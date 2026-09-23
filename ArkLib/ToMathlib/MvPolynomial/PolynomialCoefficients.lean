@@ -6,6 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.ToMathlib.MvPolynomial.ClearedSubstitution
+public import ArkLib.ToMathlib.MvPolynomial.RootContraction
 public import Mathlib.Algebra.MvPolynomial.CommRing
 public import Mathlib.Algebra.MvPolynomial.Equiv
 public import Mathlib.Algebra.MvPolynomial.PDeriv
@@ -27,11 +28,8 @@ This file records both degrees.
   so that `X` counts as one more variable. It is at most `h + P.totalDegree` when every
   coefficient has degree at most `h`, and cleared substitutions satisfy a monomialwise bound.
 
-The file also shows that `MvPolynomial.optionEquivLeft` commutes with coefficient maps.
-
 ## Main statements
 
-* `MvPolynomial.map_optionEquivLeft`: `optionEquivLeft` commutes with `MvPolynomial.map`.
 * `MvPolynomial.CoeffNatDegreeLE` and its closure lemmas, including
   `MvPolynomial.CoeffNatDegreeLE.map_coefficients`, `MvPolynomial.CoeffNatDegreeLE.aeval` and
   `MvPolynomial.CoeffNatDegreeLE.pderiv`.
@@ -49,19 +47,6 @@ namespace MvPolynomial
 noncomputable section
 
 open scoped BigOperators
-
-/-! ### Coefficient maps and `optionEquivLeft` -/
-
-/-- Moving the variable `none` out as the polynomial variable commutes with a coefficient map. -/
-theorem map_optionEquivLeft {A B σ : Type*} [CommSemiring A] [CommSemiring B]
-    (f : A →+* B) (Q : MvPolynomial (Option σ) A) :
-    Polynomial.map (map f) (optionEquivLeft A σ Q) = optionEquivLeft B σ (map f Q) := by
-  have he : (Polynomial.mapRingHom (map f)).comp (optionEquivLeft A σ).toRingHom =
-      (optionEquivLeft B σ).toRingHom.comp (map f) := by
-    ext a : 2
-    · simp
-    · cases a <;> simp
-  exact DFunLike.congr_fun he Q
 
 variable {R σ τ : Type*} [CommSemiring R]
 
