@@ -180,7 +180,6 @@ public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.Recipe
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.UniformEnvelope
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.UniformGamma
-public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.UniformGamma
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.UniformParameters
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.WeightedSupport.Block
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.WeightedSupport.Capacity
