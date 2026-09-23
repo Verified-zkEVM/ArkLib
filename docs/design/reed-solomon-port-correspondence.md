@@ -855,6 +855,12 @@ source directory, is now `certifiedEnlargedRankBound_one_eq_firstOrderRankCount`
 The threshold- and `β`-dependent definitions and theorems of `AutomaticRecipe.lean` are not ported
 here.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/FirstOrder/AllMRankRounding.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`firstOrderRateRankCount_floor_le_density_add_rounding_upper` → `firstOrderRankCount_floor_le_density_add_rounding_upper` and `firstOrderRateRankCount_floor_le_density_add_rounding` → `firstOrderRankCount_floor_le_density_add_rounding`. Their hypotheses and bounds are unchanged, using the already-ported rank-count name. The upper-branch theorem uses the sharper linear density with rounding loss `(2β + 3)m²`; the uniform theorem combines it with the existing cubic-envelope bound below `β = 1/2`.
+
+Not ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/FirstOrder/AllMSourceRounding.lean`: `firstOrderSourceDensity_mul_cube_le_rateSourceCount` is covered by `cube_mul_sourceDensity_le_firstOrderSourceCount`, generalized to any `mu` above the floor cutoff and to `m = 0`. The acceptance module derives the source-shaped ceiling-cap estimate from that generic theorem.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/StageCharges.lean`
 
 Ported from
