@@ -43,8 +43,8 @@ commute with this two-stage specialization and do not increase the challenge-hei
 * `map_differentialSpecialization`, `map_separant`: naturality of specialization and separants.
 * `jetDegree_map_eq`, `jetTotalDegree_map_eq`, `jetDegreeCastsNeZero_map_iff`: injective
   coefficient maps preserve individual and total jet degrees and the cast hypothesis.
-* `jetDegree_map_le`, `highestActiveJet_map_eq_none`: any coefficient map does not increase jet
-  degrees, so it keeps an equation with no active jet free of jet variables.
+* `jetDegree_map_le`, `jetTotalDegree_map_le`, `highestActiveJet_map_eq_none`: any coefficient map
+  does not increase jet degrees, so it keeps an equation with no active jet free of jet variables.
 * `BoundedSolution.instFinite`: over a finite coefficient semiring there are finitely many
   solutions of degree at most `D`.
 * `BoundedSolution.map`, `BoundedSolution.map_injective`, `BoundedSolution.natCard_le_natCard_map`:
@@ -134,6 +134,16 @@ theorem jetTotalDegree_map_eq [CommSemiring F] [CommSemiring E] {f : F →+* E}
     jetTotalDegree (MvPolynomial.map f Q) = jetTotalDegree Q := by
   unfold jetTotalDegree MvPolynomial.weightedTotalDegree
   rw [MvPolynomial.support_map_of_injective Q hf]
+
+/-- Any coefficient map does not increase total degree in the jet variables. -/
+theorem jetTotalDegree_map_le [CommSemiring F] [CommSemiring E] (f : F →+* E)
+    (Q : DifferentialPolynomial F d) :
+    jetTotalDegree (MvPolynomial.map f Q) ≤ jetTotalDegree Q := by
+  classical
+  rw [jetTotalDegree, MvPolynomial.weightedTotalDegree]
+  apply Finset.sup_le_iff.mpr
+  intro u hu
+  exact MvPolynomial.le_weightedTotalDegree _ (MvPolynomial.support_map_subset f Q hu)
 
 /-- Any coefficient map, injective or not, does not increase an individual jet degree. -/
 theorem jetDegree_map_le [CommSemiring F] [CommSemiring E] (f : F →+* E)
