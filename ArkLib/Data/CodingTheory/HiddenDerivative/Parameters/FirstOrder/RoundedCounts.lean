@@ -6,6 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Counting
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.Dimension
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.RateBound
 public import ArkLib.ToMathlib.BigOperators.Intervals
 public import Mathlib.Algebra.Order.Floor.Ring
@@ -47,9 +48,10 @@ This file compares both counts with their continuous densities at the rounded ca
   `r ≤ m³ (β/2 - β²/2 + β³/3) + 3 m²`, for `0 ≤ β ≤ 3/4`.
 
 Hence a positive gap `S` between the two densities gives a finite surplus `N₀ - r ≥ m³ S - 3m²`,
-which is positive once `m S > 3`. The file also contains the two comparisons that consume a
-surplus: each real source residual is below the corresponding residual of a code with degree
-`D ≤ R n` and agreement `A ≥ a n`, and the scaled kernel-height quotient
+which is positive once `m S > 3`. A source count also lower-bounds the corresponding first-order
+interpolation dimension when the code degree is at most `R n` and the agreement is at least `a n`.
+The file further contains two comparisons that consume a surplus: each real source residual is
+below the corresponding residual of the code, and the scaled kernel-height quotient
 `n r μ / (N - n r)` is at most `⌊r μ / (N₀ - r)⌋₊` whenever `n N₀ ≤ N`.
 
 ## Main statements
@@ -64,6 +66,8 @@ surplus: each real source residual is below the corresponding residual of a code
 * `cube_mul_sourceDensity_le_firstOrderSourceCount`: the source rounding estimate with no loss.
 * `cube_mul_densityGap_sub_le_sourceCount_sub_rankCount`: the combined finite surplus.
 * `mul_max_rateResidual_le_max_residual`: comparison of source residuals with code residuals.
+* `firstOrderSourceCount_mul_le_firstOrderDimensionCount`: a rate source count is bounded by the
+  first-order interpolation dimension under degree and agreement bounds.
 * `scaledKernelHeight_le_floor`: the uniform bound on the scaled kernel-height quotient.
 
 ## References
@@ -645,6 +649,47 @@ theorem mul_max_rateResidual_le_max_residual {rate a : ℝ} {n D A m t : ℕ}
     nlinarith
   · rw [max_eq_right hx, mul_zero]
     exact le_max_right _ _
+
+private theorem max_nat_sub_le_nat_add_sub (x y b : ℕ) :
+    max ((x : ℝ) - y) 0 ≤ ((x + b - y : ℕ) : ℝ) := by
+  by_cases hyx : y ≤ x
+  · rw [max_eq_left (sub_nonneg.mpr (by exact_mod_cast hyx)), Nat.cast_sub (by omega)]
+    push_cast
+    have hb : (0 : ℝ) ≤ (b : ℝ) := Nat.cast_nonneg b
+    nlinarith
+  · have hxy : x ≤ y := by omega
+    rw [max_eq_right (sub_nonpos.mpr (by exact_mod_cast hxy))]
+    positivity
+
+/-- The scaled source count is bounded by the first-order interpolation dimension whenever the
+degree and agreement satisfy the rate bounds. -/
+theorem firstOrderSourceCount_mul_le_firstOrderDimensionCount {rate agreement : ℝ}
+    {n D A m M mu : ℕ} (hD : (D : ℝ) ≤ rate * n) (hA : agreement * n ≤ A) :
+    n * firstOrderSourceCount rate agreement m M mu ≤
+      firstOrderDimensionCount D A m M mu := by
+  rw [firstOrderSourceCount, firstOrderDimensionCount]
+  push_cast
+  rw [Finset.mul_sum]
+  apply Finset.sum_le_sum
+  intro t ht
+  have hcount : min (t : ℝ) (M : ℝ) + 1 = ((min t M + 1 : ℕ) : ℝ) := by
+    norm_cast
+  rw [hcount]
+  rw [show (n : ℝ) * ((min t M + 1 : ℕ) * max (m * agreement - rate * t) 0) =
+      ∑ b ∈ Finset.range (min t M + 1), (n : ℝ) * max (m * agreement - rate * t) 0 by
+    simp only [Finset.sum_const, Finset.card_range, nsmul_eq_mul]
+    push_cast
+    ring]
+  apply Finset.sum_le_sum
+  intro b hb
+  have hresidual : (n : ℝ) * max (m * agreement - rate * t) 0 ≤
+      max ((m : ℝ) * A - D * t) 0 :=
+    mul_max_rateResidual_le_max_residual (m := m) (t := t) hD hA
+  calc
+    (n : ℝ) * max (m * agreement - rate * t) 0 ≤
+        max ((m : ℝ) * A - D * t) 0 := hresidual
+    _ ≤ ((m * A + b - D * t : ℕ) : ℝ) := by
+      simpa only [Nat.cast_mul] using max_nat_sub_le_nat_add_sub (m * A) (D * t) b
 
 /-- The scaled kernel-height quotient is bounded uniformly in the scale: if `r < N₀` and
 `n N₀ ≤ N`, then `n r μ / (N - n r) ≤ ⌊r μ / (N₀ - r)⌋₊` (natural division on the left). -/
