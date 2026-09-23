@@ -12,6 +12,7 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.Gate
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.Moment
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.Recipe
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.UniformGamma
+import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.UniformEnvelope
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.UniformParameters
 import Mathlib.Analysis.Complex.ExponentialBounds
 
@@ -302,5 +303,28 @@ example : 1 + 1 ≤ ⌊2 * (1 / 2 : ℝ) ^ 2 * 12⌋₊ ∧
       ⌊2 * (1 / 2 : ℝ) ^ 2 * 12⌋₊ + 1 ≤ 12 := by
   exact low_rate_padded_ambient_guards (δ := 1 / 2) (d := 1) (m := 3) (n := 12)
     (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+
+
+/-! ### Uniform finite-parameter envelope -/
+
+/-- The envelope exists at `δ = 1/5` with the concrete block and message dimensions below. -/
+example : Nonempty (UniformRatePartitionEnvelope (1 / 5 : ℝ)
+    (50 * uniformMultiplicity (1 / 5)) (2 * uniformMultiplicity (1 / 5))
+    (12 * uniformMultiplicity (1 / 5))) := by
+  have hm : 0 < uniformMultiplicity (1 / 5 : ℝ) := by
+    have h := add_two_le_uniformMultiplicity (1 / 5 : ℝ)
+    omega
+  apply exists_uniformRatePartitionEnvelope (δ := (1 / 5 : ℝ))
+  · norm_num
+  · norm_num
+  · apply Nat.ceil_le.mpr
+    rw [show (1 / 5 : ℝ) ^ 2 = 1 / 25 by norm_num]
+    rw [div_le_iff₀ (by norm_num : (0 : ℝ) < 1 / 25)]
+    norm_num
+    nlinarith
+  · positivity
+  · norm_num
+    nlinarith
+  · omega
 
 end ReedSolomon.HiddenDerivative.RatePartition

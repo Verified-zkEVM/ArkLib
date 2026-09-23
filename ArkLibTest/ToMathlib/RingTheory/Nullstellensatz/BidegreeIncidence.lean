@@ -190,7 +190,8 @@ example : (1 : ℚ) ≤ affineDegree
       subst x
       simp [zeroPoint])
     (hA := by intro x hx; exact Nat.zero_le _)
-  simpa [hybridDimensionSensitiveIncidenceProduct] using h
+  simpa [hybridDimensionSensitiveIncidenceProduct, incidenceProduct,
+    Finset.prod_range_succ] using h
 
 /-- The one-coordinate mixed-degree specialization bounds a genuine point off its open divisor. -/
 example : (1 : ℚ) ≤ (1 * 1 + 1 * 1 : ℕ) *
@@ -295,7 +296,7 @@ example : (1 : ℚ) ≤ (1 * 1 ^ 2 + 2 * 1 * 1 * 1 : ℕ) *
   have h := MvPolynomial.bidegreeHypersurface_incidence_off_excluded_hybrid_two
     (F := ℚ) (a := 1) (b := 1) (h := 1) (v := 1) (n := 1) (A := 1) (L := 1) (k := 1)
     (ha := by norm_num) (hb := by norm_num) (hLA := by norm_num) (hkA := by norm_num)
-    (_hAn := by norm_num) (g := (X none : MvPolynomial (Option (Fin 2)) ℚ))
+    (g := (X none : MvPolynomial (Option (Fin 2)) ℚ))
     (s := twoCoordinateWitness) (hg0 := X_ne_zero _) (hproper := span_X_none_ne_top)
     (hg := X_none_mem_bidegree)
     (highCuts := [X (some 0), X (some 1)]) (hhigh := by

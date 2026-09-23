@@ -6,6 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.SourceMonomial
+public import Mathlib.Algebra.Polynomial.BigOperators
 
 /-!
 # Source columns and assembled interpolants
@@ -31,6 +32,9 @@ ring homomorphism applied to the interpolant is applied to the coefficient vecto
   at every derivative order.
 * `SourceColumn.map_interpolant_ne_zero`: the image of the interpolant under a ring
   homomorphism is nonzero when the image of the coefficient vector is.
+* `SourceColumn.interpolant_totalJetDegree_le` and
+  `SourceColumn.map_interpolant_jetTotalDegree_le`: jet-degree bounds for interpolants and their
+  coefficient maps.
 
 ## References
 
@@ -41,6 +45,7 @@ ring homomorphism applied to the interpolant is applied to the coefficient vecto
 @[expose] public section
 
 open PolynomialDifferential
+open scoped Polynomial
 
 noncomputable section
 
@@ -207,9 +212,9 @@ theorem coeff_interpolant_natDegree_lt {columns : κ → SourceColumn d}
     simpa using hB
 
 /-- Distinct source columns preserve coefficient height at every derivative order. -/
-theorem coeff_interpolant_natDegree_le {F : Type*} [CommSemiring F] {N h : ℕ}
-    (columns : Fin N → SourceColumn d) (hcolumns : Function.Injective columns)
-    (v : Fin N → Polynomial F) (hv : ∀ j, (v j).natDegree ≤ h) :
+theorem coeff_interpolant_natDegree_le {F : Type*} [CommSemiring F] {h : ℕ}
+    (columns : κ → SourceColumn d) (hcolumns : Function.Injective columns)
+    (v : κ → Polynomial F) (hv : ∀ j, (v j).natDegree ≤ h) :
     ∀ u, ((interpolant columns v).coeff u).natDegree ≤ h := by
   have hlt := coeff_interpolant_natDegree_lt (R := F) (columns := columns)
     hcolumns v (B := h + 1) (by omega)
@@ -242,6 +247,28 @@ theorem map_interpolant_ne_zero {S : Type*} [CommSemiring S] {columns : κ → S
     (hv : (fun j => ψ (v j)) ≠ 0) :
     MvPolynomial.map ψ (interpolant columns v) ≠ 0 := by
   rwa [map_interpolant, Ne, interpolant_eq_zero_iff hcolumns]
+
+/-- The total jet degree of an interpolant is bounded by the largest bound on its columns. -/
+theorem interpolant_totalJetDegree_le (columns : κ → SourceColumn d)
+    {ν : ℕ} (hdegree : ∀ j, totalJetDegree (columns j).exponent ≤ ν) (v : κ → R) :
+    ∀ u ∈ (interpolant columns v).support, totalJetDegree u ≤ ν := by
+  classical
+  intro u hu
+  obtain ⟨j, _, hj⟩ := Finset.mem_biUnion.mp (MvPolynomial.support_sum hu)
+  have heq : u = (columns j).exponent := by
+    simpa using MvPolynomial.support_monomial_subset hj
+  subst u
+  exact hdegree j
+
+/-- Mapping the coefficients of an interpolant preserves its total jet degree bound. -/
+theorem map_interpolant_jetTotalDegree_le {S : Type*} [CommSemiring S]
+    (ψ : R →+* S) (columns : κ → SourceColumn d) {ν : ℕ}
+    (hdegree : ∀ j, totalJetDegree (columns j).exponent ≤ ν) (v : κ → R) :
+    jetTotalDegree (MvPolynomial.map ψ (interpolant columns v)) ≤ ν := by
+  rw [jetTotalDegree_le_iff]
+  intro u hu
+  exact interpolant_totalJetDegree_le columns hdegree v u
+    (MvPolynomial.support_map_subset ψ _ hu)
 
 end SourceColumn
 
