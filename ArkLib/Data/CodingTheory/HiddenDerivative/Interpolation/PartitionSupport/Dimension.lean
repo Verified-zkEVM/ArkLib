@@ -6,6 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.Counting
+public import ArkLib.ToMathlib.MeasureTheory.Integral.PositivePart
 public import ArkLib.ToMathlib.Combinatorics.QuadraticStaircase
 
 /-!
@@ -131,37 +132,17 @@ theorem partition_quadratic_rate_lower {n L deg : ℕ} {rate level : ℝ} (hD : 
     (n : ℝ) / (2 * rate) * (max (level - rate * deg) 0) ^ 2 ≤
       (D : ℝ) * (max ((L : ℝ) / D - deg) 0) ^ 2 / 2 := by
   have hDR : (0 : ℝ) < D := by exact_mod_cast hD
-  have hn0 : (0 : ℝ) ≤ n := Nat.cast_nonneg n
-  have hrn : 0 < rate * n := hDR.trans_le hupper
   have hnR : (0 : ℝ) < n := by
-    rcases hn0.eq_or_lt with h | h
-    · rw [← h, mul_zero] at hrn
-      exact absurd hrn (lt_irrefl 0)
-    · exact h
-  have hrate : 0 < rate := pos_of_mul_pos_left hrn hn0
-  have hsource : (n : ℝ) * (level - rate * deg) ≤ (L : ℝ) - D * deg := by
-    have hdeg := mul_le_mul_of_nonneg_right hupper (Nat.cast_nonneg deg : (0 : ℝ) ≤ deg)
-    nlinarith
-  have hmax : (n : ℝ) * max (level - rate * deg) 0 ≤ max ((L : ℝ) - D * deg) 0 := by
-    rw [mul_max_of_nonneg _ _ hnR.le, mul_zero]
-    exact max_le_max_right 0 hsource
-  have hquot : ((n : ℝ) * max (level - rate * deg) 0) ^ 2 / (2 * rate * n) ≤
-      (max ((L : ℝ) - D * deg) 0) ^ 2 / (2 * D) := by
-    apply div_le_div₀ (by positivity)
-    · exact pow_le_pow_left₀ (by positivity) hmax 2
-    · positivity
-    · nlinarith
-  have hleft : ((n : ℝ) * max (level - rate * deg) 0) ^ 2 / (2 * rate * n) =
-      (n : ℝ) / (2 * rate) * (max (level - rate * deg) 0) ^ 2 := by
-    field_simp
-  have hright : (max ((L : ℝ) - D * deg) 0) ^ 2 / (2 * D) =
-      (D : ℝ) * (max ((L : ℝ) / D - deg) 0) ^ 2 / 2 := by
-    have hfactor : (L : ℝ) - D * deg = D * ((L : ℝ) / D - deg) := by field_simp
-    have hmaxfactor := mul_max_of_nonneg ((L : ℝ) / D - deg) 0 hDR.le
-    rw [mul_zero] at hmaxfactor
-    rw [hfactor, ← hmaxfactor, mul_pow]
-    field_simp
-  simpa only [hleft, hright] using hquot
+    by_contra hn
+    have hn0 : (n : ℝ) = 0 := le_antisymm (le_of_not_gt hn) (Nat.cast_nonneg n)
+    rw [hn0, mul_zero] at hupper
+    linarith
+  calc
+    (n : ℝ) / (2 * rate) * (max (level - rate * deg) 0) ^ 2 ≤
+        (D : ℝ) / 2 * (max ((L : ℝ) / D - deg) 0) ^ 2 :=
+      max_sub_zero_sq_scaled_le hDR hnR (Nat.cast_nonneg deg) hupper
+        (by simpa [mul_comm] using hlevel)
+    _ = (D : ℝ) * (max ((L : ℝ) / D - deg) 0) ^ 2 / 2 := by ring
 
 /-- The rate form of the quadratic lower bound: if `0 < D ≤ rate * n` and `level * n ≤ L`, then
 `n / (2 rate) * ∑_c (max (level - rate * ∑_i c_i) 0) ^ 2` is at most the dimension of the
