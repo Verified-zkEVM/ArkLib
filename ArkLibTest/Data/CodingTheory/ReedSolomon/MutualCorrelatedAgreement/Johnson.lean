@@ -8,6 +8,8 @@ import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Johnson.Fu
 import Mathlib.Algebra.Field.ZMod
 import Mathlib.Data.Fin.VecNotation
 
+/-! # Acceptance cases for Johnson decoding consequences -/
+
 open Polynomial CoreDefinitions ReedSolomon
 
 private def fullCodeDomain : Fin 2 ↪ ℚ := ⟨![0, 1], by

@@ -14,6 +14,8 @@ import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TupleSpeci
 import Mathlib.Data.Fin.VecNotation
 import Mathlib.FieldTheory.Finite.Extension
 
+/-! # Acceptance cases for Reed–Solomon mutual correlated agreement -/
+
 open Polynomial Finset ReedSolomon ReedSolomon.FirstOrder.Squarefree PolynomialDifferential
 
 private abbrev E₄ := FiniteField.Extension (ZMod 2) 2 2

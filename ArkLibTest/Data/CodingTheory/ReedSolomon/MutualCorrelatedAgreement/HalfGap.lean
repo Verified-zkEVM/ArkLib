@@ -8,6 +8,8 @@ import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.HalfGap.Li
 import Mathlib.Algebra.Field.ZMod
 import Mathlib.Data.Fin.VecNotation
 
+/-! # Acceptance case for the half-gap line theorem -/
+
 open Polynomial Finset ReedSolomon
 
 local instance : Fact (Nat.Prime 5) := ⟨by decide⟩

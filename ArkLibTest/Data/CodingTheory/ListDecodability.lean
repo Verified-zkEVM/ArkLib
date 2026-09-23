@@ -9,6 +9,8 @@ import ArkLib.Data.CodingTheory.ListDecodability.PairAgreementBound
 import ArkLib.Data.CodingTheory.ListDecodability.SymbolMap
 import Mathlib.Data.ZMod.Basic
 
+/-! # Acceptance cases for list-decodability results -/
+
 open Code
 
 namespace ListDecodabilityTest

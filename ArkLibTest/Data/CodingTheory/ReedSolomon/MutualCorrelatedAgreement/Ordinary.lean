@@ -7,6 +7,8 @@ Authors: Quang Dao
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.FactorAssembly
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.FactorBudget
 
+/-! # Acceptance cases for ordinary factor assembly and budget bounds -/
+
 open ReedSolomon
 
 open scoped BigOperators

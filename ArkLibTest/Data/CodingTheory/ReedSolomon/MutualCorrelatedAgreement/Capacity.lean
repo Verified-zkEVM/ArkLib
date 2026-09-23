@@ -6,6 +6,8 @@ Authors: Quang Dao
 
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.Midpoint
 
+/-! # Acceptance case for correlated-agreement capacity bounds -/
+
 open ReedSolomon
 
 example : correlatedMidpoint (1 / 2) 10 2 ≤ 8 ∧

@@ -9,6 +9,8 @@ import ArkLib.Data.CodingTheory.ProximityGenerator.BinaryTensorFoldProbability
 import ArkLib.Data.CodingTheory.InterleavedCode.ExactAgreement
 import Mathlib.Algebra.Field.ZMod
 
+/-! # Acceptance cases for proximity-generator results -/
+
 open TensorMCA Code
 open scoped ProbabilityTheory
 

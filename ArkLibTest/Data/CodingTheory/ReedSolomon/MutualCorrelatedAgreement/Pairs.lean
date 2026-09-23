@@ -8,6 +8,8 @@ import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Pairs.Exce
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Pairs.Family
 import Mathlib.Data.Fin.VecNotation
 
+/-! # Acceptance cases for pair exceptional-set and family bounds -/
+
 open Polynomial ReedSolomon
 
 private def pairDomain : Fin 2 ↪ ℚ :=
