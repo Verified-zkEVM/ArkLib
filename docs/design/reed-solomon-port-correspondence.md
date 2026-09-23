@@ -2094,6 +2094,14 @@ in `TaylorChart`; `map_initialJetSeparantOver_eq` is covered by the existing
 `map_initialJetSeparant` specialization theorem. Common-numerator field-specialization theorems
 were already present in `TaylorChart`, so duplicate copies were removed from this module.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Symbolic/FrobeniusCuts.lean` and `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Symbolic/TaylorCutDegree.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`challengeHeightLE_initialJetEquationOver` becomes `coeffNatDegreeLE_initialJetEquation`, using the existing `CoeffNatDegreeLE` API. `jointTotalDegree_initialJetEquationOver_le` becomes `jointTotalDegree_initialJetEquation_le`, with the center generalized from a constant to any polynomial. `jointTotalDegree_initialJetEquationOver_le_of_source` becomes `jointTotalDegree_initialJetEquation_le_of_coeffNatDegreeLE`, generalized to `CoeffNatDegreeLE` and `jetTotalDegree`.
+
+The agreement bounds `jointTotalDegree_taylorAgreementEquationOver_le_of_exponent` and `jointTotalDegree_taylorAgreementEquationOver_le` keep their names. `jointTotalDegree_taylorAgreementEquationOver_le_of_source_and_exponent` and `jointTotalDegree_taylorAgreementEquationOver_le_of_source` become `jointTotalDegree_taylorAgreementEquationOver_le_of_coeffNatDegreeLE_and_exponent` and `jointTotalDegree_taylorAgreementEquationOver_le_of_coeffNatDegreeLE`; these use `jetTotalDegree` and `CoeffNatDegreeLE` and require no positive-degree premise. `sparse_rationalTaylorPolynomial_of_symbolic_cuts` keeps its name and uses main's common-numerator reconstruction identity.
+
+`totalDegree_initialJetEquationOver_le` is not ported because the existing, more general `PolynomialDifferential.totalDegree_initialJetEquation_le` covers it. The source `taylorAgreementEquationOver` definition and `aeval_map_commonTaylorNumeratorOver_reconstruction_of_exponent` are supplied by main under those destination names.
+
 ## `ArkLib/Data/Polynomial/Differential/TaylorChartGeometry.lean`
 
 Ported from `Geometry/AgreementGeometry.lean`, `Geometry/SolutionGeometry.lean` and part of
@@ -2975,6 +2983,10 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/S
 
 `specialize_extendSymbolicCoefficients` → `MvPolynomial.eval_map_coefficients`, generalized from field extensions to arbitrary commutative semirings, variable types, coefficient maps, and target evaluation points. `extendSymbolicCoefficients` was not ported because it is an alias for `MvPolynomial.map` with `Polynomial.mapRingHom`.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Symbolic/TaylorCutDegree.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Added `MvPolynomial.jointTotalDegree_affine_le`, the affine-polynomial degree bound in the general polynomial coefficient owner. No source declaration was renamed for this addition.
+
 ## `ArkLib/ToMathlib/MvPolynomial/RootContraction.lean`
 
 Ported from `ArkLib/ToMathlib/MvPolynomial/RootContraction.lean` at the source revision. The
@@ -3825,6 +3837,11 @@ finite set to `K` do not form a finite-dimensional `k`-space.
 Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/PointRecognition.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 The acceptance cases check the zero case and a sample with second received value `1`, challenge `2`, `K = 2 > k = 1`, and a satisfied cut at `l = 1`. They check the reconstructed affine polynomial, jet, and cleared coefficient conclusions.
+## `ArkLibTest/Data/Polynomial/Differential/TaylorChartAlgebra.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Symbolic/FrobeniusCuts.lean` and `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Symbolic/TaylorCutDegree.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+The acceptance module retains main's coefficient-map, regular and singular jet, insufficient-exponent, high-cut, and common-numerator examples. Added cases exercise the initial-equation joint-degree bound at a nonconstant center, the zero-length agreement boundary case, a positive-length agreement cut with nonconstant numerator and separant, and sparsity for jet `(1, 0)`, preserving the allowed constant coefficient `1` while forcing the excluded linear coefficient to `0`. No public ArkLib declaration is added by this file.
 
 ## `ArkLibTest/Data/Probability/Uniform.lean`
 
