@@ -24,8 +24,14 @@ ring homomorphism applied to the interpolant is applied to the coefficient vecto
   `y₀ + ∑_j higher j`.
 * `SourceColumn.polynomial_eq_sourceMonomial`: a column's monomial is the source monomial.
 * `SourceColumn.coeff_interpolant`: the coefficient of the interpolant at `columns j` is `v j`.
+* `SourceColumn.coeff_interpolant_natDegree_le`: distinct columns preserve coefficient height
+  at every derivative order.
 * `SourceColumn.map_interpolant_ne_zero`: the image of the interpolant under a ring
   homomorphism is nonzero when the image of the coefficient vector is.
+
+## References
+
+* [DKT26]
 -/
 
 @[expose] public section
@@ -172,6 +178,28 @@ theorem coeff_interpolant {columns : κ → SourceColumn d} (hcolumns : Function
     rw [coeff_monomial, ite_eq_right_iff]
     exact fun h => absurd (hcolumns (exponent_injective h)) hkj
   · simp
+
+/-- Distinct source columns preserve coefficient height at every derivative order. -/
+theorem coeff_interpolant_natDegree_le {F : Type*} [CommSemiring F] {N h : ℕ}
+    (columns : Fin N → SourceColumn d) (hcolumns : Function.Injective columns)
+    (v : Fin N → Polynomial F) (hv : ∀ j, (v j).natDegree ≤ h) :
+    ∀ u, ((interpolant columns v).coeff u).natDegree ≤ h := by
+  classical
+  intro u
+  by_cases hu : u ∈ Set.range (fun j ↦ (columns j).exponent)
+  · obtain ⟨j, rfl⟩ := hu
+    rw [coeff_interpolant hcolumns v j]
+    exact hv j
+  · have hcoeff : (interpolant columns v).coeff u = 0 := by
+      rw [interpolant, MvPolynomial.coeff_sum]
+      apply Finset.sum_eq_zero
+      intro j _
+      rw [MvPolynomial.coeff_monomial]
+      split
+      · rename_i heq
+        exact (hu ⟨j, heq⟩).elim
+      · rfl
+    simp [hcoeff]
 
 /-- Mapping the coefficients of the interpolant maps its coefficient vector. -/
 theorem map_interpolant {S : Type*} [CommSemiring S] (ψ : R →+* S)
