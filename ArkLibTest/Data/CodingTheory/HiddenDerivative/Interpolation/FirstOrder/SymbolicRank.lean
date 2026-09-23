@@ -9,28 +9,34 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.Symbol
 /-!
 # First-order symbolic rank acceptance tests
 
-The tests check a small received-line matrix at `D = 0`, the source-shaped rank bound with
-`1 < D`, and coefficient change for the local constraint map over `ℤ → ℚ`.
+The tests check the rank bound at `D = 0` and state the rank bound under `1 < D`.
 -/
 
 open PolynomialDifferential Polynomial ReedSolomon.HiddenDerivative
 
-private def constantColumn : Fin 1 → SourceColumn 1 := fun _ =>
-  ⟨0, 0, fun _ => 0⟩
+private def boundaryColumns : Fin 2 → SourceColumn 1 := fun j =>
+  if j = 0 then ⟨0, 0, fun _ => 0⟩ else ⟨0, 1, fun _ => 0⟩
 
-/-- Even at the boundary `D = 0`, the constant received-line matrix has the certified rank bound. -/
+/-- The constant row has entry `1` in the constant column at `D = 0`. -/
+example :
+    localConstraintMatrix 1 (fun _ : Fin 1 ↦ Polynomial.C (0 : ℚ))
+      (fun _ ↦ receivedLine 0 0) boundaryColumns
+      (0, ⟨0, by simp [localContactOrder]⟩) 0 = 1 := by
+  simp [localConstraintMatrix_apply, boundaryColumns, SourceColumn.polynomial,
+    SourceColumn.exponent, unscaledLocalSubstitution]
+
+/-- The two eligible columns at `D = 0` have a certified rank bound of `1`. -/
 example :
     ((localConstraintMatrix 1 (fun _ : Fin 1 ↦ Polynomial.C (0 : ℚ))
-      (fun _ ↦ receivedLine 0 0) constantColumn).map
-        (algebraMap ℚ[X] (RatFunc ℚ))).rank ≤ certifiedEnlargedRankBound 1 1 0 0 := by
-  have heligible : ∀ j, (constantColumn j).exponent ∈ firstOrderExponents 0 1 1 0 0 := by
+      (fun _ ↦ receivedLine 0 0) boundaryColumns).map
+        (algebraMap ℚ[X] (RatFunc ℚ))).rank ≤ 1 := by
+  have heligible : ∀ j, (boundaryColumns j).exponent ∈ firstOrderExponents 0 1 1 0 1 := by
     intro j
-    simp [FirstOrderEligibleExponent, constantColumn, SourceColumn.exponent, firstJetExponent,
-      totalJetDegree]
-  apply (rank_firstOrderLocalConstraintMatrix_le (D := 0) (A := 1) (m := 1) (M := 0)
-    (μ := 0) (centers := fun _ ↦ (0 : ℚ)) (f := fun _ ↦ 0) (g := fun _ ↦ 0)
-    constantColumn heligible).trans
-  simp
+    rw [mem_firstOrderExponents_iff_coordinates]
+    fin_cases j <;> simp [boundaryColumns, SourceColumn.exponent]
+  exact (rank_firstOrderLocalConstraintMatrix_le (D := 0) (A := 1) (m := 1) (M := 0)
+    (μ := 1) (centers := fun _ ↦ (0 : ℚ)) (f := fun _ ↦ 0) (g := fun _ ↦ 0)
+    boundaryColumns heligible).trans (by decide)
 
 /-- The form with the hypothesis `1 < D` follows from the rank bound, which applies to every D. -/
 example {F : Type*} [Field F] {D A m M μ n N : ℕ} (_hD : 1 < D)
