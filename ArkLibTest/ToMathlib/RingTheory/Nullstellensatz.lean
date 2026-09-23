@@ -178,6 +178,22 @@ private theorem natDegree_zero_of_all_variables_mem
     (fun i ↦ X i) hvars (fun i ↦ by simp [v, Matrix.one_apply])
   exact Nat.le_zero.mp (by simpa using h)
 
+private theorem natDegree_le_one_of_two_variables_mem
+    {J : Ideal (MvPolynomial (Option (Fin 2)) ℚ)}
+    (h₀ : (X none : MvPolynomial (Option (Fin 2)) ℚ) ∈ J)
+    (h₁ : (X (some 1) : MvPolynomial (Option (Fin 2)) ℚ) ∈ J) :
+    (affineHilbertPolynomial J).natDegree ≤ 1 := by
+  let v : Fin 2 ↪ Option (Fin 2) := ⟨![none, some 1], by decide⟩
+  have h := natDegree_affineHilbertPolynomial_le_card_sub_of_isUnit_det
+    (I := J) v (1 : Matrix (Fin 2) (Fin 2) ℚ) (by simp)
+    (fun i ↦ X (v i)) (by
+      intro i
+      fin_cases i
+      · simpa [v] using h₀
+      · simpa [v] using h₁) (fun i ↦ by simp [v, Matrix.one_apply])
+  simpa only [Nat.card_eq_fintype_card, Fintype.card_option,
+    Fintype.card_fin] using h
+
 private theorem X_mem_restrictCappedBidegree (i : Option (Fin 2)) :
     (X i : MvPolynomial (Option (Fin 2)) ℚ) ∈
     restrictCappedBidegree (Fin 2) ℚ 1 1 1 1 := by
@@ -186,15 +202,17 @@ private theorem X_mem_restrictCappedBidegree (i : Option (Fin 2)) :
   | none => simp [Finsupp.some_single_none]
   | some i => fin_cases i <;> simp [Finsupp.some_single_some]
 
-/-- A rational point on `X none = 0` satisfies the hybrid bound under three coordinate cuts. -/
+/-- The origin on the coordinate line cut from `X none = 0` satisfies the hybrid bound. -/
 example :
     (({fun _ : Option (Fin 2) => (0 : ℚ)} : Finset (Option (Fin 2) → ℚ)).card : ℚ) ≤
       (cappedBidegreeMixedVolume 1 1 1 1 1 1 : ℕ) *
-        (((3 - 3 + 1 : ℕ) : ℚ) / ((3 - 3 + 1 : ℕ) : ℚ)) *
-          (((3 - 0 + 1 : ℕ) : ℚ) / ((3 - 0 + 1 : ℕ) : ℚ)) := by
+        (((4 - 1 + 1 : ℕ) : ℚ) / ((2 - 1 + 1 : ℕ) : ℚ)) *
+          (((4 - 0 + 1 : ℕ) : ℚ) / ((2 - 0 + 1 : ℕ) : ℚ)) := by
+  let cuts : Fin 4 → MvPolynomial (Option (Fin 2)) ℚ :=
+    fun _ ↦ X (some 0)
   have h := MvPolynomial.cappedBidegreeHypersurface_incidence_off_excluded_hybrid_two
-    (a := 1) (b := 1) (c := 1) (h := 1) (j := 1) (r := 1) (n := 3)
-    (A := 3) (L := 3) (k := 0)
+    (a := 1) (b := 1) (c := 1) (h := 1) (j := 1) (r := 1) (n := 4)
+    (A := 2) (L := 1) (k := 0)
     (ha := by norm_num) (hb := by norm_num) (hc := by norm_num)
     (hLA := by norm_num) (hkA := by norm_num)
     (g := X none) (s := 1)
@@ -204,32 +222,38 @@ example :
     (hs := by
       rw [mem_restrictCappedBidegree]
       simp)
-    (highCuts := [X none, X (some 0), X (some 1)])
+    (highCuts := [X none, X (some 1)])
     (hhigh := by
       intro f hf
       simp only [List.mem_cons, List.not_mem_nil, or_false] at hf
-      rcases hf with rfl | rfl | rfl <;> exact X_mem_restrictCappedBidegree _)
-    (cuts := ![X none, X (some 0), X (some 1)])
+      rcases hf with rfl | rfl <;> exact X_mem_restrictCappedBidegree _)
+    (cuts := cuts)
     (hcuts := by
       intro i
-      fin_cases i <;> exact X_mem_restrictCappedBidegree _)
+      exact X_mem_restrictCappedBidegree _)
     (excluded := ∅)
     (hdimension := by
       intro J hJ hsJ hX hhigh hd
-      have hvars : ∀ i, (X i : MvPolynomial (Option (Fin 2)) ℚ) ∈ J := by
-        intro i
-        cases i with
-        | none => exact hhigh _ (by simp)
-        | some i => fin_cases i <;> exact hhigh _ (by simp)
-      rw [natDegree_zero_of_all_variables_mem hvars] at hd
-      omega)
+      have h₁ : (X (some 1) : MvPolynomial (Option (Fin 2)) ℚ) ∈ J :=
+        hhigh _ (by simp)
+      have hdim := natDegree_le_one_of_two_variables_mem hX h₁
+      exact ⟨by omega, fun hgt ↦ by omega⟩)
     (hterminal := by
       intro J hJ hsJ hX hhigh hd hL
+      have h₁ : (X (some 1) : MvPolynomial (Option (Fin 2)) ℚ) ∈ J :=
+        hhigh _ (by simp)
+      have hpos : 0 < {i : Fin 4 | cuts i ∈ J}.ncard := by omega
+      have h₀ : (X (some 0) : MvPolynomial (Option (Fin 2)) ℚ) ∈ J := by
+        obtain ⟨i, hi⟩ := Set.nonempty_of_ncard_ne_zero hpos.ne'
+        simpa [cuts] using hi
       have hvars : ∀ i, (X i : MvPolynomial (Option (Fin 2)) ℚ) ∈ J := by
         intro i
         cases i with
-        | none => exact hhigh _ (by simp)
-        | some i => fin_cases i <;> exact hhigh _ (by simp)
+        | none => exact hX
+        | some i =>
+          fin_cases i
+          · exact h₀
+          · exact h₁
       rw [natDegree_zero_of_all_variables_mem hvars] at hd
       omega)
     (S := {fun _ : Option (Fin 2) => (0 : ℚ)})
@@ -242,11 +266,10 @@ example :
       intro x hx
       rw [Finset.mem_singleton] at hx
       subst x
-      have hcuts : {i : Fin 3 | aeval (fun _ : Option (Fin 2) ↦ (0 : ℚ))
-          ((![X none, X (some 0), X (some 1)] : Fin 3 →
-            MvPolynomial (Option (Fin 2)) ℚ) i) = 0} = Set.univ := by
+      have hcuts : {i : Fin 4 | aeval (fun _ : Option (Fin 2) ↦ (0 : ℚ))
+          (X (some 0) : MvPolynomial (Option (Fin 2)) ℚ) = 0} = Set.univ := by
         ext i
-        fin_cases i <;> simp
+        simp
       rw [hcuts]
       simp)
   have hvolume : cappedBidegreeMixedVolume 1 1 1 1 1 1 = 3 := by
