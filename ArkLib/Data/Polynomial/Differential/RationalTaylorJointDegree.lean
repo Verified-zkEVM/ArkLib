@@ -225,8 +225,8 @@ theorem jointTotalDegree_commonTaylorNumeratorOver_le
   nlinarith
 
 /-- At a constant center, if `Q` has total jet degree at most `v` and coefficient degree at most
-`h` in the parameter, and `2(l - r) - 1 ≤ τ`, the common numerator of `c_l` with exponent `τ`
-has joint total degree at most `1 + τ * (v - 1 + h)`. -/
+`h` in the parameter, and `2(l - r) - 1 ≤ τ`, the common numerator of `c_l` with exponent `τ` has
+joint total degree at most `1 + τ * (v - 1 + h)`. -/
 theorem jointTotalDegree_commonTaylorNumeratorOver_le_of_coeffNatDegreeLE
     (center : F) (Q : DifferentialPolynomial (Polynomial F) r) (v h τ l : ℕ)
     (hl : 2 * (l - r) - 1 ≤ τ)

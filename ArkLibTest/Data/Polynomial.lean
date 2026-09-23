@@ -4,8 +4,6 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.Data.Polynomial.Differential.BaseChange
-import ArkLib.Data.Polynomial.Differential.RationalTaylorBidegree
 import ArkLib.Data.Polynomial.DivisorReconstruction
 import ArkLib.Data.Polynomial.FractionFieldResultant
 import ArkLib.Data.Polynomial.FrobeniusContraction
@@ -14,8 +12,6 @@ import ArkLib.Data.Polynomial.ResultantDegree
 import ArkLib.Data.Polynomial.SpecializationAvoidance
 import Mathlib.Algebra.Polynomial.SpecificDegree
 import Mathlib.Algebra.Field.ZMod
-import Mathlib.Data.Fin.VecNotation
-import Mathlib.FieldTheory.Finite.Extension
 import Mathlib.Tactic.ComputeDegree
 import Mathlib.Tactic.NormNum
 
@@ -341,130 +337,3 @@ private theorem canary_ne_zero : canary ≠ 0 := by
 example : ∃ t : ℚ, t ≠ 1 ∧ canary.map (evalRingHom t) ≠ 0 ∧
     (canary.map (evalRingHom t)).natDegree = canary.natDegree := by
   simpa [canary] using exists_map_evalRingHom_ne_zero_avoiding canary canary_ne_zero {1}
-
-namespace PolynomialDifferential
-
-noncomputable section
-
-open MvPolynomial Finset
-
-/-! ### Coefficient maps -/
-
-private abbrev E₄ := FiniteField.Extension (ZMod 2) 2 2
-
-/-- The injective map from `ZMod 2` to its degree-two extension preserves the jet degree of
-`Y₀ ^ 2`. -/
-example :
-    jetDegree (MvPolynomial.map (algebraMap (ZMod 2) E₄)
-      (X (some 0) ^ 2 : DifferentialPolynomial (ZMod 2) 0)) 0 = 2 := by
-  rw [jetDegree_map_eq (algebraMap (ZMod 2) E₄).injective]
-  simp [jetDegree]
-
-/-- Differential specialization commutes with the coefficient extension `ZMod 2 → E₄` on
-`Q = X + Y₀` at `P = X + 1`; both sides evaluate to `1`. -/
-example :
-    let f := algebraMap (ZMod 2) E₄
-    let Q : DifferentialPolynomial (ZMod 2) 0 :=
-      MvPolynomial.X none + MvPolynomial.X (some 0)
-    let P : Polynomial (ZMod 2) := Polynomial.X + 1
-    (differentialSpecialization Q P).map f = 1 ∧
-      (differentialSpecialization Q P).map f =
-        differentialSpecialization (MvPolynomial.map f Q) (P.map f) := by
-  intro f Q P
-  refine ⟨?_, map_differentialSpecialization f Q P⟩
-  have h2 : (Polynomial.X + (Polynomial.X + 1) : Polynomial (ZMod 2)) = 1 := by
-    rw [← add_assoc, ← two_mul,
-      show (2 : Polynomial (ZMod 2)) = Polynomial.C 2 from rfl,
-      show (2 : ZMod 2) = 0 by decide, Polynomial.C_0, zero_mul, zero_add]
-  simp [Q, P, differentialSpecialization, differentialSpecializationHom, h2]
-
-open Classical in
-/-- Mapping the nonempty regular solution family `{X}` through `ZMod 2 → E₄` preserves its
-degree, equation, and nonzero separant. -/
-example :
-    let f := algebraMap (ZMod 2) E₄
-    let Q : DifferentialPolynomial (ZMod 2) 0 := X (some 0) - X none
-    ∀ P ∈ ({(Polynomial.X : Polynomial (ZMod 2))} : Finset (Polynomial (ZMod 2))).image
-        (Polynomial.map f),
-      P.degree < 2 ∧ differentialSpecialization (MvPolynomial.map f Q) P = 0 ∧
-        differentialSpecialization (separant (MvPolynomial.map f Q) 0) P ≠ 0 := by
-  classical
-  intro f Q
-  refine map_regularSolutionFamily f.injective Q {Polynomial.X} 0 2 ?_ ?_ ?_
-  · intro P hP
-    simp only [Finset.mem_singleton] at hP
-    subst P
-    norm_num
-  · intro P hP
-    simp only [Finset.mem_singleton] at hP
-    subst P
-    simp [Q, differentialSpecialization, differentialSpecializationHom]
-  · intro P hP
-    simp only [Finset.mem_singleton] at hP
-    subst P
-    simp [Q, separant, differentialSpecialization, differentialSpecializationHom, pderiv_X]
-
-/-! ### Concrete Hasse jets and specialization degree -/
-
-private abbrev naturalBase : Polynomial ℕ := Polynomial.X ^ 2 + 2 * Polynomial.X + 3
-
-private abbrev naturalDirection : Polynomial ℕ :=
-  2 * Polynomial.X ^ 2 + Polynomial.X + 1
-
-/-- Concrete order-zero, first, and second Hasse jets over `ℕ` record an affine sum. -/
-example :
-    polynomialJet (d := 2) 0 naturalBase = ![3, 2, 1] ∧
-      polynomialJet (d := 2) 0 naturalDirection = ![1, 1, 2] ∧
-      polynomialJet (d := 2) 0 (naturalBase + Polynomial.C 3 * naturalDirection) =
-        ![6, 5, 7] := by
-  constructor
-  · ext j
-    fin_cases j <;>
-      rw [polynomialJet, Polynomial.hasseJet_eq_taylor_coeff] <;>
-      norm_num [naturalBase, Polynomial.taylor, Polynomial.coeff_X,
-        Polynomial.coeff_C, Polynomial.coeff_X_pow, Polynomial.coeff_one]
-  constructor
-  · ext j
-    fin_cases j <;>
-      rw [polynomialJet, Polynomial.hasseJet_eq_taylor_coeff] <;>
-      norm_num [naturalDirection, Polynomial.taylor, Polynomial.coeff_X,
-        Polynomial.coeff_C, Polynomial.coeff_X_pow, Polynomial.coeff_one]
-  · ext j
-    fin_cases j <;>
-      rw [polynomialJet, Polynomial.hasseJet_eq_taylor_coeff] <;>
-      norm_num [naturalBase, naturalDirection, Polynomial.taylor, Polynomial.coeff_X,
-        Polynomial.coeff_C, Polynomial.coeff_X_pow, Polynomial.coeff_one]
-
-private def exactDegreeEquation : DifferentialPolynomial ℚ 1 :=
-  MvPolynomial.X none ^ 2 * MvPolynomial.X (some (Fin.last 1)) ^ 3
-
-private theorem hasseDeriv_one_X_five :
-    Polynomial.hasseDeriv 1 (Polynomial.X ^ 5 : Polynomial ℚ) =
-      Polynomial.C 5 * Polynomial.X ^ 4 := by
-  rw [Polynomial.X_pow_eq_monomial, Polynomial.hasseDeriv_monomial]
-  norm_num
-  rw [← Polynomial.C_mul_X_pow_eq_monomial]
-
-/-- The monomial `X² Y₁³` attains its specialization degree bound at `P = X ^ 5`. -/
-example :
-    (differentialSpecialization exactDegreeEquation (Polynomial.X ^ 5)).natDegree = 14 ∧
-      (differentialSpecialization exactDegreeEquation (Polynomial.X ^ 5)).natDegree ≤
-        differentialWeightedDegree 5 exactDegreeEquation := by
-  constructor
-  · have hspec :
-        differentialSpecialization exactDegreeEquation (Polynomial.X ^ 5) =
-          Polynomial.X ^ 2 * (Polynomial.C 5 * Polynomial.X ^ 4) ^ 3 := by
-      rw [exactDegreeEquation, differentialSpecialization, map_mul, map_pow, map_pow]
-      simp only [differentialSpecializationHom, MvPolynomial.aeval_X, Fin.last]
-      rw [hasseDeriv_one_X_five]
-    rw [hspec]
-    rw [Polynomial.natDegree_mul (by simp) (by norm_num), Polynomial.natDegree_pow,
-      Polynomial.natDegree_pow, Polynomial.natDegree_mul (by norm_num) (by simp),
-      Polynomial.natDegree_pow]
-    norm_num
-  · exact natDegree_differentialSpecialization_le exactDegreeEquation
-      (Polynomial.X ^ 5) (by simp)
-
-end
-
-end PolynomialDifferential

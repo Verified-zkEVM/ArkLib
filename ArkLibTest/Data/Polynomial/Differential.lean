@@ -99,15 +99,114 @@ private theorem jetTotalDegree_constantDerivativeEquation_le {F : Type*} [CommRi
   rw [MvPolynomial.support_X, mem_singleton] at hu
   rw [hu]
   simp [totalJetDegree_eq_sum, Fin.sum_univ_two]
+/-! ### Coefficient maps -/
 
+private abbrev E₄ := FiniteField.Extension (ZMod 2) 2 2
+/-- The injective map from `ZMod 2` to its degree-two extension preserves the jet degree of
+`Y₀ ^ 2`. -/
+example :
+    jetDegree (MvPolynomial.map (algebraMap (ZMod 2) E₄)
+      (X (some 0) ^ 2 : DifferentialPolynomial (ZMod 2) 0)) 0 = 2 := by
+  rw [jetDegree_map_eq (algebraMap (ZMod 2) E₄).injective]
+  simp [jetDegree]
+/-- Differential specialization commutes with the coefficient extension `ZMod 2 → E₄` on
+`Q = X + Y₀` at `P = X + 1`; both sides evaluate to `1`. -/
+example :
+    let f := algebraMap (ZMod 2) E₄
+    let Q : DifferentialPolynomial (ZMod 2) 0 :=
+      MvPolynomial.X none + MvPolynomial.X (some 0)
+    let P : Polynomial (ZMod 2) := Polynomial.X + 1
+    (differentialSpecialization Q P).map f = 1 ∧
+      (differentialSpecialization Q P).map f =
+        differentialSpecialization (MvPolynomial.map f Q) (P.map f) := by
+  intro f Q P
+  refine ⟨?_, map_differentialSpecialization f Q P⟩
+  have h2 : (Polynomial.X + (Polynomial.X + 1) : Polynomial (ZMod 2)) = 1 := by
+    rw [← add_assoc, ← two_mul,
+      show (2 : Polynomial (ZMod 2)) = Polynomial.C 2 from rfl,
+      show (2 : ZMod 2) = 0 by decide, Polynomial.C_0, zero_mul, zero_add]
+  simp [Q, P, differentialSpecialization, differentialSpecializationHom, h2]
+
+open Classical in
+/-- Mapping the nonempty regular solution family `{X}` through `ZMod 2 → E₄` preserves its
+degree, equation, and nonzero separant. -/
+example :
+    let f := algebraMap (ZMod 2) E₄
+    let Q : DifferentialPolynomial (ZMod 2) 0 := X (some 0) - X none
+    ∀ P ∈ ({(Polynomial.X : Polynomial (ZMod 2))} : Finset (Polynomial (ZMod 2))).image
+        (Polynomial.map f),
+      P.degree < 2 ∧ differentialSpecialization (MvPolynomial.map f Q) P = 0 ∧
+        differentialSpecialization (separant (MvPolynomial.map f Q) 0) P ≠ 0 := by
+  classical
+  intro f Q
+  refine map_regularSolutionFamily f.injective Q {Polynomial.X} 0 2 ?_ ?_ ?_
+  · intro P hP
+    simp only [Finset.mem_singleton] at hP
+    subst P
+    norm_num
+  · intro P hP
+    simp only [Finset.mem_singleton] at hP
+    subst P
+    simp [Q, differentialSpecialization, differentialSpecializationHom]
+  · intro P hP
+    simp only [Finset.mem_singleton] at hP
+    subst P
+    simp [Q, separant, differentialSpecialization, differentialSpecializationHom, pderiv_X]
+/-! ### Concrete Hasse jets and specialization degree -/
+
+private abbrev naturalBase : Polynomial ℕ := Polynomial.X ^ 2 + 2 * Polynomial.X + 3
+
+private abbrev naturalDirection : Polynomial ℕ :=
+  2 * Polynomial.X ^ 2 + Polynomial.X + 1
+/-- Concrete order-zero, first, and second Hasse jets over `ℕ` record an affine sum. -/
+example :
+    polynomialJet (d := 2) 0 naturalBase = ![3, 2, 1] ∧
+      polynomialJet (d := 2) 0 naturalDirection = ![1, 1, 2] ∧
+      polynomialJet (d := 2) 0 (naturalBase + Polynomial.C 3 * naturalDirection) =
+        ![6, 5, 7] := by
+  repeat' constructor
+  all_goals
+    ext j
+    fin_cases j
+    all_goals
+      rw [polynomialJet, Polynomial.hasseJet_eq_taylor_coeff]
+      norm_num [naturalBase, naturalDirection, Polynomial.taylor, Polynomial.coeff_X,
+        Polynomial.coeff_C, Polynomial.coeff_X_pow, Polynomial.coeff_one]
+
+private def exactDegreeEquation : DifferentialPolynomial ℚ 1 :=
+  MvPolynomial.X none ^ 2 * MvPolynomial.X (some (Fin.last 1)) ^ 3
+
+private theorem hasseDeriv_one_X_five :
+    Polynomial.hasseDeriv 1 (Polynomial.X ^ 5 : Polynomial ℚ) =
+      Polynomial.C 5 * Polynomial.X ^ 4 := by
+  rw [Polynomial.X_pow_eq_monomial, Polynomial.hasseDeriv_monomial]
+  norm_num
+  rw [← Polynomial.C_mul_X_pow_eq_monomial]
+/-- The monomial `X² Y₁³` attains its specialization degree bound at `P = X ^ 5`. -/
+example :
+    (differentialSpecialization exactDegreeEquation (Polynomial.X ^ 5)).natDegree = 14 ∧
+      (differentialSpecialization exactDegreeEquation (Polynomial.X ^ 5)).natDegree ≤
+        differentialWeightedDegree 5 exactDegreeEquation := by
+  constructor
+  · have hspec :
+        differentialSpecialization exactDegreeEquation (Polynomial.X ^ 5) =
+          Polynomial.X ^ 2 * (Polynomial.C 5 * Polynomial.X ^ 4) ^ 3 := by
+      rw [exactDegreeEquation, differentialSpecialization, map_mul, map_pow, map_pow]
+      simp only [differentialSpecializationHom, MvPolynomial.aeval_X, Fin.last]
+      rw [hasseDeriv_one_X_five]
+    rw [hspec]
+    rw [Polynomial.natDegree_mul (by simp) (by norm_num), Polynomial.natDegree_pow,
+      Polynomial.natDegree_pow, Polynomial.natDegree_mul (by norm_num) (by simp),
+      Polynomial.natDegree_pow]
+    norm_num
+  · exact natDegree_differentialSpecialization_le exactDegreeEquation
+      (Polynomial.X ^ 5) (by simp)
 /-! ### A concrete chain witness -/
-
 /-- The zero polynomial gives a regular chain witness for `Y₀ = 0` at the origin. -/
 example : ChainWitness (zeroJetEquation ℚ 0) 0 0 := by
   refine .regular (highestActiveJet_zeroJetEquation (F := ℚ)) ?_ ?_
   · simp [zeroJetEquation, differentialSpecialization, differentialSpecializationHom]
   · simp [zeroJetEquation, separant, jetEvaluation, pderiv_X]
-
 /-- Every point is a chain witness for the zero solution of `Y₀ = 0`. -/
 example : ∃ R : Polynomial ℚ, R ≠ 0 ∧ R.natDegree ≤
     differentialWeightedDegree 0 (zeroJetEquation ℚ 0) ∧
@@ -152,7 +251,6 @@ private theorem challengeChain :
   apply (highestActiveJet_eq_none_iff _).mpr
   intro j
   simp [DependsOnJet, jetDegree, MvPolynomial.degreeOf_C]
-
 /-- The `X · Y₀` chain over `ℚ[X]` has at most one exceptional specialization value. -/
 example : ∃ exceptional : Finset ℚ, exceptional.card ≤ 1 ∧
     ∀ z ∉ exceptional, ∀ P : Polynomial ℚ,
@@ -166,7 +264,6 @@ example : ∃ exceptional : Finset ℚ, exceptional.card ≤ 1 ∧
             stage.2) P ≠ 0 :=
   challengeChain.exists_finset_regular_stage natDegree_coeff_challengeEquation_le
     (RingHom.id ℚ) Function.injective_id
-
 /-! ### First-order chain charge -/
 
 private theorem constantDerivativeChain :
@@ -178,7 +275,6 @@ private theorem constantDerivativeChain :
   rw [hsep]
   refine .terminal (by simp) ((highestActiveJet_eq_none_iff _).mpr fun j hj ↦ ?_)
   simp [DependsOnJet, jetDegree] at hj
-
 /-- The `Y₁` stage is charged against the first-order cap with `M = 1`. -/
 example :
     ([(constantDerivativeEquation ℚ, (1 : Fin 2))].map
@@ -191,9 +287,7 @@ example :
     (fun _ h ↦ by simp only [add_le_add_iff_right]; exact_mod_cast h)
     (fun h _ ↦ by simp only [add_le_add_iff_left]; exact_mod_cast h)
     (fun j ↦ by simp)
-
 /-! ### Derivative descent -/
-
 /-- `Y₁ ^ 2 * Y₀` in depth `1`. -/
 private abbrev cubicEquation : DifferentialPolynomial ℚ 1 :=
   X (some 1) ^ 2 * X (some 0)
@@ -207,7 +301,6 @@ private theorem jetDegree_cubicEquation (j : Fin 2) :
   classical
   rw [jetDegree, cubicEquation_eq_monomial, degreeOf_monomial_eq _ _ one_ne_zero]
   fin_cases j <;> simp
-
 /-- The descent of `Y₁ ^ 2 * Y₀` is nonzero and has no active jet at or above `Y₁`. -/
 example : derivativeDescent cubicEquation 1 ≠ 0 ∧
     ∀ j, DependsOnJet (derivativeDescent cubicEquation 1) j → j < 1 := by
@@ -221,9 +314,7 @@ example : derivativeDescent cubicEquation 1 ≠ 0 ∧
     apply jetDegreeCastsNeZero_of_ringChar
     exact Or.inl (ringChar.eq_zero : ringChar ℚ = 0)
   exact derivativeDescent_spec_of_highestActiveJet_eq_some hhighest hcast
-
 /-! ### Direct regular iteration -/
-
 /-- The equation `y' = y`, as the differential polynomial `Y₁ - Y₀`. -/
 private abbrev expEquation : DifferentialPolynomial ℚ 1 :=
   X (some 1) - X (some 0)
@@ -254,7 +345,6 @@ private theorem differentialSpecialization_regularIterate_expEquation_one :
   simp only [Polynomial.derivative_add, Polynomial.derivative_one, Polynomial.derivative_X,
     Polynomial.derivative_C_mul_X_pow]
   norm_num
-
 /-- `y' = y` has no polynomial solution of degree at most `2` with jet `(1, 1)` at `0`. -/
 example : ¬∃ P : Polynomial ℚ, P.degree ≤ 2 ∧
     differentialSpecialization expEquation P = 0 ∧
@@ -275,7 +365,6 @@ example : ¬∃ P : Polynomial ℚ, P.degree ≤ 2 ∧
   rw [hPiter, differentialSpecialization_regularIterate_expEquation_one, neg_eq_zero] at hsolution
   have hcoeff := congrArg (Polynomial.coeff · 2) hsolution
   simp at hcoeff
-
 /-- The residual coefficients of `1 + X` and `1 + X + X ^ 2` for `y' = y` differ by `2`. -/
 example : (shiftedJetSubstitution 0 (1 + Polynomial.X + Polynomial.X ^ 2) expEquation).coeff 1 -
     (shiftedJetSubstitution 0 (1 + Polynomial.X) expEquation).coeff 1 = 2 := by
@@ -285,7 +374,6 @@ example : (shiftedJetSubstitution 0 (1 + Polynomial.X + Polynomial.X ^ 2) expEqu
       rcases hi' with rfl | rfl <;> simp [Polynomial.coeff_X, Polynomial.coeff_one])]
   simp [separant, jetEvaluation, expEquation, pderiv_X, Fin.last,
     Polynomial.coeff_X, Polynomial.coeff_one]
-
 /-- The unique coefficient lifting `1 + X` for `y' = y` to residual order `2` is `1 / 2`. -/
 example : ∃! γ : ℚ, Polynomial.X ^ 2 ∣ shiftedJetSubstitution 0
     (1 + Polynomial.X + Polynomial.hassePerturbation 0 γ 2) expEquation := by
@@ -315,7 +403,6 @@ private theorem isHighestActiveJet_constEquation₂ : IsHighestActiveJet constEq
   classical
   refine ⟨by simp [DependsOnJet, constEquation₂, jetDegree], fun j hj ↦ ?_⟩
   simp [DependsOnJet, constEquation₂, jetDegree, degreeOf_X, hj.ne']
-
 /-- For `y' = 0` stored at depth `2`, the unique lift at `Y₁` is `γ = 0`. -/
 example : ∃! γ : ℚ,
     (Polynomial.X - Polynomial.C 0) ^ 2 ∣ differentialSpecialization constEquation₂
@@ -329,9 +416,7 @@ example : ∃! γ : ℚ,
     rw [Polynomial.hassePerturbation, map_zero, zero_mul, add_zero]
     simp [differentialSpecialization, differentialSpecializationHom]
   exact ⟨0, hzero, fun γ h ↦ hlift.unique h hzero⟩
-
 /-! ### Highest active jet -/
-
 /-- `Y₁ * X` in depth `2`. -/
 private abbrev productEquation : DifferentialPolynomial ℚ 2 :=
   X (some 1) * X none
@@ -349,24 +434,19 @@ private theorem highestActiveJet_productEquation : highestActiveJet productEquat
   have hne : (activeJets productEquation).Nonempty := by simp [hactive]
   rw [highestActiveJet_eq_some_max _ hne]
   simp [hactive]
-
 /-- The presentation of `Y₁ * X` at depth `1` exists. -/
 example : Nonempty (JetPrefixPresentation productEquation 1) :=
   nonempty_jetPrefixPresentation _
     (isHighestActiveJet_of_highestActiveJet_eq_some highestActiveJet_productEquation)
-
 /-! ### Rational Taylor coefficients -/
-
 /-- The equation `y' = 2x`, as the differential polynomial `Y₁ - 2X`. -/
 private abbrev taylorLinearEquation (F : Type*) [CommRing F] : DifferentialPolynomial F 1 :=
   X (some 1) - 2 * X none
-
 /-- `X ^ 2` solves `y' = 2x` over every commutative ring. -/
 private theorem differentialSpecialization_taylorLinearEquation {F : Type*} [CommRing F] :
     differentialSpecialization (taylorLinearEquation F) (Polynomial.X ^ 2) = 0 := by
   simp [taylorLinearEquation, differentialSpecialization, differentialSpecializationHom,
     Polynomial.hasseDeriv_one, one_add_one_eq_two, Polynomial.C_ofNat]
-
 /-- The separant of `Y₁ - 2X` is `1`. -/
 private theorem jetEvaluation_separant_taylorLinearEquation {F : Type*} [CommRing F]
     [Nontrivial F] (jet : Fin 2 → F) :
@@ -376,7 +456,6 @@ private theorem jetEvaluation_separant_taylorLinearEquation {F : Type*} [CommRin
 private theorem choose_one_ne_zero (i : ℕ) (hi : 1 < i) : (i.choose 1 : ℚ) ≠ 0 := by
   rw [Nat.choose_one_right]
   exact_mod_cast (by omega : i ≠ 0)
-
 /-- Over `ℚ`, the rational coefficient of `x ^ 2` from the jet of `X ^ 2` is `1`. -/
 example : rationalTaylorCoefficient 0 (taylorLinearEquation ℚ)
     (polynomialJet 0 (Polynomial.X ^ 2)) 2 = 1 := by
@@ -387,13 +466,10 @@ example : rationalTaylorCoefficient 0 (taylorLinearEquation ℚ)
       obtain rfl : i = 2 := by omega
       exact choose_one_ne_zero 2 (by omega))]
   simp [Polynomial.coeff_X_pow]
-
 /-! ### Numerators over an algebra -/
-
 /-- The equation `y' = t y`, as `Y₁ - t Y₀` over `ℚ[t]`. -/
 private abbrev scaledExpEquation : DifferentialPolynomial (Polynomial ℚ) 1 :=
   X (some 1) - C Polynomial.X * X (some 0)
-
 /-- The numerator of `y' = t y` specializes at the nonzero parameter `t = 5`. -/
 example :
     map (Polynomial.aeval (5 : ℚ)).toRingHom
@@ -402,14 +478,12 @@ example :
         (X (some 1) - C (5 : ℚ) * X (some 0) : DifferentialPolynomial ℚ 1) 2 := by
   rw [map_rationalTaylorNumeratorOver, rationalTaylorNumeratorOver_eq]
   simp [scaledExpEquation]
-
 /-! ### Symbolic Taylor-chart equations -/
 
 private abbrev independentVariableEquation : DifferentialPolynomial (Polynomial ℚ) 0 :=
   X (none : Option (Fin 1))
 
 private abbrev rationalId : ℚ →ₐ[ℚ] ℚ := AlgHom.id ℚ ℚ
-
 /-- The mapped agreement equation for `Y₁` at parameter `2` is `Y₀ + 2Y₁ - 2`. -/
 example :
     map (Polynomial.aeval (2 : ℚ)).toRingHom
@@ -437,7 +511,6 @@ example :
   rw [hcut]
   simp only [map_sub, map_add, map_mul, map_C, map_X, AlgHom.toRingHom_eq_coe,
     AlgHom.coe_toRingHom, Polynomial.aeval_X]
-
 /-- At the regular jet `(1, 0)`, the mapped symbolic agreement equation vanishes. -/
 example :
     aeval (constantJet (F := ℚ))
@@ -489,7 +562,6 @@ private theorem rationalTaylorCoefficient_scaledEquation_one :
   rw [← hsolutionJet, rationalTaylorCoefficient_eq_solution 0 scaledEquation scaledSolution
       hsolution hsep 1 (by intro i hi hle; simp)]
   norm_num [scaledSolution]
-
 /-- The common-numerator reconstruction theorem computes coefficient `1` of `X / 2`. -/
 example :
     aeval (zeroJetVector (F := ℚ) 1) (map rationalId.toRingHom
@@ -516,7 +588,6 @@ example :
   rw [hSval, hcoeff'] at hnum
   norm_num at hnum ⊢
   exact hnum
-
 /-- Symbolic high cuts for `Y₁` at the zero jet force the reconstruction to have degree below
 one. -/
 example :
@@ -541,7 +612,6 @@ example :
     degree_rationalTaylorPolynomial_lt_of_symbolic_high_cuts (F := ℚ)
       (Polynomial.aeval (0 : ℚ)) 0 (constantDerivativeEquation (Polynomial ℚ)) 2 1
       (constantJet (F := ℚ)) hS hhigh
-
 /-- A nonconstant center contributes its parameter degree to the initial equation. -/
 example : jointTotalDegree (initialJetEquation Polynomial.X independentVariableEquation) ≤ 1 := by
   have hjet : jetTotalDegree independentVariableEquation ≤ 0 := by
@@ -561,7 +631,6 @@ example : jointTotalDegree (initialJetEquation Polynomial.X independentVariableE
 
 private abbrev parameterizedJetEquation : DifferentialPolynomial (Polynomial ℚ) 1 :=
   C (Polynomial.X + 1) * X (some (1 : Fin 2))
-
 /-- The agreement degree bound applies to a positive-length chart with parameter-dependent input. -/
 example :
     jointTotalDegree (taylorAgreementEquationOver (F := ℚ) (Polynomial.C 0)
@@ -591,7 +660,6 @@ example :
   simpa using
     jointTotalDegree_taylorAgreementEquationOver_le_of_coeffNatDegreeLE (F := ℚ) (r := 1)
       0 0 0 1 parameterizedJetEquation 1 1 1 hjet hQ
-
 /-- For `Y₁` at the regular jet `(1, 0)`, the symbolic cuts force coefficient `1` to vanish. -/
 example :
     (Polynomial.taylor (0 : ℚ)
@@ -639,9 +707,7 @@ example :
   · rw [coeff_taylor_rationalTaylorPolynomial]
     exact hcoeff0
   · simpa using hSparse 1 (by decide)
-
 /-! ### Joint-degree numerator bound -/
-
 /-- The equation `y' + t y = 0`, as `Y₁ + t Y₀` over `ℚ[t]`. -/
 private abbrev positiveScaledEquation : DifferentialPolynomial (Polynomial ℚ) 1 :=
   X (some 1) + C Polynomial.X * X (some 0)
@@ -661,7 +727,6 @@ private theorem coeffNatDegreeLE_positiveScaledEquation :
     CoeffNatDegreeLE positiveScaledEquation 1 :=
   ((coeffNatDegreeLE_X _).mono (by norm_num)).add
     ((coeffNatDegreeLE_C (by simp)).mul (coeffNatDegreeLE_X _))
-
 /-- At index `2`, the numerator for `Y₁ + t Y₀` at center `0` has joint degree at most `2`. -/
 example :
     jointTotalDegree
@@ -669,12 +734,10 @@ example :
   simpa using jointTotalDegree_rationalTaylorNumeratorOver_le_of_coeffNatDegreeLE 0
     positiveScaledEquation 1 1 jetTotalDegree_positiveScaledEquation_le
     coeffNatDegreeLE_positiveScaledEquation 2
-
 /-! ### Shifted jets -/
 
 private abbrev shiftedEquation : DifferentialPolynomial ℚ 1 :=
   X (some 0) - X none * X (some 1)
-
 /-- At center `0`, the shifted residual of `Y₀ - X Y₁` on `X ^ 2` is `-X ^ 2`. -/
 example : shiftedJetSubstitution 0 (Polynomial.X ^ 2) shiftedEquation =
     -(Polynomial.X ^ 2) := by
@@ -684,7 +747,6 @@ example : shiftedJetSubstitution 0 (Polynomial.X ^ 2) shiftedEquation =
     shiftedJetSubstitution_Y]
   simp
   ring
-
 /-! ### Regular-jet count -/
 
 private abbrev squareEquation3 : DifferentialPolynomial (ZMod 3) 0 := X (some 0) ^ 2 - 1
@@ -704,7 +766,6 @@ private theorem isRegularJet_squareEquation3 (c : ZMod 3) (hc : c ^ 2 = 1) (hc0 
       mul_one, nsmul_eq_mul, map_mul, map_natCast, eval_X, jetAssignment_some,
       Matrix.cons_val_fin_one, Nat.reduceSub, pow_one]
     exact mul_ne_zero (by decide) hc0
-
 /-- `Y₀ ^ 2 - 1 = 0` over `ZMod 3` has exactly two regular jets at `0`, attaining the degree
 bound. -/
 example :
@@ -724,9 +785,7 @@ example :
       · exact isRegularJet_squareEquation3 1 (by decide) (by decide)
       · exact isRegularJet_squareEquation3 2 (by decide) (by decide)
     exact (card_le_card hsub).trans_eq' (by decide)
-
 /-! ### Separant chains and regular recursion -/
-
 /-- A separant chain exists for `Y₀ ^ 2` over `ℚ`. -/
 example : ∃ stages terminal,
     SeparantChain (X (some 0) ^ 2 : DifferentialPolynomial ℚ 0) stages terminal :=
@@ -739,26 +798,22 @@ private theorem differentialSpecialization_squareEquation_zero :
     differentialSpecialization squareEquation 0 = 0 := by
   rw [← differentialSpecializationHom_apply, map_pow, differentialSpecializationHom_apply,
     differentialSpecialization_jet, map_zero, zero_pow two_ne_zero]
-
 /-- The solution `0` of `Y₀ ^ 2 = 0` reaches a regular recursion leaf over `ℚ`. -/
 example : Nonempty (RegularRecursionLeaf squareEquation 0) :=
   exists_regularRecursionLeaf (by simp [squareEquation])
     (fun _ ↦ jetDegreeCastsNeZero_of_ringChar (Or.inl ringChar.eq_zero))
     differentialSpecialization_squareEquation_zero
-
 /-! ### Taylor reconstruction -/
 
 private theorem degree_X_sq_lt_three : (Polynomial.X ^ 2 : Polynomial ℚ).degree < 3 := by
   rw [Polynomial.degree_X_pow]
   exact_mod_cast (by norm_num : 2 < 3)
-
 /-- The rational Taylor reconstruction of the solution `X ^ 2` to `y' = 2x` is `X ^ 2`. -/
 example : rationalTaylorPolynomial 0 (taylorLinearEquation ℚ) 3
     (polynomialJet 0 (Polynomial.X ^ 2)) = Polynomial.X ^ 2 :=
   rationalTaylorPolynomial_polynomialJet 0 _ _ differentialSpecialization_taylorLinearEquation
     (by rw [jetEvaluation_separant_taylorLinearEquation]; norm_num) degree_X_sq_lt_three
     (fun i hi _ ↦ choose_one_ne_zero i hi)
-
 /-- At the jet of `X²`, the length-three agreement cut accepts `(3, 9)` and rejects `(3, 8)`. -/
 example :
     aeval (polynomialJet 0 (Polynomial.X ^ 2 : Polynomial ℚ))
@@ -772,9 +827,7 @@ example :
     (fun i hi _ ↦ choose_one_ne_zero i hi)
   rw [h, Ne, h]
   norm_num
-
 /-! ### Index weight -/
-
 /-- The first-order equation `Q = Y₁`. -/
 private theorem weightedTotalDegree_constantDerivativeEquation_Q :
     (constantDerivativeEquation ℚ).weightedTotalDegree (indexWeight 2) = 1 := by
@@ -790,7 +843,6 @@ private theorem firstJet_residual_coeff_one :
   rw [hres, optionEquivLeft_universalTaylorJet, Polynomial.hasseDeriv_coeff]
   simp [Fin.sum_univ_three, Polynomial.coeff_monomial]
   rfl
-
 /-- The index-weight bound is attained by `c₂` in the coefficient of `ξ` for `Y₁`. -/
 example :
     Finsupp.single (2 : Fin 3) 1 ∈
@@ -801,7 +853,6 @@ example :
   refine ⟨?_, by simp [Finsupp.weight_single, weightedTotalDegree_constantDerivativeEquation_Q]⟩
   rw [firstJet_residual_coeff_one, mem_support_iff, X, C_mul_monomial, coeff_monomial]
   norm_num
-
 /-- Evaluating the first displacement coefficient of the `Y₀` residual recovers the chosen
 coefficient of the polynomial prefix. -/
 private abbrev residualCoefficients : ℕ → ℚ := fun i ↦ if i = 0 then 3 else 5
@@ -813,7 +864,6 @@ example :
   rw [aeval_universalTaylorResidual_coeff (center := 0) (c := residualCoefficients)
     (K := 2) (h := 1) (Q := X (some 0))]
   simp [Polynomial.centeredCoefficientPrefix, residualCoefficients]
-
 /-- Mapping the zeroth residual coefficient through `ℤ → ZMod 2` agrees with the mapped
 equation. -/
 example :
@@ -826,7 +876,6 @@ example :
           (X (some 1) : DifferentialPolynomial ℤ 1)))).coeff 0 := by
   rw [map_universalTaylorResidual_coeff]
   simp
-
 /-! ### Total-jet-degree count -/
 
 private theorem differentialWeightedDegree_constantDerivativeEquation {F : Type*} [CommRing F]
@@ -842,7 +891,6 @@ private theorem castsNeZero_constantDerivativeEquation {F : Type*} [CommRing F] 
     (jetDegree_le_total _ j).trans jetTotalDegree_constantDerivativeEquation_le
   obtain rfl : k = 1 := by omega
   simp
-
 /-- Over `ZMod 3`, `y' = 0` has exactly three solutions of degree at most `2`: the constants. -/
 example : Nat.card (BoundedSolution (constantDerivativeEquation (ZMod 3)) 2) = 3 := by
   have h : Nat.card (BoundedSolution (constantDerivativeEquation (ZMod 3)) 2) *
@@ -873,7 +921,6 @@ example : Nat.card (BoundedSolution (constantDerivativeEquation (ZMod 3)) 2) = 3
   have hlower : 3 ≤ Nat.card (BoundedSolution (constantDerivativeEquation (ZMod 3)) 2) := by
     simpa [Nat.card_zmod] using Nat.card_le_card_of_injective solution hinj
   exact Nat.le_antisymm hupper hlower
-
 /-! ### Recursive degree count -/
 
 private def sumEquation : DifferentialPolynomial ℚ 1 := X (some 0) + X (some 1)
@@ -882,7 +929,6 @@ private theorem mem_support_sumEquation (j : Fin 2) :
     Finsupp.single (some j) 1 ∈ sumEquation.support := by
   fin_cases j <;> simp [sumEquation, MvPolynomial.mem_support_iff, MvPolynomial.coeff_X,
     Finsupp.single_eq_single_iff]
-
 /-- For `Y₀ + Y₁`, total jet degree is `1` while the individual degrees sum to `2`. -/
 example : jetTotalDegree sumEquation = 1 ∧ ∑ j : Fin 2, jetDegree sumEquation j = 2 := by
   have hdeg (j : Fin 2) : jetDegree sumEquation j = 1 := by
@@ -899,7 +945,6 @@ example : jetTotalDegree sumEquation = 1 ∧ ∑ j : Fin 2, jetDegree sumEquatio
   have hsub := MvPolynomial.support_add hu
   simp only [MvPolynomial.support_X, mem_union, mem_singleton] at hsub
   rcases hsub with rfl | rfl <;> simp [totalJetDegree_eq_sum, Fin.sum_univ_two]
-
 /-- For `Y₀ = 0` over `ℚ`, the singleton root is counted by the recursive bound. -/
 example :
     1 * ({(0 : Polynomial ℚ)} : Finset (Polynomial ℚ)).card ≤
@@ -931,9 +976,7 @@ example :
   simpa [Q, roots, zeroJetEquation] using
     (card_mul_le_jetTotalDegree_mul (Q := Q) (left := 1) (cost := 1)
       hQ hcast roots hsolution hregular)
-
 /-! ### Witness count -/
-
 /-- The one regular bounded solution `0` of `Y₀ = 0` attains the `ZMod 3` witness-count bound. -/
 example :
     1 * (Nat.card (ZMod 3) - 0) ≤
@@ -965,7 +1008,6 @@ example :
     (by simp [zeroJetEquation, separant, pderiv_X, differentialSpecialization,
       differentialSpecializationHom])
   exact h
-
 /-! ### A common regular center and Taylor-chart geometry -/
 
 private theorem aeval_initialJetEquation_taylorLinearEquation (jet : Fin 2 → ℚ) :
@@ -987,7 +1029,6 @@ private theorem highTaylorCutsIdeal_one_two_le :
   have hl : l = 1 := by omega
   subst l
   exact Ideal.subset_span (by simp)
-
 /-- For `y' = 2x`, one agreement point and the index-1 high cut determine the regular jet
 in the length-two Taylor chart, and the locus contains the zero jet. -/
 example :
@@ -1036,7 +1077,6 @@ private theorem commonTaylorNumerator_zeroJet_constantDerivativeEquation {F : Ty
   rw [aeval_commonTaylorNumerator (center := (0 : F)) (constantDerivativeEquation F)
     (zeroJetVector (F := F) 2) (τ := 4) (l := 1) (by omega) hS]
   simp [hc]
-
 /-- The zero jet of `Y₁` belongs to a prime component after the nonempty high cut at index `1`. -/
 example : ∃ P ∈ highTaylorPrimeFamily 0 (constantDerivativeEquation ℚ) 2 1 4,
     zeroJetVector (F := ℚ) 2 ∈ zeroLocus ℚ P := by
@@ -1049,7 +1089,6 @@ example : ∃ P ∈ highTaylorPrimeFamily 0 (constantDerivativeEquation ℚ) 2 1
       have hl : l = 1 := by omega
       subst l
       exact commonTaylorNumerator_zeroJet_constantDerivativeEquation)
-
 /-- With the high cut at index `1` and differential order `r = 1`, the incidence bound for `Y₁`
 is attained by its regular zero jet. -/
 example :
@@ -1102,12 +1141,10 @@ example :
   norm_num [F, Q, S, jet, constantDerivativeEquation,
     rationalTaylorCutDegreeBound] at h ⊢
   exact h
-
 /-! ### Frobenius flattening -/
 
 private abbrev frobeniusInseparableEquation :
     DifferentialPolynomial (Polynomial (ZMod 2)) 0 := X none - X (some 0) ^ 2
-
 /-- The flattened equation evaluates to `7` at the root, independent-variable, and challenge
 values `2`, `3`, and `5`. -/
 example :
@@ -1118,7 +1155,6 @@ example :
             DifferentialPolynomial (Polynomial ℚ) 0)) = 7 := by
   rw [eval_ordinaryFlatten]
   norm_num [differentialSpecialization, differentialSpecializationHom]
-
 /-- Expanding the specialization of `Y₀ + W` at `W = 2` sends the root `X` to `X² + 2`. -/
 example :
     Polynomial.expand ℚ 2
@@ -1139,7 +1175,6 @@ example :
     rw [show (1 : Fin 2) = Fin.succ 0 by norm_num, Fin.cases_succ]
   rw [expand_differentialSpecialization_map_eq_eval₂_flatten, hflat]
   simp [MvPolynomial.eval₂_add, MvPolynomial.eval₂_X, hcase]
-
 /-- Over `ZMod 2`, `X - Y₀ ^ 2` is the irreducible inseparable equation `Y₀ ^ 2 - X`;
 Frobenius contraction lowers its root degree. -/
 example :
@@ -1209,7 +1244,6 @@ example :
 
 private abbrev frobeniusSquareEquation :
     DifferentialPolynomial (Polynomial (ZMod 2)) 0 := X (some 0) ^ 2 - X none ^ 2
-
 /-- The nonzero root `X` of `Y₀ ^ 2 - X ^ 2` transports to a root of the contracted equation. -/
 example :
     differentialSpecialization
@@ -1244,9 +1278,7 @@ example :
   exact ⟨hQ, frobeniusSpecialization_eq_zero 2 1 frobeniusSquareEquation
     (MvPolynomial.X none - MvPolynomial.X (some (0 : Fin 2)) ^ 2 :
       MvPolynomial (Option (Fin 2)) (ZMod 2)) hroot Polynomial.X 0 hQ⟩
-
 /-! ### Ordinary root presentations -/
-
 /-- For the concrete irreducible equation `Y₀` over `ℚ[X]`, the exceptional set is empty. -/
 example :
     ∃ exceptional : Finset ℚ, exceptional.card ≤ 0 ∧
@@ -1273,11 +1305,9 @@ example :
       MvPolynomial.coeffNatDegreeLE_X (R := ℚ) (σ := JetVariable 0) (some 0)
   simpa [zeroJetEquation] using
     exists_exceptional_ordinary_separant hirr hpos hder hheight
-
 /-! ### Taylor chart coefficient extension -/
 
 local instance : Fact (Nat.Prime 2) := ⟨Nat.prime_two⟩
-
 /-- A concrete rational solution family satisfies all conclusions of the exponent theorem. -/
 example :
     ∃ (center : ℚ) (J : Finset (Fin 1 → ℚ)), J.card = 1 ∧
@@ -1335,7 +1365,6 @@ example :
     refine ⟨hinitial, hregular, ?_, ?_⟩
     · simpa using hcuts ⟨1, by omega⟩ (by norm_num)
     · simpa [domain, received] using hagree
-
 /-- A nonempty regular family over `ZMod 2` has a common center in its algebraic closure. -/
 example :
     let Q : DifferentialPolynomial (ZMod 2) 0 :=
@@ -1393,78 +1422,64 @@ private theorem nonlinearTaylorEquation_jetDegree :
     rw [totalJetDegree_eq_sum]
     simp [Finsupp.single_apply]
 
-/-- The initial equation has bidegree at most `(1, 2)` for a parameterized quadratic. -/
+private noncomputable abbrev recursiveTaylorNumerator : MvPolynomial (Fin 2) (Polynomial ℚ) :=
+  rationalTaylorNumeratorOver ℚ (Polynomial.C 0) nonlinearTaylorEquation 2
+
+private noncomputable abbrev paddedTaylorNumerator : MvPolynomial (Fin 2) (Polynomial ℚ) :=
+  commonTaylorNumeratorOver ℚ (Polynomial.C 0) nonlinearTaylorEquation 2 2
+
+private theorem exponentThreeSufficient : TaylorExponentSufficient 1 3 2 := by
+  intro l
+  fin_cases l <;> norm_num [TaylorExponentSufficient]
+/-- The initial equation and separant satisfy their bidegree bounds. -/
 example :
     (optionEquivRight ℚ (Fin 2)).symm
         (initialJetEquation (Polynomial.C (0 : ℚ)) nonlinearTaylorEquation) ∈
-      restrictBidegree (Fin 2) ℚ 1 2 := by
-  exact initialJetEquation_mem_restrictBidegree (F := ℚ) (r := 1) 0 nonlinearTaylorEquation
-    1 2 nonlinearTaylorEquation_height nonlinearTaylorEquation_jetDegree
-
-/-- The initial separant has bidegree at most `(1, 1)` for the parameterized quadratic. -/
-example :
+      restrictBidegree (Fin 2) ℚ 1 2 ∧
     (optionEquivRight ℚ (Fin 2)).symm
         (initialJetSeparant (Polynomial.C (0 : ℚ)) nonlinearTaylorEquation) ∈
       restrictBidegree (Fin 2) ℚ 1 1 := by
-  exact initialJetSeparant_mem_restrictBidegree (F := ℚ) (r := 1) 0 nonlinearTaylorEquation
-    1 2 nonlinearTaylorEquation_height nonlinearTaylorEquation_jetDegree
-
-/-- The recursive numerator at index `2` has parameter degree at most `1`. -/
-example : CoeffNatDegreeLE
-    (rationalTaylorNumeratorOver ℚ (Polynomial.C (0 : ℚ)) nonlinearTaylorEquation 2) 1 := by
-  simpa using coeffNatDegreeLE_rationalTaylorNumeratorOver (F := ℚ) (r := 1) 0
-    nonlinearTaylorEquation 1 nonlinearTaylorEquation_height 2
-
-/-- The recursive numerator at index `2` has jet degree at most `2`. -/
-example :
-    (rationalTaylorNumeratorOver ℚ (Polynomial.C (0 : ℚ)) nonlinearTaylorEquation 2).totalDegree
-      ≤ 2 := by
-  simpa using totalDegree_rationalTaylorNumeratorOver_le_of_jet (F := ℚ) (r := 1)
-    (Polynomial.C 0) nonlinearTaylorEquation 2 (by norm_num)
-    nonlinearTaylorEquation_jetDegree 2
-
-/-- Padding the recursive numerator at index `2` keeps parameter degree at most `2`. -/
-example : CoeffNatDegreeLE
-    (commonTaylorNumeratorOver ℚ (Polynomial.C (0 : ℚ)) nonlinearTaylorEquation 2 2) 2 := by
-  exact coeffNatDegreeLE_commonTaylorNumeratorOver_le (F := ℚ) (r := 1) 0
-    nonlinearTaylorEquation 1 2 2 (by norm_num)
-    nonlinearTaylorEquation_height
-
-/-- Padding at the recursive index `2` gives a common numerator in its bidegree rectangle. -/
-example :
-    (optionEquivRight ℚ (Fin 2)).symm
-      (commonTaylorNumeratorOver ℚ (Polynomial.C (0 : ℚ)) nonlinearTaylorEquation 2 2) ∈
-        restrictBidegree (Fin 2) ℚ 2 3 := by
-  exact commonTaylorNumeratorOver_mem_restrictBidegree (F := ℚ) (r := 1) 0
-    nonlinearTaylorEquation 1 2 3 2 (by
-      intro l
-      fin_cases l <;> norm_num [TaylorExponentSufficient])
-    nonlinearTaylorEquation_height (by norm_num) nonlinearTaylorEquation_jetDegree
-    ⟨2, by decide⟩
-
-/-- Agreement at `1` with the received polynomial `X` has bidegree at most `(3, 3)`. -/
+  constructor
+  · exact initialJetEquation_mem_restrictBidegree (F := ℚ) (r := 1) 0
+      nonlinearTaylorEquation 1 2 nonlinearTaylorEquation_height nonlinearTaylorEquation_jetDegree
+  · exact initialJetSeparant_mem_restrictBidegree (F := ℚ) (r := 1) 0
+      nonlinearTaylorEquation 1 2 nonlinearTaylorEquation_height nonlinearTaylorEquation_jetDegree
+/-- The recursive numerator at index `2` satisfies its separate degree bounds. -/
+example : CoeffNatDegreeLE recursiveTaylorNumerator 1 ∧
+    recursiveTaylorNumerator.totalDegree ≤ 2 := by
+  constructor
+  · simpa [recursiveTaylorNumerator] using
+      coeffNatDegreeLE_rationalTaylorNumeratorOver (F := ℚ) (r := 1) 0
+        nonlinearTaylorEquation 1 nonlinearTaylorEquation_height 2
+  · simpa [recursiveTaylorNumerator] using
+      totalDegree_rationalTaylorNumeratorOver_le_of_jet (F := ℚ) (r := 1)
+        (Polynomial.C 0) nonlinearTaylorEquation 2 (by norm_num)
+        nonlinearTaylorEquation_jetDegree 2
+/-- Padding at index `2` gives the coefficient, total-degree, and bidegree bounds. -/
+example : CoeffNatDegreeLE paddedTaylorNumerator 2 ∧
+    (optionEquivRight ℚ (Fin 2)).symm paddedTaylorNumerator ∈
+      restrictBidegree (Fin 2) ℚ 2 3 ∧
+    paddedTaylorNumerator.totalDegree ≤ 3 := by
+  refine ⟨?_, ?_⟩
+  · exact coeffNatDegreeLE_commonTaylorNumeratorOver_le (F := ℚ) (r := 1) 0
+      nonlinearTaylorEquation 1 2 2 (by norm_num) nonlinearTaylorEquation_height
+  · refine ⟨?_, ?_⟩
+    · exact commonTaylorNumeratorOver_mem_restrictBidegree (F := ℚ) (r := 1) 0
+        nonlinearTaylorEquation 1 2 3 2 exponentThreeSufficient nonlinearTaylorEquation_height
+        (by norm_num) nonlinearTaylorEquation_jetDegree ⟨2, by decide⟩
+    · exact totalDegree_commonTaylorNumeratorOver_le_of_jet_and_exponent (F := ℚ) (r := 1)
+        (Polynomial.C 0) nonlinearTaylorEquation 2 3 2 (by norm_num) exponentThreeSufficient
+        nonlinearTaylorEquation_jetDegree ⟨2, by decide⟩
+/-- Agreement at `1` with received polynomial `X` has bidegree at most `(3, 3)`. -/
 example :
     (optionEquivRight ℚ (Fin 2)).symm
       (taylorAgreementEquationOver (F := ℚ) (A := Polynomial ℚ)
         (Polynomial.C 0) nonlinearTaylorEquation 3 (Polynomial.C 1) Polynomial.X (τ := 2)) ∈
       restrictBidegree (Fin 2) ℚ 3 3 := by
   exact taylorAgreementEquationOver_mem_restrictBidegree (F := ℚ) (r := 1) 0 1 Polynomial.X
-    nonlinearTaylorEquation 1 1 2 3 2 (by
-      intro l
-      fin_cases l <;> norm_num [TaylorExponentSufficient])
-    (by norm_num) nonlinearTaylorEquation_height (by norm_num)
-    nonlinearTaylorEquation_jetDegree
+    nonlinearTaylorEquation 1 1 2 3 2 exponentThreeSufficient (by norm_num)
+    nonlinearTaylorEquation_height (by norm_num) nonlinearTaylorEquation_jetDegree
 
-/-- Padding at a recursive index gives total jet degree at most `3`. -/
-example :
-    (commonTaylorNumeratorOver ℚ (Polynomial.C (0 : ℚ)) nonlinearTaylorEquation 2 2).totalDegree
-      ≤ 3 := by
-  exact totalDegree_commonTaylorNumeratorOver_le_of_jet_and_exponent (F := ℚ) (r := 1)
-    (Polynomial.C 0) nonlinearTaylorEquation 2 3 2 (by norm_num)
-    (by
-      intro l
-      fin_cases l <;> norm_num [TaylorExponentSufficient])
-    nonlinearTaylorEquation_jetDegree ⟨2, by decide⟩
 end
 
 end PolynomialDifferential
