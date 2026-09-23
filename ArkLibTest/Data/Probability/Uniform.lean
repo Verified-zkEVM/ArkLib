@@ -7,6 +7,13 @@ Authors: Quang Dao
 import ArkLib.Data.Probability.Uniform
 import Mathlib.MeasureTheory.Measure.Basic
 
+/-!
+# Uniform probability acceptance tests
+
+These examples check native event-mass decomposition, finite uniform event probabilities, and
+invariance under an equivalence of sample spaces.
+-/
+
 open scoped ENNReal ProbabilityTheory
 
 example {α : Type} [Fintype α] [MeasurableSpace α] [DiscreteMeasurableSpace α]
