@@ -3330,8 +3330,8 @@ Ported from the ideal and Hilbert-function part of
 `bidegreeCutMap_surjective` is not ported. `bidegreeHypersurface_hilbertPolynomial_natDegree` is
 now `natDegree_affineHilbertPolynomial_comap_bidegreeMap` for any ideal, with the
 `_span_singleton` case. `bidegreeHypersurfaceIdeal_eq_sup_of_map_eq` is now
-`comap_bidegreeMap_span_singleton`, which with `bidegreeMap_bidegreeLift` also covers
-`bidegreeHypersurfaceIdeal_eq_sup`. `quotientBidegreeLE_finrank_add_le` and
+`comap_bidegreeMap_span_singleton`; the lift-based ideal equality applies this general form with
+`bidegreeMap_bidegreeLift`. `quotientBidegreeLE_finrank_add_le` and
 `quotientBidegreeLE_finrank_le` are now `finrank_quotientBidegreeLE_span_singleton_add_le` and
 `finrank_quotientBidegreeLE_span_singleton_le`. `bidegreeHypersurface_hilbertFunction_le` is now
 `affineHilbertFunction_comap_bidegreeMap_le`, for any ideal and without positivity of `a` and

@@ -52,20 +52,6 @@ private abbrev bidegreeIdeal (a b : ℕ) : Ideal (MvPolynomial (bidegreeExponent
 private abbrev bidegreeHypersurfaceIdeal (a b : ℕ) (g : MvPolynomial (Option σ) F) :=
   (Ideal.span {g}).comap (bidegreeMap σ F a b)
 
-private theorem bidegreeIdeal_hilbertPolynomial_natDegree [Finite σ] (a b : ℕ) (ha : 0 < a)
-    (hb : 0 < b) :
-    (affineHilbertPolynomial (bidegreeIdeal (F := F) (σ := σ) a b)).natDegree =
-      Nat.card (Option σ) :=
-  natDegree_affineHilbertPolynomial_ker_bidegreeMap ha hb
-
-private theorem bidegreeHypersurfaceIdeal_eq_sup (a b : ℕ) (g : MvPolynomial (Option σ) F)
-    (hg : g ∈ restrictBidegree σ F a b) (ha : 0 < a) (hb : 0 < b) :
-    bidegreeHypersurfaceIdeal (F := F) (σ := σ) a b g =
-      bidegreeIdeal a b ⊔ Ideal.span {bidegreeLift g hg} := by
-  change (Ideal.span {g}).comap (bidegreeMap σ F a b) = _
-  conv_lhs => rw [← bidegreeMap_bidegreeLift (a := a) (b := b) g hg]
-  exact comap_bidegreeMap_span_singleton ha hb
-
 private theorem bidegreeHypersurfaceIdeal_eq_sup_of_map_eq (a b : ℕ)
     (g : MvPolynomial (Option σ) F) (gl : MvPolynomial (bidegreeExponents σ a b) F)
     (hgl : bidegreeMap σ F a b gl = g) (ha : 0 < a) (hb : 0 < b) :
@@ -74,13 +60,6 @@ private theorem bidegreeHypersurfaceIdeal_eq_sup_of_map_eq (a b : ℕ)
   change (Ideal.span {g}).comap (bidegreeMap σ F a b) = _
   conv_lhs => rw [← hgl]
   exact comap_bidegreeMap_span_singleton ha hb
-
-private theorem bidegreeHypersurface_sum_minimalPrimes_affineDegree_le [Finite σ] {a b : ℕ}
-    (ha : 0 < a) (hb : 0 < b) {g : MvPolynomial (Option σ) F} (_hg0 : g ≠ 0)
-    (_hproper : Ideal.span {g} ≠ ⊤) :
-    ∑ P ∈ (bidegreeHypersurfaceIdeal a b g).minimalPrimesFinset, affineDegree P ≤
-      affineDegree (bidegreeHypersurfaceIdeal a b g) := by
-  exact sum_affineDegree_minimalPrimes_comap_bidegreeMap_span_singleton_le ha hb g
 
 private theorem bidegreeHypersurface_affineDegree_le_one {a b h v : ℕ} (ha : 0 < a)
     (hb : 0 < b) {g : MvPolynomial (Option (Fin 1)) F} (hg0 : g ≠ 0)
@@ -144,6 +123,117 @@ private def agreementIndices {n : ℕ} {τ : Type*} (cuts : Fin n → MvPolynomi
     (x : τ → F) : Set (Fin n) :=
   {i | aeval x (cuts i) = 0}
 
+private theorem bidegreeHypersurface_transportPrime
+    {a b n : ℕ} [Finite σ] (ha : 0 < a) (hb : 0 < b)
+    (g s : MvPolynomial (Option σ) F)
+    (gl : MvPolynomial (bidegreeExponents σ a b) F)
+    (hgl_map : bidegreeMap σ F a b gl = g)
+    (sl : MvPolynomial (bidegreeExponents σ a b) F)
+    (hsl_map : bidegreeMap σ F a b sl = s)
+    (highCuts : List (MvPolynomial (Option σ) F))
+    (highCuts' : List (MvPolynomial (bidegreeExponents σ a b) F))
+    (hliftHighCuts : ∀ f ∈ highCuts,
+      ∃ f' ∈ highCuts', bidegreeMap σ F a b f' = f)
+    (cuts : Fin n → MvPolynomial (Option σ) F)
+    (cuts' : Fin n → MvPolynomial (bidegreeExponents σ a b) F)
+    (hliftCuts : ∀ i, bidegreeMap σ F a b (cuts' i) = cuts i)
+    (P : Ideal (MvPolynomial (bidegreeExponents σ a b) F))
+    (hPT₀ : P ∈ (bidegreeHypersurfaceIdeal a b g).retainedMinimalPrimes sl)
+    (Q : Ideal (MvPolynomial (bidegreeExponents σ a b) F)) (hPQ : P ≤ Q)
+    (hQ : Q.IsPrime) (hsQ : sl ∉ Q) (hhighQ : ∀ f ∈ highCuts', f ∈ Q) :
+    let K : Ideal (MvPolynomial (Option σ) F) :=
+      Q.map (bidegreeMap σ F a b).toRingHom
+    RingHom.ker (bidegreeMap σ F a b) ≤ Q ∧ K.IsPrime ∧ s ∉ K ∧ g ∈ K ∧
+      (∀ f ∈ highCuts, f ∈ K) ∧
+      (affineHilbertPolynomial K).natDegree = (affineHilbertPolynomial Q).natDegree ∧
+      cutsInIdeal K cuts = cutsInIdeal Q cuts' := by
+  dsimp only
+  have hPJ : bidegreeHypersurfaceIdeal a b g ≤ P :=
+    ((Ideal.mem_retainedMinimalPrimes).mp hPT₀).1.le
+  have hbaseJ : RingHom.ker (bidegreeMap σ F a b) ≤ bidegreeHypersurfaceIdeal a b g := by
+    rw [bidegreeHypersurfaceIdeal_eq_sup_of_map_eq a b g gl hgl_map ha hb]
+    exact le_sup_left
+  have hbaseQ : RingHom.ker (bidegreeMap σ F a b) ≤ Q := hbaseJ.trans (hPJ.trans hPQ)
+  let K : Ideal (MvPolynomial (Option σ) F) := Q.map (bidegreeMap σ F a b).toRingHom
+  have hK : K.IsPrime := Ideal.map_isPrime_of_surjective
+    (f := (bidegreeMap σ F a b).toRingHom)
+    (bidegreeMap_surjective (a := a) (b := b) ha hb) hbaseQ
+  have hcomap : K.comap (bidegreeMap σ F a b).toRingHom = Q := by
+    change (Q.map (bidegreeMap σ F a b).toRingHom).comap (bidegreeMap σ F a b).toRingHom = Q
+    rw [Ideal.comap_map_of_surjective (bidegreeMap σ F a b).toRingHom
+      (bidegreeMap_surjective (a := a) (b := b) ha hb) Q]
+    apply sup_eq_left.mpr
+    rw [← RingHom.ker_eq_comap_bot]
+    exact hbaseQ
+  have hsK : s ∉ K := by
+    intro hsK
+    have hslQ : sl ∈ K.comap (bidegreeMap σ F a b).toRingHom := by
+      change bidegreeMap σ F a b sl ∈ K
+      rw [hsl_map]
+      exact hsK
+    rw [hcomap] at hslQ
+    exact hsQ hslQ
+  have hglJ : gl ∈ bidegreeHypersurfaceIdeal a b g := by
+    change bidegreeMap σ F a b gl ∈ Ideal.span {g}
+    rw [hgl_map]
+    exact Ideal.subset_span (Set.mem_singleton _)
+  have hgK : g ∈ K := by
+    rw [← hgl_map]
+    exact Ideal.mem_map_of_mem (bidegreeMap σ F a b).toRingHom (hPQ (hPJ hglJ))
+  have hhighK : ∀ f ∈ highCuts, f ∈ K := by
+    intro f hf
+    obtain ⟨f', hf', hmap⟩ := hliftHighCuts f hf
+    rw [← hmap]
+    exact Ideal.mem_map_of_mem (bidegreeMap σ F a b).toRingHom (hhighQ f' hf')
+  have hdeg : (affineHilbertPolynomial K).natDegree =
+      (affineHilbertPolynomial Q).natDegree := by
+    have hQK : Q ≤ K.comap (bidegreeMap σ F a b).toRingHom := by
+      intro q hq
+      exact Ideal.mem_map_of_mem (bidegreeMap σ F a b).toRingHom hq
+    let qmap :
+        (MvPolynomial (bidegreeExponents σ a b) F ⧸ Q) →ₐ[F]
+          (MvPolynomial (Option σ) F ⧸ K) :=
+      Ideal.quotientMapₐ K (bidegreeMap σ F a b) hQK
+    have hqinj : Function.Injective qmap := by
+      intro x y hxy
+      rw [← sub_eq_zero]
+      have hz : qmap (x - y) = 0 := by rw [map_sub, hxy, sub_self]
+      obtain ⟨p, hp⟩ := Ideal.Quotient.mk_surjective (I := Q) (x - y)
+      rw [← hp] at hz ⊢
+      change Ideal.Quotient.mk K (bidegreeMap σ F a b p) = 0 at hz
+      rw [Ideal.Quotient.eq_zero_iff_mem] at hz ⊢
+      have hpQ : p ∈ K.comap (bidegreeMap σ F a b).toRingHom := hz
+      rwa [hcomap] at hpQ
+    have hqsurj : Function.Surjective qmap := by
+      intro y
+      obtain ⟨p, hp⟩ := Ideal.Quotient.mk_surjective (I := K) y
+      obtain ⟨q, hq⟩ := bidegreeMap_surjective (a := a) (b := b) ha hb p
+      refine ⟨Ideal.Quotient.mk Q q, ?_⟩
+      rw [← hp, ← hq]
+      exact Ideal.quotientMap_mk (H := hQK)
+    let e :
+        (MvPolynomial (bidegreeExponents σ a b) F ⧸ Q) ≃ₐ[F]
+          (MvPolynomial (Option σ) F ⧸ K) :=
+      AlgEquiv.ofBijective qmap ⟨hqinj, hqsurj⟩
+    have hfinite : e.symm.toAlgHom.Finite :=
+      AlgHom.Finite.of_surjective _ e.symm.surjective
+    exact (natDegree_affineHilbertPolynomial_eq_of_finite_of_injective
+      e.symm.toAlgHom hfinite e.symm.injective).symm
+  have hcutsEq : cutsInIdeal K cuts = cutsInIdeal Q cuts' := by
+    ext i
+    change cuts i ∈ K ↔ cuts' i ∈ Q
+    constructor
+    · intro hi
+      have hil : cuts' i ∈ K.comap (bidegreeMap σ F a b).toRingHom := by
+        change bidegreeMap σ F a b (cuts' i) ∈ K
+        rw [hliftCuts i]
+        exact hi
+      rwa [hcomap] at hil
+    · intro hi
+      rw [← hliftCuts i]
+      exact Ideal.mem_map_of_mem (bidegreeMap σ F a b).toRingHom hi
+  exact ⟨hbaseQ, hK, hsK, hgK, hhighK, hdeg, hcutsEq⟩
+
 /-- Let `g` and `s` have bidegree at most `(a, b)`, and let each fixed and agreement equation
 have the same bound. If every positive-dimensional prime containing `g` and the fixed equations,
 avoiding `s`, and containing at least `L` agreement equations has its principal open locus in
@@ -177,6 +267,12 @@ theorem bidegreeHypersurface_incidence_off_excluded_sharp
   let J := (Ideal.span {g}).comap (bidegreeMap σ F a b)
   let gl := bidegreeLift (a := a) (b := b) g hg
   let sl := bidegreeLift (a := a) (b := b) s hs
+  have hgl_map : bidegreeMap σ F a b gl = g := by
+    dsimp only [gl]
+    exact bidegreeMap_bidegreeLift (a := a) (b := b) g hg
+  have hsl_map : bidegreeMap σ F a b sl = s := by
+    dsimp only [sl]
+    exact bidegreeMap_bidegreeLift (a := a) (b := b) s hs
   let highCuts' : List (MvPolynomial (bidegreeExponents σ a b) F) :=
     highCuts.attach.map fun f ↦ bidegreeLift (a := a) (b := b) f.1 (hhigh f.1 f.2)
   let cuts' : Fin n → MvPolynomial (bidegreeExponents σ a b) F :=
@@ -191,7 +287,7 @@ theorem bidegreeHypersurface_incidence_off_excluded_sharp
     exact ((Ideal.mem_retainedMinimalPrimes).mp hP).1.isPrime
   have hsum : ∑ P ∈ T₀, affineDegree P ≤ affineDegree J := by
     apply le_trans (Finset.sum_le_sum_of_subset_of_nonneg ?_ ?_)
-      (bidegreeHypersurface_sum_minimalPrimes_affineDegree_le ha hb hg0 hproper)
+      (sum_affineDegree_minimalPrimes_comap_bidegreeMap_span_singleton_le ha hb g)
     · intro P hP
       exact Ideal.mem_minimalPrimesFinset.mpr ((Ideal.mem_retainedMinimalPrimes).mp hP).1
     · intro P _ _
@@ -212,7 +308,7 @@ theorem bidegreeHypersurface_incidence_off_excluded_sharp
       F (bidegreeExponents σ a b) inferInstance inferInstance
       (RingHom.ker (bidegreeMap σ F a b)) P
       (RingHom.ker_isPrime _) gl hglNot (by
-        rw [← bidegreeHypersurfaceIdeal_eq_sup a b g hg ha hb]
+        rw [← bidegreeHypersurfaceIdeal_eq_sup_of_map_eq a b g gl hgl_map ha hb]
         exact hmin)
     dsimp only [d]
     rw [hbase, ← hsource] at hp
@@ -222,6 +318,17 @@ theorem bidegreeHypersurface_incidence_off_excluded_sharp
     simp only [highCuts', List.mem_map, List.mem_attach] at hf
     obtain ⟨q, _, rfl⟩ := hf
     exact totalDegree_bidegreeLift_le_one (a := a) (b := b) q.1 (hhigh q.1 q.2)
+  have hliftHighCuts : ∀ f ∈ highCuts,
+      ∃ f' ∈ highCuts', bidegreeMap σ F a b f' = f := by
+    intro f hf
+    refine ⟨bidegreeLift (a := a) (b := b) f (hhigh f hf), ?_, ?_⟩
+    · simp only [highCuts', List.mem_map, List.mem_attach]
+      exact ⟨⟨f, hf⟩, trivial, rfl⟩
+    · exact bidegreeMap_bidegreeLift (a := a) (b := b) f (hhigh f hf)
+  have hliftCuts : ∀ i, bidegreeMap σ F a b (cuts' i) = cuts i := by
+    intro i
+    dsimp only [cuts']
+    exact bidegreeMap_bidegreeLift (a := a) (b := b) (cuts i) (hcuts i)
   have hcardS : S'.card = S.card := Finset.card_image_of_injective _
     (bidegreePoint_injective a b ha hb)
   have hV : ∑ P ∈ T₀, affineDegree P * (1 : ℚ) ^
@@ -234,105 +341,16 @@ theorem bidegreeHypersurface_incidence_off_excluded_sharp
   · rw [hcardS] at hbound
     simpa only [Nat.mul_one, J, d, Fintype.card_fin] using hbound
   · intro P hPT₀ Q hPQ hQ hsQ hhighQ hdQ hcutsQ
-    have hPJ : J ≤ P := ((Ideal.mem_retainedMinimalPrimes).mp hPT₀).1.le
-    have hbaseJ : RingHom.ker (bidegreeMap σ F a b) ≤ J := by
-      change RingHom.ker (bidegreeMap σ F a b) ≤ bidegreeHypersurfaceIdeal a b g
-      rw [bidegreeHypersurfaceIdeal_eq_sup a b g hg ha hb]
-      exact le_sup_left
-    have hbaseQ : RingHom.ker (bidegreeMap σ F a b) ≤ Q :=
-      hbaseJ.trans (hPJ.trans hPQ)
     let K : Ideal (MvPolynomial (Option σ) F) := Q.map (bidegreeMap σ F a b).toRingHom
-    have hK : K.IsPrime := Ideal.map_isPrime_of_surjective
-      (f := (bidegreeMap σ F a b).toRingHom)
-      (bidegreeMap_surjective (a := a) (b := b) ha hb) hbaseQ
-    have hcomap : K.comap (bidegreeMap σ F a b).toRingHom = Q := by
-      change (Q.map (bidegreeMap σ F a b).toRingHom).comap (bidegreeMap σ F a b).toRingHom = Q
-      rw [Ideal.comap_map_of_surjective (bidegreeMap σ F a b).toRingHom
-        (bidegreeMap_surjective (a := a) (b := b) ha hb) Q]
-      apply sup_eq_left.mpr
-      rw [← RingHom.ker_eq_comap_bot]
-      exact hbaseQ
-    have hsK : s ∉ K := by
-      intro hsK
-      have hsl : sl ∈ K.comap (bidegreeMap σ F a b).toRingHom := by
-        change bidegreeMap σ F a b sl ∈ K
-        dsimp only [sl]
-        rwa [bidegreeMap_bidegreeLift]
-      rw [hcomap] at hsl
-      exact hsQ hsl
-    have hglJ : gl ∈ J := by
-      change bidegreeMap σ F a b gl ∈ Ideal.span {g}
-      dsimp only [gl]
-      rw [bidegreeMap_bidegreeLift]
-      exact Ideal.subset_span (Set.mem_singleton _)
-    have hgK : g ∈ K := by
-      rw [← bidegreeMap_bidegreeLift (a := a) (b := b) g hg]
-      exact Ideal.mem_map_of_mem (bidegreeMap σ F a b).toRingHom
-        (hPQ (hPJ hglJ))
-    have hhighK : ∀ f ∈ highCuts, f ∈ K := by
-      intro f hf
-      rw [← bidegreeMap_bidegreeLift (a := a) (b := b) f (hhigh f hf)]
-      apply Ideal.mem_map_of_mem (bidegreeMap σ F a b).toRingHom
-      apply hhighQ
-      simp only [highCuts', List.mem_map, List.mem_attach]
-      exact ⟨⟨f, hf⟩, trivial, rfl⟩
-    have hdK : 0 < (affineHilbertPolynomial K).natDegree := by
-      have hQK : Q ≤ K.comap (bidegreeMap σ F a b).toRingHom := by
-        intro q hq
-        exact Ideal.mem_map_of_mem (bidegreeMap σ F a b).toRingHom hq
-      let qmap :
-          (MvPolynomial (bidegreeExponents σ a b) F ⧸ Q) →ₐ[F]
-            (MvPolynomial (Option σ) F ⧸ K) :=
-        Ideal.quotientMapₐ K (bidegreeMap σ F a b) hQK
-      have hqinj : Function.Injective qmap := by
-        intro x y hxy
-        rw [← sub_eq_zero]
-        have hz : qmap (x - y) = 0 := by rw [map_sub, hxy, sub_self]
-        obtain ⟨p, hp⟩ := Ideal.Quotient.mk_surjective (I := Q) (x - y)
-        rw [← hp] at hz ⊢
-        change Ideal.Quotient.mk K (bidegreeMap σ F a b p) = 0 at hz
-        rw [Ideal.Quotient.eq_zero_iff_mem] at hz ⊢
-        have hpQ : p ∈ K.comap (bidegreeMap σ F a b).toRingHom := hz
-        rwa [hcomap] at hpQ
-      have hqsurj : Function.Surjective qmap := by
-        intro y
-        obtain ⟨p, hp⟩ := Ideal.Quotient.mk_surjective (I := K) y
-        obtain ⟨q, hq⟩ := bidegreeMap_surjective (a := a) (b := b) ha hb p
-        refine ⟨Ideal.Quotient.mk Q q, ?_⟩
-        rw [← hp, ← hq]
-        exact Ideal.quotientMap_mk (H := hQK)
-      let e :
-          (MvPolynomial (bidegreeExponents σ a b) F ⧸ Q) ≃ₐ[F]
-            (MvPolynomial (Option σ) F ⧸ K) :=
-        AlgEquiv.ofBijective qmap ⟨hqinj, hqsurj⟩
-      have hdeg :
-          (affineHilbertPolynomial Q).natDegree = (affineHilbertPolynomial K).natDegree := by
-        have hfinite : e.symm.toAlgHom.Finite :=
-          AlgHom.Finite.of_surjective _ e.symm.surjective
-        simpa only [Nat.card_eq_fintype_card, Fintype.card_fin] using
-          natDegree_affineHilbertPolynomial_eq_of_finite_of_injective
-            e.symm.toAlgHom hfinite e.symm.injective
-      rw [← hdeg]
-      exact hdQ
-    have hcutsEq : cutsInIdeal K cuts = cutsInIdeal Q cuts' := by
-      ext i
-      change cuts i ∈ K ↔ cuts' i ∈ Q
-      constructor
-      · intro hi
-        have hil : cuts' i ∈ K.comap (bidegreeMap σ F a b).toRingHom := by
-          change bidegreeMap σ F a b (cuts' i) ∈ K
-          dsimp only [cuts']
-          rwa [bidegreeMap_bidegreeLift]
-        rwa [hcomap] at hil
-      · intro hi
-        rw [← bidegreeMap_bidegreeLift (a := a) (b := b) (cuts i) (hcuts i)]
-        exact Ideal.mem_map_of_mem (bidegreeMap σ F a b).toRingHom hi
+    obtain ⟨hbaseQ, hK, hsK, hgK, hhighK, hdeg, hcutsEq⟩ :=
+      bidegreeHypersurface_transportPrime ha hb g s gl hgl_map sl hsl_map
+        highCuts highCuts' hliftHighCuts cuts cuts' hliftCuts P hPT₀ Q hPQ hQ hsQ hhighQ
+    have hdK : 0 < (affineHilbertPolynomial K).natDegree := by rw [hdeg]; exact hdQ
     have hcutsCard := congrArg Set.ncard hcutsEq
-    change (cutsInIdeal K cuts).ncard = (cutsInIdeal Q cuts').ncard at hcutsCard
-    have hsource := hterminal K hK hsK hgK hhighK hdK (by
-      change L ≤ (cutsInIdeal K cuts).ncard
+    have hcutsK : L ≤ (cutsInIdeal K cuts).ncard := by
       rw [hcutsCard]
-      exact hcutsQ)
+      exact hcutsQ
+    have hsource := hterminal K hK hsK hgK hhighK hdK hcutsK
     intro z hz
     have hzbase : z ∈ zeroLocus F (bidegreeIdeal (F := F) (σ := σ) a b) :=
       zeroLocus_anti_mono hbaseQ hz.1
@@ -429,7 +447,7 @@ private theorem bidegreeHypersurface_incidence_off_excluded_hybrid_core
     exact ((Ideal.mem_retainedMinimalPrimes).mp hP).1.isPrime
   have hsum : ∑ P ∈ T₀, affineDegree P ≤ affineDegree J := by
     apply le_trans (Finset.sum_le_sum_of_subset_of_nonneg ?_ ?_)
-      (bidegreeHypersurface_sum_minimalPrimes_affineDegree_le ha hb hg0 hproper)
+      (sum_affineDegree_minimalPrimes_comap_bidegreeMap_span_singleton_le ha hb g)
     · intro P hP
       exact Ideal.mem_minimalPrimesFinset.mpr ((Ideal.mem_retainedMinimalPrimes).mp hP).1
     · intro P _ _
@@ -459,105 +477,29 @@ private theorem bidegreeHypersurface_incidence_off_excluded_hybrid_core
     simp only [highCuts', List.mem_map, List.mem_attach] at hf
     obtain ⟨q, _, rfl⟩ := hf
     exact totalDegree_bidegreeLift_le_one (a := a) (b := b) q.1 (hhigh q.1 q.2)
+  have hliftHighCuts : ∀ f ∈ highCuts,
+      ∃ f' ∈ highCuts', bidegreeMap σ F a b f' = f := by
+    intro f hf
+    refine ⟨bidegreeLift (a := a) (b := b) f (hhigh f hf), ?_, ?_⟩
+    · simp only [highCuts', List.mem_map, List.mem_attach]
+      exact ⟨⟨f, hf⟩, trivial, rfl⟩
+    · exact bidegreeMap_bidegreeLift (a := a) (b := b) f (hhigh f hf)
+  have hliftCuts : ∀ i, bidegreeMap σ F a b (cuts' i) = cuts i := by
+    intro i
+    dsimp only [cuts']
+    exact bidegreeMap_bidegreeLift (a := a) (b := b) (cuts i) (hcuts i)
   have hsourceData (P : Ideal (MvPolynomial (bidegreeExponents σ a b) F))
       (hPT₀ : P ∈ T₀) (Q : Ideal (MvPolynomial (bidegreeExponents σ a b) F))
       (hPQ : P ≤ Q) (hQ : Q.IsPrime) (hsQ : sl ∉ Q)
       (hhighQ : ∀ f ∈ highCuts', f ∈ Q) :
       let K : Ideal (MvPolynomial (Option σ) F) :=
         Q.map (bidegreeMap σ F a b).toRingHom
-      K.IsPrime ∧ s ∉ K ∧ g ∈ K ∧ (∀ f ∈ highCuts, f ∈ K) ∧
+      RingHom.ker (bidegreeMap σ F a b) ≤ Q ∧ K.IsPrime ∧ s ∉ K ∧ g ∈ K ∧
+        (∀ f ∈ highCuts, f ∈ K) ∧
         (affineHilbertPolynomial K).natDegree = (affineHilbertPolynomial Q).natDegree ∧
         cutsInIdeal K cuts = cutsInIdeal Q cuts' := by
-    dsimp only
-    have hPJ : J ≤ P := ((Ideal.mem_retainedMinimalPrimes).mp hPT₀).1.le
-    have hbaseJ : RingHom.ker (bidegreeMap σ F a b) ≤ J := by
-      change RingHom.ker (bidegreeMap σ F a b) ≤ bidegreeHypersurfaceIdeal a b g
-      rw [bidegreeHypersurfaceIdeal_eq_sup_of_map_eq a b g gl hgl_map ha hb]
-      exact le_sup_left
-    have hbaseQ : RingHom.ker (bidegreeMap σ F a b) ≤ Q :=
-      hbaseJ.trans (hPJ.trans hPQ)
-    let K : Ideal (MvPolynomial (Option σ) F) :=
-      Q.map (bidegreeMap σ F a b).toRingHom
-    have hK : K.IsPrime := Ideal.map_isPrime_of_surjective
-      (f := (bidegreeMap σ F a b).toRingHom)
-      (bidegreeMap_surjective (a := a) (b := b) ha hb) hbaseQ
-    have hcomap : K.comap (bidegreeMap σ F a b).toRingHom = Q := by
-      change (Q.map (bidegreeMap σ F a b).toRingHom).comap (bidegreeMap σ F a b).toRingHom = Q
-      rw [Ideal.comap_map_of_surjective (bidegreeMap σ F a b).toRingHom
-        (bidegreeMap_surjective (a := a) (b := b) ha hb) Q]
-      apply sup_eq_left.mpr
-      rw [← RingHom.ker_eq_comap_bot]
-      exact hbaseQ
-    have hsK : s ∉ K := by
-      intro hsK
-      have hsl : sl ∈ K.comap (bidegreeMap σ F a b).toRingHom := by
-        change bidegreeMap σ F a b sl ∈ K
-        rw [hsl_map]
-        exact hsK
-      rw [hcomap] at hsl
-      exact hsQ hsl
-    have hglJ : gl ∈ J := by
-      change bidegreeMap σ F a b gl ∈ Ideal.span {g}
-      rw [hgl_map]
-      exact Ideal.subset_span (Set.mem_singleton _)
-    have hgK : g ∈ K := by
-      rw [← hgl_map]
-      exact Ideal.mem_map_of_mem (bidegreeMap σ F a b).toRingHom
-        (hPQ (hPJ hglJ))
-    have hhighK : ∀ f ∈ highCuts, f ∈ K := by
-      intro f hf
-      rw [← bidegreeMap_bidegreeLift (a := a) (b := b) f (hhigh f hf)]
-      apply Ideal.mem_map_of_mem (bidegreeMap σ F a b).toRingHom
-      apply hhighQ
-      simp only [highCuts', List.mem_map, List.mem_attach]
-      exact ⟨⟨f, hf⟩, trivial, rfl⟩
-    have hdeg : (affineHilbertPolynomial K).natDegree = (affineHilbertPolynomial Q).natDegree := by
-      have hQK : Q ≤ K.comap (bidegreeMap σ F a b).toRingHom := by
-        intro q hq
-        exact Ideal.mem_map_of_mem (bidegreeMap σ F a b).toRingHom hq
-      let qmap :
-          (MvPolynomial (bidegreeExponents σ a b) F ⧸ Q) →ₐ[F]
-            (MvPolynomial (Option σ) F ⧸ K) :=
-        Ideal.quotientMapₐ K (bidegreeMap σ F a b) hQK
-      have hqinj : Function.Injective qmap := by
-        intro x y hxy
-        rw [← sub_eq_zero]
-        have hz : qmap (x - y) = 0 := by rw [map_sub, hxy, sub_self]
-        obtain ⟨p, hp⟩ := Ideal.Quotient.mk_surjective (I := Q) (x - y)
-        rw [← hp] at hz ⊢
-        change Ideal.Quotient.mk K (bidegreeMap σ F a b p) = 0 at hz
-        rw [Ideal.Quotient.eq_zero_iff_mem] at hz ⊢
-        have hpQ : p ∈ K.comap (bidegreeMap σ F a b).toRingHom := hz
-        rwa [hcomap] at hpQ
-      have hqsurj : Function.Surjective qmap := by
-        intro y
-        obtain ⟨p, hp⟩ := Ideal.Quotient.mk_surjective (I := K) y
-        obtain ⟨q, hq⟩ := bidegreeMap_surjective (a := a) (b := b) ha hb p
-        refine ⟨Ideal.Quotient.mk Q q, ?_⟩
-        rw [← hp, ← hq]
-        exact Ideal.quotientMap_mk (H := hQK)
-      let e :
-          (MvPolynomial (bidegreeExponents σ a b) F ⧸ Q) ≃ₐ[F]
-            (MvPolynomial (Option σ) F ⧸ K) :=
-        AlgEquiv.ofBijective qmap ⟨hqinj, hqsurj⟩
-      have hfinite : e.symm.toAlgHom.Finite :=
-        AlgHom.Finite.of_surjective _ e.symm.surjective
-      exact (natDegree_affineHilbertPolynomial_eq_of_finite_of_injective
-        e.symm.toAlgHom hfinite e.symm.injective).symm
-    have hcutsEq : cutsInIdeal K cuts = cutsInIdeal Q cuts' := by
-      ext i
-      change cuts i ∈ K ↔ cuts' i ∈ Q
-      constructor
-      · intro hi
-        have hil : cuts' i ∈ K.comap (bidegreeMap σ F a b).toRingHom := by
-          change bidegreeMap σ F a b (cuts' i) ∈ K
-          dsimp only [cuts']
-          rwa [bidegreeMap_bidegreeLift]
-        rwa [hcomap] at hil
-      · intro hi
-        rw [← bidegreeMap_bidegreeLift (a := a) (b := b) (cuts i) (hcuts i)]
-        exact Ideal.mem_map_of_mem (bidegreeMap σ F a b).toRingHom hi
-    exact ⟨hK, hsK, hgK, hhighK, hdeg, hcutsEq⟩
+    exact bidegreeHypersurface_transportPrime ha hb g s gl hgl_map sl hsl_map
+      highCuts highCuts' hliftHighCuts cuts cuts' hliftCuts P hPT₀ Q hPQ hQ hsQ hhighQ
   have hcardS : S'.card = S.card := Finset.card_image_of_injective _
     (bidegreePoint_injective a b ha hb)
   have hV : ∑ P ∈ T₀, affineDegree P * (1 : ℚ) ^
@@ -580,7 +522,7 @@ private theorem bidegreeHypersurface_incidence_off_excluded_hybrid_core
   · intro P hPT₀ Q hPQ hQ hsQ hhighQ hdQ
     let K : Ideal (MvPolynomial (Option σ) F) :=
       Q.map (bidegreeMap σ F a b).toRingHom
-    obtain ⟨hK, hsK, hgK, hhighK, hdeg, hcutsEq⟩ :=
+    obtain ⟨hbaseQ, hK, hsK, hgK, hhighK, hdeg, hcutsEq⟩ :=
       hsourceData P hPT₀ Q hPQ hQ hsQ hhighQ
     have hdK : 0 < (affineHilbertPolynomial
         (Q.map (bidegreeMap σ F a b).toRingHom)).natDegree := by rw [hdeg]; omega
@@ -603,7 +545,7 @@ private theorem bidegreeHypersurface_incidence_off_excluded_hybrid_core
   · intro P hPT₀ Q hPQ hQ hsQ hhighQ hdQ hcutsQ
     let K : Ideal (MvPolynomial (Option σ) F) :=
       Q.map (bidegreeMap σ F a b).toRingHom
-    obtain ⟨hK, hsK, hgK, hhighK, hdeg, hcutsEq⟩ :=
+    obtain ⟨hbaseQ, hK, hsK, hgK, hhighK, hdeg, hcutsEq⟩ :=
       hsourceData P hPT₀ Q hPQ hQ hsQ hhighQ
     have hdK : 0 < (affineHilbertPolynomial
         (Q.map (bidegreeMap σ F a b).toRingHom)).natDegree := by rwa [hdeg]
@@ -615,13 +557,6 @@ private theorem bidegreeHypersurface_incidence_off_excluded_hybrid_core
       rw [hcutsCard]
       exact hcutsQ)
     intro z hz
-    have hPJ : J ≤ P := ((Ideal.mem_retainedMinimalPrimes).mp hPT₀).1.le
-    have hbaseJ : RingHom.ker (bidegreeMap σ F a b) ≤ J := by
-      change RingHom.ker (bidegreeMap σ F a b) ≤ bidegreeHypersurfaceIdeal a b g
-      rw [bidegreeHypersurfaceIdeal_eq_sup_of_map_eq a b g gl hgl_map ha hb]
-      exact le_sup_left
-    have hbaseQ : RingHom.ker (bidegreeMap σ F a b) ≤ Q :=
-      hbaseJ.trans (hPJ.trans hPQ)
     have hzbase : z ∈ zeroLocus F (bidegreeIdeal (F := F) (σ := σ) a b) :=
       zeroLocus_anti_mono hbaseQ hz.1
     obtain ⟨x, rfl⟩ := exists_bidegreePoint_of_mem_zeroLocus_bidegreeIdeal
