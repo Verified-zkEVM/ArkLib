@@ -41,30 +41,6 @@ example (F : Type*) [Field F] {D d n m A W : ℕ} {rate agreement : ℝ} (hD : 0
   push_cast
   linarith
 
-/-- The area integral on a region of bounded nonnegative coordinates is at most the
-dimension at the real cutoff `L`. -/
-example (F : Type*) [Field F] {D d W : ℕ} {L : ℝ} (hD : 0 < D)
-    {S : Set (Fin d → ℝ)}
-    (hcoordinates : ∀ u ∈ S, ∀ i, 0 ≤ u i)
-    (hweight : ∀ u ∈ S, ∑ i, ((i.val + 1 : ℕ) : ℝ) * u i ≤ W) :
-    (D : ℝ) / 2 * ∫ u in S, (max (L / D - ∑ i, u i) 0) ^ 2 ≤
-      (Module.finrank F (partitionSupportSpace F D d W L hD) : ℝ) := by
-  have hsubset : S ⊆ Set.weightedSimplex (fun i : Fin d ↦ (i : ℝ) + 1) W := by
-    intro u hu
-    rw [Set.mem_weightedSimplex]
-    refine ⟨hcoordinates u hu, ?_⟩
-    calc
-      ∑ i : Fin d, ((i : ℝ) + 1) * u i =
-          ∑ i : Fin d, ((i.val + 1 : ℕ) : ℝ) * u i := by
-        apply Finset.sum_congr rfl
-        intro i _
-        have hweight : (i : ℝ) + 1 = ((i.val + 1 : ℕ) : ℝ) := by
-          push_cast
-          rfl
-        rw [hweight]
-      _ ≤ W := hweight u hu
-  exact partitionSupport_dimension_ge_integral_on F hD hsubset
-
 private def halfInterval : Set (Fin 1 → ℝ) := {u | 0 ≤ u 0 ∧ u 0 ≤ 1 / 2}
 
 private theorem halfInterval_subset_weightedSimplex :
@@ -78,6 +54,32 @@ private theorem halfInterval_subset_weightedSimplex :
   · have hsum : ∑ i : Fin 1, ((i : ℝ) + 1) * u i = u 0 := by simp
     rw [hsum]
     exact hu.2.trans (by norm_num)
+
+private theorem halfInterval_strictSubset_weightedSimplex :
+    halfInterval ⊂ Set.weightedSimplex (fun i : Fin 1 ↦ (i : ℝ) + 1) (1 : ℕ) := by
+  refine ⟨halfInterval_subset_weightedSimplex, ?_⟩
+  intro hsubset
+  let u : Fin 1 → ℝ := fun _ ↦ 3 / 4
+  have hu : u ∈ Set.weightedSimplex (fun i : Fin 1 ↦ (i : ℝ) + 1) (1 : ℕ) := by
+    rw [Set.mem_weightedSimplex]
+    constructor
+    · intro i
+      norm_num [u]
+    · have hsum : ∑ i : Fin 1, ((i : ℝ) + 1) * u i = 3 / 4 := by simp [u]
+      rw [hsum]
+      norm_num
+  have hnot : u ∉ halfInterval := by
+    change ¬ (0 ≤ u 0 ∧ u 0 ≤ 1 / 2)
+    norm_num [u]
+  exact hnot (hsubset hu)
+
+/-- At the fractional cutoff `3 / 2`, the area integral on `[0, 1 / 2]` is bounded by the
+partition-support dimension at that cutoff. -/
+example : (1 : ℝ) / 2 *
+      ∫ u in halfInterval, (max (3 / 2 - ∑ i : Fin 1, u i) 0) ^ 2 ≤
+        (Module.finrank ℚ (partitionSupportSpace ℚ 1 1 1 (3 / 2 : ℝ) one_pos) : ℝ) := by
+  simpa using partitionSupport_dimension_ge_integral_on (F := ℚ) (D := 1) (d := 1) (W := 1)
+    (L := 3 / 2) one_pos halfInterval_strictSubset_weightedSimplex.subset
 
 /-- On the proper subinterval `[0, 1/2]` of the simplex at `d = W = 1`, the positive-part
 integral is bounded by the dimension at cutoff `1`. -/

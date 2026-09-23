@@ -5,6 +5,7 @@ Authors: Quang Dao
 -/
 
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.Dimension
+import ArkLib.ToMathlib.MeasureTheory.Integral.PositivePart
 
 /-!
 # Acceptance tests for the partition support dimension bounds
@@ -118,12 +119,11 @@ example : (Module.finrank ℚ (partitionSupportSpace ℚ 1 0 0 (1 / 2 : ℝ) one
 
 end
 
-/-- The real-variable comparison allows a continuous coordinate sum `t`: at `D = n = 2`,
-`rate = 1`, `level = 2`, `L = 4` and `t = 1`, both sides are `1`. -/
-example : (2 : ℝ) / (2 * 1) * (max (2 - 1 * 1) 0) ^ 2 ≤
-    (2 : ℝ) / 2 * (max (4 / 2 - 1) 0) ^ 2 :=
-  partition_quadratic_rate_lower_real (D := 2) (n := 2) (rate := 1) (L := 4) (level := 2)
-    (t := 1) (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+/-- At `t = 1 / 2`, both positive parts are positive and the bound is `3 / 2 ≤ 4`. -/
+example : (3 : ℝ) / (2 * 1) * (max (3 / 2 - 1 * (1 / 2)) 0) ^ 2 ≤
+    (2 : ℝ) / 2 * (max (5 / 2 - 1 / 2) 0) ^ 2 :=
+  max_sub_zero_sq_scaled_le (D := 2) (n := 3) (rate := 1) (L := 5) (level := 3 / 2)
+    (t := 1 / 2) (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
 
 /-- The real-variable comparison fails without `D ≤ rate * n`: with `D = 1`,
 `n = level = L = 1`, `rate = 1/2` and `t = 0`, the left side is `1` and the right side is `1/2`.

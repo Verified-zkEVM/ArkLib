@@ -38,8 +38,6 @@ Both bounds hold at a real cutoff `L`: the space at `L` is the space at `⌈L⌉
 * `partitionSupport_dimension_ge_rate_sum`: the rate form of the lower bound.
 * `partitionSupport_dimension_ge_quadratic_sum_real` and
   `partitionSupport_dimension_ge_rate_sum_real`: both bounds at a real cutoff.
-* `partition_quadratic_rate_lower_real`: the pointwise rate comparison for real-valued coordinate
-  sums and cutoffs.
 * `PartitionSupportAreaSlot` and `partitionSupportAreaSlotExponent`: encode staircase slots as
   distinct eligible exponents of the partition support.
 
@@ -210,38 +208,5 @@ theorem partitionSupport_dimension_ge_rate_sum_real (F : Type*) [Field F] {n : �
       (Module.finrank F (partitionSupportSpace F D d W L hD) : ℝ) := by
   rw [← partitionSupportSpace_natCeil]
   exact partitionSupport_dimension_ge_rate_sum F hD hupper (hlevel.trans (Nat.le_ceil L))
-
-/-- If `0 < D`, `0 < n`, `D ≤ rate * n` and `n * level ≤ L`, then for every nonnegative `t`,
-`n / (2 * rate) * (max (level - rate * t) 0) ^ 2 ≤
-  D / 2 * (max (L / D - t) 0) ^ 2`.
-
-The hypotheses force `rate > 0`. The inequality compares the rate envelope at `level` with the
-quadratic area at cutoff `L`. -/
-theorem partition_quadratic_rate_lower_real {D n rate L level t : ℝ} (hD : 0 < D)
-    (hn : 0 < n) (ht : 0 ≤ t) (hupper : D ≤ rate * n) (hlevel : n * level ≤ L) :
-    n / (2 * rate) * (max (level - rate * t) 0) ^ 2 ≤
-      D / 2 * (max (L / D - t) 0) ^ 2 := by
-  have hrate : 0 < rate := pos_of_mul_pos_left (hD.trans_le hupper) hn.le
-  by_cases hlevelt : 0 < level - rate * t
-  · rw [max_eq_left hlevelt.le]
-    have hbase : n / D * (level - rate * t) ≤ L / D - t := by
-      have hmul := mul_le_mul_of_nonneg_right hupper ht
-      field_simp
-      nlinarith
-    have hpos : 0 ≤ L / D - t :=
-      (by positivity : 0 ≤ n / D * (level - rate * t)).trans hbase
-    rw [max_eq_left hpos]
-    have hs := pow_le_pow_left₀ (by positivity : 0 ≤ n / D * (level - rate * t)) hbase 2
-    have hcoeff : n / (2 * rate) ≤ D / 2 * (n / D) ^ 2 := by
-      field_simp
-      nlinarith [mul_le_mul_of_nonneg_right hupper hn.le]
-    calc
-      _ ≤ (D / 2 * (n / D) ^ 2) * (level - rate * t) ^ 2 :=
-        mul_le_mul_of_nonneg_right hcoeff (sq_nonneg _)
-      _ = D / 2 * (n / D * (level - rate * t)) ^ 2 := by ring
-      _ ≤ _ := mul_le_mul_of_nonneg_left hs (by positivity)
-  · rw [max_eq_right (le_of_not_gt hlevelt)]
-    simp only [zero_pow, ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true, mul_zero]
-    positivity
 
 end ReedSolomon.HiddenDerivative
