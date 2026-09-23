@@ -12,10 +12,10 @@ public import ArkLib.ToMathlib.LinearAlgebra.Matrix.Rank
 /-!
 # Point independence of the weighted-support local rank
 
-The translation `globalPointTranslation center received` (`X ↦ center + X`, `Y₀ ↦ received + Y₀`)
-maps the weighted support space `weightedSupportSpace R D d W L hD` onto itself, since both of its
-support conditions are weight bounds with nonnegative weights on `X` and `Y₀`. The local
-constraint map at `(center, received)` is the constraint map at `(0, 0)` after this translation.
+The translation `globalPointTranslation center received` (`X ↦ center + X`,
+`Y₀ ↦ received + Y₀`) preserves `weightedSupportSpace R D d W L hD`. Its support conditions
+weight bounds with nonnegative weights on `X` and `Y₀`. The local constraint map at
+`(center, received)` is the constraint map at `(0, 0)` after this translation.
 Composing with a linear automorphism does not change the range, so over a field the rank of the
 local constraint map on the weighted support space does not depend on the point.
 

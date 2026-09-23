@@ -4,136 +4,146 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.ToMathlib.RingTheory.Nullstellensatz
+import ArkLib.ToMathlib.RingTheory.Nullstellensatz.AffineHilbertPolynomial
+import ArkLib.ToMathlib.RingTheory.Nullstellensatz.AgreementIncidence
+import ArkLib.ToMathlib.RingTheory.Nullstellensatz.CutFamily
+import ArkLib.ToMathlib.RingTheory.Nullstellensatz.DimensionSensitiveIncidence
+import ArkLib.ToMathlib.RingTheory.Nullstellensatz.FiniteQuotient
+import ArkLib.ToMathlib.RingTheory.Nullstellensatz.PrincipalOpen
+import ArkLib.ToMathlib.RingTheory.Nullstellensatz.PrincipalOpenParametrization
+import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 
 /-!
-# Acceptance client for retained minimal primes of a zero locus
-
-The examples work in `MvPolynomial (Fin 2) ℚ` with the ideal `I = (X 0 * X 1)`, whose zero locus is
-the union of the two coordinate axes. For `s = X 0` the retained family is computed exactly: it is
-the single prime `lineIdeal`, the kernel of the substitution `X 1 ↦ 0`, which is the ideal of the
-axis `X 1 = 0`. The other axis lies inside `{X 0 = 0}` and is discarded.
-
-The cover theorem is then applied with rational points, over the field `ℚ` itself, which is not
-algebraically closed. The zero `(0, 1)` of `I` shows that the hypothesis `aeval x s ≠ 0` cannot be
-dropped, and the point `(1, 0)` with the cut `f = X 0 - 2` shows that a regular point off the cut
-lies on no retained component of the cut.
+# Nullstellensatz acceptance examples
 -/
 
 open MvPolynomial
 
-namespace RetainedMinimalPrimesCanary
+local notation "𝕂" => AlgebraicClosure ℚ
+local notation "R₁" => MvPolynomial (Fin 1) ℚ
 
-/-- Substitution of `0` for the second variable. -/
-private noncomputable abbrev killSecond : MvPolynomial (Fin 2) ℚ →ₐ[ℚ] MvPolynomial (Fin 2) ℚ :=
-  aeval ![X 0, 0]
+private theorem totalDegree_X_sub_C_le {k : Type*} [Field k] (a : k) :
+    (X 0 - C a : MvPolynomial (Fin 1) k).totalDegree ≤ 1 :=
+  (totalDegree_sub _ _).trans (by simp)
 
-/-- The ideal of the axis `X 1 = 0`, presented as the kernel of `killSecond`. -/
-private noncomputable abbrev lineIdeal : Ideal (MvPolynomial (Fin 2) ℚ) :=
-  RingHom.ker killSecond
+private theorem subsingleton_linearCuts {k : Type*} [Field k] {n : ℕ} (c : Fin n → k)
+    (P : Ideal (MvPolynomial (Fin 1) k)) (s : MvPolynomial (Fin 1) k) (T : Finset (Fin n))
+    (hT : T.card = 1) :
+    Set.Subsingleton {x : Fin 1 → k | x ∈ zeroLocus k P ∧ aeval x s ≠ 0 ∧
+      ∀ i ∈ T, aeval x (X 0 - C (c i) : MvPolynomial (Fin 1) k) = 0} := by
+  obtain ⟨i, rfl⟩ := Finset.card_eq_one.mp hT
+  intro x hx y hy
+  have hx' := hx.2.2 i (Finset.mem_singleton_self i)
+  have hy' := hy.2.2 i (Finset.mem_singleton_self i)
+  simp only [map_sub, aeval_X, aeval_C, Algebra.algebraMap_self, RingHom.id_apply,
+    sub_eq_zero] at hx' hy'
+  funext j
+  rw [Subsingleton.elim j 0, hx', hy']
 
-/-- The ideal of the union of the two coordinate axes. -/
-private noncomputable abbrev axesIdeal : Ideal (MvPolynomial (Fin 2) ℚ) :=
-  Ideal.span {X 0 * X 1}
-
-private instance : lineIdeal.IsPrime := RingHom.ker_isPrime _
-
-/-- Every polynomial agrees with its substitution `X 1 ↦ 0` modulo `X 1`. -/
-private theorem sub_killSecond_mem (p : MvPolynomial (Fin 2) ℚ) :
-    p - killSecond p ∈ Ideal.span {(X 1 : MvPolynomial (Fin 2) ℚ)} := by
-  induction p using MvPolynomial.induction_on with
-  | C a => simp
-  | add p q hp hq =>
-    rw [map_add, add_sub_add_comm]
-    exact Ideal.add_mem _ hp hq
-  | mul_X p n hp =>
-    have hX : X n - killSecond (X n) ∈ Ideal.span {(X 1 : MvPolynomial (Fin 2) ℚ)} := by
-      fin_cases n
-      · simp
-      · simp
-    have hsplit : p * X n - killSecond (p * X n) =
-        (p - killSecond p) * X n + killSecond p * (X n - killSecond (X n)) := by
-      rw [map_mul]
-      ring
-    rw [hsplit]
-    exact Ideal.add_mem _ (Ideal.mul_mem_right _ _ hp) (Ideal.mul_mem_left _ _ hX)
-
-private theorem X0_notMem_lineIdeal : (X 0 : MvPolynomial (Fin 2) ℚ) ∉ lineIdeal := by
-  simp [RingHom.mem_ker]
-
-private theorem X1_mem_lineIdeal : (X 1 : MvPolynomial (Fin 2) ℚ) ∈ lineIdeal := by
-  simp [RingHom.mem_ker]
-
-/-- A prime containing `X 0 * X 1` but not `X 0` contains all of `lineIdeal`. -/
-private theorem lineIdeal_le {Q : Ideal (MvPolynomial (Fin 2) ℚ)} [Q.IsPrime]
-    (hIQ : axesIdeal ≤ Q) (hX0 : (X 0 : MvPolynomial (Fin 2) ℚ) ∉ Q) : lineIdeal ≤ Q := by
-  have hX1 : (X 1 : MvPolynomial (Fin 2) ℚ) ∈ Q :=
-    ((‹Q.IsPrime›.mem_or_mem (hIQ (Ideal.subset_span (Set.mem_singleton _)))).resolve_left hX0)
-  intro p hp
-  have hdiff := sub_killSecond_mem p
-  rw [RingHom.mem_ker.mp hp, sub_zero] at hdiff
-  exact (Ideal.span_singleton_le_iff_mem Q).mpr hX1 hdiff
-
-/-- The minimal primes of the two axes retained by `s = X 0` are exactly the ideal of the axis
-`X 1 = 0`. -/
-private theorem retainedMinimalPrimes_axes_X0 :
-    axesIdeal.retainedMinimalPrimes (X 0) = {lineIdeal} := by
-  have hIline : axesIdeal ≤ lineIdeal :=
-    (Ideal.span_singleton_le_iff_mem _).mpr (by simp [RingHom.mem_ker])
-  ext P
-  rw [Ideal.mem_retainedMinimalPrimes, Finset.mem_singleton]
-  constructor
-  · rintro ⟨hP, hX0⟩
-    have : P.IsPrime := hP.isPrime
-    have hle := lineIdeal_le hP.le hX0
-    exact le_antisymm (hP.2 ⟨inferInstance, hIline⟩ hle) hle
-  · rintro rfl
-    refine ⟨⟨⟨inferInstance, hIline⟩, fun Q hQ hQle ↦ ?_⟩, X0_notMem_lineIdeal⟩
-    have : Q.IsPrime := hQ.1
-    exact lineIdeal_le hQ.2 fun hX0 ↦ X0_notMem_lineIdeal (hQle hX0)
-
-/-- The cover theorem with a rational point: `(1, 0)` is a zero of `X 0 * X 1` where `X 0` does not
-vanish, so it lies on the retained component `lineIdeal`. The field `ℚ` is not algebraically
-closed. -/
-example : ![(1 : ℚ), 0] ∈ zeroLocus ℚ lineIdeal := by
-  have hx : ![(1 : ℚ), 0] ∈ zeroLocus ℚ axesIdeal := by
-    simp [axesIdeal, zeroLocus_span]
-  obtain ⟨P, hP, hxP⟩ :=
-    exists_retainedMinimalPrime_of_mem_zeroLocus axesIdeal (X 0) ![(1 : ℚ), 0] hx (by simp)
-  rw [retainedMinimalPrimes_axes_X0, Finset.mem_singleton] at hP
-  exact hP ▸ hxP
-
-/-- The regularity hypothesis cannot be dropped: `(0, 1)` is a zero of `X 0 * X 1`, but it lies on
-no minimal prime retained by `X 0`. -/
 example :
-    ![(0 : ℚ), 1] ∈ zeroLocus ℚ axesIdeal ∧
-      ¬∃ P ∈ axesIdeal.retainedMinimalPrimes (X 0), ![(0 : ℚ), 1] ∈ zeroLocus ℚ P := by
-  refine ⟨by simp [axesIdeal, zeroLocus_span], ?_⟩
-  rintro ⟨P, hP, hxP⟩
-  rw [retainedMinimalPrimes_axes_X0, Finset.mem_singleton] at hP
-  subst hP
-  simpa using hxP _ X1_mem_lineIdeal
+    let S := {x : Fin 1 → 𝕂 | x ∈ zeroLocus 𝕂 (⊥ : Ideal (MvPolynomial (Fin 1) 𝕂)) ∧
+      aeval x (1 : MvPolynomial (Fin 1) 𝕂) ≠ 0 ∧
+      2 ≤ {i | aeval x (X 0 - C (![0, 0, 1, 1] i) : MvPolynomial (Fin 1) 𝕂) = 0}.ncard}
+    S.Finite ∧ (S.ncard : ℚ) ≤ 2 := by
+  intro S
+  have h := finite_and_ncard_le_of_agreement_of_subsingleton (P := ⊥) 1
+    (fun i : Fin 4 ↦ (X 0 - C (![0, 0, 1, 1] i) : MvPolynomial (Fin 1) 𝕂)) (b := 1) (A := 2)
+    (m := 1) (fun _ ↦ totalDegree_X_sub_C_le _) (by norm_num)
+    (fun T hT ↦ subsingleton_linearCuts _ _ _ T hT)
+  refine ⟨h.1, h.2.trans_eq ?_⟩
+  simp
+  norm_num
 
-/-- A point off the cut: `(1, 0)` is a regular zero of `X 0 * X 1`, but `X 0 - 2` does not vanish
-there, so no retained component of the cut `(X 0 * X 1, X 0 - 2)` contains it. -/
+private def fourPoints : Fin 4 ↪ ℚ := ⟨![0, 1, 2, 3], by decide⟩
+
 example :
-    ¬∃ P ∈ (axesIdeal ⊔ Ideal.span {X 0 - C 2}).retainedMinimalPrimes (X 0),
-      ![(1 : ℚ), 0] ∈ zeroLocus ℚ P ∧ aeval ![(1 : ℚ), 0] (X 0 : MvPolynomial (Fin 2) ℚ) ≠ 0 := by
-  rw [← mem_zeroLocus_and_cut_iff_retained]
-  rintro ⟨-, hf, -⟩
-  norm_num at hf
+    let S := {x : Fin 1 → ℚ | x ∈ zeroLocus ℚ (⊥ : Ideal (MvPolynomial (Fin 1) ℚ)) ∧
+      aeval x (1 : MvPolynomial (Fin 1) ℚ) ≠ 0 ∧
+      2 ≤ {i | aeval x (fixedCoefficientEvaluation 1
+        (fourPoints i) (![0, 0, 1, 1] i)) = 0}.ncard}
+    S.Finite ∧ (S.ncard : ℚ) ≤ 2 := by
+  intro S
+  have h := finite_and_ncard_le_dimensionSensitiveIncidenceProduct_of_fixedCoefficientEvaluation
+    (K := ℚ) fourPoints ![0, 0, 1, 1] (m := 1) (P := ⊥) 1 (A := 2) (by norm_num)
+  refine ⟨h.1, h.2.trans_eq ?_⟩
+  simp [affineDegree_bot, natDegree_affineHilbertPolynomial_bot]
+  norm_num
 
-/-- A point on the cut: `(2, 0)` satisfies `X 0 * X 1 = 0`, `X 0 - 2 = 0` and `X 0 ≠ 0`, so a
-retained component of the cut contains it. -/
 example :
-    ∃ P ∈ (axesIdeal ⊔ Ideal.span {X 0 - C 2}).retainedMinimalPrimes (X 0),
-      ![(2 : ℚ), 0] ∈ zeroLocus ℚ P ∧ aeval ![(2 : ℚ), 0] (X 0 : MvPolynomial (Fin 2) ℚ) ≠ 0 := by
-  rw [← mem_zeroLocus_and_cut_iff_retained]
-  refine ⟨by simp [axesIdeal, zeroLocus_span], by simp, by simp⟩
+    ∃ Q ∈ Ideal.iteratedRetainedCutFamily {(⊥ : Ideal (MvPolynomial (Fin 2) ℚ))} 1 [X 0],
+      (![0, 5] : Fin 2 → ℚ) ∈ zeroLocus ℚ Q := by
+  obtain ⟨Q, hQ, -, hxQ⟩ := exists_mem_iteratedRetainedCutFamily_of_mem_zeroLocus
+    (Ps := {(⊥ : Ideal (MvPolynomial (Fin 2) ℚ))}) (s := 1) (cuts := [X 0])
+    (x := (![0, 5] : Fin 2 → ℚ)) (Finset.mem_singleton_self _) (by simp [zeroLocus]) (by simp)
+    (by simp)
+  exact ⟨Q, hQ, hxQ⟩
 
-/-- The retained family is empty when `s` lies in the radical: `X 0 * X 1` retains nothing. -/
-example : axesIdeal.retainedMinimalPrimes (X 0 * X 1) = ∅ :=
-  Ideal.retainedMinimalPrimes_eq_empty_iff.mpr
-    (Ideal.le_radical (Ideal.subset_span (Set.mem_singleton _)))
+example :
+    (zeroLocus ℚ (⊥ : Ideal (MvPolynomial Empty ℚ))).ncard = 1 ∧
+      Module.finrank ℚ (MvPolynomial Empty ℚ ⧸
+        (⊥ : Ideal (MvPolynomial Empty ℚ))) = 1 ∧
+        (zeroLocus ℚ (⊥ : Ideal (MvPolynomial Empty ℚ))).Finite ∧
+          (zeroLocus ℚ (⊥ : Ideal (MvPolynomial Empty ℚ))).ncard ≤
+            Module.finrank ℚ (MvPolynomial Empty ℚ ⧸
+              (⊥ : Ideal (MvPolynomial Empty ℚ))) := by
+  refine ⟨by simp, ?_, ?_, ?_⟩
+  · calc
+      Module.finrank ℚ (MvPolynomial Empty ℚ ⧸ (⊥ : Ideal (MvPolynomial Empty ℚ))) =
+          Module.finrank ℚ (MvPolynomial Empty ℚ) :=
+        LinearEquiv.finrank_eq (AlgEquiv.quotientBot ℚ (MvPolynomial Empty ℚ)).toLinearEquiv
+      _ = Module.finrank ℚ ℚ :=
+        LinearEquiv.finrank_eq (MvPolynomial.isEmptyAlgEquiv ℚ Empty).toLinearEquiv
+      _ = 1 := by simp
+  · exact finite_zeroLocus_of_finite_quotient (K := ℚ) (⊥ : Ideal (MvPolynomial Empty ℚ))
+  · exact ncard_zeroLocus_le_finrank_quotient (K := ℚ) (⊥ : Ideal (MvPolynomial Empty ℚ))
 
-end RetainedMinimalPrimesCanary
+example :
+    (![1] : Fin 1 → ℚ) ∈ (fun z : Option (Fin 1) → ℚ ↦ z ∘ some) ''
+      zeroLocus ℚ (awayPresentationIdeal (⊥ : Ideal (MvPolynomial (Fin 1) ℚ)) (X 0)) := by
+  rw [image_comp_some_zeroLocus_awayPresentationIdeal]
+  exact ⟨by simp, by simp⟩
+
+local notation "R₂" => MvPolynomial (Fin 2) ℚ
+
+example : (affineHilbertPolynomial (Ideal.span {(X 1 - X 0 ^ 2 : R₂)})).natDegree ≤ 1 := by
+  refine natDegree_affineHilbertPolynomial_le_one_of_principalOpen_subset_range (K := 𝕂)
+    (by rw [map_one]; exact isRegular_one.left) ![Polynomial.X, Polynomial.X ^ 2]
+    fun x hx _ ↦ ⟨x 0, ?_⟩
+  have h := (mem_zeroLocus_iff.mp hx) _ (Ideal.mem_span_singleton_self _)
+  simp only [map_sub, map_pow, aeval_X, sub_eq_zero] at h
+  funext i
+  fin_cases i <;> simp [h]
+
+example : ((zeroLocus ℚ (Ideal.span {(X 0 : R₁)})).ncard : ℚ) ≤ 1 := by
+  let I : Ideal R₁ := Ideal.span {X 0}
+  have hP : (Polynomial.preHilbertPoly ℚ 1 0).natDegree = 1 :=
+    Polynomial.natDegree_preHilbertPoly ℚ 1 0
+  have hlc : (Polynomial.preHilbertPoly ℚ 1 0).leadingCoeff = 1 := by
+    rw [Polynomial.leadingCoeff_preHilbertPoly]
+    simp
+  have hdegX : 0 < (X 0 : R₁).totalDegree := by
+    rw [totalDegree_X]
+    norm_num
+  have hdiff := Polynomial.natDegree_backwardDifference_eq_and_leadingCoeff_of_ne_zero
+    (Nat.cast_ne_zero.mpr hdegX.ne') (by rw [hP]; exact Nat.one_pos)
+  have hdegree : (affineHilbertPolynomial I).natDegree = 0 := by
+    change (affineHilbertPolynomial (Ideal.span {(X 0 : R₁)})).natDegree = 0
+    rw [affineHilbertPolynomial_span_singleton (X_ne_zero (0 : Fin 1)),
+      Nat.card_eq_fintype_card, Fintype.card_fin]
+    simpa [hP] using hdiff.1
+  have hcoeff : (affineHilbertPolynomial I).coeff 0 = 1 := by
+    change (affineHilbertPolynomial (Ideal.span {(X 0 : R₁)})).coeff 0 = 1
+    rw [affineHilbertPolynomial_span_singleton (X_ne_zero (0 : Fin 1)),
+      Nat.card_eq_fintype_card, Fintype.card_fin]
+    rw [hP, Nat.sub_self] at hdiff
+    have hc := Polynomial.coeff_natDegree
+      (p := Polynomial.backwardDifference ((X 0 : R₁).totalDegree : ℚ)
+        (Polynomial.preHilbertPoly ℚ 1 0))
+    rw [hdiff.1, hdiff.2, hlc] at hc
+    rw [hc]
+    simp [totalDegree_X]
+  have hfinite : Module.Finite ℚ (R₁ ⧸ I) :=
+    (natDegree_affineHilbertPolynomial_eq_zero_iff).mp hdegree
+  have h := ncard_zeroLocus_le_coeff_zero_affineHilbertPolynomial (K := ℚ) I
+  rw [hcoeff] at h
+  exact h

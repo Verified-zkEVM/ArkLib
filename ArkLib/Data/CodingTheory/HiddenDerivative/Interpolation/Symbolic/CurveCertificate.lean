@@ -149,6 +149,7 @@ theorem exists_certificate_of_monomial_rank_bound {F : Type u} {ι : Type uι} {
       (fun i ↦ centers i) w hw columns
       hcolumns hy₀ φ hφ hrankLocal hrκ
   let Q : DifferentialPolynomial F[X] d := SourceColumn.interpolant columns v
+  have hcoeffdegree := SourceColumn.coeff_interpolant_natDegree_le columns hcolumns v hvdegree
   have hQweight : differentialWeightedDegree D Q < m * A := by
     rw [differentialWeightedDegree, MvPolynomial.weightedTotalDegree,
       Finset.sup_lt_iff hbudget]
@@ -159,9 +160,7 @@ theorem exists_certificate_of_monomial_rank_bound {F : Type u} {ι : Type uι} {
     exact heq ▸ hweight j
   refine ⟨⟨Q, ?_, SourceColumn.interpolant_totalJetDegree_le columns hdegree v, ?_⟩⟩
   · intro u
-    exact Nat.lt_succ_iff.mp
-      (SourceColumn.natDegree_coeff_interpolant_lt columns hcolumns v (Nat.succ_pos _)
-        (fun j ↦ Nat.lt_succ_iff.mpr (hvdegree j)) u)
+    exact hcoeffdegree u
   · intro E _ ρ z
     let ψ := Polynomial.eval₂RingHom ρ z
     have hnonzero' : MvPolynomial.map ψ Q ≠ 0 := by
