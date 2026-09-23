@@ -12,13 +12,15 @@ public import ArkLib.ToMathlib.Combinatorics.QuadraticStaircase
 # A quadratic lower bound on the dimension of the partition support space
 
 Fix a tuple `c` of exponents of `Y₁, ..., Y_d` of derivative-order weight at most `W`. The
-remaining exponents `(x, b₀)` of `X` and `Y₀` satisfy `x + D (b₀ + ∑_i c_i) < L`, and for `0 < D`
-their number is the real-cutoff staircase count `QuadraticStaircase.count D (L / D - ∑_i c_i)`
+remaining exponents `(x, b₀)` of `X` and `Y₀` satisfy `x + D (b₀ + ∑_i c_i) < L`, and for
+`0 < D` their number is the real-cutoff staircase count
+`QuadraticStaircase.count D (L / D - ∑_i c_i)`
 (`QuadraticStaircase.count_div_sub_eq_sum`). Hence the dimension of the partition support space at
 the natural cutoff `L` is exactly
 
 ```text
-∑_{c} QuadraticStaircase.count D (L / D - ∑_i c_i) ≥ ∑_{c} D (max (L / D - ∑_i c_i) 0) ^ 2 / 2,
+∑_{c} QuadraticStaircase.count D (L / D - ∑_i c_i)
+  ≥ ∑_{c} D (max (L / D - ∑_i c_i) 0) ^ 2 / 2,
 ```
 
 with no tuple discarded near the boundary. For a code of length `n` and an upper rate bound
@@ -41,9 +43,7 @@ Both bounds hold at a real cutoff `L`: the space at `L` is the space at `⌈L⌉
 
 ## References
 
-* [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient Decoding
-  and Smaller Cryptographic Proofs*][DKT26], Section 6.2, (73), and Appendix D.2, in the proof of
-  Lemma 6.2
+* [DKT26]
 -/
 
 @[expose] public section
@@ -182,15 +182,16 @@ theorem partitionSupport_dimension_ge_rate_sum (F : Type*) [Field F] {n L : ℕ}
 /-- The quadratic lower bound on the dimension of the partition support space at a real cutoff
 `L`: for `0 < D`, the sum over the tuples `c` of derivative-order weight at most `W` of
 `D * (max (L / D - ∑_i c_i) 0) ^ 2 / 2` is at most the dimension. It follows from the
-natural-cutoff bound `partitionSupport_dimension_ge_quadratic_sum` at `⌈L⌉₊`, since `L ≤ ⌈L⌉₊`
-and both cutoffs give the same space. -/
+natural-cutoff bound `partitionSupport_dimension_ge_quadratic_sum` at `⌈L⌉₊`, since
+`L ≤ ⌈L⌉₊` and both cutoffs give the same space. -/
 theorem partitionSupport_dimension_ge_quadratic_sum_real (F : Type*) [Field F] (hD : 0 < D)
     (L : ℝ) :
     ∑ c ∈ natWeightedSimplex (fun i : Fin d => i.val + 1) W,
         (D : ℝ) * (max (L / D - ((∑ i, c i : ℕ) : ℝ)) 0) ^ 2 / 2 ≤
       (Module.finrank F (partitionSupportSpace F D d W L hD) : ℝ) := by
   rw [← partitionSupportSpace_natCeil]
-  refine (sum_le_sum fun c _ => ?_).trans (partitionSupport_dimension_ge_quadratic_sum F hD ⌈L⌉₊)
+  refine (sum_le_sum fun c _ => ?_).trans
+    (partitionSupport_dimension_ge_quadratic_sum F hD ⌈L⌉₊)
   gcongr
   exact Nat.le_ceil L
 
