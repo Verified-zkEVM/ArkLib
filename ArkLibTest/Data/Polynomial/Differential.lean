@@ -1204,8 +1204,8 @@ example :
 
 /-! ### Frobenius flattening -/
 
-private abbrev frobeniusSquareEquation :
-    DifferentialPolynomial (Polynomial (ZMod 2)) 0 := X (some 0) ^ 2
+private abbrev frobeniusInseparableEquation :
+    DifferentialPolynomial (Polynomial (ZMod 2)) 0 := X none - X (some 0) ^ 2
 
 /-- The flattened equation evaluates to `7` at the root, independent-variable, and challenge
 values `2`, `3`, and `5`. -/
@@ -1239,64 +1239,110 @@ example :
   rw [expand_differentialSpecialization_map_eq_eval₂_flatten, hflat]
   simp [MvPolynomial.eval₂_add, MvPolynomial.eval₂_X, hcase]
 
-/-- The fixed characteristic-two equation `Y₀` satisfies the Frobenius contraction existence
-statement. -/
+/-- Over `ZMod 2`, `X - Y₀ ^ 2` is the irreducible inseparable equation `Y₀ ^ 2 - X`;
+Frobenius contraction lowers its root degree. -/
 example :
       ∃ e : ℕ, ∃ H : DifferentialPolynomial (Polynomial (ZMod 2)) 0,
       Irreducible H ∧
       MvPolynomial.pderiv (some 0) H ≠ 0 ∧
       H.degreeOf (some 0) * (2 ^ e) =
-        (zeroJetEquation (Polynomial (ZMod 2)) 0).degreeOf (some 0) ∧
-      H.degreeOf none ≤ (zeroJetEquation (Polynomial (ZMod 2)) 0).degreeOf none ∧
+        frobeniusInseparableEquation.degreeOf (some 0) ∧
+      H.degreeOf none ≤ frobeniusInseparableEquation.degreeOf none ∧
       MvPolynomial.CoeffNatDegreeLE H 0 ∧
       ∀ (P : Polynomial (ZMod 2)) (w : ZMod 2),
         differentialSpecialization
             (MvPolynomial.map (Polynomial.evalRingHom (w ^ (2 ^ e)))
-              (zeroJetEquation (Polynomial (ZMod 2)) 0)) P = 0 →
+              frobeniusInseparableEquation) P = 0 →
           differentialSpecialization
             (MvPolynomial.map (Polynomial.evalRingHom w) H)
               (Polynomial.expand (ZMod 2) (2 ^ e) P) = 0 := by
-  apply exists_frobeniusEquation (E := ZMod 2) 2 (Q := (zeroJetEquation (Polynomial (ZMod 2)) 0))
-  · simp [zeroJetEquation]
-  · apply MvPolynomial.irreducible_of_totalDegree_eq_one
-    · simp [zeroJetEquation]
-    · intro c hc
-      apply isUnit_of_dvd_one
-      have h := hc (Finsupp.single (some (0 : Fin 1)) 1)
-      simpa [zeroJetEquation] using h
-  · exact MvPolynomial.coeffNatDegreeLE_X (some 0)
+  apply exists_frobeniusEquation (E := ZMod 2) 2
+    (Q := frobeniusInseparableEquation)
+  · have hlt :
+        (X none : DifferentialPolynomial (Polynomial (ZMod 2)) 0).degreeOf (some 0) <
+          (-(X (some 0) ^ 2 : DifferentialPolynomial (Polynomial (ZMod 2)) 0)).degreeOf
+            (some 0) := by
+      rw [MvPolynomial.degreeOf_neg]
+      simp [MvPolynomial.degreeOf_X]
+    have hsum :
+        (X none - X (some 0) ^ 2 : DifferentialPolynomial (Polynomial (ZMod 2)) 0).degreeOf
+            (some (0 : Fin 1)) =
+          (-(X (some 0) ^ 2 : DifferentialPolynomial (Polynomial (ZMod 2)) 0)).degreeOf
+            (some (0 : Fin 1)) := by
+      calc
+        _ = (X none + -(X (some 0) ^ 2 : DifferentialPolynomial (Polynomial (ZMod 2)) 0)).degreeOf
+              (some (0 : Fin 1)) := by simp [sub_eq_add_neg]
+        _ = (-(X (some 0) ^ 2 : DifferentialPolynomial (Polynomial (ZMod 2)) 0) + X none).degreeOf
+              (some (0 : Fin 1)) := congrArg (degreeOf (some (0 : Fin 1))) (add_comm _ _)
+        _ = _ := degreeOf_add_eq_of_degreeOf_lt (p := -(X (some 0) ^ 2)) (q := X none) hlt
+    rw [frobeniusInseparableEquation]
+    exact (by simp [MvPolynomial.degreeOf_neg] :
+      0 < (-(X (some 0) ^ 2 : DifferentialPolynomial (Polynomial (ZMod 2)) 0)).degreeOf
+        (some (0 : Fin 1))).trans_eq hsum.symm
+  · have hmap : optionEquivLeft (Polynomial (ZMod 2)) (Fin 1)
+        frobeniusInseparableEquation =
+          Polynomial.X - Polynomial.C
+            (MvPolynomial.X (0 : Fin 1) ^ 2 : MvPolynomial (Fin 1) (Polynomial (ZMod 2))) := by
+      rw [frobeniusInseparableEquation, map_sub, map_pow, optionEquivLeft_X_some,
+        optionEquivLeft_X_none]
+      rw [← Polynomial.C_pow]
+    have hpoly : Irreducible (optionEquivLeft (Polynomial (ZMod 2)) (Fin 1)
+        frobeniusInseparableEquation) := by
+      rw [hmap]
+      exact Polynomial.irreducible_X_sub_C _
+    exact (MulEquiv.irreducible_iff
+      (x := frobeniusInseparableEquation)
+      (optionEquivLeft (Polynomial (ZMod 2)) (Fin 1)).toMulEquiv).mp hpoly
+  · have hpower : MvPolynomial.CoeffNatDegreeLE
+        (X (some 0) ^ 2 : DifferentialPolynomial (Polynomial (ZMod 2)) 0) 0 := by
+      simpa using (MvPolynomial.CoeffNatDegreeLE.pow
+        (MvPolynomial.coeffNatDegreeLE_X (R := ZMod 2) (some 0)) 2)
+    change MvPolynomial.CoeffNatDegreeLE
+      (X none + -(X (some 0) ^ 2 : DifferentialPolynomial (Polynomial (ZMod 2)) 0)) 0
+    have hminus : MvPolynomial.CoeffNatDegreeLE
+        (-(X (some 0) ^ 2 : DifferentialPolynomial (Polynomial (ZMod 2)) 0)) 0 := by
+      intro m
+      simpa only [MvPolynomial.coeff_neg, Polynomial.natDegree_neg] using hpower m
+    exact MvPolynomial.CoeffNatDegreeLE.add
+      (MvPolynomial.coeffNatDegreeLE_X (R := ZMod 2) none) hminus
 
-/-- A concrete zero specialization is transported through the fixed characteristic-two
-Frobenius twist. -/
+private abbrev frobeniusSquareEquation :
+    DifferentialPolynomial (Polynomial (ZMod 2)) 0 := X (some 0) ^ 2 - X none ^ 2
+
+/-- The nonzero root `X` of `Y₀ ^ 2 - X ^ 2` transports to a root of the contracted equation. -/
 example :
     differentialSpecialization
       (MvPolynomial.map (Polynomial.evalRingHom ((0 : ZMod 2) ^ (2 ^ 1)))
         frobeniusSquareEquation)
-      (0 : Polynomial (ZMod 2)) = 0 ∧
+      Polynomial.X = 0 ∧
     differentialSpecialization
       (MvPolynomial.map (Polynomial.evalRingHom (0 : ZMod 2))
         (ordinaryUnflatten (ZMod 2)
           (inverseFrobeniusTwist 2 1
-            (MvPolynomial.X none : MvPolynomial (Option (Fin 2)) (ZMod 2)))))
-      (Polynomial.expand (ZMod 2) (2 ^ 1) (0 : Polynomial (ZMod 2))) = 0 := by
+            (MvPolynomial.X none - MvPolynomial.X (some (0 : Fin 2)) ^ 2 :
+              MvPolynomial (Option (Fin 2)) (ZMod 2)))))
+      (Polynomial.expand (ZMod 2) (2 ^ 1) Polynomial.X) = 0 := by
   have hflat : ordinaryFlatten (ZMod 2) frobeniusSquareEquation =
-      (MvPolynomial.X none : MvPolynomial (Option (Fin 2)) (ZMod 2)) ^ 2 := by
+      (MvPolynomial.X none : MvPolynomial (Option (Fin 2)) (ZMod 2)) ^ 2 -
+        MvPolynomial.X (some (0 : Fin 2)) ^ 2 := by
     simp [frobeniusSquareEquation]
   have hroot : rootExpansion (2 ^ 1)
-      (MvPolynomial.X none : MvPolynomial (Option (Fin 2)) (ZMod 2)) =
+      (MvPolynomial.X none - MvPolynomial.X (some (0 : Fin 2)) ^ 2 :
+        MvPolynomial (Option (Fin 2)) (ZMod 2)) =
       ordinaryFlatten (ZMod 2) frobeniusSquareEquation := by
     rw [hflat]
     norm_num only [pow_one]
-    simp [rootExpansion, optionEquivLeft_X_none]
+    simp [rootExpansion, optionEquivLeft_X_none, optionEquivLeft_X_some]
   have hQ : differentialSpecialization
       (MvPolynomial.map (Polynomial.evalRingHom ((0 : ZMod 2) ^ (2 ^ 1)))
         frobeniusSquareEquation)
-      (0 : Polynomial (ZMod 2)) = 0 := by
+      Polynomial.X = 0 := by
     norm_num only [pow_one, zero_pow (by decide : 2 ≠ 0)]
     simp [frobeniusSquareEquation, differentialSpecialization,
       differentialSpecializationHom]
   exact ⟨hQ, frobeniusSpecialization_eq_zero 2 1 frobeniusSquareEquation
-    (MvPolynomial.X none : MvPolynomial (Option (Fin 2)) (ZMod 2)) hroot 0 0 hQ⟩
+    (MvPolynomial.X none - MvPolynomial.X (some (0 : Fin 2)) ^ 2 :
+      MvPolynomial (Option (Fin 2)) (ZMod 2)) hroot Polynomial.X 0 hQ⟩
 
 /-! ### Ordinary root presentations -/
 
