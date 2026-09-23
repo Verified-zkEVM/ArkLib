@@ -2037,6 +2037,12 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/S
 
 `commonTaylorNumeratorOver_eq` is a new bridge identifying the algebra-valued common numerator with the field-valued definition. `map_commonTaylorNumeratorOver_eq` keeps its name and is generalized to the destination's natural Taylor index and arbitrary exponent, without a finite-index bound. `eval_commonTaylorNumeratorOver` keeps its name and specializes using the destination API's natural index through `l.val`.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Geometry/SolutionEmbedding.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`exists_regular_solution_jet_family_of_exponent` keeps its name and is generalized from `Fin n` to any finite coordinate type and from base-field pivots to pivots over the chart field. The theorem embeds bounded-degree regular solution families into an infinite extension field while preserving cardinality, the initial equation, high Taylor cuts, and received-word agreement lower bounds. It reuses ArkLib's regular-solution map and agreement-count results.
+
+`exists_regular_solution_jet_family` is not ported because its default-`2K` exponent is a thin wrapper; use `exists_regular_solution_jet_family_of_exponent` with `taylorExponentSufficient_two_mul` when that exponent is needed. `totalJetDegree_map_eq` is covered by `PolynomialDifferential.jetTotalDegree_map_eq` in `BaseChange.lean`. `exists_forall_jetEvaluation_ne_zero_map` is retained in the combined module as the common-center theorem, but has no corresponding declaration in this unit's source snapshot.
+
 ## `ArkLib/Data/Polynomial/Differential/TaylorChartAlgebra.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Symbolic/TaylorCuts.lean` at ArkLib revision
@@ -3795,6 +3801,12 @@ finite set to `K` do not form a finite-dimensional `k`-space.
 Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/PointRecognition.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 The acceptance cases check the zero case and a sample with second received value `1`, challenge `2`, `K = 2 > k = 1`, and a satisfied cut at `l = 1`. They check the reconstructed affine polynomial, jet, and cleared coefficient conclusions.
+
+## `ArkLibTest/Data/Polynomial/Differential.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Geometry/SolutionEmbedding.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+The acceptance cases check `exists_regular_solution_jet_family_of_exponent` on `Y₀ = 0` over `ℚ` with `K = 2`, `k = 1`, and `τ = 4`, including the one-element family, initial equation, nonzero separant, the cut at order one, and agreement at two positions. They also check `exists_forall_jetEvaluation_ne_zero_map` for a nonempty regular family over `ZMod 2` and its algebraic closure.
 
 ## `ArkLibTest/Data/Probability/Uniform.lean`
 
