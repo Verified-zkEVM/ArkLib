@@ -32,8 +32,8 @@ projected rows at each degree.
 
 ## Main statements
 
-* `firstOrderOriginGradedSliceMatrix` is the literal local constraint block for each displacement
-  and jet grade.
+* `firstOrderOriginGradedSliceMatrixOver` is the literal local constraint block for each
+  displacement and jet grade.
 * `firstOrderOriginGradedRank` is the actual block-rank profile;
   `firstOrderGradedRankBound` and `firstOrderOriginGradedRank_le_bound` give its numerical bound.
 * `firstOrderCurveGradedConstraintMatrix_kernel_iff` characterizes the full local constraints on
@@ -374,30 +374,6 @@ theorem firstOrderGradedSourceColumn_index_eq
         dsimp [a, b, t]
         omega
 
-/-- The canonical basis of the finite first-order space evaluates to the corresponding
-monomial over any coefficient semiring. -/
-theorem firstOrderSpaceBasis_apply_commSemiring
-    {R : Type*} [CommSemiring R] (D A m M μ : ℕ)
-    (u : ↑(firstOrderExponents D A m M μ)) :
-    (firstOrderSpaceBasis R D A m M μ u).1 = MvPolynomial.monomial u.1 1 := by
-  let b := firstOrderSpaceBasis R D A m M μ
-  let q : firstOrderSpace R D A m M μ := ⟨MvPolynomial.monomial u.1 1, by
-    rw [mem_firstOrderSpace_iff]
-    intro v hv
-    have heq : v = u.1 := by simpa using MvPolynomial.support_monomial_subset hv
-    exact heq ▸ mem_firstOrderExponents.mp u.2⟩
-  have hbq : b u = q := by
-    apply b.repr.injective
-    rw [b.repr_self]
-    ext j
-    change (Finsupp.single u 1) j =
-      mvCoeff j.1 (MvPolynomial.monomial u.1 1)
-    by_cases h : u = j
-    · subst j
-      simp
-    · simp [h, Ne.symm h]
-  exact congrArg Subtype.val hbq
-
 /-- The target exponent `T^s E^e Y₁^(t-e)` used by the literal `(s,t)` block matrix. -/
 def firstOrderGradedTargetExponent (s t e : ℕ) : LocalVariable 1 →₀ ℕ :=
   Finsupp.single (localT 1) s + Finsupp.single (localE 1) e +
@@ -478,10 +454,6 @@ def firstOrderOriginGradedSliceMatrixOver (R : Type*) [CommRing R]
   fun e q ↦ mvCoeff (firstOrderGradedTargetExponent s t e)
     (localConstraintAt m 0 0 (firstOrderGradedSourceColumn D A m M s t q).polynomial)
 
-/-- Actual base-field origin constraint matrix on one fixed displacement/jet-grade block. -/
-abbrev firstOrderOriginGradedSliceMatrix (D A m M s t : ℕ) :=
-  firstOrderOriginGradedSliceMatrixOver F D A m M s t
-
 /-- A literal origin slice acts on the matching coefficients of any polynomial in the finite
 first-order source space. This is the canonical elimination bridge from the whole homogeneous
 map to the concrete `(s,t)` block. -/
@@ -522,7 +494,10 @@ theorem firstOrderOriginGradedSliceMatrix_mulVec_coeff
       rw [hcExp]
       exact u.2
     have hb : (b u).1 = c.polynomial := by
-      rw [firstOrderSpaceBasis_apply_commSemiring]
+      change (MvPolynomial.basisRestrictSupport R
+        (↑(firstOrderExponents D A m M μ) : Set (JetVariable 1 →₀ ℕ)) u :
+          DifferentialPolynomial R 1) = c.polynomial
+      rw [MvPolynomial.coe_basisRestrictSupport_apply]
       change MvPolynomial.monomial u.1 (1 : R) =
         MvPolynomial.monomial c.exponent (1 : R)
       rw [hcExp]
@@ -643,46 +618,46 @@ theorem firstOrderOriginGradedSliceMatrix_mulVec_coeff
 /-- Sum of the actual origin `(s,t)` slice ranks at fixed jet grade `t`. -/
 noncomputable def firstOrderOriginGradedRank (F : Type*) [Field F]
     (D A m M t : ℕ) : ℕ :=
-  ∑ s ∈ Finset.range m, (firstOrderOriginGradedSliceMatrix (F := F) D A m M s t).rank
+  ∑ s ∈ Finset.range m, (firstOrderOriginGradedSliceMatrixOver F D A m M s t).rank
 
 /-- Each actual origin slice rank is bounded by both the literal target-row count and the exact
 source-column count. -/
 theorem firstOrderOriginGradedSliceMatrix_rank_le (D A m M s t : ℕ) :
-    (firstOrderOriginGradedSliceMatrix (F := F) D A m M s t).rank ≤
+    (firstOrderOriginGradedSliceMatrixOver F D A m M s t).rank ≤
       min (m - s) (firstOrderGradedSourceCount D A m M s t) := by
   apply le_min
   · exact (Matrix.rank_le_card_height
-      (firstOrderOriginGradedSliceMatrix (F := F) D A m M s t)).trans
+      (firstOrderOriginGradedSliceMatrixOver F D A m M s t)).trans
         (by simp)
   · simpa using
-      (Matrix.rank_le_card_width (firstOrderOriginGradedSliceMatrix (F := F) D A m M s t))
+      (Matrix.rank_le_card_width (firstOrderOriginGradedSliceMatrixOver F D A m M s t))
 
 /-- Fixed literal output rows, chosen over the base field, that form a basis of one actual
 origin block's row space. -/
 noncomputable def firstOrderOriginGradedSelectedRow (F : Type*) [Field F]
     (D A m M s t : ℕ) :
-  Fin (firstOrderOriginGradedSliceMatrix (F := F) D A m M s t).rank →
+  Fin (firstOrderOriginGradedSliceMatrixOver F D A m M s t).rank →
       Fin (min (m - s) (t + 1)) :=
   Classical.choose
     (Matrix.exists_rows_linearIndependent_span_eq
-      (firstOrderOriginGradedSliceMatrix (F := F) D A m M s t))
+      (firstOrderOriginGradedSliceMatrixOver F D A m M s t))
 
 /-- The selected literal rows span every row of the actual origin block. -/
 theorem firstOrderOriginGradedSelectedRow_span (D A m M s t : ℕ) :
     Submodule.span F (Set.range fun i ↦
-      (firstOrderOriginGradedSliceMatrix (F := F) D A m M s t).row
+      (firstOrderOriginGradedSliceMatrixOver F D A m M s t).row
         (firstOrderOriginGradedSelectedRow F D A m M s t i)) =
   Submodule.span F (Set.range
-      (firstOrderOriginGradedSliceMatrix (F := F) D A m M s t).row) :=
+      (firstOrderOriginGradedSliceMatrixOver F D A m M s t).row) :=
   (Classical.choose_spec
     (Matrix.exists_rows_linearIndependent_span_eq
-      (firstOrderOriginGradedSliceMatrix (F := F) D A m M s t))).2
+      (firstOrderOriginGradedSliceMatrixOver F D A m M s t))).2
 
 /-- The base-field selected row indices applied after extension to another coefficient ring. -/
 noncomputable def firstOrderOriginGradedBaseSelectedMatrix
     (F : Type*) [Field F] (R : Type*) [CommRing R]
     (D A m M s t : ℕ) :
-    Matrix (Fin (firstOrderOriginGradedSliceMatrix (F := F) D A m M s t).rank)
+    Matrix (Fin (firstOrderOriginGradedSliceMatrixOver F D A m M s t).rank)
       (Fin (firstOrderGradedSourceCount D A m M s t)) R :=
   (firstOrderOriginGradedSliceMatrixOver R D A m M s t).submatrix
     (firstOrderOriginGradedSelectedRow F D A m M s t) id
@@ -690,7 +665,7 @@ noncomputable def firstOrderOriginGradedBaseSelectedMatrix
 /-- Formation of an origin slice commutes with extension of its base-field coefficients. -/
 theorem firstOrderOriginGradedSliceMatrix_map
     (R : Type*) [CommRing R] [Algebra F R] (D A m M s t : ℕ) :
-    (firstOrderOriginGradedSliceMatrix (F := F) D A m M s t).map
+    (firstOrderOriginGradedSliceMatrixOver F D A m M s t).map
         (algebraMap F R) =
       firstOrderOriginGradedSliceMatrixOver R D A m M s t := by
   ext e q
@@ -715,7 +690,7 @@ theorem firstOrderOriginGradedBaseSelectedMatrix_mulVec_eq_zero_iff
     firstOrderOriginGradedBaseSelectedMatrix F R D A m M s t *ᵥ v = 0 ↔
       firstOrderOriginGradedSliceMatrixOver R D A m M s t *ᵥ v = 0 := by
   classical
-  let A₀ := firstOrderOriginGradedSliceMatrix (F := F) D A m M s t
+  let A₀ := firstOrderOriginGradedSliceMatrixOver F D A m M s t
   let Aext := firstOrderOriginGradedSliceMatrixOver R D A m M s t
   let rows := firstOrderOriginGradedSelectedRow F D A m M s t
   have hmap : A₀.map (algebraMap F R) = Aext :=
@@ -786,7 +761,7 @@ theorem firstOrderOriginGradedSelectedCoefficients_eq_zero_iff
     {R : Type*} [CommRing R] [Algebra F R]
     (D A m M μ : ℕ) (hD : 0 < D) (Q : firstOrderSpace R D A m M μ) :
     (∀ (t : Fin (μ + 1)) (s : Fin m)
-        (i : Fin (firstOrderOriginGradedSliceMatrix (F := F)
+        (i : Fin (firstOrderOriginGradedSliceMatrixOver F
           D A m M s.val t.val).rank),
       mvCoeff
         (firstOrderGradedTargetExponent s.val t.val
@@ -862,7 +837,7 @@ theorem firstOrderOriginGradedSelectedCoefficients_eq_zero_iff
 abbrev FirstOrderCurveGradedRowIndex (F : Type*) [Field F]
     (D A m M μ n : ℕ) :=
   Fin n × Σ t : Fin (μ + 1), Σ s : Fin m,
-    Fin (firstOrderOriginGradedSliceMatrix (F := F) D A m M s.val t.val).rank
+    Fin (firstOrderOriginGradedSliceMatrixOver F D A m M s.val t.val).rank
 
 /-- The literal low-contact coefficient selected by a compressed graded row. -/
 noncomputable def firstOrderCurveGradedRowLocalIndex
