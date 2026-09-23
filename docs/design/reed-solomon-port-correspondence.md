@@ -1861,6 +1861,33 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/S
 
 `commonTaylorNumeratorOver_eq` is a new bridge identifying the algebra-valued common numerator with the field-valued definition. `map_commonTaylorNumeratorOver_eq` keeps its name and is generalized to the destination's natural Taylor index and arbitrary exponent, without a finite-index bound. `eval_commonTaylorNumeratorOver` keeps its name and specializes using the destination API's natural index through `l.val`.
 
+## `ArkLib/Data/Polynomial/Differential/TaylorChartAlgebra.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Symbolic/TaylorCuts.lean` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`.
+
+`map_initialJetEquationOver` and `map_initialJetEquationOver_eq` → `map_initialJetEquation`, and
+`aeval_map_initialJetEquationOver` → `aeval_map_initialJetEquation`; these generic mapping and
+evaluation lemmas are placed in the existing `TaylorChart` module. These mappings were
+generalized to commutative semirings and arbitrary ring maps, and the evaluation theorem to maps
+between commutative semirings.
+
+The following declarations keep their names: `taylorAgreementEquationOver`,
+`map_taylorAgreementEquationOver`, `map_taylorAgreementEquationOver_eq`,
+`aeval_map_taylorAgreementEquationOver_of_exponent`, `aeval_map_taylorAgreementEquationOver`,
+`aeval_map_taylorAgreementEquationOver_eq_zero_iff_of_exponent`,
+`aeval_map_taylorAgreementEquationOver_eq_zero_iff`,
+`degree_rationalTaylorPolynomial_lt_of_symbolic_high_cuts_and_exponent`,
+`degree_rationalTaylorPolynomial_lt_of_symbolic_high_cuts`,
+`aeval_map_commonTaylorNumeratorOver_reconstruction_of_exponent`, and
+`aeval_map_commonTaylorNumeratorOver_reconstruction`. The agreement equation keeps the same
+mathematics and uses the destination common-exponent API.
+
+Not ported: `initialJetEquationOver` is covered by the existing, more general `initialJetEquation`
+in `TaylorChart`; `map_initialJetSeparantOver_eq` is covered by the existing
+`map_initialJetSeparant` specialization theorem. Common-numerator field-specialization theorems
+were already present in `TaylorChart`, so duplicate copies were removed from this module.
+
 ## `ArkLib/Data/Polynomial/Differential/TaylorChartGeometry.lean`
 
 Ported from `Geometry/AgreementGeometry.lean`, `Geometry/SolutionGeometry.lean` and part of
@@ -2406,6 +2433,15 @@ same statements. `QuadraticStaircase.square_div_two_le_sum` weakens the source h
 to `0 ≤ L`. The source file imported `CubicStaircase` without using it; that import is dropped.
 The source consumers (`RatePartition/Area.lean` and `PartitionSupport/Dimension.lean`) are not yet
 ported.
+
+## `ArkLib/ToMathlib/Finset/SumRangeFrom.lean`
+
+Ported from `ArkLib/ToMathlib/Finset/SumRangeFrom.lean` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`, namespace `Finset`.
+
+`sumRangeFrom`, `sumRangeFrom_add`, `sumRangeFrom_four`, `sumRangeFrom_four_eq`, and
+`sumRangeFrom_two_eq` keep their names. The API works for any additive commutative monoid; the
+split theorem reuses Mathlib's range-splitting theorem. No declarations were deferred or omitted.
 
 ## `ArkLib/ToMathlib/LinearAlgebra/Matrix/InvertibleCombination.lean`
 
