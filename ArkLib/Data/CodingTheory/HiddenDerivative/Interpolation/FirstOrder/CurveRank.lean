@@ -7,6 +7,7 @@ module
 
 public import ArkLib.ToMathlib.LinearAlgebra.Matrix.RowBasis
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.Interpolant
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.HeightCounting
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.GradedRank
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.ColumnHeight
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.ConstraintMatrix
@@ -56,55 +57,6 @@ noncomputable section
 local notation "mvCoeff" => fun e p => AddMonoidAlgebra.coeff p e
 
 variable {F : Type*} [Field F]
-
-/-- Enumerate the monomials in the finite first-order support as source columns. -/
-def firstOrderColumns {D A m M μ : ℕ} :
-    Fin (Fintype.card ↑(firstOrderExponents D A m M μ)) → SourceColumn 1 :=
-  fun j ↦
-    { x := ((Fintype.equivFin ↑(firstOrderExponents D A m M μ)).symm j).1 none
-      y₀ := ((Fintype.equivFin ↑(firstOrderExponents D A m M μ)).symm j).1 (some 0)
-      higher := fun _ ↦
-        ((Fintype.equivFin ↑(firstOrderExponents D A m M μ)).symm j).1 (some 1) }
-
-private def firstOrderSourceColumnOfExponent (u : JetVariable 1 →₀ ℕ) : SourceColumn 1 :=
-  { x := u none, y₀ := u (some 0), higher := fun _ ↦ u (some 1) }
-
-private theorem firstOrderSourceColumnOfExponent_exponent (u : JetVariable 1 →₀ ℕ) :
-    (firstOrderSourceColumnOfExponent u).exponent = u := by
-  ext v
-  rcases v with _ | j
-  · simp [firstOrderSourceColumnOfExponent]
-  · fin_cases j <;>
-      simp [firstOrderSourceColumnOfExponent, SourceColumn.exponent]
-
-/-- The exponent of an enumerated first-order source column is its support index. -/
-@[simp]
-theorem firstOrderColumns_exponent {D A m M μ : ℕ}
-    (j : Fin (Fintype.card ↑(firstOrderExponents D A m M μ))) :
-    (firstOrderColumns (D := D) (A := A) (m := m) (M := M) (μ := μ) j).exponent =
-      ((Fintype.equivFin ↑(firstOrderExponents D A m M μ)).symm j).1 := by
-  ext v
-  rcases v with _ | j
-  · simp [firstOrderColumns, SourceColumn.exponent]
-  · fin_cases j <;>
-      simp [firstOrderColumns, SourceColumn.exponent]
-
-/-- The finite first-order source columns are pairwise distinct. -/
-theorem firstOrderColumns_injective {D A m M μ : ℕ} :
-  Function.Injective (firstOrderColumns (D := D) (A := A) (m := m) (M := M) (μ := μ)) := by
-  intro i j hij
-  have hExponent := congrArg SourceColumn.exponent hij
-  apply (Fintype.equivFin ↑(firstOrderExponents D A m M μ)).symm.injective
-  apply Subtype.ext
-  simpa only [firstOrderColumns_exponent] using hExponent
-
-/-- Every enumerated first-order source column lies in the first-order support. -/
-theorem firstOrderColumns_eligible {D A m M μ : ℕ}
-    (j : Fin (Fintype.card ↑(firstOrderExponents D A m M μ))) :
-    (firstOrderColumns (D := D) (A := A) (m := m) (M := M) (μ := μ) j).exponent ∈
-      firstOrderExponents D A m M μ := by
-  rw [firstOrderColumns_exponent]
-  exact ((Fintype.equivFin ↑(firstOrderExponents D A m M μ)).symm j).2
 
 /-! ### Translation stability of the finite first-order source -/
 
@@ -589,8 +541,8 @@ theorem firstOrderOriginGradedSliceMatrix_mulVec_coeff
     let b := firstOrderSpaceBasis R D A m M μ
     apply b.ext
     intro u
-    let c := firstOrderSourceColumnOfExponent u.1
-    have hcExp : c.exponent = u.1 := firstOrderSourceColumnOfExponent_exponent u.1
+    let c := SourceColumn.ofExponent u.1
+    have hcExp : c.exponent = u.1 := SourceColumn.exponent_ofExponent u.1
     have hc : c.exponent ∈ firstOrderExponents D A m M μ := by
       rw [hcExp]
       exact u.2
