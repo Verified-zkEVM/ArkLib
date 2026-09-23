@@ -65,10 +65,8 @@ def jointCommonTaylorNumerator (center : E) (Q : DifferentialPolynomial E[X] r)
 def jointTaylorAgreementEquation (center : E) (Q : DifferentialPolynomial E[X] r)
     (K τ : ℕ) (x y : E[X]) : MvPolynomial (Option (Fin (r + 1))) E :=
   (optionEquivRight E (Fin (r + 1))).symm
-    ((∑ l : Fin K, MvPolynomial.C ((x - Polynomial.C center) ^ l.val) *
-      PolynomialDifferential.commonTaylorNumeratorOver E (Polynomial.C center) Q τ l.val) -
-        MvPolynomial.C y *
-          PolynomialDifferential.initialJetSeparant (Polynomial.C center) Q ^ τ)
+    (PolynomialDifferential.taylorAgreementEquationOver (F := E)
+      (Polynomial.C center) Q K x y (τ := τ))
 
 /-- The cleared equation identifying one Taylor coefficient with an affine pair. -/
 def jointTaylorReconstructionError (center : E) (Q : DifferentialPolynomial E[X] r)
@@ -107,27 +105,6 @@ private theorem eval_jointCommonTaylorNumerator (center : E)
     map_commonTaylorNumeratorOver]
   simp [commonTaylorNumerator, commonTaylorNumeratorOver, rationalTaylorNumeratorOver_eq]
 
-private theorem map_taylorAgreementExpression (center : E)
-    (Q : DifferentialPolynomial E[X] r) (K τ : ℕ) (x y : E[X])
-    (φ : E[X] →ₐ[E] E) :
-    MvPolynomial.map φ.toRingHom
-        ((∑ l : Fin K, MvPolynomial.C ((x - Polynomial.C center) ^ l.val) *
-          PolynomialDifferential.commonTaylorNumeratorOver E
-            (Polynomial.C center) Q τ l.val) -
-            MvPolynomial.C y *
-              PolynomialDifferential.initialJetSeparant (Polynomial.C center) Q ^ τ) =
-      taylorAgreementEquation (φ (Polynomial.C center))
-        (MvPolynomial.map φ.toRingHom Q) K τ (φ x) (φ y) := by
-  rw [taylorAgreementEquation, map_sub, map_sum]
-  congr 1
-  · apply Finset.sum_congr rfl
-    intro l hl
-    rw [map_mul, MvPolynomial.map_C, map_commonTaylorNumeratorOver]
-    simp [commonTaylorNumerator, commonTaylorNumeratorOver,
-      rationalTaylorNumeratorOver_eq]
-  · rw [map_mul, MvPolynomial.map_C, map_pow, map_initialJetSeparant]
-    simp
-
 private theorem eval_jointTaylorAgreementEquation (center : E)
     (Q : DifferentialPolynomial E[X] r) (K τ : ℕ) (x₀ y₀ : E[X])
     (x : Option (Fin (r + 1)) → E) :
@@ -137,7 +114,7 @@ private theorem eval_jointTaylorAgreementEquation (center : E)
           (MvPolynomial.map (Polynomial.aeval (x none)).toRingHom Q) K τ
           (Polynomial.eval (x none) x₀) (Polynomial.eval (x none) y₀)) := by
   rw [jointTaylorAgreementEquation, aeval_optionEquivRight_symm,
-    map_taylorAgreementExpression]
+    map_taylorAgreementEquationOver_eq (τ := τ)]
   simp
 
 variable {F : Type*} [Field F] {n k K : ℕ}

@@ -8,11 +8,9 @@ import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TaylorChar
 import Mathlib.Tactic.NormNum
 
 /-!
-# Acceptance tests for symbolic Taylor chart recognition
+# Acceptance test for exponent-aware Taylor chart recognition
 
-For the order-zero equation `y = 0`, one-point samples fix the base-field pair. Regular chart
-points reconstruct that pair, including when the second received value and challenge are nonzero
-and a nonvacuous high Taylor cut is required.
+The test uses a nonzero sample and challenge, with a nonvacuous high cut at `l = 1`.
 -/
 
 open MvPolynomial Polynomial
@@ -29,38 +27,33 @@ private def pointDomain : Fin 1 ↪ ℚ :=
 
 private theorem pointDomain_zero : pointDomain (0 : Fin 1) = 0 := rfl
 
-/-- The shifted order-zero equation has the constant solution `2`. -/
 private abbrev shiftedValueEquation : DifferentialPolynomial (Polynomial ℚ) 0 :=
   X (some 0) - MvPolynomial.C (Polynomial.C (2 : ℚ))
 
-/-- A nonzero challenge uses the second received value and satisfies the high cut at `l = 1`. -/
+/-- The exponent-aware theorem handles a nonzero sample, a nonzero challenge, and the high cut
+at `l = 1` when the chart length is strictly larger than the sample size. -/
 example :
     ∃ P₀ P₁ : ℚ[X], P₀.degree < 1 ∧ P₁.degree < 1 ∧
       P₀.eval 0 = 0 ∧ P₁.eval 0 = 1 ∧
       (Polynomial.C 2 * P₁.map (RingHom.id ℚ)).eval 0 = 2 ∧
       aeval (fun _ : Fin 1 ↦ (2 : ℚ))
           (map (Polynomial.evalRingHom 2)
-            (commonTaylorNumeratorOver ℚ (Polynomial.C 0) shiftedValueEquation 4 1)) = 0 ∧
+            (commonTaylorNumeratorOver ℚ (Polynomial.C 0) shiftedValueEquation 1 1)) = 0 ∧
       rationalTaylorPolynomial (0 : ℚ)
           (map (Polynomial.evalRingHom 2) shiftedValueEquation) 2
           (fun _ : Fin 1 ↦ (2 : ℚ)) =
         P₀.map (RingHom.id ℚ) + Polynomial.C 2 * P₁.map (RingHom.id ℚ) ∧
       (fun _ : Fin 1 ↦ (2 : ℚ)) = (fun j ↦
         polynomialJet (d := 0) (0 : ℚ) (P₀.map (RingHom.id ℚ)) j +
-          2 * polynomialJet (d := 0) (0 : ℚ) (P₁.map (RingHom.id ℚ)) j) ∧
-      ∀ l : Fin 2,
-        aeval (fun _ : Fin 1 ↦ (2 : ℚ))
-            (map (Polynomial.evalRingHom 2)
-              (commonTaylorNumeratorOver ℚ (Polynomial.C 0) shiftedValueEquation 4 l.val)) =
-          aeval (fun _ : Fin 1 ↦ (2 : ℚ))
-              (map (Polynomial.evalRingHom 2)
-                (initialJetSeparant (Polynomial.C 0) shiftedValueEquation)) ^ 4 *
-            (Polynomial.taylor (0 : ℚ) (P₀.map (RingHom.id ℚ) +
-              Polynomial.C 2 * P₁.map (RingHom.id ℚ))).coeff l.val := by
+          2 * polynomialJet (d := 0) (0 : ℚ) (P₁.map (RingHom.id ℚ)) j) := by
+  have hτ : TaylorExponentSufficient 0 2 1 := by
+    intro l
+    fin_cases l <;> norm_num [TaylorExponentSufficient]
   obtain ⟨P₀, P₁, hP₀, hP₁, hsample, hrecognize⟩ :=
-    exists_graphLine_pair_of_symbolic_sample (n := 1) (k := 1) (K := 2) (r := 0)
+    exists_graphLine_pair_of_symbolic_sample_of_exponent
+      (n := 1) (k := 1) (K := 2) (r := 0)
       pointDomain (fun _ ↦ 0) (fun _ ↦ 1) Finset.univ (by simp) (RingHom.id ℚ) 0
-      shiftedValueEquation (by omega)
+      shiftedValueEquation (by omega) 1 hτ
   let jet : Fin 1 → ℚ := fun _ ↦ 2
   let φ : Polynomial ℚ →ₐ[ℚ] ℚ := Polynomial.aeval (2 : ℚ)
   have hφ : φ.toRingHom = Polynomial.evalRingHom (2 : ℚ) := by
@@ -95,14 +88,14 @@ example :
       (by norm_num) (by intro i hi hiK; norm_num)
   have hhigh : ∀ l : Fin 2, 1 ≤ l.val → aeval jet
       (map (Polynomial.evalRingHom 2)
-        (commonTaylorNumeratorOver ℚ (Polynomial.C 0) shiftedValueEquation 4 l.val)) = 0 := by
+        (commonTaylorNumeratorOver ℚ (Polynomial.C 0) shiftedValueEquation 1 l.val)) = 0 := by
     intro l hl
     have hl_one : l = (1 : Fin 2) := Fin.ext (by omega)
     subst l
-    have hnum := aeval_map_commonTaylorNumeratorOver_reconstruction (F := ℚ) φ
-      (Polynomial.C 0) shiftedValueEquation 2 jet hSφ ⟨1, by omega⟩
+    have hnum := aeval_map_commonTaylorNumeratorOver_reconstruction_of_exponent
+      (F := ℚ) φ (Polynomial.C 0) shiftedValueEquation 2 1 hτ jet hSφ ⟨1, by omega⟩
     have hcoeff :
-        (Polynomial.taylor (φ (Polynomial.C 0))
+        (Polynomial.taylor (φ (Polynomial.C (0 : ℚ)))
           (rationalTaylorPolynomial (φ (Polynomial.C 0))
             (map φ.toRingHom shiftedValueEquation) 2 jet)).coeff 1 = 0 := by
       rw [show φ (Polynomial.C (0 : ℚ)) = 0 by simp [φ], hpoly]
@@ -110,19 +103,18 @@ example :
     rw [hcoeff] at hnum
     simp only [mul_zero] at hnum
     rw [← hφ]
-    have hExponent : 2 * 2 = 4 := by norm_num
-    simpa only [hExponent, Fin.val_one] using hnum
+    simpa only [Fin.val_one] using hnum
   have hcuts : ∀ i ∈ Finset.univ, aeval jet
       (map (Polynomial.evalRingHom 2)
         (taylorAgreementEquationOver (F := ℚ) (Polynomial.C 0) shiftedValueEquation 2
           (Polynomial.C (pointDomain i))
-          (Polynomial.C 0 + Polynomial.X * Polynomial.C 1))) = 0 := by
+          (Polynomial.C 0 + Polynomial.X * Polynomial.C 1) (τ := 1))) = 0 := by
     intro i hi
     have hi0 : i = 0 := Subsingleton.elim _ _
     subst i
     have hcut :=
-      (aeval_map_taylorAgreementEquationOver_eq_zero_iff (F := ℚ) φ
-        (Polynomial.C 0) shiftedValueEquation 2 jet hSφ
+      (aeval_map_taylorAgreementEquationOver_eq_zero_iff_of_exponent (F := ℚ) φ
+        (Polynomial.C 0) shiftedValueEquation 2 1 hτ jet hSφ
         (Polynomial.C (pointDomain 0))
         (Polynomial.C 0 + Polynomial.X * Polynomial.C 1)).2 (by
           have hcenter : φ (Polynomial.C (0 : ℚ)) = 0 := by simp [φ]
@@ -132,7 +124,8 @@ example :
           simp [φ])
     simpa only [hφ] using hcut
   have hresult := hrecognize 2 jet hS hhigh hcuts
-  refine ⟨P₀, P₁, hP₀, hP₁, ?_, ?_, ?_, ?_, hresult.1, hresult.2.1, hresult.2.2⟩
+  refine ⟨P₀, P₁, hP₀, hP₁, ?_, ?_, ?_, hhigh 1 (by norm_num), hresult.1,
+    hresult.2.1⟩
   · have h := hsample 0 (by simp)
     simpa only [pointDomain_zero] using h.1
   · have h := hsample 0 (by simp)
@@ -140,7 +133,6 @@ example :
   · have h := hsample 0 (by simp)
     have hP₁ : P₁.eval 0 = 1 := by simpa only [pointDomain_zero] using h.2
     simp [hP₁]
-  · simpa [jet] using hhigh 1 (by norm_num)
 
 end
 
