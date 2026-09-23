@@ -41,6 +41,8 @@ All maps are linear over an arbitrary commutative ring `R`.
   `enlargedLocalConstraintMap m ∘ translatedLocalTruncation m center received`.
 * `exactLocalConstraintAt_eq_enlarged_comp`: the same factorization on the exact interpolation
   space.
+* `map_unscaledLocalSubstitution`, `map_projectLowContact` and
+  `SatisfiesLocalConstraints.map`: coefficient changes commute with the local constraints.
 * `globalExactCoefficientConstraintMap`: all local constraints, over an arbitrary index type of
   received points, as one linear map on exact interpolation coefficients.
 
@@ -49,10 +51,8 @@ formalization.
 
 ## References
 
-* [Brakensiek, J., Chen, Y., Putterman, A., Zhang, Z., and Zheng, K. Z., *Algorithmic List
-  Decoding of Reed–Solomon Codes up to Capacity in the Low-Rate Regime*][BCPZZ26], Section 3.
-* [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient
-  Decoding and Smaller Cryptographic Proofs*][DKT26], Section 3.5, Definition 3.7 and the rows (17).
+* [BCPZZ26]
+* [DKT26]
 -/
 
 @[expose] public section
@@ -173,6 +173,46 @@ theorem satisfiesLocalConstraints_iff_coeff_eq_zero
       ∀ e, localContactOrder d e < m →
         (unscaledLocalSubstitution d center received Q).coeff e = 0 :=
   projectLowContact_eq_zero_iff m _
+
+/-- The unscaled local substitution commutes with changing the coefficient ring. -/
+theorem map_unscaledLocalSubstitution {S : Type*} [CommRing S] (φ : R →+* S)
+    (center received : R) (Q : DifferentialPolynomial R d) :
+    MvPolynomial.map φ (unscaledLocalSubstitution d center received Q) =
+      unscaledLocalSubstitution d (φ center) (φ received) (MvPolynomial.map φ Q) := by
+  simp only [unscaledLocalSubstitution, MvPolynomial.map_bind₁]
+  have hhom :
+      MvPolynomial.bind₁
+          (fun i ↦ MvPolynomial.map φ (unscaledLocalImage d center received i)) =
+        MvPolynomial.bind₁ (unscaledLocalImage d (φ center) (φ received)) := by
+    apply MvPolynomial.algHom_ext
+    intro v
+    rcases v with _ | j
+    · simp [unscaledLocalImage]
+    · refine Fin.cases ?_ (fun k ↦ ?_) j
+      · simp [unscaledLocalImage, localCorrection]
+      · simp [unscaledLocalImage]
+  rw [hhom]
+
+/-- Low-contact projection commutes with changing the coefficient ring. -/
+theorem map_projectLowContact {S : Type*} [CommRing S] (φ : R →+* S) (m : ℕ)
+    (P : LocalPolynomial R d) :
+    MvPolynomial.map φ (projectLowContact m P) =
+      projectLowContact m (MvPolynomial.map φ P) := by
+  ext e
+  rw [MvPolynomial.coeff_map, projectLowContact, MvPolynomial.coeff_weightedTruncation,
+    projectLowContact, MvPolynomial.coeff_weightedTruncation]
+  by_cases he : e.weight (localContactWeight d) < m <;>
+    simp [he, MvPolynomial.coeff_map]
+
+/-- Local constraints are preserved by every coefficient-ring homomorphism. -/
+theorem SatisfiesLocalConstraints.map {S : Type*} [CommRing S] (φ : R →+* S) (m : ℕ)
+    (center received : R) (Q : DifferentialPolynomial R d)
+    (hQ : SatisfiesLocalConstraints m center received Q) :
+    SatisfiesLocalConstraints m (φ center) (φ received) (MvPolynomial.map φ Q) := by
+  rw [SatisfiesLocalConstraints, localConstraintAt, LinearMap.comp_apply,
+    AlgHom.toLinearMap_apply] at hQ ⊢
+  rw [← map_unscaledLocalSubstitution, ← map_projectLowContact]
+  simpa using congrArg (MvPolynomial.map φ) hQ
 
 /-! ### Truncation factorization -/
 

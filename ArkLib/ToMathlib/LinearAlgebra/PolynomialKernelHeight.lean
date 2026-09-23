@@ -10,6 +10,8 @@ public import ArkLib.ToMathlib.LinearAlgebra.Matrix.RowBasis
 public import ArkLib.ToMathlib.Polynomial.DegreeLT
 public import Mathlib.Algebra.Polynomial.BigOperators
 public import Mathlib.Algebra.Polynomial.FieldDivision
+public import Mathlib.Algebra.Order.Archimedean.Real.Basic
+public import Mathlib.Data.Nat.Cast.Order.Field
 public import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
 public import Mathlib.LinearAlgebra.Matrix.ToLin
 public import Mathlib.RingTheory.Polynomial.Content
@@ -42,6 +44,8 @@ chosen primitive: its coordinates generate the unit ideal of `F[X]`.
   own `degreeLT` budget.
 * `Matrix.exists_primitive_ne_zero_mulVec_eq_zero_degreeLT_of_rank_le` adds to the rank form the
   conclusion that the coordinates of the kernel vector generate the unit ideal.
+* `Matrix.kernel_height_lt_div_margin` turns a strict rank margin into a strict scaled height
+  bound.
 
 ## Proof outline
 
@@ -59,6 +63,10 @@ and the resulting bound is at most the bound for `s` because `r * b / (c - r)` i
 `ArkLib.ToMathlib.Polynomial.DegreeLT`) transfers the degree bound from `g * u j` to `u j`.
 The natural-degree forms follow from the `degreeLT` forms by
 `Polynomial.natDegree_le_of_mem_degreeLT_succ`.
+
+## References
+
+* [DKT26]
 -/
 
 @[expose] public section
@@ -68,6 +76,22 @@ open Polynomial
 namespace Matrix
 
 variable {F : Type*} [Field F]
+
+/-- A strict rank margin makes the polynomial-kernel height smaller than the scaled budget. -/
+theorem kernel_height_lt_div_margin {N r b : ℕ} {γ : ℝ}
+    (hγ : 1 < γ) (hb : 0 < b) (hmargin : γ * r < N) :
+    ((r * b / (N - r) : ℕ) : ℝ) < (b : ℝ) / (γ - 1) := by
+  have hr : (r : ℝ) < N := by
+    nlinarith [Nat.cast_nonneg r (α := ℝ)]
+  have hrN : r < N := by exact_mod_cast hr
+  have hquot : ((r * b / (N - r) : ℕ) : ℝ) ≤
+      (r : ℝ) * b / (N - r) := by
+    simpa [Nat.cast_sub hrN.le] using
+      (Nat.cast_div_le (α := ℝ) (m := r * b) (n := N - r))
+  apply hquot.trans_lt
+  apply (div_lt_div_iff₀ (sub_pos.mpr hr) (sub_pos.mpr hγ)).mpr
+  have hbR : (0 : ℝ) < b := by exact_mod_cast hb
+  nlinarith
 
 /-- A wide polynomial matrix has a nonzero right-kernel vector with uniformly bounded degree.
 

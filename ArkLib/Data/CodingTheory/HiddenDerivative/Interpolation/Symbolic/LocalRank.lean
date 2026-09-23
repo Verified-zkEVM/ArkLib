@@ -38,16 +38,14 @@ constraint map at `(0, 0)` over `F`.
   `finrank_range_weightedSupportLocalCoordinateConstraint_eq_zero`: the ranks at any point equal
   the ranks at `(0, 0)`.
 * `rank_weightedSupportLocalCoordinateMatrix`: the matrix rank is the rank of the coordinate map.
-* `map_unscaledLocalSubstitution` and `weightedSupportLocalCoordinateMatrix_map`: applying a ring
-  homomorphism `f` to the entries of the matrix at `(center, received)` gives the matrix at
-  `(f center, f received)`.
+* `weightedSupportLocalCoordinateMatrix_map`: applying a ring homomorphism `f` to the entries of
+  the matrix at `(center, received)` gives the matrix at `(f center, f received)`.
 * `rank_weightedSupportLocalCoordinateMatrix_le_base` and
   `rank_weightedSupportLocalCoordinateMatrix_le_base_actual`: the extension-field bounds.
 
 ## References
 
-* [Brakensiek, J., Chen, Y., Putterman, A., Zhang, Z., and Zheng, K. Z., *Algorithmic List
-  Decoding of Reed–Solomon Codes up to Capacity in the Low-Rate Regime*][BCPZZ26], Section 3
+* [BCPZZ26]
 -/
 
 @[expose] public section
@@ -235,24 +233,6 @@ theorem rank_weightedSupportLocalCoordinateMatrix_le_actual {F : Type*} [Field F
   exact Submodule.finrank_map_le _ _
 
 /-! ### Coefficient maps -/
-
-/-- The unscaled local substitution commutes with a ring homomorphism `f` applied to the
-coefficients, with the point `(center, received)` sent to `(f center, f received)`. -/
-theorem map_unscaledLocalSubstitution {S : Type*} [CommRing S] (f : R →+* S)
-    (center received : R) (Q : DifferentialPolynomial R d) :
-    MvPolynomial.map f (unscaledLocalSubstitution d center received Q) =
-      unscaledLocalSubstitution d (f center) (f received) (MvPolynomial.map f Q) := by
-  have hhom : (MvPolynomial.map f).comp
-      (unscaledLocalSubstitution d center received).toRingHom =
-      (unscaledLocalSubstitution d (f center) (f received)).toRingHom.comp
-        (MvPolynomial.map f) := by
-    refine MvPolynomial.ringHom_ext (fun a => by simp) fun v => ?_
-    rcases v with _ | j
-    · simp
-    · refine Fin.cases ?_ (fun i => ?_) j
-      · simp [localCorrection]
-      · simp
-  exact RingHom.congr_fun hhom Q
 
 /-- Applying a ring homomorphism `f` to every entry of the coordinate matrix at
 `(center, received)` gives the coordinate matrix at `(f center, f received)`. The monomial basis
