@@ -38,6 +38,17 @@ theorem constantMessage_mem (r : ℤ) :
     simp [polynomialAgreementSet, constantMessage]
   simp [this]
 
+/-- The direct bounded-solution subtype keeps the agreeing polynomial. -/
+example (r : ℤ) (p : agreeingPolynomials intDomain 2 2 (fun _ ↦ r)) :
+    BoundedSolution.polynomial
+      (⟨⟨(p.1 : ℤ[X]), Polynomial.degreeLT_mono (by omega) p.1.property⟩,
+        (constantCertificate intDomain r).specializes_to_zero p.1 p.2⟩ :
+          BoundedSolution (constantCertificate intDomain r).interpolant 1) =
+      (p.1 : ℤ[X]) :=
+  agreeingPolynomial_boundedSolution_polynomial
+    (constantCertificate intDomain r).interpolant (by omega)
+    (fun p ↦ (constantCertificate intDomain r).specializes_to_zero p.1 p.2) p
+
 /-- The agreement list with threshold `2` for the constant word `r` on `{0, 1} ⊆ ℤ` is `{r}`:
 the embedding sends each member `P` to a solution of `Y₀ - r`, so `P = r`. -/
 example (r : ℤ) : agreeingPolynomials intDomain 2 2 (fun _ ↦ r) = {constantMessage r} := by

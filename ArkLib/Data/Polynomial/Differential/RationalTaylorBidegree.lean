@@ -60,11 +60,7 @@ theorem initialJetEquation_mem_restrictBidegree (center : F)
       (initialJetEquation (Polynomial.C center) Q) ∈
         restrictBidegree (Fin (r + 1)) F h v := by
   apply optionEquivRight_symm_mem_restrictBidegree
-  · apply hheight.aeval
-    intro i
-    cases i with
-    | none => exact coeffNatDegreeLE_C (by simp)
-    | some j => exact coeffNatDegreeLE_X j
+  · exact coeffNatDegreeLE_initialJetEquation center Q hheight
   · exact (totalDegree_initialJetEquation_le (Polynomial.C center) Q).trans hjet
 
 /-- The flattened initial separant lies in the rectangle with jet bound `v - 1`. -/
@@ -102,7 +98,7 @@ theorem taylorAgreementEquationOver_mem_restrictBidegree (center x : F) (y : Pol
     (hheight : CoeffNatDegreeLE Q h) (hv : 0 < v) (hjet : jetTotalDegree Q ≤ v) :
     (optionEquivRight F (Fin (r + 1))).symm
       (taylorAgreementEquationOver (F := F) (A := Polynomial F)
-        (Polynomial.C center) Q K τ (Polynomial.C x) y) ∈
+        (Polynomial.C center) Q K (Polynomial.C x) y (τ := τ)) ∈
         restrictBidegree (Fin (r + 1)) F (ell + τ * h) (1 + τ * (v - 1)) := by
   apply optionEquivRight_symm_mem_restrictBidegree
   · unfold taylorAgreementEquationOver

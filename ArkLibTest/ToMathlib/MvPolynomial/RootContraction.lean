@@ -47,6 +47,25 @@ example (s : ℕ) (j : σ) (x : σ → R) (y : R) :
   rw [eval_rootExpansion]
   simp
 
+example :
+    map (Int.castRingHom ℚ)
+        (rootExpansion 2
+          (monomial (Finsupp.single none 2 + Finsupp.single (some ()) 1) 7 :
+            MvPolynomial (Option Unit) ℤ)) =
+      (monomial (Finsupp.single none 4 + Finsupp.single (some ()) 1) (7 : ℚ) :
+        MvPolynomial (Option Unit) ℚ) := by
+  rw [map_rootExpansion]
+  apply (optionEquivLeft ℚ Unit).injective
+  simp [rootExpansion, optionEquivLeft_monomial, Polynomial.expand_monomial]
+
+example :
+    eval₂ (Int.castRingHom ℚ) (fun o : Option Unit => o.elim 2 (fun _ => 3))
+        (rootExpansion 2
+          (monomial (Finsupp.single none 2 + Finsupp.single (some ()) 1) 7 :
+            MvPolynomial (Option Unit) ℤ)) = 336 := by
+  rw [eval₂_rootExpansion]
+  norm_num
+
 end Monomial
 
 /-- The hypothesis `s ≠ 0` is needed in `rootContraction_rootExpansion`: expansion by `0` sends
