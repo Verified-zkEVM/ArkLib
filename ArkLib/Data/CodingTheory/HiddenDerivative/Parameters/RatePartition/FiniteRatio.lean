@@ -5,7 +5,6 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.Gate
 public import Mathlib.Analysis.SpecialFunctions.Log.Basic
 public import Mathlib.Analysis.SpecificLimits.Basic
 

@@ -9,8 +9,8 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.Unifor
 /-!
 # Uniform rate-partition margin acceptance tests
 
-Concrete low-rate and high-rate cases for the general logarithmic-order bounds and their uniform
-specializations, together with a boundary case for the small-gap hypothesis.
+Concrete low-rate and high-rate cases for the arbitrary-order base bounds and margins, their
+uniform-order specializations, and boundary cases for the small-gap and positive-order hypotheses.
 -/
 
 namespace ReedSolomon.HiddenDerivative.RatePartition
@@ -20,6 +20,34 @@ private theorem order_8192_log_bound :
   rw [show (8192 : ℝ) = 2 ^ 13 by norm_num, Real.log_pow]
   norm_num
   linarith [Real.log_two_gt_d9]
+
+/-- At gap `1/5` and order `8192`, the arbitrary-order low-rate base bound holds. -/
+example :
+    Real.exp (3 / 2 - Real.log (40 / 9 : ℝ)) <
+      rateGamma (2 * (1 / 5 : ℝ) ^ 2) (1 / 5) 8192 := by
+  exact rateGamma_low_base_gt (δ := 1 / 5) (order := 8192) (by norm_num) (by norm_num)
+    (by norm_num) order_8192_log_bound
+
+/-- At rate `1/2`, gap `1/5`, and order `8192`, the arbitrary-order high-rate base bound holds. -/
+example :
+    Real.exp (3 / 2 - Real.log (40 / 9 : ℝ)) <
+      rateGamma (1 / 2) (1 / 2 + 1 / 5) 8192 := by
+  exact rateGamma_high_base_gt (R := 1 / 2) (δ := 1 / 5) (order := 8192)
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    order_8192_log_bound
+
+/-- The uniform order satisfies the low-rate base bound at gap `1/5`. -/
+example :
+    Real.exp (3 / 2 - Real.log (40 / 9 : ℝ)) <
+      rateGamma (2 * (1 / 5 : ℝ) ^ 2) (1 / 5) (uniformDerivativeOrder (1 / 5)) := by
+  exact uniformRateGamma_low_base_gt (by norm_num) (by norm_num)
+
+/-- At rate `1/2` and gap `1/5`, the uniform order satisfies the high-rate base bound. -/
+example :
+    Real.exp (3 / 2 - Real.log (40 / 9 : ℝ)) <
+      rateGamma (1 / 2) (1 / 2 + 1 / 5) (uniformDerivativeOrder (1 / 5)) := by
+  exact uniformRateGamma_high_base_gt (R := 1 / 2) (δ := 1 / 5)
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num)
 
 /-- At gap `1/5`, order `8192` gives the low-rate finite-ratio margin. -/
 example :

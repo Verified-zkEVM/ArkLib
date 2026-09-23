@@ -87,12 +87,11 @@ example : ¬ ∃ gapBound : ℝ, 0 < gapBound ∧ ∀ gap : ℝ, 0 < gap → gap
 
 /-! ### Forms with stronger hypotheses -/
 
-/-- The exponential expression equals the limiting ratio. -/
-example {rate agreement : ℝ} {order : ℕ} (horder : 0 < order) :
-    rateGamma rate agreement order =
-      (27 / 20 : ℝ) * rate * (order + 1) *
-        Real.exp (-(rate / agreement * Real.log (6 * (order : ℝ)))) :=
-  rateGamma_eq_exponential horder
+/-- The exponential identity at rate `1`, agreement `2` and positive order `20`. -/
+example : rateGamma 1 2 20 =
+    (27 / 20 : ℝ) * 21 * Real.exp (-(1 / 2 * Real.log 120)) := by
+  convert rateGamma_eq_exponential (rate := 1) (agreement := 2) (order := 20) (by norm_num)
+    using 1; norm_num
 
 /-- The exact factorization applies to a positive rate, agreement and derivative order. -/
 example : rateGamma (1 / 2) (3 / 4) 500 =

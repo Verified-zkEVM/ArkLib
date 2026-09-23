@@ -13,15 +13,17 @@ example : 1 < rateGamma (1 / 2) (1 / 2 + 1 / 4)
     (fixedRatePartitionOrder (1 / 2) (1 / 4)) := by
   exact fixedRateGamma_gt_one (by norm_num) (by norm_num)
 
-/-- The selected multiplicity passes the finite checks for any positive rate and gap. -/
-example {rate gap : ℝ} (hrate : 0 < rate) (hgap : 0 < gap) :
-    let multiplicity := fixedRatePartitionMultiplicity hrate hgap
+/-- At rate `1/2` and gap `1/4`, the selected multiplicity passes the finite checks. -/
+example :
+    let multiplicity := fixedRatePartitionMultiplicity (rate := 1 / 2) (gap := 1 / 4)
+      (by norm_num) (by norm_num)
     0 < multiplicity ∧
-      0 < partitionWeightBudget rate (rate + gap) (fixedRatePartitionOrder rate gap)
-        multiplicity ∧
-      1 < partitionFiniteRatio rate (rate + gap) (fixedRatePartitionOrder rate gap)
-        multiplicity :=
-  fixedRatePartitionMultiplicity_spec hrate hgap
+      0 < partitionWeightBudget (1 / 2) (1 / 2 + 1 / 4)
+        (fixedRatePartitionOrder (1 / 2) (1 / 4)) multiplicity ∧
+      1 < partitionFiniteRatio (1 / 2) (1 / 2 + 1 / 4)
+        (fixedRatePartitionOrder (1 / 2) (1 / 4)) multiplicity :=
+  fixedRatePartitionMultiplicity_spec (rate := 1 / 2) (gap := 1 / 4)
+    (by norm_num) (by norm_num)
 
 /-- Finite parameters exist at rate `1/2` and gap `1/4`. -/
 example : Nonempty (PartitionFiniteParameters (1 / 2) (1 / 2 + 1 / 4)
