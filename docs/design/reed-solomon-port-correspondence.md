@@ -567,6 +567,19 @@ are the special cases of the new composition laws `globalPointTranslation_comp`,
 source's `Matrix.rank_map_algebraMap_le`, a base-change bound on matrix rank that does not
 concern translation; its only source consumer is `Interpolation/Symbolic/LocalRank.lean`.
 
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/PartitionSupport/FiniteSurplus.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/RatePartition/Ratio.lean` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`ratePartition_dimension_gt_ratio_of_moment` corresponds to
+`partitionSupport_finiteRatio_surplus`. The theorem uses the current partition-support space and
+coordinate-budget APIs and omits the redundant `0 < n` hypothesis, which follows from the other
+hypotheses. The floor bound supplies the moment rescaling condition, and the finite ratio cancels
+the exponential coordinate-budget envelope exactly. The acceptance case at order `500`, rate and
+agreement `1`, and multiplicity `6` is in the matching `ArkLibTest` aggregate. No public source
+declaration is unported.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/PartitionSupport/RateBound.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/PartitionSupport/RateBound.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
