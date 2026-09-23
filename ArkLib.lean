@@ -134,7 +134,6 @@ public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.SolutionEm
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.SourceMonomial
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Space
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.SpecializationDegree
-public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.Certificate
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.ChallengeDegree
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.ColumnHeight
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.ConstraintMatrix
@@ -144,6 +143,8 @@ public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.L
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.ReceivedCurve
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.SourceColumn
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.WeightedSupport
+public import
+  ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.WeightedSupportCertificate
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.Basic
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.Dimension
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.Estimate
@@ -326,6 +327,8 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ord
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.FactorBudget
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Pairs.ExceptionalSet
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Pairs.Family
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerBatchedPointRecognition
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.SingularTail
 public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TaylorChart.PointRecognition
