@@ -281,6 +281,21 @@ theorem jointTotalDegree_C_le (p : Polynomial R) :
   rw [totalDegree_C, zero_add]
   exact (totalDegree_X_pow_le _ _).trans (Polynomial.le_natDegree_of_mem_supp n hn)
 
+/-- An affine polynomial in the coefficient variable has joint degree at most one. -/
+theorem jointTotalDegree_affine_le (a b : R) :
+    jointTotalDegree
+      (C (Polynomial.C a + Polynomial.X * Polynomial.C b) :
+        MvPolynomial σ (Polynomial R)) ≤ 1 := by
+  apply (jointTotalDegree_C_le _).trans
+  apply (Polynomial.natDegree_add_le _ _).trans
+  apply max_le
+  · simp
+  · calc
+      (Polynomial.X * Polynomial.C b).natDegree ≤
+          Polynomial.X.natDegree + (Polynomial.C b).natDegree := Polynomial.natDegree_mul_le
+      _ ≤ 1 + 0 := Nat.add_le_add Polynomial.natDegree_X_le (by simp)
+      _ = 1 := by omega
+
 /-- If every coefficient of `P` has `natDegree ≤ h`, the joint total degree of `P` is at most
 `h + P.totalDegree`. -/
 theorem jointTotalDegree_le_of_natDegree_coeff_le (P : MvPolynomial σ (Polynomial R)) (h : ℕ)
