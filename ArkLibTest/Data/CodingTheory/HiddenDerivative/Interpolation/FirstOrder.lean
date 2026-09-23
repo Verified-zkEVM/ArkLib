@@ -28,6 +28,39 @@ example : firstOrderColumnSlotCount 2 3 1 0 1 1 = 7 := by
     (μ := 1) (h := 1) (by omega)]
   decide
 
+private theorem firstOrderHeightOne : firstOrderCertificateHeight 2 3 1 0 1 1 = 1 := by
+  have hcard : (firstOrderExponents 2 3 1 0 1).card = 4 := by
+    rw [card_firstOrderExponents (D := 2) (A := 3) (m := 1) (M := 0) (μ := 1) (by omega)]
+    decide
+  have hslots : firstOrderColumnSlotCount 2 3 1 0 1 1 = 7 := by
+    rw [firstOrderColumnSlotCount_eq_heightSlotCount (D := 2) (A := 3) (m := 1) (M := 0)
+      (μ := 1) (h := 1) (by omega)]
+    decide
+  have hweight : (firstOrderExponents 2 3 1 0 1).sum (fun u ↦ u (some 0)) = 1 := by
+    have h := firstOrderColumnSlotCount_add_y₀Weight (D := 2) (A := 3) (m := 1) (M := 0)
+      (μ := 1) (h := 1) (by omega)
+    rw [hslots, hcard] at h
+    dsimp [firstOrderY₀Weight] at h
+    omega
+  change max 1 ((firstOrderExponents 2 3 1 0 1).sum (fun u ↦ u (some 0)) /
+    ((firstOrderExponents 2 3 1 0 1).card - 1)) = 1
+  rw [hweight, hcard]
+  decide
+
+example : 2 < firstOrderHeightSlotCount 2 3 1 0 1 1 := by
+  have hcard : (firstOrderExponents 2 3 1 0 1).card = 4 := by
+    rw [card_firstOrderExponents (D := 2) (A := 3) (m := 1) (M := 0) (μ := 1) (by omega)]
+    decide
+  have h := firstOrder_rowTotal_mul_height_lt_heightSlotCount (D := 2) (A := 3) (m := 1)
+    (M := 0) (μ := 1) (rowTotal := 1) (by omega) (by rw [hcard]; decide)
+  simpa [firstOrderHeightOne] using h
+
+example :
+    Function.Injective (firstOrderColumns (D := 2) (A := 3) (m := 1) (M := 0) (μ := 1)) ∧
+      ∀ j, (firstOrderColumns (D := 2) (A := 3) (m := 1) (M := 0) (μ := 1) j).exponent ∈
+        firstOrderExponents 2 3 1 0 1 :=
+  ⟨firstOrderColumns_injective, firstOrderColumns_eligible⟩
+
 private def firstOrderBoundaryColumns : Fin 2 → SourceColumn 1 := fun j =>
   if j = 0 then ⟨0, 0, fun _ => 0⟩ else ⟨0, 1, fun _ => 0⟩
 
@@ -52,10 +85,15 @@ example : Finsupp.single none 1 + Finsupp.single (some 0) 1 ∈
   rw [mem_firstOrderExponents_iff_coordinates]
   simp
 
-example : monomial (Finsupp.single (some 1) 1) (1 : ℚ) ∈ firstOrderSpace ℚ 2 2 1 1 1 := by
-  rw [monomial_mem_firstOrderSpace, ← mem_firstOrderExponents,
-    mem_firstOrderExponents_iff_coordinates]
-  simp
+example : monomial (Finsupp.single (some 1) 1) (1 : ℚ) ∈ firstOrderSpace ℚ 2 2 1 1 1 ∧
+    monomial (Finsupp.single (some 1) 1) (1 : ℚ) ∈
+      exactInterpolationSpace ℚ 2 2 1 1 1 0 (by norm_num) := by
+  have hmem : monomial (Finsupp.single (some 1) 1) (1 : ℚ) ∈ firstOrderSpace ℚ 2 2 1 1 1 := by
+    rw [monomial_mem_firstOrderSpace, ← mem_firstOrderExponents,
+      mem_firstOrderExponents_iff_coordinates]
+    simp
+  exact ⟨hmem, firstOrderSpace_le_exactInterpolationSpace (D := 2) (A := 2) (m := 1)
+    (M := 1) (μ := 1) (W := 0) (by norm_num) hmem⟩
 
 example : ∃ Q : DifferentialPolynomial ℚ 1, Q ≠ 0 ∧
     Q ∈ firstOrderSpace ℚ 2 3 1 0 1 ∧

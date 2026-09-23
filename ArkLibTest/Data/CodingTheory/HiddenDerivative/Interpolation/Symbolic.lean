@@ -12,6 +12,7 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.LocalRan
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.ReceivedCurve
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.SourceColumn
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.WeightedSupport
+import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.Dimension
 import Mathlib.FieldTheory.RatFunc.Basic
 import Mathlib.Data.ZMod.Basic
 
@@ -22,13 +23,23 @@ Concrete coefficient-degree, matrix-entry, rank, height-transfer, primitive-inte
 source-column cases.
 -/
 
-open MvPolynomial PolynomialDifferential ReedSolomon.HiddenDerivative
+open Finset MvPolynomial PolynomialDifferential ReedSolomon.HiddenDerivative
 open scoped Polynomial Matrix
 
 example : ((unscaledLocalSubstitution 0 (Polynomial.C (0 : ℚ)) Polynomial.X
-    (SourceColumn.polynomial (R := ℚ[X]) ⟨0, 2, ![]⟩)).coeff 0).natDegree ≤ 2 := by
-  simpa using SourceColumn.natDegree_coeff_unscaledLocalSubstitution_le 1 (0 : ℚ)
-    (by compute_degree) (⟨0, 2, ![]⟩ : SourceColumn 0) 0
+    (SourceColumn.polynomial (R := ℚ[X]) ⟨0, 2, ![]⟩)).coeff 0).natDegree ≤ 2 ∧
+    (unscaledLocalSubstitution 0 (Polynomial.C (0 : ℚ)) Polynomial.X
+      (SourceColumn.polynomial (R := ℚ[X]) ⟨0, 2, ![]⟩)).coeff 0 = Polynomial.X ^ 2 := by
+  have hcoeff : (unscaledLocalSubstitution 0 (Polynomial.C (0 : ℚ)) Polynomial.X
+      (SourceColumn.polynomial (R := ℚ[X]) ⟨0, 2, ![]⟩)).coeff 0 = Polynomial.X ^ 2 := by
+    rw [SourceColumn.polynomial_eq_sourceMonomial]
+    rw [sourceMonomial]
+    simp only [map_mul, map_pow, unscaledLocalSubstitution_X, unscaledLocalSubstitution_Y_zero]
+    rw [← constantCoeff_eq]
+    simp [localCorrection]
+  refine ⟨?_, hcoeff⟩
+  rw [hcoeff]
+  norm_num
 
 private noncomputable def matrixRowE : Fin 1 × LowContactIndex 0 1 :=
   (0, ⟨Finsupp.single (localE 0) 2, by simp [localContactOrder_eq, localT, localAux]⟩)
@@ -89,6 +100,30 @@ private theorem onePointLocalRank_le_two :
     _ ≤ 2 := by
       norm_num [localResidualCoordinateBudget, contactThreshold, Finset.natWeightedSimplex]
 
+private theorem onePointWeightedSupportDimension_ge_four :
+    4 ≤ Module.finrank ℚ (weightedSupportSpace ℚ 1 1 0 2 Nat.one_pos) := by
+  have h := sum_count_le_finrank_weightedSupportSpace ℚ (d := 1) (D := 1) (W := 0)
+    (L := 2) (by decide) Nat.one_pos
+  have hs : natWeightedSimplex (fun i : Fin (1 - 1) => i.val + 1) 0 = {fun _ => 0} := by
+    decide
+  have h1 : ⌈(1 : ℝ)⌉₊ = 1 := by exact_mod_cast Nat.ceil_natCast 1
+  have h2 : ⌈(2 : ℝ)⌉₊ = 2 := by exact_mod_cast Nat.ceil_natCast 2
+  rw [hs, sum_singleton] at h
+  norm_num [CubicStaircase.count, h1, h2] at h
+  exact h
+
+private theorem onePointFixedMargin :
+    (543 / 500 : ℝ) * ((1 : ℕ) : ℝ) * Module.finrank ℚ (LinearMap.range
+      (weightedSupportLocalConstraint (R := ℚ) (d := 1) (W := 0) (L := 2) 1
+        Nat.one_pos 0 0)) < Module.finrank ℚ (weightedSupportSpace ℚ 1 1 0 2 Nat.one_pos) := by
+  have hrank : (Module.finrank ℚ (LinearMap.range
+      (weightedSupportLocalConstraint (R := ℚ) (d := 1) (W := 0) (L := 2) 1
+        Nat.one_pos 0 0)) : ℝ) ≤ 2 := by
+    exact_mod_cast onePointLocalRank_le_two
+  have hdim : (4 : ℝ) ≤ Module.finrank ℚ (weightedSupportSpace ℚ 1 1 0 2 Nat.one_pos) := by
+    exact_mod_cast onePointWeightedSupportDimension_ge_four
+  nlinarith
+
 example :
     ((localConstraintMatrix 1 (fun _ : Fin 1 => Polynomial.C (0 : ℚ))
       (fun _ => receivedLine (0 : ℚ) 0)
@@ -102,6 +137,32 @@ example :
         (L := 2) (m := 1) Nat.one_pos (fun _ => 0) (fun _ => 0) (fun _ => 0) _
         (weightedSupportColumns_eligible (d := 1) (D := 1) (W := 0) (L := 2) Nat.one_pos)
     _ ≤ 2 := by simpa using onePointLocalRank_le_two
+
+example : ∃ v : Fin (Fintype.card
+    (↥(weightedSupportExponents 1 1 0 2 Nat.one_pos))) → ℚ[X], v ≠ 0 ∧
+      Ideal.span (Set.range v) = ⊤ ∧
+      (∀ {E : Type*} [Field E] (ι : ℚ →+* E) (z : E),
+        MvPolynomial.map (Polynomial.eval₂RingHom ι z)
+          (SourceColumn.interpolant
+            (weightedSupportColumns (d := 1) (W := 0) (L := 2) Nat.one_pos) v) ≠ 0) ∧
+      ∀ _ : Fin 1, SatisfiesLocalConstraints 1 (Polynomial.C (0 : ℚ))
+        (receivedLine (0 : ℚ) 0)
+        (SourceColumn.interpolant
+          (weightedSupportColumns (d := 1) (W := 0) (L := 2) Nat.one_pos) v) := by
+  obtain ⟨v, hv, _, _, _, hprimitive, hnonzero, hconstraints, _⟩ :=
+    exists_symbolic_weightedSupport_interpolant_of_fixed_margin
+      (F := ℚ) (d := 1) (D := 1) (W := 0) (L := 2) (m := 1)
+      Nat.one_pos Nat.one_pos (fun _ : Fin 1 => 0) (fun _ => 0) (fun _ => 0)
+      (by
+        intro u hu
+        have hY₀ : u (some 0) ≤ totalJetDegree u := by
+          rw [totalJetDegree_eq_sum, Fin.sum_univ_succ]
+          exact Nat.le_add_right _ _
+        exact hY₀.trans
+          (totalJetDegree_le_pred_of_weightedSupportEligible (D := 1) (L := 2) (t := 2)
+            (by norm_num) (by norm_num) hu))
+      onePointFixedMargin
+  exact ⟨v, hv, hprimitive, hnonzero, hconstraints⟩
 
 private def receivedLineColumns : Fin 1 → SourceColumn 1 := fun _ => ⟨1, 0, fun _ => 0⟩
 

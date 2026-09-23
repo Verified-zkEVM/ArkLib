@@ -13,6 +13,7 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.R
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.RankIntegral
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.FloorTransfer
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.Moments
+import Mathlib.Analysis.Complex.ExponentialBounds
 
 /-!
 # Weighted-support acceptance cases
@@ -78,6 +79,29 @@ example :
         (weightedSupportSpace (ZMod 2) 2 d W ((m : ℝ) * (2 : ℕ) * (1 + g)) (by norm_num)) :=
   prescribed_weightedSupport_margin (1 / 4) 4 2 (by norm_num) (by norm_num) (by norm_num)
     (by norm_num) (by norm_num) (by norm_num)
+
+example : 2 * Real.exp 1 < 6 := by
+  have h := normalized_rank_lt_of_rounding_bounds (2 * Real.exp 1) 1 1 1 1 1 0 2 3 1 1 1 1 1
+    one_pos one_pos le_rfl le_rfl zero_le_one one_pos one_pos one_pos one_pos
+    (by simp) (by norm_num) (by simpa using Real.exp_one_lt_d9.trans (by norm_num))
+    (by norm_num) (by norm_num; ring_nf; exact le_rfl)
+  norm_num at h
+  exact h
+
+example : (3 / 2 : ℝ) < (151 / (151 + 1)) * (38 / 25 - 0 ^ 2 / 151) := by
+  exact weightedSupport_variance_factor_gt (d := 151) (H := 0) (H₂ := 38 / 25)
+    (by norm_num) (by norm_num) (by norm_num)
+
+example :
+    (2 : ℝ) * (2 ^ 2 * 1 - 3 * 2 * 1 * 0 + 2 * 1 ^ 3) / ((2 + 1) * (2 + 2)) ≤
+      2 * (1 + 2 * 1 ^ 3 / 2 ^ 2) := by
+  exact weightedSupport_third_factor_le (d := 2) (H := 1) (H₂ := 0) (H₃ := 1)
+    (by positivity) (by positivity) le_rfl (by positivity)
+
+example : (2 * (12021 / 10000 : ℝ)) ≤ 241 / 100 := by
+  have h := weightedSupport_third_factor_numeric (d := 1) (H := 0) (H₃ := 12021 / 10000)
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+  simpa using h
 
 example :
     ((1 : ℕ) : ℝ) ^ (10000 - 1) / ((10000 - 1).factorial : ℝ) ^ 2 *

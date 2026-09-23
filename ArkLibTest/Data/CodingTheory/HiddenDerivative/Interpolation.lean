@@ -25,7 +25,7 @@ open Finset MvPolynomial PolynomialDifferential ReedSolomon ReedSolomon.HiddenDe
 
 namespace CertificatesTest
 
-private theorem satisfiesLocalConstraintsOneYZeroSub {R : Type*} [CommRing R] (center r : R) :
+theorem satisfiesLocalConstraintsOneYZeroSub {R : Type*} [CommRing R] (center r : R) :
     SatisfiesLocalConstraints (d := 0) 1 center r (X (some 0) - C r) := by
   rw [SatisfiesLocalConstraints, localConstraintAt, LinearMap.comp_apply, projectLowContact,
     weightedTruncation_eq_zero_iff]
@@ -48,7 +48,7 @@ private theorem differentialWeightedDegreeYZeroSubLe {R : Type*} [CommRing R] (r
   · rw [mem_restrictWeightedDegree_iff_weightedTotalDegree_le, weightedTotalDegree_C]
     exact Nat.zero_le _
 
-private theorem YZeroSubNeZero {R : Type*} [CommRing R] [Nontrivial R] (r : R) :
+theorem YZeroSubNeZero {R : Type*} [CommRing R] [Nontrivial R] (r : R) :
     (X (some 0) - C r : DifferentialPolynomial R 0) ≠ 0 := by
   intro h
   have := congrArg (MvPolynomial.eval (fun _ ↦ r + 1)) h
@@ -66,12 +66,12 @@ private noncomputable def constantCertificate {R : Type*} [CommRing R] [Nontrivi
   weighted_degree_lt := (differentialWeightedDegreeYZeroSubLe r).trans_lt (by decide)
   local_constraints := fun i ↦ satisfiesLocalConstraintsOneYZeroSub (domain i) r
 
-private noncomputable def zmodDomain : Fin 2 ↪ ZMod 5 :=
+noncomputable def zmodDomain : Fin 2 ↪ ZMod 5 :=
   ⟨fun i ↦ ((i : ℕ) : ZMod 5), by intro a b h; revert a b h; decide⟩
 
 private instance : Fact (Nat.Prime 5) := ⟨Nat.prime_five⟩
 
-private theorem jetDegreeYZeroSubLe {R : Type*} [CommRing R] (r : R) (j : Fin 1) :
+theorem jetDegreeYZeroSubLe {R : Type*} [CommRing R] (r : R) (j : Fin 1) :
     jetDegree (X (some 0) - C r : DifferentialPolynomial R 0) j ≤ 1 := by
   rw [jetDegree]
   refine (degreeOf_sub_le _ _ _).trans (max_le ?_ ?_)
@@ -123,6 +123,18 @@ example : (exactDimensionCoordinates 3 3 2 1 1 1).card = 6 := by
 
 example : Module.finrank ℚ (exactInterpolationSpace ℚ 2 2 1 1 1 0 (by norm_num)) = 3 := by
   rw [finrank_exactInterpolationSpace_eq_exactInterpolationDimensionCount ℚ (by norm_num)]
+  decide
+
+example : 1 * certifiedEnlargedRankBound 1 (1 ^ 3) (1 ^ 3) 0 <
+    Module.finrank ℚ (exactInterpolationSpace ℚ (6 - 1) 15 1 (1 ^ 3) (1 ^ 3) 0
+      (by norm_num)) := by
+  have hgood : #(goodHigherExponents 1 0 0) = 1 := by
+    rw [card_goodHigherExponents_of_le le_rfl]
+    decide
+  refine n_mul_certifiedEnlargedRankBound_lt_finrank_exactInterpolationSpace ℚ (d := 1)
+    (K := 6) (W := 0) (R := 1) (H := 1) (C := 0) (by norm_num) (by norm_num) (by norm_num)
+    ?_ (by norm_num [certifiedEnlargedRankBound])
+  rw [hgood]
   decide
 
 example : 32 ≤ Module.finrank ℚ (interpolationSpace ℚ 2 2 7 3 5 1 1) := by

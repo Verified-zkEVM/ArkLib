@@ -8,6 +8,7 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.Counting
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.Dimension
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.FloorTransfer
+import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.FiniteSurplus
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.LocalRank
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.MomentSource
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.RateBound
@@ -21,6 +22,120 @@ Concrete strict inclusion, dimension, lower-bound, integral, rank, and interpola
 
 open Finset MvPolynomial MeasureTheory PolynomialDifferential ReedSolomon.HiddenDerivative
   ReedSolomon.HiddenDerivative.RatePartition
+
+private theorem largeWeightLowerTailMoment :
+    (27 / 10 : ℝ) < ⨍ u in Set.weightedSimplex
+      (fun i : Fin 500 ↦ (i : ℝ) + 1) (100000000 : ℝ),
+        (max (Real.log 3000 - ((500 : ℕ) : ℝ) * (∑ i, u i) / 100000000) 0) ^ 2 := by
+  simpa only [show (6 * (500 : ℕ) : ℝ) = 3000 by norm_num] using
+    setAverage_weightedSimplex_succ_lowerTail_sq_gt (d := 500) (by norm_num)
+      (W := (100000000 : ℝ)) (by norm_num)
+
+private theorem largeWeightSurplusEnvelope :
+    ((100000000 : ℝ) ^ 500 / (Nat.factorial 500 : ℝ) ^ 2) *
+        Real.exp ((500 : ℝ) / 100000000 * (1 + (501 : ℕ).choose 2)) *
+          (1 / (((500 : ℝ) + 1) * ((500 : ℝ) / 100000000) ^ 2) +
+            1 / ((500 : ℝ) / 100000000)) ≤
+      (27 / 20 : ℝ) * ((100000000 : ℝ) / 500) ^ 2 *
+        ((100000000 : ℝ) ^ 500 / (Nat.factorial 500 : ℝ) ^ 2) := by
+  let volume : ℝ := (100000000 : ℝ) ^ 500 / (Nat.factorial 500 : ℝ) ^ 2
+  have hchoose : (501 : ℕ).choose 2 = 125250 := by
+    rw [Nat.choose_two_right]
+  have hexpArg : (500 : ℝ) / 100000000 * (1 + (501 : ℕ).choose 2) ≤ 1 := by
+    rw [hchoose]
+    norm_num
+  have hexp : Real.exp ((500 : ℝ) / 100000000 * (1 + (501 : ℕ).choose 2)) ≤ 3 := by
+    calc
+      _ ≤ Real.exp 1 := Real.exp_le_exp.mpr hexpArg
+      _ ≤ 3 := Real.exp_one_lt_three.le
+  have hfactor : Real.exp ((500 : ℝ) / 100000000 * (1 + (501 : ℕ).choose 2)) *
+      (1 / (((500 : ℝ) + 1) * ((500 : ℝ) / 100000000) ^ 2) +
+        1 / ((500 : ℝ) / 100000000)) ≤ (27 / 20 : ℝ) *
+          ((100000000 : ℝ) / 500) ^ 2 := by
+    calc
+      _ ≤ 3 * (1 / (((500 : ℝ) + 1) * ((500 : ℝ) / 100000000) ^ 2) +
+          1 / ((500 : ℝ) / 100000000)) :=
+        mul_le_mul_of_nonneg_right hexp (by positivity)
+      _ ≤ (27 / 20 : ℝ) * ((100000000 : ℝ) / 500) ^ 2 := by norm_num
+  have hvolume : 0 ≤ volume := by positivity
+  have hvolume_def : volume =
+      ((100000000 : ℝ) ^ 500 / (Nat.factorial 500 : ℝ) ^ 2) := rfl
+  calc
+    _ = volume * (Real.exp ((500 : ℝ) / 100000000 * (1 + (501 : ℕ).choose 2)) *
+        (1 / (((500 : ℝ) + 1) * ((500 : ℝ) / 100000000) ^ 2) +
+          1 / ((500 : ℝ) / 100000000))) := by
+      rw [← hvolume_def]
+      ac_rfl
+    _ ≤ volume * ((27 / 20 : ℝ) * ((100000000 : ℝ) / 500) ^ 2) :=
+      mul_le_mul_of_nonneg_left hfactor hvolume
+    _ = _ := by
+      rw [← hvolume_def]
+      ac_rfl
+
+private theorem largeWeightSurplusEnvelopeForTheorem :
+      (1 : ℝ) * (((100000000 : ℝ) ^ 500 / (Nat.factorial 500 : ℝ) ^ 2) *
+        Real.exp ((500 : ℝ) / 100000000 * (1 + (501 : ℕ).choose 2)) *
+          (1 / (((500 : ℝ) + 1) * ((500 : ℝ) / 100000000) ^ 2) +
+            1 / ((500 : ℝ) / 100000000))) ≤
+      (27 / 10 : ℝ) / 2 * 1 * ((100000000 : ℝ) / 500) ^ 2 *
+        ((100000000 : ℝ) ^ 500 / (Nat.factorial 500 : ℝ) ^ 2) := by
+  calc
+    _ = ((100000000 : ℝ) ^ 500 / (Nat.factorial 500 : ℝ) ^ 2) *
+        Real.exp ((500 : ℝ) / 100000000 * (1 + (501 : ℕ).choose 2)) *
+          (1 / (((500 : ℝ) + 1) * ((500 : ℝ) / 100000000) ^ 2) +
+            1 / ((500 : ℝ) / 100000000)) := by simp only [one_mul]
+    _ ≤ (27 / 20 : ℝ) * ((100000000 : ℝ) / 500) ^ 2 *
+        ((100000000 : ℝ) ^ 500 / (Nat.factorial 500 : ℝ) ^ 2) :=
+      largeWeightSurplusEnvelope
+    _ = _ := by
+      rw [show (27 / 10 : ℝ) / 2 = 27 / 20 by norm_num,
+        show (100000000 : ℝ) / 500 = 200000 by norm_num]
+      ac_rfl
+
+private noncomputable def largeWeightCutoff : ℕ :=
+  ⌈(200000 : ℝ) * Real.log (3000 : ℝ)⌉₊
+
+private theorem largeWeightLevel_le_cutoff :
+    (200000 : ℝ) * Real.log (3000 : ℝ) * ((1 : ℕ) : ℝ) ≤ (largeWeightCutoff : ℝ) := by
+  have h := Nat.le_ceil ((200000 : ℝ) * Real.log (3000 : ℝ))
+  simpa [largeWeightCutoff] using h
+
+/-- A positive-order finite-surplus instance with a positive surplus multiplier. -/
+example :
+    (localDerivativeCoordinateBudget 500 1 100000000 : ℝ) <
+      (Module.finrank ℚ
+        (partitionSupportSpace ℚ 1 500 100000000
+          largeWeightCutoff one_pos) : ℝ) := by
+  have hbudget := partitionSupport_surplus (F := ℚ) (D := 1) (d := 500)
+    (W := 100000000) (n := 1) (L := largeWeightCutoff) (m := 1)
+    (rate := 1) (level := (200000 : ℝ) * Real.log (3000 : ℝ)) (logarithm := Real.log 3000)
+    (μ := 27 / 10) (γ := 1) one_pos (by norm_num) (by norm_num)
+    (by norm_num) largeWeightLevel_le_cutoff
+    (by norm_num [show (100000000 : ℝ) / 500 = 200000 by norm_num])
+    largeWeightLowerTailMoment (by norm_num)
+    (by simpa only [Nat.cast_ofNat, Nat.cast_one, Nat.cast_add]
+      using largeWeightSurplusEnvelopeForTheorem)
+  simpa only [Nat.cast_one, one_mul] using hbudget
+
+/-- The same strict surplus bounds the rank of a concrete local constraint map. -/
+example :
+    Module.finrank ℚ (LinearMap.range
+      (partitionSupportLocalConstraint (d := 500) (W := 100000000)
+        (L := largeWeightCutoff) 1 one_pos (0 : ℚ) 0)) <
+      (Module.finrank ℚ
+        (partitionSupportSpace ℚ 1 500 100000000
+          largeWeightCutoff one_pos) : ℝ) := by
+  have hbudget := partitionSupport_localConstraint_surplus (F := ℚ) (D := 1) (d := 500)
+    (W := 100000000) (n := 1) (L := largeWeightCutoff) (m := 1)
+    (rate := 1) (level := (200000 : ℝ) * Real.log (3000 : ℝ)) (logarithm := Real.log 3000)
+    (μ := 27 / 10) (γ := 1) one_pos (by norm_num) (by norm_num)
+    (by norm_num) largeWeightLevel_le_cutoff
+    (by norm_num [show (100000000 : ℝ) / 500 = 200000 by norm_num])
+    largeWeightLowerTailMoment (by norm_num)
+    (by simpa only [Nat.cast_ofNat, Nat.cast_one, Nat.cast_add]
+      using largeWeightSurplusEnvelopeForTheorem)
+    (0 : ℚ) 0
+  simpa only [Nat.cast_one, one_mul] using hbudget
 
 /-- A concrete `d = 500` lower-tail moment feeds the partition-support dimension bound. -/
 example :
@@ -152,29 +267,11 @@ private theorem halfIntervalSubsetWeightedSimplex :
     rw [hsum]
     exact hu.2.trans (by norm_num)
 
-private theorem halfIntervalStrictSubsetWeightedSimplex :
-    halfInterval ⊂ Set.weightedSimplex (fun i : Fin 1 ↦ (i : ℝ) + 1) (1 : ℕ) := by
-  refine ⟨halfIntervalSubsetWeightedSimplex, ?_⟩
-  intro hsubset
-  let u : Fin 1 → ℝ := fun _ ↦ 3 / 4
-  have hu : u ∈ Set.weightedSimplex (fun i : Fin 1 ↦ (i : ℝ) + 1) (1 : ℕ) := by
-    rw [Set.mem_weightedSimplex]
-    constructor
-    · intro i
-      norm_num [u]
-    · have hsum : ∑ i : Fin 1, ((i : ℝ) + 1) * u i = 3 / 4 := by simp [u]
-      rw [hsum]
-      norm_num
-  have hnot : u ∉ halfInterval := by
-    change ¬ (0 ≤ u 0 ∧ u 0 ≤ 1 / 2)
-    norm_num [u]
-  exact hnot (hsubset hu)
-
 example : (1 : ℝ) / 2 *
       ∫ u in halfInterval, (max (3 / 2 - ∑ i : Fin 1, u i) 0) ^ 2 ≤
         (Module.finrank ℚ (partitionSupportSpace ℚ 1 1 1 (3 / 2 : ℝ) one_pos) : ℝ) := by
   simpa using partitionSupport_dimension_ge_integral_on (F := ℚ) (D := 1) (d := 1) (W := 1)
-    (L := 3 / 2) one_pos halfIntervalStrictSubsetWeightedSimplex.subset
+    (L := 3 / 2) one_pos halfIntervalSubsetWeightedSimplex
 
 example : (1 : ℝ) / 2 *
       ∫ u in halfInterval, (max (1 - ∑ i : Fin 1, u i) 0) ^ 2 ≤

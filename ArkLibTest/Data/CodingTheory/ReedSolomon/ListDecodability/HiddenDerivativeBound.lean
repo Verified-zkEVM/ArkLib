@@ -25,22 +25,6 @@ namespace HiddenDerivativeBoundTest
 
 private theorem hzero_lt_one : (0 : ℕ) < 1 := by decide
 
-private noncomputable def zmodDomain : Fin 2 ↪ ZMod 5 :=
-  ⟨fun i ↦ ((i : ℕ) : ZMod 5), by intro a b h; revert a b h; decide⟩
-
-private theorem Y_zero_sub_ne_zero (r : ZMod 5) :
-    (X (some 0) - C r : DifferentialPolynomial (ZMod 5) 0) ≠ 0 := by
-  intro h
-  have := congrArg (MvPolynomial.eval (fun _ ↦ r + 1)) h
-  simp at this
-
-private theorem jetDegree_Y_zero_sub_le (r : ZMod 5) (j : Fin 1) :
-    jetDegree (X (some 0) - C r : DifferentialPolynomial (ZMod 5) 0) j ≤ 1 := by
-  rw [jetDegree]
-  refine (degreeOf_sub_le _ _ _).trans (max_le ?_ ?_)
-  · exact (degreeOf_X_le _ _).trans le_rfl
-  · simp
-
 /-- `Y₀ - r` lies in the exact interpolation space with `D = 1`, `A = 2`, and `m = 1`. -/
 private theorem Y_zero_sub_mem_exact (r : ZMod 5) :
     (X (some 0) - C r : DifferentialPolynomial (ZMod 5) 0) ∈
@@ -53,22 +37,6 @@ private theorem Y_zero_sub_mem_exact (r : ZMod 5) :
   · rw [← monomial_zero', monomial_mem_exactInterpolationSpace]
     left
     simp [ExactInterpolationEligibleExponent, firstJetExponent, fullHigherJetWeight]
-
-/-- Each `Y₀ - r` satisfies the multiplicity-one constraints at `(a, r)`. -/
-private theorem Y_zero_sub_satisfies_local (a r : ZMod 5) :
-    SatisfiesLocalConstraints (d := 0) 1 a r (X (some 0) - C r) := by
-  rw [SatisfiesLocalConstraints, localConstraintAt, LinearMap.comp_apply, projectLowContact,
-    weightedTruncation_eq_zero_iff]
-  have h : (unscaledLocalSubstitution 0 a r).toLinearMap (X (some 0) - C r) =
-      X (localT 0) * (X (localE 0) + localJetSum 0) := by
-    simp only [AlgHom.toLinearMap_apply, map_sub, unscaledLocalSubstitution_Y_zero, algHom_C,
-      algebraMap_eq, mul_add, T_mul_localJetSum]
-    ring
-  rw [h]
-  simpa using mul_mem_restrictWeightedOrder
-    (X_mem_restrictWeightedOrder (R := ZMod 5) (localContactWeight 0) (localT 0) le_rfl)
-    (by simp : X (localE 0) + localJetSum 0 ∈
-      restrictWeightedOrder (R := ZMod 5) (localContactWeight 0) 0)
 
 /-- The characteristic form of the root-count hypotheses for an exact interpolant. -/
 private theorem listBound_of_below_characteristic
@@ -92,44 +60,48 @@ private theorem listBound_of_below_characteristic
   · exact hfield
 
 /-- The agreeing-polynomial embedding preserves the polynomial over `ZMod 5`. -/
-example (r : ZMod 5) (p : agreeingPolynomials zmodDomain 2 2 (fun _ ↦ r)) :
+example (r : ZMod 5) (p : agreeingPolynomials CertificatesTest.zmodDomain 2 2 (fun _ ↦ r)) :
     ((agreeingPolynomialsToBoundedSolution (by decide) (by decide)
-      zmodDomain (fun _ ↦ r) (Y_zero_sub_mem_exact r)
-      (fun i ↦ Y_zero_sub_satisfies_local (zmodDomain i) r) p).polynomial) =
+      CertificatesTest.zmodDomain (fun _ ↦ r) (Y_zero_sub_mem_exact r)
+      (fun i ↦ CertificatesTest.satisfiesLocalConstraintsOneYZeroSub
+        (CertificatesTest.zmodDomain i) r) p).polynomial) =
       (p.1 : Polynomial (ZMod 5)) := by
   simp
 
 /-- The selected representative has an existential witness with the prescribed polynomial. -/
-example (r : ZMod 5) (p : agreeingPolynomials zmodDomain 2 2 (fun _ ↦ r)) :
+example (r : ZMod 5) (p : agreeingPolynomials CertificatesTest.zmodDomain 2 2 (fun _ ↦ r)) :
     ∃ solution : BoundedSolution (X (some 0) - C r : DifferentialPolynomial (ZMod 5) 0) 1,
       solution.polynomial = (p.1 : Polynomial (ZMod 5)) :=
-  exists_boundedSolution_polynomial_eq (by decide) (by decide) zmodDomain
+  exists_boundedSolution_polynomial_eq (by decide) (by decide) CertificatesTest.zmodDomain
     (fun _ ↦ r) (Y_zero_sub_mem_exact r)
-    (fun i ↦ Y_zero_sub_satisfies_local (zmodDomain i) r) p
+    (fun i ↦ CertificatesTest.satisfiesLocalConstraintsOneYZeroSub
+      (CertificatesTest.zmodDomain i) r) p
 
 /-- The agreement-list cardinality compares with a natural cardinal over the finite field. -/
 example (r : ZMod 5) :
-    (agreeingPolynomials zmodDomain 2 2 (fun _ ↦ r)).encard ≤
+    (agreeingPolynomials CertificatesTest.zmodDomain 2 2 (fun _ ↦ r)).encard ≤
       (Nat.card (BoundedSolution (X (some 0) - C r : DifferentialPolynomial (ZMod 5) 0) 1) :
         ℕ∞) :=
     agreeingPolynomials_encard_le_boundedSolution_natCard (by decide) (by decide)
-    zmodDomain (fun _ ↦ r) (Y_zero_sub_mem_exact r)
-    (fun i ↦ Y_zero_sub_satisfies_local (zmodDomain i) r)
+    CertificatesTest.zmodDomain (fun _ ↦ r) (Y_zero_sub_mem_exact r)
+    (fun i ↦ CertificatesTest.satisfiesLocalConstraintsOneYZeroSub
+      (CertificatesTest.zmodDomain i) r)
 
 /-- The exact-interpolant list bound on `ZMod 5` uses its characteristic guard. -/
 example (r : ZMod 5) :
-    (agreeingPolynomials zmodDomain 2 2 (fun _ ↦ r)).encard ≤
+    (agreeingPolynomials CertificatesTest.zmodDomain 2 2 (fun _ ↦ r)).encard ≤
       (2 * (0 + 1) * Nat.card (ZMod 5) ^ (3 * 0 + 2) : ℕ∞) := by
   apply listBound_of_below_characteristic (F := ZMod 5) (index := Fin 2)
     (messageDim := 2) (K := 2) (A := 2) (d := 0) (m := 1) (M := 0) (W := 0)
-    (by decide) (by decide) (by decide) zmodDomain
-    (fun _ ↦ r) (Y_zero_sub_ne_zero r) (Y_zero_sub_mem_exact r)
-    (fun i ↦ Y_zero_sub_satisfies_local (zmodDomain i) r)
+    (by decide) (by decide) (by decide) CertificatesTest.zmodDomain
+    (fun _ ↦ r) (CertificatesTest.YZeroSubNeZero r) (Y_zero_sub_mem_exact r)
+    (fun i ↦ CertificatesTest.satisfiesLocalConstraintsOneYZeroSub
+      (CertificatesTest.zmodDomain i) r)
   · rw [ZMod.ringChar_zmod_n]
     decide
   · intro j
     rw [ZMod.ringChar_zmod_n]
-    exact (jetDegree_Y_zero_sub_le r j).trans_lt (by decide)
+    exact (CertificatesTest.jetDegreeYZeroSubLe r j).trans_lt (by decide)
   · norm_num
 
 /-- With zero interpolation budget, exact-space membership forces the interpolant to vanish. -/
