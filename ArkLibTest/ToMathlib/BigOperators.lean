@@ -28,3 +28,20 @@ example : (∑ i ∈ range 5, (i : ℚ) ^ 2) * 6 = 5 * (5 - 1) * (2 * 5 - 1) :=
 example : 2 + ∑ i ∈ range 4, i ≤ 1 * 6 + 1 * 6 :=
   Finset.add_sum_le_mul_add_mul_of_le (range 4) (h := fun _ ↦ 1) (a := fun i ↦ i)
     (Nat.zero_le _) le_rfl (Nat.zero_le _) (fun i _ ↦ by omega) (by decide) (by decide)
+
+/-- The coefficient slots and weights sum to `3 * 2` for weights `0, 1, 0`. -/
+example :
+    (range 3).sum (fun i ↦ 2 - i % 2) + (range 3).sum (fun i ↦ i % 2) =
+      (range 3).card * 2 :=
+  Finset.sum_tsub_add_sum_eq_card_mul (range 3) (fun i ↦ i % 2) 1
+    (by intro i hi; omega)
+
+/-- With weights `0, 1, 0`, one row has strict slot surplus at height `1`. -/
+example :
+    Finset.slotSurplusHeight (range 3) (fun i ↦ i % 2) 1 1 = 1 ∧
+      1 * (Finset.slotSurplusHeight (range 3) (fun i ↦ i % 2) 1 1 + 1) <
+        (range 3).sum (fun i ↦
+          Finset.slotSurplusHeight (range 3) (fun i ↦ i % 2) 1 1 + 1 - i % 2) := by
+  refine ⟨by decide, ?_⟩
+  exact Finset.rows_mul_slotSurplusHeight_add_one_lt_sum_tsub (range 3) (fun i ↦ i % 2) 1 1
+    (by decide) (by intro i hi; omega)

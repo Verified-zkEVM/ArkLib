@@ -154,6 +154,14 @@ example : CoeffNatDegreeLE paramTimesVar 1 := by
   simpa using (coeffNatDegreeLE_C (σ := Unit) (p := (Polynomial.X : Polynomial ℚ))
     (by simp)).mul (coeffNatDegreeLE_X ())
 
+/-- Moving `X none` out as a polynomial variable commutes with casting coefficients to `ℚ`. -/
+example :
+    Polynomial.map (map (Int.castRingHom ℚ))
+        (optionEquivLeft ℤ Unit (X none : MvPolynomial (Option Unit) ℤ)) =
+      optionEquivLeft ℚ Unit
+        (map (Int.castRingHom ℚ) (X none : MvPolynomial (Option Unit) ℤ)) :=
+  map_optionEquivLeft _ _
+
 /-- The joint total degree of `t * Y` is `2`. -/
 example : jointTotalDegree paramTimesVar = 2 := by
   have h : (optionEquivRight ℚ Unit).symm paramTimesVar =
@@ -163,6 +171,16 @@ example : jointTotalDegree paramTimesVar = 2 := by
   rw [jointTotalDegree, h, totalDegree_monomial _ one_ne_zero,
     Finsupp.sum_add_index' (fun _ ↦ rfl) (fun _ _ _ ↦ rfl)]
   simp
+
+/-- Mapping coefficients from `ℤ` and evaluating at `2` commutes for `t * Y`. -/
+example :
+    map (Polynomial.evalRingHom (2 : ℚ))
+        (map (Polynomial.mapRingHom (Int.castRingHom ℚ))
+          (C (Polynomial.X : Polynomial ℤ) * X () : MvPolynomial Unit (Polynomial ℤ))) =
+      map (Polynomial.eval₂RingHom (Int.castRingHom ℚ) (2 : ℚ))
+        (C (Polynomial.X : Polynomial ℤ) * X () : MvPolynomial Unit (Polynomial ℤ)) :=
+  eval_map_coefficients (σ := Unit) (Int.castRingHom ℚ) 2
+    (C (Polynomial.X : Polynomial ℤ) * X ())
 
 /-! ### Division-free Schwartz–Zippel -/
 
