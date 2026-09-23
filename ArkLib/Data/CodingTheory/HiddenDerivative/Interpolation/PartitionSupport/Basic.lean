@@ -134,12 +134,6 @@ theorem partitionSupportSpace_natCeil [CommSemiring F] (hD : 0 < D) :
 
 /-! ### Nonemptiness and degree bound -/
 
-/-- The constant monomial is partition-support eligible exactly when `0 < L`: its derivative-order
-weight `0` is at most every `W`, and its coarse weight is `0`. -/
-theorem partitionSupportEligible_zero_iff :
-    PartitionSupportEligible D d W L (0 : JetVariable d →₀ ℕ) ↔ 0 < L := by
-  simp [PartitionSupportEligible, fullDerivativeJetWeight, totalJetDegree]
-
 open Finset in
 /-- For `0 < D`, some exponent is partition-support eligible exactly when `0 < L`, for every
 derivative budget `W`. If `0 < L` the constant monomial is eligible; conversely every coarse
@@ -151,7 +145,8 @@ theorem card_partitionSupportExponents_pos_iff (hD : 0 < D) :
   · rintro ⟨u, hu⟩
     exact (Nat.cast_nonneg _).trans_lt (mem_partitionSupportExponents.mp hu).2
   · intro hL
-    exact ⟨0, mem_partitionSupportExponents.mpr (partitionSupportEligible_zero_iff.mpr hL)⟩
+    exact ⟨0, mem_partitionSupportExponents.mpr
+      (by simpa [PartitionSupportEligible, fullDerivativeJetWeight, totalJetDegree] using hL)⟩
 
 /-- For `0 < D`, the partition support space over a field is nonzero exactly when `0 < L`. -/
 theorem finrank_partitionSupportSpace_pos_iff [Field F] (hD : 0 < D) :
