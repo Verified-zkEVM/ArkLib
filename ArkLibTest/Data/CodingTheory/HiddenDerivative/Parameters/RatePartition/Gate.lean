@@ -11,7 +11,8 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.Gate
 
 Concrete values of `rateGamma` and `fixedRateCoefficient`, cases showing that the kept
 hypotheses are needed, and the forms with the stronger hypotheses `0 < R`, `0 < δ` and `R < 1`
-derived from the stated theorems.
+derived from the stated theorems. The fixed-rate factorization, cutoff and strict gate are also
+checked at concrete positive parameters.
 -/
 
 namespace ReedSolomon.HiddenDerivative.RatePartition
@@ -85,6 +86,40 @@ example : ¬ ∃ gapBound : ℝ, 0 < gapBound ∧ ∀ gap : ℝ, 0 < gap → gap
   linarith
 
 /-! ### Forms with stronger hypotheses -/
+
+/-- The exponential identity at rate `1`, agreement `2` and positive order `20`. -/
+example : rateGamma 1 2 20 =
+    (27 / 20 : ℝ) * 21 * Real.exp (-(1 / 2 * Real.log 120)) := by
+  convert rateGamma_eq_exponential (rate := 1) (agreement := 2) (order := 20) (by norm_num)
+    using 1; norm_num
+
+/-- The exact factorization applies to a positive rate, agreement and derivative order. -/
+example : rateGamma (1 / 2) (3 / 4) 500 =
+    (9 * (1 / 2 : ℝ) / 40) * (6 * (500 : ℝ)) ^ (((3 / 4 : ℝ) - 1 / 2) / (3 / 4 : ℝ)) *
+      (1 + 1 / (500 : ℝ)) := by
+  exact rateGamma_factorization (rate := 1 / 2) (agreement := 3 / 4) (order := 500)
+    (by norm_num) (by norm_num)
+
+/-- The factor-six threshold retains the successor factor at this concrete order. -/
+example : 1 + 1 / (500 : ℝ) ≤ rateGamma (1 / 2) (3 / 4) 500 := by
+  apply rateGamma_ge_one_add_inv_of_factor_six <;> norm_num [Real.rpow_natCast]
+
+/-- The factor-six threshold gives a strict limiting gate at this concrete order. -/
+example : 1 < rateGamma (1 / 2) (3 / 4) 500 := by
+  apply rateGamma_gt_one_of_factor_six <;> norm_num [Real.rpow_natCast]
+
+/-- At `R = 1/2`, `δ = 1/4`, the selected order satisfies the lower bound and strict gate. -/
+example : 500 ≤ fixedRatePartitionOrder (1 / 2) (1 / 4) ∧
+    1 < rateGamma (1 / 2) (1 / 2 + 1 / 4)
+      (fixedRatePartitionOrder (1 / 2) (1 / 4)) := by
+  exact ⟨fixedRatePartitionOrder_ge_500 (rate := 1 / 2) (gap := 1 / 4),
+    fixedRateGamma_gt_one (rate := 1 / 2) (gap := 1 / 4) (by norm_num) (by norm_num)⟩
+
+/-- The cutoff identity needs a positive gap; at `δ = 0` its two sides differ. -/
+example : ¬ ((1 / 6 : ℝ) * (40 / (9 * (1 / 2 : ℝ))) ^ ((1 / 2 + 0) / 0) =
+    (20 / (27 * (1 / 2 : ℝ))) *
+      Real.exp ((1 / 2 : ℝ) * Real.log (40 / (9 * (1 / 2 : ℝ))) / 0)) := by
+  norm_num
 
 /-- `log_rateGamma` under `0 < R`. -/
 example {rate agreement : ℝ} {order : ℕ} (hrate : 0 < rate) (horder : 0 < order) :
