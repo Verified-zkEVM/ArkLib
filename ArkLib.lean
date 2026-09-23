@@ -100,6 +100,7 @@ public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Dimension
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.Dimension
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.Interpolant
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.Space
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.SymbolicRank
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FreeOrderDimension
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Global.Interpolation
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Global.Multiplicity
