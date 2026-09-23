@@ -47,10 +47,9 @@ example :
     (#{e ∈ degreeLEFinset (Fin 1) 2 |
       ∀ b ∈ ({single (0 : Fin 1) 1} : Finset (Fin 1 →₀ ℕ)), ¬b ≤ e} : ℤ) =
       ∑ T ∈ ({single (0 : Fin 1) 1} : Finset (Fin 1 →₀ ℕ)).powerset,
-        (-1 : ℤ) ^ #T * #{e ∈ degreeLEFinset (Fin 1) 2 | T.sup id ≤ e} :=
-  by
-    simpa using (card_filter_forall_not_le_degreeLEFinset (σ := Fin 1)
-      (B := {single (0 : Fin 1) 1}) 2)
+        (-1 : ℤ) ^ #T * #{e ∈ degreeLEFinset (Fin 1) 2 | T.sup id ≤ e} := by
+  simpa using (card_filter_forall_not_le_degreeLEFinset (σ := Fin 1)
+    (B := {single (0 : Fin 1) 1}) 2)
 
 open Classical in
 /-- The cone-avoidance polynomial for the cone above `X` counts the degree-two exponents outside
@@ -58,10 +57,9 @@ it. -/
 example :
     (coneAvoidancePoly ℚ 1 ({single (0 : Fin 1) 1} : Finset (Fin 1 →₀ ℕ))).eval 2 =
       #{e ∈ degreeLEFinset (Fin 1) 2 |
-        ∀ b ∈ ({single (0 : Fin 1) 1} : Finset (Fin 1 →₀ ℕ)), ¬b ≤ e} :=
-  by
-    simpa using (eval_coneAvoidancePoly (K := ℚ) (σ := Fin 1)
-      (B := ({single (0 : Fin 1) 1} : Finset (Fin 1 →₀ ℕ))) (N := 2) (by norm_num))
+        ∀ b ∈ ({single (0 : Fin 1) 1} : Finset (Fin 1 →₀ ℕ)), ¬b ≤ e} := by
+  simpa using (eval_coneAvoidancePoly (K := ℚ) (σ := Fin 1)
+    (B := ({single (0 : Fin 1) 1} : Finset (Fin 1 →₀ ℕ))) (N := 2) (by norm_num))
 
 /-- A concrete ratio increases from `9/4` to `8/3` as the deletion count grows. -/
 example : ((10 - 1 : ℕ) : ℚ) / (5 - 1 : ℕ) ≤ ((10 - 2 : ℕ) : ℚ) / (5 - 2 : ℕ) :=

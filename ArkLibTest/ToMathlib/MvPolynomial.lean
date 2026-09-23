@@ -240,21 +240,18 @@ example : (rootContraction 2 (X none ^ 4 * X (some 0) ^ 2 :
     MvPolynomial (Option (Fin 1)) ℚ)).coeff
       (Finsupp.single none 2 + Finsupp.single (some 0) 2) = 1 := by
   calc
-    _ = (X none ^ 4 * X (some 0) ^ 2 :
-        MvPolynomial (Option (Fin 1)) ℚ).coeff
-          (Finsupp.single none 4 + Finsupp.single (some 0) 2) :=
-      by
-        rw [coeff_rootContraction (s := 2) (by norm_num)
-          (P := (X none ^ 4 * X (some 0) ^ 2 :
-            MvPolynomial (Option (Fin 1)) ℚ))
-          (m := Finsupp.single none 2 + Finsupp.single (some 0) 2)]
-        congr 1
-        ext j
-        cases j with
-        | none => simp
-        | some i =>
-            fin_cases i
-            simp
+    _ = (X none ^ 4 * X (some 0) ^ 2 : MvPolynomial (Option (Fin 1)) ℚ).coeff
+          (Finsupp.single none 4 + Finsupp.single (some 0) 2) := by
+      rw [coeff_rootContraction (s := 2) (by norm_num)
+        (P := (X none ^ 4 * X (some 0) ^ 2 : MvPolynomial (Option (Fin 1)) ℚ))
+        (m := Finsupp.single none 2 + Finsupp.single (some 0) 2)]
+      congr 1
+      ext j
+      cases j with
+      | none => simp
+      | some i =>
+          fin_cases i
+          simp
     _ = 1 := by
       rw [X_pow_eq_monomial, X_pow_eq_monomial, monomial_mul_monomial, one_mul]
       simp
