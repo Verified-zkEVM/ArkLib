@@ -170,9 +170,11 @@ public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RankRounding
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.BlockLength
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.ClosedMultiplicity
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.FiniteRatio
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.FixedRateGate
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.Gate
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.Moment
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.Recipe
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.UniformGamma
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.UniformParameters
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.WeightedSupport.Block
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.WeightedSupport.Capacity
