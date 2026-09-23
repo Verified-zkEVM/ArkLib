@@ -33,8 +33,7 @@ space and provides a rational, decidable form of the finite test.
 
 ## References
 
-* [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient
-  Decoding and Smaller Cryptographic Proofs*][DKT26]
+* [DKT26]
 -/
 
 @[expose] public section
