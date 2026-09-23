@@ -35,6 +35,34 @@ example (P : ℚ[X]) (a : ℚ) :
       jetEvaluation valueAndFirstJet a (polynomialJet a P) :=
   eval_differentialSpecialization valueAndFirstJet P a
 
+private abbrev naturalBase : ℕ[X] := X ^ 2 + 2 * X + 3
+
+private abbrev naturalDirection : ℕ[X] := 2 * X ^ 2 + X + 1
+
+/-- Concrete order-zero, first, and second Hasse jets over `ℕ` record an affine sum. -/
+example :
+    polynomialJet (d := 2) 0 naturalBase = ![3, 2, 1] ∧
+      polynomialJet (d := 2) 0 naturalDirection = ![1, 1, 2] ∧
+      polynomialJet (d := 2) 0 (naturalBase + Polynomial.C 3 * naturalDirection) =
+        ![6, 5, 7] := by
+  constructor
+  · ext j
+    fin_cases j <;>
+      rw [polynomialJet, Polynomial.hasseJet_eq_taylor_coeff] <;>
+      norm_num [naturalBase, Polynomial.taylor, Polynomial.coeff_X,
+        Polynomial.coeff_C, Polynomial.coeff_X_pow, Polynomial.coeff_one]
+  constructor
+  · ext j
+    fin_cases j <;>
+      rw [polynomialJet, Polynomial.hasseJet_eq_taylor_coeff] <;>
+      norm_num [naturalDirection, Polynomial.taylor, Polynomial.coeff_X,
+        Polynomial.coeff_C, Polynomial.coeff_X_pow, Polynomial.coeff_one]
+  · ext j
+    fin_cases j <;>
+      rw [polynomialJet, Polynomial.hasseJet_eq_taylor_coeff] <;>
+      norm_num [naturalBase, naturalDirection, Polynomial.taylor, Polynomial.coeff_X,
+        Polynomial.coeff_C, Polynomial.coeff_X_pow, Polynomial.coeff_one]
+
 end
 
 end PolynomialDifferential

@@ -537,6 +537,13 @@ are the special cases of the new composition laws `globalPointTranslation_comp`,
 source's `Matrix.rank_map_algebraMap_le`, a base-change bound on matrix rank that does not
 concern translation; its only source consumer is `Interpolation/Symbolic/LocalRank.lean`.
 
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/PartitionSupport/RateBound.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/PartitionSupport/RateBound.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`ratePartition_totalJetDegree_le` is renamed `partitionSupport_totalJetDegree_le_rateJetCap`; the theorem bounds total jet degree under the ambient degree lower bound, using the renamed eligibility predicate and degree cap.
+
+No declarations were left unported from this source file.
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/PartitionSupport/Dimension.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/RatePartition/Area.lean` at ArkLib revision
@@ -975,6 +982,14 @@ under its source name, except as follows.
 `exists_orderThreshold_for_boxWidth`: The source stated this
 for `c = 2`, with the explicit threshold `⌈32 / θ⌉`.
 
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition/Gate.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/RatePartition/Gate.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`ratePartitionExponent_eq` is renamed `fixedRateCoefficient_eq`. `ratePartitionGamma_gt_one_of_log_bound` and `ratePartitionGamma_gt_one_of_exponent_margin` are renamed `rateGamma_gt_one_of_log_bound` and `rateGamma_gt_one_of_exponent_margin`; their mathematics is unchanged.
+
+Not ported: `log_ratePartitionGamma` is covered by the existing, more general `log_rateGamma`; `ratePartitionExponent` and `ratePartitionExponent_pos` are covered by `fixedRateCoefficient` and the existing, more general `fixedRateCoefficient_pos`; `ratePartition_fixedRate_eventually` is covered by `exists_small_gap_rate_gate`.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition/Moment.lean`
 
 Ported from the moment part of
@@ -1030,6 +1045,14 @@ lemmas are now `tendsto_partitionWeightBudget_div`, `tendsto_partitionInverseRad
 `RatePartitionFiniteParameters` is now `PartitionFiniteParameters`, and
 `exists_ratePartitionFiniteParameters` is now `PartitionFiniteParameters.nonempty`.
 `partitionWeightBudget_level_le` is not ported.
+
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition/Recipe.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/RatePartition/Recipe.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`exists_partitionFiniteParameters_of_rateGamma_gt_one` is new and bridges the strict limiting gate to the existing finite-ratio existence theorem. `rateMultiplicity`, `rateMultiplicity_spec`, and `rateMultiplicity_minimal` keep their names and choose and characterize the least multiplicity with positive weight budget and finite ratio above one, using `partitionFiniteRatio` in place of `finiteGamma`.
+
+No declarations were left unported from this source file.
 
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition/UniformParameters.lean`
 
@@ -1242,6 +1265,12 @@ of `ArkLib.Data.CodingTheory.ListDecodability.AgreementRadius`.
 `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/` at ArkLib revision
 `a5aa2677fee4e3a79d6bb05136631cce4a08587d`, made public and stated over semirings for any
 injective ring hom.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Geometry/SolutionExtension.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`mapped_agreement_count` is now `card_polynomialAgreement_map`. It applies to any finite indexed domain, including domains with repeated evaluation points, and lives in the Reed–Solomon agreement API.
+
+Not ported: `card_image_polynomial_map` follows from `Finset.card_image_of_injective` and `Polynomial.map_injective`; the acceptance test derives the source-shaped count.
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/Interleaved/AgreementBounds.lean`
 
@@ -1498,6 +1527,12 @@ Merges `FirstOrder/Squarefree/Bounds.lean` and `FirstOrder/Squarefree/SingularTa
 `r ≤ j` and `A.natDegree = r`, and `singularTail_map_eq_zero_of_common_root` drops both `IsDomain`
 assumptions.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/PointRecognition.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/PointRecognition.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`ReedSolomon.exists_graphLine_pair_of_symbolic_sample` keeps its name and mathematical statement. It recovers a base-field polynomial pair from the sample constraints and shows that every compatible regular symbolic chart reconstructs their affine combination, its initial jet, and its cleared Taylor coefficients. The current theorem uses the explicit `2 * K` exponent API. No declaration from the source file was omitted; the TaylorCuts bridge declarations are supplied by the current `TaylorChartAlgebra` API.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TupleSpecialization.lean`
 
 Ported from
@@ -1725,6 +1760,11 @@ contact weight to an arbitrary weight, and from commutative rings to commutative
 
 ## `ArkLib/Data/Polynomial/Differential/BaseChange.lean`
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Geometry/SolutionExtension.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`mapped_regular_solution_family` is now `map_regularSolutionFamily`. It is generalized from fields to commutative semirings with an explicit injective coefficient map, and from the last separant to any jet coordinate. `map_differentialSpecialization_ne_zero_iff` is a new reusable lemma that proves an injective coefficient map preserves nonvanishing of differential specialization.
+
+Not ported: `map_separant` already exists as `PolynomialDifferential.map_separant` in this module. `map_binomial_pivots` follows from naturality of `Nat.cast` under an injective ring hom; the acceptance test derives the field form.
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Symbolic/CoefficientExtension.lean` at ArkLib revision
 `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
@@ -1985,6 +2025,13 @@ default-exponent theorem and an `_of_exponent` theorem is one theorem taking
 `rationalTaylorCutDegreeBound` comes from `Geometry/HighCutGeometry.lean` with `τ` in place of
 `2K`.
 
+## `ArkLib/Data/Polynomial/Differential/TaylorChartBaseChange.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Geometry/SolutionExtension.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`exists_common_regular_center_extension` is now `exists_forall_jetEvaluation_ne_zero_map`. It is generalized to a commutative semiring source, an infinite domain target, an explicit injective map, and any jet coordinate. The theorem maps the finite family and applies the existing infinite-domain geometry result.
+
+Not ported: `exists_common_regular_center_algebraicClosure` is an algebra-map specialization of the generic theorem; the acceptance test checks that form.
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Symbolic/TaylorSpecialization.lean` at ArkLib revision
 `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
@@ -3748,6 +3795,11 @@ finite set to `K` do not form a finite-dimensional `k`-space.
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/RatePartition/SourceEstimate.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 The source declaration `ratePartition_dimension_gt_of_moment` is covered by the existing generic theorem `partitionSupport_dimension_gt_moment`. The acceptance case derives the source-shaped dimension estimate with cutoff `m * A`, explicit simplex volume, and exponent count, checking the cutoff and scale conversions, simplex-volume identity, and finrank-to-exponent-count identity. The generic theorem allows an arbitrary moment bound, rate, level, logarithm, and natural cutoff. No ArkLib production declaration is added; the source-specific wrapper is not needed because the generic theorem already covers it.
+## `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/PointRecognition.lean`
+
+Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/PointRecognition.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+The acceptance cases check the zero case and a sample with second received value `1`, challenge `2`, `K = 2 > k = 1`, and a satisfied cut at `l = 1`. They check the reconstructed affine polynomial, jet, and cleared coefficient conclusions.
 
 ## `ArkLibTest/Data/Probability/Uniform.lean`
 

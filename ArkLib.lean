@@ -125,6 +125,7 @@ public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionS
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.FloorTransfer
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.LocalRank
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.MomentSource
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.RateBound
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.SolutionEmbedding
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.SourceMonomial
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Space
@@ -171,6 +172,7 @@ public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.FiniteRatio
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.Gate
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.Moment
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.Recipe
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.UniformParameters
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.WeightedSupport.Block
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.WeightedSupport.Capacity
@@ -315,6 +317,8 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ord
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Pairs.ExceptionalSet
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Pairs.Family
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.SingularTail
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TaylorChart.PointRecognition
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TupleSpecialization
 public import ArkLib.Data.CodingTheory.ReedSolomon.PowerAgreement
 public import ArkLib.Data.CodingTheory.ReedSolomon.PowerAgreement.ConstantCode
@@ -436,6 +440,7 @@ public import ArkLib.Data.Polynomial.Differential.ShiftedJet
 public import ArkLib.Data.Polynomial.Differential.SingularRecursion
 public import ArkLib.Data.Polynomial.Differential.TaylorChart
 public import ArkLib.Data.Polynomial.Differential.TaylorChartAlgebra
+public import ArkLib.Data.Polynomial.Differential.TaylorChartBaseChange
 public import ArkLib.Data.Polynomial.Differential.TaylorChartGeometry
 public import ArkLib.Data.Polynomial.Differential.TaylorChartIncidence
 public import ArkLib.Data.Polynomial.Differential.TaylorIndexWeight

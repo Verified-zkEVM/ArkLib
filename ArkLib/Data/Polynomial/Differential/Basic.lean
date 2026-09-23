@@ -81,6 +81,14 @@ def jetEvaluation [CommSemiring F] (Q : DifferentialPolynomial F d) (a : F)
 def polynomialJet [Semiring F] (a : F) (P : F[X]) : Fin (d + 1) → F :=
   Polynomial.hasseJet (d + 1) a P
 
+/-- The Hasse jet of an affine combination is the same affine combination of the jets. -/
+theorem polynomialJet_add_C_mul [Semiring F] (a z : F) (P Q : F[X]) :
+    polynomialJet (d := d) a (P + Polynomial.C z * Q) =
+      fun j ↦ polynomialJet (d := d) a P j + z * polynomialJet (d := d) a Q j := by
+  rw [← Polynomial.smul_eq_C_mul]
+  funext j
+  simp [polynomialJet]
+
 /-- Evaluating a differential specialization at `a` is evaluation on the Hasse jet of `P` at
 `a`. -/
 theorem eval_differentialSpecialization [CommSemiring F] (Q : DifferentialPolynomial F d)
