@@ -37,9 +37,9 @@ example : ((unscaledLocalSubstitution 0 (Polynomial.C (0 : ℚ)) Polynomial.X
     simp only [map_mul, map_pow, unscaledLocalSubstitution_X, unscaledLocalSubstitution_Y_zero]
     rw [← constantCoeff_eq]
     simp [localCorrection]
-  refine ⟨?_, hcoeff⟩
-  rw [hcoeff]
-  norm_num
+  exact ⟨SourceColumn.natDegree_coeff_unscaledLocalSubstitution_le
+    (R := ℚ) (ℓ := 1) (a := 0) (received := Polynomial.X) (by norm_num)
+    (⟨0, 2, ![]⟩ : SourceColumn 0) 0, hcoeff⟩
 
 private noncomputable def matrixRowE : Fin 1 × LowContactIndex 0 1 :=
   (0, ⟨Finsupp.single (localE 0) 2, by simp [localContactOrder_eq, localT, localAux]⟩)
@@ -111,6 +111,15 @@ private theorem onePointWeightedSupportDimension_ge_four :
   rw [hs, sum_singleton] at h
   norm_num [CubicStaircase.count, h1, h2] at h
   exact h
+
+example :
+    (weightedSupportLocalCoordinateMatrix (R := RatFunc ℚ) (d := 1) (D := 2) (W := 0) (L := 2)
+      1 (by norm_num) 1 2).rank ≤
+      Module.finrank ℚ (LinearMap.range
+        (weightedSupportLocalConstraint (R := ℚ) (d := 1) (D := 2) (W := 0) (L := 2)
+          1 (by norm_num) 0 0)) := by
+  exact rank_weightedSupportLocalCoordinateMatrix_le_base_actual
+    (F := ℚ) (E := RatFunc ℚ) (d := 1) (D := 2) (W := 0) (L := 2) 1 (by norm_num) 1 2
 
 private theorem onePointFixedMargin :
     (543 / 500 : ℝ) * ((1 : ℕ) : ℝ) * Module.finrank ℚ (LinearMap.range

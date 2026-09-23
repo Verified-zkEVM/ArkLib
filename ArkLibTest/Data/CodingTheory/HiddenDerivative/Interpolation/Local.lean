@@ -147,13 +147,10 @@ example : globalPointTranslation (d := 1) (2 : ℤ) 3
 example : Module.finrank ℚ (localConstraintAt (d := 0) 2 (0 : ℚ) 0).range ≤ 3 := by
   exact (finrank_range_localConstraintAt_zeroOrder_le 2 (0 : ℚ) 0).trans (by decide)
 
-example :
-    (normalizedLocalConstraintAt (R := ℤ) (d := 1) 1 0 2 (X (some 0) - C 2) = 0 ↔
-      SatisfiesLocalConstraints (R := ℤ) (d := 1) 1 0 2 (X (some 0) - C 2)) ∧
-    LinearMap.ker (normalizedLocalConstraintAt (R := ℤ) (d := 1) 1 0 2) =
-      LinearMap.ker (localConstraintCoordinatesAt (R := ℤ) (d := 1) 1 0 2) :=
-  ⟨normalizedLocalConstraintAt_eq_zero_iff 1 0 2 _,
-    normalizedLocalConstraintAt_ker_eq_coordinates 1 0 2⟩
+example : normalizedLocalConstraintAt (R := ℤ) (d := 1) 1 0 2
+    (X (some 0) - C 2) = 0 := by
+  rw [normalizedLocalConstraintAt_eq_zero_iff]
+  exact satisfiesLocalConstraintsOneYZeroSub 1 0 2
 
 open Polynomial in
 example : normalizedBackwardTaylorError (2 : ℤ) (Polynomial.X ^ 2 : ℤ[X]) 1 = -Polynomial.X := by

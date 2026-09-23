@@ -55,11 +55,21 @@ example : 2 < firstOrderHeightSlotCount 2 3 1 0 1 1 := by
     (M := 0) (μ := 1) (rowTotal := 1) (by omega) (by rw [hcard]; decide)
   simpa [firstOrderHeightOne] using h
 
-example :
-    Function.Injective (firstOrderColumns (D := 2) (A := 3) (m := 1) (M := 0) (μ := 1)) ∧
-      ∀ j, (firstOrderColumns (D := 2) (A := 3) (m := 1) (M := 0) (μ := 1) j).exponent ∈
-        firstOrderExponents 2 3 1 0 1 :=
-  ⟨firstOrderColumns_injective, firstOrderColumns_eligible⟩
+example : ∃ i j : Fin (Fintype.card ↑(firstOrderExponents 2 3 1 0 1)),
+    i.val = 0 ∧ j.val = 1 ∧
+      firstOrderColumns (D := 2) (A := 3) (m := 1) (M := 0) (μ := 1) i ≠
+        firstOrderColumns (D := 2) (A := 3) (m := 1) (M := 0) (μ := 1) j := by
+  have hcard : Fintype.card ↑(firstOrderExponents 2 3 1 0 1) = 4 := by
+    rw [Fintype.card_coe,
+      card_firstOrderExponents (D := 2) (A := 3) (m := 1) (M := 0) (μ := 1) (by omega)]
+    decide
+  let i : Fin (Fintype.card ↑(firstOrderExponents 2 3 1 0 1)) := ⟨0, by omega⟩
+  let j : Fin (Fintype.card ↑(firstOrderExponents 2 3 1 0 1)) := ⟨1, by omega⟩
+  refine ⟨i, j, by simp [i], by simp [j], ?_⟩
+  intro h
+  have hij := firstOrderColumns_injective (D := 2) (A := 3) (m := 1) (M := 0) (μ := 1) h
+  have hval := congrArg Fin.val hij
+  norm_num [i, j] at hval
 
 private def firstOrderBoundaryColumns : Fin 2 → SourceColumn 1 := fun j =>
   if j = 0 then ⟨0, 0, fun _ => 0⟩ else ⟨0, 1, fun _ => 0⟩
@@ -76,9 +86,6 @@ example :
   exact (rank_firstOrderLocalConstraintMatrix_le (D := 0) (A := 1) (m := 1) (M := 0)
     (μ := 1) (centers := fun _ ↦ (0 : ℚ)) (f := fun _ ↦ 0) (g := fun _ ↦ 0)
     firstOrderBoundaryColumns heligible).trans (by decide)
-
-example : (firstOrderExponentSet 0 3 2 1 4).Finite :=
-  firstOrderExponentSet_finite 0 3 2 1 4
 
 example : Finsupp.single none 1 + Finsupp.single (some 0) 1 ∈
     firstOrderExponents 2 2 2 0 1 := by

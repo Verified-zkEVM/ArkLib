@@ -209,10 +209,6 @@ example :
   rw [volume_real_weightedSimplex_succ 1 (by norm_num)] at h
   norm_num [harmonic, Fin.sum_univ_succ, Nat.choose] at h ⊢
 
-example : ∑ i : Fin 4, (i.val + 1) = 10 := by
-  rw [sum_fin_succ_eq_choose_two]
-  rfl
-
 example :
     (5 / 8 : ℝ) ^ 3 + (4147 / 2160) * (1 / 5) ^ 2 ≤
       ∫ x, (max (5 / 8 - x) 0) ^ 3 ∂

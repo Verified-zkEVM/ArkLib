@@ -8,6 +8,7 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Dimension
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Global.Interpolation
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Global.Multiplicity
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.CertifiedRankBound
+import ArkLibTest.Data.CodingTheory.HiddenDerivative.Interpolation
 
 /-!
 # Global interpolation acceptance case
@@ -23,44 +24,14 @@ private theorem yZeroSubMemExact (r : ℤ) :
     (X (some 0) - C r : DifferentialPolynomial ℤ 0) ∈
       exactInterpolationSpace ℤ 1 2 0 1 0 0 hdD₀₁ := by
   refine Submodule.sub_mem _ ?_ ?_
-  · rw [X, monomial_mem_exactInterpolationSpace]
+  · change monomial (Finsupp.single (some 0) 1) (1 : ℤ) ∈ _
+    rw [monomial_mem_exactInterpolationSpace]
     left
     simp [ExactInterpolationEligibleExponent, firstJetExponent, fullHigherJetWeight,
       Finsupp.weight_single, jetFirstWeight, jetHigherWeight, differentialWeight]
   · rw [MvPolynomial.C_apply, monomial_mem_exactInterpolationSpace]
     left
     simp [ExactInterpolationEligibleExponent, firstJetExponent, fullHigherJetWeight]
-
-private theorem satisfiesYZeroSub (center r : ℤ) :
-    SatisfiesLocalConstraints (d := 0) 1 center r (X (some 0) - C r) := by
-  rw [SatisfiesLocalConstraints, localConstraintAt, LinearMap.comp_apply, projectLowContact,
-    weightedTruncation_eq_zero_iff]
-  have h : (unscaledLocalSubstitution 0 center r).toLinearMap
-      (X (some 0) - C r) =
-      X (localT 0) * (X (localE 0) + localJetSum 0) := by
-    simp only [AlgHom.toLinearMap_apply, map_sub, unscaledLocalSubstitution_Y_zero, algHom_C,
-      algebraMap_eq, mul_add, T_mul_localJetSum]
-    ring
-  rw [h]
-  simpa using mul_mem_restrictWeightedOrder
-    (X_mem_restrictWeightedOrder (R := ℤ) (localContactWeight 0) (localT 0) le_rfl)
-    (by simp : X (localE 0) + localJetSum 0 ∈
-      restrictWeightedOrder (R := ℤ) (localContactWeight 0) 0)
-
-private theorem differentialWeightedDegreeYZeroSubLe (r : ℤ) :
-    differentialWeightedDegree 1
-      (X (some 0) - C r : DifferentialPolynomial ℤ 0) ≤ 1 := by
-  rw [differentialWeightedDegree, ← mem_restrictWeightedDegree_iff_weightedTotalDegree_le]
-  refine Submodule.sub_mem _ (X_mem_restrictWeightedDegree _ _ _ ?_) ?_
-  · simp [differentialWeight]
-  · rw [mem_restrictWeightedDegree_iff_weightedTotalDegree_le, weightedTotalDegree_C]
-    exact Nat.zero_le _
-
-private theorem yZeroSubNeZero (r : ℤ) :
-    (X (some 0) - C r : DifferentialPolynomial ℤ 0) ≠ 0 := by
-  intro h
-  have := congrArg (MvPolynomial.eval (fun _ ↦ r + 1)) h
-  simp at this
 
 private theorem pointsInjective : Set.InjOn (fun i : Fin 2 => (i : ℤ))
     (↑(Finset.univ : Finset (Fin 2))) := by
@@ -76,10 +47,11 @@ example :
     (X (some 0) - C (0 : ℤ) : DifferentialPolynomial ℤ 0) ≠ 0 ∧
       differentialSpecialization (X (some 0) - C (0 : ℤ) : DifferentialPolynomial ℤ 0)
         (0 : Polynomial ℤ) = 0 := by
-  refine ⟨yZeroSubNeZero 0, ?_⟩
+  refine ⟨CertificatesTest.YZeroSubNeZero 0, ?_⟩
   have h := differentialSpecialization_eq_zero_of_mem_exactInterpolationSpace_of_agreements
     (ι := Fin 2) (R := ℤ) hdD₀₁ (fun i : Fin 2 => (i : ℤ)) (fun _ => 0) Finset.univ
-    (yZeroSubMemExact 0) (fun i => satisfiesYZeroSub (i : ℤ) 0) (0 : Polynomial ℤ)
+    (yZeroSubMemExact 0) (fun i => CertificatesTest.satisfiesLocalConstraintsOneYZeroSub
+      (i : ℤ) 0) (0 : Polynomial ℤ)
     (by norm_num) pointsInjective zeroAtTwoAgreedPoints (by simp)
   exact h
 
@@ -87,15 +59,15 @@ example :
     (X (some 0) - C (1 : ℤ) : DifferentialPolynomial ℤ 0) ≠ 0 ∧
       differentialSpecialization (X (some 0) - C (1 : ℤ) : DifferentialPolynomial ℤ 0)
         (Polynomial.C (1 : ℤ)) = 0 := by
-  refine ⟨yZeroSubNeZero 1, ?_⟩
-  have hdegree : differentialWeightedDegree 1
-      (X (some 0) - C (1 : ℤ) : DifferentialPolynomial ℤ 0) < 2 := by
-    exact (differentialWeightedDegreeYZeroSubLe 1).trans_lt (by decide)
+  refine ⟨CertificatesTest.YZeroSubNeZero 1, ?_⟩
+  have hdegree := differentialWeightedDegree_lt_of_mem_exactInterpolationSpace
+    (m := 1) (A := 2) (D := 1) (d := 0) (by norm_num) hdD₀₁ (yZeroSubMemExact 1)
   have h := differentialSpecialization_eq_zero_of_differentialWeightedDegree_lt
     (D := 1) (A := 2) (m := 1) (ι := Fin 2) (R := ℤ)
     (fun i : Fin 2 => (i : ℤ)) (fun _ => 1) Finset.univ
     hdegree
-    (fun i _ => satisfiesYZeroSub (i : ℤ) 1) (Polynomial.C (1 : ℤ)) (by norm_num)
+    (fun i _ => CertificatesTest.satisfiesLocalConstraintsOneYZeroSub (i : ℤ) 1)
+    (Polynomial.C (1 : ℤ)) (by norm_num)
     pointsInjective zeroAtTwoAgreedPoints (by simp)
   exact h
 
