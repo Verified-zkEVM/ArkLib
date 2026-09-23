@@ -41,8 +41,6 @@ This file records both degrees.
 * `MvPolynomial.jointTotalDegree`, its ring-operation bounds, `jointTotalDegree_C_le`,
   `jointTotalDegree_le_of_natDegree_coeff_le` and its form
   `CoeffNatDegreeLE.jointTotalDegree_le`, and `jointTotalDegree_clearedSubstitution_le`.
-
-## References
 -/
 
 @[expose] public section

@@ -43,8 +43,11 @@ private def jointReceivedF : Fin 1 → ℚ := fun _ ↦ 0
 
 private def jointReceivedG : Fin 1 → ℚ := fun _ ↦ 1
 
-private abbrev componentEquation {E : Type*} [CommSemiring E] :
-    DifferentialPolynomial E[X] 0 := X (some 0)
+private abbrev componentEquation {E : Type*} [CommRing E] :
+    DifferentialPolynomial E[X] 0 :=
+  (MvPolynomial.X (some (0 : Fin 1)) : DifferentialPolynomial E[X] 0) -
+    (MvPolynomial.X none : DifferentialPolynomial E[X] 0) *
+      MvPolynomial.X (some (0 : Fin 1))
 
 private abbrev componentVariable {E : Type*} [CommSemiring E] :
     MvPolynomial (Option (Fin 1)) E := X (some (0 : Fin 1))
@@ -99,27 +102,33 @@ private theorem component_initialEquation_mem :
   simp only [optionEquivRight_symm_X]
   exact component_generator_mem
 
-private theorem component_commonNumerator_zero :
+private theorem component_commonNumerator_one :
     commonTaylorNumeratorOver ComponentField (Polynomial.C (0 : ComponentField))
-      (componentEquation (E := ComponentField)) 2 1 = 0 := by
+      (componentEquation (E := ComponentField)) 2 1 =
+        (MvPolynomial.X (0 : Fin 1) : MvPolynomial (Fin 1) (Polynomial ComponentField)) := by
   have hcoeff :
       ((optionEquivLeft (Polynomial ComponentField) (Fin 1)
         (universalTaylorResidual 1 (Polynomial.C (0 : ComponentField))
-          (componentEquation (E := ComponentField)))).coeff 1) = 0 := by
+          (componentEquation (E := ComponentField)))).coeff 1) =
+        -(MvPolynomial.X (0 : Fin 1) : MvPolynomial (Fin 1) (Polynomial ComponentField)) := by
     rw [show universalTaylorResidual 1 (Polynomial.C (0 : ComponentField))
         (componentEquation (E := ComponentField)) =
-          universalTaylorJet (F := Polynomial ComponentField) 1 0 by
+          universalTaylorJet (F := Polynomial ComponentField) 1 0 -
+            MvPolynomial.X none * universalTaylorJet (F := Polynomial ComponentField) 1 0 by
       simp [universalTaylorResidual, componentEquation]]
-    rw [optionEquivLeft_universalTaylorJet]
+    rw [map_sub, map_mul, optionEquivLeft_X_none,
+      optionEquivLeft_universalTaylorJet]
     simp [Polynomial.hasseDeriv]
   have hnumerator :
       rationalTaylorNumeratorOver ComponentField (Polynomial.C (0 : ComponentField))
-        (componentEquation (E := ComponentField)) 1 = 0 := by
+        (componentEquation (E := ComponentField)) 1 =
+          (MvPolynomial.X (0 : Fin 1) : MvPolynomial (Fin 1) (Polynomial ComponentField)) := by
     rw [rationalTaylorNumeratorOver, dite_eq_right (by omega)]
     rw [hcoeff]
-    simp [MvPolynomial.clearedSubstitution]
+    simp [MvPolynomial.clearedSubstitution, rationalTaylorNumeratorOver,
+      initialJetSeparant, componentEquation, separant, Fin.last, MvPolynomial.support_X]
   rw [commonTaylorNumeratorOver, hnumerator]
-  simp
+  simp [initialJetSeparant, componentEquation, separant, Fin.last]
 
 private theorem component_commonNumerator_initial :
     commonTaylorNumeratorOver ComponentField (Polynomial.C (0 : ComponentField))
@@ -129,17 +138,34 @@ private theorem component_commonNumerator_initial :
   rw [commonTaylorNumeratorOver, rationalTaylorNumeratorOver, dite_eq_left hlt]
   simp [initialJetSeparant, componentEquation, separant, Fin.last]
 
+private abbrev componentHighNumerator : MvPolynomial (Option (Fin 1)) ComponentField :=
+  jointCommonTaylorNumerator (r := 0) (0 : ComponentField)
+    (componentEquation (E := ComponentField)) 2 (1 : Fin 2)
+
+private theorem component_highNumerator_eq :
+    componentHighNumerator = componentVariable (E := ComponentField) := by
+  rw [componentHighNumerator, jointCommonTaylorNumerator]
+  change (optionEquivRight ComponentField (Fin 1)).symm
+      (commonTaylorNumeratorOver ComponentField (Polynomial.C (0 : ComponentField))
+        (componentEquation (E := ComponentField)) 2 1) = componentVariable
+  rw [component_commonNumerator_one]
+  simp [componentVariable]
+
+private theorem component_highNumerator_mem : componentHighNumerator ∈ componentIdeal := by
+  rw [component_highNumerator_eq]
+  exact component_generator_mem
+
+private theorem component_highNumerator_ne_zero : componentHighNumerator ≠ 0 := by
+  rw [component_highNumerator_eq]
+  exact X_ne_zero _
+
 private theorem component_highCuts : ∀ l : Fin 2, 1 ≤ l.val →
     jointCommonTaylorNumerator (r := 0) (0 : ComponentField)
       (componentEquation (E := ComponentField)) 2 l ∈ componentIdeal := by
   intro l hl
   have hl1 : l = 1 := Fin.ext (by omega)
   subst l
-  change (optionEquivRight ComponentField (Fin 1)).symm
-      (commonTaylorNumeratorOver ComponentField (Polynomial.C (0 : ComponentField))
-        (componentEquation (E := ComponentField)) 2 1) ∈ componentIdeal
-  rw [component_commonNumerator_zero]
-  simp
+  exact component_highNumerator_mem
 
 private theorem component_cut_eq :
     taylorAgreementEquationOver (F := ComponentField) (Polynomial.C (0 : ComponentField))
@@ -148,7 +174,7 @@ private theorem component_cut_eq :
           (componentEquation (E := ComponentField)) := by
   rw [taylorAgreementEquationOver, Fin.sum_univ_two]
   simp only [Fin.val_zero, Fin.val_one]
-  rw [component_commonNumerator_initial, component_commonNumerator_zero]
+  rw [component_commonNumerator_initial]
   simp [initialJetEquation, initialJetSeparant, separant, componentEquation]
 
 private theorem component_agreementCuts : ∀ i ∈ Finset.univ,
@@ -300,6 +326,7 @@ example :
 example :
     ∃ P₀ P₁ : ℚ[X],
       P₀.eval 0 = 0 ∧ P₁.eval 0 = 0 ∧
+      componentHighNumerator ∈ componentIdeal ∧ componentHighNumerator ≠ 0 ∧
       ∀ x, x ∈ zeroLocus ComponentField (componentIdeal (E := ComponentField)) ∧
         aeval x (jointInitialJetSeparant (r := 0) (0 : ComponentField)
           (componentEquation (E := ComponentField))) ≠ 0 →
@@ -321,6 +348,7 @@ example :
   refine ⟨P₀, P₁,
     by simpa [componentWord, hd0] using (hsample 0 (by simp)).1,
     by simpa [componentWord, hd0] using (hsample 0 (by simp)).2,
+    component_highNumerator_mem, component_highNumerator_ne_zero,
     ?_⟩
   intro x hx
   exact hgraph x hx
