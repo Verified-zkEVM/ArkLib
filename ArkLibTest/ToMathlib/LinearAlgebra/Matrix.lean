@@ -52,8 +52,8 @@ open scoped Matrix
 
 namespace SupportedRowsTest
 
-/-- The matrix has a single zero row between two nonzero rows. -/
-def M₀ : Matrix (Fin 3) (Fin 1) ℚ := !![1; 0; 2]
+/-- Every nonzero row is a multiple of `(1, 1)`, with a zero row between them. -/
+def M₀ : Matrix (Fin 3) (Fin 2) ℚ := !![1, 1; 0, 0; 2, 2]
 
 /-- The selected rows cover every nonzero entry. -/
 def r₀ : Fin 2 → Fin 3 := ![0, 2]
@@ -62,12 +62,19 @@ theorem hr₀ : ∀ i j, M₀ i j ≠ 0 → i ∈ Set.range r₀ := by
   intro i j h
   fin_cases i
   · exact ⟨0, rfl⟩
-  · simp [M₀] at h
+  · fin_cases j <;> simp [M₀] at h
   · exact ⟨1, rfl⟩
 
-/-- Restricting to the selected rows preserves the kernel at a concrete vector. -/
-example : M₀.submatrix r₀ id *ᵥ ![1] = 0 ↔ M₀ *ᵥ ![1] = 0 :=
-  Matrix.submatrix_mulVec_eq_zero_iff_of_ne_zero_mem_range M₀ r₀ hr₀ ![1]
+/-- Restricting to the selected rows preserves a nonzero vector in the kernel. -/
+example : ![1, -1] ≠ (0 : Fin 2 → ℚ) ∧ M₀ *ᵥ ![1, -1] = 0 ∧
+    M₀.submatrix r₀ id *ᵥ ![1, -1] = 0 ∧
+      (M₀.submatrix r₀ id *ᵥ ![1, -1] = 0 ↔ M₀ *ᵥ ![1, -1] = 0) := by
+  refine ⟨by norm_num, ?_, ?_,
+    Matrix.submatrix_mulVec_eq_zero_iff_of_ne_zero_mem_range M₀ r₀ hr₀ ![1, -1]⟩
+  · ext i
+    fin_cases i <;> norm_num [M₀, Matrix.mulVec, Fin.sum_univ_two]
+  · ext i
+    fin_cases i <;> norm_num [M₀, r₀, Matrix.submatrix, Matrix.mulVec, Fin.sum_univ_two]
 
 /-- Restricting to the selected rows preserves the rank. -/
 example : (M₀.submatrix r₀ id).rank = M₀.rank :=

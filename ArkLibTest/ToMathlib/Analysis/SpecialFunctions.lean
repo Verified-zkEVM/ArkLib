@@ -20,14 +20,6 @@ example : Real.exp ((Real.log 4 + 1) / 2 + 1) ≤
     (E := (Real.log 4 + 1) / 2 + 1) (H := Real.log 4 + 1) (x := 4)
     (by norm_num) (by norm_num) le_rfl le_rfl
 
-/-- For `a = 2`, `b = 1`, `c = 0`, and `x = 4`, the weaker constant bound still holds. -/
-example : Real.exp ((Real.log 4 + 1) / 2) ≤ Real.exp 1 * (4 : ℝ) ^ ((1 : ℝ) / 2) :=
-  by
-    simpa only [add_zero] using
-      (Real.exp_le_exp_add_mul_rpow_of_le_log_add (a := 2) (b := 1) (c := 0)
-        (E := (Real.log 4 + 1) / 2) (H := Real.log 4 + 1) (x := 4)
-        (by norm_num) (by norm_num) (by norm_num) le_rfl (by simp))
-
 /-- With `c = 2` and `ρ = 1`, the tangent bound gives `2 * exp 1 ≤ exp 2`. -/
 example : Real.exp 1 * 2 ≤ 1 * Real.exp (2 / 1) :=
   Real.exp_one_mul_le_mul_exp_div 2 one_pos

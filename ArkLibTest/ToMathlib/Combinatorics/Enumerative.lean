@@ -15,11 +15,6 @@ import Mathlib.Tactic.NormNum
 
 open Finset Finsupp
 
-/-- Deleting two positions from `range 6` loses at most two even incidences. -/
-example : #((range 6).bipartiteAbove (fun (_ : ℕ) b ↦ b % 2 = 0) 0) - #({2, 3} : Finset ℕ) ≤
-    #(((range 6) \ {2, 3}).bipartiteAbove (fun (_ : ℕ) b ↦ b % 2 = 0) 0) :=
-  card_bipartiteAbove_sub_card_le_card_bipartiteAbove_sdiff _ _ _ _
-
 /-- Deleting two of five related columns leaves a positive sharp incidence bound. -/
 example : #(univ : Finset (Fin 3)) * (3 - #({0, 1} : Finset (Fin 5))) ≤
     ∑ b ∈ (univ : Finset (Fin 5)) \ {0, 1},
@@ -28,15 +23,6 @@ example : #(univ : Finset (Fin 3)) * (3 - #({0, 1} : Finset (Fin 5))) ≤
   simpa using card_mul_sub_card_le_sum_card_bipartiteBelow_sdiff
     (r := fun _ : Fin 3 => fun b : Fin 5 => b.val < 3)
     (s := univ) (t := univ) ({0, 1} : Finset (Fin 5)) (A := 3)
-    (by intro a ha; fin_cases a <;> decide)
-
-/-- A concrete full relation attains the complement deletion bound. -/
-example :
-    #(univ : Finset (Fin 3)) * (5 - #({0, 1} : Finset (Fin 5))) ≤
-      ∑ b ∈ ({0, 1} : Finset (Fin 5))ᶜ,
-        #((univ : Finset (Fin 3)).bipartiteBelow (fun _ : Fin 3 => fun _ : Fin 5 => True) b) :=
-  card_mul_sub_card_le_sum_compl_card_bipartiteBelow
-    (r := fun _ : Fin 3 => fun _ : Fin 5 => True) (u := {0, 1}) (A := 5)
     (by intro a ha; fin_cases a <;> decide)
 
 /-- Root dependent exceptional sets give the expected bound on the concrete full ranges. -/

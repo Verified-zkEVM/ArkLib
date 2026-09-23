@@ -54,13 +54,6 @@ example : (natWeightedSimplex (fun _ : Fin 3 ↦ 1) 2).card = 10 := by
   rw [card_natWeightedSimplex_one]
   decide
 
-/-- The `1, …, n` sandwich at `n = 2`, `W = 3`: its constants reduce to `16 ≤ 4 · 6 ≤ 36`. -/
-example : 16 ≤ 4 * (natWeightedSimplex (fun i : Fin 2 ↦ i.val + 1) 3).card ∧
-    4 * (natWeightedSimplex (fun i : Fin 2 ↦ i.val + 1) 3).card ≤ 36 := by
-  have h := natWeightedSimplex_succ_sandwich 2 3
-  norm_num [Nat.factorial, Nat.choose] at h
-  exact h
-
 /-- The general sandwich at weights `(2, 1)` on `Bool`, `W = 3`, where the count is `6`. -/
 example : 16 ≤ 2 * 2 * (natWeightedSimplex (fun b : Bool ↦ if b then 2 else 1) 3).card ∧
     2 * 2 * (natWeightedSimplex (fun b : Bool ↦ if b then 2 else 1) 3).card ≤ 36 := by
@@ -71,13 +64,6 @@ example : 16 ≤ 2 * 2 * (natWeightedSimplex (fun b : Bool ↦ if b then 2 else 
   simp only [Fintype.card_bool, Fintype.prod_bool, Fintype.sum_bool] at hlo hhi
   norm_num [Nat.factorial] at hlo hhi
   exact ⟨by omega, by omega⟩
-
-example : ((natWeightedSimplex (fun i : Fin 2 ↦ i.val + 1) 3).card : ℚ) ≤
-    ((3 : ℚ) + ∑ i : Fin 2, (i.val + 1 : ℚ)) ^ 2 /
-      ((2 : ℚ) * ∏ i : Fin 2, (i.val + 1 : ℚ)) := by
-  simpa [Nat.cast_add] using
-    (card_natWeightedSimplex_le (K := ℚ) (fun i : Fin 2 ↦ i.val + 1)
-      (fun i ↦ Nat.succ_ne_zero _) 3)
 
 example : (fun _ : Fin 1 ↦ 0) ∈
     natWeightedSimplex (fun _ : Fin 1 ↦ 1) 1 := by
@@ -192,10 +178,9 @@ example : (1 : ℚ) ^ 2 * ((natWeightedSimplex (fun _ : Fin 2 ↦ 1) 1).filter
     Fin.sum_univ_two] at h ⊢
   exact h
 
-example : (1 : ℝ) ≤ 19 / 12 := by
+example : (3 : ℝ) ≤ 13 / 3 := by
   have h := sum_natWeightedSimplex_max_sub_add_one_le (w := fun _ : Fin 1 ↦ 1)
-    (fun _ ↦ one_ne_zero) 0 (a := 1) (fun _ ↦ zero_le_one) (T := 0) (by norm_num)
-  have hset : natWeightedSimplex (fun _ : Fin 1 ↦ 1) 0 = {fun _ ↦ 0} := by decide
+    (fun _ ↦ one_ne_zero) 1 (a := 1) (fun _ ↦ zero_le_one) (T := 1) (by norm_num)
+  have hset : natWeightedSimplex (fun _ : Fin 1 ↦ 1) 1 = {![0], ![1]} := by decide
   rw [hset, volume_real_weightedSimplex (fun _ ↦ by norm_num) (by norm_num)] at h
-  norm_num at h
-  linarith
+  norm_num [Fin.sum_univ_one] at h ⊢

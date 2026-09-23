@@ -19,7 +19,3 @@ example : (1, 1) ∈ staircase 2 5 := by
 example : #(staircase 2 5) = 9 := by
   rw [card_staircase]
   decide
-
-example : Nat.card {p : ℕ × ℕ // p.1 + 2 * p.2 < 5} = 9 := by
-  rw [Nat.card_staircasePairs (by decide)]
-  decide

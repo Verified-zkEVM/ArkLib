@@ -56,6 +56,33 @@ example :
   exact map_clearedSubstitution (RingHom.id ℚ) (RingHom.id ℚ) 3 (by norm_num)
     (fun _ ↦ 5) (fun _ ↦ 1) 3 squareQ (by simp [support_squareQ, Finsupp.weight_single])
 
+/-- The polynomial `X 0 * Y ^ 2`, with coefficient `X 0` in `ℚ[X 0]`. -/
+private noncomputable abbrev coeffSquareQ :
+    MvPolynomial (Fin 1) (MvPolynomial (Fin 1) ℚ) :=
+  monomial (Finsupp.single 0 2) (X 0)
+
+private theorem support_coeffSquareQ :
+    coeffSquareQ.support = {Finsupp.single 0 2} := by
+  simp [coeffSquareQ, support_monomial, X_ne_zero]
+
+/-- With `S = X 0`, `N = X 0 ^ 2`, and budget `2`, the total-degree bound `5` is attained. -/
+example :
+    (clearedSubstitution (RingHom.id _) (X 0 : MvPolynomial (Fin 1) ℚ)
+      (fun _ ↦ X 0 ^ 2) (fun _ ↦ 1) 2 coeffSquareQ).totalDegree ≤ 5 ∧
+    (clearedSubstitution (RingHom.id _) (X 0 : MvPolynomial (Fin 1) ℚ)
+      (fun _ ↦ X 0 ^ 2) (fun _ ↦ 1) 2 coeffSquareQ).totalDegree = 5 := by
+  have hbound := totalDegree_clearedSubstitution_le_of_coeff (RingHom.id _)
+    (X 0 : MvPolynomial (Fin 1) ℚ) (fun _ ↦ X 0 ^ 2) (fun _ ↦ 1) 2 1 3 coeffSquareQ
+    (by simp) (fun _ ↦ by simp [totalDegree_X_pow])
+    (by simp [support_coeffSquareQ, Finsupp.weight_single])
+    (by simp [support_coeffSquareQ, coeffSquareQ])
+  have hvalue : clearedSubstitution (RingHom.id _) (X 0 : MvPolynomial (Fin 1) ℚ)
+      (fun _ ↦ X 0 ^ 2) (fun _ ↦ 1) 2 coeffSquareQ = X 0 ^ 5 := by
+    simp [clearedSubstitution, support_coeffSquareQ, coeffSquareQ, Finsupp.weight_single]
+    ring
+  rw [hvalue, totalDegree_X_pow] at hbound ⊢
+  exact ⟨hbound, rfl⟩
+
 /-! ### Complete homogeneous polynomials -/
 
 /-- The power-sum identity evaluates `h₂(1, 2)` to `7`. -/
@@ -96,16 +123,16 @@ example :
   norm_num [eval_add, eval_X]
   exact ZMod.natCast_self 2
 
-/-- Complementary exponents `1` and `2` recover the square substitution over `ZMod 2`. -/
+/-- Complementary exponent pairs `(1, 2)` and `(2, 1)` recover the square substitution over
+`ZMod 2` for two variables. -/
 example :
-    inverseFrobeniusTwist 2 1 (X 0 + 1 : MvPolynomial (Fin 1) (ZMod 2)) ^ 2 =
-      variablePowerSubstitution (fun _ : Fin 1 ↦ 1)
-        (variablePowerSubstitution (fun _ : Fin 1 ↦ 2) (X 0 + 1)) := by
+    inverseFrobeniusTwist 2 1 (X 0 + X 1 + 1 : MvPolynomial (Fin 2) (ZMod 2)) ^ 2 =
+      variablePowerSubstitution (![1, 2] : Fin 2 → ℕ)
+        (variablePowerSubstitution (![2, 1] : Fin 2 → ℕ) (X 0 + X 1 + 1)) := by
   apply inverseFrobeniusTwist_pow_eq_variablePowerSubstitution 2 1
-    (q := fun _ : Fin 1 ↦ 1) (r := fun _ : Fin 1 ↦ 2)
+    (q := (![1, 2] : Fin 2 → ℕ)) (r := (![2, 1] : Fin 2 → ℕ))
   · intro i
-    fin_cases i
-    norm_num
+    fin_cases i <;> norm_num
   · rfl
 
 /-- Irreducibility of `X 0` is preserved by the `ZMod 2` coefficient twist. -/
@@ -424,6 +451,14 @@ example :
   · ext j
     simp
   · simp
+
+/-- The option-variable polynomial's total degree is its weighted degree after splitting. -/
+example :
+    (optionEquivRight ℚ (Fin 1)
+      (monomial (Finsupp.single none 5 + Finsupp.single (some 0) 1) (1 : ℚ))).totalDegree = 1 := by
+  rw [totalDegree_optionEquivRight, weightedTotalDegree_monomial _ _ _ one_ne_zero]
+  rw [map_add]
+  simp [Finsupp.weight_single]
 
 /-! ### Polynomial coefficients -/
 

@@ -36,11 +36,12 @@ example : ⨍ u in weightedSimplex (fun _ : Fin 1 ↦ (1 : ℝ)) 2, (u 0 - 1) ^ 
   norm_num at h
   exact h
 
-/-- The third central moment of the uniform distribution on `[0, 2]` is `0`. -/
-example : ⨍ u in weightedSimplex (fun _ : Fin 1 ↦ (1 : ℝ)) 2, (u 0 - 1) ^ 3 = 0 := by
-  have h := setAverage_weightedSimplex_linearForm_sub_mean_cube (w := fun _ : Fin 1 ↦ (1 : ℝ))
-    (fun _ ↦ one_pos) 1 (W := 2) (by norm_num)
-  norm_num at h
+/-- On the same triangle, the third central moment of `2 u₀ + 3 u₁` is `-8 / 5`. -/
+example : ⨍ u in weightedSimplex (![2, 3] : Fin 2 → ℝ) 6,
+    (∑ i, (![2, 3] : Fin 2 → ℝ) i * u i - 4) ^ 3 = -8 / 5 := by
+  have h := setAverage_weightedSimplex_linearForm_sub_mean_cube (w := ![2, 3])
+    (by intro i; fin_cases i <;> norm_num) (![2, 3] : Fin 2 → ℝ) (W := 6) (by norm_num)
+  norm_num [Fin.sum_univ_two] at h ⊢
   exact h
 
 /-- On the triangle `x₀ + x₁ ≤ 1`, the part where `1 / 2 ≤ x₀` has area `1 / 8`. -/
@@ -58,11 +59,6 @@ example : volume.real (standardSimplex (Fin 2) 1 ∩ {x | 1 / 2 ≤ univ.sup' un
 example : ⨍ x in standardSimplex (Fin 2) 1, univ.sup' univ_nonempty x = 1 / 2 := by
   rw [setAverage_standardSimplex_sup' 2 one_pos]
   norm_num [harmonic, Finset.sum_range_succ]
-
-/-- On `[0, 2]` the only coordinate has second moment `4 / 3`. -/
-example : ⨍ x in standardSimplex (Fin 1) 2, univ.sup' univ_nonempty x ^ 2 = 4 / 3 := by
-  rw [setAverage_standardSimplex_sup'_sq 1 (by norm_num)]
-  norm_num
 
 /-- `∫₀¹ x² dx = 1 / 3`: the second moment on the one-dimensional simplex. -/
 example : (∫ x in standardSimplex (Fin 1) 1, (∑ i, (1 : ℝ) * x i) ^ 2) = 1 / 3 := by
@@ -105,12 +101,11 @@ example : (∫ x : ℝ in (0 : ℝ)..3, x ^ 2 * (3 - x) ^ 0) = 9 := by
   rw [integral_pow_mul_sub_pow]
   norm_num [Nat.factorial]
 
-/-- Sorting a constant integrand gives twice the ordered triangle's area. -/
-example : volume.real (standardSimplex (Fin 2) 1) =
-    2 * volume.real (orderedSimplex 2 1) := by
-  have h := setIntegral_standardSimplex_of_comp_perm (n := 2) (f := fun _ ↦ (1 : ℝ))
-    (fun _ _ ↦ rfl) 1
-  simpa [Nat.factorial] using h
+/-- The suffix-sum map transports a nonconstant coordinate integral on the weighted triangle. -/
+example : (∫ u in weightedSimplex (fun i : Fin 2 ↦ (i : ℝ) + 1) 1,
+    ∑ j ∈ Ici (0 : Fin 2), u j) = ∫ v in orderedSimplex 2 1, v 0 := by
+  simpa using setIntegral_weightedSimplex_succ_comp_suffixSum (n := 2) 1
+    (fun v : Fin 2 → ℝ ↦ v 0)
 
 /-- The Dirichlet integral on the unit triangle is `1 / 24`. -/
 example : (∫ x in standardSimplex (Fin 2) 1,

@@ -3056,7 +3056,8 @@ Ported from the coefficient-height and joint-degree parts of `Symbolic/TaylorHei
 closure lemmas are public. `jointTotalDegree_scalar` is now `jointTotalDegree_C_C`,
 `jointTotalDegree_le_coeff_degree_add` is now `jointTotalDegree_le_of_natDegree_coeff_le`, and
 `jointTotalDegree_clearedSubstitution` is now `jointTotalDegree_clearedSubstitution_le`.
-`jointTotalDegree_affine_le` is not retained as a port declaration or test example.
+The source-shaped acceptance example for `jointTotalDegree_affine_le` was removed; the public
+theorem survives in this module, as recorded below.
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Symbolic/CoefficientExtension.lean` at ArkLib revision
 `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
