@@ -12,13 +12,15 @@ public import ArkLib.ToMathlib.Combinatorics.QuadraticStaircase
 # A quadratic lower bound on the dimension of the partition support space
 
 Fix a tuple `c` of exponents of `Y₁, ..., Y_d` of derivative-order weight at most `W`. The
-remaining exponents `(x, b₀)` of `X` and `Y₀` satisfy `x + D (b₀ + ∑_i c_i) < L`, and for `0 < D`
-their number is the real-cutoff staircase count `QuadraticStaircase.count D (L / D - ∑_i c_i)`
+remaining exponents `(x, b₀)` of `X` and `Y₀` satisfy `x + D (b₀ + ∑_i c_i) < L`, and for
+`0 < D` their number is the real-cutoff staircase count
+`QuadraticStaircase.count D (L / D - ∑_i c_i)`
 (`QuadraticStaircase.count_div_sub_eq_sum`). Hence the dimension of the partition support space at
 the natural cutoff `L` is exactly
 
 ```text
-∑_{c} QuadraticStaircase.count D (L / D - ∑_i c_i) ≥ ∑_{c} D (max (L / D - ∑_i c_i) 0) ^ 2 / 2,
+∑_{c} QuadraticStaircase.count D (L / D - ∑_i c_i)
+  ≥ ∑_{c} D (max (L / D - ∑_i c_i) 0) ^ 2 / 2,
 ```
 
 with no tuple discarded near the boundary. For a code of length `n` and an upper rate bound
@@ -36,12 +38,12 @@ Both bounds hold at a real cutoff `L`: the space at `L` is the space at `⌈L⌉
 * `partitionSupport_dimension_ge_rate_sum`: the rate form of the lower bound.
 * `partitionSupport_dimension_ge_quadratic_sum_real` and
   `partitionSupport_dimension_ge_rate_sum_real`: both bounds at a real cutoff.
+* `partition_quadratic_rate_lower_real`: the pointwise rate comparison for real-valued coordinate
+  sums and cutoffs.
 
 ## References
 
-* [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient Decoding
-  and Smaller Cryptographic Proofs*][DKT26], Section 6.2, (73), and Appendix D.2, in the proof of
-  Lemma 6.2
+* [DKT26]
 -/
 
 @[expose] public section
@@ -139,15 +141,16 @@ theorem partitionSupport_dimension_ge_rate_sum (F : Type*) [Field F] {n L : ℕ}
 /-- The quadratic lower bound on the dimension of the partition support space at a real cutoff
 `L`: for `0 < D`, the sum over the tuples `c` of derivative-order weight at most `W` of
 `D * (max (L / D - ∑_i c_i) 0) ^ 2 / 2` is at most the dimension. It follows from the
-natural-cutoff bound `partitionSupport_dimension_ge_quadratic_sum` at `⌈L⌉₊`, since `L ≤ ⌈L⌉₊`
-and both cutoffs give the same space. -/
+natural-cutoff bound `partitionSupport_dimension_ge_quadratic_sum` at `⌈L⌉₊`, since
+`L ≤ ⌈L⌉₊` and both cutoffs give the same space. -/
 theorem partitionSupport_dimension_ge_quadratic_sum_real (F : Type*) [Field F] (hD : 0 < D)
     (L : ℝ) :
     ∑ c ∈ natWeightedSimplex (fun i : Fin d => i.val + 1) W,
         (D : ℝ) * (max (L / D - ((∑ i, c i : ℕ) : ℝ)) 0) ^ 2 / 2 ≤
       (Module.finrank F (partitionSupportSpace F D d W L hD) : ℝ) := by
   rw [← partitionSupportSpace_natCeil]
-  refine (sum_le_sum fun c _ => ?_).trans (partitionSupport_dimension_ge_quadratic_sum F hD ⌈L⌉₊)
+  refine (sum_le_sum fun c _ => ?_).trans
+    (partitionSupport_dimension_ge_quadratic_sum F hD ⌈L⌉₊)
   gcongr
   exact Nat.le_ceil L
 
@@ -164,5 +167,38 @@ theorem partitionSupport_dimension_ge_rate_sum_real (F : Type*) [Field F] {n : �
       (Module.finrank F (partitionSupportSpace F D d W L hD) : ℝ) := by
   rw [← partitionSupportSpace_natCeil]
   exact partitionSupport_dimension_ge_rate_sum F hD hupper (hlevel.trans (Nat.le_ceil L))
+
+/-- If `0 < D`, `0 < n`, `D ≤ rate * n` and `n * level ≤ L`, then for every nonnegative `t`,
+`n / (2 * rate) * (max (level - rate * t) 0) ^ 2 ≤
+  D / 2 * (max (L / D - t) 0) ^ 2`.
+
+The hypotheses force `rate > 0`. The inequality compares the rate envelope at `level` with the
+quadratic area at cutoff `L`. -/
+theorem partition_quadratic_rate_lower_real {D n rate L level t : ℝ} (hD : 0 < D)
+    (hn : 0 < n) (ht : 0 ≤ t) (hupper : D ≤ rate * n) (hlevel : n * level ≤ L) :
+    n / (2 * rate) * (max (level - rate * t) 0) ^ 2 ≤
+      D / 2 * (max (L / D - t) 0) ^ 2 := by
+  have hrate : 0 < rate := pos_of_mul_pos_left (hD.trans_le hupper) hn.le
+  by_cases hlevelt : 0 < level - rate * t
+  · rw [max_eq_left hlevelt.le]
+    have hbase : n / D * (level - rate * t) ≤ L / D - t := by
+      have hmul := mul_le_mul_of_nonneg_right hupper ht
+      field_simp
+      nlinarith
+    have hpos : 0 ≤ L / D - t :=
+      (by positivity : 0 ≤ n / D * (level - rate * t)).trans hbase
+    rw [max_eq_left hpos]
+    have hs := pow_le_pow_left₀ (by positivity : 0 ≤ n / D * (level - rate * t)) hbase 2
+    have hcoeff : n / (2 * rate) ≤ D / 2 * (n / D) ^ 2 := by
+      field_simp
+      nlinarith [mul_le_mul_of_nonneg_right hupper hn.le]
+    calc
+      _ ≤ (D / 2 * (n / D) ^ 2) * (level - rate * t) ^ 2 :=
+        mul_le_mul_of_nonneg_right hcoeff (sq_nonneg _)
+      _ = D / 2 * (n / D * (level - rate * t)) ^ 2 := by ring
+      _ ≤ _ := mul_le_mul_of_nonneg_left hs (by positivity)
+  · rw [max_eq_right (le_of_not_gt hlevelt)]
+    simp only [zero_pow, ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true, mul_zero]
+    positivity
 
 end ReedSolomon.HiddenDerivative
