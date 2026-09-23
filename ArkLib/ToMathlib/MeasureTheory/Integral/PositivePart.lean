@@ -12,12 +12,16 @@ public import Mathlib.MeasureTheory.Integral.Average
 public import Mathlib.Probability.ConditionalProbability
 
 /-!
-# Moment bounds for the positive part below a threshold
+# Pointwise and moment bounds for the positive part below a threshold
 
 For a threshold `c` above a centre `μ`, the positive part `max (c - y) 0` is bounded by the
 quadratic `c - y + (y - μ) ^ 2 / (4 * (c - μ))`. The quadratic minus the positive part is
 `(y - μ) ^ 2 / (4 * (c - μ))` for `y ≤ c` and `(y + μ - 2 * c) ^ 2 / (4 * (c - μ))` for `c ≤ y`,
 so the bound is attained at `y = μ` and at `y = 2 * c - μ`.
+
+If `0 < D`, `0 < n`, `0 ≤ t`, `D ≤ rate * n` and `n * level ≤ L`, then
+`n / (2 * rate) * (max (level - rate * t) 0) ^ 2 ≤ D / 2 * (max (L / D - t) 0) ^ 2`.
+This comparison holds in every linearly ordered field.
 
 Averaging the pointwise bound with `μ` equal to the mean gives
 `E[max (c - Y) 0] ≤ c - μ + Var(Y) / (4 * (c - μ))`. It is stated for a finite uniform average
@@ -40,7 +44,7 @@ bound `b ^ 3 ≤ ∫ (max (b - z) 0) ^ 3 ∂P` for mean-zero `z`, which needs on
 
 ## Main statements
 
-* `max_sub_zero_le_sub_add_sq_div`: the pointwise bound, over any ordered field.
+* The pointwise bounds `max_sub_zero_le_sub_add_sq_div` and `max_sub_zero_sq_scaled_le`.
 * `Finset.expect_max_sub_zero_le`: the bound for a uniform average over a finite set.
 * `MeasureTheory.integral_max_sub_zero_le`: the bound for a probability measure.
 * `MeasureTheory.setIntegral_max_sub_zero_le`: the bound for a set integral over any set,
@@ -51,6 +55,10 @@ bound `b ^ 3 ≤ ∫ (max (b - z) 0) ^ 3 ∂P` for mean-zero `z`, which needs on
 * `convexOn_max_sub_zero_pow`, `pow_three_sub_mul_le_max_sub_zero_pow_three` and
   `MeasureTheory.pow_three_le_integral_max_sub_zero_pow_three`: convexity, the tangent bound at
   `0`, and the Jensen bound for the cube of the positive part.
+
+## References
+
+* [DKT26]
 -/
 
 @[expose] public section
@@ -75,6 +83,36 @@ theorem max_sub_zero_le_sub_add_sq_div {c μ : K} (y : K) (h : μ < c) :
   refine max_le (le_add_of_nonneg_right (div_nonneg (sq_nonneg _) hd.le)) ?_
   rw [hsq]
   exact div_nonneg (sq_nonneg _) hd.le
+
+/-- If `D ≤ rate * n` and `n * level ≤ L`, the scaled positive-part square at
+`level - rate * t` is bounded by the corresponding square at `L / D - t`. Strict positivity of
+`D` and `n` forces `rate` to be positive, and `t ≥ 0` preserves the comparison. -/
+theorem max_sub_zero_sq_scaled_le {D n rate L level t : K} (hD : 0 < D)
+    (hn : 0 < n) (ht : 0 ≤ t) (hupper : D ≤ rate * n) (hlevel : n * level ≤ L) :
+    n / (2 * rate) * (max (level - rate * t) 0) ^ 2 ≤
+      D / 2 * (max (L / D - t) 0) ^ 2 := by
+  have hrate : 0 < rate := pos_of_mul_pos_left (hD.trans_le hupper) hn.le
+  by_cases hlevelt : 0 < level - rate * t
+  · rw [max_eq_left hlevelt.le]
+    have hbase : n / D * (level - rate * t) ≤ L / D - t := by
+      have hmul := mul_le_mul_of_nonneg_right hupper ht
+      field_simp
+      nlinarith
+    have hpos : 0 ≤ L / D - t :=
+      (by positivity : 0 ≤ n / D * (level - rate * t)).trans hbase
+    rw [max_eq_left hpos]
+    have hs := pow_le_pow_left₀ (by positivity : 0 ≤ n / D * (level - rate * t)) hbase 2
+    have hcoeff : n / (2 * rate) ≤ D / 2 * (n / D) ^ 2 := by
+      field_simp
+      nlinarith [mul_le_mul_of_nonneg_right hupper hn.le]
+    calc
+      _ ≤ (D / 2 * (n / D) ^ 2) * (level - rate * t) ^ 2 :=
+        mul_le_mul_of_nonneg_right hcoeff (sq_nonneg _)
+      _ = D / 2 * (n / D * (level - rate * t)) ^ 2 := by ring
+      _ ≤ _ := mul_le_mul_of_nonneg_left hs (by positivity)
+  · rw [max_eq_right (le_of_not_gt hlevelt)]
+    simp only [zero_pow, ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true, mul_zero]
+    positivity
 
 /-- The uniform average of `max (c - Y i) 0` over a finite set is at most
 `c - μ + (average of (Y i - μ) ^ 2) / (4 * (c - μ))`, where `μ` is the average of `Y` and

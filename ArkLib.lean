@@ -98,6 +98,7 @@ public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Certificat
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Counting
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Dimension
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.Dimension
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.HeightCounting
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.Interpolant
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.Space
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FreeOrderDimension
@@ -124,6 +125,7 @@ public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionS
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.FloorTransfer
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.LocalRank
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.MomentSource
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.RateBound
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.SolutionEmbedding
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.SourceMonomial
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Space
@@ -135,6 +137,7 @@ public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.C
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.LocalRank
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.ReceivedCurve
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.SourceColumn
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.WeightedSupport
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.Basic
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.Dimension
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.Estimate
@@ -151,6 +154,7 @@ public import ArkLib.Data.CodingTheory.HiddenDerivative.NormalizedSubstitution
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.Basic
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.ExactCharacteristicBudget
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.BranchwiseRate
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.FiniteRateParameters
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.HybridConstants
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.HybridRateEnvelope
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.LowRateStationary
@@ -168,6 +172,7 @@ public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.FiniteRatio
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.Gate
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.Moment
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.Recipe
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.UniformParameters
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.WeightedSupport.Block
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.WeightedSupport.Capacity
@@ -290,11 +295,15 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.AnchoredReconstru
 public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.PowerAgreement
 public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.TensorFoldAgreement
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.Basic
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.QuarterGap
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.HiddenDerivativeBound
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.PairwiseJohnson
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListSpecification
 public import ArkLib.Data.CodingTheory.ReedSolomon.Multilinear
 public import ArkLib.Data.CodingTheory.ReedSolomon.Multiplicity
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.Midpoint
+public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.ProductBounds
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.EquationDescent
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.ExtensionDescent
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FullAgreement
@@ -428,6 +437,7 @@ public import ArkLib.Data.Polynomial.Differential.SeparantChain
 public import ArkLib.Data.Polynomial.Differential.ShiftedJet
 public import ArkLib.Data.Polynomial.Differential.SingularRecursion
 public import ArkLib.Data.Polynomial.Differential.TaylorChart
+public import ArkLib.Data.Polynomial.Differential.TaylorChartAlgebra
 public import ArkLib.Data.Polynomial.Differential.TaylorChartGeometry
 public import ArkLib.Data.Polynomial.Differential.TaylorChartIncidence
 public import ArkLib.Data.Polynomial.Differential.TaylorIndexWeight
@@ -671,6 +681,7 @@ public import ArkLib.ToMathlib.Control.MonadLift
 public import ArkLib.ToMathlib.FieldTheory.Kummer
 public import ArkLib.ToMathlib.Finset.Basic
 public import ArkLib.ToMathlib.Finset.LineAgreement
+public import ArkLib.ToMathlib.Finset.SumRangeFrom
 public import ArkLib.ToMathlib.Finset.ToListWithProof
 public import ArkLib.ToMathlib.Finsupp.Weight
 public import ArkLib.ToMathlib.InformationTheory.Hamming
@@ -752,6 +763,7 @@ public import ArkLib.ToMathlib.RingTheory.MvPolynomial.StandardMonomials
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.AffineHilbertPolynomial
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.AgreementIncidence
+public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.BidegreeIncidence
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.CutFamily
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.DimensionSensitiveIncidence
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.FiniteQuotient

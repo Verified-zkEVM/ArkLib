@@ -39,7 +39,8 @@ uniformly in `δ`; choosing the multiplicity from this strict margin is left to 
 
 * `rateGamma_pos`, `log_rateGamma`: positivity of `Γ` and its logarithm.
 * `complementary_rate_logs`: `log(40/(9R)) + log(27R/20) = log 6`.
-* `fixed_rate_log_identity`: the displayed identity for `(R + δ) log Γ`.
+* `fixed_rate_log_identity`, `fixedRateCoefficient_eq`: the logarithmic gate identities.
+* `rateGamma_gt_one_of_log_bound`, `rateGamma_gt_one_of_exponent_margin`: strict gate criteria.
 * `fixedRateCoefficient_pos`: `0 < c(R)` for `0 < R < 40/9`.
 * `exists_small_gap_rate_gate`: the eventual strict gate `1 < Γ(R, R + δ, d)` with `500 ≤ d`.
 * `rateGamma_eq_exponential`, `rateGamma_factorization`: equivalent forms of the limiting ratio.
@@ -48,6 +49,10 @@ uniformly in `δ`; choosing the multiplicity from this strict margin is left to 
 * `fixedRatePartitionOrder`, `fixedRatePartitionOrder_ge_500`, `fixedRatePartition_cutoff_eq`:
   the fixed-rate order and its cutoff identity.
 * `fixedRateGamma_gt_one`: the strict gate at agreement `R + δ`.
+
+## References
+
+* [DKT26]
 -/
 
 @[expose] public section
@@ -113,12 +118,20 @@ theorem complementary_rate_logs {rate : ℝ} (hrate : rate ≠ 0) :
   field_simp
   ring
 
+/-- The fixed-rate coefficient is `rate * (log 6 - log(27 * rate / 20))` for positive rate. -/
+theorem fixedRateCoefficient_eq {rate : ℝ} (hrate : 0 < rate) :
+    fixedRateCoefficient rate = rate * (Real.log 6 - Real.log (27 * rate / 20)) := by
+  have hlogs := complementary_rate_logs hrate.ne'
+  unfold fixedRateCoefficient
+  rw [show Real.log (40 / (9 * rate)) =
+    Real.log 6 - Real.log (27 * rate / 20) by linarith]
+
 /-- The exact identity
 `(R + δ) log Γ(R, R + δ, d) = δ log d - c(R) + δ log(27R/20) + (R + δ) log(1 + 1/d)`.
 It separates the term `δ log d`, which grows with the order, from the fixed-rate coefficient
 `c(R)`; the last two terms are small for small `δ` and large `d`. The hypothesis `R + δ ≠ 0`
-is needed because the left side multiplies `R / (R + δ)` back by `R + δ`; `R ≠ 0` and `d > 0`
-are needed for the logarithms to split. -/
+is needed because the left side multiplies `R / (R + δ)` back by `R + δ`; `R ≠ 0` and
+`d > 0` are needed for the logarithms to split. -/
 theorem fixed_rate_log_identity {rate gap : ℝ} {order : ℕ}
     (hrate : rate ≠ 0) (hsum : rate + gap ≠ 0) (horder : 0 < order) :
     (rate + gap) * Real.log (rateGamma rate (rate + gap) order) =
@@ -137,6 +150,45 @@ theorem fixed_rate_log_identity {rate gap : ℝ} {order : ℕ}
   field_simp
   ring
 
+/-- A positive lower bound for the logarithmic gate implies `rateGamma > 1`. -/
+theorem rateGamma_gt_one_of_log_bound {rate gap : ℝ} {order : ℕ}
+    (hrate : 0 < rate) (hgap : 0 < gap) (horder : 0 < order)
+    (hgate : 0 < (rate + gap) * Real.log (27 * rate / 20) + gap * Real.log order -
+      rate * Real.log 6) :
+    1 < rateGamma rate (rate + gap) order := by
+  have hsum : 0 < rate + gap := add_pos hrate hgap
+  have hcorrection :
+      0 ≤ (rate + gap) * Real.log (1 + 1 / (order : ℝ)) :=
+    mul_nonneg hsum.le
+      (Real.log_nonneg (le_add_of_nonneg_right (by positivity)))
+  have hformula : gap * Real.log order - fixedRateCoefficient rate +
+      gap * Real.log (27 * rate / 20) +
+      (rate + gap) * Real.log (1 + 1 / (order : ℝ)) =
+        ((rate + gap) * Real.log (27 * rate / 20) + gap * Real.log order -
+          rate * Real.log 6) +
+          (rate + gap) * Real.log (1 + 1 / (order : ℝ)) := by
+    rw [fixedRateCoefficient_eq hrate]
+    ring
+  have hidentity := fixed_rate_log_identity hrate.ne' hsum.ne' horder
+  rw [hformula] at hidentity
+  have hlog : 0 < Real.log (rateGamma rate (rate + gap) order) := by
+    by_contra hnot
+    have hnonpos : Real.log (rateGamma rate (rate + gap) order) ≤ 0 := le_of_not_gt hnot
+    have hmul := mul_nonpos_of_nonneg_of_nonpos hsum.le hnonpos
+    nlinarith
+  exact (Real.log_pos_iff (rateGamma_pos hrate horder).le).mp hlog
+
+/-- A positive exponent margin implies the strict gate when the fixed-rate logarithmic term is
+also positive. -/
+theorem rateGamma_gt_one_of_exponent_margin {rate gap epsilon : ℝ} {order : ℕ}
+    (hrate : 0 < rate) (hgap : 0 < gap) (horder : 0 < order)
+    (horderBound : fixedRateCoefficient rate + epsilon ≤ gap * Real.log order)
+    (hmargin : 0 < epsilon + gap * Real.log (27 * rate / 20)) :
+    1 < rateGamma rate (rate + gap) order := by
+  apply rateGamma_gt_one_of_log_bound hrate hgap horder
+  rw [fixedRateCoefficient_eq hrate] at horderBound
+  nlinarith
+
 /-- `0 < c(R)` for `0 < R < 40/9`. The upper bound is sharp: `c(40/9) = 0`, and `c(R) < 0` beyond
 it. Every code rate `R < 1` is in range. -/
 theorem fixedRateCoefficient_pos {rate : ℝ} (hrate : 0 < rate) (hrateBound : rate < 40 / 9) :
@@ -147,7 +199,8 @@ theorem fixedRateCoefficient_pos {rate : ℝ} (hrate : 0 < rate) (hrateBound : r
   linarith
 
 /-- The exact factorization
-`Γ(R, a, d) = (9R/40) (6d)^((a-R)/a) (1 + 1/d)` for positive `R`, `a` and `d`. -/
+`Γ(R, a, d) = (9R/40) (6d)^((a-R)/a) (1 + 1/d)` for positive agreement and derivative order.
+The rate is arbitrary. -/
 theorem rateGamma_factorization {rate agreement : ℝ} {order : ℕ}
     (hagreement : 0 < agreement) (horder : 0 < order) :
     rateGamma rate agreement order =
