@@ -7,6 +7,7 @@ module
 
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.Basic
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.ClosedMultiplicity
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.UniformEnvelope
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.UniformGamma
 
 /-!
@@ -18,13 +19,13 @@ dimension and agreement.
 
 ## Main statements
 
-* `uniformMathematicalMultiplicity`, `uniformMathematicalJetBound`,
-  `uniformMathematicalLength`, and `uniformCapacityLengthThreshold300`.
+* `uniformMathematicalMultiplicity`, `uniformMathematicalJetBound`, and
+  `uniformMathematicalLength`.
 * `uniformDerivativeOrder_ge_519`, `uniformDerivativeOrder_le_mathematicalJetBound`, and
   `uniformMathematical_integer_guards`.
 * `uniformMathematical_totalJetDegree_le`, `uniformMathematical_low_ratio_gt`, and
   `uniformMathematical_high_ratio_gt`.
-* `MathematicalRatePartitionEnvelope` and `exists_mathematicalRatePartitionEnvelope`.
+* `exists_mathematicalRatePartitionEnvelope`, a specialization of `exists_ratePartitionEnvelope`.
 
 ## References
 
@@ -50,11 +51,6 @@ def uniformMathematicalJetBound (δ : ℝ) : ℕ :=
 /-- The mathematical block-length threshold, one more than the strict jet cap. -/
 def uniformMathematicalLength (δ : ℝ) : ℕ :=
   uniformMathematicalJetBound δ + 1
-
-/-- A common length threshold for interpolation and the characteristic-free Johnson regime. -/
-def uniformCapacityLengthThreshold300 (δ : ℝ) : ℕ :=
-  max (uniformMathematicalLength δ)
-    ⌈(4 : ℝ) * uniformMathematicalJetBound δ / δ ^ 2⌉₊
 
 /-- When the multiplicity is positive, the mathematical length is its rounded gap ratio. -/
 theorem uniformMathematicalLength_eq_ceil {δ : ℝ}
@@ -169,18 +165,6 @@ theorem uniformMathematical_totalJetDegree_le {D d W n A : ℕ} {δ : ℝ}
   change totalJetDegree u ≤ ⌈(m : ℝ) / δ ^ 2⌉₊ - 1
   exact Nat.le_sub_one_of_lt hlt
 
-private theorem mathematical_log_forty_ninths_eq :
-    Real.log (40 / 9 : ℝ) =
-      3 * Real.log 2 + Real.log 5 - 2 * Real.log 3 := by
-  calc
-    Real.log (40 / 9 : ℝ) = Real.log 40 - Real.log 9 := by
-      rw [Real.log_div] <;> norm_num
-    _ = 3 * Real.log 2 + Real.log 5 - 2 * Real.log 3 := by
-      rw [show (40 : ℝ) = 2 ^ 3 * 5 by norm_num,
-        show (9 : ℝ) = 3 ^ 2 by norm_num, Real.log_mul] <;> try positivity
-      rw [Real.log_pow, Real.log_pow]
-      norm_num
-
 private theorem mathematical_uniform_margin_numeric :
     (151 / 150 : ℝ) < Real.exp (3 / 2 - Real.log (40 / 9)) *
       Real.exp (-(1677 / 1000000 : ℝ)) := by
@@ -189,75 +173,58 @@ private theorem mathematical_uniform_margin_numeric :
       (by norm_num : (151 / 150 : ℝ) ≠ 1)
     norm_num at h ⊢
     exact h
-  have hlog409 : Real.log (40 / 9 : ℝ) <
-      3 * (0.6931471808 : ℝ) + 1.6094379126 - 2 * 1.0986122885 := by
-    rw [mathematical_log_forty_ninths_eq]
-    have htwo := Real.log_two_lt_d9
-    have hthree := Real.log_three_gt_d9
-    have hfive := Real.log_five_lt_d9
-    norm_num at htwo hthree hfive ⊢
-    have htwo3 := mul_lt_mul_of_pos_left htwo (by norm_num : (0 : ℝ) < 3)
-    have hthree2 := mul_lt_mul_of_neg_left hthree (by norm_num : (-2 : ℝ) < 0)
-    calc
-      3 * Real.log 2 + Real.log 5 - 2 * Real.log 3 <
-          3 * (108304247 / 156250000 : ℝ) + Real.log 5 - 2 * Real.log 3 := by
-        linarith
-      _ < 3 * (108304247 / 156250000 : ℝ) +
-          8047189563 / 5000000000 - 2 * Real.log 3 := by linarith
-      _ < 3 * (108304247 / 156250000 : ℝ) +
-          8047189563 / 5000000000 - 2 * (2197224577 / 2000000000) := by
-        linarith
-      _ = 745827439 / 500000000 := by norm_num
+  have hlog := log_forty_ninths_lt_d9
   have hexponent : Real.log (151 / 150 : ℝ) <
       3 / 2 - Real.log (40 / 9) - 1677 / 1000000 := by
     linarith
   rw [← Real.exp_log (by norm_num : (0 : ℝ) < 151 / 150), ← Real.exp_add]
-  exact Real.exp_lt_exp.mpr (by linarith)
+  exact Real.exp_lt_exp.mpr hexponent
 
-private theorem rateGamma_eq_exp {rate agreement : ℝ} {order : ℕ}
-    (horder : 0 < order) :
-    rateGamma rate agreement order =
-      (27 / 20 : ℝ) * rate * (order + 1) *
-        Real.exp (-(rate / agreement * Real.log (6 * (order : ℝ)))) := by
-  unfold rateGamma
-  rw [Real.rpow_def_of_pos (by positivity : 0 < (6 * (order : ℝ) : ℝ))]
-  rw [div_eq_mul_inv, ← Real.exp_neg]
-  congr 2
-  ring
+private theorem finiteRatio_gt_of_mathematicalBase {δ rate agreement : ℝ}
+    (horder : 500 ≤ uniformDerivativeOrder δ) (hrate : 0 < rate)
+    (hra : rate ≤ agreement)
+    (hbase : Real.exp (3 / 2 - Real.log (40 / 9)) <
+      rateGamma rate agreement (uniformDerivativeOrder δ)) :
+    (151 / 150 : ℝ) < partitionFiniteRatio rate agreement
+      (uniformDerivativeOrder δ) (uniformMathematicalMultiplicity δ) := by
+  have hd : 0 < uniformDerivativeOrder δ := by omega
+  have hd' : (500 : ℝ) ≤ uniformDerivativeOrder δ := by exact_mod_cast horder
+  have hscale : (1 : ℝ) < 300 * (uniformDerivativeOrder δ : ℝ) ^ 3 := by
+    nlinarith [sq_nonneg (uniformDerivativeOrder δ : ℝ)]
+  have hloss := closedMultiplicityLoss_three_hundred_lt horder
+  have hfinite := partitionFiniteRatio_closedMultiplicity_gt
+    (rate := rate) (agreement := agreement) (scale := 300)
+    (η := 1677 / 1000000) (order := uniformDerivativeOrder δ)
+    hrate hra hscale hloss
+  have hgamma := mathematical_uniform_margin_numeric.trans
+    (mul_lt_mul_of_pos_right hbase (Real.exp_pos (-(1677 / 1000000 : ℝ))))
+  have hgamma' : (151 / 150 : ℝ) <
+      (27 / 20 : ℝ) * rate * (uniformDerivativeOrder δ + 1) *
+        Real.exp (-(rate / agreement *
+          Real.log (6 * (uniformDerivativeOrder δ : ℝ)))) *
+        Real.exp (-(1677 / 1000000 : ℝ)) := by
+    simpa only [rateGamma_eq_exponential (rate := rate) (agreement := agreement) hd]
+      using hgamma
+  have hfinite' :
+      (27 / 20 : ℝ) * rate * (uniformDerivativeOrder δ + 1) *
+          Real.exp (-(rate / agreement *
+            Real.log (6 * (uniformDerivativeOrder δ : ℝ)))) *
+          Real.exp (-(1677 / 1000000 : ℝ)) <
+        partitionFiniteRatio rate agreement (uniformDerivativeOrder δ)
+          (uniformMathematicalMultiplicity δ) := by
+    simpa only [uniformMathematicalMultiplicity] using hfinite
+  exact hgamma'.trans hfinite'
 
 /-- The low-rate branch retains a strict finite-ratio margin at scale `300`. -/
 theorem uniformMathematical_low_ratio_gt {δ : ℝ}
     (hδ : 0 < δ) (hδmax : δ < 6 / 25) :
     (151 / 150 : ℝ) < partitionFiniteRatio (2 * δ ^ 2) δ
       (uniformDerivativeOrder δ) (uniformMathematicalMultiplicity δ) := by
-  have hd := uniformDerivativeOrder_ge_519 hδ hδmax
-  have hR : 0 < 2 * δ ^ 2 := by positivity
-  have hRa : 2 * δ ^ 2 < δ := by nlinarith
-  have hbase := uniformRateGamma_low_base_gt hδ hδmax
-  have horder : 500 ≤ uniformDerivativeOrder δ := by omega
-  have horderReal : (1 : ℝ) ≤ uniformDerivativeOrder δ := by
-    exact_mod_cast (by omega : 1 ≤ uniformDerivativeOrder δ)
-  have hscale : (1 : ℝ) < 300 * (uniformDerivativeOrder δ : ℝ) ^ 3 := by
-    have hcube : (1 : ℝ) ≤ (uniformDerivativeOrder δ : ℝ) ^ 3 := by
-      have hfactor := mul_nonneg (sub_nonneg.mpr horderReal)
-        (by positivity : (0 : ℝ) ≤ (uniformDerivativeOrder δ : ℝ) ^ 2 +
-          uniformDerivativeOrder δ + 1)
-      nlinarith
-    nlinarith
-  have hfinite := partitionFiniteRatio_closedMultiplicity_gt
-    (rate := 2 * δ ^ 2) (agreement := δ) (scale := 300)
-    (η := 1677 / 1000000) (order := uniformDerivativeOrder δ)
-    hR hRa.le hscale (closedMultiplicityLoss_three_hundred_lt horder)
-  have hfinite' :
-      rateGamma (2 * δ ^ 2) δ (uniformDerivativeOrder δ) *
-          Real.exp (-(1677 / 1000000 : ℝ)) <
-        partitionFiniteRatio (2 * δ ^ 2) δ (uniformDerivativeOrder δ)
-          (uniformMathematicalMultiplicity δ) := by
-    rw [rateGamma_eq_exp (rate := 2 * δ ^ 2) (agreement := δ) (by omega)]
-    simpa only [uniformMathematicalMultiplicity] using hfinite
-  exact mathematical_uniform_margin_numeric.trans <|
-    (mul_lt_mul_of_pos_right hbase
-      (Real.exp_pos (-(1677 / 1000000 : ℝ)))).trans hfinite'
+  have horder : 500 ≤ uniformDerivativeOrder δ := by
+    have h := uniformDerivativeOrder_ge_519 hδ hδmax
+    omega
+  exact finiteRatio_gt_of_mathematicalBase horder (by positivity) (by nlinarith)
+    (uniformRateGamma_low_base_gt hδ hδmax)
 
 /-- The high-rate branch retains a strict finite-ratio margin at scale `300`. -/
 theorem uniformMathematical_high_ratio_gt {R δ : ℝ}
@@ -265,132 +232,32 @@ theorem uniformMathematical_high_ratio_gt {R δ : ℝ}
     (hRlow : δ ^ 2 ≤ R) (hRtop : R ≤ 1 - δ) :
     (151 / 150 : ℝ) < partitionFiniteRatio R (R + δ)
       (uniformDerivativeOrder δ) (uniformMathematicalMultiplicity δ) := by
-  have hd := uniformDerivativeOrder_ge_519 hδ hδmax
-  have hR : 0 < R := (sq_pos_of_pos hδ).trans_le hRlow
-  have hRa : R < R + δ := by linarith
-  have hbase := uniformRateGamma_high_base_gt hδ hδmax hRlow hRtop
-  have horder : 500 ≤ uniformDerivativeOrder δ := by omega
-  have horderReal : (1 : ℝ) ≤ uniformDerivativeOrder δ := by
-    exact_mod_cast (by omega : 1 ≤ uniformDerivativeOrder δ)
-  have hscale : (1 : ℝ) < 300 * (uniformDerivativeOrder δ : ℝ) ^ 3 := by
-    have hcube : (1 : ℝ) ≤ (uniformDerivativeOrder δ : ℝ) ^ 3 := by
-      have hfactor := mul_nonneg (sub_nonneg.mpr horderReal)
-        (by positivity : (0 : ℝ) ≤ (uniformDerivativeOrder δ : ℝ) ^ 2 +
-          uniformDerivativeOrder δ + 1)
-      nlinarith
-    nlinarith
-  have hfinite := partitionFiniteRatio_closedMultiplicity_gt
-    (rate := R) (agreement := R + δ) (scale := 300)
-    (η := 1677 / 1000000) (order := uniformDerivativeOrder δ)
-    hR hRa.le hscale (closedMultiplicityLoss_three_hundred_lt horder)
-  have hfinite' :
-      rateGamma R (R + δ) (uniformDerivativeOrder δ) *
-          Real.exp (-(1677 / 1000000 : ℝ)) <
-        partitionFiniteRatio R (R + δ) (uniformDerivativeOrder δ)
-          (uniformMathematicalMultiplicity δ) := by
-    rw [rateGamma_eq_exp (rate := R) (agreement := R + δ) (by omega)]
-    simpa only [uniformMathematicalMultiplicity] using hfinite
-  exact mathematical_uniform_margin_numeric.trans <|
-    (mul_lt_mul_of_pos_right hbase
-      (Real.exp_pos (-(1677 / 1000000 : ℝ)))).trans hfinite'
-
-/-- A rate-uniform interpolation envelope at the scale-300 mathematical multiplicity. -/
-structure MathematicalRatePartitionEnvelope (δ : ℝ) (n k A : ℕ) where
-  /-- The interpolation ambient degree. -/
-  ambientDegree : ℕ
-  /-- The scalar code rate used in the finite-ratio bound. -/
-  rate : ℝ
-  /-- The agreement fraction used in the finite-ratio bound. -/
-  agreement : ℝ
-  /-- The selected rate is positive. -/
-  rate_pos : 0 < rate
-  /-- The selected rate is strictly below the agreement fraction. -/
-  rate_lt_agreement : rate < agreement
-  /-- The agreement fraction is at most one. -/
-  agreement_le_one : agreement ≤ 1
-  /-- The ambient degree includes the derivative order. -/
-  order_le : uniformDerivativeOrder δ + 1 ≤ ambientDegree
-  /-- The ambient degree fits in the block length. -/
-  ambient_le : ambientDegree + 1 ≤ n
-  /-- The message dimension fits in the ambient degree. -/
-  message_le : k ≤ ambientDegree + 1
-  /-- The ambient degree is at least the quadratic-gap threshold. -/
-  ambient_lower : δ ^ 2 * n ≤ ambientDegree
-  /-- The ambient degree is at most the selected rate times the block length. -/
-  rate_upper : (ambientDegree : ℝ) ≤ rate * n
-  /-- The agreement fraction times the block length is at most the agreement count. -/
-  agreement_lower : agreement * n ≤ A
-  /-- The scale-300 finite ratio exceeds `151/150`. -/
-  ratio_gt : (151 / 150 : ℝ) < partitionFiniteRatio rate agreement
-    (uniformDerivativeOrder δ) (uniformMathematicalMultiplicity δ)
+  have horder : 500 ≤ uniformDerivativeOrder δ := by
+    have h := uniformDerivativeOrder_ge_519 hδ hδmax
+    omega
+  exact finiteRatio_gt_of_mathematicalBase horder
+    ((sq_pos_of_pos hδ).trans_le hRlow) (by linarith)
+    (uniformRateGamma_high_base_gt hδ hδmax hRlow hRtop)
 
 /-- Choose a scale-300 mathematical envelope uniformly in the actual code rate. -/
 theorem exists_mathematicalRatePartitionEnvelope {δ : ℝ} {n k A : ℕ}
     (hδ : 0 < δ) (hδsmall : δ < 6 / 25)
     (hn : uniformMathematicalLength δ ≤ n) (hk : 0 < k)
     (hgap : (k : ℝ) + δ * n ≤ A) (hAn : A ≤ n) :
-    Nonempty (MathematicalRatePartitionEnvelope δ n k A) := by
+    Nonempty (RatePartitionEnvelope δ (uniformMathematicalMultiplicity δ) n k A) := by
   have hδone : δ < 1 := by linarith
   have hd519 := uniformDerivativeOrder_ge_519 hδ hδsmall
-  have hmorder : uniformDerivativeOrder δ + 2 ≤ uniformMathematicalMultiplicity δ := by
-    exact add_two_le_closedMultiplicity (by norm_num)
-      (by omega : 1 ≤ uniformDerivativeOrder δ)
-  have hm : 0 < uniformMathematicalMultiplicity δ := by
-    exact lt_of_lt_of_le (by omega) hmorder
+  have hmorder : uniformDerivativeOrder δ + 2 ≤ uniformMathematicalMultiplicity δ :=
+    add_two_le_closedMultiplicity (by norm_num) (by omega)
+  have hm : 0 < uniformMathematicalMultiplicity δ := by omega
   obtain ⟨hsize, _hmn, _hν, _hνn⟩ :=
     uniformMathematical_integer_guards hδ hδone hm hn
-  have hkA : k ≤ A := by
-    have : (k : ℝ) ≤ A := by nlinarith [Nat.cast_nonneg n (α := ℝ)]
-    exact_mod_cast this
-  have hnpos : 0 < n := hk.trans_le (hkA.trans hAn)
-  have hnR : (0 : ℝ) < n := by exact_mod_cast hnpos
-  by_cases hhigh : δ ^ 2 * n ≤ k
-  · let R : ℝ := (k : ℝ) / n
-    let a : ℝ := R + δ
-    have hRpos : 0 < R := by dsimp [R]; positivity
-    have hRa : R < a := by dsimp [a]; linarith
-    have hRlow : δ ^ 2 ≤ R := by
-      dsimp [R]
-      exact (le_div_iff₀ hnR).2 (by simpa only [Nat.cast_ofNat] using hhigh)
-    have hRtop : R ≤ 1 - δ := by
-      dsimp [R]
-      apply (div_le_iff₀ hnR).2
-      have hAn' : (A : ℝ) ≤ n := by exact_mod_cast hAn
-      nlinarith
-    obtain ⟨horder, hambient⟩ := high_rate_ambient_guards hδ.le hmorder hsize
-      hhigh hgap hAn
-    have hrateUpper : (k : ℝ) ≤ R * n := by
-      dsimp [R]
-      field_simp
-      exact le_rfl
-    have hagreementLower : a * n ≤ A := by
-      calc
-        a * n = (k : ℝ) + δ * n := by dsimp [a, R]; field_simp
-        _ ≤ A := hgap
-    refine ⟨⟨k, R, a, hRpos, hRa, ?_, horder, hambient, Nat.le_succ k,
-      hhigh, hrateUpper, hagreementLower, ?_⟩⟩
-    · dsimp [a]
-      linarith
-    · exact uniformMathematical_high_ratio_gt hδ hδsmall hRlow hRtop
-  · let D : ℕ := ⌊2 * δ ^ 2 * n⌋₊
-    let R : ℝ := 2 * δ ^ 2
-    let a : ℝ := δ
-    have hRpos : 0 < R := by dsimp [R]; positivity
-    have hRa : R < a := by dsimp [R, a]; nlinarith
-    obtain ⟨horder, hDlower, hambient⟩ :=
-      low_rate_padded_ambient_guards hδ.le (by linarith) hmorder hsize
-    have hkDreal : (k : ℝ) ≤ D := by
-      have hklt : (k : ℝ) < δ ^ 2 * n := lt_of_not_ge hhigh
-      exact hklt.le.trans (by exact_mod_cast hDlower)
-    have hkD : k ≤ D := by exact_mod_cast hkDreal
-    have hrateUpper : (D : ℝ) ≤ R * n := by
-      dsimp [D, R]
-      exact Nat.floor_le (by positivity)
-    have hagreementLower : a * n ≤ A := by
-      dsimp [a]
-      nlinarith [Nat.cast_nonneg k (α := ℝ)]
-    refine ⟨⟨D, R, a, hRpos, hRa, by linarith, horder, hambient,
-      hkD.trans (Nat.le_succ D), hDlower, hrateUpper, hagreementLower, ?_⟩⟩
-    exact uniformMathematical_low_ratio_gt hδ hδsmall
+  have hhigh : ∀ R, δ ^ 2 ≤ R → R ≤ 1 - δ →
+      (151 / 150 : ℝ) < partitionFiniteRatio R (R + δ)
+        (uniformDerivativeOrder δ) (uniformMathematicalMultiplicity δ) := by
+    intro R hRlow hRtop
+    exact uniformMathematical_high_ratio_gt hδ hδsmall hRlow hRtop
+  exact exists_ratePartitionEnvelope hδ hδsmall hk hgap hAn hmorder hsize
+    (uniformMathematical_low_ratio_gt hδ hδsmall) hhigh
 
 end ReedSolomon.HiddenDerivative.RatePartition

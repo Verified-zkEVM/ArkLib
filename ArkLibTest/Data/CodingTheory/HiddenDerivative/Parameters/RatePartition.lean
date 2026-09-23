@@ -28,6 +28,8 @@ open MeasureTheory Set Finset Filter Topology
 
 namespace ReedSolomon.HiddenDerivative.RatePartition
 
+open PolynomialDifferential
+
 private theorem fixedRateGateInputs :
     fixedRateCoefficient 1 ≤ Real.log 5 ∧ 0 < 0 + 1 * Real.log (27 * 1 / 20) := by
   constructor
@@ -309,7 +311,8 @@ example : 1 + 1 ≤ ⌊2 * (1 / 2 : ℝ) ^ 2 * 12⌋₊ ∧
 /-! ### Uniform finite-parameter envelope -/
 
 /-- The envelope exists at `δ = 1/5` with the concrete block and message dimensions below. -/
-example : Nonempty (UniformRatePartitionEnvelope (1 / 5 : ℝ)
+example : Nonempty (RatePartitionEnvelope (1 / 5 : ℝ)
+    (uniformMultiplicity (1 / 5))
     (50 * uniformMultiplicity (1 / 5)) (2 * uniformMultiplicity (1 / 5))
     (12 * uniformMultiplicity (1 / 5))) := by
   have hm : 0 < uniformMultiplicity (1 / 5 : ℝ) := by
@@ -333,5 +336,85 @@ example : Nonempty (UniformRatePartitionEnvelope (1 / 5 : ℝ)
 /-- The mathematical derivative order exceeds `518` at the concrete gap `1/5`. -/
 example : 519 ≤ uniformDerivativeOrder (1 / 5 : ℝ) := by
   exact uniformDerivativeOrder_ge_519 (by norm_num) (by norm_num)
+
+/-- The mathematical length, jet cap and integer guards hold at `δ = 1/5`. -/
+example :
+    uniformMathematicalLength (1 / 5 : ℝ) =
+        ⌈(uniformMathematicalMultiplicity (1 / 5 : ℝ) : ℝ) / (1 / 5 : ℝ) ^ 2⌉₊ ∧
+      uniformDerivativeOrder (1 / 5 : ℝ) ≤ uniformMathematicalJetBound (1 / 5 : ℝ) ∧
+      (uniformMathematicalMultiplicity (1 / 5 : ℝ) : ℝ) ≤
+        (1 / 5 : ℝ) ^ 2 * uniformMathematicalLength (1 / 5 : ℝ) ∧
+      uniformMathematicalMultiplicity (1 / 5 : ℝ) ≤ uniformMathematicalLength (1 / 5 : ℝ) ∧
+      0 < uniformMathematicalJetBound (1 / 5 : ℝ) ∧
+      uniformMathematicalJetBound (1 / 5 : ℝ) < uniformMathematicalLength (1 / 5 : ℝ) := by
+  let δ : ℝ := 1 / 5
+  have hδ : 0 < δ := by norm_num [δ]
+  have hδsmall : δ < 6 / 25 := by norm_num [δ]
+  have hd := uniformDerivativeOrder_ge_519 hδ hδsmall
+  have hmorder : uniformDerivativeOrder δ + 2 ≤ uniformMathematicalMultiplicity δ := by
+    simpa [uniformMathematicalMultiplicity] using
+      (add_two_le_closedMultiplicity (by norm_num) (by omega))
+  have hm : 0 < uniformMathematicalMultiplicity δ := by omega
+  have hlength := uniformMathematicalLength_eq_ceil hδ hm
+  have hjet := uniformDerivativeOrder_le_mathematicalJetBound hδ hδsmall
+  have hguards := uniformMathematical_integer_guards hδ (by norm_num [δ]) hm
+    (Nat.le_refl (uniformMathematicalLength δ))
+  rcases hguards with ⟨hsize, hmn, hνpos, hνlength⟩
+  exact ⟨hlength, hjet, hsize, hmn, hνpos, hνlength⟩
+
+/-- The low-rate finite ratio exceeds `151/150` at `δ = 1/5`. -/
+example : (151 / 150 : ℝ) <
+    partitionFiniteRatio (2 * (1 / 5 : ℝ) ^ 2) (1 / 5 : ℝ)
+      (uniformDerivativeOrder (1 / 5 : ℝ))
+      (uniformMathematicalMultiplicity (1 / 5 : ℝ)) := by
+  exact uniformMathematical_low_ratio_gt (by norm_num) (by norm_num)
+
+/-- The high-rate finite ratio exceeds `151/150` at `δ = 1/5` and `R = 1/2`. -/
+example : (151 / 150 : ℝ) <
+    partitionFiniteRatio (1 / 2 : ℝ) (1 / 2 + 1 / 5)
+      (uniformDerivativeOrder (1 / 5 : ℝ))
+      (uniformMathematicalMultiplicity (1 / 5 : ℝ)) := by
+  exact uniformMathematical_high_ratio_gt (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num)
+
+/-- Eligible partition exponents at concrete parameters satisfy the mathematical jet cap. -/
+example (u : JetVariable 1 →₀ ℕ)
+    (hu : PartitionSupportEligible 1 1 0
+      (uniformMathematicalMultiplicity (1 / 5 : ℝ) * 1 : ℕ) u) :
+    totalJetDegree u ≤ uniformMathematicalJetBound (1 / 5 : ℝ) := by
+  exact uniformMathematical_totalJetDegree_le (δ := 1 / 5) (D := 1) (d := 1)
+    (W := 0) (n := 1) (A := 1) (by norm_num) (by norm_num) (by norm_num) (by norm_num) hu
+
+/-- The shared envelope exists with scale-300 multiplicity at `δ = 1/5`. -/
+example : Nonempty (RatePartitionEnvelope (1 / 5 : ℝ)
+    (uniformMathematicalMultiplicity (1 / 5))
+    (50 * uniformMathematicalMultiplicity (1 / 5))
+    (2 * uniformMathematicalMultiplicity (1 / 5))
+    (12 * uniformMathematicalMultiplicity (1 / 5))) := by
+  have hdpos : 1 ≤ uniformDerivativeOrder (1 / 5 : ℝ) := by
+    have hd := uniformDerivativeOrder_pos (1 / 5 : ℝ)
+    omega
+  have hmorder : uniformDerivativeOrder (1 / 5 : ℝ) + 2 ≤
+      uniformMathematicalMultiplicity (1 / 5 : ℝ) := by
+    simpa [uniformMathematicalMultiplicity] using
+      (add_two_le_closedMultiplicity (by norm_num) hdpos)
+  have hm : 0 < uniformMathematicalMultiplicity (1 / 5 : ℝ) := by omega
+  have hlength : uniformMathematicalLength (1 / 5 : ℝ) ≤
+      50 * uniformMathematicalMultiplicity (1 / 5 : ℝ) := by
+    rw [uniformMathematicalLength_eq_ceil (by norm_num) hm]
+    apply Nat.ceil_le.mpr
+    rw [show (1 / 5 : ℝ) ^ 2 = 1 / 25 by norm_num]
+    rw [div_le_iff₀ (by norm_num : (0 : ℝ) < 1 / 25)]
+    norm_num
+    nlinarith
+  apply exists_mathematicalRatePartitionEnvelope (δ := (1 / 5 : ℝ))
+  · norm_num
+  · norm_num
+  · exact hlength
+  · positivity
+  · norm_num
+    nlinarith [Nat.cast_nonneg
+      (uniformMathematicalMultiplicity (1 / 5 : ℝ)) (α := ℝ)]
+  · omega
 
 end ReedSolomon.HiddenDerivative.RatePartition

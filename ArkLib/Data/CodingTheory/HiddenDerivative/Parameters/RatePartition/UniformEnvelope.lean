@@ -11,16 +11,16 @@ public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition
 /-!
 # Uniform finite-parameter envelopes for rate partition
 
-The derivative order, multiplicity, and block threshold depend on the gap. The envelope's ambient
-degree and scalar parameters may depend on the actual message dimension. The resulting
-closed-multiplicity finite ratio exceeds `151/150` while retaining the actual message dimension and
-agreement count in the bounds.
+The derivative order depends on the gap, while the interpolation multiplicity may follow either
+the executable or mathematical recipe. The envelope's ambient degree and scalar parameters may
+depend on the actual message dimension. Its closed-multiplicity finite ratio exceeds `151/150`.
 
 ## Main statements
 
-* `UniformRatePartitionEnvelope`: an ambient degree and scalar parameters with the required guards.
-* `exists_uniformRatePartitionEnvelope`: the envelope exists when the gap and block length satisfy
-  the stated bounds.
+* `RatePartitionEnvelope`: an ambient degree and scalar parameters with guards for a supplied
+  interpolation multiplicity.
+* `exists_ratePartitionEnvelope`: the envelope exists from the multiplicity, size and ratio bounds.
+* `exists_uniformRatePartitionEnvelope`: the executable recipe supplies those bounds.
 
 ## References
 
@@ -34,8 +34,9 @@ noncomputable section
 namespace ReedSolomon.HiddenDerivative.RatePartition
 
 /-- A choice of interpolation degree, rate and agreement parameters meeting the rate-partition
-  guards at block length `n`. -/
-structure UniformRatePartitionEnvelope (δ : ℝ) (n k A : ℕ) where
+  guards at block length `n`. The multiplicity `m` is `uniformMultiplicity δ` for the executable
+  recipe and `uniformMathematicalMultiplicity δ` for the mathematical recipe. -/
+structure RatePartitionEnvelope (δ : ℝ) (m n k A : ℕ) where
   /-- The selected interpolation ambient degree. -/
   ambientDegree : ℕ
   /-- The rate used by the partition estimate. -/
@@ -60,9 +61,9 @@ structure UniformRatePartitionEnvelope (δ : ℝ) (n k A : ℕ) where
   rate_upper : (ambientDegree : ℝ) ≤ rate * n
   /-- The agreement parameter is at most the actual agreement count divided by `n`. -/
   agreement_lower : agreement * n ≤ A
-  /-- The finite ratio at the uniform multiplicity exceeds `151/150`. -/
+  /-- The finite ratio at interpolation multiplicity `m` exceeds `151/150`. -/
   ratio_gt : (151 / 150 : ℝ) <
-    partitionFiniteRatio rate agreement (uniformDerivativeOrder δ) (uniformMultiplicity δ)
+    partitionFiniteRatio rate agreement (uniformDerivativeOrder δ) m
 
 private theorem finiteRatio_gt_of_uniformRateGamma {δ rate agreement : ℝ}
     (horder : 500 ≤ uniformDerivativeOrder δ) (hrate : 0 < rate)
@@ -98,42 +99,39 @@ private theorem finiteRatio_gt_of_uniformRateGamma {δ rate agreement : ℝ}
     simpa only [uniformMultiplicity] using hfinite
   exact hgamma'.trans hfinite'
 
-/-- Choose a finite interpolation envelope uniformly in the actual code rate. At high rate the
-ambient degree is the message dimension and the scalar parameters are `R = k/n`, `a = R + δ`.
-At low rate the ambient degree is `⌊2δ²n⌋₊` and the scalar parameters are
-`R = 2δ²`, `a = δ`. -/
-theorem exists_uniformRatePartitionEnvelope {δ : ℝ} {n k A : ℕ}
-    (hδ : 0 < δ) (hδsmall : δ < 6 / 25)
-    (hn : uniformBlockThreshold δ ≤ n) (hk : 0 < k)
-    (hgap : (k : ℝ) + δ * n ≤ A) (hAn : A ≤ n) :
-    Nonempty (UniformRatePartitionEnvelope δ n k A) := by
+/-- Choose an interpolation envelope from a multiplicity, size bound, and finite-ratio bounds. -/
+theorem exists_ratePartitionEnvelope {δ : ℝ} {m n k A : ℕ}
+    (hδ : 0 < δ) (hδsmall : δ < 6 / 25) (hk : 0 < k)
+    (hgap : (k : ℝ) + δ * n ≤ A) (hAn : A ≤ n)
+    (hmorder : uniformDerivativeOrder δ + 2 ≤ m)
+    (hsize : (m : ℝ) ≤ δ ^ 2 * n)
+    (hlow : (151 / 150 : ℝ) < partitionFiniteRatio (2 * δ ^ 2) δ
+      (uniformDerivativeOrder δ) m)
+    (hhigh : ∀ R, δ ^ 2 ≤ R → R ≤ 1 - δ →
+      (151 / 150 : ℝ) < partitionFiniteRatio R (R + δ) (uniformDerivativeOrder δ) m) :
+    Nonempty (RatePartitionEnvelope δ m n k A) := by
   have hδone : δ < 1 := by linarith
-  have hd500 := uniformDerivativeOrder_ge_500 hδ hδsmall
-  have hmorder := add_two_le_uniformMultiplicity δ
-  have hm : 0 < uniformMultiplicity δ := by omega
-  obtain ⟨hsize, _hmn, _hν, _hνn⟩ :=
-    uniformBlockThreshold_guards hδ hδone.le hn
+  have hm : 0 < m := by omega
   have hkA : k ≤ A := by
     have : (k : ℝ) ≤ A := by nlinarith [Nat.cast_nonneg n (α := ℝ)]
     exact_mod_cast this
   have hnpos : 0 < n := hk.trans_le (hkA.trans hAn)
   have hnR : (0 : ℝ) < n := by exact_mod_cast hnpos
-  by_cases hhigh : δ ^ 2 * n ≤ k
+  by_cases hhighRate : δ ^ 2 * n ≤ k
   · let R : ℝ := (k : ℝ) / n
     let a : ℝ := R + δ
     have hRpos : 0 < R := by dsimp [R]; positivity
     have hRa : R < a := by dsimp [a]; linarith
     have hRlow : δ ^ 2 ≤ R := by
       dsimp [R]
-      exact (le_div_iff₀ hnR).2 (by simpa only [Nat.cast_ofNat] using hhigh)
+      exact (le_div_iff₀ hnR).2 (by simpa only [Nat.cast_ofNat] using hhighRate)
     have hRtop : R ≤ 1 - δ := by
       dsimp [R]
       apply (div_le_iff₀ hnR).2
       have hAn' : (A : ℝ) ≤ n := by exact_mod_cast hAn
       nlinarith
-    have hmSize : (uniformMultiplicity δ : ℝ) ≤ δ ^ 2 * n := by linarith
-    obtain ⟨horder, hambient⟩ := high_rate_ambient_guards hδ.le hmorder hmSize
-      hhigh hgap hAn
+    obtain ⟨horder, hambient⟩ := high_rate_ambient_guards hδ.le hmorder hsize
+      hhighRate hgap hAn
     have hrateUpper : (k : ℝ) ≤ R * n := by
       dsimp [R]
       field_simp
@@ -142,23 +140,21 @@ theorem exists_uniformRatePartitionEnvelope {δ : ℝ} {n k A : ℕ}
       calc
         a * n = (k : ℝ) + δ * n := by dsimp [a, R]; field_simp
         _ ≤ A := hgap
-    have hgamma := uniformRateGamma_high_gt hδ hδsmall hRlow hRtop
-    have hratio := finiteRatio_gt_of_uniformRateGamma hd500 hRpos (le_of_lt hRa) hgamma
     refine ⟨⟨k, R, a, hRpos, hRa, ?_, horder, hambient, Nat.le_succ k,
-      hhigh, hrateUpper, hagreementLower, hratio⟩⟩
-    dsimp [a]
-    linarith
+      hhighRate, hrateUpper, hagreementLower, ?_⟩⟩
+    · dsimp [a]
+      linarith
+    · exact hhigh R hRlow hRtop
   · let D : ℕ := ⌊2 * δ ^ 2 * n⌋₊
     let R : ℝ := 2 * δ ^ 2
     let a : ℝ := δ
     have hRpos : 0 < R := by dsimp [R]; positivity
     have hRa : R < a := by dsimp [R, a]; nlinarith
-    have hmSize : (uniformMultiplicity δ : ℝ) ≤ δ ^ 2 * n := by linarith
-    obtain ⟨horder, hDlower, hambient⟩ := low_rate_padded_ambient_guards hδ.le
-      (by linarith) hmorder hmSize
+    obtain ⟨horder, hDlower, hambient⟩ :=
+      low_rate_padded_ambient_guards hδ.le (by linarith) hmorder hsize
     have hkDreal : (k : ℝ) ≤ D := by
-      have hklt : (k : ℝ) < δ ^ 2 * n := lt_of_not_ge hhigh
-      exact hklt.le.trans (by simpa only [D] using hDlower)
+      have hklt : (k : ℝ) < δ ^ 2 * n := lt_of_not_ge hhighRate
+      exact hklt.le.trans (by exact_mod_cast hDlower)
     have hkD : k ≤ D := by exact_mod_cast hkDreal
     have hrateUpper : (D : ℝ) ≤ R * n := by
       dsimp [D, R]
@@ -166,9 +162,35 @@ theorem exists_uniformRatePartitionEnvelope {δ : ℝ} {n k A : ℕ}
     have hagreementLower : a * n ≤ A := by
       dsimp [a]
       nlinarith [Nat.cast_nonneg k (α := ℝ)]
-    have hgamma := uniformRateGamma_low_gt hδ hδsmall
-    have hratio := finiteRatio_gt_of_uniformRateGamma hd500 hRpos (le_of_lt hRa) hgamma
     refine ⟨⟨D, R, a, hRpos, hRa, hδone.le, horder, hambient,
-      hkD.trans (Nat.le_succ D), hDlower, hrateUpper, hagreementLower, hratio⟩⟩
+      hkD.trans (Nat.le_succ D), hDlower, hrateUpper, hagreementLower, hlow⟩⟩
+
+/-- The executable multiplicity supplies the bounds for the shared rate-partition envelope. -/
+theorem exists_uniformRatePartitionEnvelope {δ : ℝ} {n k A : ℕ}
+    (hδ : 0 < δ) (hδsmall : δ < 6 / 25)
+    (hn : uniformBlockThreshold δ ≤ n) (hk : 0 < k)
+    (hgap : (k : ℝ) + δ * n ≤ A) (hAn : A ≤ n) :
+    Nonempty (RatePartitionEnvelope δ (uniformMultiplicity δ) n k A) := by
+  have hδone : δ < 1 := by linarith
+  have hd500 := uniformDerivativeOrder_ge_500 hδ hδsmall
+  have hmorder : uniformDerivativeOrder δ + 2 ≤ uniformMultiplicity δ :=
+    add_two_le_uniformMultiplicity δ
+  obtain ⟨hsize', _hmn, _hν, _hνn⟩ :=
+    uniformBlockThreshold_guards hδ hδone.le hn
+  have hsize : (uniformMultiplicity δ : ℝ) ≤ δ ^ 2 * n := by linarith
+  have hRpos : 0 < 2 * δ ^ 2 := by positivity
+  have hRa : 2 * δ ^ 2 ≤ δ := by nlinarith
+  have hlow := finiteRatio_gt_of_uniformRateGamma hd500 hRpos hRa
+    (uniformRateGamma_low_gt hδ hδsmall)
+  have hhigh : ∀ R, δ ^ 2 ≤ R → R ≤ 1 - δ →
+      (151 / 150 : ℝ) <
+        partitionFiniteRatio R (R + δ) (uniformDerivativeOrder δ)
+          (uniformMultiplicity δ) := by
+    intro R hRlow hRtop
+    have hRpos : 0 < R := (sq_pos_of_pos hδ).trans_le hRlow
+    have hRa : R ≤ R + δ := by linarith
+    exact finiteRatio_gt_of_uniformRateGamma hd500 hRpos hRa
+      (uniformRateGamma_high_gt hδ hδsmall hRlow hRtop)
+  exact exists_ratePartitionEnvelope hδ hδsmall hk hgap hAn hmorder hsize hlow hhigh
 
 end ReedSolomon.HiddenDerivative.RatePartition
