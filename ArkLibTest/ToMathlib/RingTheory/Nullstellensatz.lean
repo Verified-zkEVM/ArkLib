@@ -20,6 +20,7 @@ import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 open MvPolynomial
 
 local notation "𝕂" => AlgebraicClosure ℚ
+local notation "R₁" => MvPolynomial (Fin 1) ℚ
 
 private theorem totalDegree_X_sub_C_le {k : Type*} [Field k] (a : k) :
     (X 0 - C a : MvPolynomial (Fin 1) k).totalDegree ≤ 1 :=
@@ -112,3 +113,37 @@ example : (affineHilbertPolynomial (Ideal.span {(X 1 - X 0 ^ 2 : R₂)})).natDeg
   simp only [map_sub, map_pow, aeval_X, sub_eq_zero] at h
   funext i
   fin_cases i <;> simp [h]
+
+example : ((zeroLocus ℚ (Ideal.span {(X 0 : R₁)})).ncard : ℚ) ≤ 1 := by
+  let I : Ideal R₁ := Ideal.span {X 0}
+  have hP : (Polynomial.preHilbertPoly ℚ 1 0).natDegree = 1 :=
+    Polynomial.natDegree_preHilbertPoly ℚ 1 0
+  have hlc : (Polynomial.preHilbertPoly ℚ 1 0).leadingCoeff = 1 := by
+    rw [Polynomial.leadingCoeff_preHilbertPoly]
+    simp
+  have hdegX : 0 < (X 0 : R₁).totalDegree := by
+    rw [totalDegree_X]
+    norm_num
+  have hdiff := Polynomial.natDegree_backwardDifference_eq_and_leadingCoeff_of_ne_zero
+    (Nat.cast_ne_zero.mpr hdegX.ne') (by rw [hP]; exact Nat.one_pos)
+  have hdegree : (affineHilbertPolynomial I).natDegree = 0 := by
+    change (affineHilbertPolynomial (Ideal.span {(X 0 : R₁)})).natDegree = 0
+    rw [affineHilbertPolynomial_span_singleton (X_ne_zero (0 : Fin 1)),
+      Nat.card_eq_fintype_card, Fintype.card_fin]
+    simpa [hP] using hdiff.1
+  have hcoeff : (affineHilbertPolynomial I).coeff 0 = 1 := by
+    change (affineHilbertPolynomial (Ideal.span {(X 0 : R₁)})).coeff 0 = 1
+    rw [affineHilbertPolynomial_span_singleton (X_ne_zero (0 : Fin 1)),
+      Nat.card_eq_fintype_card, Fintype.card_fin]
+    rw [hP, Nat.sub_self] at hdiff
+    have hc := Polynomial.coeff_natDegree
+      (p := Polynomial.backwardDifference ((X 0 : R₁).totalDegree : ℚ)
+        (Polynomial.preHilbertPoly ℚ 1 0))
+    rw [hdiff.1, hdiff.2, hlc] at hc
+    rw [hc]
+    simp [totalDegree_X]
+  have hfinite : Module.Finite ℚ (R₁ ⧸ I) :=
+    (natDegree_affineHilbertPolynomial_eq_zero_iff).mp hdegree
+  have h := ncard_zeroLocus_le_coeff_zero_affineHilbertPolynomial (K := ℚ) I
+  rw [hcoeff] at h
+  exact h

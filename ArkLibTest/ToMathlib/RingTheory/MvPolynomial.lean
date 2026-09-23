@@ -33,6 +33,63 @@ open MvPolynomial
 open Filter Finsupp
 open scoped MonomialOrder
 
+local notation "R₁" => MvPolynomial (Fin 1) ℚ
+local notation "R₂" => MvPolynomial (Fin 2) ℚ
+
+private theorem component_isLeftRegular_mk_of_isUnit_sub {R : Type*} [CommRing R] {g h : R}
+    (hgh : IsUnit (h - g)) : IsLeftRegular (Ideal.Quotient.mk (Ideal.span {g}) h) := by
+  have hmk : Ideal.Quotient.mk (Ideal.span {g}) h =
+      Ideal.Quotient.mk (Ideal.span {g}) (h - g) := by
+    rw [map_sub, Ideal.Quotient.eq_zero_iff_mem.mpr (Ideal.mem_span_singleton_self g), sub_zero]
+  rw [hmk]
+  exact (hgh.map _).isRegular.left
+
+private theorem component_span_ne_top_of_eval_eq_zero {g : MvPolynomial (Fin 1) ℚ}
+    (a : Fin 1 → ℚ) (hg : eval a g = 0) : Ideal.span {g} ≠ ⊤ := by
+  intro h
+  obtain ⟨q, hq⟩ := Ideal.mem_span_singleton'.mp ((Ideal.eq_top_iff_one _).mp h)
+  have := congrArg (eval a) hq
+  simp [hg] at this
+
+example : 2 ≤ affineHilbertFunction (⨅ i : Fin 2,
+    (![Ideal.span {(X 0 : R₁)}, Ideal.span {X 0 - C 1}] : Fin 2 → Ideal R₁) i) 1 := by
+  let P : Fin 2 → Ideal R₁ := ![Ideal.span {X 0}, Ideal.span {X 0 - C 1}]
+  let s : Fin 2 → R₁ := ![X 0 - C 1, X 0]
+  have hreg : ∀ i, IsLeftRegular (Ideal.Quotient.mk (P i) (s i)) := by
+    intro i
+    fin_cases i
+    · change IsLeftRegular (Ideal.Quotient.mk (Ideal.span {X 0}) (X 0 - C 1))
+      exact component_isLeftRegular_mk_of_isUnit_sub
+        (by rw [sub_sub_cancel_left, map_one]; exact isUnit_one.neg)
+    · change IsLeftRegular (Ideal.Quotient.mk (Ideal.span {X 0 - C 1}) (X 0))
+      exact component_isLeftRegular_mk_of_isUnit_sub
+        (by rw [sub_sub_cancel, map_one]; exact isUnit_one)
+  have hmem : ∀ i j, i ≠ j → s i ∈ P j := by
+    intro i j hij
+    fin_cases i <;> fin_cases j
+    · exact absurd rfl hij
+    · exact Ideal.mem_span_singleton_self _
+    · exact Ideal.mem_span_singleton_self _
+    · exact absurd rfl hij
+  have hdeg : ∀ i, (s i).totalDegree ≤ 1 := by
+    intro i
+    fin_cases i
+    · change (X 0 - C 1 : R₁).totalDegree ≤ 1
+      exact (totalDegree_sub_C_le _ _).trans (totalDegree_X 0).le
+    · exact (totalDegree_X 0).le
+  have h := sum_affineHilbertFunction_le_iInf (I := P) (s := s) (b := fun _ ↦ 1)
+    hreg hmem hdeg (fun _ ↦ le_rfl) (N := 1)
+  have h0 : 1 ≤ affineHilbertFunction (Ideal.span {(X 0 : R₁)}) 0 :=
+    one_le_affineHilbertFunction
+      (component_span_ne_top_of_eval_eq_zero (g := (X 0 : R₁)) (fun _ ↦ 0) (by simp)) 0
+  have h1 : 1 ≤ affineHilbertFunction (Ideal.span {(X 0 - C 1 : R₁)}) 0 :=
+    one_le_affineHilbertFunction
+      (component_span_ne_top_of_eval_eq_zero (g := (X 0 - C 1 : R₁)) (fun _ ↦ 1) (by simp)) 0
+  have hsum : 2 ≤ ∑ i : Fin 2, affineHilbertFunction (P i) 0 := by
+    rw [Fin.sum_univ_two]
+    simpa [P] using add_le_add h0 h1
+  exact hsum.trans (by simpa only [Nat.sub_self] using h)
+
 example : affineDegree (Ideal.span {(X 0 ^ 3 : MvPolynomial (Fin 2) ℚ)}) = 3 := by
   rw [affineDegree_span_singleton (pow_ne_zero 3 (X_ne_zero 0)), totalDegree_X_pow]
   norm_num
@@ -125,6 +182,22 @@ example :
     Polynomial.preHilbertPoly_eq_choose_add_sub ℚ 2 (Nat.zero_le _)]
   norm_num [Nat.choose]
 
+example :
+    ∑ Q ∈ Ideal.iteratedRetainedCutFamily {(⊥ : Ideal R₂)} 1 [X 0, X 0 ^ 2],
+        affineDegree Q * (2 : ℚ) ^ (affineHilbertPolynomial Q).natDegree ≤
+      ∑ P ∈ {(⊥ : Ideal R₂)},
+        affineDegree P * (2 : ℚ) ^ (affineHilbertPolynomial P).natDegree := by
+  exact sum_affineDegree_mul_pow_iteratedRetainedCutFamily_le
+    (Ps := {(⊥ : Ideal R₂)})
+    (fun P hP ↦ Finset.mem_singleton.mp hP ▸ Ideal.isPrime_bot) 1 (b := 2)
+    (cuts := [X 0, X 0 ^ 2]) (by
+      intro f hf
+      simp only [List.mem_cons, List.not_mem_nil, or_false] at hf
+      rcases hf with rfl | rfl
+      · rw [totalDegree_X]
+        norm_num
+      · rw [totalDegree_X_pow])
+
 local notation "B" => (⊥ : Ideal (MvPolynomial (Fin 1) ℚ))
 
 private theorem isLeftRegular_mk_X : IsLeftRegular (Ideal.Quotient.mk B (X 0)) :=
@@ -134,6 +207,18 @@ private theorem isLeftRegular_mk_X : IsLeftRegular (Ideal.Quotient.mk B (X 0)) :
 example : (affineHilbertPolynomial (awayPresentationIdeal B (X 0))).natDegree = 1 := by
   rw [natDegree_affineHilbertPolynomial_awayPresentationIdeal isLeftRegular_mk_X,
     natDegree_affineHilbertPolynomial_bot, Nat.card_eq_fintype_card, Fintype.card_fin]
+
+example :
+    ∑ Q ∈ ((⊥ : Ideal R₁) ⊔ Ideal.span {X 0}).retainedMinimalPrimes 1, affineDegree Q ≤ 1 := by
+  have h := principalCut_sum_affineDegree_retainedMinimalPrimes_le (P := (⊥ : Ideal R₁)) 1
+    (f := X 0) (fun h ↦ X_ne_zero 0 ((Submodule.mem_bot ℚ).mp h)) (b := 1)
+    (by rw [totalDegree_X])
+  simpa [affineDegree_bot, Nat.card_eq_fintype_card, Fintype.card_fin] using h
+
+example :
+    (affineHilbertPolynomial ((Ideal.span {(X 0 ^ 2 : R₁)}).radical)).natDegree =
+      (affineHilbertPolynomial (Ideal.span {(X 0 ^ 2 : R₁)})).natDegree := by
+  exact natDegree_affineHilbertPolynomial_radical _
 
 example : Module.finrank ℚ (restrictBidegree (Fin 2) ℚ 2 3) = 30 := by
   rw [finrank_restrictBidegree, Nat.card_eq_fintype_card, Fintype.card_fin]
@@ -167,9 +252,11 @@ example : (affineHilbertPolynomial
         exact X_mem_supported.mpr fun ⟨_, h⟩ ↦ by simp [firstVariable] at h
   simpa using h
 
-example : monomialMap ℚ ({Finsupp.single (0 : Fin 1) 2} : Set (Fin 1 →₀ ℕ))
-    (X ⟨_, rfl⟩) = X 0 ^ 2 := by
-  rw [monomialMap_X, X_pow_eq_monomial]
+example : Function.Surjective
+    (monomialMap ℚ ({Finsupp.single (0 : Fin 1) 1} : Set (Fin 1 →₀ ℕ))) := by
+  apply monomialMap_surjective
+  intro i
+  simp
 
 example :
     {e : Fin 2 →₀ ℕ | e ∈ MonomialOrder.degLex.standardExponents
