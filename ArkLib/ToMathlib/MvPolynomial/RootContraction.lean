@@ -28,9 +28,11 @@ contraction by `p` divides the degree in `none` by `p` exactly.
 
 ## Main statements
 
+* `MvPolynomial.map_optionEquivLeft`: coefficient maps commute with `optionEquivLeft`.
 * `MvPolynomial.optionEquivLeft_pderiv_none`: the partial derivative in `none` is the univariate
   derivative.
-* `MvPolynomial.eval_rootExpansion` and `MvPolynomial.rootContraction_rootExpansion`.
+* `MvPolynomial.eval_rootExpansion`, `MvPolynomial.map_rootExpansion`,
+  `MvPolynomial.eval₂_rootExpansion`, and `MvPolynomial.rootContraction_rootExpansion`.
 * `MvPolynomial.coeff_rootContraction` and `MvPolynomial.degreeOf_rootContraction_some_le`.
 * `MvPolynomial.degreeOf_rootContraction_none_mul`: the degree identity for a contraction of a
   polynomial with vanishing partial derivative in `none`.
@@ -41,6 +43,17 @@ contraction by `p` divides the degree in `none` by `p` exactly.
 namespace MvPolynomial
 
 variable {R σ : Type*} [CommSemiring R]
+
+/-- `optionEquivLeft` commutes with maps of polynomial coefficients. -/
+theorem map_optionEquivLeft {S : Type*} [CommSemiring S] (f : R →+* S)
+    (P : MvPolynomial (Option σ) R) :
+    Polynomial.map (map f) (optionEquivLeft R σ P) = optionEquivLeft S σ (map f P) := by
+  have he : (Polynomial.mapRingHom (map f)).comp (optionEquivLeft R σ).toRingHom =
+      (optionEquivLeft S σ).toRingHom.comp (map f) := by
+    ext a : 2
+    · simp
+    · cases a <;> simp
+  exact DFunLike.congr_fun he P
 
 /-- Under `optionEquivLeft`, the partial derivative in `none` is the univariate derivative. -/
 theorem optionEquivLeft_pderiv_none (P : MvPolynomial (Option σ) R) :
@@ -69,6 +82,22 @@ theorem eval_rootExpansion (s : ℕ) (P : MvPolynomial (Option σ) R)
       eval (fun j ↦ Option.elim j (y ^ s) x) P := by
   rw [optionEquivLeft_elim_eval, rootExpansion, AlgEquiv.apply_symm_apply,
     Polynomial.map_expand, Polynomial.expand_eval, optionEquivLeft_elim_eval]
+
+/-- Mapping coefficients commutes with expansion in the distinguished variable. -/
+theorem map_rootExpansion {S : Type*} [CommSemiring S] (f : R →+* S) (s : ℕ)
+    (P : MvPolynomial (Option σ) R) :
+    map f (rootExpansion s P) = rootExpansion s (map f P) := by
+  apply (optionEquivLeft S σ).injective
+  rw [← map_optionEquivLeft]
+  simp [rootExpansion, Polynomial.map_expand, map_optionEquivLeft]
+
+/-- Evaluating `rootExpansion s P` through `f` at `y` evaluates `P` at `y ^ s`. -/
+theorem eval₂_rootExpansion {S : Type*} [CommSemiring S] (f : R →+* S) (s : ℕ)
+    (P : MvPolynomial (Option σ) R) (x : σ → S) (y : S) :
+    eval₂ f (fun o ↦ o.elim y x) (rootExpansion s P) =
+      eval₂ f (fun o ↦ o.elim (y ^ s) x) P := by
+  rw [eval₂_eq_eval_map, map_rootExpansion, eval_rootExpansion,
+    ← eval₂_eq_eval_map]
 
 /-- Keep the exponents of `X none` divisible by `s` and divide them by `s`. The coefficients in
 the other variables are unchanged. -/

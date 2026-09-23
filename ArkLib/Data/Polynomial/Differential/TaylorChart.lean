@@ -6,6 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.Data.Polynomial.Differential.RationalTaylor
+public import ArkLib.Data.Polynomial.Differential.RationalTaylorAlgebra
 public import Mathlib.LinearAlgebra.Lagrange
 
 /-!
@@ -40,12 +41,15 @@ agreement with `k` distinct points determine the initial jet.
 
 ## Main statements
 
-* `initialJetEquation`, `aeval_initialJetEquation`, `totalDegree_initialJetEquation_le`,
+* `initialJetEquation`, `map_initialJetEquation`, `aeval_map_initialJetEquation`,
+  `aeval_initialJetEquation`, `totalDegree_initialJetEquation_le`,
   `pderiv_last_initialJetEquation` and `aeval_initialJetEquation_polynomialJet`: the initial
   hypersurface.
 * `commonTaylorNumerator`, `totalDegree_commonTaylorNumerator_le` and
   `aeval_commonTaylorNumerator`: the cleared coefficients and their degree bound
   `rationalTaylorCutDegreeBound Q τ = 1 + τ (v - 1)`.
+* `commonTaylorNumeratorOver_eq` and `map_commonTaylorNumeratorOver_eq`: field specialization of
+  the algebra-valued common numerator.
 * `aeval_commonTaylorNumerator_eq_zero`: on `S ≠ 0`, a vanishing coefficient makes its common
   numerator vanish for every exponent.
 * `rationalTaylorMap_injective` and `rationalTaylorMap_polynomialJet`: the chart keeps the initial
@@ -60,8 +64,7 @@ agreement with `k` distinct points determine the initial jet.
 
 ## References
 
-* [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient
-  Decoding and Smaller Cryptographic Proofs*][DKT26], Appendix A.6.
+* [DKT26]
 -/
 
 @[expose] public section
@@ -85,6 +88,21 @@ def initialJetEquation (center : R) (Q : DifferentialPolynomial R r) :
     MvPolynomial (Fin (r + 1)) R :=
   aeval (fun i ↦ i.elim (C center) X) Q
 
+/-- Mapping coefficients sends the initial equation to the initial equation of the mapped
+differential polynomial. -/
+theorem map_initialJetEquation {S : Type*} [CommSemiring S] (f : R →+* S) (center : R)
+    (Q : DifferentialPolynomial R r) :
+    map f (initialJetEquation center Q) = initialJetEquation (f center) (map f Q) := by
+  simp only [initialJetEquation, aeval_def, algebraMap_eq, map_eval₂]
+  congr 1
+  funext i
+  cases i <;> simp
+
+/-- The initial separant is the initial equation of the separant. -/
+theorem initialJetEquation_separant (center : R) (Q : DifferentialPolynomial R r) :
+    initialJetEquation center (separant Q (Fin.last r)) = initialJetSeparant center Q :=
+  rfl
+
 /-- Evaluating the initial equation at a jet is `jetEvaluation` of `Q` at `center`. -/
 theorem aeval_initialJetEquation (center : R) (Q : DifferentialPolynomial R r)
     (jet : Fin (r + 1) → R) :
@@ -96,6 +114,15 @@ theorem aeval_initialJetEquation (center : R) (Q : DifferentialPolynomial R r)
     intro i
     cases i <;> simp
   exact DFunLike.congr_fun he Q
+
+/-- Evaluating the mapped initial equation agrees with evaluating the mapped differential
+polynomial at the mapped center. -/
+theorem aeval_map_initialJetEquation {S : Type*} [CommSemiring S] (f : R →+* S)
+    (center : R) (Q : DifferentialPolynomial R r) (jet : Fin (r + 1) → S) :
+    aeval jet (map f (initialJetEquation center Q)) =
+      jetEvaluation (map f Q) (f center) jet := by
+  rw [map_initialJetEquation]
+  exact aeval_initialJetEquation (f center) (map f Q) jet
 
 /-- Setting the independent variable to a constant does not increase the total jet degree. -/
 theorem totalDegree_initialJetEquation_le (center : R) (Q : DifferentialPolynomial R r) :
@@ -169,6 +196,32 @@ It represents `S ^ τ * c_l` when `2(l - r) - 1 ≤ τ`. -/
 def commonTaylorNumerator (center : F) (Q : DifferentialPolynomial F r) (τ l : ℕ) :
     MvPolynomial (Fin (r + 1)) F :=
   rationalTaylorNumerator center Q l * initialJetSeparant center Q ^ (τ - (2 * (l - r) - 1))
+
+/-- Over a field containing `F`, the common numerator over an `F`-algebra equals the field
+common numerator. -/
+theorem commonTaylorNumeratorOver_eq {E : Type*} [Field E] [Algebra F E]
+    (center : E) (Q : DifferentialPolynomial E r) (τ l : ℕ) :
+    commonTaylorNumeratorOver F center Q τ l = commonTaylorNumerator center Q τ l := by
+  rw [commonTaylorNumeratorOver, commonTaylorNumerator, rationalTaylorNumeratorOver_eq]
+
+/-- Mapping an algebra-valued common numerator into a field gives the common numerator of the
+mapped equation. -/
+theorem map_commonTaylorNumeratorOver_eq {A E : Type*} [CommRing A] [Algebra F A]
+    [Field E] [Algebra F E] (φ : A →ₐ[F] E) (center : A)
+    (Q : DifferentialPolynomial A r) (τ l : ℕ) :
+    map φ.toRingHom (commonTaylorNumeratorOver F center Q τ l) =
+      commonTaylorNumerator (φ center) (map φ.toRingHom Q) τ l := by
+  rw [map_commonTaylorNumeratorOver, commonTaylorNumeratorOver_eq]
+
+/-- Evaluating a polynomial parameter specializes a common Taylor numerator. -/
+theorem eval_commonTaylorNumeratorOver (center z : F)
+    (Q : DifferentialPolynomial (Polynomial F) r) (K : ℕ) (l : Fin K)
+    (τ : ℕ := 2 * K) :
+    map (Polynomial.evalRingHom z)
+        (commonTaylorNumeratorOver F (Polynomial.C center) Q τ l.val) =
+      commonTaylorNumerator center (map (Polynomial.evalRingHom z) Q) τ l.val := by
+  simpa using map_commonTaylorNumeratorOver_eq (F := F) (Polynomial.aeval z)
+    (Polynomial.C center) Q τ l.val
 
 /-- If `2(l - r) - 1 ≤ τ`, the common numerator of `c_l` has total degree at most
 `1 + τ (jetTotalDegree Q - 1)`. -/
@@ -277,7 +330,7 @@ theorem eval_rationalTaylorPolynomial (center : F) (Q : DifferentialPolynomial F
     Polynomial.taylor_eval] using he
 
 /-- For `r < K`, the reconstruction has the initial jet `jet`. -/
-private theorem polynomialJet_rationalTaylorPolynomial (center : F)
+theorem polynomialJet_rationalTaylorPolynomial (center : F)
     (Q : DifferentialPolynomial F r)
     {K : ℕ} (hK : r < K) (jet : Fin (r + 1) → F) :
     polynomialJet (d := r) center (rationalTaylorPolynomial center Q K jet) = jet := by
