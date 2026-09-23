@@ -45,6 +45,7 @@ All maps are linear over an arbitrary commutative ring `R`.
   its point.
 * `exactLocalConstraintAt_eq_enlarged_comp`: the same factorization on the exact interpolation
   space.
+* `SatisfiesLocalConstraints.map`: coefficient changes preserve the local constraints.
 * `globalExactCoefficientConstraintMap`: all local constraints, over an arbitrary index type of
   received points, as one linear map on exact interpolation coefficients.
 
@@ -211,6 +212,16 @@ theorem satisfiesLocalConstraints_iff_coeff_eq_zero
       ∀ e, localContactOrder d e < m →
         (unscaledLocalSubstitution d center received Q).coeff e = 0 :=
   projectLowContact_eq_zero_iff m _
+
+/-- Local constraints are preserved by every coefficient-ring homomorphism. -/
+theorem SatisfiesLocalConstraints.map {S : Type*} [CommRing S] (φ : R →+* S) (m : ℕ)
+    (center received : R) (Q : DifferentialPolynomial R d)
+    (hQ : SatisfiesLocalConstraints m center received Q) :
+    SatisfiesLocalConstraints m (φ center) (φ received) (MvPolynomial.map φ Q) := by
+  rw [SatisfiesLocalConstraints, localConstraintAt, LinearMap.comp_apply,
+    AlgHom.toLinearMap_apply] at hQ ⊢
+  rw [← map_unscaledLocalSubstitution, ← map_projectLowContact]
+  simpa using congrArg (MvPolynomial.map φ) hQ
 
 /-! ### Truncation factorization -/
 
