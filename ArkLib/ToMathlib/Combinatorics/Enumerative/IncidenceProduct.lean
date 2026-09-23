@@ -55,15 +55,20 @@ with a threshold.
 * `dimensionSensitiveIncidenceProduct_eq_pow_mul`: the degree bound `b` contributes `b ^ d`.
 * `dimensionSensitiveIncidenceProduct_le_one`: the products in dimension at most one are bounded
   by the first factor.
+* `dimensionSensitiveIncidenceProduct_mono_dimension` and
+  `dimensionSensitiveIncidenceProduct_le_first_pow`: monotonicity and a fixed-threshold power
+  bound.
 * `hybridDimensionSensitiveIncidenceProduct_mono_dimension`,
-  `hybridDimensionSensitiveIncidenceProduct_le_two`: monotonicity in the dimension, and the
-  bound of the products in dimension at most two by the first two factors.
+  `hybridDimensionSensitiveIncidenceProduct_eq_factor_mul`,
+  `hybridDimensionSensitiveIncidenceProduct_min_le`,
+  `hybridDimensionSensitiveIncidenceProduct_le_two`: monotonicity, a factorization below the
+  coefficient dimension, and upper bounds by initial factors.
 -/
 
 @[expose] public section
 
-/-- For `m ≤ m' < A ≤ n`, the ratio `(n - m) / (A - m)` is at most `(n - m') / (A - m')`: removing
-the same number of elements from a larger and a smaller count increases their ratio. -/
+/-- For `m ≤ m' < A ≤ n`, the ratio `(n - m) / (A - m)` is at most `(n - m') / (A - m')`:
+removing the same number of elements from a larger and a smaller count increases their ratio. -/
 theorem natCast_sub_div_natCast_sub_le {K : Type*} [Field K] [LinearOrder K]
     [IsStrictOrderedRing K] {n A m m' : ℕ} (hm : m ≤ m') (hm'A : m' < A) (hAn : A ≤ n) :
     ((n - m : ℕ) : K) / ((A - m : ℕ) : K) ≤ ((n - m' : ℕ) : K) / ((A - m' : ℕ) : K) := by
@@ -85,7 +90,8 @@ theorem one_le_incidenceFactor {n A T b : ℕ} (hAn : A ≤ n) (hb : 0 < b) :
 
 /-- For `j < T ≤ A ≤ n`, `(n - j) * (A - T + 1) ≤ (n - T + 1) * (A - j)`: removing `j` of `n`
 elements and `j` of `A` elements gives a ratio at most the ratio for `T - 1` removed. -/
-private theorem sub_mul_sub_add_one_le {n A T j : ℕ} (hj : j < T) (hTA : T ≤ A) (hAn : A ≤ n) :
+private theorem sub_mul_sub_add_one_le {n A T j : ℕ} (hj : j < T) (hTA : T ≤ A)
+    (hAn : A ≤ n) :
     (n - j) * (A - T + 1) ≤ (n - T + 1) * (A - j) := by
   obtain ⟨z, rfl⟩ : ∃ z, T = j + 1 + z := ⟨T - j - 1, by omega⟩
   rw [show n - j = (n - (j + 1 + z) + 1) + z by omega,
@@ -118,7 +124,8 @@ theorem incidenceProduct_zero (n A b : ℕ) (T : ℕ → ℕ) : incidenceProduct
 threshold `T d`. -/
 theorem incidenceProduct_succ (n A b : ℕ) (T : ℕ → ℕ) (d : ℕ) :
     incidenceProduct n A b T (d + 1) =
-      incidenceProduct n A b T d * ((((n - T d + 1) * b : ℕ) : ℚ) / ((A - T d + 1 : ℕ) : ℚ)) :=
+      incidenceProduct n A b T d *
+        ((((n - T d + 1) * b : ℕ) : ℚ) / ((A - T d + 1 : ℕ) : ℚ)) :=
   Finset.prod_range_succ _ _
 
 /-- The product of incidence factors is nonnegative. -/
@@ -140,7 +147,8 @@ theorem incidenceProduct_const (n A b L d : ℕ) :
 
 /-- If `A ≤ n` and `0 < b`, every factor is at least one, so the product is monotone in the
 dimension. -/
-theorem incidenceProduct_mono_dimension {n A b : ℕ} (T : ℕ → ℕ) (hAn : A ≤ n) (hb : 0 < b) :
+theorem incidenceProduct_mono_dimension {n A b : ℕ} (T : ℕ → ℕ) (hAn : A ≤ n)
+    (hb : 0 < b) :
     Monotone (incidenceProduct n A b T) :=
   monotone_nat_of_le_succ fun d ↦ by
     rw [incidenceProduct_succ]
@@ -213,6 +221,35 @@ theorem dimensionSensitiveIncidenceProduct_le_one {n A k d : ℕ} (hd : d ≤ 1)
   · simpa using one_le_incidenceFactor (T := k) (b := 1) hAn one_pos
   · simp
 
+/-- If `A ≤ n` and `0 < b`, the dimension-sensitive product is monotone in its dimension. -/
+theorem dimensionSensitiveIncidenceProduct_mono_dimension {n A k b : ℕ} (hAn : A ≤ n)
+    (hb : 0 < b) : Monotone (dimensionSensitiveIncidenceProduct n A k b) := by
+  apply monotone_nat_of_le_succ
+  intro d
+  rw [dimensionSensitiveIncidenceProduct_succ]
+  apply le_mul_of_one_le_right (dimensionSensitiveIncidenceProduct_nonneg n A k b d)
+  rw [one_le_div₀ (by positivity)]
+  exact_mod_cast (show A - k + d + 1 ≤ (n - k + d + 1) * b from
+    (by omega : A - k + d + 1 ≤ n - k + d + 1).trans (Nat.le_mul_of_pos_right _ hb))
+
+/-- The dimension-sensitive product with degree bound one is at most its first factor to the
+requested power. -/
+theorem dimensionSensitiveIncidenceProduct_le_first_pow
+    (n A k r : ℕ) (hkA : k ≤ A) (hAn : A ≤ n) :
+    dimensionSensitiveIncidenceProduct n A k 1 r ≤
+      (((n - k + 1 : ℕ) : ℚ) / (A - k + 1 : ℕ)) ^ r := by
+  induction r with
+  | zero => simp
+  | succ r ih =>
+    rw [dimensionSensitiveIncidenceProduct_succ, pow_succ]
+    apply mul_le_mul ih _ (by positivity) (by positivity)
+    simp only [Nat.mul_one]
+    rw [div_le_div_iff₀ (by positivity) (by positivity)]
+    push_cast [Nat.cast_sub hkA, Nat.cast_sub (hkA.trans hAn)]
+    have hdiff : (0 : ℚ) ≤ n - A := sub_nonneg.mpr (by exact_mod_cast hAn)
+    have hh := mul_nonneg hdiff (show (0 : ℚ) ≤ r by positivity)
+    nlinarith
+
 /-- The product over `t < d` of the factors `((n - T t + 1) * b) / (A - T t + 1)` with threshold
 `T 0 = L` and `T t = k + 1 - t` for `t ≥ 1`. -/
 def hybridDimensionSensitiveIncidenceProduct (n A L k b : ℕ) : ℕ → ℚ
@@ -276,8 +313,40 @@ theorem hybridDimensionSensitiveIncidenceProduct_mono_dimension {n A L k b : ℕ
   simpa only [hybridDimensionSensitiveIncidenceProduct_eq_incidenceProduct] using
     incidenceProduct_mono_dimension (fun t ↦ if t = 0 then L else k + 1 - t) hAn hb hdd'
 
-/-- If `d ≤ 2`, `A ≤ n` and `0 < b`, the product up to dimension `d` is at most the product of the
-first two factors. -/
+/-- For `s ≤ k + 1`, factor the hybrid product into its first factor and the dimension-sensitive
+product. -/
+theorem hybridDimensionSensitiveIncidenceProduct_eq_factor_mul
+    (n A L k b s : ℕ) (hkA : k ≤ A) (hAn : A ≤ n) (hsk : s ≤ k + 1) :
+    hybridDimensionSensitiveIncidenceProduct n A L k b (s + 1) =
+      ((((n - L + 1) * b : ℕ) : ℚ) / ((A - L + 1 : ℕ) : ℚ)) *
+        dimensionSensitiveIncidenceProduct n A k b s := by
+  induction s with
+  | zero => simp
+  | succ s ih =>
+    rw [hybridDimensionSensitiveIncidenceProduct_succ, ih (by omega),
+      dimensionSensitiveIncidenceProduct_succ]
+    have hnEq : n - (if s + 1 = 0 then L else k + 1 - (s + 1)) + 1 = n - k + s + 1 := by
+      simp only [show s + 1 ≠ 0 by omega, ite_false]
+      omega
+    have hAEq : A - (if s + 1 = 0 then L else k + 1 - (s + 1)) + 1 = A - k + s + 1 := by
+      simp only [show s + 1 ≠ 0 by omega, ite_false]
+      omega
+    rw [hnEq, hAEq, mul_assoc]
+
+/-- Cap the actual dimension at `k` before extending the dimension-sensitive product. -/
+theorem hybridDimensionSensitiveIncidenceProduct_min_le
+    (n A L k b r : ℕ) (hkA : k ≤ A) (hAn : A ≤ n) (hb : 0 < b) :
+    hybridDimensionSensitiveIncidenceProduct n A L k b (min r k + 1) ≤
+      ((((n - L + 1) * b : ℕ) : ℚ) / ((A - L + 1 : ℕ) : ℚ)) *
+        dimensionSensitiveIncidenceProduct n A k b r := by
+  rw [hybridDimensionSensitiveIncidenceProduct_eq_factor_mul n A L k b (min r k) hkA hAn
+    (by omega)]
+  exact mul_le_mul_of_nonneg_left
+    (dimensionSensitiveIncidenceProduct_mono_dimension hAn hb (Nat.min_le_left _ _))
+    (by positivity)
+
+/-- If `d ≤ 2`, `A ≤ n` and `0 < b`, the product up to dimension `d` is at most the product of
+the first two factors. -/
 theorem hybridDimensionSensitiveIncidenceProduct_le_two {n A L k b d : ℕ} (hd : d ≤ 2)
     (hAn : A ≤ n) (hb : 0 < b) :
     hybridDimensionSensitiveIncidenceProduct n A L k b d ≤

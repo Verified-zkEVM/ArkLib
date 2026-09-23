@@ -2358,6 +2358,15 @@ which makes the incidence factor an admissible ratio in
 private lemma of the same name from PR #1008's `AgreementIncidence.lean`, moved here with its
 variables renamed to `T` and `j`.
 
+Ported from `ArkLib/ToMathlib/AlgebraicGeometry/Incidence/ProductBounds.lean` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`, namespace `AffineHilbert`.
+
+`dimensionSensitiveIncidenceProduct_mono_dimension` keeps its name and is generalized from a
+pairwise `r ≤ s` comparison to the `Monotone` property. `dimensionSensitiveIncidenceProduct_le_first_pow`
+and `hybridDimensionSensitiveIncidenceProduct_min_le` keep their names and statements.
+`hybridDimensionSensitiveIncidenceProduct_eq_factor_mul` keeps its name and is generalized from
+`s ≤ k` to `s ≤ k + 1`. Nothing was deferred or left unported.
+
 ## `ArkLib/ToMathlib/Combinatorics/Enumerative/MonomialCount.lean`
 
 Ported from ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`, file
@@ -3449,6 +3458,22 @@ main, where #1008 wrote `[P.IsPrime]`. The private `sub_mul_sub_add_one_le` move
 `card_le_sum_of_forall_mem_zeroLocus`; and
 `card_le_of_agreement_off_excluded_sharp_of_iteratedRetainedCutFamily` is the iterated incidence
 bound with threshold `fun _ ↦ L` and `D = d`.
+
+## `ArkLib/ToMathlib/RingTheory/Nullstellensatz/BidegreeIncidence.lean`
+
+Ported from `ArkLib/ToMathlib/AlgebraicGeometry/Incidence/BidegreeExcluded.lean` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`, namespace `AffineHilbert`.
+
+`bidegreeHypersurface_source_incidence_off_excluded_sharp` is renamed to
+`MvPolynomial.bidegreeHypersurface_incidence_off_excluded_sharp` and generalized by removing the
+`A ≤ n` premise. `bidegreeHypersurface_source_incidence_off_excluded_hybrid` and
+`bidegreeHypersurface_source_incidence_off_excluded_hybrid_two` are renamed to
+`MvPolynomial.bidegreeHypersurface_incidence_off_excluded_hybrid` and
+`MvPolynomial.bidegreeHypersurface_incidence_off_excluded_hybrid_two`, respectively, with no
+mathematical change. The `_sharp_one` and `_sharp_two` source declarations are renamed to
+`MvPolynomial.bidegreeHypersurface_incidence_off_excluded_sharp_one` and
+`MvPolynomial.bidegreeHypersurface_incidence_off_excluded_sharp_two`; both are generalized by
+removing `A ≤ n`. Nothing was deferred or left unported.
 
 ## `ArkLib/ToMathlib/RingTheory/Nullstellensatz/DimensionSensitiveIncidence.lean`
 
