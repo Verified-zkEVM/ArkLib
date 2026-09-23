@@ -242,6 +242,147 @@ example (a : ℚ) :
     degree_rationalTaylorPolynomial_lt_of_symbolic_high_cuts (F := ℚ) (Polynomial.aeval a)
       0 parameterEquation 2 1 constantJet hS hhigh
 
+private abbrev coordinateEquation : DifferentialPolynomial (Polynomial ℚ) 0 := X (some 0)
+
+example : jointTotalDegree (initialJetEquation (Polynomial.C 0) coordinateEquation) ≤ 1 := by
+  apply jointTotalDegree_initialJetEquation_le_of_coeffNatDegreeLE 0 coordinateEquation 1 0
+  · rw [jetTotalDegree_le_iff]
+    intro u hu
+    simp only [coordinateEquation, support_X, Finset.mem_singleton] at hu
+    subst u
+    simp [totalJetDegree, Finsupp.weight_single]
+  · exact coeffNatDegreeLE_X (some 0)
+
+private abbrev independentVariableEquation : DifferentialPolynomial (Polynomial ℚ) 0 :=
+  X (none : Option (Fin 1))
+
+/-- A nonconstant center contributes its parameter degree to the initial equation. -/
+example : jointTotalDegree (initialJetEquation Polynomial.X independentVariableEquation) ≤ 1 := by
+  have hjet : jetTotalDegree independentVariableEquation ≤ 0 := by
+    rw [jetTotalDegree_le_iff]
+    intro u hu
+    simp only [independentVariableEquation, support_X, Finset.mem_singleton] at hu
+    subst u
+    simp [totalJetDegree, Finsupp.weight_single]
+  have hEq : initialJetEquation Polynomial.X independentVariableEquation = C Polynomial.X := by
+    simp [initialJetEquation, independentVariableEquation]
+  have hcoeff :
+      CoeffNatDegreeLE (initialJetEquation Polynomial.X independentVariableEquation) 1 := by
+    rw [hEq]
+    exact coeffNatDegreeLE_C (p := Polynomial.X) (by simp)
+  exact jointTotalDegree_initialJetEquation_le Polynomial.X independentVariableEquation 0 1 hjet
+    (fun m _ ↦ hcoeff m)
+
+/-- A zero-length agreement cut still has degree one from its affine received value. -/
+example :
+    jointTotalDegree (taylorAgreementEquationOver (F := ℚ) (Polynomial.C 0)
+      coordinateEquation 0 (Polynomial.C 0) (Polynomial.C 0 + Polynomial.X * Polynomial.C 1)) ≤
+      1 := by
+  have hjet : jetTotalDegree coordinateEquation ≤ 1 := by
+    rw [jetTotalDegree_le_iff]
+    intro u hu
+    simp only [coordinateEquation, support_X, Finset.mem_singleton] at hu
+    subst u
+    simp [totalJetDegree, Finsupp.weight_single]
+  have hQ : CoeffNatDegreeLE coordinateEquation 0 := coeffNatDegreeLE_X (some 0)
+  simpa only [Polynomial.C_1, mul_one] using
+    jointTotalDegree_taylorAgreementEquationOver_le_of_coeffNatDegreeLE (F := ℚ) (r := 0)
+      0 0 0 1 coordinateEquation 1 0 0 hjet hQ
+
+private abbrev parameterizedJetEquation : DifferentialPolynomial (Polynomial ℚ) 1 :=
+  C (Polynomial.X + 1) * X (some (1 : Fin 2))
+
+/-- A positive-length agreement cut has a parameter-dependent numerator and separant. -/
+example :
+    initialJetSeparant (Polynomial.C 0) parameterizedJetEquation =
+        C (Polynomial.X + 1) ∧
+      commonTaylorNumeratorOver ℚ (Polynomial.C 0) parameterizedJetEquation 2 0 =
+        X (0 : Fin 2) * C (Polynomial.X + 1) ^ 2 := by
+  constructor
+  · simp [initialJetSeparant, separant, parameterizedJetEquation]
+  · simp [commonTaylorNumeratorOver, rationalTaylorNumeratorOver, initialJetSeparant,
+      separant, parameterizedJetEquation]
+
+/-- The agreement degree bound applies when the prefix is nonempty. -/
+example :
+    jointTotalDegree (taylorAgreementEquationOver (F := ℚ) (Polynomial.C 0)
+      parameterizedJetEquation 1 (Polynomial.C 0)
+        (Polynomial.C 0 + Polynomial.X * Polynomial.C 1)) ≤ 3 := by
+  have hC :
+      (C (Polynomial.X + 1) : DifferentialPolynomial (Polynomial ℚ) 1).weightedTotalDegree
+        jetDegreeWeight ≤ 0 := by
+    exact (weightedTotalDegree_C jetDegreeWeight (Polynomial.X + 1)).le
+  have hY :
+      (X (some (1 : Fin 2)) : DifferentialPolynomial (Polynomial ℚ) 1).weightedTotalDegree
+          jetDegreeWeight ≤ 1 := by
+    rw [MvPolynomial.weightedTotalDegree, Finset.sup_le_iff]
+    intro m hm
+    simp only [support_X, Finset.mem_singleton] at hm
+    subst m
+    simp [Finsupp.weight_single, jetDegreeWeight]
+  have hjet : jetTotalDegree parameterizedJetEquation ≤ 1 := by
+    change parameterizedJetEquation.weightedTotalDegree jetDegreeWeight ≤ 1
+    change (C (Polynomial.X + 1) * X (some (1 : Fin 2))).weightedTotalDegree jetDegreeWeight ≤ 1
+    exact
+      (weightedTotalDegree_mul_le jetDegreeWeight (C (Polynomial.X + 1))
+        (X (some (1 : Fin 2)))).trans (Nat.add_le_add hC hY)
+  have hQ : CoeffNatDegreeLE parameterizedJetEquation 1 := by
+    change CoeffNatDegreeLE (C (Polynomial.X + 1) * X (some (1 : Fin 2))) 1
+    exact (coeffNatDegreeLE_C (p := Polynomial.X + 1) (by simp)).mul
+      (coeffNatDegreeLE_X (some (1 : Fin 2)))
+  simpa using
+    jointTotalDegree_taylorAgreementEquationOver_le_of_coeffNatDegreeLE (F := ℚ) (r := 1)
+      0 0 0 1 parameterizedJetEquation 1 1 1 hjet hQ
+
+private abbrev firstDerivativeEquation : DifferentialPolynomial (Polynomial ℚ) 1 :=
+  X (some (1 : Fin 2))
+
+private def nonzeroConstantJet : Fin 2 → ℚ :=
+  fun i ↦ if i.val = 0 then 1 else 0
+
+/-- Sparse cuts preserve the allowed nonzero constant term and force excluded coefficients to
+vanish. -/
+example :
+    (Polynomial.taylor (0 : ℚ)
+      (rationalTaylorPolynomial (0 : ℚ)
+        (map (Polynomial.aeval (R := ℚ) (0 : ℚ)).toRingHom firstDerivativeEquation)
+        2 nonzeroConstantJet)).coeff 0 = 1 ∧
+    (Polynomial.taylor (0 : ℚ)
+      (rationalTaylorPolynomial (0 : ℚ)
+        (map (Polynomial.aeval (R := ℚ) (0 : ℚ)).toRingHom firstDerivativeEquation)
+        2 nonzeroConstantJet)).coeff 1 = 0 := by
+  have hS : aeval nonzeroConstantJet
+      (map (Polynomial.aeval (R := ℚ) (0 : ℚ)).toRingHom
+        (initialJetSeparant (Polynomial.C (0 : ℚ)) firstDerivativeEquation)) ≠ 0 := by
+    rw [map_initialJetSeparant]
+    simp [firstDerivativeEquation, initialJetSeparant, separant]
+  have hcuts : ∀ l : Fin 2, ¬2 ∣ l.val →
+      aeval nonzeroConstantJet
+        (map (Polynomial.aeval (R := ℚ) (0 : ℚ)).toRingHom
+          (commonTaylorNumeratorOver ℚ (Polynomial.C (0 : ℚ)) firstDerivativeEquation
+            4 l.val)) = 0 := by
+    intro l hl
+    fin_cases l
+    · exact (hl (by decide)).elim
+    · rw [map_commonTaylorNumeratorOver, commonTaylorNumeratorOver,
+        rationalTaylorNumeratorOver_eq]
+      simp [rationalTaylorNumerator, firstDerivativeEquation, initialJetSeparant, separant,
+        nonzeroConstantJet]
+  have hcoeff0 : rationalTaylorCoefficient (0 : ℚ)
+      (map (Polynomial.aeval (R := ℚ) (0 : ℚ)).toRingHom firstDerivativeEquation)
+      nonzeroConstantJet 0 = 1 := by
+    simpa [nonzeroConstantJet] using rationalTaylorCoefficient_initial (0 : ℚ)
+      (map (Polynomial.aeval (R := ℚ) (0 : ℚ)).toRingHom firstDerivativeEquation)
+      nonzeroConstantJet ⟨0, by omega⟩
+  have hSparse := sparse_rationalTaylorPolynomial_of_symbolic_cuts
+    (φ := Polynomial.aeval (R := ℚ) (0 : ℚ)) (center := Polynomial.C (0 : ℚ))
+    (Q := firstDerivativeEquation) (K := 2) (s := 2) (τ := 4)
+    (hτ := taylorExponentSufficient_two_mul 1 2) (jet := nonzeroConstantJet) hS hcuts
+  constructor
+  · rw [coeff_taylor_rationalTaylorPolynomial]
+    exact hcoeff0
+  · simpa using hSparse 1 (by decide)
+
 end
 
 end PolynomialDifferential

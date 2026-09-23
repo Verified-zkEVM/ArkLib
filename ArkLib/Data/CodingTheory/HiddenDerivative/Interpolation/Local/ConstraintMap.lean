@@ -35,10 +35,14 @@ All maps are linear over an arbitrary commutative ring `R`.
 * `satisfiesLocalConstraints_iff_coordinates_eq_zero` and
   `satisfiesLocalConstraints_iff_coeff_eq_zero`: the polynomial, coordinate, and coefficient
   forms of the local constraints agree.
+* `map_projectLowContact` and `map_unscaledLocalSubstitution`: both operations commute with
+  changing coefficients.
 * `enlargedLocalConstraintMap_truncateLocalT`: reducing modulo `T^m` before the rewrite does not
   change the enlarged constraints.
 * `localConstraintAt_eq_enlarged_comp_translated`: the point-dependent map is
   `enlargedLocalConstraintMap m ∘ translatedLocalTruncation m center received`.
+* `map_localConstraintAt`: changing coefficients commutes with the local constraint map and maps
+  its point.
 * `exactLocalConstraintAt_eq_enlarged_comp`: the same factorization on the exact interpolation
   space.
 * `globalExactCoefficientConstraintMap`: all local constraints, over an arbitrary index type of
@@ -49,10 +53,8 @@ formalization.
 
 ## References
 
-* [Brakensiek, J., Chen, Y., Putterman, A., Zhang, Z., and Zheng, K. Z., *Algorithmic List
-  Decoding of Reed–Solomon Codes up to Capacity in the Low-Rate Regime*][BCPZZ26], Section 3.
-* [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient
-  Decoding and Smaller Cryptographic Proofs*][DKT26], Section 3.5, Definition 3.7 and the rows (17).
+* [BCPZZ26]
+* [DKT26]
 -/
 
 @[expose] public section
@@ -88,10 +90,21 @@ theorem coeff_truncateLocalT (m : ℕ) (F : LocalPolynomial R d) (e : LocalVaria
 /-- The coefficient of `projectLowContact m F` at `e` is that of `F` if `e` has contact order
 below `m`, and zero otherwise. -/
 @[simp]
-theorem coeff_projectLowContact (m : ℕ) (F : LocalPolynomial R d) (e : LocalVariable d →₀ ℕ) :
+theorem coeff_projectLowContact (m : ℕ) (F : LocalPolynomial R d)
+    (e : LocalVariable d →₀ ℕ) :
     (projectLowContact (R := R) m F).coeff e =
       if localContactOrder d e < m then F.coeff e else 0 :=
   coeff_weightedTruncation _ m F e
+
+/-- Changing coefficients commutes with projection to contact order below `m`. -/
+theorem map_projectLowContact {S : Type*} [CommRing S] (φ : R →+* S) (m : ℕ)
+    (P : LocalPolynomial R d) :
+    MvPolynomial.map φ (projectLowContact m P) =
+      projectLowContact m (MvPolynomial.map φ P) := by
+  ext e
+  rw [coeff_map, coeff_projectLowContact, coeff_projectLowContact]
+  rw [coeff_map]
+  by_cases he : localContactOrder d e < m <;> simp [he]
 
 /-- Exponents of contact order below `m`. This type is empty for `m = 0` and infinite for `m > 0`:
 the visible jets have contact weight zero, and so does `E` when `d = 0`, so every power of `Y₁`
@@ -146,6 +159,31 @@ substitution. -/
 def localConstraintAt (m : ℕ) (center received : R) :
     DifferentialPolynomial R d →ₗ[R] LocalPolynomial R d :=
   (projectLowContact m).comp (unscaledLocalSubstitution d center received).toLinearMap
+
+/-- Changing coefficients commutes with unscaled local substitution and maps its point. -/
+theorem map_unscaledLocalSubstitution {S : Type*} [CommRing S] (φ : R →+* S)
+    (center received : R) (Q : DifferentialPolynomial R d) :
+    MvPolynomial.map φ (unscaledLocalSubstitution d center received Q) =
+      unscaledLocalSubstitution d (φ center) (φ received) (MvPolynomial.map φ Q) := by
+  have hhom : (MvPolynomial.map φ).comp
+      (unscaledLocalSubstitution d center received).toRingHom =
+      (unscaledLocalSubstitution d (φ center) (φ received)).toRingHom.comp
+        (MvPolynomial.map φ) := by
+    refine MvPolynomial.ringHom_ext (fun a => by simp) fun v => ?_
+    rcases v with _ | j
+    · simp
+    · refine Fin.cases ?_ (fun i => ?_) j
+      · simp [localCorrection]
+      · simp
+  exact RingHom.congr_fun hhom Q
+
+/-- Changing coefficients commutes with the local constraint map and maps its point. -/
+theorem map_localConstraintAt {S : Type*} [CommRing S] (φ : R →+* S) (m : ℕ)
+    (center received : R) (Q : DifferentialPolynomial R d) :
+    MvPolynomial.map φ (localConstraintAt m center received Q) =
+      localConstraintAt m (φ center) (φ received) (MvPolynomial.map φ Q) := by
+  simp only [localConstraintAt, LinearMap.comp_apply, AlgHom.toLinearMap_apply]
+  rw [map_projectLowContact, map_unscaledLocalSubstitution]
 
 /-- The local constraints at `(center, received)` as a coefficient vector. -/
 def localConstraintCoordinatesAt (m : ℕ) (center received : R) :
