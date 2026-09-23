@@ -21,6 +21,8 @@ open Polynomial ReedSolomon
 private abbrev E₄ := FiniteField.Extension (ZMod 2) 2 2
 local instance : DecidableEq E₄ := Classical.decEq _
 
+private def repeatedDomain : Fin 3 → ZMod 2 := fun i => if i.val = 1 then 1 else 0
+
 private def twoPointDomain : Fin 2 ↪ ZMod 2 where
   toFun i := i.val
   inj' := by
@@ -85,3 +87,39 @@ example :
       simp [CharTwo.two_eq_zero]
     rw [hmap]
     simp [polynomialAgreementSet]
+
+/-- Agreement counts are preserved on a finite indexed domain with repeated evaluation points. -/
+example :
+    (Finset.univ.filter fun i : Fin 3 =>
+      (X : (ZMod 2)[X]).eval (repeatedDomain i) = (0 : ZMod 2)).card = 2 ∧
+      (Finset.univ.filter fun i : Fin 3 =>
+        ((X : (ZMod 2)[X]).map (algebraMap (ZMod 2) E₄)).eval
+            (algebraMap (ZMod 2) E₄ (repeatedDomain i)) = (0 : E₄)).card = 2 := by
+  have hsource : (Finset.univ.filter fun i : Fin 3 =>
+      (X : (ZMod 2)[X]).eval (repeatedDomain i) = (0 : ZMod 2)).card = 2 := by
+    have hset : (Finset.univ.filter fun i : Fin 3 =>
+        (X : (ZMod 2)[X]).eval (repeatedDomain i) = (0 : ZMod 2)) = {0, 2} := by
+      ext i
+      fin_cases i <;> norm_num [Polynomial.eval_X, repeatedDomain]
+    rw [hset]
+    norm_num
+  refine ⟨hsource, ?_⟩
+  simpa [Polynomial.eval_X] using
+    (card_polynomialAgreement_map (algebraMap (ZMod 2) E₄)
+      (algebraMap (ZMod 2) E₄).injective repeatedDomain
+      (fun _ ↦ 0) X).trans hsource
+
+/-- Injectivity is necessary: reducing `2 * X` from `ℤ` modulo two creates one agreement at `1`.
+-/
+example :
+    (Finset.univ.filter fun _i : Fin 1 =>
+      (2 * X : ℤ[X]).eval (1 : ℤ) = (0 : ℤ)).card = 0 ∧
+      (Finset.univ.filter fun _i : Fin 1 =>
+        ((2 * X : ℤ[X]).map (Int.castRingHom (ZMod 2))).eval (1 : ZMod 2) =
+          (0 : ZMod 2)).card = 1 := by
+  constructor
+  · norm_num [Polynomial.eval_mul]
+  · have hmap : ((2 * X : ℤ[X]).map (Int.castRingHom (ZMod 2))) = 0 := by
+      simp [CharTwo.two_eq_zero]
+    rw [hmap]
+    simp

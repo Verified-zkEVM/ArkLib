@@ -167,6 +167,23 @@ example : (1 + 1) * Real.log (rateGamma 1 (1 + 1) 1) =
 example : 0 < fixedRateCoefficient 1 :=
   fixedRateCoefficient_pos (by norm_num) (by norm_num)
 
+/-- The fixed-rate coefficient identity at rate `1`. -/
+example : fixedRateCoefficient 1 = 1 * (Real.log 6 - Real.log (27 * 1 / 20)) :=
+  fixedRateCoefficient_eq (by norm_num)
+
+/-- At rate `1`, gap `1` and order `5`, the logarithmic gate bound gives `rateGamma > 1`. -/
+example : 1 < rateGamma (1 : ℝ) (1 + 1) 5 := by
+  have hcoef : fixedRateCoefficient 1 ≤ Real.log 5 := by
+    rw [fixedRateCoefficient]
+    norm_num only [one_mul, mul_one, mul_zero, add_zero]
+    apply Real.log_le_log <;> norm_num
+  have hmargin : 0 < Real.log (27 * 1 / 20) := Real.log_pos (by norm_num)
+  have hgate : 0 < (1 + 1) * Real.log (27 * 1 / 20) + 1 * Real.log 5 - 1 * Real.log 6 := by
+    rw [fixedRateCoefficient_eq (rate := 1) (by norm_num)] at hcoef
+    nlinarith
+  exact rateGamma_gt_one_of_log_bound (rate := 1) (gap := 1) (order := 5) (by norm_num)
+    (by norm_num) (by norm_num) hgate
+
 /-! ### Weighted-simplex moments -/
 
 /-- On the segment `[0, 1]`, `⨍ (0 - 1 * u₀) ^ 2 = (harmonic 1 ^ 2 + 1) / (2 * 3) = 1 / 3`. -/

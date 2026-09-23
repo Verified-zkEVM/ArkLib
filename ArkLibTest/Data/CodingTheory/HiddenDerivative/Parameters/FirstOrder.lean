@@ -120,12 +120,37 @@ example : (firstOrderRankCount 4 ⌊(1 / 2 : ℝ) * 4⌋₊ : ℝ) ≤
     (4 : ℝ) ^ 3 * ((1 / 2 : ℝ) / 2 - (1 / 2) ^ 2 / 2 + (1 / 2) ^ 3 / 3) + 3 * 4 ^ 2 :=
   firstOrderRankCount_floor_le 4 (by norm_num) (by norm_num)
 
+/-- At `m = 4` and `β = 1`, the exact upper-branch rank density gives `35 ≤ 4³ + 5·4²`. -/
+example : ((35 : ℕ) : ℝ) ≤
+    (4 : ℕ) ^ 3 * firstOrderRankDensity 1 + (2 * 1 + 3) * (4 : ℕ) ^ 2 := by
+  have h := firstOrderRankCount_floor_le_density_add_rounding_upper
+    (beta := 1) (by norm_num) 4
+  have hM : ⌊(1 : ℝ) * (4 : ℕ)⌋₊ = 4 := by norm_num
+  have hcount : firstOrderRankCount 4 4 = 35 := by decide
+  rw [hM, hcount] at h
+  norm_num [firstOrderRankDensity] at h ⊢
+
+/-- At the branch boundary, the uniform rank estimate gives `23 ≤ 4³/6 + 4²·4`. -/
+example : ((23 : ℕ) : ℝ) ≤
+    (4 : ℕ) ^ 3 * firstOrderRankDensity (1 / 2) + (2 * (1 / 2) + 3) * (4 : ℕ) ^ 2 := by
+  have h := firstOrderRankCount_floor_le_density_add_rounding
+    (beta := 1 / 2) (by norm_num) 4
+  have hM : ⌊(1 / 2 : ℝ) * (4 : ℕ)⌋₊ = 2 := by norm_num
+  rw [hM, show firstOrderRankCount 4 2 = 23 by decide] at h
+  norm_num [firstOrderRankDensity] at h ⊢
+
 /-- The source rounding estimate at `R = 1/2`, `a = 1`, `m = 2`, `μ = 4`. -/
 example : (2 : ℝ) ^ 3 * ((1 / 2 : ℝ) * 1 ^ 2 / (2 * (1 / 2)) -
       1 * (1 / 2) ^ 2 / 2 + (1 / 2) * (1 / 2) ^ 3 / 6) ≤
     firstOrderSourceCount (1 / 2) 1 2 ⌊(1 / 2 : ℝ) * 2⌋₊ 4 :=
   cube_mul_sourceDensity_le_firstOrderSourceCount (by norm_num) (by norm_num)
     (by norm_num) (by norm_num) (by norm_num)
+
+/-- For length `1`, rate and agreement `1`, the source count equals the interpolation dimension. -/
+example : (1 : ℕ) * firstOrderSourceCount 1 1 1 0 0 ≤
+    firstOrderDimensionCount 0 1 1 0 0 :=
+  firstOrderSourceCount_mul_le_firstOrderDimensionCount (n := 1) (D := 0) (A := 1)
+    (m := 1) (M := 0) (mu := 0) (by norm_num) (by norm_num)
 
 /-- The finite source-minus-rank surplus bound at `R = 1/2`, `a = 1`, `β = 1/2`, `m = 2`. -/
 example : (2 : ℝ) ^ 3 *
