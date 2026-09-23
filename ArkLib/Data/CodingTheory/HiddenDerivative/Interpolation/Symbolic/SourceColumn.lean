@@ -98,6 +98,42 @@ theorem exponent_injective :
   subst hx hy₀ hhigher
   rfl
 
+/-- Recover the source-column coordinates of an arbitrary exponent vector. -/
+def ofExponent (u : JetVariable d →₀ ℕ) : SourceColumn d where
+  x := u none
+  y₀ := u (some 0)
+  higher j := u (some j.succ)
+
+/-- `SourceColumn.ofExponent` has the exponent vector it was given. -/
+@[simp]
+theorem exponent_ofExponent (u : JetVariable d →₀ ℕ) :
+    (SourceColumn.ofExponent u).exponent = u := by
+  ext v
+  rcases v with _ | j
+  · simp [SourceColumn.ofExponent, SourceColumn.exponent]
+  · induction j using Fin.cases with
+    | zero => simp [SourceColumn.ofExponent, SourceColumn.exponent]
+    | succ j =>
+      simp only [SourceColumn.ofExponent, SourceColumn.exponent, Finsupp.add_apply,
+        Finsupp.single_apply, Option.some.injEq, reduceCtorEq,
+        ite_false, zero_add]
+      rw [ite_eq_right (by
+        intro h
+        have := congrArg Fin.val h
+        simp at this), zero_add]
+      change Finsupp.applyAddHom (some j.succ)
+        (∑ k : Fin d, Finsupp.single (some k.succ) (u (some k.succ))) = _
+      rw [map_sum]
+      calc
+        ∑ k : Fin d, Finsupp.applyAddHom (some j.succ)
+            (Finsupp.single (some k.succ) (u (some k.succ))) =
+            Finsupp.applyAddHom (some j.succ)
+              (Finsupp.single (some j.succ) (u (some j.succ))) := by
+          apply Fintype.sum_eq_single j
+          intro k hkj
+          simp [hkj]
+        _ = u (some j.succ) := by simp
+
 variable {R : Type*} [CommSemiring R]
 
 /-- The source monomial of a column, with coefficient `1`. -/
