@@ -6,6 +6,28 @@ Authors: Quang Dao
 
 import ArkLib.ToMathlib.RingTheory.Nullstellensatz.BidegreeIncidence
 
+/-!
+# Acceptance tests for bidegree hypersurface incidence
+
+Concrete examples exercise the sharp and hybrid incidence bounds on rational points, including
+the one- and two-coordinate mixed-degree estimates and boundary cases for bidegree restrictions.
+
+## Main statements
+
+* `MvPolynomial.bidegreeHypersurface_incidence_off_excluded_sharp`: a rational point satisfies
+  the sharp estimate on a one-coordinate hypersurface.
+* `MvPolynomial.bidegreeHypersurface_incidence_off_excluded_sharp_one` and
+  `MvPolynomial.bidegreeHypersurface_incidence_off_excluded_sharp_two`: mixed-degree estimates
+  hold for nonempty point sets in one and two coordinates.
+* `MvPolynomial.bidegreeHypersurface_incidence_off_excluded_hybrid` and
+  `MvPolynomial.bidegreeHypersurface_incidence_off_excluded_hybrid_two`: hybrid bounds hold in
+  the empty-coordinate and two-coordinate examples.
+
+## References
+
+* [BCPZZ26]
+-/
+
 open MvPolynomial
 
 namespace BidegreeIncidenceTest
