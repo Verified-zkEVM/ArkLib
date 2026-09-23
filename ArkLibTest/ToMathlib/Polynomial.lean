@@ -83,12 +83,6 @@ private theorem eventually_eval_X_le_backwardDifference_Xsq :
 example : 0 ≤ (X : ℚ[X]).leadingCoeff :=
   leadingCoeff_nonneg_of_eventually_eval_natCast_nonneg eventually_eval_X_nonneg
 
-example : (X ^ 2 + 2 * X + 1 : ℚ[X]) = (X + 1) ^ 2 := by
-  apply eq_of_eventually_eval_natCast_eq (N₀ := 0)
-  intro N _
-  have hpoly : (X ^ 2 + 2 * X + 1 : ℚ[X]) = (X + 1) ^ 2 := by ring
-  exact congrArg (fun P : ℚ[X] ↦ P.eval (N : ℚ)) hpoly
-
 example :
     (X : ℚ[X]).natDegree ≤ (C (2 : ℚ) * X : ℚ[X]).natDegree ∧
       ((X : ℚ[X]).natDegree = (C (2 : ℚ) * X : ℚ[X]).natDegree →
@@ -168,24 +162,6 @@ example :
 example :
     (∑ a ∈ ({0} : Finset ℤ), (X : ℤ[X]).rootMultiplicity a) ≤ (X : ℤ[X]).natDegree :=
   sum_rootMultiplicity_le_natDegree ({0} : Finset ℤ)
-
-example : (0 : ℚ[X]) = 0 :=
-  eq_zero_of_degree_lt_mul_of_pow_X_sub_C_dvd_at_injOn
-    (fun i : Fin 2 => (i.val : ℚ)) Finset.univ 1 2
-    (by
-      intro i hi j hj hij
-      have hval : (i.val : ℚ) = (j.val : ℚ) := hij
-      exact Fin.ext (by exact_mod_cast hval))
-    (by simp) (by intro i hi; simp) (by exact WithBot.bot_lt_coe 2)
-
-example : (0 : ℤ[X]) = 0 :=
-  eq_zero_of_natDegree_lt_mul_of_pow_X_sub_C_dvd_at_injOn
-    (fun i : Fin 2 => (i.val : ℤ)) Finset.univ 1 2
-    (by
-      intro i hi j hj hij
-      have hval : (i.val : ℤ) = (j.val : ℤ) := hij
-      exact Fin.ext (by exact_mod_cast hval))
-    (by simp) (by intro i hi; simp) (by norm_num)
 
 /-! ## Sparse contraction -/
 

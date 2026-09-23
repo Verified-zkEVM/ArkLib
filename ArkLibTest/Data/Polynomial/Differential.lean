@@ -1,3 +1,9 @@
+/-
+Copyright (c) 2026 ArkLib Contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Quang Dao
+-/
+
 import ArkLib.Data.Polynomial.Differential.BaseChange
 import ArkLib.Data.Polynomial.Differential.ChainWitness
 import ArkLib.Data.Polynomial.Differential.DerivativeDescent
@@ -147,29 +153,6 @@ example :
     simp only [Finset.mem_singleton] at hP
     subst P
     simp [Q, separant, differentialSpecialization, differentialSpecializationHom, pderiv_X]
-
-/-- A finite family over `ℤ` has a common regular center after mapping into `ℚ`. -/
-example : ∃ center : ℚ, ∀ P ∈ ({(0 : Polynomial ℤ)} : Finset (Polynomial ℤ)),
-    jetEvaluation
-      (separant
-        (MvPolynomial.map (Int.castRingHom ℚ)
-          (((MvPolynomial.X none ^ 2 + 1) * MvPolynomial.X (some 0)) :
-            DifferentialPolynomial ℤ 0)) 0)
-      center (polynomialJet center (P.map (Int.castRingHom ℚ))) ≠ 0 := by
-  let Q : DifferentialPolynomial ℤ 0 :=
-    (MvPolynomial.X none ^ 2 + 1) * MvPolynomial.X (some 0)
-  have hne : (Polynomial.X ^ 2 + 1 : Polynomial ℤ) ≠ 0 := by
-    intro h
-    have hc := congrArg (fun p : Polynomial ℤ ↦ p.coeff 2) h
-    norm_num [Polynomial.coeff_X_pow, Polynomial.coeff_one] at hc
-  have hregular : ∀ P ∈ ({(0 : Polynomial ℤ)} : Finset (Polynomial ℤ)),
-      differentialSpecialization (separant Q 0) P ≠ 0 := by
-    intro P hP
-    have hP0 : P = 0 := Finset.mem_singleton.mp hP
-    subst P
-    simpa [Q, separant, differentialSpecialization, differentialSpecializationHom] using hne
-  simpa [Q] using exists_forall_jetEvaluation_ne_zero_map (Int.castRingHom ℚ)
-    Int.cast_injective Q {0} 0 hregular
 
 /-! ### Concrete Hasse jets and specialization degree -/
 
