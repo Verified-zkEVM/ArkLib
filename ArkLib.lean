@@ -440,6 +440,7 @@ public import ArkLib.Data.Polynomial.Differential.ShiftedJet
 public import ArkLib.Data.Polynomial.Differential.SingularRecursion
 public import ArkLib.Data.Polynomial.Differential.TaylorChart
 public import ArkLib.Data.Polynomial.Differential.TaylorChartAlgebra
+public import ArkLib.Data.Polynomial.Differential.TaylorChartBaseChange
 public import ArkLib.Data.Polynomial.Differential.TaylorChartGeometry
 public import ArkLib.Data.Polynomial.Differential.TaylorChartIncidence
 public import ArkLib.Data.Polynomial.Differential.TaylorIndexWeight
