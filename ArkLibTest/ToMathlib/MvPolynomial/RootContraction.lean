@@ -47,6 +47,16 @@ example (s : ℕ) (j : σ) (x : σ → R) (y : R) :
   rw [eval_rootExpansion]
   simp
 
+example (s : ℕ) (P : MvPolynomial (Option Unit) ℤ) :
+    map (Int.castRingHom ℚ) (rootExpansion s P) =
+      rootExpansion s (map (Int.castRingHom ℚ) P) := by
+  rw [map_rootExpansion]
+
+example (s : ℕ) (P : MvPolynomial (Option Unit) ℤ) (x : Unit → ℚ) (y : ℚ) :
+    eval₂ (Int.castRingHom ℚ) (fun o ↦ o.elim y x) (rootExpansion s P) =
+      eval₂ (Int.castRingHom ℚ) (fun o ↦ o.elim (y ^ s) x) P := by
+  rw [eval₂_rootExpansion]
+
 end Monomial
 
 /-- The hypothesis `s ≠ 0` is needed in `rootContraction_rootExpansion`: expansion by `0` sends
