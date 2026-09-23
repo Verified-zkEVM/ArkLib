@@ -32,12 +32,17 @@ The file also shows that `MvPolynomial.optionEquivLeft` commutes with coefficien
 ## Main statements
 
 * `MvPolynomial.map_optionEquivLeft`: `optionEquivLeft` commutes with `MvPolynomial.map`.
+* `MvPolynomial.aeval_map_optionEquivRight` and
+  `MvPolynomial.aeval_optionEquivRight_symm`: evaluation through the flattened variable
+  equivalence.
 * `MvPolynomial.CoeffNatDegreeLE` and its closure lemmas, including
   `MvPolynomial.CoeffNatDegreeLE.map_coefficients`, `MvPolynomial.CoeffNatDegreeLE.aeval` and
   `MvPolynomial.CoeffNatDegreeLE.pderiv`.
 * `MvPolynomial.jointTotalDegree`, its ring-operation bounds, `jointTotalDegree_C_le`,
   `jointTotalDegree_le_of_natDegree_coeff_le` and its form
   `CoeffNatDegreeLE.jointTotalDegree_le`, and `jointTotalDegree_clearedSubstitution_le`.
+
+## References
 -/
 
 @[expose] public section
@@ -82,6 +87,32 @@ theorem optionEquivRight_symm_C (p : Polynomial R) :
   have h := Polynomial.aeval_algHom_apply
     (IsScalarTower.toAlgHom R (Polynomial R) (MvPolynomial σ (Polynomial R))) Polynomial.X p
   simpa [Polynomial.aeval_X_left_apply, algebraMap_eq] using h.symm
+
+/-- Evaluating a flattened polynomial after specializing its distinguished variable is the same
+as evaluating the original polynomial in all its variables. -/
+theorem aeval_map_optionEquivRight {A σ : Type*} [CommSemiring A] [Algebra R A]
+    (x : Option σ → A) (p : MvPolynomial (Option σ) R) :
+    aeval (fun j ↦ x (some j))
+      (MvPolynomial.map (Polynomial.aeval (x none)).toRingHom
+        (optionEquivRight R σ p)) =
+        aeval x p := by
+  induction p using MvPolynomial.induction_on with
+  | C c => simp
+  | add p q hp hq => simp only [map_add, hp, hq]
+  | mul_X p i hp =>
+    simp only [map_mul, hp]
+    congr 1
+    cases i <;> simp
+
+/-- Evaluating the inverse flattened-variable equivalence first evaluates the distinguished
+polynomial variable, then evaluates the remaining variables. -/
+theorem aeval_optionEquivRight_symm {A σ : Type*} [CommSemiring A] [Algebra R A]
+    (x : Option σ → A) (p : MvPolynomial σ (Polynomial R)) :
+    aeval x ((optionEquivRight R σ).symm p) =
+      aeval (fun j ↦ x (some j))
+        (MvPolynomial.map (Polynomial.aeval (x none)).toRingHom p) := by
+  simpa only [AlgEquiv.apply_symm_apply] using
+    (aeval_map_optionEquivRight (R := R) x ((optionEquivRight R σ).symm p)).symm
 
 /-! ### Degree bounds on the coefficients -/
 

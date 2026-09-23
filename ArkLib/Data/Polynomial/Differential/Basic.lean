@@ -19,7 +19,16 @@ This file defines two ways to interpret a polynomial relation in `X, Y₀, ..., 
 
 The comparison theorem `eval_differentialSpecialization` says that these interpretations agree
 after evaluating the specialized univariate polynomial. No characteristic hypothesis is needed:
-specialization uses Hasse derivatives and is valid over every commutative semiring.
+specialization uses Hasse derivatives and is valid over every commutative semiring. The scalar
+Hasse jet is also compatible with affine combinations of polynomials.
+
+## Main statements
+
+* `eval_differentialSpecialization`: evaluation of a differential specialization on the Hasse
+  jet.
+* `polynomialJet_affine_combination`: affine combinations commute with taking a Hasse jet.
+
+## References
 -/
 
 @[expose] public section
@@ -80,6 +89,14 @@ def jetEvaluation [CommSemiring F] (Q : DifferentialPolynomial F d) (a : F)
 /-- The scalar Hasse jet of `P` at `a`, through order `d`. -/
 def polynomialJet [Semiring F] (a : F) (P : F[X]) : Fin (d + 1) → F :=
   Polynomial.hasseJet (d + 1) a P
+
+/-- The Hasse jet of an affine combination is the affine combination of the Hasse jets. -/
+theorem polynomialJet_affine_combination [Semiring F] (center z : F) (P Q : F[X]) :
+    polynomialJet (d := d) center (P + Polynomial.C z * Q) =
+      fun j ↦ polynomialJet center P j + z * polynomialJet center Q j := by
+  rw [← Polynomial.smul_eq_C_mul]
+  funext j
+  simp [polynomialJet]
 
 /-- Evaluating a differential specialization at `a` is evaluation on the Hasse jet of `P` at
 `a`. -/
