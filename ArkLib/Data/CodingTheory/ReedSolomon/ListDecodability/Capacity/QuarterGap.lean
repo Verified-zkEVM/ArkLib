@@ -166,36 +166,6 @@ private lemma pairwiseJohnsonListBound_quarter_gap_arithmetic {n messageDim A : 
   rw [Code.pairwiseJohnsonListBound, Nat.div_lt_iff_lt_mul hDenPos]
   exact Nat.mul_lt_mul_of_pos_left hNumLt hn
 
-private lemma agreeingPolynomials_encard_le_pairwiseJohnson_of_quarter
-    {ι F : Type*} [Field F] [DecidableEq F] [Fintype ι] {delta : ℝ}
-    (hdelta : (1 / 4 : ℝ) ≤ delta) {messageDim : ℕ}
-    (domain : ι ↪ F) (hMessageDim : 0 < messageDim)
-    (hMessageDimLe : messageDim ≤ Fintype.card ι) (received : ι → F) :
-    (agreeingPolynomials domain messageDim
-      (agreementThreshold delta (Fintype.card ι) messageDim) received).encard ≤
-        (Code.pairwiseJohnsonListBound (Fintype.card ι) (messageDim - 1)
-          (agreementThreshold delta (Fintype.card ι) messageDim) : ℕ∞) := by
-  let n := Fintype.card ι
-  let D := messageDim - 1
-  let A := agreementThreshold delta n messageDim
-  let C : Set (ι → F) := ReedSolomon.code domain messageDim
-  have hn : 0 < n := lt_of_lt_of_le hMessageDim hMessageDimLe
-  have hNonempty : Nonempty ι := Fintype.card_pos_iff.mp hn
-  have hA : messageDim ≤ A := by simp [A, agreementThreshold]
-  have hDA : D ≤ A := (Nat.sub_le _ _).trans hA
-  have hThreshold := agreementThreshold_quarter_gap hdelta n messageDim
-  have hArithmetic := pairwiseJohnsonListBound_quarter_gap_arithmetic hn hMessageDim
-    hMessageDimLe hA hThreshold
-  have hpositive := hArithmetic.1
-  have hpair : ∀ c ∈ C, ∀ c' ∈ C, c ≠ c' → Code.agree c c' ≤ D := by
-    intro c hc c' hc' hne
-    have := ReedSolomon.agree_lt_of_mem_code hc hc' hne; omega
-  have hList := agreeingPolynomials_encard_le_Lambda (minAgreement := A)
-    domain hMessageDimLe received
-  have hJohnson := @Code.Lambda_le_pairwiseJohnson ι F inferInstance hNonempty inferInstance
-    C D A hDA hpositive hpair
-  simpa only [n, D, A, C] using hList.trans hJohnson
-
 /-- The polynomial agreement set has the cardinality of its exact finite decoder. -/
 private lemma exactAgreementDecoder_encard_eq {ι F : Type*} [Field F] [Fintype F]
     [DecidableEq F] [Fintype ι] {messageDim minAgreement : ℕ} (domain : ι ↪ F)
@@ -219,19 +189,31 @@ theorem agreeingPolynomials_encard_lt_blockLength_of_quarter
     (agreeingPolynomials domain messageDim
       (agreementThreshold delta (Fintype.card ι) messageDim) received).encard <
         (Fintype.card ι : ℕ∞) := by
-  have hA := agreementThreshold_quarter_gap hdelta (Fintype.card ι) messageDim
-  have hList := agreeingPolynomials_encard_le_pairwiseJohnson_of_quarter hdelta domain
-    hMessageDim hMessageDimLe received
+  let n := Fintype.card ι
+  let D := messageDim - 1
+  let A := agreementThreshold delta n messageDim
+  let C : Set (ι → F) := ReedSolomon.code domain messageDim
+  have hn : 0 < n := lt_of_lt_of_le hMessageDim hMessageDimLe
+  have hNonempty : Nonempty ι := Fintype.card_pos_iff.mp hn
+  have hA : messageDim ≤ A := by simp [A, agreementThreshold]
+  have hDA : D ≤ A := (Nat.sub_le _ _).trans hA
+  have hThreshold := agreementThreshold_quarter_gap hdelta n messageDim
   have hArithmetic := pairwiseJohnsonListBound_quarter_gap_arithmetic
-    (lt_of_lt_of_le hMessageDim hMessageDimLe) hMessageDim hMessageDimLe
-    (by simp [agreementThreshold]) hA
-  have hJohnson := hArithmetic.2.2
+    hn hMessageDim hMessageDimLe hA hThreshold
+  have hpair : ∀ c ∈ C, ∀ c' ∈ C, c ≠ c' → Code.agree c c' ≤ D := by
+    intro c hc c' hc' hne
+    have := ReedSolomon.agree_lt_of_mem_code hc hc' hne; omega
+  have hList := agreeingPolynomials_encard_le_Lambda (minAgreement := A)
+    domain hMessageDimLe received
+  have hJohnson := @Code.Lambda_le_pairwiseJohnson ι F inferInstance hNonempty inferInstance
+    C D A hDA hArithmetic.1 hpair
+  have hListJohnson := by simpa only [n, D, A, C] using hList.trans hJohnson
   have hJohnsonStrict :
       (Code.pairwiseJohnsonListBound (Fintype.card ι) (messageDim - 1)
         (agreementThreshold delta (Fintype.card ι) messageDim) : ℕ∞) <
         (Fintype.card ι : ℕ∞) := by
-    exact_mod_cast hJohnson
-  exact hList.trans_lt hJohnsonStrict
+    exact_mod_cast hArithmetic.2.2
+  exact hListJohnson.trans_lt hJohnsonStrict
 
 /-- At a capacity gap of at least one half, every received word has at most one agreeing
 degree-bounded polynomial. -/
@@ -245,7 +227,6 @@ theorem agreeingPolynomials_encard_le_one_of_half
   let C : Set (ι → F) := ReedSolomon.code domain messageDim
   have hNeZero : NeZero messageDim := ⟨Nat.ne_of_gt hMessageDim⟩
   have hn : 0 < Fintype.card ι := lt_of_lt_of_le hMessageDim hMessageDimLe
-  have hnReal : (0 : ℝ) < Fintype.card ι := by exact_mod_cast hn
   have hRateLeNN : ((messageDim : NNReal) / (Fintype.card ι : NNReal)) ≤ 1 := by
     rw [div_le_one₀ (by positivity)]
     exact_mod_cast hMessageDimLe
