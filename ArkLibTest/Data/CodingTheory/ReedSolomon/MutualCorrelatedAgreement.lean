@@ -5,6 +5,7 @@ Authors: Quang Dao
 -/
 
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.GraphLineComponent
+import ArkLibTest.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TaylorChart
 import Mathlib.Algebra.MvPolynomial.Division
 import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 import Mathlib.Tactic.FinCases
@@ -32,66 +33,12 @@ private theorem domain_zero : domain (0 : Fin 1) = 0 := rfl
 
 private def componentWord : Fin 1 → ℚ := fun _ ↦ 0
 
-private abbrev shiftedEquation : DifferentialPolynomial ℚ[X] 0 :=
-  let Δ := X (some 0) - MvPolynomial.C (Polynomial.C (2 : ℚ))
-  Δ + X none * Δ ^ 2
-
-private theorem shiftedEquation_commonHighNumerator_eq (τ : ℕ) :
-    commonTaylorNumeratorOver ℚ (Polynomial.C 0) shiftedEquation τ 1 =
-      -(MvPolynomial.X (0 : Fin 1) - MvPolynomial.C (Polynomial.C (2 : ℚ))) ^ 2 := by
-  have hcoeff :
-      (optionEquivLeft (Polynomial ℚ) (Fin 1)
-        (universalTaylorResidual 1 (Polynomial.C 0) shiftedEquation)).coeff 1 =
-        (MvPolynomial.X (0 : Fin 1) - MvPolynomial.C (Polynomial.C (2 : ℚ))) ^ 2 := by
-    have hres : optionEquivLeft (Polynomial ℚ) (Fin 1)
-        (universalTaylorResidual 1 (Polynomial.C 0) shiftedEquation) =
-        Polynomial.C (MvPolynomial.X (0 : Fin 1) - MvPolynomial.C (Polynomial.C (2 : ℚ))) +
-          Polynomial.X * Polynomial.C
-            ((MvPolynomial.X (0 : Fin 1) - MvPolynomial.C (Polynomial.C (2 : ℚ))) ^ 2) := by
-      simp [universalTaylorResidual, shiftedEquation, optionEquivLeft_X_none,
-        optionEquivLeft_universalTaylorJet]
-    rw [hres, Polynomial.coeff_add]
-    simp only [Polynomial.coeff_C, Polynomial.coeff_X_mul]
-    norm_num
-  have hsubst : MvPolynomial.clearedSubstitution
-      (MvPolynomial.C : Polynomial ℚ →+* MvPolynomial (Fin 1) (Polynomial ℚ))
-      1 (fun _ : Fin 1 ↦ MvPolynomial.X 0) (fun _ ↦ 0) 0
-      ((MvPolynomial.X (0 : Fin 1) - MvPolynomial.C (Polynomial.C (2 : ℚ))) ^ 2) =
-        (MvPolynomial.X (0 : Fin 1) - MvPolynomial.C (Polynomial.C (2 : ℚ))) ^ 2 := by
-    calc
-      _ = MvPolynomial.eval₂ (MvPolynomial.C : Polynomial ℚ →+*
-          MvPolynomial (Fin 1) (Polynomial ℚ)) (fun _ : Fin 1 ↦ MvPolynomial.X 0)
-          ((MvPolynomial.X (0 : Fin 1) - MvPolynomial.C (Polynomial.C (2 : ℚ))) ^ 2) := by
-        unfold MvPolynomial.clearedSubstitution
-        rw [MvPolynomial.eval₂_eq]
-        simp only [one_pow, mul_one]
-      _ = _ := by simp
-  have hnumerator : rationalTaylorNumeratorOver ℚ (Polynomial.C 0) shiftedEquation 1 =
-      -(MvPolynomial.X (0 : Fin 1) - MvPolynomial.C (Polynomial.C (2 : ℚ))) ^ 2 := by
-    rw [rationalTaylorNumeratorOver, dite_eq_right (by omega), hcoeff]
-    rw [show initialJetSeparant (Polynomial.C 0) shiftedEquation = 1 by
-      simp [initialJetSeparant, shiftedEquation, separant, Fin.last]]
-    have hN : (fun i : Fin 1 ↦ rationalTaylorNumeratorOver ℚ (Polynomial.C 0)
-        shiftedEquation i.val) = fun _ : Fin 1 ↦ MvPolynomial.X (0 : Fin 1) := by
-      funext i
-      have hi : i = 0 := Fin.ext (by omega)
-      subst i
-      simp [rationalTaylorNumeratorOver]
-    have hd : (fun i : Fin 1 ↦ 2 * (i.val - 0) - 1) = fun _ ↦ 0 := by
-      funext i
-      omega
-    rw [hN, hd]
-    norm_num [Nat.choose_zero_right]
-    rw [hsubst]
-  rw [commonTaylorNumeratorOver, hnumerator]
-  simp [initialJetSeparant, shiftedEquation, separant, Fin.last]
-
-private theorem shiftedEquation_jointHighNumerator_eq :
-    jointCommonTaylorNumerator (r := 0) 0 shiftedEquation 2 (1 : Fin 2) =
+private theorem quadraticJetSampleEquation_jointHighNumerator_eq :
+    jointCommonTaylorNumerator (r := 0) 0 quadraticJetSampleEquation 2 (1 : Fin 2) =
       -(MvPolynomial.X (some (0 : Fin 1)) - MvPolynomial.C (2 : ℚ)) ^ 2 := by
   rw [jointCommonTaylorNumerator]
   simp only [Fin.val_one]
-  rw [shiftedEquation_commonHighNumerator_eq]
+  rw [quadraticJetSampleEquation_highNumerator_eq]
   simp
 
 private def jointPoint : Option (Fin 1) → ℚ
@@ -106,11 +53,11 @@ private def jointReceivedF : Fin 1 → ℚ := fun _ ↦ 0
 
 private def jointReceivedG : Fin 1 → ℚ := fun _ ↦ 1
 
-private theorem shiftedEquation_highNumerator_ne :
-    jointCommonTaylorNumerator (r := 0) 0 shiftedEquation 2 (1 : Fin 2) ≠ 0 := by
+private theorem quadraticJetSampleEquation_highNumerator_ne :
+    jointCommonTaylorNumerator (r := 0) 0 quadraticJetSampleEquation 2 (1 : Fin 2) ≠ 0 := by
   have hvalue : aeval jointZeroJet
-      (jointCommonTaylorNumerator (r := 0) 0 shiftedEquation 2 (1 : Fin 2)) = -4 := by
-    rw [shiftedEquation_jointHighNumerator_eq]
+      (jointCommonTaylorNumerator (r := 0) 0 quadraticJetSampleEquation 2 (1 : Fin 2)) = -4 := by
+    rw [quadraticJetSampleEquation_jointHighNumerator_eq]
     norm_num [jointZeroJet]
   intro hzero
   rw [hzero] at hvalue
@@ -284,10 +231,10 @@ example :
       P₀.eval 0 = 0 ∧ P₁.eval 0 = 1 ∧
       (Polynomial.C 2 * P₁.map (RingHom.id ℚ)).eval 0 = 2 ∧
       MvPolynomial.aeval jointPoint
-          (jointCommonTaylorNumerator (r := 0) 0 shiftedEquation 2 (1 : Fin 2)) = 0 ∧
-      jointCommonTaylorNumerator (r := 0) 0 shiftedEquation 2 (1 : Fin 2) ≠ 0 ∧
+          (jointCommonTaylorNumerator (r := 0) 0 quadraticJetSampleEquation 2 (1 : Fin 2)) = 0 ∧
+      jointCommonTaylorNumerator (r := 0) 0 quadraticJetSampleEquation 2 (1 : Fin 2) ≠ 0 ∧
       rationalTaylorPolynomial (0 : ℚ)
-        (map (Polynomial.evalRingHom 2) shiftedEquation) 2 (fun _ : Fin 1 ↦ 2) =
+        (map (Polynomial.evalRingHom 2) quadraticJetSampleEquation) 2 (fun _ : Fin 1 ↦ 2) =
           P₀.map (RingHom.id ℚ) + Polynomial.C 2 * P₁.map (RingHom.id ℚ) ∧
       (fun _ : Fin 1 ↦ 2) = (fun j ↦
         polynomialJet (d := 0) (0 : ℚ) (P₀.map (RingHom.id ℚ)) j +
@@ -295,66 +242,70 @@ example :
   obtain ⟨P₀, P₁, hP₀, hP₁, hsample, hrecognize⟩ :=
     exists_graphLine_pair_of_joint_taylor_chart (n := 1) (k := 1) (K := 2) (r := 0)
       domain jointReceivedF jointReceivedG Finset.univ (by simp) (RingHom.id ℚ) 0
-      shiftedEquation (by omega) 2 (by intro l; fin_cases l <;> omega)
+      quadraticJetSampleEquation (by omega) 2 (by intro l; fin_cases l <;> omega)
   let jet : Fin 1 → ℚ := fun _ ↦ 2
   let φ : Polynomial ℚ →ₐ[ℚ] ℚ := Polynomial.aeval (2 : ℚ)
   have hφ : φ.toRingHom = Polynomial.evalRingHom (2 : ℚ) := by
     ext p <;> simp [φ, Polynomial.evalRingHom]
-  have hS : aeval jointPoint (jointInitialJetSeparant (r := 0) 0 shiftedEquation) ≠ 0 := by
-    simp [jointInitialJetSeparant, shiftedEquation, initialJetSeparant, separant,
+  have hS :
+      aeval jointPoint
+        (jointInitialJetSeparant (r := 0) 0 quadraticJetSampleEquation) ≠ 0 := by
+    simp [jointInitialJetSeparant, quadraticJetSampleEquation, initialJetSeparant, separant,
       Fin.last]
-  have hSflat : aeval jointPoint (jointInitialJetSeparant (r := 0) 0 shiftedEquation) =
-      aeval jet (map φ.toRingHom (initialJetSeparant (Polynomial.C 0) shiftedEquation)) := by
+  have hSflat : aeval jointPoint (jointInitialJetSeparant (r := 0) 0 quadraticJetSampleEquation) =
+      aeval jet
+        (map φ.toRingHom (initialJetSeparant (Polynomial.C 0) quadraticJetSampleEquation)) := by
     rw [jointInitialJetSeparant, aeval_optionEquivRight_symm]
     rfl
   have hSφ : aeval jet (map φ.toRingHom
-      (initialJetSeparant (Polynomial.C 0) shiftedEquation)) ≠ 0 := by
+      (initialJetSeparant (Polynomial.C 0) quadraticJetSampleEquation)) ≠ 0 := by
     rw [← hSflat]
     exact hS
-  have hsolution : differentialSpecialization (map φ.toRingHom shiftedEquation)
+  have hsolution : differentialSpecialization (map φ.toRingHom quadraticJetSampleEquation)
       (Polynomial.C 2 : ℚ[X]) = 0 := by
-    simp [shiftedEquation, φ, differentialSpecialization, differentialSpecializationHom]
+    simp [quadraticJetSampleEquation, φ, differentialSpecialization, differentialSpecializationHom]
   have hjet : polynomialJet (d := 0) (0 : ℚ) (Polynomial.C 2 : ℚ[X]) = jet := by
     funext j
     fin_cases j
     simp [jet, polynomialJet, Polynomial.hasseJet_apply]
   have hseparant : jetEvaluation
-      (separant (map φ.toRingHom shiftedEquation) (Fin.last 0)) 0
+      (separant (map φ.toRingHom quadraticJetSampleEquation) (Fin.last 0)) 0
         (polynomialJet (d := 0) 0 (Polynomial.C 2 : ℚ[X])) ≠ 0 := by
     rw [hjet]
-    norm_num [jetEvaluation, separant, shiftedEquation, φ]
-  have hpoly : rationalTaylorPolynomial 0 (map φ.toRingHom shiftedEquation) 2 jet =
+    norm_num [jetEvaluation, separant, quadraticJetSampleEquation, φ]
+  have hpoly : rationalTaylorPolynomial 0 (map φ.toRingHom quadraticJetSampleEquation) 2 jet =
       Polynomial.C 2 := by
     rw [← hjet]
     exact rationalTaylorPolynomial_polynomialJet 0
-      (map φ.toRingHom shiftedEquation) (Polynomial.C 2) hsolution hseparant
+      (map φ.toRingHom quadraticJetSampleEquation) (Polynomial.C 2) hsolution hseparant
       (by norm_num) (by intro i hi hiK; norm_num)
   have hhigh : ∀ l : Fin 2, 1 ≤ l.val →
-      aeval jointPoint (jointCommonTaylorNumerator (r := 0) 0 shiftedEquation 2 l) = 0 := by
+      aeval jointPoint
+        (jointCommonTaylorNumerator (r := 0) 0 quadraticJetSampleEquation 2 l) = 0 := by
     intro l hl
     have hl_one : l = (1 : Fin 2) := Fin.ext (by omega)
     subst l
     have hnum := aeval_map_commonTaylorNumeratorOver_reconstruction_of_exponent
-      (F := ℚ) φ (Polynomial.C 0) shiftedEquation 2 2
+      (F := ℚ) φ (Polynomial.C 0) quadraticJetSampleEquation 2 2
       (by intro i; fin_cases i <;> omega) jet hSφ ⟨1, by omega⟩
     have hcoeff :
         (Polynomial.taylor (φ (Polynomial.C (0 : ℚ)))
           (rationalTaylorPolynomial (φ (Polynomial.C 0))
-            (map φ.toRingHom shiftedEquation) 2 jet)).coeff 1 = 0 := by
+            (map φ.toRingHom quadraticJetSampleEquation) 2 jet)).coeff 1 = 0 := by
       rw [show φ (Polynomial.C (0 : ℚ)) = 0 by simp [φ], hpoly]
       simp
     rw [hcoeff] at hnum
     simp only [mul_zero] at hnum
     have hflat : MvPolynomial.aeval jointPoint
-        (jointCommonTaylorNumerator (r := 0) 0 shiftedEquation 2 (1 : Fin 2)) =
+        (jointCommonTaylorNumerator (r := 0) 0 quadraticJetSampleEquation 2 (1 : Fin 2)) =
         MvPolynomial.aeval jet (map φ.toRingHom
-          (commonTaylorNumeratorOver ℚ (Polynomial.C 0) shiftedEquation 2 1)) := by
+          (commonTaylorNumeratorOver ℚ (Polynomial.C 0) quadraticJetSampleEquation 2 1)) := by
       rw [jointCommonTaylorNumerator, aeval_optionEquivRight_symm]
       rfl
     rw [hflat]
     exact hnum
   have hcuts : ∀ i ∈ Finset.univ,
-      aeval jointPoint (jointTaylorAgreementEquation (r := 0) 0 shiftedEquation 2 2
+      aeval jointPoint (jointTaylorAgreementEquation (r := 0) 0 quadraticJetSampleEquation 2 2
         (Polynomial.C (domain i))
         (Polynomial.C (jointReceivedF i) + Polynomial.X * Polynomial.C (jointReceivedG i))) =
           0 := by
@@ -363,7 +314,7 @@ example :
     subst i
     have hcut :=
       (aeval_map_taylorAgreementEquationOver_eq_zero_iff_of_exponent (F := ℚ) φ
-        (Polynomial.C 0) shiftedEquation 2 2
+        (Polynomial.C 0) quadraticJetSampleEquation 2 2
         (by intro l; fin_cases l <;> omega) jet hSφ
         (Polynomial.C (domain 0))
         (Polynomial.C (jointReceivedF 0) + Polynomial.X *
@@ -374,12 +325,12 @@ example :
             rw [hcenter, hx, hpoly]
             simp [φ, jointReceivedF, jointReceivedG])
     have hflat : MvPolynomial.aeval jointPoint
-        (jointTaylorAgreementEquation (r := 0) 0 shiftedEquation 2 2
+        (jointTaylorAgreementEquation (r := 0) 0 quadraticJetSampleEquation 2 2
           (Polynomial.C (domain 0))
           (Polynomial.C (jointReceivedF 0) + Polynomial.X *
             Polynomial.C (jointReceivedG 0))) =
         MvPolynomial.aeval jet (map φ.toRingHom
-          (taylorAgreementEquationOver (F := ℚ) (Polynomial.C 0) shiftedEquation 2
+          (taylorAgreementEquationOver (F := ℚ) (Polynomial.C 0) quadraticJetSampleEquation 2
             (Polynomial.C (domain 0))
             (Polynomial.C (jointReceivedF 0) + Polynomial.X *
               Polynomial.C (jointReceivedG 0)) (τ := 2))) := by
@@ -389,7 +340,7 @@ example :
     exact hcut
   have hresult := hrecognize jointPoint hS hhigh hcuts
   refine ⟨P₀, P₁, hP₀, hP₁, ?_, ?_, ?_, hhigh 1 (by omega),
-    shiftedEquation_highNumerator_ne, hresult.1,
+    quadraticJetSampleEquation_highNumerator_ne, hresult.1,
     hresult.2.1⟩
   · simpa only [domain_zero, jointReceivedF] using (hsample 0 (by simp)).1
   · simpa only [domain_zero, jointReceivedG] using (hsample 0 (by simp)).2
