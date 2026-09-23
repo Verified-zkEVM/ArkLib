@@ -31,9 +31,9 @@ E(d, m, W) = (W ^ d / (d!) ^ 2) * exp ((d / W) * (m + (d + 1).choose 2))
 support space exceeds `γ * n` times the coordinate budget, and hence `γ * n` times the rank of the
 local constraint map.
 
-At finite rate-partition parameters, `partitionFiniteRatio` times the geometric rank envelope
-equals `(27 / 20) * rate * (W / d) ^ 2 * (W ^ d / (d!) ^ 2)`. The lower-tail moment bound for
-`500 ≤ d` therefore gives a surplus for the finite ratio and the local coordinate budget.
+For the floor-defined weight budget, the finite partition ratio makes the envelope inequality an
+identity when `μ = 27 / 10`. The lower-tail moment bound for `500 ≤ d` then yields the surplus
+without an additional moment hypothesis.
 
 ## Main statements
 
@@ -41,9 +41,11 @@ equals `(27 / 20) * rate * (W / d) ^ 2 * (W ^ d / (d!) ^ 2)`. The lower-tail mom
   at most `E(d, m, W)`.
 * `partitionSupport_surplus`: `γ * n * localDerivativeCoordinateBudget d m W < dim`.
 * `partitionSupport_localConstraint_surplus`: the same with the rank of the local constraint map.
-* `partitionFiniteRatio_mul_geometricRankEnvelope_eq` and
-  `partitionSupport_finiteRatio_surplus`: the finite-ratio envelope identity and its dimension
-  consequence.
+* `partitionFiniteRatio_mul_geometricRankEnvelope_eq`: the finite-ratio envelope identity.
+* `partitionSupport_finiteRatio_surplus`: the finite partition ratio times the coordinate budget
+  is below the dimension under the corresponding second-moment bound.
+* `partitionSupport_largeOrder_finiteRatio_surplus`: the same bound for `500 ≤ d`, with the
+  second-moment hypothesis discharged by the lower-tail estimate.
 
 ## References
 
@@ -53,7 +55,7 @@ equals `(27 / 20) * rate * (W / d) ^ 2 * (W ^ d / (d!) ^ 2)`. The lower-tail mom
 
 @[expose] public section
 
-open PolynomialDifferential Finset MeasureTheory
+open PolynomialDifferential Finset MeasureTheory ReedSolomon.HiddenDerivative.RatePartition
 
 noncomputable section
 
@@ -161,11 +163,74 @@ theorem partitionSupport_localConstraint_surplus (F : Type*) [Field F] {n L m : 
     (Nat.cast_le.mpr (finrank_partitionSupportLocalConstraint_le hD center received))
     (mul_nonneg hγ (Nat.cast_nonneg n))
 
+/-- For the floor-defined weight budget and a second moment greater than `27 / 10`, the finite
+partition ratio times `n` times `localDerivativeCoordinateBudget` is strictly less than the
+dimension of the partition support space at cutoff `m * A`. The hypothesis `0 < n` follows from
+`0 < D ≤ rate * n` and `0 < rate`. -/
+theorem partitionSupport_finiteRatio_surplus (F : Type*) [Field F] {n m A : ℕ}
+    {rate agreement : ℝ} (hD : 0 < D) (hd : 0 < d) (hm : 0 < m) (hrate : 0 < rate)
+    (hagreement : 0 < agreement)
+    (hW : 0 < partitionWeightBudget rate agreement d m)
+    (hupper : (D : ℝ) ≤ rate * n) (hlower : agreement * n ≤ A)
+    (hmoment : (27 / 10 : ℝ) <
+      ⨍ u in Set.weightedSimplex (fun i : Fin d ↦ (i : ℝ) + 1)
+          (partitionWeightBudget rate agreement d m : ℝ),
+        (max (Real.log (6 * (d : ℝ)) - (d : ℝ) * (∑ i, u i) /
+          partitionWeightBudget rate agreement d m) 0) ^ 2) :
+    partitionFiniteRatio rate agreement d m * n *
+        localDerivativeCoordinateBudget d m (partitionWeightBudget rate agreement d m) <
+      (Module.finrank F (partitionSupportSpace F D d (partitionWeightBudget rate agreement d m)
+        ((m * A : ℕ) : ℝ) hD) : ℝ) := by
+  let W := partitionWeightBudget rate agreement d m
+  have hd' : (0 : ℝ) < d := by exact_mod_cast hd
+  have hW' : (0 : ℝ) < W := by exact_mod_cast hW
+  have hlog : 0 < Real.log (6 * (d : ℝ)) := Real.log_pos (by
+    have : (1 : ℝ) ≤ d := by exact_mod_cast hd
+    linarith)
+  have hfloor : (W : ℝ) ≤
+      (m : ℝ) * agreement * d / (rate * Real.log (6 * (d : ℝ))) := by
+    dsimp [W, partitionWeightBudget]
+    exact Nat.floor_le (by positivity)
+  have hcut : Real.log (6 * (d : ℝ)) ≤
+      (m : ℝ) * agreement * d / (rate * W) := by
+    have hfloor' := (le_div_iff₀ (mul_pos hrate hlog)).mp hfloor
+    apply (le_div_iff₀ (mul_pos hrate hW')).mpr
+    nlinarith only [hfloor']
+  have hcutoff : (m : ℝ) * agreement * n ≤ ((m * A : ℕ) : ℝ) := by
+    have h := mul_le_mul_of_nonneg_left hlower
+      (Nat.cast_nonneg m : (0 : ℝ) ≤ m)
+    push_cast at h ⊢
+    nlinarith
+  have hscale : rate * (W : ℝ) / d * Real.log (6 * (d : ℝ)) ≤
+      (m : ℝ) * agreement := by
+    have h := mul_le_mul_of_nonneg_left hcut
+      (show 0 ≤ rate * (W : ℝ) / d by positivity)
+    calc
+      rate * (W : ℝ) / d * Real.log (6 * (d : ℝ)) ≤
+          rate * (W : ℝ) / d * ((m : ℝ) * agreement * d / (rate * W)) := h
+      _ = (m : ℝ) * agreement := by field_simp
+  have hratio := partitionFiniteRatio_eq_weightBudget hm hW
+  have hgamma : 0 < partitionFiniteRatio rate agreement d m := by
+    rw [hratio]
+    positivity
+  have henvelope := RatePartition.partitionFiniteRatio_mul_geometricRankEnvelope_eq
+    (order := d) (multiplicity := m) (budget := W) hm rfl hW
+  have henvelope_le : partitionFiniteRatio rate agreement d m *
+      (((W : ℝ) ^ d / (d.factorial : ℝ) ^ 2) *
+        Real.exp (((d : ℝ) / W) * (m + (d + 1).choose 2)) *
+          (1 / (((d : ℝ) + 1) * ((d : ℝ) / W) ^ 2) + 1 / ((d : ℝ) / W))) ≤
+      (27 / 10 : ℝ) / 2 * rate * ((W : ℝ) / d) ^ 2 *
+        ((W : ℝ) ^ d / (d.factorial : ℝ) ^ 2) := by
+    rw [henvelope]
+    norm_num
+  exact partitionSupport_surplus F hD hd hW hupper hcutoff hscale hmoment hgamma.le
+    henvelope_le
+
 /-- For `500 ≤ d`, the finite rate-partition ratio times `n` times the local coordinate budget is
 strictly less than the dimension of the partition support space. The cutoff `L` may be any natural
 number with `(m * agreement) * n ≤ L`; the weight budget is the finite floor at rate, agreement,
 order `d` and multiplicity `m`. -/
-theorem partitionSupport_finiteRatio_surplus (F : Type*) [Field F]
+theorem partitionSupport_largeOrder_finiteRatio_surplus (F : Type*) [Field F]
     {D d m n L : ℕ} {rate agreement : ℝ} (hD : 0 < D) (hd : 500 ≤ d) (hm : 0 < m)
     (hrate : 0 < rate) (hagreement : 0 < agreement)
     (hbudget : 0 < RatePartition.partitionWeightBudget rate agreement d m)
@@ -209,7 +274,8 @@ theorem partitionSupport_finiteRatio_surplus (F : Type*) [Field F]
   have henvelope : RatePartition.partitionFiniteRatio rate agreement d m *
       (((W : ℝ) ^ d / (d.factorial : ℝ) ^ 2) *
         Real.exp (((d : ℝ) / W) * (m + (d + 1).choose 2)) *
-          (1 / (((d : ℝ) + 1) * ((d : ℝ) / W) ^ 2) + 1 / ((d : ℝ) / W))) ≤
+          (1 / (((d : ℝ) + 1) * ((d : ℝ) / W) ^ 2) +
+            1 / ((d : ℝ) / W))) ≤
       (27 / 10 : ℝ) / 2 * rate * ((W : ℝ) / d) ^ 2 *
         ((W : ℝ) ^ d / (d.factorial : ℝ) ^ 2) := by
     rw [hEnvelope]

@@ -16,17 +16,23 @@ They use an arbitrary finite coordinate type, so a domain indexed by `Fin n`, a 
 or a chosen basis enumeration uses the same API. Neither definition imposes a degree bound:
 Reed–Solomon statements must supply their strict message-degree hypotheses separately.
 
-## Main definitions
+## Main statements
 
 * `polynomialAgreementSet` records agreement with one polynomial.
 * `commonPolynomialAgreementSet` records simultaneous agreement with two polynomials on the
   same coordinates. Its cardinality for fixed witnesses is not the maximum common agreement.
+* `card_polynomialAgreementSet` identifies the single-polynomial count with `Code.agree`.
+* `polynomialAgreementSet_map` preserves the agreement set under an injective ring hom.
+* `card_polynomialAgreement_map` preserves the agreement count on any finite indexed domain,
+  including one with repeated points.
+* `commonPolynomialAgreementSet_eq_inter` identifies the common set with an intersection.
 
-`card_polynomialAgreementSet` identifies the single-polynomial count with `Code.agree`, and
-`polynomialAgreementSet_map` shows that an injective ring hom applied to the domain, the received
-word, and the polynomial gives the same agreement set.
-The intersection identity below connects the two notions. They are exact finite sets, with
-no decoding threshold, probability convention, or mutual-correlated-agreement hypothesis.
+These are exact finite sets, with no decoding threshold, probability convention, or
+mutual-correlated-agreement hypothesis.
+
+## References
+
+* [DKT26]
 -/
 
 @[expose] public section
@@ -88,6 +94,15 @@ theorem polynomialAgreementSet_map
       polynomialAgreementSet domain received P := by
   ext i
   simp [eval_map, eval₂_at_apply, hφ.eq_iff]
+
+/-- An injective ring hom preserves the number of agreement positions for any finite indexed
+domain, including domains with repeated values. -/
+theorem card_polynomialAgreement_map
+    {F E ι : Type*} [Semiring F] [Semiring E] [DecidableEq F] [DecidableEq E] [Fintype ι]
+    (φ : F →+* E) (hφ : Function.Injective φ) (domain received : ι → F) (P : F[X]) :
+    (Finset.univ.filter fun i ↦ (P.map φ).eval (φ (domain i)) = φ (received i)).card =
+      (Finset.univ.filter fun i ↦ P.eval (domain i) = received i).card := by
+  simp only [Polynomial.eval_map_apply, hφ.eq_iff]
 
 end
 end ReedSolomon
