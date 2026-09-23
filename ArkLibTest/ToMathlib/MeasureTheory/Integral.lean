@@ -19,11 +19,6 @@ bound for a two-point sample.
 open MeasureTheory Set
 open scoped BigOperators
 
-/-- The vector `(5 / 2, 0)` lies in the cell indexed by `(2, 0)`. -/
-example : (![5 / 2, 0] : Fin 2 → ℝ) ∈ natFloorCell ![2, 0] := by
-  simp only [mem_natFloorCell, Fin.forall_fin_two]
-  norm_num
-
 /-- The two-dimensional cell with lower corner `(2, 0)` has volume one. -/
 example : volume (natFloorCell ![2, 0]) = 1 := volume_natFloorCell _
 

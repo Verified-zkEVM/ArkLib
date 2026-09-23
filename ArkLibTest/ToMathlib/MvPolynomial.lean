@@ -88,7 +88,65 @@ example :
       (X 0 + X 1 : MvPolynomial (Fin 2) (ZMod 2)).expand 2 :=
   inverseFrobeniusTwist_pow 2 1 _
 
+/-- Over `ZMod 2`, the twist carries the root `1` of `X 0 + 1` to a root. -/
+example :
+    eval (fun _ : Fin 1 ↦ (1 : ZMod 2))
+      (inverseFrobeniusTwist 2 1 (X 0 + 1 : MvPolynomial (Fin 1) (ZMod 2))) = 0 := by
+  apply eval_inverseFrobeniusTwist_eq_zero 2 1 _ _
+  norm_num [eval_add, eval_X]
+  exact ZMod.natCast_self 2
+
+/-- Complementary exponents `1` and `2` recover the square substitution over `ZMod 2`. -/
+example :
+    inverseFrobeniusTwist 2 1 (X 0 + 1 : MvPolynomial (Fin 1) (ZMod 2)) ^ 2 =
+      variablePowerSubstitution (fun _ : Fin 1 ↦ 1)
+        (variablePowerSubstitution (fun _ : Fin 1 ↦ 2) (X 0 + 1)) := by
+  apply inverseFrobeniusTwist_pow_eq_variablePowerSubstitution 2 1
+    (q := fun _ : Fin 1 ↦ 1) (r := fun _ : Fin 1 ↦ 2)
+  · intro i
+    fin_cases i
+    norm_num
+  · rfl
+
+/-- Irreducibility of `X 0` is preserved by the `ZMod 2` coefficient twist. -/
+example :
+    Irreducible (inverseFrobeniusTwist 2 1 (X 0 : MvPolynomial (Fin 1) (ZMod 2))) ↔
+      Irreducible (X 0 : MvPolynomial (Fin 1) (ZMod 2)) := by
+  exact irreducible_inverseFrobeniusTwist_iff 2 1
+
+/-- The `ZMod 2` twist preserves the degree of `X 0 ^ 2 + X 0`. -/
+example :
+    degreeOf 0 (inverseFrobeniusTwist 2 1
+      (X 0 ^ 2 + X 0 : MvPolynomial (Fin 1) (ZMod 2))) =
+      degreeOf 0 (X 0 ^ 2 + X 0 : MvPolynomial (Fin 1) (ZMod 2)) := by
+  exact degreeOf_inverseFrobeniusTwist 2 1 _ _
+
+/-- The `ZMod 2` twist commutes with the derivative of `X 0 ^ 2 + X 0`. -/
+example :
+    pderiv 0 (inverseFrobeniusTwist 2 1
+      (X 0 ^ 2 + X 0 : MvPolynomial (Fin 1) (ZMod 2))) =
+      inverseFrobeniusTwist 2 1
+        (pderiv 0 (X 0 ^ 2 + X 0 : MvPolynomial (Fin 1) (ZMod 2))) := by
+  exact pderiv_inverseFrobeniusTwist 2 1 _ _
+
 /-! ### Polynomial graph root count -/
+
+/-- The roots `0` and `1` of `X none * (X none - 1)` meet its degree bound over `ℚ`. -/
+example : ({0, 1} : Finset ℚ).card ≤
+    (X none * (X none - 1) : MvPolynomial (Option Empty) ℚ).degreeOf none := by
+  have hφ : Function.Injective
+      (aeval (R := ℚ) (fun i : Empty ↦ i.elim) :
+        MvPolynomial Empty ℚ →ₐ[ℚ] ℚ) := by
+    rw [aeval_injective_iff_of_isEmpty]
+    exact RingHom.injective (algebraMap ℚ ℚ)
+  have hg : (X none * (X none - 1) : MvPolynomial (Option Empty) ℚ) ≠ 0 := by
+    intro h
+    have := congrArg (eval (fun _ : Option Empty ↦ (2 : ℚ))) h
+    norm_num at this
+  apply card_le_degreeOf_none_of_aeval_eq_zero hφ hg
+  intro y hy
+  simp only [Finset.mem_insert, Finset.mem_singleton] at hy
+  rcases hy with rfl | rfl <;> norm_num
 
 /-- The two graphs `X` and `-X` on `y² = t²` meet the degree bound. -/
 example : ({Polynomial.X, -Polynomial.X} : Finset ℚ[X]).card ≤ 2 := by
@@ -440,6 +498,24 @@ example :
 
 /-! ### Support-weight allowance -/
 
+/-- Substituting `X 0 ^ 2` for `X 0` gives the computed allowance `2`. -/
+example :
+    SupportWeightOffset (Finsupp.applyAddHom (0 : Fin 1))
+      (0 : (Fin 1 →₀ ℕ) →+ ℕ) 2 (X 0 ^ 2 : MvPolynomial (Fin 1) ℚ) := by
+  have h := supportWeightOffset_aeval
+    (Finsupp.applyAddHom (0 : Fin 1)) (0 : (Fin 1 →₀ ℕ) →+ ℕ)
+    (fun _ : Fin 1 ↦ 2) (fun _ : Fin 1 ↦ (X 0 ^ 2 : MvPolynomial (Fin 1) ℚ))
+    (by
+      intro i
+      fin_cases i
+      simpa only [X_pow_eq_monomial] using
+        SupportWeightOffset.monomial (Finsupp.single (0 : Fin 1) 2) (1 : ℚ)
+          (by simp [Finsupp.applyAddHom]))
+    (X 0 : MvPolynomial (Fin 1) ℚ)
+  have hdeg : weightedTotalDegree (fun _ : Fin 1 ↦ 2) (X 0 : MvPolynomial (Fin 1) ℚ) = 2 := by
+    simp [weightedTotalDegree, support_X, Finsupp.weight_single]
+  simpa [hdeg] using h
+
 /-- `X 0 ^ 3 * X 1` has allowance `2`, and no smaller allowance. -/
 example :
     SupportWeightOffset (Finsupp.applyAddHom 0) (Finsupp.applyAddHom 1) 2
@@ -464,20 +540,22 @@ private def rootCountPoints : Finset (Fin 2 → ℚ) := {![0, 0], ![0, 1]}
 
 private noncomputable def rootCountPolynomial : MvPolynomial (Fin 2) ℚ := X 0
 
-/-- The two roots of `X 0` in the box with a two-element second coordinate attain the line bound. -/
-example : rootCountPoints.card ≤ rootCountPolynomial.degreeOf 0 *
+private noncomputable def rootCountSpecializationPolynomial : MvPolynomial (Fin 2) ℚ := X 0 ^ 2
+
+/-- The specialization count includes the zero-derivative root of `X 0 ^ 2`. -/
+example : rootCountPoints.card ≤ rootCountSpecializationPolynomial.degreeOf 0 *
     ∏ j ∈ (Finset.univ : Finset (Fin 2)).erase 0, (rootCountBox j).card := by
   apply card_le_degreeOf_mul_prod_of_univariateSpecialization_ne_zero
-    rootCountBox 0 rootCountPolynomial rootCountPoints
+    rootCountBox 0 rootCountSpecializationPolynomial rootCountPoints
   intro x hx
   simp only [rootCountPoints, Finset.mem_insert, Finset.mem_singleton] at hx
   rcases hx with rfl | rfl
-  · refine ⟨?_, by simp [rootCountPolynomial], ?_⟩
+  · refine ⟨?_, by simp [rootCountSpecializationPolynomial], ?_⟩
     · simp [Fintype.mem_piFinset, rootCountBox]
-    · exact univariateSpecialization_ne_zero_of_eval_pderiv_ne_zero (by simp [rootCountPolynomial])
-  · refine ⟨?_, by simp [rootCountPolynomial], ?_⟩
+    · simp [rootCountSpecializationPolynomial, univariateSpecialization]
+  · refine ⟨?_, by simp [rootCountSpecializationPolynomial], ?_⟩
     · simp [Fintype.mem_piFinset, rootCountBox]
-    · exact univariateSpecialization_ne_zero_of_eval_pderiv_ne_zero (by simp [rootCountPolynomial])
+    · simp [rootCountSpecializationPolynomial, univariateSpecialization]
 
 /-- The same two roots have nonzero `0`-derivative, giving the derivative root-count bound. -/
 example : rootCountPoints.card ≤ rootCountPolynomial.degreeOf 0 *

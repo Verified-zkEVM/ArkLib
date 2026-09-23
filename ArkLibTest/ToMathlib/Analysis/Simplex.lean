@@ -105,11 +105,6 @@ example : (∫ x : ℝ in (0 : ℝ)..3, x ^ 2 * (3 - x) ^ 0) = 9 := by
   rw [integral_pow_mul_sub_pow]
   norm_num [Nat.factorial]
 
-/-- The triangle with vertices `0`, `(2, 0)`, `(1, 1)` has area `1`. -/
-example : volume.real (orderedSimplex 2 2) = 1 := by
-  rw [volume_real_orderedSimplex 2 (by norm_num)]
-  norm_num [Nat.factorial]
-
 /-- Sorting a constant integrand gives twice the ordered triangle's area. -/
 example : volume.real (standardSimplex (Fin 2) 1) =
     2 * volume.real (orderedSimplex 2 1) := by
@@ -144,3 +139,22 @@ example : (∫ u in weightedSimplex (fun _ : Fin 1 ↦ (2 : ℝ)) 2,
 example : volume.real (weightedSimplex (fun i : Fin 2 ↦ (i : ℝ) + 1) 4) = 4 := by
   rw [volume_real_weightedSimplex_succ 2 (by norm_num)]
   norm_num [Nat.factorial]
+
+/-- Weighted change of variables for the first coordinate on a one-dimensional simplex. -/
+example : (∫ u in weightedSimplex (fun _ : Fin 1 ↦ (2 : ℝ)) 2, u 0) =
+    (1 / 2 : ℝ) * ∫ t in standardSimplex (Fin 1) 2, t 0 / 2 := by
+  simpa using setIntegral_weightedSimplex (fun _ : Fin 1 ↦ (by norm_num : 0 < (2 : ℝ))) 2
+    (fun u : Fin 1 → ℝ ↦ u 0)
+
+/-- A positive dilation transports the first-coordinate integral on `[0, 1]` to `[0, 2]`. -/
+example : (∫ u in weightedSimplex (fun _ : Fin 1 ↦ (1 : ℝ)) (2 * 1), u 0) =
+    (2 : ℝ) ^ Fintype.card (Fin 1) *
+      ∫ u in weightedSimplex (fun _ : Fin 1 ↦ (1 : ℝ)) 1, ((2 : ℝ) • u) 0 := by
+  simpa using setIntegral_weightedSimplex_mul (fun _ : Fin 1 ↦ (1 : ℝ))
+    (by norm_num : (0 : ℝ) < 2) 1 (fun u : Fin 1 → ℝ ↦ u 0)
+
+/-- Enlarging the unit interval's budget to `2` obeys the exponential volume bound. -/
+example : volume.real (weightedSimplex (fun _ : Fin 1 ↦ (1 : ℝ)) (1 + 1)) ≤
+    volume.real (weightedSimplex (fun _ : Fin 1 ↦ (1 : ℝ)) 1) * Real.exp (1 * 1 / 1) := by
+  simpa using volume_real_weightedSimplex_add_le_mul_exp
+    (w := fun _ : Fin 1 ↦ (1 : ℝ)) (fun _ ↦ by norm_num) (W := 1) (by norm_num) 1

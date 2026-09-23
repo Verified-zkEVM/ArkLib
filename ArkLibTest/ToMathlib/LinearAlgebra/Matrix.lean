@@ -28,6 +28,21 @@ example : ((0, 1) : ℚ × ℚ) ∈ LinearMap.ker (LinearMap.fst ℚ ℚ ℚ) :=
     fin_cases i <;> simp [A, Fin.sum_univ_two]
   exact Submodule.mem_of_forall_sum_smul_mem A hA hx 1
 
+/-- Values at the distinct nodes `0` and `1` recover the second coefficient. -/
+example : ((0, 2) : ℚ × ℚ) ∈ LinearMap.ker (LinearMap.fst ℚ ℚ ℚ) := by
+  let α : Fin 2 → ℚ := fun i ↦ (i : ℚ)
+  let x : Fin 2 → ℚ × ℚ := ![(0, 1), (0, 2)]
+  have hα : Function.Injective α := by
+    intro i j hij
+    apply Fin.ext
+    change (i : ℚ) = (j : ℚ) at hij
+    exact_mod_cast hij
+  have hx : ∀ i : Fin 2, ∑ j : Fin 2, α i ^ (j : ℕ) • x j ∈
+      LinearMap.ker (LinearMap.fst ℚ ℚ ℚ) := by
+    intro i
+    fin_cases i <;> norm_num [α, x, Fin.sum_univ_two, LinearMap.mem_ker]
+  exact Submodule.mem_of_forall_sum_pow_smul_mem hα hx 1
+
 /-- The identity on `Fin 2 → ℚ` has coordinate matrix of rank `2`. -/
 example : (Matrix.of fun i j => (LinearMap.id : (Fin 2 → ℚ) →ₗ[ℚ] (Fin 2 → ℚ))
     (Pi.basisFun ℚ (Fin 2) j) i).rank = 2 := by

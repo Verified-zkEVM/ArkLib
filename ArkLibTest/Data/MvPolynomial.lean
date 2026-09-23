@@ -119,6 +119,28 @@ example : (X 0 * X 1 : MvPolynomial (Fin 2) ℚ) ∈ restrictWeightAtMost ![(-1 
     (X_mem_restrictWeightAtMost (R := ℚ) ![(-1 : ℤ), 1] (a := -1) 0 le_rfl)
     (X_mem_restrictWeightAtMost (R := ℚ) ![(-1 : ℤ), 1] (a := 1) 1 le_rfl)
 
+example : bind₁ (fun _ : Unit => (X () : MvPolynomial Unit ℚ))
+    (X () ^ 2 : MvPolynomial Unit ℚ) ∈
+      restrictWeightedOrder (R := ℚ) (fun _ : Unit => 1) 2 := by
+  apply bind₁_mem_restrictWeightedOrder
+  · intro i
+    exact X_mem_restrictWeightedOrder (R := ℚ) (fun _ : Unit => 1) i le_rfl
+  · exact pow_mem_restrictWeightedOrder
+      (X_mem_restrictWeightedOrder (R := ℚ) (fun _ : Unit => 1) () le_rfl) 2
+
+example : (3 : ℤ) ^ 2 ∣ eval₂Hom (RingHom.id ℤ) (fun _ : Unit => (3 : ℤ))
+    (X () ^ 2 : MvPolynomial Unit ℤ) := by
+  exact pow_dvd_eval₂Hom_of_mem_restrictWeightedOrder (RingHom.id ℤ)
+    (pow_mem_restrictWeightedOrder
+      (X_mem_restrictWeightedOrder (R := ℤ) (fun _ : Unit => 1) () le_rfl) 2)
+    (by intro i; norm_num)
+
+example : weightedTruncation (fun _ : Unit => 1) 2
+    (X () ^ 2 : MvPolynomial Unit ℚ) = 0 := by
+  rw [weightedTruncation_eq_zero_iff]
+  exact pow_mem_restrictWeightedOrder
+    (X_mem_restrictWeightedOrder (R := ℚ) (fun _ : Unit => 1) () le_rfl) 2
+
 example : Module.finrank ℚ (restrictSupport ℚ
     (↑({0, Finsupp.single 0 1} : Finset (Fin 1 →₀ ℕ)) : Set (Fin 1 →₀ ℕ))) = 2 := by
   rw [finrank_restrictSupport_finset, Finset.card_pair]
@@ -147,11 +169,22 @@ example : (filterSupport (fun e : Fin 2 →₀ ℕ => 0 < e 0)
   have hX := isWeightedHomogeneous_X ℚ (fun _ : Fin 2 => (1 : ℕ))
   exact ((((hX 0).pow 2).add ((hX 0).mul (hX 1))).add ((hX 1).pow 2)).filterSupport _
 
-example : weightedTruncation (fun _ : Unit ↦ 1) 1
+example : weightedTruncation (fun _ : Unit ↦ 1) 3
     (bind₁ (fun _ : Unit ↦ X () ^ 2)
-      (weightedTruncation (fun _ : Unit ↦ 2) 1 (X () : MvPolynomial Unit ℚ))) =
-    weightedTruncation (fun _ : Unit ↦ 1) 1
+      (weightedTruncation (fun _ : Unit ↦ 2) 3 (X () : MvPolynomial Unit ℚ))) =
+    weightedTruncation (fun _ : Unit ↦ 1) 3
       (bind₁ (fun _ : Unit ↦ X () ^ 2) (X () : MvPolynomial Unit ℚ)) := by
   exact weightedTruncation_bind₁_weightedTruncation
     (fun _ ↦ pow_mem_restrictWeightedOrder
-      (X_mem_restrictWeightedOrder (R := ℚ) (fun _ : Unit ↦ 1) () le_rfl) 2) 1 (X ())
+      (X_mem_restrictWeightedOrder (R := ℚ) (fun _ : Unit ↦ 1) () le_rfl) 2) 3 (X ())
+
+example : weightedTruncation (fun _ : Fin 1 => 1) 3
+    (mapExponents (2 • AddMonoidHom.id (Fin 1 →₀ ℕ))
+      (1 + X 0 + X 0 ^ 2 : MvPolynomial (Fin 1) ℚ)) =
+    mapExponents (2 • AddMonoidHom.id (Fin 1 →₀ ℕ))
+      (weightedTruncation (fun _ : Fin 1 => 2) 3
+        (1 + X 0 + X 0 ^ 2 : MvPolynomial (Fin 1) ℚ)) := by
+  apply weightedTruncation_mapExponents
+  intro e
+  simp [Finsupp.weight_eq_sum, smul_eq_mul]
+  omega
