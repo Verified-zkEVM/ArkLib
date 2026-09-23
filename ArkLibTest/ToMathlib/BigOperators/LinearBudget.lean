@@ -54,18 +54,23 @@ example :
     Finset.slotSurplusHeight (Finset.range 3) (fun i ↦ i % 2) 1 1 = 1 ∧
       Finset.sum (Finset.range 3) (fun i ↦
         Finset.slotSurplusHeight (Finset.range 3) (fun j ↦ j % 2) 1 1 + 1 - i % 2) = 5 ∧
-      1 * (Finset.slotSurplusHeight (Finset.range 3) (fun i ↦ i % 2) 1 1 + 1) <
-        Finset.sum (Finset.range 3) (fun i ↦
-          Finset.slotSurplusHeight (Finset.range 3) (fun j ↦ j % 2) 1 1 + 1 - i % 2) := by
+      2 < 5 := by
   have hheight : Finset.slotSurplusHeight (Finset.range 3) (fun i ↦ i % 2) 1 1 = 1 := by
     decide
   have hslots : Finset.sum (Finset.range 3) (fun i ↦
       Finset.slotSurplusHeight (Finset.range 3) (fun j ↦ j % 2) 1 1 + 1 - i % 2) = 5 := by
     rw [hheight]
     decide
+  have hsurplus :
+      1 * (Finset.slotSurplusHeight (Finset.range 3) (fun i ↦ i % 2) 1 1 + 1) <
+        Finset.sum (Finset.range 3) (fun i ↦
+          Finset.slotSurplusHeight (Finset.range 3) (fun j ↦ j % 2) 1 1 + 1 - i % 2) :=
+    Finset.rows_mul_slotSurplusHeight_add_one_lt_sum_tsub (Finset.range 3)
+      (fun i ↦ i % 2) 1 1 (by decide) (by intro i hi; omega)
   refine ⟨hheight, hslots, ?_⟩
-  rw [hslots, hheight]
-  norm_num
+  rw [hslots, hheight] at hsurplus
+  change 2 < 5 at hsurplus
+  exact hsurplus
 
 /-- With as many rows as columns, the zero-denominator height can provide no strict surplus. -/
 example :

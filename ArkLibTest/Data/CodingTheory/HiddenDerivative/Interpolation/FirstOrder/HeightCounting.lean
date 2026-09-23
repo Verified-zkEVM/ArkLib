@@ -35,17 +35,43 @@ example :
   rw [sum_firstOrderDimensionCoordinates_height]
   decide
 
-/-- With one row, the canonical height gives a strict surplus for the four-column support. -/
-example :
-    1 * (firstOrderCertificateHeight 2 3 1 0 1 1 + 1) <
-      firstOrderHeightSlotCount 2 3 1 0 1
-        (firstOrderCertificateHeight 2 3 1 0 1 1) := by
+/-- At height one, the four-column support has seven slots, so one row gives `2 < 7`. -/
+example : firstOrderCertificateHeight 2 3 1 0 1 1 = 1 ∧
+    firstOrderHeightSlotCount 2 3 1 0 1
+        (firstOrderCertificateHeight 2 3 1 0 1 1) = 7 ∧ 2 < 7 := by
   have hcard : (firstOrderExponents 2 3 1 0 1).card = 4 := by
     rw [card_firstOrderExponents (D := 2) (A := 3) (m := 1) (M := 0) (μ := 1) (by omega)]
     decide
-  apply firstOrder_rowTotal_mul_height_lt_heightSlotCount (D := 2) (A := 3) (m := 1)
-    (M := 0) (μ := 1) (rowTotal := 1) (by omega)
-  omega
+  have hweight :
+      (firstOrderExponents 2 3 1 0 1).sum (fun u ↦ u (some 0)) = 1 := by
+    have hD : 0 < 2 := by omega
+    let e := firstOrderCoordinatesEquiv (D := 2) (A := 3) (m := 1) (M := 0) (μ := 1) hD
+    rw [← Finset.sum_attach]
+    calc
+      (Finset.univ.sum fun u : ↑(firstOrderExponents 2 3 1 0 1) ↦ u.1 (some 0)) =
+          (Finset.univ.sum fun q : ↑(firstOrderDimensionCoordinates 2 3 1 0 1) ↦
+            q.1.1.1 - q.1.1.2) := by
+        rw [← e.sum_comp]
+        apply Finset.sum_congr rfl
+        intro u _
+        rw [firstOrderCoordinatesEquiv_y₀ hD]
+      _ = 1 := by decide
+  have hheight : firstOrderCertificateHeight 2 3 1 0 1 1 = 1 := by
+    change max 1 ((firstOrderExponents 2 3 1 0 1).sum (fun u ↦ u (some 0)) /
+      ((firstOrderExponents 2 3 1 0 1).card - 1)) = 1
+    rw [hweight, hcard]
+    decide
+  have hslots : firstOrderHeightSlotCount 2 3 1 0 1
+      (firstOrderCertificateHeight 2 3 1 0 1 1) = 7 := by
+    rw [hheight]
+    decide
+  refine ⟨hheight, hslots, ?_⟩
+  have hsurplus :=
+    firstOrder_rowTotal_mul_height_lt_heightSlotCount (D := 2) (A := 3) (m := 1)
+      (M := 0) (μ := 1) (rowTotal := 1) (by omega) (by omega)
+  rw [hslots, hheight] at hsurplus
+  change 2 < 7 at hsurplus
+  exact hsurplus
 
 /-- For `D = 0`, the support is empty while the coordinate formula counts two slots. -/
 example : firstOrderColumnSlotCount 0 0 1 1 1 1 = 0 ∧
