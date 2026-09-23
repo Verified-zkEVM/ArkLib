@@ -1754,11 +1754,12 @@ nonzero partial derivative, the degree identity, positive degree, irreducibility
 per-variable degree bounds. The fraction-field parts are now
 `irreducible_map_optionEquivLeft_fractionRing`, `separable_map_optionEquivLeft_fractionRing` and
 `exists_frobeniusContraction_fractionRing`, over a unique factorization domain. The primitivity,
-mapped-derivative and mapped-degree parts of the source's ten-part statements are not stated; the
-test derives the ten-part forms. `inverseFrobeniusTwist_preserves_factor` and its `_expChar` form
-are not ported: each is the conjunction of `irreducible_inverseFrobeniusTwist_iff`,
-`pderiv_inverseFrobeniusTwist_ne_zero_iff` and `degreeOf_inverseFrobeniusTwist`, derived in the
-test. `frobeniusFactor_coefficient_canary` is a test example.
+mapped-derivative and mapped-degree parts of the source's ten-part statements are not stated. The
+consolidated suite now retains a concrete two-variable `ZMod 2` contraction and a fraction-ring
+irreducibility/separability instance, but no generic ten-part derivation.
+`inverseFrobeniusTwist_preserves_factor` and its `_expChar` form are not
+ported; their component statements are the P6 slice 1 results. The
+`frobeniusFactor_coefficient_canary` example was removed with the per-module suite.
 
 ## `ArkLib/Data/MvPolynomial/MapExponents.lean`
 
@@ -1972,6 +1973,7 @@ at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`, namespace
 `map_initialJetSeparant` in `RationalTaylor.lean`. `map_universalTaylorJet`,
 `map_universalTaylorResidual` and `map_universalTaylorResidual_coeff` are in
 `TaylorResidual.lean`, and `map_optionEquivLeft` is in
+`ToMathlib/MvPolynomial/RootContraction.lean`, re-exported through
 `ToMathlib/MvPolynomial/PolynomialCoefficients.lean`; all of these need only a `CommSemiring`.
 `commonTaylorNumeratorOver` takes the exponent `τ` explicitly, with no default `2K`, and no
 longer takes `K`; `l` is a natural number instead of an element of `Fin K`.
@@ -2661,20 +2663,22 @@ and `hybridDimensionSensitiveIncidenceProduct` with `_zero`, `_succ`, `_one`, `_
 `dimensionSensitiveIncidenceProduct_le_one` drops `k ≤ A`, and
 `hybridDimensionSensitiveIncidenceProduct_mono_dimension` and
 `hybridDimensionSensitiveIncidenceProduct_le_two` drop `L ≤ A` and `k ≤ A`; truncated subtraction
-makes these unnecessary. The remaining hypotheses `A ≤ n` and `0 < b` are tested necessary.
+makes these unnecessary. The theorem statements retain the displayed hypotheses `A ≤ n` and
+`0 < b` for the corresponding incidence bounds.
 
 `goodCuts_div_agreements_le_dimension` (from `DimensionSensitive.lean`) and
 `goodCuts_div_agreements_le` (from `ArkLib/ToMathlib/AlgebraicGeometry/Incidence/SharpRatio.lean`,
 listed as deferred in the section for `DoubleCounting.lean`) are not ported; both are
 `natCast_sub_div_natCast_sub_le`, which compares `(n - m) / (A - m) ≤ (n - m') / (A - m')` for
-`m ≤ m' < A ≤ n` in any linearly ordered field. The test derives both source statements, with
-`m' = k - 1` and `m' = k - d`, and shows that `A ≤ n` and `m' < A` are needed.
+`m ≤ m' < A ≤ n` in any linearly ordered field. The consolidated suite retains concrete
+instances of the generic and shifted-ratio bounds; it no longer derives the two source-shaped
+statements or includes hypothesis-necessity cases.
 
 New, with no source counterpart: `incidenceProduct n A b T d`, the product over `t < d` of the
 factor `((n - T t + 1) * b) / (A - T t + 1)` for a threshold function `T : ℕ → ℕ`, with
 `incidenceProduct_zero`, `_succ`, `_nonneg`, `_congr`, `_const` and `_mono_dimension`;
 `dimensionSensitiveIncidenceProduct_eq_incidenceProduct` (thresholds `k - t`, under `d ≤ k + 1`,
-`k ≤ A` and `A ≤ n`, each tested necessary) and
+`k ≤ A` and `A ≤ n`) and
 `hybridDimensionSensitiveIncidenceProduct_eq_incidenceProduct` (thresholds
 `if t = 0 then L else k + 1 - t`, unconditional); and `natCast_sub_mul_le_incidenceFactor_mul`,
 the inequality `(n - j) * b ≤ ((n - T + 1) * b / (A - T + 1)) * (A - j)` for `j < T ≤ A ≤ n`,
@@ -2738,8 +2742,9 @@ revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 stated for a submodule of any module over a field, with an injective `α : Fin c → K` in place of
 an embedding `α : Fin c ↪ F` and `algebraMap` coefficients in a subalgebra. It is a corollary of
 the new `Submodule.mem_of_forall_sum_smul_mem`, for any matrix with unit determinant over a
-commutative ring. The test derives the subalgebra statement through `Subalgebra.toSubmodule` and
-shows that the unit determinant and distinct points are needed.
+commutative ring. The consolidated suite retains a concrete `2 × 2` invertible-matrix instance
+of `Submodule.mem_of_forall_sum_smul_mem`; it no longer derives the subalgebra statement or tests
+determinant and point-separation boundary cases.
 
 ## `ArkLib/ToMathlib/LinearAlgebra/Matrix/PrimitiveKernel.lean`
 
@@ -2988,8 +2993,8 @@ revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`. `oneJetRootPolynomial` is M
 `natDegree_optionEquivLeft`. `eval_oneJetRootPolynomial` is now
 `eval_map_aeval_optionEquivLeft`, and `polynomialGraphs_card_le_degreeOf` is now
 `card_le_degreeOf_some_of_aeval_eq_zero`, over any domain, with the general root count
-`card_le_degreeOf_none_of_aeval_eq_zero`. `polynomialGraphs_frobenius_canary` is a test, without
-`0 < s`.
+`card_le_degreeOf_none_of_aeval_eq_zero`. The old `polynomialGraphs_frobenius_canary` case was
+dropped; the consolidated suite retains a concrete two-graph root-count instance.
 ## `ArkLib/ToMathlib/MvPolynomial/FrobeniusPullback.lean`
 
 Merges `ArkLib/ToMathlib/MvPolynomial/FrobeniusPullback.lean` and
@@ -3002,7 +3007,8 @@ with their replacements: `pow_primePow_injective` (`(iterateFrobeniusEquiv K p e
 `pderiv_map_ringEquiv` (`MvPolynomial.pderiv_map`), `pderiv_map_ringEquiv_ne_zero_iff` (`pderiv_map`
 with `map_ne_zero_iff`), and `pderiv_inverseFrobeniusTwist_ne_zero` (the `.mpr` of
 `pderiv_inverseFrobeniusTwist_ne_zero_iff`). The Fin-3 definitions `rootVariableExponent` and
-`basePowerSubstitution` and the `*_canary` theorems are examples in the acceptance test.
+`basePowerSubstitution` and the `*_canary` examples were dropped; the consolidated suite retains a
+concrete characteristic-two inverse-twist expansion case.
 
 ## `ArkLib/ToMathlib/MvPolynomial/PDeriv.lean`
 
@@ -3049,7 +3055,8 @@ Ported from the coefficient-height and joint-degree parts of `Symbolic/TaylorHei
 closure lemmas are public. `jointTotalDegree_scalar` is now `jointTotalDegree_C_C`,
 `jointTotalDegree_le_coeff_degree_add` is now `jointTotalDegree_le_of_natDegree_coeff_le`, and
 `jointTotalDegree_clearedSubstitution` is now `jointTotalDegree_clearedSubstitution_le`.
-`jointTotalDegree_affine_le` is derived in the acceptance test.
+The source-shaped acceptance example for `jointTotalDegree_affine_le` was removed; the public
+theorem survives in this module, as recorded below.
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Symbolic/CoefficientExtension.lean` at ArkLib revision
 `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
