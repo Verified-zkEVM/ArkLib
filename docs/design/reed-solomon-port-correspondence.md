@@ -3921,6 +3921,14 @@ declarations are renamed to
 `MvPolynomial.bidegreeHypersurface_incidence_off_excluded_sharp_two`; both are generalized by
 removing `A ≤ n`. Nothing was deferred or left unported.
 
+## `ArkLib/ToMathlib/RingTheory/Nullstellensatz/CappedBidegreeIncidence.lean`
+
+Ported from `ArkLib/ToMathlib/AlgebraicGeometry/Incidence/DerivativeBidegreeExcluded.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`derivativeBidegreeHypersurface_source_incidence_off_excluded_hybrid_two_of_lt` and `derivativeBidegreeHypersurface_source_incidence_off_excluded_hybrid_two` are covered by `MvPolynomial.cappedBidegreeHypersurface_incidence_off_excluded_hybrid_two`. The destination theorem is generalized to every positive `c` and drops the assumptions `r ≤ j` and `A ≤ n`. Neither source theorem is omitted.
+
+Acceptance cases in `ArkLibTest/ToMathlib/RingTheory/Nullstellensatz.lean` include a rational point on a positive-dimensional coordinate line, with `n = 4`, `A = 2`, `L = 1`, and `k = 0`. The merged acceptance file retains its principal-open, affine-Hilbert, and zero-locus examples.
+
 ## `ArkLib/ToMathlib/RingTheory/Nullstellensatz/DimensionSensitiveIncidence.lean`
 
 Ported from `ArkLib/ToMathlib/AlgebraicGeometry/Incidence/DimensionSensitive.lean` at ArkLib
