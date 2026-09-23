@@ -40,6 +40,11 @@ trap cleanup EXIT
 printf 'module\n\n' > "$tmp_file"
 
 git ls-files -- 'ArkLib/*.lean' \
+  | while IFS= read -r file; do
+      if [[ -f "$file" ]]; then
+        printf '%s\n' "$file"
+      fi
+    done \
   | LC_ALL=C sort \
   | sed 's/\.lean//;s,/,.,g;s/^/public import /' >> "$tmp_file"
 
