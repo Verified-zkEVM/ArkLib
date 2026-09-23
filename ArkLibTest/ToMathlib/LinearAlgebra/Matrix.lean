@@ -91,13 +91,16 @@ end SupportedRowsTest
 
 namespace ProductRowRankTest
 
-/-- A matrix with two independent rows, split into two one-row blocks and three columns. -/
-private def productRowsMatrix : Matrix (Fin 2 × Fin 1) (Fin 3) ℚ :=
-  fun row column => if row.1.val = column.val then 1 else 0
+/-- Six rows split into two dependent three-row blocks, with disjoint nonzero columns. -/
+private def productRowsMatrix : Matrix (Fin 2 × Fin 3) (Fin 3) ℚ :=
+  fun row column => if row.1.val = column.val then (row.2.val + 1 : ℚ) else 0
 
-/-- Two one-rank row blocks bound the rank of a three-column matrix by two. -/
+/-- Two rank-one blocks bound the rank of a three-column matrix by two. -/
 example : productRowsMatrix.rank = 2 ∧
-    (∑ i : Fin 2, Matrix.rank (fun row column => productRowsMatrix (i, row) column)) = 2 ∧
+    (∑ i : Fin 2,
+      Matrix.rank (fun row column => productRowsMatrix (i, row) column)) = 2 ∧
+    Fintype.card (Fin 2 × Fin 3) >
+      ∑ i : Fin 2, Matrix.rank (fun row column => productRowsMatrix (i, row) column) ∧
     Fintype.card (Fin 3) >
       ∑ i : Fin 2, Matrix.rank (fun row column => productRowsMatrix (i, row) column) ∧
     productRowsMatrix.rank ≤
@@ -105,17 +108,40 @@ example : productRowsMatrix.rank = 2 ∧
   have hblock : ∀ i : Fin 2,
       Matrix.rank (fun row column => productRowsMatrix (i, row) column) = 1 := by
     intro i
-    let block : Matrix (Fin 1) (Fin 3) ℚ :=
+    let block : Matrix (Fin 3) (Fin 3) ℚ :=
       fun row column => productRowsMatrix (i, row) column
+    let active : Fin 3 := ⟨i.val, by omega⟩
+    have hsupport : Function.support (Matrix.transpose block).row ⊆
+        {active} := by
+      intro column hcolumn
+      simp only [Function.mem_support, ne_eq] at hcolumn
+      change column = active
+      by_contra hne
+      apply hcolumn
+      funext row
+      have hval : column.val ≠ i.val := by
+        intro heq
+        apply hne
+        exact Fin.ext heq
+      change productRowsMatrix (i, row) column = 0
+      have hval' : i.val ≠ column.val := fun heq => hval heq.symm
+      simp [productRowsMatrix, hval']
     have hupper : block.rank ≤ 1 := by
-      simpa using (Matrix.rank_le_card_height block)
-    let r : Fin 1 → Fin 1 := fun _ => 0
-    let c : Fin 1 → Fin 3 := fun _ => ⟨i.val, by omega⟩
+      rw [← Matrix.rank_transpose]
+      change Function.support (Matrix.transpose block).row ⊆
+        ({active} : Set (Fin 3)) at hsupport
+      calc
+        (Matrix.transpose block).rank ≤ ({active} : Finset (Fin 3)).card :=
+          Matrix.rank_le_card_of_support_subset (Matrix.transpose block) {active} hsupport
+        _ = 1 := by simp
+    let r : Fin 1 → Fin 3 := fun _ => 0
+    let c : Fin 1 → Fin 3 := fun _ => active
     have hminor : block.submatrix r c = 1 := by
       ext row column
       fin_cases row
       fin_cases column
-      simp [Matrix.submatrix, block, productRowsMatrix, r, c]
+      change productRowsMatrix (i, 0) active = 1
+      simp [productRowsMatrix, active]
     have hlower : 1 ≤ block.rank := by
       have hminorRank : (block.submatrix r c).rank = 1 := by
         rw [hminor, Matrix.rank_one]
@@ -124,9 +150,17 @@ example : productRowsMatrix.rank = 2 ∧
         1 = (block.submatrix r c).rank := hminorRank.symm
         _ ≤ block.rank := Matrix.rank_submatrix_le block r c
     exact Nat.le_antisymm hupper hlower
+  have hsum :
+      (∑ i : Fin 2,
+        Matrix.rank (fun row column => productRowsMatrix (i, row) column)) = 2 := by
+    simp [hblock]
   have hupper : productRowsMatrix.rank ≤ 2 := by
-    simpa using (Matrix.rank_le_card_height productRowsMatrix)
-  let r : Fin 2 → Fin 2 × Fin 1 := fun i => (i, 0)
+    calc
+      productRowsMatrix.rank ≤
+          ∑ i : Fin 2, Matrix.rank (fun row column => productRowsMatrix (i, row) column) :=
+        Matrix.rank_prod_rows_le_sum productRowsMatrix
+      _ = 2 := hsum
+  let r : Fin 2 → Fin 2 × Fin 3 := ![(0, 0), (1, 0)]
   let c : Fin 2 → Fin 3 := fun i => ⟨i.val, by omega⟩
   have hminor : productRowsMatrix.submatrix r c = 1 := by
     ext row column
@@ -141,11 +175,11 @@ example : productRowsMatrix.rank = 2 ∧
       2 = (productRowsMatrix.submatrix r c).rank := hminorRank.symm
       _ ≤ productRowsMatrix.rank := Matrix.rank_submatrix_le productRowsMatrix r c
   have hmatrix : productRowsMatrix.rank = 2 := Nat.le_antisymm hupper hlower
-  have hsum :
-      (∑ i : Fin 2, Matrix.rank (fun row column => productRowsMatrix (i, row) column)) = 2 := by
-    simp [hblock]
-  refine ⟨hmatrix, hsum, ?_, Matrix.rank_prod_rows_le_sum productRowsMatrix⟩
-  rw [hsum]
-  simp
+  refine ⟨hmatrix, hsum, ?_, ?_, ?_⟩
+  · rw [hsum]
+    simp
+  · rw [hsum]
+    simp
+  · exact Matrix.rank_prod_rows_le_sum productRowsMatrix
 
 end ProductRowRankTest

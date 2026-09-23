@@ -384,115 +384,165 @@ end SymbolicCurveCertificateTest
 
 namespace SymbolicPartitionRankTest
 
-/-- The constant monomial over a field has derivative-order weight zero. -/
-private noncomputable def constantPolynomial : DifferentialPolynomial ℚ 0 :=
-  MvPolynomial.monomial (0 : JetVariable 0 →₀ ℕ) 1
+/-- Two distinct source polynomials for the local rank bound with budget one. -/
+private noncomputable def localRankPolynomials : Fin 2 → DifferentialPolynomial ℚ 0 :=
+  ![1, X none]
 
-/-- Two constant columns have nonzero local rank bounded by the derivative-weight budget. -/
-example : Matrix.rank (fun row _ => localConstraintCoordinatesAt 1 (0 : ℚ) 0
-    constantPolynomial row : Matrix (LowContactIndex 0 1) (Fin 2) ℚ) = 1 := by
-  let polynomials : Fin 2 → DifferentialPolynomial ℚ 0 := fun _ => constantPolynomial
-  let M : Matrix (LowContactIndex 0 1) (Fin 2) ℚ := fun row j =>
-    localConstraintCoordinatesAt 1 (0 : ℚ) 0 (polynomials j) row
+/-- Their local coordinate matrix at the origin with multiplicity one. -/
+private noncomputable def localRankMatrix : Matrix (LowContactIndex 0 1) (Fin 2) ℚ :=
+  fun row column => localConstraintCoordinatesAt 1 0 0 (localRankPolynomials column) row
+
+/-- Two distinct columns give nonzero local rank within the derivative-weight budget. -/
+example : localRankMatrix.rank = 1 := by
+  let exponents : Fin 2 → JetVariable 0 →₀ ℕ := ![0, Finsupp.single none 1]
+  let polynomials := localRankPolynomials
+  let M := localRankMatrix
+  have hpoly : ∀ j, polynomials j = MvPolynomial.monomial (exponents j) 1 := by
+    intro j
+    fin_cases j <;> simp [polynomials, localRankPolynomials, exponents,
+      ← MvPolynomial.X_pow_eq_monomial]
   have hweight : ∀ j u, u ∈ (polynomials j).support → fullDerivativeJetWeight u ≤ 0 := by
     intro j u hu
-    have hu0 : u = 0 := by
-      simpa [polynomials, constantPolynomial] using MvPolynomial.support_monomial_subset hu
+    rw [hpoly j] at hu
+    have hu' : u = exponents j := by
+      simpa using MvPolynomial.support_monomial_subset hu
     subst u
-    simp [fullDerivativeJetWeight]
+    fin_cases j <;> simp [exponents, fullDerivativeJetWeight, jetDerivativeWeight,
+      Finsupp.weight_single]
   have hupper := localConstraintCoordinates_rank_le_of_derivative_weight
     (m := 1) (W := 0) (center := (0 : ℚ)) (received := (0 : ℚ)) polynomials hweight
+  have hbudget : localDerivativeCoordinateBudget 0 1 0 = 1 := by decide
   have hupper' : M.rank ≤ 1 := by
-    simpa [M, localDerivativeCoordinateBudget, contactThreshold,
-      weightedHigherJetCount_of_le_one] using hupper
-  let zeroRow : LowContactIndex 0 1 := ⟨0, by simp [localContactOrder]⟩
-  have hentry : M zeroRow 0 = 1 := by
-    simp [M, polynomials, zeroRow, constantPolynomial, localConstraintCoordinatesAt,
-      lowContactCoefficients]
-  have hminor : M.submatrix (fun _ : Fin 1 => zeroRow) (fun _ : Fin 1 => 0) = 1 := by
+    have hM : M = fun row j =>
+        localConstraintCoordinatesAt 1 0 0 (polynomials j) row := by
+      ext row j
+      rfl
+    rw [hM]
+    simpa [polynomials, localRankPolynomials, hbudget] using hupper
+  let rowZero : LowContactIndex 0 1 := ⟨0, by simp [localContactOrder]⟩
+  let rows : Fin 1 → LowContactIndex 0 1 := fun _ => rowZero
+  let columns : Fin 1 → Fin 2 := fun _ => 0
+  have hentry : M rowZero 0 = 1 := by
+    simp [M, localRankMatrix, localRankPolynomials, localConstraintCoordinatesAt,
+      lowContactCoefficients, rowZero]
+  have hminor : M.submatrix rows columns = 1 := by
     ext i j
     fin_cases i
     fin_cases j
-    simpa using hentry
-  have hminorRank : (M.submatrix (fun _ : Fin 1 => zeroRow)
-      (fun _ : Fin 1 => 0)).rank = 1 := by
+    simpa [rows, columns] using hentry
+  have hminorRank : (M.submatrix rows columns).rank = 1 := by
     rw [hminor, Matrix.rank_one]
     simp
   have hlower : 1 ≤ M.rank := by
     calc
-      1 = (M.submatrix (fun _ : Fin 1 => zeroRow) (fun _ : Fin 1 => 0)).rank :=
-        hminorRank.symm
-      _ ≤ M.rank := Matrix.rank_submatrix_le M _ _
+      1 = (M.submatrix rows columns).rank := hminorRank.symm
+      _ ≤ M.rank := Matrix.rank_submatrix_le M rows columns
   exact Nat.le_antisymm hupper' hlower
 
-/-- Two supported symbolic columns have nonzero rank bounded by their local coordinate budget. -/
-example : ((supportedLocalConstraintMatrix 1
-    (fun _ : Fin 1 => Polynomial.C (0 : ℚ))
-    (fun _ : Fin 1 => (1 : ℚ[X]))
-    (fun j : Fin 2 => if j = 0 then (⟨0, 1, ![]⟩ : SourceColumn 0) else ⟨0, 0, ![]⟩)).map
-      (algebraMap ℚ[X] (RatFunc ℚ))).rank = 1 := by
-  let columns : Fin 2 → SourceColumn 0 :=
-    fun j => if j = 0 then ⟨0, 1, ![]⟩ else ⟨0, 0, ![]⟩
-  let centers : Fin 1 → ℚ := fun _ => 0
-  let received : Fin 1 → ℚ[X] := fun _ => 1
-  let M : Matrix (localConstraintSupportedRows 1 (Polynomial.C ∘ centers) received columns)
-      (Fin 2) (RatFunc ℚ) :=
-    (supportedLocalConstraintMatrix 1 (Polynomial.C ∘ centers) received columns).map
-      (algebraMap ℚ[X] (RatFunc ℚ))
-  have hweight : ∀ j, fullDerivativeJetWeight (columns j).exponent ≤ 0 := by
+private def supportedRankColumns : Fin 13 → SourceColumn 1 := fun j => ⟨j.val, 0, ![0]⟩
+
+private def supportedRankCenters : Fin 4 → ℚ := ![0, 1, 2, 3]
+
+private noncomputable def supportedRankReceived : Fin 4 → ℚ[X] := fun _ => 0
+
+private noncomputable def supportedRankMatrix : Matrix
+    (localConstraintSupportedRows 2 (Polynomial.C ∘ supportedRankCenters)
+      supportedRankReceived supportedRankColumns) (Fin 13) (RatFunc ℚ) :=
+  (supportedLocalConstraintMatrix 2 (Polynomial.C ∘ supportedRankCenters)
+    supportedRankReceived supportedRankColumns).map (algebraMap ℚ[X] (RatFunc ℚ))
+
+/-- Thirteen columns and four supported rows give nonzero symbolic rank within the global budget. -/
+example : 12 < Fintype.card (Fin 13) ∧
+    3 < Fintype.card (localConstraintSupportedRows 2
+    (Polynomial.C ∘ supportedRankCenters) supportedRankReceived supportedRankColumns) ∧
+    0 < supportedRankMatrix.rank ∧ supportedRankMatrix.rank ≤ 12 := by
+  have hweight : ∀ j, fullDerivativeJetWeight (supportedRankColumns j).exponent ≤ 0 := by
     intro j
-    fin_cases j <;> simp [columns, SourceColumn.exponent, fullDerivativeJetWeight,
-      Finsupp.weight_single, jetDerivativeWeight]
+    simp [supportedRankColumns, SourceColumn.exponent, fullDerivativeJetWeight,
+      jetDerivativeWeight, Finsupp.weight_single]
   have hupper := rank_map_supportedLocalConstraintMatrix_le_of_derivative_weight
-    (m := 1) (W := 0) centers received columns hweight
-  have hupper' : M.rank ≤ 1 := by
-    change ((supportedLocalConstraintMatrix 1 (fun i => Polynomial.C (centers i)) received
-      columns).map (algebraMap ℚ[X] (RatFunc ℚ))).rank ≤ 1
-    simpa [localDerivativeCoordinateBudget, contactThreshold,
-      weightedHigherJetCount_of_le_one] using hupper
-  let zeroRow : Fin 1 × LowContactIndex 0 1 := (0, matrixRowZero.2)
-  have hfullEntry : localConstraintMatrix 1 (Polynomial.C ∘ centers) received columns
-      zeroRow 0 = 1 := by
+    (m := 2) (W := 0) supportedRankCenters supportedRankReceived supportedRankColumns hweight
+  have hbudget : localDerivativeCoordinateBudget 1 2 0 = 3 := by decide
+  have hupper' : supportedRankMatrix.rank ≤ 12 := by
+    change ((supportedLocalConstraintMatrix 2
+      (fun i => Polynomial.C (supportedRankCenters i)) supportedRankReceived
+      supportedRankColumns).map (algebraMap ℚ[X] (RatFunc ℚ))).rank ≤ 4 * 3
+    simpa [hbudget] using hupper
+  let rowZero : LowContactIndex 1 2 := ⟨0, by simp [localContactOrder]⟩
+  let rawRows : Fin 4 → Fin 4 × LowContactIndex 1 2 := fun i => (i, rowZero)
+  have hzeroEntry (i : Fin 4) :
+      localConstraintMatrix 2 (Polynomial.C ∘ supportedRankCenters) supportedRankReceived
+        supportedRankColumns (i, rowZero) 0 = 1 := by
     rw [localConstraintMatrix_apply]
-    rw [show zeroRow.2.1 = (0 : LocalVariable 0 →₀ ℕ) by rfl]
-    have hcolumn : (columns 0).polynomial =
-        (X (some 0) : DifferentialPolynomial ℚ[X] 0) := by
-      simpa [columns, SourceColumn.polynomial, SourceColumn.exponent, sourceMonomial] using
-        (SourceColumn.polynomial_eq_sourceMonomial (columns 0))
-    rw [hcolumn, unscaledLocalSubstitution_Y_zero, ← constantCoeff_eq]
-    simp [localCorrection, received]
-  let supportedRow : localConstraintSupportedRows 1 (Polynomial.C ∘ centers) received columns :=
-    ⟨zeroRow, (mem_localConstraintSupportedRows_iff 1 (Polynomial.C ∘ centers) received columns
-      zeroRow).2 ⟨0, by rw [hfullEntry]; norm_num⟩⟩
-  have hentry : M supportedRow 0 = 1 := by
+    rw [show rowZero.1 = (0 : LocalVariable 1 →₀ ℕ) by rfl]
+    have hcolumn : (supportedRankColumns 0).polynomial =
+        (1 : DifferentialPolynomial ℚ[X] 1) := by
+      rw [SourceColumn.polynomial_eq_sourceMonomial, sourceMonomial]
+      simp [supportedRankColumns]
+    rw [hcolumn]
+    simp [unscaledLocalSubstitution]
+  have hsupported (i : Fin 4) : rawRows i ∈
+      localConstraintSupportedRows 2 (Polynomial.C ∘ supportedRankCenters)
+        supportedRankReceived supportedRankColumns := by
+    rw [mem_localConstraintSupportedRows_iff]
+    refine ⟨0, ?_⟩
+    change localConstraintMatrix 2 (Polynomial.C ∘ supportedRankCenters)
+      supportedRankReceived supportedRankColumns (i, rowZero) 0 ≠ 0
+    rw [hzeroEntry i]
+    norm_num
+  let supportedRows : Fin 4 → localConstraintSupportedRows 2
+      (Polynomial.C ∘ supportedRankCenters) supportedRankReceived supportedRankColumns :=
+    fun i => ⟨rawRows i, hsupported i⟩
+  have hinj : Function.Injective supportedRows := by
+    intro i j hij
+    have hraw : rawRows i = rawRows j := congrArg Subtype.val hij
+    simpa [rawRows] using congrArg Prod.fst hraw
+  have hrows : 4 ≤ Fintype.card (localConstraintSupportedRows 2
+      (Polynomial.C ∘ supportedRankCenters) supportedRankReceived supportedRankColumns) :=
+    Fintype.card_le_of_injective supportedRows hinj
+  have hentry : supportedRankMatrix (supportedRows 0) 0 = 1 := by
     change algebraMap ℚ[X] (RatFunc ℚ)
-      (localConstraintMatrix 1 (Polynomial.C ∘ centers) received columns zeroRow 0) = 1
-    rw [hfullEntry]
+      (localConstraintMatrix 2 (Polynomial.C ∘ supportedRankCenters) supportedRankReceived
+        supportedRankColumns (rawRows 0) 0) = 1
+    rw [show rawRows 0 = (0, rowZero) by rfl]
+    rw [hzeroEntry 0]
     simp
-  have hminor : M.submatrix (fun _ : Fin 1 => supportedRow) (fun _ : Fin 1 => 0) = 1 := by
+  have hminor : supportedRankMatrix.submatrix (fun _ : Fin 1 => supportedRows 0)
+      (fun _ : Fin 1 => 0) = 1 := by
     ext i j
     fin_cases i
     fin_cases j
     simpa using hentry
-  have hminorRank : (M.submatrix (fun _ : Fin 1 => supportedRow)
+  have hminorRank : (supportedRankMatrix.submatrix (fun _ : Fin 1 => supportedRows 0)
       (fun _ : Fin 1 => 0)).rank = 1 := by
     rw [hminor, Matrix.rank_one]
     simp
-  have hlower : 1 ≤ M.rank := by
+  have hlower : 1 ≤ supportedRankMatrix.rank := by
     calc
-      1 = (M.submatrix (fun _ : Fin 1 => supportedRow) (fun _ : Fin 1 => 0)).rank :=
-        hminorRank.symm
-      _ ≤ M.rank := Matrix.rank_submatrix_le M _ _
-  exact Nat.le_antisymm hupper' hlower
+      1 = (supportedRankMatrix.submatrix (fun _ : Fin 1 => supportedRows 0)
+        (fun _ : Fin 1 => 0)).rank := hminorRank.symm
+      _ ≤ supportedRankMatrix.rank := Matrix.rank_submatrix_le _ _ _
+  exact ⟨by norm_num, (by omega), hlower, hupper'⟩
 
-/-- Base change commutes with the concrete local constraint matrix for the source column `Y₀`. -/
+/- The coefficient map acts on a nonintegral entry from a source `X` column. -/
 example :
-    ((localConstraintMatrix 1 (fun _ : Fin 1 => (0 : ℚ)) (fun _ => 1)
-      (fun _ : Fin 1 => (⟨0, 1, ![]⟩ : SourceColumn 0))).map (Rat.castHom ℝ)) =
-      localConstraintMatrix 1 (fun _ : Fin 1 => (0 : ℝ)) (fun _ => 1)
-        (fun _ : Fin 1 => (⟨0, 1, ![]⟩ : SourceColumn 0)) := by
-  simpa using localConstraintMatrix_map (R := ℚ) (f := Rat.castHom ℝ) 1
-    (fun _ : Fin 1 => (0 : ℚ)) (fun _ : Fin 1 => (1 : ℚ))
-    (fun _ : Fin 1 => (⟨0, 1, ![]⟩ : SourceColumn 0))
+    ((localConstraintMatrix 1 (fun _ : Fin 1 => (1 / 2 : ℚ)) (fun _ => 0)
+      (fun _ : Fin 1 => (⟨1, 0, ![]⟩ : SourceColumn 0))).map (Rat.castHom ℝ)) =
+      localConstraintMatrix 1 (fun _ : Fin 1 => (1 / 2 : ℝ)) (fun _ => 0)
+        (fun _ : Fin 1 => (⟨1, 0, ![]⟩ : SourceColumn 0)) ∧
+    localConstraintMatrix 1 (fun _ : Fin 1 => (1 / 2 : ℚ)) (fun _ => 0)
+      (fun _ : Fin 1 => (⟨1, 0, ![]⟩ : SourceColumn 0)) matrixRowZero 0 = (1 / 2 : ℚ) := by
+  have hmap := localConstraintMatrix_map (R := ℚ) (f := Rat.castHom ℝ) 1
+    (fun _ : Fin 1 => (1 / 2 : ℚ)) (fun _ : Fin 1 => (0 : ℚ))
+    (fun _ : Fin 1 => (⟨1, 0, ![]⟩ : SourceColumn 0))
+  refine ⟨by simpa using hmap, ?_⟩
+  rw [localConstraintMatrix_apply]
+  rw [show matrixRowZero.2.1 = (0 : LocalVariable 0 →₀ ℕ) by rfl]
+  have hcolumn : (⟨1, 0, ![]⟩ : SourceColumn 0).polynomial =
+      (X none : DifferentialPolynomial ℚ 0) := by
+    rw [SourceColumn.polynomial_eq_sourceMonomial, sourceMonomial]
+    simp
+  rw [hcolumn, unscaledLocalSubstitution_X]
+  simp [localT]
 
 end SymbolicPartitionRankTest
