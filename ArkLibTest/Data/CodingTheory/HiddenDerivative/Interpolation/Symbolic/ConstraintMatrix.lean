@@ -37,11 +37,17 @@ theorem entry_row₀ {R : Type*} [CommRing R] (r : R) :
   rw [SourceColumn.polynomial_eq_sourceMonomial, ← constantCoeff_eq]
   simp [colY, sourceMonomial, localCorrection]
 
-/-- The matrix entry is the constant coefficient of the projected local constraint. -/
-example (r : ℚ) :
-    localConstraintMatrix 1 (fun _ : Fin 1 ↦ (0 : ℚ)) (fun _ ↦ r) colY row₀ 0 =
-      (localConstraintAt 1 0 r (colY 0).polynomial).coeff 0 :=
-  localConstraintMatrix_apply_eq_localConstraintAt_coeff 1 _ _ colY row₀ 0
+/-- The constant coefficient of the projected constraint for `Y₀` is its received value. -/
+theorem projected_entry_row₀ (r : ℚ) :
+    (localConstraintAt 1 0 r (colY 0).polynomial).coeff 0 = r := by
+  calc
+    (localConstraintAt 1 0 r (colY 0).polynomial).coeff 0 =
+        localConstraintMatrix 1 (fun _ : Fin 1 ↦ (0 : ℚ)) (fun _ ↦ r) colY row₀ 0 := by
+      symm
+      simpa [row₀] using
+        (localConstraintMatrix_apply_eq_localConstraintAt_coeff 1
+          (fun _ : Fin 1 ↦ (0 : ℚ)) (fun _ ↦ r) colY row₀ 0)
+    _ = r := entry_row₀ r
 
 /-- With received value `1`, the kernel is zero. -/
 example (v : Fin 1 → ℚ)
