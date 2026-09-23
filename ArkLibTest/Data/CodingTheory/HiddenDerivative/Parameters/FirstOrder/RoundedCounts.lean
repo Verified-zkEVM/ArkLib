@@ -47,6 +47,25 @@ example : ((23 : ℕ) : ℝ) ≤ (4 : ℕ) ^ 3 * ((1 / 2 : ℝ) / 2 - (1 / 2) ^ 
   have hM : ⌊(1 / 2 : ℝ) * (4 : ℕ)⌋₊ = 2 := by norm_num
   rwa [hM, test_rankCount_four_two] at h
 
+/-- The exact-density estimate uses the linear density branch above `β = 1/2`. -/
+example : ((35 : ℕ) : ℝ) ≤
+    (4 : ℕ) ^ 3 * firstOrderRankDensity 1 + (2 * 1 + 3) * (4 : ℕ) ^ 2 := by
+  have h := firstOrderRankCount_floor_le_density_add_rounding_upper
+    (beta := 1) (by norm_num) 4
+  have hM : ⌊(1 : ℝ) * (4 : ℕ)⌋₊ = 4 := by norm_num
+  have hcount : firstOrderRankCount 4 4 = 35 := by decide
+  rw [hM, hcount] at h
+  norm_num [firstOrderRankDensity] at h ⊢
+
+/-- At the branch boundary, the uniform estimate uses the cubic density and exact cap `M = 2`. -/
+example : ((23 : ℕ) : ℝ) ≤
+    (4 : ℕ) ^ 3 * firstOrderRankDensity (1 / 2) + (2 * (1 / 2) + 3) * (4 : ℕ) ^ 2 := by
+  have h := firstOrderRankCount_floor_le_density_add_rounding
+    (beta := 1 / 2) (by norm_num) 4
+  have hM : ⌊(1 / 2 : ℝ) * (4 : ℕ)⌋₊ = 2 := by norm_num
+  rw [hM, test_rankCount_four_two] at h
+  norm_num [firstOrderRankDensity] at h ⊢
+
 /-- At `R = 1/2`, `a = 1`, `m = 2`, `β = 1/2` the caps are `M = 1` and `μ = ⌊4⌋₊ = 4`, and the
 source estimate reads `8 · (1/4 - 1/8 + 1/96) ≤ 8`. -/
 example : ((2 : ℕ) : ℝ) ^ 3 * ((1 / 2) * 1 ^ 2 / (2 * (1 / 2)) - 1 * (1 / 2) ^ 2 / 2 +
@@ -57,6 +76,19 @@ example : ((2 : ℕ) : ℝ) ^ 3 * ((1 / 2) * 1 ^ 2 / (2 * (1 / 2)) - 1 * (1 / 2)
   have hM : ⌊(1 / 2 : ℝ) * (2 : ℕ)⌋₊ = 1 := by norm_num
   rwa [hM, test_sourceCount] at h
 
+/-- The density estimate at the rounded ceiling total-degree cap. -/
+private theorem density_bound_at_ceiling {rate agreement beta : ℝ} {m : ℕ}
+    (hrate : 0 < rate) (hAgreement : rate ≤ agreement) (hbeta0 : 0 ≤ beta)
+    (hbeta : beta < agreement / rate) :
+    (m : ℝ) ^ 3 * firstOrderSourceDensity rate agreement beta ≤
+      firstOrderSourceCount rate agreement m (Nat.floor (beta * m))
+        (Nat.ceil (m * agreement / rate)) := by
+  have h := cube_mul_sourceDensity_le_firstOrderSourceCount (rate := rate)
+    (a := agreement) (beta := beta) (m := m)
+    (mu := Nat.ceil (m * agreement / rate)) hrate hAgreement hbeta0 hbeta.le
+    (Nat.floor_le_ceil _)
+  simpa [firstOrderSourceDensity] using h
+
 /-! ### Boundary hypotheses -/
 
 /-- `firstOrderRankCount_floor_le` needs `0 ≤ β`: at `β = -3`, `m = 1` the cap is `0`, the rank
@@ -64,6 +96,14 @@ count is `1`, and the right side is `-3/2 - 9/2 - 9 + 3 = -12`. -/
 example : ⌊(-3 : ℝ) * (1 : ℕ)⌋₊ = 0 ∧ firstOrderRankCount 1 0 = 1 ∧
     ¬ ((1 : ℝ) ≤ (1 : ℕ) ^ 3 * ((-3 : ℝ) / 2 - (-3) ^ 2 / 2 + (-3) ^ 3 / 3) + 3 * (1 : ℕ) ^ 2) := by
   refine ⟨by norm_num, by decide, by norm_num⟩
+
+/-- The exact-density estimate needs `0 ≤ β`: at `β = -3`, the count is `1` and its bound is
+negative. -/
+example : ⌊(-3 : ℝ) * (1 : ℕ)⌋₊ = 0 ∧ firstOrderRankCount 1 0 = 1 ∧
+    ¬ ((1 : ℝ) ≤ (1 : ℕ) ^ 3 * firstOrderRankDensity (-3) +
+      (2 * (-3) + 3) * (1 : ℕ) ^ 2) := by
+  refine ⟨by norm_num, by decide, ?_⟩
+  norm_num [firstOrderRankDensity]
 
 /-- `cube_mul_sourceDensity_le_firstOrderSourceCount` needs `β ≤ a / R`: at `R = a = 1`,
 `β = 10`, `m = 1`, `μ = 1` the source count is `1` and the left side is `5 - 50 + 1000/6`. -/
