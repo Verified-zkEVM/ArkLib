@@ -122,7 +122,7 @@ noncomputable def fullOracleProof :
 variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)}
 
 set_option backward.isDefEq.respectTransparency false in
-omit [CharP L 2] [SampleableType L] in
+omit [CharP L 2] [SampleableType L] [DecidableEq 𝔽q] in
 /-- At the initial frontier, strict completeness inputs satisfy the relaxed relation used by
 round-by-round knowledge soundness. -/
 theorem strictRoundRelation_subset_roundRelation_zero :
@@ -163,12 +163,15 @@ theorem strictRoundRelation_subset_roundRelation_zero :
       exact toOutCodewordsCountOf0 ℓ ϑ
     omega
 
-/-- Perfect completeness for the full Binary Basefold protocol (reduction) -/
+omit [CharP L 2] in
+/-- Perfect completeness for exact, honestly encoded inputs to Binary Basefold.
+The relaxed proximity relation is used separately for knowledge soundness; it does not
+require the supplied oracle to equal the witness encoding. -/
 theorem fullOracleReduction_perfectCompleteness :
     OracleProof.perfectCompleteness
       (oracleProof := fullOracleReduction 𝔽q β γ_repetitions (ϑ:=ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑))
-      (relation := roundRelation (mp := BBF_SumcheckMultiplierParam) 𝔽q β (ϑ:=ϑ)
+      (relation := strictRoundRelation (mp := BBF_SumcheckMultiplierParam) 𝔽q β (ϑ:=ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) 0)
       (init := init)
       (impl := impl) :=
@@ -178,9 +181,9 @@ theorem fullOracleReduction_perfectCompleteness :
     (R₂ := QueryPhase.queryOracleReduction 𝔽q β γ_repetitions
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ:=ϑ))
     (Oₛ₃ := fun i : Empty => nomatch i)
-      (rel₁ := roundRelation (mp := BBF_SumcheckMultiplierParam) 𝔽q β (ϑ:=ϑ)
+      (rel₁ := strictRoundRelation (mp := BBF_SumcheckMultiplierParam) 𝔽q β (ϑ:=ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) 0)
-    (rel₂ := finalSumcheckRelOut 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
+    (rel₂ := strictFinalSumcheckRelOut 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
     (rel₃ := acceptRejectOracleRel)
     (V₁ := Verifier.GuardedForm.ofEmpty _ (fun input =>
       (⟨⟨0, fun _ => 0, input.1.ctx⟩, 0⟩, fun _ _ => 0)))

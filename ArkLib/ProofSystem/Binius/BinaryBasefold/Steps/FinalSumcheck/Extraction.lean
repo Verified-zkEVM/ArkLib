@@ -43,6 +43,7 @@ This connects the proximity-based `finalSumcheckStepOracleConsistencyProp` to th
 - Folding consistency implies the first oracle is within unique decoding radius
 - Berlekamp-Welch decoder succeeds when within UDR, returning `some` -/
 omit [SampleableType L] in
+omit [CharP L 2] in
 lemma extractMLP_some_of_oracleFoldingConsistency
     (stmtOut : FinalSumcheckStatementOut (L := L) (ℓ := ℓ))
     (oStmt : ∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ (Fin.last ℓ) j)
@@ -216,7 +217,7 @@ This is the key lemma connecting extraction to the final sumcheck verification:
 - `oracleFoldingConsistencyProp` ensures all intermediate foldings are correct
 - `h_finalFolding` (isCompliant to final constant) ensures the last step is correct
 - Together, they imply the extracted `tpoly` satisfies `tpoly.eval(challenges) = c` -/
-omit [SampleableType L] [DecidableEq 𝔽q] in
+omit [SampleableType L] [DecidableEq 𝔽q] [CharP L 2] h_β₀_eq_1 [NeZero ℓ] in
 private theorem UDRCodeword_heq_of_fin_eq
     {i j : Fin r} (hij : i = j)
     (h_i : i ≤ ℓ) (h_j : j ≤ ℓ)
@@ -224,9 +225,9 @@ private theorem UDRCodeword_heq_of_fin_eq
     {g : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) j}
     (hfg : HEq f g)
     (h₁ : UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (i := i) (h_i := h_i) (f := f))
+      (i := i) (_h_i := h_i) (f := f))
     (h₂ : UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (i := j) (h_i := h_j) (f := g)) :
+      (i := j) (_h_i := h_j) (f := g)) :
     HEq
       (UDRCodeword 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (i := i) (h_i := h_i) (f := f) (h_within_radius := h₁))
@@ -322,7 +323,7 @@ private def finalOracleDecoded
     (t : ℕ) (ht : t < toOutCodewordsCount ℓ ϑ (Fin.last ℓ))
     (h_close : UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (i := finalOracleBlockIdx (ℓ := ℓ) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) t ht)
-      (h_i := oracle_index_le_ℓ (ℓ := ℓ) (ϑ := ϑ) (i := Fin.last ℓ) (j := ⟨t, ht⟩))
+      (_h_i := oracle_index_le_ℓ (ℓ := ℓ) (ϑ := ϑ) (i := Fin.last ℓ) (j := ⟨t, ht⟩))
       (f := finalOracleRaw (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) oStmtOut t ht)) :
     OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
@@ -348,7 +349,7 @@ private def finalOracleClose
     (t : ℕ) (ht : t < toOutCodewordsCount ℓ ϑ (Fin.last ℓ)) : Prop :=
   UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
     (i := finalOracleBlockIdx (ℓ := ℓ) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) t ht)
-    (h_i := oracle_index_le_ℓ (ℓ := ℓ) (ϑ := ϑ) (i := Fin.last ℓ) (j := ⟨t, ht⟩))
+    (_h_i := oracle_index_le_ℓ (ℓ := ℓ) (ϑ := ϑ) (i := Fin.last ℓ) (j := ⟨t, ht⟩))
     (f := oStmtOut ⟨t, ht⟩)
 
 omit [CharP L 2] [SampleableType L] [DecidableEq 𝔽q] h_β₀_eq_1 in
@@ -470,13 +471,13 @@ private theorem firstOracleDecoded_eq_f₀
       ϑ (Fin.last ℓ) j)
     (f₀ : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (0 : Fin r))
     (h_close_first : UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (i := (0 : Fin r)) (h_i := by simp) (f := getFirstOracle 𝔽q β oStmtOut))
+      (i := (0 : Fin r)) (_h_i := by simp) (f := getFirstOracle 𝔽q β oStmtOut))
     (h_dec0_eq_f0 :
       UDRCodeword 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (i := (0 : Fin r)) (h_i := by simp) (f := getFirstOracle 𝔽q β oStmtOut)
         (h_within_radius := h_close_first) = f₀)
     (h_close0 : UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (i := (0 : Fin r)) (h_i := by simp) (f := getFirstOracle 𝔽q β oStmtOut)) :
+      (i := (0 : Fin r)) (_h_i := by simp) (f := getFirstOracle 𝔽q β oStmtOut)) :
     UDRCodeword 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (i := (0 : Fin r)) (h_i := by simp) (f := getFirstOracle 𝔽q β oStmtOut)
       (h_within_radius := h_close0) = f₀ := by
@@ -519,7 +520,7 @@ private theorem finalOracleRaw_zero_heq_getFirstOracle
 
 set_option maxHeartbeats 10000 in
 -- This zero-step close transport crosses from the final-oracle view back to the first oracle.
-omit [SampleableType L] [DecidableEq 𝔽q] in
+omit [SampleableType L] [DecidableEq 𝔽q] [CharP L 2] hF₂ h_β₀_eq_1 [NeZero 𝓡] in
 private theorem finalOracleClose_zero_eq_first
     (oStmtOut : ∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       ϑ (Fin.last ℓ) j)
@@ -527,14 +528,14 @@ private theorem finalOracleClose_zero_eq_first
     (h_close0 : finalOracleClose (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) oStmtOut 0 ht) :
     UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (i := (0 : Fin r)) (h_i := by simp) (f := getFirstOracle 𝔽q β oStmtOut) := by
+      (i := (0 : Fin r)) (_h_i := by simp) (f := getFirstOracle 𝔽q β oStmtOut) := by
   classical
   have h_idx0 := finalOracleBlockIdx_zero
     (ℓ := ℓ) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ht
   change UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (i := finalOracleBlockIdx (ℓ := ℓ) (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) 0 ht)
-      (h_i := oracle_index_le_ℓ (ℓ := ℓ) (ϑ := ϑ) (i := Fin.last ℓ) (j := ⟨0, ht⟩))
+      (_h_i := oracle_index_le_ℓ (ℓ := ℓ) (ϑ := ϑ) (i := Fin.last ℓ) (j := ⟨0, ht⟩))
       (f := finalOracleRaw (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) oStmtOut 0 ht) at h_close0
   exact UDRClose_of_fin_eq (𝔽q := 𝔽q) (β := β)
@@ -545,14 +546,14 @@ private theorem finalOracleClose_zero_eq_first
 
 set_option maxHeartbeats 10000 in
 -- This zero-case decoded equality combines UDRCodeword transport with a zero-step fold rewrite.
-omit [SampleableType L] [DecidableEq 𝔽q] in
+omit [SampleableType L] [DecidableEq 𝔽q] [CharP L 2] h_β₀_eq_1 in
 private theorem finalOracleDecoded_zero_eq_prefixFold
     (stmtOut : FinalSumcheckStatementOut (L := L) (ℓ := ℓ))
     (oStmtOut : ∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       ϑ (Fin.last ℓ) j)
     (f₀ : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (0 : Fin r))
     (h_close_first : UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (i := (0 : Fin r)) (h_i := by simp) (f := getFirstOracle 𝔽q β oStmtOut))
+      (i := (0 : Fin r)) (_h_i := by simp) (f := getFirstOracle 𝔽q β oStmtOut))
     (h_dec0_eq_f0 :
       UDRCodeword 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (i := (0 : Fin r)) (h_i := by simp) (f := getFirstOracle 𝔽q β oStmtOut)
@@ -578,7 +579,7 @@ private theorem finalOracleDecoded_zero_eq_prefixFold
       (ℓ := ℓ) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) oStmtOut ht
   have h_close0_first :
       UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-        (i := (0 : Fin r)) (h_i := by simp) (f := getFirstOracle 𝔽q β oStmtOut) := by
+        (i := (0 : Fin r)) (_h_i := by simp) (f := getFirstOracle 𝔽q β oStmtOut) := by
     exact finalOracleClose_zero_eq_first (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) oStmtOut ht h_close0
   have h_decoded0_heq_f₀ :
@@ -643,7 +644,7 @@ private theorem finalOracleDecoded_zero_eq_prefixFold
 
 set_option maxHeartbeats 10000 in
 -- This current-close extractor unfolds one oracle-consistency witness and reindexes the block.
-omit [CharP L 2] [SampleableType L] in
+omit [CharP L 2] [SampleableType L] [DecidableEq 𝔽q] in
 private theorem finalOracleClose_curr
     (stmtOut : FinalSumcheckStatementOut (L := L) (ℓ := ℓ))
     (oStmtOut : ∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
@@ -716,7 +717,7 @@ private def finalOracleNextClose
   UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
     (i := finalOracleNextIdxOrig (ℓ := ℓ) (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) t ht)
-    (h_i := by
+    (_h_i := by
       exact oracle_index_add_steps_le_ℓ ℓ ϑ (i := Fin.last ℓ) (j := ⟨t, Nat.lt_of_succ_lt ht⟩))
     (f := finalOracleNextRaw (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) oStmtOut t ht)
@@ -746,7 +747,7 @@ private def finalOracleNextCodeword
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) oStmtOut t ht)
     (h_within_radius := h_close)
 
-omit [SampleableType L] [DecidableEq 𝔽q] in
+omit [SampleableType L] [DecidableEq 𝔽q] [CharP L 2] h_β₀_eq_1 in
 private theorem finalOracleDecoded_next_heq
     (oStmtOut : ∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       ϑ (Fin.last ℓ) j)
@@ -809,7 +810,7 @@ private theorem finalOracleDecoded_next_heq
 
 set_option maxHeartbeats 200000 in
 -- This induction over all final oracles repeatedly invokes the transport-heavy successor theorem.
-omit [SampleableType L] in
+omit [SampleableType L] [DecidableEq 𝔽q] [CharP L 2] in
 private theorem finalOracleDecoded_nat_eq_prefixFold
     (stmtOut : FinalSumcheckStatementOut (L := L) (ℓ := ℓ))
     (oStmtOut : ∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
@@ -818,7 +819,7 @@ private theorem finalOracleDecoded_nat_eq_prefixFold
       (i := Fin.last ℓ) (challenges := stmtOut.challenges) (oStmt := oStmtOut))
     (f₀ : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (0 : Fin r))
     (h_close_first : UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (i := (0 : Fin r)) (h_i := by simp) (f := getFirstOracle 𝔽q β oStmtOut))
+      (i := (0 : Fin r)) (_h_i := by simp) (f := getFirstOracle 𝔽q β oStmtOut))
     (h_dec0_eq_f0 :
       UDRCodeword 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (i := (0 : Fin r)) (h_i := by simp) (f := getFirstOracle 𝔽q β oStmtOut)
@@ -830,6 +831,7 @@ private theorem finalOracleDecoded_nat_eq_prefixFold
           (h_ℓ_add_R_rate := h_ℓ_add_R_rate) oStmtOut t ht h_close =
         finalDecodedPrefixAt (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (ϑ := ϑ)
           (h_ℓ_add_R_rate := h_ℓ_add_R_rate) stmtOut f₀ t ht := by
+  classical
   intro t
   induction t with
   | zero =>
@@ -1027,7 +1029,7 @@ private theorem finalOracleDecoded_nat_eq_prefixFold
 
 set_option maxHeartbeats 10000 in
 -- This positive-index wrapper is a thin specialization of the nat-index theorem.
-omit [SampleableType L] in
+omit [SampleableType L] [DecidableEq 𝔽q] [CharP L 2] in
 private theorem finalOracleDecoded_pos_eq_prefixFold
     (stmtOut : FinalSumcheckStatementOut (L := L) (ℓ := ℓ))
     (oStmtOut : ∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
@@ -1036,7 +1038,7 @@ private theorem finalOracleDecoded_pos_eq_prefixFold
       (i := Fin.last ℓ) (challenges := stmtOut.challenges) (oStmt := oStmtOut))
     (f₀ : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (0 : Fin r))
     (h_close_first : UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (i := (0 : Fin r)) (h_i := by simp) (f := getFirstOracle 𝔽q β oStmtOut))
+      (i := (0 : Fin r)) (_h_i := by simp) (f := getFirstOracle 𝔽q β oStmtOut))
     (h_dec0_eq_f0 :
       UDRCodeword 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (i := (0 : Fin r)) (h_i := by simp) (f := getFirstOracle 𝔽q β oStmtOut)
@@ -1049,6 +1051,7 @@ private theorem finalOracleDecoded_pos_eq_prefixFold
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) oStmtOut j.val j.isLt h_close_j =
     finalDecodedPrefixAt (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) stmtOut f₀ j.val j.isLt := by
+  classical
   exact finalOracleDecoded_nat_eq_prefixFold (𝔽q := 𝔽q) (β := β) (ℓ := ℓ) (ϑ := ϑ)
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate) stmtOut oStmtOut h_oracle_cons f₀
     h_close_first h_dec0_eq_f0 j.val j.isLt h_close_j
@@ -1056,6 +1059,7 @@ private theorem finalOracleDecoded_pos_eq_prefixFold
 set_option maxHeartbeats 20000 in
 -- This extraction-to-final-constant proof expands the final verifier and its consistency witness.
 omit [SampleableType L] in
+omit [CharP L 2] in
 lemma extracted_t_poly_eval_eq_final_constant
     (stmtOut : FinalSumcheckStatementOut (L := L) (ℓ := ℓ))
     (oStmtOut : ∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ (Fin.last ℓ) j)
@@ -1085,7 +1089,7 @@ lemma extracted_t_poly_eval_eq_final_constant
     polyToOracleFunc 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (domainIdx := 0) (P := P₀)
   have h_pair :
       pair_UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-        (i := (0 : Fin r)) (h_i := by simp)
+        (i := (0 : Fin r)) (_h_i := by simp)
         (f := getFirstOracle 𝔽q β oStmtOut) (g := f₀) := by
     have h_pair' :=
       (extractMLP_eq_some_iff_pair_UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
@@ -1101,13 +1105,13 @@ lemma extracted_t_poly_eval_eq_final_constant
       BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := (0 : Fin r))
     have h_codeword :=
       (getBBF_Codeword_of_poly 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-        (i := (0 : Fin r)) (h_i := by simp) (P := P₀)).property
+        (i := (0 : Fin r)) (_h_i := by simp) (P := P₀)).property
     unfold getBBF_Codeword_of_poly at h_codeword
     dsimp only at h_codeword
     exact h_codeword
   have h_close_first :
       UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-        (i := (0 : Fin r)) (h_i := by simp) (f := getFirstOracle 𝔽q β oStmtOut) := by
+        (i := (0 : Fin r)) (_h_i := by simp) (f := getFirstOracle 𝔽q β oStmtOut) := by
     unfold UDRClose
     calc
       2 * Δ₀(getFirstOracle 𝔽q β oStmtOut, C₀) ≤
@@ -1197,7 +1201,7 @@ lemma extracted_t_poly_eval_eq_final_constant
     dsimp [C_final]
     exact constFunc_mem_BBFCode 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (i := finalDomainIdx)
-      (h_i := h_finalDomainIdx_le)
+      (_h_i := h_finalDomainIdx_le)
       stmtOut.final_constant
   have h_lastDomainIdx_le : lastDomainIdx ≤ ℓ := by
     dsimp [lastDomainIdx, jLast]
@@ -1208,7 +1212,7 @@ lemma extracted_t_poly_eval_eq_final_constant
     exact oStmtOut jLast
   have h_close_last :
       UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-        (i := lastDomainIdx) (h_i := h_lastDomainIdx_le) (f := f_last_raw) := by
+        (i := lastDomainIdx) (_h_i := h_lastDomainIdx_le) (f := f_last_raw) := by
     have h_close_last' :=
       UDRClose_of_fiberwiseClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (i := lastDomainIdx) (steps := ϑ) (h_destIdx := by rfl)

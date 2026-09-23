@@ -181,6 +181,7 @@ lemma finalSumcheckVerifier_run_eq_guarded
 
 /-! Perfect completeness for the final sumcheck step -/
 omit [DecidableEq 𝔽q] in
+omit [CharP L 2] in
 theorem finalSumcheckOracleReduction_perfectCompleteness {σ : Type}
     (init : ProbComp σ) (hInit : NeverFail init)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
@@ -191,7 +192,7 @@ theorem finalSumcheckOracleReduction_perfectCompleteness {σ : Type}
       (relOut := strictFinalSumcheckRelOut 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
       (oracleReduction := finalSumcheckOracleReduction 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)) (init := init) (impl := impl) := by
-  let : ([]ₒ).Inhabited := { inhabitedB := fun t => nomatch t }
+  let : OracleSpec.Inhabited emptySpec.{0, 0} := { inhabitedB := fun t => nomatch t }
   have h_no_challenge : IsEmpty (ChallengeIdx (pSpecFinalSumcheckStep (L := L))) := by
     constructor
     rintro ⟨i, hdir⟩
@@ -538,8 +539,8 @@ noncomputable def finalSumcheckKnowledgeStateFunction {σ : Type} (init : ProbCo
       simp only [_root_.map_pure, support_pure, Set.mem_singleton_iff, reduceCtorEq]
         at h_output_mem_V_run_support
 
-omit [Fintype L] [CharP L 2] in
-/-! Round-by-round knowledge soundness for the final sumcheck step -/
+omit [DecidableEq 𝔽q] [CharP L 2] in
+/-- Round-by-round knowledge soundness for the final sumcheck step. -/
 theorem finalSumcheckOracleVerifier_rbrKnowledgeSoundness {σ : Type}
     (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (finalSumcheckVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)).rbrKnowledgeSoundness
@@ -548,6 +549,7 @@ theorem finalSumcheckOracleVerifier_rbrKnowledgeSoundness {σ : Type}
         (mp := BBF_SumcheckMultiplierParam) (Fin.last ℓ) )
       (relOut := finalSumcheckRelOut 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) )
       (rbrKnowledgeError := finalSumcheckKnowledgeError) := by
+  classical
   use FinalSumcheckWit (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ)
   use finalSumcheckRbrExtractor 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
   use finalSumcheckKnowledgeStateFunction 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)

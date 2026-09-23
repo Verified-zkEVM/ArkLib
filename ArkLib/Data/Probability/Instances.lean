@@ -607,7 +607,8 @@ theorem prob_pow_of_forall_finFun
     simp
   | succ n ih =>
     -- Shorter equivalence proof
-    have h_eqv (f : Fin (n + 1) → A) : (∀ i, P (f i)) ↔ P (f (Fin.last n)) ∧ ∀ (i : Fin n), P (f i.castSucc) := by
+    have h_eqv (f : Fin (n + 1) → A) :
+        (∀ i, P (f i)) ↔ P (f (Fin.last n)) ∧ ∀ (i : Fin n), P (f i.castSucc) := by
       constructor
       · intro h; exact ⟨h _, fun i => h _⟩
       · rintro ⟨h_last, h_init⟩ ⟨i, hi⟩
@@ -619,13 +620,16 @@ theorem prob_pow_of_forall_finFun
     rw [Pr_congr (h := h_eqv)]
     -- Chain the splitting and independence results
     calc Pr_{ let f ← $ᵖ (Fin (n + 1) → A) }[ P (f (Fin.last n)) ∧ ∀ (i : Fin n), P (f i.castSucc) ]
-      _ = Pr_{ let a ← $ᵖ A; let f_init ← $ᵖ (Fin n → A) }[ P a ∧ ∀ (i : Fin n), P (f_init i) ] := by
+      _ = Pr_{ let a ← $ᵖ A; let f_init ← $ᵖ (Fin n → A) }[
+          P a ∧ ∀ (i : Fin n), P (f_init i) ] := by
         have h := prob_split_last_uniform_sampling_of_finFun (ϑ := n)
           (P := fun a (f_init : Fin n → A) => P a ∧ ∀ (i : Fin n), P (f_init i))
         exact h
-      _ = Pr_{ let a ← $ᵖ A }[ P a ] * Pr_{ let f_init ← $ᵖ (Fin n → A) }[ ∀ (i : Fin n), P (f_init i) ] := by
+      _ = Pr_{ let a ← $ᵖ A }[ P a ] *
+          Pr_{ let f_init ← $ᵖ (Fin n → A) }[ ∀ (i : Fin n), P (f_init i) ] := by
         -- Convert sequential bind to single uniform over product
-        have h_prod : Pr_{ let a ← $ᵖ A; let f_init ← $ᵖ (Fin n → A) }[ P a ∧ ∀ (i : Fin n), P (f_init i) ] =
+        have h_prod : Pr_{ let a ← $ᵖ A; let f_init ← $ᵖ (Fin n → A) }[
+            P a ∧ ∀ (i : Fin n), P (f_init i) ] =
             Pr_{ let p ← $ᵖ (A × (Fin n → A)) }[ P p.1 ∧ ∀ (i : Fin n), P (p.2 i) ] := by
           rw [prob_split_uniform_sampling_of_prod]
         rw [h_prod]
@@ -635,10 +639,12 @@ theorem prob_pow_of_forall_finFun
         simp only [Fintype.card_prod, ENNReal.div_eq_inv_mul]
         -- Filter cardinality multiplies
         have h_filter :
-          (Finset.filter (fun (p : A × (Fin n → A)) => P p.1 ∧ ∀ (i : Fin n), P (p.2 i)) Finset.univ).card =
+          (Finset.filter (fun (p : A × (Fin n → A)) =>
+            P p.1 ∧ ∀ (i : Fin n), P (p.2 i)) Finset.univ).card =
           (Finset.filter (fun (a : A) => P a) Finset.univ).card *
           (Finset.filter (fun (f : Fin n → A) => ∀ (i : Fin n), P (f i)) Finset.univ).card := by
-          have : Finset.filter (fun (p : A × (Fin n → A)) => P p.1 ∧ ∀ (i : Fin n), P (p.2 i)) Finset.univ =
+          have : Finset.filter (fun (p : A × (Fin n → A)) =>
+              P p.1 ∧ ∀ (i : Fin n), P (p.2 i)) Finset.univ =
               (Finset.filter (fun (a : A) => P a) Finset.univ) ×ˢ
               (Finset.filter (fun (f : Fin n → A) => ∀ (i : Fin n), P (f i)) Finset.univ) := by
             ext ⟨a, f⟩; simp
@@ -657,7 +663,8 @@ theorem prob_pow_of_forall_finFun
           rw [mul_assoc (c := ((Finset.filter (fun a => P a) Finset.univ).card : ENNReal))]
           rw [mul_comm (b := ((Finset.filter (fun a => P a) Finset.univ).card : ENNReal))]
           rw [←mul_assoc]
-          rw [mul_assoc (a := ((Fintype.card A):ENNReal)⁻¹ * (Finset.filter (fun a => P a) Finset.univ).card)]
+          rw [mul_assoc (a := ((Fintype.card A):ENNReal)⁻¹ *
+            (Finset.filter (fun a => P a) Finset.univ).card)]
       _ = (Pr_{ let a ← $ᵖ A }[ P a ]) ^ (n + 1) := by
         rw [ih, pow_succ', mul_comm]
 

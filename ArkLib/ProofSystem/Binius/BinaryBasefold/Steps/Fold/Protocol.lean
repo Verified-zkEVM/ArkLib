@@ -79,7 +79,7 @@ noncomputable def foldOracleProver (i : Fin ℓ) :
 /-! The oracle verifier for the `i`-th round of Binary Foldfold. -/
 open Classical in
 def foldOracleVerifier (i : Fin ℓ) :
-  OracleVerifier
+    OracleVerifier
     (oSpec := []ₒ)
     (StmtIn := Statement (L := L) Context i.castSucc)
     (OStmtIn := OracleStatement 𝔽q β (ϑ := ϑ)
@@ -161,7 +161,7 @@ always succeeds (with probability 1) and produces valid outputs.
 - Apply the logic properties to complete the proof
 -/
 open Classical in
-omit [DecidableEq 𝔽q] in
+omit [DecidableEq 𝔽q] [CharP L 2] h_β₀_eq_1 in
 set_option backward.isDefEq.respectTransparency false in
 theorem foldOracleReduction_perfectCompleteness (hInit : NeverFail init) (i : Fin ℓ) :
     OracleReduction.perfectCompleteness
@@ -176,7 +176,7 @@ theorem foldOracleReduction_perfectCompleteness (hInit : NeverFail init) (i : Fi
       (impl := impl) := by
   classical
   -- Step 1: Unroll the 2-message reduction to convert from probability to logic
-  let : OracleSpec.Inhabited []ₒ := { inhabitedB := fun i => PEmpty.elim i }
+  let : OracleSpec.Inhabited emptySpec.{0, 0} := { inhabitedB := fun i => PEmpty.elim i }
   let : OracleSpec.Fintype [(pSpecFold (L := L)).Challenge]ₒ :=
     { fintypeB := fun j => by
         change Fintype ((pSpecFold (L := L)).Challenge j.1)

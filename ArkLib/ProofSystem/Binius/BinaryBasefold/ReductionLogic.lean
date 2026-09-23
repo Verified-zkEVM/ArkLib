@@ -55,8 +55,8 @@ variable [hdiv : Fact (ϑ ∣ ℓ)]
 section GenericLogic
 
 def hEq {ιₒᵢ ιₒₒ : Type} {OracleIn : ιₒᵢ → Type}
-  {OracleOut : ιₒₒ → Type} {n : ℕ} {pSpec : ProtocolSpec n}
-  (embed : ιₒₒ ↪ ιₒᵢ ⊕ pSpec.MessageIdx) :=
+    {OracleOut : ιₒₒ → Type} {n : ℕ} {pSpec : ProtocolSpec n}
+    (embed : ιₒₒ ↪ ιₒᵢ ⊕ pSpec.MessageIdx) :=
   ∀ i, OracleOut i =
     match embed i with
     | Sum.inl j => OracleIn j
@@ -350,11 +350,12 @@ interaction correctly computes the sumcheck polynomial and updates the witness t
 - Output relation: Uses `badEventExistsProp_succ_preserved` for bad events, and preservation lemmas
   (e.g., `witnessStructuralInvariant_succ_preserved`) otherwise.
 - Agreement: Prover and verifier agree on output statements and oracles. -/
-omit [SampleableType L] in
+omit [SampleableType L] [DecidableEq 𝔽q] [CharP L 2] h_β₀_eq_1 in
 set_option backward.isDefEq.respectTransparency false in
 lemma foldStep_is_logic_complete (i : Fin ℓ) :
     (foldStepLogic 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
       (mp := mp) i).IsStronglyComplete := by
+  classical
   intro stmtIn witIn oStmtIn challenges h_relIn
   let step := (foldStepLogic 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (mp := mp) i)
   let transcript := step.honestProverTranscript stmtIn witIn oStmtIn challenges
@@ -366,10 +367,10 @@ lemma foldStep_is_logic_complete (i : Fin ℓ) :
   let proverWitOut := proverOutput.2
   -- Extract properties from h_relIn (strictRoundRelation)
   simp only [foldStepLogic, strictRoundRelation, strictRoundRelationProp,
-    Set.mem_setOf_eq] at h_relIn
+    Set.mem_ofPred_eq] at h_relIn
   -- We'll need sumcheck consistency for Fact 1, so extract it from either branch
-  have h_sumcheck_cons : sumcheckConsistencyProp (𝓑 := 𝓑) stmtIn.sumcheck_target witIn.H
-    := h_relIn.1
+  have h_sumcheck_cons : sumcheckConsistencyProp (𝓑 := 𝓑) stmtIn.sumcheck_target witIn.H :=
+    h_relIn.1
   let h_VCheck_passed : step.verifierCheck stmtIn transcript := by
     -- Fact 1: Verifier check passes (sumcheck condition)
     simp only [step, foldStepLogic, foldVerifierCheck, foldProverComputeMsg]
@@ -395,7 +396,7 @@ lemma foldStep_is_logic_complete (i : Fin ℓ) :
       -- Since hj holds, we have Sum.inl j = Sum.inl j', so j = j'
       simp only [hj, ↓reduceDIte] at heq
       cases heq
-      simp [foldStepLogic]
+      simp
     · rename_i heq
       -- This case is impossible: the if-then-else evaluates to Sum.inl j when hj holds
       -- So we have Sum.inl j = Sum.inr j✝, which is a contradiction
@@ -410,7 +411,7 @@ lemma foldStep_is_logic_complete (i : Fin ℓ) :
   let hRelOut : step.completeness_relOut ((verifierStmtOut, verifierOStmtOut), proverWitOut) := by
     -- Fact 2: Output relation holds (strictFoldStepRelOut)
     simp only [step, foldStepLogic, strictFoldStepRelOut, strictFoldStepRelOutProp,
-      Set.mem_setOf_eq]
+      Set.mem_ofPred_eq]
     let r_i' := challenges ⟨1, rfl⟩
     simp only [Fin.val_succ]
     constructor
@@ -468,16 +469,17 @@ end FoldStep
 section CommitStep
 
 def commitStepLogic_embedFn (i : Fin ℓ) :
-  (Fin (toOutCodewordsCount ℓ ϑ i.succ)) →
-    Fin (toOutCodewordsCount ℓ ϑ i.castSucc) ⊕
-      (pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).MessageIdx :=
+    (Fin (toOutCodewordsCount ℓ ϑ i.succ)) →
+      Fin (toOutCodewordsCount ℓ ϑ i.castSucc) ⊕
+        (pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).MessageIdx :=
   fun j => by
   if hj : j.val < toOutCodewordsCount ℓ ϑ i.castSucc then
     exact Sum.inl ⟨j.val, hj⟩
   else
     exact Sum.inr ⟨⟨0, Nat.zero_lt_one⟩, rfl⟩
 
-def commitStepLogic_embed_inj (i : Fin ℓ) (hCR : isCommitmentRound ℓ ϑ i) :
+omit [CharP L 2] [SampleableType L] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero 𝓡] in
+theorem commitStepLogic_embed_inj (i : Fin ℓ) (hCR : isCommitmentRound ℓ ϑ i) :
     Function.Injective
       (commitStepLogic_embedFn 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ) i) := by
   intro a b h_ab_eq
@@ -495,15 +497,16 @@ def commitStepLogic_embed_inj (i : Fin ℓ) (hCR : isCommitmentRound ℓ ϑ i) :
 
 /- the CommitStep is a 1-message oracle reduction to place the conditional oracle message -/
 def commitStepLogic_embed (i : Fin ℓ) (hCR : isCommitmentRound ℓ ϑ i) :
-  Fin (toOutCodewordsCount ℓ ϑ i.succ) ↪
-    Fin (toOutCodewordsCount ℓ ϑ i.castSucc) ⊕
-      (pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).MessageIdx := ⟨
+    Fin (toOutCodewordsCount ℓ ϑ i.succ) ↪
+      Fin (toOutCodewordsCount ℓ ϑ i.castSucc) ⊕
+        (pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).MessageIdx := ⟨
   commitStepLogic_embedFn 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ) i,
   commitStepLogic_embed_inj 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ) i hCR
   ⟩
 
-def commitStepHEq (i : Fin ℓ) (hCR : isCommitmentRound ℓ ϑ i) :
-  hEq (OracleIn := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i.castSucc)
+omit [CharP L 2] [SampleableType L] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero 𝓡] in
+theorem commitStepHEq (i : Fin ℓ) (hCR : isCommitmentRound ℓ ϑ i) :
+    hEq (OracleIn := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i.castSucc)
     (OracleOut := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i.succ)
     (ιₒᵢ := Fin (toOutCodewordsCount ℓ ϑ i.castSucc))
     (ιₒₒ := Fin (toOutCodewordsCount ℓ ϑ i.succ))
@@ -579,8 +582,7 @@ lemma snoc_oracle_eq_materializeOutput_commitStep
     (newOracle : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (domainIdx := ⟨i.val + 1, by omega⟩))
     (transcript : FullTranscript (pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i))
-    (h_transcript_eq : transcript.messages ⟨0, rfl⟩ = newOracle)
-    :
+    (h_transcript_eq : transcript.messages ⟨0, rfl⟩ = newOracle) :
     snoc_oracle 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (destIdx := ⟨i.val + 1, by omega⟩) (h_destIdx := by rfl) oStmtIn newOracle =
     (commitStepLogic (mp := mp) 𝔽q β (ϑ := ϑ)
@@ -684,8 +686,7 @@ then `oStmtOut` (constructed by the commit step's output materialization) satisf
 lemma commitStep_j_bound (i : Fin ℓ) (hCR : isCommitmentRound ℓ ϑ i)
     (j : Fin (toOutCodewordsCount ℓ ϑ i.succ))
     (hj : j.val + 1 < toOutCodewordsCount ℓ ϑ i.succ) :
-    j.val < toOutCodewordsCount ℓ ϑ i.castSucc :=
-  by
+    j.val < toOutCodewordsCount ℓ ϑ i.castSucc := by
   have h_count_succ : toOutCodewordsCount ℓ ϑ i.succ = toOutCodewordsCount ℓ ϑ i.castSucc + 1 := by
     simp only [toOutCodewordsCount_succ_eq, hCR, ↓reduceIte]
   conv_rhs at hj => rw [h_count_succ]
@@ -723,8 +724,7 @@ lemma strictOracleFoldingConsistency_commitStep
       (i := i.succ)
       (challenges := Fin.take (m := i.val + 1)
         (v := verifierStmtOut.challenges) (h := by simp only [Fin.val_succ, le_refl]))
-      (oStmt := verifierOStmtOut) (t := witIn.t)
-    := by
+      (oStmt := verifierOStmtOut) (t := witIn.t) := by
   -- Key observations:
   -- 1. (mkFromStmtIdxCastSuccOfSucc i).val = i.castSucc.val = i.val
   -- 2. (mkFromStmtIdx i.succ).val = i.succ.val = i.val + 1
@@ -859,11 +859,11 @@ lemma commitStep_is_logic_complete (i : Fin ℓ) (hCR : isCommitmentRound ℓ ϑ
   let proverWitOut := proverOutput.2
   -- Extract properties from h_relIn (strictFoldStepRelOut)
   dsimp only [commitStepLogic, strictFoldStepRelOut, strictFoldStepRelOutProp,
-    strictRoundRelation, strictRoundRelationProp, Set.mem_setOf_eq] at h_relIn
+    strictRoundRelation, strictRoundRelationProp, Set.mem_ofPred_eq] at h_relIn
   dsimp only [strictFoldStepRelOutProp, strictRoundRelationProp, Fin.val_succ] at h_relIn
   -- We'll need sumcheck consistency for Fact 1, so extract it from either branch
-  have h_sumcheck_cons : sumcheckConsistencyProp (𝓑 := 𝓑) stmtIn.sumcheck_target witIn.H
-    := h_relIn.1
+  have h_sumcheck_cons : sumcheckConsistencyProp (𝓑 := 𝓑) stmtIn.sumcheck_target witIn.H :=
+    h_relIn.1
   let h_VCheck_passed : step.verifierCheck stmtIn transcript := by
     dsimp only [commitStepLogic, Prod.mk.eta, step]
   have hStmtOut_eq : proverStmtOut = verifierStmtOut := by
@@ -884,7 +884,7 @@ lemma commitStep_is_logic_complete (i : Fin ℓ) (hCR : isCommitmentRound ℓ ϑ
   let hRelOut : step.completeness_relOut ((verifierStmtOut, verifierOStmtOut), proverWitOut) := by
     -- Fact 2: Output relation holds (strictRoundRelation)
     dsimp only [step, commitStepLogic, strictRoundRelation, strictRoundRelationProp,
-      Set.mem_setOf_eq]
+      Set.mem_ofPred_eq]
     simp only [Fin.val_succ]
     constructor
     · -- Part 2.1: sumcheck consistency
@@ -990,8 +990,8 @@ def finalSumcheckStepLogic :
   ⟩
   hEq := fun oracleIdx => by simp only [Function.Embedding.coeFn_mk, Fin.eta]
 
-omit [SampleableType L] in
-/-! **Strict version**: When folding the last oracle to level `ℓ` (final sumcheck),
+omit [SampleableType L] [CharP L 2] [DecidableEq 𝔽q] in
+/-- **Strict version**: When folding the last oracle to level `ℓ` (final sumcheck),
 the iterated fold of the last oracle equals the constant function.
 
 This is the strict version that uses exact equality instead of UDR codewords.
@@ -1326,7 +1326,7 @@ lemma finalSumcheckStep_verifierCheck_passed
 2. **Relation Out**: Show that the output satisfies `finalSumcheckRelOut`
    - This involves showing `finalSumcheckStepFoldingStateProp` holds for the output
 -/
-omit [DecidableEq 𝔽q] in
+omit [DecidableEq 𝔽q] [CharP L 2] [SampleableType L] in
 lemma finalSumcheckStep_is_logic_complete :
     (finalSumcheckStepLogic 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (𝓑 := 𝓑)).IsStronglyComplete := by
@@ -1343,7 +1343,7 @@ lemma finalSumcheckStep_is_logic_complete :
   let c := transcript.messages ⟨0, rfl⟩
   -- Extract properties from h_relIn BEFORE any simp changes its structure
   simp only [finalSumcheckStepLogic, strictRoundRelation, strictRoundRelationProp,
-    Set.mem_setOf_eq] at h_relIn
+    Set.mem_ofPred_eq] at h_relIn
   obtain ⟨h_sumcheck_cons, h_strictOracleWitConsistency_In⟩ := h_relIn
   -- Extract t from strictOracleWitnessConsistency (which includes witnessStructuralInvariant)
   have h_wit_struct := h_strictOracleWitConsistency_In.1
@@ -1365,7 +1365,7 @@ lemma finalSumcheckStep_is_logic_complete :
     -- clear_value h_VCheck_passed
     -- Fact 2: Output relation holds (foldStepRelOut)
     simp only [finalSumcheckStepLogic, strictRoundRelation, strictRoundRelationProp, Fin.val_last,
-      Prod.mk.eta, Set.mem_setOf_eq, strictFinalSumcheckRelOut, strictFinalSumcheckRelOutProp,
+      Prod.mk.eta, Set.mem_ofPred_eq, strictFinalSumcheckRelOut, strictFinalSumcheckRelOutProp,
       strictfinalSumcheckStepFoldingStateProp, exists_and_right, Subtype.exists,
         Fin.isValue, MessageIdx, Fin.eta, step]
     -- let r_i' := challenges ⟨1, rfl⟩

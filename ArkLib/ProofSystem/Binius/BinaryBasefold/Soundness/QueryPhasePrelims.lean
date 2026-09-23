@@ -74,7 +74,7 @@ def extractSuffixFromChallenge (v : sDomain 𝔽q β h_ℓ_add_R_rate ⟨0, by o
   iteratedQuotientMap 𝔽q β h_ℓ_add_R_rate (i := ⟨0, by omega⟩) (k := destIdx.val)
     (h_destIdx := by simp only [zero_add]) (h_destIdx_le := h_destIdx_le) (x := v)
 
-omit [CharP L 2] [SampleableType L] [DecidableEq 𝔽q] hF₂ [NeZero 𝓡] in
+omit [CharP L 2] [SampleableType L] [DecidableEq 𝔽q] hF₂ [NeZero 𝓡] [NeZero ℓ] in
 /-- **Congruence Lemma for Challenge Suffixes**:
 Allows proving equality between two suffix extractions when the destination indices
 are proven equal (`destIdx = destIdx'`), handling the necessary type casting. -/
@@ -149,10 +149,10 @@ def queryRbrKnowledgeError := fun _ : (pSpecQuery 𝔽q β γ_repetitions
 /-- Oracle query helper: query a committed codeword at a given domain point.
     Restricted to codeword indices where the oracle range is L. -/
 def queryCodeword (j : Fin (toOutCodewordsCount ℓ ϑ (Fin.last ℓ)))
-  (point : (sDomain 𝔽q β h_ℓ_add_R_rate) ⟨oraclePositionToDomainIndex ℓ ϑ j, by omega⟩) :
-  OptionT (OracleComp ([]ₒ +
-    ([OracleStatement 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ( Fin.last ℓ)]ₒ +
-    [(pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Message]ₒ))) L :=
+    (point : (sDomain 𝔽q β h_ℓ_add_R_rate) ⟨oraclePositionToDomainIndex ℓ ϑ j, by omega⟩) :
+    OptionT (OracleComp ([]ₒ +
+      ([OracleStatement 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ( Fin.last ℓ)]ₒ +
+      [(pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Message]ₒ))) L :=
     query (spec := [OracleStatement 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ)]ₒ)
       ⟨⟨j, by omega⟩, point⟩
 
@@ -171,8 +171,8 @@ def getChallengeSuffix (k : Fin (ℓ / ϑ)) (v : sDomain 𝔽q β h_ℓ_add_R_ra
       (v:=v) (destIdx := ⟨k.val * ϑ + ϑ, by omega⟩) (h_destIdx_le:=by omega)
 
 def challengeSuffixToFin (k : Fin (ℓ / ϑ))
-  (suffix : sDomain 𝔽q β h_ℓ_add_R_rate ⟨k.val * ϑ + ϑ, by
-    have := k_succ_mul_ϑ_le_ℓ_₂ (k := k); omega⟩) : Fin (2 ^ (ℓ + 𝓡 - (k.val * ϑ + ϑ))) :=
+    (suffix : sDomain 𝔽q β h_ℓ_add_R_rate ⟨k.val * ϑ + ϑ, by
+      have := k_succ_mul_ϑ_le_ℓ_₂ (k := k); omega⟩) : Fin (2 ^ (ℓ + 𝓡 - (k.val * ϑ + ϑ))) :=
   let i := k.val * ϑ
   have h_i_add_ϑ_le_ℓ : i + ϑ ≤ ℓ := k_succ_mul_ϑ_le_ℓ_₂ (k := k)
   let destIdx : Fin r := ⟨i + ϑ, by omega⟩
@@ -185,8 +185,7 @@ noncomputable def getFiberPoint
     (k : Fin (ℓ / ϑ)) (v : sDomain 𝔽q β h_ℓ_add_R_rate ⟨0, by omega⟩) (u : Fin (2 ^ ϑ)) :
     (sDomain 𝔽q β h_ℓ_add_R_rate) (i := ⟨oraclePositionToDomainIndex ℓ ϑ (i := Fin.last ℓ)
       (positionIdx := ⟨k, by simp only [toOutCodewordsCount_last, Fin.is_lt]⟩),
-        lt_r_of_lt_ℓ (x := k.val * ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (h := k_mul_ϑ_lt_ℓ)⟩) :=
-  by
+        lt_r_of_lt_ℓ (x := k.val * ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (h := k_mul_ϑ_lt_ℓ)⟩) := by
     exact
       qMap_total_fiber 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (i := ⟨k.val * ϑ,
@@ -223,8 +222,8 @@ noncomputable def queryFiberPoints
     ⟨k, by simp only [toOutCodewordsCount, Fin.val_last, lt_self_iff_false, ↓reduceIte, add_zero,
       Fin.is_lt]⟩
   -- 2. Map over the Vector monadically
-  let results : Vector L (2^ϑ) ← (⟨Array.finRange (2^ϑ), by simp only [Array.size_finRange]⟩
-    : Vector (Fin (2^ϑ)) (2^ϑ)).mapM (fun (u : Fin (2^ϑ)) => do
+  let results : Vector L (2^ϑ) ← (⟨Array.finRange (2^ϑ), by simp only [Array.size_finRange]⟩ :
+    Vector (Fin (2^ϑ)) (2^ϑ)).mapM (fun (u : Fin (2^ϑ)) => do
     queryCodeword 𝔽q β (γ_repetitions := γ_repetitions) (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (j := k_th_oracleIdx) (point :=
         getFiberPoint 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (k := k) (v := v) (u := u))
@@ -397,7 +396,8 @@ def logical_checkSingleFoldingStep
 /-- Logical check specific to step k.
     If k is an intermediate index, it is the consistency of the folding step.
     If k is the terminal index, it is the constant check. -/
-def logical_stepCondition (oStmt : ∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ (Fin.last ℓ) j)
+def logical_stepCondition
+    (oStmt : ∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ (Fin.last ℓ) j)
     (k : Fin (ℓ / ϑ + 1)) (v : sDomain 𝔽q β h_ℓ_add_R_rate ⟨0, by omega⟩)
     (stmt : FinalSumcheckStatementOut (L := L) (ℓ := ℓ)) (final_constant : L) : Prop :=
   if h_k_lt : k.val < (ℓ / ϑ) then
@@ -420,7 +420,8 @@ def logical_checkSingleRepetition
     (v : sDomain 𝔽q β h_ℓ_add_R_rate ⟨0, by omega⟩)
     (stmt : FinalSumcheckStatementOut (L := L) (ℓ := ℓ)) (final_constant : L) : Prop :=
   ∀ k : Fin (ℓ / ϑ + 1),
-    logical_stepCondition 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (oStmt := oStmt) (k := k) (v := v) (stmt := stmt) (final_constant := final_constant)
+    logical_stepCondition 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (oStmt := oStmt) (k := k) (v := v) (stmt := stmt) (final_constant := final_constant)
 
 /-- Proximity checks spec: for all γ repetitions, `logical_checkSingleRepetition` holds. -/
 def logical_proximityChecksSpec
@@ -430,6 +431,7 @@ def logical_proximityChecksSpec
   ∀ rep : Fin γ_repetitions,
     logical_checkSingleRepetition 𝔽q β oStmt (γ_challenges rep) stmt final_constant
 
+omit [CharP L 2] [DecidableEq 𝔽q] hF₂ [SampleableType L] in
 lemma getFiberPoint_eq_qMap_total_fiber
     (k : Fin (ℓ / ϑ)) (v : sDomain 𝔽q β h_ℓ_add_R_rate ⟨0, by omega⟩)
     (u : Fin (2 ^ ϑ)) :
@@ -442,8 +444,9 @@ lemma getFiberPoint_eq_qMap_total_fiber
         (h_destIdx_le := by exact k_succ_mul_ϑ_le_ℓ_₂ (k := k))
         (y := getChallengeSuffix 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (k := k) (v := v)) u := by
   unfold getFiberPoint
-  simp only [oraclePositionToDomainIndex, id_eq]
+  simp only [oraclePositionToDomainIndex]
 
+omit [CharP L 2] [DecidableEq 𝔽q] hF₂ [SampleableType L] in
 lemma logical_queryFiberPoints_eq_fiberEvaluations
     (oStmt : ∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ (Fin.last ℓ) j)
     (k : Fin (ℓ / ϑ)) (v : sDomain 𝔽q β h_ℓ_add_R_rate ⟨0, by omega⟩) :
@@ -462,6 +465,7 @@ lemma logical_queryFiberPoints_eq_fiberEvaluations
   simp only [logical_queryFiberPoints, fiberEvaluations]
   rw [getFiberPoint_eq_qMap_total_fiber 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) k v u]
 
+omit [CharP L 2] [DecidableEq 𝔽q] hF₂ [SampleableType L] in
 lemma logical_computeFoldedValue_eq_iterated_fold
     (oStmt : ∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ (Fin.last ℓ) j)
     (k : Fin (ℓ / ϑ)) (v : sDomain 𝔽q β h_ℓ_add_R_rate ⟨0, by omega⟩)
@@ -514,7 +518,7 @@ section QueryPhaseHelperLemmas
 
 open QueryPhase
 
-set_option maxHeartbeats 10000 in
+omit [CharP L 2] [SampleableType L] in
 lemma iteratedQuotientMap_eq_qMap_total_fiber_extractMiddleFinMask
     (i : Fin r) (steps : ℕ) {destIdx : Fin r}
     (h_destIdx : destIdx.val = i.val + steps)
@@ -554,7 +558,7 @@ lemma iteratedQuotientMap_eq_qMap_total_fiber_extractMiddleFinMask
       omega
     have h_coeff_v := finToBinaryCoeffs_sDomainToFin 𝔽q β h_ℓ_add_R_rate
       ⟨0, by omega⟩ h_zero v
-    simp only [pointFinIdx] at h_coeff_v
+    simp only at h_coeff_v
     have h_coeff_vj := congrFun h_coeff_v ⟨j.val + i.val, h_j_shift⟩
     simp only [finToBinaryCoeffs] at h_coeff_vj
     rw [← h_coeff_vj]
@@ -579,23 +583,24 @@ lemma iteratedQuotientMap_eq_qMap_total_fiber_extractMiddleFinMask
             (h_ℓ_add_R_rate := h_ℓ_add_R_rate) v i steps)
         simp only [h_bit, false_or] at h
         exact h
-      simp [h_bit, h_bit_one]
+      simp [h_bit_one]
   · unfold fiber_coeff
     rw [dif_neg h_j]
     have h_res := getSDomainBasisCoeff_of_iteratedQuotientMap 𝔽q β h_ℓ_add_R_rate
       ⟨0, by omega⟩ (k := destIdx.val) (h_destIdx := by simp only [zero_add])
       (h_destIdx_le := h_destIdx_le) (x := v) (j := ⟨j.val - steps, by omega⟩)
-    simp only [y] at h_res
+    simp only at h_res
     have h_idx :
         (⟨j.val + i.val, by omega⟩ : Fin (ℓ + 𝓡)) =
           ⟨j.val - steps + destIdx.val, by omega⟩ := by
       apply Fin.eq_of_val_eq
-      simp
+      simp only
       rw [h_destIdx]
       omega
     rw [h_idx]
     exact h_res.symm
 
+omit [CharP L 2] [SampleableType L] in
 open Classical in
 lemma previousSuffix_eq_getFiberPoint_extractMiddleFinMask
     (j : Fin (ℓ / ϑ))
@@ -626,8 +631,7 @@ lemma previousSuffix_eq_getFiberPoint_extractMiddleFinMask
       (h_destIdx_le := k_succ_mul_ϑ_le_ℓ_₂ (k := j))
       (v := v)
 
-set_option maxHeartbeats 800000 in
--- The dependent index alignment in `getNextOracle` can take substantial elaboration.
+omit [CharP L 2] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero 𝓡] [SampleableType L] in
 lemma getNextOracle_eq_oracleStatement
     (oStmt : ∀ j, OracleStatement 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ) j)
@@ -646,12 +650,13 @@ lemma getNextOracle_eq_oracleStatement
         (cast (by
           apply congrArg (fun i => ↥(sDomain 𝔽q β h_ℓ_add_R_rate i))
           apply Fin.eq_of_val_eq
-          simp only [oraclePositionToDomainIndex, toOutCodewordsCount_last]
+          simp only
           ring) y) := by
   funext y
   unfold getNextOracle
-  simp only [cast_eq]
+  simp only
 
+omit [CharP L 2] [SampleableType L] in
 lemma logical_checkSingleRepetition_guard_eq
     (stmtIn : FinalSumcheckStatementOut (L := L) (ℓ := ℓ))
     (oStmtIn : ∀ j, OracleStatement 𝔽q β (ϑ := ϑ)
@@ -661,7 +666,7 @@ lemma logical_checkSingleRepetition_guard_eq
       oStmtIn v stmtIn stmtIn.final_constant)
     (j : Fin (nBlocks (ℓ := ℓ) (ϑ := ϑ)))
     (h_pos : 0 < j.val) :
-    let j_idx : Fin (ℓ / ϑ) := ⟨j.val, by
+    let _j_idx : Fin (ℓ / ϑ) := ⟨j.val, by
       have h_lt := j.isLt
       simp only [nBlocks, toOutCodewordsCount_last] at h_lt
       exact h_lt⟩
@@ -750,6 +755,7 @@ abbrev queryBlockDestIdx (j : Fin (nBlocks (ℓ := ℓ) (ϑ := ϑ))) : Fin r :=
         (oracle_index_add_steps_le_ℓ (ℓ := ℓ) (ϑ := ϑ)
           (i := Fin.last ℓ) (j := j))⟩
 
+omit [NeZero r] [NeZero ℓ] [NeZero 𝓡] in
 lemma queryBlockSourceIdx_le
     (j : Fin (nBlocks (ℓ := ℓ) (ϑ := ϑ))) :
     (queryBlockSourceIdx (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j).val ≤ ℓ := by
@@ -757,6 +763,7 @@ lemma queryBlockSourceIdx_le
     (oracle_index_add_steps_le_ℓ (ℓ := ℓ) (ϑ := ϑ)
       (i := Fin.last ℓ) (j := j))
 
+omit [NeZero r] [NeZero ℓ] [NeZero 𝓡] [NeZero ϑ] in
 lemma queryBlockDestIdx_le
     (j : Fin (nBlocks (ℓ := ℓ) (ϑ := ϑ))) :
     (queryBlockDestIdx (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j).val ≤ ℓ := by
@@ -785,6 +792,7 @@ abbrev queryBlockDestSuffix
     (h_destIdx_le := queryBlockDestIdx_le
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j)
 
+omit [NeZero r] [NeZero ℓ] [NeZero 𝓡] in
 lemma queryBlockDestIdx_eq_queryBlockSourceIdx_succ
     (j : Fin (nBlocks (ℓ := ℓ) (ϑ := ϑ)))
     (hj : j.val + 1 < nBlocks (ℓ := ℓ) (ϑ := ϑ)) :
@@ -792,9 +800,10 @@ lemma queryBlockDestIdx_eq_queryBlockSourceIdx_succ
       queryBlockSourceIdx (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ)
         ⟨j.val + 1, hj⟩ := by
   apply Fin.eq_of_val_eq
-  simp only [queryBlockDestIdx, queryBlockSourceIdx]
+  simp only
   ring
 
+omit [CharP L 2] [DecidableEq 𝔽q] hF₂ [SampleableType L] [NeZero ℓ] [NeZero 𝓡] in
 lemma queryBlockDestSuffix_eq_queryBlockSourceSuffix_succ
     (j : Fin (nBlocks (ℓ := ℓ) (ϑ := ϑ)))
     (hj : j.val + 1 < nBlocks (ℓ := ℓ) (ϑ := ϑ))
@@ -822,6 +831,7 @@ lemma queryBlockDestSuffix_eq_queryBlockSourceSuffix_succ
       (h_le' := queryBlockSourceIdx_le
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) ⟨j.val + 1, hj⟩)
 
+omit [CharP L 2] [SampleableType L] [DecidableEq 𝔽q] in
 lemma queryBlockSourceSuffix_maps_to_destSuffix
     (j : Fin (nBlocks (ℓ := ℓ) (ϑ := ϑ)))
     (v : sDomain 𝔽q β h_ℓ_add_R_rate 0) :
@@ -837,6 +847,7 @@ lemma queryBlockSourceSuffix_maps_to_destSuffix
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j v) =
     queryBlockDestSuffix (𝔽q := 𝔽q) (β := β)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j v := by
+  classical
   have h_source_suffix_eq :
       queryBlockSourceSuffix (𝔽q := 𝔽q) (β := β)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j v =
@@ -895,7 +906,7 @@ lemma queryBlockSourceSuffix_maps_to_destSuffix
     erw [getFiberPoint_eq_qMap_total_fiber]
   exact h_generates.symm
 
-set_option maxHeartbeats 10000 in
+omit [CharP L 2] [DecidableEq 𝔽q] h_β₀_eq_1 [NeZero ℓ] [SampleableType L] in
 lemma UDRCodeword_eval_eq_of_fin_eq
     {i j : Fin r} (hij : i = j)
     {hi : i ≤ ℓ} {hj : j ≤ ℓ}
@@ -927,7 +938,7 @@ lemma UDRCodeword_eval_eq_of_fin_eq
           rfl HEq.rfl hf_close))
       y
 
-set_option maxHeartbeats 10000 in
+omit [CharP L 2] [DecidableEq 𝔽q] [SampleableType L] in
 lemma successor_codeword_eval_eq
     (oStmtIn : ∀ j, OracleStatement 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ) j)

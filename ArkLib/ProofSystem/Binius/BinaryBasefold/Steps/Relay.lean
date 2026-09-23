@@ -353,7 +353,7 @@ def relayKnowledgeStateFunction (i : Fin ℓ) (hNCR : ¬ isCommitmentRound ℓ �
     rfl
 
 /-! RBR knowledge soundness for a single round oracle verifier -/
-omit [SampleableType L] in
+omit [SampleableType L] [CharP L 2] [DecidableEq 𝔽q] in
 theorem relayOracleVerifier_rbrKnowledgeSoundness (i : Fin ℓ)
     (hNCR : ¬ isCommitmentRound ℓ ϑ i) :
     (relayOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)

@@ -965,14 +965,14 @@ def FullTranscript.mk1 {pSpec : ProtocolSpec 1} (msg0 : pSpec.«Type» 0) :
 
 @[simp]
 theorem FullTranscript.mk1_eq_snoc {pSpec : ProtocolSpec 1} (msg0 : pSpec.«Type» 0) :
-      FullTranscript.mk1 msg0 = (default : pSpec.Transcript 0).concat msg0 := by
+    FullTranscript.mk1 msg0 = (default : pSpec.Transcript 0).concat msg0 := by
   unfold FullTranscript.mk1 Transcript.concat
   simp only [default, Fin.isValue]
   funext i
   have hi : i = 0 := by omega
   subst hi
-  simp [Fin.snoc]
-  exact eq_of_heq (cast_heq _ _).symm
+  simp only [Fin.isValue, Fin.coe_ofNat_eq_mod, Nat.zero_mod, Nat.reduceAdd,
+    Fin.succ_zero_eq_one, Nat.reduceMod, take_Type, Transcript.concat_zero]
 
 @[inline, reducible]
 def FullTranscript.mk2 {pSpec : ProtocolSpec 2} (msg0 : pSpec.«Type» 0) (msg1 : pSpec.«Type» 1) :

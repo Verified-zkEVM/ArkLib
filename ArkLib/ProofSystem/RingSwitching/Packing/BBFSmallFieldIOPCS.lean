@@ -7,6 +7,7 @@ module
 
 
 public import ArkLib.ProofSystem.RingSwitching.Packing.General
+public import ArkLib.ProofSystem.RingSwitching.Packing.Compatibility
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.General
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.Soundness
 public import ArkLib.OracleReduction.LiftContext.OracleReduction
@@ -31,7 +32,8 @@ in contrast to `FRIBinius/CoreInteractionPhase.lean` which fuses the sumcheck-fo
 - `bbfMLIOPCS`: Binary Basefold instantiated as an `MLIOPCS L ℓ'`
 - `bbf_fullOracleReduction_perfectCompleteness`: Perfect completeness of the composed protocol
 - `bbf_fullOracleVerifier_rbrKnowledgeSoundness`: RBR knowledge soundness of the composed protocol
-- `bbfSmallFieldConcreteKnowledgeError`: closed-form scalar error (ring-switching front + BBF (43)-style tail)
+- `bbfSmallFieldConcreteKnowledgeError`: closed-form scalar error
+  (ring-switching front + BBF (43)-style tail)
 - `bbf_fullOracleVerifier_knowledgeSoundness`: Scalar KS for the composed verifier via
   `FullRingSwitching.fullOracleVerifier_knowledgeSoundness` and
   `FullBinaryBasefold.fullRbrKnowledgeError_sum_le_concrete` (PCS RBR-error sum).
@@ -59,6 +61,27 @@ open scoped NNReal
 
 noncomputable section
 
+private theorem castInOut_verifier
+    {ι : Type} {oSpec : OracleSpec ι} {n : ℕ} {pSpec : ProtocolSpec n}
+    [Oₘ : ∀ i, OracleInterface (pSpec.Message i)]
+    {S₁ S₂ T₁ T₂ W₁ W₂ Z₁ Z₂ I₁ I₂ J₁ J₂ : Type}
+    {A₁ : I₁ → Type} {A₂ : I₂ → Type} {B₁ : J₁ → Type} {B₂ : J₂ → Type}
+    [a₁ : ∀ i, OracleInterface (A₁ i)] [a₂ : ∀ i, OracleInterface (A₂ i)]
+    [b₁ : ∀ i, OracleInterface (B₁ i)] [b₂ : ∀ i, OracleInterface (B₂ i)]
+    (R : OracleReduction oSpec S₁ A₁ W₁ T₁ B₁ Z₁ pSpec)
+    (hS : S₁ = S₂) (hT : T₁ = T₂) (hW : W₁ = W₂) (hZ : Z₁ = Z₂)
+    (hI : I₁ = I₂) (hJ : J₁ = J₂) (hA : HEq A₁ A₂) (hB : HEq B₁ B₂)
+    (ha : HEq a₁ a₂) (hb : HEq b₁ b₂) :
+    (R.castInOut hS hT hW hZ hI hJ hA hB ha hb).verifier =
+      R.verifier.castInOut hS hT hI hJ hA hB ha hb := by
+  subst hI hJ
+  cases hA
+  cases hB
+  cases ha
+  cases hb
+  subst hS hT hW hZ
+  rfl
+
 /-! ## Part 1: Binary Basefold as MLIOPCS
 
 We construct an `MLIOPCS L ℓ'` by wrapping Binary Basefold's full protocol.
@@ -81,7 +104,10 @@ variable {𝓑 : Fin 2 ↪ L}
 variable [h_B01 : Fact (𝓑 0 = 0 ∧ 𝓑 1 = 1)]
 variable [hdiv : Fact (ϑ ∣ ℓ')]
 
-instance : OracleInterface Unit := OracleInterface.instDefault
+/-- Empty output family, kept named so its interface is indexed during synthesis. -/
+def invocationEmptyOutput : Empty → Type := fun _ => Unit
+
+local instance : ∀ i, OracleInterface.{0, 0} (invocationEmptyOutput i) := fun i => nomatch i
 
 /-! ### Type Adapters
 
@@ -119,20 +145,35 @@ This wrapper maps that pair into Binary Basefold's round-0 input context
 via `LiftContext`, reusing Binary Basefold's full reduction unchanged. -/
 
 /-- Statement lens for the ring-switching large-field invocation into Binary Basefold. -/
-def largeFieldInvocationStmtLens : OracleStatement.Lens
+def largeFieldInvocationExecutableStmtLens : OracleStatement.ExecutableLens
     (OuterStmtIn := MLPEvalStatement (L := L) (ℓ := ℓ'))
     (OuterStmtOut := Bool)
     (InnerStmtIn := Statement (L := L) (SumcheckBaseContext L ℓ') (0 : Fin (ℓ' + 1)))
     (InnerStmtOut := Bool)
     (OuterOStmtIn := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (ℓ := ℓ') ϑ (0 : Fin (ℓ' + 1)))
-    (OuterOStmtOut := fun _ : Empty => Unit)
+    (OuterOStmtOut := invocationEmptyOutput)
     (InnerOStmtIn := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (ℓ := ℓ') ϑ (0 : Fin (ℓ' + 1)))
-    (InnerOStmtOut := fun _ : Empty => Unit) where
-  toFunA := fun ⟨stmtIn, oStmtIn⟩ =>
-    ⟨reducedMLPEvalStatement_to_BBF_Statement stmtIn, oStmtIn⟩
-  toFunB := fun _ ⟨stmtOut, oStmtOut⟩ => ⟨stmtOut, oStmtOut⟩
+    (InnerOStmtOut := invocationEmptyOutput) where
+  projStmt := reducedMLPEvalStatement_to_BBF_Statement
+  materializeInput := fun _ oStmt => oStmt
+  simulateInput := fun _ q => liftM <| OracleSpec.query q
+  simulateInput_eq := by
+    intro outerStmt outerOStmt q
+    rcases q with ⟨i, query⟩
+    simp only [simulateQ_query, OracleQuery.input_query, OracleQuery.cont_query,
+      OracleInterface.simOracle0]
+    rfl
+  liftStmt := fun _ stmtOut => stmtOut
+  materializeOutput := fun _ oStmt => oStmt
+  simulateOutput := fun q => nomatch q.1
+  simulateOutput_eq := by intro _ _ q; exact q.1.elim
+
+/-- Extensional view used by relation and extractor transport. -/
+def largeFieldInvocationStmtLens :=
+  (largeFieldInvocationExecutableStmtLens 𝔽q β (ϑ := ϑ)
+    (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).toLens
 
 /-- Context lens for the ring-switching large-field invocation into Binary Basefold. -/
 def largeFieldInvocationCtxLens : OracleContext.Lens
@@ -142,10 +183,10 @@ def largeFieldInvocationCtxLens : OracleContext.Lens
     (InnerStmtOut := Bool)
     (OuterOStmtIn := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (ℓ := ℓ') ϑ (0 : Fin (ℓ' + 1)))
-    (OuterOStmtOut := fun _ : Empty => Unit)
+    (OuterOStmtOut := invocationEmptyOutput)
     (InnerOStmtIn := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (ℓ := ℓ') ϑ (0 : Fin (ℓ' + 1)))
-    (InnerOStmtOut := fun _ : Empty => Unit)
+    (InnerOStmtOut := invocationEmptyOutput)
     (OuterWitIn := WitMLP (K := L) (ℓ := ℓ'))
     (OuterWitOut := Unit)
     (InnerWitIn := Witness (L := L) 𝔽q β
@@ -158,23 +199,61 @@ def largeFieldInvocationCtxLens : OracleContext.Lens
     toFunB := fun _ _ => ()
   }
 
+/-- Query-executable context adapter; its extensional semantics are unchanged. -/
+def largeFieldInvocationExecutableCtxLens : OracleContext.ExecutableLens
+    (OuterStmtIn := MLPEvalStatement (L := L) (ℓ := ℓ'))
+    (OuterStmtOut := Bool)
+    (InnerStmtIn := Statement (L := L) (SumcheckBaseContext L ℓ') (0 : Fin (ℓ' + 1)))
+    (InnerStmtOut := Bool)
+    (OuterOStmtIn := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (ℓ := ℓ') ϑ (0 : Fin (ℓ' + 1)))
+    (OuterOStmtOut := invocationEmptyOutput)
+    (InnerOStmtIn := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (ℓ := ℓ') ϑ (0 : Fin (ℓ' + 1)))
+    (InnerOStmtOut := invocationEmptyOutput)
+    (OuterWitIn := WitMLP (K := L) (ℓ := ℓ'))
+    (OuterWitOut := Unit)
+    (InnerWitIn := Witness (L := L) 𝔽q β
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ') (0 : Fin (ℓ' + 1)))
+    (InnerWitOut := Unit) where
+  stmt := largeFieldInvocationExecutableStmtLens 𝔽q β
+  wit := (largeFieldInvocationCtxLens 𝔽q β).wit
+
+/-- There are no output oracles, so output materialization agrees pointwise. -/
+def largeFieldInvocationLiftContextOutput
+    {V : OracleVerifier (oSpec := []ₒ)
+      (StmtIn := Statement (L := L) (SumcheckBaseContext L ℓ') 0)
+      (OStmtIn := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0)
+      (StmtOut := Bool) (OStmtOut := invocationEmptyOutput)
+      (pSpec := fullPSpec 𝔽q β γ_repetitions (ϑ := ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate))} :
+    OracleVerifier.LiftContextOutput
+      (largeFieldInvocationExecutableStmtLens 𝔽q β)
+      V where
+  outputOracle := Sum.inl {
+    embed := ⟨(fun i => nomatch i), (fun i => nomatch i)⟩
+    hEq := fun i => nomatch i
+    outputInterface_heq := fun i => nomatch i }
+  materialize_eq := by intro _ _ _ _; funext i; exact i.elim
+
 /-- Binary Basefold oracle reduction lifted to the ring-switching large-field invocation context. -/
 def largeFieldInvocationOracleReduction :
-    OracleReduction (oSpec := []ₒ)
+    OracleReduction (oSpec := []ₒ) (Oₛₒ := fun i : Empty => nomatch i)
       (StmtIn := MLPEvalStatement (L := L) (ℓ := ℓ'))
       (OStmtIn := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ') ϑ
           (0 : Fin (ℓ' + 1)))
       (StmtOut := Bool)
-      (OStmtOut := fun _ : Empty => Unit)
+      (OStmtOut := invocationEmptyOutput)
       (WitIn := WitMLP (K := L) (ℓ := ℓ'))
       (WitOut := Unit)
       (pSpec := fullPSpec 𝔽q β γ_repetitions (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
   (FullBinaryBasefold.fullOracleReduction 𝔽q β γ_repetitions (ϑ := ϑ)
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (ℓ := ℓ')).liftContext
-    (lens := largeFieldInvocationCtxLens 𝔽q β)
+    (lens := largeFieldInvocationExecutableCtxLens 𝔽q β)
+    (output := largeFieldInvocationLiftContextOutput 𝔽q β γ_repetitions)
 
-omit [SampleableType L] in
+omit [SampleableType L] [DecidableEq 𝔽q] [CharP L 2] in
 /-- Uniqueness of the polynomial witness from first-oracle UDR-compatibility. -/
 lemma firstOracleWitnessConsistency_unique
     (oStmt : ∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ') ϑ
@@ -185,6 +264,7 @@ lemma firstOracleWitnessConsistency_unique
     (h₂ : firstOracleWitnessConsistencyProp 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ')
       t₂ (getFirstOracle 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) oStmt)) :
     t₁ = t₂ := by
+  classical
   have h₁_some :
       extractMLP 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ') 0
         (getFirstOracle 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) oStmt) = some t₁ :=
@@ -200,14 +280,15 @@ lemma firstOracleWitnessConsistency_unique
   rw [h₁_some] at h₂_some
   injection h₂_some
 
+omit [Fintype L] [DecidableEq L] [CharP L 2] [SampleableType L] [NeZero ℓ'] in
 lemma map_eval_sumToIter_rename_finSum_zero
     (p : MvPolynomial (Fin ℓ') L) :
     (MvPolynomial.map (MvPolynomial.eval (σ := Fin 0) Fin.elim0)
-      ((sumToIter L (Fin ℓ') (Fin 0))
+      ((sumRingEquiv L (Fin ℓ') (Fin 0))
         (MvPolynomial.rename
           (f := ⇑(finSumFinEquiv (m := ℓ') (n := 0)).symm) p))) = p := by
   have h_sumToIter :
-      (sumToIter L (Fin ℓ') (Fin 0))
+      (sumRingEquiv L (Fin ℓ') (Fin 0))
           (MvPolynomial.rename
             (f := ⇑(finSumFinEquiv (m := ℓ') (n := 0)).symm) p) =
         MvPolynomial.map (MvPolynomial.C) p := by
@@ -221,10 +302,10 @@ lemma map_eval_sumToIter_rename_finSum_zero
         MvPolynomial.rename (f := Sum.inl) p := by
       exact congrArg (fun f => MvPolynomial.rename (f := f) p) h_ren_fun
     rw [h_ren]
-    have h_comp := MvPolynomial.sumAlgEquiv_comp_rename_inl
-      (R := L) (S₁ := Fin ℓ') (S₂ := Fin 0)
-    have h_eval_comp := congrArg (fun f => f p) h_comp
-    exact h_eval_comp
+    have h_comp : (sumRingEquiv L (Fin ℓ') (Fin 0)).toRingHom.comp
+        (MvPolynomial.rename Sum.inl).toRingHom = MvPolynomial.map MvPolynomial.C := by
+      ext <;> simp
+    exact congrArg (fun f => f p) h_comp
   rw [h_sumToIter]
   rw [MvPolynomial.map_map]
   have h_eval_comp_id :
@@ -234,9 +315,10 @@ lemma map_eval_sumToIter_rename_finSum_zero
   rw [h_eval_comp_id]
   exact MvPolynomial.map_id p
 
+omit [Fintype L] [DecidableEq L] [CharP L 2] [SampleableType L] [NeZero ℓ'] in
 lemma fixFirstVariablesOfMQP_zero_eq
     (H : MvPolynomial (Fin ℓ') L) :
-    fixFirstVariablesOfMQP (L := L) (ℓ := ℓ') (v := (0 : Fin (ℓ' + 1))) H
+    Binius.BinaryBasefold.fixFirstVariablesOfMQP (L := L) (ℓ := ℓ') (v := (0 : Fin (ℓ' + 1))) H
       (challenges := Fin.elim0) = H := by
   rw [fixFirstVariablesOfMQP_eq_bind₁ (L := L) (ℓ := ℓ') (v := (0 : Fin (ℓ' + 1)))
     (poly := H) (challenges := Fin.elim0)]
@@ -244,6 +326,8 @@ lemma fixFirstVariablesOfMQP_zero_eq
   rw [MvPolynomial.bind₁_X_left]
   rfl
 
+set_option backward.isDefEq.respectTransparency false in
+omit [CharP L 2] [SampleableType L] [DecidableEq 𝔽q] h_β₀_eq_1 [NeZero ℓ'] in
 lemma witnessStructuralInvariant_MLPEvalWitness_to_BBF_Witness
     (stmt : MLPEvalStatement (L := L) (ℓ := ℓ'))
     (wit : WitMLP (K := L) (ℓ := ℓ')) :
@@ -255,6 +339,8 @@ lemma witnessStructuralInvariant_MLPEvalWitness_to_BBF_Witness
   dsimp [reducedMLPEvalStatement_to_BBF_Statement, MLPEvalWitness_to_BBF_Witness]
   simp
 
+set_option backward.isDefEq.respectTransparency false in
+omit [CharP L 2] [SampleableType L] [DecidableEq 𝔽q] h_β₀_eq_1 [NeZero ℓ'] in
 /-- If `t(r) = s` for the outer MLP statement, then the mapped round-0 BBF witness
 satisfies the BBF round-0 sumcheck consistency identity. -/
 lemma sumcheckConsistency_MLPEvalWitness_to_BBF_Witness_of_eval
@@ -270,19 +356,28 @@ lemma sumcheckConsistency_MLPEvalWitness_to_BBF_Witness_of_eval
   rw [← h_eval]
   let castEmb : Fin 2 ↪ L := ⟨fun b => (b : L), by
     intro a b h
-    fin_cases a <;> fin_cases b <;> simp at h <;> simp [h]⟩
+    fin_cases a <;> fin_cases b <;> simp_all⟩
+  have hcast (b : Fin 2) : castEmb b = (b.val : L) := rfl
   have h_Beq : 𝓑 = castEmb := by
-    ext b
-    fin_cases b <;> simp [castEmb, h_B01.out.1, h_B01.out.2]
+    apply Function.Embedding.ext
+    intro b
+    have hb : b = 0 ∨ b = 1 := by omega
+    rcases hb with hb | hb
+    · subst b
+      rw [hcast]
+      simpa only [Fin.val_zero, Nat.cast_zero] using h_B01.out.1
+    · subst b
+      rw [hcast]
+      simpa only [Fin.val_one, Nat.cast_one] using h_B01.out.2
   subst h_Beq
   have h_H0 :
       projectToMidSumcheckPoly (L := L) (ℓ := ℓ') (t := wit.t)
         (m := BBF_SumcheckMultiplierParam.multpoly ⟨stmt.t_eval_point, stmt.original_claim⟩)
-        (i := (0 : Fin (ℓ' + 1))) (challenges := Fin.elim0) =
+      (i := (0 : Fin (ℓ' + 1))) (challenges := Fin.elim0) =
       computeInitialSumcheckPoly (ℓ := ℓ') wit.t
         (BBF_SumcheckMultiplierParam.multpoly ⟨stmt.t_eval_point, stmt.original_claim⟩) := by
     have h_fix0 :
-        fixFirstVariablesOfMQP (L := L) (ℓ := ℓ')
+        Binius.BinaryBasefold.fixFirstVariablesOfMQP (L := L) (ℓ := ℓ')
           (v := (0 : Fin (ℓ' + 1)))
           (H := (computeInitialSumcheckPoly (ℓ := ℓ') wit.t
             (BBF_SumcheckMultiplierParam.multpoly
@@ -420,10 +515,6 @@ def bbfAbstractOStmtIn : AbstractOStmtIn L ℓ' where
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := (0 : Fin r)) (h_i := by simp)]
       omega
     simp only [hammingDist_self, mul_zero, h_dist_pos]
-  -- Unique polynomial determination from oracle (via UDR-closeness)
-  initialCompatibility_unique := fun oStmt t₁ t₂ h₁ h₂ => by
-    exact firstOracleWitnessConsistency_unique 𝔽q β
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ) oStmt h₁ h₂
 
 instance largeFieldInvocationCtxLens_complete :
   (largeFieldInvocationCtxLens 𝔽q β).toContext.IsComplete
@@ -438,7 +529,8 @@ instance largeFieldInvocationCtxLens_complete :
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
       (largeFieldInvocationCtxLens 𝔽q β).toContext
       ((FullBinaryBasefold.fullOracleReduction 𝔽q β γ_repetitions (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (ℓ := ℓ')).toReduction)) where
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (ℓ := ℓ')).toReduction
+          (Oₛₒ := fun i : Empty => nomatch i))) where
   proj_complete := fun stmtIn witIn hRelIn => by
     rcases stmtIn with ⟨stmtIn, oStmtIn⟩
     rcases hRelIn with ⟨h_eval, h_compat⟩
@@ -462,19 +554,27 @@ instance largeFieldInvocationCtxLens_complete :
     dsimp [largeFieldInvocationCtxLens, largeFieldInvocationStmtLens] at hRelOut ⊢
     exact hRelOut
 
+omit [SampleableType L] [DecidableEq 𝔽q] [CharP L 2] in
+/-- The production codeword oracle determines its compatible polynomial uniquely. -/
+theorem bbfAbstractOStmtIn_functional :
+    (bbfAbstractOStmtIn 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ)).Functional := by
+  intro o t₁ t₂ h₁ h₂
+  exact firstOracleWitnessConsistency_unique 𝔽q β o h₁ h₂
+
 variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)}
 
-theorem largeFieldInvocationOracleReduction_perfectCompleteness (hInit : NeverFail init) :
-  OracleReduction.perfectCompleteness
-    (oracleReduction := largeFieldInvocationOracleReduction 𝔽q β γ_repetitions (𝓑 := 𝓑))
-    (relIn := (bbfAbstractOStmtIn 𝔽q β
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ)).toStrictRelInput)
-    (relOut := acceptRejectOracleRel)
-    (init := init)
-    (impl := impl) := by
+omit [CharP L 2] in
+theorem largeFieldInvocationOracleReduction_perfectCompleteness :
+    OracleReduction.perfectCompleteness (Oₛₒ := fun i : Empty => nomatch i)
+      (oracleReduction := largeFieldInvocationOracleReduction 𝔽q β γ_repetitions (𝓑 := 𝓑))
+      (relIn := (bbfAbstractOStmtIn 𝔽q β
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ)).toStrictRelInput)
+      (relOut := acceptRejectOracleRel)
+      (init := init)
+      (impl := impl) := by
   let innerReduction := FullBinaryBasefold.fullOracleReduction 𝔽q β γ_repetitions
     (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (ℓ := ℓ')
-  letI : (largeFieldInvocationCtxLens 𝔽q β).toContext.IsComplete
+  let : (largeFieldInvocationCtxLens 𝔽q β).toContext.IsComplete
       (outerRelIn := (bbfAbstractOStmtIn 𝔽q β
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ)).toStrictRelInput)
       (innerRelIn := strictRoundRelation (mp := BBF_SumcheckMultiplierParam) 𝔽q β
@@ -485,15 +585,19 @@ theorem largeFieldInvocationOracleReduction_perfectCompleteness (hInit : NeverFa
         (pSpec := fullPSpec 𝔽q β γ_repetitions (ϑ := ϑ)
           (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
         (largeFieldInvocationCtxLens 𝔽q β).toContext
-        innerReduction.toReduction) := by
+        (innerReduction.toReduction (Oₛₒ := fun i : Empty => nomatch i))) := by
     infer_instance
   have h_inner := FullBinaryBasefold.fullOracleReduction_perfectCompleteness
     𝔽q β γ_repetitions (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
-    (init := init) (impl := impl) hInit
+    (init := init) (impl := impl)
   have h_lift :=
     (OracleReduction.liftContext_perfectCompleteness
       (R := innerReduction)
-      (lens := largeFieldInvocationCtxLens 𝔽q β)
+      (lens := largeFieldInvocationExecutableCtxLens 𝔽q β)
+      (output := largeFieldInvocationLiftContextOutput 𝔽q β γ_repetitions)
+      (OuterOStmtOut := invocationEmptyOutput)
+      (InnerOStmtOut := invocationEmptyOutput)
+      (lensComplete := largeFieldInvocationCtxLens_complete 𝔽q β γ_repetitions)
       (outerRelIn := (bbfAbstractOStmtIn 𝔽q β
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ)).toStrictRelInput)
       (innerRelIn := strictRoundRelation (mp := BBF_SumcheckMultiplierParam) 𝔽q β
@@ -506,6 +610,8 @@ theorem largeFieldInvocationOracleReduction_perfectCompleteness (hInit : NeverFa
   dsimp [largeFieldInvocationOracleReduction, innerReduction] at h_lift ⊢
   exact h_lift
 
+set_option backward.isDefEq.respectTransparency false in
+omit [CharP L 2] [SampleableType L] [DecidableEq 𝔽q] h_β₀_eq_1 [NeZero ℓ'] in
 lemma MLPEvalRelation_of_round0_local_and_structural
     (stmt : MLPEvalStatement (L := L) (ℓ := ℓ'))
     (wit : Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ')
@@ -516,6 +622,7 @@ lemma MLPEvalRelation_of_round0_local_and_structural
       (mp := BBF_SumcheckMultiplierParam) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (reducedMLPEvalStatement_to_BBF_Statement (L := L) (ℓ' := ℓ') stmt) wit) :
     wit.t.val.eval stmt.t_eval_point = stmt.original_claim := by
+  classical
   let stmt_eval : MLPEvalStatement (L := L) (ℓ := ℓ') := {
     t_eval_point := stmt.t_eval_point
     original_claim := wit.t.val.eval stmt.t_eval_point
@@ -582,11 +689,11 @@ def largeFieldInvocationExtractorLens : Extractor.Lens
     (OuterStmtIn := MLPEvalStatement (L := L) (ℓ := ℓ') ×
       (∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ') ϑ
         (0 : Fin (ℓ' + 1)) j))
-    (OuterStmtOut := Bool × (∀ j : Empty, Unit))
+    (OuterStmtOut := Bool × (∀ _ : Empty, Unit))
     (InnerStmtIn := Statement (L := L) (SumcheckBaseContext L ℓ') (0 : Fin (ℓ' + 1)) ×
       (∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ') ϑ
         (0 : Fin (ℓ' + 1)) j))
-    (InnerStmtOut := Bool × (∀ j : Empty, Unit))
+    (InnerStmtOut := Bool × (∀ _ : Empty, Unit))
     (OuterWitIn := WitMLP (K := L) (ℓ := ℓ'))
     (OuterWitOut := Unit)
     (InnerWitIn := Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ')
@@ -603,16 +710,16 @@ instance largeFieldInvocationExtractorLens_rbr_knowledge_soundness
       (MLPEvalStatement (L := L) (ℓ := ℓ') ×
         (∀ i, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ') ϑ
           (0 : Fin (ℓ' + 1)) i)) →
-      (Bool × (∀ i : Empty, Unit)) → Prop} :
+      (Bool × (∀ _ : Empty, Unit)) → Prop} :
     Extractor.Lens.IsKnowledgeSound
       (OuterStmtIn := MLPEvalStatement (L := L) (ℓ := ℓ') ×
         (∀ i, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ') ϑ
           (0 : Fin (ℓ' + 1)) i))
-      (OuterStmtOut := Bool × (∀ i : Empty, Unit))
+      (OuterStmtOut := Bool × (∀ _ : Empty, Unit))
       (InnerStmtIn := Statement (L := L) (SumcheckBaseContext L ℓ') (0 : Fin (ℓ' + 1)) ×
         (∀ i, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ') ϑ
           (0 : Fin (ℓ' + 1)) i))
-      (InnerStmtOut := Bool × (∀ i : Empty, Unit))
+      (InnerStmtOut := Bool × (∀ _ : Empty, Unit))
       (OuterWitIn := WitMLP (K := L) (ℓ := ℓ'))
       (OuterWitOut := Unit)
       (InnerWitIn := Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
@@ -640,7 +747,7 @@ instance largeFieldInvocationExtractorLens_rbr_knowledge_soundness
           (0 : Fin (ℓ' + 1))
           ((reducedMLPEvalStatement_to_BBF_Statement (L := L) (ℓ' := ℓ') stmtIn,
             oStmtIn), innerWitIn) := by
-      dsimp [roundRelation, Set.mem_setOf_eq] at hInner ⊢
+      dsimp [roundRelation, Set.mem_ofPred_eq] at hInner ⊢
       exact hInner
     unfold roundRelationProp Binius.BinaryBasefold.masterKStateProp at hInner'
     have h_no_bad :
@@ -665,8 +772,8 @@ instance largeFieldInvocationExtractorLens_rbr_knowledge_soundness
       exact absurd hj (by
         apply BinaryBasefold.incrementalFoldingBadEvent_of_k_eq_0_is_false (𝔽q := 𝔽q) (β := β)
           (h_k := by
-            simp only [Nat.zero_mod, zero_mul, tsub_self, zero_le, inf_of_le_right])
-          (h_midIdx := by simp only [Nat.zero_mod, zero_mul, tsub_self, zero_le,
+            simp only [zero_mul, tsub_self, zero_le, inf_of_le_right])
+          (h_midIdx := by simp only [zero_mul, tsub_self, zero_le,
             inf_of_le_right, add_zero])
       )
     rcases hInner' with h_bad | h_good
@@ -686,6 +793,7 @@ instance largeFieldInvocationExtractorLens_rbr_knowledge_soundness
 
 /-! ### MLIOPCS Instance -/
 
+set_option backward.isDefEq.respectTransparency false in
 /-- Binary Basefold as an `MLIOPCS L ℓ'`.
 
 This wraps the full Binary Basefold protocol (core interaction + query phase)
@@ -698,9 +806,9 @@ def bbfMLIOPCS : MLIOPCS L ℓ' where
   O_challenges := inferInstance
   oracleReduction := largeFieldInvocationOracleReduction 𝔽q β γ_repetitions (𝓑 := 𝓑)
   perfectCompleteness := by
-    intro σ init impl hInit
+    intro σ init impl
     exact largeFieldInvocationOracleReduction_perfectCompleteness 𝔽q β γ_repetitions (𝓑 := 𝓑)
-      (init := init) (impl := impl) hInit
+      (init := init) (impl := impl)
   rbrKnowledgeError :=
     fullRbrKnowledgeError 𝔽q β γ_repetitions (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
   rbrKnowledgeSoundness := by
@@ -708,29 +816,66 @@ def bbfMLIOPCS : MLIOPCS L ℓ' where
     have h_bbf := FullBinaryBasefold.fullOracleVerifier_rbrKnowledgeSoundness
       𝔽q β γ_repetitions (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
       (init := init) (impl := impl)
-    letI :
+    let :
         Inhabited (Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ')
           (0 : Fin (ℓ' + 1))) := ⟨{
         t := 0
         H := 0
         f := fun _ => 0
       }⟩
-    letI : ∀ i : Empty, Inhabited ((fun _ : Empty => Unit) i) := by
+    let : ∀ i : Empty, Inhabited (invocationEmptyOutput i) := by
       intro i
       exact (i.elim)
     have h_lifted := OracleVerifier.liftContext_rbr_knowledgeSoundness
         (V := FullBinaryBasefold.fullOracleVerifier 𝔽q β γ_repetitions (ϑ := ϑ)
           (𝓑 := 𝓑) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
-        (stmtLens := largeFieldInvocationStmtLens 𝔽q β)
+        (stmtLens := largeFieldInvocationExecutableStmtLens 𝔽q β)
+        (output := largeFieldInvocationLiftContextOutput 𝔽q β γ_repetitions)
         (witLens := (largeFieldInvocationExtractorLens 𝔽q β).wit)
         (lensKS := largeFieldInvocationExtractorLens_rbr_knowledge_soundness
           (𝔽q := 𝔽q) (β := β)
           (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
           (compatStmt := (FullBinaryBasefold.fullOracleVerifier 𝔽q β γ_repetitions (ϑ := ϑ)
-            (𝓑 := 𝓑) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).toVerifier.compatStatement
+            (𝓑 := 𝓑) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).toVerifier
+              (Oₛₒ := fun i : Empty => nomatch i).compatStatement
             (largeFieldInvocationStmtLens 𝔽q β)))
         (h := by exact h_bbf)
     dsimp [largeFieldInvocationOracleReduction] at h_lifted ⊢
+    unfold OracleProof.rbrKnowledgeSoundness OracleProof.toOracleVerifier
+    dsimp only [OracleReduction.liftContext]
+    have h_verifier :
+        (FullBinaryBasefold.fullOracleReduction 𝔽q β γ_repetitions (ϑ := ϑ)
+          (𝓑 := 𝓑) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).toOracleVerifier =
+        FullBinaryBasefold.fullOracleVerifier 𝔽q β γ_repetitions (ϑ := ϑ)
+          (𝓑 := 𝓑) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) := by
+      unfold FullBinaryBasefold.fullOracleReduction FullBinaryBasefold.fullOracleVerifier
+        OracleProof.toOracleVerifier
+      dsimp only [OracleReduction.append]
+      congr 1
+      · unfold CoreInteraction.coreInteractionOracleReduction
+          CoreInteraction.coreInteractionOracleVerifier
+        dsimp only [OracleReduction.append]
+        congr 1
+        unfold CoreInteraction.sumcheckFoldOracleReduction
+          CoreInteraction.sumcheckFoldOracleVerifier
+        rw [castInOut_verifier]
+        dsimp only [OracleReduction.append]
+        congr 1
+        congr 1
+        · simp only [CoreInteraction.nonLastBlocksOracleReduction,
+            CoreInteraction.nonLastBlocksOracleVerifier, OracleReduction.seqCompose]
+          congr 1
+          funext i
+          simp only [CoreInteraction.nonLastSingleBlockOracleReduction,
+            CoreInteraction.nonLastSingleBlockOracleVerifier, castInOut_verifier,
+            OracleReduction.append, OracleReduction.seqCompose]
+          rfl
+        · simp only [CoreInteraction.lastBlockOracleReduction,
+            CoreInteraction.lastBlockOracleVerifier, castInOut_verifier,
+            OracleReduction.append, OracleReduction.seqCompose]
+          rfl
+    dsimp only [OracleProof.toOracleVerifier] at h_verifier
+    rw [h_verifier]
     exact h_lifted
 
 end BinaryBasefoldMLIOPCS
@@ -772,12 +917,12 @@ basis `β_rs`.
 
 Kept as a plain (non-`@[reducible]`) definition on purpose: the ring-switching `SampleableType`/
 `OracleInterface` instances for `pSpecBatching κ L K P` (etc.) are `∀ j`-indexed instances whose
-discrimination-tree key is the abstract projection `P.A`. Unfolding `binaryTowerProfile` (which is
-`@[reducible]`, exposing `P.A := TensorAlgebra K L`) would change that key and block instance
+discrimination-tree key is the abstract projection `P.A`. Unfolding `tensorProductProfile` (which is
+`@[reducible]`, exposing `P.A := L ⊗[K] L`) would change that key and block instance
 synthesis. Keeping the profile opaque here preserves the generic instances while remaining
-definitionally equal to `binaryTowerProfile κ K L β_rs` for the black-box `FullRingSwitching`
+definitionally equal to `tensorProductProfile κ K L β_rs` for the black-box `FullRingSwitching`
 theorems (which take `P` abstractly). -/
-def bbfProfile : RingSwitchingProfile K L κ := binaryTowerProfile κ K L β_rs
+def bbfProfile : RingSwitchingProfile K L κ := tensorProductProfile κ K L β_rs
 
 /-- The Binary Basefold MLIOPCS challenge spec is sampleable (exposes `O_challenges` as an
 instance so the composed `fullPspec` challenge-sampleability synthesis fires through the
@@ -788,13 +933,14 @@ instance bbfMLIOPCS_challenges_sampleable :
   (bbfMLIOPCS 𝔽q β γ_repetitions
     (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)).O_challenges
 
+omit [DecidableEq K] [Fintype K] in
 /-- Perfect completeness of the composed protocol:
 Ring-switching + Binary Basefold as MLIOPCS.
 
 This is a direct instantiation of `fullOracleReduction_perfectCompleteness` from
 `RingSwitching/General.lean` with the Binary Basefold MLIOPCS. -/
-theorem bbf_fullOracleReduction_perfectCompleteness (hInit : NeverFail init) :
-    OracleReduction.perfectCompleteness
+theorem bbf_fullOracleReduction_perfectCompleteness :
+    OracleReduction.perfectCompleteness (Oₛₒ := fun i : Empty => nomatch i)
       (oracleReduction := FullRingSwitching.fullOracleReduction κ L K
         (bbfProfile κ K β_rs) ℓ ℓ' h_l
         (bbfMLIOPCS 𝔽q β γ_repetitions
@@ -804,20 +950,22 @@ theorem bbf_fullOracleReduction_perfectCompleteness (hInit : NeverFail init) :
         (bbfMLIOPCS 𝔽q β γ_repetitions
           (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)).toAbstractOStmtIn)
       (relOut := acceptRejectOracleRel)
-      (init := init) (impl := impl) :=
-  FullRingSwitching.fullOracleReduction_perfectCompleteness κ L K
+      (init := init) (impl := impl) := by
+  let : Finite K := Finite.of_injective (algebraMap K L) (algebraMap K L).injective
+  exact FullRingSwitching.fullOracleReduction_perfectCompleteness κ L K
     (bbfProfile κ K β_rs) ℓ ℓ' h_l
     (bbfMLIOPCS 𝔽q β γ_repetitions
       (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑))
-    init hInit
+    init (tensorProductProfile_coordinateLaws κ K L β_rs)
 
+omit [DecidableEq K] [Fintype K] in
 /-- RBR knowledge soundness of the composed protocol:
 Ring-switching + Binary Basefold as MLIOPCS.
 
 This is a direct instantiation of `fullOracleVerifier_rbrKnowledgeSoundness` from
 `RingSwitching/General.lean` with the Binary Basefold MLIOPCS. -/
 theorem bbf_fullOracleVerifier_rbrKnowledgeSoundness :
-    OracleVerifier.rbrKnowledgeSoundness
+    OracleVerifier.rbrKnowledgeSoundness (Oₛₒ := fun i : Empty => nomatch i)
       (verifier := FullRingSwitching.fullOracleVerifier κ L K
         (bbfProfile κ K β_rs) ℓ ℓ' h_l
         (bbfMLIOPCS 𝔽q β γ_repetitions
@@ -831,12 +979,14 @@ theorem bbf_fullOracleVerifier_rbrKnowledgeSoundness :
       (rbrKnowledgeError := fun i => FullRingSwitching.fullRbrKnowledgeError κ L K
         (bbfProfile κ K β_rs) ℓ'
         (bbfMLIOPCS 𝔽q β γ_repetitions
-          (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)) i) :=
-  FullRingSwitching.fullOracleVerifier_rbrKnowledgeSoundness κ L K
+          (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)) i) := by
+  let : Finite K := Finite.of_injective (algebraMap K L) (algebraMap K L).injective
+  exact FullRingSwitching.fullOracleVerifier_rbrKnowledgeSoundness κ L K
     (bbfProfile κ K β_rs) ℓ ℓ' h_l
     (bbfMLIOPCS 𝔽q β γ_repetitions
       (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑))
-    init
+    init (tensorProductProfile_coordinateLaws κ K L β_rs)
+      (bbfAbstractOStmtIn_functional 𝔽q β)
 
 /-- Closed-form scalar knowledge-soundness error for the composed protocol: the total
 round-by-round knowledge error summed over all challenge rounds
@@ -847,6 +997,7 @@ noncomputable def bbfSmallFieldConcreteKnowledgeError
     (mlIOPCS : MLIOPCS L ℓ') [∀ i, SampleableType (mlIOPCS.pSpec.Challenge i)] : ℝ≥0 :=
   ∑ i, FullRingSwitching.fullRbrKnowledgeError κ L K (bbfProfile κ K β_rs) ℓ' mlIOPCS i
 
+omit [DecidableEq K] [Fintype K] in
 /-- Scalar knowledge soundness for ring-switching composed with Binary Basefold as `MLIOPCS`.
 
 Proof: the composed verifier is round-by-round knowledge sound with per-round errors
@@ -856,7 +1007,8 @@ soundness with error `∑ i, fullRbrKnowledgeError … = bbfSmallFieldConcreteKn
 theorem bbf_fullOracleVerifier_knowledgeSoundness :
     (FullRingSwitching.fullOracleVerifier κ L K (bbfProfile κ K β_rs) ℓ ℓ' h_l
         (bbfMLIOPCS 𝔽q β γ_repetitions
-          (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑))).toVerifier.knowledgeSoundness
+          (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑))).toVerifier
+            (Oₛₒ := fun i : Empty => nomatch i).knowledgeSoundness
       (init := init) (impl := impl)
       (relIn := BatchingPhase.batchingInputRelation
         κ L K (bbfProfile κ K β_rs) ℓ ℓ' h_l
@@ -874,12 +1026,14 @@ theorem bbf_fullOracleVerifier_knowledgeSoundness :
   let ε := fun i => FullRingSwitching.fullRbrKnowledgeError κ L K (bbfProfile κ K β_rs)
     ℓ' mlio i
   have h_rbr :
-      fullV.toVerifier.rbrKnowledgeSoundness init impl relIn0 acceptRejectOracleRel ε := by
-    change OracleVerifier.rbrKnowledgeSoundness init impl relIn0 acceptRejectOracleRel fullV ε
+      (fullV.toVerifier (Oₛₒ := fun i : Empty => nomatch i)).rbrKnowledgeSoundness
+        init impl relIn0 acceptRejectOracleRel ε := by
+    change OracleVerifier.rbrKnowledgeSoundness (Oₛₒ := fun i : Empty => nomatch i)
+      init impl relIn0 acceptRejectOracleRel fullV ε
     exact bbf_fullOracleVerifier_rbrKnowledgeSoundness 𝔽q β γ_repetitions
       (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) κ K β_rs ℓ h_l init
   exact (Verifier.rbrKnowledgeSoundness_implies_knowledgeSoundness (init := init) (impl := impl)
-    relIn0 acceptRejectOracleRel fullV.toVerifier ε) h_rbr
+    relIn0 acceptRejectOracleRel (fullV.toVerifier (Oₛₒ := fun i : Empty => nomatch i)) ε) h_rbr
 
 end Composition
 

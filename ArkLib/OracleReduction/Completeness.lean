@@ -100,14 +100,14 @@ the successful event and leaves failure untouched. -/
 theorem probEvent_simulateQ_option_map
     {ι σ α β : Type} {spec : OracleSpec ι}
     (init : ProbComp σ) (impl : QueryImpl spec (StateT σ ProbComp))
-    (computation : OracleComp spec (Option α)) (f : α → β) (P : β → Prop)
-    [DecidablePred P] [DecidablePred (P ∘ f)] :
+    (computation : OracleComp spec (Option α)) (f : α → β) (P : β → Prop) :
     probEvent (OptionT.mk do
       let s ← init
       (simulateQ impl (Option.map f <$> computation)).run' s) P =
     probEvent (OptionT.mk do
       let s ← init
       (simulateQ impl computation).run' s) (P ∘ f) := by
+  classical
   apply OptionT.probEvent_eq_of_run_map_eq _ _ f P
   simp only [OptionT.run, OptionT.mk, simulateQ_map, StateT.run'_eq, map_bind,
     Functor.map_map]
@@ -126,6 +126,8 @@ variable {oSpec : OracleSpec ι} [oSpec.Fintype] [oSpec.Inhabited]
 def liftQuery {spec : OracleSpec ι} {α} (q : OracleQuery spec α) : OracleComp spec α :=
   OracleComp.lift q
 
+omit [oSpec.Fintype] [oSpec.Inhabited] [[pSpec.Challenge]ₒ.Fintype]
+  [[pSpec.Challenge]ₒ.Inhabited] in
 /-- **Generic n-Message Protocol Completeness Theorem**
 
 This theorem characterizes perfect completeness for interactive oracle reductions
@@ -143,8 +145,8 @@ theorem unroll_n_message_reduction_perfectCompleteness
     (reduction : OracleReduction oSpec StmtIn OStmtIn WitIn StmtOut OStmtOut WitOut pSpec)
     (relIn : Set ((StmtIn × ∀ i, OStmtIn i) × WitIn))
     (relOut : Set ((StmtOut × ∀ i, OStmtOut i) × WitOut))
-    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp)) (hInit : NeverFail init)
-    (hImplSupp : ∀ {β} (q : OracleQuery oSpec β) s,
+    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp)) (_hInit : NeverFail init)
+    (_hImplSupp : ∀ {β} (q : OracleQuery oSpec β) s,
       Prod.fst <$> support ((QueryImpl.mapQuery impl q).run s) = support (liftQuery q)) :
     OracleReduction.perfectCompleteness init impl relIn relOut reduction ↔
     ∀ (stmtIn : StmtIn) (oStmtIn : ∀ i, OStmtIn i) (witIn : WitIn),
@@ -168,7 +170,8 @@ theorem unroll_n_message_reduction_perfectCompleteness
             pure ((prvStmtOut, prvOStmtOut), verifierStmtOut, witOut)
           (simulateQ pImpl computation.run).run' s)
         (fun ⟨(prvStmt, prvOStmt), (verStmt, verOStmt), witOut⟩ =>
-          ((verStmt, verOStmt), witOut) ∈ relOut ∧ prvStmt = verStmt ∧ prvOStmt = verOStmt) = 1 := by
+          ((verStmt, verOStmt), witOut) ∈ relOut ∧
+            prvStmt = verStmt ∧ prvOStmt = verOStmt) = 1 := by
   classical
   rw [OracleReduction.perfectCompleteness, Reduction.perfectCompleteness_eq_prob_one]
   constructor
@@ -179,7 +182,7 @@ theorem unroll_n_message_reduction_perfectCompleteness
         (StmtOut × ((i : ιₛₒ) → OStmtOut i)) × WitOut) → Prop :=
       fun ⟨(prvStmt, prvOStmt), (verStmt, verOStmt), witOut⟩ =>
         ((verStmt, verOStmt), witOut) ∈ relOut ∧ prvStmt = verStmt ∧ prvOStmt = verOStmt
-    letI : DecidablePred P := Classical.decPred _
+    let : DecidablePred P := Classical.decPred _
     let f :
         ((pSpec.FullTranscript ×
           ((StmtOut × ((i : ιₛₒ) → OStmtOut i)) × WitOut)) ×
@@ -188,7 +191,7 @@ theorem unroll_n_message_reduction_perfectCompleteness
             (StmtOut × ((i : ιₛₒ) → OStmtOut i)) × WitOut) :=
       fun ⟨⟨_, ⟨prvStmt, prvOStmt⟩, witOut⟩, ⟨verStmt, verOStmt⟩⟩ =>
       ((prvStmt, prvOStmt), (verStmt, verOStmt), witOut)
-    letI : DecidablePred (P ∘ f) := Classical.decPred _
+    let : DecidablePred (P ∘ f) := Classical.decPred _
     let computation : OptionT (OracleComp (oSpec + [pSpec.Challenge]ₒ))
         ((StmtOut × ((i : ιₛₒ) → OStmtOut i)) ×
           (StmtOut × ((i : ιₛₒ) → OStmtOut i)) × WitOut) := do
@@ -257,7 +260,7 @@ theorem unroll_n_message_reduction_perfectCompleteness
         (StmtOut × ((i : ιₛₒ) → OStmtOut i)) × WitOut) → Prop :=
       fun ⟨(prvStmt, prvOStmt), (verStmt, verOStmt), witOut⟩ =>
         ((verStmt, verOStmt), witOut) ∈ relOut ∧ prvStmt = verStmt ∧ prvOStmt = verOStmt
-    letI : DecidablePred P := Classical.decPred _
+    let : DecidablePred P := Classical.decPred _
     let f :
         ((pSpec.FullTranscript ×
           ((StmtOut × ((i : ιₛₒ) → OStmtOut i)) × WitOut)) ×
@@ -266,7 +269,7 @@ theorem unroll_n_message_reduction_perfectCompleteness
             (StmtOut × ((i : ιₛₒ) → OStmtOut i)) × WitOut) :=
       fun ⟨⟨_, ⟨prvStmt, prvOStmt⟩, witOut⟩, ⟨verStmt, verOStmt⟩⟩ =>
       ((prvStmt, prvOStmt), (verStmt, verOStmt), witOut)
-    letI : DecidablePred (P ∘ f) := Classical.decPred _
+    let : DecidablePred (P ∘ f) := Classical.decPred _
     let computation : OptionT (OracleComp (oSpec + [pSpec.Challenge]ₒ))
         ((StmtOut × ((i : ιₛₒ) → OStmtOut i)) ×
           (StmtOut × ((i : ιₛₒ) → OStmtOut i)) × WitOut) := do
@@ -517,6 +520,8 @@ variable {oSpec : OracleSpec ι} [oSpec.Fintype] [oSpec.Inhabited]
   [[pSpec.Challenge]ₒ.Fintype] [[pSpec.Challenge]ₒ.Inhabited]
   [∀ i, OracleInterface (pSpec.Message i)]
 
+omit [oSpec.Fintype] [oSpec.Inhabited] [[pSpec.Challenge]ₒ.Fintype]
+  [[pSpec.Challenge]ₒ.Inhabited] in
 /-- **Derive 0-message version from generic n-message theorem**
 
 This theorem handles protocols with no interaction rounds. It is useful for relay-style
@@ -551,7 +556,8 @@ theorem unroll_0_message_reduction_perfectCompleteness
             pure ((prvStmtOut, prvOStmtOut), verifierStmtOut, witOut)
           (simulateQ pImpl computation.run).run' s)
         (fun ((prvStmt, prvOStmt), (verStmt, verOStmt), witOut) =>
-          ((verStmt, verOStmt), witOut) ∈ relOut ∧ prvStmt = verStmt ∧ prvOStmt = verOStmt) = 1 := by
+          ((verStmt, verOStmt), witOut) ∈ relOut ∧
+            prvStmt = verStmt ∧ prvOStmt = verOStmt) = 1 := by
   rw [unroll_n_message_reduction_perfectCompleteness (n := 0) (reduction := reduction)
     relIn relOut init impl hInit hImplSupp]
   apply forall_congr'; intro stmtIn
@@ -579,6 +585,8 @@ variable {oSpec : OracleSpec ι} [oSpec.Fintype] [oSpec.Inhabited]
   [[pSpec.Challenge]ₒ.Fintype] [[pSpec.Challenge]ₒ.Inhabited]
   [∀ i, OracleInterface (pSpec.Message i)]
 
+omit [oSpec.Fintype] [oSpec.Inhabited] [[pSpec.Challenge]ₒ.Fintype]
+  [[pSpec.Challenge]ₒ.Inhabited] in
 /-- **Derive 1-message version from generic n-message theorem**
 
 This theorem handles the case of a 1-message protocol where the prover sends a single
@@ -622,7 +630,8 @@ theorem unroll_1_message_reduction_perfectCompleteness_P_to_V
             pure ((prvStmtOut, prvOStmtOut), verifierStmtOut, witOut)
           (simulateQ pImpl computation.run).run' s)
         (fun ((prvStmt, prvOStmt), (verStmt, verOStmt), witOut) =>
-          ((verStmt, verOStmt), witOut) ∈ relOut ∧ prvStmt = verStmt ∧ prvOStmt = verOStmt) = 1 := by
+          ((verStmt, verOStmt), witOut) ∈ relOut ∧
+            prvStmt = verStmt ∧ prvOStmt = verOStmt) = 1 := by
   rw [unroll_n_message_reduction_perfectCompleteness (n := 1) (reduction := reduction)
     relIn relOut init impl hInit hImplSupp]
   apply forall_congr'; intro stmtIn
@@ -644,10 +653,9 @@ theorem unroll_1_message_reduction_perfectCompleteness_P_to_V
   rename_i _ prvState1 prvOut
   all_goals
     try rw [← ProtocolSpec.FullTranscript.mk1_eq_snoc]
-  all_goals
-    funext i
-    fin_cases i <;> rfl
 
+omit [oSpec.Fintype] [oSpec.Inhabited] [[pSpec.Challenge]ₒ.Fintype]
+  [[pSpec.Challenge]ₒ.Inhabited] in
 /-- **Derive 1-message V→P version from generic n-message theorem**
 
 This theorem is for 1-message protocols where the verifier sends a challenge to the prover
@@ -692,7 +700,8 @@ theorem unroll_1_message_reduction_perfectCompleteness_V_to_P
             pure ((prvStmtOut, prvOStmtOut), verifierStmtOut, witOut)
           (simulateQ pImpl computation.run).run' s)
         (fun ((prvStmt, prvOStmt), (verStmt, verOStmt), witOut) =>
-          ((verStmt, verOStmt), witOut) ∈ relOut ∧ prvStmt = verStmt ∧ prvOStmt = verOStmt) = 1 := by
+          ((verStmt, verOStmt), witOut) ∈ relOut ∧
+            prvStmt = verStmt ∧ prvOStmt = verOStmt) = 1 := by
   -- 1. Apply the generic theorem for n = 1
   rw [unroll_n_message_reduction_perfectCompleteness (n := 1) (reduction := reduction)
     relIn relOut init impl hInit hImplSupp]
@@ -718,10 +727,6 @@ theorem unroll_1_message_reduction_perfectCompleteness_V_to_P
   congr!
   all_goals
   · try rw [← ProtocolSpec.FullTranscript.mk1_eq_snoc]
-  all_goals
-  · funext i
-    fin_cases i
-    · rfl
 
 end OneMessageProtocol
 
@@ -736,6 +741,8 @@ variable {oSpec : OracleSpec ι} [oSpec.Fintype] [oSpec.Inhabited]
   [[pSpec.Challenge]ₒ.Fintype] [[pSpec.Challenge]ₒ.Inhabited]
   [∀ i, OracleInterface (pSpec.Message i)]
 
+omit [oSpec.Fintype] [oSpec.Inhabited] [[pSpec.Challenge]ₒ.Fintype]
+  [[pSpec.Challenge]ₒ.Inhabited] in
 /-- **Derive 2-message version from generic n-message theorem**: [P->V, V->P]
 
 This theorem tests whether `unroll_n_message_reduction_perfectCompleteness` is actually
@@ -783,7 +790,8 @@ theorem unroll_2_message_reduction_perfectCompleteness
             pure ((prvStmtOut, prvOStmtOut), verifierStmtOut, witOut)
           (simulateQ pImpl computation.run).run' s)
         (fun ((prvStmt, prvOStmt), (verStmt, verOStmt), witOut) =>
-          ((verStmt, verOStmt), witOut) ∈ relOut ∧ prvStmt = verStmt ∧ prvOStmt = verOStmt) = 1 := by
+          ((verStmt, verOStmt), witOut) ∈ relOut ∧
+            prvStmt = verStmt ∧ prvOStmt = verOStmt) = 1 := by
   rw [unroll_n_message_reduction_perfectCompleteness (n := 2) (reduction := reduction)
     relIn relOut init impl hInit hImplSupp]
   apply forall_congr'; intro stmtIn
@@ -806,658 +814,8 @@ theorem unroll_2_message_reduction_perfectCompleteness
   congr!
   all_goals
   · try rw [← ProtocolSpec.FullTranscript.mk2_eq_snoc_snoc]
-  all_goals
-  · funext i
-    fin_cases i
-    · rfl
-    · rfl
 
 end TwoMessageProtocol
-
-/-
-/-! ## Round-by-Round Knowledge Soundness Unroll Lemmas
-
-This section provides unroll lemmas for `rbrKnowledgeSoundness` that mirror the structure
-of the completeness unroll lemmas. These lemmas convert the probabilistic soundness bounds
-into factored tsum forms that are easier to work with for probability reasoning.
-
-**Key differences from completeness:**
-- Completeness: `probEvent = 1` → pure logic/support statements
-- Soundness: `probEvent ≤ error` → tsum factorization → probability bounds
-
-**Main Results:**
-- `unroll_rbrKnowledgeSoundness`: Generic lemma that factors the probEvent bound into a tsum
-  over initial states, enabling uniform bounds on the inner computation.
-- Future: Specific versions for 1-message and 2-message protocols (similar to completeness)
--/
-
-section RoundByRoundKnowledgeSoundness
-
-open NNReal ENNReal
-
-variable {ι : Type} {oSpec : OracleSpec ι} [oSpec.Fintype]
-  {StmtIn WitIn StmtOut WitOut : Type} {n : ℕ} {pSpec : ProtocolSpec n}
-  [∀ i, SampleableType (pSpec.Challenge i)]
-  {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-
-lemma tsum_mul_le_of_le_of_sum_le_one_nnreal {α : Type*}
-    {f g : α → ℝ≥0} {ε : ℝ≥0}
-    (hf_summable : Summable f) -- Required for NNReal tsum arithmetic
-    (hg : ∀ x, g x ≤ ε)
-    (hf : ∑' x, f x ≤ 1) :
-    ∑' x, f x * g x ≤ ε := by
-  -- 1. Establish that the upper bound series (f x * ε) is summable
-  have h_mul_summable : Summable (fun x ↦ f x * ε) :=
-    hf_summable.mul_right ε
-  -- 2. Establish that the target series (f x * g x) is summable by comparison
-  have h_fg_summable : Summable (fun x ↦ f x * g x) := by
-    refine NNReal.summable_of_le (fun x ↦ ?_) h_mul_summable
-    exact mul_le_mul_of_nonneg_left (hg x) (by positivity)
-  -- 3. The calculation
-  calc ∑' x, f x * g x
-    _ ≤ ∑' x, f x * ε := by
-      apply Summable.tsum_le_tsum _ h_fg_summable h_mul_summable
-      intro x
-      exact mul_le_mul_of_nonneg_left (hg x) (by positivity)
-    _ = (∑' x, f x) * ε := tsum_mul_right f ε
-    _ ≤ 1 * ε := mul_le_mul_of_nonneg_right hf (by positivity)
-    _ = ε := one_mul ε
-
-lemma ENNReal.tsum_mul_le_of_le_of_sum_le_one {α : Type*} {f g : α → ℝ≥0∞} {ε : ℝ≥0∞}
-    (hg : ∀ x, g x ≤ ε) -- The conditional probability is bounded
-    (hf : ∑' x, f x ≤ 1) :    -- The weights sum to at most 1
-    ∑' x, f x * g x ≤ ε := by
-  calc ∑' x, f x * g x
-    _ ≤ ∑' x, f x * ε :=
-      ENNReal.tsum_le_tsum (fun x ↦ mul_le_mul_left' (hg x) _)
-    _ = (∑' x, f x) * ε := ENNReal.tsum_mul_right
-    _ ≤ 1 * ε := mul_le_mul_right' hf ε
-    _ = ε := one_mul ε
-
-omit [oSpec.Fintype] in
-/-- **Unroll lemma for round-by-round knowledge soundness (uniform bound form)**
-
-This is the preferred formulation for proving round-by-round knowledge soundness.
-Instead of proving the tsum bound directly, we prove a **uniform bound for all states**:
-
-```
-∀ (s : σ), [doom_event | (simulateQ ...).run s] ≤ rbrKnowledgeError i
-```
-
-This implies `rbrKnowledgeSoundness` because:
-- `∑' s, [= s | init] * [doom_event | ...run s] ≤ ∑' s, [= s | init] * ε`
-- `= ε * ∑' s, [= s | init]`
-- `≤ ε * 1 = ε`  (since `∑' s, [= s | init] ≤ 1` for any probability distribution)
-
-This form is convenient because:
-1. The initial state `s` is fixed, simplifying the probability reasoning
-2. The bound holds uniformly regardless of `init`, making proofs more modular
-3. It aligns with how we typically apply tools like Schwartz-Zippel
--/
-theorem unroll_rbrKnowledgeSoundness
-    (verifier : Verifier oSpec StmtIn StmtOut pSpec)
-    (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
-    (rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0)
-    (WitMid : Fin (n + 1) → Type)
-    (extractor : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid)
-    (kSF : verifier.KnowledgeStateFunction init impl relIn relOut extractor)
-    (h_single_bound : ∀ stmtIn : StmtIn,
-    ∀ witIn : WitIn,
-    ∀ prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec,
-    ∀ i : pSpec.ChallengeIdx,
-    ∀ s : σ,
-      (Pr[fun ⟨⟨transcript, challenge, _proveQueryLog⟩, _initState⟩ =>
-        ∃ witMid,
-          ¬ kSF i.1.castSucc stmtIn transcript
-            (extractor.extractMid i.1 stmtIn (transcript.concat challenge) witMid) ∧
-            kSF i.1.succ stmtIn (transcript.concat challenge) witMid
-      | (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
-          (do
-            let ⟨⟨transcript, _⟩, proveQueryLog⟩
-              ← prover.runWithLogToRound i.1.castSucc stmtIn witIn
-            let challenge ← liftComp (pSpec.getChallenge i) _
-            return (transcript, challenge, proveQueryLog))).run s] ≤
-      rbrKnowledgeError i)) :
-    (verifier.rbrKnowledgeSoundness init impl relIn relOut rbrKnowledgeError) := by
-  -- Provide the witnesses from hypotheses
-  use WitMid, extractor, kSF
-  intro stmtIn witIn prover i
-  rw [probEvent_bind_eq_tsum]
-  apply ENNReal.tsum_mul_le_of_le_of_sum_le_one (α := σ) (f := fun s => Pr[= s | init])
-  · intro s
-    simp only [StateT.run']
-    rw [probEvent_map]
-    let res := h_single_bound stmtIn witIn prover i s
-    exact res
-  · apply tsum_probOutput_le_one
-
-end RoundByRoundKnowledgeSoundness
-
-/-! ## Probability Event Simplification Lemmas for Soundness Proofs
-
-This section provides lemmas for simplifying `probEvent` expressions when the predicate
-ignores certain parts of the output (like query logs or final states). These are essential
-for reducing complex soundness goals to cleaner forms suitable for Schwartz-Zippel-style bounds.
-
-### Key Patterns Addressed
-
-1. **State marginalization**: When predicate ignores the final state from `StateT`
-2. **Query log elimination**: When predicate ignores the query log from `runWithLogToRound`
-3. **Combined patterns**: Full simplification for the common soundness proof shape
-
-### Usage
-
-Apply these lemmas (or use them as `simp` lemmas) to transform goals of the form:
-```lean
-[fun ⟨⟨transcript, challenge, _log⟩, _state⟩ => P transcript challenge |
-  (simulateQ impl (do ... runWithLogToRound ... getChallenge ...)).run s]
-```
-into cleaner forms:
-```lean
-[fun ⟨transcript, challenge⟩ => P transcript challenge |
-  simulateQ impl (do ... runToRound ... getChallenge ...)]
-```
--/
-
-section ProbEventSimplification
-
-open NNReal ENNReal
-
-variable {ι : Type} {oSpec : OracleSpec ι} [oSpec.Fintype]
-  {StmtIn WitIn StmtOut WitOut : Type} {n : ℕ} {pSpec : ProtocolSpec n}
-  [∀ i, SampleableType (pSpec.Challenge i)]
-  {σ : Type}
-
-/-! ### Lemma 1: State Marginalization
-
-When the predicate ignores the final state, we can use `run'` instead of `run`. -/
-
-/-- When the predicate ignores the final state from a stateful computation,
-    the probability event can be computed using `run'` (which discards state). -/
-theorem probEvent_StateT_run_ignore_state {α : Type}
-    (comp : StateT σ ProbComp α) (s : σ)
-    (P : α → Prop) [DecidablePred P] [DecidablePred (fun x : α × σ => P x.1)] :
-    Pr[fun x : α × σ => P x.1 | comp.run s] = Pr[P | comp.run' s] := by
-  simp only [StateT.run'_eq, probEvent_map]
-  congr 1
-
-omit [oSpec.Fintype] in
-/-- Version for `simulateQ` with stateful implementation. -/
-theorem probEvent_simulateQ_run_ignore_state {α : Type}
-    (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (oa : OracleComp oSpec α) (s : σ)
-    (P : α → Prop) [DecidablePred P] [DecidablePred (fun x : α × σ => P x.1)] :
-    Pr[fun x : α × σ => P x.1 | (simulateQ impl oa).run s] =
-    Pr[P | (simulateQ impl oa).run' s] := by
-  simp only [StateT.run'_eq, probEvent_map]
-  congr 1
-
-/-! ### Lemma 2: Combined Transcript-Challenge Pattern
-
-These lemmas handle the common pattern in soundness proofs where we compute
-`(transcript, challenge, queryLog)` but only care about `(transcript, challenge)`. -/
-
-/-- Projection function that extracts `(transcript, challenge)` from the full tuple
-    `((transcript, challenge, queryLog), state)`. -/
-@[reducible]
-def projTranscriptChallenge {T C L S : Type} : ((T × C × L) × S) → T × C :=
-  fun ⟨⟨t, c, _⟩, _⟩ => (t, c)
-
-/-- Projection function that extracts `(transcript, challenge)` from the inner tuple
-    `(transcript, challenge, queryLog)`. -/
-@[reducible]
-def projTranscriptChallengeInner {T C L : Type} : (T × C × L) → T × C :=
-  fun ⟨t, c, _⟩ => (t, c)
-
-/-- When computing `(transcript, challenge, queryLog)` inside a stateful simulation,
-    but the predicate only uses `(transcript, challenge)`, we can eliminate both
-    the query log and the state tracking.
-    This transforms:
-    ```
-    Pr[fun ⟨⟨tr, chal, _log⟩, _state⟩ => P tr chal | (simulateQ impl computation).run s]
-    ```
-    into a cleaner form suitable for probability analysis. -/
-theorem probEvent_proj_transcript_challenge
-    {T C L : Type}
-    (comp : StateT σ ProbComp (T × C × L))
-    (s : σ) (P : T × C → Prop)
-    [DecidablePred P]
-    [DecidablePred (P ∘ projTranscriptChallenge (T := T) (C := C) (L := L) (S := σ))] :
-    Pr[P ∘ projTranscriptChallenge | comp.run s] =
-    Pr[P ∘ projTranscriptChallengeInner | comp.run' s] := by
-  simp only [StateT.run'_eq, probEvent_map, Function.comp_def, projTranscriptChallenge,
-    projTranscriptChallengeInner]
-
-/-! ### Lemma 4: Master Log Unrolling for Soundness Goals
-
-The ultimate lemmas that handle the full pattern appearing in `unroll_rbrKnowledgeSoundness`,
-eliminating both the query log and state when the predicate doesn't use them. -/
-
-omit [oSpec.Fintype] in
-/-- **Master log unrolling lemma for soundness bounds.**
-
-This transforms the complex goal shape from `unroll_rbrKnowledgeSoundness`:
-```lean
-Pr[fun ⟨⟨transcript, challenge, _log⟩, _state⟩ => P transcript challenge |
-  (simulateQ (impl ++ₛₒ challengeQueryImpl)
-    (do
-      let ⟨⟨transcript, _⟩, proveQueryLog⟩ ← runWithLogToRound ...
-      let challenge ← getChallenge.liftComp ...
-      pure (transcript, challenge, proveQueryLog))).run s]
-```
-
-into the cleaner form without logging:
-```lean
-Pr[fun ⟨transcript, challenge⟩ => P transcript challenge |
-  (simulateQ (impl ++ₛₒ challengeQueryImpl)
-    (do
-      let ⟨transcript, _⟩ ← runToRound ...
-      let challenge ← getChallenge.liftComp ...
-      pure (transcript, challenge))).run' s]
-```
-
-This cleaner form is suitable for applying `probEvent_bind_eq_tsum` to factor
-out the challenge for Schwartz-Zippel-style probability bounds.
--/
-theorem probEvent_soundness_goal_unroll_log
-    [∀ i, Fintype (pSpec.Challenge i)] [∀ i, Inhabited (pSpec.Challenge i)]
-    [(oSpec + [pSpec.Challenge]ₒ).Fintype]
-    (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
-    (i : pSpec.ChallengeIdx) (stmt : StmtIn) (wit : WitIn) (s : σ)
-    (P : pSpec.Transcript i.1.castSucc × pSpec.Challenge i → Prop)
-    [DecidablePred P]
-    [DecidablePred (fun x : (pSpec.Transcript i.1.castSucc × pSpec.Challenge i ×
-      QueryLog (oSpec + [pSpec.Challenge]ₒ)) × σ => P (projTranscriptChallenge x))] :
-    Pr[fun x => P (projTranscriptChallenge x) |
-      (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
-        (do
-          let ⟨⟨transcript, _⟩, proveQueryLog⟩ ← prover.runWithLogToRound i.1.castSucc stmt wit
-          let challenge ← liftComp (pSpec.getChallenge i) (oSpec + [pSpec.Challenge]ₒ)
-          return (transcript, challenge, proveQueryLog))).run s] =
-    Pr[fun x => P x |
-      (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
-        (do
-          let ⟨transcript, _⟩ ← prover.runToRound i.1.castSucc stmt wit
-          let challenge ← liftComp (pSpec.getChallenge i) (oSpec + [pSpec.Challenge]ₒ)
-          return (transcript, challenge))).run' s] := by
-  simp only  at *
-  have h_eq : (fun x => P (projTranscriptChallenge (T := pSpec.Transcript i.1.castSucc)
-      (C := pSpec.Challenge i) (L := QueryLog (oSpec + [pSpec.Challenge]ₒ)) (S := σ) x)) =
-      P ∘ projTranscriptChallenge (T := pSpec.Transcript i.1.castSucc)
-      (C := pSpec.Challenge i) (L := QueryLog (oSpec + [pSpec.Challenge]ₒ)) (S := σ) := by
-    ext x
-    simp only [Function.comp_apply]
-  rw [h_eq]
-  rw [← probEvent_map (f := projTranscriptChallenge (T := pSpec.Transcript i.1.castSucc)
-      (C := pSpec.Challenge i) (L := QueryLog (oSpec + [pSpec.Challenge]ₒ)) (S := σ))]
-  congr 1
-  simp only [StateT.run'_eq]
-  simp only [← Prover.runWithLogToRound_discard_log_eq_runToRound]
-  simp only [simulateQ_bind, liftComp_query, bind_pure_comp, StateT.run_bind, Function.comp_apply,
-    simulateQ_map,
-    simulateQ_query, StateT.run_map, map_bind, Functor.map_map]
-  rw [bind_map_left]
-
-omit [oSpec.Fintype] in
-/-- Variant of `probEvent_soundness_goal_unroll_log` with explicit predicate matching
-    the exact shape in `unroll_rbrKnowledgeSoundness`. -/
-theorem probEvent_soundness_goal_unroll_log'
-    [∀ i, Fintype (pSpec.Challenge i)] [∀ i, Inhabited (pSpec.Challenge i)]
-    [(oSpec + [pSpec.Challenge]ₒ).Fintype]
-    (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
-    (i : pSpec.ChallengeIdx) (stmt : StmtIn) (wit : WitIn) (s : σ)
-    (P : pSpec.Transcript i.1.castSucc → pSpec.Challenge i → Prop)
-    [DecidablePred (fun x : pSpec.Transcript i.1.castSucc × pSpec.Challenge i => P x.1 x.2)]
-    [DecidablePred (fun x : (pSpec.Transcript i.1.castSucc × pSpec.Challenge i ×
-      QueryLog (oSpec + [pSpec.Challenge]ₒ)) × σ => P x.1.1 x.1.2.1)] :
-    Pr[fun x : (pSpec.Transcript i.1.castSucc × pSpec.Challenge i ×
-        QueryLog (oSpec + [pSpec.Challenge]ₒ)) × σ => P x.1.1 x.1.2.1 |
-      (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
-        (do
-          let ⟨⟨transcript, _⟩, proveQueryLog⟩ ← prover.runWithLogToRound i.1.castSucc stmt wit
-          let challenge ← liftComp (pSpec.getChallenge i) (oSpec + [pSpec.Challenge]ₒ)
-          return (transcript, challenge, proveQueryLog))).run s] =
-    Pr[fun x : pSpec.Transcript i.1.castSucc × pSpec.Challenge i => P x.1 x.2 |
-      (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
-        (do
-          let ⟨transcript, _⟩ ← prover.runToRound i.1.castSucc stmt wit
-          let challenge ← liftComp (pSpec.getChallenge i) (oSpec + [pSpec.Challenge]ₒ)
-          return (transcript, challenge))).run' s] := by
-  have h := probEvent_soundness_goal_unroll_log (ι := ι) (oSpec := oSpec)
-    (StmtIn := StmtIn) (WitIn := WitIn) (StmtOut := StmtOut) (WitOut := WitOut)
-    (n := n) (pSpec := pSpec) (σ := σ) (impl := impl) (prover := prover)
-    (i := i) (stmt := stmt) (wit := wit) (s := s) (P := fun x => P x.1 x.2)
-  exact h
-
-end ProbEventSimplification
-
-section SoundnessUnrolling
-
-open OracleSpec OracleComp ProtocolSpec ProbComp
-
-variable {ι : Type} {oSpec : OracleSpec ι}
-  {StmtIn WitIn StmtOut WitOut : Type}
-  {n : ℕ} {pSpec : ProtocolSpec n}
-  [∀ i, SampleableType (pSpec.Challenge i)]
-  [∀ i, Fintype (pSpec.Challenge i)] [∀ i, Inhabited (pSpec.Challenge i)]
-  [∀ i, OracleInterface (pSpec.Message i)]
-  {σ : Type}
-
-/-- **Unroll Soundness Computation: 1 Round (P → V)**
-
-Unrolls `runToRound 1` when dir 0 = P_to_V (one prover message at index 0). For pSpecBatching
-the challenge is at index 1; use `soundness_unroll_runToRound_2_pSpec_2` to unroll through it.
-
-**Usage:** `rw [soundness_unroll_runToRound_1_P_to_V_pSpec_2]` -/
-theorem soundness_unroll_runToRound_1_P_to_V_pSpec_2
-    {pSpec : ProtocolSpec 2}
-    (prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
-    (stmtIn : StmtIn) (witIn : WitIn)
-    (hDir0 : pSpec.dir 0 = .P_to_V) :
-    prover.runToRound 1 stmtIn witIn =
-    do
-      let msg0_state1 ← prover.sendMessage ⟨0, hDir0⟩ (prover.input (stmtIn, witIn))
-      let transcript := ProtocolSpec.FullTranscript.mk1 msg0_state1.1
-      return (transcript, msg0_state1.2) := by
-  simp only [Prover.runToRound]
-  have h_one_eq : (1 : Fin 3) = (1 : Fin 2).castSucc := rfl
-  rw! (castMode := .all) [h_one_eq, Fin.induction_init]
-  conv_lhs =>
-    rw [Fin.induction_one']
-    simp only [Fin.castSucc_zero]
-    rw [Prover.processRound_P_to_V (h := hDir0)]
-    simp only
-  dsimp only [ChallengeIdx, Fin.isValue, Fin.castSucc_zero, Fin.succ_zero_eq_one, Challenge,
-    Nat.reduceAdd, Fin.reduceLast]
-  simp only [pure_bind]
-  congr 1
-  unfold FullTranscript.mk1
-  funext i
-  unfold Transcript.concat
-  congr 1; congr 1
-  funext x
-  fin_cases x
-  rfl
-
-/-- **Unroll Soundness Computation: 1 Round (V → P)**
-
-Variant when the first message (index 0) is verifier-to-prover: unrolls `runToRound 1` into
-explicit `getChallenge` and `receiveChallenge` calls. Useful for ProtocolSpec 2 where dir 0 = V_to_P.
-
-**Usage:** `rw [soundness_unroll_runToRound_1_V_to_P_pSpec_2]` -/
-theorem soundness_unroll_runToRound_1_V_to_P_pSpec_2
-    {pSpec : ProtocolSpec 2}
-    (prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
-    (stmtIn : StmtIn) (witIn : WitIn)
-    (hDir0 : pSpec.dir 0 = .V_to_P) :
-    prover.runToRound 1 stmtIn witIn =
-    do
-      let challenge ← pSpec.getChallenge ⟨0, hDir0⟩
-      let receiveChallengeFn ← prover.receiveChallenge ⟨0, hDir0⟩ (prover.input (stmtIn, witIn))
-      let state1 := receiveChallengeFn challenge
-      let transcript := ProtocolSpec.FullTranscript.mk1 challenge
-      return (transcript, state1) := by
-  simp only [Prover.runToRound]
-  have h_one_eq : (1 : Fin 3) = (1 : Fin 2).castSucc := rfl
-  rw! (castMode := .all) [h_one_eq, Fin.induction_init]
-  conv_lhs =>
-    rw [Fin.induction_one']
-    simp only [Fin.castSucc_zero]
-    rw [Prover.processRound_V_to_P (h := hDir0)]
-    simp only
-  dsimp only [ChallengeIdx, Fin.isValue, Fin.castSucc_zero, Fin.succ_zero_eq_one, Challenge,
-    Nat.reduceAdd, Fin.reduceLast]
-  simp only [pure_bind]
-  congr 1
-  unfold FullTranscript.mk1
-  funext i
-  unfold Transcript.concat
-  congr 1;
-  funext receiveChallengeFn
-  congr 1; congr 1;
-  funext x
-  fin_cases x
-  rfl
-
-theorem soundness_unroll_runToRound_0_pSpec_1_V_to_P
-    {pSpec : ProtocolSpec 1}
-    (prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
-    (stmtIn : StmtIn) (witIn : WitIn) :
-    prover.runToRound 0 stmtIn witIn =
-    pure (default, prover.input (stmtIn, witIn)) := by
-  simp only [Prover.runToRound]
-  rfl
-
-/-- **Unroll Soundness Computation: 2 Rounds (P → V, V → P)**
-
-Unrolls the computation leading up to the second challenge (Index 2).
-Useful for 5-move protocols or 2-round reductions.
--/
-theorem soundness_unroll_runToRound_2_pSpec_2
-    {pSpec : ProtocolSpec 2} -- Restrict to n=2 context or generally n >= 2
-    (prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
-    (stmtIn : StmtIn) (witIn : WitIn)
-    (hDir0 : pSpec.dir 0 = .P_to_V) (hDir1 : pSpec.dir 1 = .V_to_P) :
-    prover.runToRound 2 stmtIn witIn =
-    do
-      let ⟨msg0, state1⟩ ← prover.sendMessage ⟨0, hDir0⟩ (prover.input (stmtIn, witIn))
-      let r1 ← pSpec.getChallenge ⟨1, hDir1⟩
-      let receiveChallengeFn ← prover.receiveChallenge ⟨1, hDir1⟩ state1
-      let state2 := receiveChallengeFn r1
-      let transcript := ProtocolSpec.FullTranscript.mk2 msg0 r1
-      return (transcript, state2) := by
-  simp [Prover.runToRound, Fin.induction_two', Prover.processRound_P_to_V (h := hDir0),
-    Prover.processRound_V_to_P (h := hDir1), ProtocolSpec.FullTranscript.mk2_eq_snoc_snoc]
-
-end SoundnessUnrolling
-
-/-! ## Round-by-round knowledge soundness reducers (per protocol shape)
-
-These package the repetitive `unroll_rbrKnowledgeSoundness` + `soundness_unroll_runToRound_*` +
-uniform-challenge-sampling boilerplate into a single lemma per protocol shape. Each reduces
-`rbrKnowledgeSoundness` to one clean per-transcript "doom bound": the probability, over the fresh
-uniform challenge, that the round-by-round extractor fails is at most `rbrKnowledgeError` at the
-challenge index.
-
-They are protocol-agnostic (parametrised by the verifier's `kSF`, `extractor`, `rbrKnowledgeError`,
-and the doom bound), so every sumcheck-round / FRI-fold style leaf — in Binius or any later
-protocol — becomes a one-liner instead of the ~90-line `erw`/`conv`/`simp` chain. -/
-section RbrKSReducers
-
-open OracleSpec OracleComp ProtocolSpec ProbComp ProbabilityTheory
-open scoped ProbabilityTheory NNReal
-
-variable {ι : Type} {oSpec : OracleSpec ι}
-  {StmtIn WitIn StmtOut WitOut : Type} {σ : Type}
-
-/-- **Round-reducer — 2-message, prover-first, uniform challenge** (shape `⟨![P_to_V, V_to_P], _⟩`).
-
-For the shape of every sumcheck-round / FRI-fold style leaf reduction, this reduces
-`rbrKnowledgeSoundness` to a single clean bound `hbound`: for each input statement and first prover
-message, the probability over the fresh uniform challenge `y` that the round-by-round extractor
-fails (the "doom event" `∃ witMid, ¬ kSF … ∧ kSF …`) is at most `rbrKnowledgeError ⟨1, hDir1⟩`.
-
-The `∃ witMid, ¬ kSF … ∧ kSF …` doom event is definitionally the failure predicate produced by
-`unroll_rbrKnowledgeSoundness`; a protocol's `rbrExtractionFailureEvent`-style abbreviation unifies
-with it by reducibility, so existing per-transcript bounds can be passed to `hbound` directly. -/
-theorem rbrKnowledgeSoundness_of_2msg_PtoV_uniformChallenge
-    {pSpec : ProtocolSpec 2} [oSpec.Fintype]
-    [∀ i, SampleableType (pSpec.Challenge i)]
-    [∀ i, Fintype (pSpec.Challenge i)] [∀ i, Inhabited (pSpec.Challenge i)]
-    [IsUniformSpec (oSpec + [pSpec.Challenge]ₒ)]
-    {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
-    (hDir0 : pSpec.dir 0 = .P_to_V) (hDir1 : pSpec.dir 1 = .V_to_P)
-    (verifier : Verifier oSpec StmtIn StmtOut pSpec)
-    (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
-    (rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0)
-    (WitMid : Fin 3 → Type)
-    (extractor : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid)
-    (kSF : verifier.KnowledgeStateFunction init impl relIn relOut extractor)
-    (hbound : ∀ (stmtIn : StmtIn) (msg₀ : pSpec.Message ⟨0, hDir0⟩),
-      Pr_{ let y ← $ᵖ (pSpec.Challenge (⟨1, hDir1⟩ : pSpec.ChallengeIdx)) }[
-        rbrExtractionFailureEvent kSF extractor (⟨1, hDir1⟩ : pSpec.ChallengeIdx) stmtIn
-          (FullTranscript.mk1 msg₀) y] ≤ rbrKnowledgeError ⟨1, hDir1⟩) :
-    verifier.rbrKnowledgeSoundness init impl relIn relOut rbrKnowledgeError := by
-  classical
-  apply unroll_rbrKnowledgeSoundness (kSF := kSF)
-  intro stmtIn witIn prover j initState
-  let P : pSpec.Transcript j.1.castSucc → pSpec.Challenge j → Prop :=
-    fun transcript challenge =>
-      ∃ witMid, ¬ kSF j.1.castSucc stmtIn transcript
-          (extractor.extractMid j.1 stmtIn (transcript.concat challenge) witMid) ∧
-        kSF j.1.succ stmtIn (transcript.concat challenge) witMid
-  rw [probEvent_soundness_goal_unroll_log' (pSpec := pSpec) (P := P) (impl := impl)
-    (prover := prover) (i := j) (stmt := stmtIn) (wit := witIn) (s := initState)]
-  have h_j_eq_1 : j = ⟨1, hDir1⟩ := by
-    obtain ⟨i, hj⟩ := j
-    fin_cases i
-    · exact absurd (hDir0.symm.trans hj) (by decide)
-    · rfl
-  subst h_j_eq_1
-  conv_lhs => simp only [Fin.isValue, Fin.castSucc_one]
-  rw [soundness_unroll_runToRound_1_P_to_V_pSpec_2 (pSpec := pSpec) (prover := prover)
-    (hDir0 := hDir0)]
-  simp only [Fin.isValue, Challenge, ChallengeIdx, QueryImpl.addLift_def, QueryImpl.liftTarget_self,
-    Message, Fin.succ_zero_eq_one, Nat.reduceAdd, Fin.coe_ofNat_eq_mod, Nat.reduceMod,
-    bind_pure_comp, liftComp_eq_liftM, bind_map_left, simulateQ_bind,
-    simulateQ_map, StateT.run'_eq, StateT.run_bind, StateT.run_map, map_bind, Functor.map_map]
-  rw [probEvent_bind_eq_tsum]
-  apply ENNReal.tsum_mul_le_of_le_of_sum_le_one
-  · intro x
-    simp only [Fin.isValue, probEvent_map, Function.comp_def]
-    let q : OracleQuery [pSpec.Challenge]ₒ _ := OracleSpec.query ⟨⟨1, hDir1⟩, ()⟩
-    erw [probEvent_StateT_run_ignore_state
-      (comp := simulateQ (impl.addLift challengeQueryImpl) (liftM (query q.input)))
-      (s := x.2)
-      (P := fun a => P (FullTranscript.mk1 x.1.1) (q.cont a))]
-    rw [probEvent_eq_tsum_ite]
-    erw [simulateQ_query]
-    simp only [ChallengeIdx, Challenge, Fin.isValue, Nat.reduceAdd,
-      monadLift_self, QueryImpl.addLift_def, QueryImpl.liftTarget_self,
-      OracleQuery.input_query, StateT.run'_eq, StateT.run_map, Functor.map_map, ge_iff_le]
-    -- Routing a challenge query through `impl + challengeQueryImpl` is definitionally uniform
-    -- sampling; the `+`-routing to the right branch holds by `rfl` for any `oSpec`.
-    have hchal : ((impl + QueryImpl.liftTarget (StateT σ ProbComp) challengeQueryImpl)
-          (MonadLift.monadLift (OracleSpec.query q.input) :
-            OracleQuery (oSpec + [pSpec.Challenge]ₒ) _).input).run x.2 =
-        ((liftM (challengeQueryImpl (pSpec := pSpec) q.input)) : StateT σ ProbComp _).run x.2 := rfl
-    conv_lhs =>
-      enter [1, x_1, 2, 1, 2]
-      rw [hchal]
-    erw [StateT.run_monadLift, monadLift_self]
-    rw [bind_pure_comp]
-    conv =>
-      enter [1, 1, x_1, 2]
-      erw [Functor.map_map]
-      rw [← probEvent_eq_eq_probOutput]
-      rw [probEvent_map]
-      rw [OracleQuery.cont_apply]
-      dsimp only [MonadLift.monadLift]
-      rw [OracleQuery.cont_apply]
-      dsimp only [q]
-    simp_rw [OracleQuery.input_query, OracleQuery.snd_query]
-    conv_lhs => change (∑' (x_1 : pSpec.Challenge (⟨1, hDir1⟩ : pSpec.ChallengeIdx)), _)
-    simp only [id_eq, Function.comp_def]
-    rw [← probEvent_eq_tsum_ite]
-    rw [probEvent_uniformSample_eq_prob_uniformOfFintype]
-    change Pr_{ let y ← $ᵖ (pSpec.Challenge (⟨1, hDir1⟩ : pSpec.ChallengeIdx)) }[
-      P (FullTranscript.mk1 x.1.1) y ] ≤ rbrKnowledgeError ⟨1, hDir1⟩
-    exact hbound stmtIn x.1.1
-  · apply tsum_probOutput_le_one
-
-/-- **Round-reducer — 1-message, verifier-first, uniform challenge** (shape `⟨![V_to_P], _⟩`).
-
-For a single verifier challenge with no prior prover message — the shape of the FRI query round —
-this reduces `rbrKnowledgeSoundness` to one clean bound `hbound`: the probability, over the fresh
-uniform challenge `y`, that the round-by-round extractor fails on the (empty) round-0 transcript is
-at most `rbrKnowledgeError` at the challenge index. Sibling of
-`rbrKnowledgeSoundness_of_2msg_PtoV_uniformChallenge` for the 1-message verifier-first shape. -/
-theorem rbrKnowledgeSoundness_of_1msg_VtoP_uniformChallenge
-    {pSpec : ProtocolSpec 1} [oSpec.Fintype]
-    [∀ i, SampleableType (pSpec.Challenge i)]
-    [∀ i, Fintype (pSpec.Challenge i)] [∀ i, Inhabited (pSpec.Challenge i)]
-    [IsUniformSpec (oSpec + [pSpec.Challenge]ₒ)]
-    {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
-    (hDir0 : pSpec.dir 0 = .V_to_P)
-    (verifier : Verifier oSpec StmtIn StmtOut pSpec)
-    (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
-    (rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0)
-    (WitMid : Fin 2 → Type)
-    (extractor : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid)
-    (kSF : verifier.KnowledgeStateFunction init impl relIn relOut extractor)
-    (hbound : ∀ (stmtIn : StmtIn)
-        (transcript : pSpec.Transcript (⟨0, hDir0⟩ : pSpec.ChallengeIdx).1.castSucc),
-      Pr_{ let y ← $ᵖ (pSpec.Challenge (⟨0, hDir0⟩ : pSpec.ChallengeIdx)) }[
-        rbrExtractionFailureEvent kSF extractor (⟨0, hDir0⟩ : pSpec.ChallengeIdx) stmtIn
-          transcript y] ≤ rbrKnowledgeError ⟨0, hDir0⟩) :
-    verifier.rbrKnowledgeSoundness init impl relIn relOut rbrKnowledgeError := by
-  classical
-  apply unroll_rbrKnowledgeSoundness (kSF := kSF)
-  intro stmtIn witIn prover j initState
-  let P : pSpec.Transcript j.1.castSucc → pSpec.Challenge j → Prop :=
-    fun transcript challenge =>
-      ∃ witMid, ¬ kSF j.1.castSucc stmtIn transcript
-          (extractor.extractMid j.1 stmtIn (transcript.concat challenge) witMid) ∧
-        kSF j.1.succ stmtIn (transcript.concat challenge) witMid
-  rw [probEvent_soundness_goal_unroll_log' (pSpec := pSpec) (P := P) (impl := impl)
-    (prover := prover) (i := j) (stmt := stmtIn) (wit := witIn) (s := initState)]
-  have h_j_eq_0 : j = ⟨0, hDir0⟩ := by
-    obtain ⟨i, hj⟩ := j
-    fin_cases i
-    · rfl
-  subst h_j_eq_0
-  conv_lhs => simp only [Fin.isValue, Fin.castSucc_zero]
-  rw [soundness_unroll_runToRound_0_pSpec_1_V_to_P (pSpec := pSpec) (prover := prover)
-    (stmtIn := stmtIn) (witIn := witIn)]
-  simp only [Fin.isValue, Challenge, ChallengeIdx, QueryImpl.addLift_def, QueryImpl.liftTarget_self,
-    bind_pure_comp, liftComp_eq_liftM, simulateQ_bind, simulateQ_map, StateT.run'_eq,
-    StateT.run_bind, StateT.run_map, map_bind, Functor.map_map]
-  rw [probEvent_bind_eq_tsum]
-  apply ENNReal.tsum_mul_le_of_le_of_sum_le_one
-  · intro x
-    simp only [Fin.isValue, probEvent_map, Function.comp_def]
-    let q : OracleQuery [pSpec.Challenge]ₒ _ := OracleSpec.query ⟨⟨0, hDir0⟩, ()⟩
-    erw [probEvent_StateT_run_ignore_state
-      (comp := simulateQ (impl.addLift challengeQueryImpl) (liftM (query q.input)))
-      (s := x.2)
-      (P := fun a => P x.1.1 (q.cont a))]
-    rw [probEvent_eq_tsum_ite]
-    erw [simulateQ_query]
-    simp only [ChallengeIdx, Challenge, Fin.isValue, Nat.reduceAdd,
-      monadLift_self, QueryImpl.addLift_def, QueryImpl.liftTarget_self,
-      OracleQuery.input_query, StateT.run'_eq, StateT.run_map, Functor.map_map, ge_iff_le]
-    have hchal : ((impl + QueryImpl.liftTarget (StateT σ ProbComp) challengeQueryImpl)
-          (MonadLift.monadLift (OracleSpec.query q.input) :
-            OracleQuery (oSpec + [pSpec.Challenge]ₒ) _).input).run x.2 =
-        ((liftM (challengeQueryImpl (pSpec := pSpec) q.input)) : StateT σ ProbComp _).run x.2 := rfl
-    conv_lhs =>
-      enter [1, x_1, 2, 1, 2]
-      rw [hchal]
-    erw [StateT.run_monadLift, monadLift_self]
-    rw [bind_pure_comp]
-    conv =>
-      enter [1, 1, x_1, 2]
-      erw [Functor.map_map]
-      rw [← probEvent_eq_eq_probOutput]
-      rw [probEvent_map]
-      rw [OracleQuery.cont_apply]
-      dsimp only [MonadLift.monadLift]
-      rw [OracleQuery.cont_apply]
-      dsimp only [q]
-    simp_rw [OracleQuery.input_query, OracleQuery.snd_query]
-    conv_lhs => change (∑' (x_1 : pSpec.Challenge (⟨0, hDir0⟩ : pSpec.ChallengeIdx)), _)
-    simp only [id_eq, Function.comp_def]
-    rw [← probEvent_eq_tsum_ite]
-    rw [probEvent_uniformSample_eq_prob_uniformOfFintype]
-    change Pr_{ let y ← $ᵖ (pSpec.Challenge (⟨0, hDir0⟩ : pSpec.ChallengeIdx)) }[
-      P x.1.1 y ] ≤ rbrKnowledgeError ⟨0, hDir0⟩
-    exact hbound stmtIn x.1.1
-  · apply tsum_probOutput_le_one
-
-end RbrKSReducers
--/
 
 /-! ## Round-by-round knowledge-soundness reducers
 
@@ -1485,8 +843,9 @@ theorem rbrKnowledgeSoundness_of_2msg_PtoV_uniformChallenge
     (extractor : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid)
     (kSF : verifier.KnowledgeStateFunction init impl relIn relOut extractor)
     (hbound : ∀ (stmtIn : StmtIn) (msg₀ : pSpec.Message ⟨0, hDir0⟩),
-      Pr_{ let y ← $ᵖ (pSpec.Challenge (⟨1, hDir1⟩ : pSpec.ChallengeIdx)) }[
-        rbrExtractionFailureEvent kSF extractor (⟨1, hDir1⟩ : pSpec.ChallengeIdx) stmtIn
+      Pr_{
+        let y ← $ᵖ (pSpec.Challenge (⟨1, hDir1⟩ : pSpec.ChallengeIdx))}[rbrExtractionFailureEvent
+        kSF extractor (⟨1, hDir1⟩ : pSpec.ChallengeIdx) stmtIn
           (FullTranscript.mk1 msg₀) y] ≤ rbrKnowledgeError ⟨1, hDir1⟩) :
     verifier.rbrKnowledgeSoundness init impl relIn relOut rbrKnowledgeError := by
   classical
@@ -1522,8 +881,9 @@ theorem rbrKnowledgeSoundness_of_1msg_VtoP_uniformChallenge
     (kSF : verifier.KnowledgeStateFunction init impl relIn relOut extractor)
     (hbound : ∀ (stmtIn : StmtIn)
         (transcript : pSpec.Transcript (⟨0, hDir0⟩ : pSpec.ChallengeIdx).1.castSucc),
-      Pr_{ let y ← $ᵖ (pSpec.Challenge (⟨0, hDir0⟩ : pSpec.ChallengeIdx)) }[
-        rbrExtractionFailureEvent kSF extractor (⟨0, hDir0⟩ : pSpec.ChallengeIdx) stmtIn
+      Pr_{
+        let y ← $ᵖ (pSpec.Challenge (⟨0, hDir0⟩ : pSpec.ChallengeIdx))}[rbrExtractionFailureEvent
+        kSF extractor (⟨0, hDir0⟩ : pSpec.ChallengeIdx) stmtIn
           transcript y] ≤ rbrKnowledgeError ⟨0, hDir0⟩) :
     verifier.rbrKnowledgeSoundness init impl relIn relOut rbrKnowledgeError := by
   classical

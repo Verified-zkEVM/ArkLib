@@ -387,7 +387,7 @@ def commitKState (i : Fin ℓ) (hCR : isCommitmentRound ℓ ϑ i) :
       commitOutputSimulation] using h_relOut
 
 /-! RBR knowledge soundness for a single round oracle verifier -/
-omit [SampleableType L] in
+omit [SampleableType L] [CharP L 2] [DecidableEq 𝔽q] in
 theorem commitOracleVerifier_rbrKnowledgeSoundness (i : Fin ℓ)
     (hCR : isCommitmentRound ℓ ϑ i) :
     (commitOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)

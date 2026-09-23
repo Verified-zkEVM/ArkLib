@@ -6,6 +6,8 @@ Authors: Chung Thai Nguyen, Quang Dao
 module
 
 public import ArkLib.ProofSystem.RingSwitching.Packing.Spec
+public import ArkLib.ProofSystem.RingSwitching.Packing.CoordinateLaws
+public import ArkLib.ProofSystem.RingSwitching.Packing.Compatibility
 public import ArkLib.ProofSystem.RingSwitching.Packing.BatchingPhase
 public import ArkLib.ProofSystem.RingSwitching.Packing.SumcheckPhase
 public import ArkLib.OracleReduction.Security.RoundByRound
@@ -14,9 +16,9 @@ public import ArkLib.OracleReduction.Composition.Sequential.OracleCompleteness
 public import ArkLib.OracleReduction.Composition.Sequential.NoAmbient
 
 /-!
-# The composed interactive packing reduction
+# The composed DP24 tensor-packing reduction
 
-The whole interactive `Packing` reduction, assembled by sequential composition, with
+The DP24 interactive `Packing` reduction, assembled by sequential composition, with
 its security statements. Input: an evaluation claim over the small ring against a committed
 multilinear. Output: accept/reject. The composition is
 
@@ -30,8 +32,13 @@ multilinear. Output: accept/reject. The composition is
 
 Perfect completeness composes from the phases. Round-by-round knowledge soundness composes
 with total error `κ/|L|` (batching) `+ 2/|L|` per sumcheck round `+ 1/|L|` (final step)
-`+` the downstream protocol's error; the Schwartz–Zippel steps require `[IsDomain L]`. Leaf
-proofs are open (`sorry`).
+`+` the downstream protocol's error; the Schwartz–Zippel steps require `[IsDomain L]`.
+The leaf proofs use explicit coordinate laws and, for soundness, functional input compatibility.
+
+These are tensor-packing security theorems, not a universal contract for every ring switch.
+`CoordinateLaws` is proved for `tensorProductProfile`; it is not imposed on the shared profile
+data. Hachi's trace head instead needs its own trace reconstruction and weak-opening contracts,
+and is not asserted to instantiate this composed reduction.
 
 This is one construction of the ring-switching family, not the family itself — see the
 folder umbrella `ArkLib/ProofSystem/RingSwitching/Basic.lean` for the taxonomy. It is
@@ -111,8 +118,6 @@ def fullOracleProof :
 ## Security Properties
 -/
 
-variable [∀ i, SampleableType (mlIOPCS.pSpec.Challenge i)]
-
 /-- Input relation for the full ring-switching protocol -/
 abbrev fullInputRelation := BatchingPhase.batchingInputRelation κ L K P ℓ ℓ'
   h_l mlIOPCS.toAbstractOStmtIn
@@ -124,36 +129,39 @@ open Sumcheck.Structured
 section SecurityProperties
 variable {σ : Type} (init : ProbComp σ) {impl : QueryImpl []ₒ (StateT σ ProbComp)}
 
-omit [Fintype L] [Fintype K] [DecidableEq K]
-  [(i : mlIOPCS.pSpec.ChallengeIdx) → SampleableType (mlIOPCS.pSpec.Challenge i)] in
-lemma batchingCore_perfectCompleteness [Finite L] [Finite K] :
+omit [Fintype L] [Fintype K] [DecidableEq K] in
+lemma batchingCore_perfectCompleteness [Finite L] [Finite K] [IsDomain K] [NoZeroDivisors L]
+    (hCoord : CoordinateLaws P) :
     (batchingCoreReduction κ L K P ℓ ℓ' h_l mlIOPCS).perfectCompleteness
   (pSpec := pSpecLargeFieldReduction κ L K P ℓ')
-  (relIn := BatchingPhase.batchingInputRelation κ L K P ℓ ℓ' h_l mlIOPCS.toAbstractOStmtIn)
-  (relOut := mlIOPCS.toRelInput)
+  (relIn := BatchingPhase.strictBatchingInputRelation κ L K P ℓ ℓ' h_l mlIOPCS.toAbstractOStmtIn)
+  (relOut := mlIOPCS.toStrictRelInput)
   (init:=init) (impl:=impl) := by
+  let _ : IsDomain L := NoZeroDivisors.to_isDomain L
   let _ := Fintype.ofFinite L
   let _ := Fintype.ofFinite K
   classical
   refine OracleReduction.append_perfectCompleteness_of_guarded_verifiers
-    (rel₂ := sumcheckRoundRelation κ L K P ℓ ℓ' h_l mlIOPCS.toAbstractOStmtIn 0) _ _
+    (rel₂ := strictSumcheckRoundRelation κ L K P ℓ ℓ' h_l mlIOPCS.toAbstractOStmtIn 0) _ _
     (Verifier.GuardedForm.ofEmpty _ (fun stmt =>
       (⟨0, Fin.elim0, ⟨⟨stmt.1.t_eval_point, stmt.1.original_claim⟩, 0, fun _ => 0⟩⟩,
         stmt.2)))
     (Verifier.GuardedForm.ofEmpty _ (fun stmt => (⟨fun _ => 0, 0⟩, stmt.2)))
     (fun _ => Or.inl inferInstance) ?_ ?_
   · exact BatchingPhase.batchingReduction_perfectCompleteness κ L K P ℓ ℓ' h_l
-       mlIOPCS.toAbstractOStmtIn
+       mlIOPCS.toAbstractOStmtIn.strictView (hCoord := hCoord)
   · intro s
     exact SumcheckPhase.coreInteraction_perfectCompleteness
-      κ L K P ℓ ℓ' h_l mlIOPCS.toAbstractOStmtIn (init := pure s) (impl := impl)
+      κ L K P ℓ ℓ' h_l mlIOPCS.toAbstractOStmtIn.strictView
+        (hCoord := hCoord) (init := pure s) (impl := impl)
 
-omit [Fintype L] [Fintype K] [DecidableEq K]
-  [(i : mlIOPCS.pSpec.ChallengeIdx) → SampleableType (mlIOPCS.pSpec.Challenge i)] in
-theorem fullOracleReduction_perfectCompleteness [Finite L] [Finite K] :
+omit [Fintype L] [Fintype K] [DecidableEq K] in
+theorem fullOracleReduction_perfectCompleteness [Finite L] [Finite K] [IsDomain K]
+    [NoZeroDivisors L]
+    (hCoord : CoordinateLaws P) :
     OracleProof.perfectCompleteness
       (oracleProof := fullOracleReduction κ L K P ℓ ℓ' (h_l := h_l) mlIOPCS)
-      (relation := BatchingPhase.batchingInputRelation κ L K P ℓ ℓ' h_l
+      (relation := BatchingPhase.strictBatchingInputRelation κ L K P ℓ ℓ' h_l
         mlIOPCS.toAbstractOStmtIn)
       (init := init)
       (impl := impl) := by
@@ -166,7 +174,7 @@ theorem fullOracleReduction_perfectCompleteness [Finite L] [Finite K] :
     (Verifier.GuardedForm.ofEmpty _ (fun stmt => (⟨fun _ => 0, 0⟩, stmt.2)))
     (Verifier.GuardedForm.ofEmpty _ (fun _ => (false, fun i : Empty => nomatch i)))
     (fun _ => Or.inl inferInstance)
-    (batchingCore_perfectCompleteness κ L K P ℓ ℓ' h_l mlIOPCS init)
+    (batchingCore_perfectCompleteness κ L K P ℓ ℓ' h_l mlIOPCS init hCoord)
     (fun _ => mlIOPCS.perfectCompleteness)
 
 def batchingCoreRbrKnowledgeError
@@ -182,7 +190,8 @@ def fullRbrKnowledgeError (i : (fullPspec κ L K P ℓ' mlIOPCS).ChallengeIdx) :
 
 omit [Fintype K] [DecidableEq K] in
 /-- Round-by-round knowledge soundness for the full ring-switching oracle verifier -/
-theorem fullOracleVerifier_rbrKnowledgeSoundness [Finite K] [NoZeroDivisors L] :
+theorem fullOracleVerifier_rbrKnowledgeSoundness [Finite K] [IsDomain K] [NoZeroDivisors L]
+    (hCoord : CoordinateLaws P) (hUnique : mlIOPCS.toAbstractOStmtIn.Functional) :
     OracleProof.rbrKnowledgeSoundness
       (verifier := fullOracleVerifier κ L K P ℓ ℓ' (h_l := h_l) mlIOPCS)
       (init := init)
@@ -203,10 +212,9 @@ theorem fullOracleVerifier_rbrKnowledgeSoundness [Finite K] [NoZeroDivisors L] :
     (rbrKnowledgeError₁:=BatchingPhase.batchingRBRKnowledgeError κ L K P)
     (rbrKnowledgeError₂:=SumcheckPhase.coreInteractionRbrKnowledgeError L ℓ')
     (h₁:=BatchingPhase.batchingOracleVerifier_rbrKnowledgeSoundness κ L K P ℓ
-      ℓ' h_l mlIOPCS.toAbstractOStmtIn)
+      ℓ' h_l mlIOPCS.toAbstractOStmtIn (hCoord := hCoord) (hUnique := hUnique))
     (h₂:=SumcheckPhase.coreInteraction_rbrKnowledgeSoundness κ L K P ℓ ℓ' h_l
-      mlIOPCS.toAbstractOStmtIn)
-
+      mlIOPCS.toAbstractOStmtIn (hCoord := hCoord) (hUnique := hUnique))
   have res :=
     OracleVerifier.append_rbrKnowledgeSoundness (init:=init) (impl:=impl)
     (rel₁:=fullInputRelation κ L K P ℓ ℓ' h_l mlIOPCS)
@@ -217,13 +225,11 @@ theorem fullOracleVerifier_rbrKnowledgeSoundness [Finite K] [NoZeroDivisors L] :
     (Oₛ₃:=fun i : Empty => nomatch i)
     (rbrKnowledgeError₁:=batchingCoreRbrKnowledgeError κ L K P ℓ')
     (rbrKnowledgeError₂:=mlIOPCS.rbrKnowledgeError)
-    (h₁:=batchInteractionRBRKS) (h₂:=by
-      convert mlIOPCS.rbrKnowledgeSoundness (L:=L) (ℓ' := ℓ') (init:=init) (impl:=impl)
-      · sorry
-    )
-  convert res
-  · simp only [ChallengeIdx]
-    sorry
+    (h₁:=batchInteractionRBRKS)
+    (h₂:=by
+      simpa only [OracleProof.rbrKnowledgeSoundness, fullOutputRelation] using
+        mlIOPCS.rbrKnowledgeSoundness (init:=init) (impl:=impl))
+  simpa only [OracleProof.rbrKnowledgeSoundness, fullOutputRelation, Function.comp_def] using res
 
 end SecurityProperties
 end

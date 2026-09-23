@@ -25,8 +25,8 @@ section FinHelpers
 
 
 @[simp]
-def Fin.reindex {R n m : Type*} [Fintype n] [Fintype m] (e : n ≃ m) (v : n → R)
-  : m → R := v ∘ e.symm
+def Fin.reindex {R n m : Type*} [Fintype n] [Fintype m] (e : n ≃ m) (v : n → R) :
+    m → R := v ∘ e.symm
 
 @[simp]
 lemma Fin.reindex_reindex {R n m l : Type*} [Fintype n] [Fintype m] [Fintype l]
@@ -51,12 +51,12 @@ def finTwoPowSumEquiv (n : ℕ) : Fin (2 ^ n) ⊕ Fin (2 ^ n) ≃ Fin (2 ^ (n + 
   (finCongr (by omega))
 
 lemma finTwoPowSumEquiv_apply_left (n : ℕ) (x : Fin (2 ^ n)) :
-  (finTwoPowSumEquiv n) (Sum.inl x) = Fin.castLT x (by omega) := by
+    (finTwoPowSumEquiv n) (Sum.inl x) = Fin.castLT x (by omega) := by
   simp only [finTwoPowSumEquiv, Equiv.trans_apply, finSumFinEquiv_apply_left, finCongr_apply]
   rfl
 
 lemma finTwoPowSumEquiv_apply_right (n : ℕ) (x : Fin (2 ^ n)) :
-  (finTwoPowSumEquiv n) (Sum.inr x) = ⟨x.val + 2 ^ n, by omega⟩ := by
+    (finTwoPowSumEquiv n) (Sum.inr x) = ⟨x.val + 2 ^ n, by omega⟩ := by
   simp only [finTwoPowSumEquiv, Equiv.trans_apply, finSumFinEquiv_apply_right, Fin.natAdd_eq_addNat,
     finCongr_apply]
   rfl
@@ -67,12 +67,12 @@ def finTwoPowAddTwoPowEquiv (n : ℕ) : Fin (2 ^ n + 2 ^ n) ≃ Fin (2 ^ (n + 1)
 
 /-- Helper to split a large vector into top/bottom halves using the equivalence. -/
 @[simp]
-def splitFinMap_PO2_left {L : Type*} {n : ℕ} (v : Fin (2 ^ (n + 1)) → L)
-  : Fin (2 ^ n) → L := fun i => v ⟨i, by omega⟩
+def splitFinMap_PO2_left {L : Type*} {n : ℕ} (v : Fin (2 ^ (n + 1)) → L) :
+    Fin (2 ^ n) → L := fun i => v ⟨i, by omega⟩
 
 @[simp]
-def splitFinMap_PO2_right {L : Type*} {n : ℕ} (v : Fin (2 ^ (n + 1)) → L)
-  : Fin (2 ^ n) → L := fun i => v ⟨i + 2 ^ n, by omega⟩
+def splitFinMap_PO2_right {L : Type*} {n : ℕ} (v : Fin (2 ^ (n + 1)) → L) :
+    Fin (2 ^ n) → L := fun i => v ⟨i + 2 ^ n, by omega⟩
 
 @[simp]
 def mergeFinMap_PO2_left_right {L : Type*} {n : ℕ} (left : Fin (2 ^ n) → L)
@@ -81,7 +81,7 @@ def mergeFinMap_PO2_left_right {L : Type*} {n : ℕ} (left : Fin (2 ^ n) → L)
     else right ⟨i - 2 ^ n, by omega⟩
 
 lemma mergeFinMap_PO2_of_split_left_right {L : Type*} {n : ℕ} (v : Fin (2 ^ (n + 1)) → L) :
-  v = mergeFinMap_PO2_left_right (left := splitFinMap_PO2_left v)
+    v = mergeFinMap_PO2_left_right (left := splitFinMap_PO2_left v)
     (right := splitFinMap_PO2_right v) := by
   ext i
   simp only [mergeFinMap_PO2_left_right, splitFinMap_PO2_left, Fin.eta, splitFinMap_PO2_right,
@@ -90,7 +90,7 @@ lemma mergeFinMap_PO2_of_split_left_right {L : Type*} {n : ℕ} (v : Fin (2 ^ (n
   congr 1; apply Fin.eq_of_val_eq; simp only; omega
 
 lemma eq_split_finMap_PO2_iff_merge_finMap_PO2_eq {L : Type*} {n : ℕ} (v : Fin (2 ^ (n + 1)) → L)
-  (left : Fin (2 ^ n) → L) (right : Fin (2 ^ n) → L) :
+    (left : Fin (2 ^ n) → L) (right : Fin (2 ^ n) → L) :
     left = splitFinMap_PO2_left v ∧ right = splitFinMap_PO2_right v
     ↔ mergeFinMap_PO2_left_right (left := left) (right := right) = v := by
   have hv_eq_merge_split : v = mergeFinMap_PO2_left_right (left := splitFinMap_PO2_left v)
@@ -130,8 +130,8 @@ lemma eq_split_finMap_PO2_iff_merge_finMap_PO2_eq {L : Type*} {n : ℕ} (v : Fin
 
 /-- Helper to cast a vector from Sum index to Power-of-Two index. -/
 @[simp]
-def reindexVecTwoPowAddTwoPow {L : Type*} {n : ℕ} (v : Fin (2 ^ n + 2 ^ n) → L)
-  : Fin (2 ^ (n+1)) → L := Fin.reindex (e := (finTwoPowAddTwoPowEquiv n)) (v := v)
+def reindexVecTwoPowAddTwoPow {L : Type*} {n : ℕ} (v : Fin (2 ^ n + 2 ^ n) → L) :
+    Fin (2 ^ (n+1)) → L := Fin.reindex (e := (finTwoPowAddTwoPowEquiv n)) (v := v)
 
 end FinHelpers
 
@@ -270,9 +270,9 @@ end MatrixReindexHelpers
 section MatrixFrom4BlocksHelpers
 /-- Construct a matrix from 4 blocks [A B; C D] -/
 def Matrix.from4Blocks {mTop nLeft mBot nRight : ℕ} {α : Type*}
-  (A : Matrix (Fin mTop) (Fin nLeft) α) (B : Matrix (Fin mTop) (Fin nRight) α)
-  (C : Matrix (Fin mBot) (Fin nLeft) α) (D : Matrix (Fin mBot) (Fin nRight) α) :
-  Matrix (Fin (mTop + mBot)) (Fin (nLeft + nRight)) α := fun i j => by
+    (A : Matrix (Fin mTop) (Fin nLeft) α) (B : Matrix (Fin mTop) (Fin nRight) α)
+    (C : Matrix (Fin mBot) (Fin nLeft) α) (D : Matrix (Fin mBot) (Fin nRight) α) :
+    Matrix (Fin (mTop + mBot)) (Fin (nLeft + nRight)) α := fun i j => by
   have isTop := i.val < mTop
   have isLeft := j.val < nLeft
   by_cases isTop : i.val < mTop

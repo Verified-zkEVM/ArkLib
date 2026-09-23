@@ -31,9 +31,6 @@ This file packages:
 
 namespace Binius.BinaryBasefold
 
--- The terminal bad-block bookkeeping proof exceeds Lean's default heartbeat budget.
-set_option maxHeartbeats 400000
-
 open OracleSpec OracleComp ProtocolSpec Finset AdditiveNTT Polynomial MvPolynomial
   Binius.BinaryBasefold
 open scoped NNReal
@@ -60,8 +57,6 @@ open scoped NNReal ProbabilityTheory
 
 section QueryPhaseSoundnessStatements
 
-variable [hdiv : Fact (ϑ ∣ ℓ)]
-variable [SampleableType L]
 open QueryPhase
 
 /-- A block index is *bad* if the corresponding folding-compliance check fails. -/
@@ -146,6 +141,7 @@ noncomputable def highestBadBlock
       refine ⟨j, ?_⟩
       exact (Finset.mem_filter.mpr ⟨by simp, hj⟩))
 
+omit [CharP L 2] [SampleableType L] [DecidableEq 𝔽q] in
 lemma highestBadBlock_is_bad
     (stmtIn : FinalSumcheckStatementOut (L := L) (ℓ := ℓ))
     (oStmtIn : ∀ j, OracleStatement 𝔽q β (ϑ := ϑ)
@@ -176,6 +172,7 @@ lemma highestBadBlock_is_bad
   have hmem' := Finset.mem_filter.mp hmem
   exact hmem'.2
 
+omit [CharP L 2] [SampleableType L] [DecidableEq 𝔽q] in
 lemma not_badBlock_of_lt_highest
     (stmtIn : FinalSumcheckStatementOut (L := L) (ℓ := ℓ))
     (oStmtIn : ∀ j, OracleStatement 𝔽q β (ϑ := ϑ)
@@ -201,8 +198,7 @@ lemma not_badBlock_of_lt_highest
     refine ⟨j', ?_⟩
     exact (Finset.mem_filter.mpr ⟨by simp, hj'⟩)
   have hle : j ≤ highestBadBlock 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (stmtIn := stmtIn) (oStmtIn := oStmtIn) h_exists :=
-    by
+      (stmtIn := stmtIn) (oStmtIn := oStmtIn) h_exists := by
       -- le_max' takes the membership proof; Nonempty is inferred from max'
       dsimp [highestBadBlock]
       exact
@@ -210,6 +206,7 @@ lemma not_badBlock_of_lt_highest
           (stmtIn := stmtIn) (oStmtIn := oStmtIn)) j hj_mem
   exact not_lt_of_ge hle hlt
 
+omit [CharP L 2] [SampleableType L] [DecidableEq 𝔽q] in
 /-- If block `j` is not bad (i.e. it is compliant), then the oracle `oStmtIn j` is UDR-close
 at its domain position `j.val * ϑ`. This extracts `fiberwiseClose` from `isCompliant`
 (the negation of `badBlockProp`) and converts it to `UDRClose` via `UDRClose_of_fiberwiseClose`. -/
@@ -254,6 +251,7 @@ lemma goodBlock_implies_UDRClose
         (i := Fin.last ℓ) (j := getLastOraclePositionIndex ℓ ϑ (Fin.last ℓ)))
       (oStmtIn (getLastOraclePositionIndex ℓ ϑ (Fin.last ℓ))) h_fw
 
+omit [CharP L 2] [SampleableType L] [DecidableEq 𝔽q] [NeZero ℓ] in
 open Classical in
 lemma prob_uniform_suffix_mem
     (destIdx : Fin r) (h_destIdx_le : destIdx ≤ ℓ)
@@ -353,7 +351,8 @@ lemma prob_uniform_suffix_mem
             h_destIdx h_destIdx_le (y := y)) (Set.univ : Set (Fin (2 ^ steps))) := by
         change
           v ∈ (Set.image (qMap_total_fiber 𝔽q β (i := (0 : Fin r)) (steps := steps)
-            h_destIdx h_destIdx_le (y := y)) (Set.univ : Set (Fin (2 ^ steps)))).toFinset at hv_fiber
+            h_destIdx h_destIdx_le (y := y))
+              (Set.univ : Set (Fin (2 ^ steps)))).toFinset at hv_fiber
         rw [Set.mem_toFinset] at hv_fiber
         exact hv_fiber
       rcases hv_fiber' with ⟨k, hk_mem, hk_eq⟩

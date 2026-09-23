@@ -158,10 +158,11 @@ Every row below is an error seen while porting real ArkLib files.
 
 ### `backward.proofsInPublic`
 
-Three files set `set_option backward.proofsInPublic true`, all in the Binius tree:
+The following files set `set_option backward.proofsInPublic true`, all in the Binius tree:
 
 - `ArkLib/ProofSystem/Binius/BinaryBasefold/CoreInteractionPhase.lean`
-- `ArkLib/ProofSystem/Binius/BinaryBasefold/QueryPhase.lean`
+- `ArkLib/ProofSystem/Binius/BinaryBasefold/CoreInteractionPhase/Protocol.lean`
+- `ArkLib/ProofSystem/Binius/BinaryBasefold/QueryPhase/Protocol.lean`
 - `ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean`
 
 They hold composed verifier and reduction bundles written as `def foo := <let-chain>` with no type

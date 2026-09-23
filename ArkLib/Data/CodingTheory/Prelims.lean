@@ -31,10 +31,9 @@ def multilinearWeight {ϑ : ℕ} (r : Fin ϑ → F) (i : Fin (2 ^ ϑ)) : F :=
 
 omit [Fintype F] [DecidableEq F] in
 lemma multilinearWeight_succ {ϑ : ℕ} (r : Fin (ϑ + 1) → F) (i : Fin (2 ^ (ϑ + 1))) :
-  (multilinearWeight r i) = (multilinearWeight (r := Fin.init r) (i :=
-    ⟨Nat.getLowBits (numLowBits := ϑ) (n := i), by simp [Nat.getLowBits_lt_two_pow]⟩)
-  ) *
-    (if i.val.testBit (ϑ) then (r (Fin.last ϑ)) else (1 - r (Fin.last ϑ))) := by
+    (multilinearWeight r i) = (multilinearWeight (r := Fin.init r) (i :=
+      ⟨Nat.getLowBits (numLowBits := ϑ) (n := i), by simp [Nat.getLowBits_lt_two_pow]⟩)) *
+      (if i.val.testBit (ϑ) then (r (Fin.last ϑ)) else (1 - r (Fin.last ϑ))) := by
   simp only [multilinearWeight, Fin.prod_univ_castSucc]
   simp_rw [Nat.testBit_eq_getBit, Nat.getBit_of_lowBits]
   simp only [Fin.val_castSucc, Fin.val_last, mul_ite, Fin.is_lt, ↓reduceIte]

@@ -473,9 +473,9 @@ lemma wt_constantCode [DecidableEq F] [NeZero x] :
     wt (constantCode x ι) = Fintype.card ι := by
   simp [constantCode, wt, NeZero.ne x]
 
--- `[Fintype ι]` is required by the proof (`constantCode`), not the statement type.
-instance instNontrivial {F ι : Type*} {n : ℕ} [Field F] [Fintype ι] {α : ι ↪ F}
+instance instNontrivial {F ι : Type*} {n : ℕ} [Field F] [Finite ι] {α : ι ↪ F}
   [NeZero n] [Nonempty ι] : Nontrivial (ReedSolomon.code α n) := by
+  let := Fintype.ofFinite ι
   let c1 := constantCode (1 : F) ι
   have h_c1_mem : c1 ∈ ReedSolomon.code α n := constantCode_mem_code
   have h_c1_ne_zero : c1 ≠ 0 := by

@@ -60,7 +60,7 @@ lemma probability_bound_badSumcheckEventProp (h_i h_star : L⦃≤ 2⦄[X]) :
   unfold badSumcheckEventProp
   by_cases h_ne : h_i ≠ h_star
   · simp only [ne_eq, h_ne, not_false_eq_true, true_and, ENNReal.coe_ofNat]
-    letI : DecidableEq L := Classical.decEq L
+    let : DecidableEq L := Classical.decEq L
     let p : L[X] := h_i.val - h_star.val
     have h_p_ne : p ≠ 0 := by
       intro h_p_zero
@@ -78,7 +78,7 @@ lemma probability_bound_badSumcheckEventProp (h_i h_star : L⦃≤ 2⦄[X]) :
       dsimp [p]
       rw [Polynomial.eval_sub, sub_eq_zero]
     simp_rw [h_event]
-    letI : DecidablePred (fun r : L => p.eval r = 0) := Classical.decPred _
+    let : DecidablePred (fun r : L => p.eval r = 0) := Classical.decPred _
     rw [Probability.prob_uniform_eq_card_filter_div_card (P := fun r : L => p.eval r = 0)]
     have h_root_card : (Finset.univ.filter fun r : L => p.eval r = 0).card ≤ p.natDegree := by
       refine le_trans ?_ (Polynomial.card_roots' p)

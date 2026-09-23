@@ -376,7 +376,7 @@ instance : ∀ i, Fintype ((pSpecQuery 𝔽q β γ_repetitions
   (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenge i)
   -- Direct term (not a tactic proof) so `instance ⟨0, rfl⟩` is *definitionally* the `Fin γ → …`
   -- instance — lets the round-reducer's `$ᵖ (Challenge ⟨0,_⟩)` unify cheaply with a doom bound's
-  -- `$ᵖ (Fin γ_repetitions → sDomain …)` (a tactic proof buries it under casts and the defeq diverges).
+  -- `$ᵖ (Fin γ_repetitions → sDomain …)`; a tactic proof introduces casts that obstruct defeq.
   | ⟨0, _⟩ => inferInstanceAs (Fintype (Fin γ_repetitions → sDomain 𝔽q β h_ℓ_add_R_rate 0))
 
 instance : ∀ i, Inhabited ((pSpecQuery 𝔽q β γ_repetitions

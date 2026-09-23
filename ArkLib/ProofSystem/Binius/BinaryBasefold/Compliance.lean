@@ -52,14 +52,14 @@ the oracle `f_i` is compliant if it's close to the code fiber-wise, the next ora
 with folding.
 -/
 def isCompliant (i : Fin r) {destIdx : Fin r} (steps : ℕ)
-  (h_destIdx : destIdx = i + steps) (h_destIdx_le : destIdx ≤ ℓ) [NeZero steps]
-  (f_i : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)
-  (f_i_plus_steps : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) destIdx)
-  (challenges : Fin steps → L) : Prop :=
+    (h_destIdx : destIdx = i + steps) (h_destIdx_le : destIdx ≤ ℓ) [NeZero steps]
+    (f_i : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)
+    (f_i_plus_steps : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) destIdx)
+    (challenges : Fin steps → L) : Prop :=
   ∃ (h_fw_dist_lt : fiberwiseClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i)
     (steps := steps) h_destIdx h_destIdx_le (f := f_i))
     (h_dist_next_lt : UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (i := destIdx) (h_i := by omega) (f := f_i_plus_steps)),
+      (i := destIdx) (_h_i := by omega) (f := f_i_plus_steps)),
     let h_dist_curr_lt := UDRClose_of_fiberwiseClose 𝔽q β
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) steps h_destIdx h_destIdx_le f_i
       (h_fw_dist_lt := h_fw_dist_lt)
@@ -72,22 +72,22 @@ def isCompliant (i : Fin r) {destIdx : Fin r} (steps : ℕ)
       h_destIdx h_destIdx_le
       f_bar_i challenges = f_bar_i_plus_steps
 
-omit [CharP L 2] in
+omit [CharP L 2] [DecidableEq 𝔽q] [NeZero ℓ] in
 /--
 Farness implies non-compliance. If `f_i` is far from its code `C_i`, it cannot be
 compliant. This follows directly from the contrapositive of
 `fiberwise_dist_lt_imp_dist_lt`.
 -/
 lemma farness_implies_non_compliance (i : Fin r) {destIdx : Fin r} (steps : ℕ)
-  (h_destIdx : destIdx = i + steps) (h_destIdx_le : destIdx ≤ ℓ) [NeZero steps]
-  (f_i : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)
-  (f_i_plus_steps : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) destIdx)
-  (challenges : Fin steps → L)
-  (h_far : 2 * Δ₀(f_i, (BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i))
-    ≥ (BBF_CodeDistance 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) : ℕ∞)) :
-  ¬ isCompliant 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (steps := steps)
-    (destIdx := destIdx) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le)
-    (f_i := f_i) (f_i_plus_steps := f_i_plus_steps) (challenges := challenges) := by
+    (h_destIdx : destIdx = i + steps) (h_destIdx_le : destIdx ≤ ℓ) [NeZero steps]
+    (f_i : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)
+    (f_i_plus_steps : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) destIdx)
+    (challenges : Fin steps → L)
+    (h_far : 2 * Δ₀(f_i, (BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i))
+      ≥ (BBF_CodeDistance 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) : ℕ∞)) :
+    ¬ isCompliant 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (steps := steps)
+      (destIdx := destIdx) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le)
+      (f_i := f_i) (f_i_plus_steps := f_i_plus_steps) (challenges := challenges) := by
   intro h_compliant
   rcases h_compliant with ⟨h_fw_dist_lt, _, _⟩
   have h_close := UDRClose_of_fiberwiseClose 𝔽q β
@@ -127,18 +127,18 @@ each tuple of folding challenges `(rᵢ', ..., r_{i+steps-1}') ∈ L^steps`, we 
 -- * **Consequence**: If `f⁽ⁱ⁾` is close to `f̄⁽ⁱ⁾`, then `fold(f⁽ⁱ⁾)` must be close to
   `fold(f̄⁽ⁱ⁾)`.
 -/
-omit [CharP L 2] [DecidableEq 𝔽q] in
+omit [CharP L 2] [DecidableEq 𝔽q] [NeZero ℓ] in
 lemma fold_error_containment_of_UDRClose (i : Fin r) {destIdx : Fin r} (steps : ℕ)
-  (h_destIdx : destIdx = i + steps) (h_destIdx_le : destIdx ≤ ℓ) [NeZero steps]
-  (f_i : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)
-  (challenges : Fin steps → L)
-  (h_UDRClose : UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (h_i := by omega)
-    (f := f_i)) :
-  let f_bar := UDRCodeword 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (h_i := by omega)
-    (f := f_i) (h_within_radius := h_UDRClose)
-  fold_error_containment 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (steps := steps)
-    (destIdx := destIdx) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le)
-    (f := f_i) (f_bar := f_bar) (r_challenges := challenges) := by
+    (h_destIdx : destIdx = i + steps) (h_destIdx_le : destIdx ≤ ℓ) [NeZero steps]
+    (f_i : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)
+    (challenges : Fin steps → L)
+    (h_UDRClose : UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (_h_i := by omega)
+      (f := f_i)) :
+    let f_bar := UDRCodeword 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (h_i := by omega)
+      (f := f_i) (h_within_radius := h_UDRClose)
+    fold_error_containment 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (steps := steps)
+      (destIdx := destIdx) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le)
+      (f := f_i) (f_bar := f_bar) (r_challenges := challenges) := by
   unfold fold_error_containment disagreementSet fiberwiseDisagreementSet
   set f_bar := UDRCodeword 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (h_i := by omega)
     (f := f_i) (h_within_radius := h_UDRClose)
@@ -187,15 +187,15 @@ open Classical in
 random folding challenges undermine the protocol's soundness checks.
 For `i ∈ {0, ..., ℓ - steps}`,
 - In case `d⁽ⁱ⁾(f⁽ⁱ⁾, C⁽ⁱ⁾) < dᵢ₊steps / 2` (fiberwise close):
-  `Δ⁽ⁱ⁾(f⁽ⁱ⁾, f̄⁽ⁱ⁾) ⊄ Δ(fold(f⁽ⁱ⁾, rᵢ', ..., r_{i+steps-1}'), fold(f̄⁽ⁱ⁾, rᵢ', ..., r_{i+steps-1}'))`,
+  `Δ⁽ⁱ⁾(f⁽ⁱ⁾, f̄⁽ⁱ⁾)` is not contained in the disagreement set of the two folded oracles,
   i.e. fiberwiseDisagreementSet ⊄ foldedDisagreementSet
 - In case `d⁽ⁱ⁾(f⁽ⁱ⁾, C⁽ⁱ⁾) ≥ dᵢ₊steps / 2`  (fiberwise far):
   `d(fold(f⁽ⁱ⁾, rᵢ', ..., rᵢ₊steps₋₁'), C⁽ⁱ⁺steps⁾) < dᵢ₊steps / 2`, i.e. foldedUDRClose
 -/
 def foldingBadEvent (i : Fin r) {destIdx : Fin r} (steps : ℕ)
-  (h_destIdx : destIdx = i + steps) (h_destIdx_le : destIdx ≤ ℓ) [NeZero steps]
-  (f_i : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)
-  (r_challenges : Fin steps → L) : Prop :=
+    (h_destIdx : destIdx = i + steps) (h_destIdx_le : destIdx ≤ ℓ) [NeZero steps]
+    (f_i : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)
+    (r_challenges : Fin steps → L) : Prop :=
   let folded_f_i := iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i)
     (steps := steps) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) (f := f_i)
     (r_challenges := r_challenges)
@@ -212,12 +212,13 @@ def foldingBadEvent (i : Fin r) {destIdx : Fin r} (steps : ℕ)
          (f := folded_f_i) (g := folded_f_bar_i))
   else
     UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := destIdx)
-      (h_i := by omega) (f := folded_f_i)
+      (_h_i := by omega) (f := folded_f_i)
 
 open Classical in
 /-- **Definition 4.20.2** (Incremental Bad Events extending Definition 4.20).
 For block start index `block_start_idx`, block size `ϑ`, and **partial step count**
-`k ≤ ϑ`, with `destIdx = block_start_idx + ϑ` (the block destination), `E(block_start_idx, k)` is defined as follows:
+`k ≤ ϑ`, with `destIdx = block_start_idx + ϑ` (the block destination),
+`E(block_start_idx, k)` is defined as follows:
 
 - If `k = 0`: Returns `False` (no challenges consumed yet).
 - Case 1 (fiberwise close at block level):
@@ -236,13 +237,11 @@ def incrementalFoldingBadEvent
     (r_challenges : Fin k → L) : Prop :=
   have h_ik_le : block_start_idx.val + k ≤ ℓ := by omega
   have h_midIdx_to_block : destIdx = midIdx + (ϑ - k) := by omega
-
   let folded_f_block_start := iterated_fold 𝔽q β
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
     (i := block_start_idx) (steps := k) (destIdx := midIdx)
     (h_destIdx := h_midIdx) (h_destIdx_le := by omega)
     (f := f_block_start) (r_challenges := r_challenges)
-
   if h_is_close : (fiberwiseClose 𝔽q β
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (i := block_start_idx) (steps := ϑ)
@@ -253,13 +252,11 @@ def incrementalFoldingBadEvent
       (h_within_radius := UDRClose_of_fiberwiseClose 𝔽q β
         block_start_idx ϑ h_destIdx h_destIdx_le
         f_block_start h_is_close)
-
     let folded_f_bar_block_start := iterated_fold 𝔽q β
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (i := block_start_idx) (steps := k)
       (h_destIdx := h_midIdx) (h_destIdx_le := by omega)
       (f := f_bar_block_start) (r_challenges := r_challenges)
-
     ¬ (fiberwiseDisagreementSet 𝔽q β
           block_start_idx ϑ h_destIdx h_destIdx_le
           f_block_start f_bar_block_start
@@ -275,9 +272,8 @@ def incrementalFoldingBadEvent
       (h_destIdx_le := h_destIdx_le)
       (f := folded_f_block_start)
 
-omit [CharP L 2] in
-/-- When all folding steps have been applied (`k = ϑ`), the incremental bad event
-coincides with the full `foldingBadEvent`. -/
+omit [CharP L 2] [DecidableEq 𝔽q] [NeZero ℓ] in
+/-- Before any folding steps (`k = 0`), the incremental bad event is false. -/
 @[simp]
 lemma incrementalFoldingBadEvent_of_k_eq_0_is_false
     (block_start_idx : Fin r) (k : ℕ) (h_k : k = 0) {midIdx destIdx : Fin r}
@@ -314,7 +310,7 @@ lemma incrementalFoldingBadEvent_of_k_eq_0_is_false
       (r_challenges := r_challenges)]
     exact h_close
 
-omit [CharP L 2] in
+omit [CharP L 2] [DecidableEq 𝔽q] [NeZero ℓ] in
 /-- When all folding steps have been applied (`k = ϑ`), the incremental bad event
 coincides with the full `foldingBadEvent`. -/
 lemma incrementalFoldingBadEvent_eq_foldingBadEvent_of_k_eq_ϑ
@@ -330,7 +326,7 @@ lemma incrementalFoldingBadEvent_eq_foldingBadEvent_of_k_eq_ϑ
     foldingBadEvent 𝔽q β block_start_idx ϑ h_destIdx h_destIdx_le
       f_block_start r_challenges := by
   unfold incrementalFoldingBadEvent foldingBadEvent
-  simp only [show ϑ ≠ 0 from NeZero.ne ϑ, ↓reduceDIte, Nat.sub_self]
+  simp only [Nat.sub_self]
   have h_midIdx_eq_destIdx : midIdx = destIdx := by omega
   subst h_midIdx_eq_destIdx
   by_cases h_close : fiberwiseClose 𝔽q β

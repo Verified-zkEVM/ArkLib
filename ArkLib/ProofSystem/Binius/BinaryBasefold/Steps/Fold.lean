@@ -233,14 +233,6 @@ def foldKnowledgeStateFunction (i : Fin ℓ) :
       simp only [Verifier.run, OracleVerifier.toVerifier]
       -- Now unfold the foldOracleVerifier's `verify()` method
       simp only [foldOracleVerifier]
-      -- dsimp only [StateT.run]
-      -- simp only [simulateQ_bind, simulateQ_query, simulateQ_pure]
-      -- oracle query unfolding
-      simp only [support_bind, Set.mem_iUnion]
-      dsimp only [StateT.run]
-      -- enter [1, i_1, 2, 1, x]
-      simp only [simulateQ_bind]
-      unfold OracleInterface.answer
       ---------------------------------------
       -- Now simplify the `guard` and `ite` of StateT.map generated from it
       simp only [MessageIdx, Fin.isValue, Matrix.cons_val_zero, simulateQ_pure, Message, guard_eq,
@@ -249,14 +241,9 @@ def foldKnowledgeStateFunction (i : Fin ℓ) :
       simp only [MessageIdx, Message, Fin.isValue, Matrix.cons_val_zero, Matrix.cons_val_one,
         bind_pure_comp, simulateQ_map, simulateQ_ite, simulateQ_pure, OptionT.simulateQ_failure,
         bind_map_left, Function.comp_apply]
-      simp only [support_ite]
-      simp only [Fin.isValue, Set.mem_ite_empty_right, Set.mem_singleton_iff, Prod.mk.injEq,
-        exists_and_left, exists_eq', exists_eq_right, exists_and_right]
       erw [simulateQ_bind]
       erw [OptionT.simulateQ_simOracle2_liftM_query_T2, pure_bind]
       simp only [Fin.isValue, FullTranscript.mk1_eq_snoc, pure_bind, OptionT.simulateQ_map]
-    conv at h_output_mem_V_run_support =>
-      simp only [Fin.isValue, FullTranscript.mk1_eq_snoc, Function.comp_apply]
     let step := (foldStepLogic 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (mp := mp) i)
     set V_check := step.verifierCheck stmtIn
       (FullTranscript.mk2 (msg0 := tr.messages ⟨⟨0, by decide⟩, rfl⟩)
@@ -271,12 +258,12 @@ def foldKnowledgeStateFunction (i : Fin ℓ) :
       erw [OptionT.run_pure, simulateQ_pure] at h_output_mem_V_run_support
       erw [_root_.map_pure] at h_output_mem_V_run_support
       simp only [OptionT.mk,
-        _root_.map_pure, support_pure, Set.mem_singleton_iff, Option.map_some, Option.some.injEq,
+        support_pure, Set.mem_singleton_iff, Option.map_some, Option.some.injEq,
         Prod.mk.injEq] at h_output_mem_V_run_support
       rcases h_output_mem_V_run_support with ⟨h_stmtOut_eq, h_oStmtOut_eq⟩
       simp only [Fin.reduceLast, Fin.isValue] -- simp the `match`
       dsimp only [foldStepRelOut, foldStepRelOutProp, masterKStateProp] at h_relOut
-      simp only [Fin.val_succ, Set.mem_setOf_eq] at h_relOut
+      simp only [Fin.val_succ, Set.mem_ofPred_eq] at h_relOut
       dsimp only [foldKStateProp]
       set h_i : ↥L⦃≤ 2⦄[X] := tr.messages ⟨⟨0, by simp only [Nat.reduceAdd,
         Fin.reduceLast, Fin.coe_ofNat_eq_mod, Nat.mod_succ, Nat.ofNat_pos]⟩, rfl⟩ with h_i_def
@@ -288,8 +275,10 @@ def foldKnowledgeStateFunction (i : Fin ℓ) :
       have h_oStmtOut_eq_oStmtIn : oStmtOut = oStmtIn := by
         rw [h_oStmtOut_eq]
         funext j
-        simp [OracleVerifier.materializeOutput, OracleVerifier.materializeOutputOracle,
-          foldOracleVerifier, foldStepLogic]
+        simp only [OracleVerifier.materializeOutput, OracleVerifier.materializeOutputOracle,
+          MessageIdx, foldStepLogic, Fin.isValue, Fin.eta, Lean.Elab.WF.paramLet,
+          Nat.cast_ofNat, Matrix.cons_val_zero, Fin.zero_eta, Matrix.cons_val_one,
+          Fin.mk_one, Function.Embedding.coeFn_mk, Message]
         split <;> rename_i k hk
         · have hk' : j = k := by simpa only [dif_pos j.is_lt, Sum.inl.injEq] using hk
           subst k
@@ -336,8 +325,8 @@ def foldKnowledgeStateFunction (i : Fin ℓ) :
     · erw [if_neg h_V_check, OptionT.run_failure, simulateQ_pure] at h_output_mem_V_run_support
       erw [map_failure] at h_output_mem_V_run_support
       erw [_root_.map_pure] at h_output_mem_V_run_support
-      simpa only [OptionT.mk, _root_.map_pure, Option.map_none, support_pure,
-        Set.mem_singleton_iff, reduceCtorEq] using h_output_mem_V_run_support
+      simp only [OptionT.mk, Option.map_none, support_pure,
+        Set.mem_singleton_iff, reduceCtorEq] at h_output_mem_V_run_support
 
 /-
 The fold-step extraction failure event implies either:
@@ -390,6 +379,7 @@ Expected helper lemmas:
 - extraction of localized round-poly equalities from fold-step local checks.
 -/
 omit [SampleableType L] [DecidableEq 𝔽q] in
+omit [CharP L 2] in
 lemma firstOracleWitnessConsistency_unique (i : Fin ℓ)
     (oStmt : ∀ j, OracleStatement 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc j)
@@ -441,6 +431,7 @@ def foldStepHStarFromWitMid (i : Fin ℓ)
 and `firstOracleWitnessConsistencyProp` determine a unique witness.
 Consequently, any witness-dependent extracted `h_star` is canonical. -/
 omit [SampleableType L] [DecidableEq 𝔽q] in
+omit [CharP L 2] in
 lemma foldStep_oracleWitnessConsistency_unique_witMid (i : Fin ℓ)
     (stmtOut : Statement (L := L) Context i.succ)
     (oStmt : ∀ j, OracleStatement 𝔽q β (ϑ := ϑ)
@@ -482,6 +473,7 @@ lemma foldStep_oracleWitnessConsistency_unique_witMid (i : Fin ℓ)
   exact ⟨h_t, h_H, h_f⟩
 
 omit [SampleableType L] [DecidableEq 𝔽q] in
+omit [CharP L 2] in
 lemma foldStepHStarFromWitMid_eq_of_oracleWitnessConsistency (i : Fin ℓ)
     (stmtOStmtIn : (Statement (L := L) Context i.castSucc) × (∀ j,
       OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc j))
@@ -667,6 +659,8 @@ private theorem fin_fun_heq_of_cast {m n : ℕ} (h : m = n)
 
 set_option maxHeartbeats 200000 in
 -- This bad-event backward step expands several nested verifier definitions before omega closes.
+omit [CharP L 2] [SampleableType L] in
+omit [DecidableEq 𝔽q] in
 lemma incrementalBadEventExistsProp_fold_step_backward (i : Fin ℓ)
     (stmtOStmtIn : (Statement (L := L) Context i.castSucc) × (∀ j,
       OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc j))
@@ -982,6 +976,9 @@ lemma incrementalBadEventExistsProp_fold_step_backward (i : Fin ℓ)
     rw [h_after_challenges] at h_after_last'
     by_contra h_before_false
     exact h_not_fresh ⟨h_before_false, h_after_last'⟩
+
+omit [CharP L 2] [SampleableType L] in
+omit [DecidableEq 𝔽q] in
 lemma foldStep_rbrExtractionFailureEvent_imply_sumcheck_or_badEvent (i : Fin ℓ)
     (stmtOStmtIn : (Statement (L := L) Context i.castSucc) × (∀ j,
       OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc j))
@@ -1140,6 +1137,7 @@ lemma foldStep_rbrExtractionFailureEvent_imply_sumcheck_or_badEvent (i : Fin ℓ
   5. **Bad event**: Bound `Pr[BE]` using the incremental folding bad-event probability
     (`prop_4_21_2_incremental_bad_event_probability`).
   6. **Combine**: Add the two bounds and match the RHS to `foldKnowledgeError`. -/
+omit [DecidableEq 𝔽q] in
 lemma foldStep_doom_escape_probability_bound (i : Fin ℓ)
     (stmtOStmtIn : (Statement (L := L) Context i.castSucc) × (∀ j,
       OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc j))
@@ -1371,6 +1369,7 @@ lemma foldStep_doom_escape_probability_bound (i : Fin ℓ)
 
 /-! RBR knowledge soundness for a single round oracle verifier -/
 open Classical in
+omit [DecidableEq 𝔽q] in
 theorem foldOracleVerifier_rbrKnowledgeSoundness (i : Fin ℓ) :
     (foldOracleVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
       (mp := mp) i).rbrKnowledgeSoundness init impl
@@ -1379,6 +1378,7 @@ theorem foldOracleVerifier_rbrKnowledgeSoundness (i : Fin ℓ) :
       (relOut := foldStepRelOut (mp := mp) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (𝓑 := 𝓑)  i)
       (foldKnowledgeError 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) := by
+  classical
   -- One-liner via the reusable round-reducer: reduce r.b.r. knowledge soundness to the fold
   -- step's per-transcript doom bound (Schwartz–Zippel).
   let : ∀ j, Fintype ((pSpecFold (L := L)).Challenge j)
