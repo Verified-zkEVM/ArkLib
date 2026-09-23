@@ -103,7 +103,7 @@ example :
         (weightedSupportColumns_eligible (d := 1) (D := 1) (W := 0) (L := 2) Nat.one_pos)
     _ ≤ 2 := by simpa using onePointLocalRank_le_two
 
-private def receivedLineColumns : Fin 1 → SourceColumn 1 := fun _ => ⟨0, 0, fun _ => 0⟩
+private def receivedLineColumns : Fin 1 → SourceColumn 1 := fun _ => ⟨1, 0, fun _ => 0⟩
 
 private theorem receivedLineColumnsInjective : Function.Injective receivedLineColumns := by
   intro i j h
@@ -112,39 +112,64 @@ private theorem receivedLineColumnsInjective : Function.Injective receivedLineCo
   rfl
 
 private theorem receivedLineMatrixRankZero :
-    ((localConstraintMatrix 0 (fun _ : Fin 1 => Polynomial.C (0 : ℚ))
+    ((localConstraintMatrix 1 (fun _ : Fin 1 => Polynomial.C (0 : ℚ))
       (fun _ => receivedLine (0 : ℚ) 0) receivedLineColumns).map
         (algebraMap ℚ[X] (RatFunc ℚ))).rank ≤ 0 := by
-  have hempty : IsEmpty (Fin 1 × LowContactIndex 1 0) := ⟨fun row => by
-    exact (Nat.not_lt_zero _ row.2.property).elim⟩
-  have hmatrix : localConstraintMatrix 0 (fun _ : Fin 1 => Polynomial.C (0 : ℚ))
+  have hX : SatisfiesLocalConstraints 1 (Polynomial.C (0 : ℚ)) (receivedLine (0 : ℚ) 0)
+      (X none : DifferentialPolynomial ℚ[X] 1) := by
+    rw [satisfiesLocalConstraints_iff_coeff_eq_zero]
+    intro e he
+    rw [unscaledLocalSubstitution_X]
+    have hT : e (localT 1) = 0 := by
+      rw [localContactOrder_eq] at he
+      omega
+    have hsingle : Finsupp.single (localT 1) 1 ≠ e := by
+      intro h
+      have := congrArg (fun a => a (localT 1)) h
+      simp at this
+      omega
+    simp [MvPolynomial.coeff_X, hsingle]
+  have hinterp : SourceColumn.interpolant receivedLineColumns (fun _ : Fin 1 => 1) =
+      (X none : DifferentialPolynomial ℚ[X] 1) := by
+    simp [SourceColumn.interpolant, receivedLineColumns, SourceColumn.exponent,
+      MvPolynomial.X]
+  have hmul := (localConstraintMatrix_mulVec_eq_zero_iff (m := 1)
+    (centers := fun _ : Fin 1 => Polynomial.C (0 : ℚ))
+    (received := fun _ => receivedLine (0 : ℚ) 0) receivedLineColumns
+    (fun _ : Fin 1 => (1 : ℚ[X]))).2 (by intro i; simpa [hinterp] using hX)
+  have hmatrix : localConstraintMatrix 1 (fun _ : Fin 1 => Polynomial.C (0 : ℚ))
       (fun _ => receivedLine (0 : ℚ) 0) receivedLineColumns = 0 := by
-    ext row j n
-    exact False.elim (hempty.false row)
+    apply Matrix.ext
+    intro row j
+    fin_cases j
+    have hrow := congrFun hmul row
+    simpa [Matrix.mulVec, dotProduct, localConstraintMatrix] using hrow
   rw [hmatrix]
   simp
 
-example : ∃ v : Fin 1 → ℚ[X], v ≠ 0 ∧
-    (∀ j, v j ∈ Polynomial.degreeLT ℚ (1 - (receivedLineColumns j).y₀)) ∧
+example : Nonempty (Fin 1 × LowContactIndex 1 1) ∧ ∃ v : Fin 1 → ℚ[X], v ≠ 0 ∧
+    (∀ j, v j ∈ Polynomial.degreeLT ℚ (1 + 1 - (receivedLineColumns j).y₀)) ∧
     Ideal.span (Set.range v) = ⊤ ∧
     (∀ {S : Type*} [CommSemiring S] [Nontrivial S] (ψ : ℚ[X] →+* S),
       MvPolynomial.map ψ (SourceColumn.interpolant receivedLineColumns v) ≠ 0) ∧
-    ∀ _ : Fin 1, SatisfiesLocalConstraints 0 (Polynomial.C (0 : ℚ))
+    ∀ _ : Fin 1, SatisfiesLocalConstraints 1 (Polynomial.C (0 : ℚ))
       (receivedLine (0 : ℚ) 0) (SourceColumn.interpolant receivedLineColumns v) := by
-  exact exists_primitive_receivedLine_interpolant_of_column_height (d := 1) (m := 0) (h := 0)
+  refine ⟨⟨(0 : Fin 1), ⟨0, by simp [localContactOrder]⟩⟩, ?_⟩
+  exact exists_primitive_receivedLine_interpolant_of_column_height (d := 1) (m := 1) (h := 1)
     (fun _ : Fin 1 => (0 : ℚ)) (fun _ => 0) (fun _ => 0) receivedLineColumns
     receivedLineColumnsInjective (algebraMap ℚ[X] (RatFunc ℚ))
     (IsFractionRing.injective ℚ[X] (RatFunc ℚ)) (s := 0) receivedLineMatrixRankZero
     (by decide)
 
-example : ∃ v : Fin 1 → ℚ[X], v ≠ 0 ∧
+example : Nonempty (Fin 1 × LowContactIndex 1 1) ∧ ∃ v : Fin 1 → ℚ[X], v ≠ 0 ∧
     (∀ j, (v j).natDegree ≤ 0 * 0 / (1 - 0)) ∧
     Ideal.span (Set.range v) = ⊤ ∧
     (∀ {S : Type*} [CommSemiring S] [Nontrivial S] (ψ : ℚ[X] →+* S),
       MvPolynomial.map ψ (SourceColumn.interpolant receivedLineColumns v) ≠ 0) ∧
-    ∀ _ : Fin 1, SatisfiesLocalConstraints 0 (Polynomial.C (0 : ℚ))
+    ∀ _ : Fin 1, SatisfiesLocalConstraints 1 (Polynomial.C (0 : ℚ))
       (receivedLine (0 : ℚ) 0) (SourceColumn.interpolant receivedLineColumns v) := by
-  exact exists_primitive_receivedLine_interpolant_of_rank_le (d := 1) (m := 0) (ν := 0)
+  refine ⟨⟨(0 : Fin 1), ⟨0, by simp [localContactOrder]⟩⟩, ?_⟩
+  exact exists_primitive_receivedLine_interpolant_of_rank_le (d := 1) (m := 1) (ν := 0)
     (fun _ : Fin 1 => (0 : ℚ)) (fun _ => 0) (fun _ => 0) receivedLineColumns
     receivedLineColumnsInjective (by intro j; fin_cases j; decide)
     (algebraMap ℚ[X] (RatFunc ℚ)) (IsFractionRing.injective ℚ[X] (RatFunc ℚ))

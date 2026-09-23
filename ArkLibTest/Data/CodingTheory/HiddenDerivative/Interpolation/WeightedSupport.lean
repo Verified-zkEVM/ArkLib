@@ -8,6 +8,7 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.D
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.Estimate
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.Interpolation
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.LocalRank
+import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.Margin
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.RankBound
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.RankIntegral
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.FloorTransfer
@@ -21,6 +22,7 @@ instances for the weighted-support statements.
 -/
 
 open Finset MeasureTheory Set MvPolynomial PolynomialDifferential ReedSolomon.HiddenDerivative
+open ReedSolomon.HiddenDerivative.WeightedSupportParameters
 open scoped BigOperators ProbabilityTheory
 
 example : WeightedSupportEligible 2 2 1 4
@@ -63,6 +65,21 @@ example : 21 ≤ Module.finrank ℚ (weightedSupportSpace ℚ 1 1 5 16 one_pos) 
   exact_mod_cast h20
 
 example :
+    let δ : ℝ := 1 / 4
+    let d := ⌈Real.exp (xi / δ)⌉₊
+    let H : ℝ := harmonic (d - 1)
+    let g := rateGap δ (((2 : ℕ) : ℝ) / (4 : ℕ))
+    let m := ⌈100 * (d : ℝ) ^ 2 * H⌉₊
+    let W := ⌊(1 + theta * g) * d * m / H⌋₊
+    (543 / 500 : ℝ) * (4 : ℕ) * Module.finrank (ZMod 2) (LinearMap.range
+      (weightedSupportLocalConstraint (R := ZMod 2) (d := d) (W := W)
+        (L := (m : ℝ) * (2 : ℕ) * (1 + g)) m (show 0 < 2 by norm_num) 0 0)) <
+      Module.finrank (ZMod 2)
+        (weightedSupportSpace (ZMod 2) 2 d W ((m : ℝ) * (2 : ℕ) * (1 + g)) (by norm_num)) :=
+  prescribed_weightedSupport_margin (1 / 4) 4 2 (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num) (by norm_num)
+
+example :
     ((1 : ℕ) : ℝ) ^ (10000 - 1) / ((10000 - 1).factorial : ℝ) ^ 2 *
         ((1 : ℕ) : ℝ) / 6 * (1 * 1) ^ 3 *
         ((5 / 8) ^ 3 + (4147 / 2160) *
@@ -101,12 +118,14 @@ private theorem eightLeCardWeightedSupportExponents :
   rw [hs, sum_singleton]
   norm_num [CubicStaircase.count, h2, h4, Finset.sum_range_succ]
 
+private theorem ceilFourDivTwo : ⌈(4 : ℝ) / ((2 : ℕ) : ℝ)⌉₊ = 2 := by
+  rw [Nat.ceil_eq_iff (by norm_num)]
+  norm_num
+
 private theorem threePointSurplus :
     Fintype.card (Fin 3) * localResidualCoordinateBudget 1 1 0
         ⌈(4 : ℝ) / ((2 : ℕ) : ℝ)⌉₊ < #(weightedSupportExponents 2 1 0 4 two_pos) := by
-  have hceil : ⌈(4 : ℝ) / ((2 : ℕ) : ℝ)⌉₊ = 2 := by
-    rw [Nat.ceil_eq_iff (by norm_num)]
-    norm_num
+  have hceil := ceilFourDivTwo
   rw [hceil, show localResidualCoordinateBudget 1 1 0 2 = 2 by decide, Fintype.card_fin]
   exact (show 3 * 2 < 8 by norm_num).trans_le eightLeCardWeightedSupportExponents
 
@@ -127,9 +146,7 @@ example : ∃ Q : DifferentialPolynomial ℚ 1, Q ≠ 0 ∧
 example : Module.finrank ℚ (LinearMap.range
     (weightedSupportLocalConstraint (D := 2) (d := 1) (W := 0) (L := 4) 2 (by norm_num)
       (0 : ℚ) (0 : ℚ))) ≤ 4 := by
-  have hceil : ⌈(4 : ℝ) / ((2 : ℕ) : ℝ)⌉₊ = 2 := by
-    rw [Nat.ceil_eq_iff (by norm_num)]
-    norm_num
+  have hceil := ceilFourDivTwo
   have h := finrank_weightedSupportLocalConstraint_le (D := 2) (d := 1) (W := 0) (L := 4)
     (m := 2) one_pos (by norm_num) (0 : ℚ) (0 : ℚ)
   rw [hceil] at h
@@ -154,22 +171,45 @@ example :
     natWeightedSimplex] at h ⊢
   norm_num at h ⊢
 
-example : (1 : ℝ) ≤ 567 / 128 := by
-  have hH : (harmonic 2 : ℝ) = 3 / 2 := by
-    norm_num [harmonic, Finset.sum_range_succ]
-  have h := weighted_residual_sum_le_volume_mul_harmonic_variance 2 0 (T := 0)
-    (by norm_num [hH, Nat.choose])
-  have hset : Finset.natWeightedSimplex (fun i : Fin 2 ↦ i.val + 1) 0 = {fun _ ↦ 0} := by
-    decide
-  rw [hset, volume_real_weightedSimplex_succ 2 (by positivity)] at h
-  norm_num [hH, Nat.choose, Nat.factorial, Fin.sum_univ_two] at h
-  linarith
+example :
+    ∑ c ∈ Finset.natWeightedSimplex (fun i : Fin 1 ↦ i.val + 1) 1,
+        (max (1 - ((∑ i, c i : ℕ) : ℝ)) 0 + 1) ≤
+      (9 / 2 : ℝ) := by
+  have hc : (((1 : ℕ) : ℝ) + ((1 + 1).choose 2 : ℕ)) * harmonic 1 /
+      (((1 : ℕ) : ℝ) + 1) < 1 + ((1 : ℕ) : ℝ) := by
+    norm_num [harmonic]
+  have h := weighted_residual_sum_le_volume_mul_harmonic_variance 1 1 (T := 1) hc
+  have hset : Finset.natWeightedSimplex (fun i : Fin 1 ↦ i.val + 1) 1 =
+      {fun _ ↦ 0, fun _ ↦ 1} := by decide
+  rw [hset, sum_pair (by decide)] at h ⊢
+  rw [volume_real_weightedSimplex_succ 1 (by norm_num)] at h
+  norm_num [harmonic, Fin.sum_univ_succ, Nat.choose] at h ⊢
 
 example : ∑ i : Fin 4, (i.val + 1) = 10 := by
   rw [sum_fin_succ_eq_choose_two]
   rfl
 
-example : (5 / 8 : ℝ) ^ 3 + (4147 / 2160) * 0 ^ 2 ≤
-    ∫ _x, (max (5 / 8 - (0 : ℝ)) 0) ^ 3 ∂Measure.dirac (0 : ℝ) :=
-  contribution_integral_lower (Measure.dirac (0 : ℝ)) (fun _ ↦ 0) 0 (integrable_const _)
-    (by simp) (by simp) (by norm_num) (by simp) (by simp)
+example :
+    (5 / 8 : ℝ) ^ 3 + (4147 / 2160) * (1 / 5) ^ 2 ≤
+      ∫ x, (max (5 / 8 - x) 0) ^ 3 ∂
+        ((2 : ENNReal)⁻¹ • (Measure.dirac (-1 : ℝ) + Measure.dirac 1)) := by
+  set P : Measure ℝ := (2 : ENNReal)⁻¹ • (Measure.dirac (-1 : ℝ) + Measure.dirac 1)
+  have hprob : IsProbabilityMeasure P := ⟨by
+    simp only [P, Measure.smul_apply, Measure.add_apply, measure_univ, smul_eq_mul]
+    rw [one_add_one_eq_two, ENNReal.inv_mul_cancel two_ne_zero ENNReal.ofNat_ne_top]⟩
+  have hdirac : ∀ (a : ℝ) (f : ℝ → ℝ), Integrable f (Measure.dirac a) :=
+    fun a f ↦ integrable_dirac (by simp)
+  have hint : ∀ f : ℝ → ℝ, Integrable f P := fun f ↦
+    ((hdirac (-1) f).add_measure (hdirac 1 f)).smul_measure (by simp)
+  have hP : ∀ f : ℝ → ℝ, ∫ x, f x ∂P = (f (-1) + f 1) / 2 := by
+    intro f
+    rw [integral_smul_measure, integral_add_measure (hdirac (-1) f) (hdirac 1 f),
+      integral_dirac, integral_dirac]
+    simp only [ENNReal.toReal_inv, ENNReal.toReal_ofNat, smul_eq_mul]
+    ring
+  have hmean : ∫ x, x ∂P = 0 := by rw [hP]; norm_num
+  have h := contribution_integral_lower P id (1 / 5) (hint _) (hint _) hmean
+    (by norm_num) (by rw [hP]; norm_num) (by rw [hP]; norm_num)
+  change (5 / 8 : ℝ) ^ 3 + (4147 / 2160) * (1 / 5) ^ 2 ≤
+    ∫ x, (max (5 / 8 - x) 0) ^ 3 ∂P
+  exact h

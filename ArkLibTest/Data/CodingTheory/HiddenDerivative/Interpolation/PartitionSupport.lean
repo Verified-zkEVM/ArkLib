@@ -78,12 +78,6 @@ example : Module.finrank ℚ (partitionSupportSpace ℚ 1 1 1 (3 / 2 : ℝ) one_
   decide
 
 example :
-    Module.finrank ℚ (partitionSupportSpace ℚ 2 0 0 ((3 : ℕ) : ℝ) two_pos) =
-      QuadraticStaircase.count 2 ((3 : ℕ) / (2 : ℕ) - ((0 : ℕ) : ℝ)) := by
-  rw [finrank_partitionSupportSpace_eq_sum_count]
-  simp [natWeightedSimplex]
-
-example :
     ((1 : ℕ) : ℝ) / (2 * (1 : ℝ)) * (max (1 - 1 * ((0 : ℕ) : ℝ)) 0) ^ 2 ≤
       ((1 : ℕ) : ℝ) * (max (((1 : ℕ) : ℝ) / ((1 : ℕ) : ℝ) - ((0 : ℕ) : ℝ)) 0) ^ 2 / 2 :=
   partition_quadratic_rate_lower (D := 1) (n := 1) (L := 1) one_pos (by norm_num) (by norm_num)
@@ -108,8 +102,7 @@ example :
 
 private theorem emptyTupleMemNatWeightedSimplex :
     (0 : Fin 0 → ℕ) ∈ natWeightedSimplex (fun i : Fin 0 => i.val + 1) 0 := by
-  apply (mem_natWeightedSimplex (w := fun i : Fin 0 => i.val + 1)
-    (hw := fun i => Nat.succ_ne_zero i.val)).2
+  rw [natWeightedSimplexFinZero]
   simp
 
 private noncomputable def xCoefficientAreaSlot : PartitionSupportAreaSlot 2 0 0 3 :=

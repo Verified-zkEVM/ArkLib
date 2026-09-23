@@ -7,6 +7,7 @@ Authors: Quang Dao
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.ConstraintKernel
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.ConstraintMap
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.GradedRank
+import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.Identity
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.IntermediateSpace
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.RemainderMap
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.ZeroOrder
@@ -69,3 +70,39 @@ example :
       LinearMap.ker (localConstraintCoordinatesAt (R := ℤ) (d := 1) 1 0 2) :=
   ⟨normalizedLocalConstraintAt_eq_zero_iff 1 0 2 _,
     normalizedLocalConstraintAt_ker_eq_coordinates 1 0 2⟩
+
+open Polynomial in
+example : normalizedBackwardTaylorError (2 : ℤ) (Polynomial.X ^ 2 : ℤ[X]) 1 = -Polynomial.X := by
+  have hP : (Polynomial.X ^ 2 : ℤ[X]).eval 2 = 4 := by norm_num
+  have hidentity := localPolynomialEvaluation_comp_unscaled_backwardError
+    (d := 1) 2 4 (Polynomial.X ^ 2) hP
+  have hcanonical := (localPolynomialEvaluation_comp_unscaled_eq_iff
+    (d := 1) 2 4 (Polynomial.X ^ 2) _).mp hidentity
+  have hC2 : (Polynomial.C (2 : ℤ) : ℤ[X]) = 2 := by norm_num
+  have hC4 : (Polynomial.C (4 : ℤ) : ℤ[X]) = 4 := by norm_num
+  have htaylor : taylor (2 : ℤ) (Polynomial.X ^ 2 : ℤ[X]) =
+      Polynomial.X ^ 2 + Polynomial.C 4 * Polynomial.X + Polynomial.C 4 := by
+    rw [taylor_X_pow, hC2, hC4]
+    ring
+  have hderiv : (Polynomial.X ^ 2 : ℤ[X]).derivative = Polynomial.C 2 * Polynomial.X := by
+    rw [Polynomial.derivative_X_pow]
+    norm_num
+  have hmove : movingHasseSum (2 : ℤ) (Polynomial.X ^ 2 : ℤ[X]) 1 =
+      Polynomial.X * (Polynomial.C 2 * Polynomial.X + Polynomial.C 4) := by
+    rw [movingHasseSum_one, hderiv, taylor_mul, taylor_C, taylor_X]
+    simp only [hC2, hC4]
+    ring
+  have hcandidate : taylor (2 : ℤ) (Polynomial.X ^ 2 : ℤ[X]) =
+    Polynomial.C 4 + movingHasseSum (2 : ℤ) (Polynomial.X ^ 2 : ℤ[X]) 1 +
+        Polynomial.X * (-Polynomial.X) := by
+    rw [htaylor, hmove]
+    simp only [hC2, hC4]
+    ring
+  have hmul : Polynomial.X * normalizedBackwardTaylorError (2 : ℤ)
+      (Polynomial.X ^ 2 : ℤ[X]) 1 = Polynomial.X * (-Polynomial.X) := by
+    calc
+      Polynomial.X * normalizedBackwardTaylorError (2 : ℤ) (Polynomial.X ^ 2 : ℤ[X]) 1 =
+          taylor (2 : ℤ) (Polynomial.X ^ 2 : ℤ[X]) - Polynomial.C 4 -
+            movingHasseSum (2 : ℤ) (Polynomial.X ^ 2 : ℤ[X]) 1 := by rw [hcanonical]; ring
+      _ = Polynomial.X * (-Polynomial.X) := by rw [hcandidate]; ring
+  exact Polynomial.isRegular_X.left hmul
