@@ -1,6 +1,24 @@
 import ArkLib.Data.Probability.Uniform
+import Mathlib.MeasureTheory.Measure.Basic
 
 open scoped ENNReal ProbabilityTheory
+
+example {α : Type} [Fintype α] [MeasurableSpace α] [DiscreteMeasurableSpace α]
+    (mx : ProbComp α) (p : α → Prop) :
+    Pr{let x ← mx}[p x] =
+      ∑' x, {x | p x}.indicator (fun y => 𝒟[mx] {y}) x := by
+  classical
+  rw [prEvent_eq_evalDist_of_discrete, tsum_fintype]
+  calc
+    𝒟[mx] {x | p x} = 𝒟[mx] ↑(Finset.univ.filter p) := by
+      congr 1
+      ext n
+      simp
+    _ = ∑ x ∈ Finset.univ.filter p, 𝒟[mx] {x} :=
+      (MeasureTheory.sum_measure_singleton
+        (μ := 𝒟[mx]) (s := Finset.univ.filter p)).symm
+    _ = ∑ x, {x | p x}.indicator (fun y => 𝒟[mx] {y}) x := by
+      simp [Set.indicator, Finset.sum_filter]
 
 example : Pr{let n ← $ᵗ (Fin 2)}[n = 0] = (1 / 2 : ENNReal) := by
   rw [SampleableType.prEvent_uniformSample]
