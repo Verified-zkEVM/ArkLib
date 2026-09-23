@@ -11,18 +11,18 @@ public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.C
 /-!
 # First-order certificate data and support assembly
 
-This module defines the specialization-sound certificate returned by finite first-order
-interpolation. Its support consists of the monomials
+This module defines the data of a first-order symbolic certificate and proves properties of
+assembled source columns. Its support consists of the monomials
 
 ```text
 X^x Y₀^a Y₁^b,  b ≤ M,  a + b ≤ μ,
                     x + D a + (D - 1) b < m A.
 ```
 
-The structure records primitivity, coefficient height, support, local constraints, and uniform
-specialization soundness. `coeff_interpolant_natDegree_le` and
-`interpolant_mem_firstOrderSpace` are the support-independent assembly lemmas used by the shifted
-finite constructor.
+The certificate records primitivity, coefficient height, support, local constraints, and uniform
+specialization soundness. `coeff_interpolant_natDegree_le` bounds coefficient heights after
+assembly, and `interpolant_mem_firstOrderSpace` proves that eligible columns assemble within the
+finite first-order support.
 
 ## Main statements
 

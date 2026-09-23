@@ -7,6 +7,8 @@ module
 
 public import ArkLib.ToMathlib.LinearAlgebra.Matrix.RowBasis
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.Interpolant
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.Symbolic
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.SymbolicRank
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.HeightCounting
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.GradedRank
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.ColumnHeight
@@ -32,12 +34,12 @@ projected rows at each degree.
 
 * `firstOrderOriginGradedSliceMatrix` is the literal local constraint block for each displacement
   and jet grade.
-* `firstOrderOriginGradedRank` and `firstOrderGradedRank` give the actual block-rank profile and
-  its numerical upper bound.
+* `firstOrderOriginGradedRank` is the actual block-rank profile;
+  `firstOrderGradedRankBound` and `firstOrderOriginGradedRank_le_bound` give its numerical bound.
 * `firstOrderCurveGradedConstraintMatrix_kernel_iff` characterizes the full local constraints on
   the finite first-order support using selected rows.
-* `firstOrder_curve_matrix_rank_le` bounds the symbolic curve matrix over the rational function
-  field.
+* `rank_firstOrderLocalConstraintMatrix_le` bounds the symbolic matrix over the rational
+  function field.
 
 ## References
 
@@ -113,6 +115,7 @@ private def firstOrderSourceSliceWeight : JetVariable 1 → ℕ
   | none => 1
   | some j => if j.val = 0 then 1 else 0
 
+/-- The displacement grading gives `T` weight one and `E` and `Y₁` weight zero. -/
 def firstOrderLocalSliceWeight : LocalVariable 1 → ℕ
   | none => 1
   | some _ => 0
@@ -214,14 +217,17 @@ def firstOrderGradedSourceColumn (D A m M s t : ℕ)
     y₀ := a
     higher := fun _ ↦ t - a }
 
+/-- The `X` exponent of a source column in the `(s,t)` slice is `s - (t - M + q.val)`. -/
 @[simp] theorem firstOrderGradedSourceColumn_x (D A m M s t : ℕ)
     (q : Fin (firstOrderGradedSourceCount D A m M s t)) :
     (firstOrderGradedSourceColumn D A m M s t q).x = s - (t - M + q.val) := rfl
 
+/-- The `Y₀` exponent of a source column in the `(s,t)` slice is `t - M + q.val`. -/
 @[simp] theorem firstOrderGradedSourceColumn_y₀ (D A m M s t : ℕ)
     (q : Fin (firstOrderGradedSourceCount D A m M s t)) :
     (firstOrderGradedSourceColumn D A m M s t q).y₀ = t - M + q.val := rfl
 
+/-- The higher-jet exponent of a source column in the `(s,t)` slice is `t - (t - M + q.val)`. -/
 @[simp] theorem firstOrderGradedSourceColumn_higher (D A m M s t : ℕ)
     (q : Fin (firstOrderGradedSourceCount D A m M s t)) (j : Fin 1) :
     (firstOrderGradedSourceColumn D A m M s t q).higher j = t - (t - M + q.val) := rfl
@@ -424,14 +430,10 @@ def firstOrderGradedTargetExponent (s t e : ℕ) : LocalVariable 1 →₀ ℕ :=
   Finsupp.single (localT 1) s + Finsupp.single (localE 1) e +
     Finsupp.single (localY (0 : Fin 1)) (t - e)
 
-/-- The local jet degree of a first-order exponent counts `E` and `Y₁`. -/
-def firstOrderLocalJetDegree (e : LocalVariable 1 →₀ ℕ) : ℕ :=
-  e.weight (localJetDegreeWeight 1)
-
-/-- The local jet degree is the sum of the `E` and `Y₁` exponents. -/
-theorem firstOrderLocalJetDegree_eq_error_add_visible (e : LocalVariable 1 →₀ ℕ) :
-    firstOrderLocalJetDegree e = e (localE 1) + e (localY (0 : Fin 1)) := by
-  simp [firstOrderLocalJetDegree, localJetDegreeWeight, Finsupp.weight_eq_sum,
+/-- In one derivative variable, the local jet weight is the sum of the `E` and `Y₁` exponents. -/
+theorem weight_localJetDegreeWeight_one_eq (e : LocalVariable 1 →₀ ℕ) :
+    e.weight (localJetDegreeWeight 1) = e (localE 1) + e (localY (0 : Fin 1)) := by
+  simp [localJetDegreeWeight, Finsupp.weight_eq_sum,
     Fintype.sum_option, localE, localAux, localY]
 
 /-- In one derivative variable, contact order is the sum of the `T` and `E`
@@ -444,16 +446,16 @@ theorem localContactOrder_one (e : LocalVariable 1 →₀ ℕ) :
 /-- The canonical `(T`-degree, jet-grade, `E`-degree) coordinates exhaust every local
 monomial in the first-order target. -/
 theorem firstOrderGradedTargetExponent_of_local (e : LocalVariable 1 →₀ ℕ) :
-    firstOrderGradedTargetExponent (e (localT 1)) (firstOrderLocalJetDegree e)
+    firstOrderGradedTargetExponent (e (localT 1)) (e.weight (localJetDegreeWeight 1))
       (e (localE 1)) = e := by
   ext v
   rcases v with _ | (_ | j)
   · simp [firstOrderGradedTargetExponent, localT, localE, localAux, localY]
-  · simp [firstOrderGradedTargetExponent, firstOrderLocalJetDegree_eq_error_add_visible,
+  · simp [firstOrderGradedTargetExponent, weight_localJetDegreeWeight_one_eq,
       localT, localE, localAux, localY]
   · have hj : j = (0 : Fin 1) := Subsingleton.elim _ _
     subst j
-    simp [firstOrderGradedTargetExponent, firstOrderLocalJetDegree_eq_error_add_visible,
+    simp [firstOrderGradedTargetExponent, weight_localJetDegreeWeight_one_eq,
       localT, localE, localAux, localY]
 
 /-- The displacement exponent of a graded target coordinate is its first index. -/
@@ -462,12 +464,12 @@ theorem firstOrderGradedTargetExponent_localT (s t e : ℕ) :
     firstOrderGradedTargetExponent s t e (localT 1) = s := by
   simp [firstOrderGradedTargetExponent, localT, localE, localAux, localY]
 
-/-- A bounded target coordinate has the prescribed local jet degree. -/
+/-- A bounded target coordinate has the prescribed local jet weight. -/
 @[simp]
-theorem firstOrderLocalJetDegree_firstOrderGradedTargetExponent
+theorem weight_localJetDegreeWeight_one_firstOrderGradedTargetExponent
     {s t e : ℕ} (he : e ≤ t) :
-    firstOrderLocalJetDegree (firstOrderGradedTargetExponent s t e) = t := by
-  simp [firstOrderLocalJetDegree, localJetDegreeWeight, firstOrderGradedTargetExponent,
+    (firstOrderGradedTargetExponent s t e).weight (localJetDegreeWeight 1) = t := by
+  simp [localJetDegreeWeight, firstOrderGradedTargetExponent,
     Finsupp.weight_eq_sum, Fintype.sum_option, localT, localE, localAux, localY]
   omega
 
@@ -485,12 +487,12 @@ def firstOrderGradedTargetLowContactIndex {m : ℕ} (s : Fin m) (t : ℕ)
     have he : e.val < m - s.val := e.isLt.trans_le (min_le_left _ _)
     omega⟩
 
-/-- The target row index has the prescribed local jet degree. -/
+/-- The target row index has the prescribed local jet weight. -/
 @[simp]
-theorem firstOrderLocalJetDegree_firstOrderGradedTargetLowContactIndex
+theorem weight_localJetDegreeWeight_one_firstOrderGradedTargetLowContactIndex
     {m : ℕ} (s : Fin m) (t : ℕ) (e : Fin (min (m - s.val) (t + 1))) :
-    firstOrderLocalJetDegree (firstOrderGradedTargetLowContactIndex s t e).1 = t := by
-  apply firstOrderLocalJetDegree_firstOrderGradedTargetExponent
+    (firstOrderGradedTargetLowContactIndex s t e).1.weight (localJetDegreeWeight 1) = t := by
+  apply weight_localJetDegreeWeight_one_firstOrderGradedTargetExponent
   have := e.isLt.trans_le (min_le_right (m - s.val) (t + 1))
   omega
 
@@ -639,8 +641,8 @@ theorem firstOrderOriginGradedSliceMatrix_mulVec_coeff
         rw [hcoeff]
         simp
       rw [hlhs]
-      by_cases hgrade : firstOrderLocalJetDegree target ≠ totalJetDegree c.exponent
-      · have hgrade' : firstOrderLocalJetDegree target ≠ c.y₀ + ∑ j, c.higher j := by
+      by_cases hgrade : target.weight (localJetDegreeWeight 1) ≠ totalJetDegree c.exponent
+      · have hgrade' : target.weight (localJetDegreeWeight 1) ≠ c.y₀ + ∑ j, c.higher j := by
           simpa [SourceColumn.totalJetDegree_exponent] using hgrade
         have hz := coeff_localConstraintAt_zero_sourceMonomial_eq_zero
           (R := R) (m := m) c.x c.y₀ c.higher target
@@ -651,9 +653,9 @@ theorem firstOrderOriginGradedSliceMatrix_mulVec_coeff
           apply hslice
           constructor
           · simpa only [target, firstOrderGradedTargetExponent_localT] using hEq.symm
-          · have htgt : firstOrderLocalJetDegree target = t := by
+          · have htgt : target.weight (localJetDegreeWeight 1) = t := by
               dsimp only [target]
-              apply firstOrderLocalJetDegree_firstOrderGradedTargetExponent
+              apply weight_localJetDegreeWeight_one_firstOrderGradedTargetExponent
               have he := e.isLt.trans_le (min_le_right (m - s) (t + 1))
               omega
             exact (not_ne_iff.mp hgrade).symm.trans htgt
@@ -702,49 +704,6 @@ theorem firstOrderOriginGradedSelectedRow_span (D A m M s t : ℕ) :
   (Classical.choose_spec
     (Matrix.exists_rows_linearIndependent_span_eq
       (firstOrderOriginGradedSliceMatrix (F := F) D A m M s t))).2
-
-/-- One origin block compressed to exactly its actual rank many fixed coefficient rows. -/
-noncomputable def firstOrderOriginGradedCompressedMatrix (F : Type*) [Field F]
-    (D A m M s t : ℕ) :
-    Matrix (Fin (firstOrderOriginGradedSliceMatrix (F := F) D A m M s t).rank)
-      (Fin (firstOrderGradedSourceCount D A m M s t)) F :=
-  (firstOrderOriginGradedSliceMatrix (F := F) D A m M s t).submatrix
-    (firstOrderOriginGradedSelectedRow F D A m M s t) id
-
-/-- Compression keeps the full row space, hence keeps the kernel of the actual origin block. -/
-theorem firstOrderOriginGradedCompressedMatrix_mulVec_eq_zero_iff
-    (D A m M s t : ℕ)
-    (v : Fin (firstOrderGradedSourceCount D A m M s t) → F) :
-    (firstOrderOriginGradedCompressedMatrix F D A m M s t) *ᵥ v = 0 ↔
-      (firstOrderOriginGradedSliceMatrix (F := F) D A m M s t) *ᵥ v = 0 := by
-  classical
-  let A₀ := firstOrderOriginGradedSliceMatrix (F := F) D A m M s t
-  let rows := firstOrderOriginGradedSelectedRow F D A m M s t
-  constructor
-  · intro hselected
-    funext i
-    change dotProduct (A₀.row i) v = 0
-    have hi : A₀.row i ∈ Submodule.span F (Set.range fun j ↦ A₀.row (rows j)) := by
-      rw [firstOrderOriginGradedSelectedRow_span (F := F) D A m M s t]
-      exact Submodule.subset_span ⟨i, rfl⟩
-    have hzero_of_mem {x : Fin (firstOrderGradedSourceCount D A m M s t) → F}
-        (hx : x ∈ Submodule.span F (Set.range fun j ↦ A₀.row (rows j))) :
-        dotProduct x v = 0 := by
-      induction hx using Submodule.span_induction with
-      | mem x hx =>
-          obtain ⟨j, rfl⟩ := hx
-          have hj := congrFun hselected j
-          simpa [firstOrderOriginGradedCompressedMatrix, A₀, rows, Matrix.mulVec,
-            dotProduct] using hj
-      | zero => simp
-      | add x y _ _ hx hy => simp [add_dotProduct, hx, hy]
-      | smul a x _ hx => simp [smul_dotProduct, hx]
-    exact hzero_of_mem hi
-  · intro hall
-    funext i
-    have hi := congrFun hall (rows i)
-    simpa [firstOrderOriginGradedCompressedMatrix, A₀, rows, Matrix.mulVec,
-      dotProduct] using hi
 
 /-- The base-field selected row indices applied after extension to another coefficient ring. -/
 noncomputable def firstOrderOriginGradedBaseSelectedMatrix
@@ -847,24 +806,6 @@ theorem firstOrderOriginGradedBaseSelectedMatrix_mulVec_coeff
       (firstOrderOriginGradedSelectedRow F D A m M s t i) = _
   exact firstOrderOriginGradedSliceMatrix_mulVec_coeff D A m M μ s t hD _ Q
 
-/-- The compressed block evaluates to its selected literal origin coefficients. -/
-theorem firstOrderOriginGradedCompressedMatrix_mulVec_coeff
-    (D A m M μ s t : ℕ) (hD : 0 < D)
-    (Q : firstOrderSpace F D A m M μ) :
-    firstOrderOriginGradedCompressedMatrix F D A m M s t *ᵥ
-        (fun q ↦ mvCoeff
-          (firstOrderGradedSourceColumn D A m M s t q).exponent Q.1) =
-      fun i ↦ mvCoeff
-        (firstOrderGradedTargetExponent s t
-          (firstOrderOriginGradedSelectedRow F D A m M s t i))
-        (localConstraintAt m 0 0 Q.1) := by
-  funext i
-  change (firstOrderOriginGradedSliceMatrix (F := F) D A m M s t *ᵥ
-      (fun q ↦ mvCoeff
-        (firstOrderGradedSourceColumn D A m M s t q).exponent Q.1))
-      (firstOrderOriginGradedSelectedRow F D A m M s t i) = _
-  exact firstOrderOriginGradedSliceMatrix_mulVec_coeff D A m M μ s t hD _ Q
-
 /-- The selected origin rows across the bounded jet grades detect the complete local
 constraint on the finite first-order source space. Grades above `μ` vanish because translation
 and the origin constraint preserve total jet degree. -/
@@ -888,10 +829,10 @@ theorem firstOrderOriginGradedSelectedCoefficients_eq_zero_iff
     · let s : Fin m := ⟨e (localT 1), by
           rw [localContactOrder_one] at hcontact
           omega⟩
-      let t := firstOrderLocalJetDegree e
+      let t := e.weight (localJetDegreeWeight 1)
       have he_le_t : e (localE 1) ≤ t := by
         dsimp only [t]
-        rw [firstOrderLocalJetDegree_eq_error_add_visible]
+        rw [weight_localJetDegreeWeight_one_eq]
         omega
       have he_contact : e (localE 1) < m - s.val := by
         dsimp only [s]
@@ -990,25 +931,9 @@ theorem firstOrderCurveGradedConstraintMatrix_mulVec_eq_coeff
   classical
   let columns := firstOrderColumns (D := D) (A := A) (m := m) (M := M) (μ := μ)
   let localRow := firstOrderCurveGradedRowLocalIndex F D A m M μ n row
-  have heq :
-      ((localConstraintMatrix m (fun i ↦ Polynomial.C (centers i)) w columns) *ᵥ v)
-          (row.1, localRow) =
-        localConstraintCoordinatesAt m (Polynomial.C (centers row.1)) (w row.1)
-          (SourceColumn.interpolant columns v) localRow := by
-    rw [SourceColumn.interpolant, Matrix.mulVec, dotProduct, map_sum]
-    simp only [Finset.sum_apply]
-    apply Finset.sum_congr rfl
-    intro j _
-    change localConstraintCoordinatesAt m (Polynomial.C (centers row.1)) (w row.1)
-      (columns j).polynomial localRow * v j = _
-    rw [show MvPolynomial.monomial (columns j).exponent (v j) =
-        v j • (columns j).polynomial by
-          rw [SourceColumn.polynomial, MvPolynomial.smul_monomial]
-          simp, LinearMap.map_smul]
-    simp [mul_comm]
   change ((localConstraintMatrix m (fun i ↦ Polynomial.C (centers i)) w columns) *ᵥ v)
       (row.1, localRow) = _
-  rw [heq]
+  rw [localConstraintMatrix_mulVec_apply]
   change mvCoeff localRow.1
       (unscaledLocalSubstitution 1 (Polynomial.C (centers row.1)) (w row.1)
         (SourceColumn.interpolant columns v)) =
@@ -1036,18 +961,10 @@ theorem firstOrderCurveGradedConstraintMatrix_kernel_iff
   classical
   let columns := firstOrderColumns (D := D) (A := A) (m := m) (M := M) (μ := μ)
   let Q := SourceColumn.interpolant columns v
-  have hQ : Q ∈ firstOrderSpace F[X] D A m M μ := by
-    change SourceColumn.interpolant columns v ∈ firstOrderSpace F[X] D A m M μ
-    rw [SourceColumn.interpolant]
-    apply Submodule.sum_mem
-    intro j _
-    rw [mem_firstOrderSpace_iff]
-    intro u hu
-    have hueq : u = (columns j).exponent := by
-      simpa using MvPolynomial.support_monomial_subset hu
-    rw [hueq]
-    exact mem_firstOrderExponents.mp (firstOrderColumns_eligible
-      (D := D) (A := A) (m := m) (M := M) (μ := μ) j)
+  have hQ : Q ∈ firstOrderSpace F[X] D A m M μ :=
+    interpolant_mem_firstOrderSpace columns
+      (fun j ↦ firstOrderColumns_eligible
+        (D := D) (A := A) (m := m) (M := M) (μ := μ) j) v
   constructor
   · intro hmatrix i
     rw [SatisfiesLocalConstraints, localConstraintAt_eq_zero_globalPointTranslation]
@@ -1125,11 +1042,7 @@ theorem firstOrderCurveGradedConstraintMatrix_degree_le
     (row.1, firstOrderCurveGradedRowLocalIndex F D A m M μ n row) j
   have hrow : (firstOrderCurveGradedRowLocalIndex F D A m M μ n row).1.weight
       (localJetDegreeWeight 1) = row.2.1.val := by
-    simpa [firstOrderCurveGradedRowLocalIndex, firstOrderLocalJetDegree] using
-      firstOrderLocalJetDegree_firstOrderGradedTargetLowContactIndex
-        row.2.2.1 row.2.1.val
-          (firstOrderOriginGradedSelectedRow F D A m M row.2.2.1.val row.2.1.val
-            row.2.2.2)
+    simp [firstOrderCurveGradedRowLocalIndex]
   rw [SourceColumn.totalJetDegree_exponent]
   rw [hrow] at h
   simpa [firstOrderCurveGradedConstraintMatrix, firstOrderCurveGradedRowLocalIndex] using h
@@ -1150,10 +1063,7 @@ theorem firstOrderCurveGradedConstraintMatrix_eq_zero_of_grade_lt
   apply localConstraintMatrix_eq_zero_of_lt m (fun i ↦ Polynomial.C (centers i)) w
     columns (row.1, lowRow) j
   have hrow : lowRow.1.weight (localJetDegreeWeight 1) = row.2.1.val := by
-    simpa [lowRow, firstOrderCurveGradedRowLocalIndex, firstOrderLocalJetDegree] using
-      firstOrderLocalJetDegree_firstOrderGradedTargetLowContactIndex row.2.2.1 row.2.1.val
-        (firstOrderOriginGradedSelectedRow F D A m M row.2.2.1.val row.2.1.val
-          row.2.2.2)
+    simp [lowRow, firstOrderCurveGradedRowLocalIndex]
   rw [← SourceColumn.totalJetDegree_exponent (columns j), hrow]
   exact hgrade
 
@@ -1207,85 +1117,6 @@ theorem firstOrderOriginGradedRank_le_bound (D A m M t : ℕ) :
   intro s hs
   exact firstOrderOriginGradedSliceMatrix_rank_le (F := F) D A m M s t
 
-/-! ### Literal graded block-rank profile -/
-
-/-- The degree-`t` row profile is the sum of the literal origin `(s,t)` block-matrix ranks.
-This is the unique rank profile used by shifted height counting. -/
-noncomputable abbrev firstOrderGradedRank (F : Type*) [Field F]
-    (D A m M t : ℕ) : ℕ :=
-  firstOrderOriginGradedRank F D A m M t
-
-/-- The complete actual graded row count through the total-degree cap `μ`. -/
-noncomputable def firstOrderGradedRowCount (F : Type*) [Field F]
-    (D A m M μ : ℕ) : ℕ :=
-  ∑ t ∈ Finset.range (μ + 1), firstOrderGradedRank F D A m M t
-
-/-- The symbolic first-order matrix has the certified global rank bound over `F(Z)`.
-The proof factors it through the actual global constraint map on the capped support. -/
-theorem firstOrder_curve_matrix_rank_le {D A m M μ n N : ℕ}
-    (centers : Fin n → F) (w : Fin n → F[X]) (columns : Fin N → SourceColumn 1)
-    (heligible : ∀ j, (columns j).exponent ∈ firstOrderExponents D A m M μ) :
-    ((localConstraintMatrix m (fun i ↦ Polynomial.C (centers i)) w columns).map
-      (algebraMap F[X] (RatFunc F))).rank ≤
-      n * certifiedEnlargedRankBound 1 m M 0 := by
-  classical
-  let K := RatFunc F
-  let φ : F[X] →+* K := algebraMap F[X] K
-  let V := firstOrderSpace K D A m M μ
-  let monomial (j : Fin N) : V := ⟨(columns j).polynomial, by
-    apply mem_firstOrderSpace_iff.mpr
-    intro u hu
-    have heq : u = (columns j).exponent := by
-      simpa [SourceColumn.polynomial] using MvPolynomial.support_monomial_subset hu
-    simpa [heq] using mem_firstOrderExponents.mp (heligible j)⟩
-  let assemble : (Fin N → K) →ₗ[K] V :=
-    ∑ j, (LinearMap.smulRight (LinearMap.proj j) (monomial j))
-  let constraint := firstOrderGlobalConstraintMap (D := D) (A := A) (m := m) (M := M) (μ := μ)
-    (fun i ↦ φ (Polynomial.C (centers i))) (fun i ↦ φ (w i))
-  let coefficients : (Fin n → LocalPolynomial K 1) →ₗ[K]
-      ((Fin n × LowContactIndex 1 m) → K) :=
-    LinearMap.pi fun row ↦ MvPolynomial.lcoeff K row.2.1 ∘ₗ LinearMap.proj row.1
-  let mat := (localConstraintMatrix m (fun i ↦ Polynomial.C (centers i)) w columns).map φ
-  have hfactor : mat.mulVecLin = coefficients ∘ₗ constraint ∘ₗ assemble := by
-    apply LinearMap.ext
-    intro v
-    funext row
-    simp only [Matrix.mulVecLin_apply, Matrix.mulVec, dotProduct,
-      LinearMap.comp_apply, coefficients, LinearMap.pi_apply, MvPolynomial.lcoeff_apply,
-      LinearMap.proj_apply, assemble, LinearMap.sum_apply, map_sum, LinearMap.smulRight_apply,
-      map_smul]
-    change (∑ j,
-      φ (localConstraintMatrix m (fun i ↦ Polynomial.C (centers i)) w columns row j) * v j) = _
-    simp only [constraint, firstOrderGlobalConstraintMap, LinearMap.pi_apply,
-      firstOrderLocalConstraintAt, LinearMap.domRestrict_apply]
-    apply Finset.sum_congr rfl
-    intro j _
-    have hentry : localConstraintMatrix m (fun i ↦ Polynomial.C (centers i)) w columns row j =
-        mvCoeff row.2.1
-          (localConstraintAt m (Polynomial.C (centers row.1)) (w row.1)
-            (columns j).polynomial) := by
-      rw [localConstraintMatrix_apply]
-      change (unscaledLocalSubstitution 1 (Polynomial.C (centers row.1)) (w row.1)
-          (columns j).polynomial).coeff row.2.1 =
-        (projectLowContact m
-          (unscaledLocalSubstitution 1 (Polynomial.C (centers row.1)) (w row.1)
-            (columns j).polynomial)).coeff row.2.1
-      rw [coeff_projectLowContact]
-      simp [row.2.2]
-    rw [hentry]
-    rw [← MvPolynomial.coeff_map, map_localConstraintAt]
-    simp [monomial, SourceColumn.polynomial, mul_comm]
-  let _ : Module.Finite K V := Module.Finite.of_basis (firstOrderSpaceBasis K D A m M μ)
-  change Module.finrank K mat.mulVecLin.range ≤ _
-  rw [hfactor]
-  apply (LinearMap.finrank_range_comp_le_left (coefficients ∘ₗ constraint) assemble).trans
-  rw [LinearMap.range_comp]
-  apply (Submodule.finrank_map_le coefficients constraint.range).trans
-  simpa [constraint] using
-    (finrank_firstOrderGlobalConstraintMap_le (D := D) (A := A) (m := m)
-      (M := M) (μ := μ)
-      (fun i ↦ φ (Polynomial.C (centers i)))
-      (fun i ↦ φ (w i)))
 
 end
 

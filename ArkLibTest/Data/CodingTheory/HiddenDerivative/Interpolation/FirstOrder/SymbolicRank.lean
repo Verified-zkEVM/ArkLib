@@ -7,9 +7,9 @@ Authors: Quang Dao
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.SymbolicRank
 
 /-!
-# First-order symbolic rank acceptance tests
+# First-order local constraint rank acceptance tests
 
-The tests check the rank bound at `D = 0` and state the rank bound under `1 < D`.
+The tests check the polynomial-received rank bound at `D = 0` and its generic received-line case.
 -/
 
 open PolynomialDifferential Polynomial ReedSolomon.HiddenDerivative
@@ -28,15 +28,15 @@ example :
 /-- The two eligible columns at `D = 0` have a certified rank bound of `1`. -/
 example :
     ((localConstraintMatrix 1 (fun _ : Fin 1 ↦ Polynomial.C (0 : ℚ))
-      (fun _ ↦ receivedLine 0 0) boundaryColumns).map
+      (fun _ ↦ (X ^ 2 : ℚ[X])) boundaryColumns).map
         (algebraMap ℚ[X] (RatFunc ℚ))).rank ≤ 1 := by
   have heligible : ∀ j, (boundaryColumns j).exponent ∈ firstOrderExponents 0 1 1 0 1 := by
     intro j
     rw [mem_firstOrderExponents_iff_coordinates]
     fin_cases j <;> simp [boundaryColumns, SourceColumn.exponent]
   exact (rank_firstOrderLocalConstraintMatrix_le (D := 0) (A := 1) (m := 1) (M := 0)
-    (μ := 1) (centers := fun _ ↦ (0 : ℚ)) (f := fun _ ↦ 0) (g := fun _ ↦ 0)
-    boundaryColumns heligible).trans (by decide)
+    (μ := 1) (centers := fun _ ↦ (0 : ℚ))
+    (received := fun _ ↦ (X ^ 2 : ℚ[X])) boundaryColumns heligible).trans (by decide)
 
 /-- The form with the hypothesis `1 < D` follows from the rank bound, which applies to every D. -/
 example {F : Type*} [Field F] {D A m M μ n N : ℕ} (_hD : 1 < D)
@@ -45,4 +45,5 @@ example {F : Type*} [Field F] {D A m M μ n N : ℕ} (_hD : 1 < D)
     ((localConstraintMatrix m (fun i ↦ Polynomial.C (centers i))
       (fun i ↦ receivedLine (f i) (g i)) columns).map
         (algebraMap F[X] (RatFunc F))).rank ≤ n * certifiedEnlargedRankBound 1 m M 0 := by
-  simpa using rank_firstOrderLocalConstraintMatrix_le centers f g columns heligible
+  simpa using rank_firstOrderLocalConstraintMatrix_le centers
+    (fun i ↦ receivedLine (f i) (g i)) columns heligible
