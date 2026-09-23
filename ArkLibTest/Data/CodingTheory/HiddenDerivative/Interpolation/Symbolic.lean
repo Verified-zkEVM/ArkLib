@@ -205,6 +205,33 @@ private theorem twoPointWeightedColumns_eligible : ∀ j, WeightedSupportEligibl
     (twoPointWeightedColumns j).exponent :=
   weightedSupportColumns_eligible (d := 1) (D := 1) (W := 0) (L := 2) Nat.one_pos
 
+/-- A nonzero two-point coefficient vector interpolates into its weighted-support space. -/
+example : ∃ v : Fin (Fintype.card
+    (↥(weightedSupportExponents 1 1 0 2 Nat.one_pos))) → ℚ,
+    v ≠ 0 ∧ SourceColumn.interpolant twoPointWeightedColumns v ≠ 0 ∧
+      SourceColumn.interpolant twoPointWeightedColumns v ∈
+        weightedSupportSpace ℚ 1 1 0 2 Nat.one_pos := by
+  have hdim := onePointWeightedSupportDimension_ge_four (F := ℚ)
+  rw [finrank_weightedSupportSpace_eq_card] at hdim
+  have hcard' : 0 < (weightedSupportExponents 1 1 0 2 Nat.one_pos).card := by omega
+  have hcard : 0 < Fintype.card
+      (↥(weightedSupportExponents 1 1 0 2 Nat.one_pos)) := by
+    simpa [Fintype.card_coe] using hcard'
+  let v : Fin (Fintype.card
+      (↥(weightedSupportExponents 1 1 0 2 Nat.one_pos))) → ℚ := fun _ => 1
+  have hv : v ≠ 0 := by
+    intro hv
+    have hzero := congrFun hv ⟨0, hcard⟩
+    norm_num [v] at hzero
+  have hcolumns : Function.Injective twoPointWeightedColumns :=
+    weightedSupportColumns_injective (d := 1) (D := 1) (W := 0) (L := 2) Nat.one_pos
+  have hinterpolant : SourceColumn.interpolant twoPointWeightedColumns v ≠ 0 := by
+    intro hzero
+    exact hv ((SourceColumn.interpolant_eq_zero_iff hcolumns).mp hzero)
+  exact ⟨v, hv, hinterpolant,
+    interpolant_mem_weightedSupportSpace Nat.one_pos twoPointWeightedColumns
+      twoPointWeightedColumns_eligible v⟩
+
 /-- A concrete quadratic received curve block is the corresponding canonical support submatrix. -/
 example :
     (fun row j => algebraMap ℚ[X] (RatFunc ℚ)
