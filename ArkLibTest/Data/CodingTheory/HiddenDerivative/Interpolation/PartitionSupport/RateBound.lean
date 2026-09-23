@@ -4,10 +4,10 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.SupportGuards
+import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.RateBound
 
 /-!
-# Rate-partition support guard acceptance tests
+# Rate-dependent partition-support acceptance tests
 
 A concrete eligible exponent satisfies the rate-dependent jet cap, while an exponent above that
 cap fails the partition-support cutoff.
