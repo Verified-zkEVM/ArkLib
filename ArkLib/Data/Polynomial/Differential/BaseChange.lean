@@ -181,26 +181,14 @@ def BoundedSolution.map [CommSemiring F] [CommSemiring E] (f : F →+* E)
     change differentialSpecialization (MvPolynomial.map f Q) (P.polynomial.map f) = 0
     rw [← map_differentialSpecialization, P.equation, Polynomial.map_zero]⟩
 
-/-- The polynomial of a mapped solution is the mapped polynomial. -/
-@[simp]
-theorem BoundedSolution.map_polynomial [CommSemiring F] [CommSemiring E] (f : F →+* E)
-    {Q : DifferentialPolynomial F d} {D : ℕ} (P : BoundedSolution Q D) :
-    (P.map f).polynomial = P.polynomial.map f :=
-  rfl
-
 /-- Mapping bounded solutions along an injective coefficient map is injective. -/
 theorem BoundedSolution.map_injective [CommSemiring F] [CommSemiring E] {f : F →+* E}
     (hf : Function.Injective f) {Q : DifferentialPolynomial F d} {D : ℕ} :
     Function.Injective (BoundedSolution.map f : BoundedSolution Q D →
       BoundedSolution (MvPolynomial.map f Q) D) :=
-  fun _ _ h ↦ Subtype.ext <| Subtype.ext <| Polynomial.map_injective f hf <|
-    congrArg BoundedSolution.polynomial h
-
-/-- `BoundedSolution.map` as an embedding, for an injective coefficient map. -/
-def BoundedSolution.mapEmbedding [CommSemiring F] [CommSemiring E] {f : F →+* E}
-    (hf : Function.Injective f) (Q : DifferentialPolynomial F d) (D : ℕ) :
-    BoundedSolution Q D ↪ BoundedSolution (MvPolynomial.map f Q) D :=
-  ⟨BoundedSolution.map f, BoundedSolution.map_injective hf⟩
+  fun P P' h ↦ Subtype.ext <| Subtype.ext <| Polynomial.map_injective f hf <| by
+    change (BoundedSolution.map f P).polynomial = (BoundedSolution.map f P').polynomial
+    exact congrArg BoundedSolution.polynomial h
 
 /-- Along an injective map into a finite commutative semiring, `Q = 0` has at most as many
 solutions of degree at most `D` as `Q.map f = 0`. Any bound on the solutions over a finite

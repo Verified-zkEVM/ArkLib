@@ -73,10 +73,13 @@ the Taylor coefficient `1` of `X ^ 2` at the jet of `X ^ 2`. -/
 example (τ : ℕ) (hτ : 1 ≤ τ) :
     aeval (polynomialJet 0 (Polynomial.X ^ 2 : Polynomial ℚ))
       (commonTaylorNumerator 0 (linearEquation ℚ) τ 2) = 1 := by
-  rw [aeval_commonTaylorNumerator_polynomialJet 0 _ _
-    (differentialSpecialization_linearEquation ℚ)
-    (by rw [jetEvaluation_separant_linearEquation]; norm_num) (by omega)
-    (fun i hi _ ↦ choose_one_ne_zero i hi), aeval_initialJetSeparant,
+  rw [aeval_commonTaylorNumerator 0 (linearEquation ℚ)
+    (polynomialJet 0 (Polynomial.X ^ 2 : Polynomial ℚ)) (by omega)
+    (by rw [aeval_initialJetSeparant, jetEvaluation_separant_linearEquation]; norm_num),
+    rationalTaylorCoefficient_eq_solution 0 (linearEquation ℚ) (Polynomial.X ^ 2)
+      (differentialSpecialization_linearEquation ℚ)
+      (by rw [jetEvaluation_separant_linearEquation]; norm_num) 2
+      (fun i hi _ ↦ choose_one_ne_zero i hi), aeval_initialJetSeparant,
     jetEvaluation_separant_linearEquation]
   simp [Polynomial.coeff_X_pow]
 
@@ -110,12 +113,19 @@ example :
         (taylorAgreementEquation 0 (linearEquation ℚ) 3 (2 * 3) 3 9) = 0 ∧
       aeval (polynomialJet 0 (Polynomial.X ^ 2 : Polynomial ℚ))
         (taylorAgreementEquation 0 (linearEquation ℚ) 3 (2 * 3) 3 8) ≠ 0 := by
-  have h := aeval_taylorAgreementEquation_polynomialJet_eq_zero_iff 0 (linearEquation ℚ)
-    (Polynomial.X ^ 2) (differentialSpecialization_linearEquation ℚ)
-    (by rw [jetEvaluation_separant_linearEquation]; norm_num)
-    (taylorExponentSufficient_two_mul 1 3) (degree_X_sq_lt_three ℚ)
-    (fun i hi _ ↦ choose_one_ne_zero i hi)
-  rw [h, Ne, h]
+  have h9 := taylorAgreementEquation_eq_zero_iff 0 (linearEquation ℚ)
+    (taylorExponentSufficient_two_mul 1 3)
+    (polynomialJet 0 (Polynomial.X ^ 2 : Polynomial ℚ))
+    (by rw [aeval_initialJetSeparant, jetEvaluation_separant_linearEquation]; norm_num) 3 9
+  have h8 := taylorAgreementEquation_eq_zero_iff 0 (linearEquation ℚ)
+    (taylorExponentSufficient_two_mul 1 3)
+    (polynomialJet 0 (Polynomial.X ^ 2 : Polynomial ℚ))
+    (by rw [aeval_initialJetSeparant, jetEvaluation_separant_linearEquation]; norm_num) 3 8
+  rw [rationalTaylorPolynomial_polynomialJet 0 (linearEquation ℚ) (Polynomial.X ^ 2)
+    (differentialSpecialization_linearEquation ℚ)
+    (by rw [jetEvaluation_separant_linearEquation]; norm_num) (degree_X_sq_lt_three ℚ)
+    (fun i hi _ ↦ choose_one_ne_zero i hi)] at h9 h8
+  rw [h9, Ne, h8]
   norm_num
 
 /-- The hypothesis `r < K` of `rationalTaylorMap_injective` is needed: for `r = 1` and `K = 1`
@@ -125,7 +135,7 @@ example (Q : DifferentialPolynomial ℚ 1) : ¬ Function.Injective (rationalTayl
   have h01 : rationalTaylorMap 0 Q 1 ![0, 0] = rationalTaylorMap 0 Q 1 ![0, 1] := by
     funext l
     obtain rfl : l = 0 := Subsingleton.elim _ _
-    simpa using (rationalTaylorCoefficient_initial 0 Q ![0, 0] 0).trans
+    simpa [rationalTaylorMap] using (rationalTaylorCoefficient_initial 0 Q ![0, 0] 0).trans
       (rationalTaylorCoefficient_initial 0 Q ![0, 1] 0).symm
   have h1 := congrFun (h h01) 1
   simp at h1

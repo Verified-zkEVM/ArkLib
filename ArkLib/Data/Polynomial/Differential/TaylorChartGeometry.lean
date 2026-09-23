@@ -348,8 +348,10 @@ theorem polynomialJet_mem_regularAgreementCutLocus (center : F)
     {ι : Type*} (domain received : ι → F) (hagree : ∀ i, P.eval (domain i) = received i) :
     polynomialJet center P ∈ regularAgreementCutLocus I center Q K τ domain received :=
   ⟨hI, by rwa [aeval_initialJetSeparant], fun i ↦
-    (aeval_taylorAgreementEquation_polynomialJet_eq_zero_iff center Q P hsolution hseparant hτ hP
-      hbin _ _).mpr (hagree i)⟩
+    (taylorAgreementEquation_eq_zero_iff center Q hτ (polynomialJet center P)
+      (by rwa [aeval_initialJetSeparant]) _ _).mpr
+        (by rw [rationalTaylorPolynomial_polynomialJet center Q P hsolution hseparant hP hbin]
+            exact hagree i)⟩
 
 end
 

@@ -1804,12 +1804,14 @@ default-exponent theorem and an `_of_exponent` theorem is one theorem taking
 `0 < v` hypothesis. Renamed: `initialJetEquation_ne_zero_of_separant_ne_zero` (from
 `Geometry/InitialGeometry.lean`) to `initialJetEquation_ne_zero_of_initialJetSeparant_ne_zero`,
 `initialJetEquation_solution` to `aeval_initialJetEquation_polynomialJet`,
-`commonTaylorNumerator_solution` to `aeval_commonTaylorNumerator_polynomialJet`,
+`commonTaylorNumerator_solution` to `aeval_commonTaylorNumerator` together with
+`rationalTaylorCoefficient_eq_solution`,
 `rationalTaylorMap_eq_solution` to `rationalTaylorMap_polynomialJet`,
 `degree_rationalTaylorPolynomial_lt_of_high_cuts` to `degree_rationalTaylorPolynomial_lt`,
-`taylorAgreementEquation_solution` to `aeval_taylorAgreementEquation_polynomialJet`,
+`taylorAgreementEquation_solution` to `aeval_taylorAgreementEquation` together with
+`rationalTaylorPolynomial_polynomialJet`,
 `polynomialJet_agreement_cut_iff` (from `Geometry/SolutionGeometry.lean`) to
-`aeval_taylorAgreementEquation_polynomialJet_eq_zero_iff`, and
+`taylorAgreementEquation_eq_zero_iff` together with `rationalTaylorPolynomial_polynomialJet`,
 `eq_of_high_cuts_and_agreement_cuts` to `eq_of_highTaylorCuts_of_agreement`, which takes
 `Set.InjOn domain T` and `k ≤ T.card` instead of an embedding `Fin n ↪ F` with `T.card = k`.
 `rationalTaylorCutDegreeBound` comes from `Geometry/HighCutGeometry.lean` with `τ` in place of

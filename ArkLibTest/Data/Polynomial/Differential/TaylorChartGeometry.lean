@@ -89,10 +89,13 @@ example : polynomialJet 0 (Polynomial.X ^ 2 : Polynomial ℚ) ∉
   rw [mem_zeroLocus_highTaylorCutsIdeal_iff]
   intro h
   have h2 := h 2 le_rfl (by norm_num)
-  rw [aeval_commonTaylorNumerator_polynomialJet 0 _ _
-    (differentialSpecialization_linearEquation ℚ)
-    (by rw [jetEvaluation_separant_linearEquation]; norm_num) (by norm_num)
-    (fun i hi _ ↦ choose_one_ne_zero i hi), aeval_initialJetSeparant_linearEquation] at h2
+  rw [aeval_commonTaylorNumerator 0 (linearEquation ℚ)
+    (polynomialJet 0 (Polynomial.X ^ 2 : Polynomial ℚ)) (by norm_num)
+    (by rw [aeval_initialJetSeparant, jetEvaluation_separant_linearEquation]; norm_num),
+    rationalTaylorCoefficient_eq_solution 0 (linearEquation ℚ) (Polynomial.X ^ 2)
+      (differentialSpecialization_linearEquation ℚ)
+      (by rw [jetEvaluation_separant_linearEquation]; norm_num) 2
+      (fun i hi _ ↦ choose_one_ne_zero i hi), aeval_initialJetSeparant_linearEquation] at h2
   simp [Polynomial.coeff_X_pow] at h2
 
 /-- With `K = 2` there are no high cuts for `k = 2`. -/
