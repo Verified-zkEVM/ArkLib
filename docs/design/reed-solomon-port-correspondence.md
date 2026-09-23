@@ -1012,6 +1012,14 @@ under its source name, except as follows.
 `exists_orderThreshold_for_boxWidth`: The source stated this
 for `c = 2`, with the explicit threshold `⌈32 / θ⌉`.
 
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition/FixedRateGate.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/RatePartition/FixedRateGate.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`fixedRatePartitionMultiplicity`, `fixedRatePartitionMultiplicity_spec`, `fixedRatePartitionFiniteParameters`, and `exists_fixedRatePartitionFiniteParameters` retain their names. The selector uses the main branch's `rateMultiplicity` and `rateMultiplicity_spec` to package positive finite weight budget and ratio greater than one in `PartitionFiniteParameters`.
+
+A separate `leastPartitionFiniteMultiplicity` family is not ported because `rateMultiplicity`, `rateMultiplicity_spec`, and `rateMultiplicity_minimal` already provide the generic selector API.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition/Gate.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/RatePartition/Gate.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -1019,6 +1027,12 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/Ra
 `ratePartitionExponent_eq` is renamed `fixedRateCoefficient_eq`. `ratePartitionGamma_gt_one_of_log_bound` and `ratePartitionGamma_gt_one_of_exponent_margin` are renamed `rateGamma_gt_one_of_log_bound` and `rateGamma_gt_one_of_exponent_margin`; their mathematics is unchanged.
 
 Not ported: `log_ratePartitionGamma` is covered by the existing, more general `log_rateGamma`; `ratePartitionExponent` and `ratePartitionExponent_pos` are covered by `fixedRateCoefficient` and the existing, more general `fixedRateCoefficient_pos`; `ratePartition_fixedRate_eventually` is covered by `exists_small_gap_rate_gate`.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/RatePartition/Gate.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`ratePartitionGamma_factorization` is now `rateGamma_factorization`. The factor-six bounds `ratePartitionGamma_ge_one_add_inv_of_factor_six` and `ratePartitionGamma_gt_one_of_factor_six` are now `rateGamma_ge_one_add_inv_of_factor_six` and `rateGamma_gt_one_of_factor_six`. The factorization allows any real rate while retaining positive agreement and derivative-order hypotheses. The fixed-rate declarations retain their names: `fixedRatePartitionOrder`, `fixedRatePartitionOrder_ge_500`, `fixedRatePartition_cutoff_eq`, and `fixedRatePartitionGamma_gt_one` is now `fixedRateGamma_gt_one`. `rateGamma_eq_exponential` is a new public identity, with no direct source declaration.
+
+`ratePartitionGamma_eq_rateGamma` is not ported because `rateGamma` is the destination's canonical limiting ratio. The weight-budget and finite-ratio bridge equalities are also unnecessary because the destination directly uses `partitionWeightBudget` and `partitionFiniteRatio`.
 
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition/Moment.lean`
 
@@ -1083,6 +1097,12 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/Ra
 `exists_partitionFiniteParameters_of_rateGamma_gt_one` is new and bridges the strict limiting gate to the existing finite-ratio existence theorem. `rateMultiplicity`, `rateMultiplicity_spec`, and `rateMultiplicity_minimal` keep their names and choose and characterize the least multiplicity with positive weight budget and finite ratio above one, using `partitionFiniteRatio` in place of `finiteGamma`.
 
 No declarations were left unported from this source file.
+
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition/UniformGamma.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/RatePartition/UniformGamma.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`uniformRatePartitionOrder_ge_500` is now `uniformDerivativeOrder_ge_500`. The four uniform-order theorems `uniformRatePartitionGamma_low_base_gt`, `uniformRatePartitionGamma_low_gt`, `uniformRatePartitionGamma_high_base_gt`, and `uniformRatePartitionGamma_high_gt` are now `uniformRateGamma_low_base_gt`, `uniformRateGamma_low_gt`, `uniformRateGamma_high_base_gt`, and `uniformRateGamma_high_gt`. The corresponding arbitrary-order bounds are generalized to positive orders satisfying the logarithmic lower bound and are named `rateGamma_low_base_gt`, `rateGamma_low_gt`, `rateGamma_high_base_gt`, and `rateGamma_high_gt`. The bounds cover low- and high-rate margins, with and without the finite-multiplicity factor.
 
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition/UniformParameters.lean`
 
@@ -1750,6 +1770,31 @@ ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d, which treated the sing
 `E ↦ T^d E` of local variables over a commutative ring. The private
 `filterLocalMonomials_monomial` of that file is `filterSupport_monomial`.
 
+## `ArkLib/Data/MvPolynomial/RadicalSplit/Separable.lean`
+
+Ported from `ArkLib/ToMathlib/MvPolynomial/OrdinaryFactorSeparable.lean` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`.
+
+`ordinaryRootPolynomial` and `natDegree_ordinaryRootPolynomial` keep their names, generalize from
+field coefficients to UFD coefficients, and use `radicalPrimPart none`. The degree statement is
+expressed using `radicalPrimPart`.
+
+`ordinaryRootPolynomial_map_fraction_separable` →
+`ordinaryRootPolynomial_map_fractionRing_separable`; it generalizes to UFD coefficients and
+arbitrary fraction-field presentations, and no longer requires `Q ≠ 0`. The new public theorem
+`radicalPrimPart_map_optionEquivLeft_fractionRing_separable` states the result for any
+distinguished variable; the ordinary-root theorem is its `none` specialization.
+
+`MvPolynomial.paddedDerivativeResultant_ordinaryRootPolynomial_ne_zero` →
+`Polynomial.resultant_derivative_ne_zero_ordinaryRootPolynomial`. It specializes the existing
+generic fraction-field resultant theorem using the ordinary-root polynomial's natural degree.
+
+Not ported: no public declarations were omitted. The source's private derivative and factor-degree
+helpers are replaced by `pderiv_ne_zero_of_natCast_ne_zero` and the radical split degree bound.
+The source padded-resultant wrapper is replaced by the existing generic separable-map resultant
+theorem. The source nonzero-polynomial hypothesis is unnecessary because the current radical
+primitive part of zero is `1`.
+
 ## `ArkLib/Data/MvPolynomial/WeightAtMost.lean`
 
 The `M`-valued support-weight lemmas generalize the private lemmas `support_weight_mul_le`,
@@ -1833,6 +1878,19 @@ the exhaustive coefficient scan (`effectiveRegularCoefficients_eq_singleton_of_d
 `directRegularIteration_eq_some_and_candidates`, `directRegularSolution_toFinset_eq`). They
 depend on the executable root-finding layer `ReedSolomon/Computation/RootFinding/Lifting/`, which
 is not ported.
+
+## `ArkLib/Data/Polynomial/Differential/FrobeniusEquation.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/Frobenius/Equation.lean` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`, namespace `ReedSolomon.HiddenDerivative`.
+
+`flatVariableEquiv`, `rootFirstEquiv`, `baseVariableEquiv`, `baseFlatten`, `ordinaryFlatten`, and `ordinaryUnflatten` keep their names in `PolynomialDifferential`. The flattening, evaluation, derivative, unflattening, and degree-transport declarations also keep their names, except `ordinaryFlatten_Y`, renamed `ordinaryFlatten_root` to identify the root coordinate. These APIs are generalized from fields to commutative semirings, with `Nontrivial` assumptions where degree bounds require them.
+
+`challengeHeightLE_ordinaryUnflatten_monomial` and `challengeHeightLE_ordinaryUnflatten_of_degreeOf_le` become `coeffNatDegreeLE_ordinaryUnflatten_monomial` and `coeffNatDegreeLE_ordinaryUnflatten_of_degreeOf_le`, using the existing `MvPolynomial.CoeffNatDegreeLE` predicate. `differentialSpecialization_map_eq_eval₂_flatten`, `eval_differentialSpecialization_map_eq_flatten`, and `expand_differentialSpecialization_map_eq_eval₂_flatten` keep their names and generalize from fields to commutative semirings. `frobeniusSpecialization_pow` keeps its name and generalizes from perfect fields to commutative rings with `ExpChar` and `PerfectRing`. `frobeniusSpecialization_eq_zero` and `exists_frobeniusEquation` keep their names and generalize to commutative rings without zero divisors with `ExpChar` and `PerfectRing`. The existence theorem also requires `[Nontrivial E]`; zero transport does not.
+
+`map_rootExpansion` and `eval₂_rootExpansion` become `MvPolynomial.map_rootExpansion` and `MvPolynomial.eval₂_rootExpansion`. They are generalized to commutative semirings and placed with the generic root-expansion API. The existing Frobenius contraction and inverse-twist preservation APIs replace the source fraction-ring aggregate API.
+
+Not ported: `ordinaryFlatCases_one` remains a private proof helper because it is a `Fin.cases` computation, not a reusable domain API. `frobeniusEquation_nonconstant_coefficient_canary` is restated as an acceptance-test example. The two source `ChallengeHeightLE` lemmas are represented by the renamed `CoeffNatDegreeLE` lemmas. No declaration was blocked or left without a proof.
 
 ## `ArkLib/Data/Polynomial/Differential/JetDegree.lean`
 
@@ -3004,6 +3062,13 @@ hypotheses weaken from `IsDomain` to `CommSemiring`, and to `NoZeroDivisors` for
 `degreeOf_rootContraction_none_mul`, which now takes `pderiv none P = 0` instead of the univariate
 derivative hypothesis.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/Frobenius/Equation.lean` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`.
+
+`map_rootExpansion` and `eval₂_rootExpansion` become `MvPolynomial.map_rootExpansion` and `MvPolynomial.eval₂_rootExpansion`, generalized to coefficient maps and evaluation into commutative semirings. `MvPolynomial.map_optionEquivLeft` is relocated from `ArkLib/ToMathlib/MvPolynomial/PolynomialCoefficients.lean` with its name and statement preserved; `PolynomialCoefficients` publicly imports `RootContraction` to retain its visibility.
+
+No declaration was left unported. The `PolynomialCoefficients` change is the import needed to expose the relocated declaration.
+
 ## `ArkLib/ToMathlib/MvPolynomial/SupportWeight.lean`
 
 These declarations are ported from ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`.
@@ -3842,6 +3907,22 @@ Deferred: the forward direction for points in a proper algebraically closed exte
 Its proof needs the finitely many maximal ideals of the quotient, since the functions from a
 finite set to `K` do not form a finite-dimensional `k`-space.
 
+## `ArkLibTest/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition/FixedRateGate.lean`
+
+Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/RatePartition/FixedRateGate.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+The acceptance cases check the strict gate at rate `1/2` and gap `1/4`, the selected multiplicity's finite checks, finite-parameter existence, and failure of the strict gate at zero gap.
+
+## `ArkLibTest/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition/UniformGamma.lean`
+
+Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/RatePartition/UniformGamma.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+The acceptance cases check concrete low- and high-rate base bounds and margins for arbitrary and uniform derivative orders, the uniform order's lower bound, and boundary cases for the small-gap and positive-order hypotheses.
+## `ArkLibTest/Data/CodingTheory/HiddenDerivative/Interpolation/PartitionSupport/MomentSource.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/RatePartition/SourceEstimate.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+The source declaration `ratePartition_dimension_gt_of_moment` is covered by the existing generic theorem `partitionSupport_dimension_gt_moment`. The acceptance case derives the source-shaped dimension estimate with cutoff `m * A`, explicit simplex volume, and exponent count, checking the cutoff and scale conversions, simplex-volume identity, and finrank-to-exponent-count identity. The generic theorem allows an arbitrary moment bound, rate, level, logarithm, and natural cutoff. No ArkLib production declaration is added; the source-specific wrapper is not needed because the generic theorem already covers it.
 ## `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/PointRecognition.lean`
 
 Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/PointRecognition.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
