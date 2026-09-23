@@ -10,8 +10,6 @@ import Mathlib.Data.ZMod.Defs
 import Mathlib.FieldTheory.Finite.Extension
 import Mathlib.Tactic.ComputeDegree
 
-private abbrev E₄ := FiniteField.Extension (ZMod 2) 2 2
-
 /-!
 # Acceptance tests for multivariate polynomials with polynomial coefficients
 
@@ -24,6 +22,8 @@ total degree at most `1`.
 Over the zero ring every polynomial is zero, so a variable has joint total degree `0`; the
 hypothesis `Nontrivial R` of `jointTotalDegree_X` is needed.
 -/
+
+private abbrev E₄ := FiniteField.Extension (ZMod 2) 2 2
 
 namespace MvPolynomial
 
