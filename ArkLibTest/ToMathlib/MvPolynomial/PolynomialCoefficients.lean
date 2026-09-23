@@ -5,8 +5,12 @@ Authors: Quang Dao
 -/
 
 import ArkLib.ToMathlib.MvPolynomial.PolynomialCoefficients
+import Mathlib.Algebra.Field.ZMod
 import Mathlib.Data.ZMod.Defs
+import Mathlib.FieldTheory.Finite.Extension
 import Mathlib.Tactic.ComputeDegree
+
+private abbrev E₄ := FiniteField.Extension (ZMod 2) 2 2
 
 /-!
 # Acceptance tests for multivariate polynomials with polynomial coefficients
@@ -81,6 +85,21 @@ example (Q : MvPolynomial (Option Unit) ℤ) :
     Polynomial.map (map (Int.castRingHom (ZMod 2))) (optionEquivLeft ℤ Unit Q) =
       optionEquivLeft (ZMod 2) Unit (map (Int.castRingHom (ZMod 2)) Q) :=
   map_optionEquivLeft _ Q
+
+/-- Evaluation into `E₄` after mapping coefficients sends `tY` to `zY` in either order. -/
+example (z : E₄) :
+    let f : ZMod 2 →+* E₄ := algebraMap (ZMod 2) E₄
+    let Q : MvPolynomial Unit (Polynomial (ZMod 2)) :=
+      MvPolynomial.C Polynomial.X * MvPolynomial.X ()
+    MvPolynomial.map (Polynomial.evalRingHom z) (MvPolynomial.map (Polynomial.mapRingHom f) Q) =
+        (MvPolynomial.C z : MvPolynomial Unit E₄) * MvPolynomial.X () ∧
+      MvPolynomial.map (Polynomial.eval₂RingHom f z) Q =
+        (MvPolynomial.C z : MvPolynomial Unit E₄) * MvPolynomial.X () := by
+  intro f Q
+  constructor
+  · rw [MvPolynomial.eval_map_coefficients]
+    simp [Q]
+  · simp [Q]
 
 end
 

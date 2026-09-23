@@ -74,8 +74,17 @@ example (l : ℕ) :
     map (Polynomial.aeval (0 : ℚ)).toRingHom
         (rationalTaylorNumeratorOver ℚ 0 singularEquation l) =
       rationalTaylorNumerator 0 (-X (some 0) : DifferentialPolynomial ℚ 1) l := by
-  rw [map_rationalTaylorNumeratorOver, rationalTaylorNumeratorOver_eq]
-  simp [singularEquation]
+  simpa [singularEquation] using
+    eval_rationalTaylorNumeratorOver (F := ℚ) 0 0 singularEquation l
+
+/-- The evaluation bridge also accepts a polynomial specialization through an algebra map. -/
+example {A E : Type*} [CommRing A] [Algebra ℚ A] [Field E] [Algebra ℚ E]
+    (f : A →ₐ[ℚ] E) (center : A) (z : E)
+    (Q : DifferentialPolynomial (Polynomial A) 1) (l : ℕ) :
+    let φ := Polynomial.eval₂AlgHom f z (fun a ↦ Commute.all (f a) z)
+    map φ.toRingHom (rationalTaylorNumeratorOver ℚ (Polynomial.C center) Q l) =
+      rationalTaylorNumerator (f center) (map φ.toRingHom Q) l :=
+  eval₂AlgHom_rationalTaylorNumeratorOver (F := ℚ) f center z Q l
 
 /-- Over `ZMod 2` the pivot `(2 choose 1)` is zero, so every first-order equation over
 `(ZMod 2)[t]` has numerator `0` at `l = 2`. -/

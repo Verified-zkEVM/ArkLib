@@ -92,6 +92,13 @@ example :
     MvPolynomial.degreeOf_C_mul _ _ (mem_nonZeroDivisors_of_ne_zero (by decide)),
     MvPolynomial.degreeOf_X_self]
 
+/-- Even when reduction modulo `2` kills `2Y₀`, total jet degree cannot increase. -/
+example :
+    jetTotalDegree (MvPolynomial.map (Int.castRingHom (ZMod 2))
+      (2 * MvPolynomial.X (some 0) : DifferentialPolynomial ℤ 0)) ≤
+      jetTotalDegree (2 * MvPolynomial.X (some 0) : DifferentialPolynomial ℤ 0) :=
+  jetTotalDegree_map_le _ _
+
 /-- `JetDegreeCastsNeZero` for `Y₀ ^ 2` fails over `ZMod 2` because `(2 : ZMod 2) = 0`, and the
 extension to `E₄` does not repair it. -/
 example : ¬ JetDegreeCastsNeZero

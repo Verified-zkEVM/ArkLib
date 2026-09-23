@@ -68,6 +68,19 @@ example : initialJetSeparant (0 : ℚ) (linearEquation ℚ) = 1 := by
   rw [← pderiv_last_initialJetEquation]
   simp [initialJetEquation, linearEquation, pderiv_X, Fin.last]
 
+/-- Specializing `tY₁ - Y₀` at `t = 0` gives a vanishing common numerator even though the
+separant vanishes; coefficient transport needs no regularity assumption. -/
+private abbrev parameterSingularEquation : DifferentialPolynomial (Polynomial ℚ) 1 :=
+  C (Polynomial.X) * X (some 1) - X (some 0)
+
+example :
+    map (Polynomial.evalRingHom (0 : ℚ))
+        (commonTaylorNumeratorOver ℚ (Polynomial.C 0) parameterSingularEquation 1 0) = 0 := by
+  simpa [parameterSingularEquation, commonTaylorNumerator, rationalTaylorNumerator,
+    initialJetSeparant, separant, pderiv_X] using
+      eval_commonTaylorNumeratorOver (F := ℚ) 0 0 parameterSingularEquation 1
+        ⟨0, by omega⟩ 1
+
 /-- Over `ℚ`, the common numerator of `c₂` for `y' = 2x` with any exponent `τ ≥ 1` evaluates to
 the Taylor coefficient `1` of `X ^ 2` at the jet of `X ^ 2`. -/
 example (τ : ℕ) (hτ : 1 ≤ τ) :
