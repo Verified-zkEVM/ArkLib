@@ -128,11 +128,10 @@ example : productRowsMatrix.rank = 2 ∧
       simp [productRowsMatrix, hval']
     have hupper : block.rank ≤ 1 := by
       rw [← Matrix.rank_transpose]
-      change Function.support (Matrix.transpose block).row ⊆
-        ({active} : Set (Fin 3)) at hsupport
       calc
         (Matrix.transpose block).rank ≤ ({active} : Finset (Fin 3)).card :=
-          Matrix.rank_le_card_of_support_subset (Matrix.transpose block) {active} hsupport
+          Matrix.rank_le_card_of_support_subset (Matrix.transpose block) {active}
+            (by simpa only [Finset.coe_singleton] using hsupport)
         _ = 1 := by simp
     let r : Fin 1 → Fin 3 := fun _ => 0
     let c : Fin 1 → Fin 3 := fun _ => active

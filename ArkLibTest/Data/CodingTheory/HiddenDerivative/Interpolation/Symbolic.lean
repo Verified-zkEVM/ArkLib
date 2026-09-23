@@ -578,11 +578,14 @@ private noncomputable def supportedRankMatrix : Matrix
   (supportedLocalConstraintMatrix 2 (Polynomial.C ∘ supportedRankCenters)
     supportedRankReceived supportedRankColumns).map (algebraMap ℚ[X] (RatFunc ℚ))
 
-/-- Thirteen columns and four supported rows give nonzero symbolic rank within the global budget. -/
-example : 12 < Fintype.card (Fin 13) ∧
+/-- Thirteen distinct columns and four supported rows give nonzero symbolic rank. -/
+example : Function.Injective supportedRankColumns ∧ 12 < Fintype.card (Fin 13) ∧
     3 < Fintype.card (localConstraintSupportedRows 2
     (Polynomial.C ∘ supportedRankCenters) supportedRankReceived supportedRankColumns) ∧
     0 < supportedRankMatrix.rank ∧ supportedRankMatrix.rank ≤ 12 := by
+  have hcolumns : Function.Injective supportedRankColumns := by
+    intro i j hij
+    exact Fin.ext (by simpa [supportedRankColumns] using congrArg SourceColumn.x hij)
   have hweight : ∀ j, fullDerivativeJetWeight (supportedRankColumns j).exponent ≤ 0 := by
     intro j
     simp [supportedRankColumns, SourceColumn.exponent, fullDerivativeJetWeight,
@@ -649,7 +652,7 @@ example : 12 < Fintype.card (Fin 13) ∧
       1 = (supportedRankMatrix.submatrix (fun _ : Fin 1 => supportedRows 0)
         (fun _ : Fin 1 => 0)).rank := hminorRank.symm
       _ ≤ supportedRankMatrix.rank := Matrix.rank_submatrix_le _ _ _
-  exact ⟨by norm_num, (by omega), hlower, hupper'⟩
+  exact ⟨hcolumns, by norm_num, (by omega), hlower, hupper'⟩
 
 /- The coefficient map acts on a nonintegral entry from a source `X` column. -/
 example :
