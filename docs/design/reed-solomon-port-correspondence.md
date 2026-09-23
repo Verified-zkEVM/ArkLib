@@ -3847,7 +3847,7 @@ finite set to `K` do not form a finite-dimensional `k`-space.
 Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/PointRecognition.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 The acceptance cases check the zero case and a sample with second received value `1`, challenge `2`, `K = 2 > k = 1`, and a satisfied cut at `l = 1`. They check the reconstructed affine polynomial, jet, and cleared coefficient conclusions.
-## `ArkLibTest/Data/Polynomial/Differential/TaylorChartAlgebra.lean`
+## `ArkLibTest/Data/Polynomial/Differential.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Symbolic/FrobeniusCuts.lean` and `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Symbolic/TaylorCutDegree.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 

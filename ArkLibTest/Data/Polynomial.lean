@@ -10,6 +10,7 @@ import ArkLib.Data.Polynomial.FrobeniusContraction
 import ArkLib.Data.Polynomial.PointCollisionProbability
 import ArkLib.Data.Polynomial.ResultantDegree
 import ArkLib.Data.Polynomial.SpecializationAvoidance
+import Mathlib.Algebra.Polynomial.SpecificDegree
 import Mathlib.Algebra.Field.ZMod
 import Mathlib.Tactic.ComputeDegree
 import Mathlib.Tactic.NormNum
@@ -43,6 +44,24 @@ example : ((X - C 0 : (ZMod 4)[X]) * C 2 + C 3).eval 2 = 3 :=
 
 /-! ### Fraction-field derivative resultants -/
 
+private theorem irreducible_Y_sq_sub_t : Irreducible (X ^ 2 - C X : ℚ[X][X]) := by
+  have hmonic : (X ^ 2 - C X : ℚ[X][X]).Monic := by monicity!
+  have hdeg : (X ^ 2 - C X : ℚ[X][X]).natDegree = 2 := by compute_degree!
+  rw [Monic.irreducible_iff_roots_eq_zero_of_degree_le_three hmonic (by omega) (by omega)]
+  refine Multiset.eq_zero_of_forall_notMem fun r hr ↦ ?_
+  rw [mem_roots hmonic.ne_zero, IsRoot, eval_sub, eval_pow, eval_X, eval_C, sub_eq_zero] at hr
+  have h := congrArg natDegree hr
+  rw [natDegree_pow, natDegree_X] at h
+  omega
+
+-- The irreducible polynomial `Y ^ 2 - t` over `ℚ[t]` has nonzero padded derivative resultant.
+example : resultant (X ^ 2 - C X : ℚ[X][X])
+    (X ^ 2 - C X : ℚ[X][X]).derivative 2 1 ≠ 0 := by
+  have h := resultant_derivative_ne_zero_of_irreducible _ irreducible_Y_sq_sub_t
+    (by simp [derivative_sub])
+  have hdeg : (X ^ 2 - C X : ℚ[X][X]).natDegree = 2 := by compute_degree!
+  rwa [hdeg] at h
+
 private noncomputable def artinSchreier : (ZMod 3)[X] := X ^ 3 - X
 
 private theorem artinSchreier_derivative : artinSchreier.derivative = -1 := by
@@ -69,6 +88,21 @@ example : ∃ e : ℕ, ∃ G : (ZMod 2)[X],
       G.natDegree * 2 ^ e = (X ^ 2 : (ZMod 2)[X]).natDegree ∧ 0 < G.natDegree := by
   refine ⟨1, X, by simp, ?_, by norm_num, by norm_num⟩
   rw [pow_one, expand_X]
+
+-- The irreducible polynomial `2X + 1` over `ℤ` contracts to an irreducible separable polynomial
+-- over its fraction field `ℚ` in characteristic zero.
+example : ∃ e : ℕ, ∃ G : ℤ[X],
+    derivative G ≠ 0 ∧ expand ℤ (0 ^ e) G = C 2 * X + 1 ∧
+      G.natDegree * 0 ^ e = (C 2 * X + 1 : ℤ[X]).natDegree ∧
+      0 < G.natDegree ∧ Irreducible G ∧
+      Irreducible (G.map (algebraMap ℤ ℚ)) ∧ (G.map (algebraMap ℤ ℚ)).Separable := by
+  have hirr : Irreducible (C 2 * X + 1 : ℤ[X]) := by
+    simpa only [C_1] using irreducible_C_mul_X_add_C (two_ne_zero : (2 : ℤ) ≠ 0)
+      isRelPrime_one_right
+  have hdeg : 0 < (C 2 * X + 1 : ℤ[X]).natDegree := by
+    rw [← C_1, natDegree_linear two_ne_zero]
+    exact Nat.one_pos
+  exact exists_frobeniusContraction_fractionRing (K := ℚ) 0 hdeg hirr
 
 -- A polynomial with nonzero derivative cannot be a first Frobenius expansion.
 example : ¬ ∃ H : (ZMod 2)[X], expand (ZMod 2) 2 H = X :=
@@ -124,19 +158,46 @@ example : Pr{let ω ← $ᵗ (ZMod 5)}[¬ Set.InjOn (evalTuple fun _ : Unit ↦ 
   rw [card_pairX0] at h
   simpa [ZMod.card] using h
 
+-- Separating points select the unique tuple `X` with its value at `1`.
+example : ∃ o : Option (Fin 1 → (ZMod 5)[X]),
+    ∀ f, o = some f ↔ f ∈ (↑pairX0 : Set (Fin 1 → (ZMod 5)[X])) ∧
+      evalTuple (fun _ : Unit ↦ (1 : ZMod 5)) f =
+        evalTuple (fun _ : Unit ↦ (1 : ZMod 5)) ![X] := by
+  refine exists_option_eq_some_iff_of_injOn_evalTuple ?_ _
+  intro f hf g hg h
+  simp only [pairX0, Finset.coe_insert, Finset.coe_singleton, Set.mem_insert_iff,
+    Set.mem_singleton_iff] at hf hg
+  have h1 := congrFun (congrFun h ()) 0
+  rcases hf with rfl | rfl <;> rcases hg with rfl | rfl <;>
+    first
+    | rfl
+    | (simp only [evalTuple_apply, Fin.isValue, Matrix.cons_val_fin_one, eval_X,
+          eval_zero] at h1
+       exact absurd h1 (by decide))
+
 end
 
 end PointCollisionTest
 
 /-! ### Resultant degree bounds -/
 
--- The weighted total-degree bound is sharp for `Res(Y - X, Y + 1) = X + 1`.
-example : (resultant (X - C (X : ℚ[X])) (X + C 1) 1 1).natDegree ≤ 1 := by
-  apply natDegree_resultant_le_of_coeff_add_le _ _ 1 1 1 1
+-- `Res_Y(Y - X, Y ^ 2 + X ^ 3) = X ^ 2 + X ^ 3`, attaining the weighted degree bound.
+private theorem resultant_line_cubic :
+    resultant (X - C (X : ℚ[X])) (X ^ 2 + C (X ^ 3)) 1 2 =
+      (X : ℚ[X]) ^ 2 + X ^ 3 := by
+  rw [resultant_X_sub_C_left _ _ _ (by compute_degree!)]
+  simp
+
+example :
+    (resultant (X - C (X : ℚ[X])) (X ^ 2 + C (X ^ 3)) 1 2).natDegree = 3 ∧
+      (resultant (X - C (X : ℚ[X])) (X ^ 2 + C (X ^ 3)) 1 2).natDegree ≤
+        2 * 1 + 1 * 3 - 1 * 2 := by
+  refine ⟨by rw [resultant_line_cubic]; compute_degree!, ?_⟩
+  apply natDegree_resultant_le_of_coeff_add_le
   · intro i hi
     interval_cases i <;> simp only [coeff_sub, coeff_X, coeff_C] <;> simp
   · intro i hi
-    interval_cases i <;> simp only [coeff_add, coeff_X, coeff_C] <;> simp
+    interval_cases i <;> simp only [coeff_add, coeff_X_pow, coeff_C] <;> simp
 
 /-! ### Specialization avoidance -/
 
