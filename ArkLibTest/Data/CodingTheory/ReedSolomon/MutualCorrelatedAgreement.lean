@@ -5,14 +5,16 @@ Authors: Quang Dao
 -/
 
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.ExtensionDescent
+import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.EquationDescent
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FullDimension
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.GraphLine
+import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.LineToAffine
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.SingularTail
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TupleSpecialization
 import Mathlib.Data.Fin.VecNotation
 import Mathlib.FieldTheory.Finite.Extension
 
-open Polynomial Finset ReedSolomon ReedSolomon.FirstOrder.Squarefree
+open Polynomial Finset ReedSolomon ReedSolomon.FirstOrder.Squarefree PolynomialDifferential
 
 private abbrev E₄ := FiniteField.Extension (ZMod 2) 2 2
 private def pointDomain : Fin 1 ↪ ZMod 2 :=
@@ -21,6 +23,13 @@ private def pointDomain : Fin 1 ↪ ZMod 2 :=
 noncomputable section
 
 local instance : DecidableEq E₄ := Classical.decEq E₄
+
+private theorem degree_le_zero_of_degree_lt_one {F : Type*} [Semiring F] (P : F[X])
+    (hP : P.degree < 1) : P.degree ≤ 0 := by
+  apply (degree_le_iff_coeff_zero P 0).2
+  intro m hm
+  have hm' : 0 < m := by exact_mod_cast hm
+  exact (degree_lt_iff_coeff_zero P 1).mp hP m (Nat.succ_le_iff.mpr hm')
 
 /-- A nonzero affine line descends from the degree-two extension. -/
 example : HasExactCorrelatedPair pointDomain (fun _ ↦ (1 : ZMod 2)) (fun _ ↦ 0)
@@ -36,7 +45,89 @@ example : HasExactCorrelatedPair pointDomain (fun _ ↦ (1 : ZMod 2)) (fun _ ↦
   exact HasExactCorrelatedPair.descend pointDomain (fun _ ↦ (1 : ZMod 2)) (fun _ ↦ 0)
     ι 2 1 (1 + X) hext
 
+example : HasExactCorrelatedPair pointDomain (fun _ ↦ (1 : ZMod 2)) (fun _ ↦ 0)
+    (RingHom.id (ZMod 2)) 1 1 (C 1) := by
+  let ι : ZMod 2 →+* E₄ := algebraMap (ZMod 2) E₄
+  have hgood : ∀ z ∉ (∅ : Finset E₄), ∀ P : E₄[X], P.degree < 1 →
+      1 ≤ (polynomialAgreementSet (pointDomain.trans ⟨ι, ι.injective⟩)
+        (fun i ↦ ι ((fun _ : Fin 1 ↦ (1 : ZMod 2)) i) +
+          z * ι ((fun _ : Fin 1 ↦ (0 : ZMod 2)) i)) P).card →
+      differentialSpecialization
+        (challengeSpecialization
+          (MvPolynomial.map (Polynomial.mapRingHom ι)
+            (0 : DifferentialPolynomial (ZMod 2)[X] 0)) z) P = 0 →
+      HasExactCorrelatedPair pointDomain (fun _ ↦ (1 : ZMod 2)) (fun _ ↦ 0) ι 1 z P := by
+    intro z _ P hP hagree _
+    have hfull : polynomialAgreementSet (pointDomain.trans ⟨ι, ι.injective⟩)
+        (fun i ↦ ι ((fun _ : Fin 1 ↦ (1 : ZMod 2)) i) +
+          z * ι ((fun _ : Fin 1 ↦ (0 : ZMod 2)) i)) P = Finset.univ :=
+      Finset.eq_univ_of_card _
+        (le_antisymm (Finset.card_le_univ _) (by simpa [Fintype.card_fin] using hagree))
+    have heval := (mem_polynomialAgreementSet ..).mp
+      (hfull ▸ Finset.mem_univ (0 : Fin 1))
+    have hcoeff : P.coeff 0 = ι 1 := by
+      have hpoint : (pointDomain.trans ⟨ι, ι.injective⟩) 0 = 0 := by
+        change ι 0 = 0
+        exact map_zero ι
+      rw [hpoint] at heval
+      calc
+        P.coeff 0 = P.eval 0 := coeff_zero_eq_eval_zero P
+        _ = ι 1 := by simpa using heval
+    have hPconst : P = C (ι 1) := by
+      rw [eq_C_of_degree_le_zero (degree_le_zero_of_degree_lt_one P hP), hcoeff]
+    refine ⟨(C 1, C 0), by simp, by simp, ?_, ?_⟩
+    · simpa [correlatedPairSpecialization] using hPconst
+    · rw [hfull]
+      ext i
+      fin_cases i
+      simp [commonPolynomialAgreementSet, pointDomain]
+  obtain ⟨exceptional, hcard, hdescend⟩ :=
+    exists_exceptional_equation_correlatedAgreement_descend pointDomain
+      (fun _ ↦ (1 : ZMod 2)) (fun _ ↦ 0) ι
+      (0 : DifferentialPolynomial (ZMod 2)[X] 0) 1 1 ∅ hgood
+  have hex : exceptional = ∅ := Finset.card_eq_zero.mp (Nat.le_zero.mp hcard)
+  have hroot : differentialSpecialization (challengeSpecialization
+      (0 : DifferentialPolynomial (ZMod 2)[X] 0) 1) (C 1) = 0 := by
+    have hchallenge : challengeSpecialization
+        (0 : DifferentialPolynomial (ZMod 2)[X] 0) 1 = 0 := by
+      simp [challengeSpecialization]
+    rw [hchallenge, differentialSpecialization]
+    exact map_zero _
+  apply hdescend 1 (by simp [hex]) (C 1) (by simp)
+  · simp [pointDomain, polynomialAgreementSet]
+  · exact hroot
+
 end
+
+private theorem singletonLineExactBound : LineExactAgreementBound pointDomain 1 1 0 := by
+  intro f g
+  refine ⟨∅, by simp, fun z _ P hP hclose ↦ ?_⟩
+  have hagree :
+      polynomialAgreementSet pointDomain (fun i ↦ f i + z * g i) P = Finset.univ :=
+    Finset.eq_univ_of_card _
+      (le_antisymm (Finset.card_le_univ _) (by simpa [Fintype.card_fin] using hclose))
+  have heval := (mem_polynomialAgreementSet ..).mp
+    (hagree ▸ Finset.mem_univ (0 : Fin 1))
+  have hcoeff : P.coeff 0 = f 0 + z * g 0 := by
+    have hpoint : pointDomain 0 = 0 := rfl
+    rw [hpoint] at heval
+    exact (coeff_zero_eq_eval_zero P).trans heval
+  have hPconst : P = C (f 0 + z * g 0) := by
+    rw [eq_C_of_degree_le_zero (degree_le_zero_of_degree_lt_one P hP), hcoeff]
+  refine ⟨C (f 0), C (g 0), (degree_C_le).trans_lt (by norm_num),
+    (degree_C_le).trans_lt (by norm_num), ?_, ?_⟩
+  · calc
+      P = C (f 0 + z * g 0) := hPconst
+      _ = C (f 0) + C z * C (g 0) := by simp
+  · rw [hagree]
+    ext i
+    fin_cases i
+    simp [commonPolynomialAgreementSet, pointDomain]
+
+private def affineValues : Fin 2 → Fin 1 → ZMod 2 := ![fun _ ↦ 1, fun _ ↦ 0]
+
+example := exists_affine_exceptionalSet_full_agreement_of_exactLine pointDomain 0
+  singletonLineExactBound 0 (by norm_num [pointDomain]) (by norm_num) affineValues
 
 private def fullDomain : Fin 2 ↪ ℚ where
   toFun i := ((i : ℕ) : ℚ)
@@ -62,23 +153,20 @@ example : ∃ F₀ G₀ : ℚ[X], C 1 + C 2 * X = F₀ + C 1 * G₀ ∧
     compute_degree!) (by rw [hagree, card_univ])
   exact ⟨F₀, G₀, hP, hset.symm.trans hagree⟩
 
-/-- Graph-line recognition for the concrete sample `0, 1` at challenge `1`. -/
-example : ∃ F₀ G₀ : ℚ[X], C 1 + C 2 * X = F₀ + C 1 * G₀ := by
-  obtain ⟨F₀, G₀, -, -, -, hrecognize⟩ :=
+/-- Graph-line recognition for the sample `0, 1` holds at every challenge. -/
+example : ∃ F₀ G₀ : ℚ[X], F₀.degree < 2 ∧ G₀.degree < 2 ∧
+    (∀ i ∈ (Finset.univ : Finset (Fin 2)),
+      F₀.eval (fullDomain i) = ![1, 2] i ∧ G₀.eval (fullDomain i) = ![0, 1] i) ∧
+    ∀ z : ℚ, ∀ P : ℚ[X], P.degree < 2 →
+      (∀ i ∈ (Finset.univ : Finset (Fin 2)),
+        P.eval (fullDomain i) = ![1, 2] i + z * ![0, 1] i) →
+      P = F₀ + C z * G₀ := by
+  obtain ⟨F₀, G₀, hF₀, hG₀, hsample, hrecognize⟩ :=
     exists_graphLine_polynomials_of_sample fullDomain ![1, 2] ![0, 1] univ
       (card_univ.trans rfl)
-  have h := hrecognize (RingHom.id ℚ) 1 (C 1 + C 2 * X) (by
-    rw [Fintype.card_fin]
-    compute_degree!) (by
-    intro i _
-    fin_cases i
-    · norm_num [fullDomain]
-      change (0 : ℚ) = 0
-      rfl
-    · norm_num [fullDomain]
-      change 1 + 2 * (1 : ℚ) = 3
-      norm_num)
-  exact ⟨F₀, G₀, by simpa using h⟩
+  refine ⟨F₀, G₀, hF₀, hG₀, hsample, ?_⟩
+  intro z P hP heval
+  simpa using hrecognize (RingHom.id ℚ) z P hP heval
 
 /-- A double root of `X²` kills the specialized singular tail. -/
 example : singularTail (1 : ℚ[X]) (X ^ 2 : ℚ[X][X]) 2 = 0 := by

@@ -1376,7 +1376,7 @@ ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`,
   `prob_not_injOn_candidateSet_offDiag_le` (the source's space of ordered distinct pairs outside
   the domain, with the source's denominator). The source's rate
   `choose L 2 * ((T + 2) / (q - n - 1)) ^ 2` is at least the bound here,
-  `choose L 2 * (T + 2) ^ 2 / ((q - n) (q - n - 1))`; the test file derives the source form.
+  `choose L 2 * (T + 2) ^ 2 / ((q - n) (q - n - 1))`.
   `natDegree_le_add_two_of_degree_lt_add_three` is the step `degree < K → natDegree ≤ K - 1`
   inside `prob_not_injOn_candidateSet_le`.
 * `twoAnchorValues` is `evalTuple ![s₁, s₂]`, and `twoAnchorValues_injOn_of_good` and
