@@ -30,7 +30,8 @@ private def pointDomain : Fin 1 ↪ ℚ :=
 private theorem pointDomain_zero : pointDomain (0 : Fin 1) = 0 := rfl
 
 private abbrev shiftedValueEquation : DifferentialPolynomial (Polynomial ℚ) 0 :=
-  X (some 0) - MvPolynomial.C (Polynomial.C (2 : ℚ))
+  let Δ := X (some 0) - MvPolynomial.C (Polynomial.C (2 : ℚ))
+  Δ + X none * Δ ^ 2
 
 private def concreteJet : Fin 1 → ℚ := fun _ ↦ 2
 
@@ -43,6 +44,69 @@ private theorem challengeHom_toRingHom :
 private theorem exponentOneSufficient : TaylorExponentSufficient 0 2 1 := by
   intro l
   fin_cases l <;> norm_num [TaylorExponentSufficient]
+
+private theorem shiftedValueEquation_highNumerator_eq (τ : ℕ) :
+    commonTaylorNumeratorOver ℚ (Polynomial.C 0) shiftedValueEquation τ 1 =
+      -(MvPolynomial.X (0 : Fin 1) - MvPolynomial.C (Polynomial.C (2 : ℚ))) ^ 2 := by
+  have hcoeff :
+      (optionEquivLeft (Polynomial ℚ) (Fin 1)
+        (universalTaylorResidual 1 (Polynomial.C 0) shiftedValueEquation)).coeff 1 =
+        (MvPolynomial.X (0 : Fin 1) - MvPolynomial.C (Polynomial.C (2 : ℚ))) ^ 2 := by
+    have hres : optionEquivLeft (Polynomial ℚ) (Fin 1)
+        (universalTaylorResidual 1 (Polynomial.C 0) shiftedValueEquation) =
+        Polynomial.C (MvPolynomial.X (0 : Fin 1) - MvPolynomial.C (Polynomial.C (2 : ℚ))) +
+          Polynomial.X * Polynomial.C
+            ((MvPolynomial.X (0 : Fin 1) - MvPolynomial.C (Polynomial.C (2 : ℚ))) ^ 2) := by
+      simp [universalTaylorResidual, shiftedValueEquation, optionEquivLeft_X_none,
+        optionEquivLeft_universalTaylorJet]
+    rw [hres, Polynomial.coeff_add]
+    simp only [Polynomial.coeff_C, Polynomial.coeff_X_mul]
+    norm_num
+  have hsubst : MvPolynomial.clearedSubstitution
+      (MvPolynomial.C : Polynomial ℚ →+* MvPolynomial (Fin 1) (Polynomial ℚ))
+      1 (fun _ : Fin 1 ↦ MvPolynomial.X 0) (fun _ ↦ 0) 0
+      ((MvPolynomial.X (0 : Fin 1) - MvPolynomial.C (Polynomial.C (2 : ℚ))) ^ 2) =
+        (MvPolynomial.X (0 : Fin 1) - MvPolynomial.C (Polynomial.C (2 : ℚ))) ^ 2 := by
+    calc
+      _ = MvPolynomial.eval₂ (MvPolynomial.C : Polynomial ℚ →+*
+          MvPolynomial (Fin 1) (Polynomial ℚ)) (fun _ : Fin 1 ↦ MvPolynomial.X 0)
+          ((MvPolynomial.X (0 : Fin 1) - MvPolynomial.C (Polynomial.C (2 : ℚ))) ^ 2) := by
+        unfold MvPolynomial.clearedSubstitution
+        rw [MvPolynomial.eval₂_eq]
+        simp only [one_pow, mul_one]
+      _ = _ := by simp
+  have hnumerator : rationalTaylorNumeratorOver ℚ (Polynomial.C 0)
+      shiftedValueEquation 1 =
+        -(MvPolynomial.X (0 : Fin 1) - MvPolynomial.C (Polynomial.C (2 : ℚ))) ^ 2 := by
+    rw [rationalTaylorNumeratorOver, dite_eq_right (by omega), hcoeff]
+    rw [show initialJetSeparant (Polynomial.C 0) shiftedValueEquation = 1 by
+      simp [initialJetSeparant, shiftedValueEquation, separant, Fin.last]]
+    have hN : (fun i : Fin 1 ↦ rationalTaylorNumeratorOver ℚ (Polynomial.C 0)
+        shiftedValueEquation i.val) = fun _ : Fin 1 ↦ MvPolynomial.X (0 : Fin 1) := by
+      funext i
+      have hi : i = 0 := Fin.ext (by omega)
+      subst i
+      simp [rationalTaylorNumeratorOver]
+    have hd : (fun i : Fin 1 ↦ 2 * (i.val - 0) - 1) = fun _ ↦ 0 := by
+      funext i
+      omega
+    rw [hN, hd]
+    norm_num [Nat.choose_zero_right]
+    rw [hsubst]
+  rw [commonTaylorNumeratorOver, hnumerator]
+  simp [initialJetSeparant, shiftedValueEquation, separant, Fin.last]
+
+private theorem shiftedValueEquation_highNumerator_ne (τ : ℕ) :
+    map (Polynomial.evalRingHom (2 : ℚ))
+      (commonTaylorNumeratorOver ℚ (Polynomial.C 0) shiftedValueEquation τ 1) ≠ 0 := by
+  have hvalue : MvPolynomial.aeval (fun _ : Fin 1 ↦ (0 : ℚ))
+      (map (Polynomial.evalRingHom (2 : ℚ))
+        (commonTaylorNumeratorOver ℚ (Polynomial.C 0) shiftedValueEquation τ 1)) = -4 := by
+    rw [shiftedValueEquation_highNumerator_eq]
+    norm_num
+  intro hzero
+  rw [hzero] at hvalue
+  norm_num at hvalue
 
 private theorem concreteTaylorChartSetup (τ : ℕ)
     (hτ : TaylorExponentSufficient 0 2 τ) :
@@ -137,6 +201,8 @@ example :
       MvPolynomial.aeval concreteJet
         (map (Polynomial.evalRingHom 2)
           (commonTaylorNumeratorOver ℚ (Polynomial.C 0) shiftedValueEquation 1 1)) = 0 ∧
+      map (Polynomial.evalRingHom 2)
+        (commonTaylorNumeratorOver ℚ (Polynomial.C 0) shiftedValueEquation 1 1) ≠ 0 ∧
       rationalTaylorPolynomial (0 : ℚ)
           (map (Polynomial.evalRingHom 2) shiftedValueEquation) 2 concreteJet =
         P₀.map (RingHom.id ℚ) + Polynomial.C 2 * P₁.map (RingHom.id ℚ) ∧
@@ -159,7 +225,8 @@ example :
       shiftedValueEquation (by omega) 1 exponentOneSufficient
   have hsetup := concreteTaylorChartSetup 1 exponentOneSufficient
   have hresult := hrecognize 2 concreteJet hsetup.1 hsetup.2.1 hsetup.2.2.1
-  refine ⟨P₀, P₁, hP₀, hP₁, ?_, ?_, ?_, ?_, hresult.1, hresult.2.1, hresult.2.2⟩
+  refine ⟨P₀, P₁, hP₀, hP₁, ?_, ?_, ?_, ?_, ?_, hresult.1, hresult.2.1,
+    hresult.2.2⟩
   · have h := hsample 0 (by simp)
     simpa only [pointDomain_zero] using h.1
   · have h := hsample 0 (by simp)
@@ -168,6 +235,7 @@ example :
     have hP₁ : P₁.eval 0 = 1 := by simpa only [pointDomain_zero] using h.2
     simp [hP₁]
   · simpa only [Fin.val_one] using hsetup.2.1 1 (by norm_num)
+  · exact shiftedValueEquation_highNumerator_ne 1
 
 /-- The default-exponent theorem recognizes the same pair at exponent `2K`. -/
 example :
@@ -177,6 +245,8 @@ example :
       MvPolynomial.aeval concreteJet
         (map (Polynomial.evalRingHom 2)
           (commonTaylorNumeratorOver ℚ (Polynomial.C 0) shiftedValueEquation 4 1)) = 0 ∧
+      map (Polynomial.evalRingHom 2)
+        (commonTaylorNumeratorOver ℚ (Polynomial.C 0) shiftedValueEquation 4 1) ≠ 0 ∧
       rationalTaylorPolynomial (0 : ℚ)
           (map (Polynomial.evalRingHom 2) shiftedValueEquation) 2 concreteJet =
         P₀.map (RingHom.id ℚ) + Polynomial.C 2 * P₁.map (RingHom.id ℚ) ∧
@@ -198,7 +268,8 @@ example :
       shiftedValueEquation (by omega)
   have hsetup := concreteTaylorChartSetup 4 (taylorExponentSufficient_two_mul 0 2)
   have hresult := hrecognize 2 concreteJet hsetup.1 hsetup.2.1 hsetup.2.2.1
-  refine ⟨P₀, P₁, hP₀, hP₁, ?_, ?_, ?_, hsetup.2.1 1 (by norm_num), hresult.1,
+  refine ⟨P₀, P₁, hP₀, hP₁, ?_, ?_, ?_, hsetup.2.1 1 (by norm_num),
+    shiftedValueEquation_highNumerator_ne 4, hresult.1,
     hresult.2.1, hresult.2.2⟩
   · have h := hsample 0 (by simp)
     simpa only [pointDomain_zero] using h.1

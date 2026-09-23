@@ -33,15 +33,88 @@ private theorem domain_zero : domain (0 : Fin 1) = 0 := rfl
 private def componentWord : Fin 1 → ℚ := fun _ ↦ 0
 
 private abbrev shiftedEquation : DifferentialPolynomial ℚ[X] 0 :=
-  X (some 0) - MvPolynomial.C (Polynomial.C (2 : ℚ))
+  let Δ := X (some 0) - MvPolynomial.C (Polynomial.C (2 : ℚ))
+  Δ + X none * Δ ^ 2
+
+private theorem shiftedEquation_commonHighNumerator_eq (τ : ℕ) :
+    commonTaylorNumeratorOver ℚ (Polynomial.C 0) shiftedEquation τ 1 =
+      -(MvPolynomial.X (0 : Fin 1) - MvPolynomial.C (Polynomial.C (2 : ℚ))) ^ 2 := by
+  have hcoeff :
+      (optionEquivLeft (Polynomial ℚ) (Fin 1)
+        (universalTaylorResidual 1 (Polynomial.C 0) shiftedEquation)).coeff 1 =
+        (MvPolynomial.X (0 : Fin 1) - MvPolynomial.C (Polynomial.C (2 : ℚ))) ^ 2 := by
+    have hres : optionEquivLeft (Polynomial ℚ) (Fin 1)
+        (universalTaylorResidual 1 (Polynomial.C 0) shiftedEquation) =
+        Polynomial.C (MvPolynomial.X (0 : Fin 1) - MvPolynomial.C (Polynomial.C (2 : ℚ))) +
+          Polynomial.X * Polynomial.C
+            ((MvPolynomial.X (0 : Fin 1) - MvPolynomial.C (Polynomial.C (2 : ℚ))) ^ 2) := by
+      simp [universalTaylorResidual, shiftedEquation, optionEquivLeft_X_none,
+        optionEquivLeft_universalTaylorJet]
+    rw [hres, Polynomial.coeff_add]
+    simp only [Polynomial.coeff_C, Polynomial.coeff_X_mul]
+    norm_num
+  have hsubst : MvPolynomial.clearedSubstitution
+      (MvPolynomial.C : Polynomial ℚ →+* MvPolynomial (Fin 1) (Polynomial ℚ))
+      1 (fun _ : Fin 1 ↦ MvPolynomial.X 0) (fun _ ↦ 0) 0
+      ((MvPolynomial.X (0 : Fin 1) - MvPolynomial.C (Polynomial.C (2 : ℚ))) ^ 2) =
+        (MvPolynomial.X (0 : Fin 1) - MvPolynomial.C (Polynomial.C (2 : ℚ))) ^ 2 := by
+    calc
+      _ = MvPolynomial.eval₂ (MvPolynomial.C : Polynomial ℚ →+*
+          MvPolynomial (Fin 1) (Polynomial ℚ)) (fun _ : Fin 1 ↦ MvPolynomial.X 0)
+          ((MvPolynomial.X (0 : Fin 1) - MvPolynomial.C (Polynomial.C (2 : ℚ))) ^ 2) := by
+        unfold MvPolynomial.clearedSubstitution
+        rw [MvPolynomial.eval₂_eq]
+        simp only [one_pow, mul_one]
+      _ = _ := by simp
+  have hnumerator : rationalTaylorNumeratorOver ℚ (Polynomial.C 0) shiftedEquation 1 =
+      -(MvPolynomial.X (0 : Fin 1) - MvPolynomial.C (Polynomial.C (2 : ℚ))) ^ 2 := by
+    rw [rationalTaylorNumeratorOver, dite_eq_right (by omega), hcoeff]
+    rw [show initialJetSeparant (Polynomial.C 0) shiftedEquation = 1 by
+      simp [initialJetSeparant, shiftedEquation, separant, Fin.last]]
+    have hN : (fun i : Fin 1 ↦ rationalTaylorNumeratorOver ℚ (Polynomial.C 0)
+        shiftedEquation i.val) = fun _ : Fin 1 ↦ MvPolynomial.X (0 : Fin 1) := by
+      funext i
+      have hi : i = 0 := Fin.ext (by omega)
+      subst i
+      simp [rationalTaylorNumeratorOver]
+    have hd : (fun i : Fin 1 ↦ 2 * (i.val - 0) - 1) = fun _ ↦ 0 := by
+      funext i
+      omega
+    rw [hN, hd]
+    norm_num [Nat.choose_zero_right]
+    rw [hsubst]
+  rw [commonTaylorNumeratorOver, hnumerator]
+  simp [initialJetSeparant, shiftedEquation, separant, Fin.last]
+
+private theorem shiftedEquation_jointHighNumerator_eq :
+    jointCommonTaylorNumerator (r := 0) 0 shiftedEquation 2 (1 : Fin 2) =
+      -(MvPolynomial.X (some (0 : Fin 1)) - MvPolynomial.C (2 : ℚ)) ^ 2 := by
+  rw [jointCommonTaylorNumerator]
+  simp only [Fin.val_one]
+  rw [shiftedEquation_commonHighNumerator_eq]
+  simp
 
 private def jointPoint : Option (Fin 1) → ℚ
   | none => 2
   | some _ => 2
 
+private def jointZeroJet : Option (Fin 1) → ℚ
+  | none => 2
+  | some _ => 0
+
 private def jointReceivedF : Fin 1 → ℚ := fun _ ↦ 0
 
 private def jointReceivedG : Fin 1 → ℚ := fun _ ↦ 1
+
+private theorem shiftedEquation_highNumerator_ne :
+    jointCommonTaylorNumerator (r := 0) 0 shiftedEquation 2 (1 : Fin 2) ≠ 0 := by
+  have hvalue : aeval jointZeroJet
+      (jointCommonTaylorNumerator (r := 0) 0 shiftedEquation 2 (1 : Fin 2)) = -4 := by
+    rw [shiftedEquation_jointHighNumerator_eq]
+    norm_num [jointZeroJet]
+  intro hzero
+  rw [hzero] at hvalue
+  norm_num at hvalue
 
 private abbrev componentEquation {E : Type*} [CommRing E] :
     DifferentialPolynomial E[X] 0 :=
@@ -212,6 +285,7 @@ example :
       (Polynomial.C 2 * P₁.map (RingHom.id ℚ)).eval 0 = 2 ∧
       MvPolynomial.aeval jointPoint
           (jointCommonTaylorNumerator (r := 0) 0 shiftedEquation 2 (1 : Fin 2)) = 0 ∧
+      jointCommonTaylorNumerator (r := 0) 0 shiftedEquation 2 (1 : Fin 2) ≠ 0 ∧
       rationalTaylorPolynomial (0 : ℚ)
         (map (Polynomial.evalRingHom 2) shiftedEquation) 2 (fun _ : Fin 1 ↦ 2) =
           P₀.map (RingHom.id ℚ) + Polynomial.C 2 * P₁.map (RingHom.id ℚ) ∧
@@ -314,7 +388,8 @@ example :
     rw [hflat]
     exact hcut
   have hresult := hrecognize jointPoint hS hhigh hcuts
-  refine ⟨P₀, P₁, hP₀, hP₁, ?_, ?_, ?_, hhigh 1 (by omega), hresult.1,
+  refine ⟨P₀, P₁, hP₀, hP₁, ?_, ?_, ?_, hhigh 1 (by omega),
+    shiftedEquation_highNumerator_ne, hresult.1,
     hresult.2.1⟩
   · simpa only [domain_zero, jointReceivedF] using (hsample 0 (by simp)).1
   · simpa only [domain_zero, jointReceivedG] using (hsample 0 (by simp)).2
