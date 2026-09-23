@@ -15,6 +15,8 @@ import Mathlib.Algebra.Field.ZMod
 import Mathlib.Tactic.ComputeDegree
 import Mathlib.Tactic.NormNum
 
+/-! # Polynomial acceptance tests -/
+
 open Polynomial
 
 private instance : Fact (Nat.Prime 3) := ⟨by decide⟩
