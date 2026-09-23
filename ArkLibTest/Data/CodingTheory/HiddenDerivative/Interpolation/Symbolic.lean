@@ -248,40 +248,22 @@ example : Nonempty (Fin 1 × LowContactIndex 1 1) ∧ ∃ v : Fin 1 → ℚ[X], 
     (algebraMap ℚ[X] (RatFunc ℚ)) (IsFractionRing.injective ℚ[X] (RatFunc ℚ))
     (s := 0) receivedLineMatrixRankZero (by decide)
 
-private theorem integerX_satisfiesLocalConstraints :
-    SatisfiesLocalConstraints 1 (0 : ℤ) 0 (X none : DifferentialPolynomial ℤ 1) := by
-  rw [satisfiesLocalConstraints_iff_coeff_eq_zero]
-  intro e he
-  rw [unscaledLocalSubstitution_X]
-  have hT : e (localT 1) = 0 := by
-    rw [localContactOrder_eq] at he
-    omega
-  have hsingle : Finsupp.single (localT 1) 1 ≠ e := by
-    intro h
-    have := congrArg (fun a => a (localT 1)) h
-    simp at this
-    omega
-  simp [MvPolynomial.coeff_X, hsingle]
-
-example : SatisfiesLocalConstraints 1 (0 : ZMod 5) 0
-    (MvPolynomial.map (Int.castRingHom (ZMod 5)) (X none : DifferentialPolynomial ℤ 1)) := by
-  simpa using ReedSolomon.HiddenDerivative.SatisfiesLocalConstraints.map
-    (φ := Int.castRingHom (ZMod 5)) 1 0 0 (X none) integerX_satisfiesLocalConstraints
-
-private def constantSupportColumns : Fin 1 → SourceColumn 1 :=
-  fun _ => SourceColumn.ofExponent (0 : JetVariable 1 →₀ ℕ)
+private def nonzeroSupportColumns : Fin 1 → SourceColumn 1 :=
+  fun _ => ⟨0, 1, fun _ => 0⟩
 
 example : MvPolynomial.map (Polynomial.eval₂RingHom (RingHom.id ℚ) 0)
-    (SourceColumn.interpolant constantSupportColumns (fun _ => (1 : ℚ[X]))) ∈
-      weightedSupportSpace ℚ 1 1 0 1 (by norm_num) := by
-  exact map_interpolant_mem_weightedSupportSpace (D := 1) (d := 1) (W := 0) (L := 1)
-    (by norm_num) constantSupportColumns
+    (SourceColumn.interpolant nonzeroSupportColumns
+      (fun _ => (Polynomial.X + 1 : ℚ[X]))) ∈
+      weightedSupportSpace ℚ 1 1 0 2 (by norm_num) := by
+  exact map_interpolant_mem_weightedSupportSpace (D := 1) (d := 1) (W := 0) (L := 2)
+    (by norm_num) nonzeroSupportColumns
     (by
       intro j
       fin_cases j
       simp [WeightedSupportEligible, fullHigherJetWeight, totalJetDegree,
-        constantSupportColumns])
-    (fun _ => 1) (RingHom.id ℚ) 0
+        nonzeroSupportColumns, SourceColumn.exponent, Finsupp.weight_single,
+        jetHigherWeight, jetDegreeWeight])
+    (fun _ => Polynomial.X + 1) (RingHom.id ℚ) 0
 
 namespace SymbolicCurveCertificateTest
 

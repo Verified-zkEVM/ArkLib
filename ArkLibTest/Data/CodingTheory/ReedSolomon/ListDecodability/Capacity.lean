@@ -70,17 +70,12 @@ private theorem singletonFixedMarginAtTwo :
     exact_mod_cast singletonWeightedSupportDimension_ge_four
   nlinarith
 
-/-- The dimension margin holds for one rational evaluation point. -/
-private theorem singletonFixedMargin :
-    (543 / 500 : ℝ) * ((1 : ℕ) : ℝ) * Module.finrank ℚ (LinearMap.range
-      (weightedSupportLocalConstraint (R := ℚ) (d := 1) (W := 0) (L := singletonCutoff) 1
-        Nat.one_pos 0 0)) < Module.finrank ℚ
-          (weightedSupportSpace ℚ 1 1 0 singletonCutoff Nat.one_pos) := by
-  exact singletonFixedMarginAtTwo
-
 /-- One evaluation constraint admits a nonzero interpolant under the fixed dimension margin. -/
 example : ∃ Q : DifferentialPolynomial ℚ 1,
-    Q ≠ 0 := by
+    Q ≠ 0 ∧
+    Q ∈ weightedSupportSpace ℚ 1 1 0 2 (by decide) ∧
+    (∀ i : Fin 1, SatisfiesLocalConstraints 1 (singletonDomain i) 0 Q) ∧
+    jetTotalDegree Q < 2 ∧ differentialWeightedDegree 1 Q < 2 := by
   have hD : 0 < (1 : ℕ) := by decide
   have hm : 0 < (1 : ℕ) := by decide
   have hA : 0 < (2 : ℕ) := by decide
@@ -89,9 +84,11 @@ example : ∃ Q : DifferentialPolynomial ℚ 1,
       ((1 * 2 : ℕ) : ℝ) := by norm_num
   have hresult := @ReedSolomon.exists_weightedSupport_interpolant_of_fixed_margin
     ℚ (inferInstance : Field ℚ) 1 1 1 1 0 2 (1 : ℝ) singletonDomain (fun _ => 0)
-    hD hm hA hg hcut singletonFixedMargin
-  obtain ⟨Q, hQ, _, _, _, _⟩ := hresult
-  exact ⟨Q, hQ⟩
+    hD hm hA hg hcut singletonFixedMarginAtTwo
+  obtain ⟨Q, hQ, hsupport, hlocal, hdegree, hweight⟩ := hresult
+  have hsupport' : Q ∈ weightedSupportSpace ℚ 1 1 0 2 (by decide) := by
+    convert hsupport using 1; norm_num
+  exact ⟨Q, hQ, hsupport', hlocal, hdegree, hweight⟩
 
 private def sampleDelta : ℝ := 1 / 8
 private def sampleN : ℕ :=

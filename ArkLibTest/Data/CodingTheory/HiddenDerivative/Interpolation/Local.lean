@@ -17,6 +17,7 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.RankBudget
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.RemainderMap
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.Translation
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.ZeroOrder
+import Mathlib.Data.ZMod.Basic
 
 /-!
 # Local interpolation acceptance cases
@@ -26,6 +27,27 @@ constraint identity.
 -/
 
 open MvPolynomial PolynomialDifferential ReedSolomon.HiddenDerivative
+
+private theorem integerX_satisfiesLocalConstraints :
+    SatisfiesLocalConstraints 1 (0 : ℤ) 0 (X none : DifferentialPolynomial ℤ 1) := by
+  rw [satisfiesLocalConstraints_iff_coeff_eq_zero]
+  intro e he
+  rw [unscaledLocalSubstitution_X]
+  have hT : e (localT 1) = 0 := by
+    rw [localContactOrder_eq] at he
+    omega
+  have hsingle : Finsupp.single (localT 1) 1 ≠ e := by
+    intro h
+    have := congrArg (fun a => a (localT 1)) h
+    simp at this
+    omega
+  simp [MvPolynomial.coeff_X, hsingle]
+
+/-- Coefficient specialization preserves a concrete order-one local constraint. -/
+example : SatisfiesLocalConstraints 1 (0 : ZMod 5) 0
+    (MvPolynomial.map (Int.castRingHom (ZMod 5)) (X none : DifferentialPolynomial ℤ 1)) := by
+  simpa using ReedSolomon.HiddenDerivative.SatisfiesLocalConstraints.map
+    (φ := Int.castRingHom (ZMod 5)) 1 0 0 (X none) integerX_satisfiesLocalConstraints
 
 private theorem satisfiesLocalConstraintsOneYZeroSub (d : ℕ) (center received : ℤ) :
     SatisfiesLocalConstraints (d := d) 1 center received (X (some 0) - C received) := by
