@@ -1019,6 +1019,38 @@ example : jetTotalDegree sumEquation = 1 ∧ ∑ j : Fin 2, jetDegree sumEquatio
   simp only [MvPolynomial.support_X, mem_union, mem_singleton] at hsub
   rcases hsub with rfl | rfl <;> simp [totalJetDegree_eq_sum, Fin.sum_univ_two]
 
+/-- For `Y₀ = 0` over `ℚ`, the singleton root is counted by the recursive bound. -/
+example :
+    1 * ({(0 : Polynomial ℚ)} : Finset (Polynomial ℚ)).card ≤
+      jetTotalDegree (zeroJetEquation ℚ 0) * 1 := by
+  let Q : DifferentialPolynomial ℚ 0 := zeroJetEquation ℚ 0
+  let roots : Finset (Polynomial ℚ) := {0}
+  have hQ : Q ≠ 0 := by simp [Q, zeroJetEquation]
+  have hcast : ∀ j, JetDegreeCastsNeZero Q j := by
+    intro j
+    apply jetDegreeCastsNeZero_of_ringChar
+    exact Or.inl (ringChar.eq_zero : ringChar ℚ = 0)
+  have hsolution : ∀ P ∈ roots, differentialSpecialization Q P = 0 := by
+    intro P hP
+    simp only [roots, Finset.mem_singleton] at hP
+    subst P
+    simp [Q, zeroJetEquation, differentialSpecialization, differentialSpecializationHom]
+  have hregular : ∀ (current : DifferentialPolynomial ℚ 0) (s : Fin 1),
+      Relation.ReflTransGen (SingularStep (F := ℚ) (d := 0)) current Q →
+        highestActiveJet current = some s → ∀ regular ⊆ roots,
+          (∀ P ∈ regular, differentialSpecialization current P = 0 ∧
+            differentialSpecialization (separant current s) P ≠ 0) →
+              1 * regular.card ≤ 1 := by
+    intro current s hreach hactive regular hsubset _
+    have hcard : regular.card ≤ 1 := by
+      calc
+        regular.card ≤ roots.card := Finset.card_le_card hsubset
+        _ = 1 := by simp [roots]
+    simpa using hcard
+  simpa [Q, roots, zeroJetEquation] using
+    (card_mul_le_jetTotalDegree_mul (Q := Q) (left := 1) (cost := 1)
+      hQ hcast roots hsolution hregular)
+
 /-! ### Witness count -/
 
 /-- The one regular bounded solution `0` of `Y₀ = 0` attains the `ZMod 3` witness-count bound. -/

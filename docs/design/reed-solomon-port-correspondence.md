@@ -3940,7 +3940,6 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/S
 
 The acceptance module retains main's coefficient-map, regular and singular jet, insufficient-exponent, high-cut, and common-numerator examples. Added cases exercise the initial-equation joint-degree bound at a nonconstant center, the zero-length agreement boundary case, a positive-length agreement cut with nonconstant numerator and separant, and sparsity for jet `(1, 0)`, preserving the allowed constant coefficient `1` while forcing the excluded linear coefficient to `0`. No public ArkLib declaration is added by this file.
 
-## `ArkLibTest/Data/Polynomial/Differential.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Geometry/SolutionEmbedding.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
