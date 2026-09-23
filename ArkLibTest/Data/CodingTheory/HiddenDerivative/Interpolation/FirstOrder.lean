@@ -11,6 +11,7 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.Space
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.CurveRank
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.Symbolic
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.SymbolicRank
+import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.CurveHeightCounting
 import Mathlib.Algebra.Field.ZMod
 
 /-!
@@ -220,6 +221,30 @@ example :
 example : firstOrderOriginGradedRank (F := ZMod 5) 1 1 1 0 0 ≤ 1 := by
   simpa [firstOrderGradedRankBound, firstOrderGradedSourceCount] using
     firstOrderOriginGradedRank_le_bound (F := ZMod 5) 1 1 1 0 0
+
+/-- A shifted surplus produces a primitive first-order curve interpolant. -/
+example :
+    ∃ v : Fin (Fintype.card ↑(firstOrderExponents 1 2 1 0 0)) → (ZMod 5)[X],
+      v ≠ 0 ∧
+      (∀ j, v j ∈ Polynomial.degreeLT (ZMod 5)
+        (0 + 1 - 0 * totalJetDegree
+          (firstOrderColumns (D := 1) (A := 2) (m := 1) (M := 0) (μ := 0) j).exponent)) ∧
+      Ideal.span (Set.range v) = ⊤ ∧
+      (∀ {E : Type*} [Field E] (ι : ZMod 5 →+* E) (z : E),
+        MvPolynomial.map (Polynomial.eval₂RingHom ι z)
+          (SourceColumn.interpolant
+            (firstOrderColumns (D := 1) (A := 2) (m := 1) (M := 0) (μ := 0)) v) ≠ 0) ∧
+      ∀ _i : Fin 1, SatisfiesLocalConstraints 1 (Polynomial.C (0 : ZMod 5))
+        (0 : (ZMod 5)[X])
+        (SourceColumn.interpolant
+          (firstOrderColumns (D := 1) (A := 2) (m := 1) (M := 0) (μ := 0)) v) := by
+  have hsurplus :
+      firstOrderCurveShiftedRowSlotBound 1 2 1 0 0 1 0 0 <
+        firstOrderCurveShiftedHeightSlotCount 1 2 1 0 0 0 0 := by
+    decide
+  exact exists_primitive_firstOrderCurve_interpolant_of_shifted_height_bound
+    (F := ZMod 5) 1 2 1 0 0 1 0 0 (by decide)
+    (fun _ ↦ 0) (fun _ ↦ 0) (by intro _; norm_num) hsurplus
 
 private theorem originConstantSlice_rank :
     (firstOrderOriginGradedSliceMatrixOver ℚ 1 2 1 1 0 0).rank = 1 := by
