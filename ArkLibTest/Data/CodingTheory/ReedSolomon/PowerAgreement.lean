@@ -145,4 +145,31 @@ example {F E ι : Type*} [Field F] [Field E] [Fintype ι] [DecidableEq F] [Decid
         HasExactPowerAgreement domain w (RingHom.id F) k z Q :=
   uniformExactPowerAgreement_of_extension domain w φ k A exceptional hgood
 
+-- A zero tuple over a one-point domain has exact agreement at every challenge.
+example : ∃ exceptional : Finset ℚ, exceptional.card ≤ 0 ∧
+    ∀ z ∉ exceptional,
+      HasExactPowerAgreement domain1 (fun _ : Fin 1 => fun _ => (0 : ℚ))
+        (RingHom.id ℚ) 1 z 0 := by
+  have h := exists_exceptional_exactPowerAgreement (ι := Fin 1) (ℓ := 0) (k := 1) (L := 0)
+    domain1 (fun _ : Fin 1 => fun _ => (0 : ℚ)) (fun _ => (0 : ℚ[X])) (RingHom.id ℚ)
+    (by intro t; norm_num) (by omega)
+  simpa [powerBatchedPolynomial, Fintype.card_fin] using h
+
+-- A singleton family of the same tuple uses the same empty exceptional set.
+example : ∃ exceptional : Finset ℚ, exceptional.card ≤ 0 ∧
+    ∀ P ∈ ({(fun _ : Fin 1 => (0 : ℚ[X]))} : Finset (Fin 1 → ℚ[X])),
+      ∀ z ∉ exceptional,
+        HasExactPowerAgreement domain1 (fun _ : Fin 1 => fun _ => (0 : ℚ))
+          (RingHom.id ℚ) 1 z 0 := by
+  have h := exists_exceptional_exactPowerAgreement_family
+    (ι := Fin 1) (ℓ := 0) (k := 1) (L := 0) domain1
+    (fun _ : Fin 1 => fun _ => (0 : ℚ)) (RingHom.id ℚ)
+    {fun _ : Fin 1 => (0 : ℚ[X])} (by
+      intro P hP t
+      rw [Finset.mem_singleton.mp hP]
+      norm_num) (by
+      intro P hP
+      omega)
+  simpa [powerBatchedPolynomial, Fintype.card_fin] using h
+
 end PowerAgreementTest
