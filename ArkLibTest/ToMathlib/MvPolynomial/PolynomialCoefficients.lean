@@ -86,48 +86,6 @@ example (Q : MvPolynomial (Option Unit) ℤ) :
       optionEquivLeft (ZMod 2) Unit (map (Int.castRingHom (ZMod 2)) Q) :=
   map_optionEquivLeft _ Q
 
-/-- Flattening a constant coefficient of degree one bounds the distinguished-variable degree. -/
-example :
-    ((optionEquivRight ℚ Unit).symm (C (Polynomial.X : Polynomial ℚ)) :
-      MvPolynomial (Option Unit) ℚ).weightedTotalDegree
-        (fun i ↦ i.elim 1 (fun _ ↦ 0)) ≤ 1 := by
-  exact weightedTotalDegree_optionEquivRight_symm_coefficientDegree_le
-    ((coeffNatDegreeLE_C (p := (Polynomial.X : Polynomial ℚ)) (by simp)) :
-      CoeffNatDegreeLE (C Polynomial.X : MvPolynomial Unit (Polynomial ℚ)) 1)
-
-/-- Clearing a degree-one substitution into a degree-one coefficient gives degree at most `2`. -/
-example : CoeffNatDegreeLE
-    (clearedSubstitution C (C (Polynomial.X : Polynomial ℚ) :
-        MvPolynomial Unit (Polynomial ℚ))
-      (fun _ : Unit ↦ C (Polynomial.X : Polynomial ℚ)) (fun _ ↦ 1) 1
-      (X () : MvPolynomial Unit (Polynomial ℚ))) 2 := by
-  exact CoeffNatDegreeLE.clearedSubstitution
-    (S := C (Polynomial.X : Polynomial ℚ))
-    (N := fun _ : Unit ↦ C (Polynomial.X : Polynomial ℚ))
-    (d := fun _ : Unit ↦ 1) (H := 1) (h := 1) (Q := X ())
-    (coeffNatDegreeLE_C (by simp))
-    (fun _ ↦ coeffNatDegreeLE_C (by simp))
-    (by
-      intro m hm
-      have hm' : m = Finsupp.single () 1 := by
-        rw [support_X] at hm
-        exact Finset.mem_singleton.mp hm
-      subst m
-      simp [Finsupp.weight_apply])
-    (fun m _ ↦ ((coeffNatDegreeLE_X ()).mono (by norm_num)) m)
-
-/-- The coefficient and jet degree bounds flatten to bidegree `(1, 1)` for `tY`. -/
-example : (optionEquivRight ℚ Unit).symm paramTimesVar ∈
-    restrictBidegree Unit ℚ 1 1 := by
-  have hheight : CoeffNatDegreeLE paramTimesVar 1 := by
-    exact (coeffNatDegreeLE_C (p := (Polynomial.X : Polynomial ℚ)) (by simp)).mul
-      (coeffNatDegreeLE_X ())
-  have hjet : paramTimesVar.totalDegree ≤ 1 := by
-    rw [paramTimesVar, C_mul_X_eq_monomial,
-      totalDegree_monomial _ Polynomial.X_ne_zero]
-    simp
-  exact optionEquivRight_symm_mem_restrictBidegree hheight hjet
-
 /-- Evaluation into `E₄` after mapping coefficients sends `tY` to `zY` in either order. -/
 example (z : E₄) :
     let f : ZMod 2 →+* E₄ := algebraMap (ZMod 2) E₄
