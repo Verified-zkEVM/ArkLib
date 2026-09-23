@@ -165,10 +165,8 @@ example :
     uniformRateGamma_high_gt (by norm_num) (by norm_num) (by norm_num) (by norm_num)⟩
 
 private theorem recipe_rate_gate : 1 < rateGamma 1 2 20 := by
-  have hcoef : fixedRateCoefficient 1 ≤ Real.log 20 := by
-    rw [fixedRateCoefficient]
-    norm_num only [one_mul, mul_one, mul_zero, add_zero]
-    apply Real.log_le_log <;> norm_num
+  have hlog : Real.log 5 ≤ Real.log 20 := Real.log_le_log (by norm_num) (by norm_num)
+  have hcoef : fixedRateCoefficient 1 ≤ Real.log 20 := fixedRateGateInputs.1.trans hlog
   have horder : fixedRateCoefficient 1 + 0 ≤ 1 * Real.log (20 : ℝ) := by
     nlinarith [hcoef]
   have hmargin := fixedRateGateInputs.2
@@ -267,11 +265,11 @@ example : ⨍ u in weightedSimplex (fun i : Fin 1 ↦ (i : ℝ) + 1) 1, (0 - 1 *
   rw [setAverage_weightedSimplex_succ_sub_mul_sum_sq 1 one_pos]
   norm_num [harmonic]
 
-/-- The upper-tail bound at dimension `1` is a concrete positive-dimensional case. -/
-example : ⨍ u in weightedSimplex (fun i : Fin 1 ↦ (i : ℝ) + 1) 1,
-    max (((1 : ℕ) : ℝ) * ∑ i, u i - Real.log ((1 : ℕ) : ℝ) - Real.log 6) 0 ^ 2 ≤
+/-- The upper-tail bound at dimension `3` has nonzero values near a simplex vertex. -/
+example : ⨍ u in weightedSimplex (fun i : Fin 3 ↦ (i : ℝ) + 1) 1,
+    max ((3 : ℝ) * ∑ i, u i - Real.log 3 - Real.log 6) 0 ^ 2 ≤
       1 / 3 :=
-  setAverage_weightedSimplex_succ_upperTail_sq_le 1
+  setAverage_weightedSimplex_succ_upperTail_sq_le 3
 
 /-- The lower-tail bound at `d = 500` and budget `2`. -/
 example : (27 / 10 : ℝ) < ⨍ u in weightedSimplex (fun i : Fin 500 ↦ (i : ℝ) + 1) 2,

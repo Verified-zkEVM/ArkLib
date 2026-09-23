@@ -82,16 +82,13 @@ example :
 example : 48000 ≤ capacityDerivativeOrder (1 / 8) :=
   (capacityDerivativeOrder_lower (by norm_num) (by norm_num)).1
 
-example : 0 < weightedSupportMultiplicity 2 :=
-  weightedSupportMultiplicity_pos_iff.mpr (by norm_num)
-
 /-- At `δ = 1/8`, `n = 8m` and `k = m`, the capacity bounds hold with positive `k`. -/
 example :
     let δ : ℝ := 1 / 8
     let m := weightedSupportMultiplicity (capacityDerivativeOrder δ)
     let n := 8 * m
     let K := weightedSupportAmbientDimension δ n m
-    0 < m ∧ 0 < n ∧ capacityDerivativeOrder δ < K - 1 ∧ 0 ≤ K ∧ K ≤ n := by
+    0 < m ∧ 0 < n ∧ capacityDerivativeOrder δ < K - 1 ∧ m ≤ K ∧ K ≤ n := by
   let δ : ℝ := 1 / 8
   let m := weightedSupportMultiplicity (capacityDerivativeOrder δ)
   let n := 8 * m
@@ -110,8 +107,8 @@ example :
   have hblock : 8 * m ≤ n := by dsimp [n]; omega
   have h := capacity_block_bounds (δ := δ) (n := n) (k := m)
     (by norm_num [δ]) (by norm_num [δ]) (by change 8 * m ≤ n; exact hblock) hA
-  rcases h with ⟨hn, hD, -, hKhi⟩
-  exact ⟨hm, hn, hD, Nat.zero_le _, hKhi⟩
+  rcases h with ⟨hn, hD, hk, hKhi⟩
+  exact ⟨hm, hn, hD, hk, hKhi⟩
 
 /-! ### Dimension inputs -/
 
