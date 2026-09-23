@@ -2656,10 +2656,11 @@ the source.
 
 Ported from `ArkLib/ToMathlib/AlgebraicGeometry/Incidence/DimensionSensitive.lean` at ArkLib
 revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`: the arithmetic of the incidence products.
-`dimensionSensitiveIncidenceProduct` with `_zero`, `_succ`, `_one`, `_nonneg` and `_eq_pow_mul`,
-and `hybridDimensionSensitiveIncidenceProduct` with `_zero`, `_succ`, `_one`, `_two` and
-`_nonneg`, keep their names, recursive definitions and statements; they move from the namespace
-`AffineHilbert` to the root namespace. `one_le_incidenceFactor` drops `T ≤ A`,
+`dimensionSensitiveIncidenceProduct` with `_succ`, `_nonneg` and `_eq_pow_mul` keep their names and
+statements; they move from the namespace `AffineHilbert` to the root namespace. The hybrid product
+is now the corresponding `incidenceProduct` specialization, so its boundary, one-factor,
+two-factor and nonnegativity cases reduce through the general product and Mathlib's
+`Finset.prod_empty` and `Finset.prod_range_succ`. `one_le_incidenceFactor` drops `T ≤ A`,
 `dimensionSensitiveIncidenceProduct_le_one` drops `k ≤ A`, and
 `hybridDimensionSensitiveIncidenceProduct_mono_dimension` and
 `hybridDimensionSensitiveIncidenceProduct_le_two` drop `L ≤ A` and `k ≤ A`; truncated subtraction
@@ -2676,7 +2677,9 @@ statements or includes hypothesis-necessity cases.
 
 New, with no source counterpart: `incidenceProduct n A b T d`, the product over `t < d` of the
 factor `((n - T t + 1) * b) / (A - T t + 1)` for a threshold function `T : ℕ → ℕ`, with
-`incidenceProduct_zero`, `_succ`, `_nonneg`, `_congr`, `_const` and `_mono_dimension`;
+`incidenceProduct_nonneg`, `_const` and `_mono_dimension`. The empty-product, successor and
+threshold-congruence cases use `Finset.prod_empty`, `Finset.prod_range_succ` and
+`Finset.prod_congr` directly;
 `dimensionSensitiveIncidenceProduct_eq_incidenceProduct` (thresholds `k - t`, under `d ≤ k + 1`,
 `k ≤ A` and `A ≤ n`) and
 `hybridDimensionSensitiveIncidenceProduct_eq_incidenceProduct` (thresholds
@@ -2727,12 +2730,10 @@ ported.
 
 ## `ArkLib/ToMathlib/Finset/SumRangeFrom.lean`
 
-Ported from `ArkLib/ToMathlib/Finset/SumRangeFrom.lean` at ArkLib revision
-`a5aa2677fee4e3a79d6bb05136631cce4a08587d`, namespace `Finset`.
-
-`sumRangeFrom`, `sumRangeFrom_add`, `sumRangeFrom_four`, `sumRangeFrom_four_eq`, and
-`sumRangeFrom_two_eq` keep their names. The API works for any additive commutative monoid; the
-split theorem reuses Mathlib's range-splitting theorem. No declarations were deferred or omitted.
+The module retains no shifted-sum declarations. Use Mathlib's `Finset.sum_Ico_eq_sum_range` for
+the interval form and `Finset.sum_range_add` for adjacent chunks; four- and two-chunk forms follow
+by repeated splitting. The acceptance file is removed because it tested only these wrappers, and
+there were no production consumers.
 
 ## `ArkLib/ToMathlib/LinearAlgebra/Matrix/InvertibleCombination.lean`
 
@@ -3825,8 +3826,9 @@ Ported from `ArkLib/ToMathlib/AlgebraicGeometry/Incidence/BidegreeExcluded.lean`
 `A ≤ n` premise. `bidegreeHypersurface_source_incidence_off_excluded_hybrid` and
 `bidegreeHypersurface_source_incidence_off_excluded_hybrid_two` are renamed to
 `MvPolynomial.bidegreeHypersurface_incidence_off_excluded_hybrid` and
-`MvPolynomial.bidegreeHypersurface_incidence_off_excluded_hybrid_two`, respectively, with no
-mathematical change. The `_sharp_one` and `_sharp_two` source declarations are renamed to
+`MvPolynomial.bidegreeHypersurface_incidence_off_excluded_hybrid_two`, respectively; the
+two-coordinate theorem drops its unused `A ≤ n` premise. The `_sharp_one` and `_sharp_two` source
+declarations are renamed to
 `MvPolynomial.bidegreeHypersurface_incidence_off_excluded_sharp_one` and
 `MvPolynomial.bidegreeHypersurface_incidence_off_excluded_sharp_two`; both are generalized by
 removing `A ≤ n`. Nothing was deferred or left unported.

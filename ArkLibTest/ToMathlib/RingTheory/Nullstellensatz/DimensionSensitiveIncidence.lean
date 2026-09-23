@@ -158,7 +158,8 @@ example :
       omega)
     fun Q _ hQ _ hd hL ↦ absurd hL (not_two_le_ncard_gridCuts hQ hd)
   refine ⟨h.1, h.2.trans_eq ?_⟩
-  simp [affineDegree_bot, natDegree_affineHilbertPolynomial_bot]
+  simp [affineDegree_bot, natDegree_affineHilbertPolynomial_bot,
+    hybridDimensionSensitiveIncidenceProduct, incidenceProduct, Finset.prod_range_succ]
   norm_num
 
 /-- The hybrid bound after the empty list of fixed cuts, for `Ps = {⊥}` in the plane and the
@@ -196,7 +197,7 @@ example (S : Finset (Fin 2 → ℚ)) (hA : ∀ x ∈ S, 2 ≤ {i | aeval x (grid
       hprime hdim 1 (h := 1) le_rfl (by simp) hV gridCuts (b := 1) (A := 2) (L := 2) (m := 1)
       totalDegree_gridCuts_le one_pos le_rfl (by norm_num) ∅ hdimension hterminal S hS hA
     refine h.trans_eq ?_
-    simp
+    simp [hybridDimensionSensitiveIncidenceProduct, incidenceProduct, Finset.prod_range_succ]
     norm_num
   · have h := card_le_hybridDimensionSensitiveIncidenceProduct_two_of_iteratedRetainedCutFamily
       hprime hdim 1 (h := 1) le_rfl (by simp) hV gridCuts (b := 1) (A := 2) (L := 2) (m := 1)
@@ -224,7 +225,8 @@ example :
   have h := finite_and_ncard_le_dimensionSensitiveIncidenceProduct_of_fixedCoefficientEvaluation
     (K := ℚ) fourPoints ![0, 0, 1, 1] (m := 1) (P := ⊥) 1 (A := 2) (by norm_num)
   refine ⟨h.1, h.2.trans_eq ?_⟩
-  simp [affineDegree_bot, natDegree_affineHilbertPolynomial_bot]
+  simp [affineDegree_bot, natDegree_affineHilbertPolynomial_bot,
+    dimensionSensitiveIncidenceProduct]
   norm_num
 
 /-- Polynomials of degree less than `2` agreeing with two of the values `0, 0, 1` at `0, 1, 2`:
@@ -298,7 +300,8 @@ example :
     have h4 : {i | gridCuts i ∈ Q}.ncard ≤ 4 := (Set.ncard_le_card _).trans_eq (by simp)
     omega
   · rw [show gridPoints.card = 4 by decide]
-    simp [affineDegree_bot, natDegree_affineHilbertPolynomial_bot]
+    simp [affineDegree_bot, natDegree_affineHilbertPolynomial_bot,
+      hybridDimensionSensitiveIncidenceProduct, incidenceProduct, Finset.prod_range_succ]
     norm_num
 
 /-! ### Derived forms -/
