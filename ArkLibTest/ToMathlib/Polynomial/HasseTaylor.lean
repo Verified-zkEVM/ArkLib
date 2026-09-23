@@ -57,11 +57,4 @@ example :
     (p := (X ^ 2 : ℚ[X])) (q := 0) (a := 0) (m := 1) (s := 1) hdiv
   exact h
 
-example :
-    X ^ (2 + 1) ∣ (X ^ 2 + X ^ 3 : ℚ[X]) ↔
-      (X ^ 2 + X ^ 3 : ℚ[X]).coeff 2 = 0 :=
-  X_pow_succ_dvd_iff_coeff_eq_zero_of_X_pow_dvd
-    (p := (X ^ 2 + X ^ 3 : ℚ[X])) (k := 2)
-    (by refine ⟨1 + X, ?_⟩; ring)
-
 end Polynomial

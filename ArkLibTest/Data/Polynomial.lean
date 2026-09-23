@@ -30,6 +30,19 @@ example :
   · simp
   · exact WithBot.bot_lt_coe 2
 
+-- Multiplying two linear polynomials and adding a constant stays below degree three.
+example : ((X : ℚ[X]) * X + C 1).degree < 3 := by
+  apply degree_mul_add_lt (D := X) (q := X) (I := C 1) (d := 1) (k := 2)
+  · simp
+  · simp
+  · simp
+
+-- A root of the divisor preserves the correction value.
+example : ((X - C 1 : ℚ[X]) * X + C 3).eval 1 = 3 := by
+  rw [eval_mul_add_of_eval_eq_zero (D := X - C 1) (q := X) (I := C 3)
+    (x := 1) (by simp)]
+  simp
+
 -- At an anchor, reconstruction takes the correction's value.
 example :
     (Lagrange.nodal Finset.univ ![(1 : ℚ), 5] * X + C 3).eval 5 = 3 := by
@@ -149,6 +162,33 @@ theorem natDegree_pairX0 : ∀ f ∈ pairX0, ∀ j, (f j).natDegree ≤ 1 := by
   simp only [pairX0, Finset.mem_insert, Finset.mem_singleton] at hf
   rcases hf with rfl | rfl <;> fin_cases j <;> simp
 
+-- At the common root `0`, the two degree-one tuples fail to separate.
+example :
+    ({fun _ : Unit ↦ (0 : ℚ)} : Finset (Unit → ℚ)).card ≤
+      ({![(X : ℚ[X])], ![0]} : Finset (Fin 1 → ℚ[X])).card.choose 2 *
+        1 ^ Fintype.card (Fin 1) := by
+  let S : Finset (Fin 1 → ℚ[X]) := {![X], ![0]}
+  let T : Finset (Unit → ℚ) := {fun _ ↦ (0 : ℚ)}
+  have hdegree : ∀ f ∈ S, ∀ j, (f j).natDegree ≤ 1 := by
+    intro f hf j
+    simp only [S, Finset.mem_insert, Finset.mem_singleton] at hf
+    rcases hf with rfl | rfl <;> fin_cases j <;> simp
+  have hfail : ∀ x ∈ T, ¬ Set.InjOn (evalTuple x) (S : Set (Fin 1 → ℚ[X])) := by
+    intro x hx
+    simp only [T, Finset.mem_singleton] at hx
+    subst x
+    intro hinj
+    have hvalues : evalTuple (fun _ : Unit ↦ (0 : ℚ)) ![X] =
+        evalTuple (fun _ : Unit ↦ (0 : ℚ)) ![0] := by
+      funext i j
+      simp
+    have hne : (![X] : Fin 1 → ℚ[X]) ≠ ![0] := by
+      intro h
+      have := congrArg (eval 1) (congrFun h 0)
+      simp at this
+    exact hne (hinj (x₁ := ![X]) (x₂ := ![0]) (by simp [S]) (by simp [S]) hvalues)
+  exact card_le_of_not_injOn_evalTuple S hdegree T hfail
+
 -- A uniform point of `ZMod 5` separates `X` and `0` except with probability `1 / 5`.
 open scoped ProbabilityTheory in
 example : Pr{let ω ← $ᵗ (ZMod 5)}[¬ Set.InjOn (evalTuple fun _ : Unit ↦ ω)
@@ -157,6 +197,14 @@ example : Pr{let ω ← $ᵗ (ZMod 5)}[¬ Set.InjOn (evalTuple fun _ : Unit ↦ 
     (fun _ _ h ↦ congrFun h ()) pairX0 natDegree_pairX0
   rw [card_pairX0] at h
   simpa [ZMod.card] using h
+
+-- The singleton family containing `X` has one possible exceptional root.
+example : ∃ exceptional : Finset ℚ, exceptional.card ≤ 1 ∧
+    ∀ z ∉ exceptional, ∀ _i : Fin 1,
+      (X : ℚ[X]).eval z = 0 ↔ (X : ℚ[X]) = 0 := by
+  exact exists_card_le_forall_eval_eq_zero_iff
+    (fun _ : Fin 1 ↦ (X : ℚ[X])) (d := 1) Finset.univ
+    (by intro i hi; simp) (by intro i hi; exact (hi (Finset.mem_univ i)).elim)
 
 -- Separating points select the unique tuple `X` with its value at `1`.
 example : ∃ o : Option (Fin 1 → (ZMod 5)[X]),

@@ -169,20 +169,23 @@ example :
     (∑ a ∈ ({0} : Finset ℤ), (X : ℤ[X]).rootMultiplicity a) ≤ (X : ℤ[X]).natDegree :=
   sum_rootMultiplicity_le_natDegree ({0} : Finset ℤ)
 
-example : (0 : ℚ[X]) = 0 ∧ (0 : ℤ[X]) = 0 := by
-  constructor
-  · exact eq_zero_of_degree_lt_mul_of_pow_X_sub_C_dvd_at_injOn
-      (fun _ : Fin 1 => (0 : ℚ)) {0} 1 1
-      (by
-        intro i hi j hj hij
-        exact Subsingleton.elim i j)
-      (by norm_num) (by intro i hi; simp) (by simp)
-  · exact eq_zero_of_natDegree_lt_mul_of_pow_X_sub_C_dvd_at_injOn
-      (fun _ : Fin 1 => (0 : ℤ)) {0} 1 1
-      (by
-        intro i hi j hj hij
-        exact Subsingleton.elim i j)
-      (by norm_num) (by intro i hi; simp) (by norm_num)
+example : (0 : ℚ[X]) = 0 :=
+  eq_zero_of_degree_lt_mul_of_pow_X_sub_C_dvd_at_injOn
+    (fun i : Fin 2 => (i.val : ℚ)) Finset.univ 1 2
+    (by
+      intro i hi j hj hij
+      have hval : (i.val : ℚ) = (j.val : ℚ) := hij
+      exact Fin.ext (by exact_mod_cast hval))
+    (by simp) (by intro i hi; simp) (by exact WithBot.bot_lt_coe 2)
+
+example : (0 : ℤ[X]) = 0 :=
+  eq_zero_of_natDegree_lt_mul_of_pow_X_sub_C_dvd_at_injOn
+    (fun i : Fin 2 => (i.val : ℤ)) Finset.univ 1 2
+    (by
+      intro i hi j hj hij
+      have hval : (i.val : ℤ) = (j.val : ℤ) := hij
+      exact Fin.ext (by exact_mod_cast hval))
+    (by simp) (by intro i hi; simp) (by norm_num)
 
 /-! ## Sparse contraction -/
 
