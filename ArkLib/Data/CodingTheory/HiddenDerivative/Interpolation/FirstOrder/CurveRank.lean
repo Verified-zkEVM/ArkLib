@@ -436,15 +436,6 @@ def firstOrderGradedTargetLowContactIndex {m : ℕ} (s : Fin m) (t : ℕ)
     have he : e.val < m - s.val := e.isLt.trans_le (min_le_left _ _)
     omega⟩
 
-/-- The target row index has the prescribed local jet weight. -/
-@[simp]
-theorem weight_localJetDegreeWeight_one_firstOrderGradedTargetLowContactIndex
-    {m : ℕ} (s : Fin m) (t : ℕ) (e : Fin (min (m - s.val) (t + 1))) :
-    (firstOrderGradedTargetLowContactIndex s t e).1.weight (localJetDegreeWeight 1) = t := by
-  apply weight_localJetDegreeWeight_one_firstOrderGradedTargetExponent
-  have := e.isLt.trans_le (min_le_right (m - s.val) (t + 1))
-  omega
-
 /-- Origin constraint matrix on one fixed displacement/jet-grade block over an arbitrary
 coefficient ring. Its rows are literal local coefficients and its columns are the exact
 admissible source slice. -/
@@ -990,7 +981,12 @@ theorem firstOrderCurveGradedConstraintMatrix_degree_le
     (row.1, firstOrderCurveGradedRowLocalIndex F D A m M μ n row) j
   have hrow : (firstOrderCurveGradedRowLocalIndex F D A m M μ n row).1.weight
       (localJetDegreeWeight 1) = row.2.1.val := by
-    simp [firstOrderCurveGradedRowLocalIndex]
+    simp only [firstOrderCurveGradedRowLocalIndex, firstOrderGradedTargetLowContactIndex]
+    apply weight_localJetDegreeWeight_one_firstOrderGradedTargetExponent
+    have he := (firstOrderOriginGradedSelectedRow F D A m M
+      row.2.2.1.val row.2.1.val row.2.2.2).isLt.trans_le
+        (min_le_right (m - row.2.2.1.val) (row.2.1.val + 1))
+    omega
   rw [SourceColumn.totalJetDegree_exponent]
   rw [hrow] at h
   simpa [firstOrderCurveGradedConstraintMatrix, firstOrderCurveGradedRowLocalIndex] using h
@@ -1011,7 +1007,13 @@ theorem firstOrderCurveGradedConstraintMatrix_eq_zero_of_grade_lt
   apply localConstraintMatrix_eq_zero_of_lt m (fun i ↦ Polynomial.C (centers i)) w
     columns (row.1, lowRow) j
   have hrow : lowRow.1.weight (localJetDegreeWeight 1) = row.2.1.val := by
-    simp [lowRow, firstOrderCurveGradedRowLocalIndex]
+    simp only [lowRow, firstOrderCurveGradedRowLocalIndex,
+      firstOrderGradedTargetLowContactIndex]
+    apply weight_localJetDegreeWeight_one_firstOrderGradedTargetExponent
+    have he := (firstOrderOriginGradedSelectedRow F D A m M
+      row.2.2.1.val row.2.1.val row.2.2.2).isLt.trans_le
+        (min_le_right (m - row.2.2.1.val) (row.2.1.val + 1))
+    omega
   rw [← SourceColumn.totalJetDegree_exponent (columns j), hrow]
   exact hgrade
 

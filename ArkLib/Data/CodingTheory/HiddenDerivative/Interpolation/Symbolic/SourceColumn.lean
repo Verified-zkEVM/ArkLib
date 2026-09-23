@@ -28,6 +28,10 @@ ring homomorphism applied to the interpolant is applied to the coefficient vecto
   at every derivative order.
 * `SourceColumn.map_interpolant_ne_zero`: the image of the interpolant under a ring
   homomorphism is nonzero when the image of the coefficient vector is.
+
+## References
+
+* [DKT26]
 -/
 
 @[expose] public section
@@ -176,7 +180,7 @@ theorem coeff_interpolant {columns : κ → SourceColumn d} (hcolumns : Function
   · simp
 
 /-- Distinct source columns preserve coefficient height at every derivative order. -/
-theorem coeff_interpolant_natDegree_le {F : Type*} [Field F] {N h : ℕ}
+theorem coeff_interpolant_natDegree_le {F : Type*} [CommSemiring F] {N h : ℕ}
     (columns : Fin N → SourceColumn d) (hcolumns : Function.Injective columns)
     (v : Fin N → Polynomial F) (hv : ∀ j, (v j).natDegree ≤ h) :
     ∀ u, ((interpolant columns v).coeff u).natDegree ≤ h := by

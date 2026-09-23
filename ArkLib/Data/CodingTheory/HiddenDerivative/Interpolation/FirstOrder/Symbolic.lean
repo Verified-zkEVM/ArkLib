@@ -72,7 +72,7 @@ structure FirstOrderSymbolicCertificate {n N : ℕ} (D A m M μ k h : ℕ)
             (MvPolynomial.map (Polynomial.eval₂RingHom ι z) Q) P = 0
 
 /-- Assembling eligible source columns preserves the finite first-order support. -/
-theorem interpolant_mem_firstOrderSpace {D A m M μ N : ℕ}
+theorem interpolant_mem_firstOrderSpace {F : Type*} [CommSemiring F] {D A m M μ N : ℕ}
     (columns : Fin N → SourceColumn 1)
     (heligible : ∀ j, (columns j).exponent ∈ firstOrderExponents D A m M μ)
     (v : Fin N → F[X]) :
