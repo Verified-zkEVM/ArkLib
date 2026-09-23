@@ -1620,6 +1620,15 @@ Ported from `HiddenDerivative/RootFinding/MutualCorrelatedAgreement/ExtensionDes
 
 Not ported: the standalone exceptional correlated-agreement wrapper from this dependency; the equation-descent theorem performs the exceptional-set pullback directly.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedPointRecognition.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/PointRecognition.lean` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`commonCurveAgreementSet_map` and `exists_exceptional_powerBatched_extension` keep their names; both are generalized from `Fin n` to any finite coordinate type, and the exceptional bound uses `Fintype.card α`. `powerBatchedJetGraph` and `polynomialJet_powerBatched` keep their names and statements. `exists_polynomialGraph_of_symbolic_sample_of_exponent` keeps its name and is generalized to an arbitrary embedded coordinate type without requiring it to be finite. Its regularity, high-cut, and agreement premises use the field-valued Taylor-chart API after specialization at each challenge.
+
+No declarations from the source were left out. The intermediate over-algebra bridge statements are not duplicated; the main theorem specializes `ReedSolomon.exists_polynomialGraph_of_sample` from `PowerAgreement` and uses the available field-valued Taylor-chart results. The source import `TaylorChart.PointRecognition` is unavailable in this checkout, so its helper bridge layer was replaced by that API.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/GraphLineComponent.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/ComponentRecognition.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:

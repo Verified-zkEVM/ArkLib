@@ -40,7 +40,7 @@ example :
       (fun _ : Bool => 0)).encard < (2 : ℕ∞) := by
   exact agreeingPolynomials_encard_lt_blockLength_of_quarter
     (ι := Bool) (F := ZMod 3) (delta := 1 / 4) (by norm_num) boolDomain
-    (by decide) (by decide) (by decide) (fun _ => 0)
+    (by decide) (by decide) (fun _ => 0)
 
 /-- At the half-gap threshold, the same two-coordinate list has size at most one. -/
 example :
@@ -51,16 +51,15 @@ example :
     (by decide) (by decide) (fun _ => 0)
 
 /-- The arbitrary finite-coordinate quarter-gap theorem specializes to the `Fin n` statement. -/
-example {F : Type*} [Field F] [Finite F] [DecidableEq F] {delta : ℝ} {n k : ℕ}
-    (hdelta : (1 / 4 : ℝ) ≤ delta) (domain : Fin n ↪ F) (hn : 0 < n)
+example {F : Type*} [Field F] [DecidableEq F] {delta : ℝ} {n k : ℕ}
+    (hdelta : (1 / 4 : ℝ) ≤ delta) (domain : Fin n ↪ F)
     (hk : 0 < k) (hkn : k ≤ n) (received : Fin n → F) :
     (agreeingPolynomials domain k (agreementThreshold delta n k) received).encard <
       (n : ℕ∞) := by
     simpa only [Fintype.card_fin] using
     agreeingPolynomials_encard_lt_blockLength_of_quarter
       (ι := Fin n) (F := F) (delta := delta) hdelta domain
-      (by simpa only [Fintype.card_fin] using hn) hk
-      (by simpa only [Fintype.card_fin] using hkn) received
+      hk (by simpa only [Fintype.card_fin] using hkn) received
 
 /-- The uniform quarter-gap theorem supplies a certificate and strict list bound on an explicit
 prime-field evaluation domain. -/
@@ -77,9 +76,10 @@ example :
               received).encard < ((4 * q : ℕ) : ℕ∞) := by
   obtain ⟨threshold, hThreshold⟩ :=
     quarter_gap_list_bound (1 / 4) (by norm_num) (by norm_num)
-  let n := max threshold 1
+  let n := max threshold 2
   have hThresholdLe : threshold ≤ n := le_max_left _ _
-  have hn : 0 < n := lt_of_lt_of_le (by omega) (le_max_right _ _)
+  have hTwo : 2 ≤ n := le_max_right _ _
+  have hn : 0 < n := lt_of_lt_of_le (by omega) hTwo
   obtain ⟨q, hnq, hq⟩ := Nat.exists_infinite_primes n
   let domain := finDomain hnq
   have hInstance := hThreshold n 1 q hThresholdLe (by norm_num) (by omega) hq hnq domain
