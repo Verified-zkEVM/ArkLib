@@ -9,6 +9,7 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.Dimension
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.FloorTransfer
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.LocalRank
+import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.RateBound
 
 /-!
 # Partition-support acceptance cases
@@ -17,6 +18,7 @@ Concrete strict inclusion, dimension, lower-bound, integral, rank, and interpola
 -/
 
 open Finset MvPolynomial MeasureTheory PolynomialDifferential ReedSolomon.HiddenDerivative
+  ReedSolomon.HiddenDerivative.RatePartition
 
 private theorem YOneWeights :
     fullHigherJetWeight (d := 1) (Finsupp.single (some 1) 1) = 0 ∧
@@ -160,6 +162,14 @@ example : Module.finrank ℚ (LinearMap.range
     (partitionSupportLocalConstraint (d := 1) (W := 0) (L := 2) 2 one_pos
       (0 : ℚ) (0 : ℚ))) ≤ 3 := by
   exact (finrank_partitionSupportLocalConstraint_le one_pos (0 : ℚ) (0 : ℚ)).trans (by decide)
+
+example :
+    totalJetDegree (Finsupp.single (some 0 : JetVariable 1) 1) ≤ rateJetCap (1 / 2) 1 := by
+  apply partitionSupport_totalJetDegree_le_rateJetCap (D := 2) (W := 1) (m := 1) (n := 4)
+    (A := 4) (rate := 1 / 2) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+  simp [PartitionSupportEligible, fullDerivativeJetWeight, totalJetDegree,
+    jetDerivativeWeight, Finsupp.weight_single]
+  norm_num
 
 example : ∃ Q : DifferentialPolynomial ℚ 0, Q ≠ 0 ∧
     Q ∈ partitionSupportSpace ℚ 1 0 0 ((2 : ℕ) : ℝ) one_pos ∧

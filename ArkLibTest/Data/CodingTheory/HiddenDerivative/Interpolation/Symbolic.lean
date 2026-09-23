@@ -5,20 +5,25 @@ Authors: Quang Dao
 -/
 
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.ChallengeDegree
+import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.ColumnHeight
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.ConstraintMatrix
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.CurveHeight
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.LocalRank
+import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.ReceivedCurve
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.SourceColumn
+import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.WeightedSupport
+import Mathlib.FieldTheory.RatFunc.Basic
 import Mathlib.Data.ZMod.Basic
 
 /-!
 # Symbolic interpolation acceptance cases
 
-Concrete coefficient-degree, matrix-entry, height-transfer, translation, and source-column cases.
+Concrete coefficient-degree, matrix-entry, rank, height-transfer, primitive-interpolant, and
+source-column cases.
 -/
 
 open MvPolynomial PolynomialDifferential ReedSolomon.HiddenDerivative
-open scoped Polynomial
+open scoped Polynomial Matrix
 
 example : ((unscaledLocalSubstitution 0 (Polynomial.C (0 : ℚ)) Polynomial.X
     (SourceColumn.polynomial (R := ℚ[X]) ⟨0, 2, ![]⟩)).coeff 0).natDegree ≤ 2 := by
@@ -33,12 +38,18 @@ private def matrixColumnY : Fin 1 → SourceColumn 0 := fun _ => ⟨0, 1, ![]⟩
 private def matrixRowZero : Fin 1 × LowContactIndex 0 1 :=
   (0, ⟨0, by simp [localContactOrder]⟩)
 
-example :
-    localConstraintMatrix 1 (fun _ : Fin 1 => (0 : ℚ)) (fun _ => 1)
-        matrixColumnY matrixRowZero 0 =
-      (localConstraintAt 1 0 1 (matrixColumnY 0).polynomial).coeff 0 :=
-  localConstraintMatrix_apply_eq_localConstraintAt_coeff 1 (fun _ : Fin 1 => 0) (fun _ => 1)
-    matrixColumnY matrixRowZero 0
+example : localConstraintMatrix 1 (fun _ : Fin 1 => (0 : ℚ)) (fun _ => 1)
+    matrixColumnY matrixRowZero 0 = 1 := by
+  rw [localConstraintMatrix_apply]
+  rw [show matrixRowZero.2.1 = (0 : LocalVariable 0 →₀ ℕ) by rfl]
+  have hcolumn : (matrixColumnY 0).polynomial =
+      (X (some 0) : DifferentialPolynomial ℚ 0) := by
+    simpa [matrixColumnY, sourceMonomial] using
+      (SourceColumn.polynomial_eq_sourceMonomial (matrixColumnY 0))
+  rw [hcolumn]
+  rw [unscaledLocalSubstitution_Y_zero]
+  rw [← constantCoeff_eq]
+  simp [localCorrection]
 
 example : localConstraintMatrix 1 (fun _ : Fin 1 => (0 : ℚ)) (fun _ => 0)
     matrixColumnY matrixRowE 0 = 0 :=
@@ -50,19 +61,6 @@ example :
       ∑ i ∈ ({0, 1} : Finset (Fin 2)),
         ![1, 2] i * (curveInterpolationHeight 3 4 + 1 - 3 * ![0, 2] i) :=
   curveInterpolationHeight_preserves_certificate _ ![1, 2] ![0, 2] 1 4 3 (by decide)
-
-private theorem XMemWeightedSupport :
-    (X none : DifferentialPolynomial ℚ 1) ∈ weightedSupportSpace ℚ 1 1 0 2 Nat.one_pos := by
-  rw [mem_weightedSupportSpace_iff, support_X]
-  intro u hu
-  obtain rfl := Finset.mem_singleton.mp hu
-  simp [WeightedSupportEligible, fullHigherJetWeight, totalJetDegree, Finsupp.weight_single,
-    jetHigherWeight, jetDegreeWeight]
-
-example :
-    (weightedSupportPointTranslation (W := 0) (L := 2) Nat.one_pos (0 : ℚ) 0
-        ⟨X none, XMemWeightedSupport⟩ : DifferentialPolynomial ℚ 1) = C 0 + X none := by
-  simp
 
 private def sourceColumns : Fin 2 → SourceColumn 1 := ![⟨0, 1, ![0]⟩, ⟨1, 0, ![0]⟩]
 
@@ -79,3 +77,75 @@ example : MvPolynomial.map (Int.castRingHom (ZMod 2))
   refine SourceColumn.map_interpolant_ne_zero sourceColumnsInjective _ fun h => ?_
   have h1 : ((3 : ℤ) : ZMod 2) = 0 := by simpa using congrFun h 1
   exact absurd h1 (by decide)
+
+private theorem onePointLocalRank_le_two :
+    Module.finrank ℚ (LinearMap.range
+      (weightedSupportLocalConstraint (R := ℚ) (d := 1) (W := 0) (L := 2) 1
+        Nat.one_pos 0 0)) ≤ 2 := by
+  calc
+    _ ≤ localResidualCoordinateBudget 1 1 0 ⌈(2 : ℝ) / 1⌉₊ := by
+      simpa using (finrank_weightedSupportLocalConstraint_le (F := ℚ) (d := 1) (D := 1)
+        (W := 0) (L := 2) (m := 1) (by norm_num) Nat.one_pos (0 : ℚ) 0)
+    _ ≤ 2 := by
+      norm_num [localResidualCoordinateBudget, contactThreshold, Finset.natWeightedSimplex]
+
+example :
+    ((localConstraintMatrix 1 (fun _ : Fin 1 => Polynomial.C (0 : ℚ))
+      (fun _ => receivedLine (0 : ℚ) 0)
+      (weightedSupportColumns (d := 1) (W := 0) (L := 2) Nat.one_pos)).map
+        (algebraMap ℚ[X] (RatFunc ℚ))).rank ≤ 2 := by
+  calc
+    _ ≤ 1 * Module.finrank ℚ (LinearMap.range
+        (weightedSupportLocalConstraint (R := ℚ) (d := 1) (W := 0) (L := 2) 1
+          Nat.one_pos 0 0)) := by
+      exact receivedLine_matrix_rank_le_base_actual (F := ℚ) (d := 1) (D := 1) (W := 0)
+        (L := 2) (m := 1) Nat.one_pos (fun _ => 0) (fun _ => 0) (fun _ => 0) _
+        (weightedSupportColumns_eligible (d := 1) (D := 1) (W := 0) (L := 2) Nat.one_pos)
+    _ ≤ 2 := by simpa using onePointLocalRank_le_two
+
+private def receivedLineColumns : Fin 1 → SourceColumn 1 := fun _ => ⟨0, 0, fun _ => 0⟩
+
+private theorem receivedLineColumnsInjective : Function.Injective receivedLineColumns := by
+  intro i j h
+  fin_cases i
+  fin_cases j
+  rfl
+
+private theorem receivedLineMatrixRankZero :
+    ((localConstraintMatrix 0 (fun _ : Fin 1 => Polynomial.C (0 : ℚ))
+      (fun _ => receivedLine (0 : ℚ) 0) receivedLineColumns).map
+        (algebraMap ℚ[X] (RatFunc ℚ))).rank ≤ 0 := by
+  have hempty : IsEmpty (Fin 1 × LowContactIndex 1 0) := ⟨fun row => by
+    exact (Nat.not_lt_zero _ row.2.property).elim⟩
+  have hmatrix : localConstraintMatrix 0 (fun _ : Fin 1 => Polynomial.C (0 : ℚ))
+      (fun _ => receivedLine (0 : ℚ) 0) receivedLineColumns = 0 := by
+    ext row j n
+    exact False.elim (hempty.false row)
+  rw [hmatrix]
+  simp
+
+example : ∃ v : Fin 1 → ℚ[X], v ≠ 0 ∧
+    (∀ j, v j ∈ Polynomial.degreeLT ℚ (1 - (receivedLineColumns j).y₀)) ∧
+    Ideal.span (Set.range v) = ⊤ ∧
+    (∀ {S : Type*} [CommSemiring S] [Nontrivial S] (ψ : ℚ[X] →+* S),
+      MvPolynomial.map ψ (SourceColumn.interpolant receivedLineColumns v) ≠ 0) ∧
+    ∀ _ : Fin 1, SatisfiesLocalConstraints 0 (Polynomial.C (0 : ℚ))
+      (receivedLine (0 : ℚ) 0) (SourceColumn.interpolant receivedLineColumns v) := by
+  exact exists_primitive_receivedLine_interpolant_of_column_height (d := 1) (m := 0) (h := 0)
+    (fun _ : Fin 1 => (0 : ℚ)) (fun _ => 0) (fun _ => 0) receivedLineColumns
+    receivedLineColumnsInjective (algebraMap ℚ[X] (RatFunc ℚ))
+    (IsFractionRing.injective ℚ[X] (RatFunc ℚ)) (s := 0) receivedLineMatrixRankZero
+    (by decide)
+
+example : ∃ v : Fin 1 → ℚ[X], v ≠ 0 ∧
+    (∀ j, (v j).natDegree ≤ 0 * 0 / (1 - 0)) ∧
+    Ideal.span (Set.range v) = ⊤ ∧
+    (∀ {S : Type*} [CommSemiring S] [Nontrivial S] (ψ : ℚ[X] →+* S),
+      MvPolynomial.map ψ (SourceColumn.interpolant receivedLineColumns v) ≠ 0) ∧
+    ∀ _ : Fin 1, SatisfiesLocalConstraints 0 (Polynomial.C (0 : ℚ))
+      (receivedLine (0 : ℚ) 0) (SourceColumn.interpolant receivedLineColumns v) := by
+  exact exists_primitive_receivedLine_interpolant_of_rank_le (d := 1) (m := 0) (ν := 0)
+    (fun _ : Fin 1 => (0 : ℚ)) (fun _ => 0) (fun _ => 0) receivedLineColumns
+    receivedLineColumnsInjective (by intro j; fin_cases j; decide)
+    (algebraMap ℚ[X] (RatFunc ℚ)) (IsFractionRing.injective ℚ[X] (RatFunc ℚ))
+    (s := 0) receivedLineMatrixRankZero (by decide)

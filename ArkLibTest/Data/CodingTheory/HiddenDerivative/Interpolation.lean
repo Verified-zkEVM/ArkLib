@@ -94,6 +94,12 @@ end CertificatesTest
 
 open CertificatesTest
 
+private theorem zeroMessageAgrees : 2 ≤ Code.agree
+    (ReedSolomon.evalOnPoints zmodDomain (0 : MessagePolynomial (ZMod 5) 2))
+    (fun _ : Fin 2 ↦ (0 : ZMod 5)) := by
+  rw [Code.agree]
+  simp
+
 private theorem hdD₁₂ : (1 : ℕ) < 2 := by decide
 
 private theorem XMemExactSpace : (X none : DifferentialPolynomial ℚ 1) ∈
@@ -151,23 +157,13 @@ example : (zmodCertificate 0).ambientDim - 1 < 5 ∧
 
 example : differentialSpecialization (constantCertificate zmodDomain 0).interpolant
     (0 : Polynomial (ZMod 5)) = 0 := by
-  have hAgreement : 2 ≤ Code.agree
-      (ReedSolomon.evalOnPoints zmodDomain (0 : MessagePolynomial (ZMod 5) 2))
-      (fun _ : Fin 2 ↦ (0 : ZMod 5)) := by
-    rw [Code.agree]
-    simp
-  exact (constantCertificate zmodDomain 0).specializes_to_zero 0 hAgreement
+  exact (constantCertificate zmodDomain 0).specializes_to_zero 0 zeroMessageAgrees
 
 example :
     ∃ solution : BoundedSolution (zmodCertificate 0).interpolant 1,
       solution.polynomial = (0 : Polynomial (ZMod 5)) := by
-  have hAgreement : 2 ≤ Code.agree
-      (ReedSolomon.evalOnPoints zmodDomain (0 : MessagePolynomial (ZMod 5) 2))
-      (fun _ : Fin 2 ↦ (0 : ZMod 5)) := by
-    rw [Code.agree]
-    simp
   exact ReedSolomon.HiddenDerivative.InterpolationCertificate.exists_solution
-    (zmodCertificate 0).toInterpolationCertificate ⟨0, hAgreement⟩
+    (zmodCertificate 0).toInterpolationCertificate ⟨0, zeroMessageAgrees⟩
 
 example :
     (differentialSpecialization (X none : DifferentialPolynomial ℚ 1)

@@ -62,6 +62,35 @@ example : 21 ≤ Module.finrank ℚ (weightedSupportSpace ℚ 1 1 5 16 one_pos) 
   have h20 : (20 : ℝ) < Module.finrank ℚ (weightedSupportSpace ℚ 1 1 5 16 one_pos) := by linarith
   exact_mod_cast h20
 
+example :
+    ((1 : ℕ) : ℝ) ^ (10000 - 1) / ((10000 - 1).factorial : ℝ) ^ 2 *
+        ((1 : ℕ) : ℝ) / 6 * (1 * 1) ^ 3 *
+        ((5 / 8) ^ 3 + (4147 / 2160) *
+          (((1 : ℕ) : ℝ) / (((10000 : ℕ) : ℝ) * (1 * 1))) ^ 2) ≤
+      Module.finrank ℚ (weightedSupportSpace ℚ 1 10000 1 2 one_pos) := by
+  have hharmonic : (harmonic 9999 : ℝ) ≤ 9999 := by
+    calc
+      (harmonic 9999 : ℝ) ≤ 1 + Real.log 9999 := harmonic_le_one_add_log _
+      _ ≤ 1 + ((9999 : ℝ) - 1) := by
+        have hlog : Real.log (9999 : ℝ) ≤ 9999 - 1 :=
+          Real.log_le_sub_one_of_pos (x := 9999) (by norm_num)
+        linarith
+      _ = 9999 := by norm_num
+  have hmean' : (harmonic 9999 : ℝ) / ((10000 : ℕ) : ℝ) ≤ 11 / 8 := by
+    nlinarith [hharmonic]
+  have hmean : ((1 : ℕ) : ℝ) * (harmonic (10000 - 1) : ℝ) / ((10000 : ℕ) : ℝ) ≤
+      (1 + 3 * (1 : ℝ) / 8) * 1 := by
+    rw [show (10000 : ℕ) - 1 = 9999 by omega, Nat.cast_one, one_mul]
+    have hconst : (1 : ℝ) + 3 * 1 / 8 = 11 / 8 := by norm_num
+    rw [hconst, mul_one]
+    exact hmean'
+  have hratio : ((1 : ℕ) : ℝ) / ((10000 : ℕ) * (1 * 1)) ≤ 10 / 27 := by norm_num
+  have h := weighted_dimension_lower (F := ℚ) (D := 1) (d := 10000) (W := 1)
+    (by norm_num) (by norm_num) (1 : ℝ) 1 hmean hratio
+  have hcutoff : (1 : ℝ) * ((1 : ℕ) : ℝ) * (1 + 1) = 2 := by norm_num
+  rw [hcutoff] at h
+  exact h
+
 private theorem eightLeCardWeightedSupportExponents :
     8 ≤ #(weightedSupportExponents 2 1 0 4 two_pos) := by
   refine le_trans (le_of_eq ?_) (sum_count_le_card_weightedSupportExponents (d := 1) (W := 0)
@@ -87,6 +116,14 @@ example : ∃ Q : DifferentialPolynomial ℚ 1, Q ≠ 0 ∧
   exists_nonzero_weightedSupport_interpolant one_pos two_pos (fun _ : Fin 3 => (0 : ℚ))
     (fun _ : Fin 3 => (0 : ℚ)) threePointSurplus
 
+example : ∃ Q : DifferentialPolynomial ℚ 1, Q ≠ 0 ∧
+    Q ∈ exactInterpolationSpace ℚ 2 4 1 1 2 0 (by norm_num) ∧
+      ∀ _ : Fin 3, SatisfiesLocalConstraints 1 0 0 Q := by
+  exact exists_nonzero_exact_interpolant_of_weightedSupport_surplus
+    (A := 4) (M := 2) (d := 1) (D := 2) (W := 0) (L := 4)
+    (by norm_num) (by norm_num) (by norm_num) (fun _ : Fin 3 => (0 : ℚ)) (fun _ => 0)
+    (by norm_num) (by norm_num) threePointSurplus
+
 example : Module.finrank ℚ (LinearMap.range
     (weightedSupportLocalConstraint (D := 2) (d := 1) (W := 0) (L := 4) 2 (by norm_num)
       (0 : ℚ) (0 : ℚ))) ≤ 4 := by
@@ -97,14 +134,6 @@ example : Module.finrank ℚ (LinearMap.range
     (m := 2) one_pos (by norm_num) (0 : ℚ) (0 : ℚ)
   rw [hceil] at h
   exact h.trans (by decide)
-
-private theorem natWeightedSimplexFinZero (W : ℕ) :
-    natWeightedSimplex (fun i : Fin (1 - 1) => i.val + 1) W = {fun _ => 0} := by
-  ext c
-  have hc : c = fun _ => 0 := funext fun i => Fin.elim0 i
-  subst hc
-  simp only [Finset.mem_singleton, iff_true]
-  exact mem_filter.mpr ⟨Fintype.mem_piFinset.mpr fun i => Fin.elim0 i, by simp⟩
 
 private theorem ceilTwentyOneDivTen : ⌈(21 / 10 : ℝ)⌉₊ = 3 := by
   rw [Nat.ceil_eq_iff (by norm_num)]
@@ -120,8 +149,9 @@ example :
   have h := localResidualCoordinateBudget_le_positivePart_sum 1 2 0 (21 / 10)
   have hc0 : contactThreshold 2 2 0 = 1 := by decide
   have hc1 : contactThreshold 2 2 1 = 1 := by decide
-  simp only [ceilTwentyOneDivTen, hb, natWeightedSimplexFinZero, sum_range_succ,
-    range_zero, sum_empty, sum_singleton, Nat.reduceAdd, hc0, hc1] at h ⊢
+  simp only [ceilTwentyOneDivTen, hb, sum_range_succ,
+    range_zero, sum_empty, Nat.reduceAdd, hc0, hc1,
+    natWeightedSimplex] at h ⊢
   norm_num at h ⊢
 
 example : (1 : ℝ) ≤ 567 / 128 := by

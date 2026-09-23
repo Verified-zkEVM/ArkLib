@@ -9,6 +9,7 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.ConstraintM
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.GradedRank
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.IntermediateSpace
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.RemainderMap
+import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.ZeroOrder
 
 /-!
 # Local interpolation acceptance cases
@@ -57,6 +58,9 @@ example : (unscaledLocalSubstitution (R := ℤ) 1 0 0 (X (some 0))).IsWeightedHo
 example : Module.finrank ℚ (localIntermediateSpace ℚ 1 2 1 0) = 6 := by
   rw [finrank_localIntermediateSpace (by norm_num)]
   decide
+
+example : Module.finrank ℚ (localConstraintAt (d := 0) 2 (0 : ℚ) 0).range ≤ 3 := by
+  exact (finrank_range_localConstraintAt_zeroOrder_le 2 (0 : ℚ) 0).trans (by decide)
 
 example :
     (normalizedLocalConstraintAt (R := ℤ) (d := 1) 1 0 2 (X (some 0) - C 2) = 0 ↔
