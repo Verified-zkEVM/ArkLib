@@ -712,6 +712,14 @@ equality `rank_map_supportedLocalConstraintMatrix` for any ring hom into a field
 `constraintMatrix_eq_zero_of_source_grade_lt_row_grade` is now
 `localConstraintMatrix_eq_zero_of_lt`.
 
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/CurveCertificate.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Symbolic/CurveStages.lean` and `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Symbolic/RankCertificate.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`Certificate`, `Certificate.Q`, `Certificate.totalJetDegree_le`, and `Certificate.specialization_sound` retain their names; `challengeHeight_le` is represented by `challengeDegree_le`. `Certificate.nonzero` retains its name and result, derived from specialization soundness. `jetWeight_le` is replaced by `Certificate.jetTotalDegree_le`, a supporting bound for the current separant-chain API. `Certificate.exists_separant_chain` is renamed `Certificate.exists_separantChain` and generalized to the destination `SeparantChain` API. `Certificate.exists_exceptional_stage_coverage` is generalized to arbitrary finite point types and the destination separant-chain representation. The monomial-rank constructor is generalized from finite ordinals to arbitrary finite point and column types, and from the rational-function-field map to an injective ring homomorphism into any field; the rank constructor uses that monomial-rank constructor.
+
+The interpolant total-jet-degree bounds are moved to `SourceColumn` and generalized to arbitrary finite column types; coefficient maps for the mapped bound target commutative semirings. The existing `SourceColumn.coeff_interpolant_natDegree_le` is generalized from `Fin N` to any finite column type and reused by the rank-based constructor. `SatisfiesLocalConstraints.map` is added to transport local constraints through coefficient maps. Separate `challengeHeight_le` and `jetWeight_le` aliases are not added because their bounds are available through `challengeDegree_le` and `jetTotalDegree_le`. `Matrix.kernel_height_lt_div_margin` is deferred to the RateHeight port because it has no consumer in this branch. Source support-certificate and jet-prefix imports are replaced by existing received-curve, source-column, and separant-chain APIs.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/ReceivedCurve.lean`
 
 From `Symbolic/ReceivedLine.lean` and `Symbolic/ReceivedCurve.lean` under
@@ -3912,6 +3920,14 @@ declarations are renamed to
 `MvPolynomial.bidegreeHypersurface_incidence_off_excluded_sharp_one` and
 `MvPolynomial.bidegreeHypersurface_incidence_off_excluded_sharp_two`; both are generalized by
 removing `A ≤ n`. Nothing was deferred or left unported.
+
+## `ArkLib/ToMathlib/RingTheory/Nullstellensatz/CappedBidegreeIncidence.lean`
+
+Ported from `ArkLib/ToMathlib/AlgebraicGeometry/Incidence/DerivativeBidegreeExcluded.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`derivativeBidegreeHypersurface_source_incidence_off_excluded_hybrid_two_of_lt` and `derivativeBidegreeHypersurface_source_incidence_off_excluded_hybrid_two` are covered by `MvPolynomial.cappedBidegreeHypersurface_incidence_off_excluded_hybrid_two`. The destination theorem is generalized to every positive `c` and drops the assumptions `r ≤ j` and `A ≤ n`. Neither source theorem is omitted.
+
+Acceptance cases in `ArkLibTest/ToMathlib/RingTheory/Nullstellensatz.lean` include a rational point on a positive-dimensional coordinate line, with `n = 4`, `A = 2`, `L = 1`, and `k = 0`. The merged acceptance file retains its principal-open, affine-Hilbert, and zero-locus examples.
 
 ## `ArkLib/ToMathlib/RingTheory/Nullstellensatz/DimensionSensitiveIncidence.lean`
 
