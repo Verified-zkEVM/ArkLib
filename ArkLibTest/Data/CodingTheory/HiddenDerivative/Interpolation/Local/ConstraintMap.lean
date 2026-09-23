@@ -18,6 +18,13 @@ checked over `ℤ`, which is not a field, and the global map over the infinite i
 
 open MvPolynomial PolynomialDifferential ReedSolomon.HiddenDerivative
 
+/-- Local constraints commute with the coefficient embedding from integers to rationals. -/
+example (d m : ℕ) (center received : ℤ) (Q : DifferentialPolynomial ℤ d) :
+    MvPolynomial.map (Int.castRingHom ℚ) (localConstraintAt m center received Q) =
+      localConstraintAt m (center : ℚ) (received : ℚ)
+        (MvPolynomial.map (Int.castRingHom ℚ) Q) :=
+  map_localConstraintAt (Int.castRingHom ℚ) m center received Q
+
 /-- `Y₀ - received` satisfies the multiplicity-one constraints at every point. -/
 example (d : ℕ) (center received : ℚ) :
     SatisfiesLocalConstraints (d := d) 1 center received (X (some 0) - C received) := by

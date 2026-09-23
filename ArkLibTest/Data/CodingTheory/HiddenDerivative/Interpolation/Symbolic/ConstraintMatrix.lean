@@ -37,6 +37,12 @@ theorem entry_row₀ {R : Type*} [CommRing R] (r : R) :
   rw [SourceColumn.polynomial_eq_sourceMonomial, ← constantCoeff_eq]
   simp [colY, sourceMonomial, localCorrection]
 
+/-- The matrix entry is the constant coefficient of the projected local constraint. -/
+example (r : ℚ) :
+    localConstraintMatrix 1 (fun _ : Fin 1 ↦ (0 : ℚ)) (fun _ ↦ r) colY row₀ 0 =
+      (localConstraintAt 1 0 r (colY 0).polynomial).coeff 0 :=
+  localConstraintMatrix_apply_eq_localConstraintAt_coeff 1 _ _ colY row₀ 0
+
 /-- With received value `1`, the kernel is zero. -/
 example (v : Fin 1 → ℚ)
     (hv : localConstraintMatrix 1 (fun _ : Fin 1 => (0 : ℚ)) (fun _ => 1) colY *ᵥ v = 0) :
@@ -82,7 +88,8 @@ example (r : ℚ) :
         (RingHom.id ℚ)).rank :=
   rank_map_supportedLocalConstraintMatrix _ 1 _ _ colY
 
-/-- For a received line `f i + Z g i`, every entry in the column of `Y₀^(y₀)` has challenge degree
+/-- For a received line `f i + Z g i`, every entry in the column of `Y₀^(y₀)` has challenge
+degree
 at most `y₀`. -/
 example {F : Type*} [Field F] {d n N : ℕ} (m : ℕ) (centers f g : Fin n → F)
     (columns : Fin N → SourceColumn d) (row : Fin n × LowContactIndex d m) (j : Fin N) :
