@@ -676,30 +676,45 @@ example : jointTotalDegree (initialJetEquation Polynomial.X independentVariableE
   exact jointTotalDegree_initialJetEquation_le Polynomial.X independentVariableEquation 0 1 hjet
     (fun m _ ↦ hcoeff m)
 
-private abbrev parameterizedJetEquation : DifferentialPolynomial (Polynomial ℚ) 1 :=
-  C (Polynomial.X + 1) * X (some (1 : Fin 2))
-
+/-- The equation `y' + t y = 0`, as `Y₁ + t Y₀` over `ℚ[t]`. -/
+private abbrev recursiveEq : DifferentialPolynomial (Polynomial ℚ) 1 :=
+  X (some 1) + C Polynomial.X * X (some 0)
+private theorem recursiveJet_le : jetTotalDegree recursiveEq ≤ 1 := by
+  rw [jetTotalDegree_le_iff]
+  intro u hu
+  rcases Finset.mem_union.mp (support_add hu) with hu | hu
+  · rw [support_X, Finset.mem_singleton] at hu
+    simp [hu, totalJetDegree_eq_sum, Finsupp.single_apply]
+  · rw [C_mul_X_eq_monomial] at hu
+    rw [Finset.mem_singleton.mp (support_monomial_subset hu)]
+    simp [totalJetDegree_eq_sum, Finsupp.single_apply]
+private theorem recursiveHeight : CoeffNatDegreeLE recursiveEq 1 :=
+  ((coeffNatDegreeLE_X _).mono (by norm_num)).add
+    ((coeffNatDegreeLE_C (by simp)).mul (coeffNatDegreeLE_X _))
 /-- The agreement degree bound applies to a positive-length chart with parameter-dependent input. -/
 example :
     jointTotalDegree (taylorAgreementEquationOver (F := ℚ) (Polynomial.C 0)
-      parameterizedJetEquation 1 (Polynomial.C 0)
-        (Polynomial.C 0 + Polynomial.X * Polynomial.C 1)) ≤ 3 := by
-  have hjet : jetTotalDegree parameterizedJetEquation ≤ 1 := by
-    rw [jetTotalDegree, parameterizedJetEquation, C_mul_X_eq_monomial,
-      weightedTotalDegree_monomial]
-    · simp [jetDegreeWeight, Finsupp.weight_single]
-    · simpa using Polynomial.X_add_C_ne_zero (1 : ℚ)
-  have hQ : CoeffNatDegreeLE parameterizedJetEquation 1 :=
-    ((coeffNatDegreeLE_C (p := Polynomial.X + 1) (by simp)).mul (coeffNatDegreeLE_X _))
-  have _ := And.intro
-    (initialJetEquation_mem_restrictBidegree 0 parameterizedJetEquation 1 1 hQ hjet)
-    (initialJetSeparant_mem_restrictBidegree 0 parameterizedJetEquation 1 1 hQ hjet)
-  have _ := taylorAgreementEquationOver_mem_restrictBidegree (center := 0) (x := 0)
-    Polynomial.X parameterizedJetEquation 1 1 1 1 2 (taylorExponentSufficient_two_mul 1 1)
-    (by simp) hQ (by norm_num) hjet
-  simpa using
-    jointTotalDegree_taylorAgreementEquationOver_le_of_coeffNatDegreeLE (F := ℚ) (r := 1)
-      0 0 0 1 parameterizedJetEquation 1 1 1 hjet hQ
+      recursiveEq 1 (Polynomial.C 1)
+      (Polynomial.C 0 + Polynomial.X * Polynomial.C 1)) ≤ 3 := by
+  simpa using jointTotalDegree_taylorAgreementEquationOver_le_of_coeffNatDegreeLE
+    (F := ℚ) (r := 1) 0 1 0 1 recursiveEq 1 1 1 recursiveJet_le recursiveHeight
+private abbrev flat (p : MvPolynomial (Fin 2) (Polynomial ℚ)) :=
+  (optionEquivRight ℚ (Fin 2)).symm p
+private abbrev rect (h v : ℕ) := restrictBidegree (Fin 2) ℚ h v
+example : flat (initialJetEquation (Polynomial.C 0) recursiveEq) ∈ rect 1 1 ∧
+    flat (initialJetSeparant (Polynomial.C 0) recursiveEq) ∈ rect 1 0 := by
+  exact ⟨initialJetEquation_mem_restrictBidegree 0 recursiveEq 1 1 recursiveHeight
+      recursiveJet_le,
+    initialJetSeparant_mem_restrictBidegree 0 recursiveEq 1 1 recursiveHeight recursiveJet_le⟩
+
+example :
+    (optionEquivRight ℚ (Fin 2)).symm
+      (taylorAgreementEquationOver (F := ℚ) (Polynomial.C 0) recursiveEq 1
+        (Polynomial.C 1) (Polynomial.C 0 + Polynomial.X * Polynomial.C 1)) ∈
+      restrictBidegree (Fin 2) ℚ 3 1 := by
+  simpa using taylorAgreementEquationOver_mem_restrictBidegree (F := ℚ) (r := 1)
+    0 1 Polynomial.X recursiveEq 1 1 1 1 2 (taylorExponentSufficient_two_mul 1 1)
+    (by simp) recursiveHeight (by norm_num) recursiveJet_le
 
 /-- For `Y₁` at the regular jet `(1, 0)`, the symbolic cuts force coefficient `1` to vanish. -/
 example :
@@ -750,42 +765,27 @@ example :
   · simpa using hSparse 1 (by decide)
 
 /-! ### Joint-degree numerator bound -/
-
-/-- The equation `y' + t y = 0`, as `Y₁ + t Y₀` over `ℚ[t]`. -/
-private abbrev positiveScaledEquation : DifferentialPolynomial (Polynomial ℚ) 1 :=
-  X (some 1) + C Polynomial.X * X (some 0)
-
-private theorem jetTotalDegree_positiveScaledEquation_le :
-    jetTotalDegree positiveScaledEquation ≤ 1 := by
-  rw [jetTotalDegree_le_iff]
-  intro u hu
-  rcases Finset.mem_union.mp (support_add hu) with hu | hu
-  · rw [support_X, Finset.mem_singleton] at hu
-    simp [hu, totalJetDegree_eq_sum, Finsupp.single_apply]
-  · rw [C_mul_X_eq_monomial] at hu
-    rw [Finset.mem_singleton.mp (support_monomial_subset hu)]
-    simp [totalJetDegree_eq_sum, Finsupp.single_apply]
-
-private theorem coeffNatDegreeLE_positiveScaledEquation :
-    CoeffNatDegreeLE positiveScaledEquation 1 :=
-  ((coeffNatDegreeLE_X _).mono (by norm_num)).add
-    ((coeffNatDegreeLE_C (by simp)).mul (coeffNatDegreeLE_X _))
-
 /-- At index `2`, the numerator for `Y₁ + t Y₀` at center `0` has joint degree at most `2`. -/
 example :
     jointTotalDegree
-      (rationalTaylorNumeratorOver ℚ (Polynomial.C 0) positiveScaledEquation 2) ≤ 2 := by
-  have _ := And.intro
-    (coeffNatDegreeLE_rationalTaylorNumeratorOver 0 positiveScaledEquation 1
-      coeffNatDegreeLE_positiveScaledEquation 2)
-    (totalDegree_rationalTaylorNumeratorOver_le_of_jet (center := Polynomial.C 0)
-      positiveScaledEquation 1 (by norm_num) jetTotalDegree_positiveScaledEquation_le 2)
-  have _ := commonTaylorNumeratorOver_mem_restrictBidegree 0 positiveScaledEquation 1 1 3 6
-    (taylorExponentSufficient_two_mul 1 3) coeffNatDegreeLE_positiveScaledEquation
-    (by norm_num) jetTotalDegree_positiveScaledEquation_le ⟨2, by decide⟩
+      (rationalTaylorNumeratorOver ℚ (Polynomial.C 0) recursiveEq 2) ≤ 2 := by
   simpa using jointTotalDegree_rationalTaylorNumeratorOver_le_of_coeffNatDegreeLE 0
-    positiveScaledEquation 1 1 jetTotalDegree_positiveScaledEquation_le
-    coeffNatDegreeLE_positiveScaledEquation 2
+    recursiveEq 1 1 recursiveJet_le recursiveHeight 2
+private abbrev padded : MvPolynomial (Fin 2) (Polynomial ℚ) :=
+  commonTaylorNumeratorOver ℚ (Polynomial.C 0) recursiveEq 6 2
+
+/-- At index `2`, the padded common numerator satisfies its degree and bidegree bounds. -/
+example :
+    CoeffNatDegreeLE padded 6 ∧ padded.totalDegree ≤ 1 ∧ flat padded ∈ rect 6 1 := by
+  exact ⟨coeffNatDegreeLE_commonTaylorNumeratorOver_le 0 recursiveEq 1 6 2
+      (by norm_num) recursiveHeight,
+    totalDegree_commonTaylorNumeratorOver_le_of_jet_and_exponent
+      (center := Polynomial.C 0) recursiveEq 1 3 6 (by norm_num)
+      (taylorExponentSufficient_two_mul 1 3) recursiveJet_le
+      ⟨2, by decide⟩,
+    commonTaylorNumeratorOver_mem_restrictBidegree 0 recursiveEq 1 1 3 6
+      (taylorExponentSufficient_two_mul 1 3) recursiveHeight
+      (by norm_num) recursiveJet_le ⟨2, by decide⟩⟩
 
 /-! ### Shifted jets -/
 
