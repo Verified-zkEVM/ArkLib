@@ -5,6 +5,7 @@ Authors: Quang Dao
 -/
 
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.BranchwiseRate
+import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.FiniteRateParameters
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.HybridRateEnvelope
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.RoundedCounts
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.StageComparison
@@ -31,6 +32,13 @@ private theorem half_rate_threshold_lt_three_four :
   refine (firstOrderRateThreshold_lt_sqrt (by norm_num) (by norm_num)).trans ?_
   rw [Real.sqrt_lt' (by norm_num)]
   norm_num
+
+private theorem lowRate_eighth_regime : FirstOrderLowRateRegime (1 / 8) := by
+  rw [firstOrderLowRateRegime_iff_lt_rateSwitch, firstOrderRateSwitch]
+  have hsqrt : Real.sqrt 13 < 29 / 8 := by
+    rw [Real.sqrt_lt' (by norm_num)]
+    norm_num
+  linarith
 
 /-! ### Rate bounds and branch selection -/
 
@@ -75,6 +83,30 @@ example : FirstOrderLowRateRegime (1 / 10) ∧ 1 / 2 < firstOrderLowRateBeta (1 
     linarith
   exact ⟨hlow, half_lt_firstOrderLowRateBeta (by norm_num) hlow,
     rate_lt_firstOrderLowRateThreshold (by norm_num) hlow⟩
+
+/-- At rate `1/8` and agreement `1`, the low-rate source-minus-rank margin is positive. -/
+example : 0 < firstOrderSourceDensity (1 / 8) 1 (firstOrderLowRateBeta (1 / 8)) -
+    firstOrderRankDensity (firstOrderLowRateBeta (1 / 8)) := by
+  apply firstOrderLowRate_margin_pos (by norm_num) lowRate_eighth_regime
+  have ht : firstOrderLowRateScale (1 / 8) = 1 / 4 := by
+    rw [firstOrderLowRateScale,
+      show (1 / 8 : ℝ) / 2 = (1 / 4 : ℝ) ^ 2 by norm_num,
+      Real.sqrt_sq (by norm_num : 0 ≤ (1 / 4 : ℝ))]
+  have hu : firstOrderLowRateStationaryU (1 / 8) < 1 := by
+    by_contra h
+    have hge : 1 ≤ firstOrderLowRateStationaryU (1 / 8) := le_of_not_gt h
+    have hc := firstOrderLowRateStationaryU_cubic (rho := (1 / 8 : ℝ)) (by norm_num)
+    rw [ht] at hc
+    unfold firstOrderStationaryCubic at hc
+    have hbound : 4 ≤ firstOrderLowRateStationaryU (1 / 8) ^ 2 *
+        (firstOrderLowRateStationaryU (1 / 8) + 3) := by
+      calc
+        4 = (1 : ℝ) ^ 2 * (1 + 3) := by norm_num
+        _ ≤ firstOrderLowRateStationaryU (1 / 8) ^ 2 *
+            (firstOrderLowRateStationaryU (1 / 8) + 3) := by gcongr
+    linarith
+  rw [firstOrderLowRateThreshold_eq_scale_mul_one_add (by norm_num), ht]
+  nlinarith [hu]
 
 /-- The stationary root at rate `2` satisfies its defining cubic. -/
 example : firstOrderStationaryCubic (firstOrderLowRateStationaryU 2) =
@@ -146,11 +178,49 @@ example : (2 : ℝ) ^ 3 * ((1 / 2 : ℝ) * 1 ^ 2 / (2 * (1 / 2)) -
   cube_mul_sourceDensity_le_firstOrderSourceCount (by norm_num) (by norm_num)
     (by norm_num) (by norm_num) (by norm_num)
 
-/-- For length `1`, rate and agreement `1`, the source count equals the interpolation dimension. -/
-example : (1 : ℕ) * firstOrderSourceCount 1 1 1 0 0 ≤
-    firstOrderDimensionCount 0 1 1 0 0 :=
-  firstOrderSourceCount_mul_le_firstOrderDimensionCount (n := 1) (D := 0) (A := 1)
-    (m := 1) (M := 0) (mu := 0) (by norm_num) (by norm_num)
+/-! ### Finite rate parameters -/
+
+private def concreteFiniteParameters : FirstOrderFiniteRateParameters (1 / 2 : ℝ) (3 / 4 : ℝ) :=
+  ⟨4, by norm_num, by norm_num [FirstOrderFiniteRateTest, firstOrderRateDerivativeCap,
+    firstOrderRateJetDegree, firstOrderRateBeta, firstOrderSourceCount, firstOrderRankCount,
+    Finset.sum_range_succ]⟩
+
+/-- The rounded finite certificate at rate `1/2` and agreement `3/4` has multiplicity `4`. -/
+example : concreteFiniteParameters.multiplicity = 4 ∧
+    concreteFiniteParameters.derivativeCap = 1 ∧ concreteFiniteParameters.jetDegree = 6 ∧
+    concreteFiniteParameters.sourceCount = 18 ∧ concreteFiniteParameters.rankCount = 17 := by
+  norm_num [FirstOrderFiniteRateParameters.derivativeCap,
+    FirstOrderFiniteRateParameters.jetDegree, FirstOrderFiniteRateParameters.sourceCount,
+    FirstOrderFiniteRateParameters.rankCount, concreteFiniteParameters,
+    firstOrderRateDerivativeCap, firstOrderRateJetDegree, firstOrderRateBeta,
+    firstOrderSourceCount, firstOrderRankCount, Finset.sum_range_succ]
+
+/-- The rational finite test computes the same strict surplus, `17 < 18`. -/
+example : FirstOrderRationalFiniteTest (1 / 2 : ℚ) (3 / 4 : ℚ) 4 := by
+  norm_num [FirstOrderRationalFiniteTest, firstOrderRationalSourceCount,
+    firstOrderRankCount, Finset.sum_range_succ]
+
+/-- At the concrete certificate, the scaled kernel-height estimate is its challenge degree `102`. -/
+example : 1 * concreteFiniteParameters.rankCount * concreteFiniteParameters.jetDegree /
+      (18 - 1 * concreteFiniteParameters.rankCount) ≤ concreteFiniteParameters.challengeDegree := by
+  have hsurplus := concreteFiniteParameters.sourceCount_gt_rankCount
+  have h := scaledKernelHeight_le_floor (n := 1) (N := 18)
+    (r := concreteFiniteParameters.rankCount) (mu := concreteFiniteParameters.jetDegree) hsurplus (by
+      norm_num [FirstOrderFiniteRateParameters.sourceCount, concreteFiniteParameters,
+        FirstOrderFiniteRateParameters.derivativeCap, FirstOrderFiniteRateParameters.jetDegree,
+        firstOrderRateDerivativeCap, firstOrderRateJetDegree, firstOrderRateBeta,
+        firstOrderSourceCount, Finset.sum_range_succ])
+  change 1 * concreteFiniteParameters.rankCount * concreteFiniteParameters.jetDegree /
+      (18 - 1 * concreteFiniteParameters.rankCount) ≤
+        max 1 ⌊(concreteFiniteParameters.rankCount : ℝ) * concreteFiniteParameters.jetDegree /
+          (concreteFiniteParameters.sourceCount - concreteFiniteParameters.rankCount)⌋₊
+  exact h.trans (le_max_right _ _)
+
+/-- At rate `1/2`, agreement `3/4`, block length `4`, the scaled source count is at most `91`. -/
+example :
+    4 * firstOrderSourceCount (1 / 2) (3 / 4) 4 1 6 ≤
+      firstOrderDimensionCount 2 3 4 1 6 := by
+  apply firstOrderSourceCount_mul_le_firstOrderDimensionCount <;> norm_num
 
 /-- The finite source-minus-rank surplus bound at `R = 1/2`, `a = 1`, `β = 1/2`, `m = 2`. -/
 example : (2 : ℝ) ^ 3 *
@@ -168,13 +238,6 @@ example : (2 : ℕ) * max (1 * 1 - (1 / 2 : ℝ) * 0) 0 ≤
   by
     have h := mul_max_rateResidual_le_max_residual (rate := 1 / 2) (a := 1) (n := 2) (D := 1)
       (A := 2) (m := 1) (t := 0) (by norm_num) (by norm_num)
-    norm_num at h ⊢
-
-/-- At `n = 1`, `N₀ = 2`, `N = 2`, the scaled kernel-height quotient is at most `1`. -/
-example : (1 : ℕ) * 1 * 1 / (2 - 1 * 1) ≤ ⌊(1 : ℝ) * 1 / (2 - 1)⌋₊ :=
-  by
-    have h := scaledKernelHeight_le_floor (n := 1) (N := 2) (r := 1) (mu := 1) (N₀ := 2)
-      (by norm_num) (by norm_num)
     norm_num at h ⊢
 
 /-! ### Hybrid constants -/
@@ -212,6 +275,31 @@ example : maxMinFirstOrderExceptionCharge (agreementIncidenceRatio 4 1 3) 4 1 3 
     firstOrderExceptionConstant (agreementIncidenceRatio 4 1 3) 4 1 1 2 0 :=
   maxMinFirstOrderExceptionCharge_le_firstOrderExceptionConstant (by norm_num) (by norm_num)
     (by norm_num) (by norm_num)
+
+/-! ### Rate and polynomial envelopes -/
+
+/-- For rate fraction `1/4` and agreement fraction `1/2`, the incidence ratio is at most `4`. -/
+example : agreementIncidenceRatio 4 1 2 ≤ 1 / ((1 / 2 : ℝ) - 1 / 4) := by
+  exact agreementIncidenceRatio_le_one_div_sub (n := 4) (D := 1) (A := 2)
+    (ρ := 1 / 4) (a := 1 / 2) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num)
+
+/-- The closed list constant at `θ = C = q = n = μ = 1`, `D = M = 0`, is at most `3`. -/
+example : firstOrderListConstant 1 0 1 0 ≤ 3 := by
+  have h := firstOrderListConstant_le_cubic (C := 1) (q := 1) (θ := 1) (n := 1) (D := 0)
+    (μ := 1) (M := 0) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num [stageStaircase])
+  norm_num at h ⊢
+  exact h
+
+/-- The closed exception constant at `θ = C = q = n = h = μ = 1`, `D = M = 0`, is at most `45`. -/
+example : firstOrderExceptionConstant 1 1 0 1 1 0 ≤ 45 := by
+  have h := firstOrderExceptionConstant_le_quintic (C := 1) (q := 1) (θ := 1) (n := 1) (D := 0)
+    (h := 1) (μ := 1) (M := 0) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num [stageStaircase])
+  norm_num at h ⊢
+  exact h
 
 /-! ### Curve charges -/
 

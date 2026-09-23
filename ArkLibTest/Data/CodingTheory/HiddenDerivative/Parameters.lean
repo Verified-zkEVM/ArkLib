@@ -12,6 +12,12 @@ import Mathlib.Data.ZMod.Basic
 open PolynomialDifferential ReedSolomon.HiddenDerivative
 open ReedSolomon.HiddenDerivative.InterpolationRounding
 
+example :
+    exactInterpolationJetDegreeFloorAt 3 2 2 (0 : Fin 2) ≤
+      exactInterpolationJetDegreeFloor 3 2 1 2 :=
+  exactInterpolationJetDegreeFloorAt_le (D := 3) (A := 2) (d := 1) (m := 2)
+    (by norm_num) 0
+
 /-- A nonzero monomial in the exact interpolation space has jet degree below the characteristic. -/
 example :
     jetDegree

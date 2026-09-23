@@ -48,9 +48,6 @@ private theorem cutoff_4_1 : johnsonXCutoff 4 1 (1 / 4) = 7 := by
   rw [johnsonXCutoff, shiftedMultiplicity_4_1, sqrtRho_4_1]
   norm_num
 
-private theorem theta_4_1 : johnsonTheta 4 1 3 = 3 / 2 := by
-  norm_num [johnsonTheta]
-
 private theorem threshold_4_1 : johnsonAgreement 4 1 (1 / 4) * (4 : ℕ) ≤ (3 : ℕ) := by
   rw [agreement_4_1]
   norm_num

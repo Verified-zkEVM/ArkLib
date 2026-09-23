@@ -9,6 +9,7 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.Closed
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.FiniteRatio
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.Gate
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.Moment
+import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.Recipe
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.UniformParameters
 import Mathlib.Analysis.Complex.ExponentialBounds
 
@@ -122,6 +123,38 @@ example : (27 / 20 : ℝ) * 1 * (6 + 1) * Real.exp (-(1 / 1 * Real.log (6 * (6 :
 
 /-! ### Finite ratio -/
 
+/-- At rate and agreement `1`, the normalized weight budget tends to `1 / log 6`. -/
+example : Tendsto (fun multiplicity : ℕ ↦
+    (partitionWeightBudget 1 1 1 multiplicity : ℝ) / multiplicity)
+    atTop (𝓝 (1 / Real.log 6)) :=
+  by simpa using
+    (tendsto_partitionWeightBudget_div (rate := 1) (agreement := 1) (order := 1)
+      (by norm_num) (by norm_num) (by norm_num))
+
+/-- At rate and agreement `1`, the inverse radius tends to `log 6`. -/
+example : Tendsto (partitionInverseRadius 1 1 1) atTop (𝓝 (Real.log 6)) :=
+  by simpa using
+    (tendsto_partitionInverseRadius (rate := 1) (agreement := 1) (order := 1)
+      (by norm_num) (by norm_num) (by norm_num))
+
+/-- At rate and agreement `1`, the finite ratio tends to `9/20`. -/
+example : Tendsto (partitionFiniteRatio 1 1 1) atTop (𝓝 (9 / 20 : ℝ)) := by
+  convert tendsto_partitionFiniteRatio (rate := 1) (agreement := 1) (order := 1)
+    (by norm_num) (by norm_num) (by norm_num) using 1
+  rw [show (1 : ℝ) / 1 * Real.log (6 * ((1 : ℕ) : ℝ)) = Real.log 6 by norm_num]
+  rw [Real.exp_neg, Real.exp_log (by norm_num : (0 : ℝ) < 6)]
+  norm_num
+
+/-- At rate and agreement `1`, the limit `9/20` exceeds `2/5`, so a finite ratio does too. -/
+example : ∃ multiplicity : ℕ, 0 < multiplicity ∧
+    0 < partitionWeightBudget 1 1 1 multiplicity ∧
+    2 / 5 < partitionFiniteRatio 1 1 1 multiplicity := by
+  apply exists_partitionFiniteRatio_gt (rate := 1) (agreement := 1) (order := 1)
+    (γ := 2 / 5) (by norm_num) (by norm_num) (by norm_num)
+  rw [show (1 : ℝ) / 1 * Real.log (6 * ((1 : ℕ) : ℝ)) = Real.log 6 by norm_num]
+  rw [Real.exp_neg, Real.exp_log (by norm_num : (0 : ℝ) < 6)]
+  norm_num
+
 /-- The inverse radius is `d m / W = 2` at `R = a = 1`, `d = 1`, `m = 2`. -/
 example : partitionInverseRadius 1 1 1 2 = 2 := by
   rw [partitionInverseRadius_eq, test_weightBudget]
@@ -177,12 +210,38 @@ example : 1 < rateGamma (1 : ℝ) (1 + 1) 5 := by
     rw [fixedRateCoefficient]
     norm_num only [one_mul, mul_one, mul_zero, add_zero]
     apply Real.log_le_log <;> norm_num
-  have hmargin : 0 < Real.log (27 * 1 / 20) := Real.log_pos (by norm_num)
+  have hmargin : 0 < 0 + 1 * Real.log (27 * 1 / 20) := by
+    norm_num only [zero_add, one_mul]
+    exact Real.log_pos (by norm_num)
   have hgate : 0 < (1 + 1) * Real.log (27 * 1 / 20) + 1 * Real.log 5 - 1 * Real.log 6 := by
     rw [fixedRateCoefficient_eq (rate := 1) (by norm_num)] at hcoef
     nlinarith
   exact rateGamma_gt_one_of_log_bound (rate := 1) (gap := 1) (order := 5) (by norm_num)
     (by norm_num) (by norm_num) hgate
+
+/-- At rate `1`, gap `1` and order `5`, the positive exponent margin supplies finite parameters.
+-/
+example : 1 < rateGamma (1 : ℝ) (1 + 1) 5 ∧
+    ∃ multiplicity : ℕ, 0 < multiplicity ∧
+      0 < partitionWeightBudget 1 2 5 multiplicity ∧
+      1 < partitionFiniteRatio 1 2 5 multiplicity := by
+  have hcoef : fixedRateCoefficient 1 ≤ Real.log 5 := by
+    rw [fixedRateCoefficient]
+    norm_num only [one_mul, mul_one, mul_zero, add_zero]
+    apply Real.log_le_log <;> norm_num
+  have hmargin : 0 < 0 + 1 * Real.log (27 * 1 / 20) := by
+    norm_num only [zero_add, one_mul]
+    exact Real.log_pos (by norm_num)
+  have horderBound : fixedRateCoefficient 1 + 0 ≤ 1 * Real.log 5 := by
+    simpa only [add_zero, one_mul] using hcoef
+  have hgate' : 1 < rateGamma 1 (1 + 1) 5 := by
+    apply rateGamma_gt_one_of_exponent_margin (rate := 1) (gap := 1) (epsilon := 0)
+      (order := 5) (by norm_num) (by norm_num) (by norm_num) horderBound hmargin
+  have hgate : 1 < rateGamma 1 2 5 := by
+    simpa only [show (1 + 1 : ℝ) = 2 by norm_num] using hgate'
+  exact ⟨by simpa only [show (1 + 1 : ℝ) = 2 by norm_num] using hgate,
+    exists_partitionFiniteParameters_of_rateGamma_gt_one (rate := 1) (agreement := 2)
+      (order := 5) (by norm_num) (by norm_num) (by norm_num) hgate⟩
 
 /-! ### Weighted-simplex moments -/
 

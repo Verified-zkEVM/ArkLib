@@ -56,6 +56,26 @@ example : 48000 ≤ capacityDerivativeOrder (1 / 8) :=
 example : 0 < weightedSupportMultiplicity 2 :=
   weightedSupportMultiplicity_pos_iff.mpr (by norm_num)
 
+example :
+    let δ : ℝ := 1 / 8
+    let m := weightedSupportMultiplicity (capacityDerivativeOrder δ)
+    let n := 8 * m
+    let K := weightedSupportAmbientDimension δ n 0
+    0 < n ∧ capacityDerivativeOrder δ < K - 1 ∧ 0 ≤ K ∧ K ≤ n := by
+  let δ : ℝ := 1 / 8
+  let m := weightedSupportMultiplicity (capacityDerivativeOrder δ)
+  let n := 8 * m
+  let K := weightedSupportAmbientDimension δ n 0
+  have h := capacity_block_bounds (δ := δ) (n := n) (k := 0) (by norm_num [δ])
+    (by norm_num [δ]) (by change 8 * m ≤ 8 * m; exact le_rfl) (by
+      have hceil : ⌈δ * (n : ℝ)⌉₊ ≤ n := Nat.ceil_le.mpr (by
+        dsimp [δ]
+        have hn : (0 : ℝ) ≤ (n : ℝ) := Nat.cast_nonneg n
+        nlinarith)
+      simpa using hceil)
+  rcases h with ⟨hn, hD, hKlo, hKhi⟩
+  exact ⟨hn, hD, hKlo, hKhi⟩
+
 /-! ### Dimension inputs -/
 
 /-- At `d = 3`, `δ = 1 / 4`, `ρ = 1 / 2` and `H = ξ / δ = 54 / 5`: here `g = 1 / 2`,
@@ -138,3 +158,52 @@ example :
     B * normalizedDimensionRankSurplus 1 1 1 (Real.log 1) =
       1 * g ^ 3 / 6 * ((5 / 8 : ℝ) ^ 3 + (4147 / 2160) * (999 / 1000) * (a / (g * 1)) ^ 2) :=
   normalized_surplus_product 1 1 1 1 (by norm_num) (by norm_num [rateGap]) (by norm_num)
+
+/-! ### Positive-rank multiplicative margin -/
+
+example :
+    let δ : ℝ := 1 / 4
+    let ρ : ℝ := 1 / 4
+    let H : ℝ := 54 / 5
+    let d : ℝ := Real.exp (54 / 5)
+    let g := rateGap δ ρ
+    let a := 1 + theta * g
+    let s : ℝ := 55 / 432
+    let V : ℝ := 1
+    let m : ℝ := 1
+    let n : ℝ := 1
+    let D : ℝ := 1 / 4
+    let N := V * D / 6 * (g * m) ^ 3 * ((5 / 8 : ℝ) ^ 3 + (4147 / 2160) * s ^ 2)
+    let R := g * (448 / 625) * (101 / 100) * (37 / 20) * a ^ 2 / H ^ 2 *
+      d ^ (1 / a) / d
+    0 < R ∧ (543 / 500 : ℝ) * n * R < N := by
+  let δ : ℝ := 1 / 4
+  let ρ : ℝ := 1 / 4
+  let H : ℝ := 54 / 5
+  let d : ℝ := Real.exp (54 / 5)
+  let g := rateGap δ ρ
+  let a := 1 + theta * g
+  let s : ℝ := 55 / 432
+  let V : ℝ := 1
+  let m : ℝ := 1
+  let n : ℝ := 1
+  let D : ℝ := 1 / 4
+  let N := V * D / 6 * (g * m) ^ 3 * ((5 / 8 : ℝ) ^ 3 + (4147 / 2160) * s ^ 2)
+  let R := g * (448 / 625) * (101 / 100) * (37 / 20) * a ^ 2 / H ^ 2 *
+    d ^ (1 / a) / d
+  have hmargin := multiplicative_margin_from_bounds δ ρ H d g a s V m n D N R
+    (by norm_num [δ]) (by norm_num [δ]) (by norm_num [δ, ρ]) (by norm_num [δ, ρ])
+    (by norm_num [δ, H, xi])
+    (by simp only [d, Real.log_exp]; norm_num [δ, xi])
+    (by positivity) rfl rfl (by norm_num [V]) (by norm_num [m]) (by norm_num [n])
+    (by norm_num [D, n, ρ]) (by norm_num [s, a, g, H, δ, ρ, rateGap, theta])
+    (by norm_num [N, V, D, m, s, g, rateGap, δ, ρ, theta])
+    (by
+      norm_num [V, m]
+      change (g * (448 / 625) * (101 / 100) * (37 / 20) * a ^ 2 / H ^ 2 *
+        d ^ (1 / a) / d) ≤ _
+      rw [show H ^ 2 = (2916 / 25 : ℝ) by norm_num [H], one_div])
+  constructor
+  · dsimp [R, g, a, H, d, δ, ρ, rateGap, theta]
+    positivity
+  · exact hmargin
