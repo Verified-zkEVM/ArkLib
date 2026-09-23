@@ -506,6 +506,27 @@ are the special cases of the new composition laws `globalPointTranslation_comp`,
 source's `Matrix.rank_map_algebraMap_le`, a base-change bound on matrix rank that does not
 concern translation; its only source consumer is `Interpolation/Symbolic/LocalRank.lean`.
 
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Local/ZeroOrder.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/OrderZero/LocalImage.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`zeroLocalExponent`, `zeroLocalExponent_reconstruct`, `zeroLocalExponents`, and
+`mem_zeroLocalExponents` are renamed to `zeroOrderLocalExponent`,
+`zeroOrderLocalExponent_reconstruct`, `zeroOrderLocalExponents`, and
+`mem_zeroOrderLocalExponents`. The exponent set remains the triangular set characterized by
+`E ≤ T < m`. `localConstraint_zero_support`, `range_localConstraint_zero_le`,
+`finite_localConstraint_zero_range`, `card_zeroLocalExponents_le`,
+`finrank_localConstraint_zero_le`, and `finrank_localConstraint_zero_domRestrict_le` are renamed
+to their `zeroOrder` or `At_zeroOrder` names; their support statements and rank bounds are
+unchanged. The support argument uses the general local-constraint and local-substitution support
+results, together with the general contact-order result.
+
+Not ported: `unscaled_zero_support` is covered by `localE_le_localT_of_mem_support` in
+`Local/Coordinates.lean`, which holds at every derivative order. `localContactOrder_zero` is
+covered by `localContactOrder_eq` in `Variables.lean`. `ZeroLocalIndex` and `card_zeroLocalIndex`
+are not separate public declarations; the finite Sigma index and its cardinality calculation are
+kept internal.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/SourceMonomial.lean`
 
 Ported from
