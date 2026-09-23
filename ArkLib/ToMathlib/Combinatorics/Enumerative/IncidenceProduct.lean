@@ -137,28 +137,10 @@ threshold `T t` at dimension `t + 1`. -/
 def incidenceProduct (n A b : ℕ) (T : ℕ → ℕ) (d : ℕ) : ℚ :=
   ∏ t ∈ Finset.range d, ((((n - T t + 1) * b : ℕ) : ℚ) / ((A - T t + 1 : ℕ) : ℚ))
 
-/-- The empty product of incidence factors is one. -/
-@[simp]
-theorem incidenceProduct_zero (n A b : ℕ) (T : ℕ → ℕ) : incidenceProduct n A b T 0 = 1 := by
-  simp [incidenceProduct]
-
-/-- The product up to dimension `d + 1` is the product up to dimension `d` times the factor with
-threshold `T d`. -/
-theorem incidenceProduct_succ (n A b : ℕ) (T : ℕ → ℕ) (d : ℕ) :
-    incidenceProduct n A b T (d + 1) =
-      incidenceProduct n A b T d *
-        ((((n - T d + 1) * b : ℕ) : ℚ) / ((A - T d + 1 : ℕ) : ℚ)) :=
-  Finset.prod_range_succ _ _
-
 /-- The product of incidence factors is nonnegative. -/
 theorem incidenceProduct_nonneg (n A b : ℕ) (T : ℕ → ℕ) (d : ℕ) :
     0 ≤ incidenceProduct n A b T d :=
   Finset.prod_nonneg fun _ _ ↦ div_nonneg (by positivity) (by positivity)
-
-/-- The product depends only on the thresholds `T t` for `t < d`. -/
-theorem incidenceProduct_congr {n A b d : ℕ} {T T' : ℕ → ℕ} (h : ∀ t < d, T t = T' t) :
-    incidenceProduct n A b T d = incidenceProduct n A b T' d :=
-  Finset.prod_congr rfl fun t ht ↦ by rw [h t (Finset.mem_range.mp ht)]
 
 /-- With the constant threshold `L`, the product up to dimension `d` is the `d`-th power of the
 factor `((n - L + 1) * b) / (A - L + 1)`. -/
@@ -173,20 +155,15 @@ theorem incidenceProduct_mono_dimension {n A b : ℕ} (T : ℕ → ℕ) (hAn : A
     (hb : 0 < b) :
     Monotone (incidenceProduct n A b T) :=
   monotone_nat_of_le_succ fun d ↦ by
-    rw [incidenceProduct_succ]
-    exact le_mul_of_one_le_right (incidenceProduct_nonneg n A b T d)
-      (one_le_incidenceFactor hAn hb)
+    simpa only [incidenceProduct, Finset.prod_range_succ] using
+      (le_mul_of_one_le_right (incidenceProduct_nonneg n A b T d)
+        (one_le_incidenceFactor hAn hb))
 
 /-- The product over `t < d` of the factors `((n - k + t + 1) * b) / (A - k + t + 1)`. -/
 def dimensionSensitiveIncidenceProduct (n A k b : ℕ) : ℕ → ℚ
   | 0 => 1
   | d + 1 => dimensionSensitiveIncidenceProduct n A k b d *
       ((((n - k + d + 1) * b : ℕ) : ℚ) / ((A - k + d + 1 : ℕ) : ℚ))
-
-/-- The empty product of incidence factors is one. -/
-@[simp]
-theorem dimensionSensitiveIncidenceProduct_zero (n A k b : ℕ) :
-    dimensionSensitiveIncidenceProduct n A k b 0 = 1 := rfl
 
 /-- The product up to dimension `d + 1` is the product up to dimension `d` times the factor
 `((n - k + d + 1) * b) / (A - k + d + 1)`. -/
@@ -195,18 +172,11 @@ theorem dimensionSensitiveIncidenceProduct_succ (n A k b d : ℕ) :
       dimensionSensitiveIncidenceProduct n A k b d *
         ((((n - k + d + 1) * b : ℕ) : ℚ) / ((A - k + d + 1 : ℕ) : ℚ)) := rfl
 
-/-- The product in dimension one is the factor `((n - k + 1) * b) / (A - k + 1)`. -/
-@[simp]
-theorem dimensionSensitiveIncidenceProduct_one (n A k b : ℕ) :
-    dimensionSensitiveIncidenceProduct n A k b 1 =
-      ((((n - k + 1) * b : ℕ) : ℚ) / ((A - k + 1 : ℕ) : ℚ)) := by
-  simp [dimensionSensitiveIncidenceProduct]
-
 /-- The product of incidence factors is nonnegative. -/
 theorem dimensionSensitiveIncidenceProduct_nonneg (n A k b d : ℕ) :
     0 ≤ dimensionSensitiveIncidenceProduct n A k b d := by
   induction d with
-  | zero => simp
+  | zero => rfl
   | succ d ih =>
     rw [dimensionSensitiveIncidenceProduct_succ]
     exact mul_nonneg ih (div_nonneg (by positivity) (by positivity))
@@ -216,7 +186,7 @@ theorem dimensionSensitiveIncidenceProduct_eq_pow_mul (n A k b d : ℕ) :
     dimensionSensitiveIncidenceProduct n A k b d =
       (b : ℚ) ^ d * dimensionSensitiveIncidenceProduct n A k 1 d := by
   induction d with
-  | zero => simp
+  | zero => simp [dimensionSensitiveIncidenceProduct]
   | succ d ih =>
     rw [dimensionSensitiveIncidenceProduct_succ, dimensionSensitiveIncidenceProduct_succ, ih,
       pow_succ]
@@ -229,9 +199,11 @@ theorem dimensionSensitiveIncidenceProduct_eq_incidenceProduct {n A k b d : ℕ}
     (hkA : k ≤ A) (hAn : A ≤ n) :
     dimensionSensitiveIncidenceProduct n A k b d = incidenceProduct n A b (fun t ↦ k - t) d := by
   induction d with
-  | zero => simp
+  | zero => rfl
   | succ d ih =>
-    rw [dimensionSensitiveIncidenceProduct_succ, incidenceProduct_succ, ih (by omega),
+    rw [dimensionSensitiveIncidenceProduct_succ]
+    conv_rhs => rw [incidenceProduct, Finset.prod_range_succ]
+    rw [ih (by omega), incidenceProduct,
       show n - (k - d) + 1 = n - k + d + 1 by omega, show A - (k - d) + 1 = A - k + d + 1 by omega]
 
 /-- For `d ≤ 1` and `A ≤ n`, the product with `b = 1` up to dimension `d` is at most the first
@@ -240,8 +212,9 @@ theorem dimensionSensitiveIncidenceProduct_le_one {n A k d : ℕ} (hd : d ≤ 1)
     dimensionSensitiveIncidenceProduct n A k 1 d ≤
       ((n - k + 1 : ℕ) : ℚ) / ((A - k + 1 : ℕ) : ℚ) := by
   interval_cases d
-  · simpa using one_le_incidenceFactor (T := k) (b := 1) hAn one_pos
-  · simp
+  · simpa [dimensionSensitiveIncidenceProduct] using
+      one_le_incidenceFactor (T := k) (b := 1) hAn one_pos
+  · simp [dimensionSensitiveIncidenceProduct]
 
 /-- If `A ≤ n` and `0 < b`, the dimension-sensitive product is monotone in its dimension. -/
 theorem dimensionSensitiveIncidenceProduct_mono_dimension {n A k b : ℕ} (hAn : A ≤ n)
@@ -261,7 +234,7 @@ theorem dimensionSensitiveIncidenceProduct_le_first_pow
     dimensionSensitiveIncidenceProduct n A k 1 r ≤
       (((n - k + 1 : ℕ) : ℚ) / (A - k + 1 : ℕ)) ^ r := by
   induction r with
-  | zero => simp
+  | zero => simp [dimensionSensitiveIncidenceProduct]
   | succ r ih =>
     rw [dimensionSensitiveIncidenceProduct_succ, pow_succ]
     apply mul_le_mul ih _ (by positivity) (by positivity)
@@ -298,58 +271,14 @@ theorem dimensionSensitiveIncidenceProduct_le_one_div_pow_of_gap {K : Type*}
 
 /-- The product over `t < d` of the factors `((n - T t + 1) * b) / (A - T t + 1)` with threshold
 `T 0 = L` and `T t = k + 1 - t` for `t ≥ 1`. -/
-def hybridDimensionSensitiveIncidenceProduct (n A L k b : ℕ) : ℕ → ℚ
-  | 0 => 1
-  | d + 1 => hybridDimensionSensitiveIncidenceProduct n A L k b d *
-      (((((n - (if d = 0 then L else k + 1 - d) + 1) * b : ℕ) : ℚ) /
-        ((A - (if d = 0 then L else k + 1 - d) + 1 : ℕ) : ℚ)))
-
-/-- The empty product of incidence factors is one. -/
-@[simp]
-theorem hybridDimensionSensitiveIncidenceProduct_zero (n A L k b : ℕ) :
-    hybridDimensionSensitiveIncidenceProduct n A L k b 0 = 1 := rfl
-
-/-- The product up to dimension `d + 1` is the product up to dimension `d` times the factor with
-threshold `L` if `d = 0` and `k + 1 - d` otherwise. -/
-theorem hybridDimensionSensitiveIncidenceProduct_succ (n A L k b d : ℕ) :
-    hybridDimensionSensitiveIncidenceProduct n A L k b (d + 1) =
-      hybridDimensionSensitiveIncidenceProduct n A L k b d *
-        (((((n - (if d = 0 then L else k + 1 - d) + 1) * b : ℕ) : ℚ) /
-          ((A - (if d = 0 then L else k + 1 - d) + 1 : ℕ) : ℚ))) := rfl
-
-/-- The product in dimension one is the factor `((n - L + 1) * b) / (A - L + 1)`. -/
-@[simp]
-theorem hybridDimensionSensitiveIncidenceProduct_one (n A L k b : ℕ) :
-    hybridDimensionSensitiveIncidenceProduct n A L k b 1 =
-      ((((n - L + 1) * b : ℕ) : ℚ) / ((A - L + 1 : ℕ) : ℚ)) := by
-  simp [hybridDimensionSensitiveIncidenceProduct]
-
-/-- The product in dimension two is `((n - L + 1) * b) / (A - L + 1)` times
-`((n - k + 1) * b) / (A - k + 1)`. -/
-@[simp]
-theorem hybridDimensionSensitiveIncidenceProduct_two (n A L k b : ℕ) :
-    hybridDimensionSensitiveIncidenceProduct n A L k b 2 =
-      ((((n - L + 1) * b : ℕ) : ℚ) / ((A - L + 1 : ℕ) : ℚ)) *
-        ((((n - k + 1) * b : ℕ) : ℚ) / ((A - k + 1 : ℕ) : ℚ)) := by
-  simp [hybridDimensionSensitiveIncidenceProduct]
-
-/-- The product of incidence factors is nonnegative. -/
-theorem hybridDimensionSensitiveIncidenceProduct_nonneg (n A L k b d : ℕ) :
-    0 ≤ hybridDimensionSensitiveIncidenceProduct n A L k b d := by
-  induction d with
-  | zero => simp
-  | succ d ih =>
-    rw [hybridDimensionSensitiveIncidenceProduct_succ]
-    exact mul_nonneg ih (div_nonneg (by positivity) (by positivity))
+def hybridDimensionSensitiveIncidenceProduct (n A L k b : ℕ) : ℕ → ℚ :=
+  incidenceProduct n A b (fun t ↦ if t = 0 then L else k + 1 - t)
 
 /-- The hybrid product is the incidence product with threshold `L` at dimension one and
 `k + 1 - t` at dimension `t + 1` for `t ≥ 1`. -/
 theorem hybridDimensionSensitiveIncidenceProduct_eq_incidenceProduct (n A L k b d : ℕ) :
     hybridDimensionSensitiveIncidenceProduct n A L k b d =
-      incidenceProduct n A b (fun t ↦ if t = 0 then L else k + 1 - t) d := by
-  induction d with
-  | zero => simp
-  | succ d ih => rw [hybridDimensionSensitiveIncidenceProduct_succ, incidenceProduct_succ, ih]
+      incidenceProduct n A b (fun t ↦ if t = 0 then L else k + 1 - t) d := rfl
 
 /-- If `A ≤ n` and `0 < b`, every factor is at least one, so the product is monotone in the
 dimension. -/
@@ -366,11 +295,14 @@ theorem hybridDimensionSensitiveIncidenceProduct_eq_factor_mul
     hybridDimensionSensitiveIncidenceProduct n A L k b (s + 1) =
       ((((n - L + 1) * b : ℕ) : ℚ) / ((A - L + 1 : ℕ) : ℚ)) *
         dimensionSensitiveIncidenceProduct n A k b s := by
+  change incidenceProduct n A b (fun t ↦ if t = 0 then L else k + 1 - t) (s + 1) = _
   induction s with
-  | zero => simp
+  | zero => simp [incidenceProduct, dimensionSensitiveIncidenceProduct]
   | succ s ih =>
-    rw [hybridDimensionSensitiveIncidenceProduct_succ, ih (by omega),
-      dimensionSensitiveIncidenceProduct_succ]
+    rw [incidenceProduct, Finset.prod_range_succ]
+    have ih' := ih (by omega)
+    rw [incidenceProduct] at ih'
+    rw [ih', dimensionSensitiveIncidenceProduct_succ]
     have hnEq : n - (if s + 1 = 0 then L else k + 1 - (s + 1)) + 1 = n - k + s + 1 := by
       simp only [show s + 1 ≠ 0 by omega, ite_false]
       omega
@@ -398,5 +330,12 @@ theorem hybridDimensionSensitiveIncidenceProduct_le_two {n A L k b d : ℕ} (hd 
     hybridDimensionSensitiveIncidenceProduct n A L k b d ≤
       ((((n - L + 1) * b : ℕ) : ℚ) / ((A - L + 1 : ℕ) : ℚ)) *
         ((((n - k + 1) * b : ℕ) : ℚ) / ((A - k + 1 : ℕ) : ℚ)) := by
-  simpa only [hybridDimensionSensitiveIncidenceProduct_two] using
-    hybridDimensionSensitiveIncidenceProduct_mono_dimension hAn hb hd
+  calc
+    hybridDimensionSensitiveIncidenceProduct n A L k b d ≤
+        hybridDimensionSensitiveIncidenceProduct n A L k b 2 :=
+      hybridDimensionSensitiveIncidenceProduct_mono_dimension
+        (n := n) (A := A) (L := L) (k := k) (b := b) hAn hb hd
+    _ = _ := by
+      simp only [hybridDimensionSensitiveIncidenceProduct, incidenceProduct]
+      rw [Finset.prod_range_succ, Finset.prod_range_succ]
+      simp

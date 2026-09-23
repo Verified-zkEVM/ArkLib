@@ -178,6 +178,7 @@ public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.Gate
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.Moment
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.Recipe
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.UniformEnvelope
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.UniformGamma
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.UniformParameters
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.WeightedSupport.Block
@@ -315,6 +316,7 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ext
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FullAgreement
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FullDimension
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.GraphLine
+public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.GraphLineComponent
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.HalfGap.Line
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Johnson.FullCode
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.LineToAffine
