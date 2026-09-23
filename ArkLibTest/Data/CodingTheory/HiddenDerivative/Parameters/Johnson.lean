@@ -150,4 +150,13 @@ example :
     johnsonWeightedRowSlots_add_nT (by decide), hcert.rowSlots_lt_sourceSlots,
     hcert.strict_scalar_surplus⟩
 
+/-- At positive moment and slope, the selected Johnson height bounds both quantities. -/
+example :
+    1 ≤ johnsonWeightedHeight 3 1 3 2 1 ∧
+    johnsonWeightedMoment 3 1 3 2 1 <
+      ((johnsonWeightedHeight 3 1 3 2 1 + 1 : ℕ) : ℤ) * johnsonWeightedSlope 3 1 3 2 1 := by
+  have hslope : 3 * johnsonWeightedR 2 1 < johnsonWeightedN 1 3 2 1 := by decide
+  exact ⟨johnsonWeightedHeight_ge 3 1 3 2 1,
+    johnsonWeightedHeight_strict hslope⟩
+
 end ReedSolomon.HiddenDerivative

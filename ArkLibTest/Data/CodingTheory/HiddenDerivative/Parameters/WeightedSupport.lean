@@ -118,6 +118,19 @@ example :
       xi / (1 / 4 : ℝ) ≤ (harmonic (d - 1) : ℝ) :=
   prescribed_order_lower (1 / 4) (by norm_num) (by norm_num)
 
+/-- At `δ = 1/4`, `ρ = 1/2`, the denominator and specialized radius bounds hold. -/
+example :
+    ((1 / 2 : ℝ) + theta * (1 / 4)) ^ 2 ≤ 1 / 2 ∧
+    xi ≤ rateGap (1 / 4) (1 / 2) * (54 / 5) ∧
+    (1 / 5 : ℝ) ≤ 10 / 27 := by
+  exact ⟨highRate_denominator_sq_le_rate (θ := theta) (δ := 1 / 4) (ρ := 1 / 2)
+      (by norm_num) (by norm_num [theta]) (by norm_num [theta]) (by norm_num) (by norm_num),
+    xi_le_rateGap_mul (δ := 1 / 4) (ρ := 1 / 2) (H := 54 / 5)
+      (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num [xi]),
+    normalizedRadius_le_ten_twentySeven (δ := 1 / 4) (ρ := 1 / 2) (H := 54 / 5) (s := 1 / 5)
+      (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num [xi])
+      (by norm_num [rateGap, theta])⟩
+
 /-! ### Endpoint comparison -/
 
 example :

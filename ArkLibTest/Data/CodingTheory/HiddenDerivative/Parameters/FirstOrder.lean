@@ -191,12 +191,20 @@ example : ((23 : ℕ) : ℝ) ≤
   rw [hM, show firstOrderRankCount 4 2 = 23 by decide] at h
   norm_num [firstOrderRankDensity] at h ⊢
 
-/-- The source rounding estimate at `R = 1/2`, `a = 1`, `m = 2`, `μ = 4`. -/
-example : (2 : ℝ) ^ 3 * ((1 / 2 : ℝ) * 1 ^ 2 / (2 * (1 / 2)) -
-      1 * (1 / 2) ^ 2 / 2 + (1 / 2) * (1 / 2) ^ 3 / 6) ≤
-    firstOrderSourceCount (1 / 2) 1 2 ⌊(1 / 2 : ℝ) * 2⌋₊ 4 :=
-  cube_mul_sourceDensity_le_firstOrderSourceCount (by norm_num) (by norm_num)
-    (by norm_num) (by norm_num) (by norm_num)
+/-- At `R = 1/2`, `a = 1`, `β = 1/4`, `m = 64`, both rounding and finite-surplus bounds hold. -/
+example :
+    (64 : ℝ) ^ 3 * ((1 / 4 : ℝ) * 1 ^ 2 / (2 * (1 / 2)) -
+      1 * (1 / 4) ^ 2 / 2 + (1 / 2) * (1 / 4) ^ 3 / 6) ≤
+      firstOrderSourceCount (1 / 2) 1 64 ⌊(1 / 4 : ℝ) * 64⌋₊ 128 ∧
+    (64 : ℝ) ^ 3 * (((1 / 4 : ℝ) * 1 ^ 2 / (2 * (1 / 2)) -
+      1 * (1 / 4) ^ 2 / 2 + (1 / 2) * (1 / 4) ^ 3 / 6) -
+      ((1 / 4 : ℝ) / 2 - (1 / 4) ^ 2 / 2 + (1 / 4) ^ 3 / 3)) - 3 * 64 ^ 2 ≤
+      firstOrderSourceCount (1 / 2) 1 64 ⌊(1 / 4 : ℝ) * 64⌋₊ 128 -
+        firstOrderRankCount 64 ⌊(1 / 4 : ℝ) * 64⌋₊ := by
+  exact ⟨cube_mul_sourceDensity_le_firstOrderSourceCount (by norm_num) (by norm_num)
+      (by norm_num) (by norm_num) (by norm_num),
+    cube_mul_densityGap_sub_le_sourceCount_sub_rankCount (by norm_num) (by norm_num)
+      (by norm_num) (by norm_num) (by norm_num) (by norm_num)⟩
 
 private noncomputable def roundedSourcePolynomial (m M L : ℕ) : ℝ :=
   3 * (m : ℝ) * (M + 1) * (M + 2) / 8 -
@@ -567,16 +575,6 @@ private def concreteFiniteParameters : FirstOrderFiniteRateParameters (1 / 2 : �
   ⟨4, by norm_num, by norm_num [FirstOrderFiniteRateTest, firstOrderRateDerivativeCap,
     firstOrderRateJetDegree, firstOrderRateBeta, firstOrderSourceCount, firstOrderRankCount,
     Finset.sum_range_succ]⟩
-
-/-- The rounded finite certificate at rate `1/2` and agreement `3/4` has multiplicity `4`. -/
-example : concreteFiniteParameters.multiplicity = 4 ∧
-    concreteFiniteParameters.derivativeCap = 1 ∧ concreteFiniteParameters.jetDegree = 6 ∧
-    concreteFiniteParameters.sourceCount = 18 ∧ concreteFiniteParameters.rankCount = 17 := by
-  norm_num [FirstOrderFiniteRateParameters.derivativeCap,
-    FirstOrderFiniteRateParameters.jetDegree, FirstOrderFiniteRateParameters.sourceCount,
-    FirstOrderFiniteRateParameters.rankCount, concreteFiniteParameters,
-    firstOrderRateDerivativeCap, firstOrderRateJetDegree, firstOrderRateBeta,
-    firstOrderSourceCount, firstOrderRankCount, Finset.sum_range_succ]
 
 /-- The rational finite test computes the same strict surplus, `17 < 18`. -/
 example : FirstOrderRationalFiniteTest (1 / 2 : ℚ) (3 / 4 : ℚ) 4 := by

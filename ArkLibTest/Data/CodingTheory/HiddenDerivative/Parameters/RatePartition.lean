@@ -7,9 +7,11 @@ Authors: Quang Dao
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.BlockLength
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.ClosedMultiplicity
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.FiniteRatio
+import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.FixedRateGate
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.Gate
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.Moment
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.Recipe
+import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.UniformGamma
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.UniformParameters
 import Mathlib.Analysis.Complex.ExponentialBounds
 
@@ -50,6 +52,12 @@ private theorem fixedRateGateInputs :
     apply Real.log_le_log <;> norm_num
   · norm_num only [zero_add, one_mul]
     exact Real.log_pos (by norm_num)
+
+private theorem order_8192_log_bound :
+    3 / (2 * (1 / 5 : ℝ)) ≤ Real.log (8192 : ℝ) := by
+  rw [show (8192 : ℝ) = 2 ^ 13 by norm_num, Real.log_pow]
+  norm_num
+  linarith [Real.log_two_gt_d9]
 
 /-! ### Block-length thresholds -/
 
@@ -240,21 +248,25 @@ example :
         Real.exp ((1 / 2 : ℝ) * Real.log (40 / (9 * (1 / 2 : ℝ))) / (1 / 4)) :=
   fixedRatePartition_cutoff_eq (rate := 1 / 2) (gap := 1 / 4) (by norm_num) (by norm_num)
 
-/-- The selected order at rate `1/2` and gap `1/4` gives the strict gate. -/
+/-- The selected order and multiplicity at rate `1/2` and gap `1/4` give finite parameters. -/
 example : 500 ≤ fixedRatePartitionOrder (1 / 2) (1 / 4) ∧
-    1 < rateGamma (1 / 2) (1 / 2 + 1 / 4)
-      (fixedRatePartitionOrder (1 / 2) (1 / 4)) := by
+    1 < rateGamma (1 / 2) (1 / 2 + 1 / 4) (fixedRatePartitionOrder (1 / 2) (1 / 4)) ∧
+    0 < fixedRatePartitionMultiplicity (rate := 1 / 2) (gap := 1 / 4)
+      (by norm_num) (by norm_num) ∧
+    0 < partitionWeightBudget (1 / 2) (1 / 2 + 1 / 4) (fixedRatePartitionOrder (1 / 2) (1 / 4))
+      (fixedRatePartitionMultiplicity (rate := 1 / 2) (gap := 1 / 4)
+        (by norm_num) (by norm_num)) ∧
+    1 < partitionFiniteRatio (1 / 2) (1 / 2 + 1 / 4) (fixedRatePartitionOrder (1 / 2) (1 / 4))
+      (fixedRatePartitionMultiplicity (rate := 1 / 2) (gap := 1 / 4)
+        (by norm_num) (by norm_num)) ∧
+    Nonempty (PartitionFiniteParameters (1 / 2) (1 / 2 + 1 / 4)
+      (fixedRatePartitionOrder (1 / 2) (1 / 4))) := by
+  obtain ⟨hm, hbudget, hratio⟩ := fixedRatePartitionMultiplicity_spec (rate := 1 / 2)
+    (gap := 1 / 4) (by norm_num) (by norm_num)
   exact ⟨fixedRatePartitionOrder_ge_500 (rate := 1 / 2) (gap := 1 / 4),
-    fixedRateGamma_gt_one (by norm_num) (by norm_num)⟩
-
-/-- At rate `1`, gap `1` and order `5`, the logarithmic gate bound gives `rateGamma > 1`. -/
-example : 1 < rateGamma (1 : ℝ) (1 + 1) 5 := by
-  obtain ⟨hcoef, hmargin⟩ := fixedRateGateInputs
-  have hgate : 0 < (1 + 1) * Real.log (27 * 1 / 20) + 1 * Real.log 5 - 1 * Real.log 6 := by
-    rw [fixedRateCoefficient_eq (rate := 1) (by norm_num)] at hcoef
-    nlinarith
-  exact rateGamma_gt_one_of_log_bound (rate := 1) (gap := 1) (order := 5) (by norm_num)
-    (by norm_num) (by norm_num) hgate
+    fixedRateGamma_gt_one (by norm_num) (by norm_num), hm, hbudget, hratio,
+    exists_fixedRatePartitionFiniteParameters (rate := 1 / 2) (gap := 1 / 4)
+      (by norm_num) (by norm_num)⟩
 
 /-- At rate `1`, gap `1` and order `5`, the positive exponent margin supplies finite parameters.
 -/
@@ -263,16 +275,21 @@ example : 1 < rateGamma (1 : ℝ) (1 + 1) 5 ∧
       0 < partitionWeightBudget 1 2 5 multiplicity ∧
       1 < partitionFiniteRatio 1 2 5 multiplicity := by
   obtain ⟨hcoef, hmargin⟩ := fixedRateGateInputs
+  have hlogMargin : 0 < (1 + 1) * Real.log (27 * 1 / 20) + 1 * Real.log 5 - 1 * Real.log 6 := by
+    rw [fixedRateCoefficient_eq (rate := 1) (by norm_num)] at hcoef
+    nlinarith
+  have hlogGate := rateGamma_gt_one_of_log_bound (rate := 1) (gap := 1) (order := 5)
+    (by norm_num) (by norm_num) (by norm_num) hlogMargin
   have horderBound : fixedRateCoefficient 1 + 0 ≤ 1 * Real.log 5 := by
     simpa only [add_zero, one_mul] using hcoef
   have hgate' : 1 < rateGamma 1 (1 + 1) 5 := by
     apply rateGamma_gt_one_of_exponent_margin (rate := 1) (gap := 1) (epsilon := 0)
       (order := 5) (by norm_num) (by norm_num) (by norm_num) horderBound hmargin
-  have hgate : 1 < rateGamma 1 2 5 := by
+  have hmarginGate : 1 < rateGamma 1 2 5 := by
     simpa only [show (1 + 1 : ℝ) = 2 by norm_num] using hgate'
-  exact ⟨by simpa only [show (1 + 1 : ℝ) = 2 by norm_num] using hgate,
+  exact ⟨by simpa only [show (1 + 1 : ℝ) = 2 by norm_num] using hlogGate,
     exists_partitionFiniteParameters_of_rateGamma_gt_one (rate := 1) (agreement := 2)
-      (order := 5) (by norm_num) (by norm_num) (by norm_num) hgate⟩
+      (order := 5) (by norm_num) (by norm_num) (by norm_num) hmarginGate⟩
 
 /-- Every sufficiently small positive gap at rate `1/2` has a concrete exponential order gate. -/
 example : ∃ gapBound : ℝ, 0 < gapBound ∧ ∀ gap : ℝ, 0 < gap → gap < gapBound →
@@ -280,6 +297,48 @@ example : ∃ gapBound : ℝ, 0 < gapBound ∧ ∀ gap : ℝ, 0 < gap → gap < 
     (1 / 2 : ℝ) + gap < 1 ∧ 500 ≤ order ∧ 1 < rateGamma (1 / 2) ((1 / 2) + gap) order :=
   exists_small_gap_rate_gate (rate := 1 / 2) (epsilon := 1) (by norm_num) (by norm_num)
     (by norm_num)
+
+/-! ### Uniform rate-gamma margins -/
+
+/-- At gap `1/5`, order `8192` gives the low- and high-rate base bounds and margins. -/
+example :
+    Real.exp (3 / 2 - Real.log (40 / 9 : ℝ)) <
+      rateGamma (2 * (1 / 5 : ℝ) ^ 2) (1 / 5) 8192 ∧
+    Real.exp (3 / 2 - Real.log (40 / 9 : ℝ)) <
+      rateGamma (1 / 2) (1 / 2 + 1 / 5) 8192 ∧
+    (151 / 150 : ℝ) <
+      rateGamma (2 * (1 / 5 : ℝ) ^ 2) (1 / 5) 8192 * Real.exp (-1 / 1000) ∧
+    (151 / 150 : ℝ) <
+      rateGamma (1 / 2) (1 / 2 + 1 / 5) 8192 * Real.exp (-1 / 1000) := by
+  exact ⟨rateGamma_low_base_gt (δ := 1 / 5) (order := 8192) (by norm_num) (by norm_num)
+      (by norm_num) order_8192_log_bound,
+    rateGamma_high_base_gt (R := 1 / 2) (δ := 1 / 5) (order := 8192)
+      (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+      order_8192_log_bound,
+    rateGamma_low_gt (δ := 1 / 5) (order := 8192) (by norm_num) (by norm_num)
+      (by norm_num) order_8192_log_bound,
+    rateGamma_high_gt (δ := 1 / 5) (order := 8192) (by norm_num) (by norm_num)
+      (by norm_num) (by norm_num) (by norm_num) order_8192_log_bound⟩
+
+/-- The uniform order at gap `1/5` gives the low- and high-rate base bounds and margins. -/
+example :
+    500 ≤ uniformDerivativeOrder (1 / 5 : ℝ) ∧
+    Real.exp (3 / 2 - Real.log (40 / 9 : ℝ)) <
+      rateGamma (2 * (1 / 5 : ℝ) ^ 2) (1 / 5) (uniformDerivativeOrder (1 / 5)) ∧
+    Real.exp (3 / 2 - Real.log (40 / 9 : ℝ)) <
+      rateGamma (1 / 2) (1 / 2 + 1 / 5) (uniformDerivativeOrder (1 / 5)) ∧
+    (151 / 150 : ℝ) <
+      rateGamma (2 * (1 / 5 : ℝ) ^ 2) (1 / 5) (uniformDerivativeOrder (1 / 5)) *
+        Real.exp (-1 / 1000) ∧
+    (151 / 150 : ℝ) <
+      rateGamma (1 / 2) (1 / 2 + 1 / 5) (uniformDerivativeOrder (1 / 5)) *
+        Real.exp (-1 / 1000) := by
+  exact ⟨uniformDerivativeOrder_ge_500 (by norm_num) (by norm_num),
+    uniformRateGamma_low_base_gt (by norm_num) (by norm_num),
+    uniformRateGamma_high_base_gt (R := 1 / 2) (δ := 1 / 5)
+      (by norm_num) (by norm_num) (by norm_num) (by norm_num),
+    uniformRateGamma_low_gt (by norm_num) (by norm_num),
+    uniformRateGamma_high_gt (by norm_num) (by norm_num) (by norm_num) (by norm_num)⟩
 
 private theorem recipe_rate_gate : 1 < rateGamma 1 2 20 := by
   have hcoef : fixedRateCoefficient 1 ≤ Real.log 20 := by
