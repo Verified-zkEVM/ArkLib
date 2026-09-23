@@ -20,16 +20,13 @@ X^x Y₀^a Y₁^b,  b ≤ M,  a + b ≤ μ,
 ```
 
 The certificate records primitivity, coefficient height, support, local constraints, and uniform
-specialization soundness. `coeff_interpolant_natDegree_le` bounds coefficient heights after
-assembly, and `interpolant_mem_firstOrderSpace` proves that eligible columns assemble within the
-finite first-order support.
+specialization soundness. `interpolant_mem_firstOrderSpace` proves that eligible columns assemble
+within the finite first-order support.
 
 ## Main statements
 
 * `FirstOrderSymbolicCertificate`: a primitive first-order interpolant with uniform
   specialization soundness.
-* `coeff_interpolant_natDegree_le`: distinct source columns preserve the coefficient height of
-  the coefficient vector.
 * `interpolant_mem_firstOrderSpace`: assembling eligible source columns preserves the finite
   first-order support.
 
@@ -73,28 +70,6 @@ structure FirstOrderSymbolicCertificate {n N : ℕ} (D A m M μ k h : ℕ)
         (∀ i ∈ indices, P.eval (ι (centers i)) = ι (f i) + z * ι (g i)) →
           differentialSpecialization
             (MvPolynomial.map (Polynomial.eval₂RingHom ι z) Q) P = 0
-
-/-- Distinct source columns preserve the coefficient height of the coefficient vector. -/
-theorem coeff_interpolant_natDegree_le {N h : ℕ}
-    (columns : Fin N → SourceColumn 1) (hcolumns : Function.Injective columns)
-    (v : Fin N → F[X]) (hv : ∀ j, (v j).natDegree ≤ h) :
-    ∀ u, ((SourceColumn.interpolant columns v).coeff u).natDegree ≤ h := by
-  classical
-  intro u
-  by_cases hu : u ∈ Set.range (fun j ↦ (columns j).exponent)
-  · obtain ⟨j, rfl⟩ := hu
-    rw [SourceColumn.coeff_interpolant hcolumns v j]
-    exact hv j
-  · have hcoeff : (SourceColumn.interpolant columns v).coeff u = 0 := by
-      rw [SourceColumn.interpolant, MvPolynomial.coeff_sum]
-      apply Finset.sum_eq_zero
-      intro j _
-      rw [MvPolynomial.coeff_monomial]
-      split
-      · rename_i heq
-        exact (hu ⟨j, heq⟩).elim
-      · rfl
-    simp [hcoeff]
 
 /-- Assembling eligible source columns preserves the finite first-order support. -/
 theorem interpolant_mem_firstOrderSpace {D A m M μ N : ℕ}

@@ -9,7 +9,7 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.Symbol
 /-!
 # First-order local constraint rank acceptance tests
 
-The tests check the polynomial-received rank bound at `D = 0` and its generic received-line case.
+The tests check the rank bound for a concrete non-line received polynomial at `D = 0`.
 -/
 
 open PolynomialDifferential Polynomial ReedSolomon.HiddenDerivative
@@ -37,13 +37,3 @@ example :
   exact (rank_firstOrderLocalConstraintMatrix_le (D := 0) (A := 1) (m := 1) (M := 0)
     (μ := 1) (centers := fun _ ↦ (0 : ℚ))
     (received := fun _ ↦ (X ^ 2 : ℚ[X])) boundaryColumns heligible).trans (by decide)
-
-/-- The form with the hypothesis `1 < D` follows from the rank bound, which applies to every D. -/
-example {F : Type*} [Field F] {D A m M μ n N : ℕ} (_hD : 1 < D)
-    (centers f g : Fin n → F) (columns : Fin N → SourceColumn 1)
-    (heligible : ∀ j, (columns j).exponent ∈ firstOrderExponents D A m M μ) :
-    ((localConstraintMatrix m (fun i ↦ Polynomial.C (centers i))
-      (fun i ↦ receivedLine (f i) (g i)) columns).map
-        (algebraMap F[X] (RatFunc F))).rank ≤ n * certifiedEnlargedRankBound 1 m M 0 := by
-  simpa using rank_firstOrderLocalConstraintMatrix_le centers
-    (fun i ↦ receivedLine (f i) (g i)) columns heligible

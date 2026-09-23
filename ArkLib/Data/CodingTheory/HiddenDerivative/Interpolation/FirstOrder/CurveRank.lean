@@ -62,17 +62,6 @@ variable {F : Type*} [Field F]
 
 /-! ### Translation stability of the finite first-order source -/
 
-private def firstOrderFirstJetWeight : JetVariable 1 → ℕ
-  | none => 0
-  | some j => if j.val = 1 then 1 else 0
-
-private theorem weight_firstOrderFirstJetWeight (u : JetVariable 1 →₀ ℕ) :
-    Finsupp.weight firstOrderFirstJetWeight u = firstJetExponent u := by
-  have hweight : firstOrderFirstJetWeight = jetFirstWeight := by
-    funext v
-    rcases v with _ | j <;> rfl
-  rw [hweight, firstJetExponent]
-
 /-- Translation in `X,Y₀` preserves all three defining bounds of the finite first-order
 support: the `Y₁` cap, total jet-degree cap, and exact specialization-degree cutoff. -/
 theorem globalPointTranslation_mem_firstOrderSpace
@@ -83,11 +72,10 @@ theorem globalPointTranslation_mem_firstOrderSpace
   rw [mem_firstOrderSpace_iff] at hQ ⊢
   intro e he
   have hfirst := globalPointTranslation_mem_restrictWeightAtMost
-    (w := firstOrderFirstJetWeight) (by simp [firstOrderFirstJetWeight])
-    (by simp [firstOrderFirstJetWeight]) center received (a := M)
+    (w := jetFirstWeight) (by simp [jetFirstWeight]) (by simp [jetFirstWeight])
+    center received (a := M)
       (mem_restrictWeightAtMost.mpr fun u hu => by
-      rw [weight_firstOrderFirstJetWeight]
-      exact (hQ u hu).1)
+        simpa [firstJetExponent] using (hQ u hu).1)
   have htotal := totalJetDegree_le_of_mem_globalPointTranslation_support
     center received (t := μ) (fun u hu => (hQ u hu).2.1) he
   have hQne : Q ≠ 0 := by
@@ -106,42 +94,33 @@ theorem globalPointTranslation_mem_firstOrderSpace
       omega)
   have hfirst' := (mem_restrictWeightAtMost.mp hfirst) e he
   have hdegree' := (mem_restrictWeightAtMost.mp hdegree) e he
-  rw [weight_firstOrderFirstJetWeight] at hfirst'
+  change firstJetExponent e ≤ M at hfirst'
   exact ⟨hfirst', htotal, by omega⟩
 
 /-! ### The second origin grading by displacement degree -/
 
-private def firstOrderSourceSliceWeight : JetVariable 1 → ℕ
-  | none => 1
-  | some j => if j.val = 0 then 1 else 0
-
-/-- The displacement grading gives `T` weight one and `E` and `Y₁` weight zero. -/
-def firstOrderLocalSliceWeight : LocalVariable 1 → ℕ
-  | none => 1
-  | some _ => 0
-
 private theorem localCorrection_one_isSliceHomogeneous
     {R : Type*} [CommRing R] :
-    (localCorrection (R := R) 1).IsWeightedHomogeneous firstOrderLocalSliceWeight 1 := by
+    (localCorrection (R := R) 1).IsWeightedHomogeneous (localTWeight 1) 1 := by
   rw [localCorrection, Fin.sum_univ_one]
-  simpa [firstOrderLocalSliceWeight, localT, localY] using
-    ((isWeightedHomogeneous_C firstOrderLocalSliceWeight (1 : R)).mul
+  simpa [localTWeight, localT, localY] using
+    ((isWeightedHomogeneous_C (localTWeight 1) (1 : R)).mul
       ((isWeightedHomogeneous_X
-        (R := R) firstOrderLocalSliceWeight (localT 1)).pow 1)).mul
+        (R := R) (localTWeight 1) (localT 1)).pow 1)).mul
       (isWeightedHomogeneous_X
-        (R := R) firstOrderLocalSliceWeight (localY (0 : Fin 1)))
+        (R := R) (localTWeight 1) (localY (0 : Fin 1)))
 
 private theorem unscaledLocalSubstitution_zero_Y_zero_isSliceHomogeneous
     {R : Type*} [CommRing R] :
     (unscaledLocalSubstitution (R := R) 1 0 0 (MvPolynomial.X (some 0))).IsWeightedHomogeneous
-      firstOrderLocalSliceWeight 1 := by
+      (localTWeight 1) 1 := by
   rw [unscaledLocalSubstitution_Y_zero]
   have hT := isWeightedHomogeneous_X
-    (R := R) firstOrderLocalSliceWeight (localT 1)
+    (R := R) (localTWeight 1) (localT 1)
   have hE := isWeightedHomogeneous_X
-    (R := R) firstOrderLocalSliceWeight (localE 1)
-  simpa [firstOrderLocalSliceWeight] using
-    (isWeightedHomogeneous_zero R firstOrderLocalSliceWeight 1).add
+    (R := R) (localTWeight 1) (localE 1)
+  simpa [localTWeight] using
+    (isWeightedHomogeneous_zero R (localTWeight 1) 1).add
       (localCorrection_one_isSliceHomogeneous (R := R)) |>.add (hT.mul hE)
 
 /-- At the origin, a first-order source monomial with ordinary exponent `x` and hidden-value
@@ -150,30 +129,30 @@ theorem localConstraintAt_zero_sourceMonomial_isSliceHomogeneous
     {R : Type*} [CommRing R]
     (m x a : ℕ) (higher : Fin 1 → ℕ) :
     (localConstraintAt (R := R) (d := 1) m 0 0
-      (sourceMonomial x a higher)).IsWeightedHomogeneous
-        firstOrderLocalSliceWeight (x + a) := by
+    (sourceMonomial x a higher)).IsWeightedHomogeneous
+        (localTWeight 1) (x + a) := by
   have hT := isWeightedHomogeneous_X
-    (R := R) firstOrderLocalSliceWeight (localT 1)
+    (R := R) (localTWeight 1) (localT 1)
   have hY₀ := unscaledLocalSubstitution_zero_Y_zero_isSliceHomogeneous (R := R)
   have hhigher' : (∏ j, MvPolynomial.X (localY j) ^ higher j :
-      LocalPolynomial R 1).IsWeightedHomogeneous firstOrderLocalSliceWeight
+      LocalPolynomial R 1).IsWeightedHomogeneous (localTWeight 1)
         (∑ _j : Fin 1, 0) := by
     apply MvPolynomial.IsWeightedHomogeneous.prod
     intro j _
-    simpa [firstOrderLocalSliceWeight, localY] using
+    simpa [localTWeight, localY] using
       (isWeightedHomogeneous_X
-        (R := R) firstOrderLocalSliceWeight (localY j)).pow (higher j)
+        (R := R) (localTWeight 1) (localY j)).pow (higher j)
   have hhigher : (∏ j, MvPolynomial.X (localY j) ^ higher j :
-      LocalPolynomial R 1).IsWeightedHomogeneous firstOrderLocalSliceWeight 0 := by
+      LocalPolynomial R 1).IsWeightedHomogeneous (localTWeight 1) 0 := by
     simpa using hhigher'
   have hunscaled :
       (unscaledLocalSubstitution (R := R) 1 0 0
         (sourceMonomial x a higher)).IsWeightedHomogeneous
-          firstOrderLocalSliceWeight (x + a) := by
+          (localTWeight 1) (x + a) := by
     simp only [sourceMonomial, map_mul, map_pow, map_prod,
       unscaledLocalSubstitution_X, unscaledLocalSubstitution_Y_zero,
       unscaledLocalSubstitution_Y_succ]
-    simpa [firstOrderLocalSliceWeight, localT, add_assoc] using
+    simpa [localTWeight, localT, add_assoc] using
       ((hT.pow x).mul (hY₀.pow a)).mul hhigher
   intro e he
   apply hunscaled
@@ -193,7 +172,7 @@ theorem coeff_localConstraintAt_zero_sourceMonomial_eq_zero_of_T_degree_ne
       (sourceMonomial x a higher)) = 0 := by
   apply (localConstraintAt_zero_sourceMonomial_isSliceHomogeneous
     (R := R) m x a higher).coeff_eq_zero
-  simpa [Finsupp.weight_eq_sum, Fintype.sum_option, firstOrderLocalSliceWeight, localT]
+  simpa [Finsupp.weight_eq_sum, Fintype.sum_option, localTWeight, localT]
     using hdegree
 
 /-! ### Exact origin slice matrices -/
@@ -320,13 +299,6 @@ theorem firstOrderGradedSourceColumn_mem {D A m M s t μ : ℕ}
     _ = s + (D - 1) * t := by rw [hs_split, ht_split]
     _ < m * A := hbounds.1
 
-/-- The first-jet statistic of a first-order source column is its sole higher coordinate. -/
-@[simp] theorem SourceColumn.firstJetExponent_exponent (c : SourceColumn 1) :
-    firstJetExponent c.exponent = c.higher 0 := by
-  rw [firstJetExponent_eq_coordinates (by omega : 0 < 1)]
-  rw [jetExponentCoordinatesEquiv_apply]
-  exact SourceColumn.exponent_succ c 0
-
 /-- Every eligible source column is represented in its unique origin `(s,t)` slice. -/
 noncomputable def firstOrderGradedSourceColumnIndex
     {D A m M μ : ℕ} (hD : 0 < D) (c : SourceColumn 1)
@@ -337,14 +309,13 @@ noncomputable def firstOrderGradedSourceColumnIndex
   let b := c.higher 0
   let t := totalJetDegree c.exponent
   let s := c.x + c.y₀
-  have hc' := (mem_firstOrderExponents.mp hc)
+  have hcoords := (mem_firstOrderExponents_iff_coordinates).mp hc
+  have hthird : c.exponent (some 1) = c.higher 0 := by
+    simpa using SourceColumn.exponent_succ c (0 : Fin 1)
   have ht : t = a + b := by
     simp [t, a, b, SourceColumn.totalJetDegree_exponent]
-  have hbM : b ≤ M := by simpa [b] using hc'.1
+  have hbM : b ≤ M := by simpa [b, hthird] using hcoords.1
   have hdegree : c.x + D * a + (D - 1) * b < m * A := by
-    have hcoords := (mem_firstOrderExponents_iff_coordinates).mp hc
-    have hthird : c.exponent (some 1) = c.higher 0 := by
-      simpa using SourceColumn.exponent_succ c (0 : Fin 1)
     simpa [a, b, SourceColumn.exponent_none, SourceColumn.exponent_zero, hthird] using
       hcoords.2.2
   have hDa : D * a = (D - 1) * a + a := by
@@ -375,10 +346,12 @@ theorem firstOrderGradedSourceColumn_index_eq
   let a := c.y₀
   let b := c.higher 0
   let t := totalJetDegree c.exponent
-  have hc' := (mem_firstOrderExponents.mp hc)
+  have hcoords := (mem_firstOrderExponents_iff_coordinates).mp hc
+  have hthird : c.exponent (some 1) = c.higher 0 := by
+    simpa using SourceColumn.exponent_succ c (0 : Fin 1)
   have ht : t = a + b := by
     simp [t, a, b, SourceColumn.totalJetDegree_exponent]
-  have hbM : b ≤ M := by simpa [b] using hc'.1
+  have hbM : b ≤ M := by simpa [b, hthird] using hcoords.1
   have haM : t - M ≤ a := by rw [ht]; omega
   apply SourceColumn.exponent_injective
   ext v
@@ -1073,10 +1046,7 @@ theorem firstOrderCurveGradedFinMatrix_degree_le
     (D A m M μ n ℓ : ℕ) (centers : Fin n → F) (w : Fin n → F[X])
     (hw : ∀ i, (w i).natDegree ≤ ℓ)
     (i : Fin (Fintype.card (FirstOrderCurveGradedRowIndex F D A m M μ n)))
-    (j : Fin (Fintype.card ↑(firstOrderExponents D A m M μ)))
-    (_hweight : firstOrderCurveGradedFinRowWeight F D A m M μ n ℓ i ≤
-      ℓ * totalJetDegree
-        (firstOrderColumns (D := D) (A := A) (m := m) (M := M) (μ := μ) j).exponent) :
+    (j : Fin (Fintype.card ↑(firstOrderExponents D A m M μ))) :
     (firstOrderCurveGradedFinMatrix D A m M μ n centers w i j).natDegree ≤
       ℓ * totalJetDegree
           (firstOrderColumns (D := D) (A := A) (m := m) (M := M) (μ := μ) j).exponent -
