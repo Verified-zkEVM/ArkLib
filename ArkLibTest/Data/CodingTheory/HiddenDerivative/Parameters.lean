@@ -9,6 +9,12 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FreeOrder
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RankRounding
 import Mathlib.Data.ZMod.Basic
 
+/-!
+# Hidden-derivative parameter acceptance tests
+
+Concrete checks for characteristic budgets, free-order bounds, and rank rounding.
+-/
+
 open PolynomialDifferential ReedSolomon.HiddenDerivative
 open ReedSolomon.HiddenDerivative.InterpolationRounding
 
