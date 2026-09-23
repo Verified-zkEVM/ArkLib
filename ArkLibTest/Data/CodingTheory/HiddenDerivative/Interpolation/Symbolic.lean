@@ -249,7 +249,7 @@ example : Nonempty (Fin 1 × LowContactIndex 1 1) ∧ ∃ v : Fin 1 → ℚ[X], 
     (s := 0) receivedLineMatrixRankZero (by decide)
 
 private def shiftedKernelColumns : Fin 2 → SourceColumn 1 := fun j =>
-  if j = 0 then ⟨0, 1, fun _ => 0⟩ else ⟨1, 1, fun _ => 0⟩
+  ⟨j.val, 0, fun _ => 1⟩
 
 private theorem shiftedKernelColumns_injective : Function.Injective shiftedKernelColumns := by
   intro i j hij
@@ -258,6 +258,77 @@ private theorem shiftedKernelColumns_injective : Function.Injective shiftedKerne
 private theorem shiftedKernelColumns_degree (j : Fin 2) :
     totalJetDegree (shiftedKernelColumns j).exponent = 1 := by
   fin_cases j <;> simp [shiftedKernelColumns]
+
+private theorem shiftedKernelColumns_interpolant (v : Fin 2 → (ZMod 5)[X]) :
+    SourceColumn.interpolant shiftedKernelColumns v =
+      v 0 • (MvPolynomial.X (some 1) : DifferentialPolynomial (ZMod 5)[X] 1) +
+        v 1 • ((MvPolynomial.X none : DifferentialPolynomial (ZMod 5)[X] 1) *
+          MvPolynomial.X (some 1)) := by
+  rw [SourceColumn.interpolant_eq_sum_smul]
+  simp [shiftedKernelColumns, SourceColumn.polynomial_eq_sourceMonomial, sourceMonomial]
+
+private noncomputable def shiftedConstraintMatrix :
+    Matrix (Fin 1) (Fin 2) (ZMod 5)[X] := fun _ j => if j = 0 then 1 else 0
+
+private theorem shiftedKernelColumns_constraint_iff (v : Fin 2 → (ZMod 5)[X]) :
+    SatisfiesLocalConstraints 1 (Polynomial.C (0 : ZMod 5)) (0 : (ZMod 5)[X])
+      (SourceColumn.interpolant shiftedKernelColumns v) ↔ v 0 = 0 := by
+  rw [satisfiesLocalConstraints_iff_coeff_eq_zero]
+  have hsub :
+      unscaledLocalSubstitution 1 (Polynomial.C (0 : ZMod 5)) (0 : (ZMod 5)[X])
+        (SourceColumn.interpolant shiftedKernelColumns v) =
+      MvPolynomial.C (v 0) * MvPolynomial.X (localY 0) +
+        MvPolynomial.C (v 1) *
+          MvPolynomial.monomial
+            (Finsupp.single (localT 1) 1 + Finsupp.single (localY 0) 1) 1 := by
+    have hmon :
+        (MvPolynomial.X (localT 1) : LocalPolynomial (ZMod 5)[X] 1) *
+          MvPolynomial.X (localY 0) =
+        MvPolynomial.monomial
+          (Finsupp.single (localT 1) 1 + Finsupp.single (localY 0) 1) 1 := by
+      rw [← pow_one (MvPolynomial.X (localT 1)), ← pow_one (MvPolynomial.X (localY 0)),
+        MvPolynomial.X_pow_eq_monomial, MvPolynomial.X_pow_eq_monomial,
+        MvPolynomial.monomial_mul_monomial]
+      norm_num
+    have hsource : (some 1 : JetVariable 1) = some (Fin.succ (0 : Fin 1)) := by decide
+    rw [shiftedKernelColumns_interpolant]
+    simp only [map_add, map_smul, map_mul]
+    rw [hsource]
+    rw [unscaledLocalSubstitution_Y_succ, unscaledLocalSubstitution_X]
+    simp only [Polynomial.C_0, MvPolynomial.C_0, zero_add]
+    simp only [localT, localY] at hmon ⊢
+    rw [smul_eq_C_mul, smul_eq_C_mul]
+    rw [hmon]
+  have hcoeff :
+      (unscaledLocalSubstitution 1 (Polynomial.C (0 : ZMod 5)) (0 : (ZMod 5)[X])
+        (SourceColumn.interpolant shiftedKernelColumns v)).coeff
+          (Finsupp.single (localY 0) 1) = v 0 := by
+    rw [hsub]
+    have hne : Finsupp.single (localT 1) 1 + Finsupp.single (localY 0) 1 ≠
+        Finsupp.single (localY 0) 1 := by
+      intro h
+      have ht := congrArg (fun q => q (localT 1)) h
+      simp [localT, localY] at ht
+    simp [hne]
+  constructor
+  · intro h
+    have h := h (Finsupp.single (localY 0) 1) (by
+      rw [localContactOrder_eq]
+      simp [localT, localE, localAux, localY])
+    rw [hcoeff] at h
+    exact h
+  · intro hv e he
+    rw [hsub]
+    have hT : e (localT 1) = 0 := by
+      rw [localContactOrder_eq] at he
+      omega
+    have hT' : e none = 0 := by simpa [localT] using hT
+    have hne : Finsupp.single (localT 1) 1 + Finsupp.single (localY 0) 1 ≠ e := by
+      intro h
+      have ht := congrArg (fun q => q (localT 1)) h
+      simp [localT, localY] at ht
+      omega
+    simp [hv, hne]
 
 /-- A concrete shifted row and column surplus constructs a primitive interpolant. -/
 example :
@@ -269,24 +340,38 @@ example :
       (∀ {E : Type*} [Field E] (ι : ZMod 5 →+* E) (z : E),
         MvPolynomial.map (Polynomial.eval₂RingHom ι z)
           (SourceColumn.interpolant shiftedKernelColumns v) ≠ 0) ∧
-      ∀ _i : Fin 0, SatisfiesLocalConstraints 1 (Polynomial.C (0 : ZMod 5))
+      ∀ _i : Fin 1, SatisfiesLocalConstraints 1 (Polynomial.C (0 : ZMod 5))
         (0 : (ZMod 5)[X])
         (SourceColumn.interpolant shiftedKernelColumns v) := by
   exact exists_primitive_interpolant_of_shifted_height
-    (F := ZMod 5) (d := 1) (n := 0) (N := 2) (rows := 1) 1 1 1
-    (fun _ : Fin 0 ↦ (0 : ZMod 5)) (fun _ : Fin 0 ↦ (0 : (ZMod 5)[X]))
+    (F := ZMod 5) (d := 1) (n := 1) (N := 2) (rows := 1) 1 1 1
+    (fun _ : Fin 1 ↦ (0 : ZMod 5)) (fun _ : Fin 1 ↦ (0 : (ZMod 5)[X]))
     shiftedKernelColumns shiftedKernelColumns_injective
-    (0 : Matrix (Fin 1) (Fin 2) (ZMod 5)[X]) (fun _ : Fin 1 ↦ 1)
-    (by intro v; simp)
+    shiftedConstraintMatrix (fun _ : Fin 1 ↦ 1)
+    (by
+      intro v
+      constructor
+      · intro hv i
+        have hv0 : v 0 = 0 := by
+          simpa [shiftedConstraintMatrix, Matrix.mulVec, dotProduct] using congrFun hv 0
+        fin_cases i
+        exact (shiftedKernelColumns_constraint_iff v).2 hv0
+      · intro h
+        have hv0 := (shiftedKernelColumns_constraint_iff v).1 (h 0)
+        ext i
+        fin_cases i
+        simp [shiftedConstraintMatrix, Matrix.mulVec, dotProduct, hv0])
     (by
       intro i j h
       rw [shiftedKernelColumns_degree j] at h ⊢
-      norm_num at h ⊢)
+      fin_cases i
+      fin_cases j <;> norm_num [shiftedConstraintMatrix] at h ⊢)
     (by
       intro i j h
       rw [shiftedKernelColumns_degree j] at h
       norm_num at h)
-    (by norm_num [shiftedKernelColumns, SourceColumn.totalJetDegree_exponent])
+    (by norm_num [shiftedKernelColumns, SourceColumn.totalJetDegree_exponent,
+      shiftedConstraintMatrix])
 
 namespace SymbolicCurveCertificateTest
 
