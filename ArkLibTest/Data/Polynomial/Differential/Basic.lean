@@ -35,6 +35,12 @@ example (P : ℚ[X]) (a : ℚ) :
       jetEvaluation valueAndFirstJet a (polynomialJet a P) :=
   eval_differentialSpecialization valueAndFirstJet P a
 
+/-- The affine jet identity holds even over the semiring `ℕ`. -/
+example (P Q : ℕ[X]) (a z : ℕ) :
+    polynomialJet (d := 2) a (P + Polynomial.C z * Q) =
+      fun j ↦ polynomialJet (d := 2) a P j + z * polynomialJet (d := 2) a Q j :=
+  polynomialJet_add_C_mul a z P Q
+
 end
 
 end PolynomialDifferential
