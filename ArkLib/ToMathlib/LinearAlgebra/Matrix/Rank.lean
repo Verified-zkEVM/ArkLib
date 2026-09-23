@@ -10,13 +10,13 @@ public import Mathlib.LinearAlgebra.Matrix.Rank
 /-!
 # Matrix rank of coordinate matrices and under coefficient maps
 
-This file adds two facts about `Matrix.rank` for matrices with finitely many columns and an
+This file adds three facts about `Matrix.rank` for matrices with finitely many columns and an
 arbitrary, possibly infinite, row type.
 
 The first identifies the rank of a coordinate matrix with the rank of a linear map. If `b` is a
-finite basis of `M` and `f : M →ₗ[R] (m → R)`, the matrix whose column `j` is `f (b j)` has rank
-`finrank R (LinearMap.range f)`. Mathlib's `Matrix.rank_eq_finrank_range_toLin` states the same
-for matrices with finitely many rows, where `Matrix.toLin` is available.
+finite basis of `M` and `f : M →ₗ[R] (m → R)`, the matrix whose column `j` is `f (b j)` has
+rank `finrank R (LinearMap.range f)`. Mathlib's `Matrix.rank_eq_finrank_range_toLin` states the
+same for matrices with finitely many rows, where `Matrix.toLin` is available.
 
 The second bounds the rank after applying a ring homomorphism `f : K →+* S` to every entry, where
 `K` is a field and `S` has the strong rank condition: `(A.map f).rank ≤ A.rank`. Over a field

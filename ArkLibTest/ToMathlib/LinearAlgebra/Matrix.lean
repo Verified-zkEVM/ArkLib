@@ -88,3 +88,64 @@ example : (M₀.submatrix r₀ id).rank = M₀.rank :=
   Matrix.rank_submatrix_eq_of_ne_zero_mem_range M₀ r₀ hr₀
 
 end SupportedRowsTest
+
+namespace ProductRowRankTest
+
+/-- A matrix with two independent rows, split into two one-row blocks and three columns. -/
+private def productRowsMatrix : Matrix (Fin 2 × Fin 1) (Fin 3) ℚ :=
+  fun row column => if row.1.val = column.val then 1 else 0
+
+/-- Two one-rank row blocks bound the rank of a three-column matrix by two. -/
+example : productRowsMatrix.rank = 2 ∧
+    (∑ i : Fin 2, Matrix.rank (fun row column => productRowsMatrix (i, row) column)) = 2 ∧
+    Fintype.card (Fin 3) >
+      ∑ i : Fin 2, Matrix.rank (fun row column => productRowsMatrix (i, row) column) ∧
+    productRowsMatrix.rank ≤
+      ∑ i : Fin 2, Matrix.rank (fun row column => productRowsMatrix (i, row) column) := by
+  have hblock : ∀ i : Fin 2,
+      Matrix.rank (fun row column => productRowsMatrix (i, row) column) = 1 := by
+    intro i
+    let block : Matrix (Fin 1) (Fin 3) ℚ :=
+      fun row column => productRowsMatrix (i, row) column
+    have hupper : block.rank ≤ 1 := by
+      simpa using (Matrix.rank_le_card_height block)
+    let r : Fin 1 → Fin 1 := fun _ => 0
+    let c : Fin 1 → Fin 3 := fun _ => ⟨i.val, by omega⟩
+    have hminor : block.submatrix r c = 1 := by
+      ext row column
+      fin_cases row
+      fin_cases column
+      simp [Matrix.submatrix, block, productRowsMatrix, r, c]
+    have hlower : 1 ≤ block.rank := by
+      have hminorRank : (block.submatrix r c).rank = 1 := by
+        rw [hminor, Matrix.rank_one]
+        simp
+      calc
+        1 = (block.submatrix r c).rank := hminorRank.symm
+        _ ≤ block.rank := Matrix.rank_submatrix_le block r c
+    exact Nat.le_antisymm hupper hlower
+  have hupper : productRowsMatrix.rank ≤ 2 := by
+    simpa using (Matrix.rank_le_card_height productRowsMatrix)
+  let r : Fin 2 → Fin 2 × Fin 1 := fun i => (i, 0)
+  let c : Fin 2 → Fin 3 := fun i => ⟨i.val, by omega⟩
+  have hminor : productRowsMatrix.submatrix r c = 1 := by
+    ext row column
+    rw [Matrix.submatrix_apply]
+    fin_cases row <;> fin_cases column <;>
+      norm_num [Matrix.one_apply, productRowsMatrix, r, c]
+  have hlower : 2 ≤ productRowsMatrix.rank := by
+    have hminorRank : (productRowsMatrix.submatrix r c).rank = 2 := by
+      rw [hminor, Matrix.rank_one]
+      simp
+    calc
+      2 = (productRowsMatrix.submatrix r c).rank := hminorRank.symm
+      _ ≤ productRowsMatrix.rank := Matrix.rank_submatrix_le productRowsMatrix r c
+  have hmatrix : productRowsMatrix.rank = 2 := Nat.le_antisymm hupper hlower
+  have hsum :
+      (∑ i : Fin 2, Matrix.rank (fun row column => productRowsMatrix (i, row) column)) = 2 := by
+    simp [hblock]
+  refine ⟨hmatrix, hsum, ?_, Matrix.rank_prod_rows_le_sum productRowsMatrix⟩
+  rw [hsum]
+  simp
+
+end ProductRowRankTest
