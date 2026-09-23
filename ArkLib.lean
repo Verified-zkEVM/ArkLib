@@ -317,7 +317,8 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ord
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Pairs.ExceptionalSet
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Pairs.Family
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.SingularTail
-public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TaylorChart.PointRecognition
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TaylorChart.PointRecognition
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TupleSpecialization
 public import ArkLib.Data.CodingTheory.ReedSolomon.PowerAgreement
 public import ArkLib.Data.CodingTheory.ReedSolomon.PowerAgreement.ConstantCode
@@ -438,7 +439,6 @@ public import ArkLib.Data.Polynomial.Differential.SeparantChain
 public import ArkLib.Data.Polynomial.Differential.ShiftedJet
 public import ArkLib.Data.Polynomial.Differential.SingularRecursion
 public import ArkLib.Data.Polynomial.Differential.TaylorChart
-public import ArkLib.Data.Polynomial.Differential.TaylorChartAlgebra
 public import ArkLib.Data.Polynomial.Differential.TaylorChartAlgebra
 public import ArkLib.Data.Polynomial.Differential.TaylorChartGeometry
 public import ArkLib.Data.Polynomial.Differential.TaylorChartIncidence
