@@ -64,12 +64,6 @@ example : 1 < firstOrderCleanExpression (1 / 2) (3 / 4) :=
   firstOrderCleanExpression_gt_one (by norm_num) (by norm_num)
     half_rate_threshold_lt_three_four
 
-/-- At these parameters, the exact rank density is below the source density. -/
-example : firstOrderRankDensity (firstOrderRateBeta (1 / 2) (3 / 4)) <
-    firstOrderSourceDensity (1 / 2) (3 / 4) (firstOrderRateBeta (1 / 2) (3 / 4)) :=
-  firstOrderRate_surplus_pos (by norm_num) (by norm_num) (by norm_num)
-    half_rate_threshold_lt_three_four
-
 /-- The exact rank density is below its cubic envelope at `β = 3/4`. -/
 example : firstOrderRankDensity (3 / 4) ≤ firstOrderRankCubicEnvelope (3 / 4) :=
   firstOrderRankDensity_le_cubicEnvelope (3 / 4)

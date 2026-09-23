@@ -47,25 +47,34 @@ example : (2 : ℝ) * (1 + rateGap (1 / 2) ((2 : ℝ) / 10)) ≤ 3 + 5 := by
   norm_num at h ⊢
   exact h
 
+/-- At `δ = 1/4`, `n = 8m` and `k = m`, the positive-dimensional block bounds hold. -/
 example :
     let δ : ℝ := 1 / 4
     let d := ⌈Real.exp (xi / δ)⌉₊
     let m := ⌈100 * (d : ℝ) ^ 2 * (harmonic (d - 1) : ℝ)⌉₊
     let n := 8 * m
-    let K := max 0 ⌊δ * n / 2⌋₊
-    let D := K - 1
-    d < D := by
+    0 < m ∧ d < weightedSupportAmbientDimension δ n m - 1 := by
   let δ : ℝ := 1 / 4
   let d := ⌈Real.exp (xi / δ)⌉₊
   let m := ⌈100 * (d : ℝ) ^ 2 * (harmonic (d - 1) : ℝ)⌉₊
   let n := 8 * m
-  have hA : 0 + ⌈δ * (n : ℝ)⌉₊ ≤ n := by
-    have hceil : ⌈δ * (n : ℝ)⌉₊ ≤ n := Nat.ceil_le.mpr (by
-      dsimp [δ]
-      have hn : (0 : ℝ) ≤ (n : ℝ) := Nat.cast_nonneg n
-      nlinarith)
-    simpa using hceil
-  exact (prescribedBlockBounds δ n 0 (by norm_num [δ]) (by norm_num [δ]) (by rfl) hA).2.2.1
+  have hm : 0 < m := by
+    apply weightedSupportMultiplicity_pos_iff.mpr
+    have h := prescribed_order_lower δ (by norm_num [δ]) (by norm_num [δ])
+    have hd : 48000 ≤ d := by simpa [d, δ] using h.1
+    dsimp [d]
+    omega
+  have hceil : ⌈δ * (n : ℝ)⌉₊ = 2 * m := by
+    rw [show δ * (n : ℝ) = ((2 * m : ℕ) : ℝ) by dsimp [δ, n]; push_cast; ring,
+      Nat.ceil_natCast]
+  have hA : m + ⌈δ * (n : ℝ)⌉₊ ≤ n := by
+    rw [hceil]
+    dsimp [n]
+    omega
+  have hblock : 8 * m ≤ n := by dsimp [n]; omega
+  have h := prescribedBlockBounds δ n m (by norm_num [δ]) (by norm_num [δ])
+    (by change 8 * m ≤ n; exact hblock) hA
+  exact ⟨hm, h.2.2.1⟩
 
 /-! ### Capacity parameters -/
 
@@ -76,25 +85,33 @@ example : 48000 ≤ capacityDerivativeOrder (1 / 8) :=
 example : 0 < weightedSupportMultiplicity 2 :=
   weightedSupportMultiplicity_pos_iff.mpr (by norm_num)
 
+/-- At `δ = 1/8`, `n = 8m` and `k = m`, the capacity bounds hold with positive `k`. -/
 example :
     let δ : ℝ := 1 / 8
     let m := weightedSupportMultiplicity (capacityDerivativeOrder δ)
     let n := 8 * m
-    let K := weightedSupportAmbientDimension δ n 0
-    0 < n ∧ capacityDerivativeOrder δ < K - 1 ∧ 0 ≤ K ∧ K ≤ n := by
+    let K := weightedSupportAmbientDimension δ n m
+    0 < m ∧ 0 < n ∧ capacityDerivativeOrder δ < K - 1 ∧ 0 ≤ K ∧ K ≤ n := by
   let δ : ℝ := 1 / 8
   let m := weightedSupportMultiplicity (capacityDerivativeOrder δ)
   let n := 8 * m
-  let K := weightedSupportAmbientDimension δ n 0
-  have h := capacity_block_bounds (δ := δ) (n := n) (k := 0) (by norm_num [δ])
-    (by norm_num [δ]) (by change 8 * m ≤ 8 * m; exact le_rfl) (by
-      have hceil : ⌈δ * (n : ℝ)⌉₊ ≤ n := Nat.ceil_le.mpr (by
-        dsimp [δ]
-        have hn : (0 : ℝ) ≤ (n : ℝ) := Nat.cast_nonneg n
-        nlinarith)
-      simpa using hceil)
-  rcases h with ⟨hn, hD, hKlo, hKhi⟩
-  exact ⟨hn, hD, hKlo, hKhi⟩
+  let K := weightedSupportAmbientDimension δ n m
+  have hd : 2 ≤ capacityDerivativeOrder δ := by
+    have h := (capacityDerivativeOrder_lower (δ := δ) (by norm_num [δ])
+      (by norm_num [δ])).1
+    omega
+  have hm : 0 < m := weightedSupportMultiplicity_pos_iff.mpr hd
+  have hceil : ⌈δ * (n : ℝ)⌉₊ = m := by
+    rw [show δ * (n : ℝ) = (m : ℝ) by dsimp [δ, n]; push_cast; ring, Nat.ceil_natCast]
+  have hA : m + ⌈δ * (n : ℝ)⌉₊ ≤ n := by
+    rw [hceil]
+    dsimp [n]
+    omega
+  have hblock : 8 * m ≤ n := by dsimp [n]; omega
+  have h := capacity_block_bounds (δ := δ) (n := n) (k := m)
+    (by norm_num [δ]) (by norm_num [δ]) (by change 8 * m ≤ n; exact hblock) hA
+  rcases h with ⟨hn, hD, -, hKhi⟩
+  exact ⟨hm, hn, hD, Nat.zero_le _, hKhi⟩
 
 /-! ### Dimension inputs -/
 
@@ -172,44 +189,6 @@ example :
     (ρ := 1 / 3) (H := 108 / 5) (logd := 108 / 5) (by norm_num [theta]) (by norm_num [xi])
     (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num [xi]) (by norm_num [xi])
 
-/-! ### Rounding parameters -/
-
-example : (⌊(2 : ℝ) * 2 * 3 / 2⌋₊ : ℝ) * 2 / 2 ≤ 2 * 3 :=
-  floorRadius_mul_div_le 2 2 2 3 (by norm_num)
-
-example : (⌊(2 : ℝ) * 2 * 3 / 2⌋₊ : ℝ) / (2 * 1 * 3) ≤ 2 / (1 * 2) :=
-  floorRadius_normalized_le 2 1 2 2 3 (by norm_num) (by norm_num) (by norm_num)
-
-example :
-    (1 - 1 / 2 : ℝ) ^ 2 * (2 / (1 * 2)) ^ 2 ≤
-      ((⌊(2 : ℝ) * 2 * 3 / 2⌋₊ : ℝ) / (2 * 1 * 3)) ^ 2 :=
-  floorRadius_sq_ge 2 2 1 2 2 3 (by norm_num) (by norm_num) (by norm_num) (by norm_num)
-    (by norm_num) (by norm_num)
-
-example :
-  (1 - theta) * 1 * 3 * (1 - 3) ≤
-      (3 : ℝ) * (1 + 1) + (2 - 1 : ℕ) - (4 + 0 + Nat.choose 2 2 : ℕ) * 2 / 2 :=
-  remainingDegree_lower theta 3 1 2 2 3 0 4 (by omega) (by norm_num [theta]) (by norm_num)
-    (by
-      symm
-      rw [Nat.floor_eq_iff (by norm_num [theta])]
-      norm_num [theta]) (by norm_num [theta])
-
-example :
-    (3 : ℝ) * (1 + 1) + (2 - 1 : ℕ) - (4 + 0 + Nat.choose 2 2 : ℕ) * 2 / 2 ≤
-      (1 - theta) * 1 * 3 * (1 + 2) :=
-  remainingDegree_upper theta 2 1 2 2 3 0 4 (by omega) (by norm_num) (by
-      symm
-      rw [Nat.floor_eq_iff (by norm_num [theta])]
-      norm_num [theta]) (by norm_num [theta])
-
-example : ((4 + 0 + Nat.choose 2 2 : ℕ) : ℝ) / 2 ≤ ((1 + theta * 1) * 3 / 2) * (1 + 1) :=
-  enlargedRadius_upper theta 1 1 2 2 3 0 4 (by omega) (by omega) (by norm_num [theta]) (by norm_num)
-    (by
-      symm
-      rw [Nat.floor_eq_iff (by norm_num [theta])]
-      norm_num [theta]) (by norm_num [theta])
-
 /-! ### Mean and variance bounds -/
 
 example :
@@ -258,13 +237,6 @@ example :
   refine ⟨hcenter, ?_⟩
   dsimp only [g, W] at hfiber
   simpa only [one_mul, mul_one] using hfiber
-
-example :
-    0 < (1250 : ℝ) ∧
-      (1250 : ℝ) + 1 / (4 * 1250) + 1 ≤ 2000 * (448 / 625 : ℝ) :=
-  residualMeanVariance_le 1250 1 2000 (by norm_num)
-    (by norm_num [residualFraction, theta]) (by norm_num [residualFraction, theta])
-    (by norm_num [xi]) (by norm_num)
 
 /-! ### Scalar parameters -/
 

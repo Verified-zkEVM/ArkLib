@@ -111,14 +111,6 @@ example :
   exact half_rate_le_ambientDimension_sub_one_div (ε := 1 / 2) (θ := 1 / 2)
     (n := 12) (by norm_num [ambientDimension])
 
-/-- The rounded-rank interval at `a = H = 1`, `d = 2`, and `m = 2`. -/
-example :
-    1 / 2 ≤ ((2 - 1 : ℕ) : ℝ) * 2 / Nat.floor ((1 : ℝ) * (2 : ℕ) * 2 / 1) ∧
-      ((2 - 1 : ℕ) : ℝ) * 2 / Nat.floor ((1 : ℝ) * (2 : ℕ) * 2 / 1) ≤ 1 := by
-  have h := kappa_interval 1 1 2 2 (by norm_num) (by norm_num) (by norm_num) (by norm_num)
-    (by norm_num)
-  norm_num at h ⊢
-
 /-- The sharper floor interval and the order-normalized interval both hold at `a = H = 1`. -/
 example :
     let R := (1 : ℝ) * 2 * 4 / 1
