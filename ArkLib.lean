@@ -101,6 +101,7 @@ public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.HeightCounting
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.Interpolant
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.Space
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.SymbolicRank
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FreeOrderDimension
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Global.Interpolation
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Global.Multiplicity
@@ -118,6 +119,7 @@ public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.Rank
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.RankBudget
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.RemainderMap
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.Translation
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.ZeroOrder
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.Basic
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.Counting
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.Dimension
@@ -435,6 +437,7 @@ public import ArkLib.Data.Polynomial.Differential.RecursiveCount
 public import ArkLib.Data.Polynomial.Differential.RegularIteration
 public import ArkLib.Data.Polynomial.Differential.RegularJetCount
 public import ArkLib.Data.Polynomial.Differential.RegularLift
+public import ArkLib.Data.Polynomial.Differential.RootPresentation
 public import ArkLib.Data.Polynomial.Differential.SeparantChain
 public import ArkLib.Data.Polynomial.Differential.ShiftedJet
 public import ArkLib.Data.Polynomial.Differential.SingularRecursion
