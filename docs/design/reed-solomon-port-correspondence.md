@@ -3873,6 +3873,11 @@ The acceptance cases check the strict gate at rate `1/2` and gap `1/4`, the sele
 Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/RatePartition/UniformGamma.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 The acceptance cases check concrete low- and high-rate base bounds and margins for arbitrary and uniform derivative orders, the uniform order's lower bound, and boundary cases for the small-gap and positive-order hypotheses.
+## `ArkLibTest/Data/CodingTheory/HiddenDerivative/Interpolation/PartitionSupport/MomentSource.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/RatePartition/SourceEstimate.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+The source declaration `ratePartition_dimension_gt_of_moment` is covered by the existing generic theorem `partitionSupport_dimension_gt_moment`. The acceptance case derives the source-shaped dimension estimate with cutoff `m * A`, explicit simplex volume, and exponent count, checking the cutoff and scale conversions, simplex-volume identity, and finrank-to-exponent-count identity. The generic theorem allows an arbitrary moment bound, rate, level, logarithm, and natural cutoff. No ArkLib production declaration is added; the source-specific wrapper is not needed because the generic theorem already covers it.
 ## `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/PointRecognition.lean`
 
 Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/PointRecognition.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
