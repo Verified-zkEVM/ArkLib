@@ -570,6 +570,26 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation
 `ratePartition_floor_integral` → `partition_floor_square_integral`, specialized to the whole weighted simplex. The existing `Finset.setIntegral_le_sum_natWeightedSimplex` handles the generic arbitrary-subset floor-transfer result, so no specialized arbitrary-subset version was added.
 
 `ratePartition_dimension_ge_integral` → `partitionSupport_dimension_ge_integral_on` and `ratePartition_dimension_ge_rate_integral` → `partitionSupport_dimension_ge_rate_integral_on`. Both bounds now allow real cutoffs and subsets specified by inclusion in the weighted simplex; the dimension is expressed as `finrank`. The rate form has no separate integrability hypotheses.
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Local/ZeroOrder.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/OrderZero/LocalImage.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`zeroLocalExponent`, `zeroLocalExponent_reconstruct`, `zeroLocalExponents`, and
+`mem_zeroLocalExponents` are renamed to `zeroOrderLocalExponent`,
+`zeroOrderLocalExponent_reconstruct`, `zeroOrderLocalExponents`, and
+`mem_zeroOrderLocalExponents`. The exponent set remains the triangular set characterized by
+`E ≤ T < m`. `localConstraint_zero_support`, `range_localConstraint_zero_le`,
+`finite_localConstraint_zero_range`, `card_zeroLocalExponents_le`,
+`finrank_localConstraint_zero_le`, and `finrank_localConstraint_zero_domRestrict_le` are renamed
+to their `zeroOrder` or `At_zeroOrder` names; their support statements and rank bounds are
+unchanged. The support argument uses the general local-constraint and local-substitution support
+results, together with the general contact-order result.
+
+Not ported: `unscaled_zero_support` is covered by `localE_le_localT_of_mem_support` in
+`Local/Coordinates.lean`, which holds at every derivative order. `localContactOrder_zero` is
+covered by `localContactOrder_eq` in `Variables.lean`. `ZeroLocalIndex` and `card_zeroLocalIndex`
+are not separate public declarations; the finite Sigma index and its cardinality calculation are
+kept internal.
 
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/SourceMonomial.lean`
 
