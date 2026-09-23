@@ -19,16 +19,7 @@ This file defines two ways to interpret a polynomial relation in `X, Y₀, ..., 
 
 The comparison theorem `eval_differentialSpecialization` says that these interpretations agree
 after evaluating the specialized univariate polynomial. No characteristic hypothesis is needed:
-specialization uses Hasse derivatives and is valid over every commutative semiring. The scalar
-Hasse jet is also compatible with affine combinations of polynomials.
-
-## Main statements
-
-* `eval_differentialSpecialization`: evaluation of a differential specialization on the Hasse
-  jet.
-* `polynomialJet_add_C_mul`: affine combinations commute with taking a Hasse jet.
-
-## References
+specialization uses Hasse derivatives and is valid over every commutative semiring.
 -/
 
 @[expose] public section

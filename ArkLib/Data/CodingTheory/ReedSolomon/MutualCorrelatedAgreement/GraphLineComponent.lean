@@ -8,9 +8,7 @@ module
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.GraphLine
 public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TaylorChart.PointRecognition
-public import ArkLib.Data.Polynomial.Differential.TaylorChart
-public import ArkLib.Data.Polynomial.Differential.RationalTaylorAlgebra
-public import ArkLib.ToMathlib.MvPolynomial.PolynomialCoefficients
+public import ArkLib.Data.Polynomial.Differential.TaylorChartAlgebra
 public import ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertPolynomial
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.PrincipalOpenParametrization
 /-!
@@ -42,48 +40,6 @@ namespace ReedSolomon
 noncomputable section
 
 variable {E : Type*} [Field E] {r : ℕ}
-
-/-- The initial equation in joint challenge and initial-jet coordinates. -/
-def jointInitialJetEquation (center : E) (Q : DifferentialPolynomial E[X] r) :
-    MvPolynomial (Option (Fin (r + 1))) E :=
-  (optionEquivRight E (Fin (r + 1))).symm
-    (PolynomialDifferential.initialJetEquation (Polynomial.C center) Q)
-
-/-- The initial separant in joint challenge and initial-jet coordinates. -/
-def jointInitialJetSeparant (center : E) (Q : DifferentialPolynomial E[X] r) :
-    MvPolynomial (Option (Fin (r + 1))) E :=
-  (optionEquivRight E (Fin (r + 1))).symm
-    (PolynomialDifferential.initialJetSeparant (Polynomial.C center) Q)
-
-/-- A cleared Taylor coefficient in joint challenge and initial-jet coordinates. -/
-def jointCommonTaylorNumerator (center : E) (Q : DifferentialPolynomial E[X] r)
-    (τ : ℕ) {K : ℕ} (l : Fin K) : MvPolynomial (Option (Fin (r + 1))) E :=
-  (optionEquivRight E (Fin (r + 1))).symm
-    (PolynomialDifferential.commonTaylorNumeratorOver E (Polynomial.C center) Q τ l.val)
-
-/-- The cleared agreement equation in joint challenge and initial-jet coordinates. -/
-def jointTaylorAgreementEquation (center : E) (Q : DifferentialPolynomial E[X] r)
-    (K τ : ℕ) (x y : E[X]) : MvPolynomial (Option (Fin (r + 1))) E :=
-  (optionEquivRight E (Fin (r + 1))).symm
-    (PolynomialDifferential.taylorAgreementEquationOver (F := E)
-      (Polynomial.C center) Q K x y (τ := τ))
-
-/-- The cleared equation identifying one Taylor coefficient with an affine pair. -/
-def jointTaylorReconstructionError (center : E) (Q : DifferentialPolynomial E[X] r)
-    (τ : ℕ) {K : ℕ} (P₀ P₁ : E[X]) (l : Fin K) :
-    MvPolynomial (Option (Fin (r + 1))) E :=
-  jointCommonTaylorNumerator center Q τ l -
-    jointInitialJetSeparant center Q ^ τ *
-      (MvPolynomial.C ((Polynomial.taylor center P₀).coeff l.val) +
-        MvPolynomial.X none * MvPolynomial.C ((Polynomial.taylor center P₁).coeff l.val))
-
-/-- The polynomial parametrization of the initial jets of an affine pair. -/
-def affinePairCurve (center : E) (P₀ P₁ : E[X]) :
-    Option (Fin (r + 1)) → E[X] := fun i ↦
-  match i with
-  | none => Polynomial.X
-  | some j => Polynomial.C (polynomialJet center P₀ j) +
-      Polynomial.X * Polynomial.C (polynomialJet center P₁ j)
 
 private theorem eval_jointInitialJetSeparant (center : E)
     (Q : DifferentialPolynomial E[X] r) (x : Option (Fin (r + 1)) → E) :

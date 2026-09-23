@@ -8,6 +8,7 @@ module
 public import ArkLib.Data.Polynomial.Differential.RationalTaylorAlgebra
 public import ArkLib.Data.Polynomial.Differential.RationalTaylorJointDegree
 public import ArkLib.Data.Polynomial.Differential.TaylorChart
+public import ArkLib.ToMathlib.MvPolynomial.PolynomialCoefficients
 
 /-!
 # Symbolic equations on the rational Taylor chart
@@ -24,6 +25,10 @@ separant denominator.
   evaluation of the initial equation.
 * `taylorAgreementEquationOver` and its map theorem define symbolic agreement equations over an
   algebra and specialize them to field-valued cuts.
+* `jointInitialJetEquation`, `jointInitialJetSeparant`, and `jointCommonTaylorNumerator` define
+  flattened challenge and jet coordinates for the Taylor chart.
+* `jointTaylorAgreementEquation`, `jointTaylorReconstructionError`, and `affinePairCurve` describe
+  the agreement cuts and affine-pair graph in those coordinates.
 * `commonTaylorNumeratorOver_eq` and `map_commonTaylorNumeratorOver_eq` bridge algebra-valued
   numerators to their field-valued counterparts.
 * `aeval_map_taylorAgreementEquationOver` characterizes regular agreement cuts, while
@@ -96,6 +101,49 @@ def taylorAgreementEquationOver (center : A) (Q : DifferentialPolynomial A r) (K
     (x y : A) (τ : ℕ := 2 * K) : MvPolynomial (Fin (r + 1)) A :=
   (∑ l : Fin K, C ((x - center) ^ l.val) *
     commonTaylorNumeratorOver F center Q τ l.val) - C y * initialJetSeparant center Q ^ τ
+
+variable {E : Type*} [Field E]
+
+/-- The initial equation in joint challenge and initial-jet coordinates. -/
+def jointInitialJetEquation (center : E) (Q : DifferentialPolynomial (Polynomial E) r) :
+    MvPolynomial (Option (Fin (r + 1))) E :=
+  (optionEquivRight E (Fin (r + 1))).symm
+    (initialJetEquation (Polynomial.C center) Q)
+
+/-- The initial separant in joint challenge and initial-jet coordinates. -/
+def jointInitialJetSeparant (center : E) (Q : DifferentialPolynomial (Polynomial E) r) :
+    MvPolynomial (Option (Fin (r + 1))) E :=
+  (optionEquivRight E (Fin (r + 1))).symm
+    (initialJetSeparant (Polynomial.C center) Q)
+
+/-- A cleared Taylor coefficient in joint challenge and initial-jet coordinates. -/
+def jointCommonTaylorNumerator (center : E) (Q : DifferentialPolynomial (Polynomial E) r)
+    (τ : ℕ) {K : ℕ} (l : Fin K) : MvPolynomial (Option (Fin (r + 1))) E :=
+  (optionEquivRight E (Fin (r + 1))).symm
+    (commonTaylorNumeratorOver E (Polynomial.C center) Q τ l.val)
+
+/-- The cleared agreement equation in joint challenge and initial-jet coordinates. -/
+def jointTaylorAgreementEquation (center : E) (Q : DifferentialPolynomial (Polynomial E) r)
+    (K τ : ℕ) (x y : Polynomial E) : MvPolynomial (Option (Fin (r + 1))) E :=
+  (optionEquivRight E (Fin (r + 1))).symm
+    (taylorAgreementEquationOver (F := E) (Polynomial.C center) Q K x y (τ := τ))
+
+/-- The cleared equation identifying one Taylor coefficient with an affine pair. -/
+def jointTaylorReconstructionError (center : E) (Q : DifferentialPolynomial (Polynomial E) r)
+    (τ : ℕ) {K : ℕ} (P₀ P₁ : Polynomial E) (l : Fin K) :
+    MvPolynomial (Option (Fin (r + 1))) E :=
+  jointCommonTaylorNumerator center Q τ l -
+    jointInitialJetSeparant center Q ^ τ *
+      (MvPolynomial.C ((Polynomial.taylor center P₀).coeff l.val) +
+        MvPolynomial.X none * MvPolynomial.C ((Polynomial.taylor center P₁).coeff l.val))
+
+/-- The polynomial parametrization of the initial jets of an affine pair. -/
+def affinePairCurve (center : E) (P₀ P₁ : Polynomial E) :
+    Option (Fin (r + 1)) → Polynomial E := fun i ↦
+  match i with
+  | none => Polynomial.X
+  | some j => Polynomial.C (polynomialJet center P₀ j) +
+      Polynomial.X * Polynomial.C (polynomialJet center P₁ j)
 
 /-- An affine agreement cut has joint degree at most `1 + τ * B` when its separant and common
 numerators have joint degrees at most `B` and `1 + τ * B`, respectively. -/

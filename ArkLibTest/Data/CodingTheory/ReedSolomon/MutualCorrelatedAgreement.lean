@@ -69,7 +69,8 @@ private theorem componentIdeal_degree_pos :
   have h := natDegree_affineHilbertPolynomial_span_singleton_add_one
     (f := componentVariable (E := ComponentField)) (X_ne_zero _) componentIdeal_isPrime.ne_top
   have hcard : Nat.card (Option (Fin 1)) = 2 := by simp
-  have h' : (affineHilbertPolynomial (componentIdeal (E := ComponentField))).natDegree + 1 = 2 := by
+  have h' :
+      (affineHilbertPolynomial (componentIdeal (E := ComponentField))).natDegree + 1 = 2 := by
     simpa [componentIdeal, componentVariable, hcard] using h
   omega
 
