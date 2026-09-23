@@ -86,7 +86,8 @@ theorem aeval_map_taylorAgreementEquationOver_of_exponent {E : Type*} [Field E]
     aeval jet (map φ.toRingHom
       (taylorAgreementEquationOver (F := F) center Q K x y (τ := τ))) =
         aeval jet (map φ.toRingHom (initialJetSeparant center Q)) ^ τ *
-          ((rationalTaylorPolynomial (φ center) (map φ.toRingHom Q) K jet).eval (φ x) - φ y) := by
+          ((rationalTaylorPolynomial (φ center) (map φ.toRingHom Q) K jet).eval (φ x) -
+            φ y) := by
   rw [map_initialJetSeparant φ.toRingHom center Q] at hS ⊢
   rw [map_taylorAgreementEquationOver_eq (τ := τ)]
   simpa only [AlgHom.toRingHom_eq_coe, AlgHom.coe_toRingHom] using

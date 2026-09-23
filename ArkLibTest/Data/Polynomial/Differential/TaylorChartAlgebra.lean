@@ -22,26 +22,42 @@ open MvPolynomial
 
 private abbrev parameterEquation : DifferentialPolynomial (Polynomial ℚ) 1 := X (some 1)
 
+private abbrev parameterizedEquation : DifferentialPolynomial (Polynomial ℚ) 1 :=
+  C (Polynomial.X + 1) * X (some 1) + X none
+
 private abbrev rationalId : ℚ →ₐ[ℚ] ℚ := AlgHom.id ℚ ℚ
 
-/-- Specializing a parameter in an algebra-valued cut gives the field-valued cut with the same
-explicit exponent. -/
-example (a : ℚ) (τ : ℕ) :
-    map (Polynomial.aeval a).toRingHom
+/-- Evaluating the parameter `X` at `2` computes the agreement cut as `Y₀ + 2Y₁ - 2`. -/
+example :
+    map (Polynomial.aeval (2 : ℚ)).toRingHom
         (taylorAgreementEquationOver (F := ℚ) (0 : Polynomial ℚ) parameterEquation 2
-          Polynomial.X Polynomial.X (τ := τ)) =
-      taylorAgreementEquation (0 : ℚ) (X (some 1) : DifferentialPolynomial ℚ 1)
-        2 τ a a := by
-  simpa using map_taylorAgreementEquationOver_eq (F := ℚ) (Polynomial.aeval a)
-    (0 : Polynomial ℚ) parameterEquation 2 Polynomial.X Polynomial.X τ
+          Polynomial.X Polynomial.X) =
+      X (0 : Fin 2) + C (2 : ℚ) * X (1 : Fin 2) - C (2 : ℚ) := by
+  have hnum0 : commonTaylorNumeratorOver ℚ (0 : Polynomial ℚ) parameterEquation 4 0 =
+      X (0 : Fin 2) := by
+    simp [commonTaylorNumeratorOver, rationalTaylorNumeratorOver, parameterEquation,
+      initialJetSeparant, separant]
+  have hnum1 : commonTaylorNumeratorOver ℚ (0 : Polynomial ℚ) parameterEquation 4 1 =
+      X (1 : Fin 2) := by
+    simp [commonTaylorNumeratorOver, rationalTaylorNumeratorOver, parameterEquation,
+      initialJetSeparant, separant]
+  have hcut : taylorAgreementEquationOver (F := ℚ) (0 : Polynomial ℚ) parameterEquation 2
+      Polynomial.X Polynomial.X =
+        X (0 : Fin 2) + C Polynomial.X * X (1 : Fin 2) - C Polynomial.X := by
+    simp [taylorAgreementEquationOver, hnum0, hnum1, initialJetSeparant,
+      parameterEquation, separant]
+  rw [hcut]
+  simp only [map_sub, map_add, map_mul, map_C, map_X, AlgHom.toRingHom_eq_coe,
+    AlgHom.coe_toRingHom, Polynomial.aeval_X]
 
-/-- The mapped initial equation evaluates as the mapped differential polynomial. -/
-example (a : ℚ) (jet : Fin 2 → ℚ) :
-    aeval jet (map (Polynomial.aeval a).toRingHom
-      (initialJetEquation (0 : Polynomial ℚ) parameterEquation)) =
-      jetEvaluation (map (Polynomial.aeval a).toRingHom parameterEquation) 0 jet := by
-  simpa using aeval_map_initialJetEquation (Polynomial.aeval a).toRingHom
-    (0 : Polynomial ℚ) parameterEquation jet
+/-- Mapping the initial equation evaluates the polynomial coefficient `X + 1` at `2`. -/
+example :
+    map (Polynomial.aeval (2 : ℚ)).toRingHom
+        (initialJetEquation (Polynomial.X : Polynomial ℚ) parameterizedEquation) =
+      C (3 : ℚ) * X (1 : Fin 2) + C (2 : ℚ) := by
+  norm_num [initialJetEquation, parameterizedEquation]
+  rw [← C_1, ← C_add]
+  norm_num
 
 private abbrev constantJetEquation : DifferentialPolynomial ℚ 1 := X (some 1)
 
@@ -118,6 +134,48 @@ private theorem initialJetSeparant_scaledEquation :
     aeval zeroJet0 (initialJetSeparant 0 scaledEquation) = 2 := by
   norm_num [initialJetSeparant, separant, scaledEquation, zeroJet0]
 
+/-- The first rational Taylor coefficient of the regular zero jet is `1 / 2`. -/
+private theorem rationalTaylorCoefficient_scaledEquation_one :
+    rationalTaylorCoefficient 0 scaledEquation zeroJet0 1 = (1 / 2 : ℚ) := by
+  have hsolutionJet : polynomialJet 0 scaledSolution = zeroJet0 := by
+    funext i
+    fin_cases i
+    simp [polynomialJet, scaledSolution, zeroJet0]
+  have hsep : jetEvaluation (separant scaledEquation (Fin.last 0)) 0
+      (polynomialJet 0 scaledSolution) ≠ 0 := by
+    rw [hsolutionJet]
+    norm_num [jetEvaluation, separant, scaledEquation, zeroJet0]
+  rw [← hsolutionJet, rationalTaylorCoefficient_eq_solution 0 scaledEquation scaledSolution
+      scaledSolution_sol hsep 1 (by intro i hi hle; simp)]
+  norm_num [scaledSolution]
+
+/-- The common-numerator theorem computes coefficient `1` of the reconstructed `X / 2`. -/
+example :
+    aeval zeroJet0 (map rationalId.toRingHom
+      (commonTaylorNumeratorOver ℚ 0 scaledEquation 4 1)) = 8 := by
+  have hS0 : aeval zeroJet0 (initialJetSeparant 0 scaledEquation) ≠ 0 := by
+    rw [initialJetSeparant_scaledEquation]
+    norm_num
+  have hS : aeval zeroJet0 (map rationalId.toRingHom
+      (initialJetSeparant 0 scaledEquation)) ≠ 0 := by
+    simpa [rationalId] using hS0
+  have hcoeff : (Polynomial.taylor 0
+      (rationalTaylorPolynomial 0 scaledEquation 2 zeroJet0)).coeff 1 = (1 / 2 : ℚ) := by
+    rw [coeff_taylor_rationalTaylorPolynomial]
+    simp [rationalTaylorCoefficient_scaledEquation_one]
+  have hnum := aeval_map_commonTaylorNumeratorOver_reconstruction (F := ℚ) rationalId
+    0 scaledEquation 2 zeroJet0 hS ⟨1, by omega⟩
+  have hSval : aeval zeroJet0
+      (map rationalId.toRingHom (initialJetSeparant 0 scaledEquation)) = 2 := by
+    simpa [rationalId] using initialJetSeparant_scaledEquation
+  have hcoeff' : (Polynomial.taylor (rationalId 0)
+      (rationalTaylorPolynomial (rationalId 0) (map rationalId.toRingHom scaledEquation) 2
+        zeroJet0)).coeff 1 = (1 / 2 : ℚ) := by
+    simpa [rationalId] using hcoeff
+  rw [hSval, hcoeff'] at hnum
+  norm_num at hnum ⊢
+  exact hnum
+
 /-- At exponent zero the agreement cut is `1`, while the reconstructed discrepancy is `1 / 2`;
 the sufficient exponent condition is therefore needed. -/
 example :
@@ -127,18 +185,7 @@ example :
   have hS : aeval zeroJet0 (initialJetSeparant 0 scaledEquation) ≠ 0 := by
     rw [initialJetSeparant_scaledEquation]
     norm_num
-  have hsolutionJet : polynomialJet 0 scaledSolution = zeroJet0 := by
-    funext i
-    fin_cases i
-    simp [polynomialJet, scaledSolution, zeroJet0]
-  have hsep : jetEvaluation (separant scaledEquation (Fin.last 0)) 0
-      (polynomialJet 0 scaledSolution) ≠ 0 := by
-    rw [hsolutionJet]
-    norm_num [jetEvaluation, separant, scaledEquation, zeroJet0]
-  have hc1 : rationalTaylorCoefficient 0 scaledEquation zeroJet0 1 = (1 / 2 : ℚ) := by
-    rw [← hsolutionJet, rationalTaylorCoefficient_eq_solution 0 scaledEquation scaledSolution
-      scaledSolution_sol hsep 1 (by intro i hi hle; simp)]
-    norm_num [scaledSolution]
+  have hc1 := rationalTaylorCoefficient_scaledEquation_one
   have hc0 : rationalTaylorCoefficient 0 scaledEquation zeroJet0 0 = 0 := by
     simpa [zeroJet0] using
       rationalTaylorCoefficient_initial 0 scaledEquation zeroJet0 ⟨0, by omega⟩
