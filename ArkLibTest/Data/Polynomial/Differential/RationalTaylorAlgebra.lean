@@ -74,8 +74,66 @@ example (l : ℕ) :
     map (Polynomial.aeval (0 : ℚ)).toRingHom
         (rationalTaylorNumeratorOver ℚ 0 singularEquation l) =
       rationalTaylorNumerator 0 (-X (some 0) : DifferentialPolynomial ℚ 1) l := by
-  rw [map_rationalTaylorNumeratorOver, rationalTaylorNumeratorOver_eq]
-  simp [singularEquation]
+  simpa [singularEquation] using
+    eval_rationalTaylorNumeratorOver (F := ℚ) 0 0 singularEquation l
+
+/-- The equation `Y₀ = (s + t)x` over `ℚ[s][t]`. -/
+private abbrev nestedEvaluationEquation :
+    DifferentialPolynomial (Polynomial (Polynomial ℚ)) 0 :=
+  X (some 0) -
+    C ((Polynomial.X : Polynomial (Polynomial ℚ)) +
+      Polynomial.C (Polynomial.X : Polynomial ℚ)) * X none
+
+private abbrev innerEvaluation : Polynomial ℚ →ₐ[ℚ] ℚ := Polynomial.aeval 2
+
+private abbrev challengeEvaluation : Polynomial (Polynomial ℚ) →ₐ[ℚ] ℚ :=
+  Polynomial.eval₂AlgHom innerEvaluation 3
+    (fun a ↦ Commute.all (innerEvaluation a) (3 : ℚ))
+
+/-- At center `2`, the equation `Y₀ = 5x` has first numerator `5`. -/
+private theorem specializedNestedNumerator :
+    rationalTaylorNumerator (2 : ℚ)
+      (X (some 0) - C (5 : ℚ) * X none : DifferentialPolynomial ℚ 0) 1 =
+        (C (5 : ℚ) : MvPolynomial (Fin 1) ℚ) := by
+  rw [rationalTaylorNumerator, dite_eq_right (by norm_num)]
+  have hres :
+        optionEquivLeft ℚ (Fin 1)
+          (universalTaylorResidual 1 (2 : ℚ)
+            (X (some 0) - C (5 : ℚ) * X none : DifferentialPolynomial ℚ 0)) =
+        Polynomial.C
+            ((monomial (Finsupp.single (0 : Fin 1) 1) (1 : ℚ)) :
+              MvPolynomial (Fin 1) ℚ) -
+          Polynomial.C (C (5 : ℚ)) * (Polynomial.C (C (2 : ℚ)) + Polynomial.X) := by
+    simp [universalTaylorResidual, universalTaylorJet, optionEquivLeft_monomial]
+  have hcoeff :
+      (optionEquivLeft ℚ (Fin 1)
+        (universalTaylorResidual 1 (2 : ℚ)
+          (X (some 0) - C (5 : ℚ) * X none : DifferentialPolynomial ℚ 0))).coeff 1 =
+        -C (5 : ℚ) := by
+    rw [hres]
+    simp
+  classical
+  norm_num [hcoeff, clearedSubstitution, rationalTaylorNumerator,
+    MvPolynomial.support_C]
+
+/-- Evaluating `s` at `2` and `t` at `3` sends the numerator of
+`Y₀ = (s + t)x` at index `1` to the constant numerator `5`. -/
+example :
+    map challengeEvaluation.toRingHom
+        (rationalTaylorNumeratorOver ℚ (Polynomial.C Polynomial.X)
+          nestedEvaluationEquation 1) =
+      (C (5 : ℚ) : MvPolynomial (Fin 1) ℚ) := by
+  rw [eval₂AlgHom_rationalTaylorNumeratorOver]
+  have hcenter : innerEvaluation Polynomial.X = 2 := by simp [innerEvaluation]
+  have hmap : map challengeEvaluation.toRingHom nestedEvaluationEquation =
+      (X (some 0) - (C (3 : ℚ) + C (2 : ℚ)) * X none : DifferentialPolynomial ℚ 0) := by
+    norm_num [nestedEvaluationEquation, challengeEvaluation, innerEvaluation,
+      Polynomial.eval₂AlgHom]
+  have hcoeff : (C (3 : ℚ) + C (2 : ℚ) : MvPolynomial (Option (Fin 1)) ℚ) = C 5 := by
+    rw [← map_add]
+    norm_num
+  rw [hcenter, hmap, hcoeff]
+  exact specializedNestedNumerator
 
 /-- Over `ZMod 2` the pivot `(2 choose 1)` is zero, so every first-order equation over
 `(ZMod 2)[t]` has numerator `0` at `l = 2`. -/

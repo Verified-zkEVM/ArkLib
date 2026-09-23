@@ -137,3 +137,92 @@ example : ¬ ((1 : ℝ) / (2 * (1 / 2)) * (max (1 - (1 / 2) * 0) 0) ^ 2 ≤
 example : ¬ ((1 : ℝ) / (2 * 1) * (max (2 - 1 * 0) 0) ^ 2 ≤
     (1 : ℝ) / 2 * (max (1 / 1 - 0) 0) ^ 2) := by
   norm_num
+/-! ### Staircase slots -/
+
+private theorem emptyTuple_mem_natWeightedSimplex :
+    (0 : Fin 0 → ℕ) ∈ natWeightedSimplex (fun i : Fin 0 => i.val + 1) 0 := by
+  apply (mem_natWeightedSimplex (w := fun i : Fin 0 => i.val + 1)
+    (hw := fun i => Nat.succ_ne_zero i.val)).2
+  simp
+
+private noncomputable def xCoefficientAreaSlot : PartitionSupportAreaSlot 2 0 0 3 :=
+  ⟨⟨0, emptyTuple_mem_natWeightedSimplex⟩, ⟨⟨0, by norm_num⟩, ⟨1, by norm_num⟩⟩⟩
+
+private noncomputable def constantCoefficientAreaSlot : PartitionSupportAreaSlot 2 0 0 3 :=
+  ⟨⟨0, emptyTuple_mem_natWeightedSimplex⟩, ⟨⟨0, by norm_num⟩, ⟨0, by norm_num⟩⟩⟩
+
+/-- At `D = 2` and `L = 3`, two valid staircase slots represent `X` and the constant monomial. -/
+example :
+    partitionSupportAreaSlotExponent xCoefficientAreaSlot none = 1 ∧
+      partitionSupportAreaSlotExponent constantCoefficientAreaSlot none = 0 := by
+  constructor <;> rfl
+
+/-- The distinct slots for `X` and the constant monomial have distinct exponents. -/
+example : partitionSupportAreaSlotExponent xCoefficientAreaSlot ≠
+    partitionSupportAreaSlotExponent constantCoefficientAreaSlot := by
+  intro h
+  have hslots := partitionSupportAreaSlotExponent_injective h
+  have hX := congrArg (fun p => p.2.exponents.1) hslots
+  change (1 : ℕ) = 0 at hX
+  omega
+
+/-- Each of these concrete area slots gives an exponent in the partition support. -/
+example :
+    partitionSupportAreaSlotExponent xCoefficientAreaSlot ∈
+      partitionSupportExponents 2 0 0 3 two_pos ∧
+      partitionSupportAreaSlotExponent constantCoefficientAreaSlot ∈
+        partitionSupportExponents 2 0 0 3 two_pos := by
+  constructor <;> apply mem_partitionSupportExponents.mpr
+  · exact partitionSupportAreaSlotExponent_eligible two_pos xCoefficientAreaSlot
+  · exact partitionSupportAreaSlotExponent_eligible two_pos constantCoefficientAreaSlot
+
+private def zeroDerivativeTuple : Fin 1 → ℕ := fun _ => 0
+
+private def unitDerivativeTuple : Fin 1 → ℕ := fun _ => 1
+
+private theorem zeroDerivativeTuple_mem_natWeightedSimplex :
+    zeroDerivativeTuple ∈ natWeightedSimplex (fun i : Fin 1 => i.val + 1) 1 := by
+  apply (mem_natWeightedSimplex (hw := fun i : Fin 1 => Nat.succ_ne_zero i.val)).2
+  norm_num [zeroDerivativeTuple]
+
+private theorem unitDerivativeTuple_mem_natWeightedSimplex :
+    unitDerivativeTuple ∈ natWeightedSimplex (fun i : Fin 1 => i.val + 1) 1 := by
+  apply (mem_natWeightedSimplex (hw := fun i : Fin 1 => Nat.succ_ne_zero i.val)).2
+  norm_num [unitDerivativeTuple]
+
+private noncomputable def zeroDerivativeAreaSlot : PartitionSupportAreaSlot 2 1 1 5 :=
+  ⟨⟨zeroDerivativeTuple, zeroDerivativeTuple_mem_natWeightedSimplex⟩,
+    ⟨⟨0, by norm_num [zeroDerivativeTuple, QuadraticStaircase.Slot]⟩,
+      ⟨0, by norm_num [zeroDerivativeTuple, QuadraticStaircase.Slot]⟩⟩⟩
+
+private noncomputable def unitDerivativeAreaSlot : PartitionSupportAreaSlot 2 1 1 5 :=
+  ⟨⟨unitDerivativeTuple, unitDerivativeTuple_mem_natWeightedSimplex⟩,
+    ⟨⟨0, by norm_num [unitDerivativeTuple, QuadraticStaircase.Slot]⟩,
+      ⟨0, by norm_num [unitDerivativeTuple, QuadraticStaircase.Slot]⟩⟩⟩
+
+/-- With `d = 1`, the slots for derivative tuples `0` and `1` have the corresponding `Y₁`
+exponents. -/
+example :
+    partitionSupportAreaSlotExponent zeroDerivativeAreaSlot (some (0 : Fin 1).succ) = 0 ∧
+      partitionSupportAreaSlotExponent unitDerivativeAreaSlot (some (0 : Fin 1).succ) = 1 := by
+  constructor <;> rfl
+
+/-- The `d = 1` slots with different derivative tuples give distinct exponents by injectivity. -/
+example : partitionSupportAreaSlotExponent zeroDerivativeAreaSlot ≠
+    partitionSupportAreaSlotExponent unitDerivativeAreaSlot := by
+  intro h
+  have hslots := partitionSupportAreaSlotExponent_injective h
+  have hc := congrArg (fun p => p.1.val 0) hslots
+  norm_num [zeroDerivativeAreaSlot, unitDerivativeAreaSlot, zeroDerivativeTuple,
+    unitDerivativeTuple] at hc
+
+/-- At `D = 0`, no staircase slot represents the eligible exponent `Y₀`, so positive `D` is needed
+for the slot enumeration to cover the partition support. -/
+example : ¬ Nonempty (PartitionSupportAreaSlot 0 0 0 1) ∧
+    PartitionSupportEligible 0 0 0 1 (partitionSourceExponent 0 1 0) := by
+  constructor
+  · rintro ⟨⟨c, slot⟩⟩
+    have hbound := slot.1.isLt
+    norm_num at hbound
+  · rw [partitionSupportEligible_partitionSourceExponent_iff]
+    simp
