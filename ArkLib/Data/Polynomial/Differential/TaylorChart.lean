@@ -41,7 +41,8 @@ agreement with `k` distinct points determine the initial jet.
 
 ## Main statements
 
-* `initialJetEquation`, `aeval_initialJetEquation`, `totalDegree_initialJetEquation_le`,
+* `initialJetEquation`, `map_initialJetEquation`, `aeval_map_initialJetEquation`,
+  `aeval_initialJetEquation`, `totalDegree_initialJetEquation_le`,
   `pderiv_last_initialJetEquation` and `aeval_initialJetEquation_polynomialJet`: the initial
   hypersurface.
 * `commonTaylorNumerator`, `totalDegree_commonTaylorNumerator_le` and
@@ -87,6 +88,16 @@ def initialJetEquation (center : R) (Q : DifferentialPolynomial R r) :
     MvPolynomial (Fin (r + 1)) R :=
   aeval (fun i ↦ i.elim (C center) X) Q
 
+/-- Mapping coefficients sends the initial equation to the initial equation of the mapped
+differential polynomial. -/
+theorem map_initialJetEquation {S : Type*} [CommSemiring S] (f : R →+* S) (center : R)
+    (Q : DifferentialPolynomial R r) :
+    map f (initialJetEquation center Q) = initialJetEquation (f center) (map f Q) := by
+  simp only [initialJetEquation, aeval_def, algebraMap_eq, map_eval₂]
+  congr 1
+  funext i
+  cases i <;> simp
+
 /-- The initial separant is the initial equation of the separant. -/
 theorem initialJetEquation_separant (center : R) (Q : DifferentialPolynomial R r) :
     initialJetEquation center (separant Q (Fin.last r)) = initialJetSeparant center Q :=
@@ -103,6 +114,15 @@ theorem aeval_initialJetEquation (center : R) (Q : DifferentialPolynomial R r)
     intro i
     cases i <;> simp
   exact DFunLike.congr_fun he Q
+
+/-- Evaluating the mapped initial equation agrees with evaluating the mapped differential
+polynomial at the mapped center. -/
+theorem aeval_map_initialJetEquation {S : Type*} [CommSemiring S] (f : R →+* S)
+    (center : R) (Q : DifferentialPolynomial R r) (jet : Fin (r + 1) → S) :
+    aeval jet (map f (initialJetEquation center Q)) =
+      jetEvaluation (map f Q) (f center) jet := by
+  rw [map_initialJetEquation]
+  exact aeval_initialJetEquation (f center) (map f Q) jet
 
 /-- Setting the independent variable to a constant does not increase the total jet degree. -/
 theorem totalDegree_initialJetEquation_le (center : R) (Q : DifferentialPolynomial R r) :
