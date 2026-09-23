@@ -8,14 +8,13 @@ module
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.WeightedSupport
 
 /-!
-# Coefficient specialization of symbolic interpolation
+# Weighted support under coefficient specialization
 
-Coefficient homomorphisms preserve local constraints and weighted support. In particular, every
-specialization of a symbolic weighted-support interpolant remains in the same support space.
+Applying a coefficient homomorphism to a linear combination of eligible source monomials
+preserves its weighted support over the target coefficient field.
 
 ## Main statements
 
-* `SatisfiesLocalConstraints.map`: local constraints are preserved by coefficient homomorphisms.
 * `map_interpolant_mem_weightedSupportSpace`: challenge specialization preserves weighted support.
 
 ## References
@@ -35,19 +34,8 @@ namespace ReedSolomon.HiddenDerivative.SymbolicReceivedInterpolation
 open MvPolynomial
 open scoped BigOperators
 
-variable {R S : Type*} [CommRing R] [CommRing S] {d : ℕ}
-
-/-- Local constraints are preserved by every coefficient-ring homomorphism. -/
-theorem SatisfiesLocalConstraints.map (φ : R →+* S) (m : ℕ) (center received : R)
-    (Q : DifferentialPolynomial R d)
-    (hQ : SatisfiesLocalConstraints m center received Q) :
-    SatisfiesLocalConstraints m (φ center) (φ received) (MvPolynomial.map φ Q) := by
-  rw [SatisfiesLocalConstraints] at hQ ⊢
-  rw [← ReedSolomon.HiddenDerivative.map_localConstraintAt]
-  simpa using congrArg (MvPolynomial.map φ) hQ
-
 variable {F E : Type*} [Field F] [Field E]
-variable {D A m W : ℕ} {L : ℝ}
+variable {d D m W : ℕ} {L : ℝ}
 
 /-- Specializing a symbolic interpolant preserves the weighted-support bound on its monomials. -/
 theorem map_interpolant_mem_weightedSupportSpace (hD : 0 < D)

@@ -37,6 +37,7 @@ All maps are linear over an arbitrary commutative ring `R`.
   forms of the local constraints agree.
 * `map_projectLowContact` and `map_unscaledLocalSubstitution`: both operations commute with
   changing coefficients.
+* `SatisfiesLocalConstraints.map`: local constraints are preserved by coefficient homomorphisms.
 * `enlargedLocalConstraintMap_truncateLocalT`: reducing modulo `T^m` before the rewrite does not
   change the enlarged constraints.
 * `localConstraintAt_eq_enlarged_comp_translated`: the point-dependent map is
@@ -195,6 +196,15 @@ unscaled local substitution, every monomial of contact order below `m` has coeff
 def SatisfiesLocalConstraints (m : ℕ) (center received : R)
     (Q : DifferentialPolynomial R d) : Prop :=
   localConstraintAt m center received Q = 0
+
+/-- Local constraints are preserved by every coefficient-ring homomorphism. -/
+theorem SatisfiesLocalConstraints.map {S : Type*} [CommRing S] (φ : R →+* S) (m : ℕ)
+    (center received : R) (Q : DifferentialPolynomial R d)
+    (hQ : SatisfiesLocalConstraints m center received Q) :
+    SatisfiesLocalConstraints m (φ center) (φ received) (MvPolynomial.map φ Q) := by
+  rw [SatisfiesLocalConstraints] at hQ ⊢
+  rw [← map_localConstraintAt]
+  simpa using congrArg (MvPolynomial.map φ) hQ
 
 /-- The local constraints hold exactly when their coordinate vector vanishes. -/
 theorem satisfiesLocalConstraints_iff_coordinates_eq_zero

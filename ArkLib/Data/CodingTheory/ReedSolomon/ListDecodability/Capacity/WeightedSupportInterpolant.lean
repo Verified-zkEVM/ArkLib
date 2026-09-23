@@ -193,10 +193,6 @@ theorem exists_prescribed_weightedSupport_construction_core
   have hkK : k ≤ K := by
     dsimp only [K]
     exact Nat.le_max_left _ _
-  have hDchar : D < ringChar (ZMod q) := by
-    rw [ringChar.eq (ZMod q) q]
-    have hDK : D < K := by dsimp only [D]; omega
-    exact hDK.trans_le (hKn.trans hnq)
   have hmchar : 2 * m < ringChar (ZMod q) := by
     rw [ringChar.eq (ZMod q) q]
     have : 2 * m < 8 * m := by omega
