@@ -1090,6 +1090,14 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation
 
 `ratePartitionGamma_eq_rateGamma` is not ported because `rateGamma` is the destination's canonical limiting ratio. The weight-budget and finite-ratio bridge equalities are also unnecessary because the destination directly uses `partitionWeightBudget` and `partitionFiniteRatio`.
 
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition/MathematicalUniform.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/RatePartition/MathematicalUniform.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Renamed `uniformRatePartitionMathematicalMultiplicity`, `uniformRatePartitionMathematicalJetBound`, `uniformRatePartitionMathematicalLength`, `uniformRatePartitionMathematicalLength_eq_ceil`, `uniformRatePartitionOrder_ge_519`, `uniformRatePartitionOrder_le_mathematicalJetBound`, `uniformRatePartitionMathematical_integer_guards`, `uniformRatePartitionMathematical_totalJetDegree_le`, `uniformRatePartitionMathematical_low_ratio_gt`, and `uniformRatePartitionMathematical_high_ratio_gt` to their `uniformMathematical...` or `uniformDerivativeOrder...` destination names. `exists_mathematicalRatePartitionEnvelope` keeps its name and specializes the shared `RatePartitionEnvelope` at `uniformMathematicalMultiplicity δ`. The total-jet bound uses the equivalent `PartitionSupportEligible` predicate, and the scale-300 ratio proofs share one finite-ratio argument and reuse the generalized gamma bounds.
+
+`uniformCapacityLengthThreshold300` is deferred because this unit has no consumer; its first consumers are in the ListDecodability and MutualCorrelatedAgreement mathematical-uniform capacity units. `ratePartitionMathematicalMultiplicity_ge_order` is covered by the stronger generic `add_two_le_closedMultiplicity`, which needs only scale at least 3 and order at least 1.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition/Moment.lean`
 
 Ported from the moment part of
@@ -1163,11 +1171,19 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/Ra
 
 No declarations from the designated source file were left unported. The generalized Gamma bounds and their uniform-order specializations are supplied by `main`'s `UniformGamma` module. The proof uses the existing `rateGamma_eq_exponential` identity; the redundant branch-local `rateGamma_eq_exp` alias was removed.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/RatePartition/UniformEnvelope.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Renamed `UniformRatePartitionEnvelope` to `RatePartitionEnvelope` and generalized the record with an explicit interpolation multiplicity parameter. Added `exists_ratePartitionEnvelope` for the common branch construction. `exists_uniformRatePartitionEnvelope` keeps its name and now specializes that theorem at the executable `uniformMultiplicity δ`.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition/UniformGamma.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/RatePartition/UniformGamma.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 `uniformRatePartitionOrder_ge_500` is now `uniformDerivativeOrder_ge_500`. The four uniform-order theorems `uniformRatePartitionGamma_low_base_gt`, `uniformRatePartitionGamma_low_gt`, `uniformRatePartitionGamma_high_base_gt`, and `uniformRatePartitionGamma_high_gt` are now `uniformRateGamma_low_base_gt`, `uniformRateGamma_low_gt`, `uniformRateGamma_high_base_gt`, and `uniformRateGamma_high_gt`. The corresponding arbitrary-order bounds are generalized to positive orders satisfying the logarithmic lower bound and are named `rateGamma_low_base_gt`, `rateGamma_low_gt`, `rateGamma_high_base_gt`, and `rateGamma_high_gt`. The bounds cover low- and high-rate margins, with and without the finite-multiplicity factor.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/RatePartition/UniformGamma.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Added the public numerical bound `log_forty_ninths_lt_d9`, used to prove the scale-300 finite-ratio margin.
 
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition/UniformParameters.lean`
 
@@ -4033,6 +4049,12 @@ polynomial of the same natural degree (`natDegree_affineHilbertPolynomial_radica
 Deferred: the forward direction for points in a proper algebraically closed extension `K` of `k`.
 Its proof needs the finitely many maximal ideals of the quotient, since the functions from a
 finite set to `K` do not form a finite-dimensional `k`-space.
+
+## `ArkLibTest/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition.lean`
+
+Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/RatePartition.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Acceptance cases use the shared envelope record for the scale-1000 recipe and check the scale-300 order bound, length equality, jet and integer guards, total-jet bound, low- and high-rate ratio branches, and envelope existence.
 
 ## `ArkLibTest/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition.lean` — fixed-rate gate cases
 

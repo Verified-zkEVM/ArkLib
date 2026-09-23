@@ -25,6 +25,7 @@ multiplicity factor `exp (-1/1000)` in both rate branches.
 * `rateGamma_low_base_gt`, `rateGamma_high_base_gt`: lower bounds before finite-multiplicity loss.
 * `rateGamma_low_gt`, `rateGamma_high_gt`: lower bounds after the loss `exp (-1/1000)`.
 * `uniformDerivativeOrder_ge_500` and the four `uniformRateGamma_*` specializations.
+* `log_forty_ninths_lt_d9`: a numerical upper bound used for the scale-300 margin.
 
 ## References
 
@@ -54,6 +55,12 @@ private theorem log_forty_ninths_eq :
 
 private theorem log_forty_ninths_lt :
     Real.log (40 / 9 : ℝ) < 373 / 250 := by
+  rw [log_forty_ninths_eq]
+  linarith [Real.log_two_lt_d9, Real.log_three_gt_d9, Real.log_five_lt_d9]
+
+/-- A decimal upper bound for `log (40 / 9)` used in the scale-300 finite-ratio margin. -/
+theorem log_forty_ninths_lt_d9 :
+    Real.log (40 / 9 : ℝ) < 1.491654878 := by
   rw [log_forty_ninths_eq]
   linarith [Real.log_two_lt_d9, Real.log_three_gt_d9, Real.log_five_lt_d9]
 
