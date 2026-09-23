@@ -11,6 +11,7 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FreeOrderDimensio
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Space
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.SourceMonomial
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.SpecializationDegree
+import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.SolutionEmbedding
 
 /-!
 # Hidden-derivative interpolation acceptance cases
@@ -156,6 +157,17 @@ example : differentialSpecialization (constantCertificate zmodDomain 0).interpol
     rw [Code.agree]
     simp
   exact (constantCertificate zmodDomain 0).specializes_to_zero 0 hAgreement
+
+example :
+    ∃ solution : BoundedSolution (zmodCertificate 0).interpolant 1,
+      solution.polynomial = (0 : Polynomial (ZMod 5)) := by
+  have hAgreement : 2 ≤ Code.agree
+      (ReedSolomon.evalOnPoints zmodDomain (0 : MessagePolynomial (ZMod 5) 2))
+      (fun _ : Fin 2 ↦ (0 : ZMod 5)) := by
+    rw [Code.agree]
+    simp
+  exact ReedSolomon.HiddenDerivative.InterpolationCertificate.exists_solution
+    (zmodCertificate 0).toInterpolationCertificate ⟨0, hAgreement⟩
 
 example :
     (differentialSpecialization (X none : DifferentialPolynomial ℚ 1)
