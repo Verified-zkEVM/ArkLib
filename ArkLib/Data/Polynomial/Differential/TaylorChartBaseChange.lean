@@ -7,23 +7,22 @@ module
 
 public import ArkLib.Data.Polynomial.Differential.BaseChange
 public import ArkLib.Data.Polynomial.Differential.TaylorChartGeometry
+public import ArkLib.Data.CodingTheory.ReedSolomon.Agreement
 
 /-!
 # Coefficient extension of rational Taylor charts
 
-An injective coefficient map preserves agreement indices and nonzero separant specializations.
-Over an infinite target domain, finite families of regular solutions share a center after mapping
-coefficients. Over an infinite extension field, their polynomial jets form a cardinality-preserving
-family satisfying the initial equation, high Taylor cuts, and received-word agreement bounds.
+An injective coefficient map preserves nonzero separant specializations. Over an infinite target
+domain, finite families of regular solutions share a center after mapping coefficients. Over an
+infinite extension field, their polynomial jets form a cardinality-preserving family satisfying the
+initial equation, high Taylor cuts, and received-word agreement bounds.
 
 ## Main statements
 
-* `agreementFilter_map_eq`: coefficient extension preserves the exact agreement index set.
 * `exists_forall_jetEvaluation_ne_zero_map`: mapped nonzero separants share a center over an
   infinite target domain.
 * `exists_regular_solution_jet_family_of_exponent`: regular solution families embed into a chart
   with any sufficient common Taylor exponent.
-* `exists_regular_solution_jet_family`: the default exponent `2K` gives such an embedding.
 
 ## References
 
@@ -59,21 +58,6 @@ theorem exists_forall_jetEvaluation_ne_zero_map {F E : Type*} [CommSemiring F] [
       (S.image (Polynomial.map f)) hregularMap
   exact ⟨center, fun P hP ↦ hc _ (Finset.mem_image.mpr ⟨P, hP, rfl⟩)⟩
 
-/-! ### Agreement under coefficient extension -/
-
-open Classical in
-/-- An injective coefficient map preserves the indices where a polynomial agrees with received
-values, when the evaluation points and received values are mapped by the same homomorphism. -/
-theorem agreementFilter_map_eq {F E ι : Type*} [Semiring F] [Semiring E] [Fintype ι]
-    {f : F →+* E} (hf : Function.Injective f) (domain received : ι → F)
-    (P : Polynomial F) :
-    Finset.univ.filter (fun i ↦ (P.map f).eval (f (domain i)) = f (received i)) =
-      Finset.univ.filter (fun i ↦ P.eval (domain i) = received i) := by
-  classical
-  ext i
-  simp only [Finset.mem_filter, Finset.mem_univ, true_and]
-  simp [Polynomial.eval_map, Polynomial.eval₂_at_apply, hf.eq_iff]
-
 open Classical in
 /-- A finite family of regular polynomial solutions embeds into a rational Taylor chart over an
 infinite extension field. Each jet satisfies the initial equation, all high cuts for degree below
@@ -104,16 +88,8 @@ theorem exists_regular_solution_jet_family_of_exponent
   classical
   let QE := MvPolynomial.map f Q
   let SE := S.image (Polynomial.map f)
-  have hSE : ∀ P ∈ SE,
-      P.degree < k ∧ differentialSpecialization QE P = 0 ∧
-        differentialSpecialization (separant QE (Fin.last r)) P ≠ 0 := by
-    intro P hP
-    obtain ⟨P₀, hP₀, rfl⟩ := Finset.mem_image.mp hP
-    refine ⟨Polynomial.degree_map_le.trans_lt (hdegree P₀ hP₀), ?_, ?_⟩
-    · rw [← map_differentialSpecialization, hsol P₀ hP₀, Polynomial.map_zero]
-    · rw [← map_separant, ← map_differentialSpecialization]
-      exact fun h ↦ hsep P₀ hP₀
-        (Polynomial.map_injective f f.injective (by simpa using h))
+  have hSE := map_regularSolutionFamily (f := f) f.injective Q S (j := Fin.last r) k
+    hdegree hsol hsep
   obtain ⟨center, hcenter⟩ :=
     exists_forall_jetEvaluation_ne_zero_map f f.injective Q S (Fin.last r) hsep
   have hcenterMapped : ∀ P ∈ SE,
@@ -150,33 +126,14 @@ theorem exists_regular_solution_jet_family_of_exponent
         rw [aeval_taylorAgreementEquation_polynomialJet_eq_zero_iff center QE
           (Polynomial.map f P₀) hp.2.1 hs hτ
           (hp.1.trans_le (Nat.cast_le.mpr hkK)) hbin (f (domain i)) (f (received i))]
-      rw [hcut, agreementFilter_map_eq f.injective domain received P₀]
-      exact hagree P₀ hP₀
-
-open Classical in
-/-- The default exponent `2K` embeds a finite family of regular polynomial solutions into a
-rational Taylor chart over an infinite extension field. -/
-theorem exists_regular_solution_jet_family
-    {F E : Type*} [Field F] [Field E] [Infinite E] {r : ℕ}
-    (f : F →+* E) (Q : DifferentialPolynomial F r) (K k : ℕ) (hkK : k ≤ K)
-    (S : Finset (Polynomial F)) {A : ℕ} {ι : Type*} [Fintype ι]
-    (domain received : ι → F)
-    (hdegree : ∀ P ∈ S, P.degree < k)
-    (hsol : ∀ P ∈ S, differentialSpecialization Q P = 0)
-    (hsep : ∀ P ∈ S, differentialSpecialization (separant Q (Fin.last r)) P ≠ 0)
-    (hbin : ∀ i, r < i → i < K → (i.choose r : E) ≠ 0)
-    (hagree : ∀ P ∈ S,
-      A ≤ (Finset.univ.filter (fun i ↦ P.eval (domain i) = received i)).card) :
-    ∃ (center : E) (J : Finset (Fin (r + 1) → E)), J.card = S.card ∧
-      ∀ jet ∈ J,
-        aeval jet (initialJetEquation center (MvPolynomial.map f Q)) = 0 ∧
-        aeval jet (initialJetSeparant center (MvPolynomial.map f Q)) ≠ 0 ∧
-        (∀ l : Fin K, k ≤ l.val →
-          aeval jet (commonTaylorNumerator center (MvPolynomial.map f Q) (2 * K) l.val) = 0) ∧
-        A ≤ (Finset.univ.filter (fun i ↦
-          aeval jet (taylorAgreementEquation center (MvPolynomial.map f Q) K (2 * K)
-            (f (domain i)) (f (received i))) = 0)).card := by
-  exact exists_regular_solution_jet_family_of_exponent f Q K k (2 * K)
-    (taylorExponentSufficient_two_mul r K) hkK S domain received
-      hdegree hsol hsep hbin hagree
+      calc
+        A ≤ (Finset.univ.filter (fun i ↦ P₀.eval (domain i) = received i)).card :=
+          hagree P₀ hP₀
+        _ = (Finset.univ.filter (fun i ↦
+            (Polynomial.map f P₀).eval (f (domain i)) = f (received i))).card :=
+          (ReedSolomon.card_polynomialAgreement_map f f.injective domain received P₀).symm
+        _ = (Finset.univ.filter (fun i ↦
+            aeval (polynomialJet center (Polynomial.map f P₀))
+              (taylorAgreementEquation center QE K τ (f (domain i)) (f (received i))) = 0)).card :=
+          by rw [hcut]
 end PolynomialDifferential
