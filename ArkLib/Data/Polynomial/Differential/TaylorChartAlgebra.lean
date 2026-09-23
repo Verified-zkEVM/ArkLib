@@ -49,23 +49,6 @@ variable {A B : Type*} [CommSemiring A] [CommSemiring B] {r : ℕ}
 variable {F : Type*} [Field F] {A B : Type*} [CommRing A] [CommRing B]
   [Algebra F A] [Algebra F B]
 
-/-- Over a field containing `F`, the common numerator over an algebra is the field-valued
-common numerator. -/
-theorem commonTaylorNumeratorOver_eq {E : Type*} [Field E] [Algebra F E]
-    (center : E) (Q : DifferentialPolynomial E r) (τ l : ℕ) :
-    commonTaylorNumeratorOver F center Q τ l = commonTaylorNumerator center Q τ l := by
-  rw [commonTaylorNumeratorOver, rationalTaylorNumeratorOver_eq]
-  rfl
-
-/-- Specializing the coefficients to a field sends the common numerator over an algebra to the
-field-valued common numerator. -/
-theorem map_commonTaylorNumeratorOver_eq {E : Type*} [Field E] [Algebra F E]
-    (φ : A →ₐ[F] E) (center : A) (Q : DifferentialPolynomial A r) (τ l : ℕ) :
-    map φ.toRingHom (commonTaylorNumeratorOver F center Q τ l) =
-      commonTaylorNumerator (φ center) (map φ.toRingHom Q) τ l := by
-  rw [map_commonTaylorNumeratorOver]
-  exact commonTaylorNumeratorOver_eq (F := F) (φ center) (map φ.toRingHom Q) τ l
-
 /-- The agreement equation over an `F`-algebra, with every common numerator using the same
 separant exponent. -/
 def taylorAgreementEquationOver (center : A) (Q : DifferentialPolynomial A r) (K : ℕ)
