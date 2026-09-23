@@ -253,6 +253,26 @@ example : jointTotalDegree (initialJetEquation (Polynomial.C 0) coordinateEquati
     simp [totalJetDegree, Finsupp.weight_single]
   · exact coeffNatDegreeLE_X (some 0)
 
+private abbrev independentVariableEquation : DifferentialPolynomial (Polynomial ℚ) 0 :=
+  X (none : Option (Fin 1))
+
+/-- A nonconstant center contributes its parameter degree to the initial equation. -/
+example : jointTotalDegree (initialJetEquation Polynomial.X independentVariableEquation) ≤ 1 := by
+  have hjet : jetTotalDegree independentVariableEquation ≤ 0 := by
+    rw [jetTotalDegree_le_iff]
+    intro u hu
+    simp only [independentVariableEquation, support_X, Finset.mem_singleton] at hu
+    subst u
+    simp [totalJetDegree, Finsupp.weight_single]
+  have hEq : initialJetEquation Polynomial.X independentVariableEquation = C Polynomial.X := by
+    simp [initialJetEquation, independentVariableEquation]
+  have hcoeff :
+      CoeffNatDegreeLE (initialJetEquation Polynomial.X independentVariableEquation) 1 := by
+    rw [hEq]
+    exact coeffNatDegreeLE_C (p := Polynomial.X) (by simp)
+  exact jointTotalDegree_initialJetEquation_le Polynomial.X independentVariableEquation 0 1 hjet
+    (fun m _ ↦ hcoeff m)
+
 /-- A zero-length agreement cut still has degree one from its affine received value. -/
 example :
     jointTotalDegree (taylorAgreementEquationOver (F := ℚ) (Polynomial.C 0)
@@ -266,7 +286,7 @@ example :
     simp [totalJetDegree, Finsupp.weight_single]
   have hQ : CoeffNatDegreeLE coordinateEquation 0 := coeffNatDegreeLE_X (some 0)
   simpa only [Polynomial.C_1, mul_one] using
-    jointTotalDegree_taylorAgreementEquationOver_le_of_source (F := ℚ) (r := 0)
+    jointTotalDegree_taylorAgreementEquationOver_le_of_coeffNatDegreeLE (F := ℚ) (r := 0)
       0 0 0 1 coordinateEquation 1 0 0 hjet hQ
 
 private abbrev firstDerivativeEquation : DifferentialPolynomial (Polynomial ℚ) 1 :=

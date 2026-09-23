@@ -31,8 +31,8 @@ separant denominator.
 * `aeval_map_commonTaylorNumeratorOver_reconstruction` identifies symbolic common numerators
   with coefficients of the reconstructed polynomial.
 * `jointTotalDegree_initialJetEquation_le_of_coeffNatDegreeLE` and
-  `jointTotalDegree_taylorAgreementEquationOver_le_of_source_and_exponent` bound symbolic
-  equation degrees from jet degree and coefficient height.
+  `jointTotalDegree_taylorAgreementEquationOver_le_of_coeffNatDegreeLE_and_exponent` bound
+  symbolic equation degrees from jet degree and coefficient height.
 * `sparse_rationalTaylorPolynomial_of_symbolic_cuts` derives coefficient sparsity from symbolic
   cuts at a regular jet.
 
@@ -69,24 +69,24 @@ theorem coeffNatDegreeLE_initialJetEquation (center : F)
 
 /-- The joint degree of the initial equation is bounded by the jet degree and coefficient height.
 -/
-theorem jointTotalDegree_initialJetEquation_le (center : F)
+theorem jointTotalDegree_initialJetEquation_le (center : Polynomial F)
     (Q : DifferentialPolynomial (Polynomial F) r) (v h : ℕ)
     (hv : jetTotalDegree Q ≤ v)
-    (hh : ∀ m ∈ (initialJetEquation (Polynomial.C center) Q).support,
-      ((initialJetEquation (Polynomial.C center) Q).coeff m).natDegree ≤ h) :
-    jointTotalDegree (initialJetEquation (Polynomial.C center) Q) ≤ v + h := by
+    (hh : ∀ m ∈ (initialJetEquation center Q).support,
+      ((initialJetEquation center Q).coeff m).natDegree ≤ h) :
+    jointTotalDegree (initialJetEquation center Q) ≤ v + h := by
   have hd := jointTotalDegree_le_of_natDegree_coeff_le
-    (initialJetEquation (Polynomial.C center) Q) h hh
-  have hj := (totalDegree_initialJetEquation_le (Polynomial.C center) Q).trans hv
+    (initialJetEquation center Q) h hh
+  have hj := (totalDegree_initialJetEquation_le center Q).trans hv
   omega
 
-/-- The source jet degree and coefficient height bound the initial equation's joint degree.
+/-- The jet degree and coefficient height bound the initial equation's joint degree.
 -/
 theorem jointTotalDegree_initialJetEquation_le_of_coeffNatDegreeLE (center : F)
     (Q : DifferentialPolynomial (Polynomial F) r) (v h : ℕ)
     (hv : jetTotalDegree Q ≤ v) (hQ : CoeffNatDegreeLE Q h) :
     jointTotalDegree (initialJetEquation (Polynomial.C center) Q) ≤ v + h := by
-  apply jointTotalDegree_initialJetEquation_le center Q v h hv
+  apply jointTotalDegree_initialJetEquation_le (Polynomial.C center) Q v h hv
   intro m _
   exact coeffNatDegreeLE_initialJetEquation center Q hQ m
 
@@ -133,9 +133,9 @@ theorem jointTotalDegree_taylorAgreementEquationOver_le
   exact jointTotalDegree_taylorAgreementEquationOver_le_of_exponent center x a b Q K (2 * K) B
     hS hN
 
-/-- Source jet degree and coefficient height bound an affine agreement cut at any sufficient
+/-- Jet degree and coefficient height bound an affine agreement cut at any sufficient
 common exponent. -/
-theorem jointTotalDegree_taylorAgreementEquationOver_le_of_source_and_exponent
+theorem jointTotalDegree_taylorAgreementEquationOver_le_of_coeffNatDegreeLE_and_exponent
     (center x a b : F) (Q : DifferentialPolynomial (Polynomial F) r) (v h K τ : ℕ)
     (hτ : TaylorExponentSufficient r K τ) (hjet : jetTotalDegree Q ≤ v)
     (hQ : CoeffNatDegreeLE Q h) :
@@ -150,14 +150,15 @@ theorem jointTotalDegree_taylorAgreementEquationOver_le_of_source_and_exponent
     exact jointTotalDegree_commonTaylorNumeratorOver_le_of_coeffNatDegreeLE center Q v h τ
       l.val (hτ l) hjet hQ
 
-/-- The default exponent gives the source-derived affine agreement degree bound. -/
-theorem jointTotalDegree_taylorAgreementEquationOver_le_of_source
+/-- The default exponent gives the affine agreement degree bound from jet degree and coefficient
+height. -/
+theorem jointTotalDegree_taylorAgreementEquationOver_le_of_coeffNatDegreeLE
     (center x a b : F) (Q : DifferentialPolynomial (Polynomial F) r) (v h K : ℕ)
     (hjet : jetTotalDegree Q ≤ v) (hQ : CoeffNatDegreeLE Q h) :
     jointTotalDegree (taylorAgreementEquationOver (F := F) (Polynomial.C center) Q K
       (Polynomial.C x) (Polynomial.C a + Polynomial.X * Polynomial.C b)) ≤
         1 + 2 * K * (v - 1 + h) := by
-  exact jointTotalDegree_taylorAgreementEquationOver_le_of_source_and_exponent
+  exact jointTotalDegree_taylorAgreementEquationOver_le_of_coeffNatDegreeLE_and_exponent
     center x a b Q v h K (2 * K) (taylorExponentSufficient_two_mul r K) hjet hQ
 
 /-- Coefficient specialization maps an algebra-valued agreement equation to the corresponding
