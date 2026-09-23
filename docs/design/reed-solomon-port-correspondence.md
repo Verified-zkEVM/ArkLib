@@ -113,6 +113,14 @@ jet-degree budget `B` with `C + 2H ≤ B`; neither assumption is needed.
 
 `finrank_interpolationSpace_lowerBound`: /-- The source's rectangular lower bound:
 
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder/CurveHeightCounting.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/FirstOrder/CurveHeightCounting.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`firstOrderExponentDimensionIndex_totalJetDegree` is renamed to `firstOrderCoordinatesEquiv_totalJetDegree` and adapted to the support-coordinate equivalence. The shifted source and row slot counts, their exact counting identities, the numerical row-slot bound, the surplus predicate, weighted slot identities, and both first-order interpolant constructors keep their names. The row counts use `firstOrderOriginGradedRank`; the omitted `firstOrderGradedRank` alias is not needed. The generic constructor `CurveColumnHeight.exists_primitive_interpolant_of_shifted_height` is renamed to `ReedSolomon.HiddenDerivative.exists_primitive_interpolant_of_shifted_height` in `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/ColumnHeight.lean` and generalized to per-column total-jet-degree shifts.
+
+`firstOrderCurveShiftedRowSlotBound_eq_sumRangeFrom` and `firstOrderCurveShiftedHeightSlotCount_eq_sumRangeFrom` were not ported because each only unfolds `Finset.sumRangeFrom` at start zero and neither has a consumer. `firstOrderCurveShiftedRowSlotBound_le_of_rankBound` was not ported because it has no consumer; a needed concrete profile comparison can be proved directly from finite-sum monotonicity.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder/CurveRank.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/FirstOrder/CurveRank.lean` at ArkLib revision
