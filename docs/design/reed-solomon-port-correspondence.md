@@ -3743,6 +3743,12 @@ Deferred: the forward direction for points in a proper algebraically closed exte
 Its proof needs the finitely many maximal ideals of the quotient, since the functions from a
 finite set to `K` do not form a finite-dimensional `k`-space.
 
+## `ArkLibTest/Data/CodingTheory/HiddenDerivative/Interpolation/PartitionSupport/MomentSource.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/RatePartition/SourceEstimate.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+The source declaration `ratePartition_dimension_gt_of_moment` is covered by the existing generic theorem `partitionSupport_dimension_gt_moment`. The acceptance case derives the source-shaped dimension estimate with cutoff `m * A`, explicit simplex volume, and exponent count, checking the cutoff and scale conversions, simplex-volume identity, and finrank-to-exponent-count identity. The generic theorem allows an arbitrary moment bound, rate, level, logarithm, and natural cutoff. No ArkLib production declaration is added; the source-specific wrapper is not needed because the generic theorem already covers it.
+
 ## `ArkLibTest/Data/Probability/Uniform.lean`
 
 Ported from `ArkLib/Data/Probability/Notation.lean` at ArkLib revision
