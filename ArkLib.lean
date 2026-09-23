@@ -137,6 +137,7 @@ public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Specializa
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.ChallengeDegree
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.ColumnHeight
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.ConstraintMatrix
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.CurveCertificate
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.CurveHeight
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.LocalRank
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.ReceivedCurve
@@ -781,6 +782,7 @@ public import ArkLib.ToMathlib.RingTheory.Nullstellensatz
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.AffineHilbertPolynomial
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.AgreementIncidence
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.BidegreeIncidence
+public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.CappedBidegreeIncidence
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.CutFamily
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.DimensionSensitiveIncidence
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.FiniteQuotient
