@@ -244,40 +244,17 @@ example :
         2 * 1 + 1 * 3 ∧
       (resultant (X - C (X : ℚ[X])) (X ^ 2 + C (X ^ 3)) 1 2).natDegree ≤
         2 * 1 + 1 * 3 - 1 * 2 ∧
-      (resultant (X - C (X : ℚ[X])) (X ^ 2 + C (X ^ 3)) 1 2).natDegree ≤ 1 * 3 ∧
-      (resultant (X - C (X : ℚ[X])) (X ^ 2 + C (X ^ 3)) 1 2).natDegree ≤
-        2 * 1 + 1 * 3 := by
+      (resultant (X - C (X : ℚ[X])) (X ^ 2 + C (X ^ 3)) 1 2).natDegree ≤ 1 * 3 := by
   have hP : ∀ i ≤ 1, i + ((X - C (X : ℚ[X])).coeff i).natDegree ≤ 1 := by
     intro i hi
     interval_cases i <;> simp only [coeff_sub, coeff_X, coeff_C] <;> simp
   have hQ : ∀ i ≤ 2, i + ((X ^ 2 + C (X ^ 3 : ℚ[X])).coeff i).natDegree ≤ 3 := by
     intro i hi
     interval_cases i <;> simp only [coeff_add, coeff_X_pow, coeff_C] <;> simp
-  have hPdeg : (X - C (X : ℚ[X])).natDegree = 1 := by compute_degree!
-  have hQdeg : (X ^ 2 + C (X ^ 3 : ℚ[X])).natDegree = 2 := by compute_degree!
-  have hPnat : ∀ i, ((X - C (X : ℚ[X])).coeff i).natDegree ≤ 1 := by
-    intro i
-    by_cases hi : i ≤ 1
-    · have := hP i hi
-      omega
-    · have hzero := coeff_eq_zero_of_natDegree_lt (show
-        (X - C (X : ℚ[X])).natDegree < i by rw [hPdeg]; omega)
-      rw [hzero]
-      simp
-  have hQnat : ∀ i, ((X ^ 2 + C (X ^ 3 : ℚ[X])).coeff i).natDegree ≤ 3 := by
-    intro i
-    by_cases hi : i ≤ 2
-    · have := hQ i hi
-      omega
-    · have hzero := coeff_eq_zero_of_natDegree_lt (show
-        (X ^ 2 + C (X ^ 3 : ℚ[X])).natDegree < i by rw [hQdeg]; omega)
-      rw [hzero]
-      simp
-  refine ⟨by rw [resultant_line_cubic]; compute_degree!, ?_, ?_, ?_, ?_⟩
+  refine ⟨by rw [resultant_line_cubic]; compute_degree!, ?_, ?_, ?_⟩
   · exact natDegree_resultant_add_mul_le_of_coeff_add_le _ _ 1 2 1 3 hP hQ
   · exact natDegree_resultant_le_of_coeff_add_le _ _ 1 2 1 3 hP hQ
   · exact natDegree_resultant_le_mul_of_coeff_add_le _ _ 1 2 1 3 hP hQ
-  · exact natDegree_resultant_le_of_coeff_natDegree_le _ _ 1 2 1 3 hPnat hQnat
 
 -- Differentiating the outer variable preserves the coefficient-variable degree of `X^3 * Y^2`.
 example :

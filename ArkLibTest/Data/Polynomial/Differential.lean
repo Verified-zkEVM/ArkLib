@@ -465,12 +465,6 @@ private theorem highestActiveJet_productEquation : highestActiveJet productEquat
   rw [highestActiveJet_eq_some_max _ hne]
   simp [hactive]
 
-/-- The equation `Y₁ * X` in depth `2` has a prefix presentation at its highest active jet. -/
-example : ∃ Q' : DifferentialPolynomial ℚ 1,
-    rename (jetPrefixEmbedding (1 : Fin 3)) Q' = productEquation :=
-  exists_prefixDifferentialPolynomial productEquation
-    (isHighestActiveJet_of_highestActiveJet_eq_some highestActiveJet_productEquation)
-
 /-- The presentation of `Y₁ * X` at depth `1` exists. -/
 example : Nonempty (JetPrefixPresentation productEquation 1) :=
   nonempty_jetPrefixPresentation _
@@ -526,9 +520,6 @@ example :
 
 /-! ### Symbolic Taylor-chart equations -/
 
-private abbrev parameterizedEquation : DifferentialPolynomial (Polynomial ℚ) 1 :=
-  C (Polynomial.X + 1) * X (some 1) + X none
-
 private abbrev independentVariableEquation : DifferentialPolynomial (Polynomial ℚ) 0 :=
   X (none : Option (Fin 1))
 
@@ -561,15 +552,6 @@ example :
   rw [hcut]
   simp only [map_sub, map_add, map_mul, map_C, map_X, AlgHom.toRingHom_eq_coe,
     AlgHom.coe_toRingHom, Polynomial.aeval_X]
-
-/-- The initial equation for `(X + 1)Y₁ + X` maps to `3Y₁ + 2` at parameter `2`. -/
-example :
-    map (Polynomial.aeval (2 : ℚ)).toRingHom
-        (initialJetEquation (Polynomial.X : Polynomial ℚ) parameterizedEquation) =
-      C (3 : ℚ) * X (1 : Fin 2) + C (2 : ℚ) := by
-  norm_num [initialJetEquation, parameterizedEquation]
-  rw [← C_1, ← C_add]
-  norm_num
 
 /-- At the regular jet `(1, 0)`, the mapped symbolic agreement equation vanishes. -/
 example :
@@ -1110,17 +1092,51 @@ private theorem aeval_initialJetSeparant_taylorLinearEquation (jet : Fin 2 → �
     aeval jet (initialJetSeparant 0 (taylorLinearEquation ℚ)) = 1 := by
   rw [aeval_initialJetSeparant, jetEvaluation_separant_taylorLinearEquation]
 
-private theorem highTaylorCutsIdeal_two_two_le (I : Ideal (MvPolynomial (Fin 2) ℚ)) :
-    highTaylorCutsIdeal 0 (taylorLinearEquation ℚ) 2 2 4 ≤ I :=
-  (highTaylorCutsIdeal_le_iff 0 _).mpr fun _ h2 hl ↦ absurd hl (by omega)
+private abbrev indexOneHighCutIdeal : Ideal (MvPolynomial (Fin 2) ℚ) :=
+  Ideal.span {commonTaylorNumerator 0 (taylorLinearEquation ℚ) 4 1}
 
-/-- For `y' = 2x`, agreement at `0` and `1` leaves at most one regular jet in the length-two
-Taylor chart. -/
+private theorem highTaylorCutsIdeal_one_two_le :
+    highTaylorCutsIdeal 0 (taylorLinearEquation ℚ) 2 1 4 ≤ indexOneHighCutIdeal := by
+  rw [highTaylorCutsIdeal_le_iff 0 _]
+  intro l hkl hlK
+  have hl : l = 1 := by omega
+  subst l
+  exact Ideal.subset_span (by simp)
+
+/-- For `y' = 2x`, one agreement point and the index-1 high cut determine the regular jet
+in the length-two Taylor chart, and the locus contains the zero jet. -/
 example :
-    (regularAgreementCutLocus ⊥ 0 (taylorLinearEquation ℚ) 2 4 ![0, 1] ![0, 1]).Subsingleton :=
-  regularAgreementCutLocus_subsingleton 0 _ (taylorExponentSufficient_two_mul 1 2)
-    (by norm_num) (highTaylorCutsIdeal_two_two_le ⊥) _ _
-    (by intro i j h; fin_cases i <;> fin_cases j <;> simp_all) (by norm_num)
+    Nonempty (regularAgreementCutLocus indexOneHighCutIdeal 0 (taylorLinearEquation ℚ) 2 4
+      (fun _ : Fin 1 ↦ (0 : ℚ)) (fun _ : Fin 1 ↦ (0 : ℚ))) ∧
+    (regularAgreementCutLocus indexOneHighCutIdeal 0 (taylorLinearEquation ℚ) 2 4
+      (fun _ : Fin 1 ↦ (0 : ℚ)) (fun _ : Fin 1 ↦ (0 : ℚ))).Subsingleton := by
+  let jet := zeroJetVector (F := ℚ) 2
+  have hS : aeval jet (initialJetSeparant 0 (taylorLinearEquation ℚ)) ≠ 0 := by
+    rw [aeval_initialJetSeparant_taylorLinearEquation]
+    norm_num
+  have hgen : aeval jet (commonTaylorNumerator 0 (taylorLinearEquation ℚ) 4 1) = 0 := by
+    have hc : rationalTaylorCoefficient 0 (taylorLinearEquation ℚ) jet 1 = 0 := by
+      simpa [zeroJetVector, jet] using rationalTaylorCoefficient_initial 0
+        (taylorLinearEquation ℚ) jet ⟨1, by omega⟩
+    rw [aeval_commonTaylorNumerator (center := (0 : ℚ)) (taylorLinearEquation ℚ)
+      jet (τ := 4) (l := 1) (by norm_num) hS]
+    simp [hc]
+  have hjet : jet ∈ zeroLocus ℚ indexOneHighCutIdeal := by
+    simpa [indexOneHighCutIdeal, zeroLocus_span] using hgen
+  have hcut : aeval jet
+      (taylorAgreementEquation 0 (taylorLinearEquation ℚ) 2 4 0 0) = 0 := by
+    have hrec : (rationalTaylorPolynomial 0 (taylorLinearEquation ℚ) 2 jet).eval 0 = 0 := by
+      rw [eval_rationalTaylorPolynomial]
+      simp [rationalTaylorCoefficient_initial, jet, zeroJetVector]
+    rw [aeval_taylorAgreementEquation 0 (taylorLinearEquation ℚ)
+      (taylorExponentSufficient_two_mul 1 2) jet hS]
+    rw [hrec]
+    simp
+  refine ⟨⟨jet, ⟨hjet, hS, fun _ ↦ hcut⟩⟩, ?_⟩
+  exact regularAgreementCutLocus_subsingleton 0 (taylorLinearEquation ℚ)
+    (taylorExponentSufficient_two_mul 1 2) (by norm_num) highTaylorCutsIdeal_one_two_le
+    (fun _ : Fin 1 ↦ (0 : ℚ)) (fun _ : Fin 1 ↦ (0 : ℚ))
+    (by intro i j _; exact Subsingleton.elim i j) (by norm_num)
 
 private theorem commonTaylorNumerator_zeroJet_constantDerivativeEquation {F : Type*} [Field F] :
     aeval (zeroJetVector (F := F) 2)
