@@ -437,6 +437,7 @@ public import ArkLib.Data.Polynomial.Differential.RecursiveCount
 public import ArkLib.Data.Polynomial.Differential.RegularIteration
 public import ArkLib.Data.Polynomial.Differential.RegularJetCount
 public import ArkLib.Data.Polynomial.Differential.RegularLift
+public import ArkLib.Data.Polynomial.Differential.RootPresentation
 public import ArkLib.Data.Polynomial.Differential.SeparantChain
 public import ArkLib.Data.Polynomial.Differential.ShiftedJet
 public import ArkLib.Data.Polynomial.Differential.SingularRecursion
