@@ -14,7 +14,7 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.SourceCo
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.WeightedSupport
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.Dimension
 import Mathlib.FieldTheory.RatFunc.Basic
-import Mathlib.Data.ZMod.Basic
+import Mathlib.Algebra.Field.ZMod
 
 /-!
 # Symbolic interpolation acceptance cases
@@ -25,6 +25,8 @@ source-column cases.
 
 open Finset MvPolynomial PolynomialDifferential ReedSolomon.HiddenDerivative
 open scoped Polynomial Matrix
+
+private instance : Fact (Nat.Prime 5) := ⟨by decide⟩
 
 example : ((unscaledLocalSubstitution 0 (Polynomial.C (0 : ℚ)) Polynomial.X
     (SourceColumn.polynomial (R := ℚ[X]) ⟨0, 2, ![]⟩)).coeff 0).natDegree ≤ 2 ∧
@@ -244,3 +246,43 @@ example : Nonempty (Fin 1 × LowContactIndex 1 1) ∧ ∃ v : Fin 1 → ℚ[X], 
     receivedLineColumnsInjective (by intro j; fin_cases j; decide)
     (algebraMap ℚ[X] (RatFunc ℚ)) (IsFractionRing.injective ℚ[X] (RatFunc ℚ))
     (s := 0) receivedLineMatrixRankZero (by decide)
+
+private def shiftedKernelColumns : Fin 2 → SourceColumn 1 := fun j =>
+  if j = 0 then ⟨0, 1, fun _ => 0⟩ else ⟨1, 1, fun _ => 0⟩
+
+private theorem shiftedKernelColumns_injective : Function.Injective shiftedKernelColumns := by
+  intro i j hij
+  fin_cases i <;> fin_cases j <;> simp_all [shiftedKernelColumns]
+
+private theorem shiftedKernelColumns_degree (j : Fin 2) :
+    totalJetDegree (shiftedKernelColumns j).exponent = 1 := by
+  fin_cases j <;> simp [shiftedKernelColumns]
+
+/-- A concrete shifted row and column surplus constructs a primitive interpolant. -/
+example :
+    ∃ v : Fin 2 → (ZMod 5)[X],
+      v ≠ 0 ∧
+      (∀ j, v j ∈ Polynomial.degreeLT (ZMod 5)
+        (1 + 1 - 1 * totalJetDegree (shiftedKernelColumns j).exponent)) ∧
+      Ideal.span (Set.range v) = ⊤ ∧
+      (∀ {E : Type*} [Field E] (ι : ZMod 5 →+* E) (z : E),
+        MvPolynomial.map (Polynomial.eval₂RingHom ι z)
+          (SourceColumn.interpolant shiftedKernelColumns v) ≠ 0) ∧
+      ∀ _i : Fin 0, SatisfiesLocalConstraints 1 (Polynomial.C (0 : ZMod 5))
+        (0 : (ZMod 5)[X])
+        (SourceColumn.interpolant shiftedKernelColumns v) := by
+  exact exists_primitive_interpolant_of_shifted_height
+    (F := ZMod 5) (d := 1) (n := 0) (N := 2) (rows := 1) 1 1 1
+    (fun _ : Fin 0 ↦ (0 : ZMod 5)) (fun _ : Fin 0 ↦ (0 : (ZMod 5)[X]))
+    shiftedKernelColumns shiftedKernelColumns_injective
+    (0 : Matrix (Fin 1) (Fin 2) (ZMod 5)[X]) (fun _ : Fin 1 ↦ 1)
+    (by intro v; simp)
+    (by
+      intro i j h
+      rw [shiftedKernelColumns_degree j] at h ⊢
+      norm_num at h ⊢)
+    (by
+      intro i j h
+      rw [shiftedKernelColumns_degree j] at h
+      norm_num at h)
+    (by norm_num [shiftedKernelColumns, SourceColumn.totalJetDegree_exponent])

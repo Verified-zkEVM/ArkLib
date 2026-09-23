@@ -7,7 +7,6 @@ module
 
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.HeightCounting
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.CurveRank
-public import ArkLib.ToMathlib.Finset.SumRangeFrom
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.ColumnHeight
 
 /-!
@@ -105,34 +104,7 @@ def firstOrderCurveShiftedRowSlotBound
   Finset.sum (Finset.range (μ + 1)) fun t ↦
     n * firstOrderGradedRankBound D A m M t * (h + 1 - ℓ * t)
 
-/-- Express the shifted row-slot bound as one finite interval sum. This form supports bounded
-kernel evaluation of large concrete grade ranges. -/
-theorem firstOrderCurveShiftedRowSlotBound_eq_sumRangeFrom
-    (D A m M μ n ℓ h : ℕ) :
-    firstOrderCurveShiftedRowSlotBound D A m M μ n ℓ h =
-      Finset.sumRangeFrom (fun t ↦ n * firstOrderGradedRankBound D A m M t *
-        (h + 1 - ℓ * t)) 0 (μ + 1) := by
-  simp [firstOrderCurveShiftedRowSlotBound, Finset.sumRangeFrom]
-
-/-- Express the shifted source-slot count as one finite interval sum. -/
-theorem firstOrderCurveShiftedHeightSlotCount_eq_sumRangeFrom
-    (D A m M μ ℓ h : ℕ) :
-    firstOrderCurveShiftedHeightSlotCount D A m M μ ℓ h =
-      Finset.sumRangeFrom (fun t ↦ ∑ b ∈ Finset.range (min t M + 1),
-        (m * A + b - D * t) * (h + 1 - ℓ * t)) 0 (μ + 1) := by
-  simp [firstOrderCurveShiftedHeightSlotCount, Finset.sumRangeFrom]
-
-/-- A pointwise numerical rank profile bounds the corresponding shifted row-slot sum. -/
-theorem firstOrderCurveShiftedRowSlotBound_le_of_rankBound
-    (D A m M μ n ℓ h : ℕ) (rankBound : ℕ → ℕ)
-    (hrank : ∀ t, firstOrderGradedRankBound D A m M t ≤ rankBound t) :
-    firstOrderCurveShiftedRowSlotBound D A m M μ n ℓ h ≤
-      ∑ t ∈ Finset.range (μ + 1), n * rankBound t * (h + 1 - ℓ * t) := by
-  apply Finset.sum_le_sum
-  intro t ht
-  exact Nat.mul_le_mul_right (h + 1 - ℓ * t) (Nat.mul_le_mul_left n (hrank t))
-
-/-- The actual compressed-row slot count is bounded by the sharp paper profile. -/
+/-- The actual compressed-row slot count is bounded by the numerical block-rank profile. -/
 theorem firstOrderCurveShiftedRowSlotCount_le_bound
     {F : Type*} [Field F] (D A m M μ n ℓ h : ℕ) :
     firstOrderCurveShiftedRowSlotCount F D A m M μ n ℓ h ≤
@@ -142,19 +114,17 @@ theorem firstOrderCurveShiftedRowSlotCount_le_bound
   exact Nat.mul_le_mul_right (h + 1 - ℓ * t)
     (Nat.mul_le_mul_left n (firstOrderOriginGradedRank_le_bound (F := F) D A m M t))
 
-/-- The finite type of fixed compressed rows has exactly the truncated weighted slot count. -/
-theorem sum_firstOrderCurveGradedRowIndex_slots
-    {F : Type*} [Field F] (D A m M μ n ℓ h : ℕ) :
+private theorem sum_firstOrderCurveGradedRowIndex_profile
+    {F : Type*} [Field F] (D A m M μ n : ℕ) (profile : ℕ → ℕ) :
     (Finset.univ.sum fun row : FirstOrderCurveGradedRowIndex F D A m M μ n ↦
-      h + 1 - ℓ * row.2.1.val) =
-      firstOrderCurveShiftedRowSlotCount F D A m M μ n ℓ h := by
+      profile row.2.1.val) =
+      n * ∑ t ∈ Finset.range (μ + 1),
+        firstOrderOriginGradedRank F D A m M t * profile t := by
   rw [Fintype.sum_prod_type]
   simp only [Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul]
   rw [Fintype.sum_sigma]
   simp_rw [Fintype.sum_sigma]
-  rw [firstOrderCurveShiftedRowSlotCount, ← Fin.sum_univ_eq_sum_range]
-  simp_rw [Nat.mul_assoc]
-  rw [← Finset.mul_sum]
+  rw [← Fin.sum_univ_eq_sum_range]
   congr 1
   apply Finset.sum_congr rfl
   intro t _
@@ -164,6 +134,17 @@ theorem sum_firstOrderCurveGradedRowIndex_slots
   apply Finset.sum_congr rfl
   intro s _
   simp
+
+/-- The finite type of fixed compressed rows has exactly the truncated weighted slot count. -/
+theorem sum_firstOrderCurveGradedRowIndex_slots
+    {F : Type*} [Field F] (D A m M μ n ℓ h : ℕ) :
+    (Finset.univ.sum fun row : FirstOrderCurveGradedRowIndex F D A m M μ n ↦
+      h + 1 - ℓ * row.2.1.val) =
+      firstOrderCurveShiftedRowSlotCount F D A m M μ n ℓ h := by
+  rw [firstOrderCurveShiftedRowSlotCount]
+  simpa [Nat.mul_assoc, Finset.mul_sum] using
+    (sum_firstOrderCurveGradedRowIndex_profile (F := F) D A m M μ n
+      (fun t ↦ h + 1 - ℓ * t))
 
 /-- Flattening the compressed row index preserves its exact truncated weighted slot count. -/
 theorem sum_firstOrderCurveGradedFinRowWeight_slots
@@ -225,18 +206,11 @@ theorem firstOrderCurveShiftedColumnSlotCount_add_weight
         ℓ * firstOrderTotalJetWeight D A m M μ =
       (firstOrderExponents D A m M μ).card * (h + 1) := by
   rw [firstOrderCurveShiftedColumnSlotCount, firstOrderTotalJetWeight,
-    Finset.mul_sum, ← Finset.sum_add_distrib]
-  calc
-    Finset.sum (firstOrderExponents D A m M μ)
-        (fun u ↦ h + 1 - ℓ * totalJetDegree u + ℓ * totalJetDegree u) =
-        Finset.sum (firstOrderExponents D A m M μ) (fun _ ↦ h + 1) := by
-      apply Finset.sum_congr rfl
-      intro u hu
-      rw [Nat.sub_add_cancel]
-      have hut : totalJetDegree u ≤ μ :=
-        (mem_firstOrderExponents.mp hu).2.1
-      exact (Nat.mul_le_mul_left ℓ hut).trans (hactive.trans (Nat.le_add_right h 1))
-    _ = (firstOrderExponents D A m M μ).card * (h + 1) := by simp
+    Finset.mul_sum]
+  exact Finset.sum_tsub_add_sum_eq_card_mul (firstOrderExponents D A m M μ)
+    (fun u ↦ ℓ * totalJetDegree u) h
+    (fun u hu => (Nat.mul_le_mul_left ℓ (mem_firstOrderExponents.mp hu).2.1).trans
+      (hactive.trans (Nat.le_add_right h 1)))
 
 /-- In the all-active range, compressed row slots also equal a rectangle minus the weighted
 actual-rank profile. -/
@@ -246,25 +220,39 @@ theorem firstOrderCurveShiftedRowSlotCount_add_weight
         n * ℓ * firstOrderGradedRowWeight F D A m M μ =
       n * (∑ t ∈ Finset.range (μ + 1), firstOrderOriginGradedRank F D A m M t) *
         (h + 1) := by
-  rw [firstOrderCurveShiftedRowSlotCount, firstOrderGradedRowWeight,
-    Finset.mul_sum, Finset.mul_sum, ← Finset.sum_add_distrib]
-  calc
-    (∑ t ∈ Finset.range (μ + 1),
-        (n * firstOrderOriginGradedRank F D A m M t * (h + 1 - ℓ * t) +
-          n * ℓ * (firstOrderOriginGradedRank F D A m M t * t))) =
+  classical
+  let rows := FirstOrderCurveGradedRowIndex F D A m M μ n
+  have hcard : Fintype.card rows =
+      n * ∑ t ∈ Finset.range (μ + 1), firstOrderOriginGradedRank F D A m M t := by
+    simpa [rows] using
+      (sum_firstOrderCurveGradedRowIndex_profile (F := F) D A m M μ n (fun _ ↦ 1))
+  have hweight :
+      (Finset.univ.sum fun row : rows ↦ ℓ * row.2.1.val) =
+        n * ℓ * firstOrderGradedRowWeight F D A m M μ := by
+    rw [sum_firstOrderCurveGradedRowIndex_profile (F := F) D A m M μ n (fun t ↦ ℓ * t),
+      firstOrderGradedRowWeight]
+    have hfactor :
         (∑ t ∈ Finset.range (μ + 1),
-          n * firstOrderOriginGradedRank F D A m M t * (h + 1)) := by
-      apply Finset.sum_congr rfl
-      intro t ht
-      have htμ : t ≤ μ := by simpa using Nat.le_of_lt_succ (Finset.mem_range.mp ht)
-      have hweight : ℓ * t ≤ h + 1 :=
-        (Nat.mul_le_mul_left ℓ htμ).trans (hactive.trans (Nat.le_add_right h 1))
-      rw [show n * ℓ * (firstOrderOriginGradedRank F D A m M t * t) =
-          n * firstOrderOriginGradedRank F D A m M t * (ℓ * t) by ring]
-      rw [← Nat.mul_add, Nat.sub_add_cancel hweight]
-    _ = (∑ t ∈ Finset.range (μ + 1),
-        n * firstOrderOriginGradedRank F D A m M t) * (h + 1) := by
-      rw [Finset.sum_mul]
+          firstOrderOriginGradedRank F D A m M t * (ℓ * t)) =
+        ℓ * ∑ t ∈ Finset.range (μ + 1),
+          firstOrderOriginGradedRank F D A m M t * t := by
+      calc
+        _ = ∑ t ∈ Finset.range (μ + 1),
+            ℓ * (firstOrderOriginGradedRank F D A m M t * t) := by
+          apply Finset.sum_congr rfl
+          intro t ht
+          ring
+        _ = _ := by rw [Finset.mul_sum]
+    rw [hfactor]
+    ring
+  have hslots := Finset.sum_tsub_add_sum_eq_card_mul (Finset.univ : Finset rows)
+    (fun row ↦ ℓ * row.2.1.val) h (by
+      intro row hrow
+      have ht : row.2.1.val ≤ μ := Nat.le_of_lt_succ row.2.1.isLt
+      exact (Nat.mul_le_mul_left ℓ ht).trans
+        (hactive.trans (Nat.le_add_right h 1)))
+  rw [sum_firstOrderCurveGradedRowIndex_slots, hweight, Finset.card_univ, hcard] at hslots
+  exact hslots
 
 /-! ### Concrete primitive shifted-height constructor -/
 
