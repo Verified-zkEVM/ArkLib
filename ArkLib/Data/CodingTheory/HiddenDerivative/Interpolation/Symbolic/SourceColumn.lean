@@ -20,12 +20,19 @@ ring homomorphism applied to the interpolant is applied to the coefficient vecto
 ## Main statements
 
 * `SourceColumn.exponent_injective`: distinct columns have distinct exponents.
+* `SourceColumn.ofExponent`: the column with a given exponent vector.
 * `SourceColumn.totalJetDegree_exponent`: the total jet degree of a column is
   `y₀ + ∑_j higher j`.
 * `SourceColumn.polynomial_eq_sourceMonomial`: a column's monomial is the source monomial.
 * `SourceColumn.coeff_interpolant`: the coefficient of the interpolant at `columns j` is `v j`.
+* `SourceColumn.coeff_interpolant_natDegree_lt`: a uniform coefficient-degree bound for the
+  interpolant.
 * `SourceColumn.map_interpolant_ne_zero`: the image of the interpolant under a ring
   homomorphism is nonzero when the image of the coefficient vector is.
+
+## References
+
+* [DKT26]
 -/
 
 @[expose] public section
@@ -98,6 +105,22 @@ theorem exponent_injective :
   subst hx hy₀ hhigher
   rfl
 
+/-- The source column whose exponent vector is `u`. -/
+def ofExponent (u : JetVariable d →₀ ℕ) : SourceColumn d where
+  x := u none
+  y₀ := u (some 0)
+  higher j := u (some j.succ)
+
+/-- Reconstructing a source column from its exponent vector gives that vector. -/
+@[simp]
+theorem exponent_ofExponent (u : JetVariable d →₀ ℕ) : (ofExponent u).exponent = u := by
+  ext x
+  rcases x with _ | j
+  · simp [exponent, ofExponent]
+  · refine Fin.cases ?_ (fun j => ?_) j
+    · simp [exponent, ofExponent]
+    · simp [exponent, ofExponent, Finsupp.single_apply]
+
 variable {R : Type*} [CommSemiring R]
 
 /-- The source monomial of a column, with coefficient `1`. -/
@@ -136,6 +159,29 @@ theorem coeff_interpolant {columns : κ → SourceColumn d} (hcolumns : Function
     rw [coeff_monomial, ite_eq_right_iff]
     exact fun h => absurd (hcolumns (exponent_injective h)) hkj
   · simp
+
+/-- If each coefficient polynomial has degree below `B`, every coefficient of the assembled
+interpolant has degree below `B`. -/
+theorem coeff_interpolant_natDegree_lt {columns : κ → SourceColumn d}
+    (hcolumns : Function.Injective columns) (v : κ → Polynomial R) {B : ℕ} (hB : 0 < B)
+    (hv : ∀ j, (v j).natDegree < B) :
+    ∀ u, ((interpolant columns v).coeff u).natDegree < B := by
+  classical
+  intro u
+  by_cases hu : u ∈ Set.range (fun j => (columns j).exponent)
+  · obtain ⟨j, rfl⟩ := hu
+    rw [coeff_interpolant hcolumns v j]
+    exact hv j
+  · have hcoeff : (interpolant columns v).coeff u = 0 := by
+      rw [interpolant, coeff_sum]
+      apply Finset.sum_eq_zero
+      intro j _
+      rw [coeff_monomial]
+      split_ifs with heq
+      · exact (hu ⟨j, heq⟩).elim
+      · rfl
+    rw [hcoeff]
+    simpa using hB
 
 /-- Mapping the coefficients of the interpolant maps its coefficient vector. -/
 theorem map_interpolant {S : Type*} [CommSemiring S] (ψ : R →+* S)
