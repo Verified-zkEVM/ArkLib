@@ -8,6 +8,7 @@ import ArkLib.ToMathlib.LinearAlgebra.Matrix.InvertibleCombination
 import ArkLib.ToMathlib.LinearAlgebra.Matrix.Rank
 import ArkLib.ToMathlib.LinearAlgebra.Matrix.SupportedRows
 import Mathlib.Algebra.BigOperators.Fin
+import Mathlib.Basic.Real.Basic
 
 /-!
 # Acceptance tests for matrix recovery, rank, and row restriction
@@ -49,6 +50,12 @@ example : (Matrix.of fun i j => (LinearMap.id : (Fin 2 → ℚ) →ₗ[ℚ] (Fin
   rw [Matrix.rank_of_basis, LinearMap.range_id, finrank_top, Module.finrank_fin_fun]
 
 open scoped Matrix
+
+/-- Mapping a nonzero diagonal matrix from `ℚ` to `ℝ` does not increase its rank. -/
+example :
+    ((!![1, 0; 0, 2] : Matrix (Fin 2) (Fin 2) ℚ).map (Rat.castHom ℝ)).rank ≤
+      (!![1, 0; 0, 2] : Matrix (Fin 2) (Fin 2) ℚ).rank :=
+  Matrix.rank_map_le (Rat.castHom ℝ) _
 
 namespace SupportedRowsTest
 

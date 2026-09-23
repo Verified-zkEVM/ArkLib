@@ -501,10 +501,22 @@ example :
 /-- `X 0` has exactly two zeros on `(ZMod 2)²`, attaining the degree bound `2`. -/
 example : #{x ∈ Fintype.piFinset fun _ : Fin 2 ↦ (univ : Finset (ZMod 2)) |
       eval x (X 0 : MvPolynomial (Fin 2) (ZMod 2)) = 0} = 2 ∧
-    (X 0 : MvPolynomial (Fin 2) (ZMod 2)).totalDegree * #(univ : Finset (ZMod 2)) ^ 1 = 2 := by
-  refine ⟨?_, by rw [totalDegree_X, card_univ, ZMod.card]; rfl⟩
-  simp only [eval_X]
-  decide
+    (X 0 : MvPolynomial (Fin 2) (ZMod 2)).totalDegree * #(univ : Finset (ZMod 2)) ^ 1 = 2 ∧
+    #{x ∈ Fintype.piFinset fun _ : Fin 2 ↦ (univ : Finset (ZMod 2)) |
+      eval x (X 0 : MvPolynomial (Fin 2) (ZMod 2)) = 0} ≤
+      (X 0 : MvPolynomial (Fin 2) (ZMod 2)).totalDegree * #(univ : Finset (ZMod 2)) ^ 1 := by
+  have hcount : #{x ∈ Fintype.piFinset fun _ : Fin 2 ↦ (univ : Finset (ZMod 2)) |
+      eval x (X 0 : MvPolynomial (Fin 2) (ZMod 2)) = 0} = 2 := by
+    simp only [eval_X]
+    decide
+  have hdegree : (X 0 : MvPolynomial (Fin 2) (ZMod 2)).totalDegree *
+      #(univ : Finset (ZMod 2)) ^ 1 = 2 := by
+    rw [totalDegree_X, card_univ, ZMod.card]
+    rfl
+  have hbound := card_filter_eval_eq_zero_le
+    (p := (X 0 : MvPolynomial (Fin 2) (ZMod 2))) (X_ne_zero (0 : Fin 2))
+    (univ : Finset (ZMod 2))
+  exact ⟨hcount, hdegree, by simpa only [hcount, hdegree] using hbound⟩
 
 /-! ### Support weights -/
 

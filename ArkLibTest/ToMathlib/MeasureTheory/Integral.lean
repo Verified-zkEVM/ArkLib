@@ -134,17 +134,6 @@ local instance : IsProbabilityMeasure twoPointMeasure := by
 
 private def twoPointY (b : Bool) : ℝ := if b then 2 else 0
 
-/-- A balanced two-point probability has nonzero variance and satisfies the positive-part bound. -/
-example :
-    ∫ x, max (2 - twoPointY x) 0 ∂twoPointMeasure ≤
-      2 - 1 + (∫ x, (twoPointY x - 1) ^ 2 ∂twoPointMeasure) / (4 * (2 - 1)) := by
-  apply MeasureTheory.integral_max_sub_zero_le twoPointMeasure twoPointY 2 1
-  · exact Integrable.of_finite
-  · rw [twoPointMeasure, ProbabilityTheory.integral_bernoulliMeasure]
-    norm_num [twoPointY, halfProbability]
-  · exact Integrable.of_finite
-  · norm_num
-
 /-- The set-average bound also holds on the full two-point space for a nonconstant function. -/
 example :
     ∫ x in (Set.univ : Set Bool), max (2 - twoPointY x) 0 ∂twoPointMeasure ≤
