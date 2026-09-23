@@ -1,0 +1,61 @@
+/-
+Copyright (c) 2026 ArkLib Contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Quang Dao
+-/
+
+import ArkLib.ToMathlib.LinearAlgebra.Matrix.InvertibleCombination
+import ArkLib.ToMathlib.LinearAlgebra.Matrix.Rank
+import ArkLib.ToMathlib.LinearAlgebra.Matrix.SupportedRows
+import Mathlib.Algebra.BigOperators.Fin
+
+/-!
+# Acceptance tests for matrix recovery, rank, and row restriction
+-/
+
+open Module
+
+/-- An invertible pair of linear combinations recovers a vector in the kernel of a projection. -/
+example : ((0, 1) : ℚ × ℚ) ∈ LinearMap.ker (LinearMap.fst ℚ ℚ ℚ) := by
+  let A : Matrix (Fin 2) (Fin 2) ℚ := !![1, 1; 1, -1]
+  have hA : IsUnit A.det := by
+    apply isUnit_iff_ne_zero.mpr
+    rw [Matrix.det_fin_two_of]
+    norm_num [A]
+  have hx : ∀ i : Fin 2, ∑ j, A i j • ((0, 1) : ℚ × ℚ) ∈
+      LinearMap.ker (LinearMap.fst ℚ ℚ ℚ) := by
+    intro i
+    fin_cases i <;> simp [A, Fin.sum_univ_two]
+  exact Submodule.mem_of_forall_sum_smul_mem A hA hx 1
+
+/-- The identity on `Fin 2 → ℚ` has coordinate matrix of rank `2`. -/
+example : (Matrix.of fun i j => (LinearMap.id : (Fin 2 → ℚ) →ₗ[ℚ] (Fin 2 → ℚ))
+    (Pi.basisFun ℚ (Fin 2) j) i).rank = 2 := by
+  rw [Matrix.rank_of_basis, LinearMap.range_id, finrank_top, Module.finrank_fin_fun]
+
+open scoped Matrix
+
+namespace SupportedRowsTest
+
+/-- The matrix has a single zero row between two nonzero rows. -/
+def M₀ : Matrix (Fin 3) (Fin 1) ℚ := !![1; 0; 2]
+
+/-- The selected rows cover every nonzero entry. -/
+def r₀ : Fin 2 → Fin 3 := ![0, 2]
+
+theorem hr₀ : ∀ i j, M₀ i j ≠ 0 → i ∈ Set.range r₀ := by
+  intro i j h
+  fin_cases i
+  · exact ⟨0, rfl⟩
+  · simp [M₀] at h
+  · exact ⟨1, rfl⟩
+
+/-- Restricting to the selected rows preserves the kernel at a concrete vector. -/
+example : M₀.submatrix r₀ id *ᵥ ![1] = 0 ↔ M₀ *ᵥ ![1] = 0 :=
+  Matrix.submatrix_mulVec_eq_zero_iff_of_ne_zero_mem_range M₀ r₀ hr₀ ![1]
+
+/-- Restricting to the selected rows preserves the rank. -/
+example : (M₀.submatrix r₀ id).rank = M₀.rank :=
+  Matrix.rank_submatrix_eq_of_ne_zero_mem_range M₀ r₀ hr₀
+
+end SupportedRowsTest
