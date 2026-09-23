@@ -665,12 +665,28 @@ recovered in the tests.
 The source's lower bound `finrank_interpolationSpace_lowerBound` is in
 `Interpolation/Dimension.lean`. Deferred: the shell counts.
 
-## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/Certificate.lean`
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/WeightedSupportCertificate.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Symbolic/ReceivedLine.lean` and `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Symbolic/ReceivedCurve.lean` at ArkLib revision
 `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
-`SymbolicReceivedInterpolation.Certificate` is now `WeightedSupportCertificate`, generalized from `Fin n` to arbitrary finite point types and expressed with named fields for the interpolant and its guarantees. `exists_weightedSupport_certificate_of_fixed_margin` and `exists_weightedSupport_certificate_of_rate` now accept finite point types. `exists_prescribed_symbolic_weightedSupport_certificate` drops the unused positive-message-dimension premise. The certificate packages challenge-degree, total-jet-degree, specialization nonvanishing, and agreement-vanishing guarantees. No source declaration was left out of the certificate port.
+`SymbolicReceivedInterpolation.Certificate` is covered by
+`SymbolicReceivedCurve.Certificate` at `ℓ = 1` with
+`w i = receivedLine (f i) (g i)`; no separate certificate type is needed.
+`exists_weightedSupport_certificate_of_fixed_margin` and
+`exists_weightedSupport_certificate_of_rate` construct this certificate for finite point types.
+`exists_prescribed_symbolic_weightedSupport_certificate` drops the unused positive-message-
+dimension premise. The source strict coefficient-degree bound
+`coeff_interpolant_natDegree_lt` is covered by
+`SourceColumn.coeff_interpolant_natDegree_le` at cutoff `B - 1`. The weighted-support degree
+wrappers `totalJetDegree_interpolant_le_two_mul_sub_one`,
+`jetTotalDegree_map_interpolant_le_two_mul_sub_one`, `totalJetDegree_interpolant_le_pred`, and
+`jetTotalDegree_map_interpolant_lt` are covered by
+`SourceColumn.interpolant_totalJetDegree_le` and
+`SourceColumn.map_interpolant_jetTotalDegree_le`, together with
+`totalJetDegree_le_pred_of_weightedSupportEligible`. The unused
+`map_interpolant_mem_weightedSupportSpace` helper was not retained; its result follows from
+`SourceColumn.map_interpolant` and `interpolant_mem_weightedSupportSpace`.
 
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/ChallengeDegree.lean`
 

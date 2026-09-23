@@ -21,13 +21,10 @@ ring homomorphism applied to the interpolant is applied to the coefficient vecto
 ## Main statements
 
 * `SourceColumn.exponent_injective`: distinct columns have distinct exponents.
-* `SourceColumn.ofExponent`: the column with a given exponent vector.
 * `SourceColumn.totalJetDegree_exponent`: the total jet degree of a column is
   `y₀ + ∑_j higher j`.
 * `SourceColumn.polynomial_eq_sourceMonomial`: a column's monomial is the source monomial.
 * `SourceColumn.coeff_interpolant`: the coefficient of the interpolant at `columns j` is `v j`.
-* `SourceColumn.coeff_interpolant_natDegree_lt`: a uniform coefficient-degree bound for the
-  interpolant.
 * `SourceColumn.coeff_interpolant_natDegree_le`: distinct columns preserve coefficient height
   at every derivative order.
 * `SourceColumn.map_interpolant_ne_zero`: the image of the interpolant under a ring
@@ -188,40 +185,27 @@ theorem coeff_interpolant {columns : κ → SourceColumn d} (hcolumns : Function
     exact fun h => absurd (hcolumns (exponent_injective h)) hkj
   · simp
 
-/-- If each coefficient polynomial has degree below `B`, every coefficient of the assembled
-interpolant has degree below `B`. -/
-theorem coeff_interpolant_natDegree_lt {columns : κ → SourceColumn d}
-    (hcolumns : Function.Injective columns) (v : κ → Polynomial R) {B : ℕ} (hB : 0 < B)
-    (hv : ∀ j, (v j).natDegree < B) :
-    ∀ u, ((interpolant columns v).coeff u).natDegree < B := by
-  classical
-  intro u
-  by_cases hu : u ∈ Set.range (fun j => (columns j).exponent)
-  · obtain ⟨j, rfl⟩ := hu
-    rw [coeff_interpolant hcolumns v j]
-    exact hv j
-  · have hcoeff : (interpolant columns v).coeff u = 0 := by
-      rw [interpolant, coeff_sum]
-      apply Finset.sum_eq_zero
-      intro j _
-      rw [coeff_monomial]
-      split_ifs with heq
-      · exact (hu ⟨j, heq⟩).elim
-      · rfl
-    rw [hcoeff]
-    simpa using hB
-
 /-- Distinct source columns preserve coefficient height at every derivative order. -/
 theorem coeff_interpolant_natDegree_le {F : Type*} [CommSemiring F] {h : ℕ}
     (columns : κ → SourceColumn d) (hcolumns : Function.Injective columns)
     (v : κ → Polynomial F) (hv : ∀ j, (v j).natDegree ≤ h) :
     ∀ u, ((interpolant columns v).coeff u).natDegree ≤ h := by
-  have hlt := coeff_interpolant_natDegree_lt (R := F) (columns := columns)
-    hcolumns v (B := h + 1) (by omega)
-    (by intro j; exact Nat.lt_succ_of_le (hv j))
+  classical
   intro u
-  have hltu := hlt u
-  omega
+  by_cases hu : u ∈ Set.range (fun j ↦ (columns j).exponent)
+  · obtain ⟨j, rfl⟩ := hu
+    rw [coeff_interpolant hcolumns v j]
+    exact hv j
+  · have hcoeff : (interpolant columns v).coeff u = 0 := by
+      rw [interpolant, MvPolynomial.coeff_sum]
+      apply Finset.sum_eq_zero
+      intro j _
+      rw [MvPolynomial.coeff_monomial]
+      split
+      · rename_i heq
+        exact (hu ⟨j, heq⟩).elim
+      · rfl
+    simp [hcoeff]
 
 /-- Mapping the coefficients of the interpolant maps its coefficient vector. -/
 theorem map_interpolant {S : Type*} [CommSemiring S] (ψ : R →+* S)

@@ -32,8 +32,7 @@ interpolant with explicit challenge-degree and height bounds.
   arbitrary received polynomial curves.
 * `exists_primitive_weightedSupport_interpolant`: primitive interpolation from a strict dimension
   surplus for arbitrary finite point and column types.
-* `interpolant_mem_weightedSupportSpace` and the degree-bound theorems: support and total jet
-  degree of an assembled interpolant and its specializations.
+* `interpolant_mem_weightedSupportSpace`: assembled interpolants lie in the weighted-support space.
 * `receivedLine_matrix_rank_le_base_actual`: the full symbolic matrix has rank at most the number
   of points times the actual local rank.
 * `exists_symbolic_weightedSupport_interpolant_of_fixed_margin`: a dimension margin yields a
@@ -399,80 +398,5 @@ theorem interpolant_mem_weightedSupportSpace (hD : 0 < D) (columns : κ → Sour
   have heq : u = (columns j).exponent := by
     simpa using MvPolynomial.support_monomial_subset hu
   simpa only [heq] using hband j
-
-/-- Mapping the challenge coefficients of an interpolant preserves its weighted-support bounds. -/
-theorem map_interpolant_mem_weightedSupportSpace {E : Type*} [CommSemiring E]
-    (hD : 0 < D) (columns : κ → SourceColumn d)
-    (hband : ∀ j, WeightedSupportEligible D d W L (columns j).exponent)
-    (v : κ → R[X]) (φ : R[X] →+* E) :
-    MvPolynomial.map φ (SourceColumn.interpolant columns v) ∈
-      weightedSupportSpace E D d W L hD := by
-  rw [SourceColumn.map_interpolant]
-  exact interpolant_mem_weightedSupportSpace hD columns hband (fun j => φ (v j))
-
-/-- Every monomial of an interpolant in weighted support has total jet degree below `t` when the
-support cutoff is at most `D * t`. -/
-theorem totalJetDegree_interpolant_le_pred (hD : 0 < D) {t : ℕ}
-    (hL : L ≤ (D : ℝ) * t) (columns : κ → SourceColumn d)
-    (hband : ∀ j, WeightedSupportEligible D d W L (columns j).exponent) (v : κ → R) :
-    ∀ u ∈ (SourceColumn.interpolant columns v).support, totalJetDegree u ≤ t - 1 := by
-  have hQ := interpolant_mem_weightedSupportSpace hD columns hband v
-  intro u hu
-  exact totalJetDegree_le_pred_of_weightedSupportEligible hD hL
-    (mem_weightedSupportSpace_iff.mp hQ u hu)
-
-/-- A challenge specialization of an interpolant in weighted support has jet degree below `t`
-when the support cutoff is at most `D * t`. -/
-theorem jetTotalDegree_map_interpolant_lt {E : Type*} [CommSemiring E]
-    (hD : 0 < D) {t : ℕ} (ht : 0 < t) (hL : L ≤ (D : ℝ) * t)
-    (columns : κ → SourceColumn d)
-    (hband : ∀ j, WeightedSupportEligible D d W L (columns j).exponent)
-    (v : κ → R[X]) (φ : R →+* E) (z : E) :
-    jetTotalDegree
-      (MvPolynomial.map (Polynomial.eval₂RingHom φ z)
-        (SourceColumn.interpolant columns v)) < t :=
-  jetTotalDegree_lt_of_mem_weightedSupportSpace ht (by exact_mod_cast hL)
-    (map_interpolant_mem_weightedSupportSpace hD columns hband v
-      (Polynomial.eval₂RingHom φ z))
-
-/-- The prescribed cutoff `(D : ℝ) * m * (1 + g)` with `g ≤ 1` gives total jet degree at most
-`2 * m - 1` for every monomial of the interpolant. -/
-theorem totalJetDegree_interpolant_le_two_mul_sub_one {R : Type*} [CommSemiring R]
-    {d D m W : ℕ} {κ : Type*} [Fintype κ] {g : ℝ} (hD : 0 < D) (hg : g ≤ 1)
-    (columns : κ → SourceColumn d)
-    (hband : ∀ j, WeightedSupportEligible D d W ((D : ℝ) * m * (1 + g))
-      (columns j).exponent) (v : κ → R[X]) :
-    ∀ u ∈ (SourceColumn.interpolant columns v).support, totalJetDegree u ≤ 2 * m - 1 := by
-  have hcut := weightedSupportCutoff_le_two_mul D m hg
-  exact totalJetDegree_interpolant_le_pred hD (by exact_mod_cast hcut) columns hband v
-
-/-- Every challenge specialization of an interpolant under the prescribed cutoff has total jet
-degree at most `2 * m - 1`. -/
-theorem jetTotalDegree_map_interpolant_le_two_mul_sub_one {R S : Type*}
-    [CommSemiring R] [CommSemiring S]
-    {d D m W : ℕ} {κ : Type*} [Fintype κ] {g : ℝ} (hD : 0 < D) (hg : g ≤ 1)
-    (columns : κ → SourceColumn d)
-    (hband : ∀ j, WeightedSupportEligible D d W ((D : ℝ) * m * (1 + g))
-      (columns j).exponent) (v : κ → R[X]) (ι : R →+* S) (z : S) :
-    jetTotalDegree (MvPolynomial.map (Polynomial.eval₂RingHom ι z)
-      (SourceColumn.interpolant columns v)) ≤ 2 * m - 1 := by
-  have hcut := weightedSupportCutoff_le_two_mul D m hg
-  by_cases hm : m = 0
-  · subst m
-    have hκ : IsEmpty κ := ⟨fun j => by
-      have hlt : (((columns j).exponent none + D *
-          totalJetDegree (columns j).exponent : ℕ) : ℝ) < 0 := by
-        simpa using (hband j).2
-      exact (not_lt_of_ge (Nat.cast_nonneg _) hlt)⟩
-    have hzero : SourceColumn.interpolant columns v = 0 := by
-      rw [SourceColumn.interpolant]
-      apply Finset.sum_eq_zero
-      intro j hj
-      exact (hκ.false j).elim
-    rw [hzero]
-    simp [jetTotalDegree, MvPolynomial.weightedTotalDegree]
-  · have hlt := jetTotalDegree_map_interpolant_lt (t := 2 * m) hD (by omega)
-      (by exact_mod_cast hcut) columns hband v ι z
-    exact Nat.le_sub_one_of_lt hlt
 
 end ReedSolomon.HiddenDerivative

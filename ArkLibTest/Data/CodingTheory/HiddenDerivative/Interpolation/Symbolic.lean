@@ -14,7 +14,7 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.Received
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.SourceColumn
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.WeightedSupport
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.Dimension
-import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.Certificate
+import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.WeightedSupportCertificate
 import Mathlib.FieldTheory.RatFunc.Basic
 import Mathlib.Data.ZMod.Basic
 
@@ -186,17 +186,22 @@ private theorem twoPointFixedMargin {F : Type*} [Field F] :
   exact_mod_cast hmargin
 
 /-- The fixed-margin construction gives a certificate with a feasible two-point threshold. -/
-example : Nonempty (WeightedSupportCertificate ℚ 2 1 3 1 35 twoPointEmbedding
-    (fun _ => 0) (fun _ => 0)) ∧ ∃ indices : Finset (Fin 2), indices.card = 2 := by
-  refine ⟨exists_weightedSupport_certificate_of_fixed_margin (F := ℚ) (D := 1) (d := 1)
+example : Nonempty (SymbolicReceivedCurve.Certificate 2 1 1 3 1 35 twoPointEmbedding
+    (fun _ => receivedLine 0 0)) ∧
+    (∃ cert : SymbolicReceivedCurve.Certificate 2 1 1 3 1 35 twoPointEmbedding
+      (fun _ => receivedLine 0 0), ∃ stages terminal, SeparantChain cert.Q stages terminal) ∧
+    ∃ indices : Finset (Fin 2), indices.card = 2 := by
+  obtain ⟨cert⟩ := exists_weightedSupport_certificate_of_fixed_margin
+    (F := ℚ) (D := 1) (d := 1)
     (W := 0) (m := 2) (A := 2) (k := 1) (g₀ := 1) Nat.one_pos (by norm_num)
     (by norm_num) (by norm_num) (by norm_num) (by norm_num) twoPointEmbedding
     (fun _ => 0) (fun _ => 0) (by
       have hmargin := twoPointFixedMargin (F := ℚ)
       have hcut : ((1 : ℕ) : ℝ) * 2 * (1 + (1 : ℝ)) = 4 := by norm_num
       rw [← hcut] at hmargin
-      exact hmargin), ?_⟩
-  exact ⟨Finset.univ, by simp⟩
+      exact hmargin)
+  refine ⟨⟨cert⟩, ⟨cert, ?_⟩, ⟨Finset.univ, by simp⟩⟩
+  exact cert.exists_separantChain (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
 
 private noncomputable def twoPointWeightedColumns : Fin (Fintype.card
     (↥(weightedSupportExponents 1 1 0 2 Nat.one_pos))) → SourceColumn 1 :=
@@ -266,9 +271,14 @@ example :
 /-- Distinct source columns with coefficients of degree below two retain that bound. -/
 example : ∀ u, ((SourceColumn.interpolant sourceColumns
     ![(Polynomial.X : ℚ[X]), 1]).coeff u).natDegree < 2 := by
-  exact SourceColumn.coeff_interpolant_natDegree_lt (columns := sourceColumns)
-    sourceColumnsInjective ![(Polynomial.X : ℚ[X]), 1] (B := 2) (by norm_num)
-    (by intro j; fin_cases j <;> norm_num [sourceColumns])
+  have hbound : ∀ u, ((SourceColumn.interpolant sourceColumns
+      ![(Polynomial.X : ℚ[X]), 1]).coeff u).natDegree ≤ 2 - 1 :=
+    SourceColumn.coeff_interpolant_natDegree_le (h := 2 - 1) sourceColumns
+      sourceColumnsInjective ![(Polynomial.X : ℚ[X]), 1]
+      (by intro j; fin_cases j <;> norm_num [sourceColumns])
+  intro u
+  have h := hbound u
+  omega
 
 /-- The weighted cutoff bounds both the interpolant support and its challenge specialization. -/
 example :
@@ -285,13 +295,16 @@ example :
     intro j
     have hcut : ((1 : ℕ) : ℝ) * (1 : ℕ) * (1 + (1 : ℝ)) = 2 := by norm_num
     simpa only [hcut] using twoPointWeightedColumns_eligible j
-  constructor
-  · exact totalJetDegree_interpolant_le_two_mul_sub_one (d := 1) (D := 1) (m := 1)
-      (W := 0) (g := 1) Nat.one_pos (by norm_num) twoPointWeightedColumns
-      hband (fun _ => 1)
-  · exact jetTotalDegree_map_interpolant_le_two_mul_sub_one (d := 1) (D := 1) (m := 1)
-      (W := 0) (g := 1) Nat.one_pos (by norm_num) twoPointWeightedColumns
-      hband (fun _ => 1) (RingHom.id ℚ) 0
+  have hdegree : ∀ j, totalJetDegree (twoPointWeightedColumns j).exponent ≤ 1 := by
+    intro j
+    have h := totalJetDegree_le_pred_of_weightedSupportEligible (D := 1) (d := 1)
+      (W := 0) (t := 2) Nat.one_pos (by norm_num) (hband j)
+    simpa using h
+  exact ⟨SourceColumn.interpolant_totalJetDegree_le twoPointWeightedColumns hdegree
+      (fun _ => 1),
+    SourceColumn.map_interpolant_jetTotalDegree_le
+      (Polynomial.eval₂RingHom (RingHom.id ℚ) 0) twoPointWeightedColumns hdegree
+      (fun _ => 1)⟩
 
 example :
     ((localConstraintMatrix 1 (fun _ : Fin 1 => Polynomial.C (0 : ℚ))
@@ -471,8 +484,8 @@ example :
     let d := Nat.ceil (Real.exp (xi / (1 / 8 : ℝ)))
     let H : ℝ := harmonic (d - 1)
     let m := Nat.ceil (100 * (d : ℝ) ^ 2 * H)
-    Nonempty (WeightedSupportCertificate ℚ 2 1 (2 * m - 1) d
-      (12 * (2 * m - 1) - 1) sixteenPointEmbedding (fun _ => 0) (fun _ => 0)) := by
+    Nonempty (SymbolicReceivedCurve.Certificate 2 1 1 (2 * m - 1) d
+      (12 * (2 * m - 1) - 1) sixteenPointEmbedding (fun _ => receivedLine 0 0)) := by
   dsimp
   exact exists_weightedSupport_certificate_of_rate (F := ℚ) (δ := 1 / 8) (n := 16)
     (D := 1) (A := 2) (k := 1) sixteenPointEmbedding (fun _ => 0) (fun _ => 0)
@@ -521,9 +534,10 @@ private theorem prescribedExampleMultiplicity_pos : 0 < prescribedExampleMultipl
 example :
     let A := ReedSolomon.agreementThreshold prescribedExampleDelta prescribedExampleBlockLength 1
     A ≤ prescribedExampleBlockLength ∧
-      Nonempty (WeightedSupportCertificate ℚ A 1 (2 * prescribedExampleMultiplicity - 1)
-        prescribedExampleOrder (12 * (2 * prescribedExampleMultiplicity - 1) - 1)
-        prescribedExampleCenters (fun _ => 0) (fun _ => 0)) := by
+      Nonempty (SymbolicReceivedCurve.Certificate A 1 1
+        (2 * prescribedExampleMultiplicity - 1) prescribedExampleOrder
+        (12 * (2 * prescribedExampleMultiplicity - 1) - 1) prescribedExampleCenters
+        (fun _ => receivedLine 0 0)) := by
   dsimp
   have hceil : ⌈prescribedExampleDelta * prescribedExampleBlockLength⌉₊ =
       prescribedExampleMultiplicity := by
