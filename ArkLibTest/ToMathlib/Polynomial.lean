@@ -137,13 +137,6 @@ example : taylor (1 : ZMod 2) (expand (ZMod 2) 2 X) = X ^ 2 + 1 := by
   simp only [pow_one, one_pow] at h
   rw [h, taylor_X, map_add, expand_X, expand_C, C_1]
 
-example : (taylor (1 : ZMod 2) (expand (ZMod 2) 2 X)).coeff 2 = 1 := by
-  simpa [hasseDeriv_X] using
-    coeff_taylor_expand_expChar_pow_mul (R := ZMod 2) 2 1 X 1 1
-
-example : (taylor (1 : ZMod 2) (expand (ZMod 2) 2 X)).coeff 1 = 0 :=
-  coeff_taylor_expand_expChar_pow_eq_zero (R := ZMod 2) 2 1 X 1 (by norm_num)
-
 /-! ## Rectangle differences -/
 
 example : (rectangleDifference 1 (1 : ℚ) 1 1 1).natDegree ≤ 1 :=

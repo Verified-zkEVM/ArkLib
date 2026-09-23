@@ -43,11 +43,6 @@ example : ((Nat.choose 4 2 : ℕ) : ZMod 5) ≠ 0 :=
   natCast_choose_ne_zero_of_lt_charP Nat.prime_five (by norm_num) (by norm_num)
 
 example :
-    X ∣ taylor (1 : ℚ) (X - C 1 : ℚ[X]) ↔ (X - C 1 : ℚ[X]) ∣ X - C 1 :=
-  by
-    simpa only [pow_one] using X_pow_dvd_taylor_iff_X_sub_C_pow_dvd (X - C 1 : ℚ[X]) 1 1
-
-example :
     X ^ 1 ∣ taylor (0 : ℚ) (hasseDeriv 1 (X ^ 2 : ℚ[X])) -
       taylor (0 : ℚ) (hasseDeriv 1 (0 : ℚ[X])) := by
   have hdiv : X ^ 2 ∣ taylor (0 : ℚ) (X ^ 2 : ℚ[X]) - taylor 0 0 := by

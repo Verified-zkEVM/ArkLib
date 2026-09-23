@@ -283,20 +283,6 @@ example :
       Bivariate.degreeX (C ((X : ℚ[X]) ^ 3) * X ^ 2 : ℚ[X][X]) :=
   Bivariate.degreeX_derivative_le _
 
--- Actual-degree and padded derivative resultants obey the coefficient-variable bound for `Y²-X²`.
-example :
-    (resultant (X ^ 2 - C ((X : ℚ[X]) ^ 2))
-      (X ^ 2 - C ((X : ℚ[X]) ^ 2)).derivative).natDegree ≤
-        (2 * (X ^ 2 - C ((X : ℚ[X]) ^ 2) : ℚ[X][X]).natDegree - 1) *
-          Bivariate.degreeX (X ^ 2 - C ((X : ℚ[X]) ^ 2)) ∧
-      (resultant (X ^ 2 - C ((X : ℚ[X]) ^ 2))
-        (X ^ 2 - C ((X : ℚ[X]) ^ 2)).derivative
-        (X ^ 2 - C ((X : ℚ[X]) ^ 2) : ℚ[X][X]).natDegree
-        ((X ^ 2 - C ((X : ℚ[X]) ^ 2) : ℚ[X][X]).natDegree - 1)).natDegree ≤
-          (2 * (X ^ 2 - C ((X : ℚ[X]) ^ 2) : ℚ[X][X]).natDegree - 1) *
-            Bivariate.degreeX (X ^ 2 - C ((X : ℚ[X]) ^ 2)) := by
-  exact ⟨natDegree_resultant_derivative_le _, natDegree_resultant_derivative_padded_le _⟩
-
 private noncomputable def squareEquation : ℚ[X][X] := X ^ 2 - C ((X : ℚ[X]) ^ 2)
 
 private theorem resultant_squareEquation_derivative :

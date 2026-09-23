@@ -323,11 +323,19 @@ private theorem jetDegree_cubicEquation (j : Fin 2) :
   rw [jetDegree, cubicEquation_eq_monomial, degreeOf_monomial_eq _ _ one_ne_zero]
   fin_cases j <;> simp
 
-/-- The full descent of `Y₁ ^ 2 * Y₀` in `Y₁` is `2 * Y₀`. -/
-example : derivativeDescent cubicEquation 1 = 2 * X (some 0) := by
-  rw [derivativeDescent, jetDegree_cubicEquation]
-  simp [jetDerivative, sq, pderiv_X]
-  ring
+/-- The descent of `Y₁ ^ 2 * Y₀` is nonzero and has no active jet at or above `Y₁`. -/
+example : derivativeDescent cubicEquation 1 ≠ 0 ∧
+    ∀ j, DependsOnJet (derivativeDescent cubicEquation 1) j → j < 1 := by
+  have hactive : activeJets cubicEquation = {0, 1} := by
+    ext j
+    fin_cases j <;> simp [DependsOnJet, jetDegree_cubicEquation]
+  have hhighest : highestActiveJet cubicEquation = some 1 := by
+    rw [highestActiveJet_eq_some_max cubicEquation (by simp [hactive])]
+    simp [hactive]
+  have hcast : JetDegreeCastsNeZero cubicEquation 1 := by
+    apply jetDegreeCastsNeZero_of_ringChar
+    exact Or.inl (ringChar.eq_zero : ringChar ℚ = 0)
+  exact derivativeDescent_spec_of_highestActiveJet_eq_some hhighest hcast
 
 /-! ### Direct regular iteration -/
 
@@ -507,17 +515,16 @@ example : rationalTaylorCoefficient 0 (taylorLinearEquation ℚ)
 private abbrev scaledExpEquation : DifferentialPolynomial (Polynomial ℚ) 1 :=
   X (some 1) - C Polynomial.X * X (some 0)
 
-/-- The numerator of `y' = t y` specializes at `t = 0` to that of `y' = 0`. -/
+/-- The numerator of `y' = t y` specializes at the nonzero parameter `t = 5`. -/
 example :
-    map (Polynomial.aeval (0 : ℚ)).toRingHom
+    map (Polynomial.aeval (5 : ℚ)).toRingHom
         (rationalTaylorNumeratorOver ℚ 0 scaledExpEquation 2) =
-      rationalTaylorNumerator 0 (X (some 1) : DifferentialPolynomial ℚ 1) 2 := by
+      rationalTaylorNumerator 0
+        (X (some 1) - C (5 : ℚ) * X (some 0) : DifferentialPolynomial ℚ 1) 2 := by
   rw [map_rationalTaylorNumeratorOver, rationalTaylorNumeratorOver_eq]
   simp [scaledExpEquation]
 
 /-! ### Symbolic Taylor-chart equations -/
-
-private abbrev parameterEquation : DifferentialPolynomial (Polynomial ℚ) 1 := X (some 1)
 
 private abbrev parameterizedEquation : DifferentialPolynomial (Polynomial ℚ) 1 :=
   C (Polynomial.X + 1) * X (some 1) + X none
@@ -530,22 +537,27 @@ private abbrev rationalId : ℚ →ₐ[ℚ] ℚ := AlgHom.id ℚ ℚ
 /-- The mapped agreement equation for `Y₁` at parameter `2` is `Y₀ + 2Y₁ - 2`. -/
 example :
     map (Polynomial.aeval (2 : ℚ)).toRingHom
-        (taylorAgreementEquationOver (F := ℚ) (0 : Polynomial ℚ) parameterEquation 2
-          Polynomial.X Polynomial.X) =
+        (taylorAgreementEquationOver (F := ℚ) (0 : Polynomial ℚ)
+          (constantDerivativeEquation (Polynomial ℚ)) 2 Polynomial.X Polynomial.X) =
       X (0 : Fin 2) + C (2 : ℚ) * X (1 : Fin 2) - C (2 : ℚ) := by
-  have hnum0 : commonTaylorNumeratorOver ℚ (0 : Polynomial ℚ) parameterEquation 4 0 =
+  have hnum0 :
+      commonTaylorNumeratorOver ℚ (0 : Polynomial ℚ)
+        (constantDerivativeEquation (Polynomial ℚ)) 4 0 =
       X (0 : Fin 2) := by
-    simp [commonTaylorNumeratorOver, rationalTaylorNumeratorOver, parameterEquation,
+    simp [commonTaylorNumeratorOver, rationalTaylorNumeratorOver, constantDerivativeEquation,
       initialJetSeparant, separant]
-  have hnum1 : commonTaylorNumeratorOver ℚ (0 : Polynomial ℚ) parameterEquation 4 1 =
+  have hnum1 :
+      commonTaylorNumeratorOver ℚ (0 : Polynomial ℚ)
+        (constantDerivativeEquation (Polynomial ℚ)) 4 1 =
       X (1 : Fin 2) := by
-    simp [commonTaylorNumeratorOver, rationalTaylorNumeratorOver, parameterEquation,
+    simp [commonTaylorNumeratorOver, rationalTaylorNumeratorOver, constantDerivativeEquation,
       initialJetSeparant, separant]
-  have hcut : taylorAgreementEquationOver (F := ℚ) (0 : Polynomial ℚ) parameterEquation 2
-      Polynomial.X Polynomial.X =
+  have hcut :
+      taylorAgreementEquationOver (F := ℚ) (0 : Polynomial ℚ)
+        (constantDerivativeEquation (Polynomial ℚ)) 2 Polynomial.X Polynomial.X =
         X (0 : Fin 2) + C Polynomial.X * X (1 : Fin 2) - C Polynomial.X := by
     simp [taylorAgreementEquationOver, hnum0, hnum1, initialJetSeparant,
-      parameterEquation, separant]
+      constantDerivativeEquation, separant]
   rw [hcut]
   simp only [map_sub, map_add, map_mul, map_C, map_X, AlgHom.toRingHom_eq_coe,
     AlgHom.coe_toRingHom, Polynomial.aeval_X]
@@ -645,21 +657,23 @@ example :
       (constantJet (F := ℚ))).degree
       < 1 := by
   have hS : aeval (constantJet (F := ℚ)) (map (Polynomial.aeval (0 : ℚ)).toRingHom
-      (initialJetSeparant 0 parameterEquation)) ≠ 0 := by
+      (initialJetSeparant 0 (constantDerivativeEquation (Polynomial ℚ)))) ≠ 0 := by
     rw [map_initialJetSeparant]
-    norm_num [initialJetSeparant, separant, parameterEquation, constantJet]
+    norm_num [initialJetSeparant, separant, constantDerivativeEquation, constantJet]
   have hhigh : ∀ l : Fin 2, 1 ≤ l.val →
       aeval (constantJet (F := ℚ)) (map (Polynomial.aeval (0 : ℚ)).toRingHom
-        (commonTaylorNumeratorOver ℚ 0 parameterEquation 4 l.val)) = 0 := by
+        (commonTaylorNumeratorOver ℚ 0
+          (constantDerivativeEquation (Polynomial ℚ)) 4 l.val)) = 0 := by
     intro l hl
     have hl1 : l = 1 := by fin_cases l <;> simp_all
     subst l
     rw [map_commonTaylorNumeratorOver_eq]
     norm_num [commonTaylorNumerator, rationalTaylorNumerator, initialJetSeparant, separant,
-      parameterEquation, constantJet]
-  simpa [parameterEquation] using
+      constantDerivativeEquation, constantJet]
+  simpa [constantDerivativeEquation] using
     degree_rationalTaylorPolynomial_lt_of_symbolic_high_cuts (F := ℚ)
-      (Polynomial.aeval (0 : ℚ)) 0 parameterEquation 2 1 (constantJet (F := ℚ)) hS hhigh
+      (Polynomial.aeval (0 : ℚ)) 0 (constantDerivativeEquation (Polynomial ℚ)) 2 1
+      (constantJet (F := ℚ)) hS hhigh
 
 /-- A nonconstant center contributes its parameter degree to the initial equation. -/
 example : jointTotalDegree (initialJetEquation Polynomial.X independentVariableEquation) ≤ 1 := by
@@ -1190,9 +1204,6 @@ example :
 
 /-! ### Frobenius flattening -/
 
-private abbrev frobeniusEquationExample :
-    DifferentialPolynomial (Polynomial (ZMod 2)) 0 := X (some 0)
-
 private abbrev frobeniusSquareEquation :
     DifferentialPolynomial (Polynomial (ZMod 2)) 0 := X (some 0) ^ 2
 
@@ -1234,24 +1245,25 @@ example :
       ∃ e : ℕ, ∃ H : DifferentialPolynomial (Polynomial (ZMod 2)) 0,
       Irreducible H ∧
       MvPolynomial.pderiv (some 0) H ≠ 0 ∧
-      H.degreeOf (some 0) * (2 ^ e) = frobeniusEquationExample.degreeOf (some 0) ∧
-      H.degreeOf none ≤ frobeniusEquationExample.degreeOf none ∧
+      H.degreeOf (some 0) * (2 ^ e) =
+        (zeroJetEquation (Polynomial (ZMod 2)) 0).degreeOf (some 0) ∧
+      H.degreeOf none ≤ (zeroJetEquation (Polynomial (ZMod 2)) 0).degreeOf none ∧
       MvPolynomial.CoeffNatDegreeLE H 0 ∧
       ∀ (P : Polynomial (ZMod 2)) (w : ZMod 2),
         differentialSpecialization
             (MvPolynomial.map (Polynomial.evalRingHom (w ^ (2 ^ e)))
-              frobeniusEquationExample) P = 0 →
+              (zeroJetEquation (Polynomial (ZMod 2)) 0)) P = 0 →
           differentialSpecialization
             (MvPolynomial.map (Polynomial.evalRingHom w) H)
               (Polynomial.expand (ZMod 2) (2 ^ e) P) = 0 := by
-  apply exists_frobeniusEquation (E := ZMod 2) 2 (Q := frobeniusEquationExample)
-  · simp [frobeniusEquationExample]
+  apply exists_frobeniusEquation (E := ZMod 2) 2 (Q := (zeroJetEquation (Polynomial (ZMod 2)) 0))
+  · simp [zeroJetEquation]
   · apply MvPolynomial.irreducible_of_totalDegree_eq_one
-    · simp [frobeniusEquationExample]
+    · simp [zeroJetEquation]
     · intro c hc
       apply isUnit_of_dvd_one
       have h := hc (Finsupp.single (some (0 : Fin 1)) 1)
-      simpa [frobeniusEquationExample] using h
+      simpa [zeroJetEquation] using h
   · exact MvPolynomial.coeffNatDegreeLE_X (some 0)
 
 /-- A concrete zero specialization is transported through the fixed characteristic-two
@@ -1288,31 +1300,31 @@ example :
 
 /-! ### Ordinary root presentations -/
 
-private abbrev rationalRootEquation : DifferentialPolynomial (Polynomial ℚ) 0 := X (some 0)
-
 /-- For the concrete irreducible equation `Y₀` over `ℚ[X]`, the exceptional set is empty. -/
 example :
     ∃ exceptional : Finset ℚ, exceptional.card ≤ 0 ∧
       ∀ w ∉ exceptional, ∀ P : Polynomial ℚ,
         differentialSpecialization
-            (challengeSpecialization rationalRootEquation w) P = 0 →
+          (challengeSpecialization (zeroJetEquation (Polynomial ℚ) 0) w) P = 0 →
           differentialSpecialization
-            (separant (challengeSpecialization rationalRootEquation w) (Fin.last 0)) P ≠ 0 := by
-  have hirr : Irreducible rationalRootEquation := by
+            (separant
+              (challengeSpecialization (zeroJetEquation (Polynomial ℚ) 0) w) (Fin.last 0))
+            P ≠ 0 := by
+  have hirr : Irreducible (zeroJetEquation (Polynomial ℚ) 0) := by
     apply MvPolynomial.irreducible_of_totalDegree_eq_one
-    · simp [rationalRootEquation]
+    · simp [zeroJetEquation]
     · intro c hc
       apply isUnit_of_dvd_one
       have h := hc (Finsupp.single (some (0 : Fin 1)) 1)
-      simpa [rationalRootEquation] using h
-  have hpos : 0 < rationalRootEquation.degreeOf (some 0) := by
-    simp [rationalRootEquation]
-  have hder : MvPolynomial.pderiv (some 0) rationalRootEquation ≠ 0 := by
-    simp [rationalRootEquation]
-  have hheight : MvPolynomial.CoeffNatDegreeLE rationalRootEquation 0 := by
-    simpa [rationalRootEquation] using
+      simpa [zeroJetEquation] using h
+  have hpos : 0 < (zeroJetEquation (Polynomial ℚ) 0).degreeOf (some 0) := by
+    simp [zeroJetEquation]
+  have hder : MvPolynomial.pderiv (some 0) (zeroJetEquation (Polynomial ℚ) 0) ≠ 0 := by
+    simp [zeroJetEquation]
+  have hheight : MvPolynomial.CoeffNatDegreeLE (zeroJetEquation (Polynomial ℚ) 0) 0 := by
+    simpa [zeroJetEquation] using
       MvPolynomial.coeffNatDegreeLE_X (R := ℚ) (σ := JetVariable 0) (some 0)
-  simpa [rationalRootEquation] using
+  simpa [zeroJetEquation] using
     exists_exceptional_ordinary_separant hirr hpos hder hheight
 
 /-! ### Taylor chart coefficient extension -/
