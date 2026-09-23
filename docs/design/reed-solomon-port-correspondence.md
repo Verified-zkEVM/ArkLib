@@ -3943,13 +3943,12 @@ The aggregate includes a concrete `d = 500`, `W = 1` instance of `partitionSuppo
 Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/PointRecognition.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 The acceptance cases check the zero case and a sample with second received value `1`, challenge `2`, `K = 2 > k = 1`, and a satisfied cut at `l = 1`. They check the reconstructed affine polynomial, jet, and cleared coefficient conclusions.
-## `ArkLibTest/Data/Polynomial/Differential/TaylorChartAlgebra.lean`
+## `ArkLibTest/Data/Polynomial/Differential.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Symbolic/FrobeniusCuts.lean` and `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Symbolic/TaylorCutDegree.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
-The acceptance module retains main's coefficient-map, regular and singular jet, insufficient-exponent, high-cut, and common-numerator examples. Added cases exercise the initial-equation joint-degree bound at a nonconstant center, the zero-length agreement boundary case, a positive-length agreement cut with nonconstant numerator and separant, and sparsity for jet `(1, 0)`, preserving the allowed constant coefficient `1` while forcing the excluded linear coefficient to `0`. No public ArkLib declaration is added by this file.
+The acceptance module retains main's coefficient-map and regular-jet examples, high-cut and common-numerator checks. Added cases exercise the initial-equation joint-degree bound at a nonconstant center, a positive-length agreement cut with nonconstant numerator and separant, and sparsity for jet `(1, 0)`, preserving the allowed constant coefficient `1` while forcing the excluded linear coefficient to `0`. No public ArkLib declaration is added by this file.
 
-## `ArkLibTest/Data/Polynomial/Differential.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Geometry/SolutionEmbedding.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
