@@ -5,6 +5,7 @@ Authors: Quang Dao
 -/
 module
 
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.Gate
 public import Mathlib.Analysis.SpecialFunctions.Log.Basic
 public import Mathlib.Analysis.SpecificLimits.Basic
 
@@ -41,7 +42,10 @@ be assumed.
   `tendsto_partitionFiniteRatio`: the three limits above.
 * `exists_partitionFiniteRatio_gt`: every value below the limit is exceeded at some positive
   multiplicity with positive weight budget.
+* `leastPartitionFiniteMultiplicity` and its specification: the first multiplicity whose finite
+  ratio exceeds `1` and whose weight budget is positive.
 * `PartitionFiniteParameters.nonempty`: such parameters exist when the limit exceeds `1`.
+* The fixed-rate multiplicity and finite-parameter results specialize these APIs at `R + δ`.
 
 ## References
 
@@ -188,6 +192,65 @@ theorem exists_partitionFiniteRatio_gt {rate agreement γ : ℝ} {order : ℕ}
   rw [Nat.eq_zero_of_not_pos hzero, Nat.cast_zero, zero_div] at hW
   exact lt_irrefl _ hW
 
+/-- The least multiplicity whose weight budget is positive and finite ratio exceeds `1`. -/
+noncomputable def leastPartitionFiniteMultiplicity {rate agreement : ℝ} {order : ℕ}
+    (hrate : 0 < rate) (hagreement : 0 < agreement) (horder : 0 < order)
+    (hlimit : 1 < (27 / 20 : ℝ) * rate * (order + 1) *
+      Real.exp (-(rate / agreement * Real.log (6 * (order : ℝ))))) : ℕ := by
+  classical
+  exact Nat.find (exists_partitionFiniteRatio_gt hrate hagreement horder hlimit)
+
+/-- The least multiplicity passes all finite acceptance checks. -/
+theorem leastPartitionFiniteMultiplicity_spec {rate agreement : ℝ} {order : ℕ}
+    (hrate : 0 < rate) (hagreement : 0 < agreement) (horder : 0 < order)
+    (hlimit : 1 < (27 / 20 : ℝ) * rate * (order + 1) *
+      Real.exp (-(rate / agreement * Real.log (6 * (order : ℝ))))) :
+    let multiplicity := leastPartitionFiniteMultiplicity hrate hagreement horder hlimit
+    0 < multiplicity ∧ 0 < partitionWeightBudget rate agreement order multiplicity ∧
+      1 < partitionFiniteRatio rate agreement order multiplicity := by
+  classical
+  exact Nat.find_spec (exists_partitionFiniteRatio_gt hrate hagreement horder hlimit)
+
+/-- The least multiplicity is no greater than any candidate passing the finite checks. -/
+theorem leastPartitionFiniteMultiplicity_minimal {rate agreement : ℝ} {order candidate : ℕ}
+    (hrate : 0 < rate) (hagreement : 0 < agreement) (horder : 0 < order)
+    (hlimit : 1 < (27 / 20 : ℝ) * rate * (order + 1) *
+      Real.exp (-(rate / agreement * Real.log (6 * (order : ℝ)))))
+    (hcandidate : 0 < candidate ∧
+      0 < partitionWeightBudget rate agreement order candidate ∧
+      1 < partitionFiniteRatio rate agreement order candidate) :
+    leastPartitionFiniteMultiplicity hrate hagreement horder hlimit ≤ candidate := by
+  classical
+  exact Nat.find_min' (exists_partitionFiniteRatio_gt hrate hagreement horder hlimit) hcandidate
+
+/-- The least multiplicity for the fixed-rate order and agreement `R + δ`. -/
+noncomputable def fixedRatePartitionMultiplicity {rate gap : ℝ}
+    (hrate : 0 < rate) (hgap : 0 < gap) : ℕ := by
+  have hagreement : 0 < rate + gap := by linarith
+  have horder500 := fixedRatePartitionOrder_ge_500 rate gap
+  have horder : 0 < fixedRatePartitionOrder rate gap := by
+    omega
+  refine leastPartitionFiniteMultiplicity hrate hagreement horder ?_
+  rw [← rateGamma_eq_exponential horder]
+  exact fixedRateGamma_gt_one hrate hgap
+
+/-- The least fixed-rate multiplicity has a positive weight budget and finite ratio above `1`. -/
+theorem fixedRatePartitionMultiplicity_spec {rate gap : ℝ}
+    (hrate : 0 < rate) (hgap : 0 < gap) :
+    let multiplicity := fixedRatePartitionMultiplicity hrate hgap
+    0 < multiplicity ∧
+      0 < partitionWeightBudget rate (rate + gap) (fixedRatePartitionOrder rate gap)
+        multiplicity ∧
+    1 < partitionFiniteRatio rate (rate + gap) (fixedRatePartitionOrder rate gap)
+        multiplicity := by
+  have hagreement : 0 < rate + gap := by linarith
+  have horder500 := fixedRatePartitionOrder_ge_500 rate gap
+  have horder : 0 < fixedRatePartitionOrder rate gap := by omega
+  unfold fixedRatePartitionMultiplicity
+  exact leastPartitionFiniteMultiplicity_spec hrate hagreement horder (by
+    rw [← rateGamma_eq_exponential horder]
+    exact fixedRateGamma_gt_one hrate hgap)
+
 /-- A positive multiplicity with positive weight budget at which the finite ratio exceeds `1`,
 at code rate `R`, agreement fraction `a` and derivative order `d`. -/
 structure PartitionFiniteParameters (rate agreement : ℝ) (order : ℕ) where
@@ -199,6 +262,22 @@ structure PartitionFiniteParameters (rate agreement : ℝ) (order : ℕ) where
   weightBudget_pos : 0 < partitionWeightBudget rate agreement order multiplicity
   /-- The finite ratio at this multiplicity exceeds `1`. -/
   one_lt_finiteRatio : 1 < partitionFiniteRatio rate agreement order multiplicity
+
+/-- Finite parameters at the fixed-rate order and agreement `R + δ`. -/
+noncomputable def fixedRatePartitionFiniteParameters {rate gap : ℝ}
+    (hrate : 0 < rate) (hgap : 0 < gap) :
+    PartitionFiniteParameters rate (rate + gap) (fixedRatePartitionOrder rate gap) where
+  multiplicity := fixedRatePartitionMultiplicity hrate hgap
+  multiplicity_pos := (fixedRatePartitionMultiplicity_spec hrate hgap).1
+  weightBudget_pos := (fixedRatePartitionMultiplicity_spec hrate hgap).2.1
+  one_lt_finiteRatio := (fixedRatePartitionMultiplicity_spec hrate hgap).2.2
+
+/-- Fixed-rate parameters exist at the order `fixedRatePartitionOrder R δ`. -/
+theorem exists_fixedRatePartitionFiniteParameters {rate gap : ℝ}
+    (hrate : 0 < rate) (hgap : 0 < gap) :
+    Nonempty (PartitionFiniteParameters rate (rate + gap)
+      (fixedRatePartitionOrder rate gap)) := by
+  exact ⟨fixedRatePartitionFiniteParameters hrate hgap⟩
 
 /-- Finite parameters exist whenever the limit `(27/20) R (d + 1) exp(-(R/a) log(6d))` of the
 finite ratio exceeds `1`. -/

@@ -13,7 +13,7 @@ import Mathlib.Analysis.Complex.ExponentialBounds
 The weight budget, inverse radius and finite ratio at `R = a = 1`, `d = 1`, `m = 2`; the finite
 ratio written with the triangular number `d (d + 1) / 2` divided by `m`; a case showing that
 `0 < a` is needed for the limit of `W/m`; and the existence statement without the weight-budget
-clause.
+clause. The least-multiplicity selector and the fixed-rate finite parameters are also checked.
 -/
 
 open Filter Topology
@@ -111,5 +111,44 @@ example {rate agreement : ℝ} {order : ℕ} (hrate : 0 < rate) (hagreement : 0 
       1 < partitionFiniteRatio rate agreement order multiplicity := by
   obtain ⟨p⟩ := PartitionFiniteParameters.nonempty hrate hagreement horder hlimit
   exact ⟨p.multiplicity, p.multiplicity_pos, p.weightBudget_pos, p.one_lt_finiteRatio⟩
+
+/-! ### Least finite multiplicity -/
+
+/-- The least multiplicity passes each finite acceptance check. -/
+example {rate agreement : ℝ} {order : ℕ} (hrate : 0 < rate) (hagreement : 0 < agreement)
+    (horder : 0 < order)
+    (hlimit : 1 < (27 / 20 : ℝ) * rate * (order + 1) *
+      Real.exp (-(rate / agreement * Real.log (6 * (order : ℝ))))) :
+    let m := leastPartitionFiniteMultiplicity hrate hagreement horder hlimit
+    0 < m ∧ 0 < partitionWeightBudget rate agreement order m ∧
+      1 < partitionFiniteRatio rate agreement order m :=
+  leastPartitionFiniteMultiplicity_spec hrate hagreement horder hlimit
+
+/-- Every multiplicity passing the finite checks is at least the least one. -/
+example {rate agreement : ℝ} {order candidate : ℕ} (hrate : 0 < rate)
+    (hagreement : 0 < agreement) (horder : 0 < order)
+    (hlimit : 1 < (27 / 20 : ℝ) * rate * (order + 1) *
+      Real.exp (-(rate / agreement * Real.log (6 * (order : ℝ)))))
+    (hcandidate : 0 < candidate ∧
+      0 < partitionWeightBudget rate agreement order candidate ∧
+      1 < partitionFiniteRatio rate agreement order candidate) :
+    leastPartitionFiniteMultiplicity hrate hagreement horder hlimit ≤ candidate :=
+  leastPartitionFiniteMultiplicity_minimal hrate hagreement horder hlimit hcandidate
+
+/-! ### Fixed-rate specialization -/
+
+/-- The fixed-rate least multiplicity has positive weight and finite ratio above `1`. -/
+example {rate gap : ℝ} (hrate : 0 < rate) (hgap : 0 < gap) :
+    let m := fixedRatePartitionMultiplicity hrate hgap
+    0 < m ∧
+      0 < partitionWeightBudget rate (rate + gap) (fixedRatePartitionOrder rate gap) m ∧
+      1 < partitionFiniteRatio rate (rate + gap) (fixedRatePartitionOrder rate gap) m :=
+  fixedRatePartitionMultiplicity_spec hrate hgap
+
+/-- At `R = 1/2` and `δ = 1/4`, the specialized finite parameters exist. -/
+example : Nonempty (PartitionFiniteParameters (1 / 2) (1 / 2 + 1 / 4)
+    (fixedRatePartitionOrder (1 / 2) (1 / 4))) := by
+  exact exists_fixedRatePartitionFiniteParameters (rate := 1 / 2) (gap := 1 / 4)
+    (by norm_num) (by norm_num)
 
 end ReedSolomon.HiddenDerivative.RatePartition
