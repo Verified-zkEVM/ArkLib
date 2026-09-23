@@ -82,6 +82,16 @@ example (Q : MvPolynomial (Option Unit) ℤ) :
       optionEquivLeft (ZMod 2) Unit (map (Int.castRingHom (ZMod 2)) Q) :=
   map_optionEquivLeft _ Q
 
+/-- Flattening a constant coefficient of challenge degree one gives a distinguished-variable
+degree at most one. -/
+example :
+    ((optionEquivRight ℚ Unit).symm (C (Polynomial.X : Polynomial ℚ)) :
+      MvPolynomial (Option Unit) ℚ).weightedTotalDegree
+        (fun i ↦ i.elim 1 (fun _ ↦ 0)) ≤ 1 := by
+  exact weightedTotalDegree_optionEquivRight_symm_challenge_le
+    ((coeffNatDegreeLE_C (p := (Polynomial.X : Polynomial ℚ)) (by simp)) :
+      CoeffNatDegreeLE (C Polynomial.X : MvPolynomial Unit (Polynomial ℚ)) 1)
+
 end
 
 end MvPolynomial

@@ -46,6 +46,10 @@ example : (X none * X (some 0) : MvPolynomial (Option (Fin 1)) ℚ) ∈
     restrictBidegree (Fin 1) ℚ 1 1 :=
   mul_mem_restrictBidegree X_none_mem_restrictBidegree X_some_mem_restrictBidegree
 
+/-- A bidegree bound remains valid when both coordinate bounds are enlarged. -/
+example : (X none : MvPolynomial (Option (Fin 1)) ℚ) ∈ restrictBidegree (Fin 1) ℚ 2 3 :=
+  mem_restrictBidegree_mono X_none_mem_restrictBidegree (by omega) (by omega)
+
 /-- The square of the distinguished variable does not have bidegree at most `(1, b)`. -/
 example (b : ℕ) : (X none ^ 2 : MvPolynomial (Option (Fin 1)) ℚ) ∉
     restrictBidegree (Fin 1) ℚ 1 b := by
