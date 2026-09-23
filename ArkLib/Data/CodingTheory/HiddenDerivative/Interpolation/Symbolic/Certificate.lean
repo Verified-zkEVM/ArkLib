@@ -33,8 +33,7 @@ the surplus and the corresponding degree bounds.
 
 ## References
 
-* [Dao, Q., Kominers, S. D., Thaler, J., Zheng, K. Z., *Reed--Solomon List Decoding and Mutual
-  Correlated Agreement up to Capacity*][DKTZ26], Section 5.1, Corollary 5.3.
+* [DKTZ26]
 -/
 
 @[expose] public section
@@ -105,11 +104,7 @@ theorem exists_weightedSupport_certificate_of_fixed_margin {F : Type*} [Field F]
     simpa [columns] using (mem_weightedSupportExponents.mp j.2)
   have hcut : L ≤ (D : ℝ) * ((2 * m : ℕ) : ℝ) := by
     dsimp [L]
-    have hDm : 0 ≤ (D : ℝ) * m := mul_nonneg (Nat.cast_nonneg _) (Nat.cast_nonneg _)
-    calc
-      (D : ℝ) * m * (1 + g₀) ≤ (D : ℝ) * m * 2 :=
-        mul_le_mul_of_nonneg_left (by linarith [hg₁]) hDm
-      _ = (D : ℝ) * ((2 * m : ℕ) : ℝ) := by push_cast; ring
+    exact weightedSupportCutoff_le_two_mul D m hg₁
   have hν : 0 < 2 * m - 1 := by omega
   have hy₀ : ∀ j : ↥support, (columns j).y₀ ≤ 2 * m - 1 := by
     intro j
@@ -273,7 +268,7 @@ theorem exists_weightedSupport_certificate_of_rate {F : Type*} [Field F]
 /-- The prescribed block threshold constructs a uniformly nonvanishing line certificate. -/
 theorem exists_prescribed_symbolic_weightedSupport_certificate {F : Type*} [Field F]
     (δ : ℝ) (n k : ℕ) (centers : Fin n ↪ F) (f g : Fin n → F)
-    (hδ : 0 < δ) (hδmax : δ < 1 / 4) (hk : 0 < k)
+    (hδ : 0 < δ) (hδmax : δ < 1 / 4)
     (hblock :
       let d := Nat.ceil (Real.exp (xi / δ))
       let H : ℝ := harmonic (d - 1)

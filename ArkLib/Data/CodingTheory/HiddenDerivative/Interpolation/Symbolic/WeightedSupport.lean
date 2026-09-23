@@ -44,6 +44,7 @@ interpolant with explicit challenge-degree and height bounds.
 ## References
 
 * [DKT26]
+* [DKTZ26]
 -/
 
 @[expose] public section
@@ -235,17 +236,21 @@ theorem receivedLine_matrix_rank_le_base_actual {n N : ℕ}
     (localConstraintMatrix_rank_le_weightedSupport (F := F) (d := d) (D := D) (m := m)
       (W := W) (L := L) hD centers (fun i => receivedLine (f i) (g i)) columns hband)
 
+/-- A weighted-support cutoff with slack at most one is at most `D * (2 * m)`. -/
+theorem weightedSupportCutoff_le_two_mul (D m : ℕ) {g : ℝ} (hg : g ≤ 1) :
+    (D : ℝ) * m * (1 + g) ≤ (D : ℝ) * ((2 * m : ℕ) : ℝ) := by
+  have hDm : 0 ≤ (D : ℝ) * m := mul_nonneg (Nat.cast_nonneg _) (Nat.cast_nonneg _)
+  calc
+    (D : ℝ) * m * (1 + g) ≤ (D : ℝ) * m * 2 :=
+      mul_le_mul_of_nonneg_left (by linarith) hDm
+    _ = (D : ℝ) * ((2 * m : ℕ) : ℝ) := by push_cast; ring
+
 /-- Under the prescribed slack bound, the strict band cutoff gives `Y₀ ≤ 2m - 1`. -/
 theorem y₀_le_two_mul_sub_one_of_eligible {g : ℝ} (hD : 0 < D) (hg : g ≤ 1)
-    (hm : 0 < m) {u : JetVariable d →₀ ℕ}
+    {u : JetVariable d →₀ ℕ}
     (hu : WeightedSupportEligible D d W ((D : ℝ) * m * (1 + g)) u) :
     u (some 0) ≤ 2 * m - 1 := by
-  have hcut : (D : ℝ) * m * (1 + g) ≤ (D : ℝ) * (2 * m : ℕ) := by
-    have hnonneg : (0 : ℝ) ≤ (D : ℝ) * m := by positivity
-    calc
-      (D : ℝ) * m * (1 + g) ≤ (D : ℝ) * m * 2 :=
-        mul_le_mul_of_nonneg_left (by linarith) hnonneg
-      _ = (D : ℝ) * (2 * m : ℕ) := by push_cast; ring
+  have hcut := weightedSupportCutoff_le_two_mul D m hg
   have htotal := totalJetDegree_le_pred_of_weightedSupportEligible
     (D := D) (d := d) (W := W) (L := (D : ℝ) * m * (1 + g)) (t := 2 * m) hD hcut hu
   have hcoord : u (some 0) ≤ totalJetDegree u := by
@@ -438,12 +443,7 @@ theorem totalJetDegree_interpolant_le_two_mul_sub_one {F : Type*} [Field F]
     (hband : ∀ j, WeightedSupportEligible D d W ((D : ℝ) * m * (1 + g))
       (columns j).exponent) (v : κ → F[X]) :
     ∀ u ∈ (SourceColumn.interpolant columns v).support, totalJetDegree u ≤ 2 * m - 1 := by
-  have hDm : 0 ≤ (D : ℝ) * m := mul_nonneg (Nat.cast_nonneg _) (Nat.cast_nonneg _)
-  have hcut : (D : ℝ) * m * (1 + g) ≤ (D : ℝ) * (2 * m) := by
-    calc
-      (D : ℝ) * m * (1 + g) ≤ (D : ℝ) * m * 2 :=
-        mul_le_mul_of_nonneg_left (by linarith [hg]) hDm
-      _ = (D : ℝ) * (2 * m) := by norm_cast; ring
+  have hcut := weightedSupportCutoff_le_two_mul D m hg
   exact totalJetDegree_interpolant_le_pred hD (by exact_mod_cast hcut) columns hband v
 
 /-- Every challenge specialization of an interpolant under the prescribed cutoff has total jet
@@ -455,12 +455,7 @@ theorem jetTotalDegree_map_interpolant_le_two_mul_sub_one {F E : Type*} [Field F
       (columns j).exponent) (v : κ → F[X]) (ι : F →+* E) (z : E) :
     jetTotalDegree (MvPolynomial.map (Polynomial.eval₂RingHom ι z)
       (SourceColumn.interpolant columns v)) ≤ 2 * m - 1 := by
-  have hDm : 0 ≤ (D : ℝ) * m := mul_nonneg (Nat.cast_nonneg _) (Nat.cast_nonneg _)
-  have hcut : (D : ℝ) * m * (1 + g) ≤ (D : ℝ) * (2 * m) := by
-    calc
-      (D : ℝ) * m * (1 + g) ≤ (D : ℝ) * m * 2 :=
-        mul_le_mul_of_nonneg_left (by linarith [hg]) hDm
-      _ = (D : ℝ) * (2 * m) := by norm_cast; ring
+  have hcut := weightedSupportCutoff_le_two_mul D m hg
   by_cases hm : m = 0
   · subst m
     have hκ : IsEmpty κ := ⟨fun j => by

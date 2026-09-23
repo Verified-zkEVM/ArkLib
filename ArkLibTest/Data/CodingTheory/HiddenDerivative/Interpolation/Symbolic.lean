@@ -25,13 +25,8 @@ source-column cases.
 -/
 
 open Finset MvPolynomial PolynomialDifferential ReedSolomon.HiddenDerivative
+open ReedSolomon.HiddenDerivative.WeightedSupportParameters
 open scoped Polynomial Matrix
-
-private def onePointEmbedding : Fin 1 ↪ ℚ where
-  toFun := fun _ => 0
-  inj' := by
-    intro i j _
-    exact Subsingleton.elim _ _
 
 example : ((unscaledLocalSubstitution 0 (Polynomial.C (0 : ℚ)) Polynomial.X
     (SourceColumn.polynomial (R := ℚ[X]) ⟨0, 2, ![]⟩)).coeff 0).natDegree ≤ 2 ∧
@@ -140,17 +135,135 @@ private theorem onePointFixedMargin {F : Type*} [Field F] :
     exact_mod_cast onePointWeightedSupportDimension_ge_four (F := F)
   nlinarith
 
-/-- The fixed-margin construction produces a certificate at one received point. -/
-example : Nonempty (WeightedSupportCertificate ℚ 2 1 1 1 11 onePointEmbedding
-    (fun _ => 0) (fun _ => 0)) := by
-  have hmargin := onePointFixedMargin (F := ℚ)
-  exact exists_weightedSupport_certificate_of_fixed_margin (F := ℚ) (D := 1) (d := 1)
-    (W := 0) (m := 1) (A := 2) (k := 1) (g₀ := 1) Nat.one_pos (by norm_num)
-    (by norm_num) (by norm_num) (by norm_num) (by norm_num) onePointEmbedding
+private def twoPointEmbedding : Fin 2 ↪ ℚ where
+  toFun := fun i => (i.val : ℚ)
+  inj' := by
+    intro i j hij
+    apply Fin.ext
+    change (i.val : ℚ) = (j.val : ℚ) at hij
+    exact_mod_cast hij
+
+private theorem twoPointLocalRank_le_eight {F : Type*} [Field F] :
+    Module.finrank F (LinearMap.range
+      (weightedSupportLocalConstraint (R := F) (d := 1) (W := 0) (L := 4) 2
+        Nat.one_pos 0 0)) ≤ 8 := by
+  calc
+    _ ≤ localResidualCoordinateBudget 1 2 0 ⌈(4 : ℝ) / 1⌉₊ := by
+      simpa using (finrank_weightedSupportLocalConstraint_le (F := F) (d := 1) (D := 1)
+        (W := 0) (L := 4) (m := 2) (by norm_num) Nat.one_pos (0 : F) 0)
+    _ ≤ 8 := by
+      norm_num [localResidualCoordinateBudget, contactThreshold, Finset.natWeightedSimplex,
+        Nat.ceilDiv_eq_add_pred_div]
+
+private theorem twoPointSupportDimension_ge_twenty {F : Type*} [Field F] :
+    20 ≤ Module.finrank F (weightedSupportSpace F 1 1 0 4 Nat.one_pos) := by
+  have h := sum_count_le_finrank_weightedSupportSpace F (d := 1) (D := 1) (W := 0)
+    (L := 4) (by decide) Nat.one_pos
+  have hs : natWeightedSimplex (fun i : Fin (1 - 1) => i.val + 1) 0 = {fun _ => 0} := by
+    decide
+  have h4 : ⌈(4 : ℝ)⌉₊ = 4 := by exact_mod_cast Nat.ceil_natCast 4
+  rw [hs, sum_singleton] at h
+  norm_num [CubicStaircase.count, h4] at h
+  exact h
+
+private theorem twoPointFixedMargin {F : Type*} [Field F] :
+    (543 / 500 : ℝ) * Fintype.card (Fin 2) * Module.finrank F (LinearMap.range
+      (weightedSupportLocalConstraint (R := F) (d := 1) (W := 0) (L := 4) 2
+        Nat.one_pos 0 0)) < Module.finrank F (weightedSupportSpace F 1 1 0 4 Nat.one_pos) := by
+  have hrank : (Module.finrank F (LinearMap.range
+      (weightedSupportLocalConstraint (R := F) (d := 1) (W := 0) (L := 4) 2
+        Nat.one_pos 0 0)) : ℝ) ≤ 8 := by
+    exact_mod_cast twoPointLocalRank_le_eight (F := F)
+  have hdim : (20 : ℝ) ≤ Module.finrank F (weightedSupportSpace F 1 1 0 4 Nat.one_pos) := by
+    exact_mod_cast twoPointSupportDimension_ge_twenty (F := F)
+  have hmargin : (543 / 500 : ℝ) * 2 *
+      (Module.finrank F (LinearMap.range
+        (weightedSupportLocalConstraint (R := F) (d := 1) (W := 0) (L := 4) 2
+          Nat.one_pos 0 0)) : ℝ) <
+        Module.finrank F (weightedSupportSpace F 1 1 0 4 Nat.one_pos) := by
+    nlinarith [hrank, hdim]
+  exact_mod_cast hmargin
+
+/-- The fixed-margin construction gives a certificate with a feasible two-point threshold. -/
+example : Nonempty (WeightedSupportCertificate ℚ 2 1 3 1 35 twoPointEmbedding
+    (fun _ => 0) (fun _ => 0)) ∧ ∃ indices : Finset (Fin 2), indices.card = 2 := by
+  refine ⟨exists_weightedSupport_certificate_of_fixed_margin (F := ℚ) (D := 1) (d := 1)
+    (W := 0) (m := 2) (A := 2) (k := 1) (g₀ := 1) Nat.one_pos (by norm_num)
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num) twoPointEmbedding
     (fun _ => 0) (fun _ => 0) (by
-      have hcut : ((1 : ℕ) : ℝ) * (1 : ℕ) * (1 + (1 : ℝ)) = 2 := by norm_num
-      convert hmargin using 1
-      all_goals rw [hcut] <;> norm_num [Fintype.card_fin])
+      have hmargin := twoPointFixedMargin (F := ℚ)
+      have hcut : ((1 : ℕ) : ℝ) * 2 * (1 + (1 : ℝ)) = 4 := by norm_num
+      rw [← hcut] at hmargin
+      exact hmargin), ?_⟩
+  exact ⟨Finset.univ, by simp⟩
+
+private noncomputable def twoPointWeightedColumns : Fin (Fintype.card
+    (↥(weightedSupportExponents 1 1 0 2 Nat.one_pos))) → SourceColumn 1 :=
+  weightedSupportColumns (d := 1) (W := 0) (L := 2) Nat.one_pos
+
+private theorem twoPointWeightedColumns_eligible : ∀ j, WeightedSupportEligible 1 1 0 2
+    (twoPointWeightedColumns j).exponent :=
+  weightedSupportColumns_eligible (d := 1) (D := 1) (W := 0) (L := 2) Nat.one_pos
+
+/-- A concrete quadratic received curve block is the corresponding canonical support submatrix. -/
+example :
+    (fun row j => algebraMap ℚ[X] (RatFunc ℚ)
+      (localConstraintMatrix 1 (fun _ : Fin 1 => Polynomial.C (0 : ℚ))
+        (fun _ => Polynomial.X ^ 2 + 1) twoPointWeightedColumns (0, row) j)) =
+      (weightedSupportLocalCoordinateMatrix (R := RatFunc ℚ) (d := 1) (m := 1) (W := 0)
+        (L := 2) Nat.one_pos
+        (algebraMap ℚ[X] (RatFunc ℚ) (Polynomial.C (0 : ℚ)))
+        (algebraMap ℚ[X] (RatFunc ℚ) (Polynomial.X ^ 2 + 1))).submatrix id
+          (weightedSupportColumnIndex Nat.one_pos twoPointWeightedColumns
+            twoPointWeightedColumns_eligible) := by
+  exact localConstraintBlock_eq_weightedSupportSubmatrix Nat.one_pos
+    (fun _ : Fin 1 => 0) (fun _ : Fin 1 => Polynomial.X ^ 2 + 1)
+    twoPointWeightedColumns twoPointWeightedColumns_eligible 0
+
+/-- A quadratic received curve obeys the concrete weighted-support rank bound. -/
+example :
+    ((localConstraintMatrix 1 (fun _ : Fin 1 => Polynomial.C (0 : ℚ))
+      (fun _ => Polynomial.X ^ 2 + 1) twoPointWeightedColumns).map
+        (algebraMap ℚ[X] (RatFunc ℚ))).rank ≤ 2 := by
+  calc
+    _ ≤ Fintype.card (Fin 1) * Module.finrank ℚ (LinearMap.range
+        (weightedSupportLocalConstraint (R := ℚ) (d := 1) (W := 0) (L := 2) 1
+          Nat.one_pos 0 0)) := by
+      exact localConstraintMatrix_rank_le_weightedSupport Nat.one_pos
+        (fun _ : Fin 1 => 0) (fun _ : Fin 1 => Polynomial.X ^ 2 + 1)
+        twoPointWeightedColumns twoPointWeightedColumns_eligible
+    _ ≤ 2 := by
+      simpa [Fintype.card_fin] using onePointLocalRank_le_two (F := ℚ)
+
+/-- Distinct source columns with coefficients of degree below two retain that bound. -/
+example : ∀ u, ((SourceColumn.interpolant sourceColumns
+    ![(Polynomial.X : ℚ[X]), 1]).coeff u).natDegree < 2 := by
+  exact SourceColumn.coeff_interpolant_natDegree_lt (columns := sourceColumns)
+    sourceColumnsInjective ![(Polynomial.X : ℚ[X]), 1] (B := 2) (by norm_num)
+    (by intro j; fin_cases j <;> norm_num [sourceColumns])
+
+/-- The weighted cutoff bounds both the interpolant support and its challenge specialization. -/
+example :
+    (∀ u ∈ (SourceColumn.interpolant twoPointWeightedColumns
+      (fun _ : Fin (Fintype.card (↥(weightedSupportExponents 1 1 0 2 Nat.one_pos))) =>
+        (1 : ℚ[X]))).support, totalJetDegree u ≤ 1) ∧
+      jetTotalDegree (MvPolynomial.map (Polynomial.eval₂RingHom (RingHom.id ℚ) (0 : ℚ))
+        (SourceColumn.interpolant twoPointWeightedColumns
+          (fun _ : Fin (Fintype.card
+            (↥(weightedSupportExponents 1 1 0 2 Nat.one_pos))) => (1 : ℚ[X])))) ≤ 1 := by
+  have hband : ∀ j, WeightedSupportEligible 1 1 0
+      (((1 : ℕ) : ℝ) * (1 : ℕ) * (1 + (1 : ℝ)))
+      (twoPointWeightedColumns j).exponent := by
+    intro j
+    have hcut : ((1 : ℕ) : ℝ) * (1 : ℕ) * (1 + (1 : ℝ)) = 2 := by norm_num
+    simpa only [hcut] using twoPointWeightedColumns_eligible j
+  constructor
+  · exact totalJetDegree_interpolant_le_two_mul_sub_one (d := 1) (D := 1) (m := 1)
+      (W := 0) (g := 1) Nat.one_pos (by norm_num) twoPointWeightedColumns
+      hband (fun _ => 1)
+  · exact jetTotalDegree_map_interpolant_le_two_mul_sub_one (d := 1) (D := 1) (m := 1)
+      (W := 0) (g := 1) Nat.one_pos (by norm_num) twoPointWeightedColumns
+      hband (fun _ => 1) (RingHom.id ℚ) 0
 
 example :
     ((localConstraintMatrix 1 (fun _ : Fin 1 => Polynomial.C (0 : ℚ))
@@ -220,7 +333,7 @@ example :
       have hcut : ((1 : ℕ) : ℝ) * (1 : ℕ) * (1 + (1 : ℝ)) = 2 := by norm_num
       simpa only [hcut] using hband j
     have h := y₀_le_two_mul_sub_one_of_eligible (d := 1) (D := 1) (m := 1) (W := 0)
-      (g := 1) Nat.one_pos (by norm_num) Nat.one_pos hband'
+      (g := 1) Nat.one_pos (by norm_num) hband'
     simpa using h
   have hdim : 3 ≤ N := by
     have hdim' := onePointWeightedSupportDimension_ge_four (F := ℚ)
@@ -316,3 +429,100 @@ example : Nonempty (Fin 1 × LowContactIndex 1 1) ∧ ∃ v : Fin 1 → ℚ[X], 
     receivedLineColumnsInjective (by intro j; fin_cases j; decide)
     (algebraMap ℚ[X] (RatFunc ℚ)) (IsFractionRing.injective ℚ[X] (RatFunc ℚ))
     (s := 0) receivedLineMatrixRankZero (by decide)
+
+private def sixteenPointEmbedding : Fin 16 ↪ ℚ where
+  toFun i := (i.val : ℚ)
+  inj' := by
+    intro i j hij
+    apply Fin.ext
+    change (i.val : ℚ) = (j.val : ℚ) at hij
+    exact_mod_cast hij
+
+/-- The rate construction gives a certificate at a small, feasible agreement threshold. -/
+example :
+    let d := Nat.ceil (Real.exp (xi / (1 / 8 : ℝ)))
+    let H : ℝ := harmonic (d - 1)
+    let m := Nat.ceil (100 * (d : ℝ) ^ 2 * H)
+    Nonempty (WeightedSupportCertificate ℚ 2 1 (2 * m - 1) d
+      (12 * (2 * m - 1) - 1) sixteenPointEmbedding (fun _ => 0) (fun _ => 0)) := by
+  dsimp
+  exact exists_weightedSupport_certificate_of_rate (F := ℚ) (δ := 1 / 8) (n := 16)
+    (D := 1) (A := 2) (k := 1) sixteenPointEmbedding (fun _ => 0) (fun _ => 0)
+    (by norm_num) (by norm_num) (by norm_num) Nat.one_pos (by norm_num) (by norm_num)
+    (by norm_num) (by nlinarith [rateGap_le_one (1 / 8) (1 / 16)])
+
+private noncomputable def prescribedExampleDelta : ℝ := 1 / 8
+
+private noncomputable def prescribedExampleOrder : ℕ :=
+  Nat.ceil (Real.exp (xi / prescribedExampleDelta))
+
+private noncomputable def prescribedExampleHarmonic : ℝ :=
+  harmonic (prescribedExampleOrder - 1)
+
+private noncomputable def prescribedExampleMultiplicity : ℕ :=
+  Nat.ceil (100 * (prescribedExampleOrder : ℝ) ^ 2 * prescribedExampleHarmonic)
+
+private noncomputable def prescribedExampleBlockLength : ℕ :=
+  8 * prescribedExampleMultiplicity
+
+private def prescribedExampleCenters : Fin prescribedExampleBlockLength ↪ ℚ where
+  toFun i := (i.val : ℚ)
+  inj' := by
+    intro i j hij
+    apply Fin.ext
+    change (i.val : ℚ) = (j.val : ℚ) at hij
+    exact_mod_cast hij
+
+private theorem prescribedExampleMultiplicity_pos : 0 < prescribedExampleMultiplicity := by
+  have horder := prescribed_order_lower prescribedExampleDelta
+    (by norm_num [prescribedExampleDelta]) (by norm_num [prescribedExampleDelta])
+  have hharmonic : 0 < prescribedExampleHarmonic := by
+    have hlower : xi / prescribedExampleDelta ≤ prescribedExampleHarmonic := by
+      simpa [prescribedExampleOrder, prescribedExampleHarmonic] using horder.2.2
+    exact (div_pos xi_pos (by norm_num [prescribedExampleDelta])).trans_le hlower
+  have horder_pos : 0 < (prescribedExampleOrder : ℝ) := by
+    have horder_nat : 0 < prescribedExampleOrder :=
+      lt_of_lt_of_le (by norm_num : 0 < 48000) horder.1
+    exact_mod_cast horder_nat
+  have hargument : 0 < 100 * (prescribedExampleOrder : ℝ) ^ 2 * prescribedExampleHarmonic := by
+    positivity
+  change 0 < Nat.ceil (100 * (prescribedExampleOrder : ℝ) ^ 2 * prescribedExampleHarmonic)
+  exact Nat.ceil_pos.mpr hargument
+
+/-- The prescribed-threshold construction gives a certificate when its threshold fits the block. -/
+example :
+    let A := ReedSolomon.agreementThreshold prescribedExampleDelta prescribedExampleBlockLength 1
+    A ≤ prescribedExampleBlockLength ∧
+      Nonempty (WeightedSupportCertificate ℚ A 1 (2 * prescribedExampleMultiplicity - 1)
+        prescribedExampleOrder (12 * (2 * prescribedExampleMultiplicity - 1) - 1)
+        prescribedExampleCenters (fun _ => 0) (fun _ => 0)) := by
+  dsimp
+  have hceil : ⌈prescribedExampleDelta * prescribedExampleBlockLength⌉₊ =
+      prescribedExampleMultiplicity := by
+    have harg : prescribedExampleDelta * (prescribedExampleBlockLength : ℕ) =
+        (prescribedExampleMultiplicity : ℝ) := by
+      dsimp [prescribedExampleDelta, prescribedExampleBlockLength]
+      push_cast
+      ring
+    rw [harg, Nat.ceil_natCast]
+  have hA : ReedSolomon.agreementThreshold prescribedExampleDelta
+      prescribedExampleBlockLength 1 ≤ prescribedExampleBlockLength := by
+    have hm := prescribedExampleMultiplicity_pos
+    rw [ReedSolomon.agreementThreshold, hceil]
+    dsimp [prescribedExampleBlockLength]
+    omega
+  have hblock :
+      let d := Nat.ceil (Real.exp (xi / prescribedExampleDelta))
+      let H : ℝ := harmonic (d - 1)
+      let m := Nat.ceil (100 * (d : ℝ) ^ 2 * H)
+      8 * m ≤ prescribedExampleBlockLength := by
+    change 8 * prescribedExampleMultiplicity ≤ prescribedExampleBlockLength
+    dsimp [prescribedExampleBlockLength]
+    rfl
+  exact ⟨hA, by
+    simpa [prescribedExampleDelta, prescribedExampleOrder, prescribedExampleHarmonic,
+      prescribedExampleMultiplicity] using
+      (exists_prescribed_symbolic_weightedSupport_certificate (F := ℚ)
+        prescribedExampleDelta prescribedExampleBlockLength 1 prescribedExampleCenters
+        (fun _ => 0) (fun _ => 0) (by norm_num [prescribedExampleDelta])
+        (by norm_num [prescribedExampleDelta]) hblock hA)⟩
