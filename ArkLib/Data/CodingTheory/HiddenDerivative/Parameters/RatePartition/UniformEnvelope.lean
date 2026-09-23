@@ -11,9 +11,10 @@ public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition
 /-!
 # Uniform finite-parameter envelopes for rate partition
 
-For every actual code rate, the interpolation ambient degree and scalar parameters can be chosen
-from the gap and block length alone. The resulting closed-multiplicity finite ratio exceeds
-`151/150` while retaining the actual message dimension and agreement count in the bounds.
+The derivative order, multiplicity, and block threshold depend on the gap. The envelope's ambient
+degree and scalar parameters may depend on the actual message dimension. The resulting
+closed-multiplicity finite ratio exceeds `151/150` while retaining the actual message dimension and
+agreement count in the bounds.
 
 ## Main statements
 
