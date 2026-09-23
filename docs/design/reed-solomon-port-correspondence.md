@@ -909,8 +909,8 @@ Exception constants: `hybridERaw` is now `firstOrderExceptionCharge`, `hybridECl
 `maxFirstOrderListCharge_le_firstOrderListConstant`, the private
 `hybridERawAtDegree_le_balanced` is now the public `minFirstOrderExceptionCharge_le`, and
 `hybridEOptimizedRaw_le_closed` is now
-`maxMinFirstOrderExceptionCharge_le_firstOrderExceptionConstant`, without `1 ≤ μ`. The numerical
-checks of the source are examples in the test.
+`maxMinFirstOrderExceptionCharge_le_firstOrderExceptionConstant`, without `1 ≤ μ`. The aggregate
+retains concrete checks of the agreement-incidence ratio and optimized exception bounds.
 
 New, with no source counterpart: `stageStaircase_nonneg`, `firstOrderListCharge_le_max` and
 `minFirstOrderExceptionCharge_le_maxMin`.

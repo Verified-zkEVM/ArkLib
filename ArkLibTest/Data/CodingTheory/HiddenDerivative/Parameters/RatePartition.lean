@@ -42,6 +42,15 @@ private theorem test_weightBudget : partitionWeightBudget 1 1 1 2 = 1 := by
   · rw [le_div_iff₀ (by linarith)]; linarith
   · rw [div_lt_iff₀ (by linarith)]; linarith
 
+private theorem fixedRateGateInputs :
+    fixedRateCoefficient 1 ≤ Real.log 5 ∧ 0 < 0 + 1 * Real.log (27 * 1 / 20) := by
+  constructor
+  · rw [fixedRateCoefficient]
+    norm_num only [one_mul, mul_one, mul_zero, add_zero]
+    apply Real.log_le_log <;> norm_num
+  · norm_num only [zero_add, one_mul]
+    exact Real.log_pos (by norm_num)
+
 /-! ### Block-length thresholds -/
 
 /-- At `n = 13`, with message dimension `6` and agreement `(1/2) · 13 ≤ 7`, the ambient degree
@@ -206,13 +215,7 @@ example : fixedRateCoefficient 1 = 1 * (Real.log 6 - Real.log (27 * 1 / 20)) :=
 
 /-- At rate `1`, gap `1` and order `5`, the logarithmic gate bound gives `rateGamma > 1`. -/
 example : 1 < rateGamma (1 : ℝ) (1 + 1) 5 := by
-  have hcoef : fixedRateCoefficient 1 ≤ Real.log 5 := by
-    rw [fixedRateCoefficient]
-    norm_num only [one_mul, mul_one, mul_zero, add_zero]
-    apply Real.log_le_log <;> norm_num
-  have hmargin : 0 < 0 + 1 * Real.log (27 * 1 / 20) := by
-    norm_num only [zero_add, one_mul]
-    exact Real.log_pos (by norm_num)
+  obtain ⟨hcoef, hmargin⟩ := fixedRateGateInputs
   have hgate : 0 < (1 + 1) * Real.log (27 * 1 / 20) + 1 * Real.log 5 - 1 * Real.log 6 := by
     rw [fixedRateCoefficient_eq (rate := 1) (by norm_num)] at hcoef
     nlinarith
@@ -225,13 +228,7 @@ example : 1 < rateGamma (1 : ℝ) (1 + 1) 5 ∧
     ∃ multiplicity : ℕ, 0 < multiplicity ∧
       0 < partitionWeightBudget 1 2 5 multiplicity ∧
       1 < partitionFiniteRatio 1 2 5 multiplicity := by
-  have hcoef : fixedRateCoefficient 1 ≤ Real.log 5 := by
-    rw [fixedRateCoefficient]
-    norm_num only [one_mul, mul_one, mul_zero, add_zero]
-    apply Real.log_le_log <;> norm_num
-  have hmargin : 0 < 0 + 1 * Real.log (27 * 1 / 20) := by
-    norm_num only [zero_add, one_mul]
-    exact Real.log_pos (by norm_num)
+  obtain ⟨hcoef, hmargin⟩ := fixedRateGateInputs
   have horderBound : fixedRateCoefficient 1 + 0 ≤ 1 * Real.log 5 := by
     simpa only [add_zero, one_mul] using hcoef
   have hgate' : 1 < rateGamma 1 (1 + 1) 5 := by
@@ -242,6 +239,108 @@ example : 1 < rateGamma (1 : ℝ) (1 + 1) 5 ∧
   exact ⟨by simpa only [show (1 + 1 : ℝ) = 2 by norm_num] using hgate,
     exists_partitionFiniteParameters_of_rateGamma_gt_one (rate := 1) (agreement := 2)
       (order := 5) (by norm_num) (by norm_num) (by norm_num) hgate⟩
+
+/-- Every sufficiently small positive gap at rate `1/2` has a concrete exponential order gate. -/
+example : ∃ gapBound : ℝ, 0 < gapBound ∧ ∀ gap : ℝ, 0 < gap → gap < gapBound →
+    let order := ⌈Real.exp ((fixedRateCoefficient (1 / 2) + 1) / gap)⌉₊
+    (1 / 2 : ℝ) + gap < 1 ∧ 500 ≤ order ∧ 1 < rateGamma (1 / 2) ((1 / 2) + gap) order :=
+  exists_small_gap_rate_gate (rate := 1 / 2) (epsilon := 1) (by norm_num) (by norm_num)
+    (by norm_num)
+
+private theorem recipe_rate_gate : 1 < rateGamma 1 2 20 := by
+  have hcoef : fixedRateCoefficient 1 ≤ Real.log 20 := by
+    rw [fixedRateCoefficient]
+    norm_num only [one_mul, mul_one, mul_zero, add_zero]
+    apply Real.log_le_log <;> norm_num
+  have horder : fixedRateCoefficient 1 + 0 ≤ 1 * Real.log (20 : ℝ) := by
+    nlinarith [hcoef]
+  have hmargin := fixedRateGateInputs.2
+  have h := rateGamma_gt_one_of_exponent_margin (rate := 1) (gap := 1) (epsilon := 0)
+    (order := 20) (by norm_num) (by norm_num) (by norm_num) horder hmargin
+  norm_num at h ⊢
+  exact h
+
+private theorem candidateWeightBudget :
+    800000 ≤ partitionWeightBudget 1 2 20 100000 := by
+  have hlog : Real.log 120 < 5 := by
+    rw [Real.log_lt_iff_lt_exp (by norm_num)]
+    have hexp5 : Real.exp 5 = Real.exp 1 ^ 5 := by rw [← Real.exp_nat_mul]; norm_num
+    have hexp : (27 / 10 : ℝ) < Real.exp 1 := by
+      have := Real.exp_one_gt_d9
+      norm_num at this ⊢
+      linarith
+    calc
+      (120 : ℝ) < (27 / 10 : ℝ) ^ 5 := by norm_num
+      _ < Real.exp 1 ^ 5 := by gcongr
+      _ = Real.exp 5 := by rw [← hexp5]
+  unfold partitionWeightBudget
+  norm_num only [Nat.cast_ofNat]
+  apply Nat.le_floor
+  apply (le_div_iff₀ (show (0 : ℝ) < 1 * Real.log 120 by positivity)).2
+  have hscaled : (800000 : ℝ) * Real.log 120 < 4000000 := by nlinarith [hlog]
+  norm_num only [one_mul] at hscaled ⊢
+  linarith
+
+private theorem candidateFiniteRatio : 1 < partitionFiniteRatio 1 2 20 100000 := by
+  have hbudget := candidateWeightBudget
+  have hbudget_pos : 0 < partitionWeightBudget 1 2 20 100000 :=
+    lt_of_lt_of_le (by norm_num) hbudget
+  have hbudget_real : (800000 : ℝ) ≤ partitionWeightBudget 1 2 20 100000 := by
+    exact_mod_cast hbudget
+  have hlambda : partitionInverseRadius 1 2 20 100000 ≤ 5 / 2 := by
+    rw [partitionInverseRadius_eq]
+    apply (div_le_iff₀ (show (0 : ℝ) <
+      (partitionWeightBudget 1 2 20 100000 : ℝ) by exact_mod_cast hbudget_pos)).mpr
+    norm_num
+    nlinarith
+  let lambda := partitionInverseRadius 1 2 20 100000
+  have hexponent : lambda * (1 + 20 * 21 / (2 * 100000)) < 3 := by
+    have hfactor : (1 : ℝ) + 20 * 21 / (2 * 100000) = 10021 / 10000 := by norm_num
+    rw [hfactor]
+    dsimp only [lambda] at hlambda ⊢
+    nlinarith
+  have hexp3 : Real.exp 3 < 27 := by
+    rw [show Real.exp 3 = Real.exp 1 ^ 3 by rw [← Real.exp_nat_mul]; norm_num]
+    calc
+      Real.exp 1 ^ 3 < 3 ^ 3 := by gcongr; exact Real.exp_one_lt_three
+      _ = 27 := by norm_num
+  have hexp := (Real.exp_lt_exp.mpr hexponent).trans hexp3
+  have hnegative : 1 / 27 < Real.exp (-(lambda * (1 + 20 * 21 / (2 * 100000)))) := by
+    rw [Real.exp_neg]
+    have h := (inv_lt_inv₀ (by norm_num : (0 : ℝ) < 27) (Real.exp_pos _)).2 hexp
+    simpa only [one_div] using h
+  have hnumerator : 1001 / 1000 <
+      (27 / 20 : ℝ) * 21 * Real.exp (-(lambda * (1 + 20 * 21 / (2 * 100000)))) := by
+    calc
+      (1001 / 1000 : ℝ) < (27 / 20) * 21 * (1 / 27) := by norm_num
+      _ < _ := by gcongr
+  have hlambda_nonneg : 0 ≤ lambda := by
+    dsimp only [lambda]
+    exact partitionInverseRadius_nonneg 1 2 20 100000
+  have hdenominator : 1 + 21 * lambda / 100000 < 1001 / 1000 := by
+    dsimp only [lambda] at hlambda ⊢
+    norm_num
+    nlinarith
+  have hdenominator_pos : 0 < 1 + 21 * lambda / 100000 := by positivity
+  have hdenominator_pos' : 0 < 1 + (20 + 1) * lambda / 100000 := by
+    simpa only [show (20 : ℝ) + 1 = 21 by norm_num] using hdenominator_pos
+  have hratio : 1 < ((27 / 20 : ℝ) * (20 + 1) *
+      Real.exp (-(lambda * (1 + (20 : ℝ) * (20 + 1) / (2 * 100000)))) /
+      (1 + (20 + 1) * lambda / 100000)) := by
+    apply (lt_div_iff₀ hdenominator_pos').2
+    linarith
+  simpa [partitionFiniteRatio, lambda, Nat.cast_add] using hratio
+
+/-- The selected recipe multiplicity passes its checks and is no larger than `100000`. -/
+example :
+    let multiplicity := rateMultiplicity (by norm_num) (by norm_num) (by norm_num) recipe_rate_gate
+    0 < multiplicity ∧ 0 < partitionWeightBudget 1 2 20 multiplicity ∧
+      1 < partitionFiniteRatio 1 2 20 multiplicity ∧ multiplicity ≤ 100000 := by
+  have hspec := rateMultiplicity_spec (by norm_num) (by norm_num) (by norm_num) recipe_rate_gate
+  refine ⟨hspec.1, hspec.2.1, hspec.2.2, ?_⟩
+  apply rateMultiplicity_minimal (by norm_num) (by norm_num) (by norm_num) recipe_rate_gate
+  exact ⟨by norm_num, lt_of_lt_of_le (by norm_num) candidateWeightBudget,
+    candidateFiniteRatio⟩
 
 /-! ### Weighted-simplex moments -/
 

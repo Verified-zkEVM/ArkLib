@@ -9,6 +9,7 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.FiniteRat
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.HybridRateEnvelope
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.RoundedCounts
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.StageComparison
+import Mathlib.Order.Interval.Finset.Nat
 
 /-!
 # First-order parameter acceptance tests
@@ -18,6 +19,8 @@ charges.
 -/
 
 namespace ReedSolomon.HiddenDerivative
+
+open Filter Topology
 
 private theorem rateSwitch_lt_half : firstOrderRateSwitch < 1 / 2 := by
   have h : (7 : ℝ) < 2 * Real.sqrt 13 := by
@@ -39,6 +42,9 @@ private theorem lowRate_eighth_regime : FirstOrderLowRateRegime (1 / 8) := by
     rw [Real.sqrt_lt' (by norm_num)]
     norm_num
   linarith
+
+private theorem concrete_rate_ratio : firstOrderRateBeta (1 / 2) (3 / 4) = 1 / 4 := by
+  norm_num [firstOrderRateBeta]
 
 /-! ### Rate bounds and branch selection -/
 
@@ -84,6 +90,15 @@ example : FirstOrderLowRateRegime (1 / 10) ∧ 1 / 2 < firstOrderLowRateBeta (1 
   exact ⟨hlow, half_lt_firstOrderLowRateBeta (by norm_num) hlow,
     rate_lt_firstOrderLowRateThreshold (by norm_num) hlow⟩
 
+/-- At rate `1/8`, both branch definitions select the stationary branch with positive ratio. -/
+example : firstOrderBranchThreshold (1 / 8) = firstOrderLowRateThreshold (1 / 8) ∧
+    firstOrderBranchBeta (1 / 8) (3 / 4) = firstOrderLowRateBeta (1 / 8) ∧
+    0 < firstOrderBranchBeta (1 / 8) (3 / 4) := by
+  have hlow : (1 / 8 : ℝ) < firstOrderRateSwitch :=
+    (firstOrderLowRateRegime_iff_lt_rateSwitch _).mp lowRate_eighth_regime
+  exact ⟨firstOrderBranchThreshold_eq_low hlow, firstOrderBranchBeta_eq_low hlow,
+    firstOrderBranchBeta_pos (by norm_num) (by norm_num) (by norm_num)⟩
+
 /-- At rate `1/8` and agreement `1`, the low-rate source-minus-rank margin is positive. -/
 example : 0 < firstOrderSourceDensity (1 / 8) 1 (firstOrderLowRateBeta (1 / 8)) -
     firstOrderRankDensity (firstOrderLowRateBeta (1 / 8)) := by
@@ -108,10 +123,15 @@ example : 0 < firstOrderSourceDensity (1 / 8) 1 (firstOrderLowRateBeta (1 / 8)) 
   rw [firstOrderLowRateThreshold_eq_scale_mul_one_add (by norm_num), ht]
   nlinarith [hu]
 
-/-- The stationary root at rate `2` satisfies its defining cubic. -/
-example : firstOrderStationaryCubic (firstOrderLowRateStationaryU 2) =
-    firstOrderLowRateScale 2 :=
-  firstOrderLowRateStationaryU_cubic (by norm_num)
+/-- At rate `1/8`, the positive stationary root exists and is the unique nonnegative root. -/
+example : ∃ u : ℝ, 0 < u ∧
+    firstOrderStationaryCubic u = firstOrderLowRateScale (1 / 8) ∧
+    firstOrderStationaryCubic (firstOrderLowRateStationaryU (1 / 8)) =
+      firstOrderLowRateScale (1 / 8) ∧
+    u = firstOrderLowRateStationaryU (1 / 8) := by
+  obtain ⟨u, hu, hcubic⟩ := exists_firstOrderStationaryRoot (rho := (1 / 8 : ℝ)) (by norm_num)
+  exact ⟨u, hu, hcubic, firstOrderLowRateStationaryU_cubic (by norm_num),
+    firstOrderLowRateStationaryU_unique (by norm_num) hu.le hcubic⟩
 
 /-- The source-minus-envelope factorization at the chosen rate ratio. -/
 example :
@@ -178,6 +198,369 @@ example : (2 : ℝ) ^ 3 * ((1 / 2 : ℝ) * 1 ^ 2 / (2 * (1 / 2)) -
   cube_mul_sourceDensity_le_firstOrderSourceCount (by norm_num) (by norm_num)
     (by norm_num) (by norm_num) (by norm_num)
 
+private noncomputable def roundedSourcePolynomial (m M L : ℕ) : ℝ :=
+  3 * (m : ℝ) * (M + 1) * (M + 2) / 8 -
+    (M : ℝ) * (M + 1) * (M + 2) / 6 +
+    (M + 1) * ((L - M : ℕ) * (3 * (m : ℝ) / 4) -
+      ((L : ℝ) * (L + 1) - (M : ℝ) * (M + 1)) / 4)
+
+private noncomputable def roundedRankPolynomial (m M : ℕ) : ℝ :=
+  (M + 1) * (m : ℝ) * (m + 1) / 2 -
+    ((m - 2 * M + 1 : ℕ) : ℝ) * M * (M + 1) / 2 -
+    2 * (M : ℝ) * (M - 1) * (M + 1) / 3
+
+private noncomputable def roundedSourceModel (p : (ℝ × ℝ) × ℝ) : ℝ :=
+  let x := p.1.1
+  let y := p.1.2
+  let e := p.2
+  3 / 8 * (x + e) * (x + 2 * e) -
+    x * (x + e) * (x + 2 * e) / 6 +
+    (x + e) * (3 / 4 * (y - x) - (y * (y + e) - x * (x + e)) / 4)
+
+private noncomputable def roundedRankModel (p : ℝ × ℝ) : ℝ :=
+  let x := p.1
+  let e := p.2
+  (x + e) * (1 + e) / 2 -
+    (1 - 2 * x + e) * x * (x + e) / 2 - 2 * x * (x - e) * (x + e) / 3
+
+private theorem sum_range_cast_eq (n : ℕ) :
+    (∑ i ∈ Finset.range n, (i : ℝ)) = (n : ℝ) * (n - 1) / 2 := by
+  rw [eq_div_iff two_ne_zero, Finset.sum_range_natCast_mul_two]
+
+private theorem sum_range_cast_sq_eq (n : ℕ) :
+    (∑ i ∈ Finset.range n, (i : ℝ) ^ 2) =
+      (n : ℝ) * (n - 1) * (2 * n - 1) / 6 := by
+  rw [eq_div_iff (by norm_num : (6 : ℝ) ≠ 0), Finset.sum_range_natCast_sq_mul_six]
+
+private theorem roundedSourceCount_eq_polynomial {m : ℕ} (hm : 0 < m) :
+    firstOrderSourceCount (1 / 2) (3 / 4) m
+      (firstOrderRateDerivativeCap (1 / 2) (3 / 4) m)
+      (firstOrderRateJetDegree (1 / 2) (3 / 4) m) =
+        roundedSourcePolynomial m ⌊(1 / 4 : ℝ) * m⌋₊ ⌊(3 / 2 : ℝ) * m⌋₊ := by
+  let M := ⌊(1 / 4 : ℝ) * m⌋₊
+  let L := ⌊(3 / 2 : ℝ) * m⌋₊
+  have hMcap : firstOrderRateDerivativeCap (1 / 2) (3 / 4) m = M := by
+    norm_num [M, firstOrderRateDerivativeCap, firstOrderRateBeta]
+  have hLcap : firstOrderRateJetDegree (1 / 2) (3 / 4) m = ⌈(3 / 2 : ℝ) * m⌉₊ := by
+    simp [firstOrderRateJetDegree]
+    ring_nf
+  have hML : M ≤ L := by
+    apply Nat.floor_mono
+    nlinarith [show (0 : ℝ) ≤ m by positivity]
+  have hMle : 2 * M ≤ m := by
+    have hMreal : (M : ℝ) ≤ (1 / 4 : ℝ) * m :=
+      Nat.floor_le (show (0 : ℝ) ≤ (1 / 4 : ℝ) * m by positivity)
+    exact_mod_cast (by nlinarith [hMreal] : 2 * (M : ℝ) ≤ (m : ℝ))
+  have hLreal : (L : ℝ) ≤ (3 / 2 : ℝ) * m :=
+    Nat.floor_le (by positivity)
+  have hceilLo : L ≤ ⌈(3 / 2 : ℝ) * m⌉₊ := Nat.floor_le_ceil _
+  have hceilHi : ⌈(3 / 2 : ℝ) * m⌉₊ ≤ L + 1 := Nat.ceil_le_floor_add_one _
+  have hceilRange :
+      (∑ t ∈ Finset.range (⌈(3 / 2 : ℝ) * m⌉₊ + 1),
+        (min t M + 1 : ℕ) * max (m * (3 / 4 : ℝ) - (1 / 2 : ℝ) * t) 0) =
+        ∑ t ∈ Finset.range (L + 1),
+          (min t M + 1 : ℕ) * max (m * (3 / 4 : ℝ) - (1 / 2 : ℝ) * t) 0 := by
+    by_cases h : ⌈(3 / 2 : ℝ) * m⌉₊ = L
+    · rw [h]
+    · have h' : ⌈(3 / 2 : ℝ) * m⌉₊ = L + 1 := by omega
+      rw [h', Finset.sum_range_succ]
+      have htail : (3 / 2 : ℝ) * m < (L : ℝ) + 1 := Nat.lt_floor_add_one _
+      have hneg : m * (3 / 4 : ℝ) - (1 / 2 : ℝ) * (L + 1) < 0 := by
+        linarith [htail]
+      have hneg' : m * (3 / 4 : ℝ) - (1 / 2 : ℝ) * ((L + 1 : ℕ) : ℝ) < 0 := by
+        simpa using hneg
+      rw [max_eq_right hneg'.le]
+      simp only [mul_zero, add_zero]
+  have hres {t : ℕ} (ht : t ≤ L) :
+      0 ≤ m * (3 / 4 : ℝ) - (1 / 2 : ℝ) * t := by
+    have htR : (t : ℝ) ≤ L := by exact_mod_cast ht
+    nlinarith
+  have hfirst :
+      (∑ t ∈ Finset.range (M + 1), (min t M + 1 : ℕ) *
+        max (m * (3 / 4 : ℝ) - (1 / 2 : ℝ) * t) 0) =
+        3 * (m : ℝ) * (M + 1) * (M + 2) / 8 -
+          (M : ℝ) * (M + 1) * (M + 2) / 6 := by
+    have hsum1 (n : ℕ) :
+        (∑ t ∈ Finset.range n, ((t : ℝ) + 1)) =
+          (n : ℝ) * (n - 1) / 2 + n := by
+      rw [Finset.sum_add_distrib, Finset.sum_const, Finset.card_range, nsmul_eq_mul,
+        mul_one, sum_range_cast_eq]
+    have hsumt2 (n : ℕ) :
+        (∑ t ∈ Finset.range n, ((t : ℝ) ^ 2 + t)) =
+          (n : ℝ) * (n - 1) * (2 * n - 1) / 6 + (n : ℝ) * (n - 1) / 2 := by
+      rw [Finset.sum_add_distrib, sum_range_cast_sq_eq, sum_range_cast_eq]
+    calc
+      _ = ∑ t ∈ Finset.range (M + 1),
+          ((3 * (m : ℝ) / 4) * ((t : ℝ) + 1) -
+            (1 / 2 : ℝ) * ((t : ℝ) ^ 2 + t)) := by
+        refine Finset.sum_congr rfl fun t ht => ?_
+        have htM : t ≤ M := Nat.le_of_lt_succ (Finset.mem_range.mp ht)
+        rw [min_eq_left htM, max_eq_left (hres (Nat.le_trans htM hML))]
+        push_cast
+        ring
+      _ = _ := by
+        rw [Finset.sum_sub_distrib, ← Finset.mul_sum, ← Finset.mul_sum, hsum1, hsumt2]
+        push_cast
+        ring
+  have htail :
+      (∑ t ∈ Finset.Ico (M + 1) (L + 1), (min t M + 1 : ℕ) *
+        max (m * (3 / 4 : ℝ) - (1 / 2 : ℝ) * t) 0) =
+        (M + 1) * ((L - M : ℕ) * (3 * (m : ℝ) / 4) -
+          ((L : ℝ) * (L + 1) - (M : ℝ) * (M + 1)) / 4) := by
+    have hsumIco : (∑ t ∈ Finset.Ico (M + 1) (L + 1), (t : ℝ)) =
+        ((L : ℝ) * L / 2 + L / 2) - ((M : ℝ) * M / 2 + M / 2) := by
+      rw [Finset.sum_Ico_eq_sub _ (Nat.succ_le_succ hML), sum_range_cast_eq,
+        sum_range_cast_eq]
+      push_cast
+      ring
+    calc
+      _ = ∑ t ∈ Finset.Ico (M + 1) (L + 1),
+          ((M + 1 : ℝ) * (3 * (m : ℝ) / 4 - (1 / 2 : ℝ) * t)) := by
+        refine Finset.sum_congr rfl fun t ht => ?_
+        have htmem := Finset.mem_Ico.mp ht
+        have htM : M ≤ t := by omega
+        have htL : t ≤ L := by omega
+        rw [min_eq_right htM, max_eq_left (hres htL)]
+        push_cast
+        ring
+      _ = _ := by
+        rw [← Finset.mul_sum, Finset.sum_sub_distrib, Finset.sum_const, Nat.card_Ico,
+          nsmul_eq_mul, ← Finset.mul_sum, hsumIco]
+        rw [show L + 1 - (M + 1) = L - M by omega]
+        ring
+  rw [firstOrderSourceCount, hMcap, hLcap, hceilRange,
+    ← Finset.sum_range_add_sum_Ico _ (Nat.succ_le_succ hML), hfirst, htail]
+  rfl
+
+private theorem roundedRankCount_eq_polynomial {m : ℕ} (hm : 0 < m) :
+    (firstOrderRankCount m ⌊(1 / 4 : ℝ) * m⌋₊ : ℝ) =
+      roundedRankPolynomial m ⌊(1 / 4 : ℝ) * m⌋₊ := by
+  let M := ⌊(1 / 4 : ℝ) * m⌋₊
+  have hMle : 2 * M ≤ m := by
+    have hMreal : (M : ℝ) ≤ (1 / 4 : ℝ) * m :=
+      Nat.floor_le (show (0 : ℝ) ≤ (1 / 4 : ℝ) * m by positivity)
+    exact_mod_cast (by nlinarith [hMreal] : 2 * (M : ℝ) ≤ (m : ℝ))
+  have hformula : (firstOrderRankCount m M : ℝ) =
+      (M + 1) * (m : ℝ) * (m + 1) / 2 -
+        ((m - 2 * M + 1 : ℕ) : ℝ) * M * (M + 1) / 2 -
+        2 * (M : ℝ) * (M - 1) * (M + 1) / 3 := by
+    have hcast : (firstOrderRankCount m M : ℝ) =
+        ∑ s ∈ Finset.range m,
+          (((s + 1 : ℕ) : ℝ) * (M + 1) -
+            ((2 * s + 1 - m : ℕ) : ℝ) * ((s + M + 1 - m : ℕ) : ℝ)) := by
+      unfold firstOrderRankCount
+      rw [Nat.cast_sum]
+      refine Finset.sum_congr rfl fun s hs => ?_
+      have hs : s < m := Finset.mem_range.mp hs
+      have hsub : (2 * s + 1 - m) * (s + M + 1 - m) ≤ (s + 1) * (M + 1) := by
+        apply Nat.mul_le_mul <;> omega
+      rw [Nat.cast_sub hsub]
+      push_cast
+      rfl
+    have hamb :
+        (∑ s ∈ Finset.range m, ((s + 1 : ℕ) : ℝ) * (M + 1)) =
+          (M + 1) * (m : ℝ) * (m + 1) / 2 := by
+      have hsum : (∑ s ∈ Finset.range m, ((s : ℝ) + 1)) =
+          (m : ℝ) * (m - 1) / 2 + m := by
+        rw [Finset.sum_add_distrib, Finset.sum_const, Finset.card_range, nsmul_eq_mul,
+          mul_one, sum_range_cast_eq]
+      calc
+        _ = (∑ s ∈ Finset.range m, ((s : ℝ) + 1)) * (M + 1) := by
+          rw [Finset.sum_mul]
+          refine Finset.sum_congr rfl fun s _ => ?_
+          push_cast
+          ring
+        _ = _ := by rw [hsum]; ring
+    have hcorr :
+        (∑ s ∈ Finset.range m,
+          ((2 * s + 1 - m : ℕ) : ℝ) * ((s + M + 1 - m : ℕ) : ℝ)) =
+          ((m : ℝ) - 2 * M + 1) * M * (M + 1) / 2 +
+            2 * (M : ℝ) * (M - 1) * (M + 1) / 3 := by
+      rw [← Finset.sum_range_add_sum_Ico _ (Nat.sub_le m M)]
+      have hprefix :
+          (∑ s ∈ Finset.range (m - M),
+            ((2 * s + 1 - m : ℕ) : ℝ) * ((s + M + 1 - m : ℕ) : ℝ)) = 0 := by
+        apply Finset.sum_eq_zero
+        intro s hs
+        have hs : s < m - M := Finset.mem_range.mp hs
+        have hz : s + M + 1 - m = 0 := by omega
+        rw [hz]
+        simp
+      have htail :
+          (∑ s ∈ Finset.Ico (m - M) m,
+            ((2 * s + 1 - m : ℕ) : ℝ) * ((s + M + 1 - m : ℕ) : ℝ)) =
+            ((m : ℝ) - 2 * M + 1) * M * (M + 1) / 2 +
+              2 * (M : ℝ) * (M - 1) * (M + 1) / 3 := by
+        rw [Finset.sum_Ico_eq_sum_range, Nat.sub_sub_self (by omega : M ≤ m)]
+        have hsum1 (n : ℕ) :
+            (∑ i ∈ Finset.range n, ((i : ℝ) + 1)) =
+              (n : ℝ) * (n - 1) / 2 + n := by
+          rw [Finset.sum_add_distrib, Finset.sum_const, Finset.card_range, nsmul_eq_mul,
+            mul_one, sum_range_cast_eq]
+        have hsumt2 (n : ℕ) :
+            (∑ i ∈ Finset.range n, ((i : ℝ) ^ 2 + i)) =
+              (n : ℝ) * (n - 1) * (2 * n - 1) / 6 +
+                (n : ℝ) * (n - 1) / 2 := by
+          rw [Finset.sum_add_distrib, sum_range_cast_sq_eq, sum_range_cast_eq]
+        calc
+          _ = ∑ i ∈ Finset.range M,
+              (((m : ℝ) - 2 * M + 1) * ((i : ℝ) + 1) +
+                2 * ((i : ℝ) ^ 2 + i)) := by
+            refine Finset.sum_congr rfl fun i hi => ?_
+            have hi : i < M := Finset.mem_range.mp hi
+            have hfirst : m ≤ 2 * (m - M + i) + 1 := by omega
+            have hsecond : m ≤ m - M + i + M + 1 := by omega
+            have hsubM : ((m - M : ℕ) : ℝ) = (m : ℝ) - M := by
+              rw [Nat.cast_sub (by omega : M ≤ m)]
+            rw [Nat.cast_sub hfirst, Nat.cast_sub hsecond]
+            push_cast
+            rw [hsubM]
+            ring
+          _ = _ := by
+            rw [Finset.sum_add_distrib, ← Finset.mul_sum, ← Finset.mul_sum, hsum1,
+              hsumt2]
+            ring
+      rw [hprefix, htail, zero_add]
+    rw [hcast, Finset.sum_sub_distrib, hamb, hcorr]
+    have hcoef : ((m - 2 * M + 1 : ℕ) : ℝ) =
+        (m : ℝ) - 2 * (M : ℝ) + 1 := by
+      rw [Nat.cast_add, Nat.cast_sub hMle]
+      push_cast
+      ring
+    rw [hcoef]
+    ring
+  simpa [roundedRankPolynomial, M] using hformula
+
+private theorem roundedSourcePolynomial_div_cube_eq_model {m M L : ℕ} (hm : 0 < m)
+    (hML : M ≤ L) :
+    roundedSourcePolynomial m M L / (m : ℝ) ^ 3 =
+      roundedSourceModel (((M : ℝ) / m, (L : ℝ) / m), (m : ℝ)⁻¹) := by
+  have hmne : (m : ℝ) ≠ 0 := by positivity
+  have hsub : ((L - M : ℕ) : ℝ) = (L : ℝ) - M := by
+    rw [Nat.cast_sub hML]
+  unfold roundedSourcePolynomial roundedSourceModel
+  rw [hsub]
+  field_simp
+
+private theorem roundedRankPolynomial_div_cube_eq_model {m M : ℕ} (hm : 0 < m)
+    (hM : 2 * M ≤ m) :
+    roundedRankPolynomial m M / (m : ℝ) ^ 3 =
+      roundedRankModel ((M : ℝ) / m, (m : ℝ)⁻¹) := by
+  have hmne : (m : ℝ) ≠ 0 := by positivity
+  have hcast : ((m - 2 * M + 1 : ℕ) : ℝ) = (m : ℝ) - 2 * (M : ℝ) + 1 := by
+    rw [Nat.cast_add, Nat.cast_sub hM]
+    push_cast
+    ring
+  unfold roundedRankPolynomial roundedRankModel
+  rw [hcast]
+  field_simp
+
+private theorem roundedSourceNormalized_eq_model {m : ℕ} (hm : 0 < m) :
+    firstOrderNormalizedSourceCount (1 / 2) (3 / 4) m =
+      roundedSourceModel
+        (((⌊(1 / 4 : ℝ) * m⌋₊ : ℝ) / m,
+          (⌊(3 / 2 : ℝ) * m⌋₊ : ℝ) / m), (m : ℝ)⁻¹) := by
+  unfold firstOrderNormalizedSourceCount
+  rw [roundedSourceCount_eq_polynomial hm,
+    roundedSourcePolynomial_div_cube_eq_model hm (Nat.floor_mono (by
+      have hm0 : (0 : ℝ) ≤ m := by positivity
+      nlinarith))]
+
+private theorem roundedRankNormalized_eq_model {m : ℕ} (hm : 0 < m) :
+    firstOrderNormalizedRankCount (1 / 2) (3 / 4) m =
+      roundedRankModel ((⌊(1 / 4 : ℝ) * m⌋₊ : ℝ) / m, (m : ℝ)⁻¹) := by
+  have hMcap : firstOrderRateDerivativeCap (1 / 2) (3 / 4) m = ⌊(1 / 4 : ℝ) * m⌋₊ := by
+    norm_num [firstOrderRateDerivativeCap, firstOrderRateBeta]
+  unfold firstOrderNormalizedRankCount
+  rw [hMcap, roundedRankCount_eq_polynomial hm,
+    roundedRankPolynomial_div_cube_eq_model hm (by
+      have hM : (⌊(1 / 4 : ℝ) * m⌋₊ : ℝ) ≤ (1 / 4 : ℝ) * m :=
+        Nat.floor_le (by positivity)
+      exact_mod_cast (by nlinarith [hM] : 2 * (⌊(1 / 4 : ℝ) * m⌋₊ : ℝ) ≤ m))]
+
+private theorem concreteSourceNormalized_tendsto :
+    Tendsto (firstOrderNormalizedSourceCount (1 / 2) (3 / 4)) atTop
+      (𝓝 (firstOrderSourceDensity (1 / 2) (3 / 4)
+        (firstOrderRateBeta (1 / 2) (3 / 4)))) := by
+  have hM : Tendsto (fun m : ℕ =>
+      (⌊(1 / 4 : ℝ) * (m : ℝ)⌋₊ : ℝ) / m) atTop (𝓝 (1 / 4 : ℝ)) :=
+    (tendsto_nat_floor_mul_div_atTop (a := (1 / 4 : ℝ)) (by norm_num)).comp
+      tendsto_natCast_atTop_atTop
+  have hL : Tendsto (fun m : ℕ =>
+      (⌊(3 / 2 : ℝ) * (m : ℝ)⌋₊ : ℝ) / m) atTop (𝓝 (3 / 2 : ℝ)) :=
+    (tendsto_nat_floor_mul_div_atTop (a := (3 / 2 : ℝ)) (by norm_num)).comp
+      tendsto_natCast_atTop_atTop
+  have he : Tendsto (fun m : ℕ => (m : ℝ)⁻¹) atTop (𝓝 0) :=
+    tendsto_inv_atTop_nhds_zero_nat
+  have hpair : Tendsto (fun m : ℕ =>
+      ((⌊(1 / 4 : ℝ) * (m : ℝ)⌋₊ : ℝ) / m,
+        (⌊(3 / 2 : ℝ) * (m : ℝ)⌋₊ : ℝ) / m)) atTop
+      (𝓝 ((1 / 4 : ℝ), (3 / 2 : ℝ))) := hM.prodMk_nhds hL
+  have hargs : Tendsto (fun m : ℕ =>
+      (((⌊(1 / 4 : ℝ) * (m : ℝ)⌋₊ : ℝ) / m,
+        (⌊(3 / 2 : ℝ) * (m : ℝ)⌋₊ : ℝ) / m), (m : ℝ)⁻¹)) atTop
+      (𝓝 (((1 / 4 : ℝ), (3 / 2 : ℝ)), (0 : ℝ))) := hpair.prodMk_nhds he
+  have hcont : ContinuousAt roundedSourceModel (((1 / 4 : ℝ), (3 / 2 : ℝ)), 0) := by
+    unfold roundedSourceModel
+    fun_prop
+  have hmodel : Tendsto (roundedSourceModel ∘ fun m : ℕ =>
+      (((⌊(1 / 4 : ℝ) * (m : ℝ)⌋₊ : ℝ) / m,
+        (⌊(3 / 2 : ℝ) * (m : ℝ)⌋₊ : ℝ) / m), (m : ℝ)⁻¹)) atTop
+      (𝓝 (91 / 768 : ℝ)) := by
+    have h := hcont.tendsto.comp hargs
+    have heval : roundedSourceModel (((1 / 4 : ℝ), (3 / 2 : ℝ)), 0) = 91 / 768 := by
+      norm_num [roundedSourceModel]
+    rw [heval] at h
+    exact h
+  have hlimit : firstOrderSourceDensity (1 / 2) (3 / 4)
+      (firstOrderRateBeta (1 / 2) (3 / 4)) = 91 / 768 := by
+    rw [concrete_rate_ratio]
+    norm_num [firstOrderSourceDensity]
+  rw [hlimit]
+  apply hmodel.congr'
+  filter_upwards [eventually_gt_atTop 0] with m hm
+  simp only [Function.comp_apply]
+  rw [roundedSourceNormalized_eq_model hm]
+
+private theorem concreteRankNormalized_tendsto :
+    Tendsto (firstOrderNormalizedRankCount (1 / 2) (3 / 4)) atTop
+      (𝓝 (firstOrderRankDensity (firstOrderRateBeta (1 / 2) (3 / 4)))) := by
+  have hM : Tendsto (fun m : ℕ =>
+      (⌊(1 / 4 : ℝ) * (m : ℝ)⌋₊ : ℝ) / m) atTop (𝓝 (1 / 4 : ℝ)) :=
+    (tendsto_nat_floor_mul_div_atTop (a := (1 / 4 : ℝ)) (by norm_num)).comp
+      tendsto_natCast_atTop_atTop
+  have he : Tendsto (fun m : ℕ => (m : ℝ)⁻¹) atTop (𝓝 0) :=
+    tendsto_inv_atTop_nhds_zero_nat
+  have hargs : Tendsto (fun m : ℕ =>
+      ((⌊(1 / 4 : ℝ) * (m : ℝ)⌋₊ : ℝ) / m, (m : ℝ)⁻¹)) atTop
+      (𝓝 ((1 / 4 : ℝ), (0 : ℝ))) := hM.prodMk_nhds he
+  have hcont : ContinuousAt roundedRankModel ((1 / 4 : ℝ), (0 : ℝ)) := by
+    unfold roundedRankModel
+    fun_prop
+  have hmodel : Tendsto (roundedRankModel ∘ fun m : ℕ =>
+      ((⌊(1 / 4 : ℝ) * (m : ℝ)⌋₊ : ℝ) / m, (m : ℝ)⁻¹)) atTop
+      (𝓝 (19 / 192 : ℝ)) := by
+    have h := hcont.tendsto.comp hargs
+    have heval : roundedRankModel ((1 / 4 : ℝ), 0) = 19 / 192 := by
+      norm_num [roundedRankModel]
+    rw [heval] at h
+    exact h
+  have hlimit : firstOrderRankDensity (firstOrderRateBeta (1 / 2) (3 / 4)) = 19 / 192 := by
+    rw [concrete_rate_ratio]
+    norm_num [firstOrderRankDensity]
+  rw [hlimit]
+  apply hmodel.congr'
+  filter_upwards [eventually_gt_atTop 0] with m hm
+  simp only [Function.comp_apply]
+  rw [roundedRankNormalized_eq_model hm]
+
+/-- The concrete normalized limits give a finite certificate through the limit theorem. -/
+example : Nonempty (FirstOrderFiniteRateParameters (1 / 2) (3 / 4)) := by
+  exact exists_firstOrderFiniteRateParameters_of_tendsto concreteSourceNormalized_tendsto
+    concreteRankNormalized_tendsto (by
+      rw [concrete_rate_ratio]
+      norm_num [firstOrderSourceDensity, firstOrderRankDensity])
+
 /-! ### Finite rate parameters -/
 
 private def concreteFiniteParameters : FirstOrderFiniteRateParameters (1 / 2 : ℝ) (3 / 4 : ℝ) :=
@@ -202,7 +585,8 @@ example : FirstOrderRationalFiniteTest (1 / 2 : ℚ) (3 / 4 : ℚ) 4 := by
 
 /-- At the concrete certificate, the scaled kernel-height estimate is its challenge degree `102`. -/
 example : 1 * concreteFiniteParameters.rankCount * concreteFiniteParameters.jetDegree /
-      (18 - 1 * concreteFiniteParameters.rankCount) ≤ concreteFiniteParameters.challengeDegree := by
+      (18 - 1 * concreteFiniteParameters.rankCount) ≤
+    concreteFiniteParameters.challengeDegree := by
   have hsurplus := concreteFiniteParameters.sourceCount_gt_rankCount
   have h := scaledKernelHeight_le_floor (n := 1) (N := 18)
     (r := concreteFiniteParameters.rankCount) (mu := concreteFiniteParameters.jetDegree)
@@ -223,23 +607,11 @@ example :
       firstOrderDimensionCount 2 3 4 1 6 := by
   apply firstOrderSourceCount_mul_le_firstOrderDimensionCount <;> norm_num
 
-/-- The finite source-minus-rank surplus bound at `R = 1/2`, `a = 1`, `β = 1/2`, `m = 2`. -/
-example : (2 : ℝ) ^ 3 *
-      (((1 / 2 : ℝ) * 1 ^ 2 / (2 * (1 / 2)) - 1 * (1 / 2) ^ 2 / 2 +
-          (1 / 2) * (1 / 2) ^ 3 / 6) -
-        ((1 / 2 : ℝ) / 2 - (1 / 2) ^ 2 / 2 + (1 / 2) ^ 3 / 3)) - 3 * 2 ^ 2 ≤
-    firstOrderSourceCount (1 / 2) 1 2 ⌊(1 / 2 : ℝ) * 2⌋₊ 4 -
-      firstOrderRankCount 2 ⌊(1 / 2 : ℝ) * 2⌋₊ :=
-  cube_mul_densityGap_sub_le_sourceCount_sub_rankCount (by norm_num) (by norm_num)
-    (by norm_num) (by norm_num) (by norm_num) (by norm_num)
-
-/-- A concrete residual comparison for `n = 2`, `D = 1`, `A = 2`. -/
-example : (2 : ℕ) * max (1 * 1 - (1 / 2 : ℝ) * 0) 0 ≤
-    max ((1 : ℝ) * 2 - 1 * 0) 0 :=
-  by
-    have h := mul_max_rateResidual_le_max_residual (rate := 1 / 2) (a := 1) (n := 2) (D := 1)
-      (A := 2) (m := 1) (t := 0) (by norm_num) (by norm_num)
-    norm_num at h ⊢
+/-- A positive residual parameter preserves the source-to-rank residual comparison. -/
+example : (2 : ℝ) * max (3 * (1 / 2 : ℝ) - (1 / 2) * 1) 0 ≤ max (3 * 2 - 1 * 1) 0 := by
+  have h := mul_max_rateResidual_le_max_residual (rate := 1 / 2) (a := 1)
+    (n := 2) (D := 1) (A := 2) (m := 3) (t := 1) (by norm_num) (by norm_num)
+  norm_num at h ⊢
 
 /-! ### Hybrid constants -/
 
@@ -277,6 +649,16 @@ example : maxMinFirstOrderExceptionCharge (agreementIncidenceRatio 4 1 3) 4 1 3 
   maxMinFirstOrderExceptionCharge_le_firstOrderExceptionConstant (by norm_num) (by norm_num)
     (by norm_num) (by norm_num)
 
+/-- Concrete list and balanced-split exception charges satisfy their direct closed bounds. -/
+example : firstOrderListCharge 1 1 2 1 ≤ firstOrderListConstant 1 1 2 1 ∧
+    firstOrderExceptionCharge (agreementIncidenceRatio 4 1 3) 4 1 3 1 2 1
+        (balancedSplit 1 3) ≤
+      firstOrderExceptionConstant (agreementIncidenceRatio 4 1 3) 4 1 1 2 1 := by
+  exact ⟨firstOrderListCharge_le_firstOrderListConstant (by norm_num) (by norm_num)
+      (by norm_num) (by norm_num),
+    firstOrderExceptionCharge_balancedSplit_le (by norm_num) (by norm_num) (by norm_num)
+      (by norm_num) (by norm_num)⟩
+
 /-! ### Rate and polynomial envelopes -/
 
 /-- For rate fraction `1/4` and agreement fraction `1/2`, the incidence ratio is at most `4`. -/
@@ -285,18 +667,18 @@ example : agreementIncidenceRatio 4 1 2 ≤ 1 / ((1 / 2 : ℝ) - 1 / 4) := by
     (ρ := 1 / 4) (a := 1 / 2) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
     (by norm_num)
 
-/-- The closed list constant at `θ = C = q = n = μ = 1`, `D = M = 0`, is at most `3`. -/
-example : firstOrderListConstant 1 0 1 0 ≤ 3 := by
-  have h := firstOrderListConstant_le_cubic (C := 1) (q := 1) (θ := 1) (n := 1) (D := 0)
-    (μ := 1) (M := 0) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+/-- The cubic envelope at `C = θ = 1`, `q = n = μ = 2`, and `D = M = 1`. -/
+example : firstOrderListConstant 1 1 2 1 ≤ 48 := by
+  have h := firstOrderListConstant_le_cubic (C := 1) (q := 2) (θ := 1) (n := 2) (D := 1)
+    (μ := 2) (M := 1) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
     (by norm_num) (by norm_num) (by norm_num) (by norm_num [stageStaircase])
   norm_num at h ⊢
   exact h
 
-/-- The closed exception constant at `θ = C = q = n = h = μ = 1`, `D = M = 0`, is at most `45`. -/
-example : firstOrderExceptionConstant 1 1 0 1 1 0 ≤ 45 := by
-  have h := firstOrderExceptionConstant_le_quintic (C := 1) (q := 1) (θ := 1) (n := 1) (D := 0)
-    (h := 1) (μ := 1) (M := 0) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+/-- The quintic envelope at `C = θ = 1`, `q = n = μ = 2`, and `D = M = h = 1`. -/
+example : firstOrderExceptionConstant 1 2 1 1 2 1 ≤ 5760 := by
+  have h := firstOrderExceptionConstant_le_quintic (C := 1) (q := 2) (θ := 1) (n := 2) (D := 1)
+    (h := 1) (μ := 2) (M := 1) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
     (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
     (by norm_num [stageStaircase])
   norm_num at h ⊢
@@ -304,9 +686,25 @@ example : firstOrderExceptionConstant 1 1 0 1 1 0 ≤ 45 := by
 
 /-! ### Curve charges -/
 
+/-- Increasing total degree or derivative degree increases the concrete stage charges. -/
+example : orderZeroCurveStageCharge 1 1 1 1 1 1 ≤ orderZeroCurveStageCharge 1 1 1 1 2 1 ∧
+    orderOneCurveStageCharge 3 1 1 1 1 1 1 1 1 1 ≤
+      orderOneCurveStageCharge 3 1 1 1 1 1 2 1 1 1 ∧
+    orderOneCurveStageCharge 3 1 1 1 1 1 2 0 1 1 ≤
+      orderOneCurveStageCharge 3 1 1 1 1 1 2 1 1 1 := by
+  refine ⟨?_, ?_, ?_⟩
+  · exact (orderZeroCurveStageCharge_mono 1 1 (s := 1) (c := 1)
+      (by norm_num) (by norm_num) 1) (by norm_num)
+  · exact (orderOneCurveStageCharge_mono_total 3 1 1 (s := 1) (η := 1) (t := 1) (c := 1)
+      (by norm_num) (by norm_num) (by norm_num) (by norm_num) 1) (by norm_num)
+  · exact orderOneCurveStageCharge_mono_derivative 3 1 1 (s := 1) (η := 1) (t := 1) (c := 1)
+      (by norm_num) (by norm_num) (by norm_num) (by norm_num) 1 (by norm_num) (by norm_num)
+
 /-- The order-one fiber degree is bounded by `j` times the total Taylor cap. -/
-example : firstOrderCurveFiberStageOne 3 3 1 2 ≤ 3 * firstOrderTaylorTotalCap 3 2 :=
-  firstOrderCurveFiberStageOne_le_mul_totalCap (by norm_num)
+example : 2 ≤ firstOrderCurveFiberStageOne 3 2 1 2 ∧
+    firstOrderCurveFiberStageOne 3 3 1 2 ≤ 3 * firstOrderTaylorTotalCap 3 2 := by
+  exact ⟨le_firstOrderCurveFiberStageOne (by norm_num),
+    firstOrderCurveFiberStageOne_le_mul_totalCap (by norm_num)⟩
 
 /-- The fiber and joint stage degrees are monotone in total jet degree for concrete parameters. -/
 example : firstOrderCurveFiberStageOne 3 2 1 2 ≤ firstOrderCurveFiberStageOne 3 3 1 2 ∧
@@ -326,8 +724,8 @@ example : firstOrderCurveBound 8 3 2 3 4 3 1 1 1 2 1 ≤
   firstOrderCurveBound_mono_directFactor 8 3 2 3 4 3 1 1 1 2 (by norm_num)
 
 /-- At `K = 3`, the order-zero charge is below the order-one charge at `v = 3`. -/
-example : orderZeroCurveStageCharge 1 1 1 0 3 2 ≤
-    orderOneCurveStageCharge 3 1 1 1 1 0 3 1 2 1 :=
+example : orderZeroCurveStageCharge 1 1 1 1 3 2 ≤
+    orderOneCurveStageCharge 3 1 1 1 1 1 3 1 2 1 :=
   orderZeroCurveStageCharge_le_orderOne 3 1 1 (by norm_num) (by norm_num) (by norm_num)
     (by norm_num) (by norm_num) 3 2
 
