@@ -31,19 +31,31 @@ example : agreementThreshold (1 / 4) 10 3 = 6 := by
   · norm_num [agreementThreshold, hceil]
 
 example :
-    agreementThreshold (1 / 4) 2 1 ≤ Code.agree ![false, false] ![false, false] ∧
-      (Code.relHammingDist ![false, false] ![false, false] : ℝ) ≤
-        capacityRadius (1 / 4) 2 1 := by
-  have hthreshold : agreementThreshold (1 / 4) 2 1 ≤ 2 := by
-    rw [agreementThreshold_le_iff_real (by norm_num) 2 1 2]
-    norm_num
-  have hagree : Code.agree ![false, false] ![false, false] = 2 := by
-    simp [Code.agree]
+    agreementThreshold (1 / 4) 4 2 ≤ Code.agree ![false, false, false, false]
+        ![true, false, false, false] ∧
+      (Code.relHammingDist ![true, false, false, false] ![false, false, false, false] : ℝ) ≤
+        capacityRadius (1 / 4) 4 2 ∧
+      Code.agree ![false, false, false, false] ![true, false, false, false] = 3 ∧
+      (Code.relHammingDist ![true, false, false, false] ![false, false, false, false] : ℝ) =
+        1 / 4 ∧ capacityRadius (1 / 4) 4 2 = 1 / 4 := by
+  have hthreshold : agreementThreshold (1 / 4) 4 2 ≤ 3 := by
+    exact (agreementThreshold_le_iff_real (by norm_num) 4 2 3).2 (by norm_num)
+  have hagree : Code.agree ![false, false, false, false] ![true, false, false, false] = 3 := by
+    decide
+  have hdist : (Code.relHammingDist ![true, false, false, false]
+      ![false, false, false, false] : ℝ) = 1 / 4 := by
+    norm_num [Code.relHammingDist, hammingDist]
+    decide
+  have hradius : capacityRadius (1 / 4) 4 2 = 1 / 4 := by
+    norm_num [capacityRadius]
   constructor
   · simpa [hagree] using hthreshold
-  · exact (relHammingDist_le_capacityRadius_iff_agreementThreshold_le
-      (delta := 1 / 4) (messageDim := 1) (by norm_num) (by decide)
-      ![false, false] ![false, false]).mpr (by simpa [hagree] using hthreshold)
+  · constructor
+    · exact (relHammingDist_le_capacityRadius_iff_agreementThreshold_le
+        (delta := 1 / 4) (messageDim := 2) (by norm_num) (by decide)
+        ![false, false, false, false] ![true, false, false, false]).mpr
+          (by simpa [hagree] using hthreshold)
+    · exact ⟨hagree, hdist, hradius⟩
 
 end ReedSolomonAcceptance
 

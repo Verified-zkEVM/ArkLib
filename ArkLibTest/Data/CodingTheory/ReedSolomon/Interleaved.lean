@@ -74,21 +74,100 @@ example :
       · funext j
         simp [evalTuple, point, singletonReceived]
 
-private def singletonChallengePoint : Fin 1 → Fin 1 → ZMod 2 := fun _ _ ↦ 0
+private def domainTwoZMod2 : Fin 2 ↪ ZMod 2 :=
+  ⟨fun i ↦ (i.val : ZMod 2), fun a b h ↦ by
+    fin_cases a <;> fin_cases b <;> simp_all⟩
 
--- At the singleton challenge the only candidate is the zero polynomial, so the bad-anchor
--- probability is zero in this concrete instance.
+local instance : Fact (Nat.Prime 3) := ⟨by decide⟩
+
+private def anchorDomainThree : Fin 2 ↪ ZMod 3 :=
+  ⟨fun i ↦ (i.val : ZMod 3), by decide⟩
+
+private def anchorReceivedThree : Fin 2 → Fin 1 → ZMod 3 := fun _ _ ↦ 0
+
+private noncomputable def zeroAnchorCandidate : Fin 1 → (ZMod 3)[X] := fun _ ↦ 0
+
+private noncomputable def lineAnchorCandidate : Fin 1 → (ZMod 3)[X] := fun _ ↦ X
+
+private theorem anchorInterleavedLambdaBound :
+    Lambda (interleavedCodeSet (κ := Fin 1)
+      (code anchorDomainThree 2 : Set (Fin 2 → ZMod 3)))
+        (1 - (1 : ℝ) / Fintype.card (Fin 2)) ≤ 9 := by
+  apply Lambda_le_iff_forall_encard_le.mpr
+  intro y
+  calc
+    (closeCodewordsRel (interleavedCodeSet (κ := Fin 1)
+      (code anchorDomainThree 2 : Set (Fin 2 → ZMod 3))) y
+        (1 - (1 : ℝ) / Fintype.card (Fin 2))).encard ≤
+        (Set.univ : Set (Fin 2 → Fin 1 → ZMod 3)).encard := Set.encard_mono (by simp)
+    _ = (Fintype.card (Fin 2 → Fin 1 → ZMod 3) : ℕ∞) := by simp
+    _ = 9 := by norm_num [Fintype.card_fun]
+
+-- The zero and linear candidates agree at the anchor 0; four sampled anchors give a subunit
+-- collision bound.
 example :
-    Pr{let ω ← $ᵗ (Fin 1)}[
-      ¬ Set.InjOn (evalTuple (singletonChallengePoint ω))
-        (candidateSet point singletonReceived 1 1)] ≤ 0 := by
-  have hpt : Function.Injective singletonChallengePoint := by
-    intro a b _
-    exact Subsingleton.elim a b
-  simpa [singletonChallengePoint, singletonReceived] using
-    (prob_not_injOn_candidateSet_le (pt := singletonChallengePoint) hpt point singletonReceived
-      (K := 1) (a := 1) (L := 2) (by decide)
-      (by simpa using singletonInterleavedLambdaBound))
+    zeroAnchorCandidate ∈ candidateSet anchorDomainThree anchorReceivedThree 2 1 ∧
+      lineAnchorCandidate ∈ candidateSet anchorDomainThree anchorReceivedThree 2 1 ∧
+      zeroAnchorCandidate ≠ lineAnchorCandidate ∧
+      Pr{let ω ← $ᵗ (Fin 4 → ZMod 3)}[
+        ¬ Set.InjOn (evalTuple ω)
+          (candidateSet anchorDomainThree anchorReceivedThree 2 1)] ≤
+        ENNReal.ofReal (1 / 2 : ℝ) := by
+  have hzero : zeroAnchorCandidate ∈
+      candidateSet anchorDomainThree anchorReceivedThree 2 1 := by
+    rw [mem_candidateSet]
+    constructor
+    · intro j
+      change (0 : (ZMod 3)[X]).degree < (2 : WithBot ℕ)
+      rw [Polynomial.degree_zero]
+      exact WithBot.bot_lt_coe _
+    · rw [agree, Finset.one_le_card]
+      refine ⟨0, ?_⟩
+      simp only [Finset.mem_filter]
+      constructor
+      · simp
+      · funext j
+        fin_cases j
+        simp [evalTuple, zeroAnchorCandidate, anchorReceivedThree, anchorDomainThree]
+  have hone : lineAnchorCandidate ∈
+      candidateSet anchorDomainThree anchorReceivedThree 2 1 := by
+    rw [mem_candidateSet]
+    constructor
+    · intro j
+      norm_num [lineAnchorCandidate]
+    · rw [agree, Finset.one_le_card]
+      refine ⟨0, ?_⟩
+      simp only [Finset.mem_filter]
+      constructor
+      · simp
+      · funext j
+        fin_cases j
+        simp [evalTuple, lineAnchorCandidate, anchorReceivedThree, anchorDomainThree]
+  have hne : zeroAnchorCandidate ≠ lineAnchorCandidate := by
+    intro h
+    have hval := congrFun h 0
+    exact (X_ne_zero (R := ZMod 3)) (by
+      simpa [zeroAnchorCandidate, lineAnchorCandidate] using hval.symm)
+  have hΛ : Lambda (interleavedCodeSet (κ := Fin 1)
+      (code anchorDomainThree 2 : Set (Fin 2 → ZMod 3)))
+        (1 - (1 : ℝ) / Fintype.card (Fin 2)) ≤ 9 := anchorInterleavedLambdaBound
+  have hprob := prob_not_injOn_candidateSet_le
+    (pt := fun ω : Fin 4 → ZMod 3 ↦ ω) (by intro ω ω' h; exact h)
+    anchorDomainThree anchorReceivedThree (K := 2) (a := 1) (L := 9) (by decide)
+    (by simpa using hΛ)
+  refine ⟨hzero, hone, hne, ?_⟩
+  have hchoose : (9).choose 2 = 36 := by rw [Nat.choose_two_right]
+  have hΩ : Fintype.card (Fin 4 → ZMod 3) = 81 := by
+    rw [Fintype.card_fun]
+    norm_num
+  calc
+    Pr{let ω ← $ᵗ (Fin 4 → ZMod 3)}[
+        ¬ Set.InjOn (evalTuple ω)
+          (candidateSet anchorDomainThree anchorReceivedThree 2 1)] ≤
+        ENNReal.ofReal (((9).choose 2 * (2 - 1) ^ Fintype.card (Fin 4) : ℕ) /
+          (Fintype.card (Fin 4 → ZMod 3) : ℝ)) := hprob
+    _ ≤ ENNReal.ofReal (1 / 2 : ℝ) := ENNReal.ofReal_le_ofReal (by
+      norm_num [hchoose, hΩ, Fintype.card_fin])
 
 private def domainTwo : Fin 2 ↪ ℚ :=
   ⟨fun i ↦ (i.val : ℚ), fun a b h ↦ Fin.ext (by simpa using h)⟩
@@ -251,7 +330,8 @@ example :
   exact ⟨bad, hbadCard, by simp [hbad], hgood 1 1 (by simp [hbad]) 0 (by simp) hclose⟩
 
 private def foldValues : (Fin 3 → Bool) → Fin 1 → Fin 1 → ZMod 2 :=
-  fun leaf _ _ ↦ if leaf 0 then 1 else 0
+  fun leaf _ _ ↦ (if leaf 0 then 1 else 0) + (if leaf 1 then 1 else 0) +
+    (if leaf 2 then 1 else 0)
 
 example :
     (tensorFoldBad
@@ -259,10 +339,6 @@ example :
         (Fin 1)) foldValues).card ≤ 0 := by
   simpa using interleavedRS_tensorFoldBad_card_le_heightThree point singletonPowerGuarantee
     le_rfl (κ := Fin 1) foldValues
-
-private def domainTwoZMod2 : Fin 2 ↪ ZMod 2 :=
-  ⟨fun i ↦ (i.val : ZMod 2), fun a b h ↦ by
-    fin_cases a <;> fin_cases b <;> simp_all⟩
 
 noncomputable section
 

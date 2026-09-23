@@ -18,16 +18,19 @@ namespace ProximityGeneratorTest
 
 private abbrev probabilityCode : ModuleCode (Fin 1) (ZMod 2) (ZMod 2) := ⊤
 
+private theorem singletonPointMem {T : Finset (Fin 1)} (hT : 1 ≤ T.card) :
+    (0 : Fin 1) ∈ T := by
+  by_contra hzero
+  have hTempty : T = ∅ := Finset.Subset.antisymm (by
+    intro i hi
+    have hi0 : i = 0 := Subsingleton.elim _ _
+    subst i
+    exact False.elim (hzero hi)) (by simp)
+  simp [hTempty] at hT
+
 private theorem singletonDetermined : DeterminedByAgreement probabilityCode 1 := by
   intro c _ d _ T hT hagree
-  have hzero : (0 : Fin 1) ∈ T := by
-    by_contra hzero
-    have hTempty : T = ∅ := Finset.Subset.antisymm (by
-      intro i hi
-      have hi0 : i = 0 := Subsingleton.elim _ _
-      subst i
-      exact False.elim (hzero hi)) (by simp)
-    simp [hTempty] at hT
+  have hzero : (0 : Fin 1) ∈ T := singletonPointMem hT
   funext i
   have hi : i = 0 := Subsingleton.elim _ _
   simpa [hi] using hagree 0 hzero
@@ -36,14 +39,7 @@ private theorem singletonLineExact (V : Bool → Fin 1 → ZMod 2) :
     UniformExactAgreement binaryEqualityGenerator probabilityCode 1 0 V := by
   refine ⟨∅, by simp, ?_⟩
   intro r _ c _ T hT hagree
-  have hzero : (0 : Fin 1) ∈ T := by
-    by_contra hzero
-    have hTempty : T = ∅ := Finset.Subset.antisymm (by
-      intro i hi
-      have hi0 : i = 0 := Subsingleton.elim _ _
-      subst i
-      exact False.elim (hzero hi)) (by simp)
-    simp [hTempty] at hT
+  have hzero : (0 : Fin 1) ∈ T := singletonPointMem hT
   have hroot : c 0 = ∑ b, binaryEqualityGenerator r b • V b 0 := hagree 0 hzero
   refine ⟨V, ?_, ?_, ?_⟩
   · intro b
@@ -76,10 +72,6 @@ private theorem shortBadSetEmpty : tensorFoldBad singletonLevelWitness shortLeav
   have hle : (tensorFoldBad singletonLevelWitness shortLeaves).card ≤ 0 := by
     simpa [shortLeaves] using h
   exact Finset.card_eq_zero.mp (Nat.eq_zero_of_le_zero hle)
-
-example : (tensorFoldBad singletonLevelWitness shortLeaves).card = 0 := by
-  rw [shortBadSetEmpty]
-  simp
 
 example :
     ∃ leafCode : (Fin 1 → Bool) → Fin 1 → ZMod 2,

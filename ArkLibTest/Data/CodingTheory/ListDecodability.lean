@@ -26,16 +26,11 @@ example : (δᵣ((fun _ : Fin 4 ↦ true), ![true, true, true, false]) : ℝ) �
   exact this
 
 example :
-    (δᵣ(radiusWord, radiusWord) : ℝ) ≤ 1 - (2 : ℝ) / 2 ↔
-      (2 : ℝ) ≤ Code.agree radiusWord radiusWord := by
+    (δᵣ(radiusWord, ![true, true]) : ℝ) ≤ 1 - (1 : ℝ) / 2 ↔
+      (1 : ℝ) ≤ Code.agree radiusWord ![true, true] := by
   have h := Code.relHammingDist_le_one_sub_div_iff
-    (ι := Fin 2) (A := Bool) (by decide) (c := radiusWord) (y := radiusWord) (x := 2)
-  norm_num [Code.relHammingDist, hammingDist, Code.agree] at h ⊢
-
-example : radiusWord ∈ Code.closeCodewordsRel radiusCode radiusWord (1 - (2 : ℝ) / 2) := by
-  apply Code.mem_closeCodewordsRel_of_le_agree
-  · simp [radiusCode]
-  · simp [Code.agree]
+    (ι := Fin 2) (A := Bool) (by decide) (c := radiusWord) (y := ![true, true]) (x := 1)
+  simpa [Code.relHammingDist, hammingDist, Code.agree, ne_comm] using h
 
 example : 1 ≤ Code.Lambda radiusCode 0 := by
   have hset :

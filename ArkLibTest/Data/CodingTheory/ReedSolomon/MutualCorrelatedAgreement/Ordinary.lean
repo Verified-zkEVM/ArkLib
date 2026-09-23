@@ -94,6 +94,17 @@ private theorem assemblyFactorRoot {c : Associates assemblyPoly}
   rw [hrep, zero_mul] at h'
   exact h'.trans (by simp)
 
+private theorem assemblyFactorExceptionalRoot {c : Associates assemblyPoly}
+    (hc : c ∈ MvPolynomial.positiveDegreeFactorClasses (0 : Fin 1) assemblyQ) :
+    ∃ ex : Finset Unit, (ex.card : ℚ) = 0 ∧
+      ∀ w ∉ ex, ∀ y, assemblyEval w y c.rep = 0 → y = 0 := by
+  refine ⟨∅, by simp, ?_⟩
+  intro w _ y hy
+  exact assemblyFactorRoot hc y hy
+
+private theorem assemblyRootAtZero : assemblyEval () 0 assemblyQ = 0 := by
+  simp [assemblyEval, assemblyQ]
+
 private theorem assemblyPrimeFactors :
     UniqueFactorizationMonoid.primeFactors (Associates.mk assemblyQ) =
       {Associates.mk (MvPolynomial.X (0 : Fin 1) : assemblyPoly)} := by
@@ -137,10 +148,10 @@ private theorem assemblyFactorGood :
           (MvPolynomial.degreeOf (0 : Fin 1) c.rep) (assemblyHeight c.rep) ∧
         ∀ w ∉ ex, ∀ y, assemblyEval w y c.rep = 0 → y = 0 := by
   intro c hc
-  refine ⟨∅, ?_, ?_⟩
-  · simp [ordinaryFactorRaw, assemblyHeight]
-  · intro w _ y hy
-    exact assemblyFactorRoot hc y hy
+  obtain ⟨ex, hcard, hroot⟩ := assemblyFactorExceptionalRoot hc
+  refine ⟨ex, ?_, hroot⟩
+  rw [hcard]
+  simp [ordinaryFactorRaw, assemblyHeight]
 
 private theorem assemblyUnifiedFactorGood :
     ∀ c ∈ MvPolynomial.positiveDegreeFactorClasses (0 : Fin 1) assemblyQ,
@@ -149,10 +160,10 @@ private theorem assemblyUnifiedFactorGood :
           (MvPolynomial.degreeOf (0 : Fin 1) c.rep) (assemblyHeight c.rep) 1 ∧
         ∀ w ∉ ex, ∀ y, assemblyEval w y c.rep = 0 → y = 0 := by
   intro c hc
-  refine ⟨∅, ?_, ?_⟩
-  · simp [ordinaryUnifiedPowerFactorRawAt, assemblyHeight]
-  · intro w _ y hy
-    exact assemblyFactorRoot hc y hy
+  obtain ⟨ex, hcard, hroot⟩ := assemblyFactorExceptionalRoot hc
+  refine ⟨ex, ?_, hroot⟩
+  rw [hcard]
+  simp [ordinaryUnifiedPowerFactorRawAt, assemblyHeight]
 
 private theorem assemblyRootBudget : MvPolynomial.degreeOf (0 : Fin 1) assemblyQ ≤ 1 := by
   simp [assemblyQ]
@@ -171,9 +182,7 @@ example : (MvPolynomial.positiveDegreeFactorClasses (0 : Fin 1) assemblyQ).Nonem
     (by exact MvPolynomial.X_ne_zero _) assemblyEval (fun _ y ↦ y = 0) assemblyHeight
     0 1 0 1 0 (by norm_num) (by norm_num) assemblyRootBudget assemblyHeightBudget
     assemblyContentGood assemblyFactorGood
-  have hzero : assemblyEval () 0 assemblyQ = 0 := by
-    simp [assemblyEval, assemblyQ]
-  exact ⟨⟨Associates.mk assemblyQ, assemblyFactorMem⟩, hresult, hzero⟩
+  exact ⟨⟨Associates.mk assemblyQ, assemblyFactorMem⟩, hresult, assemblyRootAtZero⟩
 
 example : ∃ ex : Finset Unit, (ex.card : ℚ) ≤ ordinaryUnifiedPowerFactorRawAt 0 1 0 1 1 0 1 ∧
     (∀ w ∉ ex, ∀ y, assemblyEval w y assemblyQ = 0 → y = 0) ∧
@@ -182,10 +191,8 @@ example : ∃ ex : Finset Unit, (ex.card : ℚ) ≤ ordinaryUnifiedPowerFactorRa
     (i := 0) (Q := assemblyQ) (by exact MvPolynomial.X_ne_zero _) assemblyEval
     (fun _ y ↦ y = 0) assemblyHeight 0 1 0 1 1 0 1 (by norm_num) (by norm_num)
     assemblyRootBudget assemblyHeightBudget assemblyContentGood assemblyUnifiedFactorGood
-  have hzero : assemblyEval () 0 assemblyQ = 0 := by
-    simp [assemblyEval, assemblyQ]
   rcases hresult with ⟨ex, hcard, hgood⟩
-  exact ⟨ex, hcard, hgood, hzero⟩
+  exact ⟨ex, hcard, hgood, assemblyRootAtZero⟩
 
 example : (∑ _i ∈ (Finset.univ : Finset (Fin 2)),
     ordinaryFactorRaw 0 4 1 1 1) ≤ ordinaryFactorRaw 0 4 1 2 2 := by
