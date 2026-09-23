@@ -91,20 +91,20 @@ example : MvPolynomial.map (Int.castRingHom (ZMod 2))
   have h1 : ((3 : ℤ) : ZMod 2) = 0 := by simpa using congrFun h 1
   exact absurd h1 (by decide)
 
-private theorem onePointLocalRank_le_two {F : Type*} [Field F] :
-    Module.finrank F (LinearMap.range
-      (weightedSupportLocalConstraint (R := F) (d := 1) (W := 0) (L := 2) 1
+private theorem onePointLocalRank_le_two :
+    Module.finrank ℚ (LinearMap.range
+      (weightedSupportLocalConstraint (R := ℚ) (d := 1) (W := 0) (L := 2) 1
         Nat.one_pos 0 0)) ≤ 2 := by
   calc
     _ ≤ localResidualCoordinateBudget 1 1 0 ⌈(2 : ℝ) / 1⌉₊ := by
-      simpa using (finrank_weightedSupportLocalConstraint_le (F := F) (d := 1) (D := 1)
-        (W := 0) (L := 2) (m := 1) (by norm_num) Nat.one_pos (0 : F) 0)
+      simpa using (finrank_weightedSupportLocalConstraint_le (F := ℚ) (d := 1) (D := 1)
+        (W := 0) (L := 2) (m := 1) (by norm_num) Nat.one_pos (0 : ℚ) 0)
     _ ≤ 2 := by
       norm_num [localResidualCoordinateBudget, contactThreshold, Finset.natWeightedSimplex]
 
-private theorem onePointWeightedSupportDimension_ge_four {F : Type*} [Field F] :
-    4 ≤ Module.finrank F (weightedSupportSpace F 1 1 0 2 Nat.one_pos) := by
-  have h := sum_count_le_finrank_weightedSupportSpace F (d := 1) (D := 1) (W := 0)
+private theorem onePointWeightedSupportDimension_ge_four :
+    4 ≤ Module.finrank ℚ (weightedSupportSpace ℚ 1 1 0 2 Nat.one_pos) := by
+  have h := sum_count_le_finrank_weightedSupportSpace ℚ (d := 1) (D := 1) (W := 0)
     (L := 2) (by decide) Nat.one_pos
   have hs : natWeightedSimplex (fun i : Fin (1 - 1) => i.val + 1) 0 = {fun _ => 0} := by
     decide
@@ -123,16 +123,16 @@ example :
   exact rank_weightedSupportLocalCoordinateMatrix_le_base_actual
     (F := ℚ) (E := RatFunc ℚ) (d := 1) (D := 2) (W := 0) (L := 2) 1 (by norm_num) 1 2
 
-private theorem onePointFixedMargin {F : Type*} [Field F] :
-    (543 / 500 : ℝ) * ((1 : ℕ) : ℝ) * Module.finrank F (LinearMap.range
-      (weightedSupportLocalConstraint (R := F) (d := 1) (W := 0) (L := 2) 1
-        Nat.one_pos 0 0)) < Module.finrank F (weightedSupportSpace F 1 1 0 2 Nat.one_pos) := by
-  have hrank : (Module.finrank F (LinearMap.range
-      (weightedSupportLocalConstraint (R := F) (d := 1) (W := 0) (L := 2) 1
+private theorem onePointFixedMargin :
+    (543 / 500 : ℝ) * ((1 : ℕ) : ℝ) * Module.finrank ℚ (LinearMap.range
+      (weightedSupportLocalConstraint (R := ℚ) (d := 1) (W := 0) (L := 2) 1
+        Nat.one_pos 0 0)) < Module.finrank ℚ (weightedSupportSpace ℚ 1 1 0 2 Nat.one_pos) := by
+  have hrank : (Module.finrank ℚ (LinearMap.range
+      (weightedSupportLocalConstraint (R := ℚ) (d := 1) (W := 0) (L := 2) 1
         Nat.one_pos 0 0)) : ℝ) ≤ 2 := by
-    exact_mod_cast onePointLocalRank_le_two (F := F)
-  have hdim : (4 : ℝ) ≤ Module.finrank F (weightedSupportSpace F 1 1 0 2 Nat.one_pos) := by
-    exact_mod_cast onePointWeightedSupportDimension_ge_four (F := F)
+    exact_mod_cast onePointLocalRank_le_two
+  have hdim : (4 : ℝ) ≤ Module.finrank ℚ (weightedSupportSpace ℚ 1 1 0 2 Nat.one_pos) := by
+    exact_mod_cast onePointWeightedSupportDimension_ge_four
   nlinarith
 
 private def twoPointEmbedding : Fin 2 ↪ ℚ where
@@ -211,7 +211,7 @@ example : ∃ v : Fin (Fintype.card
     v ≠ 0 ∧ SourceColumn.interpolant twoPointWeightedColumns v ≠ 0 ∧
       SourceColumn.interpolant twoPointWeightedColumns v ∈
         weightedSupportSpace ℚ 1 1 0 2 Nat.one_pos := by
-  have hdim := onePointWeightedSupportDimension_ge_four (F := ℚ)
+  have hdim := onePointWeightedSupportDimension_ge_four
   rw [finrank_weightedSupportSpace_eq_card] at hdim
   have hcard' : 0 < (weightedSupportExponents 1 1 0 2 Nat.one_pos).card := by omega
   have hcard : 0 < Fintype.card
@@ -260,7 +260,7 @@ example :
         (fun _ : Fin 1 => 0) (fun _ : Fin 1 => Polynomial.X ^ 2 + 1)
         twoPointWeightedColumns twoPointWeightedColumns_eligible
     _ ≤ 2 := by
-      simpa [Fintype.card_fin] using onePointLocalRank_le_two (F := ℚ)
+      simpa [Fintype.card_fin] using onePointLocalRank_le_two
 
 /-- Distinct source columns with coefficients of degree below two retain that bound. -/
 example : ∀ u, ((SourceColumn.interpolant sourceColumns
@@ -304,7 +304,7 @@ example :
       exact receivedLine_matrix_rank_le_base_actual (F := ℚ) (d := 1) (D := 1) (W := 0)
         (L := 2) (m := 1) Nat.one_pos (fun _ => 0) (fun _ => 0) (fun _ => 0) _
         (weightedSupportColumns_eligible (d := 1) (D := 1) (W := 0) (L := 2) Nat.one_pos)
-    _ ≤ 2 := by simpa using onePointLocalRank_le_two (F := ℚ)
+    _ ≤ 2 := by simpa using onePointLocalRank_le_two
 
 example : ∃ v : Fin (Fintype.card
     (↥(weightedSupportExponents 1 1 0 2 Nat.one_pos))) → ℚ[X], v ≠ 0 ∧
@@ -329,7 +329,7 @@ example : ∃ v : Fin (Fintype.card
         exact hY₀.trans
           (totalJetDegree_le_pred_of_weightedSupportEligible (D := 1) (L := 2) (t := 2)
             (by norm_num) (by norm_num) hu))
-      (onePointFixedMargin (F := ℚ))
+      onePointFixedMargin
   exact ⟨v, hv, hprimitive, hnonzero, hconstraints⟩
 
 example :
@@ -363,14 +363,14 @@ example :
       (g := 1) Nat.one_pos (by norm_num) hband'
     simpa using h
   have hdim : 3 ≤ N := by
-    have hdim' := onePointWeightedSupportDimension_ge_four (F := ℚ)
+    have hdim' := onePointWeightedSupportDimension_ge_four
     rw [finrank_weightedSupportSpace_eq_card] at hdim'
     have hdim'' : 3 ≤ (weightedSupportExponents 1 1 0 2 Nat.one_pos).card := by omega
     simpa [N, Fintype.card_coe] using hdim''
   have hmargin : Fintype.card (Fin 1) * Module.finrank ℚ (LinearMap.range
       (weightedSupportLocalConstraint (R := ℚ) (d := 1) (W := 0) (L := 2) 1
         Nat.one_pos 0 0)) < Fintype.card (Fin N) := by
-    have hrank := onePointLocalRank_le_two (F := ℚ)
+    have hrank := onePointLocalRank_le_two
     have hlt : Module.finrank ℚ (LinearMap.range
         (weightedSupportLocalConstraint (R := ℚ) (d := 1) (W := 0) (L := 2) 1
           Nat.one_pos 0 0)) < N := by omega

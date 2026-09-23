@@ -211,22 +211,12 @@ theorem coeff_interpolant_natDegree_le {F : Type*} [CommSemiring F] {N h : ℕ}
     (columns : Fin N → SourceColumn d) (hcolumns : Function.Injective columns)
     (v : Fin N → Polynomial F) (hv : ∀ j, (v j).natDegree ≤ h) :
     ∀ u, ((interpolant columns v).coeff u).natDegree ≤ h := by
-  classical
+  have hlt := coeff_interpolant_natDegree_lt (R := F) (columns := columns)
+    hcolumns v (B := h + 1) (by omega)
+    (by intro j; exact Nat.lt_succ_of_le (hv j))
   intro u
-  by_cases hu : u ∈ Set.range (fun j ↦ (columns j).exponent)
-  · obtain ⟨j, rfl⟩ := hu
-    rw [coeff_interpolant hcolumns v j]
-    exact hv j
-  · have hcoeff : (interpolant columns v).coeff u = 0 := by
-      rw [interpolant, MvPolynomial.coeff_sum]
-      apply Finset.sum_eq_zero
-      intro j _
-      rw [MvPolynomial.coeff_monomial]
-      split
-      · rename_i heq
-        exact (hu ⟨j, heq⟩).elim
-      · rfl
-    simp [hcoeff]
+  have hltu := hlt u
+  omega
 
 /-- Mapping the coefficients of the interpolant maps its coefficient vector. -/
 theorem map_interpolant {S : Type*} [CommSemiring S] (ψ : R →+* S)

@@ -50,7 +50,7 @@ namespace ReedSolomon.HiddenDerivative
 
 /-- A differential polynomial over `F[X]` whose challenge specializations remain nonzero, have
 bounded total jet degree and vanish on sufficiently agreeing message polynomials. -/
-structure WeightedSupportCertificate (F : Type*) [Field F] {ι : Type*} [Fintype ι]
+structure WeightedSupportCertificate (F : Type*) [Field F] {ι : Type*}
     (A k ν d h : ℕ) (centers : ι ↪ F) (f g : ι → F) where
   /-- The differential polynomial with challenge-polynomial coefficients. -/
   interpolant : DifferentialPolynomial F[X] d
@@ -173,9 +173,6 @@ theorem exists_weightedSupport_certificate_of_fixed_margin {F : Type*} [Field F]
       12 * (2 * m - 1) :=
     SourceColumn.coeff_interpolant_natDegree_lt hcolumns v (by omega) hvheight'
   let Q := SourceColumn.interpolant columns v
-  have hQspace : Q ∈ weightedSupportSpace F[X] D d W L hD := by
-    dsimp [Q]
-    exact interpolant_mem_weightedSupportSpace hD columns hband v
   refine ⟨⟨Q, fun u => Nat.le_sub_one_of_lt (hchallenge u), ?_, ?_⟩⟩
   · intro u hu
     exact totalJetDegree_interpolant_le_two_mul_sub_one hD hg₁ columns hband v u hu
