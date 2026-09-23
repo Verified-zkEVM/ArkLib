@@ -427,8 +427,6 @@ public import ArkLib.Data.Polynomial.BivariateFactorDegrees
 public import ArkLib.Data.Polynomial.ClassicalWronskian
 public import ArkLib.Data.Polynomial.Differential.BaseChange
 public import ArkLib.Data.Polynomial.Differential.Basic
-public import ArkLib.Data.Polynomial.Differential.Basic
-public import ArkLib.Data.Polynomial.Differential.Basic
 public import ArkLib.Data.Polynomial.Differential.ChainWitness
 public import ArkLib.Data.Polynomial.Differential.DerivativeDescent
 public import ArkLib.Data.Polynomial.Differential.DirectRegularLift
@@ -722,8 +720,6 @@ public import ArkLib.ToMathlib.MvPolynomial.FrobeniusPullback
 public import ArkLib.ToMathlib.MvPolynomial.OptionRoots
 public import ArkLib.ToMathlib.MvPolynomial.OptionWeightedDegree
 public import ArkLib.ToMathlib.MvPolynomial.PDeriv
-public import ArkLib.ToMathlib.MvPolynomial.PolynomialCoefficients
-public import ArkLib.ToMathlib.MvPolynomial.PolynomialCoefficients
 public import ArkLib.ToMathlib.MvPolynomial.PolynomialCoefficients
 public import ArkLib.ToMathlib.MvPolynomial.RadicalSplit
 public import ArkLib.ToMathlib.MvPolynomial.RootContraction
