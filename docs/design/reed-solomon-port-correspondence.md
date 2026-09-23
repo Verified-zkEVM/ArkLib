@@ -1885,6 +1885,14 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/S
 The definitions and laws are ported from `ArkLib/Data/Polynomial/Differential/Basic.lean` at
 ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`.
 
+## `ArkLib/Data/Polynomial/Differential/ContentExceptions.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/Factors/ContentExceptions.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`ReedSolomon.HiddenDerivative.exists_exceptional_ordinaryContent` is renamed to `PolynomialDifferential.exists_exceptional_jet_independent_content` and generalized from fields to commutative integral domains. Its coefficient-height bound uses `MvPolynomial.CoeffNatDegreeLE`. The theorem bounds challenges where a nonzero equation independent of its jet specializes to zero; outside the exceptional set, every polynomial input has nonzero specialization.
+
+The acceptance case in `ArkLibTest/Data/Polynomial/Differential.lean` uses a height-one nonconstant coefficient equation that vanishes at challenge zero and checks that zero belongs to an exceptional set of cardinality at most one. Nothing was deferred or left unported.
+
 ## `ArkLib/Data/Polynomial/Differential/DirectRegularLift.lean`
 
 This file ports the semantic content of `RootFinding/Regular/DirectRegularCoefficient.lean` and
@@ -2118,6 +2126,10 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordi
 `separableResultant_ordinaryRootPresentation_ne_zero` is renamed to `resultant_derivative_ordinaryRootPresentation_ne_zero` and generalized to the generic padded derivative resultant; it no longer needs a separate positive-degree assumption. The challenge-height bound uses `MvPolynomial.CoeffNatDegreeLE`.
 
 Nothing was deferred or left unported. The source separable-resultant declaration is covered by the renamed theorem using the current padded resultant API, so no duplicate wrapper was added.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/Factors/RootPresentation.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`ordinaryRootPresentation`, `natDegree_ordinaryRootPresentation`, `ordinaryRootPresentation_ne_zero`, `irreducible_ordinaryRootPresentation`, `derivative_ordinaryRootPresentation`, `ordinaryRootPresentation_monomial`, `degreeX_ordinaryRootPresentation_le`, and `eval_ordinaryRootPresentation` keep their names and are generalized from fields to commutative rings. The resultant and separant statements retain their field assumptions.
 
 ## `ArkLib/Data/Polynomial/Differential/ShiftedJet.lean`
 
