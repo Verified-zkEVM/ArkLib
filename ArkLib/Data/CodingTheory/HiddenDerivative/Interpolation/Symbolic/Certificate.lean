@@ -16,11 +16,12 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.AgreementThreshold
 /-!
 # Certificates from symbolic weighted-support interpolation
 
-A symbolic weighted-support certificate is a differential polynomial whose challenge
-specializations stay nonzero, have bounded total jet degree, satisfy the local constraints at every
-received point, and vanish on every sufficiently agreeing message polynomial. A strict dimension
-surplus constructs such a certificate for received lines; the prescribed rate parameters provide
-the surplus and the corresponding degree bounds.
+A symbolic weighted-support certificate is a differential polynomial with bounded challenge degree
+and total jet degree. Every challenge specialization stays nonzero, obeys the same total jet-degree
+bound, and vanishes on sufficiently agreeing message polynomials. The weighted-support
+interpolation construction imposes local constraints at every received point; a strict dimension
+surplus constructs certificates for received lines, and the prescribed rate parameters provide the
+surplus and corresponding degree bounds.
 
 ## Main statements
 

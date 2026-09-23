@@ -423,7 +423,7 @@ theorem totalJetDegree_interpolant_le_pred (hD : 0 < D) {t : ℕ}
 
 /-- A challenge specialization of an interpolant in weighted support has jet degree below `t`
 when the support cutoff is at most `D * t`. -/
-theorem jetTotalDegree_map_interpolant_lt {E : Type*} [Field E]
+theorem jetTotalDegree_map_interpolant_lt {E : Type*} [CommSemiring E]
     (hD : 0 < D) {t : ℕ} (ht : 0 < t) (hL : L ≤ (D : ℝ) * t)
     (columns : κ → SourceColumn d)
     (hband : ∀ j, WeightedSupportEligible D d W L (columns j).exponent)
@@ -437,22 +437,23 @@ theorem jetTotalDegree_map_interpolant_lt {E : Type*} [Field E]
 
 /-- The prescribed cutoff `(D : ℝ) * m * (1 + g)` with `g ≤ 1` gives total jet degree at most
 `2 * m - 1` for every monomial of the interpolant. -/
-theorem totalJetDegree_interpolant_le_two_mul_sub_one {F : Type*} [Field F]
+theorem totalJetDegree_interpolant_le_two_mul_sub_one {R : Type*} [CommSemiring R]
     {d D m W : ℕ} {κ : Type*} [Fintype κ] {g : ℝ} (hD : 0 < D) (hg : g ≤ 1)
     (columns : κ → SourceColumn d)
     (hband : ∀ j, WeightedSupportEligible D d W ((D : ℝ) * m * (1 + g))
-      (columns j).exponent) (v : κ → F[X]) :
+      (columns j).exponent) (v : κ → R[X]) :
     ∀ u ∈ (SourceColumn.interpolant columns v).support, totalJetDegree u ≤ 2 * m - 1 := by
   have hcut := weightedSupportCutoff_le_two_mul D m hg
   exact totalJetDegree_interpolant_le_pred hD (by exact_mod_cast hcut) columns hband v
 
 /-- Every challenge specialization of an interpolant under the prescribed cutoff has total jet
 degree at most `2 * m - 1`. -/
-theorem jetTotalDegree_map_interpolant_le_two_mul_sub_one {F E : Type*} [Field F] [Field E]
+theorem jetTotalDegree_map_interpolant_le_two_mul_sub_one {R S : Type*}
+    [CommSemiring R] [CommSemiring S]
     {d D m W : ℕ} {κ : Type*} [Fintype κ] {g : ℝ} (hD : 0 < D) (hg : g ≤ 1)
     (columns : κ → SourceColumn d)
     (hband : ∀ j, WeightedSupportEligible D d W ((D : ℝ) * m * (1 + g))
-      (columns j).exponent) (v : κ → F[X]) (ι : F →+* E) (z : E) :
+      (columns j).exponent) (v : κ → R[X]) (ι : R →+* S) (z : S) :
     jetTotalDegree (MvPolynomial.map (Polynomial.eval₂RingHom ι z)
       (SourceColumn.interpolant columns v)) ≤ 2 * m - 1 := by
   have hcut := weightedSupportCutoff_le_two_mul D m hg
