@@ -1,11 +1,6 @@
-import ArkLib.Data.Probability.PMF
-import VCVio.OracleComp.Constructions.SampleableType.NativeMeasure
+import ArkLib.Data.Probability.Uniform
 
 open scoped ENNReal ProbabilityTheory
-
-example (mx : ProbComp Bool) (p : Bool → Prop) :
-    Pr{let b ← mx}[p b] = 𝒟[p <$> mx] {True} :=
-  prEvent_eq_evalDist_map mx p
 
 example : Pr{let n ← $ᵗ (Fin 2)}[n = 0] = (1 / 2 : ENNReal) := by
   rw [SampleableType.prEvent_uniformSample]
