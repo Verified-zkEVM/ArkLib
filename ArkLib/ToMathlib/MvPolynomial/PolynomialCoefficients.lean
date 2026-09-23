@@ -6,6 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.ToMathlib.MvPolynomial.ClearedSubstitution
+public import ArkLib.ToMathlib.MvPolynomial.RootContraction
 public import Mathlib.Algebra.MvPolynomial.CommRing
 public import Mathlib.Algebra.MvPolynomial.Equiv
 public import Mathlib.Algebra.MvPolynomial.PDeriv
@@ -27,14 +28,16 @@ This file records both degrees.
   so that `X` counts as one more variable. It is at most `h + P.totalDegree` when every
   coefficient has degree at most `h`, and cleared substitutions satisfy a monomialwise bound.
 
-The file also shows that `MvPolynomial.optionEquivLeft` commutes with coefficient maps.
-
 ## Main statements
 
-* `MvPolynomial.map_optionEquivLeft`: `optionEquivLeft` commutes with `MvPolynomial.map`.
+* `MvPolynomial.aeval_map_optionEquivRight` and
+  `MvPolynomial.aeval_optionEquivRight_symm`: evaluation through the flattened variable
+  equivalence.
 * `MvPolynomial.CoeffNatDegreeLE` and its closure lemmas, including
   `MvPolynomial.CoeffNatDegreeLE.map_coefficients`, `MvPolynomial.CoeffNatDegreeLE.aeval` and
   `MvPolynomial.CoeffNatDegreeLE.pderiv`.
+* `MvPolynomial.eval_map_coefficients`: evaluation after a coefficient map agrees with direct
+  evaluation into the target semiring.
 * `MvPolynomial.jointTotalDegree`, its ring-operation bounds, `jointTotalDegree_C_le`,
   `jointTotalDegree_le_of_natDegree_coeff_le` and its form
   `CoeffNatDegreeLE.jointTotalDegree_le`, and `jointTotalDegree_clearedSubstitution_le`.
@@ -47,19 +50,6 @@ namespace MvPolynomial
 noncomputable section
 
 open scoped BigOperators
-
-/-! ### Coefficient maps and `optionEquivLeft` -/
-
-/-- Moving the variable `none` out as the polynomial variable commutes with a coefficient map. -/
-theorem map_optionEquivLeft {A B σ : Type*} [CommSemiring A] [CommSemiring B]
-    (f : A →+* B) (Q : MvPolynomial (Option σ) A) :
-    Polynomial.map (map f) (optionEquivLeft A σ Q) = optionEquivLeft B σ (map f Q) := by
-  have he : (Polynomial.mapRingHom (map f)).comp (optionEquivLeft A σ).toRingHom =
-      (optionEquivLeft B σ).toRingHom.comp (map f) := by
-    ext a : 2
-    · simp
-    · cases a <;> simp
-  exact DFunLike.congr_fun he Q
 
 variable {R σ τ : Type*} [CommSemiring R]
 
@@ -82,6 +72,32 @@ theorem optionEquivRight_symm_C (p : Polynomial R) :
   have h := Polynomial.aeval_algHom_apply
     (IsScalarTower.toAlgHom R (Polynomial R) (MvPolynomial σ (Polynomial R))) Polynomial.X p
   simpa [Polynomial.aeval_X_left_apply, algebraMap_eq] using h.symm
+
+/-- Evaluating a flattened polynomial after specializing its distinguished variable is the same
+as evaluating the original polynomial in all its variables. -/
+theorem aeval_map_optionEquivRight {A σ : Type*} [CommSemiring A] [Algebra R A]
+    (x : Option σ → A) (p : MvPolynomial (Option σ) R) :
+    aeval (fun j ↦ x (some j))
+      (MvPolynomial.map (Polynomial.aeval (x none)).toRingHom
+        (optionEquivRight R σ p)) =
+        aeval x p := by
+  induction p using MvPolynomial.induction_on with
+  | C c => simp
+  | add p q hp hq => simp only [map_add, hp, hq]
+  | mul_X p i hp =>
+    simp only [map_mul, hp]
+    congr 1
+    cases i <;> simp
+
+/-- Evaluating the inverse flattened-variable equivalence first evaluates the distinguished
+polynomial variable, then evaluates the remaining variables. -/
+theorem aeval_optionEquivRight_symm {A σ : Type*} [CommSemiring A] [Algebra R A]
+    (x : Option σ → A) (p : MvPolynomial σ (Polynomial R)) :
+    aeval x ((optionEquivRight R σ).symm p) =
+      aeval (fun j ↦ x (some j))
+        (MvPolynomial.map (Polynomial.aeval (x none)).toRingHom p) := by
+  simpa only [AlgEquiv.apply_symm_apply] using
+    (aeval_map_optionEquivRight (R := R) x ((optionEquivRight R σ).symm p)).symm
 
 /-! ### Degree bounds on the coefficients -/
 
@@ -197,6 +213,22 @@ theorem CoeffNatDegreeLE.map_coefficients {S : Type*} [CommSemiring S]
   rw [MvPolynomial.coeff_map]
   exact Polynomial.natDegree_map_le.trans (hP m)
 
+/-- Evaluating mapped coefficient polynomials agrees with evaluating their coefficients directly.
+-/
+theorem eval_map_coefficients {S : Type*} [CommSemiring S]
+    (f : R →+* S) (z : S) (P : MvPolynomial σ (Polynomial R)) :
+    MvPolynomial.map (Polynomial.evalRingHom z)
+        (MvPolynomial.map (Polynomial.mapRingHom f) P) =
+      MvPolynomial.map (Polynomial.eval₂RingHom f z) P := by
+  rw [MvPolynomial.map_map]
+  have hcomp : (Polynomial.evalRingHom z).comp (Polynomial.mapRingHom f) =
+      Polynomial.eval₂RingHom f z := by
+    apply Polynomial.ringHom_ext
+    · intro a
+      simp
+    · simp
+  rw [hcomp]
+
 /-! ### Joint total degree -/
 
 /-- A power of a variable has total degree at most its exponent, also over the zero ring. -/
@@ -262,6 +294,21 @@ theorem jointTotalDegree_C_le (p : Polynomial R) :
   apply (totalDegree_mul _ _).trans
   rw [totalDegree_C, zero_add]
   exact (totalDegree_X_pow_le _ _).trans (Polynomial.le_natDegree_of_mem_supp n hn)
+
+/-- An affine polynomial in the coefficient variable has joint degree at most one. -/
+theorem jointTotalDegree_affine_le (a b : R) :
+    jointTotalDegree
+      (C (Polynomial.C a + Polynomial.X * Polynomial.C b) :
+        MvPolynomial σ (Polynomial R)) ≤ 1 := by
+  apply (jointTotalDegree_C_le _).trans
+  apply (Polynomial.natDegree_add_le _ _).trans
+  apply max_le
+  · simp
+  · calc
+      (Polynomial.X * Polynomial.C b).natDegree ≤
+          Polynomial.X.natDegree + (Polynomial.C b).natDegree := Polynomial.natDegree_mul_le
+      _ ≤ 1 + 0 := Nat.add_le_add Polynomial.natDegree_X_le (by simp)
+      _ = 1 := by omega
 
 /-- If every coefficient of `P` has `natDegree ≤ h`, the joint total degree of `P` is at most
 `h + P.totalDegree`. -/
