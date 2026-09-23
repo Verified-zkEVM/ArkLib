@@ -205,7 +205,8 @@ example : 1 * concreteFiniteParameters.rankCount * concreteFiniteParameters.jetD
       (18 - 1 * concreteFiniteParameters.rankCount) ≤ concreteFiniteParameters.challengeDegree := by
   have hsurplus := concreteFiniteParameters.sourceCount_gt_rankCount
   have h := scaledKernelHeight_le_floor (n := 1) (N := 18)
-    (r := concreteFiniteParameters.rankCount) (mu := concreteFiniteParameters.jetDegree) hsurplus (by
+    (r := concreteFiniteParameters.rankCount) (mu := concreteFiniteParameters.jetDegree)
+    hsurplus (by
       norm_num [FirstOrderFiniteRateParameters.sourceCount, concreteFiniteParameters,
         FirstOrderFiniteRateParameters.derivativeCap, FirstOrderFiniteRateParameters.jetDegree,
         firstOrderRateDerivativeCap, firstOrderRateJetDegree, firstOrderRateBeta,
