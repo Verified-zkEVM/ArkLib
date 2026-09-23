@@ -15,19 +15,15 @@ For every actual code rate, the interpolation ambient degree and scalar paramete
 from the gap and block length alone. The resulting closed-multiplicity finite ratio exceeds
 `151/150` while retaining the actual message dimension and agreement count in the bounds.
 
-## Main definitions
-
-* `UniformRatePartitionEnvelope`: an ambient degree and scalar parameters with the required guards.
-
 ## Main statements
 
+* `UniformRatePartitionEnvelope`: an ambient degree and scalar parameters with the required guards.
 * `exists_uniformRatePartitionEnvelope`: the envelope exists when the gap and block length satisfy
   the stated bounds.
 
 ## References
 
-* [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient
-  Decoding and Smaller Cryptographic Proofs*][DKT26]
+* [DKT26]
 -/
 
 @[expose] public section
@@ -91,7 +87,8 @@ private theorem finiteRatio_gt_of_uniformRateGamma {δ rate agreement : ℝ}
       (27 / 20 : ℝ) * rate * (uniformDerivativeOrder δ + 1) *
         Real.exp (-(rate / agreement *
           Real.log (6 * (uniformDerivativeOrder δ : ℝ)))) * Real.exp (-(1 / 1000 : ℝ)) := by
-    rw [← rateGamma_eq_exp rate agreement hd]
+    rw [← rateGamma_eq_exponential (rate := rate) (agreement := agreement)
+      (order := uniformDerivativeOrder δ) hd]
     exact hgamma0
   have hfinite' : (27 / 20 : ℝ) * rate * (uniformDerivativeOrder δ + 1) *
       Real.exp (-(rate / agreement *
@@ -102,7 +99,8 @@ private theorem finiteRatio_gt_of_uniformRateGamma {δ rate agreement : ℝ}
 
 /-- Choose a finite interpolation envelope uniformly in the actual code rate. At high rate the
 ambient degree is the message dimension and the scalar parameters are `R = k/n`, `a = R + δ`.
-At low rate the ambient degree is `⌊2δ²n⌋₊` and the scalar parameters are `R = 2δ²`, `a = δ`. -/
+At low rate the ambient degree is `⌊2δ²n⌋₊` and the scalar parameters are
+`R = 2δ²`, `a = δ`. -/
 theorem exists_uniformRatePartitionEnvelope {δ : ℝ} {n k A : ℕ}
     (hδ : 0 < δ) (hδsmall : δ < 6 / 25)
     (hn : uniformBlockThreshold δ ≤ n) (hk : 0 < k)

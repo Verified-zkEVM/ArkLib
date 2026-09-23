@@ -6,32 +6,29 @@ Authors: Quang Dao
 module
 
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.Gate
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.Moment
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.UniformParameters
-public import Mathlib.Analysis.Complex.ExponentialBounds
 public import Mathlib.Analysis.Convex.Deriv
 public import Mathlib.Analysis.Convex.Jensen
 public import Mathlib.Analysis.SpecialFunctions.Log.NegMulLog
 
-import Mathlib.Tactic.NormNum
-
 /-!
-# Uniform bounds for the partition Gamma factor
+# Uniform margins for the rate-partition ratio
 
-The derivative order `uniformDerivativeOrder δ` gives limiting-ratio bounds in both ambient-rate
-branches for every `0 < δ < 6/25`.
+This file proves low-rate and high-rate lower bounds for `rateGamma` when the derivative order
+satisfies `3 / (2 * δ) ≤ log d`. It also verifies that `uniformDerivativeOrder δ` satisfies this
+condition, is at least `500` for `0 < δ < 6/25`, and retains a `151/150` margin after the
+multiplicity factor `exp (-1/1000)` in both rate branches.
 
 ## Main statements
 
-* `uniformDerivativeOrder_ge_500`: the chosen order is at least 500.
-* `uniformRateGamma_low_base_gt`, `uniformRateGamma_high_base_gt`: lower bounds for the two
-  limiting ratios before the multiplicity loss.
-* `uniformRateGamma_low_gt`, `uniformRateGamma_high_gt`: both ratios remain above `151/150`
-  after the multiplicity loss.
+* `rateGamma_low_base_gt`, `rateGamma_high_base_gt`: lower bounds before finite-multiplicity loss.
+* `rateGamma_low_gt`, `rateGamma_high_gt`: lower bounds after the loss `exp (-1/1000)`.
+* `uniformDerivativeOrder_ge_500` and the four `uniformRateGamma_*` specializations.
 
 ## References
 
-* [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient
-  Decoding and Smaller Cryptographic Proofs*][DKT26]
+* [DKT26]
 -/
 
 @[expose] public section
@@ -94,7 +91,7 @@ private theorem log_five_hundred_lt : Real.log 500 < (311 / 50 : ℝ) := by
   rw [hlog]
   linarith [Real.log_two_lt_d9, Real.log_five_lt_d9]
 
-/-- The uniform derivative order is at least 500 for gaps below `6/25`. -/
+/-- For `0 < δ < 6/25`, the uniform derivative order is at least `500`. -/
 theorem uniformDerivativeOrder_ge_500 {δ : ℝ} (hδ : 0 < δ) (hδmax : δ < 6 / 25) :
     500 ≤ uniformDerivativeOrder δ := by
   have hexponent : (311 / 50 : ℝ) < 3 / (2 * δ) := by
@@ -172,34 +169,32 @@ private theorem uniformDerivativeOrder_log_lower {δ : ℝ} (hδ : 0 < δ) :
     exact Nat.le_ceil _
   simpa only [Real.log_exp] using Real.log_le_log hexp hceil
 
-/-- The low-rate ambient choice has the uniform limiting-ratio lower bound used before
-any finite-multiplicity loss is charged. -/
-theorem uniformRateGamma_low_base_gt {δ : ℝ}
-    (hδ : 0 < δ) (hδmax : δ < 6 / 25) :
+/-- For an order `d` with `3/(2δ) ≤ log d`, the low-rate limiting ratio has the stated lower
+bound when `0 < δ < 6/25`. -/
+theorem rateGamma_low_base_gt {δ : ℝ} {order : ℕ}
+    (hδ : 0 < δ) (hδmax : δ < 6 / 25) (horder : 0 < order)
+    (hlogOrder : 3 / (2 * δ) ≤ Real.log (order : ℝ)) :
     Real.exp (3 / 2 - Real.log (40 / 9)) <
-      rateGamma (2 * δ ^ 2) δ (uniformDerivativeOrder δ) := by
-  let d := uniformDerivativeOrder δ
-  have hd500 : 500 ≤ d := uniformDerivativeOrder_ge_500 hδ hδmax
-  have hd : 0 < d := by omega
+      rateGamma (2 * δ ^ 2) δ order := by
+  let d := order
+  have hd : 0 < d := horder
   have hdR : (0 : ℝ) < d := by exact_mod_cast hd
   have hR : 0 < 2 * δ ^ 2 := by positivity
-  have hlogd : 3 / (2 * δ) ≤ Real.log (d : ℝ) :=
-    uniformDerivativeOrder_log_lower hδ
+  have hlogd : 3 / (2 * δ) ≤ Real.log (d : ℝ) := hlogOrder
   have hcoefficient : 0 < 1 - 2 * δ := by linarith
   have hlogfactor :
-      Real.log (27 * (2 * δ ^ 2) / 20) =
+      Real.log (27 * (2 * δ ^ 2) / 20 : ℝ) =
         Real.log (27 / 10) + 2 * Real.log δ := by
-    rw [show (27 * (2 * δ ^ 2) / 20 : ℝ) = (27 / 10) * δ ^ 2 by ring,
+    rw [show (27 : ℝ) * (2 * δ ^ 2) / 20 = (27 / 10) * δ ^ 2 by ring,
       Real.log_mul (by norm_num : (27 / 10 : ℝ) ≠ 0) (sq_pos_of_pos hδ).ne',
       Real.log_pow]
     norm_num
   have hlogsucc : Real.log (d : ℝ) < Real.log ((d : ℝ) + 1) :=
     Real.strictMonoOn_log (by simpa using hdR) (by simp; linarith) (by linarith)
-  have hlog6d : Real.log (6 * (d : ℝ)) = Real.log 6 + Real.log d := by
-    rw [Real.log_mul] <;> positivity
   have hloggamma : lowRateLogMargin δ <
       Real.log (rateGamma (2 * δ ^ 2) δ d) := by
-    rw [log_rateGamma hR.ne' hd, hlogfactor, hlog6d]
+    rw [log_rateGamma hR.ne' hd, hlogfactor,
+      Real.log_mul (by norm_num : (6 : ℝ) ≠ 0) hdR.ne']
     have hmain := mul_le_mul_of_nonneg_left hlogd hcoefficient.le
     have hmain' : 3 / (2 * δ) - 3 ≤ (1 - 2 * δ) * Real.log d := by
       calc
@@ -233,14 +228,38 @@ theorem uniformRateGamma_low_base_gt {δ : ℝ}
     exact Real.exp_lt_exp.mpr hlower
   exact hexp
 
-/-- The low-rate choice `R = 2δ²`, `a = δ` retains the closed finite-ratio margin. -/
+/-- The low-rate ambient choice `R = 2δ²`, `a = δ` has the limiting-ratio lower bound. -/
+theorem uniformRateGamma_low_base_gt {δ : ℝ}
+    (hδ : 0 < δ) (hδmax : δ < 6 / 25) :
+    Real.exp (3 / 2 - Real.log (40 / 9)) <
+      rateGamma (2 * δ ^ 2) δ (uniformDerivativeOrder δ) := by
+  have horder : 0 < uniformDerivativeOrder δ := by
+    unfold uniformDerivativeOrder
+    exact Nat.ceil_pos.mpr (Real.exp_pos _)
+  exact rateGamma_low_base_gt hδ hδmax horder (uniformDerivativeOrder_log_lower hδ)
+
+/-- For an order satisfying `3/(2δ) ≤ log d`, the low-rate ratio retains a `151/150` margin after
+the finite-multiplicity factor `exp(-1/1000)`. -/
+theorem rateGamma_low_gt {δ : ℝ} {order : ℕ}
+    (hδ : 0 < δ) (hδmax : δ < 6 / 25) (horder : 0 < order)
+    (hlogOrder : 3 / (2 * δ) ≤ Real.log (order : ℝ)) :
+    (151 / 150 : ℝ) <
+      rateGamma (2 * δ ^ 2) δ order *
+        Real.exp (-1 / 1000) := by
+  exact uniform_margin_numeric.trans (mul_lt_mul_of_pos_right
+    (rateGamma_low_base_gt hδ hδmax horder hlogOrder) (Real.exp_pos (-1 / 1000)))
+
+/-- The low-rate ambient choice `R = 2δ²`, `a = δ` retains a `151/150` margin after the
+finite-multiplicity factor `exp(-1/1000)`. -/
 theorem uniformRateGamma_low_gt {δ : ℝ}
     (hδ : 0 < δ) (hδmax : δ < 6 / 25) :
     (151 / 150 : ℝ) <
       rateGamma (2 * δ ^ 2) δ (uniformDerivativeOrder δ) *
         Real.exp (-1 / 1000) := by
-  exact uniform_margin_numeric.trans (mul_lt_mul_of_pos_right
-    (uniformRateGamma_low_base_gt hδ hδmax) (Real.exp_pos (-1 / 1000)))
+  have horder : 0 < uniformDerivativeOrder δ := by
+    unfold uniformDerivativeOrder
+    exact Nat.ceil_pos.mpr (Real.exp_pos _)
+  exact rateGamma_low_gt hδ hδmax horder (uniformDerivativeOrder_log_lower hδ)
 
 /-- The logarithmic constants in the high-rate penalty match. -/
 private theorem log_six_sub_log_factor :
@@ -255,6 +274,7 @@ private def highRatePenalty (R δ : ℝ) : ℝ :=
 private theorem highRatePenalty_hasDerivAt {R δ : ℝ} (hR : 0 < R) :
     HasDerivAt (fun x ↦ highRatePenalty x δ)
       (Real.log (40 / 9) - Real.log R - 1 - δ / R) R := by
+  unfold highRatePenalty
   have hderiv := ((hasDerivAt_id R).mul_const (Real.log (40 / 9))).sub
     (((hasDerivAt_id R).add_const δ).mul (Real.hasDerivAt_log hR.ne')) |>.sub_const
       (δ * Real.log (27 / 20))
@@ -264,7 +284,9 @@ private theorem highRatePenalty_hasDerivAt {R δ : ℝ} (hR : 0 < R) :
     rw [div_eq_mul_inv]
     field_simp [hR.ne']
     ring
-  convert hderiv.congr_deriv heq using 1; try rfl
+  convert hderiv.congr_deriv heq using 1
+  · funext x
+    simp
 
 private theorem highRatePenalty_deriv {R δ : ℝ} (hR : 0 < R) :
     deriv (fun x ↦ highRatePenalty x δ) R =
@@ -332,6 +354,7 @@ private theorem highRatePenalty_endpoint_lt {δ : ℝ}
 
 private theorem highRatePenalty_convex_low {δ : ℝ} (hδ : 0 < δ) :
     ConvexOn ℝ (Icc (δ ^ 2) δ) (fun R ↦ highRatePenalty R δ) := by
+  unfold highRatePenalty
   apply convexOn_of_hasDerivWithinAt2_nonneg (convex_Icc (δ ^ 2) δ)
   · intro x hx
     have hxpos : 0 < x := (sq_pos_of_pos hδ).trans_le hx.1
@@ -346,7 +369,9 @@ private theorem highRatePenalty_convex_low {δ : ℝ} (hδ : 0 < δ) :
     have hsecond := (((hasDerivAt_const x (Real.log (40 / 9))).sub
       (Real.hasDerivAt_log hxpos.ne')).sub_const 1).sub
         ((hasDerivAt_const x δ).div (hasDerivAt_id x) hxpos.ne')
-    convert hsecond.hasDerivWithinAt using 1; try rfl
+    convert hsecond.hasDerivWithinAt using 1
+    · funext y
+      simp
   · intro x hx
     have hx' : x ∈ Ioo (δ ^ 2) δ := by simpa only [interior_Icc] using hx
     have hxpos : 0 < x := (sq_pos_of_pos hδ).trans hx'.1
@@ -431,22 +456,21 @@ private theorem highRatePenalty_lt {R δ : ℝ}
   · exact (highRatePenalty_le_endpoint hδ hδquarter hδR hRtop).trans_lt
       (highRatePenalty_endpoint_lt hδ hδquarter)
 
-/-- The high-rate choice has the same uniform limiting-ratio lower bound before
-finite-multiplicity loss, for every `δ² ≤ R ≤ 1 - δ`. -/
-theorem uniformRateGamma_high_base_gt {R δ : ℝ}
+/-- For an order `d` with `3/(2δ) ≤ log d`, the high-rate limiting ratio has the stated lower
+bound for `δ² ≤ R ≤ 1 - δ`. -/
+theorem rateGamma_high_base_gt {R δ : ℝ} {order : ℕ}
     (hδ : 0 < δ) (hδmax : δ < 6 / 25)
-    (hRlow : δ ^ 2 ≤ R) (hRtop : R ≤ 1 - δ) :
+    (hRlow : δ ^ 2 ≤ R) (hRtop : R ≤ 1 - δ) (horder : 0 < order)
+    (hlogOrder : 3 / (2 * δ) ≤ Real.log (order : ℝ)) :
     Real.exp (3 / 2 - Real.log (40 / 9)) <
-      rateGamma R (R + δ) (uniformDerivativeOrder δ) := by
-  let d := uniformDerivativeOrder δ
-  have hd500 : 500 ≤ d := uniformDerivativeOrder_ge_500 hδ hδmax
-  have hd : 0 < d := by omega
+      rateGamma R (R + δ) order := by
+  let d := order
+  have hd : 0 < d := horder
   have hdR : (0 : ℝ) < d := by exact_mod_cast hd
   have hRpos : 0 < R := (sq_pos_of_pos hδ).trans_le hRlow
   have ha : 0 < R + δ := add_pos hRpos hδ
   have hale : R + δ ≤ 1 := by linarith
-  have hlogd : 3 / (2 * δ) ≤ Real.log (d : ℝ) :=
-    uniformDerivativeOrder_log_lower hδ
+  have hlogd : 3 / (2 * δ) ≤ Real.log (d : ℝ) := hlogOrder
   have hthree : (3 / 2 : ℝ) ≤ δ * Real.log (d : ℝ) := by
     calc
       (3 / 2 : ℝ) = δ * (3 / (2 * δ)) := by field_simp
@@ -460,18 +484,17 @@ theorem uniformRateGamma_high_base_gt {R δ : ℝ}
     have hRlog := mul_nonneg hRpos.le (sub_nonneg.mpr hlogsucc.le)
     nlinarith
   have hlogfactor :
-      Real.log (27 * R / 20) = Real.log (27 / 20) + Real.log R := by
-    rw [show (27 * R / 20 : ℝ) = (27 / 20) * R by ring,
+      Real.log (27 * R / 20 : ℝ) = Real.log (27 / 20) + Real.log R := by
+    rw [show (27 : ℝ) * R / 20 = (27 / 20) * R by ring,
       Real.log_mul (by norm_num : (27 / 20 : ℝ) ≠ 0) hRpos.ne']
   have hloggamma := log_rateGamma (agreement := R + δ) hRpos.ne' hd
-  have hlog6d : Real.log (6 * (d : ℝ)) = Real.log 6 + Real.log d := by
-    rw [Real.log_mul] <;> positivity
   have hscaled :
       (R + δ) * Real.log (rateGamma R (R + δ) d) =
         (R + δ) * (Real.log (27 / 20) + Real.log R) +
           (R + δ) * Real.log ((d : ℝ) + 1) -
             R * (Real.log 6 + Real.log d) := by
-    rw [hloggamma, hlogfactor, hlog6d]
+    rw [hloggamma, hlogfactor,
+      Real.log_mul (by norm_num : (6 : ℝ) ≠ 0) hdR.ne']
     field_simp [ha.ne']
   have hpenaltyIdentity :
       3 / 2 - highRatePenalty R δ =
@@ -510,16 +533,44 @@ theorem uniformRateGamma_high_base_gt {R δ : ℝ}
     exact Real.exp_lt_exp.mpr hloglower
   exact hexp
 
-/-- The high-rate choice `a = R + δ` retains the closed finite-ratio margin uniformly for every
+/-- The high-rate choice `a = R + δ` has the limiting-ratio lower bound for every
 `δ² ≤ R ≤ 1 - δ`. -/
+theorem uniformRateGamma_high_base_gt {R δ : ℝ}
+    (hδ : 0 < δ) (hδmax : δ < 6 / 25)
+    (hRlow : δ ^ 2 ≤ R) (hRtop : R ≤ 1 - δ) :
+    Real.exp (3 / 2 - Real.log (40 / 9)) <
+      rateGamma R (R + δ) (uniformDerivativeOrder δ) := by
+  have horder : 0 < uniformDerivativeOrder δ := by
+    unfold uniformDerivativeOrder
+    exact Nat.ceil_pos.mpr (Real.exp_pos _)
+  exact rateGamma_high_base_gt hδ hδmax hRlow hRtop horder
+    (uniformDerivativeOrder_log_lower hδ)
+
+/-- For an order satisfying `3/(2δ) ≤ log d`, the high-rate ratio retains a `151/150` margin
+after the finite-multiplicity factor `exp(-1/1000)`. -/
+theorem rateGamma_high_gt {R δ : ℝ} {order : ℕ}
+    (hδ : 0 < δ) (hδmax : δ < 6 / 25)
+    (hRlow : δ ^ 2 ≤ R) (hRtop : R ≤ 1 - δ) (horder : 0 < order)
+    (hlogOrder : 3 / (2 * δ) ≤ Real.log (order : ℝ)) :
+    (151 / 150 : ℝ) <
+      rateGamma R (R + δ) order *
+        Real.exp (-1 / 1000) := by
+  exact uniform_margin_numeric.trans (mul_lt_mul_of_pos_right
+    (rateGamma_high_base_gt hδ hδmax hRlow hRtop horder hlogOrder)
+    (Real.exp_pos (-1 / 1000)))
+
+/-- The high-rate choice `a = R + δ` retains a `151/150` margin after the
+finite-multiplicity factor `exp(-1/1000)` for every `δ² ≤ R ≤ 1 - δ`. -/
 theorem uniformRateGamma_high_gt {R δ : ℝ}
     (hδ : 0 < δ) (hδmax : δ < 6 / 25)
     (hRlow : δ ^ 2 ≤ R) (hRtop : R ≤ 1 - δ) :
     (151 / 150 : ℝ) <
       rateGamma R (R + δ) (uniformDerivativeOrder δ) *
         Real.exp (-1 / 1000) := by
-  exact uniform_margin_numeric.trans (mul_lt_mul_of_pos_right
-    (uniformRateGamma_high_base_gt hδ hδmax hRlow hRtop)
-    (Real.exp_pos (-1 / 1000)))
+  have horder : 0 < uniformDerivativeOrder δ := by
+    unfold uniformDerivativeOrder
+    exact Nat.ceil_pos.mpr (Real.exp_pos _)
+  exact rateGamma_high_gt hδ hδmax hRlow hRtop horder
+    (uniformDerivativeOrder_log_lower hδ)
 
 end ReedSolomon.HiddenDerivative.RatePartition
