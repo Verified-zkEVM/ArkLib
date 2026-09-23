@@ -28,27 +28,6 @@ constraint identity.
 
 open MvPolynomial PolynomialDifferential ReedSolomon.HiddenDerivative
 
-private theorem integerX_satisfiesLocalConstraints :
-    SatisfiesLocalConstraints 1 (0 : ℤ) 0 (X none : DifferentialPolynomial ℤ 1) := by
-  rw [satisfiesLocalConstraints_iff_coeff_eq_zero]
-  intro e he
-  rw [unscaledLocalSubstitution_X]
-  have hT : e (localT 1) = 0 := by
-    rw [localContactOrder_eq] at he
-    omega
-  have hsingle : Finsupp.single (localT 1) 1 ≠ e := by
-    intro h
-    have := congrArg (fun a => a (localT 1)) h
-    simp at this
-    omega
-  simp [MvPolynomial.coeff_X, hsingle]
-
-/-- Coefficient specialization preserves a concrete order-one local constraint. -/
-example : SatisfiesLocalConstraints 1 (0 : ZMod 5) 0
-    (MvPolynomial.map (Int.castRingHom (ZMod 5)) (X none : DifferentialPolynomial ℤ 1)) := by
-  simpa using ReedSolomon.HiddenDerivative.SatisfiesLocalConstraints.map
-    (φ := Int.castRingHom (ZMod 5)) 1 0 0 (X none) integerX_satisfiesLocalConstraints
-
 private theorem satisfiesLocalConstraintsOneYZeroSub (d : ℕ) (center received : ℤ) :
     SatisfiesLocalConstraints (d := d) 1 center received (X (some 0) - C received) := by
   rw [SatisfiesLocalConstraints, localConstraintAt, LinearMap.comp_apply, projectLowContact,
@@ -64,6 +43,16 @@ private theorem satisfiesLocalConstraintsOneYZeroSub (d : ℕ) (center received 
     (X_mem_restrictWeightedOrder (R := ℤ) (localContactWeight d) (localT d) le_rfl)
     (by simp : X (localE d) + localJetSum d ∈
       restrictWeightedOrder (R := ℤ) (localContactWeight d) 0)
+
+/-- Specializing the point, received value, and polynomial preserves a concrete constraint. -/
+example : SatisfiesLocalConstraints 1 (1 : ZMod 5) 2
+    (MvPolynomial.map (Int.castRingHom (ZMod 5))
+      (X (some 0) - C (7 : ℤ) : DifferentialPolynomial ℤ 1)) := by
+  have h := ReedSolomon.HiddenDerivative.SatisfiesLocalConstraints.map
+    (φ := Int.castRingHom (ZMod 5)) 1 6 7 (X (some 0) - C (7 : ℤ))
+    (satisfiesLocalConstraintsOneYZeroSub 1 6 7)
+  norm_num at h ⊢
+  exact h
 
 /-- At a nonzero center, the order-one constraint gives the factor `X - 2` of `X² - 4`. -/
 example : (Polynomial.X - Polynomial.C (2 : ℤ)) ∣
