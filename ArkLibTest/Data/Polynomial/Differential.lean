@@ -6,6 +6,7 @@ Authors: Quang Dao
 
 import ArkLib.Data.Polynomial.Differential.BaseChange
 import ArkLib.Data.Polynomial.Differential.ChainWitness
+import ArkLib.Data.Polynomial.Differential.ContentExceptions
 import ArkLib.Data.Polynomial.Differential.DerivativeDescent
 import ArkLib.Data.Polynomial.Differential.DirectRegularLift
 import ArkLib.Data.Polynomial.Differential.FirstOrderStageSum
@@ -33,6 +34,7 @@ import ArkLib.Data.Polynomial.Differential.TaylorResidual
 import ArkLib.Data.Polynomial.Differential.TotalJetDegreeCount
 import ArkLib.Data.Polynomial.Differential.WitnessCount
 import Mathlib.Algebra.Field.ZMod
+import Mathlib.Data.Rat.Defs
 import Mathlib.FieldTheory.Finite.Extension
 import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 import Mathlib.RingTheory.MvPolynomial.IrreducibleQuadratic
@@ -1481,7 +1483,16 @@ example :
   let f : ZMod 2 →+* AlgebraicClosure (ZMod 2) := algebraMap _ _
   exact exists_forall_jetEvaluation_ne_zero_map f f.injective Q {0} 0 hregular
 
-
+example :
+    ∃ exceptional : Finset ℚ, exceptional.card ≤ 1 ∧ 0 ∈ exceptional := by
+  let Q : DifferentialPolynomial (Polynomial ℚ) 0 := MvPolynomial.C Polynomial.X
+  have hheight := MvPolynomial.coeffNatDegreeLE_C
+    (σ := JetVariable 0) (R := ℚ) (p := Polynomial.X) (h := 1) (by simp)
+  obtain ⟨exceptional, hcard, hregular⟩ :=
+    exists_exceptional_jet_independent_content Q (by simp [Q]) (by simp [Q]) hheight
+  refine ⟨exceptional, hcard, ?_⟩
+  by_contra hzero
+  have hspec : challengeSpecialization Q 0 = 0 := by simp [Q, challengeSpecialization]
+  exact hregular 0 hzero 0 (by rw [hspec]; rfl)
 end
-
 end PolynomialDifferential

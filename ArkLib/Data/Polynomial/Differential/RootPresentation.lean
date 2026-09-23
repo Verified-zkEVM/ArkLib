@@ -50,7 +50,7 @@ namespace PolynomialDifferential
 
 open Polynomial MvPolynomial
 
-variable {F : Type*} [Field F]
+variable {F : Type*} [CommRing F]
 
 /-- Reorder a degree-zero differential equation as a polynomial in its root. -/
 def ordinaryRootPresentation (Q : DifferentialPolynomial F[X] 0) : F[X][X][X] :=
@@ -106,23 +106,6 @@ theorem derivative_ordinaryRootPresentation (Q : DifferentialPolynomial F[X] 0) 
   congr 3
   simpa only [renameEquiv_apply, Equiv.swap_apply_right] using
     pderiv_rename (Equiv.swap none (some (0 : Fin 1))).injective (some 0) Q
-
-/-- An irreducible equation with nonzero root derivative has a nonzero padded derivative
-resultant for its root presentation. -/
-theorem resultant_derivative_ordinaryRootPresentation_ne_zero
-    {Q : DifferentialPolynomial F[X] 0} (hQ : Irreducible Q)
-    (hder : MvPolynomial.pderiv (some 0) Q ≠ 0) :
-    Polynomial.resultant (ordinaryRootPresentation Q)
-      (ordinaryRootPresentation Q).derivative (Q.degreeOf (some 0))
-      (Q.degreeOf (some 0) - 1) ≠ 0 := by
-  let A := ordinaryRootPresentation Q
-  have hirr : Irreducible A := irreducible_ordinaryRootPresentation hQ
-  have hderA : A.derivative ≠ 0 := by
-    rw [show A = ordinaryRootPresentation Q from rfl, derivative_ordinaryRootPresentation]
-    exact ordinaryRootPresentation_ne_zero hder
-  have hres := Polynomial.resultant_derivative_ne_zero_of_irreducible A hirr hderA
-  rw [natDegree_ordinaryRootPresentation] at hres
-  exact hres
 
 /-- Explicit monomial coordinates of the root presentation. -/
 theorem ordinaryRootPresentation_monomial (m : Option (Fin 1) →₀ ℕ) (c : F[X]) :
@@ -203,6 +186,27 @@ theorem eval_ordinaryRootPresentation (Q : DifferentialPolynomial F[X] 0)
         Polynomial.map_mul, Polynomial.eval_mul, MvPolynomial.map_X,
         MvPolynomial.aeval_X, hQ, hX', hidx, hhasse] using congrArg (· * P) hQ
 
+section
+
+variable {F : Type*} [Field F]
+
+/-- An irreducible equation with nonzero root derivative has a nonzero padded derivative
+resultant for its root presentation. -/
+theorem resultant_derivative_ordinaryRootPresentation_ne_zero
+    {Q : DifferentialPolynomial F[X] 0} (hQ : Irreducible Q)
+    (hder : MvPolynomial.pderiv (some 0) Q ≠ 0) :
+    Polynomial.resultant (ordinaryRootPresentation Q)
+      (ordinaryRootPresentation Q).derivative (Q.degreeOf (some 0))
+      (Q.degreeOf (some 0) - 1) ≠ 0 := by
+  let A := ordinaryRootPresentation Q
+  have hirr : Irreducible A := irreducible_ordinaryRootPresentation hQ
+  have hderA : A.derivative ≠ 0 := by
+    rw [show A = ordinaryRootPresentation Q from rfl, derivative_ordinaryRootPresentation]
+    exact ordinaryRootPresentation_ne_zero hder
+  have hres := Polynomial.resultant_derivative_ne_zero_of_irreducible A hirr hderA
+  rw [natDegree_ordinaryRootPresentation] at hres
+  exact hres
+
 /-- If the derivative resultant is nonzero at a challenge, every actual root has nonzero
 separant. -/
 theorem ordinary_separant_ne_zero_of_resultant_eval_ne_zero
@@ -266,6 +270,8 @@ theorem exists_exceptional_ordinary_separant
   apply ordinary_separant_ne_zero_of_resultant_eval_ne_zero Q hpos w P _ hroot
   intro hzero
   exact hw (hfinite.mem_toFinset.mpr hzero)
+
+end
 
 end PolynomialDifferential
 
