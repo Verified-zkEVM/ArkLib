@@ -1854,6 +1854,19 @@ the exhaustive coefficient scan (`effectiveRegularCoefficients_eq_singleton_of_d
 depend on the executable root-finding layer `ReedSolomon/Computation/RootFinding/Lifting/`, which
 is not ported.
 
+## `ArkLib/Data/Polynomial/Differential/FrobeniusEquation.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/Frobenius/Equation.lean` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`, namespace `ReedSolomon.HiddenDerivative`.
+
+`flatVariableEquiv`, `rootFirstEquiv`, `baseVariableEquiv`, `baseFlatten`, `ordinaryFlatten`, and `ordinaryUnflatten` keep their names in `PolynomialDifferential`. The flattening, evaluation, derivative, unflattening, and degree-transport declarations also keep their names, except `ordinaryFlatten_Y`, renamed `ordinaryFlatten_root` to identify the root coordinate. These APIs are generalized from fields to commutative semirings, with `Nontrivial` assumptions where degree bounds require them.
+
+`challengeHeightLE_ordinaryUnflatten_monomial` and `challengeHeightLE_ordinaryUnflatten_of_degreeOf_le` become `coeffNatDegreeLE_ordinaryUnflatten_monomial` and `coeffNatDegreeLE_ordinaryUnflatten_of_degreeOf_le`, using the existing `MvPolynomial.CoeffNatDegreeLE` predicate. `differentialSpecialization_map_eq_eval₂_flatten`, `eval_differentialSpecialization_map_eq_flatten`, and `expand_differentialSpecialization_map_eq_eval₂_flatten` keep their names and generalize from fields to commutative semirings. `frobeniusSpecialization_pow` keeps its name and generalizes from perfect fields to commutative rings with `ExpChar` and `PerfectRing`. `frobeniusSpecialization_eq_zero` and `exists_frobeniusEquation` keep their names and generalize to commutative rings without zero divisors with `ExpChar` and `PerfectRing`. The existence theorem also requires `[Nontrivial E]`; zero transport does not.
+
+`map_rootExpansion` and `eval₂_rootExpansion` become `MvPolynomial.map_rootExpansion` and `MvPolynomial.eval₂_rootExpansion`. They are generalized to commutative semirings and placed with the generic root-expansion API. The existing Frobenius contraction and inverse-twist preservation APIs replace the source fraction-ring aggregate API.
+
+Not ported: `ordinaryFlatCases_one` remains a private proof helper because it is a `Fin.cases` computation, not a reusable domain API. `frobeniusEquation_nonconstant_coefficient_canary` is restated as an acceptance-test example. The two source `ChallengeHeightLE` lemmas are represented by the renamed `CoeffNatDegreeLE` lemmas. No declaration was blocked or left without a proof.
+
 ## `ArkLib/Data/Polynomial/Differential/JetDegree.lean`
 
 The core definitions and specialization bounds are ported from the differential and
@@ -3023,6 +3036,13 @@ Ported from `ArkLib/ToMathlib/MvPolynomial/RootContraction.lean` at the source r
 hypotheses weaken from `IsDomain` to `CommSemiring`, and to `NoZeroDivisors` for
 `degreeOf_rootContraction_none_mul`, which now takes `pderiv none P = 0` instead of the univariate
 derivative hypothesis.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/Frobenius/Equation.lean` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`.
+
+`map_rootExpansion` and `eval₂_rootExpansion` become `MvPolynomial.map_rootExpansion` and `MvPolynomial.eval₂_rootExpansion`, generalized to coefficient maps and evaluation into commutative semirings. `MvPolynomial.map_optionEquivLeft` is relocated from `ArkLib/ToMathlib/MvPolynomial/PolynomialCoefficients.lean` with its name and statement preserved; `PolynomialCoefficients` publicly imports `RootContraction` to retain its visibility.
+
+No declaration was left unported. The `PolynomialCoefficients` change is the import needed to expose the relocated declaration.
 
 ## `ArkLib/ToMathlib/MvPolynomial/SupportWeight.lean`
 
