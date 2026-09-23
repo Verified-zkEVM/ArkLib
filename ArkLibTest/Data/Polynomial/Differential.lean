@@ -1484,15 +1484,15 @@ example :
   exact exists_forall_jetEvaluation_ne_zero_map f f.injective Q {0} 0 hregular
 
 example :
-    ∃ exceptional : Finset ℚ, exceptional.card ≤ 0 ∧
-      ∀ w ∉ exceptional, ∀ P : Polynomial ℚ,
-        differentialSpecialization
-          (challengeSpecialization (1 : DifferentialPolynomial (Polynomial ℚ) 0) w) P ≠ 0 := by
-  refine exists_exceptional_jet_independent_content
-    (Q := (1 : DifferentialPolynomial (Polynomial ℚ) 0)) (h := 0)
-    (hQ := one_ne_zero) (hdegree := by simp) ?_
-  simpa using (MvPolynomial.coeffNatDegreeLE_C
-    (σ := JetVariable 0) (R := ℚ) (p := Polynomial.C (1 : ℚ)) (h := 0) (by simp))
+    ∃ exceptional : Finset ℚ, exceptional.card ≤ 1 ∧ 0 ∈ exceptional := by
+  let Q : DifferentialPolynomial (Polynomial ℚ) 0 := MvPolynomial.C Polynomial.X
+  have hheight := MvPolynomial.coeffNatDegreeLE_C
+    (σ := JetVariable 0) (R := ℚ) (p := Polynomial.X) (h := 1) (by simp)
+  obtain ⟨exceptional, hcard, hregular⟩ :=
+    exists_exceptional_jet_independent_content Q (by simp [Q]) (by simp [Q]) hheight
+  refine ⟨exceptional, hcard, ?_⟩
+  by_contra hzero
+  have hspec : challengeSpecialization Q 0 = 0 := by simp [Q, challengeSpecialization]
+  exact hregular 0 hzero 0 (by rw [hspec]; rfl)
 end
-
 end PolynomialDifferential
