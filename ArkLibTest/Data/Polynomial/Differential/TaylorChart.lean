@@ -68,6 +68,71 @@ example : initialJetSeparant (0 : ℚ) (linearEquation ℚ) = 1 := by
   rw [← pderiv_last_initialJetEquation]
   simp [initialJetEquation, linearEquation, pderiv_X, Fin.last]
 
+/-- Specializing `tY₁ - Y₀` at `t = 0` gives a vanishing common numerator even though the
+separant vanishes; coefficient transport needs no regularity assumption. -/
+private abbrev parameterSingularEquation : DifferentialPolynomial (Polynomial ℚ) 1 :=
+  C (Polynomial.X) * X (some 1) - X (some 0)
+
+example :
+    map (Polynomial.evalRingHom (0 : ℚ))
+        (commonTaylorNumeratorOver ℚ (Polynomial.C 0) parameterSingularEquation 1 0) = 0 := by
+  simpa [parameterSingularEquation, commonTaylorNumerator, rationalTaylorNumerator,
+    initialJetSeparant, separant, pderiv_X] using
+      eval_commonTaylorNumeratorOver (F := ℚ) 0 0 parameterSingularEquation 1
+        ⟨0, by omega⟩ 1
+
+/-- At index `1`, the order-zero equation `Y₀ = tx` specializes from `t = 3` to common
+numerator `3`, which is nonzero. -/
+private abbrev parameterNonzeroEquation : DifferentialPolynomial (Polynomial ℚ) 0 :=
+  X (some 0) - C (Polynomial.X) * X none
+
+/-- The order-zero equation `Y₀ = 3x` has common numerator `3` at index `1`. -/
+private theorem specializedHigherCommonNumerator :
+    commonTaylorNumerator (0 : ℚ)
+      (X (some 0) - C (3 : ℚ) * X none : DifferentialPolynomial ℚ 0) 4 1 =
+        (C (3 : ℚ) : MvPolynomial (Fin 1) ℚ) := by
+  rw [commonTaylorNumerator]
+  have hsep : initialJetSeparant (0 : ℚ)
+      (X (some 0) - C (3 : ℚ) * X none : DifferentialPolynomial ℚ 0) = 1 := by
+    simp [initialJetSeparant, separant, pderiv_X]
+  rw [hsep]
+  simp only [one_pow, mul_one]
+  rw [rationalTaylorNumerator, dite_eq_right (by norm_num)]
+  have hres :
+      optionEquivLeft ℚ (Fin 1)
+        (universalTaylorResidual 1 (0 : ℚ)
+          (X (some 0) - C (3 : ℚ) * X none : DifferentialPolynomial ℚ 0)) =
+        Polynomial.C
+            ((monomial (Finsupp.single (0 : Fin 1) 1) (1 : ℚ)) :
+              MvPolynomial (Fin 1) ℚ) -
+          Polynomial.C (C (3 : ℚ)) * (Polynomial.C (C (0 : ℚ)) + Polynomial.X) := by
+    simp [universalTaylorResidual, universalTaylorJet, optionEquivLeft_monomial]
+  have hcoeff :
+      (optionEquivLeft ℚ (Fin 1)
+        (universalTaylorResidual 1 (0 : ℚ)
+          (X (some 0) - C (3 : ℚ) * X none : DifferentialPolynomial ℚ 0))).coeff 1 =
+        -C (3 : ℚ) := by
+    rw [hres]
+    simp
+  classical
+  norm_num [hcoeff, clearedSubstitution, rationalTaylorNumerator,
+    MvPolynomial.support_C]
+
+example :
+    map (Polynomial.evalRingHom (3 : ℚ))
+        (commonTaylorNumeratorOver ℚ (Polynomial.C 0) parameterNonzeroEquation 4 1) =
+      (C (3 : ℚ) : MvPolynomial (Fin 1) ℚ) ∧
+      (C (3 : ℚ) : MvPolynomial (Fin 1) ℚ) ≠ 0 := by
+  constructor
+  · rw [eval_commonTaylorNumeratorOver (F := ℚ) 0 3 parameterNonzeroEquation 2
+      ⟨1, by omega⟩ 4]
+    have hmap : map (Polynomial.evalRingHom (3 : ℚ)) parameterNonzeroEquation =
+        (X (some 0) - C (3 : ℚ) * X none : DifferentialPolynomial ℚ 0) := by
+      simp [parameterNonzeroEquation]
+    rw [hmap]
+    exact specializedHigherCommonNumerator
+  · norm_num
+
 /-- Over `ℚ`, the common numerator of `c₂` for `y' = 2x` with any exponent `τ ≥ 1` evaluates to
 the Taylor coefficient `1` of `X ^ 2` at the jet of `X ^ 2`. -/
 example (τ : ℕ) (hτ : 1 ≤ τ) :

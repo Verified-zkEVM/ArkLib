@@ -76,21 +76,34 @@ example :
     MvPolynomial.degreeOf_C_mul _ _ (mem_nonZeroDivisors_of_ne_zero (by decide)),
     MvPolynomial.degreeOf_X_self]
 
-/-- Injectivity is needed in `jetTotalDegree_map_eq`: `2 * Y₀` over `ℤ` has total jet degree at
-least its jet degree `1`, and its image over `ZMod 2` is `0`, of total jet degree `0`. -/
+/-- Reduction modulo `2` sends `2Y₀` from jet degree `1` to degree `0`; the map bound
+specializes to these concrete degrees. -/
 example :
     let Q : DifferentialPolynomial ℤ 0 := 2 * MvPolynomial.X (some 0)
-    jetTotalDegree (MvPolynomial.map (Int.castRingHom (ZMod 2)) Q) = 0 ∧
-      1 ≤ jetTotalDegree Q := by
+    jetTotalDegree Q = 1 ∧
+      jetTotalDegree (MvPolynomial.map (Int.castRingHom (ZMod 2)) Q) = 0 ∧
+      jetTotalDegree (MvPolynomial.map (Int.castRingHom (ZMod 2)) Q) ≤ jetTotalDegree Q := by
   intro Q
   have hmap : MvPolynomial.map (Int.castRingHom (ZMod 2)) Q = 0 := by
     simp [Q, CharTwo.two_eq_zero]
-  refine ⟨by rw [hmap]; exact Nat.le_zero.mp ((jetTotalDegree_le_iff _ 0).mpr (by simp)), ?_⟩
-  refine le_of_eq_of_le ?_ (jetDegree_le_total Q 0)
-  simp only [Q, jetDegree]
-  rw [show (2 : DifferentialPolynomial ℤ 0) = MvPolynomial.C 2 from rfl,
-    MvPolynomial.degreeOf_C_mul _ _ (mem_nonZeroDivisors_of_ne_zero (by decide)),
-    MvPolynomial.degreeOf_X_self]
+  have hweight : jetDegreeWeight (d := 0) = Pi.single (some (0 : Fin 1)) 1 := by
+    funext i
+    cases i with
+    | none => simp [jetDegreeWeight]
+    | some j =>
+      have hj : j = 0 := Fin.ext (by omega)
+      subst j
+      simp [jetDegreeWeight]
+  have hsource : jetTotalDegree Q = 1 := by
+    rw [jetTotalDegree, hweight, MvPolynomial.weightedTotalDegree_piSingle]
+    change jetDegree Q 0 = 1
+    simp only [Q, jetDegree]
+    rw [show (2 : DifferentialPolynomial ℤ 0) = MvPolynomial.C 2 from rfl,
+      MvPolynomial.degreeOf_C_mul _ _ (mem_nonZeroDivisors_of_ne_zero (by decide)),
+      MvPolynomial.degreeOf_X_self]
+  refine ⟨hsource, ?_, jetTotalDegree_map_le (Int.castRingHom (ZMod 2)) Q⟩
+  rw [hmap]
+  exact Nat.le_zero.mp ((jetTotalDegree_le_iff _ 0).mpr (by simp))
 
 /-- `JetDegreeCastsNeZero` for `Y₀ ^ 2` fails over `ZMod 2` because `(2 : ZMod 2) = 0`, and the
 extension to `E₄` does not repair it. -/
