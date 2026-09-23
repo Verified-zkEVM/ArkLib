@@ -743,6 +743,35 @@ the free-order extension was contributed by Pratyush Mishra. All eight definitio
 parameter data only: no theorem here or in the source proves that it bounds a list, since that
 needs a root-counting theorem of Kopparty that is not formalized. -/
 
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/FiniteRateParameters.lean`
+
+Ported from `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/FiniteRateParameters.lean` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`, namespace `ReedSolomon.HiddenDerivative`.
+
+`firstOrderRateDerivativeCap`, `firstOrderRateJetDegree`, `FirstOrderFiniteRateTest`,
+`firstOrderNormalizedSourceCount`, `firstOrderNormalizedRankCount`,
+`firstOrderRateChallengeDegree`, `FirstOrderFiniteRateParameters` and its
+`derivativeCap`, `jetDegree`, `rankCount`, `sourceCount`, `challengeDegree`, and
+`sourceCount_gt_rankCount` declarations keep their names. The two existence theorems,
+`exists_firstOrderFiniteRateParameters_of_tendsto` and
+`exists_firstOrderFiniteRateParameters_of_rate_limits`, and the rational declarations
+`firstOrderRationalSourceCount`, `FirstOrderRationalFiniteTest`, and its decidability instance
+also keep their names. The certificate's count fields use the existing generic
+`firstOrderRankCount` and `firstOrderSourceCount`.
+
+The dimension bound is placed in `RoundedCounts.lean` and renamed from
+`firstOrderRateSourceCount_le_dimensionCount` to
+`firstOrderSourceCount_mul_le_firstOrderDimensionCount`; it is generalized to the generic count
+API.
+
+Not ported: `firstOrderRateSourceCount` and `firstOrderRateRankCount` are covered by
+`firstOrderSourceCount` and `firstOrderRankCount`. The cubic rank upper bound and its rate-count
+corollary are covered by the existing `firstOrderRankCubicUpperCount` and
+`firstOrderRankCount_le_cubicUpperCount`. The certified enlarged-rank bound is covered by the
+existing `certifiedEnlargedRankBound_one_eq_firstOrderRateRankCount`, generalized to every
+higher-jet budget. The scaled kernel-height bound follows from the stronger
+`scaledKernelHeight_le_floor`; the source-shaped max-one bound is derived in the acceptance test.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/HybridConstants.lean`
 
 Ported from
@@ -2423,6 +2452,15 @@ same statements. `QuadraticStaircase.square_div_two_le_sum` weakens the source h
 to `0 ≤ L`. The source file imported `CubicStaircase` without using it; that import is dropped.
 The source consumers (`RatePartition/Area.lean` and `PartitionSupport/Dimension.lean`) are not yet
 ported.
+
+## `ArkLib/ToMathlib/Finset/SumRangeFrom.lean`
+
+Ported from `ArkLib/ToMathlib/Finset/SumRangeFrom.lean` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`, namespace `Finset`.
+
+`sumRangeFrom`, `sumRangeFrom_add`, `sumRangeFrom_four`, `sumRangeFrom_four_eq`, and
+`sumRangeFrom_two_eq` keep their names. The API works for any additive commutative monoid; the
+split theorem reuses Mathlib's range-splitting theorem. No declarations were deferred or omitted.
 
 ## `ArkLib/ToMathlib/LinearAlgebra/Matrix/InvertibleCombination.lean`
 
