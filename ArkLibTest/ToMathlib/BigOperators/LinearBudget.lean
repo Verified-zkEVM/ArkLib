@@ -36,7 +36,8 @@ example : (1 : ℚ) + ∑ i ∈ Finset.range 3, (i : ℚ) ^ 2 / 2 ≤ 2 * 4 + (1
 /-- `0 ≤ r` is needed: with `s = ∅`, `r = H = -1`, `c = 2`, `e = B = 0`, the remaining
 hypotheses hold and `r + ∑ ≤ c * H + e * B` reads `-1 ≤ -2`. -/
 example :
-    (1 : ℤ) ≤ 2 ∧ (0 : ℤ) ≤ 0 ∧ (-1 : ℤ) + ∑ _i ∈ (∅ : Finset ℕ), (0 : ℤ) ≤ -1 ∧
+    (1 : ℤ) ≤ 2 ∧ (0 : ℤ) ≤ 0 ∧
+      (-1 : ℤ) + ∑ _i ∈ (∅ : Finset ℕ), (0 : ℤ) ≤ -1 ∧
       ∑ _i ∈ (∅ : Finset ℕ), (0 : ℤ) ≤ 0 ∧
       ¬ ((-1 : ℤ) + ∑ _i ∈ (∅ : Finset ℕ), (0 : ℤ) ≤ 2 * (-1) + 0 * 0) := by
   norm_num
@@ -47,5 +48,35 @@ example :
     (0 : ℚ) ≤ 1 ∧ (1 : ℚ) + ∑ _i ∈ (∅ : Finset ℕ), (0 : ℚ) ≤ 1 ∧
       ¬ ((1 : ℚ) + ∑ _i ∈ (∅ : Finset ℕ), (0 : ℚ) ≤ 0 * 1 + 0 * 0) := by
   norm_num
+
+/-- The weights `0, 1, 0` give height `1`, five slots, and a strict surplus for one row. -/
+example :
+    Finset.slotSurplusHeight (Finset.range 3) (fun i ↦ i % 2) 1 1 = 1 ∧
+      Finset.sum (Finset.range 3) (fun i ↦
+        Finset.slotSurplusHeight (Finset.range 3) (fun j ↦ j % 2) 1 1 + 1 - i % 2) = 5 ∧
+      2 < 5 := by
+  have hheight : Finset.slotSurplusHeight (Finset.range 3) (fun i ↦ i % 2) 1 1 = 1 := by
+    decide
+  have hslots : Finset.sum (Finset.range 3) (fun i ↦
+      Finset.slotSurplusHeight (Finset.range 3) (fun j ↦ j % 2) 1 1 + 1 - i % 2) = 5 := by
+    rw [hheight]
+    decide
+  have hsurplus :
+      1 * (Finset.slotSurplusHeight (Finset.range 3) (fun i ↦ i % 2) 1 1 + 1) <
+        Finset.sum (Finset.range 3) (fun i ↦
+          Finset.slotSurplusHeight (Finset.range 3) (fun j ↦ j % 2) 1 1 + 1 - i % 2) :=
+    Finset.rows_mul_slotSurplusHeight_add_one_lt_sum_tsub (Finset.range 3)
+      (fun i ↦ i % 2) 1 1 (by decide) (by intro i hi; omega)
+  refine ⟨hheight, hslots, ?_⟩
+  rw [hslots, hheight] at hsurplus
+  change 2 < 5 at hsurplus
+  exact hsurplus
+
+/-- With as many rows as columns, the zero-denominator height can provide no strict surplus. -/
+example :
+    ¬ (1 * (Finset.slotSurplusHeight ({0} : Finset ℕ) (fun _ ↦ 0) 0 1 + 1) <
+      ({0} : Finset ℕ).sum (fun _ ↦
+        Finset.slotSurplusHeight ({0} : Finset ℕ) (fun _ ↦ 0) 0 1 + 1)) := by
+  norm_num [Finset.slotSurplusHeight]
 
 end LinearBudgetTest
