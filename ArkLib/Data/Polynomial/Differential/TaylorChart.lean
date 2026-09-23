@@ -49,7 +49,7 @@ agreement with `k` distinct points determine the initial jet.
   `aeval_commonTaylorNumerator`: the cleared coefficients and their degree bound
   `rationalTaylorCutDegreeBound Q τ = 1 + τ (v - 1)`.
 * `commonTaylorNumeratorOver_eq` and `map_commonTaylorNumeratorOver_eq`: field specialization of
-  the algebra-valued common numerator.
+  the algebra-valued common numerator, the latter along any `F`-algebra map.
 * `aeval_commonTaylorNumerator_eq_zero`: on `S ≠ 0`, a vanishing coefficient makes its common
   numerator vanish for every exponent.
 * `rationalTaylorMap_injective` and `rationalTaylorMap_polynomialJet`: the chart keeps the initial
@@ -97,11 +97,6 @@ theorem map_initialJetEquation {S : Type*} [CommSemiring S] (f : R →+* S) (cen
   congr 1
   funext i
   cases i <;> simp
-
-/-- The initial separant is the initial equation of the separant. -/
-theorem initialJetEquation_separant (center : R) (Q : DifferentialPolynomial R r) :
-    initialJetEquation center (separant Q (Fin.last r)) = initialJetSeparant center Q :=
-  rfl
 
 /-- Evaluating the initial equation at a jet is `jetEvaluation` of `Q` at `center`. -/
 theorem aeval_initialJetEquation (center : R) (Q : DifferentialPolynomial R r)
@@ -213,16 +208,6 @@ theorem map_commonTaylorNumeratorOver_eq {A E : Type*} [CommRing A] [Algebra F A
       commonTaylorNumerator (φ center) (map φ.toRingHom Q) τ l := by
   rw [map_commonTaylorNumeratorOver, commonTaylorNumeratorOver_eq]
 
-/-- Evaluating a polynomial parameter specializes a common Taylor numerator. -/
-theorem eval_commonTaylorNumeratorOver (center z : F)
-    (Q : DifferentialPolynomial (Polynomial F) r) (K : ℕ) (l : Fin K)
-    (τ : ℕ := 2 * K) :
-    map (Polynomial.evalRingHom z)
-        (commonTaylorNumeratorOver F (Polynomial.C center) Q τ l.val) =
-      commonTaylorNumerator center (map (Polynomial.evalRingHom z) Q) τ l.val := by
-  simpa using map_commonTaylorNumeratorOver_eq (F := F) (Polynomial.aeval z)
-    (Polynomial.C center) Q τ l.val
-
 /-- If `2(l - r) - 1 ≤ τ`, the common numerator of `c_l` has total degree at most
 `1 + τ (jetTotalDegree Q - 1)`. -/
 theorem totalDegree_commonTaylorNumerator_le (center : F) (Q : DifferentialPolynomial F r)
@@ -311,14 +296,6 @@ def rationalTaylorPolynomial (center : F) (Q : DifferentialPolynomial F r) (K : 
     (jet : Fin (r + 1) → F) : Polynomial F :=
   Polynomial.centeredCoefficientPrefix center (rationalTaylorCoefficient center Q jet) K
 
-/-- The Taylor coefficient of the reconstruction of order `i` is the rational coefficient `c_i`
-for `i < K`, and zero otherwise. -/
-theorem coeff_taylor_rationalTaylorPolynomial (center : F) (Q : DifferentialPolynomial F r)
-    (K : ℕ) (jet : Fin (r + 1) → F) (i : ℕ) :
-    (Polynomial.taylor center (rationalTaylorPolynomial center Q K jet)).coeff i =
-      if i < K then rationalTaylorCoefficient center Q jet i else 0 :=
-  Polynomial.coeff_taylor_centeredCoefficientPrefix _ _ _ _
-
 /-- The reconstruction evaluates at `x` to `∑_{l < K} c_l (x - center) ^ l`. -/
 theorem eval_rationalTaylorPolynomial (center : F) (Q : DifferentialPolynomial F r) (K : ℕ)
     (jet : Fin (r + 1) → F) (x : F) :
@@ -330,8 +307,7 @@ theorem eval_rationalTaylorPolynomial (center : F) (Q : DifferentialPolynomial F
     Polynomial.taylor_eval] using he
 
 /-- For `r < K`, the reconstruction has the initial jet `jet`. -/
-theorem polynomialJet_rationalTaylorPolynomial (center : F)
-    (Q : DifferentialPolynomial F r)
+theorem polynomialJet_rationalTaylorPolynomial (center : F) (Q : DifferentialPolynomial F r)
     {K : ℕ} (hK : r < K) (jet : Fin (r + 1) → F) :
     polynomialJet (d := r) center (rationalTaylorPolynomial center Q K jet) = jet := by
   rw [rationalTaylorPolynomial, polynomialJet,
@@ -357,7 +333,7 @@ theorem rationalTaylorPolynomial_polynomialJet (center : F) (Q : DifferentialPol
     rationalTaylorPolynomial center Q K (polynomialJet center P) = P := by
   apply Polynomial.taylor_injective center
   ext i
-  rw [coeff_taylor_rationalTaylorPolynomial]
+  rw [rationalTaylorPolynomial, Polynomial.coeff_taylor_centeredCoefficientPrefix]
   split_ifs with hi
   · exact rationalTaylorCoefficient_eq_solution center Q P hsolution hseparant i
       (fun j hj hji ↦ hbin j hj (hji.trans_lt hi))
@@ -374,7 +350,7 @@ theorem degree_rationalTaylorPolynomial_lt (center : F) (Q : DifferentialPolynom
     (rationalTaylorPolynomial center Q K jet).degree < k := by
   rw [← Polynomial.degree_taylor _ center, Polynomial.degree_lt_iff_coeff_zero]
   intro i hi
-  rw [coeff_taylor_rationalTaylorPolynomial]
+  rw [rationalTaylorPolynomial, Polynomial.coeff_taylor_centeredCoefficientPrefix]
   split_ifs with hiK
   · exact (aeval_commonTaylorNumerator_eq_zero_iff center Q jet (hτ ⟨i, hiK⟩) hS).mp
       (hhigh i (by exact_mod_cast hi) hiK)

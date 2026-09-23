@@ -573,7 +573,8 @@ example :
     simpa [constantJet] using
       rationalTaylorCoefficient_initial 0 (constantDerivativeEquation ℚ)
         (constantJet (F := ℚ)) ⟨0, by omega⟩
-  rw [eval_rationalTaylorPolynomial, Fin.sum_univ_one]; simp [h0]
+  rw [eval_rationalTaylorPolynomial, Fin.sum_univ_one]
+  simp [h0]
 
 private abbrev scaledEquation : DifferentialPolynomial ℚ 0 :=
   C (2 : ℚ) * X (some 0) - X none
@@ -620,7 +621,7 @@ example :
   have hcoeff : (Polynomial.taylor 0
       (rationalTaylorPolynomial 0 scaledEquation 2 (zeroJetVector (F := ℚ) 1))).coeff 1 =
         (1 / 2 : ℚ) := by
-    rw [coeff_taylor_rationalTaylorPolynomial]
+    rw [rationalTaylorPolynomial, Polynomial.coeff_taylor_centeredCoefficientPrefix]
     simp [rationalTaylorCoefficient_scaledEquation_one]
   have hnum := aeval_map_commonTaylorNumeratorOver_reconstruction_of_exponent (F := ℚ)
     rationalId 0 scaledEquation 2 4 (taylorExponentSufficient_two_mul 0 2)
@@ -631,7 +632,8 @@ example :
         (1 / 2 : ℚ) := by
     simpa [rationalId] using hcoeff
   rw [hSval, hcoeff'] at hnum
-  norm_num at hnum ⊢; exact hnum
+  norm_num at hnum ⊢
+  exact hnum
 
 /-- Symbolic high cuts for `Y₁` at the zero jet force the reconstruction to have degree below
 one. -/
@@ -739,21 +741,16 @@ example :
         rationalTaylorNumeratorOver_eq]
       simp [rationalTaylorNumerator, constantDerivativeEquation, initialJetSeparant,
         separant, constantJet]
-  have hcoeff0 : rationalTaylorCoefficient (0 : ℚ)
-      (map (Polynomial.aeval (R := ℚ) (0 : ℚ)).toRingHom
-        (constantDerivativeEquation (Polynomial ℚ)))
-      (constantJet (F := ℚ)) 0 = 1 := by
-    simpa [constantJet] using rationalTaylorCoefficient_initial (0 : ℚ)
-      (map (Polynomial.aeval (R := ℚ) (0 : ℚ)).toRingHom
-        (constantDerivativeEquation (Polynomial ℚ)))
-        (constantJet (F := ℚ)) ⟨0, by omega⟩
   have hSparse := sparse_rationalTaylorPolynomial_of_symbolic_cuts
     (φ := Polynomial.aeval (R := ℚ) (0 : ℚ)) (center := Polynomial.C (0 : ℚ))
     (Q := (constantDerivativeEquation (Polynomial ℚ))) (K := 2) (s := 2) (τ := 4)
     (hτ := taylorExponentSufficient_two_mul 1 2) (jet := constantJet (F := ℚ)) hS hcuts
   constructor
-  · rw [coeff_taylor_rationalTaylorPolynomial]
-    exact hcoeff0
+  · rw [rationalTaylorPolynomial, Polynomial.coeff_taylor_centeredCoefficientPrefix]
+    simpa [constantJet] using rationalTaylorCoefficient_initial (0 : ℚ)
+      (map (Polynomial.aeval (R := ℚ) (0 : ℚ)).toRingHom
+        (constantDerivativeEquation (Polynomial ℚ)))
+        (constantJet (F := ℚ)) ⟨0, by omega⟩
   · simpa using hSparse 1 (by decide)
 
 /-! ### Joint-degree numerator bound -/

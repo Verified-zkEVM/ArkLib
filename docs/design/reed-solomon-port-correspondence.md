@@ -2057,7 +2057,7 @@ longer takes `K`; `l` is a natural number instead of an element of `Fin K`.
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Symbolic/TaylorSpecialization.lean` at ArkLib revision
 `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
-`map_rationalTaylorNumeratorOver_eq` keeps its name and mathematical contract in the destination owner module. `eval_rationalTaylorNumeratorOver` and `eval₂AlgHom_rationalTaylorNumeratorOver` keep their names and source-shaped specializations.
+`map_rationalTaylorNumeratorOver_eq` keeps its name and mathematical contract in the destination owner module; it also handles polynomial evaluation as a field-valued algebra-map specialization.
 
 ## `ArkLib/Data/Polynomial/Differential/RationalTaylorJointDegree.lean`
 
@@ -2216,7 +2216,7 @@ Not ported: `exists_common_regular_center_algebraicClosure` is an algebra-map sp
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Symbolic/TaylorSpecialization.lean` at ArkLib revision
 `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
-`commonTaylorNumeratorOver_eq` is a new bridge identifying the algebra-valued common numerator with the field-valued definition. `map_commonTaylorNumeratorOver_eq` keeps its name and is generalized to the destination's natural Taylor index and arbitrary exponent, without a finite-index bound. `eval_commonTaylorNumeratorOver` keeps its name and specializes using the destination API's natural index through `l.val`.
+`commonTaylorNumeratorOver_eq` is a new bridge identifying the algebra-valued common numerator with the field-valued definition. `map_commonTaylorNumeratorOver_eq` keeps its name and is generalized to the destination's natural Taylor index and arbitrary exponent, without a finite-index bound; it also handles polynomial evaluation as a field-valued algebra-map specialization.
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Geometry/SolutionEmbedding.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 

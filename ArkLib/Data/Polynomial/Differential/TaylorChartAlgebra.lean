@@ -270,7 +270,7 @@ theorem aeval_map_commonTaylorNumeratorOver_reconstruction_of_exponent {E : Type
     simpa only [AlgHom.toRingHom_eq_coe, AlgHom.coe_toRingHom] using hS
   rw [map_commonTaylorNumeratorOver_eq,
     aeval_commonTaylorNumerator (φ center) (map φ.toRingHom Q) jet (hτ l) hS']
-  rw [coeff_taylor_rationalTaylorPolynomial]
+  rw [rationalTaylorPolynomial, Polynomial.coeff_taylor_centeredCoefficientPrefix]
   simp [l.isLt]
 
 /-- Vanishing symbolic common numerators outside multiples of `s` force the corresponding
@@ -291,7 +291,7 @@ theorem sparse_rationalTaylorPolynomial_of_symbolic_cuts {E : Type*} [Field E]
       φ center Q K τ hτ jet hS ⟨i, hiK⟩
     rw [hbridge] at hnum
     exact (mul_eq_zero.mp hnum).resolve_left (pow_ne_zero _ hS)
-  · simp [coeff_taylor_rationalTaylorPolynomial, hiK]
+  · simp [rationalTaylorPolynomial, Polynomial.coeff_taylor_centeredCoefficientPrefix, hiK]
 
 end
 
