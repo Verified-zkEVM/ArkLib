@@ -12,6 +12,7 @@ import ArkLib.ToMathlib.MvPolynomial.OptionRoots
 import ArkLib.ToMathlib.MvPolynomial.OptionWeightedDegree
 import ArkLib.ToMathlib.MvPolynomial.PolynomialCoefficients
 import ArkLib.ToMathlib.MvPolynomial.RadicalSplit
+import ArkLib.ToMathlib.MvPolynomial.RootContraction
 import ArkLib.ToMathlib.MvPolynomial.SchwartzZippel
 import ArkLib.ToMathlib.MvPolynomial.SupportWeight
 import ArkLib.ToMathlib.MvPolynomial.SupportWeightOffset
@@ -35,6 +36,8 @@ and specialization.
 
 open Finset MvPolynomial
 open scoped Polynomial
+
+local instance : Fact (Nat.Prime 2) := ⟨by decide⟩
 
 /-! ### Cleared substitution -/
 
@@ -113,6 +116,60 @@ example : ({Polynomial.X, -Polynomial.X} : Finset ℚ[X]).card ≤ 2 := by
   rw [hcard] at h
   omega
 
+/-! ### Root contraction -/
+
+/-- Expanding `X none + X (some 0)` by two evaluates at `2` as the original does at `4`. -/
+example : eval (fun j : Option (Fin 1) ↦ j.elim (2 : ℚ) (fun _ ↦ 3))
+    (rootExpansion 2 (X none + X (some 0) : MvPolynomial (Option (Fin 1)) ℚ)) = 7 := by
+  rw [eval_rootExpansion]
+  norm_num
+
+/-- Contracting the expansion by two recovers the two-variable linear polynomial. -/
+example : rootContraction 2 (rootExpansion 2 (X none + X (some 0) :
+    MvPolynomial (Option (Fin 1)) ℚ)) = X none + X (some 0) :=
+  rootContraction_rootExpansion (by norm_num) _
+
+/-- Contraction by two reads the coefficient at doubled distinguished exponent `4`. -/
+example : (rootContraction 2 (X none ^ 4 * X (some 0) ^ 2 :
+    MvPolynomial (Option (Fin 1)) ℚ)).coeff
+      (Finsupp.single none 2 + Finsupp.single (some 0) 2) = 1 := by
+  calc
+    _ = (X none ^ 4 * X (some 0) ^ 2 :
+        MvPolynomial (Option (Fin 1)) ℚ).coeff
+          (Finsupp.single none 4 + Finsupp.single (some 0) 2) :=
+      by
+        rw [coeff_rootContraction (s := 2) (by norm_num)
+          (P := (X none ^ 4 * X (some 0) ^ 2 :
+            MvPolynomial (Option (Fin 1)) ℚ))
+          (m := Finsupp.single none 2 + Finsupp.single (some 0) 2)]
+        congr 1
+        ext j
+        cases j with
+        | none => simp
+        | some i =>
+            fin_cases i
+            simp
+    _ = 1 := by
+      rw [X_pow_eq_monomial, X_pow_eq_monomial, monomial_mul_monomial, one_mul]
+      simp
+
+/-- Contraction preserves the degree in the other variable for `X none ^ 4 * X (some 0) ^ 2`. -/
+example : degreeOf (some (0 : Fin 1))
+      (rootContraction 2 (X none ^ 4 * X (some 0) ^ 2 :
+        MvPolynomial (Option (Fin 1)) ℚ)) ≤
+    degreeOf (some (0 : Fin 1)) (X none ^ 4 * X (some 0) ^ 2 :
+      MvPolynomial (Option (Fin 1)) ℚ) :=
+  degreeOf_rootContraction_some_le (by norm_num) _ _
+
+/-- In characteristic two, contracting `X none ^ 2 + X (some 0)` halves its degree in `none`. -/
+example : (rootContraction 2 (X none ^ 2 + X (some 0) :
+      MvPolynomial (Option (Fin 1)) (ZMod 2))).degreeOf none * 2 =
+    (X none ^ 2 + X (some 0) : MvPolynomial (Option (Fin 1)) (ZMod 2)).degreeOf none := by
+  apply degreeOf_rootContraction_none_mul 2 (by norm_num)
+  have htwo : (2 : MvPolynomial (Option (Fin 1)) (ZMod 2)) = 0 :=
+    CharP.cast_eq_zero _ 2
+  simp [htwo]
+
 /-! ### Radical factor split -/
 
 open UniqueFactorizationMonoid
@@ -126,6 +183,79 @@ private theorem radicalSplitPolynomial_ne_zero : radicalSplitPolynomial ≠ 0 :=
   intro h
   have h' := congrArg (eval₂Hom (RingHom.id ℚ) (fun _ : Fin 2 ↦ (1 : ℚ))) h
   norm_num [radicalSplitPolynomial] at h'
+
+private theorem rep_mk_X_degree :
+    degreeOf (0 : Fin 1) (Associates.mk (X 0 : MvPolynomial (Fin 1) ℚ)).rep = 1 := by
+  let c : Associates (MvPolynomial (Fin 1) ℚ) := Associates.mk (X 0)
+  have hmk : Associates.mk c.rep = Associates.mk (X 0 : MvPolynomial (Fin 1) ℚ) := by
+    simp [c]
+  have hassoc : Associated c.rep (X 0 : MvPolynomial (Fin 1) ℚ) :=
+    Associates.mk_eq_mk_iff_associated.mp hmk
+  have hX : (X 0 : MvPolynomial (Fin 1) ℚ) ≠ 0 := X_ne_zero _
+  have hc : c.rep ≠ 0 := by
+    intro hz
+    have hmk0 := hmk
+    rw [hz] at hmk0
+    exact (Associates.mk_ne_zero.mpr hX) (hmk0 ▸ rfl)
+  rcases hassoc.dvd_dvd with ⟨⟨q, hq⟩, ⟨r, hr⟩⟩
+  have hq0 : q ≠ 0 := by
+    intro hq0
+    rw [hq0, mul_zero] at hq
+    exact hX hq
+  have hr0 : r ≠ 0 := by
+    intro hr0
+    rw [hr0, mul_zero] at hr
+    exact hc hr
+  have hleft := MvPolynomial.degreeOf_mul_eq (n := (0 : Fin 1)) (p := c.rep) (q := q) hc hq0
+  have hright := MvPolynomial.degreeOf_mul_eq (n := (0 : Fin 1))
+    (p := (X 0 : MvPolynomial (Fin 1) ℚ)) (q := r) hX hr0
+  rw [← hq, degreeOf_X_self] at hleft
+  rw [← hr, degreeOf_X_self] at hright
+  change degreeOf (0 : Fin 1) c.rep = 1
+  omega
+
+private theorem radicalContent_X :
+    radicalContent (R := ℚ) (0 : Fin 1) (X 0 : MvPolynomial (Fin 1) ℚ) = 1 := by
+  classical
+  rw [radicalContent, show primeFactors (Associates.mk (X 0 : MvPolynomial (Fin 1) ℚ)) =
+    {Associates.mk (X 0 : MvPolynomial (Fin 1) ℚ)} by
+      rw [primeFactors, normalizedFactors_irreducible
+        ((Associates.irreducible_mk).2 X_prime.irreducible)]
+      simp]
+  have hfilter :
+      (({Associates.mk (X 0 : MvPolynomial (Fin 1) ℚ)} :
+          Finset (Associates (MvPolynomial (Fin 1) ℚ))).filter
+        (fun c ↦ degreeOf (0 : Fin 1) c.rep = 0)) = ∅ := by
+    ext c
+    constructor
+    · intro hc
+      simp only [Finset.mem_filter, Finset.mem_singleton] at hc
+      rcases hc with ⟨rfl, hdeg⟩
+      rw [rep_mk_X_degree] at hdeg
+      norm_num at hdeg
+    · simp
+  rw [hfilter]
+  simp
+
+private theorem radicalX_factor_sum_le :
+    ∑ _c ∈ positiveDegreeFactorClasses (0 : Fin 1) (X 0 : MvPolynomial (Fin 1) ℚ), 1 ≤ 1 := by
+  calc
+    _ ≤ ∑ c ∈ positiveDegreeFactorClasses (0 : Fin 1) (X 0 : MvPolynomial (Fin 1) ℚ),
+        degreeOf (0 : Fin 1) c.rep := by
+      apply Finset.sum_le_sum
+      intro _c hc
+      exact Nat.succ_le_of_lt (mem_positiveDegreeFactorClasses.mp hc).2
+    _ ≤ degreeOf (0 : Fin 1) (X 0 : MvPolynomial (Fin 1) ℚ) := by
+      have h := add_sum_degreeOf_positiveDegreeFactorClasses_le
+        (0 : Fin 1) (0 : Fin 1) (X 0 : MvPolynomial (Fin 1) ℚ)
+      rw [degreeOf_radicalContent] at h
+      simpa using h
+    _ = 1 := by simp
+
+private noncomputable abbrev exceptionalRootEvaluation (w : Fin 3) (v : Fin 2) :
+    MvPolynomial (Fin 1) ℚ →+* ℚ :=
+  eval₂Hom (RingHom.id ℚ) (fun _ : Fin 1 ↦
+    if w = 0 then (v.val : ℚ) else (v.val : ℚ) - 1)
 
 /-- The two radicals of a nonzero polynomial multiply to its radical representative. -/
 example :
@@ -146,28 +276,55 @@ example : totalDegree (radicalContent 0 radicalSplitPolynomial) +
       totalDegree radicalSplitPolynomial :=
   add_sum_totalDegree_positiveDegreeFactorClasses_le 0 radicalSplitPolynomial
 
-/-- The origin is captured by the bounded exceptional set for the zero locus of `X 0 * X 1`. -/
-example : ∃ ex : Finset Unit,
-    (ex.card : ℤ) ≤ 1 + ∑ _c ∈ positiveDegreeFactorClasses 0 radicalSplitPolynomial, (1 : ℤ) ∧
-      () ∈ ex := by
+/-- For the nonconstant polynomial `X`, a proper challenge exception leaves a root whose challenge
+is nonzero, so the combined exceptional-set conclusion has content. -/
+example : ∃ ex : Finset (Fin 3), (ex.card : ℤ) ≤ 2 ∧
+    ∃ w ∉ ex, ∃ v : Fin 2, exceptionalRootEvaluation w v (X 0) = 0 ∧ w ≠ 0 := by
+  let Q : MvPolynomial (Fin 1) ℚ := X 0
+  let Good : Fin 3 → Fin 2 → Prop := fun w _ ↦ w ≠ 0
   obtain ⟨ex, hcard, hgood⟩ := exists_exceptional_of_factor_exceptional
-    (R := ℚ) (σ := Fin 2) (K := ℚ) (Fn := MvPolynomial (Fin 2) ℚ →+* ℚ) (α := ℤ)
-    0 radicalSplitPolynomial_ne_zero (fun _ _ ↦ radicalSplitEvaluation) (fun _ _ ↦ False)
-    1 (fun _ ↦ 1)
+    (R := ℚ) (σ := Fin 1) (K := ℚ) (Fn := MvPolynomial (Fin 1) ℚ →+* ℚ) (α := ℤ)
+    0 (Q := Q) (X_ne_zero _) (fun w v ↦ exceptionalRootEvaluation w v) Good 1 (fun _ ↦ 1)
     (by
-      refine ⟨(univ : Finset Unit), by simp, ?_⟩
+      refine ⟨{0}, by norm_num, ?_⟩
       intro w hw v
-      exact (hw (Finset.mem_univ _)).elim)
+      simp [Q, radicalContent_X])
     (by
-      intro _c _hc
-      refine ⟨(univ : Finset Unit), by simp, ?_⟩
+      intro c hc
+      refine ⟨{0}, by norm_num, ?_⟩
       intro w hw v hzero
-      exact (hw (Finset.mem_univ _)).elim)
-  refine ⟨ex, hcard, ?_⟩
-  by_contra hnot
-  have hzero : radicalSplitEvaluation radicalSplitPolynomial = 0 := by
-    simp [radicalSplitEvaluation, radicalSplitPolynomial]
-  exact hgood () hnot () hzero
+      change w ≠ 0
+      simpa using hw)
+  have hsum :
+      (∑ c ∈ positiveDegreeFactorClasses (0 : Fin 1) Q, (1 : ℤ)) ≤ 1 := by
+    exact_mod_cast radicalX_factor_sum_le
+  have hcard' : (ex.card : ℤ) ≤ 2 := by
+    calc
+      (ex.card : ℤ) ≤ 1 + ∑ c ∈ positiveDegreeFactorClasses (0 : Fin 1) Q, (1 : ℤ) := hcard
+      _ ≤ 2 := by linarith
+  have hzero0 : exceptionalRootEvaluation 0 0 Q = 0 := by simp [exceptionalRootEvaluation, Q]
+  have h0 : (0 : Fin 3) ∈ ex := by
+    by_contra hnot
+    have h := hgood 0 hnot 0 hzero0
+    exact h (by decide)
+  have hnotall : 1 ∉ ex ∨ 2 ∉ ex := by
+    by_contra h
+    push Not at h
+    have hsub : (Finset.univ : Finset (Fin 3)) ⊆ ex := by
+      intro w hw
+      fin_cases w
+      · exact h0
+      · exact h.1
+      · exact h.2
+    have hcardNat : ex.card ≤ 2 := by exact_mod_cast hcard'
+    have hlarge : 3 ≤ ex.card := by
+      simpa using Finset.card_le_card hsub
+    omega
+  rcases hnotall with h1 | h2
+  · refine ⟨ex, hcard', 1, h1, 1, ?_, by decide⟩
+    simp [exceptionalRootEvaluation]
+  · refine ⟨ex, hcard', 2, h2, 1, ?_, by decide⟩
+    simp [exceptionalRootEvaluation]
 
 /-! ### Weighted degree -/
 
@@ -279,3 +436,37 @@ example :
     (univariateSpecialization (X 0 * X 1 : MvPolynomial (Fin 2) ℚ) 1 ![3, 5]).eval 2 = 6 := by
   rw [eval_univariateSpecialization]
   norm_num [Function.update]
+
+private def rootCountBox (i : Fin 2) : Finset ℚ := if i = 0 then {0} else {0, 1}
+
+private def rootCountPoints : Finset (Fin 2 → ℚ) := {![0, 0], ![0, 1]}
+
+private noncomputable def rootCountPolynomial : MvPolynomial (Fin 2) ℚ := X 0
+
+/-- The two roots of `X 0` in the box with a two-element second coordinate attain the line bound. -/
+example : rootCountPoints.card ≤ rootCountPolynomial.degreeOf 0 *
+    ∏ j ∈ (Finset.univ : Finset (Fin 2)).erase 0, (rootCountBox j).card := by
+  apply card_le_degreeOf_mul_prod_of_univariateSpecialization_ne_zero
+    rootCountBox 0 rootCountPolynomial rootCountPoints
+  intro x hx
+  simp only [rootCountPoints, Finset.mem_insert, Finset.mem_singleton] at hx
+  rcases hx with rfl | rfl
+  · refine ⟨?_, by simp [rootCountPolynomial], ?_⟩
+    · simp [Fintype.mem_piFinset, rootCountBox]
+    · exact univariateSpecialization_ne_zero_of_eval_pderiv_ne_zero (by simp [rootCountPolynomial])
+  · refine ⟨?_, by simp [rootCountPolynomial], ?_⟩
+    · simp [Fintype.mem_piFinset, rootCountBox]
+    · exact univariateSpecialization_ne_zero_of_eval_pderiv_ne_zero (by simp [rootCountPolynomial])
+
+/-- The same two roots have nonzero `0`-derivative, giving the derivative root-count bound. -/
+example : rootCountPoints.card ≤ rootCountPolynomial.degreeOf 0 *
+    ∏ j ∈ (Finset.univ : Finset (Fin 2)).erase 0, (rootCountBox j).card := by
+  apply card_le_degreeOf_mul_prod_of_eval_pderiv_ne_zero
+    rootCountBox 0 rootCountPolynomial rootCountPoints
+  intro x hx
+  simp only [rootCountPoints, Finset.mem_insert, Finset.mem_singleton] at hx
+  rcases hx with rfl | rfl
+  · refine ⟨?_, by simp [rootCountPolynomial], by simp [rootCountPolynomial]⟩
+    simp [Fintype.mem_piFinset, rootCountBox]
+  · refine ⟨?_, by simp [rootCountPolynomial], by simp [rootCountPolynomial]⟩
+    simp [Fintype.mem_piFinset, rootCountBox]

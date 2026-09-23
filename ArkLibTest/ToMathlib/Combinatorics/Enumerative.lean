@@ -20,14 +20,15 @@ example : #((range 6).bipartiteAbove (fun (_ : ℕ) b ↦ b % 2 = 0) 0) - #({2, 
     #(((range 6) \ {2, 3}).bipartiteAbove (fun (_ : ℕ) b ↦ b % 2 = 0) 0) :=
   card_bipartiteAbove_sub_card_le_card_bipartiteAbove_sdiff _ _ _ _
 
-/-- The sharp deletion estimate on a concrete relation with `s = {0, 1, 2}`. -/
-example : #({0, 1, 2} : Finset ℕ) * (1 - #({5, 6} : Finset ℕ)) ≤
-    ∑ b ∈ ({0, 1, 2} : Finset ℕ) \ {5, 6},
-      #(({0, 1, 2} : Finset ℕ).bipartiteBelow (fun a b : ℕ ↦ a = b) b) := by
-  apply card_mul_sub_card_le_sum_card_bipartiteBelow_sdiff
-  intro a ha
-  simp only [mem_insert, mem_singleton] at ha
-  rcases ha with rfl | rfl | rfl <;> decide
+/-- Deleting two of five related columns leaves a positive sharp incidence bound. -/
+example : #(univ : Finset (Fin 3)) * (3 - #({0, 1} : Finset (Fin 5))) ≤
+    ∑ b ∈ (univ : Finset (Fin 5)) \ {0, 1},
+      #((univ : Finset (Fin 3)).bipartiteBelow
+        (fun _ : Fin 3 => fun b : Fin 5 => b.val < 3) b) := by
+  simpa using card_mul_sub_card_le_sum_card_bipartiteBelow_sdiff
+    (r := fun _ : Fin 3 => fun b : Fin 5 => b.val < 3)
+    (s := univ) (t := univ) ({0, 1} : Finset (Fin 5)) (A := 3)
+    (by intro a ha; fin_cases a <;> decide)
 
 /-- A concrete full relation attains the complement deletion bound. -/
 example :

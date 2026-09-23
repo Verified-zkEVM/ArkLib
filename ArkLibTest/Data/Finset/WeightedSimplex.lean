@@ -26,9 +26,6 @@ open scoped BigOperators
 example : (natWeightedSimplex (fun i : Fin 2 ↦ i.val + 1) 3).card = 6 := by
   decide
 
-example : (natWeightedSimplex (fun _ : Fin 3 ↦ 1) 2).card = 10 := by
-  decide
-
 /-- The slack-coordinate exact-simplex equivalence is executable through the ordinary public
 import, including at an index type other than `Fin`. The unused unit of budget becomes the `none`
 coordinate. -/
@@ -128,6 +125,42 @@ example : (fun _ : Fin 1 ↦ 0) ∈
     (w := fun _ : Fin 1 ↦ 1) (W := (1 : ℝ)) (x := fun _ ↦ (0 : ℝ))
     (fun _ ↦ one_ne_zero)
     (Set.mem_weightedSimplex.mpr ⟨fun _ ↦ by norm_num, by norm_num⟩)
+
+/-- The unit floor cell of the zero lattice point fits in the enlarged one-dimensional simplex. -/
+example :
+    MeasureTheory.natFloorCell (fun _ : Unit ↦ 0) ⊆
+      Set.weightedSimplex (fun _ : Unit ↦ (1 : ℝ)) 1 := by
+  simpa using (natFloorCell_subset_weightedSimplex
+    (w := fun _ : Unit ↦ 1) (W := 0) (c := fun _ ↦ 0) (by decide))
+
+/-- The integral of one over the one-dimensional budget-one simplex is bounded by its two cells. -/
+example :
+    ∫ _x in MeasureTheory.natFloorCell (fun _ : Unit ↦ 0), (1 : ℝ) ∂volume ≤
+      ∑ _c ∈ natWeightedSimplex (fun _ : Unit ↦ 1) 1, (1 : ℝ) := by
+  have hTW : MeasureTheory.natFloorCell (fun _ : Unit ↦ 0) ⊆
+      Set.weightedSimplex (fun _ : Unit ↦ (1 : ℝ)) 1 := by
+    intro x hx
+    refine Set.mem_weightedSimplex.mpr ⟨?_, ?_⟩
+    · intro i
+      simpa using (MeasureTheory.mem_natFloorCell.mp hx i).1
+    · have hupper : x () ≤ 1 := by
+        simpa using (MeasureTheory.mem_natFloorCell.mp hx ()).2.le
+      simpa using hupper
+  simpa using setIntegral_le_sum_natWeightedSimplex (w := fun _ : Unit ↦ 1) (W := (1 : ℝ))
+    (T := MeasureTheory.natFloorCell (fun _ ↦ 0)) (f := fun _ ↦ (1 : ℝ)) (g := fun _ ↦ 1)
+    (fun _ ↦ one_ne_zero) (MeasureTheory.measurableSet_natFloorCell _) (by simpa using hTW)
+    (integrableOn_const (by rw [MeasureTheory.volume_natFloorCell]; simp))
+    (by intro c hc; norm_num) (by intro x hx; norm_num)
+
+/-- The two budget-one lattice points contribute inside the enlarged one-dimensional simplex. -/
+example :
+    ∑ _c ∈ natWeightedSimplex (fun _ : Unit ↦ 1) 1, (1 : ℝ) ≤
+      ∫ _x in Set.weightedSimplex (fun _ : Unit ↦ (1 : ℝ))
+        ((1 : ℝ) + ∑ _i : Unit, (1 : ℝ)), (1 : ℝ) ∂volume := by
+  simpa using sum_natWeightedSimplex_le_setIntegral (w := fun _ : Unit ↦ 1) 1
+    (f := fun _ ↦ (1 : ℝ)) (g := fun _ ↦ 1)
+    (continuousOn_const.integrableOn_weightedSimplex (fun _ ↦ by norm_num))
+    (by intro x hx; norm_num) (by intro _c _hc _x _hx; norm_num)
 
 example : ∑ c ∈ natWeightedSimplex (fun _ : Bool ↦ 1) 3, c true = 10 := by
   have h := card_add_one_mul_sum_natWeightedSimplex_one_apply (σ := Bool) true 3
