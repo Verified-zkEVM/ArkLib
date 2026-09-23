@@ -129,6 +129,37 @@ definitions are not ported; one `Finset.card_nbij'` proof replaces them.
 `exists_nonzero_firstOrder_interpolant_of_dimensionCount` moved to
 `Interpolation/FirstOrder/Interpolant.lean`.
 
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder/HeightCounting.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/FirstOrder/HeightCounting.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Namespace: `ReedSolomon.HiddenDerivative`.
+
+`firstOrderColumnSlotCount`, `firstOrderHeightSlotCount`, `firstOrderY₀Weight`,
+`firstOrder_y₀_le_μ`, `firstOrderColumnSlotCount_add_y₀Weight`,
+`firstOrderCertificateHeight`, `firstOrder_rowTotal_mul_height_lt_columnSlotCount`,
+`firstOrderColumnSlotCount_eq_heightSlotCount`, and
+`firstOrder_rowTotal_mul_height_lt_heightSlotCount` keep their names. The height is defined using
+the generic `Finset.slotSurplusHeight` API added to `ArkLib/ToMathlib/BigOperators/LinearBudget.lean`;
+the strict slot bound uses `Finset.rows_mul_slotSurplusHeight_add_one_lt_sum_tsub`.
+
+`sum_firstOrderDimensionIndex_height` → `sum_firstOrderDimensionCoordinates_height`; its sum is
+reindexed over the existing dimension-coordinate Finset.
+`ReedSolomon.HiddenDerivative.SymbolicWeightedSupportInterpolation.firstOrderColumns` →
+`ReedSolomon.HiddenDerivative.firstOrderColumns`; the matching `_exponent`, `_injective`, and
+`_eligible` declarations keep their suffixes under the new namespace and use `SourceColumn.ofExponent`.
+
+The dimension module receives `firstOrderCoordinatesEquiv` and its coordinate API from the source
+`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/FirstOrder/Counting.lean`:
+`firstOrderExponentDimensionIndex_y₀` → `firstOrderCoordinatesEquiv_y₀`. The exponent constructor
+and its coordinate and reconstruction theorems are public there. `card_firstOrderExponents` keeps
+its statement and uses the equivalence. These facts are now owned by
+`ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder/Dimension.lean`.
+
+No listed unit statement was omitted. The source's dependent `FirstOrderDimensionIndex`
+representation is not recreated; its coordinate statements use the dimension module's existing
+finite coordinate set.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder/Interpolant.lean`
 
 Ported from
