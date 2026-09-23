@@ -31,6 +31,25 @@ example : Real.log (27 * 1 / 20) + Real.log ((1 : ℕ) + 1 : ℝ) -
     1 / 1 * Real.log (6 * ((1 : ℕ) : ℝ)) = Real.log (9 / 20) := by
   rw [← log_rateGamma one_ne_zero one_pos, test_rateGamma_one]
 
+/-- The logarithmic identity in the form with separate `log 6` and `log d` terms. -/
+example {rate agreement : ℝ} {order : ℕ} (hrate : 0 < rate) (horder : 0 < order) :
+    Real.log (rateGamma rate agreement order) =
+      Real.log ((27 / 20 : ℝ) * rate) + Real.log ((order : ℝ) + 1) -
+        rate / agreement * (Real.log 6 + Real.log order) := by
+  rw [log_rateGamma hrate.ne' horder]
+  have hcoefficient : (27 * rate / 20 : ℝ) = (27 / 20 : ℝ) * rate := by ring
+  rw [hcoefficient]
+  have horderReal : (0 : ℝ) < order := by exact_mod_cast horder
+  rw [Real.log_mul (by norm_num : (6 : ℝ) ≠ 0) horderReal.ne']
+
+/-- The fixed-rate coefficient with the factor written as `(27/20) * rate`. -/
+example {rate : ℝ} (hrate : 0 < rate) :
+    fixedRateCoefficient rate =
+      rate * (Real.log 6 - Real.log ((27 / 20 : ℝ) * rate)) := by
+  rw [fixedRateCoefficient_eq hrate]
+  have hcoefficient : (27 * rate / 20 : ℝ) = (27 / 20 : ℝ) * rate := by ring
+  rw [hcoefficient]
+
 /-! ### The kept hypotheses are needed -/
 
 /-- `rateGamma_pos` needs `0 < d`: `Γ(1, 1, 0) = 0`. -/
@@ -95,5 +114,24 @@ example : ∃ gapBound : ℝ, 0 < gapBound ∧ ∀ gap : ℝ, 0 < gap → gap < 
     let order := ⌈Real.exp ((fixedRateCoefficient (1 / 2) + 1) / gap)⌉₊
     (1 / 2 : ℝ) + gap < 1 ∧ 500 ≤ order ∧ 1 < rateGamma (1 / 2) (1 / 2 + gap) order :=
   exists_small_gap_rate_gate (by norm_num) (by norm_num) one_pos
+
+/-! ### A strict gate from an exponent margin -/
+
+/-- At rate `1`, gap `1` and order `5`, the fixed-rate exponent margin gives `rateGamma > 1`. -/
+example : 1 < rateGamma 1 2 5 := by
+  have hcoef : fixedRateCoefficient 1 ≤ Real.log 5 := by
+    rw [fixedRateCoefficient]
+    norm_num only [one_mul, mul_one, mul_zero, add_zero]
+    apply Real.log_le_log <;> norm_num
+  have horder : fixedRateCoefficient 1 + 0 ≤ 1 * Real.log (5 : ℝ) := by
+    nlinarith [hcoef]
+  have hmargin : 0 < 0 + 1 * Real.log (27 * 1 / 20) := by
+    norm_num only [zero_add, one_mul]
+    exact Real.log_pos (by norm_num)
+  have h := rateGamma_gt_one_of_exponent_margin (rate := 1) (gap := 1) (epsilon := 0)
+    (order := 5) (by norm_num) (by norm_num) (by norm_num) horder hmargin
+  have hsum : (1 : ℝ) + 1 = 2 := by norm_num
+  rw [← hsum]
+  exact h
 
 end ReedSolomon.HiddenDerivative.RatePartition
