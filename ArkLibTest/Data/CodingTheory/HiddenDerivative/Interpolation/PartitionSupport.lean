@@ -9,7 +9,9 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.Dimension
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.FloorTransfer
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.LocalRank
+import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.MomentSource
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.RateBound
+import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.Moment
 
 /-!
 # Partition-support acceptance cases
@@ -19,6 +21,36 @@ Concrete strict inclusion, dimension, lower-bound, integral, rank, and interpola
 
 open Finset MvPolynomial MeasureTheory PolynomialDifferential ReedSolomon.HiddenDerivative
   ReedSolomon.HiddenDerivative.RatePartition
+
+/-- A concrete `d = 500` lower-tail moment feeds the partition-support dimension bound. -/
+example :
+    (27 / 10 : ℝ) / 2 * ((1 : ℕ) : ℝ) * 1 *
+        (((1 : ℕ) : ℝ) / ((500 : ℕ) : ℝ)) ^ 2 *
+        (((1 : ℕ) : ℝ) ^ 500 / (Nat.factorial 500 : ℝ) ^ 2) <
+      (Module.finrank ℚ (partitionSupportSpace ℚ 1 500 1 ((10 : ℕ) : ℝ) one_pos) : ℝ) := by
+  have hlog : (0 : ℝ) < 3000 := by norm_num
+  have hlogBound : Real.log 3000 ≤ 2999 := by
+    simpa only [show (3000 : ℝ) - 1 = 2999 by norm_num] using
+      Real.log_le_sub_one_of_pos hlog
+  have hlevel : Real.log 3000 / 500 * (1 : ℕ) ≤ (10 : ℕ) := by
+    have h : Real.log 3000 / 500 ≤ 10 := by
+      calc
+        Real.log 3000 / 500 ≤ 2999 / 500 := div_le_div_of_nonneg_right hlogBound (by norm_num)
+        _ ≤ 10 := by norm_num
+    norm_num at h ⊢
+    exact h
+  have hscale : (1 : ℝ) * (1 : ℕ) / (500 : ℕ) * Real.log 3000 ≤ Real.log 3000 / 500 := by
+    norm_num
+    ring_nf
+    exact le_rfl
+  have hmoment := setAverage_weightedSimplex_succ_lowerTail_sq_gt (d := 500)
+    (by norm_num) (W := (1 : ℝ)) one_pos
+  exact partitionSupport_dimension_gt_moment (F := ℚ) (D := 1) (d := 500) (W := 1)
+    (n := 1) (L := 10) (rate := 1) (level := Real.log 3000 / 500)
+    (logarithm := Real.log 3000) (μ := 27 / 10) (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by simpa using hlevel) (by simpa using hscale)
+    (by simpa only [Nat.cast_one, Nat.cast_ofNat,
+      show (6 : ℝ) * 500 = 3000 by norm_num] using hmoment)
 
 private theorem YOneWeights :
     fullHigherJetWeight (d := 1) (Finsupp.single (some 1) 1) = 0 ∧
