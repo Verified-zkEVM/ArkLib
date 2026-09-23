@@ -10,13 +10,64 @@ import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.Basic
 # Acceptance cases for capacity-gap list-bound certificates
 
 These cases compute a polynomial list bound and exercise the generic certificate interface,
-including its pointwise list conclusion and oversized-threshold case.
+including a concrete Reed–Solomon instance, its pointwise list conclusion, and the
+oversized-threshold case.
 -/
 
 open ReedSolomon ReedSolomon.ListDecoding
 
+private def singletonDomain : Fin 1 ↪ ZMod 2 where
+  toFun _ := 0
+  inj' _ _ _ := Subsingleton.elim _ _
+
+private theorem singletonThreshold :
+    agreementThreshold 1 (Fintype.card (Fin 1)) 1 = 2 := by
+  simp [agreementThreshold]
+
+private def singletonDecoder : DecoderCertificate singletonDomain 1
+    (agreementThreshold 1 (Fintype.card (Fin 1)) 1) 0 where
+  enumerate _ := ∅
+  isExact := by
+    intro received p
+    constructor
+    · simp
+    · intro hAccept
+      have hAgreement := Code.agree_le_card
+        (u := ReedSolomon.evalOnPoints singletonDomain p) (v := received)
+      rw [singletonThreshold] at hAccept
+      have hAgreementLt : Code.agree
+          (ReedSolomon.evalOnPoints singletonDomain p) received < 2 :=
+        hAgreement.trans_lt (by decide)
+      exact False.elim ((Nat.not_le_of_gt hAgreementLt) hAccept)
+  card_le := by
+    intro received
+    simp
+
+private noncomputable def singletonCapacityCertificate :
+    CapacityGapCertificate 1 singletonDomain 1 0 :=
+  CapacityGapCertificate.ofDecoderCertificateAndPointwiseBound
+    (by norm_num) (by decide) singletonDecoder (by
+      intro received
+      have hEmpty : agreeingPolynomials singletonDomain 1
+          (agreementThreshold 1 (Fintype.card (Fin 1)) 1) received = ∅ := by
+        ext p
+        simp only [Set.mem_empty_iff_false, iff_false]
+        intro hAgreement
+        have hAgreementLe := Code.agree_le_card
+          (u := ReedSolomon.evalOnPoints singletonDomain p) (v := received)
+        have hAgreementLt : Code.agree
+            (ReedSolomon.evalOnPoints singletonDomain p) received < 2 :=
+          hAgreementLe.trans_lt (by decide)
+        rw [singletonThreshold] at hAgreement
+        exact (Nat.not_le_of_gt hAgreementLt) hAgreement
+      rw [hEmpty]
+      simp)
+
 example : polynomialListBound 7 3 2 = 147 := by
   norm_num [polynomialListBound]
+
+example : PointwiseListBound 1 singletonDomain 1 0 (fun _ => 0) :=
+  singletonCapacityCertificate.pointwiseListBound _
 
 example {ι F : Type*} [Semiring F] [DecidableEq F] [Fintype ι]
     {delta : ℝ} {domain : ι ↪ F} {messageDim listBound : ℕ}
