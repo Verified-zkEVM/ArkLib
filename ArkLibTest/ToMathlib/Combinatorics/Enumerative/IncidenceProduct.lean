@@ -5,6 +5,7 @@ Authors: Quang Dao
 -/
 
 import ArkLib.ToMathlib.Combinatorics.Enumerative.IncidenceProduct
+import Mathlib.Basic.Real.Basic
 
 /-!
 # Acceptance tests for products of incidence ratios
@@ -19,10 +20,21 @@ threshold `k - d + 1`.
 The boundary examples show the hypotheses are needed: `A ≤ n` and `m' < A` in the ratio
 comparison, `A ≤ n` and `0 < b` in `one_le_incidenceFactor`, `d ≤ k + 1`, `k ≤ A` and `A ≤ n`
 in writing the dimension-sensitive product over thresholds, and `0 < b` in monotonicity in the
-dimension.
+dimension. The shifted-ratio estimate also needs `δ ≤ 1` and `δ * x ≤ y`.
 -/
 
 namespace IncidenceProductTest
+
+/-- For `δ = 1 / 2`, `x = 4`, `y = 2`, and offset `4`, the shifted ratio is `8 / 6 ≤ 2`. -/
+example : ((4 + 3 + 1 : ℕ) : ℝ) / ((2 + 3 + 1 : ℕ) : ℝ) ≤ 1 / (1 / 2 : ℝ) :=
+  natCast_shiftedRatio_le_one_div (1 / 2) (by norm_num) (by norm_num) 4 2 3 (by norm_num)
+
+/-- With a half-gap between `k = 2` and `A = 7`, the product through dimension two is at most
+`4`. -/
+example :
+    ((dimensionSensitiveIncidenceProduct 10 7 2 1 2 : ℚ) : ℝ) ≤ (1 / (1 / 2 : ℝ)) ^ 2 :=
+  dimensionSensitiveIncidenceProduct_le_one_div_pow_of_gap (1 / 2) 10 2 7 2
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
 
 /-- With `n = 10`, `A = 5`, `k = 3`, `b = 1`, the factors in dimensions one and two are `8 / 3`
 and `9 / 4`, with product `6`. -/
@@ -96,6 +108,14 @@ example : hybridDimensionSensitiveIncidenceProduct 10 5 2 3 1 1 ≤
   hybridDimensionSensitiveIncidenceProduct_le_two (by norm_num) (by norm_num) one_pos
 
 /-! ### The hypotheses are needed -/
+
+/-- `δ ≤ 1` is needed: for `δ = 2` and zero `x`, `y`, and offset, the ratio is `1 > 1 / 2`. -/
+example : ¬ (((0 + 0 + 1 : ℕ) : ℝ) / ((0 + 0 + 1 : ℕ) : ℝ) ≤ 1 / 2) := by
+  norm_num
+
+/-- `δ * x ≤ y` is needed: with `δ = 1`, `x = 1`, `y = 0`, and zero offset, the ratio is `2`. -/
+example : ¬ (((1 + 0 + 1 : ℕ) : ℝ) / ((0 + 0 + 1 : ℕ) : ℝ) ≤ 1) := by
+  norm_num
 
 /-- `A ≤ n` is needed in the ratio comparison: `(1 - 0) / (2 - 0) = 1 / 2` exceeds
 `(1 - 1) / (2 - 1) = 0`. -/
