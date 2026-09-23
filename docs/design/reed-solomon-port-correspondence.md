@@ -896,8 +896,7 @@ is now `lt_balancedSplit` and `balancedSplit_le`, the latter needing only `D ≤
 `hybridBalancedL_retention` is now `retainedCoordinateRatio_balancedSplit_le` (with `D < n` in
 place of `A ≤ n`), `fixedCoordinateRatio_balancedSplit_le` (with no hypotheses) and
 `sub_balancedSplit_le`. `hybridTheta_one_le` is now `one_le_agreementIncidenceRatio`.
-`hybridBalancedL_denominators_pos` is not ported; it follows by `omega` from the split bounds, as
-the test shows.
+`hybridBalancedL_denominators_pos` is not ported; it follows by `omega` from the split bounds.
 
 Exception constants: `hybridERaw` is now `firstOrderExceptionCharge`, `hybridEClosed` is now
 `firstOrderExceptionConstant`, and `hybridERaw_balanced_le_closed` is now
@@ -909,8 +908,8 @@ Exception constants: `hybridERaw` is now `firstOrderExceptionCharge`, `hybridECl
 `maxFirstOrderListCharge_le_firstOrderListConstant`, the private
 `hybridERawAtDegree_le_balanced` is now the public `minFirstOrderExceptionCharge_le`, and
 `hybridEOptimizedRaw_le_closed` is now
-`maxMinFirstOrderExceptionCharge_le_firstOrderExceptionConstant`, without `1 ≤ μ`. The numerical
-checks of the source are examples in the test.
+`maxMinFirstOrderExceptionCharge_le_firstOrderExceptionConstant`, without `1 ≤ μ`. The aggregate
+retains concrete checks of the agreement-incidence ratio and optimized exception bounds.
 
 New, with no source counterpart: `stageStaircase_nonneg`, `firstOrderListCharge_le_max` and
 `minFirstOrderExceptionCharge_le_maxMin`.
@@ -939,9 +938,10 @@ at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`. `automaticSourceC
 `firstOrderRankCount_floor_le`, `cube_mul_sourceDensity_le_firstOrderSourceCount` and
 `cube_mul_densityGap_sub_le_sourceCount_sub_rankCount`, stated at `M = ⌊β m⌋₊` for any `β` in
 range and without `0 < m`. `automatic_source_residual_le_public` is now
-`mul_max_rateResidual_le_max_residual`, which takes `D ≤ R n` directly; the acceptance test derives
-`automatic_degree_le_rate_mul`. `scaledKernelHeight_le_of_source_surplus` is now
-`scaledKernelHeight_le_floor`, bounding by the floor rather than `max 1 …` and without `0 < n`.
+`mul_max_rateResidual_le_max_residual`, which takes `D ≤ R n` directly; when `D = k - 1` and
+`k ≤ R n`, the degree bound follows from `Nat.sub_le`.
+`scaledKernelHeight_le_of_source_surplus` is now `scaledKernelHeight_le_floor`, bounding by the
+floor rather than `max 1 …` and without `0 < n`.
 `certifiedEnlargedRankBound_one_eq_firstOrderRateRankCount`, from `RateRounding.lean` in the same
 source directory, is now `certifiedEnlargedRankBound_one_eq_firstOrderRankCount` for every `W`.
 The threshold- and `β`-dependent definitions and theorems of `AutomaticRecipe.lean` are not ported
@@ -951,7 +951,7 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/Fi
 
 `firstOrderRateRankCount_floor_le_density_add_rounding_upper` → `firstOrderRankCount_floor_le_density_add_rounding_upper` and `firstOrderRateRankCount_floor_le_density_add_rounding` → `firstOrderRankCount_floor_le_density_add_rounding`. Their hypotheses and bounds are unchanged, using the already-ported rank-count name. The upper-branch theorem uses the sharper linear density with rounding loss `(2β + 3)m²`; the uniform theorem combines it with the existing cubic-envelope bound below `β = 1/2`.
 
-Not ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/FirstOrder/AllMSourceRounding.lean`: `firstOrderSourceDensity_mul_cube_le_rateSourceCount` is covered by `cube_mul_sourceDensity_le_firstOrderSourceCount`, generalized to any `mu` above the floor cutoff and to `m = 0`. The acceptance module derives the source-shaped ceiling-cap estimate from that generic theorem.
+Not ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/FirstOrder/AllMSourceRounding.lean`: `firstOrderSourceDensity_mul_cube_le_rateSourceCount` is covered by `cube_mul_sourceDensity_le_firstOrderSourceCount`, generalized to any `mu` above the floor cutoff and to `m = 0`. Taking `mu = ⌈m a / R⌉₊` gives the corresponding ceiling-cap bound whenever the source theorem's numeric hypotheses hold.
 
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/StageCharges.lean`
 
@@ -1112,8 +1112,8 @@ Ported from `UniformParameters.lean` of the same source directory. `uniformRateP
 `uniformBlockThreshold_guards`, without `0 < m` and with `δ ≤ 1` in place of `δ < 1`.
 `uniformRatePartition_high_ambient_of_m_le` is now `high_rate_ambient_guards`, without
 `0 < δ < 1`; `uniformRatePartition_low_ambient_of_m_le` is now `low_rate_padded_ambient_guards`,
-with `δ ≤ 1/2` in place of `δ < 6/25`. `uniformRatePartition_high_ambient` and
-`uniformRatePartition_low_ambient` are derived in the acceptance test.
+with `δ ≤ 1/2` in place of `δ < 6/25`. The corresponding source-shaped high-rate and padded
+low-rate ambient bounds follow by specializing these guards to the uniform order and multiplicity.
 `uniformRatePartition_totalJetDegree_le` is deferred: it needs `RatePartitionEligible` (#977).
 
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Substitution.lean`
@@ -3912,18 +3912,21 @@ Deferred: the forward direction for points in a proper algebraically closed exte
 Its proof needs the finitely many maximal ideals of the quotient, since the functions from a
 finite set to `K` do not form a finite-dimensional `k`-space.
 
-## `ArkLibTest/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition/FixedRateGate.lean`
+## `ArkLibTest/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition.lean` — fixed-rate gate cases
 
 Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/RatePartition/FixedRateGate.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
-The acceptance cases check the strict gate at rate `1/2` and gap `1/4`, the selected multiplicity's finite checks, finite-parameter existence, and failure of the strict gate at zero gap.
+The aggregate keeps a concrete strict gate at rate `1/2` and gap `1/4`, together with the selected multiplicity's finite checks and finite-parameter existence. The zero-gap boundary case was removed because the theorem's positive-gap hypothesis states the restriction directly.
 
-## `ArkLibTest/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition/UniformGamma.lean`
+## `ArkLibTest/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition.lean` — uniform rate-gamma cases
 
 Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/RatePartition/UniformGamma.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 The acceptance cases check concrete low- and high-rate base bounds and margins for arbitrary and uniform derivative orders, the uniform order's lower bound, and boundary cases for the small-gap and positive-order hypotheses.
 ## `ArkLibTest/Data/CodingTheory/HiddenDerivative/Interpolation/PartitionSupport.lean`
+The aggregate keeps concrete low- and high-rate base bounds and margins for the uniform derivative order, together with its lower bound.
+
+## `ArkLibTest/Data/CodingTheory/HiddenDerivative/Interpolation/PartitionSupport/MomentSource.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/RatePartition/SourceEstimate.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
