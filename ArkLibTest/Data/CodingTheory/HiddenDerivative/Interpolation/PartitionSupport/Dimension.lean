@@ -111,3 +111,52 @@ example : (Module.finrank ℚ (partitionSupportSpace ℚ 1 0 0 (1 / 2 : ℝ) one
   norm_num
 
 end
+
+/-! ### Staircase slots -/
+
+private theorem emptyTuple_mem_natWeightedSimplex :
+    (0 : Fin 0 → ℕ) ∈ natWeightedSimplex (fun i : Fin 0 => i.val + 1) 0 := by
+  apply (mem_natWeightedSimplex (w := fun i : Fin 0 => i.val + 1)
+    (hw := fun i => Nat.succ_ne_zero i.val)).2
+  simp
+
+private noncomputable def xCoefficientAreaSlot : PartitionSupportAreaSlot 2 0 0 3 :=
+  ⟨⟨0, emptyTuple_mem_natWeightedSimplex⟩, ⟨⟨0, by norm_num⟩, ⟨1, by norm_num⟩⟩⟩
+
+private noncomputable def constantCoefficientAreaSlot : PartitionSupportAreaSlot 2 0 0 3 :=
+  ⟨⟨0, emptyTuple_mem_natWeightedSimplex⟩, ⟨⟨0, by norm_num⟩, ⟨0, by norm_num⟩⟩⟩
+
+/-- At `D = 2` and `L = 3`, two valid staircase slots represent `X` and the constant monomial. -/
+example :
+    partitionSupportAreaSlotExponent xCoefficientAreaSlot none = 1 ∧
+      partitionSupportAreaSlotExponent constantCoefficientAreaSlot none = 0 := by
+  constructor <;> rfl
+
+/-- The distinct slots for `X` and the constant monomial have distinct exponents. -/
+example : partitionSupportAreaSlotExponent xCoefficientAreaSlot ≠
+    partitionSupportAreaSlotExponent constantCoefficientAreaSlot := by
+  intro h
+  have hX := congrArg (fun e => e none) h
+  change (1 : ℕ) = 0 at hX
+  omega
+
+/-- Each of these concrete area slots gives an exponent in the partition support. -/
+example :
+    partitionSupportAreaSlotExponent xCoefficientAreaSlot ∈
+      partitionSupportExponents 2 0 0 3 two_pos ∧
+      partitionSupportAreaSlotExponent constantCoefficientAreaSlot ∈
+        partitionSupportExponents 2 0 0 3 two_pos := by
+  constructor <;> apply mem_partitionSupportExponents.mpr
+  · exact partitionSupportAreaSlotExponent_eligible two_pos xCoefficientAreaSlot
+  · exact partitionSupportAreaSlotExponent_eligible two_pos constantCoefficientAreaSlot
+
+/-- At `D = 0`, no staircase slot represents the eligible exponent `Y₀`, so positive `D` is needed
+for the slot enumeration to cover the partition support. -/
+example : ¬ Nonempty (PartitionSupportAreaSlot 0 0 0 1) ∧
+    PartitionSupportEligible 0 0 0 1 (partitionSourceExponent 0 1 0) := by
+  constructor
+  · rintro ⟨⟨c, slot⟩⟩
+    have hbound := slot.1.isLt
+    norm_num at hbound
+  · rw [partitionSupportEligible_partitionSourceExponent_iff]
+    simp
