@@ -18,6 +18,7 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.Soundnes
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.JohnsonCertificate
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.Dimension
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.WeightedSupportCertificate
+import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.WeightedJohnsonCertificate
 import Mathlib.FieldTheory.RatFunc.Basic
 import Mathlib.Algebra.Field.ZMod
 
@@ -1399,3 +1400,35 @@ example :
   simp [localT]
 
 end SymbolicPartitionRankTest
+
+namespace WeightedJohnsonCertificateTest
+
+private def onePointEmbedding : Fin 1 ↪ ℚ where
+  toFun := fun _ => 0
+  inj' := by
+    intro i j _
+    exact Fin.ext (by omega)
+
+/- A one-point weighted system with four source slots and two row slots has a certificate. -/
+example : Nonempty (JohnsonSymbolicCertificate (F := ℚ) 1 2 2 1 1 0 4
+    onePointEmbedding (fun _ => 0) (fun _ => 0)) := by
+  apply exists_weighted_johnson_symbolic_certificate
+  · norm_num
+  · norm_num
+  · norm_num
+  · norm_num [johnsonSourceSlotCount]
+
+private theorem onePointWeightedArithmeticCertificate :
+    IsJohnsonWeightedCertificate 1 1 2 2 1 1 := by
+  norm_num [IsJohnsonWeightedCertificate, johnsonWeightedHeight,
+    johnsonWeightedHeightInt, johnsonWeightedMoment, johnsonWeightedSlope,
+    johnsonWeightedW, johnsonWeightedN, johnsonWeightedR, johnsonWeightedU,
+    johnsonWeightedT]
+
+/- The finite arithmetic certificate also supplies the interpolation surplus. -/
+example : Nonempty (JohnsonSymbolicCertificate (F := ℚ) 1 2 2 1 1 1 4
+    onePointEmbedding (fun _ => 0) (fun _ => 0)) := by
+  exact IsJohnsonWeightedCertificate.exists_symbolic onePointWeightedArithmeticCertificate
+    (by norm_num) (by norm_num) onePointEmbedding (fun _ => 0) (fun _ => 0)
+
+end WeightedJohnsonCertificateTest
