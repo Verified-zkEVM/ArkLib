@@ -223,14 +223,6 @@ example :
   · exact natDegree_differentialSpecialization_le exactDegreeEquation
       (Polynomial.X ^ 5) (by simp)
 
-/-! ### A concrete chain witness -/
-
-/-- The zero polynomial gives a regular chain witness for `Y₀ = 0` at the origin. -/
-example : ChainWitness (zeroJetEquation ℚ 0) 0 0 := by
-  refine .regular (highestActiveJet_zeroJetEquation (F := ℚ)) ?_ ?_
-  · simp [zeroJetEquation, differentialSpecialization, differentialSpecializationHom]
-  · simp [zeroJetEquation, separant, jetEvaluation, pderiv_X]
-
 /-- Every point is a chain witness for the zero solution of `Y₀ = 0`. -/
 example : ∃ R : Polynomial ℚ, R ≠ 0 ∧ R.natDegree ≤
     differentialWeightedDegree 0 (zeroJetEquation ℚ 0) ∧
@@ -244,15 +236,8 @@ example : ∃ R : Polynomial ℚ, R ≠ 0 ∧ R.natDegree ≤
 
 private abbrev challengeEquation : DifferentialPolynomial (Polynomial ℚ) 0 :=
   C Polynomial.X * X (some 0)
-
 private theorem separant_challengeEquation : separant challengeEquation 0 = C Polynomial.X := by
   simp [separant, pderiv_X]
-
-private theorem natDegree_coeff_challengeEquation_le (u : JetVariable 0 →₀ ℕ) :
-    (challengeEquation.coeff u).natDegree ≤ 1 := by
-  rw [coeff_C_mul, coeff_X]
-  split_ifs <;> simp
-
 private theorem challengeChain :
     SeparantChain challengeEquation [(challengeEquation, (0 : Fin 1))] (C Polynomial.X) := by
   have hjet : jetDegree challengeEquation 0 = 1 := by
@@ -276,45 +261,60 @@ private theorem challengeChain :
   intro j
   simp [DependsOnJet, jetDegree, MvPolynomial.degreeOf_C]
 
-/-- The `X · Y₀` chain over `ℚ[X]` has at most one exceptional specialization value. -/
-example : ∃ exceptional : Finset ℚ, exceptional.card ≤ 1 ∧
-    ∀ z ∉ exceptional, ∀ P : Polynomial ℚ,
-      differentialSpecialization
-        (MvPolynomial.map (Polynomial.eval₂RingHom (RingHom.id ℚ) z) challengeEquation) P = 0 →
-      ∃ stage ∈ [(challengeEquation, (0 : Fin 1))],
-        differentialSpecialization
-          (MvPolynomial.map (Polynomial.eval₂RingHom (RingHom.id ℚ) z) stage.1) P = 0 ∧
-        differentialSpecialization
-          (separant (MvPolynomial.map (Polynomial.eval₂RingHom (RingHom.id ℚ) z) stage.1)
-            stage.2) P ≠ 0 :=
-  challengeChain.exists_finset_regular_stage natDegree_coeff_challengeEquation_le
-    (RingHom.id ℚ) Function.injective_id
-
-/-! ### First-order chain charge -/
-
+private theorem natDegree_coeff_challengeEquation_le (u : JetVariable 0 →₀ ℕ) :
+    (challengeEquation.coeff u).natDegree ≤ 1 := by rw [coeff_C_mul, coeff_X]; split_ifs <;> simp
 private theorem constantDerivativeChain :
     SeparantChain (constantDerivativeEquation ℚ)
       [(constantDerivativeEquation ℚ, (1 : Fin 2))] (C 1) := by
   refine .active 1 (X_ne_zero _) highestActiveJet_constantDerivativeEquation_Q ?_
-  have hsep : separant (constantDerivativeEquation ℚ) 1 = C 1 := by
-    simp [separant, constantDerivativeEquation, pderiv_X]
-  rw [hsep]
-  refine .terminal (by simp) ((highestActiveJet_eq_none_iff _).mpr fun j hj ↦ ?_)
-  simp [DependsOnJet, jetDegree] at hj
-
-/-- The `Y₁` stage is charged against the first-order cap with `M = 1`. -/
+  simpa [constantDerivativeEquation, separant, pderiv_X] using
+    (SeparantChain.terminal (by simp)
+      ((highestActiveJet_eq_none_iff _).mpr fun j hj ↦ by
+        simp [DependsOnJet, jetDegree] at hj))
+/-- The charge along the chain for `Y₁` meets the cap with `M = 1`. -/
 example :
     ([(constantDerivativeEquation ℚ, (1 : Fin 2))].map
-      (firstOrderStageCharge (fun j ↦ (j : ℚ)) fun j r ↦ (j + r : ℚ))).sum ≤
-        firstOrderStageCap (fun j ↦ (j : ℚ)) (fun j r ↦ (j + r : ℚ)) 1 1 :=
+      (firstOrderStageCharge (fun j ↦ (j : ℚ)) fun j r ↦ (j : ℚ) + r)).sum ≤
+        firstOrderStageCap (fun j ↦ (j : ℚ)) (fun j r ↦ (j : ℚ) + r) 1 1 :=
   constantDerivativeChain.sum_firstOrderStageCharge_le
     jetTotalDegree_constantDerivativeEquation_le
-    (by simp [constantDerivativeEquation, jetDegree]) (fun j ↦ by positivity)
-    (fun j r ↦ by positivity) (fun _ _ h ↦ by exact_mod_cast h)
-    (fun _ h ↦ by simp only [add_le_add_iff_right]; exact_mod_cast h)
-    (fun h _ ↦ by simp only [add_le_add_iff_left]; exact_mod_cast h)
-    (fun j ↦ by simp)
+    (by simp [constantDerivativeEquation, jetDegree])
+    (fun _ ↦ by positivity) (fun _ _ ↦ by positivity)
+    (by intro j w h; exact Nat.cast_le.mpr h)
+    (by intro j w r _ hjw; simpa [add_comm] using
+      add_le_add_right (Nat.cast_le.mpr hjw) (r : ℚ))
+    (by intro j r q hr _; simpa [add_comm] using
+      add_le_add_left (Nat.cast_le.mpr hr) (j : ℚ))
+    (by intro j; exact le_add_of_nonneg_right (by positivity))
 
+/-- A nonempty bounded-solution family is bounded by costs along its separant chain. -/
+example : ∃ roots : Finset (BoundedSolution challengeEquation 0),
+    roots.Nonempty ∧ (roots.card : ℚ) ≤
+      ([(challengeEquation, (0 : Fin 1))].map fun _ ↦ 1).sum := by
+  let root : BoundedSolution challengeEquation 0 :=
+    ⟨⟨0, by simp⟩, by simp [challengeEquation, differentialSpecialization,
+      differentialSpecializationHom]⟩
+  let roots : Finset (BoundedSolution challengeEquation 0) := {root}
+  let accepts : Polynomial (Polynomial ℚ) → Prop := fun P ↦ P = root.polynomial
+  have hroots : ∀ solution ∈ roots, accepts solution.polynomial := fun s hs ↦
+    congrArg (fun s ↦ s.polynomial) (Finset.mem_singleton.mp hs)
+  have hregular : ∀ stage ∈ [(challengeEquation, (0 : Fin 1))],
+      ∀ regular : Finset (BoundedSolution stage.1 0),
+        (∀ solution ∈ regular, accepts solution.polynomial) →
+        (∀ solution ∈ regular,
+          differentialSpecialization (separant stage.1 stage.2) solution.polynomial ≠ 0) →
+        (regular.card : ℚ) ≤ 1 := by
+    intro stage hstage regular hregularAccepts _
+    rcases List.mem_singleton.mp hstage with rfl
+    exact_mod_cast (Finset.card_le_one.mpr fun a ha b hb ↦
+      Subtype.ext (Subtype.ext ((hregularAccepts a ha).trans (hregularAccepts b hb).symm)))
+  have hcount := boundedSolution_card_le_separantChainStageSum challengeChain 0 accepts roots
+    hroots (fun _ ↦ 1) hregular
+  exact ⟨roots, by simp [roots], hcount⟩
+
+/-- The `X · Y₀` chain has a one-value exceptional-set bound. -/
+example := challengeChain.exists_finset_regular_stage
+  natDegree_coeff_challengeEquation_le (RingHom.id ℚ) Function.injective_id
 /-! ### Derivative descent -/
 
 /-- `Y₁ ^ 2 * Y₀` in depth `1`. -/
@@ -967,11 +967,6 @@ private theorem castsNeZero_constantDerivativeEquation {F : Type*} [CommRing F] 
   obtain rfl : k = 1 := by omega
   simp
 
-/-- The active formal derivative of `Y₀` is nonzero over `ℚ`. -/
-example : separant (zeroJetEquation ℚ 0) 0 ≠ 0 := by
-  apply separant_ne_zero
-  norm_num [zeroJetEquation, jetDegree]
-
 /-- Over `ZMod 3`, `y' = 0` has exactly three solutions of degree at most `2`: the constants. -/
 example : Nat.card (BoundedSolution (constantDerivativeEquation (ZMod 3)) 2) = 3 := by
   have h : Nat.card (BoundedSolution (constantDerivativeEquation (ZMod 3)) 2) *
@@ -1003,6 +998,11 @@ example : Nat.card (BoundedSolution (constantDerivativeEquation (ZMod 3)) 2) = 3
     simpa [Nat.card_zmod] using Nat.card_le_card_of_injective solution hinj
   exact Nat.le_antisymm hupper hlower
 /-! ### Rational recursive and agreement bounds -/
+/-- The active formal derivative of `Y₀` is nonzero over `ℚ`. -/
+example : separant (zeroJetEquation ℚ 0) 0 ≠ 0 := by
+  apply separant_ne_zero
+  norm_num [zeroJetEquation, jetDegree]
+
 /-- The singleton root `0` of `Y₀ = 0` satisfies recursive, agreement, and gap bounds. -/
 example :
     (({zeroJetBoundedRoot} : Finset

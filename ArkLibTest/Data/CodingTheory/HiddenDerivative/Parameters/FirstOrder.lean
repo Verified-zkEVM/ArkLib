@@ -5,6 +5,7 @@ Authors: Quang Dao
 -/
 
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.AutomaticBounds
+import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.AgreementCounting
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.BranchwiseRate
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.DerivativeCappedCounting
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.FiniteRateParameters
@@ -556,6 +557,71 @@ private theorem commonTaylorNumerator_zeroJet_firstOrderUnitEquation {F : Type*}
   rw [aeval_commonTaylorNumerator (center := (0 : F)) (firstOrderUnitEquation F)
     (firstOrderZeroJet (F := F)) (τ := 4) (l := 1) (by omega) hS]
   simp [hc]
+
+private def firstOrderAgreementTestDomain : Fin 2 ↪ ℚ :=
+  ⟨fun i ↦ (i.val : ℚ), fun i j hij ↦ by
+    apply Fin.ext
+    change (i.val : ℚ) = (j.val : ℚ) at hij
+    exact_mod_cast hij⟩
+
+private def firstOrderAgreementTestReceived : Fin 2 → ℚ := fun _ ↦ 0
+
+/-- The exact and uniform first-order list bounds cover a singleton solution family
+over two points. -/
+example :
+    (({(0 : Polynomial ℚ)} : Finset (Polynomial ℚ)).card : ℚ) ≤
+        firstOrderTightListWeight 2 2 1 2 4 1 1 ∧
+      firstOrderTightListWeight 2 2 1 2 4 1 1 ≤
+        ((2 * firstOrderListWeight 2 1 1 : ℕ) : ℚ) / 2 ∧
+      (({(0 : Polynomial ℚ)} : Finset (Polynomial ℚ)).card : ℚ) ≤
+        ((2 * firstOrderListWeight 2 1 1 : ℕ) : ℚ) / 2 ∧
+      0 ≤ firstOrderTightListWeight 2 2 1 2 4 1 1 := by
+  let Q : DifferentialPolynomial ℚ 1 := firstOrderUnitEquation ℚ
+  let S : Finset (Polynomial ℚ) := {(0 : Polynomial ℚ)}
+  have hQ : Q ≠ 0 := by simp [Q, firstOrderUnitEquation]
+  have hdegree : jetTotalDegree Q ≤ 1 := by
+    refine (jetTotalDegree_le_iff Q 1).mpr fun u hu ↦ ?_
+    change u ∈ (MvPolynomial.X (some 1) : DifferentialPolynomial ℚ 1).support at hu
+    rw [MvPolynomial.support_X, Finset.mem_singleton] at hu
+    rw [hu]
+    simp [totalJetDegree_eq_sum, Fin.sum_univ_two]
+  have hfirst : jetDegree Q (1 : Fin 2) ≤ 1 := by
+    exact (jetDegree_le_total Q 1).trans hdegree
+  have hsol : ∀ P ∈ S, differentialSpecialization Q P = 0 := by
+    intro P hP
+    simp only [S, Finset.mem_singleton] at hP
+    subst P
+    rw [differentialSpecialization, differentialSpecializationHom]
+    simp [Q, firstOrderUnitEquation]
+  have haccept : ∀ P ∈ S,
+      P.degree < 1 ∧ 2 ≤
+        ({i : Fin 2 | P.eval (firstOrderAgreementTestDomain i) =
+          firstOrderAgreementTestReceived i}).ncard := by
+    intro P hP
+    simp only [S, Finset.mem_singleton] at hP
+    subst P
+    constructor
+    · norm_num
+    · norm_num [firstOrderAgreementTestDomain, firstOrderAgreementTestReceived]
+  have hExact := finite_firstOrder_agreement_solutions_card_le_tight_of_exponent
+    Q 2 1 1 1 4 hQ hdegree hfirst
+    (fun r hr ↦ taylorExponentSufficient_two_mul r 2)
+    firstOrderAgreementTestDomain firstOrderAgreementTestReceived
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (Or.inl (by simp)) S hsol haccept
+  have hSharp := finite_firstOrder_agreement_solutions_card_le_sharp
+    Q 2 1 1 1 hQ hdegree hfirst firstOrderAgreementTestDomain
+    firstOrderAgreementTestReceived (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num) (Or.inl (by simp)) S hsol haccept
+  have hCompare := firstOrderTightListWeight_two_mul_le 2 2 1 2 1 1
+    (by norm_num) (by norm_num) (by norm_num)
+  refine ⟨?_, ?_, ?_, firstOrderTightListWeight_nonneg 2 2 1 2 4 1 1⟩
+  · simpa [S, firstOrderTightListWeight, firstOrderCurveFiberStageOne,
+      firstOrderTaylorTotalCap, firstOrderTaylorDerivativeCap] using hExact
+  · simpa using hCompare
+  · change (S.card : ℚ) ≤
+      ((2 * firstOrderListWeight 2 1 1 : ℕ) : ℚ) / 2
+    exact hSharp
 
 /-- The derivative-capped first-order incidence bound is attained by the zero jet of `Y₁`. -/
 example :
