@@ -639,9 +639,7 @@ private abbrev componentTupleDimensionBound : ℚ :=
     (1 + 2 * (jetTotalDegree (componentEquation (E := ComponentField)) - 1) : ℕ) ^ 0 *
       dimensionSensitiveIncidenceProduct 1 1 1 1 0
 
-/-- A regular component yields an admissible tuple whose specialization recognizes the chart
-point; the admissible family contains it and obeys the family and general tuple bounds. -/
-example : ∃ P : Fin 2 → ℚ[X],
+private theorem componentAdmissibleTupleWitness : ∃ P : Fin 2 → ℚ[X],
     IsAdmissibleChartTupleAtExponent domain (fun _ ↦ componentWord)
       (algebraMap ℚ ComponentField) 0 (componentEquation (E := ComponentField)) 2 1 1 2 P ∧
     rationalTaylorPolynomial 0
@@ -680,6 +678,21 @@ example : ∃ P : Fin 2 → ℚ[X],
     by simpa [componentAdmissibleTuples, componentTupleDimensionBound] using hfamilyDim,
     by simpa [componentTupleDimensionBound] using hsingleDim⟩
 
+/-- The admissible component tuple gives a nonempty image of regular high-cut jets. -/
+example : ∃ z : ComponentField, ∃ jets : Finset (Fin 1 → ComponentField),
+    jets.Nonempty ∧ jets.card = 1 ∧
+      ∀ jet ∈ jets, aeval jet (initialJetSeparant 0
+        (MvPolynomial.map (Polynomial.evalRingHom z) componentEquation)) ≠ 0 := by
+  obtain ⟨P, hP, _, _, _, _⟩ := componentAdmissibleTupleWitness
+  have hτ : TaylorExponentSufficient 0 2 2 := by intro l; fin_cases l <;> omega
+  obtain ⟨z, jets, _, htupleImage, _, hcard, hS, _⟩ :=
+    exists_regularHighCutJetImage_of_admissibleChartTuples
+      domain (fun _ ↦ componentWord) (algebraMap ℚ ComponentField) 0 componentEquation
+      2 1 1 2 hτ (by omega) {P} (by
+        simpa using hP)
+  exact ⟨z, jets, ⟨_, htupleImage P (by simp)⟩, by simpa using hcard,
+    fun jet hjet ↦ (hS jet hjet).2.1⟩
+
 local instance : DecidableEq ComponentField := Classical.decEq _
 
 private abbrev badChallengeDomain : Fin 2 ↪ ℚ := fullDomain
@@ -710,9 +723,13 @@ private theorem badChallengeCandidate_agrees :
   fin_cases i <;> norm_num [polynomialAgreementSet, powerBatchedWord,
     Fin.sum_univ_succ, badChallengeWords, badChallengeDomain, badChallengeDomainE,
     fullDomain]
-
-/-- A nonempty bad-challenge set satisfies the combined power-batched chart bound. -/
-example : badChallenges.Nonempty ∧ (badChallenges.card : ℚ) ≤ 17 := by
+/-- A nonempty bad-challenge set satisfies the chart and regular-equation bounds. -/
+example : badChallenges.Nonempty ∧ (badChallenges.card : ℚ) ≤ 17 ∧
+    (badChallenges.card : ℚ) ≤ regularPowerBatchedAgreementBound 2 0 1 1 1 1 2 1 1 ∧
+    (regularPowerBatchedBadChallenges badChallengeDomain badChallengeWords
+      (algebraMap ℚ ComponentField) badChallengeEquation 1 2).Finite ∧
+    (∃ exceptional : Finset ComponentField,
+      (exceptional.card : ℚ) ≤ regularPowerBatchedAgreementBound 2 0 1 1 1 1 2 1 1) := by
   classical
   have hjet : jetTotalDegree badChallengeEquation ≤ 1 := by
     classical
@@ -746,8 +763,7 @@ example : badChallenges.Nonempty ∧ (badChallenges.card : ℚ) ≤ 17 := by
         rationalTaylorPolynomial (0 : ComponentField) Qz 1 (badChallengeJet z) =
           badChallengeWitness z := by
     intro z hz
-    have hz0 : z = 0 := by simpa [badChallenges] using hz
-    subst z
+    obtain rfl : z = 0 := by simpa [badChallenges] using hz
     refine ⟨by simp [badChallengeWitness], ?_, ?_, ?_⟩
     · simp [badChallengeEquation, badChallengeJet, initialJetEquation]
     · simp [badChallengeEquation, initialJetSeparant, separant]
@@ -810,6 +826,15 @@ example : badChallenges.Nonempty ∧ (badChallenges.card : ℚ) ≤ 17 := by
     rw [hconstant, Polynomial.eval_C] at hone
     rw [hzero] at hone
     norm_num at hone
+  have hregularSet : ↑badChallenges ⊆ regularPowerBatchedBadChallenges
+      badChallengeDomain badChallengeWords (algebraMap ℚ ComponentField)
+      badChallengeEquation 1 2 := by
+    intro z hz
+    obtain rfl : z = 0 := by simpa [badChallenges] using hz
+    refine ⟨badChallengeWitness 0, by simp [badChallengeWitness],
+      hagree 0 (by simp [badChallenges]), ?_, ?_, hbad 0 (by simp [badChallenges])⟩
+    all_goals simp [badChallengeEquation, badChallengeWitness, challengeSpecialization,
+      separant, differentialSpecialization, differentialSpecializationHom]
   have hbound := finite_powerBatchedChart_badChallenges_card_le
     (domain := badChallengeDomain) (w := badChallengeWords)
     (iota := algebraMap ℚ ComponentField) (center := (0 : ComponentField))
@@ -817,8 +842,22 @@ example : badChallenges.Nonempty ∧ (badChallenges.card : ℚ) ≤ 17 := by
     (v := 1) (h := 1) (by omega) (by omega) (by omega) (by omega) (by omega)
     (by omega) (by omega) (by omega) hjet hheight badChallenges badChallengeWitness
     badChallengeJet hchart hagree hbad
-  norm_num [badChallenges] at hbound ⊢
-
+  have hregularBound := finite_regularPowerBatchedBadChallenges_card_le
+    badChallengeDomain badChallengeWords (algebraMap ℚ ComponentField) badChallengeEquation
+    1 1 1 2 1 1 (by omega) (by omega) (by omega) (by omega)
+    (by omega) (by omega) (by omega) (by omega) hjet hheight
+    (by intro i hi hiK; omega) badChallenges hregularSet
+  have hfinite := regularPowerBatchedBadChallenges_finite
+    badChallengeDomain badChallengeWords (algebraMap ℚ ComponentField) badChallengeEquation
+    1 1 1 2 1 1 (by omega) (by omega) (by omega) (by omega)
+    (by omega) (by omega) (by omega) (by omega) hjet hheight (by intro i hi hiK; omega)
+  obtain ⟨exceptional, hexceptionalBound, _⟩ := exists_exceptional_regularPowerBatchedAgreement
+    badChallengeDomain badChallengeWords (algebraMap ℚ ComponentField) badChallengeEquation
+    1 1 1 2 1 1 (by omega) (by omega) (by omega) (by omega)
+    (by omega) (by omega) (by omega) (by omega) hjet hheight (by intro i hi hiK; omega)
+  have hcard : badChallenges.Nonempty ∧ (badChallenges.card : ℚ) ≤ 17 := by
+    norm_num [badChallenges]
+  exact ⟨hcard.1, hcard.2, hregularBound, hfinite, ⟨exceptional, hexceptionalBound⟩⟩
 private abbrev offGraphEquation : DifferentialPolynomial ComponentField[X] 0 :=
   MvPolynomial.X (some (0 : Fin 1)) - MvPolynomial.C (Polynomial.X : ComponentField[X])
 
@@ -1457,42 +1496,3 @@ example : (firstOrderCurveFiberStageOne 2 exampleJet exampleCap (regularTaylorEx
         automaticDerivativeRatio, automaticAgreement, automaticGapBracket,
         firstOrderCleanExpression, firstOrderRateBeta, ht]
 end ReedSolomon.FirstOrder.Squarefree
-namespace ReedSolomon.PowerBatchedRegularEquationTest
-private abbrev E := AlgebraicClosure ℚ
-noncomputable local instance : DecidableEq E := Classical.decEq _
-private noncomputable def d : Fin 2 ↪ E :=
-  ⟨fun i ↦ i.val, fun _ _ h ↦ Fin.ext (Nat.cast_injective h)⟩
-private noncomputable def w : Fin 2 → Fin 2 → E := fun t i ↦ t.val * i.val
-private noncomputable abbrev Q : DifferentialPolynomial E[X] 0 := MvPolynomial.X (some 0)
-private theorem regularJet : jetTotalDegree Q ≤ 1 := by
-  rw [jetTotalDegree_le_iff]; intro u hu
-  simp only [Q, MvPolynomial.support_X, Finset.mem_singleton] at hu
-  subst u; norm_num [totalJetDegree, jetDegreeWeight, Finsupp.weight]
-private theorem hgt : CoeffNatDegreeLE Q 1 :=
-  (coeffNatDegreeLE_X (some 0)).mono (by omega)
-private theorem zeroBatch (i : Fin 2) : powerBatchedWord w 0 i = 0 := by
-  rw [powerBatchedWord, Fin.sum_univ_two]; fin_cases i <;> simp [w]
-private theorem noExact : ¬ HasExactPowerAgreement d w (RingHom.id _) 1 0 0 := by
-  intro hex; have h := (hasExactPowerAgreement_constant_iff d w (by simp)).mp hex
-    0 (by simp [polynomialAgreementSet, zeroBatch])
-    1 (by simp [polynomialAgreementSet, zeroBatch]) 1
-  norm_num [w] at h
-private theorem zeroBad : (0 : E) ∈
-    regularPowerBatchedBadChallenges d w (RingHom.id E) Q 1 2 := by
-  refine ⟨0, by simp, ?_, ?_, ?_, noExact⟩
-  all_goals simp [polynomialAgreementSet, zeroBatch, d,
-    Q, challengeSpecialization, separant, differentialSpecialization,
-    differentialSpecializationHom, pderiv_X]
-example := exists_exceptional_regularPowerBatchedAgreement d w
-  (RingHom.id _) Q 1 1 2 2 1 1 (by norm_num) (by norm_num) (by norm_num)
-  (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num) regularJet
-  hgt (by intro i hi hiK; omega)
-example := finite_regularPowerBatchedBadChallenges_card_le d w
-  (RingHom.id _) Q 1 1 2 2 1 1 (by norm_num) (by norm_num) (by norm_num)
-  (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num) regularJet
-  hgt (by intro i hi hiK; omega) {0} (by simpa using zeroBad)
-example := regularPowerBatchedBadChallenges_finite d w (RingHom.id _)
-  Q 1 1 2 2 1 1 (by norm_num) (by norm_num) (by norm_num) (by norm_num)
-  (by norm_num) (by norm_num) (by norm_num) (by norm_num) regularJet hgt
-  (by intro i hi hiK; omega)
-end ReedSolomon.PowerBatchedRegularEquationTest

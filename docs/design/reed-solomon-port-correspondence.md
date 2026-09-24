@@ -1752,6 +1752,18 @@ ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`,
 Deferred: scalar providers of the line guarantee (list-decoding and curve-counting results) and
 the probability form of the count.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/CodewordBound.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/CodewordBound.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`agreeingPolynomials_encard_le_closePolynomialSet`, `lambda_le_ceil_of_closePolynomialSet_bound`, and `prescribed_geometric_lambda_bound` keep their names and results. The transfer uses the current `Fintype.card_fin` representation. The geometric bound uses the canonical `xi` and `harmonic` parameters in place of the source's explicit `27/10` and `harmonicNumber` parameters. No public declaration was omitted.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/CurveCertificate.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/CurveCertificate.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`exists_closePolynomial_list_of_curve_certificate_actualStages`, `close_list_bound_of_curve_certificate_directJetCoarse`, and `close_list_bound_of_curve_certificate_of_jetCharacteristic` keep their names and results. The proofs use the current `SymbolicReceivedCurve.Certificate`, `SeparantChain`, agreement-list, and direct-jet APIs. No public declaration was omitted.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/FiniteField.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/FiniteField.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -2044,6 +2056,12 @@ Merges `FirstOrder/Squarefree/Bounds.lean` and `FirstOrder/Squarefree/SingularTa
 `separableResultant` form by `resultant_comm_sub_one`. `natDegree_singularTail_le` drops `0 < r`,
 `r ≤ j` and `A.natDegree = r`, and `singularTail_map_eq_zero_of_common_root` drops both `IsDomain`
 assumptions.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/DerivativeTupleCounting.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/DerivativeTupleCounting.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`admissibleChartTuples_card_le_derivativeCapped_of_exponent` and `admissibleChartTupleFamilyAtExponent_card_le_derivativeCapped` keep their names and conclusions, with the source hypothesis `0 < k` dropped. The bounds transport total and derivative degree bounds through the coefficient-map lemmas and retain the sharp agreement ratio `(n-k+1)/(L-k+1)`. The shared specialization theorem `exists_regularHighCutJetImage_of_admissibleChartTuples` is in `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedGraphCounting.lean`; it gives an equal-cardinality image of regular high-cut Taylor jets with inherited agreement equations.
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/ExceptionalChallenges.lean`
 

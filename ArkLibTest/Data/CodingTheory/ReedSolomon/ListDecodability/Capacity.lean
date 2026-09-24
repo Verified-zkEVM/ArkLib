@@ -5,17 +5,22 @@ Authors: Quang Dao
 -/
 
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.Basic
+import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.CodewordBound
+import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.CurveCertificate
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.WeightedSupportInterpolant
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.WeightedSupport
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.FiniteField
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.GeometricBound
+import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.CurveCertificate
+import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.Counting
 import Mathlib.Data.Nat.Prime.Infinite
 
 /-!
 # Acceptance cases for Reed–Solomon capacity list bounds
 
-The examples exercise weighted-support interpolation over a large prime field and the explicit
-finite-field capacity list theorem on a concrete half-gap instance.
+The examples cover weighted-support interpolation, finite-field capacity bounds, transfer from
+close-polynomial counts to codeword-list bounds, and actual-stage and gap bounds from concrete
+received-curve certificates.
 -/
 
 open Finset PolynomialDifferential ReedSolomon ReedSolomon.HiddenDerivative
@@ -351,6 +356,135 @@ example :
     (by norm_num [sampleDelta]) hk hblock hA
     (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
   exact ⟨geometricSampleZero_mem, hbound.1, hbound.2⟩
+
+private def singletonAgreementDomain : Fin 1 ↪ ℚ where
+  toFun _ := 0
+  inj' _ _ _ := Subsingleton.elim _ _
+
+example :
+    (agreeingPolynomials singletonAgreementDomain 1 1 (fun _ ↦ 0)).encard ≤
+      (closePolynomialSet singletonAgreementDomain (fun _ ↦ 0) 1 1).encard := by
+  exact agreeingPolynomials_encard_le_closePolynomialSet
+    singletonAgreementDomain (fun _ ↦ 0)
+
+example :
+    Code.Lambda (ReedSolomon.code singletonAgreementDomain 1 : Set (Fin 1 → ℚ))
+        (capacityRadius 0 1 1) ≤ 1 := by
+  have hthreshold : agreementThreshold 0 1 1 = 1 := by
+    norm_num [agreementThreshold]
+  have hB : ∀ received : Fin 1 → ℚ,
+      (closePolynomialSet singletonAgreementDomain received 1
+        (agreementThreshold 0 1 1)).Finite ∧
+        ((closePolynomialSet singletonAgreementDomain received 1
+          (agreementThreshold 0 1 1)).ncard : ℝ) ≤ 1 := by
+    intro received
+    rw [hthreshold]
+    refine ⟨closePolynomialSet_finite singletonAgreementDomain received (by norm_num), ?_⟩
+    simpa using closePolynomialSet_one_ncard_le_div singletonAgreementDomain received
+      (by norm_num)
+  have hbound := lambda_le_ceil_of_closePolynomialSet_bound
+    (δ := 0) (n := 1) (k := 1) (by norm_num) (by norm_num)
+    singletonAgreementDomain 1 hB
+  simpa using hbound
+
+/-- The prescribed close-list bound transfers to the codeword-list function. -/
+example :
+    let d := Nat.ceil (Real.exp (xi / sampleDelta))
+    let m := Nat.ceil (100 * (d : ℝ) ^ 2 * harmonic (d - 1))
+    Code.Lambda (ReedSolomon.code geometricSampleDomain sampleMessageDim :
+      Set (Fin sampleN → ℚ)) (capacityRadius sampleDelta sampleN sampleMessageDim) ≤
+      (Nat.ceil (4 * (m : ℝ) ^ 2 * (4 * m / sampleDelta) ^ d * sampleN ^ d) : ℕ∞) := by
+  obtain ⟨hk, hA, hblock⟩ := prescribedGeometricSampleData
+  exact prescribed_geometric_lambda_bound sampleDelta sampleN sampleMessageDim
+    geometricSampleDomain (by norm_num [sampleDelta]) (by norm_num [sampleDelta])
+    hk hblock hA (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
+
+private def curveCertificateCenters : Fin 2 ↪ ℚ where
+  toFun i := i.val
+  inj' := by
+    intro i j h
+    fin_cases i <;> fin_cases j <;> simp_all
+
+private def curveCertificateReceived : Fin 2 → ℚ := fun _ ↦ 0
+
+private noncomputable def curveCertificateWord : Fin 2 → Polynomial ℚ :=
+  fun i ↦ Polynomial.C (curveCertificateReceived i)
+
+private noncomputable def curveCertificate :
+    SymbolicReceivedCurve.Certificate 2 2 0 1 0 0
+      curveCertificateCenters curveCertificateWord :=
+  Classical.choice (by
+    simpa [curveCertificateWord] using
+      exists_partitionSupport_curve_certificate
+        (D := 1) (d := 0) (m := 1) (W := 0) (n := 2) (A := 2) (k := 2) (ℓ := 0)
+        (ν := 1) (L := 2) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+        curveCertificateCenters curveCertificateWord
+        (by intro i; simp [curveCertificateWord])
+        (by
+          intro u hu
+          have h : u none + 1 * totalJetDegree u < 2 := by
+            exact_mod_cast hu.2
+          omega)
+        (by
+          have hcard : (partitionSupportExponents 1 0 0 (2 : ℝ) (by norm_num)).card =
+              partitionSourceCount 1 0 0 2 := by
+            simpa using
+              (card_partitionSupportExponents (D := 1) (d := 0) (W := 0) (by norm_num) 2)
+          rw [hcard]
+          norm_num [partitionSourceCount, localDerivativeCoordinateBudget, contactThreshold,
+            weightedHigherJetCount, Finset.natWeightedSimplex, Finset.sum_range_succ]))
+
+example :
+    let Q : DifferentialPolynomial ℚ 0 :=
+      MvPolynomial.map (Polynomial.eval₂RingHom (RingHom.id ℚ) 0) curveCertificate.Q
+    ∃ stages terminal, ∃ list : Finset (Polynomial ℚ),
+      SeparantChain Q stages terminal ∧
+        (list : Set (Polynomial ℚ)) =
+          closePolynomialSet curveCertificateCenters curveCertificateReceived 2 2 ∧
+        (list.card : ℚ) ≤ (stages.map (directJetStageCharge 2 2 2 2)).sum := by
+  dsimp only
+  obtain ⟨stages, terminal, list, hchain, hlist, _, hbound⟩ :=
+    exists_closePolynomial_list_of_curve_certificate_actualStages
+      curveCertificateCenters curveCertificateReceived curveCertificate
+      (by norm_num) (by norm_num)
+      (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
+  exact ⟨stages, terminal, list, hchain, hlist, hbound⟩
+
+example :
+    (closePolynomialSet curveCertificateCenters curveCertificateReceived 2 2).Finite ∧
+      ((closePolynomialSet curveCertificateCenters curveCertificateReceived 2 2).ncard : ℚ) ≤
+        1 := by
+  simpa using close_list_bound_of_curve_certificate_directJetCoarse
+    curveCertificateCenters curveCertificateReceived curveCertificate
+    (by norm_num) (by norm_num) (by norm_num)
+    (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
+
+private noncomputable def curveCertificateDegreeOne :
+    SymbolicReceivedCurve.Certificate 2 1 0 1 0 0
+      curveCertificateCenters curveCertificateWord := by
+  let cert := curveCertificate
+  refine
+    { Q := cert.Q
+      challengeDegree_le := cert.challengeDegree_le
+      totalJetDegree_le := cert.totalJetDegree_le
+      specialization_sound := ?_ }
+  intro E hE ρ z
+  obtain ⟨hQ, hdegree, hsound⟩ := cert.specialization_sound ρ z
+  refine ⟨hQ, hdegree, ?_⟩
+  intro indices P hP hA heval
+  apply hsound indices P ?_ hA heval
+  exact lt_trans hP (by norm_num)
+
+example :
+    (closePolynomialSet curveCertificateCenters curveCertificateReceived 1 2).Finite ∧
+      ((closePolynomialSet curveCertificateCenters curveCertificateReceived 1 2).ncard :
+        ℝ) ≤ 1 := by
+  simpa using close_list_bound_of_curve_certificate_of_jetCharacteristic
+    (δ := 1 / 2) (K := 1) (d := 0) (ν := 1) (H := 0)
+    curveCertificateCenters curveCertificateReceived curveCertificateDegreeOne
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
 
 end
 end WeightedSupportInterpolantTest
