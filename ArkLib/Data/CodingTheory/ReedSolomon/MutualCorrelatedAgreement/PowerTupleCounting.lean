@@ -10,6 +10,7 @@ public import
 public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TupleSpecialization
 public import ArkLib.ToMathlib.MvPolynomial.OptionRoots
+public import Mathlib.Algebra.CharP.Reduced
 
 /-!
 # Counting admissible Frobenius power tuples
@@ -233,28 +234,23 @@ theorem IsAdmissibleFrobeniusPowerTuple.eq_of_initialGraph_eq [Infinite E]
           (powerBatchedPolynomial (fun t ↦ (R t).map ι) (z ^ (p ^ e))) :=
       hPspec.symm.trans (hT.trans hRspec)
     exact hExpanded
-  funext t
-  apply Polynomial.map_injective ι ι.injective
-  ext l
-  let left :=
-    frobeniusPowerCoordinate (p ^ e) (fun j ↦ ((P j).map ι).coeff l)
-  let right :=
-    frobeniusPowerCoordinate (p ^ e) (fun j ↦ ((R j).map ι).coeff l)
-  have hcoordinates : left = right := by
-    apply Polynomial.eq_of_infinite_eval_eq
-    apply hinfinite.mono
-    intro z hz
-    change left.eval z = right.eval z
-    have hcoeff := congrArg (fun S : E[X] ↦ S.coeff l) (heq z hz)
-    simpa only [left, right, frobeniusPowerCoordinate_eval, powerBatchedPolynomial,
-      Polynomial.finsetSum_coeff, Polynomial.coeff_smul, smul_eq_mul, pow_mul] using hcoeff
-  have hbase :
-      powerBatchedCoordinate (fun j ↦ ((P j).map ι).coeff l) =
-        powerBatchedCoordinate (fun j ↦ ((R j).map ι).coeff l) := by
-    apply Polynomial.expand_injective hs
-    simpa only [left, right, frobeniusPowerCoordinate] using hcoordinates
-  have hcoefficient := congrArg (fun S : E[X] ↦ S.coeff t) hbase
-  simpa only [powerBatchedCoordinate_coeff, Polynomial.coeff_map] using hcoefficient
+  have hpow_inj : Function.Injective (fun z : E ↦ z ^ (p ^ e)) := by
+    intro x y hxy
+    apply iterateFrobenius_inj E p e
+    simpa only [iterateFrobenius_def] using hxy
+  have hpowered : {w : E | ∃ z, sep.eval z ≠ 0 ∧ w = z ^ (p ^ e)}.Infinite := by
+    have himage : ((fun z : E ↦ z ^ (p ^ e)) '' {z : E | sep.eval z ≠ 0}).Infinite :=
+      hinfinite.image hpow_inj.injOn
+    apply himage.mono
+    rintro w ⟨z, hz, rfl⟩
+    exact ⟨z, hz, rfl⟩
+  have hspecializations :
+      {w : E | powerBatchedPolynomial (fun t ↦ (P t).map ι) w =
+        powerBatchedPolynomial (fun t ↦ (R t).map ι) w}.Infinite := by
+    apply hpowered.mono
+    rintro w ⟨z, hz, rfl⟩
+    exact heq z hz
+  exact polynomialTuple_eq_of_infinite_specializations ι P R hspecializations
 
 /-- The graph-coordinate degree of the nonzero initial equation bounds every finite family of
 admissible Frobenius power tuples. -/
