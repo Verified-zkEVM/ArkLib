@@ -11,6 +11,7 @@ import ArkLib.ToMathlib.MvPolynomial.FrobeniusPullback
 import ArkLib.ToMathlib.MvPolynomial.OptionRoots
 import ArkLib.ToMathlib.MvPolynomial.OptionWeightedDegree
 import ArkLib.ToMathlib.MvPolynomial.PolynomialCoefficients
+import ArkLib.ToMathlib.MvPolynomial.PowerMomentLift
 import ArkLib.ToMathlib.MvPolynomial.RadicalSplit
 import ArkLib.ToMathlib.MvPolynomial.RootContraction
 import ArkLib.ToMathlib.MvPolynomial.SchwartzZippel
@@ -774,3 +775,47 @@ example :
     (R := ℚ) (σ := Fin 1) (i := 0) (a := 0) (b := 2) (c := 2)
     (ha := by exact (coeffNatDegreeLE_X (R := ℚ) (σ := Fin 1) 0).pow 2)
     (hb := by simp) (hc := by simp)
+
+/-! ### Power-moment lifts -/
+
+private noncomputable abbrev powerLiftSource : MvPolynomial Unit (Polynomial ℚ) := X ()
+
+private theorem powerLiftSource_height : CoeffNatDegreeLE powerLiftSource 1 := by
+  exact (coeffNatDegreeLE_X (R := ℚ) (σ := Unit) ()).mono (by omega)
+
+/-- A positive power range represents the challenge and jet variables. -/
+example : Function.Surjective (powerMomentMap (R := ℚ) (σ := Unit) 1) := by
+  exact powerMomentMap_surjective 1 (by norm_num)
+
+/-- The relations of a concrete power-moment map form a prime ideal. -/
+example : (powerMomentIdeal (R := ℚ) (σ := Unit) 1).IsPrime := by
+  exact powerMomentIdeal_isPrime 1
+
+/-- A linear lift of a concrete polynomial evaluates to that polynomial. -/
+example :
+    powerMomentMap (R := ℚ) (σ := Unit) 1
+        (coefficientPowerLift (R := ℚ) (σ := Unit) 1
+          (Polynomial.X + 1) (by simp)) =
+      Polynomial.aeval (X none : MvPolynomial (Option Unit) ℚ)
+        (Polynomial.X + 1 : Polynomial ℚ) := by
+  exact powerMomentMap_coefficientPowerLift 1 (Polynomial.X + 1) (by simp)
+
+/-- A lifted jet variable maps back to its flattened polynomial. -/
+example :
+    powerMomentMap (R := ℚ) (σ := Unit) 1
+        (polynomialPowerLift (R := ℚ) 1 powerLiftSource powerLiftSource_height) =
+      (optionEquivRight ℚ Unit).symm powerLiftSource := by
+  exact powerMomentMap_polynomialPowerLift 1 powerLiftSource powerLiftSource_height
+
+/-- A lifted polynomial coefficient has degree at most one. -/
+example :
+    (coefficientPowerLift (R := ℚ) (σ := Unit) 1
+      (Polynomial.X + 1) (by simp)).totalDegree ≤ 1 := by
+  exact coefficientPowerLift_totalDegree_le_one 1 (Polynomial.X + 1) (by simp)
+
+/-- A lifted jet variable has degree at most two. -/
+example :
+    (polynomialPowerLift (R := ℚ) 1 powerLiftSource powerLiftSource_height).totalDegree ≤
+      2 := by
+  apply polynomialPowerLift_totalDegree_le 1 1 powerLiftSource powerLiftSource_height
+  simp [powerLiftSource]
