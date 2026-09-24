@@ -23,12 +23,20 @@ Sequential composition of:
 
 * [Diamond, B.E. and Posen, J., *Polylogarithmic proofs for multilinears over binary towers*][DP24]
   Statement numbering follows the archived revision of [DP24].
+* [Zeilberger, H., Chen, B. and Fisch, B., *BaseFold: Efficient Field-Agnostic Polynomial
+  Commitment Schemes from Foldable Codes*][ZCF24]
 
 This initial development assumes `ϑ ∣ ℓ`. DP24 §5.2 removes that notational-convenience assumption
 via early termination. TODO: formalize that variant.
 
 At round zero, the strict relation used for perfect completeness is contained in the relaxed
 round-by-round relation used for knowledge soundness, so both guarantees apply to strict inputs.
+This separation is consistent with [ZCF24], Definition 8 and §5: honest commitment produces
+an exact encoding, and perfect completeness is required for those honest inputs. Its Theorem 4
+instead extracts a polynomial whose encoding is close to the input oracle and whose evaluation
+matches the claim. This is a precedent for the distinction, not an identification of its coset
+distance with our UDR predicate or of its knowledge-soundness theorem with our RBR guarantee.
+In particular, we do not claim perfect completeness for arbitrary nearby but inexact oracles.
 -/
 
 @[expose] public section

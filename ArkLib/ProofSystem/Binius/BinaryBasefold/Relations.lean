@@ -8,7 +8,21 @@ module
 
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.Basic
 
-/-! ## Binary Basefold relations and bad-event layer -/
+/-!
+## Binary Basefold relations and bad-event layer
+
+The strict relations describe exact witness encodings and their honest folds, for perfect
+completeness. The relaxed relations support knowledge soundness via decoding proximity.
+This distinction is consistent with BaseFold [ZCF24]: Definition 8 requires completeness
+for honestly generated commitments, whereas Theorem 4 extracts a polynomial with a nearby
+encoding and the claimed evaluation. BaseFold's coset-distance condition is not identified
+with our UDR predicate, and its theorem is not our round-by-round knowledge-soundness result.
+
+## References
+
+* [Zeilberger, H., Chen, B. and Fisch, B., *BaseFold: Efficient Field-Agnostic Polynomial
+  Commitment Schemes from Foldable Codes*][ZCF24]
+-/
 
 @[expose] public section
 

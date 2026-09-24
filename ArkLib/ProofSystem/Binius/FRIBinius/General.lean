@@ -20,12 +20,16 @@ The FRI-Binius IOPCS consists of the following phases:
 3. **Query Phase**: FRI-style proximity testing with γ repetitions
 
 ## References
-- State RBR KS
 
-## References
+* [Diamond, B.E. and Posen, J., *Polylogarithmic proofs for multilinears over binary towers*][DP24]
+* [Zeilberger, H., Chen, B. and Fisch, B., *BaseFold: Efficient Field-Agnostic Polynomial
+  Commitment Schemes from Foldable Codes*][ZCF24]
 
-- [DP24] Diamond, Benjamin E., and Jim Posen. "Polylogarithmic Proofs for Multilinears over Binary
-  Towers." Cryptology ePrint Archive (2024).
+Perfect completeness uses exact honest inputs, while knowledge soundness uses the relaxed
+decoding-proximity relation. This distinction is consistent with [ZCF24], Definition 8 and
+Theorem 4: honest commitments encode exactly, while extraction guarantees a nearby encoding
+with the claimed evaluation. The distance predicate and RBR guarantee here are established
+separately; we do not assert perfect completeness for arbitrary nearby-but-inexact oracles.
 
 This initial development assumes `ϑ ∣ ℓ'`. DP24 §5.2's early-termination variant removes that
 notational-convenience assumption. TODO: formalize that variant.
