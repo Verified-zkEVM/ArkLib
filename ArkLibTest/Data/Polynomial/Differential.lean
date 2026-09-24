@@ -1396,34 +1396,37 @@ example :
 
 /-! ### Taylor chart coefficient extension -/
 
-/-- A concrete rational family satisfies a high cut and two agreement equations. -/
+/-- A rational family has initial and regular jets, a high cut, and two agreements. -/
 example :
-    ∃ (c : ℚ) (J : Finset (Fin 1 → ℚ)), J.card = 1 ∧ ∀ j ∈ J,
-      (∀ l : ℕ, 1 ≤ l → l < 2 →
-        aeval j (commonTaylorNumerator c
-          (MvPolynomial.map (RingHom.id ℚ) (X (some 0))) 4 l) = 0) ∧
-      2 ≤ (Finset.univ.filter (fun _ : Fin 2 ↦
-        aeval j (taylorAgreementEquation c
-          (MvPolynomial.map (RingHom.id ℚ) (X (some 0))) 2 4
-          (RingHom.id ℚ (0 : ℚ)) (RingHom.id ℚ (0 : ℚ))) = 0)).card := by
-  obtain ⟨c, J, hcard, hfamily⟩ := exists_regular_solution_jet_family_of_exponent
-      (f := RingHom.id ℚ) (Q := X (some 0)) (K := 2) (k := 1) (τ := 4)
+    ∃ (center : ℚ) (J : Finset (Fin 1 → ℚ)), J.card = 1 ∧
+      ∀ jet ∈ J,
+        aeval jet (initialJetEquation center
+          (MvPolynomial.map (RingHom.id ℚ) (zeroJetEquation ℚ 0))) = 0 ∧
+        aeval jet (initialJetSeparant center
+          (MvPolynomial.map (RingHom.id ℚ) (zeroJetEquation ℚ 0))) ≠ 0 ∧
+        aeval jet (commonTaylorNumerator center
+          (MvPolynomial.map (RingHom.id ℚ) (zeroJetEquation ℚ 0)) 4 1) = 0 ∧
+        2 ≤ (Finset.univ.filter (fun i : Fin 2 ↦
+          aeval jet (taylorAgreementEquation center
+            (MvPolynomial.map (RingHom.id ℚ) (zeroJetEquation ℚ 0)) 2 4
+            (RingHom.id ℚ (i.val : ℚ)) (0 : ℚ)) = 0)).card := by
+  obtain ⟨center, J, hcard, hproperties⟩ := exists_regular_solution_jet_family_of_exponent
+      (f := RingHom.id ℚ) (Q := zeroJetEquation ℚ 0) (K := 2) (k := 1) (τ := 4)
       (taylorExponentSufficient_two_mul 0 2) (by norm_num) {0} (A := 2)
-      (domain := fun _ : Fin 2 ↦ (0 : ℚ)) (received := fun _ ↦ 0)
+      (domain := fun i : Fin 2 ↦ (i.val : ℚ)) (received := fun _ ↦ 0)
       (hdegree := by simp)
-      (hsol := by simp [differentialSpecialization, differentialSpecializationHom])
-      (hsep := by simp [separant, differentialSpecialization, differentialSpecializationHom])
-      (hbin := by simp) (hagree := by simp)
-  refine ⟨c, J, by simpa using hcard, ?_⟩
-  intro j hj
-  obtain ⟨_, _, hcut, hagree⟩ := hfamily j hj
-  refine ⟨?_, ?_⟩
-  · intro l hl hlt
-    simpa using hcut ⟨l, hlt⟩ hl
-  · exact hagree.trans_eq (by
-      congr 1
-      ext i
-      simp)
+      (hsol := by
+        simp [zeroJetEquation, differentialSpecialization, differentialSpecializationHom])
+      (hsep := by simp [zeroJetEquation, separant, differentialSpecialization,
+        differentialSpecializationHom])
+      (hbin := by simp)
+      (hagree := by simp)
+  refine ⟨center, J, by simpa using hcard, ?_⟩
+  intro jet hj
+  obtain ⟨hinitial, hregular, hcuts, hagree⟩ := hproperties jet hj
+  refine ⟨hinitial, hregular, ?_, ?_⟩
+  · simpa using hcuts ⟨1, by omega⟩ (by norm_num)
+  · simpa using hagree
 
 /-- A nonempty regular family over `ZMod 2` has a common center in its algebraic closure. -/
 example :
@@ -1472,17 +1475,14 @@ example :
 private abbrev retainedCurveEquation : DifferentialPolynomial (Polynomial ℚ) 1 :=
   C (Polynomial.X + 1) * X (some 1) ^ 2 + X none
 
-/-- The zero input produces the constant positive-factor equation. -/
 example : positiveCurveEquation (0 : DifferentialPolynomial (Polynomial ℚ) 1) = 1 := by
   simp [positiveCurveEquation, fromFlattenedRootFirst, challengeRetainingRootFirst,
     MvPolynomial.radicalPrimPart]
-/-- The root-first curve view records the jet degree of a concrete equation. -/
 example :
     (curveJetView (challengeRetainingRootFirst retainedCurveEquation)).totalDegree =
       jetTotalDegree retainedCurveEquation := by
   rw [curveJetView_totalDegree, fromFlattenedRootFirst_rootFirstChallenge]
 
-/-- The retained equation satisfies its degree and coefficient bounds. -/
 example :
     (positiveCurveEquation retainedCurveEquation).degreeOf (some 1) ≤
       retainedCurveEquation.degreeOf (some 1) ∧

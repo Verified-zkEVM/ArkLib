@@ -142,14 +142,6 @@ theorem curveJetView_totalDegree
   · rfl
   · fin_cases i <;> rfl
 
-/-- The retained equation's jet degree is the total degree of its two-variable view. -/
-theorem positiveCurveEquation_jetTotalDegree_eq_curveJetView
-    (Q : DifferentialPolynomial F[X] 1) :
-    jetTotalDegree (positiveCurveEquation Q) =
-      (curveJetView (radicalPrimPart none (challengeRetainingRootFirst Q))).totalDegree := by
-  rw [curveJetView_totalDegree]
-  rfl
-
 /-- Recovering the root-first form of an equation returns the original equation. -/
 theorem fromFlattenedRootFirst_rootFirstChallenge
     (Q : DifferentialPolynomial F[X] 1) :
