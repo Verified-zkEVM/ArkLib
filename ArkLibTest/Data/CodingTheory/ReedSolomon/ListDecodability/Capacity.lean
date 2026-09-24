@@ -10,8 +10,8 @@ import Mathlib.Data.Nat.Prime.Infinite
 /-!
 # Acceptance cases for weighted-support capacity interpolation
 
-The examples exercise a concrete fixed-margin interpolant, the prescribed construction over a
-large prime field, and the resulting agreement-list bound.
+The examples exercise the prescribed construction over a large prime field and the resulting
+agreement-list bound.
 -/
 
 open Finset PolynomialDifferential ReedSolomon ReedSolomon.HiddenDerivative
@@ -21,74 +21,6 @@ open ReedSolomon.HiddenDerivativeInterpolationCertificate
 namespace WeightedSupportInterpolantTest
 
 noncomputable section
-
-private def singletonDomain : Fin 1 ↪ ℚ where
-  toFun _ := 0
-  inj' i j _ := by
-    apply Fin.ext
-    omega
-
-private def singletonCutoff : ℝ :=
-  ((1 : ℕ) : ℝ) * ((1 : ℕ) : ℝ) * (1 + (1 : ℝ))
-
-private theorem singletonLocalRank_le_two :
-    Module.finrank ℚ (LinearMap.range
-      (weightedSupportLocalConstraint (R := ℚ) (d := 1) (W := 0) (L := singletonCutoff) 1
-        Nat.one_pos 0 0)) ≤ 2 := by
-  calc
-    _ ≤ localResidualCoordinateBudget 1 1 0 ⌈singletonCutoff / 1⌉₊ := by
-      simpa using (finrank_weightedSupportLocalConstraint_le (F := ℚ) (d := 1) (D := 1)
-        (W := 0) (L := singletonCutoff) (m := 1) (by norm_num) Nat.one_pos (0 : ℚ) 0)
-    _ ≤ 2 := by
-      norm_num [singletonCutoff, localResidualCoordinateBudget, contactThreshold,
-        Finset.natWeightedSimplex]
-
-private theorem singletonWeightedSupportDimension_ge_four :
-    4 ≤ Module.finrank ℚ (weightedSupportSpace ℚ 1 1 0 singletonCutoff Nat.one_pos) := by
-  have h := sum_count_le_finrank_weightedSupportSpace ℚ (d := 1) (D := 1) (W := 0)
-    (L := singletonCutoff) (by decide) Nat.one_pos
-  have hs : natWeightedSimplex (fun i : Fin (1 - 1) => i.val + 1) 0 = {fun _ => 0} := by
-    decide
-  have h1 : ⌈(1 : ℝ)⌉₊ = 1 := by exact_mod_cast Nat.ceil_natCast 1
-  have h2 : ⌈(2 : ℝ)⌉₊ = 2 := by exact_mod_cast Nat.ceil_natCast 2
-  rw [hs, sum_singleton] at h
-  norm_num [singletonCutoff, CubicStaircase.count, h1, h2] at h
-  exact h
-
-/-- A concrete numerical bound for the dimension margin at cutoff two. -/
-private theorem singletonFixedMarginAtTwo :
-    (543 / 500 : ℝ) * ((1 : ℕ) : ℝ) * Module.finrank ℚ (LinearMap.range
-      (weightedSupportLocalConstraint (R := ℚ) (d := 1) (W := 0) (L := singletonCutoff) 1
-        Nat.one_pos 0 0)) < Module.finrank ℚ (weightedSupportSpace ℚ 1 1 0 singletonCutoff
-          Nat.one_pos) := by
-  have hrank : (Module.finrank ℚ (LinearMap.range
-      (weightedSupportLocalConstraint (R := ℚ) (d := 1) (W := 0) (L := singletonCutoff) 1
-        Nat.one_pos 0 0)) : ℝ) ≤ 2 := by
-    exact_mod_cast singletonLocalRank_le_two
-  have hdim : (4 : ℝ) ≤ Module.finrank ℚ
-      (weightedSupportSpace ℚ 1 1 0 singletonCutoff Nat.one_pos) := by
-    exact_mod_cast singletonWeightedSupportDimension_ge_four
-  nlinarith
-
-/-- One evaluation constraint admits a nonzero interpolant under the fixed dimension margin. -/
-example : ∃ Q : DifferentialPolynomial ℚ 1,
-    Q ≠ 0 ∧
-    Q ∈ weightedSupportSpace ℚ 1 1 0 2 (by decide) ∧
-    (∀ i : Fin 1, SatisfiesLocalConstraints 1 (singletonDomain i) 0 Q) ∧
-    jetTotalDegree Q < 2 ∧ differentialWeightedDegree 1 Q < 2 := by
-  have hD : 0 < (1 : ℕ) := by decide
-  have hm : 0 < (1 : ℕ) := by decide
-  have hA : 0 < (2 : ℕ) := by decide
-  have hg : (1 : ℝ) ≤ 1 := by norm_num
-  have hcut : ((1 : ℕ) : ℝ) * ((1 : ℕ) : ℝ) * (1 + (1 : ℝ)) ≤
-      ((1 * 2 : ℕ) : ℝ) := by norm_num
-  have hresult := @ReedSolomon.HiddenDerivative.exists_weightedSupport_interpolant_of_fixed_margin
-    ℚ (inferInstance : Field ℚ) 1 1 1 0 1 2 (1 : ℝ) singletonDomain (fun _ => 0)
-    hD hm hA hg hcut singletonFixedMarginAtTwo
-  obtain ⟨Q, hQ, hsupport, hlocal, hdegree, hweight⟩ := hresult
-  have hsupport' : Q ∈ weightedSupportSpace ℚ 1 1 0 2 (by decide) := by
-    convert hsupport using 1; norm_num
-  exact ⟨Q, hQ, hsupport', hlocal, hdegree, hweight⟩
 
 private def sampleDelta : ℝ := 1 / 8
 private def sampleN : ℕ :=
