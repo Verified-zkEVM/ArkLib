@@ -1764,6 +1764,14 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/Ta
 
 The weighted-support construction now uses `jetDegreeCastsNeZero_of_jetTotalDegree_charGuard` instead of repeating the proof of the jet-degree cast condition.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/DirectJetList.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Counting/DirectJetList.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+The declarations map to themselves: `directJetAgreementSolutions` → `directJetAgreementSolutions`, `directJetStageCharge` → `directJetStageCharge`, `directJetCommonOrderSum` → `directJetCommonOrderSum`, `finite_actualStage_regularSolutions_card_le_dimensionSensitive` → `finite_actualStage_regularSolutions_card_le_dimensionSensitive`, `finset_card_le_directJetStageCharge_sum` → `finset_card_le_directJetStageCharge_sum`, `directJetAgreementSolutions_finite_and_ncard_le_chain` → `directJetAgreementSolutions_finite_and_ncard_le_chain`, `directJetStageCharge_sum_le_commonOrderSum` → `directJetStageCharge_sum_le_commonOrderSum`, `directJetCommonOrderSum_le_coarse` → `directJetCommonOrderSum_le_coarse`, `exists_chain_directJetAgreementSolutions_finite_and_ncard_le` → `exists_chain_directJetAgreementSolutions_finite_and_ncard_le`, and `exists_directJetList_actualStages_and_bounds` → `exists_directJetList_actualStages_and_bounds`. The stage charge now expresses `jetWeight` and `SymbolicSeparantChain.Stage` as `jetTotalDegree` and `SeparantStage`; the chain bound uses the current `SeparantChain` API. The regular-stage theorem derives its degree and equation hypotheses from agreement-set membership and uses the current `closePolynomialSet` API.
+
+Did not port `directJetAgreementSolutions_finite_and_ncard_le_coarse`, since it follows from `closePolynomialSet_finite` and `closePolynomialSet_card_le_of_differential_equation`. The characteristic-zero declarations are covered by existing general theorems: `separant_ne_zero` with `JetDegreeCastsNeZero`, `card_le_of_regular_solutions_agreement`, `boundedSolution_card_le_sq_totalJetDegree`, and `finite_solutions_card_le_sq_totalJetDegree_of_agreement` with the Reed–Solomon close-polynomial specialization.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/HiddenDerivativeBound.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/HiddenDerivativeBound.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -4624,6 +4632,12 @@ An acceptance example checks a concrete small-gap block against both the Taylor 
 Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 Added a concrete nonvacuity example over `ℚ` for one degree-`< 1` solution agreeing at one coordinate, checking the Reed–Solomon specialization.
+
+## `ArkLibTest/Data/CodingTheory/ReedSolomon/ListDecodability.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Counting/DirectJetList.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Added `ZMod 5` acceptance examples showing the zero polynomial as an agreeing root, applying the regular-stage estimate, and obtaining the finite actual-chain, common-order, and coarse bounds from the final theorem.
 
 ## `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement.lean`
 
