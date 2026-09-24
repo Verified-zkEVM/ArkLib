@@ -1168,44 +1168,34 @@ example : ∃ P ∈ highTaylorPrimeFamily 0 (constantDerivativeEquation ℚ) 2 1
       have hl : l = 1 := by omega
       subst l
       exact commonTaylorNumerator_zeroJet_constantDerivativeEquation)
-
-/-- With the high cut at index `1` and differential order `r = 1`, the incidence bound for `Y₁`
-is attained by its regular zero jet. -/
+/-- The zero jet attains the capped bound for `Y₁ = 0` and satisfies both degree bounds. -/
 example :
-    (((({zeroJetVector (F := AlgebraicClosure ℚ) 2} :
-      Finset (Fin 2 → AlgebraicClosure ℚ)).card : ℕ) : ℚ)) ≤
-      jetTotalDegree (constantDerivativeEquation (AlgebraicClosure ℚ)) *
-        (((Fintype.card (Fin 1) * rationalTaylorCutDegreeBound
-          (constantDerivativeEquation (AlgebraicClosure ℚ)) 4 : ℕ) : ℚ) /
-            ((1 - 1 + 1 : ℕ) : ℚ)) ^ 1 := by
+    (1 : ℚ) ≤ (cappedDegreeMixedVolume 1 1 4 1 : ℚ) ∧
+    (commonTaylorNumerator 0 (constantDerivativeEquation ℚ) 4 0).degreeOf 1 ≤ 0 ∧
+    (taylorAgreementEquation 0 (constantDerivativeEquation ℚ) 2 4 0 0).degreeOf 1 ≤ 1 := by
   let F := AlgebraicClosure ℚ
   let Q : DifferentialPolynomial F 1 := constantDerivativeEquation F
   let jet : Fin 2 → F := zeroJetVector 2
-  let domain : Fin 1 → F := fun _ ↦ 0
+  let domain : Fin 1 ↪ F := ⟨fun _ ↦ 0, by intro i j _; exact Subsingleton.elim i j⟩
   let received : Fin 1 → F := fun _ ↦ 0
   let S : Finset (Fin 2 → F) := {jet}
-  have hinj : Function.Injective domain := by
-    intro i j _
-    exact Subsingleton.elim i j
   have hS : ∀ jet' ∈ S, aeval jet' (initialJetEquation 0 Q) = 0 ∧
       aeval jet' (initialJetSeparant 0 Q) ≠ 0 ∧
-      ∀ l, 1 ≤ l → l < 2 → aeval jet' (commonTaylorNumerator 0 Q 4 l) = 0 := by
+      ∀ l : {l : Fin 2 // 1 ≤ l.val},
+        aeval jet' (commonTaylorNumerator 0 Q 4 l.val) = 0 := by
     intro jet' hjet
-    have : jet' = jet := Finset.mem_singleton.mp hjet
-    subst jet'
+    obtain rfl := Finset.mem_singleton.mp hjet
     refine ⟨?_, ?_, ?_⟩
     · simp [Q, jet, initialJetEquation, constantDerivativeEquation, zeroJetVector]
     · simp [Q, jet, initialJetSeparant, constantDerivativeEquation, separant]
-    · intro l hl hlK
-      have hl' : l = 1 := by omega
-      subst l
-      exact commonTaylorNumerator_zeroJet_constantDerivativeEquation
+    · intro l
+      simpa [show l.val = 1 by omega] using
+        commonTaylorNumerator_zeroJet_constantDerivativeEquation
   have hA : ∀ jet' ∈ S, 1 ≤
       {i : Fin 1 | aeval jet'
         (taylorAgreementEquation 0 Q 2 4 (domain i) (received i)) = 0}.ncard := by
     intro jet' hjet
-    have : jet' = jet := Finset.mem_singleton.mp hjet
-    subst jet'
+    obtain rfl := Finset.mem_singleton.mp hjet
     have hsep : aeval jet (initialJetSeparant 0 Q) ≠ 0 := by
       simp [Q, jet, initialJetSeparant, constantDerivativeEquation, separant]
     have hcut (i : Fin 1) : aeval jet
@@ -1215,13 +1205,24 @@ example :
       simp [eval_rationalTaylorPolynomial, rationalTaylorCoefficient_initial,
         Q, jet, domain, received, zeroJetVector]
     simp [hcut]
-  have h := card_le_of_highTaylorCuts_of_agreement_sharp (center := (0 : F)) Q
-    (taylorExponentSufficient_two_mul 1 2) (by decide) domain received hinj
-    (A := 1) (by decide) (by decide) S hS hA
-  norm_num [F, Q, S, jet, constantDerivativeEquation,
-    rationalTaylorCutDegreeBound] at h ⊢
-  exact h
-
+  have hCapped := card_le_of_firstOrderHighTaylorCuts_of_agreement_capped
+    (center := (0 : F)) Q (K := 2) (k := 1) (τ := 4) (j := 1) (r := 1) (b := 4)
+    (hτ := taylorExponentSufficient_two_mul 1 2) (hK := by decide) (hb := by decide)
+    (hc := by decide) (hjb := by decide) (hrc := by decide) (hchart := by decide)
+    (hr := by decide) (hjet := by simpa [Q] using jetTotalDegree_constantDerivativeEquation_le)
+    (hderiv := by simp [Q, constantDerivativeEquation]) (domain := domain)
+    (received := received) (hkA := by decide) (hAn := by decide) (S := S) (hS := hS)
+    (hA := hA)
+  refine ⟨?_, ?_, ?_⟩
+  · norm_num [S, jet, cappedDegreeMixedVolume] at hCapped ⊢
+  · simpa using degreeOf_commonTaylorNumerator_firstOrder_le
+      (center := (0 : ℚ)) (Q := constantDerivativeEquation ℚ) 1 2 4
+      (taylorExponentSufficient_two_mul 1 2) (by decide)
+      (by simp [constantDerivativeEquation]) 0
+  · simpa using degreeOf_taylorAgreementEquation_firstOrder_le
+      (center := (0 : ℚ)) (Q := constantDerivativeEquation ℚ) 1 2 4
+      (taylorExponentSufficient_two_mul 1 2) (by decide)
+      (by simp [constantDerivativeEquation]) 0 0
 /-! ### Frobenius flattening -/
 
 private abbrev frobeniusInseparableEquation :

@@ -193,24 +193,35 @@ theorem degreeOf_taylorAgreementEquation_firstOrder_le (center : F)
     (hderiv : Q.degreeOf (some 1) ≤ r) (x y : F) :
     (taylorAgreementEquation center Q K x y (τ := τ)).degreeOf 1 ≤
       τ * (r - 1) + (K - 1) := by
-  apply (degreeOf_sub_le _ _ _).trans
-  apply max_le
-  · apply (degreeOf_sum_le _ _ _).trans
-    apply Finset.sup_le
-    intro l _
-    apply (degreeOf_mul_le _ _ _).trans
-    rw [degreeOf_C, zero_add]
-    exact (degreeOf_commonTaylorNumerator_firstOrder_le center Q r K τ hτ hr hderiv l).trans
-      (Nat.add_le_add_left (by omega) _)
-  · apply (degreeOf_mul_le _ _ _).trans
-    rw [degreeOf_C, zero_add]
-    have hsep : (initialJetSeparant center Q).degreeOf 1 ≤ r - 1 :=
-      (degreeOf_initialJetSeparant_firstOrder_le center Q).trans
-        (Nat.sub_le_sub_right hderiv 1)
-    have hpow : (initialJetSeparant center Q ^ τ).degreeOf 1 ≤ τ * (r - 1) :=
-      (degreeOf_pow_le (1 : Fin 2) (initialJetSeparant center Q) τ).trans
-        (Nat.mul_le_mul_left τ hsep)
-    exact hpow.trans (Nat.le_add_right _ _)
+  let Qover : DifferentialPolynomial (Polynomial F) 1 := MvPolynomial.map Polynomial.C Q
+  have hQover : Qover.degreeOf (some 1) ≤ r :=
+    (degreeOf_map_le Polynomial.C Q (some 1)).trans hderiv
+  have hover := degreeOf_taylorAgreementEquationOver_firstOrder
+    (Polynomial.C center) (Polynomial.C x) (Polynomial.C y) Qover r K τ hτ hr hQover
+  have hmap := degreeOf_map_le (Polynomial.aeval (0 : F)).toRingHom
+    (taylorAgreementEquationOver (F := F) (Polynomial.C center) Qover K
+      (Polynomial.C x) (Polynomial.C y) (τ := τ)) 1
+  have hQeval :
+      MvPolynomial.map (Polynomial.aeval (0 : F)).toRingHom Qover = Q := by
+    dsimp only [Qover]
+    rw [MvPolynomial.map_map]
+    have he : (Polynomial.aeval (0 : F)).toRingHom.comp Polynomial.C = RingHom.id F := by
+      ext a
+      simp
+    rw [he]
+    exact MvPolynomial.map_id Q
+  have hspec := map_taylorAgreementEquationOver_eq
+    (F := F) (φ := Polynomial.aeval (0 : F)) (Polynomial.C center) Qover K
+      (Polynomial.C x) (Polynomial.C y) τ
+  rw [hQeval] at hspec
+  have hspec' :
+      MvPolynomial.map (Polynomial.aeval (0 : F)).toRingHom
+          (taylorAgreementEquationOver (F := F) (Polynomial.C center) Qover K
+            (Polynomial.C x) (Polynomial.C y) (τ := τ)) =
+        taylorAgreementEquation center Q K x y (τ := τ) := by
+    simpa using hspec
+  rw [← hspec']
+  exact hmap.trans hover
 
 /-- Agreement with a received polynomial of bounded degree lies in the capped rectangle whose
 third bound records the first-derivative degree. -/

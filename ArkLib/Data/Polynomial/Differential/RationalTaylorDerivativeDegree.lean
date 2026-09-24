@@ -22,7 +22,7 @@ then follows for every sufficient denominator exponent.
 
 * `degreeOf_initialJetSeparant_le`: the separant has degree at most one less in the highest jet
   variable.
-* `degreeOf_initialJetSeparant_firstOrder_le`: the field-valued first-order specialization.
+* `degreeOf_map_le`: coefficient maps do not increase degree in any variable.
 * `degreeOf_rationalTaylorNumeratorOver_le`: a bound on the Taylor index-weight degree gives a
   bound on every rational Taylor numerator.
 * `degreeOf_commonTaylorNumeratorOver_le`: every numerator padded to a sufficient exponent has a
@@ -46,8 +46,7 @@ variable {F : Type*} {r : ℕ}
 
 /-- The initial separant has degree at most one less in the highest jet variable. -/
 theorem degreeOf_initialJetSeparant_le [CommSemiring F] [Nontrivial F]
-    (center : Polynomial F)
-    (Q : DifferentialPolynomial (Polynomial F) r) :
+    (center : F) (Q : DifferentialPolynomial F r) :
     (initialJetSeparant center Q).degreeOf (Fin.last r) ≤
       Q.degreeOf (some (Fin.last r)) - 1 := by
   rw [← weightedTotalDegree_piSingle]
@@ -63,21 +62,6 @@ theorem degreeOf_initialJetSeparant_le [CommSemiring F] [Nontrivial F]
       · subst j
         simp [weightedTotalDegree_piSingle]
       · simp [weightedTotalDegree_piSingle, degreeOf_X, Ne.symm hj]
-
-/-- The field-valued first-order initial separant has degree at most one less than `Q` in `Y₁`. -/
-theorem degreeOf_initialJetSeparant_firstOrder_le [Field F] (center : F)
-    (Q : DifferentialPolynomial F 1) :
-    (initialJetSeparant center Q).degreeOf 1 ≤ Q.degreeOf (some 1) - 1 := by
-  rw [← weightedTotalDegree_piSingle]
-  apply le_trans (weightedTotalDegree_aeval_le_of_le
-    (Pi.single (some (1 : Fin 2)) 1) (Pi.single (1 : Fin 2) 1) _ _ ?_)
-  · simpa [initialJetSeparant, separant] using weightedTotalDegree_pderiv_le_sub
-      (Pi.single (some (1 : Fin 2)) 1) (some (1 : Fin 2)) Q
-  · intro i
-    cases i with
-    | none => simp
-    | some j => fin_cases j <;>
-        simp [weightedTotalDegree_piSingle, MvPolynomial.degreeOf_X]
 
 /-- If the Taylor index-weight degree of `Q` is at most `v`, its rational Taylor numerator has
 degree at most `(2(l - r) - 1) * (v - 1) + l` in the highest jet variable. -/
@@ -193,15 +177,9 @@ theorem degreeOf_commonTaylorNumeratorOver_firstOrder
     exact hjet
   simpa using degreeOf_commonTaylorNumeratorOver_le center Q v K τ hτ (by omega) hv hQ l
 
-private theorem degreeOf_map_le [CommSemiring F] {σ : Type*}
-    (f : F →+* Polynomial F) (P : MvPolynomial σ F)
-    (i : σ) : (MvPolynomial.map f P).degreeOf i ≤ P.degreeOf i := by
-  apply MvPolynomial.degreeOf_le_iff.mpr
-  intro m hm
-  exact MvPolynomial.monomial_le_degreeOf i (MvPolynomial.support_map_subset f P hm)
-
-private theorem degreeOf_map_eval_le [CommSemiring F] {σ : Type*}
-    (f : Polynomial F →+* F) (P : MvPolynomial σ (Polynomial F))
+/-- A coefficient ring homomorphism does not increase degree in any variable. -/
+theorem degreeOf_map_le {R S : Type*} [CommSemiring R] [CommSemiring S]
+    {σ : Type*} (f : R →+* S) (P : MvPolynomial σ R)
     (i : σ) : (MvPolynomial.map f P).degreeOf i ≤ P.degreeOf i := by
   apply MvPolynomial.degreeOf_le_iff.mpr
   intro m hm
@@ -219,7 +197,7 @@ theorem degreeOf_commonTaylorNumerator_firstOrder_le [Field F] (center : F)
     (degreeOf_map_le Polynomial.C Q (some 1)).trans hjet
   have hover := degreeOf_commonTaylorNumeratorOver_firstOrder
     (Polynomial.C center) Qover v K τ hτ hv hQover l
-  have hmap := degreeOf_map_eval_le (Polynomial.aeval (0 : F)).toRingHom
+  have hmap := degreeOf_map_le (Polynomial.aeval (0 : F)).toRingHom
     (commonTaylorNumeratorOver (F := F) (Polynomial.C center) Qover τ l.val) 1
   have hQeval :
       MvPolynomial.map (Polynomial.aeval (0 : F)).toRingHom Qover = Q := by

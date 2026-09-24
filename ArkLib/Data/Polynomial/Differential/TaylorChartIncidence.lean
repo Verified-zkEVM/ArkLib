@@ -426,7 +426,7 @@ theorem card_le_of_firstOrderHighTaylorCuts_of_agreement_capped [IsAlgClosed F]
     mem_restrictCappedDegree_of_bounds _
       ((totalDegree_initialJetSeparant_le center Q).trans
         ((Nat.sub_le_sub_right hjet 1).trans (by omega)))
-      ((degreeOf_initialJetSeparant_firstOrder_le center Q).trans
+      ((degreeOf_initialJetSeparant_le center Q).trans
         ((Nat.sub_le_sub_right hderiv 1).trans (by omega)))
   have hhigh : ∀ f ∈ highCuts, f ∈ restrictCappedDegree (Fin 2) F 1 b c := by
     intro f hf
