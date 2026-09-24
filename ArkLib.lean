@@ -148,6 +148,8 @@ public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.P
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.ReceivedCurve
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.Soundness
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.SourceColumn
+public import
+  ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.WeightedJohnsonCertificate
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.WeightedSupport
 public import
   ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.WeightedSupportCertificate
