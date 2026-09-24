@@ -3088,6 +3088,10 @@ ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d, which were stated over
 * The exponential envelope inside `localRank_weightedHigherJetCount_le_exp` is
   `Real.add_pow_le_pow_mul_exp`.
 
+Ported from `ArkLib/ToMathlib/Analysis/SpecificLimits/GeometricBounds.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Renamed `geometric_ratio_le` to `agreementGap_geometricRatio_le` and `geometric_count_le_manuscript_bound` to `geometricCount_le_of_agreementGap`. Generalized both conclusions from `ℝ` to any linearly ordered field; the count theorem retains its rational count premise. The characteristic-based binomial pivot condition is covered by `PolynomialDifferential.natCast_choose_ne_zero_of_ringChar`, specialized at each index and combined with binomial symmetry, so it was not ported. No Reed–Solomon wrapper was added because the numerical statements have no Reed–Solomon-specific data.
+
 ## `ArkLib/ToMathlib/BigOperators/Intervals.lean`
 
 The source's private sums `automatic_sum_range_cast` and `automatic_sum_range_sq_cast` in
@@ -4639,6 +4643,12 @@ event sum and the uniform-sampling statements. No public ArkLib declaration is a
 compatibility calculation is covered by VCVio's `probOutput_true_eq_probEvent` followed by
 `probEvent_eq_tsum_indicator` or its finite variants, so ArkLib adds no wrapper. The three-sample
 PMF computation is not added, and `$ᵖ` plus `Pr_{…}[…]` remain retired syntax.
+
+## `ArkLibTest/ToMathlib/Analysis/SpecificLimits.lean`
+
+Ported from `ArkLib/ToMathlib/Analysis/SpecificLimits/GeometricBounds.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Acceptance examples check the ratio bound at `n = K = A = 2`, `k = 1`, `ν = 2`, and `δ = 1/2`, and the count bound for `L = 20`, `m = d = 1`.
 
 ## `ArkLibTest/ToMathlib/MvPolynomial.lean`
 
