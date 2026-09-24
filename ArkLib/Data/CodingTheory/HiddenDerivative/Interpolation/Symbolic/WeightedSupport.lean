@@ -27,8 +27,9 @@ interpolant with explicit challenge-degree and height bounds.
 
 * `weightedSupportColumns`: a finite enumeration of the weighted-support exponents as source
   columns.
-* `localConstraintBlock_eq_weightedSupportSubmatrix` and
-  `localConstraintMatrix_rank_le_weightedSupport`: block identification and a rank bound for
+* `localConstraintBlock_eq_weightedSupportSubmatrix`,
+  `localConstraintBlock_rank_le_base_actual` and
+  `localConstraintMatrix_rank_le_weightedSupport`: block identification and rank bounds for
   arbitrary received polynomial curves.
 * `exists_primitive_weightedSupport_interpolant`: primitive interpolation from a strict dimension
   surplus for arbitrary finite point and column types.
@@ -127,6 +128,25 @@ theorem localConstraintBlock_eq_weightedSupportSubmatrix
   rw [map_localConstraintCoordinatesAt]
   simp [SourceColumn.polynomial]
 
+/-- Every mapped point block of a received polynomial curve has rank at most the source-field
+actual local rank. -/
+theorem localConstraintBlock_rank_le_base_actual
+    [Fintype κ] (hD : 0 < D) (centers : ι → F) (received : ι → F[X])
+    (columns : κ → SourceColumn d)
+    (hband : ∀ j, WeightedSupportEligible D d W L (columns j).exponent) (i : ι) :
+    Matrix.rank (fun row j => algebraMap F[X] (RatFunc F)
+      (localConstraintMatrix m (fun j => Polynomial.C (centers j)) received columns
+        (i, row) j) : Matrix (LowContactIndex d m) κ (RatFunc F)) ≤
+      Module.finrank F (LinearMap.range
+        (weightedSupportLocalConstraint (R := F) (d := d) (W := W)
+          (L := L) m hD 0 0)) := by
+  rw [localConstraintBlock_eq_weightedSupportSubmatrix hD centers received columns hband i]
+  exact (Matrix.rank_submatrix_le _ id (weightedSupportColumnIndex hD columns hband)).trans
+    (rank_weightedSupportLocalCoordinateMatrix_le_base_actual (F := F) (d := d) (W := W)
+      (L := L) m hD
+      (algebraMap F[X] (RatFunc F) (Polynomial.C (centers i)))
+      (algebraMap F[X] (RatFunc F) (received i)))
+
 /-- A mapped received-line point block is a column submatrix of the canonical support matrix over
 the rational-function field. -/
 theorem receivedLine_block_eq_canonical_submatrix {n N : ℕ}
@@ -155,12 +175,8 @@ theorem receivedLine_block_rank_le_base_actual {n N : ℕ}
       Module.finrank F (LinearMap.range
         (weightedSupportLocalConstraint (R := F) (d := d) (W := W)
           (L := L) m hD 0 0)) := by
-  rw [receivedLine_block_eq_canonical_submatrix hD centers f g columns hband i]
-  exact (Matrix.rank_submatrix_le _ id (weightedSupportColumnIndex hD columns hband)).trans
-    (rank_weightedSupportLocalCoordinateMatrix_le_base_actual (F := F) (d := d) (W := W)
-      (L := L) m hD
-      (algebraMap F[X] (RatFunc F) (Polynomial.C (centers i)))
-      (algebraMap F[X] (RatFunc F) (receivedLine (f i) (g i))))
+  exact localConstraintBlock_rank_le_base_actual hD centers
+    (fun i => receivedLine (f i) (g i)) columns hband i
 
 /-- The symbolic curve matrix has rank at most the number of received points times the rank of
 the weighted-support local constraint map over the base field. -/
@@ -186,12 +202,7 @@ theorem localConstraintMatrix_rank_le_weightedSupport [Fintype ι] [Fintype κ]
       change Matrix.rank (fun row j => algebraMap F[X] (RatFunc F)
         (localConstraintMatrix m (fun j => Polynomial.C (centers j)) received columns
           (i, row) j)) ≤ _
-      rw [localConstraintBlock_eq_weightedSupportSubmatrix hD centers received columns hband i]
-      exact (Matrix.rank_submatrix_le _ id (weightedSupportColumnIndex hD columns hband)).trans
-        (rank_weightedSupportLocalCoordinateMatrix_le_base_actual (F := F) (d := d) (W := W)
-          (L := L) m hD
-          (algebraMap F[X] (RatFunc F) (Polynomial.C (centers i)))
-          (algebraMap F[X] (RatFunc F) (received i)))
+      exact localConstraintBlock_rank_le_base_actual hD centers received columns hband i
     _ = _ := by simp
 
 /-- A weighted-support dimension surplus gives a primitive interpolant for a received curve. Its

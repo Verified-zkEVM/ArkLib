@@ -54,13 +54,6 @@ variable {F : Type*} [Field F] {d : ℕ} {ι κ : Type*} [Finite ι] [Fintype κ
 def receivedLine (f g : F) : F[X] :=
   Polynomial.C f + Polynomial.X * Polynomial.C g
 
-/-- Evaluating a received line at challenge `z` gives `ρ f + z * ρ g`. -/
-@[simp]
-theorem eval₂_receivedLine {E : Type*} [CommSemiring E] (ρ : F →+* E) (z : E) (f g : F) :
-    (receivedLine f g).eval₂ ρ z = ρ f + z * ρ g := by
-  simp only [receivedLine, Polynomial.eval₂_add, Polynomial.eval₂_C,
-    Polynomial.eval₂_mul, Polynomial.eval₂_X]
-
 /-- A received line has challenge degree at most `1`. -/
 theorem natDegree_receivedLine_le (f g : F) : (receivedLine f g).natDegree ≤ 1 := by
   rw [receivedLine]

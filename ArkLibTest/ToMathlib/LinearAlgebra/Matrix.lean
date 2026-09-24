@@ -135,10 +135,6 @@ example : twoBlockMatrix.rank = 2 ∧
     twoBlockMatrix.rank ≤
       ∑ i : Fin 2, (twoBlockMatrix.submatrix (fun a : Fin 1 => (i, a)) id).rank := by
   refine ⟨twoBlockMatrix_rank, fun i => twoBlock_block_rank i, ?_⟩
-  rw [twoBlockMatrix_rank]
-  have hsum : ∑ i : Fin 2,
-      (twoBlockMatrix.submatrix (fun a : Fin 1 => (i, a)) id).rank = 2 := by
-    simp [twoBlock_block_rank]
-  omega
+  exact Matrix.rank_prod_rows_le_sum twoBlockMatrix
 
 end MatrixRowBlocksTest

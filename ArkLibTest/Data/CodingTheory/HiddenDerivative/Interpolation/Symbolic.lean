@@ -188,11 +188,8 @@ private theorem twoPointFixedMargin {F : Type*} [Field F] :
   exact_mod_cast hmargin
 
 /-- The fixed-margin construction gives a certificate with a feasible two-point threshold. -/
-example : Nonempty (SymbolicReceivedCurve.Certificate 2 1 1 3 1 35 twoPointEmbedding
-    (fun _ => receivedLine 0 0)) ∧
-    (∃ cert : SymbolicReceivedCurve.Certificate 2 1 1 3 1 35 twoPointEmbedding
-      (fun _ => receivedLine 0 0), ∃ stages terminal, SeparantChain cert.Q stages terminal) ∧
-    ∃ indices : Finset (Fin 2), indices.card = 2 := by
+example : ∃ cert : SymbolicReceivedCurve.Certificate 2 1 1 3 1 35 twoPointEmbedding
+    (fun _ => receivedLine 0 0), ∃ stages terminal, SeparantChain cert.Q stages terminal := by
   obtain ⟨cert⟩ := exists_weightedSupport_certificate_of_fixed_margin
     (F := ℚ) (D := 1) (d := 1)
     (W := 0) (m := 2) (A := 2) (k := 1) (g₀ := 1) Nat.one_pos (by norm_num)
@@ -202,8 +199,7 @@ example : Nonempty (SymbolicReceivedCurve.Certificate 2 1 1 3 1 35 twoPointEmbed
       have hcut : ((1 : ℕ) : ℝ) * 2 * (1 + (1 : ℝ)) = 4 := by norm_num
       rw [← hcut] at hmargin
       exact hmargin)
-  refine ⟨⟨cert⟩, ⟨cert, ?_⟩, ⟨Finset.univ, by simp⟩⟩
-  exact cert.exists_separantChain (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
+  exact ⟨cert, cert.exists_separantChain (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))⟩
 
 private noncomputable def twoPointWeightedColumns : Fin (Fintype.card
     (↥(weightedSupportExponents 1 1 0 2 Nat.one_pos))) → SourceColumn 1 :=
