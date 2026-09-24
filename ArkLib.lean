@@ -507,6 +507,7 @@ public import ArkLib.Data.Polynomial.Differential.FrobeniusTaylorWitness
 public import ArkLib.Data.Polynomial.Differential.JetDegree
 public import ArkLib.Data.Polynomial.Differential.JetPrefix
 public import ArkLib.Data.Polynomial.Differential.JetPrefixPresentation
+public import ArkLib.Data.Polynomial.Differential.RadicalSplit
 public import ArkLib.Data.Polynomial.Differential.RationalTaylor
 public import ArkLib.Data.Polynomial.Differential.RationalTaylorAlgebra
 public import ArkLib.Data.Polynomial.Differential.RationalTaylorBidegree
