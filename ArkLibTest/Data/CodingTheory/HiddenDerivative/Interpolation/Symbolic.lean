@@ -242,82 +242,121 @@ example :
         (L := 2) (m := 1) Nat.one_pos (fun _ => 0) (fun _ => 0) (fun _ => 0) _
         (weightedSupportColumns_eligible (d := 1) (D := 1) (W := 0) (L := 2) Nat.one_pos)
     _ ≤ 2 := by simpa using onePointLocalRank_le_two
-private def receivedLineColumns : Fin 1 → SourceColumn 1 := fun _ => ⟨1, 0, fun _ => 0⟩
+private def constructionColumns : Fin 2 → SourceColumn 1 :=
+  ![⟨0, 0, ![0]⟩, ⟨0, 1, ![0]⟩]
 
-private theorem receivedLineColumnsInjective : Function.Injective receivedLineColumns := by
+private theorem constructionColumnsInjective : Function.Injective constructionColumns := by
   intro i j h
-  fin_cases i
-  fin_cases j
-  rfl
+  fin_cases i <;> fin_cases j <;> simp_all [constructionColumns]
 
-private theorem receivedLineMatrixRankZero :
-    ((localConstraintMatrix 1 (fun _ : Fin 1 => Polynomial.C (0 : ℚ))
-      (fun _ => receivedLine (0 : ℚ) 0) receivedLineColumns).map
-        (algebraMap ℚ[X] (RatFunc ℚ))).rank ≤ 0 := by
-  have hX : SatisfiesLocalConstraints 1 (Polynomial.C (0 : ℚ)) (receivedLine (0 : ℚ) 0)
-      (X none : DifferentialPolynomial ℚ[X] 1) := by
-    rw [satisfiesLocalConstraints_iff_coeff_eq_zero]
-    intro e he
-    rw [unscaledLocalSubstitution_X]
-    have hT : e (localT 1) = 0 := by
-      rw [localContactOrder_eq] at he
-      omega
-    have hsingle : Finsupp.single (localT 1) 1 ≠ e := by
-      intro h
-      have := congrArg (fun a => a (localT 1)) h
-      simp at this
-      omega
-    simp [MvPolynomial.coeff_X, hsingle]
-  have hinterp : SourceColumn.interpolant receivedLineColumns (fun _ : Fin 1 => 1) =
-      (X none : DifferentialPolynomial ℚ[X] 1) := by
-    simp [SourceColumn.interpolant, receivedLineColumns, SourceColumn.exponent,
-      MvPolynomial.X]
-  have hmul := (localConstraintMatrix_mulVec_eq_zero_iff (m := 1)
-    (centers := fun _ : Fin 1 => Polynomial.C (0 : ℚ))
-    (received := fun _ => receivedLine (0 : ℚ) 0) receivedLineColumns
-    (fun _ : Fin 1 => (1 : ℚ[X]))).2 (by intro i; simpa [hinterp] using hX)
-  have hmatrix : localConstraintMatrix 1 (fun _ : Fin 1 => Polynomial.C (0 : ℚ))
-      (fun _ => receivedLine (0 : ℚ) 0) receivedLineColumns = 0 := by
-    apply Matrix.ext
-    intro row j
+private def constructionRow : Fin 1 × LowContactIndex 1 1 :=
+  (0, ⟨0, by simp [localContactOrder]⟩)
+
+private noncomputable def constructionConstraintMatrix (received : Fin 1 → ℚ[X]) :=
+  localConstraintMatrix 1 (fun _ : Fin 1 => Polynomial.C (0 : ℚ)) received constructionColumns
+
+private theorem constructionConstraintMatrix_constant_entry (received : Fin 1 → ℚ[X]) :
+    constructionConstraintMatrix received constructionRow 0 = 1 := by
+  rw [constructionConstraintMatrix, localConstraintMatrix_apply]
+  simp [constructionRow, constructionColumns, SourceColumn.polynomial, SourceColumn.exponent]
+
+private theorem constructionColumnsDerivativeWeight : ∀ j,
+    fullDerivativeJetWeight (constructionColumns j).exponent ≤ 0 := by
+  intro j
+  fin_cases j <;> change (constructionColumns _).exponent.weight jetDerivativeWeight ≤ 0 <;>
+    rw [SourceColumn.weight_exponent] <;>
+      simp [jetDerivativeWeight, constructionColumns]
+
+private theorem constructionConstraintMatrix_rank_one (received : Fin 1 → ℚ[X]) :
+    ((constructionConstraintMatrix received).map (algebraMap ℚ[X] (RatFunc ℚ))).rank = 1 := by
+  have hbudget : localDerivativeCoordinateBudget 1 1 0 = 1 := by decide
+  have hle : ((constructionConstraintMatrix received).map
+      (algebraMap ℚ[X] (RatFunc ℚ))).rank ≤ 1 := by
+    change ((localConstraintMatrix 1 (fun _ : Fin 1 => Polynomial.C (0 : ℚ)) received
+      constructionColumns).map (algebraMap ℚ[X] (RatFunc ℚ))).rank ≤ 1
+    rw [← rank_map_supportedLocalConstraintMatrix (algebraMap ℚ[X] (RatFunc ℚ)) 1 _ _ _]
+    simpa [hbudget] using
+      (rank_map_supportedLocalConstraintMatrix_le_of_derivative_weight (F := ℚ) (d := 1)
+        (m := 1) (W := 0) (centers := fun _ => 0) (received := received) constructionColumns
+        constructionColumnsDerivativeWeight)
+  let r : Fin 1 → Fin 1 × LowContactIndex 1 1 := fun _ => constructionRow
+  let c : Fin 1 → Fin 2 := fun _ => 0
+  have hminor : ((constructionConstraintMatrix received).map
+      (algebraMap ℚ[X] (RatFunc ℚ))).submatrix r c = (1 : Matrix (Fin 1) (Fin 1) (RatFunc ℚ)) := by
+    ext i j
+    fin_cases i
     fin_cases j
-    have hrow := congrFun hmul row
-    simpa [Matrix.mulVec, dotProduct, localConstraintMatrix] using hrow
-  rw [hmatrix]
-  simp
-example : Nonempty (Fin 1 × LowContactIndex 1 1) ∧ ∃ v : Fin 1 → ℚ[X], v ≠ 0 ∧
-    (∀ j, (v j).natDegree ≤ 0 * 0 / (1 - 0)) ∧
+    rw [Matrix.submatrix_apply, Matrix.map_apply]
+    change algebraMap ℚ[X] (RatFunc ℚ) (constructionConstraintMatrix received constructionRow 0) = 1
+    rw [constructionConstraintMatrix_constant_entry]
+    simp
+  have hge : 1 ≤ ((constructionConstraintMatrix received).map
+      (algebraMap ℚ[X] (RatFunc ℚ))).rank := by
+    have h := Matrix.rank_submatrix_le ((constructionConstraintMatrix received).map
+      (algebraMap ℚ[X] (RatFunc ℚ))) r c
+    rw [hminor, Matrix.rank_one] at h
+    simpa using h
+  exact Nat.le_antisymm hle hge
+
+private theorem constructionRow_supported (received : Fin 1 → ℚ[X]) :
+    constructionRow ∈ localConstraintSupportedRows 1
+      (fun _ : Fin 1 => Polynomial.C (0 : ℚ)) received constructionColumns := by
+  apply (mem_localConstraintSupportedRows_iff 1 _ _ _ constructionRow).mpr
+  refine ⟨0, ?_⟩
+  change constructionConstraintMatrix received constructionRow 0 ≠ 0
+  rw [constructionConstraintMatrix_constant_entry]
+  norm_num
+
+example : ∃ v : Fin 2 → ℚ[X], v ≠ 0 ∧
+    (∀ j, (v j).natDegree ≤ 1 - (constructionColumns j).y₀) ∧
     Ideal.span (Set.range v) = ⊤ ∧
     (∀ {S : Type*} [CommSemiring S] [Nontrivial S] (ψ : ℚ[X] →+* S),
-      MvPolynomial.map ψ (SourceColumn.interpolant receivedLineColumns v) ≠ 0) ∧
+      MvPolynomial.map ψ (SourceColumn.interpolant constructionColumns v) ≠ 0) ∧
     ∀ _ : Fin 1, SatisfiesLocalConstraints 1 (Polynomial.C (0 : ℚ))
-      (receivedLine (0 : ℚ) 0) (SourceColumn.interpolant receivedLineColumns v) := by
-  refine ⟨⟨(0 : Fin 1), ⟨0, by simp [localContactOrder]⟩⟩, ?_⟩
+      (receivedLine (0 : ℚ) 1) (SourceColumn.interpolant constructionColumns v) := by
+  have hsurplus : 1 * (1 + 1) <
+      ∑ j : Fin 2, (1 + 1 - 1 * (constructionColumns j).y₀) := by decide
   obtain ⟨v, hv, hvdeg, hspan, hmap, hconstraints⟩ :=
-    exists_primitive_receivedLine_interpolant_of_column_height (m := 1) (h := 0)
-    (centers := fun _ : Fin 1 => (0 : ℚ)) (f := fun _ => 0) (g := fun _ => 0)
-    receivedLineColumns receivedLineColumnsInjective (algebraMap ℚ[X] (RatFunc ℚ))
-    (IsFractionRing.injective ℚ[X] (RatFunc ℚ)) (s := 0) receivedLineMatrixRankZero (by decide)
+    exists_primitive_receivedLine_interpolant_of_column_height (m := 1) (h := 1)
+      (centers := fun _ : Fin 1 => (0 : ℚ)) (f := fun _ => 0) (g := fun _ => 1)
+      constructionColumns constructionColumnsInjective (algebraMap ℚ[X] (RatFunc ℚ))
+      (IsFractionRing.injective ℚ[X] (RatFunc ℚ)) (s := 1)
+      (constructionConstraintMatrix_rank_one (fun _ => receivedLine (0 : ℚ) 1)).le hsurplus
   refine ⟨v, hv, ?_, hspan, hmap, hconstraints⟩
   intro j
   fin_cases j
-  simpa [receivedLineColumns] using
-    (Polynomial.natDegree_le_of_mem_degreeLT_succ (hvdeg 0))
+  · simpa [constructionColumns] using
+      (Polynomial.natDegree_le_of_mem_degreeLT_succ (hvdeg 0))
+  · simpa [constructionColumns] using
+      (Polynomial.natDegree_le_of_mem_degreeLT_succ (hvdeg 1))
 
-private theorem sourceColumnsDerivativeWeight : ∀ j,
-    fullDerivativeJetWeight (sourceColumns j).exponent ≤ 0 := by
-  intro j
-  fin_cases j <;> change (sourceColumns _).exponent.weight jetDerivativeWeight ≤ 0 <;>
-    rw [SourceColumn.weight_exponent] <;> simp [jetDerivativeWeight, sourceColumns]
+example : ∃ v : Fin 2 → ℚ[X], v ≠ 0 ∧ (∀ j, (v j).natDegree ≤ 1) ∧
+    Ideal.span (Set.range v) = ⊤ ∧
+    (∀ {S : Type*} [CommSemiring S] [Nontrivial S] (ψ : ℚ[X] →+* S),
+      MvPolynomial.map ψ (SourceColumn.interpolant constructionColumns v) ≠ 0) ∧
+    ∀ _ : Fin 1, SatisfiesLocalConstraints 1 (Polynomial.C (0 : ℚ))
+      (receivedLine (0 : ℚ) 1) (SourceColumn.interpolant constructionColumns v) := by
+  obtain ⟨v, hv, hdegree, hspan, hmap, hconstraints⟩ :=
+    exists_primitive_receivedLine_interpolant_of_rank_le (m := 1) (ν := 1)
+      (centers := fun _ : Fin 1 => (0 : ℚ)) (f := fun _ => 0) (g := fun _ => 1)
+      constructionColumns constructionColumnsInjective
+      (by intro j; fin_cases j <;> norm_num [constructionColumns])
+      (algebraMap ℚ[X] (RatFunc ℚ)) (IsFractionRing.injective ℚ[X] (RatFunc ℚ)) (s := 1)
+      (constructionConstraintMatrix_rank_one (fun _ => receivedLine (0 : ℚ) 1)).le (by decide)
+  exact ⟨v, hv, hdegree, hspan, hmap, hconstraints⟩
 
-example : ((supportedLocalConstraintMatrix 1
-      (fun _ : Fin 1 => Polynomial.C (0 : ℚ)) (fun _ => (0 : ℚ[X])) sourceColumns).map
+example : constructionConstraintMatrix (fun _ => 0) constructionRow 0 = 1 ∧
+    constructionRow ∈ localConstraintSupportedRows 1
+      (fun _ : Fin 1 => Polynomial.C (0 : ℚ)) (fun _ => 0) constructionColumns ∧
+    ((supportedLocalConstraintMatrix 1 (fun _ : Fin 1 => Polynomial.C (0 : ℚ))
+      (fun _ => (0 : ℚ[X])) constructionColumns).map
       (algebraMap ℚ[X] (RatFunc ℚ))).rank ≤ 1 * localDerivativeCoordinateBudget 1 1 0 := by
   have hbudget : localDerivativeCoordinateBudget 1 1 0 = 1 := by decide
+  refine ⟨constructionConstraintMatrix_constant_entry _, constructionRow_supported _, ?_⟩
   simpa [hbudget] using
     (rank_map_supportedLocalConstraintMatrix_le_of_derivative_weight
       (F := ℚ) (d := 1) (m := 1) (W := 0) (centers := fun _ => 0)
-      (received := fun _ => 0) sourceColumns sourceColumnsDerivativeWeight)
+      (received := fun _ => 0) constructionColumns constructionColumnsDerivativeWeight)
 private def nonzeroSupportColumns : Fin 1 → SourceColumn 1 :=
   fun _ => ⟨0, 1, fun _ => 0⟩
 
