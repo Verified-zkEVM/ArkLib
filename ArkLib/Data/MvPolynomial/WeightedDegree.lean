@@ -36,6 +36,8 @@ variables must add separate degree caps before using a finite-dimensional count.
 * `bind₁_mem_restrictWeightedDegree`: preservation under prescribed-weight substitution.
 * `weightedTotalDegree_pderiv_le_sub`: a partial derivative in `X i` lowers the weighted total
   degree by at least `w i`, in every characteristic.
+* `degreeOf_le_weightedTotalDegree`: if `X i` has positive weight, its degree is bounded by the
+  weighted total degree.
 * `natDegree_aeval_le_weightedTotalDegree` and `natDegree_aeval_le_weightedTotalDegree_of_le`:
   substituting univariate polynomials gives a univariate polynomial whose `natDegree` is at most
   the weighted total degree, with the weight of `i` being (a bound on) `natDegree (f i)`.
@@ -70,6 +72,15 @@ open Finsupp Module
 namespace MvPolynomial
 
 variable {σ R : Type*} [CommSemiring R]
+
+/-- If `X i` has positive weight, its degree is bounded by the weighted total degree. -/
+theorem degreeOf_le_weightedTotalDegree (w : σ → ℕ) (i : σ) (hi : 0 < w i)
+    (p : MvPolynomial σ R) :
+    degreeOf i p ≤ weightedTotalDegree w p := by
+  classical
+  apply degreeOf_le_iff.mpr
+  intro m hm
+  exact (Finsupp.le_weight w (Nat.ne_of_gt hi) m).trans (le_weightedTotalDegree w hm)
 
 /-- The `R`-submodule of multivariate polynomials all of whose monomials have `w`-weight at most
 `d`. -/

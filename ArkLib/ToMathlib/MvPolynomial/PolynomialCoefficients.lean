@@ -38,6 +38,8 @@ The file also shows that `MvPolynomial.optionEquivLeft` commutes with coefficien
 * `MvPolynomial.jointTotalDegree`, its ring-operation bounds, `jointTotalDegree_C_le`,
   `jointTotalDegree_le_of_natDegree_coeff_le` and its form
   `CoeffNatDegreeLE.jointTotalDegree_le`, and `jointTotalDegree_clearedSubstitution_le`.
+* `MvPolynomial.degreeOf_optionEquivRight_symm_le`: moving coefficient polynomials into a
+  distinguished variable does not increase the degree in the remaining variables.
 -/
 
 @[expose] public section
@@ -82,6 +84,52 @@ theorem optionEquivRight_symm_C (p : Polynomial R) :
   have h := Polynomial.aeval_algHom_apply
     (IsScalarTower.toAlgHom R (Polynomial R) (MvPolynomial σ (Polynomial R))) Polynomial.X p
   simpa [Polynomial.aeval_X_left_apply, algebraMap_eq] using h.symm
+
+/-- Moving coefficient polynomials into the distinguished variable does not increase the degree
+in any of the remaining variables. -/
+theorem degreeOf_optionEquivRight_symm_le [Nontrivial R]
+    (P : MvPolynomial σ (Polynomial R)) (i : σ) :
+    ((optionEquivRight R σ).symm P).degreeOf (some i) ≤ P.degreeOf i := by
+  classical
+  have hc (p : Polynomial R) :
+      ((optionEquivRight R σ).symm (C p : MvPolynomial σ (Polynomial R))).degreeOf
+        (some i) = 0 := by
+    rw [optionEquivRight_symm_C]
+    have he : Polynomial.aeval (X none : MvPolynomial (Option σ) R) p =
+        ∑ n ∈ p.support, C (p.coeff n) * X none ^ n := by
+      simpa [Polynomial.sum_def] using congrArg
+        (Polynomial.aeval (X none : MvPolynomial (Option σ) R)) p.sum_monomial_eq.symm
+    rw [he]
+    apply Nat.eq_zero_of_le_zero
+    apply (degreeOf_sum_le _ _ _).trans
+    apply Finset.sup_le
+    intro n _
+    apply (degreeOf_mul_le _ _ _).trans
+    simp only [degreeOf_C, zero_add]
+    exact (degreeOf_pow_le _ _ _).trans (by simp [degreeOf_X])
+  have he : (optionEquivRight R σ).symm P =
+      ∑ m ∈ P.support, (optionEquivRight R σ).symm (C (P.coeff m)) *
+        ∏ j ∈ m.support, (X (some j) : MvPolynomial (Option σ) R) ^ m j := by
+    conv_lhs => rw [P.as_sum]
+    simp only [map_sum, monomial_eq, map_mul, Finsupp.prod, map_prod, map_pow,
+      optionEquivRight_symm_X]
+  rw [he]
+  apply (degreeOf_sum_le _ _ _).trans
+  apply Finset.sup_le
+  intro m hm
+  apply (degreeOf_mul_le _ _ _).trans
+  rw [hc, zero_add]
+  apply (degreeOf_prod_le _ _ _).trans
+  calc
+    _ ≤ ∑ j ∈ m.support, m j * (if i = j then 1 else 0) := by
+      apply Finset.sum_le_sum
+      intro j _
+      exact (degreeOf_pow_le _ _ _).trans (by simp [degreeOf_X])
+    _ = m i := by
+      simp only [mul_ite, mul_one, mul_zero, Finset.sum_ite_eq, Finsupp.mem_support_iff,
+        ne_eq, ite_not, ite_eq_right_iff]
+      exact Eq.symm
+    _ ≤ P.degreeOf i := monomial_le_degreeOf i hm
 
 /-! ### Degree bounds on the coefficients -/
 

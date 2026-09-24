@@ -32,6 +32,8 @@ support of `Q`. It is defined in any commutative semiring and needs no division.
   `H * b + v`, where `v` bounds the degree of each monomial of `Q` plus the degree of its mapped
   coefficient. `MvPolynomial.totalDegree_clearedSubstitution` is the case of the coefficient map
   `C`, with `v = totalDegree Q`.
+* `MvPolynomial.degreeOf_clearedSubstitution`: a bound on one variable degree of the numerator
+  from corresponding bounds on `S` and the `N i`.
 -/
 
 @[expose] public section
@@ -168,6 +170,44 @@ theorem totalDegree_clearedSubstitution {K σ : Type*} [CommSemiring K]
   refine totalDegree_clearedSubstitution_le_of_coeff C S N d H b v Q hS hN hQ fun m hm ↦ ?_
   rw [totalDegree_C, zero_add]
   exact (le_totalDegree hm).trans hv
+
+/-- If `S` has degree at most `b` in `i`, each `N j` has degree at most `d j * b + w j`,
+every monomial of `Q` fits denominator budget `H`, and its `w`-weight is at most `v`, then the
+cleared numerator has degree at most `H * b + v` in `i`. -/
+theorem degreeOf_clearedSubstitution {R σ ι : Type*} [CommSemiring R]
+    (i : σ) (S : MvPolynomial σ R) (N : ι → MvPolynomial σ R) (d w : ι → ℕ)
+    (H b v : ℕ) (Q : MvPolynomial ι R)
+    (hS : S.degreeOf i ≤ b) (hN : ∀ j, (N j).degreeOf i ≤ d j * b + w j)
+    (hden : ∀ m ∈ Q.support, Finsupp.weight d m ≤ H)
+    (hw : ∀ m ∈ Q.support, Finsupp.weight w m ≤ v) :
+    (clearedSubstitution C S N d H Q).degreeOf i ≤ H * b + v := by
+  classical
+  apply (degreeOf_sum_le _ _ _).trans
+  apply Finset.sup_le
+  intro m hm
+  have hprod : (∏ j ∈ m.support, N j ^ m j).degreeOf i ≤
+      Finsupp.weight d m * b + Finsupp.weight w m := by
+    apply (degreeOf_prod_le _ _ _).trans
+    calc
+      _ ≤ ∑ j ∈ m.support, m j * (d j * b + w j) := by
+        apply Finset.sum_le_sum
+        intro j _
+        exact (degreeOf_pow_le _ _ _).trans (Nat.mul_le_mul_left _ (hN j))
+      _ = _ := by
+        simp only [Finsupp.weight_apply, Finsupp.sum, smul_eq_mul]
+        rw [Finset.sum_mul, ← Finset.sum_add_distrib]
+        apply Finset.sum_congr rfl
+        intro j _
+        ring
+  have hpow := (degreeOf_pow_le i S (H - Finsupp.weight d m)).trans
+    (Nat.mul_le_mul_left _ hS)
+  have hbudget := Nat.sub_add_cancel (hden m hm)
+  have hmul := degreeOf_mul_le i
+    (C (Q.coeff m) * ∏ j ∈ m.support, N j ^ m j)
+    (S ^ (H - Finsupp.weight d m))
+  have hcoeff := degreeOf_mul_le i (C (Q.coeff m)) (∏ j ∈ m.support, N j ^ m j)
+  rw [degreeOf_C, zero_add] at hcoeff
+  nlinarith [hw m hm]
 
 end
 
