@@ -970,10 +970,7 @@ private theorem castsNeZero_constantDerivativeEquation {F : Type*} [CommRing F] 
 /-- The active formal derivative of `Y₀` is nonzero over `ℚ`. -/
 example : separant (zeroJetEquation ℚ 0) 0 ≠ 0 := by
   apply separant_ne_zero
-  have hcast : JetDegreeCastsNeZero (zeroJetEquation ℚ 0) 0 :=
-    jetDegreeCastsNeZero_of_ringChar (Or.inl ringChar.eq_zero)
-  exact hcast.natCast_jetDegree_ne_zero (by
-    simp [DependsOnJet, zeroJetEquation, jetDegree])
+  norm_num [zeroJetEquation, jetDegree]
 
 /-- Over `ZMod 3`, `y' = 0` has exactly three solutions of degree at most `2`: the constants. -/
 example : Nat.card (BoundedSolution (constantDerivativeEquation (ZMod 3)) 2) = 3 := by
@@ -1443,6 +1440,19 @@ example :
     exact hspec_ne
   let f : ZMod 2 →+* AlgebraicClosure (ZMod 2) := algebraMap _ _
   exact exists_forall_jetEvaluation_ne_zero_map f f.injective Q {0} 0 hregular
+
+/-- Two distinct regular equations admit a common Taylor center. -/
+example :
+    let D : Fin 2 → DifferentialPolynomial ℚ 0 :=
+      fun i ↦ C (if i = 0 then (1 : ℚ) else 2)
+    D 0 ≠ D 1 ∧ ∃ center : ℚ, ∀ i ∈ Finset.univ,
+      jetEvaluation (D i) center (polynomialJet center (0 : Polynomial ℚ)) ≠ 0 := by
+  intro D
+  refine ⟨?_, exists_forall_jetEvaluation_ne_zero_of_family univ D (fun _ ↦ 0) ?_⟩
+  · change C 1 ≠ C 2
+    exact mt (MvPolynomial.C_inj ℚ 1 2).mp (by norm_num)
+  · intro i hi
+    fin_cases i <;> simp [D, differentialSpecialization, differentialSpecializationHom]
 
 example :
     ∃ exceptional : Finset ℚ, exceptional.card ≤ 1 ∧ 0 ∈ exceptional := by

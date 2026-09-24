@@ -354,3 +354,42 @@ example :
   norm_num [cappedDegreeMixedVolume] at h ⊢
 
 end CappedDegreeIncidenceCanary
+
+example :
+    let S : Finset (Fin 1 → 𝕂) := {fun _ ↦ 0}
+    (S.card : ℚ) ≤ 1 := by
+  intro S
+  let P : Ideal (MvPolynomial (Fin 1) ℚ) := ⊥
+  let cuts : Fin 1 → MvPolynomial (Fin 1) ℚ := fun _ ↦ X 0
+  have hP : P.IsPrime := by
+    change (⊥ : Ideal (MvPolynomial (Fin 1) ℚ)).IsPrime
+    exact Ideal.isPrime_bot
+  have h := MvPolynomial.card_le_of_agreement_off_excluded_of_principalCut
+    (P := P) (d := 0) (baseDegree := 1) (initialDegree := 1) (B := 1) (A := 1) (L := 1)
+    (hP := hP)
+    (hdim := by simp [P])
+    (hbaseDegree := by simp [P, affineDegree_bot])
+    (g := X 0) (s := 1) (hgP := by simp [P, X_ne_zero])
+    (hgDegree := by simp [totalDegree_X]) (hB := by omega)
+    (highCuts := []) (hhigh := by simp)
+    (cuts := cuts) (hcuts := by intro i; simp [cuts, totalDegree_X])
+    (hL := by omega) (hLA := by omega) (hAn := by simp)
+    (excluded := ∅)
+    (hterminal := by
+      intro Q hPQ hprime hs hg hhigh hdimQ hLQ
+      have hbound := natDegree_affineHilbertPolynomial_le_of_mem
+        (X_ne_zero (0 : Fin 1)) hg
+      have hbound' : (affineHilbertPolynomial Q).natDegree ≤ 0 := by simpa using hbound
+      omega)
+    (S := S)
+    (hS := by
+      intro x hx
+      rw [Finset.mem_singleton] at hx
+      subst x
+      simp [P])
+    (hA := by
+      intro x hx
+      rw [Finset.mem_singleton] at hx
+      subst x
+      simp [cuts])
+  norm_num [S] at h ⊢

@@ -139,58 +139,25 @@ theorem BW_homMatrix_mulVec_eq_zero_iff {R : Type} [CommRing R] {ι : Type} [Fin
     intro x hle
     have : e + 1 ≤ e := le_trans (Nat.le_add_right (e + 1) x.1) hle
     exact Nat.not_succ_le_self e this
-  constructor
-  · intro h i
-    have hi := congrArg (fun v => v i) h
-    have hi' :
-        (∑ j : Fin ((e + 1) + (e + k)),
-            BW_homMatrix (ι := ι) e k ωs f i j * Fin.append a b j) = 0 := by
-      simpa [Matrix.mulVec, dotProduct] using hi
-    have hi'' := hi'
-    rw [Fin.sum_univ_add] at hi''
-    simp only [BW_homMatrix, Order.lt_add_one_iff, Matrix.of_apply, Fin.val_castAdd, hx,
-      ↓reduceIte, Fin.append_left, Fin.val_natAdd, hy, add_tsub_cancel_left, Fin.append_right,
-      neg_mul, sum_neg_distrib] at hi''
-    have hAC :
-        (∑ x : Fin (e + 1), f i * ωs i ^ x.1 * a x) =
-          ∑ x : Fin (e + k), ωs i ^ x.1 * b x := by
-      have := eq_neg_of_add_eq_zero_left hi''
-      simpa using this
-    -- Convert `hAC` into the desired coefficientwise identity.
-    calc
-      (∑ t : Fin (e + 1), a t * ωs i ^ t.1) * f i
-          = f i * (∑ t : Fin (e + 1), a t * ωs i ^ t.1) := by
-              simp [mul_comm]
-      _ = ∑ t : Fin (e + 1), f i * (a t * ωs i ^ t.1) := by
-              simp [Finset.mul_sum]
-      _ = ∑ t : Fin (e + 1), f i * ωs i ^ t.1 * a t := by
-              simp [mul_left_comm, mul_comm]
-      _ = ∑ x : Fin (e + k), ωs i ^ x.1 * b x := by
-              simpa using hAC
-      _ = ∑ s : Fin (e + k), b s * ωs i ^ s.1 := by
-              simp [mul_comm]
-  · intro h
-    ext i
-    -- expand the matrix-vector multiplication at coordinate `i`
-    simp only [Matrix.mulVec, dotProduct, Pi.zero_apply]
+  have hrow : ∀ i, Matrix.mulVec (BW_homMatrix (ι := ι) e k ωs f) (Fin.append a b) i =
+      (∑ t : Fin (e + 1), a t * ωs i ^ t.1) * f i - ∑ s : Fin (e + k), b s * ωs i ^ s.1 := by
+    intro i
+    simp only [Matrix.mulVec, dotProduct]
     rw [Fin.sum_univ_add]
     simp only [BW_homMatrix, Order.lt_add_one_iff, Matrix.of_apply, Fin.val_castAdd, hx,
       ↓reduceIte, Fin.append_left, Fin.val_natAdd, hy, add_tsub_cancel_left, Fin.append_right,
       neg_mul, sum_neg_distrib]
-    -- turn the hypothesis `h i` into the same normal form
-    have hEq0 : f i * (∑ t : Fin (e + 1), a t * ωs i ^ t.1) =
-        ∑ s : Fin (e + k), b s * ωs i ^ s.1 := by
-      simpa [mul_comm] using h i
-    have hEq1 : (∑ t : Fin (e + 1), f i * (a t * ωs i ^ t.1)) =
-        ∑ s : Fin (e + k), b s * ωs i ^ s.1 := by
-      simpa [Finset.mul_sum] using hEq0
-    have hAC :
-        (∑ x : Fin (e + 1), f i * ωs i ^ x.1 * a x) =
-          ∑ x : Fin (e + k), ωs i ^ x.1 * b x := by
-      -- rearrange products in `hEq1`
-      simpa [mul_assoc, mul_left_comm, mul_comm]
-    -- use `hAC` to close the goal
-    simp [hAC]
+    rw [sub_eq_add_neg, Finset.sum_mul]
+    congr 1
+    · exact Finset.sum_congr rfl fun _ _ ↦ by ring
+    · rw [neg_inj]
+      exact Finset.sum_congr rfl fun _ _ ↦ mul_comm _ _
+  constructor
+  · intro h i
+    exact sub_eq_zero.mp ((hrow i).symm.trans (congrFun h i))
+  · intro h
+    funext i
+    rw [hrow, h i, sub_self, Pi.zero_apply]
 
 open scoped BigOperators in
 theorem Fin_sum_ite_lt_e_add_one (e k : ℕ) :
@@ -846,19 +813,21 @@ theorem RS_natDegree_inv_neg_vandermonde_C_eq_zero (n : ℕ) (v : Fin n → F)
   change ((D⁻¹ i j).natDegree = 0)
   have hDmap : D = D0.map f := by
     ext i j
-    simp [D, D0, Matrix.vandermonde, Matrix.map_apply, f, map_pow]
-  have hdetV : (Matrix.det (Matrix.vandermonde v)) ≠ 0 := by
-    simpa using (Matrix.det_vandermonde_ne_zero_iff (v := v)).2 hv
+    simp only [D, D0, f, Matrix.map_apply, Matrix.neg_apply, Matrix.vandermonde_apply, map_neg,
+      map_pow]
+  have hdetV : (Matrix.det (Matrix.vandermonde v)) ≠ 0 :=
+    (Matrix.det_vandermonde_ne_zero_iff (v := v)).2 hv
   have hdetD0 : (Matrix.det D0) ≠ 0 := by
     have h : ((-1 : F) ^ (Fintype.card (Fin n)) * Matrix.det (Matrix.vandermonde v)) ≠ 0 := by
-      exact mul_ne_zero (pow_ne_zero _ (by simp)) hdetV
-    simpa [D0, Matrix.det_neg] using h
+      exact mul_ne_zero (pow_ne_zero _ (neg_ne_zero.mpr one_ne_zero)) hdetV
+    rwa [Matrix.det_neg]
   have hunit0 : IsUnit (Matrix.det D0) := (isUnit_iff_ne_zero).2 hdetD0
   have hmul0 : D0 * D0⁻¹ = 1 := Matrix.mul_nonsing_inv D0 hunit0
   have hmul : (D0.map f) * ((D0⁻¹).map f) = (1 : Matrix (Fin n) (Fin n) F[X]) := by
-    simpa [Matrix.map_mul] using congrArg (fun A : Matrix (Fin n) (Fin n) F => A.map f) hmul0
+    rw [← Matrix.map_mul, hmul0, Matrix.map_one _ (map_zero f) (map_one f)]
   have hmul' : D * ((D0⁻¹).map f) = (1 : Matrix (Fin n) (Fin n) F[X]) := by
-    simpa [hDmap] using hmul
+    rw [hDmap]
+    exact hmul
   have hinv : D⁻¹ = (D0⁻¹).map f := by
     exact Matrix.inv_eq_right_inv (A := D) (B := (D0⁻¹).map f) hmul'
   simp [hinv, Matrix.map_apply, f]
@@ -1217,17 +1186,14 @@ theorem RS_exists_nonzero_kernelVec_of_det_submatrix_eq_zero_natDegree_le_one (e
       simp [n]
     exact hnotPn (hcond hn0)
   have hrlt : r < n := Nat.lt_of_le_of_ne hrle hrne
-  have hrle_e : r ≤ e := by
-    have : r < e + 1 := by
-      simpa [n] using hrlt
-    exact Nat.lt_succ_iff.mp this
-  have hcard' : n ≤ Fintype.card ι := by
-    simpa [n] using hcard
+  have hrle_e : r ≤ e := Nat.lt_succ_iff.mp hrlt
+  have hcard' : n ≤ Fintype.card ι := hcard
   have hrltcardι : r < Fintype.card ι := lt_of_lt_of_le hrlt hcard'
   -- pick i0 ∉ range I
   let sI : Finset ι := Finset.univ.map I
   have hsIlt : sI.card < (Finset.univ : Finset ι).card := by
-    simpa [sI] using hrltcardι
+    rw [Finset.card_map, Finset.card_univ, Finset.card_univ, Fintype.card_fin]
+    exact hrltcardι
   obtain ⟨i0, -, hi0_notmem⟩ := Finset.exists_mem_notMem_of_card_lt_card hsIlt
   have hi0 : i0 ∉ Set.range I := by
     intro hi
@@ -1238,7 +1204,8 @@ theorem RS_exists_nonzero_kernelVec_of_det_submatrix_eq_zero_natDegree_le_one (e
   -- pick j0 ∉ range J
   let sJ : Finset (Fin n) := Finset.univ.map J
   have hsJlt : sJ.card < (Finset.univ : Finset (Fin n)).card := by
-    simpa [sJ] using hrlt
+    rw [Finset.card_map, Finset.card_univ, Finset.card_univ, Fintype.card_fin, Fintype.card_fin]
+    exact hrlt
   obtain ⟨j0, -, hj0_notmem⟩ := Finset.exists_mem_notMem_of_card_lt_card hsJlt
   have hj0 : j0 ∉ Set.range J := by
     intro hj
@@ -1259,23 +1226,22 @@ theorem RS_exists_nonzero_kernelVec_of_det_submatrix_eq_zero_natDegree_le_one (e
     have : P (r + 1) := ⟨I', J', by simpa [B] using hne⟩
     exact hnotPr1 this
   let u : Fin (r + 1) → F[X] := fun t => B.adjugate t (Fin.last r)
-  have hBu : Matrix.mulVec B u = 0 := by
-    simpa [u] using
-      RS_mulVec_adjugate_col_eq_zero_of_det_eq_zero (n := r + 1) (A := B) (j := Fin.last r) hdetB
+  have hBu : Matrix.mulVec B u = 0 :=
+    RS_mulVec_adjugate_col_eq_zero_of_det_eq_zero (n := r + 1) (A := B) (j := Fin.last r) hdetB
   have hsub_cast : B.submatrix Fin.castSucc Fin.castSucc = K.submatrix I J := by
     funext i
     funext j
     simp [B, I', J']
   have hu_last : u (Fin.last r) =
       (-1 : F[X]) ^ ((Fin.last r : ℕ) + (Fin.last r : ℕ)) *
-        Matrix.det (B.submatrix Fin.castSucc Fin.castSucc) := by
-    simpa [u] using RS_adjugate_last_last_eq_det_submatrix_castSucc_castSucc (n := r) (B := B)
+        Matrix.det (B.submatrix Fin.castSucc Fin.castSucc) :=
+    RS_adjugate_last_last_eq_det_submatrix_castSucc_castSucc (n := r) (B := B)
   have hu_last_ne : u (Fin.last r) ≠ (0 : F[X]) := by
     have hsign : (-1 : F[X]) ^ ((Fin.last r : ℕ) + (Fin.last r : ℕ)) ≠ (0 : F[X]) := by
       have hminus1 : (-1 : F[X]) ≠ (0 : F[X]) := by simp
       exact pow_ne_zero _ hminus1
     have hdetMinor : Matrix.det (B.submatrix Fin.castSucc Fin.castSucc) ≠ (0 : F[X]) := by
-      simpa [hsub_cast] using hdetIJ
+      rwa [hsub_cast]
     rw [hu_last]
     exact mul_ne_zero hsign hdetMinor
   -- degree bound on u
@@ -1283,29 +1249,19 @@ theorem RS_exists_nonzero_kernelVec_of_det_submatrix_eq_zero_natDegree_le_one (e
     intro t
     have hu_t : u t =
         (-1 : F[X]) ^ ((Fin.last r : ℕ) + (t : ℕ)) *
-          Matrix.det (B.submatrix Fin.castSucc t.succAbove) := by
-      simpa [u] using RS_adjugate_fin_succ_eq_det_submatrix_last_castSucc (n := r) (B := B) (t := t)
-    have hdeg_det : (Matrix.det (B.submatrix Fin.castSucc t.succAbove)).natDegree ≤ r := by
-      apply RS_natDegree_det_le_of_entry_natDegree_le_one (n := r)
-        (A := B.submatrix Fin.castSucc t.succAbove)
-      intro i j
+          Matrix.det (B.submatrix Fin.castSucc t.succAbove) :=
+      RS_adjugate_fin_succ_eq_det_submatrix_last_castSucc (n := r) (B := B) (t := t)
+    have hdeg_det : (Matrix.det (B.submatrix Fin.castSucc t.succAbove)).natDegree ≤ r :=
       -- entries come from K
-      simpa [B] using hdeg (I' (Fin.castSucc i)) (J' (t.succAbove j))
+      RS_natDegree_det_le_of_entry_natDegree_le_one (n := r)
+        (A := B.submatrix Fin.castSucc t.succAbove) fun i j ↦
+          hdeg (I' (Fin.castSucc i)) (J' (t.succAbove j))
     have hdeg_sign : ((-1 : F[X]) ^ ((Fin.last r : ℕ) + (t : ℕ))).natDegree = 0 := by
       simp
-    have hmul_le :
-        (u t).natDegree ≤
-          ((-1 : F[X]) ^ ((Fin.last r : ℕ) + (t : ℕ))).natDegree +
-            (Matrix.det (B.submatrix Fin.castSucc t.succAbove)).natDegree := by
-      simpa [hu_t] using
-        (Polynomial.natDegree_mul_le
-          (p := (-1 : F[X]) ^ ((Fin.last r : ℕ) + (t : ℕ)))
-          (q := Matrix.det (B.submatrix Fin.castSucc t.succAbove)))
-    have hdeg_rhs :
-        ((-1 : F[X]) ^ ((Fin.last r : ℕ) + (t : ℕ))).natDegree +
-            (Matrix.det (B.submatrix Fin.castSucc t.succAbove)).natDegree ≤ r := by
-      simpa [hdeg_sign] using hdeg_det
-    exact le_trans hmul_le hdeg_rhs
+    rw [hu_t]
+    refine Polynomial.natDegree_mul_le.trans ?_
+    rw [hdeg_sign, zero_add]
+    exact hdeg_det
   -- extend u to all columns
   let a : Fin n → F[X] := Function.extend (J' : Fin (r + 1) → Fin n) u (fun _ => 0)
   have ha_on : ∀ t : Fin (r + 1), a (J' t) = u t := by
@@ -1382,8 +1338,7 @@ theorem RS_exists_nonzero_kernelVec_of_det_submatrix_eq_zero_natDegree_le_one (e
           det_updateRow_eq_sum_mul_adjugate_col (A := B) (i := Fin.last r) (b := b)
       have hsum0 : (∑ j : Fin (r + 1), b j * B.adjugate j (Fin.last r)) = 0 := by
         simpa [hdet_expr] using hdet_update
-      have hsum0' : (∑ j : Fin (r + 1), K i (J' j) * u j) = 0 := by
-        simpa [b, u] using hsum0
+      have hsum0' : (∑ j : Fin (r + 1), K i (J' j) * u j) = 0 := hsum0
       rw [hmul_formula (i := i)]
       simpa using hsum0'
   refine ⟨a, ha_ne, ?_, hmulVec⟩

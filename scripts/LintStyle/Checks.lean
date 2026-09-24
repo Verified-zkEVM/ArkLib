@@ -440,6 +440,20 @@ private def forbiddenRawOptionRoot? (chars : List Char) (line : Nat) :
       if !quoted || tail.head? == some '»' then some (root, line) else none
     else none
 
+/-- Elaboration-budget options: the exact names `maxHeartbeats` and `maxRecDepth`, and every
+option under the `synthInstance` root. Returns the option spelling used in the diagnostic. -/
+private def forbiddenRawBudgetOption? (chars : List Char) (line : Nat) :
+    Option (String × Nat) :=
+  let (chars, line) := skipRawTrivia chars line
+  let quoted := chars.head? == some '«'
+  let chars := if quoted then chars.tail else chars
+  [("maxHeartbeats", "maxHeartbeats"), ("maxRecDepth", "maxRecDepth"),
+      ("synthInstance", "synthInstance.*")].findSome? fun (name, shown) =>
+    if startsToken name chars then
+      let tail := chars.drop name.length
+      if !quoted || tail.head? == some '»' then some (shown, line) else none
+    else none
+
 private partial def rawOptionViolationsAux (chars : List Char) (line : Nat)
     (previousIsIdent : Bool) (acc : Array Violation) : Array Violation :=
   match chars with
@@ -447,10 +461,15 @@ private partial def rawOptionViolationsAux (chars : List Char) (line : Nat)
   | c :: rest =>
       let acc :=
         if !previousIsIdent && startsToken "set_option" chars then
-          match forbiddenRawOptionRoot? (chars.drop "set_option".length) line with
+          let optionChars := chars.drop "set_option".length
+          match forbiddenRawOptionRoot? optionChars line with
           | some (root, rootLine) => acc.push <| violation "ERR_OPT" rootLine
               s!"Forbidden `set_option {root}.*`; fix the source instead of changing or suppressing the linter"
-          | none => acc
+          | none =>
+            match forbiddenRawBudgetOption? optionChars line with
+            | some (option, optionLine) => acc.push <| violation "ERR_BUDGET" optionLine
+                s!"Forbidden `set_option {option}`; make the proof cheaper instead of raising the elaboration budget"
+            | none => acc
         else acc
       rawOptionViolationsAux rest (if c == '\n' then line + 1 else line)
         (isIdentContinue c) acc
@@ -611,8 +630,27 @@ def runSelfTests : IO Unit := do
     "def f (x : Nat) := 1"])
     "later nolint attributes with comment trivia must be rejected"
   assertSelfTest (!hasCode "ERR_OPT" #["def set_optionx := 1",
-    "set_option linterish.test false", "set_option maxRecDepth 1000"])
+    "set_option linterish.test false", "set_option autoImplicit false"])
     "option checks must respect exact keyword and root boundaries"
+  for option in ["maxHeartbeats", "maxRecDepth", "synthInstance.maxHeartbeats",
+      "synthInstance.maxSize"] do
+    assertSelfTest (hasCode "ERR_BUDGET" #[s!"set_option {option} 400000 in",
+      "theorem t : True := trivial"])
+      s!"a command-level {option} budget must be rejected"
+    assertSelfTest (hasCode "ERR_BUDGET" #[s!"def t := set_option {option} 400000 in 1",
+      s!"example : True := by set_option {option} 400000 in trivial"])
+      s!"term and tactic {option} budgets must be rejected"
+    assertSelfTest (!hasCode "ERR_OPT" #[s!"set_option {option} 400000"])
+      s!"{option} is an elaboration budget, not a linter suppression"
+  assertSelfTest (hasCode "ERR_BUDGET" #["set_option /- outer /- nested -/ comment -/",
+    "  «maxHeartbeats» 400000 in (1 : Nat)"])
+    "nested trivia and a quoted budget option must not bypass the lexical backstop"
+  assertSelfTest (hasCode "ERR_BUDGET" #["set_option maxRecDepth 4096"])
+    "a file-level budget must be rejected"
+  assertSelfTest (!hasCode "ERR_BUDGET" #["def maxHeartbeats := 1",
+    "set_option maxHeartbeatsx 1", "set_option maxRecDepthα 1",
+    "set_option synthInstanceα.maxSize 1", "set_option autoImplicit false"])
+    "budget checks must respect exact option-name and root boundaries"
   assertSelfTest (!hasCode "ERR_OPT" #["set_option ppα.test true",
     "set_option linterα.test true", "set_option profilerα.test true",
     "set_option traceα.test true"])

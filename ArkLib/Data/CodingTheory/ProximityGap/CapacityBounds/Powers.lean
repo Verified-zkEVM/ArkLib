@@ -147,19 +147,27 @@ private theorem powers_noninjective_tuple_card_le
     intro p hp
     have hp2 : p.card = 2 := (Finset.mem_powersetCard.mp hp).2
     obtain ⟨i, j, hij, rfl⟩ := Finset.card_eq_two.mp hp2
-    simpa [collision, hij, ne_comm, eq_comm] using
+    refine (Finset.card_le_card fun xs hxs ↦ ?_).trans
       (powers_collision_tuple_card_le (S := S) t i j hij)
+    obtain ⟨a, ha, b, hb, hab, h⟩ := (Finset.mem_filter.mp hxs).2
+    rw [Finset.mem_insert, Finset.mem_singleton] at ha hb
+    refine Finset.mem_filter.mpr ⟨Finset.mem_univ _, ?_⟩
+    rcases ha with rfl | rfl <;> rcases hb with rfl | rfl
+    · exact (hab rfl).elim
+    · exact h
+    · exact h.symm
+    · exact (hab rfl).elim
   have hsubset :
       (Finset.univ.filter fun xs : Fin (t + 1) → S => ¬ Function.Injective xs) ⊆
         P.biUnion collision := by
     intro xs hxs
     have hbad := (Finset.mem_filter.mp hxs).2
     obtain ⟨i, j, heq, hij⟩ := Function.not_injective_iff.mp hbad
-    have hp : ({i, j} : Finset (Fin (t + 1))) ∈ P := by
-      simp [P, hij]
-    apply Finset.mem_biUnion.mpr
-    refine ⟨{i, j}, hp, ?_⟩
-    simp [collision, heq, hij]
+    have hp : ({i, j} : Finset (Fin (t + 1))) ∈ P :=
+      Finset.mem_powersetCard.mpr ⟨Finset.subset_univ _, Finset.card_pair hij⟩
+    exact Finset.mem_biUnion.mpr ⟨{i, j}, hp, Finset.mem_filter.mpr ⟨Finset.mem_univ _, i,
+      Finset.mem_insert_self _ _, j, Finset.mem_insert_of_mem (Finset.mem_singleton_self _), hij,
+      heq⟩⟩
   calc
     (Finset.univ.filter fun xs : Fin (t + 1) → S => ¬ Function.Injective xs).card ≤
         (P.biUnion collision).card := Finset.card_le_card hsubset
@@ -565,7 +573,7 @@ private theorem powers_injective_compatible_tuple_card_lower
       (Fintype.card S : ℝ) ^ (k + 1) *
           (η * (Fintype.card S : ℝ) - (Nat.choose (k + 2) 2 : ℝ)) ≤
         (I.card : ℝ) := by
-    nlinarith
+    linarith
   simpa only [I] using hfinal
 
 open scoped BigOperators in
@@ -995,7 +1003,8 @@ private theorem powers_bad_seed_finset_card_le
     have hcommon :
         ((powers_common_domain k U cstar).card : ℝ) ≥
           (Fintype.card ι : ℝ) * (1 - (1 - β)) := by
-      nlinarith
+      rw [sub_sub_cancel]
+      exact hcommonStrict.le
     have hext : ∀ x ∈ Bgood,
         ∃ i, i ∈ (bw x).T ∧ i ∉ powers_common_domain k U cstar := by
       intro x _
