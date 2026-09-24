@@ -8,6 +8,7 @@ import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.Basic
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.WeightedSupportInterpolant
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.WeightedSupport
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.FiniteField
+import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.GeometricBound
 import Mathlib.Data.Nat.Prime.Infinite
 
 /-!
@@ -18,6 +19,7 @@ finite-field capacity list theorem on a concrete half-gap instance.
 -/
 
 open Finset PolynomialDifferential ReedSolomon ReedSolomon.HiddenDerivative
+  ReedSolomon.HiddenDerivative.WeightedSupportParameters
   ReedSolomon.ListDecoding
 open ReedSolomon.HiddenDerivativeInterpolationCertificate
 
@@ -277,6 +279,78 @@ example :
   exact ⟨q, hq, domain, listFactor, hfactor,
     by simpa only [sampleD] using hcertificate.1,
     sampleZeroInList domain hA⟩
+
+private def geometricSampleDomain : Fin sampleN ↪ ℚ :=
+  ⟨fun i ↦ ((i : ℕ) : ℚ), fun _ _ h ↦ Fin.ext (Nat.cast_injective (R := ℚ) h)⟩
+
+local instance : DecidableEq ℚ := Classical.decEq _
+
+private theorem prescribedGeometricSampleData :
+    0 < sampleMessageDim ∧ sampleA ≤ sampleN ∧
+      let d := Nat.ceil (Real.exp (xi / sampleDelta))
+      let m := Nat.ceil (100 * (d : ℝ) ^ 2 * harmonic (d - 1))
+      8 * m ≤ sampleN := by
+  obtain ⟨_, _, _, _, _, _, _, _, _, hblock, hk, _, hA, _⟩ := prescribedSampleSetup
+  have hδmax : sampleDelta < 1 / 4 := by norm_num [sampleDelta]
+  have hblock' :
+      let d := Nat.ceil (Real.exp (xi / sampleDelta))
+      let m := Nat.ceil (100 * (d : ℝ) ^ 2 * harmonic (d - 1))
+      8 * m ≤ sampleN := by
+    simpa only [sampleN, sampleM, sampleD,
+      capacityDerivativeOrder_eq_ceil hδmax, weightedSupportMultiplicity] using hblock
+  exact ⟨hk, hA, hblock'⟩
+
+private theorem geometricSampleZero_mem :
+    (0 : Polynomial ℚ) ∈ closePolynomialSet geometricSampleDomain (fun _ ↦ 0)
+      sampleMessageDim (agreementThreshold sampleDelta sampleN sampleMessageDim) := by
+  obtain ⟨_, hA, _⟩ := prescribedGeometricSampleData
+  rw [closePolynomialSet]
+  refine ⟨by simp, ?_⟩
+  have hset : polynomialAgreementSet geometricSampleDomain (fun _ ↦ 0)
+      (0 : Polynomial ℚ) = Finset.univ := by
+    ext i
+    simp [polynomialAgreementSet]
+  rw [hset]
+  simpa [sampleA, Fintype.card_fin] using hA
+
+/-- A concrete zero polynomial belongs to a singleton finite sublist with the prescribed bound. -/
+example :
+    let d := Nat.ceil (Real.exp (xi / sampleDelta))
+    let m := Nat.ceil (100 * (d : ℝ) ^ 2 * harmonic (d - 1))
+    (({(0 : Polynomial ℚ)} : Finset (Polynomial ℚ)).card : ℝ) ≤
+        4 * (m : ℝ) ^ 2 * (4 * m / sampleDelta) ^ d * sampleN ^ d ∧
+      (0 : Polynomial ℚ) ∈ closePolynomialSet geometricSampleDomain (fun _ ↦ 0)
+        sampleMessageDim (agreementThreshold sampleDelta sampleN sampleMessageDim) := by
+  obtain ⟨hk, hA, hblock⟩ := prescribedGeometricSampleData
+  have hbound := prescribed_geometric_finite_list_bound sampleDelta sampleN sampleMessageDim
+    geometricSampleDomain (fun _ ↦ 0) (by norm_num [sampleDelta])
+    (by norm_num [sampleDelta]) hk hblock hA
+    (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
+    ({(0 : Polynomial ℚ)} : Finset (Polynomial ℚ))
+    (by
+      intro P hP
+      simp only [Finset.mem_singleton] at hP
+      subst P
+      exact geometricSampleZero_mem)
+  exact ⟨by simpa using hbound, geometricSampleZero_mem⟩
+
+/-- The complete prescribed agreement list is nonempty, finite, and geometrically bounded. -/
+example :
+    let d := Nat.ceil (Real.exp (xi / sampleDelta))
+    let m := Nat.ceil (100 * (d : ℝ) ^ 2 * harmonic (d - 1))
+    (0 : Polynomial ℚ) ∈ closePolynomialSet geometricSampleDomain (fun _ ↦ 0)
+        sampleMessageDim (agreementThreshold sampleDelta sampleN sampleMessageDim) ∧
+      (closePolynomialSet geometricSampleDomain (fun _ ↦ 0) sampleMessageDim
+        (agreementThreshold sampleDelta sampleN sampleMessageDim)).Finite ∧
+        ((closePolynomialSet geometricSampleDomain (fun _ ↦ 0) sampleMessageDim
+          (agreementThreshold sampleDelta sampleN sampleMessageDim)).ncard : ℝ) ≤
+          4 * (m : ℝ) ^ 2 * (4 * m / sampleDelta) ^ d * sampleN ^ d := by
+  obtain ⟨hk, hA, hblock⟩ := prescribedGeometricSampleData
+  have hbound := prescribed_geometric_close_list_bound sampleDelta sampleN sampleMessageDim
+    geometricSampleDomain (fun _ ↦ 0) (by norm_num [sampleDelta])
+    (by norm_num [sampleDelta]) hk hblock hA
+    (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
+  exact ⟨geometricSampleZero_mem, hbound.1, hbound.2⟩
 
 end
 end WeightedSupportInterpolantTest
