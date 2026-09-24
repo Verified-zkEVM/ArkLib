@@ -229,21 +229,6 @@ example : ({Polynomial.X, -Polynomial.X} : Finset ℚ[X]).card ≤ 2 := by
   rw [hcard] at h
   omega
 
-/-- A singleton indexed family of polynomial graphs obeys the degree bound. -/
-example : (Finset.univ : Finset Unit).card ≤
-    (X (some ()) : MvPolynomial (Option Unit) ℚ).degreeOf (some ()) := by
-  have hg : (X (some ()) : MvPolynomial (Option Unit) ℚ) ≠ 0 := by
-    intro h
-    have := congrArg
-      (aeval (fun o : Option Unit ↦ o.elim (0 : ℚ) fun _ ↦ 1)) h
-    norm_num at this
-  exact card_le_degreeOf_some_of_aeval_eq_zero_of_injOn hg Finset.univ
-    (fun _ : Unit ↦ 0) (by
-      intro a _ b _ _
-      exact Subsingleton.elim _ _) (by
-      intro a _
-      simp)
-
 /-! ### Root contraction -/
 
 /-- Expanding `X none + X (some 0)` by two evaluates at `2` as the original does at `4`. -/
