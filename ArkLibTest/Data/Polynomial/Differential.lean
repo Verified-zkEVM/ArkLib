@@ -11,6 +11,7 @@ import ArkLib.Data.Polynomial.Differential.DerivativeDescent
 import ArkLib.Data.Polynomial.Differential.DirectRegularLift
 import ArkLib.Data.Polynomial.Differential.FirstOrderStageSum
 import ArkLib.Data.Polynomial.Differential.FrobeniusEquation
+import ArkLib.Data.Polynomial.Differential.FrobeniusTaylorWitness
 import ArkLib.Data.Polynomial.Differential.JetPrefix
 import ArkLib.Data.Polynomial.Differential.JetPrefixPresentation
 import ArkLib.Data.Polynomial.Differential.RationalTaylor
@@ -1245,18 +1246,11 @@ example :
           (MvPolynomial.X (some 0) + MvPolynomial.C Polynomial.X :
             DifferentialPolynomial (Polynomial ℚ) 0)) Polynomial.X) =
       Polynomial.X ^ 2 + Polynomial.C 2 := by
-  have hflat : ordinaryFlatten ℚ
-      (MvPolynomial.X (some 0) + MvPolynomial.C Polynomial.X :
-        DifferentialPolynomial (Polynomial ℚ) 0) =
-        MvPolynomial.X none + MvPolynomial.X (some 1) := by
-    simp
-  have hcase :
-      Fin.cases (Polynomial.X ^ 2 : Polynomial ℚ)
-        (fun _ : Fin 1 => Polynomial.C 2)
-        (1 : Fin 2) = Polynomial.C 2 := by
-    rw [show (1 : Fin 2) = Fin.succ 0 by norm_num, Fin.cases_succ]
-  rw [expand_differentialSpecialization_map_eq_eval₂_flatten, hflat]
-  simp [MvPolynomial.eval₂_add, MvPolynomial.eval₂_X, hcase]
+  rw [expand_differentialSpecialization_map_eq_eval₂_flatten]
+  simp only [Polynomial.expand_X, Nat.reduceAdd, Fin.isValue, map_add,
+    ordinaryFlatten_root, ordinaryFlatten_coeff_X, eval₂_add, eval₂_X,
+    Option.elim_none, Option.elim_some, add_right_inj]
+  rw [show (1 : Fin 2) = Fin.succ 0 by norm_num, Fin.cases_succ]
 
 /-- Over `ZMod 2`, `X - Y₀ ^ 2` is the irreducible inseparable equation `Y₀ ^ 2 - X`;
 Frobenius contraction lowers its root degree. -/
@@ -1363,6 +1357,14 @@ example :
     (MvPolynomial.X none - MvPolynomial.X (some (0 : Fin 2)) ^ 2 :
       MvPolynomial (Option (Fin 2)) (ZMod 2)) hroot Polynomial.X 0 hQ⟩
 
+local instance : Fact (Nat.Prime 2) := ⟨Nat.prime_two⟩
+
+example := frobeniusExpansion_satisfies_jointTaylorCuts (E := ZMod 2)
+    (X (some 0)) 0 0 0 2 1 2 4 (taylorExponentSufficient_two_mul 0 2)
+    (by simp only [map_zero, Polynomial.degree_zero]; exact WithBot.bot_lt_coe (2 : ℕ))
+    (by simp [challengeSpecialization])
+    (by simp [initialJetSeparant, challengeSpecialization, separant])
+
 /-! ### Ordinary root presentations -/
 
 /-- For the concrete irreducible equation `Y₀` over `ℚ[X]`, the exceptional set is empty. -/
@@ -1391,6 +1393,37 @@ example :
       MvPolynomial.coeffNatDegreeLE_X (R := ℚ) (σ := JetVariable 0) (some 0)
   simpa [zeroJetEquation] using
     exists_exceptional_ordinary_separant hirr hpos hder hheight
+
+/-! ### Taylor chart coefficient extension -/
+
+/-- A concrete rational family satisfies a high cut and two agreement equations. -/
+example :
+    ∃ (c : ℚ) (J : Finset (Fin 1 → ℚ)), J.card = 1 ∧ ∀ j ∈ J,
+      (∀ l : ℕ, 1 ≤ l → l < 2 →
+        aeval j (commonTaylorNumerator c
+          (MvPolynomial.map (RingHom.id ℚ) (X (some 0))) 4 l) = 0) ∧
+      2 ≤ (Finset.univ.filter (fun _ : Fin 2 ↦
+        aeval j (taylorAgreementEquation c
+          (MvPolynomial.map (RingHom.id ℚ) (X (some 0))) 2 4
+          (RingHom.id ℚ (0 : ℚ)) (RingHom.id ℚ (0 : ℚ))) = 0)).card := by
+  obtain ⟨c, J, hcard, hfamily⟩ := exists_regular_solution_jet_family_of_exponent
+      (f := RingHom.id ℚ) (Q := X (some 0)) (K := 2) (k := 1) (τ := 4)
+      (taylorExponentSufficient_two_mul 0 2) (by norm_num) {0} (A := 2)
+      (domain := fun _ : Fin 2 ↦ (0 : ℚ)) (received := fun _ ↦ 0)
+      (hdegree := by simp)
+      (hsol := by simp [differentialSpecialization, differentialSpecializationHom])
+      (hsep := by simp [separant, differentialSpecialization, differentialSpecializationHom])
+      (hbin := by simp) (hagree := by simp)
+  refine ⟨c, J, by simpa using hcard, ?_⟩
+  intro j hj
+  obtain ⟨_, _, hcut, hagree⟩ := hfamily j hj
+  refine ⟨?_, ?_⟩
+  · intro l hl hlt
+    simpa using hcut ⟨l, hlt⟩ hl
+  · exact hagree.trans_eq (by
+      congr 1
+      ext i
+      simp)
 
 /-- A nonempty regular family over `ZMod 2` has a common center in its algebraic closure. -/
 example :
@@ -1421,31 +1454,7 @@ example :
     exact hspec_ne
   let f : ZMod 2 →+* AlgebraicClosure (ZMod 2) := algebraMap _ _
   exact exists_forall_jetEvaluation_ne_zero_map f f.injective Q {0} 0 hregular
-example :
-    ∃ (c : ℚ) (J : Finset (Fin 1 → ℚ)), J.card = 1 ∧ ∀ j ∈ J,
-      (∀ l : ℕ, 1 ≤ l → l < 2 →
-        aeval j (commonTaylorNumerator c
-          (MvPolynomial.map (RingHom.id ℚ) (X (some 0))) 4 l) = 0) ∧
-      2 ≤ (Finset.univ.filter (fun _ : Fin 2 ↦
-        aeval j (taylorAgreementEquation c
-          (MvPolynomial.map (RingHom.id ℚ) (X (some 0))) 2 4
-          (RingHom.id ℚ (0 : ℚ)) (RingHom.id ℚ (0 : ℚ))) = 0)).card := by
-  obtain ⟨c, J, hcard, hfamily⟩ := exists_regular_solution_jet_family_of_exponent
-      (f := RingHom.id ℚ) (Q := X (some 0)) (K := 2) (k := 1) (τ := 4)
-      (taylorExponentSufficient_two_mul 0 2) (by norm_num) {0} (A := 2)
-      (domain := fun _ : Fin 2 ↦ (0 : ℚ)) (received := fun _ ↦ 0)
-      (hdegree := by simp)
-      (hsol := by simp [differentialSpecialization, differentialSpecializationHom])
-      (hsep := by simp [separant, differentialSpecialization, differentialSpecializationHom])
-      (hbin := by simp) (hagree := by simp)
-  refine ⟨c, J, by simpa using hcard, ?_⟩; intro j hj
-  obtain ⟨_, _, hcut, hagree⟩ := hfamily j hj
-  refine ⟨?_, ?_⟩
-  · intro l hl hlt
-    simpa using hcut ⟨l, hlt⟩ hl
-  · exact hagree.trans_eq (by
-      congr 1
-      ext i; simp)
+
 example :
     ∃ exceptional : Finset ℚ, exceptional.card ≤ 1 ∧ 0 ∈ exceptional := by
   let Q : DifferentialPolynomial (Polynomial ℚ) 0 := MvPolynomial.C Polynomial.X
@@ -1467,31 +1476,23 @@ private abbrev retainedCurveEquation : DifferentialPolynomial (Polynomial ℚ) 1
 example : positiveCurveEquation (0 : DifferentialPolynomial (Polynomial ℚ) 1) = 1 := by
   simp [positiveCurveEquation, fromFlattenedRootFirst, challengeRetainingRootFirst,
     MvPolynomial.radicalPrimPart]
-
 /-- The root-first curve view records the jet degree of a concrete equation. -/
 example :
     (curveJetView (challengeRetainingRootFirst retainedCurveEquation)).totalDegree =
       jetTotalDegree retainedCurveEquation := by
   rw [curveJetView_totalDegree, fromFlattenedRootFirst_rootFirstChallenge]
 
-/-- Removing repeated root factors respects the `Y₁` degree bound on this equation. -/
+/-- The retained equation satisfies its degree and coefficient bounds. -/
 example :
     (positiveCurveEquation retainedCurveEquation).degreeOf (some 1) ≤
-      retainedCurveEquation.degreeOf (some 1) := by
-  exact positiveCurveEquation_yOneDegree_le retainedCurveEquation
-
-/-- Removing repeated root factors respects the jet-degree bound on this equation. -/
-example :
+      retainedCurveEquation.degreeOf (some 1) ∧
     jetTotalDegree (positiveCurveEquation retainedCurveEquation) ≤
-      jetTotalDegree retainedCurveEquation := by
-  exact positiveCurveEquation_jetTotalDegree_le retainedCurveEquation
-
-/-- The retained equation's coefficient height is bounded by its root-first challenge degree. -/
-example :
+      jetTotalDegree retainedCurveEquation ∧
     CoeffNatDegreeLE (positiveCurveEquation retainedCurveEquation)
       (degreeOf (some (some 1))
         (radicalPrimPart none (challengeRetainingRootFirst retainedCurveEquation))) := by
-  exact positiveCurveEquation_coeffNatDegreeLE retainedCurveEquation
-
+  exact ⟨positiveCurveEquation_yOneDegree_le retainedCurveEquation,
+    positiveCurveEquation_jetTotalDegree_le retainedCurveEquation,
+    positiveCurveEquation_coeffNatDegreeLE retainedCurveEquation⟩
 end
 end PolynomialDifferential
