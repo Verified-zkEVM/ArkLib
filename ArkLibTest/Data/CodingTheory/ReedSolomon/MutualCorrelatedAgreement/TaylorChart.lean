@@ -9,6 +9,8 @@ import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TaylorChar
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TaylorChart.Incidence
 import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TaylorChart.ExceptionalChallenges
+import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TaylorChart.RegularEquation
 import Mathlib.Algebra.Field.ZMod
 import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 import Mathlib.Tactic.NormNum
@@ -817,6 +819,46 @@ example : challengeBoundChallenges.Nonempty ∧
     hchart hagree hbad
   refine ⟨by simp [challengeBoundChallenges], ?_⟩
   norm_num [challengeBoundChallenges] at hbound ⊢
+
+private abbrev AlgebraicClosureField := AlgebraicClosure ℚ
+
+private def regularEquationDomain : Fin 1 ↪ ℚ :=
+  ⟨fun _ ↦ 0, fun _ _ _ ↦ Subsingleton.elim _ _⟩
+
+private def regularEquationSample : DifferentialPolynomial (Polynomial AlgebraicClosureField) 0 :=
+  MvPolynomial.X (some (0 : Fin 1))
+
+local instance : DecidableEq AlgebraicClosureField := Classical.decEq AlgebraicClosureField
+
+/-- A zero solution of `P = 0` has an exact pair at every regular challenge. -/
+example :
+    ∃ exceptional : Finset AlgebraicClosureField,
+      (exceptional.card : ℚ) ≤ regularSymbolicAgreementBound 1 0 1 1 1 1 1 0 ∧
+      ∀ z ∉ exceptional, ∀ P : AlgebraicClosureField[X], P.degree < 1 →
+        1 ≤ (polynomialAgreementSet
+          (regularEquationDomain.trans ⟨algebraMap ℚ AlgebraicClosureField,
+            (algebraMap ℚ AlgebraicClosureField).injective⟩)
+          (fun _ ↦ algebraMap ℚ AlgebraicClosureField (0 : ℚ) +
+            z * algebraMap ℚ AlgebraicClosureField 0) P).card →
+        differentialSpecialization (challengeSpecialization regularEquationSample z) P = 0 →
+        differentialSpecialization
+          (separant (challengeSpecialization regularEquationSample z) (Fin.last 0)) P ≠ 0 →
+        HasExactCorrelatedPair regularEquationDomain (fun _ ↦ (0 : ℚ)) (fun _ ↦ 0)
+          (algebraMap ℚ AlgebraicClosureField) 1 z P := by
+  let iota : ℚ →+* AlgebraicClosureField := algebraMap ℚ AlgebraicClosureField
+  have hheight : CoeffNatDegreeLE regularEquationSample 0 := by
+    simpa [regularEquationSample] using
+      (coeffNatDegreeLE_X (R := AlgebraicClosureField) (σ := JetVariable 0)
+        (some (0 : Fin 1)))
+  have hjet : regularEquationSample.weightedTotalDegree
+      (fun i : JetVariable 0 ↦ i.elim 0 (fun _ ↦ 1)) ≤ 1 := by
+    norm_num [regularEquationSample, MvPolynomial.weightedTotalDegree, MvPolynomial.support_X]
+  exact exists_exceptional_regularSymbolicCorrelatedAgreement regularEquationDomain
+    (fun _ ↦ 0) (fun _ ↦ 0) iota regularEquationSample 1 1 1 1 1 0
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    hjet hheight (by
+      intro i hi hiK
+      omega)
 
 end
 
