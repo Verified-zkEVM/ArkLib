@@ -232,7 +232,8 @@ theorem regularFiberStageSum_add_one_le_succ {D μ e : ℕ} (hD : 1 ≤ D) (heμ
 
 /-- The regular fiber stage sum is monotone in the actual derivative degree. -/
 theorem regularFiberStageSum_mono {D μ e M : ℕ} (hD : 1 ≤ D)
-    (heM : e ≤ M) (hMμ : M ≤ μ) : regularFiberStageSum D μ e ≤ regularFiberStageSum D μ M := by
+    (heM : e ≤ M) (hMμ : M ≤ μ) :
+    regularFiberStageSum D μ e ≤ regularFiberStageSum D μ M := by
   induction M generalizing e with
   | zero =>
       have : e = 0 := by omega

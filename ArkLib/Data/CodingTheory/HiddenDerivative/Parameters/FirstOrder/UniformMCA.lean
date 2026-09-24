@@ -70,7 +70,7 @@ private theorem uniformFirstOrderMCAHeightDegreeWeightUpTo_eq_nested (q : ℕ) :
   simp [uniformFirstOrderMCAHeightDegreeWeightUpTo, Finset.sum_const, Nat.mul_assoc]
 
 /-- Prefix accounting for the shifted coefficient-height sum. -/
-private theorem uniformFirstOrderMCA_shiftedHeightSlot_accounting
+private theorem uniformFirstOrderMCA_shiftedHeightSlot_accounting_general
     (D A q : ℕ) :
     12 * A * uniformFirstOrderMCAHeightWeightUpTo q +
         uniformFirstOrderMCAHeightFirstJetWeightUpTo q ≤
@@ -100,6 +100,18 @@ private theorem uniformFirstOrderMCA_shiftedHeightSlot_accounting
   intro b hb
   rw [← Nat.add_mul]
   exact Nat.mul_le_mul_right _ (by omega)
+
+private theorem uniformFirstOrderMCA_shiftedHeightSlot_accounting
+    (D A q heightWeight degreeWeight firstJetWeight : ℕ)
+    (hweight : uniformFirstOrderMCAHeightWeightUpTo q = heightWeight)
+    (hdegree : uniformFirstOrderMCAHeightDegreeWeightUpTo q = degreeWeight)
+    (hfirstJet : uniformFirstOrderMCAHeightFirstJetWeightUpTo q = firstJetWeight) :
+    12 * A * heightWeight + firstJetWeight ≤
+      (∑ t ∈ Finset.range q, ∑ b ∈ Finset.range (min t 4 + 1),
+        (12 * A + b - D * t) * (277 - t)) + D * degreeWeight := by
+  have haccounting := uniformFirstOrderMCA_shiftedHeightSlot_accounting_general D A q
+  rw [hweight, hdegree, hfirstJet] at haccounting
+  exact haccounting
 
 set_option maxHeartbeats 10000000 in
 -- The nine exact interval branches require more than the default heartbeat budget.
@@ -141,89 +153,62 @@ theorem uniformFirstOrderMCA_heightSlotCount (n k A : ℕ)
     dsimp only [slotTerm]
     norm_num only [Nat.reduceAdd]
     have haccount := uniformFirstOrderMCA_shiftedHeightSlot_accounting D A 24
-    have hw : uniformFirstOrderMCAHeightWeightUpTo 24 = 29100 := by decide
-    have ht : uniformFirstOrderMCAHeightDegreeWeightUpTo 24 = 357890 := by decide
-    have hj : uniformFirstOrderMCAHeightFirstJetWeightUpTo 24 = 55445 := by decide
-    rw [hw, ht, hj] at haccount
+      29100 357890 55445 (by decide) (by decide) (by decide)
     omega
   by_cases h10 : 250 * k ≤ 72 * n
   · apply lt_of_lt_of_le ?_ (hpartial 23 (by omega))
     dsimp only [slotTerm]
     norm_num only [Nat.reduceAdd]
     have haccount := uniformFirstOrderMCA_shiftedHeightSlot_accounting D A 23
-    have hw : uniformFirstOrderMCAHeightWeightUpTo 23 = 27830 := by decide
-    have ht : uniformFirstOrderMCAHeightDegreeWeightUpTo 23 = 328680 := by decide
-    have hj : uniformFirstOrderMCAHeightFirstJetWeightUpTo 23 = 52905 := by decide
-    rw [hw, ht, hj] at haccount
+      27830 328680 52905 (by decide) (by decide) (by decide)
     omega
   by_cases h9 : 225 * k ≤ 72 * n
   · apply lt_of_lt_of_le ?_ (hpartial 22 (by omega))
     dsimp only [slotTerm]
     norm_num only [Nat.reduceAdd]
     have haccount := uniformFirstOrderMCA_shiftedHeightSlot_accounting D A 22
-    have hw : uniformFirstOrderMCAHeightWeightUpTo 22 = 26555 := by decide
-    have ht : uniformFirstOrderMCAHeightDegreeWeightUpTo 22 = 300630 := by decide
-    have hj : uniformFirstOrderMCAHeightFirstJetWeightUpTo 22 = 50355 := by decide
-    rw [hw, ht, hj] at haccount
+      26555 300630 50355 (by decide) (by decide) (by decide)
     omega
   by_cases h8 : 200 * k ≤ 72 * n
   · apply lt_of_lt_of_le ?_ (hpartial 21 (by omega))
     dsimp only [slotTerm]
     norm_num only [Nat.reduceAdd]
     have haccount := uniformFirstOrderMCA_shiftedHeightSlot_accounting D A 21
-    have hw : uniformFirstOrderMCAHeightWeightUpTo 21 = 25275 := by decide
-    have ht : uniformFirstOrderMCAHeightDegreeWeightUpTo 21 = 273750 := by decide
-    have hj : uniformFirstOrderMCAHeightFirstJetWeightUpTo 21 = 47795 := by decide
-    rw [hw, ht, hj] at haccount
+      25275 273750 47795 (by decide) (by decide) (by decide)
     omega
   by_cases h7 : 175 * k ≤ 72 * n
   · apply lt_of_lt_of_le ?_ (hpartial 20 (by omega))
     dsimp only [slotTerm]
     norm_num only [Nat.reduceAdd]
     have haccount := uniformFirstOrderMCA_shiftedHeightSlot_accounting D A 20
-    have hw : uniformFirstOrderMCAHeightWeightUpTo 20 = 23990 := by decide
-    have ht : uniformFirstOrderMCAHeightDegreeWeightUpTo 20 = 248050 := by decide
-    have hj : uniformFirstOrderMCAHeightFirstJetWeightUpTo 20 = 45225 := by decide
-    rw [hw, ht, hj] at haccount
+      23990 248050 45225 (by decide) (by decide) (by decide)
     omega
   by_cases h6 : 150 * k ≤ 72 * n
   · apply lt_of_lt_of_le ?_ (hpartial 19 (by omega))
     dsimp only [slotTerm]
     norm_num only [Nat.reduceAdd]
     have haccount := uniformFirstOrderMCA_shiftedHeightSlot_accounting D A 19
-    have hw : uniformFirstOrderMCAHeightWeightUpTo 19 = 22700 := by decide
-    have ht : uniformFirstOrderMCAHeightDegreeWeightUpTo 19 = 223540 := by decide
-    have hj : uniformFirstOrderMCAHeightFirstJetWeightUpTo 19 = 42645 := by decide
-    rw [hw, ht, hj] at haccount
+      22700 223540 42645 (by decide) (by decide) (by decide)
     omega
   by_cases h5 : 125 * k ≤ 72 * n
   · apply lt_of_lt_of_le ?_ (hpartial 18 (by omega))
     dsimp only [slotTerm]
     norm_num only [Nat.reduceAdd]
     have haccount := uniformFirstOrderMCA_shiftedHeightSlot_accounting D A 18
-    have hw : uniformFirstOrderMCAHeightWeightUpTo 18 = 21405 := by decide
-    have ht : uniformFirstOrderMCAHeightDegreeWeightUpTo 18 = 200230 := by decide
-    have hj : uniformFirstOrderMCAHeightFirstJetWeightUpTo 18 = 40055 := by decide
-    rw [hw, ht, hj] at haccount
+      21405 200230 40055 (by decide) (by decide) (by decide)
     omega
   by_cases h4 : 100 * k ≤ 72 * n
   · apply lt_of_lt_of_le ?_ (hpartial 17 (by omega))
     dsimp only [slotTerm]
     norm_num only [Nat.reduceAdd]
     have haccount := uniformFirstOrderMCA_shiftedHeightSlot_accounting D A 17
-    have hw : uniformFirstOrderMCAHeightWeightUpTo 17 = 20105 := by decide
-    have ht : uniformFirstOrderMCAHeightDegreeWeightUpTo 17 = 178130 := by decide
-    have hj : uniformFirstOrderMCAHeightFirstJetWeightUpTo 17 = 37455 := by decide
-    rw [hw, ht, hj] at haccount
+      20105 178130 37455 (by decide) (by decide) (by decide)
     omega
   · apply lt_of_lt_of_le ?_ (hpartial 16 (by omega))
     dsimp only [slotTerm]
     norm_num only [Nat.reduceAdd]
     have haccount := uniformFirstOrderMCA_shiftedHeightSlot_accounting D A 16
-    have hw : uniformFirstOrderMCAHeightWeightUpTo 16 = 18800 := by decide
-    have ht : uniformFirstOrderMCAHeightDegreeWeightUpTo 16 = 157250 := by decide
-    have hj : uniformFirstOrderMCAHeightFirstJetWeightUpTo 16 = 34845 := by decide
-    rw [hw, ht, hj] at haccount
+      18800 157250 34845 (by decide) (by decide) (by decide)
     omega
 
 /-- The height-276 support supplies precisely the ambient-degree, positive-budget,
