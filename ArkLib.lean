@@ -699,6 +699,7 @@ public import ArkLib.ProofSystem.Sumcheck.Interaction.Sequential
 public import ArkLib.ProofSystem.Sumcheck.Interaction.SingleRound
 public import ArkLib.ProofSystem.Sumcheck.Interaction.Soundness
 public import ArkLib.ProofSystem.Sumcheck.Spec.General
+public import ArkLib.ProofSystem.Sumcheck.Spec.RoundPolynomial
 public import ArkLib.ProofSystem.Sumcheck.Spec.SingleRound
 public import ArkLib.ProofSystem.Sumcheck.Structured
 public import ArkLib.ProofSystem.Sumcheck.Structured.Prismalinear
