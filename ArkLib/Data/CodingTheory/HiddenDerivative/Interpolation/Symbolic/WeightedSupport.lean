@@ -8,23 +8,32 @@ module
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.LocalRank
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.ReceivedCurve
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.Basic
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.LocalRank
 public import ArkLib.ToMathlib.LinearAlgebra.FiniteDimensional
+public import ArkLib.ToMathlib.LinearAlgebra.Matrix.Rank
 public import Mathlib.Data.Nat.Cast.Order.Field
 public import Mathlib.FieldTheory.RatFunc.Basic
 
 /-!
-# Symbolic interpolation on weighted support
+# Symbolic interpolation on weighted support and received curves
 
 Every eligible exponent is represented by a source column, so the full weighted support can be
-used as the column family of a symbolic received-line interpolant. The local-coordinate matrix of
-each received line is a column submatrix of the canonical weighted-support matrix. Pointwise
-rank bounds therefore give a rank bound for the full matrix, and a dimension margin yields a
-primitive interpolant with explicit challenge-degree and height bounds.
+used as the column family of a symbolic interpolant. The local-coordinate matrix of each received
+line or polynomial curve is a column submatrix of the canonical weighted-support matrix. Pointwise
+rank bounds give a rank bound for the full matrix, and a dimension margin yields a primitive
+interpolant with explicit challenge-degree and height bounds.
 
 ## Main statements
 
 * `weightedSupportColumns`: a finite enumeration of the weighted-support exponents as source
   columns.
+* `localConstraintBlock_eq_weightedSupportSubmatrix`,
+  `localConstraintBlock_rank_le_base_actual` and
+  `localConstraintMatrix_rank_le_weightedSupport`: block identification and rank bounds for
+  arbitrary received polynomial curves.
+* `exists_primitive_weightedSupport_interpolant`: primitive interpolation from a strict dimension
+  surplus for arbitrary finite point and column types.
+* `interpolant_mem_weightedSupportSpace`: assembled interpolants lie in the weighted-support space.
 * `receivedLine_matrix_rank_le_base_actual`: the full symbolic matrix has rank at most the number
   of points times the actual local rank.
 * `exists_symbolic_weightedSupport_interpolant_of_fixed_margin`: a dimension margin yields a
@@ -35,6 +44,7 @@ primitive interpolant with explicit challenge-degree and height bounds.
 ## References
 
 * [DKT26]
+* [DKTZ26]
 -/
 
 @[expose] public section
@@ -49,11 +59,12 @@ namespace ReedSolomon.HiddenDerivative
 open MvPolynomial
 
 variable {F : Type*} [Field F] {d D m W : ℕ} {L : ℝ}
+variable {ι κ : Type*}
 
-/-- Interpret an eligible source column as an index of the canonical weighted-support matrix. -/
-def weightedSupportColumnIndex {N : ℕ} (hD : 0 < D) (columns : Fin N → SourceColumn d)
-    (hband : ∀ j, WeightedSupportEligible D d W L (columns j).exponent) (j : Fin N) :
-    ↥(weightedSupportExponents D d W L hD) :=
+/-- Interpret eligible source columns as indices of the canonical weighted-support matrix. -/
+def weightedSupportColumnIndex (hD : 0 < D) {κ : Type*} (columns : κ → SourceColumn d)
+    (hband : ∀ j, WeightedSupportEligible D d W L (columns j).exponent) :
+    κ → ↥(weightedSupportExponents D d W L hD) := fun j =>
   ⟨(columns j).exponent, mem_weightedSupportExponents.mpr (hband j)⟩
 
 /-- Enumerate the weighted-support exponents as source columns. -/
@@ -97,6 +108,45 @@ private theorem map_localConstraintCoordinatesAt
     LinearMap.pi_apply, MvPolynomial.lcoeff_apply]
   rw [← MvPolynomial.coeff_map, map_unscaledLocalSubstitution]
 
+/-- A local block of the symbolic curve matrix is the weighted-support coordinate matrix restricted
+to the exponents of the selected source columns. -/
+theorem localConstraintBlock_eq_weightedSupportSubmatrix
+    (hD : 0 < D) (centers : ι → F) (received : ι → F[X])
+    (columns : κ → SourceColumn d)
+    (hband : ∀ j, WeightedSupportEligible D d W L (columns j).exponent) (i : ι) :
+    (fun row j => algebraMap F[X] (RatFunc F)
+      (localConstraintMatrix m (fun i => Polynomial.C (centers i)) received columns
+        (i, row) j) : Matrix (LowContactIndex d m) κ (RatFunc F)) =
+      (weightedSupportLocalCoordinateMatrix (R := RatFunc F) (d := d) (m := m) (W := W)
+        (L := L) hD
+        (algebraMap F[X] (RatFunc F) (Polynomial.C (centers i)))
+        (algebraMap F[X] (RatFunc F) (received i))).submatrix id
+          (weightedSupportColumnIndex hD columns hband) := by
+  ext row j
+  simp only [Matrix.submatrix_apply, id_eq, weightedSupportLocalCoordinateMatrix_apply,
+    weightedSupportColumnIndex, localConstraintMatrix]
+  rw [map_localConstraintCoordinatesAt]
+  simp [SourceColumn.polynomial]
+
+/-- Every mapped point block of a received polynomial curve has rank at most the source-field
+actual local rank. -/
+theorem localConstraintBlock_rank_le_base_actual
+    [Fintype κ] (hD : 0 < D) (centers : ι → F) (received : ι → F[X])
+    (columns : κ → SourceColumn d)
+    (hband : ∀ j, WeightedSupportEligible D d W L (columns j).exponent) (i : ι) :
+    Matrix.rank (fun row j => algebraMap F[X] (RatFunc F)
+      (localConstraintMatrix m (fun j => Polynomial.C (centers j)) received columns
+        (i, row) j) : Matrix (LowContactIndex d m) κ (RatFunc F)) ≤
+      Module.finrank F (LinearMap.range
+        (weightedSupportLocalConstraint (R := F) (d := d) (W := W)
+          (L := L) m hD 0 0)) := by
+  rw [localConstraintBlock_eq_weightedSupportSubmatrix hD centers received columns hband i]
+  exact (Matrix.rank_submatrix_le _ id (weightedSupportColumnIndex hD columns hband)).trans
+    (rank_weightedSupportLocalCoordinateMatrix_le_base_actual (F := F) (d := d) (W := W)
+      (L := L) m hD
+      (algebraMap F[X] (RatFunc F) (Polynomial.C (centers i)))
+      (algebraMap F[X] (RatFunc F) (received i)))
+
 /-- A mapped received-line point block is a column submatrix of the canonical support matrix over
 the rational-function field. -/
 theorem receivedLine_block_eq_canonical_submatrix {n N : ℕ}
@@ -111,18 +161,8 @@ theorem receivedLine_block_eq_canonical_submatrix {n N : ℕ}
         (algebraMap F[X] (RatFunc F) (Polynomial.C (centers i)))
         (algebraMap F[X] (RatFunc F) (receivedLine (f i) (g i)))).submatrix
           id (weightedSupportColumnIndex hD columns hband) := by
-  ext row j
-  rw [Matrix.submatrix_apply]
-  simp only [weightedSupportLocalCoordinateMatrix_apply]
-  change algebraMap F[X] (RatFunc F)
-      (localConstraintCoordinatesAt m (Polynomial.C (centers i))
-        (receivedLine (f i) (g i)) ((columns j).polynomial) row) =
-    localConstraintCoordinatesAt m
-      (algebraMap F[X] (RatFunc F) (Polynomial.C (centers i)))
-      (algebraMap F[X] (RatFunc F) (receivedLine (f i) (g i)))
-      (monomial (columns j).exponent 1) row
-  rw [map_localConstraintCoordinatesAt]
-  simp [SourceColumn.polynomial]
+  exact localConstraintBlock_eq_weightedSupportSubmatrix hD centers
+    (fun i => receivedLine (f i) (g i)) columns hband i
 
 /-- Every mapped received-line point block has rank at most the source-field actual local rank. -/
 theorem receivedLine_block_rank_le_base_actual {n N : ℕ}
@@ -135,12 +175,61 @@ theorem receivedLine_block_rank_le_base_actual {n N : ℕ}
       Module.finrank F (LinearMap.range
         (weightedSupportLocalConstraint (R := F) (d := d) (W := W)
           (L := L) m hD 0 0)) := by
-  rw [receivedLine_block_eq_canonical_submatrix hD centers f g columns hband i]
-  exact (Matrix.rank_submatrix_le _ id (weightedSupportColumnIndex hD columns hband)).trans
-    (rank_weightedSupportLocalCoordinateMatrix_le_base_actual (F := F) (d := d) (W := W)
-      (L := L) m hD
-      (algebraMap F[X] (RatFunc F) (Polynomial.C (centers i)))
-      (algebraMap F[X] (RatFunc F) (receivedLine (f i) (g i))))
+  exact localConstraintBlock_rank_le_base_actual hD centers
+    (fun i => receivedLine (f i) (g i)) columns hband i
+
+/-- The symbolic curve matrix has rank at most the number of received points times the rank of
+the weighted-support local constraint map over the base field. -/
+theorem localConstraintMatrix_rank_le_weightedSupport [Fintype ι] [Fintype κ]
+    (hD : 0 < D) (centers : ι → F) (received : ι → F[X])
+    (columns : κ → SourceColumn d)
+    (hband : ∀ j, WeightedSupportEligible D d W L (columns j).exponent) :
+    ((localConstraintMatrix m (fun i => Polynomial.C (centers i)) received columns).map
+      (algebraMap F[X] (RatFunc F))).rank ≤
+      Fintype.card ι * Module.finrank F (LinearMap.range
+        (weightedSupportLocalConstraint (R := F) (d := d) (W := W) (L := L) m hD 0 0)) := by
+  let A := (localConstraintMatrix m (fun i => Polynomial.C (centers i)) received columns).map
+    (algebraMap F[X] (RatFunc F))
+  change A.rank ≤ _
+  calc
+    A.rank ≤ ∑ i, (A.submatrix (fun row => (i, row)) id).rank :=
+      Matrix.rank_prod_rows_le_sum A
+    _ ≤ ∑ _i : ι, Module.finrank F (LinearMap.range
+        (weightedSupportLocalConstraint (R := F) (d := d) (W := W)
+          (L := L) m hD 0 0)) := by
+      apply Finset.sum_le_sum
+      intro i _
+      change Matrix.rank (fun row j => algebraMap F[X] (RatFunc F)
+        (localConstraintMatrix m (fun j => Polynomial.C (centers j)) received columns
+          (i, row) j)) ≤ _
+      exact localConstraintBlock_rank_le_base_actual hD centers received columns hband i
+    _ = _ := by simp
+
+/-- A weighted-support dimension surplus gives a primitive interpolant for a received curve. Its
+coefficients have challenge degree at most `r * (ℓ * ν) / (card κ - r)`, where `r` is the global
+rank bound. Every challenge specialization remains nonzero. -/
+theorem exists_primitive_weightedSupport_interpolant [Fintype ι] [Fintype κ]
+    (hD : 0 < D) (m ℓ ν : ℕ) (centers : ι → F) (received : ι → F[X])
+    (hreceived : ∀ i, (received i).natDegree ≤ ℓ) (columns : κ → SourceColumn d)
+    (hcolumns : Function.Injective columns) (hy₀ : ∀ j, (columns j).y₀ ≤ ν)
+    (hband : ∀ j, WeightedSupportEligible D d W L (columns j).exponent)
+    (hmargin : Fintype.card ι * Module.finrank F (LinearMap.range
+      (weightedSupportLocalConstraint (R := F) (d := d) (W := W) (L := L) m hD 0 0)) <
+        Fintype.card κ) :
+    let r := Fintype.card ι * Module.finrank F (LinearMap.range
+      (weightedSupportLocalConstraint (R := F) (d := d) (W := W) (L := L) m hD 0 0))
+    ∃ v : κ → F[X], v ≠ 0 ∧
+      (∀ j, (v j).natDegree ≤ r * (ℓ * ν) / (Fintype.card κ - r)) ∧
+      Ideal.span (Set.range v) = ⊤ ∧
+      (∀ {E : Type*} [CommSemiring E] [Nontrivial E] (ψ : F[X] →+* E),
+        MvPolynomial.map ψ (SourceColumn.interpolant columns v) ≠ 0) ∧
+      ∀ i, SatisfiesLocalConstraints m (Polynomial.C (centers i)) (received i)
+        (SourceColumn.interpolant columns v) := by
+  intro r
+  apply exists_primitive_interpolant_of_rank_le m ℓ ν centers received hreceived columns
+    hcolumns hy₀ (algebraMap F[X] (RatFunc F)) (IsFractionRing.injective F[X] (RatFunc F))
+  · exact localConstraintMatrix_rank_le_weightedSupport hD centers received columns hband
+  · exact hmargin
 
 /-- The complete mapped symbolic matrix has rank at most `n` times the source-field actual local
 rank. -/
@@ -153,61 +242,25 @@ theorem receivedLine_matrix_rank_le_base_actual {n N : ℕ}
       n * Module.finrank F (LinearMap.range
       (weightedSupportLocalConstraint (R := F) (d := d) (W := W)
           (L := L) m hD 0 0)) := by
-  let A := (localConstraintMatrix m (fun i => Polynomial.C (centers i))
-    (fun i => receivedLine (f i) (g i)) columns).map (algebraMap F[X] (RatFunc F))
-  let Φ := A.mulVecLin
-  let block (i : Fin n) : Matrix (LowContactIndex d m) (Fin N) (RatFunc F) :=
-    fun row j => A (i, row) j
-  let φ : ∀ i : Fin n, (Fin N → RatFunc F) →ₗ[RatFunc F]
-      (LowContactIndex d m → RatFunc F) := fun i => (block i).mulVecLin
-  have hblockApply (i : Fin n) (v : Fin N → RatFunc F) (row : LowContactIndex d m) :
-      (block i).mulVecLin v row = Φ v (i, row) := by
-    change Matrix.mulVec (block i) v row = Matrix.mulVec A v (i, row)
-    rfl
-  let includeRange : Φ.range →ₗ[RatFunc F] (LinearMap.pi φ).range := {
-    toFun y := ⟨(fun i row => y.1 (i, row)), by
-      rcases y.2 with ⟨v, hv⟩
-      refine ⟨v, ?_⟩
-      ext i row
-      exact (hblockApply i v row).trans (congrFun hv (i, row))⟩
-    map_add' x y := by ext i row; rfl
-    map_smul' a x := by ext i row; rfl
-  }
-  have hinjective : Function.Injective includeRange := by
-    intro x y hxy
-    apply Subtype.ext
-    funext row
-    have hval := congrArg Subtype.val hxy
-    exact congrFun (congrFun hval row.1) row.2
+  simpa only [Fintype.card_fin] using
+    (localConstraintMatrix_rank_le_weightedSupport (F := F) (d := d) (D := D) (m := m)
+      (W := W) (L := L) hD centers (fun i => receivedLine (f i) (g i)) columns hband)
+
+/-- A weighted-support cutoff with slack at most one is at most `D * (2 * m)`. -/
+theorem weightedSupportCutoff_le_two_mul (D m : ℕ) {g : ℝ} (hg : g ≤ 1) :
+    (D : ℝ) * m * (1 + g) ≤ (D : ℝ) * ((2 * m : ℕ) : ℝ) := by
+  have hDm : 0 ≤ (D : ℝ) * m := mul_nonneg (Nat.cast_nonneg _) (Nat.cast_nonneg _)
   calc
-    A.rank = Module.finrank (RatFunc F) Φ.range := rfl
-    _ ≤ Module.finrank (RatFunc F) (LinearMap.range (LinearMap.pi φ)) :=
-      LinearMap.finrank_le_finrank_of_injective hinjective
-    _ ≤ ∑ i, Module.finrank (RatFunc F) (LinearMap.range (φ i)) :=
-      LinearMap.finrank_range_pi_le_sum φ
-    _ = ∑ i, (block i).rank := by
-      apply Finset.sum_congr rfl
-      intro i hi
-      rfl
-    _ ≤ ∑ _ : Fin n, Module.finrank F (LinearMap.range
-        (weightedSupportLocalConstraint (R := F) (d := d) (W := W)
-          (L := L) m hD 0 0)) := by
-      apply Finset.sum_le_sum
-      intro i _
-      exact receivedLine_block_rank_le_base_actual hD centers f g columns hband i
-    _ = _ := by simp
+    (D : ℝ) * m * (1 + g) ≤ (D : ℝ) * m * 2 :=
+      mul_le_mul_of_nonneg_left (by linarith) hDm
+    _ = (D : ℝ) * ((2 * m : ℕ) : ℝ) := by push_cast; ring
 
 /-- Under the prescribed slack bound, the strict band cutoff gives `Y₀ ≤ 2m - 1`. -/
 theorem y₀_le_two_mul_sub_one_of_eligible {g : ℝ} (hD : 0 < D) (hg : g ≤ 1)
-    (hm : 0 < m) {u : JetVariable d →₀ ℕ}
+    {u : JetVariable d →₀ ℕ}
     (hu : WeightedSupportEligible D d W ((D : ℝ) * m * (1 + g)) u) :
     u (some 0) ≤ 2 * m - 1 := by
-  have hcut : (D : ℝ) * m * (1 + g) ≤ (D : ℝ) * (2 * m : ℕ) := by
-    have hnonneg : (0 : ℝ) ≤ (D : ℝ) * m := by positivity
-    calc
-      (D : ℝ) * m * (1 + g) ≤ (D : ℝ) * m * 2 :=
-        mul_le_mul_of_nonneg_left (by linarith) hnonneg
-      _ = (D : ℝ) * (2 * m : ℕ) := by push_cast; ring
+  have hcut := weightedSupportCutoff_le_two_mul D m hg
   have htotal := totalJetDegree_le_pred_of_weightedSupportEligible
     (D := D) (d := d) (W := W) (L := (D : ℝ) * m * (1 + g)) (t := 2 * m) hD hcut hu
   have hcoord : u (some 0) ≤ totalJetDegree u := by
@@ -341,5 +394,20 @@ theorem exists_constant_interpolant_of_zero_rank {n ν : ℕ} (hD : 0 < D) (hν 
   intro j
   have h := hdegree j
   simpa [hrank] using h
+
+variable {R : Type*} [CommSemiring R] {κ : Type*} [Fintype κ]
+
+/-- An interpolant of eligible source columns lies in the weighted-support space. -/
+theorem interpolant_mem_weightedSupportSpace (hD : 0 < D) (columns : κ → SourceColumn d)
+    (hband : ∀ j, WeightedSupportEligible D d W L (columns j).exponent) (v : κ → R) :
+    SourceColumn.interpolant columns v ∈ weightedSupportSpace R D d W L hD := by
+  rw [SourceColumn.interpolant]
+  apply Submodule.sum_mem
+  intro j _
+  rw [mem_weightedSupportSpace_iff]
+  intro u hu
+  have heq : u = (columns j).exponent := by
+    simpa using MvPolynomial.support_monomial_subset hu
+  simpa only [heq] using hband j
 
 end ReedSolomon.HiddenDerivative

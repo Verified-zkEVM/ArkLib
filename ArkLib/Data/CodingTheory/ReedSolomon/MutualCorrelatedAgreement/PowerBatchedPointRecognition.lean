@@ -20,6 +20,8 @@ identifies its initial jet and cleared Taylor coefficients.
 * `commonCurveAgreementSet_map` and `exists_exceptional_powerBatched_extension`: scalar extension
   preserves common agreement positions and transfers the exceptional-challenge bound for any
   finite coordinate type.
+* `exists_exceptional_exactPowerAgreement` and `exists_exceptional_exactPowerAgreement_family`:
+  exact power agreement outside a bounded exceptional set for a tuple or a finite family.
 * `powerBatchedJetGraph` and `polynomialJet_powerBatched`: initial jets commute with power
   batching.
 * `exists_polynomialGraph_of_symbolic_sample_of_exponent`: symbolic Taylor cuts recognize the
@@ -38,7 +40,7 @@ open Polynomial PolynomialDifferential
 
 noncomputable section
 
-variable {F E α : Type*} [Field F] [Field E] {k K r ℓ : ℕ}
+variable {F E α : Type*} [Field F] [Field E] {k K r ℓ L : ℕ}
 
 open Classical in
 /-- Scalar extension preserves exactly the common agreement positions of a polynomial tuple. -/
@@ -70,6 +72,54 @@ theorem exists_exceptional_powerBatched_extension [Fintype α] (domain : α ↪ 
     (fun t ↦ (P t).map iota) L (by rw [hmap]; exact hcommon)
   refine ⟨exceptional, ?_, fun z hz ↦ (hgood z hz).trans hmap⟩
   simpa using hcard
+
+open Classical in
+/-- A degree-bounded tuple with at least `L` common agreements has exact power agreement outside
+at most `ℓ * (|α| - L)` extension-field challenges. -/
+theorem exists_exceptional_exactPowerAgreement [Fintype α] (domain : α ↪ F)
+    (w : Fin (ℓ + 1) → α → F) (P : Fin (ℓ + 1) → F[X]) (iota : F →+* E)
+    (hdegree : ∀ t, (P t).degree < k)
+    (hcommon : L ≤ (commonCurveAgreementSet domain w P).card) :
+    ∃ exceptional : Finset E, exceptional.card ≤ ℓ * (Fintype.card α - L) ∧
+      ∀ z ∉ exceptional, HasExactPowerAgreement domain w iota k z
+        (powerBatchedPolynomial (fun t ↦ (P t).map iota) z) := by
+  obtain ⟨ex, hcard, hgood⟩ :=
+    exists_exceptional_powerBatched_extension domain w P iota L hcommon
+  exact ⟨ex, hcard, fun z hz ↦ ⟨P, hdegree, rfl, hgood z hz⟩⟩
+
+open Classical in
+/-- One exceptional set gives exact power agreement for every tuple in a finite family, with
+size at most `family.card * ℓ * (|α| - L)`. -/
+theorem exists_exceptional_exactPowerAgreement_family [Fintype α] (domain : α ↪ F)
+    (w : Fin (ℓ + 1) → α → F) (iota : F →+* E)
+    (family : Finset (Fin (ℓ + 1) → F[X]))
+    (hdegree : ∀ P ∈ family, ∀ t, (P t).degree < k)
+    (hcommon : ∀ P ∈ family, L ≤ (commonCurveAgreementSet domain w P).card) :
+    ∃ exceptional : Finset E,
+      exceptional.card ≤ family.card * (ℓ * (Fintype.card α - L)) ∧
+      ∀ P ∈ family, ∀ z ∉ exceptional,
+        HasExactPowerAgreement domain w iota k z
+          (powerBatchedPolynomial (fun t ↦ (P t).map iota) z) := by
+  classical
+  let domainE := domain.trans ⟨iota, iota.injective⟩
+  let wordsE := fun t i ↦ iota (w t i)
+  let mapTuple (P : Fin (ℓ + 1) → F[X]) : Fin (ℓ + 1) → E[X] :=
+    fun t ↦ (P t).map iota
+  let familyE := family.image mapTuple
+  have hcommonE : ∀ P ∈ familyE,
+      L ≤ (commonCurveAgreementSet domainE wordsE P).card := by
+    intro P hP
+    obtain ⟨P₀, hP₀, rfl⟩ := Finset.mem_image.mp hP
+    rw [commonCurveAgreementSet_map]
+    exact hcommon P₀ hP₀
+  obtain ⟨ex, hcard, hgood⟩ :=
+    exists_exceptional_powerBatched_family domainE wordsE familyE L hcommonE
+  refine ⟨ex, hcard.trans (Nat.mul_le_mul_right _ Finset.card_image_le), ?_⟩
+  intro P hP z hz
+  refine ⟨P, hdegree P hP, rfl, ?_⟩
+  have hset := hgood (mapTuple P) (Finset.mem_image.mpr ⟨P, hP, rfl⟩) z hz
+  simpa only [domainE, wordsE, familyE, mapTuple] using
+    hset.trans (commonCurveAgreementSet_map domain w P iota)
 
 /-- The polynomial initial-jet graph associated with a tuple of messages. -/
 def powerBatchedJetGraph (center : E) (P : Fin (ℓ + 1) → E[X]) :
