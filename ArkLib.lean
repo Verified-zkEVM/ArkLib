@@ -800,6 +800,7 @@ public import ArkLib.ToMathlib.RingTheory.Ideal.HeightUnder
 public import ArkLib.ToMathlib.RingTheory.Ideal.MinimalPrime.Noetherian
 public import ArkLib.ToMathlib.RingTheory.Ideal.PrincipalCut
 public import ArkLib.ToMathlib.RingTheory.Ideal.Separator
+public import ArkLib.ToMathlib.RingTheory.Ideal.SurjectiveMap
 public import ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineDegree
 public import ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbert
 public import ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertAlgHom
@@ -824,6 +825,7 @@ public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.AffineHilbertPolynomia
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.AgreementIncidence
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.BidegreeIncidence
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.CappedBidegreeIncidence
+public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.CappedDegreeIncidence
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.CutFamily
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.DimensionSensitiveIncidence
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.FiniteQuotient
