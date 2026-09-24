@@ -588,6 +588,10 @@ the exponential coordinate-budget envelope exactly. The acceptance case at order
 agreement `1`, and multiplicity `6` is in the matching `ArkLibTest` aggregate. No public source
 declaration is unported.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/RatePartition/Bound.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Kept `partitionSupport_finiteRatio_surplus` with its existing statement and second-moment lower-bound hypothesis. Renamed `ratePartition_dimension_gt_finiteRatio` to `partitionSupport_largeOrder_finiteRatio_surplus`. The large-order theorem applies for `d ≥ 500`, generalizes the cutoff to any natural `L` satisfying the level bound, and states the strict comparison using the finrank of the partition-support space and its local coordinate budget. Private lemmas share the floor-budget scale bound and finite-ratio geometric-envelope conversion. No source declaration is unported.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/PartitionSupport/RateBound.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/PartitionSupport/RateBound.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -4077,6 +4081,10 @@ Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpola
 The acceptance cases check concrete low- and high-rate base bounds and margins for arbitrary and uniform derivative orders, the uniform order's lower bound, and boundary cases for the small-gap and positive-order hypotheses.
 ## `ArkLibTest/Data/CodingTheory/HiddenDerivative/Interpolation/PartitionSupport.lean`
 The aggregate keeps concrete low- and high-rate base bounds and margins for the uniform derivative order, together with its lower bound.
+
+Ported from `ArkLibTest/Data/CodingTheory/HiddenDerivative/Interpolation/PartitionSupport.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Added a concrete order-500 finite-ratio surplus acceptance case. The example uses a natural cutoff satisfying the level bound. The old nested test path was removed; the acceptance case is in this consolidated test file.
 
 ## `ArkLibTest/Data/CodingTheory/HiddenDerivative/Interpolation/PartitionSupport/MomentSource.lean`
 
