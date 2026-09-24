@@ -29,6 +29,7 @@ import Mathlib.Data.Fin.VecNotation
 import Mathlib.FieldTheory.Finite.Extension
 
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerBatchedPointRecognition
+import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Squarefree.RetainedCurve
 import Mathlib.Algebra.Field.ZMod
 
 /-! # Acceptance cases for Reed–Solomon mutual correlated agreement -/
@@ -1165,3 +1166,14 @@ example : ∃ P : Fin 2 → (ZMod 2)[X],
 end
 
 end ReedSolomon.PowerBatchedPointRecognitionTest
+
+/-! ### Retained challenge curve equation -/
+
+/-- The zero input produces the constant positive-factor equation. -/
+example :
+    ReedSolomon.FirstOrder.Squarefree.positiveCurveEquation
+      (0 : PolynomialDifferential.DifferentialPolynomial ℚ[X] 1) = 1 := by
+  simp [ReedSolomon.FirstOrder.Squarefree.positiveCurveEquation,
+    ReedSolomon.FirstOrder.Squarefree.fromFlattenedRootFirst,
+    ReedSolomon.FirstOrder.Squarefree.challengeRetainingRootFirst,
+    MvPolynomial.radicalPrimPart]
