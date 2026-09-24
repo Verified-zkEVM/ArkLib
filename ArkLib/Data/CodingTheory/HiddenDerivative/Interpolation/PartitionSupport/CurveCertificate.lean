@@ -38,24 +38,11 @@ namespace ReedSolomon.HiddenDerivative
 
 open MvPolynomial
 
-private def sourceColumnOfExponent {d : ℕ} (u : JetVariable d →₀ ℕ) : SourceColumn d :=
-  ⟨u none, u (some 0), fun j ↦ u (some j.succ)⟩
-
-private theorem sourceColumnOfExponent_exponent {d : ℕ} (u : JetVariable d →₀ ℕ) :
-    (sourceColumnOfExponent u).exponent = u := by
-  ext v
-  rcases v with _ | j
-  · simp [sourceColumnOfExponent, SourceColumn.exponent]
-  · refine Fin.cases ?_ (fun j ↦ ?_) j
-    · simp [sourceColumnOfExponent, SourceColumn.exponent]
-    · simp [sourceColumnOfExponent, SourceColumn.exponent, Finsupp.single_apply]
-
 /-- The source column indexed by a partition-support exponent. -/
 def partitionSupportColumns {D d W : ℕ} {L : ℝ} (hD : 0 < D) :
     Fin (Fintype.card ↥(partitionSupportExponents D d W L hD)) → SourceColumn d :=
-  fun j ↦
-    let u := ((Fintype.equivFin ↥(partitionSupportExponents D d W L hD)).symm j).1
-    ⟨u none, u (some 0), fun i ↦ u (some i.succ)⟩
+  fun j ↦ SourceColumn.ofExponent
+    (((Fintype.equivFin ↥(partitionSupportExponents D d W L hD)).symm j).1)
 
 /-- The exponent of a selected source column is its partition-support index. -/
 @[simp]
@@ -64,8 +51,8 @@ theorem partitionSupportColumns_exponent {D d W : ℕ} {L : ℝ} (hD : 0 < D)
     (partitionSupportColumns (d := d) (W := W) (L := L) hD j).exponent =
       ((Fintype.equivFin ↥(partitionSupportExponents D d W L hD)).symm j).1 :=
   by
-    change (sourceColumnOfExponent _).exponent = _
-    exact sourceColumnOfExponent_exponent _
+    change (SourceColumn.ofExponent _).exponent = _
+    exact SourceColumn.exponent_ofExponent _
 
 /-- The selected source columns are pairwise distinct. -/
 theorem partitionSupportColumns_injective {D d W : ℕ} {L : ℝ} (hD : 0 < D) :
