@@ -1903,6 +1903,16 @@ Merges `FirstOrder/Squarefree/Bounds.lean` and `FirstOrder/Squarefree/SingularTa
 `r ≤ j` and `A.natDegree = r`, and `singularTail_map_eq_zero_of_common_root` drops both `IsDomain`
 assumptions.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/PairCounting.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/PairCounting.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`chartPairPullback` → `chartPairPullback`, `chartPairJet` → `chartPairJet`, `IsAdmissibleChartPair` → `IsAdmissibleChartPair`, `eval_chartPairPullback_symbolic` → `eval_chartPairPullback_symbolic`, `degree_correlatedPairSpecialization_lt` → `degree_correlatedPairSpecialization_lt`, `coeff_taylor_correlatedPairSpecialization` → `coeff_taylor_correlatedPairSpecialization`, `IsAdmissibleChartPair.specialize` → `IsAdmissibleChartPair.specialize`, `admissibleChartPairs_card_le` → `admissibleChartPairs_card_le`, `admissibleChartPairFamily` → `admissibleChartPairFamily`, `mem_admissibleChartPairFamily_iff` → `mem_admissibleChartPairFamily_iff`, and `admissibleChartPairFamily_card_le` → `admissibleChartPairFamily_card_le`.
+
+The chart numerator exponent defaulted to `2*K` in the source and is explicit in the destination API. Generalized `admissibleChartPairs_card_le` and `admissibleChartPairFamily_card_le` to remove the positive-`k` premise: for `k > 0` they retain the source incidence estimate, and for `k = 0` the degree conditions force every pair to zero, yielding a singleton bound.
+
+The private source helper `jetDegree_pos_of_initialSeparant_ne_zero` was not ported because the destination incidence theorem handles regular-jet counting without its positivity premise. The existing acceptance file `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart.lean` retains the degree-specialization example and adds a concrete admissible-pair example covering specialization and both cardinal bounds.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/PointRecognition.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/PointRecognition.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
