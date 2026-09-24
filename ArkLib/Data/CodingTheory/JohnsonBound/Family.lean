@@ -100,6 +100,29 @@ open scoped NNReal
 open Code JohnsonBound
 open Real Finset Fintype
 
+/-- Numeric core of `johnson_card_le_ell`: with `E ≤ 1 - √(1 - x)`, `x < b ≤ D`, the Johnson
+denominator `(1 - E)² - (1 - D)` is positive and `D / denominator ≤ b / (b - x)`. -/
+private lemma johnson_card_aux {x b E D : ℚ} (hx0 : 0 ≤ x) (hx1 : x ≤ 1) (hxb : x < b)
+    (hE0 : 0 ≤ E) (hE : (E : ℝ) ≤ 1 - √(1 - (x : ℝ))) (hD : b ≤ D) :
+    0 < (1 - E) ^ 2 - (1 - D) ∧ D / ((1 - E) ^ 2 - (1 - D)) ≤ b / (b - x) := by
+  have hs0 := sqrt_nonneg (1 - (x : ℝ))
+  have hsq : 1 - x ≤ (1 - E) ^ 2 := by
+    have hs2 : √(1 - (x : ℝ)) ^ 2 = 1 - x := sq_sqrt (sub_nonneg.mpr (by exact_mod_cast hx1))
+    have h : ((1 - x : ℚ) : ℝ) ≤ ((1 - E) ^ 2 : ℚ) := by
+      push_cast
+      rw [← hs2]
+      exact pow_le_pow_left₀ hs0 (by linarith) 2
+    exact_mod_cast h
+  have hE1 : E ≤ 1 := by exact_mod_cast (by linarith : (E : ℝ) ≤ 1)
+  have hsq1 : 0 ≤ E * (2 - E) := mul_nonneg hE0 (by linarith)
+  have hden : 0 < (1 - E) ^ 2 - (1 - D) := by linarith
+  refine ⟨hden, ?_⟩
+  have hb : 0 < b := hx0.trans_lt hxb
+  rw [div_le_div_iff₀ hden (by linarith)]
+  have h1 : b * (1 - (1 - E) ^ 2) ≤ b * x := mul_le_mul_of_nonneg_left (by linarith) hb.le
+  have h2 : b * x ≤ D * x := mul_le_mul_of_nonneg_right hD hx0
+  linarith
+
 /-- Numeric core of the Johnson list-size bound, stated for an arbitrary finite set of
 words `B` rather than for a Hamming ball in a code. -/
 lemma johnson_card_le_ell {n : ℕ} {α : Type*} [Fintype α] [DecidableEq α]
@@ -110,200 +133,47 @@ lemma johnson_card_le_ell {n : ℕ} {α : Type*} [Fintype α] [DecidableEq α]
     (hradicand : ((Fintype.card α : ℚ) / ((Fintype.card α : ℚ) - 1))
         * (((ℓ : ℚ) - 1) / (ℓ : ℚ)) * ((mDist : ℚ) / n) ≤ 1) :
     B.card ≤ ℓ := by
-  set q : ℚ := (Fintype.card α : ℚ) with hq_def
-  set δ_min : ℚ := (mDist : ℚ) / n with hδ_def0
-  set radius : ℝ := Jqℓ q ℓ δ_min with hradius
-  -- Numeric setup
-  have hq2 : (2 : ℚ) ≤ q := by rw [hq_def]; exact_mod_cast hα2
-  have hfrac : (q / (q - 1) : ℚ) = q / (q - 1) := rfl
-  set frac : ℚ := q / (q - 1) with hfrac_def
-  have hq1_pos : (0 : ℚ) < q - 1 := by linarith
-  have hq_pos : (0 : ℚ) < q := by linarith
-  have hfrac_pos : (0 : ℚ) < frac := div_pos hq_pos hq1_pos
-  have hfrac_ge1 : (1 : ℚ) ≤ frac := by
-    rw [hfrac_def, le_div_iff₀ hq1_pos]; linarith
-  -- minDist C ≥ 1
-  have hminDist1 : 1 ≤ mDist := hmDist1
-  have hδmin_pos : (0 : ℚ) < δ_min := by
-    rw [show δ_min = (mDist:ℚ) / n from rfl]
-    apply div_pos <;> [exact_mod_cast hminDist1; exact_mod_cast hn_pos]
-  set lFac : ℚ := ((ℓ : ℚ) - 1) / (ℓ : ℚ) with hlFac_def
-  have hℓpos : (0 : ℚ) < (ℓ : ℚ) := by exact_mod_cast (by omega : 0 < ℓ)
-  have hℓ1_pos : (0 : ℚ) < (ℓ : ℚ) - 1 := by
-    have : (2 : ℚ) ≤ (ℓ : ℚ) := by exact_mod_cast hℓ2
-    linarith
-  have hlFac_pos : (0 : ℚ) < lFac := div_pos hℓ1_pos hℓpos
-  have hlFac_lt1 : lFac < 1 := by
-    rw [hlFac_def, div_lt_one hℓpos]; linarith
-  set x : ℚ := frac * lFac * δ_min with hx_def
-  have hx_pos : (0 : ℚ) < x := by positivity
-  have hx_le1 : x ≤ 1 := by
-    rw [hx_def, hfrac_def, hlFac_def, show δ_min = (mDist:ℚ) / n from rfl]
-    convert hradicand using 2
-  -- radius expression
-  -- `Jqℓ` is the existing `J` at the rescaled radius `x = frac * lFac * δ_min` (`Jqℓ_eq_J`).
-  have hradius_eq : radius = (1 / (frac:ℝ)) * (1 - √(1 - (x:ℝ))) := by
-    rw [hradius, Jqℓ_eq_J, JohnsonBound.J, hx_def, hlFac_def, hfrac_def]
-    push_cast
-    congr 2
-    ring_nf
-  -- 0 ≤ 1 - x
-  have h1x_nonneg : (0 : ℝ) ≤ 1 - (x : ℝ) := by
-    have : (x : ℝ) ≤ 1 := by exact_mod_cast hx_le1
-    linarith
-  have hsqrt_nonneg : (0 : ℝ) ≤ √(1 - (x:ℝ)) := Real.sqrt_nonneg _
-  have hsqrt_le1 : √(1 - (x:ℝ)) ≤ 1 := by
-    have hx0 : (0:ℝ) ≤ (x:ℝ) := by exact_mod_cast hx_pos.le
-    calc √(1 - (x:ℝ)) ≤ √1 := Real.sqrt_le_sqrt (by linarith)
-      _ = 1 := Real.sqrt_one
-  -- frac * radius = 1 - √(1-x)
-  have hfrac_radius : (frac : ℝ) * radius = 1 - √(1 - (x:ℝ)) := by
-    rw [hradius_eq]
-    have : (frac : ℝ) ≠ 0 := ne_of_gt (by exact_mod_cast hfrac_pos)
-    field_simp
-  -- JohnsonConditionStrong B v
-  -- shared numeric facts (hoisted so both hstrong and the final chain can use them)
-  set eB : ℚ := JohnsonBound.e B v with heB
-  set dB : ℚ := JohnsonBound.d B with hdB
-  have hcardq : (card α : ℚ) = q := rfl
-  have hed_le : (frac:ℝ) * ((eB:ℝ)/n) ≤ 1 - √(1 - (x:ℝ)) := by
-    have he_le : (eB:ℝ)/n ≤ radius := by
-      rw [div_le_iff₀ (by exact_mod_cast hn_pos)]
-      calc (eB:ℝ) = (JohnsonBound.e B v : ℝ) := by rw [heB]
-        _ ≤ radius * n := e_fact
-    calc (frac:ℝ) * ((eB:ℝ)/n) ≤ (frac:ℝ) * radius :=
-          mul_le_mul_of_nonneg_left he_le (by exact_mod_cast hfrac_pos.le)
-      _ = 1 - √(1 - (x:ℝ)) := hfrac_radius
-  have heB_nonneg : (0:ℚ) ≤ eB := by
-    rw [heB]; simp only [JohnsonBound.e]
-    apply mul_nonneg (by positivity)
-    exact_mod_cast Nat.zero_le _
-  have hed_nonneg : (0:ℝ) ≤ (frac:ℝ) * ((eB:ℝ)/n) := by
-    apply mul_nonneg (by exact_mod_cast hfrac_pos.le)
-    apply div_nonneg _ (by exact_mod_cast hn_pos.le)
-    exact_mod_cast heB_nonneg
-  have hsq_ge : (1 - (x:ℝ)) ≤ (1 - (frac:ℝ) * ((eB:ℝ)/n))^2 := by
-    have h1med : √(1 - (x:ℝ)) ≤ 1 - (frac:ℝ) * ((eB:ℝ)/n) := by linarith
-    have hnn : (0:ℝ) ≤ 1 - (frac:ℝ) * ((eB:ℝ)/n) := le_trans hsqrt_nonneg h1med
-    calc
-      1 - (x : ℝ) = √(1 - (x : ℝ)) ^ 2 := (Real.sq_sqrt h1x_nonneg).symm
-      _ ≤ (1 - (frac : ℝ) * ((eB : ℝ) / n)) ^ 2 :=
-        (sq_le_sq₀ hsqrt_nonneg hnn).2 h1med
-  have hdd_ge : (frac:ℝ) * (δ_min:ℝ) ≤ (frac:ℝ) * ((dB:ℝ)/n) := by
-    apply mul_le_mul_of_nonneg_left _ (by exact_mod_cast hfrac_pos.le)
-    rw [le_div_iff₀ (by exact_mod_cast hn_pos)]
-    have hdge : (δ_min:ℝ) * n ≤ (dB : ℝ) := by
-      have hd1 : (δ_min : ℝ) * n = (mDist : ℝ) := by
-        rw [show δ_min = (mDist:ℚ) / n from rfl]; push_cast; field_simp
-      rw [hd1, hdB]; exact_mod_cast d_fact
-    linarith [hdge]
-  have hx_lt_fracδ : (x:ℝ) < (frac:ℝ) * (δ_min:ℝ) := by
-    have hxeq : (x:ℝ) = (frac:ℝ) * (lFac:ℝ) * (δ_min:ℝ) := by rw [hx_def]; push_cast; ring
-    rw [hxeq]
-    have hlFacR : (lFac:ℝ) < 1 := by exact_mod_cast hlFac_lt1
-    have hpos : (0:ℝ) < (frac:ℝ) * (δ_min:ℝ) := by
-      apply mul_pos (by exact_mod_cast hfrac_pos) (by exact_mod_cast hδmin_pos)
-    calc
-      (frac : ℝ) * (lFac : ℝ) * (δ_min : ℝ) =
-          (lFac : ℝ) * ((frac : ℝ) * (δ_min : ℝ)) := by ring
-      _ < 1 * ((frac : ℝ) * (δ_min : ℝ)) := mul_lt_mul_of_pos_right hlFacR hpos
-      _ = (frac : ℝ) * (δ_min : ℝ) := one_mul _
-  have hreal : (1 - (frac:ℝ) * ((dB:ℝ)/n)) < (1 - (frac:ℝ) * ((eB:ℝ)/n))^2 := by
-    have hxlt : (x:ℝ) < (frac:ℝ) * ((dB:ℝ)/n) := lt_of_lt_of_le hx_lt_fracδ hdd_ge
-    linarith [hsq_ge, hxlt]
-  have hstrong : JohnsonConditionStrong B v := by
-    rw [johnson_condition_strong_iff_johnson_denom_pos, johnson_denominator_def]
-    have hQ : (1 - frac * (dB / n) : ℚ) < (1 - frac * (eB / n) : ℚ) ^ 2 := by
-      have hcast : ((1 - frac * (dB / n) : ℚ) : ℝ) < (((1 - frac * (eB / n) : ℚ) : ℝ)) ^ 2 := by
-        push_cast; convert hreal using 2
-      exact_mod_cast hcast
-    have hpos0 : (1 - (card α : ℚ) / ((card α:ℚ) - 1) * (eB / n)) ^ 2
-         - (1 - (card α:ℚ) / ((card α:ℚ) - 1) * (dB / n)) > 0 := by
-      rw [show (card α:ℚ) = q from rfl, ← hfrac_def]; linarith [hQ]
-    convert hpos0 using 2
-  have hjb := johnson_bound hstrong
-  simp only at hjb
-  -- ed, dd in ℚ
-  set ed : ℚ := frac * eB / n with hed_def
-  set dd : ℚ := frac * dB / n with hdd_def
-  -- Denominator = (1-ed)^2 - (1-dd)
-  have hDenom : JohnsonDenominator B v = (1 - ed)^2 - (1 - dd) := by
-    rw [johnson_denominator_def]
-    rw [show (card α : ℚ) = q from rfl, ← hfrac_def]
-    rw [hed_def, hdd_def]; ring
-  -- t := 1 - (1-ed)^2; then Denom = dd - t
-  set t : ℚ := 1 - (1 - ed)^2 with ht_def
-  have hDenom2 : JohnsonDenominator B v = dd - t := by rw [hDenom, ht_def]; ring
-  -- facts: 0 ≤ t ≤ x, b := frac*δ_min, b ≤ dd, x < b
-  have ht_nonneg : (0:ℚ) ≤ t := by
-    rw [ht_def]
-    have : (1 - ed)^2 ≤ 1 := by
-      -- 1 - ed ∈ [0,1] since ed ∈ [0, 1-√(1-x)] ≤ 1 and ed ≥ 0
-      have hed_nn : (0:ℚ) ≤ ed := by
-        rw [hed_def]; apply div_nonneg (mul_nonneg hfrac_pos.le _) (by exact_mod_cast hn_pos.le)
-        rw [heB]; simp only [JohnsonBound.e]
-        exact mul_nonneg (by positivity) (by exact_mod_cast Nat.zero_le _)
-      have hed_le1 : ed ≤ 1 := by
-        have : (ed : ℝ) ≤ 1 - √(1-(x:ℝ)) := by
-          rw [hed_def]; push_cast; rw [mul_div_assoc]; exact hed_le
-        have : (ed : ℝ) ≤ 1 := le_trans this (by linarith [hsqrt_nonneg])
-        exact_mod_cast this
-      have hed_le2 : ed ≤ 2 := hed_le1.trans (by norm_num)
-      have hprod : 0 ≤ ed * (2 - ed) :=
-        mul_nonneg hed_nn (sub_nonneg.mpr hed_le2)
-      calc
-        (1 - ed) ^ 2 = 1 - ed * (2 - ed) := by ring
-        _ ≤ 1 := sub_le_self _ hprod
-    exact sub_nonneg.mpr this
-  have ht_le_x : t ≤ x := by
-    rw [ht_def]
-    -- (1-ed)^2 ≥ 1 - x  from hsq_ge (ℝ) cast to ℚ
-    have hsqQ : (1 - x) ≤ (1 - ed)^2 := by
-      have : ((1 - x : ℚ) : ℝ) ≤ ((1 - ed : ℚ) : ℝ)^2 := by
-        push_cast
-        rw [hed_def]; push_cast
-        convert hsq_ge using 2
-        ring
-      exact_mod_cast this
-    linarith
-  set b : ℚ := frac * δ_min with hb_def
-  have hδ_le_dd_raw : δ_min ≤ dB / n := by
-    rw [show δ_min = (mDist:ℚ) / n from rfl, hdB]
-    exact div_le_div_of_nonneg_right d_fact (by exact_mod_cast hn_pos.le)
-  have hb_le_dd : b ≤ dd := by
-    rw [hb_def, hdd_def, mul_div_assoc]
-    exact mul_le_mul_of_nonneg_left hδ_le_dd_raw hfrac_pos.le
-  have hx_lt_b : x < b := by rw [hb_def]; exact_mod_cast hx_lt_fracδ
-  have hb_pos : (0:ℚ) < b := by rw [hb_def]; exact mul_pos hfrac_pos hδmin_pos
-  have hbx_eq_ℓ : b / (b - x) = (ℓ:ℚ) := by
-    rw [hb_def, hx_def, hlFac_def]
-    have hl1 : (0:ℚ) < (ℓ:ℚ) - 1 := hℓ1_pos
-    field_simp
-    ring
-  have hDenom_pos : (0:ℚ) < JohnsonDenominator B v :=
-    johnson_condition_strong_iff_johnson_denom_pos.1 hstrong
-  have hDenom_eq_pos : (0:ℚ) < dd - t := by rw [← hDenom2]; exact hDenom_pos
-  have hcard_le : (B.card : ℚ) ≤ (ℓ:ℚ) := by
-    calc (B.card : ℚ)
-        ≤ (frac * dB / n) / JohnsonDenominator B v := by
-          convert hjb using 2
-          try rw [show (card α : ℚ) = q from rfl, ← hfrac_def]
-      _ = dd / (dd - t) := by rw [hDenom2, hdd_def]
-      _ ≤ b / (b - t) := by
-          have hat : (0:ℚ) < dd - t := hDenom_eq_pos
-          have hbt : (0:ℚ) < b - t := by linarith [ht_le_x, hx_lt_b]
-          rw [div_le_div_iff₀ hat hbt]
-          have hmul : b * t ≤ dd * t := mul_le_mul_of_nonneg_right hb_le_dd ht_nonneg
-          calc
-            dd * (b - t) = b * dd - dd * t := by ring
-            _ ≤ b * dd - b * t := sub_le_sub_left hmul _
-            _ = b * (dd - t) := by ring
-      _ ≤ b / (b - x) := by
-          have hbx : (0:ℚ) < b - x := by linarith [hx_lt_b]
-          apply div_le_div_of_nonneg_left hb_pos.le hbx
-          linarith [ht_nonneg]
-      _ = (ℓ:ℚ) := hbx_eq_ℓ
-  exact_mod_cast hcard_le
+  have hq2 : (2 : ℚ) ≤ Fintype.card α := by exact_mod_cast hα2
+  have hℓ : (2 : ℚ) ≤ ℓ := by exact_mod_cast hℓ2
+  have hn : (0 : ℚ) < n := by exact_mod_cast hn_pos
+  have hnR : (0 : ℝ) < n := by exact_mod_cast hn_pos
+  have hf : (0 : ℚ) < (Fintype.card α : ℚ) / ((Fintype.card α : ℚ) - 1) :=
+    div_pos (by linarith) (by linarith)
+  have hfR : (0 : ℝ) < (((Fintype.card α : ℚ) / ((Fintype.card α : ℚ) - 1) : ℚ) : ℝ) := by
+    exact_mod_cast hf
+  have hl1 : ((ℓ : ℚ) - 1) / ℓ < 1 := (div_lt_one (by linarith)).2 (by linarith)
+  have hδ : (0 : ℚ) < (mDist : ℚ) / n := div_pos (by exact_mod_cast hmDist1) hn
+  have hb : 0 < (Fintype.card α : ℚ) / ((Fintype.card α : ℚ) - 1) * ((mDist : ℚ) / n) :=
+    mul_pos hf hδ
+  have hx0 : 0 ≤ (Fintype.card α : ℚ) / ((Fintype.card α : ℚ) - 1)
+      * (((ℓ : ℚ) - 1) / (ℓ : ℚ)) * ((mDist : ℚ) / n) :=
+    mul_nonneg (mul_nonneg hf.le (div_nonneg (by linarith) (by linarith))) hδ.le
+  have hxb := mul_lt_mul_of_pos_left hl1 hb
+  have heB : (0 : ℚ) ≤ JohnsonBound.e B v :=
+    mul_nonneg (one_div_nonneg.mpr (Nat.cast_nonneg _)) (by exact_mod_cast Nat.zero_le _)
+  have hE : ((((Fintype.card α : ℚ) / ((Fintype.card α : ℚ) - 1)) * JohnsonBound.e B v / n : ℚ)
+      : ℝ) ≤ 1 - √(1 - (((Fintype.card α : ℚ) / ((Fintype.card α : ℚ) - 1)
+        * (((ℓ : ℚ) - 1) / (ℓ : ℚ)) * ((mDist : ℚ) / n) : ℚ) : ℝ)) := by
+    have h := mul_le_mul_of_nonneg_left e_fact hfR.le
+    simp only [Jqℓ, J] at h
+    rw [← mul_assoc, ← mul_assoc, mul_one_div_cancel hfR.ne', one_mul] at h
+    rw [mul_assoc _ (((ℓ : ℚ) - 1) / (ℓ : ℚ)), Rat.cast_div, Rat.cast_mul, Rat.cast_natCast,
+      div_le_iff₀ hnR, Rat.cast_mul]
+    exact h
+  obtain ⟨hden, hle⟩ := johnson_card_aux hx0 hradicand (by linear_combination hxb)
+    (div_nonneg (mul_nonneg hf.le heB) hn.le) hE
+    (b := (Fintype.card α : ℚ) / ((Fintype.card α : ℚ) - 1) * ((mDist : ℚ) / n))
+    (D := (Fintype.card α : ℚ) / ((Fintype.card α : ℚ) - 1) * JohnsonBound.d B / n)
+    (by rw [mul_div_assoc]
+        exact mul_le_mul_of_nonneg_left (div_le_div_of_nonneg_right d_fact hn.le) hf.le)
+  have hjb := johnson_bound (B := B) (v := v) (sub_pos.mp hden)
+  have hbx : (Fintype.card α : ℚ) / ((Fintype.card α : ℚ) - 1) * ((mDist : ℚ) / n) /
+      ((Fintype.card α : ℚ) / ((Fintype.card α : ℚ) - 1) * ((mDist : ℚ) / n) -
+        (Fintype.card α : ℚ) / ((Fintype.card α : ℚ) - 1) * (((ℓ : ℚ) - 1) / (ℓ : ℚ)) *
+          ((mDist : ℚ) / n)) = ℓ := by
+    rw [show ∀ f l δ : ℚ, f * δ - f * l * δ = f * δ * (1 - l) from fun _ _ _ ↦ by ring,
+      div_mul_cancel_left₀ hb.ne', one_sub_div (by positivity), sub_sub_cancel, inv_div, div_one]
+  exact_mod_cast hjb.trans (hle.trans_eq hbx)
 
 /-- The `q`-ary Plotkin bound, in list-factor form: if the average pairwise distance of `B`
 (lower-bounded by `mDist`) exceeds the Plotkin radius `1 - 1/q` by the list factor
@@ -642,8 +512,9 @@ private lemma domination_core (s η : ℝ) (ℓ : ℕ) (n : ℕ)
           mul_le_mul_of_nonneg_right hinvℓ h1ρ
       _ ≤ 2 * η * s := by
           rw [div_mul_eq_mul_div, div_le_iff₀ h1m2ηρ]
-          nlinarith [sq_nonneg (2*s-1), sq_nonneg (s-1), mul_nonneg hs0.le h1ρ, h2ηρ, hη, hs0,
-                     mul_pos hη hs0]
+          have hcub : s * (1 - s ^ 2) ≤ 1 - 2 * η * s ^ 2 := by
+            linarith only [h2ηρ, mul_nonneg hs0.le (sq_nonneg (s - 1 / 2)), sq_nonneg (s - 5 / 8)]
+          linear_combination mul_le_mul_of_nonneg_left hcub (by positivity : (0 : ℝ) ≤ 2 * η * s)
       _ ≤ 2 * η * s + η^2 := le_add_of_nonneg_right (sq_nonneg η)
   linarith only [hLHS, hbound]
 
@@ -713,15 +584,15 @@ theorem mds_johnson_lambda_le_of_rate_distance
       linarith
     have hη_gt : 1 / (4 * ρ) < η := by
       rw [div_lt_iff₀ (by positivity)]
-      nlinarith [hηρ_gt, hρ_pos]
+      linarith only [hηρ_gt]
     have hradius_neg : 1 - s - η < 0 := by
       have hcorner : 1 - s - 1/(4*s^2) < 0 := by
         have h4 : 0 < 4 * s^2 := by positivity
         rw [sub_neg, lt_div_iff₀ h4]
-        nlinarith [sq_nonneg (2*s - 1), sq_nonneg (s-1), hs_pos, hs_le1, sq_nonneg s]
+        linarith only [mul_nonneg hs_pos.le (sq_nonneg (s - 2 / 3)), sq_nonneg (s - 2 / 3)]
       have h4ρ : 1/(4*ρ) = 1/(4*s^2) := by rw [hs_sq]
       rw [h4ρ] at hη_gt
-      linarith
+      linarith only [hη_gt, hcorner]
     -- Lambda C (negative) = 0
     have hLambda0 : Lambda C (1 - s - η) = 0 := by
       rw [Lambda]
@@ -734,7 +605,7 @@ theorem mds_johnson_lambda_le_of_rate_distance
           simp only [Code.relHammingBall, Set.mem_ofPred_eq] at hmem
           -- hmem : ↑(relHammingDist f c) ≤ 1 - s - η, LHS is a coerced ℚ≥0 (≥ 0)
           have hcombine : (0:ℝ) ≤ 1 - s - η := le_trans (by positivity) hmem
-          linarith [hcombine, hradius_neg]
+          linarith only [hcombine, hradius_neg]
         rw [hempty]; simp
       · exact bot_le
     have : Lambda C (1 - √ρ - η) = 0 := by rw [← hs_def]; exact hLambda0
@@ -767,7 +638,7 @@ theorem mds_johnson_lambda_le_of_rate_distance
         have : (2:ℕ) ≤ ⌊1 / (2 * η * ρ)⌋₊ := by rw [← hℓ_def]; exact hℓ2
         calc (2:ℝ) ≤ (⌊1/(2*η*ρ)⌋₊ : ℝ) := by exact_mod_cast this
           _ ≤ 1/(2*η*ρ) := Nat.floor_le (by positivity)
-      rw [le_div_iff₀ hηρ_pos] at hval_ge; linarith
+      rw [le_div_iff₀ hηρ_pos] at hval_ge; linarith only [hval_ge]
     -- radicand guard
     rcases le_or_gt ((q / (q - 1)) * (((ℓ:ℚ) - 1) / ℓ) * δ_minQ) 1 with hradicand | hguard
     · -- radicand holds: main line
@@ -777,14 +648,13 @@ theorem mds_johnson_lambda_le_of_rate_distance
         rw [Jqℓ_eq_J]
         set δJ : ℚ := (((ℓ:ℚ)-1)/ℓ) * δ_minQ with hδJ_def
         have hδJ_nonneg : (0:ℚ) ≤ δJ := by
-          rw [hδJ_def]; apply mul_nonneg
-          · apply div_nonneg (by linarith [hℓQ2]) (by linarith [hℓQ2])
-          · rw [hδ_def]; positivity
+          exact mul_nonneg (div_nonneg (by linarith only [hℓQ2]) (by linarith only [hℓQ2]))
+            (div_nonneg (Nat.cast_nonneg _) (Nat.cast_nonneg _))
         have hδJ_le1 : δJ ≤ 1 := by
           -- δJ = lFac·δ_minQ ≤ radicand (since frac ≥ 1) ≤ 1
-          have hfrac_ge1 : (1:ℚ) ≤ q/(q-1) := by
-            rw [le_div_iff₀ (by linarith [hqR2])]; linarith [hqR2]
-          calc δJ ≤ (q/(q-1)) * δJ := by nlinarith [hδJ_nonneg, hfrac_ge1]
+          have hfrac_ge1 : (1:ℚ) ≤ q/(q-1) :=
+            (one_le_div (by linarith only [hqR2])).2 (by linarith only)
+          calc δJ ≤ (q/(q-1)) * δJ := le_mul_of_one_le_left hδJ_nonneg hfrac_ge1
             _ = (q / (q - 1)) * (((ℓ:ℚ) - 1) / ℓ) * δ_minQ := by rw [hδJ_def]; ring
             _ ≤ 1 := hradicand
         have hguardJ : q/(q-1) * δJ ≤ 1 := by
@@ -795,11 +665,11 @@ theorem mds_johnson_lambda_le_of_rate_distance
         -- `sqrt_le_J : Jcap δ ≤ J q δ`, i.e. `1 - √(1 - δ) ≤ J q δ` (`Jcap` is that expression).
         have hsj : 1 - √(1 - (δJ : ℝ)) ≤ JohnsonBound.J q δJ :=
           JohnsonBound.sqrt_le_J (q := q) (δ := δJ)
-            (by exact_mod_cast (by linarith [hqR2] : (1:ℚ) < q)) hδJ_nonneg hδJ_le1 hguardJ
+            (by exact_mod_cast (by linarith only [hqR2] : (1:ℚ) < q)) hδJ_nonneg hδJ_le1 hguardJ
         -- suffices 1-√ρ-η ≤ 1-√(1-δJ)
         refine le_trans ?_ hsj
         -- √(1-δJ) ≤ √ρ + η
-        have hrhs_nn : (0:ℝ) ≤ s + η := by linarith [hs_pos, hη_pos]
+        have hrhs_nn : (0:ℝ) ≤ s + η := (add_pos hs_pos hη_pos).le
         have hδJR : (δJ:ℝ) = (((ℓ:ℝ)-1)/ℓ) * (δ_minQ:ℝ) := by rw [hδJ_def]; push_cast; ring
         -- 1 - δJ ≤ (s+η)^2
         have hsq_le : 1 - (δJ:ℝ) ≤ (s + η)^2 := by
@@ -811,7 +681,7 @@ theorem mds_johnson_lambda_le_of_rate_distance
             rw [hs_sq]
             have h1 : (1:ℝ)/(2*η*ρ) - 1 ≤ ⌊1/(2*η*ρ)⌋₊ := by
               have := Nat.sub_one_lt_floor (1/(2*η*ρ))
-              linarith [this]
+              linarith only [this]
             rw [← hℓ_def] at h1; exact h1
           have h2ηρs : 2 * η * s^2 ≤ 1/2 := by rw [hs_sq]; exact h2ηρ_le
           have hρle1 : (s^2:ℝ) ≤ 1 := by rw [hs_sq]; exact hρ_le_one
@@ -821,7 +691,7 @@ theorem mds_johnson_lambda_le_of_rate_distance
         have hsuff : √(1 - (δJ:ℝ)) ≤ s + η := by
           rw [show s + η = √((s+η)^2) from by rw [Real.sqrt_sq hrhs_nn]]
           exact Real.sqrt_le_sqrt hsq_le
-        rw [hs_def] at hsuff; linarith [hsuff]
+        rw [hs_def] at hsuff; linarith only [hsuff]
       -- Chain: `Lambda` monotone in the radius, then the Johnson bound, then `ℓ ≤ 1/(2ηρ)`.
       have hstep1 : Lambda C (1 - √ρ - η)
           ≤ Lambda C (Jqℓ q ℓ δ_minQ) := Lambda_mono hdom
