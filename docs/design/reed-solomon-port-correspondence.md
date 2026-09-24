@@ -3419,6 +3419,16 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Poly
 
 The source rational Taylor numerator coefficient bound is covered by `PolynomialDifferential.coeffNatDegreeLE_rationalTaylorNumeratorOver`; the exponent-aware common Taylor numerator bound and its default form are covered by `coeffNatDegreeLE_commonTaylorNumeratorOver_le`. The source total-degree bound is covered by `totalDegree_rationalTaylorNumeratorOver_le_of_jet` in `PolynomialDifferential.RationalTaylorJointDegree`. The common Taylor numerator and Taylor curve agreement bidegree bounds, including exponent-aware forms, are covered by stronger rectangle-membership theorems in `PolynomialDifferential.RationalTaylorBidegree`. The common Taylor denominator bidegree bounds are not given paired wrappers because existing separant coefficient-degree, power, and jet-degree bounds suffice.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/ChunkedPowerLift.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`ReedSolomon.chunkedCoefficientPowerLift` became `MvPolynomial.chunkedCoefficientPowerLift`, generalized from fields to commutative semirings. `ReedSolomon.powerMomentMap_chunkedCoefficientPowerLift` became `MvPolynomial.powerMomentMap_chunkedCoefficientPowerLift` with the same generalization.
+
+`ReedSolomon.chunkedPolynomialPowerLift` became `MvPolynomial.chunkedPolynomialPowerLift`, generalized from fields and `ChallengeHeightLE` to commutative semirings and `CoeffNatDegreeLE`. `ReedSolomon.powerMomentMap_chunkedPolynomialPowerLift` became `MvPolynomial.powerMomentMap_chunkedPolynomialPowerLift` with the same generalization; flattening uses `optionEquivRight`.
+
+`ReedSolomon.chunkedCoefficientPowerLift_totalDegree_le` became `MvPolynomial.chunkedCoefficientPowerLift_totalDegree_le`, generalized to nontrivial commutative semirings. `ReedSolomon.chunkedPolynomialPowerLift_totalDegree_le` became `MvPolynomial.chunkedPolynomialPowerLift_totalDegree_le`, generalized to nontrivial commutative semirings and `CoeffNatDegreeLE`.
+
+All six public declarations are represented. The existing `PowerMomentIndex`, `powerMomentMap`, coefficient-height predicate, and flattening equivalence are reused; nothing was omitted.
+
 ## `ArkLib/ToMathlib/MvPolynomial/RootContraction.lean`
 
 Ported from `ArkLib/ToMathlib/MvPolynomial/RootContraction.lean` at the source revision. The
@@ -4411,6 +4421,10 @@ No public declarations were added. The acceptance case checks the composed chall
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/Degree.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 Acceptance cases check a concrete degree-one power-moment map and its prime kernel over `ℚ`, coefficient-lift evaluation, polynomial-lift flattening, and both lifted-degree bounds. A cleared-substitution example with `h = 0` and `a = 1` attains coefficient degree one.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/ChunkedPowerLift.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Acceptance cases check a coefficient lift through degree two and its total-degree bound, plus a multivariate lift with a degree-two coefficient and a jet variable. The multivariate case checks that the power-moment map recovers the flattening and that the lift has total degree at most three.
 
 ## `ArkLibTest/ToMathlib/RingTheory/MvPolynomial.lean`
 
