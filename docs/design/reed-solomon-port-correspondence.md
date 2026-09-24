@@ -1891,7 +1891,7 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Frob
 
 `frobeniusInitialGraph` keeps its name and is generalized from a `Fin 1` jet-coordinate function to `Option (Fin 1)`, with the challenge coordinate mapped to `X`, and from fields to commutative semirings. `exists_frobeniusGraph_of_symbolic_prime_sample` keeps its name and is generalized from `Fin n` to an arbitrary embedded type `ι`; Frobenius roots are required only at sampled indices. The theorem is derived from the two-term case of `exists_frobeniusPowerGraph_of_symbolic_prime_sample`.
 
-`symbolicSourceFrobeniusAgreement` is not added because the existing `jointTaylorAgreementEquation` in `PolynomialDifferential.TaylorChartAlgebra` covers it. No new acceptance example was retained: a trial concrete component example exceeded 200,000 heartbeats, and the existing TaylorChart acceptance module exercises the point-recognition result.
+`symbolicSourceFrobeniusAgreement` is not added because the existing `jointTaylorAgreementEquation` in `PolynomialDifferential.TaylorChartAlgebra` covers it. An acceptance case in `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement.lean` recognizes the zero pair on a positive-dimensional prime component from a one-point sparse sample cut.
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FrobeniusRetainedFamily.lean`
 
