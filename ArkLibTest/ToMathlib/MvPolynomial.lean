@@ -485,6 +485,13 @@ example :
   rw [map_add]
   simp [Finsupp.weight_single]
 
+/-- Splitting a nonconstant root variable preserves its degree. -/
+example :
+    (optionEquivRight ℚ (Fin 1)
+      (X (some (0 : Fin 1)) ^ 3 : MvPolynomial (Option (Fin 1)) ℚ)).degreeOf 0 = 3 := by
+  rw [degreeOf_optionEquivRight]
+  simp
+
 /-! ### Polynomial coefficients -/
 
 /-- The polynomial `t * Y`, with `t` in the coefficient ring `ℚ[t]`. -/

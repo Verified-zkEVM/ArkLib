@@ -2402,6 +2402,14 @@ assumption that `P` is a solution.
 
 `existsUnique_regularLiftCoefficient`: The regular one-step lift of [Kop15, Theorem 4.4].
 
+## `ArkLib/Data/Polynomial/Differential/RetainedCurve.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/RetainedCurve.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Moved the retained positive-factor equation API into the `PolynomialDifferential` namespace. Renamed `flattenedRootFirst (flattenFirstOrderChallenge Q)` to `challengeRetainingRootFirst`, and renamed `flattenChallenge_fromFlattenedRootFirst` to `flattenedCoordinates_fromFlattenedRootFirst`. The coordinate recovery function, `positiveCurveEquation`, `positiveCurveEquation_ne_zero`, `curveJetReindex`, `curveJetView`, and `curveJetView_totalDegree` keep their names. Renamed `positiveCurveEquation_jetWeight` to `positiveCurveEquation_jetTotalDegree_eq_curveJetView`, and generalized its view-degree identity to canonical `jetTotalDegree` after coordinate recovery. Added the public round-trip theorem `fromFlattenedRootFirst_rootFirstChallenge` from the source coordinate recovery and flattening identity. Renamed `positiveCurveEquation_jetWeight_le` to `positiveCurveEquation_jetTotalDegree_le` and removed its nonzero-input assumption. The `positiveCurveEquation_yOneDegree` equality keeps its name; `positiveCurveEquation_yOneDegree_le` was generalized by removing its nonzero-input assumption. Renamed `positiveCurveEquation_challengeHeightLE` to `positiveCurveEquation_coeffNatDegreeLE` without changing the coefficient-height bound.
+
+Did not port `flattenChallenge_weightedTotalDegree_eq` because the generic `weightedTotalDegree_optionEquivRight` result supplies that wrapper directly. Did not port `flattenedRootJetWeight` because `curveJetView_totalDegree` expresses the weight through canonical `jetTotalDegree`.
+
 ## `ArkLib/Data/Polynomial/Differential/RootPresentation.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/Factors/RootPresentation.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`, namespace `ReedSolomon.HiddenDerivative`.
@@ -3362,6 +3370,10 @@ concrete characteristic-two inverse-twist expansion case.
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/Flattening.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 The unit-specific flattening alias and helper weight are retired. The flattened polynomial is expressed directly as `(optionEquivRight F (JetVariable 1)).symm Q`, with weight `fun v ↦ v.elim 0 w`. The total weighted-degree bound follows from `weightedTotalDegree_optionEquivRight` and `AlgEquiv.apply_symm_apply`; no first-order wrapper is added.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/RetainedCurve.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Promoted the source-local `flattenChallenge_degreeOf_eq` result to the reusable generic theorem `MvPolynomial.degreeOf_optionEquivRight`, generalized to arbitrary `σ` and commutative semirings.
 
 ## `ArkLib/ToMathlib/MvPolynomial/PDeriv.lean`
 
@@ -4408,6 +4420,10 @@ The acceptance cases check `exists_regular_solution_jet_family_of_exponent` on `
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Symbolic/TaylorDerivativeSupport.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 Concrete `recursiveEq` examples check the initial-equation cap and degree, the common-numerator cap, and the Taylor-agreement cap and degree.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/RetainedCurve.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Moved the retained-curve acceptance cases to the differential directory test. They check `positiveCurveEquation 0 = 1` and concrete nonzero instances of the view degree identity, jet-degree bound, `Y₁` degree bound, and coefficient-height bound. The view case uses the public round-trip theorem `fromFlattenedRootFirst_rootFirstChallenge`.
 
 ## `ArkLibTest/Data/Probability/Uniform.lean`
 
