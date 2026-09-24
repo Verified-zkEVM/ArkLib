@@ -6,6 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.HybridConstants
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.AutomaticBounds
 public import ArkLib.Data.Polynomial.ResultantDegree
 public import ArkLib.Data.Polynomial.ResultantSpecialization
 
@@ -28,6 +29,8 @@ where that bound is truncated. The analogous envelope in a challenge variable is
 
 The ordinary envelope also bounds a first-order squarefree list expression. Under a common
 incidence and degree bound, this expression is at most `7 C³ n q²`.
+For the automatic first-order parameters, the same expression is bounded by a rate-only constant
+times `n / eta²`.
 
 ## Main definitions
 
@@ -48,6 +51,8 @@ incidence and degree bound, this expression is at most `7 C³ n q²`.
   is bounded by a product envelope.
 * `ReedSolomon.FirstOrder.Squarefree.squarefreeListExpression_le_rate_envelope`: the list
   expression is bounded by `7 C³ n q²` under common incidence and degree bounds.
+* `ReedSolomon.FirstOrder.Squarefree.automaticSquarefreeListExpression_le`: the automatic
+  parameters give an inverse-square slack bound for the list expression.
 
 ## References
 
@@ -180,6 +185,54 @@ theorem squarefreeListExpression_le_rate_envelope
     _ ≤ 4 * (C ^ 3 * n * q ^ 2) + 2 * (C ^ 3 * n * q ^ 2) +
           C ^ 3 * n * q ^ 2 := by gcongr
     _ = 7 * C ^ 3 * n * q ^ 2 := by ring
+
+/-- A rate-only coefficient for the squarefree inverse-square list envelope. -/
+noncomputable def automaticSquarefreeListBoundConstant (rho : ℝ) : ℝ :=
+  7 * automaticRateEnvelopeConstant rho ^ 3
+
+/-- On the positive-derivative branch, the automatic squarefree list expression is bounded by a
+rate-only constant times `n / eta²`. -/
+theorem automaticSquarefreeListExpression_le
+    {rho eta : ℝ} {n D A : ℕ}
+    (hrho : 0 < rho) (hrhoOne : rho < 1) (heta : 0 < eta)
+    (haOne : firstOrderRateThreshold rho + eta < 1)
+    (hn : 1 ≤ n) (hD : 1 ≤ D) (hDn : D ≤ n) (hDA : D < A)
+    (hDrate : (D : ℝ) ≤ rho * n)
+    (hA : (firstOrderRateThreshold rho + eta) * n ≤ A)
+    (hM : 1 ≤ automaticDerivativeCap rho (firstOrderRateThreshold rho + eta)) :
+    let B := automaticJetDegree rho (firstOrderRateThreshold rho + eta)
+    let M := automaticDerivativeCap rho (firstOrderRateThreshold rho + eta)
+    let lambda := agreementIncidenceRatio n D A
+    (firstOrderCurveFiberStageOne (D + 1) B M (regularTaylorExponent D) : ℝ) * lambda +
+        ordinaryDegreeEnvelope B M ≤
+      automaticSquarefreeListBoundConstant rho * n / eta ^ 2 := by
+  dsimp only
+  let C := automaticRateEnvelopeConstant rho
+  let q := 1 / eta
+  let B := automaticJetDegree rho (firstOrderRateThreshold rho + eta)
+  let M := automaticDerivativeCap rho (firstOrderRateThreshold rho + eta)
+  let lambda := agreementIncidenceRatio n D A
+  obtain ⟨hC', hq', hIncidence0, hIncidence, _, hJetDegree⟩ :=
+    automaticRateIncidenceJetBounds hrho hrhoOne heta haOne hDn hDA hDrate hA
+  have hC : 1 ≤ C := by simpa only [C] using hC'
+  have hq : 1 ≤ q := by simpa only [q] using hq'
+  have hlambda0 : 0 ≤ lambda := by simpa only [lambda] using hIncidence0
+  have hlambda : lambda ≤ C := by simpa only [lambda, C] using hIncidence
+  have hB : (B : ℝ) ≤ C * q := by
+    calc
+      (B : ℝ) ≤ automaticRateEnvelopeConstant rho / eta := by
+        simpa only [B] using hJetDegree
+      _ = C * q := by dsimp only [C, q]; ring
+  have hMB : M ≤ B := by
+    dsimp only [M, B]
+    unfold automaticDerivativeCap
+    exact min_le_right _ _
+  have hbound := squarefreeListExpression_le_rate_envelope hC hq hn hD hDn
+    (by simpa only [M] using hM) hMB hlambda0 hlambda hB
+  dsimp only [C, q, B, M, lambda] at hbound ⊢
+  unfold automaticSquarefreeListBoundConstant
+  field_simp [ne_of_gt heta] at hbound ⊢
+  nlinarith
 
 /-- The degree envelope `(2 * M - 1) * H` in the challenge variable, for a challenge-degree budget
 `H` and a bound `M` on the degree in the root variable. -/

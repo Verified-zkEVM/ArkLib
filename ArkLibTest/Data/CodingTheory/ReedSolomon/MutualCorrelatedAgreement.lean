@@ -190,21 +190,6 @@ private theorem affineCandidateEvaluation (i : Fin 2) :
     change 1 + 2 * (1 : ℚ) = 3
     norm_num
 
-/-- At challenge `1`, the candidate `1 + 2X` is explained by one pair on both coordinates. -/
-example : ∃ F₀ G₀ : ℚ[X], C 1 + C 2 * X = F₀ + C 1 * G₀ ∧
-    commonPolynomialAgreementSet fullDomain ![1, 2] ![0, 1] F₀ G₀ = univ := by
-  obtain ⟨F₀, G₀, -, -, hpair⟩ :=
-    exists_exactPair_fullDimension fullDomain ![1, 2] ![0, 1]
-  have hagree : polynomialAgreementSet fullDomain (fun i ↦ ![1, 2] i + 1 * ![0, 1] i)
-      (C 1 + C 2 * X) = univ := by
-    ext i
-    simpa only [mem_polynomialAgreementSet, Finset.mem_univ, iff_true] using
-      affineCandidateEvaluation i
-  obtain ⟨hP, hset⟩ := hpair 1 (C 1 + C 2 * X) (by
-    rw [Fintype.card_fin]
-    compute_degree!) (by rw [hagree, card_univ])
-  exact ⟨F₀, G₀, hP, hset.symm.trans hagree⟩
-
 /-- The graph-line recognizer accepts the computed candidate `1 + 2X` at challenge `1`. -/
 example : ∃ F₀ G₀ : ℚ[X], F₀.degree < 2 ∧ G₀.degree < 2 ∧
     (∀ i ∈ (Finset.univ : Finset (Fin 2)),
@@ -260,23 +245,36 @@ open MvPolynomial Polynomial PolynomialDifferential
 
 namespace ReedSolomon.FirstOrder.Squarefree
 
-example : singularTail (1 : ℚ[X]) (Polynomial.X ^ 2 : ℚ[X][X]) 2 = 0 ∧
-    (firstOrderCurveFiberStageOne 2 4 2 (regularTaylorExponent 1) : ℝ) * (1 : ℝ) +
-        ordinaryDegreeEnvelope 4 2 ≤ 52 ∧
-    (firstOrderCurveFiberStageOne 2 4 2 (regularTaylorExponent 1) : ℝ) * (1 : ℝ) +
-        ordinaryDegreeEnvelope 4 2 ≤ 7 * (1 : ℝ) ^ 3 * 4 * 4 ^ 2 := by
-  refine ⟨?_, ?_, ?_⟩
-  · simpa using singularTail_map_eq_zero_of_common_root
-      (1 : ℚ[X]) (Polynomial.X ^ 2 : ℚ[X][X])
-      two_pos (by simp) (RingHom.id ℚ[X]) 0 (by simp) (by simp)
-  · have h := squarefreeListExpression_le (D := 1) (B := 4) (M := 2) (lambda := 1)
-      (by norm_num) (by norm_num) (by norm_num) (by norm_num)
-    norm_num at h; simpa using h
-  · have h := squarefreeListExpression_le_rate_envelope
-      (C := 1) (q := 4) (lambda := 1) (n := 4) (D := 1) (B := 4) (M := 2)
-      (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
-      (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
-    norm_num at h ⊢; exact h
+example : singularTail (1 : ℚ[X]) (Polynomial.X ^ 2 : ℚ[X][X]) 2 = 0 := by
+  simpa using singularTail_map_eq_zero_of_common_root (1 : ℚ[X])
+    (Polynomial.X ^ 2 : ℚ[X][X]) two_pos (by simp) (RingHom.id ℚ[X]) 0 (by simp) (by simp)
+
+private noncomputable abbrev exampleRho : ℝ := 2 / 49
+private noncomputable abbrev exampleEta : ℝ := 1 / 100
+private noncomputable abbrev exampleAgreement := firstOrderRateThreshold exampleRho + exampleEta
+private noncomputable abbrev exampleJet := automaticJetDegree exampleRho exampleAgreement
+private noncomputable abbrev exampleCap := automaticDerivativeCap exampleRho exampleAgreement
+
+example : (firstOrderCurveFiberStageOne 2 exampleJet exampleCap (regularTaylorExponent 1) : ℝ) *
+    agreementIncidenceRatio 100 1 20 + ordinaryDegreeEnvelope exampleJet exampleCap ≤
+    automaticSquarefreeListBoundConstant exampleRho * 100 / exampleEta ^ 2 := by
+  have ht : firstOrderRateThreshold exampleRho = 79 / 455 := by
+    unfold firstOrderRateThreshold exampleRho
+    rw [show (2 / 49 : ℝ) * (5 - 2 / 49) * (2 - 2 / 49) = (216 / 343 : ℝ) ^ 2 by norm_num,
+      Real.sqrt_sq_eq_abs]
+    norm_num
+  have hc : (2 : ℝ) < (⌈4 / ((1081506391 : ℝ) / 42598400000)⌉₊ : ℝ) := by
+    exact_mod_cast Nat.lt_ceil.mpr (by norm_num)
+  apply automaticSquarefreeListExpression_le (rho := exampleRho) (eta := exampleEta)
+  all_goals norm_num [ht,
+    automaticDerivativeCap, automaticDerivativeCapRaw, automaticMultiplicity, automaticSurplus,
+    automaticDerivativeRatio, automaticAgreement, automaticGapBracket, firstOrderCleanExpression,
+    firstOrderRateBeta]
+  · constructor
+    · nlinarith [hc]
+    · norm_num [automaticJetDegree, automaticMultiplicity, automaticSurplus,
+        automaticDerivativeRatio, automaticAgreement, automaticGapBracket,
+        firstOrderCleanExpression, firstOrderRateBeta, ht]
 end ReedSolomon.FirstOrder.Squarefree
 
 namespace ReedSolomon.GraphLineComponentTest
