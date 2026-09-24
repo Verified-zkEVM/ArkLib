@@ -5,25 +5,28 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Counting
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.Coordinates
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.ConstraintMatrix
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.LocalRank
-public import ArkLib.ToMathlib.LinearAlgebra.Matrix.RankProduct
+public import ArkLib.ToMathlib.LinearAlgebra.Matrix.Rank
 public import Mathlib.FieldTheory.RatFunc.Basic
 
 /-!
-# Symbolic rank bounds from derivative-order support
+# Rank bounds for derivative-order local constraint matrices
 
-If each source monomial has derivative-order weight at most `W`, one local constraint block has
-rank at most `localDerivativeCoordinateBudget d m W`. Stacking blocks over `n` received points
-gives the corresponding total rank bound, including when the received values are polynomials in a
-symbolic challenge.
+For any finite family of differential polynomials whose exponents have derivative-order weight at
+most `W`, the matrix of low-contact coordinates at one point has rank at most
+`localDerivativeCoordinateBudget d m W`. This bound applies to monomial columns and to arbitrary
+polynomials. Entrywise base change commutes with the local constraint matrix, so stacking the
+blocks of a symbolic received curve gives a rank bound proportional to the number of points.
 
 ## Main statements
 
-* `monomial_local_matrix_rank_le`: the rank bound for one local block.
-* `symbolicLocalConstraintMatrix_rank_le_partition`: the bound for a symbolic curve.
+* `localConstraintMatrix_map`: entrywise base change of the local constraint matrix.
+* `localConstraintCoordinates_rank_le_of_derivative_weight`: the rank bound for a finite family
+  of polynomials.
+* `rank_map_supportedLocalConstraintMatrix_le_of_derivative_weight`: the bound for a finite
+  symbolic matrix whose columns satisfy the derivative-weight condition.
 
 ## References
 
@@ -33,105 +36,102 @@ symbolic challenge.
 @[expose] public section
 
 open Polynomial PolynomialDifferential
-open scoped BigOperators Matrix
+open scoped Matrix
 
 noncomputable section
 
 namespace ReedSolomon.HiddenDerivative
 
-open MvPolynomial
+variable {R : Type*} [CommRing R] {d : ℕ} {ι κ : Type*}
 
-/-- A local coefficient matrix on monomials of derivative-order weight at most `W` has rank at
-most `localDerivativeCoordinateBudget d m W`. -/
-theorem monomial_local_matrix_rank_le {F : Type*} [Field F] {d m W N : ℕ}
-    (center received : F) (columns : Fin N → SourceColumn d)
-    (hweight : ∀ j, fullDerivativeJetWeight (columns j).exponent ≤ W) :
-    Matrix.rank (fun row j ↦ localConstraintCoordinatesAt m center received
-      (MvPolynomial.monomial (columns j).exponent 1) row :
-      Matrix (LowContactIndex d m) (Fin N) F) ≤ localDerivativeCoordinateBudget d m W := by
+/-- Applying a ring homomorphism to every entry of the local constraint matrix maps its centers
+and received values and leaves its source columns unchanged. -/
+theorem localConstraintMatrix_map {S : Type*} [CommRing S] (f : R →+* S) (m : ℕ)
+    (centers received : ι → R) (columns : κ → SourceColumn d) :
+    (localConstraintMatrix m centers received columns).map f =
+      localConstraintMatrix m (fun i => f (centers i)) (fun i => f (received i)) columns := by
+  ext row j
+  simp only [Matrix.map_apply, localConstraintMatrix_apply]
+  rw [← MvPolynomial.coeff_map, map_unscaledLocalSubstitution]
+  simp [SourceColumn.polynomial]
+
+/-- The low-contact coordinate matrix of any finite family of differential polynomials whose
+support has derivative-order weight at most `W` has rank at most
+`localDerivativeCoordinateBudget d m W`. -/
+theorem localConstraintCoordinates_rank_le_of_derivative_weight {F : Type*} [Field F]
+    {d m W N : ℕ} (center received : F) (polynomials : Fin N → DifferentialPolynomial F d)
+    (hweight : ∀ j u, u ∈ (polynomials j).support → fullDerivativeJetWeight u ≤ W) :
+    Matrix.rank (fun row j => localConstraintCoordinatesAt m center received
+      (polynomials j) row : Matrix (LowContactIndex d m) (Fin N) F) ≤
+      localDerivativeCoordinateBudget d m W := by
   classical
-  let M : Matrix (LowContactIndex d m) (Fin N) F := fun row j ↦
-    localConstraintCoordinatesAt m center received
-      (MvPolynomial.monomial (columns j).exponent 1) row
+  let M : Matrix (LowContactIndex d m) (Fin N) F := fun row j =>
+    localConstraintCoordinatesAt m center received (polynomials j) row
+  change M.rank ≤ _
   let s := localDerivativeExponents d m W
   let V := MvPolynomial.restrictSupport F (s : Set (LocalVariable d →₀ ℕ))
-  let b := MvPolynomial.basisRestrictSupport F (s : Set (LocalVariable d →₀ ℕ))
+  let b := MvPolynomial.basisRestrictSupport (R := F) (s : Set (LocalVariable d →₀ ℕ))
   let _ : Module.Finite F V := Module.Finite.of_basis b
   let f := lowContactCoefficients (R := F) (d := d) m
   have hdim : Module.finrank F V = s.card := by
     rw [← Fintype.card_coe]
     exact Module.finrank_eq_card_basis b
-  change M.rank ≤ localDerivativeCoordinateBudget d m W
   rw [Matrix.rank_eq_finrank_span_cols]
   have hspan : Submodule.span F (Set.range M.col) ≤ V.map f := by
     apply Submodule.span_le.mpr
     rintro _ ⟨j, rfl⟩
-    refine ⟨localConstraintAt m center received
-      (MvPolynomial.monomial (columns j).exponent 1), ?_, ?_⟩
-    · change localConstraintAt m center received
-        (MvPolynomial.monomial (columns j).exponent 1) ∈
-          MvPolynomial.restrictSupport F (s : Set (LocalVariable d →₀ ℕ))
+    refine ⟨localConstraintAt m center received (polynomials j), ?_, ?_⟩
+    · change localConstraintAt m center received (polynomials j) ∈
+        MvPolynomial.restrictSupport F (s : Set (LocalVariable d →₀ ℕ))
       rw [MvPolynomial.mem_restrictSupport_iff]
       intro e he
-      have hmonomial : ∀ u ∈ (MvPolynomial.monomial (columns j).exponent (1 : F)).support,
-          fullDerivativeJetWeight u ≤ W := by
-        intro u hu
-        have heq : u = (columns j).exponent := by
-          simpa using MvPolynomial.support_monomial_subset hu
-        simpa [heq] using hweight j
-      obtain ⟨hb, hw, hc⟩ := localConstraintAt_support_of_derivative_weight center received
-        hmonomial he
-      exact mem_localDerivativeExponents_of_bounds hb hw hc
+      obtain ⟨hbalance, hweight', hcontact⟩ := localConstraintAt_support_of_derivative_weight
+        center received (hweight j) he
+      exact mem_localDerivativeExponents_of_bounds hbalance hweight' hcontact
     · ext row
-      change f (localConstraintAt m center received
-        (MvPolynomial.monomial (columns j).exponent 1)) row = M row j
-      have hrow : Finsupp.weight (localContactWeight d) row.1 < m := by
-        exact row.2
-      simp [M, f, localConstraintCoordinatesAt, localConstraintAt,
-        lowContactCoefficients, projectLowContact, hrow]
-  calc
-    Module.finrank F (Submodule.span F (Set.range M.col)) ≤ Module.finrank F (V.map f) :=
-      Submodule.finrank_mono hspan
-    _ ≤ Module.finrank F V := Submodule.finrank_map_le _ _
-    _ = s.card := hdim
-    _ ≤ localDerivativeCoordinateBudget d m W := card_localDerivativeExponents_le d m W
+      change f (localConstraintAt m center received (polynomials j)) row = M row j
+      change (projectLowContact m (unscaledLocalSubstitution d center received
+        (polynomials j))).coeff row.1 =
+          (unscaledLocalSubstitution d center received (polynomials j)).coeff row.1
+      rw [coeff_projectLowContact]
+      simp [row.2]
+  exact (Submodule.finrank_mono hspan).trans
+    ((Submodule.finrank_map_le f V).trans
+      (hdim.le.trans (card_localDerivativeExponents_le d m W)))
 
-private theorem mapped_symbolic_curve_block_eq_local_matrix {F : Type*} [Field F]
-    {d m n N : ℕ} (centers : Fin n → F) (w : Fin n → F[X])
-    (columns : Fin N → SourceColumn d) (i : Fin n) :
-    (fun row j ↦ algebraMap F[X] (RatFunc F)
-      (localConstraintMatrix m (fun i ↦ Polynomial.C (centers i)) w columns (i, row) j)) =
-      (fun row j ↦ localConstraintCoordinatesAt m
-        (algebraMap F[X] (RatFunc F) (Polynomial.C (centers i)))
-        (algebraMap F[X] (RatFunc F) (w i))
-        (MvPolynomial.monomial (columns j).exponent 1) row) := by
-  ext row j
-  simp only [localConstraintMatrix, localConstraintCoordinatesAt,
-    lowContactCoefficients, LinearMap.comp_apply, AlgHom.toLinearMap_apply,
-    LinearMap.pi_apply, MvPolynomial.lcoeff_apply]
-  rw [← MvPolynomial.coeff_map, map_unscaledLocalSubstitution]
-  simp [SourceColumn.polynomial]
-
-/-- The symbolic local constraint matrix has rank at most `n` times the local derivative budget
-when every source monomial has derivative-order weight at most `W`. -/
-theorem symbolicLocalConstraintMatrix_rank_le_partition {F : Type*} [Field F]
-    {d m W n N : ℕ} (centers : Fin n → F) (w : Fin n → F[X])
+/-- The finite supported-row matrix of a symbolic received curve has rank at most the number of
+points times the local derivative-order coordinate budget when every source column has weight at
+most `W`. -/
+theorem rank_map_supportedLocalConstraintMatrix_le_of_derivative_weight {F : Type*} [Field F]
+    {d m W n N : ℕ} (centers : Fin n → F) (received : Fin n → F[X])
     (columns : Fin N → SourceColumn d)
     (hweight : ∀ j, fullDerivativeJetWeight (columns j).exponent ≤ W) :
-    ((localConstraintMatrix m (fun i ↦ Polynomial.C (centers i)) w columns).map
+    ((supportedLocalConstraintMatrix m (fun i => Polynomial.C (centers i)) received columns).map
       (algebraMap F[X] (RatFunc F))).rank ≤ n * localDerivativeCoordinateBudget d m W := by
-  let M := (localConstraintMatrix m (fun i ↦ Polynomial.C (centers i)) w columns).map
-    (algebraMap F[X] (RatFunc F))
-  apply (Matrix.rank_prod_rows_le_sum M).trans
+  rw [rank_map_supportedLocalConstraintMatrix]
+  apply (Matrix.rank_prod_rows_le_sum _).trans
   calc
-    ∑ i : Fin n, (Matrix.rowBlock M i).rank ≤
-        ∑ _i : Fin n, localDerivativeCoordinateBudget d m W := by
+    ∑ i : Fin n, Matrix.rank (fun row j =>
+        ((localConstraintMatrix m (fun i => Polynomial.C (centers i)) received columns).map
+          (algebraMap F[X] (RatFunc F))) (i, row) j) ≤
+        ∑ _ : Fin n, localDerivativeCoordinateBudget d m W := by
       apply Finset.sum_le_sum
-      intro i _
-      change Matrix.rank (fun row j ↦ algebraMap F[X] (RatFunc F)
-        (localConstraintMatrix m (fun i ↦ Polynomial.C (centers i)) w columns (i, row) j)) ≤ _
-      rw [mapped_symbolic_curve_block_eq_local_matrix centers w columns i]
-      exact monomial_local_matrix_rank_le _ _ columns hweight
-    _ = _ := by simp
+      intro i hi
+      change Matrix.rank (fun row j =>
+        ((localConstraintMatrix m (fun i => Polynomial.C (centers i)) received columns).map
+          (algebraMap F[X] (RatFunc F))) (i, row) j) ≤ _
+      rw [localConstraintMatrix_map]
+      change Matrix.rank (fun row j => localConstraintCoordinatesAt m
+        (algebraMap F[X] (RatFunc F) (Polynomial.C (centers i)))
+        (algebraMap F[X] (RatFunc F) (received i)) (columns j).polynomial row) ≤ _
+      apply localConstraintCoordinates_rank_le_of_derivative_weight
+        (center := algebraMap F[X] (RatFunc F) (Polynomial.C (centers i)))
+        (received := algebraMap F[X] (RatFunc F) (received i))
+        (polynomials := fun j => (columns j).polynomial)
+      intro j u hu
+      have heq : u = (columns j).exponent := by
+        simpa using MvPolynomial.support_monomial_subset hu
+      simpa [heq] using hweight j
+    _ = n * localDerivativeCoordinateBudget d m W := by simp
 
 end ReedSolomon.HiddenDerivative

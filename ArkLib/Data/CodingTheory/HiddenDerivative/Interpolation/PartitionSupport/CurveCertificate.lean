@@ -99,7 +99,7 @@ theorem exists_partitionSupport_curve_certificate {F : Type*} [Field F]
       (partitionSupportExponents D d W L hD).card) :
     let N := (partitionSupportExponents D d W L hD).card
     let r := n * localDerivativeCoordinateBudget d m W
-    Nonempty (SymbolicReceivedCurve.CurveCertificate F A k ℓ ν d
+    Nonempty (SymbolicReceivedCurve.Certificate A k ℓ ν d
       (r * (ℓ * ν) / (N - r)) centers received) := by
   classical
   let N := Fintype.card ↥(partitionSupportExponents D d W L hD)
@@ -121,26 +121,24 @@ theorem exists_partitionSupport_curve_certificate {F : Type*} [Field F]
         _ = totalJetDegree (columns j).exponent :=
           (totalJetDegree_eq_degree_some _).symm
     exact hc.trans (htotal j)
-  have hweight : ∀ j, (columns j).exponent.weight (differentialWeight D) < m * A := by
-    intro j
-    have hcoarse :
-        (columns j).exponent none + D * totalJetDegree (columns j).exponent < m * A := by
-      exact_mod_cast ((hband j).2.trans_le hL)
-    exact (weight_le_add_mul_totalJetDegree D (columns j).exponent).trans_lt hcoarse
   have hrank :
-      ((localConstraintMatrix m (fun i ↦ Polynomial.C (centers i)) received columns).map
+      ((supportedLocalConstraintMatrix m (fun i ↦ Polynomial.C (centers i)) received columns).map
         (algebraMap F[X] (RatFunc F))).rank ≤ r := by
-    change ((localConstraintMatrix m (fun i ↦ Polynomial.C (centers i)) received columns).map
-      (algebraMap F[X] (RatFunc F))).rank ≤ n * localDerivativeCoordinateBudget d m W
-    exact symbolicLocalConstraintMatrix_rank_le_partition centers received columns
+    change ((supportedLocalConstraintMatrix m
+      (fun i ↦ Polynomial.C (centers i)) received columns).map (algebraMap F[X] (RatFunc F))).rank
+      ≤ n * localDerivativeCoordinateBudget d m W
+    exact rank_map_supportedLocalConstraintMatrix_le_of_derivative_weight centers received columns
       (fun j ↦ (hband j).1)
   have hrN : r < N := by
     dsimp only [r]
     rw [hN]
     exact hsurplus
-  have hcert := SymbolicReceivedCurve.exists_curveCertificate_of_rank_bound
-    hbudget hkD centers received hreceived columns (partitionSupportColumns_injective
-      (d := d) (W := W) (L := L) hD) hy₀ htotal hweight hrank hrN
-  simpa only [Fintype.card_coe] using hcert
+  have hcert := SymbolicReceivedCurve.exists_certificate_of_rank_bound
+    (F := F) (ι := Fin n) (κ := Fin N) (K := RatFunc F) hL hbudget hkD centers received
+    hreceived columns (partitionSupportColumns_injective (d := d) (W := W) (L := L) hD)
+    hy₀ htotal (fun j ↦ (hband j).toWeightedSupportEligible)
+    (algebraMap F[X] (RatFunc F)) (RatFunc.algebraMap_injective F) hrank
+    (by simpa only [Fintype.card_fin] using hrN)
+  simpa only [Fintype.card_fin, Fintype.card_coe, hN] using hcert
 
 end ReedSolomon.HiddenDerivative

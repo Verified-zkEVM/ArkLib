@@ -118,15 +118,6 @@ theorem mem_zeroLocus_highTaylorCutsIdeal_iff (center : F) (Q : DifferentialPoly
   rw [highTaylorCutsIdeal, zeroLocus_span]
   simp only [Set.mem_ofPred_eq, Set.forall_mem_image, Set.mem_Ico, and_imp]
 
-/-- If the high cuts lie in `I`, the common numerators of `c_l` for `k ≤ l < K` vanish at every
-zero of `I`. -/
-theorem aeval_commonTaylorNumerator_eq_zero_of_mem_zeroLocus (center : F)
-    (Q : DifferentialPolynomial F r) {K k τ : ℕ} {I : Ideal (MvPolynomial (Fin (r + 1)) F)}
-    (hhigh : highTaylorCutsIdeal center Q K k τ ≤ I) {E : Type*} [Field E] [Algebra F E]
-    {jet : Fin (r + 1) → E} (hjet : jet ∈ zeroLocus E I) :
-    ∀ l, k ≤ l → l < K → aeval jet (commonTaylorNumerator center Q τ l) = 0 :=
-  (mem_zeroLocus_highTaylorCutsIdeal_iff center Q).mp (zeroLocus_anti_mono hhigh hjet)
-
 /-! ### Regular agreement loci -/
 
 /-- The zeros of `I` at which the initial separant is nonzero and the agreement equation at
@@ -164,8 +155,10 @@ theorem eq_of_mem_zeroLocus_of_highTaylorCutsIdeal_le (center : F)
       aeval jet' (taylorAgreementEquation center Q K τ (domain i) (received i)) = 0) :
     jet = jet' :=
   eq_of_highTaylorCuts_of_agreement center Q hτ hK domain received T hinj hk hS hS'
-    (aeval_commonTaylorNumerator_eq_zero_of_mem_zeroLocus center Q hhigh hjet)
-    (aeval_commonTaylorNumerator_eq_zero_of_mem_zeroLocus center Q hhigh hjet') hcut hcut'
+    ((mem_zeroLocus_highTaylorCutsIdeal_iff center Q).mp
+      (zeroLocus_anti_mono hhigh hjet))
+    ((mem_zeroLocus_highTaylorCutsIdeal_iff center Q).mp
+      (zeroLocus_anti_mono hhigh hjet')) hcut hcut'
 
 /-- Let `r < K`, let `τ` be sufficient for `K`, and let `I` contain the high cuts for `k`. If
 `domain` is injective on a finite index type with at least `k` elements, the regular agreement
@@ -348,8 +341,10 @@ theorem polynomialJet_mem_regularAgreementCutLocus (center : F)
     {ι : Type*} (domain received : ι → F) (hagree : ∀ i, P.eval (domain i) = received i) :
     polynomialJet center P ∈ regularAgreementCutLocus I center Q K τ domain received :=
   ⟨hI, by rwa [aeval_initialJetSeparant], fun i ↦
-    (aeval_taylorAgreementEquation_polynomialJet_eq_zero_iff center Q P hsolution hseparant hτ hP
-      hbin _ _).mpr (hagree i)⟩
+    (taylorAgreementEquation_eq_zero_iff center Q hτ (polynomialJet center P)
+      (by rwa [aeval_initialJetSeparant]) _ _).mpr
+        (by rw [rationalTaylorPolynomial_polynomialJet center Q P hsolution hseparant hP hbin]
+            exact hagree i)⟩
 
 end
 
