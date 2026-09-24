@@ -189,23 +189,32 @@ private theorem affineCandidateEvaluation (i : Fin 2) :
     change 1 + 2 * (1 : ℚ) = 3
     norm_num
 
+/-- At challenge `1`, the candidate `1 + 2X` is explained by one pair on both coordinates. -/
+example : ∃ F₀ G₀ : ℚ[X], C 1 + C 2 * X = F₀ + C 1 * G₀ ∧
+    commonPolynomialAgreementSet fullDomain ![1, 2] ![0, 1] F₀ G₀ = univ := by
+  obtain ⟨F₀, G₀, -, -, hpair⟩ :=
+    exists_exactPair_fullDimension fullDomain ![1, 2] ![0, 1]
+  have hagree : polynomialAgreementSet fullDomain (fun i ↦ ![1, 2] i + 1 * ![0, 1] i)
+      (C 1 + C 2 * X) = univ := by
+    ext i
+    simpa only [mem_polynomialAgreementSet, Finset.mem_univ, iff_true] using
+      affineCandidateEvaluation i
+  obtain ⟨hP, hset⟩ := hpair 1 (C 1 + C 2 * X) (by
+    rw [Fintype.card_fin]
+    compute_degree!) (by rw [hagree, card_univ])
+  exact ⟨F₀, G₀, hP, hset.symm.trans hagree⟩
+
 /-- The graph-line recognizer accepts the computed candidate `1 + 2X` at challenge `1`. -/
 example : ∃ F₀ G₀ : ℚ[X], F₀.degree < 2 ∧ G₀.degree < 2 ∧
     (∀ i ∈ (Finset.univ : Finset (Fin 2)),
       F₀.eval (fullDomain i) = ![1, 2] i ∧ G₀.eval (fullDomain i) = ![0, 1] i) ∧
-    Polynomial.eval (fullDomain 0) (C 1 + C 2 * X : ℚ[X]) = ![1, 2] 0 + 1 * ![0, 1] 0 ∧
-    Polynomial.eval (fullDomain 1) (C 1 + C 2 * X : ℚ[X]) = ![1, 2] 1 + 1 * ![0, 1] 1 ∧
     C 1 + C 2 * X = F₀ + C 1 * G₀ := by
   obtain ⟨F₀, G₀, hF₀, hG₀, hsample, hrecognize⟩ :=
     exists_graphLine_polynomials_of_sample fullDomain ![1, 2] ![0, 1] univ
       (card_univ.trans rfl)
-  have hP : (C 1 + C 2 * X : ℚ[X]).degree < 2 := by compute_degree!
-  have heval : ∀ i ∈ (Finset.univ : Finset (Fin 2)),
-      Polynomial.eval (fullDomain i) (C 1 + C 2 * X : ℚ[X]) = ![1, 2] i + 1 * ![0, 1] i := by
-    intro i hi
-    exact affineCandidateEvaluation i
-  exact ⟨F₀, G₀, hF₀, hG₀, hsample, heval 0 (by simp), heval 1 (by simp),
-    by simpa using hrecognize (RingHom.id ℚ) 1 (C 1 + C 2 * X) hP heval⟩
+  refine ⟨F₀, G₀, hF₀, hG₀, hsample, ?_⟩
+  simpa using hrecognize (RingHom.id ℚ) 1 (C 1 + C 2 * X) (by compute_degree!)
+    fun i _ ↦ affineCandidateEvaluation i
 
 /-- The exceptional bound is attained when the graph agrees at only one coordinate. -/
 example : ∃ exceptional : Finset ℚ, exceptional.card ≤ 1 ∧ 0 ∈ exceptional := by
@@ -220,22 +229,10 @@ example : ∃ exceptional : Finset ℚ, exceptional.card ≤ 1 ∧ 0 ∈ excepti
   have hzero : 0 ∈ exceptional := by
     by_contra hz
     have hset := hagreement 0 hz
-    have hleft : polynomialAgreementSet fullDomain (fun _ : Fin 2 ↦ 0) (0 : ℚ[X]) = univ := by
-      ext i
-      simp [polynomialAgreementSet]
-    have hzero : (fun i : Fin 2 ↦ ![0, 0] i) = fun _ ↦ (0 : ℚ) := by
-      funext i
-      fin_cases i <;> norm_num
-    have hset'' : polynomialAgreementSet fullDomain (fun i : Fin 2 ↦ ![0, 0] i)
-        (0 : ℚ[X]) = commonPolynomialAgreementSet fullDomain ![0, 0] ![0, 1] 0 0 := by
-      simpa using hset
-    have hset' : polynomialAgreementSet fullDomain (fun _ : Fin 2 ↦ 0) (0 : ℚ[X]) =
-        commonPolynomialAgreementSet fullDomain ![0, 0] ![0, 1] 0 0 := by
-      rw [← hzero]
-      exact hset''
-    rw [hleft, hcommon] at hset'
-    have hone : (1 : Fin 2) ∈ (Finset.univ : Finset (Fin 2)) := Finset.mem_univ _
-    rw [hset'] at hone
+    rw [hcommon] at hset
+    have hone : (1 : Fin 2) ∈ ({0} : Finset (Fin 2)) := by
+      rw [← hset]
+      simp [polynomialAgreementSet, fullDomain]
     simp at hone
   exact ⟨exceptional, hcard', hzero⟩
 
@@ -257,6 +254,7 @@ example : ∃ z : ℚ, z ≠ 1 ∧ z ≠ 0 ∧
     (RingHom.id ℚ) {tupleOne, tupleChallenge} {1} {X} (by simp [X_ne_zero])
   refine ⟨z, by simpa using hz, by simpa using hroot X (by simp), fun heq ↦ ?_⟩
   exact tuples_ne (hinj (by simp) (by simp) heq)
+
 open MvPolynomial Polynomial PolynomialDifferential
 
 namespace ReedSolomon.FirstOrder.Squarefree

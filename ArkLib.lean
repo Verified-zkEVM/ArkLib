@@ -186,7 +186,7 @@ public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.St
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.StageComparison
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.StageSum
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.Uniform
-public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.UniformMCA
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.UniformMca
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FreeOrder
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.Johnson.FiniteBounds
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.Johnson.InterpolationBounds
