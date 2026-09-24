@@ -77,18 +77,28 @@ theorem exists_field_bounded_capacity_list
   let m := weightedSupportMultiplicity d
   change ∀ n k q A : ℕ,
     (if (1 / 4 : ℝ) ≤ delta then 1 else 8 * m) ≤ n → _
+  intro n k q A hn hk hkn hq hnq hA alpha y
+  let : Fact q.Prime := ⟨hq⟩
+  have hthreshold := (agreementThreshold_le_iff_real hdelta.le n k A).mpr hA
+  have hsubset : agreeingPolynomials alpha k A y ⊆
+      agreeingPolynomials alpha k (agreementThreshold delta n k) y := by
+    intro P hP
+    change A ≤ Code.agree (ReedSolomon.evalOnPoints alpha P) y at hP
+    change agreementThreshold delta n k ≤ Code.agree (ReedSolomon.evalOnPoints alpha P) y
+    exact hthreshold.trans hP
+  have hmono := Set.encard_mono hsubset
+  have listEmptyOfOversizedThreshold (list : Finset (Polynomial (ZMod q)))
+      (hexact : ∀ P : Polynomial (ZMod q), P ∈ list ↔
+        P.degree < k ∧ A ≤ Code.agree (fun i => P.eval (alpha i)) y)
+      (hoversized : n < A) : list = ∅ := by
+    apply Finset.eq_empty_iff_forall_notMem.mpr
+    intro P hP
+    have h := (hexact P).mp hP
+    have hAgree := Code.agree_le_card (u := ReedSolomon.evalOnPoints alpha P) (v := y)
+    simp only [Fintype.card_fin] at hAgree
+    exact (Nat.not_le_of_lt hoversized) (h.2.trans hAgree)
   by_cases hquarter : (1 / 4 : ℝ) ≤ delta
-  · intro n k q A _hn hk hkn hq hnq hA alpha y
-    let : Fact q.Prime := ⟨hq⟩
-    have hthreshold := (agreementThreshold_le_iff_real hdelta.le n k A).mpr hA
-    have hsubset : agreeingPolynomials alpha k A y ⊆
-        agreeingPolynomials alpha k (agreementThreshold delta n k) y := by
-      intro P hP
-      change A ≤ Code.agree (ReedSolomon.evalOnPoints alpha P) y at hP
-      change agreementThreshold delta n k ≤ Code.agree (ReedSolomon.evalOnPoints alpha P) y
-      exact hthreshold.trans hP
-    have hmono := Set.encard_mono hsubset
-    have hquarterBound := agreeingPolynomials_encard_lt_blockLength_of_quarter
+  · have hquarterBound := agreeingPolynomials_encard_lt_blockLength_of_quarter
       hquarter alpha hk (by simpa only [Fintype.card_fin] using hkn) y
     have hquarterBound' :
         (agreeingPolynomials alpha k (agreementThreshold delta n k) y).encard < n := by
@@ -97,13 +107,7 @@ theorem exists_field_bounded_capacity_list
     obtain ⟨list, hexact, hcard⟩ := exists_finset_polynomial_list alpha k A y
       (Set.finite_of_encard_le_coe hbound.le)
     refine ⟨list, hexact, ?_, ?_, ?_, ?_⟩
-    · intro hoversized
-      apply Finset.eq_empty_iff_forall_notMem.mpr
-      intro P hP
-      have h := (hexact P).mp hP
-      have := Code.agree_le_card (u := ReedSolomon.evalOnPoints alpha P) (v := y)
-      simp only [Fintype.card_fin] at this
-      omega
+    · exact listEmptyOfOversizedThreshold list hexact
     · intro hhalf
       have hhalfBound := agreeingPolynomials_encard_le_one_of_half
         hhalf alpha hk (by simpa only [Fintype.card_fin] using hkn) y
@@ -119,18 +123,9 @@ theorem exists_field_bounded_capacity_list
       exact (not_lt_of_ge hquarter hsmall).elim
   · have hsmall : delta < (1 / 4 : ℝ) := lt_of_not_ge hquarter
     have hbound := weightedSupport_capacity_list_bound_four_mul delta hdelta hsmall
-    intro n k q A hn hk hkn hq hnq hA alpha y
     have hblock : 8 * weightedSupportMultiplicity (capacityDerivativeOrder delta) ≤ n := by
       simpa only [ite_eq_right hquarter] using hn
     obtain ⟨⟨certificate⟩, hlarge⟩ := hbound n k q hblock hk hkn hq hnq alpha
-    have hthreshold := (agreementThreshold_le_iff_real hdelta.le n k A).mpr hA
-    have hsubset : agreeingPolynomials alpha k A y ⊆
-        agreeingPolynomials alpha k (agreementThreshold delta n k) y := by
-      intro P hP
-      change A ≤ Code.agree (ReedSolomon.evalOnPoints alpha P) y at hP
-      change agreementThreshold delta n k ≤ Code.agree (ReedSolomon.evalOnPoints alpha P) y
-      exact hthreshold.trans hP
-    have hmono := Set.encard_mono hsubset
     have hcertificateBound := (certificate.pointwiseListBound y).1
     have hcertificateBound' :
         (agreeingPolynomials alpha k (agreementThreshold delta n k) y).encard ≤
@@ -140,13 +135,7 @@ theorem exists_field_bounded_capacity_list
     obtain ⟨list, hexact, hcard⟩ := exists_finset_polynomial_list alpha k A y
       (Set.finite_of_encard_le_coe hbound')
     refine ⟨list, hexact, ?_, ?_, ?_, ?_⟩
-    · intro hoversized
-      apply Finset.eq_empty_iff_forall_notMem.mpr
-      intro P hP
-      have h := (hexact P).mp hP
-      have := Code.agree_le_card (u := ReedSolomon.evalOnPoints alpha P) (v := y)
-      simp only [Fintype.card_fin] at this
-      omega
+    · exact listEmptyOfOversizedThreshold list hexact
     · intro hhalf
       linarith
     · intro hquarter'

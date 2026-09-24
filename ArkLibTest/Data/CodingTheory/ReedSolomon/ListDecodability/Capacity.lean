@@ -11,10 +11,10 @@ import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.FiniteFiel
 import Mathlib.Data.Nat.Prime.Infinite
 
 /-!
-# Acceptance cases for weighted-support capacity interpolation
+# Acceptance cases for Reed–Solomon capacity list bounds
 
-The examples exercise the prescribed construction over a large prime field and the resulting
-agreement-list bound.
+The examples exercise weighted-support interpolation over a large prime field and the explicit
+finite-field capacity list theorem on a concrete half-gap instance.
 -/
 
 open Finset PolynomialDifferential ReedSolomon ReedSolomon.HiddenDerivative
