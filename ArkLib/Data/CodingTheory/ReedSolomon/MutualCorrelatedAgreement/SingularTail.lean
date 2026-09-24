@@ -5,11 +5,12 @@ Authors: Quang Dao
 -/
 module
 
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.HybridConstants
 public import ArkLib.Data.Polynomial.ResultantDegree
 public import ArkLib.Data.Polynomial.ResultantSpecialization
 
 /-!
-# The singular tail of a squarefree first-order equation
+# Squarefree singular tails and list envelopes
 
 Let `A : R[X][X]` be an equation in a root variable `Y` whose coefficients are polynomials in an
 ordinary variable, and let `U : R[X]` be a content that does not depend on `Y`. The *singular
@@ -24,6 +25,9 @@ envelopes. If `B` bounds the total degree budget and `M` bounds the degree in `Y
 the derivative-resultant bound `(2 * r - 1) * j - r ^ 2` and the first covers the degrees `r ≤ 1`
 where that bound is truncated. The analogous envelope in a challenge variable is
 `resultantChallengeEnvelope H M = (2 * M - 1) * H`.
+
+The ordinary envelope also bounds a first-order squarefree list expression. Under a common
+incidence and degree bound, this expression is at most `7 C³ n q²`.
 
 ## Main definitions
 
@@ -40,6 +44,14 @@ where that bound is truncated. The analogous envelope in a challenge variable is
   most `ordinaryDegreeEnvelope B M`.
 * `ReedSolomon.FirstOrder.Squarefree.singularTail_map_eq_zero_of_common_root`: a common root of a
   specialized equation and its derivative kills the specialized singular tail.
+* `ReedSolomon.FirstOrder.Squarefree.squarefreeListExpression_le`: the first-order list expression
+  is bounded by a product envelope.
+* `ReedSolomon.FirstOrder.Squarefree.squarefreeListExpression_le_rate_envelope`: the list
+  expression is bounded by `7 C³ n q²` under common incidence and degree bounds.
+
+## References
+
+* [DKT26]
 -/
 
 @[expose] public section
@@ -47,6 +59,7 @@ where that bound is truncated. The analogous envelope in a challenge variable is
 namespace ReedSolomon.FirstOrder.Squarefree
 
 open Polynomial
+open ReedSolomon.HiddenDerivative
 
 section Envelopes
 
@@ -95,6 +108,78 @@ theorem ordinaryDegreeEnvelope_le (B M : ℕ) : ordinaryDegreeEnvelope B M ≤ B
   refine max_le (Nat.le_add_right _ _) ((Nat.sub_le _ _).trans ?_)
   calc (2 * M - 1) * B ≤ 2 * M * B := Nat.mul_le_mul_right B (Nat.sub_le _ _)
     _ ≤ B + 2 * B * M := by nlinarith
+
+/-- The first-order squarefree list expression is bounded by
+`4 λ D B M + 2 B M + B`. -/
+theorem squarefreeListExpression_le
+    {D B M : ℕ} {lambda : ℝ}
+    (hD : 1 ≤ D) (hM : 1 ≤ M) (hMB : M ≤ B) (hlambda : 0 ≤ lambda) :
+    (firstOrderCurveFiberStageOne (D + 1) B M (regularTaylorExponent D) : ℝ) * lambda +
+        ordinaryDegreeEnvelope B M ≤
+      4 * D * B * M * lambda + 2 * B * M + B := by
+  have hstageNat :
+      firstOrderCurveFiberStageOne (D + 1) B M (regularTaylorExponent D) ≤ 4 * D * B * M := by
+    calc
+      _ ≤ 2 * D * M * (2 * B - M) :=
+        firstOrderCurveFiberStageOne_regularTaylorExponent_le hD hM hMB
+      _ ≤ 4 * D * B * M := by
+        have hsub : 2 * B - M ≤ 2 * B := Nat.sub_le _ _
+        calc
+          2 * D * M * (2 * B - M) ≤ 2 * D * M * (2 * B) :=
+            Nat.mul_le_mul_left _ hsub
+          _ = 4 * D * B * M := by ring
+  have hstage :
+      (firstOrderCurveFiberStageOne (D + 1) B M (regularTaylorExponent D) : ℝ) ≤
+        4 * D * B * M := by
+    exact_mod_cast hstageNat
+  have htail : (ordinaryDegreeEnvelope B M : ℝ) ≤ B + 2 * B * M := by
+    exact_mod_cast ordinaryDegreeEnvelope_le B M
+  nlinarith [mul_le_mul_of_nonneg_right hstage hlambda]
+
+/-- A common incidence ratio and two degree caps give the inverse-square slack envelope. -/
+theorem squarefreeListExpression_le_rate_envelope
+    {C q lambda : ℝ} {n D B M : ℕ}
+    (hC : 1 ≤ C) (hq : 1 ≤ q) (hn : 1 ≤ n) (hD : 1 ≤ D) (hDn : D ≤ n)
+    (hM : 1 ≤ M) (hMB : M ≤ B) (hlambda0 : 0 ≤ lambda) (hlambda : lambda ≤ C)
+    (hB : (B : ℝ) ≤ C * q) :
+    (firstOrderCurveFiberStageOne (D + 1) B M (regularTaylorExponent D) : ℝ) * lambda +
+        ordinaryDegreeEnvelope B M ≤
+      7 * C ^ 3 * n * q ^ 2 := by
+  have hraw := squarefreeListExpression_le hD hM hMB hlambda0
+  have hD' : (D : ℝ) ≤ n := by exact_mod_cast hDn
+  have hM' : (M : ℝ) ≤ C * q := (Nat.cast_le.mpr hMB).trans hB
+  have hrough :
+      4 * (D : ℝ) * B * M * lambda + 2 * (B : ℝ) * M + B ≤
+        4 * (n : ℝ) * (C * q) * (C * q) * C +
+          2 * (C * q) * (C * q) + C * q := by
+    gcongr
+  have hN : (1 : ℝ) ≤ n := by exact_mod_cast hn
+  have hC0 : 0 ≤ C := zero_le_one.trans hC
+  have hq0 : 0 ≤ q := zero_le_one.trans hq
+  have hx : 1 ≤ C * q := by
+    nlinarith [mul_nonneg (sub_nonneg.mpr hC) (sub_nonneg.mpr hq)]
+  have hCN : 1 ≤ C * (n : ℝ) := by
+    nlinarith [mul_nonneg (sub_nonneg.mpr hC) (sub_nonneg.mpr hN)]
+  have htwo : (C * q) * (C * q) ≤ C ^ 3 * n * q ^ 2 := by
+    have hnonneg : 0 ≤ (C * q) ^ 2 := sq_nonneg _
+    have hmul : (C * q) ^ 2 ≤ (C * q) ^ 2 * (C * n) := by
+      nlinarith [mul_nonneg hnonneg (sub_nonneg.mpr hCN)]
+    nlinarith [hmul]
+  have hone : C * q ≤ C ^ 3 * n * q ^ 2 := by
+    have hsquare : C * q ≤ (C * q) ^ 2 := by
+      nlinarith [mul_nonneg (mul_nonneg hC0 hq0) (sub_nonneg.mpr hx)]
+    exact hsquare.trans (by simpa only [pow_two] using htwo)
+  calc
+    (firstOrderCurveFiberStageOne (D + 1) B M (regularTaylorExponent D) : ℝ) * lambda +
+          ordinaryDegreeEnvelope B M ≤
+        4 * (D : ℝ) * B * M * lambda + 2 * (B : ℝ) * M + B := by
+      simpa only [Nat.cast_mul, Nat.cast_ofNat] using hraw
+    _ ≤ 4 * (n : ℝ) * (C * q) * (C * q) * C +
+          2 * (C * q) * (C * q) + C * q := hrough
+    _ = 4 * (C ^ 3 * n * q ^ 2) + 2 * ((C * q) * (C * q)) + C * q := by ring
+    _ ≤ 4 * (C ^ 3 * n * q ^ 2) + 2 * (C ^ 3 * n * q ^ 2) +
+          C ^ 3 * n * q ^ 2 := by gcongr
+    _ = 7 * C ^ 3 * n * q ^ 2 := by ring
 
 /-- The degree envelope `(2 * M - 1) * H` in the challenge variable, for a challenge-degree budget
 `H` and a bound `M` on the degree in the root variable. -/

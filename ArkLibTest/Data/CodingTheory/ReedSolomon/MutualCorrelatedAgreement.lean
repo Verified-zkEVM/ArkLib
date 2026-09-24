@@ -19,7 +19,6 @@ import
 import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerBatchedGeometricTransfer
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.LineToAffine
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.SingularTail
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TupleSpecialization
 import ArkLibTest.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TaylorChart
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.ComponentDimension
@@ -35,10 +34,14 @@ import Mathlib.FieldTheory.Finite.Extension
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerBatchedAdmissibility
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerBatchedGraphCounting
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerBatchedIncidence
+import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerBatchedPointRecognition
+import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.SingularTail
+import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.UniformMca
 import Mathlib.Algebra.Field.ZMod
+
 /-! # Acceptance cases for Reed–Solomon mutual correlated agreement -/
 
-open Polynomial Finset ReedSolomon ReedSolomon.FirstOrder.Squarefree PolynomialDifferential
+open Polynomial Finset ReedSolomon PolynomialDifferential ReedSolomon.HiddenDerivative
 
 private abbrev E₄ := FiniteField.Extension (ZMod 2) 2 2
 private def pointDomain : Fin 1 ↪ ZMod 2 :=
@@ -207,19 +210,13 @@ example : ∃ F₀ G₀ : ℚ[X], C 1 + C 2 * X = F₀ + C 1 * G₀ ∧
 example : ∃ F₀ G₀ : ℚ[X], F₀.degree < 2 ∧ G₀.degree < 2 ∧
     (∀ i ∈ (Finset.univ : Finset (Fin 2)),
       F₀.eval (fullDomain i) = ![1, 2] i ∧ G₀.eval (fullDomain i) = ![0, 1] i) ∧
-    Polynomial.eval (fullDomain 0) (C 1 + C 2 * X : ℚ[X]) = ![1, 2] 0 + 1 * ![0, 1] 0 ∧
-    Polynomial.eval (fullDomain 1) (C 1 + C 2 * X : ℚ[X]) = ![1, 2] 1 + 1 * ![0, 1] 1 ∧
     C 1 + C 2 * X = F₀ + C 1 * G₀ := by
   obtain ⟨F₀, G₀, hF₀, hG₀, hsample, hrecognize⟩ :=
     exists_graphLine_polynomials_of_sample fullDomain ![1, 2] ![0, 1] univ
       (card_univ.trans rfl)
-  have hP : (C 1 + C 2 * X : ℚ[X]).degree < 2 := by compute_degree!
-  have heval : ∀ i ∈ (Finset.univ : Finset (Fin 2)),
-      Polynomial.eval (fullDomain i) (C 1 + C 2 * X : ℚ[X]) = ![1, 2] i + 1 * ![0, 1] i := by
-    intro i hi
-    exact affineCandidateEvaluation i
-  exact ⟨F₀, G₀, hF₀, hG₀, hsample, heval 0 (by simp), heval 1 (by simp),
-    by simpa using hrecognize (RingHom.id ℚ) 1 (C 1 + C 2 * X) hP heval⟩
+  refine ⟨F₀, G₀, hF₀, hG₀, hsample, ?_⟩
+  simpa using hrecognize (RingHom.id ℚ) 1 (C 1 + C 2 * X) (by compute_degree!)
+    fun i _ ↦ affineCandidateEvaluation i
 
 /-- The exceptional bound is attained when the graph agrees at only one coordinate. -/
 example : ∃ exceptional : Finset ℚ, exceptional.card ≤ 1 ∧ 0 ∈ exceptional := by
@@ -234,30 +231,12 @@ example : ∃ exceptional : Finset ℚ, exceptional.card ≤ 1 ∧ 0 ∈ excepti
   have hzero : 0 ∈ exceptional := by
     by_contra hz
     have hset := hagreement 0 hz
-    have hleft : polynomialAgreementSet fullDomain (fun _ : Fin 2 ↦ 0) (0 : ℚ[X]) = univ := by
-      ext i
-      simp [polynomialAgreementSet]
-    have hzero : (fun i : Fin 2 ↦ ![0, 0] i) = fun _ ↦ (0 : ℚ) := by
-      funext i
-      fin_cases i <;> norm_num
-    have hset'' : polynomialAgreementSet fullDomain (fun i : Fin 2 ↦ ![0, 0] i)
-        (0 : ℚ[X]) = commonPolynomialAgreementSet fullDomain ![0, 0] ![0, 1] 0 0 := by
-      simpa using hset
-    have hset' : polynomialAgreementSet fullDomain (fun _ : Fin 2 ↦ 0) (0 : ℚ[X]) =
-        commonPolynomialAgreementSet fullDomain ![0, 0] ![0, 1] 0 0 := by
-      rw [← hzero]
-      exact hset''
-    rw [hleft, hcommon] at hset'
-    have hone : (1 : Fin 2) ∈ (Finset.univ : Finset (Fin 2)) := Finset.mem_univ _
-    rw [hset'] at hone
+    rw [hcommon] at hset
+    have hone : (1 : Fin 2) ∈ ({0} : Finset (Fin 2)) := by
+      rw [← hset]
+      simp [polynomialAgreementSet, fullDomain]
     simp at hone
   exact ⟨exceptional, hcard', hzero⟩
-
-/-- A double root of `X²` kills the specialized singular tail. -/
-example : singularTail (1 : ℚ[X]) (X ^ 2 : ℚ[X][X]) 2 = 0 := by
-  have h := singularTail_map_eq_zero_of_common_root (1 : ℚ[X]) (X ^ 2 : ℚ[X][X]) two_pos
-    (by simp) (RingHom.id ℚ[X]) 0 (by simp) (by simp)
-  simpa using h
 
 private noncomputable def tupleOne : Fin 2 → ℚ[X] := ![1, 0]
 private noncomputable def tupleChallenge : Fin 2 → ℚ[X] := ![0, 1]
@@ -279,6 +258,27 @@ example : ∃ z : ℚ, z ≠ 1 ∧ z ≠ 0 ∧
   exact tuples_ne (hinj (by simp) (by simp) heq)
 
 open MvPolynomial Polynomial PolynomialDifferential
+
+namespace ReedSolomon.FirstOrder.Squarefree
+
+example : singularTail (1 : ℚ[X]) (Polynomial.X ^ 2 : ℚ[X][X]) 2 = 0 ∧
+    (firstOrderCurveFiberStageOne 2 4 2 (regularTaylorExponent 1) : ℝ) * (1 : ℝ) +
+        ordinaryDegreeEnvelope 4 2 ≤ 52 ∧
+    (firstOrderCurveFiberStageOne 2 4 2 (regularTaylorExponent 1) : ℝ) * (1 : ℝ) +
+        ordinaryDegreeEnvelope 4 2 ≤ 7 * (1 : ℝ) ^ 3 * 4 * 4 ^ 2 := by
+  refine ⟨?_, ?_, ?_⟩
+  · simpa using singularTail_map_eq_zero_of_common_root
+      (1 : ℚ[X]) (Polynomial.X ^ 2 : ℚ[X][X])
+      two_pos (by simp) (RingHom.id ℚ[X]) 0 (by simp) (by simp)
+  · have h := squarefreeListExpression_le (D := 1) (B := 4) (M := 2) (lambda := 1)
+      (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    norm_num at h; simpa using h
+  · have h := squarefreeListExpression_le_rate_envelope
+      (C := 1) (q := 4) (lambda := 1) (n := 4) (D := 1) (B := 4) (M := 2)
+      (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+      (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    norm_num at h ⊢; exact h
+end ReedSolomon.FirstOrder.Squarefree
 
 namespace ReedSolomon.GraphLineComponentTest
 

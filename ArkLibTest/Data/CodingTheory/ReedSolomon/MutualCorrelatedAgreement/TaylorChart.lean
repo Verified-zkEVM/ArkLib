@@ -485,6 +485,38 @@ example :
         MvPolynomial.support_X])
     simpa using hbound
 
+/-- The sharp pair bound applies to a concrete nonempty admissible-pair set. -/
+example : pairCountingPair ∈ pairCountingPairs ∧ (pairCountingPairs.card : ℚ) ≤ 1 := by
+  constructor
+  · simp [pairCountingPairs]
+  · have hbound := admissibleChartPairs_card_le_sharp pointDomain (fun _ ↦ 0) (fun _ ↦ 0)
+      pairCountingIota (0 : PairCountingField) pairCountingEquation 1 1 1 1
+      (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+      (by simp [pairCountingEquation, MvPolynomial.weightedTotalDegree,
+        MvPolynomial.support_X]) pairCountingPairs (by
+        intro pair hp
+        have hpair : pair = pairCountingPair := by simpa [pairCountingPairs] using hp
+        subst pair
+        exact pairCountingAdmissible)
+    simpa using hbound
+
+/-- The explicit family of concrete admissible pairs satisfies the sharp graph-count bound. -/
+example : pairCountingPair ∈ admissibleChartPairFamily pointDomain (fun _ ↦ 0) (fun _ ↦ 0)
+      pairCountingIota (0 : PairCountingField) pairCountingEquation 1 1 1 ∧
+    ((admissibleChartPairFamily pointDomain (fun _ ↦ 0) (fun _ ↦ 0) pairCountingIota
+      (0 : PairCountingField) pairCountingEquation 1 1 1).card : ℚ) ≤ 1 := by
+  constructor
+  · exact (mem_admissibleChartPairFamily_iff pointDomain (fun _ ↦ 0) (fun _ ↦ 0)
+      pairCountingIota (0 : PairCountingField) pairCountingEquation 1 1 1 (by norm_num)
+      pairCountingPair).2 pairCountingAdmissible
+  · have hbound := admissibleChartPairFamily_card_le_sharp pointDomain
+      (fun _ ↦ 0) (fun _ ↦ 0) pairCountingIota (0 : PairCountingField)
+      pairCountingEquation 1 1 1 1
+      (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+      (by simp [pairCountingEquation, MvPolynomial.weightedTotalDegree,
+        MvPolynomial.support_X])
+    simpa using hbound
+
 end
 
 end ReedSolomon
