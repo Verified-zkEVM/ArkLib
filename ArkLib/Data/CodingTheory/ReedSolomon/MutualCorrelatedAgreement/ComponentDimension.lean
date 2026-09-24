@@ -26,9 +26,10 @@ bounds provide the dimension hypotheses for hybrid agreement incidence.
 ## Main statements
 
 * `chart_prime_affineHilbertPolynomial_natDegree_le_of_agreements_of_exponent` and
-  `symbolicSource_prime_affineHilbertPolynomial_natDegree_le_of_agreements_of_exponent`:
+  `symbolicSource_prime_affineHilbertPolynomial_natDegree_le_of_polynomial_agreements_of_exponent`:
   retained-prime bounds from distinct agreement cuts.
-* `chart_dimensionSensitive_component_of_exponent` and
+* `chart_dimensionSensitive_component_of_exponent`,
+  `symbolicSourcePolynomial_dimensionSensitive_component_of_exponent`, and
   `symbolicSource_dimensionSensitive_component_of_exponent`: hereditary component budgets.
 * `finite_symbolicSource_agreementLocus_off_excluded_and_ncard_le_hybrid_of_exponent`:
   the hybrid incidence bound on a retained source locus.
@@ -837,28 +838,6 @@ theorem
     (sourceCoordinate_mem_range_sourceCoefficientMap_of_exponent
       center Q K k τ hτ hK hkK P hP hs hhigh) hJdim
 
-
-/-- Affine received-line specialization of the arbitrary-polynomial retained-source dimension
-bound. -/
-theorem symbolicSource_prime_affineHilbertPolynomial_natDegree_le_of_agreements_of_exponent
-    (center : E) (Q : DifferentialPolynomial E[X] r) (K k c τ : ℕ)
-    (hτ : TaylorExponentSufficient r K τ)
-    (hK : r < K) (hkK : k ≤ K) (hck : c ≤ k)
-    (P : Ideal (SourceRing r E)) (hP : P.IsPrime)
-    (hs : jointInitialJetSeparant center Q ∉ P)
-    (hhigh : ∀ l : Fin K, k ≤ l.val →
-      jointCommonTaylorNumerator center Q τ l ∈ P)
-    (α : Fin c ↪ E) (f g : Fin c → E)
-    (hcut : ∀ i,
-      jointTaylorAgreementEquation center Q K τ (Polynomial.C (α i))
-        (Polynomial.C (f i) + Polynomial.X * Polynomial.C (g i)) ∈ P) :
-    (affineHilbertPolynomial P).natDegree ≤ k + 1 - c := by
-  apply
-    symbolicSource_prime_affineHilbertPolynomial_natDegree_le_of_polynomial_agreements_of_exponent
-    center Q K k c τ hτ hK hkK hck P hP hs hhigh α
-    (fun i ↦ Polynomial.C (f i) + Polynomial.X * Polynomial.C (g i))
-  intro i
-  exact hcut i
 
 /-- Hereditary joint coefficient-space budget for every actual retained source prime.
 In dimensions at least two, all identically vanishing agreement cuts can be used in the

@@ -748,7 +748,7 @@ example :
   · simpa [componentWord, domain_zero] using
       (mem_commonPolynomialAgreementSet domain componentWord componentWord P₀ P₁ 0).mp hmem |>.2
 
-/-- One retained source prime with one actual agreement cut has degree at most one. -/
+/-- A polynomial-valued received word with a proved cut gives a concrete source prime bound. -/
 example :
     (affineHilbertPolynomial (componentIdeal (E := ComponentField))).natDegree ≤ 1 := by
   let α : Fin 1 ↪ ComponentField :=
@@ -762,11 +762,13 @@ example :
         (Polynomial.C (f i) + Polynomial.X * Polynomial.C (g i)) ∈ componentIdeal := by
     intro i
     simpa [α, f, g] using component_agreementCuts i (Finset.mem_univ i)
-  have hbound := symbolicSource_prime_affineHilbertPolynomial_natDegree_le_of_agreements_of_exponent
+  have hbound :=
+    symbolicSource_prime_affineHilbertPolynomial_natDegree_le_of_polynomial_agreements_of_exponent
     (center := (0 : ComponentField))
     (Q := componentEquation (E := ComponentField)) (K := 2) (k := 1) (c := 1)
     (τ := 2) (by intro l; omega) (by omega) (by omega) (by omega)
-    componentIdeal componentIdeal_isPrime component_separant_notMem component_highCuts α f g hcut
+    componentIdeal componentIdeal_isPrime component_separant_notMem component_highCuts α
+    (received := fun i ↦ Polynomial.C (f i) + Polynomial.X * Polynomial.C (g i)) hcut
   simpa using hbound
 
 /-- A retained chart prime with one nonempty agreement cut has degree zero. -/
@@ -806,7 +808,8 @@ example :
     (by intro l hl; fin_cases l; omega) α y hcut
   simpa using hbound
 
-/-- The positive-dimensional chart and source bounds control one genuine one-point cut. -/
+/-- The positive-dimensional chart and source bounds include empty-cut boundary cases; the chart
+bound forces the cut count to zero. -/
 example :
     (affineHilbertPolynomial firstOrderChartIdeal).natDegree +
         {i : Fin 1 | firstOrderChartCut i ∈ firstOrderChartIdeal}.ncard ≤ 1 ∧
@@ -1427,7 +1430,3 @@ example : ∃ P : Fin 2 → (ZMod 2)[X],
 end
 
 end ReedSolomon.PowerBatchedPointRecognitionTest
-
-namespace ReedSolomon.MutualCorrelatedAgreementTest
-
-end ReedSolomon.MutualCorrelatedAgreementTest
