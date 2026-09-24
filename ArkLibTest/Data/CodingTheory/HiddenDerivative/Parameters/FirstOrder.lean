@@ -9,6 +9,7 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.FiniteRat
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.HybridRateEnvelope
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.RoundedCounts
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.StageComparison
+import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.Uniform
 import Mathlib.Order.Interval.Finset.Nat
 
 /-!
@@ -343,5 +344,14 @@ example : orderZeroCurveStageCharge 1 1 1 1 3 2 ≤
     orderOneCurveStageCharge 3 1 1 1 1 1 3 1 2 1 :=
   orderZeroCurveStageCharge_le_orderOne 3 1 1 (by norm_num) (by norm_num) (by norm_num)
     (by norm_num) (by norm_num) 3 2
+
+/-! ### Fixed shifted-height certificate -/
+
+/-- At `n = A = 3` and `k = 2`, the fixed height-851 source has a strict slot surplus. -/
+example : firstOrderCurveShiftedRowSlotBound 1 3 12 4 22 3 1 851 <
+    firstOrderCurveShiftedHeightSlotCount 1 3 12 4 22 1 851 := by
+  have h := uniformFirstOrder_parameters 3 2 3 (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num)
+  exact h.2.2.2
 
 end ReedSolomon.HiddenDerivative
