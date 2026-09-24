@@ -6,6 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.Data.Polynomial.Differential.SingularRecursion
+public import ArkLib.Data.Polynomial.Differential.SeparantChain
 public import Mathlib.Data.Rat.Defs
 
 /-!
@@ -43,6 +44,8 @@ jet degree yields a square-total-degree bound.
 * `jetTotalDegree_le_sum_jetDegree` and `jetTotalDegree_le_mul`: the total jet degree is at most
   the sum of the individual jet degrees, hence at most `(d + 1) * t` when each is at most `t`.
 * `card_mul_le_jetTotalDegree_mul`: the recursive composition of regular-part bounds.
+* `boundedSolution_card_le_separantChainStageSum`: stage-dependent regular-branch bounds along
+  an explicit separant chain.
 * `RegularBranchRatBudget`, `boundedSolution_recursive_counting_totalJetDegree`, and
   `boundedSolution_card_le_sq_totalJetDegree`: rational regular-branch budgets and their
   total-jet-degree composition.
@@ -196,6 +199,83 @@ theorem card_mul_le_jetTotalDegree_mul [NoZeroDivisors F] {Q : DifferentialPolyn
         _ ≤ jetTotalDegree (separant equation s) * cost + cost := Nat.add_le_add hsing hreg
         _ = (jetTotalDegree (separant equation s) + 1) * cost := by ring
         _ ≤ jetTotalDegree equation * cost := Nat.mul_le_mul_right cost hlt
+
+/-- A finite family of bounded solutions is bounded by the sum of the regular-branch costs along
+an explicit separant chain. The cost may depend on the equation and active jet at each stage. -/
+theorem boundedSolution_card_le_separantChainStageSum
+    {Q terminal : DifferentialPolynomial F d} {stages : List (SeparantStage F d)}
+    (hchain : SeparantChain Q stages terminal) (D : ℕ) (accepts : F[X] → Prop)
+    (roots : Finset (BoundedSolution Q D))
+    (hroots : ∀ solution ∈ roots, accepts solution.polynomial)
+    (stageCost : SeparantStage F d → ℚ)
+    (hregular : ∀ stage ∈ stages, ∀ regular : Finset (BoundedSolution stage.1 D),
+      (∀ solution ∈ regular, accepts solution.polynomial) →
+      (∀ solution ∈ regular,
+        differentialSpecialization (separant stage.1 stage.2) solution.polynomial ≠ 0) →
+      (regular.card : ℚ) ≤ stageCost stage) :
+    (roots.card : ℚ) ≤ (stages.map stageCost).sum := by
+  classical
+  revert roots hroots hregular
+  induction hchain with
+  | @terminal equation hne hterminal =>
+      intro roots hroots hregular
+      let _ : IsEmpty (BoundedSolution equation D) :=
+        isEmpty_boundedSolution_of_highestActiveJet_eq_none hne hterminal
+      have hempty : roots = ∅ := by
+        ext solution
+        exact isEmptyElim solution
+      simp [hempty]
+  | @active current tail terminal s hne hhighest next ih =>
+      intro roots hroots hregular
+      let regularRoots := roots.filter fun solution ↦
+        differentialSpecialization (separant current s) solution.polynomial ≠ 0
+      let singularRoots := roots.filter fun solution ↦
+        differentialSpecialization (separant current s) solution.polynomial = 0
+      let nextMap : singularRoots → BoundedSolution (separant current s) D := fun source ↦ by
+        have hmem := source.property
+        simp only [singularRoots] at hmem
+        exact ⟨source.val.val, (Finset.mem_filter.mp hmem).2⟩
+      let nextRoots : Finset (BoundedSolution (separant current s) D) :=
+        singularRoots.attach.image nextMap
+      have hregularBound : (regularRoots.card : ℚ) ≤ stageCost (current, s) := by
+        apply hregular (current, s) List.mem_cons_self regularRoots
+        · intro solution hsolution
+          exact hroots solution (Finset.mem_filter.mp hsolution).1
+        · intro solution hsolution
+          exact (Finset.mem_filter.mp hsolution).2
+      have hnextAccepts : ∀ solution ∈ nextRoots, accepts solution.polynomial := by
+        intro solution hsolution
+        change solution ∈ singularRoots.attach.image nextMap at hsolution
+        rcases Finset.mem_image.mp hsolution with ⟨source, _hsource, heq⟩
+        have hsource := source.property
+        simp only [singularRoots] at hsource
+        rw [← heq]
+        exact hroots source.val (Finset.mem_filter.mp hsource).1
+      have hnextInjective : Function.Injective nextMap := by
+        intro left right heq
+        apply Subtype.ext
+        exact Subtype.ext
+          (congrArg (fun solution : BoundedSolution (separant current s) D => solution.1) heq)
+      have hnextCard : nextRoots.card = singularRoots.card := by
+        change (singularRoots.attach.image nextMap).card = singularRoots.card
+        rw [Finset.card_image_of_injective _ hnextInjective, Finset.card_attach]
+      have hnextBound : (nextRoots.card : ℚ) ≤ (tail.map stageCost).sum :=
+        ih nextRoots hnextAccepts (fun stage hstage ↦
+          hregular stage (List.mem_cons_of_mem _ hstage))
+      have hsingularBound : (singularRoots.card : ℚ) ≤ (tail.map stageCost).sum := by
+        rw [← hnextCard]
+        exact hnextBound
+      have hpartition : regularRoots.card + singularRoots.card = roots.card := by
+        simpa only [regularRoots, singularRoots, not_ne_iff] using
+          Finset.card_filter_add_card_filter_not (s := roots)
+            (fun solution ↦
+              differentialSpecialization (separant current s) solution.polynomial ≠ 0)
+      rw [List.map_cons, List.sum_cons]
+      calc
+        (roots.card : ℚ) = (regularRoots.card : ℚ) + (singularRoots.card : ℚ) := by
+          exact_mod_cast hpartition.symm
+        _ ≤ stageCost (current, s) + (tail.map stageCost).sum :=
+          add_le_add hregularBound hsingularBound
 
 /-! ### Rational recursive bounds -/
 
