@@ -1018,6 +1018,10 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/Fi
 
 Ported the rate-gap, surplus-slope, multiplicity, jet-degree, height, moment, and exception constants and the bounds for automatic parameters and closed list and exception constants. Renamed `automaticHybridEnvelopeConstant` to `automaticRateEnvelopeConstant`, `automaticLambdaBoundConstant` to `automaticListBoundConstant`, and `automaticHybridT_le_inv_eta_cube` to `automaticStaircaseMoment_le_inv_eta_cube`. Renamed the hybrid-envelope inequalities to name the rate envelope, and renamed the closed list, exception, and combined bounds to name their mathematical quantities. The slack comparison theorems drop unused rate, positivity, or agreement guards as reported. A private helper proves repeated rate, ratio, jet, and staircase premises once. The unused private `automaticSourceLowerCount` helper and later challenge-height applications were not ported; existing first-order threshold, count, surplus, residual, and scaled-height results cover the needed facts.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/FirstOrder/AutomaticBounds.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Added `automaticRateIncidenceJetBounds`, a shared theorem collecting the rate-envelope, incidence-ratio, and jet-degree bounds used by both automatic-envelope proofs. No declarations from the source unit were omitted.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/AutomaticParameters.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/FirstOrder/AutomaticParameters.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -1948,6 +1952,10 @@ Merges `FirstOrder/Squarefree/Bounds.lean` and `FirstOrder/Squarefree/SingularTa
 `separableResultant` form by `resultant_comm_sub_one`. `natDegree_singularTail_le` drops `0 < r`,
 `r ≤ j` and `A.natDegree = r`, and `singularTail_map_eq_zero_of_common_root` drops both `IsDomain`
 assumptions.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/SingularTail.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Added `automaticSquarefreeListBoundConstant` and `automaticSquarefreeListExpression_le` with their source names. The theorem specializes the automatic first-order recipe to a rate-only constant times `n / eta²`, using the shared premise theorem from `AutomaticBounds.lean`. No declarations from the source unit were omitted. The matching acceptance file checks the singular-tail zero case and an automatic bound instance at rate `2 / 49`, slack `1 / 100`, and parameters `n = 100`, `D = 1`, `A = 20`.
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/PairCounting.lean`
 
