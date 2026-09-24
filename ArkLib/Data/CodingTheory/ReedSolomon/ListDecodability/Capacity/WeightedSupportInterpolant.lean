@@ -52,8 +52,6 @@ noncomputable section
 open HiddenDerivative ListDecoding Polynomial
 open HiddenDerivative.WeightedSupportParameters
 
-set_option maxHeartbeats 800000 in
--- The prescribed margin expands the continuous simplex and symbolic kernel constructions.
 /-- The explicit prescribed weighted-support parameters give a genuine hidden-derivative
 construction. The original message dimension remains the input parameter. -/
 private theorem exists_prescribed_weightedSupport_construction_core

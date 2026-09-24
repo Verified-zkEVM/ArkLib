@@ -45,8 +45,6 @@ namespace ReedSolomon.HiddenDerivative
 
 noncomputable section
 
-set_option autoImplicit false
-
 /-- The distance from the first-order threshold to agreement one. -/
 def automaticRateGap (rho : ℝ) : ℝ := 1 - firstOrderRateThreshold rho
 

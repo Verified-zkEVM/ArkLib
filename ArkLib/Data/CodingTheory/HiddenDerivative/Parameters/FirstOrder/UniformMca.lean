@@ -42,8 +42,6 @@ namespace ReedSolomon.HiddenDerivative
 
 open scoped BigOperators
 
-set_option maxRecDepth 4096
-
 /-- Height weight of the first `q` total-degree shells. -/
 private def uniformFirstOrderMcaHeightWeightUpTo (q : ℕ) : ℕ :=
   ∑ t ∈ Finset.range q, (min t 4 + 1) * (277 - t)
@@ -229,8 +227,6 @@ theorem uniformFirstOrderMca_parameters (n k A : ℕ)
 
 /-! ## Exact regular-stage arithmetic -/
 
-set_option maxHeartbeats 2000000 in
--- Expanding the four exact cap-sensitive stages needs more than the default budget.
 /-- Exact generic-fiber degree of the four regular stages at the identity-pair endpoint. -/
 theorem uniformFirstOrderMca_regularFiberStageSum_four_one : regularFiberStageSum 1 23 4 = 86 := by
   norm_num [regularFiberStageSum, Finset.sum_range_succ, regularTaylorExponent,
@@ -252,11 +248,7 @@ theorem uniformFirstOrderMca_regularFiberStageSum_four (D : ℕ) (hD : 2 ≤ D) 
 /-- Exact joint-family degree at the identity-pair endpoint. -/
 theorem uniformFirstOrderMca_regularJointStageSum_four_one :
     regularJointStageSum 1 276 23 4 = 1276 := by
-  norm_num [regularJointStageSum, Finset.sum_range_succ,
-    firstOrderCurveJointStageOne, firstOrderTaylorTotalCap,
-    firstOrderTaylorDerivativeCap, firstOrderCurveFiberStageOne,
-    regularTaylorExponent, MvPolynomial.cappedBidegreeMixedVolume,
-    MvPolynomial.cappedDegreeMixedVolume]
+  decide
 
 /-- Exact joint-family degree of the four regular stages for `D ≥ 2`. -/
 theorem uniformFirstOrderMca_regularJointStageSum_four (D : ℕ) (hD : 2 ≤ D) :

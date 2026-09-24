@@ -32,8 +32,6 @@ namespace ReedSolomon.HiddenDerivative
 
 open scoped BigOperators
 
-set_option maxRecDepth 4096
-
 /-- The exact unrestricted block-rank profile for `(m, M) = (12, 4)`. -/
 def uniformFirstOrderGradedRankProfile (t : ℕ) : ℕ :=
   Finset.sum (Finset.range 12) fun s ↦
