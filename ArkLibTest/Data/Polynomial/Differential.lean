@@ -661,22 +661,8 @@ example :
       (Polynomial.aeval (0 : ℚ)) 0 (constantDerivativeEquation (Polynomial ℚ)) 2 1 4
       (taylorExponentSufficient_two_mul 1 2) (constantJet (F := ℚ)) hS hhigh
 
-/-- A nonconstant center contributes its parameter degree to the initial equation. -/
 example : jointTotalDegree (initialJetEquation Polynomial.X independentVariableEquation) ≤ 1 := by
-  have hjet : jetTotalDegree independentVariableEquation ≤ 0 := by
-    rw [jetTotalDegree_le_iff]
-    intro u hu
-    simp only [independentVariableEquation, support_X, Finset.mem_singleton] at hu
-    subst u
-    simp [totalJetDegree, Finsupp.weight_single]
-  have hEq : initialJetEquation Polynomial.X independentVariableEquation = C Polynomial.X := by
-    simp [initialJetEquation, independentVariableEquation]
-  have hcoeff :
-      CoeffNatDegreeLE (initialJetEquation Polynomial.X independentVariableEquation) 1 := by
-    rw [hEq]
-    exact coeffNatDegreeLE_C (p := Polynomial.X) (by simp)
-  exact jointTotalDegree_initialJetEquation_le Polynomial.X independentVariableEquation 0 1 hjet
-    (fun m _ ↦ hcoeff m)
+  simp [jointTotalDegree, initialJetEquation, independentVariableEquation]
 
 /-- The equation `(y')² + t y = 0`, as `Y₁² + t Y₀` over `ℚ[t]`. -/
 private abbrev recursiveEq : DifferentialPolynomial (Polynomial ℚ) 1 :=
@@ -693,6 +679,8 @@ private theorem recursiveJet_le : jetTotalDegree recursiveEq ≤ 2 := by
 private theorem recursiveHeight : CoeffNatDegreeLE recursiveEq 1 :=
   (((coeffNatDegreeLE_X _).pow 2).mono (by norm_num)).add
     ((coeffNatDegreeLE_C (by simp)).mul (coeffNatDegreeLE_X _))
+private theorem recursiveDerivativeDegree : recursiveEq.degreeOf (some 1) ≤ 2 :=
+  (jetDegree_le_total recursiveEq 1).trans recursiveJet_le
 /-- The agreement degree bound applies to a positive-length chart with parameter-dependent input. -/
 example :
     jointTotalDegree (taylorAgreementEquationOver (F := ℚ) (Polynomial.C 0)
@@ -705,19 +693,34 @@ private abbrev flat (p : MvPolynomial (Fin 2) (Polynomial ℚ)) :=
   (optionEquivRight ℚ (Fin 2)).symm p
 private abbrev rect (h v : ℕ) := restrictBidegree (Fin 2) ℚ h v
 example : flat (initialJetEquation (Polynomial.C 0) recursiveEq) ∈ rect 1 2 ∧
-    flat (initialJetSeparant (Polynomial.C 0) recursiveEq) ∈ rect 1 1 := by
+    flat (initialJetSeparant (Polynomial.C 0) recursiveEq) ∈ rect 1 1 ∧
+    flat (initialJetEquation (Polynomial.C 0) recursiveEq) ∈
+      restrictCappedBidegree (Fin 2) ℚ 1 1 2 2 ∧
+    (initialJetEquation (Polynomial.C 0) recursiveEq).degreeOf (Fin.last 1) ≤ 2 := by
   exact ⟨initialJetEquation_mem_restrictBidegree 0 recursiveEq 1 2 recursiveHeight
-      recursiveJet_le,
-    initialJetSeparant_mem_restrictBidegree 0 recursiveEq 1 2 recursiveHeight recursiveJet_le⟩
+    recursiveJet_le, ⟨initialJetSeparant_mem_restrictBidegree 0 recursiveEq 1 2 recursiveHeight
+    recursiveJet_le, ⟨initialJetEquation_mem_restrictCappedBidegree 0 recursiveEq 1 2 2
+    recursiveHeight recursiveJet_le recursiveDerivativeDegree,
+    (degreeOf_initialJetEquation_le _ _).trans recursiveDerivativeDegree⟩⟩⟩
 
-example :
+example : ((optionEquivRight ℚ (Fin 2)).symm
+      (taylorAgreementEquationOver (F := ℚ) (Polynomial.C 0) recursiveEq 1
+        (Polynomial.C 1) (0 : Polynomial ℚ) (τ := 6)) ∈
+      restrictCappedBidegree (Fin 2) ℚ 1 6 7 6 ∧
     (optionEquivRight ℚ (Fin 2)).symm
-      (taylorAgreementEquationOver (F := ℚ) (Polynomial.C 0) recursiveEq 3
-        (Polynomial.C 1) (Polynomial.C 0 + Polynomial.X * Polynomial.C 1) (τ := 6)) ∈
-      restrictBidegree (Fin 2) ℚ 7 7 := by
-  simpa using taylorAgreementEquationOver_mem_restrictBidegree (F := ℚ) (r := 1)
-    0 1 Polynomial.X recursiveEq 1 1 2 3 6 (taylorExponentSufficient_two_mul 1 3)
-    (by simp) recursiveHeight (by norm_num) recursiveJet_le
+      (commonTaylorNumeratorOver ℚ (Polynomial.C 0) recursiveEq 6 0) ∈
+        restrictCappedBidegree (Fin 2) ℚ 1 6 7 6) ∧
+    (taylorAgreementEquationOver (F := ℚ) (Polynomial.C 0) recursiveEq 1
+      (Polynomial.C 1) (0 : Polynomial ℚ) (τ := 6)).degreeOf 1 ≤ 6 := by
+  exact ⟨⟨taylorAgreementEquationOver_mem_restrictCappedBidegree 0 1 0 recursiveEq 0 1 2 2 1 6
+      (by intro l; omega) (by simp) recursiveHeight (by norm_num) (by norm_num) recursiveJet_le
+      recursiveDerivativeDegree,
+    commonTaylorNumeratorOver_mem_restrictCappedBidegree 0 recursiveEq 1 2 2 1 6
+      (by intro l; omega) recursiveHeight (by norm_num) recursiveJet_le (by norm_num)
+      recursiveDerivativeDegree 0⟩,
+    (by simpa using (degreeOf_taylorAgreementEquationOver_firstOrder (F := ℚ) (Polynomial.C 0)
+      (Polynomial.C 1) (Polynomial.C 0) recursiveEq 2 1 6 (by intro l; omega) (by norm_num)
+      recursiveDerivativeDegree))⟩
 
 /-- For `Y₁` at the regular jet `(1, 0)`, the symbolic cuts force coefficient `1` to vanish. -/
 example :

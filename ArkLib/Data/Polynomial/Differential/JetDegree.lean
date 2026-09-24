@@ -37,7 +37,8 @@ Taylor charts use the same specialization.
 
 * `initialJetEquation`, `map_initialJetEquation`, `aeval_initialJetEquation`,
   `aeval_map_initialJetEquation`, `totalDegree_initialJetEquation_le`, and
-  `pderiv_initialJetEquation`: the shared initial equation and its basic laws.
+  `degreeOf_initialJetEquation_le`, `pderiv_initialJetEquation`: the shared initial equation and
+  its basic laws.
 -/
 
 @[expose] public section
@@ -271,6 +272,22 @@ theorem totalDegree_initialJetEquation_le (center : R) (Q : DifferentialPolynomi
   | some j =>
     simp only [Option.elim_some, weightedTotalDegree_one]
     exact (totalDegree_monomial_le _ _).trans (by simp)
+
+/-- Setting the independent variable to a constant does not increase the degree in the highest jet
+coordinate. -/
+theorem degreeOf_initialJetEquation_le [Nontrivial R] (center : R)
+    (Q : DifferentialPolynomial R r) :
+    (initialJetEquation center Q).degreeOf (Fin.last r) ≤ Q.degreeOf (some (Fin.last r)) := by
+  rw [← weightedTotalDegree_piSingle, ← weightedTotalDegree_piSingle (some (Fin.last r))]
+  apply weightedTotalDegree_aeval_le_of_le
+  intro i
+  cases i with
+  | none => simp
+  | some j =>
+    by_cases hj : j = Fin.last r
+    · subst j
+      simp [weightedTotalDegree_piSingle]
+    · simp [weightedTotalDegree_piSingle, degreeOf_X, Ne.symm hj]
 
 /-- Taking a partial derivative of the initial equation in `Y_j` gives the initial equation of
 the separant in `Y_j`. -/
