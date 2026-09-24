@@ -32,12 +32,10 @@ import Mathlib.Tactic.NormNum
 import Mathlib.Tactic.Order
 import Mathlib.Data.Fin.VecNotation
 import Mathlib.FieldTheory.Finite.Extension
-
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerBatchedPointRecognition
+import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerBatchedAdmissibility
 import Mathlib.Algebra.Field.ZMod
 
 /-! # Acceptance cases for Reed–Solomon mutual correlated agreement -/
-
 open Polynomial Finset ReedSolomon ReedSolomon.FirstOrder.Squarefree PolynomialDifferential
 
 private abbrev E₄ := FiniteField.Extension (ZMod 2) 2 2
@@ -1496,3 +1494,5 @@ example :
       componentMap (fun _ ↦ (0 : ComponentField)) 0 componentJet 1 1 2 1
 end
 end ReedSolomon.GraphLineComponentTest
+
+example := eval_chartTuplePullback (r := 0) (RingHom.id ℚ) 0 2 ![X] (X none)
