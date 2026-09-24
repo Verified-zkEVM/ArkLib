@@ -32,8 +32,10 @@ polynomials (`ListDecoding.MessagePolynomial`) over any semiring and any finite 
 ## Main statements
 
 * `closePolynomialSet_finite_and_ncard_mul_choose_le` and
-  `closePolynomialSet_card_le_of_differential_equation`: finiteness and cardinality bounds for
-  agreement lists, including the geometric bound from a differential equation and agreement gap.
+  `closePolynomialSet_card_le_of_differential_equation`: incidence and equation bounds for
+  agreement lists.
+* `closePolynomialSet_finite_and_ncard_le_of_differential_equation_and_gap`: finiteness and the
+  geometric cardinality bound from a differential equation and agreement gap.
 
 ## References
 
