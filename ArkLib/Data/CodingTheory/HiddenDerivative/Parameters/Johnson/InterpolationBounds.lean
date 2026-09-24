@@ -351,7 +351,10 @@ theorem johnson_interpolation_slot_surplus {n D : ℕ} {eta : ℝ}
   have hcoef : 0 < t * x + 1 / 4 := by positivity
   have hmterm : 0 < (m : ℝ) ^ 3 - m := by
     have hmreal : (3 : ℝ) ≤ m := by exact_mod_cast hm3
-    nlinarith [sq_nonneg ((m : ℝ) - 1)]
+    have hmpos : 0 < (m : ℝ) := lt_of_lt_of_le (by norm_num) hmreal
+    have hmSubPos : 0 < (m : ℝ) - 1 := by linarith
+    rw [show (m : ℝ) ^ 3 - m = (m : ℝ) * ((m : ℝ) - 1) * ((m : ℝ) + 1) by ring]
+    exact mul_pos (mul_pos hmpos hmSubPos) (by positivity)
   have hmain :
       (n : ℝ) * ((m : ℝ) * (m + 1) / 2 * (z : ℝ) -
           ((m : ℝ) ^ 3 - m) / 6) <
@@ -375,7 +378,7 @@ theorem johnson_interpolation_slot_surplus {n D : ℕ} {eta : ℝ}
       have htail : 0 < t ^ 2 / (4 * x ^ 2) + t * x + ((m : ℝ) ^ 3 - m) := by
         positivity
       field_simp [hx0.ne'] at htail ⊢
-      nlinarith
+      linarith
     have hscaled :
         3 * (t * x + 1 / 4) * (t ^ 2 / (3 * x ^ 2)) ≤
           3 * (t * x + 1 / 4) * (z : ℝ) := by gcongr
