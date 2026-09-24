@@ -101,11 +101,25 @@ theorem exists_exceptional_exactPowerAgreement_family [Fintype α] (domain : α 
         HasExactPowerAgreement domain w iota k z
           (powerBatchedPolynomial (fun t ↦ (P t).map iota) z) := by
   classical
-  choose! ex hcard hgood using fun P hP ↦
-    exists_exceptional_exactPowerAgreement domain w P iota (hdegree P hP) (hcommon P hP)
-  refine ⟨family.biUnion ex, Finset.card_biUnion_le_card_mul _ _ _ hcard,
-    fun P hP z hz ↦ hgood P hP z fun hmem ↦
-      hz (Finset.mem_biUnion.mpr ⟨P, hP, hmem⟩)⟩
+  let domainE := domain.trans ⟨iota, iota.injective⟩
+  let wordsE := fun t i ↦ iota (w t i)
+  let mapTuple (P : Fin (ℓ + 1) → F[X]) : Fin (ℓ + 1) → E[X] :=
+    fun t ↦ (P t).map iota
+  let familyE := family.image mapTuple
+  have hcommonE : ∀ P ∈ familyE,
+      L ≤ (commonCurveAgreementSet domainE wordsE P).card := by
+    intro P hP
+    obtain ⟨P₀, hP₀, rfl⟩ := Finset.mem_image.mp hP
+    rw [commonCurveAgreementSet_map]
+    exact hcommon P₀ hP₀
+  obtain ⟨ex, hcard, hgood⟩ :=
+    exists_exceptional_powerBatched_family domainE wordsE familyE L hcommonE
+  refine ⟨ex, hcard.trans (Nat.mul_le_mul_right _ Finset.card_image_le), ?_⟩
+  intro P hP z hz
+  refine ⟨P, hdegree P hP, rfl, ?_⟩
+  have hset := hgood (mapTuple P) (Finset.mem_image.mpr ⟨P, hP, rfl⟩) z hz
+  simpa only [domainE, wordsE, familyE, mapTuple] using
+    hset.trans (commonCurveAgreementSet_map domain w P iota)
 
 /-- The polynomial initial-jet graph associated with a tuple of messages. -/
 def powerBatchedJetGraph (center : E) (P : Fin (ℓ + 1) → E[X]) :
