@@ -5,6 +5,7 @@ Authors: Quang Dao
 -/
 
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TaylorChart.PointRecognition
+import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TaylorChart.PairCounting
 import Mathlib.Algebra.Field.ZMod
 import Mathlib.Tactic.NormNum
 
@@ -387,5 +388,17 @@ example :
   · simpa only [hdom] using hsample0.2
 
 end
+
+end ReedSolomon
+
+namespace ReedSolomon
+
+/-- The specialization of a concrete degree-one pair has degree below two. -/
+example :
+    (correlatedPairSpecialization (RingHom.id ℚ) (3 : ℚ)
+      (Polynomial.X, Polynomial.C (2 : ℚ))).degree < 2 := by
+  exact degree_correlatedPairSpecialization_lt (RingHom.id ℚ) 3
+    (Polynomial.X, Polynomial.C (2 : ℚ))
+    (by norm_num [Polynomial.degree_X]) (by norm_num [Polynomial.degree_C])
 
 end ReedSolomon
