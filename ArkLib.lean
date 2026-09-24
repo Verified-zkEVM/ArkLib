@@ -820,6 +820,7 @@ public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.AffineHilbertPolynomia
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.AgreementIncidence
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.BidegreeIncidence
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.CappedBidegreeIncidence
+public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.CappedDegreeIncidence
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.CutFamily
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.DimensionSensitiveIncidence
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.FiniteQuotient
