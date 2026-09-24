@@ -47,6 +47,48 @@ example : (2 : ℝ) * (1 + rateGap (1 / 2) ((2 : ℝ) / 10)) ≤ 3 + 5 := by
   norm_num at h ⊢
   exact h
 
+/-- A concrete small-gap block satisfies the prescribed geometric parameter contract. -/
+example :
+    let δ : ℝ := 1 / 5
+    let d := Nat.ceil (Real.exp (xi / δ))
+    let m := Nat.ceil (100 * (d : ℝ) ^ 2 * harmonic (d - 1))
+    let n := 8 * m
+    2 * m - 1 < n ∧ d < max 1 (Nat.floor (δ * n / 2)) := by
+  let δ : ℝ := 1 / 5
+  let d := Nat.ceil (Real.exp (xi / δ))
+  let m := Nat.ceil (100 * (d : ℝ) ^ 2 * harmonic (d - 1))
+  let n := 8 * m
+  have hδ : 0 < δ := by norm_num [δ]
+  have hδmax : δ < 1 / 4 := by norm_num [δ]
+  have ho := prescribed_order_lower δ hδ hδmax.le
+  have hH : (0 : ℝ) < (harmonic (d - 1) : ℝ) := by
+    have hxi : 0 < xi := by norm_num [xi]
+    simpa only [d] using (div_pos hxi hδ).trans_le ho.2.2
+  have hdlower : 48000 ≤ d := by simpa only [d] using ho.1
+  have hd : 0 < d := by omega
+  have hm : 0 < m := by
+    dsimp only [m]
+    apply Nat.ceil_pos.mpr
+    have hdR : (0 : ℝ) < d := by exact_mod_cast hd
+    positivity
+  have hblock :
+      let d := Nat.ceil (Real.exp (xi / δ))
+      let m := Nat.ceil (100 * (d : ℝ) ^ 2 * harmonic (d - 1))
+      8 * m ≤ n := by
+    dsimp only
+    exact Nat.le_refl _
+  have hA : agreementThreshold δ n 1 ≤ n := by
+    apply (agreementThreshold_le_iff_real hδ.le n 1 n).mpr
+    have hnR : (n : ℝ) = 8 * m := by norm_num [n]
+    rw [hnR]
+    dsimp [δ]
+    push_cast
+    have hmR : (1 : ℝ) ≤ m := by exact_mod_cast (Nat.one_le_iff_ne_zero.mpr hm.ne')
+    nlinarith
+  obtain ⟨_, _, _, _, hνn, hdK, _, _, _, _⟩ :=
+    prescribed_geometric_parameters δ n 1 hδ hδmax hblock hA
+  exact ⟨hνn, hdK⟩
+
 /-- At `δ = 1/4`, `n = 8m` and `k = m`, the positive-dimensional block bounds hold. -/
 example :
     let δ : ℝ := 1 / 4
