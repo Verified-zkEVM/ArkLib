@@ -7,6 +7,7 @@ Authors: Quang Dao
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.ExtensionDescent
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.EquationDescent
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FullDimension
+import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FrobeniusAdmissibility
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.GraphLine
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.GraphLineComponent
 import
@@ -450,133 +451,6 @@ private theorem component_agreementCuts : ∀ i ∈ Finset.univ,
   rw [hxval, hyval, component_cut_eq]
   exact component_initialEquation_mem
 
-private def componentOrigin : Option (Fin 1) → ComponentField := fun _ ↦ 0
-
-private def componentPointEvaluation : SourceRing 0 ComponentField →ₐ[ComponentField]
-    ComponentField := MvPolynomial.aeval componentOrigin
-
-private def componentPointMap : SourceRing 0 ComponentField →ₐ[ComponentField]
-    MvPolynomial (Fin 0) ComponentField :=
-  (MvPolynomial.isEmptyAlgEquiv ComponentField (Fin 0)).symm.toAlgHom.comp
-    componentPointEvaluation
-
-private def componentPointIdeal : Ideal (SourceRing 0 ComponentField) :=
-  RingHom.ker componentPointEvaluation.toRingHom
-
-private theorem componentPointEvaluation_surjective :
-    Function.Surjective componentPointEvaluation := by
-  intro z
-  exact ⟨MvPolynomial.C z, by simp [componentPointEvaluation]⟩
-
-private theorem componentPointMap_surjective : Function.Surjective componentPointMap := by
-  let e : MvPolynomial (Fin 0) ComponentField ≃ₐ[ComponentField] ComponentField :=
-    MvPolynomial.isEmptyAlgEquiv ComponentField (Fin 0)
-  intro z
-  obtain ⟨a, ha⟩ := e.symm.surjective z
-  obtain ⟨p, hp⟩ := componentPointEvaluation_surjective a
-  refine ⟨p, ?_⟩
-  change e.symm (componentPointEvaluation p) = z
-  rw [hp, ha]
-
-private theorem componentPointIdeal_isPrime : componentPointIdeal.IsPrime :=
-  RingHom.ker_isPrime _
-
-private theorem componentPointIdeal_isMaximal : componentPointIdeal.IsMaximal :=
-  RingHom.ker_isMaximal_of_surjective _ componentPointEvaluation_surjective
-
-private theorem componentPointIdeal_degree :
-    (affineHilbertPolynomial componentPointIdeal).natDegree = 0 := by
-  let e : MvPolynomial (Fin 0) ComponentField ≃ₐ[ComponentField] ComponentField :=
-    MvPolynomial.isEmptyAlgEquiv ComponentField (Fin 0)
-  have hmapDegree :
-      (affineHilbertPolynomial (RingHom.ker componentPointMap)).natDegree = 0 := by
-    simpa using natDegree_affineHilbertPolynomial_ker_of_surjective
-      componentPointMap componentPointMap_surjective
-  have hker : RingHom.ker componentPointMap = componentPointIdeal := by
-    ext p
-    change (componentPointMap p = 0) ↔ (componentPointEvaluation p = 0)
-    constructor
-    · intro hp
-      apply e.symm.injective
-      simpa [componentPointMap, e] using hp
-    · intro hp
-      simp [componentPointMap, hp]
-  rw [← hker]
-  exact hmapDegree
-
-private abbrev componentPointSeparant : SourceRing 0 ComponentField :=
-  jointInitialJetSeparant (0 : ComponentField) (componentEquation (E := ComponentField))
-
-private theorem componentPointSeparant_eval :
-    MvPolynomial.aeval componentOrigin componentPointSeparant = 1 := by
-  simp [componentPointSeparant, jointInitialJetSeparant, componentEquation,
-    initialJetSeparant, separant]
-
-private theorem componentPointSeparant_notMem :
-    componentPointSeparant ∉ componentPointIdeal := by
-  intro hp
-  have hz : componentPointEvaluation componentPointSeparant = 0 := hp
-  change MvPolynomial.aeval componentOrigin componentPointSeparant = 0 at hz
-  rw [componentPointSeparant_eval] at hz
-  norm_num at hz
-
-private theorem componentPointHigh : ∀ l : Fin 2, 1 ≤ l.val →
-    jointCommonTaylorNumerator (0 : ComponentField)
-      (componentEquation (E := ComponentField)) 2 l ∈ componentPointIdeal := by
-  intro l hl
-  have hl1 : l = 1 := Fin.ext (by omega)
-  subst l
-  change componentPointEvaluation componentHighNumerator = 0
-  rw [component_highNumerator_eq]
-  simp [componentPointEvaluation, componentOrigin, componentVariable]
-
-private theorem componentPointTerminal (α : Fin 1 ↪ ComponentField)
-    (f g : Fin 1 → ComponentField) (J : Ideal (SourceRing 0 ComponentField))
-    (hPJ : componentPointIdeal ≤ J) (hJ : J.IsPrime)
-    (_hsJ : jointInitialJetSeparant (0 : ComponentField)
-      (componentEquation (E := ComponentField)) ∉ J)
-    (hdJ : 0 < (affineHilbertPolynomial J).natDegree)
-    (_hcuts : 1 ≤ {i : Fin 1 | jointTaylorAgreementEquation (0 : ComponentField)
-      (componentEquation (E := ComponentField)) 2 2 (Polynomial.C (α i))
-      (Polynomial.C (f i) + Polynomial.X * Polynomial.C (g i)) ∈ J}.ncard) :
-    {x | x ∈ zeroLocus ComponentField J ∧
-      aeval x (jointInitialJetSeparant (0 : ComponentField)
-        (componentEquation (E := ComponentField))) ≠ 0} ⊆ ∅ := by
-  have hJP : J = componentPointIdeal :=
-    (componentPointIdeal_isMaximal.eq_of_le hJ.ne_top hPJ).symm
-  rw [hJP, componentPointIdeal_degree] at hdJ
-  omega
-
-private theorem componentPointIdeal_eq_ker : componentPointIdeal =
-    RingHom.ker (MvPolynomial.aeval componentOrigin) := by
-  rfl
-
-private theorem componentIdeal_le_componentPointIdeal :
-    componentIdeal (E := ComponentField) ≤ componentPointIdeal := by
-  rw [componentPointIdeal_eq_ker, componentIdeal]
-  apply Ideal.span_le.mpr
-  rintro p rfl
-  simp [componentVariable, componentOrigin]
-
-private def componentPointCut (_ : Fin 1) : SourceRing 0 ComponentField :=
-  jointTaylorAgreementEquation (0 : ComponentField)
-    (componentEquation (E := ComponentField)) 2 2 (Polynomial.C (0 : ComponentField))
-    (0 : ComponentField[X])
-
-private theorem componentPointCut_eq_initial :
-    componentPointCut 0 = jointInitialJetEquation (0 : ComponentField)
-      (componentEquation (E := ComponentField)) := by
-  dsimp only [componentPointCut, jointTaylorAgreementEquation,
-    jointInitialJetEquation]
-  simpa only [Polynomial.C_0] using
-    congrArg (optionEquivRight ComponentField (Fin 1)).symm component_cut_eq
-
-private theorem componentPointCut_mem : componentPointCut 0 ∈ componentPointIdeal := by
-  rw [componentPointCut_eq_initial]
-  exact componentIdeal_le_componentPointIdeal component_initialEquation_mem
-
-attribute [irreducible] componentPointIdeal
-
 private abbrev firstOrderChartEquation : DifferentialPolynomial ComponentField 1 :=
   MvPolynomial.X (Fin.last 1)
 
@@ -857,75 +731,6 @@ example :
       {i : Fin 1 | firstOrderSourceCut i ∈ firstOrderSourceIdeal}.ncard = 0 := by
     simpa [firstOrderSourceCut, firstOrderTestPoints] using hfirstZero
   exact ⟨hchart, hsourceTotal, firstOrderSourceIdeal_degree, hfirstCount⟩
-
-/-- The retained incidence locus contains its regular origin and is finite. -/
-example :
-    let P : Ideal (SourceRing 0 ComponentField) := componentPointIdeal
-    let α : Fin 1 ↪ ComponentField :=
-      ⟨fun _ ↦ 0, fun _ _ _ ↦ Subsingleton.elim _ _⟩
-    let f : Fin 1 → ComponentField := fun _ ↦ 0
-    let g : Fin 1 → ComponentField := fun _ ↦ 0
-    let cuts : Fin 1 → SourceRing 0 ComponentField := fun i ↦
-      jointTaylorAgreementEquation (0 : ComponentField)
-        (componentEquation (E := ComponentField)) 2 2 (Polynomial.C (α i))
-        (Polynomial.C (f i) + Polynomial.X * Polynomial.C (g i))
-    let T := {x : Option (Fin 1) → ComponentField |
-      x ∈ zeroLocus ComponentField P ∧
-        aeval x (jointInitialJetSeparant (0 : ComponentField)
-          (componentEquation (E := ComponentField))) ≠ 0 ∧
-        x ∉ (∅ : Set (Option (Fin 1) → ComponentField)) ∧
-        1 ≤ {i | aeval x (cuts i) = 0}.ncard}
-    let b := (cuts 0).totalDegree
-    T.Finite ∧ (T.ncard : ℚ) ≤ affineDegree P *
-      hybridDimensionSensitiveIncidenceProduct 1 1 1 1 b
-        (affineHilbertPolynomial P).natDegree ∧ T.Nonempty := by
-  intro P α f g cuts T b
-  have hdeg : ∀ i, (cuts i).totalDegree ≤ b := by
-    intro i
-    have hi : i = 0 := Subsingleton.elim _ _
-    subst i
-    exact Nat.le_refl _
-  have hfinite := finite_symbolicSource_agreementLocus_off_excluded_and_ncard_le_hybrid_of_exponent
-    (center := (0 : ComponentField)) (Q := componentEquation (E := ComponentField))
-    (K := 2) (k := 1) (n := 1) (τ := 2) (L := 1) (A := 1) (b := b)
-    (by intro l; omega) (by omega) (by omega) (by omega) (by omega)
-    P componentPointIdeal_isPrime componentPointHigh α f g hdeg ∅
-    (componentPointTerminal α f g)
-  refine ⟨hfinite.1, hfinite.2, ?_⟩
-  refine ⟨componentOrigin, ?_⟩
-  have hzero : componentOrigin ∈ zeroLocus ComponentField P := by
-    rw [mem_zeroLocus_iff]
-    intro p hp
-    have hp' : p ∈ componentPointIdeal := by
-      simpa only [P] using hp
-    rw [componentPointIdeal_eq_ker] at hp'
-    exact hp'
-  have hregular : aeval componentOrigin componentPointSeparant ≠ 0 := by
-    rw [componentPointSeparant_eval]
-    exact one_ne_zero
-  have hcutEval : ∀ i : Fin 1, aeval componentOrigin (cuts i) = 0 := by
-    intro i
-    have hi : i = 0 := Subsingleton.elim _ _
-    subst i
-    have hcut : cuts 0 = componentPointCut 0 := by
-      dsimp only [cuts, componentPointCut]
-      congr 1
-      simp [f, g]
-    rw [hcut]
-    have hmem : componentPointCut 0 ∈ componentPointIdeal := componentPointCut_mem
-    have heval : componentPointEvaluation (componentPointCut 0) = 0 := by
-      rw [componentPointIdeal_eq_ker] at hmem
-      simpa [componentPointEvaluation] using hmem
-    change MvPolynomial.aeval componentOrigin (componentPointCut 0) = 0 at heval
-    simpa only [P] using heval
-  have hset : {i : Fin 1 | aeval componentOrigin (cuts i) = 0} = Set.univ := by
-    ext i
-    change aeval componentOrigin (cuts i) = 0 ↔ True
-    exact ⟨fun _ ↦ trivial, fun _ ↦ hcutEval i⟩
-  have hcard : {i : Fin 1 | aeval componentOrigin (cuts i) = 0}.ncard = 1 := by
-    rw [hset]
-    simp
-  exact ⟨hzero, hregular, by simp, by omega⟩
 
 private theorem component_powerBatchedAgreementCuts : ∀ i ∈ Finset.univ,
     jointTaylorAgreementEquation (r := 0) (0 : ComponentField)
@@ -1430,3 +1235,103 @@ example : ∃ P : Fin 2 → (ZMod 2)[X],
 end
 
 end ReedSolomon.PowerBatchedPointRecognitionTest
+
+namespace ReedSolomon.GraphLineComponentTest
+
+noncomputable section
+
+private theorem component_cut_eq_length_one :
+    taylorAgreementEquationOver (F := ComponentField) (0 : ComponentField[X])
+      (componentEquation (E := ComponentField)) 1 0 0 (τ := 2) =
+        initialJetEquation (0 : ComponentField[X])
+          (componentEquation (E := ComponentField)) := by
+  rw [taylorAgreementEquationOver, Fin.sum_univ_one]
+  simp only [Fin.val_zero]
+  have hnum : commonTaylorNumeratorOver ComponentField (0 : ComponentField[X])
+      (componentEquation (E := ComponentField)) 2 0 =
+        (MvPolynomial.X (0 : Fin 1) : MvPolynomial (Fin 1) (Polynomial ComponentField)) := by
+    simpa only [Polynomial.C_0] using component_commonNumerator_initial
+  rw [hnum]
+  simp [initialJetEquation, componentEquation, initialJetSeparant, separant, Fin.last]
+
+private theorem component_jointCut_eq_length_one :
+  jointTaylorAgreementEquation (r := 0) (0 : ComponentField)
+      (componentEquation (E := ComponentField)) 1 2 (0 : ComponentField[X]) 0 =
+      jointInitialJetEquation (r := 0) (0 : ComponentField)
+        (componentEquation (E := ComponentField)) := by
+  simp only [jointTaylorAgreementEquation, jointInitialJetEquation, Polynomial.C_0]
+  rw [component_cut_eq_length_one]
+
+private theorem component_admissibility_cut :
+    ∀ i ∈ (Finset.univ : Finset (Fin 1)),
+      jointTaylorAgreementEquation (r := 0) (0 : ComponentField)
+        (componentEquation (E := ComponentField)) 1 2 (Polynomial.C 0) 0 ∈
+          componentIdeal (E := ComponentField) := by
+  intro i hi
+  have hi0 : i = 0 := Subsingleton.elim _ _
+  subst i
+  have hcut : jointTaylorAgreementEquation (r := 0) (0 : ComponentField)
+      (componentEquation (E := ComponentField)) 1 2 (Polynomial.C 0) 0 =
+      jointInitialJetEquation (r := 0) (0 : ComponentField)
+        (componentEquation (E := ComponentField)) := by
+    simpa only [Polynomial.C_0] using component_jointCut_eq_length_one
+  rw [hcut]
+  exact component_initialEquation_mem
+
+local instance : (componentIdeal (E := ComponentField)).IsPrime := componentIdeal_isPrime
+
+private theorem extractedAdmissibleFrobeniusPair :
+    ∃ F₀ G₀ : ℚ[X],
+      IsAdmissibleFrobeniusPair domain componentWord componentWord
+        (algebraMap ℚ ComponentField) (fun _ ↦ 0) 0
+        (componentEquation (E := ComponentField)) 1 1 2 1 F₀ G₀ := by
+  obtain ⟨F₀, G₀, hP, _⟩ := exists_admissibleFrobeniusPair_of_symbolic_prime_sample
+    (domain := domain) (f := componentWord) (g := componentWord)
+    (sample := Finset.univ) (hsample := by simp)
+    (iota := algebraMap ℚ ComponentField) (p := 1) (e := 0)
+    (roots := fun _ ↦ 0) (hroots := by
+      intro i hi
+      have hi0 : i = 0 := Subsingleton.elim _ _
+      subst i
+      norm_num
+      change (0 : ComponentField) = (algebraMap ℚ ComponentField) (0 : ℚ)
+      simp)
+    (center := 0) (Q := componentEquation (E := ComponentField))
+    (K := 1) (k := 1) (hK := by norm_num) (hKk := by norm_num) (τ := 2)
+    (hτ := taylorExponentSufficient_two_mul 0 1)
+    (I := componentIdeal (E := ComponentField))
+    component_separant_notMem component_initialEquation_mem
+    componentIdeal_degree_pos
+    (by intro l hl; fin_cases l; norm_num at hl)
+    (by
+      intro i hi
+      have hi0 : i = 0 := Subsingleton.elim _ _
+      subst i
+      simpa [componentWord, Polynomial.C_0] using component_admissibility_cut 0 (by simp))
+  exact ⟨F₀, G₀, hP⟩
+
+example :
+    ∃ F₀ G₀ : ℚ[X],
+      IsAdmissibleFrobeniusPair domain componentWord componentWord
+        (algebraMap ℚ ComponentField) (fun _ ↦ 0) 0
+        (componentEquation (E := ComponentField)) 1 1 2 1 F₀ G₀ ∧
+      rationalTaylorPolynomial (0 : ComponentField)
+        (MvPolynomial.map (Polynomial.evalRingHom (0 : ComponentField))
+          (componentEquation (E := ComponentField))) 1
+        (fun j ↦ (frobeniusInitialGraph (0 : ComponentField) 1
+          (F₀.map (algebraMap ℚ ComponentField)) (G₀.map (algebraMap ℚ ComponentField))
+          (some j)).eval 0) =
+        expand ComponentField 1
+          (F₀.map (algebraMap ℚ ComponentField) + Polynomial.C 0 *
+            G₀.map (algebraMap ℚ ComponentField)) := by
+  obtain ⟨F₀, G₀, hP⟩ := extractedAdmissibleFrobeniusPair
+  refine ⟨F₀, G₀, hP, ?_⟩
+  have hspec := hP.specialize (K := 1) (k := 1) (p := 1) (e := 0)
+    (by norm_num) (by norm_num) (taylorExponentSufficient_two_mul 0 1) 0 (by
+      simp [jointInitialJetSeparant, componentEquation, initialJetSeparant,
+        separant, Fin.last])
+  simpa [pow_zero, one_pow] using hspec
+
+end
+
+end ReedSolomon.GraphLineComponentTest

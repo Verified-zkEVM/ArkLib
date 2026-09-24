@@ -113,6 +113,14 @@ jet-degree budget `B` with `C + 2H ≤ B`; neither assumption is needed.
 
 `finrank_interpolationSpace_lowerBound`: /-- The source's rectangular lower bound:
 
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder/CurveCertificate.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/FirstOrder/CurveSymbolic.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`FirstOrderCurveCertificate` keeps its name, mathematical fields, and specialization contract. Its interpolant field uses the destination API's `SourceColumn.interpolant`. No declarations were omitted.
+
+The matching `ArkLibTest/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder.lean` remains unchanged and covers first-order support, interpolation, rank, and shifted-height cases. No example was added for this data-only declaration.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder/CurveHeightCounting.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/FirstOrder/CurveHeightCounting.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -1747,6 +1755,12 @@ Ported from `HiddenDerivative/RootFinding/MutualCorrelatedAgreement/ExtensionDes
 
 Not ported: the standalone exceptional correlated-agreement wrapper from this dependency; the equation-descent theorem performs the exceptional-set pullback directly.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FrobeniusAdmissibility.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FrobeniusAdmissibility.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Ported `IsAdmissibleFrobeniusPair`, its projections `degree_left`, `degree_right`, `initial`, `regular`, `sparse`, and `sample`, `exists_admissibleFrobeniusPair_of_symbolic_prime_sample`, `IsAdmissibleFrobeniusPair.specialize`, and `IsAdmissibleFrobeniusPair.eq_of_initialGraph_eq` without renaming. Generalized them from `Fin n` to arbitrary embedded index types `ι`. The sample condition groups sample values and Frobenius root equations, and root equations are required only on the interpolation sample. No other public source declaration from this file was left out.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FrobeniusComponentRecognition.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FrobeniusComponentRecognition.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -2159,6 +2173,12 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordi
 `map_rootExpansion` and `eval₂_rootExpansion` become `MvPolynomial.map_rootExpansion` and `MvPolynomial.eval₂_rootExpansion`. They are generalized to commutative semirings and placed with the generic root-expansion API. The existing Frobenius contraction and inverse-twist preservation APIs replace the source fraction-ring aggregate API.
 
 Not ported: `ordinaryFlatCases_one` remains a private proof helper because it is a `Fin.cases` computation, not a reusable domain API. `frobeniusEquation_nonconstant_coefficient_canary` is restated as an acceptance-test example. The two source `ChallengeHeightLE` lemmas are represented by the renamed `CoeffNatDegreeLE` lemmas. No declaration was blocked or left without a proof.
+
+## `ArkLib/Data/Polynomial/Differential/FrobeniusTaylorWitness.lean`
+
+Ported from `ArkLib/Data/Polynomial/Differential/FrobeniusTaylorWitness.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Renamed `symbolicFrobeniusWitness_equations` to `frobeniusExpansion_satisfies_jointTaylorCuts`. The canonical theorem uses the joint Taylor-chart API and a flattened joint point. The sufficient-exponent wrapper `frobeniusTaylorExponentSufficient` is covered by `taylorExponentSufficient_two_mul_sub_three` at `K = D * s + 1`; no wrapper was added. The reconstruction wrapper `symbolicFrobeniusWitness_reconstruction` is covered by `rationalTaylorPolynomial_polynomialJet` at order zero; no wrapper was added. No other public source declaration from this file was left out.
 
 ## `ArkLib/Data/Polynomial/Differential/JetDegree.lean`
 
