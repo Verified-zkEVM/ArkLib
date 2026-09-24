@@ -57,6 +57,9 @@ Check: search module and declaration docstrings for `Ported from`, the snapshot 
   declarations, so those results belong in `PartitionSupport/`.
 - Put a generic result with its generic owner. A joint-kernel lemma about matrices goes to the
   linear-algebra layer, not to the protocol-specific module that first used it.
+- Retire a source module when existing APIs cover every declaration and it has no distinct present
+  API or production consumers. Record the mappings and downstream guidance in the port history.
+  Do not add aliases, theorem wrappers, or duplicate acceptance tests solely to fill the unit.
 - Concrete instances without a production consumer go to `ArkLibTest/`. Examples are table rows
   and results with hard-coded parameters such as `n = 2 ^ 16`. The generic API they instantiate
   stays in `ArkLib/`.
