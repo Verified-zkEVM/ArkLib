@@ -135,9 +135,7 @@ theorem linear_close_probability_le_epsCa
       Pr{let r ← $ᵗ F}[Good (z + r • d)] ≤
         epsCa (F := F) (A := F) (C : Set (ι → F)) δ δ := by
     unfold epsCa
-    refine le_trans (le_of_eq ?_) (le_iSup (fun v : Code.WordStack F (Fin 2) ι =>
-      if Code.jointProximity (C := (C : Set (ι → F))) (u := v) δ then 0
-      else Pr{let r ← $ᵗ F}[δᵣ(v 0 + r • v 1, (C : Set (ι → F))) ≤ δ]) u)
+    refine le_iSup_of_le u (le_of_eq ?_)
     rw [ite_eq_right hnotjoint]
     simp [u, Good]
   simpa [Good] using havg.trans hline
