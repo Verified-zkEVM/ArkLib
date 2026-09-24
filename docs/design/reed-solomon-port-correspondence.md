@@ -3713,6 +3713,12 @@ primes is the private `minimalPrime_pairwise_incomparable` of
 `ArkLib/ToMathlib/AlgebraicGeometry/PrincipalCut/ComponentCoefficient.lean`, stated for an
 arbitrary commutative semiring.
 
+## `ArkLib/ToMathlib/RingTheory/Ideal/SurjectiveMap.lean`
+
+Ported from `ArkLib/ToMathlib/AlgebraicGeometry/Incidence/TwoJet.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Added `Ideal.map_prime_principalOpenData_of_surjective` as a generic helper. It transports prime ideal and comap data, principal-open avoidance, generator membership, and membership of lifted cuts along a surjective ring map. The helper has no direct source declaration; it factors the shared ideal transport used by both capped incidence proofs.
+
 ## `ArkLib/ToMathlib/RingTheory/MvPolynomial/AffineDegree.lean`
 
 Ported from ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`, file
@@ -4307,6 +4313,16 @@ Ported from `ArkLib/ToMathlib/AlgebraicGeometry/Incidence/DerivativeBidegreeExcl
 
 Acceptance cases in `ArkLibTest/ToMathlib/RingTheory/Nullstellensatz.lean` include a rational point on a positive-dimensional coordinate line, with `n = 4`, `A = 2`, `L = 1`, and `k = 0`. The merged acceptance file retains its principal-open, affine-Hilbert, and zero-locus examples.
 
+Ported from `ArkLib/ToMathlib/AlgebraicGeometry/Incidence/TwoJet.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+The capped-bidegree incidence proof now uses `Ideal.map_prime_principalOpenData_of_surjective` for its prime ideal, comap, generator, principal-open, and lifted-cut transport. No public declaration was renamed or removed.
+
+## `ArkLib/ToMathlib/RingTheory/Nullstellensatz/CappedDegreeIncidence.lean`
+
+Ported from `ArkLib/ToMathlib/AlgebraicGeometry/Incidence/TwoJet.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`AffineHilbert.twoJetHypersurface_source_incidence_sharp` → `MvPolynomial.cappedDegreeHypersurface_incidence_sharp`. The theorem removes the assumptions `0 < k`, `c ≤ b`, and properness of `span {g}`, and states agreement counts using `Set.ncard`. No source declaration was deferred or omitted.
+
 ## `ArkLib/ToMathlib/RingTheory/Nullstellensatz/DimensionSensitiveIncidence.lean`
 
 Ported from `ArkLib/ToMathlib/AlgebraicGeometry/Incidence/DimensionSensitive.lean` at ArkLib
@@ -4565,3 +4581,9 @@ The existing acceptance example exercises `weightedTotalDegree_optionEquivRight_
 Ported from `ArkLibTest/ToMathlib/RingTheory/MvPolynomial.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 The acceptance case checks the generic count theorem on a dimension-two coordinate ideal containing one evaluation equation.
+
+## `ArkLibTest/ToMathlib/RingTheory/Nullstellensatz.lean`
+
+Ported from `ArkLib/ToMathlib/AlgebraicGeometry/Incidence/TwoJet.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+An acceptance example checks the point `(1, 0)` on `X 1 = 0` with concrete cuts and computed hypotheses for `MvPolynomial.cappedDegreeHypersurface_incidence_sharp`.
