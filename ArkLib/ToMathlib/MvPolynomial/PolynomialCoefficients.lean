@@ -279,16 +279,16 @@ theorem CoeffNatDegreeLE.map_coefficients {S : Type*} [CommSemiring S]
   exact Polynomial.natDegree_map_le.trans (hP m)
 
 /-- Clearing a substitution preserves the coefficient-degree bound, with the denominator budget
-`H` contributing at most `H * h` and the coefficients of `Q` contributing at most `h`. -/
+`H` contributing at most `H * h` and the coefficients of `Q` contributing at most `a`. -/
 theorem CoeffNatDegreeLE.clearedSubstitution
     {τ : Type*} (S : MvPolynomial σ (Polynomial R))
-    (N : τ → MvPolynomial σ (Polynomial R)) (d : τ → ℕ) (H h : ℕ)
+    (N : τ → MvPolynomial σ (Polynomial R)) (d : τ → ℕ) (H h a : ℕ)
     (Q : MvPolynomial τ (Polynomial R))
     (hS : CoeffNatDegreeLE S h)
     (hN : ∀ i, CoeffNatDegreeLE (N i) (d i * h))
     (hden : ∀ m ∈ Q.support, Finsupp.weight d m ≤ H)
-    (hQ : ∀ m ∈ Q.support, (Q.coeff m).natDegree ≤ h) :
-    CoeffNatDegreeLE (MvPolynomial.clearedSubstitution C S N d H Q) (H * h + h) := by
+    (hQ : ∀ m ∈ Q.support, (Q.coeff m).natDegree ≤ a) :
+    CoeffNatDegreeLE (MvPolynomial.clearedSubstitution C S N d H Q) (H * h + a) := by
   classical
   unfold MvPolynomial.clearedSubstitution
   apply coeffNatDegreeLE_sum
