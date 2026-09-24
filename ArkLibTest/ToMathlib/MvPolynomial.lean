@@ -926,7 +926,7 @@ example :
   simpa using powerMomentMap_weightedTotalDegree_le (E := ℚ) (σ := Unit) 1
     (X (Sum.inl ⟨1, by omega⟩))
 
-/-- A zero-dimensional source gives a concrete finite Hilbert-function bound. -/
+/-- A source with no auxiliary variables gives a concrete Hilbert-function bound. -/
 example :
     affineHilbertFunction (powerMomentIdeal (R := ℚ) (σ := Empty) 1) 0 ≤
       1 * (0 + Nat.card (Option Empty)).choose (Nat.card (Option Empty)) := by

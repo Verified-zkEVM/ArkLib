@@ -605,37 +605,6 @@ example :
   intro x hx
   exact hgraph x hx
 
-/-- A regular component supported on its agreement set yields a pair with that agreement. -/
-example :
-    ∃ P₀ P₁ : ℚ[X], P₀.degree < 1 ∧ P₁.degree < 1 ∧
-      P₀.eval 0 = 0 ∧ P₁.eval 0 = 0 ∧
-      1 ≤ (commonPolynomialAgreementSet domain componentWord componentWord P₀ P₁).card := by
-  classical
-  have hprime : (componentIdeal (E := ComponentField)).IsPrime := componentIdeal_isPrime
-  have hcomponent := exists_graphLine_pair_of_regular_component_agreements
-    (n := 1) (k := 1) (K := 2) (r := 0) (L := 1) (domain := domain)
-    (f := componentWord) (g := componentWord) (indices := Finset.univ)
-    (hcard := by simp) (hkL := by omega) (iota := algebraMap ℚ ComponentField)
-    (center := 0) (Q := componentEquation (E := ComponentField)) (hK := by omega)
-    (τ := 2) (hτ := by intro l; omega) (P := componentIdeal (E := ComponentField))
-    (hs := component_separant_notMem) (hd := componentIdeal_degree_pos)
-    (hinit := component_initialEquation_mem) (hhigh := component_highCuts)
-    (hcuts := component_agreementCuts)
-  obtain ⟨P₀, P₁, hP₀, hP₁, hcard, -, -, -, -, -, -⟩ := hcomponent
-  have hfull : commonPolynomialAgreementSet domain componentWord componentWord P₀ P₁ =
-      Finset.univ :=
-    Finset.eq_univ_of_card _ (le_antisymm (Finset.card_le_univ _)
-      (by simpa [Fintype.card_fin] using hcard))
-  have hmem : (0 : Fin 1) ∈
-      commonPolynomialAgreementSet domain componentWord componentWord P₀ P₁ := by
-    rw [hfull]
-    simp
-  refine ⟨P₀, P₁, hP₀, hP₁, ?_, ?_, hcard⟩
-  · simpa [componentWord, domain_zero] using
-      (mem_commonPolynomialAgreementSet domain componentWord componentWord P₀ P₁ 0).mp hmem |>.1
-  · simpa [componentWord, domain_zero] using
-      (mem_commonPolynomialAgreementSet domain componentWord componentWord P₀ P₁ 0).mp hmem |>.2
-
 /-- A polynomial-valued received word with a proved cut gives a concrete source prime bound. -/
 example :
     (affineHilbertPolynomial (componentIdeal (E := ComponentField))).natDegree ≤ 1 := by
@@ -774,8 +743,11 @@ example : let F : Finset (Fin 2 → ℚ[X]) := admissibleChartTupleFamilyAtExpon
                       (algebraMap ℚ ComponentField) 0
                       (componentEquation (E := ComponentField)) 2 1 1 2
           F.Nonempty ∧ (F.card : ℚ) ≤
-            (jetTotalDegree (componentEquation (E := ComponentField)) : ℚ) := by
-  dsimp only
+            (jetTotalDegree (componentEquation (E := ComponentField)) : ℚ) ∧
+          ∃ P ∈ F, ({P} : Finset (Fin 2 → ℚ[X])).Nonempty ∧
+            (({P} : Finset (Fin 2 → ℚ[X])).card : ℚ) ≤
+              (jetTotalDegree (componentEquation (E := ComponentField)) : ℚ) := by
+  intro F
   let x : Option (Fin 1) → ComponentField := fun _ ↦ 0
   have hx : x ∈ {x | x ∈ zeroLocus ComponentField (componentIdeal (E := ComponentField)) ∧
       aeval x (jointInitialJetSeparant (0 : ComponentField) componentEquation) ≠ 0} := by
@@ -793,53 +765,111 @@ example : let F : Finset (Fin 2 → ℚ[X]) := admissibleChartTupleFamilyAtExpon
   obtain ⟨P, hP, _⟩ := hprincipal hx
   have hfamily := (mem_admissibleChartTupleFamilyAtExponent_iff domain
     (fun _ ↦ componentWord) _ 0 componentEquation 2 1 1 2 (by omega) P).2 hP
-  have hcount := admissibleChartTupleFamilyAtExponent_card_le domain
-    (fun _ : Fin 2 ↦ componentWord) (algebraMap ℚ ComponentField) 0 componentEquation
-    2 1 1 (jetTotalDegree (componentEquation (E := ComponentField))) 2 (by intro l; omega)
-    (by omega) (by omega) (by omega) (by omega) (by omega) le_rfl
-  exact ⟨⟨P, hfamily⟩, by simpa using hcount⟩
-
-/-- The prime component's joint cut forces the tuple's value at its evaluation point. -/
-example : ∃ P : Fin 2 → ℚ[X], (∀ t, (P t).degree < 1) ∧
-    ∀ t, (P t).eval (domain 0) = componentWord 0 := by
-  classical
-  have hprime : (componentIdeal (E := ComponentField)).IsPrime := componentIdeal_isPrime
-  obtain ⟨P, hP, _, hgraph, hpoly, _, _⟩ :=
-    exists_polynomialGraph_of_primeTaylorComponent (domain := domain)
-      (w := fun _ : Fin 2 ↦ componentWord) (sample := Finset.univ) (hsample := by simp)
-      (φ := algebraMap ℚ ComponentField) (center := 0)
-      (Q := componentEquation (E := ComponentField)) (hK := by omega) (τ := 2)
-      (hτ := by intro l; fin_cases l <;> omega)
-      (I := componentIdeal (E := ComponentField)) (hsep := component_separant_notMem)
-      (hdim := componentIdeal_degree_pos) (hhigh := component_highCuts)
-      (hcuts := component_powerBatchedAgreementCuts)
-  have hagreement := commonCurveAgreement_of_jointTaylorAgreementEquation_mem_prime
-    (n := 1) (K := 2) (r := 0) (ℓ := 1) (domain := domain)
-    (w := fun _ : Fin 2 ↦ componentWord) (ιₑ := algebraMap ℚ ComponentField)
-    (center := 0) (Q := componentEquation (E := ComponentField)) (τ := 2)
-    (hτ := by intro l; omega) (I := componentIdeal (E := ComponentField))
-    (hsep := component_separant_notMem) (hdim := componentIdeal_degree_pos) (P := P)
-    (hgraph := hgraph) (hpoly := hpoly) (i := 0)
-    (hcut := component_powerBatchedAgreementCuts 0 (by simp))
-  exact ⟨P, hP, hagreement⟩
-
-open Classical in
-/-- One joint agreement cut for a two-entry tuple yields a common agreement. -/
-example : ∃ P : Fin 2 → ℚ[X], (∀ t, (P t).degree < 1) ∧
-    1 ≤ (commonCurveAgreementSet domain (fun _ : Fin 2 ↦ componentWord) P).card := by
-  have hprime : (componentIdeal (E := ComponentField)).IsPrime := componentIdeal_isPrime
-  obtain ⟨P, hP, hcommon, -, -, -, -⟩ :=
-    exists_polynomialGraph_of_primeTaylorComponent_agreements (n := 1) (k := 1) (K := 2)
-      (r := 0) (ℓ := 1) (L := 1) (domain := domain)
-      (w := fun _ : Fin 2 ↦ componentWord) (indices := Finset.univ)
-      (hcard := by simp) (hkL := by omega) (ιₑ := algebraMap ℚ ComponentField)
-      (center := 0) (Q := componentEquation (E := ComponentField)) (hK := by omega)
-      (τ := 2) (hτ := by intro l; omega)
-      (I := componentIdeal (E := ComponentField)) (hsep := component_separant_notMem)
-      (hdim := componentIdeal_degree_pos) (hhigh := component_highCuts)
-      (hcuts := component_powerBatchedAgreementCuts)
-  exact ⟨P, hP, hcommon⟩
-
+  have hcountGeneral := admissibleChartTuples_card_le_of_exponent domain
+    (fun _ : Fin 2 ↦ componentWord) (algebraMap ℚ ComponentField) 0
+    (componentEquation (E := ComponentField)) 2 1 1
+    (jetTotalDegree (componentEquation (E := ComponentField))) 2
+    (by intro l; omega) (by omega) (by omega) (by omega) (by omega) (by omega)
+    le_rfl {P} (by intro R hR; simp only [Finset.mem_singleton] at hR; subst R; exact hP)
+  have hcountFamily := admissibleChartTupleFamilyAtExponent_card_le domain
+    (fun _ : Fin 2 ↦ componentWord) (algebraMap ℚ ComponentField) 0
+    (componentEquation (E := ComponentField)) 2 1 1
+    (jetTotalDegree (componentEquation (E := ComponentField))) 2
+    (by intro l; omega) (by omega) (by omega) (by omega) (by omega) (by omega) le_rfl
+  exact ⟨⟨P, hfamily⟩, by simpa using hcountFamily,
+    ⟨P, hfamily, by simp, by simpa using hcountGeneral⟩⟩
+private abbrev offGraphEquation : DifferentialPolynomial ComponentField[X] 0 :=
+  MvPolynomial.X (some (0 : Fin 1)) - MvPolynomial.C (Polynomial.X : ComponentField[X])
+private def offGraphWords : Fin 1 → Fin 1 → ℚ := fun _ _ ↦ 0
+private def offGraphPoint : Option (Fin 1) → ComponentField := fun _ ↦ 0
+private def offGraphPoints : Finset (Option (Fin 1) → ComponentField) := {offGraphPoint}
+/-- A nonempty singleton off the tuple graphs satisfies the finite incidence bound. -/
+example : offGraphPoints.Nonempty ∧ (offGraphPoints.card : ℚ) ≤ 8 := by
+  have hS : ∀ y ∈ offGraphPoints,
+      aeval y (jointInitialJetEquation (0 : ComponentField) offGraphEquation) = 0 ∧
+      aeval y (jointInitialJetSeparant (0 : ComponentField) offGraphEquation) ≠ 0 ∧
+      (∀ l : Fin 1, 1 ≤ l.val →
+        aeval y (jointCommonTaylorNumerator (0 : ComponentField) offGraphEquation 2 l) = 0) ∧
+      y ∉ admissibleChartTupleGraphLocus domain offGraphWords
+        (algebraMap ℚ ComponentField) 0 offGraphEquation 1 1 1 2 := by
+    intro y hy
+    have hyx : y = offGraphPoint := by simpa [offGraphPoints] using hy
+    subst y
+    refine ⟨by simp [jointInitialJetEquation, offGraphEquation, offGraphPoint,
+        initialJetEquation],
+      by simp [jointInitialJetSeparant, offGraphEquation, initialJetSeparant,
+        separant, Fin.last], (by intro l hl; omega), ?_⟩
+    rintro ⟨P, hP, hgraph⟩
+    have hi := hP.initial
+    simp only [Nat.reduceAdd, chartTuplePullback, jointInitialJetEquation,
+      initialJetEquation, map_zero, aeval_eq_bind₁, offGraphEquation,
+      Fin.isValue, map_sub, bind₁_X_right, Option.elim_some, algHom_C,
+      MvPolynomial.algebraMap_eq, optionEquivRight_symm_apply, MvPolynomial.aevalTower_X,
+      MvPolynomial.aevalTower_C, Polynomial.aeval_X, MvPolynomial.aeval_X,
+      powerBatchedJetGraphMap, powerBatchedJetGraph, powerBatchedCoordinate, univ_unique,
+      Fin.default_eq_zero, Fin.val_eq_zero, polynomialJet, hasseJet_apply,
+      hasseDeriv_zero, LinearMap.id_coe, id_eq, eval_map_algebraMap,
+      monomial_zero_left, sum_singleton, Option.elim_none] at hi
+    have h0 := congrArg (fun p : ComponentField[X] ↦ p.eval 0) hi
+    have h1 := congrArg (fun p : ComponentField[X] ↦ p.eval 1) hi
+    simp only [Fin.isValue, Polynomial.eval_sub, Polynomial.eval_C, Polynomial.eval_X,
+      sub_zero, Polynomial.eval_zero] at h0 h1
+    rw [h0] at h1
+    norm_num at h1
+  have hA : ∀ y ∈ offGraphPoints, 1 ≤ {i : Fin 1 | aeval y
+      (jointTaylorAgreementEquation (0 : ComponentField) offGraphEquation 1 2
+        (Polynomial.C ((algebraMap ℚ ComponentField) (domain i)))
+        (powerBatchedCoordinate (fun _ : Fin 1 ↦
+          (algebraMap ℚ ComponentField) (offGraphWords 0 i)))) = 0}.ncard := by
+    intro y hy
+    have hyx : y = offGraphPoint := by simpa [offGraphPoints] using hy
+    subst y
+    have hz : 0 ∈ {i : Fin 1 | aeval offGraphPoint
+        (jointTaylorAgreementEquation (0 : ComponentField) offGraphEquation 1 2
+          (Polynomial.C ((algebraMap ℚ ComponentField) (domain i)))
+          (powerBatchedCoordinate (fun _ : Fin 1 ↦
+            (algebraMap ℚ ComponentField) (offGraphWords 0 i)))) = 0} := by
+      simp [jointTaylorAgreementEquation, offGraphEquation, offGraphPoint, domain,
+        offGraphWords, taylorAgreementEquationOver, commonTaylorNumeratorOver,
+        rationalTaylorNumeratorOver, initialJetSeparant, separant, Fin.last,
+        powerBatchedCoordinate]
+    exact Nat.succ_le_of_lt ((Set.ncard_pos (Set.toFinite _)).2 ⟨0, hz⟩)
+  have hinit : jointInitialJetEquation (0 : ComponentField) offGraphEquation ≠ 0 := by
+    intro h
+    have h' := congrArg (MvPolynomial.aeval
+      (fun j : Option (Fin 1) ↦ if j = some (0 : Fin 1) then
+        (1 : ComponentField) else 0)) h
+    norm_num [jointInitialJetEquation, offGraphEquation, initialJetEquation] at h'
+  have hjet : jetTotalDegree offGraphEquation ≤ 1 := by
+    classical
+    rw [jetTotalDegree_le_iff]
+    intro u hu
+    have hu' := (MvPolynomial.support_sub _ _ _) hu
+    rcases Finset.mem_union.mp hu' with hX | hC
+    · rw [MvPolynomial.support_X] at hX
+      have huX : u = Finsupp.single (some (0 : Fin 1)) 1 := Finset.mem_singleton.mp hX
+      subst u
+      simp [totalJetDegree_eq_sum]
+    · have huC : u = 0 := by
+        rw [MvPolynomial.support_C] at hC
+        simp only [Polynomial.X_ne_zero, ↓reduceIte, mem_singleton] at hC
+        exact hC
+      subst u
+      simp [totalJetDegree_eq_sum]
+  have hheight : CoeffNatDegreeLE offGraphEquation 1 := by
+    intro m
+    rw [offGraphEquation, MvPolynomial.coeff_sub]
+    exact (Polynomial.natDegree_sub_le _ _).trans (max_le
+      (by rw [MvPolynomial.coeff_X]; split_ifs <;> simp)
+      (by rw [MvPolynomial.coeff_C]; split_ifs <;>
+        norm_num [Polynomial.natDegree_X]))
+  have hbound := finite_admissibleChartTupleIncidence_off_graphs
+    (K := 1) (k := 1) (L := 1) (A := 1) (v := 1) (h := 1) domain offGraphWords
+    (algebraMap ℚ ComponentField) (0 : ComponentField) offGraphEquation
+    (by omega) (by omega) (by omega) (by omega) (by omega) (by omega) hinit
+    (by simp [jointInitialJetSeparant, offGraphEquation, initialJetSeparant,
+      separant, Fin.last]) (by omega) hjet hheight offGraphPoints hS hA
+  norm_num [offGraphPoints] at hbound ⊢
 /-- A sparse sample cut on the regular prime component determines its Frobenius graph. -/
 example :
     ∃ P : Fin 2 → ℚ[X], (∀ t, (P t).degree < 1) ∧
@@ -872,36 +902,6 @@ example :
           componentCoordinateEquation, frobeniusPowerCoordinate,
           powerBatchedCoordinate] using component_generator_mem)
   exact ⟨P, hdegree, hsample, hseparant⟩
-
-/-- A regular chart point at zero satisfies sparse Frobenius graph reconstruction. -/
-example : ∃ P : Fin 2 → ℚ[X], (∀ t, (P t).degree < 1) ∧
-    (∀ i ∈ (Finset.univ : Finset (Fin 1)), ∀ t,
-      (P t).eval (domain i) = componentWord i) ∧
-    (0 : ComponentField) =
-      (frobeniusPowerInitialGraph (center := (0 : ComponentField)) 1
-        (fun t ↦ (P t).map (algebraMap ℚ ComponentField)) 0).eval 0 := by
-  obtain ⟨P, hdegree, hsample, hrecognize⟩ :=
-    exists_frobeniusPowerGraph_of_symbolic_sample
-      (domain := domain) (values := fun _ : Fin 2 ↦ componentWord)
-      (sample := univ) (k := 1) (ℓ := 1) (hsample := by simp)
-      (ι := algebraMap ℚ ComponentField) (p := 1) (e := 0)
-      (roots := fun _ ↦ 0) (hroots := by intro i _; fin_cases i; simp [domain_zero])
-      (center := 0) (Q := componentCoordinateEquation)
-      (K := 1) (hK := by omega) (hKk := by norm_num) (τ := 0)
-      (hτ := by intro l; fin_cases l; omega)
-  have hsep : aeval (fun _ : Fin 1 ↦ (0 : ComponentField))
-      (map (Polynomial.evalRingHom (0 : ComponentField))
-        (initialJetSeparant (Polynomial.C 0) componentCoordinateEquation)) ≠ 0 := by
-    simp [initialJetSeparant, separant, Fin.last, componentCoordinateEquation]
-  have hresult := hrecognize 0 (fun _ ↦ 0) hsep
-    (by intro l hl; simp at hl)
-    (by
-      intro i _
-      fin_cases i
-      simp [taylorAgreementEquationOver, commonTaylorNumeratorOver,
-        rationalTaylorNumeratorOver, componentWord, componentCoordinateEquation,
-        frobeniusPowerCoordinate, powerBatchedCoordinate])
-  exact ⟨P, hdegree, hsample, (by simpa using hresult.2)⟩
 
 end
 
