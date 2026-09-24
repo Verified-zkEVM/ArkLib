@@ -17,6 +17,8 @@ public import ArkLib.ToMathlib.MvPolynomial.OptionRoots
 import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 import Mathlib.Tactic.Ring
 
+universe u
+
 /-!
 # Actual-degree first-order hybrid agreement counting
 
@@ -34,6 +36,9 @@ closed first-order list constant.
 * `FirstOrderHybridDescent`, `exists_firstOrderHybridDescent`, and
   `FirstOrderHybridDescent.root_coverage`: symbolic actual-degree descent and its specialization
   coverage.
+* `FirstOrderCurveCertificate.exists_hybridDescent` and
+  `FirstOrderCurveCertificate.exists_hybridDescent_of_derivativeCap_lt_ringChar`: certificate
+  bridges to the symbolic descent.
 * `finite_firstOrder_hybrid_agreement_solutions_card_le_raw_of_tail` and
   `finite_firstOrder_hybrid_agreement_solutions_card_le_optimized_of_tail`: list bounds for a
   symbolic equation with a supplied order-zero tail bound.
@@ -105,23 +110,6 @@ theorem hasOrderZeroTailListBound_of_nonzero
     simpa [jetDegree] using jetDegree_le_total Q₀ idx
   exact_mod_cast hroots.trans (hdegree.trans hweight)
 
-/-- A first-order equation with `Y₁` degree zero has a presentation using only `X` and `Y₀`. -/
-theorem exists_firstOrderTailPresentation {R : Type*} [CommSemiring R]
-    (Q : DifferentialPolynomial R 1) (hdegree : jetDegree Q (1 : Fin 2) = 0) :
-    Nonempty (JetPrefixPresentation Q (0 : Fin 2)) := by
-  classical
-  have hvars : (Q.vars : Set (JetVariable 1)) ⊆
-      Set.range (jetPrefixEmbedding (0 : Fin 2)) := by
-    intro v hv
-    rcases v with _ | j
-    · exact ⟨none, rfl⟩
-    · fin_cases j
-      · exact ⟨some 0, rfl⟩
-      · have hne : jetDegree Q (1 : Fin 2) ≠ 0 :=
-          MvPolynomial.mem_vars_iff_degreeOf_ne_zero.mp hv
-        exact (hne hdegree).elim
-  exact exists_jetPrefixPresentation_of_vars_subset_range Q (0 : Fin 2) hvars
-
 /-- The successive partial derivatives of a first-order equation through its actual `Y₁` degree,
 with a nonzero presentation of the terminal equation in `X` and `Y₀`. -/
 structure FirstOrderFieldDescent {F : Type*} [Field F]
@@ -173,7 +161,8 @@ theorem exists_firstOrderFieldDescent
   have htailDegree : jetDegree (jetDerivative Q 1 e) (1 : Fin 2) = 0 := by
     rw [jetDegree_jetDerivative_eq_sub Q 1 e hcasts]
     exact Nat.sub_self e
-  obtain ⟨tail⟩ := exists_firstOrderTailPresentation (jetDerivative Q 1 e) htailDegree
+  obtain ⟨tail⟩ := exists_jetPrefixPresentation_firstOrder_of_jetDegree_zero
+    (jetDerivative Q 1 e) htailDegree
   refine ⟨{
     actualDegree := e
     actualDegree_eq := rfl
@@ -297,7 +286,7 @@ theorem exists_firstOrderHybridDescent {F : Type*} [Field F]
         omega
   have htailDegree : jetDegree (jetDerivative Q (1 : Fin 2) e) (1 : Fin 2) = 0 := by
     simpa [e] using (hstages e le_rfl).2
-  obtain ⟨tail⟩ := exists_firstOrderTailPresentation
+  obtain ⟨tail⟩ := exists_jetPrefixPresentation_firstOrder_of_jetDegree_zero
     (jetDerivative Q (1 : Fin 2) e) htailDegree
   exact ⟨{
     actualDegree := e
@@ -309,6 +298,50 @@ theorem exists_firstOrderHybridDescent {F : Type*} [Field F]
     tail := tail
     tail_nonzero := tail.equation_ne_zero (hstages e le_rfl).1
   }⟩
+
+private theorem FirstOrderCurveCertificate.jetDegree_one_le
+    {F : Type u} [Field F] {D A m M μ k h n N : ℕ}
+    {domain : Fin n ↪ F} {w : Fin n → F[X]} {columns : Fin N → SourceColumn 1}
+    (cert : FirstOrderCurveCertificate.{u, u} D A m M μ k h domain w columns) :
+    jetDegree cert.Q 1 ≤ M := by
+  rw [jetDegree, MvPolynomial.degreeOf_le_iff]
+  intro u hu
+  have hfirst : u (some (⟨1, by omega⟩ : Fin 2)) ≤ M := by
+    simpa only [firstJetExponent_eq_coordinates Nat.one_pos,
+      jetExponentCoordinatesEquiv_apply] using cert.firstJetDegree_le u hu
+  have hcoord : (⟨1, by omega⟩ : Fin 2) = 1 := Fin.ext rfl
+  simpa only [hcoord] using hfirst
+
+/-- A first-order curve certificate supplies a symbolic actual-degree descent under the
+characteristic guard at the actual `Y₁` degree. -/
+theorem FirstOrderCurveCertificate.exists_hybridDescent
+    {F : Type u} [Field F] {D A m M μ k h n N : ℕ}
+    {domain : Fin n ↪ F} {w : Fin n → F[X]} {columns : Fin N → SourceColumn 1}
+    (cert : FirstOrderCurveCertificate.{u, u} D A m M μ k h domain w columns)
+    (hchar : ringChar F = 0 ∨ jetDegree cert.Q (1 : Fin 2) < ringChar F) :
+    Nonempty (FirstOrderHybridDescent cert.Q μ M) := by
+  have hQ : cert.Q ≠ 0 := by
+    intro hzero
+    have hnonzero := (cert.specialization_sound (RingHom.id F) 0).1
+    apply hnonzero
+    rw [hzero, map_zero]
+  have hweight : jetTotalDegree cert.Q ≤ μ := by
+    rw [jetTotalDegree_le_iff]
+    exact cert.totalJetDegree_le
+  have hdegree := cert.jetDegree_one_le
+  exact exists_firstOrderHybridDescent cert.Q hQ hweight hdegree hchar
+
+/-- The public derivative cap of a first-order curve certificate implies the actual-degree
+characteristic guard required by the symbolic descent. -/
+theorem FirstOrderCurveCertificate.exists_hybridDescent_of_derivativeCap_lt_ringChar
+    {F : Type u} [Field F] {D A m M μ k h n N : ℕ}
+    {domain : Fin n ↪ F} {w : Fin n → F[X]} {columns : Fin N → SourceColumn 1}
+    (cert : FirstOrderCurveCertificate.{u, u} D A m M μ k h domain w columns)
+    (hchar : ringChar F = 0 ∨ M < ringChar F) :
+  Nonempty (FirstOrderHybridDescent cert.Q μ M) := by
+  apply cert.exists_hybridDescent
+  have hdegree := cert.jetDegree_one_le
+  exact hchar.imp_right (fun hM ↦ hdegree.trans_lt hM)
 
 /-- Every specialized root either solves the order-zero tail or is regular at an earlier `Y₁`
 derivative stage. -/
@@ -362,77 +395,6 @@ theorem FirstOrderHybridDescent.root_coverage {F E : Type*} [Field F] [Field E]
     exact htail
   · right
     exact ⟨j, hj, by simpa [value] using hstage, hsep⟩
-
-open Classical in
-/-- A finite regular family of accepted polynomial solutions is bounded by the derivative-capped
-first-order Taylor incidence charge. -/
-theorem finite_regular_agreement_solutions_card_le_derivativeCapped_of_exponent
-    {F : Type*} [Field F]
-    (Q : DifferentialPolynomial F 1) (K k j r τ : ℕ)
-    (hτ : TaylorExponentSufficient 1 K τ) (hτpos : 0 < τ) (hK : 1 < K)
-    (hkK : k ≤ K) (hr : 0 < r) (hrj : r ≤ j)
-    (hjet : jetTotalDegree Q ≤ j) (hderiv : jetDegree Q 1 ≤ r)
-    {n A : ℕ} (domain : Fin n ↪ F) (received : Fin n → F)
-    (hkA : k ≤ A) (hAn : A ≤ n)
-    (S : Finset F[X])
-    (hdegree : ∀ P ∈ S, P.degree < k)
-    (hsol : ∀ P ∈ S, differentialSpecialization Q P = 0)
-    (hsep : ∀ P ∈ S, differentialSpecialization (separant Q 1) P ≠ 0)
-    (hbin : ∀ i, 1 < i → i < K → (i.choose 1 : F) ≠ 0)
-    (hagree : ∀ P ∈ S,
-      A ≤ (Finset.univ.filter fun i ↦ P.eval (domain i) = received i).card) :
-    (S.card : ℚ) ≤ firstOrderCurveFiberStageOne K j r τ *
-      (((n - k + 1 : ℕ) : ℚ) / ((A - k + 1 : ℕ) : ℚ)) := by
-  classical
-  let E := AlgebraicClosure F
-  let scalar : F →+* E := algebraMap F E
-  let QE := MvPolynomial.map scalar Q
-  have hbinE : ∀ i, 1 < i → i < K → (i.choose 1 : E) ≠ 0 := by
-    intro i hi hiK hz
-    apply hbin i hi hiK
-    exact scalar.injective (by simpa using hz)
-  obtain ⟨center, jets, hcard, hjets⟩ := exists_regular_solution_jet_family_of_exponent
-    (A := A) scalar Q K k τ hτ hkK S domain received hdegree hsol hsep hbinE hagree
-  by_cases hempty : jets = ∅
-  · have hScard : S.card = 0 := by simpa [hempty] using hcard.symm
-    rw [hScard, Nat.cast_zero]
-    positivity
-  let domainE : Fin n ↪ E := domain.trans ⟨scalar, scalar.injective⟩
-  have hcount := finite_regularHighCutJets_card_le_derivativeCapped_of_exponent
-    center QE K k j r τ hτ hτpos hK hr hrj
-    (by
-      have hw : (fun i : Option (Fin 2) ↦ i.elim 0 (fun _ ↦ 1)) = jetDegreeWeight := by
-        funext i
-        cases i <;> rfl
-      have hjetE : jetTotalDegree QE ≤ j := by
-        rw [jetTotalDegree_map_eq scalar.injective Q]
-        exact hjet
-      change QE.weightedTotalDegree
-        (fun i : Option (Fin 2) ↦ i.elim 0 (fun _ ↦ 1)) ≤ j
-      rw [hw]
-      exact hjetE)
-    (by
-      change jetDegree QE 1 ≤ r
-      simpa only [QE, jetDegree_map_eq scalar.injective Q 1] using hderiv)
-    domainE (fun i ↦ scalar (received i)) hkA hAn jets
-    (fun jet hjetmem ↦ ⟨(hjets jet hjetmem).1, (hjets jet hjetmem).2.1,
-      fun l ↦ (hjets jet hjetmem).2.2.1 l.val l.property⟩)
-    (fun jet hjetmem ↦ by
-      let agreementSet := Finset.univ.filter fun i : Fin n ↦
-        MvPolynomial.aeval jet (taylorAgreementEquation center QE K τ
-          (scalar (domain i)) (scalar (received i))) = 0
-      have hset : {i | MvPolynomial.aeval jet (taylorAgreementEquation center QE K τ
-          (domainE i) (scalar (received i))) = 0} =
-            (agreementSet : Set (Fin n)) := by
-        ext i
-        simp only [Set.mem_ofPred_eq, Finset.mem_coe, Finset.mem_filter,
-          Finset.mem_univ, true_and, agreementSet, domainE,
-          Function.Embedding.coe_trans, Function.Embedding.coeFn_mk, Function.comp_apply]
-      rw [hset, Set.ncard_coe_finset]
-      simpa only [agreementSet, domainE, Function.Embedding.coeFn_mk] using
-        (hjets jet hjetmem).2.2.2)
-  rw [hcard] at hcount
-  exact hcount
 
 open Classical in
 /-- A degree-one message equation is bounded by the identity-pair Taylor incidence count. -/
@@ -694,6 +656,22 @@ theorem finite_firstOrder_hybrid_agreement_solutions_card_le_raw_of_tail
     domain received Q' stage tail heμ hstageWeight hstageDegree hD hDA hAn hchar'
     htail S (by simpa [Q'] using hsol) hcoverage haccept
 
+private theorem firstOrderListCount_optimized_of_raw
+    {n D A μ M e count : ℕ} (hD : 1 ≤ D) (hDA : D < A) (hAn : A ≤ n)
+    (hMμ : M ≤ μ) (heM : e ≤ M)
+    (hraw : (count : ℝ) ≤
+      firstOrderListCharge (agreementIncidenceRatio n D A) D μ e) :
+    (count : ℝ) ≤ maxFirstOrderListCharge (agreementIncidenceRatio n D A) D μ M ∧
+      count ≤ firstOrderListBound (agreementIncidenceRatio n D A) D μ M ∧
+      (count : ℝ) ≤ firstOrderListConstant (agreementIncidenceRatio n D A) D μ M := by
+  have hopt := hraw.trans (firstOrderListCharge_le_max heM)
+  have hceil : count ≤ firstOrderListBound (agreementIncidenceRatio n D A) D μ M := by
+    unfold firstOrderListBound maxFirstOrderListCharge at hopt ⊢
+    exact_mod_cast hopt.trans (Nat.le_ceil _)
+  have hclosed := maxFirstOrderListCharge_le_firstOrderListConstant
+    (one_le_agreementIncidenceRatio hDA hAn) hD hMμ
+  exact ⟨hopt, hceil, hopt.trans hclosed⟩
+
 open Classical in
 /-- A polynomial-coefficient actual-degree hybrid count gives the optimized, ceiling, and closed
 first-order list bounds after specialization. -/
@@ -717,13 +695,7 @@ theorem finite_firstOrder_hybrid_agreement_solutions_card_le_optimized_of_tail
       (S.card : ℝ) ≤ firstOrderListConstant (agreementIncidenceRatio n D A) D μ M := by
   have hraw := finite_firstOrder_hybrid_agreement_solutions_card_le_raw_of_tail
     domain received Q descent z hD (by omega) hAn hchar htail S hsol haccept
-  have hopt := hraw.trans (firstOrderListCharge_le_max descent.actualDegree_le)
-  have hceil : S.card ≤ firstOrderListBound (agreementIncidenceRatio n D A) D μ M := by
-    unfold firstOrderListBound maxFirstOrderListCharge at hopt ⊢
-    exact_mod_cast hopt.trans (Nat.le_ceil _)
-  have hclosed := maxFirstOrderListCharge_le_firstOrderListConstant
-    (one_le_agreementIncidenceRatio hDA hAn) hD hMμ
-  exact ⟨hopt, hceil, hopt.trans hclosed⟩
+  exact firstOrderListCount_optimized_of_raw hD hDA hAn hMμ descent.actualDegree_le hraw
 
 open Classical in
 /-- The field descent bounds the accepted roots by the regular-stage charges and the tail. -/
@@ -792,13 +764,7 @@ private theorem finite_firstOrder_hybrid_agreement_solutions_card_le_optimized_o
       (S.card : ℝ) ≤ firstOrderListConstant (agreementIncidenceRatio n D A) D μ M := by
   have hraw := finite_firstOrder_hybrid_agreement_solutions_card_le_raw_of_field_tail
     domain received Q descent hD (by omega) hAn hchar htail S hsol haccept
-  have hopt := hraw.trans (firstOrderListCharge_le_max descent.actualDegree_le)
-  have hceil : S.card ≤ firstOrderListBound (agreementIncidenceRatio n D A) D μ M := by
-    unfold firstOrderListBound maxFirstOrderListCharge at hopt ⊢
-    exact_mod_cast hopt.trans (Nat.le_ceil _)
-  have hclosed := maxFirstOrderListCharge_le_firstOrderListConstant
-    (one_le_agreementIncidenceRatio hDA hAn) hD hMμ
-  exact ⟨hopt, hceil, hopt.trans hclosed⟩
+  exact firstOrderListCount_optimized_of_raw hD hDA hAn hMμ descent.actualDegree_le hraw
 
 open Classical in
 /-- A ground-field first-order equation has no tail premise: its nonzero order-zero tail is bounded

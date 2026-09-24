@@ -25,6 +25,8 @@ uniform cap-sensitive bound at exponent `2 * K`.
 
 * `firstOrderListWeight` and `firstOrderTightListWeight`: uniform and exact stage-charge sums.
 * `firstOrderTightListWeight_nonneg`: nonnegativity of the exact charge.
+* `finite_regular_agreement_solutions_card_le_derivativeCapped_of_exponent`: the regular-solution
+  derivative-capped count.
 * `finite_firstOrder_agreement_solutions_card_le_tight_of_exponent`: the exact-exponent count.
 * `firstOrderTightListWeight_two_mul_le` and
   `finite_firstOrder_agreement_solutions_card_le_sharp`: the uniform comparison and count.
@@ -228,6 +230,32 @@ private theorem finite_regular_solutions_card_le_derivativeCapped_of_exponent
         exact (hJ jet hjetmem).2.2.2)
   rw [hcard] at hcount
   exact hcount
+
+open Classical in
+/-- A finite regular family of accepted first-order solutions is bounded by its derivative-capped
+Taylor incidence charge. -/
+theorem finite_regular_agreement_solutions_card_le_derivativeCapped_of_exponent
+    (Q : DifferentialPolynomial F 1) (K k j r τ : ℕ)
+    (hτ : TaylorExponentSufficient 1 K τ) (hτpos : 0 < τ) (hK : 1 < K)
+    (hkK : k ≤ K) (hr : 0 < r) (hrj : r ≤ j)
+    (hjet : jetTotalDegree Q ≤ j) (hderiv : jetDegree Q 1 ≤ r)
+    {n A : ℕ} (domain : Fin n ↪ F) (received : Fin n → F)
+    (hkA : k ≤ A) (hAn : A ≤ n)
+    (regular : Finset (Polynomial F))
+    (hdegree : ∀ P ∈ regular, P.degree < k)
+    (hsol : ∀ P ∈ regular, differentialSpecialization Q P = 0)
+    (hsep : ∀ P ∈ regular, differentialSpecialization (separant Q 1) P ≠ 0)
+    (hbin : ∀ i, 1 < i → i < K → (i.choose 1 : F) ≠ 0)
+    (hagree : ∀ P ∈ regular,
+      A ≤ (Finset.univ.filter fun i ↦ P.eval (domain i) = received i).card) :
+    (regular.card : ℚ) ≤ firstOrderCurveFiberStageOne K j r τ *
+      (((n - k + 1 : ℕ) : ℚ) / ((A - k + 1 : ℕ) : ℚ)) := by
+  classical
+  exact finite_regular_solutions_card_le_derivativeCapped_of_exponent Q K k j r τ
+    hτ hτpos hK hkK hr hrj hjet hderiv domain received hkA hAn regular hdegree hsol hsep hbin
+    (fun P hP ↦ by
+      rw [agreement_ncard_eq_filter_card domain received P]
+      exact hagree P hP)
 
 /-- Every finite family of accepted polynomial solutions of a first-order equation is bounded by
 the exact sum of its order-zero and derivative-capped order-one stage charges. -/

@@ -30,6 +30,8 @@ unevaluated challenge `Z` specializes to a presentation of every evaluation `Z �
   active jet, and there is at most one (`JetPrefixPresentation.instSubsingleton`).
 * `exists_jetPrefixPresentation_of_vars_subset_range`: a polynomial supported on a jet prefix has
   a presentation at that prefix.
+* `exists_jetPrefixPresentation_firstOrder_of_jetDegree_zero`: a first-order equation independent
+  of `Y₁` has a presentation at depth zero.
 * `JetPrefixPresentation.coeff_equation`, `JetPrefixPresentation.jetDegree_equation`,
   `JetPrefixPresentation.jetTotalDegree_equation`: coefficients and degrees of the presentation.
 * `JetPrefixPresentation.isHighestActiveJet_last`: the top variable is the highest active jet of
@@ -87,6 +89,24 @@ theorem exists_jetPrefixPresentation_of_vars_subset_range (Q : DifferentialPolyn
   obtain ⟨equation, hequation⟩ := MvPolynomial.exists_rename_eq_of_vars_subset_range Q
     (jetPrefixEmbedding s) (jetPrefixEmbedding s).injective hvars
   exact ⟨⟨equation, hequation⟩⟩
+
+/-- A first-order differential polynomial of degree zero in `Y₁` has a presentation at depth
+zero. -/
+theorem exists_jetPrefixPresentation_firstOrder_of_jetDegree_zero
+    (Q : DifferentialPolynomial R 1) (hdegree : jetDegree Q (1 : Fin 2) = 0) :
+    Nonempty (JetPrefixPresentation Q (0 : Fin 2)) := by
+  classical
+  have hvars : (Q.vars : Set (JetVariable 1)) ⊆
+      Set.range (jetPrefixEmbedding (0 : Fin 2)) := by
+    intro v hv
+    rcases v with _ | j
+    · exact ⟨none, rfl⟩
+    · fin_cases j
+      · exact ⟨some 0, rfl⟩
+      · have hne : jetDegree Q (1 : Fin 2) ≠ 0 :=
+          MvPolynomial.mem_vars_iff_degreeOf_ne_zero.mp hv
+        exact (hne hdegree).elim
+  exact exists_jetPrefixPresentation_of_vars_subset_range Q (0 : Fin 2) hvars
 
 /-- `Q` has a presentation at its highest active jet. -/
 theorem nonempty_jetPrefixPresentation (Q : DifferentialPolynomial R d) {s : Fin (d + 1)}

@@ -469,12 +469,12 @@ private theorem highestActiveJet_productEquation : highestActiveJet productEquat
   have hne : (activeJets productEquation).Nonempty := by simp [hactive]
   rw [highestActiveJet_eq_some_max _ hne]
   simp [hactive]
-
 /-- The presentation of `Y₁ * X` at depth `1` exists. -/
 example : Nonempty (JetPrefixPresentation productEquation 1) :=
   nonempty_jetPrefixPresentation _
     (isHighestActiveJet_of_highestActiveJet_eq_some highestActiveJet_productEquation)
-
+example : Nonempty (JetPrefixPresentation (X (some 1) : DifferentialPolynomial ℚ 2) 2) :=
+  exists_jetPrefixPresentation_of_vars_subset_range (X (some 1)) 2 (by simp [jetPrefixEmbedding])
 /-! ### Rational Taylor coefficients -/
 
 /-- The equation `y' = 2x`, as the differential polynomial `Y₁ - 2X`. -/
