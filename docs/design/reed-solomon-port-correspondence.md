@@ -1774,6 +1774,12 @@ In `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/SolutionEmbedding.le
 
 No source public declarations were omitted. The generic `boundedSolutionOfPolynomial` constructor and its preservation theorem were removed; callers construct the bounded-solution subtype directly.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/Parameters.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/Parameters.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`exists_prescribed_correlated_parameters` keeps its name and is generalized by dropping the source hypothesis `0 < k`. It uses the current `SymbolicReceivedCurve.Certificate` and `receivedLine` APIs. The theorem gives a symbolic received-line certificate, size and agreement bounds, and all binomial pivots below the block length from the characteristic bound. A concrete rational acceptance case checks that the certificate conclusion is inhabited. The `prescribed_correlated_extension_pivots` wrapper was not ported: its base-field pivot statement is the final conjunct of the parameter theorem, and extension-field nonvanishing follows by injectivity of the field homomorphism at existing use sites, so no generic wrapper was added.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/ProductBounds.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/ProductBounds.lean` at ArkLib revision
