@@ -32,8 +32,10 @@ polynomials (`ListDecoding.MessagePolynomial`) over any semiring and any finite 
 ## Main statements
 
 * `closePolynomialSet_finite_and_ncard_mul_choose_le` and
-  `closePolynomialSet_card_le_of_differential_equation`: finiteness and cardinality bounds for
+  `closePolynomialSet_card_le_of_differential_equation`: incidence and equation bounds for
   agreement lists.
+* `closePolynomialSet_finite_and_ncard_le_of_differential_equation_and_gap`: finiteness and the
+  geometric cardinality bound from a differential equation and agreement gap.
 
 ## References
 
@@ -187,5 +189,37 @@ theorem closePolynomialSet_card_le_of_differential_equation
     simp [accepts, closePolynomialSet, polynomialAgreementSet]
   exact finite_solutions_card_le_sq_totalJetDegree_of_agreement Q K k ν hK hkK hQ hcast
     hdegree domain received hk hkA hAn hbin accepts hagreement S hsol hS
+
+open Classical in
+/-- A differential equation and positive agreement gap make the complete close-polynomial set
+finite and bound its cardinality by `ν² (2ν / δ)^d n^d`. -/
+theorem closePolynomialSet_finite_and_ncard_le_of_differential_equation_and_gap
+    {F : Type*} [Field F] [DecidableEq F] {d : ℕ} {δ : ℝ}
+    (Q : DifferentialPolynomial F d) (K k ν : ℕ) (hK : d < K) (hkK : k ≤ K)
+    (hQ : Q ≠ 0) (hdegree : jetTotalDegree Q ≤ ν) {n A : ℕ}
+    (domain : Fin n ↪ F) (received : Fin n → F) (hk : 0 < k) (hkA : k ≤ A)
+    (hAn : A ≤ n) (hKn : K ≤ n) (hν : 0 < ν) (hδ : 0 < δ)
+    (hgap : (k : ℝ) + δ * n ≤ A)
+    (hchar : ringChar F = 0 ∨ max (K - 1) ν < ringChar F)
+    (hsound : ∀ P, P ∈ closePolynomialSet domain received k A →
+      differentialSpecialization Q P = 0) :
+    (closePolynomialSet domain received k A).Finite ∧
+      ((closePolynomialSet domain received k A).ncard : ℝ) ≤
+        (ν : ℝ) ^ 2 * (2 * ν / δ) ^ d * n ^ d := by
+  have hfinite := closePolynomialSet_finite domain received hkA
+  let accepts : F[X] → Prop := fun P ↦ P ∈ closePolynomialSet domain received k A
+  have hagreement : ∀ P, accepts P ↔
+      P.degree < k ∧ A ≤ (Finset.univ.filter fun i ↦
+        P.eval (domain i) = received i).card := by
+    intro P
+    simp [accepts, closePolynomialSet, polynomialAgreementSet]
+  have hbound := finite_solutions_card_le_sq_totalJetDegree_of_agreementGap
+    Q K k ν hK hkK hQ hdegree domain received hk hkA hAn hKn hν hgap hδ hchar
+    accepts hagreement hfinite.toFinset
+    (fun P hP ↦ hsound P (hfinite.mem_toFinset.mp hP))
+    (fun P hP ↦ hfinite.mem_toFinset.mp hP)
+  refine ⟨hfinite, ?_⟩
+  rw [Set.ncard_eq_toFinset_card _ hfinite]
+  exact hbound
 
 end ReedSolomon

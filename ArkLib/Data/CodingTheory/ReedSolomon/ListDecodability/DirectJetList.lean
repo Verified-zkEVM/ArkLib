@@ -54,7 +54,6 @@ variable {F : Type*} [Field F] {d : ℕ}
 private theorem regularHighTaylorJets_card_le_dimensionSensitive
     [IsAlgClosed F] {r : ℕ} (center : F) (Q : DifferentialPolynomial F r)
     (K k τ : ℕ) (hτ : TaylorExponentSufficient r K τ) (hK : r < K) (hkK : k ≤ K)
-    (hsep : initialJetSeparant center Q ≠ 0)
     {n A : ℕ} (domain : Fin n ↪ F) (received : Fin n → F)
     (hkA : k ≤ A) (hAn : A ≤ n)
     (S : Finset (Fin (r + 1) → F))
@@ -69,94 +68,18 @@ private theorem regularHighTaylorJets_card_le_dimensionSensitive
     (S.card : ℚ) ≤ (jetTotalDegree Q : ℚ) *
       (rationalTaylorCutDegreeBound Q τ : ℚ) ^ r *
         dimensionSensitiveIncidenceProduct n A k 1 r := by
-  classical
-  let B := rationalTaylorCutDegreeBound Q τ
-  let T := highTaylorPrimeFamily center Q K k τ
-  let cuts : Fin n → MvPolynomial (Fin (r + 1)) F := fun i ↦
-    taylorAgreementEquation center Q K τ (domain i) (received i)
-  have hinit : initialJetEquation center Q ≠ 0 :=
-    initialJetEquation_ne_zero_of_initialJetSeparant_ne_zero center Q hsep
-  have hcoverNat : S.card ≤ ∑ P ∈ T,
-      (S.filter fun jet ↦ jet ∈ zeroLocus F P).card := by
-    calc
-      S.card ≤ (T.biUnion fun P ↦ S.filter fun jet ↦ jet ∈ zeroLocus F P).card := by
-        apply Finset.card_le_card
-        intro jet hjet
-        obtain ⟨P, hPT, hjetP⟩ := exists_mem_highTaylorPrimeFamily_of_regular
-          center Q (K := K) (k := k) (τ := τ) jet
-          (hS jet hjet).1 (hS jet hjet).2.1
-          (fun l hkl hlK ↦ hS jet hjet |>.2.2 l hkl hlK)
-        exact Finset.mem_biUnion.mpr ⟨P, hPT,
-          Finset.mem_filter.mpr ⟨hjet, hjetP⟩⟩
-      _ ≤ ∑ P ∈ T, (S.filter fun jet ↦ jet ∈ zeroLocus F P).card :=
-        Finset.card_biUnion_le
-  have hcomponent : ∀ P ∈ T,
-      ((S.filter fun jet ↦ jet ∈ zeroLocus F P).card : ℚ) ≤
-        affineDegree P * (B : ℚ) ^ (affineHilbertPolynomial P).natDegree *
-          dimensionSensitiveIncidenceProduct n A k 1 r := by
-    intro P hPT
-    have hPprime : P.IsPrime := isPrime_of_mem_highTaylorPrimeFamily hPT
-    have hhigh : highTaylorCutsIdeal center Q K k τ ≤ P :=
-      highTaylorCutsIdeal_le_of_mem_highTaylorPrimeFamily hPT
-    have hbound := MvPolynomial.card_le_dimensionSensitiveIncidenceProduct_of_agreement
-      (P := P) (initialJetSeparant center Q) cuts
-      (fun i ↦ totalDegree_taylorAgreementEquation_le center Q hτ _ _)
-      hkA (fun J hPJ hJ hsJ hdJ ↦
-        have hhighJ := hhigh.trans hPJ
-        ReedSolomon.chart_dimensionSensitive_component_of_exponent
-          center Q K k n τ hτ hK hkK J hJ hsJ
-          (fun l hl ↦ hhighJ <| by
-            rw [highTaylorCutsIdeal]
-            exact Ideal.subset_span
-              ⟨l.val, ⟨hl, l.isLt⟩, rfl⟩)
-          domain received hdJ)
-      (S.filter fun jet ↦ jet ∈ zeroLocus F P)
-      (fun jet hj ↦ by
-        rw [Finset.mem_filter] at hj
-        exact ⟨hj.2, (hS jet hj.1).2.1⟩)
-      (fun jet hj ↦ hA jet (Finset.mem_filter.mp hj).1)
-    have hdim : (affineHilbertPolynomial P).natDegree ≤ r :=
-      natDegree_affineHilbertPolynomial_le_of_mem_highTaylorPrimeFamily hPT
-    have hproductMono := dimensionSensitiveIncidenceProduct_mono_dimension
-      (n := n) (A := A) (k := k) (b := 1) hAn Nat.zero_lt_one
-    have hproduct := hproductMono hdim
-    have hbound' :
-        ((S.filter fun jet ↦ jet ∈ zeroLocus F P).card : ℚ) ≤
-          affineDegree P * dimensionSensitiveIncidenceProduct n A k B
-            (affineHilbertPolynomial P).natDegree := by
-      simpa [B] using hbound
-    calc
-      ((S.filter fun jet ↦ jet ∈ zeroLocus F P).card : ℚ) ≤
-          affineDegree P * dimensionSensitiveIncidenceProduct n A k B
-            (affineHilbertPolynomial P).natDegree := hbound'
-      _ = affineDegree P * (B : ℚ) ^ (affineHilbertPolynomial P).natDegree *
-          dimensionSensitiveIncidenceProduct n A k 1 (affineHilbertPolynomial P).natDegree := by
-        rw [dimensionSensitiveIncidenceProduct_eq_pow_mul]
-        ring
-      _ ≤ affineDegree P * (B : ℚ) ^ (affineHilbertPolynomial P).natDegree *
-          dimensionSensitiveIncidenceProduct n A k 1 r :=
-        mul_le_mul_of_nonneg_left hproduct
-          (mul_nonneg (affineDegree_nonneg P) (by positivity))
-      _ = _ := by ring
-  have hpotential := sum_affineDegree_mul_pow_highTaylorPrimeFamily_le
-    (k := k) center Q hτ
-  calc
-    (S.card : ℚ) ≤ ∑ P ∈ T,
-        ((S.filter fun jet ↦ jet ∈ zeroLocus F P).card : ℚ) := by
-      exact_mod_cast hcoverNat
-    _ ≤ ∑ P ∈ T, affineDegree P * (B : ℚ) ^
-          (affineHilbertPolynomial P).natDegree *
-            dimensionSensitiveIncidenceProduct n A k 1 r :=
-      Finset.sum_le_sum hcomponent
-    _ = (∑ P ∈ T, affineDegree P * (B : ℚ) ^
-          (affineHilbertPolynomial P).natDegree) *
-            dimensionSensitiveIncidenceProduct n A k 1 r := by
-      rw [Finset.sum_mul]
-    _ ≤ ((jetTotalDegree Q : ℚ) * (B : ℚ) ^ r) *
-          dimensionSensitiveIncidenceProduct n A k 1 r :=
-      mul_le_mul_of_nonneg_right hpotential
-        (dimensionSensitiveIncidenceProduct_nonneg n A k 1 r)
-    _ = _ := by ring
+  apply PolynomialDifferential.finite_regularHighCutJets_card_le_dimensionSensitive_of_exponent
+    center Q K k τ hτ domain received hkA hAn S
+  · intro jet hjet
+    exact ⟨(hS jet hjet).1, (hS jet hjet).2.1,
+      fun l ↦ (hS jet hjet).2.2 l.val l.property l.val.isLt⟩
+  · exact hA
+  · intro J hJ hsep hhigh hd
+    have hhigh' : ∀ l : Fin K, k ≤ l.val → commonTaylorNumerator center Q τ l.val ∈ J := by
+      intro l hl
+      exact hhigh (commonTaylorNumerator_mem_highTaylorCutsIdeal center Q hl l.isLt)
+    exact ReedSolomon.chart_dimensionSensitive_component_of_exponent
+      center Q K k n τ hτ hK hkK J hJ hsep hhigh' domain received hd
 
 /-- The degree-`< k` agreement polynomials that solve one differential equation. -/
 def directJetAgreementSolutions {n : ℕ} (Q : DifferentialPolynomial F d)
@@ -251,13 +174,9 @@ theorem finite_actualStage_regularSolutions_card_le_dimensionSensitive
     exact mul_nonneg
       (mul_nonneg (dimensionSensitiveIncidenceProduct_nonneg n A k 1 s.val)
         (Nat.cast_nonneg _)) (by positivity)
-  have hsepE : initialJetSeparant center QE ≠ 0 := by
-    obtain ⟨jet, hjet⟩ := Finset.nonempty_iff_ne_empty.mpr hJempty
-    intro hz
-    exact (hJ jet hjet).2.1 (by rw [hz, map_zero])
   let domainE : Fin n ↪ E := domain.trans ⟨f, f.injective⟩
   have hcount := regularHighTaylorJets_card_le_dimensionSensitive
-    center QE K k (2 * K) (taylorExponentSufficient_two_mul s.val K) (by omega) hkK hsepE
+    center QE K k (2 * K) (taylorExponentSufficient_two_mul s.val K) (by omega) hkK
     domainE (fun i ↦ f (received i)) hkA hAn J
     (fun jet hjet ↦ ⟨(hJ jet hjet).1, (hJ jet hjet).2.1,
       fun l hkl hlK ↦ (hJ jet hjet).2.2.1 ⟨l, hlK⟩ hkl⟩)

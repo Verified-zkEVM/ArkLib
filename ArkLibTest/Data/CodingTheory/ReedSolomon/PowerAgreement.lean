@@ -44,6 +44,30 @@ example : ¬ UniformExactPowerAgreement domain2 swapWords 1 2 0 ∧
     exact hnot (hagree 1 (by simp [hempty]) (C 1) (by simp) (by rw [hfull]; simp))
   · simpa using uniformExactPowerAgreement_constantCode domain2 swapWords 2
 
+example : UniformExactPowerAgreement domain2 swapWords 2 2 0 :=
+  uniformExactPowerAgreement_fullDimension domain2 swapWords
+
+example : ∃ P : Fin 2 → ℚ[X], (∀ t, (P t).degree < 2) ∧
+    HasExactPowerAgreement domain2 swapWords (RingHom.id ℚ) 2 0 X := by
+  obtain ⟨P, hP, hgood⟩ := exists_exactPower_fullDimension domain2 swapWords
+  refine ⟨P, hP, hgood 0 X (by norm_num) ?_⟩
+  have hfull : polynomialAgreementSet domain2 (powerBatchedWord swapWords 0) X =
+      (Finset.univ : Finset (Fin 2)) := by
+    ext i
+    fin_cases i
+    · simp only [Fin.zero_eta, Fin.isValue, mem_polynomialAgreementSet, eval_X,
+        Finset.mem_univ, iff_true]
+      norm_num [powerBatchedWord, swapWords, Fin.sum_univ_succ]
+      change (((0 : Fin 2) : ℕ) : ℚ) = 0
+      norm_num
+    · simp only [Fin.mk_one, Fin.isValue, mem_polynomialAgreementSet, eval_X,
+        Finset.mem_univ, iff_true]
+      norm_num [powerBatchedWord, swapWords, Fin.sum_univ_succ]
+      change (((1 : Fin 2) : ℕ) : ℚ) = 1
+      norm_num
+  rw [hfull]
+  simp
+
 end ConstantCodeTest
 
 namespace InterpolationFamilyTest

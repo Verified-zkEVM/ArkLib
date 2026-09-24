@@ -10,6 +10,8 @@ public import ArkLib.Data.Polynomial.Differential.RecursiveCount
 public import ArkLib.Data.Polynomial.Differential.TaylorChartGeometry
 public import ArkLib.Data.Polynomial.Differential.TaylorChartIncidence
 import ArkLib.Data.Polynomial.Differential.JetPrefixPresentation
+import ArkLib.Data.Polynomial.Differential.WitnessCount
+import ArkLib.ToMathlib.Analysis.SpecificLimits.GeometricBounds
 import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 
 /-!
@@ -32,6 +34,8 @@ initial equation, high Taylor cuts, and received-word agreement bounds.
   rational agreement-count budget.
 * `finite_solutions_card_le_sq_totalJetDegree_of_agreement`: finite differential-equation
   solutions with agreement constraints satisfy the square-total-degree bound.
+* `finite_solutions_card_le_sq_totalJetDegree_of_agreementGap`: a positive agreement gap gives
+  the corresponding geometric bound.
 
 ## References
 
@@ -358,5 +362,46 @@ theorem finite_solutions_card_le_sq_totalJetDegree_of_agreement
     roots hroots hdegree hRegular
   rw [hcard] at hcount
   exact hcount
+
+/-- A positive agreement gap bounds a finite family of differential-equation solutions by
+`ν² (2ν / δ)^d n^d`. -/
+theorem finite_solutions_card_le_sq_totalJetDegree_of_agreementGap
+    {F : Type*} [Field F] [DecidableEq F] {d : ℕ}
+    (Q : DifferentialPolynomial F d) (K k ν : ℕ) (hK : d < K) (hkK : k ≤ K)
+    (hQ : Q ≠ 0) (hdegree : jetTotalDegree Q ≤ ν) {n A : ℕ} {δ : ℝ}
+    (domain : Fin n ↪ F) (received : Fin n → F) (hk : 0 < k) (hkA : k ≤ A)
+    (hAn : A ≤ n) (hKn : K ≤ n) (hν : 0 < ν)
+    (hgap : (k : ℝ) + δ * n ≤ A) (hδ : 0 < δ)
+    (hchar : ringChar F = 0 ∨ max (K - 1) ν < ringChar F)
+    (accepts : F[X] → Prop)
+    (hagreement : ∀ P, accepts P ↔
+      P.degree < k ∧ A ≤ (Finset.univ.filter fun i ↦ P.eval (domain i) = received i).card)
+    (S : Finset F[X]) (hsol : ∀ P ∈ S, differentialSpecialization Q P = 0)
+    (haccepts : ∀ P ∈ S, accepts P) :
+    (S.card : ℝ) ≤ (ν : ℝ) ^ 2 * (2 * ν / δ) ^ d * n ^ d := by
+  have htotalChar : ringChar F = 0 ∨ ν < ringChar F :=
+    hchar.imp_right (Nat.le_max_right _ _ |>.trans_lt)
+  have hcast := jetDegreeCastsNeZero_of_jetTotalDegree_charGuard hdegree htotalChar
+  have hcutChar : ringChar F = 0 ∨ K - 1 < ringChar F :=
+    hchar.imp_right (Nat.le_max_left _ _ |>.trans_lt)
+  have hbin : ∀ r, r ≤ d → ∀ i, r < i → i < K → (i.choose r : F) ≠ 0 := by
+    intro r _ i hir hiK
+    have hchoose := natCast_choose_ne_zero_of_ringChar (D := K - 1) (s := r)
+      hcutChar (i - r) (by omega) (by omega)
+    simpa only [Nat.sub_add_cancel (Nat.le_of_lt hir)] using hchoose
+  have hn : 0 < n := hk.trans_le (hkA.trans hAn)
+  have hcount := finite_solutions_card_le_sq_totalJetDegree_of_agreement Q K k ν hK hkK
+    hQ hcast hdegree domain received hk hkA hAn hbin accepts hagreement S hsol haccepts
+  have hcountR : (S.card : ℝ) ≤ (ν : ℝ) ^ 2 *
+      (((n * (1 + 2 * K * (ν - 1)) : ℕ) : ℝ) / (A - k + 1 : ℕ)) ^ d := by
+    have hc := (Rat.cast_le (K := ℝ)).mpr hcount
+    simpa only [Rat.cast_natCast, Rat.cast_mul, Rat.cast_pow, Rat.cast_div] using hc
+  have hratio := agreementGap_geometricRatio_le (F := ℝ) hn hν hδ hKn hkA hgap
+  calc
+    (S.card : ℝ) ≤ (ν : ℝ) ^ 2 *
+        (((n * (1 + 2 * K * (ν - 1)) : ℕ) : ℝ) / (A - k + 1 : ℕ)) ^ d := hcountR
+    _ ≤ (ν : ℝ) ^ 2 * ((2 * ν / δ) * n) ^ d := by
+      gcongr
+    _ = (ν : ℝ) ^ 2 * (2 * ν / δ) ^ d * n ^ d := by rw [mul_pow, mul_assoc]
 
 end PolynomialDifferential
