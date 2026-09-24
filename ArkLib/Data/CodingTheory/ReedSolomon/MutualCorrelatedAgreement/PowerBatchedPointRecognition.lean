@@ -201,7 +201,8 @@ theorem exists_polynomialGraph_of_symbolic_sample_of_exponent
       polynomialJet_rationalTaylorPolynomial center Qz hK]
   · intro l
     have hcoeff := aeval_commonTaylorNumerator center Qz jet (hτ l) hS'
-    simpa [Qz, ← hpoly, coeff_taylor_rationalTaylorPolynomial, l.isLt] using hcoeff
+    simpa [Qz, ← hpoly, rationalTaylorPolynomial,
+      Polynomial.coeff_taylor_centeredCoefficientPrefix, l.isLt] using hcoeff
 
 end
 

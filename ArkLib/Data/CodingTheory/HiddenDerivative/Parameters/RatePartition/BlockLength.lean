@@ -12,6 +12,7 @@ public import Mathlib.Tactic.Linarith
 public import Mathlib.Tactic.NormNum
 public import Mathlib.Tactic.Positivity
 public import Mathlib.Tactic.Ring
+import Mathlib.Data.Nat.Cast.Order.Field
 
 /-!
 # Block-length thresholds and heights for the rate-dependent partition construction
@@ -41,11 +42,11 @@ The height of a curve family is chosen from a certified ratio `γ > 1` as
 
 * `rateBlockThreshold_guards`, `paddedRateBlockThreshold_guards`: the guards above.
 * `marginHeight_one_add_inv`: `marginHeight ν (1 + 1/k) = k ν` for positive `k` and `ν`.
+* `kernel_height_le_marginHeight`: a strict rank margin bounds the polynomial-kernel height.
 
 ## References
 
-* [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient
-  Decoding and Smaller Cryptographic Proofs*][DKT26]
+* [DKT26]
 -/
 
 @[expose] public section
@@ -161,5 +162,45 @@ theorem marginHeight_one_add_inv {bound k : ℕ} (hbound : 0 < bound) (hk : 0 < 
   unfold marginHeight
   rw [hquotient, Nat.ceil_natCast]
   exact max_eq_right (Nat.one_le_iff_ne_zero.mpr (Nat.mul_ne_zero hk.ne' hbound.ne'))
+
+/-- A strict rank margin bounds the polynomial-kernel height by the margin height. -/
+theorem kernel_height_le_marginHeight {N r ℓ ν : ℕ} {γ : ℝ}
+    (hγ : 1 < γ) (hmargin : γ * r < N) :
+    r * (ℓ * ν) / (N - r) ≤ ℓ * marginHeight ν γ := by
+  by_cases hb : 0 < ℓ * ν
+  · have hr : (r : ℝ) < N := by
+      nlinarith [Nat.cast_nonneg r (α := ℝ)]
+    have hrN : r < N := by exact_mod_cast hr
+    have hquot : ((r * (ℓ * ν) / (N - r) : ℕ) : ℝ) ≤
+        (r : ℝ) * (ℓ * ν) / (N - r) := by
+      simpa [Nat.cast_sub hrN.le] using
+        (Nat.cast_div_le (α := ℝ) (m := r * (ℓ * ν)) (n := N - r))
+    have hbR : (0 : ℝ) < ℓ * ν := by exact_mod_cast hb
+    have hbcast : ((ℓ * ν : ℕ) : ℝ) = (ℓ : ℝ) * ν := by norm_cast
+    have hratio : (r : ℝ) * (ℓ * ν) / (N - r) <
+        (ℓ * ν : ℕ) / (γ - 1) := by
+      apply (div_lt_div_iff₀ (sub_pos.mpr hr) (sub_pos.mpr hγ)).mpr
+      have hgap : (r : ℝ) * (γ - 1) < (N : ℝ) - r := by
+        nlinarith [hmargin]
+      have hcross := mul_lt_mul_of_pos_left hgap hbR
+      nlinarith [hcross, hbcast]
+    have hceil : (ν : ℝ) / (γ - 1) ≤ (marginHeight ν γ : ℝ) := by
+      unfold marginHeight
+      exact (Nat.le_ceil _).trans (by exact_mod_cast le_max_right 1 _)
+    have hscale : (ℓ * ν : ℕ) / (γ - 1) ≤
+        (ℓ * marginHeight ν γ : ℕ) := by
+      have heq : (ℓ * ν : ℕ) / (γ - 1) =
+          (ℓ : ℝ) * ((ν : ℝ) / (γ - 1)) := by
+        push_cast
+        ring
+      rw [heq]
+      exact_mod_cast (mul_le_mul_of_nonneg_left hceil
+        (Nat.cast_nonneg ℓ (α := ℝ)))
+    have hresult : ((r * (ℓ * ν) / (N - r) : ℕ) : ℝ) <
+        ((ℓ * marginHeight ν γ : ℕ) : ℝ) := hquot.trans_lt (hratio.trans_le hscale)
+    exact Nat.le_of_lt (by exact_mod_cast hresult)
+  · have hz : ℓ * ν = 0 := by omega
+    simp only [hz, mul_zero, Nat.zero_div]
+    exact Nat.zero_le _
 
 end ReedSolomon.HiddenDerivative.RatePartition

@@ -417,4 +417,9 @@ example : Nonempty (RatePartitionEnvelope (1 / 5 : ℝ)
       (uniformMathematicalMultiplicity (1 / 5 : ℝ)) (α := ℝ)]
   · omega
 
+/-- A rank margin with `N = 4`, `r = 1` and `γ = 5/2` gives kernel height `1`, below margin
+height `3` for `ν = 4`. -/
+example : 1 * (1 * 4) / (4 - 1) ≤ 1 * marginHeight 4 (5 / 2 : ℝ) := by
+  exact kernel_height_le_marginHeight (by norm_num) (by norm_num)
+
 end ReedSolomon.HiddenDerivative.RatePartition
