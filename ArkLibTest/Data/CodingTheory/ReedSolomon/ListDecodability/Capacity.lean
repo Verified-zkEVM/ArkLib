@@ -35,14 +35,6 @@ private def sampleK : ℕ :=
   weightedSupportAmbientDimension sampleDelta sampleN sampleMessageDim
 private def sampleFieldLower : ℕ := max sampleN (2 * (sampleM * sampleA + sampleD))
 
-private def onePointDomain : Fin 1 ↪ ZMod 2 where
-  toFun _ := 0
-  inj' _ _ _ := Subsingleton.elim _ _
-
-private theorem onePointThreshold :
-    agreementThreshold 1 (Fintype.card (Fin 1)) 1 = 2 := by
-  simp [agreementThreshold]
-
 /-- The prescribed parameters have a concrete finite block and prime field. -/
 private theorem prescribedSampleSetup :
     ∃ q : ℕ, q.Prime ∧ sampleN ≤ q ∧
@@ -52,7 +44,9 @@ private theorem prescribedSampleSetup :
         ∃ construction : HiddenDerivativeInterpolationCertificate
           (k := sampleMessageDim) (A := sampleA) sampleD sampleM domain (fun _ => 0),
           construction.ambientDim = sampleK ∧
-            jetTotalDegree construction.interpolant < 2 * sampleM := by
+            jetTotalDegree construction.interpolant < 2 * sampleM ∧
+            8 * sampleM ≤ sampleN ∧ 0 < sampleMessageDim ∧
+            sampleMessageDim ≤ sampleN ∧ sampleA ≤ sampleN ∧ 1 ≤ sampleM := by
   obtain ⟨q, hqLower, hqPrime⟩ := Nat.exists_infinite_primes sampleFieldLower
   have hqLower' : max sampleN (2 * (sampleM * sampleA + sampleD)) ≤ q := by
     simpa only [sampleFieldLower] using hqLower
@@ -101,6 +95,16 @@ private theorem prescribedSampleSetup :
       push_cast
       nlinarith [sq_nonneg ((sampleD : ℝ) - 1)]
     exact_mod_cast hreal
+  have hblock : 8 * sampleM ≤ sampleN := by
+    change 8 * sampleM ≤ 8 * sampleM
+    exact le_rfl
+  have hmessageDim_pos : 0 < sampleMessageDim := by
+    dsimp [sampleMessageDim]
+    omega
+  have hmessageDim_le_n : sampleMessageDim ≤ sampleN := by
+    calc
+      sampleMessageDim ≤ sampleM := hmessageDim_le_m
+      _ ≤ 8 * sampleM := by omega
   have hn : 2 ≤ sampleN := by
     change 2 ≤ 8 * sampleM
     omega
@@ -121,7 +125,22 @@ private theorem prescribedSampleSetup :
     (by norm_num [sampleDelta]) (by norm_num [sampleDelta])
     (by dsimp [sampleMessageDim]; omega)
     (by rfl) hnq hA
-  exact ⟨q, hqPrime, hnq, hfield, hlarge, domain, construction, hK, htotal⟩
+  exact ⟨q, hqPrime, hnq, hfield, hlarge, domain, construction, hK, htotal,
+    hblock, hmessageDim_pos, hmessageDim_le_n, hA, hm⟩
+
+private theorem sampleZeroInList {q : ℕ} (domain : Fin sampleN ↪ ZMod q)
+    (hA : sampleA ≤ sampleN) :
+    (0 : MessagePolynomial (ZMod q) sampleMessageDim) ∈
+      agreeingPolynomials domain sampleMessageDim sampleA (fun _ => 0) := by
+  have hEval : ReedSolomon.evalOnPoints domain
+      (0 : MessagePolynomial (ZMod q) sampleMessageDim) = fun _ => 0 := by
+    ext i
+    simp [ReedSolomon.evalOnPoints]
+  change sampleA ≤ Code.agree
+    (ReedSolomon.evalOnPoints domain (0 : MessagePolynomial (ZMod q) sampleMessageDim))
+    (fun _ => 0)
+  rw [hEval, Code.agree_self]
+  simpa only [Fintype.card_fin] using hA
 
 /-- At the prescribed parameters, interpolation yields a certificate with the stated degree bound.
 -/
@@ -131,7 +150,8 @@ example :
         (k := sampleMessageDim) (A := sampleA) sampleD sampleM domain (fun _ => 0),
         construction.ambientDim = sampleK ∧
           jetTotalDegree construction.interpolant < 2 * sampleM := by
-  obtain ⟨q, hq, -, -, -, domain, construction, hK, htotal⟩ := prescribedSampleSetup
+  obtain ⟨q, hq, -, -, -, domain, construction, hK, htotal, -, -, -, -, -⟩ :=
+    prescribedSampleSetup
   exact ⟨q, hq, domain, construction, hK, htotal⟩
 
 /-- The prescribed interpolant bounds the agreement list over its concrete prime field. -/
@@ -141,7 +161,7 @@ example :
         (4 * sampleM * q ^ sampleD : ℕ∞) ∧
       (4 * sampleM * q ^ sampleD : ℕ) <
         Nat.card (Polynomial.degreeLT (ZMod q) sampleMessageDim) := by
-  obtain ⟨q, hq, -, hfield, hlarge, domain, construction, hK, htotal⟩ :=
+  obtain ⟨q, hq, -, hfield, hlarge, domain, construction, hK, htotal, -, -, -, -, -⟩ :=
     prescribedSampleSetup
   have hbound := @agreeingPolynomials_encard_le_totalJetDegree
       sampleN q sampleMessageDim sampleA sampleD sampleM sampleK 1 ⟨hq⟩ domain (fun _ => 0)
@@ -189,48 +209,73 @@ example :
 /-- The prescribed weighted-support instance has a certified capacity-gap list bound. -/
 example :
     ∃ q : ℕ, q.Prime ∧ ∃ domain : Fin sampleN ↪ ZMod q,
-      Nonempty (CapacityGapCertificate sampleDelta domain 1
-        (4 * sampleM * q ^ (2 * sampleD))) := by
-  obtain ⟨q, hq, hnq, -, -, domain, -, -, -⟩ := prescribedSampleSetup
-  have hdge2 : 2 ≤ capacityDerivativeOrder sampleDelta := by
-    have h := (capacityDerivativeOrder_lower (δ := sampleDelta)
-      (by norm_num [sampleDelta]) (by norm_num [sampleDelta])).1
-    omega
-  have hm : 0 < weightedSupportMultiplicity (capacityDerivativeOrder sampleDelta) :=
-    weightedSupportMultiplicity_pos_iff.mpr hdge2
-  have hblock :
-      8 * weightedSupportMultiplicity (capacityDerivativeOrder sampleDelta) ≤ sampleN := by
-    exact le_rfl
-  have hkn : 1 ≤ sampleN := by
-    dsimp only [sampleN]
-    omega
+      0 < 4 * sampleM * q ^ (2 * sampleD) ∧
+      Nonempty (CapacityGapCertificate sampleDelta domain sampleMessageDim
+        (4 * sampleM * q ^ (2 * sampleD))) ∧
+      (0 : MessagePolynomial (ZMod q) sampleMessageDim) ∈
+        agreeingPolynomials domain sampleMessageDim sampleA (fun _ => 0) := by
+  obtain ⟨q, hq, hnq, -, -, domain, -, -, -, hblock, hk, hkn, hA, hm⟩ :=
+    prescribedSampleSetup
   obtain ⟨hbound, _hlarge⟩ := weightedSupport_capacity_list_bound_four_mul sampleDelta
-    (by norm_num [sampleDelta]) (by norm_num [sampleDelta]) sampleN 1 q hblock
-    (by decide) hkn hq hnq domain
-  exact ⟨q, hq, domain, by simpa only [sampleM, sampleD] using hbound⟩
+    (by norm_num [sampleDelta]) (by norm_num [sampleDelta]) sampleN sampleMessageDim q
+    (by simpa only [sampleM, sampleD] using hblock) hk hkn hq hnq domain
+  obtain ⟨certificate⟩ := hbound
+  have hpositive : 0 < 4 * sampleM * q ^ (2 * sampleD) := by
+    have hmpos : 0 < sampleM := by omega
+    exact Nat.mul_pos (Nat.mul_pos (by decide) hmpos) (Nat.pow_pos hq.pos)
+  have hpointwise : ∀ received : Fin sampleN → ZMod q,
+      (agreeingPolynomials domain sampleMessageDim
+        (agreementThreshold sampleDelta (Fintype.card (Fin sampleN)) sampleMessageDim)
+        received).encard ≤
+          ((4 * sampleM * q ^ (2 * sampleD) : ℕ) : ℕ∞) := by
+    intro received
+    simpa only [sampleM, sampleD, Fintype.card_fin] using
+      (certificate.pointwiseListBound received).1
+  have hNpos : 0 < Fintype.card (Fin sampleN) := by
+    simpa only [Fintype.card_fin] using hk.trans_le hkn
+  have hhelper : CapacityGapCertificate sampleDelta domain sampleMessageDim
+      (4 * sampleM * q ^ (2 * sampleD)) := CapacityGapCertificate.ofPointwiseBound
+    (by norm_num [sampleDelta]) hNpos (domain := domain)
+    (messageDim := sampleMessageDim)
+    (listBound := 4 * sampleM * q ^ (2 * sampleD)) hpointwise
+  exact ⟨q, hq, domain, hpositive, ⟨hhelper⟩, sampleZeroInList domain hA⟩
 
-/-- A pointwise agreement bound constructs a certificate on the singleton code. -/
-example : Nonempty (CapacityGapCertificate 1 onePointDomain 1 0) := by
-  refine ⟨CapacityGapCertificate.ofPointwiseBound (by norm_num) (by decide)
-    (domain := onePointDomain) (messageDim := 1) (listBound := 0) ?_⟩
-  intro received
-  have hEmpty : agreeingPolynomials onePointDomain 1
-      (agreementThreshold 1 (Fintype.card (Fin 1)) 1) received = ∅ := by
-    apply Set.eq_empty_iff_forall_notMem.mpr
-    intro p hp
-    have hAgreementLe : Code.agree
-        (ReedSolomon.evalOnPoints onePointDomain p) received ≤ 1 := by
-      simpa using (Code.agree_le_card
-        (u := ReedSolomon.evalOnPoints onePointDomain p) (v := received))
-    have hAgreementLt : Code.agree
-        (ReedSolomon.evalOnPoints onePointDomain p) received < 2 :=
-      hAgreementLe.trans_lt (by decide)
-    change agreementThreshold 1 (Fintype.card (Fin 1)) 1 ≤
-      Code.agree (ReedSolomon.evalOnPoints onePointDomain p) received at hp
-    rw [onePointThreshold] at hp
-    exact (Nat.not_le_of_gt hAgreementLt) hp
-  rw [hEmpty]
-  simp
+/-- The public construction contract supplies the sample certificate at an attainable threshold.
+-/
+example :
+    ∃ q : ℕ, q.Prime ∧ ∃ domain : Fin sampleN ↪ ZMod q,
+      ∃ construction : HiddenDerivativeInterpolationCertificate
+        (k := sampleMessageDim) (A := sampleA) sampleD sampleM domain (fun _ => 0),
+        construction.ambientDim = sampleK ∧
+          (0 : MessagePolynomial (ZMod q) sampleMessageDim) ∈
+            agreeingPolynomials domain sampleMessageDim sampleA (fun _ => 0) := by
+  obtain ⟨q, hq, hnq, -, -, domain, -, -, -, hblock, hk, hkn, hA, -⟩ :=
+    prescribedSampleSetup
+  have hconstruct := exists_weightedSupport_hiddenDerivativeConstruction sampleDelta
+    (by norm_num [sampleDelta]) (by norm_num [sampleDelta]) sampleN sampleMessageDim q
+    (by simpa only [sampleM, sampleD] using hblock) hk hkn hq hnq hA
+  obtain ⟨construction, hK⟩ := hconstruct domain (fun _ => 0)
+  exact ⟨q, hq, domain, construction, hK, sampleZeroInList domain hA⟩
+
+/-- The packaged weighted-support bound gives a positive-factor certificate for the sample.
+-/
+example :
+    ∃ q : ℕ, q.Prime ∧ ∃ domain : Fin sampleN ↪ ZMod q,
+      ∃ listFactor : ℕ, 0 < listFactor ∧
+        Nonempty (CapacityGapCertificate sampleDelta domain sampleMessageDim
+          (listFactor * q ^ (2 * sampleD))) ∧
+        (0 : MessagePolynomial (ZMod q) sampleMessageDim) ∈
+          agreeingPolynomials domain sampleMessageDim sampleA (fun _ => 0) := by
+  obtain ⟨q, hq, hnq, -, -, domain, -, -, -, hblock, hk, hkn, hA, -⟩ :=
+    prescribedSampleSetup
+  obtain ⟨_, listFactor, hfactor, hBound⟩ :=
+    weightedSupport_capacity_list_bound sampleDelta
+      (by norm_num [sampleDelta]) (by norm_num [sampleDelta])
+  have hcertificate := hBound sampleN sampleMessageDim q
+    (by simpa only [sampleM, sampleD] using hblock) hk hkn hq hnq domain
+  exact ⟨q, hq, domain, listFactor, hfactor,
+    by simpa only [sampleD] using hcertificate.1,
+    sampleZeroInList domain hA⟩
 
 end
 end WeightedSupportInterpolantTest
