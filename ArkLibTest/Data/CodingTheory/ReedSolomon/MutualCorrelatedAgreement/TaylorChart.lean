@@ -9,6 +9,8 @@ import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TaylorChar
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TaylorChart.Incidence
 import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TaylorChart.ExceptionalChallenges
+import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TaylorChart.RegularEquation
 import Mathlib.Algebra.Field.ZMod
 import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 import Mathlib.Tactic.NormNum
@@ -817,6 +819,182 @@ example : challengeBoundChallenges.Nonempty ∧
     hchart hagree hbad
   refine ⟨by simp [challengeBoundChallenges], ?_⟩
   norm_num [challengeBoundChallenges] at hbound ⊢
+
+private abbrev AlgebraicClosureField := AlgebraicClosure ℚ
+
+private def regularEquationDomain : Fin 1 ↪ ℚ :=
+  ⟨fun _ ↦ 0, fun _ _ _ ↦ Subsingleton.elim _ _⟩
+
+private def regularEquationSample : DifferentialPolynomial (Polynomial AlgebraicClosureField) 0 :=
+  MvPolynomial.X (some (0 : Fin 1))
+
+local instance : DecidableEq AlgebraicClosureField := Classical.decEq AlgebraicClosureField
+
+/-- A zero solution of `P = 0` has an exact pair at every regular challenge. -/
+example :
+    ∃ exceptional : Finset AlgebraicClosureField,
+      (exceptional.card : ℚ) ≤ regularSymbolicAgreementBound 1 0 1 1 1 1 1 0 ∧
+      ∀ z ∉ exceptional, ∀ P : AlgebraicClosureField[X], P.degree < 1 →
+        1 ≤ (polynomialAgreementSet
+          (regularEquationDomain.trans ⟨algebraMap ℚ AlgebraicClosureField,
+            (algebraMap ℚ AlgebraicClosureField).injective⟩)
+          (fun _ ↦ algebraMap ℚ AlgebraicClosureField (0 : ℚ) +
+            z * algebraMap ℚ AlgebraicClosureField 0) P).card →
+        differentialSpecialization (challengeSpecialization regularEquationSample z) P = 0 →
+        differentialSpecialization
+          (separant (challengeSpecialization regularEquationSample z) (Fin.last 0)) P ≠ 0 →
+        HasExactCorrelatedPair regularEquationDomain (fun _ ↦ (0 : ℚ)) (fun _ ↦ 0)
+          (algebraMap ℚ AlgebraicClosureField) 1 z P := by
+  let iota : ℚ →+* AlgebraicClosureField := algebraMap ℚ AlgebraicClosureField
+  have hheight : CoeffNatDegreeLE regularEquationSample 0 := by
+    simpa [regularEquationSample] using
+      (coeffNatDegreeLE_X (R := AlgebraicClosureField) (σ := JetVariable 0)
+        (some (0 : Fin 1)))
+  have hjet : regularEquationSample.weightedTotalDegree
+      (fun i : JetVariable 0 ↦ i.elim 0 (fun _ ↦ 1)) ≤ 1 := by
+    norm_num [regularEquationSample, MvPolynomial.weightedTotalDegree, MvPolynomial.support_X]
+  exact exists_exceptional_regularSymbolicCorrelatedAgreement regularEquationDomain
+    (fun _ ↦ 0) (fun _ ↦ 0) iota regularEquationSample 1 1 1 1 1 0
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    hjet hheight (by
+      intro i hi hiK
+      omega)
+
+private def regularBadDomain : Fin 3 ↪ ℚ :=
+  ⟨fun i ↦ i.val, by
+    intro i j hij
+    change (i.val : ℚ) = (j.val : ℚ) at hij
+    apply Fin.ext
+    exact_mod_cast hij⟩
+
+private def regularBadFirstWord : Fin 3 → ℚ := fun i ↦ if i.val = 1 then 1 else 0
+
+private def regularBadSecondWord : Fin 3 → ℚ :=
+  fun i ↦ if i.val = 1 then -1 else if i.val = 2 then 1 else 0
+
+private def regularBadEquation : DifferentialPolynomial (Polynomial AlgebraicClosureField) 0 :=
+  MvPolynomial.X (some (0 : Fin 1))
+
+private def regularBadChallenge : AlgebraicClosureField :=
+  algebraMap ℚ AlgebraicClosureField 1
+
+private def regularBadChallengeLine (z : AlgebraicClosureField) : Fin 3 → AlgebraicClosureField :=
+  fun i ↦ algebraMap ℚ AlgebraicClosureField (regularBadFirstWord i) +
+    z * algebraMap ℚ AlgebraicClosureField (regularBadSecondWord i)
+
+private theorem regularBadAgreementSet :
+    polynomialAgreementSet
+      (regularBadDomain.trans ⟨algebraMap ℚ AlgebraicClosureField,
+        (algebraMap ℚ AlgebraicClosureField).injective⟩)
+      (regularBadChallengeLine regularBadChallenge) (0 : AlgebraicClosureField[X]) = {0, 1} := by
+  ext i
+  fin_cases i <;>
+    norm_num [polynomialAgreementSet, regularBadDomain, regularBadChallengeLine,
+      regularBadFirstWord, regularBadSecondWord, regularBadChallenge]
+
+private theorem regularBadChallenge_mem :
+    regularBadChallenge ∈ regularSymbolicBadChallenges regularBadDomain regularBadFirstWord
+      regularBadSecondWord (algebraMap ℚ AlgebraicClosureField) regularBadEquation 1 2 := by
+  refine ⟨0, by simp, ?_, ?_, ?_, ?_⟩
+  · change 2 ≤ (polynomialAgreementSet
+      (regularBadDomain.trans ⟨algebraMap ℚ AlgebraicClosureField,
+        (algebraMap ℚ AlgebraicClosureField).injective⟩)
+      (regularBadChallengeLine regularBadChallenge) (0 : AlgebraicClosureField[X])).card
+    rw [regularBadAgreementSet]
+    norm_num
+  · simp [regularBadEquation, challengeSpecialization, differentialSpecialization,
+      differentialSpecializationHom]
+  · simp [regularBadEquation, challengeSpecialization, separant, differentialSpecialization,
+      differentialSpecializationHom]
+  · intro hexact
+    obtain ⟨pair, hleft, _, _, hsets⟩ := hexact
+    have hzero : (0 : Fin 3) ∈ polynomialAgreementSet
+        (regularBadDomain.trans ⟨algebraMap ℚ AlgebraicClosureField,
+          (algebraMap ℚ AlgebraicClosureField).injective⟩)
+        (regularBadChallengeLine regularBadChallenge) (0 : AlgebraicClosureField[X]) := by
+      norm_num [polynomialAgreementSet, regularBadDomain, regularBadChallengeLine,
+        regularBadFirstWord, regularBadSecondWord, regularBadChallenge]
+    have hone : (1 : Fin 3) ∈ polynomialAgreementSet
+        (regularBadDomain.trans ⟨algebraMap ℚ AlgebraicClosureField,
+          (algebraMap ℚ AlgebraicClosureField).injective⟩)
+        (regularBadChallengeLine regularBadChallenge) (0 : AlgebraicClosureField[X]) := by
+      norm_num [polynomialAgreementSet, regularBadDomain, regularBadChallengeLine,
+        regularBadFirstWord, regularBadSecondWord, regularBadChallenge]
+    have hsets' : polynomialAgreementSet
+        (regularBadDomain.trans ⟨algebraMap ℚ AlgebraicClosureField,
+          (algebraMap ℚ AlgebraicClosureField).injective⟩)
+        (regularBadChallengeLine regularBadChallenge) (0 : AlgebraicClosureField[X]) =
+        commonPolynomialAgreementSet regularBadDomain regularBadFirstWord regularBadSecondWord
+          pair.1 pair.2 := by
+      exact hsets
+    rw [hsets'] at hzero hone
+    have hzeroEval := (mem_commonPolynomialAgreementSet ..).mp hzero
+    have honeEval := (mem_commonPolynomialAgreementSet ..).mp hone
+    norm_num [regularBadDomain, regularBadFirstWord, regularBadSecondWord] at hzeroEval honeEval
+    have hdegree : pair.1.degree ≤ 0 := by
+      by_cases hp : pair.1 = 0
+      · simp [hp]
+      · have hnat : pair.1.natDegree < 1 :=
+          (Polynomial.natDegree_lt_iff_degree_lt hp).mpr hleft
+        have hnat0 : pair.1.natDegree = 0 := by omega
+        rw [Polynomial.eq_C_of_natDegree_eq_zero hnat0]
+        exact Polynomial.degree_C_le
+    have heval : pair.1.eval (regularBadDomain 0) = pair.1.eval (regularBadDomain 1) := by
+      rw [Polynomial.eq_C_of_degree_le_zero hdegree]
+      simp
+    have hzeroP : pair.1.eval (regularBadDomain 0) = 0 := by
+      simpa [regularBadDomain] using hzeroEval.1
+    have honeP : pair.1.eval (regularBadDomain 1) = 1 := by
+      simpa [regularBadDomain] using honeEval.1
+    rw [hzeroP, honeP] at heval
+    norm_num at heval
+
+private theorem regularBadEquation_weightedDegree :
+    regularBadEquation.weightedTotalDegree (fun i ↦ i.elim 0 (fun _ ↦ 1)) ≤ 1 := by
+  norm_num [regularBadEquation, MvPolynomial.weightedTotalDegree, MvPolynomial.support_X]
+
+private theorem regularBadEquation_height : CoeffNatDegreeLE regularBadEquation 0 := by
+  exact coeffNatDegreeLE_X (R := AlgebraicClosureField) (σ := JetVariable 0)
+    (some (0 : Fin 1))
+
+private theorem regularBadBinomial :
+    ∀ i, 0 < i → i < 1 → (i.choose 0 : AlgebraicClosureField) ≠ 0 := by
+  intro i hi hiK
+  omega
+
+/-- The finite-family bound includes a concrete nonempty singleton of bad challenges. -/
+example :
+    ({regularBadChallenge} : Finset AlgebraicClosureField).Nonempty ∧
+      (({regularBadChallenge} : Finset AlgebraicClosureField).card : ℚ) ≤
+        regularSymbolicAgreementBound 3 0 1 1 1 2 1 0 := by
+  classical
+  have hsubset : ↑({regularBadChallenge} : Finset AlgebraicClosureField) ⊆
+      regularSymbolicBadChallenges regularBadDomain regularBadFirstWord regularBadSecondWord
+        (algebraMap ℚ AlgebraicClosureField) regularBadEquation 1 2 := by
+    intro z hz
+    have hz' : z = regularBadChallenge := by simpa using hz
+    rw [hz']
+    exact regularBadChallenge_mem
+  have hbound := finite_regularSymbolicBadChallenges_card_le regularBadDomain regularBadFirstWord
+    regularBadSecondWord (algebraMap ℚ AlgebraicClosureField) regularBadEquation
+    1 1 1 2 1 0 (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) regularBadEquation_weightedDegree regularBadEquation_height regularBadBinomial
+    {regularBadChallenge} hsubset
+  refine ⟨by simp, ?_⟩
+  norm_num [regularSymbolicAgreementBound] at hbound ⊢
+
+/-- The full bad-challenge set is finite and contains the displayed regular challenge. -/
+example :
+    regularBadChallenge ∈ regularSymbolicBadChallenges regularBadDomain regularBadFirstWord
+      regularBadSecondWord (algebraMap ℚ AlgebraicClosureField) regularBadEquation 1 2 ∧
+    (regularSymbolicBadChallenges regularBadDomain regularBadFirstWord regularBadSecondWord
+      (algebraMap ℚ AlgebraicClosureField) regularBadEquation 1 2).Finite := by
+  constructor
+  · exact regularBadChallenge_mem
+  · exact regularSymbolicBadChallenges_finite regularBadDomain regularBadFirstWord
+      regularBadSecondWord (algebraMap ℚ AlgebraicClosureField) regularBadEquation
+      1 1 1 2 1 0 (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+      (by norm_num) regularBadEquation_weightedDegree regularBadEquation_height regularBadBinomial
 
 end
 

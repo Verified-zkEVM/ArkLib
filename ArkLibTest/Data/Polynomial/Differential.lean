@@ -1436,6 +1436,24 @@ example :
   let f : ZMod 2 →+* AlgebraicClosure (ZMod 2) := algebraMap _ _
   exact exists_forall_jetEvaluation_ne_zero_map f f.injective Q {0} 0 hregular
 
+/-- Two distinct regular equations admit a common Taylor center. -/
+example :
+    let D : Fin 2 → DifferentialPolynomial ℚ 0 :=
+      fun i ↦ C (if i = 0 then (1 : ℚ) else 2)
+    D 0 ≠ D 1 ∧ ∃ center : ℚ, ∀ i ∈ Finset.univ,
+      jetEvaluation (D i) center (polynomialJet center (0 : Polynomial ℚ)) ≠ 0 := by
+  intro D
+  constructor
+  · intro h
+    have h' : MvPolynomial.C (σ := JetVariable 0) (1 : ℚ) =
+        MvPolynomial.C (σ := JetVariable 0) 2 := by simpa [D] using h
+    have h'' : (1 : ℚ) = 2 := (MvPolynomial.C_inj ℚ 1 2).mp h'
+    norm_num at h''
+  · apply exists_forall_jetEvaluation_ne_zero_of_family Finset.univ D (fun _ ↦ 0)
+    intro i hi
+    fin_cases i <;>
+      simp [D, differentialSpecialization, differentialSpecializationHom]
+
 example :
     ∃ exceptional : Finset ℚ, exceptional.card ≤ 1 ∧ 0 ∈ exceptional := by
   let Q : DifferentialPolynomial (Polynomial ℚ) 0 := MvPolynomial.C Polynomial.X
