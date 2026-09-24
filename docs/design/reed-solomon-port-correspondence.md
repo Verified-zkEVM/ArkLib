@@ -215,6 +215,12 @@ polynomial `P`, and each divisibility needs agreement only at its own point. The
 the source form. The rank bound and the interpolant use `LinearMap.finrank_range_pi_le_sum` and
 `LinearMap.exists_ne_zero_map_eq_zero_of_finrank_range_lt` from P3 slice 10.
 
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder/ListBound.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/FirstOrder/SharpListBound.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`firstOrder_finite_agreement_solutions_card_le_tight` → `firstOrder_finite_agreement_solutions_card_le_tight_of_exponent` adds a bound for any sufficient Taylor exponent. `firstOrder_finite_agreement_solutions_card_le_tight` → `firstOrder_finite_agreement_solutions_card_le_tight`, `firstOrder_finite_agreement_solutions_card_le_sharp` → `firstOrder_finite_agreement_solutions_card_le_sharp`, `finite_firstOrder_list_bound_of_heightSlotCount_sharp` → `finite_firstOrder_list_bound_of_heightSlotCount_sharp`, and `finite_firstOrder_list_bound_of_shiftedHeightSlotCount_tight` → `finite_firstOrder_list_bound_of_shiftedHeightSlotCount_tight` all drop `K ≤ n` and express finite-domain agreement with the equivalent `Set.ncard` condition. The source-named tight bounds retain exponent `2 * K - 3`. No declarations were omitted.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder/Profile.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/FirstOrder/Profile.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
