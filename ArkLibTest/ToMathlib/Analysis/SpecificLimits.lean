@@ -9,7 +9,8 @@ import ArkLib.ToMathlib.Analysis.SpecificLimits.GeometricBounds
 /-!
 # Concrete geometric and exponential bounds
 
-Finite geometric sums, exponential ratio bounds, a power estimate, and a natural ceiling bound.
+Finite geometric sums, exponential ratio bounds, agreement-gap estimates, a power estimate, and a
+natural ceiling bound.
 -/
 
 open Finset
@@ -47,3 +48,19 @@ example : (1 + 1 : ℝ) ^ 2 ≤ 1 ^ 2 * Real.exp (2 * (1 / 1)) := by
 example : ((1 ⌈/⌉ 3 : ℕ) : ℚ) = 1 ∧ ((1 ⌈/⌉ 3 : ℕ) : ℚ) ≤ 1 / 3 + 1 := by
   refine ⟨by norm_num [Nat.ceilDiv_eq_add_pred_div], ?_⟩
   exact_mod_cast Nat.cast_ceilDiv_le_div_add_one (K := ℚ) 1 3
+
+/-- For `n = K = A = 2`, a gap of `1/2` bounds the geometric ratio by `16`. -/
+example :
+    ((2 * (1 + 2 * 2 * (2 - 1)) : ℕ) : ℝ) / ((2 - 1 + 1 : ℕ) : ℝ) ≤
+      (2 * 2 / (1 / 2 : ℝ)) * 2 := by
+  apply agreementGap_geometricRatio_le (F := ℝ) (n := 2) (k := 1) (A := 2) (K := 2)
+    (ν := 2) (δ := 1 / 2)
+  all_goals norm_num
+
+/-- A rational count of `20` meets the geometric premise and the resulting real bound. -/
+example :
+    (20 : ℝ) ≤ 4 * (1 : ℝ) ^ 2 * (4 * 1 / (1 / 2 : ℝ)) ^ 1 * 2 ^ 1 := by
+  have h := geometricCount_le_of_agreementGap (F := ℝ) (n := 2) (k := 1) (A := 2) (K := 2)
+    (ν := 2) (m := 1) (d := 1) (L := 20) (δ := 1 / 2) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+  norm_num at h ⊢
