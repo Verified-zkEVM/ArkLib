@@ -277,3 +277,28 @@ example :
       (⊥ : Ideal (MvPolynomial (Fin 2) ℚ)) ∧ e.degree ≤ 1}.ncard = 3 := by
   rw [← affineHilbertFunction_eq_standard_count, affineHilbertFunction_bot]
   simp
+
+example :
+    let I : Ideal (MvPolynomial (Option (Fin 2)) ℚ) :=
+      Ideal.span {(X (some (0 : Fin 2)) : MvPolynomial (Option (Fin 2)) ℚ)}
+    (affineHilbertPolynomial I).natDegree + (Set.univ : Set (Fin 1)).ncard ≤ 3 := by
+  intro I
+  have hI : ∀ i ∈ (Set.univ : Set (Fin 1)),
+      polynomialCoefficientEvaluation 2 (0 : ℚ) (0 : Polynomial ℚ) ∈ I := by
+    intro _ _
+    simp [polynomialCoefficientEvaluation, I]
+  have hprime : I.IsPrime := by
+    change (Ideal.span {(X (some (0 : Fin 2)) : MvPolynomial (Option (Fin 2)) ℚ)}).IsPrime
+    exact (Ideal.span_singleton_prime (X_ne_zero _)).mpr X_prime
+  have hcard : Nat.card (Option (Fin 2)) = 3 := by simp
+  have hdegree : (affineHilbertPolynomial I).natDegree = 2 := by
+    have h := natDegree_affineHilbertPolynomial_span_singleton_add_one
+      (f := (X (some (0 : Fin 2)) : MvPolynomial (Option (Fin 2)) ℚ))
+      (X_ne_zero _) hprime.ne_top
+    have h' : (affineHilbertPolynomial I).natDegree + 1 = 3 := by
+      simpa [I, hcard] using h
+    omega
+  have hdim : 1 < (affineHilbertPolynomial I).natDegree := by rw [hdegree]; omega
+  simpa using natDegree_affineHilbertPolynomial_add_ncard_le_of_polynomialCoefficientEvaluation
+    (⟨fun _ ↦ (0 : ℚ), fun _ _ _ ↦ Subsingleton.elim _ _⟩ : Fin 1 ↪ ℚ)
+    (fun _ ↦ (0 : Polynomial ℚ)) Set.univ hI hdim

@@ -55,8 +55,8 @@ of the equations at distinct points `α i`: if `c` of them lie in `P`, then
   a positive-dimensional ideal contains at most `m - natDegree P_P` fixed evaluation equations at
   distinct points.
 * `MvPolynomial.natDegree_affineHilbertPolynomial_add_ncard_le_of_polynomialCoefficientEvaluation`:
-  a positive-dimensional ideal has an affine dimension bound from any finite set of polynomial
-  evaluation equations it contains.
+  an ideal of dimension greater than one has an affine dimension bound from any finite set of
+  polynomial evaluation equations it contains.
 -/
 
 @[expose] public section

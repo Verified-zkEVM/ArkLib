@@ -630,12 +630,13 @@ private theorem componentFiniteAgreement
         aeval x (jointInitialJetSeparant (0 : ComponentField)
           (componentEquation (E := ComponentField))) ≠ 0 ∧ x ∉ excluded ∧
         1 ≤ {i | aeval x (cuts i) = 0}.ncard}
-    T.Finite := by
+    T.Finite ∧ (T.ncard : ℚ) ≤ affineDegree P *
+      hybridDimensionSensitiveIncidenceProduct 1 1 1 1 b (affineHilbertPolynomial P).natDegree := by
   exact (finite_symbolicSource_agreementLocus_off_excluded_and_ncard_le_hybrid_of_exponent
     (center := (0 : ComponentField)) (Q := componentEquation (E := ComponentField))
     (K := 2) (k := 1) (n := 1) (τ := 2) (L := 1) (A := 1) (b := b)
     (by intro l; omega) (by omega) (by omega) (by omega) (by omega)
-    P hP hhigh α f g hdeg excluded hterminal).1
+    P hP hhigh α f g hdeg excluded hterminal)
 
 private abbrev firstOrderChartEquation : DifferentialPolynomial ComponentField 1 :=
   MvPolynomial.X (Fin.last 1)
@@ -1012,22 +1013,27 @@ example :
     firstOrderSourceIdeal_isPrime firstOrderSourceSeparant_notMem firstOrderSourceHigh
     firstOrderTestPoints
     (fun _ ↦ 0)
+  have hline := symbolicSource_dimensionSensitive_component_of_exponent
+    (center := (0 : ComponentField)) (Q := firstOrderSourceEquation) (K := 2) (k := 1)
+    (n := 1) (τ := 2) hτ (by omega) (by omega) firstOrderSourceIdeal
+    firstOrderSourceIdeal_isPrime firstOrderSourceSeparant_notMem firstOrderSourceHigh
+    firstOrderTestPoints (fun _ ↦ 0) (fun _ ↦ 0)
   have hfirst := firstOrder_symbolicSource_dimensionSensitive_component_of_exponent
     (center := (0 : ComponentField)) (Q := firstOrderSourceEquation) (K := 2) (n := 1)
     (τ := 2) hτ (by omega) firstOrderSourceIdeal firstOrderSourceIdeal_isPrime
     firstOrderSourceSeparant_notMem firstOrderSourceHigh firstOrderTestPoints
     (fun _ ↦ 0) (fun _ ↦ 0)
-  rcases hsource with ⟨_, hsourceCuts⟩
-  have hsourceZero := hsourceCuts (by rw [firstOrderSourceIdeal_degree]; omega)
+  have hlineZero := hline.2 (by rw [firstOrderSourceIdeal_degree]; omega)
   have hfirstZero := hfirst.2 (by rw [firstOrderSourceIdeal_degree]; omega)
   have hsourceTotal :
       (affineHilbertPolynomial firstOrderSourceIdeal).natDegree +
         {i : Fin 1 | firstOrderSourceCut i ∈ firstOrderSourceIdeal}.ncard ≤ 2 := by
-    rw [firstOrderSourceIdeal_degree]
     have hcount : {i : Fin 1 | firstOrderSourceCut i ∈ firstOrderSourceIdeal}.ncard ≤ 0 := by
-      rw [firstOrderSourceIdeal_degree] at hsourceZero
-      simpa [firstOrderSourceCut, firstOrderTestPoints] using hsourceZero
-    exact Nat.add_le_add_left hcount _
+      rw [firstOrderSourceIdeal_degree] at hlineZero
+      simpa [firstOrderSourceCut, firstOrderTestPoints] using hlineZero
+    have hcountZero := Nat.eq_zero_of_le_zero hcount
+    rw [hcountZero, Nat.add_zero]
+    exact hsource.1
   have hfirstCount :
       {i : Fin 1 | firstOrderSourceCut i ∈ firstOrderSourceIdeal}.ncard = 0 := by
     simpa [firstOrderSourceCut, firstOrderTestPoints] using hfirstZero
@@ -1050,9 +1056,11 @@ example :
           (componentEquation (E := ComponentField))) ≠ 0 ∧
         x ∉ (∅ : Set (Option (Fin 1) → ComponentField)) ∧
         1 ≤ {i | aeval x (cuts i) = 0}.ncard}
-    T.Finite ∧ T.Nonempty := by
-  intro P α f g cuts T
-  let b := (cuts 0).totalDegree
+    let b := (cuts 0).totalDegree
+    T.Finite ∧ (T.ncard : ℚ) ≤ affineDegree P *
+      hybridDimensionSensitiveIncidenceProduct 1 1 1 1 b
+        (affineHilbertPolynomial P).natDegree ∧ T.Nonempty := by
+  intro P α f g cuts T b
   have hdeg : ∀ i, (cuts i).totalDegree ≤ b := by
     intro i
     have hi : i = 0 := Subsingleton.elim _ _
@@ -1060,7 +1068,7 @@ example :
     exact Nat.le_refl _
   have hfinite := componentFiniteAgreement P componentPointIdeal_isPrime
     componentPointHigh α f g b hdeg ∅ (componentPointTerminal α f g)
-  refine ⟨hfinite, ?_⟩
+  refine ⟨hfinite.1, hfinite.2, ?_⟩
   refine ⟨componentOrigin, ?_⟩
   have hzero : componentOrigin ∈ zeroLocus ComponentField P := by
     rw [mem_zeroLocus_iff]
