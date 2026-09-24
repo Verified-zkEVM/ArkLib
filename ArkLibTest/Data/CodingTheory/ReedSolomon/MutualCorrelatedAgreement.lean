@@ -1474,5 +1474,18 @@ example : LineExactAgreementBound pointDomain 1 1 0 := by
     ext i
     fin_cases i
     simp [commonCurveAgreementSet, pointDomain]
+
+/-- Exact power agreement for zero words yields an exact correlated pair. -/
+example : HasExactCorrelatedPair pointDomain (fun _ ↦ (0 : ZMod 2)) (fun _ ↦ 0)
+    (RingHom.id (ZMod 2)) 1 0 0 := by
+  apply exactCorrelatedPair_of_powerAgreement_one pointDomain
+    ![fun _ ↦ (0 : ZMod 2), fun _ ↦ 0] (RingHom.id (ZMod 2)) 0 0
+  refine ⟨![0, 0], ?_, ?_, ?_⟩
+  · intro t
+    fin_cases t <;> simp
+  · simp [powerBatchedPolynomial]
+  · ext i
+    fin_cases i
+    simp [powerBatchedWord, commonCurveAgreementSet, pointDomain]
 end
 end ReedSolomon.GraphLineComponentTest
