@@ -48,6 +48,7 @@ interleaved statements are in `ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.
 * `ReedSolomon.powerBatchedWord`, `ReedSolomon.powerBatchedPolynomial`: batching of received
   words and of message polynomials.
 * `ReedSolomon.commonCurveAgreementSet`: coordinates where every `P t` agrees with `w t`.
+* `ReedSolomon.polynomialTupleFamily`: the interpolant tuples on `k`-element samples.
 * `ReedSolomon.powerBatchedCoordinate`: a coordinate vector as a polynomial in the challenge.
 * `ReedSolomon.frobeniusPowerCoordinate`: a coordinate vector with challenge exponents scaled
   by a natural number.
@@ -66,6 +67,10 @@ interleaved statements are in `ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.
 * `ReedSolomon.exists_exceptional_powerBatched_agreement` and
   `ReedSolomon.exists_exceptional_powerBatched_family`: outside at most `ℓ * (|ι| - L)`
   challenges per tuple, the agreement set of the batched polynomial is the common agreement set.
+* `ReedSolomon.mem_polynomialTupleFamily_iff` and
+  `ReedSolomon.mem_polynomialTupleFamily_of_commonAgreement`:
+  the degree and common-agreement characterization of the interpolant family.
+* `ReedSolomon.polynomialTupleFamily_card_le`: the sample-size bound for the interpolant family.
 * `ReedSolomon.exists_polynomialGraph_of_sample`: a sample of `k` coordinates determines every
   batched polynomial of degree below `k` that agrees with the batched word on it, over every
   extension field.
@@ -284,6 +289,70 @@ end Discrepancy
 section Interpolation
 
 variable {F ι : Type*} [Field F] {ℓ : ℕ}
+
+/-- The finite family of tuples interpolated from received values on a common sample. -/
+def polynomialTupleFamily [Fintype ι] [DecidableEq ι] [DecidableEq F]
+    (domain : ι ↪ F) (w : Fin (ℓ + 1) → ι → F) (k : ℕ) :
+    Finset (Fin (ℓ + 1) → F[X]) := by
+  classical
+  exact (Finset.univ.powersetCard k).image fun sample t ↦
+    Lagrange.interpolate sample domain (w t)
+
+/-- A degree-bounded tuple with at least `k` common agreements belongs to the interpolation
+family. -/
+theorem mem_polynomialTupleFamily_of_commonAgreement [Fintype ι] [DecidableEq ι]
+    [DecidableEq F] (domain : ι ↪ F) (w : Fin (ℓ + 1) → ι → F)
+    (P : Fin (ℓ + 1) → F[X]) (k : ℕ)
+    (hdegree : ∀ t, (P t).degree < k)
+    (hcommon : k ≤ (commonCurveAgreementSet domain w P).card) :
+    P ∈ polynomialTupleFamily domain w k := by
+  classical
+  obtain ⟨sample, hsub, hcard⟩ := Finset.exists_subset_card_eq hcommon
+  have hinj : Set.InjOn domain sample := domain.injective.injOn
+  apply Finset.mem_image.mpr
+  refine ⟨sample, Finset.mem_powersetCard.mpr ⟨Finset.subset_univ _, hcard⟩, ?_⟩
+  funext t
+  apply Polynomial.eq_of_degrees_lt_of_eval_index_eq sample hinj
+  · exact Lagrange.degree_interpolate_lt (w t) hinj
+  · simpa only [hcard] using hdegree t
+  · intro i hi
+    rw [Lagrange.eval_interpolate_at_node (w t) hinj hi]
+    have himem := hsub hi
+    simp only [commonCurveAgreementSet, Finset.mem_filter, Finset.mem_univ,
+      true_and] at himem
+    exact (himem t).symm
+
+/-- The interpolation family has at most one tuple for each `k`-element sample. -/
+theorem polynomialTupleFamily_card_le [Fintype ι] [DecidableEq ι] [DecidableEq F]
+    (domain : ι ↪ F) (w : Fin (ℓ + 1) → ι → F) (k : ℕ) :
+    (polynomialTupleFamily domain w k).card ≤ (Fintype.card ι).choose k := by
+  classical
+  exact Finset.card_image_le.trans_eq (by simp)
+
+/-- The interpolation family consists exactly of degree-bounded tuples with at least `k` common
+agreements. -/
+theorem mem_polynomialTupleFamily_iff [Fintype ι] [DecidableEq ι] [DecidableEq F]
+    (domain : ι ↪ F) (w : Fin (ℓ + 1) → ι → F)
+    (P : Fin (ℓ + 1) → F[X]) (k : ℕ) :
+    P ∈ polynomialTupleFamily domain w k ↔
+      (∀ t, (P t).degree < k) ∧ k ≤ (commonCurveAgreementSet domain w P).card := by
+  classical
+  constructor
+  · intro hP
+    obtain ⟨sample, hsample, rfl⟩ := Finset.mem_image.mp hP
+    have hcard := (Finset.mem_powersetCard.mp hsample).2
+    have hinj : Set.InjOn domain sample := domain.injective.injOn
+    constructor
+    · intro t
+      simpa only [hcard] using Lagrange.degree_interpolate_lt (w t) hinj
+    · rw [← hcard]
+      apply Finset.card_le_card
+      intro i hi
+      simp only [commonCurveAgreementSet, Finset.mem_filter, Finset.mem_univ, true_and]
+      intro t
+      exact Lagrange.eval_interpolate_at_node (w t) hinj hi
+  · rintro ⟨hdegree, hcommon⟩
+    exact mem_polynomialTupleFamily_of_commonAgreement domain w P k hdegree hcommon
 
 /-- Interpolating each word `w t` on a finite sample set gives polynomials `P t` of degree below
 any `k ≥ samples.card` that agree with every `w t` on the samples. -/

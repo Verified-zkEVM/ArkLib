@@ -5,11 +5,13 @@ Authors: Quang Dao
 -/
 
 import ArkLib.Data.CodingTheory.ReedSolomon.PowerAgreement.ConstantCode
+import ArkLib.Data.CodingTheory.ReedSolomon.PowerAgreement
 
 /-!
 # Constant-code power-agreement acceptance tests
 
-A concrete two-point example attains the exceptional-challenge bound for constant messages.
+A concrete two-point example attains the exceptional-challenge bound for constant messages, and a
+sample-interpolated tuple belongs to the finite family.
 -/
 
 open Polynomial ReedSolomon
@@ -43,3 +45,28 @@ example : ¬ UniformExactPowerAgreement domain2 swapWords 1 2 0 ∧
   · simpa using uniformExactPowerAgreement_constantCode domain2 swapWords 2
 
 end ConstantCodeTest
+
+namespace InterpolationFamilyTest
+
+open Polynomial ReedSolomon
+
+def domain2 : Fin 2 ↪ ℚ :=
+  ⟨fun i ↦ ((i : ℕ) : ℚ), fun _ _ h ↦ Fin.ext (Nat.cast_injective (R := ℚ) h)⟩
+
+def words : Fin 2 → Fin 2 → ℚ := ![![0, 1], ![1, 0]]
+
+noncomputable def tuple : Fin 2 → ℚ[X] := ![0, 1]
+
+example : tuple ∈ polynomialTupleFamily domain2 words 1 ∧
+    (polynomialTupleFamily domain2 words 1).card ≤ 2 := by
+  have hcommon : commonCurveAgreementSet domain2 words tuple = {0} := by
+    ext i
+    fin_cases i <;> simp [commonCurveAgreementSet, words, tuple, domain2]
+  have hdegree : ∀ t, (tuple t).degree < 1 := by
+    intro t
+    fin_cases t <;> simp [tuple]
+  refine ⟨(mem_polynomialTupleFamily_iff domain2 words tuple 1).2
+    ⟨hdegree, by rw [hcommon]; simp⟩, ?_⟩
+  simpa using (polynomialTupleFamily_card_le domain2 words 1)
+
+end InterpolationFamilyTest

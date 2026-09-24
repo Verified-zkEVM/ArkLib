@@ -904,4 +904,147 @@ theorem card_le_of_agreement_off_excluded_sharp_of_iteratedRetainedCutFamily [Fi
     hterminal S hS hA
   rwa [incidenceProduct_const] at this
 
+/-- Agreement incidence on a hypersurface inside a prime variety. Let `P` be a prime of
+dimension `d + 1`, and let `g` cut it properly. If every positive-dimensional prime above `P`
+containing `g` and the fixed equations, while avoiding `s`, is excluded once it contains `L`
+agreement equations, then the finite set of points of `V(P)` on `g = 0`, outside the excluded
+locus and agreeing with at least `A` equations, has size at most
+`baseDegree * initialDegree * ((n * B / (A - L + 1)) ^ d)`. Here `baseDegree` bounds the affine
+degree of `P`, `initialDegree` bounds `g`, and `B` bounds the fixed and agreement equations. -/
+theorem card_le_of_agreement_off_excluded_of_principalCut [Finite σ] [Fintype ι]
+    {P : Ideal (MvPolynomial σ k)} [hP : P.IsPrime] {d baseDegree initialDegree B A L : ℕ}
+    (hdim : (affineHilbertPolynomial P).natDegree = d + 1)
+    (hbaseDegree : affineDegree P ≤ (baseDegree : ℚ)) (g s : MvPolynomial σ k)
+    (hgP : g ∉ P) (hgDegree : g.totalDegree ≤ initialDegree) (hB : 0 < B)
+    (highCuts : List (MvPolynomial σ k)) (hhigh : ∀ f ∈ highCuts, f.totalDegree ≤ B)
+    (cuts : ι → MvPolynomial σ k) (hcuts : ∀ i, (cuts i).totalDegree ≤ B)
+    (hL : 0 < L) (hLA : L ≤ A) (hAn : A ≤ Fintype.card ι)
+    (excluded : Set (σ → K))
+    (hterminal : ∀ Q : Ideal (MvPolynomial σ k), P ≤ Q → Q.IsPrime → s ∉ Q →
+      g ∈ Q → (∀ f ∈ highCuts, f ∈ Q) → 0 < (affineHilbertPolynomial Q).natDegree →
+      L ≤ {i | cuts i ∈ Q}.ncard →
+      {x : σ → K | x ∈ zeroLocus K Q ∧ aeval x s ≠ 0} ⊆ excluded)
+    (S : Finset (σ → K))
+    (hS : ∀ x ∈ S, x ∈ zeroLocus K P ∧ aeval x g = 0 ∧ aeval x s ≠ 0 ∧
+      (∀ f ∈ highCuts, aeval x f = 0) ∧ x ∉ excluded)
+    (hA : ∀ x ∈ S, A ≤ {i | aeval x (cuts i) = 0}.ncard) :
+    (#S : ℚ) ≤ (baseDegree : ℚ) * initialDegree *
+      ((((Fintype.card ι * B : ℕ) : ℚ) / ((A - L + 1 : ℕ) : ℚ)) ^ d) := by
+  classical
+  let T₀ := (P ⊔ Ideal.span {g}).retainedMinimalPrimes s
+  let T := Ideal.iteratedRetainedCutFamily T₀ s highCuts
+  let t : ℚ := (Fintype.card ι : ℚ) / ((A - L + 1 : ℕ) : ℚ)
+  have hden : 0 < A - L + 1 := by omega
+  have hdenn : A - L + 1 ≤ Fintype.card ι := by omega
+  have ht : 1 ≤ t := by
+    apply (le_div_iff₀ (by exact_mod_cast hden)).2
+    simpa only [one_mul] using
+      (show ((A - L + 1 : ℕ) : ℚ) ≤ (Fintype.card ι : ℚ) by exact_mod_cast hdenn)
+  have hratio : ((Fintype.card ι * B : ℕ) : ℚ) / ((A - L + 1 : ℕ) : ℚ) =
+      (B : ℚ) * t := by
+    dsimp only [t]
+    push_cast
+    ring
+  have hT₀prime : ∀ Q ∈ T₀, Q.IsPrime := by
+    intro Q hQ
+    exact (Ideal.mem_retainedMinimalPrimes.mp hQ).1.isPrime
+  have hT₀dim : ∀ Q ∈ T₀, (affineHilbertPolynomial Q).natDegree = d := by
+    intro Q hQ
+    have hQmin : Q ∈ (P ⊔ Ideal.span {g}).minimalPrimes :=
+      (Ideal.mem_retainedMinimalPrimes.mp hQ).1
+    have hpure := principalCut_natDegree_affineHilbertPolynomial_add_one hgP hQmin
+    rw [hdim] at hpure
+    omega
+  have hT₀potential : ∑ Q ∈ T₀, affineDegree Q ≤ (initialDegree : ℚ) * affineDegree P :=
+    principalCut_sum_affineDegree_retainedMinimalPrimes_le s hgP hgDegree
+  have hTpotential :
+      ∑ Q ∈ T, affineDegree Q * (B : ℚ) ^ (affineHilbertPolynomial Q).natDegree ≤
+        (initialDegree : ℚ) * affineDegree P * (B : ℚ) ^ d := by
+    have hiter := sum_affineDegree_mul_pow_iteratedRetainedCutFamily_le hT₀prime s hhigh
+    calc
+      _ ≤ ∑ Q ∈ T₀, affineDegree Q * (B : ℚ) ^
+          (affineHilbertPolynomial Q).natDegree := hiter
+      _ = (∑ Q ∈ T₀, affineDegree Q) * (B : ℚ) ^ d := by
+        rw [Finset.sum_mul]
+        apply Finset.sum_congr rfl
+        intro Q hQ
+        rw [hT₀dim Q hQ]
+      _ ≤ (initialDegree : ℚ) * affineDegree P * (B : ℚ) ^ d := by
+        exact mul_le_mul_of_nonneg_right hT₀potential (by positivity)
+  have hTdim : ∀ Q ∈ T, (affineHilbertPolynomial Q).natDegree ≤ d := by
+    intro Q hQ
+    obtain ⟨Q₀, hQ₀, hQ₀Q, -⟩ := Ideal.exists_le_of_mem_iteratedRetainedCutFamily hQ
+    exact (natDegree_affineHilbertPolynomial_le_of_le hQ₀Q).trans (hT₀dim Q₀ hQ₀).le
+  have hTprime : ∀ Q ∈ T, Q.IsPrime := by
+    intro Q hQ
+    exact Ideal.isPrime_of_mem_iteratedRetainedCutFamily hT₀prime s highCuts hQ
+  have hcover : ∀ x ∈ S, ∃ Q ∈ T, x ∈ zeroLocus K Q := by
+    intro x hx
+    have hxP : x ∈ zeroLocus K (P ⊔ Ideal.span {g}) := by
+      exact mem_zeroLocus_sup_span_singleton_iff.mpr
+        ⟨(hS x hx).1, (hS x hx).2.1⟩
+    obtain ⟨Q₀, hQ₀, hxQ₀⟩ :=
+      exists_retainedMinimalPrime_of_mem_zeroLocus _ s x hxP (hS x hx).2.2.1
+    obtain ⟨Q, hQ, -, hxQ⟩ :=
+      exists_mem_iteratedRetainedCutFamily_of_mem_zeroLocus hQ₀ hxQ₀
+        (hS x hx).2.2.1 (hS x hx).2.2.2.1
+    exact ⟨Q, hQ, hxQ⟩
+  have hterminal' : ∀ Q ∈ T, ∀ J : Ideal (MvPolynomial σ k), Q ≤ J → J.IsPrime →
+      s ∉ J → 0 < (affineHilbertPolynomial J).natDegree →
+      L ≤ {i | cuts i ∈ J}.ncard →
+      {x : σ → K | x ∈ zeroLocus K J ∧ aeval x s ≠ 0} ⊆ excluded := by
+    intro Q hQ J hQJ hJ hsJ hdJ hcutsJ
+    obtain ⟨Q₀, hQ₀, hQ₀Q, hhighQ⟩ := Ideal.exists_le_of_mem_iteratedRetainedCutFamily hQ
+    have hQmin := (Ideal.mem_retainedMinimalPrimes.mp hQ₀).1
+    have hQmin' := Ideal.mem_minimalPrimesFinset.mp (Ideal.mem_minimalPrimesFinset.mpr hQmin)
+    have hPQ₀ : P ≤ Q₀ := le_sup_left.trans hQmin'.1.2
+    have hgQ₀ : g ∈ Q₀ :=
+      hQmin'.1.2 (Ideal.mem_sup_right (Ideal.mem_span_singleton_self g))
+    exact hterminal J (hPQ₀.trans (hQ₀Q.trans hQJ)) hJ hsJ
+      (hQJ (hQ₀Q hgQ₀)) (fun f hf ↦ hQJ (hhighQ f hf)) hdJ hcutsJ
+  have hbound := card_le_sum_of_agreement_off_excluded T hTprime s cuts hcuts hLA excluded
+    (fun Q hQ J hQJ hJ hsJ hdJ hcutsJ ↦ hterminal' Q hQ J hQJ hJ hsJ hdJ hcutsJ)
+    S (fun x hx ↦ ⟨hcover x hx, (hS x hx).2.2.1, (hS x hx).2.2.2.2⟩) hA
+  have hcomponent (Q : Ideal (MvPolynomial σ k)) (hQ : Q ∈ T) :
+      (((S : Set (σ → K)) ∩ zeroLocus K Q).ncard : ℚ) ≤
+        affineDegree Q * (B : ℚ) ^ (affineHilbertPolynomial Q).natDegree * t ^ d := by
+    have hq := hTprime Q hQ
+    have hi := card_le_of_agreement_off_excluded s cuts hcuts hLA excluded
+      (fun J hQJ hJ hsJ hdJ hcutsJ ↦ hterminal' Q hQ J hQJ hJ hsJ hdJ hcutsJ)
+      (S.filter (· ∈ zeroLocus K Q))
+      (fun x hx ↦ by
+        rw [Finset.mem_filter] at hx
+        exact ⟨hx.2, (hS x hx.1).2.2.1, (hS x hx.1).2.2.2.2⟩)
+      (fun x hx ↦ hA x (Finset.mem_filter.mp hx).1)
+    rw [hratio, mul_pow, ← mul_assoc] at hi
+    rw [show (S : Set (σ → K)) ∩ zeroLocus K Q =
+      (S : Set (σ → K)) ∩ {x | x ∈ zeroLocus K Q} from rfl, ncard_coe_inter_setOf]
+    exact hi.trans (mul_le_mul_of_nonneg_left
+      (pow_le_pow_right₀ ht (hTdim Q hQ))
+      (mul_nonneg (affineDegree_nonneg Q) (by positivity)))
+  calc
+    (#S : ℚ) ≤ ∑ Q ∈ T, (((S : Set (σ → K)) ∩ zeroLocus K Q).ncard : ℚ) := by
+      exact card_le_sum_of_forall_mem_zeroLocus T
+        (fun Q ↦ (((S : Set (σ → K)) ∩ zeroLocus K Q).ncard : ℚ)) S hcover
+        (fun _ _ ↦ le_rfl)
+    _ ≤ ∑ Q ∈ T,
+        affineDegree Q * (B : ℚ) ^ (affineHilbertPolynomial Q).natDegree * t ^ d :=
+      Finset.sum_le_sum hcomponent
+    _ = (∑ Q ∈ T, affineDegree Q * (B : ℚ) ^
+        (affineHilbertPolynomial Q).natDegree) * t ^ d := by rw [Finset.sum_mul]
+    _ ≤ ((initialDegree : ℚ) * affineDegree P * (B : ℚ) ^ d) * t ^ d :=
+      mul_le_mul_of_nonneg_right hTpotential (by positivity)
+    _ ≤ (baseDegree : ℚ) * initialDegree * ((B : ℚ) * t) ^ d := by
+      calc
+        _ = ((initialDegree : ℚ) * affineDegree P) * ((B : ℚ) * t) ^ d := by
+          rw [mul_pow]
+          ring
+        _ ≤ ((initialDegree : ℚ) * (baseDegree : ℚ)) * ((B : ℚ) * t) ^ d :=
+          mul_le_mul_of_nonneg_right
+            (mul_le_mul_of_nonneg_left hbaseDegree (by positivity)) (by positivity)
+        _ = (baseDegree : ℚ) * initialDegree * ((B : ℚ) * t) ^ d := by ring
+    _ = (baseDegree : ℚ) * initialDegree *
+        ((((Fintype.card ι * B : ℕ) : ℚ) / ((A - L + 1 : ℕ) : ℚ)) ^ d) := by
+      rw [← hratio]
+
 end MvPolynomial
