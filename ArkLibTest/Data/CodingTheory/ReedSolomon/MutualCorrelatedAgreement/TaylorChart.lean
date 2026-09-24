@@ -11,6 +11,8 @@ import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TaylorChart.ExceptionalChallenges
 import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TaylorChart.RegularEquation
+import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TaylorChart.DerivativeTupleCounting
 import Mathlib.Algebra.Field.ZMod
 import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 import Mathlib.Tactic.NormNum
@@ -26,6 +28,7 @@ Taylor-chart recognition.
 
 open MvPolynomial Polynomial
 open PolynomialDifferential
+open ReedSolomon.HiddenDerivative
 
 namespace ReedSolomon
 
@@ -995,6 +998,95 @@ example :
       regularBadSecondWord (algebraMap ℚ AlgebraicClosureField) regularBadEquation
       1 1 1 2 1 0 (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
       (by norm_num) regularBadEquation_weightedDegree regularBadEquation_height regularBadBinomial
+
+private abbrev derivativeTupleEquation :
+    DifferentialPolynomial (Polynomial PairCountingField) 1 :=
+  MvPolynomial.X (some (Fin.last 1))
+
+private abbrev derivativeTuple : Fin 1 → ℚ[X] := fun _ ↦ 0
+
+private abbrev derivativeTupleWords : Fin 1 → Fin 1 → ℚ := fun _ _ ↦ 0
+
+private theorem derivativeTuplePullback_coordinate (j : Fin 2) :
+    chartTuplePullback (algebraMap ℚ PairCountingField) 0 derivativeTuple
+      (MvPolynomial.X (some j)) = 0 := by
+  simp [chartTuplePullback, derivativeTuple, powerBatchedJetGraphMap,
+    powerBatchedJetGraph, powerBatchedCoordinate, polynomialJet]
+
+private theorem derivativeTuplePullback_separant :
+    chartTuplePullback (algebraMap ℚ PairCountingField) 0 derivativeTuple
+      (jointInitialJetSeparant 0 derivativeTupleEquation) = 1 := by
+  simp [chartTuplePullback, jointInitialJetSeparant, initialJetSeparant,
+    derivativeTupleEquation, separant, Fin.last]
+
+private theorem derivativeTupleCommonNumerator_eq (l : Fin 2) :
+    jointCommonTaylorNumerator 0 derivativeTupleEquation 1 l =
+      MvPolynomial.X (some l) := by
+  fin_cases l <;>
+    simp [jointCommonTaylorNumerator, commonTaylorNumeratorOver,
+      rationalTaylorNumeratorOver, initialJetSeparant, derivativeTupleEquation,
+      separant, Fin.last]
+
+private theorem derivativeTupleAdmissible :
+    IsAdmissibleChartTupleAtExponent pointDomain derivativeTupleWords
+      (algebraMap ℚ PairCountingField) 0 derivativeTupleEquation 2 1 1 1 derivativeTuple := by
+  classical
+  refine ⟨?_, ?_, ?_, ?_, ?_, ?_⟩
+  · intro t
+    simp [derivativeTuple]
+  · norm_num [commonCurveAgreementSet, derivativeTupleWords, derivativeTuple, pointDomain]
+  · rw [show jointInitialJetEquation 0 derivativeTupleEquation =
+      MvPolynomial.X (some (1 : Fin 2)) by
+        simp [jointInitialJetEquation, initialJetEquation, derivativeTupleEquation]]
+    exact derivativeTuplePullback_coordinate 1
+  · intro l hl
+    have hl' : l = 1 := Fin.ext (by omega)
+    subst l
+    rw [derivativeTupleCommonNumerator_eq]
+    exact derivativeTuplePullback_coordinate 1
+  · rw [derivativeTuplePullback_separant]
+    norm_num
+  · intro l
+    rw [derivativeTupleCommonNumerator_eq, derivativeTuplePullback_coordinate,
+      derivativeTuplePullback_separant]
+    simp [powerBatchedTaylorCoefficient, powerBatchedCoordinate, derivativeTuple]
+
+/-- The derivative-capped tuple bounds apply to a concrete nonempty admissible family. -/
+example :
+    ({derivativeTuple} : Finset (Fin 1 → ℚ[X])).Nonempty ∧
+      (({derivativeTuple} : Finset (Fin 1 → ℚ[X])).card : ℚ) ≤
+        firstOrderCurveFiberStageOne 2 1 1 1 ∧
+      (admissibleChartTupleFamilyAtExponent pointDomain derivativeTupleWords
+        (algebraMap ℚ PairCountingField) 0 derivativeTupleEquation 2 1 1 1).Nonempty ∧
+      ((admissibleChartTupleFamilyAtExponent pointDomain derivativeTupleWords
+        (algebraMap ℚ PairCountingField) 0 derivativeTupleEquation 2 1 1 1).card : ℚ) ≤
+        firstOrderCurveFiberStageOne 2 1 1 1 := by
+  classical
+  have hτ : TaylorExponentSufficient 1 2 1 := by
+    intro l
+    fin_cases l <;> norm_num [TaylorExponentSufficient]
+  have hjet : derivativeTupleEquation.weightedTotalDegree
+      (fun i ↦ i.elim 0 (fun _ ↦ 1)) ≤ 1 := by
+    norm_num [derivativeTupleEquation, MvPolynomial.weightedTotalDegree,
+      MvPolynomial.support_X]
+  have hderiv : derivativeTupleEquation.degreeOf (some 1) ≤ 1 := by
+    norm_num [derivativeTupleEquation, MvPolynomial.degreeOf_X]
+  have hmem : derivativeTuple ∈ admissibleChartTupleFamilyAtExponent pointDomain
+      derivativeTupleWords (algebraMap ℚ PairCountingField) 0 derivativeTupleEquation 2 1 1 1 :=
+    (mem_admissibleChartTupleFamilyAtExponent_iff pointDomain derivativeTupleWords
+      (algebraMap ℚ PairCountingField) 0 derivativeTupleEquation 2 1 1 1 (by omega)
+      derivativeTuple).2 derivativeTupleAdmissible
+  refine ⟨by simp, ?_, ⟨derivativeTuple, hmem⟩, ?_⟩
+  · have h := admissibleChartTuples_card_le_derivativeCapped_of_exponent
+      pointDomain derivativeTupleWords (algebraMap ℚ PairCountingField) 0
+      derivativeTupleEquation 2 1 1 1 1 1 hτ (by norm_num) (by norm_num) (by norm_num)
+      (by norm_num) (by norm_num) (by norm_num) (by norm_num) hjet hderiv {derivativeTuple}
+      (by simpa using derivativeTupleAdmissible)
+    simpa using h
+  · simpa using admissibleChartTupleFamilyAtExponent_card_le_derivativeCapped
+      pointDomain derivativeTupleWords (algebraMap ℚ PairCountingField) 0
+      derivativeTupleEquation 2 1 1 1 1 1 hτ (by norm_num) (by norm_num) (by norm_num)
+      (by norm_num) (by norm_num) (by norm_num) (by norm_num) hjet hderiv
 
 end
 

@@ -2039,6 +2039,12 @@ Merges `FirstOrder/Squarefree/Bounds.lean` and `FirstOrder/Squarefree/SingularTa
 `r ≤ j` and `A.natDegree = r`, and `singularTail_map_eq_zero_of_common_root` drops both `IsDomain`
 assumptions.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/DerivativeTupleCounting.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/DerivativeTupleCounting.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`admissibleChartTuples_card_le_derivativeCapped_of_exponent` and `admissibleChartTupleFamilyAtExponent_card_le_derivativeCapped` keep their names and conclusions, with the source hypothesis `0 < k` dropped. The bounds transport total and derivative degree bounds through the coefficient-map lemmas and retain the sharp agreement ratio `(n-k+1)/(L-k+1)`. The shared specialization theorem `exists_regularHighCutJetImage_of_admissibleChartTuples` is in `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedGraphCounting.lean`; it gives an equal-cardinality image of regular high-cut Taylor jets with inherited agreement equations.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/ExceptionalChallenges.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/ExceptionalChallenges.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:

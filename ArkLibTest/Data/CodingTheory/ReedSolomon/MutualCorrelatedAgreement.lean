@@ -636,9 +636,7 @@ private abbrev componentTupleDimensionBound : ℚ :=
     (1 + 2 * (jetTotalDegree (componentEquation (E := ComponentField)) - 1) : ℕ) ^ 0 *
       dimensionSensitiveIncidenceProduct 1 1 1 1 0
 
-/-- A regular component yields an admissible tuple whose specialization recognizes the chart
-point; the admissible family contains it and obeys the family and general tuple bounds. -/
-example : ∃ P : Fin 2 → ℚ[X],
+private theorem componentAdmissibleTupleWitness : ∃ P : Fin 2 → ℚ[X],
     IsAdmissibleChartTupleAtExponent domain (fun _ ↦ componentWord)
       (algebraMap ℚ ComponentField) 0 (componentEquation (E := ComponentField)) 2 1 1 2 P ∧
     rationalTaylorPolynomial 0
@@ -676,6 +674,28 @@ example : ∃ P : Fin 2 → ℚ[X],
     (mem_admissibleChartTupleFamilyAtExponent_iff domain _ _ 0 _ 2 1 1 2 (by omega) P).2 hP,
     by simpa [componentAdmissibleTuples, componentTupleDimensionBound] using hfamilyDim,
     by simpa [componentTupleDimensionBound] using hsingleDim⟩
+
+/-- The admissible component tuple gives a nonempty image of regular high-cut jets. -/
+example : ∃ z : ComponentField, ∃ jets : Finset (Fin 1 → ComponentField),
+    jets.Nonempty ∧ jets.card = 1 ∧
+      ∀ jet ∈ jets, aeval jet (initialJetSeparant 0
+        (MvPolynomial.map (Polynomial.evalRingHom z) componentEquation)) ≠ 0 := by
+  obtain ⟨P, hP, _, _, _, _⟩ := componentAdmissibleTupleWitness
+  have hτ : TaylorExponentSufficient 0 2 2 := by
+    intro l
+    fin_cases l <;> omega
+  have htuples : ∀ R ∈ ({P} : Finset (Fin 2 → ℚ[X])),
+      IsAdmissibleChartTupleAtExponent domain (fun _ ↦ componentWord)
+        (algebraMap ℚ ComponentField) 0 componentEquation 2 1 1 2 R := by
+    intro R hR
+    obtain rfl := Finset.mem_singleton.mp hR
+    exact hP
+  obtain ⟨z, jets, _, htupleImage, _, hcard, hS, _⟩ :=
+    exists_regularHighCutJetImage_of_admissibleChartTuples
+      domain (fun _ ↦ componentWord) (algebraMap ℚ ComponentField) 0 componentEquation
+      2 1 1 2 hτ (by omega) {P} htuples
+  exact ⟨z, jets, ⟨chartTupleJet (algebraMap ℚ ComponentField) 0 z P,
+      htupleImage P (by simp)⟩, by simpa using hcard, fun jet hjet ↦ (hS jet hjet).2.1⟩
 
 local instance : DecidableEq ComponentField := Classical.decEq _
 
