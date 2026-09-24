@@ -83,6 +83,33 @@ example :
   rw [hvalue, totalDegree_X_pow] at hbound ⊢
   exact ⟨hbound, rfl⟩
 
+/-- A nonconstant mapped coefficient contributes to a weighted cleared-substitution bound. -/
+example :
+    weightedTotalDegree (fun _ : Unit ↦ 2)
+      (clearedSubstitution
+        (Polynomial.aeval (X () : MvPolynomial Unit ℚ)).toRingHom
+        (1 : MvPolynomial Unit ℚ) (fun _ : Unit ↦ 1) (fun _ ↦ 0) 0
+        (C (Polynomial.X : Polynomial ℚ) : MvPolynomial Unit (Polynomial ℚ))) ≤ 2 := by
+  apply weightedTotalDegree_clearedSubstitution_le_of_coeff
+    (f := (Polynomial.aeval (X () : MvPolynomial Unit ℚ)).toRingHom)
+    (S := (1 : MvPolynomial Unit ℚ)) (N := fun _ : Unit ↦ 1)
+    (d := fun _ ↦ 0) (e := fun _ ↦ 0) (w := fun _ : Unit ↦ 2)
+    (H := 0) (b := 0) (v := 2)
+    (Q := C (Polynomial.X : Polynomial ℚ))
+  · rw [← C_1, weightedTotalDegree_C]
+  · intro i
+    rw [← C_1, weightedTotalDegree_C]
+  · intro m hm
+    simp [Finsupp.weight_apply]
+  · intro m hm
+    classical
+    have hm0 : m = 0 := by
+      have hm' := hm
+      rw [support_C, ite_eq_right Polynomial.X_ne_zero] at hm'
+      exact Finset.mem_singleton.mp hm'
+    subst m
+    simp [weightedTotalDegree, support_X, Finsupp.weight_single]
+
 /-! ### Complete homogeneous polynomials -/
 
 /-- The power-sum identity evaluates `h₂(1, 2)` to `7`. -/

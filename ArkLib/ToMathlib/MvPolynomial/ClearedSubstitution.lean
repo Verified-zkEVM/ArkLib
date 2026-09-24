@@ -113,15 +113,6 @@ theorem map_clearedSubstitution (f : F →+* R) (φ : R →+* E) (S : R)
   rw [mul_assoc, he]
   ring
 
-private theorem weightedTotalDegree_finsetSum_le {K σ ι : Type*} [CommSemiring K]
-    (w : σ → ℕ) (s : Finset ι) (P : ι → MvPolynomial σ K) (d : ℕ)
-    (hP : ∀ i ∈ s, (P i).weightedTotalDegree w ≤ d) :
-    (∑ i ∈ s, P i).weightedTotalDegree w ≤ d := by
-  classical
-  unfold MvPolynomial.weightedTotalDegree
-  exact AddMonoidAlgebra.supDegree_sum_le.trans
-    (Finset.sup_le fun i hi ↦ hP i hi)
-
 /-- A weighted-degree bound for a cleared numerator from weighted bounds on its inputs. -/
 theorem weightedTotalDegree_clearedSubstitution_le_of_coeff {A K σ : Type*} [CommSemiring A]
     [CommSemiring K] (f : A →+* MvPolynomial σ K) (S : MvPolynomial σ K)
@@ -135,10 +126,10 @@ theorem weightedTotalDegree_clearedSubstitution_le_of_coeff {A K σ : Type*} [Co
     (clearedSubstitution f S N d H Q).weightedTotalDegree w ≤ H * b + v := by
   classical
   rw [clearedSubstitution]
-  refine weightedTotalDegree_finsetSum_le w Q.support
-    (fun m ↦ f (Q.coeff m) * (∏ i ∈ m.support, N i ^ m i) *
-      S ^ (H - Finsupp.weight d m)) (H * b + v) ?_
-  intro m hm
+  refine AddMonoidAlgebra.supDegree_sum_le.trans ?_
+  refine Finset.sup_le fun m hm ↦ ?_
+  change (f (Q.coeff m) * (∏ i ∈ m.support, N i ^ m i) *
+    S ^ (H - Finsupp.weight d m)).weightedTotalDegree w ≤ H * b + v
   have hprod : (∏ i ∈ m.support, N i ^ m i).weightedTotalDegree w ≤
       Finsupp.weight d m * b + Finsupp.weight e m := by
     calc
