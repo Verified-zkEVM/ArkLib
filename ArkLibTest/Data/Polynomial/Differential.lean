@@ -1421,29 +1421,31 @@ example :
     exact hspec_ne
   let f : ZMod 2 →+* AlgebraicClosure (ZMod 2) := algebraMap _ _
   exact exists_forall_jetEvaluation_ne_zero_map f f.injective Q {0} 0 hregular
-
-/-! ### Taylor chart coefficient extension -/
-
-/-- The exponent theorem returns jets satisfying a high cut and two agreement equations. -/
-example := exists_regular_solution_jet_family_of_exponent
-  (f := RingHom.id ℚ) (Q := zeroJetEquation ℚ 0) (K := 2) (k := 1) (τ := 4)
-  (taylorExponentSufficient_two_mul 0 2) (by norm_num) {0} (A := 2)
-  (domain := fun i : Fin 2 ↦ (i.val : ℚ)) (received := fun _ ↦ 0)
-  (hdegree := by simp)
-  (hsol := by
-    intro P hP
-    rw [Finset.mem_singleton.mp hP]
-    simp [zeroJetEquation])
-  (hsep := by
-    intro P hP
-    rw [Finset.mem_singleton.mp hP]
-    simp [zeroJetEquation, separant, differentialSpecialization, differentialSpecializationHom])
-  (hbin := by simp)
-  (hagree := by
-    intro P hP
-    rw [Finset.mem_singleton.mp hP]
-    simp)
-
+example :
+    ∃ (c : ℚ) (J : Finset (Fin 1 → ℚ)), J.card = 1 ∧ ∀ j ∈ J,
+      (∀ l : ℕ, 1 ≤ l → l < 2 →
+        aeval j (commonTaylorNumerator c
+          (MvPolynomial.map (RingHom.id ℚ) (X (some 0))) 4 l) = 0) ∧
+      2 ≤ (Finset.univ.filter (fun _ : Fin 2 ↦
+        aeval j (taylorAgreementEquation c
+          (MvPolynomial.map (RingHom.id ℚ) (X (some 0))) 2 4
+          (RingHom.id ℚ (0 : ℚ)) (RingHom.id ℚ (0 : ℚ))) = 0)).card := by
+  obtain ⟨c, J, hcard, hfamily⟩ := exists_regular_solution_jet_family_of_exponent
+      (f := RingHom.id ℚ) (Q := X (some 0)) (K := 2) (k := 1) (τ := 4)
+      (taylorExponentSufficient_two_mul 0 2) (by norm_num) {0} (A := 2)
+      (domain := fun _ : Fin 2 ↦ (0 : ℚ)) (received := fun _ ↦ 0)
+      (hdegree := by simp)
+      (hsol := by simp [differentialSpecialization, differentialSpecializationHom])
+      (hsep := by simp [separant, differentialSpecialization, differentialSpecializationHom])
+      (hbin := by simp) (hagree := by simp)
+  refine ⟨c, J, by simpa using hcard, ?_⟩; intro j hj
+  obtain ⟨_, _, hcut, hagree⟩ := hfamily j hj
+  refine ⟨?_, ?_⟩
+  · intro l hl hlt
+    simpa using hcut ⟨l, hlt⟩ hl
+  · exact hagree.trans_eq (by
+      congr 1
+      ext i; simp)
 example :
     ∃ exceptional : Finset ℚ, exceptional.card ≤ 1 ∧ 0 ∈ exceptional := by
   let Q : DifferentialPolynomial (Polynomial ℚ) 0 := MvPolynomial.C Polynomial.X
