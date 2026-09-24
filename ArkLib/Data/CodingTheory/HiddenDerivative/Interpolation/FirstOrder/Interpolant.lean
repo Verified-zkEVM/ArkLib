@@ -80,13 +80,15 @@ theorem finrank_firstOrderLocalConstraintAt_le (center received : F) :
       exact Nat.add_le_add_left (Nat.le_mul_of_pos_left _ hm) _
     have hle := firstOrderSpace_le_exactInterpolationSpace_of_le (F := F) (D := D) (A := A)
       (M := M) (μ := μ) (W := 0) (by omega : 1 < D + 2) (by omega) hA
-    have hfactor : firstOrderLocalConstraintAt (D := D) (A := A) (m := m) (M := M) (μ := μ)
-        center received =
-        (exactLocalConstraintAt (A := A + 2 * μ) (M := M) (W := 0) (by omega : 1 < D + 2) m
-          center received).comp (Submodule.inclusion hle) :=
-      LinearMap.ext fun _ => rfl
-    rw [hfactor]
-    exact (LinearMap.finrank_range_comp_le_left _ _).trans
+    have hrange : LinearMap.range
+        (firstOrderLocalConstraintAt (D := D) (A := A) (m := m) (M := M) (μ := μ)
+          center received) ≤
+        LinearMap.range
+          (exactLocalConstraintAt (A := A + 2 * μ) (M := M) (W := 0)
+            (by omega : 1 < D + 2) m center received) := by
+      rintro _ ⟨Q, rfl⟩
+      exact ⟨⟨Q.1, hle Q.2⟩, rfl⟩
+    exact (Submodule.finrank_mono hrange).trans
       (finrank_exactLocalConstraintAt_le_certifiedEnlargedRankBound Nat.one_pos _ _ _)
 
 /-- The local constraints at every received point `(centers i, received i)` on the first-order
