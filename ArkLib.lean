@@ -173,6 +173,8 @@ public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSu
 public import ArkLib.Data.CodingTheory.HiddenDerivative.NormalizedSubstitution
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.Basic
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.ExactCharacteristicBudget
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.AutomaticBounds
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.AutomaticParameters
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.BranchwiseRate
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.FiniteRateParameters
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.HybridConstants
@@ -182,6 +184,7 @@ public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.Ra
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.RoundedCounts
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.StageCharges
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.StageComparison
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.StageSum
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.Uniform
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.UniformMCA
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FreeOrder
