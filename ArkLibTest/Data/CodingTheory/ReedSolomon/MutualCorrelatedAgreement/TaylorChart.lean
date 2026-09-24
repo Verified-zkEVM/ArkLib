@@ -6,6 +6,7 @@ Authors: Quang Dao
 
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TaylorChart.PointRecognition
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TaylorChart.PairCounting
+import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TaylorChart.Incidence
 import Mathlib.Algebra.Field.ZMod
 import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 import Mathlib.Tactic.NormNum
@@ -484,6 +485,13 @@ example :
       (by simp [pairCountingEquation, MvPolynomial.weightedTotalDegree,
         MvPolynomial.support_X])
     simpa using hbound
+
+/-- A concrete joint Taylor high cut occurs in the finite list. -/
+example :
+    jointCommonTaylorNumerator (0 : ℚ) quadraticJetSampleEquation 4 (1 : Fin 2) ∈
+      jointTaylorHighCutList (0 : ℚ) quadraticJetSampleEquation 2 1 := by
+  exact jointCommonTaylorNumerator_mem_jointTaylorHighCutList (0 : ℚ)
+    quadraticJetSampleEquation 2 1 (1 : Fin 2) (by omega)
 
 end
 
