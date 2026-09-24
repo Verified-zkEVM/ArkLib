@@ -1648,6 +1648,12 @@ Ported from `HiddenDerivative/RootFinding/MutualCorrelatedAgreement/ExtensionDes
 
 Not ported: the standalone exceptional correlated-agreement wrapper from this dependency; the equation-descent theorem performs the exceptional-set pullback directly.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedComponentRecognition.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/ComponentRecognition.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Renamed `exists_polynomialGraph_of_symbolic_prime_sample_of_exponent` to `exists_polynomialGraph_of_primeTaylorComponent`. It uses the destination joint Taylor cuts and recognizes a graph for tuples of arbitrary length. Added `powerBatchedJetGraphMap`. The result also proves ideal vanishing on the graph and nonvanishing of the restricted separant. The wrapper declarations `symbolicSourceCurveAgreement_of_exponent` and `symbolicSourceCurveAgreement` were not ported: their cut polynomial is `jointTaylorAgreementEquation`, and the default-exponent case follows by taking exponent `2 * K`.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedPointRecognition.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/PointRecognition.lean` at ArkLib revision
@@ -1656,6 +1662,10 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Poly
 `commonCurveAgreementSet_map` and `exists_exceptional_powerBatched_extension` keep their names; both are generalized from `Fin n` to any finite coordinate type, and the exceptional bound uses `Fintype.card α`. `powerBatchedJetGraph` and `polynomialJet_powerBatched` keep their names and statements. `exists_polynomialGraph_of_symbolic_sample_of_exponent` keeps its name and is generalized to an arbitrary embedded coordinate type without requiring it to be finite. Its regularity, high-cut, and agreement premises use the field-valued Taylor-chart API after specialization at each challenge.
 
 No declarations from the source were left out. The intermediate over-algebra bridge statements are not duplicated; the main theorem specializes `ReedSolomon.exists_polynomialGraph_of_sample` from `PowerAgreement` and uses the available field-valued Taylor-chart results. The source import `TaylorChart.PointRecognition` is unavailable in this checkout, so its helper bridge layer was replaced by that API.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/ExceptionalSet.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`exists_exceptional_exactPowerAgreement` and `exists_exceptional_exactPowerAgreement_family` keep their names and are generalized from `Fin n` coordinates to any finite coordinate type. The family result delegates to `exists_exceptional_powerBatched_family` on the mapped polynomial family and uses each original tuple as its exact-agreement witness.
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/GraphLineComponent.lean`
 
@@ -1666,6 +1676,10 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Tayl
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/ComponentAgreement.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 `symbolicSourceAgreement_eq_zero_iff_of_exponent` and `symbolicSourceAgreement_eq_zero_iff` → `aeval_jointTaylorAgreementEquation_eq_zero_iff`; the two forms are combined into a theorem for every sufficient exponent `τ`, using the joint chart API. `commonAgreement_of_symbolicSourceAgreement_mem_prime_of_exponent` and `commonAgreement_of_symbolicSourceAgreement_mem_prime` → `commonAgreement_of_jointTaylorAgreementEquation_mem_prime`; it uses any sufficient exponent and the current affine-pair curve parametrization. `exists_graphLine_pair_of_symbolic_prime_agreements_of_exponent` and `exists_graphLine_pair_of_symbolic_prime_agreements` → `exists_graphLine_pair_of_regular_component_agreements`; it uses any sufficient exponent and returns the regular-component parametrization and restriction identities with the common-agreement bound. No source declarations are unported; the default-exponent forms are covered by the exponent-general statements and have no separate wrappers.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/ComponentRecognition.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+The graph-line component result now uses the shared `aeval_jointInitialJetSeparant`, `aeval_jointCommonTaylorNumerator`, and `aeval_jointTaylorAgreementEquation` results from `TaylorChartAlgebra`, and `regular_principalOpen_graph_restriction` from `PrincipalOpenParametrization`.
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/SingularTail.lean`
 
@@ -2309,6 +2323,10 @@ The agreement bounds `jointTotalDegree_taylorAgreementEquationOver_le_of_exponen
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/ComponentRecognition.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 `symbolicSourceInitialEquation`, `symbolicSourceSeparant`, `symbolicSourceNumerator`, `symbolicSourceAgreement`, and `symbolicSourceReconstructionError` move to the `PolynomialDifferential` owner as `jointInitialJetEquation`, `jointInitialJetSeparant`, `jointCommonTaylorNumerator`, `jointTaylorAgreementEquation`, and `jointTaylorReconstructionError`. The equations keep their substance; the common numerator takes the exponent explicitly. `jointTaylorAgreementEquation` combines the two source agreement declarations and is defined using `taylorAgreementEquationOver`. `affinePairCurve` adds a polynomial-valued parametrization of the affine pair graph. The initial equation and separant use only a commutative semiring, and the affine-pair curve uses only a semiring.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/ComponentRecognition.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Moved the joint-cut evaluation results into the polynomial differential owner and renamed `eval_jointInitialJetSeparant`, `eval_jointCommonTaylorNumerator`, and `eval_jointTaylorAgreementEquation` to `aeval_jointInitialJetSeparant`, `aeval_jointCommonTaylorNumerator`, and `aeval_jointTaylorAgreementEquation`, respectively. They specialize the challenge before evaluating the jet.
 
 ## `ArkLib/Data/Polynomial/Differential/TaylorChartGeometry.lean`
 
@@ -4066,6 +4084,12 @@ Deferred: the forward direction for points in a proper algebraically closed exte
 Its proof needs the finitely many maximal ideals of the quotient, since the functions from a
 finite set to `K` do not form a finite-dimensional `k`-space.
 
+## `ArkLib/ToMathlib/RingTheory/Nullstellensatz/PrincipalOpenParametrization.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/ComponentRecognition.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Added `regular_principalOpen_graph_restriction`, which gives ideal restriction and cut nonvanishing when a polynomial graph covers the regular principal open of a positive-dimensional prime component. This shared result is used by both component-recognition results.
+
 ## `ArkLibTest/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition.lean`
 
 Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/RatePartition.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -4104,6 +4128,10 @@ The joint-chart case reuses the shared concrete equation and numerator identity,
 Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 Added an acceptance example on the algebraic-closure prime-component fixture. It checks a degree-bounded pair and a nonzero common-agreement count.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/ComponentRecognition.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Acceptance cases check a positive-dimensional prime component's sample interpolation, graph coverage, and nonzero restricted separant. They also check the single-tuple and finite-family exact-agreement bounds with positive power batching, including two distinct family candidates.
 
 ## `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart.lean`
 
