@@ -173,6 +173,7 @@ theorem exists_affineHilbertFunction_le_mul_of_finite [Finite σ] [Finite τ]
   obtain ⟨s₀, hs₀⟩ := hfin.fg_top
   set s := insert (1 : MvPolynomial σ k ⧸ I) s₀ with hs_def
   have hone : (1 : MvPolynomial σ k ⧸ I) ∈ s := Finset.mem_insert_self _ _
+  have hnonempty : Nonempty s := ⟨⟨1, hone⟩⟩
   have hspan : ∀ x : MvPolynomial σ k ⧸ I, ∃ a : s → MvPolynomial τ k ⧸ J,
       ∑ l, g (a l) * (l : MvPolynomial σ k ⧸ I) = x := by
     intro x
@@ -193,9 +194,12 @@ theorem exists_affineHilbertFunction_le_mul_of_finite [Finite σ] [Finite τ]
   let L : ∀ M, (s → quotientDegreeLE J M) →ₗ[k] MvPolynomial σ k ⧸ I := fun M ↦
     ∑ l : s, (LinearMap.mulRight k (l : MvPolynomial σ k ⧸ I)).comp
       ((g.toLinearMap.comp (quotientDegreeLE J M).subtype).comp (LinearMap.proj l))
-  have hL : ∀ M z, L M z = ∑ l, g (z l) * (l : MvPolynomial σ k ⧸ I) := by
-    intro M z
+  have hL_nonempty : ∀ [Nonempty s] M z,
+      L M z = ∑ l, g (z l) * (l : MvPolynomial σ k ⧸ I) := by
+    intro _ M z
     simp [L]
+  have hL : ∀ M z, L M z = ∑ l, g (z l) * (l : MvPolynomial σ k ⧸ I) :=
+    @hL_nonempty hnonempty
   let T : ℕ → Submodule k (MvPolynomial σ k ⧸ I) := fun M ↦ LinearMap.range (L M)
   have hmemT : ∀ M t, t ∈ T M ↔ ∃ b : s → MvPolynomial τ k ⧸ J,
       (∀ l, b l ∈ quotientDegreeLE J M) ∧ ∑ l, g (b l) * (l : MvPolynomial σ k ⧸ I) = t := by
@@ -209,7 +213,8 @@ theorem exists_affineHilbertFunction_le_mul_of_finite [Finite σ] [Finite τ]
     intro M M' hMM' t ht
     obtain ⟨b, hb, rfl⟩ := (hmemT M t).mp ht
     exact (hmemT M' _).mpr ⟨b, fun l ↦ quotientDegreeLE_mono J hMM' (hb l), rfl⟩
-  have h1 : (1 : MvPolynomial σ k ⧸ I) ∈ T 0 := by
+  have h1_nonempty : ∀ [Nonempty s], (1 : MvPolynomial σ k ⧸ I) ∈ T 0 := by
+    intro _
     refine (hmemT 0 1).mpr ⟨Pi.single ⟨1, hone⟩ 1, fun l ↦ ?_, ?_⟩
     · by_cases hl : l = ⟨1, hone⟩
       · subst hl; simpa using one_mem_quotientDegreeLE J 0
@@ -217,6 +222,7 @@ theorem exists_affineHilbertFunction_le_mul_of_finite [Finite σ] [Finite τ]
     · rw [Finset.sum_eq_single ⟨1, hone⟩ (fun l _ hl ↦ by simp [hl])
         (by simp)]
       simp
+  have h1 : (1 : MvPolynomial σ k ⧸ I) ∈ T 0 := @h1_nonempty hnonempty
   have hmul : ∀ i M t, t ∈ T M → Ideal.Quotient.mk I (X i) * t ∈ T (M + c) := by
     intro i M t ht
     obtain ⟨b, hb, rfl⟩ := (hmemT M _).mp ht

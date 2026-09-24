@@ -579,6 +579,14 @@ are the special cases of the new composition laws `globalPointTranslation_comp`,
 source's `Matrix.rank_map_algebraMap_le`, a base-change bound on matrix rank that does not
 concern translation; its only source consumer is `Interpolation/Symbolic/LocalRank.lean`.
 
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/PartitionSupport/CurveCertificate.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/RatePartition/Certificate.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Renamed `ratePartitionColumns`, `ratePartitionColumns_exponent`, `ratePartitionColumns_injective`, and `ratePartitionColumns_eligible` to `partitionSupportColumns`, `partitionSupportColumns_exponent`, `partitionSupportColumns_injective`, and `partitionSupportColumns_eligible`. Renamed `exists_ratePartition_certificate` to `exists_partitionSupport_curve_certificate` and adapted it to `PartitionSupportEligible`, `localDerivativeCoordinateBudget`, and `SymbolicReceivedCurve.Certificate`. Its challenge height retains the exact natural-number formula. The generic finite-support enumeration and its exponent, injectivity, and membership theorems are provided by `SourceColumn.enumerate`; weighted-support and first-order column families also use this API while retaining their names and statements.
+
+The source helper bounds `monomial_local_matrix_rank_le` and `finiteConstraintMatrix_rank_le_partition` were not ported because `main` provides more general local-coordinate and supported-matrix rank theorems. The partition-support acceptance case checks the certificate from a strict dimension surplus.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/PartitionSupport/FiniteSurplus.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/RatePartition/Ratio.lean` at ArkLib revision
@@ -1345,6 +1353,14 @@ statements here, at the radius `1 - a / n` and for an arbitrary code, imply the 
 `Code.Lambda_mono`. The Reed–Solomon consumers are in
 `ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.AnchoredAgreement`.
 
+## `ArkLib/Data/CodingTheory/ListDecodability/Capacity/WeightedSupport.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/WeightedSupport.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`exists_weightedSupport_hiddenDerivativeConstruction`, `weightedSupport_capacity_list_bound_four_mul`, and `weightedSupport_capacity_list_bound` keep their names and mathematical statements. The construction theorem specializes the existing prescribed construction result. The pointwise list bound uses the destination's order-indexed multiplicity API and gives prefactor `4m` with exponent `2d`, refined to `d` under the large-field condition. The packaged theorem provides `WeightedSupportListBound` using the existing multiplicity positivity characterization. The generic `CapacityGapCertificate.ofPointwiseBound` helper was added to the existing capacity owner file; it has no source declaration and turns pointwise finite-list bounds into exact decoder certificates over arbitrary finite coordinate types. `weightedSupportMultiplicity_pos` was not ported because `weightedSupportMultiplicity_pos_iff` together with `capacityDerivativeOrder_lower` covers it.
+
+The acceptance cases in `ArkLibTest/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity.lean` check the construction contract, the pointwise bound constructor, and the packaged theorem at the prescribed sample parameters. The samples put the zero polynomial in the agreement list at a threshold no greater than the block length, and the pointwise-bound case supplies a positive finite list bound.
+
 ## `ArkLib/Data/CodingTheory/ListDecodability/SymbolMap.lean`
 
 ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`,
@@ -1729,6 +1745,14 @@ No declarations from the source were left out. The intermediate over-algebra bri
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/ExceptionalSet.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 `exists_exceptional_exactPowerAgreement` and `exists_exceptional_exactPowerAgreement_family` keep their names and are generalized from `Fin n` coordinates to any finite coordinate type. The family result delegates to `exists_exceptional_powerBatched_family` on the mapped polynomial family and uses each original tuple as its exact-agreement witness.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedPointRecognition.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`ReedSolomon.exists_frobeniusPowerGraph_polynomials_of_sample` keeps its name. It is generalized from `Fin n` to any embedded coordinate type `α`, and its root condition is restricted to the sample.
+
+Did not port `exists_exceptional_frobeniusPower_challenges_of_sample` because `ReedSolomon.exists_exceptional_exactPowerAgreement` in `PowerBatchedPointRecognition` already covers it: sample agreement proves the required common-agreement lower bound, and specialization to `Fin n` gives the source bound.
+
+The singleton-sample characteristic-two acceptance case in `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement.lean` checks the zero sparse Frobenius pullback and both recognition conclusions.
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/GraphLineComponent.lean`
 

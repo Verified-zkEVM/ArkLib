@@ -86,10 +86,19 @@ theorem multiplicative_margin_from_bounds (δ ρ H d g a s V m n D N R : ℝ)
       normalized_surplus_product δ ρ H d hd (hg ▸ hg0) hH
   have hsmall : (543 / 500 : ℝ) * B <
       ρ * g ^ 3 / 6 * ((5 / 8 : ℝ) ^ 3 + (4147 / 2160) * s ^ 2) := by
+    have hvariance : (4147 / 2160 : ℝ) * ((999 / 1000) * (a / (g * H)) ^ 2) ≤
+        (4147 / 2160) * s ^ 2 := mul_le_mul_of_nonneg_left hs (by norm_num)
     calc
-      _ < B * normalizedDimensionRankSurplus δ ρ H (Real.log d) := by nlinarith
+      (543 / 500 : ℝ) * B = B * (543 / 500) := by ring
+      _ < B * normalizedDimensionRankSurplus δ ρ H (Real.log d) :=
+        mul_lt_mul_of_pos_left hsur hB
       _ = _ := hprod
-      _ ≤ _ := mul_le_mul_of_nonneg_left (by nlinarith [hs]) (by positivity)
+      _ ≤ _ := mul_le_mul_of_nonneg_left (by
+        calc
+          (5 / 8 : ℝ) ^ 3 + (4147 / 2160) * (999 / 1000) * (a / (g * H)) ^ 2 =
+              (5 / 8 : ℝ) ^ 3 + (4147 / 2160) * ((999 / 1000) * (a / (g * H)) ^ 2) := by ring
+          _ ≤ _ := add_le_add_right hvariance _
+      ) (by positivity)
   have hVm : 0 < V * m ^ 3 := by positivity
   have hRR : R ≤ V * m ^ 3 * B := by
     simpa only [B, mul_comm] using (div_le_iff₀ hVm).mp hR
