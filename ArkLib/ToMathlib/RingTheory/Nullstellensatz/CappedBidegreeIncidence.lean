@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-
+public import ArkLib.ToMathlib.RingTheory.Ideal.SurjectiveMap
 public import ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertCappedBidegree
 public import ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertComap
 public import ArkLib.ToMathlib.RingTheory.MvPolynomial.MonomialMap
