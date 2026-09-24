@@ -348,6 +348,24 @@ private theorem component_initialEquation_mem :
   simp only [optionEquivRight_symm_X]
   exact component_generator_mem
 
+private theorem component_initialEquation_ne_zero :
+    jointInitialJetEquation (r := 0) (0 : ComponentField)
+      (componentEquation (E := ComponentField)) ≠ 0 := by
+  intro h
+  have h'' : (optionEquivRight ComponentField (Fin 1)).symm
+      (initialJetEquation (Polynomial.C (0 : ComponentField))
+        (componentEquation (E := ComponentField))) =
+      (optionEquivRight ComponentField (Fin 1)).symm 0 := by
+    simpa only [jointInitialJetEquation, map_zero] using h
+  have h' : initialJetEquation (Polynomial.C (0 : ComponentField))
+      (componentEquation (E := ComponentField)) = 0 :=
+    (optionEquivRight ComponentField (Fin 1)).symm.injective h''
+  rw [show initialJetEquation (Polynomial.C (0 : ComponentField))
+      (componentEquation (E := ComponentField)) =
+        (MvPolynomial.X (0 : Fin 1) : MvPolynomial (Fin 1) (Polynomial ComponentField)) by
+    simp [initialJetEquation, componentEquation]] at h'
+  exact (MvPolynomial.X_ne_zero _) h'
+
 private theorem component_commonNumerator_one :
     commonTaylorNumeratorOver ComponentField (Polynomial.C (0 : ComponentField))
       (componentEquation (E := ComponentField)) 2 1 =
@@ -830,19 +848,6 @@ end
 
 end ReedSolomon.GraphLineComponentTest
 
-/-- A family of admissible Frobenius pairs satisfies the initial-jet degree bound. -/
-example {F E ι : Type*} [Field F] [Field E] [Infinite E] {k K : ℕ}
-    (domain : ι ↪ F) (f g : ι → F) (iota : F →+* E) (roots : ι → E) (center : E)
-    (Q : DifferentialPolynomial E[X] 0) (p e τ : ℕ) [ExpChar E p]
-    (hK : 0 < K) (hKk : K ≤ p ^ e * k) (hτ : TaylorExponentSufficient 0 K τ)
-    (hinit : jointInitialJetEquation center Q ≠ 0)
-    (pairs : Finset (F[X] × F[X]))
-    (hpairs : ∀ P ∈ pairs,
-      IsAdmissibleFrobeniusPair domain f g iota roots center Q K k τ (p ^ e) P.1 P.2) :
-    pairs.card ≤ (jointInitialJetEquation center Q).degreeOf (some 0) := by
-  exact admissibleFrobeniusPairs_card_le_degreeOf domain f g iota roots center Q p e τ
-    hK hKk hτ hinit pairs hpairs
-
 namespace ReedSolomon.PowerBatchedPointRecognitionTest
 
 noncomputable section
@@ -1322,6 +1327,27 @@ private theorem extractedAdmissibleFrobeniusPair :
       subst i
       simpa [componentWord, Polynomial.C_0] using component_admissibility_cut 0 (by simp))
   exact ⟨F₀, G₀, hP⟩
+
+/-- The component's singleton family of admissible pairs satisfies the graph degree bound. -/
+example :
+    1 ≤ (jointInitialJetEquation (r := 0) (0 : ComponentField)
+      (componentEquation (E := ComponentField))).degreeOf (some 0) := by
+  classical
+  obtain ⟨F₀, G₀, hP⟩ := extractedAdmissibleFrobeniusPair
+  have hcount := admissibleFrobeniusPairs_card_le_degreeOf
+    (domain := domain) (f := componentWord) (g := componentWord)
+    (iota := algebraMap ℚ ComponentField) (roots := fun _ ↦ 0) (center := 0)
+    (Q := componentEquation (E := ComponentField)) (K := 1) (k := 1)
+    (p := 1) (e := 0) (τ := 2)
+    (hK := by norm_num) (hKk := by norm_num)
+    (hτ := taylorExponentSufficient_two_mul 0 1)
+    (hinit := component_initialEquation_ne_zero)
+    (pairs := { (F₀, G₀) })
+    (hpairs := by
+      intro P hmem
+      rcases Finset.mem_singleton.mp hmem with rfl
+      exact hP)
+  simpa using hcount
 
 example :
     ∃ F₀ G₀ : ℚ[X],
