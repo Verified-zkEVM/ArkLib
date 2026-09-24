@@ -689,6 +689,14 @@ recovered in the tests.
 The source's lower bound `finrank_interpolationSpace_lowerBound` is in
 `Interpolation/Dimension.lean`. Deferred: the shell counts.
 
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/JohnsonCertificate.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Ordinary/JohnsonCertificate.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`JohnsonColumnIndex`, `JohnsonLocalRowIndex`, `JohnsonRowIndex`, `johnsonColumns`, `johnsonColumns_y₀`, `johnsonColumns_x`, `johnsonColumns_totalJetDegree`, `johnsonColumns_injective`, `johnsonLocalRow`, `johnsonConstraintMatrix`, `johnsonFinMatrix`, `johnsonFinRowWeight`, `card_johnsonColumnIndex`, `sum_johnsonColumns_slots`, `sum_johnsonFinRowWeight_slots`, `johnsonConstraintMatrix_kernel_iff`, `johnsonFinMatrix_kernel_iff`, `johnsonConstraintMatrix_degree_le`, `JohnsonSymbolicCertificate`, and `johnsonInterpolant_jetDegree_le` retain their names. `johnsonLocalRow_localJetDegree` is generalized to the current local jet-degree weight interface. The matrix vanishing results remove the received-polynomial degree bound, and `johnsonFinMatrix_degree_le` removes an unused row-weight premise. `exists_johnson_symbolic_certificate` removes the unused agreement-at-most-one and threshold-at-most-length assumptions.
+
+The generic `SourceColumn.coeff_interpolant_natDegree_le` covers `coeff_johnsonInterpolant_natDegree_le`; `interpolant_mem_weightedSupportSpace` covers `interpolant_mem_johnsonWeightedSupport`; and the jet-degree bound follows from `SourceColumn.interpolant_totalJetDegree_le`, so `support_johnsonInterpolant_subset_range` is not needed. The source `TaylorHeight` import is unnecessary because its coefficient-height API is not used by the certificate proof. The weighted-support and specialization soundness declarations are in the existing `Symbolic/Soundness.lean` owner.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/WeightedSupportCertificate.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Symbolic/ReceivedLine.lean` and `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Symbolic/ReceivedCurve.lean` at ArkLib revision
