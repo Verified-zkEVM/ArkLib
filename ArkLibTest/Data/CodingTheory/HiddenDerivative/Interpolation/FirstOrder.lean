@@ -12,6 +12,7 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.CurveR
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.Symbolic
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.SymbolicRank
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.CurveHeightCounting
+import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.CurveCertificate
 import Mathlib.Algebra.Field.ZMod
 
 /-!
@@ -286,6 +287,23 @@ example :
   exact exists_primitive_firstOrderCurve_interpolant_of_shifted_height_bound
     (F := ZMod 5) 1 2 2 0 1 1 1 1 (by decide)
     (fun _ ↦ 0) (fun _ ↦ 0) (by intro _; norm_num) hsurplus
+
+/-- A strict shifted-slot surplus constructs a certificate on two distinct received points. -/
+example :
+    ∃ centers : Fin 2 ↪ ZMod 5,
+      Nonempty (FirstOrderCurveCertificate (F := ZMod 5) 1 2 2 0 1 2 1 centers
+        (fun _ ↦ (0 : (ZMod 5)[X]))
+        (firstOrderColumns (D := 1) (A := 2) (m := 2) (M := 0) (μ := 1))) := by
+  let centers : Fin 2 ↪ ZMod 5 := ⟨fun i ↦ i.val, by
+    intro i j hij
+    fin_cases i <;> fin_cases j <;> simp_all⟩
+  refine ⟨centers, ?_⟩
+  have hheight : firstOrderCurveShiftedRowSlotBound 1 2 2 0 1 2 1 1 <
+      firstOrderCurveShiftedHeightSlotCount 1 2 2 0 1 1 1 := by decide
+  exact exists_finite_firstOrder_curve_certificate_of_heightSlotCount
+    (F := ZMod 5) (D := 1) (A := 2) (m := 2) (M := 0) (μ := 1) (k := 2)
+    (h := 1) (n := 2) (ℓ := 1) (by decide) (by norm_num) (by norm_num) centers
+    (fun _ ↦ 0) (by intro _; norm_num) hheight
 
 private theorem originConstantSlice_rank :
     (firstOrderOriginGradedSliceMatrixOver ℚ 1 2 1 1 0 0).rank = 1 := by
