@@ -20,6 +20,8 @@ of `c`. Taking `c` to be the leading coefficient of `A : R[X][X]` gives a specia
 
 * `card_le_natDegree_of_injOn_of_eval_eq_zero`: if a nonzero `p` vanishes at `x w` for every
   `w ∈ s`, and `x` is injective on `s`, then `s.card ≤ p.natDegree`.
+* `exists_forall_eval_ne_zero`: finitely many nonzero polynomials have a common nonvanishing
+  evaluation over an infinite domain.
 * `exists_mem_eval_ne_zero_of_card_add_natDegree_lt_card`: if
   `forbidden.card + c.natDegree < T.card`, some `t ∈ T` is not forbidden and `c.eval t ≠ 0`.
 * `exists_mem_map_evalRingHom_ne_zero_of_card_add_natDegree_lt_card`: the degree-preserving
@@ -52,6 +54,20 @@ statements below use it in that form.
 namespace Polynomial
 
 variable {R α : Type*} [CommRing R] [IsDomain R]
+
+/-- In an infinite domain, finitely many nonzero polynomials have a common nonvanishing point. -/
+theorem exists_forall_eval_ne_zero {ι : Type*} [Infinite R] (T : Finset ι)
+    (P : ι → Polynomial R) (hT : ∀ i ∈ T, P i ≠ 0) :
+    ∃ center : R, ∀ i ∈ T, (P i).eval center ≠ 0 := by
+  classical
+  have hprod : ∏ i ∈ T, P i ≠ 0 := Finset.prod_ne_zero_iff.mpr hT
+  obtain ⟨center, hc⟩ :
+      ∃ center : R, (∏ i ∈ T, P i).eval center ≠ 0 := by
+    by_contra! h
+    exact hprod (Polynomial.funext (by simpa using h))
+  refine ⟨center, fun P hP ↦ ?_⟩
+  rw [Polynomial.eval_prod, Finset.prod_ne_zero_iff] at hc
+  exact hc P hP
 
 /-- A nonzero polynomial `p` over a domain vanishes at no more than `p.natDegree` of the points
 `x w`, `w ∈ s`, when `x` is injective on `s`.
