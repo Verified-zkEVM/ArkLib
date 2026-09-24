@@ -118,13 +118,12 @@ theorem exists_firstOrderRate_symbolicCertificate
       ((localConstraintMatrix m (fun i ↦ Polynomial.C (centers i)) w columns).map
         (algebraMap F[X] (RatFunc F))).rank ≤ r := by
     calc
-      _ ≤ n * certifiedEnlargedRankBound 1 m M 0 :=
-        by
-          simpa only [Fintype.card_fin] using
-            rank_firstOrderLocalConstraintMatrix_le (D := D) (A := A) (m := m) (M := M)
-              (μ := μ) (fun i ↦ centers i) w columns
-              (fun j ↦ firstOrderColumns_eligible
-                (D := D) (A := A) (m := m) (M := M) (μ := μ) j)
+      _ ≤ n * certifiedEnlargedRankBound 1 m M 0 := by
+        simpa only [Fintype.card_fin] using
+          rank_firstOrderLocalConstraintMatrix_le (D := D) (A := A) (m := m) (M := M)
+            (μ := μ) (fun i ↦ centers i) w columns
+            (fun j ↦ firstOrderColumns_eligible
+              (D := D) (A := A) (m := m) (M := M) (μ := μ) j)
       _ = r := by
         rw [certifiedEnlargedRankBound_one_eq_firstOrderRankCount]
         rfl
