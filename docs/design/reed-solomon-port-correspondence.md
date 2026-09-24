@@ -1022,6 +1022,10 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/Fi
 
 Ported the rate-gap, surplus-slope, multiplicity, jet-degree, height, moment, and exception constants and the bounds for automatic parameters and closed list and exception constants. Renamed `automaticHybridEnvelopeConstant` to `automaticRateEnvelopeConstant`, `automaticLambdaBoundConstant` to `automaticListBoundConstant`, and `automaticHybridT_le_inv_eta_cube` to `automaticStaircaseMoment_le_inv_eta_cube`. Renamed the hybrid-envelope inequalities to name the rate envelope, and renamed the closed list, exception, and combined bounds to name their mathematical quantities. The slack comparison theorems drop unused rate, positivity, or agreement guards as reported. A private helper proves repeated rate, ratio, jet, and staircase premises once. The unused private `automaticSourceLowerCount` helper and later challenge-height applications were not ported; existing first-order threshold, count, surplus, residual, and scaled-height results cover the needed facts.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/FirstOrder/AutomaticBounds.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Added `automaticRateIncidenceJetBounds`, a shared theorem collecting the rate-envelope, incidence-ratio, and jet-degree bounds used by both automatic-envelope proofs. No declarations from the source unit were omitted.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/AutomaticParameters.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/FirstOrder/AutomaticParameters.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -1360,6 +1364,12 @@ with `δ ≤ 1/2` in place of `δ < 6/25`. The corresponding source-shaped high-
 low-rate ambient bounds follow by specializing these guards to the uniform order and multiplicity.
 `uniformRatePartition_totalJetDegree_le` is deferred: it needs `RatePartitionEligible` (#977).
 
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/WeightedSupport/Capacity.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/TaylorCutoff.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`ReedSolomon.prescribed_geometric_parameters` keeps its name. It gives the prescribed order, multiplicity, Taylor cutoff, ambient dimension, and agreement bounds, dropping the unused `0 < k` assumption and using the current harmonic and agreement-threshold APIs.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Substitution.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Substitution.lean` at ArkLib
@@ -1551,6 +1561,11 @@ proves a weaker, field-size-weighted bound, which is not formalized here.
 at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d` is now
 `exists_closePolynomial_finset_one_card_le_div`, for any received word in place of a batched
 word, with the `ncard` form `closePolynomialSet_one_ncard_le_div`.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/AgreementList.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Added `closePolynomialSet_card_le_of_differential_equation`, a thin specialization of the generic finite-family theorem to finite sets of differential-equation solutions in `closePolynomialSet`.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/AgreementThreshold.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/AgreementThreshold.lean` at ArkLib revision
@@ -1744,6 +1759,10 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/Weig
 `exists_weightedSupport_interpolant_of_fixed_margin`, `exists_prescribed_weightedSupport_construction_core`, `exists_prescribed_weightedSupport_construction`, and `HiddenDerivativeInterpolationCertificate.agreeingPolynomials_encard_le_totalJetDegree` retain their mathematical guarantees using the destination weighted-support, harmonic, parameter, certificate, and root-count APIs. The first theorem specializes the symbolic kernel construction at challenge zero; the prescribed construction uses the existing capacity parameters. The final theorem uses the solution embedding and bounded-solution root count to obtain the extension-field list bound `4 * m * q ^ (e * d)`.
 
 The symbolic height bound was renamed from `noBand_kernel_height_lt` to `kernel_height_lt_twelve_mul_of_margin`. The matrix block rank argument uses the range embedding and finite-dimensional rank bound. `map_projectLowContact` and `map_unscaledLocalSubstitution` are supplied by the existing local-constraint API. `WeightedSupportIndex` is not retained as an alias; support uses `weightedSupportExponents`. The three differential-specialization agreement lemmas are outside the unit's main statements, since the list bound uses the existing solution embedding and bounded-solution root count.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/TaylorCutoff.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+The weighted-support construction now uses `jetDegreeCastsNeZero_of_jetTotalDegree_charGuard` instead of repeating the proof of the jet-degree cast condition.
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/HiddenDerivativeBound.lean`
 
@@ -1962,6 +1981,9 @@ Renamed `sourceChartHighCuts` to `jointTaylorHighCutList`, `symbolicSourceNumera
 The graph-locus inclusion uses `Set.ncard` cut counts and the explicit exponent `2 * K`. The finite incidence bound uses `L ≤ A` and `A - L + 1 ≤ n`, counts agreement indices with `Set.ncard`, and drops the unnecessary positive cut-degree premise. Its specialization uses `jetTotalDegree` and `CoeffNatDegreeLE` and drops the positive jet-degree premise. No public source declarations were omitted; finite index-set encodings are expressed directly with `Set.ncard`.
 
 The matching acceptance module `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart.lean` replaces the high-cut membership example with two concrete singleton-set examples, one for each finite incidence bound.
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/SingularTail.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Added `automaticSquarefreeListBoundConstant` and `automaticSquarefreeListExpression_le` with their source names. The theorem specializes the automatic first-order recipe to a rate-only constant times `n / eta²`, using the shared premise theorem from `AutomaticBounds.lean`. No declarations from the source unit were omitted. The matching acceptance file checks the singular-tail zero case and an automatic bound instance at rate `2 / 49`, slack `1 / 100`, and parameters `n = 100`, `D = 1`, `A = 20`.
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/PairCounting.lean`
 
@@ -2267,6 +2289,12 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordi
 
 The acceptance case in `ArkLibTest/Data/Polynomial/Differential.lean` uses a height-one nonconstant coefficient equation that vanishes at challenge zero and checks that zero belongs to an exceptional set of cardinality at most one. Nothing was deferred or left unported.
 
+## `ArkLib/Data/Polynomial/Differential/DerivativeDescent.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/TaylorCutoff.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`ReedSolomon.HiddenDerivative.geometric_characteristic_components` became `PolynomialDifferential.characteristic_bounds_of_max`. It generalizes the field result to commutative semirings and drops the unnecessary `0 < K` assumption. `ReedSolomon.geometric_below_characteristic` became `PolynomialDifferential.jetDegreeCastsNeZero_of_jetTotalDegree_charGuard`. It generalizes to any commutative semiring and the current `JetDegreeCastsNeZero` contract, without the unused message-dimension and block-length parameters. The source-shaped `IsBelowCharacteristic (k - 1) Q` result is not recreated because that bundled predicate is absent from the current API; the jet-degree consequence is supplied in the operational cast form, and ambient-cutoff bounds remain separate in the current certificate API.
+
 ## `ArkLib/Data/Polynomial/Differential/DirectRegularLift.lean`
 
 This file ports the semantic content of `RootFinding/Regular/DirectRegularCoefficient.lean` and
@@ -2463,6 +2491,12 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Poly
 
 The caller of `CoeffNatDegreeLE.clearedSubstitution` is adapted to pass the same parameter bound for both `h` and the new independent coefficient bound `a`. The source `totalDegree_rationalTaylorNumeratorOver_le` is covered by the generalized `totalDegree_rationalTaylorNumeratorOver_le_of_jet` theorem.
 
+## `ArkLib/Data/Polynomial/Differential/RecursiveCount.lean`
+
+Ported from `ArkLib/Data/Polynomial/Differential/RecursiveCount.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`RegularBranchRatBudget`, `boundedSolution_recursive_counting_totalJetDegree`, and `boundedSolution_card_le_sq_totalJetDegree` keep their names. The regular-branch budget and recursive counting theorems use explicit per-jet cast nonvanishing, and the square-bound corollary uses the current explicit cast contract.
+
 ## `ArkLib/Data/Polynomial/Differential/RegularIteration.lean`
 
 Ported from ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d, where the statements were
@@ -2622,6 +2656,12 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/G
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Geometry/RegularCounting.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 `finite_regular_solutions_card_le` → `card_le_of_regular_solutions_agreement`. The result allows any algebraically closed field extension and an explicit sufficient Taylor exponent, uses the sharp numerator `n - k + 1` and `jetTotalDegree`, and drops the positive-degree and positive-`k` assumptions.
+
+Ported from `ArkLib/Data/Polynomial/Differential/TaylorChartBaseChange.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`regularBranchRatBudget_of_agreement` keeps its name and now accepts any predicate characterized by degree and agreement constraints. `finite_agreement_solutions_card_le` was generalized to that predicate form and renamed `finite_solutions_card_le_sq_totalJetDegree_of_agreement`; the finite-family argument is owned by the generic differential layer.
+
+`IsAgreementSolution` is represented by the existing `ReedSolomon.closePolynomialSet` membership condition and the generic agreement predicate. `jetTotalDegree_eq_weightedTotalDegree_elim` was not ported because it restates the existing weighted-degree API. `jetTotalDegree_le_of_reflTransGen_singularStep` and `jetTotalDegree_rename_jetPrefixEmbedding` were not ported because they already exist in `RecursiveCount.lean` and `PolynomialDifferential.JetPrefixPresentation`, respectively.
 
 ## `ArkLib/Data/Polynomial/Differential/TaylorChartAlgebra.lean`
 
@@ -4564,6 +4604,17 @@ An acceptance case checks a concrete scale-300 curve certificate at `δ = 1/5`.
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/RatePartition/SourceEstimate.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 The aggregate includes a concrete `d = 500`, `W = 1` instance of `partitionSupport_dimension_gt_moment`, using the lower-tail second-moment bound at logarithm `log 3000`. It checks the numeric rate and scale hypotheses and exercises the dimension conclusion without generic theorem restatements. The source-specific wrapper is not needed because the existing theorem covers it.
+## `ArkLibTest/Data/CodingTheory/HiddenDerivative/Parameters/WeightedSupport.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/TaylorCutoff.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+An acceptance example checks a concrete small-gap block against both the Taylor cutoff bound `2 * m - 1 < n` and the ambient-dimension bound.
+## `ArkLibTest/Data/CodingTheory/ReedSolomon.lean`
+
+Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Added a concrete nonvacuity example over `ℚ` for one degree-`< 1` solution agreeing at one coordinate, checking the Reed–Solomon specialization.
+
 ## `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement.lean`
 
 Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -4638,6 +4689,13 @@ A singleton-jet case exercises `card_le_of_highTaylorCuts_of_agreement_sharp`.
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Geometry/RegularCounting.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 The shared acceptance example applies `exists_regular_solution_jet_family_of_exponent` to the nonempty singleton family `{0}` for `Q = Y₀` over `ℚ`, and applies `card_le_of_regular_solutions_agreement` to the same family with one evaluation point.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/TaylorCutoff.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Acceptance examples exercise the total-degree cast theorem and check `characteristic_bounds_of_max` over `ZMod 5` with `K = 5` and `ν = 3`, yielding the pivot bound at equality.
+Ported from `ArkLibTest/Data/Polynomial/Differential.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+The singleton `Y₀ = 0` example instantiates `card_mul_le_jetTotalDegree_mul`, the rational recursive count, its square-bound corollary, the agreement-derived regular-branch budget, the generic finite agreement theorem, and the sharp regular-agreement count. The standalone `Y₀ + Y₁` degree illustration was removed to keep the file under 1,500 lines while retaining the main theorem examples.
 
 ## `ArkLibTest/Data/Probability/Uniform.lean`
 

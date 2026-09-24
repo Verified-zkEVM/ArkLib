@@ -6,6 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.Data.Polynomial.Differential.SingularRecursion
+public import Mathlib.Data.Rat.Defs
 
 /-!
 # Counting solutions along the singular recursion
@@ -30,6 +31,10 @@ The regular-part bound used with this composition is
 `card_mul_sub_le_jetTotalDegree_mul` in `ArkLib.Data.Polynomial.Differential.TotalJetDegreeCount`
 is sharper than the composition by the factor `t` in the regular cost.
 
+Rational regular-branch budgets compose in the same way: a cost `c` at each stage gives at most
+`jetTotalDegree Q * c` solutions. In particular, a branch cost proportional to the initial total
+jet degree yields a square-total-degree bound.
+
 ## Main statements
 
 * `differentialWeightedDegree_le_of_reflTransGen_singularStep`,
@@ -38,10 +43,14 @@ is sharper than the composition by the factor `t` in the regular cost.
 * `jetTotalDegree_le_sum_jetDegree` and `jetTotalDegree_le_mul`: the total jet degree is at most
   the sum of the individual jet degrees, hence at most `(d + 1) * t` when each is at most `t`.
 * `card_mul_le_jetTotalDegree_mul`: the recursive composition of regular-part bounds.
+* `RegularBranchRatBudget`, `boundedSolution_recursive_counting_totalJetDegree`, and
+  `boundedSolution_card_le_sq_totalJetDegree`: rational regular-branch budgets and their
+  total-jet-degree composition.
 
 ## References
 
-* [Kopparty, S., *List-Decoding Multiplicity Codes*][Kop15], Theorem 4.3 and Section 4.2.
+* [Kop15]
+* [DKT26]
 -/
 
 @[expose] public section
@@ -187,6 +196,143 @@ theorem card_mul_le_jetTotalDegree_mul [NoZeroDivisors F] {Q : DifferentialPolyn
         _ ≤ jetTotalDegree (separant equation s) * cost + cost := Nat.add_le_add hsing hreg
         _ = (jetTotalDegree (separant equation s) + 1) * cost := by ring
         _ ≤ jetTotalDegree equation * cost := Nat.mul_le_mul_right cost hlt
+
+/-! ### Rational recursive bounds -/
+
+variable {D : ℕ}
+
+/-- A rational cardinality budget for every regular branch below `root`, restricted to solutions
+satisfying a predicate that is preserved when the equation moves down the singular chain. -/
+def RegularBranchRatBudget (root : DifferentialPolynomial F d) (D : ℕ)
+    (accepts : F[X] → Prop) (cost : ℚ) : Prop :=
+  ∀ (current : DifferentialPolynomial F d) (s : Fin (d + 1)),
+    Relation.ReflTransGen (SingularStep (F := F) (d := d)) current root →
+      highestActiveJet current = some s →
+        (∀ j, JetDegreeCastsNeZero current j) →
+          ∀ regular : Finset (BoundedSolution current D),
+            (∀ solution ∈ regular, accepts solution.polynomial) →
+            (∀ solution ∈ regular,
+              differentialSpecialization (separant current s) solution.polynomial ≠ 0) →
+                (regular.card : ℚ) ≤ cost
+
+/-- A rational bound for a finite family of bounded solutions, obtained by summing the regular
+branch costs along the singular separant recursion. -/
+theorem boundedSolution_recursive_counting_totalJetDegree [NoZeroDivisors F] [Nontrivial F]
+    (Q : DifferentialPolynomial F d) (hQ : Q ≠ 0) (hcast : ∀ j, JetDegreeCastsNeZero Q j)
+    (accepts : F[X] → Prop) (cost : ℚ) (hcost : 0 ≤ cost)
+    (roots : Finset (BoundedSolution Q D))
+    (hroots : ∀ solution ∈ roots, accepts solution.polynomial)
+    (hRegular : RegularBranchRatBudget Q D accepts cost) :
+    (roots.card : ℚ) ≤ (jetTotalDegree Q : ℚ) * cost := by
+  classical
+  let motive := fun current : DifferentialPolynomial F d ↦
+    Relation.ReflTransGen (SingularStep (F := F) (d := d)) current Q →
+      current ≠ 0 →
+        (∀ j, JetDegreeCastsNeZero current j) →
+          ∀ currentRoots : Finset (BoundedSolution current D),
+            (∀ solution ∈ currentRoots, accepts solution.polynomial) →
+              (currentRoots.card : ℚ) ≤ (jetTotalDegree current : ℚ) * cost
+  have recurse : ∀ current, motive current := by
+    intro current
+    apply (singularStep_wellFounded (F := F) (d := d)).induction current
+    intro equation ih hreachable hne heqCast currentRoots hcurrentAccepts
+    cases hactive : highestActiveJet equation with
+    | none =>
+        let _ : IsEmpty (BoundedSolution equation D) :=
+          isEmpty_boundedSolution_of_highestActiveJet_eq_none hne hactive
+        have hroots : currentRoots = ∅ := by
+          ext solution
+          exact isEmptyElim solution
+        rw [hroots]
+        exact mul_nonneg (Nat.cast_nonneg _) hcost
+    | some s =>
+        let regularRoots := currentRoots.filter fun solution ↦
+          differentialSpecialization (separant equation s) solution.polynomial ≠ 0
+        let singularRoots := currentRoots.filter fun solution ↦
+          differentialSpecialization (separant equation s) solution.polynomial = 0
+        let nextMap : singularRoots → BoundedSolution (separant equation s) D :=
+          fun source ↦ by
+            have hmem := source.property
+            simp only [singularRoots] at hmem
+            exact ⟨source.val.val, (Finset.mem_filter.mp hmem).2⟩
+        let nextRoots : Finset (BoundedSolution (separant equation s) D) :=
+          singularRoots.attach.image nextMap
+        have hstep : SingularStep (separant equation s) equation :=
+          singularStep_separant equation hactive
+        have hnextCast := singularStep_preserves heqCast hstep
+        have hregular : (regularRoots.card : ℚ) ≤ cost := by
+          apply hRegular equation s hreachable hactive heqCast regularRoots
+          · intro solution hsolution
+            exact hcurrentAccepts solution (Finset.mem_filter.mp hsolution).1
+          · intro solution hsolution
+            exact (Finset.mem_filter.mp hsolution).2
+        have hnextAccepts : ∀ solution ∈ nextRoots, accepts solution.polynomial := by
+          intro solution hsolution
+          change solution ∈ singularRoots.attach.image nextMap at hsolution
+          rcases Finset.mem_image.mp hsolution with ⟨source, _hsource, heq⟩
+          have hsource := source.property
+          simp only [singularRoots] at hsource
+          rw [← heq]
+          exact hcurrentAccepts source.val (Finset.mem_filter.mp hsource).1
+        have hnextInjective : Function.Injective
+            (nextMap) := by
+          intro left right heq
+          apply Subtype.ext
+          exact Subtype.ext
+            (congrArg (fun solution : BoundedSolution (separant equation s) D => solution.1)
+              heq)
+        have hnextCard : nextRoots.card = singularRoots.card := by
+          change (singularRoots.attach.image nextMap).card = singularRoots.card
+          rw [Finset.card_image_of_injective _ hnextInjective, Finset.card_attach]
+        have hnext : (nextRoots.card : ℚ) ≤
+            (jetTotalDegree (separant equation s) : ℚ) * cost :=
+          ih (separant equation s) hstep
+            (Relation.ReflTransGen.head hstep hreachable) hnextCast.1 hnextCast.2
+            nextRoots hnextAccepts
+        have hsingular : (singularRoots.card : ℚ) ≤
+            (jetTotalDegree (separant equation s) : ℚ) * cost := by
+          rw [← hnextCard]
+          exact hnext
+        have hpartition : regularRoots.card + singularRoots.card = currentRoots.card := by
+          simpa only [regularRoots, singularRoots, not_ne_iff] using
+            Finset.card_filter_add_card_filter_not (s := currentRoots)
+              (fun solution ↦
+                differentialSpecialization (separant equation s) solution.polynomial ≠ 0)
+        have hmeasure : jetTotalDegree (separant equation s) + 1 ≤
+            jetTotalDegree equation := by
+          exact Nat.succ_le_iff.mpr (jetTotalDegree_lt_of_singularStep hstep)
+        calc
+          (currentRoots.card : ℚ) =
+              (regularRoots.card : ℚ) + (singularRoots.card : ℚ) := by
+            exact_mod_cast hpartition.symm
+          _ ≤ cost + (jetTotalDegree (separant equation s) : ℚ) * cost :=
+            add_le_add hregular hsingular
+          _ = ((jetTotalDegree (separant equation s) + 1 : ℕ) : ℚ) * cost := by
+            push_cast
+            ring
+          _ ≤ (jetTotalDegree equation : ℚ) * cost := by
+            exact mul_le_mul_of_nonneg_right (by exact_mod_cast hmeasure) hcost
+  exact recurse Q Relation.ReflTransGen.refl hQ hcast roots hroots
+
+/-- If every regular branch has cost `ν * R ^ d`, an equation of total jet degree at most `ν`
+has at most `ν ^ 2 * R ^ d` solutions in any finite family. -/
+theorem boundedSolution_card_le_sq_totalJetDegree [NoZeroDivisors F] [Nontrivial F]
+    (Q : DifferentialPolynomial F d) (hQ : Q ≠ 0) (hcast : ∀ j, JetDegreeCastsNeZero Q j)
+    (accepts : F[X] → Prop) (ν : ℕ) (R : ℚ) (hR : 0 ≤ R)
+    (roots : Finset (BoundedSolution Q D))
+    (hroots : ∀ solution ∈ roots, accepts solution.polynomial)
+    (hdegree : jetTotalDegree Q ≤ ν)
+    (hRegular : RegularBranchRatBudget Q D accepts ((ν : ℚ) * R ^ d)) :
+    (roots.card : ℚ) ≤ (ν : ℚ) ^ 2 * R ^ d := by
+  have hcost : 0 ≤ (ν : ℚ) * R ^ d :=
+    mul_nonneg (Nat.cast_nonneg ν) (pow_nonneg hR d)
+  calc
+    (roots.card : ℚ) ≤ (jetTotalDegree Q : ℚ) * ((ν : ℚ) * R ^ d) :=
+      boundedSolution_recursive_counting_totalJetDegree Q hQ hcast accepts _ hcost roots hroots
+        hRegular
+    _ ≤ (ν : ℚ) * ((ν : ℚ) * R ^ d) := by
+      gcongr
+    _ = (ν : ℚ) ^ 2 * R ^ d := by ring
 
 end
 

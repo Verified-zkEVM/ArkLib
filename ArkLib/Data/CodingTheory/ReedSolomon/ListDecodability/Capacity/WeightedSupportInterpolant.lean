@@ -13,6 +13,7 @@ public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.WeightedSuppo
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.WeightedSupport.DimensionInputs
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.WeightedSupport.ScalarParameters
 public import ArkLib.Data.CodingTheory.ReedSolomon.AgreementThreshold
+public import ArkLib.Data.Polynomial.Differential.DerivativeDescent
 public import ArkLib.Data.Polynomial.Differential.TotalJetDegreeCount
 
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.Margin
@@ -134,10 +135,8 @@ private theorem exists_prescribed_weightedSupport_construction_core
     rw [ringChar.eq (ZMod q) q]
     have : 2 * m < 8 * m := by omega
     exact this.trans_le (hblock'.trans hnq)
-  have hcast : ∀ j, JetDegreeCastsNeZero Q j := by
-    intro j
-    apply jetDegreeCastsNeZero_of_ringChar
-    exact Or.inr ((jetDegree_le_total Q j).trans_lt hQtotal |>.trans hmchar)
+  have hcast : ∀ j, JetDegreeCastsNeZero Q j :=
+    jetDegreeCastsNeZero_of_jetTotalDegree_charGuard (le_of_lt hQtotal) (Or.inr hmchar)
   have hcontact : m * A ≤ q ^ 2 := by
     have hmle : m ≤ q := (by omega : m ≤ n).trans hnq
     have hAle : A ≤ q := hA.trans hnq
