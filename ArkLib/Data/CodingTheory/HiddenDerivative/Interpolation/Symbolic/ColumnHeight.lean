@@ -96,8 +96,15 @@ theorem exists_primitive_receivedLine_interpolant_of_column_height (m h : ℕ)
         MvPolynomial.map ψ (SourceColumn.interpolant columns v) ≠ 0) ∧
       ∀ i, SatisfiesLocalConstraints m (Polynomial.C (centers i)) (receivedLine (f i) (g i))
         (SourceColumn.interpolant columns v) := by
-  simpa using exists_primitive_interpolant_of_column_height m 1 h centers _
-    (fun i => natDegree_receivedLine_le (f i) (g i)) columns hcolumns φ hφ hrank
-    (by simpa using hsurplus)
+  have hreceived : ∀ i, (receivedLine (f i) (g i)).natDegree ≤ 1 :=
+    fun i => natDegree_receivedLine_le (f i) (g i)
+  have hsurplus' : s * (h + 1) < ∑ j, (h + 1 - 1 * (columns j).y₀) := by
+    simpa only [Nat.one_mul] using hsurplus
+  obtain ⟨v, hv, hvdeg, hspan, hmap, hconstraints⟩ :=
+    exists_primitive_interpolant_of_column_height m 1 h centers
+      (fun i => receivedLine (f i) (g i)) hreceived columns hcolumns φ hφ hrank hsurplus'
+  refine ⟨v, hv, ?_, hspan, hmap, hconstraints⟩
+  intro j
+  simpa only [Nat.one_mul] using hvdeg j
 
 end ReedSolomon.HiddenDerivative

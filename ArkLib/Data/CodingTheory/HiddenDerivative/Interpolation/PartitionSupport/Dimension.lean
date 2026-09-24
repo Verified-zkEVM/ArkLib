@@ -98,7 +98,10 @@ theorem partition_quadratic_rate_lower {n L deg : ℕ} {rate level : ℝ} (hD : 
   have hrate : 0 < rate := pos_of_mul_pos_left hrn hn0
   have hsource : (n : ℝ) * (level - rate * deg) ≤ (L : ℝ) - D * deg := by
     have hdeg := mul_le_mul_of_nonneg_right hupper (Nat.cast_nonneg deg : (0 : ℝ) ≤ deg)
-    nlinarith
+    calc
+      (n : ℝ) * (level - rate * deg) = level * n + -(rate * n * deg) := by ring
+      _ ≤ (L : ℝ) + -(D * deg) := add_le_add hlevel (neg_le_neg hdeg)
+      _ = (L : ℝ) - D * deg := by ring
   have hmax : (n : ℝ) * max (level - rate * deg) 0 ≤ max ((L : ℝ) - D * deg) 0 := by
     rw [mul_max_of_nonneg _ _ hnR.le, mul_zero]
     exact max_le_max_right 0 hsource
@@ -107,7 +110,9 @@ theorem partition_quadratic_rate_lower {n L deg : ℕ} {rate level : ℝ} (hD : 
     apply div_le_div₀ (by positivity)
     · exact pow_le_pow_left₀ (by positivity) hmax 2
     · positivity
-    · nlinarith
+    · calc
+        2 * (D : ℝ) ≤ 2 * (rate * n) := mul_le_mul_of_nonneg_left hupper (by positivity)
+        _ = 2 * rate * n := by ring
   have hleft : ((n : ℝ) * max (level - rate * deg) 0) ^ 2 / (2 * rate * n) =
       (n : ℝ) / (2 * rate) * (max (level - rate * deg) 0) ^ 2 := by
     field_simp
