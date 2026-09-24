@@ -286,15 +286,11 @@ theorem firstOrderRankCount_floor_le {beta : ℝ} (m : ℕ) (hb0 : 0 ≤ beta)
   set v : ℝ := (m : ℝ)⁻¹ with hv
   have hmR : (0 : ℝ) < m := Nat.cast_pos.mpr hm
   have hMReal : (M : ℝ) ≤ beta * m := Nat.floor_le (by positivity)
-  have hMlt : beta * m < (M : ℝ) + 1 := Nat.lt_floor_add_one _
   have hMNat : M ≤ m := by
     have : (M : ℝ) ≤ m := by nlinarith
     exact_mod_cast this
   have hu0 : 0 ≤ u := by positivity
   have hub : u ≤ beta := (div_le_iff₀ hmR).2 hMReal
-  have hbu : beta ≤ u + v := by
-    rw [hu, hv, show (M : ℝ) / m + (m : ℝ)⁻¹ = ((M : ℝ) + 1) / m by field_simp]
-    exact (le_div_iff₀ hmR).2 hMlt.le
   have hv0 : 0 ≤ v := by positivity
   have hv1 : v ≤ 1 := inv_le_one_of_one_le₀ (by exact_mod_cast hm)
   have hmodel := rankRoundingModel_le hu0 hub hv0 hv1 hb34

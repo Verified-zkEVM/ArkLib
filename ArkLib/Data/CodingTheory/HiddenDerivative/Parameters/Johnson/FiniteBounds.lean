@@ -406,16 +406,8 @@ theorem johnsonPreEnvelope_le_normalized {x y t : ℝ}
       _ = (2 / 7) * t := by ring
   have hinvSq : 1 / t ^ 2 ≤ (4 / 49 : ℝ) := by
     apply (div_le_iff₀ (sq_pos_of_pos ht0)).2
-    have hleft : (7 / 2 : ℝ) * (7 / 2) ≤ (7 / 2) * t :=
-      mul_le_mul_of_nonneg_left ht (by norm_num)
-    have hright : (7 / 2 : ℝ) * t ≤ t * t :=
-      mul_le_mul_of_nonneg_right ht ht0.le
-    have htSquared : (7 / 2 : ℝ) ^ 2 ≤ t ^ 2 := by
-      calc
-        (7 / 2 : ℝ) ^ 2 = (7 / 2) * (7 / 2) := by ring
-        _ ≤ (7 / 2) * t := hleft
-        _ ≤ t * t := hright
-        _ = t ^ 2 := by ring
+    have htSquared : (7 / 2 : ℝ) ^ 2 ≤ t ^ 2 :=
+      (sq_le_sq₀ (by norm_num) ht0.le).2 ht
     calc
       1 = (7 / 2 : ℝ) ^ 2 * (4 / 49) := by norm_num
       _ ≤ t ^ 2 * (4 / 49) := mul_le_mul_of_nonneg_right htSquared (by norm_num)
@@ -792,15 +784,11 @@ theorem johnsonExceptionCount_div_comparisonEstimate_lt {n D A : ℕ} {eta : ℝ
         exact mul_lt_mul_of_pos_right hx1 (pow_pos ht 3)
       _ ≤ tB ^ 3 := by simpa using htCube
   have h49 : (49 : ℝ) ≤ 4 * tB ^ 2 := by
-    have hleft : (7 / 2 : ℝ) * (7 / 2) ≤ (7 / 2) * tB :=
-      mul_le_mul_of_nonneg_left htBLower (by norm_num)
-    have hright : (7 / 2 : ℝ) * tB ≤ tB * tB :=
-      mul_le_mul_of_nonneg_right htBLower htB.le
+    have htBSquared : (7 / 2 : ℝ) ^ 2 ≤ tB ^ 2 :=
+      (sq_le_sq₀ (by norm_num) htB.le).2 htBLower
     calc
-      49 = 4 * ((7 / 2 : ℝ) * (7 / 2)) := by norm_num
-      _ ≤ 4 * (tB * tB) := by
-        exact mul_le_mul_of_nonneg_left (hleft.trans hright) (by norm_num)
-      _ = 4 * tB ^ 2 := by ring
+      49 = 4 * ((7 / 2 : ℝ) ^ 2) := by norm_num
+      _ ≤ 4 * tB ^ 2 := mul_le_mul_of_nonneg_left htBSquared (by norm_num)
   have hquintic : 49 * tB ^ 3 ≤ 4 * tB ^ 5 := by
     calc
       49 * tB ^ 3 ≤ 4 * tB ^ 2 * tB ^ 3 :=

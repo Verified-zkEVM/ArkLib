@@ -7,6 +7,8 @@ module
 
 public import
   ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.WeightedSupport.ScalarParameters
+public import
+  ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RankRounding
 public import ArkLib.ToMathlib.Algebra.Order.Floor.Ratio
 public import Mathlib.Data.Nat.Choose.Cast
 
@@ -207,22 +209,13 @@ theorem centeringErrorBounds (d m : ℕ) (g H : ℝ)
   have hHd : H ≤ (19 / 365 : ℝ) * d :=
     hHupper.trans (mul_le_mul_of_nonneg_left hsqrtLeD (by norm_num))
   have hB : (d.choose 2 : ℝ) / m ≤ 1 / (200 * H) := by
-    have hchoose : (d.choose 2 : ℝ) ≤ (d : ℝ) ^ 2 / 2 := by
-      rw [Nat.cast_choose_two]
-      have hfactor : (d : ℝ) - 1 ≤ d := by linarith
-      have hmul := mul_le_mul_of_nonneg_left hfactor hdR.le
-      calc
-        (d : ℝ) * (d - 1) / 2 ≤ d * d / 2 :=
-          div_le_div_of_nonneg_right hmul (by norm_num)
-        _ = d ^ 2 / 2 := by ring
-    have hsize' : (d.choose 2 : ℝ) * (200 * H) ≤ m := by
-      calc
-        (d.choose 2 : ℝ) * (200 * H) ≤ (d : ℝ) ^ 2 / 2 * (200 * H) :=
-          mul_le_mul_of_nonneg_right hchoose (by positivity)
-        _ = 100 * (d : ℝ) ^ 2 * H := by ring
-        _ ≤ m := hsize
-    rw [div_le_div_iff₀ hmR (by positivity : (0 : ℝ) < 200 * H)]
-    simpa only [one_mul] using hsize'
+    simpa only [show (2 : ℝ) * 100 = 200 by norm_num] using
+      InterpolationRounding.binomial_error_le 100 H d m (by norm_num) hH hm hsize
+  have hBterm : (d.choose 2 : ℝ) * H / (d * m) ≤ 1 / (200 * (d : ℝ)) := by
+    calc
+      _ = ((d.choose 2 : ℝ) / m) * H / d := by ring
+      _ ≤ (1 / (200 * H)) * H / d := by gcongr
+      _ = 1 / (200 * d) := by field_simp
   have hxiH : xi * H ≤ g * H ^ 2 := by
     have := mul_le_mul_of_nonneg_right hgH hH.le
     calc
@@ -243,9 +236,7 @@ theorem centeringErrorBounds (d m : ℕ) (g H : ℝ)
   have hterm2 : (d.choose 2 : ℝ) * H / (d * m) ≤
       g * (19 / 365) / (200 * xi) := by
     calc
-      (d.choose 2 : ℝ) * H / (d * m) = ((d.choose 2 : ℝ) / m) * H / d := by ring
-      _ ≤ (1 / (200 * H)) * H / d := by gcongr
-      _ = 1 / (200 * d) := by field_simp
+      _ ≤ 1 / (200 * (d : ℝ)) := hBterm
       _ ≤ g * (19 / 365) / (200 * xi) := by
         apply (div_le_div_iff₀ (by positivity : (0 : ℝ) < 200 * d)
           (by norm_num [xi] : (0 : ℝ) < 200 * xi)).2
@@ -312,11 +303,6 @@ theorem centeringErrorBounds (d m : ℕ) (g H : ℝ)
         nlinarith only [hsqrtSq]
       _ ≤ (19 / 365 : ℝ) / 219 :=
         div_le_div_of_nonneg_left (by norm_num) (by norm_num) hsqrtLower
-  have hBterm : (d.choose 2 : ℝ) * H / (d * m) ≤ 1 / (200 * d) := by
-    calc
-      _ = ((d.choose 2 : ℝ) / m) * H / d := by ring
-      _ ≤ (1 / (200 * H)) * H / d := by gcongr
-      _ = 1 / (200 * d) := by field_simp
   have hBterm' : (d.choose 2 : ℝ) * H / (d * m) ≤ 1 / (200 * 48000) := by
     apply hBterm.trans
     apply one_div_le_one_div_of_le (by norm_num : (0 : ℝ) < 200 * 48000)
