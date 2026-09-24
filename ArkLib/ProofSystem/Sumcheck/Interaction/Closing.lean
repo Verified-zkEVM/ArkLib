@@ -262,13 +262,19 @@ theorem executeSampled_perfectCompleteness [DecidableEq R] (challenge : ProbComp
   OracleComp.prEvent_eq_one_of_forall_mem_support _ _
     (executeSampled_support R deg challenge p domain target h)
 
+/-- `prEvent_eq_evalDist_map` at `OracleComp unifSpec`, stated so that the `Pr{...}` side uses
+the same `Bind`/`Pure` instances as `do` notation elaborated at this monad. -/
+private theorem prEvent_eq_evalDist_map_unifSpec {α : Type} (mx : OracleComp unifSpec α)
+    (p : α → Prop) : Pr{let x ← mx}[p x] = 𝒟[p <$> mx] {True} :=
+  prEvent_eq_evalDist_map mx p
+
 /-- Measure-valued perfect completeness for the actual randomized verifier. -/
 theorem executeSampled_measureCompleteness [DecidableEq R] (challenge : ProbComp R)
     (p : Message R deg) (domain : List R) (target : R)
     (h : (domain.map (fun x => p.val.eval x)).sum = target) :
     𝒟[(fun run => run.closed.map (closedOutputRelation R deg) = some True) <$>
         executeSampled R deg challenge p domain target] {True} = 1 := by
-  rw [← prEvent_eq_evalDist_map]
+  rw [← prEvent_eq_evalDist_map_unifSpec]
   exact executeSampled_perfectCompleteness R deg challenge p domain target h
 
 end
