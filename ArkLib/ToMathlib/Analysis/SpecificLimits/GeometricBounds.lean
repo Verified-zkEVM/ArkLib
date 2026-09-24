@@ -8,9 +8,15 @@ module
 public import Mathlib.Algebra.Order.Field.GeomSum
 public import Mathlib.Algebra.Order.Floor.Div
 public import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
+public import Mathlib.Data.Rat.Defs
+import Mathlib.Tactic.FieldSimp
+import Mathlib.Tactic.Linarith
+import Mathlib.Tactic.NormNum
+import Mathlib.Tactic.Push
+import Mathlib.Tactic.Ring
 
 /-!
-# Finite geometric sums with a linear weight, and exponential tails
+# Finite geometric sums, agreement-gap bounds, and exponential tails
 
 For `0 ≤ q < 1` in a linearly ordered field, the finite sums `∑_{j<m} q^(j+1)` and
 `∑_{j<m} (j+1) q^(j+1)` are at most their infinite values `q / (1 - q)` and `q / (1 - q)^2`.
@@ -27,6 +33,9 @@ The power bound `(W + y)^n ≤ W^n exp(n y / W)` for `W > 0` and `W + y ≥ 0` t
 upper bound into an exponential one. Finally `⌈a / b⌉ ≤ a / b + 1` after casting to a linearly
 ordered field, for all natural `a, b`.
 
+For positive natural parameters, a gap in a linearly ordered field bounds a rational geometric
+count by a polynomial expression in the block length and the inverse gap.
+
 ## Main statements
 
 * `sum_range_pow_succ_le_div_one_sub`
@@ -37,6 +46,11 @@ ordered field, for all natural `a, b`.
   `Real.sum_range_linear_mul_exp_neg_pow_succ_le`
 * `Real.add_pow_le_pow_mul_exp`
 * `Nat.cast_ceilDiv_le_div_add_one`
+* `agreementGap_geometricRatio_le` and `geometricCount_le_of_agreementGap`
+
+## References
+
+* [DKT26]
 -/
 
 @[expose] public section
@@ -190,3 +204,72 @@ theorem add_pow_le_pow_mul_exp (n : ℕ) {W y : ℝ} (hW : 0 < W) (hWy : 0 ≤ W
     _ = W ^ n * exp (n * (y / W)) := by rw [mul_pow, ← exp_nat_mul]
 
 end Real
+
+/-- If `n`, `ν`, and `δ` are positive, `K ≤ n`, `k ≤ A`, and `k + δn ≤ A`, then the ratio
+`n(1 + 2K(ν - 1)) / (A - k + 1)` is at most `2νn / δ`. -/
+theorem agreementGap_geometricRatio_le {F : Type*} [Field F] [LinearOrder F]
+    [IsStrictOrderedRing F]
+    {n k A K ν : ℕ} {δ : F}
+    (hn : 0 < n) (hν : 0 < ν) (hδ : 0 < δ) (hK : K ≤ n) (hkA : k ≤ A)
+    (hgap : (k : F) + δ * n ≤ A) :
+    ((n * (1 + 2 * K * (ν - 1)) : ℕ) : F) / ((A - k + 1 : ℕ) : F) ≤
+      (2 * ν / δ) * n := by
+  have hnF : (0 : F) < n := by exact_mod_cast hn
+  have hνF : (1 : F) ≤ ν := by exact_mod_cast hν
+  have hKF : (K : F) ≤ n := by exact_mod_cast hK
+  have hb : ((1 + 2 * K * (ν - 1) : ℕ) : F) ≤ 2 * ν * n := by
+    push_cast
+    rw [Nat.cast_sub hν]
+    have hn1 : (1 : F) ≤ n := by exact_mod_cast hn
+    have hm := mul_le_mul_of_nonneg_right hKF (show 0 ≤ (ν : F) - 1 by linarith)
+    norm_num only [Nat.cast_one, Nat.cast_ofNat]
+    nlinarith
+  have ha : δ * n ≤ ((A - k + 1 : ℕ) : F) := by
+    rw [Nat.cast_add, Nat.cast_sub hkA]
+    push_cast
+    linarith
+  have ha0 : (0 : F) < ((A - k + 1 : ℕ) : F) := by positivity
+  have hd : 0 < δ * n := mul_pos hδ hnF
+  calc
+    ((n * (1 + 2 * K * (ν - 1)) : ℕ) : F) / ((A - k + 1 : ℕ) : F) ≤
+        ((n : F) * (2 * ν * n)) / (δ * n) := by
+      apply div_le_div₀ (by positivity)
+      · simpa only [Nat.cast_mul] using mul_le_mul_of_nonneg_left hb hnF.le
+      · exact hd
+      · exact ha
+    _ = (2 * ν / δ) * n := by field_simp
+
+/-- Suppose `n`, `ν`, and `δ` are positive, `K ≤ n`, `k ≤ A`, and `k + δn ≤ A`.
+If `ν ≤ 2m` and `L ≤ ν² (n(1 + 2K(ν - 1)) / (A - k + 1))^d` in `ℚ`, then
+`L ≤ 4m² (4m / δ)^d n^d` in the ordered field. -/
+theorem geometricCount_le_of_agreementGap {F : Type*} [Field F] [LinearOrder F]
+    [IsStrictOrderedRing F]
+    {n k A K ν m d L : ℕ} {δ : F}
+    (hn : 0 < n) (hν : 0 < ν) (hνm : ν ≤ 2 * m) (hδ : 0 < δ)
+    (hK : K ≤ n) (hkA : k ≤ A) (hgap : (k : F) + δ * n ≤ A)
+    (hcount : (L : ℚ) ≤ (ν : ℚ) ^ 2 *
+      (((n * (1 + 2 * K * (ν - 1)) : ℕ) : ℚ) /
+        ((A - k + 1 : ℕ) : ℚ)) ^ d) :
+    (L : F) ≤ 4 * (m : F) ^ 2 * (4 * m / δ) ^ d * n ^ d := by
+  have hcountF : (L : F) ≤ (ν : F) ^ 2 *
+      (((n * (1 + 2 * K * (ν - 1)) : ℕ) : F) /
+        ((A - k + 1 : ℕ) : F)) ^ d := by
+    have hc := (Rat.cast_le (K := F)).mpr hcount
+    simpa only [Rat.cast_natCast, Rat.cast_mul, Rat.cast_pow, Rat.cast_div] using hc
+  have hratio := agreementGap_geometricRatio_le (F := F) hn hν hδ hK hkA hgap
+  have hνmF : (ν : F) ≤ 2 * m := by exact_mod_cast hνm
+  have hratio' : ((n * (1 + 2 * K * (ν - 1)) : ℕ) : F) /
+      ((A - k + 1 : ℕ) : F) ≤ (4 * m / δ) * n := by
+    apply hratio.trans
+    apply mul_le_mul_of_nonneg_right _ (Nat.cast_nonneg n)
+    apply (div_le_div_iff_of_pos_right hδ).mpr
+    linarith
+  calc
+    (L : F) ≤ (ν : F) ^ 2 *
+        (((n * (1 + 2 * K * (ν - 1)) : ℕ) : F) /
+          ((A - k + 1 : ℕ) : F)) ^ d := hcountF
+    _ ≤ (2 * (m : F)) ^ 2 * ((4 * m / δ) * n) ^ d := by
+      gcongr
+    _ = 4 * (m : F) ^ 2 * (4 * m / δ) ^ d * n ^ d := by
+      rw [mul_pow]
+      ring
