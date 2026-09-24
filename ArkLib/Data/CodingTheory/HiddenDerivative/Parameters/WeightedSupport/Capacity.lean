@@ -6,6 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.WeightedSupport.Block
+public import ArkLib.Data.CodingTheory.ReedSolomon.AgreementThreshold
 
 /-!
 # Weighted-support capacity parameters
@@ -40,11 +41,12 @@ from the order bounds in `Parameters/WeightedSupport/ScalarParameters.lean` and 
 * `weightedSupportMultiplicity_pos_iff`: `0 < m ↔ 2 ≤ d`.
 * `capacity_block_bounds`: for `0 < δ < 1 / 4`, `8 m ≤ n` and `k + ⌈δ n⌉₊ ≤ n`, the order is
   below the ambient degree `K - 1` and `k ≤ K ≤ n`.
+* `prescribed_geometric_parameters`: the prescribed order, multiplicity and Taylor cutoff satisfy
+  the size and agreement bounds used by geometric list counting.
 
 ## References
 
-* [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient
-  Decoding and Smaller Cryptographic Proofs*][DKT26], weighted-support parameters
+* [DKT26]
 -/
 
 @[expose] public section
@@ -141,5 +143,59 @@ theorem capacity_block_bounds {δ : ℝ} {n k : ℕ} (hδ : 0 < δ) (hδmax : δ
   rw [capacityDerivativeOrder_eq_ceil hδmax] at hblock ⊢
   obtain ⟨hn, -, hdD, -, -, hK, -⟩ := prescribedBlockBounds δ n k hδ hδmax.le hblock hA
   exact ⟨hn, hdD, le_max_left _ _, hK⟩
+
+/-- The prescribed order and multiplicity give the size and agreement bounds for geometric
+list counting. -/
+theorem prescribed_geometric_parameters
+    (δ : ℝ) (n k : ℕ) (hδ : 0 < δ) (hδmax : δ < 1 / 4)
+    (hblock :
+      let d := Nat.ceil (Real.exp (xi / δ))
+      let m := Nat.ceil (100 * (d : ℝ) ^ 2 * harmonic (d - 1))
+      8 * m ≤ n)
+    (hA : agreementThreshold δ n k ≤ n) :
+    let A := agreementThreshold δ n k
+    let d := Nat.ceil (Real.exp (xi / δ))
+    let m := Nat.ceil (100 * (d : ℝ) ^ 2 * harmonic (d - 1))
+    let ν := 2 * m - 1
+    let K := max k (Nat.floor (δ * n / 2))
+    0 < n ∧ 0 < m ∧ 0 < ν ∧ ν ≤ 2 * m ∧ ν < n ∧
+      d < K ∧ k ≤ K ∧ K ≤ n ∧ k ≤ A ∧ (k : ℝ) + δ * n ≤ A := by
+  let d := Nat.ceil (Real.exp (xi / δ))
+  let m := Nat.ceil (100 * (d : ℝ) ^ 2 * harmonic (d - 1))
+  let ν := 2 * m - 1
+  let K := max k (Nat.floor (δ * n / 2))
+  let A := agreementThreshold δ n k
+  have hblock' : 8 * m ≤ n := by simpa only [d, m] using hblock
+  have hblock'' :
+      let d := Nat.ceil (Real.exp (xi / δ))
+      let H : ℝ := harmonic (d - 1)
+      let m := Nat.ceil (100 * (d : ℝ) ^ 2 * H)
+      8 * m ≤ n := by
+    dsimp only
+    exact hblock'
+  have hA' : k + Nat.ceil (δ * n) ≤ n := by
+    simpa only [agreementThreshold] using hA
+  have hb := prescribedBlockBounds δ n k hδ hδmax.le hblock'' hA'
+  obtain ⟨hn, hD, hdD, _, _, hKn, _⟩ := hb
+  have ho := prescribed_order_lower δ hδ hδmax.le
+  have hH : (0 : ℝ) < (harmonic (d - 1) : ℝ) := by
+    have hxi : 0 < xi := by norm_num [xi]
+    simpa only [d] using (div_pos hxi hδ).trans_le ho.2.2
+  have hdlower : 48000 ≤ d := by simpa only [d] using ho.1
+  have hd : 0 < d := by omega
+  have hmR : (0 : ℝ) < m := lt_of_lt_of_le (by positivity) (Nat.le_ceil _)
+  have hm : 0 < m := Nat.cast_pos.mp hmR
+  have hν : 0 < ν := by dsimp [ν]; omega
+  have hνm : ν ≤ 2 * m := by dsimp [ν]; omega
+  have hνn : ν < n := by dsimp [ν]; omega
+  have hdK : d < K := by
+    have hdD' : d < K - 1 := by simpa only [d, K] using hdD
+    omega
+  have hkK : k ≤ K := Nat.le_max_left _ _
+  have hKn' : K ≤ n := by simpa only [K] using hKn
+  have hkA : k ≤ A := by dsimp [A]; exact Nat.le_add_right _ _
+  have hgap : (k : ℝ) + δ * n ≤ A :=
+    (agreementThreshold_le_iff_real hδ.le n k _).mp le_rfl
+  exact ⟨hn, hm, hν, hνm, hνn, hdK, hkK, hKn', hkA, hgap⟩
 
 end ReedSolomon

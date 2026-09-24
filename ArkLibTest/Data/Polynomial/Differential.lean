@@ -335,13 +335,10 @@ example : derivativeDescent cubicEquation 1 ≠ 0 ∧
     ext j
     fin_cases j <;> simp [DependsOnJet, jetDegree_cubicEquation]
   have hhighest : highestActiveJet cubicEquation = some 1 := by
-    rw [highestActiveJet_eq_some_max cubicEquation (by simp [hactive])]
-    simp [hactive]
-  have hcast : JetDegreeCastsNeZero cubicEquation 1 := by
-    apply jetDegreeCastsNeZero_of_ringChar
-    exact Or.inl (ringChar.eq_zero : ringChar ℚ = 0)
+    simpa [hactive] using highestActiveJet_eq_some_max cubicEquation (by simp [hactive])
+  have hcast := jetDegreeCastsNeZero_of_jetTotalDegree_charGuard (Q := cubicEquation)
+    (ν := jetTotalDegree cubicEquation) le_rfl (Or.inl ringChar.eq_zero) 1
   exact derivativeDescent_spec_of_highestActiveJet_eq_some hhighest hcast
-
 /-! ### Direct regular iteration -/
 
 /-- The equation `y' = y`, as the differential polynomial `Y₁ - Y₀`. -/
@@ -1493,5 +1490,9 @@ example :
   exact ⟨positiveCurveEquation_yOneDegree_le retainedCurveEquation,
     positiveCurveEquation_jetTotalDegree_le retainedCurveEquation,
     positiveCurveEquation_coeffNatDegreeLE retainedCurveEquation⟩
+example : 5 ≤ ringChar (ZMod 5) := by
+  exact (characteristic_bounds_of_max (F := ZMod 5) (K := 5) (ν := 3)
+    (Or.inr (by rw [ringChar.eq (ZMod 5) 5]; norm_num))).2.resolve_left
+      (by rw [ringChar.eq (ZMod 5) 5]; norm_num)
 end
 end PolynomialDifferential
