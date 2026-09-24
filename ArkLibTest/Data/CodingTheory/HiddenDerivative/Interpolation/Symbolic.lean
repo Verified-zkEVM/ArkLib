@@ -519,7 +519,9 @@ private theorem johnsonKernelInterpolant_eq :
     Fin.default_eq_zero, Fin.isValue, Fin.val_eq_zero, sum_singleton, Fin.coe_ofNat_eq_mod,
     Nat.zero_mod, Nat.mul_zero, Nat.sub_zero, Fin.sum_univ_two]
   rw [hcoord ⟨0, 0⟩, hcoord ⟨0, 1⟩]
-  simp
+  simp only [Nat.reduceAdd, Fin.isValue, Fin.coe_ofNat_eq_mod, Nat.zero_mod, Nat.mul_zero,
+    Nat.sub_zero, Finsupp.single_zero, add_zero, univ_eq_empty, sum_empty, monomial_zero', C_1,
+    Nat.mod_succ, add_right_inj]
   simpa using (MvPolynomial.X_pow_eq_monomial (n := none) (e := 1) :
     (X none : DifferentialPolynomial ℚ[X] 0) ^ 1 =
       MvPolynomial.monomial (Finsupp.single none 1) 1).symm
