@@ -1016,6 +1016,12 @@ the free-order extension was contributed by Pratyush Mishra. All eight definitio
 parameter data only: no theorem here or in the source proves that it bounds a list, since that
 needs a root-counting theorem of Kopparty that is not formalized. -/
 
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/AgreementCounting.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/FirstOrder/FirstOrderList.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`firstOrderListWeight`, `firstOrderTightListWeight`, `firstOrderTightListWeight_nonneg`, `firstOrderTightListWeight_two_mul_le`, and `finite_firstOrder_agreement_solutions_card_le_sharp` keep their names. `finite_firstOrder_agreement_solutions_card_le_tight_of_exponent` also keeps its name and has the unused premise `K ≤ n` removed; the sharp-count theorem likewise drops that premise. Added `boundedSolution_card_le_separantChainStageSum` to `ArkLib/Data/Polynomial/Differential/RecursiveCount.lean` as a generic composition theorem for stage-dependent regular-branch costs along an explicit separant chain, representing the source-local regular-stage estimate and recursive induction. No public source declaration was left out. The first-order acceptance example exercises the exact count, sharp count, uniform comparison, and charge nonnegativity; the differential-polynomial acceptance example checks the `Y₁` stage charge and applies the stage-sum theorem to a nonempty bounded-solution set along `challengeChain`.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/AutomaticBounds.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/FirstOrder/AutomaticBounds.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
