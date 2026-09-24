@@ -19,7 +19,6 @@ import
 import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerBatchedGeometricTransfer
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.LineToAffine
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.SingularTail
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TupleSpecialization
 import ArkLibTest.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TaylorChart
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.ComponentDimension
@@ -38,7 +37,7 @@ import Mathlib.Algebra.Field.ZMod
 
 /-! # Acceptance cases for Reed–Solomon mutual correlated agreement -/
 
-open Polynomial Finset ReedSolomon ReedSolomon.FirstOrder.Squarefree PolynomialDifferential
+open Polynomial Finset ReedSolomon PolynomialDifferential
 
 private abbrev E₄ := FiniteField.Extension (ZMod 2) 2 2
 private def pointDomain : Fin 1 ↪ ZMod 2 :=
@@ -252,12 +251,6 @@ example : ∃ exceptional : Finset ℚ, exceptional.card ≤ 1 ∧ 0 ∈ excepti
     rw [hset'] at hone
     simp at hone
   exact ⟨exceptional, hcard', hzero⟩
-
-/-- A double root of `X²` kills the specialized singular tail. -/
-example : singularTail (1 : ℚ[X]) (X ^ 2 : ℚ[X][X]) 2 = 0 := by
-  have h := singularTail_map_eq_zero_of_common_root (1 : ℚ[X]) (X ^ 2 : ℚ[X][X]) two_pos
-    (by simp) (RingHom.id ℚ[X]) 0 (by simp) (by simp)
-  simpa using h
 
 private noncomputable def tupleOne : Fin 2 → ℚ[X] := ![1, 0]
 private noncomputable def tupleChallenge : Fin 2 → ℚ[X] := ![0, 1]

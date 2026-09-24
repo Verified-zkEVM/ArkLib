@@ -5,12 +5,21 @@ Authors: Quang Dao
 -/
 
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.SingularTail
+import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.UniformMca
+import ArkLib.Data.Polynomial.Differential.Types
+import Mathlib.Tactic.NormNum
 
-/-! # Acceptance cases for squarefree list bounds -/
+/-! # Acceptance cases for singular tails and squarefree list bounds -/
 
-open ReedSolomon.HiddenDerivative
+open Polynomial PolynomialDifferential ReedSolomon.HiddenDerivative
 
 namespace ReedSolomon.FirstOrder.Squarefree
+
+/-- A double root of `X²` kills the specialized singular tail. -/
+example : singularTail (1 : ℚ[X]) (X ^ 2 : ℚ[X][X]) 2 = 0 := by
+  have h := singularTail_map_eq_zero_of_common_root (1 : ℚ[X]) (X ^ 2 : ℚ[X][X]) two_pos
+    (by simp) (RingHom.id ℚ[X]) 0 (by simp) (by simp)
+  simpa using h
 
 /-- The squarefree list expression has the product bound at `D = 1`, `B = 4`, `M = 2`. -/
 example :
