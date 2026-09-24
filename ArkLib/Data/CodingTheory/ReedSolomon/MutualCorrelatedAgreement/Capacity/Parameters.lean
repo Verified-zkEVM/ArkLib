@@ -18,12 +18,11 @@ import ArkLib.Data.Polynomial.Differential.WitnessCount
 
 The prescribed weighted-support construction gives a symbolic received-curve certificate and
 size bounds for its Taylor parameters. A characteristic bound by the block length supplies all
-binomial pivots over the base field and its extensions.
+binomial pivots below the block length.
 
 ## Main statements
 
 * `ReedSolomon.exists_prescribed_correlated_parameters`: a certificate and its parameter bounds.
-* `ReedSolomon.prescribed_correlated_extension_pivots`: nonzero pivots in every field extension.
 
 ## References
 
@@ -83,17 +82,5 @@ theorem exists_prescribed_correlated_parameters {F : Type u} [Field F]
       hδ hδ' hblock hA,
     hn, hν, hνn, hdK.trans_le hKn, hkK.trans hKn, hkA, hgap,
     binomial_pivots_below_of_characteristic hchar⟩
-
-/-- A characteristic bound by the block length supplies every binomial pivot in an
-extension field. -/
-theorem prescribed_correlated_extension_pivots {F E : Type*} [Field F] [Field E]
-    (iota : F →+* E) (n : ℕ) (hchar : ringChar F = 0 ∨ n ≤ ringChar F) :
-    ∀ r i, r < i → i < n → (i.choose r : E) ≠ 0 := by
-  intro r i hri hi
-  have hbase := binomial_pivots_below_of_characteristic hchar r i hri hi
-  intro hzero
-  apply hbase
-  apply iota.injective
-  simpa using hzero
 
 end ReedSolomon
