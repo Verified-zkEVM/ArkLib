@@ -25,6 +25,10 @@ vanishes after restriction to it.
 * `exists_graphLine_pair_of_joint_taylor_chart`: reconstruction on a regular joint chart point.
 * `exists_graphLine_pair_of_regular_component`: a positive-dimensional prime component lies on
   a graph line determined by the common sample.
+* `aeval_jointTaylorAgreementEquation_eq_zero_iff`,
+  `commonAgreement_of_jointTaylorAgreementEquation_mem_prime`, and
+  `exists_graphLine_pair_of_regular_component_agreements`: agreement extraction from regular
+  components.
 
 ## References
 
@@ -319,6 +323,193 @@ theorem exists_graphLine_pair_of_regular_component [IsAlgClosed E]
     rw [hcoeff, hlinear, sub_self]
   refine ⟨P₀, P₁, hP₀, hP₁, hsamplePair, hgraph, hvanish,
     hvanish _ hinit, (fun l hl ↦ hvanish _ (hhigh l hl)), hseparant, herror⟩
+
+/-- A regular joint agreement equation vanishes exactly when the reconstructed polynomial takes
+the received value at the challenge coordinate. -/
+theorem aeval_jointTaylorAgreementEquation_eq_zero_iff
+    (center : E) (Q : DifferentialPolynomial E[X] r) (K τ : ℕ)
+    (hτ : TaylorExponentSufficient r K τ)
+    (x : Option (Fin (r + 1)) → E)
+    (hs : aeval x (jointInitialJetSeparant center Q) ≠ 0) (alpha f g : E) :
+    aeval x (jointTaylorAgreementEquation center Q K τ (Polynomial.C alpha)
+      (Polynomial.C f + Polynomial.X * Polynomial.C g)) = 0 ↔
+      (rationalTaylorPolynomial center
+        (MvPolynomial.map (Polynomial.evalRingHom (x none)) Q) K
+        (fun j ↦ x (some j))).eval alpha = f + x none * g := by
+  let φ : E[X] →ₐ[E] E := Polynomial.aeval (x none)
+  have hφ : φ.toRingHom = Polynomial.evalRingHom (x none) := by
+    ext a <;> simp [φ]
+  have hs' : aeval (fun j ↦ x (some j))
+      (MvPolynomial.map φ.toRingHom (initialJetSeparant (Polynomial.C center) Q)) ≠ 0 := by
+    simpa only [jointInitialJetSeparant, aeval_optionEquivRight_symm, φ] using hs
+  rw [jointTaylorAgreementEquation, aeval_optionEquivRight_symm]
+  have hiff := aeval_map_taylorAgreementEquationOver_eq_zero_iff_of_exponent φ
+    (Polynomial.C center) Q K τ hτ (fun j ↦ x (some j)) hs' (Polynomial.C alpha)
+    (Polynomial.C f + Polynomial.X * Polynomial.C g)
+  simpa only [hφ, φ, map_add, map_mul, Polynomial.aeval_C, Polynomial.aeval_X,
+    Algebra.algebraMap_self, RingHom.id_apply] using hiff
+
+/-- An agreement equation in a positive-dimensional regular component forces the corresponding
+received coordinate to agree with the pair parametrizing that component. -/
+theorem commonAgreement_of_jointTaylorAgreementEquation_mem_prime [IsAlgClosed E]
+    (domain : Fin n ↪ F) (f g : Fin n → F) (iota : F →+* E)
+    (center : E) (Q : DifferentialPolynomial E[X] r) (K τ : ℕ)
+    (hτ : TaylorExponentSufficient r K τ)
+    (P : Ideal (MvPolynomial (Option (Fin (r + 1))) E)) [P.IsPrime]
+    (hs : jointInitialJetSeparant center Q ∉ P)
+    (hd : 0 < (affineHilbertPolynomial P).natDegree) (P₀ P₁ : F[X])
+    (hgraph : ∀ x ∈ {x | x ∈ zeroLocus E P ∧
+        aeval x (jointInitialJetSeparant center Q) ≠ 0},
+      ∃ z : E, x = fun j ↦
+        (affinePairCurve center (P₀.map iota) (P₁.map iota) j).eval z)
+    (hpoly : ∀ x, x ∈ zeroLocus E P → aeval x (jointInitialJetSeparant center Q) ≠ 0 →
+      rationalTaylorPolynomial center (MvPolynomial.map (Polynomial.evalRingHom (x none)) Q)
+        K (fun j ↦ x (some j)) = P₀.map iota + Polynomial.C (x none) * P₁.map iota)
+    (i : Fin n)
+    (hcut : jointTaylorAgreementEquation center Q K τ (Polynomial.C (iota (domain i)))
+      (Polynomial.C (iota (f i)) + Polynomial.X * Polynomial.C (iota (g i))) ∈ P) :
+    P₀.eval (domain i) = f i ∧ P₁.eval (domain i) = g i := by
+  have hregular : IsLeftRegular (Ideal.Quotient.mk P (jointInitialJetSeparant center Q)) :=
+    IsLeftCancelMulZero.mul_left_cancel_of_ne_zero
+      (mt Ideal.Quotient.eq_zero_iff_mem.mp hs)
+  let regularSet := {x : Option (Fin (r + 1)) → E |
+    x ∈ zeroLocus E P ∧ aeval x (jointInitialJetSeparant center Q) ≠ 0}
+  have hinfinite : regularSet.Infinite := by
+    intro hfinite
+    have hzero := (MvPolynomial.finite_principalOpen_iff_natDegree_affineHilbertPolynomial_eq_zero
+      hregular).mp hfinite
+    omega
+  have hcoords (x : Option (Fin (r + 1)) → E) (hx : x ∈ regularSet)
+      (j : Fin (r + 1)) :
+      x (some j) = polynomialJet center (P₀.map iota) j +
+        x none * polynomialJet center (P₁.map iota) j := by
+    obtain ⟨z, hz⟩ := hgraph x hx
+    have hnone : x none = z := by
+      have h := congrFun hz none
+      simpa [affinePairCurve] using h
+    have hsome := congrFun hz (some j)
+    have hsome' : x (some j) = polynomialJet center (P₀.map iota) j +
+        z * polynomialJet center (P₁.map iota) j := by
+      simpa only [affinePairCurve, Polynomial.eval_add, Polynomial.eval_mul,
+        Polynomial.eval_C, Polynomial.eval_X, mul_comm] using hsome
+    rw [hnone]
+    exact hsome'
+  have hinj : Set.InjOn (fun x : Option (Fin (r + 1)) → E ↦ x none) regularSet := by
+    intro x hx y hy hxy
+    change x none = y none at hxy
+    funext j
+    cases j with
+    | none => exact hxy
+    | some j => rw [hcoords x hx j, hcoords y hy j, hxy]
+  let mismatch : E[X] :=
+    Polynomial.C (iota (P₀.eval (domain i)) - iota (f i)) +
+      Polynomial.X * Polynomial.C (iota (P₁.eval (domain i)) - iota (g i))
+  have hzero : mismatch = 0 := by
+    apply Polynomial.eq_zero_of_infinite_isRoot
+    apply (hinfinite.image hinj).mono
+    rintro z ⟨x, hx, rfl⟩
+    have heval := (aeval_jointTaylorAgreementEquation_eq_zero_iff center Q K τ hτ x hx.2
+      (iota (domain i)) (iota (f i)) (iota (g i))).mp (hx.1 _ hcut)
+    rw [hpoly x hx.1 hx.2] at heval
+    have heval' : iota (P₀.eval (domain i)) + x none * iota (P₁.eval (domain i)) =
+        iota (f i) + x none * iota (g i) := by
+      simpa only [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_C,
+        Polynomial.eval_map, Polynomial.eval₂_at_apply] using heval
+    change mismatch.eval (x none) = 0
+    simp only [mismatch, Polynomial.eval_add, Polynomial.eval_C,
+      Polynomial.eval_mul, Polynomial.eval_X]
+    linear_combination heval'
+  have hconst := congrArg (fun R : E[X] ↦ R.eval 0) hzero
+  have hone := congrArg (fun R : E[X] ↦ R.eval 1) hzero
+  simp only [mismatch, Polynomial.eval_add, Polynomial.eval_C, Polynomial.eval_mul,
+    Polynomial.eval_X, zero_mul, add_zero, Polynomial.eval_zero] at hconst
+  simp only [mismatch, Polynomial.eval_add, Polynomial.eval_C, Polynomial.eval_mul,
+    Polynomial.eval_X, one_mul, Polynomial.eval_zero] at hone
+  refine ⟨iota.injective (sub_eq_zero.mp hconst), ?_⟩
+  rw [hconst, zero_add] at hone
+  exact iota.injective (sub_eq_zero.mp hone)
+
+/-- A positive-dimensional regular component supported on any `L` agreement cuts determines a
+degree-bounded pair with at least `L` common agreements and all chart restriction identities. -/
+theorem exists_graphLine_pair_of_regular_component_agreements [IsAlgClosed E]
+    [DecidableEq F] {L : ℕ} (domain : Fin n ↪ F) (f g : Fin n → F)
+    (indices : Finset (Fin n)) (hcard : indices.card = L) (hkL : k ≤ L)
+    (iota : F →+* E) (center : E) (Q : DifferentialPolynomial E[X] r)
+    (hK : r < K) (τ : ℕ) (hτ : TaylorExponentSufficient r K τ)
+    (P : Ideal (MvPolynomial (Option (Fin (r + 1))) E)) [P.IsPrime]
+    (hs : jointInitialJetSeparant center Q ∉ P)
+    (hd : 0 < (affineHilbertPolynomial P).natDegree)
+    (hinit : jointInitialJetEquation center Q ∈ P)
+    (hhigh : ∀ l : Fin K, k ≤ l.val → jointCommonTaylorNumerator center Q τ l ∈ P)
+    (hcuts : ∀ i ∈ indices,
+      jointTaylorAgreementEquation center Q K τ (Polynomial.C (iota (domain i)))
+        (Polynomial.C (iota (f i)) + Polynomial.X * Polynomial.C (iota (g i))) ∈ P) :
+    ∃ P₀ P₁ : F[X], P₀.degree < k ∧ P₁.degree < k ∧
+      L ≤ (commonPolynomialAgreementSet domain f g P₀ P₁).card ∧
+      (∀ x ∈ {x | x ∈ zeroLocus E P ∧
+          aeval x (jointInitialJetSeparant center Q) ≠ 0},
+        ∃ z : E, x = fun j ↦
+          (affinePairCurve center (P₀.map iota) (P₁.map iota) j).eval z) ∧
+      (∀ p ∈ P, aeval (affinePairCurve center (P₀.map iota) (P₁.map iota)) p = 0) ∧
+      aeval (affinePairCurve center (P₀.map iota) (P₁.map iota))
+        (jointInitialJetEquation center Q) = 0 ∧
+      (∀ l : Fin K, k ≤ l.val →
+        aeval (affinePairCurve center (P₀.map iota) (P₁.map iota))
+          (jointCommonTaylorNumerator center Q τ l) = 0) ∧
+      aeval (affinePairCurve center (P₀.map iota) (P₁.map iota))
+        (jointInitialJetSeparant center Q) ≠ 0 ∧
+      ∀ l : Fin K,
+        aeval (affinePairCurve center (P₀.map iota) (P₁.map iota))
+          (jointTaylorReconstructionError center Q τ (P₀.map iota) (P₁.map iota) l) = 0 := by
+  classical
+  obtain ⟨sample, hsub, hsample⟩ := Finset.exists_subset_card_eq (hcard ▸ hkL)
+  obtain ⟨P₀, P₁, hP₀, hP₁, hsamplePair, hgraph, hvanish, hinitPair,
+      hhighPair, hregularPair, hreconstruction⟩ :=
+    exists_graphLine_pair_of_regular_component domain f g sample hsample iota center Q hK τ hτ
+      P hs hd hinit hhigh (fun i hi ↦ hcuts i (hsub hi))
+  have hpoly : ∀ x, x ∈ zeroLocus E P →
+      aeval x (jointInitialJetSeparant center Q) ≠ 0 →
+      rationalTaylorPolynomial center (MvPolynomial.map (Polynomial.evalRingHom (x none)) Q)
+        K (fun j ↦ x (some j)) = P₀.map iota + Polynomial.C (x none) * P₁.map iota := by
+    intro x hx hsep
+    let φ : E[X] →ₐ[E] E := Polynomial.aeval (x none)
+    have hφ : φ.toRingHom = Polynomial.evalRingHom (x none) := by
+      ext a <;> simp [φ]
+    have hS : aeval (fun j ↦ x (some j))
+        (MvPolynomial.map φ.toRingHom (initialJetSeparant (Polynomial.C center) Q)) ≠ 0 := by
+      simpa only [jointInitialJetSeparant, aeval_optionEquivRight_symm, φ] using hsep
+    have hdegree := degree_rationalTaylorPolynomial_lt_of_symbolic_high_cuts_and_exponent
+      φ (Polynomial.C center) Q K k τ hτ (fun j ↦ x (some j)) hS
+      (fun l hl ↦ by
+        have hz := hx _ (hhigh l hl)
+        simpa only [jointCommonTaylorNumerator, aeval_optionEquivRight_symm, φ] using hz)
+    have hcenter : φ (Polynomial.C center) = center := by simp [φ]
+    rw [hcenter, hφ] at hdegree
+    have hpairdegree : (P₀.map iota + Polynomial.C (x none) * P₁.map iota).degree < k := by
+      apply (Polynomial.degree_add_le _ _).trans_lt
+      apply max_lt (Polynomial.degree_map_le.trans_lt hP₀)
+      rw [← Polynomial.smul_eq_C_mul]
+      exact (Polynomial.degree_smul_le _ _).trans_lt (Polynomial.degree_map_le.trans_lt hP₁)
+    apply Polynomial.eq_of_degrees_lt_of_eval_index_eq sample
+      (domain.trans ⟨iota, iota.injective⟩).injective.injOn
+    · simpa only [hsample] using hdegree
+    · simpa only [hsample] using hpairdegree
+    · intro i hi
+      have heval := (aeval_jointTaylorAgreementEquation_eq_zero_iff center Q K τ hτ x hsep
+        (iota (domain i)) (iota (f i)) (iota (g i))).mp
+        (hx _ (hcuts i (hsub hi)))
+      simpa only [Function.Embedding.trans_apply, Function.Embedding.coeFn_mk,
+        Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_C,
+        Polynomial.eval_map, Polynomial.eval₂_at_apply,
+        (hsamplePair i hi).1, (hsamplePair i hi).2] using heval
+  refine ⟨P₀, P₁, hP₀, hP₁, ?_, hgraph, hvanish, hinitPair, hhighPair,
+    hregularPair, hreconstruction⟩
+  rw [← hcard]
+  apply Finset.card_le_card
+  intro i hi
+  simp only [commonPolynomialAgreementSet, Finset.mem_filter, Finset.mem_univ, true_and]
+  exact commonAgreement_of_jointTaylorAgreementEquation_mem_prime domain f g iota center Q K τ hτ
+    P hs hd P₀ P₁ hgraph hpoly i (hcuts i hi)
 
 end
 
