@@ -13,6 +13,7 @@ public import ArkLib.Data.Polynomial.Differential.TaylorChart
 public import ArkLib.Data.Polynomial.Differential.BaseChange
 public import ArkLib.Data.Polynomial.Differential.JetDegree
 public import ArkLib.ToMathlib.MvPolynomial.PolynomialCoefficients
+public import ArkLib.ToMathlib.Set.Finite
 
 /-!
 # Regular equations on power-batched polynomial curves
@@ -128,13 +129,9 @@ theorem regularPowerBatchedBadChallenges_finite [IsAlgClosed E]
     (hjet : jetTotalDegree Q ≤ v) (hheight : CoeffNatDegreeLE Q h)
     (hbin : ∀ i, r < i → i < K → (i.choose r : E) ≠ 0) :
     (regularPowerBatchedBadChallenges domain w iota Q k A).Finite := by
-  by_contra hinfinite
-  obtain ⟨N, hN⟩ := exists_nat_gt (regularPowerBatchedAgreementBound n r ℓ K k L A v h)
-  obtain ⟨S, hS, hcard⟩ := Set.Infinite.exists_subset_card_eq hinfinite N
-  have hb := finite_regularPowerBatchedBadChallenges_card_le
-    domain w iota Q K k L A v h hK hkK hk hkL hLA hAn hD hv hjet hheight hbin S hS
-  rw [hcard] at hb
-  exact (not_lt_of_ge hb) hN
+  exact Set.finite_of_forall_finset_card_le (R := ℚ) fun S hS ↦
+    finite_regularPowerBatchedBadChallenges_card_le
+      domain w iota Q K k L A v h hK hkK hk hkL hLA hAn hD hv hjet hheight hbin S hS
 
 open Classical in
 /-- One bounded exceptional set works for every close regular solution of the symbolic equation;

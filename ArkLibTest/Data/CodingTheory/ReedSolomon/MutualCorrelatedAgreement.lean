@@ -14,6 +14,7 @@ import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.GraphLineC
 import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerBatchedComponentRecognition
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerTupleCounting
+import ArkLib.Data.CodingTheory.ReedSolomon.PowerAgreement.ConstantCode
 import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerBatchedComponentAgreement
 import
@@ -1456,41 +1457,42 @@ example : (firstOrderCurveFiberStageOne 2 exampleJet exampleCap (regularTaylorEx
         automaticDerivativeRatio, automaticAgreement, automaticGapBracket,
         firstOrderCleanExpression, firstOrderRateBeta, ht]
 end ReedSolomon.FirstOrder.Squarefree
-
 namespace ReedSolomon.PowerBatchedRegularEquationTest
-private abbrev regularField := AlgebraicClosure ℚ
-private def regularDomain : Fin 1 ↪ ℚ :=
-  ⟨fun _ ↦ 0, fun _ _ _ ↦ Subsingleton.elim _ _⟩
-private def regularWord : Fin 1 → Fin 1 → ℚ := fun _ _ ↦ 0
-private noncomputable abbrev regularMap : ℚ →+* regularField := algebraMap ℚ regularField
-private noncomputable abbrev regularEquation :
-    DifferentialPolynomial regularField[X] 0 := MvPolynomial.X (some (0 : Fin 1))
-open Classical in
-example : ∃ exceptional : Finset regularField,
-    (exceptional.card : ℚ) ≤ regularPowerBatchedAgreementBound 1 0 0 1 1 1 1 1 1 ∧
-    ∀ z ∉ exceptional,
-      letI : DecidableEq ℚ := fun a b ↦ Classical.propDecidable (a = b)
-      letI : DecidableEq regularField := fun a b ↦ Classical.propDecidable (a = b)
-      ∀ P : regularField[X], P.degree < 1 →
-      1 ≤ (polynomialAgreementSet
-        (regularDomain.trans ⟨regularMap, regularMap.injective⟩)
-        (powerBatchedWord (fun t i ↦ regularMap (regularWord t i)) z) P).card →
-      differentialSpecialization (challengeSpecialization regularEquation z) P = 0 →
-      differentialSpecialization
-        (separant (challengeSpecialization regularEquation z) (Fin.last 0)) P ≠ 0 →
-      HasExactPowerAgreement regularDomain regularWord regularMap 1 z P := by
-  have hjet : jetTotalDegree regularEquation ≤ 1 := by
-    rw [jetTotalDegree_le_iff]
-    intro u hu
-    have hu' : u = Finsupp.single (some (0 : Fin 1)) 1 := by
-      simpa only [regularEquation, MvPolynomial.support_X, Finset.mem_singleton] using hu
-    subst u
-    norm_num [totalJetDegree, jetDegreeWeight, Finsupp.weight]
-  have hheight : CoeffNatDegreeLE regularEquation 1 := by
-    exact (coeffNatDegreeLE_X (some (0 : Fin 1))).mono (by omega)
-  exact exists_exceptional_regularPowerBatchedAgreement
-    regularDomain regularWord regularMap regularEquation 1 1 1 1 1 1
-    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
-    (by norm_num) (by norm_num) hjet hheight (by intro i hi hiK; omega)
-
+private abbrev E := AlgebraicClosure ℚ
+noncomputable local instance : DecidableEq E := Classical.decEq _
+private noncomputable def d : Fin 2 ↪ E :=
+  ⟨fun i ↦ i.val, fun _ _ h ↦ Fin.ext (Nat.cast_injective h)⟩
+private noncomputable def w : Fin 2 → Fin 2 → E := fun t i ↦ t.val * i.val
+private noncomputable abbrev Q : DifferentialPolynomial E[X] 0 := MvPolynomial.X (some 0)
+private theorem regularJet : jetTotalDegree Q ≤ 1 := by
+  rw [jetTotalDegree_le_iff]; intro u hu
+  simp only [Q, MvPolynomial.support_X, Finset.mem_singleton] at hu
+  subst u; norm_num [totalJetDegree, jetDegreeWeight, Finsupp.weight]
+private theorem hgt : CoeffNatDegreeLE Q 1 :=
+  (coeffNatDegreeLE_X (some 0)).mono (by omega)
+private theorem zeroBatch (i : Fin 2) : powerBatchedWord w 0 i = 0 := by
+  rw [powerBatchedWord, Fin.sum_univ_two]; fin_cases i <;> simp [w]
+private theorem noExact : ¬ HasExactPowerAgreement d w (RingHom.id _) 1 0 0 := by
+  intro hex; have h := (hasExactPowerAgreement_constant_iff d w (by simp)).mp hex
+    0 (by simp [polynomialAgreementSet, zeroBatch])
+    1 (by simp [polynomialAgreementSet, zeroBatch]) 1
+  norm_num [w] at h
+private theorem zeroBad : (0 : E) ∈
+    regularPowerBatchedBadChallenges d w (RingHom.id E) Q 1 2 := by
+  refine ⟨0, by simp, ?_, ?_, ?_, noExact⟩
+  all_goals simp [polynomialAgreementSet, zeroBatch, d,
+    Q, challengeSpecialization, separant, differentialSpecialization,
+    differentialSpecializationHom, pderiv_X]
+example := exists_exceptional_regularPowerBatchedAgreement d w
+  (RingHom.id _) Q 1 1 2 2 1 1 (by norm_num) (by norm_num) (by norm_num)
+  (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num) regularJet
+  hgt (by intro i hi hiK; omega)
+example := finite_regularPowerBatchedBadChallenges_card_le d w
+  (RingHom.id _) Q 1 1 2 2 1 1 (by norm_num) (by norm_num) (by norm_num)
+  (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num) regularJet
+  hgt (by intro i hi hiK; omega) {0} (by simpa using zeroBad)
+example := regularPowerBatchedBadChallenges_finite d w (RingHom.id _)
+  Q 1 1 2 2 1 1 (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+  (by norm_num) (by norm_num) (by norm_num) (by norm_num) regularJet hgt
+  (by intro i hi hiK; omega)
 end ReedSolomon.PowerBatchedRegularEquationTest
