@@ -176,6 +176,8 @@ public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.ExactCharacte
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.AutomaticBounds
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.AutomaticParameters
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.BranchwiseRate
+public import
+  ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.DerivativeCappedCounting
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.FiniteRateParameters
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.HybridConstants
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.HybridRateEnvelope
