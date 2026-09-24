@@ -27,6 +27,8 @@ bounds for the closed list and exceptional-set constants.
   `automaticJetDegree_le_inv_eta` bound the rounded interpolation parameters.
 * `automaticChallengeHeight_le_inv_eta_sq` and `automaticStaircaseMoment_le_inv_eta_cube` bound the
   challenge height and staircase moment.
+* `automaticRateIncidenceJetBounds` supplies the shared rate, incidence-ratio, and jet-degree
+  bounds for the automatic recipe.
 * `automaticListConstant_le_cubic_slack_envelope` and
   `automaticExceptionConstant_le_quintic_slack_envelope` bound the closed list and exceptional-set
   constants.
@@ -509,6 +511,61 @@ theorem automaticMomentBoundConstant_le_envelope (rho : ℝ) :
   simp only [automaticRateEnvelopeConstant, le_max_iff]
   tauto
 
+/-- The automatic rate envelope bounds the agreement-incidence ratio and jet degree throughout
+the admissible slack range. -/
+theorem automaticRateIncidenceJetBounds {rho eta : ℝ} {n D A : ℕ}
+    (hrho : 0 < rho) (hrhoOne : rho < 1) (heta : 0 < eta)
+    (haOne : firstOrderRateThreshold rho + eta < 1)
+    (hDn : D ≤ n) (hDA : D < A)
+    (hD : (D : ℝ) ≤ rho * n)
+    (hA : (firstOrderRateThreshold rho + eta) * n ≤ A) :
+    1 ≤ automaticRateEnvelopeConstant rho ∧
+    1 ≤ 1 / eta ∧
+    0 ≤ agreementIncidenceRatio n D A ∧
+    agreementIncidenceRatio n D A ≤ automaticRateEnvelopeConstant rho ∧
+    1 ≤ automaticJetDegree rho (firstOrderRateThreshold rho + eta) ∧
+    (automaticJetDegree rho (firstOrderRateThreshold rho + eta) : ℝ) ≤
+      automaticRateEnvelopeConstant rho / eta := by
+  let a := firstOrderRateThreshold rho + eta
+  let C := automaticRateEnvelopeConstant rho
+  let q := 1 / eta
+  have ha : firstOrderRateThreshold rho < a := by dsimp only [a]; linarith
+  have hthresholdGap : 0 < firstOrderRateThreshold rho - rho :=
+    sub_pos.mpr (rate_lt_firstOrderRateThreshold hrho hrhoOne)
+  have hC : 1 ≤ C := automaticRateEnvelopeConstant_one_le rho
+  have hetaOne : eta ≤ 1 := by
+    have hgap := automatic_eta_lt_rateGap haOne
+    have hthresholdPos := (rate_lt_firstOrderRateThreshold hrho hrhoOne).trans' hrho
+    unfold automaticRateGap at hgap
+    linarith
+  have hq : 1 ≤ q := by
+    dsimp only [q]
+    exact (one_le_div heta).2 hetaOne
+  have htheta0 : 0 ≤ agreementIncidenceRatio n D A := by
+    unfold agreementIncidenceRatio
+    positivity
+  have hthetaRate := agreementIncidenceRatio_le_one_div_sub hDn hDA hD hA
+    (show rho < a by exact (rate_lt_firstOrderRateThreshold hrho hrhoOne).trans ha)
+  have htheta : agreementIncidenceRatio n D A ≤ C := by
+    calc
+      agreementIncidenceRatio n D A ≤ 1 / (a - rho) := hthetaRate
+      _ ≤ 1 / (firstOrderRateThreshold rho - rho) := by
+        exact div_le_div_of_nonneg_left zero_le_one hthresholdGap (by dsimp only [a]; linarith)
+      _ ≤ C := automaticRateGapInv_le_rateEnvelopeConstant rho
+  have hmuPos : 1 ≤ automaticJetDegree rho a := automaticJetDegree_pos hrho hrhoOne ha haOne
+  have hmu : (automaticJetDegree rho a : ℝ) ≤ C * q := by
+    calc
+      (automaticJetDegree rho a : ℝ) ≤ automaticJetBoundConstant rho / eta :=
+        automaticJetDegree_le_inv_eta hrho hrhoOne heta haOne
+      _ = automaticJetBoundConstant rho * q := by dsimp only [q]; ring
+      _ ≤ C * q := by
+        gcongr
+        exact automaticJetBoundConstant_le_envelope rho
+  dsimp only [a, C, q] at hC hq htheta0 htheta hmuPos hmu
+  refine ⟨hC, ?_, htheta0, htheta, hmuPos, ?_⟩
+  · simpa only [div_eq_mul_inv] using hq
+  · simpa only [div_eq_mul_inv, one_mul] using hmu
+
 private theorem automaticClosedEnvelopeInputs {rho eta : ℝ} {n D A : ℕ}
     (hrho : 0 < rho) (hrhoOne : rho < 1) (heta : 0 < eta)
     (haOne : firstOrderRateThreshold rho + eta < 1)
@@ -533,37 +590,13 @@ private theorem automaticClosedEnvelopeInputs {rho eta : ℝ} {n D A : ℕ}
   let mu := automaticJetDegree rho a
   let M := automaticDerivativeCap rho a
   have ha : firstOrderRateThreshold rho < a := by dsimp only [a]; linarith
-  have hthresholdGap : 0 < firstOrderRateThreshold rho - rho :=
-    sub_pos.mpr (rate_lt_firstOrderRateThreshold hrho hrhoOne)
-  have hC : 1 ≤ C := automaticRateEnvelopeConstant_one_le rho
-  have hetaOne : eta ≤ 1 := by
-    have hgap := automatic_eta_lt_rateGap haOne
-    have hthresholdPos := (rate_lt_firstOrderRateThreshold hrho hrhoOne).trans' hrho
-    unfold automaticRateGap at hgap
-    linarith
-  have hq : 1 ≤ q := by
-    dsimp only [q]
-    exact (one_le_div heta).2 hetaOne
-  have htheta0 : 0 ≤ agreementIncidenceRatio n D A := by
-    unfold agreementIncidenceRatio
-    positivity
-  have hthetaRate := agreementIncidenceRatio_le_one_div_sub hDn hDA hD hA
-    (show rho < a by exact (rate_lt_firstOrderRateThreshold hrho hrhoOne).trans ha)
-  have htheta : agreementIncidenceRatio n D A ≤ C := by
-    calc
-      agreementIncidenceRatio n D A ≤ 1 / (a - rho) := hthetaRate
-      _ ≤ 1 / (firstOrderRateThreshold rho - rho) := by
-        exact div_le_div_of_nonneg_left zero_le_one hthresholdGap (by dsimp only [a]; linarith)
-      _ ≤ C := automaticRateGapInv_le_rateEnvelopeConstant rho
-  have hmuPos : 1 ≤ mu := automaticJetDegree_pos hrho hrhoOne ha haOne
+  obtain ⟨hC, hq, htheta0, htheta, hmuPos, hmuDiv⟩ :=
+    automaticRateIncidenceJetBounds hrho hrhoOne heta haOne hDn hDA hD hA
   have hmu : (mu : ℝ) ≤ C * q := by
     calc
-      (mu : ℝ) ≤ automaticJetBoundConstant rho / eta :=
-        automaticJetDegree_le_inv_eta hrho hrhoOne heta haOne
-      _ = automaticJetBoundConstant rho * q := by dsimp only [q]; ring
-      _ ≤ C * q := by
-        gcongr
-        exact automaticJetBoundConstant_le_envelope rho
+      (mu : ℝ) ≤ automaticRateEnvelopeConstant rho / eta := by
+        simpa only [a, mu] using hmuDiv
+      _ = C * q := by dsimp only [C, q]; ring
   have hh : (automaticChallengeHeight rho a : ℝ) ≤ C * q ^ 2 := by
     calc
       (automaticChallengeHeight rho a : ℝ) ≤ automaticHeightBoundConstant rho / eta ^ 2 :=

@@ -212,38 +212,17 @@ theorem automaticSquarefreeListExpression_le
   let B := automaticJetDegree rho (firstOrderRateThreshold rho + eta)
   let M := automaticDerivativeCap rho (firstOrderRateThreshold rho + eta)
   let lambda := agreementIncidenceRatio n D A
-  have hC : 1 ≤ C := automaticRateEnvelopeConstant_one_le rho
-  have hetaOne : eta ≤ 1 := by
-    have hgap := automatic_eta_lt_rateGap haOne
-    have hthresholdPos := (rate_lt_firstOrderRateThreshold hrho hrhoOne).trans' hrho
-    unfold automaticRateGap at hgap
-    linarith
-  have hq : 1 ≤ q := by
-    dsimp only [q]
-    exact (one_le_div heta).2 hetaOne
-  have hlambda0 : 0 ≤ lambda := by
-    dsimp only [lambda]
-    unfold agreementIncidenceRatio
-    positivity
-  have hthresholdGap : 0 < firstOrderRateThreshold rho - rho :=
-    sub_pos.mpr (rate_lt_firstOrderRateThreshold hrho hrhoOne)
-  have hlambdaRate := agreementIncidenceRatio_le_one_div_sub hDn hDA hDrate hA
-    (show rho < firstOrderRateThreshold rho + eta by
-      exact (rate_lt_firstOrderRateThreshold hrho hrhoOne).trans (by linarith))
-  have hlambda : lambda ≤ C := by
-    calc
-      lambda ≤ 1 / (firstOrderRateThreshold rho + eta - rho) := hlambdaRate
-      _ ≤ 1 / (firstOrderRateThreshold rho - rho) := by
-        exact div_le_div_of_nonneg_left zero_le_one hthresholdGap (by linarith)
-      _ ≤ C := automaticRateGapInv_le_rateEnvelopeConstant rho
+  obtain ⟨hC', hq', hIncidence0, hIncidence, _, hJetDegree⟩ :=
+    automaticRateIncidenceJetBounds hrho hrhoOne heta haOne hDn hDA hDrate hA
+  have hC : 1 ≤ C := by simpa only [C] using hC'
+  have hq : 1 ≤ q := by simpa only [q] using hq'
+  have hlambda0 : 0 ≤ lambda := by simpa only [lambda] using hIncidence0
+  have hlambda : lambda ≤ C := by simpa only [lambda, C] using hIncidence
   have hB : (B : ℝ) ≤ C * q := by
     calc
-      (B : ℝ) ≤ automaticJetBoundConstant rho / eta :=
-        automaticJetDegree_le_inv_eta hrho hrhoOne heta haOne
-      _ = automaticJetBoundConstant rho * q := by dsimp only [q]; ring
-      _ ≤ C * q := by
-        gcongr
-        exact automaticJetBoundConstant_le_envelope rho
+      (B : ℝ) ≤ automaticRateEnvelopeConstant rho / eta := by
+        simpa only [B] using hJetDegree
+      _ = C * q := by dsimp only [C, q]; ring
   have hMB : M ≤ B := by
     dsimp only [M, B]
     unfold automaticDerivativeCap
