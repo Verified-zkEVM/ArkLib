@@ -1761,6 +1761,10 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Frob
 
 Ported `IsAdmissibleFrobeniusPair`, its projections `degree_left`, `degree_right`, `initial`, `regular`, `sparse`, and `sample`, `exists_admissibleFrobeniusPair_of_symbolic_prime_sample`, `IsAdmissibleFrobeniusPair.specialize`, and `IsAdmissibleFrobeniusPair.eq_of_initialGraph_eq` without renaming. Generalized them from `Fin n` to arbitrary embedded index types `ι`. The sample condition groups sample values and Frobenius root equations, and root equations are required only on the interpolation sample. No other public source declaration from this file was left out.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/Frobenius/GraphCounting.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`admissibleFrobeniusPairs_card_le_degreeOf` keeps its name. It bounds the cardinality of any finite family of admissible Frobenius pairs by the degree of the nonzero joint initial-jet equation in the graph coordinate. The theorem generalizes the source index type from `Fin n` to an arbitrary embedded type `ι`; a global Frobenius-root premise is unnecessary because reconstruction uniqueness uses roots on each admissible sample. It reuses the existing joint initial-jet equation and generic polynomial graph root count. No source declarations were left unported.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FrobeniusComponentRecognition.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FrobeniusComponentRecognition.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -4370,6 +4374,10 @@ Acceptance cases check a positive-dimensional prime component's sample interpola
 Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 Acceptance cases check the polynomial-valued source prime bound with a polynomial received word and proved cut premise, a degree-zero chart prime with a nonempty cut, chart/source/first-order component bounds including empty-cut boundary cases (the positive-dimensional chart bound forces the cut count to zero), and a finite incidence count with a regular agreement point.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/Frobenius/GraphCounting.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+An acceptance case applies `admissibleFrobeniusPairs_card_le_degreeOf` to a singleton family containing an admissible pair from the existing concrete component example. Its initial-equation identity is shared by the ideal-membership and nonvanishing proofs.
 
 ## `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart.lean`
 
