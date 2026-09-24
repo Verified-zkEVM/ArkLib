@@ -335,34 +335,28 @@ private theorem component_generator_mem :
     componentVariable (E := ComponentField) ∈ componentIdeal :=
   Ideal.subset_span (by simp)
 
-private theorem component_initialEquation_mem :
+private theorem component_initialEquation_eq_variable :
     jointInitialJetEquation (r := 0) (0 : ComponentField)
-      (componentEquation (E := ComponentField)) ∈ componentIdeal := by
+      (componentEquation (E := ComponentField)) = componentVariable := by
   change (optionEquivRight ComponentField (Fin 1)).symm
     (initialJetEquation (Polynomial.C (0 : ComponentField))
-      (componentEquation (E := ComponentField))) ∈ componentIdeal
+      (componentEquation (E := ComponentField))) = _
   rw [show initialJetEquation (Polynomial.C (0 : ComponentField))
       (componentEquation (E := ComponentField)) =
         (MvPolynomial.X (0 : Fin 1) : MvPolynomial (Fin 1) (Polynomial ComponentField)) by
     simp [initialJetEquation, componentEquation]]
-  simp only [optionEquivRight_symm_X]
+  simp only [optionEquivRight_symm_X, componentVariable]
+
+private theorem component_initialEquation_mem :
+    jointInitialJetEquation (r := 0) (0 : ComponentField)
+      (componentEquation (E := ComponentField)) ∈ componentIdeal := by
+  rw [component_initialEquation_eq_variable]
   exact component_generator_mem
 
 private theorem component_initialEquation_ne_zero :
     jointInitialJetEquation (r := 0) (0 : ComponentField)
       (componentEquation (E := ComponentField)) ≠ 0 := by
-  have heq : jointInitialJetEquation (r := 0) (0 : ComponentField)
-      (componentEquation (E := ComponentField)) = componentVariable := by
-    change (optionEquivRight ComponentField (Fin 1)).symm
-      (initialJetEquation (Polynomial.C (0 : ComponentField))
-        (componentEquation (E := ComponentField))) = _
-    rw [show initialJetEquation (Polynomial.C (0 : ComponentField))
-        (componentEquation (E := ComponentField)) =
-          (MvPolynomial.X (0 : Fin 1) :
-            MvPolynomial (Fin 1) (Polynomial ComponentField)) by
-      simp [initialJetEquation, componentEquation]]
-    simp only [optionEquivRight_symm_X, componentVariable]
-  rw [heq]
+  rw [component_initialEquation_eq_variable]
   exact X_ne_zero _
 
 private theorem component_commonNumerator_one :
