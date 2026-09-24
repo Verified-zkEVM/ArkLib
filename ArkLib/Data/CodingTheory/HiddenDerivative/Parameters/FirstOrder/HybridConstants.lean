@@ -52,6 +52,8 @@ most `2 θ`. All comparisons are between real numbers, before any ceiling is tak
 * `cast_stageStaircaseSum`: the closed form of the staircase.
 * `regularFiberStageSum_cast_le`, `regularJointStageSum_cast_le`: the stage sums at any `e ≤ M`
   are at most `2 D T` and `(12 D² h + 4 D) T`.
+* `regularFiberStageSum_mono`, `regularJointStageSum_mono`: the stage sums increase with the
+  actual derivative degree.
 * `firstOrderListCharge_mono`, `firstOrderListCharge_le_firstOrderListConstant`: the list charge
   increases with `e` and is at most `Λ`.
 * `retainedCoordinateRatio_balancedSplit_le`, `fixedCoordinateRatio_balancedSplit_le`: both
@@ -227,6 +229,48 @@ theorem regularFiberStageSum_add_one_le_succ {D μ e : ℕ} (hD : 1 ≤ D) (heμ
   · have hie : i < e := Finset.mem_range.mp hi
     exact firstOrderCurveFiberStageOne_mono_derivative (by omega) (by omega)
   · exact (show 1 ≤ μ - e by omega).trans (le_firstOrderCurveFiberStageOne (by omega))
+
+/-- The regular fiber stage sum is monotone in the actual derivative degree. -/
+theorem regularFiberStageSum_mono {D μ e M : ℕ} (hD : 1 ≤ D)
+    (heM : e ≤ M) (hMμ : M ≤ μ) : regularFiberStageSum D μ e ≤ regularFiberStageSum D μ M := by
+  induction M generalizing e with
+  | zero =>
+      have : e = 0 := by omega
+      subst e
+      exact le_rfl
+  | succ M ih =>
+      by_cases heq : e = M + 1
+      · subst e
+        exact le_rfl
+      · exact (ih (by omega) (by omega)).trans
+          ((regularFiberStageSum_add_one_le_succ hD (by omega)).trans' (Nat.le_add_right _ _))
+
+/-- The regular joint stage sum is monotone in the actual derivative degree. -/
+theorem regularJointStageSum_mono {D h μ e M : ℕ} (heM : e ≤ M) (hMμ : M ≤ μ) :
+    regularJointStageSum D h μ e ≤ regularJointStageSum D h μ M := by
+  induction M generalizing e with
+  | zero =>
+      have : e = 0 := by omega
+      subst e
+      exact le_rfl
+  | succ M ih =>
+      by_cases heq : e = M + 1
+      · subst e
+        exact le_rfl
+      · apply (ih (by omega) (by omega)).trans
+        unfold regularJointStageSum
+        rw [Finset.sum_range_succ]
+        have hsum :
+            (∑ i ∈ Finset.range M,
+              firstOrderCurveJointStageOne (D + 1) 1 h (μ - i) (M - i)
+                (regularTaylorExponent D)) ≤
+              ∑ i ∈ Finset.range M,
+                firstOrderCurveJointStageOne (D + 1) 1 h (μ - i) (M + 1 - i)
+                  (regularTaylorExponent D) := by
+          apply Finset.sum_le_sum
+          intro i hi
+          exact firstOrderCurveJointStageOne_mono_derivative (by omega) (by omega)
+        exact hsum.trans (Nat.le_add_right _ _)
 
 /-- For `e ≤ M ≤ μ`, the closed staircase at `e` is at most the one at `M`. -/
 theorem stageStaircase_mono {μ e M : ℕ} (heM : e ≤ M) (hMμ : M ≤ μ) :
