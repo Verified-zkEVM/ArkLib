@@ -1773,6 +1773,14 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Frob
 
 `symbolicSourceFrobeniusAgreement` is not added because the existing `jointTaylorAgreementEquation` in `PolynomialDifferential.TaylorChartAlgebra` covers it. No new acceptance example was retained: a trial concrete component example exceeded 200,000 heartbeats, and the existing TaylorChart acceptance module exercises the point-recognition result.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FrobeniusRetainedFamily.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/Frobenius/RetainedFamily.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`frobeniusRetainedPairFamily`, `mem_frobeniusRetainedPairFamily_iff`, `frobeniusRetainedPairFamily_card_le`, and `exists_exceptional_frobeniusRetainedPairFamily` retain their names. They are generalized from `Fin n` to any finite embedded coordinate type. The retained family is expressed as a filter of the existing correlated-pair family. The cardinality bound uses the joint initial equation; a global root premise is unnecessary because root equations are included in each admissible pair's sample witness. The exceptional-set theorem specializes the existing exceptional-set theorem for correlated pairs.
+
+Acceptance cases in `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement.lean` exhibit a nonempty retained family and check its graph-coordinate degree bound, then exhibit a retained pair and an exceptional set of size zero for a one-point domain with a one-point sample. No public source declarations were omitted.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedComponentAgreement.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/ComponentAgreement.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
