@@ -215,6 +215,12 @@ polynomial `P`, and each divisibility needs agreement only at its own point. The
 the source form. The rank bound and the interpolant use `LinearMap.finrank_range_pi_le_sum` and
 `LinearMap.exists_ne_zero_map_eq_zero_of_finrank_range_lt` from P3 slice 10.
 
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder/ListBound.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/FirstOrder/SharpListBound.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`firstOrder_finite_agreement_solutions_card_le_tight` → `firstOrder_finite_agreement_solutions_card_le_tight_of_exponent` adds a bound for any sufficient Taylor exponent. `firstOrder_finite_agreement_solutions_card_le_tight` → `firstOrder_finite_agreement_solutions_card_le_tight`, `firstOrder_finite_agreement_solutions_card_le_sharp` → `firstOrder_finite_agreement_solutions_card_le_sharp`, `finite_firstOrder_list_bound_of_heightSlotCount_sharp` → `finite_firstOrder_list_bound_of_heightSlotCount_sharp`, and `finite_firstOrder_list_bound_of_shiftedHeightSlotCount_tight` → `finite_firstOrder_list_bound_of_shiftedHeightSlotCount_tight` all drop `K ≤ n` and express finite-domain agreement with the equivalent `Set.ncard` condition. The source-named tight bounds retain exponent `2 * K - 3`. No declarations were omitted.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder/Profile.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/FirstOrder/Profile.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -1775,6 +1781,12 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/Curv
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/FiniteField.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 `exists_field_bounded_capacity_list` keeps its name. It drops the unused assumptions `delta < 1` and `A ≤ 2 * n`, and states the derivative order and multiplicity through the canonical capacity parameter definitions. No declarations were left unported.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/FixedRateExplicitGate.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/RatePartition.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`fixedRatePartitionOrder_list_bound_selected` and `fixedRatePartitionOrder_list_bound` retain their names and mathematical guarantees, using the destination parameter and threshold APIs. The destination names `RatePartition.rateBlockThreshold` and `RatePartition.rateJetCap` replace `ratePartitionMathematicalLength` and `ratePartitionJetBound`; their definitions match. Both proofs specialize `ratePartition_close_list_bound`. Both public source declarations are covered; no declarations were omitted.
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/GeometricBound.lean`
 
@@ -4849,6 +4861,12 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/C
 No library declarations were added. `separant_ne_zero_of_dependsOnJet_charZero` is covered by `PolynomialDifferential.separant_ne_zero`, using `jetDegreeCastsNeZero_of_ringChar` and `JetDegreeCastsNeZero.natCast_jetDegree_ne_zero`. `regularSolutions_card_le_of_agreement_charZero` is covered by `PolynomialDifferential.card_le_of_regular_solutions_agreement` together with `regularBranchRatBudget_of_agreement`, which allows general agreement predicates and a sufficient Taylor exponent. `boundedSolution_card_le_sq_totalJetDegree_charZero` is covered by `PolynomialDifferential.boundedSolution_card_le_sq_totalJetDegree`, using the characteristic-zero cast condition and the agreement-derived regular-branch budget. `finite_agreement_solutions_card_le_charZero` is covered by `PolynomialDifferential.finite_solutions_card_le_sq_totalJetDegree_of_agreement`; the Reed–Solomon close-polynomial specialization is `ReedSolomon.closePolynomialSet_card_le_of_differential_equation`.
 
 An acceptance example checks generic separant nonvanishing for `Y₀ = 0` over `ℚ`, deriving the cast condition from characteristic zero. Existing examples in this file cover the generic square, finite-agreement, and regular-branch bounds. No production declarations were ported because the source results are covered by these more general APIs.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/Semantic.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+No library declarations were added. The acceptance example computes that `Y₁` specializes to zero over `ℚ` at the zero polynomial, then applies `MvPolynomial.map_radicalContent_mul_radicalPrimPart_eq_zero_iff` with `differentialSpecializationHom` to establish the radical-factor zero disjunction. This records the proof recipe for the future `TailBound` port.
+
+`root_content_or_positive` is covered by that generic theorem, followed by `map_mul`, `mul_eq_zero`, and `differentialSpecializationHom_apply`. The root-first declarations `contentEquation`, `positiveEquation`, `fromRootFirst`, `rootFirst_fromRootFirst`, `fromRootFirst_rootFirst`, `fromRootFirst_mul`, `rootFirstSpecializationHom`, `rootFirstSpecializationHom_rootFirst`, and `rootFirstSpecializationHom_fromRootFirst` are not ported; the root-first presentation remains outside the P6 slice 6 API boundary. The nonvanishing, divisibility, and degree declarations are covered by the corresponding existing generic `MvPolynomial` APIs listed in the report. The former direct theorem-application example for retained-curve degree bounds was replaced by this computed split example.
 
 ## `ArkLibTest/Data/Probability/Uniform.lean`
 

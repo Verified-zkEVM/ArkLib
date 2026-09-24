@@ -13,6 +13,7 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.Symbol
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.SymbolicRank
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.CurveHeightCounting
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.CurveCertificate
+import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.ListBound
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.Profile
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.RateCertificate
 import Mathlib.Algebra.Field.ZMod
@@ -757,3 +758,109 @@ example :
     by simpa [smallFirstOrderProfile,
       ReedSolomon.HiddenDerivative.CurveProfile.LineProfile.candidateDegree] using
       smallFirstOrderProfile_verified.columnY₀Weight_eq.symm⟩
+
+private noncomputable def smallFirstOrderAgreementList : Finset (ZMod 5)[X] := {0}
+
+private theorem smallFirstOrderAgreementList_accepted :
+    ∀ P ∈ smallFirstOrderAgreementList,
+      P.degree < 1 ∧
+        2 ≤ ({i : Fin 2 | P.eval (smallFirstOrderCenters i) = (0 : ZMod 5)} :
+          Set (Fin 2)).ncard := by
+  classical
+  intro P hP
+  have hPzero : P = 0 := by simpa [smallFirstOrderAgreementList] using hP
+  subst P
+  constructor
+  · simp
+  · simp [smallFirstOrderCenters]
+
+private theorem smallFirstOrderAgreementCertificate :
+    Nonempty (FirstOrderSymbolicCertificate (F := ZMod 5) 1 2 2 0 1 1 1
+      smallFirstOrderCenters (fun _ ↦ 0) (fun _ ↦ 0)
+      (firstOrderColumns (D := 1) (A := 2) (m := 2) (M := 0) (μ := 1))) := by
+  have hheight : firstOrderCurveShiftedRowSlotBound 1 2 2 0 1 2 1 1 <
+      firstOrderCurveShiftedHeightSlotCount 1 2 2 0 1 1 1 := by decide
+  exact exists_finite_firstOrder_symbolic_certificate_of_heightSlotCount
+    (F := ZMod 5) (D := 1) (A := 2) (m := 2) (M := 0) (μ := 1) (k := 1) (h := 1)
+    (n := 2) (by decide) (by norm_num) (by norm_num) smallFirstOrderCenters
+    (fun _ ↦ 0) (fun _ ↦ 0) hheight
+
+/-- A concrete symbolic certificate gives the sharp cap-sensitive agreement bound. -/
+example :
+    (smallFirstOrderAgreementList.card : ℚ) ≤
+      ((2 * firstOrderListWeight 2 1 0 : ℕ) : ℚ) / ((2 - 1 + 1 : ℕ) : ℚ) := by
+  have hchar : ringChar (ZMod 5) = 0 ∨ max (2 - 1) 1 < ringChar (ZMod 5) := by
+    right
+    rw [ZMod.ringChar_zmod_n]
+    norm_num
+  obtain ⟨cert⟩ := smallFirstOrderAgreementCertificate
+  exact firstOrder_finite_agreement_solutions_card_le_sharp
+    smallFirstOrderCenters (fun _ ↦ 0)
+    (firstOrderColumns (D := 1) (A := 2) (m := 2) (M := 0) (μ := 1)) cert
+    (by decide) (by decide) (by decide) (by decide) (by decide) hchar
+    smallFirstOrderAgreementList smallFirstOrderAgreementList_accepted
+
+/-- A sufficient exponent gives the dimension-sensitive agreement bound. -/
+example :
+    (smallFirstOrderAgreementList.card : ℚ) ≤
+      firstOrderTightListWeight 2 2 1 2 1 1 0 := by
+  have hchar : ringChar (ZMod 5) = 0 ∨ max (2 - 1) 1 < ringChar (ZMod 5) := by
+    right
+    rw [ZMod.ringChar_zmod_n]
+    norm_num
+  obtain ⟨cert⟩ := smallFirstOrderAgreementCertificate
+  exact firstOrder_finite_agreement_solutions_card_le_tight
+    smallFirstOrderCenters (fun _ ↦ 0)
+    (firstOrderColumns (D := 1) (A := 2) (m := 2) (M := 0) (μ := 1)) cert
+    (by decide) (by decide) (by decide) (by decide) (by decide) hchar
+    smallFirstOrderAgreementList smallFirstOrderAgreementList_accepted
+
+/-- A nonstandard sufficient Taylor exponent gives the dimension-sensitive agreement bound. -/
+example :
+    (smallFirstOrderAgreementList.card : ℚ) ≤
+      firstOrderTightListWeight 2 2 1 2 4 1 0 := by
+  have hchar : ringChar (ZMod 5) = 0 ∨ max (2 - 1) 1 < ringChar (ZMod 5) := by
+    right
+    rw [ZMod.ringChar_zmod_n]
+    norm_num
+  have hτ : ∀ r ≤ 1, TaylorExponentSufficient r 2 4 := by
+    intro r hr
+    exact (taylorExponentSufficient_two_mul r 2).mono (by decide)
+  obtain ⟨cert⟩ := smallFirstOrderAgreementCertificate
+  exact firstOrder_finite_agreement_solutions_card_le_tight_of_exponent
+    smallFirstOrderCenters (fun _ ↦ 0)
+    (firstOrderColumns (D := 1) (A := 2) (m := 2) (M := 0) (μ := 1)) cert hτ
+    (by decide) (by decide) (by decide) (by decide) (by decide) hchar
+    smallFirstOrderAgreementList smallFirstOrderAgreementList_accepted
+
+/-- A concrete shifted-slot surplus gives the sharp cap-sensitive agreement bound. -/
+example :
+    (smallFirstOrderAgreementList.card : ℚ) ≤
+      ((2 * firstOrderListWeight 2 1 0 : ℕ) : ℚ) / ((2 - 1 + 1 : ℕ) : ℚ) := by
+  have hchar : ringChar (ZMod 5) = 0 ∨ max (2 - 1) 1 < ringChar (ZMod 5) := by
+    right
+    rw [ZMod.ringChar_zmod_n]
+    norm_num
+  have hheight : firstOrderCurveShiftedRowSlotBound 1 2 2 0 1 2 1 1 <
+      firstOrderCurveShiftedHeightSlotCount 1 2 2 0 1 1 1 := by decide
+  exact finite_firstOrder_list_bound_of_heightSlotCount_sharp
+    (D := 1) (A := 2) (m := 2) (M := 0) (μ := 1) (k := 1) (h := 1) (n := 2)
+    (K := 2) (by decide) (by norm_num) (by norm_num) smallFirstOrderCenters
+    (fun _ ↦ 0) hheight (by decide) (by decide) (by decide) (by decide) (by decide)
+    hchar smallFirstOrderAgreementList smallFirstOrderAgreementList_accepted
+
+/-- A concrete shifted-slot surplus gives the dimension-sensitive agreement bound. -/
+example :
+    (smallFirstOrderAgreementList.card : ℚ) ≤
+      firstOrderTightListWeight 2 2 1 2 1 1 0 := by
+  have hchar : ringChar (ZMod 5) = 0 ∨ max (2 - 1) 1 < ringChar (ZMod 5) := by
+    right
+    rw [ZMod.ringChar_zmod_n]
+    norm_num
+  have hheight : firstOrderCurveShiftedRowSlotBound 1 2 2 0 1 2 1 1 <
+      firstOrderCurveShiftedHeightSlotCount 1 2 2 0 1 1 1 := by decide
+  exact finite_firstOrder_list_bound_of_shiftedHeightSlotCount_tight
+    (D := 1) (A := 2) (m := 2) (M := 0) (μ := 1) (k := 1) (h := 1) (n := 2)
+    (K := 2) (by decide) (by norm_num) (by norm_num) smallFirstOrderCenters
+    (fun _ ↦ 0) hheight (by decide) (by decide) (by decide) (by decide) (by decide)
+    hchar smallFirstOrderAgreementList smallFirstOrderAgreementList_accepted
