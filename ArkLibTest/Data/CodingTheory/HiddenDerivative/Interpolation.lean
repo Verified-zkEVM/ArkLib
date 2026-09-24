@@ -126,16 +126,18 @@ example : Module.finrank ℚ (exactInterpolationSpace ℚ 2 2 1 1 1 0 (by norm_n
   decide
 
 example : 1 * certifiedEnlargedRankBound 1 (1 ^ 3) (1 ^ 3) 0 <
-    Module.finrank ℚ (exactInterpolationSpace ℚ (6 - 1) 15 1 (1 ^ 3) (1 ^ 3) 0
+    Module.finrank ℚ (exactInterpolationSpace ℚ (10 - 1) 27 1 (1 ^ 3) (1 ^ 3) 0
       (by norm_num)) := by
   have hgood : #(goodHigherExponents 1 0 0) = 1 := by
     rw [card_goodHigherExponents_of_le le_rfl]
     decide
-  refine n_mul_certifiedEnlargedRankBound_lt_finrank_exactInterpolationSpace ℚ (d := 1)
-    (K := 6) (W := 0) (R := 1) (H := 1) (C := 0) (by norm_num) (by norm_num) (by norm_num)
-    ?_ (by norm_num [certifiedEnlargedRankBound])
-  rw [hgood]
-  decide
+  have hshell : weightedHigherJetCount 1 (0 + 1 ^ 3) ≤ 1 * #(goodHigherExponents 1 0 0) := by
+    rw [weightedHigherJetCount_of_le_one (by norm_num)]
+    norm_num [hgood]
+  exact localRankBound_lt_interpolationSpace_of_shell_bounds (F := ℚ) (θ := 32) (d := 1)
+    (A := 27) (K := 10) (W := 0) (C := 0) (H := 1) (R := 1) (n := 1)
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num [shellExponent])
+    (by norm_num [rankSavingExponent]) hshell
 
 example : 32 ≤ Module.finrank ℚ (interpolationSpace ℚ 2 2 7 3 5 1 1) := by
   have h := finrank_interpolationSpace_lowerBound ℚ (d := 2) (m := 2) (A := 7) (K := 3)
