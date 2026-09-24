@@ -1722,6 +1722,14 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Poly
 
 `exists_exceptional_exactPowerAgreement` and `exists_exceptional_exactPowerAgreement_family` keep their names and are generalized from `Fin n` coordinates to any finite coordinate type. The family result delegates to `exists_exceptional_powerBatched_family` on the mapped polynomial family and uses each original tuple as its exact-agreement witness.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedPointRecognition.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`ReedSolomon.exists_frobeniusPowerGraph_polynomials_of_sample` keeps its name. It is generalized from `Fin n` to any embedded coordinate type `α`, and its root condition is restricted to the sample.
+
+Did not port `exists_exceptional_frobeniusPower_challenges_of_sample` because `ReedSolomon.exists_exceptional_exactPowerAgreement` in `PowerBatchedPointRecognition` already covers it: sample agreement proves the required common-agreement lower bound, and specialization to `Fin n` gives the source bound.
+
+The singleton-sample characteristic-two acceptance case in `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement.lean` checks the zero sparse Frobenius pullback and both recognition conclusions.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/GraphLineComponent.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/ComponentRecognition.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
