@@ -137,12 +137,15 @@ lemma ps_coprime_case_constant {F : Type} [Field F]
     · rw [ps_degree_x_swap B]; exact Nat.mul_le_mul_left _ (by simpa using h_g_degY)
     · rw [ps_degree_x_swap A]; exact le_of_eq (Nat.mul_comm b_x (natDegreeY A))
   -- Show D := mX * b_y + mY * b_x = 0 via rational argument
-  have hmy_le_D : mY * (n_x : ℕ) ≤ mX * b_y + mY * b_x :=
-    le_trans (le_trans (Nat.mul_le_mul_left _ h_card_Px)
-      ((hdeg_prod P_x mY).symm ▸ natDegree_le_of_dvd hprod_dvd_RY hRY0)) (by linarith)
-  have hmx_le_D : mX * (n_y : ℕ) ≤ mX * b_y + mY * b_x :=
-    le_trans (le_trans (Nat.mul_le_mul_left _ h_card_Py)
-      ((hdeg_prod P_y mX).symm ▸ natDegree_le_of_dvd hprod_dvd_RX hRX0)) hRX_le
+  have hmy_le_D : mY * (n_x : ℕ) ≤ mX * b_y + mY * b_x := by
+    have h := natDegree_le_of_dvd hprod_dvd_RY hRY0
+    rw [hdeg_prod] at h
+    exact ((Nat.mul_le_mul_left _ h_card_Px).trans h).trans
+      (hRY_le.trans_eq (Nat.add_comm _ _))
+  have hmx_le_D : mX * (n_y : ℕ) ≤ mX * b_y + mY * b_x := by
+    have h := natDegree_le_of_dvd hprod_dvd_RX hRX0
+    rw [hdeg_prod] at h
+    exact ((Nat.mul_le_mul_left _ h_card_Py).trans h).trans hRX_le
   suffices mX * b_y + mY * b_x = 0 by
     constructor
     · simpa [mX, hmX] using show mX = 0 from by
@@ -156,18 +159,23 @@ lemma ps_coprime_case_constant {F : Type} [Field F]
   have hn_y0 : (0 : ℚ) < n_y := by exact_mod_cast n_y.pos
   have hmyq : (mY : ℚ) * n_x ≤ ((mX * b_y + mY * b_x : ℕ) : ℚ) := by exact_mod_cast hmy_le_D
   have hmxq : (mX : ℚ) * n_y ≤ ((mX * b_y + mY * b_x : ℕ) : ℚ) := by exact_mod_cast hmx_le_D
+  have h1 : (mY : ℚ) * b_x ≤ D * ((b_x : ℚ) / n_x) :=
+    calc (mY : ℚ) * b_x = (mY * n_x) * (b_x / n_x) := by
+          rw [mul_assoc, mul_div_cancel₀ _ hn_x0.ne']
+      _ ≤ D * ((b_x : ℚ) / n_x) :=
+          mul_le_mul_of_nonneg_right hmyq (div_nonneg (Nat.cast_nonneg b_x) hn_x0.le)
+  have h2 : (mX : ℚ) * b_y ≤ D * ((b_y : ℚ) / n_y) :=
+    calc (mX : ℚ) * b_y = (mX * n_y) * (b_y / n_y) := by
+          rw [mul_assoc, mul_div_cancel₀ _ hn_y0.ne']
+      _ ≤ D * ((b_y : ℚ) / n_y) :=
+          mul_le_mul_of_nonneg_right hmxq (div_nonneg (Nat.cast_nonneg b_y) hn_y0.le)
+  have hD : D = (mX : ℚ) * b_y + (mY : ℚ) * b_x := by
+    simp only [D, Nat.cast_add, Nat.cast_mul]
   have hDle : D ≤ D * ((b_x : ℚ) / n_x + (b_y : ℚ) / n_y) := by
-    linarith [mul_add D ((b_x : ℚ) / n_x) ((b_y : ℚ) / n_y),
-      show D = (mX : ℚ) * b_y + (mY : ℚ) * b_x from by simp [D, Nat.cast_add, Nat.cast_mul],
-      show (mY : ℚ) * b_x ≤ D * ((b_x : ℚ) / n_x) from by
-        linarith [mul_le_mul_of_nonneg_right hmyq (div_nonneg (Nat.cast_nonneg b_x) hn_x0.le),
-          show (mY : ℚ) * n_x * (b_x / n_x) = (mY : ℚ) * b_x from by field_simp],
-      show (mX : ℚ) * b_y ≤ D * ((b_y : ℚ) / n_y) from by
-        linarith [mul_le_mul_of_nonneg_right hmxq (div_nonneg (Nat.cast_nonneg b_y) hn_y0.le),
-          show (mX : ℚ) * n_y * (b_y / n_y) = (mX : ℚ) * b_y from by field_simp]]
+    rw [mul_add]; linarith only [h1, h2, hD]
   by_contra hD0
-  linarith [mul_lt_mul_of_pos_left (show (b_x : ℚ) / n_x + b_y / n_y < 1 by linarith)
-    (show 0 < D by positivity)]
+  have hDpos : 0 < D := Nat.cast_pos.mpr (Nat.pos_of_ne_zero hD0)
+  exact lt_irrefl D (hDle.trans_lt ((mul_lt_mul_of_pos_left h_le_1 hDpos).trans_eq (mul_one D)))
 
 /-- Existence of `P` with `B = P * A` when both `A` and `B` are nonzero. -/
 lemma ps_exists_p_nonzero {F : Type} [Field F]
@@ -244,8 +252,8 @@ lemma ps_exists_p_nonzero {F : Type} [Field F]
       simp [nx', Nat.cast_sub (le_of_lt hx_lt_nx)]
     rw [hbx'cast, hnx'cast,
       div_le_div_iff₀ (by rw [hnx'cast] at hn2; exact hn2) (by exact_mod_cast n_x.pos)]
-    nlinarith [show (b_x : ℚ) ≤ n_x from by exact_mod_cast le_of_lt hbxltnx,
-      Nat.cast_nonneg (α := ℚ) g_x]
+    nlinarith only [mul_le_mul_of_nonneg_left
+      (show (b_x : ℚ) ≤ n_x from by exact_mod_cast le_of_lt hbxltnx) (Nat.cast_nonneg (α := ℚ) g_x)]
   have hyfrac : (by' : ℚ) / (ny' : ℚ) ≤ (b_y : ℚ) / (n_y : ℚ) := by
     have hn2 : (0 : ℚ) < (ny' : ℚ) := by exact_mod_cast ny'.pos
     have hby'cast : (by' : ℚ) = (b_y : ℚ) - g_y := by simp [by', Nat.cast_sub hgy_le_by]
@@ -253,8 +261,8 @@ lemma ps_exists_p_nonzero {F : Type} [Field F]
       simp [ny', Nat.cast_sub (le_of_lt hy_lt_ny)]
     rw [hby'cast, hny'cast,
       div_le_div_iff₀ (by rw [hny'cast] at hn2; exact hn2) (by exact_mod_cast n_y.pos)]
-    nlinarith [show (b_y : ℚ) ≤ n_y from by exact_mod_cast le_of_lt hbyltny,
-      Nat.cast_nonneg (α := ℚ) g_y]
+    nlinarith only [mul_le_mul_of_nonneg_left
+      (show (b_y : ℚ) ≤ n_y from by exact_mod_cast le_of_lt hbyltny) (Nat.cast_nonneg (α := ℚ) g_y)]
   have hconst := ps_coprime_case_constant ax' ay' bx' by' nx' ny'
     (by simpa [bx', ax'] using Nat.sub_le_sub_right h_bx_ge_ax g_x)
     (by simpa [by', ay'] using Nat.sub_le_sub_right h_by_ge_ay g_y)

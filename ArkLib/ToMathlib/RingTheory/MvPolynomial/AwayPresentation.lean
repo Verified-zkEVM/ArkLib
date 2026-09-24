@@ -47,7 +47,9 @@ the localization is the zero ring, `K = ⊤`, and `H(K, N) = 0 < N + 1 = H(I, N)
   degrees for a regular `s`.
 * `MvPolynomial.natDegree_affineHilbertPolynomial_le_of_surjective_away`,
   `MvPolynomial.natDegree_affineHilbertPolynomial_le_of_surjective_away_away`,
-  `MvPolynomial.natDegree_affineHilbertPolynomial_le_card_of_surjective_away`,
+  `MvPolynomial.natDegree_affineHilbertPolynomial_le_of_away_range`: bounds from localized
+  polynomial presentations.
+* `MvPolynomial.natDegree_affineHilbertPolynomial_le_card_of_surjective_away`,
   `MvPolynomial.natDegree_affineHilbertPolynomial_le_card_of_adjoin_eq_top_away`: dimension
   bounds from surjections onto a principal localization.
 -/
@@ -333,6 +335,86 @@ theorem natDegree_affineHilbertPolynomial_le_of_surjective_away_away [Finite σ]
       (g.comp (awayPresentationEquiv J t).toAlgHom)
       (hg.comp (awayPresentationEquiv J t).surjective)).trans
     (natDegree_affineHilbertPolynomial_awayPresentationIdeal_le J t)
+
+/-- If every class in a regular principal localization lies in the range of a
+polynomial map whose kernel has Hilbert degree at most `d`, then the original ideal has Hilbert
+degree at most `d`. -/
+theorem natDegree_affineHilbertPolynomial_le_of_away_range
+    {κ : Type*} [Finite σ] [Finite κ]
+    (P : Ideal (MvPolynomial σ k)) (u : MvPolynomial σ k)
+    (hregular : IsLeftRegular (Ideal.Quotient.mk P u))
+    (Φ : MvPolynomial κ k →ₐ[k] Localization.Away (Ideal.Quotient.mk P u))
+    (hrange : ∀ p : MvPolynomial σ k,
+      algebraMap (MvPolynomial σ k ⧸ P) (Localization.Away (Ideal.Quotient.mk P u))
+        (Ideal.Quotient.mk P p) ∈ Set.range Φ)
+    {d : ℕ}
+    (hbound : (affineHilbertPolynomial (RingHom.ker Φ.toRingHom)).natDegree ≤ d) :
+    (affineHilbertPolynomial P).natDegree ≤ d := by
+  classical
+  let J := RingHom.ker Φ.toRingHom
+  let L := Localization.Away (Ideal.Quotient.mk P u)
+  obtain ⟨t, ht⟩ := hrange u
+  let qΦ : (MvPolynomial κ k ⧸ J) →ₐ[k] L :=
+    Ideal.Quotient.liftₐ J Φ fun p hp ↦ hp
+  have hqt : qΦ (Ideal.Quotient.mk J t) =
+      algebraMap (MvPolynomial σ k ⧸ P) L (Ideal.Quotient.mk P u) := by
+    rw [show qΦ (Ideal.Quotient.mk J t) = Φ t by rfl]
+    exact ht
+  have hqtUnit : IsUnit (qΦ (Ideal.Quotient.mk J t)) := by
+    apply isUnit_iff_exists_inv.mpr
+    refine ⟨IsLocalization.Away.invSelf (Ideal.Quotient.mk P u), ?_⟩
+    rw [hqt]
+    exact IsLocalization.Away.mul_invSelf (S := L) (Ideal.Quotient.mk P u)
+  let gRing : Localization.Away (Ideal.Quotient.mk J t) →+* L :=
+    IsLocalization.Away.lift (g := qΦ.toRingHom) (Ideal.Quotient.mk J t) hqtUnit
+  let locMap : Localization.Away (Ideal.Quotient.mk J t) →ₐ[k] L :=
+    { toRingHom := gRing
+      commutes' := by
+        intro a
+        change gRing (algebraMap k (Localization.Away (Ideal.Quotient.mk J t)) a) =
+          algebraMap k L a
+        rw [IsScalarTower.algebraMap_apply k (MvPolynomial κ k ⧸ J)
+          (Localization.Away (Ideal.Quotient.mk J t))]
+        rw [show gRing (algebraMap (MvPolynomial κ k ⧸ J)
+          (Localization.Away (Ideal.Quotient.mk J t))
+          (algebraMap k (MvPolynomial κ k ⧸ J) a)) =
+            qΦ (algebraMap k (MvPolynomial κ k ⧸ J) a) by
+          exact IsLocalization.Away.lift_eq
+            (S := Localization.Away (Ideal.Quotient.mk J t))
+            (g := qΦ.toRingHom) (Ideal.Quotient.mk J t) hqtUnit _]
+        exact qΦ.commutes a }
+  have hlocMap : Function.Surjective locMap := by
+    intro z
+    obtain ⟨m, a, hza⟩ := IsLocalization.Away.surj (Ideal.Quotient.mk P u) z
+    obtain ⟨a, rfl⟩ := Ideal.Quotient.mk_surjective a
+    obtain ⟨p, hp⟩ := hrange a
+    let x : Localization.Away (Ideal.Quotient.mk J t) :=
+      Localization.mk (Ideal.Quotient.mk J p) ⟨Ideal.Quotient.mk J t ^ m, m, rfl⟩
+    refine ⟨x, ?_⟩
+    have hbase :
+        algebraMap (MvPolynomial σ k ⧸ P) L (Ideal.Quotient.mk P u) *
+          IsLocalization.Away.invSelf (Ideal.Quotient.mk P u) = 1 :=
+      IsLocalization.Away.mul_invSelf (S := L) (Ideal.Quotient.mk P u)
+    have hz : algebraMap (MvPolynomial σ k ⧸ P) L (Ideal.Quotient.mk P a) *
+        IsLocalization.Away.invSelf (Ideal.Quotient.mk P u) ^ m = z := by
+      have h := congrArg
+        (fun q : L ↦ q * IsLocalization.Away.invSelf (Ideal.Quotient.mk P u) ^ m) hza
+      simpa only [← mul_pow, hbase, one_pow, mul_one, mul_assoc] using h.symm
+    have hqbase : qΦ (Ideal.Quotient.mk J t) *
+        IsLocalization.Away.invSelf (Ideal.Quotient.mk P u) = 1 := by
+      rw [hqt]
+      exact hbase
+    change gRing x = z
+    rw [show gRing x = qΦ (Ideal.Quotient.mk J p) *
+        IsLocalization.Away.invSelf (Ideal.Quotient.mk P u) ^ m by
+      dsimp only [gRing, x]
+      exact Localization.awayLift_mk qΦ.toRingHom (Ideal.Quotient.mk J t)
+        (Ideal.Quotient.mk J p) (IsLocalization.Away.invSelf (Ideal.Quotient.mk P u))
+          hqbase m]
+    rw [show qΦ (Ideal.Quotient.mk J p) = Φ p by rfl, hp]
+    exact hz
+  exact (natDegree_affineHilbertPolynomial_le_of_surjective_away_away
+    hregular locMap hlocMap).trans hbound
 
 /-- A surjection from a polynomial ring in `τ` onto the localization away from a regular `s`
 bounds the natural degree of the Hilbert polynomial of `I` by `Nat.card τ`. Regularity is needed:
