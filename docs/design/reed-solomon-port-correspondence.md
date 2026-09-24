@@ -1663,6 +1663,10 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Tayl
 
 `exists_graphLine_pair_of_symbolic_sample_of_exponent` is specialized as `exists_graphLine_pair_of_joint_taylor_chart` for flattened challenge and initial-jet coordinates. `exists_graphLine_pair_of_symbolic_prime_sample_of_exponent` is renamed and reformulated as `exists_graphLine_pair_of_regular_component`; it gives a joint-coordinate conclusion parametrized by the affine-pair curve on the regular locus of a positive-dimensional component. `exists_graphLine_pair_of_symbolic_prime_sample` is not added as a separate default-exponent wrapper because the component theorem accepts any sufficient exponent.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/ComponentAgreement.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`symbolicSourceAgreement_eq_zero_iff_of_exponent` and `symbolicSourceAgreement_eq_zero_iff` → `aeval_jointTaylorAgreementEquation_eq_zero_iff`; the two forms are combined into a theorem for every sufficient exponent `τ`, using the joint chart API. `commonAgreement_of_symbolicSourceAgreement_mem_prime_of_exponent` and `commonAgreement_of_symbolicSourceAgreement_mem_prime` → `commonAgreement_of_jointTaylorAgreementEquation_mem_prime`; it uses any sufficient exponent and the current affine-pair curve parametrization. `exists_graphLine_pair_of_symbolic_prime_agreements_of_exponent` and `exists_graphLine_pair_of_symbolic_prime_agreements` → `exists_graphLine_pair_of_regular_component_agreements`; it uses any sufficient exponent and returns the regular-component parametrization and restriction identities with the common-agreement bound. No source declarations are unported; the default-exponent forms are covered by the exponent-general statements and have no separate wrappers.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/SingularTail.lean`
 
 Merges `FirstOrder/Squarefree/Bounds.lean` and `FirstOrder/Squarefree/SingularTail.lean` under
@@ -4096,6 +4100,10 @@ The aggregate includes a concrete `d = 500`, `W = 1` instance of `partitionSuppo
 Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 The joint-chart case reuses the shared concrete equation and numerator identity, derives the joint-coordinate identity by flattening, and checks that the order-one numerator vanishes at the selected point while remaining nonzero at another jet. The component case uses `K = 2`, `k = 1`; its `l = 1` numerator is the nonzero jet variable `Y₀`, proved to lie in the prime component ideal. It checks that the returned graph parametrizes every regular point of that component. Existing cases for extension descent, exact agreement, graph-line recognition, singular tails, and tuple specialization remain covered.
+
+Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Added an acceptance example on the algebraic-closure prime-component fixture. It checks a degree-bounded pair and a nonzero common-agreement count.
 
 ## `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart.lean`
 
