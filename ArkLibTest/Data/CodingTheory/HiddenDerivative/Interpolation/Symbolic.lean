@@ -17,6 +17,7 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.Soundnes
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.JohnsonCertificate
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.Dimension
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.WeightedSupportCertificate
+import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.WeightedJohnsonCertificate
 import Mathlib.FieldTheory.RatFunc.Basic
 import Mathlib.Algebra.Field.ZMod
 
@@ -546,3 +547,94 @@ example : Nonempty (JohnsonSymbolicCertificate (F := ℚ) 1 6
         constructor <;> norm_num
       nlinarith [hsqrt])
     (hkD := by norm_num) sixteenPointEmbedding (fun _ => 0) (fun _ => 0)
+
+namespace WeightedJohnsonCertificateTest
+
+private def onePointEmbedding : Fin 1 ↪ ℚ where
+  toFun := fun _ => 0
+  inj' := by
+    intro i j _
+    exact Fin.ext (by omega)
+
+/- A one-point weighted system with four source slots and two row slots has a certificate. -/
+example : Nonempty (JohnsonSymbolicCertificate (F := ℚ) 1 2 2 1 1 0 4
+    onePointEmbedding (fun _ => 0) (fun _ => 0)) := by
+  apply exists_weighted_johnson_symbolic_certificate
+  · norm_num
+  · norm_num
+  · norm_num
+  · norm_num [johnsonSourceSlotCount]
+
+private theorem onePointWeightedArithmeticCertificate :
+    IsJohnsonWeightedCertificate 1 1 2 2 1 1 := by
+  norm_num [IsJohnsonWeightedCertificate, johnsonWeightedHeight,
+    johnsonWeightedHeightInt, johnsonWeightedMoment, johnsonWeightedSlope,
+    johnsonWeightedW, johnsonWeightedN, johnsonWeightedR, johnsonWeightedU,
+    johnsonWeightedT]
+
+/- The finite arithmetic certificate also supplies the interpolation surplus. -/
+example : Nonempty (JohnsonSymbolicCertificate (F := ℚ) 1 2 2 1 1 1 4
+    onePointEmbedding (fun _ => 0) (fun _ => 0)) := by
+  exact IsJohnsonWeightedCertificate.exists_symbolic onePointWeightedArithmeticCertificate
+    (by norm_num) (by norm_num) onePointEmbedding (fun _ => 0) (fun _ => 0)
+
+private def truncationTestColumn : JohnsonColumnIndex 3 1 0 :=
+  ⟨⟨0, by decide⟩, ⟨2, by decide⟩⟩
+
+private noncomputable def truncationTestSelected :
+    Fin (Fintype.card (JohnsonColumnIndex 3 1 0)) :=
+  Fintype.equivFin (JohnsonColumnIndex 3 1 0) truncationTestColumn
+
+private noncomputable def truncationTestCoefficients :
+    Fin (Fintype.card (JohnsonColumnIndex 3 1 0)) → ℚ[X] :=
+  fun j ↦ if j = truncationTestSelected then 1 else 0
+
+/- The coefficient vector for `T^2` satisfies multiplicity two after truncating to error grade
+zero, with the cutoff strictly below `m - 1`. -/
+example :
+    (0 : ℕ) < 2 - 1 ∧
+      weightedJohnsonFinMatrix 3 1 0 2 (fun _ : Fin 1 ↦ (0 : ℚ))
+        (fun _ ↦ (0 : ℚ[X])) *ᵥ truncationTestCoefficients = 0 ∧
+      ∀ _i : Fin 1, SatisfiesLocalConstraints 2 (Polynomial.C (0 : ℚ)) (0 : ℚ[X])
+        (SourceColumn.interpolant (johnsonColumns 3 1 0) truncationTestCoefficients) := by
+  have hinterp : SourceColumn.interpolant (johnsonColumns 3 1 0) truncationTestCoefficients =
+      (X none : DifferentialPolynomial ℚ[X] 0) ^ 2 := by
+    have hselected : (Fintype.equivFin (JohnsonColumnIndex 3 1 0)).symm
+        truncationTestSelected = truncationTestColumn :=
+      (Fintype.equivFin (JohnsonColumnIndex 3 1 0)).symm_apply_apply _
+    have hcolumn : johnsonColumns 3 1 0 truncationTestSelected =
+        (⟨2, 0, Fin.elim0⟩ : SourceColumn 0) := by
+      unfold johnsonColumns
+      dsimp only
+      rw [hselected]
+      rfl
+    rw [SourceColumn.interpolant_eq_sum_smul]
+    rw [Finset.sum_eq_single truncationTestSelected]
+    · rw [hcolumn, SourceColumn.polynomial_eq_sourceMonomial, sourceMonomial]
+      simp [truncationTestCoefficients]
+    · intro j _ hj
+      simp [truncationTestCoefficients, hj]
+    · simp
+  have hconstraints : ∀ _i : Fin 1,
+      SatisfiesLocalConstraints 2 (Polynomial.C (0 : ℚ)) (0 : ℚ[X])
+        (SourceColumn.interpolant (johnsonColumns 3 1 0) truncationTestCoefficients) := by
+    intro _i
+    rw [satisfiesLocalConstraints_iff_coeff_eq_zero, hinterp]
+    intro e he
+    have hT : e (localT 0) < 2 := by
+      rw [localContactOrder_eq] at he
+      simpa [localT, localE] using he
+    have hne : e ≠ Finsupp.single (localT 0) 2 := by
+      intro heq
+      have hvalue := congrArg (fun a : LocalVariable 0 →₀ ℕ => a (localT 0)) heq
+      simp at hvalue
+      omega
+    simp only [map_pow, unscaledLocalSubstitution_X, map_zero, zero_add]
+    rw [MvPolynomial.X_pow_eq_monomial, MvPolynomial.coeff_monomial]
+    simp [Ne.symm hne]
+  refine ⟨by norm_num, ?_, hconstraints⟩
+  exact (weightedJohnsonFinMatrix_kernel_iff 3 1 0 2
+    (fun _ : Fin 1 ↦ (0 : ℚ)) (fun _ ↦ (0 : ℚ[X])) truncationTestCoefficients).2
+      hconstraints
+
+end WeightedJohnsonCertificateTest

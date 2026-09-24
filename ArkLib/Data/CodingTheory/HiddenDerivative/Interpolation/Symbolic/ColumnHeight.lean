@@ -108,13 +108,14 @@ theorem exists_primitive_receivedLine_interpolant_of_column_height (m h : ℕ)
   intro j
   simpa only [Nat.one_mul] using hvdeg j
 
-/-- A strict surplus of shifted row and column slots yields a primitive curve interpolant whose
-coefficient in column `j` has degree below `h + 1 - ℓ * totalJetDegree (columns j).exponent`. -/
+/-- A strict surplus of shifted row and column slots, with a matrix kernel implying the local
+constraints, yields a primitive curve interpolant whose coefficient in column `j` has degree
+below `h + 1 - ℓ * totalJetDegree (columns j).exponent`. -/
 theorem exists_primitive_interpolant_of_shifted_height {n N rows : ℕ}
     (m ℓ h : ℕ) (centers : Fin n → F) (w : Fin n → F[X])
     (columns : Fin N → SourceColumn d) (hcolumns : Function.Injective columns)
     (M : Matrix (Fin rows) (Fin N) F[X]) (rowWeight : Fin rows → ℕ)
-    (hkernel : ∀ v, M *ᵥ v = 0 ↔
+    (hkernel : ∀ v, M *ᵥ v = 0 →
       ∀ i, SatisfiesLocalConstraints m (Polynomial.C (centers i))
         (w i) (SourceColumn.interpolant columns v))
     (hdegree : ∀ i j, rowWeight i ≤ ℓ * totalJetDegree (columns j).exponent →
@@ -135,7 +136,7 @@ theorem exists_primitive_interpolant_of_shifted_height {n N rows : ℕ}
   obtain ⟨v, hv, hMv, hvdegree, hprimitive⟩ :=
     Matrix.exists_primitive_ne_zero_mulVec_eq_zero_shifted_degreeLT_of_natDegree_le
       M rowWeight (fun j ↦ ℓ * totalJetDegree (columns j).exponent) h hdegree hzero hsurplus
-  refine ⟨v, hv, hvdegree, hprimitive, ?_, (hkernel v).mp hMv⟩
+  refine ⟨v, hv, hvdegree, hprimitive, ?_, hkernel v hMv⟩
   intro E _ ι z
   exact SourceColumn.map_interpolant_ne_zero hcolumns (Polynomial.eval₂RingHom ι z)
     (Ideal.comp_ne_zero_of_span_range_eq_top hprimitive (Polynomial.eval₂RingHom ι z))
