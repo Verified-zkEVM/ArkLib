@@ -1978,6 +1978,12 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Poly
 
 The graph-line component result now uses the shared `aeval_jointInitialJetSeparant`, `aeval_jointCommonTaylorNumerator`, and `aeval_jointTaylorAgreementEquation` results from `TaylorChartAlgebra`, and `regular_principalOpen_graph_restriction` from `PrincipalOpenParametrization`.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerToLine.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/PowerToLine.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`exactCorrelatedPair_of_powerAgreement_one` keeps its name and turns exact degree-one power agreement for two constituents into an exact correlated-pair witness, preserving the degree bounds and full agreement-set equality. `lineExactAgreementBound_of_powerAgreement_one` keeps its name and is generalized from a rational budget and finite field to a real budget over any field. Both source public declarations are ported. A one-coordinate acceptance case exercises the line-bound conversion, and another directly applies the exact-pair bridge with an explicit exact-power witness over `pointDomain`.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerTupleCounting.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/PolynomialCurve/Admissible.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
