@@ -16,7 +16,8 @@ strict shifted source-slot surplus when `2 ≤ k` and `25 * k + 6 * n ≤ 25 * A
 
 ## Main statements
 
-* `uniformFirstOrderGradedRankProfile_values`: the exact finite graded-rank profile.
+* `firstOrderGradedRankBound_le_uniformFirstOrderProfile`: the fixed profile bounds every
+  graded-rank bound with `(m, M) = (12, 4)`.
 * `uniformFirstOrder_parameters`: the positive ambient and shifted-slot bounds in the
   gap-`6/25` regime.
 
@@ -67,21 +68,6 @@ def uniformFirstOrderRowWeightSum : ℕ :=
   Finset.sum (Finset.range 23) fun t ↦
     uniformFirstOrderGradedRankProfile t * (852 - t)
 
-/-- The fixed graded-rank profile has the displayed values through grade `22`. -/
-theorem uniformFirstOrderGradedRankProfile_values :
-    List.ofFn (fun t : Fin 23 ↦ uniformFirstOrderGradedRankProfile t) =
-      [12, 22, 30, 36, 40, 35, 30, 25, 20, 16, 12, 9, 6, 4, 2, 1,
-        0, 0, 0, 0, 0, 0, 0] := by decide
-
-/-- The fixed graded-rank profile sums to `300` through grade `22`. -/
-theorem uniformFirstOrderGradedRankProfile_sum :
-    Finset.sum (Finset.range 23) uniformFirstOrderGradedRankProfile = 300 := by decide
-
-/-- The grade-weighted fixed profile sums to `1570` through grade `22`. -/
-theorem uniformFirstOrderGradedRankProfile_weighted_sum :
-    Finset.sum (Finset.range 23) (fun t ↦ t * uniformFirstOrderGradedRankProfile t) = 1570 := by
-  decide
-
 /-- The total coefficient-height multiplicity is `88205`. -/
 theorem uniformFirstOrderHeightWeightSum_eq :
     uniformFirstOrderHeightWeightSum = 88205 := by decide
@@ -128,11 +114,10 @@ private theorem uniformFirstOrder_shiftedHeightSlot_accounting (D A : ℕ) :
   rw [← Nat.add_mul]
   exact Nat.mul_le_mul_right _ (by omega)
 
-/-- In the gap-`6/25` regime with `2 ≤ n`, `2 ≤ k`, and `A ≤ n`, ambient degree `k - 1`
-is positive, `12 * A` is positive, `k ≤ (k - 1) + 1`, and the fixed shifted row slots are
-strictly fewer than the height-851 source slots. -/
-theorem uniformFirstOrder_parameters (n k A : ℕ)
-    (hn : 2 ≤ n) (hk : 2 ≤ k) (_hAn : A ≤ n)
+/-- In the gap-`6/25` regime with `2 ≤ k`, ambient degree `k - 1` is positive, `12 * A` is
+positive, `k ≤ (k - 1) + 1`, and the fixed shifted row slots are strictly fewer than the
+height-851 source slots. -/
+theorem uniformFirstOrder_parameters (n k A : ℕ) (hk : 2 ≤ k)
     (hgap : 25 * k + 6 * n ≤ 25 * A) :
     let D := k - 1
     0 < D ∧ 0 < 12 * A ∧ k ≤ D + 1 ∧

@@ -351,7 +351,20 @@ example : orderZeroCurveStageCharge 1 1 1 1 3 2 ≤
 example : firstOrderCurveShiftedRowSlotBound 1 3 12 4 22 3 1 851 <
     firstOrderCurveShiftedHeightSlotCount 1 3 12 4 22 1 851 := by
   have h := uniformFirstOrder_parameters 3 2 3 (by norm_num) (by norm_num)
-    (by norm_num) (by norm_num)
   exact h.2.2.2
+
+set_option maxRecDepth 4096 in
+/-- The fixed graded-rank profile through grade `22`. -/
+example : List.ofFn (fun t : Fin 23 ↦ uniformFirstOrderGradedRankProfile t) =
+    [12, 22, 30, 36, 40, 35, 30, 25, 20, 16, 12, 9, 6, 4, 2, 1,
+      0, 0, 0, 0, 0, 0, 0] := by decide
+
+set_option maxRecDepth 4096 in
+/-- The fixed graded-rank profile sums to `300` through grade `22`. -/
+example : ∑ t ∈ Finset.range 23, uniformFirstOrderGradedRankProfile t = 300 := by decide
+
+set_option maxRecDepth 4096 in
+/-- The grade-weighted fixed profile sums to `1570` through grade `22`. -/
+example : ∑ t ∈ Finset.range 23, t * uniformFirstOrderGradedRankProfile t = 1570 := by decide
 
 end ReedSolomon.HiddenDerivative
