@@ -93,9 +93,9 @@ example : (3 / 2 : ℝ) < (151 / (151 + 1)) * (38 / 25 - 1 ^ 2 / 151) := by
     (by norm_num) (by norm_num) (by norm_num)
 
 example :
-    (2 : ℝ) * (2 ^ 2 * 1 - 3 * 2 * 1 * 1 + 2 * 1 ^ 3) / ((2 + 1) * (2 + 2)) ≤
+    (2 : ℝ) * (2 ^ 2 * 1 - 3 * 2 * 1 * (1 / 2) + 2 * 1 ^ 3) / ((2 + 1) * (2 + 2)) ≤
       2 * (1 + 2 * 1 ^ 3 / 2 ^ 2) := by
-  exact weightedSupport_third_factor_le (d := 2) (H := 1) (H₂ := 1) (H₃ := 1)
+  exact weightedSupport_third_factor_le (d := 2) (H := 1) (H₂ := 1 / 2) (H₃ := 1)
     (by positivity) (by positivity) (by positivity) (by positivity)
 
 example : (2 * ((12021 / 10000 : ℝ) + 2 * (1 / 10 : ℝ) ^ 3 / 1 ^ 2)) ≤ 241 / 100 := by
