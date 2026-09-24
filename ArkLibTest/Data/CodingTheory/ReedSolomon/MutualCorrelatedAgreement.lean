@@ -398,32 +398,97 @@ private theorem firstOrderSourceIdeal_degree :
   simp only [Nat.card_eq_fintype_card, Fintype.card_option, Fintype.card_fin] at h
   unfold firstOrderSourceIdeal; omega
 
-/-- Every regular point of a prime component lies on the recognized graph line, and the agreement
-variant gives a pair that matches the word at the sample point. -/
+/-- The two-point evaluation domain `{0, 1}` in `ℚ`. -/
+private def pairDomain : Fin 2 ↪ ℚ :=
+  ⟨fun i ↦ (i : ℚ), fun i j h ↦ Fin.ext (by simpa using h)⟩
+
+/-- The component contains the agreement cut for the zero pair at every challenge point. -/
+private theorem component_zeroCut_mem (alpha : ComponentField) :
+    jointTaylorAgreementEquation (r := 0) (0 : ComponentField)
+      (componentEquation (E := ComponentField)) 2 2 (Polynomial.C alpha) 0 ∈ componentIdeal := by
+  change (optionEquivRight ComponentField (Fin 1)).symm
+    (taylorAgreementEquationOver (F := ComponentField) _ _ 2 _ _ (τ := 2)) ∈ componentIdeal
+  rw [taylorAgreementEquationOver, Fin.sum_univ_two]
+  simp only [Fin.val_zero, Fin.val_one]
+  rw [component_commonNumerator_initial, component_commonNumerator_one]
+  simp only [Polynomial.C_0, sub_zero, pow_zero, pow_one, MvPolynomial.C_0, zero_mul, map_one,
+    one_mul]
+  rw [show (MvPolynomial.X 0 + MvPolynomial.C (Polynomial.C alpha) * MvPolynomial.X 0 :
+      MvPolynomial (Fin 1) ComponentField[X]) =
+        (1 + MvPolynomial.C (Polynomial.C alpha)) * MvPolynomial.X 0 by ring,
+    map_mul, optionEquivRight_symm_X]
+  exact Ideal.mul_mem_left _ _ component_generator_mem
+
+/-- Every regular point of a prime component lies on the recognized graph line, and agreement
+cuts at two points, one more than the degree bound `k = 1`, give a pair with two common
+agreements. -/
 example :
     (∃ P₀ P₁ : ℚ[X], ∀ x, x ∈ zeroLocus ComponentField (componentIdeal (E := ComponentField)) ∧
       aeval x (jointInitialJetSeparant (r := 0) (0 : ComponentField)
         (componentEquation (E := ComponentField))) ≠ 0 → ∃ z : ComponentField, x = fun i ↦
           (affinePairCurve (r := 0) 0 (P₀.map (algebraMap ℚ ComponentField))
             (P₁.map (algebraMap ℚ ComponentField)) i).eval z) ∧
-    ∃ P₀ P₁ : ℚ[X], P₀.eval 0 = 0 ∧ P₁.eval 0 = 0 ∧
-      1 ≤ (commonPolynomialAgreementSet domain componentWord componentWord P₀ P₁).card := by
+    ∃ P₀ P₁ : ℚ[X], P₀.degree < 1 ∧ P₁.degree < 1 ∧
+      2 ≤ (commonPolynomialAgreementSet pairDomain 0 0 P₀ P₁).card := by
   have hprime : (componentIdeal (E := ComponentField)).IsPrime := componentIdeal_isPrime
   obtain ⟨P₀, P₁, -, -, -, hgraph, -⟩ := exists_graphLine_pair_of_regular_component domain
     componentWord componentWord univ (by simp) (algebraMap ℚ ComponentField) 0
     componentEquation (by omega) 2 (by intro l; omega) componentIdeal component_separant_notMem
     componentIdeal_degree_pos component_initialEquation_mem component_highCuts
     component_agreementCuts
-  obtain ⟨Q₀, Q₁, -, -, hcommon, -⟩ := exists_graphLine_pair_of_regular_component_agreements
-    (L := 1) domain componentWord componentWord univ (by simp) (by omega)
+  obtain ⟨Q₀, Q₁, hQ₀, hQ₁, hcommon, -⟩ := exists_graphLine_pair_of_regular_component_agreements
+    (k := 1) (L := 2) pairDomain 0 0 univ (by simp) (by omega)
     (algebraMap ℚ ComponentField) 0 componentEquation (by omega) 2 (by intro l; omega)
     componentIdeal component_separant_notMem componentIdeal_degree_pos
-    component_initialEquation_mem component_highCuts component_agreementCuts
-  obtain ⟨i, hi⟩ := Finset.card_pos.mp hcommon
-  obtain rfl : i = 0 := Subsingleton.elim _ _
-  obtain ⟨h₀, h₁⟩ := (mem_commonPolynomialAgreementSet domain _ _ Q₀ Q₁ 0).mp hi
-  exact ⟨⟨P₀, P₁, hgraph⟩, Q₀, Q₁, by simpa [componentWord, domain_zero] using h₀,
-    by simpa [componentWord, domain_zero] using h₁, hcommon⟩
+    component_initialEquation_mem component_highCuts
+    (fun i _ ↦ by simpa using component_zeroCut_mem _)
+  exact ⟨⟨P₀, P₁, hgraph⟩, Q₀, Q₁, hQ₀, hQ₁, hcommon⟩
+
+/-- At the chart point with challenge `2` and initial value `3`, the agreement equation at the
+center vanishes exactly when the received line `f + z g` takes the value `3` at `z = 2`. -/
+example (f g : ℚ) :
+    aeval (fun i : Option (Fin 1) ↦ i.elim (2 : ℚ) fun _ ↦ 3)
+      (jointTaylorAgreementEquation (r := 0) (0 : ℚ) componentEquation 2 2 (Polynomial.C 0)
+        (Polynomial.C f + Polynomial.X * Polynomial.C g)) = 0 ↔ f + 2 * g = 3 := by
+  rw [aeval_jointTaylorAgreementEquation_eq_zero_iff 0 componentEquation 2 2
+    (by intro l; omega) _ (by norm_num [jointInitialJetSeparant, initialJetSeparant, separant,
+      Fin.last]), eval_rationalTaylorPolynomial]
+  have h3 (Q : DifferentialPolynomial ℚ 0) : rationalTaylorCoefficient 0 Q (fun _ ↦ 3) 0 = 3 :=
+    rationalTaylorCoefficient_initial _ Q _ (0 : Fin 1)
+  simp [Fin.sum_univ_two, h3, eq_comm]
+
+/-- On the component `y = 0`, every regular point lies on the graph of the zero pair, so an
+agreement cut at the sample point forces the received pair `(a, b)` to vanish. -/
+example (a b : ℚ)
+    (hcut : jointTaylorAgreementEquation (r := 0) (0 : ComponentField) componentEquation 2 2
+      (Polynomial.C (algebraMap ℚ ComponentField (domain 0)))
+      (Polynomial.C (algebraMap ℚ ComponentField a) +
+        Polynomial.X * Polynomial.C (algebraMap ℚ ComponentField b)) ∈ componentIdeal) :
+    a = 0 ∧ b = 0 := by
+  have hprime : (componentIdeal (E := ComponentField)).IsPrime := componentIdeal_isPrime
+  have hzero (x : Option (Fin 1) → ComponentField)
+      (hx : x ∈ zeroLocus ComponentField (componentIdeal (E := ComponentField))) (j : Fin 1) :
+      x (some j) = 0 := by
+    obtain rfl : j = 0 := Subsingleton.elim _ _
+    simpa [componentIdeal, componentVariable, zeroLocus_span] using hx
+  have h := commonAgreement_of_jointTaylorAgreementEquation_mem_prime domain (fun _ ↦ a)
+    (fun _ ↦ b) (algebraMap ℚ ComponentField) 0 componentEquation 2 2 (by intro l; omega)
+    componentIdeal component_separant_notMem componentIdeal_degree_pos 0 0
+    (fun x hx ↦ ⟨x none, funext fun j ↦ by
+      cases j with
+      | none => simp [affinePairCurve]
+      | some j => simp [affinePairCurve, polynomialJet, hzero x hx.1 j]⟩)
+    (fun x hx _ ↦ by
+      have hjet : (fun j ↦ x (some j)) = polynomialJet (d := 0) 0 (0 : ComponentField[X]) := by
+        funext j; simp [polynomialJet, hzero x hx j]
+      rw [hjet, rationalTaylorPolynomial_polynomialJet _ _ 0 ?_ ?_
+        (by rw [Polynomial.degree_zero]; exact WithBot.bot_lt_coe 2) ?_]
+      · simp
+      · simp [differentialSpecialization, differentialSpecializationHom]
+      · simp [separant, Fin.last, jetEvaluation]
+      · intro i _ _; simp)
+    0 hcut
+  simpa [eq_comm] using h
 
 private theorem component_powerBatchedAgreementCuts : ∀ i ∈ Finset.univ,
     jointTaylorAgreementEquation (r := 0) (0 : ComponentField)
@@ -675,6 +740,30 @@ example :
       frobeniusPowerCoordinate, powerBatchedCoordinate])
   exact ⟨⟨P, hdegree, hsample, hseparant⟩,
     ⟨P', hdegree', by simpa using hresult.2⟩⟩
+
+/-- The pair form of Frobenius component recognition reads the zero pair off the same sparse
+sample cut and keeps the separant nonzero on its graph. -/
+example : ∃ F₀ G₀ : ℚ[X], F₀.degree < 1 ∧ G₀.degree < 1 ∧ F₀.eval 0 = 0 ∧ G₀.eval 0 = 0 ∧
+    aeval (frobeniusInitialGraph (0 : ComponentField) 1 (F₀.map (algebraMap ℚ ComponentField))
+      (G₀.map (algebraMap ℚ ComponentField)))
+      (jointInitialJetSeparant (r := 0) (0 : ComponentField)
+        (componentCoordinateEquation (E := ComponentField))) ≠ 0 := by
+  have hprime : (componentIdeal (E := ComponentField)).IsPrime := componentIdeal_isPrime
+  have hτ : TaylorExponentSufficient 0 1 0 := by intro l; fin_cases l; omega
+  obtain ⟨F₀, G₀, hF₀, hG₀, hsample, -, -, hseparant⟩ :=
+    exists_frobeniusGraph_of_symbolic_prime_sample (k := 1) (K := 1) domain componentWord
+      componentWord univ (by simp) (algebraMap ℚ ComponentField) 1 0 (fun _ ↦ 0)
+      (by intro i _; fin_cases i; simp [domain_zero]) 0 componentCoordinateEquation (by omega)
+      (by norm_num) 0 hτ componentIdeal
+      (by simpa [jointInitialJetSeparant, initialJetSeparant, separant,
+        Fin.last, componentCoordinateEquation] using componentIdeal_one_notMem)
+      componentIdeal_degree_pos (by intro l hl; simp at hl)
+      (by intro i _; fin_cases i; simpa [componentWord, jointTaylorAgreementEquation,
+        taylorAgreementEquationOver, commonTaylorNumeratorOver, rationalTaylorNumeratorOver,
+        componentCoordinateEquation] using component_generator_mem)
+  obtain ⟨h₀, h₁⟩ := hsample 0 (by simp)
+  exact ⟨F₀, G₀, hF₀, hG₀, by simpa [componentWord, domain_zero] using h₀,
+    by simpa [componentWord, domain_zero] using h₁, hseparant⟩
 
 end
 

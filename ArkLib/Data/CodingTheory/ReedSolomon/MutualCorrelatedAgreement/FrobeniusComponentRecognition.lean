@@ -6,14 +6,15 @@ Authors: Quang Dao
 module
 
 public import
-  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TaylorChart.PointRecognition
-public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.PrincipalOpenParametrization
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerBatchedComponentRecognition
+
 /-!
 # Frobenius graph recognition on regular Taylor components
 
 A positive-dimensional prime component containing sparse Frobenius Taylor cuts and a common
 sample lies on the Frobenius graph of one pair of base-field polynomials. Every polynomial in the
 component ideal vanishes after restriction to that graph, and the separant remains nonzero.
+This is the two-term case of `ReedSolomon.exists_frobeniusPowerGraph_of_symbolic_prime_sample`.
 
 ## Main statements
 
@@ -39,6 +40,28 @@ def frobeniusInitialGraph {E : Type*} [CommSemiring E] (center : E) (s : ℕ)
   fun i ↦ i.elim Polynomial.X fun _ ↦
     Polynomial.C (F₀.eval (center ^ s)) +
       Polynomial.X ^ s * Polynomial.C (G₀.eval (center ^ s))
+
+/-- A two-term Frobenius power coordinate is the Frobenius pair coordinate. -/
+private theorem frobeniusPowerCoordinate_two {R : Type*} [CommSemiring R] (s : ℕ)
+    (values : Fin 2 → R) :
+    frobeniusPowerCoordinate s values =
+      Polynomial.C (values 0) + Polynomial.X ^ s * Polynomial.C (values 1) := by
+  rw [frobeniusPowerCoordinate, powerBatchedCoordinate, Fin.sum_univ_two,
+    ← Polynomial.C_mul_X_pow_eq_monomial, ← Polynomial.C_mul_X_pow_eq_monomial]
+  simp only [map_add, map_mul, Polynomial.expand_C, Polynomial.expand_X,
+    Fin.val_zero, Fin.val_one, pow_zero, pow_one, mul_one]
+  ring
+
+/-- The Frobenius power graph of a pair is `frobeniusInitialGraph`. -/
+private theorem frobeniusPowerGraphMap_two {E : Type*} [CommSemiring E] (center : E) (s : ℕ)
+    (P : Fin 2 → E[X]) :
+    frobeniusPowerGraphMap center s P = frobeniusInitialGraph center s (P 0) (P 1) := by
+  funext i
+  cases i with
+  | none => rfl
+  | some j =>
+    simp [frobeniusPowerGraphMap, frobeniusPowerInitialGraph, frobeniusInitialGraph,
+      frobeniusPowerCoordinate_two]
 
 variable {F E ι : Type*} [Field F] [Field E] {k K : ℕ}
 
@@ -69,69 +92,13 @@ theorem exists_frobeniusGraph_of_symbolic_prime_sample [IsAlgClosed E]
         aeval (frobeniusInitialGraph center (p ^ e) (F₀.map iota) (G₀.map iota)) q = 0) ∧
       aeval (frobeniusInitialGraph center (p ^ e) (F₀.map iota) (G₀.map iota))
         (jointInitialJetSeparant center Q) ≠ 0 := by
-  obtain ⟨F₀, G₀, hF, hG, hsampleFG, hrecognize⟩ :=
-    exists_frobeniusGraphLine_of_symbolic_sample domain f g sample hsample iota p e roots hroots
-      center Q hK hKk τ hτ
-  let graph := frobeniusInitialGraph center (p ^ e) (F₀.map iota) (G₀.map iota)
-  have hpoint (x : Option (Fin 1) → E)
-      (hx : x ∈ zeroLocus E I ∧ aeval x (jointInitialJetSeparant center Q) ≠ 0) :
-      rationalTaylorPolynomial center (MvPolynomial.map (Polynomial.evalRingHom (x none)) Q) K
-          (fun j ↦ x (some j)) =
-        expand E (p ^ e) (F₀.map iota + Polynomial.C ((x none) ^ (p ^ e)) * G₀.map iota) ∧
-        x (some 0) = (F₀.map iota).eval (center ^ (p ^ e)) +
-          (x none) ^ (p ^ e) * (G₀.map iota).eval (center ^ (p ^ e)) := by
-    let φ : E[X] →ₐ[E] E := Polynomial.aeval (x none)
-    have hφ : φ.toRingHom = Polynomial.evalRingHom (x none) := by
-      ext a <;> simp [φ, Polynomial.evalRingHom]
-    apply hrecognize (x none) (fun j ↦ x (some j))
-    · have hS : aeval (fun j ↦ x (some j))
-          (MvPolynomial.map φ.toRingHom (initialJetSeparant (Polynomial.C center) Q)) ≠ 0 := by
-        simpa only [jointInitialJetSeparant, aeval_optionEquivRight_symm] using hx.2
-      simpa only [hφ] using hS
-    · intro l hl
-      have hz := hx.1 _ (hsparse l hl)
-      have hnum : aeval (fun j ↦ x (some j))
-          (MvPolynomial.map φ.toRingHom
-            (commonTaylorNumeratorOver E (Polynomial.C center) Q τ l.val)) = 0 := by
-        simpa only [jointCommonTaylorNumerator, aeval_optionEquivRight_symm] using hz
-      simpa only [hφ] using hnum
-    · intro i hi
-      have hz := hx.1 _ (hcuts i hi)
-      have hcut : aeval (fun j ↦ x (some j))
-          (MvPolynomial.map φ.toRingHom
-            (taylorAgreementEquationOver (F := E) (Polynomial.C center) Q K
-              (Polynomial.C (roots i))
-              (Polynomial.C (iota (f i)) + Polynomial.X ^ (p ^ e) *
-                Polynomial.C (iota (g i))) (τ := τ))) = 0 := by
-        simpa only [jointTaylorAgreementEquation, aeval_optionEquivRight_symm] using hz
-      simpa only [hφ] using hcut
-  have hgraph : ∀ x,
-      x ∈ zeroLocus E I ∧ aeval x (jointInitialJetSeparant center Q) ≠ 0 →
-      x = fun i ↦ (graph i).eval (x none) := by
-    intro x hx
-    have hjet := (hpoint x hx).2
-    funext i
-    cases i with
-    | none => simp [graph, frobeniusInitialGraph]
-    | some j =>
-      have hj : j = 0 := Subsingleton.elim _ _
-      subst j
-      have hjet' : x (some 0) = (F₀.map iota).eval (center ^ (p ^ e)) +
-          (G₀.map iota).eval (center ^ (p ^ e)) * (x none) ^ (p ^ e) := by
-        calc
-          _ = (F₀.map iota).eval (center ^ (p ^ e)) +
-              (x none) ^ (p ^ e) * (G₀.map iota).eval (center ^ (p ^ e)) := hjet
-          _ = _ := by rw [mul_comm]
-      simpa [graph, frobeniusInitialGraph] using hjet'
-  have hrange : ∀ x, x ∈ zeroLocus E I →
-      aeval x (jointInitialJetSeparant center Q) ≠ 0 →
-      ∃ z : E, x = fun i ↦ (graph i).eval z := by
-    intro x hx hsep
-    exact ⟨x none, hgraph x ⟨hx, hsep⟩⟩
-  obtain ⟨_, hvanish, hseparant⟩ :=
-    MvPolynomial.regular_principalOpen_graph_restriction I
-      (jointInitialJetSeparant center Q) hs hd graph hrange
-  exact ⟨F₀, G₀, hF, hG, hsampleFG, hgraph, hvanish, hseparant⟩
+  obtain ⟨P, hP, hsampleP, hgraph, hvanish, hseparant⟩ :=
+    exists_frobeniusPowerGraph_of_symbolic_prime_sample (ℓ := 1) domain ![f, g] sample hsample
+      iota p e roots hroots center Q hK hKk τ hτ I hs hd hsparse
+      (fun i hi ↦ by simpa [frobeniusPowerCoordinate_two] using hcuts i hi)
+  rw [frobeniusPowerGraphMap_two] at hgraph hvanish hseparant
+  exact ⟨P 0, P 1, hP 0, hP 1, fun i hi ↦ ⟨by simpa using hsampleP i hi 0,
+    by simpa using hsampleP i hi 1⟩, hgraph, hvanish, hseparant⟩
 
 end
 

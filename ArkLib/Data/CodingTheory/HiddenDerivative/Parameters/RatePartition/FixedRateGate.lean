@@ -20,8 +20,7 @@ strictly greater than one.
 
 * `fixedRatePartitionMultiplicity`, `fixedRatePartitionMultiplicity_spec`: the least accepted
   multiplicity and its finite checks.
-* `fixedRatePartitionFiniteParameters`, `exists_fixedRatePartitionFiniteParameters`: the selected
-  finite parameters at the fixed-rate order.
+* `fixedRatePartitionFiniteParameters`: the selected finite parameters at the fixed-rate order.
 
 ## References
 
@@ -64,12 +63,5 @@ noncomputable def fixedRatePartitionFiniteParameters {rate gap : ℝ}
   multiplicity_pos := (fixedRatePartitionMultiplicity_spec hrate hgap).1
   weightBudget_pos := (fixedRatePartitionMultiplicity_spec hrate hgap).2.1
   one_lt_finiteRatio := (fixedRatePartitionMultiplicity_spec hrate hgap).2.2
-
-/-- Fixed-rate finite parameters exist at the order `fixedRatePartitionOrder R δ`. -/
-theorem exists_fixedRatePartitionFiniteParameters {rate gap : ℝ}
-    (hrate : 0 < rate) (hgap : 0 < gap) :
-    Nonempty (PartitionFiniteParameters rate (rate + gap)
-      (fixedRatePartitionOrder rate gap)) := by
-  exact ⟨fixedRatePartitionFiniteParameters hrate hgap⟩
 
 end ReedSolomon.HiddenDerivative.RatePartition
