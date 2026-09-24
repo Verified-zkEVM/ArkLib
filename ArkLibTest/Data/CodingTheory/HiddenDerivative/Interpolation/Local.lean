@@ -17,6 +17,7 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.RankBudget
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.RemainderMap
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.Translation
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.ZeroOrder
+import Mathlib.Data.ZMod.Basic
 
 /-!
 # Local interpolation acceptance cases
@@ -42,6 +43,16 @@ private theorem satisfiesLocalConstraintsOneYZeroSub (d : ℕ) (center received 
     (X_mem_restrictWeightedOrder (R := ℤ) (localContactWeight d) (localT d) le_rfl)
     (by simp : X (localE d) + localJetSum d ∈
       restrictWeightedOrder (R := ℤ) (localContactWeight d) 0)
+
+/-- Specializing the point, received value, and polynomial preserves a concrete constraint. -/
+example : SatisfiesLocalConstraints 1 (1 : ZMod 5) 2
+    (MvPolynomial.map (Int.castRingHom (ZMod 5))
+      (X (some 0) - C (7 : ℤ) : DifferentialPolynomial ℤ 1)) := by
+  have h := ReedSolomon.HiddenDerivative.SatisfiesLocalConstraints.map
+    (φ := Int.castRingHom (ZMod 5)) 1 6 7 (X (some 0) - C (7 : ℤ))
+    (satisfiesLocalConstraintsOneYZeroSub 1 6 7)
+  norm_num at h ⊢
+  exact h
 
 /-- At a nonzero center, the order-one constraint gives the factor `X - 2` of `X² - 4`. -/
 example : (Polynomial.X - Polynomial.C (2 : ℤ)) ∣

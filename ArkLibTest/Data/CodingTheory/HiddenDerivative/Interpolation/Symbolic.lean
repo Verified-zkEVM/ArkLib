@@ -14,6 +14,7 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.Partitio
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.ReceivedCurve
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.SourceColumn
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.WeightedSupport
+import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.Soundness
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.Dimension
 import Mathlib.FieldTheory.RatFunc.Basic
 import Mathlib.Algebra.Field.ZMod
@@ -21,11 +22,12 @@ import Mathlib.Algebra.Field.ZMod
 /-!
 # Symbolic interpolation acceptance cases
 
-Concrete coefficient-degree, matrix-entry, rank, height-transfer, primitive-interpolant, and
-source-column cases.
+Concrete coefficient-degree, matrix-entry, rank, height-transfer, primitive-interpolant,
+source-column, and curve-certificate cases.
 -/
 
 open Finset MvPolynomial PolynomialDifferential ReedSolomon.HiddenDerivative
+open ReedSolomon.HiddenDerivative.SymbolicReceivedInterpolation
 open scoped Polynomial Matrix
 
 private instance : Fact (Nat.Prime 5) := ⟨by decide⟩
@@ -248,6 +250,23 @@ example : Nonempty (Fin 1 × LowContactIndex 1 1) ∧ ∃ v : Fin 1 → ℚ[X], 
     receivedLineColumnsInjective (by intro j; fin_cases j; decide)
     (algebraMap ℚ[X] (RatFunc ℚ)) (IsFractionRing.injective ℚ[X] (RatFunc ℚ))
     (s := 0) receivedLineMatrixRankZero (by decide)
+
+private def nonzeroSupportColumns : Fin 1 → SourceColumn 1 :=
+  fun _ => ⟨0, 1, fun _ => 0⟩
+
+example : MvPolynomial.map (Polynomial.eval₂RingHom (RingHom.id ℚ) 0)
+    (SourceColumn.interpolant nonzeroSupportColumns
+      (fun _ => (Polynomial.X + 1 : ℚ[X]))) ∈
+      weightedSupportSpace ℚ 1 1 0 2 (by norm_num) := by
+  exact map_interpolant_mem_weightedSupportSpace (D := 1) (d := 1) (W := 0) (L := 2)
+    (by norm_num) nonzeroSupportColumns
+    (by
+      intro j
+      fin_cases j
+      simp [WeightedSupportEligible, fullHigherJetWeight, totalJetDegree,
+        nonzeroSupportColumns, SourceColumn.exponent, Finsupp.weight_single,
+        jetHigherWeight, jetDegreeWeight])
+    (fun _ => Polynomial.X + 1) (RingHom.id ℚ) 0
 
 private def shiftedKernelColumns : Fin 2 → SourceColumn 1 := fun j =>
   ⟨j.val, 0, fun _ => 1⟩
