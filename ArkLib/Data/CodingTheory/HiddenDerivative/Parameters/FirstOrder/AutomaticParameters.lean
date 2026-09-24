@@ -48,7 +48,7 @@ def automaticAgreement (rho a : ℝ) : ℝ :=
   min a ((1 + firstOrderRateThreshold rho) / 2)
 
 /-- The maximizing derivative ratio at the tuned agreement. -/
-def automaticBeta (rho a : ℝ) : ℝ :=
+def automaticDerivativeRatio (rho a : ℝ) : ℝ :=
   firstOrderRateBeta rho (automaticAgreement rho a)
 
 /-- The normalized source-minus-rank density bracket at the tuned agreement. -/
@@ -57,7 +57,7 @@ def automaticGapBracket (rho a : ℝ) : ℝ :=
 
 /-- The positive normalized source-minus-rank density gap. -/
 def automaticSurplus (rho a : ℝ) : ℝ :=
-  automaticBeta rho a * automaticGapBracket rho a / 2
+  automaticDerivativeRatio rho a * automaticGapBracket rho a / 2
 
 /-- The interpolation multiplicity obtained by rounding up four times the inverse surplus. -/
 def automaticMultiplicity (rho a : ℝ) : ℕ :=
@@ -65,7 +65,7 @@ def automaticMultiplicity (rho a : ℝ) : ℕ :=
 
 /-- The raw derivative-degree cap obtained by rounding down the optimized ratio. -/
 def automaticDerivativeCapRaw (rho a : ℝ) : ℕ :=
-  ⌊automaticBeta rho a * automaticMultiplicity rho a⌋₊
+  ⌊automaticDerivativeRatio rho a * automaticMultiplicity rho a⌋₊
 
 /-- The rounded total jet-degree cap at the tuned agreement. -/
 def automaticJetDegree (rho a : ℝ) : ℕ :=
@@ -91,11 +91,11 @@ def automaticChallengeHeight (rho a : ℝ) : ℕ :=
 
 /-- The source density at the tuned agreement and optimized derivative ratio. -/
 def automaticSourceDensity (rho a : ℝ) : ℝ :=
-  firstOrderSourceDensity rho (automaticAgreement rho a) (automaticBeta rho a)
+  firstOrderSourceDensity rho (automaticAgreement rho a) (automaticDerivativeRatio rho a)
 
 /-- The cubic rank-density envelope at the optimized derivative ratio. -/
 def automaticRankDensityEnvelope (rho a : ℝ) : ℝ :=
-  firstOrderRankCubicEnvelope (automaticBeta rho a)
+  firstOrderRankCubicEnvelope (automaticDerivativeRatio rho a)
 
 /-- The tuned agreement equals the smaller of the requested agreement and the safe midpoint. -/
 theorem automaticAgreement_eq_min (rho a : ℝ) :
@@ -129,26 +129,26 @@ theorem rho_lt_automaticAgreement {rho a : ℝ} (hrho : 0 < rho) (hrhoOne : rho 
     (automatic_threshold_lt_agreement hrho hrhoOne ha)
 
 /-- The optimized derivative ratio is positive in the automatic range. -/
-theorem automaticBeta_pos {rho a : ℝ} (_hrho : 0 < rho) (hrhoOne : rho < 1)
-    (_ha : firstOrderRateThreshold rho < a) (haOne : a < 1) :
-    0 < automaticBeta rho a := by
-  unfold automaticBeta
+theorem automaticDerivativeRatio_pos {rho a : ℝ} (hrhoOne : rho < 1) (haOne : a < 1) :
+    0 < automaticDerivativeRatio rho a := by
+  unfold automaticDerivativeRatio
   exact firstOrderRateBeta_pos (automaticAgreement_lt_one haOne) (by linarith)
 
 /-- The optimized derivative ratio is strictly below `3/4` in the automatic range. -/
-theorem automaticBeta_lt_three_four {rho a : ℝ} (hrho : 0 < rho) (hrhoOne : rho < 1)
-    (ha : firstOrderRateThreshold rho < a) (_haOne : a < 1) :
-    automaticBeta rho a < 3 / 4 := by
-  unfold automaticBeta
+theorem automaticDerivativeRatio_lt_three_four {rho a : ℝ} (hrho : 0 < rho) (hrhoOne : rho < 1)
+    (ha : firstOrderRateThreshold rho < a) :
+    automaticDerivativeRatio rho a < 3 / 4 := by
+  unfold automaticDerivativeRatio
   apply firstOrderRateBeta_lt_three_four (by linarith)
   have hρa := rho_lt_automaticAgreement hrho hrhoOne ha
   exact hρa.trans (by linarith)
 
 /-- The optimized derivative ratio is below the total-degree cutoff ratio. -/
-theorem automaticBeta_lt_agreement_div_rate {rho a : ℝ} (hrho : 0 < rho) (hrhoOne : rho < 1)
-    (ha : firstOrderRateThreshold rho < a) (_haOne : a < 1) :
-    automaticBeta rho a < automaticAgreement rho a / rho := by
-  unfold automaticBeta
+theorem automaticDerivativeRatio_lt_agreement_div_rate {rho a : ℝ}
+    (hrho : 0 < rho) (hrhoOne : rho < 1)
+    (ha : firstOrderRateThreshold rho < a) :
+    automaticDerivativeRatio rho a < automaticAgreement rho a / rho := by
+  unfold automaticDerivativeRatio
   exact firstOrderRateBeta_lt_agreement_div_rate hrho (by linarith)
     (rho_lt_automaticAgreement hrho hrhoOne ha).le
 
@@ -156,7 +156,7 @@ theorem automaticBeta_lt_agreement_div_rate {rho a : ℝ} (hrho : 0 < rho) (hrho
 theorem automaticSurplus_pos {rho a : ℝ} (hrho : 0 < rho) (hrhoOne : rho < 1)
     (ha : firstOrderRateThreshold rho < a) (haOne : a < 1) :
     0 < automaticSurplus rho a := by
-  have hbeta := automaticBeta_pos hrho hrhoOne ha haOne
+  have hbeta := automaticDerivativeRatio_pos hrhoOne haOne
   have hclean := firstOrderCleanExpression_gt_one hrho hrhoOne
     (automatic_threshold_lt_agreement hrho hrhoOne ha)
   unfold automaticSurplus automaticGapBracket
@@ -186,20 +186,20 @@ theorem automaticMultiplicity_pos {rho a : ℝ} (hrho : 0 < rho) (hrhoOne : rho 
 theorem automaticDerivativeCapRaw_le_jetDegree {rho a : ℝ} (hrho : 0 < rho)
     (hrhoOne : rho < 1) (ha : firstOrderRateThreshold rho < a) (haOne : a < 1) :
     automaticDerivativeCapRaw rho a ≤ automaticJetDegree rho a := by
-  have hbeta := automaticBeta_lt_agreement_div_rate hrho hrhoOne ha haOne
+  have hbeta := automaticDerivativeRatio_lt_agreement_div_rate hrho hrhoOne ha
   have hm : 0 ≤ (automaticMultiplicity rho a : ℝ) := Nat.cast_nonneg _
-  have hcut : automaticBeta rho a * automaticMultiplicity rho a ≤
+  have hcut : automaticDerivativeRatio rho a * automaticMultiplicity rho a ≤
       automaticMultiplicity rho a * automaticAgreement rho a / rho := by
     calc
-      automaticBeta rho a * automaticMultiplicity rho a ≤
+      automaticDerivativeRatio rho a * automaticMultiplicity rho a ≤
           (automaticAgreement rho a / rho) * automaticMultiplicity rho a :=
         mul_le_mul_of_nonneg_right hbeta.le hm
       _ = automaticMultiplicity rho a * automaticAgreement rho a / rho := by ring
   have hraw : (automaticDerivativeCapRaw rho a : ℝ) ≤
-      automaticBeta rho a * automaticMultiplicity rho a := by
+      automaticDerivativeRatio rho a * automaticMultiplicity rho a := by
     unfold automaticDerivativeCapRaw
     exact Nat.floor_le (mul_nonneg
-      (automaticBeta_pos hrho hrhoOne ha haOne).le (Nat.cast_nonneg _))
+      (automaticDerivativeRatio_pos hrhoOne haOne).le (Nat.cast_nonneg _))
   have hceil : automaticMultiplicity rho a * automaticAgreement rho a / rho ≤
       (automaticJetDegree rho a : ℝ) := by
     unfold automaticJetDegree
@@ -237,8 +237,8 @@ theorem automaticRankCount_le_densityEnvelope_add_rounding {rho a : ℝ}
         3 * automaticMultiplicity rho a ^ 2 := by
   rw [automaticRankCount_eq_raw hrho hrhoOne ha haOne, automaticRankDensityEnvelope]
   exact firstOrderRankCount_floor_le (automaticMultiplicity rho a)
-    (automaticBeta_pos hrho hrhoOne ha haOne).le
-    (automaticBeta_lt_three_four hrho hrhoOne ha haOne).le
+    (automaticDerivativeRatio_pos hrhoOne haOne).le
+    (automaticDerivativeRatio_lt_three_four hrho hrhoOne ha).le
 
 /-- The rounded source count dominates the continuous source-density lower bound. -/
 theorem automaticSourceDensity_mul_cube_le_sourceCount {rho a : ℝ}
@@ -249,15 +249,14 @@ theorem automaticSourceDensity_mul_cube_le_sourceCount {rho a : ℝ}
   rw [automaticSourceCount_eq_raw hrho hrhoOne ha haOne, automaticSourceDensity]
   apply cube_mul_sourceDensity_le_firstOrderSourceCount hrho
     (rho_lt_automaticAgreement hrho hrhoOne ha).le
-    (automaticBeta_pos hrho hrhoOne ha haOne).le
-    (automaticBeta_lt_agreement_div_rate hrho hrhoOne ha haOne).le
+    (automaticDerivativeRatio_pos hrhoOne haOne).le
+    (automaticDerivativeRatio_lt_agreement_div_rate hrho hrhoOne ha).le
   unfold automaticJetDegree
   exact Nat.floor_le_ceil _
 
 /-- The source-density gap equals the displayed automatic surplus. -/
 theorem automatic_sourceDensity_sub_rankDensityEnvelope {rho a : ℝ}
-    (hrho : 0 < rho) (hrhoOne : rho < 1)
-    (_ha : firstOrderRateThreshold rho < a) (_haOne : a < 1) :
+    (hrho : 0 < rho) (hrhoOne : rho < 1) :
     automaticSourceDensity rho a - automaticRankDensityEnvelope rho a =
       automaticSurplus rho a := by
   have hfactor := firstOrderSourceDensity_sub_cubicEnvelope rho
@@ -292,9 +291,9 @@ theorem automaticSurplusQuarter_le_source_sub_rank {rho a : ℝ}
       automaticSourceCount rho a - automaticRankCount rho a := by
   have hfinite := cube_mul_densityGap_sub_le_sourceCount_sub_rankCount
     hrho (rho_lt_automaticAgreement hrho hrhoOne ha).le
-    (automaticBeta_pos hrho hrhoOne ha haOne).le
-    (automaticBeta_lt_three_four hrho hrhoOne ha haOne).le
-    (automaticBeta_lt_agreement_div_rate hrho hrhoOne ha haOne).le
+    (automaticDerivativeRatio_pos hrhoOne haOne).le
+    (automaticDerivativeRatio_lt_three_four hrho hrhoOne ha).le
+    (automaticDerivativeRatio_lt_agreement_div_rate hrho hrhoOne ha).le
     (m := automaticMultiplicity rho a) (mu := automaticJetDegree rho a)
     (by unfold automaticJetDegree; exact Nat.floor_le_ceil _)
   have hfiniteRaw := hfinite
@@ -305,7 +304,7 @@ theorem automaticSurplusQuarter_le_source_sub_rank {rho a : ℝ}
         (automaticDerivativeCapRaw rho a) (automaticJetDegree rho a) -
       firstOrderRankCount (automaticMultiplicity rho a) (automaticDerivativeCapRaw rho a)
     at hfiniteRaw
-  have hgap := automatic_sourceDensity_sub_rankDensityEnvelope hrho hrhoOne ha haOne
+  have hgap := automatic_sourceDensity_sub_rankDensityEnvelope (a := a) hrho hrhoOne
   rw [← automaticSourceCount_eq_raw hrho hrhoOne ha haOne,
     ← automaticRankCount_eq_raw hrho hrhoOne ha haOne, hgap] at hfiniteRaw
   exact (automatic_rounding_loss_bound hrho hrhoOne ha haOne).trans hfiniteRaw

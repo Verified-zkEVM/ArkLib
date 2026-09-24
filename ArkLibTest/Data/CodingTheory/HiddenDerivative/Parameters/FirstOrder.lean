@@ -23,7 +23,7 @@ charges.
 
 namespace ReedSolomon.HiddenDerivative
 
-open Filter Topology
+open Filter Topology MvPolynomial PolynomialDifferential
 
 private theorem rateSwitch_lt_half : firstOrderRateSwitch < 1 / 2 := by
   have h : (7 : ℝ) < 2 * Real.sqrt 13 := by
@@ -349,27 +349,99 @@ example : orderZeroCurveStageCharge 1 1 1 1 3 2 ≤
 
 /-! ### Automatic parameter bounds -/
 
-/-- The finite multiplicity, jet degree, challenge height and moment obey concrete slack bounds. -/
+/-- Every automatic interpolation parameter obeys its concrete slack bound. -/
 example :
     (automaticMultiplicity (1 / 2) (firstOrderRateThreshold (1 / 2) + 1 / 8) : ℝ) ≤
+        automaticMultiplicityBoundConstant (1 / 2) / (1 / 8) ∧
+      (automaticDerivativeCap (1 / 2) (firstOrderRateThreshold (1 / 2) + 1 / 8) : ℝ) ≤
         automaticMultiplicityBoundConstant (1 / 2) / (1 / 8) ∧
       (automaticJetDegree (1 / 2) (firstOrderRateThreshold (1 / 2) + 1 / 8) : ℝ) ≤
         automaticJetBoundConstant (1 / 2) / (1 / 8) ∧
       (automaticChallengeHeight (1 / 2)
           (firstOrderRateThreshold (1 / 2) + 1 / 8) : ℝ) ≤
-        automaticHeightBoundConstant (1 / 2) / (1 / 8) ^ 2 := by
+        automaticHeightBoundConstant (1 / 2) / (1 / 8) ^ 2 ∧
+      stageStaircase (automaticJetDegree (1 / 2)
+          (firstOrderRateThreshold (1 / 2) + 1 / 8))
+          (automaticDerivativeCap (1 / 2) (firstOrderRateThreshold (1 / 2) + 1 / 8)) ≤
+        automaticMomentBoundConstant (1 / 2) / (1 / 8) ^ 3 := by
   have hslack : firstOrderRateThreshold (1 / 2) + 1 / 8 < 1 := by
     linarith [half_rate_threshold_lt_three_four]
-  have hbounds := automaticParameterBounds (by norm_num) (by norm_num) (by norm_num) hslack
-  exact ⟨hbounds.1, hbounds.2.2.1, hbounds.2.2.2.1⟩
+  exact automaticParameterBounds (by norm_num) (by norm_num) (by norm_num) hslack
+
+/-- The closed list and exception constants obey their slack envelopes at rate `1/2`. -/
+example :
+    firstOrderListConstant (agreementIncidenceRatio 8 2 7) 2
+        (automaticJetDegree (1 / 2) (firstOrderRateThreshold (1 / 2) + 1 / 8))
+        (automaticDerivativeCap (1 / 2) (firstOrderRateThreshold (1 / 2) + 1 / 8)) ≤
+      automaticListBoundConstant (1 / 2) * 8 / (1 / 8) ^ 3 ∧
+    firstOrderExceptionConstant (agreementIncidenceRatio 8 2 7) 8 2
+        (automaticChallengeHeight (1 / 2) (firstOrderRateThreshold (1 / 2) + 1 / 8))
+        (automaticJetDegree (1 / 2) (firstOrderRateThreshold (1 / 2) + 1 / 8))
+        (automaticDerivativeCap (1 / 2) (firstOrderRateThreshold (1 / 2) + 1 / 8)) ≤
+      automaticExceptionBoundConstant (1 / 2) * 8 ^ 2 / (1 / 8) ^ 5 := by
+  have hslack : firstOrderRateThreshold (1 / 2) + 1 / 8 < 1 := by
+    linarith [half_rate_threshold_lt_three_four]
+  exact automaticClosedListAndExceptionBounds (by norm_num) (by norm_num) (by norm_num)
+    hslack (by norm_num) (by norm_num)
+    (by norm_num : (3 : ℝ) ≤ (1 / 2) * 8)
+    (by nlinarith [half_rate_threshold_lt_three_four])
 
 /-! ### Curve-stage sums -/
 
-/-- Splitting the first-order curve ratio at `L = 2` raises it above the direct ratio. -/
-example : firstOrderCurveDirectRatio 5 1 4 ≤ firstOrderCurveJointRatio 5 2 4 := by
-  exact firstOrderCurveDirectRatio_le_jointRatio (by norm_num) (by norm_num) (by norm_num)
+private noncomputable def automaticCurveEquation : DifferentialPolynomial (Polynomial ℚ) 1 :=
+  MvPolynomial.X (some 1)
 
-/-- A computed order-zero cap agrees with the concrete first-order curve bound. -/
+private theorem highestActiveJet_automaticCurveEquation :
+    highestActiveJet automaticCurveEquation = some 1 := by
+  have hactive : activeJets automaticCurveEquation = {1} := by
+    ext j
+    fin_cases j
+    · rw [mem_activeJets]
+      change 0 < jetDegree automaticCurveEquation (0 : Fin 2) ↔
+        (0 : Fin 2) ∈ ({1} : Finset (Fin 2))
+      rw [jetDegree, automaticCurveEquation, MvPolynomial.degreeOf_X_of_ne (by decide)]
+      norm_num
+    · rw [mem_activeJets]
+      change 0 < jetDegree automaticCurveEquation (1 : Fin 2) ↔
+        (1 : Fin 2) ∈ ({1} : Finset (Fin 2))
+      rw [jetDegree, automaticCurveEquation, MvPolynomial.degreeOf_X_self]
+      norm_num
+  rw [highestActiveJet_eq_some_max automaticCurveEquation (by simp [hactive])]
+  simp [hactive]
+
+private theorem automaticCurveChain :
+    PolynomialDifferential.SeparantChain automaticCurveEquation
+      [(automaticCurveEquation, (1 : Fin 2))] (MvPolynomial.C (1 : Polynomial ℚ)) := by
+  refine .active 1 (MvPolynomial.X_ne_zero _) highestActiveJet_automaticCurveEquation ?_
+  have hsep : separant automaticCurveEquation 1 = MvPolynomial.C 1 := by
+    simp [separant, automaticCurveEquation, MvPolynomial.pderiv_X]
+  rw [hsep]
+  refine .terminal (by simp) ?_
+  apply (highestActiveJet_eq_none_iff _).mpr
+  intro j
+  simp [DependsOnJet, jetDegree]
+
+/-- A one-stage separant chain satisfies the direct-ratio curve bound over `ℚ[X]`. -/
+example :
+    (1 : ℚ) +
+        ([(automaticCurveEquation, (1 : Fin 2))].map (fun stage ↦
+          firstOrderCurveStageCharge (F := ℚ) 4 2 1 1 2 1 1 stage (τ := 0)
+            (η := firstOrderCurveDirectRatio 4 1 2))).sum ≤
+      firstOrderCurveBound 4 2 1 1 2 1 1 1 1 0
+        (firstOrderCurveDirectRatio 4 1 2) := by
+  have hdegree : jetTotalDegree automaticCurveEquation ≤ 1 := by
+    refine (jetTotalDegree_le_iff _ 1).mpr fun u hu ↦ ?_
+    rw [automaticCurveEquation, MvPolynomial.support_X, Finset.mem_singleton] at hu
+    rw [hu]
+    simp [totalJetDegree_eq_sum, Fin.sum_univ_two]
+  have hderivative : jetDegree automaticCurveEquation 1 ≤ 1 := by
+    simp [automaticCurveEquation, jetDegree]
+  exact automaticCurveChain.sum_firstOrderCurveStageCharge_add_height_le_of_directRatio
+    (n := 4) (K := 2) (k := 1) (L := 1) (A := 2) (μ := 1) (M := 1)
+    (ell := 1) (h := 1) (τ := 0) hdegree hderivative
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+
+/-- The stage cap identity computes the concrete first-order curve bound. -/
 example :
     (0 : ℚ) + PolynomialDifferential.firstOrderStageCap
         (fun v ↦ orderZeroCurveStageCharge 1 0 (firstOrderCurveJointRatio 5 2 4)
@@ -377,11 +449,7 @@ example :
         (fun v r ↦ orderOneCurveStageCharge 3 1 0 (firstOrderCurveJointRatio 5 2 4)
           (firstOrderCurveFiberRatio 5 1 2) (3 : ℚ) v r 0 2) 1 0 =
       firstOrderCurveBound 5 3 1 2 4 1 0 1 0 0 2 := by
-  norm_num [PolynomialDifferential.firstOrderStageCap, firstOrderCurveBound,
-    orderZeroCurveStageCharge, orderOneCurveStageCharge, firstOrderCurveJointZero,
-    firstOrderCurveJointOne, firstOrderCurveFiberZero, firstOrderCurveFiberOne,
-    firstOrderTaylorTotalCap, firstOrderTaylorDerivativeCap,
-    firstOrderCurveJointRatio, firstOrderCurveFiberRatio]
+  exact firstOrderCurveStageCap_add_height_eq_of_factors 5 3 1 2 4 1 0 1 0 0 2
 
 /-! ### Fixed shifted-height certificate -/
 

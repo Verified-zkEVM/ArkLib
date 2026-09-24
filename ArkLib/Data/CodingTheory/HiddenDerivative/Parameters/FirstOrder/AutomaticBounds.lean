@@ -25,11 +25,12 @@ bounds for the closed list and exceptional-set constants.
 
 * `automaticMultiplicity_le_inv_eta`, `automaticDerivativeCap_le_inv_eta`, and
   `automaticJetDegree_le_inv_eta` bound the rounded interpolation parameters.
-* `automaticChallengeHeight_le_inv_eta_sq` and `automaticHybridT_le_inv_eta_cube` bound the
+* `automaticChallengeHeight_le_inv_eta_sq` and `automaticStaircaseMoment_le_inv_eta_cube` bound the
   challenge height and staircase moment.
-* `automaticHybridLambdaClosed_le` and `automaticHybridEClosed_le` bound the closed list and
-  exceptional-set constants.
-* `automaticHybridClosedBounds` derives both closed bounds from the physical-rate guards.
+* `automaticListConstant_le_cubic_slack_envelope` and
+  `automaticExceptionConstant_le_quintic_slack_envelope` bound the closed list and exceptional-set
+  constants.
+* `automaticClosedListAndExceptionBounds` derives both closed bounds from the physical-rate guards.
 
 ## References
 
@@ -67,18 +68,18 @@ def automaticMomentBoundConstant (rho : ℝ) : ℝ :=
   3 * automaticJetBoundConstant rho ^ 3
 
 /-- A common rate-only budget for the recipe and the retained agreement ratio. -/
-def automaticHybridEnvelopeConstant (rho : ℝ) : ℝ :=
+def automaticRateEnvelopeConstant (rho : ℝ) : ℝ :=
   max 1 (max (1 / (firstOrderRateThreshold rho - rho))
     (max (automaticJetBoundConstant rho)
       (max (automaticHeightBoundConstant rho) (automaticMomentBoundConstant rho))))
 
 /-- The explicit rate-only coefficient in the cubic list envelope. -/
-def automaticLambdaBoundConstant (rho : ℝ) : ℝ :=
-  3 * automaticHybridEnvelopeConstant rho ^ 2
+def automaticListBoundConstant (rho : ℝ) : ℝ :=
+  3 * automaticRateEnvelopeConstant rho ^ 2
 
 /-- The explicit rate-only coefficient in the quintic exception envelope. -/
 def automaticExceptionBoundConstant (rho : ℝ) : ℝ :=
-  45 * automaticHybridEnvelopeConstant rho ^ 4
+  45 * automaticRateEnvelopeConstant rho ^ 4
 
 /-- The threshold lies strictly below agreement one for rates in `(0, 1)`. -/
 theorem automaticRateGap_pos {rho : ℝ} (hrho : 0 < rho) (hrhoOne : rho < 1) :
@@ -89,7 +90,6 @@ theorem automaticRateGap_pos {rho : ℝ} (hrho : 0 < rho) (hrhoOne : rho < 1) :
 
 /-- The admissible slack is smaller than the distance from threshold to one. -/
 theorem automatic_eta_lt_rateGap {rho eta : ℝ}
-    (_hrho : 0 < rho) (_hrhoOne : rho < 1) (_heta : 0 < eta)
     (haOne : firstOrderRateThreshold rho + eta < 1) :
     eta < automaticRateGap rho := by
   unfold automaticRateGap
@@ -97,12 +97,11 @@ theorem automatic_eta_lt_rateGap {rho eta : ℝ}
 
 /-- Capping the agreement gap loses at most a factor two over its whole public range. -/
 theorem half_eta_le_automaticAgreement_sub_threshold {rho eta : ℝ}
-    (hrho : 0 < rho) (hrhoOne : rho < 1) (heta : 0 < eta)
-    (haOne : firstOrderRateThreshold rho + eta < 1) :
+    (heta : 0 < eta) (haOne : firstOrderRateThreshold rho + eta < 1) :
     eta / 2 ≤ automaticAgreement rho (firstOrderRateThreshold rho + eta) -
       firstOrderRateThreshold rho := by
   have hetaGap : eta ≤ automaticRateGap rho :=
-    (automatic_eta_lt_rateGap hrho hrhoOne heta haOne).le
+    (automatic_eta_lt_rateGap haOne).le
   rw [automaticAgreement_eq_min, min_def]
   split_ifs <;> unfold automaticRateGap at hetaGap <;> linarith
 
@@ -164,15 +163,15 @@ theorem automaticSurplusSlope_mul_eta_le {rho eta : ℝ}
   let a := firstOrderRateThreshold rho + eta
   let a₀ := automaticAgreement rho a
   have hgap := automaticRateGap_pos hrho hrhoOne
-  have hslack := half_eta_le_automaticAgreement_sub_threshold hrho hrhoOne heta haOne
+  have hslack := half_eta_le_automaticAgreement_sub_threshold heta haOne
   have hG := half_agreement_slack_le_automaticGapBracket hrho hrhoOne heta haOne
-  have hbeta : 3 * automaticRateGap rho / 8 ≤ automaticBeta rho a := by
+  have hbeta : 3 * automaticRateGap rho / 8 ≤ automaticDerivativeRatio rho a := by
     have ha₀mid : a₀ ≤ (1 + firstOrderRateThreshold rho) / 2 := by
       dsimp only [a₀, a]
       rw [automaticAgreement_eq_min]
       exact min_le_right _ _
     have hden : 0 < 2 * (2 - rho) := mul_pos (by norm_num) (by linarith)
-    unfold automaticBeta
+    unfold automaticDerivativeRatio
     dsimp only [a₀, a]
     unfold automaticRateGap firstOrderRateBeta
     rw [le_div_iff₀ hden]
@@ -191,10 +190,10 @@ theorem automaticSurplusSlope_mul_eta_le {rho eta : ℝ}
   calc
     3 * automaticRateGap rho / 64 * eta =
         (3 * automaticRateGap rho / 8) * (eta / 4) / 2 := by ring
-    _ ≤ automaticBeta rho (firstOrderRateThreshold rho + eta) *
+    _ ≤ automaticDerivativeRatio rho (firstOrderRateThreshold rho + eta) *
           automaticGapBracket rho (firstOrderRateThreshold rho + eta) / 2 := by
       gcongr
-      exact (automaticBeta_pos hrho hrhoOne (by linarith) haOne).le
+      exact (automaticDerivativeRatio_pos hrhoOne haOne).le
 
 /-- The rate-only surplus coefficient is positive for rates in `(0, 1)`. -/
 theorem automaticSurplusSlope_pos {rho : ℝ} (hrho : 0 < rho) (hrhoOne : rho < 1) :
@@ -228,7 +227,7 @@ theorem automaticMultiplicity_le_inv_eta {rho eta : ℝ}
   let m := automaticMultiplicity rho a
   have hgap := automaticRateGap_pos hrho hrhoOne
   have hetaOne : eta ≤ 1 := by
-    have := automatic_eta_lt_rateGap hrho hrhoOne heta haOne
+    have := automatic_eta_lt_rateGap haOne
     unfold automaticRateGap at this
     have hthresholdPos := (rate_lt_firstOrderRateThreshold hrho hrhoOne).trans' hrho
     linarith
@@ -259,17 +258,18 @@ theorem automaticDerivativeCap_le_inv_eta {rho eta : ℝ}
     (automaticDerivativeCap rho (firstOrderRateThreshold rho + eta) : ℝ) ≤
       automaticMultiplicityBoundConstant rho / eta := by
   let a := firstOrderRateThreshold rho + eta
-  have hbeta := automaticBeta_lt_three_four hrho hrhoOne (by linarith) haOne
-  have hbeta0 := (automaticBeta_pos hrho hrhoOne (by linarith) haOne).le
+  have hbeta := automaticDerivativeRatio_lt_three_four (rho := rho) (a := a) hrho hrhoOne
+    (by dsimp only [a]; linarith)
+  have hbeta0 := (automaticDerivativeRatio_pos hrhoOne haOne).le
   have hfloor : automaticDerivativeCapRaw rho a ≤ automaticMultiplicity rho a := by
     have hm : (0 : ℝ) ≤ automaticMultiplicity rho a := Nat.cast_nonneg _
     have hcast : (automaticDerivativeCapRaw rho a : ℝ) ≤
         (automaticMultiplicity rho a : ℝ) := calc
       (automaticDerivativeCapRaw rho a : ℝ) ≤
-          automaticBeta rho a * automaticMultiplicity rho a := by
+          automaticDerivativeRatio rho a * automaticMultiplicity rho a := by
         unfold automaticDerivativeCapRaw
         exact Nat.floor_le (mul_nonneg hbeta0 hm)
-      automaticBeta rho a * automaticMultiplicity rho a ≤
+      automaticDerivativeRatio rho a * automaticMultiplicity rho a ≤
           1 * automaticMultiplicity rho a :=
         mul_le_mul_of_nonneg_right (hbeta.trans (by norm_num)).le hm
       _ = _ := one_mul _
@@ -288,7 +288,7 @@ theorem automaticJetDegree_le_inv_eta {rho eta : ℝ}
   let m := automaticMultiplicity rho a
   let a₀ := automaticAgreement rho a
   have hetaOne : eta ≤ 1 := by
-    have := automatic_eta_lt_rateGap hrho hrhoOne heta haOne
+    have := automatic_eta_lt_rateGap haOne
     have hthresholdPos := (rate_lt_firstOrderRateThreshold hrho hrhoOne).trans' hrho
     unfold automaticRateGap at this
     linarith
@@ -319,15 +319,15 @@ theorem automaticRankDensityEnvelope_le_one {rho a : ℝ}
     (hrho : 0 < rho) (hrhoOne : rho < 1)
     (ha : firstOrderRateThreshold rho < a) (haOne : a < 1) :
     automaticRankDensityEnvelope rho a ≤ 1 := by
-  let beta := automaticBeta rho a
-  have hb0 : 0 ≤ beta := (automaticBeta_pos hrho hrhoOne ha haOne).le
+  let beta := automaticDerivativeRatio rho a
+  have hb0 : 0 ≤ beta := (automaticDerivativeRatio_pos hrhoOne haOne).le
   have hb1 : beta ≤ 1 :=
-    ((automaticBeta_lt_three_four hrho hrhoOne ha haOne).trans
+    ((automaticDerivativeRatio_lt_three_four hrho hrhoOne ha).trans
       (by norm_num : (3 / 4 : ℝ) < 1)).le
   have hb3 : beta ^ 3 ≤ 1 := pow_le_one₀ hb0 hb1
   unfold automaticRankDensityEnvelope firstOrderRankCubicEnvelope
   dsimp only [beta] at hb0 hb1 hb3 ⊢
-  nlinarith [sq_nonneg (automaticBeta rho a)]
+  nlinarith [sq_nonneg (automaticDerivativeRatio rho a)]
 
 /-- The exact local rank is bounded by four multiplicity cubes. -/
 theorem automaticRankCount_le_four_mul_cube {rho a : ℝ}
@@ -409,7 +409,7 @@ theorem automaticChallengeHeight_le_inv_eta_sq {rho eta : ℝ}
     field_simp [ne_of_gt heta] at this ⊢
     nlinarith
   have hetaOne : eta ≤ 1 := by
-    have := automatic_eta_lt_rateGap hrho hrhoOne heta haOne
+    have := automatic_eta_lt_rateGap haOne
     have hthresholdPos := (rate_lt_firstOrderRateThreshold hrho hrhoOne).trans' hrho
     unfold automaticRateGap at this
     linarith
@@ -431,7 +431,7 @@ theorem automaticChallengeHeight_le_inv_eta_sq {rho eta : ℝ}
       nlinarith
 
 /-- The automatic staircase moment is at most a rate-only multiple of `eta⁻³`. -/
-theorem automaticHybridT_le_inv_eta_cube {rho eta : ℝ}
+theorem automaticStaircaseMoment_le_inv_eta_cube {rho eta : ℝ}
     (hrho : 0 < rho) (hrhoOne : rho < 1) (heta : 0 < eta)
     (haOne : firstOrderRateThreshold rho + eta < 1) :
     stageStaircase (automaticJetDegree rho (firstOrderRateThreshold rho + eta))
@@ -476,63 +476,70 @@ theorem automaticParameterBounds {rho eta : ℝ}
     automaticDerivativeCap_le_inv_eta hrho hrhoOne heta haOne,
     automaticJetDegree_le_inv_eta hrho hrhoOne heta haOne,
     automaticChallengeHeight_le_inv_eta_sq hrho hrhoOne heta haOne,
-    automaticHybridT_le_inv_eta_cube hrho hrhoOne heta haOne⟩
+    automaticStaircaseMoment_le_inv_eta_cube hrho hrhoOne heta haOne⟩
 
 /-- The common envelope constant is at least one. -/
-theorem one_le_automaticHybridEnvelopeConstant (rho : ℝ) :
-    1 ≤ automaticHybridEnvelopeConstant rho := by
-  unfold automaticHybridEnvelopeConstant
+theorem automaticRateEnvelopeConstant_one_le (rho : ℝ) :
+    1 ≤ automaticRateEnvelopeConstant rho := by
+  unfold automaticRateEnvelopeConstant
   exact le_max_left _ _
 
 /-- The common envelope constant dominates the inverse first-order rate gap. -/
-theorem rateGapInv_le_automaticHybridEnvelopeConstant (rho : ℝ) :
+theorem automaticRateGapInv_le_rateEnvelopeConstant (rho : ℝ) :
     1 / (firstOrderRateThreshold rho - rho) ≤
-      automaticHybridEnvelopeConstant rho := by
-  unfold automaticHybridEnvelopeConstant
+      automaticRateEnvelopeConstant rho := by
+  unfold automaticRateEnvelopeConstant
   exact (le_max_left _ _).trans (le_max_right _ _)
 
 /-- The common envelope constant dominates the jet-degree coefficient. -/
 theorem automaticJetBoundConstant_le_envelope (rho : ℝ) :
-    automaticJetBoundConstant rho ≤ automaticHybridEnvelopeConstant rho := by
-  simp only [automaticHybridEnvelopeConstant, le_max_iff]
+    automaticJetBoundConstant rho ≤ automaticRateEnvelopeConstant rho := by
+  simp only [automaticRateEnvelopeConstant, le_max_iff]
   exact Or.inr (Or.inr (Or.inl le_rfl))
 
 /-- The common envelope constant dominates the challenge-height coefficient. -/
 theorem automaticHeightBoundConstant_le_envelope (rho : ℝ) :
-    automaticHeightBoundConstant rho ≤ automaticHybridEnvelopeConstant rho := by
-  simp only [automaticHybridEnvelopeConstant, le_max_iff]
+    automaticHeightBoundConstant rho ≤ automaticRateEnvelopeConstant rho := by
+  simp only [automaticRateEnvelopeConstant, le_max_iff]
   exact Or.inr (Or.inr (Or.inr (Or.inl le_rfl)))
 
 /-- The common envelope constant dominates the staircase-moment coefficient. -/
 theorem automaticMomentBoundConstant_le_envelope (rho : ℝ) :
-    automaticMomentBoundConstant rho ≤ automaticHybridEnvelopeConstant rho := by
-  simp only [automaticHybridEnvelopeConstant, le_max_iff]
+    automaticMomentBoundConstant rho ≤ automaticRateEnvelopeConstant rho := by
+  simp only [automaticRateEnvelopeConstant, le_max_iff]
   tauto
 
-/-- The automatic closed list constant has a cubic slack envelope. -/
-theorem automaticHybridLambdaClosed_le {rho eta : ℝ} {n D A : ℕ}
+private theorem automaticClosedEnvelopeInputs {rho eta : ℝ} {n D A : ℕ}
     (hrho : 0 < rho) (hrhoOne : rho < 1) (heta : 0 < eta)
     (haOne : firstOrderRateThreshold rho + eta < 1)
-    (hn : 1 ≤ n) (hDn : D ≤ n) (hDA : D < A)
+    (hDn : D ≤ n) (hDA : D < A)
     (hD : (D : ℝ) ≤ rho * n)
     (hA : (firstOrderRateThreshold rho + eta) * n ≤ A) :
-    firstOrderListConstant (agreementIncidenceRatio n D A) D
-        (automaticJetDegree rho (firstOrderRateThreshold rho + eta))
-        (automaticDerivativeCap rho (firstOrderRateThreshold rho + eta)) ≤
-      automaticLambdaBoundConstant rho * n / eta ^ 3 := by
+    1 ≤ automaticRateEnvelopeConstant rho ∧
+    1 ≤ 1 / eta ∧
+    0 ≤ agreementIncidenceRatio n D A ∧
+    agreementIncidenceRatio n D A ≤ automaticRateEnvelopeConstant rho ∧
+    1 ≤ automaticJetDegree rho (firstOrderRateThreshold rho + eta) ∧
+    (automaticJetDegree rho (firstOrderRateThreshold rho + eta) : ℝ) ≤
+      automaticRateEnvelopeConstant rho / eta ∧
+    (automaticChallengeHeight rho (firstOrderRateThreshold rho + eta) : ℝ) ≤
+      automaticRateEnvelopeConstant rho / eta ^ 2 ∧
+    stageStaircase (automaticJetDegree rho (firstOrderRateThreshold rho + eta))
+      (automaticDerivativeCap rho (firstOrderRateThreshold rho + eta)) ≤
+        automaticRateEnvelopeConstant rho / eta ^ 3 := by
   let a := firstOrderRateThreshold rho + eta
-  let C := automaticHybridEnvelopeConstant rho
+  let C := automaticRateEnvelopeConstant rho
   let q := 1 / eta
   let mu := automaticJetDegree rho a
   let M := automaticDerivativeCap rho a
   have ha : firstOrderRateThreshold rho < a := by dsimp only [a]; linarith
   have hthresholdGap : 0 < firstOrderRateThreshold rho - rho :=
     sub_pos.mpr (rate_lt_firstOrderRateThreshold hrho hrhoOne)
-  have hC : 1 ≤ C := one_le_automaticHybridEnvelopeConstant rho
+  have hC : 1 ≤ C := automaticRateEnvelopeConstant_one_le rho
   have hetaOne : eta ≤ 1 := by
-    have := automatic_eta_lt_rateGap hrho hrhoOne heta haOne
+    have hgap := automatic_eta_lt_rateGap haOne
     have hthresholdPos := (rate_lt_firstOrderRateThreshold hrho hrhoOne).trans' hrho
-    unfold automaticRateGap at this
+    unfold automaticRateGap at hgap
     linarith
   have hq : 1 ≤ q := by
     dsimp only [q]
@@ -547,8 +554,8 @@ theorem automaticHybridLambdaClosed_le {rho eta : ℝ} {n D A : ℕ}
       agreementIncidenceRatio n D A ≤ 1 / (a - rho) := hthetaRate
       _ ≤ 1 / (firstOrderRateThreshold rho - rho) := by
         exact div_le_div_of_nonneg_left zero_le_one hthresholdGap (by dsimp only [a]; linarith)
-      _ ≤ C := rateGapInv_le_automaticHybridEnvelopeConstant rho
-  have hmu0 : (0 : ℝ) ≤ mu := Nat.cast_nonneg _
+      _ ≤ C := automaticRateGapInv_le_rateEnvelopeConstant rho
+  have hmuPos : 1 ≤ mu := automaticJetDegree_pos hrho hrhoOne ha haOne
   have hmu : (mu : ℝ) ≤ C * q := by
     calc
       (mu : ℝ) ≤ automaticJetBoundConstant rho / eta :=
@@ -557,28 +564,74 @@ theorem automaticHybridLambdaClosed_le {rho eta : ℝ} {n D A : ℕ}
       _ ≤ C * q := by
         gcongr
         exact automaticJetBoundConstant_le_envelope rho
-  have hT0 : 0 ≤ stageStaircase mu M := by
-    unfold stageStaircase
-    positivity
+  have hh : (automaticChallengeHeight rho a : ℝ) ≤ C * q ^ 2 := by
+    calc
+      (automaticChallengeHeight rho a : ℝ) ≤ automaticHeightBoundConstant rho / eta ^ 2 :=
+        automaticChallengeHeight_le_inv_eta_sq hrho hrhoOne heta haOne
+      _ = automaticHeightBoundConstant rho * q ^ 2 := by
+        dsimp only [q]
+        field_simp [ne_of_gt heta]
+      _ ≤ C * q ^ 2 := by
+        gcongr
+        exact automaticHeightBoundConstant_le_envelope rho
   have hT : stageStaircase mu M ≤ C * q ^ 3 := by
     calc
       stageStaircase mu M ≤ automaticMomentBoundConstant rho / eta ^ 3 :=
-        automaticHybridT_le_inv_eta_cube hrho hrhoOne heta haOne
+        automaticStaircaseMoment_le_inv_eta_cube hrho hrhoOne heta haOne
       _ = automaticMomentBoundConstant rho * q ^ 3 := by
         dsimp only [q]
         field_simp [ne_of_gt heta]
       _ ≤ C * q ^ 3 := by
         gcongr
         exact automaticMomentBoundConstant_le_envelope rho
-  have hbound := firstOrderListConstant_le_cubic hC hq hn hDn htheta0 htheta hmu hT
+  dsimp only [a, C, q, mu, M] at hC hq htheta0 htheta hmuPos hmu hh hT
+  constructor
+  · exact hC
+  constructor
+  · exact hq
+  constructor
+  · exact htheta0
+  constructor
+  · exact htheta
+  constructor
+  · exact hmuPos
+  constructor
+  · simpa [div_eq_mul_inv] using hmu
+  constructor
+  · simpa [div_eq_mul_inv] using hh
+  · simpa [div_eq_mul_inv] using hT
+
+/-- The automatic closed list constant has a cubic slack envelope. -/
+theorem automaticListConstant_le_cubic_slack_envelope {rho eta : ℝ} {n D A : ℕ}
+    (hrho : 0 < rho) (hrhoOne : rho < 1) (heta : 0 < eta)
+    (haOne : firstOrderRateThreshold rho + eta < 1)
+    (hn : 1 ≤ n) (hDn : D ≤ n) (hDA : D < A)
+    (hD : (D : ℝ) ≤ rho * n)
+    (hA : (firstOrderRateThreshold rho + eta) * n ≤ A) :
+    firstOrderListConstant (agreementIncidenceRatio n D A) D
+        (automaticJetDegree rho (firstOrderRateThreshold rho + eta))
+        (automaticDerivativeCap rho (firstOrderRateThreshold rho + eta)) ≤
+      automaticListBoundConstant rho * n / eta ^ 3 := by
+  obtain ⟨hC, hq, htheta0, htheta, _, hmu, _, hT⟩ :=
+    automaticClosedEnvelopeInputs hrho hrhoOne heta haOne hDn hDA hD hA
+  let a := firstOrderRateThreshold rho + eta
+  let C := automaticRateEnvelopeConstant rho
+  let q := 1 / eta
+  let mu := automaticJetDegree rho a
+  let M := automaticDerivativeCap rho a
+  have hmu' : (mu : ℝ) ≤ C * q := by
+    simpa only [a, mu, C, q, div_eq_mul_inv, one_mul, inv_pow] using hmu
+  have hT' : stageStaircase mu M ≤ C * q ^ 3 := by
+    simpa only [a, mu, M, C, q, div_eq_mul_inv, one_mul, inv_pow] using hT
+  have hbound := firstOrderListConstant_le_cubic hC hq hn hDn htheta0 htheta hmu' hT'
   dsimp only [a, C, q, mu, M] at hbound ⊢
-  unfold automaticLambdaBoundConstant
+  unfold automaticListBoundConstant
   field_simp [ne_of_gt heta] at hbound ⊢
   nlinarith
 
 /-- The automatic closed exceptional-set constant has a quintic slack envelope and quadratic
 block-length dependence. -/
-theorem automaticHybridEClosed_le {rho eta : ℝ} {n D A : ℕ}
+theorem automaticExceptionConstant_le_quintic_slack_envelope {rho eta : ℝ} {n D A : ℕ}
     (hrho : 0 < rho) (hrhoOne : rho < 1) (heta : 0 < eta)
     (haOne : firstOrderRateThreshold rho + eta < 1)
     (hn : 1 ≤ n) (hDn : D ≤ n) (hDA : D < A)
@@ -589,76 +642,29 @@ theorem automaticHybridEClosed_le {rho eta : ℝ} {n D A : ℕ}
         (automaticJetDegree rho (firstOrderRateThreshold rho + eta))
         (automaticDerivativeCap rho (firstOrderRateThreshold rho + eta)) ≤
       automaticExceptionBoundConstant rho * n ^ 2 / eta ^ 5 := by
+  obtain ⟨hC, hq, htheta0, htheta, hmuPos, hmu, hh, hT⟩ :=
+    automaticClosedEnvelopeInputs hrho hrhoOne heta haOne hDn hDA hD hA
   let a := firstOrderRateThreshold rho + eta
-  let C := automaticHybridEnvelopeConstant rho
+  let C := automaticRateEnvelopeConstant rho
   let q := 1 / eta
   let mu := automaticJetDegree rho a
   let M := automaticDerivativeCap rho a
   let h := automaticChallengeHeight rho a
-  have ha : firstOrderRateThreshold rho < a := by dsimp only [a]; linarith
-  have hthresholdGap : 0 < firstOrderRateThreshold rho - rho :=
-    sub_pos.mpr (rate_lt_firstOrderRateThreshold hrho hrhoOne)
-  have hC : 1 ≤ C := one_le_automaticHybridEnvelopeConstant rho
-  have hetaOne : eta ≤ 1 := by
-    have := automatic_eta_lt_rateGap hrho hrhoOne heta haOne
-    have hthresholdPos := (rate_lt_firstOrderRateThreshold hrho hrhoOne).trans' hrho
-    unfold automaticRateGap at this
-    linarith
-  have hq : 1 ≤ q := by
-    dsimp only [q]
-    exact (one_le_div heta).2 hetaOne
-  have htheta0 : 0 ≤ agreementIncidenceRatio n D A := by
-    unfold agreementIncidenceRatio
-    positivity
-  have hthetaRate := agreementIncidenceRatio_le_one_div_sub hDn hDA hD hA
-    (show rho < a by exact (rate_lt_firstOrderRateThreshold hrho hrhoOne).trans ha)
-  have htheta : agreementIncidenceRatio n D A ≤ C := by
-    calc
-      agreementIncidenceRatio n D A ≤ 1 / (a - rho) := hthetaRate
-      _ ≤ 1 / (firstOrderRateThreshold rho - rho) := by
-        exact div_le_div_of_nonneg_left zero_le_one hthresholdGap (by dsimp only [a]; linarith)
-      _ ≤ C := rateGapInv_le_automaticHybridEnvelopeConstant rho
-  have hmuPos : 1 ≤ mu := automaticJetDegree_pos hrho hrhoOne ha haOne
-  have hmu : (mu : ℝ) ≤ C * q := by
-    calc
-      (mu : ℝ) ≤ automaticJetBoundConstant rho / eta :=
-        automaticJetDegree_le_inv_eta hrho hrhoOne heta haOne
-      _ = automaticJetBoundConstant rho * q := by dsimp only [q]; ring
-      _ ≤ C * q := by
-        gcongr
-        exact automaticJetBoundConstant_le_envelope rho
-  have hh : (h : ℝ) ≤ C * q ^ 2 := by
-    calc
-      (h : ℝ) ≤ automaticHeightBoundConstant rho / eta ^ 2 :=
-        automaticChallengeHeight_le_inv_eta_sq hrho hrhoOne heta haOne
-      _ = automaticHeightBoundConstant rho * q ^ 2 := by
-        dsimp only [q]
-        field_simp [ne_of_gt heta]
-      _ ≤ C * q ^ 2 := by
-        gcongr
-        exact automaticHeightBoundConstant_le_envelope rho
-  have hT0 : 0 ≤ stageStaircase mu M := by
-    unfold stageStaircase
-    positivity
-  have hT : stageStaircase mu M ≤ C * q ^ 3 := by
-    calc
-      stageStaircase mu M ≤ automaticMomentBoundConstant rho / eta ^ 3 :=
-        automaticHybridT_le_inv_eta_cube hrho hrhoOne heta haOne
-      _ = automaticMomentBoundConstant rho * q ^ 3 := by
-        dsimp only [q]
-        field_simp [ne_of_gt heta]
-      _ ≤ C * q ^ 3 := by
-        gcongr
-        exact automaticMomentBoundConstant_le_envelope rho
+  have hmu' : (mu : ℝ) ≤ C * q := by
+    simpa only [a, mu, C, q, div_eq_mul_inv, one_mul, inv_pow] using hmu
+  have hh' : (h : ℝ) ≤ C * q ^ 2 := by
+    simpa only [a, h, C, q, div_eq_mul_inv, one_mul, inv_pow] using hh
+  have hT' : stageStaircase mu M ≤ C * q ^ 3 := by
+    simpa only [a, mu, M, C, q, div_eq_mul_inv, one_mul, inv_pow] using hT
   have hbound := firstOrderExceptionConstant_le_quintic hC hq hn hDn htheta0 htheta
-    hmuPos hmu hh hT
+    hmuPos hmu' hh' hT'
   dsimp only [a, C, q, mu, M, h] at hbound ⊢
   unfold automaticExceptionBoundConstant
   field_simp [ne_of_gt heta] at hbound ⊢
   nlinarith
 
 /-- The public physical-rate guards imply both explicit automatic closed envelopes at once. -/
-theorem automaticHybridClosedBounds {rho eta : ℝ} {n k D A : ℕ}
+theorem automaticClosedListAndExceptionBounds {rho eta : ℝ} {n k D A : ℕ}
     (hrho : 0 < rho) (hrhoOne : rho < 1) (heta : 0 < eta)
     (haOne : firstOrderRateThreshold rho + eta < 1)
     (hn : 1 ≤ n) (hDdef : D = k - 1)
@@ -667,7 +673,7 @@ theorem automaticHybridClosedBounds {rho eta : ℝ} {n k D A : ℕ}
     firstOrderListConstant (agreementIncidenceRatio n D A) D
           (automaticJetDegree rho (firstOrderRateThreshold rho + eta))
           (automaticDerivativeCap rho (firstOrderRateThreshold rho + eta)) ≤
-        automaticLambdaBoundConstant rho * n / eta ^ 3 ∧
+        automaticListBoundConstant rho * n / eta ^ 3 ∧
       firstOrderExceptionConstant (agreementIncidenceRatio n D A) n D
           (automaticChallengeHeight rho (firstOrderRateThreshold rho + eta))
           (automaticJetDegree rho (firstOrderRateThreshold rho + eta))
@@ -683,8 +689,8 @@ theorem automaticHybridClosedBounds {rho eta : ℝ} {n k D A : ℕ}
   have hDAReal : (D : ℝ) < A :=
     (hD.trans_lt (mul_lt_mul_of_pos_right haRho hnReal)).trans_le hA
   have hDA : D < A := by exact_mod_cast hDAReal
-  exact ⟨automaticHybridLambdaClosed_le hrho hrhoOne heta haOne hn hDn hDA hD hA,
-    automaticHybridEClosed_le hrho hrhoOne heta haOne hn hDn hDA hD hA⟩
+  exact ⟨automaticListConstant_le_cubic_slack_envelope hrho hrhoOne heta haOne hn hDn hDA hD hA,
+    automaticExceptionConstant_le_quintic_slack_envelope hrho hrhoOne heta haOne hn hDn hDA hD hA⟩
 
 end
 
