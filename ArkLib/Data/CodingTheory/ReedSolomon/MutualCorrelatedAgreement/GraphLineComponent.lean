@@ -45,41 +45,6 @@ noncomputable section
 
 variable {E : Type*} [Field E] {r : ℕ}
 
-/-- Evaluating the joint separant specializes its challenge before evaluating the jet. -/
-theorem eval_jointInitialJetSeparant (center : E)
-    (Q : DifferentialPolynomial E[X] r) (x : Option (Fin (r + 1)) → E) :
-    aeval x (jointInitialJetSeparant center Q) =
-      aeval (fun j ↦ x (some j))
-        (initialJetSeparant center (MvPolynomial.map
-          (Polynomial.aeval (x none)).toRingHom Q)) := by
-  rw [jointInitialJetSeparant, aeval_optionEquivRight_symm, map_initialJetSeparant]
-  simp
-
-/-- Evaluating a joint high cut specializes its challenge before evaluating the jet. -/
-theorem eval_jointCommonTaylorNumerator (center : E)
-    (Q : DifferentialPolynomial E[X] r) (τ : ℕ) {K : ℕ} (l : Fin K)
-    (x : Option (Fin (r + 1)) → E) :
-    aeval x (jointCommonTaylorNumerator center Q τ l) =
-      aeval (fun j ↦ x (some j))
-        (commonTaylorNumerator center
-          (MvPolynomial.map (Polynomial.aeval (x none)).toRingHom Q) τ l.val) := by
-  rw [jointCommonTaylorNumerator, aeval_optionEquivRight_symm,
-    map_commonTaylorNumeratorOver]
-  simp [commonTaylorNumerator, commonTaylorNumeratorOver, rationalTaylorNumeratorOver_eq]
-
-/-- Evaluating a joint agreement cut specializes its challenge and received value. -/
-theorem eval_jointTaylorAgreementEquation (center : E)
-    (Q : DifferentialPolynomial E[X] r) (K τ : ℕ) (x₀ y₀ : E[X])
-    (x : Option (Fin (r + 1)) → E) :
-    aeval x (jointTaylorAgreementEquation center Q K τ x₀ y₀) =
-      aeval (fun j ↦ x (some j))
-        (taylorAgreementEquation center
-          (MvPolynomial.map (Polynomial.aeval (x none)).toRingHom Q) K τ
-          (Polynomial.eval (x none) x₀) (Polynomial.eval (x none) y₀)) := by
-  rw [jointTaylorAgreementEquation, aeval_optionEquivRight_symm,
-    map_taylorAgreementEquationOver_eq (τ := τ)]
-  simp
-
 variable {F : Type*} [Field F] {n k K : ℕ}
 
 /-- A common sample determines one base-field pair for every regular point of the joint Taylor
@@ -127,7 +92,7 @@ theorem exists_graphLine_pair_of_joint_taylor_chart
     ext a <;> simp [φ, Polynomial.evalRingHom]
   have hS_eq : aeval x (jointInitialJetSeparant center Q) =
       aeval jet (initialJetSeparant center Qz) := by
-    simpa only [jet, z, Qz, φ] using eval_jointInitialJetSeparant center Q x
+    simpa only [jet, z, Qz, φ] using aeval_jointInitialJetSeparant center Q x
   have hS_field : aeval jet (initialJetSeparant center Qz) ≠ 0 := by
     rw [← hS_eq]
     exact hS
@@ -144,7 +109,7 @@ theorem exists_graphLine_pair_of_joint_taylor_chart
     have hnum_eq : aeval x (jointCommonTaylorNumerator center Q τ l) =
         aeval jet (commonTaylorNumerator center Qz τ l.val) := by
       simpa only [jet, z, Qz, φ] using
-        eval_jointCommonTaylorNumerator center Q τ l x
+        aeval_jointCommonTaylorNumerator center Q τ l x
     rw [hnum_eq] at hz
     rw [← hφ, map_commonTaylorNumeratorOver_eq, hcenter]
     simpa only [Qz] using hz
@@ -156,7 +121,7 @@ theorem exists_graphLine_pair_of_joint_taylor_chart
           (τ := τ))) = 0 := by
     intro i hi
     have hz := hcuts i hi
-    have hagree_eq := eval_jointTaylorAgreementEquation center Q K τ
+    have hagree_eq := aeval_jointTaylorAgreementEquation center Q K τ
       (Polynomial.C (iota (domain i)))
       (Polynomial.C (iota (f i)) + Polynomial.X * Polynomial.C (iota (g i))) x
     change aeval x (jointTaylorAgreementEquation center Q K τ
@@ -199,8 +164,8 @@ theorem exists_graphLine_pair_of_joint_taylor_chart
   refine ⟨hpoly, ?_, ?_⟩
   · simpa only [jet, z] using hjet
   · intro l
-    have hnum := eval_jointCommonTaylorNumerator center Q τ l x
-    have hsep := eval_jointInitialJetSeparant center Q x
+    have hnum := aeval_jointCommonTaylorNumerator center Q τ l x
+    have hsep := aeval_jointInitialJetSeparant center Q x
     have hcoeff' := hcoeff l
     rw [← hφ, map_commonTaylorNumeratorOver_eq, hcenter, map_initialJetSeparant,
       hcenterRing]
@@ -283,31 +248,9 @@ theorem exists_graphLine_pair_of_regular_component [IsAlgClosed E]
         ∃ z : E, x = fun i ↦ (w i).eval z := by
     intro x hx hsx
     exact hgraph x ⟨hx, hsx⟩
-  have hregular : IsLeftRegular (Ideal.Quotient.mk P (jointInitialJetSeparant center Q)) :=
-    IsLeftCancelMulZero.mul_left_cancel_of_ne_zero
-      (mt Ideal.Quotient.eq_zero_iff_mem.mp hs)
-  have hvanish : ∀ p ∈ P, aeval w p = 0 := by
-    intro p hp
-    apply MvPolynomial.aeval_eq_zero_of_principalOpen_subset_range hregular hd w hgraphRange
-    intro x hx hsx
-    exact hx p hp
-  have hinfinite :
-      {x | x ∈ zeroLocus E P ∧ aeval x (jointInitialJetSeparant center Q) ≠ 0}.Infinite := by
-    intro hfinite
-    have hzero := (MvPolynomial.finite_principalOpen_iff_natDegree_affineHilbertPolynomial_eq_zero
-      hregular).mp hfinite
-    omega
-  have hseparant : aeval w (jointInitialJetSeparant center Q) ≠ 0 := by
-    intro hzero
-    obtain ⟨x, hx⟩ := hinfinite.nonempty
-    obtain ⟨z, hxw⟩ := hgraph x hx
-    have heval : aeval x (jointInitialJetSeparant center Q) =
-        (aeval w (jointInitialJetSeparant center Q)).eval z := by
-      rw [MvPolynomial.polynomial_eval_aeval]
-      rw [← hxw]
-      simp only [MvPolynomial.aeval_eq_eval]
-    rw [hzero, Polynomial.eval_zero] at heval
-    exact hx.2 heval
+  obtain ⟨hregular, hvanish, hseparant⟩ :=
+    MvPolynomial.regular_principalOpen_graph_restriction P
+      (jointInitialJetSeparant center Q) hs hd w hgraphRange
   have herror (l : Fin K) :
       aeval w
         (jointTaylorReconstructionError center Q τ (P₀.map iota) (P₁.map iota) l) = 0 := by

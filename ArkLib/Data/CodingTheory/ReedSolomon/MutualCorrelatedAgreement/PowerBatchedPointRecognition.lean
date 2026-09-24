@@ -101,30 +101,11 @@ theorem exists_exceptional_exactPowerAgreement_family [Fintype α] (domain : α 
         HasExactPowerAgreement domain w iota k z
           (powerBatchedPolynomial (fun t ↦ (P t).map iota) z) := by
   classical
-  have hex : ∀ P ∈ family, ∃ exceptional : Finset E,
-      exceptional.card ≤ ℓ * (Fintype.card α - L) ∧
-      ∀ z ∉ exceptional, HasExactPowerAgreement domain w iota k z
-        (powerBatchedPolynomial (fun t ↦ (P t).map iota) z) :=
-    fun P hP ↦ exists_exceptional_exactPowerAgreement domain w P iota (hdegree P hP)
-      (hcommon P hP)
-  choose ex hcard hgood using hex
-  let exceptions (P : Fin (ℓ + 1) → F[X]) :=
-    if hP : P ∈ family then ex P hP else ∅
-  refine ⟨family.biUnion exceptions, ?_, ?_⟩
-  · calc
-      (family.biUnion exceptions).card ≤ ∑ P ∈ family, (exceptions P).card :=
-        Finset.card_biUnion_le
-      _ ≤ ∑ _P ∈ family, ℓ * (Fintype.card α - L) := by
-        apply Finset.sum_le_sum
-        intro P hP
-        simpa [exceptions, hP] using hcard P hP
-      _ = family.card * (ℓ * (Fintype.card α - L)) := by simp
-  · intro P hP z hz
-    apply hgood P hP z
-    intro hmem
-    apply hz
-    exact Finset.mem_biUnion.mpr
-      ⟨P, hP, by simpa [exceptions, hP] using hmem⟩
+  choose! ex hcard hgood using fun P hP ↦
+    exists_exceptional_exactPowerAgreement domain w P iota (hdegree P hP) (hcommon P hP)
+  refine ⟨family.biUnion ex, Finset.card_biUnion_le_card_mul _ _ _ hcard,
+    fun P hP z hz ↦ hgood P hP z fun hmem ↦
+      hz (Finset.mem_biUnion.mpr ⟨P, hP, hmem⟩)⟩
 
 /-- The polynomial initial-jet graph associated with a tuple of messages. -/
 def powerBatchedJetGraph (center : E) (P : Fin (ℓ + 1) → E[X]) :

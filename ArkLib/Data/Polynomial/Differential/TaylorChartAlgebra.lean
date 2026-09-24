@@ -29,6 +29,8 @@ separant denominator.
   flattened challenge and jet coordinates for the Taylor chart.
 * `jointTaylorAgreementEquation`, `jointTaylorReconstructionError`, and `affinePairCurve` describe
   the agreement cuts and affine-pair graph in those coordinates.
+* `aeval_jointInitialJetSeparant`, `aeval_jointCommonTaylorNumerator`, and
+  `aeval_jointTaylorAgreementEquation` specialize joint cuts at a point before evaluating jets.
 * `commonTaylorNumeratorOver_eq` and `map_commonTaylorNumeratorOver_eq` bridge algebra-valued
   numerators to their field-valued counterparts.
 * `aeval_map_taylorAgreementEquationOver` characterizes regular agreement cuts, while
@@ -102,6 +104,27 @@ def taylorAgreementEquationOver (center : A) (Q : DifferentialPolynomial A r) (K
   (∑ l : Fin K, C ((x - center) ^ l.val) *
     commonTaylorNumeratorOver F center Q τ l.val) - C y * initialJetSeparant center Q ^ τ
 
+/-- Coefficient specialization maps an algebra-valued agreement equation to the corresponding
+agreement equation. -/
+theorem map_taylorAgreementEquationOver (φ : A →ₐ[F] B) (center : A)
+    (Q : DifferentialPolynomial A r) (K : ℕ) (x y : A) (τ : ℕ := 2 * K) :
+    map φ.toRingHom (taylorAgreementEquationOver (F := F) center Q K x y (τ := τ)) =
+      taylorAgreementEquationOver (F := F) (φ center) (map φ.toRingHom Q) K
+        (φ x) (φ y) (τ := τ) := by
+  simp only [taylorAgreementEquationOver, map_sub, map_sum, map_mul, map_C, map_pow,
+    map_commonTaylorNumeratorOver, map_initialJetSeparant]
+  rfl
+
+/-- Specializing an algebra-valued agreement equation to a field gives the field-valued cut. -/
+theorem map_taylorAgreementEquationOver_eq {E : Type*} [Field E] [Algebra F E]
+    (φ : A →ₐ[F] E) (center : A) (Q : DifferentialPolynomial A r) (K : ℕ) (x y : A)
+    (τ : ℕ := 2 * K) :
+    map φ.toRingHom (taylorAgreementEquationOver (F := F) center Q K x y (τ := τ)) =
+      taylorAgreementEquation (φ center) (map φ.toRingHom Q) K τ (φ x) (φ y) := by
+  rw [map_taylorAgreementEquationOver (τ := τ)]
+  simp only [taylorAgreementEquationOver, taylorAgreementEquation,
+    commonTaylorNumeratorOver_eq]
+
 /-- The initial equation in joint challenge and initial-jet coordinates. -/
 def jointInitialJetEquation {E : Type*} [CommSemiring E] (center : E)
     (Q : DifferentialPolynomial (Polynomial E) r) :
@@ -147,6 +170,43 @@ def affinePairCurve {E : Type*} [Semiring E] (center : E) (P₀ P₁ : Polynomia
   | none => Polynomial.X
   | some j => Polynomial.C (polynomialJet center P₀ j) +
       Polynomial.X * Polynomial.C (polynomialJet center P₁ j)
+
+variable {E : Type*} [Field E]
+
+/-- Evaluating the joint separant specializes its challenge before evaluating the jet. -/
+theorem aeval_jointInitialJetSeparant (center : E)
+    (Q : DifferentialPolynomial (Polynomial E) r) (x : Option (Fin (r + 1)) → E) :
+    aeval x (jointInitialJetSeparant center Q) =
+      aeval (fun j ↦ x (some j))
+        (initialJetSeparant center
+          (MvPolynomial.map (Polynomial.aeval (x none)).toRingHom Q)) := by
+  rw [jointInitialJetSeparant, aeval_optionEquivRight_symm, map_initialJetSeparant]
+  simp
+
+/-- Evaluating a joint high cut specializes its challenge before evaluating the jet. -/
+theorem aeval_jointCommonTaylorNumerator (center : E)
+    (Q : DifferentialPolynomial (Polynomial E) r) (τ : ℕ) {K : ℕ} (l : Fin K)
+    (x : Option (Fin (r + 1)) → E) :
+    aeval x (jointCommonTaylorNumerator center Q τ l) =
+      aeval (fun j ↦ x (some j))
+        (commonTaylorNumerator center
+          (MvPolynomial.map (Polynomial.aeval (x none)).toRingHom Q) τ l.val) := by
+  rw [jointCommonTaylorNumerator, aeval_optionEquivRight_symm,
+    map_commonTaylorNumeratorOver]
+  simp [commonTaylorNumerator, commonTaylorNumeratorOver, rationalTaylorNumeratorOver_eq]
+
+/-- Evaluating a joint agreement cut specializes its challenge and received value. -/
+theorem aeval_jointTaylorAgreementEquation (center : E)
+    (Q : DifferentialPolynomial (Polynomial E) r) (K τ : ℕ) (x₀ y₀ : Polynomial E)
+    (x : Option (Fin (r + 1)) → E) :
+    aeval x (jointTaylorAgreementEquation center Q K τ x₀ y₀) =
+      aeval (fun j ↦ x (some j))
+        (taylorAgreementEquation center
+          (MvPolynomial.map (Polynomial.aeval (x none)).toRingHom Q) K τ
+          (Polynomial.eval (x none) x₀) (Polynomial.eval (x none) y₀)) := by
+  rw [jointTaylorAgreementEquation, aeval_optionEquivRight_symm,
+    map_taylorAgreementEquationOver_eq (τ := τ)]
+  simp
 
 /-- An affine agreement cut has joint degree at most `1 + τ * B` when its separant and common
 numerators have joint degrees at most `B` and `1 + τ * B`, respectively. -/
@@ -211,27 +271,6 @@ theorem jointTotalDegree_taylorAgreementEquationOver_le_of_coeffNatDegreeLE
         1 + 2 * K * (v - 1 + h) := by
   exact jointTotalDegree_taylorAgreementEquationOver_le_of_coeffNatDegreeLE_and_exponent
     center x a b Q v h K (2 * K) (taylorExponentSufficient_two_mul r K) hjet hQ
-
-/-- Coefficient specialization maps an algebra-valued agreement equation to the corresponding
-agreement equation. -/
-theorem map_taylorAgreementEquationOver (φ : A →ₐ[F] B) (center : A)
-    (Q : DifferentialPolynomial A r) (K : ℕ) (x y : A) (τ : ℕ := 2 * K) :
-    map φ.toRingHom (taylorAgreementEquationOver (F := F) center Q K x y (τ := τ)) =
-      taylorAgreementEquationOver (F := F) (φ center) (map φ.toRingHom Q) K
-        (φ x) (φ y) (τ := τ) := by
-  simp only [taylorAgreementEquationOver, map_sub, map_sum, map_mul, map_C, map_pow,
-    map_commonTaylorNumeratorOver, map_initialJetSeparant]
-  rfl
-
-/-- Specializing an algebra-valued agreement equation to a field gives the field-valued cut. -/
-theorem map_taylorAgreementEquationOver_eq {E : Type*} [Field E] [Algebra F E]
-    (φ : A →ₐ[F] E) (center : A) (Q : DifferentialPolynomial A r) (K : ℕ) (x y : A)
-    (τ : ℕ := 2 * K) :
-    map φ.toRingHom (taylorAgreementEquationOver (F := F) center Q K x y (τ := τ)) =
-      taylorAgreementEquation (φ center) (map φ.toRingHom Q) K τ (φ x) (φ y) := by
-  rw [map_taylorAgreementEquationOver (τ := τ)]
-  simp only [taylorAgreementEquationOver, taylorAgreementEquation,
-    commonTaylorNumeratorOver_eq]
 
 /-- At a regular jet, a sufficiently padded symbolic agreement equation evaluates to the
 separant power times the discrepancy of the reconstructed polynomial. -/

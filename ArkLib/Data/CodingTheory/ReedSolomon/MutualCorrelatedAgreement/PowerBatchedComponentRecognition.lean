@@ -16,7 +16,6 @@ public import
 A common sample determines a tuple of base-field polynomials. A positive-dimensional prime
 component satisfying the joint Taylor cuts lies on its power-batched initial-jet graph. Its
 ideal vanishes after graph restriction, and its separant stays nonzero on the graph.
-This is the polynomial-graph recognition step of [DKT26, Theorem 5.14].
 
 ## Main statements
 
@@ -94,15 +93,15 @@ theorem exists_polynomialGraph_of_primeTaylorComponent [IsAlgClosed E]
         Polynomial.evalRingHom (x none) := by
       ext a <;> simp [Polynomial.evalRingHom]
     apply hrecognize (x none) (fun j ↦ x (some j))
-    · rw [← hφ, ← eval_jointInitialJetSeparant]
+    · rw [← hφ, ← aeval_jointInitialJetSeparant]
       exact hx.2
     · intro l hl
       have hz := hx.1 _ (hhigh l hl)
-      rw [eval_jointCommonTaylorNumerator, hφ] at hz
+      rw [aeval_jointCommonTaylorNumerator, hφ] at hz
       exact hz
     · intro i hi
       have hz := hx.1 _ (hcuts i hi)
-      rw [eval_jointTaylorAgreementEquation, hφ] at hz
+      rw [aeval_jointTaylorAgreementEquation, hφ] at hz
       simpa only [Polynomial.eval_C] using hz
   have hgraph : ∀ x, x ∈ zeroLocus E I ∧
       aeval x (jointInitialJetSeparant center Q) ≠ 0 →
@@ -115,36 +114,14 @@ theorem exists_polynomialGraph_of_primeTaylorComponent [IsAlgClosed E]
       change x none = Polynomial.X.eval (x none)
       simp
     | some j => exact congrFun hjet j
-  have hregular : IsLeftRegular (Ideal.Quotient.mk I (jointInitialJetSeparant center Q)) :=
-    IsLeftCancelMulZero.mul_left_cancel_of_ne_zero
-      (mt Ideal.Quotient.eq_zero_iff_mem.mp hsep)
   have hrange : ∀ x, x ∈ zeroLocus E I →
       aeval x (jointInitialJetSeparant center Q) ≠ 0 →
       ∃ z : E, x = fun i ↦ (graph i).eval z := by
     intro x hx hxs
     exact ⟨x none, hgraph x ⟨hx, hxs⟩⟩
-  have hvanish : ∀ p ∈ I, aeval graph p = 0 := by
-    intro p hp
-    apply MvPolynomial.aeval_eq_zero_of_principalOpen_subset_range hregular hdim graph hrange
-    intro x hx hxs
-    exact hx p hp
-  have hinfinite :
-      {x | x ∈ zeroLocus E I ∧ aeval x (jointInitialJetSeparant center Q) ≠ 0}.Infinite := by
-    intro hfinite
-    have hzero := (MvPolynomial.finite_principalOpen_iff_natDegree_affineHilbertPolynomial_eq_zero
-      hregular).mp hfinite
-    omega
-  have hseparant : aeval graph (jointInitialJetSeparant center Q) ≠ 0 := by
-    intro hzero
-    obtain ⟨x, hx⟩ := hinfinite.nonempty
-    obtain ⟨z, hxg⟩ := hrange x hx.1 hx.2
-    have heval : aeval x (jointInitialJetSeparant center Q) =
-        (aeval graph (jointInitialJetSeparant center Q)).eval z := by
-      rw [MvPolynomial.polynomial_eval_aeval]
-      rw [← hxg]
-      simp only [MvPolynomial.aeval_eq_eval]
-    rw [hzero, Polynomial.eval_zero] at heval
-    exact hx.2 heval
+  obtain ⟨_, hvanish, hseparant⟩ :=
+    MvPolynomial.regular_principalOpen_graph_restriction I
+      (jointInitialJetSeparant center Q) hsep hdim graph hrange
   refine ⟨P, hP, hsampleP, hgraph, ?_, hvanish, hseparant⟩
   intro x hx
   exact (hpoint x hx).1
