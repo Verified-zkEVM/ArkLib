@@ -7,6 +7,7 @@ Authors: Quang Dao
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.Basic
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.WeightedSupportInterpolant
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.WeightedSupport
+import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.FiniteField
 import Mathlib.Data.Nat.Prime.Infinite
 
 /-!
@@ -279,3 +280,34 @@ example :
 
 end
 end WeightedSupportInterpolantTest
+
+private def finiteFieldCapacityDomain : Fin 2 ↪ ZMod 3 where
+  toFun i := (i.val : ZMod 3)
+  inj' i j hij := by
+    apply Fin.ext
+    have hi : i.val < 3 := i.isLt.trans_le (by decide)
+    have hj : j.val < 3 := j.isLt.trans_le (by decide)
+    simpa only [ZMod.val_natCast, Nat.mod_eq_of_lt hi, Nat.mod_eq_of_lt hj]
+      using congrArg ZMod.val hij
+
+/-- At gap one half, the exact list contains the zero polynomial and has size at most one. -/
+example :
+    ∃ list : Finset (Polynomial (ZMod 3)),
+      (0 : Polynomial (ZMod 3)) ∈ list ∧ list.card ≤ 1 := by
+  have h := exists_field_bounded_capacity_list (1 / 2 : ℝ) (by norm_num)
+  have hinstance := h 2 1 3 2 (by norm_num) (by norm_num) (by norm_num)
+    (by decide) (by norm_num) (by norm_num)
+    finiteFieldCapacityDomain (fun _ => 0)
+  obtain ⟨list, hexact, -, hhalf, -, -⟩ := hinstance
+  have hagreement :
+      Code.agree (fun i => (0 : Polynomial (ZMod 3)).eval (finiteFieldCapacityDomain i))
+        (fun _ => 0) = 2 := by
+    have heval :
+        (fun i => (0 : Polynomial (ZMod 3)).eval (finiteFieldCapacityDomain i)) =
+          (fun _ => 0) := by
+      ext i
+      simp
+    rw [heval, Code.agree_self]
+    simp
+  refine ⟨list, (hexact 0).2 ⟨by simp, ?_⟩, hhalf (by norm_num)⟩
+  rw [hagreement]
