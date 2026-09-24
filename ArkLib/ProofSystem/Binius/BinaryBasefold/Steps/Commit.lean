@@ -100,19 +100,19 @@ noncomputable def commitOutputSimulation (i : Fin ℓ) (hCR : isCommitmentRound 
               i.castSucc]ₒ +
               [(pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).Message]ₒ)).Domain from
           Sum.inr (Sum.inl ⟨⟨j.val, hj⟩, x⟩))
-    · exact do
-      let f ← liftM <| OracleSpec.query
-        (show ([]ₒ +
-            ([OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-              i.castSucc]ₒ +
-              [(pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).Message]ₒ)).Domain from
-          Sum.inr (Sum.inr ⟨⟨0, by rfl⟩, ()⟩))
-      let h_eq := snoc_oracle_dest_eq_j
+    · have h_eq := snoc_oracle_dest_eq_j
         (r := r) (𝓡 := 𝓡) (ℓ := ℓ) (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (destIdx := ⟨i.val + 1, by omega⟩)
         (h_destIdx := by rfl) j hj hCR
-      pure (f (cast (by rw [h_eq]; rfl) x))
+      exact liftM <| OracleSpec.query
+        (show ([]ₒ +
+            ([OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+              i.castSucc]ₒ +
+              [(pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).Message]ₒ)).Domain from
+          Sum.inr (Sum.inr ⟨⟨0, by rfl⟩, cast (by
+            change ↥(sDomain 𝔽q β h_ℓ_add_R_rate _) = ↥(sDomain 𝔽q β h_ℓ_add_R_rate _)
+            rw [h_eq]) x⟩))
   simulateOutputQuery_eq := by
     intro challenges oStmt messages q
     rcases q with ⟨j, x⟩
@@ -121,9 +121,7 @@ noncomputable def commitOutputSimulation (i : Fin ℓ) (hCR : isCommitmentRound 
       simp only [dite_eq_left hj]
       simp only [OracleInterface.simOracle2, snoc_oracle, hj, ↓reduceDIte]
       rfl
-    · simp only [simulateQ_bind, simulateQ_query,
-        OracleQuery.input_query, OracleQuery.cont_query, OracleInterface.simOracle2,
-        snoc_oracle, hj, ↓reduceDIte, hCR]
+    · simp only [OracleInterface.simOracle2, snoc_oracle, hj, ↓reduceDIte, hCR]
       rfl
 
 noncomputable def commitOracleVerifier (i : Fin ℓ) (hCR : isCommitmentRound ℓ ϑ i) :

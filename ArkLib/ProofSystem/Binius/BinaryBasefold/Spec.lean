@@ -305,9 +305,28 @@ instance : ∀ j, OracleInterface ((pSpecFold (L := L)).Challenge j) :=
 instance : ∀ j, OracleInterface ((pSpecRelay).Message j)
   | ⟨x, h⟩ => by exact x.elim0
 
-instance {i : Fin ℓ} :
+instance instOracleInterfaceMessagePSpecCommit {i : Fin ℓ} :
     ∀ j, OracleInterface ((pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).Message j)
-  | ⟨0, _⟩ => by exact OracleInterface.instDefault -- oracle commitment (conditional)
+  | ⟨0, _⟩ => OracleInterface.instFunction
+      (α := sDomain 𝔽q β h_ℓ_add_R_rate ⟨i.val + 1, by omega⟩) (β := L)
+
+-- Commitment messages expose point queries, never the entire codeword.
+example (i : Fin ℓ) : @OracleInterface.Query _
+    (instOracleInterfaceMessagePSpecCommit 𝔽q β
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) ⟨0, rfl⟩) =
+    sDomain 𝔽q β h_ℓ_add_R_rate ⟨i.val + 1, by omega⟩ := rfl
+
+example (i : Fin ℓ) (x : sDomain 𝔽q β h_ℓ_add_R_rate ⟨i.val + 1, by omega⟩) :
+    @OracleInterface.Response _
+      (instOracleInterfaceMessagePSpecCommit 𝔽q β
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) ⟨0, rfl⟩) x = L := rfl
+
+example (i : Fin ℓ)
+    (f : (pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).Message ⟨0, rfl⟩)
+    (x : sDomain 𝔽q β h_ℓ_add_R_rate ⟨i.val + 1, by omega⟩) :
+    @OracleInterface.answer _
+      (instOracleInterfaceMessagePSpecCommit 𝔽q β
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) ⟨0, rfl⟩) f x = f x := rfl
 
 instance {i : Fin ℓ} : ∀ j, OracleInterface
   ((pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).Challenge j) :=
