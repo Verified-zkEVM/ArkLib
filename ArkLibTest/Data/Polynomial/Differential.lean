@@ -967,6 +967,14 @@ private theorem castsNeZero_constantDerivativeEquation {F : Type*} [CommRing F] 
   obtain rfl : k = 1 := by omega
   simp
 
+/-- The active formal derivative of `Y₀` is nonzero over `ℚ`. -/
+example : separant (zeroJetEquation ℚ 0) 0 ≠ 0 := by
+  apply separant_ne_zero
+  have hcast : JetDegreeCastsNeZero (zeroJetEquation ℚ 0) 0 :=
+    jetDegreeCastsNeZero_of_ringChar (Or.inl ringChar.eq_zero)
+  exact hcast.natCast_jetDegree_ne_zero (by
+    simp [DependsOnJet, zeroJetEquation, jetDegree])
+
 /-- Over `ZMod 3`, `y' = 0` has exactly three solutions of degree at most `2`: the constants. -/
 example : Nat.card (BoundedSolution (constantDerivativeEquation (ZMod 3)) 2) = 3 := by
   have h : Nat.card (BoundedSolution (constantDerivativeEquation (ZMod 3)) 2) *
