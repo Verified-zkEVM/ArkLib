@@ -532,6 +532,48 @@ example :
     ((coeffNatDegreeLE_C (p := (Polynomial.X : Polynomial ℚ)) (by simp)) :
       CoeffNatDegreeLE (C Polynomial.X : MvPolynomial Unit (Polynomial ℚ)) 1)
 
+private noncomputable abbrev positiveProductChallenge :
+    MvPolynomial (Option (Fin 2)) (Polynomial ℚ) :=
+  C (Polynomial.X : Polynomial ℚ) * X none + X (some (1 : Fin 2))
+
+private noncomputable abbrev positiveProductFlattened :
+    MvPolynomial (Option (Option (Fin 2))) ℚ :=
+  (optionEquivRight ℚ (Option (Fin 2))).symm positiveProductChallenge
+
+private def positiveProductRootFirstEquiv :
+    Option (Option (Fin 2)) ≃ Option (Option (Fin 2)) :=
+  Equiv.swap none (some (some (1 : Fin 2)))
+
+private noncomputable abbrev positiveProductRootFirst :
+    MvPolynomial (Option (Option (Fin 2))) ℚ :=
+  renameEquiv ℚ positiveProductRootFirstEquiv positiveProductFlattened
+
+/-- The retained challenge-coordinate budget for `t * Y₀ + Y₁` is one. -/
+example :
+    degreeOf (some (some (1 : Fin 2))) (radicalContent none positiveProductRootFirst) +
+      ∑ c ∈ positiveDegreeFactorClasses none positiveProductRootFirst,
+        degreeOf (some (some (1 : Fin 2))) c.rep ≤ 1 := by
+  have hheight : CoeffNatDegreeLE positiveProductChallenge 1 := by
+    have hconstant : CoeffNatDegreeLE
+        (C (Polynomial.X : Polynomial ℚ) :
+          MvPolynomial (Option (Fin 2)) (Polynomial ℚ)) 1 :=
+      coeffNatDegreeLE_C (by simp)
+    exact (hconstant.mul (coeffNatDegreeLE_X none)).add
+      ((coeffNatDegreeLE_X (some (1 : Fin 2))).mono (by omega))
+  have hflattened : degreeOf none positiveProductFlattened ≤ 1 := by
+    exact (degreeOf_le_weightedTotalDegree
+      (fun i : Option (Option (Fin 2)) ↦ i.elim 1 (fun _ ↦ 0)) none (by simp)
+      positiveProductFlattened).trans
+      (weightedTotalDegree_optionEquivRight_symm_coefficientDegree_le hheight)
+  have hroot :
+      degreeOf (some (some (1 : Fin 2))) positiveProductRootFirst ≤ 1 := by
+    have hrename := degreeOf_rename_of_injective positiveProductRootFirstEquiv.injective
+      none (p := positiveProductFlattened)
+    simpa only [positiveProductRootFirst, renameEquiv_apply,
+      positiveProductRootFirstEquiv, Equiv.swap_apply_left] using hrename.le.trans hflattened
+  exact (add_sum_degreeOf_positiveDegreeFactorClasses_le none (some (some (1 : Fin 2)))
+    positiveProductRootFirst).trans hroot
+
 private noncomputable abbrev clearedDegreeTwoExample : MvPolynomial Unit (Polynomial ℚ) :=
   clearedSubstitution C (C (Polynomial.X : Polynomial ℚ))
     (fun _ : Unit ↦ C (Polynomial.X : Polynomial ℚ)) (fun _ ↦ 1) 1
