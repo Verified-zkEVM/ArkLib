@@ -140,11 +140,11 @@ private theorem lt_affine_moment_of_bounds
   have hres : (121 / 100 : ℝ) + (L + 29 / 50) / (D + 1) <
       A + L - D * H / (D + 1) := by
     field_simp
-    nlinarith
+    linarith [mul_lt_mul_of_pos_left hA hD1, mul_lt_mul_of_pos_left hHu hD0]
   have hratio : (500 / 501 : ℝ) * (L + 29 / 50) / D ≤
       (L + 29 / 50) / (D + 1) := by
     field_simp
-    nlinarith
+    linarith
   have hbias : (121 / 100 : ℝ) ^ 2 +
       2 * (121 / 100) * (500 / 501) * (L + 29 / 50) / D <
         (A + L - D * H / (D + 1)) ^ 2 := by
@@ -162,17 +162,21 @@ private theorem lt_affine_moment_of_bounds
         linarith
       _ < (A + L - D * H / (D + 1)) ^ 2 := hsquares
   have hcoefQ : 1 - 3 / D < D ^ 2 / ((D + 1) * (D + 2)) := by
-    field_simp
-    nlinarith
+    rw [one_sub_div hD0.ne', div_lt_div_iff₀ hD0 (by positivity)]
+    linarith
   have hcoefH : D ^ 2 / ((D + 1) ^ 2 * (D + 2)) ≤ 1 / D := by
-    field_simp
-    nlinarith
+    rw [div_le_div_iff₀ (by positivity) hD0]
+    linarith [sq_nonneg D]
   have hvcoef : (41 / 25 : ℝ) * (1 - 3 / D) < Q * (D ^ 2 / ((D + 1) * (D + 2))) := by
     have hone : 0 < 1 - 3 / D := by
       apply sub_pos.mpr
       apply (div_lt_iff₀ hD0).2
       linarith
-    nlinarith
+    calc
+      (41 / 25 : ℝ) * (1 - 3 / D) < 41 / 25 * (D ^ 2 / ((D + 1) * (D + 2))) :=
+        mul_lt_mul_of_pos_left hcoefQ (by norm_num)
+      _ < Q * (D ^ 2 / ((D + 1) * (D + 2))) :=
+        mul_lt_mul_of_pos_right hQ (hone.trans hcoefQ)
   have hHsq : H ^ 2 < (L + 29 / 50) ^ 2 :=
     (sq_lt_sq₀ hH ht.le).2 hHu
   have hHterm : D ^ 2 * H ^ 2 / ((D + 1) ^ 2 * (D + 2)) ≤ (L + 29 / 50) ^ 2 / D := by
