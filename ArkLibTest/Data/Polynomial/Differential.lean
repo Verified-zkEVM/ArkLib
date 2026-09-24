@@ -1165,7 +1165,7 @@ example : ∃ P ∈ highTaylorPrimeFamily 0 (constantDerivativeEquation ℚ) 2 1
       have hl : l = 1 := by omega
       subst l
       exact commonTaylorNumerator_zeroJet_constantDerivativeEquation)
-/-- The zero jet attains the capped bound for `Y₁ = 0` and satisfies both degree bounds. -/
+/-- The zero jet satisfies the capped bound for `Y₁ = 0` and both degree bounds. -/
 example :
     (1 : ℚ) ≤ (cappedDegreeMixedVolume 1 1 4 1 : ℚ) ∧
     (commonTaylorNumerator 0 (constantDerivativeEquation ℚ) 4 0).degreeOf 1 ≤ 0 ∧

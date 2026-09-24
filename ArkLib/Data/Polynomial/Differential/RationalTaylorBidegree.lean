@@ -194,13 +194,27 @@ theorem degreeOf_taylorAgreementEquation_firstOrder_le (center : F)
     (taylorAgreementEquation center Q K x y (τ := τ)).degreeOf 1 ≤
       τ * (r - 1) + (K - 1) := by
   let Qover : DifferentialPolynomial (Polynomial F) 1 := MvPolynomial.map Polynomial.C Q
-  have hQover : Qover.degreeOf (some 1) ≤ r :=
-    (degreeOf_map_le Polynomial.C Q (some 1)).trans hderiv
+  have hderiv' : Q.degreeOf (some 1) ≤ r := hderiv
+  rw [MvPolynomial.degreeOf_def] at hderiv'
+  have hQover : Qover.degreeOf (some 1) ≤ r := by
+    rw [MvPolynomial.degreeOf_def]
+    change Multiset.count (some 1) (MvPolynomial.map Polynomial.C Q).degrees ≤ r
+    exact (Multiset.count_le_of_le (some 1)
+      (MvPolynomial.degrees_map_le (p := Q) (f := Polynomial.C))).trans hderiv'
   have hover := degreeOf_taylorAgreementEquationOver_firstOrder
     (Polynomial.C center) (Polynomial.C x) (Polynomial.C y) Qover r K τ hτ hr hQover
-  have hmap := degreeOf_map_le (Polynomial.aeval (0 : F)).toRingHom
-    (taylorAgreementEquationOver (F := F) (Polynomial.C center) Qover K
-      (Polynomial.C x) (Polynomial.C y) (τ := τ)) 1
+  have hmap :
+      (MvPolynomial.map (Polynomial.aeval (0 : F)).toRingHom
+        (taylorAgreementEquationOver (F := F) (Polynomial.C center) Qover K
+          (Polynomial.C x) (Polynomial.C y) (τ := τ))).degreeOf 1 ≤
+        (taylorAgreementEquationOver (F := F) (Polynomial.C center) Qover K
+          (Polynomial.C x) (Polynomial.C y) (τ := τ)).degreeOf 1 := by
+    simp only [MvPolynomial.degreeOf_def]
+    exact Multiset.count_le_of_le 1
+      (MvPolynomial.degrees_map_le
+        (p := taylorAgreementEquationOver (F := F) (Polynomial.C center) Qover K
+          (Polynomial.C x) (Polynomial.C y) (τ := τ))
+        (f := (Polynomial.aeval (0 : F)).toRingHom))
   have hQeval :
       MvPolynomial.map (Polynomial.aeval (0 : F)).toRingHom Qover = Q := by
     dsimp only [Qover]
