@@ -61,15 +61,21 @@ structure IsAdmissibleFrobeniusPair
     (domain : ι ↪ F) (f g : ι → F) (iota : F →+* E) (roots : ι → E)
     (center : E) (Q : DifferentialPolynomial E[X] 0)
     (K k τ s : ℕ) (F₀ G₀ : F[X]) : Prop where
+  /-- The left retained polynomial has degree below the sample size. -/
   degree_left : F₀.degree < ↑k
+  /-- The right retained polynomial has degree below the sample size. -/
   degree_right : G₀.degree < ↑k
+  /-- The initial Taylor equation vanishes on the Frobenius graph. -/
   initial : aeval (frobeniusInitialGraph center s (F₀.map iota) (G₀.map iota))
     (jointInitialJetEquation center Q) = 0
+  /-- The initial Taylor separant is nonzero on the Frobenius graph. -/
   regular : aeval (frobeniusInitialGraph center s (F₀.map iota) (G₀.map iota))
     (jointInitialJetSeparant center Q) ≠ 0
+  /-- Every sparse common Taylor numerator vanishes on the Frobenius graph. -/
   sparse : ∀ l : Fin K, ¬s ∣ l.val →
     aeval (frobeniusInitialGraph center s (F₀.map iota) (G₀.map iota))
       (jointCommonTaylorNumerator center Q τ l) = 0
+  /-- A sample of size `k` satisfies the root, interpolation, and agreement conditions. -/
   sample : ∃ sample : Finset ι, sample.card = k ∧ ∀ i ∈ sample,
     roots i ^ s = iota (domain i) ∧
     F₀.eval (domain i) = f i ∧ G₀.eval (domain i) = g i ∧
@@ -105,28 +111,20 @@ theorem IsAdmissibleFrobeniusPair.specialize
     (fun i hi ↦ (hagree₁ i hi).2.trans (hsample i hi).2.2.1.symm)
   subst F₁
   subst G₁
+  have hgraph :
+      frobeniusInitialGraph center (p ^ e) (F₀.map iota) (G₀.map iota) none =
+        Polynomial.X := by
+    simp [frobeniusInitialGraph]
   apply (hrecognize w _ ?_ ?_ ?_).1
-  · have hgraph :
-        frobeniusInitialGraph center (p ^ e) (F₀.map iota) (G₀.map iota) none =
-          Polynomial.X := by
-      simp [frobeniusInitialGraph]
-    rw [eval_aeval_frobeniusGraph _ w hgraph] at hw
+  · rw [eval_aeval_frobeniusGraph _ w hgraph] at hw
     simpa only [jointInitialJetSeparant, AlgEquiv.apply_symm_apply] using hw
   · intro l hl
     have hz := congrArg (fun R : E[X] ↦ R.eval w) (hP.sparse l hl)
-    have hgraph :
-        frobeniusInitialGraph center (p ^ e) (F₀.map iota) (G₀.map iota) none =
-          Polynomial.X := by
-      simp [frobeniusInitialGraph]
     rw [eval_aeval_frobeniusGraph _ w hgraph] at hz
     simpa only [jointCommonTaylorNumerator, AlgEquiv.apply_symm_apply,
       Polynomial.eval_zero] using hz
   · intro i hi
     have hz := congrArg (fun R : E[X] ↦ R.eval w) (hsample i hi).2.2.2
-    have hgraph :
-        frobeniusInitialGraph center (p ^ e) (F₀.map iota) (G₀.map iota) none =
-          Polynomial.X := by
-      simp [frobeniusInitialGraph]
     rw [eval_aeval_frobeniusGraph _ w hgraph] at hz
     simpa only [jointTaylorAgreementEquation, AlgEquiv.apply_symm_apply,
       map_taylorAgreementEquationOver_eq,

@@ -11,6 +11,7 @@ import ArkLib.Data.Polynomial.Differential.DerivativeDescent
 import ArkLib.Data.Polynomial.Differential.DirectRegularLift
 import ArkLib.Data.Polynomial.Differential.FirstOrderStageSum
 import ArkLib.Data.Polynomial.Differential.FrobeniusEquation
+import ArkLib.Data.Polynomial.Differential.FrobeniusTaylorWitness
 import ArkLib.Data.Polynomial.Differential.JetPrefix
 import ArkLib.Data.Polynomial.Differential.JetPrefixPresentation
 import ArkLib.Data.Polynomial.Differential.RationalTaylor
@@ -1219,12 +1220,9 @@ example :
   norm_num [F, Q, S, jet, constantDerivativeEquation,
     rationalTaylorCutDegreeBound] at h ⊢
   exact h
-
 /-! ### Frobenius flattening -/
-
 private abbrev frobeniusInseparableEquation :
     DifferentialPolynomial (Polynomial (ZMod 2)) 0 := X none - X (some 0) ^ 2
-
 /-- The flattened equation evaluates to `7` at the root, independent-variable, and challenge
 values `2`, `3`, and `5`. -/
 example :
@@ -1235,7 +1233,6 @@ example :
             DifferentialPolynomial (Polynomial ℚ) 0)) = 7 := by
   rw [eval_ordinaryFlatten]
   norm_num [differentialSpecialization, differentialSpecializationHom]
-
 /-- Expanding the specialization of `Y₀ + W` at `W = 2` sends the root `X` to `X² + 2`. -/
 example :
     Polynomial.expand ℚ 2
@@ -1256,7 +1253,6 @@ example :
     rw [show (1 : Fin 2) = Fin.succ 0 by norm_num, Fin.cases_succ]
   rw [expand_differentialSpecialization_map_eq_eval₂_flatten, hflat]
   simp [MvPolynomial.eval₂_add, MvPolynomial.eval₂_X, hcase]
-
 /-- Over `ZMod 2`, `X - Y₀ ^ 2` is the irreducible inseparable equation `Y₀ ^ 2 - X`;
 Frobenius contraction lowers its root degree. -/
 example :
@@ -1323,10 +1319,8 @@ example :
       simpa only [MvPolynomial.coeff_neg, Polynomial.natDegree_neg] using hpower m
     exact MvPolynomial.CoeffNatDegreeLE.add
       (MvPolynomial.coeffNatDegreeLE_X (R := ZMod 2) none) hminus
-
 private abbrev frobeniusSquareEquation :
     DifferentialPolynomial (Polynomial (ZMod 2)) 0 := X (some 0) ^ 2 - X none ^ 2
-
 /-- The nonzero root `X` of `Y₀ ^ 2 - X ^ 2` transports to a root of the contracted equation. -/
 example :
     differentialSpecialization
@@ -1361,9 +1355,15 @@ example :
   exact ⟨hQ, frobeniusSpecialization_eq_zero 2 1 frobeniusSquareEquation
     (MvPolynomial.X none - MvPolynomial.X (some (0 : Fin 2)) ^ 2 :
       MvPolynomial (Option (Fin 2)) (ZMod 2)) hroot Polynomial.X 0 hQ⟩
-
 /-! ### Ordinary root presentations -/
-
+example := by
+  letI : Fact (Nat.Prime 2) := ⟨Nat.prime_two⟩
+  exact frobeniusExpansion_satisfies_jointTaylorCuts
+    (MvPolynomial.X (some (0 : Fin 1)) : DifferentialPolynomial (Polynomial (ZMod 2)) 0)
+    0 0 0 2 1 2 4 (taylorExponentSufficient_two_mul 0 2)
+    (by simp only [map_zero, Polynomial.degree_zero]; exact WithBot.bot_lt_coe (2 : ℕ))
+    (by simp [challengeSpecialization])
+    (by simp [initialJetSeparant, challengeSpecialization, separant])
 /-- For the concrete irreducible equation `Y₀` over `ℚ[X]`, the exceptional set is empty. -/
 example :
     ∃ exceptional : Finset ℚ, exceptional.card ≤ 0 ∧

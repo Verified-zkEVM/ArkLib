@@ -7,6 +7,7 @@ Authors: Quang Dao
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.ExtensionDescent
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.EquationDescent
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FullDimension
+import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FrobeniusAdmissibility
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.GraphLine
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.GraphLineComponent
 import
@@ -1165,3 +1166,160 @@ example : ∃ P : Fin 2 → (ZMod 2)[X],
 end
 
 end ReedSolomon.PowerBatchedPointRecognitionTest
+
+namespace ReedSolomon.GraphLineComponentTest
+
+noncomputable section
+
+private theorem component_cut_eq_length_one :
+    taylorAgreementEquationOver (F := ComponentField) (0 : ComponentField[X])
+      (componentEquation (E := ComponentField)) 1 0 0 (τ := 2) =
+        initialJetEquation (0 : ComponentField[X])
+          (componentEquation (E := ComponentField)) := by
+  rw [taylorAgreementEquationOver, Fin.sum_univ_one]
+  simp only [Fin.val_zero]
+  have hnum : commonTaylorNumeratorOver ComponentField (0 : ComponentField[X])
+      (componentEquation (E := ComponentField)) 2 0 =
+        (MvPolynomial.X (0 : Fin 1) : MvPolynomial (Fin 1) (Polynomial ComponentField)) := by
+    simpa only [Polynomial.C_0] using component_commonNumerator_initial
+  rw [hnum]
+  simp [initialJetEquation, componentEquation, initialJetSeparant, separant, Fin.last]
+
+private theorem component_jointCut_eq_length_one :
+  jointTaylorAgreementEquation (r := 0) (0 : ComponentField)
+      (componentEquation (E := ComponentField)) 1 2 (0 : ComponentField[X]) 0 =
+      jointInitialJetEquation (r := 0) (0 : ComponentField)
+        (componentEquation (E := ComponentField)) := by
+  simp only [jointTaylorAgreementEquation, jointInitialJetEquation, Polynomial.C_0]
+  rw [component_cut_eq_length_one]
+
+private theorem component_admissibility_cut :
+    ∀ i ∈ (Finset.univ : Finset (Fin 1)),
+      jointTaylorAgreementEquation (r := 0) (0 : ComponentField)
+        (componentEquation (E := ComponentField)) 1 2 (Polynomial.C 0) 0 ∈
+          componentIdeal (E := ComponentField) := by
+  intro i hi
+  have hi0 : i = 0 := Subsingleton.elim _ _
+  subst i
+  have hcut : jointTaylorAgreementEquation (r := 0) (0 : ComponentField)
+      (componentEquation (E := ComponentField)) 1 2 (Polynomial.C 0) 0 =
+      jointInitialJetEquation (r := 0) (0 : ComponentField)
+        (componentEquation (E := ComponentField)) := by
+    simpa only [Polynomial.C_0] using component_jointCut_eq_length_one
+  rw [hcut]
+  exact component_initialEquation_mem
+
+local instance : (componentIdeal (E := ComponentField)).IsPrime := componentIdeal_isPrime
+
+private theorem extractedAdmissibleFrobeniusPair :
+    ∃ F₀ G₀ : ℚ[X],
+      IsAdmissibleFrobeniusPair domain componentWord componentWord
+        (algebraMap ℚ ComponentField) (fun _ ↦ 0) 0
+        (componentEquation (E := ComponentField)) 1 1 2 1 F₀ G₀ ∧ F₀ = 0 ∧ G₀ = 0 := by
+  obtain ⟨F₀, G₀, hP, _⟩ := exists_admissibleFrobeniusPair_of_symbolic_prime_sample
+    (domain := domain) (f := componentWord) (g := componentWord)
+    (sample := Finset.univ) (hsample := by simp)
+    (iota := algebraMap ℚ ComponentField) (p := 1) (e := 0)
+    (roots := fun _ ↦ 0) (hroots := by
+      intro i hi
+      have hi0 : i = 0 := Subsingleton.elim _ _
+      subst i
+      norm_num
+      change (0 : ComponentField) = (algebraMap ℚ ComponentField) (0 : ℚ)
+      simp)
+    (center := 0) (Q := componentEquation (E := ComponentField))
+    (K := 1) (k := 1) (hK := by norm_num) (hKk := by norm_num) (τ := 2)
+    (hτ := taylorExponentSufficient_two_mul 0 1)
+    (I := componentIdeal (E := ComponentField))
+    component_separant_notMem component_initialEquation_mem
+    componentIdeal_degree_pos
+    (by intro l hl; fin_cases l; norm_num at hl)
+    (by
+      intro i hi
+      have hi0 : i = 0 := Subsingleton.elim _ _
+      subst i
+      simpa [componentWord, Polynomial.C_0] using component_admissibility_cut 0 (by simp))
+  obtain ⟨sample, hcard, hsample⟩ := hP.sample
+  have hmem : (0 : Fin 1) ∈ sample := by
+    have hcardpos : 0 < sample.card := by omega
+    obtain ⟨i, hi⟩ := Finset.card_pos.mp hcardpos
+    have hi0 : i = 0 := Subsingleton.elim _ _
+    simpa [hi0] using hi
+  have hFval : F₀.eval 0 = 0 := by
+    simpa only [domain_zero, componentWord] using (hsample 0 hmem).2.1
+  have hGval : G₀.eval 0 = 0 := by
+    simpa only [domain_zero, componentWord] using (hsample 0 hmem).2.2.1
+  have hFdegree : F₀.degree ≤ 0 := Order.lt_succ_iff.mp hP.degree_left
+  have hGdegree : G₀.degree ≤ 0 := Order.lt_succ_iff.mp hP.degree_right
+  have hF : F₀ = 0 := by
+    calc
+      F₀ = Polynomial.C (F₀.coeff 0) := eq_C_of_degree_le_zero hFdegree
+      _ = Polynomial.C (F₀.eval 0) := by rw [← coeff_zero_eq_eval_zero]
+      _ = 0 := by simp [hFval]
+  have hG : G₀ = 0 := by
+    calc
+      G₀ = Polynomial.C (G₀.coeff 0) := eq_C_of_degree_le_zero hGdegree
+      _ = Polynomial.C (G₀.eval 0) := by rw [← coeff_zero_eq_eval_zero]
+      _ = 0 := by simp [hGval]
+  exact ⟨F₀, G₀, hP, hF, hG⟩
+
+example :
+    ∃ F₀ G₀ : ℚ[X],
+      IsAdmissibleFrobeniusPair domain componentWord componentWord
+        (algebraMap ℚ ComponentField) (fun _ ↦ 0) 0
+        (componentEquation (E := ComponentField)) 1 1 2 1 F₀ G₀ ∧ F₀ = 0 ∧ G₀ = 0 :=
+  extractedAdmissibleFrobeniusPair
+
+example :
+    ∃ F₀ G₀ : ℚ[X],
+      IsAdmissibleFrobeniusPair domain componentWord componentWord
+        (algebraMap ℚ ComponentField) (fun _ ↦ 0) 0
+        (componentEquation (E := ComponentField)) 1 1 2 1 F₀ G₀ ∧
+      rationalTaylorPolynomial (0 : ComponentField)
+        (MvPolynomial.map (Polynomial.evalRingHom (0 : ComponentField))
+          (componentEquation (E := ComponentField))) 1
+        (fun j ↦ (frobeniusInitialGraph (0 : ComponentField) 1
+          (F₀.map (algebraMap ℚ ComponentField)) (G₀.map (algebraMap ℚ ComponentField))
+          (some j)).eval 0) =
+        expand ComponentField 1
+          (F₀.map (algebraMap ℚ ComponentField) + Polynomial.C 0 *
+            G₀.map (algebraMap ℚ ComponentField)) := by
+  obtain ⟨F₀, G₀, hP, hF, hG⟩ := extractedAdmissibleFrobeniusPair
+  refine ⟨F₀, G₀, hP, ?_⟩
+  have hregular : (aeval (frobeniusInitialGraph (0 : ComponentField) 1 0 0)
+      (jointInitialJetSeparant (0 : ComponentField)
+        (componentEquation (E := ComponentField)))).eval 0 ≠ 0 := by
+    simp [jointInitialJetSeparant, componentEquation,
+      initialJetSeparant, separant, Fin.last]
+  have hspec := hP.specialize (K := 1) (k := 1) (p := 1) (e := 0)
+    (by norm_num) (by norm_num) (taylorExponentSufficient_two_mul 0 1) 0
+    (by simpa [hF, hG] using hregular)
+  simpa [hF, hG] using hspec
+
+example :
+    ∃ F₀ G₀ : ℚ[X],
+      IsAdmissibleFrobeniusPair domain componentWord componentWord
+        (algebraMap ℚ ComponentField) (fun _ ↦ 0) 0
+        (componentEquation (E := ComponentField)) 1 1 2 1 F₀ G₀ ∧
+      IsAdmissibleFrobeniusPair domain componentWord componentWord
+        (algebraMap ℚ ComponentField) (fun _ ↦ 0) 0
+        (componentEquation (E := ComponentField)) 1 1 2 1 0 0 ∧
+      F₀ = 0 ∧ G₀ = 0 := by
+  obtain ⟨F₀, G₀, hP, hF, hG⟩ := extractedAdmissibleFrobeniusPair
+  have hR : IsAdmissibleFrobeniusPair domain componentWord componentWord
+      (algebraMap ℚ ComponentField) (fun _ ↦ 0) 0
+      (componentEquation (E := ComponentField)) 1 1 2 1 0 0 := by
+    simpa [hF, hG] using hP
+  have hgraph : frobeniusInitialGraph (0 : ComponentField) 1
+      (F₀.map (algebraMap ℚ ComponentField)) (G₀.map (algebraMap ℚ ComponentField)) =
+      frobeniusInitialGraph (0 : ComponentField) 1
+        ((0 : ℚ[X]).map (algebraMap ℚ ComponentField))
+        ((0 : ℚ[X]).map (algebraMap ℚ ComponentField)) := by
+    simp [hF, hG]
+  exact ⟨F₀, G₀, hP, hR,
+    hP.eq_of_initialGraph_eq (K := 1) (k := 1) (p := 1) (e := 0) hR
+      (by norm_num) (by norm_num) (taylorExponentSufficient_two_mul 0 1) hgraph⟩
+
+end
+
+end ReedSolomon.GraphLineComponentTest
