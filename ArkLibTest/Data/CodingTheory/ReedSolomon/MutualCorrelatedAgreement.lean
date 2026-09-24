@@ -684,14 +684,21 @@ example : ∃ z : ComponentField, ∃ jets : Finset (Fin 1 → ComponentField),
       ∀ jet ∈ jets, aeval jet (initialJetSeparant 0
         (MvPolynomial.map (Polynomial.evalRingHom z) componentEquation)) ≠ 0 := by
   obtain ⟨P, hP, _, _, _, _⟩ := componentAdmissibleTupleWitness
-  have hτ : TaylorExponentSufficient 0 2 2 := by intro l; fin_cases l <;> omega
+  have hτ : TaylorExponentSufficient 0 2 2 := by
+    intro l
+    fin_cases l <;> omega
+  have htuples : ∀ R ∈ ({P} : Finset (Fin 2 → ℚ[X])),
+      IsAdmissibleChartTupleAtExponent domain (fun _ ↦ componentWord)
+        (algebraMap ℚ ComponentField) 0 componentEquation 2 1 1 2 R := by
+    intro R hR
+    obtain rfl := Finset.mem_singleton.mp hR
+    exact hP
   obtain ⟨z, jets, _, htupleImage, _, hcard, hS, _⟩ :=
     exists_regularHighCutJetImage_of_admissibleChartTuples
       domain (fun _ ↦ componentWord) (algebraMap ℚ ComponentField) 0 componentEquation
-      2 1 1 2 hτ (by omega) {P} (by
-        simpa using hP)
-  exact ⟨z, jets, ⟨_, htupleImage P (by simp)⟩, by simpa using hcard,
-    fun jet hjet ↦ (hS jet hjet).2.1⟩
+      2 1 1 2 hτ (by omega) {P} htuples
+  exact ⟨z, jets, ⟨chartTupleJet (algebraMap ℚ ComponentField) 0 z P,
+      htupleImage P (by simp)⟩, by simpa using hcard, fun jet hjet ↦ (hS jet hjet).2.1⟩
 
 local instance : DecidableEq ComponentField := Classical.decEq _
 
@@ -705,13 +712,10 @@ private def badChallengeWords : Fin 2 → Fin 2 → ℚ := ![![1, 1], ![0, 1]]
 private abbrev badChallengeEquation : DifferentialPolynomial ComponentField[X] 0 :=
   MvPolynomial.X (some (0 : Fin 1)) -
     MvPolynomial.C (Polynomial.C (1 : ComponentField))
-private abbrev badChallengeSpecialization : DifferentialPolynomial ComponentField 0 :=
-  MvPolynomial.X (some (0 : Fin 1)) - MvPolynomial.C (1 : ComponentField)
 
 private def badChallenges : Finset ComponentField := by classical exact {0}
 
 private def badChallengeWitness (_ : ComponentField) : ComponentField[X] := C 1
-private def badChallengeJet (_ : ComponentField) : Fin 1 → ComponentField := fun _ ↦ 1
 
 private theorem badChallengeCandidate_agrees :
     polynomialAgreementSet badChallengeDomainE
@@ -723,13 +727,14 @@ private theorem badChallengeCandidate_agrees :
   fin_cases i <;> norm_num [polynomialAgreementSet, powerBatchedWord,
     Fin.sum_univ_succ, badChallengeWords, badChallengeDomain, badChallengeDomainE,
     fullDomain]
-/-- A nonempty bad-challenge set satisfies the chart and regular-equation bounds. -/
-example : badChallenges.Nonempty ∧ (badChallenges.card : ℚ) ≤ 17 ∧
+/-- A nonempty bad-challenge set instantiates the regular-equation bounds. -/
+example : badChallenges.Nonempty ∧
     (badChallenges.card : ℚ) ≤ regularPowerBatchedAgreementBound 2 0 1 1 1 1 2 1 1 ∧
     (regularPowerBatchedBadChallenges badChallengeDomain badChallengeWords
       (algebraMap ℚ ComponentField) badChallengeEquation 1 2).Finite ∧
     (∃ exceptional : Finset ComponentField,
-      (exceptional.card : ℚ) ≤ regularPowerBatchedAgreementBound 2 0 1 1 1 1 2 1 1) := by
+      (exceptional.card : ℚ) ≤ regularPowerBatchedAgreementBound 2 0 1 1 1 1 2 1 1 ∧
+        (0 : ComponentField) ∈ exceptional) := by
   classical
   have hjet : jetTotalDegree badChallengeEquation ≤ 1 := by
     classical
@@ -755,30 +760,6 @@ example : badChallenges.Nonempty ∧ (badChallenges.card : ℚ) ≤ 17 ∧
       (by rw [MvPolynomial.coeff_X]; split_ifs <;> simp)
       (by rw [MvPolynomial.coeff_C]; split_ifs <;>
         norm_num [Polynomial.natDegree_C]))
-  have hchart : ∀ z ∈ badChallenges,
-      let Qz := MvPolynomial.map (Polynomial.evalRingHom z) badChallengeEquation
-      (badChallengeWitness z).degree < 1 ∧
-        aeval (badChallengeJet z) (initialJetEquation (0 : ComponentField) Qz) = 0 ∧
-        aeval (badChallengeJet z) (initialJetSeparant (0 : ComponentField) Qz) ≠ 0 ∧
-        rationalTaylorPolynomial (0 : ComponentField) Qz 1 (badChallengeJet z) =
-          badChallengeWitness z := by
-    intro z hz
-    obtain rfl : z = 0 := by simpa [badChallenges] using hz
-    refine ⟨by simp [badChallengeWitness], ?_, ?_, ?_⟩
-    · simp [badChallengeEquation, badChallengeJet, initialJetEquation]
-    · simp [badChallengeEquation, initialJetSeparant, separant]
-    · have hcoeff : rationalTaylorCoefficient (0 : ComponentField)
-        badChallengeSpecialization (badChallengeJet 0) 0 = 1 := by
-        exact rationalTaylorCoefficient_initial (0 : ComponentField)
-          badChallengeSpecialization (badChallengeJet 0) ⟨0, by omega⟩
-      have hq : MvPolynomial.map (Polynomial.evalRingHom (0 : ComponentField))
-          badChallengeEquation = badChallengeSpecialization := by
-        simp [badChallengeEquation, badChallengeSpecialization]
-      rw [hq, rationalTaylorPolynomial, Polynomial.centeredCoefficientPrefix]
-      simp only [neg_zero, Polynomial.taylor_zero, Fin.sum_univ_one, Fin.val_zero,
-        Polynomial.monomial_zero_left]
-      rw [hcoeff]
-      simp [badChallengeWitness]
   have hagree : ∀ z ∈ badChallenges, 2 ≤
       (polynomialAgreementSet badChallengeDomainE
         (fun i ↦ (powerBatchedWord
@@ -835,13 +816,6 @@ example : badChallenges.Nonempty ∧ (badChallenges.card : ℚ) ≤ 17 ∧
       hagree 0 (by simp [badChallenges]), ?_, ?_, hbad 0 (by simp [badChallenges])⟩
     all_goals simp [badChallengeEquation, badChallengeWitness, challengeSpecialization,
       separant, differentialSpecialization, differentialSpecializationHom]
-  have hbound := finite_powerBatchedChart_badChallenges_card_le
-    (domain := badChallengeDomain) (w := badChallengeWords)
-    (iota := algebraMap ℚ ComponentField) (center := (0 : ComponentField))
-    (Q := badChallengeEquation) (K := 1) (k := 1) (L := 1) (A := 2)
-    (v := 1) (h := 1) (by omega) (by omega) (by omega) (by omega) (by omega)
-    (by omega) (by omega) (by omega) hjet hheight badChallenges badChallengeWitness
-    badChallengeJet hchart hagree hbad
   have hregularBound := finite_regularPowerBatchedBadChallenges_card_le
     badChallengeDomain badChallengeWords (algebraMap ℚ ComponentField) badChallengeEquation
     1 1 1 2 1 1 (by omega) (by omega) (by omega) (by omega)
@@ -851,13 +825,21 @@ example : badChallenges.Nonempty ∧ (badChallenges.card : ℚ) ≤ 17 ∧
     badChallengeDomain badChallengeWords (algebraMap ℚ ComponentField) badChallengeEquation
     1 1 1 2 1 1 (by omega) (by omega) (by omega) (by omega)
     (by omega) (by omega) (by omega) (by omega) hjet hheight (by intro i hi hiK; omega)
-  obtain ⟨exceptional, hexceptionalBound, _⟩ := exists_exceptional_regularPowerBatchedAgreement
+  obtain ⟨exceptional, hexceptionalBound, hexceptionalAgreement⟩ :=
+    exists_exceptional_regularPowerBatchedAgreement
     badChallengeDomain badChallengeWords (algebraMap ℚ ComponentField) badChallengeEquation
     1 1 1 2 1 1 (by omega) (by omega) (by omega) (by omega)
     (by omega) (by omega) (by omega) (by omega) hjet hheight (by intro i hi hiK; omega)
-  have hcard : badChallenges.Nonempty ∧ (badChallenges.card : ℚ) ≤ 17 := by
-    norm_num [badChallenges]
-  exact ⟨hcard.1, hcard.2, hregularBound, hfinite, ⟨exceptional, hexceptionalBound⟩⟩
+  have hzeroBad : (0 : ComponentField) ∈ regularPowerBatchedBadChallenges
+      badChallengeDomain badChallengeWords (algebraMap ℚ ComponentField)
+      badChallengeEquation 1 2 :=
+    hregularSet (a := (0 : ComponentField)) (by simp [badChallenges])
+  obtain ⟨P, hdegree, hagreement, hsolution, hseparant, hnotExact⟩ := hzeroBad
+  have hzeroExceptional : (0 : ComponentField) ∈ exceptional := by
+    by_contra hzero
+    exact hnotExact (hexceptionalAgreement 0 hzero P hdegree hagreement hsolution hseparant)
+  exact ⟨by simp [badChallenges], hregularBound, hfinite,
+    ⟨exceptional, hexceptionalBound, hzeroExceptional⟩⟩
 private abbrev offGraphEquation : DifferentialPolynomial ComponentField[X] 0 :=
   MvPolynomial.X (some (0 : Fin 1)) - MvPolynomial.C (Polynomial.X : ComponentField[X])
 

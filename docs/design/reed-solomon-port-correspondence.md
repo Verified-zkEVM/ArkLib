@@ -2025,12 +2025,6 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Poly
 
 The graph-line component result now uses the shared `aeval_jointInitialJetSeparant`, `aeval_jointCommonTaylorNumerator`, and `aeval_jointTaylorAgreementEquation` results from `TaylorChartAlgebra`, and `regular_principalOpen_graph_restriction` from `PrincipalOpenParametrization`.
 
-## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedRegularEquation.lean`
-
-Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/RegularEquation.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
-
-Renamed `regularSymbolicCurveBadChallenges` to `regularPowerBatchedBadChallenges` and `regularSymbolicCurveMCABound` to `regularPowerBatchedAgreementBound`; the predicate and rational formula are unchanged, with the current exact-power-agreement API and agreement meaning. Renamed `finite_regularSymbolicCurveBadChallenges_card_le` to `finite_regularPowerBatchedBadChallenges_card_le`, `regularSymbolicCurveBadChallenges_finite` to `regularPowerBatchedBadChallenges_finite`, and `exists_exceptional_regularSymbolicCurveMCA` to `exists_exceptional_regularPowerBatchedAgreement`. Generalized the degree and height premises of these three theorems to `jetTotalDegree` and `CoeffNatDegreeLE`. No public declarations were omitted. The common-center and Taylor-reconstruction helpers use `PolynomialDifferential.exists_forall_jetEvaluation_ne_zero_of_family` and `rationalTaylorPolynomial_polynomialJet`.
-
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerToLine.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/PowerToLine.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
