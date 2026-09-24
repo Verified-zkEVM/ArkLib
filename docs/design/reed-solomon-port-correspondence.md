@@ -1184,6 +1184,12 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/Fi
 
 The source declarations map into the destination namespace as follows: `ReedSolomon.uniformFirstOrderGradedRankProfile` → `ReedSolomon.HiddenDerivative.uniformFirstOrderGradedRankProfile`; `ReedSolomon.firstOrderGradedRankBound_le_uniformFirstOrderProfile` → `ReedSolomon.HiddenDerivative.firstOrderGradedRankBound_le_uniformFirstOrderProfile`; `ReedSolomon.uniformFirstOrderHeightWeightSum`, `ReedSolomon.uniformFirstOrderHeightTotalDegreeSum`, `ReedSolomon.uniformFirstOrderHeightFirstJetSum`, and `ReedSolomon.uniformFirstOrderRowWeightSum` → the same names under `ReedSolomon.HiddenDerivative`; the four corresponding `_eq` theorems → the same names under `ReedSolomon.HiddenDerivative`; `ReedSolomon.uniformFirstOrder_parameters` → `ReedSolomon.HiddenDerivative.uniformFirstOrder_parameters`. `uniformFirstOrder_parameters` drops the unnecessary `2 ≤ n` and `A ≤ n` premises; `2 ≤ k` and `25 * k + 6 * n ≤ 25 * A` suffice. The fixed profile values, sum, and weighted sum are checked in acceptance examples rather than exported as library theorems because they have no production consumers.
 
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/UniformMca.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/FirstOrder/UniformMCA.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Renamed `uniformFirstOrderMCASplit` to `uniformFirstOrderMcaSplit`, `uniformFirstOrderMCASplit_bounds` to `uniformFirstOrderMcaSplit_bounds`, `uniformFirstOrderMCASplit_lambdaOne_le` to `uniformFirstOrderMcaSplit_retainedCoordinateRatio_le`, `uniformFirstOrderMCASplit_lambdaTwo_le` to `uniformFirstOrderMcaSplit_fixedCoordinateRatio_le`, `uniformFirstOrderMCA_D_mul_theta_le` to `uniformFirstOrderMca_degree_mul_agreementIncidenceRatio_le`, `uniformFirstOrderMCA_heightSlotCount` to `uniformFirstOrderMca_heightSlotCount`, `uniformFirstOrderMCA_hybridB1_four` and `uniformFirstOrderMCA_hybridB1_four_one` to `uniformFirstOrderMca_regularFiberStageSum_four` and `uniformFirstOrderMca_regularFiberStageSum_four_one`, `uniformFirstOrderMCA_hybridJ1_four` and `uniformFirstOrderMCA_hybridJ1_four_one` to `uniformFirstOrderMca_regularJointStageSum_four` and `uniformFirstOrderMca_regularJointStageSum_four_one`, `uniformFirstOrderMCA_hybridEOptimizedRaw_le_ceiling` to `uniformFirstOrderMca_optimizedExceptionCharge_le_ceiling`, `uniformFirstOrderMCA_hybridERaw_le` and `uniformFirstOrderMCA_hybridERaw_le_ceiling` to `uniformFirstOrderMca_exceptionCharge_le` and `uniformFirstOrderMca_exceptionCharge_le_ceiling`, `uniformFirstOrderMCA_parameters` to `uniformFirstOrderMca_parameters`, and `uniformFirstOrderMCA_theta_le` to `uniformFirstOrderMca_agreementIncidenceRatio_le`. The fixed-coordinate ratio, shifted-height certificate, parameter certificate, and agreement-incidence ratio bounds drop the unused `A ≤ n` premise. The support `(12, 4, 23)` is certified at height `276`; the split and numerical bounds use the destination stage-sum API. The legacy `firstOrderCurveFiberStageOne_le_four_mul` theorem is not ported because `firstOrderCurveFiberStageOne_regularTaylorExponent_le` is stronger and the four-factor estimate is derived locally.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FreeOrder.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/FreeOrder.lean` at
@@ -1851,6 +1857,12 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordi
 `frobeniusRetainedPairFamily`, `mem_frobeniusRetainedPairFamily_iff`, `frobeniusRetainedPairFamily_card_le`, and `exists_exceptional_frobeniusRetainedPairFamily` retain their names. They are generalized from `Fin n` to any finite embedded coordinate type. The retained family is expressed as a filter of the existing correlated-pair family. The cardinality bound uses the joint initial equation; a global root premise is unnecessary because root equations are included in each admissible pair's sample witness. The exceptional-set theorem specializes the existing exceptional-set theorem for correlated pairs.
 
 Acceptance cases in `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement.lean` exhibit a nonempty retained family and check its graph-coordinate degree bound, then exhibit a retained pair and an exceptional set of size zero for a one-point domain with a one-point sample. No public source declarations were omitted.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedAdmissibility.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/GraphAdmissibility.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+The graph restriction, specialized jet, Taylor coefficient, admissibility structure and its fields, evaluation identities, and specialization theorem keep their names. `exists_admissibleChartTuple_of_symbolic_prime_agreements_of_exponent` is renamed to `exists_admissibleChartTuple_of_primeTaylorComponent_agreements`; its mathematical result is unchanged and uses the existing prime-component graph theorem and joint equations. The symbolic equation names are supplied by the existing joint Taylor-chart API. No public declarations from the source unit were left out.
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedComponentAgreement.lean`
 
@@ -2589,6 +2601,10 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/G
 
 `exists_regular_solution_jet_family` is not ported because its default-`2K` exponent is a thin wrapper; use `exists_regular_solution_jet_family_of_exponent` with `taylorExponentSufficient_two_mul` when that exponent is needed. `totalJetDegree_map_eq` is covered by `PolynomialDifferential.jetTotalDegree_map_eq` in `BaseChange.lean`. `exists_forall_jetEvaluation_ne_zero_map` is retained in the combined module as the common-center theorem, but has no corresponding declaration in this unit's source snapshot.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Geometry/RegularCounting.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`finite_regular_solutions_card_le` → `card_le_of_regular_solutions_agreement`. The result allows any algebraically closed field extension and an explicit sufficient Taylor exponent, uses the sharp numerator `n - k + 1` and `jetTotalDegree`, and drops the positive-degree and positive-`k` assumptions.
+
 ## `ArkLib/Data/Polynomial/Differential/TaylorChartAlgebra.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Symbolic/TaylorCuts.lean` at ArkLib revision
@@ -2698,6 +2714,10 @@ positive-dimensional prime containing the high cuts and not containing the separ
 fewer than `k` agreement equations at distinct points. The test derives the source statement,
 with `Fin n ↪ F`, `τ = 2K`, `0 < k ≤ A ≤ n` and the subtype cut list, and shows that `r < K` and
 `A - k + 1 ≤ #ι` are needed.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Geometry/SharpCounting.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`finite_regularHighCutJets_card_le_sharp_of_exponent` and `finite_regularHighCutJets_card_le_sharp` are covered by `card_le_of_highTaylorCuts_of_agreement_sharp`. The theorem accepts any finite index type and an explicit sufficient Taylor exponent, uses `jetTotalDegree`, and does not require positive degree, positive `k`, or a global nonzero-separant hypothesis; regularity remains an assumption for each jet. The fixed `2 * K` case is covered by `taylorExponentSufficient_two_mul`, so `finite_regularHighCutJets_card_le_sharp` is not a separate declaration.
 
 ## `ArkLib/Data/Polynomial/Differential/TaylorIndexWeight.lean`
 
@@ -4539,6 +4559,10 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordi
 
 An acceptance case applies `admissibleFrobeniusPairs_card_le_degreeOf` to a singleton family containing an admissible pair from the existing concrete component example. Its initial-equation identity is shared by the ideal-membership and nonvanishing proofs.
 
+Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+An acceptance example applies `exists_admissibleChartTuple_of_primeTaylorComponent_agreements` to the existing component ideal, agreement cuts, and separant fixtures. It specializes the returned admissible tuple at zero and checks the Taylor reconstruction identity.
+
 ## `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart.lean`
 
 Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/PointRecognition.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -4575,6 +4599,14 @@ Moved the retained-curve acceptance cases to the differential directory test. Th
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/PolynomialCurve/Witness.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 The acceptance case checks the generalized agreement characterization with a concrete characteristic-two solution and a cubic received curve.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Geometry/SharpCounting.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+A singleton-jet case exercises `card_le_of_highTaylorCuts_of_agreement_sharp`.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Geometry/RegularCounting.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+The shared acceptance example applies `exists_regular_solution_jet_family_of_exponent` to the nonempty singleton family `{0}` for `Q = Y₀` over `ℚ`, and applies `card_le_of_regular_solutions_agreement` to the same family with one evaluation point.
 
 ## `ArkLibTest/Data/Probability/Uniform.lean`
 
