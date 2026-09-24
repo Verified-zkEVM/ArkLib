@@ -10,6 +10,7 @@ import ArkLib.Data.MvPolynomial.MapExponents
 import ArkLib.Data.MvPolynomial.WeightAtMost
 import ArkLib.Data.MvPolynomial.WeightedHomogeneous
 import ArkLib.Data.MvPolynomial.WeightedOrder
+import ArkLib.Data.MvPolynomial.WeightedDegree
 import Mathlib.Algebra.CharP.Lemmas
 import Mathlib.Algebra.Field.ZMod
 import Mathlib.Algebra.MvPolynomial.Division
@@ -188,3 +189,14 @@ example : weightedTruncation (fun _ : Fin 1 => 1) 3
   intro e
   simp [Finsupp.weight_eq_sum, smul_eq_mul]
   omega
+
+/-! ### Separate-variable degree bound -/
+
+/-- The degree in `X₁` of `X₀² X₁³` is bounded by its positive weighted degree. -/
+example :
+    let p : MvPolynomial (Fin 2) ℚ := X 0 ^ 2 * X 1 ^ 3
+    degreeOf (1 : Fin 2) p ≤
+      weightedTotalDegree (fun i : Fin 2 ↦ if i = 0 then 1 else 2) p := by
+  dsimp
+  exact degreeOf_le_weightedTotalDegree (fun i : Fin 2 ↦ if i = 0 then 1 else 2) 1
+    (by decide) _

@@ -9,6 +9,7 @@ public import Mathlib.RingTheory.MvPolynomial.WeightedHomogeneous
 public import Mathlib.Algebra.MvPolynomial.Eval
 public import Mathlib.Tactic.FieldSimp
 public import Mathlib.Tactic.Ring
+public import ArkLib.Data.MvPolynomial.WeightedDegree
 
 /-!
 # Clearing a common-power denominator in a multivariate substitution
@@ -32,6 +33,10 @@ support of `Q`. It is defined in any commutative semiring and needs no division.
   `H * b + v`, where `v` bounds the degree of each monomial of `Q` plus the degree of its mapped
   coefficient. `MvPolynomial.totalDegree_clearedSubstitution` is the case of the coefficient map
   `C`, with `v = totalDegree Q`.
+* `MvPolynomial.weightedTotalDegree_clearedSubstitution_le_of_coeff`: the weighted form used to
+  derive total-degree and coordinate-degree bounds.
+* `MvPolynomial.degreeOf_clearedSubstitution`: a bound on one variable degree of the numerator
+  from corresponding bounds on `S` and the `N i`.
 -/
 
 @[expose] public section
@@ -108,6 +113,51 @@ theorem map_clearedSubstitution (f : F →+* R) (φ : R →+* E) (S : R)
   rw [mul_assoc, he]
   ring
 
+/-- A weighted-degree bound for a cleared numerator from weighted bounds on its inputs. -/
+theorem weightedTotalDegree_clearedSubstitution_le_of_coeff {A K σ : Type*} [CommSemiring A]
+    [CommSemiring K] (f : A →+* MvPolynomial σ K) (S : MvPolynomial σ K)
+    (N : τ → MvPolynomial σ K) (d e : τ → ℕ) (w : σ → ℕ)
+    (H b v : ℕ) (Q : MvPolynomial τ A)
+    (hS : S.weightedTotalDegree w ≤ b)
+    (hN : ∀ i, (N i).weightedTotalDegree w ≤ d i * b + e i)
+    (hQ : ∀ m ∈ Q.support, Finsupp.weight d m ≤ H)
+    (hv : ∀ m ∈ Q.support,
+      (f (Q.coeff m)).weightedTotalDegree w + Finsupp.weight e m ≤ v) :
+    (clearedSubstitution f S N d H Q).weightedTotalDegree w ≤ H * b + v := by
+  classical
+  rw [clearedSubstitution]
+  refine AddMonoidAlgebra.supDegree_sum_le.trans ?_
+  refine Finset.sup_le fun m hm ↦ ?_
+  change (f (Q.coeff m) * (∏ i ∈ m.support, N i ^ m i) *
+    S ^ (H - Finsupp.weight d m)).weightedTotalDegree w ≤ H * b + v
+  have hprod : (∏ i ∈ m.support, N i ^ m i).weightedTotalDegree w ≤
+      Finsupp.weight d m * b + Finsupp.weight e m := by
+    calc
+      _ ≤ ∑ i ∈ m.support, (N i ^ m i).weightedTotalDegree w := by
+        exact AddMonoidAlgebra.supDegree_prod_le (R := K) (A := σ →₀ ℕ) (B := ℕ)
+          (D := Finsupp.weight w) (map_zero (Finsupp.weight w))
+          (fun a b ↦ map_add (Finsupp.weight w) a b)
+      _ ≤ ∑ i ∈ m.support, m i * (d i * b + e i) := by
+        apply Finset.sum_le_sum
+        intro i _
+        exact (weightedTotalDegree_pow_le w (N i) (m i)).trans
+          (Nat.mul_le_mul_left _ (hN i))
+      _ = Finsupp.weight d m * b + Finsupp.weight e m := by
+        simp only [Finsupp.weight_apply, Finsupp.sum, smul_eq_mul]
+        rw [Finset.sum_mul, ← Finset.sum_add_distrib]
+        apply Finset.sum_congr rfl
+        intro i _
+        ring
+  have hpow := (weightedTotalDegree_pow_le w S (H - Finsupp.weight d m)).trans
+    (Nat.mul_le_mul_left _ hS)
+  have hbudget := Nat.sub_add_cancel (hQ m hm)
+  have hmul := weightedTotalDegree_mul_le w
+    (f (Q.coeff m) * ∏ i ∈ m.support, N i ^ m i)
+    (S ^ (H - Finsupp.weight d m))
+  have hcoeff := weightedTotalDegree_mul_le w (f (Q.coeff m))
+    (∏ i ∈ m.support, N i ^ m i)
+  nlinarith [hv m hm]
+
 /-- Total-degree bound for a cleared numerator with any coefficient map `f` into a polynomial
 ring. If `S` has total degree at most `b`, each `N i` has total degree at most `d i * b + 1`,
 every monomial of `Q` fits the budget `H`, and every monomial `m` of `Q` satisfies
@@ -126,32 +176,19 @@ theorem totalDegree_clearedSubstitution_le_of_coeff {A K σ : Type*} [CommSemiri
     (hQ : ∀ m ∈ Q.support, Finsupp.weight d m ≤ H)
     (hv : ∀ m ∈ Q.support, (f (Q.coeff m)).totalDegree + m.degree ≤ v) :
     (clearedSubstitution f S N d H Q).totalDegree ≤ H * b + v := by
-  classical
-  apply totalDegree_finsetSum_le
-  intro m hm
-  have hprod : (∏ i ∈ m.support, N i ^ m i).totalDegree ≤
-      Finsupp.weight d m * b + m.degree := by
-    apply (totalDegree_finsetProd _ _).trans
-    calc
-      _ ≤ ∑ i ∈ m.support, m i * (d i * b + 1) := by
-        apply Finset.sum_le_sum
-        intro i _
-        exact (totalDegree_pow _ _).trans (Nat.mul_le_mul_left _ (hN i))
-      _ = Finsupp.weight d m * b + m.degree := by
-        simp only [Finsupp.weight_apply, Finsupp.sum, Finsupp.degree_apply, smul_eq_mul]
-        rw [Finset.sum_mul, ← Finset.sum_add_distrib]
-        apply Finset.sum_congr rfl
-        intro i _
-        ring
-  have hpow := (totalDegree_pow S (H - Finsupp.weight d m)).trans
-    (Nat.mul_le_mul_left _ hS)
-  have hmon := hv m hm
-  have hbudget := Nat.sub_add_cancel (hQ m hm)
-  have hmul := totalDegree_mul
-    (f (Q.coeff m) * ∏ i ∈ m.support, N i ^ m i)
-    (S ^ (H - Finsupp.weight d m))
-  have hcoeff := totalDegree_mul (f (Q.coeff m)) (∏ i ∈ m.support, N i ^ m i)
-  nlinarith
+  have hS' : S.weightedTotalDegree (1 : σ → ℕ) ≤ b := by
+    simpa only [weightedTotalDegree_one] using hS
+  have hN' i : (N i).weightedTotalDegree (1 : σ → ℕ) ≤ d i * b + 1 := by
+    simpa only [weightedTotalDegree_one] using hN i
+  have hv' (m : τ →₀ ℕ) (hm : m ∈ Q.support) :
+      (f (Q.coeff m)).weightedTotalDegree (1 : σ → ℕ) +
+        Finsupp.weight (1 : τ → ℕ) m ≤ v := by
+    have h := hv m hm
+    rw [← weightedTotalDegree_one, Finsupp.degree_eq_weight_one] at h
+    exact h
+  rw [← weightedTotalDegree_one]
+  exact weightedTotalDegree_clearedSubstitution_le_of_coeff f S N d (fun _ ↦ 1)
+    (fun _ ↦ 1) H b v Q hS' hN' hQ hv'
 
 /-- Total-degree bound for a cleared numerator over a polynomial ring. If `S` has total degree
 at most `b`, each `N i` has total degree at most `d i * b + 1`, every monomial of `Q` fits the
@@ -168,6 +205,29 @@ theorem totalDegree_clearedSubstitution {K σ : Type*} [CommSemiring K]
   refine totalDegree_clearedSubstitution_le_of_coeff C S N d H b v Q hS hN hQ fun m hm ↦ ?_
   rw [totalDegree_C, zero_add]
   exact (le_totalDegree hm).trans hv
+
+/-- If `S` has degree at most `b` in `i`, each `N j` has degree at most `d j * b + w j`,
+every monomial of `Q` fits denominator budget `H`, and its `w`-weight is at most `v`, then the
+cleared numerator has degree at most `H * b + v` in `i`. -/
+theorem degreeOf_clearedSubstitution {R σ ι : Type*} [CommSemiring R]
+    (i : σ) (S : MvPolynomial σ R) (N : ι → MvPolynomial σ R) (d w : ι → ℕ)
+    (H b v : ℕ) (Q : MvPolynomial ι R)
+    (hS : S.degreeOf i ≤ b) (hN : ∀ j, (N j).degreeOf i ≤ d j * b + w j)
+    (hden : ∀ m ∈ Q.support, Finsupp.weight d m ≤ H)
+    (hw : ∀ m ∈ Q.support, Finsupp.weight w m ≤ v) :
+    (clearedSubstitution C S N d H Q).degreeOf i ≤ H * b + v := by
+  classical
+  have hS' : S.weightedTotalDegree (Pi.single i 1) ≤ b := by
+    simpa only [weightedTotalDegree_piSingle] using hS
+  have hN' j : (N j).weightedTotalDegree (Pi.single i 1) ≤ d j * b + w j := by
+    simpa only [weightedTotalDegree_piSingle] using hN j
+  have hw' (m : ι →₀ ℕ) (hm : m ∈ Q.support) :
+      (C (Q.coeff m) : MvPolynomial σ R).weightedTotalDegree (Pi.single i 1) +
+        Finsupp.weight w m ≤ v := by
+    simpa only [weightedTotalDegree_C, zero_add] using hw m hm
+  rw [← weightedTotalDegree_piSingle]
+  exact weightedTotalDegree_clearedSubstitution_le_of_coeff C S N d w
+    (Pi.single i 1) H b v Q hS' hN' hden hw'
 
 end
 
