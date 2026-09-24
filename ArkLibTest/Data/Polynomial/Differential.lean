@@ -1358,14 +1358,14 @@ example :
 
 local instance : Fact (Nat.Prime 2) := ⟨Nat.prime_two⟩
 
-example := by
-  exact frobeniusExpansion_satisfies_jointTaylorCuts
-    (X (some 0) : DifferentialPolynomial (Polynomial (ZMod 2)) 0) 0 0 0 2 1 2 4
-    (taylorExponentSufficient_two_mul 0 2)
+example := frobeniusExpansion_satisfies_jointTaylorCuts (E := ZMod 2)
+    (X (some 0)) 0 0 0 2 1 2 4 (taylorExponentSufficient_two_mul 0 2)
     (by simp only [map_zero, Polynomial.degree_zero]; exact WithBot.bot_lt_coe (2 : ℕ))
     (by simp [challengeSpecialization])
     (by simp [initialJetSeparant, challengeSpecialization, separant])
+
 /-! ### Ordinary root presentations -/
+
 /-- For the concrete irreducible equation `Y₀` over `ℚ[X]`, the exceptional set is empty. -/
 example :
     ∃ exceptional : Finset ℚ, exceptional.card ≤ 0 ∧

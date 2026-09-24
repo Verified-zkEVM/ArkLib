@@ -1310,121 +1310,6 @@ private theorem extractedAdmissibleFrobeniusPair :
       simpa [componentWord, Polynomial.C_0] using component_admissibility_cut 0 (by simp))
   exact ⟨F₀, G₀, hP⟩
 
-private theorem zeroFrobeniusInitial :
-    aeval (frobeniusInitialGraph (0 : ComponentField) 1
-      ((0 : ℚ[X]).map (algebraMap ℚ ComponentField))
-      ((0 : ℚ[X]).map (algebraMap ℚ ComponentField)))
-      (jointInitialJetEquation (r := 0) (0 : ComponentField)
-        (componentEquation (E := ComponentField))) = 0 := by
-  simp [frobeniusInitialGraph, jointInitialJetEquation, initialJetEquation,
-    componentEquation]
-
-private theorem zeroFrobeniusRegular :
-    aeval (frobeniusInitialGraph (0 : ComponentField) 1
-      ((0 : ℚ[X]).map (algebraMap ℚ ComponentField))
-      ((0 : ℚ[X]).map (algebraMap ℚ ComponentField)))
-      (jointInitialJetSeparant (r := 0) (0 : ComponentField)
-        (componentEquation (E := ComponentField))) ≠ 0 := by
-  simp [jointInitialJetSeparant, componentEquation, initialJetSeparant,
-    separant, Fin.last]
-
-private theorem zeroFrobeniusSparse :
-    ∀ l : Fin 1, ¬1 ∣ l.val →
-      aeval (frobeniusInitialGraph (0 : ComponentField) 1
-        ((0 : ℚ[X]).map (algebraMap ℚ ComponentField))
-        ((0 : ℚ[X]).map (algebraMap ℚ ComponentField)))
-        (jointCommonTaylorNumerator (r := 0) (0 : ComponentField)
-          (componentEquation (E := ComponentField)) 2 l) = 0 := by
-  intro l hl
-  have hl0 : l = 0 := Fin.ext (by omega)
-  subst l
-  norm_num at hl
-
-private theorem zeroFrobeniusSampleCut :
-    aeval (frobeniusInitialGraph (0 : ComponentField) 1
-      ((0 : ℚ[X]).map (algebraMap ℚ ComponentField))
-      ((0 : ℚ[X]).map (algebraMap ℚ ComponentField)))
-      (jointTaylorAgreementEquation (r := 0) (0 : ComponentField)
-        (componentEquation (E := ComponentField)) 1 2 (Polynomial.C 0) 0) = 0 := by
-  simp only [Polynomial.C_0]
-  rw [component_jointCut_eq_length_one]
-  simp [frobeniusInitialGraph, jointInitialJetEquation, initialJetEquation,
-    componentEquation]
-
-private theorem zeroFrobeniusSample :
-    ∃ sample : Finset (Fin 1), sample.card = 1 ∧ ∀ i ∈ sample,
-      (fun _ : Fin 1 ↦ (0 : ComponentField)) i ^ 1 =
-        (algebraMap ℚ ComponentField) (domain i) ∧
-      (0 : ℚ[X]).eval (domain i) = componentWord i ∧
-      (0 : ℚ[X]).eval (domain i) = componentWord i ∧
-      aeval (frobeniusInitialGraph (0 : ComponentField) 1
-        ((0 : ℚ[X]).map (algebraMap ℚ ComponentField))
-        ((0 : ℚ[X]).map (algebraMap ℚ ComponentField)))
-        (jointTaylorAgreementEquation (r := 0) (0 : ComponentField)
-          (componentEquation (E := ComponentField)) 1 2
-          (Polynomial.C ((fun _ : Fin 1 ↦ (0 : ComponentField)) i))
-          (Polynomial.C ((algebraMap ℚ ComponentField) (componentWord i)) +
-            Polynomial.X ^ 1 * Polynomial.C ((algebraMap ℚ ComponentField)
-              (componentWord i)))) = 0 := by
-  refine ⟨Finset.univ, by simp, ?_⟩
-  intro i hi
-  have hi0 : i = 0 := Subsingleton.elim _ _
-  subst i
-  refine ⟨?_, by simp [domain_zero, componentWord], by simp [componentWord], ?_⟩
-  · norm_num
-    change (0 : ComponentField) = (algebraMap ℚ ComponentField) (0 : ℚ)
-    simp
-  · simpa only [componentWord, map_zero, Polynomial.C_0, one_pow, mul_zero,
-      zero_add] using zeroFrobeniusSampleCut
-
-private theorem zeroAdmissibleFrobeniusPair :
-    IsAdmissibleFrobeniusPair domain componentWord componentWord
-      (algebraMap ℚ ComponentField) (fun _ ↦ 0) 0
-      (componentEquation (E := ComponentField)) 1 1 2 1 0 0 := by
-  exact ⟨by simp, by simp, zeroFrobeniusInitial, zeroFrobeniusRegular,
-    zeroFrobeniusSparse, zeroFrobeniusSample⟩
-
-private theorem frobeniusInitialGraph_eq_zero_of_eval_zero
-    {E : Type*} [CommSemiring E] {F₀ G₀ : E[X]}
-    (hF : F₀.eval 0 = 0) (hG : G₀.eval 0 = 0) :
-    frobeniusInitialGraph (0 : E) (1 ^ 0) F₀ G₀ =
-      frobeniusInitialGraph (0 : E) (1 ^ 0) 0 0 := by
-  funext j
-  cases j with
-  | none => rfl
-  | some i =>
-      have hi0 : i = 0 := Subsingleton.elim _ _
-      subst i
-      simp [frobeniusInitialGraph, hF, hG]
-
-private theorem extractedFrobeniusGraph_eq_zero {F₀ G₀ : ℚ[X]}
-    (hP : IsAdmissibleFrobeniusPair domain componentWord componentWord
-      (algebraMap ℚ ComponentField) (fun _ ↦ 0) 0
-      (componentEquation (E := ComponentField)) 1 1 2 1 F₀ G₀) :
-    frobeniusInitialGraph (0 : ComponentField) (1 ^ 0)
-      (F₀.map (algebraMap ℚ ComponentField)) (G₀.map (algebraMap ℚ ComponentField)) =
-    frobeniusInitialGraph (0 : ComponentField) (1 ^ 0)
-      ((0 : ℚ[X]).map (algebraMap ℚ ComponentField))
-      ((0 : ℚ[X]).map (algebraMap ℚ ComponentField)) := by
-  obtain ⟨sample, hcard, hsample⟩ := hP.sample
-  have hmem : (0 : Fin 1) ∈ sample := by
-    have hcardpos : 0 < sample.card := by omega
-    obtain ⟨i, hi⟩ := Finset.card_pos.mp hcardpos
-    have hi0 : i = 0 := Subsingleton.elim _ _
-    simpa [hi0] using hi
-  have hFval : F₀.eval 0 = 0 :=
-    by simpa only [domain_zero, componentWord] using (hsample 0 hmem).2.1
-  have hGval : G₀.eval 0 = 0 :=
-    by simpa only [domain_zero, componentWord] using (hsample 0 hmem).2.2.1
-  have hFmap : (F₀.map (algebraMap ℚ ComponentField)).eval 0 = 0 := by
-    rw [Polynomial.eval_zero_map, hFval]
-    simp
-  have hGmap : (G₀.map (algebraMap ℚ ComponentField)).eval 0 = 0 := by
-    rw [Polynomial.eval_zero_map, hGval]
-    simp
-  simpa only [Polynomial.map_zero] using
-    (frobeniusInitialGraph_eq_zero_of_eval_zero hFmap hGmap)
-
 example :
     ∃ F₀ G₀ : ℚ[X],
       IsAdmissibleFrobeniusPair domain componentWord componentWord
@@ -1447,21 +1332,148 @@ example :
         separant, Fin.last])
   simpa [pow_zero, one_pow] using hspec
 
+private abbrev uniquenessEquation {E : Type*} [CommRing E] :
+    DifferentialPolynomial E[X] 0 :=
+  (MvPolynomial.X (some (0 : Fin 1)) : DifferentialPolynomial E[X] 0) -
+    MvPolynomial.X none
+private def uniquenessDomain : Fin 4 ↪ ℚ :=
+  ⟨fun i ↦ (i.val : ℚ), by
+    intro i j hij
+    apply Fin.ext
+    exact_mod_cast (show (i.val : ℚ) = j.val from hij)⟩
+private def uniquenessSampleLeft : Finset (Fin 4) := {0, 1}
+private def uniquenessSampleRight : Finset (Fin 4) := {2, 3}
+private abbrev uniquenessAdmissiblePair (F₀ G₀ : ℚ[X]) :=
+  IsAdmissibleFrobeniusPair uniquenessDomain uniquenessDomain (fun _ ↦ 0)
+    (algebraMap ℚ ComponentField)
+    (fun i ↦ (algebraMap ℚ ComponentField) (uniquenessDomain i)) 0
+    (uniquenessEquation (E := ComponentField)) 2 2 4 1 F₀ G₀
+private theorem uniquenessCommonNumerator_zero :
+    commonTaylorNumeratorOver ComponentField (Polynomial.C (0 : ComponentField))
+      (uniquenessEquation (E := ComponentField)) 4 0 =
+        (MvPolynomial.X (0 : Fin 1) : MvPolynomial (Fin 1) (Polynomial ComponentField)) := by
+  have hlt : 0 < 0 + 1 := by omega
+  rw [commonTaylorNumeratorOver, rationalTaylorNumeratorOver, dite_eq_left hlt]
+  simp [initialJetSeparant, uniquenessEquation, separant, Fin.last]
+
+private theorem uniquenessCommonNumerator_one :
+    commonTaylorNumeratorOver ComponentField (Polynomial.C (0 : ComponentField))
+      (uniquenessEquation (E := ComponentField)) 4 1 =
+        (1 : MvPolynomial (Fin 1) (Polynomial ComponentField)) := by
+  have hcoeff :
+      ((optionEquivLeft (Polynomial ComponentField) (Fin 1)
+        (universalTaylorResidual 1 (Polynomial.C (0 : ComponentField))
+          (uniquenessEquation (E := ComponentField)))).coeff 1) = -1 := by
+    rw [show universalTaylorResidual 1 (Polynomial.C (0 : ComponentField))
+        (uniquenessEquation (E := ComponentField)) =
+          universalTaylorJet (F := Polynomial ComponentField) 1 0 - MvPolynomial.X none by
+      simp [universalTaylorResidual, uniquenessEquation]]
+    rw [map_sub, optionEquivLeft_X_none, optionEquivLeft_universalTaylorJet]
+    simp [Polynomial.hasseDeriv]
+  have hnumerator :
+      rationalTaylorNumeratorOver ComponentField (Polynomial.C (0 : ComponentField))
+        (uniquenessEquation (E := ComponentField)) 1 =
+          (1 : MvPolynomial (Fin 1) (Polynomial ComponentField)) := by
+    rw [rationalTaylorNumeratorOver, dite_eq_right (by omega), hcoeff]
+    simp [MvPolynomial.clearedSubstitution, initialJetSeparant,
+      uniquenessEquation, separant, Fin.last]
+  rw [commonTaylorNumeratorOver, hnumerator]
+  simp [initialJetSeparant, uniquenessEquation, separant, Fin.last]
+
+private theorem uniquenessAgreementCut (i : Fin 4) :
+    jointTaylorAgreementEquation (r := 0) (0 : ComponentField)
+      (uniquenessEquation (E := ComponentField)) 2 4
+      (Polynomial.C ((algebraMap ℚ ComponentField) (uniquenessDomain i)))
+      (Polynomial.C ((algebraMap ℚ ComponentField) (uniquenessDomain i)) +
+        Polynomial.X ^ 1 * (0 : Polynomial ComponentField)) =
+      componentVariable (E := ComponentField) := by
+  have hcut :
+      taylorAgreementEquationOver (F := ComponentField)
+        (Polynomial.C (0 : ComponentField)) (uniquenessEquation (E := ComponentField)) 2
+        (Polynomial.C ((algebraMap ℚ ComponentField) (uniquenessDomain i)))
+        (Polynomial.C ((algebraMap ℚ ComponentField) (uniquenessDomain i))) (τ := 4) =
+        (MvPolynomial.X (0 : Fin 1) : MvPolynomial (Fin 1) (Polynomial ComponentField)) := by
+    rw [taylorAgreementEquationOver, Fin.sum_univ_two]
+    simp only [Fin.val_zero, Fin.val_one]
+    rw [uniquenessCommonNumerator_zero, uniquenessCommonNumerator_one]
+    simp [initialJetSeparant, uniquenessEquation, separant, Fin.last]
+  simp only [mul_zero, add_zero]
+  rw [jointTaylorAgreementEquation, hcut]
+  simp only [optionEquivRight_symm_X]
+
+private theorem frobeniusInitialGraph_eq_zero_of_eval_zero
+    {E : Type*} [CommSemiring E] {F₀ G₀ : E[X]}
+    (hF : F₀.eval 0 = 0) (hG : G₀.eval 0 = 0) :
+    frobeniusInitialGraph (0 : E) 1 F₀ G₀ =
+      frobeniusInitialGraph (0 : E) 1 0 0 := by
+  funext j
+  cases j with
+  | none => rfl
+  | some i =>
+    have hi : i = 0 := Subsingleton.elim _ _
+    subst i
+    simp [frobeniusInitialGraph, hF, hG]
+
+private theorem uniquenessAdmissibleOn (sample : Finset (Fin 4))
+    (hsample : sample.card = 2) (P : ℚ[X]) (hdegree : P.degree < 2)
+    (hcenter : P.eval 0 = 0)
+    (heval : ∀ i ∈ sample, P.eval (uniquenessDomain i) = uniquenessDomain i) :
+    uniquenessAdmissiblePair P 0 := by
+  have hF : (P.map (algebraMap ℚ ComponentField)).eval 0 = 0 := by
+    rw [Polynomial.eval_zero_map, hcenter]
+    simp
+  have hgraph :
+      frobeniusInitialGraph (0 : ComponentField) 1
+        (P.map (algebraMap ℚ ComponentField)) ((0 : ℚ[X]).map (algebraMap ℚ ComponentField)) =
+      frobeniusInitialGraph (0 : ComponentField) 1 0 0 := by
+    apply frobeniusInitialGraph_eq_zero_of_eval_zero hF
+    simp
+  refine ⟨hdegree, WithBot.bot_lt_coe 2, ?_, ?_, ?_, ?_⟩
+  · rw [hgraph]
+    simp [jointInitialJetEquation, uniquenessEquation, initialJetEquation,
+      frobeniusInitialGraph]
+  · rw [hgraph]
+    simp [jointInitialJetSeparant, uniquenessEquation, initialJetSeparant,
+      separant, Fin.last]
+  · intro l hl
+    norm_num at hl
+  · refine ⟨sample, hsample, ?_⟩
+    intro i hi
+    refine ⟨by simp, heval i hi, by simp, ?_⟩
+    rw [hgraph]
+    simp only [map_zero]
+    rw [uniquenessAgreementCut i]
+    simp [componentVariable, frobeniusInitialGraph]
+
 example :
-    ∃ F₀ G₀ : ℚ[X],
-      IsAdmissibleFrobeniusPair domain componentWord componentWord
-        (algebraMap ℚ ComponentField) (fun _ ↦ 0) 0
-        (componentEquation (E := ComponentField)) 1 1 2 1 F₀ G₀ ∧
-      IsAdmissibleFrobeniusPair domain componentWord componentWord
-        (algebraMap ℚ ComponentField) (fun _ ↦ 0) 0
-        (componentEquation (E := ComponentField)) 1 1 2 1 0 0 ∧
-      F₀ = 0 ∧ G₀ = 0 := by
-  obtain ⟨F₀, G₀, hP⟩ := extractedAdmissibleFrobeniusPair
-  have hR := zeroAdmissibleFrobeniusPair
-  have hgraph := extractedFrobeniusGraph_eq_zero hP
-  exact ⟨F₀, G₀, hP, hR,
-    hP.eq_of_initialGraph_eq (K := 1) (k := 1) (p := 1) (e := 0) hR
-      (by norm_num) (by norm_num) (taylorExponentSufficient_two_mul 0 1) hgraph⟩
+    ∃ F₀ G₀ F₁ G₁ : ℚ[X],
+      uniquenessAdmissiblePair F₀ G₀ ∧ uniquenessAdmissiblePair F₁ G₁ ∧
+      F₀ = F₁ ∧ G₀ = G₁ := by
+  let F₀ : ℚ[X] := Polynomial.X
+  let G₀ : ℚ[X] := 0
+  let F₁ : ℚ[X] := Polynomial.X * Polynomial.C 1
+  let G₁ : ℚ[X] := 0
+  have hP := uniquenessAdmissibleOn uniquenessSampleLeft
+    (by norm_num [uniquenessSampleLeft]) F₀ (by simp [F₀]) (by simp [F₀])
+    (by intro i hi; simp [F₀])
+  have hR := uniquenessAdmissibleOn uniquenessSampleRight
+    (by norm_num [uniquenessSampleRight]) F₁ (by simp [F₁]) (by simp [F₁])
+    (by intro i hi; simp [F₁])
+  have hgraph :
+      frobeniusInitialGraph (0 : ComponentField) 1
+        (F₀.map (algebraMap ℚ ComponentField)) (G₀.map (algebraMap ℚ ComponentField)) =
+      frobeniusInitialGraph (0 : ComponentField) 1
+        (F₁.map (algebraMap ℚ ComponentField)) (G₁.map (algebraMap ℚ ComponentField)) := by
+    funext j
+    cases j with
+    | none => rfl
+    | some i =>
+      have hi : i = 0 := Subsingleton.elim _ _
+      subst i
+      simp [frobeniusInitialGraph, F₀, G₀, F₁, G₁]
+  refine ⟨F₀, G₀, F₁, G₁, hP, hR, ?_⟩
+  exact hP.eq_of_initialGraph_eq (K := 2) (k := 2) (p := 1) (e := 0) hR
+    (by norm_num) (by norm_num) (taylorExponentSufficient_two_mul 0 2) hgraph
 
 end
 
