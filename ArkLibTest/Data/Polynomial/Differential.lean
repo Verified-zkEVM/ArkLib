@@ -449,34 +449,34 @@ example : ∃! γ : ℚ,
     rw [Polynomial.hassePerturbation, map_zero, zero_mul, add_zero]
     simp [differentialSpecialization, differentialSpecializationHom]
   exact ⟨0, hzero, fun γ h ↦ hlift.unique h hzero⟩
+
 /-! ### Highest active jet -/
 
 /-- `Y₁ * X` in depth `2`. -/
-private abbrev productEquation : DifferentialPolynomial ℚ 2 :=
-  X (some 1) * X none
+private abbrev productEquation : DifferentialPolynomial ℚ 2 := X (some 1) * X none
+
 private theorem jetDegree_productEquation (j : Fin 3) :
     jetDegree productEquation j = if j = 1 then 1 else 0 := by
-  classical
-  rw [jetDegree, degreeOf_mul_X_of_ne _ (Option.some_ne_none j), degreeOf_X]
-  simp
+  rw [jetDegree, degreeOf_mul_X_of_ne _ (Option.some_ne_none j)]; simp [degreeOf_X]
 
 private theorem highestActiveJet_productEquation : highestActiveJet productEquation = some 1 := by
   have hactive : activeJets productEquation = {1} := by
-    ext j
-    by_cases h : j = 1 <;> simp [DependsOnJet, jetDegree_productEquation, h]
+    ext j; by_cases h : j = 1 <;> simp [DependsOnJet, jetDegree_productEquation, h]
   have hne : (activeJets productEquation).Nonempty := by simp [hactive]
-  rw [highestActiveJet_eq_some_max _ hne]
-  simp [hactive]
-/-- The presentation of `Y₁ * X` at depth `1` exists. -/
+  simpa [hactive] using highestActiveJet_eq_some_max _ hne
+
 example : Nonempty (JetPrefixPresentation productEquation 1) :=
   nonempty_jetPrefixPresentation _
     (isHighestActiveJet_of_highestActiveJet_eq_some highestActiveJet_productEquation)
+
 example : Nonempty (JetPrefixPresentation (X (some 1) : DifferentialPolynomial ℚ 2) 1) :=
   exists_jetPrefixPresentation_of_vars_subset_range (X (some 1)) 1 (by simp [jetPrefixEmbedding])
+
 example : Nonempty (JetPrefixPresentation (X (some 0) : DifferentialPolynomial ℚ 1) 0) :=
-  exists_jetPrefixPresentation_firstOrder_of_jetDegree_zero _
-    (MvPolynomial.degreeOf_X_of_ne (by decide))
+  exists_jetPrefixPresentation_firstOrder_of_jetDegree_zero _ (degreeOf_X_of_ne (by decide))
+
 /-! ### Rational Taylor coefficients -/
+
 /-- The equation `y' = 2x`, as the differential polynomial `Y₁ - 2X`. -/
 private abbrev taylorLinearEquation (F : Type*) [CommRing F] : DifferentialPolynomial F 1 :=
   X (some 1) - 2 * X none
