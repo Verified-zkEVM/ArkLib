@@ -28,6 +28,8 @@ unevaluated challenge `Z` specializes to a presentation of every evaluation `Z �
   renaming keeps individual and total jet degrees.
 * `JetPrefixPresentation` and `nonempty_jetPrefixPresentation`: presentations exist at the highest
   active jet, and there is at most one (`JetPrefixPresentation.instSubsingleton`).
+* `exists_jetPrefixPresentation_of_vars_subset_range`: a polynomial supported on a jet prefix has
+  a presentation at that prefix.
 * `JetPrefixPresentation.coeff_equation`, `JetPrefixPresentation.jetDegree_equation`,
   `JetPrefixPresentation.jetTotalDegree_equation`: coefficients and degrees of the presentation.
 * `JetPrefixPresentation.isHighestActiveJet_last`: the top variable is the highest active jet of
@@ -76,6 +78,15 @@ structure JetPrefixPresentation (Q : DifferentialPolynomial R d) (s : Fin (d + 1
   equation : DifferentialPolynomial R s.val
   /-- Renaming the depth-`s` polynomial into depth `d` gives `Q`. -/
   rename_equation : MvPolynomial.rename (jetPrefixEmbedding s) equation = Q
+
+/-- A differential polynomial supported on a jet prefix has a presentation at that prefix. -/
+theorem exists_jetPrefixPresentation_of_vars_subset_range (Q : DifferentialPolynomial R d)
+    (s : Fin (d + 1))
+    (hvars : (Q.vars : Set (JetVariable d)) ⊆ Set.range (jetPrefixEmbedding s)) :
+    Nonempty (JetPrefixPresentation Q s) := by
+  obtain ⟨equation, hequation⟩ := MvPolynomial.exists_rename_eq_of_vars_subset_range Q
+    (jetPrefixEmbedding s) (jetPrefixEmbedding s).injective hvars
+  exact ⟨⟨equation, hequation⟩⟩
 
 /-- `Q` has a presentation at its highest active jet. -/
 theorem nonempty_jetPrefixPresentation (Q : DifferentialPolynomial R d) {s : Fin (d + 1)}

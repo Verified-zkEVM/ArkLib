@@ -9,6 +9,7 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.Agreement
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.BranchwiseRate
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.DerivativeCappedCounting
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.FiniteRateParameters
+import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.HybridAgreementCounting
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.HybridRateEnvelope
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.RoundedCounts
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.StageComparison
@@ -235,6 +236,20 @@ example : (2 : ℝ) * max (3 * (1 / 2 : ℝ) - (1 / 2) * 1) 0 ≤ max (3 * 2 - 1
   have h := mul_max_rateResidual_le_max_residual (rate := 1 / 2) (a := 1)
     (n := 2) (D := 1) (A := 2) (m := 3) (t := 1) (by norm_num) (by norm_num)
   norm_num at h ⊢
+
+/-! ### Hybrid descent -/
+
+private noncomputable abbrev constantFirstOrderEquation :
+    DifferentialPolynomial (Polynomial ℚ) 1 := 1
+
+/-- A constant symbolic equation admits the zero-degree descent boundary case. -/
+example : Nonempty (FirstOrderHybridDescent constantFirstOrderEquation 0 0) := by
+  apply exists_firstOrderHybridDescent constantFirstOrderEquation
+  · exact one_ne_zero
+  · simpa [constantFirstOrderEquation, jetTotalDegree] using
+      (MvPolynomial.weightedTotalDegree_C jetDegreeWeight (1 : Polynomial ℚ))
+  · simp [constantFirstOrderEquation, jetDegree]
+  · exact Or.inl (ringChar.eq_zero : ringChar ℚ = 0)
 
 /-! ### Hybrid constants -/
 
