@@ -619,7 +619,9 @@ example :
   · simpa [S, firstOrderTightListWeight, firstOrderCurveFiberStageOne,
       firstOrderTaylorTotalCap, firstOrderTaylorDerivativeCap] using hExact
   · simpa using hCompare
-  · simp [firstOrderListWeight]
+  · change (S.card : ℚ) ≤
+      ((2 * firstOrderListWeight 2 1 1 : ℕ) : ℚ) / 2
+    exact hSharp
 
 /-- The derivative-capped first-order incidence bound is attained by the zero jet of `Y₁`. -/
 example :

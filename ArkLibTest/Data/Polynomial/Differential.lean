@@ -248,11 +248,6 @@ private abbrev challengeEquation : DifferentialPolynomial (Polynomial ℚ) 0 :=
 private theorem separant_challengeEquation : separant challengeEquation 0 = C Polynomial.X := by
   simp [separant, pderiv_X]
 
-private theorem natDegree_coeff_challengeEquation_le (u : JetVariable 0 →₀ ℕ) :
-    (challengeEquation.coeff u).natDegree ≤ 1 := by
-  rw [coeff_C_mul, coeff_X]
-  split_ifs <;> simp
-
 private theorem challengeChain :
     SeparantChain challengeEquation [(challengeEquation, (0 : Fin 1))] (C Polynomial.X) := by
   have hjet : jetDegree challengeEquation 0 = 1 := by
@@ -276,19 +271,25 @@ private theorem challengeChain :
   intro j
   simp [DependsOnJet, jetDegree, MvPolynomial.degreeOf_C]
 
-/-- The `X · Y₀` chain over `ℚ[X]` has at most one exceptional specialization value. -/
-example : ∃ exceptional : Finset ℚ, exceptional.card ≤ 1 ∧
-    ∀ z ∉ exceptional, ∀ P : Polynomial ℚ,
-      differentialSpecialization
-        (MvPolynomial.map (Polynomial.eval₂RingHom (RingHom.id ℚ) z) challengeEquation) P = 0 →
-      ∃ stage ∈ [(challengeEquation, (0 : Fin 1))],
-        differentialSpecialization
-          (MvPolynomial.map (Polynomial.eval₂RingHom (RingHom.id ℚ) z) stage.1) P = 0 ∧
-        differentialSpecialization
-          (separant (MvPolynomial.map (Polynomial.eval₂RingHom (RingHom.id ℚ) z) stage.1)
-            stage.2) P ≠ 0 :=
-  challengeChain.exists_finset_regular_stage natDegree_coeff_challengeEquation_le
-    (RingHom.id ℚ) Function.injective_id
+private theorem constantDerivativeChain :
+    SeparantChain (constantDerivativeEquation ℚ)
+      [(constantDerivativeEquation ℚ, (1 : Fin 2))] (C 1) := by
+  refine .active 1 (X_ne_zero _) highestActiveJet_constantDerivativeEquation_Q ?_
+  simpa [constantDerivativeEquation, separant, pderiv_X] using
+    (SeparantChain.terminal (by simp)
+      ((highestActiveJet_eq_none_iff _).mpr fun j hj ↦ by
+        simp [DependsOnJet, jetDegree] at hj))
+/-- The charge along the chain for `Y₁` meets the cap with `M = 1`. -/
+example :
+    ([(constantDerivativeEquation ℚ, (1 : Fin 2))].map
+      (firstOrderStageCharge (fun j ↦ (j : ℚ)) fun j _ ↦ (j : ℚ))).sum ≤
+        firstOrderStageCap (fun j ↦ (j : ℚ)) (fun j _ ↦ (j : ℚ)) 1 1 :=
+  constantDerivativeChain.sum_firstOrderStageCharge_le
+    jetTotalDegree_constantDerivativeEquation_le
+    (by simp [constantDerivativeEquation, jetDegree])
+    (fun _ ↦ by positivity) (fun _ _ ↦ by positivity)
+    (fun _ _ h ↦ by exact_mod_cast h) (fun {_ _ _} _ h ↦ by exact_mod_cast h)
+    (fun {_ _ _} _ _ ↦ le_rfl) (fun _ ↦ le_rfl)
 
 /-- A nonempty bounded-solution family is bounded by costs along its separant chain. -/
 example : ∃ roots : Finset (BoundedSolution challengeEquation 0),
@@ -299,9 +300,8 @@ example : ∃ roots : Finset (BoundedSolution challengeEquation 0),
       differentialSpecializationHom]⟩
   let roots : Finset (BoundedSolution challengeEquation 0) := {root}
   let accepts : Polynomial (Polynomial ℚ) → Prop := fun P ↦ P = root.polynomial
-  have hroots : ∀ solution ∈ roots, accepts solution.polynomial := fun s hs ↦ by
-    exact congrArg (fun s : BoundedSolution challengeEquation 0 ↦ s.polynomial)
-      (Finset.mem_singleton.mp hs)
+  have hroots : ∀ solution ∈ roots, accepts solution.polynomial := fun s hs ↦
+    congrArg (fun s ↦ s.polynomial) (Finset.mem_singleton.mp hs)
   have hregular : ∀ stage ∈ [(challengeEquation, (0 : Fin 1))],
       ∀ regular : Finset (BoundedSolution stage.1 0),
         (∀ solution ∈ regular, accepts solution.polynomial) →
@@ -314,7 +314,7 @@ example : ∃ roots : Finset (BoundedSolution challengeEquation 0),
       Subtype.ext (Subtype.ext ((hregularAccepts a ha).trans (hregularAccepts b hb).symm)))
   have hcount := boundedSolution_card_le_separantChainStageSum challengeChain 0 accepts roots
     hroots (fun _ ↦ 1) hregular
-  exact ⟨roots, by simp [roots], by simp [roots]⟩
+  exact ⟨roots, by simp [roots], hcount⟩
 /-! ### Derivative descent -/
 
 /-- `Y₁ ^ 2 * Y₀` in depth `1`. -/
@@ -967,11 +967,6 @@ private theorem castsNeZero_constantDerivativeEquation {F : Type*} [CommRing F] 
   obtain rfl : k = 1 := by omega
   simp
 
-/-- The active formal derivative of `Y₀` is nonzero over `ℚ`. -/
-example : separant (zeroJetEquation ℚ 0) 0 ≠ 0 := by
-  apply separant_ne_zero
-  norm_num [zeroJetEquation, jetDegree]
-
 /-- Over `ZMod 3`, `y' = 0` has exactly three solutions of degree at most `2`: the constants. -/
 example : Nat.card (BoundedSolution (constantDerivativeEquation (ZMod 3)) 2) = 3 := by
   have h : Nat.card (BoundedSolution (constantDerivativeEquation (ZMod 3)) 2) *
@@ -1004,6 +999,11 @@ example : Nat.card (BoundedSolution (constantDerivativeEquation (ZMod 3)) 2) = 3
   exact Nat.le_antisymm hupper hlower
 
 /-! ### Rational recursive and agreement bounds -/
+/-- The active formal derivative of `Y₀` is nonzero over `ℚ`. -/
+example : separant (zeroJetEquation ℚ 0) 0 ≠ 0 := by
+  apply separant_ne_zero
+  norm_num [zeroJetEquation, jetDegree]
+
 /-- The singleton root `0` of `Y₀ = 0` satisfies the recursive and agreement bounds. -/
 example :
     (({zeroJetBoundedRoot} : Finset
