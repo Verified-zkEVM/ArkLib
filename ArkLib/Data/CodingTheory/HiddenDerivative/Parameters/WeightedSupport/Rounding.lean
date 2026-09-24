@@ -7,6 +7,8 @@ module
 
 public import
   ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.WeightedSupport.ScalarParameters
+public import
+  ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RankRounding
 public import ArkLib.ToMathlib.Algebra.Order.Floor.Ratio
 public import Mathlib.Data.Nat.Choose.Cast
 
@@ -194,40 +196,51 @@ theorem centeringErrorBounds (d m : ℕ) (g H : ℝ)
     exact h219.le.trans hs
   have hHsq : H ^ 2 ≤ (19 / 365 : ℝ) ^ 2 * d := by
     have hs := pow_le_pow_left₀ hH.le hHupper 2
-    nlinarith
+    calc
+      H ^ 2 ≤ ((19 / 365 : ℝ) * Real.sqrt d) ^ 2 := hs
+      _ = (19 / 365 : ℝ) ^ 2 * d := by rw [mul_pow, hsqrtSq]
   have hsqrtLeD : Real.sqrt d ≤ d := by
-    nlinarith [sq_nonneg (Real.sqrt d - 1)]
+    apply (Real.sqrt_le_left hdR.le).2
+    have hdge1 : (1 : ℝ) ≤ d := by exact_mod_cast (show 1 ≤ d by omega)
+    calc
+      (d : ℝ) = 1 * d := by ring
+      _ ≤ d * d := mul_le_mul_of_nonneg_right hdge1 hdR.le
+      _ = d ^ 2 := by ring
   have hHd : H ≤ (19 / 365 : ℝ) * d :=
     hHupper.trans (mul_le_mul_of_nonneg_left hsqrtLeD (by norm_num))
   have hB : (d.choose 2 : ℝ) / m ≤ 1 / (200 * H) := by
-    rw [Nat.cast_choose_two]
-    apply (div_le_iff₀ hmR).2
-    rw [show 1 / (200 * H) * (m : ℝ) = (m : ℝ) / (200 * H) by ring]
-    apply (le_div_iff₀ (by positivity : (0 : ℝ) < 200 * H)).2
-    have hd0 : (0 : ℝ) ≤ d := hdR.le
-    nlinarith
+    simpa only [show (2 : ℝ) * 100 = 200 by norm_num] using
+      InterpolationRounding.binomial_error_le 100 H d m (by norm_num) hH hm hsize
+  have hBterm : (d.choose 2 : ℝ) * H / (d * m) ≤ 1 / (200 * (d : ℝ)) := by
+    calc
+      _ = ((d.choose 2 : ℝ) / m) * H / d := by ring
+      _ ≤ (1 / (200 * H)) * H / d := by gcongr
+      _ = 1 / (200 * d) := by field_simp
   have hxiH : xi * H ≤ g * H ^ 2 := by
     have := mul_le_mul_of_nonneg_right hgH hH.le
-    nlinarith
+    calc
+      xi * H ≤ g * H * H := by simpa only [mul_assoc] using this
+      _ = g * H ^ 2 := by ring
   have hterm1 : H / d ≤ g * (19 / 365 : ℝ) ^ 2 / xi := by
     apply (div_le_iff₀ hdR).2
     rw [show (g * (19 / 365 : ℝ) ^ 2 / xi) * d =
       (g * (19 / 365 : ℝ) ^ 2 * d) / xi by ring]
     apply (le_div_iff₀ xi_pos).2
     have hsqScaled := mul_le_mul_of_nonneg_left hHsq hg.le
-    nlinarith
+    calc
+      H * xi ≤ g * H ^ 2 := by simpa only [mul_comm] using hxiH
+      _ ≤ g * ((19 / 365 : ℝ) ^ 2 * d) := hsqScaled
+      _ = g * (19 / 365 : ℝ) ^ 2 * d := by ring
   have hxiD : xi ≤ g * (19 / 365 : ℝ) * d := by
     simpa [mul_assoc] using hgH.trans (mul_le_mul_of_nonneg_left hHd hg.le)
   have hterm2 : (d.choose 2 : ℝ) * H / (d * m) ≤
       g * (19 / 365) / (200 * xi) := by
     calc
-      (d.choose 2 : ℝ) * H / (d * m) = ((d.choose 2 : ℝ) / m) * H / d := by ring
-      _ ≤ (1 / (200 * H)) * H / d := by gcongr
-      _ = 1 / (200 * d) := by field_simp
+      _ ≤ 1 / (200 * (d : ℝ)) := hBterm
       _ ≤ g * (19 / 365) / (200 * xi) := by
         apply (div_le_div_iff₀ (by positivity : (0 : ℝ) < 200 * d)
           (by norm_num [xi] : (0 : ℝ) < 200 * xi)).2
-        nlinarith
+        nlinarith only [hxiD]
   have hlowerCoeff :
       (19 / 365 : ℝ) ^ 2 / xi + (19 / 365) / (200 * xi) ≤
         (2 / 1000) * residualFraction := by
@@ -250,13 +263,13 @@ theorem centeringErrorBounds (d m : ℕ) (g H : ℝ)
     linarith
   have hdTerm : (d : ℝ) ≤ g * m / (270 * H) := by
     apply (le_div_iff₀ (by positivity : (0 : ℝ) < 270 * H)).2
-    nlinarith
+    simpa [mul_assoc, mul_left_comm, mul_comm] using hgm
   have hHterm : H / d ≤ g * m / (270 * d ^ 2) := by
     apply (div_le_iff₀ hdR).2
     rw [show (g * m / (270 * d ^ 2)) * d = g * m / (270 * d) by
       field_simp]
     apply (le_div_iff₀ (by positivity : (0 : ℝ) < 270 * d)).2
-    nlinarith [hgm]
+    simpa [mul_assoc, mul_left_comm, mul_comm] using hgm
   have hgm0 : 0 ≤ g * (m : ℝ) := by positivity
   have hdTerm' : (d : ℝ) ≤ g * m / (270 * (54 / 5)) :=
     hdTerm.trans (div_le_div_of_nonneg_left hgm0 (by norm_num)
@@ -265,7 +278,8 @@ theorem centeringErrorBounds (d m : ℕ) (g H : ℝ)
     apply hHterm.trans
     apply div_le_div_of_nonneg_left hgm0 (by positivity)
     have hdcast : (48000 : ℝ) ≤ d := by exact_mod_cast hd
-    nlinarith
+    apply mul_le_mul_of_nonneg_left _ (by norm_num : (0 : ℝ) ≤ 270)
+    exact (sq_le_sq₀ (by norm_num) (by positivity)).2 hdcast
   have hupperCoeff :
       1 / (270 * (54 / 5 : ℝ)) + 1 / (270 * (48000 : ℝ) ^ 2) ≤
         (1 / 1000) * residualFraction := by
@@ -289,11 +303,6 @@ theorem centeringErrorBounds (d m : ℕ) (g H : ℝ)
         nlinarith only [hsqrtSq]
       _ ≤ (19 / 365 : ℝ) / 219 :=
         div_le_div_of_nonneg_left (by norm_num) (by norm_num) hsqrtLower
-  have hBterm : (d.choose 2 : ℝ) * H / (d * m) ≤ 1 / (200 * d) := by
-    calc
-      _ = ((d.choose 2 : ℝ) / m) * H / d := by ring
-      _ ≤ (1 / (200 * H)) * H / d := by gcongr
-      _ = 1 / (200 * d) := by field_simp
   have hBterm' : (d.choose 2 : ℝ) * H / (d * m) ≤ 1 / (200 * 48000) := by
     apply hBterm.trans
     apply one_div_le_one_div_of_le (by norm_num : (0 : ℝ) < 200 * 48000)
@@ -303,7 +312,14 @@ theorem centeringErrorBounds (d m : ℕ) (g H : ℝ)
       (1 / 1000) * (1 + theta * g) := by
     have hθg : 0 ≤ theta * g := mul_nonneg theta_pos.le hg.le
     have hc : (19 / 365 : ℝ) / 219 + 1 / (200 * 48000) ≤ 1 / 1000 := by norm_num
-    nlinarith
+    have hbound : H / d + (d.choose 2 : ℝ) * H / (d * m) ≤
+        (19 / 365 : ℝ) / 219 + 1 / (200 * 48000) := add_le_add hHoverD hBterm'
+    have htheta : (1 / 1000 : ℝ) ≤ (1 / 1000) * (1 + theta * g) := by
+      calc
+        (1 / 1000 : ℝ) = (1 / 1000) * 1 := by ring
+        _ ≤ (1 / 1000) * (1 + theta * g) :=
+          mul_le_mul_of_nonneg_left (by linarith) (by norm_num)
+    exact hbound.trans (hc.trans htheta)
   have hradius : (m : ℝ) + d.choose 2 ≤
       (1 / 1000) * ((1 + theta * g) * d * m / H) := by
     calc

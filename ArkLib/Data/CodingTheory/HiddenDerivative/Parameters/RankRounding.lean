@@ -107,19 +107,29 @@ theorem kappa_interval (a H : ℝ) (d m : ℕ)
   have hb := kappa_floor_bounds a H d m ha hH hd hm (by linarith)
   dsimp only at hb ⊢
   have ht : 0 ≤ H / a := (div_pos hH ha).le
-  refine ⟨by linarith [hb.1], ?_⟩
+  refine ⟨by simpa [mul_comm] using hb.1, ?_⟩
   have herr : 2 / (a * d * m / H) ≤ 1 / (d : ℝ) := by
     rw [div_le_div_iff₀ hRp hdp]
-    linarith
+    simpa only [one_mul] using hR
   have hrec : 1 / (d : ℝ) ≤ 1 := by
     rw [div_le_one hdp]
     exact hd'
-  have hbase : 0 ≤ 1 - 1 / (d : ℝ) := by linarith
-  have hmul := mul_le_mul_of_nonneg_left herr hbase
-  have hs := sq_nonneg (1 / (d : ℝ))
-  have hfactor : (1 - 1 / (d : ℝ)) * (1 + 2 / (a * d * m / H)) ≤ 1 := by nlinarith
-  have := mul_le_mul_of_nonneg_left hfactor ht
-  nlinarith [hb.2]
+  have hbase : 0 ≤ 1 - 1 / (d : ℝ) := sub_nonneg.mpr hrec
+  have hfactor : (1 - 1 / (d : ℝ)) * (1 + 2 / (a * d * m / H)) ≤ 1 := by
+    calc
+      (1 - 1 / (d : ℝ)) * (1 + 2 / (a * d * m / H)) ≤
+          (1 - 1 / (d : ℝ)) * (1 + 1 / (d : ℝ)) := by
+        exact mul_le_mul_of_nonneg_left
+          (by simpa only [add_comm] using add_le_add_left herr (1 : ℝ)) hbase
+      _ = 1 - (1 / (d : ℝ)) ^ 2 := by ring
+      _ ≤ 1 := sub_le_self _ (sq_nonneg _)
+  have hupper : H / a * ((1 - 1 / (d : ℝ)) *
+      (1 + 2 / (a * d * m / H))) ≤ H / a := by
+    simpa only [mul_one] using mul_le_mul_of_nonneg_left hfactor ht
+  have hbound : ((d - 1 : ℕ) : ℝ) * m / Nat.floor (a * d * m / H) ≤
+      H / a * ((1 - 1 / (d : ℝ)) * (1 + 2 / (a * d * m / H))) := by
+    simpa only [mul_assoc] using hb.2
+  exact hbound.trans hupper
 
 /-- A multiplicity `m ≥ C d ^ 2 H` makes the binomial shift small: `C(d, 2) / m ≤ 1 / (2 C H)`,
 because `C(d, 2) ≤ d ^ 2 / 2`. The hypotheses `0 < C`, `0 < H` and `0 < m` keep every denominator
