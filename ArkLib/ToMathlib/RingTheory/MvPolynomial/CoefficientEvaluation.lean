@@ -54,6 +54,9 @@ of the equations at distinct points `α i`: if `c` of them lie in `P`, then
 * `MvPolynomial.natDegree_affineHilbertPolynomial_add_ncard_le_of_fixedCoefficientEvaluation`:
   a positive-dimensional ideal contains at most `m - natDegree P_P` fixed evaluation equations at
   distinct points.
+* `MvPolynomial.natDegree_affineHilbertPolynomial_add_ncard_le_of_polynomialCoefficientEvaluation`:
+  a positive-dimensional ideal has an affine dimension bound from any finite set of polynomial
+  evaluation equations it contains.
 -/
 
 @[expose] public section
@@ -202,6 +205,39 @@ theorem natDegree_affineHilbertPolynomial_le_of_polynomialCoefficientEvaluation_
       exact Algebra.adjoin_le (Set.singleton_subset_iff.mpr hz)
         (Polynomial.aeval_mem_adjoin_singleton k _)) hI
   rwa [Nat.card_eq_fintype_card, Fintype.card_option, Fintype.card_fin] at h
+
+/-- On an ideal of dimension greater than one, the dimension and the number of polynomial
+evaluation equations it contains add up to at most `m + 1`. -/
+theorem natDegree_affineHilbertPolynomial_add_ncard_le_of_polynomialCoefficientEvaluation
+    {n m : ℕ} (α : Fin n ↪ k) (received : Fin n → Polynomial k)
+    {I : Ideal (MvPolynomial (Option (Fin m)) k)}
+    (S : Set (Fin n))
+    (hI : ∀ i ∈ S, polynomialCoefficientEvaluation m (α i) (received i) ∈ I)
+    (hd : 1 < (affineHilbertPolynomial I).natDegree) :
+    (affineHilbertPolynomial I).natDegree +
+        S.ncard ≤ m + 1 := by
+  classical
+  let hSfin : S.Finite := Set.toFinite S
+  let bad := hSfin.toFinset
+  have hbad : S.ncard = bad.card := by
+    simpa [bad] using Set.ncard_eq_toFinset_card S hSfin
+  by_cases hcount : bad.card ≤ m
+  · let e := (bad.orderEmbOfFin rfl).toEmbedding
+    have hdegree := natDegree_affineHilbertPolynomial_le_of_polynomialCoefficientEvaluation_mem
+      hcount (e.trans α) (fun j ↦ received (e j)) fun j ↦
+        hI (e j) (hSfin.mem_toFinset.mp (bad.orderEmbOfFin_mem rfl j))
+    rw [hbad]
+    omega
+  · have hm : m ≤ bad.card := by omega
+    obtain ⟨indices, hsubset, hcard⟩ := Finset.exists_subset_card_eq hm
+    let e : Fin m ↪ Fin n := (indices.orderEmbOfFin hcard).toEmbedding
+    have hmem (j : Fin m) :
+        polynomialCoefficientEvaluation m (α (e j)) (received (e j)) ∈ I := by
+      have hj : e j ∈ bad := hsubset (indices.orderEmbOfFin_mem hcard j)
+      exact hI (e j) (hSfin.mem_toFinset.mp hj)
+    have hdegree := natDegree_affineHilbertPolynomial_le_of_polynomialCoefficientEvaluation_mem
+      le_rfl (e.trans α) (fun j ↦ received (e j)) hmem
+    omega
 
 /-- An ideal of `MvPolynomial (Option (Fin m)) k` containing the affine evaluation equations at
 `c ≤ m` distinct points has affine Hilbert polynomial of natural degree at most `m + 1 - c`. -/

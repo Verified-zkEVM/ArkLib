@@ -7,6 +7,7 @@ module
 
 public import ArkLib.Data.Polynomial.Differential.TaylorChart
 public import ArkLib.Data.Polynomial.Differential.RationalTaylorAlgebra
+public import ArkLib.Data.Polynomial.Differential.TaylorChartAlgebra
 public import ArkLib.Data.Polynomial.Differential.BaseChange
 public import ArkLib.ToMathlib.MvPolynomial.PolynomialCoefficients
 public import ArkLib.ToMathlib.RingTheory.MvPolynomial.CoefficientEvaluation
@@ -47,82 +48,7 @@ namespace ReedSolomon
 
 open Polynomial MvPolynomial
 
-variable {F E σ ι : Type*} [Field F] [Field E] {n k K r : ℕ}
-
-/-- The points in the zero locus of `P` where `s` does not vanish. -/
-def principalOpenZeroLocus (P : Ideal (MvPolynomial σ E)) (s : MvPolynomial σ E) :
-    Set (σ → E) := {x | x ∈ zeroLocus E P ∧ aeval x s ≠ 0}
-
-/-- The finite set of indices whose cuts belong to an ideal. -/
-def cutsInIdeal [Fintype ι] [DecidableEq ι] (P : Ideal (MvPolynomial σ E))
-    (cuts : ι → MvPolynomial σ E) : Finset ι :=
-  by
-    classical
-    exact Finset.univ.filter fun i ↦ cuts i ∈ P
-
-/-- An index belongs to `cutsInIdeal` exactly when its cut belongs to the ideal. -/
-theorem mem_cutsInIdeal [Fintype ι] [DecidableEq ι] (P : Ideal (MvPolynomial σ E))
-    (cuts : ι → MvPolynomial σ E) (i : ι) : i ∈ cutsInIdeal P cuts ↔ cuts i ∈ P := by
-  simp [cutsInIdeal]
-
-/-- The number of cuts vanishing at a point, represented as a finite set. -/
-def agreementIndices [Fintype ι] [DecidableEq ι] (cuts : ι → MvPolynomial σ E)
-    (x : σ → E) : Finset ι :=
-  by
-    classical
-    exact Finset.univ.filter fun i ↦ aeval x (cuts i) = 0
-
-/-- The finite agreement count equals the cardinality of the corresponding set. -/
-theorem agreementIndices_card [Fintype ι] [DecidableEq ι]
-    (cuts : ι → MvPolynomial σ E) (x : σ → E) :
-    (agreementIndices cuts x).card = {i | aeval x (cuts i) = 0}.ncard := by
-  classical
-  rw [← Set.ncard_coe_finset, agreementIndices, Finset.coe_filter]
-  simp
-
-/-- The number of cuts in an ideal equals the cardinality of its index set. -/
-theorem cutsInIdeal_card [Fintype ι] [DecidableEq ι]
-    (P : Ideal (MvPolynomial σ E)) (cuts : ι → MvPolynomial σ E) :
-    (cutsInIdeal P cuts).card = {i | cuts i ∈ P}.ncard := by
-  classical
-  rw [← Set.ncard_coe_finset]
-  congr 1
-  ext i
-  simp [cutsInIdeal]
-
-/-- The initial differential equation in joint challenge and jet coordinates. -/
-def symbolicSourceInitialEquation (center : E) (Q : DifferentialPolynomial E[X] r) :
-    MvPolynomial (Option (Fin (r + 1))) E :=
-  (MvPolynomial.optionEquivRight E (Fin (r + 1))).symm
-    (initialJetEquation (Polynomial.C center) Q)
-
-/-- The initial separant in joint challenge and jet coordinates. -/
-def symbolicSourceSeparant (center : E) (Q : DifferentialPolynomial E[X] r) :
-    MvPolynomial (Option (Fin (r + 1))) E :=
-  (MvPolynomial.optionEquivRight E (Fin (r + 1))).symm
-    (initialJetSeparant (Polynomial.C center) Q)
-
-/-- A common Taylor numerator in joint challenge and jet coordinates. -/
-def symbolicSourceNumerator (center : E) (Q : DifferentialPolynomial E[X] r)
-    (K : ℕ) (l : Fin K) (τ : ℕ := 2 * K) : MvPolynomial (Option (Fin (r + 1))) E :=
-  (MvPolynomial.optionEquivRight E (Fin (r + 1))).symm
-    (commonTaylorNumeratorOver (F := E) (Polynomial.C center) Q τ l.val)
-
-/-- A polynomial-valued received-word agreement equation in joint source coordinates. -/
-def symbolicSourcePolynomialAgreement (center : E) (Q : DifferentialPolynomial E[X] r)
-    (K : ℕ) (alpha : E) (received : E[X]) (τ : ℕ := 2 * K) :
-    MvPolynomial (Option (Fin (r + 1))) E :=
-  (MvPolynomial.optionEquivRight E (Fin (r + 1))).symm
-    ((∑ l : Fin K, MvPolynomial.C ((Polynomial.C alpha - Polynomial.C center) ^ l.val) *
-      commonTaylorNumeratorOver (F := E) (Polynomial.C center) Q τ l.val) -
-      MvPolynomial.C received * initialJetSeparant (Polynomial.C center) Q ^ τ)
-
-/-- A received-line agreement equation in joint source coordinates. -/
-def symbolicSourceAgreement (center : E) (Q : DifferentialPolynomial E[X] r)
-    (K : ℕ) (alpha f g : E) (τ : ℕ := 2 * K) :
-    MvPolynomial (Option (Fin (r + 1))) E :=
-  symbolicSourcePolynomialAgreement center Q K alpha
-    (Polynomial.C f + Polynomial.X * Polynomial.C g) (τ := τ)
+variable {F E : Type*} [Field F] [Field E] {n k K r : ℕ}
 
 /-- The polynomial ring in the initial Taylor-jet coordinates. -/
 abbrev ChartRing (r : ℕ) (E : Type*) [Field E] :=
@@ -438,54 +364,27 @@ theorem fixedCoefficientEvaluation_mem_ker_chartCoefficientMap_of_exponent
   simp only [map_mul, map_pow, hC, hX]
   exact sub_eq_zero.mpr (by simpa only [L] using hlocalized)
 
-/-- A retained fixed Taylor-chart prime containing `c` distinct agreement cuts has dimension at
-most `k-c`.  The proof reuses the ordinary Vandermonde quotient bound and the generic
-localization comparison used by the source-coordinate theorem. -/
-theorem chart_prime_affineHilbertPolynomial_natDegree_le_of_agreements_of_exponent
-    (center : E) (Q : DifferentialPolynomial E r) (K k c τ : ℕ)
-    (hτ : TaylorExponentSufficient r K τ) (hK : r < K)
-    (hkK : k ≤ K)
-    (P : Ideal (ChartRing r E)) (hP : P.IsPrime)
-    (hs : initialJetSeparant center Q ∉ P)
-    (hhigh : ∀ l : Fin K, k ≤ l.val →
-      commonTaylorNumerator center Q τ l.val ∈ P)
-    (α : Fin c ↪ E) (y : Fin c → E)
-    (hcut : ∀ i, taylorAgreementEquation center Q K (α i) (y i) (τ := τ) ∈ P) :
-    (affineHilbertPolynomial P).natDegree ≤ k - c := by
+private theorem natDegree_affineHilbertPolynomial_le_of_awayRange
+    {E σ κ : Type*} [Field E] [Finite σ] [Finite κ]
+    (P : Ideal (MvPolynomial σ E)) (s : MvPolynomial σ E)
+    (hregular : IsLeftRegular (Ideal.Quotient.mk P s))
+    (Φ : MvPolynomial κ E →ₐ[E] Localization.Away (Ideal.Quotient.mk P s))
+    (hrange : ∀ p : MvPolynomial σ E,
+      algebraMap (MvPolynomial σ E ⧸ P) (Localization.Away (Ideal.Quotient.mk P s))
+        (Ideal.Quotient.mk P p) ∈ Set.range Φ)
+    {d : ℕ}
+    (hbound : (affineHilbertPolynomial (RingHom.ker Φ.toRingHom)).natDegree ≤ d) :
+    (affineHilbertPolynomial P).natDegree ≤ d := by
   classical
-  let s := initialJetSeparant center Q
-  let L := ChartAway P s
-  let _ : P.IsPrime := hP
-  have hs0 : Ideal.Quotient.mk P s ≠ 0 := by
-    intro hz
-    exact hs (Ideal.Quotient.eq_zero_iff_mem.mp hz)
-  let _ : IsDomain L := Localization.Away.isDomain hs0
-  let Φ := chartCoefficientMap center Q K k hkK P (τ := τ)
-  let J : Ideal (MvPolynomial (Fin k) E) := RingHom.ker Φ.toRingHom
-  have hJ : J.IsPrime := RingHom.ker_isPrime Φ.toRingHom
-  let β : Fin c ↪ E :=
-    ⟨fun i ↦ α i - center, fun i j hij ↦ α.injective (sub_left_injective hij)⟩
-  have heval (i : Fin c) : fixedCoefficientEvaluation k (β i) (y i) ∈ J := by
-    exact fixedCoefficientEvaluation_mem_ker_chartCoefficientMap_of_exponent
-      center Q K k τ hkK P (α i) (y i) (hcut i) hhigh
-  have hJdim : (affineHilbertPolynomial J).natDegree ≤ k - c :=
-    natDegree_affineHilbertPolynomial_le_of_fixedCoefficientEvaluation_mem β y heval
-  obtain ⟨t, ht⟩ := chartCoordinate_mem_range_chartCoefficientMap_of_exponent
-    center Q K k τ hτ hK hkK P hP hs hhigh s
-  have ht' : Φ t = algebraMap (ChartRing r E ⧸ P) L (Ideal.Quotient.mk P s) := ht
-  have htJ : t ∉ J := by
-    intro htmem
-    have htzero : Φ t = 0 := htmem
-    rw [ht'] at htzero
-    have hone := IsLocalization.Away.mul_invSelf (S := L) (Ideal.Quotient.mk P s)
-    rw [htzero, zero_mul] at hone
-    exact zero_ne_one hone
-  let qΦ : (MvPolynomial (Fin k) E ⧸ J) →ₐ[E] L :=
+  let J := RingHom.ker Φ.toRingHom
+  let L := Localization.Away (Ideal.Quotient.mk P s)
+  obtain ⟨t, ht⟩ := hrange s
+  let qΦ : (MvPolynomial κ E ⧸ J) →ₐ[E] L :=
     Ideal.Quotient.liftₐ J Φ fun p hp ↦ hp
   have hqt : qΦ (Ideal.Quotient.mk J t) =
-      algebraMap (ChartRing r E ⧸ P) L (Ideal.Quotient.mk P s) := by
+      algebraMap (MvPolynomial σ E ⧸ P) L (Ideal.Quotient.mk P s) := by
     rw [show qΦ (Ideal.Quotient.mk J t) = Φ t by rfl]
-    exact ht'
+    exact ht
   have hqtUnit : IsUnit (qΦ (Ideal.Quotient.mk J t)) := by
     apply isUnit_iff_exists_inv.mpr
     refine ⟨IsLocalization.Away.invSelf (Ideal.Quotient.mk P s), ?_⟩
@@ -499,12 +398,12 @@ theorem chart_prime_affineHilbertPolynomial_natDegree_le_of_agreements_of_expone
         intro a
         change gRing (algebraMap E (Localization.Away (Ideal.Quotient.mk J t)) a) =
           algebraMap E L a
-        rw [IsScalarTower.algebraMap_apply E (MvPolynomial (Fin k) E ⧸ J)
+        rw [IsScalarTower.algebraMap_apply E (MvPolynomial κ E ⧸ J)
           (Localization.Away (Ideal.Quotient.mk J t))]
-        rw [show gRing (algebraMap (MvPolynomial (Fin k) E ⧸ J)
+        rw [show gRing (algebraMap (MvPolynomial κ E ⧸ J)
           (Localization.Away (Ideal.Quotient.mk J t))
-          (algebraMap E (MvPolynomial (Fin k) E ⧸ J) a)) =
-            qΦ (algebraMap E (MvPolynomial (Fin k) E ⧸ J) a) by
+          (algebraMap E (MvPolynomial κ E ⧸ J) a)) =
+            qΦ (algebraMap E (MvPolynomial κ E ⧸ J) a) by
           exact IsLocalization.Away.lift_eq
             (S := Localization.Away (Ideal.Quotient.mk J t))
             (g := qΦ.toRingHom) (Ideal.Quotient.mk J t) hqtUnit _]
@@ -513,15 +412,15 @@ theorem chart_prime_affineHilbertPolynomial_natDegree_le_of_agreements_of_expone
     intro z
     obtain ⟨m, a, hza⟩ := IsLocalization.Away.surj (Ideal.Quotient.mk P s) z
     obtain ⟨a, rfl⟩ := Ideal.Quotient.mk_surjective a
-    obtain ⟨p, hp⟩ := chartCoordinate_mem_range_chartCoefficientMap_of_exponent
-      center Q K k τ hτ hK hkK P hP hs hhigh a
+    obtain ⟨p, hp⟩ := hrange a
     let x : Localization.Away (Ideal.Quotient.mk J t) :=
       Localization.mk (Ideal.Quotient.mk J p) ⟨Ideal.Quotient.mk J t ^ m, m, rfl⟩
     refine ⟨x, ?_⟩
-    have hbase : algebraMap (ChartRing r E ⧸ P) L (Ideal.Quotient.mk P s) *
-        IsLocalization.Away.invSelf (Ideal.Quotient.mk P s) = 1 :=
+    have hbase :
+        algebraMap (MvPolynomial σ E ⧸ P) L (Ideal.Quotient.mk P s) *
+          IsLocalization.Away.invSelf (Ideal.Quotient.mk P s) = 1 :=
       IsLocalization.Away.mul_invSelf (S := L) (Ideal.Quotient.mk P s)
-    have hz : algebraMap (ChartRing r E ⧸ P) L (Ideal.Quotient.mk P a) *
+    have hz : algebraMap (MvPolynomial σ E ⧸ P) L (Ideal.Quotient.mk P a) *
         IsLocalization.Away.invSelf (Ideal.Quotient.mk P s) ^ m = z := by
       have h := congrArg
         (fun q : L ↦ q * IsLocalization.Away.invSelf (Ideal.Quotient.mk P s) ^ m) hza
@@ -539,14 +438,47 @@ theorem chart_prime_affineHilbertPolynomial_natDegree_le_of_agreements_of_expone
           hqbase m]
     rw [show qΦ (Ideal.Quotient.mk J p) = Φ p by rfl, hp]
     exact hz
+  exact (natDegree_affineHilbertPolynomial_le_of_surjective_away_away
+    hregular locMap hlocMap).trans hbound
+
+/-- A retained fixed Taylor-chart prime containing `c` distinct agreement cuts has dimension at
+most `k-c`.  The proof reuses the ordinary Vandermonde quotient bound and the generic
+localization comparison used by the source-coordinate theorem. -/
+theorem chart_prime_affineHilbertPolynomial_natDegree_le_of_agreements_of_exponent
+    (center : E) (Q : DifferentialPolynomial E r) (K k c τ : ℕ)
+    (hτ : TaylorExponentSufficient r K τ) (hK : r < K)
+    (hkK : k ≤ K)
+    (P : Ideal (ChartRing r E)) (hP : P.IsPrime)
+    (hs : initialJetSeparant center Q ∉ P)
+    (hhigh : ∀ l : Fin K, k ≤ l.val →
+      commonTaylorNumerator center Q τ l.val ∈ P)
+    (α : Fin c ↪ E) (y : Fin c → E)
+    (hcut : ∀ i, taylorAgreementEquation center Q K (α i) (y i) (τ := τ) ∈ P) :
+    (affineHilbertPolynomial P).natDegree ≤ k - c := by
+  classical
+  let s := initialJetSeparant center Q
+  have hs0 : Ideal.Quotient.mk P s ≠ 0 := by
+    intro hz
+    exact hs (Ideal.Quotient.eq_zero_iff_mem.mp hz)
+  let Φ := chartCoefficientMap center Q K k hkK P (τ := τ)
+  let J : Ideal (MvPolynomial (Fin k) E) := RingHom.ker Φ.toRingHom
+  let β : Fin c ↪ E :=
+    ⟨fun i ↦ α i - center, fun i j hij ↦ α.injective (sub_left_injective hij)⟩
+  have heval (i : Fin c) : fixedCoefficientEvaluation k (β i) (y i) ∈ J := by
+    exact fixedCoefficientEvaluation_mem_ker_chartCoefficientMap_of_exponent
+      center Q K k τ hkK P (α i) (y i) (hcut i) hhigh
+  have hJdim : (affineHilbertPolynomial J).natDegree ≤ k - c :=
+    natDegree_affineHilbertPolynomial_le_of_fixedCoefficientEvaluation_mem β y heval
   have hregular : IsLeftRegular (Ideal.Quotient.mk P s) := by
     rw [isLeftRegular_iff_isRegular]
     exact isRegular_iff_ne_zero.mpr hs0
-  exact (natDegree_affineHilbertPolynomial_le_of_surjective_away_away
-    hregular locMap hlocMap).trans hJdim
+  exact natDegree_affineHilbertPolynomial_le_of_awayRange P s hregular Φ
+    (chartCoordinate_mem_range_chartCoefficientMap_of_exponent
+      center Q K k τ hτ hK hkK P hP hs hhigh) hJdim
 
-/-- Every positive-dimensional retained fixed-chart prime satisfies the hereditary
-coefficient-space budget used by product incidence. -/
+
+/-- A positive-dimensional retained fixed-chart prime has dimension plus its number of
+agreement cuts bounded by the coefficient count. -/
 theorem chart_dimensionSensitive_component_of_exponent
     (center : E) (Q : DifferentialPolynomial E r) (K k n τ : ℕ)
     (hτ : TaylorExponentSufficient r K τ) (hK : r < K) (hkK : k ≤ K)
@@ -558,40 +490,38 @@ theorem chart_dimensionSensitive_component_of_exponent
     (hd : 0 < (affineHilbertPolynomial P).natDegree) :
     let cuts : Fin n → ChartRing r E := fun i ↦
       taylorAgreementEquation center Q K (α i) (y i) (τ := τ)
-    (affineHilbertPolynomial P).natDegree ≤ k ∧
-      (cutsInIdeal P cuts).card ≤ k - (affineHilbertPolynomial P).natDegree := by
+    (affineHilbertPolynomial P).natDegree + {i | cuts i ∈ P}.ncard ≤ k := by
   classical
   dsimp only
-  let cuts : Fin n → ChartRing r E := fun i ↦
-    taylorAgreementEquation center Q K (α i) (y i) (τ := τ)
-  let Bad := cutsInIdeal P cuts
-  have hpartial (indices : Finset (Fin n)) (hcard : indices.card ≤ k)
-      (hsub : indices ⊆ Bad) :
-      (affineHilbertPolynomial P).natDegree ≤ k - indices.card := by
-    let sample : Fin indices.card ↪ Fin n :=
-      ⟨fun j ↦ (indices.equivFin.symm j).val,
-        fun i j hij ↦ indices.equivFin.symm.injective (Subtype.ext hij)⟩
-    let α' : Fin indices.card ↪ E :=
-      ⟨fun j ↦ α (sample j), fun i j hij ↦ sample.injective (α.injective hij)⟩
-    apply chart_prime_affineHilbertPolynomial_natDegree_le_of_agreements_of_exponent
-      center Q K k indices.card τ hτ hK hkK P hP hs hhigh α'
-        (fun j ↦ y (sample j))
-    intro j
-    change cuts (sample j) ∈ P
-    rw [← mem_cutsInIdeal]
-    exact hsub (indices.equivFin.symm j).property
-  have hdim : (affineHilbertPolynomial P).natDegree ≤ k := by
-    simpa using hpartial ∅ (by simp) (by simp)
-  refine ⟨hdim, ?_⟩
-  change Bad.card ≤ k - (affineHilbertPolynomial P).natDegree
-  by_cases hBadk : Bad.card ≤ k
-  · have hle := hpartial Bad hBadk le_rfl
-    omega
-  · have hkBad : k ≤ Bad.card := by omega
-    obtain ⟨indices, hindices, hcard⟩ := Finset.exists_subset_card_eq hkBad
-    have hle := hpartial indices (by omega) hindices
-    rw [hcard] at hle
-    omega
+  let s := initialJetSeparant center Q
+  let Φ := chartCoefficientMap center Q K k hkK P (τ := τ)
+  let J : Ideal (MvPolynomial (Fin k) E) := RingHom.ker Φ.toRingHom
+  let β : Fin n ↪ E :=
+    ⟨fun i ↦ α i - center, fun i j hij ↦ α.injective (sub_left_injective hij)⟩
+  have heval (i : Fin n)
+      (hi : taylorAgreementEquation center Q K (α i) (y i) (τ := τ) ∈ P) :
+      fixedCoefficientEvaluation k (α i - center) (y i) ∈ J := by
+    exact fixedCoefficientEvaluation_mem_ker_chartCoefficientMap_of_exponent
+      center Q K k τ hkK P (α i) (y i) hi hhigh
+  have hregular : IsLeftRegular (Ideal.Quotient.mk P s) := by
+    rw [isLeftRegular_iff_isRegular]
+    exact isRegular_iff_ne_zero.mpr (by
+      intro hz
+      exact hs (Ideal.Quotient.eq_zero_iff_mem.mp hz))
+  have hdegree : (affineHilbertPolynomial P).natDegree ≤
+      (affineHilbertPolynomial J).natDegree :=
+    natDegree_affineHilbertPolynomial_le_of_awayRange P s hregular Φ
+      (chartCoordinate_mem_range_chartCoefficientMap_of_exponent
+        center Q K k τ hτ hK hkK P hP hs hhigh) le_rfl
+  have hJdim : 0 < (affineHilbertPolynomial J).natDegree := by omega
+  have hJbound := natDegree_affineHilbertPolynomial_add_ncard_le_of_fixedCoefficientEvaluation
+    β y hJdim
+  have hsubset : {i | taylorAgreementEquation center Q K (α i) (y i) (τ := τ) ∈ P} ⊆
+      {i | fixedCoefficientEvaluation k (β i) (y i) ∈ J} := by
+    intro i hi
+    exact heval i hi
+  have hcount := Set.ncard_le_ncard hsubset (Set.toFinite _)
+  exact (Nat.add_le_add hdegree hcount).trans hJbound
 
 /-- The polynomial ring in the challenge and initial Taylor-jet coordinates. -/
 abbrev SourceRing (r : ℕ) (E : Type*) [Field E] :=
@@ -617,12 +547,12 @@ def localizedSourceJet (P : Ideal (SourceRing r E)) (s : SourceRing r E)
 /-- The `l`-th reconstructed centered coefficient in the source localization. -/
 def localizedSourceCoefficient (center : E) (Q : DifferentialPolynomial E[X] r) (K : ℕ)
     (P : Ideal (SourceRing r E)) (l : Fin K) (τ : ℕ := 2 * K) :
-    SourceAway P (symbolicSourceSeparant center Q) :=
+    SourceAway P (jointInitialJetSeparant center Q) :=
   algebraMap (SourceRing r E ⧸ P)
-      (SourceAway P (symbolicSourceSeparant center Q))
-      (Ideal.Quotient.mk P (symbolicSourceNumerator center Q K l (τ := τ))) *
+      (SourceAway P (jointInitialJetSeparant center Q))
+      (Ideal.Quotient.mk P (jointCommonTaylorNumerator center Q τ l)) *
     IsLocalization.Away.invSelf
-      (Ideal.Quotient.mk P (symbolicSourceSeparant center Q)) ^ τ
+      (Ideal.Quotient.mk P (jointInitialJetSeparant center Q)) ^ τ
 
 /-- Below the differential order, the reconstructed coefficients recover the actual jet
 coordinates in the retained source localization. -/
@@ -630,12 +560,12 @@ theorem localizedSourceCoefficient_eq_jet_of_exponent
     (center : E) (Q : DifferentialPolynomial E[X] r) (K τ : ℕ)
     (hτ : TaylorExponentSufficient r K τ) (hK : r < K)
     (P : Ideal (SourceRing r E)) (hP : P.IsPrime)
-    (hs : symbolicSourceSeparant center Q ∉ P)
+    (hs : jointInitialJetSeparant center Q ∉ P)
     (l : Fin K) (hl : l.val ≤ r) :
     localizedSourceCoefficient center Q K P l (τ := τ) =
-      localizedSourceJet P (symbolicSourceSeparant center Q)
+      localizedSourceJet P (jointInitialJetSeparant center Q)
         ⟨l.val, by omega⟩ := by
-  let s := symbolicSourceSeparant center Q
+  let s := jointInitialJetSeparant center Q
   let L := SourceAway P s
   let _ : P.IsPrime := hP
   have hs0 : Ideal.Quotient.mk P s ≠ 0 := by
@@ -697,16 +627,16 @@ theorem localizedSourceCoefficient_eq_jet_of_exponent
       (MvPolynomial.map φ.toRingHom
         (commonTaylorNumeratorOver (F := E) (Polynomial.C center : E[X]) Q τ l.val)) =
         emb (algebraMap (SourceRing r E ⧸ P) L
-          (Ideal.Quotient.mk P (symbolicSourceNumerator center Q K l (τ := τ)))) := by
+          (Ideal.Quotient.mk P (jointCommonTaylorNumerator center Q τ l))) := by
     rw [← hflatten
       (commonTaylorNumeratorOver (F := E) (Polynomial.C center : E[X]) Q τ l.val)]
-    exact (heval (symbolicSourceNumerator center Q K l (τ := τ))).symm
+    exact (heval (jointCommonTaylorNumerator center Q τ l)).symm
   apply IsFractionRing.injective L Frac
   rw [show algebraMap L Frac = emb from rfl]
   simp only [localizedSourceCoefficient, localizedSourceJet, map_mul, map_pow]
-  rw [heval (symbolicSourceNumerator center Q K l (τ := τ)),
+  rw [heval (jointCommonTaylorNumerator center Q τ l),
     heval (MvPolynomial.X (some ⟨l.val, by omega⟩))]
-  rw [← heval (symbolicSourceNumerator center Q K l (τ := τ)), ← hnumEval]
+  rw [← heval (jointCommonTaylorNumerator center Q τ l), ← hnumEval]
   rw [hsepEval] at hrec
   rw [hrec]
   have hcancel :
@@ -719,19 +649,19 @@ theorem localizedSourceCoefficient_eq_jet_of_exponent
   dsimp only [s] at hcancel
   calc
     emb (algebraMap (SourceRing r E ⧸ P) L
-          (Ideal.Quotient.mk P (symbolicSourceSeparant center Q))) ^ τ *
+          (Ideal.Quotient.mk P (jointInitialJetSeparant center Q))) ^ τ *
         ((Polynomial.taylor (φ (Polynomial.C center))
           (rationalTaylorPolynomial (φ (Polynomial.C center))
             (MvPolynomial.map φ.toRingHom Q) K (fun j ↦ x (some j)))).coeff l.val) *
         emb (IsLocalization.Away.invSelf
-          (Ideal.Quotient.mk P (symbolicSourceSeparant center Q))) ^ τ =
+          (Ideal.Quotient.mk P (jointInitialJetSeparant center Q))) ^ τ =
         ((Polynomial.taylor (φ (Polynomial.C center))
           (rationalTaylorPolynomial (φ (Polynomial.C center))
             (MvPolynomial.map φ.toRingHom Q) K (fun j ↦ x (some j)))).coeff l.val) *
           (emb (algebraMap (SourceRing r E ⧸ P) L
-            (Ideal.Quotient.mk P (symbolicSourceSeparant center Q))) ^ τ *
+            (Ideal.Quotient.mk P (jointInitialJetSeparant center Q))) ^ τ *
             emb (IsLocalization.Away.invSelf
-              (Ideal.Quotient.mk P (symbolicSourceSeparant center Q))) ^ τ) := by ring
+              (Ideal.Quotient.mk P (jointInitialJetSeparant center Q))) ^ τ) := by ring
     _ = (Polynomial.taylor (φ (Polynomial.C center))
           (rationalTaylorPolynomial (φ (Polynomial.C center))
             (MvPolynomial.map φ.toRingHom Q) K (fun j ↦ x (some j)))).coeff l.val := by
@@ -751,9 +681,9 @@ localization. -/
 def sourceCoefficientMap (center : E) (Q : DifferentialPolynomial E[X] r)
     (K k : ℕ) (hkK : k ≤ K) (P : Ideal (SourceRing r E)) (τ : ℕ := 2 * K) :
     MvPolynomial (Option (Fin k)) E →ₐ[E]
-      SourceAway P (symbolicSourceSeparant center Q) :=
+      SourceAway P (jointInitialJetSeparant center Q) :=
   MvPolynomial.aeval fun
-    | none => localizedSourceChallenge P (symbolicSourceSeparant center Q)
+    | none => localizedSourceChallenge P (jointInitialJetSeparant center Q)
     | some l => localizedSourceCoefficient center Q K P (Fin.castLE hkK l) (τ := τ)
 
 /-- The challenge and first `k` reconstructed coefficients generate every ordinary source
@@ -764,12 +694,12 @@ theorem sourceCoordinate_mem_range_sourceCoefficientMap_of_exponent
     (center : E) (Q : DifferentialPolynomial E[X] r) (K k τ : ℕ)
     (hτ : TaylorExponentSufficient r K τ) (hK : r < K) (hkK : k ≤ K)
     (P : Ideal (SourceRing r E)) (hP : P.IsPrime)
-    (hs : symbolicSourceSeparant center Q ∉ P)
+    (hs : jointInitialJetSeparant center Q ∉ P)
     (hhigh : ∀ l : Fin K, k ≤ l.val →
-      symbolicSourceNumerator center Q K l (τ := τ) ∈ P)
+      jointCommonTaylorNumerator center Q τ l ∈ P)
     (p : SourceRing r E) :
     algebraMap (SourceRing r E ⧸ P)
-      (SourceAway P (symbolicSourceSeparant center Q)) (Ideal.Quotient.mk P p) ∈
+      (SourceAway P (jointInitialJetSeparant center Q)) (Ideal.Quotient.mk P p) ∈
         Set.range (sourceCoefficientMap center Q K k hkK P (τ := τ)) := by
   induction p using MvPolynomial.induction_on with
   | C a =>
@@ -780,7 +710,7 @@ theorem sourceCoordinate_mem_range_sourceCoefficientMap_of_exponent
           rfl]
       simpa [sourceCoefficientMap] using
         (IsScalarTower.algebraMap_apply E (SourceRing r E ⧸ P)
-          (SourceAway P (symbolicSourceSeparant center Q)) a)
+          (SourceAway P (jointInitialJetSeparant center Q)) a)
   | add p q hp hq =>
       obtain ⟨p', hp'⟩ := hp
       obtain ⟨q', hq'⟩ := hq
@@ -810,13 +740,13 @@ theorem sourceCoordinate_mem_range_sourceCoefficientMap_of_exponent
               rw [Ideal.Quotient.eq_zero_iff_mem.mpr (hhigh l hkj), map_zero,
                 zero_mul]
             have hjetZero :
-                localizedSourceJet P (symbolicSourceSeparant center Q) j = 0 := by
+                localizedSourceJet P (jointInitialJetSeparant center Q) j = 0 := by
               rw [← localizedSourceCoefficient_eq_jet_of_exponent center Q K τ hτ hK P hP hs l
                 (by dsimp only [l]; omega)]
               exact hcoeffZero
             refine ⟨0, ?_⟩
             rw [map_zero, map_mul, map_mul]
-            change 0 = _ * localizedSourceJet P (symbolicSourceSeparant center Q) j
+            change 0 = _ * localizedSourceJet P (jointInitialJetSeparant center Q) j
             rw [hjetZero, mul_zero]
 
 set_option maxHeartbeats 800000 in
@@ -825,32 +755,26 @@ set_option maxHeartbeats 800000 in
 evaluation equation under the source coefficient map. -/
 theorem polynomialCoefficientEvaluation_mem_ker_sourceCoefficientMap_of_exponent
     (center : E) (Q : DifferentialPolynomial E[X] r) (K k τ : ℕ) (hkK : k ≤ K)
-    (P : Ideal (SourceRing r E)) (hP : P.IsPrime)
-    (hs : symbolicSourceSeparant center Q ∉ P)
+    (P : Ideal (SourceRing r E))
     (α : E) (received : E[X])
-    (hcut : symbolicSourcePolynomialAgreement center Q K α received (τ := τ) ∈ P)
+    (hcut : jointTaylorAgreementEquation center Q K τ (Polynomial.C α) received ∈ P)
     (hhigh : ∀ l : Fin K, k ≤ l.val →
-      symbolicSourceNumerator center Q K l (τ := τ) ∈ P) :
+      jointCommonTaylorNumerator center Q τ l ∈ P) :
     polynomialCoefficientEvaluation k (α - center) received ∈
       RingHom.ker (sourceCoefficientMap center Q K k hkK P (τ := τ)).toRingHom := by
-  let s := symbolicSourceSeparant center Q
+  let s := jointInitialJetSeparant center Q
   let L := SourceAway P s
-  let _ : P.IsPrime := hP
-  have hs0 : Ideal.Quotient.mk P s ≠ 0 := by
-    intro h
-    exact hs (Ideal.Quotient.eq_zero_iff_mem.mp h)
-  let _ : IsDomain L := Localization.Away.isDomain hs0
   let src : SourceRing r E →ₐ[E] L :=
     (IsScalarTower.toAlgHom E (SourceRing r E ⧸ P) L).comp (Ideal.Quotient.mkₐ E P)
-  have hcut0 : src (symbolicSourcePolynomialAgreement center Q K α received (τ := τ)) = 0 := by
+  have hcut0 : src (jointTaylorAgreementEquation center Q K τ (Polynomial.C α) received) = 0 := by
     change algebraMap (SourceRing r E ⧸ P) L
       (Ideal.Quotient.mk P
-        (symbolicSourcePolynomialAgreement center Q K α received (τ := τ))) = 0
+        (jointTaylorAgreementEquation center Q K τ (Polynomial.C α) received)) = 0
     rw [Ideal.Quotient.eq_zero_iff_mem.mpr hcut, map_zero]
   have hhigh0 (l : Fin K) (hl : k ≤ l.val) :
-      src (symbolicSourceNumerator center Q K l (τ := τ)) = 0 := by
+      src (jointCommonTaylorNumerator center Q τ l) = 0 := by
     change algebraMap (SourceRing r E ⧸ P) L
-      (Ideal.Quotient.mk P (symbolicSourceNumerator center Q K l (τ := τ))) = 0
+      (Ideal.Quotient.mk P (jointCommonTaylorNumerator center Q τ l)) = 0
     rw [Ideal.Quotient.eq_zero_iff_mem.mpr (hhigh l hl), map_zero]
   have hcancel : src s ^ τ *
       IsLocalization.Away.invSelf (Ideal.Quotient.mk P s) ^ τ = 1 := by
@@ -873,7 +797,7 @@ theorem polynomialCoefficientEvaluation_mem_ker_sourceCoefficientMap_of_exponent
       aeval (fun j ↦ src (MvPolynomial.X (some j)))
         (MvPolynomial.map ψ.toRingHom
           (commonTaylorNumeratorOver (F := E) (Polynomial.C center) Q τ l.val)) =
-        src (symbolicSourceNumerator center Q K l (τ := τ)) := by
+        src (jointCommonTaylorNumerator center Q τ l) := by
     exact (hsrcFlatten
       (commonTaylorNumeratorOver (F := E) (Polynomial.C center) Q τ l.val)).symm
   have hsep :
@@ -883,21 +807,16 @@ theorem polynomialCoefficientEvaluation_mem_ker_sourceCoefficientMap_of_exponent
     exact (hsrcFlatten (initialJetSeparant (Polynomial.C center) Q)).symm
   have hcutEq :
       (∑ l : Fin K, (algebraMap E L (α - center)) ^ l.val *
-        src (symbolicSourceNumerator center Q K l (τ := τ))) -
+        src (jointCommonTaylorNumerator center Q τ l)) -
           ψ received * src s ^ τ = 0 := by
-    rw [symbolicSourcePolynomialAgreement] at hcut0
-    change src ((MvPolynomial.optionEquivRight E (Fin (r + 1))).symm
-      ((∑ l : Fin K, MvPolynomial.C ((Polynomial.C α - Polynomial.C center) ^ l.val) *
-        commonTaylorNumeratorOver (F := E) (Polynomial.C center) Q τ l.val) -
-          MvPolynomial.C received * initialJetSeparant (Polynomial.C center) Q ^ τ)) = 0
-      at hcut0
+    rw [jointTaylorAgreementEquation, taylorAgreementEquationOver] at hcut0
     rw [hsrcFlatten] at hcut0
     simp only [map_sub, map_sum, map_mul, map_pow, MvPolynomial.map_C] at hcut0
     simp only [MvPolynomial.aeval_C] at hcut0
     simp_rw [hnum] at hcut0
     rw [hsep] at hcut0
     change (∑ l : Fin K, (ψ (Polynomial.C α) - ψ (Polynomial.C center)) ^ l.val *
-        src (symbolicSourceNumerator center Q K l (τ := τ))) -
+        src (jointCommonTaylorNumerator center Q τ l)) -
       ψ received * src s ^ τ = 0 at hcut0
     have hx : ψ (Polynomial.C α) - ψ (Polynomial.C center) =
         algebraMap E L (α - center) := by
@@ -913,18 +832,18 @@ theorem polynomialCoefficientEvaluation_mem_ker_sourceCoefficientMap_of_exponent
     congr 1
   let u : Fin K → L := fun l ↦
     (algebraMap E L (α - center)) ^ l.val *
-      src (symbolicSourceNumerator center Q K l (τ := τ))
+      src (jointCommonTaylorNumerator center Q τ l)
   have htail : (∑ l : Fin (K - k), u ⟨k + l.val, by omega⟩) = 0 := by
     apply Finset.sum_eq_zero
     intro l _
     have hkl : k ≤ (⟨k + l.val, by omega⟩ : Fin K).val := by simp
     rw [show u ⟨k + l.val, by omega⟩ =
       (algebraMap E L (α - center)) ^ (k + l.val) *
-        src (symbolicSourceNumerator center Q K ⟨k + l.val, by omega⟩ (τ := τ)) from rfl,
+        src (jointCommonTaylorNumerator center Q τ ⟨k + l.val, by omega⟩) from rfl,
       hhigh0 _ hkl, mul_zero]
   have hfirst :
       (∑ l : Fin k, (algebraMap E L (α - center)) ^ l.val *
-        src (symbolicSourceNumerator center Q K (Fin.castLE hkK l) (τ := τ))) =
+        src (jointCommonTaylorNumerator center Q τ (Fin.castLE hkK l))) =
           ψ received * src s ^ τ := by
     have hfull := sub_eq_zero.mp hcutEq
     rw [hsplit u, htail, add_zero] at hfull
@@ -933,7 +852,7 @@ theorem polynomialCoefficientEvaluation_mem_ker_sourceCoefficientMap_of_exponent
     IsLocalization.Away.invSelf (Ideal.Quotient.mk P s) ^ τ
   have hcoeff (l : Fin k) :
       localizedSourceCoefficient center Q K P (Fin.castLE hkK l) (τ := τ) =
-        src (symbolicSourceNumerator center Q K (Fin.castLE hkK l) (τ := τ)) * invPow := by
+        src (jointCommonTaylorNumerator center Q τ (Fin.castLE hkK l)) * invPow := by
     rfl
   have hlocalized :
       (∑ l : Fin k, (algebraMap E L (α - center)) ^ l.val *
@@ -941,9 +860,9 @@ theorem polynomialCoefficientEvaluation_mem_ker_sourceCoefficientMap_of_exponent
           received.eval₂ (algebraMap E L) (localizedSourceChallenge P s) := by
     simp_rw [hcoeff]
     rw [show (∑ l : Fin k, (algebraMap E L (α - center)) ^ l.val *
-        (src (symbolicSourceNumerator center Q K (Fin.castLE hkK l) (τ := τ)) * invPow)) =
+        (src (jointCommonTaylorNumerator center Q τ (Fin.castLE hkK l)) * invPow)) =
       (∑ l : Fin k, (algebraMap E L (α - center)) ^ l.val *
-        src (symbolicSourceNumerator center Q K (Fin.castLE hkK l) (τ := τ))) * invPow by
+        src (jointCommonTaylorNumerator center Q τ (Fin.castLE hkK l))) * invPow by
           rw [Finset.sum_mul]
           apply Finset.sum_congr rfl
           intro l _
@@ -959,11 +878,11 @@ theorem polynomialCoefficientEvaluation_mem_ker_sourceCoefficientMap_of_exponent
   let Φ := sourceCoefficientMap center Q K k hkK P (τ := τ)
   change Φ (polynomialCoefficientEvaluation k (α - center) received) = 0
   have hC (a : E) : Φ (MvPolynomial.C a) =
-      algebraMap E (SourceAway P (symbolicSourceSeparant center Q)) a := by
+      algebraMap E (SourceAway P (jointInitialJetSeparant center Q)) a := by
     simp [Φ, sourceCoefficientMap]
   have hX (j : Option (Fin k)) : Φ (MvPolynomial.X j) =
       match j with
-      | none => localizedSourceChallenge P (symbolicSourceSeparant center Q)
+      | none => localizedSourceChallenge P (jointInitialJetSeparant center Q)
       | some l => localizedSourceCoefficient center Q K P (Fin.castLE hkK l) (τ := τ) := by
     simp [Φ, sourceCoefficientMap]
   rw [polynomialCoefficientEvaluation, map_sub]
@@ -973,32 +892,13 @@ theorem polynomialCoefficientEvaluation_mem_ker_sourceCoefficientMap_of_exponent
     received.eval₂ (Φ.toRingHom.comp MvPolynomial.C) (Φ (MvPolynomial.X none)) at hreceived
   rw [hreceived]
   have hmap : Φ.toRingHom.comp MvPolynomial.C =
-      algebraMap E (SourceAway P (symbolicSourceSeparant center Q)) := by
+      algebraMap E (SourceAway P (jointInitialJetSeparant center Q)) := by
     ext a
     exact hC a
   rw [hmap]
   simp only [map_sum, map_mul, hC, hX]
   simp_rw [map_pow]
   exact sub_eq_zero.mpr hlocalized
-
-
-/-- An affine received-line cut is the corresponding specialization of
-`polynomialCoefficientEvaluation_mem_ker_sourceCoefficientMap_of_exponent`. -/
-theorem coefficientEvaluation_mem_ker_sourceCoefficientMap_of_exponent
-    (center : E) (Q : DifferentialPolynomial E[X] r) (K k τ : ℕ) (hkK : k ≤ K)
-    (P : Ideal (SourceRing r E)) (hP : P.IsPrime)
-    (hs : symbolicSourceSeparant center Q ∉ P)
-    (α f g : E)
-    (hcut : symbolicSourceAgreement center Q K α f g (τ := τ) ∈ P)
-    (hhigh : ∀ l : Fin K, k ≤ l.val →
-      symbolicSourceNumerator center Q K l (τ := τ) ∈ P) :
-    affineCoefficientEvaluation k (α - center) f g ∈
-      RingHom.ker (sourceCoefficientMap center Q K k hkK P (τ := τ)).toRingHom := by
-  apply polynomialCoefficientEvaluation_mem_ker_sourceCoefficientMap_of_exponent
-    center Q K k τ hkK P hP hs α
-      (Polynomial.C f + Polynomial.X * Polynomial.C g)
-  · simpa only [symbolicSourceAgreement, symbolicSourcePolynomialAgreement] using hcut
-  · exact hhigh
 
 /-- A retained source prime containing `c` agreement cuts at distinct evaluation points has
 dimension at most `k + 1 - c`.
@@ -1013,112 +913,37 @@ theorem
     (hτ : TaylorExponentSufficient r K τ)
     (hK : r < K) (hkK : k ≤ K) (hck : c ≤ k)
     (P : Ideal (SourceRing r E)) (hP : P.IsPrime)
-    (hs : symbolicSourceSeparant center Q ∉ P)
+    (hs : jointInitialJetSeparant center Q ∉ P)
     (hhigh : ∀ l : Fin K, k ≤ l.val →
-      symbolicSourceNumerator center Q K l (τ := τ) ∈ P)
+      jointCommonTaylorNumerator center Q τ l ∈ P)
     (α : Fin c ↪ E) (received : Fin c → E[X])
     (hcut : ∀ i,
-      symbolicSourcePolynomialAgreement center Q K (α i) (received i) (τ := τ) ∈ P) :
+      jointTaylorAgreementEquation center Q K τ (Polynomial.C (α i)) (received i) ∈ P) :
     (affineHilbertPolynomial P).natDegree ≤ k + 1 - c := by
   classical
-  let s := symbolicSourceSeparant center Q
-  let L := SourceAway P s
+  let s := jointInitialJetSeparant center Q
   let _ : P.IsPrime := hP
   have hs0 : Ideal.Quotient.mk P s ≠ 0 := by
     intro h
     exact hs (Ideal.Quotient.eq_zero_iff_mem.mp h)
-  let _ : IsDomain L := Localization.Away.isDomain hs0
   let Φ := sourceCoefficientMap center Q K k hkK P (τ := τ)
   let J : Ideal (MvPolynomial (Option (Fin k)) E) := RingHom.ker Φ.toRingHom
-  have hJ : J.IsPrime := RingHom.ker_isPrime Φ.toRingHom
   let β : Fin c ↪ E :=
     ⟨fun i ↦ α i - center, fun i j hij ↦ α.injective (sub_left_injective hij)⟩
   have heval (i : Fin c) :
       polynomialCoefficientEvaluation k (β i) (received i) ∈ J := by
     exact polynomialCoefficientEvaluation_mem_ker_sourceCoefficientMap_of_exponent
-      center Q K k τ hkK P hP hs (α i) (received i) (hcut i) hhigh
+      center Q K k τ hkK P (α i) (received i) (hcut i) hhigh
   have hJdim : (affineHilbertPolynomial J).natDegree ≤ k + 1 - c :=
     natDegree_affineHilbertPolynomial_le_of_polynomialCoefficientEvaluation_mem
       hck β received heval
-  obtain ⟨t, ht⟩ := sourceCoordinate_mem_range_sourceCoefficientMap_of_exponent
-    center Q K k τ hτ hK hkK P hP hs hhigh s
-  have ht' : Φ t =
-      algebraMap (SourceRing r E ⧸ P) L (Ideal.Quotient.mk P s) := ht
-  have htJ : t ∉ J := by
-    intro htmem
-    have htzero : Φ t = 0 := htmem
-    rw [ht'] at htzero
-    have hone := IsLocalization.Away.mul_invSelf (S := L) (Ideal.Quotient.mk P s)
-    rw [htzero, zero_mul] at hone
-    exact zero_ne_one hone
-  let qΦ : (MvPolynomial (Option (Fin k)) E ⧸ J) →ₐ[E] L :=
-    Ideal.Quotient.liftₐ J Φ fun p hp ↦ hp
-  have hqt : qΦ (Ideal.Quotient.mk J t) =
-      algebraMap (SourceRing r E ⧸ P) L (Ideal.Quotient.mk P s) := by
-    rw [show qΦ (Ideal.Quotient.mk J t) = Φ t by rfl]
-    exact ht'
-  have hqtUnit : IsUnit (qΦ (Ideal.Quotient.mk J t)) := by
-    apply isUnit_iff_exists_inv.mpr
-    refine ⟨IsLocalization.Away.invSelf (Ideal.Quotient.mk P s), ?_⟩
-    rw [hqt]
-    exact IsLocalization.Away.mul_invSelf (S := L) (Ideal.Quotient.mk P s)
-  let gRing : Localization.Away (Ideal.Quotient.mk J t) →+* L :=
-    IsLocalization.Away.lift (g := qΦ.toRingHom) (Ideal.Quotient.mk J t) hqtUnit
-  let locMap : Localization.Away (Ideal.Quotient.mk J t) →ₐ[E] L :=
-    { toRingHom := gRing
-      commutes' := by
-        intro a
-        change gRing (algebraMap E (Localization.Away (Ideal.Quotient.mk J t)) a) =
-          algebraMap E L a
-        rw [IsScalarTower.algebraMap_apply E
-          (MvPolynomial (Option (Fin k)) E ⧸ J)
-          (Localization.Away (Ideal.Quotient.mk J t))]
-        rw [show gRing (algebraMap (MvPolynomial (Option (Fin k)) E ⧸ J)
-          (Localization.Away (Ideal.Quotient.mk J t))
-          (algebraMap E (MvPolynomial (Option (Fin k)) E ⧸ J) a)) =
-            qΦ (algebraMap E (MvPolynomial (Option (Fin k)) E ⧸ J) a) by
-          exact IsLocalization.Away.lift_eq
-            (S := Localization.Away (Ideal.Quotient.mk J t))
-            (g := qΦ.toRingHom) (Ideal.Quotient.mk J t) hqtUnit _]
-        exact qΦ.commutes a }
-  have hlocMap : Function.Surjective locMap := by
-    intro y
-    obtain ⟨n, a, hya⟩ := IsLocalization.Away.surj (Ideal.Quotient.mk P s) y
-    obtain ⟨a, rfl⟩ := Ideal.Quotient.mk_surjective a
-    obtain ⟨p, hp⟩ := sourceCoordinate_mem_range_sourceCoefficientMap_of_exponent
-      center Q K k τ hτ hK hkK P hP hs hhigh a
-    let x : Localization.Away (Ideal.Quotient.mk J t) :=
-      Localization.mk (Ideal.Quotient.mk J p)
-        ⟨Ideal.Quotient.mk J t ^ n, n, rfl⟩
-    refine ⟨x, ?_⟩
-    have hbase :
-        algebraMap (SourceRing r E ⧸ P) L (Ideal.Quotient.mk P s) *
-            IsLocalization.Away.invSelf (Ideal.Quotient.mk P s) = 1 :=
-      IsLocalization.Away.mul_invSelf (S := L) (Ideal.Quotient.mk P s)
-    have hy :
-        algebraMap (SourceRing r E ⧸ P) L (Ideal.Quotient.mk P a) *
-            IsLocalization.Away.invSelf (Ideal.Quotient.mk P s) ^ n = y := by
-      have h := congrArg
-        (fun w : L ↦ w * IsLocalization.Away.invSelf (Ideal.Quotient.mk P s) ^ n) hya
-      simpa only [← mul_pow, hbase, one_pow, mul_one, mul_assoc] using h.symm
-    have hqbase : qΦ (Ideal.Quotient.mk J t) *
-        IsLocalization.Away.invSelf (Ideal.Quotient.mk P s) = 1 := by
-      rw [hqt]
-      exact hbase
-    change gRing x = y
-    rw [show gRing x = qΦ (Ideal.Quotient.mk J p) *
-        IsLocalization.Away.invSelf (Ideal.Quotient.mk P s) ^ n by
-      dsimp only [gRing, x]
-      exact Localization.awayLift_mk qΦ.toRingHom (Ideal.Quotient.mk J t)
-        (Ideal.Quotient.mk J p) (IsLocalization.Away.invSelf (Ideal.Quotient.mk P s))
-          hqbase n]
-    rw [show qΦ (Ideal.Quotient.mk J p) = Φ p by rfl, hp]
-    exact hy
   have hregular : IsLeftRegular (Ideal.Quotient.mk P s) := by
     rw [isLeftRegular_iff_isRegular]
     exact isRegular_iff_ne_zero.mpr hs0
-  exact (natDegree_affineHilbertPolynomial_le_of_surjective_away_away
-    hregular locMap hlocMap).trans hJdim
+  exact natDegree_affineHilbertPolynomial_le_of_awayRange P s hregular Φ
+    (sourceCoordinate_mem_range_sourceCoefficientMap_of_exponent
+      center Q K k τ hτ hK hkK P hP hs hhigh) hJdim
+
 
 /-- Affine received-line specialization of the arbitrary-polynomial retained-source dimension
 bound. -/
@@ -1127,78 +952,20 @@ theorem symbolicSource_prime_affineHilbertPolynomial_natDegree_le_of_agreements_
     (hτ : TaylorExponentSufficient r K τ)
     (hK : r < K) (hkK : k ≤ K) (hck : c ≤ k)
     (P : Ideal (SourceRing r E)) (hP : P.IsPrime)
-    (hs : symbolicSourceSeparant center Q ∉ P)
+    (hs : jointInitialJetSeparant center Q ∉ P)
     (hhigh : ∀ l : Fin K, k ≤ l.val →
-      symbolicSourceNumerator center Q K l (τ := τ) ∈ P)
+      jointCommonTaylorNumerator center Q τ l ∈ P)
     (α : Fin c ↪ E) (f g : Fin c → E)
     (hcut : ∀ i,
-      symbolicSourceAgreement center Q K (α i) (f i) (g i) (τ := τ) ∈ P) :
+      jointTaylorAgreementEquation center Q K τ (Polynomial.C (α i))
+        (Polynomial.C (f i) + Polynomial.X * Polynomial.C (g i)) ∈ P) :
     (affineHilbertPolynomial P).natDegree ≤ k + 1 - c := by
   apply
     symbolicSource_prime_affineHilbertPolynomial_natDegree_le_of_polynomial_agreements_of_exponent
     center Q K k c τ hτ hK hkK hck P hP hs hhigh α
     (fun i ↦ Polynomial.C (f i) + Polynomial.X * Polynomial.C (g i))
   intro i
-  simpa only [symbolicSourceAgreement, symbolicSourcePolynomialAgreement] using hcut i
-
-/-- The actual retained source prime satisfies the joint coefficient-space hereditary budget,
-unless its entire regular principal open belongs to the supplied persistent-graph locus.
-
-This is the application premise for dimension-sensitive incidence with parameter `k + 1`: the
-extra coordinate is the retained challenge. -/
-theorem symbolicSource_dimensionSensitive_component_or_excluded_of_exponent
-    (center : E) (Q : DifferentialPolynomial E[X] r) (K k n τ : ℕ)
-    (hτ : TaylorExponentSufficient r K τ) (hK : r < K) (hkK : k ≤ K)
-    (P : Ideal (SourceRing r E)) (hP : P.IsPrime)
-    (hs : symbolicSourceSeparant center Q ∉ P)
-    (hhigh : ∀ l : Fin K, k ≤ l.val →
-      symbolicSourceNumerator center Q K l (τ := τ) ∈ P)
-    (α : Fin n ↪ E) (f g : Fin n → E)
-    (excluded : Set (Option (Fin (r + 1)) → E))
-    (hterminal : k ≤ (cutsInIdeal P fun i ↦
-      symbolicSourceAgreement center Q K (α i) (f i) (g i) (τ := τ)).card →
-      principalOpenZeroLocus P (symbolicSourceSeparant center Q) ⊆ excluded) :
-    (affineHilbertPolynomial P).natDegree ≤ k + 1 ∧
-      ((cutsInIdeal P fun i ↦
-          symbolicSourceAgreement center Q K (α i) (f i) (g i) (τ := τ)).card ≤
-        k + 1 - (affineHilbertPolynomial P).natDegree ∨
-       principalOpenZeroLocus P (symbolicSourceSeparant center Q) ⊆ excluded) := by
-  classical
-  let cuts : Fin n → MvPolynomial (Option (Fin (r + 1))) E := fun i ↦
-    symbolicSourceAgreement center Q K (α i) (f i) (g i) (τ := τ)
-  change (affineHilbertPolynomial P).natDegree ≤ k + 1 ∧
-    ((cutsInIdeal P cuts).card ≤ k + 1 - (affineHilbertPolynomial P).natDegree ∨
-      principalOpenZeroLocus P (symbolicSourceSeparant center Q) ⊆ excluded)
-  let α0 : Fin 0 ↪ E := ⟨Fin.elim0, fun i ↦ Fin.elim0 i⟩
-  let f0 : Fin 0 → E := Fin.elim0
-  have hdim : (affineHilbertPolynomial P).natDegree ≤ k + 1 := by
-    simpa only [Nat.sub_zero] using
-      (symbolicSource_prime_affineHilbertPolynomial_natDegree_le_of_agreements_of_exponent
-        center Q K k 0 τ hτ hK hkK (by omega) P hP hs hhigh α0 f0 f0
-          (fun i ↦ Fin.elim0 i))
-  refine ⟨hdim, ?_⟩
-  by_cases hc : (cutsInIdeal P cuts).card ≤ k
-  · let sample : Fin (cutsInIdeal P cuts).card ↪ Fin n :=
-      ⟨fun j ↦ ((cutsInIdeal P cuts).equivFin.symm j).val,
-        fun i j hij ↦ (cutsInIdeal P cuts).equivFin.symm.injective (Subtype.ext hij)⟩
-    let α' : Fin (cutsInIdeal P cuts).card ↪ E :=
-      ⟨fun j ↦ α (sample j), fun i j hij ↦ sample.injective (α.injective hij)⟩
-    let f' : Fin (cutsInIdeal P cuts).card → E := fun j ↦ f (sample j)
-    let g' : Fin (cutsInIdeal P cuts).card → E := fun j ↦ g (sample j)
-    have hcuts (j : Fin (cutsInIdeal P cuts).card) :
-        symbolicSourceAgreement center Q K (α' j) (f' j) (g' j) (τ := τ) ∈ P := by
-      change cuts (sample j) ∈ P
-      rw [← mem_cutsInIdeal]
-      exact ((cutsInIdeal P cuts).equivFin.symm j).property
-    have hd := symbolicSource_prime_affineHilbertPolynomial_natDegree_le_of_agreements_of_exponent
-      center Q K k (cutsInIdeal P cuts).card τ hτ hK hkK hc P hP hs hhigh
-        α' f' g' hcuts
-    left
-    omega
-  · right
-    apply hterminal
-    change k ≤ (cutsInIdeal P cuts).card
-    omega
+  exact hcut i
 
 /-- Hereditary joint coefficient-space budget for every actual retained source prime.
 In dimensions at least two, all identically vanishing agreement cuts can be used in the
@@ -1208,48 +975,53 @@ theorem symbolicSourcePolynomial_dimensionSensitive_component_of_exponent
     (center : E) (Q : DifferentialPolynomial E[X] r) (K k n τ : ℕ)
     (hτ : TaylorExponentSufficient r K τ) (hK : r < K) (hkK : k ≤ K)
     (P : Ideal (SourceRing r E)) (hP : P.IsPrime)
-    (hs : symbolicSourceSeparant center Q ∉ P)
-    (hhigh : ∀ l : Fin K, k ≤ l.val →
-      symbolicSourceNumerator center Q K l (τ := τ) ∈ P)
+    (hs : jointInitialJetSeparant center Q ∉ P)
+    (hhigh : ∀ l : Fin K, k ≤ l.val → jointCommonTaylorNumerator center Q τ l ∈ P)
     (α : Fin n ↪ E) (received : Fin n → E[X]) :
     let cuts : Fin n → MvPolynomial (Option (Fin (r + 1))) E := fun i ↦
-      symbolicSourcePolynomialAgreement center Q K (α i) (received i) (τ := τ)
+      jointTaylorAgreementEquation center Q K τ (Polynomial.C (α i)) (received i)
     (affineHilbertPolynomial P).natDegree ≤ k + 1 ∧
       (1 < (affineHilbertPolynomial P).natDegree →
-        (cutsInIdeal P cuts).card ≤ k + 1 - (affineHilbertPolynomial P).natDegree) := by
+        {i | cuts i ∈ P}.ncard ≤ k + 1 - (affineHilbertPolynomial P).natDegree) := by
   classical
   dsimp only
   let cuts : Fin n → MvPolynomial (Option (Fin (r + 1))) E := fun i ↦
-    symbolicSourcePolynomialAgreement center Q K (α i) (received i) (τ := τ)
-  have hpartial (indices : Finset (Fin n)) (hcard : indices.card ≤ k)
-      (hsub : indices ⊆ cutsInIdeal P cuts) :
-      (affineHilbertPolynomial P).natDegree ≤ k + 1 - indices.card := by
-    let sample : Fin indices.card ↪ Fin n :=
-      ⟨fun j ↦ (indices.equivFin.symm j).val,
-        fun i j hij ↦ indices.equivFin.symm.injective (Subtype.ext hij)⟩
-    let α' : Fin indices.card ↪ E :=
-      ⟨fun j ↦ α (sample j), fun i j hij ↦ sample.injective (α.injective hij)⟩
-    let received' : Fin indices.card → E[X] := fun j ↦ received (sample j)
-    apply
-      symbolicSource_prime_affineHilbertPolynomial_natDegree_le_of_polynomial_agreements_of_exponent
-        center Q K k indices.card τ hτ hK hkK hcard P hP hs hhigh α' received'
-    intro j
-    change cuts (sample j) ∈ P
-    rw [← mem_cutsInIdeal]
-    exact hsub (indices.equivFin.symm j).property
+    jointTaylorAgreementEquation center Q K τ (Polynomial.C (α i)) (received i)
+  let s := jointInitialJetSeparant center Q
+  let Φ := sourceCoefficientMap center Q K k hkK P (τ := τ)
+  let J : Ideal (MvPolynomial (Option (Fin k)) E) := RingHom.ker Φ.toRingHom
+  have hregular : IsLeftRegular (Ideal.Quotient.mk P s) := by
+    rw [isLeftRegular_iff_isRegular]
+    apply isRegular_iff_ne_zero.mpr
+    intro hz
+    exact hs (Ideal.Quotient.eq_zero_iff_mem.mp hz)
+  have hdegree : (affineHilbertPolynomial P).natDegree ≤
+      (affineHilbertPolynomial J).natDegree :=
+    natDegree_affineHilbertPolynomial_le_of_awayRange P s hregular Φ
+      (sourceCoordinate_mem_range_sourceCoefficientMap_of_exponent
+        center Q K k τ hτ hK hkK P hP hs hhigh) le_rfl
+  let α0 : Fin 0 ↪ E := ⟨Fin.elim0, fun i ↦ Fin.elim0 i⟩
   have hdim : (affineHilbertPolynomial P).natDegree ≤ k + 1 := by
-    simpa using hpartial ∅ (by simp) (by simp)
+    have h :=
+      symbolicSource_prime_affineHilbertPolynomial_natDegree_le_of_polynomial_agreements_of_exponent
+        center Q K k 0 τ hτ hK hkK (by omega) P hP hs hhigh α0 (fun _ ↦ 0)
+        (fun i ↦ Fin.elim0 i)
+    simpa using h
   refine ⟨hdim, fun hd ↦ ?_⟩
-  let Bad := cutsInIdeal P cuts
-  change Bad.card ≤ k + 1 - (affineHilbertPolynomial P).natDegree
-  by_cases hBadk : Bad.card ≤ k
-  · have hbound := hpartial Bad hBadk le_rfl
-    omega
-  · have hkBad : k ≤ Bad.card := by omega
-    obtain ⟨indices, hindices, hcard⟩ := Finset.exists_subset_card_eq hkBad
-    have hle := hpartial indices (by omega) hindices
-    rw [hcard] at hle
-    omega
+  have hJdim : 1 < (affineHilbertPolynomial J).natDegree := by omega
+  let β : Fin n ↪ E :=
+    ⟨fun i ↦ α i - center, fun i j hij ↦ α.injective (sub_left_injective hij)⟩
+  have hJbound := natDegree_affineHilbertPolynomial_add_ncard_le_of_polynomialCoefficientEvaluation
+    β (fun i ↦ received i) {i | cuts i ∈ P}
+    (fun i hi ↦ polynomialCoefficientEvaluation_mem_ker_sourceCoefficientMap_of_exponent
+      center Q K k τ hkK P (α i) (received i) hi hhigh) hJdim
+  have hJbound' : (affineHilbertPolynomial J).natDegree +
+      {i | cuts i ∈ P}.ncard ≤ k + 1 := by
+    simpa only [cuts] using hJbound
+  have hbound : (affineHilbertPolynomial P).natDegree + {i | cuts i ∈ P}.ncard ≤ k + 1 :=
+    (Nat.add_le_add_right hdegree _).trans hJbound'
+  exact (Nat.le_sub_iff_add_le hdim).2 (by simpa [Nat.add_comm] using hbound)
+
 
 /-- Affine received-line specialization of the arbitrary-polynomial hereditary component
 bound. -/
@@ -1257,19 +1029,19 @@ theorem symbolicSource_dimensionSensitive_component_of_exponent
     (center : E) (Q : DifferentialPolynomial E[X] r) (K k n τ : ℕ)
     (hτ : TaylorExponentSufficient r K τ) (hK : r < K) (hkK : k ≤ K)
     (P : Ideal (SourceRing r E)) (hP : P.IsPrime)
-    (hs : symbolicSourceSeparant center Q ∉ P)
+    (hs : jointInitialJetSeparant center Q ∉ P)
     (hhigh : ∀ l : Fin K, k ≤ l.val →
-      symbolicSourceNumerator center Q K l (τ := τ) ∈ P)
+      jointCommonTaylorNumerator center Q τ l ∈ P)
     (α : Fin n ↪ E) (f g : Fin n → E) :
     let cuts : Fin n → MvPolynomial (Option (Fin (r + 1))) E := fun i ↦
-      symbolicSourceAgreement center Q K (α i) (f i) (g i) (τ := τ)
+      jointTaylorAgreementEquation center Q K τ (Polynomial.C (α i))
+        (Polynomial.C (f i) + Polynomial.X * Polynomial.C (g i))
     (affineHilbertPolynomial P).natDegree ≤ k + 1 ∧
-      (1 < (affineHilbertPolynomial P).natDegree →
-        (cutsInIdeal P cuts).card ≤ k + 1 - (affineHilbertPolynomial P).natDegree) := by
-  simpa only [symbolicSourceAgreement, symbolicSourcePolynomialAgreement] using
-    (symbolicSourcePolynomial_dimensionSensitive_component_of_exponent
-      center Q K k n τ hτ hK hkK P hP hs hhigh α
-        (fun i ↦ Polynomial.C (f i) + Polynomial.X * Polynomial.C (g i)))
+    (1 < (affineHilbertPolynomial P).natDegree →
+      {i | cuts i ∈ P}.ncard ≤ k + 1 - (affineHilbertPolynomial P).natDegree) := by
+  exact symbolicSourcePolynomial_dimensionSensitive_component_of_exponent
+    center Q K k n τ hτ hK hkK P hP hs hhigh α
+    (fun i ↦ Polynomial.C (f i) + Polynomial.X * Polynomial.C (g i))
 
 /-- Order-one, degree-one-message specialization.  This explicit caller checks the boundary
 `r = k = 1`: every two-dimensional retained source prime contains no agreement cut identically,
@@ -1278,14 +1050,15 @@ theorem firstOrder_symbolicSource_dimensionSensitive_component_of_exponent
     (center : E) (Q : DifferentialPolynomial E[X] 1) (K n τ : ℕ)
     (hτ : TaylorExponentSufficient 1 K τ) (hK : 1 < K)
     (P : Ideal (SourceRing 1 E)) (hP : P.IsPrime)
-    (hs : symbolicSourceSeparant center Q ∉ P)
+    (hs : jointInitialJetSeparant center Q ∉ P)
     (hhigh : ∀ l : Fin K, 1 ≤ l.val →
-      symbolicSourceNumerator center Q K l (τ := τ) ∈ P)
+      jointCommonTaylorNumerator center Q τ l ∈ P)
     (α : Fin n ↪ E) (f g : Fin n → E) :
     let cuts : Fin n → MvPolynomial (Option (Fin 2)) E := fun i ↦
-      symbolicSourceAgreement center Q K (α i) (f i) (g i) (τ := τ)
+      jointTaylorAgreementEquation center Q K τ (Polynomial.C (α i))
+        (Polynomial.C (f i) + Polynomial.X * Polynomial.C (g i))
     (affineHilbertPolynomial P).natDegree ≤ 2 ∧
-      (1 < (affineHilbertPolynomial P).natDegree → (cutsInIdeal P cuts).card = 0) := by
+      (1 < (affineHilbertPolynomial P).natDegree → {i | cuts i ∈ P}.ncard = 0) := by
   dsimp only
   have h := symbolicSource_dimensionSensitive_component_of_exponent center Q K 1 n τ hτ hK
     (by omega) P hP hs hhigh α f g
@@ -1294,7 +1067,11 @@ theorem firstOrder_symbolicSource_dimensionSensitive_component_of_exponent
   have hbound := hcuts hd
   have hdimEq : (affineHilbertPolynomial P).natDegree = 2 := by omega
   rw [hdimEq] at hbound
-  simpa using hbound
+  have hzero :
+      {i | jointTaylorAgreementEquation center Q K τ (Polynomial.C (α i))
+        (Polynomial.C (f i) + Polynomial.X * Polynomial.C (g i)) ∈ P}.ncard ≤ 0 := by
+    simpa [hdimEq] using hbound
+  exact Nat.eq_zero_of_le_zero hzero
 
 /-- The high-agreement part of one retained source component, outside the terminal graph locus,
 is finite and has the hybrid joint incidence bound.  The first factor uses the graph-recognition
@@ -1307,62 +1084,52 @@ theorem finite_symbolicSource_agreementLocus_off_excluded_and_ncard_le_hybrid_of
     (hLA : L ≤ A) (hkA : k ≤ A)
     (P : Ideal (SourceRing r E)) (hP : P.IsPrime)
     (hhigh : ∀ l : Fin K, k ≤ l.val →
-      symbolicSourceNumerator center Q K l (τ := τ) ∈ P)
+      jointCommonTaylorNumerator center Q τ l ∈ P)
     (α : Fin n ↪ E) (f g : Fin n → E)
-    (hdeg : ∀ i, (symbolicSourceAgreement center Q K (α i) (f i) (g i)
-      (τ := τ)).totalDegree ≤ b)
+    (hdeg : ∀ i, (jointTaylorAgreementEquation center Q K τ (Polynomial.C (α i))
+      (Polynomial.C (f i) + Polynomial.X * Polynomial.C (g i))).totalDegree ≤ b)
     (excluded : Set (Option (Fin (r + 1)) → E))
     (hterminal : ∀ J : Ideal (SourceRing r E),
-      P ≤ J → J.IsPrime → symbolicSourceSeparant center Q ∉ J →
+      P ≤ J → J.IsPrime → jointInitialJetSeparant center Q ∉ J →
       0 < (affineHilbertPolynomial J).natDegree →
-      L ≤ (cutsInIdeal J fun i ↦
-        symbolicSourceAgreement center Q K (α i) (f i) (g i) (τ := τ)).card →
-      principalOpenZeroLocus J (symbolicSourceSeparant center Q) ⊆ excluded) :
+      L ≤ {i | jointTaylorAgreementEquation center Q K τ (Polynomial.C (α i))
+        (Polynomial.C (f i) + Polynomial.X * Polynomial.C (g i)) ∈ J}.ncard →
+      {x | x ∈ zeroLocus E J ∧ aeval x (jointInitialJetSeparant center Q) ≠ 0} ⊆ excluded) :
     let cuts : Fin n → MvPolynomial (Option (Fin (r + 1))) E := fun i ↦
-      symbolicSourceAgreement center Q K (α i) (f i) (g i) (τ := τ)
+      jointTaylorAgreementEquation center Q K τ (Polynomial.C (α i))
+        (Polynomial.C (f i) + Polynomial.X * Polynomial.C (g i))
     let T := {x : Option (Fin (r + 1)) → E |
-      x ∈ principalOpenZeroLocus P (symbolicSourceSeparant center Q) ∧ x ∉ excluded ∧
-        A ≤ (agreementIndices cuts x).card}
+      x ∈ zeroLocus E P ∧ aeval x (jointInitialJetSeparant center Q) ≠ 0 ∧
+        x ∉ excluded ∧ A ≤ {i | aeval x (cuts i) = 0}.ncard}
     T.Finite ∧ (T.ncard : ℚ) ≤ affineDegree P *
       hybridDimensionSensitiveIncidenceProduct n A L k b
         (affineHilbertPolynomial P).natDegree := by
   classical
   dsimp only
   let cuts : Fin n → MvPolynomial (Option (Fin (r + 1))) E := fun i ↦
-    symbolicSourceAgreement center Q K (α i) (f i) (g i) (τ := τ)
-  let s := symbolicSourceSeparant center Q
+    jointTaylorAgreementEquation center Q K τ (Polynomial.C (α i))
+      (Polynomial.C (f i) + Polynomial.X * Polynomial.C (g i))
+  let s := jointInitialJetSeparant center Q
   have : P.IsPrime := hP
   have hdimension (J : Ideal (SourceRing r E)) (hPJ : P ≤ J) (hJ : J.IsPrime)
       (hsJ : s ∉ J) (hdJ : 1 < (affineHilbertPolynomial J).natDegree) :
       (affineHilbertPolynomial J).natDegree + {i | cuts i ∈ J}.ncard ≤ k + 1 := by
-    obtain ⟨hdegree, hcuts⟩ := symbolicSource_dimensionSensitive_component_of_exponent
+    obtain ⟨_, hcuts⟩ := symbolicSource_dimensionSensitive_component_of_exponent
       center Q K k n τ hτ hK hkK J hJ hsJ
         (fun l hl ↦ hPJ (hhigh l hl)) α f g
     have hcount := hcuts hdJ
-    rw [cutsInIdeal_card J cuts] at hcount
+    have hcount' : {i | cuts i ∈ J}.ncard ≤
+        k + 1 - (affineHilbertPolynomial J).natDegree := by
+      simpa only [cuts] using hcount
     omega
   have hterminal' (J : Ideal (SourceRing r E)) (hPJ : P ≤ J) (hJ : J.IsPrime)
       (hsJ : s ∉ J) (hdJ : 0 < (affineHilbertPolynomial J).natDegree)
       (hcuts : L ≤ {i | cuts i ∈ J}.ncard) :
       {x | x ∈ zeroLocus E J ∧ aeval x s ≠ 0} ⊆ excluded := by
-    have hcuts' : L ≤ (cutsInIdeal J cuts).card := by
-      rw [cutsInIdeal_card]
-      exact hcuts
-    simpa only [principalOpenZeroLocus] using
-      hterminal J hPJ hJ hsJ hdJ hcuts'
-  have hbound :=
-    finite_and_ncard_le_hybridDimensionSensitiveIncidenceProduct_of_agreement_off_excluded
-      (K := E) (P := P) s cuts hdeg hLA hkA excluded hdimension hterminal'
-  have hset :
-      {x | x ∈ principalOpenZeroLocus P s ∧ x ∉ excluded ∧
-        A ≤ (agreementIndices cuts x).card} =
-      {x | x ∈ zeroLocus E P ∧ aeval x s ≠ 0 ∧ x ∉ excluded ∧
-        A ≤ {i | aeval x (cuts i) = 0}.ncard} := by
-    ext x
-    simp only [principalOpenZeroLocus, Set.mem_ofPred_eq, agreementIndices_card,
-      and_assoc]
-  rw [hset]
-  simpa only [Fintype.card_fin] using hbound
+    exact hterminal J hPJ hJ hsJ hdJ hcuts
+  simpa only [Fintype.card_fin, cuts, s] using
+    (finite_and_ncard_le_hybridDimensionSensitiveIncidenceProduct_of_agreement_off_excluded
+      (K := E) (P := P) s cuts hdeg hLA hkA excluded hdimension hterminal')
 
 
 end ReedSolomon
