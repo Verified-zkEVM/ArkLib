@@ -6,8 +6,11 @@ Authors: Quang Dao
 module
 
 public import ArkLib.Data.Polynomial.Differential.BaseChange
+public import ArkLib.Data.Polynomial.Differential.RecursiveCount
 public import ArkLib.Data.Polynomial.Differential.TaylorChartGeometry
 public import ArkLib.Data.Polynomial.Differential.TaylorChartIncidence
+import ArkLib.Data.Polynomial.Differential.JetPrefixPresentation
+import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 
 /-!
 # Coefficient extension of rational Taylor charts
@@ -25,6 +28,10 @@ initial equation, high Taylor cuts, and received-word agreement bounds.
   with any sufficient common Taylor exponent.
 * `card_le_of_regular_solutions_agreement`: regular polynomial solutions obey the sharp agreement
   bound after passage to an algebraically closed extension.
+* `regularBranchRatBudget_of_agreement`: every regular stage in the singular recursion has a
+  rational agreement-count budget.
+* `finite_solutions_card_le_sq_totalJetDegree_of_agreement`: finite differential-equation
+  solutions with agreement constraints satisfy the square-total-degree bound.
 
 ## References
 
@@ -36,6 +43,7 @@ initial equation, high Taylor cuts, and received-word agreement bounds.
 namespace PolynomialDifferential
 
 open MvPolynomial
+open Polynomial
 
 open Classical in
 /-- A finite family with nonzero separant specialization has a common regular center after an
@@ -194,4 +202,161 @@ theorem card_le_of_regular_solutions_agreement
       exact hagreeJet)
   rw [hcard] at hcount
   simpa [QE, rationalTaylorCutDegreeBound, jetTotalDegree_map_eq f.injective] using hcount
+
+/-- Agreement constraints give a rational cardinality budget for every regular branch in the
+singular recursion. -/
+theorem regularBranchRatBudget_of_agreement
+    {F : Type*} [Field F] [DecidableEq F] {d D K k ν : ℕ}
+    (Q : DifferentialPolynomial F d)
+    (hK : d < K) (hkK : k ≤ K) {n A : ℕ} (domain : Fin n ↪ F) (received : Fin n → F)
+    (hk : 0 < k) (hkA : k ≤ A) (hAn : A ≤ n)
+    (accepts : F[X] → Prop)
+    (hagreement : ∀ P, accepts P ↔
+      P.degree < k ∧ A ≤ (Finset.univ.filter fun i ↦ P.eval (domain i) = received i).card)
+    (hdegree : jetTotalDegree Q ≤ ν)
+    (hbin : ∀ r, r ≤ d → ∀ i, r < i → i < K → (i.choose r : F) ≠ 0) :
+    RegularBranchRatBudget Q D accepts
+      ((ν : ℚ) *
+        ((((n * (1 + 2 * K * (ν - 1)) : ℕ) : ℚ) /
+          ((A - k + 1 : ℕ) : ℚ)) ^ d)) := by
+  classical
+  intro current s hreachable hhighest _hcast regular haccepted hseparant
+  obtain ⟨Q', hQ'⟩ := exists_prefixDifferentialPolynomial current
+    (isHighestActiveJet_of_highestActiveJet_eq_some hhighest)
+  let presentation : JetPrefixPresentation current s := ⟨Q', hQ'⟩
+  let polynomials : Finset F[X] := regular.image fun solution ↦ solution.polynomial
+  have hinjective : Function.Injective
+      (fun solution : BoundedSolution current D ↦ solution.polynomial) := by
+    intro left right heq
+    exact Subtype.ext (Subtype.ext heq)
+  have hcard : polynomials.card = regular.card := by
+    exact Finset.card_image_of_injective regular hinjective
+  have hsle : s.val ≤ d := Nat.le_of_lt_succ s.isLt
+  have hcurrentDegree : jetTotalDegree current ≤ ν :=
+    (jetTotalDegree_le_of_reflTransGen_singularStep hreachable).trans hdegree
+  have hQ'Degree : jetTotalDegree Q' ≤ ν := by
+    rw [presentation.jetTotalDegree_equation]
+    exact hcurrentDegree
+  have hactive : 0 < jetDegree current s :=
+    (isHighestActiveJet_of_highestActiveJet_eq_some hhighest).1
+  have hactive' : 0 < jetDegree Q' (Fin.last s.val) := by
+    rw [presentation.jetDegree_equation_last]
+    exact hactive
+  have hpositive : 0 < jetTotalDegree Q' := hactive'.trans_le (jetDegree_le_total Q' _)
+  have hν : 0 < ν := hpositive.trans_le hQ'Degree
+  have hfilter (P : F[X]) :
+      Finset.univ.filter (fun i : Fin n ↦ P.eval (domain i) = received i) =
+        @Finset.filter (Fin n) (fun i ↦ P.eval (domain i) = received i)
+          (fun i ↦ Classical.decEq F (P.eval (domain i)) (received i)) Finset.univ := by
+    exact (Finset.filter_congr_decidable Finset.univ
+      (fun i : Fin n ↦ P.eval (domain i) = received i)
+      (fun i ↦ Classical.decEq F (P.eval (domain i)) (received i))).symm
+  have hstage := card_le_of_regular_solutions_agreement (E := AlgebraicClosure F)
+    Q' K k (2 * K) (taylorExponentSufficient_two_mul s.val K) (by omega) hkK
+    domain received hkA hAn polynomials
+    (fun P hP ↦ by
+      rcases Finset.mem_image.mp hP with ⟨solution, hsolution, rfl⟩
+      exact ((hagreement solution.polynomial).mp (haccepted solution hsolution)).1)
+    (fun P hP ↦ by
+      rcases Finset.mem_image.mp hP with ⟨solution, hsolution, rfl⟩
+      exact (presentation.differentialSpecialization_equation solution.polynomial).trans
+        solution.equation)
+    (fun P hP ↦ by
+      rcases Finset.mem_image.mp hP with ⟨solution, hsolution, rfl⟩
+      have hs := hseparant solution hsolution
+      rw [← presentation.differentialSpecialization_separant_equation] at hs
+      exact hs)
+    (fun i hi hiK ↦ hbin s.val hsle i hi hiK)
+    (fun P hP ↦ by
+      rcases Finset.mem_image.mp hP with ⟨solution, hsolution, rfl⟩
+      have h := ((hagreement solution.polynomial).mp
+        (haccepted solution hsolution)).2
+      rw [hfilter solution.polynomial] at h
+      exact h)
+  rw [hcard] at hstage
+  have hB : rationalTaylorCutDegreeBound Q' (2 * K) ≤ 1 + 2 * K * (ν - 1) := by
+    unfold rationalTaylorCutDegreeBound
+    gcongr
+  have hden : 0 < (A - k + 1 : ℕ) := by omega
+  have hbase :
+      (((((n - k + 1) * rationalTaylorCutDegreeBound Q' (2 * K) : ℕ) : ℚ) /
+          ((A - k + 1 : ℕ) : ℚ))) ≤
+        ((((n * (1 + 2 * K * (ν - 1)) : ℕ) : ℚ) /
+          ((A - k + 1 : ℕ) : ℚ))) := by
+    gcongr
+    omega
+  have hglobalBaseOne :
+      1 ≤ ((((n * (1 + 2 * K * (ν - 1)) : ℕ) : ℚ) /
+        ((A - k + 1 : ℕ) : ℚ))) := by
+    rw [le_div_iff₀ (by exact_mod_cast hden)]
+    norm_cast
+    have hdenle : A - k + 1 ≤ n := by omega
+    calc
+      1 * (A - k + 1) = A - k + 1 := one_mul _
+      _ ≤ n := hdenle
+      _ = n * 1 := by omega
+      _ ≤ n * (1 + 2 * K * (ν - 1)) :=
+        Nat.mul_le_mul_left n (by omega)
+  calc
+    (regular.card : ℚ) ≤
+        (jetTotalDegree Q' : ℚ) *
+          (((((n - k + 1) * rationalTaylorCutDegreeBound Q' (2 * K) : ℕ) : ℚ) /
+            ((A - k + 1 : ℕ) : ℚ)) ^ s.val) := hstage
+    _ ≤ (ν : ℚ) *
+          ((((n * (1 + 2 * K * (ν - 1)) : ℕ) : ℚ) /
+            ((A - k + 1 : ℕ) : ℚ)) ^ s.val) := by
+      gcongr
+    _ ≤ (ν : ℚ) *
+          ((((n * (1 + 2 * K * (ν - 1)) : ℕ) : ℚ) /
+            ((A - k + 1 : ℕ) : ℚ)) ^ d) := by
+      gcongr
+
+/-- Finite polynomial solutions of a differential equation with degree and agreement constraints
+have cardinality bounded by the square of the total jet degree times the agreement factor. -/
+theorem finite_solutions_card_le_sq_totalJetDegree_of_agreement
+    {F : Type*} [Field F] [DecidableEq F] {d : ℕ}
+    (Q : DifferentialPolynomial F d) (K k ν : ℕ) (hK : d < K) (hkK : k ≤ K)
+    (hQ : Q ≠ 0) (hcast : ∀ j, JetDegreeCastsNeZero Q j)
+    (hdegree : jetTotalDegree Q ≤ ν) {n A : ℕ}
+    (domain : Fin n ↪ F) (received : Fin n → F) (hk : 0 < k) (hkA : k ≤ A)
+    (hAn : A ≤ n)
+    (hbin : ∀ r, r ≤ d → ∀ i, r < i → i < K → (i.choose r : F) ≠ 0)
+    (accepts : F[X] → Prop)
+    (hagreement : ∀ P, accepts P ↔
+      P.degree < k ∧ A ≤ (Finset.univ.filter fun i ↦ P.eval (domain i) = received i).card)
+    (S : Finset F[X]) (hsol : ∀ P ∈ S, differentialSpecialization Q P = 0)
+    (haccepts : ∀ P ∈ S, accepts P) :
+    (S.card : ℚ) ≤ (ν : ℚ) ^ 2 *
+      ((((n * (1 + 2 * K * (ν - 1)) : ℕ) : ℚ) /
+        ((A - k + 1 : ℕ) : ℚ)) ^ d) := by
+  classical
+  let toRoot : {P // P ∈ S} → BoundedSolution Q (k - 1) := fun P ↦
+    ⟨⟨P.1, by
+      rw [Polynomial.mem_degreeLT]
+      simpa [Nat.sub_add_cancel hk] using
+        ((hagreement P.1).mp (haccepts P.1 P.2)).1⟩, hsol P.1 P.2⟩
+  let roots : Finset (BoundedSolution Q (k - 1)) := S.attach.image toRoot
+  have htoRoot : Function.Injective toRoot := by
+    intro left right heq
+    apply Subtype.ext
+    exact congrArg BoundedSolution.polynomial heq
+  have hcard : roots.card = S.card := by
+    change (S.attach.image toRoot).card = S.card
+    rw [Finset.card_image_of_injective _ htoRoot, Finset.card_attach]
+  have hroots : ∀ solution ∈ roots, accepts solution.polynomial := by
+    intro solution hsolution
+    change solution ∈ S.attach.image toRoot at hsolution
+    rcases Finset.mem_image.mp hsolution with ⟨source, _hsource, rfl⟩
+    exact haccepts source.1 source.2
+  let R : ℚ :=
+    ((n * (1 + 2 * K * (ν - 1)) : ℕ) : ℚ) / ((A - k + 1 : ℕ) : ℚ)
+  have hR : 0 ≤ R := by unfold R; positivity
+  have hRegular : RegularBranchRatBudget Q (k - 1) accepts ((ν : ℚ) * R ^ d) := by
+    simpa only [R] using regularBranchRatBudget_of_agreement (D := k - 1) Q hK hkK
+      domain received hk hkA hAn accepts hagreement hdegree hbin
+  have hcount := boundedSolution_card_le_sq_totalJetDegree Q hQ hcast accepts ν R hR
+    roots hroots hdegree hRegular
+  rw [hcard] at hcount
+  exact hcount
+
 end PolynomialDifferential
