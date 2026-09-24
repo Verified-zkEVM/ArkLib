@@ -8,7 +8,11 @@ module
 public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerBatchedAdmissibility
 public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.ComponentDimension
+public import ArkLib.Data.Polynomial.Differential.TaylorChartIncidence
+public import
   ArkLib.ToMathlib.MvPolynomial.PowerMomentGeometry
+public import ArkLib.ToMathlib.Combinatorics.Enumerative.IncidenceProduct
 public import ArkLib.Data.Polynomial.Differential.RationalTaylorBidegree
 public import ArkLib.Data.Polynomial.Differential.TaylorChartAlgebra
 public import ArkLib.Data.CodingTheory.ReedSolomon.PowerAgreement
@@ -27,6 +31,8 @@ lift then bounds the points on the initial equation and high Taylor cuts that li
   coverage property.
 * `finite_admissibleChartTupleIncidence_off_graphs`: a finite incidence bound away from the graph
   locus.
+* `finite_regularHighCutJets_card_le_dimensionSensitive_of_exponent`: the dimension-sensitive
+  product bound for finite sets of regular jets satisfying high cuts.
 
 ## References
 
@@ -263,6 +269,33 @@ theorem finite_admissibleChartTupleIncidence_off_graphs
         (hS x hx).2.2.1 l.val l.property
   · intro x hx
     simpa only [cuts, jointTaylorAgreementEquation] using hA x hx
+
+/-- A finite family of regular jets satisfying all high Taylor cuts and enough agreement cuts is
+bounded by the dimension-sensitive evaluation product. -/
+theorem finite_regularHighCutJets_card_le_dimensionSensitive_of_exponent [IsAlgClosed E]
+    (center : E) (Q : DifferentialPolynomial E r) (K k τ : ℕ)
+    (hτ : TaylorExponentSufficient r K τ) (hK : r < K) (hkK : k ≤ K)
+    {n A : ℕ} (domain : Fin n ↪ E) (received : Fin n → E)
+    (hkA : k ≤ A) (hAn : A ≤ n)
+    (S : Finset (Fin (r + 1) → E))
+    (hS : ∀ jet ∈ S,
+      aeval jet (initialJetEquation center Q) = 0 ∧
+      aeval jet (initialJetSeparant center Q) ≠ 0 ∧
+      ∀ l : {l : Fin K // k ≤ l.val},
+        aeval jet (commonTaylorNumerator center Q τ l.val) = 0)
+    (hA : ∀ jet ∈ S, A ≤
+      {i | aeval jet (taylorAgreementEquation center Q K τ (domain i) (received i)) = 0}.ncard) :
+    (S.card : ℚ) ≤ (jetTotalDegree Q : ℚ) *
+      (rationalTaylorCutDegreeBound Q τ : ℚ) ^ r *
+        dimensionSensitiveIncidenceProduct n A k 1 r := by
+  apply PolynomialDifferential.finite_regularHighCutJets_card_le_dimensionSensitive_of_exponent
+    center Q K k τ hτ domain received hkA hAn S hS hA
+  intro J hJ hsep hhigh hd
+  exact chart_dimensionSensitive_component_of_exponent center Q K k n τ hτ hK hkK
+    J hJ hsep (by
+      intro l hkl
+      exact hhigh (commonTaylorNumerator_mem_highTaylorCutsIdeal center Q hkl l.isLt))
+    domain received hd
 
 end ReedSolomon
 

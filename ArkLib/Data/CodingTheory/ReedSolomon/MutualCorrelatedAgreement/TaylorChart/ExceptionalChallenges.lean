@@ -40,10 +40,8 @@ private theorem jointInitial_eval (center z : E) (Q : DifferentialPolynomial E[X
     aeval jet (initialJetEquation center (MvPolynomial.map (Polynomial.evalRingHom z) Q)) := by
   have hφ : (Polynomial.aeval z).toRingHom = Polynomial.evalRingHom z := by
     ext a <;> simp [Polynomial.evalRingHom]
-  rw [jointInitialJetEquation, aeval_optionEquivRight_symm, map_initialJetEquation]
-  simp only [Option.elim_none, Option.elim_some]
-  rw [hφ]
-  rw [show (Polynomial.evalRingHom z) (Polynomial.C center) = center from Polynomial.eval_C]
+  simpa only [Option.elim_none, Option.elim_some, hφ] using
+    aeval_jointInitialJetEquation center Q (fun i ↦ i.elim z jet)
 
 private theorem jointSeparant_eval (center z : E) (Q : DifferentialPolynomial E[X] r)
     (jet : Fin (r + 1) → E) :
@@ -69,19 +67,8 @@ private theorem jointInitial_ne_zero_of_regular (center z : E)
     (Q : DifferentialPolynomial E[X] r) (jet : Fin (r + 1) → E)
     (hs : aeval jet (initialJetSeparant center
       (MvPolynomial.map (Polynomial.evalRingHom z) Q)) ≠ 0) :
-    jointInitialJetEquation center Q ≠ 0 := by
-  have hs' : initialJetSeparant center (MvPolynomial.map (Polynomial.evalRingHom z) Q) ≠ 0 := by
-    intro hzero
-    exact hs (by rw [hzero]; simp)
-  have hi := initialJetEquation_ne_zero_of_initialJetSeparant_ne_zero center _ hs'
-  intro hzero
-  have he : initialJetEquation (Polynomial.C center) Q = 0 := by
-    apply (optionEquivRight E (Fin (r + 1))).symm.injective
-    simpa only [jointInitialJetEquation, map_zero] using hzero
-  have hm := congrArg (MvPolynomial.map (Polynomial.evalRingHom z)) he
-  rw [map_initialJetEquation, map_zero,
-    show (Polynomial.evalRingHom z) (Polynomial.C center) = center from Polynomial.eval_C] at hm
-  exact hi hm
+    jointInitialJetEquation center Q ≠ 0 :=
+  jointInitialJetEquation_ne_zero_of_regular center z Q jet hs
 
 /-- Distinct challenges with regular symbolic Taylor charts and no exact admissible-pair
 agreement representation satisfy the combined incidence and exceptional-pair bound. -/

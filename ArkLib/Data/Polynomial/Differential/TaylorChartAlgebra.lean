@@ -29,8 +29,11 @@ separant denominator.
   flattened challenge and jet coordinates for the Taylor chart.
 * `jointTaylorAgreementEquation`, `jointTaylorReconstructionError`, and `affinePairCurve` describe
   the agreement cuts and affine-pair graph in those coordinates.
-* `aeval_jointInitialJetSeparant`, `aeval_jointCommonTaylorNumerator`, and
-  `aeval_jointTaylorAgreementEquation` specialize joint cuts at a point before evaluating jets.
+* `aeval_jointInitialJetEquation`, `aeval_jointInitialJetSeparant`,
+  `aeval_jointCommonTaylorNumerator`, and `aeval_jointTaylorAgreementEquation` specialize joint
+  cuts at a point before evaluating jets.
+* `jointInitialJetEquation_ne_zero_of_regular` certifies the joint initial equation from a regular
+  specialized jet.
 * `commonTaylorNumeratorOver_eq` and `map_commonTaylorNumeratorOver_eq` bridge algebra-valued
   numerators to their field-valued counterparts.
 * `aeval_map_taylorAgreementEquationOver_eq_zero_iff_of_exponent` characterizes regular agreement
@@ -173,6 +176,36 @@ def affinePairCurve {E : Type*} [Semiring E] (center : E) (P₀ P₁ : Polynomia
       Polynomial.X * Polynomial.C (polynomialJet center P₁ j)
 
 variable {E : Type*} [Field E]
+
+/-- Evaluating the joint initial equation specializes its challenge before evaluating the jet. -/
+theorem aeval_jointInitialJetEquation (center : E)
+    (Q : DifferentialPolynomial (Polynomial E) r) (x : Option (Fin (r + 1)) → E) :
+    aeval x (jointInitialJetEquation center Q) =
+      aeval (fun j ↦ x (some j))
+        (initialJetEquation center
+          (MvPolynomial.map (Polynomial.aeval (x none)).toRingHom Q)) := by
+  rw [jointInitialJetEquation, aeval_optionEquivRight_symm, map_initialJetEquation]
+  simp
+
+/-- A regular specialized jet implies that the joint initial equation is nonzero. -/
+theorem jointInitialJetEquation_ne_zero_of_regular (center z : E)
+    (Q : DifferentialPolynomial (Polynomial E) r) (jet : Fin (r + 1) → E)
+    (hS : aeval jet (initialJetSeparant center
+      (MvPolynomial.map (Polynomial.evalRingHom z) Q)) ≠ 0) :
+    jointInitialJetEquation center Q ≠ 0 := by
+  have hsep : initialJetSeparant center
+      (MvPolynomial.map (Polynomial.evalRingHom z) Q) ≠ 0 := by
+    intro hzero
+    exact hS (by rw [hzero]; simp)
+  have hinit := initialJetEquation_ne_zero_of_initialJetSeparant_ne_zero center _ hsep
+  intro hzero
+  have he : initialJetEquation (Polynomial.C center) Q = 0 := by
+    apply (optionEquivRight E (Fin (r + 1))).symm.injective
+    simpa only [jointInitialJetEquation, map_zero] using hzero
+  have hm := congrArg (MvPolynomial.map (Polynomial.evalRingHom z)) he
+  rw [map_initialJetEquation, map_zero,
+    show (Polynomial.evalRingHom z) (Polynomial.C center) = center from Polynomial.eval_C] at hm
+  exact hinit hm
 
 /-- Evaluating the joint separant specializes its challenge before evaluating the jet. -/
 theorem aeval_jointInitialJetSeparant (center : E)
