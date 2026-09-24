@@ -15,6 +15,7 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.Received
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.SourceColumn
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.WeightedSupport
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.Soundness
+import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.JohnsonCertificate
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.Dimension
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.WeightedSupportCertificate
 import Mathlib.FieldTheory.RatFunc.Basic
@@ -497,6 +498,169 @@ private def sixteenPointEmbedding : Fin 16 ↪ ℚ where
     apply Fin.ext
     change (i.val : ℚ) = (j.val : ℚ) at hij
     exact_mod_cast hij
+
+private noncomputable def johnsonKernelCoefficients :
+    Fin (Fintype.card (JohnsonColumnIndex 2 1 0)) → ℚ[X] :=
+  fun _ => 1
+
+private theorem johnsonKernelInterpolant_eq :
+    SourceColumn.interpolant (johnsonColumns 2 1 0) johnsonKernelCoefficients =
+      (1 + (X none : DifferentialPolynomial ℚ[X] 0)) := by
+  classical
+  let e := Fintype.equivFin (JohnsonColumnIndex 2 1 0)
+  rw [SourceColumn.interpolant, ← e.sum_comp]
+  have hcoord (q : JohnsonColumnIndex 2 1 0) :
+      (Fintype.equivFin (JohnsonColumnIndex 2 1 0)).symm (e q) = q := by
+    change e.symm (e q) = q
+    exact e.symm_apply_apply q
+  simp_rw [johnsonColumns]
+  rw [Fintype.sum_sigma]
+  simp only [johnsonKernelCoefficients, SourceColumn.exponent, Nat.reduceAdd, univ_unique,
+    Fin.default_eq_zero, Fin.isValue, Fin.val_eq_zero, sum_singleton, Fin.coe_ofNat_eq_mod,
+    Nat.zero_mod, Nat.mul_zero, Nat.sub_zero, Fin.sum_univ_two]
+  rw [hcoord ⟨0, 0⟩, hcoord ⟨0, 1⟩]
+  simp only [Nat.reduceAdd, Fin.isValue, Fin.coe_ofNat_eq_mod, Nat.zero_mod, Nat.mul_zero,
+    Nat.sub_zero, Finsupp.single_zero, add_zero, univ_eq_empty, sum_empty, monomial_zero', C_1,
+    Nat.mod_succ, add_right_inj]
+  simpa using (MvPolynomial.X_pow_eq_monomial (n := none) (e := 1) :
+    (X none : DifferentialPolynomial ℚ[X] 0) ^ 1 =
+      MvPolynomial.monomial (Finsupp.single none 1) 1).symm
+
+private theorem johnsonKernelLocalConstraints :
+    SatisfiesLocalConstraints 1 (Polynomial.C (-1 : ℚ)) (0 : ℚ[X])
+      (SourceColumn.interpolant (johnsonColumns 2 1 0) johnsonKernelCoefficients) := by
+  rw [johnsonKernelInterpolant_eq, satisfiesLocalConstraints_iff_coeff_eq_zero]
+  intro e he
+  have hT : e (localT 0) = 0 := by
+    have horder : localContactOrder 0 e = e (localT 0) := by
+      rw [localContactOrder_eq]
+      simp [localT, localE, localAux]
+    rw [horder] at he
+    omega
+  have hsub : unscaledLocalSubstitution 0 (Polynomial.C (-1 : ℚ)) (0 : ℚ[X])
+      (1 + (X none : DifferentialPolynomial ℚ[X] 0)) = X (localT 0) := by
+    rw [map_add, map_one, unscaledLocalSubstitution_X]
+    simp [localT]
+  rw [hsub]
+  have hsingle : Finsupp.single (localT 0) 1 ≠ e := by
+    intro h
+    have h' : 1 = e (localT 0) := by
+      simpa [localT] using congrArg (fun u => u (localT 0)) h
+    rw [hT] at h'
+    norm_num at h'
+  simp [MvPolynomial.coeff_X, hsingle]
+
+/-- A nonzero concrete coefficient vector lies in the Johnson matrix kernel. -/
+example : johnsonConstraintMatrix 2 1 0 1 (fun _ : Fin 1 => -1) (fun _ => 0) *ᵥ
+    johnsonKernelCoefficients = 0 ∧ johnsonKernelCoefficients ≠ 0 := by
+  constructor
+  · exact (johnsonConstraintMatrix_kernel_iff 2 1 0 1 (fun _ : Fin 1 => -1)
+      (fun _ => 0) johnsonKernelCoefficients).2 (by
+        intro i
+        fin_cases i
+        exact johnsonKernelLocalConstraints)
+  · intro h
+    have h0 := congrFun h ⟨0, by norm_num [johnsonKernelCoefficients]⟩
+    simp [johnsonKernelCoefficients] at h0
+
+private def agreementSoundnessColumns : Fin 1 → SourceColumn 0 := fun _ => ⟨0, 1, ![]⟩
+
+private theorem agreementSoundnessInterpolant_eq :
+    SourceColumn.interpolant agreementSoundnessColumns (fun _ => (1 : ℚ[X])) =
+      (X (some 0) : DifferentialPolynomial ℚ[X] 0) := by
+  simp [SourceColumn.interpolant, agreementSoundnessColumns, SourceColumn.exponent,
+    MvPolynomial.X]
+
+private theorem agreementSoundnessColumn_eligible : ∀ j,
+    WeightedSupportEligible 1 0 0 2 (agreementSoundnessColumns j).exponent := by
+  intro j
+  fin_cases j
+  simp [WeightedSupportEligible, agreementSoundnessColumns, SourceColumn.exponent,
+    fullHigherJetWeight, jetHigherWeight, totalJetDegree_eq_sum, Finsupp.weight_single]
+
+private theorem agreementSoundnessLocalConstraints : ∀ i : Fin 2,
+    SatisfiesLocalConstraints 1 (Polynomial.C (twoPointEmbedding i)) (0 : ℚ[X])
+      (SourceColumn.interpolant agreementSoundnessColumns (fun _ => (1 : ℚ[X]))) := by
+  intro i
+  rw [satisfiesLocalConstraints_iff_coeff_eq_zero]
+  intro e he
+  have hT : e (localT 0) = 0 := by
+    have horder : localContactOrder 0 e = e (localT 0) := by
+      rw [localContactOrder_eq]
+      simp [localT, localE, localAux]
+    rw [horder] at he
+    omega
+  have hmon : (X (localT 0) * X (localE 0) : LocalPolynomial (ℚ[X]) 0) =
+      MvPolynomial.monomial (Finsupp.single (localT 0) 1 + Finsupp.single (localE 0) 1) 1 := by
+    rw [← pow_one (X (localT 0)), ← pow_one (X (localE 0)),
+      MvPolynomial.X_pow_eq_monomial, MvPolynomial.X_pow_eq_monomial,
+      MvPolynomial.monomial_mul_monomial]
+    norm_num
+  rw [agreementSoundnessInterpolant_eq, unscaledLocalSubstitution_Y_zero]
+  simp only [localCorrection, map_zero, zero_add, hmon]
+  have hnot : Finsupp.single (localT 0) 1 + Finsupp.single (localE 0) 1 ≠ e := by
+    intro h
+    have h' : 1 = e (localT 0) := by
+      simpa [localT, localE, localAux] using congrArg (fun u => u none) h
+    rw [hT] at h'
+    norm_num at h'
+  simp [MvPolynomial.coeff_monomial, hnot]
+
+/-- A nonzero order-zero equation vanishes at a concrete two-point agreement set. -/
+example : differentialSpecialization
+    (MvPolynomial.map (Polynomial.eval₂RingHom (RingHom.id ℚ) (0 : ℚ))
+      (SourceColumn.interpolant agreementSoundnessColumns (fun _ => (1 : ℚ[X]))))
+    (0 : ℚ[X]) = 0 := by
+  exact differentialSpecialization_curve_interpolant_eq_zero_of_agreements
+    (F := ℚ) (E := ℚ) (d := 0) (D := 1) (m := 1) (A := 2) (W := 0) (L := 2)
+    Nat.one_pos (by norm_num) (by norm_num) twoPointEmbedding (fun _ => 0)
+    agreementSoundnessColumns agreementSoundnessColumn_eligible (fun _ => 1)
+    agreementSoundnessLocalConstraints (RingHom.id ℚ) 0 Finset.univ 0 (by norm_num)
+    twoPointEmbedding.injective.injOn (by norm_num) (by intro i hi; simp)
+
+/-- The received-line agreement theorem handles a concrete constant received line. -/
+example : differentialSpecialization
+    (MvPolynomial.map (Polynomial.eval₂RingHom (RingHom.id ℚ) (0 : ℚ))
+      (SourceColumn.interpolant agreementSoundnessColumns (fun _ => (1 : ℚ[X]))))
+    (0 : ℚ[X]) = 0 := by
+  exact differentialSpecialization_map_interpolant_eq_zero_of_agreements
+    (F := ℚ) (E := ℚ) (d := 0) (D := 1) (m := 1) (A := 2) (W := 0) (L := 2)
+    Nat.one_pos (by norm_num) (by norm_num) twoPointEmbedding (fun _ => 0) (fun _ => 0)
+    agreementSoundnessColumns agreementSoundnessColumn_eligible (fun _ => 1)
+    (by simpa [receivedLine] using agreementSoundnessLocalConstraints)
+    (RingHom.id ℚ) 0 Finset.univ 0 (by norm_num) twoPointEmbedding.injective.injOn
+    (by norm_num) (by intro i hi; simp)
+
+/-- The degree-`< k` form applies to the same concrete two-point agreement. -/
+example : differentialSpecialization
+    (MvPolynomial.map (Polynomial.eval₂RingHom (RingHom.id ℚ) (0 : ℚ))
+      (SourceColumn.interpolant agreementSoundnessColumns (fun _ => (1 : ℚ[X]))))
+    (0 : ℚ[X]) = 0 := by
+  exact differentialSpecialization_map_interpolant_eq_zero_of_degree_lt
+    (F := ℚ) (E := ℚ) (d := 0) (D := 1) (m := 1) (A := 2) (W := 0) (L := 2) (k := 1)
+    Nat.one_pos (by norm_num) (by norm_num) (by norm_num)
+    twoPointEmbedding (fun _ => 0) (fun _ => 0)
+    agreementSoundnessColumns agreementSoundnessColumn_eligible (fun _ => 1)
+    (by simpa [receivedLine] using agreementSoundnessLocalConstraints)
+    (RingHom.id ℚ) 0 Finset.univ 0 (by norm_num) twoPointEmbedding.injective.injOn
+    (by norm_num) (by intro i hi; simp)
+
+/-- The finite Johnson construction has a concrete degree-one rational instance. -/
+example : Nonempty (JohnsonSymbolicCertificate (F := ℚ) 1 6
+    (johnsonM 16 1 (1 / 8 : ℝ)) (johnsonMu 16 1 (1 / 8 : ℝ)) 1
+    (johnsonH 16 1 (1 / 8 : ℝ)) (johnsonXCutoff 16 1 (1 / 8 : ℝ))
+    sixteenPointEmbedding (fun _ => 0) (fun _ => 0)) := by
+  exact exists_johnson_symbolic_certificate (F := ℚ)
+    (hD := by norm_num) (hDn := by norm_num) (heta := by norm_num)
+    (hthreshold := by
+      have hrho : johnsonRhoMinus 16 1 = (1 / 16 : ℝ) := by
+        norm_num [johnsonRhoMinus]
+      rw [johnsonAgreement, hrho]
+      have hsqrt : Real.sqrt (1 / 16 : ℝ) ≤ 1 / 4 := by
+        apply Real.sqrt_le_iff.mpr
+        constructor <;> norm_num
+      nlinarith [hsqrt])
+    (hkD := by norm_num) sixteenPointEmbedding (fun _ => 0) (fun _ => 0)
 
 /-- The rate construction gives a certificate at a small, feasible agreement threshold. -/
 example :

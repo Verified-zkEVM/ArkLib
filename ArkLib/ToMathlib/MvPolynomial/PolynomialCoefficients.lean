@@ -6,8 +6,10 @@ Authors: Quang Dao
 module
 
 public import ArkLib.ToMathlib.MvPolynomial.ClearedSubstitution
+public import ArkLib.ToMathlib.MvPolynomial.OptionWeightedDegree
 public import ArkLib.ToMathlib.MvPolynomial.RootContraction
 public import ArkLib.ToMathlib.RingTheory.MvPolynomial.Bidegree
+public import ArkLib.ToMathlib.RingTheory.MvPolynomial.CappedBidegree
 public import Mathlib.Algebra.MvPolynomial.CommRing
 public import Mathlib.Algebra.MvPolynomial.Equiv
 public import Mathlib.Algebra.MvPolynomial.PDeriv
@@ -40,6 +42,9 @@ This file records both degrees.
   `MvPolynomial.CoeffNatDegreeLE.pderiv` and `MvPolynomial.CoeffNatDegreeLE.clearedSubstitution`.
 * `MvPolynomial.optionEquivRight_symm_mem_restrictBidegree`: coefficient and jet degree bounds
   give a bidegree bound after flattening.
+* `MvPolynomial.optionEquivRight_symm_mem_restrictCappedBidegree`: coefficient, total-degree, and
+  coordinate bounds give a cap after flattening, using the weighted-degree identity for the
+  coordinate bound.
 * `MvPolynomial.eval_map_coefficients`: evaluation after a coefficient map agrees with direct
   evaluation into the target semiring.
 * `MvPolynomial.jointTotalDegree`, its ring-operation bounds, `jointTotalDegree_C_le`,
@@ -345,6 +350,26 @@ theorem optionEquivRight_symm_mem_restrictBidegree [Nontrivial R]
         simpa only [AlgEquiv.apply_symm_apply] using
           (totalDegree_optionEquivRight ((optionEquivRight R σ).symm P)).symm
       _ ≤ b := hb
+
+/-- Coefficient, total, and separate variable-degree bounds give a capped bidegree bound after
+flattening. -/
+theorem optionEquivRight_symm_mem_restrictCappedBidegree [Nontrivial R]
+    {P : MvPolynomial σ (Polynomial R)} {i : σ} {a b c : ℕ}
+    (ha : CoeffNatDegreeLE P a) (hb : P.totalDegree ≤ b) (hc : P.degreeOf i ≤ c) :
+    (optionEquivRight R σ).symm P ∈ restrictCappedBidegree σ R i a b (min b c) :=
+  mem_restrictCappedBidegree_of_mem_restrictBidegree
+    (optionEquivRight_symm_mem_restrictBidegree ha hb) (by
+      classical
+      have hdegree := weightedTotalDegree_optionEquivRight (Pi.single i 1)
+        ((optionEquivRight R σ).symm P)
+      have hweight : (fun v : Option σ ↦ v.elim 0 (Pi.single i 1)) = Pi.single (some i) 1 := by
+        funext v
+        cases v <;> simp [Pi.single_apply]
+      have hcoordinate : ((optionEquivRight R σ).symm P).degreeOf (some i) = P.degreeOf i := by
+        simpa only [hweight, AlgEquiv.apply_symm_apply, weightedTotalDegree_piSingle] using
+          hdegree.symm
+      rw [hcoordinate]
+      exact hc)
 
 /-- Evaluating mapped coefficient polynomials agrees with evaluating their coefficients directly.
 -/

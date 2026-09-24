@@ -11,6 +11,10 @@ import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.GraphLine
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.GraphLineComponent
 import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerBatchedComponentRecognition
+import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerBatchedComponentAgreement
+import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerBatchedGeometricTransfer
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.LineToAffine
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.SingularTail
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TupleSpecialization
@@ -1124,6 +1128,49 @@ example :
       (hcuts := component_powerBatchedAgreementCuts)
   exact ⟨P, hP, hsample, hgraph, hsep⟩
 
+/-- The prime component's joint cut forces the tuple's value at its evaluation point. -/
+example : ∃ P : Fin 2 → ℚ[X], (∀ t, (P t).degree < 1) ∧
+    ∀ t, (P t).eval (domain 0) = componentWord 0 := by
+  classical
+  have hprime : (componentIdeal (E := ComponentField)).IsPrime := componentIdeal_isPrime
+  obtain ⟨P, hP, _, hgraph, hpoly, _, _⟩ :=
+    exists_polynomialGraph_of_primeTaylorComponent (domain := domain)
+      (w := fun _ : Fin 2 ↦ componentWord) (sample := Finset.univ) (hsample := by simp)
+      (φ := algebraMap ℚ ComponentField) (center := 0)
+      (Q := componentEquation (E := ComponentField)) (hK := by omega) (τ := 2)
+      (hτ := by intro l; fin_cases l <;> omega)
+      (I := componentIdeal (E := ComponentField)) (hsep := component_separant_notMem)
+      (hdim := componentIdeal_degree_pos) (hhigh := component_highCuts)
+      (hcuts := component_powerBatchedAgreementCuts)
+  have hagreement := commonCurveAgreement_of_jointTaylorAgreementEquation_mem_prime
+    (n := 1) (K := 2) (r := 0) (ℓ := 1) (domain := domain)
+    (w := fun _ : Fin 2 ↦ componentWord) (ιₑ := algebraMap ℚ ComponentField)
+    (center := 0) (Q := componentEquation (E := ComponentField)) (τ := 2)
+    (hτ := by intro l; omega) (I := componentIdeal (E := ComponentField))
+    (hsep := component_separant_notMem) (hdim := componentIdeal_degree_pos) (P := P)
+    (hgraph := hgraph) (hpoly := hpoly) (i := 0)
+    (hcut := component_powerBatchedAgreementCuts 0 (by simp))
+  exact ⟨P, hP, hagreement⟩
+
+noncomputable local instance graphComponentDecidableEq : DecidableEq ℚ := Classical.decEq _
+
+open Classical in
+/-- One joint agreement cut for a two-entry tuple yields a common agreement. -/
+example : ∃ P : Fin 2 → ℚ[X], (∀ t, (P t).degree < 1) ∧
+    1 ≤ (commonCurveAgreementSet domain (fun _ : Fin 2 ↦ componentWord) P).card := by
+  have hprime : (componentIdeal (E := ComponentField)).IsPrime := componentIdeal_isPrime
+  obtain ⟨P, hP, hcommon, -, -, -, -⟩ :=
+    exists_polynomialGraph_of_primeTaylorComponent_agreements (n := 1) (k := 1) (K := 2)
+      (r := 0) (ℓ := 1) (L := 1) (domain := domain)
+      (w := fun _ : Fin 2 ↦ componentWord) (indices := Finset.univ)
+      (hcard := by simp) (hkL := by omega) (ιₑ := algebraMap ℚ ComponentField)
+      (center := 0) (Q := componentEquation (E := ComponentField)) (hK := by omega)
+      (τ := 2) (hτ := by intro l; omega)
+      (I := componentIdeal (E := ComponentField)) (hsep := component_separant_notMem)
+      (hdim := componentIdeal_degree_pos) (hhigh := component_highCuts)
+      (hcuts := component_powerBatchedAgreementCuts)
+  exact ⟨P, hP, hcommon⟩
+
 end
 
 end ReedSolomon.GraphLineComponentTest
@@ -1424,6 +1471,65 @@ private theorem batchedCandidates_ne : batchedTuple ≠ alternateBatchedTuple :=
   intro h
   have h1 := congrFun h (1 : Fin 2)
   simp [batchedTuple, alternateBatchedTuple] at h1
+
+private def zeroTuple : Fin 2 → (ZMod 3)[X] := fun _ ↦ 0
+
+private def zeroWords : Fin 2 → Fin 1 → ZMod 3 := fun _ _ ↦ 0
+
+private def zeroCandidate : ZMod 3 → (ZMod 3)[X] → Prop := fun _ Q ↦ Q = 0
+
+private def retainedZeroTuple : Finset (Fin 2 → (ZMod 3)[X]) := {zeroTuple}
+
+-- One retained zero tuple covers every degree-bounded zero candidate.
+example : ∃ exceptional : Finset (ZMod 3),
+    (exceptional.card : ℚ) ≤
+      geometricTransferBound 0 1 1 1 0 0 (fun _ : PUnit ↦ 0) (fun _ ↦ 0) (fun _ ↦ 1) ∧
+    ∀ z ∉ exceptional, ∀ Q, zeroCandidate z Q → Q.degree < 1 →
+      HasExactPowerAgreement (ℓ := 1) domain zeroWords
+        (RingHom.id (ZMod 3)) 1 z Q := by
+  classical
+  have h := exists_geometricTransfer_exceptional
+    (α := Fin 1) (ν := PUnit) (k := 1) (ℓ := 1) (L := 0) (A := 0)
+    domain zeroWords (RingHom.id (ZMod 3)) zeroCandidate ∅
+    (fun _ ↦ 0) (fun _ ↦ 0) (fun _ ↦ 1) (fun _ ↦ ∅) (fun _ ↦ retainedZeroTuple)
+    (by intro s; simp)
+    (by intro s; simp [retainedZeroTuple, dimensionSensitiveIncidenceProduct])
+    (by
+      intro s P hP t
+      simp only [retainedZeroTuple, Finset.mem_singleton] at hP
+      rw [hP]
+      simp [zeroTuple])
+    (by intro s P hP; simp)
+    (by
+      intro z Q hQ hQdegree hA hz
+      right
+      refine ⟨(), zeroTuple, ?_, ?_⟩
+      · simp [retainedZeroTuple]
+      · rw [hQ]
+        simp [zeroTuple, powerBatchedPolynomial])
+  simpa [geometricTransferBound, Fintype.card_fin] using h
+
+-- The identity embedding pulls back an empty exceptional set to an empty base-field set.
+example : ∃ exceptional : Finset (ZMod 3), exceptional.card = 0 ∧
+    ∀ z ∉ exceptional, ∀ Q, zeroCandidate z Q →
+      HasExactPowerAgreement (ℓ := 1) domain zeroWords
+        (RingHom.id (ZMod 3)) 1 z Q := by
+  classical
+  obtain ⟨exceptional, hcard, hgood⟩ :=
+    exists_geometricTransfer_baseField_semantic (domain := domain) (w := zeroWords)
+      (iota := RingHom.id (ZMod 3)) (k := 1) (Candidate := zeroCandidate)
+      (exceptional := ∅) (bound := 0) (by simp) (by
+        intro z hz Q hQ
+        subst Q
+        refine ⟨zeroTuple, ?_, ?_, ?_⟩
+        · intro t
+          simp [zeroTuple]
+        · simp [zeroTuple, powerBatchedPolynomial]
+        · ext i
+          simp [zeroWords, zeroTuple, commonCurveAgreementSet, polynomialAgreementSet,
+            powerBatchedWord])
+  refine ⟨exceptional, ?_, hgood⟩
+  exact Nat.eq_zero_of_le_zero (by exact_mod_cast hcard)
 
 -- The degree-one tuple uses the positive challenge term in exact power agreement.
 example : ∃ exceptional : Finset (ZMod 3), exceptional.card ≤ 0 ∧
