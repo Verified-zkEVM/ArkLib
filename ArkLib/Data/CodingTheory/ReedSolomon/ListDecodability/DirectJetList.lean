@@ -187,13 +187,17 @@ theorem finite_actualStage_regularSolutions_card_le_dimensionSensitive
     (hkA : k ≤ A) (hAn : A ≤ n)
     (hbin : ∀ r, r ≤ d → ∀ i, r < i → i < K → (i.choose r : F) ≠ 0)
     (S : Finset F[X])
-    (hdegree : ∀ P ∈ S, P.degree < k)
-    (hsol : ∀ P ∈ S, differentialSpecialization current P = 0)
     (hsep : ∀ P ∈ S, differentialSpecialization (separant current s) P ≠ 0)
     (hagree : ∀ P ∈ S,
       P ∈ directJetAgreementSolutions current domain received k A) :
     (S.card : ℚ) ≤ directJetStageCharge n A k K (current, s) := by
   classical
+  have hdegree : ∀ P ∈ S, P.degree < k := by
+    intro P hP
+    exact ((hagree P hP).2).1
+  have hsol : ∀ P ∈ S, differentialSpecialization current P = 0 := by
+    intro P hP
+    exact (hagree P hP).1
   obtain ⟨presentation⟩ := nonempty_jetPrefixPresentation current
     (isHighestActiveJet_of_highestActiveJet_eq_some hhighest)
   let Q' := presentation.equation
@@ -325,8 +329,6 @@ theorem finset_card_le_directJetStageCharge_sum
         ¬ differentialSpecialization (separant current s) P ≠ 0
       have hregular := finite_actualStage_regularSolutions_card_le_dimensionSensitive
         current s hhighest K k hK hkK domain received hkA hAn hbin regular
-        (fun P hP ↦ ((hS P (Finset.mem_filter.mp hP).1).2).1)
-        (fun P hP ↦ (hS P (Finset.mem_filter.mp hP).1).1)
         (fun P hP ↦ (Finset.mem_filter.mp hP).2)
         (fun P hP ↦ hS P (Finset.mem_filter.mp hP).1)
       have hsingularAccept :
