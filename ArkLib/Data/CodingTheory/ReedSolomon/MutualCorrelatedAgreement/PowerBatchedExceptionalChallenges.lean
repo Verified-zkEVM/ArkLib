@@ -41,54 +41,6 @@ namespace ReedSolomon
 
 variable {F E : Type*} [Field F] [Field E] {n r ℓ : ℕ}
 
-private theorem jointInitialJetEquation_eval (center z : E)
-    (Q : DifferentialPolynomial E[X] r) (jet : Fin (r + 1) → E) :
-    aeval (fun i ↦ i.elim z jet) (jointInitialJetEquation center Q) =
-      aeval jet (initialJetEquation center (MvPolynomial.map (Polynomial.evalRingHom z) Q)) := by
-  have hφ : (Polynomial.aeval z).toRingHom = Polynomial.evalRingHom z := by
-    ext a <;> simp [Polynomial.evalRingHom]
-  rw [jointInitialJetEquation, aeval_optionEquivRight_symm, map_initialJetEquation]
-  simp only [Option.elim_none, Option.elim_some]
-  rw [hφ, show (Polynomial.evalRingHom z) (Polynomial.C center) = center from Polynomial.eval_C]
-
-private theorem jointInitialJetEquation_ne_zero_of_regular (center z : E)
-    (Q : DifferentialPolynomial E[X] r) (jet : Fin (r + 1) → E)
-    (hs : aeval jet (initialJetSeparant center
-      (MvPolynomial.map (Polynomial.evalRingHom z) Q)) ≠ 0) :
-    jointInitialJetEquation center Q ≠ 0 := by
-  have hs' : initialJetSeparant center
-      (MvPolynomial.map (Polynomial.evalRingHom z) Q) ≠ 0 := by
-    intro hzero
-    exact hs (by rw [hzero]; simp)
-  have hi := initialJetEquation_ne_zero_of_initialJetSeparant_ne_zero center _ hs'
-  intro hzero
-  have he : initialJetEquation (Polynomial.C center) Q = 0 := by
-    apply (optionEquivRight E (Fin (r + 1))).symm.injective
-    simpa only [jointInitialJetEquation, map_zero] using hzero
-  have hm := congrArg (MvPolynomial.map (Polynomial.evalRingHom z)) he
-  rw [map_initialJetEquation, map_zero,
-    show (Polynomial.evalRingHom z) (Polynomial.C center) = center from Polynomial.eval_C] at hm
-  exact hi hm
-
-private theorem jointSeparant_eval (center z : E) (Q : DifferentialPolynomial E[X] r)
-    (jet : Fin (r + 1) → E) :
-    aeval (fun i ↦ i.elim z jet) (jointInitialJetSeparant center Q) =
-      aeval jet (initialJetSeparant center (MvPolynomial.map (Polynomial.evalRingHom z) Q)) := by
-  have hφ : (Polynomial.aeval z).toRingHom = Polynomial.evalRingHom z := by
-    ext a <;> simp [Polynomial.evalRingHom]
-  simpa only [Option.elim_none, Option.elim_some, hφ] using
-    aeval_jointInitialJetSeparant center Q (fun i ↦ i.elim z jet)
-
-private theorem jointNumerator_eval (center z : E) (Q : DifferentialPolynomial E[X] r)
-    (τ : ℕ) {K : ℕ} (l : Fin K) (jet : Fin (r + 1) → E) :
-    aeval (fun i ↦ i.elim z jet) (jointCommonTaylorNumerator center Q τ l) =
-      aeval jet (commonTaylorNumerator center
-        (MvPolynomial.map (Polynomial.evalRingHom z) Q) τ l.val) := by
-  have hφ : (Polynomial.aeval z).toRingHom = Polynomial.evalRingHom z := by
-    ext a <;> simp [Polynomial.evalRingHom]
-  simpa only [Option.elim_none, Option.elim_some, hφ] using
-    aeval_jointCommonTaylorNumerator center Q τ l (fun i ↦ i.elim z jet)
-
 open Classical in
 /-- A finite family of regular power-batched charts has a bad-challenge bound from incidence
 outside admissible tuple graphs and exact-agreement exceptions for the retained tuples. -/
@@ -175,11 +127,14 @@ theorem finite_powerBatchedChart_badChallenges_card_le [IsAlgClosed E]
       positivity
     obtain ⟨z₀, hz₀⟩ := Finset.nonempty_iff_ne_empty.mpr hempty
     have hzc := (Finset.mem_sdiff.mp hz₀).1
-    have hinit := jointInitialJetEquation_ne_zero_of_regular center z₀ Q (jet z₀)
-      (hchart z₀ hzc).2.2.1
+    have hφ : (Polynomial.aeval z₀).toRingHom = Polynomial.evalRingHom z₀ := by
+      ext a <;> simp [Polynomial.evalRingHom]
+    have hinit := PolynomialDifferential.jointInitialJetEquation_ne_zero_of_regular center z₀ Q
+      (jet z₀) (hchart z₀ hzc).2.2.1
     have hsepPoint : aeval (point z₀) (jointInitialJetSeparant center Q) ≠ 0 := by
-      rw [jointSeparant_eval]
-      exact (hchart z₀ hzc).2.2.1
+      rw [aeval_jointInitialJetSeparant]
+      simpa only [point, Option.elim_none, Option.elim_some, hφ] using
+        (hchart z₀ hzc).2.2.1
     have hsep : jointInitialJetSeparant center Q ≠ 0 := by
       intro hzero
       apply hsepPoint
@@ -192,13 +147,17 @@ theorem finite_powerBatchedChart_badChallenges_card_le [IsAlgClosed E]
     · intro x hx
       obtain ⟨z, hz, rfl⟩ := Finset.mem_image.mp hx
       have hzc := (Finset.mem_sdiff.mp hz).1
+      have hφ : (Polynomial.aeval z).toRingHom = Polynomial.evalRingHom z := by
+        ext a <;> simp [Polynomial.evalRingHom]
       refine ⟨?_, ?_, ?_, ?_⟩
-      · rw [jointInitialJetEquation_eval]
-        exact (hchart z hzc).2.1
-      · rw [jointSeparant_eval]
-        exact (hchart z hzc).2.2.1
+      · rw [aeval_jointInitialJetEquation]
+        simpa only [point, Option.elim_none, Option.elim_some, hφ] using
+          (hchart z hzc).2.1
+      · rw [aeval_jointInitialJetSeparant]
+        simpa only [point, Option.elim_none, Option.elim_some, hφ] using
+          (hchart z hzc).2.2.1
       · intro l hl
-        rw [jointNumerator_eval]
+        rw [aeval_jointCommonTaylorNumerator]
         have hcoeff : rationalTaylorCoefficient center
             (MvPolynomial.map (Polynomial.evalRingHom z) Q) (jet z) l.val = 0 := by
           have hprefix :
@@ -217,9 +176,10 @@ theorem finite_powerBatchedChart_badChallenges_card_le [IsAlgClosed E]
               (Polynomial.taylor center (witness z)).degree < (l.val : WithBot ℕ) := by
             simpa only [Polynomial.degree_taylor] using hdegree
           exact Polynomial.coeff_eq_zero_of_degree_lt hdegree'
-        exact aeval_commonTaylorNumerator_eq_zero center
-          (MvPolynomial.map (Polynomial.evalRingHom z) Q) (jet z) τ
-          (hchart z hzc).2.2.1 hcoeff
+        simpa only [point, Option.elim_none, Option.elim_some, hφ] using
+          aeval_commonTaylorNumerator_eq_zero center
+            (MvPolynomial.map (Polynomial.evalRingHom z) Q) (jet z) τ
+            (hchart z hzc).2.2.1 hcoeff
       · exact hoff z hz
     · intro x hx
       obtain ⟨z, hz, rfl⟩ := Finset.mem_image.mp hx
