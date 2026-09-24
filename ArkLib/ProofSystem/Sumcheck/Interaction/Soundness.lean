@@ -112,6 +112,18 @@ theorem committedRun_rejects [DecidableEq F] (p q : Message F deg)
     (committedRun F deg p q domain target r).closed = none := by
   simp [committedRun, h, CoreRun.closed]
 
+/-- `prEvent_eq_evalDist_map` at `OracleComp unifSpec`, stated so that the `Pr{...}` side uses
+the same `Bind`/`Pure` instances as `do` notation elaborated at this monad. -/
+private theorem prEvent_eq_evalDist_map_unifSpec {α : Type} (mx : OracleComp unifSpec α)
+    (p : α → Prop) : Pr{let x ← mx}[p x] = 𝒟[p <$> mx] {True} :=
+  prEvent_eq_evalDist_map mx p
+
+/-- `prEvent_bind_le_of_forall_le` at `OracleComp unifSpec`, with `do`-notation instances. -/
+private theorem prEvent_bind_le_of_forall_le_unifSpec {α β : Type}
+    (mx : OracleComp unifSpec α) (f : α → OracleComp unifSpec β) (q : β → Prop) {ε : ENNReal}
+    (h : ∀ a, Pr{let y ← f a}[q y] ≤ ε) : Pr{let y ← mx >>= f}[q y] ≤ ε :=
+  prEvent_bind_le_of_forall_le mx f q h
+
 variable [Fintype F] [DecidableEq F] [SampleableType F]
 
 /-- Soundness against every polynomial fixed before the fresh uniform challenge. -/
@@ -157,7 +169,7 @@ theorem executeRandomCommitment_soundness (messages : ProbComp (Message F deg))
     Pr{let run ← messages >>= fun q => executeCommitted F deg ($ᵗ F) p q domain target}[
       run.closed.map (closedOutputRelation F deg) = some True] ≤
         (deg : ENNReal) / Fintype.card F := by
-  exact prEvent_bind_le_of_forall_le _ _ _
+  exact prEvent_bind_le_of_forall_le_unifSpec _ _ _
     (fun q => executeCommitted_soundness F deg p q domain target hfalse)
 
 /-- Primary measure-valued soundness on the actual executor's closed output.
@@ -168,7 +180,7 @@ theorem executeCommitted_measureSoundness (p q : Message F deg)
     𝒟[(fun run => run.closed.map (closedOutputRelation F deg) = some True) <$>
         executeCommitted F deg ($ᵗ F) p q domain target] {True} ≤
         (deg : ENNReal) / Fintype.card F := by
-  rw [← prEvent_eq_evalDist_map]
+  rw [← prEvent_eq_evalDist_map_unifSpec]
   exact executeCommitted_soundness F deg p q domain target hfalse
 
 /-- Primary measure bound for any possibly failing randomized commitment made first. -/
@@ -178,7 +190,7 @@ theorem executeRandomCommitment_measureSoundness (messages : ProbComp (Message F
     𝒟[(fun run => run.closed.map (closedOutputRelation F deg) = some True) <$>
         (messages >>= fun q => executeCommitted F deg ($ᵗ F) p q domain target)] {True} ≤
         (deg : ENNReal) / Fintype.card F := by
-  rw [← prEvent_eq_evalDist_map]
+  rw [← prEvent_eq_evalDist_map_unifSpec]
   exact executeRandomCommitment_soundness F deg messages p domain target hfalse
 
 end

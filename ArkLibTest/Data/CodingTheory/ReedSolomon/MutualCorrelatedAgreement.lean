@@ -20,6 +20,8 @@ import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.LineToAffi
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.SingularTail
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TupleSpecialization
 import ArkLibTest.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TaylorChart
+import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.ComponentDimension
+import ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertComap
 import ArkLib.ToMathlib.RingTheory.Nullstellensatz
 import Mathlib.Algebra.MvPolynomial.Division
 import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
@@ -287,36 +289,6 @@ private theorem domain_zero : domain (0 : Fin 1) = 0 := rfl
 
 private def componentWord : Fin 1 → ℚ := fun _ ↦ 0
 
-private theorem quadraticJetSampleEquation_jointHighNumerator_eq :
-    jointCommonTaylorNumerator (r := 0) 0 quadraticJetSampleEquation 2 (1 : Fin 2) =
-      -(MvPolynomial.X (some (0 : Fin 1)) - MvPolynomial.C (2 : ℚ)) ^ 2 := by
-  rw [jointCommonTaylorNumerator]
-  simp only [Fin.val_one]
-  rw [quadraticJetSampleEquation_highNumerator_eq]
-  simp
-
-private def jointPoint : Option (Fin 1) → ℚ
-  | none => 2
-  | some _ => 2
-
-private def jointZeroJet : Option (Fin 1) → ℚ
-  | none => 2
-  | some _ => 0
-
-private def jointReceivedF : Fin 1 → ℚ := fun _ ↦ 0
-
-private def jointReceivedG : Fin 1 → ℚ := fun _ ↦ 1
-
-private theorem quadraticJetSampleEquation_highNumerator_ne :
-    jointCommonTaylorNumerator (r := 0) 0 quadraticJetSampleEquation 2 (1 : Fin 2) ≠ 0 := by
-  have hvalue : aeval jointZeroJet
-      (jointCommonTaylorNumerator (r := 0) 0 quadraticJetSampleEquation 2 (1 : Fin 2)) = -4 := by
-    rw [quadraticJetSampleEquation_jointHighNumerator_eq]
-    norm_num [jointZeroJet]
-  intro hzero
-  rw [hzero] at hvalue
-  norm_num at hvalue
-
 private abbrev componentEquation {E : Type*} [CommRing E] :
     DifferentialPolynomial E[X] 0 :=
   (MvPolynomial.X (some (0 : Fin 1)) : DifferentialPolynomial E[X] 0) -
@@ -479,151 +451,241 @@ private theorem component_agreementCuts : ∀ i ∈ Finset.univ,
   rw [hxval, hyval, component_cut_eq]
   exact component_initialEquation_mem
 
-private theorem component_powerBatchedAgreementCuts : ∀ i ∈ Finset.univ,
-    jointTaylorAgreementEquation (r := 0) (0 : ComponentField)
-      (componentEquation (E := ComponentField)) 2 2
-      (Polynomial.C ((algebraMap ℚ ComponentField) (domain i)))
-      (powerBatchedCoordinate
-        (fun _ : Fin 2 ↦ (algebraMap ℚ ComponentField) (componentWord i))) ∈
-        componentIdeal := by
-  intro i hi
-  have hbatch : powerBatchedCoordinate
-      (fun _ : Fin 2 ↦ (algebraMap ℚ ComponentField) (componentWord i)) = 0 := by
-    rw [powerBatchedCoordinate_eq_zero_iff]
-    funext t
-    simp [componentWord]
-  have hreceived :
-      Polynomial.C ((algebraMap ℚ ComponentField) (componentWord i)) +
-        Polynomial.X * Polynomial.C
-          ((algebraMap ℚ ComponentField) (componentWord i)) = 0 := by
-    simp [componentWord]
-  have hpair := component_agreementCuts i hi
-  rw [hreceived] at hpair
-  rw [hbatch]
-  exact hpair
+private def componentOrigin : Option (Fin 1) → ComponentField := fun _ ↦ 0
 
-/-- A nonvacuous high cut and nonzero reconstruction use the second received value. -/
-example :
-    ∃ P₀ P₁ : ℚ[X], P₀.degree < 1 ∧ P₁.degree < 1 ∧
-      P₀.eval 0 = 0 ∧ P₁.eval 0 = 1 ∧
-      (Polynomial.C 2 * P₁.map (RingHom.id ℚ)).eval 0 = 2 ∧
-      MvPolynomial.aeval jointPoint
-          (jointCommonTaylorNumerator (r := 0) 0 quadraticJetSampleEquation 2 (1 : Fin 2)) = 0 ∧
-      jointCommonTaylorNumerator (r := 0) 0 quadraticJetSampleEquation 2 (1 : Fin 2) ≠ 0 ∧
-      rationalTaylorPolynomial (0 : ℚ)
-        (map (Polynomial.evalRingHom 2) quadraticJetSampleEquation) 2 (fun _ : Fin 1 ↦ 2) =
-          P₀.map (RingHom.id ℚ) + Polynomial.C 2 * P₁.map (RingHom.id ℚ) ∧
-      (fun _ : Fin 1 ↦ 2) = (fun j ↦
-        polynomialJet (d := 0) (0 : ℚ) (P₀.map (RingHom.id ℚ)) j +
-          (2 : ℚ) * polynomialJet (d := 0) (0 : ℚ) (P₁.map (RingHom.id ℚ)) j) := by
-  obtain ⟨P₀, P₁, hP₀, hP₁, hsample, hrecognize⟩ :=
-    exists_graphLine_pair_of_joint_taylor_chart (n := 1) (k := 1) (K := 2) (r := 0)
-      domain jointReceivedF jointReceivedG Finset.univ (by simp) (RingHom.id ℚ) 0
-      quadraticJetSampleEquation (by omega) 2 (by intro l; fin_cases l <;> omega)
-  let jet : Fin 1 → ℚ := fun _ ↦ 2
-  let φ : Polynomial ℚ →ₐ[ℚ] ℚ := Polynomial.aeval (2 : ℚ)
-  have hφ : φ.toRingHom = Polynomial.evalRingHom (2 : ℚ) := by
-    ext p <;> simp [φ, Polynomial.evalRingHom]
-  have hS :
-      aeval jointPoint
-        (jointInitialJetSeparant (r := 0) 0 quadraticJetSampleEquation) ≠ 0 := by
-    simp [jointInitialJetSeparant, quadraticJetSampleEquation, initialJetSeparant, separant,
-      Fin.last]
-  have hSflat : aeval jointPoint (jointInitialJetSeparant (r := 0) 0 quadraticJetSampleEquation) =
-      aeval jet
-        (map φ.toRingHom (initialJetSeparant (Polynomial.C 0) quadraticJetSampleEquation)) := by
-    rw [jointInitialJetSeparant, aeval_optionEquivRight_symm]
-    rfl
-  have hSφ : aeval jet (map φ.toRingHom
-      (initialJetSeparant (Polynomial.C 0) quadraticJetSampleEquation)) ≠ 0 := by
-    rw [← hSflat]
-    exact hS
-  have hsolution : differentialSpecialization (map φ.toRingHom quadraticJetSampleEquation)
-      (Polynomial.C 2 : ℚ[X]) = 0 := by
-    simp [quadraticJetSampleEquation, φ, differentialSpecialization, differentialSpecializationHom]
-  have hjet : polynomialJet (d := 0) (0 : ℚ) (Polynomial.C 2 : ℚ[X]) = jet := by
-    funext j
-    fin_cases j
-    simp [jet, polynomialJet, Polynomial.hasseJet_apply]
-  have hseparant : jetEvaluation
-      (separant (map φ.toRingHom quadraticJetSampleEquation) (Fin.last 0)) 0
-        (polynomialJet (d := 0) 0 (Polynomial.C 2 : ℚ[X])) ≠ 0 := by
-    rw [hjet]
-    norm_num [jetEvaluation, separant, quadraticJetSampleEquation, φ]
-  have hpoly : rationalTaylorPolynomial 0 (map φ.toRingHom quadraticJetSampleEquation) 2 jet =
-      Polynomial.C 2 := by
-    rw [← hjet]
-    exact rationalTaylorPolynomial_polynomialJet 0
-      (map φ.toRingHom quadraticJetSampleEquation) (Polynomial.C 2) hsolution hseparant
-      (by norm_num) (by intro i hi hiK; norm_num)
-  have hhigh : ∀ l : Fin 2, 1 ≤ l.val →
-      aeval jointPoint
-        (jointCommonTaylorNumerator (r := 0) 0 quadraticJetSampleEquation 2 l) = 0 := by
-    intro l hl
-    have hl_one : l = (1 : Fin 2) := Fin.ext (by omega)
-    subst l
-    have hnum := aeval_map_commonTaylorNumeratorOver_reconstruction_of_exponent
-      (F := ℚ) φ (Polynomial.C 0) quadraticJetSampleEquation 2 2
-      (by intro i; fin_cases i <;> omega) jet hSφ ⟨1, by omega⟩
-    have hcoeff :
-        (Polynomial.taylor (φ (Polynomial.C (0 : ℚ)))
-          (rationalTaylorPolynomial (φ (Polynomial.C 0))
-            (map φ.toRingHom quadraticJetSampleEquation) 2 jet)).coeff 1 = 0 := by
-      rw [show φ (Polynomial.C (0 : ℚ)) = 0 by simp [φ], hpoly]
-      simp
-    rw [hcoeff] at hnum
-    simp only [mul_zero] at hnum
-    have hflat : MvPolynomial.aeval jointPoint
-        (jointCommonTaylorNumerator (r := 0) 0 quadraticJetSampleEquation 2 (1 : Fin 2)) =
-        MvPolynomial.aeval jet (map φ.toRingHom
-          (commonTaylorNumeratorOver ℚ (Polynomial.C 0) quadraticJetSampleEquation 2 1)) := by
-      rw [jointCommonTaylorNumerator, aeval_optionEquivRight_symm]
-      rfl
-    rw [hflat]
-    exact hnum
-  have hcuts : ∀ i ∈ Finset.univ,
-      aeval jointPoint (jointTaylorAgreementEquation (r := 0) 0 quadraticJetSampleEquation 2 2
-        (Polynomial.C (domain i))
-        (Polynomial.C (jointReceivedF i) + Polynomial.X * Polynomial.C (jointReceivedG i))) =
-          0 := by
-    intro i hi
-    have hi0 : i = 0 := Subsingleton.elim _ _
-    subst i
-    have hcut :=
-      (aeval_map_taylorAgreementEquationOver_eq_zero_iff_of_exponent (F := ℚ) φ
-        (Polynomial.C 0) quadraticJetSampleEquation 2 2
-        (by intro l; fin_cases l <;> omega) jet hSφ
-        (Polynomial.C (domain 0))
-        (Polynomial.C (jointReceivedF 0) + Polynomial.X *
-          Polynomial.C (jointReceivedG 0))).2 (by
-            have hcenter : φ (Polynomial.C (0 : ℚ)) = 0 := by simp [φ]
-            have hx : φ (Polynomial.C (domain 0)) = 0 := by
-              simp [φ, domain_zero]
-            rw [hcenter, hx, hpoly]
-            simp [φ, jointReceivedF, jointReceivedG])
-    have hflat : MvPolynomial.aeval jointPoint
-        (jointTaylorAgreementEquation (r := 0) 0 quadraticJetSampleEquation 2 2
-          (Polynomial.C (domain 0))
-          (Polynomial.C (jointReceivedF 0) + Polynomial.X *
-            Polynomial.C (jointReceivedG 0))) =
-        MvPolynomial.aeval jet (map φ.toRingHom
-          (taylorAgreementEquationOver (F := ℚ) (Polynomial.C 0) quadraticJetSampleEquation 2
-            (Polynomial.C (domain 0))
-            (Polynomial.C (jointReceivedF 0) + Polynomial.X *
-              Polynomial.C (jointReceivedG 0)) (τ := 2))) := by
-      rw [jointTaylorAgreementEquation, aeval_optionEquivRight_symm]
-      rfl
-    rw [hflat]
-    exact hcut
-  have hresult := hrecognize jointPoint hS hhigh hcuts
-  refine ⟨P₀, P₁, hP₀, hP₁, ?_, ?_, ?_, hhigh 1 (by omega),
-    quadraticJetSampleEquation_highNumerator_ne, hresult.1,
-    hresult.2.1⟩
-  · simpa only [domain_zero, jointReceivedF] using (hsample 0 (by simp)).1
-  · simpa only [domain_zero, jointReceivedG] using (hsample 0 (by simp)).2
-  · have h := hsample 0 (by simp)
-    have hP₁ : P₁.eval 0 = 1 := by simpa only [domain_zero, jointReceivedG] using h.2
-    simp [hP₁]
+private def componentPointEvaluation : SourceRing 0 ComponentField →ₐ[ComponentField]
+    ComponentField := MvPolynomial.aeval componentOrigin
+
+private def componentPointMap : SourceRing 0 ComponentField →ₐ[ComponentField]
+    MvPolynomial (Fin 0) ComponentField :=
+  (MvPolynomial.isEmptyAlgEquiv ComponentField (Fin 0)).symm.toAlgHom.comp
+    componentPointEvaluation
+
+private def componentPointIdeal : Ideal (SourceRing 0 ComponentField) :=
+  RingHom.ker componentPointEvaluation.toRingHom
+
+private theorem componentPointEvaluation_surjective :
+    Function.Surjective componentPointEvaluation := by
+  intro z
+  exact ⟨MvPolynomial.C z, by simp [componentPointEvaluation]⟩
+
+private theorem componentPointMap_surjective : Function.Surjective componentPointMap := by
+  let e : MvPolynomial (Fin 0) ComponentField ≃ₐ[ComponentField] ComponentField :=
+    MvPolynomial.isEmptyAlgEquiv ComponentField (Fin 0)
+  intro z
+  obtain ⟨a, ha⟩ := e.symm.surjective z
+  obtain ⟨p, hp⟩ := componentPointEvaluation_surjective a
+  refine ⟨p, ?_⟩
+  change e.symm (componentPointEvaluation p) = z
+  rw [hp, ha]
+
+private theorem componentPointIdeal_isPrime : componentPointIdeal.IsPrime :=
+  RingHom.ker_isPrime _
+
+private theorem componentPointIdeal_isMaximal : componentPointIdeal.IsMaximal :=
+  RingHom.ker_isMaximal_of_surjective _ componentPointEvaluation_surjective
+
+private theorem componentPointIdeal_degree :
+    (affineHilbertPolynomial componentPointIdeal).natDegree = 0 := by
+  let e : MvPolynomial (Fin 0) ComponentField ≃ₐ[ComponentField] ComponentField :=
+    MvPolynomial.isEmptyAlgEquiv ComponentField (Fin 0)
+  have hmapDegree :
+      (affineHilbertPolynomial (RingHom.ker componentPointMap)).natDegree = 0 := by
+    simpa using natDegree_affineHilbertPolynomial_ker_of_surjective
+      componentPointMap componentPointMap_surjective
+  have hker : RingHom.ker componentPointMap = componentPointIdeal := by
+    ext p
+    change (componentPointMap p = 0) ↔ (componentPointEvaluation p = 0)
+    constructor
+    · intro hp
+      apply e.symm.injective
+      simpa [componentPointMap, e] using hp
+    · intro hp
+      simp [componentPointMap, hp]
+  rw [← hker]
+  exact hmapDegree
+
+private abbrev componentPointSeparant : SourceRing 0 ComponentField :=
+  jointInitialJetSeparant (0 : ComponentField) (componentEquation (E := ComponentField))
+
+private theorem componentPointSeparant_eval :
+    MvPolynomial.aeval componentOrigin componentPointSeparant = 1 := by
+  simp [componentPointSeparant, jointInitialJetSeparant, componentEquation,
+    initialJetSeparant, separant]
+
+private theorem componentPointSeparant_notMem :
+    componentPointSeparant ∉ componentPointIdeal := by
+  intro hp
+  have hz : componentPointEvaluation componentPointSeparant = 0 := hp
+  change MvPolynomial.aeval componentOrigin componentPointSeparant = 0 at hz
+  rw [componentPointSeparant_eval] at hz
+  norm_num at hz
+
+private theorem componentPointHigh : ∀ l : Fin 2, 1 ≤ l.val →
+    jointCommonTaylorNumerator (0 : ComponentField)
+      (componentEquation (E := ComponentField)) 2 l ∈ componentPointIdeal := by
+  intro l hl
+  have hl1 : l = 1 := Fin.ext (by omega)
+  subst l
+  change componentPointEvaluation componentHighNumerator = 0
+  rw [component_highNumerator_eq]
+  simp [componentPointEvaluation, componentOrigin, componentVariable]
+
+private theorem componentPointTerminal (α : Fin 1 ↪ ComponentField)
+    (f g : Fin 1 → ComponentField) (J : Ideal (SourceRing 0 ComponentField))
+    (hPJ : componentPointIdeal ≤ J) (hJ : J.IsPrime)
+    (_hsJ : jointInitialJetSeparant (0 : ComponentField)
+      (componentEquation (E := ComponentField)) ∉ J)
+    (hdJ : 0 < (affineHilbertPolynomial J).natDegree)
+    (_hcuts : 1 ≤ {i : Fin 1 | jointTaylorAgreementEquation (0 : ComponentField)
+      (componentEquation (E := ComponentField)) 2 2 (Polynomial.C (α i))
+      (Polynomial.C (f i) + Polynomial.X * Polynomial.C (g i)) ∈ J}.ncard) :
+    {x | x ∈ zeroLocus ComponentField J ∧
+      aeval x (jointInitialJetSeparant (0 : ComponentField)
+        (componentEquation (E := ComponentField))) ≠ 0} ⊆ ∅ := by
+  have hJP : J = componentPointIdeal :=
+    (componentPointIdeal_isMaximal.eq_of_le hJ.ne_top hPJ).symm
+  rw [hJP, componentPointIdeal_degree] at hdJ
+  omega
+
+private theorem componentPointIdeal_eq_ker : componentPointIdeal =
+    RingHom.ker (MvPolynomial.aeval componentOrigin) := by
+  rfl
+
+private theorem componentIdeal_le_componentPointIdeal :
+    componentIdeal (E := ComponentField) ≤ componentPointIdeal := by
+  rw [componentPointIdeal_eq_ker, componentIdeal]
+  apply Ideal.span_le.mpr
+  rintro p rfl
+  simp [componentVariable, componentOrigin]
+
+private def componentPointCut (_ : Fin 1) : SourceRing 0 ComponentField :=
+  jointTaylorAgreementEquation (0 : ComponentField)
+    (componentEquation (E := ComponentField)) 2 2 (Polynomial.C (0 : ComponentField))
+    (0 : ComponentField[X])
+
+private theorem componentPointCut_eq_initial :
+    componentPointCut 0 = jointInitialJetEquation (0 : ComponentField)
+      (componentEquation (E := ComponentField)) := by
+  dsimp only [componentPointCut, jointTaylorAgreementEquation,
+    jointInitialJetEquation]
+  simpa only [Polynomial.C_0] using
+    congrArg (optionEquivRight ComponentField (Fin 1)).symm component_cut_eq
+
+private theorem componentPointCut_mem : componentPointCut 0 ∈ componentPointIdeal := by
+  rw [componentPointCut_eq_initial]
+  exact componentIdeal_le_componentPointIdeal component_initialEquation_mem
+
+attribute [irreducible] componentPointIdeal
+
+private abbrev firstOrderChartEquation : DifferentialPolynomial ComponentField 1 :=
+  MvPolynomial.X (Fin.last 1)
+
+private abbrev firstOrderSourceEquation : DifferentialPolynomial ComponentField[X] 1 :=
+  MvPolynomial.X (some (Fin.last 1))
+
+private def firstOrderChartIdeal : Ideal (ChartRing 1 ComponentField) :=
+  Ideal.span {(MvPolynomial.X (Fin.last 1) : ChartRing 1 ComponentField)}
+
+private def firstOrderSourceIdeal : Ideal (SourceRing 1 ComponentField) :=
+  Ideal.span {(MvPolynomial.X (some (Fin.last 1)) : SourceRing 1 ComponentField)}
+
+private def firstOrderTestPoints : Fin 1 ↪ ComponentField :=
+  ⟨fun _ ↦ 0, fun _ _ _ ↦ Subsingleton.elim _ _⟩
+
+private def firstOrderChartValues : Fin 1 → ComponentField := fun _ ↦ 0
+
+private abbrev firstOrderChartCut (i : Fin 1) : ChartRing 1 ComponentField :=
+  taylorAgreementEquation (0 : ComponentField) firstOrderChartEquation 2 2
+    (firstOrderTestPoints i) (firstOrderChartValues i)
+
+private abbrev firstOrderSourceCut (i : Fin 1) : SourceRing 1 ComponentField :=
+  jointTaylorAgreementEquation (0 : ComponentField) firstOrderSourceEquation 2 2
+    (Polynomial.C (firstOrderTestPoints i)) 0
+
+private theorem firstOrderChartIdeal_isPrime : firstOrderChartIdeal.IsPrime := by
+  change (Ideal.span {(MvPolynomial.X (Fin.last 1) : ChartRing 1 ComponentField)}).IsPrime
+  exact (Ideal.span_singleton_prime (X_ne_zero _)).mpr X_prime
+
+private theorem firstOrderSourceIdeal_isPrime : firstOrderSourceIdeal.IsPrime := by
+  change
+    (Ideal.span {(MvPolynomial.X (some (Fin.last 1)) : SourceRing 1 ComponentField)}).IsPrime
+  exact (Ideal.span_singleton_prime (X_ne_zero _)).mpr X_prime
+
+private theorem firstOrderChartIdeal_one_notMem : (1 : ChartRing 1 ComponentField) ∉
+    firstOrderChartIdeal := by
+  intro h
+  exact firstOrderChartIdeal_isPrime.ne_top ((Ideal.eq_top_iff_one _).mpr h)
+
+private theorem firstOrderSourceIdeal_one_notMem : (1 : SourceRing 1 ComponentField) ∉
+    firstOrderSourceIdeal := by
+  intro h
+  exact firstOrderSourceIdeal_isPrime.ne_top ((Ideal.eq_top_iff_one _).mpr h)
+
+private theorem firstOrderChartSeparant_notMem :
+    initialJetSeparant (0 : ComponentField) firstOrderChartEquation ∉ firstOrderChartIdeal := by
+  simpa [firstOrderChartEquation, initialJetSeparant, initialJetEquation, separant] using
+    firstOrderChartIdeal_one_notMem
+
+private theorem firstOrderSourceSeparant_notMem :
+    jointInitialJetSeparant (0 : ComponentField) firstOrderSourceEquation ∉
+      firstOrderSourceIdeal := by
+  simpa [jointInitialJetSeparant, firstOrderSourceEquation, initialJetSeparant,
+    initialJetEquation, separant] using firstOrderSourceIdeal_one_notMem
+
+private theorem firstOrderChartHighNumerator :
+    commonTaylorNumerator (0 : ComponentField) firstOrderChartEquation 2 1 =
+      (MvPolynomial.X (Fin.last 1) : ChartRing 1 ComponentField) := by
+  simp [commonTaylorNumerator, rationalTaylorNumerator, firstOrderChartEquation,
+    initialJetSeparant, separant]
+
+private theorem firstOrderSourceHighNumerator :
+    jointCommonTaylorNumerator (0 : ComponentField) firstOrderSourceEquation 2
+      (1 : Fin 2) =
+        (MvPolynomial.X (some (Fin.last 1)) : SourceRing 1 ComponentField) := by
+  simp [jointCommonTaylorNumerator, commonTaylorNumeratorOver, rationalTaylorNumeratorOver,
+    firstOrderSourceEquation, initialJetSeparant, separant]
+
+private theorem firstOrderChartHigh : ∀ l : Fin 2, 1 ≤ l.val →
+    commonTaylorNumerator (0 : ComponentField) firstOrderChartEquation 2 l.val ∈
+      firstOrderChartIdeal := by
+  intro l hl
+  have h : l = 1 := Fin.ext (by omega)
+  subst l
+  change commonTaylorNumerator (0 : ComponentField) firstOrderChartEquation 2 1 ∈ _
+  rw [firstOrderChartHighNumerator]
+  exact Ideal.subset_span (by simp)
+
+private theorem firstOrderSourceHigh : ∀ l : Fin 2, 1 ≤ l.val →
+    jointCommonTaylorNumerator (0 : ComponentField) firstOrderSourceEquation 2 l ∈
+      firstOrderSourceIdeal := by
+  intro l hl
+  have h : l = 1 := Fin.ext (by omega)
+  subst l
+  change jointCommonTaylorNumerator (0 : ComponentField) firstOrderSourceEquation 2
+    (1 : Fin 2) ∈ _
+  rw [firstOrderSourceHighNumerator]
+  exact Ideal.subset_span (by simp)
+
+private theorem firstOrderChartIdeal_degree :
+    (affineHilbertPolynomial firstOrderChartIdeal).natDegree = 1 := by
+  have h := natDegree_affineHilbertPolynomial_span_singleton_add_one
+    (f := (MvPolynomial.X (Fin.last 1) : ChartRing 1 ComponentField)) (X_ne_zero _)
+    firstOrderChartIdeal_isPrime.ne_top
+  have hc : Nat.card (Fin 2) = 2 := by simp
+  have h' : (affineHilbertPolynomial firstOrderChartIdeal).natDegree + 1 = 2 := by
+    simpa [firstOrderChartIdeal, hc] using h
+  omega
+
+private theorem firstOrderSourceIdeal_degree :
+    (affineHilbertPolynomial firstOrderSourceIdeal).natDegree = 2 := by
+  have h := natDegree_affineHilbertPolynomial_span_singleton_add_one
+    (f := (MvPolynomial.X (some (Fin.last 1)) : SourceRing 1 ComponentField))
+    (X_ne_zero _) firstOrderSourceIdeal_isPrime.ne_top
+  have hc : Nat.card (Option (Fin 2)) = 3 := by simp
+  have h' : (affineHilbertPolynomial firstOrderSourceIdeal).natDegree + 1 = 3 := by
+    simpa [firstOrderSourceIdeal, hc] using h
+  omega
 
 /-- Every regular point of a prime component lies on the graph returned by recognition. -/
 example :
@@ -687,8 +749,210 @@ example :
   · simpa [componentWord, domain_zero] using
       (mem_commonPolynomialAgreementSet domain componentWord componentWord P₀ P₁ 0).mp hmem |>.2
 
+/-- A polynomial-valued received word with a proved cut gives a concrete source prime bound. -/
+example :
+    (affineHilbertPolynomial (componentIdeal (E := ComponentField))).natDegree ≤ 1 := by
+  let α : Fin 1 ↪ ComponentField :=
+    ⟨fun i ↦ algebraMap ℚ ComponentField (domain i),
+      fun _ _ _ ↦ Subsingleton.elim _ _⟩
+  let f : Fin 1 → ComponentField := fun i ↦ algebraMap ℚ ComponentField (componentWord i)
+  let g : Fin 1 → ComponentField := fun i ↦ algebraMap ℚ ComponentField (componentWord i)
+  have hcut : ∀ i,
+      jointTaylorAgreementEquation (r := 0) (0 : ComponentField)
+        (componentEquation (E := ComponentField)) 2 2 (Polynomial.C (α i))
+        (Polynomial.C (f i) + Polynomial.X * Polynomial.C (g i)) ∈ componentIdeal := by
+    intro i
+    simpa [α, f, g] using component_agreementCuts i (Finset.mem_univ i)
+  have hbound :=
+    symbolicSource_prime_affineHilbertPolynomial_natDegree_le_of_polynomial_agreements_of_exponent
+    (center := (0 : ComponentField))
+    (Q := componentEquation (E := ComponentField)) (K := 2) (k := 1) (c := 1)
+    (τ := 2) (by intro l; omega) (by omega) (by omega) (by omega)
+    componentIdeal componentIdeal_isPrime component_separant_notMem component_highCuts α
+    (received := fun i ↦ Polynomial.C (f i) + Polynomial.X * Polynomial.C (g i)) hcut
+  simpa using hbound
+
+/-- A retained chart prime with one nonempty agreement cut has degree zero. -/
+example :
+    (affineHilbertPolynomial
+      (Ideal.span {(MvPolynomial.X (0 : Fin 1) : ChartRing 0 ComponentField)})).natDegree ≤
+        0 := by
+  let Q : DifferentialPolynomial ComponentField 0 := MvPolynomial.X (0 : Fin 1)
+  let P : Ideal (ChartRing 0 ComponentField) :=
+    Ideal.span {(MvPolynomial.X (0 : Fin 1) : ChartRing 0 ComponentField)}
+  let α : Fin 1 ↪ ComponentField :=
+    ⟨fun _ ↦ 0, fun _ _ _ ↦ Subsingleton.elim _ _⟩
+  let y : Fin 1 → ComponentField := fun _ ↦ 0
+  have hP : P.IsPrime := by
+    change (Ideal.span {(MvPolynomial.X (0 : Fin 1) : ChartRing 0 ComponentField)}).IsPrime
+    exact (Ideal.span_singleton_prime (X_ne_zero _)).mpr X_prime
+  have hsep : initialJetSeparant (0 : ComponentField) Q ∉ P := by
+    have hone : (1 : ChartRing 0 ComponentField) ∉ P := by
+      intro h
+      exact hP.ne_top ((Ideal.eq_top_iff_one _).mpr h)
+    simpa [Q, initialJetSeparant, initialJetEquation, separant] using hone
+  have hcut : ∀ i, taylorAgreementEquation (0 : ComponentField) Q 1
+      (α i) (y i) (τ := 0) ∈ P := by
+    intro i
+    have hi : i = 0 := Subsingleton.elim _ _
+    subst i
+    change taylorAgreementEquation (0 : ComponentField) Q 1 0 0 (τ := 0) ∈ P
+    have heq : taylorAgreementEquation (0 : ComponentField) Q 1 0 0 (τ := 0) =
+        (MvPolynomial.X (0 : Fin 1) : ChartRing 0 ComponentField) := by
+      simp [taylorAgreementEquation, commonTaylorNumerator, rationalTaylorNumerator,
+        Q, initialJetSeparant, separant]
+    rw [heq]
+    exact Ideal.subset_span (by simp)
+  have hbound := chart_prime_affineHilbertPolynomial_natDegree_le_of_agreements_of_exponent
+    (center := (0 : ComponentField)) (Q := Q) (K := 1) (k := 1) (c := 1) (τ := 0)
+    (by intro l; fin_cases l; decide) (by omega) (by omega) P hP hsep
+    (by intro l hl; fin_cases l; omega) α y hcut
+  simpa using hbound
+
+/-- The positive-dimensional chart and source bounds include empty-cut boundary cases; the chart
+bound forces the cut count to zero. -/
+example :
+    (affineHilbertPolynomial firstOrderChartIdeal).natDegree +
+        {i : Fin 1 | firstOrderChartCut i ∈ firstOrderChartIdeal}.ncard ≤ 1 ∧
+      (affineHilbertPolynomial firstOrderSourceIdeal).natDegree +
+        {i : Fin 1 | firstOrderSourceCut i ∈ firstOrderSourceIdeal}.ncard ≤ 2 ∧
+      (affineHilbertPolynomial firstOrderSourceIdeal).natDegree = 2 ∧
+      {i : Fin 1 | firstOrderSourceCut i ∈ firstOrderSourceIdeal}.ncard = 0 := by
+  have hτ : TaylorExponentSufficient 1 2 2 := by
+    intro l
+    fin_cases l <;> omega
+  have hchart := chart_dimensionSensitive_component_of_exponent
+    (center := (0 : ComponentField)) (Q := firstOrderChartEquation) (K := 2) (k := 1)
+    (n := 1) (τ := 2) hτ (by omega) (by omega) firstOrderChartIdeal
+    firstOrderChartIdeal_isPrime firstOrderChartSeparant_notMem firstOrderChartHigh
+    firstOrderTestPoints firstOrderChartValues
+    (by rw [firstOrderChartIdeal_degree]; omega)
+  have hsource := symbolicSourcePolynomial_dimensionSensitive_component_of_exponent
+    (center := (0 : ComponentField)) (Q := firstOrderSourceEquation) (K := 2) (k := 1)
+    (n := 1) (τ := 2) hτ (by omega) (by omega) firstOrderSourceIdeal
+    firstOrderSourceIdeal_isPrime firstOrderSourceSeparant_notMem firstOrderSourceHigh
+    firstOrderTestPoints
+    (fun _ ↦ 0)
+  have hline := symbolicSource_dimensionSensitive_component_of_exponent
+    (center := (0 : ComponentField)) (Q := firstOrderSourceEquation) (K := 2) (k := 1)
+    (n := 1) (τ := 2) hτ (by omega) (by omega) firstOrderSourceIdeal
+    firstOrderSourceIdeal_isPrime firstOrderSourceSeparant_notMem firstOrderSourceHigh
+    firstOrderTestPoints (fun _ ↦ 0) (fun _ ↦ 0)
+  have hfirst := firstOrder_symbolicSource_dimensionSensitive_component_of_exponent
+    (center := (0 : ComponentField)) (Q := firstOrderSourceEquation) (K := 2) (n := 1)
+    (τ := 2) hτ (by omega) firstOrderSourceIdeal firstOrderSourceIdeal_isPrime
+    firstOrderSourceSeparant_notMem firstOrderSourceHigh firstOrderTestPoints
+    (fun _ ↦ 0) (fun _ ↦ 0)
+  have hlineZero := hline.2 (by rw [firstOrderSourceIdeal_degree]; omega)
+  have hfirstZero := hfirst.2 (by rw [firstOrderSourceIdeal_degree]; omega)
+  have hsourceTotal :
+      (affineHilbertPolynomial firstOrderSourceIdeal).natDegree +
+        {i : Fin 1 | firstOrderSourceCut i ∈ firstOrderSourceIdeal}.ncard ≤ 2 := by
+    have hcount : {i : Fin 1 | firstOrderSourceCut i ∈ firstOrderSourceIdeal}.ncard ≤ 0 := by
+      rw [firstOrderSourceIdeal_degree] at hlineZero
+      simpa [firstOrderSourceCut, firstOrderTestPoints] using hlineZero
+    have hcountZero := Nat.eq_zero_of_le_zero hcount
+    rw [hcountZero, Nat.add_zero]
+    exact hsource.1
+  have hfirstCount :
+      {i : Fin 1 | firstOrderSourceCut i ∈ firstOrderSourceIdeal}.ncard = 0 := by
+    simpa [firstOrderSourceCut, firstOrderTestPoints] using hfirstZero
+  exact ⟨hchart, hsourceTotal, firstOrderSourceIdeal_degree, hfirstCount⟩
+
+/-- The retained incidence locus contains its regular origin and is finite. -/
+example :
+    let P : Ideal (SourceRing 0 ComponentField) := componentPointIdeal
+    let α : Fin 1 ↪ ComponentField :=
+      ⟨fun _ ↦ 0, fun _ _ _ ↦ Subsingleton.elim _ _⟩
+    let f : Fin 1 → ComponentField := fun _ ↦ 0
+    let g : Fin 1 → ComponentField := fun _ ↦ 0
+    let cuts : Fin 1 → SourceRing 0 ComponentField := fun i ↦
+      jointTaylorAgreementEquation (0 : ComponentField)
+        (componentEquation (E := ComponentField)) 2 2 (Polynomial.C (α i))
+        (Polynomial.C (f i) + Polynomial.X * Polynomial.C (g i))
+    let T := {x : Option (Fin 1) → ComponentField |
+      x ∈ zeroLocus ComponentField P ∧
+        aeval x (jointInitialJetSeparant (0 : ComponentField)
+          (componentEquation (E := ComponentField))) ≠ 0 ∧
+        x ∉ (∅ : Set (Option (Fin 1) → ComponentField)) ∧
+        1 ≤ {i | aeval x (cuts i) = 0}.ncard}
+    let b := (cuts 0).totalDegree
+    T.Finite ∧ (T.ncard : ℚ) ≤ affineDegree P *
+      hybridDimensionSensitiveIncidenceProduct 1 1 1 1 b
+        (affineHilbertPolynomial P).natDegree ∧ T.Nonempty := by
+  intro P α f g cuts T b
+  have hdeg : ∀ i, (cuts i).totalDegree ≤ b := by
+    intro i
+    have hi : i = 0 := Subsingleton.elim _ _
+    subst i
+    exact Nat.le_refl _
+  have hfinite := finite_symbolicSource_agreementLocus_off_excluded_and_ncard_le_hybrid_of_exponent
+    (center := (0 : ComponentField)) (Q := componentEquation (E := ComponentField))
+    (K := 2) (k := 1) (n := 1) (τ := 2) (L := 1) (A := 1) (b := b)
+    (by intro l; omega) (by omega) (by omega) (by omega) (by omega)
+    P componentPointIdeal_isPrime componentPointHigh α f g hdeg ∅
+    (componentPointTerminal α f g)
+  refine ⟨hfinite.1, hfinite.2, ?_⟩
+  refine ⟨componentOrigin, ?_⟩
+  have hzero : componentOrigin ∈ zeroLocus ComponentField P := by
+    rw [mem_zeroLocus_iff]
+    intro p hp
+    have hp' : p ∈ componentPointIdeal := by
+      simpa only [P] using hp
+    rw [componentPointIdeal_eq_ker] at hp'
+    exact hp'
+  have hregular : aeval componentOrigin componentPointSeparant ≠ 0 := by
+    rw [componentPointSeparant_eval]
+    exact one_ne_zero
+  have hcutEval : ∀ i : Fin 1, aeval componentOrigin (cuts i) = 0 := by
+    intro i
+    have hi : i = 0 := Subsingleton.elim _ _
+    subst i
+    have hcut : cuts 0 = componentPointCut 0 := by
+      dsimp only [cuts, componentPointCut]
+      congr 1
+      simp [f, g]
+    rw [hcut]
+    have hmem : componentPointCut 0 ∈ componentPointIdeal := componentPointCut_mem
+    have heval : componentPointEvaluation (componentPointCut 0) = 0 := by
+      rw [componentPointIdeal_eq_ker] at hmem
+      simpa [componentPointEvaluation] using hmem
+    change MvPolynomial.aeval componentOrigin (componentPointCut 0) = 0 at heval
+    simpa only [P] using heval
+  have hset : {i : Fin 1 | aeval componentOrigin (cuts i) = 0} = Set.univ := by
+    ext i
+    change aeval componentOrigin (cuts i) = 0 ↔ True
+    exact ⟨fun _ ↦ trivial, fun _ ↦ hcutEval i⟩
+  have hcard : {i : Fin 1 | aeval componentOrigin (cuts i) = 0}.ncard = 1 := by
+    rw [hset]
+    simp
+  exact ⟨hzero, hregular, by simp, by omega⟩
+
+private theorem component_powerBatchedAgreementCuts : ∀ i ∈ Finset.univ,
+    jointTaylorAgreementEquation (r := 0) (0 : ComponentField)
+      (componentEquation (E := ComponentField)) 2 2
+      (Polynomial.C ((algebraMap ℚ ComponentField) (domain i)))
+      (powerBatchedCoordinate
+        (fun _ : Fin 2 ↦ (algebraMap ℚ ComponentField) (componentWord i))) ∈
+        componentIdeal := by
+  intro i hi
+  have hbatch : powerBatchedCoordinate
+      (fun _ : Fin 2 ↦ (algebraMap ℚ ComponentField) (componentWord i)) = 0 := by
+    rw [powerBatchedCoordinate_eq_zero_iff]
+    funext t
+    simp [componentWord]
+  have hreceived :
+      Polynomial.C ((algebraMap ℚ ComponentField) (componentWord i)) +
+        Polynomial.X * Polynomial.C
+          ((algebraMap ℚ ComponentField) (componentWord i)) = 0 := by
+    simp [componentWord]
+  have hpair := component_agreementCuts i hi
+  rw [hreceived] at hpair
+  rw [hbatch]
+  exact hpair
+
 /-- A positive-dimensional prime component determines one base-field tuple whose graph contains
-every regular component point, with nonzero restricted separant. -/
+its regular points, with nonzero restricted separant. -/
 example :
     ∃ P : Fin 2 → ℚ[X], (∀ t, (P t).degree < 1) ∧
       (∀ i ∈ Finset.univ, ∀ t, (P t).eval (domain i) = componentWord i) ∧
@@ -705,7 +969,8 @@ example :
   have hprime : (componentIdeal (E := ComponentField)).IsPrime := componentIdeal_isPrime
   obtain ⟨P, hP, hsample, hgraph, -, -, hsep⟩ :=
     exists_polynomialGraph_of_primeTaylorComponent (domain := domain)
-      (w := fun _ : Fin 2 ↦ componentWord) (sample := Finset.univ) (hsample := by simp)
+      (w := fun _ : Fin 2 ↦ fun i ↦ componentWord i)
+      (sample := Finset.univ) (hsample := by simp)
       (φ := algebraMap ℚ ComponentField) (center := 0)
       (Q := componentEquation (E := ComponentField)) (hK := by omega) (τ := 2)
       (hτ := by intro l; fin_cases l <;> omega)

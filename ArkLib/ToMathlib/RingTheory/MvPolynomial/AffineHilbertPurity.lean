@@ -125,8 +125,9 @@ theorem natDegree_affineHilbertPolynomial_add_one_of_height_eq_one [Finite σ]
       ext x
       rfl
     rw [hcomp]
-    exact RingHom.Finite.comp e.toRingEquiv.finite
+    have h := RingHom.Finite.comp e.toRingEquiv.finite
       (RingHom.Finite.comp (RingHom.Finite.of_surjective _ Ideal.Quotient.mk_surjective) hg_fin)
+    exact h
   have hparent := natDegree_affineHilbertPolynomial_eq_card_of_finite_of_injective g hg_fin hg_inj
   have hproper : Ideal.span {a} ≠ ⊤ := by
     rw [Ne, Ideal.span_singleton_eq_top]

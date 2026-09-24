@@ -191,22 +191,21 @@ private lemma combine_eq_flat
               (fun i => degs i.castSucc)
               h
             exists (Fin.castSucc a)
-            constructor
-            · simp_all only [forall_const, Fin.sum_univ_castSucc]
-              convert ha₁ using 1
+            have hs : ∑ i ∈ univ.filter (· < a.castSucc), (dstar - degs i + 1) =
+                ∑ i ∈ univ.filter (· < a), (dstar - degs i.castSucc + 1) := by
               simp only [sum_filter, Fin.sum_univ_castSucc, Fin.castSucc_lt_castSucc_iff,
                 Nat.add_eq_left, ite_eq_right_iff, Nat.add_eq_zero_iff, one_ne_zero, and_false,
                 imp_false, not_lt]
               exact Fin.le_last _
-            · aesop
-                (add simp [Fin.sum_univ_castSucc, Finset.sum_filter])
-                (add safe (by grind))
+            rw [hs]
+            exact ⟨ha₁, ha₂⟩
           · exists (Fin.last m)
-            constructor
-            · simp_all only [forall_const, Fin.sum_univ_castSucc, not_lt]
-              rw [Finset.sum_filter, Fin.sum_univ_castSucc]
-              aesop
-            · simp_all [Fin.sum_univ_castSucc, Finset.sum_filter]
+            have hs : ∑ i ∈ univ.filter (· < Fin.last m), (dstar - degs i + 1) =
+                ∑ i : Fin m, (dstar - degs i.castSucc + 1) := by
+              simp only [sum_filter, Fin.sum_univ_castSucc, Fin.castSucc_lt_last, ite_true,
+                lt_self_iff_false, ite_false, add_zero]
+            rw [hs]
+            exact ⟨not_lt.mp h, (Fin.sum_univ_castSucc (fun i => dstar - degs i + 1)) ▸ hL⟩
       · rintro ⟨i, hi⟩
         exact lt_of_lt_of_le hi.2 <| by
           rw [←Finset.sum_sdiff
@@ -445,8 +444,10 @@ lemma master_lemma
   classical
   have hlt : dstar < Fintype.card ι := by
     by_contra contra
-    aesop
-      (add simp [ReedSolomon.rateOfLinearCode_eq_min_div, min_eq_right])
+    have h2 := (lt_min_iff.mp hδLt).2
+    rw [ReedSolomon.rateOfLinearCode_eq_min_div, min_eq_right (not_lt.mp contra),
+      div_self (Nat.cast_ne_zero.mpr Fintype.card_ne_zero)] at h2
+    simp only [NNRat.cast_one, tsub_self, zero_tsub, not_lt_zero] at h2
   rcases j with ⟨j, hj⟩
   simp only [block_size] at hj
   simp only [gt_iff_lt]
@@ -481,12 +482,8 @@ lemma master_lemma
     have hq_coincide :=
       Polynomial.eq_of_eval_eq_degree
         (q := v i ⟨j + 1, h_fin⟩)
-        hq_deg (lt_trans (hv_deg _ _) <| by
-          rw [WithBot.lt_def]
-          right
-          exists dstar, (dstar + 1)
-          aesop
-        ) (Finset.image φ S) (by {
+        hq_deg (lt_trans (hv_deg _ _) (WithBot.coe_lt_coe.mpr (Nat.lt_succ_self dstar)))
+        (Finset.image φ S) (by {
           simp only [Nat.cast_id, ge_iff_le, Order.add_one_le_iff]
           rw [Finset.card_image_of_injective _ φ.injective]
           have h : ↑(rate (code φ dstar)) + 1 / ↑(Fintype.card ι) < 1 - δ :=
@@ -553,14 +550,13 @@ theorem combine_theorem
     rw [Fintype.card_eq_zero_iff, not_isEmpty_iff] at hempty
     rcases total with _ | total
     · rcases m with _ | m
-      · aesop
-          (add simp [total_terms, block_size])
-          (add safe (by exists Finset.univ))
-      · aesop (add simp [total_terms, block_size])
+      · refine ⟨Finset.univ, ?_, fun i => i.elim0, fun i => i.elim0⟩
+        rw [ge_iff_le, Finset.card_univ]
+        exact mul_le_of_le_one_left (Nat.cast_nonneg _) tsub_le_self
+      · simp [total_terms, block_size] at htotal
     · have proximity_gap :=
         @ProximityGap.correlatedAgreement_affine_curves ι _ _ F _ _ _ _
-          (total_terms dstar degs - 1) dstar φ δ hδPos (by
-            aesop (add simp [lt_min_iff, ReedSolomon.sqrtRate]))
+          (total_terms dstar degs - 1) dstar φ δ hδPos (lt_min_iff.mp hδLt).1
       simp only [ProximityGap.δ_ε_correlatedAgreementCurves] at proximity_gap
       specialize proximity_gap
           (fun l (x : ι) ↦ (
@@ -578,12 +574,16 @@ theorem combine_theorem
               rw [htotal, add_tsub_cancel_right,
                   Nat.cast_sum, mul_add, mul_one,
                   show (↑m : ENNReal) * ↑dstar
-                    = ∑ x : Fin m, ↑dstar by simp,
-                  show (↑m : ENNReal) = ∑ x : Fin m, 1 by simp,
+                    = ∑ x : Fin m, ↑dstar by
+                      simp only [Finset.sum_const, Finset.card_univ, Fintype.card_fin,
+                        nsmul_eq_mul],
+                  show (↑m : ENNReal) = ∑ x : Fin m, 1 by
+                    simp only [Finset.sum_const, Finset.card_univ, Fintype.card_fin,
+                      nsmul_eq_mul, mul_one],
                   ←Finset.sum_add_distrib,
                   show ∑ x : Fin m, ((↑dstar : ENNReal) + 1) - ∑ x, ↑(degs x)
                     = ↑(∑ x : Fin m, (dstar + 1)) - ↑(∑ x, degs x)
-                      by simp; ring_nf,
+                      by simp only [Nat.cast_sum, Nat.cast_add, Nat.cast_one],
                   ←ENNReal.natCast_sub,
                   ←Finset.sum_tsub_distrib _ (fun x _ ↦
                     le_trans (hdegs x) (by omega))]
@@ -628,13 +628,16 @@ theorem combine_theorem
             rcases j with ⟨j, hj⟩
             apply lt_of_lt_of_le
             · apply Nat.add_lt_add_left (m := dstar - degs ⟨i, hi⟩ + 1)
-                (by aesop (add simp [block_size]) (add safe (by omega)))
+                hj
             · rw [Finset.sum_equiv
                 (t := Finset.erase {x : Fin _ | x ≤ ⟨i, hi⟩} ⟨i, hi⟩)
+                (f := fun x => (dstar - degs x + 1))
                 (g := fun x => (dstar - degs x + 1))
                 (Equiv.refl _)
-                (by aesop (add safe (by omega)))
-                (by aesop), Finset.sum_erase_add _ _ (by simp)]
+                (fun x => by
+                  simp only [mem_filter, mem_univ, true_and, Equiv.refl_apply, mem_erase]
+                  exact lt_iff_le_and_ne.trans and_comm)
+                (fun _ _ => rfl), Finset.sum_erase_add _ _ (by simp)]
               exact Finset.sum_le_sum_of_subset (by simp)
           }⟩
           simp only [Polynomial.degreeLT, ge_iff_le, Submodule.mem_iInf, LinearMap.mem_ker,
