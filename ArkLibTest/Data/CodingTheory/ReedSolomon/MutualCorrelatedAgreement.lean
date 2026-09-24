@@ -830,6 +830,19 @@ end
 
 end ReedSolomon.GraphLineComponentTest
 
+/-- A family of admissible Frobenius pairs satisfies the initial-jet degree bound. -/
+example {F E ι : Type*} [Field F] [Field E] [Infinite E] {k K : ℕ}
+    (domain : ι ↪ F) (f g : ι → F) (iota : F →+* E) (roots : ι → E) (center : E)
+    (Q : DifferentialPolynomial E[X] 0) (p e τ : ℕ) [ExpChar E p]
+    (hK : 0 < K) (hKk : K ≤ p ^ e * k) (hτ : TaylorExponentSufficient 0 K τ)
+    (hinit : jointInitialJetEquation center Q ≠ 0)
+    (pairs : Finset (F[X] × F[X]))
+    (hpairs : ∀ P ∈ pairs,
+      IsAdmissibleFrobeniusPair domain f g iota roots center Q K k τ (p ^ e) P.1 P.2) :
+    pairs.card ≤ (jointInitialJetEquation center Q).degreeOf (some 0) := by
+  exact admissibleFrobeniusPairs_card_le_degreeOf domain f g iota roots center Q p e τ
+    hK hKk hτ hinit pairs hpairs
+
 namespace ReedSolomon.PowerBatchedPointRecognitionTest
 
 noncomputable section
