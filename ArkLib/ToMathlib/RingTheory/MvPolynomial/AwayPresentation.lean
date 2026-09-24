@@ -177,6 +177,10 @@ theorem affineHilbertFunction_awayPresentationIdeal_le [Finite σ] (I : Ideal (M
       affineHilbertFunction I ((s.totalDegree + 1) * N) := by
   set A := MvPolynomial σ k ⧸ I
   set S := Localization.Away (Ideal.Quotient.mk I s)
+  let : CommRing S := inferInstance
+  let : Algebra A S := inferInstance
+  let : AddCommMonoid S := NonUnitalNonAssocSemiring.toAddCommMonoid
+  let : Module k S := Algebra.toModule
   set d := s.totalDegree
   set u : S := algebraMap A S (Ideal.Quotient.mk I s)
   set ι := (IsScalarTower.toAlgHom k A S).toLinearMap
