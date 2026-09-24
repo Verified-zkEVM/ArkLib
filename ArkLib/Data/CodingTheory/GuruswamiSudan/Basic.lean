@@ -82,30 +82,26 @@ lemma gs_degree_bound_div_lt {k n F : ℕ} (hk : 2 ≤ k) (hn : n ≤ F) (hF : 5
   unfold gs_degree_bound; dsimp only
   rw [Nat.floor_lt (by positivity)]
   have harith : 9 * k * n < 4 * (F * (k - 1)) ^ 2 := by
-    rcases Nat.eq_or_lt_of_le hk with rfl | hk3
-    · simp only [show 2 - 1 = 1 from rfl, mul_one]; nlinarith
-    · have : 4 ≤ (k - 1) ^ 2 := le_trans (by norm_num : 4 ≤ 2 ^ 2)
-        (Nat.pow_le_pow_left (by omega) 2)
-      have : k ≤ n := by omega
-      nlinarith [sq_nonneg F, mul_le_mul_of_nonneg_right hn (by omega : 0 ≤ 9 * k)]
-  have hLHS_nn : (0 : ℝ) ≤ (↑(1 : ℕ) + 1 / 2) * √↑(↑k / ↑n : ℚ) * ↑n := by positivity
-  suffices hsq : ((↑(1 : ℕ) + 1 / 2) * √↑(↑k / ↑n : ℚ) * ↑n) ^ 2 <
-      (↑(F * (k - 1)) : ℝ) ^ 2 by
-    nlinarith [sq_abs (↑(F * (k - 1) : ℕ) -
-      ((↑(1 : ℕ) + (1 : ℝ) / 2) * √↑(↑k / ↑n : ℚ) * ↑n))]
-  calc ((↑(1 : ℕ) + 1 / 2) * √↑(↑k / ↑n : ℚ) * ↑n) ^ 2
-      = (↑(1 : ℕ) + 1 / 2) ^ 2 * (√↑(↑k / ↑n : ℚ)) ^ 2 * (↑n) ^ 2 := by ring
-    _ = (↑(1 : ℕ) + 1 / 2) ^ 2 * ↑(↑k / ↑n : ℚ) * (↑n) ^ 2 := by
-        rw [Real.sq_sqrt (by positivity)]
-    _ = 9 / 4 * ((↑k : ℝ) / ↑n) * (↑n : ℝ) ^ 2 := by push_cast; ring
-    _ = 9 / 4 * ↑k * ↑n := by
-        field_simp [show (0 : ℝ) < n from by exact_mod_cast show 0 < n by omega]
-    _ < (↑(F * (k - 1)) : ℝ) ^ 2 := by
-        rw [show (9 : ℝ) / 4 * ↑k * ↑n = 9 * ↑k * ↑n / 4 from by ring]
-        rw [div_lt_iff₀ (by norm_num : (0 : ℝ) < 4)]
-        rw [show (↑(F * (k - 1)) : ℝ) ^ 2 * 4 =
-          4 * (↑F * ↑(k - 1 : ℕ)) ^ 2 from by push_cast; ring]
-        exact_mod_cast harith
+    obtain ⟨j, rfl⟩ : ∃ j, k = j + 1 + 1 := ⟨k - 2, by omega⟩
+    rw [Nat.add_sub_cancel]
+    have h5 : 5 ≤ F * (j + 1) := hF.trans (Nat.le_mul_of_pos_right F (Nat.succ_pos j))
+    calc 9 * (j + 1 + 1) * n ≤ 9 * (j + 1 + 1) * F := Nat.mul_le_mul_left _ hn
+      _ < 4 * (j + 1) * (5 * F) := by
+        rw [← mul_assoc]; exact Nat.mul_lt_mul_of_pos_right (by omega) (by omega)
+      _ ≤ 4 * (j + 1) * (F * (j + 1) * F) :=
+        Nat.mul_le_mul_left _ (Nat.mul_le_mul_right F h5)
+      _ = 4 * (F * (j + 1)) ^ 2 := by ring
+  have hn0 : (0 : ℝ) < n := by exact_mod_cast (by omega : 0 < n)
+  refine lt_of_pow_lt_pow_left₀ 2 (by positivity) ?_
+  have hsq : ((↑(1 : ℕ) + 1 / 2) * √↑(↑k / ↑n : ℚ) * ↑n : ℝ) ^ 2 = 9 / 4 * k * n := by
+    rw [mul_pow, mul_pow, Real.sq_sqrt (by positivity)]
+    push_cast
+    field_simp
+    ring
+  rw [hsq]
+  have : ((9 * k * n : ℕ) : ℝ) < ((4 * (F * (k - 1)) ^ 2 : ℕ) : ℝ) := by exact_mod_cast harith
+  push_cast at this ⊢
+  linarith only [this]
 
 namespace GuruswamiSudan
 
@@ -166,43 +162,33 @@ lemma card_weightBoundIndices_eq_sum (D : ℕ) (hk : 1 < k) :
 /-- Closed form for the number of variables when k > 1. -/
 lemma numVars_eq_of_gt_one {D : ℕ} (hk : 1 < k) :
     numVars k D = let L := D / (k - 1); (L + 1) * (2 * D + 2 - (k - 1) * L) / 2 := by
-      convert card_weightBoundIndices_eq_sum D hk using 1
-      · rfl
-      next =>
-      have h_simp : ∑ j ∈ range (D / (k - 1) + 1), (D - (k - 1) * j) =
-          (D / (k - 1) + 1) * D - (k - 1) * ((D / (k - 1)) * (D / (k - 1) + 1)) / 2 := by
-        have h_simp : ∑ j ∈ range (D / (k - 1) + 1), (D - (k - 1) * j) =
-            ∑ j ∈ range (D / (k - 1) + 1), D -
-              ∑ j ∈ range (D / (k - 1) + 1), (k - 1) * j := by
-          exact eq_tsub_of_add_eq <| by
-            rw [← sum_add_distrib]
-            refine sum_congr rfl fun x hx ↦ tsub_add_cancel_of_le ?_
-            exact (Nat.mul_le_mul_left _ (Nat.lt_succ_iff.mp (mem_range.mp hx))).trans
-              (Nat.mul_div_le D (k - 1))
-        rw [h_simp, ← Finset.mul_sum, Finset.sum_range_id]
-        simp only [sum_const, card_range, smul_eq_mul]
-        simp only [Nat.add_sub_cancel]
-        rw [Nat.mul_comm (D / (k - 1) + 1) (D / (k - 1)), ← Nat.mul_div_assoc]
-        exact even_iff_two_dvd.mp (by simpa [parity_simps] using Nat.even_or_odd (D / (k - 1)))
-      rw [sum_add_distrib]
-      simp only [sum_const, card_range, smul_eq_mul, mul_one]
-      rw [h_simp]
-      rw [Nat.div_eq_of_eq_mul_left zero_lt_two]
-      rw [tsub_eq_of_eq_add (c := k - 1)]
-      · rw [tsub_add_eq_add_tsub]
-        rotate_left
-        · exact Nat.div_le_of_le_mul <| by
-            nlinarith [(D / (k - 1)).zero_le, D.div_mul_le_self (k - 1),
-              Nat.sub_add_cancel hk.le]
-        · rw [tsub_mul, Nat.mul_sub_left_distrib]
-          ring_nf
-          rw [tsub_mul]
-          ring_nf
-          rw [Nat.div_mul_cancel]
-          · rw [show D / (k - 1) * k - D / (k - 1) = D / (k - 1) * (k - 1) by
-              rw [Nat.mul_sub_left_distrib, Nat.mul_one]]; ring_nf
-          · norm_num [← even_iff_two_dvd, parity_simps]
-      · rw [Nat.sub_add_cancel hk.le]
+  rw [numVars, card_weightBoundIndices_eq_sum D hk]
+  dsimp only
+  obtain ⟨c, rfl⟩ : ∃ c, k = c + 1 := ⟨k - 1, by omega⟩
+  rw [Nat.add_sub_cancel]
+  have hdm := Nat.div_add_mod D c
+  generalize D / c = L at hdm ⊢
+  generalize D % c = r at hdm
+  subst hdm
+  have h1 : 2 * (c * L + r) + 2 - c * L = c * L + 2 * r + 2 := by omega
+  rw [h1]
+  obtain ⟨T, hT⟩ := Nat.even_mul_succ_self L
+  have hX : (L + 1) * (c * L + 2 * r + 2) = 2 * (c * T + (L + 1) * (r + 1)) := by
+    calc _ = c * (L * (L + 1)) + 2 * ((L + 1) * (r + 1)) := by ring
+      _ = _ := by rw [hT]; ring
+  rw [hX, Nat.mul_div_cancel_left _ two_pos, ← Finset.sum_range_reflect]
+  have hterm : ∀ j ∈ range (L + 1), c * L + r - c * (L + 1 - 1 - j) + 1 = c * j + (r + 1) := by
+    intro j hj
+    obtain ⟨i, rfl⟩ := Nat.exists_eq_add_of_le (Nat.lt_succ_iff.mp (mem_range.mp hj))
+    rw [show j + i + 1 - 1 - j = i by omega, mul_add]
+    generalize c * j = a
+    generalize c * i = b
+    omega
+  have hsum := Finset.sum_range_id_mul_two (L + 1)
+  rw [Finset.sum_congr rfl hterm, Finset.sum_add_distrib, ← Finset.mul_sum, sum_const, card_range,
+    smul_eq_mul, Nat.add_sub_cancel, mul_comm (L + 1) L, hT] at *
+  congr 2
+  omega
 
 /-- The number of variables is (D+1)^2 when k ≤ 1. -/
 lemma numVars_eq_sq {k D : ℕ} (hk : k ≤ 1) : numVars k D = (D + 1) ^ 2 := by
@@ -217,23 +203,32 @@ lemma numVars_eq_sq {k D : ℕ} (hk : k ≤ 1) : numVars k D = (D + 1) ^ 2 := by
     2(k-1) * numVars ≥ D(D+2). -/
 lemma numVars_lower_bound_tight {D : ℕ} (hk : 1 < k) :
     2 * (k - 1) * numVars k D ≥ D * (D + 2) := by
-      have h_numVars_def : numVars k D =
-          ((D / (k - 1)) + 1) * (2 * D + 2 - (k - 1) * (D / (k - 1))) / 2 :=
-        numVars_eq_of_gt_one hk
-      rcases k with (_|_|k) <;> simp_all only [lt_add_iff_pos_left, add_pos_iff, zero_lt_one,
-        or_true, add_tsub_cancel_right, Nat.mul_succ, ge_iff_le]
-      · omega
-      · omega
-      rw [← Nat.mul_div_assoc]
-      · rw [Nat.le_div_iff_mul_le] <;> ring_nf
-        · zify
-          rw [Nat.cast_sub] <;> push_cast <;>
-            nlinarith [D.div_mul_le_self (1 + k), D.div_add_mod (1 + k),
-              D.mod_lt (by linarith : 0 < (1 + k))]
-        · norm_num
-      · cases le_total (2 * D + 2) ((k + 1) * (D / (k + 1))) <;>
-          simp_all [← even_iff_two_dvd, parity_simps]
-        by_cases h : Even (D / (k + 1)) <;> simp_all [parity_simps]
+  rw [numVars_eq_of_gt_one hk]
+  obtain ⟨c, rfl⟩ : ∃ c, k = c + 1 := ⟨k - 1, by omega⟩
+  dsimp only
+  rw [Nat.add_sub_cancel]
+  have hdm := Nat.div_add_mod D c
+  have hrc := Nat.mod_lt D (by omega : 0 < c)
+  generalize D / c = L at hdm ⊢
+  generalize D % c = r at hdm hrc
+  subst hdm
+  obtain ⟨s, rfl⟩ : ∃ s, c = r + 1 + s := ⟨c - (r + 1), by omega⟩
+  generalize hM : (r + 1 + s) * L = M
+  have h1 : 2 * (M + r) + 2 - M = M + 2 * r + 2 := by omega
+  rw [h1]
+  obtain ⟨T, hT⟩ := Nat.even_mul_succ_self L
+  have hX : (L + 1) * (M + 2 * r + 2) = 2 * ((r + 1 + s) * T + (L + 1) * (r + 1)) := by
+    calc _ = (r + 1 + s) * (L * (L + 1)) + 2 * ((L + 1) * (r + 1)) := by rw [← hM]; ring
+      _ = _ := by rw [hT]; ring
+  rw [hX, Nat.mul_div_cancel_left _ two_pos]
+  have hY : 2 * (r + 1 + s) * ((r + 1 + s) * T + (L + 1) * (r + 1)) =
+      (M + r) * (M + r + 2) + ((r + 1 + s) ^ 2 * L + r * (r + 2 * s) + 2 * (r + 1 + s)) := by
+    calc _ = (r + 1 + s) ^ 2 * (T + T) + 2 * (r + 1 + s) * ((L + 1) * (r + 1)) := by ring
+      _ = (r + 1 + s) ^ 2 * (L * (L + 1)) + 2 * (r + 1 + s) * ((L + 1) * (r + 1)) := by
+        rw [hT]
+      _ = _ := by rw [← hM]; ring
+  rw [hY]
+  exact Nat.le_add_right _ _
 
 /-- The exact first moment of `j ↦ j * (u - c * j)` over `range (J + 1)`, computed over `ℤ` so
 that the subtraction is not truncated. -/
@@ -306,9 +301,10 @@ lemma sum_snd_weightBoundIndices_le (D : ℕ) (hk : 1 < k) :
     rw [hcast]
     exact_mod_cast sum_range_mul_sub (D + 1) κ J
   rcases Nat.eq_zero_or_pos J with hJ0 | hJ1
-  · have hS0 : (S : ℤ) = 0 := by rw [hJ0] at hexact; push_cast at hexact; linarith
-    have : S = 0 := by exact_mod_cast hS0
-    simp [this]
+  · have h6 : 6 * (S : ℤ) = 0 := by rw [hexact, hJ0]; ring
+    have : S = 0 := by omega
+    rw [this, mul_zero]
+    exact Nat.zero_le _
   · have hτD : κ * J ≤ D := by
       calc κ * J ≤ κ * (D / κ) := by gcongr
         _ ≤ D := Nat.mul_div_le D κ
@@ -316,17 +312,18 @@ lemma sum_snd_weightBoundIndices_le (D : ℕ) (hk : 1 < k) :
     have hτu : (κ : ℤ) * J ≤ (D : ℤ) := by exact_mod_cast hτD
     have hκτ : (κ : ℤ) ≤ (κ : ℤ) * J := by
       exact_mod_cast Nat.le_mul_of_pos_right κ hJ1
-    have hc0 : (0 : ℤ) ≤ 3 * ((D : ℤ) + 1) - 2 * ((κ : ℤ) * J) - κ := by linarith
+    have hc0 : (0 : ℤ) ≤ 3 * ((D : ℤ) + 1) - 2 * ((κ : ℤ) * J) - κ := by
+      linarith only [hτu, hκτ]
     have hkey : 6 * (κ : ℤ) ^ 2 * S
         = ((κ : ℤ) * J) * ((κ : ℤ) * J + κ)
           * (3 * ((D : ℤ) + 1) - 2 * ((κ : ℤ) * J) - κ) := by
       linear_combination (κ : ℤ) ^ 2 * hexact
-    have hamgm := mul_mul_le_cube hτ0 (by linarith : (0 : ℤ) ≤ (κ : ℤ) * J + κ) hc0
+    have hamgm := mul_mul_le_cube hτ0 (by positivity : (0 : ℤ) ≤ (κ : ℤ) * J + κ) hc0
     have hsum : (κ : ℤ) * J + ((κ : ℤ) * J + κ)
         + (3 * ((D : ℤ) + 1) - 2 * ((κ : ℤ) * J) - κ) = 3 * ((D : ℤ) + 1) := by ring
     rw [hsum] at hamgm
     have hfinal : 6 * (κ : ℤ) ^ 2 * S ≤ ((D : ℤ) + 1) ^ 3 := by
-      rw [hkey]; nlinarith [hamgm]
+      rw [hkey]; linarith only [hamgm]
     exact_mod_cast hfinal
 
 end numVars
@@ -424,49 +421,21 @@ lemma numVars_gt_numConstraints_of_gt_one (hn : n ≠ 0) (hk : 1 < k) (hm : 1 �
 lemma numVars_gt_numConstraints (k n m : ℕ) :
     numVars k (proximity_gap_degree_bound k n m) > numConstraints n m := by
   by_cases hk : k ≤ 1
-  · interval_cases k <;> norm_num [numVars_eq_sq, numConstraints]
-    · unfold proximity_gap_degree_bound
-      norm_num
-      have h_constraint_card : (constraintIndices m).card = m * (m + 1) / 2 := by
-        exact card_constraintIndices m
-      rcases n with (_ | n) <;> rcases m with (_ | m) <;> norm_num at *
-      · norm_num [card_constraintIndices]
-      · have h_simplify : (n + 1) * (m + 1) * (m + 2) / 2 <
-            (⌊((m + 1 + 1 / 2) * √(n + 1))⌋₊ + 1) ^ 2 := by
-          have := Nat.lt_floor_add_one ((m + 1 + 1 / 2 : ℝ) * √(n + 1))
-          rw [Nat.div_lt_iff_lt_mul <| by positivity]
-          rw [← @Nat.cast_lt ℝ]
-          norm_num
-          ring_nf at *
-          nlinarith [show 0 ≤ (m : ℝ) * √(1 + n) by
-              positivity, show 0 ≤ √(1 + n) by
-                  positivity, Real.mul_self_sqrt (show (0 : ℝ) ≤ 1 + n by positivity)]
-        convert h_simplify using 1
-        · exact (Nat.div_eq_of_eq_mul_left zero_lt_two (by
-            nlinarith only [Nat.div_mul_cancel (show 2 ∣ (m + 1) * (m + 1 + 1) from
-              Nat.dvd_of_mod_eq_zero <| by norm_num [Nat.add_mod, Nat.mod_two_of_bodd]),
-                h_constraint_card])).symm
-        · rw [mul_assoc]
-          congr
-          field_simp
-          rw [Real.sq_sqrt (by norm_cast; omega)]
-    · by_cases hn : n = 0
-      · aesop
-      · by_cases hm : m = 0
-        · unfold constraintIndices; aesop
-        · have h_ineq : (m + 1 / 2 : ℝ) ^ 2 * 2 * n > n * m * (m + 1) / 2 := by
-            nlinarith [show (m : ℝ) ≥ 1 by exact Nat.one_le_cast.mpr (Nat.pos_of_ne_zero hm),
-              show (n : ℝ) ≥ 1 by exact Nat.one_le_cast.mpr (Nat.pos_of_ne_zero hn),
-                mul_pos (show (m : ℝ) > 0 by exact Nat.cast_pos.mpr (Nat.pos_of_ne_zero hm))
-                  (show (n : ℝ) > 0 by exact Nat.cast_pos.mpr (Nat.pos_of_ne_zero hn))]
-          have h_ineq : (n * m * (m + 1) / 2 : ℝ) <
-              ((proximity_gap_degree_bound 1 n m + 1) : ℝ) ^ 2 := by
-            refine lt_of_lt_of_le h_ineq ?_
-            convert proximity_gap_degree_bound_sq_gt hn |> le_of_lt using 1
-            ring
-          rw [div_lt_iff₀] at h_ineq <;> norm_cast at *
-          rw [card_constraintIndices]
-          nlinarith [Nat.div_mul_le_self (m * (m + 1)) 2]
+  · rw [numVars_eq_sq hk, numConstraints, card_constraintIndices]
+    rcases Nat.eq_zero_or_pos n with rfl | hn
+    · rw [zero_mul]; positivity
+    · have hsq := proximity_gap_degree_bound_sq_gt (k := k) (m := m) hn.ne'
+      generalize proximity_gap_degree_bound k n m = D at hsq ⊢
+      have h2 : n * (m * (m + 1) / 2) * 2 ≤ n * (m * (m + 1)) := by
+        rw [mul_assoc]; exact Nat.mul_le_mul_left _ (Nat.div_mul_le_self _ _)
+      have hreal : ((n * (m * (m + 1)) : ℕ) : ℝ) < ((2 * (D + 1) ^ 2 : ℕ) : ℝ) := by
+        push_cast
+        linarith [mul_nonneg (mul_nonneg (sq_nonneg ((m : ℝ) + 1 / 2)) (Nat.cast_nonneg k))
+            (Nat.cast_nonneg n), mul_nonneg (sq_nonneg (m : ℝ)) (Nat.cast_nonneg n),
+          mul_nonneg (Nat.cast_nonneg (α := ℝ) m) (Nat.cast_nonneg (α := ℝ) n),
+          (Nat.cast_nonneg n : (0 : ℝ) ≤ n)]
+      have := Nat.cast_lt.mp hreal
+      omega
   · by_cases hn : n = 0 <;> by_cases hm : m = 0 <;>
       simp_all only [not_le, gt_iff_lt, numConstraints]
     · exact card_pos.mpr ⟨⟨0, 0⟩,
@@ -753,19 +722,13 @@ lemma rootMultiplicity_le_of_coeff_ne_zero [DecidableEq F] {Q : F[X][Y]} {x y : 
           · exact fun h' => h <| by rw [Polynomial.Bivariate.coeff]; aesop
         exact ⟨List.mem_product.mpr ⟨List.mem_range.mpr (by linarith),
           List.mem_range.mpr (by linarith)⟩, rfl, h⟩
-      have h_min_le : ∀ {l : List ℕ} {m : ℕ}, m ∈ l → (List.min? l).getD 0 ≤ m := by
-        exact fun {l} {m} a ↦ List.min?_getD_le_of_mem a
-      convert h_min_le _
-      any_goals exact List.filterMap (fun p ↦ if Bivariate.coeff g p.1 p.2 = 0
-        then Option.none else Option.some (p.1 + p.2)) (List.product (List.range
-          (natWeightedDegree g 1 1 + 1)) (List.range (natWeightedDegree g 1 1 + 1 )))
-      rotate_left
-      · exact p.1 + p.2
-      · rw [List.mem_filterMap]
-        exact ⟨p, hp.1, by simp only [ite_eq_right hp.2.2, hp.2.1]⟩
-      · cases h : List.min? (List.filterMap (fun p ↦ if Bivariate.coeff g p.1 p.2 = 0
+      have hmem : s + t ∈ List.filterMap (fun p ↦ if Bivariate.coeff g p.1 p.2 = 0
           then Option.none else Option.some (p.1 + p.2)) (List.product (List.range
-            (natWeightedDegree g 1 1 + 1)) (List.range (natWeightedDegree g 1 1 + 1)))) <;> aesop
+            (natWeightedDegree g 1 1 + 1)) (List.range (natWeightedDegree g 1 1 + 1))) :=
+        List.mem_filterMap.mpr ⟨p, hp.1, by simp only [ite_eq_right hp.2.2, hp.2.1]⟩
+      obtain ⟨μ, hμ⟩ := Option.isSome_iff_exists.mp (List.isSome_min?_of_mem hmem)
+      rw [h_rootMultiplicity, hμ]
+      exact_mod_cast list_min_le_of_mem hμ hmem
 
 /-- Shifting a polynomial by (x, y) results in the zero polynomial if and only if the
     original polynomial was zero. -/

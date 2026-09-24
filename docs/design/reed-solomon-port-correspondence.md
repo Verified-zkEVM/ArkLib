@@ -697,6 +697,12 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation
 
 The generic `SourceColumn.coeff_interpolant_natDegree_le` covers `coeff_johnsonInterpolant_natDegree_le`; `interpolant_mem_weightedSupportSpace` covers `interpolant_mem_johnsonWeightedSupport`; and the jet-degree bound follows from `SourceColumn.interpolant_totalJetDegree_le`, so `support_johnsonInterpolant_subset_range` is not needed. The source `TaylorHeight` import is unnecessary because its coefficient-height API is not used by the certificate proof. The weighted-support and specialization soundness declarations are in the existing `Symbolic/Soundness.lean` owner.
 
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/WeightedJohnsonCertificate.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Ordinary/Weighted.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+The declarations `WeightedJohnsonLocalRowIndex`, `WeightedJohnsonRowIndex`, `weightedJohnsonLocalRowIndexToJohnson`, `weightedJohnsonLocalRowIndexToJohnson_errorGrade`, `weightedJohnsonConstraintMatrix`, `weightedJohnsonFinMatrix`, `weightedJohnsonFinRowWeight`, `sum_weightedJohnsonFinRowWeight_slots`, `weightedJohnsonConstraintMatrix_kernel_iff`, `weightedJohnsonFinMatrix_kernel_iff`, `weightedJohnsonFinMatrix_degree_le`, `weightedJohnsonFinMatrix_eq_zero_of_grade_lt`, `exists_weighted_johnson_symbolic_certificate`, and `IsJohnsonWeightedCertificate.exists_symbolic` keep their source names. The two matrix kernel theorems no longer require the redundant received-polynomial degree bound; `weightedJohnsonFinMatrix_degree_le` no longer takes an unused row-weight premise. `exists_johnson_symbolic_certificate_of_shifted_surplus` is added in the existing Johnson certificate owner as the shared construction used by ordinary and weighted constructors. The shifted-height constructor `exists_primitive_interpolant_of_shifted_height` now requires only that matrix-kernel vectors satisfy the local constraints, and its first-order caller uses that implication. The symbolic acceptance file checks ordinary and weighted certificate construction and a truncated weighted-kernel instance with multiplicity two and cutoff `0 < 2 - 1`. No source declarations were omitted.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/WeightedSupportCertificate.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Symbolic/ReceivedLine.lean` and `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Symbolic/ReceivedCurve.lean` at ArkLib revision
@@ -1717,6 +1723,14 @@ No public declaration from this source module was omitted. The separate
 `agreeingPolynomials_eq_empty_of_card_lt` API is not duplicated; pointwise emptiness follows from
 `DecoderCertificate.decoder_eq_empty_of_card_lt`.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/ComponentDimension.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/ComponentDimension.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Ported the chart and source coefficient maps, localization lemmas, prime degree bounds, hereditary component bounds, and finite hybrid incidence theorem. Renamed `chart_prime_hilbertPolynomial_natDegree_le_of_agreements_of_exponent` to `chart_prime_affineHilbertPolynomial_natDegree_le_of_agreements_of_exponent`, and renamed `symbolicSource_prime_hilbertPolynomial_natDegree_le_of_polynomial_agreements_of_exponent` to `symbolicSource_prime_affineHilbertPolynomial_natDegree_le_of_polynomial_agreements_of_exponent`. The chart bound now removes the `c ≤ k` premise. The polynomial source kernel theorem removes primality and separant nonvanishing assumptions. The finite incidence theorem removes `A ≤ n` and the unused initial separant nonvanishing premise.
+
+The local symbolic source equation and numerator definitions now use `jointInitialJetEquation`, `jointInitialJetSeparant`, `jointCommonTaylorNumerator`, and `jointTaylorAgreementEquation`. The chart and source localization arguments share a private comparison proof. Principal-open and agreement-index helpers were replaced by direct zero-locus/set membership and `Set.ncard` expressions. `symbolicSource_prime_hilbertPolynomial_natDegree_le_of_agreements_of_exponent` was not ported: it specializes the polynomial-valued bound to affine received lines, and after the component proof was routed through the polynomial-valued theorem it has no caller. The affine kernel specialization was omitted as unused; the component-or-excluded interface was omitted because no theorem in the unit uses it; the separate source prime Hilbert-degree wrapper is covered by the existing generic `MvPolynomial.natDegree_affineHilbertPolynomial_le_of_mem` theorem.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/EquationDescent.lean`
 
 Ported from `HiddenDerivative/RootFinding/MutualCorrelatedAgreement/EquationDescent.lean` at ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d:
@@ -2295,6 +2309,10 @@ place of a bound on `Q.weightedTotalDegree (i.elim 0 1)`. The suffixes `_of_coef
 `_of_source_and_exponent` is now `_le_of_coeffNatDegreeLE`. The hypothesis `0 < v` is dropped.
 The default-exponent corollaries `jointTotalDegree_commonTaylorNumeratorOver_le` (at `2K`) and
 `…_of_source` are derived in the acceptance test through `taylorExponentSufficient_two_mul`.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/Degree.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+The caller of `CoeffNatDegreeLE.clearedSubstitution` is adapted to pass the same parameter bound for both `h` and the new independent coefficient bound `a`. The source `totalDegree_rationalTaylorNumeratorOver_le` is covered by the generalized `totalDegree_rationalTaylorNumeratorOver_le_of_jet` theorem.
 
 ## `ArkLib/Data/Polynomial/Differential/RegularIteration.lean`
 
@@ -3399,6 +3417,18 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Firs
 
 `flattenFirstOrderChallenge_challengeDegree_le` is retired in favor of `weightedTotalDegree_optionEquivRight_symm_coefficientDegree_le`; use `weightedTotalDegree_piSingle` for the `degreeOf none` form. The first-order coefficient-degree wrapper is not added.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/Degree.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`challengeHeightLE_clearedSubstitution` becomes `CoeffNatDegreeLE.clearedSubstitution`. The generic theorem takes an independent coefficient bound `a`, concludes `H * h + a`, and restricts the coefficient bound to `Q.support`, weaker than the source's all-coefficient hypothesis. The source `ChallengeHeightLE` predicate and its `mono`, `const`, `mul_bound`, `pow_bound`, and `sum_bound` lemmas are represented by `CoeffNatDegreeLE` and its existing closure lemmas. The source `prod_bound` helper is not promoted because no public result in this unit needs it; the finite-product estimate is handled internally. The private copy in `TaylorBidegree.lean` is subsumed and needs no separate entry.
+
+## `ArkLib/ToMathlib/MvPolynomial/PowerMomentLift.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/Degree.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`ReedSolomon.PowerLiftIndex` becomes `MvPolynomial.PowerMomentIndex`. `ReedSolomon.powerMomentMap` and `ReedSolomon.powerMomentIdeal` become `MvPolynomial.powerMomentMap` and `MvPolynomial.powerMomentIdeal`. The API is generalized from fields to commutative semirings. `powerMomentIdeal_isPrime`, `powerMomentMap_surjective`, `coefficientPowerLift`, `powerMomentMap_coefficientPowerLift`, `polynomialPowerLift`, `powerMomentMap_polynomialPowerLift`, `coefficientPowerLift_totalDegree_le_one`, and `polynomialPowerLift_totalDegree_le` keep their names under the MvPolynomial owner. Primality is generalized to additively cancellative commutative semirings with a domain structure; the degree bounds require nontriviality. `polynomialPowerLift` uses `CoeffNatDegreeLE`, and its map theorem recovers `(optionEquivRight R σ).symm P`.
+
+The source rational Taylor numerator coefficient bound is covered by `PolynomialDifferential.coeffNatDegreeLE_rationalTaylorNumeratorOver`; the exponent-aware common Taylor numerator bound and its default form are covered by `coeffNatDegreeLE_commonTaylorNumeratorOver_le`. The source total-degree bound is covered by `totalDegree_rationalTaylorNumeratorOver_le_of_jet` in `PolynomialDifferential.RationalTaylorJointDegree`. The common Taylor numerator and Taylor curve agreement bidegree bounds, including exponent-aware forms, are covered by stronger rectangle-membership theorems in `PolynomialDifferential.RationalTaylorBidegree`. The common Taylor denominator bidegree bounds are not given paired wrappers because existing separant coefficient-degree, power, and jet-degree bounds suffice.
+
 ## `ArkLib/ToMathlib/MvPolynomial/RootContraction.lean`
 
 Ported from `ArkLib/ToMathlib/MvPolynomial/RootContraction.lean` at the source revision. The
@@ -3935,6 +3965,10 @@ place of the conjunction `natDegree ≤ k ∧ #(cutsInIdeal P cuts) ≤ k - natD
 primality, and counting with `Set.ncard` instead of the source's `cutsInIdeal` Finset. The test
 derives the conjunction and shows that positive dimension is needed.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/ComponentDimension.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Added `MvPolynomial.natDegree_affineHilbertPolynomial_add_ncard_le_of_polynomialCoefficientEvaluation`, a generic bound for the affine Hilbert degree plus the size of a set of polynomial-evaluation equations contained in an ideal of dimension greater than one. The source unit had no declaration with this name; this theorem provides the set-indexed count bound used by the source component theorem.
+
 ## `ArkLib/ToMathlib/RingTheory/MvPolynomial/CappedBidegree.lean`
 
 Ported from the index and submodule part of
@@ -4313,6 +4347,10 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Poly
 
 Acceptance cases check a positive-dimensional prime component's sample interpolation, graph coverage, and nonzero restricted separant. They also check the single-tuple and finite-family exact-agreement bounds with positive power batching, including two distinct family candidates.
 
+Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Acceptance cases check the polynomial-valued source prime bound with a polynomial received word and proved cut premise, a degree-zero chart prime with a nonempty cut, chart/source/first-order component bounds including empty-cut boundary cases (the positive-dimensional chart bound forces the cut count to zero), and a finite incidence count with a regular agreement point.
+
 ## `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart.lean`
 
 Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/PointRecognition.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -4380,11 +4418,20 @@ No public declarations were added. The acceptance case checks the composed chall
 
 `flattenedPositiveRootProduct_map_fraction_separable` is covered by `MvPolynomial.ordinaryRootPolynomial_map_fractionRing_separable` and the more general `MvPolynomial.radicalPrimPart_map_optionEquivLeft_fractionRing_separable`. `flattenedPositiveRootProduct_resultant_ne_zero` is covered by `Polynomial.resultant_derivative_ne_zero_ordinaryRootPolynomial`. These first-order names are omitted because the existing generic APIs cover their mathematics, not because of proof gaps.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/Degree.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Acceptance cases check a concrete degree-one power-moment map and its prime kernel over `ℚ`, coefficient-lift evaluation, polynomial-lift flattening, and both lifted-degree bounds. A cleared-substitution example with `h = 0` and `a = 1` attains coefficient degree one.
+
 ## `ArkLibTest/ToMathlib/RingTheory/MvPolynomial.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Symbolic/TaylorDerivativeSupport.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 An acceptance case checks capped-bidegree membership from a bidegree rectangle and a separate variable-degree bound.
+
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/Flattening.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 The existing acceptance example exercises `weightedTotalDegree_optionEquivRight_symm_coefficientDegree_le`. The unit-specific acceptance file was removed; no replacement first-order acceptance file is added.
+
+Ported from `ArkLibTest/ToMathlib/RingTheory/MvPolynomial.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+The acceptance case checks the generic count theorem on a dimension-two coordinate ideal containing one evaluation equation.
