@@ -178,7 +178,7 @@ example :
     norm_num
   refine ⟨hsource, ?_⟩
   simpa [Polynomial.eval_X] using
-      (card_polynomialAgreement_map (algebraMap (ZMod 2) E₄)
+    (card_polynomialAgreement_map (algebraMap (ZMod 2) E₄)
       (algebraMap (ZMod 2) E₄).injective repeatedDomain
       (fun _ ↦ 0) X).trans hsource
 
