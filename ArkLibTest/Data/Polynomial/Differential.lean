@@ -223,14 +223,6 @@ example :
   · exact natDegree_differentialSpecialization_le exactDegreeEquation
       (Polynomial.X ^ 5) (by simp)
 
-/-! ### A concrete chain witness -/
-
-/-- The zero polynomial gives a regular chain witness for `Y₀ = 0` at the origin. -/
-example : ChainWitness (zeroJetEquation ℚ 0) 0 0 := by
-  refine .regular (highestActiveJet_zeroJetEquation (F := ℚ)) ?_ ?_
-  · simp [zeroJetEquation, differentialSpecialization, differentialSpecializationHom]
-  · simp [zeroJetEquation, separant, jetEvaluation, pderiv_X]
-
 /-- Every point is a chain witness for the zero solution of `Y₀ = 0`. -/
 example : ∃ R : Polynomial ℚ, R ≠ 0 ∧ R.natDegree ≤
     differentialWeightedDegree 0 (zeroJetEquation ℚ 0) ∧
@@ -244,10 +236,8 @@ example : ∃ R : Polynomial ℚ, R ≠ 0 ∧ R.natDegree ≤
 
 private abbrev challengeEquation : DifferentialPolynomial (Polynomial ℚ) 0 :=
   C Polynomial.X * X (some 0)
-
 private theorem separant_challengeEquation : separant challengeEquation 0 = C Polynomial.X := by
   simp [separant, pderiv_X]
-
 private theorem challengeChain :
     SeparantChain challengeEquation [(challengeEquation, (0 : Fin 1))] (C Polynomial.X) := by
   have hjet : jetDegree challengeEquation 0 = 1 := by
@@ -271,6 +261,8 @@ private theorem challengeChain :
   intro j
   simp [DependsOnJet, jetDegree, MvPolynomial.degreeOf_C]
 
+private theorem natDegree_coeff_challengeEquation_le (u : JetVariable 0 →₀ ℕ) :
+    (challengeEquation.coeff u).natDegree ≤ 1 := by rw [coeff_C_mul, coeff_X]; split_ifs <;> simp
 private theorem constantDerivativeChain :
     SeparantChain (constantDerivativeEquation ℚ)
       [(constantDerivativeEquation ℚ, (1 : Fin 2))] (C 1) := by
@@ -282,14 +274,18 @@ private theorem constantDerivativeChain :
 /-- The charge along the chain for `Y₁` meets the cap with `M = 1`. -/
 example :
     ([(constantDerivativeEquation ℚ, (1 : Fin 2))].map
-      (firstOrderStageCharge (fun j ↦ (j : ℚ)) fun j _ ↦ (j : ℚ))).sum ≤
-        firstOrderStageCap (fun j ↦ (j : ℚ)) (fun j _ ↦ (j : ℚ)) 1 1 :=
+      (firstOrderStageCharge (fun j ↦ (j : ℚ)) fun j r ↦ (j : ℚ) + r)).sum ≤
+        firstOrderStageCap (fun j ↦ (j : ℚ)) (fun j r ↦ (j : ℚ) + r) 1 1 :=
   constantDerivativeChain.sum_firstOrderStageCharge_le
     jetTotalDegree_constantDerivativeEquation_le
     (by simp [constantDerivativeEquation, jetDegree])
     (fun _ ↦ by positivity) (fun _ _ ↦ by positivity)
-    (fun _ _ h ↦ by exact_mod_cast h) (fun {_ _ _} _ h ↦ by exact_mod_cast h)
-    (fun {_ _ _} _ _ ↦ le_rfl) (fun _ ↦ le_rfl)
+    (by intro j w h; exact Nat.cast_le.mpr h)
+    (by intro j w r _ hjw; simpa [add_comm] using
+      add_le_add_right (Nat.cast_le.mpr hjw) (r : ℚ))
+    (by intro j r q hr _; simpa [add_comm] using
+      add_le_add_left (Nat.cast_le.mpr hr) (j : ℚ))
+    (by intro j; exact le_add_of_nonneg_right (by positivity))
 
 /-- A nonempty bounded-solution family is bounded by costs along its separant chain. -/
 example : ∃ roots : Finset (BoundedSolution challengeEquation 0),
@@ -315,6 +311,10 @@ example : ∃ roots : Finset (BoundedSolution challengeEquation 0),
   have hcount := boundedSolution_card_le_separantChainStageSum challengeChain 0 accepts roots
     hroots (fun _ ↦ 1) hregular
   exact ⟨roots, by simp [roots], hcount⟩
+
+/-- The `X · Y₀` chain has a one-value exceptional-set bound. -/
+example := challengeChain.exists_finset_regular_stage
+  natDegree_coeff_challengeEquation_le (RingHom.id ℚ) Function.injective_id
 /-! ### Derivative descent -/
 
 /-- `Y₁ ^ 2 * Y₀` in depth `1`. -/
