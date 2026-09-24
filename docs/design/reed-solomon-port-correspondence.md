@@ -2209,25 +2209,6 @@ Renamed `degreeOf_initialJetSeparantOver_firstOrder` to `degreeOf_initialJetSepa
 
 `flattenChallenge_degreeOf_le` was not given a wrapper because the existing weighted-degree identities already provide the coordinate-degree identity. The redundant `degreeOf_optionEquivRight_symm_le` declaration and its constant-coefficient test were removed.
 
-## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/Flattening.lean`
-
-The unit is retired; ArkLib adds no named first-order flattening API. Its declarations use the
-existing option-coordinate equivalence and weighted-degree results directly:
-
-| Source declaration | Replacement |
-| --- | --- |
-| `flattenFirstOrderChallenge Q` | `(optionEquivRight F (JetVariable 1)).symm Q` |
-| `liftedSourceWeight w` | `fun v ↦ v.elim 0 w` |
-| `flattenFirstOrderChallenge_ne_zero_iff` | `(optionEquivRight F (JetVariable 1)).symm.injective.ne_iff`, with `map_zero` |
-| `flattenFirstOrderChallenge_challengeDegree_le` | `weightedTotalDegree_optionEquivRight_symm_coefficientDegree_le`; use `weightedTotalDegree_piSingle` for `degreeOf none` |
-| `flattenFirstOrderChallenge_yOneDegree_le`, `flattenFirstOrderChallenge_jetWeight_le` | `weightedTotalDegree_optionEquivRight` applied to the inverse-equivalent polynomial, followed by `AlgEquiv.apply_symm_apply`; this gives equality |
-| `flattenChallenge_weightedTotalDegree_le` | `weightedTotalDegree_optionEquivRight` applied to `(optionEquivRight F σ).symm Q`, followed by `AlgEquiv.apply_symm_apply`; this gives equality |
-
-The source consumers `Squarefree/PositiveProduct.lean`, `RetainedCurve.lean`, and `RetainedTail.lean`
-should state their bounds through these generic forms. If a `degreeOf` specialization is needed
-repeatedly in the PositiveProduct port, keep it private or local beside the replacement for
-`flattenedRootFirst`; it should not become a standalone first-order flattening unit.
-
 ## `ArkLib/Data/Polynomial/Differential/RationalTaylorJointDegree.lean`
 
 Ported from `Symbolic/TaylorHeight.lean` and `Symbolic/TaylorDegree.lean` under the same source
