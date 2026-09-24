@@ -29,11 +29,12 @@ and stays nonzero under every ring homomorphism from `F[X]` into a nontrivial se
 
 * `exists_primitive_interpolant_of_column_height`: the construction for received curves.
 * `exists_primitive_receivedLine_interpolant_of_column_height`: the case of received lines.
+* `exists_primitive_interpolant_of_shifted_height`: the construction from shifted row and
+  column weights.
 
 ## References
 
-* [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient
-  Decoding and Smaller Cryptographic Proofs*][DKT26]
+* [DKT26]
 -/
 
 @[expose] public section
@@ -96,8 +97,48 @@ theorem exists_primitive_receivedLine_interpolant_of_column_height (m h : ℕ)
         MvPolynomial.map ψ (SourceColumn.interpolant columns v) ≠ 0) ∧
       ∀ i, SatisfiesLocalConstraints m (Polynomial.C (centers i)) (receivedLine (f i) (g i))
         (SourceColumn.interpolant columns v) := by
-  simpa using exists_primitive_interpolant_of_column_height m 1 h centers _
-    (fun i => natDegree_receivedLine_le (f i) (g i)) columns hcolumns φ hφ hrank
-    (by simpa using hsurplus)
+  have hreceived : ∀ i, (receivedLine (f i) (g i)).natDegree ≤ 1 :=
+    fun i => natDegree_receivedLine_le (f i) (g i)
+  have hsurplus' : s * (h + 1) < ∑ j, (h + 1 - 1 * (columns j).y₀) := by
+    simpa only [Nat.one_mul] using hsurplus
+  obtain ⟨v, hv, hvdeg, hspan, hmap, hconstraints⟩ :=
+    exists_primitive_interpolant_of_column_height m 1 h centers
+      (fun i => receivedLine (f i) (g i)) hreceived columns hcolumns φ hφ hrank hsurplus'
+  refine ⟨v, hv, ?_, hspan, hmap, hconstraints⟩
+  intro j
+  simpa only [Nat.one_mul] using hvdeg j
+
+/-- A strict surplus of shifted row and column slots, with a matrix kernel implying the local
+constraints, yields a primitive curve interpolant whose coefficient in column `j` has degree
+below `h + 1 - ℓ * totalJetDegree (columns j).exponent`. -/
+theorem exists_primitive_interpolant_of_shifted_height {n N rows : ℕ}
+    (m ℓ h : ℕ) (centers : Fin n → F) (w : Fin n → F[X])
+    (columns : Fin N → SourceColumn d) (hcolumns : Function.Injective columns)
+    (M : Matrix (Fin rows) (Fin N) F[X]) (rowWeight : Fin rows → ℕ)
+    (hkernel : ∀ v, M *ᵥ v = 0 →
+      ∀ i, SatisfiesLocalConstraints m (Polynomial.C (centers i))
+        (w i) (SourceColumn.interpolant columns v))
+    (hdegree : ∀ i j, rowWeight i ≤ ℓ * totalJetDegree (columns j).exponent →
+      (M i j).natDegree ≤ ℓ * totalJetDegree (columns j).exponent - rowWeight i)
+    (hzero : ∀ i j, ℓ * totalJetDegree (columns j).exponent < rowWeight i → M i j = 0)
+    (hsurplus : Finset.univ.sum (fun i : Fin rows ↦ h + 1 - rowWeight i) <
+      Finset.univ.sum (fun j : Fin N ↦
+        h + 1 - ℓ * totalJetDegree (columns j).exponent)) :
+    ∃ v : Fin N → F[X], v ≠ 0 ∧
+      (∀ j, v j ∈ Polynomial.degreeLT F
+        (h + 1 - ℓ * totalJetDegree (columns j).exponent)) ∧
+      Ideal.span (Set.range v) = ⊤ ∧
+      (∀ {E : Type*} [Field E] (ι : F →+* E) (z : E),
+        MvPolynomial.map (Polynomial.eval₂RingHom ι z)
+          (SourceColumn.interpolant columns v) ≠ 0) ∧
+      ∀ i, SatisfiesLocalConstraints m (Polynomial.C (centers i))
+        (w i) (SourceColumn.interpolant columns v) := by
+  obtain ⟨v, hv, hMv, hvdegree, hprimitive⟩ :=
+    Matrix.exists_primitive_ne_zero_mulVec_eq_zero_shifted_degreeLT_of_natDegree_le
+      M rowWeight (fun j ↦ ℓ * totalJetDegree (columns j).exponent) h hdegree hzero hsurplus
+  refine ⟨v, hv, hvdegree, hprimitive, ?_, hkernel v hMv⟩
+  intro E _ ι z
+  exact SourceColumn.map_interpolant_ne_zero hcolumns (Polynomial.eval₂RingHom ι z)
+    (Ideal.comp_ne_zero_of_span_range_eq_top hprimitive (Polynomial.eval₂RingHom ι z))
 
 end ReedSolomon.HiddenDerivative

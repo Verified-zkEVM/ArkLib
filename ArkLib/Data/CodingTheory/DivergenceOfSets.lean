@@ -391,52 +391,22 @@ theorem errorBound_ge_const {ι : Type} [Fintype ι] [Nonempty ι]
     simp only [ge_iff_le]
     have hm_le : m ≤ Real.sqrt (r : ℝ) / 20 := by
       simp [hm]
-    have hm_nonneg : 0 ≤ m := by
-      have h1 : (0 : ℝ) ≤ (↑(1 - sqrt r - δ) : ℝ) := by
-        exact_mod_cast (show (0 : ℝ≥0) ≤ (1 - sqrt r - δ) from zero_le)
-      have h2 : (0 : ℝ) ≤ Real.sqrt (r : ℝ) / 20 := by
-        have : (0 : ℝ) ≤ Real.sqrt (r : ℝ) := Real.sqrt_nonneg _
-        nlinarith
-      have : (0 : ℝ) ≤ min (↑(1 - sqrt r - δ) : ℝ) (Real.sqrt (r : ℝ) / 20) :=
-        le_min h1 h2
-      simpa [hm] using this
+    have hm_nonneg : 0 ≤ m :=
+      le_min (NNReal.coe_nonneg _) (div_nonneg (Real.sqrt_nonneg _) (by norm_num))
     have hr_le_one : r ≤ 1 := by
       have h := reedSolomon_rate_le_one (deg := deg) (domain := domain)
       have : (LinearCode.rate (ReedSolomon.code domain deg) : ℝ≥0) ≤ 1 := by
         exact_mod_cast h
       simpa [hr] using this
-    have h_sqrt_le_one : Real.sqrt (r : ℝ) ≤ 1 := by
-      have : (r : ℝ) ≤ (1 : ℝ) := by
-        exact_mod_cast hr_le_one
-      have := Real.sqrt_le_sqrt this
-      simpa using this
-    have h2m_le_one : 2 * m ≤ 1 := by
-      have h2m_le_sqrt10 : 2 * m ≤ Real.sqrt (r : ℝ) / 10 := by
-        have : 2 * m ≤ 2 * (Real.sqrt (r : ℝ) / 20) := by
-          gcongr
-        nlinarith
-      have hsqrt10_le_one : Real.sqrt (r : ℝ) / 10 ≤ 1 := by
-        have : Real.sqrt (r : ℝ) / 10 ≤ 1 / 10 := by
-          nlinarith [h_sqrt_le_one]
-        linarith
-      exact h2m_le_sqrt10.trans hsqrt10_le_one
-    have h2m_nonneg : 0 ≤ 2 * m := by nlinarith [hm_nonneg]
-    have hpow7_le_pow2 : (2 * m) ^ 7 ≤ (2 * m) ^ 2 := by
-      exact pow_le_pow_of_le_one h2m_nonneg h2m_le_one (by decide : (2 : ℕ) ≤ 7)
-    have hpow2_le : (2 * m) ^ 2 ≤ (Real.sqrt (r : ℝ) / 10) ^ 2 := by
-      have hle : 2 * m ≤ Real.sqrt (r : ℝ) / 10 := by
-        have : 2 * m ≤ 2 * (Real.sqrt (r : ℝ) / 20) := by
-          gcongr
-        nlinarith
-      have hsqrt10_nonneg : 0 ≤ Real.sqrt (r : ℝ) / 10 := by
-        have : 0 ≤ Real.sqrt (r : ℝ) := Real.sqrt_nonneg _
-        nlinarith
-      have habs : |2 * m| ≤ |Real.sqrt (r : ℝ) / 10| := by
-        have ha : 0 ≤ 2 * m := h2m_nonneg
-        have hb : 0 ≤ Real.sqrt (r : ℝ) / 10 := hsqrt10_nonneg
-        simpa [abs_of_nonneg ha, abs_of_nonneg hb] using hle
-      have := (sq_le_sq).2 habs
-      simpa using this
+    have h_sqrt_le_one : Real.sqrt (r : ℝ) ≤ 1 :=
+      Real.sqrt_le_one.mpr (by exact_mod_cast hr_le_one)
+    have hle : 2 * m ≤ Real.sqrt (r : ℝ) / 10 := by linarith only [hm_le]
+    have h2m_le_one : 2 * m ≤ 1 := by linarith only [hle, h_sqrt_le_one]
+    have h2m_nonneg : 0 ≤ 2 * m := by linarith only [hm_nonneg]
+    have hpow7_le_pow2 : (2 * m) ^ 7 ≤ (2 * m) ^ 2 :=
+      pow_le_pow_of_le_one h2m_nonneg h2m_le_one (by decide : (2 : ℕ) ≤ 7)
+    have hpow2_le : (2 * m) ^ 2 ≤ (Real.sqrt (r : ℝ) / 10) ^ 2 :=
+      pow_le_pow_left₀ h2m_nonneg hle 2
     have hsqrt_sq : (Real.sqrt (r : ℝ) / 10) ^ 2 = (r : ℝ) / 100 := by
       simpa using (real_sqrt_div_10_pow_two (r := r))
     have h2m_pow7_le : (2 * m) ^ 7 ≤ (r : ℝ) / 100 := by
@@ -455,13 +425,8 @@ theorem errorBound_ge_const {ι : Type} [Fintype ι] [Nonempty ι]
         simpa [hr] using hrate_pos
       exact_mod_cast this
     have hm_pos : 0 < m := by
-      have hA_nnreal : (0 : ℝ≥0) < (1 - sqrt r - δ) := tsub_pos_of_lt hδ'
-      have hA : (0 : ℝ) < (↑(1 - sqrt r - δ) : ℝ) := by exact_mod_cast hA_nnreal
-      have hB : (0 : ℝ) < Real.sqrt (r : ℝ) / 20 := by
-        have hsqrt_pos : (0 : ℝ) < Real.sqrt (r : ℝ) := (Real.sqrt_pos).2 hr_pos
-        nlinarith
-      have : 0 < min (↑(1 - sqrt r - δ) : ℝ) (Real.sqrt (r : ℝ) / 20) := lt_min hA hB
-      simpa [hm] using this
+      have hA : (0 : ℝ) < (↑(1 - sqrt r - δ) : ℝ) := by exact_mod_cast tsub_pos_of_lt hδ'
+      exact lt_min hA (div_pos (Real.sqrt_pos.2 hr_pos) (by norm_num))
     have hm7_pos : 0 < m ^ 7 := by
       simpa using (pow_pos hm_pos 7)
     -- main inequality after clearing denominators
@@ -749,6 +714,7 @@ theorem concentration_bounds {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq
   dsimp
   -- Abbreviate the Reed–Solomon code set
   set V : Set (ι → F) := RScodeSet domain deg
+  have : Nonempty V := ⟨⟨0, Submodule.zero_mem _⟩⟩
   -- Obtain the proximity threshold δ < δ' and the pointwise characterization
   obtain ⟨δ, hδlt, hpred⟩ :=
     divergence_pred_spec (U := (U : Set (ι → F))) (V := V) (hdiv_pos := hdiv_pos)

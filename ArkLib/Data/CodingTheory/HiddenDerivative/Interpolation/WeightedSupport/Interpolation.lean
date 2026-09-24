@@ -8,6 +8,9 @@ module
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.LocalRank
 public import ArkLib.ToMathlib.LinearAlgebra.FiniteDimensional
 
+import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.Soundness
+import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.Margin
+
 /-!
 # A nonzero interpolant from a weighted-support surplus
 
@@ -17,7 +20,8 @@ weighted support space, has rank at most `localResidualCoordinateBudget d m W �
 `ι` therefore has rank at most `card ι` times that budget. If this is below the number of
 weighted-support exponents, which is the dimension of the space, some nonzero member of the space
 satisfies every local constraint. The rank bound holds in every characteristic, and no
-independence of the constraints is assumed.
+independence of the constraints is assumed. A quantitative dimension margin and a symbolic kernel
+also give an interpolant with the jet and weighted-degree bounds used by the decoder.
 
 ## Main statements
 
@@ -27,6 +31,12 @@ independence of the constraints is assumed.
   space.
 * `exists_nonzero_exact_interpolant_of_weightedSupport_surplus`: the same interpolant in the exact
   interpolation space, when `L ≤ m A` and `L ≤ D M`.
+* `exists_weightedSupport_interpolant_of_fixed_margin`: a nonzero interpolant with degree bounds
+  from a strict dimension margin.
+
+## References
+
+* [DKT26]
 -/
 
 @[expose] public section
@@ -88,5 +98,68 @@ theorem exists_nonzero_exact_interpolant_of_weightedSupport_surplus {A M : ℕ}
   obtain ⟨Q, hQ0, hQ, hQlocal⟩ :=
     exists_nonzero_weightedSupport_interpolant hd hD centers received hdim
   exact ⟨Q, hQ0, weightedSupportSpace_le_exactInterpolationSpace hD hdD hL hcap hQ, hQlocal⟩
+
+open Polynomial
+open SymbolicReceivedInterpolation
+open WeightedSupportParameters
+
+set_option maxHeartbeats 800000 in
+-- Elaborating the symbolic matrix witness crosses the full weighted-support rank construction.
+/-- A strict dimension margin gives a nonzero interpolant in the weighted-support space that
+satisfies all local constraints and both decoder degree bounds. -/
+theorem exists_weightedSupport_interpolant_of_fixed_margin
+    {n A : ℕ} {g : ℝ}
+    (domain : Fin n ↪ F) (received : Fin n → F)
+    (hD : 0 < D) (hm : 0 < m) (hA : 0 < A) (hg : g ≤ 1)
+    (hcut : (D : ℝ) * m * (1 + g) ≤ (m * A : ℕ))
+    (hmargin : (543 / 500 : ℝ) * n *
+      Module.finrank F (LinearMap.range
+        (weightedSupportLocalConstraint (R := F) (d := d) (W := W)
+          (L := (D : ℝ) * m * (1 + g)) m hD 0 0)) <
+      Module.finrank F (weightedSupportSpace F D d W
+        ((D : ℝ) * m * (1 + g)) hD)) :
+    ∃ Q : DifferentialPolynomial F d,
+      Q ≠ 0 ∧
+      Q ∈ weightedSupportSpace F D d W ((D : ℝ) * m * (1 + g)) hD ∧
+      (∀ i, SatisfiesLocalConstraints m (domain i) (received i) Q) ∧
+      jetTotalDegree Q < 2 * m ∧
+      differentialWeightedDegree D Q < m * A := by
+  let ν := 2 * m - 1
+  have hν : 0 < ν := by dsimp only [ν]; omega
+  have hy₀ : ∀ u, WeightedSupportEligible D d W
+      ((D : ℝ) * m * (1 + g)) u → u (some 0) ≤ ν := by
+    intro u hu
+    exact y₀_le_two_mul_sub_one_of_eligible hD hg hu
+  obtain ⟨v, _hv, _hkernel, _hdegree, _hheight, _hprimitive, hnozero,
+      hconstraints, hsupport⟩ :=
+    exists_symbolic_weightedSupport_interpolant_of_fixed_margin
+      hD hν (fun i ↦ domain i) received (fun _ ↦ 0) hy₀ hmargin
+  let columns := weightedSupportColumns
+    (d := d) (W := W) (L := (D : ℝ) * m * (1 + g)) hD
+  let φ : F[X] →+* F := Polynomial.eval₂RingHom (RingHom.id F) 0
+  let Q : DifferentialPolynomial F d :=
+    MvPolynomial.map φ (SourceColumn.interpolant columns v)
+  have hQ0 : Q ≠ 0 := by
+    simpa only [Q, φ] using hnozero (RingHom.id F) 0
+  have hQsupport :
+      Q ∈ weightedSupportSpace F D d W ((D : ℝ) * m * (1 + g)) hD := by
+    simpa only [Q, φ, columns] using
+      map_interpolant_mem_weightedSupportSpace hD columns hsupport v (RingHom.id F) 0
+  have hQlocal : ∀ i, SatisfiesLocalConstraints m (domain i) (received i) Q := by
+    intro i
+    have hi := SatisfiesLocalConstraints.map φ m (Polynomial.C (domain i))
+      (receivedLine (received i) 0) (SourceColumn.interpolant columns v) (hconstraints i)
+    change SatisfiesLocalConstraints m
+      (φ (Polynomial.C (domain i))) (φ (receivedLine (received i) 0)) Q at hi
+    convert hi using 1 <;> simp [φ, receivedLine]
+  have hdecoder := decoder_bounds_of_mem_weightedSupportSpace hm hA
+    (by
+      have hnonneg : (0 : ℝ) ≤ (D : ℝ) * m := by positivity
+      calc
+        (D : ℝ) * m * (1 + g) ≤ (D : ℝ) * m * 2 :=
+          mul_le_mul_of_nonneg_left (by linarith) hnonneg
+        _ = (D : ℝ) * (2 * m) := by ring)
+    hcut hQsupport
+  exact ⟨Q, hQ0, hQsupport, hQlocal, hdecoder.1, hdecoder.2⟩
 
 end ReedSolomon.HiddenDerivative

@@ -31,7 +31,7 @@ an exponent `τ`, so that all coefficients `c_l` with `2(l - r) - 1 ≤ τ` shar
   numerator commutes with `F`-algebra maps.
 * `rationalTaylorNumeratorOver_eq`: over a field extension of `F` it is
   `rationalTaylorNumerator`.
-* `map_rationalTaylorNumeratorOver_eq` and its polynomial-evaluation specializations.
+* `map_rationalTaylorNumeratorOver_eq`: field specialization along any `F`-algebra map.
 * `PolynomialDifferential.commonTaylorNumeratorOver` and `map_commonTaylorNumeratorOver`.
 
 ## References
@@ -116,26 +116,6 @@ theorem map_rationalTaylorNumeratorOver_eq {E : Type*} [Field E] [Algebra F E]
     map φ.toRingHom (rationalTaylorNumeratorOver F center Q l) =
       rationalTaylorNumerator (φ center) (map φ.toRingHom Q) l := by
   rw [map_rationalTaylorNumeratorOver, rationalTaylorNumeratorOver_eq]
-
-/-- Evaluating a polynomial parameter in a rational Taylor numerator gives the field numerator. -/
-theorem eval_rationalTaylorNumeratorOver
-    (center z : F) (Q : DifferentialPolynomial (Polynomial F) r) (l : ℕ) :
-    map (Polynomial.evalRingHom z)
-        (rationalTaylorNumeratorOver F (Polynomial.C center) Q l) =
-      rationalTaylorNumerator center (map (Polynomial.evalRingHom z) Q) l := by
-  simpa using map_rationalTaylorNumeratorOver_eq (F := F) (Polynomial.aeval z)
-    (Polynomial.C center) Q l
-
-/-- Polynomial evaluation through an algebra map specializes a rational Taylor numerator. -/
-theorem eval₂AlgHom_rationalTaylorNumeratorOver {A E : Type*} [CommRing A]
-    [Algebra F A] [Field E] [Algebra F E] (f : A →ₐ[F] E) (center : A) (z : E)
-    (Q : DifferentialPolynomial (Polynomial A) r) (l : ℕ) :
-    let φ := Polynomial.eval₂AlgHom f z (fun a ↦ Commute.all (f a) z)
-    map φ.toRingHom (rationalTaylorNumeratorOver F (Polynomial.C center) Q l) =
-      rationalTaylorNumerator (f center) (map φ.toRingHom Q) l := by
-  dsimp only
-  simpa using map_rationalTaylorNumeratorOver_eq (F := F)
-    (Polynomial.eval₂AlgHom f z (fun a ↦ Commute.all (f a) z)) (Polynomial.C center) Q l
 
 /-- The numerator of `c_l` padded to the common denominator `S ^ τ`, where `S` is the initial
 separant: `rationalTaylorNumeratorOver F center Q l * S ^ (τ - (2(l - r) - 1))`. The padding is

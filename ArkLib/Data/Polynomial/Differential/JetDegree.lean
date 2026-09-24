@@ -27,6 +27,18 @@ finite-dimensional bounded-support space without a separate coordinate cap.
 Ordinary partial-derivative exactness remains governed by the explicit cast hypotheses in
 `ArkLib.ToMathlib.MvPolynomial.PDeriv`; the characteristic-free bounds in this file do not assert
 that a separant is nonzero.
+
+The initial equation `initialJetEquation center Q` is the specialization of `Q` at `X = center`,
+viewed as a polynomial in the initial jet coordinates. Its coefficient maps, evaluation, total
+degree, and all-coordinate partial-derivative law are developed here so both chain witnesses and
+Taylor charts use the same specialization.
+
+## Main statements
+
+* `initialJetEquation`, `map_initialJetEquation`, `aeval_initialJetEquation`,
+  `aeval_map_initialJetEquation`, `totalDegree_initialJetEquation_le`, and
+  `degreeOf_initialJetEquation_le`, `pderiv_initialJetEquation`: the shared initial equation and
+  its basic laws.
 -/
 
 @[expose] public section
@@ -203,6 +215,105 @@ theorem separant_total_le [CommSemiring F] (Q : DifferentialPolynomial F d)
     (j : Fin (d + 1)) :
     jetTotalDegree (separant Q j) ≤ jetTotalDegree Q - 1 :=
   MvPolynomial.weightedTotalDegree_pderiv_le_sub jetDegreeWeight (some j) Q
+
+section CommSemiring
+
+variable {R : Type*} [CommSemiring R] {r : ℕ}
+
+open MvPolynomial
+
+/-- The differential polynomial `Q` with the independent variable set to `center`, as a
+polynomial in the initial jet coordinates `Y_0, ..., Y_r`. -/
+def initialJetEquation (center : R) (Q : DifferentialPolynomial R r) :
+    MvPolynomial (Fin (r + 1)) R :=
+  MvPolynomial.aeval (fun i ↦ i.elim (C center) X) Q
+
+/-- Mapping coefficients sends the initial equation to the initial equation of the mapped
+differential polynomial. -/
+theorem map_initialJetEquation {S : Type*} [CommSemiring S] (f : R →+* S) (center : R)
+    (Q : DifferentialPolynomial R r) :
+    map f (initialJetEquation center Q) = initialJetEquation (f center) (map f Q) := by
+  simp only [initialJetEquation, MvPolynomial.aeval_def, MvPolynomial.algebraMap_eq,
+    MvPolynomial.map_eval₂]
+  congr 1
+  funext i
+  cases i <;> simp
+
+/-- Evaluating the initial equation at a jet is `jetEvaluation` of `Q` at `center`. -/
+theorem aeval_initialJetEquation (center : R) (Q : DifferentialPolynomial R r)
+    (jet : Fin (r + 1) → R) :
+    MvPolynomial.aeval jet (initialJetEquation center Q) = jetEvaluation Q center jet := by
+  have he : (MvPolynomial.aeval jet).comp
+      (MvPolynomial.aeval (fun i : Option (Fin (r + 1)) ↦ i.elim (C center) X)) =
+      MvPolynomial.aeval (fun i ↦ match i with
+        | none => center | some j => jet j) := by
+    apply MvPolynomial.algHom_ext
+    intro i
+    cases i <;> simp
+  exact DFunLike.congr_fun he Q
+
+/-- Evaluating the mapped initial equation agrees with evaluating the mapped differential
+polynomial at the mapped center. -/
+theorem aeval_map_initialJetEquation {S : Type*} [CommSemiring S] (f : R →+* S)
+    (center : R) (Q : DifferentialPolynomial R r) (jet : Fin (r + 1) → S) :
+    MvPolynomial.aeval jet (map f (initialJetEquation center Q)) =
+      jetEvaluation (map f Q) (f center) jet := by
+  rw [map_initialJetEquation]
+  exact aeval_initialJetEquation (f center) (map f Q) jet
+
+/-- Setting the independent variable to a constant does not increase the total jet degree. -/
+theorem totalDegree_initialJetEquation_le (center : R) (Q : DifferentialPolynomial R r) :
+    (initialJetEquation center Q).totalDegree ≤ jetTotalDegree Q := by
+  rw [← weightedTotalDegree_one]
+  apply weightedTotalDegree_aeval_le_of_le
+  intro i
+  cases i with
+  | none => simp
+  | some j =>
+    simp only [Option.elim_some, weightedTotalDegree_one]
+    exact (totalDegree_monomial_le _ _).trans (by simp)
+
+/-- Setting the independent variable to a constant does not increase the degree in the highest jet
+coordinate. -/
+theorem degreeOf_initialJetEquation_le [Nontrivial R] (center : R)
+    (Q : DifferentialPolynomial R r) :
+    (initialJetEquation center Q).degreeOf (Fin.last r) ≤ Q.degreeOf (some (Fin.last r)) := by
+  rw [← weightedTotalDegree_piSingle, ← weightedTotalDegree_piSingle (some (Fin.last r))]
+  apply weightedTotalDegree_aeval_le_of_le
+  intro i
+  cases i with
+  | none => simp
+  | some j =>
+    by_cases hj : j = Fin.last r
+    · subst j
+      simp [weightedTotalDegree_piSingle]
+    · simp [weightedTotalDegree_piSingle, degreeOf_X, Ne.symm hj]
+
+/-- Taking a partial derivative of the initial equation in `Y_j` gives the initial equation of
+the separant in `Y_j`. -/
+theorem pderiv_initialJetEquation (center : R) (Q : DifferentialPolynomial R r)
+    (j : Fin (r + 1)) :
+    pderiv j (initialJetEquation center Q) = initialJetEquation center (separant Q j) := by
+  classical
+  induction Q using MvPolynomial.induction_on with
+  | C c => simp [initialJetEquation, separant]
+  | add P Q hP hQ => simpa [initialJetEquation, separant] using congrArg₂ (· + ·) hP hQ
+  | mul_X P i hP =>
+    simp only [initialJetEquation, separant] at hP
+    cases i with
+    | none =>
+      simp only [aeval_eq_bind₁] at hP
+      simp [initialJetEquation, separant, hP]
+    | some i =>
+      simp only [initialJetEquation, separant, map_mul, MvPolynomial.aeval_X,
+        pderiv_mul, pderiv_X, map_add]
+      rw [hP]
+      by_cases hi : i = j
+      · subst i
+        simp
+      · simp [hi]
+
+end CommSemiring
 
 end
 

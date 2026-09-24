@@ -20,8 +20,6 @@ construction does not depend on how the interpolant was found.
 
 ## Main definitions
 
-* `HiddenDerivative.InterpolationCertificate.toBoundedSolution`: an agreeing polynomial as a
-  bounded solution.
 * `HiddenDerivative.InterpolationCertificate.solutionEmbedding`: the injection
   `agreeingPolynomials domain k A received ↪ BoundedSolution Q (ambientDim - 1)`.
 
@@ -106,27 +104,7 @@ open ListDecoding
 variable {ι R : Type*} [Fintype ι] [CommRing R] {k A d m : ℕ} {domain : ι ↪ R}
   {received : ι → R}
 
-/-- A message polynomial of degree below `k` lies in `degreeLT R (ambientDim - 1 + 1)`. -/
-theorem mem_degreeLT (c : InterpolationCertificate k A d m domain received)
-    (P : MessagePolynomial R k) : (P : R[X]) ∈ degreeLT R (c.ambientDim - 1 + 1) :=
-  degreeLT_mono (by have := c.messageDim_le; have := c.one_le_ambientDim; omega) P.property
-
 variable [IsDomain R] [DecidableEq R]
-
-/-- An agreeing message polynomial, unchanged, as a bounded solution of the interpolant of degree
-at most `ambientDim - 1`. -/
-def toBoundedSolution (c : InterpolationCertificate k A d m domain received)
-    (p : agreeingPolynomials domain k A received) :
-  BoundedSolution c.interpolant (c.ambientDim - 1) :=
-  ⟨⟨p.1, c.mem_degreeLT p.1⟩, c.specializes_to_zero p.1 p.2⟩
-
-/-- `toBoundedSolution` keeps the polynomial. -/
-@[simp]
-theorem toBoundedSolution_polynomial (c : InterpolationCertificate k A d m domain received)
-    (p : agreeingPolynomials domain k A received) :
-    (c.toBoundedSolution p).polynomial = (p.1 : R[X]) := by
-  unfold toBoundedSolution BoundedSolution.polynomial
-  rfl
 
 /-- The embedding of the agreement list into the bounded solutions of the interpolant. A message
 polynomial with at least `A` agreements is sent to itself, viewed as a solution of degree at most

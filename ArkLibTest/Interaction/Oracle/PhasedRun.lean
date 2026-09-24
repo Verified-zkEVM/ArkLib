@@ -184,6 +184,10 @@ example (hidden : Nat) :
       worldTags run,
       result.2) =
     (7, .accept 18, [⟨Sum.inr (), (11 : Nat)⟩], [[9], [0], [1], [2]], [9, 0, 1, 2]) := by
+  -- Reduce the shared run once: a bare `rfl` re-reduces this open term for every projection.
+  generalize h : observed 2 7 11 hidden = result
+  conv at h => lhs; whnf
+  subst h
   rfl
 
 /-- Rejection remains explicit on a phased artifact. -/

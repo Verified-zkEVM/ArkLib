@@ -6,7 +6,7 @@ Authors: Quang Dao
 
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.HiddenDerivativeBound
 import ArkLib.Data.Polynomial.Differential.WitnessCount
-import ArkLibTest.Data.CodingTheory.HiddenDerivative.Interpolation.Certificates
+import ArkLibTest.Data.CodingTheory.HiddenDerivative.Interpolation
 
 /-!
 # Acceptance cases for exact-interpolant list bounds
@@ -38,11 +38,6 @@ private theorem Y_zero_sub_mem_exact (r : ZMod 5) :
     left
     simp [ExactInterpolationEligibleExponent, firstJetExponent, fullHigherJetWeight]
 
-/-- Each `Y₀ - r` satisfies the multiplicity-one constraints at `(a, r)`. -/
-private theorem Y_zero_sub_satisfies_local (a r : ZMod 5) :
-    SatisfiesLocalConstraints (d := 0) 1 a r (X (some 0) - C r) :=
-  CertificatesTest.satisfiesLocalConstraints_one_Y_zero_sub a r
-
 /-- The characteristic form of the root-count hypotheses for an exact interpolant. -/
 private theorem listBound_of_below_characteristic
     {F index : Type*} [Field F] [Finite F] [DecidableEq F] [Fintype index]
@@ -68,7 +63,8 @@ private theorem listBound_of_below_characteristic
 example (r : ZMod 5) (p : agreeingPolynomials CertificatesTest.zmodDomain 2 2 (fun _ ↦ r)) :
     ((agreeingPolynomialsToBoundedSolution (by decide) (by decide)
       CertificatesTest.zmodDomain (fun _ ↦ r) (Y_zero_sub_mem_exact r)
-      (fun i ↦ Y_zero_sub_satisfies_local (CertificatesTest.zmodDomain i) r) p).polynomial) =
+      (fun i ↦ CertificatesTest.satisfiesLocalConstraintsOneYZeroSub
+        (CertificatesTest.zmodDomain i) r) p).polynomial) =
       (p.1 : Polynomial (ZMod 5)) := by
   simp
 
@@ -78,16 +74,18 @@ example (r : ZMod 5) (p : agreeingPolynomials CertificatesTest.zmodDomain 2 2 (f
       solution.polynomial = (p.1 : Polynomial (ZMod 5)) :=
   exists_boundedSolution_polynomial_eq (by decide) (by decide) CertificatesTest.zmodDomain
     (fun _ ↦ r) (Y_zero_sub_mem_exact r)
-    (fun i ↦ Y_zero_sub_satisfies_local (CertificatesTest.zmodDomain i) r) p
+    (fun i ↦ CertificatesTest.satisfiesLocalConstraintsOneYZeroSub
+      (CertificatesTest.zmodDomain i) r) p
 
 /-- The agreement-list cardinality compares with a natural cardinal over the finite field. -/
 example (r : ZMod 5) :
     (agreeingPolynomials CertificatesTest.zmodDomain 2 2 (fun _ ↦ r)).encard ≤
       (Nat.card (BoundedSolution (X (some 0) - C r : DifferentialPolynomial (ZMod 5) 0) 1) :
         ℕ∞) :=
-  agreeingPolynomials_encard_le_boundedSolution_natCard (by decide) (by decide)
+    agreeingPolynomials_encard_le_boundedSolution_natCard (by decide) (by decide)
     CertificatesTest.zmodDomain (fun _ ↦ r) (Y_zero_sub_mem_exact r)
-    (fun i ↦ Y_zero_sub_satisfies_local (CertificatesTest.zmodDomain i) r)
+    (fun i ↦ CertificatesTest.satisfiesLocalConstraintsOneYZeroSub
+      (CertificatesTest.zmodDomain i) r)
 
 /-- The exact-interpolant list bound on `ZMod 5` uses its characteristic guard. -/
 example (r : ZMod 5) :
@@ -96,13 +94,14 @@ example (r : ZMod 5) :
   apply listBound_of_below_characteristic (F := ZMod 5) (index := Fin 2)
     (messageDim := 2) (K := 2) (A := 2) (d := 0) (m := 1) (M := 0) (W := 0)
     (by decide) (by decide) (by decide) CertificatesTest.zmodDomain
-    (fun _ ↦ r) (CertificatesTest.Y_zero_sub_ne_zero r) (Y_zero_sub_mem_exact r)
-    (fun i ↦ Y_zero_sub_satisfies_local (CertificatesTest.zmodDomain i) r)
+    (fun _ ↦ r) (CertificatesTest.YZeroSubNeZero r) (Y_zero_sub_mem_exact r)
+    (fun i ↦ CertificatesTest.satisfiesLocalConstraintsOneYZeroSub
+      (CertificatesTest.zmodDomain i) r)
   · rw [ZMod.ringChar_zmod_n]
     decide
   · intro j
     rw [ZMod.ringChar_zmod_n]
-    exact (CertificatesTest.jetDegree_Y_zero_sub_le r j).trans_lt (by decide)
+    exact (CertificatesTest.jetDegreeYZeroSubLe r j).trans_lt (by decide)
   · norm_num
 
 /-- With zero interpolation budget, exact-space membership forces the interpolant to vanish. -/

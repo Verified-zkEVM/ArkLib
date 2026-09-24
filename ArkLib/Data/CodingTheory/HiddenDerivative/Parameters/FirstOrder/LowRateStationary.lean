@@ -97,20 +97,33 @@ theorem firstOrderLowRateRegime_iff_lt_rateSwitch (rho : ℝ) :
     exact firstOrderLowRateScale_sq hrho
   have hbSq : b ^ 2 = firstOrderRateSwitch / 2 := by
     dsimp only [b, firstOrderRateSwitch]
-    nlinarith
+    calc
+      ((r - 3) / 2) ^ 2 = (r ^ 2 - 6 * r + 9) / 4 := by ring
+      _ = (11 - 3 * r) / 2 := by rw [hrSq]; ring
   have hbBoundary : b * (b + 3) = 1 := by
     dsimp only [b]
-    nlinarith
+    calc
+      ((r - 3) / 2) * ((r - 3) / 2 + 3) = (r ^ 2 - 9) / 4 := by ring
+      _ = 1 := by rw [hrSq]; norm_num
   have hbranch : t * (t + 3) < 1 ↔ t < b := by
+    have hfactor : 0 < t + b + 3 := by positivity
+    have hidentity : t * (t + 3) - 1 = (t - b) * (t + b + 3) := by
+      rw [← hbBoundary]
+      ring
     constructor
     · intro h
+      have hprod : (t - b) * (t + b + 3) < 0 := by
+        rw [← hidentity]
+        linarith
       by_contra hnot
-      have hbt : b ≤ t := le_of_not_gt hnot
-      have hnonneg : 0 ≤ (t - b) * (t + b + 3) := by positivity
-      nlinarith
+      have hnonneg : 0 ≤ (t - b) * (t + b + 3) :=
+        mul_nonneg (sub_nonneg.mpr (le_of_not_gt hnot)) hfactor.le
+      linarith
     · intro htb
-      have hnonneg : 0 < (b - t) * (b + t + 3) := by positivity
-      nlinarith
+      have hprod : (t - b) * (t + b + 3) < 0 :=
+        mul_neg_of_neg_of_pos (sub_neg.mpr htb) hfactor
+      rw [← hidentity] at hprod
+      linarith
   change t * (t + 3) < 1 ↔ rho < firstOrderRateSwitch
   rw [hbranch]
   rw [← sq_lt_sq₀ ht0 hb0, htSq, hbSq]

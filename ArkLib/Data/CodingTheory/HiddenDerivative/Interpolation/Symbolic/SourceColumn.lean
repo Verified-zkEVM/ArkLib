@@ -6,6 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.SourceMonomial
+public import Mathlib.Algebra.Polynomial.BigOperators
 
 /-!
 # Source columns and assembled interpolants
@@ -20,17 +21,30 @@ ring homomorphism applied to the interpolant is applied to the coefficient vecto
 ## Main statements
 
 * `SourceColumn.exponent_injective`: distinct columns have distinct exponents.
+* `SourceColumn.enumerate` and its exponent, injectivity, and membership lemmas: source columns
+  enumerated from a finite set of exponent vectors.
 * `SourceColumn.totalJetDegree_exponent`: the total jet degree of a column is
   `y₀ + ∑_j higher j`.
 * `SourceColumn.polynomial_eq_sourceMonomial`: a column's monomial is the source monomial.
 * `SourceColumn.coeff_interpolant`: the coefficient of the interpolant at `columns j` is `v j`.
+* `SourceColumn.coeff_interpolant_natDegree_le`: distinct columns preserve coefficient height
+  at every derivative order.
 * `SourceColumn.map_interpolant_ne_zero`: the image of the interpolant under a ring
   homomorphism is nonzero when the image of the coefficient vector is.
+* `SourceColumn.interpolant_totalJetDegree_le` and
+  `SourceColumn.map_interpolant_jetTotalDegree_le`: jet-degree bounds for interpolants and their
+  coefficient maps.
+
+## References
+
+* [DKT26]
+* [DKTZ26]
 -/
 
 @[expose] public section
 
 open PolynomialDifferential
+open scoped Polynomial
 
 noncomputable section
 
@@ -134,6 +148,34 @@ theorem exponent_ofExponent (u : JetVariable d →₀ ℕ) :
           simp [hkj]
         _ = u (some j.succ) := by simp
 
+/-- Enumerate a finite set of exponent vectors as source columns. -/
+def enumerate (s : Finset (JetVariable d →₀ ℕ)) :
+    Fin (Fintype.card (↑s)) → SourceColumn d :=
+  fun i => SourceColumn.ofExponent ((Fintype.equivFin (↑s)).symm i).1
+
+/-- The exponent of an enumerated source column is its indexed exponent vector. -/
+@[simp]
+theorem exponent_enumerate (s : Finset (JetVariable d →₀ ℕ))
+    (i : Fin (Fintype.card (↑s))) :
+    (enumerate s i).exponent = ((Fintype.equivFin (↑s)).symm i).1 := by
+  simp [enumerate]
+
+/-- Distinct indices enumerate distinct source columns. -/
+theorem enumerate_injective (s : Finset (JetVariable d →₀ ℕ)) :
+    Function.Injective (enumerate s) := by
+  intro i j hij
+  apply (Fintype.equivFin (↑s)).symm.injective
+  apply Subtype.ext
+  rw [← exponent_enumerate s i, ← exponent_enumerate s j]
+  exact congrArg SourceColumn.exponent hij
+
+/-- Every enumerated source column has an exponent in the finite set. -/
+theorem exponent_enumerate_mem (s : Finset (JetVariable d →₀ ℕ))
+    (i : Fin (Fintype.card (↑s))) :
+    (enumerate s i).exponent ∈ s := by
+  rw [exponent_enumerate]
+  exact ((Fintype.equivFin (↑s)).symm i).2
+
 variable {R : Type*} [CommSemiring R]
 
 /-- The source monomial of a column, with coefficient `1`. -/
@@ -173,6 +215,28 @@ theorem coeff_interpolant {columns : κ → SourceColumn d} (hcolumns : Function
     exact fun h => absurd (hcolumns (exponent_injective h)) hkj
   · simp
 
+/-- Distinct source columns preserve coefficient height at every derivative order. -/
+theorem coeff_interpolant_natDegree_le {F : Type*} [CommSemiring F] {h : ℕ}
+    (columns : κ → SourceColumn d) (hcolumns : Function.Injective columns)
+    (v : κ → Polynomial F) (hv : ∀ j, (v j).natDegree ≤ h) :
+    ∀ u, ((interpolant columns v).coeff u).natDegree ≤ h := by
+  classical
+  intro u
+  by_cases hu : u ∈ Set.range (fun j ↦ (columns j).exponent)
+  · obtain ⟨j, rfl⟩ := hu
+    rw [coeff_interpolant hcolumns v j]
+    exact hv j
+  · have hcoeff : (interpolant columns v).coeff u = 0 := by
+      rw [interpolant, MvPolynomial.coeff_sum]
+      apply Finset.sum_eq_zero
+      intro j _
+      rw [MvPolynomial.coeff_monomial]
+      split
+      · rename_i heq
+        exact (hu ⟨j, heq⟩).elim
+      · rfl
+    simp [hcoeff]
+
 /-- Mapping the coefficients of the interpolant maps its coefficient vector. -/
 theorem map_interpolant {S : Type*} [CommSemiring S] (ψ : R →+* S)
     (columns : κ → SourceColumn d) (v : κ → R) :
@@ -197,6 +261,28 @@ theorem map_interpolant_ne_zero {S : Type*} [CommSemiring S] {columns : κ → S
     (hv : (fun j => ψ (v j)) ≠ 0) :
     MvPolynomial.map ψ (interpolant columns v) ≠ 0 := by
   rwa [map_interpolant, Ne, interpolant_eq_zero_iff hcolumns]
+
+/-- The total jet degree of an interpolant is bounded by the largest bound on its columns. -/
+theorem interpolant_totalJetDegree_le (columns : κ → SourceColumn d)
+    {ν : ℕ} (hdegree : ∀ j, totalJetDegree (columns j).exponent ≤ ν) (v : κ → R) :
+    ∀ u ∈ (interpolant columns v).support, totalJetDegree u ≤ ν := by
+  classical
+  intro u hu
+  obtain ⟨j, _, hj⟩ := Finset.mem_biUnion.mp (MvPolynomial.support_sum hu)
+  have heq : u = (columns j).exponent := by
+    simpa using MvPolynomial.support_monomial_subset hj
+  subst u
+  exact hdegree j
+
+/-- Mapping the coefficients of an interpolant preserves its total jet degree bound. -/
+theorem map_interpolant_jetTotalDegree_le {S : Type*} [CommSemiring S]
+    (ψ : R →+* S) (columns : κ → SourceColumn d) {ν : ℕ}
+    (hdegree : ∀ j, totalJetDegree (columns j).exponent ≤ ν) (v : κ → R) :
+    jetTotalDegree (MvPolynomial.map ψ (interpolant columns v)) ≤ ν := by
+  rw [jetTotalDegree_le_iff]
+  intro u hu
+  exact interpolant_totalJetDegree_le columns hdegree v u
+    (MvPolynomial.support_map_subset ψ _ hu)
 
 end SourceColumn
 

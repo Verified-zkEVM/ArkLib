@@ -6,19 +6,22 @@ Authors: Quang Dao
 module
 
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.Counting
+public import ArkLib.ToMathlib.MeasureTheory.Integral.PositivePart
 public import ArkLib.ToMathlib.Combinatorics.QuadraticStaircase
 
 /-!
 # A quadratic lower bound on the dimension of the partition support space
 
 Fix a tuple `c` of exponents of `Y₁, ..., Y_d` of derivative-order weight at most `W`. The
-remaining exponents `(x, b₀)` of `X` and `Y₀` satisfy `x + D (b₀ + ∑_i c_i) < L`, and for `0 < D`
-their number is the real-cutoff staircase count `QuadraticStaircase.count D (L / D - ∑_i c_i)`
+remaining exponents `(x, b₀)` of `X` and `Y₀` satisfy `x + D (b₀ + ∑_i c_i) < L`, and for
+`0 < D` their number is the real-cutoff staircase count
+`QuadraticStaircase.count D (L / D - ∑_i c_i)`
 (`QuadraticStaircase.count_div_sub_eq_sum`). Hence the dimension of the partition support space at
 the natural cutoff `L` is exactly
 
 ```text
-∑_{c} QuadraticStaircase.count D (L / D - ∑_i c_i) ≥ ∑_{c} D (max (L / D - ∑_i c_i) 0) ^ 2 / 2,
+∑_{c} QuadraticStaircase.count D (L / D - ∑_i c_i)
+  ≥ ∑_{c} D (max (L / D - ∑_i c_i) 0) ^ 2 / 2,
 ```
 
 with no tuple discarded near the boundary. For a code of length `n` and an upper rate bound
@@ -36,12 +39,12 @@ Both bounds hold at a real cutoff `L`: the space at `L` is the space at `⌈L⌉
 * `partitionSupport_dimension_ge_rate_sum`: the rate form of the lower bound.
 * `partitionSupport_dimension_ge_quadratic_sum_real` and
   `partitionSupport_dimension_ge_rate_sum_real`: both bounds at a real cutoff.
+* `PartitionSupportAreaSlot` and `partitionSupportAreaSlotExponent`: encode staircase slots as
+  distinct eligible exponents of the partition support.
 
 ## References
 
-* [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient Decoding
-  and Smaller Cryptographic Proofs*][DKT26], Section 6.2, (73), and Appendix D.2, in the proof of
-  Lemma 6.2
+* [DKT26]
 -/
 
 @[expose] public section
@@ -77,6 +80,47 @@ theorem partitionSupport_dimension_ge_quadratic_sum (F : Type*) [Field F] (hD : 
   rw [finrank_partitionSupportSpace_eq_sum_count, Nat.cast_sum]
   exact sum_le_sum fun c _ => QuadraticStaircase.count_ge_quadratic _ _
 
+/-- A derivative-order tuple and a staircase slot for the exponents of `X` and `Y₀` at cutoff
+`L`. -/
+abbrev PartitionSupportAreaSlot (D d W : ℕ) (L : ℝ) :=
+  Σ c : ↥(natWeightedSimplex (fun i : Fin d => i.val + 1) W),
+    QuadraticStaircase.Slot D (L / D - ((∑ i, c.val i : ℕ) : ℝ))
+
+/-- Interpret an area slot as the exponent of a monomial in the partition support. -/
+def partitionSupportAreaSlotExponent {D d W : ℕ} {L : ℝ}
+    (p : PartitionSupportAreaSlot D d W L) : JetVariable d →₀ ℕ :=
+  partitionSourceExponent p.2.exponents.1 p.2.exponents.2 p.1.val
+
+/-- Every area slot gives an exponent eligible for the partition support at cutoff `L`. -/
+theorem partitionSupportAreaSlotExponent_eligible {D d W : ℕ} {L : ℝ}
+    (hD : 0 < D) (p : PartitionSupportAreaSlot D d W L) :
+    PartitionSupportEligible D d W L (partitionSupportAreaSlotExponent p) := by
+  have hD0 : (D : ℝ) ≠ 0 := by positivity
+  have hcancel : (D : ℝ) * (L / D - ((∑ i, p.1.val i : ℕ) : ℝ)) =
+      L - D * ((∑ i, p.1.val i : ℕ) : ℝ) := by field_simp
+  have hslot := QuadraticStaircase.Slot.weighted_degree_lt p.2
+  rw [hcancel] at hslot
+  change PartitionSupportEligible D d W L
+    (partitionSourceExponent p.2.exponents.1 p.2.exponents.2 p.1.val)
+  rw [partitionSupportEligible_partitionSourceExponent_iff]
+  constructor
+  · exact (mem_natWeightedSimplex (fun i : Fin d => Nat.succ_ne_zero i.val)).mp p.1.2
+  · push_cast at hslot ⊢
+    nlinarith
+
+/-- Distinct area slots give distinct partition-support exponents. -/
+theorem partitionSupportAreaSlotExponent_injective {D d W : ℕ} {L : ℝ} :
+    Function.Injective (partitionSupportAreaSlotExponent (D := D) (d := d) (W := W) (L := L)) := by
+  rintro ⟨c, p⟩ ⟨b, q⟩ h
+  have hc : c = b := by
+    apply Subtype.ext
+    funext i
+    exact congrArg (fun e => e (some i.succ)) h
+  subst b
+  apply congrArg (Sigma.mk c)
+  apply QuadraticStaircase.Slot.exponents_injective
+  exact Prod.ext (congrArg (fun e => e none) h) (congrArg (fun e => e (some 0)) h)
+
 /-- One term of the quadratic lower bound in rate form. If `0 < D ≤ rate * n` and
 `level * n ≤ L`, then for every natural `deg`,
 `n / (2 rate) * (max (level - rate * deg) 0) ^ 2 ≤ D * (max (L / D - deg) 0) ^ 2 / 2`.
@@ -88,37 +132,17 @@ theorem partition_quadratic_rate_lower {n L deg : ℕ} {rate level : ℝ} (hD : 
     (n : ℝ) / (2 * rate) * (max (level - rate * deg) 0) ^ 2 ≤
       (D : ℝ) * (max ((L : ℝ) / D - deg) 0) ^ 2 / 2 := by
   have hDR : (0 : ℝ) < D := by exact_mod_cast hD
-  have hn0 : (0 : ℝ) ≤ n := Nat.cast_nonneg n
-  have hrn : 0 < rate * n := hDR.trans_le hupper
   have hnR : (0 : ℝ) < n := by
-    rcases hn0.eq_or_lt with h | h
-    · rw [← h, mul_zero] at hrn
-      exact absurd hrn (lt_irrefl 0)
-    · exact h
-  have hrate : 0 < rate := pos_of_mul_pos_left hrn hn0
-  have hsource : (n : ℝ) * (level - rate * deg) ≤ (L : ℝ) - D * deg := by
-    have hdeg := mul_le_mul_of_nonneg_right hupper (Nat.cast_nonneg deg : (0 : ℝ) ≤ deg)
-    nlinarith
-  have hmax : (n : ℝ) * max (level - rate * deg) 0 ≤ max ((L : ℝ) - D * deg) 0 := by
-    rw [mul_max_of_nonneg _ _ hnR.le, mul_zero]
-    exact max_le_max_right 0 hsource
-  have hquot : ((n : ℝ) * max (level - rate * deg) 0) ^ 2 / (2 * rate * n) ≤
-      (max ((L : ℝ) - D * deg) 0) ^ 2 / (2 * D) := by
-    apply div_le_div₀ (by positivity)
-    · exact pow_le_pow_left₀ (by positivity) hmax 2
-    · positivity
-    · nlinarith
-  have hleft : ((n : ℝ) * max (level - rate * deg) 0) ^ 2 / (2 * rate * n) =
-      (n : ℝ) / (2 * rate) * (max (level - rate * deg) 0) ^ 2 := by
-    field_simp
-  have hright : (max ((L : ℝ) - D * deg) 0) ^ 2 / (2 * D) =
-      (D : ℝ) * (max ((L : ℝ) / D - deg) 0) ^ 2 / 2 := by
-    have hfactor : (L : ℝ) - D * deg = D * ((L : ℝ) / D - deg) := by field_simp
-    have hmaxfactor := mul_max_of_nonneg ((L : ℝ) / D - deg) 0 hDR.le
-    rw [mul_zero] at hmaxfactor
-    rw [hfactor, ← hmaxfactor, mul_pow]
-    field_simp
-  simpa only [hleft, hright] using hquot
+    by_contra hn
+    have hn0 : (n : ℝ) = 0 := le_antisymm (le_of_not_gt hn) (Nat.cast_nonneg n)
+    rw [hn0, mul_zero] at hupper
+    exact (not_le_of_gt hDR) hupper
+  calc
+    (n : ℝ) / (2 * rate) * (max (level - rate * deg) 0) ^ 2 ≤
+        (D : ℝ) / 2 * (max ((L : ℝ) / D - deg) 0) ^ 2 :=
+      max_sub_zero_sq_scaled_le hDR hnR (Nat.cast_nonneg deg) hupper
+        (by simpa [mul_comm] using hlevel)
+    _ = (D : ℝ) * (max ((L : ℝ) / D - deg) 0) ^ 2 / 2 := by ring
 
 /-- The rate form of the quadratic lower bound: if `0 < D ≤ rate * n` and `level * n ≤ L`, then
 `n / (2 rate) * ∑_c (max (level - rate * ∑_i c_i) 0) ^ 2` is at most the dimension of the
@@ -139,15 +163,16 @@ theorem partitionSupport_dimension_ge_rate_sum (F : Type*) [Field F] {n L : ℕ}
 /-- The quadratic lower bound on the dimension of the partition support space at a real cutoff
 `L`: for `0 < D`, the sum over the tuples `c` of derivative-order weight at most `W` of
 `D * (max (L / D - ∑_i c_i) 0) ^ 2 / 2` is at most the dimension. It follows from the
-natural-cutoff bound `partitionSupport_dimension_ge_quadratic_sum` at `⌈L⌉₊`, since `L ≤ ⌈L⌉₊`
-and both cutoffs give the same space. -/
+natural-cutoff bound `partitionSupport_dimension_ge_quadratic_sum` at `⌈L⌉₊`, since
+`L ≤ ⌈L⌉₊` and both cutoffs give the same space. -/
 theorem partitionSupport_dimension_ge_quadratic_sum_real (F : Type*) [Field F] (hD : 0 < D)
     (L : ℝ) :
     ∑ c ∈ natWeightedSimplex (fun i : Fin d => i.val + 1) W,
         (D : ℝ) * (max (L / D - ((∑ i, c i : ℕ) : ℝ)) 0) ^ 2 / 2 ≤
       (Module.finrank F (partitionSupportSpace F D d W L hD) : ℝ) := by
   rw [← partitionSupportSpace_natCeil]
-  refine (sum_le_sum fun c _ => ?_).trans (partitionSupport_dimension_ge_quadratic_sum F hD ⌈L⌉₊)
+  refine (sum_le_sum fun c _ => ?_).trans
+    (partitionSupport_dimension_ge_quadratic_sum F hD ⌈L⌉₊)
   gcongr
   exact Nat.le_ceil L
 
