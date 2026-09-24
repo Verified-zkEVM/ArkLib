@@ -11,6 +11,7 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.Space
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.CurveRank
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.Symbolic
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.SymbolicRank
+import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.CurveHeightCounting
 import Mathlib.Algebra.Field.ZMod
 
 /-!
@@ -220,6 +221,71 @@ example :
 example : firstOrderOriginGradedRank (F := ZMod 5) 1 1 1 0 0 ≤ 1 := by
   simpa [firstOrderGradedRankBound, firstOrderGradedSourceCount] using
     firstOrderOriginGradedRank_le_bound (F := ZMod 5) 1 1 1 0 0
+
+/-- The shifted profile has eleven source slots and a numerical row bound of five. -/
+example :
+    firstOrderCurveShiftedHeightSlotCount 1 2 2 0 1 1 1 = 11 ∧
+    firstOrderCurveShiftedRowSlotBound 1 2 2 0 1 1 1 1 = 5 ∧
+    firstOrderCurveShiftedColumnSlotCount 1 2 2 0 1 1 1 = 11 ∧
+    firstOrderCurveShiftedRowSlotCount (F := ZMod 5) 1 2 2 0 1 1 1 1 ≤ 5 := by
+  have hheight : firstOrderCurveShiftedHeightSlotCount 1 2 2 0 1 1 1 = 11 := by decide
+  have hbound : firstOrderCurveShiftedRowSlotBound 1 2 2 0 1 1 1 1 = 5 := by decide
+  refine ⟨hheight, hbound, ?_, ?_⟩
+  · rw [firstOrderCurveShiftedColumnSlotCount_eq_heightSlotCount
+      (D := 1) (A := 2) (m := 2) (M := 0) (μ := 1) (ℓ := 1) (h := 1) (by decide)]
+    exact hheight
+  · exact (firstOrderCurveShiftedRowSlotCount_le_bound
+      (F := ZMod 5) 1 2 2 0 1 1 1 1).trans_eq hbound
+
+/-- An exact shifted surplus produces a primitive first-order curve interpolant. -/
+example :
+    ∃ v : Fin (Fintype.card ↑(firstOrderExponents 1 2 2 0 1)) → (ZMod 5)[X],
+      v ≠ 0 ∧
+      (∀ j, v j ∈ Polynomial.degreeLT (ZMod 5)
+        (1 + 1 - 1 * totalJetDegree
+          (firstOrderColumns (D := 1) (A := 2) (m := 2) (M := 0) (μ := 1) j).exponent)) ∧
+      Ideal.span (Set.range v) = ⊤ ∧
+      (∀ {E : Type*} [Field E] (ι : ZMod 5 →+* E) (z : E),
+        MvPolynomial.map (Polynomial.eval₂RingHom ι z)
+          (SourceColumn.interpolant
+            (firstOrderColumns (D := 1) (A := 2) (m := 2) (M := 0) (μ := 1)) v) ≠ 0) ∧
+      ∀ _i : Fin 1, SatisfiesLocalConstraints 2 (Polynomial.C (0 : ZMod 5))
+        (0 : (ZMod 5)[X])
+        (SourceColumn.interpolant
+          (firstOrderColumns (D := 1) (A := 2) (m := 2) (M := 0) (μ := 1)) v) := by
+  have hnum : firstOrderCurveShiftedRowSlotBound 1 2 2 0 1 1 1 1 <
+      firstOrderCurveShiftedHeightSlotCount 1 2 2 0 1 1 1 := by decide
+  have hsurplus : FirstOrderCurveShiftedHeightSurplus (ZMod 5) 1 2 2 0 1 1 1 1 := by
+    unfold FirstOrderCurveShiftedHeightSurplus
+    rw [firstOrderCurveShiftedColumnSlotCount_eq_heightSlotCount
+      (D := 1) (A := 2) (m := 2) (M := 0) (μ := 1) (ℓ := 1) (h := 1) (by decide)]
+    exact (firstOrderCurveShiftedRowSlotCount_le_bound
+      (F := ZMod 5) 1 2 2 0 1 1 1 1).trans_lt hnum
+  exact exists_primitive_firstOrderCurve_interpolant_of_shifted_height
+    (F := ZMod 5) 1 2 2 0 1 1 1 1 (by decide)
+    (fun _ ↦ 0) (fun _ ↦ 0) (by intro _; norm_num) hsurplus
+
+/-- A numerical shifted surplus also produces a primitive first-order curve interpolant. -/
+example :
+    ∃ v : Fin (Fintype.card ↑(firstOrderExponents 1 2 2 0 1)) → (ZMod 5)[X],
+      v ≠ 0 ∧
+      (∀ j, v j ∈ Polynomial.degreeLT (ZMod 5)
+        (1 + 1 - 1 * totalJetDegree
+          (firstOrderColumns (D := 1) (A := 2) (m := 2) (M := 0) (μ := 1) j).exponent)) ∧
+      Ideal.span (Set.range v) = ⊤ ∧
+      (∀ {E : Type*} [Field E] (ι : ZMod 5 →+* E) (z : E),
+        MvPolynomial.map (Polynomial.eval₂RingHom ι z)
+          (SourceColumn.interpolant
+            (firstOrderColumns (D := 1) (A := 2) (m := 2) (M := 0) (μ := 1)) v) ≠ 0) ∧
+      ∀ _i : Fin 1, SatisfiesLocalConstraints 2 (Polynomial.C (0 : ZMod 5))
+        (0 : (ZMod 5)[X])
+        (SourceColumn.interpolant
+          (firstOrderColumns (D := 1) (A := 2) (m := 2) (M := 0) (μ := 1)) v) := by
+  have hsurplus : firstOrderCurveShiftedRowSlotBound 1 2 2 0 1 1 1 1 <
+      firstOrderCurveShiftedHeightSlotCount 1 2 2 0 1 1 1 := by decide
+  exact exists_primitive_firstOrderCurve_interpolant_of_shifted_height_bound
+    (F := ZMod 5) 1 2 2 0 1 1 1 1 (by decide)
+    (fun _ ↦ 0) (fun _ ↦ 0) (by intro _; norm_num) hsurplus
 
 private theorem originConstantSlice_rank :
     (firstOrderOriginGradedSliceMatrixOver ℚ 1 2 1 1 0 0).rank = 1 := by

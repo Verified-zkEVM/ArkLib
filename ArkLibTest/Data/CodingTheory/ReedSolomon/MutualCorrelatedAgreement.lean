@@ -626,6 +626,37 @@ example :
   intro x hx
   exact hgraph x hx
 
+/-- A regular component supported on its agreement set yields a pair with that agreement. -/
+example :
+    ∃ P₀ P₁ : ℚ[X], P₀.degree < 1 ∧ P₁.degree < 1 ∧
+      P₀.eval 0 = 0 ∧ P₁.eval 0 = 0 ∧
+      1 ≤ (commonPolynomialAgreementSet domain componentWord componentWord P₀ P₁).card := by
+  classical
+  have hprime : (componentIdeal (E := ComponentField)).IsPrime := componentIdeal_isPrime
+  have hcomponent := exists_graphLine_pair_of_regular_component_agreements
+    (n := 1) (k := 1) (K := 2) (r := 0) (L := 1) (domain := domain)
+    (f := componentWord) (g := componentWord) (indices := Finset.univ)
+    (hcard := by simp) (hkL := by omega) (iota := algebraMap ℚ ComponentField)
+    (center := 0) (Q := componentEquation (E := ComponentField)) (hK := by omega)
+    (τ := 2) (hτ := by intro l; omega) (P := componentIdeal (E := ComponentField))
+    (hs := component_separant_notMem) (hd := componentIdeal_degree_pos)
+    (hinit := component_initialEquation_mem) (hhigh := component_highCuts)
+    (hcuts := component_agreementCuts)
+  obtain ⟨P₀, P₁, hP₀, hP₁, hcard, -, -, -, -, -, -⟩ := hcomponent
+  have hfull : commonPolynomialAgreementSet domain componentWord componentWord P₀ P₁ =
+      Finset.univ :=
+    Finset.eq_univ_of_card _ (le_antisymm (Finset.card_le_univ _)
+      (by simpa [Fintype.card_fin] using hcard))
+  have hmem : (0 : Fin 1) ∈
+      commonPolynomialAgreementSet domain componentWord componentWord P₀ P₁ := by
+    rw [hfull]
+    simp
+  refine ⟨P₀, P₁, hP₀, hP₁, ?_, ?_, hcard⟩
+  · simpa [componentWord, domain_zero] using
+      (mem_commonPolynomialAgreementSet domain componentWord componentWord P₀ P₁ 0).mp hmem |>.1
+  · simpa [componentWord, domain_zero] using
+      (mem_commonPolynomialAgreementSet domain componentWord componentWord P₀ P₁ 0).mp hmem |>.2
+
 end
 
 end ReedSolomon.GraphLineComponentTest

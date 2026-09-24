@@ -34,7 +34,8 @@ among its coordinates. A polynomial of bidegree at most `(a, b)` has the preimag
   polynomials of bidegree at most `(a, b)`.
 * `MvPolynomial.mem_restrictBidegree_iff_weightedTotalDegree_le`: membership through the two
   weighted degrees.
-* `MvPolynomial.mul_mem_restrictBidegree`: bidegree bounds add under multiplication.
+* `MvPolynomial.mem_restrictBidegree_mono` and `MvPolynomial.mul_mem_restrictBidegree`:
+  bounds enlarge componentwise and add under multiplication.
 * `MvPolynomial.ncard_bidegreeExponents`, `MvPolynomial.finrank_restrictBidegree`: the count
   `(a + 1) * (b + n).choose n`.
 * `MvPolynomial.bidegreeMap`, `MvPolynomial.bidegreeMap_surjective`: the monomial map and its
@@ -108,6 +109,14 @@ def restrictBidegree (a b : ℕ) : Submodule R (MvPolynomial (Option σ) R) :=
 theorem mem_restrictBidegree {a b : ℕ} {P : MvPolynomial (Option σ) R} :
     P ∈ restrictBidegree σ R a b ↔ ∀ m ∈ P.support, m none ≤ a ∧ m.some.degree ≤ b :=
   Iff.rfl
+
+/-- Componentwise enlargement preserves membership in a bidegree rectangle. -/
+theorem mem_restrictBidegree_mono {P : MvPolynomial (Option σ) R}
+    {a b c d : ℕ} (hP : P ∈ restrictBidegree σ R a b)
+    (hac : a ≤ c) (hbd : b ≤ d) : P ∈ restrictBidegree σ R c d := by
+  rw [mem_restrictBidegree] at hP ⊢
+  intro m hm
+  exact ⟨(hP m hm).1.trans hac, (hP m hm).2.trans hbd⟩
 
 /-- A polynomial has bidegree at most `(a, b)` exactly when its weighted degree for the weight
 counting `none` is at most `a` and its weighted degree for the weight counting the variables
