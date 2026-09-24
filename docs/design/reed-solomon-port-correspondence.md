@@ -656,6 +656,12 @@ covered by `localContactOrder_eq` in `Variables.lean`. `ZeroLocalIndex` and `car
 are not separate public declarations; the finite Sigma index and its cardinality calculation are
 kept internal.
 
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/PartitionSupport/RateCertificate.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/RatePartition/Adapter.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Renamed `exists_ratePartitionFinite_certificate` to `exists_partitionSupport_curve_certificate_of_finiteRatio`; generalized it by removing `0 < n`, which follows from `0 < D`, `D ≤ rate * n`, and `0 < rate`. Renamed `exists_ratePartitionRate_certificate` to `exists_partitionSupport_curve_certificate_of_paddedRateBlockThreshold` and `exists_ratePartitionMathematical_certificate` to `exists_partitionSupport_curve_certificate_of_rateBlockThreshold`; both are mathematically unchanged and use the renamed threshold and finite-parameter APIs. No public source declarations were omitted. Acceptance cases in `ArkLibTest/Data/CodingTheory/HiddenDerivative/Interpolation/PartitionSupport.lean` check a concrete finite-ratio certificate and certificates from both block-length thresholds.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/SourceMonomial.lean`
 
 Ported from
