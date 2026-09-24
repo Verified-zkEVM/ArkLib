@@ -13,6 +13,7 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.Symbol
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.SymbolicRank
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.CurveHeightCounting
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.CurveCertificate
+import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.Profile
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.RateCertificate
 import Mathlib.Algebra.Field.ZMod
 
@@ -575,3 +576,51 @@ example :
     (F := ZMod 5) (D := 1) (A := 2) (m := 2) (M := 0) (μ := 1) (k := 1) (h := 1)
     (n := 2) (by decide) (by norm_num) (by norm_num) centers (fun _ ↦ 0) (fun _ ↦ 0)
     hheight
+
+private def smallFirstOrderProfile :
+    ReedSolomon.HiddenDerivative.CurveProfile.LineProfile :=
+  { n := 2
+    k := 2
+    agreement := 2
+    multiplicity := 2
+    firstDerivativeCap := 0
+    totalJetCap := 1
+    batchingDegree := 1
+    supportDimension := 7
+    localRank := 3
+    columnY₀Weight := 3
+    height := 1
+    heightSlots := 11 }
+
+private theorem smallFirstOrderProfile_verified :
+    smallFirstOrderProfile.Verification := by
+  refine ⟨by decide, by decide, by decide, by decide, by decide, by decide, by decide,
+    by decide⟩
+
+private theorem smallFirstOrderProfile_curveVerified :
+    smallFirstOrderProfile.CurveVerification := by
+  decide
+
+/-- A concrete profile verifies both line and curve certificates over a small finite field. -/
+example :
+    Nonempty (smallFirstOrderProfile.SymbolicCertificate
+      smallFirstOrderCenters (fun _ ↦ 0) (fun _ ↦ 0)) ∧
+    Nonempty (FirstOrderCurveCertificate (F := ZMod 5) 1 2 2 0 1 2 1
+      smallFirstOrderCenters
+      (fun _ ↦ (0 : (ZMod 5)[X])) smallFirstOrderProfile.columns) := by
+  refine ⟨?_, ?_⟩
+  · exact smallFirstOrderProfile_verified.exists_symbolicCertificate
+      smallFirstOrderCenters (fun _ ↦ 0) (fun _ ↦ 0)
+  · exact smallFirstOrderProfile_curveVerified.exists_certificate
+      smallFirstOrderCenters (fun _ ↦ 0) (by intro i; simp)
+
+/-- The profile's recorded dimension and column weight match its finite support. -/
+example :
+    (firstOrderExponents 1 2 2 0 1).card = 7 ∧
+    firstOrderY₀Weight 1 2 2 0 1 = 3 := by
+  exact ⟨by simpa [smallFirstOrderProfile,
+      ReedSolomon.HiddenDerivative.CurveProfile.LineProfile.candidateDegree] using
+      smallFirstOrderProfile_verified.support_card_eq,
+    by simpa [smallFirstOrderProfile,
+      ReedSolomon.HiddenDerivative.CurveProfile.LineProfile.candidateDegree] using
+      smallFirstOrderProfile_verified.columnY₀Weight_eq.symm⟩
