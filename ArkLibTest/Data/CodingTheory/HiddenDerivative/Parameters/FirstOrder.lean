@@ -6,6 +6,7 @@ Authors: Quang Dao
 
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.AutomaticBounds
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.BranchwiseRate
+import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.DerivativeCappedCounting
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.FiniteRateParameters
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.HybridRateEnvelope
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.RoundedCounts
@@ -13,6 +14,7 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.StageComp
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.StageSum
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.Uniform
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.UniformMca
+import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 import Mathlib.Order.Interval.Finset.Nat
 
 /-!
@@ -537,5 +539,88 @@ example : ∑ t ∈ Finset.range 23, uniformFirstOrderGradedRankProfile t = 300 
 set_option maxRecDepth 4096 in
 /-- The grade-weighted fixed profile sums to `1570` through grade `22`. -/
 example : ∑ t ∈ Finset.range 23, t * uniformFirstOrderGradedRankProfile t = 1570 := by decide
+
+private noncomputable abbrev firstOrderUnitEquation (F : Type*) [CommRing F] :
+    DifferentialPolynomial F 1 :=
+  X (some 1)
+
+private def firstOrderZeroJet {F : Type*} [Zero F] : Fin 2 → F := fun _ ↦ 0
+
+private theorem commonTaylorNumerator_zeroJet_firstOrderUnitEquation {F : Type*} [Field F] :
+    aeval (firstOrderZeroJet (F := F))
+      (commonTaylorNumerator 0 (firstOrderUnitEquation F) 4 1) = 0 := by
+  have hS : aeval (firstOrderZeroJet (F := F))
+      (initialJetSeparant 0 (firstOrderUnitEquation F)) ≠ 0 := by
+    simp [firstOrderUnitEquation, initialJetSeparant, separant]
+  have hc : rationalTaylorCoefficient 0 (firstOrderUnitEquation F)
+      (firstOrderZeroJet (F := F)) 1 = 0 := by
+    simpa [firstOrderZeroJet] using rationalTaylorCoefficient_initial 0
+      (firstOrderUnitEquation F) (firstOrderZeroJet (F := F) : Fin 2 → F) ⟨1, by omega⟩
+  rw [aeval_commonTaylorNumerator (center := (0 : F)) (firstOrderUnitEquation F)
+    (firstOrderZeroJet (F := F)) (τ := 4) (l := 1) (by omega) hS]
+  simp [hc]
+
+/-- The derivative-capped first-order incidence bound is attained by the zero jet of `Y₁`. -/
+example :
+    (((({firstOrderZeroJet (F := AlgebraicClosure ℚ)} :
+      Finset (Fin 2 → AlgebraicClosure ℚ)).card : ℕ) : ℚ)) ≤
+      firstOrderCurveFiberStageOne 2 1 1 4 *
+        (((1 - 1 + 1 : ℕ) : ℚ) / ((1 - 1 + 1 : ℕ) : ℚ)) := by
+  let F := AlgebraicClosure ℚ
+  let Q : DifferentialPolynomial F 1 := firstOrderUnitEquation F
+  let jet : Fin 2 → F := firstOrderZeroJet
+  let domain : Fin 1 ↪ F := ⟨fun _ ↦ 0, fun i j _ ↦ Subsingleton.elim i j⟩
+  let received : Fin 1 → F := fun _ ↦ 0
+  let S : Finset (Fin 2 → F) := {jet}
+  have hS : ∀ jet' ∈ S, aeval jet' (initialJetEquation 0 Q) = 0 ∧
+      aeval jet' (initialJetSeparant 0 Q) ≠ 0 ∧
+      ∀ l : {l : Fin 2 // 1 ≤ l.val},
+        aeval jet' (commonTaylorNumerator 0 Q 4 l.val) = 0 := by
+    intro jet' hj
+    have hjet : jet' = jet := Finset.mem_singleton.mp hj
+    subst jet'
+    refine ⟨?_, ?_, ?_⟩
+    · simp [Q, jet, firstOrderZeroJet, initialJetEquation, firstOrderUnitEquation]
+    · simp [Q, jet, initialJetSeparant, firstOrderUnitEquation, separant]
+    · intro l
+      have hl : l.val = (1 : Fin 2) := Fin.ext (by omega)
+      have hl' : l = ⟨⟨1, by decide⟩, by decide⟩ := by
+        exact Subtype.ext hl
+      subst l
+      exact commonTaylorNumerator_zeroJet_firstOrderUnitEquation
+  have hA : ∀ jet' ∈ S, 1 ≤
+      {i : Fin 1 | aeval jet'
+        (taylorAgreementEquation 0 Q 2 4 (domain i) (received i)) = 0}.ncard := by
+    intro jet' hj
+    have hjet : jet' = jet := Finset.mem_singleton.mp hj
+    subst jet'
+    have hcut : ∀ i : Fin 1, aeval jet
+        (taylorAgreementEquation 0 Q 2 4 (domain i) (received i)) = 0 := by
+      intro i
+      rw [aeval_taylorAgreementEquation 0 Q (taylorExponentSufficient_two_mul 1 2)
+        jet (by simp [Q, jet, initialJetSeparant,
+          firstOrderUnitEquation, separant]) (domain i) (received i)]
+      simp [Q, jet, firstOrderZeroJet, domain, received, firstOrderUnitEquation,
+        eval_rationalTaylorPolynomial, rationalTaylorCoefficient_initial]
+    simp [hcut]
+  have h := finite_regularHighCutJets_card_le_derivativeCapped_of_exponent
+    (F := F) (center := 0) Q 2 1 1 1 4
+    (taylorExponentSufficient_two_mul 1 2) (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num)
+    (by
+      have hjet' : jetTotalDegree Q ≤ 1 := by
+        refine (jetTotalDegree_le_iff Q 1).mpr fun u hu ↦ ?_
+        change u ∈ (MvPolynomial.X (some 1) : DifferentialPolynomial F 1).support at hu
+        rw [MvPolynomial.support_X, Finset.mem_singleton] at hu
+        rw [hu]
+        simp [totalJetDegree_eq_sum, Fin.sum_univ_two]
+      have hw : (fun i : Option (Fin 2) ↦ i.elim 0 (fun _ ↦ 1)) = jetDegreeWeight := by
+        funext i
+        cases i <;> rfl
+      simpa only [jetTotalDegree, hw] using hjet')
+    (by simp [Q, firstOrderUnitEquation])
+    domain received (by norm_num) (by norm_num) S hS hA
+  simpa [F, Q, S, jet, firstOrderCurveFiberStageOne, firstOrderTaylorDerivativeCap,
+    firstOrderTaylorTotalCap, firstOrderUnitEquation, firstOrderZeroJet] using h
 
 end ReedSolomon.HiddenDerivative
