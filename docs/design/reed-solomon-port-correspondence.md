@@ -1923,6 +1923,23 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Poly
 
 Renamed `exists_polynomialGraph_of_symbolic_prime_sample_of_exponent` to `exists_polynomialGraph_of_primeTaylorComponent`. It uses the destination joint Taylor cuts and recognizes a graph for tuples of arbitrary length. Added `powerBatchedJetGraphMap`. The result also proves ideal vanishing on the graph and nonvanishing of the restricted separant. The wrapper declarations `symbolicSourceCurveAgreement_of_exponent` and `symbolicSourceCurveAgreement` were not ported: their cut polynomial is `jointTaylorAgreementEquation`, and the default-exponent case follows by taking exponent `2 * K`.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedFrobeniusFamily.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedFrobeniusFamily.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`frobeniusRetainedPowerTupleFamily` → `frobeniusRetainedPowerTupleFamily`,
+`mem_frobeniusRetainedPowerTupleFamily_iff` → `mem_frobeniusRetainedPowerTupleFamily_iff`,
+`frobeniusRetainedPowerTupleFamily_card_le` → `frobeniusRetainedPowerTupleFamily_card_le`, and
+`exists_exceptional_frobeniusRetainedPowerTupleFamily` →
+`exists_exceptional_frobeniusRetainedPowerTupleFamily` keep their names. The retained-family
+API and its bounds now accept any finite coordinate type instead of only `Fin n`. The
+cardinality theorem uses `jointInitialJetEquation` for the current initial-equation API; the
+exceptional-set theorem specializes the generic exact-power-agreement family bound.
+
+No declarations from this source file were left out. The related source wrapper
+`uniformExactPowerAgreement_descend` is covered by the existing
+`uniformExactPowerAgreement_of_extension` theorem in `PowerAgreement`.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedGeometricTransfer.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/GeometricTransfer.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
