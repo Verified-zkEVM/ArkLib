@@ -8,6 +8,7 @@ module
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.Basic
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.CurveCertificate
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.PartitionRank
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.SourceColumn
 
 /-!
 # Symbolic certificates from the partition support
@@ -41,8 +42,7 @@ open MvPolynomial
 /-- The source column indexed by a partition-support exponent. -/
 def partitionSupportColumns {D d W : ℕ} {L : ℝ} (hD : 0 < D) :
     Fin (Fintype.card ↥(partitionSupportExponents D d W L hD)) → SourceColumn d :=
-  fun j ↦ SourceColumn.ofExponent
-    (((Fintype.equivFin ↥(partitionSupportExponents D d W L hD)).symm j).1)
+  SourceColumn.enumerate (partitionSupportExponents D d W L hD)
 
 /-- The exponent of a selected source column is its partition-support index. -/
 @[simp]
@@ -50,26 +50,19 @@ theorem partitionSupportColumns_exponent {D d W : ℕ} {L : ℝ} (hD : 0 < D)
     (j : Fin (Fintype.card ↥(partitionSupportExponents D d W L hD))) :
     (partitionSupportColumns (d := d) (W := W) (L := L) hD j).exponent =
       ((Fintype.equivFin ↥(partitionSupportExponents D d W L hD)).symm j).1 := by
-  change (SourceColumn.ofExponent _).exponent = _
-  exact SourceColumn.exponent_ofExponent _
+  exact SourceColumn.exponent_enumerate _ _
 
 /-- The selected source columns are pairwise distinct. -/
 theorem partitionSupportColumns_injective {D d W : ℕ} {L : ℝ} (hD : 0 < D) :
     Function.Injective (partitionSupportColumns (d := d) (W := W) (L := L) hD) := by
-  intro i j hij
-  apply (Fintype.equivFin ↥(partitionSupportExponents D d W L hD)).symm.injective
-  apply Subtype.ext
-  rw [← partitionSupportColumns_exponent hD i, ← partitionSupportColumns_exponent hD j]
-  exact congrArg SourceColumn.exponent hij
+  exact SourceColumn.enumerate_injective _
 
 /-- Every selected source column satisfies the partition-support restrictions. -/
 theorem partitionSupportColumns_eligible {D d W : ℕ} {L : ℝ} (hD : 0 < D)
     (j : Fin (Fintype.card ↥(partitionSupportExponents D d W L hD))) :
     PartitionSupportEligible D d W L
       (partitionSupportColumns (d := d) (W := W) (L := L) hD j).exponent := by
-  rw [partitionSupportColumns_exponent]
-  exact mem_partitionSupportExponents.mp
-    ((Fintype.equivFin ↥(partitionSupportExponents D d W L hD)).symm j).2
+  exact mem_partitionSupportExponents.mp (SourceColumn.exponent_enumerate_mem _ _)
 
 /-- A strict surplus of partition-support exponents over the total local derivative budget gives a
 uniformly nonvanishing symbolic curve certificate. Its challenge height is
