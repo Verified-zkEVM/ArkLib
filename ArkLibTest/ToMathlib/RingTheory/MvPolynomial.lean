@@ -30,6 +30,20 @@ import Mathlib.Algebra.MvPolynomial.Division
 -/
 
 open MvPolynomial
+
+/-- Enlarging either bidegree bound preserves membership. -/
+example : (X none * X (some 0) : MvPolynomial (Option (Fin 1)) ℚ) ∈
+    restrictBidegree (Fin 1) ℚ 2 3 := by
+  have hnone : (X none : MvPolynomial (Option (Fin 1)) ℚ) ∈
+      restrictBidegree (Fin 1) ℚ 1 0 := by
+    rw [mem_restrictBidegree, support_X]
+    simp
+  have hsome : (X (some 0) : MvPolynomial (Option (Fin 1)) ℚ) ∈
+      restrictBidegree (Fin 1) ℚ 0 1 := by
+    rw [mem_restrictBidegree, support_X]
+    simp
+  exact mem_restrictBidegree_mono (mul_mem_restrictBidegree hnone hsome)
+    (by omega) (by omega)
 open Filter Finsupp
 open scoped MonomialOrder
 
