@@ -28,6 +28,8 @@ all-rate prime-field bounds and their large-gap and weighted-support regimes.
 * `CapacityGapCertificate.ofDecoderCertificate` and
   `CapacityGapCertificate.ofDecoderCertificateAndPointwiseBound`: package exact decoders with
   their radius or pointwise-list bound.
+* `CapacityGapCertificate.ofPointwiseBound`: construct an exact decoder from a pointwise list
+  bound and package its capacity-radius certificate.
 * `lambda_le_of_forall_agreeingPolynomials_encard_le`: a pointwise polynomial-list bound gives
   the corresponding `Code.Lambda` bound.
 * `closeCodewordsRel_eq_eval_image_agreeingPolynomials`: the capacity-radius point list is the
@@ -183,6 +185,34 @@ def CapacityGapCertificate.ofDecoderCertificateAndPointwiseBound {delta : ℝ}
   CapacityGapCertificate.ofDecoderCertificate decoderCertificate
     (lambda_le_of_forall_agreeingPolynomials_encard_le hdelta hn
       (domain := domain) (messageDim := messageDim) listBound hBound)
+
+/-- A pointwise finite-list bound gives an exact decoder and its capacity-radius certificate. -/
+def CapacityGapCertificate.ofPointwiseBound {delta : ℝ}
+    {ι F : Type*} [Semiring F] [DecidableEq F] [Fintype ι]
+    (hdelta : 0 ≤ delta) (hn : 0 < Fintype.card ι) {domain : ι ↪ F}
+    {messageDim listBound : ℕ}
+    (hBound : ∀ received : ι → F,
+      (agreeingPolynomials domain messageDim
+        (agreementThreshold delta (Fintype.card ι) messageDim) received).encard ≤
+          (listBound : ℕ∞)) :
+    CapacityGapCertificate delta domain messageDim listBound := by
+  classical
+  let finiteList := fun received ↦ Set.finite_of_encard_le_coe (hBound received)
+  let decoderCertificate : DecoderCertificate domain messageDim
+      (agreementThreshold delta (Fintype.card ι) messageDim) listBound := {
+    enumerate := fun received ↦ (finiteList received).toFinset
+    isExact := by
+      intro received p
+      simp only [Set.Finite.mem_toFinset]
+      rfl
+    card_le := by
+      intro received
+      have h := hBound received
+      rw [(finiteList received).encard_eq_coe_toFinset_card] at h
+      exact_mod_cast h
+  }
+  exact CapacityGapCertificate.ofDecoderCertificateAndPointwiseBound
+    hdelta hn decoderCertificate hBound
 
 /-- For every fixed positive gap, one polynomial list bound works at every code rate. The
 prefactor, exponent, and block threshold depend only on the gap. -/
