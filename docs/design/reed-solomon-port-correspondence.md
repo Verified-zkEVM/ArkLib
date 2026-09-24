@@ -1854,6 +1854,18 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Poly
 
 The graph-line component result now uses the shared `aeval_jointInitialJetSeparant`, `aeval_jointCommonTaylorNumerator`, and `aeval_jointTaylorAgreementEquation` results from `TaylorChartAlgebra`, and `regular_principalOpen_graph_restriction` from `PrincipalOpenParametrization`.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerTupleCounting.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/PolynomialCurve/Admissible.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`Ordinary.PolynomialCurve.Admissible.IsAdmissibleFrobeniusPowerTuple` → `ReedSolomon.IsAdmissibleFrobeniusPowerTuple`, `Ordinary.PolynomialCurve.Admissible.IsAdmissibleFrobeniusPowerTuple.specialize` → `ReedSolomon.IsAdmissibleFrobeniusPowerTuple.specialize`, and `Ordinary.PolynomialCurve.Admissible.IsAdmissibleFrobeniusPowerTuple.eq_of_initialGraph_eq` → `ReedSolomon.IsAdmissibleFrobeniusPowerTuple.eq_of_initialGraph_eq`. The structure, specialization theorem, and uniqueness theorem are generalized from a `Fin n` domain to an arbitrary embedded coordinate type. Specialization is adapted to the current graph API. Uniqueness uses `iterateFrobenius_inj` and reuses `polynomialTuple_eq_of_infinite_specializations`.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/PolynomialCurve/Counting.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`Ordinary.PolynomialCurve.Counting.admissibleFrobeniusPowerTuples_card_le_degreeOf` → `ReedSolomon.admissibleFrobeniusPowerTuples_card_le_degreeOf`, generalized from `Fin n` to an arbitrary embedded coordinate type. No declarations from the counting source were left out. The imported adapter `Ordinary.PolynomialCurve.Admissible.exists_admissibleFrobeniusPowerTuple_of_symbolic_prime_sample` is not added because constructing admissible tuples from prime components is outside this counting unit.
+
+The shared acceptance file uses a concrete zero tuple for specialization and singleton tuple counting. A zero-pair witness covers admissible-pair counting, retained-family nonemptiness and its cardinality bound. The exceptional-family example states `exceptional.card ≤ 0` and equality of affine and common agreement sets for every retained pair. The standalone tuple admissibility example and simplification-only uniqueness example were removed.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/SingularTail.lean`
 
 Merges `FirstOrder/Squarefree/Bounds.lean` and `FirstOrder/Squarefree/SingularTail.lean` under
