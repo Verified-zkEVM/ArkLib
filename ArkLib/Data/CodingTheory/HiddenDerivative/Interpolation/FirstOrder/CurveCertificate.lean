@@ -18,12 +18,15 @@ first-order space, with local constraints and specialization soundness along rec
 curves. A strict surplus of shifted coefficient slots over the numerical row bound constructs
 such a certificate for the canonical enumeration of the support. Received lines also give
 symbolic certificates whose specialization soundness is stated directly for affine combinations
-of two received words.
+of two received words. The shared specialization theorem derives vanishing from support and local
+constraint hypotheses.
 
 ## Main statements
 
 * `FirstOrderCurveCertificate`: a primitive interpolant with bounded support and uniform
   specialization soundness along a received polynomial curve.
+* `differentialSpecialization_eq_zero_of_firstOrderSpace`: support and local constraints imply
+  vanishing after specialization at sufficiently many agreeing points.
 * `FirstOrderSymbolicCertificate.toCurve`: views a line certificate as a degree-one curve
   certificate.
 * `exists_finite_firstOrder_curve_certificate_of_heightSlotCount`: a strict shifted-slot surplus
@@ -66,6 +69,47 @@ structure FirstOrderCurveCertificate {n N : ℕ} (D A m M μ k h : ℕ)
         (∀ i ∈ indices, P.eval (ι (centers i)) = (w i).eval₂ ι z) →
           differentialSpecialization
             (MvPolynomial.map (Polynomial.eval₂RingHom ι z) Q) P = 0
+
+/-- A supported first-order polynomial satisfying the local constraints vanishes after
+specialization at any sufficiently large set of points where the polynomial agrees. -/
+theorem differentialSpecialization_eq_zero_of_firstOrderSpace
+    {D A m M μ k n : ℕ} (hkD : k ≤ D + 1) (hbudget : 0 < m * A)
+    (centers : Fin n ↪ F) (w : Fin n → F[X]) (Q : DifferentialPolynomial F[X] 1)
+    (hQsupport : Q ∈ firstOrderSpace F[X] D A m M μ)
+    (hconstraints : ∀ i, SatisfiesLocalConstraints m (Polynomial.C (centers i)) (w i) Q)
+    {E : Type*} [Field E] (ι : F →+* E) (z : E) (indices : Finset (Fin n)) (P : E[X])
+    (hPdegree : P.degree < k) (hcard : A ≤ indices.card)
+    (hagreements : ∀ i ∈ indices, P.eval (ι (centers i)) = (w i).eval₂ ι z) :
+    differentialSpecialization (MvPolynomial.map (Polynomial.eval₂RingHom ι z) Q) P = 0 := by
+  let φ := Polynomial.eval₂RingHom ι z
+  have hQmapped : MvPolynomial.map φ Q ∈ firstOrderSpace E D A m M μ := by
+    rw [mem_firstOrderSpace_iff]
+    intro u hu
+    have huQ : u ∈ Q.support := MvPolynomial.support_map_subset φ Q hu
+    exact mem_firstOrderSpace_iff.mp hQsupport u huQ
+  have hconstraintsE : ∀ i, SatisfiesLocalConstraints m (ι (centers i))
+      ((w i).eval₂ ι z) (MvPolynomial.map φ Q) := by
+    intro i
+    have hi := SatisfiesLocalConstraints.map φ m (Polynomial.C (centers i))
+      (w i) Q (hconstraints i)
+    change SatisfiesLocalConstraints m
+      (Polynomial.eval₂ ι z (Polynomial.C (centers i)))
+      ((w i).eval₂ ι z) (MvPolynomial.map φ Q) at hi
+    simpa only [Polynomial.eval₂_C] using hi
+  have hPnat : P.natDegree ≤ D := by
+    by_cases hPzero : P = 0
+    · simp [hPzero]
+    · have hlt : P.natDegree < k :=
+        (Polynomial.natDegree_lt_iff_degree_lt hPzero).mpr hPdegree
+      omega
+  have hcenters : Set.InjOn (fun i ↦ ι (centers i)) (indices : Set (Fin n)) := by
+    intro i _ j _ hij
+    exact centers.injective (ι.injective hij)
+  have hweight : differentialWeightedDegree D (MvPolynomial.map φ Q) < m * A :=
+    differentialWeightedDegree_lt_of_mem_firstOrderSpace hbudget hQmapped
+  exact differentialSpecialization_eq_zero_of_differentialWeightedDegree_lt
+    (fun i ↦ ι (centers i)) (fun i ↦ (w i).eval₂ ι z) indices hweight
+    (fun i _ ↦ hconstraintsE i) P hPnat hcenters hcard hagreements
 
 /-- A symbolic line certificate is a degree-one received-curve certificate with the same
 equation. -/
@@ -137,35 +181,8 @@ theorem exists_finite_firstOrder_curve_certificate_of_heightSlotCount
   intro E _ ι z
   refine ⟨hnonzero ι z, ?_⟩
   intro indices P hPdegree hcard hagreements
-  let φ := Polynomial.eval₂RingHom ι z
-  have hQmapped : MvPolynomial.map φ Q ∈ firstOrderSpace E D A m M μ := by
-    rw [mem_firstOrderSpace_iff]
-    intro u hu
-    have huQ : u ∈ Q.support := MvPolynomial.support_map_subset φ Q hu
-    exact mem_firstOrderSpace_iff.mp hQsupport u huQ
-  have hconstraintsE : ∀ i, SatisfiesLocalConstraints m (ι (centers i))
-      ((w i).eval₂ ι z) (MvPolynomial.map φ Q) := by
-    intro i
-    have hi := SatisfiesLocalConstraints.map φ m (Polynomial.C (centers i))
-      (w i) Q (hconstraints i)
-    change SatisfiesLocalConstraints m
-      (Polynomial.eval₂ ι z (Polynomial.C (centers i)))
-      ((w i).eval₂ ι z) (MvPolynomial.map φ Q) at hi
-    simpa only [Polynomial.eval₂_C] using hi
-  have hPnat : P.natDegree ≤ D := by
-    by_cases hPzero : P = 0
-    · simp [hPzero]
-    · have hlt : P.natDegree < k :=
-        (Polynomial.natDegree_lt_iff_degree_lt hPzero).mpr hPdegree
-      omega
-  have hcenters : Set.InjOn (fun i ↦ ι (centers i)) (indices : Set (Fin n)) := by
-    intro i _ j _ hij
-    exact centers.injective (ι.injective hij)
-  have hweight : differentialWeightedDegree D (MvPolynomial.map φ Q) < m * A :=
-    (differentialWeightedDegree_lt_of_mem_firstOrderSpace hbudget hQmapped)
-  exact differentialSpecialization_eq_zero_of_differentialWeightedDegree_lt
-    (fun i ↦ ι (centers i)) (fun i ↦ (w i).eval₂ ι z) indices hweight
-    (fun i _ ↦ hconstraintsE i) P hPnat hcenters hcard hagreements
+  exact differentialSpecialization_eq_zero_of_firstOrderSpace
+    hkD hbudget centers w Q hQsupport hconstraints ι z indices P hPdegree hcard hagreements
 
 /-- A strict shifted-slot surplus for a received line gives a symbolic first-order certificate. -/
 theorem exists_finite_firstOrder_symbolic_certificate_of_heightSlotCount

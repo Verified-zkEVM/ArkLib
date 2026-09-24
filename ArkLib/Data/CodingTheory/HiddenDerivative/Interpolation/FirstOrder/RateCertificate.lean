@@ -155,41 +155,14 @@ theorem exists_firstOrderRate_symbolicCertificate
   intro E _ ι z
   refine ⟨hnonzero (Polynomial.eval₂RingHom ι z), ?_⟩
   intro indices P hPdegree hcard hagreements
-  let φ := Polynomial.eval₂RingHom ι z
-  have hQmapped : MvPolynomial.map φ Q ∈ firstOrderSpace E D A m M μ := by
-    rw [mem_firstOrderSpace_iff]
-    intro u hu
-    have huQ : u ∈ Q.support := MvPolynomial.support_map_subset φ Q hu
-    exact mem_firstOrderSpace_iff.mp hQsupport u huQ
-  have hconstraintsE : ∀ i, SatisfiesLocalConstraints m (ι (centers i))
-      ((w i).eval₂ ι z) (MvPolynomial.map φ Q) := by
-    intro i
-    have hi := SatisfiesLocalConstraints.map φ m (Polynomial.C (centers i))
-      (w i) Q (hconstraints i)
-    change SatisfiesLocalConstraints m
-      (Polynomial.eval₂ ι z (Polynomial.C (centers i)))
-      ((w i).eval₂ ι z) (MvPolynomial.map φ Q) at hi
-    simpa only [Polynomial.eval₂_C] using hi
-  have hPnat : P.natDegree ≤ D := by
-    by_cases hPzero : P = 0
-    · simp [hPzero]
-    · have hlt : P.natDegree < k :=
-        (Polynomial.natDegree_lt_iff_degree_lt hPzero).mpr hPdegree
-      omega
-  have hcenters : Set.InjOn (fun i ↦ ι (centers i)) (indices : Set (Fin n)) := by
-    intro i _ j _ hij
-    exact centers.injective (ι.injective hij)
-  have hweight : differentialWeightedDegree D (MvPolynomial.map φ Q) < m * A :=
-    differentialWeightedDegree_lt_of_mem_firstOrderSpace hbudget hQmapped
   have hagreeCurve : ∀ i ∈ indices,
       P.eval (ι (centers i)) = (w i).eval₂ ι z := by
     intro i hi
     rw [hagreements i hi]
     simp [w, receivedLine]
     ring
-  exact differentialSpecialization_eq_zero_of_differentialWeightedDegree_lt
-    (fun i ↦ ι (centers i)) (fun i ↦ (w i).eval₂ ι z) indices hweight
-    (fun i hi ↦ hconstraintsE i) P hPnat hcenters hcard hagreeCurve
+  exact differentialSpecialization_eq_zero_of_firstOrderSpace
+    hkD hbudget centers w Q hQsupport hconstraints ι z indices P hPdegree hcard hagreeCurve
 
 end
 
