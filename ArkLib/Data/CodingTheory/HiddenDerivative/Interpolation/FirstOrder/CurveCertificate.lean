@@ -24,6 +24,8 @@ of two received words.
 
 * `FirstOrderCurveCertificate`: a primitive interpolant with bounded support and uniform
   specialization soundness along a received polynomial curve.
+* `FirstOrderSymbolicCertificate.toCurve`: views a line certificate as a degree-one curve
+  certificate.
 * `exists_finite_firstOrder_curve_certificate_of_heightSlotCount`: a strict shifted-slot surplus
   constructs a certificate with bounded coefficient degree.
 * `exists_finite_firstOrder_symbolic_certificate_of_heightSlotCount`: a strict shifted-slot
@@ -64,6 +66,36 @@ structure FirstOrderCurveCertificate {n N : ℕ} (D A m M μ k h : ℕ)
         (∀ i ∈ indices, P.eval (ι (centers i)) = (w i).eval₂ ι z) →
           differentialSpecialization
             (MvPolynomial.map (Polynomial.eval₂RingHom ι z) Q) P = 0
+
+/-- A symbolic line certificate is a degree-one received-curve certificate with the same
+equation. -/
+def FirstOrderSymbolicCertificate.toCurve
+    {D A m M μ k h n N : ℕ}
+    {centers : Fin n ↪ F} {f g : Fin n → F} {columns : Fin N → SourceColumn 1}
+    (cert : FirstOrderSymbolicCertificate (F := F) D A m M μ k h centers f g columns) :
+    FirstOrderCurveCertificate (F := F) D A m M μ k h centers
+      (fun i ↦ receivedLine (f i) (g i)) columns := {
+  coefficients := cert.coefficients
+  Q := cert.Q
+  eq_interpolant := cert.eq_interpolant
+  primitiveCoefficients := cert.primitiveCoefficients
+  challengeDegree_le := cert.challengeDegree_le
+  support := cert.support
+  firstJetDegree_le := cert.firstJetDegree_le
+  totalJetDegree_le := cert.totalJetDegree_le
+  localConstraints := cert.localConstraints
+  specialization_sound := by
+    intro E _ ι z
+    obtain ⟨hne, hsound⟩ := cert.specialization_sound ι z
+    refine ⟨hne, ?_⟩
+    intro indices P hP hcard hagree
+    apply hsound indices P hP hcard
+    intro i hi
+    have h := hagree i hi
+    simp only [receivedLine, Polynomial.eval₂_add, Polynomial.eval₂_C,
+      Polynomial.eval₂_mul, Polynomial.eval₂_X] at h
+    exact h
+}
 
 /-- A strict shifted-slot surplus constructs a primitive first-order curve certificate whose
 coefficients have challenge degree at most `h`. -/

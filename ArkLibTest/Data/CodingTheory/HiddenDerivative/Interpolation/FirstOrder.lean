@@ -13,6 +13,7 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.Symbol
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.SymbolicRank
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.CurveHeightCounting
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.CurveCertificate
+import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.RateCertificate
 import Mathlib.Algebra.Field.ZMod
 
 /-!
@@ -25,6 +26,37 @@ open MvPolynomial PolynomialDifferential ReedSolomon.HiddenDerivative
 open scoped BigOperators Polynomial Matrix
 
 private instance : Fact (Nat.Prime 5) := ⟨by decide⟩
+
+private noncomputable def smallFirstOrderRateParameters :
+    FirstOrderFiniteRateParameters (1 / 2 : ℝ) 1 := by
+  refine ⟨1, by norm_num, ?_⟩
+  norm_num [FirstOrderFiniteRateTest, firstOrderRateDerivativeCap, firstOrderRateJetDegree,
+    firstOrderRateBeta, firstOrderRankCount, firstOrderSourceCount, Finset.sum_range_succ]
+
+/-- A finite first-order rate choice yields a line certificate and its curve form on two points. -/
+example :
+    Nonempty (FirstOrderCurveCertificate (F := ZMod 5) 1 2
+      smallFirstOrderRateParameters.multiplicity smallFirstOrderRateParameters.derivativeCap
+      smallFirstOrderRateParameters.jetDegree 2 smallFirstOrderRateParameters.challengeDegree
+      (⟨fun i ↦ i.val, by
+        intro i j hij
+        fin_cases i <;> fin_cases j <;> simp_all⟩ : Fin 2 ↪ ZMod 5)
+      (fun _ ↦ receivedLine (0 : ZMod 5) 0)
+      (firstOrderColumns (D := 1) (A := 2)
+        (m := smallFirstOrderRateParameters.multiplicity)
+        (M := smallFirstOrderRateParameters.derivativeCap)
+        (μ := smallFirstOrderRateParameters.jetDegree))) := by
+  have hbudget : 0 < smallFirstOrderRateParameters.multiplicity * 2 :=
+    Nat.mul_pos smallFirstOrderRateParameters.multiplicity_pos (by norm_num)
+  obtain ⟨cert⟩ := exists_firstOrderRate_symbolicCertificate
+    (rate := (1 / 2 : ℝ)) (agreement := 1) (p := smallFirstOrderRateParameters)
+    (F := ZMod 5) (n := 2) (D := 1) (A := 2) (k := 2)
+    (by norm_num) (by norm_num) hbudget (by norm_num) (by norm_num) (by norm_num)
+    (⟨fun i ↦ i.val, by
+      intro i j hij
+      fin_cases i <;> fin_cases j <;> simp_all⟩ : Fin 2 ↪ ZMod 5)
+    (fun _ ↦ 0) (fun _ ↦ 0)
+  exact ⟨cert.toCurve⟩
 
 example : Module.finrank ℚ (firstOrderSpace ℚ 2 3 1 0 1) = 4 := by
   rw [finrank_firstOrderSpace_eq_firstOrderDimensionCount ℚ (by norm_num)]
