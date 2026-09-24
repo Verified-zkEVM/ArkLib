@@ -815,6 +815,24 @@ example :
     (by decide) (by decide) (by decide) (by decide) (by decide) hchar
     smallFirstOrderAgreementList smallFirstOrderAgreementList_accepted
 
+/-- A nonstandard sufficient Taylor exponent gives the dimension-sensitive agreement bound. -/
+example :
+    (smallFirstOrderAgreementList.card : ℚ) ≤
+      firstOrderTightListWeight 2 2 1 2 4 1 0 := by
+  have hchar : ringChar (ZMod 5) = 0 ∨ max (2 - 1) 1 < ringChar (ZMod 5) := by
+    right
+    rw [ZMod.ringChar_zmod_n]
+    norm_num
+  have hτ : ∀ r ≤ 1, TaylorExponentSufficient r 2 4 := by
+    intro r hr
+    exact (taylorExponentSufficient_two_mul r 2).mono (by decide)
+  obtain ⟨cert⟩ := smallFirstOrderAgreementCertificate
+  exact firstOrder_finite_agreement_solutions_card_le_tight_of_exponent
+    smallFirstOrderCenters (fun _ ↦ 0)
+    (firstOrderColumns (D := 1) (A := 2) (m := 2) (M := 0) (μ := 1)) cert hτ
+    (by decide) (by decide) (by decide) (by decide) (by decide) hchar
+    smallFirstOrderAgreementList smallFirstOrderAgreementList_accepted
+
 /-- A concrete shifted-slot surplus gives the sharp cap-sensitive agreement bound. -/
 example :
     (smallFirstOrderAgreementList.card : ℚ) ≤

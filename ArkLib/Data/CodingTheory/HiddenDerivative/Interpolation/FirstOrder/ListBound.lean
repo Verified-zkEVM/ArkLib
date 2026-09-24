@@ -178,7 +178,7 @@ theorem finite_firstOrder_list_bound_of_heightSlotCount_sharp
 
 open Classical in
 /-- A shifted-slot surplus constructs a first-order certificate and gives the
-dimension-sensitive finite-list bound for any sufficient Taylor exponent. -/
+dimension-sensitive finite-list bound at exponent `2 * K - 3`. -/
 theorem finite_firstOrder_list_bound_of_shiftedHeightSlotCount_tight
     {D A m M μ k h n K : ℕ}
     (hD : 0 < D) (hbudget : 0 < m * A) (hkD : k ≤ D + 1)
