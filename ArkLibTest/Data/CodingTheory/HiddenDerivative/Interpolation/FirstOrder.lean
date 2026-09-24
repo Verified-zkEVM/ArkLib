@@ -33,6 +33,29 @@ private noncomputable def smallFirstOrderRateParameters :
   norm_num [FirstOrderFiniteRateTest, firstOrderRateDerivativeCap, firstOrderRateJetDegree,
     firstOrderRateBeta, firstOrderRankCount, firstOrderSourceCount, Finset.sum_range_succ]
 
+private def smallFirstOrderCenters : Fin 2 ↪ ZMod 5 :=
+  ⟨fun i ↦ i.val, by
+    intro i j hij
+    fin_cases i <;> fin_cases j <;> simp_all⟩
+
+private noncomputable def smallFirstOrderRateCertificate :
+    FirstOrderSymbolicCertificate (F := ZMod 5) 1 2
+      smallFirstOrderRateParameters.multiplicity smallFirstOrderRateParameters.derivativeCap
+      smallFirstOrderRateParameters.jetDegree 2 smallFirstOrderRateParameters.challengeDegree
+      smallFirstOrderCenters (fun _ ↦ 0)
+      (fun _ ↦ 0)
+      (firstOrderColumns (D := 1) (A := 2)
+        (m := smallFirstOrderRateParameters.multiplicity)
+        (M := smallFirstOrderRateParameters.derivativeCap)
+        (μ := smallFirstOrderRateParameters.jetDegree)) := by
+  have hbudget : 0 < smallFirstOrderRateParameters.multiplicity * 2 :=
+    Nat.mul_pos smallFirstOrderRateParameters.multiplicity_pos (by norm_num)
+  exact Classical.choice (exists_firstOrderRate_symbolicCertificate
+    (rate := (1 / 2 : ℝ)) (agreement := 1) (p := smallFirstOrderRateParameters)
+    (F := ZMod 5) (n := 2) (D := 1) (A := 2) (k := 2)
+    (by norm_num) (by norm_num) hbudget (by norm_num) (by norm_num) (by norm_num)
+    smallFirstOrderCenters (fun _ ↦ 0) (fun _ ↦ 0))
+
 /-- The concrete two-point rate choice has strict surplus over its interpolation dimension. -/
 example :
     2 * smallFirstOrderRateParameters.rankCount < firstOrderDimensionCount 1 2
@@ -56,25 +79,39 @@ example :
     Nonempty (FirstOrderCurveCertificate (F := ZMod 5) 1 2
       smallFirstOrderRateParameters.multiplicity smallFirstOrderRateParameters.derivativeCap
       smallFirstOrderRateParameters.jetDegree 2 smallFirstOrderRateParameters.challengeDegree
-      (⟨fun i ↦ i.val, by
-        intro i j hij
-        fin_cases i <;> fin_cases j <;> simp_all⟩ : Fin 2 ↪ ZMod 5)
+      smallFirstOrderCenters
       (fun _ ↦ receivedLine (0 : ZMod 5) 0)
       (firstOrderColumns (D := 1) (A := 2)
         (m := smallFirstOrderRateParameters.multiplicity)
         (M := smallFirstOrderRateParameters.derivativeCap)
         (μ := smallFirstOrderRateParameters.jetDegree))) := by
+  exact ⟨smallFirstOrderRateCertificate.toCurve⟩
+
+/-- The shared specialization theorem applies directly to the nonzero two-point certificate. -/
+example :
+    ∃ Q : DifferentialPolynomial (ZMod 5)[X] 1,
+      MvPolynomial.map (Polynomial.eval₂RingHom (RingHom.id (ZMod 5)) (0 : ZMod 5)) Q ≠ 0 ∧
+        differentialSpecialization
+          (MvPolynomial.map
+            (Polynomial.eval₂RingHom (RingHom.id (ZMod 5)) (0 : ZMod 5)) Q)
+          (0 : (ZMod 5)[X]) = 0 := by
+  let cert := smallFirstOrderRateCertificate
+  let ι : ZMod 5 →+* ZMod 5 := RingHom.id _
+  refine ⟨cert.Q, cert.specialization_sound ι 0 |>.1, ?_⟩
   have hbudget : 0 < smallFirstOrderRateParameters.multiplicity * 2 :=
     Nat.mul_pos smallFirstOrderRateParameters.multiplicity_pos (by norm_num)
-  obtain ⟨cert⟩ := exists_firstOrderRate_symbolicCertificate
-    (rate := (1 / 2 : ℝ)) (agreement := 1) (p := smallFirstOrderRateParameters)
-    (F := ZMod 5) (n := 2) (D := 1) (A := 2) (k := 2)
-    (by norm_num) (by norm_num) hbudget (by norm_num) (by norm_num) (by norm_num)
-    (⟨fun i ↦ i.val, by
-      intro i j hij
-      fin_cases i <;> fin_cases j <;> simp_all⟩ : Fin 2 ↪ ZMod 5)
-    (fun _ ↦ 0) (fun _ ↦ 0)
-  exact ⟨cert.toCurve⟩
+  have hagreements : ∀ i ∈ (Finset.univ : Finset (Fin 2)),
+      (0 : (ZMod 5)[X]).eval (ι (smallFirstOrderCenters i)) =
+        (receivedLine (0 : ZMod 5) 0).eval₂ ι 0 := by
+    intro i hi
+    simp [receivedLine]
+  exact differentialSpecialization_eq_zero_of_firstOrderSpace
+    (D := 1) (A := 2) (m := smallFirstOrderRateParameters.multiplicity)
+    (M := smallFirstOrderRateParameters.derivativeCap)
+    (μ := smallFirstOrderRateParameters.jetDegree) (k := 2) (n := 2)
+    (by norm_num) hbudget smallFirstOrderCenters
+    (fun _ ↦ receivedLine (0 : ZMod 5) 0) cert.Q cert.support cert.localConstraints ι 0
+    Finset.univ 0 (by exact WithBot.bot_lt_coe 2) (by simp) hagreements
 
 example : Module.finrank ℚ (firstOrderSpace ℚ 2 3 1 0 1) = 4 := by
   rw [finrank_firstOrderSpace_eq_firstOrderDimensionCount ℚ (by norm_num)]
