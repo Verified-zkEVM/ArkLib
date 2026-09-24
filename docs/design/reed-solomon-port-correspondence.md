@@ -579,6 +579,14 @@ are the special cases of the new composition laws `globalPointTranslation_comp`,
 source's `Matrix.rank_map_algebraMap_le`, a base-change bound on matrix rank that does not
 concern translation; its only source consumer is `Interpolation/Symbolic/LocalRank.lean`.
 
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/PartitionSupport/CurveCertificate.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/RatePartition/Certificate.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Renamed `ratePartitionColumns`, `ratePartitionColumns_exponent`, `ratePartitionColumns_injective`, and `ratePartitionColumns_eligible` to `partitionSupportColumns`, `partitionSupportColumns_exponent`, `partitionSupportColumns_injective`, and `partitionSupportColumns_eligible`. Renamed `exists_ratePartition_certificate` to `exists_partitionSupport_curve_certificate` and adapted it to `PartitionSupportEligible`, `localDerivativeCoordinateBudget`, and `SymbolicReceivedCurve.Certificate`. Its challenge height retains the exact natural-number formula. The generic finite-support enumeration and its exponent, injectivity, and membership theorems are provided by `SourceColumn.enumerate`; weighted-support and first-order column families also use this API while retaining their names and statements.
+
+The source helper bounds `monomial_local_matrix_rank_le` and `finiteConstraintMatrix_rank_le_partition` were not ported because `main` provides more general local-coordinate and supported-matrix rank theorems. The partition-support acceptance case checks the certificate from a strict dimension surplus.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/PartitionSupport/FiniteSurplus.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/RatePartition/Ratio.lean` at ArkLib revision
