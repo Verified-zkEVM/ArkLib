@@ -3255,6 +3255,12 @@ with `map_ne_zero_iff`), and `pderiv_inverseFrobeniusTwist_ne_zero` (the `.mpr` 
 `basePowerSubstitution` and the `*_canary` examples were dropped; the consolidated suite retains a
 concrete characteristic-two inverse-twist expansion case.
 
+## `ArkLib/ToMathlib/MvPolynomial/OptionWeightedDegree.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/Flattening.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+The unit-specific flattening alias and helper weight are retired. The flattened polynomial is expressed directly as `(optionEquivRight F (JetVariable 1)).symm Q`, with weight `fun v ↦ v.elim 0 w`. The total weighted-degree bound follows from `weightedTotalDegree_optionEquivRight` and `AlgEquiv.apply_symm_apply`; no first-order wrapper is added.
+
 ## `ArkLib/ToMathlib/MvPolynomial/PDeriv.lean`
 
 This file ports and generalizes `ArkLib/ToMathlib/MvPolynomial/PDeriv.lean` at ArkLib revision
@@ -3315,6 +3321,10 @@ Added `MvPolynomial.jointTotalDegree_affine_le`, the affine-polynomial degree bo
 Ported from `ArkLib/ToMathlib/AlgebraicGeometry/Incidence/GraphPullback.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 `aeval_map_optionEquivRight` and `aeval_optionEquivRight_symm` keep their names and are generalized from fields to commutative semiring algebras.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/Flattening.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`flattenFirstOrderChallenge_challengeDegree_le` is retired in favor of `weightedTotalDegree_optionEquivRight_symm_coefficientDegree_le`; use `weightedTotalDegree_piSingle` for the `degreeOf none` form. The first-order coefficient-degree wrapper is not added.
 
 ## `ArkLib/ToMathlib/MvPolynomial/RootContraction.lean`
 
@@ -4268,3 +4278,7 @@ PMF computation is not added, and `$ᵖ` plus `Pr_{…}[…]` remain retired syn
 Ported from `ArkLibTest/ToMathlib/MvPolynomial.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 Acceptance cases check both evaluation directions using nonconstant polynomials and distinct values for the distinguished and remaining variables.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/Flattening.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+The existing acceptance example exercises `weightedTotalDegree_optionEquivRight_symm_coefficientDegree_le`. The unit-specific acceptance file was removed; no replacement first-order acceptance file is added.
