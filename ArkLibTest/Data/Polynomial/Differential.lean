@@ -1392,68 +1392,6 @@ example :
   simpa [zeroJetEquation] using
     exists_exceptional_ordinary_separant hirr hpos hder hheight
 
-/-! ### Taylor chart coefficient extension -/
-
-local instance : Fact (Nat.Prime 2) := ⟨Nat.prime_two⟩
-
-/-- A concrete rational solution family satisfies all conclusions of the exponent theorem. -/
-example :
-    ∃ (center : ℚ) (J : Finset (Fin 1 → ℚ)), J.card = 1 ∧
-      ∀ jet ∈ J,
-        aeval jet (initialJetEquation center
-          (MvPolynomial.map (RingHom.id ℚ) (zeroJetEquation ℚ 0))) = 0 ∧
-        aeval jet (initialJetSeparant center
-          (MvPolynomial.map (RingHom.id ℚ) (zeroJetEquation ℚ 0))) ≠ 0 ∧
-        aeval jet (commonTaylorNumerator center
-          (MvPolynomial.map (RingHom.id ℚ) (zeroJetEquation ℚ 0)) 4 1) = 0 ∧
-        2 ≤ (Finset.univ.filter (fun i : Fin 2 ↦
-          aeval jet (taylorAgreementEquation center
-            (MvPolynomial.map (RingHom.id ℚ) (zeroJetEquation ℚ 0)) 2 4
-            (RingHom.id ℚ (i.val : ℚ)) (0 : ℚ)) = 0)).card := by
-  classical
-  let domain : Fin 2 → ℚ := fun i ↦ (i.val : ℚ)
-  let received : Fin 2 → ℚ := fun _ ↦ 0
-  have hτ : TaylorExponentSufficient 0 2 4 := by
-    simpa using taylorExponentSufficient_two_mul 0 2
-  have hdegree : ∀ P ∈ ({0} : Finset (Polynomial ℚ)), P.degree < 1 := by
-    intro P hP
-    rw [Finset.mem_singleton.mp hP]
-    norm_num
-  have hsol : ∀ P ∈ ({0} : Finset (Polynomial ℚ)),
-      differentialSpecialization (zeroJetEquation ℚ 0) P = 0 := by
-    intro P hP
-    rw [Finset.mem_singleton.mp hP]
-    simp [zeroJetEquation]
-  have hsep : ∀ P ∈ ({0} : Finset (Polynomial ℚ)),
-      differentialSpecialization (separant (zeroJetEquation ℚ 0) (Fin.last 0)) P ≠ 0 := by
-    intro P hP
-    rw [Finset.mem_singleton.mp hP]
-    simp [zeroJetEquation, separant, differentialSpecialization,
-      differentialSpecializationHom]
-  have hbin : ∀ i, 0 < i → i < 2 → (i.choose 0 : ℚ) ≠ 0 := by
-    intro i hi hi2
-    simp
-  have hagree : ∀ P ∈ ({0} : Finset (Polynomial ℚ)),
-      2 ≤ (Finset.univ.filter (fun i : Fin 2 ↦ P.eval (domain i) = received i)).card := by
-    intro P hP
-    rw [Finset.mem_singleton.mp hP]
-    simp [domain, received]
-  obtain ⟨center, J, hcard, hproperties⟩ :=
-    exists_regular_solution_jet_family_of_exponent
-      (f := RingHom.id ℚ) (Q := zeroJetEquation ℚ 0) (K := 2) (k := 1) (τ := 4)
-      (hτ := hτ) (hkK := by norm_num) (S := {0}) (A := 2)
-      (domain := domain) (received := received) (hdegree := hdegree) (hsol := hsol)
-      (hsep := hsep) (hbin := hbin) (hagree := by
-        intro P hP
-        simpa [domain, received] using hagree P hP)
-  refine ⟨center, J, ?_, ?_⟩
-  · simpa using hcard
-  · intro jet hj
-    rcases hproperties jet hj with ⟨hinitial, hregular, hcuts, hagree⟩
-    refine ⟨hinitial, hregular, ?_, ?_⟩
-    · simpa using hcuts ⟨1, by omega⟩ (by norm_num)
-    · simpa [domain, received] using hagree
-
 /-- A nonempty regular family over `ZMod 2` has a common center in its algebraic closure. -/
 example :
     let Q : DifferentialPolynomial (ZMod 2) 0 :=

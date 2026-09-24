@@ -2382,17 +2382,6 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordi
 
 `ordinaryRootPresentation`, `natDegree_ordinaryRootPresentation`, `ordinaryRootPresentation_ne_zero`, `irreducible_ordinaryRootPresentation`, `derivative_ordinaryRootPresentation`, `ordinaryRootPresentation_monomial`, `degreeX_ordinaryRootPresentation_le`, and `eval_ordinaryRootPresentation` keep their names and are generalized from fields to commutative rings. The resultant and separant statements retain their field assumptions.
 
-## `ArkLib/Data/Polynomial/Differential/RetainedCurve.lean`
-
-The retained-curve API lives in namespace `PolynomialDifferential` at
-`ArkLib/Data/Polynomial/Differential/RetainedCurve.lean`. The source's
-`FirstOrder/Squarefree/RetainedCurve.lean` concerns arbitrary first-order differential
-polynomials and has no Reed–Solomon-specific object. `degreeOf_optionEquivRight` is a public
-generic coordinate-degree identity in `ArkLib/ToMathlib/MvPolynomial/OptionWeightedDegree.lean`.
-The round-trip law `fromFlattenedRootFirst_rootFirstChallenge` is public for the directory-level
-acceptance case. The zero-input example and concrete nonzero degree cases are in
-`ArkLibTest/Data/Polynomial/Differential.lean`.
-
 ## `ArkLib/Data/Polynomial/Differential/ShiftedJet.lean`
 
 Ported from
