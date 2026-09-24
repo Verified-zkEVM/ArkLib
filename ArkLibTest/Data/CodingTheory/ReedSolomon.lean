@@ -5,6 +5,7 @@ Authors: Quang Dao
 -/
 
 import ArkLib.Data.CodingTheory.ReedSolomon.Agreement
+import ArkLib.Data.CodingTheory.ReedSolomon.AgreementList
 import ArkLib.Data.CodingTheory.ReedSolomon.AgreementThreshold
 import ArkLib.Data.CodingTheory.ReedSolomon.PowerAgreement
 import Mathlib.FieldTheory.Finite.Extension
@@ -177,9 +178,49 @@ example :
     norm_num
   refine ⟨hsource, ?_⟩
   simpa [Polynomial.eval_X] using
-    (card_polynomialAgreement_map (algebraMap (ZMod 2) E₄)
+      (card_polynomialAgreement_map (algebraMap (ZMod 2) E₄)
       (algebraMap (ZMod 2) E₄).injective repeatedDomain
       (fun _ ↦ 0) X).trans hsource
+
+/-- The equation `Y₀ = 0` has one degree-`< 1` solution agreeing with one received symbol. -/
+example :
+    (({(0 : Polynomial ℚ)} : Finset (Polynomial ℚ)).card : ℚ) ≤ 1 := by
+  let Q : PolynomialDifferential.DifferentialPolynomial ℚ 0 :=
+    MvPolynomial.X (some 0)
+  let domain : Fin 1 ↪ ℚ :=
+    ⟨fun _ ↦ 0, fun _ _ _ ↦ Subsingleton.elim _ _⟩
+  let S : Finset (Polynomial ℚ) := {0}
+  have hQ : Q ≠ 0 := by simp [Q]
+  have hcast : ∀ j, PolynomialDifferential.JetDegreeCastsNeZero Q j := by
+    intro j
+    apply PolynomialDifferential.jetDegreeCastsNeZero_of_ringChar
+    exact Or.inl (ringChar.eq_zero : ringChar ℚ = 0)
+  have hdegree : PolynomialDifferential.jetTotalDegree Q ≤ 1 := by
+    change MvPolynomial.weightedTotalDegree
+      PolynomialDifferential.jetDegreeWeight (MvPolynomial.X (some 0)) ≤ 1
+    have hX : (MvPolynomial.X (some 0) : PolynomialDifferential.DifferentialPolynomial
+        ℚ 0) = MvPolynomial.monomial (Finsupp.single (some 0) 1) 1 := by
+      rw [← MvPolynomial.C_mul_X_eq_monomial]
+      simp
+    rw [hX, MvPolynomial.weightedTotalDegree_monomial]
+    · simp [Finsupp.weight, PolynomialDifferential.jetDegreeWeight]
+    · norm_num
+  have hsol : ∀ P ∈ S, PolynomialDifferential.differentialSpecialization Q P = 0 := by
+    intro P hP
+    simp only [S, Finset.mem_singleton] at hP
+    subst P
+    simp [Q, PolynomialDifferential.differentialSpecialization,
+      PolynomialDifferential.differentialSpecializationHom]
+  have hS : ∀ P ∈ S, P ∈ closePolynomialSet domain (fun _ ↦ 0) 1 1 := by
+    intro P hP
+    simp only [S, Finset.mem_singleton] at hP
+    subst P
+    simp [closePolynomialSet, polynomialAgreementSet, domain]
+  have hcount := closePolynomialSet_card_le_of_differential_equation Q
+    1 1 1 (by norm_num) (by norm_num) hQ hcast hdegree domain (fun _ ↦ 0)
+    (by norm_num) (by norm_num) (by norm_num)
+    (by intro r hr i hir hi; omega) S hsol hS
+  norm_num [S] at hcount ⊢
 
 end
 end ReedSolomonAgreementAcceptance
