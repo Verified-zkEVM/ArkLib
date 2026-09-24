@@ -49,10 +49,9 @@ def partitionSupportColumns {D d W : ℕ} {L : ℝ} (hD : 0 < D) :
 theorem partitionSupportColumns_exponent {D d W : ℕ} {L : ℝ} (hD : 0 < D)
     (j : Fin (Fintype.card ↥(partitionSupportExponents D d W L hD))) :
     (partitionSupportColumns (d := d) (W := W) (L := L) hD j).exponent =
-      ((Fintype.equivFin ↥(partitionSupportExponents D d W L hD)).symm j).1 :=
-  by
-    change (SourceColumn.ofExponent _).exponent = _
-    exact SourceColumn.exponent_ofExponent _
+      ((Fintype.equivFin ↥(partitionSupportExponents D d W L hD)).symm j).1 := by
+  change (SourceColumn.ofExponent _).exponent = _
+  exact SourceColumn.exponent_ofExponent _
 
 /-- The selected source columns are pairwise distinct. -/
 theorem partitionSupportColumns_injective {D d W : ℕ} {L : ℝ} (hD : 0 < D) :
