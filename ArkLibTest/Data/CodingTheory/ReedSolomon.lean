@@ -222,5 +222,45 @@ example :
     (by intro r hr i hir hi; omega) S hsol hS
   norm_num [S] at hcount ⊢
 
+/-- A two-coordinate close list satisfies the geometric equation bound over `ℚ`. -/
+example : (({(0 : Polynomial ℚ)} : Finset (Polynomial ℚ)).card : ℝ) ≤ 1 := by
+  let domain : Fin 2 ↪ ℚ := {
+    toFun := fun i ↦ (i.val : ℚ)
+    inj' := by
+      intro i j hij
+      fin_cases i <;> fin_cases j <;> norm_num at *
+  }
+  let received : Fin 2 → ℚ := fun _ ↦ 0
+  let Q : PolynomialDifferential.DifferentialPolynomial ℚ 0 := MvPolynomial.X (some 0)
+  let S : Finset (Polynomial ℚ) := {0}
+  have hQ : Q ≠ 0 := by simp [Q]
+  have hdegree : PolynomialDifferential.jetTotalDegree Q ≤ 1 := by
+    simpa [Q, PolynomialDifferential.jetDegree] using
+      PolynomialDifferential.jetTotalDegree_le_sum_jetDegree Q
+  have hsol : ∀ P ∈ S, PolynomialDifferential.differentialSpecialization Q P = 0 := by
+    intro P hP
+    simp only [S, Finset.mem_singleton] at hP
+    subst P
+    simp [Q, PolynomialDifferential.differentialSpecialization,
+      PolynomialDifferential.differentialSpecializationHom]
+  have hS : ∀ P ∈ S, P ∈ closePolynomialSet domain received 1 2 := by
+    intro P hP
+    simp only [S, Finset.mem_singleton] at hP
+    subst P
+    simp [closePolynomialSet, polynomialAgreementSet, domain, received]
+  have haccepts : ∀ P ∈ S, P ∈ closePolynomialSet domain received 1 2 := hS
+  let accepts : Polynomial ℚ → Prop := fun P ↦ P ∈ closePolynomialSet domain received 1 2
+  have hagreement : ∀ P, accepts P ↔
+      P.degree < 1 ∧ 2 ≤ (Finset.univ.filter fun i ↦
+        P.eval (domain i) = received i).card := by
+    intro P
+    simp [accepts, closePolynomialSet, polynomialAgreementSet]
+  have h := PolynomialDifferential.finite_solutions_card_le_sq_totalJetDegree_of_agreementGap
+    (δ := 1 / 2) Q 2 1 1 (by norm_num) (by norm_num) hQ hdegree domain received
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num) (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
+    accepts hagreement S hsol haccepts
+  norm_num [S] at h ⊢
+
 end
 end ReedSolomonAgreementAcceptance
