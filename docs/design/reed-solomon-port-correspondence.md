@@ -2121,6 +2121,10 @@ specialization modules at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a085
 The total-jet-degree API is extracted from
 `HiddenDerivative/RootFinding/Counting/TotalJetDegreeRootCount.lean` at the same revision.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Symbolic/TaylorDerivativeSupport.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`degreeOf_initialJetEquationOver_firstOrder` became `PolynomialDifferential.degreeOf_initialJetEquation_le`. The bound now applies at arbitrary differential order over a nontrivial commutative semiring.
+
 ## `ArkLib/Data/Polynomial/Differential/JetPrefix.lean`
 
 Ported from ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d.
@@ -2212,6 +2216,18 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/S
 `initialJetEquationOver_mem_restrictBidegree` and `initialJetSeparantOver_mem_restrictBidegree` become `initialJetEquation_mem_restrictBidegree` and `initialJetSeparant_mem_restrictBidegree` for the current `initialJetEquation` and `initialJetSeparant` APIs. The exponent and default-exponent forms of `commonTaylorNumeratorOver_mem_restrictBidegree` and `taylorAgreementEquationOver_mem_restrictBidegree` are each represented by one explicit-exponent theorem with a sufficiency proof. The agreement bound is stated for a received polynomial over `F[X]`. Separate coefficient-degree and jet-degree bounds support the rectangle results; the jet bounds use `jetTotalDegree`. Default-exponent wrappers are covered using `taylorExponentSufficient_two_mul`, and `flattenChallenge_jetDegree_le` is covered by `MvPolynomial.totalDegree_optionEquivRight`. The agreement-equation definition is supplied by main and retained unchanged; no source theorem remains blocked.
 
 The shared coefficient and bidegree results are generalized in `ArkLib/ToMathlib/MvPolynomial/PolynomialCoefficients.lean` and `ArkLib/ToMathlib/RingTheory/MvPolynomial/Bidegree.lean`: `source_mem_restrictBidegree_mono` becomes `mem_restrictBidegree_mono` for arbitrary `MvPolynomial` coefficients; private `challengeHeightLE_clearedSubstitution` becomes `CoeffNatDegreeLE.clearedSubstitution`, generalized to commutative semirings; and `flattenChallenge_challengeDegree_le` becomes `weightedTotalDegree_optionEquivRight_symm_coefficientDegree_le`, generalized to arbitrary variable types and nontrivial commutative semirings. `flattenChallenge_mem_restrictBidegree` is likewise generalized to those variable and semiring assumptions. The acceptance cases are in `ArkLibTest/Data/Polynomial/Differential.lean`, `ArkLibTest/ToMathlib/MvPolynomial.lean`, and `ArkLibTest/ToMathlib/RingTheory/MvPolynomial.lean`.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Symbolic/TaylorDerivativeSupport.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`initialJetEquationOver_mem_restrictDerivativeBidegree` became `PolynomialDifferential.initialJetEquation_mem_restrictCappedBidegree`. It now applies at arbitrary differential order and uses the destination capped-bidegree API.
+
+`commonTaylorNumeratorOver_mem_restrictDerivativeBidegree` became `PolynomialDifferential.commonTaylorNumeratorOver_mem_restrictCappedBidegree`. It states the same mathematical bounds with the destination degree and membership APIs.
+
+`degreeOf_taylorAgreementEquationOver_firstOrder` retains its name as `PolynomialDifferential.degreeOf_taylorAgreementEquationOver_firstOrder`. It keeps the same degree bound for arbitrary polynomial centers and evaluation points.
+
+`taylorAgreementEquationOver_mem_restrictDerivativeBidegree` became `PolynomialDifferential.taylorAgreementEquationOver_mem_restrictCappedBidegree`. It states the same mathematical bounds with the destination degree and membership APIs.
+
+`derivativeWeight_eq_piSingle` was not ported because it is a source-specific encoding helper. The destination capped-bidegree API bounds an indexed coordinate directly, and the existing `weightedTotalDegree_indexWeight_eq_jetDegree_one` supplies the needed first-order weighted-degree fact.
 
 ## `ArkLib/Data/Polynomial/Differential/RationalTaylorDerivativeDegree.lean`
 
@@ -3328,6 +3344,10 @@ Ported from `ArkLib/ToMathlib/AlgebraicGeometry/Incidence/GraphPullback.lean` at
 
 `aeval_map_optionEquivRight` and `aeval_optionEquivRight_symm` keep their names and are generalized from fields to commutative semiring algebras.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Symbolic/TaylorDerivativeSupport.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Added `MvPolynomial.optionEquivRight_symm_mem_restrictCappedBidegree`. It combines coefficient, total-degree, and coordinate bounds after flattening, using the existing weighted-degree identity for the coordinate bound.
+
 ## `ArkLib/ToMathlib/MvPolynomial/RootContraction.lean`
 
 Ported from `ArkLib/ToMathlib/MvPolynomial/RootContraction.lean` at the source revision. The
@@ -3889,6 +3909,10 @@ formula as `cappedBidegreeMixedVolume_eq` under `c ≤ b`; `mixedDerivativeImage
 is now `cappedBidegreeMixedVolume_mono_left`. New, with no source counterpart:
 `cappedBidegreeMixedVolume_mono_right`.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Symbolic/TaylorDerivativeSupport.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`mem_restrictDerivativeBidegree_of_bidegree` became `MvPolynomial.mem_restrictCappedBidegree_of_mem_restrictBidegree`. It applies to an arbitrary indexed coordinate and turns a bidegree rectangle plus a coordinate-degree bound into a capped bidegree bound.
+
 ## `ArkLib/ToMathlib/RingTheory/MvPolynomial/CappedDegree.lean`
 
 Ported from the exponent and submodule part of
@@ -4264,6 +4288,10 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/G
 
 The acceptance cases check `exists_regular_solution_jet_family_of_exponent` on `Y₀ = 0` over `ℚ` with `K = 2`, `k = 1`, and `τ = 4`, including the one-element family, initial equation, nonzero separant, the cut at order one, and agreement at two positions. They also check `exists_forall_jetEvaluation_ne_zero_map` for a nonempty regular family over `ZMod 2` and its algebraic closure.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Symbolic/TaylorDerivativeSupport.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Concrete `recursiveEq` examples check the initial-equation cap and degree, the common-numerator cap, and the Taylor-agreement cap and degree.
+
 ## `ArkLibTest/Data/Probability/Uniform.lean`
 
 Ported from `ArkLib/Data/Probability/Notation.lean` at ArkLib revision
@@ -4284,3 +4312,13 @@ PMF computation is not added, and `$ᵖ` plus `Pr_{…}[…]` remain retired syn
 Ported from `ArkLibTest/ToMathlib/MvPolynomial.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 Acceptance cases check both evaluation directions using nonconstant polynomials and distinct values for the distinguished and remaining variables.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Symbolic/TaylorDerivativeSupport.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+An acceptance case checks that flattening preserves a separate cap on a polynomial variable.
+
+## `ArkLibTest/ToMathlib/RingTheory/MvPolynomial.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Symbolic/TaylorDerivativeSupport.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+An acceptance case checks capped-bidegree membership from a bidegree rectangle and a separate variable-degree bound.
