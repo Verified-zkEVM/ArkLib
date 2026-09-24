@@ -368,6 +368,9 @@ public import
 public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerBatchedGeometricTransfer
 public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerBatchedGraphCounting
+public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerBatchedIncidence
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerBatchedPointRecognition
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerTupleCounting
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.SingularTail
@@ -780,6 +783,7 @@ public import ArkLib.ToMathlib.MvPolynomial.OptionRoots
 public import ArkLib.ToMathlib.MvPolynomial.OptionWeightedDegree
 public import ArkLib.ToMathlib.MvPolynomial.PDeriv
 public import ArkLib.ToMathlib.MvPolynomial.PolynomialCoefficients
+public import ArkLib.ToMathlib.MvPolynomial.PowerMomentGeometry
 public import ArkLib.ToMathlib.MvPolynomial.PowerMomentLift
 public import ArkLib.ToMathlib.MvPolynomial.RadicalSplit
 public import ArkLib.ToMathlib.MvPolynomial.RootContraction

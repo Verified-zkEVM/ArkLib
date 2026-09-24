@@ -12,6 +12,7 @@ import ArkLib.ToMathlib.MvPolynomial.OptionRoots
 import ArkLib.ToMathlib.MvPolynomial.OptionWeightedDegree
 import ArkLib.ToMathlib.MvPolynomial.PolynomialCoefficients
 import ArkLib.ToMathlib.MvPolynomial.PowerMomentLift
+import ArkLib.ToMathlib.MvPolynomial.PowerMomentGeometry
 import ArkLib.ToMathlib.MvPolynomial.RadicalSplit
 import ArkLib.ToMathlib.MvPolynomial.RootContraction
 import ArkLib.ToMathlib.MvPolynomial.SchwartzZippel
@@ -913,3 +914,103 @@ example :
       chunkedPowerSource_height,
     chunkedPolynomialPowerLift_totalDegree_le 2 1 1 (by norm_num) _
       chunkedPowerSource_height chunkedPowerSource_degree⟩
+
+/-! ### Power-moment geometry -/
+
+/-- Substitution into a power-moment coordinate obeys the weighted degree bound. -/
+example :
+    (powerMomentMap (R := ℚ) 1
+      (X (Sum.inl ⟨1, by omega⟩) :
+        MvPolynomial (PowerMomentIndex 1 Unit) ℚ)).weightedTotalDegree
+      (powerMomentWeight (σ := Unit) 1) ≤ 1 := by
+  simpa using powerMomentMap_weightedTotalDegree_le (E := ℚ) (σ := Unit) 1
+    (X (Sum.inl ⟨1, by omega⟩))
+
+/-- A source with no auxiliary variables gives a concrete Hilbert-function bound. -/
+example :
+    affineHilbertFunction (powerMomentIdeal (R := ℚ) (σ := Empty) 1) 0 ≤
+      1 * (0 + Nat.card (Option Empty)).choose (Nat.card (Option Empty)) := by
+  exact powerMomentIdeal_hilbertFunction_le (E := ℚ) (σ := Empty) 1 0 (by norm_num)
+
+/-- The exponent ball at radius zero has the predicted one-element bound. -/
+example :
+    Set.ncard {m : Option Empty →₀ ℕ | m.weight (powerMomentWeight 1) ≤ 0} ≤
+      1 * (0 + Nat.card (Option Empty)).choose (Nat.card (Option Empty)) := by
+  simpa using powerMomentWeight_exponent_ncard_le (σ := Empty) 1 0 (by norm_num)
+
+/-- The affine degree of the constant-source moment variety is bounded by one. -/
+example : affineDegree (powerMomentIdeal (R := ℚ) (σ := Fin 0) 1) ≤ 1 := by
+  exact powerMomentIdeal_affineDegree_le (E := ℚ) (σ := Fin 0) 1 (by norm_num)
+
+/-- Evaluation at a canonical lifted point factors through its recovered source point. -/
+example :
+    let x : Option Unit → ℚ := fun i ↦ i.elim 2 (fun _ ↦ 3)
+    aeval (powerMomentPoint 1 x)
+        (X (Sum.inl ⟨1, by omega⟩) : MvPolynomial (PowerMomentIndex 1 Unit) ℚ) =
+      aeval (powerMomentSourcePoint 1 (by norm_num) (powerMomentPoint 1 x))
+        (powerMomentMap (R := ℚ) 1
+          (X (Sum.inl ⟨1, by omega⟩) : MvPolynomial (PowerMomentIndex 1 Unit) ℚ)) := by
+  exact aeval_eq_aeval_powerMomentMap_of_mem_zeroLocus 1 (by norm_num)
+    (powerMomentPoint 1 (fun i : Option Unit ↦ i.elim 2 (fun _ ↦ 3)))
+    (powerMomentPoint_mem_zeroLocus 1 (fun i : Option Unit ↦ i.elim 2 (fun _ ↦ 3)))
+    (X (Sum.inl ⟨1, by omega⟩))
+
+private noncomputable abbrev momentIncidenceEquation :
+    MvPolynomial (Fin 0) (Polynomial ℚ) := C (Polynomial.X : Polynomial ℚ)
+
+private theorem momentIncidenceEquation_height : CoeffNatDegreeLE momentIncidenceEquation 1 :=
+  coeffNatDegreeLE_C (by simp)
+
+/-- A singleton source point satisfies a concrete transferred incidence bound. -/
+example :
+    (({(fun _ : Option (Fin 0) ↦ (0 : ℚ))} :
+      Finset (Option (Fin 0) → ℚ)).card : ℚ) ≤ 1 := by
+  let x : Option (Fin 0) → ℚ := fun _ ↦ 0
+  let S : Finset (Option (Fin 0) → ℚ) := {x}
+  let high : Empty → MvPolynomial (Fin 0) (Polynomial ℚ) := fun i ↦ nomatch i
+  let cuts : Fin 1 → MvPolynomial (Fin 0) (Polynomial ℚ) := fun _ ↦ 0
+  have hS : ∀ y ∈ S,
+      aeval y ((optionEquivRight ℚ (Fin 0)).symm momentIncidenceEquation) = 0 ∧
+      aeval y ((optionEquivRight ℚ (Fin 0)).symm
+        (1 : MvPolynomial (Fin 0) (Polynomial ℚ))) ≠ 0 ∧
+      (∀ i : Empty, aeval y ((optionEquivRight ℚ (Fin 0)).symm
+        (high i)) = 0) ∧
+      y ∉ (∅ : Set (Option (Fin 0) → ℚ)) := by
+    intro y hy
+    simp only [S, Finset.mem_singleton] at hy
+    subst y
+    refine ⟨?_, ?_, ?_, ?_⟩
+    · simp [x, momentIncidenceEquation]
+    · simp
+    · intro i
+      exact isEmptyElim i
+    · simp
+  have hA : ∀ y ∈ S,
+      1 ≤ {i : Fin 1 | aeval y
+        ((optionEquivRight ℚ (Fin 0)).symm (cuts i)) = 0}.ncard := by
+    intro y hy
+    simp [cuts]
+  have hbound := powerMomentMap_incidence_off_excluded (E := ℚ) (σ := Fin 0)
+    (ι := Empty) (D := 1) (M := 1) (d := 0) (initialDegree := 1) (B := 2)
+    (A := 1) (L := 1) (n := 1) (by norm_num)
+    (g := momentIncidenceEquation) (s := 1) momentIncidenceEquation_height
+    (coeffNatDegreeLE_C (by simp)) (by simp [momentIncidenceEquation]) (by simp)
+    (by simp [momentIncidenceEquation, totalDegree_C])
+    (high := high)
+    (by intro i; exact isEmptyElim i) (by intro i; exact isEmptyElim i)
+    cuts (by intro i; simp [cuts, CoeffNatDegreeLE]) (by intro i; simp [cuts])
+    (by simp) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (excluded := ∅)
+    (by
+      intro J hJ hsJ hgJ hhighJ hdim hcutsJ
+      have hX : (X none : MvPolynomial (Option (Fin 0)) ℚ) ∈ J := by
+        simpa [momentIncidenceEquation] using hgJ
+      have hdim' : (affineHilbertPolynomial J).natDegree ≤ 0 := by
+        have hbound := natDegree_affineHilbertPolynomial_le_of_mem
+          (X_ne_zero (none : Option (Fin 0))) hX
+        simpa using hbound
+      intro z hz
+      exfalso
+      omega)
+    S hS hA
+  norm_num [S] at hbound ⊢
