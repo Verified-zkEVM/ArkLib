@@ -53,7 +53,7 @@ example :
     let d := Nat.ceil (Real.exp (xi / δ))
     let m := Nat.ceil (100 * (d : ℝ) ^ 2 * harmonic (d - 1))
     let n := 8 * m
-    0 < n := by
+    2 * m - 1 < n ∧ d < max 1 (Nat.floor (δ * n / 2)) := by
   let δ : ℝ := 1 / 5
   let d := Nat.ceil (Real.exp (xi / δ))
   let m := Nat.ceil (100 * (d : ℝ) ^ 2 * harmonic (d - 1))
@@ -85,7 +85,9 @@ example :
     push_cast
     have hmR : (1 : ℝ) ≤ m := by exact_mod_cast (Nat.one_le_iff_ne_zero.mpr hm.ne')
     nlinarith
-  exact (prescribed_geometric_parameters δ n 1 hδ hδmax hblock hA).1
+  obtain ⟨_, _, _, _, hνn, hdK, _, _, _, _⟩ :=
+    prescribed_geometric_parameters δ n 1 hδ hδmax hblock hA
+  exact ⟨hνn, hdK⟩
 
 /-- At `δ = 1/4`, `n = 8m` and `k = m`, the positive-dimensional block bounds hold. -/
 example :
