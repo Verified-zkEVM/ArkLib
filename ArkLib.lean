@@ -796,6 +796,7 @@ public import ArkLib.ToMathlib.RingTheory.Ideal.HeightUnder
 public import ArkLib.ToMathlib.RingTheory.Ideal.MinimalPrime.Noetherian
 public import ArkLib.ToMathlib.RingTheory.Ideal.PrincipalCut
 public import ArkLib.ToMathlib.RingTheory.Ideal.Separator
+public import ArkLib.ToMathlib.RingTheory.Ideal.SurjectiveMap
 public import ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineDegree
 public import ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbert
 public import ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertAlgHom
