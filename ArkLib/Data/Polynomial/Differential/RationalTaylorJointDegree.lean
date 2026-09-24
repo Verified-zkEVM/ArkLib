@@ -263,7 +263,7 @@ theorem coeffNatDegreeLE_rationalTaylorNumeratorOver (center : F)
       have hd := CoeffNatDegreeLE.clearedSubstitution
         (initialJetSeparant (Polynomial.C center) Q)
         (fun i : Fin l ↦ rationalTaylorNumeratorOver F (Polynomial.C center) Q i.val)
-        (fun i ↦ 2 * (i.val - r) - 1) (2 * (l - r) - 2) h
+        (fun i ↦ 2 * (i.val - r) - 1) (2 * (l - r) - 2) h h
         ((optionEquivLeft (Polynomial F) (Fin l)
           (universalTaylorResidual l (Polynomial.C center) Q)).coeff (l - r))
         (coeffNatDegreeLE_initialJetSeparant Q center hQ)
