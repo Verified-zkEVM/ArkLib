@@ -9,18 +9,20 @@ public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Global.Mul
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.WeightedSupport
 
 /-!
-# Weighted support under coefficient specialization
+# Weighted support and agreement soundness under specialization
 
-Applying a coefficient homomorphism to a linear combination of eligible source monomials
-preserves its weighted support over the target coefficient field.
+Applying a coefficient homomorphism to an interpolant of eligible source monomials preserves its
+weighted support over the target field. If the interpolant also satisfies the local constraints,
+then every sufficiently agreeing bounded-degree polynomial has zero differential specialization.
 
 ## Main statements
 
 * `map_interpolant_mem_weightedSupportSpace`: challenge specialization preserves weighted support.
-* `differentialSpecialization_curve_interpolant_eq_zero_of_agreements`: weighted-support
-  interpolants satisfying local constraints vanish on sufficiently agreeing polynomials.
-* `differentialSpecialization_map_interpolant_eq_zero_of_degree_lt`: the received-line form for
-  polynomials of degree below `k`.
+* `differentialSpecialization_curve_interpolant_eq_zero_of_agreements`: the general agreement
+  soundness theorem for polynomial received data.
+* `differentialSpecialization_map_interpolant_eq_zero_of_agreements` and
+  `differentialSpecialization_map_interpolant_eq_zero_of_degree_lt`: the received-line statements,
+  including the degree-`< k` form.
 
 ## References
 
