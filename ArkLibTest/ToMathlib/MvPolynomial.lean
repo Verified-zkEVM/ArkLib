@@ -764,3 +764,13 @@ example :
       simpa only [support_X, Finset.mem_singleton] using hm
     rw [hm']
     simp [Finsupp.weight_single]
+
+/-- Flattening preserves a separate cap on a polynomial variable. -/
+example :
+    (optionEquivRight ℚ (Fin 1)).symm
+      (X (0 : Fin 1) ^ 2 : MvPolynomial (Fin 1) (Polynomial ℚ)) ∈
+    restrictCappedBidegree (Fin 1) ℚ 0 0 2 2 := by
+  exact optionEquivRight_symm_mem_restrictCappedBidegree
+    (R := ℚ) (σ := Fin 1) (i := 0) (a := 0) (b := 2) (c := 2)
+    (ha := by exact (coeffNatDegreeLE_X (R := ℚ) (σ := Fin 1) 0).pow 2)
+    (hb := by simp) (hc := by simp)
