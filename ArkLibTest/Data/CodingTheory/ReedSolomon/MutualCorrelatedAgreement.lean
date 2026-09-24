@@ -603,43 +603,6 @@ private theorem componentPointCut_mem : componentPointCut 0 ∈ componentPointId
 
 attribute [irreducible] componentPointIdeal
 
-private theorem componentFiniteAgreement
-    (P : Ideal (SourceRing 0 ComponentField)) (hP : P.IsPrime)
-    (hhigh : ∀ l : Fin 2, 1 ≤ l.val →
-      jointCommonTaylorNumerator (0 : ComponentField)
-        (componentEquation (E := ComponentField)) 2 l ∈ P)
-    (α : Fin 1 ↪ ComponentField) (f g : Fin 1 → ComponentField) (b : ℕ)
-    (hdeg : ∀ i, (jointTaylorAgreementEquation (0 : ComponentField)
-      (componentEquation (E := ComponentField)) 2 2 (Polynomial.C (α i))
-      (Polynomial.C (f i) + Polynomial.X * Polynomial.C (g i))).totalDegree ≤ b)
-    (excluded : Set (Option (Fin 1) → ComponentField))
-    (hterminal : ∀ J : Ideal (SourceRing 0 ComponentField), P ≤ J → J.IsPrime →
-      jointInitialJetSeparant (0 : ComponentField)
-        (componentEquation (E := ComponentField)) ∉ J →
-      0 < (affineHilbertPolynomial J).natDegree →
-      1 ≤ {i | jointTaylorAgreementEquation (0 : ComponentField)
-        (componentEquation (E := ComponentField)) 2 2 (Polynomial.C (α i))
-        (Polynomial.C (f i) + Polynomial.X * Polynomial.C (g i)) ∈ J}.ncard →
-      {x | x ∈ zeroLocus ComponentField J ∧
-        aeval x (jointInitialJetSeparant (0 : ComponentField)
-          (componentEquation (E := ComponentField))) ≠ 0} ⊆ excluded) :
-    let cuts : Fin 1 → SourceRing 0 ComponentField := fun i ↦
-      jointTaylorAgreementEquation (0 : ComponentField)
-        (componentEquation (E := ComponentField)) 2 2 (Polynomial.C (α i))
-        (Polynomial.C (f i) + Polynomial.X * Polynomial.C (g i))
-    let T := {x : Option (Fin 1) → ComponentField |
-      x ∈ zeroLocus ComponentField P ∧
-        aeval x (jointInitialJetSeparant (0 : ComponentField)
-          (componentEquation (E := ComponentField))) ≠ 0 ∧ x ∉ excluded ∧
-        1 ≤ {i | aeval x (cuts i) = 0}.ncard}
-    T.Finite ∧ (T.ncard : ℚ) ≤ affineDegree P *
-      hybridDimensionSensitiveIncidenceProduct 1 1 1 1 b (affineHilbertPolynomial P).natDegree := by
-  exact (finite_symbolicSource_agreementLocus_off_excluded_and_ncard_le_hybrid_of_exponent
-    (center := (0 : ComponentField)) (Q := componentEquation (E := ComponentField))
-    (K := 2) (k := 1) (n := 1) (τ := 2) (L := 1) (A := 1) (b := b)
-    (by intro l; omega) (by omega) (by omega) (by omega) (by omega)
-    P hP hhigh α f g hdeg excluded hterminal)
-
 private abbrev firstOrderChartEquation : DifferentialPolynomial ComponentField 1 :=
   MvPolynomial.X (Fin.last 1)
 
@@ -1068,8 +1031,12 @@ example :
     have hi : i = 0 := Subsingleton.elim _ _
     subst i
     exact Nat.le_refl _
-  have hfinite := componentFiniteAgreement P componentPointIdeal_isPrime
-    componentPointHigh α f g b hdeg ∅ (componentPointTerminal α f g)
+  have hfinite := finite_symbolicSource_agreementLocus_off_excluded_and_ncard_le_hybrid_of_exponent
+    (center := (0 : ComponentField)) (Q := componentEquation (E := ComponentField))
+    (K := 2) (k := 1) (n := 1) (τ := 2) (L := 1) (A := 1) (b := b)
+    (by intro l; omega) (by omega) (by omega) (by omega) (by omega)
+    P componentPointIdeal_isPrime componentPointHigh α f g hdeg ∅
+    (componentPointTerminal α f g)
   refine ⟨hfinite.1, hfinite.2, ?_⟩
   refine ⟨componentOrigin, ?_⟩
   have hzero : componentOrigin ∈ zeroLocus ComponentField P := by
@@ -1105,6 +1072,58 @@ example :
     rw [hset]
     simp
   exact ⟨hzero, hregular, by simp, by omega⟩
+
+private theorem component_powerBatchedAgreementCuts : ∀ i ∈ Finset.univ,
+    jointTaylorAgreementEquation (r := 0) (0 : ComponentField)
+      (componentEquation (E := ComponentField)) 2 2
+      (Polynomial.C ((algebraMap ℚ ComponentField) (domain i)))
+      (powerBatchedCoordinate
+        (fun _ : Fin 2 ↦ (algebraMap ℚ ComponentField) (componentWord i))) ∈
+        componentIdeal := by
+  intro i hi
+  have hbatch : powerBatchedCoordinate
+      (fun _ : Fin 2 ↦ (algebraMap ℚ ComponentField) (componentWord i)) = 0 := by
+    rw [powerBatchedCoordinate_eq_zero_iff]
+    funext t
+    simp [componentWord]
+  have hreceived :
+      Polynomial.C ((algebraMap ℚ ComponentField) (componentWord i)) +
+        Polynomial.X * Polynomial.C
+          ((algebraMap ℚ ComponentField) (componentWord i)) = 0 := by
+    simp [componentWord]
+  have hpair := component_agreementCuts i hi
+  rw [hreceived] at hpair
+  rw [hbatch]
+  exact hpair
+
+/-- A positive-dimensional prime component determines one base-field tuple whose graph contains
+its regular points, with nonzero restricted separant. -/
+example :
+    ∃ P : Fin 2 → ℚ[X], (∀ t, (P t).degree < 1) ∧
+      (∀ i ∈ Finset.univ, ∀ t, (P t).eval (domain i) = componentWord i) ∧
+      (∀ x ∈ {x | x ∈ zeroLocus ComponentField
+          (componentIdeal (E := ComponentField)) ∧
+        aeval x (jointInitialJetSeparant (r := 0) (0 : ComponentField)
+              (componentEquation (E := ComponentField))) ≠ 0},
+        x = fun i ↦ (powerBatchedJetGraphMap (r := 0) 0
+          (fun t ↦ (P t).map (algebraMap ℚ ComponentField)) i).eval (x none)) ∧
+      aeval (powerBatchedJetGraphMap (r := 0) 0
+        (fun t ↦ (P t).map (algebraMap ℚ ComponentField)))
+        (jointInitialJetSeparant (r := 0) (0 : ComponentField)
+          (componentEquation (E := ComponentField))) ≠ 0 := by
+  have hprime : (componentIdeal (E := ComponentField)).IsPrime := componentIdeal_isPrime
+  obtain ⟨P, hP, hsample, hgraph, -, -, hsep⟩ :=
+    exists_polynomialGraph_of_primeTaylorComponent (domain := domain)
+      (w := fun _ : Fin 2 ↦ fun i ↦ componentWord i)
+      (sample := Finset.univ) (hsample := by simp)
+      (φ := algebraMap ℚ ComponentField) (center := 0)
+      (Q := componentEquation (E := ComponentField)) (hK := by omega) (τ := 2)
+      (hτ := by intro l; fin_cases l <;> omega)
+      (I := componentIdeal (E := ComponentField)) (hsep := component_separant_notMem)
+      (hdim := componentIdeal_degree_pos) (hhigh := component_highCuts)
+      (hcuts := component_powerBatchedAgreementCuts)
+  exact ⟨P, hP, hsample, hgraph, hsep⟩
+
 end
 
 end ReedSolomon.GraphLineComponentTest

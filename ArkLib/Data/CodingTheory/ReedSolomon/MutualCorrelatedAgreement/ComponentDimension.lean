@@ -334,83 +334,6 @@ theorem fixedCoefficientEvaluation_mem_ker_chartCoefficientMap_of_exponent
   simp only [map_mul, map_pow, hC, hX]
   exact sub_eq_zero.mpr (by simpa only [L] using hlocalized)
 
-private theorem natDegree_affineHilbertPolynomial_le_of_awayRange
-    {E σ κ : Type*} [Field E] [Finite σ] [Finite κ]
-    (P : Ideal (MvPolynomial σ E)) (s : MvPolynomial σ E)
-    (hregular : IsLeftRegular (Ideal.Quotient.mk P s))
-    (Φ : MvPolynomial κ E →ₐ[E] Localization.Away (Ideal.Quotient.mk P s))
-    (hrange : ∀ p : MvPolynomial σ E,
-      algebraMap (MvPolynomial σ E ⧸ P) (Localization.Away (Ideal.Quotient.mk P s))
-        (Ideal.Quotient.mk P p) ∈ Set.range Φ)
-    {d : ℕ}
-    (hbound : (affineHilbertPolynomial (RingHom.ker Φ.toRingHom)).natDegree ≤ d) :
-    (affineHilbertPolynomial P).natDegree ≤ d := by
-  classical
-  let J := RingHom.ker Φ.toRingHom
-  let L := Localization.Away (Ideal.Quotient.mk P s)
-  obtain ⟨t, ht⟩ := hrange s
-  let qΦ : (MvPolynomial κ E ⧸ J) →ₐ[E] L :=
-    Ideal.Quotient.liftₐ J Φ fun p hp ↦ hp
-  have hqt : qΦ (Ideal.Quotient.mk J t) =
-      algebraMap (MvPolynomial σ E ⧸ P) L (Ideal.Quotient.mk P s) := by
-    rw [show qΦ (Ideal.Quotient.mk J t) = Φ t by rfl]
-    exact ht
-  have hqtUnit : IsUnit (qΦ (Ideal.Quotient.mk J t)) := by
-    apply isUnit_iff_exists_inv.mpr
-    refine ⟨IsLocalization.Away.invSelf (Ideal.Quotient.mk P s), ?_⟩
-    rw [hqt]
-    exact IsLocalization.Away.mul_invSelf (S := L) (Ideal.Quotient.mk P s)
-  let gRing : Localization.Away (Ideal.Quotient.mk J t) →+* L :=
-    IsLocalization.Away.lift (g := qΦ.toRingHom) (Ideal.Quotient.mk J t) hqtUnit
-  let locMap : Localization.Away (Ideal.Quotient.mk J t) →ₐ[E] L :=
-    { toRingHom := gRing
-      commutes' := by
-        intro a
-        change gRing (algebraMap E (Localization.Away (Ideal.Quotient.mk J t)) a) =
-          algebraMap E L a
-        rw [IsScalarTower.algebraMap_apply E (MvPolynomial κ E ⧸ J)
-          (Localization.Away (Ideal.Quotient.mk J t))]
-        rw [show gRing (algebraMap (MvPolynomial κ E ⧸ J)
-          (Localization.Away (Ideal.Quotient.mk J t))
-          (algebraMap E (MvPolynomial κ E ⧸ J) a)) =
-            qΦ (algebraMap E (MvPolynomial κ E ⧸ J) a) by
-          exact IsLocalization.Away.lift_eq
-            (S := Localization.Away (Ideal.Quotient.mk J t))
-            (g := qΦ.toRingHom) (Ideal.Quotient.mk J t) hqtUnit _]
-        exact qΦ.commutes a }
-  have hlocMap : Function.Surjective locMap := by
-    intro z
-    obtain ⟨m, a, hza⟩ := IsLocalization.Away.surj (Ideal.Quotient.mk P s) z
-    obtain ⟨a, rfl⟩ := Ideal.Quotient.mk_surjective a
-    obtain ⟨p, hp⟩ := hrange a
-    let x : Localization.Away (Ideal.Quotient.mk J t) :=
-      Localization.mk (Ideal.Quotient.mk J p) ⟨Ideal.Quotient.mk J t ^ m, m, rfl⟩
-    refine ⟨x, ?_⟩
-    have hbase :
-        algebraMap (MvPolynomial σ E ⧸ P) L (Ideal.Quotient.mk P s) *
-          IsLocalization.Away.invSelf (Ideal.Quotient.mk P s) = 1 :=
-      IsLocalization.Away.mul_invSelf (S := L) (Ideal.Quotient.mk P s)
-    have hz : algebraMap (MvPolynomial σ E ⧸ P) L (Ideal.Quotient.mk P a) *
-        IsLocalization.Away.invSelf (Ideal.Quotient.mk P s) ^ m = z := by
-      have h := congrArg
-        (fun q : L ↦ q * IsLocalization.Away.invSelf (Ideal.Quotient.mk P s) ^ m) hza
-      simpa only [← mul_pow, hbase, one_pow, mul_one, mul_assoc] using h.symm
-    have hqbase : qΦ (Ideal.Quotient.mk J t) *
-        IsLocalization.Away.invSelf (Ideal.Quotient.mk P s) = 1 := by
-      rw [hqt]
-      exact hbase
-    change gRing x = z
-    rw [show gRing x = qΦ (Ideal.Quotient.mk J p) *
-        IsLocalization.Away.invSelf (Ideal.Quotient.mk P s) ^ m by
-      dsimp only [gRing, x]
-      exact Localization.awayLift_mk qΦ.toRingHom (Ideal.Quotient.mk J t)
-        (Ideal.Quotient.mk J p) (IsLocalization.Away.invSelf (Ideal.Quotient.mk P s))
-          hqbase m]
-    rw [show qΦ (Ideal.Quotient.mk J p) = Φ p by rfl, hp]
-    exact hz
-  exact (natDegree_affineHilbertPolynomial_le_of_surjective_away_away
-    hregular locMap hlocMap).trans hbound
-
 /-- A retained fixed Taylor-chart prime containing `c` distinct agreement cuts has dimension at
 most `k-c`.  The proof reuses the ordinary Vandermonde quotient bound and the generic
 localization comparison used by the source-coordinate theorem. -/
@@ -442,7 +365,7 @@ theorem chart_prime_affineHilbertPolynomial_natDegree_le_of_agreements_of_expone
   have hregular : IsLeftRegular (Ideal.Quotient.mk P s) := by
     rw [isLeftRegular_iff_isRegular]
     exact isRegular_iff_ne_zero.mpr hs0
-  exact natDegree_affineHilbertPolynomial_le_of_awayRange P s hregular Φ
+  exact natDegree_affineHilbertPolynomial_le_of_away_range P s hregular Φ
     (chartCoordinate_mem_range_chartCoefficientMap_of_exponent
       center Q K k τ hτ hK hkK P hP hs hhigh) hJdim
 
@@ -480,7 +403,7 @@ theorem chart_dimensionSensitive_component_of_exponent
       exact hs (Ideal.Quotient.eq_zero_iff_mem.mp hz))
   have hdegree : (affineHilbertPolynomial P).natDegree ≤
       (affineHilbertPolynomial J).natDegree :=
-    natDegree_affineHilbertPolynomial_le_of_awayRange P s hregular Φ
+    natDegree_affineHilbertPolynomial_le_of_away_range P s hregular Φ
       (chartCoordinate_mem_range_chartCoefficientMap_of_exponent
         center Q K k τ hτ hK hkK P hP hs hhigh) le_rfl
   have hJdim : 0 < (affineHilbertPolynomial J).natDegree := by omega
@@ -910,7 +833,7 @@ theorem
   have hregular : IsLeftRegular (Ideal.Quotient.mk P s) := by
     rw [isLeftRegular_iff_isRegular]
     exact isRegular_iff_ne_zero.mpr hs0
-  exact natDegree_affineHilbertPolynomial_le_of_awayRange P s hregular Φ
+  exact natDegree_affineHilbertPolynomial_le_of_away_range P s hregular Φ
     (sourceCoordinate_mem_range_sourceCoefficientMap_of_exponent
       center Q K k τ hτ hK hkK P hP hs hhigh) hJdim
 
@@ -967,7 +890,7 @@ theorem symbolicSourcePolynomial_dimensionSensitive_component_of_exponent
     exact hs (Ideal.Quotient.eq_zero_iff_mem.mp hz)
   have hdegree : (affineHilbertPolynomial P).natDegree ≤
       (affineHilbertPolynomial J).natDegree :=
-    natDegree_affineHilbertPolynomial_le_of_awayRange P s hregular Φ
+    natDegree_affineHilbertPolynomial_le_of_away_range P s hregular Φ
       (sourceCoordinate_mem_range_sourceCoefficientMap_of_exponent
         center Q K k τ hτ hK hkK P hP hs hhigh) le_rfl
   let α0 : Fin 0 ↪ E := ⟨Fin.elim0, fun i ↦ Fin.elim0 i⟩
