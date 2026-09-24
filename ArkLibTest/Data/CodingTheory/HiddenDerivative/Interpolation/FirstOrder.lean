@@ -471,3 +471,20 @@ example :
   exact ⟨i, j, hweight,
     firstOrderCurveGradedFinMatrix_eq_zero_of_weight_lt
       1 2 2 0 1 1 1 (fun _ ↦ (0 : ℚ)) (fun _ ↦ (Polynomial.X : ℚ[X])) i j hweight⟩
+
+/-- A concrete shifted surplus gives a symbolic certificate for received lines. -/
+example :
+    ∃ centers : Fin 2 ↪ ZMod 5,
+      Nonempty (FirstOrderSymbolicCertificate (F := ZMod 5) 1 2 2 0 1 1 1 centers
+        (fun _ ↦ 0) (fun _ ↦ 0)
+        (firstOrderColumns (D := 1) (A := 2) (m := 2) (M := 0) (μ := 1))) := by
+  let centers : Fin 2 ↪ ZMod 5 := ⟨fun i ↦ i.val, by
+    intro i j hij
+    fin_cases i <;> fin_cases j <;> simp_all⟩
+  refine ⟨centers, ?_⟩
+  have hheight : firstOrderCurveShiftedRowSlotBound 1 2 2 0 1 2 1 1 <
+      firstOrderCurveShiftedHeightSlotCount 1 2 2 0 1 1 1 := by decide
+  exact exists_finite_firstOrder_symbolic_certificate_of_heightSlotCount
+    (F := ZMod 5) (D := 1) (A := 2) (m := 2) (M := 0) (μ := 1) (k := 1) (h := 1)
+    (n := 2) (by decide) (by norm_num) (by norm_num) centers (fun _ ↦ 0) (fun _ ↦ 0)
+    hheight

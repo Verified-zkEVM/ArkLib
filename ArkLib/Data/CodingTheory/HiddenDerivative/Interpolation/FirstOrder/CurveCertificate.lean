@@ -16,7 +16,9 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Global.Multiplici
 This module packages primitive first-order differential equations supported in the finite
 first-order space, with local constraints and specialization soundness along received polynomial
 curves. A strict surplus of shifted coefficient slots over the numerical row bound constructs
-such a certificate for the canonical enumeration of the support.
+such a certificate for the canonical enumeration of the support. Received lines also give
+symbolic certificates whose specialization soundness is stated directly for affine combinations
+of two received words.
 
 ## Main statements
 
@@ -24,6 +26,8 @@ such a certificate for the canonical enumeration of the support.
   specialization soundness along a received polynomial curve.
 * `exists_finite_firstOrder_curve_certificate_of_heightSlotCount`: a strict shifted-slot surplus
   constructs a certificate with bounded coefficient degree.
+* `exists_finite_firstOrder_symbolic_certificate_of_heightSlotCount`: a strict shifted-slot
+  surplus for a received line constructs a symbolic certificate.
 
 ## References
 
@@ -130,6 +134,42 @@ theorem exists_finite_firstOrder_curve_certificate_of_heightSlotCount
   exact differentialSpecialization_eq_zero_of_differentialWeightedDegree_lt
     (fun i ↦ ι (centers i)) (fun i ↦ (w i).eval₂ ι z) indices hweight
     (fun i _ ↦ hconstraintsE i) P hPnat hcenters hcard hagreements
+
+/-- A strict shifted-slot surplus for a received line gives a symbolic first-order certificate. -/
+theorem exists_finite_firstOrder_symbolic_certificate_of_heightSlotCount
+    {D A m M μ k h n : ℕ}
+    (hD : 0 < D) (hbudget : 0 < m * A) (hkD : k ≤ D + 1)
+    (centers : Fin n ↪ F) (f g : Fin n → F)
+    (hheight : firstOrderCurveShiftedRowSlotBound D A m M μ n 1 h <
+      firstOrderCurveShiftedHeightSlotCount D A m M μ 1 h) :
+    Nonempty (FirstOrderSymbolicCertificate (F := F) D A m M μ k h centers f g
+      (firstOrderColumns (D := D) (A := A) (m := m) (M := M) (μ := μ))) := by
+  let w : Fin n → F[X] := fun i ↦ receivedLine (f i) (g i)
+  obtain ⟨cert⟩ := exists_finite_firstOrder_curve_certificate_of_heightSlotCount
+    1 (Nat.zero_lt_of_lt hD) hbudget hkD centers w
+      (fun i ↦ natDegree_receivedLine_le (f i) (g i)) hheight
+  refine ⟨{
+    coefficients := cert.coefficients
+    Q := cert.Q
+    eq_interpolant := cert.eq_interpolant
+    primitiveCoefficients := cert.primitiveCoefficients
+    challengeDegree_le := cert.challengeDegree_le
+    support := cert.support
+    firstJetDegree_le := cert.firstJetDegree_le
+    totalJetDegree_le := cert.totalJetDegree_le
+    localConstraints := cert.localConstraints
+    specialization_sound := ?_ }⟩
+  intro E _ ι z
+  obtain ⟨hnonzero, hsound⟩ := cert.specialization_sound ι z
+  refine ⟨hnonzero, ?_⟩
+  intro indices P hPdegree hcard hagreements
+  apply hsound indices P hPdegree hcard
+  intro i hi
+  rw [hagreements i hi]
+  change ι (f i) + z * ι (g i) =
+    Polynomial.eval₂ ι z (receivedLine (f i) (g i))
+  simp only [receivedLine, Polynomial.eval₂_add, Polynomial.eval₂_C,
+    Polynomial.eval₂_mul, Polynomial.eval₂_X]
 
 end
 
