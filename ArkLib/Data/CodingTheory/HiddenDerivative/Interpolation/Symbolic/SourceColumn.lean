@@ -21,6 +21,8 @@ ring homomorphism applied to the interpolant is applied to the coefficient vecto
 ## Main statements
 
 * `SourceColumn.exponent_injective`: distinct columns have distinct exponents.
+* `SourceColumn.enumerate` and its exponent, injectivity, and membership lemmas: source columns
+  enumerated from a finite set of exponent vectors.
 * `SourceColumn.totalJetDegree_exponent`: the total jet degree of a column is
   `y₀ + ∑_j higher j`.
 * `SourceColumn.polynomial_eq_sourceMonomial`: a column's monomial is the source monomial.
@@ -145,6 +147,34 @@ theorem exponent_ofExponent (u : JetVariable d →₀ ℕ) :
           intro k hkj
           simp [hkj]
         _ = u (some j.succ) := by simp
+
+/-- Enumerate a finite set of exponent vectors as source columns. -/
+def enumerate (s : Finset (JetVariable d →₀ ℕ)) :
+    Fin (Fintype.card (↑s)) → SourceColumn d :=
+  fun i => SourceColumn.ofExponent ((Fintype.equivFin (↑s)).symm i).1
+
+/-- The exponent of an enumerated source column is its indexed exponent vector. -/
+@[simp]
+theorem exponent_enumerate (s : Finset (JetVariable d →₀ ℕ))
+    (i : Fin (Fintype.card (↑s))) :
+    (enumerate s i).exponent = ((Fintype.equivFin (↑s)).symm i).1 := by
+  simp [enumerate]
+
+/-- Distinct indices enumerate distinct source columns. -/
+theorem enumerate_injective (s : Finset (JetVariable d →₀ ℕ)) :
+    Function.Injective (enumerate s) := by
+  intro i j hij
+  apply (Fintype.equivFin (↑s)).symm.injective
+  apply Subtype.ext
+  rw [← exponent_enumerate s i, ← exponent_enumerate s j]
+  exact congrArg SourceColumn.exponent hij
+
+/-- Every enumerated source column has an exponent in the finite set. -/
+theorem exponent_enumerate_mem (s : Finset (JetVariable d →₀ ℕ))
+    (i : Fin (Fintype.card (↑s))) :
+    (enumerate s i).exponent ∈ s := by
+  rw [exponent_enumerate]
+  exact ((Fintype.equivFin (↑s)).symm i).2
 
 variable {R : Type*} [CommSemiring R]
 

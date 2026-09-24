@@ -137,23 +137,60 @@ theorem prescribedBlockBounds (δ : ℝ) (n k : ℕ) (hδ : 0 < δ) (hδmax : δ
   have hblockR : 8 * (⌈100 * (d : ℝ) ^ 2 * H⌉₊ : ℝ) ≤ n := by exact_mod_cast hblock
   have hdR : (48000 : ℝ) ≤ d := by exact_mod_cast hd
   have hδn : 2160 * (d : ℝ) ^ 2 ≤ δ * n := by
-    have h1 := mul_le_mul_of_nonneg_left hsize hδ.le
     have h2 := mul_le_mul_of_nonneg_left hblockR hδ.le
     have h3 := mul_le_mul_of_nonneg_left hδH (by positivity : (0 : ℝ) ≤ 800 * (d : ℝ) ^ 2)
     norm_num [xi] at h3
-    nlinarith
+    ring_nf at h3
+    have h3' : 2160 * (d : ℝ) ^ 2 ≤ 800 * δ * (d : ℝ) ^ 2 * H := by
+      simpa [mul_assoc, mul_left_comm, mul_comm] using h3
+    have h1' : 800 * δ * (d : ℝ) ^ 2 * H ≤ 8 * δ * ⌈100 * (d : ℝ) ^ 2 * H⌉₊ := by
+      calc
+        _ = 8 * δ * (100 * (d : ℝ) ^ 2 * H) := by ring
+        _ ≤ 8 * δ * ⌈100 * (d : ℝ) ^ 2 * H⌉₊ :=
+          mul_le_mul_of_nonneg_left hsize (by positivity)
+    have h2' : 8 * δ * ⌈100 * (d : ℝ) ^ 2 * H⌉₊ ≤ δ * n := by
+      calc
+        _ = δ * (8 * ⌈100 * (d : ℝ) ^ 2 * H⌉₊) := by ring
+        _ ≤ δ * n := h2
+    exact h3'.trans (h1'.trans h2')
+  have hδlarge : 12 ≤ δ * n := by
+    have hdge1 : (1 : ℝ) ≤ d := le_trans (by norm_num) hdR
+    have hdSq : (1 : ℝ) ≤ (d : ℝ) ^ 2 := one_le_pow₀ hdge1
+    have hlarge : 12 ≤ 2160 * (d : ℝ) ^ 2 := by
+      calc
+        12 ≤ (2160 : ℝ) := by norm_num
+        _ = (2160 : ℝ) * 1 := by ring
+        _ ≤ 2160 * (d : ℝ) ^ 2 := mul_le_mul_of_nonneg_left hdSq (by norm_num)
+    exact hlarge.trans hδn
   obtain ⟨hn, hDlow, hlo, hhi, hK⟩ :=
-    blockDegree_bounds (δ := δ) (n := n) (k := k) (by linarith) (by nlinarith) hA
+    blockDegree_bounds (δ := δ) (n := n) (k := k)
+      (hδmax.trans (by norm_num : (1 : ℝ) / 4 ≤ 2 / 3)) hδlarge hA
   have hnR : (0 : ℝ) < n := by exact_mod_cast hn
   have hdD : (d : ℝ) < D := by
-    have : (d : ℝ) < δ * n / 3 := by nlinarith
+    have hdpos : (0 : ℝ) < d := lt_of_lt_of_le (by norm_num) hdR
+    have h720d : (1 : ℝ) < 720 * d := by
+      have hlarge : (1 : ℝ) < 720 * 48000 := by norm_num
+      have hmul := mul_le_mul_of_nonneg_left hdR (by norm_num : (0 : ℝ) ≤ 720)
+      exact lt_of_lt_of_le hlarge hmul
+    have hdstep : (d : ℝ) < 720 * (d : ℝ) ^ 2 := by
+      calc
+        (d : ℝ) = 1 * d := by ring
+        _ < (720 * d) * d := mul_lt_mul_of_pos_right h720d hdpos
+        _ = 720 * d ^ 2 := by ring
+    have : (d : ℝ) < δ * n / 3 := by nlinarith only [hdstep, hδn]
     exact this.trans_le hDlow
   have hcut := blockDegree_mul_one_add_rateGap_le δ n k
   dsimp only at hcut
   refine ⟨hn, ?_, by exact_mod_cast hdD, hlo, hhi, ?_, by simpa only [A, Nat.cast_add] using hcut⟩
   · have : (0 : ℝ) < D := (by positivity : (0 : ℝ) ≤ d).trans_lt hdD
     exact_mod_cast this
-  · have : (K : ℝ) ≤ n := hK.trans (by nlinarith)
-    exact_mod_cast this
+  · have hKupper : (1 - δ) * n ≤ (1 : ℝ) * n :=
+      mul_le_mul_of_nonneg_right (by linarith) (Nat.cast_nonneg n)
+    have hKreal : (K : ℝ) ≤ n := by
+      calc
+        (K : ℝ) ≤ (1 - δ) * n := hK
+        _ ≤ (1 : ℝ) * n := hKupper
+        _ = n := by ring
+    exact_mod_cast hKreal
 
 end ReedSolomon.HiddenDerivative.WeightedSupportParameters

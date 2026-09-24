@@ -173,7 +173,8 @@ private theorem lt_affine_moment_of_bounds
       apply (div_lt_iff₀ hD0).2
       linarith
     nlinarith
-  have hHsq : H ^ 2 < (L + 29 / 50) ^ 2 := by nlinarith
+  have hHsq : H ^ 2 < (L + 29 / 50) ^ 2 :=
+    (sq_lt_sq₀ hH ht.le).2 hHu
   have hHterm : D ^ 2 * H ^ 2 / ((D + 1) ^ 2 * (D + 2)) ≤ (L + 29 / 50) ^ 2 / D := by
     have hcoefH0 : 0 ≤ D ^ 2 / ((D + 1) ^ 2 * (D + 2)) := by positivity
     calc
@@ -198,7 +199,7 @@ private theorem lt_affine_moment_of_bounds
           (D ^ 2 * ((H ^ 2 + Q) / ((D + 1) * (D + 2))) - (D * H / (D + 1)) ^ 2) := by ring
   rw [hdecomp]
   ring_nf at hbias hvariance ⊢
-  nlinarith
+  linarith
 
 /-! ### Moments on the weighted simplex -/
 

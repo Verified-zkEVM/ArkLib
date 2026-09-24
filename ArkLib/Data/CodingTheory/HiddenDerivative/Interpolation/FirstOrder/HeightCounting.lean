@@ -135,8 +135,7 @@ theorem firstOrder_rowTotal_mul_height_lt_heightSlotCount (hD : 0 < D)
 /-- Enumerate every first-order support exponent as a symbolic source column. -/
 def firstOrderColumns :
     Fin (Fintype.card ↑(firstOrderExponents D A m M μ)) → SourceColumn 1 :=
-  fun j ↦ SourceColumn.ofExponent
-    (((Fintype.equivFin ↑(firstOrderExponents D A m M μ)).symm j).1)
+  SourceColumn.enumerate (firstOrderExponents D A m M μ)
 
 /-- The exponent of each enumerated column is its indexed first-order support exponent. -/
 @[simp]
@@ -144,27 +143,19 @@ theorem firstOrderColumns_exponent
     (j : Fin (Fintype.card ↑(firstOrderExponents D A m M μ))) :
     (firstOrderColumns (D := D) (A := A) (m := m) (M := M) (μ := μ) j).exponent =
       ((Fintype.equivFin ↑(firstOrderExponents D A m M μ)).symm j).1 := by
-  simp [firstOrderColumns]
+  exact SourceColumn.exponent_enumerate _ _
 
 /-- Distinct indices enumerate distinct first-order source columns. -/
 theorem firstOrderColumns_injective :
     Function.Injective (firstOrderColumns (D := D) (A := A) (m := m) (M := M) (μ := μ)) := by
-  intro i j hij
-  have hExp : ((Fintype.equivFin ↑(firstOrderExponents D A m M μ)).symm i).1 =
-      ((Fintype.equivFin ↑(firstOrderExponents D A m M μ)).symm j).1 := by
-    rw [← firstOrderColumns_exponent i, ← firstOrderColumns_exponent j]
-    exact congrArg SourceColumn.exponent hij
-  have hEq : (Fintype.equivFin ↑(firstOrderExponents D A m M μ)).symm i =
-      (Fintype.equivFin ↑(firstOrderExponents D A m M μ)).symm j := Subtype.ext hExp
-  exact (Fintype.equivFin ↑(firstOrderExponents D A m M μ)).symm.injective hEq
+  exact SourceColumn.enumerate_injective _
 
 /-- Each enumerated column has an eligible first-order exponent. -/
 theorem firstOrderColumns_eligible
     (j : Fin (Fintype.card ↑(firstOrderExponents D A m M μ))) :
     (firstOrderColumns (D := D) (A := A) (m := m) (M := M) (μ := μ) j).exponent ∈
       firstOrderExponents D A m M μ := by
-  rw [firstOrderColumns_exponent]
-  exact ((Fintype.equivFin ↑(firstOrderExponents D A m M μ)).symm j).2
+  exact SourceColumn.exponent_enumerate_mem _ _
 
 end
 
