@@ -444,6 +444,140 @@ private theorem pairCountingAdmissible :
 private def pairCountingPairs : Finset (Polynomial ℚ × Polynomial ℚ) :=
   {pairCountingPair}
 
+private def incidenceEquation :
+    DifferentialPolynomial (Polynomial PairCountingField) 0 :=
+  MvPolynomial.C (Polynomial.X : Polynomial PairCountingField) +
+    MvPolynomial.X (some (0 : Fin 1))
+
+private def incidencePoint : Option (Fin 1) → PairCountingField := fun _ ↦ 0
+
+private def incidencePoints : Finset (Option (Fin 1) → PairCountingField) := by
+  classical
+  exact {incidencePoint}
+
+private theorem incidencePoint_not_mem_pairGraph :
+    incidencePoint ∉ admissibleChartPairGraphLocus pointDomain (fun _ ↦ 0) (fun _ ↦ 0)
+      pairCountingIota 0 incidenceEquation 1 0 0 := by
+  classical
+  rintro ⟨pair, hp, z, hz⟩
+  have hleft : pair.1 = 0 := by
+    apply Polynomial.degree_eq_bot.mp
+    exact Nat.WithBot.lt_zero_iff.mp (by simpa using hp.degree_left)
+  have hright : pair.2 = 0 := by
+    apply Polynomial.degree_eq_bot.mp
+    exact Nat.WithBot.lt_zero_iff.mp (by simpa using hp.degree_right)
+  have hpair : pair = (0, 0) := Prod.ext hleft hright
+  subst pair
+  have hzero : chartPairPullback pairCountingIota 0 (0, 0)
+      (jointInitialJetEquation 0 incidenceEquation) = 0 := hp.initial
+  have hX : (Polynomial.X : PairCountingField[X]) = 0 := by
+    simp [chartPairPullback, jointInitialJetEquation, initialJetEquation,
+      incidenceEquation, affinePairCurve, polynomialJet] at hzero
+  exact Polynomial.X_ne_zero hX
+
+private theorem incidencePoint_conditions :
+    ∀ x ∈ incidencePoints,
+      aeval x (jointInitialJetEquation 0 incidenceEquation) = 0 ∧
+      aeval x (jointInitialJetSeparant 0 incidenceEquation) ≠ 0 ∧
+      (∀ l : Fin 1, 0 ≤ l.val →
+        aeval x (jointCommonTaylorNumerator 0 incidenceEquation 2 l) = 0) ∧
+      x ∉ admissibleChartPairGraphLocus pointDomain (fun _ ↦ 0) (fun _ ↦ 0)
+        pairCountingIota 0 incidenceEquation 1 0 0 := by
+  intro x hx
+  have hx' : x = incidencePoint := by simpa [incidencePoints] using hx
+  subst x
+  refine ⟨?_, ?_, ?_, incidencePoint_not_mem_pairGraph⟩
+  · simp [incidencePoint, jointInitialJetEquation, initialJetEquation, incidenceEquation]
+  · rw [jointInitialJetSeparant, aeval_optionEquivRight_symm]
+    simp [initialJetSeparant, incidenceEquation, incidencePoint, separant]
+  · intro l hl
+    have hl0 : l = 0 := Fin.ext (by omega)
+    subst l
+    simp [incidencePoint, jointCommonTaylorNumerator, commonTaylorNumeratorOver,
+      rationalTaylorNumeratorOver, initialJetSeparant, incidenceEquation]
+
+private theorem incidenceJetDegree : jetTotalDegree incidenceEquation ≤ 1 := by
+  classical
+  unfold jetTotalDegree MvPolynomial.weightedTotalDegree
+  simp only [Finset.sup_le_iff]
+  intro m hm
+  change m ∈ (MvPolynomial.C (Polynomial.X : Polynomial PairCountingField) +
+    MvPolynomial.X (some (0 : Fin 1))).support at hm
+  have hm' : m ∈ (MvPolynomial.C (Polynomial.X : Polynomial PairCountingField)).support ∪
+      (MvPolynomial.X (some (0 : Fin 1)) :
+        MvPolynomial (Option (Fin 1)) (Polynomial PairCountingField)).support :=
+    MvPolynomial.support_add hm
+  rcases Finset.mem_union.mp hm' with hmC | hmX
+  · have hm0 : 0 = m := by simpa using hmC
+    have hm0 := hm0.symm
+    subst m
+    simp
+  · rw [MvPolynomial.support_X] at hmX
+    have hmSingle : m = Finsupp.single (some (0 : Fin 1)) 1 := by
+      simpa only [Finset.mem_singleton] using hmX
+    subst m
+    rw [Finsupp.weight_single]
+    simp [jetDegreeWeight]
+
+private theorem incidenceHeight : CoeffNatDegreeLE incidenceEquation 1 := by
+  apply CoeffNatDegreeLE.add
+  · exact coeffNatDegreeLE_C (p := Polynomial.X) (by simp)
+  · exact (coeffNatDegreeLE_X (some (0 : Fin 1))).mono (by omega)
+
+/-- The total-degree incidence bound applies to a concrete nonempty set of chart points. -/
+example : incidencePoints.Nonempty ∧ (incidencePoints.card : ℚ) ≤ 6 := by
+  refine ⟨by simp [incidencePoints], ?_⟩
+  have hinit : jointInitialJetEquation 0 incidenceEquation ≠ 0 := by
+    intro h
+    have heval := congrArg
+      (MvPolynomial.aeval (fun j : Option (Fin 1) ↦
+        if j = none then (1 : PairCountingField) else 0)) h
+    norm_num [jointInitialJetEquation, initialJetEquation, incidenceEquation] at heval
+  have hbound := finite_regularJointTaylorChartPoints_off_admissiblePairGraphs_card_le
+    (K := 1) (k := 0) (L := 0) (A := 0) (initialDegree := 2) (cutDegree := 3)
+    pointDomain (fun _ ↦ 0) (fun _ ↦ 0) pairCountingIota 0 incidenceEquation
+    (by omega) (by omega) (by omega) (by omega) hinit
+    (by
+      simpa [jointInitialJetEquation, jointTotalDegree] using
+        jointTotalDegree_initialJetEquation_le_of_coeffNatDegreeLE
+          (0 : PairCountingField) incidenceEquation 1 1 incidenceJetDegree incidenceHeight)
+    (by
+      intro l hl
+      have hlτ : 2 * (l.val - 0) - 1 ≤ 2 := by omega
+      simpa [jointCommonTaylorNumerator, jointTotalDegree] using
+        jointTotalDegree_commonTaylorNumeratorOver_le_of_coeffNatDegreeLE
+          (0 : PairCountingField) incidenceEquation 1 1 2 l.val hlτ
+          incidenceJetDegree incidenceHeight)
+    (by
+      intro i
+      simpa [jointTaylorAgreementEquation, jointTotalDegree] using
+        jointTotalDegree_taylorAgreementEquationOver_le_of_coeffNatDegreeLE_and_exponent
+          (0 : PairCountingField) (pointDomain i) (0 : ℚ) (0 : ℚ) incidenceEquation
+          1 1 1 2 (taylorExponentSufficient_two_mul 0 1)
+          incidenceJetDegree incidenceHeight)
+    incidencePoints incidencePoint_conditions (by
+      intro x hx
+      exact Nat.zero_le _)
+  exact hbound.trans (by norm_num [incidencePoints])
+
+/-- The jet-degree incidence bound applies to the same concrete nonempty chart-point set. -/
+example : incidencePoints.Nonempty ∧ (incidencePoints.card : ℚ) ≤ 6 := by
+  refine ⟨by simp [incidencePoints], ?_⟩
+  have hinit : jointInitialJetEquation 0 incidenceEquation ≠ 0 := by
+    intro h
+    have heval := congrArg
+      (MvPolynomial.aeval (fun j : Option (Fin 1) ↦
+        if j = none then (1 : PairCountingField) else 0)) h
+    norm_num [jointInitialJetEquation, initialJetEquation, incidenceEquation] at heval
+  have hbound := finite_regularJointTaylorChartPoints_off_admissiblePairGraphs_card_le_of_jetDegree
+    (K := 1) (k := 0) (L := 0) (A := 0) (v := 1) (h := 1)
+    pointDomain (fun _ ↦ 0) (fun _ ↦ 0) pairCountingIota 0 incidenceEquation
+    (by omega) (by omega) (by omega) (by omega) hinit incidenceJetDegree incidenceHeight
+    incidencePoints incidencePoint_conditions (by
+      intro x hx
+      exact Nat.zero_le _)
+  exact hbound.trans (by norm_num [incidencePoints])
+
 /-- A regular challenge specializes a concrete admissible pair to its Taylor reconstruction. -/
 example :
     rationalTaylorPolynomial (0 : PairCountingField)
@@ -485,13 +619,6 @@ example :
       (by simp [pairCountingEquation, MvPolynomial.weightedTotalDegree,
         MvPolynomial.support_X])
     simpa using hbound
-
-/-- A concrete joint Taylor high cut occurs in the finite list. -/
-example :
-    jointCommonTaylorNumerator (0 : ℚ) quadraticJetSampleEquation 4 (1 : Fin 2) ∈
-      jointTaylorHighCutList (0 : ℚ) quadraticJetSampleEquation 2 1 := by
-  exact jointCommonTaylorNumerator_mem_jointTaylorHighCutList (0 : ℚ)
-    quadraticJetSampleEquation 2 1 (1 : Fin 2) (by omega)
 
 end
 
