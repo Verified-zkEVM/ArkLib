@@ -4856,6 +4856,12 @@ No library declarations were added. `separant_ne_zero_of_dependsOnJet_charZero` 
 
 An acceptance example checks generic separant nonvanishing for `Y₀ = 0` over `ℚ`, deriving the cast condition from characteristic zero. Existing examples in this file cover the generic square, finite-agreement, and regular-branch bounds. No production declarations were ported because the source results are covered by these more general APIs.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/Semantic.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+No library declarations were added. The acceptance example computes that `Y₁` specializes to zero over `ℚ` at the zero polynomial, then applies `MvPolynomial.map_radicalContent_mul_radicalPrimPart_eq_zero_iff` with `differentialSpecializationHom` to establish the radical-factor zero disjunction. This records the proof recipe for the future `TailBound` port.
+
+`root_content_or_positive` is covered by that generic theorem, followed by `map_mul`, `mul_eq_zero`, and `differentialSpecializationHom_apply`. The root-first declarations `contentEquation`, `positiveEquation`, `fromRootFirst`, `rootFirst_fromRootFirst`, `fromRootFirst_rootFirst`, `fromRootFirst_mul`, `rootFirstSpecializationHom`, `rootFirstSpecializationHom_rootFirst`, and `rootFirstSpecializationHom_fromRootFirst` are not ported; the root-first presentation remains outside the P6 slice 6 API boundary. The nonvanishing, divisibility, and degree declarations are covered by the corresponding existing generic `MvPolynomial` APIs listed in the report. The former direct theorem-application example for retained-curve degree bounds was replaced by this computed split example.
+
 ## `ArkLibTest/Data/Probability/Uniform.lean`
 
 Ported from `ArkLib/Data/Probability/Notation.lean` at ArkLib revision

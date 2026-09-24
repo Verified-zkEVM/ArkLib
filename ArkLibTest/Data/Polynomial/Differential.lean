@@ -1483,16 +1483,16 @@ example :
       jetTotalDegree retainedCurveEquation := by
   rw [curveJetView_totalDegree, fromFlattenedRootFirst_rootFirstChallenge]
 
-example :
-    (positiveCurveEquation retainedCurveEquation).degreeOf (some 1) ≤
-      retainedCurveEquation.degreeOf (some 1) ∧
-    jetTotalDegree (positiveCurveEquation retainedCurveEquation) ≤
-      jetTotalDegree retainedCurveEquation ∧
-    CoeffNatDegreeLE (positiveCurveEquation retainedCurveEquation)
-      (degreeOf (some (some 1))
-        (radicalPrimPart none (challengeRetainingRootFirst retainedCurveEquation))) := by
-  exact ⟨positiveCurveEquation_yOneDegree_le retainedCurveEquation,
-    positiveCurveEquation_jetTotalDegree_le retainedCurveEquation,
-    positiveCurveEquation_coeffNatDegreeLE retainedCurveEquation⟩
+example : differentialSpecialization (constantDerivativeEquation ℚ) 0 = 0 ∧
+      (differentialSpecialization (radicalContent (some 1)
+        (constantDerivativeEquation ℚ)) 0 = 0 ∨
+       differentialSpecialization (radicalPrimPart (some 1)
+        (constantDerivativeEquation ℚ)) 0 = 0) := by
+  have hsplit := MvPolynomial.map_radicalContent_mul_radicalPrimPart_eq_zero_iff
+    (differentialSpecializationHom (0 : Polynomial ℚ)) (some 1)
+    (Q := constantDerivativeEquation ℚ) (MvPolynomial.X_ne_zero (some 1))
+  rw [map_mul, mul_eq_zero, differentialSpecializationHom_apply] at hsplit
+  exact ⟨by simp [constantDerivativeEquation],
+    hsplit.mpr (by simp [constantDerivativeEquation])⟩
 end
 end PolynomialDifferential
