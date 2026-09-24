@@ -13,6 +13,7 @@ import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.GraphLine
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.GraphLineComponent
 import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerBatchedComponentRecognition
+import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerTupleCounting
 import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerBatchedComponentAgreement
 import
@@ -1340,146 +1341,158 @@ private theorem component_jointCut_eq_length_one :
   simp only [jointTaylorAgreementEquation, jointInitialJetEquation, Polynomial.C_0]
   rw [component_cut_eq_length_one]
 
-private theorem component_admissibility_cut :
-    ∀ i ∈ (Finset.univ : Finset (Fin 1)),
-      jointTaylorAgreementEquation (r := 0) (0 : ComponentField)
-        (componentEquation (E := ComponentField)) 1 2 (Polynomial.C 0) 0 ∈
-          componentIdeal (E := ComponentField) := by
-  intro i hi
-  have hi0 : i = 0 := Subsingleton.elim _ _
+private def componentPowerTuple : Fin 2 → ℚ[X] := fun _ ↦ 0
+private abbrev componentMap : ℚ →+* ComponentField := algebraMap ℚ ComponentField
+private abbrev componentJet := componentEquation (E := ComponentField)
+
+private theorem component_roots :
+    ∀ i : Fin 1, (0 : ComponentField) ^ (1 ^ 0) =
+      componentMap (domain i) := by
+  intro i
+  have hi : i = 0 := Subsingleton.elim _ _
   subst i
-  have hcut : jointTaylorAgreementEquation (r := 0) (0 : ComponentField)
-      (componentEquation (E := ComponentField)) 1 2 (Polynomial.C 0) 0 =
-      jointInitialJetEquation (r := 0) (0 : ComponentField)
-        (componentEquation (E := ComponentField)) := by
-    simpa only [Polynomial.C_0] using component_jointCut_eq_length_one
-  rw [hcut]
-  exact component_initialEquation_mem
+  rw [domain_zero]
+  simp
 
-local instance : (componentIdeal (E := ComponentField)).IsPrime := componentIdeal_isPrime
-
+private theorem extractedAdmissibleFrobeniusPowerTuple :
+    IsAdmissibleFrobeniusPowerTuple domain (fun _ ↦ componentWord)
+      componentMap (fun _ ↦ 0) 0 componentJet 1 1 2 1 componentPowerTuple := by
+  have hgraph :
+      frobeniusPowerGraphMap (0 : ComponentField) 1
+        (fun t ↦ (componentPowerTuple t).map componentMap) =
+      fun i ↦ i.elim Polynomial.X fun _ ↦ 0 := by
+    funext i
+    cases i with
+    | none => rfl
+    | some j =>
+      fin_cases j
+      simp [frobeniusPowerGraphMap, frobeniusPowerInitialGraph, componentPowerTuple,
+        frobeniusPowerCoordinate, powerBatchedCoordinate]
+  refine ⟨?_, ?_, ?_, ?_, ?_⟩
+  · intro t
+    fin_cases t <;> simp [componentPowerTuple]
+  · rw [component_initialEquation_eq_variable]
+    simp [hgraph]
+  · intro hsep
+    have heval := congrArg (fun f : ComponentField[X] ↦ f.eval 0) hsep
+    norm_num [hgraph, jointInitialJetSeparant, componentEquation,
+      initialJetSeparant, separant, Fin.last] at heval
+  · intro l hl
+    fin_cases l
+    norm_num at hl
+  · refine ⟨univ, by simp, ?_, ?_⟩
+    · intro i hi t
+      simp [componentPowerTuple, componentWord]
+    · intro i hi
+      have hi0 : i = 0 := Subsingleton.elim _ _
+      subst i
+      rw [hgraph]
+      have hcoord :
+          frobeniusPowerCoordinate 1
+            (fun _ : Fin 2 ↦ componentMap (componentWord 0)) = 0 := by
+        simp [frobeniusPowerCoordinate, powerBatchedCoordinate, componentWord]
+      rw [hcoord]
+      simp only [Polynomial.C_0]
+      rw [component_jointCut_eq_length_one, component_initialEquation_eq_variable]
+      simp
 private theorem extractedAdmissibleFrobeniusPair :
-    ∃ F₀ G₀ : ℚ[X],
-      IsAdmissibleFrobeniusPair domain componentWord componentWord
-        (algebraMap ℚ ComponentField) (fun _ ↦ 0) 0
-        (componentEquation (E := ComponentField)) 1 1 2 1 F₀ G₀ := by
-  obtain ⟨F₀, G₀, hP, _⟩ := exists_admissibleFrobeniusPair_of_symbolic_prime_sample
-    (domain := domain) (f := componentWord) (g := componentWord)
-    (sample := Finset.univ) (hsample := by simp)
-    (iota := algebraMap ℚ ComponentField) (p := 1) (e := 0)
-    (roots := fun _ ↦ 0) (hroots := by
-      intro i hi
-      have hi0 : i = 0 := Subsingleton.elim _ _
-      subst i
-      norm_num
-      change (0 : ComponentField) = (algebraMap ℚ ComponentField) (0 : ℚ)
-      simp)
-    (center := 0) (Q := componentEquation (E := ComponentField))
-    (K := 1) (k := 1) (hK := by norm_num) (hKk := by norm_num) (τ := 2)
-    (hτ := taylorExponentSufficient_two_mul 0 1)
-    (I := componentIdeal (E := ComponentField))
-    component_separant_notMem component_initialEquation_mem
-    componentIdeal_degree_pos
-    (by intro l hl; fin_cases l; norm_num at hl)
-    (by
-      intro i hi
-      have hi0 : i = 0 := Subsingleton.elim _ _
-      subst i
-      simpa [componentWord, Polynomial.C_0] using component_admissibility_cut 0 (by simp))
-  exact ⟨F₀, G₀, hP⟩
-
+    IsAdmissibleFrobeniusPair domain componentWord componentWord
+      componentMap (fun _ ↦ 0) 0 componentJet 1 1 2 1 0 0 := by
+  have hgraph :
+      frobeniusInitialGraph (0 : ComponentField) 1
+        ((0 : ℚ[X]).map componentMap) ((0 : ℚ[X]).map componentMap) =
+      fun i ↦ i.elim Polynomial.X fun _ ↦ 0 := by
+    funext i
+    cases i <;> simp [frobeniusInitialGraph]
+  refine ⟨by simp, by simp, ?_, ?_, ?_, ?_⟩
+  · rw [component_initialEquation_eq_variable]
+    simp [frobeniusInitialGraph]
+  · intro hsep
+    have heval := congrArg (fun f : ComponentField[X] ↦ f.eval 0) hsep
+    norm_num [hgraph, jointInitialJetSeparant, componentEquation,
+      initialJetSeparant, separant, Fin.last] at heval
+  · intro l hl; fin_cases l; norm_num at hl
+  · refine ⟨univ, by simp, ?_⟩
+    intro i hi
+    fin_cases i
+    refine ⟨component_roots 0, ?_, ?_, ?_⟩
+    · simp [domain_zero, componentWord]
+    · simp [domain_zero, componentWord]
+    · rw [hgraph]
+      simp [componentWord, component_jointCut_eq_length_one,
+        component_initialEquation_eq_variable]
 local instance : DecidableEq ComponentField := Classical.decEq _
-
+private abbrev componentInitialDegree :=
+  (jointInitialJetEquation (r := 0) (0 : ComponentField)
+    (componentEquation (E := ComponentField))).degreeOf (some 0)
+private abbrev componentRetainedPairs :=
+  frobeniusRetainedPairFamily domain componentWord componentWord
+    componentMap (fun _ ↦ (0 : ComponentField)) 0 componentJet 1 1 2 1
 example :
-    ∃ F₀ G₀ : ℚ[X],
-      ({(F₀, G₀)} : Finset (ℚ[X] × ℚ[X])).card ≤
-        (jointInitialJetEquation (r := 0) (0 : ComponentField)
-          (componentEquation (E := ComponentField))).degreeOf (some 0) := by
-  obtain ⟨F₀, G₀, hP⟩ := extractedAdmissibleFrobeniusPair
-  refine ⟨F₀, G₀, ?_⟩
-  exact admissibleFrobeniusPairs_card_le_degreeOf (K := 1) (k := 1)
-    domain componentWord componentWord
-    (algebraMap ℚ ComponentField) (fun _ ↦ (0 : ComponentField)) 0
-    (componentEquation (E := ComponentField)) 1 0 2
-    (by norm_num) (by norm_num) (taylorExponentSufficient_two_mul 0 1)
-    component_initialEquation_ne_zero {(F₀, G₀)} (by
-      intro P hmem
-      rw [Finset.mem_singleton] at hmem
-      cases hmem
-      exact hP)
-
-example :
-    0 < (frobeniusRetainedPairFamily domain componentWord componentWord
-      (algebraMap ℚ ComponentField) (fun _ ↦ (0 : ComponentField)) 0
-      (componentEquation (E := ComponentField)) 1 1 2 1).card ∧
-    (frobeniusRetainedPairFamily domain componentWord componentWord
-      (algebraMap ℚ ComponentField) (fun _ ↦ (0 : ComponentField)) 0
-      (componentEquation (E := ComponentField)) 1 1 2 1).card ≤
-      (jointInitialJetEquation (r := 0) (0 : ComponentField)
-        (componentEquation (E := ComponentField))).degreeOf (some 0) := by
-  obtain ⟨F₀, G₀, hP⟩ := extractedAdmissibleFrobeniusPair
-  have hmem := (mem_frobeniusRetainedPairFamily_iff domain componentWord componentWord
-    (algebraMap ℚ ComponentField) (fun _ ↦ (0 : ComponentField)) 0
-    (componentEquation (E := ComponentField)) 1 1 2 1 (F₀, G₀)).mpr hP
-  have hbound := frobeniusRetainedPairFamily_card_le (K := 1) (k := 1)
-    domain componentWord componentWord (algebraMap ℚ ComponentField)
-    (fun _ ↦ (0 : ComponentField)) 0 (componentEquation (E := ComponentField)) 1 0 2
-    (by norm_num) (by norm_num) (taylorExponentSufficient_two_mul 0 1)
-    component_initialEquation_ne_zero
-  exact ⟨Finset.card_pos.mpr ⟨(F₀, G₀), hmem⟩, hbound⟩
-
-example :
-    ∃ F₀ G₀ : ℚ[X],
-      (F₀, G₀) ∈ frobeniusRetainedPairFamily domain componentWord componentWord
-        (algebraMap ℚ ComponentField) (fun _ ↦ (0 : ComponentField)) 0
-        (componentEquation (E := ComponentField)) 1 1 2 1 ∧
-      ∃ exceptional : Finset ComponentField, exceptional.card = 0 ∧
-        ∀ P ∈ frobeniusRetainedPairFamily domain componentWord componentWord
-            (algebraMap ℚ ComponentField) (fun _ ↦ (0 : ComponentField)) 0
-            (componentEquation (E := ComponentField)) 1 1 2 1,
-          ∀ z ∉ exceptional,
-            polynomialAgreementSet (domain.trans ⟨algebraMap ℚ ComponentField,
-              (algebraMap ℚ ComponentField).injective⟩)
-                (fun i ↦ algebraMap ℚ ComponentField (componentWord i) +
-                  z * algebraMap ℚ ComponentField (componentWord i))
-                (P.1.map (algebraMap ℚ ComponentField) +
-                  Polynomial.C z * P.2.map (algebraMap ℚ ComponentField)) =
-              commonPolynomialAgreementSet domain componentWord componentWord P.1 P.2 := by
-  classical
-  obtain ⟨F₀, G₀, hP⟩ := extractedAdmissibleFrobeniusPair
-  have hmem := (mem_frobeniusRetainedPairFamily_iff domain componentWord componentWord
-    (algebraMap ℚ ComponentField) (fun _ ↦ (0 : ComponentField)) 0
-    (componentEquation (E := ComponentField)) 1 1 2 1 (F₀, G₀)).mpr hP
-  obtain ⟨exceptional, hcard, hagree⟩ := exists_exceptional_frobeniusRetainedPairFamily
-    domain componentWord componentWord (algebraMap ℚ ComponentField)
-    (fun _ ↦ (0 : ComponentField)) 0 (componentEquation (E := ComponentField)) 1 1 2 1
-  have hcard' : exceptional.card = 0 := by
-    apply Nat.eq_zero_of_le_zero
-    simpa [Fintype.card_fin] using hcard
-  exact ⟨F₀, G₀, hmem, exceptional, hcard', hagree⟩
-
-example :
-    ∃ F₀ G₀ : ℚ[X],
-      IsAdmissibleFrobeniusPair domain componentWord componentWord
-        (algebraMap ℚ ComponentField) (fun _ ↦ 0) 0
-        (componentEquation (E := ComponentField)) 1 1 2 1 F₀ G₀ ∧
+    ∃ P : Fin 2 → ℚ[X],
+      IsAdmissibleFrobeniusPowerTuple domain (fun _ ↦ componentWord)
+        componentMap (fun _ ↦ 0) 0 componentJet 1 1 2 1 P ∧
       rationalTaylorPolynomial (0 : ComponentField)
         (MvPolynomial.map (Polynomial.evalRingHom (0 : ComponentField))
-          (componentEquation (E := ComponentField))) 1
-        (fun j ↦ (frobeniusInitialGraph (0 : ComponentField) 1
-          (F₀.map (algebraMap ℚ ComponentField)) (G₀.map (algebraMap ℚ ComponentField))
-          (some j)).eval 0) =
-        expand ComponentField 1
-          (F₀.map (algebraMap ℚ ComponentField) + Polynomial.C 0 *
-            G₀.map (algebraMap ℚ ComponentField)) := by
-  obtain ⟨F₀, G₀, hP⟩ := extractedAdmissibleFrobeniusPair
-  refine ⟨F₀, G₀, hP, ?_⟩
-  have hspec := hP.specialize (K := 1) (k := 1) (p := 1) (e := 0)
-    (by norm_num) (by norm_num) (taylorExponentSufficient_two_mul 0 1) 0 (by
-      simp [jointInitialJetSeparant, componentEquation, initialJetSeparant,
-        separant, Fin.last])
+          componentJet) 1
+        (fun j ↦ (frobeniusPowerGraphMap (0 : ComponentField) 1
+          (fun t ↦ (P t).map componentMap) (some j)).eval 0) =
+        Polynomial.expand ComponentField 1
+          (powerBatchedPolynomial
+            (fun t ↦ (P t).map componentMap) (0 : ComponentField)) := by
+  refine ⟨componentPowerTuple, extractedAdmissibleFrobeniusPowerTuple, ?_⟩
+  have hspec := extractedAdmissibleFrobeniusPowerTuple.specialize
+    (K := 1) (k := 1) (p := 1) (e := 0)
+    component_roots (by norm_num) (by norm_num)
+    (taylorExponentSufficient_two_mul 0 1) 0 (by
+      simp [jointInitialJetSeparant, initialJetSeparant, separant, Fin.last])
   simpa [pow_zero, one_pow] using hspec
-
+example :
+    ({componentPowerTuple} : Finset (Fin 2 → ℚ[X])).card ≤
+        componentInitialDegree ∧
+    ({((0 : ℚ[X]), (0 : ℚ[X]))} : Finset (ℚ[X] × ℚ[X])).card ≤
+        componentInitialDegree ∧
+    0 < componentRetainedPairs.card ∧ componentRetainedPairs.card ≤ componentInitialDegree := by
+  classical
+  have hmem := (mem_frobeniusRetainedPairFamily_iff domain componentWord componentWord
+    componentMap (fun _ ↦ (0 : ComponentField)) 0 componentJet 1 1 2 1 (0, 0)).mpr
+    extractedAdmissibleFrobeniusPair
+  refine ⟨?_, ?_, Finset.card_pos.mpr ⟨(0, 0), hmem⟩, ?_⟩
+  · exact admissibleFrobeniusPowerTuples_card_le_degreeOf (K := 1) (k := 1)
+      domain (fun _ ↦ componentWord) componentMap (fun _ ↦ (0 : ComponentField))
+      0 componentJet 1 0 2
+      component_roots (by norm_num) (by norm_num)
+      (taylorExponentSufficient_two_mul 0 1) component_initialEquation_ne_zero
+      {componentPowerTuple} (by
+        intro P hmem
+        rw [Finset.mem_singleton] at hmem
+        subst P
+        exact extractedAdmissibleFrobeniusPowerTuple)
+  · exact admissibleFrobeniusPairs_card_le_degreeOf (K := 1) (k := 1)
+      domain componentWord componentWord componentMap (fun _ ↦ (0 : ComponentField))
+      0 componentJet 1 0 2
+      (by norm_num) (by norm_num) (taylorExponentSufficient_two_mul 0 1)
+      component_initialEquation_ne_zero {(0, 0)} (by
+        intro P hP
+        rw [Finset.mem_singleton] at hP
+        subst P
+        exact extractedAdmissibleFrobeniusPair)
+  · exact frobeniusRetainedPairFamily_card_le (K := 1) (k := 1)
+      domain componentWord componentWord componentMap (fun _ ↦ (0 : ComponentField))
+      0 componentJet 1 0 2
+      (by norm_num) (by norm_num) (taylorExponentSufficient_two_mul 0 1)
+      component_initialEquation_ne_zero
+example :
+    ∃ exceptional : Finset ComponentField,
+      exceptional.card ≤ 0 ∧
+      ∀ P ∈ componentRetainedPairs, ∀ z ∉ exceptional,
+      polynomialAgreementSet
+          (domain.trans ⟨componentMap, componentMap.injective⟩)
+          (fun i ↦ componentMap (componentWord i) + z * componentMap (componentWord i))
+          (P.1.map componentMap + Polynomial.C z * P.2.map componentMap) =
+          commonPolynomialAgreementSet domain componentWord componentWord P.1 P.2 := by
+  simpa [componentRetainedPairs, Fintype.card_fin] using
+    exists_exceptional_frobeniusRetainedPairFamily domain componentWord componentWord
+      componentMap (fun _ ↦ (0 : ComponentField)) 0 componentJet 1 1 2 1
 end
-
 end ReedSolomon.GraphLineComponentTest
