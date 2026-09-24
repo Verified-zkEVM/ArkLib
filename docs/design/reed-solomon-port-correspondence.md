@@ -4737,6 +4737,12 @@ Ported from `ArkLibTest/Data/Polynomial/Differential.lean` at ArkLib revision `a
 
 The singleton `Y₀ = 0` example instantiates `card_mul_le_jetTotalDegree_mul`, the rational recursive count, its square-bound corollary, the agreement-derived regular-branch budget, the generic finite agreement theorem, and the sharp regular-agreement count. The standalone `Y₀ + Y₁` degree illustration was removed to keep the file under 1,500 lines while retaining the main theorem examples.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Counting/TaylorCharZeroSolutions.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+No library declarations were added. `separant_ne_zero_of_dependsOnJet_charZero` is covered by `PolynomialDifferential.separant_ne_zero`, using `jetDegreeCastsNeZero_of_ringChar` and `JetDegreeCastsNeZero.natCast_jetDegree_ne_zero`. `regularSolutions_card_le_of_agreement_charZero` is covered by `PolynomialDifferential.card_le_of_regular_solutions_agreement` together with `regularBranchRatBudget_of_agreement`, which allows general agreement predicates and a sufficient Taylor exponent. `boundedSolution_card_le_sq_totalJetDegree_charZero` is covered by `PolynomialDifferential.boundedSolution_card_le_sq_totalJetDegree`, using the characteristic-zero cast condition and the agreement-derived regular-branch budget. `finite_agreement_solutions_card_le_charZero` is covered by `PolynomialDifferential.finite_solutions_card_le_sq_totalJetDegree_of_agreement`; the Reed–Solomon close-polynomial specialization is `ReedSolomon.closePolynomialSet_card_le_of_differential_equation`.
+
+An acceptance example checks generic separant nonvanishing for `Y₀ = 0` over `ℚ`, deriving the cast condition from characteristic zero. Existing examples in this file cover the generic square, finite-agreement, and regular-branch bounds. No production declarations were ported because the source results are covered by these more general APIs.
+
 ## `ArkLibTest/Data/Probability/Uniform.lean`
 
 Ported from `ArkLib/Data/Probability/Notation.lean` at ArkLib revision
