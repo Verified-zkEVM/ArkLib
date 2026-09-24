@@ -36,6 +36,7 @@ import Mathlib.FieldTheory.Finite.Extension
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerBatchedGraphCounting
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerBatchedIncidence
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerBatchedPointRecognition
+import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerBatchedFrobeniusFamily
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.SingularTail
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.UniformMca
 import Mathlib.Algebra.Field.ZMod
@@ -1038,6 +1039,9 @@ private abbrev componentInitialDegree :=
 private abbrev componentRetainedPairs :=
   frobeniusRetainedPairFamily domain componentWord componentWord
     componentMap (fun _ ↦ (0 : ComponentField)) 0 componentJet 1 1 2 1
+private abbrev componentRetainedTuples :=
+  frobeniusRetainedPowerTupleFamily (ℓ := 1) domain (fun _ ↦ componentWord)
+    componentMap (fun _ ↦ (0 : ComponentField)) 0 componentJet 1 1 2 1
 example :
     ∃ P : Fin 2 → ℚ[X],
       IsAdmissibleFrobeniusPowerTuple domain (fun _ ↦ componentWord)
@@ -1062,12 +1066,18 @@ example :
         componentInitialDegree ∧
     ({((0 : ℚ[X]), (0 : ℚ[X]))} : Finset (ℚ[X] × ℚ[X])).card ≤
         componentInitialDegree ∧
-    0 < componentRetainedPairs.card ∧ componentRetainedPairs.card ≤ componentInitialDegree := by
+    0 < componentRetainedPairs.card ∧ componentRetainedPairs.card ≤ componentInitialDegree ∧
+    0 < componentRetainedTuples.card ∧
+      componentRetainedTuples.card ≤ componentInitialDegree := by
   classical
   have hmem := (mem_frobeniusRetainedPairFamily_iff domain componentWord componentWord
     componentMap (fun _ ↦ (0 : ComponentField)) 0 componentJet 1 1 2 1 (0, 0)).mpr
     extractedAdmissibleFrobeniusPair
-  refine ⟨?_, ?_, Finset.card_pos.mpr ⟨(0, 0), hmem⟩, ?_⟩
+  have htmem := (mem_frobeniusRetainedPowerTupleFamily_iff domain
+    (fun _ ↦ componentWord) componentMap (fun _ ↦ (0 : ComponentField)) 0 componentJet
+    1 1 2 1 componentPowerTuple).mpr extractedAdmissibleFrobeniusPowerTuple
+  refine ⟨?_, ?_, Finset.card_pos.mpr ⟨(0, 0), hmem⟩, ?_,
+    Finset.card_pos.mpr ⟨componentPowerTuple, htmem⟩, ?_⟩
   · exact admissibleFrobeniusPowerTuples_card_le_degreeOf (K := 1) (k := 1)
       domain (fun _ ↦ componentWord) componentMap (fun _ ↦ (0 : ComponentField))
       0 componentJet 1 0 2
@@ -1084,6 +1094,12 @@ example :
   · exact frobeniusRetainedPairFamily_card_le (K := 1) (k := 1)
       domain componentWord componentWord componentMap (fun _ ↦ (0 : ComponentField))
       0 componentJet 1 0 2
+      (by norm_num) (by norm_num) (taylorExponentSufficient_two_mul 0 1)
+      component_initialEquation_ne_zero
+  · exact frobeniusRetainedPowerTupleFamily_card_le (K := 1) (k := 1)
+      domain (fun _ : Fin 2 ↦ componentWord) componentMap
+      (fun _ ↦ (0 : ComponentField))
+      0 componentJet 1 0 2 component_roots
       (by norm_num) (by norm_num) (taylorExponentSufficient_two_mul 0 1)
       component_initialEquation_ne_zero
 example :
@@ -1141,5 +1157,17 @@ example : HasExactCorrelatedPair pointDomain (fun _ ↦ (0 : ZMod 2)) (fun _ ↦
   · ext i
     fin_cases i
     simp [powerBatchedWord, commonCurveAgreementSet, pointDomain]
+example :
+    ∃ exceptional : Finset ComponentField,
+      exceptional.card ≤ 0 ∧
+      ∀ P ∈ componentRetainedTuples, ∀ z ∉ exceptional,
+        letI : DecidableEq ℚ := fun a b ↦ Classical.propDecidable (a = b)
+        letI : DecidableEq ComponentField := fun a b ↦ Classical.propDecidable (a = b)
+        HasExactPowerAgreement (ℓ := 1) domain (fun _ ↦ componentWord) componentMap 1 z
+          (powerBatchedPolynomial (fun t ↦ (P t).map componentMap) z) := by
+  simpa [componentRetainedTuples, Fintype.card_fin] using
+    exists_exceptional_frobeniusRetainedPowerTupleFamily (ℓ := 1) domain
+      (fun _ ↦ componentWord) componentMap (fun _ ↦ (0 : ComponentField)) 0
+      componentJet 1 1 2 1
 end
 end ReedSolomon.GraphLineComponentTest
