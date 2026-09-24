@@ -115,10 +115,13 @@ theorem commonCurveAgreement_of_jointTaylorAgreementEquation_mem_prime [IsAlgClo
   simpa only [domainE, Function.Embedding.trans_apply, Function.Embedding.coeFn_mk,
     wordE, tupleE, Polynomial.eval_map, Polynomial.eval₂_at_apply] using hcommon t
 
+noncomputable local instance componentAgreementDecidableEq : DecidableEq F :=
+  Classical.decEq _
+
+open Classical in
 /-- A positive-dimensional prime Taylor component containing `L` agreement cuts determines a
 degree-bounded polynomial tuple with at least `L` common agreements. -/
 theorem exists_polynomialGraph_of_primeTaylorComponent_agreements [IsAlgClosed E]
-    [DecidableEq F]
     {L : ℕ} (domain : Fin n ↪ F) (w : Fin (ℓ + 1) → Fin n → F)
     (indices : Finset (Fin n)) (hcard : indices.card = L) (hkL : k ≤ L)
     (ιₑ : F →+* E) (center : E) (Q : DifferentialPolynomial E[X] r)
@@ -145,6 +148,7 @@ theorem exists_polynomialGraph_of_primeTaylorComponent_agreements [IsAlgClosed E
         (fun t ↦ (P t).map ιₑ)) p = 0) ∧
       aeval (powerBatchedJetGraphMap (r := r) center (fun t ↦ (P t).map ιₑ))
         (jointInitialJetSeparant center Q) ≠ 0 := by
+  classical
   obtain ⟨sample, hsub, hsample⟩ := Finset.exists_subset_card_eq (hcard ▸ hkL)
   obtain ⟨P, hP, _hsampleP, hgraph, hpoly, hvanish, hsepGraph⟩ :=
     exists_polynomialGraph_of_primeTaylorComponent domain w sample hsample ιₑ center Q

@@ -713,7 +713,34 @@ example :
       (hcuts := component_powerBatchedAgreementCuts)
   exact ⟨P, hP, hsample, hgraph, hsep⟩
 
-/-- A prime component with two agreement cuts yields a tuple with the common agreement. -/
+/-- The prime component's joint cut forces the tuple's value at its evaluation point. -/
+example : ∃ P : Fin 2 → ℚ[X], (∀ t, (P t).degree < 1) ∧
+    ∀ t, (P t).eval (domain 0) = componentWord 0 := by
+  classical
+  have hprime : (componentIdeal (E := ComponentField)).IsPrime := componentIdeal_isPrime
+  obtain ⟨P, hP, _, hgraph, hpoly, _, _⟩ :=
+    exists_polynomialGraph_of_primeTaylorComponent (domain := domain)
+      (w := fun _ : Fin 2 ↦ componentWord) (sample := Finset.univ) (hsample := by simp)
+      (φ := algebraMap ℚ ComponentField) (center := 0)
+      (Q := componentEquation (E := ComponentField)) (hK := by omega) (τ := 2)
+      (hτ := by intro l; fin_cases l <;> omega)
+      (I := componentIdeal (E := ComponentField)) (hsep := component_separant_notMem)
+      (hdim := componentIdeal_degree_pos) (hhigh := component_highCuts)
+      (hcuts := component_powerBatchedAgreementCuts)
+  have hagreement := commonCurveAgreement_of_jointTaylorAgreementEquation_mem_prime
+    (n := 1) (K := 2) (r := 0) (ℓ := 1) (domain := domain)
+    (w := fun _ : Fin 2 ↦ componentWord) (ιₑ := algebraMap ℚ ComponentField)
+    (center := 0) (Q := componentEquation (E := ComponentField)) (τ := 2)
+    (hτ := by intro l; omega) (I := componentIdeal (E := ComponentField))
+    (hsep := component_separant_notMem) (hdim := componentIdeal_degree_pos) (P := P)
+    (hgraph := hgraph) (hpoly := hpoly) (i := 0)
+    (hcut := component_powerBatchedAgreementCuts 0 (by simp))
+  exact ⟨P, hP, hagreement⟩
+
+noncomputable local instance graphComponentDecidableEq : DecidableEq ℚ := Classical.decEq _
+
+open Classical in
+/-- One joint agreement cut for a two-entry tuple yields a common agreement. -/
 example : ∃ P : Fin 2 → ℚ[X], (∀ t, (P t).degree < 1) ∧
     1 ≤ (commonCurveAgreementSet domain (fun _ : Fin 2 ↦ componentWord) P).card := by
   have hprime : (componentIdeal (E := ComponentField)).IsPrime := componentIdeal_isPrime
