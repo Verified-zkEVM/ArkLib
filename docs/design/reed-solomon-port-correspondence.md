@@ -1636,6 +1636,12 @@ ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`,
 Deferred: scalar providers of the line guarantee (list-decoding and curve-counting results) and
 the probability form of the count.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/FiniteField.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/FiniteField.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`exists_field_bounded_capacity_list` keeps its name. It drops the unused assumptions `delta < 1` and `A ≤ 2 * n`, and states the derivative order and multiplicity through the canonical capacity parameter definitions. No declarations were left unported.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/WeightedSupportInterpolant.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/WeightedSupportInterpolant.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -1726,6 +1732,14 @@ Ported from `HiddenDerivative/RootFinding/MutualCorrelatedAgreement/ExtensionDes
 `HasExactCorrelatedPair.descend` keeps its name and statement. `HasExactCorrelatedPair` keeps its name and mathematical meaning; its mapped evaluation domain is expressed as an embedding composition. The definition was moved from `HiddenDerivative/RootFinding/MutualCorrelatedAgreement/Symbolic/RegularEquation.lean`.
 
 Not ported: the standalone exceptional correlated-agreement wrapper from this dependency; the equation-descent theorem performs the exceptional-set pullback directly.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FrobeniusComponentRecognition.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FrobeniusComponentRecognition.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`frobeniusInitialGraph` keeps its name and is generalized from a `Fin 1` jet-coordinate function to `Option (Fin 1)`, with the challenge coordinate mapped to `X`, and from fields to commutative semirings. `exists_frobeniusGraph_of_symbolic_prime_sample` keeps its name and is generalized from `Fin n` to an arbitrary embedded type `ι`; Frobenius roots are required only at sampled indices. The theorem uses the current affine Hilbert polynomial and graph-restriction APIs.
+
+`symbolicSourceFrobeniusAgreement` is not added because the existing `jointTaylorAgreementEquation` in `PolynomialDifferential.TaylorChartAlgebra` covers it. No new acceptance example was retained: a trial concrete component example exceeded 200,000 heartbeats, and the existing TaylorChart acceptance module exercises the point-recognition result.
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedComponentAgreement.lean`
 
