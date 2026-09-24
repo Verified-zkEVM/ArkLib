@@ -878,13 +878,21 @@ example :
     chunkedCoefficientPowerLift_totalDegree_le 2 1 (by norm_num) _ (by simp)⟩
 
 private noncomputable abbrev chunkedPowerSource : MvPolynomial Unit (Polynomial ℚ) :=
-  MvPolynomial.X ()
+  MvPolynomial.C ((Polynomial.X : ℚ[X]) ^ 2 + 1) * MvPolynomial.X ()
 
 private theorem chunkedPowerSource_height : CoeffNatDegreeLE chunkedPowerSource 2 := by
-  exact (coeffNatDegreeLE_X ()).mono (by norm_num)
+  have hconst : CoeffNatDegreeLE
+      (MvPolynomial.C ((Polynomial.X : ℚ[X]) ^ 2 + 1) :
+        MvPolynomial Unit (Polynomial ℚ)) 2 := coeffNatDegreeLE_C (by simp)
+  have hvar : CoeffNatDegreeLE
+      (MvPolynomial.X () : MvPolynomial Unit (Polynomial ℚ)) 0 := coeffNatDegreeLE_X ()
+  exact hconst.mul hvar
 
 private theorem chunkedPowerSource_degree : chunkedPowerSource.totalDegree ≤ 1 := by
-  simp [chunkedPowerSource]
+  rw [chunkedPowerSource]
+  exact (MvPolynomial.totalDegree_mul _ _).trans (by
+    simp only [MvPolynomial.totalDegree_C, MvPolynomial.totalDegree_X]
+    omega)
 
 /-- A multivariate polynomial's chunked lift recovers its flattening within the degree bound. -/
 example :

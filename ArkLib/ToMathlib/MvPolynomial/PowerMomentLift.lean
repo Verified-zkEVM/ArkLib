@@ -111,22 +111,38 @@ def polynomialPowerLift {σ : Type*} (D : ℕ) (P : MvPolynomial σ (R[X]))
     coefficientPowerLift (R := R) D (P.coeff m) (hP m) *
       ∏ i ∈ m.support, MvPolynomial.X (Sum.inr i) ^ m i
 
-/-- The power-moment map sends a lifted polynomial to its flattened form. -/
-theorem powerMomentMap_polynomialPowerLift {σ : Type*} (D : ℕ)
-    (P : MvPolynomial σ (R[X])) (hP : CoeffNatDegreeLE P D) :
-    powerMomentMap (R := R) (σ := σ) D (polynomialPowerLift (R := R) D P hP) =
+private theorem powerMomentMap_coefficientwiseLift {σ : Type*} (D h : ℕ)
+    (lift : (p : R[X]) → p.natDegree ≤ h → MvPolynomial (PowerMomentIndex D σ) R)
+    (hlift : ∀ (p : R[X]) (hp : p.natDegree ≤ h),
+      powerMomentMap (R := R) (σ := σ) D (lift p hp) =
+        Polynomial.aeval (MvPolynomial.X none : MvPolynomial (Option σ) R) p)
+    (P : MvPolynomial σ (R[X])) (hP : CoeffNatDegreeLE P h) :
+    powerMomentMap (R := R) (σ := σ) D
+        (∑ m ∈ P.support, lift (P.coeff m) (hP m) *
+          ∏ i ∈ m.support, MvPolynomial.X (Sum.inr i) ^ m i) =
       (optionEquivRight R σ).symm P := by
   classical
-  rw [polynomialPowerLift, map_sum]
+  rw [map_sum]
   conv_rhs => rw [P.as_sum]
   simp only [map_sum, monomial_eq, map_mul, Finsupp.prod, map_prod, map_pow,
     optionEquivRight_symm_C, optionEquivRight_symm_X]
   apply Finset.sum_congr rfl
   intro m hm
   change powerMomentMap (R := R) (σ := σ) D
-      (coefficientPowerLift (R := R) D (P.coeff m) (hP m)) * _ = _
-  rw [powerMomentMap_coefficientPowerLift]
+      (lift (P.coeff m) (hP m)) * _ = _
+  rw [hlift (P.coeff m) (hP m)]
   simp [powerMomentMap]
+
+/-- The power-moment map sends a lifted polynomial to its flattened form. -/
+theorem powerMomentMap_polynomialPowerLift {σ : Type*} (D : ℕ)
+    (P : MvPolynomial σ (R[X])) (hP : CoeffNatDegreeLE P D) :
+    powerMomentMap (R := R) (σ := σ) D (polynomialPowerLift (R := R) D P hP) =
+      (optionEquivRight R σ).symm P := by
+  classical
+  rw [polynomialPowerLift]
+  exact powerMomentMap_coefficientwiseLift (R := R) (σ := σ) D D
+    (coefficientPowerLift (R := R) (σ := σ) D)
+    (fun p hp ↦ powerMomentMap_coefficientPowerLift (R := R) (σ := σ) D p hp) P hP
 
 /-- Every bounded coefficient lift has total degree at most one. -/
 theorem coefficientPowerLift_totalDegree_le_one {σ : Type*} [Nontrivial R] (D : ℕ)
@@ -137,23 +153,35 @@ theorem coefficientPowerLift_totalDegree_le_one {σ : Type*} [Nontrivial R] (D :
   intro j hj
   exact (MvPolynomial.totalDegree_mul _ _).trans (by simp)
 
-/-- A bounded polynomial lift has total degree at most one plus its original variable degree. -/
-theorem polynomialPowerLift_totalDegree_le {σ : Type*} [Nontrivial R] (D B : ℕ)
-    (P : MvPolynomial σ (R[X])) (hP : CoeffNatDegreeLE P D) (hdeg : P.totalDegree ≤ B) :
-    (polynomialPowerLift (R := R) D P hP).totalDegree ≤ B + 1 := by
+private theorem totalDegree_coefficientwiseLift_sum_le {σ : Type*} [Nontrivial R]
+    (D h B L : ℕ)
+    (lift : (p : R[X]) → p.natDegree ≤ h → MvPolynomial (PowerMomentIndex D σ) R)
+    (hlift : ∀ (p : R[X]) (hp : p.natDegree ≤ h), (lift p hp).totalDegree ≤ L)
+    (P : MvPolynomial σ (R[X])) (hP : CoeffNatDegreeLE P h)
+    (hdeg : P.totalDegree ≤ B) :
+    (∑ m ∈ P.support, lift (P.coeff m) (hP m) *
+      ∏ i ∈ m.support, MvPolynomial.X (Sum.inr i) ^ m i).totalDegree ≤ B + L := by
   classical
-  rw [polynomialPowerLift]
   apply MvPolynomial.totalDegree_finsetSum_le
   intro m hm
   apply (MvPolynomial.totalDegree_mul _ _).trans
-  have hc := coefficientPowerLift_totalDegree_le_one (R := R) (σ := σ) D
-    (P.coeff m) (hP m)
+  have hc := hlift (P.coeff m) (hP m)
   have hj : (∏ i ∈ m.support,
       (MvPolynomial.X (Sum.inr i) : MvPolynomial (PowerMomentIndex D σ) R) ^ m i).totalDegree ≤
       m.sum fun _ e ↦ e := by
     apply (MvPolynomial.totalDegree_finsetProd _ _).trans
     simp [Finsupp.sum, MvPolynomial.totalDegree_X_pow]
   exact (Nat.add_le_add hc (hj.trans (MvPolynomial.le_totalDegree hm))).trans (by omega)
+
+/-- A bounded polynomial lift has total degree at most one plus its original variable degree. -/
+theorem polynomialPowerLift_totalDegree_le {σ : Type*} [Nontrivial R] (D B : ℕ)
+    (P : MvPolynomial σ (R[X])) (hP : CoeffNatDegreeLE P D) (hdeg : P.totalDegree ≤ B) :
+    (polynomialPowerLift (R := R) D P hP).totalDegree ≤ B + 1 := by
+  rw [polynomialPowerLift]
+  exact totalDegree_coefficientwiseLift_sum_le (R := R) (σ := σ) D D B 1
+    (coefficientPowerLift (R := R) (σ := σ) D)
+    (fun p hp ↦ coefficientPowerLift_totalDegree_le_one (R := R) (σ := σ) D p hp)
+    P hP hdeg
 
 /-! ### Chunked power-moment lifts -/
 
@@ -199,18 +227,10 @@ theorem powerMomentMap_chunkedPolynomialPowerLift {σ : Type*} (D M : ℕ) (hD :
     powerMomentMap (R := R) (σ := σ) D
         (chunkedPolynomialPowerLift (R := R) (σ := σ) D M hD P hP) =
       (optionEquivRight R σ).symm P := by
-  classical
-  rw [chunkedPolynomialPowerLift, map_sum]
-  conv_rhs => rw [P.as_sum]
-  simp only [map_sum, monomial_eq, map_mul, Finsupp.prod, map_prod, map_pow,
-    optionEquivRight_symm_C, optionEquivRight_symm_X]
-  apply Finset.sum_congr rfl
-  intro m hm
-  change powerMomentMap (R := R) (σ := σ) D
-      (chunkedCoefficientPowerLift (R := R) (σ := σ) D M hD
-        (P.coeff m) (hP m)) * _ = _
-  rw [powerMomentMap_chunkedCoefficientPowerLift]
-  simp [powerMomentMap]
+  rw [chunkedPolynomialPowerLift]
+  exact powerMomentMap_coefficientwiseLift (R := R) (σ := σ) D (M * D)
+    (chunkedCoefficientPowerLift (R := R) (σ := σ) D M hD)
+    (powerMomentMap_chunkedCoefficientPowerLift (R := R) (σ := σ) D M hD) P hP
 
 /-- A chunked coefficient lift has total degree at most `M + 1`. -/
 theorem chunkedCoefficientPowerLift_totalDegree_le {σ : Type*} [Nontrivial R]
@@ -236,19 +256,12 @@ theorem chunkedPolynomialPowerLift_totalDegree_le {σ : Type*} [Nontrivial R]
     (D M B : ℕ) (hD : 0 < D) (P : MvPolynomial σ (R[X]))
     (hP : CoeffNatDegreeLE P (M * D)) (hdeg : P.totalDegree ≤ B) :
     (chunkedPolynomialPowerLift (R := R) (σ := σ) D M hD P hP).totalDegree ≤ B + M + 1 := by
-  classical
   rw [chunkedPolynomialPowerLift]
-  apply MvPolynomial.totalDegree_finsetSum_le
-  intro m hm
-  apply (MvPolynomial.totalDegree_mul _ _).trans
-  have hc := chunkedCoefficientPowerLift_totalDegree_le (R := R) (σ := σ) D M hD
-    (P.coeff m) (hP m)
-  have hj : (∏ i ∈ m.support,
-      (MvPolynomial.X (Sum.inr i) : MvPolynomial (PowerMomentIndex D σ) R) ^ m i).totalDegree ≤
-      m.sum fun _ e ↦ e := by
-    apply (MvPolynomial.totalDegree_finsetProd _ _).trans
-    simp [Finsupp.sum, MvPolynomial.totalDegree_X_pow]
-  exact (Nat.add_le_add hc (hj.trans (MvPolynomial.le_totalDegree hm))).trans (by omega)
+  have hbound := totalDegree_coefficientwiseLift_sum_le (R := R) (σ := σ) D (M * D) B
+    (M + 1) (chunkedCoefficientPowerLift (R := R) (σ := σ) D M hD)
+    (chunkedCoefficientPowerLift_totalDegree_le (R := R) (σ := σ) D M hD)
+    P hP hdeg
+  omega
 
 end
 
