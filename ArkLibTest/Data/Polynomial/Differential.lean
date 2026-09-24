@@ -1359,11 +1359,11 @@ example :
 
 local instance : Fact (Nat.Prime 2) := ⟨Nat.prime_two⟩
 
-example := frobeniusExpansion_satisfies_jointTaylorCuts (E := ZMod 2)
-    (X (some 0)) 0 0 0 2 1 2 4 (taylorExponentSufficient_two_mul 0 2)
-    (by simp only [map_zero, Polynomial.degree_zero]; exact WithBot.bot_lt_coe (2 : ℕ))
-    (by simp [challengeSpecialization])
-    (by simp [initialJetSeparant, challengeSpecialization, separant])
+example := (frobeniusExpansion_satisfies_jointTaylorCuts (E := ZMod 2) (X (some 0))
+  0 0 0 2 1 2 4 (taylorExponentSufficient_two_mul 0 2)
+  (by simpa using (WithBot.bot_lt_coe (2 : ℕ))) (by simp [challengeSpecialization])
+  (by simp [initialJetSeparant, challengeSpecialization, separant])).2.2.2 (1 : ZMod 2)
+  (Polynomial.X ^ 3 + Polynomial.C (1 : ZMod 2))
 
 /-! ### Ordinary root presentations -/
 

@@ -13,12 +13,13 @@ public import ArkLib.ToMathlib.Polynomial.FrobeniusTaylor
 # Taylor equations of a Frobenius-expanded solution
 
 An expanded solution of a specialized differential equation satisfies the joint Taylor-chart
-equations. Its cleared agreement cuts characterize evaluation along the Frobenius pullback.
+equations. Its cleared agreement cuts compare a Frobenius-pulled solution value against an
+arbitrary polynomial curve at the challenge.
 
 ## Main statements
 
 * `PolynomialDifferential.frobeniusExpansion_satisfies_jointTaylorCuts`: chart equations and
-  agreement characterization for an expanded solution.
+  agreement characterization for an expanded solution and any polynomial-valued curve.
 
 ## References
 
@@ -33,8 +34,8 @@ namespace PolynomialDifferential
 
 noncomputable section
 
-/-- The joint Taylor chart of an expanded solution satisfies the initial, regularity, sparse, and
-agreement equations. -/
+/-- The joint Taylor chart of an expanded solution satisfies the initial, regularity, and sparse
+equations, and its agreement cuts characterize arbitrary polynomial-valued curves. -/
 theorem frobeniusExpansion_satisfies_jointTaylorCuts {E : Type*} [Field E]
     (Q : DifferentialPolynomial E[X] 0) (center w : E) (P : E[X])
     (p e K τ : ℕ) [ExpChar E p]
@@ -50,10 +51,9 @@ theorem frobeniusExpansion_satisfies_jointTaylorCuts {E : Type*} [Field E]
     aeval point (jointInitialJetSeparant center Q) ≠ 0 ∧
     (∀ l : Fin K, ¬p ^ e ∣ l.val →
       aeval point (jointCommonTaylorNumerator center Q τ l) = 0) ∧
-    ∀ alpha u v : E,
+    ∀ alpha : E, ∀ curve : E[X],
       aeval point (jointTaylorAgreementEquation center Q K τ (Polynomial.C alpha)
-        (Polynomial.C u + Polynomial.X ^ (p ^ e) * Polynomial.C v)) = 0 ↔
-        P.eval (alpha ^ (p ^ e)) = u + w ^ (p ^ e) * v := by
+        curve) = 0 ↔ P.eval (alpha ^ (p ^ e)) = curve.eval w := by
   classical
   let P' := expand E (p ^ e) P
   let jet : Fin 1 → E := polynomialJet center P'
@@ -89,15 +89,14 @@ theorem frobeniusExpansion_satisfies_jointTaylorCuts {E : Type*} [Field E]
     simp
   refine ⟨?_, hregular, hsparse, ?_⟩
   · exact hinitial
-  · intro alpha u v
+  · intro alpha curve
     rw [aeval_jointTaylorAgreementEquation]
-    simp only [Option.elim_none, Option.elim_some, Polynomial.eval_C, Polynomial.eval_add,
-      Polynomial.eval_mul, Polynomial.eval_X, Polynomial.eval_pow]
+    simp only [Option.elim_none, Option.elim_some, Polynomial.eval_C]
     change (aeval jet
       (taylorAgreementEquation center (challengeSpecialization Q w) K τ alpha
-        (u + w ^ (p ^ e) * v)) = 0) ↔ P.eval (alpha ^ (p ^ e)) = u + w ^ (p ^ e) * v
+        (curve.eval w)) = 0) ↔ P.eval (alpha ^ (p ^ e)) = curve.eval w
     have hpoint := taylorAgreementEquation_eq_zero_iff center
-      (challengeSpecialization Q w) hτ jet hS alpha (u + w ^ (p ^ e) * v)
+      (challengeSpecialization Q w) hτ jet hS alpha (curve.eval w)
     rw [hpoint, hrec]
     simp [P', expand_eval]
 
