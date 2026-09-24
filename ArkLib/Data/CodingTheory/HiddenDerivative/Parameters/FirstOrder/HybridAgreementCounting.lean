@@ -905,13 +905,8 @@ theorem finite_automaticFirstOrder_hybrid_agreement_solutions_card_le
   have hweight : jetTotalDegree Q ≤ automaticJetDegree rho a := by
     exact (jetTotalDegree_map_le phi cert.Q).trans (hweightCert.trans_eq hjetCap)
   have hdegreeCert : jetDegree cert.Q 1 ≤ hp.derivativeCap := by
-    rw [jetDegree, MvPolynomial.degreeOf_le_iff]
-    intro u hu
-    have hfirst : u (some (⟨1, by omega⟩ : Fin 2)) ≤ hp.derivativeCap := by
-      simpa only [firstJetExponent_eq_coordinates Nat.one_pos,
-        jetExponentCoordinatesEquiv_apply] using cert.firstJetDegree_le u hu
-    have hcoord : (⟨1, by omega⟩ : Fin 2) = 1 := Fin.ext rfl
-    simpa only [hcoord] using hfirst
+    change jetDegree cert.toCurve.Q 1 ≤ hp.derivativeCap
+    exact cert.toCurve.jetDegree_one_le
   have hderivCap : hp.derivativeCap = automaticDerivativeCap rho a := by
     rw [automaticDerivativeCap_eq_raw hrho hrhoOne ha haOne]
     change firstOrderRateDerivativeCap rho agreement m = automaticDerivativeCapRaw rho a

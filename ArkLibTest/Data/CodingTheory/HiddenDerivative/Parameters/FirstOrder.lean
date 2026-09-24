@@ -297,6 +297,60 @@ private def hybridDomain : Fin 4 ↪ ℚ where
     apply Fin.ext
     exact_mod_cast hij
 
+private instance : Fact (Nat.Prime 5) := ⟨by decide⟩
+
+private def hybridFiniteFieldDomain : Fin 4 ↪ ZMod 5 where
+  toFun i := i.val
+  inj' := by
+    intro i j hij
+    apply Fin.ext
+    change (i.val : ZMod 5) = (j.val : ZMod 5) at hij
+    have hmod := (ZMod.natCast_eq_natCast_iff _ _ 5).mp hij
+    exact hmod.eq_of_lt_of_lt (by omega) (by omega)
+
+private noncomputable def hybridCurveCertificate :
+    FirstOrderCurveCertificate.{0, 0} (F := ZMod 5) 2 3
+      concreteFiniteParameters.multiplicity concreteFiniteParameters.derivativeCap
+      concreteFiniteParameters.jetDegree 3 concreteFiniteParameters.challengeDegree
+      hybridFiniteFieldDomain (fun _ ↦ receivedLine (0 : ZMod 5) 0)
+      (firstOrderColumns (D := 2) (A := 3)
+        (m := concreteFiniteParameters.multiplicity)
+        (M := concreteFiniteParameters.derivativeCap)
+        (μ := concreteFiniteParameters.jetDegree)) := by
+  have hbudget : 0 < concreteFiniteParameters.multiplicity * 3 := by
+    exact Nat.mul_pos concreteFiniteParameters.multiplicity_pos (by norm_num)
+  exact (Classical.choice (exists_firstOrderRate_symbolicCertificate
+    (rate := (1 / 2 : ℝ)) (agreement := (3 / 4 : ℝ))
+    (p := concreteFiniteParameters) (F := ZMod 5) (n := 4) (D := 2) (A := 3) (k := 3)
+    (by norm_num) (by norm_num) hbudget (by norm_num) (by norm_num) (by norm_num)
+    hybridFiniteFieldDomain (fun _ ↦ 0) (fun _ ↦ 0))).toCurve
+
+private theorem hybridCurveCertificate_jetDegree_le :
+    jetDegree hybridCurveCertificate.Q 1 ≤ concreteFiniteParameters.derivativeCap := by
+  rw [jetDegree, MvPolynomial.degreeOf_le_iff]
+  intro u hu
+  have hfirst : u (some (⟨1, by omega⟩ : Fin 2)) ≤
+      concreteFiniteParameters.derivativeCap := by
+    simpa only [firstJetExponent_eq_coordinates Nat.one_pos,
+      jetExponentCoordinatesEquiv_apply] using hybridCurveCertificate.firstJetDegree_le u hu
+  have hcoord : (⟨1, by omega⟩ : Fin 2) = 1 := Fin.ext rfl
+  simpa only [hcoord] using hfirst
+
+/-- A concrete curve certificate satisfies both characteristic-guarded descent bridges. -/
+example :
+    Nonempty (FirstOrderHybridDescent hybridCurveCertificate.Q
+      concreteFiniteParameters.jetDegree concreteFiniteParameters.derivativeCap) ∧
+    Nonempty (FirstOrderHybridDescent hybridCurveCertificate.Q
+      concreteFiniteParameters.jetDegree concreteFiniteParameters.derivativeCap) := by
+  have hcap : concreteFiniteParameters.derivativeCap < ringChar (ZMod 5) := by
+    norm_num [concreteFiniteParameters, FirstOrderFiniteRateParameters.derivativeCap,
+      firstOrderRateDerivativeCap, firstOrderRateBeta, ZMod.ringChar_zmod_n]
+  refine ⟨?_, ?_⟩
+  · apply hybridCurveCertificate.exists_hybridDescent
+    exact Or.inr (hybridCurveCertificate_jetDegree_le.trans_lt hcap)
+  · apply hybridCurveCertificate.exists_hybridDescent_of_derivativeCap_lt_ringChar
+    exact Or.inr hcap
+
 private def hybridReceived : Fin 4 → ℚ := fun _ ↦ 0
 
 private noncomputable def hybridSolutions : Finset (Polynomial ℚ) := {0}
