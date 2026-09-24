@@ -1040,23 +1040,6 @@ at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`. `curveStageZero` 
 `r ≤ v`) and `orderOneCurveStageCharge_mono_derivative`, and `curveStageZero_le_one_of_factors`
 is now `orderZeroCurveStageCharge_le_orderOne`, with `0 ≤ s` in place of `1 ≤ s`.
 
-## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/Uniform.lean`
-
-Ported from
-`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/FirstOrder/Uniform.lean`
-at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`. The fixed profile's
-`uniformFirstOrderGradedRankProfile_values` is the acceptance example “The fixed graded-rank
-profile through grade `22`”; `uniformFirstOrderGradedRankProfile_sum` is “The fixed graded-rank
-profile sums to `300` through grade `22`”; and
-`uniformFirstOrderGradedRankProfile_weighted_sum` is “The grade-weighted fixed profile sums to
-`1570` through grade `22`.” These are fixed evaluations without production consumers, so they are
-not exported as library theorems. The examples are in
-`ArkLibTest/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder.lean`.
-`uniformFirstOrder_parameters` keeps its name and conclusion but drops `2 ≤ n` and `A ≤ n`:
-`2 ≤ k` and the gap inequality suffice. Callers ported from the source theorem must omit those
-two arguments. The other uniform profile and shifted-height declarations keep their names,
-with the namespace `ReedSolomon.HiddenDerivative`.
-
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FreeOrder.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/FreeOrder.lean` at
