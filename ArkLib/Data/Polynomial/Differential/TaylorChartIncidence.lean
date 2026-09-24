@@ -44,6 +44,8 @@ whose reconstructed polynomial has degree below `k`.
 * `ncard_setOf_taylorAgreementEquation_mem_lt`: positive-dimensional primes containing the high
   cuts contain fewer than `k` agreement equations.
 * `card_le_of_highTaylorCuts_of_agreement`: the incidence bound for regular high-cut jets.
+* `card_le_of_highTaylorCuts_of_agreement_sharp`: the sharp incidence bound with numerator
+  `#ι - k + 1`.
 
 ## References
 
@@ -240,6 +242,122 @@ theorem card_le_of_highTaylorCuts_of_agreement [IsAlgClosed F] (center : F)
       obtain ⟨l, hkl, hlK, rfl⟩ := mem_highTaylorCutList.mp hf
       exact (hS jet hjet).2.2 l hkl hlK, Set.notMem_empty jet⟩) hA
   rwa [Nat.card_eq_fintype_card, Fintype.card_fin, Nat.add_sub_cancel] at h
+
+/-- **Sharp incidence of regular high-cut jets.** Over an algebraically closed field, let
+`r < K`, let `τ` be sufficient for `K`, and write `B = rationalTaylorCutDegreeBound Q τ`.
+Suppose the agreement points `domain i`, `i : ι`, are distinct, `k ≤ A ≤ #ι`, and each
+member of a finite set of regular high-cut jets satisfies at least `A` agreement equations.
+Then the set has at most
+`jetTotalDegree Q * (((#ι - k + 1) * B) / (A - k + 1)) ^ r` elements. -/
+theorem card_le_of_highTaylorCuts_of_agreement_sharp [IsAlgClosed F] (center : F)
+    (Q : DifferentialPolynomial F r) {K k τ : ℕ} (hτ : TaylorExponentSufficient r K τ)
+    (hK : r < K) {ι : Type*} [Fintype ι] (domain received : ι → F)
+    (hinj : Function.Injective domain) {A : ℕ} (hkA : k ≤ A)
+    (hAn : A ≤ Fintype.card ι) (S : Finset (Fin (r + 1) → F))
+    (hS : ∀ jet ∈ S, aeval jet (initialJetEquation center Q) = 0 ∧
+      aeval jet (initialJetSeparant center Q) ≠ 0 ∧
+      ∀ l, k ≤ l → l < K → aeval jet (commonTaylorNumerator center Q τ l) = 0)
+    (hA : ∀ jet ∈ S, A ≤ {i | aeval jet
+      (taylorAgreementEquation center Q K τ (domain i) (received i)) = 0}.ncard) :
+    (S.card : ℚ) ≤ jetTotalDegree Q *
+      (((((Fintype.card ι - k + 1) * rationalTaylorCutDegreeBound Q τ : ℕ) : ℚ) /
+        ((A - k + 1 : ℕ) : ℚ))) ^ r := by
+  classical
+  let T := highTaylorPrimeFamily center Q K k τ
+  let B := rationalTaylorCutDegreeBound Q τ
+  let cuts : ι → MvPolynomial (Fin (r + 1)) F := fun i ↦
+    taylorAgreementEquation center Q K τ (domain i) (received i)
+  let R : ℚ := ((((Fintype.card ι - k + 1) * B : ℕ) : ℚ) /
+    ((A - k + 1 : ℕ) : ℚ))
+  let t : ℚ := ((Fintype.card ι - k + 1 : ℕ) : ℚ) /
+    ((A - k + 1 : ℕ) : ℚ)
+  have hB : 1 ≤ B := by
+    dsimp [B, rationalTaylorCutDegreeBound]
+    exact Nat.le_add_right _ _
+  have hBpos : 0 < B := by omega
+  have hden : 0 < A - k + 1 := by omega
+  have hnum : A - k + 1 ≤ Fintype.card ι - k + 1 := by omega
+  have ht : 1 ≤ t := by
+    apply (le_div_iff₀ (by exact_mod_cast hden)).2
+    simpa using (show ((A - k + 1 : ℕ) : ℚ) ≤
+      ((Fintype.card ι - k + 1 : ℕ) : ℚ) by exact_mod_cast hnum)
+  have hR : R = (B : ℚ) * t := by
+    dsimp only [R, t]
+    push_cast
+    field_simp
+  have hcoverNat : S.card ≤
+      ∑ P ∈ T, (S.filter fun jet ↦ jet ∈ zeroLocus F P).card := by
+    calc
+      S.card ≤ (T.biUnion fun P ↦ S.filter fun jet ↦ jet ∈ zeroLocus F P).card := by
+        apply Finset.card_le_card
+        intro jet hjet
+        obtain ⟨P, hPT, hjetP⟩ := exists_mem_highTaylorPrimeFamily_of_regular
+          center Q (K := K) (k := k) (τ := τ) jet (hS jet hjet).1 (hS jet hjet).2.1
+          (fun l hkl hlK ↦ (hS jet hjet).2.2 l hkl hlK)
+        exact Finset.mem_biUnion.mpr ⟨P, hPT,
+          Finset.mem_filter.mpr ⟨hjet, hjetP⟩⟩
+      _ ≤ ∑ P ∈ T, (S.filter fun jet ↦ jet ∈ zeroLocus F P).card :=
+        Finset.card_biUnion_le
+  have hcover : (S.card : ℚ) ≤
+      ∑ P ∈ T, ((S.filter fun jet ↦ jet ∈ zeroLocus F P).card : ℚ) := by
+    exact_mod_cast hcoverNat
+  have hcomponent : ∀ P ∈ T,
+      ((S.filter fun jet ↦ jet ∈ zeroLocus F P).card : ℚ) ≤
+        affineDegree P * R ^ (affineHilbertPolynomial P).natDegree := by
+    intro P hPT
+    have hPprime : P.IsPrime := isPrime_of_mem_highTaylorPrimeFamily hPT
+    have hhigh : highTaylorCutsIdeal center Q K k τ ≤ P :=
+      highTaylorCutsIdeal_le_of_mem_highTaylorPrimeFamily hPT
+    have hbound := @card_le_of_agreement_off_excluded_sharp
+      F F (Fin (r + 1)) ι _ _ _ _ _ P hPprime (initialJetSeparant center Q) cuts B A k
+      (fun i ↦ totalDegree_taylorAgreementEquation_le center Q hτ _ _) hkA ∅
+      (fun J hPJ hJ hSJ hdim hcuts ↦ by
+        have hhighJ : highTaylorCutsIdeal center Q K k τ ≤ J := hhigh.trans hPJ
+        have hncard : {i | cuts i ∈ J}.ncard < k := by
+          simpa [cuts] using ncard_setOf_taylorAgreementEquation_mem_lt center Q hτ hK hSJ
+            hhighJ hdim domain received hinj
+        intro jet hjet
+        exact False.elim ((not_le_of_gt hncard) hcuts))
+      (S.filter fun jet ↦ jet ∈ zeroLocus F P)
+      (fun jet hj ↦ by
+        rw [Finset.mem_filter] at hj
+        exact ⟨hj.2, (hS jet hj.1).2.1, Set.notMem_empty jet⟩)
+      (fun jet hj ↦ hA jet (Finset.mem_filter.mp hj).1)
+    simpa [cuts, R, B] using hbound
+  have hpotential := sum_affineDegree_mul_pow_highTaylorPrimeFamily_le
+    (k := k) center Q hτ
+  have hratio : R = (B : ℚ) * t := hR
+  calc
+    (S.card : ℚ) ≤ ∑ P ∈ T,
+        ((S.filter fun jet ↦ jet ∈ zeroLocus F P).card : ℚ) := hcover
+    _ ≤ ∑ P ∈ T, affineDegree P * R ^ (affineHilbertPolynomial P).natDegree :=
+      Finset.sum_le_sum hcomponent
+    _ = ∑ P ∈ T, affineDegree P * (B : ℚ) ^ (affineHilbertPolynomial P).natDegree *
+          t ^ (affineHilbertPolynomial P).natDegree := by
+      apply Finset.sum_congr rfl
+      intro P hPT
+      rw [hratio, mul_pow]
+      ring
+    _ ≤ ∑ P ∈ T, affineDegree P * (B : ℚ) ^ (affineHilbertPolynomial P).natDegree *
+          t ^ r := by
+      apply Finset.sum_le_sum
+      intro P hPT
+      apply mul_le_mul_of_nonneg_left
+      · exact pow_le_pow_right₀ ht
+          (natDegree_affineHilbertPolynomial_le_of_mem_highTaylorPrimeFamily hPT)
+      · exact mul_nonneg (affineDegree_nonneg P) (by positivity)
+    _ = (∑ P ∈ T, affineDegree P * (B : ℚ) ^
+          (affineHilbertPolynomial P).natDegree) * t ^ r := by
+      rw [Finset.sum_mul]
+    _ ≤ (jetTotalDegree Q * (B : ℚ) ^ r) * t ^ r :=
+      mul_le_mul_of_nonneg_right hpotential (by positivity)
+    _ = jetTotalDegree Q * R ^ r := by
+      rw [hratio, mul_pow]
+      ring
+    _ = jetTotalDegree Q *
+        (((((Fintype.card ι - k + 1) * rationalTaylorCutDegreeBound Q τ : ℕ) : ℚ) /
+          ((A - k + 1 : ℕ) : ℚ))) ^ r := by
+      simp [R, B]
 
 end
 
