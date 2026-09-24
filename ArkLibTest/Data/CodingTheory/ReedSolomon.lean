@@ -15,7 +15,7 @@ import Mathlib.Tactic.NormNum
 # Reed–Solomon acceptance tests
 
 Concrete instances check the agreement threshold, its distance interpretation, codeword
-determination, and the single-word power-agreement guarantee.
+determination, power agreement, and differential-equation list bounds.
 -/
 
 open Polynomial ReedSolomon CoreDefinitions
@@ -221,6 +221,63 @@ example :
     (by norm_num) (by norm_num) (by norm_num)
     (by intro r hr i hir hi; omega) S hsol hS
   norm_num [S] at hcount ⊢
+
+private def geometricBoundDomain : Fin 2 ↪ ℚ :=
+  ⟨fun i ↦ (i.val : ℚ), fun i j h ↦ by
+    apply Fin.ext
+    fin_cases i <;> fin_cases j <;> norm_num at *⟩
+
+/-- The complete two-coordinate close list over `ℚ` is finite and geometrically bounded. -/
+example :
+    ∃ P : Polynomial ℚ,
+      P ∈ closePolynomialSet geometricBoundDomain (fun _ ↦ 0) 1 2 ∧
+        (closePolynomialSet geometricBoundDomain (fun _ ↦ 0) 1 2).Finite ∧
+          ((closePolynomialSet geometricBoundDomain (fun _ ↦ 0) 1 2).ncard : ℝ) ≤ 1 := by
+  let Q : PolynomialDifferential.DifferentialPolynomial ℚ 0 := MvPolynomial.X (some 0)
+  have hQ : Q ≠ 0 := by simp [Q]
+  have hdegree : PolynomialDifferential.jetTotalDegree Q ≤ 1 := by
+    simpa [Q, PolynomialDifferential.jetDegree] using
+      PolynomialDifferential.jetTotalDegree_le_sum_jetDegree Q
+  have hsound : ∀ P, P ∈ closePolynomialSet geometricBoundDomain (fun _ ↦ 0) 1 2 →
+      PolynomialDifferential.differentialSpecialization Q P = 0 := by
+    intro P hP
+    have hdegreeP : P.degree ≤ 0 := Order.lt_succ_iff.mp hP.1
+    have hcard : 2 ≤
+        (Finset.univ.filter fun i : Fin 2 => P.eval (geometricBoundDomain i) = 0).card := by
+      simpa [polynomialAgreementSet] using hP.2
+    have heval : P.eval (geometricBoundDomain 0) = 0 := by
+      by_contra hne
+      have hcard' : (Finset.univ.filter fun i : Fin 2 =>
+          P.eval (geometricBoundDomain i) = 0).card ≤ 1 := by
+        apply Finset.card_le_one.mpr
+        intro i hi j hj
+        have hiEval := (Finset.mem_filter.mp hi).2
+        have hjEval := (Finset.mem_filter.mp hj).2
+        fin_cases i <;> fin_cases j <;> simp_all [geometricBoundDomain]
+      omega
+    have hPzero : P = 0 := by
+      rw [Polynomial.eq_C_of_degree_le_zero hdegreeP]
+      have hcoeff : P.coeff 0 = 0 := by
+        rw [Polynomial.coeff_zero_eq_eval_zero]
+        have hdomain0 : geometricBoundDomain 0 = 0 := by
+          change ((0 : ℕ) : ℚ) = 0
+          norm_num
+        rw [hdomain0] at heval
+        exact heval
+      rw [hcoeff]
+      simp
+    subst P
+    simp [Q, PolynomialDifferential.differentialSpecialization,
+      PolynomialDifferential.differentialSpecializationHom]
+  have hbound := closePolynomialSet_finite_and_ncard_le_of_differential_equation_and_gap
+    (δ := 1 / 2) (n := 2) (A := 2)
+    Q 2 1 1 (by norm_num) (by norm_num) hQ hdegree geometricBoundDomain (fun _ ↦ 0)
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num)
+    (Or.inl (ringChar.eq_zero : ringChar ℚ = 0)) hsound
+  refine ⟨0, ?_, hbound.1, ?_⟩
+  · simp [closePolynomialSet, polynomialAgreementSet, geometricBoundDomain]
+  · simpa using hbound.2
 
 end
 end ReedSolomonAgreementAcceptance

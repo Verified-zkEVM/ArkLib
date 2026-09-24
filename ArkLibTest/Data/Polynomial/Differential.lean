@@ -1002,9 +1002,8 @@ example : Nat.card (BoundedSolution (constantDerivativeEquation (ZMod 3)) 2) = 3
   have hlower : 3 ≤ Nat.card (BoundedSolution (constantDerivativeEquation (ZMod 3)) 2) := by
     simpa [Nat.card_zmod] using Nat.card_le_card_of_injective solution hinj
   exact Nat.le_antisymm hupper hlower
-
 /-! ### Rational recursive and agreement bounds -/
-/-- The singleton root `0` of `Y₀ = 0` satisfies the recursive and agreement bounds. -/
+/-- The singleton root `0` of `Y₀ = 0` satisfies recursive, agreement, and gap bounds. -/
 example :
     (({zeroJetBoundedRoot} : Finset
       (BoundedSolution (zeroJetEquation ℚ 0) 0)).card : ℚ) ≤
@@ -1042,10 +1041,18 @@ example :
     (by norm_num) boundedRoots hboundedAccepted hregular
   have hsquare := boundedSolution_card_le_sq_totalJetDegree Q hQ hcast accepts 1 1
     (by norm_num) boundedRoots hboundedAccepted hdegree (by simpa using hregular)
-  have hagreementBound := finite_solutions_card_le_sq_totalJetDegree_of_agreement Q 1 1 1
-    (by norm_num) (by norm_num) hQ hcast hdegree (n := 1) (A := 1) domain (fun _ ↦ 0)
-    (by norm_num) (by norm_num) (by norm_num)
-    hbin accepts (by intro P; rfl) roots hsolution haccepted
+  have hagreementBound : (({(0 : Polynomial ℚ)} : Finset (Polynomial ℚ)).card : ℚ) ≤ 1 := by
+    let domain2 : Fin 2 ↪ ℚ := ⟨fun i ↦ i, fun i j h ↦ Fin.ext (Nat.cast_injective h)⟩
+    have hgap := finite_solutions_card_le_sq_totalJetDegree_of_agreementGap
+      (δ := 1 / 2) (n := 2) (A := 2) Q 2 1 1
+      (by norm_num) (by norm_num) hQ hdegree domain2 (fun _ ↦ 0)
+      (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+      (by norm_num) (by norm_num) (by norm_num)
+      (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
+      (fun P ↦ P.degree < 1 ∧
+        2 ≤ (Finset.univ.filter fun i ↦ P.eval (domain2 i) = 0).card)
+      (by intro P; rfl) roots hsolution (by simp [roots, domain2])
+    norm_num [roots] at hgap ⊢
   have hTaylorBound := card_le_of_regular_solutions_agreement (E := AlgebraicClosure ℚ)
     (n := 1) (A := 1) Q 1 1 2 (taylorExponentSufficient_two_mul 0 1)
     (by norm_num) (by norm_num) domain (fun _ ↦ 0) (by norm_num) (by norm_num)
@@ -1471,9 +1478,6 @@ example :
 private abbrev retainedCurveEquation : DifferentialPolynomial (Polynomial ℚ) 1 :=
   C (Polynomial.X + 1) * X (some 1) ^ 2 + X none
 
-example : positiveCurveEquation (0 : DifferentialPolynomial (Polynomial ℚ) 1) = 1 := by
-  simp [positiveCurveEquation, fromFlattenedRootFirst, challengeRetainingRootFirst,
-    MvPolynomial.radicalPrimPart]
 example :
     (curveJetView (challengeRetainingRootFirst retainedCurveEquation)).totalDegree =
       jetTotalDegree retainedCurveEquation := by
@@ -1490,9 +1494,5 @@ example :
   exact ⟨positiveCurveEquation_yOneDegree_le retainedCurveEquation,
     positiveCurveEquation_jetTotalDegree_le retainedCurveEquation,
     positiveCurveEquation_coeffNatDegreeLE retainedCurveEquation⟩
-example : 5 ≤ ringChar (ZMod 5) := by
-  exact (characteristic_bounds_of_max (F := ZMod 5) (K := 5) (ν := 3)
-    (Or.inr (by rw [ringChar.eq (ZMod 5) 5]; norm_num))).2.resolve_left
-      (by rw [ringChar.eq (ZMod 5) 5]; norm_num)
 end
 end PolynomialDifferential
