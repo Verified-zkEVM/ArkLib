@@ -10,6 +10,7 @@ public import ArkLib.Data.Polynomial.Differential.TaylorChart
 public import ArkLib.Data.Polynomial.Differential.JetDegree
 public import ArkLib.Data.Polynomial.Differential.RationalTaylorDerivativeDegree
 public import ArkLib.Data.Polynomial.Differential.RationalTaylorJointDegree
+public import ArkLib.ToMathlib.MvPolynomial.OptionWeightedDegree
 public import ArkLib.ToMathlib.MvPolynomial.PolynomialCoefficients
 public import ArkLib.ToMathlib.RingTheory.MvPolynomial.Bidegree
 public import ArkLib.ToMathlib.RingTheory.MvPolynomial.CappedBidegree
@@ -198,10 +199,23 @@ theorem taylorAgreementEquationOver_mem_restrictCappedBidegree (center x : F)
   apply mem_restrictCappedBidegree_of_mem_restrictBidegree
     (taylorAgreementEquationOver_mem_restrictBidegree center x y Q ell h v K τ hτ hy
       hheight hv hjet)
-  exact (degreeOf_optionEquivRight_symm_some_le
-    (taylorAgreementEquationOver (F := F) (Polynomial.C center) Q K
-      (Polynomial.C x) y (τ := τ)) 1).trans
-      (degreeOf_taylorAgreementEquationOver_firstOrder (Polynomial.C center) (Polynomial.C x) y
-        Q r K τ hτ hr hderiv)
+  have heq : ((optionEquivRight F (Fin 2)).symm
+      (taylorAgreementEquationOver (F := F) (Polynomial.C center) Q K
+        (Polynomial.C x) y (τ := τ))).degreeOf (some 1) =
+      (taylorAgreementEquationOver (F := F) (Polynomial.C center) Q K
+        (Polynomial.C x) y (τ := τ)).degreeOf 1 := by
+    have hweighted := weightedTotalDegree_optionEquivRight (Pi.single (1 : Fin 2) 1)
+      ((optionEquivRight F (Fin 2)).symm
+        (taylorAgreementEquationOver (F := F) (Polynomial.C center) Q K
+          (Polynomial.C x) y (τ := τ)))
+    have hweight : (fun v : Option (Fin 2) ↦ v.elim 0 (Pi.single (1 : Fin 2) 1)) =
+        Pi.single (some 1) 1 := by
+      funext v
+      cases v <;> simp [Pi.single_apply]
+    simpa only [hweight, AlgEquiv.apply_symm_apply, weightedTotalDegree_piSingle] using
+      hweighted.symm
+  rw [heq]
+  exact degreeOf_taylorAgreementEquationOver_firstOrder (Polynomial.C center) (Polynomial.C x) y
+    Q r K τ hτ hr hderiv
 
 end PolynomialDifferential
