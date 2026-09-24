@@ -38,11 +38,6 @@ namespace MvPolynomial
 
 variable {F : Type*} [Field F]
 
-private theorem ncard_coe_inter_setOf {α : Type*} (S : Finset α) (p : α → Prop)
-    [DecidablePred p] : ((S : Set α) ∩ {x | p x}).ncard = #(S.filter p) := by
-  rw [← Set.ncard_coe_finset, Finset.coe_filter]
-  rfl
-
 private theorem aeval_monomialLift_iff
     (E : Set ((Fin 2) →₀ ℕ)) (x : Fin 2 → F)
     (p : MvPolynomial (Fin 2) F) (hp : p ∈ restrictSupport F E) :
@@ -151,43 +146,31 @@ theorem cappedDegreeHypersurface_incidence_sharp
       K.IsPrime ∧ s ∉ K ∧ g ∈ K ∧ (∀ f ∈ highCuts, f ∈ K) := by
     dsimp only
     have hPJ : J ≤ P := ((Ideal.mem_retainedMinimalPrimes).mp hP).1.le
-    have hbaseQ : RingHom.ker φ ≤ Q := by
-      calc
-        RingHom.ker φ ≤ RingHom.ker φ ⊔ Ideal.span {gl} := le_sup_left
-        _ = J := hJ_eq.symm
-        _ ≤ Q := hPJ.trans hPQ
-    let K : Ideal (MvPolynomial (Fin 2) F) := Q.map φ.toRingHom
-    have hK : K.IsPrime := Ideal.map_isPrime_of_surjective
-      (f := φ.toRingHom) hφ hbaseQ
-    have hcomap : K.comap φ.toRingHom = Q := by
-      change (Q.map φ.toRingHom).comap φ.toRingHom = Q
-      rw [Ideal.comap_map_of_surjective φ.toRingHom hφ Q]
-      apply sup_eq_left.mpr
-      rw [← RingHom.ker_eq_comap_bot]
-      exact hbaseQ
-    have hsK : s ∉ K := by
-      intro hsK
-      have hsl : sl ∈ K.comap φ.toRingHom := by
-        change φ sl ∈ K
-        dsimp only [sl]
-        rwa [monomialMap_monomialLift]
-      rw [hcomap] at hsl
-      exact hsQ hsl
-    have hgK : g ∈ K := by
-      rw [← monomialMap_monomialLift g hg']
-      apply Ideal.mem_map_of_mem φ.toRingHom
-      apply hPQ
-      apply hPJ
-      rw [hJ_eq]
-      exact (le_sup_right : Ideal.span {gl} ≤ RingHom.ker φ ⊔ Ideal.span {gl})
-        (Ideal.subset_span (Set.mem_singleton _))
-    have hhighK : ∀ f ∈ highCuts, f ∈ K := by
-      intro f hf
-      rw [← monomialMap_monomialLift f (hhigh' f hf)]
-      apply Ideal.mem_map_of_mem φ.toRingHom
-      apply hhighQ
-      simp only [highCuts', List.mem_map, List.mem_attach]
-      exact ⟨⟨f, hf⟩, trivial, rfl⟩
+    have htransport := Ideal.map_prime_principalOpenData_of_surjective
+      (φ := φ.toRingHom) hφ Q hQ (g := g) (s := s) (gl := gl) (sl := sl)
+      (hprincipal := by
+        calc
+          RingHom.ker φ ⊔ Ideal.span {gl} = J := hJ_eq.symm
+          _ ≤ P := hPJ
+          _ ≤ Q := hPQ)
+      (hgl := by
+        change monomialMap F E (monomialLift g hg') = g
+        exact monomialMap_monomialLift g hg')
+      (hsl := by
+        change monomialMap F E (monomialLift s hs') = s
+        exact monomialMap_monomialLift s hs')
+      hsQ (highCuts := highCuts)
+      (highCutsLift := fun f hf ↦ monomialLift f (hhigh' f hf))
+      (hhighMap := by
+        intro f hf
+        change monomialMap F E (monomialLift f (hhigh' f hf)) = f
+        exact monomialMap_monomialLift f (hhigh' f hf))
+      (hhighLift := by
+        intro f hf
+        apply hhighQ
+        simp only [highCuts', List.mem_map, List.mem_attach]
+        exact ⟨⟨f, hf⟩, trivial, rfl⟩)
+    rcases htransport with ⟨hK, _, hsK, hgK, hhighK⟩
     exact ⟨hK, hsK, hgK, hhighK⟩
   have hpoint : Function.Injective (monomialPoint (E := F) E) :=
     monomialPoint_injective hE
@@ -309,7 +292,8 @@ theorem cappedDegreeHypersurface_incidence_sharp
           ((S' : Set (E → F)) ∩ zeroLocus F Q).ncard = points.card := by
         rw [show (S' : Set (E → F)) ∩ zeroLocus F Q =
           (S' : Set (E → F)) ∩ {z | z ∈ zeroLocus F Q} from rfl,
-          ncard_coe_inter_setOf]
+          ← Set.ncard_coe_finset, Finset.coe_filter]
+        rfl
       rw [← hcard] at hinc
       exact hinc)
   rw [hcardS] at hbound

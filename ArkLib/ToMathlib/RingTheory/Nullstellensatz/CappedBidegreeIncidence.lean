@@ -162,45 +162,33 @@ theorem cappedBidegreeHypersurface_incidence_off_excluded_hybrid_two
         {i | cuts i ∈ K}.ncard = {i | cuts' i ∈ Q}.ncard := by
     dsimp only
     have hPJ : J ≤ P := ((Ideal.mem_retainedMinimalPrimes).mp hPT₀).1.le
-    have hbaseQ : RingHom.ker φ ≤ Q := by
-      calc
-        RingHom.ker φ ≤ RingHom.ker φ ⊔ Ideal.span {gl} := le_sup_left
-        _ = J := hJ_eq.symm
-        _ ≤ Q := hPJ.trans hPQ
     let K : Ideal (MvPolynomial (Option (Fin 2)) F) :=
       Q.map φ.toRingHom
-    have hK : K.IsPrime := Ideal.map_isPrime_of_surjective
-      (f := φ.toRingHom) hφ hbaseQ
-    have hcomap : K.comap φ.toRingHom = Q := by
-      change (Q.map φ.toRingHom).comap
-        φ.toRingHom = Q
-      rw [Ideal.comap_map_of_surjective φ.toRingHom hφ Q]
-      apply sup_eq_left.mpr
-      rw [← RingHom.ker_eq_comap_bot]
-      exact hbaseQ
-    have hsK : s ∉ K := by
-      intro hsK
-      have hsl : sl ∈ K.comap φ.toRingHom := by
-        change φ sl ∈ K
-        dsimp only [φ, sl]
-        rwa [monomialMap_monomialLift]
-      rw [hcomap] at hsl
-      exact hsQ hsl
-    have hgK : g ∈ K := by
-      rw [← monomialMap_monomialLift g hgAB']
-      apply Ideal.mem_map_of_mem φ.toRingHom
-      apply hPQ
-      apply hPJ
-      rw [hJ_eq]
-      exact (le_sup_right : Ideal.span {gl} ≤ RingHom.ker φ ⊔ Ideal.span {gl})
-        (Ideal.subset_span (Set.mem_singleton _))
-    have hhighK : ∀ f ∈ highCuts, f ∈ K := by
-      intro f hf
-      rw [← monomialMap_monomialLift f (hhigh' f hf)]
-      apply Ideal.mem_map_of_mem φ.toRingHom
-      apply hhighQ
-      simp only [highCuts', List.mem_map, List.mem_attach]
-      exact ⟨⟨f, hf⟩, trivial, rfl⟩
+    have htransport := Ideal.map_prime_principalOpenData_of_surjective
+      (φ := φ.toRingHom) hφ Q hQ (g := g) (s := s) (gl := gl) (sl := sl)
+      (hprincipal := by
+        calc
+          RingHom.ker φ ⊔ Ideal.span {gl} = J := hJ_eq.symm
+          _ ≤ P := hPJ
+          _ ≤ Q := hPQ)
+      (hgl := by
+        change monomialMap F E (monomialLift g hgAB') = g
+        exact monomialMap_monomialLift g hgAB')
+      (hsl := by
+        change monomialMap F E (monomialLift s hs') = s
+        exact monomialMap_monomialLift s hs')
+      hsQ (highCuts := highCuts)
+      (highCutsLift := fun f hf ↦ monomialLift f (hhigh' f hf))
+      (hhighMap := by
+        intro f hf
+        change monomialMap F E (monomialLift f (hhigh' f hf)) = f
+        exact monomialMap_monomialLift f (hhigh' f hf))
+      (hhighLift := by
+        intro f hf
+        apply hhighQ
+        simp only [highCuts', List.mem_map, List.mem_attach]
+        exact ⟨⟨f, hf⟩, trivial, rfl⟩)
+    rcases htransport with ⟨hK, hcomap, hsK, hgK, hhighK⟩
     have hdeg : (affineHilbertPolynomial K).natDegree =
         (affineHilbertPolynomial Q).natDegree := by
       rw [← hcomap]
