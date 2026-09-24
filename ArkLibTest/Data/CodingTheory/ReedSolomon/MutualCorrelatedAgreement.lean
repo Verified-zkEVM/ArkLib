@@ -684,6 +684,138 @@ private abbrev badChallengeDomain : Fin 2 ↪ ℚ := fullDomain
 private def badChallengeDomainE : Fin 2 ↪ ComponentField :=
   badChallengeDomain.trans ⟨algebraMap ℚ ComponentField, RingHom.injective _⟩
 
+private def badChallengeWords : Fin 2 → Fin 2 → ℚ := ![![1, 1], ![0, 1]]
+
+private abbrev badChallengeEquation : DifferentialPolynomial ComponentField[X] 0 :=
+  MvPolynomial.X (some (0 : Fin 1)) -
+    MvPolynomial.C (Polynomial.C (1 : ComponentField))
+private abbrev badChallengeSpecialization : DifferentialPolynomial ComponentField 0 :=
+  MvPolynomial.X (some (0 : Fin 1)) - MvPolynomial.C (1 : ComponentField)
+
+private def badChallenges : Finset ComponentField := by classical exact {0}
+
+private def badChallengeWitness (_ : ComponentField) : ComponentField[X] := C 1
+private def badChallengeJet (_ : ComponentField) : Fin 1 → ComponentField := fun _ ↦ 1
+
+private theorem badChallengeCandidate_agrees :
+    polynomialAgreementSet badChallengeDomainE
+      (powerBatchedWord
+        (fun t i ↦ (algebraMap ℚ ComponentField) (badChallengeWords t i)) 0)
+      (C (1 : ComponentField)) = Finset.univ := by
+  classical
+  ext i
+  fin_cases i <;> norm_num [polynomialAgreementSet, powerBatchedWord,
+    Fin.sum_univ_succ, badChallengeWords, badChallengeDomain, badChallengeDomainE,
+    fullDomain]
+
+/-- A nonempty bad-challenge set satisfies the combined power-batched chart bound. -/
+example : badChallenges.Nonempty ∧ (badChallenges.card : ℚ) ≤ 17 := by
+  classical
+  have hjet : jetTotalDegree badChallengeEquation ≤ 1 := by
+    classical
+    rw [jetTotalDegree_le_iff]
+    intro u hu
+    have hu' := (MvPolynomial.support_sub _ _ _) hu
+    rcases Finset.mem_union.mp hu' with hX | hC
+    · rw [MvPolynomial.support_X] at hX
+      have huX : u = Finsupp.single (some (0 : Fin 1)) 1 :=
+        Finset.mem_singleton.mp hX
+      subst u
+      simp [totalJetDegree_eq_sum]
+    · have huC : u = 0 := by
+        rw [MvPolynomial.support_C] at hC
+        have hC1 : Polynomial.C (1 : ComponentField) ≠ 0 := by simp
+        simpa only [hC1, ↓reduceIte, Finset.mem_singleton] using hC
+      subst u
+      simp [totalJetDegree_eq_sum]
+  have hheight : CoeffNatDegreeLE badChallengeEquation 1 := by
+    intro m
+    rw [badChallengeEquation, MvPolynomial.coeff_sub]
+    exact (Polynomial.natDegree_sub_le _ _).trans (max_le
+      (by rw [MvPolynomial.coeff_X]; split_ifs <;> simp)
+      (by rw [MvPolynomial.coeff_C]; split_ifs <;>
+        norm_num [Polynomial.natDegree_C]))
+  have hchart : ∀ z ∈ badChallenges,
+      let Qz := MvPolynomial.map (Polynomial.evalRingHom z) badChallengeEquation
+      (badChallengeWitness z).degree < 1 ∧
+        aeval (badChallengeJet z) (initialJetEquation (0 : ComponentField) Qz) = 0 ∧
+        aeval (badChallengeJet z) (initialJetSeparant (0 : ComponentField) Qz) ≠ 0 ∧
+        rationalTaylorPolynomial (0 : ComponentField) Qz 1 (badChallengeJet z) =
+          badChallengeWitness z := by
+    intro z hz
+    have hz0 : z = 0 := by simpa [badChallenges] using hz
+    subst z
+    refine ⟨by simp [badChallengeWitness], ?_, ?_, ?_⟩
+    · simp [badChallengeEquation, badChallengeJet, initialJetEquation]
+    · simp [badChallengeEquation, initialJetSeparant, separant]
+    · have hcoeff : rationalTaylorCoefficient (0 : ComponentField)
+        badChallengeSpecialization (badChallengeJet 0) 0 = 1 := by
+        exact rationalTaylorCoefficient_initial (0 : ComponentField)
+          badChallengeSpecialization (badChallengeJet 0) ⟨0, by omega⟩
+      have hq : MvPolynomial.map (Polynomial.evalRingHom (0 : ComponentField))
+          badChallengeEquation = badChallengeSpecialization := by
+        simp [badChallengeEquation, badChallengeSpecialization]
+      rw [hq, rationalTaylorPolynomial, Polynomial.centeredCoefficientPrefix]
+      simp only [neg_zero, Polynomial.taylor_zero, Fin.sum_univ_one, Fin.val_zero,
+        Polynomial.monomial_zero_left]
+      rw [hcoeff]
+      simp [badChallengeWitness]
+  have hagree : ∀ z ∈ badChallenges, 2 ≤
+      (polynomialAgreementSet badChallengeDomainE
+        (fun i ↦ (powerBatchedWord
+          (fun t j ↦ (algebraMap ℚ ComponentField) (badChallengeWords t j)) z) i)
+        (badChallengeWitness z)).card := by
+    intro z hz
+    have hz0 : z = 0 := by simpa [badChallenges] using hz
+    subst z
+    change 2 ≤ (polynomialAgreementSet badChallengeDomainE
+      (powerBatchedWord
+        (fun t i ↦ (algebraMap ℚ ComponentField) (badChallengeWords t i)) 0)
+      (C (1 : ComponentField))).card
+    rw [badChallengeCandidate_agrees]
+    simp
+  have hbad : ∀ z ∈ badChallenges,
+      ¬ HasExactPowerAgreement badChallengeDomain badChallengeWords
+        (algebraMap ℚ ComponentField) 1 z (badChallengeWitness z) := by
+    intro z hz
+    have hz0 : z = 0 := by simpa [badChallenges] using hz
+    subst z
+    rintro ⟨P, hdegree, -, hsets⟩
+    have hcommon : commonCurveAgreementSet badChallengeDomain badChallengeWords P =
+        Finset.univ := by
+      rw [← hsets]
+      change polynomialAgreementSet badChallengeDomainE
+        (powerBatchedWord
+          (fun t i ↦ (algebraMap ℚ ComponentField) (badChallengeWords t i)) 0)
+        (C (1 : ComponentField)) = Finset.univ
+      exact badChallengeCandidate_agrees
+    have hvalues0 := (mem_commonCurveAgreementSet badChallengeDomain
+      badChallengeWords P 0).mp (by rw [hcommon]; simp)
+    have hvalues1 := (mem_commonCurveAgreementSet badChallengeDomain
+      badChallengeWords P 1).mp (by rw [hcommon]; simp)
+    have hzero : (P 1).eval 0 = 0 := by
+      have h := hvalues0 1
+      norm_num [fullDomain, badChallengeWords] at h
+      exact h
+    have hone : (P 1).eval 1 = 1 := by
+      have h := hvalues1 1
+      norm_num [fullDomain, badChallengeWords] at h
+      exact h
+    have hconstant : P 1 = Polynomial.C ((P 1).eval 0) := by
+      simpa only [Polynomial.coeff_zero_eq_eval_zero] using
+        eq_C_of_degree_le_zero (Order.lt_succ_iff.mp (hdegree 1))
+    rw [hconstant, Polynomial.eval_C] at hone
+    rw [hzero] at hone
+    norm_num at hone
+  have hbound := finite_powerBatchedChart_badChallenges_card_le
+    (domain := badChallengeDomain) (w := badChallengeWords)
+    (iota := algebraMap ℚ ComponentField) (center := (0 : ComponentField))
+    (Q := badChallengeEquation) (K := 1) (k := 1) (L := 1) (A := 2)
+    (v := 1) (h := 1) (by omega) (by omega) (by omega) (by omega) (by omega)
+    (by omega) (by omega) (by omega) hjet hheight badChallenges badChallengeWitness
+    badChallengeJet hchart hagree hbad
+  norm_num [badChallenges] at hbound ⊢
+
 private abbrev offGraphEquation : DifferentialPolynomial ComponentField[X] 0 :=
   MvPolynomial.X (some (0 : Fin 1)) - MvPolynomial.C (Polynomial.X : ComponentField[X])
 
@@ -1290,3 +1422,35 @@ example :
       componentJet 1 1 2 1
 end
 end ReedSolomon.GraphLineComponentTest
+
+namespace ReedSolomon.FirstOrder.Squarefree
+
+open Polynomial ReedSolomon.HiddenDerivative
+
+private noncomputable abbrev exampleRho : ℝ := 2 / 49
+private noncomputable abbrev exampleEta : ℝ := 1 / 100
+private noncomputable abbrev exampleAgreement := firstOrderRateThreshold exampleRho + exampleEta
+private noncomputable abbrev exampleJet := automaticJetDegree exampleRho exampleAgreement
+private noncomputable abbrev exampleCap := automaticDerivativeCap exampleRho exampleAgreement
+
+example : (firstOrderCurveFiberStageOne 2 exampleJet exampleCap (regularTaylorExponent 1) : ℝ) *
+    agreementIncidenceRatio 100 1 20 + ordinaryDegreeEnvelope exampleJet exampleCap ≤
+    automaticSquarefreeListBoundConstant exampleRho * 100 / exampleEta ^ 2 := by
+  have ht : firstOrderRateThreshold exampleRho = 79 / 455 := by
+    unfold firstOrderRateThreshold exampleRho
+    rw [show (2 / 49 : ℝ) * (5 - 2 / 49) * (2 - 2 / 49) = (216 / 343 : ℝ) ^ 2 by norm_num,
+      Real.sqrt_sq_eq_abs]
+    norm_num
+  have hc : (2 : ℝ) < (⌈4 / ((1081506391 : ℝ) / 42598400000)⌉₊ : ℝ) := by
+    exact_mod_cast Nat.lt_ceil.mpr (by norm_num)
+  apply automaticSquarefreeListExpression_le (rho := exampleRho) (eta := exampleEta)
+  all_goals norm_num [ht,
+    automaticDerivativeCap, automaticDerivativeCapRaw, automaticMultiplicity, automaticSurplus,
+    automaticDerivativeRatio, automaticAgreement, automaticGapBracket, firstOrderCleanExpression,
+    firstOrderRateBeta]
+  · constructor
+    · nlinarith [hc]
+    · norm_num [automaticJetDegree, automaticMultiplicity, automaticSurplus,
+        automaticDerivativeRatio, automaticAgreement, automaticGapBracket,
+        firstOrderCleanExpression, firstOrderRateBeta, ht]
+end ReedSolomon.FirstOrder.Squarefree
