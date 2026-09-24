@@ -736,6 +736,14 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation
 
 The interpolant total-jet-degree bounds are moved to `SourceColumn` and generalized to arbitrary finite column types; coefficient maps for the mapped bound target commutative semirings. The existing `SourceColumn.coeff_interpolant_natDegree_le` is generalized from `Fin N` to any finite column type and reused by the rank-based constructor. `SatisfiesLocalConstraints.map` is added to transport local constraints through coefficient maps. Separate `challengeHeight_le` and `jetWeight_le` aliases are not added because their bounds are available through `challengeDegree_le` and `jetTotalDegree_le`. `Matrix.kernel_height_lt_div_margin` is deferred to the RateHeight port because it has no consumer in this branch. Source support-certificate and jet-prefix imports are replaced by existing received-curve, source-column, and separant-chain APIs.
 
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/PartitionRank.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Symbolic/RatePartitionMatrix.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`mapped_curve_block_eq_local_matrix` became `localConstraintMatrix_map`, generalizing the algebra-map block identity to entrywise base change of the full matrix along any ring homomorphism. `monomial_local_matrix_rank_le` became `localConstraintCoordinates_rank_le_of_derivative_weight`, generalizing from monomial columns to arbitrary finite families of differential polynomials whose support has derivative-order weight at most `W`. The old symbolic weighted-support `Matrix.rank_prod_rows_le_sum` became a generic product-row rank bound in `ArkLib.ToMathlib.LinearAlgebra.Matrix.Rank`. `finiteConstraintMatrix_rank_le_partition` became `rank_map_supportedLocalConstraintMatrix_le_of_derivative_weight`, using the existing supported-row matrix and `localDerivativeCoordinateBudget` to bound rank by the number of points times the local budget.
+
+The separate `mapped_curve_block_eq_local_matrix` wrapper and `monomial_local_matrix_rank_le` theorem were not ported because the generalized theorems cover them. The `Matrix.rowBlock` helper was not ported because its row-block lambda is inlined into the generic product-row rank theorem.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/ReceivedCurve.lean`
 
 From `Symbolic/ReceivedLine.lean` and `Symbolic/ReceivedCurve.lean` under
