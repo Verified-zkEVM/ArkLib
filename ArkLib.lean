@@ -333,6 +333,8 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.Cur
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.FiniteField
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.GeometricBound
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.QuarterGap
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.RatePartition
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.UniformRate
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.WeightedSupport
 public import
   ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.WeightedSupportInterpolant

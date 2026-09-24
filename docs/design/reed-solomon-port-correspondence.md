@@ -1782,6 +1782,18 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/Geom
 
 `prescribed_geometric_finite_list_bound` and `prescribed_geometric_close_list_bound` keep their names. They use the current prescribed weighted-support parameters and symbolic certificate APIs to give geometric bounds for finite sublists and the complete close-polynomial set. The geometric ratio/counting lemmas, parameters, certificate, and characteristic/cast facts are reused from their current owners. No public source declaration from this module was omitted.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/RatePartition.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/RatePartition.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`ratePartition_close_list_bound` and `exists_ratePartition_list_bound` keep their source names and mathematical statements. Their proofs use the current partition-parameter API, curve-certificate construction, and close-list bound. Neither declaration was deferred or left unported.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/UniformRate.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/UniformRate.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`uniformRatePartition_close_list_bound` and `uniform_capacity_list_bound` keep their source names and mathematical statements. Their proofs use the current uniform parameter names, generalized envelope certificate, curve-certificate construction, and close-list bound. Neither declaration was deferred or left unported.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/WeightedSupportInterpolant.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/WeightedSupportInterpolant.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
