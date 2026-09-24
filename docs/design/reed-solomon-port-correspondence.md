@@ -121,6 +121,10 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation
 
 The matching `ArkLibTest/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder.lean` remains unchanged and covers first-order support, interpolation, rank, and shifted-height cases. No example was added for this data-only declaration.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/FirstOrder/CurveFinite.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`exists_finite_firstOrder_curve_certificate_of_heightSlotCount` keeps its name, assumptions, and conclusion. The theorem is consolidated into the existing `FirstOrder.CurveCertificate` owner rather than a parallel module. Its proof uses the existing weighted-degree global multiplicity theorem. No public source declaration is omitted.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder/CurveHeightCounting.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/FirstOrder/CurveHeightCounting.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -4351,6 +4355,12 @@ finite set to `K` do not form a finite-dimensional `k`-space.
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/ComponentRecognition.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 Added `regular_principalOpen_graph_restriction`, which gives ideal restriction and cut nonvanishing when a polynomial graph covers the regular principal open of a positive-dimensional prime component. This shared result is used by both component-recognition results.
+
+## `ArkLibTest/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/FirstOrder/CurveFinite.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+An acceptance example uses `D = 1`, `A = m = 2`, `M = 0`, `μ = 1`, `k = 2`, `n = 2`, and `ℓ = h = 1`, with distinct centers in `ZMod 5` and zero received curves. It computes the strict slot surplus `10 < 11` and constructs the certificate with an agreement threshold matching the number of centers.
 
 ## `ArkLibTest/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition.lean`
 
