@@ -121,6 +121,10 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation
 
 `firstOrderCurveShiftedRowSlotBound_eq_sumRangeFrom` and `firstOrderCurveShiftedHeightSlotCount_eq_sumRangeFrom` were not ported because each only unfolds `Finset.sumRangeFrom` at start zero and neither has a consumer. `firstOrderCurveShiftedRowSlotBound_le_of_rankBound` was not ported because it has no consumer; a needed concrete profile comparison can be proved directly from finite-sum monotonicity.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/FirstOrder/CurveHeightCounting.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`firstOrderCurveShiftedRowSlotBound_le_of_rankBound` keeps its name and proves the shifted row-slot sum is bounded by any pointwise upper bound on the graded-rank profile. No declaration from this source file was omitted.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder/CurveRank.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/FirstOrder/CurveRank.lean` at ArkLib revision
@@ -732,6 +736,14 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation
 
 The interpolant total-jet-degree bounds are moved to `SourceColumn` and generalized to arbitrary finite column types; coefficient maps for the mapped bound target commutative semirings. The existing `SourceColumn.coeff_interpolant_natDegree_le` is generalized from `Fin N` to any finite column type and reused by the rank-based constructor. `SatisfiesLocalConstraints.map` is added to transport local constraints through coefficient maps. Separate `challengeHeight_le` and `jetWeight_le` aliases are not added because their bounds are available through `challengeDegree_le` and `jetTotalDegree_le`. `Matrix.kernel_height_lt_div_margin` is deferred to the RateHeight port because it has no consumer in this branch. Source support-certificate and jet-prefix imports are replaced by existing received-curve, source-column, and separant-chain APIs.
 
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/PartitionRank.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Symbolic/RatePartitionMatrix.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`mapped_curve_block_eq_local_matrix` became `localConstraintMatrix_map`, generalizing the algebra-map block identity to entrywise base change of the full matrix along any ring homomorphism. `monomial_local_matrix_rank_le` became `localConstraintCoordinates_rank_le_of_derivative_weight`, generalizing from monomial columns to arbitrary finite families of differential polynomials whose support has derivative-order weight at most `W`. The old symbolic weighted-support `Matrix.rank_prod_rows_le_sum` became a generic product-row rank bound in `ArkLib.ToMathlib.LinearAlgebra.Matrix.Rank`. `finiteConstraintMatrix_rank_le_partition` became `rank_map_supportedLocalConstraintMatrix_le_of_derivative_weight`, using the existing supported-row matrix and `localDerivativeCoordinateBudget` to bound rank by the number of points times the local budget.
+
+The separate `mapped_curve_block_eq_local_matrix` wrapper and `monomial_local_matrix_rank_le` theorem were not ported because the generalized theorems cover them. The `Matrix.rowBlock` helper was not ported because its row-block lambda is inlined into the generic product-row rank theorem.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/ReceivedCurve.lean`
 
 From `Symbolic/ReceivedLine.lean` and `Symbolic/ReceivedCurve.lean` under
@@ -1039,6 +1051,12 @@ at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`. `curveStageZero` 
 `curveStageOne_mono_derivative_of_factors` are now `orderOneCurveStageCharge_mono_total` (without
 `r ≤ v`) and `orderOneCurveStageCharge_mono_derivative`, and `curveStageZero_le_one_of_factors`
 is now `orderZeroCurveStageCharge_le_orderOne`, with `0 ≤ s` in place of `1 ≤ s`.
+
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/Uniform.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/FirstOrder/Uniform.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+The source declarations map into the destination namespace as follows: `ReedSolomon.uniformFirstOrderGradedRankProfile` → `ReedSolomon.HiddenDerivative.uniformFirstOrderGradedRankProfile`; `ReedSolomon.firstOrderGradedRankBound_le_uniformFirstOrderProfile` → `ReedSolomon.HiddenDerivative.firstOrderGradedRankBound_le_uniformFirstOrderProfile`; `ReedSolomon.uniformFirstOrderHeightWeightSum`, `ReedSolomon.uniformFirstOrderHeightTotalDegreeSum`, `ReedSolomon.uniformFirstOrderHeightFirstJetSum`, and `ReedSolomon.uniformFirstOrderRowWeightSum` → the same names under `ReedSolomon.HiddenDerivative`; the four corresponding `_eq` theorems → the same names under `ReedSolomon.HiddenDerivative`; `ReedSolomon.uniformFirstOrder_parameters` → `ReedSolomon.HiddenDerivative.uniformFirstOrder_parameters`. `uniformFirstOrder_parameters` drops the unnecessary `2 ≤ n` and `A ≤ n` premises; `2 ≤ k` and `25 * k + 6 * n ≤ 25 * A` suffice. The fixed profile values, sum, and weighted sum are checked in acceptance examples rather than exported as library theorems because they have no production consumers.
 
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FreeOrder.lean`
 
