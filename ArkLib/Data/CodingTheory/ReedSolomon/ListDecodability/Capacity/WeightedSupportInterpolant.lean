@@ -6,9 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Certificates
-public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.Soundness
-public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.WeightedSupport
-public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.Margin
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.Interpolation
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.SolutionEmbedding
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.WeightedSupport.Block
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.WeightedSupport.Capacity
@@ -16,7 +14,9 @@ public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.WeightedSuppo
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.WeightedSupport.ScalarParameters
 public import ArkLib.Data.CodingTheory.ReedSolomon.AgreementThreshold
 public import ArkLib.Data.Polynomial.Differential.TotalJetDegreeCount
-public import Mathlib.Data.Nat.Factorial.NatCast
+
+import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.Margin
+import ArkLib.Data.Polynomial.Differential.WitnessCount
 
 
 /-!
@@ -29,8 +29,6 @@ embedding agreeing polynomials into the bounded solutions of its interpolant.
 
 ## Main statements
 
-* `exists_weightedSupport_interpolant_of_fixed_margin`: a nonzero interpolant in the weighted
-  support space from a strict dimension margin.
 * `exists_prescribed_weightedSupport_construction`: a hidden-derivative certificate at the
   prescribed weighted-support parameters.
 * `HiddenDerivativeInterpolationCertificate.agreeingPolynomials_encard_le_totalJetDegree`: the
@@ -51,74 +49,13 @@ namespace ReedSolomon
 noncomputable section
 
 open HiddenDerivative ListDecoding Polynomial
-open HiddenDerivative.SymbolicReceivedInterpolation
 open HiddenDerivative.WeightedSupportParameters
-
-set_option maxHeartbeats 800000 in
--- Elaborating the symbolic matrix witness crosses the full weighted-support rank construction.
-/-- Specializing the canonical symbolic kernel gives an actual weighted-support interpolant.
-The returned strict degree bounds are exactly those used by the decoder root count. -/
-theorem exists_weightedSupport_interpolant_of_fixed_margin
-    {F : Type*} [Field F] {n D d m W A : ℕ} {g : ℝ}
-    (domain : Fin n ↪ F) (received : Fin n → F)
-    (hD : 0 < D) (hm : 0 < m) (hA : 0 < A) (hg : g ≤ 1)
-    (hcut : (D : ℝ) * m * (1 + g) ≤ (m * A : ℕ))
-    (hmargin : (543 / 500 : ℝ) * n *
-      Module.finrank F (LinearMap.range
-        (weightedSupportLocalConstraint (R := F) (d := d) (W := W)
-          (L := (D : ℝ) * m * (1 + g)) m hD 0 0)) <
-      Module.finrank F (weightedSupportSpace F D d W
-        ((D : ℝ) * m * (1 + g)) hD)) :
-    ∃ Q : DifferentialPolynomial F d,
-      Q ≠ 0 ∧
-      Q ∈ weightedSupportSpace F D d W ((D : ℝ) * m * (1 + g)) hD ∧
-      (∀ i, SatisfiesLocalConstraints m (domain i) (received i) Q) ∧
-      jetTotalDegree Q < 2 * m ∧
-    differentialWeightedDegree D Q < m * A := by
-  let ν := 2 * m - 1
-  have hν : 0 < ν := by dsimp only [ν]; omega
-  have hy₀ : ∀ u, WeightedSupportEligible D d W
-      ((D : ℝ) * m * (1 + g)) u → u (some 0) ≤ ν := by
-    intro u hu
-    exact HiddenDerivative.y₀_le_two_mul_sub_one_of_eligible
-      hD hg hm hu
-  obtain ⟨v, _hv, _hkernel, _hdegree, _hheight, _hprimitive, hnozero,
-      hconstraints, hsupport⟩ :=
-    HiddenDerivative.exists_symbolic_weightedSupport_interpolant_of_fixed_margin
-      hD hν (fun i ↦ domain i) received (fun _ ↦ 0) hy₀ hmargin
-  let columns := HiddenDerivative.weightedSupportColumns
-    (d := d) (W := W) (L := (D : ℝ) * m * (1 + g)) hD
-  let φ : F[X] →+* F := Polynomial.eval₂RingHom (RingHom.id F) 0
-  let Q : DifferentialPolynomial F d :=
-    MvPolynomial.map φ (SourceColumn.interpolant columns v)
-  have hQ0 : Q ≠ 0 := by
-    simpa only [Q, φ] using hnozero (RingHom.id F) 0
-  have hQsupport :
-      Q ∈ weightedSupportSpace F D d W ((D : ℝ) * m * (1 + g)) hD := by
-    simpa only [Q, φ, columns] using
-      map_interpolant_mem_weightedSupportSpace hD columns hsupport v (RingHom.id F) 0
-  have hQlocal : ∀ i, SatisfiesLocalConstraints m (domain i) (received i) Q := by
-    intro i
-    have hi := SatisfiesLocalConstraints.map φ m (Polynomial.C (domain i))
-      (receivedLine (received i) 0) (SourceColumn.interpolant columns v) (hconstraints i)
-    change SatisfiesLocalConstraints m
-      (φ (Polynomial.C (domain i))) (φ (receivedLine (received i) 0)) Q at hi
-    convert hi using 1 <;> simp [φ, receivedLine]
-  have hdecoder := decoder_bounds_of_mem_weightedSupportSpace hm hA
-    (by
-      have hnonneg : (0 : ℝ) ≤ (D : ℝ) * m := by positivity
-      calc
-        (D : ℝ) * m * (1 + g) ≤ (D : ℝ) * m * 2 :=
-          mul_le_mul_of_nonneg_left (by linarith) hnonneg
-        _ = (D : ℝ) * (2 * m) := by ring)
-    hcut hQsupport
-  exact ⟨Q, hQ0, hQsupport, hQlocal, hdecoder.1, hdecoder.2⟩
 
 set_option maxHeartbeats 800000 in
 -- The prescribed margin expands the continuous simplex and symbolic kernel constructions.
 /-- The explicit prescribed weighted-support parameters give a genuine hidden-derivative
 construction. The original message dimension remains the input parameter. -/
-theorem exists_prescribed_weightedSupport_construction_core
+private theorem exists_prescribed_weightedSupport_construction_core
     {δ : ℝ} {n k q : ℕ} [Fact q.Prime]
     (domain : Fin n ↪ ZMod q) (received : Fin n → ZMod q)
     (hδ : 0 < δ) (hδmax : δ < 1 / 4) (hk : 0 < k)
@@ -260,22 +197,15 @@ theorem HiddenDerivativeInterpolationCertificate.agreeingPolynomials_encard_le_t
     (hlarge : 2 * (m * A + d - K) ≤ q ^ e) :
     (agreeingPolynomials domain k A received).encard ≤
       (4 * m * q ^ (e * d) : ℕ) := by
-  have hdegreeChar : construction.ambientDim - 1 < q :=
-    construction.below_characteristic.1
   have hbinom : ∀ a s, 0 < a → a + s ≤ construction.ambientDim - 1 →
       ((a + s).choose s : ZMod q) ≠ 0 := by
     intro a s ha has
-    have hsum : a + s < q := has.trans_lt hdegreeChar
-    have hfact : IsUnit (Nat.factorial (a + s) : ZMod q) :=
-      (IsUnit.natCast_factorial_iff_of_charP q).2 hsum
-    have heq : ((a + s).choose s : ZMod q) * (Nat.factorial s : ZMod q) *
-        (Nat.factorial (a + s - s) : ZMod q) = (Nat.factorial (a + s) : ZMod q) := by
-      simpa only [Nat.cast_mul] using congrArg (fun x : ℕ => (x : ZMod q))
-        (Nat.choose_mul_factorial_mul_factorial (by omega : s ≤ a + s))
-    intro hzero
-    apply hfact.ne_zero
-    rw [← heq, hzero]
-    simp
+    have hchar : construction.ambientDim - 1 < ringChar (ZMod q) := by
+      rw [ringChar.eq (ZMod q) q]
+      exact construction.below_characteristic.1
+    exact PolynomialDifferential.natCast_choose_ne_zero_of_ringChar
+      (F := ZMod q) (D := construction.ambientDim - 1) (s := s)
+      (Or.inr hchar) a ha has
   have hdegreeEq : construction.ambientDim - 1 = K - 1 := by omega
   have hweight : differentialWeightedDegree (construction.ambientDim - 1)
       construction.interpolant - (construction.ambientDim - 1 - d) ≤ m * A + d - K := by
