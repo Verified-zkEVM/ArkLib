@@ -59,6 +59,9 @@ open MvPolynomial Finset
 private abbrev zeroJetEquation (F : Type*) [CommRing F] (d : ℕ) :
     DifferentialPolynomial F d := X (some 0)
 
+private def zeroJetBoundedRoot : BoundedSolution (zeroJetEquation ℚ 0) 0 :=
+  ⟨⟨0, by simp⟩, by simp⟩
+
 private abbrev constantDerivativeEquation (F : Type*) [CommRing F] :
     DifferentialPolynomial F 1 := X (some 1)
 
@@ -335,13 +338,10 @@ example : derivativeDescent cubicEquation 1 ≠ 0 ∧
     ext j
     fin_cases j <;> simp [DependsOnJet, jetDegree_cubicEquation]
   have hhighest : highestActiveJet cubicEquation = some 1 := by
-    rw [highestActiveJet_eq_some_max cubicEquation (by simp [hactive])]
-    simp [hactive]
-  have hcast : JetDegreeCastsNeZero cubicEquation 1 := by
-    apply jetDegreeCastsNeZero_of_ringChar
-    exact Or.inl (ringChar.eq_zero : ringChar ℚ = 0)
+    simpa [hactive] using highestActiveJet_eq_some_max cubicEquation (by simp [hactive])
+  have hcast := jetDegreeCastsNeZero_of_jetTotalDegree_charGuard (Q := cubicEquation)
+    (ν := jetTotalDegree cubicEquation) le_rfl (Or.inl ringChar.eq_zero) 1
   exact derivativeDescent_spec_of_highestActiveJet_eq_some hhighest hcast
-
 /-! ### Direct regular iteration -/
 
 /-- The equation `y' = y`, as the differential polynomial `Y₁ - Y₀`. -/
@@ -998,64 +998,61 @@ example : Nat.card (BoundedSolution (constantDerivativeEquation (ZMod 3)) 2) = 3
     simpa [Nat.card_zmod] using Nat.card_le_card_of_injective solution hinj
   exact Nat.le_antisymm hupper hlower
 
-/-! ### Recursive degree count -/
-
-private def sumEquation : DifferentialPolynomial ℚ 1 := X (some 0) + X (some 1)
-
-private theorem mem_support_sumEquation (j : Fin 2) :
-    Finsupp.single (some j) 1 ∈ sumEquation.support := by
-  fin_cases j <;> simp [sumEquation, MvPolynomial.mem_support_iff, MvPolynomial.coeff_X,
-    Finsupp.single_eq_single_iff]
-
-/-- For `Y₀ + Y₁`, total jet degree is `1` while the individual degrees sum to `2`. -/
-example : jetTotalDegree sumEquation = 1 ∧ ∑ j : Fin 2, jetDegree sumEquation j = 2 := by
-  have hdeg (j : Fin 2) : jetDegree sumEquation j = 1 := by
-    refine le_antisymm ?_ ?_
-    · refine MvPolynomial.degreeOf_le_iff.mpr fun u hu ↦ ?_
-      have hsub := MvPolynomial.support_add hu
-      simp only [MvPolynomial.support_X, mem_union, mem_singleton] at hsub
-      rcases hsub with rfl | rfl <;> simp [Finsupp.single_apply] <;> split_ifs <;> simp
-    · have h := MvPolynomial.monomial_le_degreeOf (some j) (mem_support_sumEquation j)
-      rw [Finsupp.single_eq_same] at h
-      exact h
-  refine ⟨le_antisymm ?_ ((hdeg 0).symm.le.trans (jetDegree_le_total _ 0)), by simp [hdeg]⟩
-  refine (jetTotalDegree_le_iff _ 1).mpr fun u hu ↦ ?_
-  have hsub := MvPolynomial.support_add hu
-  simp only [MvPolynomial.support_X, mem_union, mem_singleton] at hsub
-  rcases hsub with rfl | rfl <;> simp [totalJetDegree_eq_sum, Fin.sum_univ_two]
-
-/-- For `Y₀ = 0` over `ℚ`, the singleton root is counted by the recursive bound. -/
+/-! ### Rational recursive and agreement bounds -/
+/-- The singleton root `0` of `Y₀ = 0` satisfies the recursive and agreement bounds. -/
 example :
-    1 * ({(0 : Polynomial ℚ)} : Finset (Polynomial ℚ)).card ≤
-      jetTotalDegree (zeroJetEquation ℚ 0) * 1 := by
+    (({zeroJetBoundedRoot} : Finset
+      (BoundedSolution (zeroJetEquation ℚ 0) 0)).card : ℚ) ≤
+        (jetTotalDegree (zeroJetEquation ℚ 0) : ℚ) * 1 ∧
+      (({zeroJetBoundedRoot} : Finset
+        (BoundedSolution (zeroJetEquation ℚ 0) 0)).card : ℚ) ≤ 1 ∧
+      (({(0 : Polynomial ℚ)} : Finset (Polynomial ℚ)).card : ℚ) ≤ 1 := by
+  classical
   let Q : DifferentialPolynomial ℚ 0 := zeroJetEquation ℚ 0
   let roots : Finset (Polynomial ℚ) := {0}
+  let domain : Fin 1 ↪ ℚ := ⟨fun _ ↦ 0, fun i j _ ↦ Subsingleton.elim i j⟩
+  let accepts : Polynomial ℚ → Prop := fun P ↦
+    P.degree < 1 ∧ 1 ≤ (Finset.univ.filter fun i ↦ P.eval (domain i) = 0).card
+  let boundedRoots : Finset (BoundedSolution Q 0) := {zeroJetBoundedRoot}
   have hQ : Q ≠ 0 := by simp [Q, zeroJetEquation]
-  have hcast : ∀ j, JetDegreeCastsNeZero Q j := by
-    intro j
-    apply jetDegreeCastsNeZero_of_ringChar
-    exact Or.inl (ringChar.eq_zero : ringChar ℚ = 0)
+  have hcast : ∀ j, JetDegreeCastsNeZero Q j := fun j ↦
+    jetDegreeCastsNeZero_of_ringChar (Or.inl ringChar.eq_zero)
+  have hdegree : jetTotalDegree Q ≤ 1 := by
+    simpa [Q, zeroJetEquation, jetDegree] using jetTotalDegree_le_sum_jetDegree Q
+  have hbin : ∀ r, r ≤ 0 → ∀ i, r < i → i < 1 → (i.choose r : ℚ) ≠ 0 := by omega
   have hsolution : ∀ P ∈ roots, differentialSpecialization Q P = 0 := by
-    intro P hP
-    simp only [roots, Finset.mem_singleton] at hP
-    subst P
-    simp [Q, zeroJetEquation, differentialSpecialization, differentialSpecializationHom]
-  have hregular : ∀ (current : DifferentialPolynomial ℚ 0) (s : Fin 1),
-      Relation.ReflTransGen (SingularStep (F := ℚ) (d := 0)) current Q →
-        highestActiveJet current = some s → ∀ regular ⊆ roots,
-          (∀ P ∈ regular, differentialSpecialization current P = 0 ∧
-            differentialSpecialization (separant current s) P ≠ 0) →
-              1 * regular.card ≤ 1 := by
-    intro current s hreach hactive regular hsubset _
-    have hcard : regular.card ≤ 1 := by
-      calc
-        regular.card ≤ roots.card := Finset.card_le_card hsubset
-        _ = 1 := by simp [roots]
-    simpa using hcard
-  simpa [Q, roots, zeroJetEquation] using
-    (card_mul_le_jetTotalDegree_mul (Q := Q) (left := 1) (cost := 1)
-      hQ hcast roots hsolution hregular)
-
+    simp [roots, Q, zeroJetEquation]
+  have hmul := card_mul_le_jetTotalDegree_mul hQ hcast roots hsolution (left := 1)
+    (cost := 1) (by intro _ _ _ _ _ hs _; simpa [roots] using Finset.card_le_card hs)
+  have haccepted : ∀ P ∈ roots, accepts P := by simp [roots, accepts, domain]
+  have hregular : RegularBranchRatBudget Q 0 accepts 1 := by
+    simpa [Q, zeroJetEquation] using regularBranchRatBudget_of_agreement
+      (Q := Q) (D := 0) (K := 1) (k := 1) (ν := 1) (n := 1) (A := 1)
+      (by norm_num) (by norm_num) domain (fun _ ↦ 0) (by norm_num)
+      (by norm_num) (by norm_num) accepts (by intro P; rfl) hdegree hbin
+  have hboundedAccepted : ∀ P ∈ boundedRoots, accepts P.polynomial := by
+    intro P hP; simp only [boundedRoots, mem_singleton] at hP; subst P
+    simp [BoundedSolution.polynomial, accepts, domain, zeroJetBoundedRoot]
+  have hrecursive := boundedSolution_recursive_counting_totalJetDegree Q hQ hcast accepts 1
+    (by norm_num) boundedRoots hboundedAccepted hregular
+  have hsquare := boundedSolution_card_le_sq_totalJetDegree Q hQ hcast accepts 1 1
+    (by norm_num) boundedRoots hboundedAccepted hdegree (by simpa using hregular)
+  have hagreementBound := finite_solutions_card_le_sq_totalJetDegree_of_agreement Q 1 1 1
+    (by norm_num) (by norm_num) hQ hcast hdegree (n := 1) (A := 1) domain (fun _ ↦ 0)
+    (by norm_num) (by norm_num) (by norm_num)
+    hbin accepts (by intro P; rfl) roots hsolution haccepted
+  have hTaylorBound := card_le_of_regular_solutions_agreement (E := AlgebraicClosure ℚ)
+    (n := 1) (A := 1) Q 1 1 2 (taylorExponentSufficient_two_mul 0 1)
+    (by norm_num) (by norm_num) domain (fun _ ↦ 0) (by norm_num) (by norm_num)
+    roots (by simp [roots]) hsolution
+    (by simp [roots, Q, zeroJetEquation, separant, differentialSpecialization,
+      differentialSpecializationHom]) (hbin 0 (by omega))
+    (by intro P hP; simp_all [roots, accepts, domain])
+  refine ⟨?_, ?_, ?_⟩
+  · simpa [Q, zeroJetEquation, boundedRoots] using hrecursive
+  · norm_num [Q, zeroJetEquation, boundedRoots] at hsquare ⊢
+  · norm_num [Q, roots, zeroJetEquation, rationalTaylorCutDegreeBound,
+      jetTotalDegree] at hagreementBound hmul hTaylorBound ⊢
 /-! ### Witness count -/
 
 /-- The one regular bounded solution `0` of `Y₀ = 0` attains the `ZMod 3` witness-count bound. -/
@@ -1396,36 +1393,17 @@ example :
 
 /-! ### Taylor chart coefficient extension -/
 
-/-- A nonempty rational solution family has jets and satisfies the sharp agreement count. -/
-example :
-    (∃ _center : ℚ, ∃ J : Finset (Fin 1 → ℚ), J.card = 1) ∧
-    (({(0 : Polynomial ℚ)} : Finset (Polynomial ℚ)).card : ℚ) ≤
-      jetTotalDegree (zeroJetEquation ℚ 0) *
-        (((((1 - 1 + 1) * rationalTaylorCutDegreeBound (zeroJetEquation ℚ 0) 2 : ℕ) : ℚ) /
-          ((1 - 1 + 1 : ℕ) : ℚ))) ^ 0 := by
-  constructor
-  · obtain ⟨center, J, hcard, _⟩ := exists_regular_solution_jet_family_of_exponent
-      (f := RingHom.id ℚ) (Q := zeroJetEquation ℚ 0) (K := 1) (k := 1) (τ := 2)
-      (taylorExponentSufficient_two_mul 0 1) (by norm_num) {0} (A := 1)
-      (domain := fun _ : Fin 1 ↦ 0) (received := fun _ ↦ 0)
-      (by simp) (by simp [zeroJetEquation, differentialSpecialization,
-        differentialSpecializationHom])
-      (by simp [zeroJetEquation, separant, differentialSpecialization,
-        differentialSpecializationHom]) (by simp) (by simp)
-    exact ⟨center, J, by simpa using hcard⟩
-  · have h := card_le_of_regular_solutions_agreement (E := AlgebraicClosure ℚ)
-      (Q := zeroJetEquation ℚ 0) (K := 1) (k := 1) (τ := 2)
-      (hτ := taylorExponentSufficient_two_mul 0 1) (hK := by norm_num)
-      (hkK := by norm_num) (n := 1) (A := 1)
-      (domain := ⟨fun _ : Fin 1 ↦ 0, fun i j _ ↦ Subsingleton.elim i j⟩)
-      (received := fun _ ↦ 0) (hkA := by norm_num) (hAn := by norm_num)
-      (S := {0}) (hdegree := by simp)
-      (hsol := by simp [zeroJetEquation, differentialSpecialization,
-        differentialSpecializationHom])
-      (hsep := by simp [zeroJetEquation, separant, differentialSpecialization,
-        differentialSpecializationHom])
-      (hbin := by omega) (hagree := by intro P hP; simp_all)
-    norm_num [zeroJetEquation, rationalTaylorCutDegreeBound, jetTotalDegree] at h ⊢; exact h
+/-- A nonempty rational solution family has jets in a common Taylor chart. -/
+example : ∃ _center : ℚ, ∃ J : Finset (Fin 1 → ℚ), J.card = 1 := by
+  obtain ⟨center, J, hcard, _⟩ := exists_regular_solution_jet_family_of_exponent
+    (f := RingHom.id ℚ) (Q := zeroJetEquation ℚ 0) (K := 1) (k := 1) (τ := 2)
+    (taylorExponentSufficient_two_mul 0 1) (by norm_num) {0} (A := 1)
+    (domain := fun _ : Fin 1 ↦ 0) (received := fun _ ↦ 0)
+    (by simp) (by simp [zeroJetEquation, differentialSpecialization,
+      differentialSpecializationHom])
+    (by simp [zeroJetEquation, separant, differentialSpecialization,
+      differentialSpecializationHom]) (by simp) (by simp)
+  exact ⟨center, J, by simpa using hcard⟩
 
 /-- A nonempty regular family over `ZMod 2` has a common center in its algebraic closure. -/
 example :
@@ -1493,5 +1471,9 @@ example :
   exact ⟨positiveCurveEquation_yOneDegree_le retainedCurveEquation,
     positiveCurveEquation_jetTotalDegree_le retainedCurveEquation,
     positiveCurveEquation_coeffNatDegreeLE retainedCurveEquation⟩
+example : 5 ≤ ringChar (ZMod 5) := by
+  exact (characteristic_bounds_of_max (F := ZMod 5) (K := 5) (ν := 3)
+    (Or.inr (by rw [ringChar.eq (ZMod 5) 5]; norm_num))).2.resolve_left
+      (by rw [ringChar.eq (ZMod 5) 5]; norm_num)
 end
 end PolynomialDifferential
