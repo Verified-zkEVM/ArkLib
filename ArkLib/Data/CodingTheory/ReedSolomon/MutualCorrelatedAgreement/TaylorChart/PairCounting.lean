@@ -26,8 +26,9 @@ the high-cut incidence bound gives a sharp count for finite families of admissib
   identities and common-agreement condition.
 * `IsAdmissibleChartPair.specialize` identifies the specialized pair with the rational Taylor
   reconstruction at every regular challenge.
-* `admissibleChartPairs_card_le` and `admissibleChartPairFamily_card_le` bound the number of
-  admissible pairs by the regular high-cut incidence estimate, with a singleton bound at `k = 0`.
+* `admissibleChartPairs_card_le` and `admissibleChartPairFamily_card_le` give the ordinary
+  incidence bound. Their `_sharp` counterparts use the numerator `n - k + 1`; all four give a
+  singleton bound at `k = 0`.
 
 ## References
 
@@ -361,6 +362,134 @@ theorem admissibleChartPairs_card_le [DecidableEq F] [IsAlgClosed E]
       hK hkK hkpos hkL hLn hjet pairs hpairs
     simpa [hk] using hbound
 
+private theorem admissibleChartPairs_card_le_sharp_core [DecidableEq F] [IsAlgClosed E]
+    (domain : Fin n ↪ F) (f g : Fin n → F) (iota : F →+* E)
+    (center : E) (Q : DifferentialPolynomial E[X] r) (K k L v : ℕ)
+    (hK : r < K) (hkK : k ≤ K) (hkL : k ≤ L) (hLn : L ≤ n)
+    (hjet : Q.weightedTotalDegree (fun i ↦ i.elim 0 (fun _ ↦ 1)) ≤ v)
+    (pairs : Finset (F[X] × F[X]))
+    (hpairs : ∀ pair ∈ pairs,
+      IsAdmissibleChartPair domain f g iota center Q K k L pair) :
+    (pairs.card : ℚ) ≤ (v : ℚ) *
+      ((((((n - k + 1) * (1 + 2 * K * (v - 1)) : ℕ) : ℚ) /
+        ((L - k + 1 : ℕ) : ℚ))) ^ r) := by
+  classical
+  by_cases hempty : pairs = ∅
+  · subst pairs
+    simp only [Finset.card_empty, Nat.cast_zero]
+    positivity
+  let auxiliary := pairs.image fun pair ↦
+    chartPairPullback iota center pair (jointInitialJetSeparant center Q)
+  obtain ⟨z, _, hinj, havoid⟩ :=
+    exists_correlatedPairSpecialization_injOn_avoiding_roots iota pairs ∅ auxiliary (by
+      intro R hR
+      obtain ⟨pair, hp, rfl⟩ := Finset.mem_image.mp hR
+      exact (hpairs pair hp).regular)
+  let Qz := MvPolynomial.map (Polynomial.evalRingHom z) Q
+  let jets : Finset (Fin (r + 1) → E) := pairs.image (chartPairJet iota center z)
+  have hspec (pair : F[X] × F[X]) (hp : pair ∈ pairs) :=
+    (hpairs pair hp).specialize hkK z
+      (havoid _ (Finset.mem_image.mpr ⟨pair, hp, rfl⟩))
+  have hjetinj : Set.InjOn (chartPairJet (r := r) iota center z) (↑pairs) := by
+    intro p hp q hq heq
+    apply hinj hp hq
+    rw [← (hspec p hp).2.2.2, ← (hspec q hq).2.2.2, heq]
+  have hcard : jets.card = pairs.card := Finset.card_image_of_injOn hjetinj
+  let domainE : Fin n ↪ E := ⟨fun i ↦ iota (domain i), iota.injective.comp domain.injective⟩
+  let received : Fin n → E := fun i ↦ iota (f i) + z * iota (g i)
+  have hbound := card_le_of_highTaylorCuts_of_agreement_sharp center Qz
+    (K := K) (k := k) (τ := 2 * K) (taylorExponentSufficient_two_mul r K) hK
+    (ι := Fin n) domainE received domainE.injective (A := L) hkL (by simpa using hLn) jets (by
+      intro jet hj
+      obtain ⟨pair, hp, rfl⟩ := Finset.mem_image.mp hj
+      exact ⟨(hspec pair hp).1, (hspec pair hp).2.1,
+        fun l hkl hlK ↦ (hspec pair hp).2.2.1 ⟨l, hlK⟩ hkl⟩) (by
+      intro jet hj
+      obtain ⟨pair, hp, rfl⟩ := Finset.mem_image.mp hj
+      apply (hpairs pair hp).common.trans
+      have hsubset : (commonPolynomialAgreementSet domain f g pair.1 pair.2 : Set (Fin n)) ⊆
+          {i | aeval (chartPairJet (r := r) iota center z pair)
+            (taylorAgreementEquation center Qz K (2 * K) (domainE i) (received i)) = 0} := by
+        intro i hi
+        have hi' : pair.1.eval (domain i) = f i ∧ pair.2.eval (domain i) = g i := by
+          have hiFin : i ∈ commonPolynomialAgreementSet domain f g pair.1 pair.2 := by
+            simpa using hi
+          exact (mem_commonPolynomialAgreementSet domain f g pair.1 pair.2 i).mp hiFin
+        exact (taylorAgreementEquation_eq_zero_iff center Qz
+          (taylorExponentSufficient_two_mul r K) (chartPairJet (r := r) iota center z pair)
+          (hspec pair hp).2.1 (domainE i) (received i)).2 (by
+            rw [(hspec pair hp).2.2.2]
+            change (correlatedPairSpecialization iota z pair).eval (iota (domain i)) =
+              iota (f i) + z * iota (g i)
+            simp only [correlatedPairSpecialization, Polynomial.eval_add,
+              Polynomial.eval_mul, Polynomial.eval_C, Polynomial.eval_map_apply, hi'.1,
+              hi'.2])
+      calc
+        (commonPolynomialAgreementSet domain f g pair.1 pair.2).card =
+            (commonPolynomialAgreementSet domain f g pair.1 pair.2 : Set (Fin n)).ncard := by
+          simp
+        _ ≤ _ := Set.ncard_le_ncard hsubset)
+  rw [hcard, Fintype.card_fin] at hbound
+  have hweight : (fun i : JetVariable r ↦ i.elim 0 (fun _ ↦ 1)) = jetDegreeWeight := by
+    funext i
+    cases i <;> rfl
+  have hjetQ : jetTotalDegree Qz ≤ v := by
+    change Qz.weightedTotalDegree jetDegreeWeight ≤ v
+    rw [← hweight]
+    apply Finset.sup_le_iff.mpr
+    intro m hm
+    exact (le_weightedTotalDegree _
+      (support_map_subset (Polynomial.evalRingHom z) Q hm)).trans hjet
+  have hB : rationalTaylorCutDegreeBound Qz (2 * K) ≤ 1 + 2 * K * (v - 1) := by
+    unfold rationalTaylorCutDegreeBound
+    exact Nat.add_le_add_left (Nat.mul_le_mul_left _ (Nat.sub_le_sub_right hjetQ 1)) 1
+  apply hbound.trans
+  apply mul_le_mul
+  · exact_mod_cast hjetQ
+  · apply pow_le_pow_left₀ (by positivity)
+    apply div_le_div_of_nonneg_right _ (by positivity)
+    exact_mod_cast Nat.mul_le_mul_left (n - k + 1) hB
+  · positivity
+  · positivity
+
+/-- A finite family of admissible pair graphs obeys the sharp graph-count ratio. When `k = 0`,
+the degree conditions force every pair to be zero, so the family has at most one element.
+-/
+theorem admissibleChartPairs_card_le_sharp [DecidableEq F] [IsAlgClosed E]
+    (domain : Fin n ↪ F) (f g : Fin n → F) (iota : F →+* E)
+    (center : E) (Q : DifferentialPolynomial E[X] r) (K k L v : ℕ)
+    (hK : r < K) (hkK : k ≤ K) (hkL : k ≤ L) (hLn : L ≤ n)
+    (hjet : Q.weightedTotalDegree (fun i ↦ i.elim 0 (fun _ ↦ 1)) ≤ v)
+    (pairs : Finset (F[X] × F[X]))
+    (hpairs : ∀ pair ∈ pairs,
+      IsAdmissibleChartPair domain f g iota center Q K k L pair) :
+    (pairs.card : ℚ) ≤ if k = 0 then 1 else (v : ℚ) *
+      ((((((n - k + 1) * (1 + 2 * K * (v - 1)) : ℕ) : ℚ) /
+        ((L - k + 1 : ℕ) : ℚ))) ^ r) := by
+  classical
+  by_cases hk : k = 0
+  · have hzeroPair : ∀ pair ∈ pairs, pair = (0, 0) := by
+      intro pair hpair
+      have hadm := hpairs pair hpair
+      have hleft : pair.1.degree < (0 : WithBot ℕ) := by simpa [hk] using hadm.degree_left
+      have hright : pair.2.degree < (0 : WithBot ℕ) := by simpa [hk] using hadm.degree_right
+      cases pair with
+      | mk P₀ P₁ =>
+        simp only [Prod.mk.injEq]
+        exact ⟨Polynomial.degree_eq_bot.mp (Nat.WithBot.lt_zero_iff.mp hleft),
+          Polynomial.degree_eq_bot.mp (Nat.WithBot.lt_zero_iff.mp hright)⟩
+    have hsubset : pairs ⊆ ({(0, 0)} : Finset (F[X] × F[X])) := by
+      intro pair hpair
+      rw [hzeroPair pair hpair]
+      simp
+    have hcard : pairs.card ≤ 1 := by
+      exact (Finset.card_le_card hsubset).trans (by simp)
+    have hcardRat : (pairs.card : ℚ) ≤ 1 := by exact_mod_cast hcard
+    simpa [hk] using hcardRat
+  · have hbound := admissibleChartPairs_card_le_sharp_core domain f g iota center Q K k L v
+      hK hkK hkL hLn hjet pairs hpairs
+    simpa [hk] using hbound
+
 /-- The finite admissible-pair family contains only degree-bounded pairs with sufficient
 common agreement, together with their chart identities. -/
 def admissibleChartPairFamily [DecidableEq F]
@@ -397,6 +526,23 @@ theorem admissibleChartPairFamily_card_le [DecidableEq F] [IsAlgClosed E]
       if k = 0 then 1 else (v : ℚ) *
         ((((n * (1 + 2 * K * (v - 1)) : ℕ) : ℚ) / ((L - k + 1 : ℕ) : ℚ)) ^ r) := by
   apply admissibleChartPairs_card_le domain f g iota center Q K k L v hK hkK hkL hLn
+    hjet
+  intro pair hp
+  exact (mem_admissibleChartPairFamily_iff domain f g iota center Q K k L hkL pair).mp hp
+
+/-- The filtered family of admissible pairs has the sharp graph-count bound, with a singleton
+bound when `k = 0`.
+-/
+theorem admissibleChartPairFamily_card_le_sharp [DecidableEq F] [IsAlgClosed E]
+    (domain : Fin n ↪ F) (f g : Fin n → F) (iota : F →+* E)
+    (center : E) (Q : DifferentialPolynomial E[X] r) (K k L v : ℕ)
+    (hK : r < K) (hkK : k ≤ K) (hkL : k ≤ L) (hLn : L ≤ n)
+    (hjet : Q.weightedTotalDegree (fun i ↦ i.elim 0 (fun _ ↦ 1)) ≤ v) :
+    ((admissibleChartPairFamily domain f g iota center Q K k L).card : ℚ) ≤
+      if k = 0 then 1 else (v : ℚ) *
+        ((((((n - k + 1) * (1 + 2 * K * (v - 1)) : ℕ) : ℚ) /
+          ((L - k + 1 : ℕ) : ℚ))) ^ r) := by
+  apply admissibleChartPairs_card_le_sharp domain f g iota center Q K k L v hK hkK hkL hLn
     hjet
   intro pair hp
   exact (mem_admissibleChartPairFamily_iff domain f g iota center Q K k L hkL pair).mp hp
