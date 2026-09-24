@@ -1782,6 +1782,12 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/Fini
 
 `exists_field_bounded_capacity_list` keeps its name. It drops the unused assumptions `delta < 1` and `A ≤ 2 * n`, and states the derivative order and multiplicity through the canonical capacity parameter definitions. No declarations were left unported.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/FixedRateExplicitGate.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/RatePartition.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`fixedRatePartitionOrder_list_bound_selected` and `fixedRatePartitionOrder_list_bound` retain their names and mathematical guarantees, using the destination parameter and threshold APIs. The destination names `RatePartition.rateBlockThreshold` and `RatePartition.rateJetCap` replace `ratePartitionMathematicalLength` and `ratePartitionJetBound`; their definitions match. Both proofs specialize `ratePartition_close_list_bound`. Both public source declarations are covered; no declarations were omitted.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/GeometricBound.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/GeometricBound.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
