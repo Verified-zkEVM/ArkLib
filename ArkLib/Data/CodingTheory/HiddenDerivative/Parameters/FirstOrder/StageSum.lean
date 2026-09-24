@@ -8,6 +8,7 @@ module
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.StageComparison
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.StageCharges
 public import ArkLib.Data.Polynomial.Differential.FirstOrderStageSum
+public import ArkLib.ToMathlib.Combinatorics.Enumerative.IncidenceProduct
 public import Mathlib.Tactic.Linarith
 public import Mathlib.Tactic.Ring
 
@@ -23,7 +24,8 @@ separant chain.
 
 * `firstOrderCurveStageCap_add_height_eq_of_factors` identifies the stage cap with the curve
   bound.
-* `firstOrderCurveIncidenceRatio_one_le` bounds the common incidence ratio for nested sets.
+* `firstOrderCurveJointRatio_one_le`, `firstOrderCurveFiberRatio_one_le`, and
+  `firstOrderCurveDirectRatio_one_le` bound the three curve incidence factors.
 * `SeparantChain.sum_firstOrderCurveStageCharge_add_height_le_of_factors` bounds the terminal
   height and all stage charges by the curve bound.
 * `sum_firstOrderCurveStageCharge_add_height_le_of_directRatio` specializes the order-one factor
@@ -47,7 +49,7 @@ open scoped BigOperators
 
 variable {F : Type*} [CommSemiring F]
 
-/-- The incidence ratio for nested coordinate sets of sizes `lower ≤ upper ≤ n`. -/
+/-- The incidence factor with threshold `lower` and agreement size `upper` among `n` coordinates. -/
 def firstOrderCurveIncidenceRatio (n lower upper : ℕ) : ℚ :=
   ((n - lower + 1 : ℕ) : ℚ) / (upper - lower + 1 : ℕ)
 
@@ -63,32 +65,23 @@ def firstOrderCurveFiberRatio (n k L : ℕ) : ℚ :=
 def firstOrderCurveDirectRatio (n k A : ℕ) : ℚ :=
   firstOrderCurveIncidenceRatio n k A
 
-/-- The incidence ratio is at least one when the larger set is contained in the `n` coordinates. -/
-theorem firstOrderCurveIncidenceRatio_one_le {n lower upper : ℕ} (hLower : lower ≤ upper)
-    (hUpper : upper ≤ n) :
-    1 ≤ firstOrderCurveIncidenceRatio n lower upper := by
-  unfold firstOrderCurveIncidenceRatio
-  apply (le_div_iff₀ (by positivity)).2
-  push_cast [Nat.cast_sub hLower, Nat.cast_sub (hLower.trans hUpper)]
-  nlinarith [show (upper : ℚ) ≤ n by exact_mod_cast hUpper]
-
-/-- The split joint ratio is at least one throughout its geometric range. -/
-theorem firstOrderCurveJointRatio_one_le {n L A : ℕ} (hLA : L ≤ A) (hAn : A ≤ n) :
+/-- The split joint ratio is at least one when its agreement size is at most `n`. -/
+theorem firstOrderCurveJointRatio_one_le {n L A : ℕ} (hAn : A ≤ n) :
     1 ≤ firstOrderCurveJointRatio n L A := by
-  change 1 ≤ firstOrderCurveIncidenceRatio n L A
-  exact firstOrderCurveIncidenceRatio_one_le hLA hAn
+  unfold firstOrderCurveJointRatio firstOrderCurveIncidenceRatio
+  simpa using (one_le_incidenceFactor (T := L) (b := 1) hAn one_pos)
 
-/-- The fiber ratio is at least one throughout its geometric range. -/
-theorem firstOrderCurveFiberRatio_one_le {n k L : ℕ} (hkL : k ≤ L) (hLn : L ≤ n) :
+/-- The fiber ratio is at least one when its agreement size is at most `n`. -/
+theorem firstOrderCurveFiberRatio_one_le {n k L : ℕ} (hLn : L ≤ n) :
     1 ≤ firstOrderCurveFiberRatio n k L := by
-  change 1 ≤ firstOrderCurveIncidenceRatio n k L
-  exact firstOrderCurveIncidenceRatio_one_le hkL hLn
+  unfold firstOrderCurveFiberRatio firstOrderCurveIncidenceRatio
+  simpa using (one_le_incidenceFactor (T := k) (b := 1) hLn one_pos)
 
-/-- The direct order-one joint ratio is at least one throughout its geometric range. -/
-theorem firstOrderCurveDirectRatio_one_le {n k A : ℕ} (hkA : k ≤ A) (hAn : A ≤ n) :
+/-- The direct order-one joint ratio is at least one when its agreement size is at most `n`. -/
+theorem firstOrderCurveDirectRatio_one_le {n k A : ℕ} (hAn : A ≤ n) :
     1 ≤ firstOrderCurveDirectRatio n k A := by
-  change 1 ≤ firstOrderCurveIncidenceRatio n k A
-  exact firstOrderCurveIncidenceRatio_one_le hkA hAn
+  unfold firstOrderCurveDirectRatio firstOrderCurveIncidenceRatio
+  simpa using (one_le_incidenceFactor (T := k) (b := 1) hAn one_pos)
 
 /-- Splitting at `L` can only increase the joint ratio relative to going directly from `k`
 to `A`. -/
@@ -185,7 +178,7 @@ theorem sum_firstOrderCurveStageCharge_add_height_le_of_factors
     (hc : SeparantChain Q stages terminal) {n K k L A μ M ell h : ℕ}
     (τ : ℕ) (η : ℚ) (hη : 1 ≤ η)
     (hμ : jetTotalDegree Q ≤ μ) (hM : jetDegree Q 1 ≤ M)
-    (hK : 2 ≤ K) (hkL : k ≤ L) (hLA : L ≤ A) (hAn : A ≤ n) :
+    (hK : 2 ≤ K) (hLA : L ≤ A) (hAn : A ≤ n) :
     (h : ℚ) +
         (stages.map (fun stage ↦
           firstOrderCurveStageCharge n K k L A ell h stage (τ := τ) (η := η))).sum ≤
@@ -193,8 +186,8 @@ theorem sum_firstOrderCurveStageCharge_add_height_le_of_factors
   let s := firstOrderCurveJointRatio n L A
   let t := firstOrderCurveFiberRatio n k L
   let c : ℚ := ((ell * (n - L) : ℕ) : ℚ)
-  have hs : 1 ≤ s := firstOrderCurveJointRatio_one_le hLA hAn
-  have ht : 1 ≤ t := firstOrderCurveFiberRatio_one_le hkL (hLA.trans hAn)
+  have hs : 1 ≤ s := firstOrderCurveJointRatio_one_le hAn
+  have ht : 1 ≤ t := firstOrderCurveFiberRatio_one_le (hLA.trans hAn)
   have hs0 : 0 ≤ s := (by positivity)
   have ht0 : 0 ≤ t := (by positivity)
   have hη0 : 0 ≤ η := (by positivity)
@@ -226,7 +219,7 @@ theorem sum_firstOrderCurveStageCharge_add_height_le_of_directRatio
     (hc : SeparantChain Q stages terminal) {n K k L A μ M ell h : ℕ}
     (τ : ℕ)
     (hμ : jetTotalDegree Q ≤ μ) (hM : jetDegree Q 1 ≤ M)
-    (hK : 2 ≤ K) (hkL : k ≤ L) (hLA : L ≤ A) (hAn : A ≤ n) :
+    (hK : 2 ≤ K) (hLA : L ≤ A) (hAn : A ≤ n) :
     (h : ℚ) +
         (stages.map (fun stage ↦ firstOrderCurveStageCharge n K k L A ell h stage
           (τ := τ) (η := firstOrderCurveDirectRatio n k A))).sum ≤
@@ -234,7 +227,7 @@ theorem sum_firstOrderCurveStageCharge_add_height_le_of_directRatio
         (η := firstOrderCurveDirectRatio n k A) :=
   hc.sum_firstOrderCurveStageCharge_add_height_le_of_factors τ
     (firstOrderCurveDirectRatio n k A)
-    (firstOrderCurveDirectRatio_one_le (hkL.trans hLA) hAn)
-    hμ hM hK hkL hLA hAn
+    (firstOrderCurveDirectRatio_one_le hAn)
+    hμ hM hK hLA hAn
 
 end PolynomialDifferential.SeparantChain

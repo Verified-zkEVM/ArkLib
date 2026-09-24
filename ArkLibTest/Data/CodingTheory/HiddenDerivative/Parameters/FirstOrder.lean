@@ -439,7 +439,7 @@ example :
   exact automaticCurveChain.sum_firstOrderCurveStageCharge_add_height_le_of_directRatio
     (n := 4) (K := 2) (k := 1) (L := 1) (A := 2) (μ := 1) (M := 1)
     (ell := 1) (h := 1) (τ := 0) hdegree hderivative
-    (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num) (by norm_num)
 
 /-- The stage cap identity computes the concrete first-order curve bound. -/
 example :
