@@ -338,18 +338,29 @@ private theorem component_generator_mem :
     componentVariable (E := ComponentField) ∈ componentIdeal :=
   Ideal.subset_span (by simp)
 
-private theorem component_initialEquation_mem :
+private theorem component_initialEquation_eq_variable :
     jointInitialJetEquation (r := 0) (0 : ComponentField)
-      (componentEquation (E := ComponentField)) ∈ componentIdeal := by
+      (componentEquation (E := ComponentField)) = componentVariable := by
   change (optionEquivRight ComponentField (Fin 1)).symm
     (initialJetEquation (Polynomial.C (0 : ComponentField))
-      (componentEquation (E := ComponentField))) ∈ componentIdeal
+      (componentEquation (E := ComponentField))) = _
   rw [show initialJetEquation (Polynomial.C (0 : ComponentField))
       (componentEquation (E := ComponentField)) =
         (MvPolynomial.X (0 : Fin 1) : MvPolynomial (Fin 1) (Polynomial ComponentField)) by
     simp [initialJetEquation, componentEquation]]
-  simp only [optionEquivRight_symm_X]
+  simp only [optionEquivRight_symm_X, componentVariable]
+
+private theorem component_initialEquation_mem :
+    jointInitialJetEquation (r := 0) (0 : ComponentField)
+      (componentEquation (E := ComponentField)) ∈ componentIdeal := by
+  rw [component_initialEquation_eq_variable]
   exact component_generator_mem
+
+private theorem component_initialEquation_ne_zero :
+    jointInitialJetEquation (r := 0) (0 : ComponentField)
+      (componentEquation (E := ComponentField)) ≠ 0 := by
+  rw [component_initialEquation_eq_variable]
+  exact X_ne_zero _
 
 private theorem component_commonNumerator_one :
     commonTaylorNumeratorOver ComponentField (Polynomial.C (0 : ComponentField))
@@ -1375,6 +1386,24 @@ private theorem extractedAdmissibleFrobeniusPair :
       subst i
       simpa [componentWord, Polynomial.C_0] using component_admissibility_cut 0 (by simp))
   exact ⟨F₀, G₀, hP⟩
+
+example :
+    ∃ F₀ G₀ : ℚ[X],
+      ({(F₀, G₀)} : Finset (ℚ[X] × ℚ[X])).card ≤
+        (jointInitialJetEquation (r := 0) (0 : ComponentField)
+          (componentEquation (E := ComponentField))).degreeOf (some 0) := by
+  obtain ⟨F₀, G₀, hP⟩ := extractedAdmissibleFrobeniusPair
+  refine ⟨F₀, G₀, ?_⟩
+  exact admissibleFrobeniusPairs_card_le_degreeOf (K := 1) (k := 1)
+    domain componentWord componentWord
+    (algebraMap ℚ ComponentField) (fun _ ↦ (0 : ComponentField)) 0
+    (componentEquation (E := ComponentField)) 1 0 2
+    (by norm_num) (by norm_num) (taylorExponentSufficient_two_mul 0 1)
+    component_initialEquation_ne_zero {(F₀, G₀)} (by
+      intro P hmem
+      rw [Finset.mem_singleton] at hmem
+      cases hmem
+      exact hP)
 
 example :
     ∃ F₀ G₀ : ℚ[X],
