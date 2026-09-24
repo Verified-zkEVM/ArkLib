@@ -39,10 +39,11 @@ noncomputable section
 
 open MvPolynomial
 
-variable {F : Type*} [Field F] {r : ℕ}
+variable {F : Type*} {r : ℕ}
 
 /-- The initial separant has degree at most one less in the highest jet variable. -/
-theorem degreeOf_initialJetSeparant_le (center : Polynomial F)
+theorem degreeOf_initialJetSeparant_le [CommSemiring F] [Nontrivial F]
+    (center : Polynomial F)
     (Q : DifferentialPolynomial (Polynomial F) r) :
     (initialJetSeparant center Q).degreeOf (Fin.last r) ≤
       Q.degreeOf (some (Fin.last r)) - 1 := by
@@ -63,7 +64,7 @@ theorem degreeOf_initialJetSeparant_le (center : Polynomial F)
 /-- If the Taylor index-weight degree of `Q` is at most `v`, its rational Taylor numerator has
 degree at most `(2(l - r) - 1) * (v - 1) + l` in the highest jet variable. -/
 theorem degreeOf_rationalTaylorNumeratorOver_le
-    (center : Polynomial F) (Q : DifferentialPolynomial (Polynomial F) r) (v : ℕ)
+    [Field F] (center : Polynomial F) (Q : DifferentialPolynomial (Polynomial F) r) (v : ℕ)
     (hr : 0 < r) (hv : 0 < v)
     (hQ : Q.weightedTotalDegree (indexWeight (r + 1)) ≤ v) (l : ℕ) :
     (rationalTaylorNumeratorOver F center Q l).degreeOf (Fin.last r) ≤
@@ -132,7 +133,7 @@ theorem degreeOf_rationalTaylorNumeratorOver_le
 
 /-- In first order, a degree bound on `Y₁` gives the rational Taylor numerator bound. -/
 theorem degreeOf_rationalTaylorNumeratorOver_firstOrder
-    (center : Polynomial F) (Q : DifferentialPolynomial (Polynomial F) 1) (v : ℕ)
+    [Field F] (center : Polynomial F) (Q : DifferentialPolynomial (Polynomial F) 1) (v : ℕ)
     (hv : 0 < v) (hjet : Q.degreeOf (some 1) ≤ v) (l : ℕ) :
     (rationalTaylorNumeratorOver F center Q l).degreeOf 1 ≤
       (2 * (l - 1) - 1) * (v - 1) + l := by
@@ -144,7 +145,7 @@ theorem degreeOf_rationalTaylorNumeratorOver_firstOrder
 /-- If `τ` is sufficient for the chart, every padded Taylor numerator has degree at most
 `τ * (v - 1) + l` in the highest jet variable. -/
 theorem degreeOf_commonTaylorNumeratorOver_le
-    (center : Polynomial F) (Q : DifferentialPolynomial (Polynomial F) r)
+    [Field F] (center : Polynomial F) (Q : DifferentialPolynomial (Polynomial F) r)
     (v K τ : ℕ) (hτ : TaylorExponentSufficient r K τ) (hr : 0 < r) (hv : 0 < v)
     (hQ : Q.weightedTotalDegree (indexWeight (r + 1)) ≤ v) (l : Fin K) :
     (commonTaylorNumeratorOver F center Q τ l).degreeOf (Fin.last r) ≤
@@ -165,7 +166,7 @@ theorem degreeOf_commonTaylorNumeratorOver_le
 
 /-- In first order, a degree bound on `Y₁` gives the common Taylor numerator bound. -/
 theorem degreeOf_commonTaylorNumeratorOver_firstOrder
-    (center : Polynomial F) (Q : DifferentialPolynomial (Polynomial F) 1)
+    [Field F] (center : Polynomial F) (Q : DifferentialPolynomial (Polynomial F) 1)
     (v K τ : ℕ) (hτ : TaylorExponentSufficient 1 K τ) (hv : 0 < v)
     (hjet : Q.degreeOf (some 1) ≤ v) (l : Fin K) :
     (commonTaylorNumeratorOver F center Q τ l).degreeOf 1 ≤ τ * (v - 1) + l.val := by

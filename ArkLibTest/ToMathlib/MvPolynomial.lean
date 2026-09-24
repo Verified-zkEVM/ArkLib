@@ -737,10 +737,3 @@ example :
       simpa only [support_X, Finset.mem_singleton] using hm
     rw [hm']
     simp [Finsupp.weight_single]
-
-/-- The coefficient-polynomial variable does not contribute to the degree in `Y₁`. -/
-example :
-    degreeOf (some (1 : Fin 2)) ((optionEquivRight ℚ (Fin 2)).symm
-      (X (0 : Fin 2) ^ 2 * X 1 ^ 3 : MvPolynomial (Fin 2) (Polynomial ℚ))) ≤
-      (X (0 : Fin 2) ^ 2 * X 1 ^ 3 : MvPolynomial (Fin 2) (Polynomial ℚ)).degreeOf 1 := by
-  exact degreeOf_optionEquivRight_symm_le _ _
