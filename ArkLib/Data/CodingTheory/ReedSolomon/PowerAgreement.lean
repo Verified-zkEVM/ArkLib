@@ -9,6 +9,7 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.Agreement
 public import ArkLib.Data.CodingTheory.InterleavedCode.ExactAgreement
 public import ArkLib.Data.CodingTheory.ProximityGenerator.Basic
 public import ArkLib.Data.Polynomial.SpecializationAvoidance
+public import Mathlib.Algebra.Polynomial.Expand
 public import Mathlib.Algebra.Polynomial.OfFn
 public import Mathlib.LinearAlgebra.Lagrange
 
@@ -48,6 +49,8 @@ interleaved statements are in `ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.
   words and of message polynomials.
 * `ReedSolomon.commonCurveAgreementSet`: coordinates where every `P t` agrees with `w t`.
 * `ReedSolomon.powerBatchedCoordinate`: a coordinate vector as a polynomial in the challenge.
+* `ReedSolomon.frobeniusPowerCoordinate`: a coordinate vector with challenge exponents scaled
+  by a natural number.
 * `ReedSolomon.curveDiscrepancy`: the discrepancy at one coordinate as a polynomial in the
   challenge.
 * `ReedSolomon.HasExactPowerAgreement`: exact power agreement, with the challenge and the
@@ -57,6 +60,9 @@ interleaved statements are in `ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.
 
 ## Main statements
 
+* `ReedSolomon.frobeniusPowerCoordinate_eval` and
+  `ReedSolomon.frobeniusPowerCoordinate_natDegree_le`: evaluation and degree bounds for sparse
+  coordinates.
 * `ReedSolomon.exists_exceptional_powerBatched_agreement` and
   `ReedSolomon.exists_exceptional_powerBatched_family`: outside at most `ℓ * (|ι| - L)`
   challenges per tuple, the agreement set of the batched polynomial is the common agreement set.
@@ -158,6 +164,26 @@ theorem powerBatchedCoordinate_eq_ofFn [DecidableEq R] (w : Fin (ℓ + 1) → R)
     (powerBatchedCoordinate w).coeff t = w t := by
   classical
   rw [powerBatchedCoordinate_eq_ofFn, ofFn_coeff_eq_val_of_lt w t.isLt]
+
+/-- The polynomial coordinate whose challenge exponents are scaled by `s`. -/
+def frobeniusPowerCoordinate (s : ℕ) (values : Fin (ℓ + 1) → R) : R[X] :=
+  Polynomial.expand R s (powerBatchedCoordinate values)
+
+/-- Evaluation of `frobeniusPowerCoordinate` scales each challenge exponent by `s`. -/
+theorem frobeniusPowerCoordinate_eval (s : ℕ) (values : Fin (ℓ + 1) → R) (z : R) :
+    (frobeniusPowerCoordinate s values).eval z =
+      ∑ t, z ^ (s * t.val) * values t := by
+  rw [frobeniusPowerCoordinate, Polynomial.expand_eval, powerBatchedCoordinate_eval]
+  apply Finset.sum_congr rfl
+  intro t _
+  rw [pow_mul]
+
+/-- The degree of `frobeniusPowerCoordinate` is at most `s * ℓ`. -/
+theorem frobeniusPowerCoordinate_natDegree_le (s : ℕ) (values : Fin (ℓ + 1) → R) :
+    (frobeniusPowerCoordinate s values).natDegree ≤ s * ℓ := by
+  rw [frobeniusPowerCoordinate, Polynomial.natDegree_expand]
+  exact (Nat.mul_le_mul_right s (powerBatchedCoordinate_natDegree_le values)).trans_eq
+    (Nat.mul_comm _ _)
 
 /-- A coordinate vector is determined by its polynomial `powerBatchedCoordinate`. -/
 theorem powerBatchedCoordinate_injective :
