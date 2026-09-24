@@ -34,6 +34,12 @@ on the degrees of the `q`.
   variable `none`.
 * `MvPolynomial.card_le_degreeOf_some_of_aeval_eq_zero`: the count of polynomial graphs on a plane
   curve.
+* `MvPolynomial.card_le_degreeOf_some_of_aeval_eq_zero_of_injOn`: the same bound for a finite
+  family mapped injectively to polynomial graphs.
+
+## References
+
+* [DKT26]
 -/
 
 @[expose] public section
@@ -106,5 +112,19 @@ theorem card_le_degreeOf_some_of_aeval_eq_zero {R ι : Type*} [CommRing R] [IsDo
   · simp [e]
   · rw [Unique.eq_default i]
     simp [e]
+
+/-- A finite family mapped injectively to polynomial graphs on the zero locus of a nonzero
+multivariate polynomial has cardinality at most its degree in the graph variable. -/
+theorem card_le_degreeOf_some_of_aeval_eq_zero_of_injOn {R ι α : Type*} [CommRing R]
+    [IsDomain R] [Unique ι] {g : MvPolynomial (Option ι) R} (hg : g ≠ 0) (T : Finset α)
+    (f : α → R[X]) (hinj : Set.InjOn f (T : Set α))
+    (hT : ∀ a ∈ T, aeval (fun o ↦ o.elim Polynomial.X fun _ ↦ f a) g = 0) :
+    T.card ≤ g.degreeOf (some default) := by
+  classical
+  have hcount := card_le_degreeOf_some_of_aeval_eq_zero hg (T.image f) (by
+    intro q hq
+    obtain ⟨a, ha, rfl⟩ := Finset.mem_image.mp hq
+    exact hT a ha)
+  rwa [Finset.card_image_of_injOn hinj] at hcount
 
 end MvPolynomial
