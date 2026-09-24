@@ -45,6 +45,8 @@ polynomial.
   one-parameter case.
 * `MvPolynomial.aeval_eq_zero_of_principalOpen_subset_range`: polynomial identities along a
   one-parameter family covering a positive-dimensional `U(I)`.
+* `MvPolynomial.regular_principalOpen_graph_restriction`: ideal restriction and cut
+  nonvanishing for a positive-dimensional prime principal open covered by a polynomial graph.
 -/
 
 @[expose] public section
@@ -200,5 +202,40 @@ theorem aeval_eq_zero_of_principalOpen_subset_range [IsAlgClosed k] [Finite σ]
     hd.ne' ((finite_principalOpen_iff_natDegree_affineHilbertPolynomial_eq_zero hs).mp hfin)
   exact aeval_eq_zero_of_infinite w hinf (fun x hx ↦ hrange x hx.1 hx.2)
     fun x hx ↦ by simpa using hp x hx.1 hx.2
+
+/-- If a one-parameter polynomial graph covers the regular principal open of a positive-dimensional
+prime component, every polynomial in the component ideal vanishes on the graph, while the defining
+cut stays nonzero after restriction. -/
+theorem regular_principalOpen_graph_restriction [IsAlgClosed k] [Finite σ]
+    (I : Ideal (MvPolynomial σ k)) [I.IsPrime] (s : MvPolynomial σ k) (hs : s ∉ I)
+    (hd : 0 < (affineHilbertPolynomial I).natDegree) (w : σ → Polynomial k)
+    (hrange : ∀ x : σ → k, x ∈ zeroLocus k I → aeval x s ≠ 0 →
+      ∃ z : k, x = fun i ↦ (w i).eval z) :
+    IsLeftRegular (Ideal.Quotient.mk I s) ∧ (∀ p ∈ I, aeval w p = 0) ∧
+      aeval w s ≠ 0 := by
+  have hregular : IsLeftRegular (Ideal.Quotient.mk I s) :=
+    IsLeftCancelMulZero.mul_left_cancel_of_ne_zero
+      (mt Ideal.Quotient.eq_zero_iff_mem.mp hs)
+  have hvanish : ∀ p ∈ I, aeval w p = 0 := by
+    intro p hp
+    apply aeval_eq_zero_of_principalOpen_subset_range hregular hd w hrange
+    intro x hx hxs
+    exact hx p hp
+  have hinfinite : {x | x ∈ zeroLocus k I ∧ aeval x s ≠ 0}.Infinite := by
+    intro hfinite
+    have hzero := (finite_principalOpen_iff_natDegree_affineHilbertPolynomial_eq_zero
+      hregular).mp hfinite
+    omega
+  have hnonzero : aeval w s ≠ 0 := by
+    intro hzero
+    obtain ⟨x, hx⟩ := hinfinite.nonempty
+    obtain ⟨z, hxw⟩ := hrange x hx.1 hx.2
+    have heval : aeval x s = (aeval w s).eval z := by
+      rw [polynomial_eval_aeval]
+      rw [← hxw]
+      simp only [aeval_eq_eval]
+    rw [hzero, Polynomial.eval_zero] at heval
+    exact hx.2 heval
+  exact ⟨hregular, hvanish, hnonzero⟩
 
 end MvPolynomial

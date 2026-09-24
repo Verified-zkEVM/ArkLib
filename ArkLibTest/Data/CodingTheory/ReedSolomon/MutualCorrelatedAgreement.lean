@@ -9,6 +9,8 @@ import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.EquationDe
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FullDimension
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.GraphLine
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.GraphLineComponent
+import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerBatchedComponentRecognition
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.LineToAffine
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.SingularTail
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TupleSpecialization
@@ -472,6 +474,29 @@ private theorem component_agreementCuts : ∀ i ∈ Finset.univ,
   rw [hxval, hyval, component_cut_eq]
   exact component_initialEquation_mem
 
+private theorem component_powerBatchedAgreementCuts : ∀ i ∈ Finset.univ,
+    jointTaylorAgreementEquation (r := 0) (0 : ComponentField)
+      (componentEquation (E := ComponentField)) 2 2
+      (Polynomial.C ((algebraMap ℚ ComponentField) (domain i)))
+      (powerBatchedCoordinate
+        (fun _ : Fin 2 ↦ (algebraMap ℚ ComponentField) (componentWord i))) ∈
+        componentIdeal := by
+  intro i hi
+  have hbatch : powerBatchedCoordinate
+      (fun _ : Fin 2 ↦ (algebraMap ℚ ComponentField) (componentWord i)) = 0 := by
+    rw [powerBatchedCoordinate_eq_zero_iff]
+    funext t
+    simp [componentWord]
+  have hreceived :
+      Polynomial.C ((algebraMap ℚ ComponentField) (componentWord i)) +
+        Polynomial.X * Polynomial.C
+          ((algebraMap ℚ ComponentField) (componentWord i)) = 0 := by
+    simp [componentWord]
+  have hpair := component_agreementCuts i hi
+  rw [hreceived] at hpair
+  rw [hbatch]
+  exact hpair
+
 /-- A nonvacuous high cut and nonzero reconstruction use the second received value. -/
 example :
     ∃ P₀ P₁ : ℚ[X], P₀.degree < 1 ∧ P₁.degree < 1 ∧
@@ -657,6 +682,33 @@ example :
   · simpa [componentWord, domain_zero] using
       (mem_commonPolynomialAgreementSet domain componentWord componentWord P₀ P₁ 0).mp hmem |>.2
 
+/-- A positive-dimensional prime component determines one base-field tuple whose graph contains
+every regular component point, with nonzero restricted separant. -/
+example :
+    ∃ P : Fin 2 → ℚ[X], (∀ t, (P t).degree < 1) ∧
+      (∀ i ∈ Finset.univ, ∀ t, (P t).eval (domain i) = componentWord i) ∧
+      (∀ x ∈ {x | x ∈ zeroLocus ComponentField
+          (componentIdeal (E := ComponentField)) ∧
+        aeval x (jointInitialJetSeparant (r := 0) (0 : ComponentField)
+              (componentEquation (E := ComponentField))) ≠ 0},
+        x = fun i ↦ (powerBatchedJetGraphMap (r := 0) 0
+          (fun t ↦ (P t).map (algebraMap ℚ ComponentField)) i).eval (x none)) ∧
+      aeval (powerBatchedJetGraphMap (r := 0) 0
+        (fun t ↦ (P t).map (algebraMap ℚ ComponentField)))
+        (jointInitialJetSeparant (r := 0) (0 : ComponentField)
+          (componentEquation (E := ComponentField))) ≠ 0 := by
+  have hprime : (componentIdeal (E := ComponentField)).IsPrime := componentIdeal_isPrime
+  obtain ⟨P, hP, hsample, hgraph, -, -, hsep⟩ :=
+    exists_polynomialGraph_of_primeTaylorComponent (domain := domain)
+      (w := fun _ : Fin 2 ↦ componentWord) (sample := Finset.univ) (hsample := by simp)
+      (φ := algebraMap ℚ ComponentField) (center := 0)
+      (Q := componentEquation (E := ComponentField)) (hK := by omega) (τ := 2)
+      (hτ := by intro l; fin_cases l <;> omega)
+      (I := componentIdeal (E := ComponentField)) (hsep := component_separant_notMem)
+      (hdim := componentIdeal_degree_pos) (hhigh := component_highCuts)
+      (hcuts := component_powerBatchedAgreementCuts)
+  exact ⟨P, hP, hsample, hgraph, hsep⟩
+
 end
 
 end ReedSolomon.GraphLineComponentTest
@@ -670,6 +722,8 @@ private abbrev E₉ := FiniteField.Extension (ZMod 3) 3 2
 /-- The one-point evaluation domain at zero over `ZMod 3`. -/
 private def domain : Fin 1 ↪ ZMod 3 :=
   ⟨fun _ ↦ 0, fun _ _ _ ↦ Subsingleton.elim _ _⟩
+
+private theorem domain_zero : domain (0 : Fin 1) = 0 := rfl
 
 /-- The two-point evaluation domain in `ZMod 3`. -/
 private def exceptionalDomain : Fin 2 ↪ ZMod 3 :=
@@ -886,6 +940,99 @@ example :
         hy.symm
   obtain ⟨hpoly, hjet, hcoeff⟩ := hrecognize 1 recognitionJet hS hhigh hcuts
   exact ⟨P, hP, hs, hpoly, hjet, hcoeff⟩
+
+local instance : DecidableEq (ZMod 3) := Classical.decEq _
+
+private def batchedWords : Fin 2 → Fin 1 → ZMod 3 :=
+  fun t _ ↦ if t = 0 then 0 else 1
+
+private def batchedTuple : Fin 2 → (ZMod 3)[X] :=
+  fun t ↦ if t = 0 then 0 else Polynomial.C 1
+
+private def alternateBatchedTuple : Fin 2 → (ZMod 3)[X] :=
+  fun t ↦ if t = 0 then 0 else Polynomial.C 1 + Polynomial.X
+
+private def candidateFamily : Finset (Fin 2 → (ZMod 3)[X]) :=
+  {batchedTuple, alternateBatchedTuple}
+
+private theorem batchedTuple_common :
+    1 ≤ (commonCurveAgreementSet domain batchedWords batchedTuple).card := by
+  have hmem : (0 : Fin 1) ∈ commonCurveAgreementSet domain batchedWords batchedTuple := by
+    rw [mem_commonCurveAgreementSet]
+    intro t
+    fin_cases t <;> simp [batchedTuple, batchedWords, domain]
+  exact Nat.succ_le_of_lt (Finset.card_pos.mpr ⟨0, hmem⟩)
+
+private theorem candidateFamily_degree :
+    ∀ P ∈ candidateFamily, ∀ t, (P t).degree < 2 := by
+  intro P hP t
+  simp only [candidateFamily, Finset.mem_insert, Finset.mem_singleton] at hP
+  rcases hP with hP | hP
+  · subst P
+    fin_cases t
+    · simp only [Fin.zero_eta, Fin.isValue]
+      exact WithBot.bot_lt_coe 2
+    · simp [batchedTuple]
+  · subst P
+    fin_cases t
+    · simp only [Fin.zero_eta, Fin.isValue]
+      exact WithBot.bot_lt_coe 2
+    · apply (Polynomial.degree_add_le _ _).trans_lt
+      exact max_lt (Polynomial.degree_C_le.trans_lt (by norm_num)) (by simp)
+
+private theorem candidateFamily_common :
+    ∀ P ∈ candidateFamily,
+      1 ≤ (commonCurveAgreementSet domain batchedWords P).card := by
+  intro P hP
+  simp only [candidateFamily, Finset.mem_insert, Finset.mem_singleton] at hP
+  rcases hP with hP | hP
+  · subst P
+    have hmem : (0 : Fin 1) ∈
+        commonCurveAgreementSet domain batchedWords batchedTuple := by
+      rw [mem_commonCurveAgreementSet]
+      intro t
+      fin_cases t <;> simp [batchedTuple, batchedWords, domain]
+    exact Nat.succ_le_of_lt (Finset.card_pos.mpr ⟨0, hmem⟩)
+  · subst P
+    have hmem : (0 : Fin 1) ∈
+        commonCurveAgreementSet domain batchedWords alternateBatchedTuple := by
+      rw [mem_commonCurveAgreementSet]
+      intro t
+      fin_cases t
+      · rw [domain_zero]
+        simp [alternateBatchedTuple, batchedWords]
+      · rw [domain_zero]
+        simp [alternateBatchedTuple, batchedWords]
+    exact Nat.succ_le_of_lt (Finset.card_pos.mpr ⟨0, hmem⟩)
+
+private theorem batchedCandidates_ne : batchedTuple ≠ alternateBatchedTuple := by
+  intro h
+  have h1 := congrFun h (1 : Fin 2)
+  simp [batchedTuple, alternateBatchedTuple] at h1
+
+-- The degree-one tuple uses the positive challenge term in exact power agreement.
+example : ∃ exceptional : Finset (ZMod 3), exceptional.card ≤ 0 ∧
+    ∀ z ∉ exceptional,
+      HasExactPowerAgreement domain batchedWords (RingHom.id (ZMod 3)) 1 z
+        (powerBatchedPolynomial
+          (fun t ↦ (batchedTuple t).map (RingHom.id (ZMod 3))) z) := by
+  classical
+  have h := exists_exceptional_exactPowerAgreement (α := Fin 1) (ℓ := 1) (k := 1) (L := 1)
+    domain batchedWords batchedTuple (RingHom.id (ZMod 3))
+    (by intro t; fin_cases t <;> norm_num [batchedTuple]) batchedTuple_common
+  simpa [Fintype.card_fin] using h
+
+-- Two distinct degree-bounded tuples share the one-point sample and have one family bound.
+example : ∃ exceptional : Finset (ZMod 3), exceptional.card ≤ 0 ∧
+    ∀ P ∈ candidateFamily, ∀ z ∉ exceptional,
+      HasExactPowerAgreement domain batchedWords (RingHom.id (ZMod 3)) 2 z
+        (powerBatchedPolynomial
+          (fun t ↦ (P t).map (RingHom.id (ZMod 3))) z) := by
+  classical
+  have h := exists_exceptional_exactPowerAgreement_family
+    (α := Fin 1) (ℓ := 1) (k := 2) (L := 1) domain batchedWords
+    (RingHom.id (ZMod 3)) candidateFamily candidateFamily_degree candidateFamily_common
+  simpa [Fintype.card_fin, candidateFamily, batchedCandidates_ne] using h
 
 end
 
