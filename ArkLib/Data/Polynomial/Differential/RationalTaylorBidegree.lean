@@ -31,6 +31,7 @@ separant, padded Taylor numerators, and agreement equations therefore lie in bid
   with a received polynomial of bounded degree.
 * `degreeOf_taylorAgreementEquationOver_firstOrder`: a separate degree bound in the first
   derivative variable for an agreement equation.
+* `degreeOf_taylorAgreementEquation_firstOrder_le`: its field-valued first-order specialization.
 * `initialJetEquation_mem_restrictCappedBidegree`,
   `commonTaylorNumeratorOver_mem_restrictCappedBidegree`, and
   `taylorAgreementEquationOver_mem_restrictCappedBidegree`: the same equations with a separate
@@ -183,6 +184,33 @@ theorem degreeOf_taylorAgreementEquationOver_firstOrder (center x y : Polynomial
     exact (degreeOf_pow_le _ _ _).trans
       ((Nat.mul_le_mul_left τ ((degreeOf_initialJetSeparant_le _ Q).trans
         (Nat.sub_le_sub_right hderiv 1))).trans (by omega))
+
+/-- In a first-order Taylor chart over a field, the agreement equation has degree at most
+`τ * (r - 1) + (K - 1)` in the first-derivative variable when `Q` has degree at most `r` there. -/
+theorem degreeOf_taylorAgreementEquation_firstOrder_le (center : F)
+    (Q : DifferentialPolynomial F 1) (r K τ : ℕ)
+    (hτ : TaylorExponentSufficient 1 K τ) (hr : 0 < r)
+    (hderiv : Q.degreeOf (some 1) ≤ r) (x y : F) :
+    (taylorAgreementEquation center Q K x y (τ := τ)).degreeOf 1 ≤
+      τ * (r - 1) + (K - 1) := by
+  apply (degreeOf_sub_le _ _ _).trans
+  apply max_le
+  · apply (degreeOf_sum_le _ _ _).trans
+    apply Finset.sup_le
+    intro l _
+    apply (degreeOf_mul_le _ _ _).trans
+    rw [degreeOf_C, zero_add]
+    exact (degreeOf_commonTaylorNumerator_firstOrder_le center Q r K τ hτ hr hderiv l).trans
+      (Nat.add_le_add_left (by omega) _)
+  · apply (degreeOf_mul_le _ _ _).trans
+    rw [degreeOf_C, zero_add]
+    have hsep : (initialJetSeparant center Q).degreeOf 1 ≤ r - 1 :=
+      (degreeOf_initialJetSeparant_firstOrder_le center Q).trans
+        (Nat.sub_le_sub_right hderiv 1)
+    have hpow : (initialJetSeparant center Q ^ τ).degreeOf 1 ≤ τ * (r - 1) :=
+      (degreeOf_pow_le (1 : Fin 2) (initialJetSeparant center Q) τ).trans
+        (Nat.mul_le_mul_left τ hsep)
+    exact hpow.trans (Nat.le_add_right _ _)
 
 /-- Agreement with a received polynomial of bounded degree lies in the capped rectangle whose
 third bound records the first-derivative degree. -/
