@@ -1215,7 +1215,7 @@ example :
       simp [eval_rationalTaylorPolynomial, rationalTaylorCoefficient_initial,
         Q, jet, domain, received, zeroJetVector]
     simp [hcut]
-  have h := card_le_of_highTaylorCuts_of_agreement (center := (0 : F)) Q
+  have h := card_le_of_highTaylorCuts_of_agreement_sharp (center := (0 : F)) Q
     (taylorExponentSufficient_two_mul 1 2) (by decide) domain received hinj
     (A := 1) (by decide) (by decide) S hS hA
   norm_num [F, Q, S, jet, constantDerivativeEquation,
