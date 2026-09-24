@@ -65,36 +65,6 @@ private theorem commonTaylorNumeratorOver_self (center : E)
       commonTaylorNumerator center Q τ l.val := by
   simp only [commonTaylorNumeratorOver, commonTaylorNumerator, rationalTaylorNumeratorOver_eq]
 
-private theorem aeval_map_commonTaylorNumeratorOver_reconstruction_of_exponent
-    {F A E : Type*} [Field F] [CommRing A] [Field E] [Algebra F A] [Algebra F E]
-    {r K τ : ℕ} (φ : A →ₐ[F] E) (center : A)
-    (Q : DifferentialPolynomial A r) (hτ : TaylorExponentSufficient r K τ)
-    (jet : Fin (r + 1) → E)
-    (hS : aeval jet (MvPolynomial.map φ.toRingHom (initialJetSeparant center Q)) ≠ 0)
-    (l : Fin K) :
-    aeval jet (MvPolynomial.map φ.toRingHom
-    (commonTaylorNumeratorOver (F := F) center Q τ l.val)) =
-      aeval jet (MvPolynomial.map φ.toRingHom (initialJetSeparant center Q)) ^ τ *
-        (Polynomial.taylor (φ center)
-          (rationalTaylorPolynomial (φ center) (MvPolynomial.map φ.toRingHom Q) K jet)).coeff
-            l.val := by
-  have hmap := map_commonTaylorNumeratorOver (F := F) φ center Q τ l.val
-  rw [hmap, map_initialJetSeparant φ.toRingHom center Q]
-  rw [map_initialJetSeparant φ.toRingHom center Q] at hS
-  change aeval jet (initialJetSeparant (φ center)
-      (MvPolynomial.map φ.toRingHom Q)) ≠ 0 at hS
-  rw [show commonTaylorNumeratorOver (F := F) (φ center)
-      (MvPolynomial.map φ.toRingHom Q) τ l.val =
-      commonTaylorNumerator (φ center) (MvPolynomial.map φ.toRingHom Q) τ l.val by
-        simp only [commonTaylorNumeratorOver, commonTaylorNumerator,
-          rationalTaylorNumeratorOver_eq]]
-  rw [aeval_commonTaylorNumerator (φ center) (MvPolynomial.map φ.toRingHom Q) jet
-    (hτ l) hS]
-  rw [coeff_taylor_rationalTaylorPolynomial]
-  split_ifs with h
-  · rfl
-  · exact (h l.isLt).elim
-
 /-- A jet coordinate in a localized ordinary Taylor chart. -/
 def localizedChartJet (P : Ideal (ChartRing r E)) (s : ChartRing r E)
     (j : Fin (r + 1)) : ChartAway P s :=
@@ -160,7 +130,7 @@ theorem localizedChartCoefficient_eq_jet_of_exponent
       simpa only [map_zero] using hz
     rw [hz', zero_mul] at hone
     exact zero_ne_one hone
-  have hrec := aeval_map_commonTaylorNumeratorOver_reconstruction_of_exponent φ center Q
+  have hrec := aeval_map_commonTaylorNumeratorOver_reconstruction_of_exponent φ center Q K τ
     hτ x hsepNe l
   have hnumEval : aeval x (MvPolynomial.map φ.toRingHom
       (commonTaylorNumeratorOver (F := E) center Q τ l.val)) =
@@ -622,7 +592,7 @@ theorem localizedSourceCoefficient_eq_jet_of_exponent
     apply IsFractionRing.injective L Frac
     simpa only [map_zero] using hz
   have hrec := aeval_map_commonTaylorNumeratorOver_reconstruction_of_exponent φ
-    (Polynomial.C center) Q hτ (fun j ↦ x (some j)) hsepNe l
+    (Polynomial.C center) Q K τ hτ (fun j ↦ x (some j)) hsepNe l
   have hnumEval : aeval (fun j ↦ x (some j))
       (MvPolynomial.map φ.toRingHom
         (commonTaylorNumeratorOver (F := E) (Polynomial.C center : E[X]) Q τ l.val)) =
