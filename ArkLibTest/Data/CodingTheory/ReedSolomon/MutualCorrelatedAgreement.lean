@@ -1034,6 +1034,28 @@ example : ∃ exceptional : Finset (ZMod 3), exceptional.card ≤ 0 ∧
     (RingHom.id (ZMod 3)) candidateFamily candidateFamily_degree candidateFamily_common
   simpa [Fintype.card_fin, candidateFamily, batchedCandidates_ne] using h
 
+/-- A singleton sample recognizes the zero sparse Frobenius pullback. -/
+example : ∃ P : Fin 2 → (ZMod 2)[X],
+    (∀ t, (P t).degree < 1) ∧
+    (∀ i ∈ (univ : Finset (Fin 1)), ∀ t, (P t).eval (pointDomain i) = 0) ∧
+    (0 : (ZMod 2)[X]) =
+      expand (ZMod 2) (2 ^ 1)
+        (powerBatchedPolynomial (fun t ↦ (P t).map (RingHom.id (ZMod 2)))
+          ((0 : ZMod 2) ^ (2 ^ 1))) ∧
+    (0 : (ZMod 2)[X]).eval 0 =
+      (powerBatchedPolynomial (fun t ↦ (P t).map (RingHom.id (ZMod 2)))
+        ((0 : ZMod 2) ^ (2 ^ 1))).eval (0 ^ (2 ^ 1)) := by
+  obtain ⟨P, hdegree, hsample, hrecognize⟩ :=
+    exists_frobeniusPowerGraph_polynomials_of_sample (k := 1) (ℓ := 1) pointDomain
+      (fun _ _ ↦ (0 : ZMod 2)) univ (by simp)
+  have hresult := hrecognize (RingHom.id (ZMod 2)) 2 1
+    (fun _ ↦ (0 : ZMod 2)) (0 : ZMod 2) (0 : ZMod 2) (0 : (ZMod 2)[X])
+    (by intro i hi; change (0 : ZMod 2) = 0; rfl)
+    (by compute_degree!)
+    (by intro j hj; simp)
+    (by intro i hi; simp)
+  exact ⟨P, hdegree, hsample, hresult.1, hresult.2⟩
+
 end
 
 end ReedSolomon.PowerBatchedPointRecognitionTest
