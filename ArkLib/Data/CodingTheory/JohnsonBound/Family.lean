@@ -151,8 +151,9 @@ lemma johnson_card_le_ell {n : ℕ} {α : Type*} [Fintype α] [DecidableEq α]
   have hxb := mul_lt_mul_of_pos_left hl1 hb
   have heB : (0 : ℚ) ≤ JohnsonBound.e B v :=
     mul_nonneg (one_div_nonneg.mpr (Nat.cast_nonneg _)) (by exact_mod_cast Nat.zero_le _)
-  have hE : ((((Fintype.card α : ℚ) / ((Fintype.card α : ℚ) - 1)) * JohnsonBound.e B v / n : ℚ)
-      : ℝ) ≤ 1 - √(1 - (((Fintype.card α : ℚ) / ((Fintype.card α : ℚ) - 1)
+  have hE :
+      ((((Fintype.card α : ℚ) / ((Fintype.card α : ℚ) - 1)) * JohnsonBound.e B v / n :
+        ℚ) : ℝ) ≤ 1 - √(1 - (((Fintype.card α : ℚ) / ((Fintype.card α : ℚ) - 1)
         * (((ℓ : ℚ) - 1) / (ℓ : ℚ)) * ((mDist : ℚ) / n) : ℚ) : ℝ)) := by
     have h := mul_le_mul_of_nonneg_left e_fact hfR.le
     simp only [Jqℓ, J] at h
