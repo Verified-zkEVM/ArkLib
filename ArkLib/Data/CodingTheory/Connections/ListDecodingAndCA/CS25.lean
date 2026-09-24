@@ -360,9 +360,7 @@ theorem rs_Lambda_extended_le_of_epsCa_int_radius
   have hprob : ((Good.card : ℝ≥0) / (q : ℝ≥0) : ENNReal) ≤
       epsCa (F := F) (A := F) Ck ((f : ℝ≥0) / n) ((f : ℝ≥0) / n) := by
     unfold epsCa
-    refine le_trans ?_ (le_iSup (fun w : WordStack F (Fin 2) ι =>
-      if jointProximity (C := Ck) (u := w) ((f : ℝ≥0) / n) then 0 else
-        Pr{let x ←$ᵗ F}[δᵣ(w 0 + x • w 1, Ck) ≤ ((f : ℝ≥0) / n : ℝ≥0)]) v)
+    refine le_iSup_of_le v ?_
     rw [ite_eq_right hvnot, SampleableType.prEvent_uniformSample]
     simp only [Good, q]
     rw [ENNReal.coe_natCast, ENNReal.coe_natCast]

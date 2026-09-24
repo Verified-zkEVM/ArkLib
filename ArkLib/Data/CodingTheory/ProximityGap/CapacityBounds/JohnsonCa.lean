@@ -75,10 +75,8 @@ private theorem joint_proximity_of_many_affine_agreements
     by_cases hiT : i ∈ T
     · rw [ite_eq_left hiT]
       have hnat :
-          (Finset.univ.filter fun x : ↥A => i ∈ S x).card ≤ A.card := by
-        simpa using
-          (Finset.card_le_card
-            (Finset.filter_subset (fun x : ↥A => i ∈ S x) Finset.univ))
+          (Finset.univ.filter fun x : ↥A => i ∈ S x).card ≤ A.card :=
+        (Finset.card_le_univ _).trans_eq (Fintype.card_coe A)
       exact_mod_cast hnat
     · rw [ite_eq_right hiT]
       exact_mod_cast Finset.card_le_one.mpr (by
@@ -120,7 +118,8 @@ private theorem joint_proximity_of_many_affine_agreements
     dsimp [total]
     calc
       (A.card : ℝ) * ((1 - (d : ℝ)) * Fintype.card ι) =
-          ∑ x : ↥A, ((1 - (d : ℝ)) * Fintype.card ι) := by simp
+          ∑ x : ↥A, ((1 - (d : ℝ)) * Fintype.card ι) := by
+            rw [Finset.sum_const, Finset.card_univ, Fintype.card_coe, nsmul_eq_mul]
       _ ≤ ∑ x : ↥A, ((S x).card : ℝ) := by
             exact Finset.sum_le_sum (fun x hx => hS x)
   have hMpos : 0 < (A.card : ℝ) := by
@@ -145,21 +144,20 @@ private theorem joint_proximity_of_many_affine_agreements
     have hgain :
         (Fintype.card ι : ℝ) <
           (A.card : ℝ) * (e : ℝ) * Fintype.card ι := by
-      nlinarith [mul_pos (sub_pos.mpr hMe) hn]
+      simpa only [one_mul] using mul_lt_mul_of_pos_right hMe hn
     have hgap :
         ((1 - (d : ℝ) - (e : ℝ)) * Fintype.card ι) *
               (A.card : ℝ) + Fintype.card ι <
           (A.card : ℝ) * ((1 - (d : ℝ)) * Fintype.card ι) := by
-      nlinarith
+      linear_combination hgain
     exact (not_lt_of_ge (le_trans htotal_lower htotal_upper))
       (lt_trans hupper_lt hgap)
   have hdereal : (d : ℝ) + (e : ℝ) ≤ 1 := by
     exact_mod_cast hde
   have htarget' :
       (((1 - (d + e) : ℝ≥0) : ℝ) * Fintype.card ι) ≤ (T.card : ℝ) := by
-    rw [NNReal.coe_sub hde]
-    push_cast
-    nlinarith
+    rw [NNReal.coe_sub hde, NNReal.coe_add, NNReal.coe_one, ← sub_sub]
+    exact htarget
   have hTcard :
       (1 - (d + e)) * (Fintype.card ι : ℝ≥0) ≤ (T.card : ℝ≥0) := by
     exact_mod_cast htarget'
