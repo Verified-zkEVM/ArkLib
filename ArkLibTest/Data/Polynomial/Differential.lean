@@ -18,6 +18,7 @@ import ArkLib.Data.Polynomial.Differential.RationalTaylorAlgebra
 import ArkLib.Data.Polynomial.Differential.RationalTaylorDerivativeDegree
 import ArkLib.Data.Polynomial.Differential.RationalTaylorJointDegree
 import ArkLib.Data.Polynomial.Differential.RecursiveCount
+import ArkLib.Data.Polynomial.Differential.RetainedCurve
 import ArkLib.Data.Polynomial.Differential.RegularIteration
 import ArkLib.Data.Polynomial.Differential.RegularJetCount
 import ArkLib.Data.Polynomial.Differential.RegularLift
@@ -1494,5 +1495,41 @@ example :
   by_contra hzero
   have hspec : challengeSpecialization Q 0 = 0 := by simp [Q, challengeSpecialization]
   exact hregular 0 hzero 0 (by rw [hspec]; rfl)
+
+/-! ### Retained curve equations -/
+
+private abbrev retainedCurveEquation : DifferentialPolynomial (Polynomial ℚ) 1 :=
+  C (Polynomial.X + 1) * X (some 1) ^ 2 + X none
+
+/-- The zero input produces the constant positive-factor equation. -/
+example : positiveCurveEquation (0 : DifferentialPolynomial (Polynomial ℚ) 1) = 1 := by
+  simp [positiveCurveEquation, fromFlattenedRootFirst, challengeRetainingRootFirst,
+    MvPolynomial.radicalPrimPart]
+
+/-- The root-first curve view records the jet degree of a concrete equation. -/
+example :
+    (curveJetView (challengeRetainingRootFirst retainedCurveEquation)).totalDegree =
+      jetTotalDegree retainedCurveEquation := by
+  rw [curveJetView_totalDegree, fromFlattenedRootFirst_rootFirstChallenge]
+
+/-- Removing repeated root factors respects the `Y₁` degree bound on this equation. -/
+example :
+    (positiveCurveEquation retainedCurveEquation).degreeOf (some 1) ≤
+      retainedCurveEquation.degreeOf (some 1) := by
+  exact positiveCurveEquation_yOneDegree_le retainedCurveEquation
+
+/-- Removing repeated root factors respects the jet-degree bound on this equation. -/
+example :
+    jetTotalDegree (positiveCurveEquation retainedCurveEquation) ≤
+      jetTotalDegree retainedCurveEquation := by
+  exact positiveCurveEquation_jetTotalDegree_le retainedCurveEquation
+
+/-- The retained equation's coefficient height is bounded by its root-first challenge degree. -/
+example :
+    CoeffNatDegreeLE (positiveCurveEquation retainedCurveEquation)
+      (degreeOf (some (some 1))
+        (radicalPrimPart none (challengeRetainingRootFirst retainedCurveEquation))) := by
+  exact positiveCurveEquation_coeffNatDegreeLE retainedCurveEquation
+
 end
 end PolynomialDifferential

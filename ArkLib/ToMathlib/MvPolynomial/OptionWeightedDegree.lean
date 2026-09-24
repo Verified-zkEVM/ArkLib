@@ -29,6 +29,7 @@ ignores `none`.
   `none`-coordinate and only the `some`-coordinates.
 * `MvPolynomial.weightedTotalDegree_optionEquivRight`: the weighted-degree identity for any `w`.
 * `MvPolynomial.totalDegree_optionEquivRight`: the case `w = 1`.
+* `MvPolynomial.degreeOf_optionEquivRight`: the degree in each remaining variable.
 
 Additivity under multiplication and monotonicity under divisibility over a ring without zero
 divisors need no separate statement here: they are `MvPolynomial.weightedTotalDegree_mul` and
@@ -169,5 +170,20 @@ theorem totalDegree_optionEquivRight (p : MvPolynomial (Option σ) R) :
       p.weightedTotalDegree (fun v ↦ v.elim 0 (fun _ ↦ 1)) := by
   rw [← weightedTotalDegree_one, weightedTotalDegree_optionEquivRight]
   rfl
+
+/-- Moving a variable into the coefficient ring preserves its degree in each remaining variable. -/
+theorem degreeOf_optionEquivRight (p : MvPolynomial (Option σ) R) (i : σ) :
+    degreeOf i (optionEquivRight R σ p) = degreeOf (some i) p := by
+  classical
+  have hw : (fun v : Option σ ↦ v.elim 0 (Pi.single i 1)) = Pi.single (some i) 1 := by
+    funext v
+    cases v <;> simp [Pi.single_apply]
+  calc
+    degreeOf i (optionEquivRight R σ p) =
+        (optionEquivRight R σ p).weightedTotalDegree (Pi.single i 1) :=
+      (weightedTotalDegree_piSingle _ _).symm
+    _ = p.weightedTotalDegree (Pi.single (some i) 1) := by
+      rw [weightedTotalDegree_optionEquivRight, hw]
+    _ = degreeOf (some i) p := weightedTotalDegree_piSingle _ _
 
 end MvPolynomial

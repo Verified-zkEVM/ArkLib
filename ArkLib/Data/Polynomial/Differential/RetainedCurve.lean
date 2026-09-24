@@ -25,6 +25,7 @@ exact jet degree and the separate bounds on `Y₁` and the challenge.
   and `Y₁` degree bounds for the retained equation.
 * `positiveCurveEquation_coeffNatDegreeLE`: the coefficient challenge height bound.
 * `curveJetView_totalDegree`: the two-variable view computes the jet degree.
+* `fromFlattenedRootFirst_rootFirstChallenge`: the root-first coordinate map is invertible.
 
 ## References
 
@@ -33,9 +34,9 @@ exact jet degree and the separate bounds on `Y₁` and the challenge.
 
 @[expose] public section
 
-namespace ReedSolomon.FirstOrder.Squarefree
+namespace PolynomialDifferential
 
-open MvPolynomial Polynomial PolynomialDifferential
+open MvPolynomial Polynomial
 
 noncomputable section
 
@@ -149,7 +150,8 @@ theorem positiveCurveEquation_jetTotalDegree_eq_curveJetView
   rw [curveJetView_totalDegree]
   rfl
 
-private theorem fromFlattenedRootFirst_rootFirstChallenge
+/-- Recovering the root-first form of an equation returns the original equation. -/
+theorem fromFlattenedRootFirst_rootFirstChallenge
     (Q : DifferentialPolynomial F[X] 1) :
     fromFlattenedRootFirst (challengeRetainingRootFirst Q) = Q := by
   rw [challengeRetainingRootFirst, fromFlattenedRootFirst]
@@ -192,21 +194,6 @@ theorem positiveCurveEquation_jetTotalDegree_le (Q : DifferentialPolynomial F[X]
   change jetTotalDegree (fromFlattenedRootFirst
     (radicalPrimPart none (challengeRetainingRootFirst Q))) ≤ _ at hdegree
   simpa only [positiveCurveEquation, fromFlattenedRootFirst_rootFirstChallenge] using hdegree
-
-private theorem degreeOf_optionEquivRight
-    {σ : Type*} (P : MvPolynomial (Option σ) F) (i : σ) :
-    degreeOf i (optionEquivRight F σ P) = degreeOf (some i) P := by
-  classical
-  have hw : (fun v : Option σ ↦ v.elim 0 (Pi.single i 1)) = Pi.single (some i) 1 := by
-    funext v
-    cases v <;> simp [Pi.single_apply]
-  calc
-    degreeOf i (optionEquivRight F σ P) =
-        (optionEquivRight F σ P).weightedTotalDegree (Pi.single i 1) :=
-      (weightedTotalDegree_piSingle _ _).symm
-    _ = P.weightedTotalDegree (Pi.single (some i) 1) := by
-      rw [weightedTotalDegree_optionEquivRight, hw]
-    _ = degreeOf (some i) P := weightedTotalDegree_piSingle _ _
 
 /-- The `Y₁` degree of the retained equation is the degree of the positive-factor product in its
 root coordinate. -/
@@ -294,4 +281,4 @@ theorem positiveCurveEquation_coeffNatDegreeLE (Q : DifferentialPolynomial F[X] 
 
 end
 
-end ReedSolomon.FirstOrder.Squarefree
+end PolynomialDifferential
