@@ -106,7 +106,7 @@ theorem rankShellBound_lt_interpolationBox {θ : ℝ} {d K H R n : ℕ}
     have hcube : θ ^ 3 / 262144 ≤ 0 :=
       div_nonpos_of_nonpos_of_nonneg (Odd.pow_nonpos (by decide) (not_lt.mp hθ)) (by norm_num)
     have := mul_nonpos_of_nonpos_of_nonneg (mul_nonpos_of_nonpos_of_nonneg hcube hrate) hdpow
-    linarith
+    exact (not_lt_of_ge (this.trans (by norm_num))) hcompare
   have hn : 0 < n := by
     rcases Nat.eq_zero_or_pos n with rfl | hn
     · simp at hcompare
