@@ -8,6 +8,7 @@ module
 public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerBatchedGraphCounting
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.StageCharges
+import ArkLib.Data.Polynomial.Differential.BaseChange
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.DerivativeCappedCounting
 
 /-!
@@ -62,78 +63,33 @@ theorem admissibleChartTuples_card_le_derivativeCapped_of_exponent
   · subst tuples
     simp only [Finset.card_empty, Nat.cast_zero]
     positivity
-  let auxiliary := tuples.image fun P ↦
-    chartTuplePullback iota center P (jointInitialJetSeparant center Q)
-  obtain ⟨z, _, hinj, havoid⟩ :=
-    exists_polynomialTuple_specialization_injective_avoiding_roots (ℓ := ℓ)
-      iota tuples ∅ auxiliary (by
-      intro R hR
-      obtain ⟨P, hP, rfl⟩ := Finset.mem_image.mp hR
-      exact (htuples P hP).regular)
+  obtain ⟨z, jets, _, _, _, hcard, hS, hA⟩ :=
+    exists_regularHighCutJetImage_of_admissibleChartTuples
+    domain w iota center Q K k L τ hτ hkK tuples htuples
   let Qz := MvPolynomial.map (Polynomial.evalRingHom z) Q
-  let jets : Finset (Fin 2 → E) := tuples.image (chartTupleJet iota center z)
-  have hspec (P : Fin (ℓ + 1) → F[X]) (hP : P ∈ tuples) :=
-    (htuples P hP).specialize hτ hkK z
-      (havoid _ (Finset.mem_image.mpr ⟨P, hP, rfl⟩))
-  have hjetinj : Set.InjOn (chartTupleJet (r := 1) iota center z)
-      (tuples : Set (Fin (ℓ + 1) → F[X])) := by
-    intro P hP R hR heq
-    apply hinj hP hR
-    change powerBatchedPolynomial (fun t ↦ (P t).map iota) z =
-      powerBatchedPolynomial (fun t ↦ (R t).map iota) z
-    rw [← (hspec P hP).2.2.2, ← (hspec R hR).2.2.2, heq]
-  have hcard : jets.card = tuples.card := Finset.card_image_of_injOn hjetinj
   let domainE : Fin n ↪ E :=
     ⟨fun i ↦ iota (domain i), iota.injective.comp domain.injective⟩
   let received : Fin n → E := powerBatchedWord (fun t i ↦ iota (w t i)) z
+  have hw : (fun i : Option (Fin 2) ↦ i.elim 0 (fun _ ↦ 1)) =
+      jetDegreeWeight (d := 1) := by
+    funext i
+    cases i <;> rfl
+  have htotal : jetTotalDegree Q ≤ v := by
+    simpa only [jetTotalDegree, ← hw] using hjet
+  have htotalz : jetTotalDegree Qz ≤ v :=
+    (jetTotalDegree_map_le (Polynomial.evalRingHom z) Q).trans htotal
   have hvle : Qz.weightedTotalDegree (fun i ↦ i.elim 0 (fun _ ↦ 1)) ≤ v := by
-    apply Finset.sup_le_iff.mpr
-    intro m hm
-    exact (le_weightedTotalDegree _
-      (support_map_subset (Polynomial.evalRingHom z) Q hm)).trans hjet
+    simpa only [jetTotalDegree, ← hw] using htotalz
   have hderivz : Qz.degreeOf (some 1) ≤ u := by
-    apply MvPolynomial.degreeOf_le_iff.mpr
-    intro m hm
-    exact (monomial_le_degreeOf (some 1)
-      (support_map_subset (Polynomial.evalRingHom z) Q hm)).trans hderiv
+    calc
+      Qz.degreeOf (some 1) = jetDegree Qz 1 := rfl
+      _ ≤ jetDegree Q 1 := by
+        simpa only [Qz] using jetDegree_map_le (Polynomial.evalRingHom z) Q 1
+      _ = Q.degreeOf (some 1) := rfl
+      _ ≤ u := hderiv
   have hbound := finite_regularHighCutJets_card_le_derivativeCapped_of_exponent
     center Qz K k v u τ hτ hτpos hK hu huv hvle hderivz
-    domainE received hkL hLn jets (by
-      intro jet hjetmem
-      obtain ⟨P, hP, rfl⟩ := Finset.mem_image.mp hjetmem
-      exact ⟨(hspec P hP).1, (hspec P hP).2.1,
-        fun l ↦ (hspec P hP).2.2.1 l.val l.property⟩) (by
-      intro jet hjetmem
-      obtain ⟨P, hP, rfl⟩ := Finset.mem_image.mp hjetmem
-      have hsubset : (commonCurveAgreementSet domain w P : Set (Fin n)) ⊆
-          {i | aeval (chartTupleJet iota center z P)
-            (taylorAgreementEquation center Qz K τ (domainE i) (received i)) = 0} := by
-        intro i hi
-        have hi' : ∀ t, (P t).eval (domain i) = w t i :=
-          (mem_commonCurveAgreementSet domain w P i).mp hi
-        have hbatch :
-            (powerBatchedPolynomial (fun t ↦ (P t).map iota) z).eval
-              (domainE i) = received i := by
-          change (powerBatchedPolynomial (fun t ↦ (P t).map iota) z).eval
-              (iota (domain i)) = ∑ t, z ^ t.val * iota (w t i)
-          rw [powerBatchedPolynomial_eval]
-          apply Finset.sum_congr rfl
-          intro t _
-          congr 1
-          rw [Polynomial.eval_map, Polynomial.eval₂_at_apply, hi' t]
-        have heval :
-            (rationalTaylorPolynomial center Qz K (chartTupleJet iota center z P)).eval
-              (domainE i) = received i := by
-          rw [(hspec P hP).2.2.2]
-          exact hbatch
-        exact (taylorAgreementEquation_eq_zero_iff center Qz hτ
-          (chartTupleJet iota center z P) (hspec P hP).2.1 (domainE i) (received i)).mpr
-            heval
-      calc
-        L ≤ (commonCurveAgreementSet domain w P).card := (htuples P hP).common
-        _ = (commonCurveAgreementSet domain w P : Set (Fin n)).ncard :=
-          (Set.ncard_coe_finset _).symm
-        _ ≤ _ := Set.ncard_le_ncard hsubset)
+    domainE received hkL hLn jets hS hA
   rw [hcard] at hbound
   exact hbound
 
