@@ -9,6 +9,7 @@ public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.St
 public import Mathlib.Algebra.Order.Floor.Semifield
 public import Mathlib.Tactic.FieldSimp
 public import Mathlib.Tactic.Linarith
+public import Mathlib.Tactic.Positivity
 public import Mathlib.Tactic.Ring
 public import Mathlib.Tactic.Zify
 
@@ -50,6 +51,7 @@ most `2 θ`. All comparisons are between real numbers, before any ceiling is tak
 ## Main statements
 
 * `cast_stageStaircaseSum`: the closed form of the staircase.
+* `stageStaircase_le_three_mul_cube`: the staircase is bounded by `3 μ^3` when `M ≤ μ`.
 * `regularFiberStageSum_cast_le`, `regularJointStageSum_cast_le`: the stage sums at any `e ≤ M`
   are at most `2 D T` and `(12 D² h + 4 D) T`.
 * `firstOrderListCharge_mono`, `firstOrderListCharge_le_firstOrderListConstant`: the list charge
@@ -64,8 +66,7 @@ most `2 θ`. All comparisons are between real numbers, before any ceiling is tak
 
 ## References
 
-* [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient
-  Decoding and Smaller Cryptographic Proofs*][DKT26]
+* [DKT26]
 -/
 
 @[expose] public section
@@ -106,6 +107,28 @@ def stageStaircase (μ M : ℕ) : ℝ :=
 theorem stageStaircase_nonneg (μ M : ℕ) : 0 ≤ stageStaircase μ M := by
   unfold stageStaircase
   positivity
+
+/-- The staircase is at most `3 μ^3` when `1 ≤ μ` and `M ≤ μ`. -/
+theorem stageStaircase_le_three_mul_cube {μ M : ℕ} (hμ : 1 ≤ μ) (hM : M ≤ μ) :
+    stageStaircase μ M ≤ 3 * (μ : ℝ) ^ 3 := by
+  have hμ0 : (0 : ℝ) ≤ μ := by positivity
+  have hμ1 : (1 : ℝ) ≤ μ := by exact_mod_cast hμ
+  have hM0 : (0 : ℝ) ≤ M := by positivity
+  have hMreal : (M : ℝ) ≤ μ := by exact_mod_cast hM
+  have hsub : ((μ - M : ℕ) : ℝ) ≤ μ := by exact_mod_cast Nat.sub_le μ M
+  have hMadd : (M : ℝ) + 1 ≤ 2 * μ := by linarith
+  have hMtwo : 2 * (M : ℝ) + 1 ≤ 3 * μ := by linarith
+  have hfirst : ((μ - M : ℕ) : ℝ) * M * (M + 1) ≤ 2 * (μ : ℝ) ^ 3 := by
+    calc
+      ((μ - M : ℕ) : ℝ) * M * (M + 1) ≤ (μ : ℝ) * μ * (2 * μ) := by gcongr
+      _ = 2 * (μ : ℝ) ^ 3 := by ring
+  have hsecond : (M : ℝ) * (M + 1) * (2 * M + 1) / 6 ≤ (μ : ℝ) ^ 3 := by
+    calc
+      (M : ℝ) * (M + 1) * (2 * M + 1) / 6 ≤ (μ : ℝ) * (2 * μ) * (3 * μ) / 6 := by
+        gcongr
+      _ = (μ : ℝ) ^ 3 := by ring
+  unfold stageStaircase
+  linarith
 
 private theorem sum_range_succ_mul_two_mul_add (d : ℝ) (M : ℕ) :
     ∑ r ∈ Finset.range M, ((r : ℝ) + 1) * (2 * d + ((r : ℝ) + 1)) =
