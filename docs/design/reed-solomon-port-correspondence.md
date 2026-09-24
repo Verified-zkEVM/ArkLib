@@ -2130,7 +2130,7 @@ longer takes `K`; `l` is a natural number instead of an element of `Fin K`.
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Symbolic/TaylorSpecialization.lean` at ArkLib revision
 `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
-`map_rationalTaylorNumeratorOver_eq` keeps its name and mathematical contract in the destination owner module. `eval_rationalTaylorNumeratorOver` and `eval₂AlgHom_rationalTaylorNumeratorOver` keep their names and source-shaped specializations.
+`map_rationalTaylorNumeratorOver_eq` keeps its name and mathematical contract in the destination owner module; it also handles polynomial evaluation as a field-valued algebra-map specialization.
 
 ## `ArkLib/Data/Polynomial/Differential/RationalTaylorBidegree.lean`
 
@@ -2274,12 +2274,14 @@ default-exponent theorem and an `_of_exponent` theorem is one theorem taking
 `0 < v` hypothesis. Renamed: `initialJetEquation_ne_zero_of_separant_ne_zero` (from
 `Geometry/InitialGeometry.lean`) to `initialJetEquation_ne_zero_of_initialJetSeparant_ne_zero`,
 `initialJetEquation_solution` to `aeval_initialJetEquation_polynomialJet`,
-`commonTaylorNumerator_solution` to `aeval_commonTaylorNumerator_polynomialJet`,
+`commonTaylorNumerator_solution` to `aeval_commonTaylorNumerator` together with
+`rationalTaylorCoefficient_eq_solution`,
 `rationalTaylorMap_eq_solution` to `rationalTaylorMap_polynomialJet`,
 `degree_rationalTaylorPolynomial_lt_of_high_cuts` to `degree_rationalTaylorPolynomial_lt`,
-`taylorAgreementEquation_solution` to `aeval_taylorAgreementEquation_polynomialJet`,
+`taylorAgreementEquation_solution` to `aeval_taylorAgreementEquation` together with
+`rationalTaylorPolynomial_polynomialJet`,
 `polynomialJet_agreement_cut_iff` (from `Geometry/SolutionGeometry.lean`) to
-`aeval_taylorAgreementEquation_polynomialJet_eq_zero_iff`, and
+`taylorAgreementEquation_eq_zero_iff` together with `rationalTaylorPolynomial_polynomialJet`,
 `eq_of_high_cuts_and_agreement_cuts` to `eq_of_highTaylorCuts_of_agreement`, which takes
 `Set.InjOn domain T` and `k ≤ T.card` instead of an embedding `Fin n ↪ F` with `T.card = k`.
 `rationalTaylorCutDegreeBound` comes from `Geometry/HighCutGeometry.lean` with `τ` in place of
@@ -2295,7 +2297,7 @@ Not ported: `exists_common_regular_center_algebraicClosure` is an algebra-map sp
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Symbolic/TaylorSpecialization.lean` at ArkLib revision
 `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
-`commonTaylorNumeratorOver_eq` is a new bridge identifying the algebra-valued common numerator with the field-valued definition. `map_commonTaylorNumeratorOver_eq` keeps its name and is generalized to the destination's natural Taylor index and arbitrary exponent, without a finite-index bound. `eval_commonTaylorNumeratorOver` keeps its name and specializes using the destination API's natural index through `l.val`.
+`commonTaylorNumeratorOver_eq` is a new bridge identifying the algebra-valued common numerator with the field-valued definition. `map_commonTaylorNumeratorOver_eq` keeps its name and is generalized to the destination's natural Taylor index and arbitrary exponent, without a finite-index bound; it also handles polynomial evaluation as a field-valued algebra-map specialization.
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Geometry/SolutionEmbedding.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
@@ -2314,16 +2316,13 @@ evaluation lemmas are placed in the existing `TaylorChart` module. These mapping
 generalized to commutative semirings and arbitrary ring maps, and the evaluation theorem to maps
 between commutative semirings.
 
-The following declarations keep their names: `taylorAgreementEquationOver`,
-`map_taylorAgreementEquationOver`, `map_taylorAgreementEquationOver_eq`,
-`aeval_map_taylorAgreementEquationOver_of_exponent`, `aeval_map_taylorAgreementEquationOver`,
+The declarations `taylorAgreementEquationOver`, `map_taylorAgreementEquationOver`,
+`map_taylorAgreementEquationOver_eq`, `aeval_map_taylorAgreementEquationOver_of_exponent`,
 `aeval_map_taylorAgreementEquationOver_eq_zero_iff_of_exponent`,
-`aeval_map_taylorAgreementEquationOver_eq_zero_iff`,
-`degree_rationalTaylorPolynomial_lt_of_symbolic_high_cuts_and_exponent`,
-`degree_rationalTaylorPolynomial_lt_of_symbolic_high_cuts`,
-`aeval_map_commonTaylorNumeratorOver_reconstruction_of_exponent`, and
-`aeval_map_commonTaylorNumeratorOver_reconstruction`. The agreement equation keeps the same
-mathematics and uses the destination common-exponent API.
+`degree_rationalTaylorPolynomial_lt_of_symbolic_high_cuts_and_exponent`, and
+`aeval_map_commonTaylorNumeratorOver_reconstruction_of_exponent` keep their general statements.
+The default-exponent twins were removed; callers pass `τ` and its sufficiency proof. The
+agreement equation keeps the same mathematics and uses the destination common-exponent API.
 
 Not ported: `initialJetEquationOver` is covered by the existing, more general `initialJetEquation`
 in `TaylorChart`; `map_initialJetSeparantOver_eq` is covered by the existing
@@ -2334,7 +2333,7 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/S
 
 `challengeHeightLE_initialJetEquationOver` becomes `coeffNatDegreeLE_initialJetEquation`, using the existing `CoeffNatDegreeLE` API. `jointTotalDegree_initialJetEquationOver_le` becomes `jointTotalDegree_initialJetEquation_le`, with the center generalized from a constant to any polynomial. `jointTotalDegree_initialJetEquationOver_le_of_source` becomes `jointTotalDegree_initialJetEquation_le_of_coeffNatDegreeLE`, generalized to `CoeffNatDegreeLE` and `jetTotalDegree`.
 
-The agreement bounds `jointTotalDegree_taylorAgreementEquationOver_le_of_exponent` and `jointTotalDegree_taylorAgreementEquationOver_le` keep their names. `jointTotalDegree_taylorAgreementEquationOver_le_of_source_and_exponent` and `jointTotalDegree_taylorAgreementEquationOver_le_of_source` become `jointTotalDegree_taylorAgreementEquationOver_le_of_coeffNatDegreeLE_and_exponent` and `jointTotalDegree_taylorAgreementEquationOver_le_of_coeffNatDegreeLE`; these use `jetTotalDegree` and `CoeffNatDegreeLE` and require no positive-degree premise. `sparse_rationalTaylorPolynomial_of_symbolic_cuts` keeps its name and uses main's common-numerator reconstruction identity.
+The general agreement bound `jointTotalDegree_taylorAgreementEquationOver_le_of_exponent` keeps its name. The default-exponent specialization was removed; callers pass `τ := 2 * K` with `taylorExponentSufficient_two_mul` when they need that exponent. `jointTotalDegree_taylorAgreementEquationOver_le_of_source_and_exponent` becomes `jointTotalDegree_taylorAgreementEquationOver_le_of_coeffNatDegreeLE_and_exponent`; the source default-exponent bound was removed. These use `jetTotalDegree` and `CoeffNatDegreeLE` and require no positive-degree premise. `sparse_rationalTaylorPolynomial_of_symbolic_cuts` keeps its name and uses main's common-numerator reconstruction identity.
 
 `totalDegree_initialJetEquationOver_le` is not ported because the existing, more general `PolynomialDifferential.totalDegree_initialJetEquation_le` covers it. The source `taylorAgreementEquationOver` definition and `aeval_map_commonTaylorNumeratorOver_reconstruction_of_exponent` are supplied by main under those destination names.
 

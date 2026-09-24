@@ -126,7 +126,8 @@ theorem exists_graphLine_pair_of_symbolic_sample
           aeval jet (map (Polynomial.evalRingHom z)
             (taylorAgreementEquationOver (F := E) (Polynomial.C center) Q K
               (Polynomial.C (iota (domain i)))
-              (Polynomial.C (iota (f i)) + Polynomial.X * Polynomial.C (iota (g i))))) = 0) →
+              (Polynomial.C (iota (f i)) + Polynomial.X * Polynomial.C (iota (g i)))
+              (τ := 2 * K))) = 0) →
         rationalTaylorPolynomial center (map (Polynomial.evalRingHom z) Q) K jet =
             P₀.map iota + Polynomial.C z * P₁.map iota ∧
           jet = (fun j ↦ polynomialJet (d := r) center (P₀.map iota) j +

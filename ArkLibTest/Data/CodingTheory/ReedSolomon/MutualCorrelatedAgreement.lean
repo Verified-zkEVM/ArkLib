@@ -829,23 +829,25 @@ example :
     intro l hl
     fin_cases l
     · simp at hl
-    · have hcoeff := aeval_commonTaylorNumerator_polynomialJet (0 : ZMod 3)
-        recognitionChartAt (0 : Polynomial (ZMod 3)) hsolution hseparant
-        (τ := 4) (l := 1) (by norm_num) (by
-          intro i hir hi
-          have : i = 1 := by omega
-          subst i
-          norm_num)
-      have hjetZero : recognitionJet = polynomialJet 0 (0 : Polynomial (ZMod 3)) := by
+    · have hjetZero : recognitionJet = polynomialJet 0 (0 : Polynomial (ZMod 3)) := by
         funext j
         fin_cases j
         simp [recognitionJet, polynomialJet, Polynomial.hasseJet]
+      have hcoeff : rationalTaylorCoefficient (0 : ZMod 3) recognitionChartAt
+          recognitionJet 1 = 0 := by
+        rw [hjetZero, rationalTaylorCoefficient_eq_solution (0 : ZMod 3)
+          recognitionChartAt (0 : Polynomial (ZMod 3)) hsolution hseparant 1 (by
+            intro i hir hi
+            have : i = 1 := by omega
+            subst i
+            norm_num)]
+        simp
       have hcoeffZero : MvPolynomial.aeval (fun _ : Fin 1 ↦ (0 : ZMod 3))
           (commonTaylorNumerator (0 : ZMod 3) recognitionChartAt 4 1) = 0 := by
         change MvPolynomial.aeval recognitionJet
           (commonTaylorNumerator (0 : ZMod 3) recognitionChartAt 4 1) = 0
-        rw [hjetZero, hcoeff]
-        simp [polynomialJet, Polynomial.hasseJet]
+        exact aeval_commonTaylorNumerator_eq_zero (0 : ZMod 3) recognitionChartAt
+          recognitionJet 4 hS hcoeff
       change MvPolynomial.aeval (fun _ : Fin 1 ↦ (0 : ZMod 3))
         (commonTaylorNumerator (0 : ZMod 3) recognitionChartAt 4 1) = 0
       exact hcoeffZero

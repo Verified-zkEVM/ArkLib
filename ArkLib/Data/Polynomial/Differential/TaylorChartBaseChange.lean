@@ -122,9 +122,11 @@ theorem exists_regular_solution_jet_family_of_exponent
             (Polynomial.map f P₀).eval (f (domain i)) = f (received i)) := by
         ext i
         simp only [Finset.mem_filter, Finset.mem_univ, true_and]
-        rw [aeval_taylorAgreementEquation_polynomialJet_eq_zero_iff center QE
-          (Polynomial.map f P₀) hp.2.1 hs hτ
-          (hp.1.trans_le (Nat.cast_le.mpr hkK)) hbin (f (domain i)) (f (received i))]
+        rw [taylorAgreementEquation_eq_zero_iff center QE hτ
+          (polynomialJet center (Polynomial.map f P₀))
+          (by rwa [aeval_initialJetSeparant]) (f (domain i)) (f (received i))]
+        rw [rationalTaylorPolynomial_polynomialJet center QE (Polynomial.map f P₀)
+          hp.2.1 hs (hp.1.trans_le (Nat.cast_le.mpr hkK)) hbin]
       calc
         A ≤ (Finset.univ.filter (fun i ↦ P₀.eval (domain i) = received i)).card :=
           hagree P₀ hP₀
