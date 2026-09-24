@@ -125,6 +125,10 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation
 
 `exists_finite_firstOrder_curve_certificate_of_heightSlotCount` keeps its name, assumptions, and conclusion. The theorem is consolidated into the existing `FirstOrder.CurveCertificate` owner rather than a parallel module. Its proof uses the existing weighted-degree global multiplicity theorem. No public source declaration is omitted.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/FirstOrder/FiniteCertificate.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`exists_finite_firstOrder_symbolic_certificate_of_heightSlotCount` keeps its name, assumptions, and conclusion. It specializes the existing finite curve-certificate constructor at curve degree one and transfers specialization soundness to affine combinations of two received words while preserving the support, coefficient-height, primitivity, and local-constraint fields. The received-line degree bound uses `natDegree_receivedLine_le` in the destination API. No declarations are omitted.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder/CurveHeightCounting.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/FirstOrder/CurveHeightCounting.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -4361,6 +4365,10 @@ Added `regular_principalOpen_graph_restriction`, which gives ideal restriction a
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/FirstOrder/CurveFinite.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 An acceptance example uses `D = 1`, `A = m = 2`, `M = 0`, `μ = 1`, `k = 2`, `n = 2`, and `ℓ = h = 1`, with distinct centers in `ZMod 5` and zero received curves. It computes the strict slot surplus `10 < 11` and constructs the certificate with an agreement threshold matching the number of centers.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/FirstOrder/FiniteCertificate.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+A `ZMod 5` shifted-surplus acceptance example uses `n = 2`, two distinct centers, and `A = 2`, so the two positions can meet the agreement threshold.
 
 ## `ArkLibTest/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition.lean`
 
