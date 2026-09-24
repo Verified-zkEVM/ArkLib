@@ -7,12 +7,15 @@ module
 
 public import ArkLib.Data.Polynomial.Differential.TaylorChartAlgebra
 public import ArkLib.Data.Polynomial.Differential.TaylorChart
+public import ArkLib.Data.Polynomial.Differential.JetDegree
+public import ArkLib.Data.Polynomial.Differential.RationalTaylorDerivativeDegree
 public import ArkLib.Data.Polynomial.Differential.RationalTaylorJointDegree
 public import ArkLib.ToMathlib.MvPolynomial.PolynomialCoefficients
 public import ArkLib.ToMathlib.RingTheory.MvPolynomial.Bidegree
+public import ArkLib.ToMathlib.RingTheory.MvPolynomial.CappedBidegree
 
 /-!
-# Bidegrees of rational Taylor chart equations
+# Capped bidegrees of rational Taylor chart equations
 
 For a differential polynomial over `F[X]`, coefficient degree measures the challenge variable and
 total degree in the jet variables measures the initial jet. The flattened initial equation, initial
@@ -25,6 +28,12 @@ separant, padded Taylor numerators, and agreement equations therefore lie in bid
 * `commonTaylorNumeratorOver_mem_restrictBidegree`: the rectangle for a padded Taylor numerator.
 * `taylorAgreementEquationOver_mem_restrictBidegree`: the rectangle for an agreement equation
   with a received polynomial of bounded degree.
+* `degreeOf_taylorAgreementEquationOver_firstOrder`: a separate degree bound in the first
+  derivative variable for an agreement equation.
+* `initialJetEquation_mem_restrictCappedBidegree`,
+  `commonTaylorNumeratorOver_mem_restrictCappedBidegree`, and
+  `taylorAgreementEquationOver_mem_restrictCappedBidegree`: the same equations with a separate
+  bound on their highest jet variable.
 
 ## References
 
@@ -117,5 +126,82 @@ theorem taylorAgreementEquationOver_mem_restrictBidegree (center x : F) (y : Pol
           ((totalDegree_initialJetSeparant_le (Polynomial.C center) Q).trans
             (Nat.sub_le_sub_right hjet 1)))
       exact hs.trans (by omega)
+
+/-- The initial equation lies in the capped rectangle given by the coefficient, total jet, and
+highest-jet degrees of `Q`. -/
+theorem initialJetEquation_mem_restrictCappedBidegree (center : F)
+    (Q : DifferentialPolynomial (Polynomial F) r) (h v c : ℕ)
+    (hheight : CoeffNatDegreeLE Q h) (hjet : jetTotalDegree Q ≤ v)
+    (hhighest : Q.degreeOf (some (Fin.last r)) ≤ c) :
+    (optionEquivRight F (Fin (r + 1))).symm
+      (initialJetEquation (Polynomial.C center) Q) ∈
+        restrictCappedBidegree (Fin (r + 1)) F (Fin.last r) h v (min v c) := by
+  apply optionEquivRight_symm_mem_restrictCappedBidegree
+  · exact coeffNatDegreeLE_initialJetEquation center Q hheight
+  · exact (totalDegree_initialJetEquation_le _ _).trans hjet
+  · exact (degreeOf_initialJetEquation_le _ _).trans hhighest
+
+/-- A common Taylor numerator lies in the capped rectangle that records its degree in the first
+derivative variable separately. -/
+theorem commonTaylorNumeratorOver_mem_restrictCappedBidegree (center : F)
+    (Q : DifferentialPolynomial (Polynomial F) 1) (h v r K τ : ℕ)
+    (hτ : TaylorExponentSufficient 1 K τ) (hheight : CoeffNatDegreeLE Q h)
+    (hv : 0 < v) (hjet : jetTotalDegree Q ≤ v) (hr : 0 < r)
+    (hderiv : Q.degreeOf (some 1) ≤ r) (l : Fin K) :
+    (optionEquivRight F (Fin 2)).symm
+      (commonTaylorNumeratorOver F (Polynomial.C center) Q τ l.val) ∈
+        restrictCappedBidegree (Fin 2) F 1 (τ * h) (1 + τ * (v - 1))
+          (min (1 + τ * (v - 1)) (τ * (r - 1) + l.val)) := by
+  apply optionEquivRight_symm_mem_restrictCappedBidegree
+  · exact coeffNatDegreeLE_commonTaylorNumeratorOver_le center Q h τ l.val (hτ l) hheight
+  · exact totalDegree_commonTaylorNumeratorOver_le_of_jet_and_exponent
+      (Polynomial.C center) Q v K τ hv hτ hjet l
+  · exact (degreeOf_commonTaylorNumeratorOver_firstOrder
+      (Polynomial.C center) Q r K τ hτ hr hderiv l).trans (by omega)
+
+/-- Agreement with a received polynomial of bounded degree has the same separate first-derivative
+degree bound as the common Taylor numerators. -/
+theorem degreeOf_taylorAgreementEquationOver_firstOrder (center x y : Polynomial F)
+    (Q : DifferentialPolynomial (Polynomial F) 1) (r K τ : ℕ)
+    (hτ : TaylorExponentSufficient 1 K τ) (hr : 0 < r)
+    (hderiv : Q.degreeOf (some 1) ≤ r) :
+    (taylorAgreementEquationOver (F := F) center Q K x y (τ := τ)).degreeOf 1 ≤
+      τ * (r - 1) + (K - 1) := by
+  unfold taylorAgreementEquationOver
+  apply (degreeOf_sub_le _ _ _).trans
+  apply max_le
+  · apply (degreeOf_sum_le _ _ _).trans
+    apply Finset.sup_le
+    intro l _
+    apply (degreeOf_mul_le _ _ _).trans
+    simp only [degreeOf_C, zero_add]
+    exact (degreeOf_commonTaylorNumeratorOver_firstOrder
+      center Q r K τ hτ hr hderiv l).trans (by omega)
+  · apply (degreeOf_mul_le _ _ _).trans
+    simp only [degreeOf_C, zero_add]
+    exact (degreeOf_pow_le _ _ _).trans
+      ((Nat.mul_le_mul_left τ ((degreeOf_initialJetSeparant_le _ Q).trans
+        (Nat.sub_le_sub_right hderiv 1))).trans (by omega))
+
+/-- Agreement with a received polynomial of bounded degree lies in the capped rectangle whose
+third bound records the first-derivative degree. -/
+theorem taylorAgreementEquationOver_mem_restrictCappedBidegree (center x : F)
+    (y : Polynomial F) (Q : DifferentialPolynomial (Polynomial F) 1)
+    (ell h v r K τ : ℕ) (hτ : TaylorExponentSufficient 1 K τ)
+    (hy : y.natDegree ≤ ell) (hheight : CoeffNatDegreeLE Q h) (hv : 0 < v)
+    (hr : 0 < r) (hjet : jetTotalDegree Q ≤ v) (hderiv : Q.degreeOf (some 1) ≤ r) :
+    (optionEquivRight F (Fin 2)).symm
+        (taylorAgreementEquationOver (F := F) (Polynomial.C center) Q K
+          (Polynomial.C x) y (τ := τ)) ∈
+        restrictCappedBidegree (Fin 2) F 1 (ell + τ * h) (1 + τ * (v - 1))
+          (min (1 + τ * (v - 1)) (τ * (r - 1) + (K - 1))) := by
+  apply mem_restrictCappedBidegree_of_mem_restrictBidegree
+    (taylorAgreementEquationOver_mem_restrictBidegree center x y Q ell h v K τ hτ hy
+      hheight hv hjet)
+  exact (degreeOf_optionEquivRight_symm_some_le
+    (taylorAgreementEquationOver (F := F) (Polynomial.C center) Q K
+      (Polynomial.C x) y (τ := τ)) 1).trans
+      (degreeOf_taylorAgreementEquationOver_firstOrder (Polynomial.C center) (Polynomial.C x) y
+        Q r K τ hτ hr hderiv)
 
 end PolynomialDifferential

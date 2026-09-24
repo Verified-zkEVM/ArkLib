@@ -712,12 +712,14 @@ example : flat (initialJetEquation (Polynomial.C 0) recursiveEq) ∈ rect 1 2 �
 
 example :
     (optionEquivRight ℚ (Fin 2)).symm
-      (taylorAgreementEquationOver (F := ℚ) (Polynomial.C 0) recursiveEq 3
-        (Polynomial.C 1) (Polynomial.C 0 + Polynomial.X * Polynomial.C 1) (τ := 6)) ∈
-      restrictBidegree (Fin 2) ℚ 7 7 := by
-  simpa using taylorAgreementEquationOver_mem_restrictBidegree (F := ℚ) (r := 1)
-    0 1 Polynomial.X recursiveEq 1 1 2 3 6 (taylorExponentSufficient_two_mul 1 3)
-    (by simp) recursiveHeight (by norm_num) recursiveJet_le
+      (taylorAgreementEquationOver (F := ℚ) (Polynomial.C 0) recursiveEq 1
+        (Polynomial.C 1) (0 : Polynomial ℚ) (τ := 6)) ∈
+      restrictCappedBidegree (Fin 2) ℚ 1 6 7 6 := by
+  have hderiv : recursiveEq.degreeOf (some 1) ≤ 2 := by
+    exact (jetDegree_le_total recursiveEq 1).trans recursiveJet_le
+  exact taylorAgreementEquationOver_mem_restrictCappedBidegree 0 1 0 recursiveEq
+    0 1 2 2 1 6 (by intro l; omega) (by simp) recursiveHeight (by norm_num)
+    (by norm_num) recursiveJet_le hderiv
 
 /-- For `Y₁` at the regular jet `(1, 0)`, the symbolic cuts force coefficient `1` to vanish. -/
 example :

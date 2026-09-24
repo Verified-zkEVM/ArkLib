@@ -8,6 +8,7 @@ module
 public import ArkLib.ToMathlib.MvPolynomial.ClearedSubstitution
 public import ArkLib.ToMathlib.MvPolynomial.RootContraction
 public import ArkLib.ToMathlib.RingTheory.MvPolynomial.Bidegree
+public import ArkLib.ToMathlib.RingTheory.MvPolynomial.CappedBidegree
 public import Mathlib.Algebra.MvPolynomial.CommRing
 public import Mathlib.Algebra.MvPolynomial.Equiv
 public import Mathlib.Algebra.MvPolynomial.PDeriv
@@ -40,6 +41,9 @@ This file records both degrees.
   `MvPolynomial.CoeffNatDegreeLE.pderiv` and `MvPolynomial.CoeffNatDegreeLE.clearedSubstitution`.
 * `MvPolynomial.optionEquivRight_symm_mem_restrictBidegree`: coefficient and jet degree bounds
   give a bidegree bound after flattening.
+* `MvPolynomial.degreeOf_optionEquivRight_symm_some_le` and
+  `MvPolynomial.optionEquivRight_symm_mem_restrictCappedBidegree`: separate degree bounds also give
+  a coordinate cap after flattening.
 * `MvPolynomial.eval_map_coefficients`: evaluation after a coefficient map agrees with direct
   evaluation into the target semiring.
 * `MvPolynomial.jointTotalDegree`, its ring-operation bounds, `jointTotalDegree_C_le`,
@@ -345,6 +349,81 @@ theorem optionEquivRight_symm_mem_restrictBidegree [Nontrivial R]
         simpa only [AlgEquiv.apply_symm_apply] using
           (totalDegree_optionEquivRight ((optionEquivRight R σ).symm P)).symm
       _ ≤ b := hb
+
+private theorem degreeOf_optionEquivRight_symm_C_some_le [Nontrivial R]
+    (p : Polynomial R) (i : σ) :
+    ((optionEquivRight R σ).symm (C p)).degreeOf (some i) ≤ 0 := by
+  classical
+  rw [optionEquivRight_symm_C]
+  have he : Polynomial.aeval (X none : MvPolynomial (Option σ) R) p =
+      ∑ n ∈ p.support, C (p.coeff n) * X none ^ n := by
+    simpa [Polynomial.sum_def] using congrArg
+      (Polynomial.aeval (X none : MvPolynomial (Option σ) R)) p.sum_monomial_eq.symm
+  rw [he]
+  apply (degreeOf_sum_le (some i) p.support
+    (fun n => C (p.coeff n) * X none ^ n)).trans
+  apply Finset.sup_le
+  intro n hn
+  exact (degreeOf_C_mul_le (X none ^ n) (some i) (p.coeff n)).trans
+    (degreeOf_X_pow_of_ne n (by simp)).le
+
+/-- Flattening preserves an upper bound on the degree of each polynomial variable. -/
+theorem degreeOf_optionEquivRight_symm_some_le [Nontrivial R]
+    (P : MvPolynomial σ (Polynomial R)) (i : σ) :
+    ((optionEquivRight R σ).symm P).degreeOf (some i) ≤ P.degreeOf i := by
+  classical
+  have he : (optionEquivRight R σ).symm P =
+      ∑ m ∈ P.support, (optionEquivRight R σ).symm (C (P.coeff m)) *
+        ∏ j ∈ m.support, (X (some j) : MvPolynomial (Option σ) R) ^ m j := by
+    conv_lhs => rw [P.as_sum]
+    simp only [map_sum, monomial_eq, map_mul, Finsupp.prod, map_prod, map_pow,
+      optionEquivRight_symm_X]
+  rw [he]
+  apply (degreeOf_sum_le (some i) P.support
+    (fun m => (optionEquivRight R σ).symm (C (P.coeff m)) *
+      ∏ j ∈ m.support, (X (some j) : MvPolynomial (Option σ) R) ^ m j)).trans
+  apply Finset.sup_le
+  intro m hm
+  apply (degreeOf_mul_le _ _ _).trans
+  have hprod :
+      (∏ j ∈ m.support, (X (some j) : MvPolynomial (Option σ) R) ^ m j).degreeOf
+          (some i) ≤ m i := by
+    apply (degreeOf_prod_le (some i) m.support
+      (fun j => (X (some j) : MvPolynomial (Option σ) R) ^ m j)).trans
+    calc
+      _ ≤ ∑ j ∈ m.support, if j = i then m i else 0 := by
+        apply Finset.sum_le_sum
+        intro j hj
+        by_cases hji : j = i
+        · subst j
+          simp
+        · have hdegree : degreeOf (some i)
+              ((X (some j) : MvPolynomial (Option σ) R) ^ m j) = 0 :=
+            degreeOf_X_pow_of_ne (m j) (by simp [Ne.symm hji])
+          simp [hji, hdegree]
+      _ ≤ m i := by
+        simp only [Finset.sum_ite_eq']
+        split_ifs with hi
+        · exact le_rfl
+        · have hzero : m i = 0 := by
+            by_contra hne
+            exact hi (Finsupp.mem_support_iff.mpr hne)
+          simp [hzero]
+  calc
+    _ ≤ 0 + m i := Nat.add_le_add
+      (degreeOf_optionEquivRight_symm_C_some_le (P.coeff m) i) hprod
+    _ ≤ P.degreeOf i := by
+      simpa using Nat.add_le_add_left (monomial_le_degreeOf i hm) 0
+
+/-- Coefficient, total, and separate variable-degree bounds give a capped bidegree bound after
+flattening. -/
+theorem optionEquivRight_symm_mem_restrictCappedBidegree [Nontrivial R]
+    {P : MvPolynomial σ (Polynomial R)} {i : σ} {a b c : ℕ}
+    (ha : CoeffNatDegreeLE P a) (hb : P.totalDegree ≤ b) (hc : P.degreeOf i ≤ c) :
+    (optionEquivRight R σ).symm P ∈ restrictCappedBidegree σ R i a b (min b c) :=
+  mem_restrictCappedBidegree_of_mem_restrictBidegree
+    (optionEquivRight_symm_mem_restrictBidegree ha hb)
+    ((degreeOf_optionEquivRight_symm_some_le P i).trans hc)
 
 /-- Evaluating mapped coefficient polynomials agrees with evaluating their coefficients directly.
 -/

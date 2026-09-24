@@ -249,6 +249,12 @@ example : Module.finrank ℚ (restrictCappedDegree (Fin 2) ℚ 1 2 1) = 5 := by
   rw [finrank_restrictCappedDegree]
   omega
 
+example : (X (some 0) : MvPolynomial (Option (Fin 1)) ℚ) ∈
+    restrictCappedBidegree (Fin 1) ℚ 0 0 1 1 := by
+  exact mem_restrictCappedBidegree_of_mem_restrictBidegree
+    (σ := Fin 1) (R := ℚ) (i := 0) (a := 0) (b := 1) (c := 1)
+    (by rw [mem_restrictBidegree, support_X]; simp) (by simp)
+
 private def firstVariable : Fin 1 ↪ Fin 3 :=
   ⟨fun _ ↦ 0, Function.injective_of_subsingleton _⟩
 
