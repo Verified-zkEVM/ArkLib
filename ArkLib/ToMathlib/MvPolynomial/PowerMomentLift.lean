@@ -23,6 +23,9 @@ corresponding powers and leaves the other variables unchanged.
 * `MvPolynomial.coefficientPowerLift` and `polynomialPowerLift` construct linear lifts of bounded
   polynomial coefficients and multivariate polynomials.
 * The map theorems recover the original polynomials, and the total-degree bounds control the lifts.
+* `chunkedCoefficientPowerLift` and `chunkedPolynomialPowerLift` represent coefficients of degree
+  at most `M * D` using degree-`D` moment coordinates, with total-degree bounds `M + 1` and
+  `B + M + 1`.
 
 ## References
 
@@ -144,6 +147,101 @@ theorem polynomialPowerLift_totalDegree_le {σ : Type*} [Nontrivial R] (D B : �
   intro m hm
   apply (MvPolynomial.totalDegree_mul _ _).trans
   have hc := coefficientPowerLift_totalDegree_le_one (R := R) (σ := σ) D
+    (P.coeff m) (hP m)
+  have hj : (∏ i ∈ m.support,
+      (MvPolynomial.X (Sum.inr i) : MvPolynomial (PowerMomentIndex D σ) R) ^ m i).totalDegree ≤
+      m.sum fun _ e ↦ e := by
+    apply (MvPolynomial.totalDegree_finsetProd _ _).trans
+    simp [Finsupp.sum, MvPolynomial.totalDegree_X_pow]
+  exact (Nat.add_le_add hc (hj.trans (MvPolynomial.le_totalDegree hm))).trans (by omega)
+
+/-! ### Chunked power-moment lifts -/
+
+/-- Represent a polynomial of degree at most `M * D` using degree-`D` power-moment coordinates.
+The exponent is split into quotient and remainder upon division by `D`. -/
+def chunkedCoefficientPowerLift {σ : Type*} (D M : ℕ) (hD : 0 < D) (p : R[X])
+    (_hp : p.natDegree ≤ M * D) : MvPolynomial (PowerMomentIndex D σ) R :=
+  ∑ j ∈ Finset.range (p.natDegree + 1),
+    MvPolynomial.C (p.coeff j) *
+      MvPolynomial.X (Sum.inl ⟨D, Nat.lt_succ_self D⟩) ^ (j / D) *
+      MvPolynomial.X (Sum.inl ⟨j % D, (Nat.mod_lt j hD).trans_le (Nat.le_succ D)⟩)
+
+/-- Evaluating a chunked coefficient lift recovers its polynomial. -/
+theorem powerMomentMap_chunkedCoefficientPowerLift {σ : Type*} (D M : ℕ) (hD : 0 < D)
+    (p : R[X]) (hp : p.natDegree ≤ M * D) :
+    powerMomentMap (R := R) (σ := σ) D
+        (chunkedCoefficientPowerLift (R := R) (σ := σ) D M hD p hp) =
+      Polynomial.aeval (MvPolynomial.X none : MvPolynomial (Option σ) R) p := by
+  classical
+  rw [chunkedCoefficientPowerLift, map_sum]
+  simp only [map_mul, map_pow, powerMomentMap, MvPolynomial.aeval_X,
+    MvPolynomial.aeval_C, MvPolynomial.algebraMap_eq, Sum.elim_inl]
+  rw [Polynomial.aeval_def, Polynomial.eval₂_eq_sum_range]
+  apply Finset.sum_congr rfl
+  intro j hj
+  rw [← pow_mul, mul_assoc, ← pow_add]
+  have he : D * (j / D) + j % D = j := by
+    simpa only [Nat.add_comm] using (Nat.mod_add_div j D)
+  rw [he]
+  simp only [MvPolynomial.algebraMap_eq]
+
+/-- Lift every polynomial coefficient of a multivariate polynomial using chunked power moments. -/
+def chunkedPolynomialPowerLift {σ : Type*} (D M : ℕ) (hD : 0 < D)
+    (P : MvPolynomial σ (R[X])) (hP : CoeffNatDegreeLE P (M * D)) :
+    MvPolynomial (PowerMomentIndex D σ) R :=
+  ∑ m ∈ P.support,
+    chunkedCoefficientPowerLift (R := R) (σ := σ) D M hD (P.coeff m) (hP m) *
+      ∏ i ∈ m.support, MvPolynomial.X (Sum.inr i) ^ m i
+
+/-- The power-moment map sends a chunked lift to the flattened polynomial. -/
+theorem powerMomentMap_chunkedPolynomialPowerLift {σ : Type*} (D M : ℕ) (hD : 0 < D)
+    (P : MvPolynomial σ (R[X])) (hP : CoeffNatDegreeLE P (M * D)) :
+    powerMomentMap (R := R) (σ := σ) D
+        (chunkedPolynomialPowerLift (R := R) (σ := σ) D M hD P hP) =
+      (optionEquivRight R σ).symm P := by
+  classical
+  rw [chunkedPolynomialPowerLift, map_sum]
+  conv_rhs => rw [P.as_sum]
+  simp only [map_sum, monomial_eq, map_mul, Finsupp.prod, map_prod, map_pow,
+    optionEquivRight_symm_C, optionEquivRight_symm_X]
+  apply Finset.sum_congr rfl
+  intro m hm
+  change powerMomentMap (R := R) (σ := σ) D
+      (chunkedCoefficientPowerLift (R := R) (σ := σ) D M hD
+        (P.coeff m) (hP m)) * _ = _
+  rw [powerMomentMap_chunkedCoefficientPowerLift]
+  simp [powerMomentMap]
+
+/-- A chunked coefficient lift has total degree at most `M + 1`. -/
+theorem chunkedCoefficientPowerLift_totalDegree_le {σ : Type*} [Nontrivial R]
+    (D M : ℕ) (hD : 0 < D) (p : R[X]) (hp : p.natDegree ≤ M * D) :
+    (chunkedCoefficientPowerLift (R := R) (σ := σ) D M hD p hp).totalDegree ≤ M + 1 := by
+  classical
+  rw [chunkedCoefficientPowerLift]
+  apply MvPolynomial.totalDegree_finsetSum_le
+  intro j hj
+  apply (MvPolynomial.totalDegree_mul _ _).trans
+  apply (Nat.add_le_add (MvPolynomial.totalDegree_mul _ _) le_rfl).trans
+  simp only [MvPolynomial.totalDegree_C, MvPolynomial.totalDegree_X_pow,
+    MvPolynomial.totalDegree_X, zero_add, add_le_add_iff_right]
+  have hjdeg : j ≤ p.natDegree := Nat.le_of_lt_succ (Finset.mem_range.mp hj)
+  have hjMD : j ≤ M * D := hjdeg.trans hp
+  have hq : j / D ≤ M := Nat.div_le_of_le_mul (by
+    simpa [Nat.mul_comm] using hjMD)
+  omega
+
+/-- A polynomial of jet degree at most `B` and coefficient degree at most `M * D` has a
+chunked lift of total degree at most `B + M + 1`. -/
+theorem chunkedPolynomialPowerLift_totalDegree_le {σ : Type*} [Nontrivial R]
+    (D M B : ℕ) (hD : 0 < D) (P : MvPolynomial σ (R[X]))
+    (hP : CoeffNatDegreeLE P (M * D)) (hdeg : P.totalDegree ≤ B) :
+    (chunkedPolynomialPowerLift (R := R) (σ := σ) D M hD P hP).totalDegree ≤ B + M + 1 := by
+  classical
+  rw [chunkedPolynomialPowerLift]
+  apply MvPolynomial.totalDegree_finsetSum_le
+  intro m hm
+  apply (MvPolynomial.totalDegree_mul _ _).trans
+  have hc := chunkedCoefficientPowerLift_totalDegree_le (R := R) (σ := σ) D M hD
     (P.coeff m) (hP m)
   have hj : (∏ i ∈ m.support,
       (MvPolynomial.X (Sum.inr i) : MvPolynomial (PowerMomentIndex D σ) R) ^ m i).totalDegree ≤
