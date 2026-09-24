@@ -4,11 +4,13 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
+import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.AutomaticBounds
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.BranchwiseRate
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.FiniteRateParameters
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.HybridRateEnvelope
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.RoundedCounts
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.StageComparison
+import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.StageSum
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.Uniform
 import Mathlib.Order.Interval.Finset.Nat
 
@@ -344,6 +346,42 @@ example : orderZeroCurveStageCharge 1 1 1 1 3 2 ≤
     orderOneCurveStageCharge 3 1 1 1 1 1 3 1 2 1 :=
   orderZeroCurveStageCharge_le_orderOne 3 1 1 (by norm_num) (by norm_num) (by norm_num)
     (by norm_num) (by norm_num) 3 2
+
+/-! ### Automatic parameter bounds -/
+
+/-- The finite multiplicity, jet degree, challenge height and moment obey concrete slack bounds. -/
+example :
+    (automaticMultiplicity (1 / 2) (firstOrderRateThreshold (1 / 2) + 1 / 8) : ℝ) ≤
+        automaticMultiplicityBoundConstant (1 / 2) / (1 / 8) ∧
+      (automaticJetDegree (1 / 2) (firstOrderRateThreshold (1 / 2) + 1 / 8) : ℝ) ≤
+        automaticJetBoundConstant (1 / 2) / (1 / 8) ∧
+      (automaticChallengeHeight (1 / 2)
+          (firstOrderRateThreshold (1 / 2) + 1 / 8) : ℝ) ≤
+        automaticHeightBoundConstant (1 / 2) / (1 / 8) ^ 2 := by
+  have hslack : firstOrderRateThreshold (1 / 2) + 1 / 8 < 1 := by
+    linarith [half_rate_threshold_lt_three_four]
+  have hbounds := automaticParameterBounds (by norm_num) (by norm_num) (by norm_num) hslack
+  exact ⟨hbounds.1, hbounds.2.2.1, hbounds.2.2.2.1⟩
+
+/-! ### Curve-stage sums -/
+
+/-- Splitting the first-order curve ratio at `L = 2` raises it above the direct ratio. -/
+example : firstOrderCurveDirectRatio 5 1 4 ≤ firstOrderCurveJointRatio 5 2 4 := by
+  exact firstOrderCurveDirectRatio_le_jointRatio (by norm_num) (by norm_num) (by norm_num)
+
+/-- A computed order-zero cap agrees with the concrete first-order curve bound. -/
+example :
+    (0 : ℚ) + PolynomialDifferential.firstOrderStageCap
+        (fun v ↦ orderZeroCurveStageCharge 1 0 (firstOrderCurveJointRatio 5 2 4)
+          (3 : ℚ) v 0)
+        (fun v r ↦ orderOneCurveStageCharge 3 1 0 (firstOrderCurveJointRatio 5 2 4)
+          (firstOrderCurveFiberRatio 5 1 2) (3 : ℚ) v r 0 2) 1 0 =
+      firstOrderCurveBound 5 3 1 2 4 1 0 1 0 0 2 := by
+  norm_num [PolynomialDifferential.firstOrderStageCap, firstOrderCurveBound,
+    orderZeroCurveStageCharge, orderOneCurveStageCharge, firstOrderCurveJointZero,
+    firstOrderCurveJointOne, firstOrderCurveFiberZero, firstOrderCurveFiberOne,
+    firstOrderTaylorTotalCap, firstOrderTaylorDerivativeCap,
+    firstOrderCurveJointRatio, firstOrderCurveFiberRatio]
 
 /-! ### Fixed shifted-height certificate -/
 
