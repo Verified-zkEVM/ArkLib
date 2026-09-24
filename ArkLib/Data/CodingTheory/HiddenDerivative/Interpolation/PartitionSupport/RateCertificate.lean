@@ -228,21 +228,8 @@ theorem RatePartitionEnvelope.exists_curve_certificate {F : Type*} [Field F]
       (partitionWeightBudget e.rate e.agreement d m) (m * A : ℕ) u →
       totalJetDegree u ≤ ν := by
     intro u hu
-    have htotal := totalJetDegree_lt_of_partitionSupportEligible hD hu
-    have hambient : (0 : ℝ) < e.ambientDegree := by exact_mod_cast hD
-    have hδ2 : 0 < δ ^ 2 := sq_pos_of_pos hδ
-    have hbound : ((m * A : ℕ) : ℝ) / e.ambientDegree ≤ (m : ℝ) / δ ^ 2 := by
-      apply (div_le_div_iff₀ hambient hδ2).2
-      have hAn' : (A : ℝ) ≤ n := by exact_mod_cast hAn
-      have hm' : (0 : ℝ) ≤ m := Nat.cast_nonneg _
-      push_cast
-      nlinarith [mul_le_mul_of_nonneg_left e.ambient_lower hm',
-        mul_le_mul_of_nonneg_left hAn' (mul_nonneg hm' hδ2.le)]
-    have hceil : (m : ℝ) / δ ^ 2 ≤ ⌈(m : ℝ) / δ ^ 2⌉₊ := Nat.le_ceil _
-    have hlt : (totalJetDegree u : ℝ) < ⌈(m : ℝ) / δ ^ 2⌉₊ :=
-      htotal.trans_le (hbound.trans hceil)
-    change totalJetDegree u ≤ ⌈(m : ℝ) / δ ^ 2⌉₊ - 1
-    exact Nat.le_sub_one_of_lt (by exact_mod_cast hlt)
+    exact partitionSupport_totalJetDegree_le_of_ambient_lower_bound hD hδ
+      e.ambient_lower hAn hu
   obtain ⟨cert⟩ := exists_partitionSupport_curve_certificate_of_finiteRatio hD hd
     hmpos e.rate_pos (e.rate_pos.trans e.rate_lt_agreement) hW e.message_le
     e.rate_upper e.agreement_lower centers received hreceived hdegree
