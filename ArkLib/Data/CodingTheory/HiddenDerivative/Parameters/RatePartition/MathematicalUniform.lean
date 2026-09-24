@@ -22,8 +22,7 @@ dimension and agreement.
 
 * `uniformMathematicalMultiplicity`, `uniformMathematicalJetBound`, and
   `uniformMathematicalLength`.
-* `uniformDerivativeOrder_ge_519`, `uniformDerivativeOrder_le_mathematicalJetBound`, and
-  `uniformMathematical_integer_guards`.
+* `uniformDerivativeOrder_le_mathematicalJetBound` and `uniformMathematical_integer_guards`.
 * `uniformMathematical_totalJetDegree_le`, `uniformMathematical_low_ratio_gt`, and
   `uniformMathematical_high_ratio_gt`.
 * `exists_mathematicalRatePartitionEnvelope`, a specialization of `exists_ratePartitionEnvelope`.
@@ -66,24 +65,6 @@ theorem uniformMathematicalLength_eq_ceil {δ : ℝ}
         (0 : ℝ) < uniformMathematicalMultiplicity δ) (sq_pos_of_pos hδ))
   unfold uniformMathematicalLength uniformMathematicalJetBound
   omega
-
-/-- The uniform derivative order is at least `519` for `0 < δ < 6/25`. -/
-theorem uniformDerivativeOrder_ge_519 {δ : ℝ} (hδ : 0 < δ) (hδmax : δ < 6 / 25) :
-    519 ≤ uniformDerivativeOrder δ := by
-  have hexponent : (25 / 4 : ℝ) < 3 / (2 * δ) := by
-    apply (lt_div_iff₀ (mul_pos (by norm_num) hδ)).2
-    nlinarith
-  have hseries := Real.sum_le_exp_of_nonneg (show (0 : ℝ) ≤ 25 / 4 by norm_num) 20
-  have h518 : (518 : ℝ) < Real.exp (25 / 4) := by
-    norm_num [Finset.sum_range_succ] at hseries ⊢
-    exact lt_of_lt_of_le (by norm_num) hseries
-  have hexp : (518 : ℝ) < Real.exp (3 / (2 * δ)) :=
-    h518.trans (Real.exp_lt_exp.mpr hexponent)
-  have heq : (3 / 2 : ℝ) / δ = 3 / (2 * δ) := by field_simp
-  have hceil : (518 : ℝ) < uniformDerivativeOrder δ := by
-    rw [uniformDerivativeOrder, heq]
-    exact hexp.trans_le (Nat.le_ceil _)
-  exact_mod_cast hceil
 
 /-- The scale-300 multiplicity bounds the uniform derivative order by the jet cap. -/
 theorem uniformDerivativeOrder_le_mathematicalJetBound {δ : ℝ}
