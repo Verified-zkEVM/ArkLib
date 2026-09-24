@@ -69,4 +69,8 @@ example : tuple ∈ polynomialTupleFamily domain2 words 1 ∧
     ⟨hdegree, by rw [hcommon]; simp⟩, ?_⟩
   simpa using (polynomialTupleFamily_card_le domain2 words 1)
 
+example : UniformExactPowerAgreement domain2 words 1 1 2 := by
+  (convert uniformExactPowerAgreement_of_all_samples (k := 1) (L := 1)
+    domain2 words (by norm_num) using 1; norm_num)
+
 end InterpolationFamilyTest
