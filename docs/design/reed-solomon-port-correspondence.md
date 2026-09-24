@@ -211,6 +211,18 @@ polynomial `P`, and each divisibility needs agreement only at its own point. The
 the source form. The rank bound and the interpolant use `LinearMap.finrank_range_pi_le_sum` and
 `LinearMap.exists_ne_zero_map_eq_zero_of_finrank_range_lt` from P3 slice 10.
 
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder/Profile.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/FirstOrder/Profile.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`LineProfile` and its count definitions and accessors are ported. Source `LineProfile.D` is renamed to `LineProfile.candidateDegree`, with unchanged mathematics. `LineProfile.Verification` omits its `degree_le` projection, and `CurveVerification` omits the matching tautological conjunct; both state `k ≤ k - 1 + 1`. `support_card_eq`, `columnY₀Weight_eq`, and symbolic certificate construction are generalized to the weaker verification predicate, deriving the degree condition internally. `CurveVerification.exists_certificate` likewise derives it internally. The declarations live under `ReedSolomon.HiddenDerivative.CurveProfile`.
+
+The automatic recipe bridge is not ported: `automaticFirstOrderThreshold_eq_firstOrderRateThreshold`, `automaticBeta_eq_firstOrderRateBeta`, `automaticDerivativeCapRaw_eq_firstOrderRateDerivativeCap`, `automaticJetDegree_eq_firstOrderRateJetDegree`, `automaticSourceCount_eq_firstOrderRateSourceCount`, `automaticRankCount_eq_firstOrderRateRankCount`, and `automaticChallengeHeight_eq_firstOrderRateChallengeDegree` are recipe-specific names absent from the current API; generic rate declarations already live in `Parameters.FirstOrder` and `FirstOrderFiniteRateParameters`. `automaticSourceCount_le_dimensionCount` is covered by `firstOrderSourceCount_mul_le_firstOrderDimensionCount`, and `certifiedEnlargedRankBound_one_eq_automaticRankCount` by `certifiedEnlargedRankBound_one_eq_firstOrderRankCount`. `automaticFirstOrderFiniteRateParameters` and `exists_automaticFirstOrder_symbolicCertificate` require the unavailable `automaticMultiplicity_pos` and `automaticRankCount_lt_sourceCount` results. The generic finite-rate certificate remains the supported construction boundary.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/FirstOrder/CurveFinite.lean` and `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/FirstOrder/FiniteCertificate.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+The profile reuses the current first-order curve-certificate engine to construct polynomial-curve certificates, and constructs symbolic certificates through the finite first-order certificate API.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder/RateCertificate.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/FirstOrder/RateCertificate.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -4410,6 +4422,10 @@ An acceptance example uses `D = 1`, `A = m = 2`, `M = 0`, `μ = 1`, `k = 2`, `n 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/FirstOrder/FiniteCertificate.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 A `ZMod 5` shifted-surplus acceptance example uses `n = 2`, two distinct centers, and `A = 2`, so the two positions can meet the agreement threshold.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/FirstOrder/Profile.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Acceptance cases check a concrete profile with support dimension `7`, local rank `3`, height slots `11`, and shifted row bound `10`. They verify the support-cardinality and column-weight identities and construct symbolic line and polynomial-curve certificates over `ZMod 5`.
 
 ## `ArkLibTest/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition.lean`
 
