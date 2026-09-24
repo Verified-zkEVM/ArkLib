@@ -7,6 +7,7 @@ module
 
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.LocalRank
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.ReceivedCurve
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.SourceColumn
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.Basic
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.LocalRank
 public import ArkLib.ToMathlib.LinearAlgebra.FiniteDimensional
@@ -70,8 +71,7 @@ def weightedSupportColumnIndex (hD : 0 < D) {κ : Type*} (columns : κ → Sourc
 /-- Enumerate the weighted-support exponents as source columns. -/
 def weightedSupportColumns (hD : 0 < D) :
     Fin (Fintype.card (↥(weightedSupportExponents D d W L hD))) → SourceColumn d :=
-  fun j => SourceColumn.ofExponent
-    (((Fintype.equivFin (↥(weightedSupportExponents D d W L hD))).symm j).1)
+  SourceColumn.enumerate (weightedSupportExponents D d W L hD)
 
 /-- The exponent of an enumerated weighted-support column is its enumerated exponent. -/
 @[simp]
@@ -79,24 +79,19 @@ theorem weightedSupportColumns_exponent (hD : 0 < D)
     (j : Fin (Fintype.card (↥(weightedSupportExponents D d W L hD)))) :
     (weightedSupportColumns (d := d) (W := W) (L := L) hD j).exponent =
       ((Fintype.equivFin (↥(weightedSupportExponents D d W L hD))).symm j).1 := by
-  simp [weightedSupportColumns]
+  exact SourceColumn.exponent_enumerate _ _
 
 /-- Different indices enumerate different weighted-support columns. -/
 theorem weightedSupportColumns_injective (hD : 0 < D) :
     Function.Injective (weightedSupportColumns (d := d) (W := W) (L := L) hD) := by
-  intro i j hij
-  apply (Fintype.equivFin (↥(weightedSupportExponents D d W L hD))).symm.injective
-  apply Subtype.ext
-  rw [← weightedSupportColumns_exponent hD i, ← weightedSupportColumns_exponent hD j, hij]
+  exact SourceColumn.enumerate_injective _
 
 /-- Every enumerated weighted-support column is eligible. -/
 theorem weightedSupportColumns_eligible (hD : 0 < D)
     (j : Fin (Fintype.card (↥(weightedSupportExponents D d W L hD)))) :
     WeightedSupportEligible D d W L
       (weightedSupportColumns (d := d) (W := W) (L := L) hD j).exponent := by
-  rw [weightedSupportColumns_exponent]
-  exact mem_weightedSupportExponents.mp
-    ((Fintype.equivFin (↥(weightedSupportExponents D d W L hD))).symm j).2
+  exact mem_weightedSupportExponents.mp (SourceColumn.exponent_enumerate_mem _ _)
 
 private theorem map_localConstraintCoordinatesAt
     {R E : Type*} [CommRing R] [CommRing E] (φ : R →+* E) (d m : ℕ)
