@@ -6,6 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.Data.Polynomial.Differential.TaylorChart
+public import ArkLib.Data.Polynomial.SpecializationAvoidance
 public import ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertCutFamily
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz
 
@@ -69,20 +70,6 @@ open MvPolynomial
 
 /-! ### A common regular center -/
 
-/-- In an infinite domain, finitely many nonzero polynomials have a common nonvanishing point. -/
-theorem exists_forall_eval_ne_zero {R ι : Type*} [CommRing R] [IsDomain R] [Infinite R]
-    (T : Finset ι) (P : ι → Polynomial R) (hT : ∀ i ∈ T, P i ≠ 0) :
-    ∃ center : R, ∀ i ∈ T, (P i).eval center ≠ 0 := by
-  classical
-  have hprod : ∏ i ∈ T, P i ≠ 0 := Finset.prod_ne_zero_iff.mpr hT
-  obtain ⟨center, hc⟩ :
-      ∃ center : R, (∏ i ∈ T, P i).eval center ≠ 0 := by
-    by_contra! h
-    exact hprod (Polynomial.funext (by simpa using h))
-  refine ⟨center, fun P hP ↦ ?_⟩
-  rw [Polynomial.eval_prod, Finset.prod_ne_zero_iff] at hc
-  exact hc P hP
-
 /-- In an infinite domain, a finite family of polynomial solutions with nonzero differential
 specializations admits a common center at which every specialized separant is nonzero. -/
 theorem exists_forall_jetEvaluation_ne_zero_of_family {R ι : Type*} [CommRing R] [IsDomain R]
@@ -91,7 +78,7 @@ theorem exists_forall_jetEvaluation_ne_zero_of_family {R ι : Type*} [CommRing R
     (hT : ∀ i ∈ T, differentialSpecialization (D i) (P i) ≠ 0) :
     ∃ center : R, ∀ i ∈ T,
       jetEvaluation (D i) center (polynomialJet center (P i)) ≠ 0 := by
-  obtain ⟨center, hc⟩ := exists_forall_eval_ne_zero T
+  obtain ⟨center, hc⟩ := Polynomial.exists_forall_eval_ne_zero T
     (fun i ↦ differentialSpecialization (D i) (P i)) hT
   refine ⟨center, fun i hi ↦ ?_⟩
   rw [← eval_differentialSpecialization]
