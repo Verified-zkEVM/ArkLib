@@ -12,6 +12,7 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.RoundedCo
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.StageComparison
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.StageSum
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.Uniform
+import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.UniformMca
 import Mathlib.Order.Interval.Finset.Nat
 
 /-!
@@ -453,11 +454,75 @@ example :
 
 /-! ### Fixed shifted-height certificate -/
 
+/-- Both regular stage sums increase from derivative degree `1` to `2`. -/
+example : regularFiberStageSum 1 3 1 ≤ regularFiberStageSum 1 3 2 ∧
+    regularJointStageSum 1 1 3 1 ≤ regularJointStageSum 1 1 3 2 := by
+  exact ⟨regularFiberStageSum_mono (by norm_num) (by norm_num) (by norm_num),
+    regularJointStageSum_mono (by norm_num) (by norm_num)⟩
+
 /-- At `n = A = 3` and `k = 2`, the fixed height-851 source has a strict slot surplus. -/
 example : firstOrderCurveShiftedRowSlotBound 1 3 12 4 22 3 1 851 <
     firstOrderCurveShiftedHeightSlotCount 1 3 12 4 22 1 851 := by
   have h := uniformFirstOrder_parameters 3 2 3 (by norm_num) (by norm_num)
   exact h.2.2.2
+
+/-- At `n = 10`, `k = 2`, and `A = 5`, the height-276 support has strict slot surplus. -/
+example : firstOrderCurveShiftedRowSlotBound 1 5 12 4 23 10 1 276 <
+    firstOrderCurveShiftedHeightSlotCount 1 5 12 4 23 1 276 := by
+  have h := uniformFirstOrderMca_parameters 10 2 5 (by norm_num) (by norm_num)
+  exact h.2.2.2
+
+/-- The optimized height-276 exception charge has the integral ceiling at `n = 10`. -/
+example : maxMinFirstOrderExceptionCharge (agreementIncidenceRatio 10 1 5) 10 1 5 276 23 4 ≤
+    1325775 * (10 : ℝ) ^ 2 :=
+  uniformFirstOrderMca_optimizedExceptionCharge_le_ceiling (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num) (by norm_num)
+
+/-- At `D = 1`, `A = 5`, the retained split is `2` and lies strictly between `D` and `A`. -/
+example : uniformFirstOrderMcaSplit 1 5 = 2 ∧
+    1 < uniformFirstOrderMcaSplit 1 5 ∧ uniformFirstOrderMcaSplit 1 5 ≤ 5 := by
+  constructor
+  · norm_num [uniformFirstOrderMcaSplit]
+  · exact uniformFirstOrderMcaSplit_bounds (D := 1) (A := 5) (by norm_num)
+
+/-- Both split coordinate ratios satisfy their bounds for `n = 10`, `D = 1`, `A = 5`. -/
+example : retainedCoordinateRatio 10 5 (uniformFirstOrderMcaSplit 1 5) ≤
+      (42 / 41 : ℝ) * agreementIncidenceRatio 10 1 5 ∧
+    fixedCoordinateRatio 10 1 (uniformFirstOrderMcaSplit 1 5) ≤
+      42 * agreementIncidenceRatio 10 1 5 := by
+  exact ⟨uniformFirstOrderMcaSplit_retainedCoordinateRatio_le (by norm_num) (by norm_num),
+    uniformFirstOrderMcaSplit_fixedCoordinateRatio_le (by norm_num)⟩
+
+/-- The agreement incidence ratios obey the gap bounds at `n = 10`, `D = 1`, `A = 5`. -/
+example : agreementIncidenceRatio 10 1 5 ≤ 25 / 6 ∧
+    (1 : ℝ) * agreementIncidenceRatio 10 1 5 ≤ (25 / 24 : ℝ) * 10 := by
+  have hdegree : (1 : ℝ) * agreementIncidenceRatio 10 1 5 ≤ (25 / 24 : ℝ) * 10 := by
+    simpa using
+      (uniformFirstOrderMca_degree_mul_agreementIncidenceRatio_le
+        (n := 10) (D := 1) (A := 5) (by norm_num) (by norm_num) (by norm_num))
+  exact ⟨uniformFirstOrderMca_agreementIncidenceRatio_le (by norm_num) (by norm_num), hdegree⟩
+
+/-- The four regular stage sums have their exact values at `D = 1` and `D = 2`. -/
+example : regularFiberStageSum 1 23 4 = 86 ∧ regularFiberStageSum 2 23 4 = 486 ∧
+    regularJointStageSum 1 276 23 4 = 1276 ∧ regularJointStageSum 2 276 23 4 = 423252 := by
+  exact ⟨uniformFirstOrderMca_regularFiberStageSum_four_one,
+    (by simpa using uniformFirstOrderMca_regularFiberStageSum_four 2 (by norm_num)),
+    uniformFirstOrderMca_regularJointStageSum_four_one,
+    (by simpa using uniformFirstOrderMca_regularJointStageSum_four 2 (by norm_num))⟩
+
+/-- The raw height-276 exception charge obeys its rational bound at `n = 10`. -/
+example : firstOrderExceptionCharge (agreementIncidenceRatio 10 1 5) 10 1 5 276 23 4
+      (uniformFirstOrderMcaSplit 1 5) ≤
+    (1304562211 / 984 : ℝ) * (10 : ℝ) ^ 2 :=
+  uniformFirstOrderMca_exceptionCharge_le
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+
+/-- The raw height-276 exception charge has its integral ceiling at `n = 10`. -/
+example : firstOrderExceptionCharge (agreementIncidenceRatio 10 1 5) 10 1 5 276 23 4
+      (uniformFirstOrderMcaSplit 1 5) ≤
+    1325775 * (10 : ℝ) ^ 2 :=
+  uniformFirstOrderMca_exceptionCharge_le_ceiling
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
 
 set_option maxRecDepth 4096 in
 /-- The fixed graded-rank profile through grade `22`. -/
