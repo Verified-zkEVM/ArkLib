@@ -7,6 +7,8 @@ Authors: Quang Dao
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TaylorChart.PointRecognition
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TaylorChart.PairCounting
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TaylorChart.Incidence
+import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TaylorChart.ExceptionalChallenges
 import Mathlib.Algebra.Field.ZMod
 import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 import Mathlib.Tactic.NormNum
@@ -651,6 +653,170 @@ example : pairCountingPair ∈ admissibleChartPairFamily pointDomain (fun _ ↦ 
       (by simp [pairCountingEquation, MvPolynomial.weightedTotalDegree,
         MvPolynomial.support_X])
     simpa using hbound
+
+private def challengeBoundDomain : Fin 4 ↪ ℚ :=
+  ⟨fun i ↦ i.val, by
+    intro i j h
+    apply Fin.ext
+    exact_mod_cast (show (i.val : ℚ) = (j.val : ℚ) from h)⟩
+
+private def challengeBoundFirstWord : Fin 4 → ℚ := fun i ↦ if i.val = 3 then 1 else 0
+
+private def challengeBoundSecondWord : Fin 4 → ℚ := fun i ↦ if i.val = 2 then 1 else 0
+
+private def challengeBoundEquation : DifferentialPolynomial (Polynomial PairCountingField) 1 :=
+  MvPolynomial.X (some (1 : Fin 2))
+
+private def challengeBoundJet : Fin 2 → PairCountingField :=
+  polynomialJet 0 (0 : PairCountingField[X])
+
+private def challengeBoundChallenges : Finset PairCountingField := {0}
+
+/-- The bad-challenge bound includes a concrete challenge with three agreements and no matching
+common-agreement set from a degree-bounded polynomial pair. -/
+example : challengeBoundChallenges.Nonempty ∧
+    (challengeBoundChallenges.card : ℚ) ≤ 12 := by
+  classical
+  have hsolution : differentialSpecialization
+      (MvPolynomial.map (Polynomial.evalRingHom (0 : PairCountingField)) challengeBoundEquation)
+      (0 : PairCountingField[X]) = 0 := by
+    simp [differentialSpecialization, differentialSpecializationHom, challengeBoundEquation]
+  have hseparant : jetEvaluation
+      (separant
+        (MvPolynomial.map (Polynomial.evalRingHom (0 : PairCountingField)) challengeBoundEquation)
+        (Fin.last 1)) 0 challengeBoundJet ≠ 0 := by
+    norm_num [jetEvaluation, separant, challengeBoundEquation, challengeBoundJet,
+      polynomialJet]
+  have hpolynomial : rationalTaylorPolynomial 0
+      (MvPolynomial.map (Polynomial.evalRingHom (0 : PairCountingField)) challengeBoundEquation)
+      2 challengeBoundJet = 0 := by
+    exact rationalTaylorPolynomial_polynomialJet 0
+      (MvPolynomial.map (Polynomial.evalRingHom (0 : PairCountingField)) challengeBoundEquation)
+      (0 : PairCountingField[X]) hsolution hseparant
+      (by exact WithBot.bot_lt_coe 2)
+      (by intro i hi hiK; omega)
+  have hchart : ∀ z ∈ challengeBoundChallenges,
+      let Qz := MvPolynomial.map (Polynomial.evalRingHom z) challengeBoundEquation
+      (0 : PairCountingField[X]).degree < 2 ∧
+        aeval challengeBoundJet (initialJetEquation (0 : PairCountingField) Qz) = 0 ∧
+        aeval challengeBoundJet (initialJetSeparant (0 : PairCountingField) Qz) ≠ 0 ∧
+        (∀ l : Fin 2, 2 ≤ l.val →
+          aeval challengeBoundJet (commonTaylorNumerator 0 Qz 4 l) = 0) ∧
+        rationalTaylorPolynomial 0 Qz 2 challengeBoundJet = 0 := by
+    intro z hz
+    have hz0 : z = 0 := Finset.mem_singleton.mp hz
+    subst z
+    dsimp only
+    refine ⟨WithBot.bot_lt_coe 2, ?_, ?_, ?_, hpolynomial⟩
+    · exact aeval_initialJetEquation_polynomialJet 0
+        (MvPolynomial.map (Polynomial.evalRingHom (0 : PairCountingField)) challengeBoundEquation)
+        (0 : PairCountingField[X]) hsolution
+    · norm_num [challengeBoundEquation, initialJetSeparant, separant]
+    · intro l hl
+      omega
+  have hagree : ∀ z ∈ challengeBoundChallenges,
+      3 ≤ (polynomialAgreementSet
+        (challengeBoundDomain.trans ⟨pairCountingIota, pairCountingIota.injective⟩)
+        (fun i ↦ pairCountingIota (challengeBoundFirstWord i) + z *
+          pairCountingIota (challengeBoundSecondWord i)) (0 : PairCountingField[X])).card := by
+    intro z hz
+    have hz0 : z = 0 := Finset.mem_singleton.mp hz
+    subst z
+    have hset : polynomialAgreementSet
+        (challengeBoundDomain.trans ⟨pairCountingIota, pairCountingIota.injective⟩)
+        (fun i ↦ pairCountingIota (challengeBoundFirstWord i) +
+          0 * pairCountingIota (challengeBoundSecondWord i)) (0 : PairCountingField[X]) =
+        Finset.univ.filter fun i : Fin 4 ↦ i.val ≠ 3 := by
+      ext i
+      simp [polynomialAgreementSet, challengeBoundDomain, challengeBoundFirstWord,
+        challengeBoundSecondWord, pairCountingIota]
+    rw [hset]
+    decide
+  have hbad : ∀ z ∈ challengeBoundChallenges, ¬ ∃ pair : ℚ[X] × ℚ[X],
+      pair.1.degree < 2 ∧ pair.2.degree < 2 ∧
+      (0 : PairCountingField[X]) = correlatedPairSpecialization pairCountingIota z pair ∧
+      polynomialAgreementSet
+          (challengeBoundDomain.trans ⟨pairCountingIota, pairCountingIota.injective⟩)
+          (fun i ↦ pairCountingIota (challengeBoundFirstWord i) + z *
+            pairCountingIota (challengeBoundSecondWord i)) (0 : PairCountingField[X]) =
+        commonPolynomialAgreementSet challengeBoundDomain challengeBoundFirstWord
+          challengeBoundSecondWord pair.1 pair.2 := by
+    intro z hz
+    have hz0 : z = 0 := Finset.mem_singleton.mp hz
+    subst z
+    rintro ⟨pair, _, hdegree, hspecialize, hsets⟩
+    have hmapped : pair.1.map pairCountingIota = 0 := by
+      simpa [correlatedPairSpecialization] using hspecialize.symm
+    have hleft : pair.1 = 0 := by
+      apply Polynomial.map_injective pairCountingIota pairCountingIota.injective
+      simpa using hmapped
+    have hQ0 : pair.2.eval 0 = 0 := by
+      have hi : (0 : Fin 4) ∈ polynomialAgreementSet
+          (challengeBoundDomain.trans ⟨pairCountingIota, pairCountingIota.injective⟩)
+          (fun i ↦ pairCountingIota (challengeBoundFirstWord i) +
+            0 * pairCountingIota (challengeBoundSecondWord i)) (0 : PairCountingField[X]) := by
+        norm_num [polynomialAgreementSet, challengeBoundDomain, challengeBoundFirstWord,
+          challengeBoundSecondWord, pairCountingIota]
+      have hc : (0 : Fin 4) ∈ commonPolynomialAgreementSet challengeBoundDomain
+          challengeBoundFirstWord challengeBoundSecondWord pair.1 pair.2 := by
+        rw [← hsets]
+        exact hi
+      have hq := (mem_commonPolynomialAgreementSet ..).mp hc |>.2
+      change pair.2.eval (challengeBoundDomain (0 : Fin 4)) = challengeBoundSecondWord 0 at hq
+      norm_num [challengeBoundDomain, challengeBoundSecondWord] at hq
+      exact hq
+    have hQ1 : pair.2.eval 1 = 0 := by
+      have hi : (1 : Fin 4) ∈ polynomialAgreementSet
+          (challengeBoundDomain.trans ⟨pairCountingIota, pairCountingIota.injective⟩)
+          (fun i ↦ pairCountingIota (challengeBoundFirstWord i) +
+            0 * pairCountingIota (challengeBoundSecondWord i)) (0 : PairCountingField[X]) := by
+        norm_num [polynomialAgreementSet, challengeBoundDomain, challengeBoundFirstWord,
+          challengeBoundSecondWord, pairCountingIota]
+      have hc : (1 : Fin 4) ∈ commonPolynomialAgreementSet challengeBoundDomain
+          challengeBoundFirstWord challengeBoundSecondWord pair.1 pair.2 := by
+        rw [← hsets]
+        exact hi
+      have hq := (mem_commonPolynomialAgreementSet ..).mp hc |>.2
+      change pair.2.eval (challengeBoundDomain (1 : Fin 4)) = challengeBoundSecondWord 1 at hq
+      norm_num [challengeBoundDomain, challengeBoundSecondWord] at hq
+      exact hq
+    have hQzero : pair.2 = 0 := by
+      refine Polynomial.eq_zero_of_degree_lt_of_eval_finset_eq_zero ({(0 : ℚ), 1}) ?_ ?_
+      · simpa using hdegree
+      · intro x hx
+        simp only [Finset.mem_insert, Finset.mem_singleton] at hx
+        rcases hx with rfl | rfl
+        · exact hQ0
+        · exact hQ1
+    have hQ2 : pair.2.eval 2 = 1 := by
+      have hi : (2 : Fin 4) ∈ polynomialAgreementSet
+          (challengeBoundDomain.trans ⟨pairCountingIota, pairCountingIota.injective⟩)
+          (fun i ↦ pairCountingIota (challengeBoundFirstWord i) +
+            0 * pairCountingIota (challengeBoundSecondWord i)) (0 : PairCountingField[X]) := by
+        norm_num [polynomialAgreementSet, challengeBoundDomain, challengeBoundFirstWord,
+          challengeBoundSecondWord, pairCountingIota]
+      have hc : (2 : Fin 4) ∈ commonPolynomialAgreementSet challengeBoundDomain
+          challengeBoundFirstWord challengeBoundSecondWord pair.1 pair.2 := by
+        rw [← hsets]
+        exact hi
+      have hq := (mem_commonPolynomialAgreementSet ..).mp hc |>.2
+      change pair.2.eval (challengeBoundDomain (2 : Fin 4)) = challengeBoundSecondWord 2 at hq
+      norm_num [challengeBoundDomain, challengeBoundSecondWord] at hq
+      exact hq
+    norm_num [hQzero] at hQ2
+  have hjet : challengeBoundEquation.weightedTotalDegree
+      (fun i ↦ i.elim 0 (fun _ ↦ 1)) ≤ 1 := by
+    norm_num [challengeBoundEquation, MvPolynomial.weightedTotalDegree, MvPolynomial.support_X]
+  have hheight : CoeffNatDegreeLE challengeBoundEquation 0 :=
+    coeffNatDegreeLE_X (some (1 : Fin 2))
+  have hbound := finite_symbolicTaylorChart_badChallenges_card_le
+    (F := ℚ) (E := PairCountingField) (n := 4) (r := 1) challengeBoundDomain
+    challengeBoundFirstWord challengeBoundSecondWord pairCountingIota 0 challengeBoundEquation
+    2 2 2 3 1 0 (by omega) (by omega) (by omega) (by omega) (by omega) (by omega)
+    hjet hheight challengeBoundChallenges (fun _ ↦ 0) (fun _ ↦ challengeBoundJet)
+    hchart hagree hbad
+  refine ⟨by simp [challengeBoundChallenges], ?_⟩
+  norm_num [challengeBoundChallenges] at hbound ⊢
 
 end
 
