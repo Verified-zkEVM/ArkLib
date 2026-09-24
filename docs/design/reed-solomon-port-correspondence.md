@@ -1727,11 +1727,29 @@ Ported from `HiddenDerivative/RootFinding/MutualCorrelatedAgreement/ExtensionDes
 
 Not ported: the standalone exceptional correlated-agreement wrapper from this dependency; the equation-descent theorem performs the exceptional-set pullback directly.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedComponentAgreement.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/ComponentAgreement.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`commonAgreement_of_curveCut_mem_prime_of_exponent` became `commonCurveAgreement_of_jointTaylorAgreementEquation_mem_prime`. It uses the current joint Taylor cut and applies to every constituent of an arbitrary power-batched tuple.
+
+`exists_polynomialGraph_of_symbolic_prime_agreements_of_exponent` became `exists_polynomialGraph_of_primeTaylorComponent_agreements`. It handles any index set of size `L` with `k ≤ L`, chooses the interpolation sample internally, and returns the graph and ideal restriction facts.
+
+`symbolicSourceCurveAgreement_eq_zero_iff_of_exponent` was not ported because `PolynomialDifferential.aeval_map_taylorAgreementEquationOver_eq_zero_iff_of_exponent` covers it generically. Acceptance cases in `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement.lean` check direct constituent agreement on the prime-component fixture and tuple extraction from one joint cut for a two-entry tuple.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedComponentRecognition.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/ComponentRecognition.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 Renamed `exists_polynomialGraph_of_symbolic_prime_sample_of_exponent` to `exists_polynomialGraph_of_primeTaylorComponent`. It uses the destination joint Taylor cuts and recognizes a graph for tuples of arbitrary length. Added `powerBatchedJetGraphMap`. The result also proves ideal vanishing on the graph and nonvanishing of the restricted separant. The wrapper declarations `symbolicSourceCurveAgreement_of_exponent` and `symbolicSourceCurveAgreement` were not ported: their cut polynomial is `jointTaylorAgreementEquation`, and the default-exponent case follows by taking exponent `2 * K`.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedGeometricTransfer.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/GeometricTransfer.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`geometricTransferBound` keeps its name and budget, and uses `dimensionSensitiveIncidenceProduct` directly. `exists_geometricTransfer_exceptional` keeps its name, generalizes `Fin n` to any finite coordinate type, and removes unused algebraic-closure and parameter-bound hypotheses. `exists_geometricTransfer_baseField_semantic` keeps its name and generalizes `Fin n` to any finite coordinate type while preserving the exceptional-set bound.
+
+`geometricTransferIncidenceProduct` and `geometricTransferIncidenceProduct_zero` were not ported because `dimensionSensitiveIncidenceProduct` covers them at degree one and its zero case. Source `ExtensionDescent` functionality is supplied by `HasExactPowerAgreement.descend` in `PowerAgreement.lean`. Acceptance cases in `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement.lean` check geometric transfer for a retained zero tuple and identity-map descent.
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedPointRecognition.lean`
 
@@ -3283,6 +3301,12 @@ with `map_ne_zero_iff`), and `pderiv_inverseFrobeniusTwist_ne_zero` (the `.mpr` 
 `basePowerSubstitution` and the `*_canary` examples were dropped; the consolidated suite retains a
 concrete characteristic-two inverse-twist expansion case.
 
+## `ArkLib/ToMathlib/MvPolynomial/OptionWeightedDegree.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/Flattening.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+The unit-specific flattening alias and helper weight are retired. The flattened polynomial is expressed directly as `(optionEquivRight F (JetVariable 1)).symm Q`, with weight `fun v ↦ v.elim 0 w`. The total weighted-degree bound follows from `weightedTotalDegree_optionEquivRight` and `AlgEquiv.apply_symm_apply`; no first-order wrapper is added.
+
 ## `ArkLib/ToMathlib/MvPolynomial/PDeriv.lean`
 
 This file ports and generalizes `ArkLib/ToMathlib/MvPolynomial/PDeriv.lean` at ArkLib revision
@@ -3347,6 +3371,9 @@ Ported from `ArkLib/ToMathlib/AlgebraicGeometry/Incidence/GraphPullback.lean` at
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Symbolic/TaylorDerivativeSupport.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 Added `MvPolynomial.optionEquivRight_symm_mem_restrictCappedBidegree`. It combines coefficient, total-degree, and coordinate bounds after flattening, using the existing weighted-degree identity for the coordinate bound.
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/Flattening.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`flattenFirstOrderChallenge_challengeDegree_le` is retired in favor of `weightedTotalDegree_optionEquivRight_symm_coefficientDegree_le`; use `weightedTotalDegree_piSingle` for the `degreeOf none` form. The first-order coefficient-degree wrapper is not added.
 
 ## `ArkLib/ToMathlib/MvPolynomial/RootContraction.lean`
 
@@ -4322,3 +4349,6 @@ An acceptance case checks that flattening preserves a separate cap on a polynomi
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Symbolic/TaylorDerivativeSupport.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 An acceptance case checks capped-bidegree membership from a bidegree rectangle and a separate variable-degree bound.
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/Flattening.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+The existing acceptance example exercises `weightedTotalDegree_optionEquivRight_symm_coefficientDegree_le`. The unit-specific acceptance file was removed; no replacement first-order acceptance file is added.
