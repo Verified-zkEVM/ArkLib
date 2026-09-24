@@ -1000,6 +1000,18 @@ the free-order extension was contributed by Pratyush Mishra. All eight definitio
 parameter data only: no theorem here or in the source proves that it bounds a list, since that
 needs a root-counting theorem of Kopparty that is not formalized. -/
 
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/AutomaticBounds.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/FirstOrder/AutomaticBounds.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Ported the rate-gap, surplus-slope, multiplicity, jet-degree, height, moment, and exception constants and the bounds for automatic parameters and closed list and exception constants. Renamed `automaticHybridEnvelopeConstant` to `automaticRateEnvelopeConstant`, `automaticLambdaBoundConstant` to `automaticListBoundConstant`, and `automaticHybridT_le_inv_eta_cube` to `automaticStaircaseMoment_le_inv_eta_cube`. Renamed the hybrid-envelope inequalities to name the rate envelope, and renamed the closed list, exception, and combined bounds to name their mathematical quantities. The slack comparison theorems drop unused rate, positivity, or agreement guards as reported. A private helper proves repeated rate, ratio, jet, and staircase premises once. The unused private `automaticSourceLowerCount` helper and later challenge-height applications were not ported; existing first-order threshold, count, surplus, residual, and scaled-height results cover the needed facts.
+
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/AutomaticParameters.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/FirstOrder/AutomaticParameters.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Ported the first-order automatic agreement, surplus, multiplicity, derivative cap, jet degree, source and rank counts, challenge height, and density definitions. Renamed `automaticBeta` to `automaticDerivativeRatio`; the associated derivative-ratio theorems use the new name. The first derivative-ratio positivity theorem drops unused rate and threshold guards, and the upper-bound theorems drop an unused agreement upper guard. Generalized `automatic_sourceDensity_sub_rankDensityEnvelope` by dropping unused agreement assumptions. Reused the generic counts from `RoundedCounts`. The source threshold, recipe-specific count and surplus results, and scaled-height floor result are covered by existing first-order declarations; unused recipe helpers and challenge-height applications were not exposed.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/FiniteRateParameters.lean`
 
 Ported from `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/FiniteRateParameters.lean` at ArkLib revision
@@ -1079,6 +1091,10 @@ retains concrete checks of the agreement-incidence ratio and optimized exception
 New, with no source counterpart: `stageStaircase_nonneg`, `firstOrderListCharge_le_max` and
 `minFirstOrderExceptionCharge_le_maxMin`.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/FirstOrder/HybridConstants.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Renamed `hybridT_le_three_mul_cube` to `stageStaircase_le_three_mul_cube`. The statement is unchanged, and the theorem is owned by the staircase API.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/HybridRateEnvelope.lean`
 
 Ported from
@@ -1143,6 +1159,12 @@ at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`. `curveStageZero` 
 `curveStageOne_mono_derivative_of_factors` are now `orderOneCurveStageCharge_mono_total` (without
 `r ≤ v`) and `orderOneCurveStageCharge_mono_derivative`, and `curveStageZero_le_one_of_factors`
 is now `orderZeroCurveStageCharge_le_orderOne`, with `0 ≤ s` in place of `1 ≤ s`.
+
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/StageSum.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/FirstOrder/StageSum.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Added `firstOrderCurveIncidenceRatio` as the common ratio for nested coordinate-set sizes; the joint, fiber, and direct ratio declarations are defined through it. Ported the stage charge, direct-ratio comparison, and cap identity. Renamed `SymbolicSeparantChain.Chain.sum_firstOrderCurveStageCharge_add_height_le_of_factors` to `PolynomialDifferential.SeparantChain.sum_firstOrderCurveStageCharge_add_height_le_of_factors`, and renamed the exponent-specialized sum theorem to `sum_firstOrderCurveStageCharge_add_height_le_of_directRatio`. Both sum theorems are generalized from fields to commutative semirings and drop unused `0 < k` and `k ≤ L` guards. The three role-specific ratio lower-bound wrappers were omitted because the chain proofs apply `one_le_incidenceFactor` directly with `b = 1`. The exponent cap identity was omitted as an unused specialization of the factors identity.
 
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/Uniform.lean`
 
@@ -4410,6 +4432,12 @@ An acceptance example uses `D = 1`, `A = m = 2`, `M = 0`, `μ = 1`, `k = 2`, `n 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/FirstOrder/FiniteCertificate.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 A `ZMod 5` shifted-surplus acceptance example uses `n = 2`, two distinct centers, and `A = 2`, so the two positions can meet the agreement threshold.
+
+## `ArkLibTest/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder.lean`
+
+Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/FirstOrder.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Extended the existing acceptance file with a concrete five-part `automaticParameterBounds` case at rate `1/2` and slack `1/8`, concrete closed list and exception envelope cases, a one-stage direct-ratio separant-chain bound, and the cap identity through `firstOrderCurveStageCap_add_height_eq_of_factors`. Removed the redundant ratio restatement; no separate acceptance module was added.
 
 ## `ArkLibTest/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition.lean`
 
