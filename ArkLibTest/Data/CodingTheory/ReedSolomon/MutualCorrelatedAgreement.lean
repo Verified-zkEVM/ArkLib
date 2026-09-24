@@ -33,11 +33,13 @@ import Mathlib.Data.Fin.VecNotation
 import Mathlib.FieldTheory.Finite.Extension
 
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerBatchedPointRecognition
+import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.SingularTail
+import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.UniformMca
 import Mathlib.Algebra.Field.ZMod
 
 /-! # Acceptance cases for Reed–Solomon mutual correlated agreement -/
 
-open Polynomial Finset ReedSolomon PolynomialDifferential
+open Polynomial Finset ReedSolomon PolynomialDifferential ReedSolomon.HiddenDerivative
 
 private abbrev E₄ := FiniteField.Extension (ZMod 2) 2 2
 private def pointDomain : Fin 1 ↪ ZMod 2 :=
@@ -187,21 +189,6 @@ private theorem affineCandidateEvaluation (i : Fin 2) :
     change 1 + 2 * (1 : ℚ) = 3
     norm_num
 
-/-- At challenge `1`, the candidate `1 + 2X` is explained by one pair on both coordinates. -/
-example : ∃ F₀ G₀ : ℚ[X], C 1 + C 2 * X = F₀ + C 1 * G₀ ∧
-    commonPolynomialAgreementSet fullDomain ![1, 2] ![0, 1] F₀ G₀ = univ := by
-  obtain ⟨F₀, G₀, -, -, hpair⟩ :=
-    exists_exactPair_fullDimension fullDomain ![1, 2] ![0, 1]
-  have hagree : polynomialAgreementSet fullDomain (fun i ↦ ![1, 2] i + 1 * ![0, 1] i)
-      (C 1 + C 2 * X) = univ := by
-    ext i
-    simpa only [mem_polynomialAgreementSet, Finset.mem_univ, iff_true] using
-      affineCandidateEvaluation i
-  obtain ⟨hP, hset⟩ := hpair 1 (C 1 + C 2 * X) (by
-    rw [Fintype.card_fin]
-    compute_degree!) (by rw [hagree, card_univ])
-  exact ⟨F₀, G₀, hP, hset.symm.trans hagree⟩
-
 /-- The graph-line recognizer accepts the computed candidate `1 + 2X` at challenge `1`. -/
 example : ∃ F₀ G₀ : ℚ[X], F₀.degree < 2 ∧ G₀.degree < 2 ∧
     (∀ i ∈ (Finset.univ : Finset (Fin 2)),
@@ -270,8 +257,28 @@ example : ∃ z : ℚ, z ≠ 1 ∧ z ≠ 0 ∧
     (RingHom.id ℚ) {tupleOne, tupleChallenge} {1} {X} (by simp [X_ne_zero])
   refine ⟨z, by simpa using hz, by simpa using hroot X (by simp), fun heq ↦ ?_⟩
   exact tuples_ne (hinj (by simp) (by simp) heq)
-
 open MvPolynomial Polynomial PolynomialDifferential
+
+namespace ReedSolomon.FirstOrder.Squarefree
+
+example : singularTail (1 : ℚ[X]) (Polynomial.X ^ 2 : ℚ[X][X]) 2 = 0 ∧
+    (firstOrderCurveFiberStageOne 2 4 2 (regularTaylorExponent 1) : ℝ) * (1 : ℝ) +
+        ordinaryDegreeEnvelope 4 2 ≤ 52 ∧
+    (firstOrderCurveFiberStageOne 2 4 2 (regularTaylorExponent 1) : ℝ) * (1 : ℝ) +
+        ordinaryDegreeEnvelope 4 2 ≤ 7 * (1 : ℝ) ^ 3 * 4 * 4 ^ 2 := by
+  refine ⟨?_, ?_, ?_⟩
+  · simpa using singularTail_map_eq_zero_of_common_root
+      (1 : ℚ[X]) (Polynomial.X ^ 2 : ℚ[X][X])
+      two_pos (by simp) (RingHom.id ℚ[X]) 0 (by simp) (by simp)
+  · have h := squarefreeListExpression_le (D := 1) (B := 4) (M := 2) (lambda := 1)
+      (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    norm_num at h; simpa using h
+  · have h := squarefreeListExpression_le_rate_envelope
+      (C := 1) (q := 4) (lambda := 1) (n := 4) (D := 1) (B := 4) (M := 2)
+      (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+      (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    norm_num at h ⊢; exact h
+end ReedSolomon.FirstOrder.Squarefree
 
 namespace ReedSolomon.GraphLineComponentTest
 
