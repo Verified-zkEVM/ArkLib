@@ -15,6 +15,7 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.Received
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.SourceColumn
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.WeightedSupport
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.Soundness
+import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.JohnsonCertificate
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.Dimension
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.WeightedSupportCertificate
 import Mathlib.FieldTheory.RatFunc.Basic
@@ -497,6 +498,23 @@ private def sixteenPointEmbedding : Fin 16 ↪ ℚ where
     apply Fin.ext
     change (i.val : ℚ) = (j.val : ℚ) at hij
     exact_mod_cast hij
+
+/-- The finite Johnson construction has a concrete degree-one rational instance. -/
+example : Nonempty (JohnsonSymbolicCertificate (F := ℚ) 1 6
+    (johnsonM 16 1 (1 / 8 : ℝ)) (johnsonMu 16 1 (1 / 8 : ℝ)) 1
+    (johnsonH 16 1 (1 / 8 : ℝ)) (johnsonXCutoff 16 1 (1 / 8 : ℝ))
+    sixteenPointEmbedding (fun _ => 0) (fun _ => 0)) := by
+  exact exists_johnson_symbolic_certificate (F := ℚ)
+    (hD := by norm_num) (hDn := by norm_num) (heta := by norm_num)
+    (hthreshold := by
+      have hrho : johnsonRhoMinus 16 1 = (1 / 16 : ℝ) := by
+        norm_num [johnsonRhoMinus]
+      rw [johnsonAgreement, hrho]
+      have hsqrt : Real.sqrt (1 / 16 : ℝ) ≤ 1 / 4 := by
+        apply Real.sqrt_le_iff.mpr
+        constructor <;> norm_num
+      nlinarith [hsqrt])
+    (hkD := by norm_num) sixteenPointEmbedding (fun _ => 0) (fun _ => 0)
 
 /-- The rate construction gives a certificate at a small, feasible agreement threshold. -/
 example :
