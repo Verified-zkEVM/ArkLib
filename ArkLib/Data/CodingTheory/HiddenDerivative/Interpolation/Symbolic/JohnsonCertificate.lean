@@ -27,6 +27,8 @@ the prescribed weighted support, bounded challenge degree, and soundness under f
   constraint.
 * `JohnsonSymbolicCertificate` and `exists_johnson_symbolic_certificate`: the primitive
   interpolation certificate and its construction from the Johnson slot surplus.
+* `exists_johnson_symbolic_certificate_of_shifted_surplus`: the construction from a finite matrix
+  with shifted entry bounds and a strict slot surplus.
 
 ## References
 
@@ -373,50 +375,44 @@ theorem johnsonInterpolant_jetDegree_le {Xc D μ : ℕ}
       exact SourceColumn.interpolant_totalJetDegree_le (johnsonColumns Xc D μ)
         hcolumns v u hu
 
-/-- The Johnson slot surplus constructs a primitive ordinary symbolic certificate from the rate
-and degree bounds. -/
-theorem exists_johnson_symbolic_certificate
-    {n D A k : ℕ} {eta : ℝ}
-    (hD : 1 ≤ D) (hDn : D ≤ n - 2) (heta : 0 < eta)
-    (hthreshold : johnsonAgreement n D eta * n ≤ A)
-    (hkD : k ≤ D + 1) (centers : Fin n ↪ F) (f g : Fin n → F) :
-    Nonempty (JohnsonSymbolicCertificate (F := F) D A (johnsonM n D eta)
-      (johnsonMu n D eta) k (johnsonH n D eta) (johnsonXCutoff n D eta)
-      centers f g) := by
-  let m := johnsonM n D eta
-  let μ := johnsonMu n D eta
-  let h := johnsonH n D eta
-  let Xc := johnsonXCutoff n D eta
+/-- For `1 ≤ D`, `Xc ≤ m * A`, `0 < m * A`, and `k ≤ D + 1`, a finite matrix whose kernel
+implies the Johnson local constraints and whose entries satisfy the shifted bounds yields a
+primitive symbolic certificate under a strict slot surplus. -/
+theorem exists_johnson_symbolic_certificate_of_shifted_surplus
+    {n D A m μ k h Xc rows : ℕ}
+    (hD : 1 ≤ D) (hXc : Xc ≤ m * A) (hbudget : 0 < m * A) (hkD : k ≤ D + 1)
+    (centers : Fin n ↪ F) (f g : Fin n → F)
+    (M : Matrix (Fin rows) (Fin (Fintype.card (JohnsonColumnIndex Xc D μ))) F[X])
+    (rowWeight : Fin rows → ℕ)
+    (hkernel : ∀ v, M *ᵥ v = 0 →
+      ∀ i, SatisfiesLocalConstraints m (Polynomial.C (centers i))
+        (receivedLine (f i) (g i)) (interpolant (johnsonColumns Xc D μ) v))
+    (hdegree : ∀ i j, rowWeight i ≤ (johnsonColumns Xc D μ j).y₀ →
+      (M i j).natDegree ≤ (johnsonColumns Xc D μ j).y₀ - rowWeight i)
+    (hzero : ∀ i j, (johnsonColumns Xc D μ j).y₀ < rowWeight i → M i j = 0)
+    (hsurplus : Finset.univ.sum (fun i : Fin rows ↦ h + 1 - rowWeight i) <
+      Finset.univ.sum (fun j : Fin (Fintype.card (JohnsonColumnIndex Xc D μ)) ↦
+        h + 1 - (johnsonColumns Xc D μ j).y₀)) :
+    Nonempty (JohnsonSymbolicCertificate (F := F) D A m μ k h Xc centers f g) := by
+  have hDpos : 0 < D := Nat.zero_lt_of_lt hD
   let columns := johnsonColumns Xc D μ
   let w : Fin n → F[X] := fun i ↦ receivedLine (f i) (g i)
-  have hDpos : 0 < D := Nat.zero_lt_of_lt hD
-  have hcut : Xc ≤ m * A := by
-    simpa only [Xc, m] using johnsonXCutoff_le_mul_agreement heta hthreshold
-  have hbudget : 0 < m * A := by
-    have hDlt : D < n := by omega
-    have hDA := johnson_degree_succ_le_agreement hD hDlt heta hthreshold
-    have hm := johnsonM_ge_three n D eta
-    exact Nat.mul_pos (by omega) (by omega)
   obtain ⟨v, _hv, hvdegree, hprimitive, hnonzero, hconstraints⟩ :=
     exists_primitive_interpolant_of_shifted_height
       m 1 h (fun i ↦ centers i) w columns (johnsonColumns_injective Xc D μ)
-      (johnsonFinMatrix Xc D μ m (fun i ↦ centers i) w)
-      (johnsonFinRowWeight m)
-      (johnsonFinMatrix_kernel_iff Xc D μ m (fun i ↦ centers i) w)
+      M rowWeight hkernel
       (by
         intro i j hweight
-        have hh := johnsonFinMatrix_degree_le Xc D μ m (fun i ↦ centers i) w
-          (fun i ↦ natDegree_receivedLine_le (f i) (g i)) i j
+        have hweight' : rowWeight i ≤ (johnsonColumns Xc D μ j).y₀ := by
+          simpa only [columns, one_mul, johnsonColumns_totalJetDegree] using hweight
+        have hh := hdegree i j hweight'
         simpa only [columns, one_mul, johnsonColumns_totalJetDegree] using hh)
       (by
         intro i j hweight
-        apply johnsonFinMatrix_eq_zero_of_grade_lt Xc D μ m (fun i ↦ centers i) w
-          i j
-        simpa only [columns, one_mul, johnsonColumns_totalJetDegree] using hweight) (by
-          rw [sum_johnsonFinRowWeight_slots]
-          simpa only [columns, one_mul, johnsonColumns_totalJetDegree,
-            sum_johnsonColumns_slots, m, μ, h, Xc] using
-              johnson_interpolation_slot_surplus hD (by omega))
+        apply hzero i j
+        simpa only [columns, one_mul, johnsonColumns_totalJetDegree] using hweight)
+      (by
+        simpa only [columns, one_mul, johnsonColumns_totalJetDegree] using hsurplus)
   let Q : DifferentialPolynomial F[X] 0 := interpolant columns v
   have hvheight : ∀ j, (v j).natDegree ≤ h := by
     intro j
@@ -445,9 +441,51 @@ theorem exists_johnson_symbolic_certificate
   refine ⟨hnonzero ι z, ?_⟩
   intro indices P hPdegree hcard hagreements
   apply differentialSpecialization_map_interpolant_eq_zero_of_degree_lt
-    hDpos (by exact_mod_cast hcut) hbudget hkD (fun i ↦ centers i) f g columns
+    hDpos (by exact_mod_cast hXc) hbudget hkD (fun i ↦ centers i) f g columns
     (fun j ↦ johnsonColumns_weightedSupportEligible j) v hconstraints ι z indices P
     hPdegree centers.injective.injOn hcard hagreements
+
+/-- The Johnson slot surplus constructs a primitive ordinary symbolic certificate from the rate
+and degree bounds. -/
+theorem exists_johnson_symbolic_certificate
+    {n D A k : ℕ} {eta : ℝ}
+    (hD : 1 ≤ D) (hDn : D ≤ n - 2) (heta : 0 < eta)
+    (hthreshold : johnsonAgreement n D eta * n ≤ A)
+    (hkD : k ≤ D + 1) (centers : Fin n ↪ F) (f g : Fin n → F) :
+    Nonempty (JohnsonSymbolicCertificate (F := F) D A (johnsonM n D eta)
+      (johnsonMu n D eta) k (johnsonH n D eta) (johnsonXCutoff n D eta)
+      centers f g) := by
+  let m := johnsonM n D eta
+  let μ := johnsonMu n D eta
+  let h := johnsonH n D eta
+  let Xc := johnsonXCutoff n D eta
+  let columns := johnsonColumns Xc D μ
+  let w : Fin n → F[X] := fun i ↦ receivedLine (f i) (g i)
+  have hcut : Xc ≤ m * A := by
+    simpa only [Xc, m] using johnsonXCutoff_le_mul_agreement heta hthreshold
+  have hbudget : 0 < m * A := by
+    have hDlt : D < n := by omega
+    have hDA := johnson_degree_succ_le_agreement hD hDlt heta hthreshold
+    have hm := johnsonM_ge_three n D eta
+    exact Nat.mul_pos (by omega) (by omega)
+  exact exists_johnson_symbolic_certificate_of_shifted_surplus hD hcut hbudget hkD
+    centers f g (johnsonFinMatrix Xc D μ m (fun i ↦ centers i) w)
+    (johnsonFinRowWeight m)
+    (fun v hv ↦ (johnsonFinMatrix_kernel_iff Xc D μ m (fun i ↦ centers i) w v).mp hv)
+    (by
+      intro i j _
+      have hh := johnsonFinMatrix_degree_le Xc D μ m (fun i ↦ centers i) w
+        (fun i ↦ natDegree_receivedLine_le (f i) (g i)) i j
+      simpa only [columns, one_mul, johnsonColumns_totalJetDegree] using hh)
+    (by
+      intro i j hweight
+      apply johnsonFinMatrix_eq_zero_of_grade_lt Xc D μ m (fun i ↦ centers i) w i j
+      simpa only [columns, one_mul, johnsonColumns_totalJetDegree] using hweight)
+    (by
+      rw [sum_johnsonFinRowWeight_slots]
+      simpa only [columns, one_mul, johnsonColumns_totalJetDegree,
+        sum_johnsonColumns_slots, m, μ, h, Xc] using
+          johnson_interpolation_slot_surplus hD (by omega))
 
 end
 end ReedSolomon.HiddenDerivative
