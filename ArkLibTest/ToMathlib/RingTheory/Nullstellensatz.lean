@@ -7,6 +7,7 @@ Authors: Quang Dao
 import ArkLib.ToMathlib.RingTheory.Nullstellensatz.AffineHilbertPolynomial
 import ArkLib.ToMathlib.RingTheory.Nullstellensatz.AgreementIncidence
 import ArkLib.ToMathlib.RingTheory.Nullstellensatz.CappedBidegreeIncidence
+import ArkLib.ToMathlib.RingTheory.Nullstellensatz.CappedDegreeIncidence
 import ArkLib.ToMathlib.RingTheory.Nullstellensatz.CutFamily
 import ArkLib.ToMathlib.RingTheory.Nullstellensatz.DimensionSensitiveIncidence
 import ArkLib.ToMathlib.RingTheory.Nullstellensatz.FiniteQuotient
@@ -277,3 +278,79 @@ example :
   norm_num [hvolume] at h ⊢
 
 end CappedBidegreeIncidenceCanary
+
+namespace CappedDegreeIncidenceCanary
+
+open MvPolynomial
+
+private theorem X_mem_restrictCappedDegree (i : Fin 2) :
+    (X i : MvPolynomial (Fin 2) 𝕂) ∈ restrictCappedDegree (Fin 2) 𝕂 1 1 1 := by
+  rw [mem_restrictCappedDegree, support_X]
+  intro e he
+  rw [Finset.mem_singleton] at he
+  subst e
+  constructor
+  · simp [Finsupp.degree_single]
+  · simp [Finsupp.single_apply]
+    split_ifs <;> norm_num
+
+private theorem X_zeroSubOne_mem_restrictCappedDegree :
+    (X 0 - 1 : MvPolynomial (Fin 2) 𝕂) ∈
+      restrictCappedDegree (Fin 2) 𝕂 1 1 1 := by
+  apply Submodule.sub_mem
+  · exact X_mem_restrictCappedDegree 0
+  · rw [mem_restrictCappedDegree]
+    simp
+
+private noncomputable def cappedDegreeLinePoint : Fin 2 → 𝕂 := ![1, 0]
+
+/-- The point `(1, 0)` on the line `X 1 = 0` satisfies the capped-degree incidence bound. -/
+example :
+    ((({cappedDegreeLinePoint} : Finset (Fin 2 → 𝕂)).card : ℚ)) ≤
+      (cappedDegreeMixedVolume 1 1 1 1 : ℕ) *
+        (((2 - 0 + 1 : ℕ) : ℚ) / ((2 - 0 + 1 : ℕ) : ℚ)) := by
+  let cuts : Fin 2 → MvPolynomial (Fin 2) 𝕂 := fun _ ↦ X 0 - 1
+  have h := cappedDegreeHypersurface_incidence_sharp
+    (b := 1) (c := 1) (j := 1) (r := 1) (n := 2) (A := 2) (k := 0)
+    (hb := by norm_num) (hc := by norm_num) (hkA := by norm_num) (hAn := by norm_num)
+    (g := X 1) (s := 1) (hg0 := X_ne_zero _)
+    (hg := X_mem_restrictCappedDegree 1)
+    (hgbc := X_mem_restrictCappedDegree 1)
+    (hsbc := by rw [mem_restrictCappedDegree]; simp)
+    (highCuts := [X 0 - 1])
+    (hhigh := by
+      intro f hf
+      simp only [List.mem_singleton] at hf
+      subst f
+      exact X_zeroSubOne_mem_restrictCappedDegree)
+    (cuts := cuts)
+    (hcuts := by intro i; exact X_zeroSubOne_mem_restrictCappedDegree)
+    (S := {cappedDegreeLinePoint})
+    (hS := by
+      intro x hx
+      rw [Finset.mem_singleton] at hx
+      subst x
+      simp [cappedDegreeLinePoint])
+    (hA := by
+      intro x hx
+      rw [Finset.mem_singleton] at hx
+      subst x
+      simp [cappedDegreeLinePoint, cuts])
+    (hunique := by
+      intro J hJ hsJ hgJ hhigh U hU x y hx hxs hy hys hcuts
+      have hcut : (X 0 - 1 : MvPolynomial (Fin 2) 𝕂) ∈ J :=
+        hhigh _ (by simp)
+      have hx0 : x 0 = 1 := by
+        have h := hx _ hcut
+        simpa only [map_sub, aeval_X, map_one, sub_eq_zero] using h
+      have hy0 : y 0 = 1 := by
+        have h := hy _ hcut
+        simpa only [map_sub, aeval_X, map_one, sub_eq_zero] using h
+      have hx1 : x 1 = 0 := by simpa using hx _ hgJ
+      have hy1 : y 1 = 0 := by simpa using hy _ hgJ
+      funext j
+      fin_cases j
+      <;> simp [hx0, hy0, hx1, hy1])
+  norm_num [cappedDegreeMixedVolume] at h ⊢
+
+end CappedDegreeIncidenceCanary
