@@ -4344,6 +4344,18 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/S
 
 An acceptance case checks that flattening preserves a separate cap on a polynomial variable.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/PositiveProduct.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+No public declarations were added. The acceptance case checks the composed challenge-degree budget for `t * Y₀ + Y₁` at height one, using `CoeffNatDegreeLE`, option-equivalence flattening, and a local `renameEquiv` swap.
+
+`flattenedRootFirstEquiv` and `flattenedRootFirst` have no named replacements; the test uses option-equivalence flattening followed by the local variable swap. `flattenedRootFirst_ne_zero_iff` follows from injectivity of those equivalences, and `flattenedRootFirst_rootDegree_le` is derived locally from `weightedTotalDegree_optionEquivRight` and degree transport under renaming.
+
+`flattenedContent` and `flattenedPositiveRootProduct` use `MvPolynomial.radicalContent none` and `MvPolynomial.radicalPrimPart none`. Their nonzero and root-degree facts are covered by `MvPolynomial.degreeOf_radicalContent`, `MvPolynomial.radicalContent_ne_zero`, and `MvPolynomial.radicalPrimPart_ne_zero`. `flattened_split_zero_iff` is covered by `MvPolynomial.map_radicalContent_mul_radicalPrimPart_eq_zero_iff`, generalized to arbitrary supported homomorphisms and variable coordinates.
+
+`flattened_factorRootDegrees_le` is covered by `MvPolynomial.sum_degreeOf_positiveDegreeFactorClasses_le`, with its source-coordinate cap derived locally. `flattened_content_add_factorChallengeDegrees_le` is covered by `MvPolynomial.add_sum_degreeOf_positiveDegreeFactorClasses_le`; its challenge-height premise uses `CoeffNatDegreeLE`, and its coordinate bound follows from `weightedTotalDegree_optionEquivRight_symm_coefficientDegree_le`.
+
+`flattenedPositiveRootProduct_map_fraction_separable` is covered by `MvPolynomial.ordinaryRootPolynomial_map_fractionRing_separable` and the more general `MvPolynomial.radicalPrimPart_map_optionEquivLeft_fractionRing_separable`. `flattenedPositiveRootProduct_resultant_ne_zero` is covered by `Polynomial.resultant_derivative_ne_zero_ordinaryRootPolynomial`. These first-order names are omitted because the existing generic APIs cover their mathematics, not because of proof gaps.
+
 ## `ArkLibTest/ToMathlib/RingTheory/MvPolynomial.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Symbolic/TaylorDerivativeSupport.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
