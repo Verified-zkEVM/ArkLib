@@ -5,6 +5,7 @@ Authors: Quang Dao
 -/
 
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.Midpoint
+import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.Parameters
 
 /-! # Acceptance case for correlated-agreement capacity bounds -/
 
@@ -15,3 +16,8 @@ example : correlatedMidpoint (1 / 2) 10 2 ≤ 8 ∧
   obtain ⟨-, h, -, h', -⟩ := correlatedMidpoint_bounds (1 / 2) 10 2 8 (by norm_num)
     (by norm_num) (by norm_num)
   exact ⟨h, h'⟩
+
+example : (Nat.choose 2 1 : ℚ) ≠ 0 := by
+  have h := prescribed_correlated_extension_pivots (F := ℚ) (E := ℚ)
+    (RingHom.id ℚ) 3 (Or.inl (by simp))
+  exact h 1 2 (by decide) (by decide)
