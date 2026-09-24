@@ -40,7 +40,6 @@ trap cleanup EXIT
 printf 'module\n\n' > "$tmp_file"
 
 while IFS= read -r lean_path; do
-  [[ -f "$lean_path" ]] || continue
   module_path="${lean_path%.lean}"
   module_path="${module_path//\//.}"
   if (( ${#module_path} + 14 > 100 )); then
