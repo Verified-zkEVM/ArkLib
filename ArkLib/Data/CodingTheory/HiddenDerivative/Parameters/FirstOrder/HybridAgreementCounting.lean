@@ -17,8 +17,6 @@ public import ArkLib.ToMathlib.MvPolynomial.OptionRoots
 import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 import Mathlib.Tactic.Ring
 
-universe u
-
 /-!
 # Actual-degree first-order hybrid agreement counting
 
@@ -53,6 +51,8 @@ closed first-order list constant.
 -/
 
 @[expose] public section
+
+universe u
 
 open Polynomial PolynomialDifferential
 open scoped BigOperators
