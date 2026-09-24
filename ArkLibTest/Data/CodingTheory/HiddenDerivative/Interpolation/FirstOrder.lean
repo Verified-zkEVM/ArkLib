@@ -33,6 +33,24 @@ private noncomputable def smallFirstOrderRateParameters :
   norm_num [FirstOrderFiniteRateTest, firstOrderRateDerivativeCap, firstOrderRateJetDegree,
     firstOrderRateBeta, firstOrderRankCount, firstOrderSourceCount, Finset.sum_range_succ]
 
+/-- The concrete two-point rate choice has strict surplus over its interpolation dimension. -/
+example :
+    2 * smallFirstOrderRateParameters.rankCount < firstOrderDimensionCount 1 2
+      smallFirstOrderRateParameters.multiplicity smallFirstOrderRateParameters.derivativeCap
+      smallFirstOrderRateParameters.jetDegree := by
+  exact smallFirstOrderRateParameters.rankCount_mul_lt_dimensionCount
+    (by norm_num) (by norm_num) (by norm_num)
+
+/-- The concrete two-point rate choice bounds its kernel-height quotient. -/
+example :
+    2 * smallFirstOrderRateParameters.rankCount * smallFirstOrderRateParameters.jetDegree /
+      (firstOrderDimensionCount 1 2 smallFirstOrderRateParameters.multiplicity
+        smallFirstOrderRateParameters.derivativeCap smallFirstOrderRateParameters.jetDegree -
+        2 * smallFirstOrderRateParameters.rankCount) ≤
+      smallFirstOrderRateParameters.challengeDegree := by
+  exact smallFirstOrderRateParameters.kernelHeight_le_challengeDegree
+    (by norm_num) (by norm_num)
+
 /-- A finite first-order rate choice yields a line certificate and its curve form on two points. -/
 example :
     Nonempty (FirstOrderCurveCertificate (F := ZMod 5) 1 2
