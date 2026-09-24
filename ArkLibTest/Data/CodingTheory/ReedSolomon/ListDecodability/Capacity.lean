@@ -18,8 +18,9 @@ import Mathlib.Data.Nat.Prime.Infinite
 /-!
 # Acceptance cases for Reed–Solomon capacity list bounds
 
-The examples exercise weighted-support interpolation over a large prime field and the explicit
-finite-field capacity list theorem on a concrete half-gap instance.
+The examples cover weighted-support interpolation, finite-field capacity bounds, transfer from
+close-polynomial counts to codeword-list bounds, and actual-stage and gap bounds from concrete
+received-curve certificates.
 -/
 
 open Finset PolynomialDifferential ReedSolomon ReedSolomon.HiddenDerivative
@@ -366,6 +367,26 @@ example :
   exact agreeingPolynomials_encard_le_closePolynomialSet
     singletonAgreementDomain (fun _ ↦ 0)
 
+example :
+    Code.Lambda (ReedSolomon.code singletonAgreementDomain 1 : Set (Fin 1 → ℚ))
+        (capacityRadius 0 1 1) ≤ 1 := by
+  have hthreshold : agreementThreshold 0 1 1 = 1 := by
+    norm_num [agreementThreshold]
+  have hB : ∀ received : Fin 1 → ℚ,
+      (closePolynomialSet singletonAgreementDomain received 1
+        (agreementThreshold 0 1 1)).Finite ∧
+        ((closePolynomialSet singletonAgreementDomain received 1
+          (agreementThreshold 0 1 1)).ncard : ℝ) ≤ 1 := by
+    intro received
+    rw [hthreshold]
+    refine ⟨closePolynomialSet_finite singletonAgreementDomain received (by norm_num), ?_⟩
+    simpa using closePolynomialSet_one_ncard_le_div singletonAgreementDomain received
+      (by norm_num)
+  have hbound := lambda_le_ceil_of_closePolynomialSet_bound
+    (δ := 0) (n := 1) (k := 1) (by norm_num) (by norm_num)
+    singletonAgreementDomain 1 hB
+  simpa using hbound
+
 /-- The prescribed close-list bound transfers to the codeword-list function. -/
 example :
     let d := Nat.ceil (Real.exp (xi / sampleDelta))
@@ -414,15 +435,20 @@ private noncomputable def curveCertificate :
             weightedHigherJetCount, Finset.natWeightedSimplex, Finset.sum_range_succ]))
 
 example :
-    ∃ list : Finset (Polynomial ℚ),
-      (list : Set (Polynomial ℚ)) =
-        closePolynomialSet curveCertificateCenters curveCertificateReceived 2 2 := by
-  obtain ⟨_, _, list, _, hlist, _, _⟩ :=
+    let Q : DifferentialPolynomial ℚ 0 :=
+      MvPolynomial.map (Polynomial.eval₂RingHom (RingHom.id ℚ) 0) curveCertificate.Q
+    ∃ stages terminal, ∃ list : Finset (Polynomial ℚ),
+      SeparantChain Q stages terminal ∧
+        (list : Set (Polynomial ℚ)) =
+          closePolynomialSet curveCertificateCenters curveCertificateReceived 2 2 ∧
+        (list.card : ℚ) ≤ (stages.map (directJetStageCharge 2 2 2 2)).sum := by
+  dsimp only
+  obtain ⟨stages, terminal, list, hchain, hlist, _, hbound⟩ :=
     exists_closePolynomial_list_of_curve_certificate_actualStages
       curveCertificateCenters curveCertificateReceived curveCertificate
       (by norm_num) (by norm_num)
       (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
-  exact ⟨list, hlist⟩
+  exact ⟨stages, terminal, list, hchain, hlist, hbound⟩
 
 example :
     (closePolynomialSet curveCertificateCenters curveCertificateReceived 2 2).Finite ∧
