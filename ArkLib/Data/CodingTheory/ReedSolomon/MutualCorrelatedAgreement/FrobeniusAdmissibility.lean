@@ -8,6 +8,7 @@ module
 public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FrobeniusComponentRecognition
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.PrincipalOpenParametrization
+import ArkLib.ToMathlib.MvPolynomial.OptionRoots
 /-!
 # Admissible Frobenius graph pairs
 
@@ -22,6 +23,8 @@ Frobenius graph. Every regular specialization reconstructs the same base-field p
   extraction from a positive-dimensional prime component.
 * `ReedSolomon.IsAdmissibleFrobeniusPair.specialize` and
   `ReedSolomon.IsAdmissibleFrobeniusPair.eq_of_initialGraph_eq`: reconstruction and uniqueness.
+* `ReedSolomon.admissibleFrobeniusPairs_card_le_degreeOf`: a root-degree bound for finite
+  families of admissible pairs.
 
 ## References
 
@@ -214,6 +217,55 @@ theorem IsAdmissibleFrobeniusPair.eq_of_initialGraph_eq [Infinite E]
     have h := congrArg (fun R : E[X] ↦ R.coeff (p ^ e)) (hcoeff l)
     simpa [Polynomial.coeff_X_pow_mul, Polynomial.coeff_C, ne_of_gt hs, (ne_of_gt hs).symm,
       (expChar_pos E p).ne', Polynomial.coeff_map] using h
+
+/-- The degree in the graph coordinate of the nonzero initial equation bounds every finite
+family of admissible Frobenius pairs. -/
+theorem admissibleFrobeniusPairs_card_le_degreeOf [Infinite E]
+    (domain : ι ↪ F) (f g : ι → F) (iota : F →+* E)
+    (roots : ι → E) (center : E) (Q : DifferentialPolynomial E[X] 0)
+    (p e τ : ℕ) [ExpChar E p]
+    (hK : 0 < K) (hKk : K ≤ p ^ e * k) (hτ : TaylorExponentSufficient 0 K τ)
+    (hinit : jointInitialJetEquation center Q ≠ 0)
+    (pairs : Finset (F[X] × F[X]))
+    (hpairs : ∀ P ∈ pairs,
+      IsAdmissibleFrobeniusPair domain f g iota roots center Q K k τ (p ^ e) P.1 P.2) :
+    pairs.card ≤ (jointInitialJetEquation center Q).degreeOf (some 0) := by
+  classical
+  let graph : F[X] × F[X] → E[X] := fun P ↦
+    frobeniusInitialGraph center (p ^ e) (P.1.map iota) (P.2.map iota) (some 0)
+  have hinj : Set.InjOn graph (pairs : Set (F[X] × F[X])) := by
+    intro P hP R hR heq
+    have hgraphs :
+        frobeniusInitialGraph center (p ^ e) (P.1.map iota) (P.2.map iota) =
+          frobeniusInitialGraph center (p ^ e) (R.1.map iota) (R.2.map iota) := by
+      funext j
+      cases j with
+      | none => rfl
+      | some j =>
+          have : j = 0 := Subsingleton.elim _ _
+          subst j
+          exact heq
+    obtain ⟨hleft, hright⟩ := (hpairs P hP).eq_of_initialGraph_eq (hpairs R hR)
+      hK hKk hτ hgraphs
+    exact Prod.ext hleft hright
+  have hcount := MvPolynomial.card_le_degreeOf_some_of_aeval_eq_zero
+    (R := E) (ι := Fin 1) (g := jointInitialJetEquation center Q) hinit
+    (pairs.image graph) (by
+      intro q hq
+      obtain ⟨P, hP, rfl⟩ := Finset.mem_image.mp hq
+      have hgraph : frobeniusInitialGraph center (p ^ e) (P.1.map iota) (P.2.map iota) =
+          fun o ↦ o.elim Polynomial.X fun _ ↦ graph P := by
+        funext o
+        cases o with
+        | none => rfl
+        | some j =>
+            have : j = 0 := Subsingleton.elim _ _
+            subst j
+            rfl
+      rw [← hgraph]
+      exact (hpairs P hP).initial)
+  rw [Finset.card_image_of_injOn hinj] at hcount
+  simpa only [show (default : Fin 1) = 0 from Subsingleton.elim _ _] using hcount
 
 end
 
