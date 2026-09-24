@@ -41,10 +41,9 @@ agreement with `k` distinct points determine the initial jet.
 
 ## Main statements
 
-* `initialJetEquation`, `map_initialJetEquation`, `aeval_map_initialJetEquation`,
-  `aeval_initialJetEquation`, `totalDegree_initialJetEquation_le`,
-  `pderiv_last_initialJetEquation` and `aeval_initialJetEquation_polynomialJet`: the initial
-  hypersurface.
+* The initial equation specialization and its basic laws come from `JetDegree`;
+  `pderiv_last_initialJetEquation` and `aeval_initialJetEquation_polynomialJet` give the initial
+  separant and polynomial-solution consequences for the chart.
 * `commonTaylorNumerator`, `totalDegree_commonTaylorNumerator_le` and
   `aeval_commonTaylorNumerator`: the cleared coefficients and their degree bound
   `rationalTaylorCutDegreeBound Q τ = 1 + τ (v - 1)`.
@@ -81,77 +80,6 @@ open scoped BigOperators
 section CommSemiring
 
 variable {R : Type*} [CommSemiring R] {r : ℕ}
-
-/-- The differential polynomial `Q` with the independent variable set to `center`, as a
-polynomial in the initial jet coordinates `Y_0, ..., Y_r`. -/
-def initialJetEquation (center : R) (Q : DifferentialPolynomial R r) :
-    MvPolynomial (Fin (r + 1)) R :=
-  aeval (fun i ↦ i.elim (C center) X) Q
-
-/-- Mapping coefficients sends the initial equation to the initial equation of the mapped
-differential polynomial. -/
-theorem map_initialJetEquation {S : Type*} [CommSemiring S] (f : R →+* S) (center : R)
-    (Q : DifferentialPolynomial R r) :
-    map f (initialJetEquation center Q) = initialJetEquation (f center) (map f Q) := by
-  simp only [initialJetEquation, aeval_def, algebraMap_eq, map_eval₂]
-  congr 1
-  funext i
-  cases i <;> simp
-
-/-- Evaluating the initial equation at a jet is `jetEvaluation` of `Q` at `center`. -/
-theorem aeval_initialJetEquation (center : R) (Q : DifferentialPolynomial R r)
-    (jet : Fin (r + 1) → R) :
-    aeval jet (initialJetEquation center Q) = jetEvaluation Q center jet := by
-  have he : (aeval jet).comp (aeval (fun i : Option (Fin (r + 1)) ↦
-      i.elim (C center) X)) = aeval (fun i ↦ match i with
-        | none => center | some j => jet j) := by
-    apply algHom_ext
-    intro i
-    cases i <;> simp
-  exact DFunLike.congr_fun he Q
-
-/-- Evaluating the mapped initial equation agrees with evaluating the mapped differential
-polynomial at the mapped center. -/
-theorem aeval_map_initialJetEquation {S : Type*} [CommSemiring S] (f : R →+* S)
-    (center : R) (Q : DifferentialPolynomial R r) (jet : Fin (r + 1) → S) :
-    aeval jet (map f (initialJetEquation center Q)) =
-      jetEvaluation (map f Q) (f center) jet := by
-  rw [map_initialJetEquation]
-  exact aeval_initialJetEquation (f center) (map f Q) jet
-
-/-- Setting the independent variable to a constant does not increase the total jet degree. -/
-theorem totalDegree_initialJetEquation_le (center : R) (Q : DifferentialPolynomial R r) :
-    (initialJetEquation center Q).totalDegree ≤ jetTotalDegree Q := by
-  rw [← weightedTotalDegree_one]
-  apply weightedTotalDegree_aeval_le_of_le
-  intro i
-  cases i with
-  | none => simp
-  | some j =>
-    simp only [Option.elim_some, weightedTotalDegree_one]
-    exact (totalDegree_monomial_le _ _).trans (by simp)
-
-private theorem pderiv_initialJetEquation (center : R) (Q : DifferentialPolynomial R r)
-    (j : Fin (r + 1)) :
-    pderiv j (initialJetEquation center Q) = initialJetEquation center (separant Q j) := by
-  classical
-  induction Q using MvPolynomial.induction_on with
-  | C c => simp [initialJetEquation, separant]
-  | add P Q hP hQ => simpa [initialJetEquation, separant] using congrArg₂ (· + ·) hP hQ
-  | mul_X P i hP =>
-    simp only [initialJetEquation, separant] at hP
-    cases i with
-    | none =>
-      simp only [aeval_eq_bind₁] at hP
-      simp [initialJetEquation, separant, hP]
-    | some i =>
-      simp only [initialJetEquation, separant, map_mul, aeval_X, Option.elim_some,
-        pderiv_mul, pderiv_X, map_add]
-      rw [hP]
-      by_cases hi : i = j
-      · subst i
-        simp
-      · simp [hi]
 
 /-- The partial derivative of the initial equation in the last jet coordinate is the initial
 separant. -/
