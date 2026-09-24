@@ -2055,6 +2055,16 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordi
 
 `exists_frobeniusGraphLine_of_symbolic_sample` keeps its name. It is generalized from `Fin n` to an arbitrary embedded coordinate type and requires root equations only on the sample, as used by interpolation. The source file's only public declaration is covered; its interpolation and Taylor-cut helpers already live in the current `GraphLine` and `TaylorChartAlgebra` APIs, so nothing is deferred or unported.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/RegularEquation.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/RegularEquation.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`regularSymbolicMCABound` was renamed to `regularSymbolicAgreementBound`, and `exists_exceptional_regularSymbolicLineMCA` was renamed to `exists_exceptional_regularSymbolicCorrelatedAgreement`. The rational bound formula and uniform exceptional-set conclusion are unchanged. `regularSymbolicBadChallenges`, `finite_regularSymbolicBadChallenges_card_le`, and `regularSymbolicBadChallenges_finite` keep their names. The cardinality bound, finiteness theorem, and exceptional-set theorem drop the unused `0 < v` assumption. The bad-challenge predicate uses the current embedding-composition domain API, and the bound uses `CoeffNatDegreeLE`.
+
+The common-center argument uses `Polynomial.exists_forall_eval_ne_zero`, added to the public polynomial API and owned by `SpecializationAvoidance`. `exists_forall_jetEvaluation_ne_zero_of_family` replaces `exists_common_symbolicWitness_center` and generalizes it to a finite indexed family of differential equations and solution polynomials. The existing `exists_forall_jetEvaluation_ne_zero` statement is unchanged and specializes the family theorem.
+
+`HasExactCorrelatedPair` was already defined in `MutualCorrelatedAgreement/ExtensionDescent.lean` with the exact polynomial and agreement-set conditions, so it was not redeclared. No other public declaration from the unit was omitted. `ArkLibTest/Data/Polynomial/Differential.lean` checks a common center for two distinct equations. `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart.lean` checks the exceptional-set theorem, a nonempty singleton in the finite-family bound, and finiteness of the full bad-challenge set.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TupleSpecialization.lean`
 
 Ported from

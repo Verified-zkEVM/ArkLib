@@ -381,6 +381,8 @@ public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TaylorChart.PairCounting
 public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TaylorChart.PointRecognition
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TaylorChart.RegularEquation
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TupleSpecialization
 public import ArkLib.Data.CodingTheory.ReedSolomon.PowerAgreement
 public import ArkLib.Data.CodingTheory.ReedSolomon.PowerAgreement.ConstantCode
