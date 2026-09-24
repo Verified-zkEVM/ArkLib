@@ -1396,37 +1396,33 @@ example :
 
 /-! ### Taylor chart coefficient extension -/
 
-/-- A rational family has initial and regular jets, a high cut, and two agreements. -/
+/-- The nonempty singleton of regular rational solutions satisfies the sharp agreement count. -/
 example :
-    ∃ (center : ℚ) (J : Finset (Fin 1 → ℚ)), J.card = 1 ∧
-      ∀ jet ∈ J,
-        aeval jet (initialJetEquation center
-          (MvPolynomial.map (RingHom.id ℚ) (zeroJetEquation ℚ 0))) = 0 ∧
-        aeval jet (initialJetSeparant center
-          (MvPolynomial.map (RingHom.id ℚ) (zeroJetEquation ℚ 0))) ≠ 0 ∧
-        aeval jet (commonTaylorNumerator center
-          (MvPolynomial.map (RingHom.id ℚ) (zeroJetEquation ℚ 0)) 4 1) = 0 ∧
-        2 ≤ (Finset.univ.filter (fun i : Fin 2 ↦
-          aeval jet (taylorAgreementEquation center
-            (MvPolynomial.map (RingHom.id ℚ) (zeroJetEquation ℚ 0)) 2 4
-            (RingHom.id ℚ (i.val : ℚ)) (0 : ℚ)) = 0)).card := by
-  obtain ⟨center, J, hcard, hproperties⟩ := exists_regular_solution_jet_family_of_exponent
-      (f := RingHom.id ℚ) (Q := zeroJetEquation ℚ 0) (K := 2) (k := 1) (τ := 4)
-      (taylorExponentSufficient_two_mul 0 2) (by norm_num) {0} (A := 2)
-      (domain := fun i : Fin 2 ↦ (i.val : ℚ)) (received := fun _ ↦ 0)
-      (hdegree := by simp)
-      (hsol := by
-        simp [zeroJetEquation, differentialSpecialization, differentialSpecializationHom])
-      (hsep := by simp [zeroJetEquation, separant, differentialSpecialization,
-        differentialSpecializationHom])
-      (hbin := by simp)
-      (hagree := by simp)
-  refine ⟨center, J, by simpa using hcard, ?_⟩
-  intro jet hj
-  obtain ⟨hinitial, hregular, hcuts, hagree⟩ := hproperties jet hj
-  refine ⟨hinitial, hregular, ?_, ?_⟩
-  · simpa using hcuts ⟨1, by omega⟩ (by norm_num)
-  · simpa using hagree
+    (({(0 : Polynomial ℚ)} : Finset (Polynomial ℚ)).card : ℚ) ≤
+      jetTotalDegree (zeroJetEquation ℚ 0) *
+        (((((2 - 1 + 1) * rationalTaylorCutDegreeBound (zeroJetEquation ℚ 0) 4 : ℕ) : ℚ) /
+          ((2 - 1 + 1 : ℕ) : ℚ))) ^ 0 := by
+  have h := card_le_of_regular_solutions_agreement (E := AlgebraicClosure ℚ)
+    (Q := zeroJetEquation ℚ 0) (K := 2) (k := 1) (τ := 4)
+    (hτ := taylorExponentSufficient_two_mul 0 2) (hK := by norm_num)
+    (hkK := by norm_num)
+    (n := 2) (A := 2)
+    (domain := ⟨fun i : Fin 2 ↦ (i.val : ℚ), fun i j h ↦
+      Fin.ext (Nat.cast_injective h)⟩)
+    (received := fun _ ↦ 0) (hkA := by norm_num) (hAn := by norm_num)
+    (S := {0}) (hdegree := by simp)
+    (hsol := by simp [zeroJetEquation, differentialSpecialization,
+      differentialSpecializationHom])
+    (hsep := by simp [zeroJetEquation, separant, differentialSpecialization,
+      differentialSpecializationHom])
+    (hbin := by
+      intro i hi hiK
+      have : i = 1 := by omega
+      subst i
+      norm_num)
+    (hagree := by intro P hP; simp_all)
+  norm_num [zeroJetEquation, rationalTaylorCutDegreeBound, jetTotalDegree] at h ⊢
+  exact h
 
 /-- A nonempty regular family over `ZMod 2` has a common center in its algebraic closure. -/
 example :
