@@ -2180,6 +2180,10 @@ Ported from `ArkLib/Data/Polynomial/Differential/FrobeniusTaylorWitness.lean` at
 
 Renamed `symbolicFrobeniusWitness_equations` to `frobeniusExpansion_satisfies_jointTaylorCuts`. The canonical theorem uses the joint Taylor-chart API and a flattened joint point. The sufficient-exponent wrapper `frobeniusTaylorExponentSufficient` is covered by `taylorExponentSufficient_two_mul_sub_three` at `K = D * s + 1`; no wrapper was added. The reconstruction wrapper `symbolicFrobeniusWitness_reconstruction` is covered by `rationalTaylorPolynomial_polynomialJet` at order zero; no wrapper was added. No other public source declaration from this file was left out.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/PolynomialCurve/Witness.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Renamed `symbolicFrobeniusPowerWitness_equations` to `PolynomialDifferential.frobeniusExpansion_satisfies_jointTaylorCuts` and generalized its agreement characterization from a two-term Frobenius power curve to any polynomial-valued curve. Specializing the curve to `ReedSolomon.frobeniusPowerCoordinate` recovers the source agreement result using its evaluation lemma. The theorem retains its initial equation, regularity, and sparse-cut conclusions. The source reconstruction wrapper `symbolicFrobeniusPowerWitness_reconstruction` is covered by `PolynomialDifferential.rationalTaylorPolynomial_polynomialJet` at order zero and was not added.
+
 ## `ArkLib/Data/Polynomial/Differential/JetDegree.lean`
 
 The core definitions and specialization bounds are ported from the differential and
@@ -4400,6 +4404,10 @@ The acceptance cases check `exists_regular_solution_jet_family_of_exponent` on `
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Symbolic/TaylorDerivativeSupport.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 Concrete `recursiveEq` examples check the initial-equation cap and degree, the common-numerator cap, and the Taylor-agreement cap and degree.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/PolynomialCurve/Witness.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+The acceptance case checks the generalized agreement characterization with a concrete characteristic-two solution and a cubic received curve.
 
 ## `ArkLibTest/Data/Probability/Uniform.lean`
 
