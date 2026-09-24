@@ -15,6 +15,7 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.CurveCertificate
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.RateCertificate
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.ClosedMultiplicity
+import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.MathematicalUniform
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.Moment
 
 /-!
@@ -396,6 +397,58 @@ private def rationalCenters (n : ℕ) : Fin n ↪ ℚ where
     exact_mod_cast hij
 
 private noncomputable def zeroReceivedOf (n : ℕ) : Fin n → Polynomial ℚ := fun _ ↦ 0
+
+/-- The mathematical scale-300 envelope yields a curve certificate at `δ = 1/5`. -/
+example : Nonempty (SymbolicReceivedCurve.Certificate
+    (12 * uniformMathematicalMultiplicity (1 / 5 : ℝ))
+    (2 * uniformMathematicalMultiplicity (1 / 5 : ℝ)) 1
+    (uniformMathematicalJetBound (1 / 5 : ℝ)) (uniformDerivativeOrder (1 / 5 : ℝ))
+    (150 * uniformMathematicalJetBound (1 / 5 : ℝ))
+    (rationalCenters (50 * uniformMathematicalMultiplicity (1 / 5 : ℝ)))
+    (zeroReceivedOf (50 * uniformMathematicalMultiplicity (1 / 5 : ℝ)))) := by
+  let δ : ℝ := 1 / 5
+  let m := uniformMathematicalMultiplicity δ
+  let n := 50 * m
+  let k := 2 * m
+  let A := 12 * m
+  have hδ : 0 < δ := by norm_num [δ]
+  have hδsmall : δ < 6 / 25 := by norm_num [δ]
+  have hmorder : uniformDerivativeOrder δ + 2 ≤ m := by
+    simpa [m, uniformMathematicalMultiplicity] using
+      (add_two_le_closedMultiplicity (by norm_num)
+        (by have := uniformDerivativeOrder_pos δ; omega))
+  have hmpos : 0 < m := by omega
+  have hlength : uniformMathematicalLength δ ≤ n := by
+    rw [uniformMathematicalLength_eq_ceil hδ hmpos]
+    apply Nat.ceil_le.mpr
+    norm_num [δ, n, m]
+    nlinarith [Nat.cast_nonneg m (α := ℝ)]
+  have he : Nonempty (RatePartitionEnvelope δ m n k A) := by
+    simpa [m, uniformMathematicalMultiplicity] using
+      (exists_mathematicalRatePartitionEnvelope (δ := δ) hδ hδsmall hlength
+        (by dsimp [k]; omega) (by dsimp [δ, k, n, A]; norm_num; nlinarith)
+        (by dsimp [A, n]; omega))
+  obtain ⟨e⟩ := he
+  have hd : 519 ≤ uniformDerivativeOrder δ := uniformDerivativeOrder_ge_519 hδ hδsmall
+  have hd500 : 500 ≤ uniformDerivativeOrder δ := by omega
+  have hscale :
+      1 < (300 : ℝ) * (uniformDerivativeOrder δ : ℝ) ^ 3 := by
+    have hd' : (519 : ℝ) ≤ uniformDerivativeOrder (1 / 5 : ℝ) := by
+      exact_mod_cast (by simpa [δ] using hd)
+    have horder : (1 : ℝ) ≤ uniformDerivativeOrder (1 / 5 : ℝ) := by linarith
+    have hpow : (1 : ℝ) ^ 3 ≤ (uniformDerivativeOrder (1 / 5 : ℝ) : ℝ) ^ 3 := by
+      gcongr
+    norm_num at hpow ⊢
+    nlinarith
+  have hAn : A ≤ n := by dsimp [A, n]; omega
+  have hreceived : ∀ i, (zeroReceivedOf n i).natDegree ≤ 1 := by
+    intro i
+    simp [zeroReceivedOf]
+  have hcert := RatePartitionEnvelope.exists_curve_certificate (scale := 300) e hδ
+    (by norm_num [δ] : δ < 1) hd500 hscale hAn (rationalCenters n)
+    (zeroReceivedOf n) hreceived
+  simpa [δ, m, n, k, A, uniformMathematicalMultiplicity,
+    uniformMathematicalJetBound] using hcert
 
 private theorem finiteCertificateRatio_gt_two :
     2 < RatePartition.partitionFiniteRatio (1 / 10) (9 / 10) 500

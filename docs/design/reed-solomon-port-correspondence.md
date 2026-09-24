@@ -627,6 +627,11 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation
 `ratePartition_totalJetDegree_le` is renamed `partitionSupport_totalJetDegree_le_rateJetCap`; the theorem bounds total jet degree under the ambient degree lower bound, using the renamed eligibility predicate and degree cap.
 
 No declarations were left unported from this source file.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/PartitionSupport/RateBound.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Added `partitionSupport_totalJetDegree_le_of_ambient_lower_bound`, which bounds eligible exponents by `⌈m / δ²⌉₊ - 1` for any multiplicity from the ambient lower bound and `A ≤ n`. The rate-dependent bound reuses a private positive-denominator comparison lemma shared with the gap-dependent bound; their ceiling steps remain separate.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/PartitionSupport/Dimension.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/RatePartition/Area.lean` at ArkLib revision
@@ -669,6 +674,10 @@ kept internal.
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/RatePartition/Adapter.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 Renamed `exists_ratePartitionFinite_certificate` to `exists_partitionSupport_curve_certificate_of_finiteRatio`; generalized it by removing `0 < n`, which follows from `0 < D`, `D ≤ rate * n`, and `0 < rate`. Renamed `exists_ratePartitionRate_certificate` to `exists_partitionSupport_curve_certificate_of_paddedRateBlockThreshold` and `exists_ratePartitionMathematical_certificate` to `exists_partitionSupport_curve_certificate_of_rateBlockThreshold`; both are mathematically unchanged and use the renamed threshold and finite-parameter APIs. No public source declarations were omitted. Acceptance cases in `ArkLibTest/Data/CodingTheory/HiddenDerivative/Interpolation/PartitionSupport.lean` check a concrete finite-ratio certificate and certificates from both block-length thresholds.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/RatePartition/MathematicalUniform.lean` and `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/RatePartition/UniformEnvelope.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Generalized `MathematicalRatePartitionEnvelope.exists_curve_certificate` and `UniformRatePartitionEnvelope.exists_curve_certificate` to the shared `RatePartitionEnvelope.exists_curve_certificate`, covering qualifying scales with total-jet cap `⌈m / δ²⌉₊ - 1` and challenge height 150 times that cap. Once an envelope is supplied, its ambient lower bound gives the jet-degree estimate, so the source block-length premise is unnecessary. Both source certificate declarations are covered by this theorem.
 
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/SourceMonomial.lean`
 
@@ -1192,6 +1201,10 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/Ra
 Renamed `uniformRatePartitionMathematicalMultiplicity`, `uniformRatePartitionMathematicalJetBound`, `uniformRatePartitionMathematicalLength`, `uniformRatePartitionMathematicalLength_eq_ceil`, `uniformRatePartitionOrder_ge_519`, `uniformRatePartitionOrder_le_mathematicalJetBound`, `uniformRatePartitionMathematical_integer_guards`, `uniformRatePartitionMathematical_totalJetDegree_le`, `uniformRatePartitionMathematical_low_ratio_gt`, and `uniformRatePartitionMathematical_high_ratio_gt` to their `uniformMathematical...` or `uniformDerivativeOrder...` destination names. `exists_mathematicalRatePartitionEnvelope` keeps its name and specializes the shared `RatePartitionEnvelope` at `uniformMathematicalMultiplicity δ`. The total-jet bound uses the equivalent `PartitionSupportEligible` predicate, and the scale-300 ratio proofs share one finite-ratio argument and reuse the generalized gamma bounds.
 
 `uniformCapacityLengthThreshold300` is deferred because this unit has no consumer; its first consumers are in the ListDecodability and MutualCorrelatedAgreement mathematical-uniform capacity units. `ratePartitionMathematicalMultiplicity_ge_order` is covered by the stronger generic `add_two_le_closedMultiplicity`, which needs only scale at least 3 and order at least 1.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/RatePartition/MathematicalUniform.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`uniformMathematical_totalJetDegree_le` now uses `partitionSupport_totalJetDegree_le_of_ambient_lower_bound`; its statement and name are unchanged. The acceptance cases in `ArkLibTest/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition.lean` check the mathematical-uniform parameter examples.
 
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition/Moment.lean`
 
@@ -4394,6 +4407,10 @@ Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameter
 
 Acceptance cases use the shared envelope record for the scale-1000 recipe and check the scale-300 order bound, length equality, jet and integer guards, total-jet bound, low- and high-rate ratio branches, and envelope existence.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/RatePartition/MathematicalUniform.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Acceptance cases check the mathematical-uniform parameter examples.
+
 ## `ArkLibTest/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition.lean` — fixed-rate gate cases
 
 Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/RatePartition/FixedRateGate.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -4411,6 +4428,10 @@ The aggregate keeps concrete low- and high-rate base bounds and margins for the 
 Ported from `ArkLibTest/Data/CodingTheory/HiddenDerivative/Interpolation/PartitionSupport.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 Added a concrete order-500 finite-ratio surplus acceptance case. The example uses a natural cutoff satisfying the level bound. The old nested test path was removed; the acceptance case is in this consolidated test file.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/PartitionSupport/RateCertificate.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+An acceptance case checks a concrete scale-300 curve certificate at `δ = 1/5`.
 
 ## `ArkLibTest/Data/CodingTheory/HiddenDerivative/Interpolation/PartitionSupport/MomentSource.lean`
 

@@ -9,6 +9,7 @@ public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionS
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.ClosedMultiplicity
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.UniformEnvelope
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.UniformGamma
+import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.RateBound
 
 /-!
 # The 300-based uniform rate-partition parameters
@@ -148,22 +149,8 @@ theorem uniformMathematical_totalJetDegree_le {D d W n A : ℕ} {δ : ℝ}
     (hu : PartitionSupportEligible D d W
       (uniformMathematicalMultiplicity δ * A : ℕ) u) :
     totalJetDegree u ≤ uniformMathematicalJetBound δ := by
-  let m := uniformMathematicalMultiplicity δ
-  have hD' : (0 : ℝ) < D := by exact_mod_cast hD
-  have hδ2 : 0 < δ ^ 2 := sq_pos_of_pos hδ
-  have ht := totalJetDegree_lt_of_partitionSupportEligible hD hu
-  have hb : ((m * A : ℕ) : ℝ) / D ≤ (m : ℝ) / δ ^ 2 := by
-    apply (div_le_div_iff₀ hD' hδ2).2
-    have hAn' : (A : ℝ) ≤ n := by exact_mod_cast hAn
-    have hm' : (0 : ℝ) ≤ m := Nat.cast_nonneg _
-    push_cast
-    nlinarith [mul_le_mul_of_nonneg_left hDlower hm',
-      mul_le_mul_of_nonneg_left hAn' (mul_nonneg hm' hδ2.le)]
-  have hc : (m : ℝ) / δ ^ 2 ≤ ⌈(m : ℝ) / δ ^ 2⌉₊ := Nat.le_ceil _
-  have hlt : totalJetDegree u < ⌈(m : ℝ) / δ ^ 2⌉₊ := by
-    exact_mod_cast (ht.trans_le (hb.trans hc))
-  change totalJetDegree u ≤ ⌈(m : ℝ) / δ ^ 2⌉₊ - 1
-  exact Nat.le_sub_one_of_lt hlt
+  simpa only [uniformMathematicalJetBound] using
+    partitionSupport_totalJetDegree_le_of_ambient_lower_bound hD hδ hDlower hAn hu
 
 private theorem mathematical_uniform_margin_numeric :
     (151 / 150 : ℝ) < Real.exp (3 / 2 - Real.log (40 / 9)) *
