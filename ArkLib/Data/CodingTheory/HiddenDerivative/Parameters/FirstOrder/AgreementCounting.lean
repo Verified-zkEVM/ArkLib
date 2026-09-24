@@ -24,13 +24,14 @@ uniform cap-sensitive bound at exponent `2 * K`.
 ## Main statements
 
 * `firstOrderListWeight` and `firstOrderTightListWeight`: uniform and exact stage-charge sums.
+* `firstOrderTightListWeight_nonneg`: nonnegativity of the exact charge.
 * `finite_firstOrder_agreement_solutions_card_le_tight_of_exponent`: the exact-exponent count.
 * `firstOrderTightListWeight_two_mul_le` and
   `finite_firstOrder_agreement_solutions_card_le_sharp`: the uniform comparison and count.
 
 ## References
 
-* [DKT26]
+* [DKTZ26]
 -/
 
 @[expose] public section
@@ -62,20 +63,6 @@ def firstOrderTightListWeight (n A k K τ : ℕ) : ℕ → ℕ → ℚ
           ((n - k + 1 : ℕ) : ℚ) / ((A - k + 1 : ℕ) : ℚ) +
         firstOrderTightListWeight n A k K τ μ M
 
-/-- The exact first-order list charge is nonnegative. -/
-theorem firstOrderTightListWeight_nonneg (n A k K τ μ M : ℕ) :
-    0 ≤ firstOrderTightListWeight n A k K τ μ M := by
-  induction μ generalizing M with
-  | zero => simp [firstOrderTightListWeight]
-  | succ μ ih =>
-      cases M with
-      | zero =>
-          simp only [firstOrderTightListWeight]
-          exact add_nonneg (by positivity) (ih 0)
-      | succ M =>
-          simp only [firstOrderTightListWeight]
-          exact add_nonneg (by positivity) (ih M)
-
 private theorem firstOrderTightListWeight_eq_stageCap (n A k K τ μ M : ℕ) :
     firstOrderTightListWeight n A k K τ μ M =
       firstOrderStageCap (fun j ↦ (j : ℚ))
@@ -93,6 +80,12 @@ private theorem firstOrderTightListWeight_eq_stageCap (n A k K τ μ M : ℕ) :
           rw [firstOrderTightListWeight, firstOrderStageCap_succ_succ]
           rw [ih M]
           ring
+
+/-- The exact first-order list charge is nonnegative. -/
+theorem firstOrderTightListWeight_nonneg (n A k K τ μ M : ℕ) :
+    0 ≤ firstOrderTightListWeight n A k K τ μ M := by
+  rw [firstOrderTightListWeight_eq_stageCap]
+  exact firstOrderStageCap_nonneg (fun _ ↦ by positivity) (fun _ _ ↦ by positivity) μ M
 
 private theorem agreement_ncard_eq_filter_card {n : ℕ} (domain : Fin n ↪ F)
     (received : Fin n → F) (P : F[X]) :
@@ -244,7 +237,7 @@ theorem finite_firstOrder_agreement_solutions_card_le_tight_of_exponent
     (hfirst : jetDegree Q (1 : Fin 2) ≤ M)
     (hτ : ∀ r ≤ 1, TaylorExponentSufficient r K τ)
     {n A : ℕ} (domain : Fin n ↪ F) (received : Fin n → F)
-    (hK : 1 < K) (hkK : k ≤ K) (hKn : K ≤ n)
+    (hK : 1 < K) (hkK : k ≤ K)
     (hk : 0 < k) (hkA : k ≤ A) (hAn : A ≤ n)
     (hchar : ringChar F = 0 ∨ max (K - 1) μ < ringChar F)
     (S : Finset F[X])
@@ -407,11 +400,6 @@ theorem firstOrderTightListWeight_two_mul_le (n A k K μ M : ℕ)
     rw [le_div_iff₀ hden]
     norm_cast
     omega
-  have hratio : ((n - k + 1 : ℕ) : ℚ) / (A - k + 1 : ℕ) ≤
-      (n : ℚ) / (A - k + 1 : ℕ) := by
-    apply div_le_div_of_nonneg_right
-    · exact_mod_cast (show n - k + 1 ≤ n by omega)
-    · exact hden.le
   induction μ generalizing M with
   | zero => simp [firstOrderTightListWeight, firstOrderListWeight]
   | succ μ ih =>
@@ -478,7 +466,7 @@ theorem finite_firstOrder_agreement_solutions_card_le_sharp
     (hQ : Q ≠ 0) (hdegree : jetTotalDegree Q ≤ μ)
     (hfirst : jetDegree Q (1 : Fin 2) ≤ M)
     {n A : ℕ} (domain : Fin n ↪ F) (received : Fin n → F)
-    (hK : 1 < K) (hkK : k ≤ K) (hKn : K ≤ n)
+    (hK : 1 < K) (hkK : k ≤ K)
     (hk : 0 < k) (hkA : k ≤ A) (hAn : A ≤ n)
     (hchar : ringChar F = 0 ∨ max (K - 1) μ < ringChar F)
     (S : Finset F[X])
@@ -490,7 +478,7 @@ theorem finite_firstOrder_agreement_solutions_card_le_sharp
   exact (finite_firstOrder_agreement_solutions_card_le_tight_of_exponent
     Q K k μ M (2 * K) hQ hdegree hfirst
       (fun r _ ↦ taylorExponentSufficient_two_mul r K) domain received
-      hK hkK hKn hk hkA hAn hchar S hsol haccept).trans
+      hK hkK hk hkA hAn hchar S hsol haccept).trans
         (firstOrderTightListWeight_two_mul_le n A k K μ M hk hkA hAn)
 
 end

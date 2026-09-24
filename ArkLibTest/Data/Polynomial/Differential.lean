@@ -290,31 +290,31 @@ example : ∃ exceptional : Finset ℚ, exceptional.card ≤ 1 ∧
   challengeChain.exists_finset_regular_stage natDegree_coeff_challengeEquation_le
     (RingHom.id ℚ) Function.injective_id
 
-/-! ### First-order chain charge -/
-
-private theorem constantDerivativeChain :
-    SeparantChain (constantDerivativeEquation ℚ)
-      [(constantDerivativeEquation ℚ, (1 : Fin 2))] (C 1) := by
-  refine .active 1 (X_ne_zero _) highestActiveJet_constantDerivativeEquation_Q ?_
-  have hsep : separant (constantDerivativeEquation ℚ) 1 = C 1 := by
-    simp [separant, constantDerivativeEquation, pderiv_X]
-  rw [hsep]
-  refine .terminal (by simp) ((highestActiveJet_eq_none_iff _).mpr fun j hj ↦ ?_)
-  simp [DependsOnJet, jetDegree] at hj
-
-/-- The `Y₁` stage is charged against the first-order cap with `M = 1`. -/
-example :
-    ([(constantDerivativeEquation ℚ, (1 : Fin 2))].map
-      (firstOrderStageCharge (fun j ↦ (j : ℚ)) fun j r ↦ (j + r : ℚ))).sum ≤
-        firstOrderStageCap (fun j ↦ (j : ℚ)) (fun j r ↦ (j + r : ℚ)) 1 1 :=
-  constantDerivativeChain.sum_firstOrderStageCharge_le
-    jetTotalDegree_constantDerivativeEquation_le
-    (by simp [constantDerivativeEquation, jetDegree]) (fun j ↦ by positivity)
-    (fun j r ↦ by positivity) (fun _ _ h ↦ by exact_mod_cast h)
-    (fun _ h ↦ by simp only [add_le_add_iff_right]; exact_mod_cast h)
-    (fun h _ ↦ by simp only [add_le_add_iff_left]; exact_mod_cast h)
-    (fun j ↦ by simp)
-
+/-- A nonempty bounded-solution family is bounded by costs along its separant chain. -/
+example : ∃ roots : Finset (BoundedSolution challengeEquation 0),
+    roots.Nonempty ∧ (roots.card : ℚ) ≤
+      ([(challengeEquation, (0 : Fin 1))].map fun _ ↦ 1).sum := by
+  let root : BoundedSolution challengeEquation 0 :=
+    ⟨⟨0, by simp⟩, by simp [challengeEquation, differentialSpecialization,
+      differentialSpecializationHom]⟩
+  let roots : Finset (BoundedSolution challengeEquation 0) := {root}
+  let accepts : Polynomial (Polynomial ℚ) → Prop := fun P ↦ P = root.polynomial
+  have hroots : ∀ solution ∈ roots, accepts solution.polynomial := fun s hs ↦ by
+    exact congrArg (fun s : BoundedSolution challengeEquation 0 ↦ s.polynomial)
+      (Finset.mem_singleton.mp hs)
+  have hregular : ∀ stage ∈ [(challengeEquation, (0 : Fin 1))],
+      ∀ regular : Finset (BoundedSolution stage.1 0),
+        (∀ solution ∈ regular, accepts solution.polynomial) →
+        (∀ solution ∈ regular,
+          differentialSpecialization (separant stage.1 stage.2) solution.polynomial ≠ 0) →
+        (regular.card : ℚ) ≤ 1 := by
+    intro stage hstage regular hregularAccepts _
+    rcases List.mem_singleton.mp hstage with rfl
+    exact_mod_cast (Finset.card_le_one.mpr fun a ha b hb ↦
+      Subtype.ext (Subtype.ext ((hregularAccepts a ha).trans (hregularAccepts b hb).symm)))
+  have hcount := boundedSolution_card_le_separantChainStageSum challengeChain 0 accepts roots
+    hroots (fun _ ↦ 1) hregular
+  exact ⟨roots, by simp [roots], by simp [roots]⟩
 /-! ### Derivative descent -/
 
 /-- `Y₁ ^ 2 * Y₀` in depth `1`. -/
