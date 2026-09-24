@@ -11,9 +11,9 @@ public import ArkLib.Data.Finset.WeightedSimplex.FloorTransfer
 /-!
 # From the lattice sum to an integral over the weighted simplex
 
-The rate form of the dimension bound in `PartitionSupport/Dimension.lean` is a sum over the
-lattice points `c` of the simplex `∑_i (i + 1) c_i ≤ W` of `(max (level - rate ∑_i c_i) 0) ^ 2`.
-Flooring a point `u` of the continuous simplex `∑_i (i + 1) u_i ≤ W` gives a lattice point of the
+The rate form of the dimension bound in `PartitionSupport/Dimension.lean` is a sum over the lattice
+points `c` of the simplex `∑_i (i + 1) c_i ≤ W` of `(max (level - rate ∑_i c_i) 0) ^ 2`.
+Flooring a point `u` of the continuous simplex `∑_i (i + 1) u_i ≤ W` gives a lattice point of
 same simplex whose coordinate sum is at most `∑_i u_i`. For `0 ≤ rate` the integrand
 `(max (level - rate ∑_i u_i) 0) ^ 2` can only grow under flooring, and the unit cells of the
 lattice points have volume one, so the integral over the whole simplex is at most the lattice sum.
@@ -24,12 +24,13 @@ below.
 
 * `partition_floor_square_integral`: the integral is at most the lattice sum.
 * `partitionSupport_dimension_ge_rate_integral`: the integral form of the dimension bound.
+* `partitionSupport_dimension_ge_integral_on` and
+  `partitionSupport_dimension_ge_rate_integral_on`: the dimension bound over a subset of the
+  weighted simplex.
 
 ## References
 
-* [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient Decoding
-  and Smaller Cryptographic Proofs*][DKT26], Section 6.2, (73), and Appendix D.2, in the proof of
-  Lemma 6.2
+* [DKT26]
 -/
 
 @[expose] public section
@@ -43,7 +44,8 @@ namespace ReedSolomon.HiddenDerivative
 variable {d D W : ℕ}
 
 /-- For `0 ≤ rate`, the integral of `(max (level - rate ∑_i u_i) 0) ^ 2` over the continuous
-simplex `∑_i (i + 1) u_i ≤ W` is at most the sum of `(max (level - rate ∑_i c_i) 0) ^ 2` over the
+simplex `∑_i (i + 1) u_i ≤ W` is at most the sum of
+`(max (level - rate ∑_i c_i) 0) ^ 2` over the
 lattice points `c` of the same simplex. The point `u` lies in the unit cell of its floor, and
 flooring lowers the coordinate sum. The hypothesis `0 ≤ rate` makes the integrand nonincreasing
 in the coordinate sum, which is what the comparison on each cell uses. -/
@@ -87,5 +89,52 @@ theorem partitionSupport_dimension_ge_rate_integral (F : Type*) [Field F] {n L :
   have hrate : 0 < rate := pos_of_mul_pos_left hrn (Nat.cast_nonneg n)
   exact (mul_le_mul_of_nonneg_left (partition_floor_square_integral d W level rate hrate.le)
     (by positivity)).trans (partitionSupport_dimension_ge_rate_sum F hD hupper hlevel)
+
+/-- The rate-form dimension bound over any subset of the weighted simplex. The integrand is
+nonnegative, so its integral over the subset is at most its integral over the whole simplex; the
+whole-simplex integral is bounded by the dimension by
+`partitionSupport_dimension_ge_rate_integral`. -/
+theorem partitionSupport_dimension_ge_rate_integral_on (F : Type*) [Field F] {n : ℕ}
+    {L rate level : ℝ} (hD : 0 < D) (hupper : (D : ℝ) ≤ rate * n)
+    (hlevel : level * n ≤ L) {S : Set (Fin d → ℝ)}
+    (hS : S ⊆ Set.weightedSimplex (fun i : Fin d ↦ (i : ℝ) + 1) W) :
+    (n : ℝ) / (2 * rate) *
+        ∫ u in S, (max (level - rate * ∑ i, u i) 0) ^ 2 ≤
+      (Module.finrank F (partitionSupportSpace F D d W L hD) : ℝ) := by
+  let T := Set.weightedSimplex (fun i : Fin d ↦ (i : ℝ) + 1) W
+  let f : (Fin d → ℝ) → ℝ := fun u ↦ (max (level - rate * ∑ i, u i) 0) ^ 2
+  have hweights : ∀ i : Fin d, 0 < (i : ℝ) + 1 := fun i ↦ by positivity
+  have hint : IntegrableOn f T :=
+    ContinuousOn.integrableOn_weightedSimplex hweights (by fun_prop)
+  have hmono : ∫ u in S, f u ≤ ∫ u in T, f u :=
+    setIntegral_mono_set hint (ae_of_all _ fun u ↦ sq_nonneg (max (level - rate * ∑ i, u i) 0))
+      (ae_of_all _ hS)
+  have hrn : 0 < rate * n := (Nat.cast_pos.mpr hD).trans_le hupper
+  have hrate : 0 < rate := pos_of_mul_pos_left hrn (Nat.cast_nonneg n)
+  have hcoef : 0 ≤ (n : ℝ) / (2 * rate) := div_nonneg (Nat.cast_nonneg n) (by positivity)
+  have hfull := partitionSupport_dimension_ge_rate_integral (F := F) (D := D) (d := d)
+    (W := W) (n := n) (L := ⌈L⌉₊) hD hupper (hlevel.trans (Nat.le_ceil L))
+  rw [partitionSupportSpace_natCeil] at hfull
+  have hfull' : (n : ℝ) / (2 * rate) * ∫ u in T, f u ≤
+      (Module.finrank F (partitionSupportSpace F D d W L hD) : ℝ) := by
+    exact hfull
+  exact (mul_le_mul_of_nonneg_left hmono hcoef).trans hfull'
+
+/-- The quadratic-area integral over a subset of the weighted simplex is bounded by the dimension
+of the partition support space at the real cutoff `L`. This is the rate-integral bound at
+`n = D`, `rate = 1` and `level = L / D`. -/
+theorem partitionSupport_dimension_ge_integral_on (F : Type*) [Field F] {L : ℝ}
+    (hD : 0 < D) {S : Set (Fin d → ℝ)}
+    (hS : S ⊆ Set.weightedSimplex (fun i : Fin d ↦ (i : ℝ) + 1) W) :
+    (D : ℝ) / 2 * ∫ u in S, (max (L / D - ∑ i, u i) 0) ^ 2 ≤
+      (Module.finrank F (partitionSupportSpace F D d W L hD) : ℝ) := by
+  have hupper : (D : ℝ) ≤ (1 : ℝ) * D := by norm_num
+  have hDne : (D : ℝ) ≠ 0 := by positivity
+  have hlevel : L / D * D ≤ L := by
+    field_simp
+    rfl
+  have h := partitionSupport_dimension_ge_rate_integral_on (F := F) (D := D) (d := d)
+    (W := W) (n := D) (L := L) (rate := 1) (level := L / D) hD hupper hlevel hS
+  simpa [mul_one] using h
 
 end ReedSolomon.HiddenDerivative

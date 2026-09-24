@@ -21,6 +21,8 @@ Edit the source of truth, not the output.
 
 - `./scripts/update-lib.sh` only uses tracked `ArkLib/**/*.lean` files, and fails fast if
   untracked Lean files would be skipped. `git add` new paths before running validation.
+- The generator wraps any `public import` that would exceed 100 characters, placing its module
+  name on an indented continuation line.
 - After merging `main` into a branch that adds Lean files, rerun `./scripts/update-lib.sh` and
   stage `ArkLib.lean`. Resolving the umbrella conflict with only one side can omit the branch's
   modules. Branches predating the module-system migration also need the
