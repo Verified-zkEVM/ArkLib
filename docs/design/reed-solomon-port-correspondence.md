@@ -1959,6 +1959,10 @@ The chart numerator exponent defaulted to `2*K` in the source and is explicit in
 
 The private source helper `jetDegree_pos_of_initialSeparant_ne_zero` was not ported because the destination incidence theorem handles regular-jet counting without its positivity premise. The existing acceptance file `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart.lean` retains the degree-specialization example and adds a concrete admissible-pair example covering specialization and both cardinal bounds.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/PairCounting.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`admissibleChartPairs_card_le_sharp` and `admissibleChartPairFamily_card_le_sharp` keep their source names. Both bounds now allow `k = 0`, where the degree constraints force every admissible pair to be zero and the count is at most one. For positive `k`, they use the factor `v * (((n - k + 1) * (1 + 2 * K * (v - 1)) / (L - k + 1)) ^ r)`. The proof specializes the generic sharp high-cut incidence theorem after choosing a challenge that preserves pair injectivity. No public source declaration was omitted. The source-private `jetDegree_pos_of_initialSeparant_ne_zero_sharp` was not ported because the current generic sharp incidence theorem has no positive jet-degree premise.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/PointRecognition.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/PointRecognition.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -4572,6 +4576,10 @@ The acceptance cases consolidate default and exponent-aware point recognition wi
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/Frobenius/TaylorChart.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 The acceptance case adds a concrete characteristic-two example with a nonzero one-point sample and checks the Frobenius chart reconstruction.
+
+Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Acceptance examples check both sharp bounds on a concrete nonempty admissible-pair set and its filtered family at `r = 0`; each bound evaluates to one.
 
 ## `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/PointRecognition.lean`
 
