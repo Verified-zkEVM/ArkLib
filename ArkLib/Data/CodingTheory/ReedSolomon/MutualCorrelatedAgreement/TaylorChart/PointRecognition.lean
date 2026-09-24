@@ -22,6 +22,8 @@ Taylor coefficients satisfy the corresponding identities.
   base-field pair for every sufficient common exponent.
 * `ReedSolomon.exists_graphLine_pair_of_symbolic_sample`: one sample determines a base-field pair
   that reconstructs every regular symbolic Taylor chart point at the default exponent.
+* `ReedSolomon.exists_frobeniusGraphLine_of_symbolic_sample`: one sample recognizes the
+  Frobenius pullback of a regular order-zero symbolic Taylor chart.
 
 ## References
 
@@ -141,6 +143,76 @@ theorem exists_graphLine_pair_of_symbolic_sample
                   (P₀.map iota + Polynomial.C z * P₁.map iota)).coeff l.val := by
   simpa only using exists_graphLine_pair_of_symbolic_sample_of_exponent
     domain f g sample hsample iota center Q hK (2 * K) (taylorExponentSufficient_two_mul r K)
+
+/-- A sample determines a base-field pair whose Frobenius pullback reconstructs every regular
+order-zero symbolic Taylor chart satisfying the sparse and agreement cuts. Roots are needed only
+at sample positions. -/
+theorem exists_frobeniusGraphLine_of_symbolic_sample
+    {F E ι : Type*} [Field F] [Field E] {k K : ℕ}
+    (domain : ι ↪ F) (f g : ι → F) (sample : Finset ι)
+    (hsample : sample.card = k) (iota : F →+* E) (p e : ℕ) [ExpChar E p]
+    (roots : ι → E) (hroots : ∀ i ∈ sample, roots i ^ (p ^ e) = iota (domain i))
+    (center : E) (Q : DifferentialPolynomial E[X] 0)
+    (hK : 0 < K) (hKk : K ≤ p ^ e * k) (τ : ℕ)
+    (hτ : TaylorExponentSufficient 0 K τ) :
+    ∃ F₀ G₀ : F[X], F₀.degree < k ∧ G₀.degree < k ∧
+      (∀ i ∈ sample, F₀.eval (domain i) = f i ∧ G₀.eval (domain i) = g i) ∧
+      ∀ (w : E) (jet : Fin 1 → E),
+        MvPolynomial.aeval jet (MvPolynomial.map (Polynomial.evalRingHom w)
+          (initialJetSeparant (Polynomial.C center) Q)) ≠ 0 →
+        (∀ l : Fin K, ¬p ^ e ∣ l.val →
+          MvPolynomial.aeval jet (MvPolynomial.map (Polynomial.evalRingHom w)
+            (commonTaylorNumeratorOver (F := E) (Polynomial.C center) Q τ l.val)) = 0) →
+        (∀ i ∈ sample,
+          MvPolynomial.aeval jet (MvPolynomial.map (Polynomial.evalRingHom w)
+            (taylorAgreementEquationOver (F := E) (Polynomial.C center) Q K
+              (Polynomial.C (roots i))
+              (Polynomial.C (iota (f i)) + Polynomial.X ^ (p ^ e) *
+                Polynomial.C (iota (g i))) (τ := τ))) = 0) →
+        rationalTaylorPolynomial center (MvPolynomial.map (Polynomial.evalRingHom w) Q) K jet =
+            expand E (p ^ e)
+              (F₀.map iota + Polynomial.C (w ^ (p ^ e)) * G₀.map iota) ∧
+          jet 0 = (F₀.map iota).eval (center ^ (p ^ e)) +
+            w ^ (p ^ e) * (G₀.map iota).eval (center ^ (p ^ e)) := by
+  obtain ⟨F₀, G₀, hF, hG, hsampleFG, hrecognize⟩ :=
+    exists_frobeniusGraphLine_polynomials_of_sample domain f g sample hsample
+  refine ⟨F₀, G₀, hF, hG, hsampleFG, ?_⟩
+  intro w jet hS hsparse hcuts
+  let φ : E[X] →ₐ[E] E := Polynomial.aeval w
+  have hcenter : φ (Polynomial.C center) = center := by simp [φ]
+  have hφ : φ.toRingHom = Polynomial.evalRingHom w := by ext a <;> simp [φ]
+  have hdegreeK :
+    (rationalTaylorPolynomial center (MvPolynomial.map (Polynomial.evalRingHom w) Q)
+        K jet).degree < ↑K := by
+    simpa only [hcenter, hφ] using
+      degree_rationalTaylorPolynomial_lt_of_symbolic_high_cuts_and_exponent
+        φ (Polynomial.C center) Q K K τ hτ jet hS (fun l hl ↦ by omega)
+  have hdegree :
+      (rationalTaylorPolynomial center (MvPolynomial.map (Polynomial.evalRingHom w) Q)
+        K jet).degree < ↑(p ^ e * k) := hdegreeK.trans_le (by exact_mod_cast hKk)
+  have hsparseP := sparse_rationalTaylorPolynomial_of_symbolic_cuts
+    φ (Polynomial.C center) Q K (p ^ e) τ hτ jet hS hsparse
+  simp only [hcenter, hφ] at hsparseP
+  have hagree : ∀ i ∈ sample,
+      (rationalTaylorPolynomial center (MvPolynomial.map (Polynomial.evalRingHom w) Q)
+        K jet).eval (roots i) = iota (f i) + w ^ (p ^ e) * iota (g i) := by
+    intro i hi
+    have h := (aeval_map_taylorAgreementEquationOver_eq_zero_iff_of_exponent
+      φ (Polynomial.C center) Q K τ hτ jet hS (Polynomial.C (roots i))
+        (Polynomial.C (iota (f i)) + Polynomial.X ^ (p ^ e) *
+          Polynomial.C (iota (g i)))).mp (hcuts i hi)
+    simp [φ, Polynomial.aeval_def, hcenter] at h
+    exact h.trans (congrArg (iota (f i) + ·) (mul_comm _ _))
+  obtain ⟨hpoly, heval⟩ := hrecognize iota p e roots center w _ hroots hdegree hsparseP hagree
+  refine ⟨hpoly, ?_⟩
+  have hjet := congrFun
+    (polynomialJet_rationalTaylorPolynomial center
+      (MvPolynomial.map (Polynomial.evalRingHom w) Q) hK jet) 0
+  have hzero :
+      (rationalTaylorPolynomial center (MvPolynomial.map (Polynomial.evalRingHom w) Q)
+        K jet).eval center = jet 0 := by
+    simpa [polynomialJet] using hjet
+  exact hzero.symm.trans heval
 
 end
 
