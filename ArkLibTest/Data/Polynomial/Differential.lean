@@ -1001,32 +1001,6 @@ example : Nat.card (BoundedSolution (constantDerivativeEquation (ZMod 3)) 2) = 3
     simpa [Nat.card_zmod] using Nat.card_le_card_of_injective solution hinj
   exact Nat.le_antisymm hupper hlower
 
-/-! ### Recursive degree count -/
-
-private def sumEquation : DifferentialPolynomial ℚ 1 := X (some 0) + X (some 1)
-
-private theorem mem_support_sumEquation (j : Fin 2) :
-    Finsupp.single (some j) 1 ∈ sumEquation.support := by
-  fin_cases j <;> simp [sumEquation, MvPolynomial.mem_support_iff, MvPolynomial.coeff_X,
-    Finsupp.single_eq_single_iff]
-
-/-- For `Y₀ + Y₁`, total jet degree is `1` while the individual degrees sum to `2`. -/
-example : jetTotalDegree sumEquation = 1 ∧ ∑ j : Fin 2, jetDegree sumEquation j = 2 := by
-  have hdeg (j : Fin 2) : jetDegree sumEquation j = 1 := by
-    refine le_antisymm ?_ ?_
-    · refine MvPolynomial.degreeOf_le_iff.mpr fun u hu ↦ ?_
-      have hsub := MvPolynomial.support_add hu
-      simp only [MvPolynomial.support_X, mem_union, mem_singleton] at hsub
-      rcases hsub with rfl | rfl <;> simp [Finsupp.single_apply] <;> split_ifs <;> simp
-    · have h := MvPolynomial.monomial_le_degreeOf (some j) (mem_support_sumEquation j)
-      rw [Finsupp.single_eq_same] at h
-      exact h
-  refine ⟨le_antisymm ?_ ((hdeg 0).symm.le.trans (jetDegree_le_total _ 0)), by simp [hdeg]⟩
-  refine (jetTotalDegree_le_iff _ 1).mpr fun u hu ↦ ?_
-  have hsub := MvPolynomial.support_add hu
-  simp only [MvPolynomial.support_X, mem_union, mem_singleton] at hsub
-  rcases hsub with rfl | rfl <;> simp [totalJetDegree_eq_sum, Fin.sum_univ_two]
-
 /-! ### Rational recursive and agreement bounds -/
 /-- The singleton root `0` of `Y₀ = 0` satisfies the recursive and agreement bounds. -/
 example :
@@ -1051,6 +1025,8 @@ example :
   have hbin : ∀ r, r ≤ 0 → ∀ i, r < i → i < 1 → (i.choose r : ℚ) ≠ 0 := by omega
   have hsolution : ∀ P ∈ roots, differentialSpecialization Q P = 0 := by
     simp [roots, Q, zeroJetEquation]
+  have hmul := card_mul_le_jetTotalDegree_mul hQ hcast roots hsolution (left := 1)
+    (cost := 1) (by intro _ _ _ _ _ hs _; simpa [roots] using Finset.card_le_card hs)
   have haccepted : ∀ P ∈ roots, accepts P := by simp [roots, accepts, domain]
   have hregular : RegularBranchRatBudget Q 0 accepts 1 := by
     simpa [Q, zeroJetEquation] using regularBranchRatBudget_of_agreement
@@ -1058,21 +1034,28 @@ example :
       (by norm_num) (by norm_num) domain (fun _ ↦ 0) (by norm_num)
       (by norm_num) (by norm_num) accepts (by intro P; rfl) hdegree hbin
   have hboundedAccepted : ∀ P ∈ boundedRoots, accepts P.polynomial := by
-    intro P hP
-    simp only [boundedRoots, mem_singleton] at hP
-    subst P; simp [BoundedSolution.polynomial, accepts, domain, zeroJetBoundedRoot]
+    intro P hP; simp only [boundedRoots, mem_singleton] at hP; subst P
+    simp [BoundedSolution.polynomial, accepts, domain, zeroJetBoundedRoot]
   have hrecursive := boundedSolution_recursive_counting_totalJetDegree Q hQ hcast accepts 1
     (by norm_num) boundedRoots hboundedAccepted hregular
   have hsquare := boundedSolution_card_le_sq_totalJetDegree Q hQ hcast accepts 1 1
     (by norm_num) boundedRoots hboundedAccepted hdegree (by simpa using hregular)
   have hagreementBound := finite_solutions_card_le_sq_totalJetDegree_of_agreement Q 1 1 1
-    (by norm_num) (by norm_num) hQ hcast hdegree (n := 1) (A := 1) domain
-    (fun _ ↦ 0) (by norm_num)
-    (by norm_num) (by norm_num) hbin accepts (by intro P; rfl) roots hsolution haccepted
+    (by norm_num) (by norm_num) hQ hcast hdegree (n := 1) (A := 1) domain (fun _ ↦ 0)
+    (by norm_num) (by norm_num) (by norm_num)
+    hbin accepts (by intro P; rfl) roots hsolution haccepted
+  have hTaylorBound := card_le_of_regular_solutions_agreement (E := AlgebraicClosure ℚ)
+    (n := 1) (A := 1) Q 1 1 2 (taylorExponentSufficient_two_mul 0 1)
+    (by norm_num) (by norm_num) domain (fun _ ↦ 0) (by norm_num) (by norm_num)
+    roots (by simp [roots]) hsolution
+    (by simp [roots, Q, zeroJetEquation, separant, differentialSpecialization,
+      differentialSpecializationHom]) (hbin 0 (by omega))
+    (by intro P hP; simp_all [roots, accepts, domain])
   refine ⟨?_, ?_, ?_⟩
   · simpa [Q, zeroJetEquation, boundedRoots] using hrecursive
   · norm_num [Q, zeroJetEquation, boundedRoots] at hsquare ⊢
-  · norm_num [Q, roots, zeroJetEquation] at hagreementBound ⊢
+  · norm_num [Q, roots, zeroJetEquation, rationalTaylorCutDegreeBound,
+      jetTotalDegree] at hagreementBound hmul hTaylorBound ⊢
 /-! ### Witness count -/
 
 /-- The one regular bounded solution `0` of `Y₀ = 0` attains the `ZMod 3` witness-count bound. -/
