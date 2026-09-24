@@ -10,7 +10,7 @@ public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.R
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.Basic
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.LocalRank
 public import ArkLib.ToMathlib.LinearAlgebra.FiniteDimensional
-public import ArkLib.ToMathlib.LinearAlgebra.Matrix.RowBlocks
+public import ArkLib.ToMathlib.LinearAlgebra.Matrix.Rank
 public import Mathlib.Data.Nat.Cast.Order.Field
 public import Mathlib.FieldTheory.RatFunc.Basic
 
