@@ -340,12 +340,18 @@ theorem johnsonTheta_le_sqrt_envelope {n D A : ℕ} {eta : ℝ}
   have hden : ((A - D : ℕ) : ℝ) = (A : ℝ) - D := by
     rw [Nat.cast_sub (show D ≤ A by omega)]
   have hxA : x * n < A := by
-    unfold johnsonAgreement at hthreshold
-    dsimp only [x, rho]
-    nlinarith [mul_pos heta hn]
+    have hthreshold' : (x + eta) * n ≤ (A : ℝ) := by
+      simpa only [johnsonAgreement, x, rho] using hthreshold
+    calc
+      x * n < (x + eta) * n :=
+        mul_lt_mul_of_pos_right (lt_add_of_pos_right x heta) hn
+      _ ≤ A := hthreshold'
   have hdenLower : n * (x - x ^ 2) ≤ ((A - D : ℕ) : ℝ) := by
     rw [hden, hrhoEq, ← hx2]
-    nlinarith
+    apply (le_sub_iff_add_le).2
+    calc
+      n * (x - x ^ 2) + x ^ 2 * n = x * n := by ring
+      _ ≤ A := hxA.le
   have hdenPos : (0 : ℝ) < (A - D : ℕ) := by exact_mod_cast (show 0 < A - D by omega)
   unfold johnsonTheta
   rw [hnum]
@@ -356,8 +362,9 @@ theorem johnsonTheta_le_sqrt_envelope {n D A : ℕ} {eta : ℝ}
     ((1 + x) * (A - D : ℕ)) / x by ring]
   apply (le_div_iff₀ hx.1).2
   have hmul := mul_le_mul_of_nonneg_left hdenLower (show 0 ≤ 1 + x by positivity)
-  nlinarith [show x * (n * (1 - x ^ 2)) =
-    (1 + x) * (n * (x - x ^ 2)) by ring]
+  calc
+    n * (1 - x ^ 2) * x = (1 + x) * (n * (x - x ^ 2)) := by ring
+    _ ≤ (1 + x) * ((A - D : ℕ) : ℝ) := hmul
 
 /-- The normalized envelope
 `4(1 + x)/3 + (16/(21x) + 26/147) min (x²) ((1 - x²)/2) + 4x(1 - x²)/49`, obtained from
@@ -384,14 +391,35 @@ theorem johnsonPreEnvelope_le_normalized {x y t : ℝ}
     johnsonPreEnvelope x y t ≤ johnsonNormalizedEnvelope x := by
   let s := min (x ^ 2) ((1 - x ^ 2) / 2)
   have ht0 : 0 < t := lt_of_lt_of_le (by norm_num) ht
+  have hxSquare : 0 ≤ 1 - x ^ 2 := by
+    rw [show (1 : ℝ) - x ^ 2 = (1 - x) * (1 + x) by ring]
+    positivity
   have hs0 : 0 ≤ s := by
-    apply le_min <;> nlinarith [sq_nonneg x]
+    apply le_min
+    · positivity
+    · positivity
   have hinv : 1 / t ≤ (2 / 7 : ℝ) := by
     apply (div_le_iff₀ ht0).2
-    nlinarith
+    calc
+      1 = (7 / 2 : ℝ) * (2 / 7) := by norm_num
+      _ ≤ t * (2 / 7) := mul_le_mul_of_nonneg_right ht (by norm_num)
+      _ = (2 / 7) * t := by ring
   have hinvSq : 1 / t ^ 2 ≤ (4 / 49 : ℝ) := by
     apply (div_le_iff₀ (sq_pos_of_pos ht0)).2
-    nlinarith [sq_nonneg (t - 7 / 2)]
+    have hleft : (7 / 2 : ℝ) * (7 / 2) ≤ (7 / 2) * t :=
+      mul_le_mul_of_nonneg_left ht (by norm_num)
+    have hright : (7 / 2 : ℝ) * t ≤ t * t :=
+      mul_le_mul_of_nonneg_right ht ht0.le
+    have htSquared : (7 / 2 : ℝ) ^ 2 ≤ t ^ 2 := by
+      calc
+        (7 / 2 : ℝ) ^ 2 = (7 / 2) * (7 / 2) := by ring
+        _ ≤ (7 / 2) * t := hleft
+        _ ≤ t * t := hright
+        _ = t ^ 2 := by ring
+    calc
+      1 = (7 / 2 : ℝ) ^ 2 * (4 / 49) := by norm_num
+      _ ≤ t ^ 2 * (4 / 49) := mul_le_mul_of_nonneg_right htSquared (by norm_num)
+      _ = (4 / 49) * t ^ 2 := by ring
   have hmiddleCoeff :
       2 / (3 * x) + (1 + x) / (3 * t * x) + 1 / t ^ 2 ≤
         16 / (21 * x) + 26 / 147 := by
@@ -413,10 +441,7 @@ theorem johnsonPreEnvelope_le_normalized {x y t : ℝ}
       _ ≤ (2 / (3 * x) + (1 + x) / (3 * t * x) + 1 / t ^ 2) * s := by
         exact mul_le_mul_of_nonneg_left hy hmiddleCoeff0
       _ ≤ _ := by gcongr
-  have hxgap : 0 ≤ x * (1 - x ^ 2) := by
-    have : 0 ≤ 1 - x ^ 2 := by
-      nlinarith [mul_pos (sub_pos.mpr hx1) (add_pos_of_pos_of_nonneg hx0 hx0.le)]
-    positivity
+  have hxgap : 0 ≤ x * (1 - x ^ 2) := by positivity
   have hlast : x * (1 - x ^ 2) / t ^ 2 ≤ 4 * x * (1 - x ^ 2) / 49 := by
     calc
       x * (1 - x ^ 2) / t ^ 2 = x * (1 - x ^ 2) * (1 / t ^ 2) := by ring
@@ -503,7 +528,8 @@ theorem johnsonExceptionCount_lt_preEnvelope_scale {n D A : ℕ} {eta : ℝ}
   have hcoeff0 : 0 ≤ theta + ((n - D - 1 : ℕ) : ℝ) := by positivity
   have hcoeffUpper0 : 0 < (n : ℝ) * (1 - x ^ 2) + 1 / x := by
     have : 0 < 1 - x ^ 2 := by
-      nlinarith [mul_pos (sub_pos.mpr hx.2) (add_pos_of_pos_of_nonneg hx.1 hx.1.le)]
+      rw [show (1 : ℝ) - x ^ 2 = (1 - x) * (1 + x) by ring]
+      exact mul_pos (sub_pos.mpr hx.2) (by linarith)
     positivity
   have hlinear : (theta + ((n - D - 1 : ℕ) : ℝ)) * μ <
       (n : ℝ) * t * (1 - x ^ 2) / x + t / x ^ 2 := by
@@ -558,7 +584,7 @@ theorem johnsonNormalizedEnvelope_lt {x : ℝ} (hx0 : 0 < x) (hx1 : x < 1) :
       have hroot : 316 * r < (562 : ℝ) / 3 := by
         nlinarith [sq_nonneg (316 * r + (562 : ℝ) / 3)]
       rw [hr2, hr3]
-      nlinarith
+      linarith
     have hbracket :
         0 < 320 + 26 * (x + r) - 12 * (x ^ 2 + x * r + r ^ 2) := by
       have hxxr : x * x ≤ r * x := mul_le_mul_of_nonneg_right hxr hx0.le
@@ -568,11 +594,12 @@ theorem johnsonNormalizedEnvelope_lt {x : ℝ} (hx0 : 0 < x) (hx1 : x < 1) :
         (320 + 26 * (x + r) - 12 * (x ^ 2 + x * r + r ^ 2)) :=
       mul_nonneg (sub_nonneg.mpr hxr) hbracket.le
     have hpoly : 0 < 196 - 320 * x - 26 * x ^ 2 + 12 * x ^ 3 := by
-      nlinarith [show
-        (196 - 320 * x - 26 * x ^ 2 + 12 * x ^ 3) -
-          (196 - 320 * r - 26 * r ^ 2 + 12 * r ^ 3) =
-            (r - x) *
-              (320 + 26 * (x + r) - 12 * (x ^ 2 + x * r + r ^ 2)) by ring]
+      have hpolyEq : 196 - 320 * x - 26 * x ^ 2 + 12 * x ^ 3 =
+          (196 - 320 * r - 26 * r ^ 2 + 12 * r ^ 3) +
+            (r - x) * (320 + 26 * (x + r) - 12 * (x ^ 2 + x * r + r ^ 2)) := by
+        ring
+      rw [hpolyEq]
+      exact add_pos_of_pos_of_nonneg hrEndpoint hproduct
     have hformula :
         8 / 3 - johnsonNormalizedEnvelope x =
           (196 - 320 * x - 26 * x ^ 2 + 12 * x ^ 3) / 147 := by
@@ -593,7 +620,7 @@ theorem johnsonNormalizedEnvelope_lt {x : ℝ} (hx0 : 0 < x) (hx1 : x < 1) :
       have hroot : (193 : ℝ) / 3 < 123 * r := by
         nlinarith [sq_nonneg ((193 : ℝ) / 3 + 123 * r)]
       rw [hr2, hr3]
-      nlinarith
+      linarith
     have hx2 : x ^ 2 < 1 := by
       nlinarith [mul_pos (sub_pos.mpr hx1) (add_pos_of_pos_of_nonneg hx0 hx0.le)]
     have hxrOne : x * r < 1 := by
@@ -605,11 +632,12 @@ theorem johnsonNormalizedEnvelope_lt {x : ℝ} (hx0 : 0 < x) (hx1 : x < 1) :
         (127 - 25 * (x + r) - 12 * (x ^ 2 + x * r + r ^ 2)) :=
       mul_nonneg (sub_nonneg.mpr hrx) hbracket.le
     have hpoly : 0 < -12 * x ^ 3 - 25 * x ^ 2 + 127 * x - 56 := by
-      nlinarith [show
-        (-12 * x ^ 3 - 25 * x ^ 2 + 127 * x - 56) -
-          (-12 * r ^ 3 - 25 * r ^ 2 + 127 * r - 56) =
-            (x - r) *
-              (127 - 25 * (x + r) - 12 * (x ^ 2 + x * r + r ^ 2)) by ring]
+      have hpolyEq : -12 * x ^ 3 - 25 * x ^ 2 + 127 * x - 56 =
+          (-12 * r ^ 3 - 25 * r ^ 2 + 127 * r - 56) +
+            (x - r) * (127 - 25 * (x + r) - 12 * (x ^ 2 + x * r + r ^ 2)) := by
+        ring
+      rw [hpolyEq]
+      exact add_pos_of_pos_of_nonneg hrEndpoint hproduct
     have hformula :
         8 / 3 - johnsonNormalizedEnvelope x =
           (1 - x) * (-12 * x ^ 3 - 25 * x ^ 2 + 127 * x - 56) /
@@ -764,14 +792,30 @@ theorem johnsonExceptionCount_div_comparisonEstimate_lt {n D A : ℕ} {eta : ℝ
         exact mul_lt_mul_of_pos_right hx1 (pow_pos ht 3)
       _ ≤ tB ^ 3 := by simpa using htCube
   have h49 : (49 : ℝ) ≤ 4 * tB ^ 2 := by
-    nlinarith [sq_nonneg (tB - 7 / 2)]
+    have hleft : (7 / 2 : ℝ) * (7 / 2) ≤ (7 / 2) * tB :=
+      mul_le_mul_of_nonneg_left htBLower (by norm_num)
+    have hright : (7 / 2 : ℝ) * tB ≤ tB * tB :=
+      mul_le_mul_of_nonneg_right htBLower htB.le
+    calc
+      49 = 4 * ((7 / 2 : ℝ) * (7 / 2)) := by norm_num
+      _ ≤ 4 * (tB * tB) := by
+        exact mul_le_mul_of_nonneg_left (hleft.trans hright) (by norm_num)
+      _ = 4 * tB ^ 2 := by ring
   have hquintic : 49 * tB ^ 3 ≤ 4 * tB ^ 5 := by
-    have hmul := mul_le_mul_of_nonneg_right h49 (pow_nonneg htB.le 3)
-    nlinarith [show tB ^ 5 = tB ^ 3 * tB ^ 2 by ring]
+    calc
+      49 * tB ^ 3 ≤ 4 * tB ^ 2 * tB ^ 3 :=
+        mul_le_mul_of_nonneg_right h49 (pow_nonneg htB.le 3)
+      _ = 4 * tB ^ 5 := by ring
   have hkey : 49 * x * t ^ 3 < 4 * tB ^ 5 := by
-    nlinarith
+    calc
+      49 * x * t ^ 3 = 49 * (x * t ^ 3) := by ring
+      _ < 49 * tB ^ 3 := mul_lt_mul_of_pos_left hxtCube (by norm_num)
+      _ ≤ 4 * tB ^ 5 := hquintic
   have hnkey : 49 * (n : ℝ) * x * t ^ 3 < 4 * n * tB ^ 5 := by
-    nlinarith [mul_pos hn (sub_pos.mpr hkey)]
+    calc
+      49 * (n : ℝ) * x * t ^ 3 = (n : ℝ) * (49 * x * t ^ 3) := by ring
+      _ < (n : ℝ) * (4 * tB ^ 5) := mul_lt_mul_of_pos_left hkey hn
+      _ = 4 * n * tB ^ 5 := by ring
   have hclosedCompare :
       (8 / 3 : ℝ) * n * t ^ 3 / rho <
         (16 / 49 : ℝ) * ((2 * tB ^ 5 / (3 * x ^ 3)) * n) := by
@@ -781,7 +825,11 @@ theorem johnsonExceptionCount_div_comparisonEstimate_lt {n D A : ℕ} {eta : ℝ
           ((8 / 3 : ℝ) * n * t ^ 3 * x) / x ^ 3 := by
         field_simp [hxne]
       _ < ((32 / 147 : ℝ) * n * tB ^ 5) / x ^ 3 := by
-        exact (div_lt_div_iff_of_pos_right (pow_pos hx.1 3)).2 (by nlinarith)
+        apply (div_lt_div_iff_of_pos_right (pow_pos hx.1 3)).2
+        calc
+          (8 / 3 : ℝ) * n * t ^ 3 * x = (8 / 147) * (49 * n * x * t ^ 3) := by ring
+          _ < (8 / 147) * (4 * n * tB ^ 5) := mul_lt_mul_of_pos_left hnkey (by norm_num)
+          _ = (32 / 147 : ℝ) * n * tB ^ 5 := by ring
       _ = (16 / 49 : ℝ) * ((2 * tB ^ 5 / (3 * x ^ 3)) * n) := by
         field_simp [hxne]
         norm_num

@@ -188,19 +188,28 @@ theorem rate_lt_firstOrderRateThreshold {R : ℝ} (hR : 0 < R) (hRone : R < 1) :
     rw [hsquare]
     ring
   have hfactorpos : 0 < R * (5 - R) * ((1 - R) * (8 - R)) / 4 := by
-    exact div_pos (mul_pos (mul_pos hR (by linarith))
-      (mul_pos (by linarith) (by linarith))) (by norm_num)
+    have h5R : 0 < 5 - R := by linarith
+    have h1R : 0 < 1 - R := by linarith
+    have h8R : 0 < 8 - R := by linarith
+    exact div_pos (mul_pos (mul_pos hR h5R) (mul_pos h1R h8R)) (by norm_num)
   have hauxsq : (R * (5 - R) / 2) ^ 2 < s ^ 2 := by
     linarith
   have haux : R * (5 - R) / 2 < s := by
     have hleft : 0 ≤ R * (5 - R) / 2 := by
-      apply div_nonneg <;> nlinarith
-    nlinarith
+      apply div_nonneg
+      · exact mul_nonneg hR.le (by linarith)
+      · norm_num
+    exact (sq_lt_sq₀ hleft hs0).mp hauxsq
   rw [firstOrderRateThreshold]
   have hden : 0 < 8 - R := by linarith
   rw [lt_div_iff₀ hden]
-  dsimp only [s] at haux
-  nlinarith
+  have hscaled : R * (5 - R) < 2 * s := by
+    calc
+      R * (5 - R) = 2 * (R * (5 - R) / 2) := by ring
+      _ < 2 * s := mul_lt_mul_of_pos_left haux (by norm_num)
+  dsimp only [s] at hscaled ⊢
+  ring_nf at hscaled ⊢
+  linarith
 
 /-- `a₁(R) < √R` for `0 < R < 1`: the first-order threshold strictly improves the Johnson
 agreement. At `R = 1` both sides equal `1`. -/
@@ -218,8 +227,11 @@ theorem firstOrderRateThreshold_lt_sqrt {R : ℝ} (hR : 0 < R) (hRone : R < 1) :
   have hsquare : s ^ 2 = R * (5 - R) * (2 - R) :=
     Real.sq_sqrt (firstOrderRateThreshold_radicand_pos hR (by linarith)).le
   have hright : 0 < x * (8 - R) - 3 * R := by
-    dsimp only [x] at hx0 hx1 hxsquare ⊢
-    nlinarith [sq_nonneg (x - 1)]
+    rw [← hxsquare]
+    have hfactor : x * (8 - x ^ 2) - 3 * x ^ 2 =
+        x * (1 - x) * (x + 4) + 4 * x := by ring
+    rw [hfactor]
+    positivity
   have hdiff :
       (x * (8 - R) - 3 * R) ^ 2 - (2 * s) ^ 2 =
         3 * R * (1 - x) ^ 2 * (8 - R) := by
@@ -234,12 +246,13 @@ theorem firstOrderRateThreshold_lt_sqrt {R : ℝ} (hR : 0 < R) (hRone : R < 1) :
     · linarith
   have hsquarelt : (2 * s) ^ 2 < (x * (8 - R) - 3 * R) ^ 2 := by
     linarith
-  have hroot : 2 * s < x * (8 - R) - 3 * R := by nlinarith
+  have hroot : 2 * s < x * (8 - R) - 3 * R :=
+    (sq_lt_sq₀ (by positivity) hright.le).mp hsquarelt
   rw [firstOrderRateThreshold]
   have hden : 0 < 8 - R := by linarith
   rw [div_lt_iff₀ hden]
   dsimp only [x, s] at hroot ⊢
-  nlinarith
+  linarith
 
 /-- `1 < Q(R, a)` for `0 < R < 1` and `a > a₁(R)`. The proof writes
 `Q(R, a) - Q(R, a₁) = (a - a₁)((a + a₁)/R + 3(a + a₁ - 2)/(4(2 - R)))` and shows the second
@@ -257,13 +270,19 @@ theorem firstOrderCleanExpression_gt_one {R a : ℝ} (hR : 0 < R) (hRone : R < 1
     let c := (a + b) / R + 3 * (a + b - 2) / (4 * (2 - R))
     let q := R * (4 * (2 - R))
     have hq : 0 < q := mul_pos hR hden2
-    have heq : c * q =
-        (a + b) * (4 * (2 - R)) + 3 * (a + b - 2) * R := by
+    have heq : c * q = (a + b) * (8 - R) - 6 * R := by
       dsimp only [c, q]
       field_simp [ne_of_gt hR, ne_of_gt (show 0 < 2 - R by linarith)]
-    have hrhs : 0 < (a + b) * (4 * (2 - R)) + 3 * (a + b - 2) * R := by
-      nlinarith [mul_pos (sub_pos.mpr hRone)
-        (sub_pos.mpr (show R < 8 by linarith))]
+      ring
+    have hsum : 2 * R < a + b := by linarith [hbR, ha]
+    have h8R : 0 < 8 - R := by linarith
+    have h5R : 0 < 5 - R := by linarith
+    have hrhs : 0 < (a + b) * (8 - R) - 6 * R := by
+      calc
+        0 < 2 * R * (5 - R) := mul_pos (mul_pos (by norm_num) hR) h5R
+        _ = 2 * R * (8 - R) - 6 * R := by ring
+        _ < (a + b) * (8 - R) - 6 * R :=
+          sub_lt_sub_right (mul_lt_mul_of_pos_right hsum h8R) _
     have hcq : 0 < c * q := heq.symm ▸ hrhs
     exact (mul_pos_iff_of_pos_right hq).mp hcq
   have hid :
@@ -272,7 +291,13 @@ theorem firstOrderCleanExpression_gt_one {R a : ℝ} (hR : 0 < R) (hRone : R < 1
         (a - b) * ((a + b) / R + 3 * (a + b - 2) / (4 * (2 - R))) := by
     field_simp
     ring
-  nlinarith
+  have hdiffpos :
+      0 < (a - b) * ((a + b) / R + 3 * (a + b - 2) / (4 * (2 - R))) :=
+    mul_pos (sub_pos.mpr ha) hcoef
+  rw [← hid] at hdiffpos
+  calc
+    1 = b ^ 2 / R + 3 * (1 - b) ^ 2 / (4 * (2 - R)) := hbase.symm
+    _ < a ^ 2 / R + 3 * (1 - a) ^ 2 / (4 * (2 - R)) := sub_pos.mp hdiffpos
 
 /-- For `0 < R < a < 1` with `a₁(R) < a`, the exact rank density at the chosen `β` is strictly
 below the source density. The strict inequality comes from `1 < Q(R, a)` and `β > 0`; at `a = 1`

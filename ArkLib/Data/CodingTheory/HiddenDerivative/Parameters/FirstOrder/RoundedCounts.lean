@@ -173,28 +173,68 @@ private def rankRoundingModel (u v : ℝ) : ℝ :=
       u * (v - 1) * (u + v - 1))
 
 private theorem rankRoundingModel_le {u v beta : ℝ} (hu0 : 0 ≤ u) (hub : u ≤ beta)
-    (hbu : beta ≤ u + v) (hv0 : 0 ≤ v) (hv1 : v ≤ 1) (hb1 : beta ≤ 3 / 4) :
+    (hv0 : 0 ≤ v) (hv1 : v ≤ 1) (hb1 : beta ≤ 3 / 4) :
     rankRoundingModel u v ≤ beta / 2 - beta ^ 2 / 2 + beta ^ 3 / 3 + 3 * v := by
-  unfold rankRoundingModel
   have hu34 : u ≤ 3 / 4 := hub.trans hb1
+  have hq_eq :
+      1 / 2 - (beta + u) / 2 + (beta ^ 2 + beta * u + u ^ 2) / 3 =
+        1 / 4 + ((beta - 1 / 2 + (u - 1 / 2)) ^ 2 + (beta - 1 / 2) ^ 2 +
+          (u - 1 / 2) ^ 2) / 6 := by ring
   have hq : 0 ≤ 1 / 2 - (beta + u) / 2 + (beta ^ 2 + beta * u + u ^ 2) / 3 := by
-    nlinarith [sq_nonneg (beta - u), sq_nonneg (beta + u - 1)]
+    rw [hq_eq]
+    exact add_nonneg (by norm_num)
+      (div_nonneg (add_nonneg (add_nonneg (sq_nonneg _) (sq_nonneg _)) (sq_nonneg _))
+        (by norm_num))
   have hP : u / 2 - u ^ 2 / 2 + u ^ 3 / 3 ≤ beta / 2 - beta ^ 2 / 2 + beta ^ 3 / 3 := by
     have hdiff :
         (beta / 2 - beta ^ 2 / 2 + beta ^ 3 / 3) - (u / 2 - u ^ 2 / 2 + u ^ 3 / 3) =
           (beta - u) * (1 / 2 - (beta + u) / 2 + (beta ^ 2 + beta * u + u ^ 2) / 3) := by
       ring
-    nlinarith [mul_nonneg (sub_nonneg.mpr hub) hq]
-  have hvSq : v ^ 2 ≤ v := by nlinarith [mul_nonneg hv0 (sub_nonneg.mpr hv1)]
-  have huSq : u ^ 2 ≤ (9 / 16 : ℝ) := by
-    nlinarith [mul_nonneg (sub_nonneg.mpr hu34) (add_nonneg hu0 (by norm_num : (0 : ℝ) ≤ 3 / 4))]
-  have huSqV : u ^ 2 * v ≤ (9 / 16 : ℝ) * v := mul_le_mul_of_nonneg_right huSq hv0
-  have huVSq : u * v ^ 2 ≤ (3 / 4 : ℝ) * v :=
+    rw [← sub_nonneg, hdiff]
+    exact mul_nonneg (sub_nonneg.mpr hub) hq
+  have hvSq : v ^ 2 ≤ v := by
     calc
-      u * v ^ 2 ≤ (3 / 4 : ℝ) * v ^ 2 := mul_le_mul_of_nonneg_right hu34 (sq_nonneg v)
-      _ ≤ (3 / 4 : ℝ) * v := mul_le_mul_of_nonneg_left hvSq (by norm_num)
-  ring_nf at ⊢
-  nlinarith
+      v ^ 2 = v * v := by ring
+      _ ≤ v * 1 := mul_le_mul_of_nonneg_left hv1 hv0
+      _ = v := by ring
+  have huSq : u ^ 2 ≤ (9 / 16 : ℝ) := by
+    calc
+      u ^ 2 = u * u := by ring
+      _ ≤ u * (3 / 4) := mul_le_mul_of_nonneg_left hu34 hu0
+      _ ≤ (3 / 4) * (3 / 4) := mul_le_mul_of_nonneg_right hu34 (by norm_num)
+      _ = 9 / 16 := by norm_num
+  have hmodel :
+      rankRoundingModel u v =
+        (u / 2 - u ^ 2 / 2 + u ^ 3 / 3) + v * (u ^ 2 / 2 + 1 / 2) +
+          v ^ 2 * (u / 6 + 1 / 2) := by
+    unfold rankRoundingModel
+    ring
+  rw [hmodel]
+  have hcoef1 : u ^ 2 / 2 + 1 / 2 ≤ 25 / 32 := by
+    calc
+      u ^ 2 / 2 + 1 / 2 ≤ (9 / 16 : ℝ) / 2 + 1 / 2 := by gcongr
+      _ = 25 / 32 := by norm_num
+  have hcoef2 : u / 6 + 1 / 2 ≤ 5 / 8 := by
+    calc
+      u / 6 + 1 / 2 ≤ (3 / 4 : ℝ) / 6 + 1 / 2 := by gcongr
+      _ = 5 / 8 := by norm_num
+  have hround : v * (u ^ 2 / 2 + 1 / 2) + v ^ 2 * (u / 6 + 1 / 2) ≤ 3 * v := by
+    calc
+      v * (u ^ 2 / 2 + 1 / 2) + v ^ 2 * (u / 6 + 1 / 2) ≤
+          v * (25 / 32) + v ^ 2 * (5 / 8) := by
+        exact add_le_add (mul_le_mul_of_nonneg_left hcoef1 hv0)
+          (mul_le_mul_of_nonneg_left hcoef2 (sq_nonneg v))
+      _ ≤ v * (25 / 32) + v * (5 / 8) := by
+        exact add_le_add (le_refl _) (mul_le_mul_of_nonneg_right hvSq
+          (by norm_num : (0 : ℝ) ≤ 5 / 8))
+      _ = (45 / 32 : ℝ) * v := by ring
+      _ ≤ 3 * v := mul_le_mul_of_nonneg_right (by norm_num) hv0
+  calc
+    (u / 2 - u ^ 2 / 2 + u ^ 3 / 3) + v * (u ^ 2 / 2 + 1 / 2) +
+        v ^ 2 * (u / 6 + 1 / 2) =
+      (u / 2 - u ^ 2 / 2 + u ^ 3 / 3) +
+        (v * (u ^ 2 / 2 + 1 / 2) + v ^ 2 * (u / 6 + 1 / 2)) := by ring
+    _ ≤ beta / 2 - beta ^ 2 / 2 + beta ^ 3 / 3 + 3 * v := add_le_add hP hround
 
 private theorem cubicUpperCount_div_cube_eq_model {m M : ℕ} (hm : 0 < m) (hM : M ≤ m) :
     firstOrderRankCubicUpperCount m M / (m : ℝ) ^ 3 =
@@ -249,7 +289,7 @@ theorem firstOrderRankCount_floor_le {beta : ℝ} (m : ℕ) (hb0 : 0 ≤ beta)
     exact (le_div_iff₀ hmR).2 hMlt.le
   have hv0 : 0 ≤ v := by positivity
   have hv1 : v ≤ 1 := inv_le_one_of_one_le₀ (by exact_mod_cast hm)
-  have hmodel := rankRoundingModel_le hu0 hub hbu hv0 hv1 hb34
+  have hmodel := rankRoundingModel_le hu0 hub hv0 hv1 hb34
   rw [← cubicUpperCount_div_cube_eq_model hm hMNat, div_le_iff₀ (by positivity)] at hmodel
   calc
     (firstOrderRankCount m M : ℝ) ≤ firstOrderRankCubicUpperCount m M :=
@@ -285,7 +325,11 @@ private theorem sourceRoundingModel_ge {z u c v beta : ℝ} (hz1 : 1 ≤ z) (hbz
     have : 0 ≤ z + 2 * v - c := by linarith
     positivity
   have hquad : 0 ≤ (u - z) ^ 2 + (u - z) * (beta - z) + (beta - z) ^ 2 := by
-    nlinarith [sq_nonneg ((u - z) + (beta - z)), sq_nonneg (u - z), sq_nonneg (beta - z)]
+    have hquad_eq :
+        (u - z) ^ 2 + (u - z) * (beta - z) + (beta - z) ^ 2 =
+          ((u - z) + (beta - z)) ^ 2 / 2 + (u - z) ^ 2 / 2 + (beta - z) ^ 2 / 2 := by ring
+    rw [hquad_eq]
+    positivity
   have hbase : beta * z ^ 2 / 2 - z * beta ^ 2 / 2 + beta ^ 3 / 6 ≤
       u * z ^ 2 / 2 - z * u ^ 2 / 2 + u ^ 3 / 6 := by
     have hid :
@@ -294,7 +338,8 @@ private theorem sourceRoundingModel_ge {z u c v beta : ℝ} (hz1 : 1 ≤ z) (hbz
           (u - beta) / 6 * ((u - z) ^ 2 + (u - z) * (beta - z) + (beta - z) ^ 2) := by
       ring
     have hfac : 0 ≤ (u - beta) / 6 := div_nonneg (sub_nonneg.mpr hbu) (by norm_num)
-    nlinarith [mul_nonneg hfac hquad]
+    rw [← sub_nonneg, hid]
+    exact mul_nonneg hfac hquad
   have hbracket : 0 ≤ z - u / 2 + v / 3 := by nlinarith
   have hround : 0 ≤ v * u * (z - u / 2 + v / 3) := by positivity
   have hid : sourceRoundingModel z u (z + v) v =
