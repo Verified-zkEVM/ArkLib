@@ -681,6 +681,29 @@ recovered in the tests.
 The source's lower bound `finrank_interpolationSpace_lowerBound` is in
 `Interpolation/Dimension.lean`. Deferred: the shell counts.
 
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/WeightedSupportCertificate.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Symbolic/ReceivedLine.lean` and `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Symbolic/ReceivedCurve.lean` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`SymbolicReceivedInterpolation.Certificate` is covered by
+`SymbolicReceivedCurve.Certificate` at `ℓ = 1` with
+`w i = receivedLine (f i) (g i)`; no separate certificate type is needed.
+`exists_weightedSupport_certificate_of_fixed_margin` and
+`exists_weightedSupport_certificate_of_rate` construct this certificate for finite point types.
+`exists_prescribed_symbolic_weightedSupport_certificate` drops the unused positive-message-
+dimension premise. The source strict coefficient-degree bound
+`coeff_interpolant_natDegree_lt` is covered by
+`SourceColumn.coeff_interpolant_natDegree_le` at cutoff `B - 1`. The weighted-support degree
+wrappers `totalJetDegree_interpolant_le_two_mul_sub_one`,
+`jetTotalDegree_map_interpolant_le_two_mul_sub_one`, `totalJetDegree_interpolant_le_pred`, and
+`jetTotalDegree_map_interpolant_lt` are covered by
+`SourceColumn.interpolant_totalJetDegree_le` and
+`SourceColumn.map_interpolant_jetTotalDegree_le`, together with
+`totalJetDegree_le_pred_of_weightedSupportEligible`. The unused
+`map_interpolant_mem_weightedSupportSpace` helper was not retained; its result follows from
+`SourceColumn.map_interpolant` and `interpolant_mem_weightedSupportSpace`.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/ChallengeDegree.lean`
 
 From the challenge-degree part of
@@ -784,9 +807,9 @@ The consolidated acceptance cases, including this port's coefficient-height, sup
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Symbolic/WeightedSupport.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
-`SourceColumn.ofExponent` and `SourceColumn.exponent_ofExponent` keep their names and move to the existing `Symbolic/SourceColumn` owner. `noBand_kernel_height_lt` → `kernel_height_lt_twelve_mul_of_margin`; the renamed theorem describes its margin hypothesis and height bound. The remaining declarations keep their names and mathematical statements, adapted to the current support API and local-constraint operator. The full symbolic matrix rank bound uses the existing `LinearMap.finrank_range_pi_le_sum`.
+`SourceColumn.ofExponent` and `SourceColumn.exponent_ofExponent` keep their names and move to the existing `Symbolic/SourceColumn` owner. `noBand_kernel_height_lt` → `kernel_height_lt_twelve_mul_of_margin`; the renamed theorem describes its margin hypothesis and height bound. `localConstraintBlock_rank_le_base_actual` gives the point-block rank bound for arbitrary received polynomials, and `receivedLine_block_rank_le_base_actual` is derived as its received-line specialization. The full symbolic matrix rank bound uses `Matrix.rank_prod_rows_le_sum`.
 
-The private `map_unscaledLocalImage` helper is subsumed by the existing `map_unscaledLocalSubstitution`. The private `localConstraintCoordinatesAt_monomial_map` helper is generalized to `map_localConstraintCoordinatesAt`, which handles every differential polynomial. No new generic matrix API is added: the block helper is local to the proof, and the rank bound uses the existing linear-map rank-sum result. `WeightedSupportIndex` is replaced by the subtype of the existing `weightedSupportExponents`; `to` appears only in overview prose and is not a declaration.
+The private `map_unscaledLocalImage` helper is subsumed by the existing `map_unscaledLocalSubstitution`. The private `localConstraintCoordinatesAt_monomial_map` helper is generalized to `map_localConstraintCoordinatesAt`, which handles every differential polynomial. `WeightedSupportIndex` is replaced by the subtype of the existing `weightedSupportExponents`; `to` appears only in overview prose and is not a declaration.
 
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/WeightedSupport/FloorTransfer.lean`
 
@@ -2950,6 +2973,13 @@ The row selector is extracted and generalized from
 replaces the span-induction argument inside
 `Matrix.exists_ne_zero_mulVec_eq_zero_natDegree_le_of_rank_eq` at the same revision, which was
 specialized to polynomial matrices, `Fin` indices, and the rational function field.
+
+## `ArkLib/ToMathlib/LinearAlgebra/Matrix/RowBlocks.lean`
+
+Ported from the matrix rank argument in `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Symbolic/WeightedSupport.lean` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`Matrix.rank_prod_rows_le_sum` is a new generic rank bound for matrices whose row indices are products. It bounds the full matrix rank by the sum of the ranks of the blocks at each first-coordinate index. The generic helper is newly added for the weighted-support curve rank proof; there is no source declaration to leave out.
 
 ## `ArkLib/ToMathlib/LinearAlgebra/Matrix/SupportedRows.lean`
 

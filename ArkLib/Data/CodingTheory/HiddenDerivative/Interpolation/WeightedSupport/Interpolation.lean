@@ -129,7 +129,7 @@ theorem exists_weightedSupport_interpolant_of_fixed_margin
   have hy₀ : ∀ u, WeightedSupportEligible D d W
       ((D : ℝ) * m * (1 + g)) u → u (some 0) ≤ ν := by
     intro u hu
-    exact y₀_le_two_mul_sub_one_of_eligible hD hg hm hu
+    exact y₀_le_two_mul_sub_one_of_eligible hD hg hu
   obtain ⟨v, _hv, _hkernel, _hdegree, _hheight, _hprimitive, hnozero,
       hconstraints, hsupport⟩ :=
     exists_symbolic_weightedSupport_interpolant_of_fixed_margin
