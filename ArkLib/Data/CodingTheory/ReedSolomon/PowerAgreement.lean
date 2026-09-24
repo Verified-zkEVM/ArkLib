@@ -81,6 +81,10 @@ interleaved statements are in `ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.
 * `ReedSolomon.hasExactPowerAgreement_id_iff_hasExactAgreement` and
   `ReedSolomon.uniformExactPowerAgreement_iff_uniformExactAgreement`: the polynomial predicates
   are the code-level predicates for `univariatePowersGenerator`.
+
+## References
+
+* [DKT26]
 -/
 
 @[expose] public section

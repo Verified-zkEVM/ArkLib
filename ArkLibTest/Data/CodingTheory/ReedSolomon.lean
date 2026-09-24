@@ -108,6 +108,20 @@ example :
 
 end PowerAgreementTest
 
+namespace FrobeniusPowerCoordinateTest
+
+-- Three values produce the sparse polynomial `1 + 2 * X^2 + 3 * X^4`.
+example :
+    (frobeniusPowerCoordinate 2 (![1, 2, 3] : Fin 3 → ℚ)).eval 2 = 57 ∧
+      (frobeniusPowerCoordinate 2 (![1, 2, 3] : Fin 3 → ℚ)).natDegree ≤ 4 := by
+  constructor
+  · norm_num [frobeniusPowerCoordinate_eval, Fin.sum_univ_succ]
+  · simpa using
+      (frobeniusPowerCoordinate_natDegree_le (s := 2)
+        (values := (![1, 2, 3] : Fin 3 → ℚ)))
+
+end FrobeniusPowerCoordinateTest
+
 namespace ReedSolomonAgreementAcceptance
 
 noncomputable section
