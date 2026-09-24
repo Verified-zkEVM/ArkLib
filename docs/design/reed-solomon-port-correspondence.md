@@ -1758,6 +1758,12 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/Fini
 
 `exists_field_bounded_capacity_list` keeps its name. It drops the unused assumptions `delta < 1` and `A ≤ 2 * n`, and states the derivative order and multiplicity through the canonical capacity parameter definitions. No declarations were left unported.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/GeometricBound.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/GeometricBound.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`prescribed_geometric_finite_list_bound` and `prescribed_geometric_close_list_bound` keep their names. They use the current prescribed weighted-support parameters and symbolic certificate APIs to give geometric bounds for finite sublists and the complete close-polynomial set. The geometric ratio/counting lemmas, parameters, certificate, and characteristic/cast facts are reused from their current owners. No public source declaration from this module was omitted.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/WeightedSupportInterpolant.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/WeightedSupportInterpolant.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
