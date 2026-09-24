@@ -129,6 +129,10 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation
 
 `exists_finite_firstOrder_symbolic_certificate_of_heightSlotCount` keeps its name, assumptions, and conclusion. It specializes the existing finite curve-certificate constructor at curve degree one and transfers specialization soundness to affine combinations of two received words while preserving the support, coefficient-height, primitivity, and local-constraint fields. The received-line degree bound uses `natDegree_receivedLine_le` in the destination API. No declarations are omitted.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/FirstOrder/CurveTransfer.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`exists_exceptional_of_regular_stage_bounds_of_factors` keeps its name. The theorem combines regular-stage exceptional sets into a finite set bounded by the first-order curve envelope. It drops the unused assumptions `0 < k` and `k ≤ L`. The exponent-specialized `exists_exceptional_of_regular_stage_bounds_of_exponent` was not ported because it is a direct-ratio specialization of the factors theorem, and the ratio lower bound follows from the existing incidence estimate.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder/CurveHeightCounting.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/FirstOrder/CurveHeightCounting.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -1949,6 +1953,16 @@ Merges `FirstOrder/Squarefree/Bounds.lean` and `FirstOrder/Squarefree/SingularTa
 `r ≤ j` and `A.natDegree = r`, and `singularTail_map_eq_zero_of_common_root` drops both `IsDomain`
 assumptions.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/Incidence.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/Incidence.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Renamed `sourceChartHighCuts` to `jointTaylorHighCutList`, `symbolicSourceNumerator_mem_sourceChartHighCuts` to `jointCommonTaylorNumerator_mem_jointTaylorHighCutList`, `sourceChartPairLocus` to `admissibleChartPairGraphLocus`, `principalOpen_subset_sourceChartPairLocus` to `principalOpen_subset_admissibleChartPairGraphLocus`, `finite_sourceChart_points_off_pairs_card_le` to `finite_regularJointTaylorChartPoints_off_admissiblePairGraphs_card_le`, and `finite_sourceChart_points_off_pairs_card_le_of_source` to `finite_regularJointTaylorChartPoints_off_admissiblePairGraphs_card_le_of_jetDegree`.
+
+The graph-locus inclusion uses `Set.ncard` cut counts and the explicit exponent `2 * K`. The finite incidence bound uses `L ≤ A` and `A - L + 1 ≤ n`, counts agreement indices with `Set.ncard`, and drops the unnecessary positive cut-degree premise. Its specialization uses `jetTotalDegree` and `CoeffNatDegreeLE` and drops the positive jet-degree premise. No public source declarations were omitted; finite index-set encodings are expressed directly with `Set.ncard`.
+
+The matching acceptance module `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart.lean` replaces the high-cut membership example with two concrete singleton-set examples, one for each finite incidence bound.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/PairCounting.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/PairCounting.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -3083,6 +3097,10 @@ ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d, which were stated over
 * The ceiling estimate inside `localRank_ceilDiv_le` is `Nat.cast_ceilDiv_le_div_add_one`.
 * The exponential envelope inside `localRank_weightedHigherJetCount_le_exp` is
   `Real.add_pow_le_pow_mul_exp`.
+
+Ported from `ArkLib/ToMathlib/Analysis/SpecificLimits/GeometricBounds.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Renamed `geometric_ratio_le` to `agreementGap_geometricRatio_le` and `geometric_count_le_manuscript_bound` to `geometricCount_le_of_agreementGap`. Generalized both conclusions from `ℝ` to any linearly ordered field; the count theorem retains its rational count premise. The characteristic-based binomial pivot condition is covered by `PolynomialDifferential.natCast_choose_ne_zero_of_ringChar`, specialized at each index and combined with binomial symmetry, so it was not ported. No Reed–Solomon wrapper was added because the numerical statements have no Reed–Solomon-specific data.
 
 ## `ArkLib/ToMathlib/BigOperators/Intervals.lean`
 
@@ -4498,6 +4516,11 @@ A `ZMod 5` shifted-surplus acceptance example uses `n = 2`, two distinct centers
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/FirstOrder/Profile.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 Acceptance cases check a concrete profile with support dimension `7`, local rank `3`, height slots `11`, and shifted row bound `10`. They verify the support-cardinality and column-weight identities and construct symbolic line and polynomial-curve certificates over `ZMod 5`.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/FirstOrder/CurveTransfer.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+An acceptance example uses the rate certificate to obtain a curve certificate, constructs a separant chain, and shows that any agreeing degree-<2 candidate for the two-point zero word is zero. It then selects a challenge outside the finite exceptional set in an infinite extension field.
+
 ## `ArkLibTest/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder.lean`
 
 Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/FirstOrder.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -4630,6 +4653,12 @@ event sum and the uniform-sampling statements. No public ArkLib declaration is a
 compatibility calculation is covered by VCVio's `probOutput_true_eq_probEvent` followed by
 `probEvent_eq_tsum_indicator` or its finite variants, so ArkLib adds no wrapper. The three-sample
 PMF computation is not added, and `$ᵖ` plus `Pr_{…}[…]` remain retired syntax.
+
+## `ArkLibTest/ToMathlib/Analysis/SpecificLimits.lean`
+
+Ported from `ArkLib/ToMathlib/Analysis/SpecificLimits/GeometricBounds.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Acceptance examples check the ratio bound at `n = K = A = 2`, `k = 1`, `ν = 2`, and `δ = 1/2`, and the count bound for `L = 20`, `m = d = 1`.
 
 ## `ArkLibTest/ToMathlib/MvPolynomial.lean`
 

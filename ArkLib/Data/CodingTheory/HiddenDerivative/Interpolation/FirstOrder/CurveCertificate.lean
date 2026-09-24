@@ -8,6 +8,7 @@ module
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.Symbolic
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.CurveHeightCounting
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.ReceivedCurve
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.StageSum
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Global.Multiplicity
 
 /-!
@@ -29,6 +30,8 @@ constraint hypotheses.
   vanishing after specialization at sufficiently many agreeing points.
 * `FirstOrderSymbolicCertificate.toCurve`: views a line certificate as a degree-one curve
   certificate.
+* `FirstOrderCurveCertificate.exists_exceptional_of_regular_stage_bounds_of_factors`: combines
+  per-stage regularity bounds into one exceptional set bounded by the curve envelope.
 * `exists_finite_firstOrder_curve_certificate_of_heightSlotCount`: a strict shifted-slot surplus
   constructs a certificate with bounded coefficient degree.
 * `exists_finite_firstOrder_symbolic_certificate_of_heightSlotCount`: a strict shifted-slot
@@ -219,6 +222,99 @@ theorem exists_finite_firstOrder_symbolic_certificate_of_heightSlotCount
     Polynomial.eval₂ ι z (receivedLine (f i) (g i))
   simp only [receivedLine, Polynomial.eval₂_add, Polynomial.eval₂_C,
     Polynomial.eval₂_mul, Polynomial.eval₂_X]
+
+namespace FirstOrderCurveCertificate
+
+open PolynomialDifferential.SeparantChain
+
+universe u
+
+variable {F E : Type u} [Field F] [Field E] {D A m M μ k h n N : ℕ}
+  {domain : Fin n ↪ F} {w : Fin n → F[X]} {columns : Fin N → SourceColumn 1}
+
+/-- Uniform exceptional sets for regular stages combine into a single set bounded by the
+first-order curve envelope. -/
+theorem exists_exceptional_of_regular_stage_bounds_of_factors
+    (cert : FirstOrderCurveCertificate.{u, u} D A m M μ k h domain w columns)
+    {stages : List (SeparantStage F[X] 1)} {terminal : DifferentialPolynomial F[X] 1}
+    (hc : SeparantChain cert.Q stages terminal) (ι : F →+* E)
+    (K L ell τ : ℕ) (η : ℚ) (hη : 1 ≤ η)
+    (hK : 2 ≤ K) (hLA : L ≤ A) (hAn : A ≤ n)
+    (conclusion : E → E[X] → Prop)
+    (hregular : ∀ stage ∈ stages, ∃ exceptional : Finset E,
+      (exceptional.card : ℚ) ≤
+          firstOrderCurveStageCharge n K k L A ell h stage (τ := τ) (η := η) ∧
+        ∀ z ∉ exceptional, ∀ (indices : Finset (Fin n)) (P : E[X]),
+          P.degree < k → A ≤ indices.card →
+          (∀ i ∈ indices, P.eval (ι (domain i)) = (w i).eval₂ ι z) →
+          differentialSpecialization
+            (MvPolynomial.map (Polynomial.eval₂RingHom ι z) stage.1) P = 0 →
+          differentialSpecialization
+            (separant (MvPolynomial.map (Polynomial.eval₂RingHom ι z) stage.1)
+              stage.2) P ≠ 0 → conclusion z P) :
+    ∃ exceptional : Finset E,
+      (exceptional.card : ℚ) ≤
+          firstOrderCurveBound n K k L A μ M ell h (τ := τ) (η := η) ∧
+        ∀ z ∉ exceptional, ∀ (indices : Finset (Fin n)) (P : E[X]),
+          P.degree < k → A ≤ indices.card →
+          (∀ i ∈ indices, P.eval (ι (domain i)) = (w i).eval₂ ι z) → conclusion z P := by
+  classical
+  obtain ⟨base, hbase, hcover⟩ :=
+    hc.exists_finset_regular_stage cert.challengeDegree_le ι ι.injective
+  let ex : SeparantStage F[X] 1 → Finset E := fun stage ↦
+    if hs : stage ∈ stages then (hregular stage hs).choose else ∅
+  have hex (stage : SeparantStage F[X] 1) (hs : stage ∈ stages) :=
+    (hregular stage hs).choose_spec
+  have hex_eq (stage : SeparantStage F[X] 1) (hs : stage ∈ stages) :
+      ex stage = (hregular stage hs).choose := by simp [ex, hs]
+  have hμ : jetTotalDegree cert.Q ≤ μ := by
+    rw [jetTotalDegree_le_iff]
+    exact cert.totalJetDegree_le
+  have hM : jetDegree cert.Q 1 ≤ M := by
+    rw [jetDegree, MvPolynomial.degreeOf_le_iff]
+    intro u hu
+    have hfirst : u (some (⟨1, by omega⟩ : Fin 2)) ≤ M := by
+      simpa only [firstJetExponent_eq_coordinates Nat.one_pos,
+        jetExponentCoordinatesEquiv_apply] using cert.firstJetDegree_le u hu
+    have hcoord : (⟨1, by omega⟩ : Fin 2) = 1 := Fin.ext rfl
+    simpa only [hcoord] using hfirst
+  have hnodup : stages.Nodup := by
+    exact hc.pairwise_stages.imp (fun hab heq ↦ by
+      cases heq
+      exact (lt_irrefl _ hab.1))
+  refine ⟨base ∪ stages.toFinset.biUnion ex, ?_, ?_⟩
+  · calc
+      ((base ∪ stages.toFinset.biUnion ex).card : ℚ) ≤
+          (base.card : ℚ) + ((stages.toFinset.biUnion ex).card : ℚ) := by
+        exact_mod_cast Finset.card_union_le base (stages.toFinset.biUnion ex)
+      _ ≤ (h : ℚ) + ∑ stage ∈ stages.toFinset, ((ex stage).card : ℚ) := by
+        apply add_le_add
+        · exact_mod_cast hbase
+        · exact_mod_cast Finset.card_biUnion_le
+      _ ≤ (h : ℚ) + ∑ stage ∈ stages.toFinset,
+          firstOrderCurveStageCharge n K k L A ell h stage (τ := τ) (η := η) := by
+        apply add_le_add_right
+        apply Finset.sum_le_sum
+        intro stage hs
+        rw [hex_eq stage (List.mem_toFinset.mp hs)]
+        exact (hex stage (List.mem_toFinset.mp hs)).1
+      _ = (h : ℚ) + (stages.map (fun stage ↦
+          firstOrderCurveStageCharge n K k L A ell h stage
+            (τ := τ) (η := η))).sum := by
+        rw [List.sum_toFinset _ hnodup]
+      _ ≤ _ := hc.sum_firstOrderCurveStageCharge_add_height_le_of_factors τ η hη hμ hM
+        hK hLA hAn
+  · intro z hz indices P hdegree hagree hvalues
+    have hzbase : z ∉ base := fun hm ↦ hz (Finset.mem_union_left _ hm)
+    have hroot := (cert.specialization_sound (E := E) ι z).2 indices P hdegree hagree hvalues
+    obtain ⟨stage, hs, hsol, hsep⟩ := hcover z hzbase P hroot
+    apply (hex stage hs).2 z ?_ indices P hdegree hagree hvalues hsol hsep
+    intro hm
+    apply hz (Finset.mem_union_right _ (Finset.mem_biUnion.mpr
+      ⟨stage, List.mem_toFinset.mpr hs, ?_⟩))
+    rwa [hex_eq stage hs]
+
+end FirstOrderCurveCertificate
 
 end
 
