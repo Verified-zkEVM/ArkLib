@@ -32,7 +32,7 @@ parameters provide the surplus for the certificate construction.
 
 ## References
 
-* [DKTZ26, Section 5.1, Corollary 5.3]
+* [DKTZ26], Section 5.1, Corollary 5.3
 -/
 
 @[expose] public section

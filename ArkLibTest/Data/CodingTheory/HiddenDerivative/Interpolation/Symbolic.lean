@@ -251,6 +251,23 @@ example :
     (fun _ : Fin 1 => 0) (fun _ : Fin 1 => Polynomial.X ^ 2 + 1)
     twoPointWeightedColumns twoPointWeightedColumns_eligible 0
 
+/-- The quadratic curve's concrete point block has rank at most two. -/
+example :
+    Matrix.rank (fun row j => algebraMap ℚ[X] (RatFunc ℚ)
+      (localConstraintMatrix 1 (fun _ : Fin 1 => Polynomial.C (0 : ℚ))
+        (fun _ => Polynomial.X ^ 2 + 1) twoPointWeightedColumns (0, row) j) :
+        Matrix (LowContactIndex 1 1)
+          (Fin (Fintype.card
+            (↥(weightedSupportExponents 1 1 0 2 Nat.one_pos)))) (RatFunc ℚ)) ≤ 2 := by
+  calc
+    _ ≤ Module.finrank ℚ (LinearMap.range
+        (weightedSupportLocalConstraint (R := ℚ) (d := 1) (W := 0) (L := 2) 1
+          Nat.one_pos 0 0)) := by
+      exact localConstraintBlock_rank_le_base_actual Nat.one_pos
+        (fun _ : Fin 1 => 0) (fun _ => Polynomial.X ^ 2 + 1)
+        twoPointWeightedColumns twoPointWeightedColumns_eligible 0
+    _ ≤ 2 := onePointLocalRank_le_two
+
 /-- A quadratic received curve obeys the concrete weighted-support rank bound. -/
 example :
     ((localConstraintMatrix 1 (fun _ : Fin 1 => Polynomial.C (0 : ℚ))
