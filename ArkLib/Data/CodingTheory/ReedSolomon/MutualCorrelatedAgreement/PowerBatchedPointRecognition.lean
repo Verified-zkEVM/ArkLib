@@ -7,13 +7,14 @@ module
 
 public import ArkLib.Data.CodingTheory.ReedSolomon.PowerAgreement
 public import ArkLib.Data.Polynomial.Differential.TaylorChart
+public import ArkLib.ToMathlib.Polynomial.SparseContraction
 /-!
-# Symbolic point recognition for power-batched polynomial graphs
+# Point recognition for power-batched polynomial graphs
 
-A sample of agreement cuts determines a tuple of base-field polynomials. At every regular
-specialization of a symbolic Taylor chart satisfying the high cuts and sample equations, the
-reconstructed polynomial is the power-batched polynomial from that tuple. The result also
-identifies its initial jet and cleared Taylor coefficients.
+A sample of agreement positions determines a tuple of base-field polynomials. Sparse Frobenius
+pullbacks agreeing with the associated power-batched word on the sample are recognized from their
+values at roots of the evaluation points. Symbolic Taylor charts also identify the initial jet and
+cleared Taylor coefficients of the reconstructed polynomial.
 
 ## Main statements
 
@@ -22,6 +23,8 @@ identifies its initial jet and cleared Taylor coefficients.
   finite coordinate type.
 * `exists_exceptional_exactPowerAgreement` and `exists_exceptional_exactPowerAgreement_family`:
   exact power agreement outside a bounded exceptional set for a tuple or a finite family.
+* `exists_frobeniusPowerGraph_polynomials_of_sample`: a sample recognizes sparse Frobenius
+  pullbacks of power-batched polynomial graphs.
 * `powerBatchedJetGraph` and `polynomialJet_powerBatched`: initial jets commute with power
   batching.
 * `exists_polynomialGraph_of_symbolic_sample_of_exponent`: symbolic Taylor cuts recognize the
@@ -120,6 +123,44 @@ theorem exists_exceptional_exactPowerAgreement_family [Fintype α] (domain : α 
   have hset := hgood (mapTuple P) (Finset.mem_image.mpr ⟨P, hP, rfl⟩) z hz
   simpa only [domainE, wordsE, familyE, mapTuple] using
     hset.trans (commonCurveAgreementSet_map domain w P iota)
+
+/-- A sample of `k` positions recognizes a sparse Frobenius pullback of the power-batched
+polynomial graph. The root and value conditions are needed only on the sample. -/
+theorem exists_frobeniusPowerGraph_polynomials_of_sample
+    (domain : α ↪ F) (w : Fin (ℓ + 1) → α → F)
+    (sample : Finset α) (hsample : sample.card = k) :
+    ∃ P : Fin (ℓ + 1) → F[X], (∀ t, (P t).degree < k) ∧
+      (∀ i ∈ sample, ∀ t, (P t).eval (domain i) = w t i) ∧
+      ∀ {E : Type*} [Field E] (ι : F →+* E) (p e : ℕ) [ExpChar E p]
+        (roots : α → E) (center z : E) (Q : E[X]),
+        (∀ i ∈ sample, roots i ^ (p ^ e) = ι (domain i)) →
+        Q.degree < ↑(p ^ e * k) →
+        (∀ j : ℕ, ¬p ^ e ∣ j → (taylor center Q).coeff j = 0) →
+        (∀ i ∈ sample,
+          Q.eval (roots i) = ∑ t, z ^ (p ^ e * t.val) * ι (w t i)) →
+        Q = expand E (p ^ e)
+            (powerBatchedPolynomial (fun t ↦ (P t).map ι) (z ^ (p ^ e))) ∧
+          Q.eval center =
+            (powerBatchedPolynomial (fun t ↦ (P t).map ι)
+              (z ^ (p ^ e))).eval (center ^ (p ^ e)) := by
+  obtain ⟨P, hPdegree, hPsample, hrecognize⟩ :=
+    exists_polynomialGraph_of_sample domain w sample hsample
+  refine ⟨P, hPdegree, hPsample, ?_⟩
+  intro E _ ι p e _ roots center z Q hroots hdegree hsparse hagree
+  obtain ⟨R, ⟨hRdegree, hRQ⟩, _⟩ :=
+    existsUnique_expand_of_sparse_taylor p e k Q center hsparse hdegree
+  have hRagree : ∀ i ∈ sample,
+      R.eval (domain.trans ⟨ι, ι.injective⟩ i) =
+        ∑ t, (z ^ (p ^ e)) ^ t.val * ι (w t i) := by
+    intro i hi
+    have hiAgree := hagree i hi
+    rw [← hRQ, expand_eval, hroots i hi] at hiAgree
+    simpa only [Function.Embedding.trans_apply, Function.Embedding.coeFn_mk, pow_mul]
+      using hiAgree
+  have hRidentity := hrecognize ι (z ^ (p ^ e)) R hRdegree hRagree
+  constructor
+  · rw [← hRQ, hRidentity]
+  · rw [← hRQ, expand_eval, hRidentity]
 
 /-- The polynomial initial-jet graph associated with a tuple of messages. -/
 def powerBatchedJetGraph (center : E) (P : Fin (ℓ + 1) → E[X]) :
