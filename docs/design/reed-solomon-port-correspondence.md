@@ -1923,6 +1923,18 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Poly
 
 `geometricTransferIncidenceProduct` and `geometricTransferIncidenceProduct_zero` were not ported because `dimensionSensitiveIncidenceProduct` covers them at degree one and its zero case. Source `ExtensionDescent` functionality is supplied by `HasExactPowerAgreement.descend` in `PowerAgreement.lean`. Acceptance cases in `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement.lean` check geometric transfer for a retained zero tuple and identity-map descent.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedGraphCounting.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/GraphCounting.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`admissibleChartTupleFamilyAtExponent`, `mem_admissibleChartTupleFamilyAtExponent_iff`, `admissibleChartTuples_card_le_of_exponent`, and `admissibleChartTupleFamilyAtExponent_card_le` retain their names and statements. The family characterization and count use the generalized tuple-family API.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedIncidence.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/Incidence.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`ReedSolomon.sourceCurveTupleLocus` and `ReedSolomon.sourceCurveTupleLocus_of_exponent` become `ReedSolomon.admissibleChartTupleGraphLocus`. `ReedSolomon.principalOpen_subset_sourceCurveTupleLocus_of_exponent` becomes `ReedSolomon.principalOpen_subset_admissibleChartTupleGraphLocus`, and `ReedSolomon.finite_sourceCurve_points_off_tuples_card_le` becomes `ReedSolomon.finite_admissibleChartTupleIncidence_off_graphs`, under the current Taylor-chart and graph-locus API. The high-cut helper predicates and their membership wrappers are not ported because the statements use explicit high-cut predicates directly. `sourceCurveTupleLocus_of_exponent_two_mul_eq` is not ported because the finite incidence theorem uses exponent `2 * K` directly.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedPointRecognition.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/PointRecognition.lean` at ArkLib revision
@@ -2061,6 +2073,10 @@ The code-level characterizations are new. They let the counting and transfer the
 The interleaved statements are in `ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.PowerAgreement`.
 Scalar providers of `UniformExactPowerAgreement` (list-decoding and curve-counting results) are
 not ported here.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/GraphCounting.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`polynomialTupleFamily`, `mem_polynomialTupleFamily_of_commonAgreement`, `polynomialTupleFamily_card_le`, and `mem_polynomialTupleFamily_iff` retain their names and are generalized from `Fin n` to finite embedded coordinate types.
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/PowerAgreement/ConstantCode.lean`
 
@@ -3656,6 +3672,12 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Poly
 
 `challengeHeightLE_clearedSubstitution` becomes `CoeffNatDegreeLE.clearedSubstitution`. The generic theorem takes an independent coefficient bound `a`, concludes `H * h + a`, and restricts the coefficient bound to `Q.support`, weaker than the source's all-coefficient hypothesis. The source `ChallengeHeightLE` predicate and its `mono`, `const`, `mul_bound`, `pow_bound`, and `sum_bound` lemmas are represented by `CoeffNatDegreeLE` and its existing closure lemmas. The source `prod_bound` helper is not promoted because no public result in this unit needs it; the finite-product estimate is handled internally. The private copy in `TaylorBidegree.lean` is subsumed and needs no separate entry.
 
+## `ArkLib/ToMathlib/MvPolynomial/PowerMomentGeometry.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/Incidence.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`ReedSolomon.powerMomentWeight`, `powerMomentMap_weightedTotalDegree_le`, `powerMomentIdeal_hilbertFunction_le_weightedFinrank`, `powerMomentWeight_exponent_ncard_le`, `powerMomentIdeal_hilbertFunction_le`, `powerMomentIdeal_affineDegree_le`, `powerMomentPoint`, `powerMomentSourcePoint`, `powerMomentSourcePoint_powerMomentPoint`, `aeval_powerMomentPoint`, `powerMomentPoint_mem_zeroLocus`, and `aeval_eq_aeval_powerMomentMap_of_mem_zeroLocus` move into the `MvPolynomial` namespace under their destination names, using the existing `PowerMomentIndex` API. `ReedSolomon.powerMoment_incidence_off_source_excluded` becomes `MvPolynomial.powerMomentMap_incidence_off_excluded` and is generalized. The Hilbert-polynomial degree results are not ported because existing generic affine-Hilbert-polynomial theorems cover them.
+
 ## `ArkLib/ToMathlib/MvPolynomial/PowerMomentLift.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/Degree.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -4435,6 +4457,10 @@ main, where #1008 wrote `[P.IsPrime]`. The private `sub_mul_sub_add_one_le` move
 `card_le_sum_of_forall_mem_zeroLocus`; and
 `card_le_of_agreement_off_excluded_sharp_of_iteratedRetainedCutFamily` is the iterated incidence
 bound with threshold `fun _ ↦ L` and `D = d`.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/Incidence.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`ReedSolomon.primeBaseHypersurface_incidence_off_excluded` is generalized as `MvPolynomial.card_le_of_agreement_off_excluded_of_principalCut`.
 
 ## `ArkLib/ToMathlib/RingTheory/Nullstellensatz/BidegreeIncidence.lean`
 
