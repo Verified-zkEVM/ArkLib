@@ -136,7 +136,7 @@ theorem partition_quadratic_rate_lower {n L deg : ℕ} {rate level : ℝ} (hD : 
     by_contra hn
     have hn0 : (n : ℝ) = 0 := le_antisymm (le_of_not_gt hn) (Nat.cast_nonneg n)
     rw [hn0, mul_zero] at hupper
-    linarith
+    exact (not_le_of_gt hDR) hupper
   calc
     (n : ℝ) / (2 * rate) * (max (level - rate * deg) 0) ^ 2 ≤
         (D : ℝ) / 2 * (max ((L : ℝ) / D - deg) 0) ^ 2 :=

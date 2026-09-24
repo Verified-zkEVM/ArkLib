@@ -203,16 +203,41 @@ theorem prescribed_weightedSupport_margin {F : Type*} [Field F]
       hHlo le_rfl
   obtain ⟨hm, hW, hmean, hs, hf⟩ :=
     prescribed_dimension_inputs δ _ H d hδ hδmax hρ hρhi (by omega) hHlo
-  have hHsq := Real.sq_le_div_hundred_of_le_log_add_three_fifths (by linarith) hH.le
-    (Real.harmonic_pred_lt_log_add_three_fifths d).le
-  have hHd : H ≤ d := by nlinarith
+  have hHlog : H ≤ Real.log d + 3 / 5 := (Real.harmonic_pred_lt_log_add_three_fifths d).le
+  have hHupper : H ≤ (19 / 365) * Real.sqrt d :=
+    hHlog.trans (Real.log_add_three_fifths_le_nineteen_div_365_mul_sqrt (by exact_mod_cast hd))
+  have hdsqrt : Real.sqrt (d : ℝ) ≤ d :=
+    Real.sqrt_le_self_iff.mpr (Or.inr (by exact_mod_cast (show 1 ≤ d by omega)))
+  have hcoeffsqrt : (19 / 365 : ℝ) * Real.sqrt d ≤ Real.sqrt d := by
+    simpa only [one_mul] using
+      (mul_le_mul_of_nonneg_right (by norm_num : (19 / 365 : ℝ) ≤ 1) (Real.sqrt_nonneg _))
+  have hHd : H ≤ d := hHupper.trans (hcoeffsqrt.trans hdsqrt)
   have hsize : 100 * (d : ℝ) ^ 2 * H ≤ m := Nat.le_ceil _
   have hgm : 270 * d * H ≤ g * m := by
-    have h1 := mul_le_mul_of_nonneg_left hsize hg.le
-    have h2 := mul_le_mul_of_nonneg_left hgH (show 0 ≤ 100 * (d : ℝ) ^ 2 by positivity)
-    have h3 := mul_le_mul_of_nonneg_left hHd (show 0 ≤ 270 * (d : ℝ) by positivity)
-    norm_num [xi] at h2
-    nlinarith
+    have hsize' : 100 * (d : ℝ) ^ 2 * (g * H) ≤ g * m := by
+      calc
+        100 * (d : ℝ) ^ 2 * (g * H) = g * (100 * (d : ℝ) ^ 2 * H) := by ring
+        _ ≤ g * m := mul_le_mul_of_nonneg_left hsize hg.le
+    have hcoef : (270 : ℝ) ≤ 100 * (g * H) := by
+      have : (27 / 10 : ℝ) ≤ g * H := by simpa [xi] using hgH
+      calc
+        270 = 100 * (27 / 10 : ℝ) := by norm_num
+        _ ≤ 100 * (g * H) := mul_le_mul_of_nonneg_left this (by norm_num)
+    have hdegree : 270 * (d : ℝ) * H ≤ 270 * (d : ℝ) ^ 2 := by
+      have hmul := mul_le_mul_of_nonneg_left hHd (show 0 ≤ (d : ℝ) by positivity)
+      calc
+        270 * (d : ℝ) * H = 270 * ((d : ℝ) * H) := by ring
+        _ ≤ 270 * ((d : ℝ) * (d : ℝ)) := mul_le_mul_of_nonneg_left hmul (by norm_num)
+        _ = 270 * (d : ℝ) ^ 2 := by ring
+    calc
+      270 * (d : ℝ) * H ≤ 270 * (d : ℝ) ^ 2 := hdegree
+      _ ≤ 100 * (d : ℝ) ^ 2 * (g * H) := by
+        calc
+          270 * (d : ℝ) ^ 2 = 270 * (d : ℝ) ^ 2 := rfl
+          _ ≤ 100 * (g * H) * (d : ℝ) ^ 2 :=
+            mul_le_mul_of_nonneg_right hcoef (sq_nonneg _)
+          _ = 100 * (d : ℝ) ^ 2 * (g * H) := by ring
+      _ ≤ g * m := hsize'
   have hrank := finrank_weightedSupportLocalConstraint_lt_prescribed g d D hg hd hD hHlower hgH
     hnorm hgm (0 : F) 0
   exact weightedSupport_margin_of_normalized_rank δ n D d m W hδ hδmax hn hD (by omega) hm hW
