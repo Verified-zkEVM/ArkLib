@@ -26,6 +26,7 @@ the high-cut incidence bound gives a sharp count for finite families of admissib
   identities and common-agreement condition.
 * `IsAdmissibleChartPair.specialize` identifies the specialized pair with the rational Taylor
   reconstruction at every regular challenge.
+* `eval_chartPairPullback_joint` evaluates a chart pullback at the corresponding joint chart point.
 * `admissibleChartPairs_card_le` and `admissibleChartPairFamily_card_le` give the ordinary
   incidence bound. Their `_sharp` counterparts use the numerator `n - k + 1`; all four give a
   singleton bound at `k = 0`.
@@ -73,7 +74,9 @@ structure IsAdmissibleChartPair [DecidableEq F] (domain : Fin n ↪ F) (f g : Fi
       (jointTaylorReconstructionError center Q (2 * K) (pair.1.map iota)
         (pair.2.map iota) l) = 0
 
-private theorem eval_chartPairPullback_joint (iota : F →+* E) (center z : E)
+/-- Evaluating a chart pullback at a challenge is evaluation at the corresponding joint chart
+point. -/
+theorem eval_chartPairPullback_joint (iota : F →+* E) (center z : E)
     (pair : F[X] × F[X]) (p : MvPolynomial (Option (Fin (r + 1))) E) :
     (chartPairPullback iota center pair p).eval z =
       aeval (fun j ↦ (affinePairCurve (r := r) center
