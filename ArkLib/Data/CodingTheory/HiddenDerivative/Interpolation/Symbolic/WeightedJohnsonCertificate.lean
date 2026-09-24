@@ -201,12 +201,10 @@ theorem weightedJohnsonFinMatrix_eq_zero_of_grade_lt {F : Type*} [Field F] {n : 
         ((Fintype.equivFin (WeightedJohnsonRowIndex n m B)).symm i).2) j
   simpa [weightedJohnsonFinRowWeight] using hgrade
 
-/-- Exact finite interpolation slot surplus constructs a primitive ordinary certificate.
-
-The caller supplies only the explicit finite count inequality. The conclusion keeps every
-agreement subset of size at least `A`, remains nonzero after every field extension and
-challenge specialization, and has the full agreement-set recovery shape packaged by
-`JohnsonSymbolicCertificate`. -/
+/-- Under `1 ≤ D`, `D * B < m * A`, `k ≤ D + 1`, and a strict finite slot surplus, this theorem
+constructs a primitive symbolic certificate. It retains every agreement subset of size at least
+`A`, remains nonzero after every field extension and challenge specialization, and has the full
+agreement-set recovery shape packaged by `JohnsonSymbolicCertificate`. -/
 theorem exists_weighted_johnson_symbolic_certificate
     {F : Type*} [Field F] {n D A m B k h : ℕ}
     (hD : 1 ≤ D) (hcut : D * B < m * A) (hkD : k ≤ D + 1)
@@ -219,63 +217,26 @@ theorem exists_weighted_johnson_symbolic_certificate
       centers f g) := by
   let columns := johnsonColumns (m * A) D B
   let w : Fin n → F[X] := fun i ↦ receivedLine (f i) (g i)
-  have hDpos : 0 < D := Nat.zero_lt_of_lt hD
   have hbudget : 0 < m * A := lt_of_le_of_lt (Nat.zero_le (D * B)) hcut
-  obtain ⟨v, _hv, hvdegree, hprimitive, hnonzero, hconstraints⟩ :=
-    exists_primitive_interpolant_of_shifted_height
-      m 1 h (fun i ↦ centers i) w columns
-      (johnsonColumns_injective (m * A) D B)
-      (weightedJohnsonFinMatrix (m * A) D B m (fun i ↦ centers i) w)
-      (weightedJohnsonFinRowWeight m B)
-      (weightedJohnsonFinMatrix_kernel_iff (m * A) D B m (fun i ↦ centers i) w)
-      (by
-        intro i j hweight
-        have hh := weightedJohnsonFinMatrix_degree_le (m * A) D B m
-          (fun i ↦ centers i) w (fun i ↦ natDegree_receivedLine_le (f i) (g i))
-          i j
-        simpa only [columns, one_mul, johnsonColumns_totalJetDegree] using hh)
-      (by
-        intro i j hweight
-        apply weightedJohnsonFinMatrix_eq_zero_of_grade_lt (m * A) D B m
-          (fun i ↦ centers i) w i j
-        simpa only [columns, one_mul, johnsonColumns_totalJetDegree] using hweight)
-      (by
-        rw [sum_weightedJohnsonFinRowWeight_slots]
-        simpa only [columns, one_mul, johnsonColumns_totalJetDegree,
-          sum_johnsonColumns_slots] using hsurplus)
-  let Q : DifferentialPolynomial F[X] 0 := interpolant columns v
-  have hvheight : ∀ j, (v j).natDegree ≤ h := by
-    intro j
-    by_cases hz : v j = 0
-    · simp [hz]
-    · have hlt : (v j).natDegree < h + 1 - (columns j).y₀ := by
-        apply (Polynomial.natDegree_lt_iff_degree_lt hz).mpr
-        simpa only [columns, one_mul, johnsonColumns_totalJetDegree] using
-          Polynomial.mem_degreeLT.mp (hvdegree j)
-      omega
-  have hQsupport : Q ∈
-      weightedSupportSpace F[X] D 0 0 (((m * A : ℕ) : ℝ)) hDpos := by
-    exact interpolant_mem_weightedSupportSpace hDpos columns
-      (fun j ↦ johnsonColumns_weightedSupportEligible j) v
-  refine ⟨{
-    coefficients := v
-    Q := Q
-    eq_interpolant := rfl
-    primitiveCoefficients := hprimitive
-    challengeDegree_le := SourceColumn.coeff_interpolant_natDegree_le columns
-      (johnsonColumns_injective (m * A) D B) v hvheight
-    support := fun u hu ↦ mem_weightedSupportSpace_iff.mp hQsupport u hu
-    jetDegree_le := johnsonInterpolant_jetDegree_le v
-    localConstraints := hconstraints
-    specialization_sound := ?_ }⟩
-  intro E _ ι z
-  refine ⟨hnonzero ι z, ?_⟩
-  intro indices P hPdegree hcard hagreements
-  apply differentialSpecialization_map_interpolant_eq_zero_of_degree_lt
-    hDpos (by exact_mod_cast (Nat.le_refl (m * A))) hbudget hkD
-    (fun i ↦ centers i) f g columns
-    (fun j ↦ johnsonColumns_weightedSupportEligible j) v hconstraints ι z indices P
-    hPdegree centers.injective.injOn hcard hagreements
+  exact exists_johnson_symbolic_certificate_of_shifted_surplus hD (Nat.le_refl (m * A))
+    hbudget hkD centers f g (weightedJohnsonFinMatrix (m * A) D B m (fun i ↦ centers i) w)
+    (weightedJohnsonFinRowWeight m B)
+    (fun v hv ↦
+      (weightedJohnsonFinMatrix_kernel_iff (m * A) D B m (fun i ↦ centers i) w v).mp hv)
+    (by
+      intro i j _
+      have hh := weightedJohnsonFinMatrix_degree_le (m * A) D B m
+        (fun i ↦ centers i) w (fun i ↦ natDegree_receivedLine_le (f i) (g i)) i j
+      simpa only [columns, one_mul, johnsonColumns_totalJetDegree] using hh)
+    (by
+      intro i j hweight
+      apply weightedJohnsonFinMatrix_eq_zero_of_grade_lt (m * A) D B m
+        (fun i ↦ centers i) w i j
+      simpa only [columns, one_mul, johnsonColumns_totalJetDegree] using hweight)
+    (by
+      rw [sum_weightedJohnsonFinRowWeight_slots]
+      simpa only [columns, one_mul, johnsonColumns_totalJetDegree,
+        sum_johnsonColumns_slots] using hsurplus)
 
 /-- A weighted arithmetic certificate supplies the strict slot surplus needed to construct a
 primitive symbolic certificate for the given centers and received lines. -/

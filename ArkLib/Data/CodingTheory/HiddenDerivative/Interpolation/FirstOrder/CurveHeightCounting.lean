@@ -294,8 +294,9 @@ theorem exists_primitive_firstOrderCurve_interpolant_of_shifted_height
     firstOrderColumns_injective
     (firstOrderCurveGradedFinMatrix D A m M μ n centers w)
     (firstOrderCurveGradedFinRowWeight F D A m M μ n ℓ)
-  · exact firstOrderCurveGradedFinMatrix_kernel_iff
-      D A m M μ n hD centers w
+  · intro v hv
+    exact (firstOrderCurveGradedFinMatrix_kernel_iff
+      D A m M μ n hD centers w v).mp hv
   · intro i j hweight
     exact firstOrderCurveGradedFinMatrix_degree_le
       D A m M μ n ℓ centers w hw i j
