@@ -16,6 +16,7 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.CurveC
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.Profile
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.RateCertificate
 import Mathlib.Algebra.Field.ZMod
+import Mathlib.FieldTheory.RatFunc.Basic
 
 /-!
 # First-order interpolation acceptance cases
@@ -87,6 +88,138 @@ example :
         (M := smallFirstOrderRateParameters.derivativeCap)
         (μ := smallFirstOrderRateParameters.jetDegree))) := by
   exact ⟨smallFirstOrderRateCertificate.toCurve⟩
+
+/-- The curve transfer applies to the two-point zero word and retains an agreeing candidate
+outside its finite exceptional set. -/
+example :
+    ∃ exceptional : Finset (RatFunc (ZMod 5)),
+      (exceptional.card : ℚ) ≤ firstOrderCurveBound 2 2 2 2 2
+        smallFirstOrderRateParameters.jetDegree smallFirstOrderRateParameters.derivativeCap
+        0 smallFirstOrderRateParameters.challengeDegree 0 1 ∧
+      ∃ z ∉ exceptional, ∃ P : (RatFunc (ZMod 5))[X],
+        P.degree < 2 ∧
+        (∀ i ∈ (Finset.univ : Finset (Fin 2)),
+          P.eval (algebraMap (ZMod 5) (RatFunc (ZMod 5)) (smallFirstOrderCenters i)) =
+            (receivedLine (0 : ZMod 5) 0).eval₂
+              (algebraMap (ZMod 5) (RatFunc (ZMod 5))) z) ∧
+        P = 0 := by
+  classical
+  let cert := smallFirstOrderRateCertificate.toCurve
+  have hnonzero : cert.Q ≠ 0 := by
+    intro hzero
+    have h := (cert.specialization_sound (E := ZMod 5) (RingHom.id _) 0).1
+    rw [hzero, map_zero] at h
+    exact h rfl
+  have hjet : jetTotalDegree cert.Q ≤ smallFirstOrderRateParameters.jetDegree := by
+    rw [jetTotalDegree_le_iff]
+    exact cert.totalJetDegree_le
+  have hchar : jetTotalDegree cert.Q < ringChar ((ZMod 5)[X]) := by
+    calc
+      jetTotalDegree cert.Q ≤ smallFirstOrderRateParameters.jetDegree := hjet
+      _ < ringChar ((ZMod 5)[X]) := by
+        rw [← Algebra.ringChar_eq (ZMod 5) ((ZMod 5)[X])]
+        norm_num [smallFirstOrderRateParameters,
+          FirstOrderFiniteRateParameters.jetDegree, firstOrderRateJetDegree,
+          ZMod.ringChar_zmod_n]
+  obtain ⟨stages, terminal, hchain⟩ :=
+    PolynomialDifferential.exists_separantChain_of_ringChar hnonzero (Or.inr hchar)
+  let ι : ZMod 5 →+* RatFunc (ZMod 5) := algebraMap _ _
+  have hjoint : firstOrderCurveJointRatio 2 2 2 = 1 := by
+    norm_num [firstOrderCurveJointRatio, firstOrderCurveIncidenceRatio]
+  have hfiber : firstOrderCurveFiberRatio 2 2 2 = 1 := by
+    norm_num [firstOrderCurveFiberRatio, firstOrderCurveIncidenceRatio]
+  have hcharge (stage : SeparantStage (ZMod 5)[X] 1) :
+      0 ≤ firstOrderCurveStageCharge 2 2 2 2 2 0
+        smallFirstOrderRateParameters.challengeDegree stage 0 1 := by
+    unfold firstOrderCurveStageCharge
+    rw [hjoint, hfiber]
+    change 0 ≤ firstOrderStageCharge
+      (fun v ↦ orderZeroCurveStageCharge 0 smallFirstOrderRateParameters.challengeDegree
+        1 0 v 0)
+      (fun v r ↦ orderOneCurveStageCharge 2 0 smallFirstOrderRateParameters.challengeDegree
+        1 1 0 v r 0 1) stage
+    unfold firstOrderStageCharge
+    split_ifs
+    · exact orderZeroCurveStageCharge_nonneg (ell := 0)
+        (h := smallFirstOrderRateParameters.challengeDegree) (s := 1) (c := 0)
+        (by norm_num) (by norm_num) _ _
+    · exact orderOneCurveStageCharge_nonneg (K := 2) (ell := 0)
+        (h := smallFirstOrderRateParameters.challengeDegree) (s := 1) (η := 1) (t := 1)
+        (c := 0) (by norm_num) (by norm_num) (by norm_num) (by norm_num) _ _ _
+  have hregular : ∀ stage ∈ stages, ∃ exceptional : Finset (RatFunc (ZMod 5)),
+      (exceptional.card : ℚ) ≤
+        firstOrderCurveStageCharge 2 2 2 2 2 0
+          smallFirstOrderRateParameters.challengeDegree stage 0 1 ∧
+      ∀ z ∉ exceptional, ∀ (indices : Finset (Fin 2)) (P : (RatFunc (ZMod 5))[X]),
+        P.degree < 2 → 2 ≤ indices.card →
+        (∀ i ∈ indices, P.eval (ι (smallFirstOrderCenters i)) =
+          (receivedLine (0 : ZMod 5) 0).eval₂ ι z) →
+        differentialSpecialization
+            (MvPolynomial.map (Polynomial.eval₂RingHom ι z) stage.1) P = 0 →
+        differentialSpecialization
+          (separant
+            (MvPolynomial.map (Polynomial.eval₂RingHom ι z) stage.1) stage.2) P ≠ 0 →
+        P = 0 := by
+    intro stage hstage
+    refine ⟨∅, ?_, ?_⟩
+    · simp only [Finset.card_empty, CharP.cast_eq_zero]
+      exact hcharge stage
+    · intro _ _ indices P hdegree hsize hagree _ _
+      have hcard : indices.card = 2 := by
+        have hle := Finset.card_le_univ indices
+        simp only [Fintype.card_fin] at hle
+        omega
+      have hindices : indices = Finset.univ := by
+        apply indices.card_eq_iff_eq_univ.mp
+        simpa using hcard
+      have hcenter0 : smallFirstOrderCenters 0 = 0 := by
+        change ((0 : Fin 2).val : ZMod 5) = 0
+        norm_num
+      have hcenter1 : smallFirstOrderCenters 1 = 1 := by
+        change ((1 : Fin 2).val : ZMod 5) = 1
+        norm_num
+      have hroot0 : P.eval (0 : RatFunc (ZMod 5)) = 0 := by
+        simpa [hcenter0, receivedLine] using hagree 0 (by simp [hindices])
+      have hroot1 : P.eval (1 : RatFunc (ZMod 5)) = 0 := by
+        simpa [hcenter1, receivedLine] using hagree 1 (by simp [hindices])
+      by_contra hP
+      have hroots0 : (0 : RatFunc (ZMod 5)) ∈ P.roots :=
+        (Polynomial.mem_roots hP).mpr hroot0
+      have hroots1 : (1 : RatFunc (ZMod 5)) ∈ P.roots :=
+        (Polynomial.mem_roots hP).mpr hroot1
+      have hroots : 2 ≤ P.roots.card := by
+        have hsubset : ({(0 : RatFunc (ZMod 5)), 1} : Finset (RatFunc (ZMod 5))) ⊆
+            P.roots.toFinset := by
+          intro x hx
+          simp only [Finset.mem_insert, Finset.mem_singleton] at hx
+          rcases hx with rfl | rfl
+          · exact Multiset.mem_toFinset.mpr hroots0
+          · exact Multiset.mem_toFinset.mpr hroots1
+        calc
+          2 = ({(0 : RatFunc (ZMod 5)), 1} : Finset (RatFunc (ZMod 5))).card := by
+            norm_num
+          _ ≤ P.roots.toFinset.card := Finset.card_le_card hsubset
+          _ ≤ P.roots.card := Multiset.toFinset_card_le _
+      have hdegree' : P.natDegree < 2 :=
+        (Polynomial.natDegree_lt_iff_degree_lt hP).mpr hdegree
+      have hroots_le : P.roots.card ≤ P.natDegree := Polynomial.card_roots' P
+      omega
+  obtain ⟨exceptional, hbound, hgood⟩ :=
+    cert.exists_exceptional_of_regular_stage_bounds_of_factors hchain ι
+      2 2 0 0 1 (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+      (fun _ P ↦ P = 0) hregular
+  have hInfinite : Infinite (RatFunc (ZMod 5)) := by
+    exact Infinite.of_injective (algebraMap (ZMod 5)[X] (RatFunc (ZMod 5)))
+      (IsFractionRing.injective _ _)
+  have hcard : (exceptional.card : ENat) < ENat.card (RatFunc (ZMod 5)) := by
+    rw [ENat.card_eq_top_of_infinite]
+    exact ENat.natCast_lt_top _
+  obtain ⟨z, hz⟩ := Finset.exists_not_mem_of_card_lt_enatCard hcard
+  refine ⟨exceptional, hbound, z, hz, 0, WithBot.bot_lt_coe 2, ?_, ?_⟩
+  · intro i hi
+    simp [receivedLine]
+  · exact hgood z hz Finset.univ 0 (WithBot.bot_lt_coe 2) (by simp)
+      (by intro i hi; simp [receivedLine])
 
 /-- The shared specialization theorem applies directly to the nonzero two-point certificate. -/
 example :
