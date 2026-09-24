@@ -298,6 +298,47 @@ lemma support_challengeQueryImpl_eq {n : ℕ} {pSpec : ProtocolSpec n}
 
 end SimulationSafety
 
+/-- A supported successful result of a simulated deterministic guard identifies both the
+passing guard and its output. The initial state and oracle handler do not affect this check. -/
+lemma OptionT.mem_support_simulateQ_run'_guarded_iff
+    {ι σ α : Type} {spec : OracleSpec ι} (init : ProbComp σ)
+    (impl : QueryImpl spec (StateT σ ProbComp)) (p : Prop) [Decidable p] (x y : α) :
+    some y ∈ support (do
+      let s ← init
+      (simulateQ impl (if p then pure (some x) else pure none)).run' s) ↔
+      p ∧ y = x := by
+  have hinit : ∃ s, MonadAttach.CanReturn init s := OracleComp.support_nonempty init
+  by_cases hp : p <;>
+    simp [hp, StateT.run'_eq, StateT.run_pure, hinit, eq_comm]
+
+open scoped ProbabilityTheory in
+/-- Positive probability after a deterministic guarded check is exactly the passing guard
+and the output predicate. This removes state/support plumbing from KState terminal proofs. -/
+lemma OptionT.prEvent_simulateQ_run'_guarded_pos_iff
+    {ι σ α : Type} {spec : OracleSpec ι} (init : ProbComp σ)
+    (impl : QueryImpl spec (StateT σ ProbComp)) (p : Prop) [Decidable p]
+    (x : α) (R : α → Prop) :
+    0 < Pr{let y ← OptionT.mk (do
+      let s ← init
+      (simulateQ impl (if p then pure (some x) else pure none)).run' s)}[R y] ↔
+      p ∧ R x := by
+  rw [OracleComp.OptionT.prEvent_mk_pos_iff]
+  simp only [OptionT.mem_support_simulateQ_run'_guarded_iff]
+  constructor
+  · rintro ⟨y, ⟨hp, rfl⟩, hR⟩
+    exact ⟨hp, hR⟩
+  · rintro ⟨hp, hR⟩
+    exact ⟨x, ⟨hp, rfl⟩, hR⟩
+
+open Lean.Parser.Tactic in
+/-- `vcv_guard [run_eq] at h` reduces a positive-probability hypothesis for a guarded
+verifier to its guard and output predicate. The caller explicitly supplies the verifier's
+run equation; protocol definitions and mathematical relations are not unfolded. -/
+macro "vcv_guard" "[" runEq:rwRule "]" loc:location : tactic =>
+  `(tactic| (simp only [gt_iff_lt] $loc
+             erw [$runEq] $loc
+             erw [OptionT.prEvent_simulateQ_run'_guarded_pos_iff] $loc))
+
 section ProtocolUnrolling
 
 variable {ι : Type} {n : ℕ} {pSpec : ProtocolSpec n} {oSpec : OracleSpec ι}

@@ -441,53 +441,25 @@ noncomputable def batchingKnowledgeStateFunction (hCoord : CoordinateLaws P)
           exact h_compat
       | ⟨1, h⟩ => nomatch h
     toFun_full := fun ⟨stmtIn, oStmtIn⟩ tr witOut h_relOut => by
-      simp only [StateT.run'_eq, gt_iff_lt, OracleComp.OptionT.prEvent_mk_pos_iff,
-        Prod.exists] at h_relOut
-      rcases h_relOut with ⟨stmtOut, oStmtOut, h_output, h_relOut⟩
-      erw [oracleVerifier_run_eq_guarded] at h_output
-      simp only [support_bind, Set.mem_iUnion, exists_prop] at h_output
-      rcases h_output with ⟨s, _hs_init, h_output⟩
-      by_cases h_check : batchingVerifierCheck κ L K P ℓ ℓ' h_l stmtIn
-          ((show (pSpecBatching κ L K P).FullTranscript from tr).messages ⟨0, rfl⟩)
-      · rw [ite_eq_left h_check] at h_output
-        change some (stmtOut, oStmtOut) ∈ MonadAttach.support
-          ((simulateQ impl (pure (some _) : OracleComp []ₒ (Option _))).run' s) at h_output
-        rw [simulateQ_pure] at h_output
-        change some (stmtOut, oStmtOut) ∈ MonadAttach.support
-          (Prod.fst <$> (pure (some _) : StateT σ ProbComp _).run s) at h_output
-        rw [StateT.run_pure] at h_output
-        simp only [map_pure, support_pure, Set.mem_singleton_iff,
-          Option.some.injEq] at h_output
-        have h_stmt := congrArg Prod.fst h_output
-        have h_oracle := congrArg Prod.snd h_output
-        change stmtOut = _ at h_stmt
-        change oStmtOut = oStmtIn at h_oracle
-        rw [h_stmt, h_oracle] at h_relOut
-        simp only [Fin.reduceLast, Fin.isValue]
-        unfold batchingKStateProp
-        simp only [Fin.isValue]
-        dsimp only [Transcript.equivMessagesChallenges, Equiv.coe_fn_mk,
-          Transcript.toMessagesChallenges, Transcript.toMessagesUpTo, Transcript.toChallengesUpTo]
-        dsimp only [sumcheckRoundRelation, sumcheckRoundRelationProp, masterKStateProp,
-          Set.mem_ofPred_eq] at h_relOut
-        refine ⟨?_, h_check, h_relOut.2.2.2⟩
-        change sumcheckRoundRelationProp κ L K P ℓ ℓ' h_l aOStmtIn 0 _ oStmtIn _
-        unfold sumcheckRoundRelationProp masterKStateProp
-        refine ⟨trivial, rfl, ?_, h_relOut.2.2.2⟩
-        have hH := h_relOut.2.1
-        have hCons := h_relOut.2.2.1
-        change witOut.H.val = _ at hH
-        have hH' := Subtype.ext hH
-        rw [hH'] at hCons
-        exact hCons
-      · rw [ite_eq_right h_check] at h_output
-        change some (stmtOut, oStmtOut) ∈ MonadAttach.support
-          ((simulateQ impl (pure none : OracleComp []ₒ (Option _))).run' s) at h_output
-        rw [simulateQ_pure] at h_output
-        change some (stmtOut, oStmtOut) ∈ MonadAttach.support
-          (Prod.fst <$> (pure none : StateT σ ProbComp _).run s) at h_output
-        rw [StateT.run_pure] at h_output
-        simp only [map_pure, support_pure, Set.mem_singleton_iff, reduceCtorEq] at h_output
+      vcv_guard [oracleVerifier_run_eq_guarded] at h_relOut
+      obtain ⟨h_check, h_relOut⟩ := h_relOut
+      simp only [Fin.reduceLast, Fin.isValue]
+      unfold batchingKStateProp
+      simp only [Fin.isValue]
+      dsimp only [Transcript.equivMessagesChallenges, Equiv.coe_fn_mk,
+        Transcript.toMessagesChallenges, Transcript.toMessagesUpTo, Transcript.toChallengesUpTo]
+      dsimp only [sumcheckRoundRelation, sumcheckRoundRelationProp, masterKStateProp,
+        Set.mem_ofPred_eq] at h_relOut
+      refine ⟨?_, h_check, h_relOut.2.2.2⟩
+      change sumcheckRoundRelationProp κ L K P ℓ ℓ' h_l aOStmtIn 0 _ oStmtIn _
+      unfold sumcheckRoundRelationProp masterKStateProp
+      refine ⟨trivial, rfl, ?_, h_relOut.2.2.2⟩
+      have hH := h_relOut.2.1
+      have hCons := h_relOut.2.2.1
+      change witOut.H.val = _ at hH
+      have hH' := Subtype.ext hH
+      rw [hH'] at hCons
+      exact hCons
   }
 
 /-! ## Security Properties -/

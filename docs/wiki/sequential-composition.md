@@ -19,6 +19,22 @@ through simulation and retains the final shared oracle state.
 
 ## Choosing a completeness theorem
 
+### Simplifying component guarded-verifier proofs
+
+`ArkLib.ToVCVio.Simulation.Basic` provides `vcv_guard [run_eq] at h` for a
+positive-probability hypothesis about a deterministic guarded verifier. Supply an equation
+identifying its run as `if check then pure output else failure`; the tactic replaces the
+hypothesis with `check ∧ R output`. It preserves the guard and leaves the mathematical
+relation `R` opaque. It does not unfold protocol definitions or prove relation implications.
+
+The supporting lemmas are `OptionT.mem_support_simulateQ_run'_guarded_iff` and
+`OptionT.prEvent_simulateQ_run'_guarded_pos_iff`. They work for arbitrary initial `ProbComp`
+states and stateful handlers because the normalized computation makes no oracle queries.
+Use the existing `Verifier.GuardedForm` certificates for composition; this tactic is only
+component-level proof plumbing, not a replacement completeness interface.
+
+### Composition interfaces
+
 All completeness theorems below require suffix correctness at every deterministic shared oracle
 state. A suffix starts in the state left by the prefix, so correctness only at the original
 initial distribution is insufficient. Component errors add, and the perfect-completeness

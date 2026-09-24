@@ -482,57 +482,12 @@ noncomputable def finalSumcheckKnowledgeStateFunction {σ : Type} (init : ProbCo
           (oStmt := oStmtIn) (challenges := stmtIn.challenges)).1 hBad
       )
   toFun_full := fun ⟨stmtIn, oStmtIn⟩ tr witOut probEvent_relOut_gt_0 => by
-  -- Same pattern as relay: verifier output (stmtOut, oStmtOut) + h_relOut ⇒ commitKStateProp 1
-    simp only [StateT.run'_eq, gt_iff_lt, OptionT.prEvent_mk_pos_iff, Prod.exists]
-      at probEvent_relOut_gt_0
-    rcases probEvent_relOut_gt_0 with ⟨stmtOut, oStmtOut, h_output_mem_V_run_support, h_relOut⟩
-    rw [finalSumcheckVerifier_run_eq_guarded] at h_output_mem_V_run_support
-    simp only [support_bind, Set.mem_iUnion, exists_prop]
-      at h_output_mem_V_run_support
-    rcases h_output_mem_V_run_support with ⟨s, hs_init, h_output_mem_V_run_support⟩
-    let messageIdx : (pSpecFinalSumcheckStep (L := L)).MessageIdx := ⟨0, by rfl⟩
-    let c : L := @OracleInterface.answer _
-      (Binius.BinaryBasefold.instFinalSumcheckMessageInterface messageIdx)
-      (tr.messages messageIdx) ()
-    by_cases h_V_check : (finalSumcheckStepLogic 𝔽q β
-        (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)).verifierCheck stmtIn
-        (FullTranscript.mk1 c)
-    · rw [ite_eq_left h_V_check] at h_output_mem_V_run_support
-      change some (stmtOut, oStmtOut) ∈ MonadAttach.support
-        ((simulateQ impl (pure (some _) : OracleComp []ₒ (Option _))).run' s)
-        at h_output_mem_V_run_support
-      rw [simulateQ_pure] at h_output_mem_V_run_support
-      change some (stmtOut, oStmtOut) ∈ MonadAttach.support
-        (Prod.fst <$> (pure (some _) : StateT σ ProbComp _).run s)
-        at h_output_mem_V_run_support
-      rw [StateT.run_pure] at h_output_mem_V_run_support
-      simp only [_root_.map_pure, support_pure, Set.mem_singleton_iff, Option.some.injEq]
-        at h_output_mem_V_run_support
-      have h_stmtOut_eq := congrArg Prod.fst h_output_mem_V_run_support
-      have h_oStmtOut_eq := congrArg Prod.snd h_output_mem_V_run_support
-      simp only [Fin.reduceLast, Fin.isValue]
-      simp only [finalSumcheckRelOut, finalSumcheckRelOutProp, Set.mem_ofPred_eq] at h_relOut
-      unfold finalSumcheckKStateProp
-      dsimp only
-      change stmtOut = _ at h_stmtOut_eq
-      rw [h_stmtOut_eq] at h_relOut
-      change oStmtOut = _ at h_oStmtOut_eq
-      have h_oStmtOut_eq_oStmtIn : oStmtOut = oStmtIn := by rw [h_oStmtOut_eq]; rfl
-      constructor
-      · exact h_V_check
-      · rw [h_oStmtOut_eq_oStmtIn] at h_relOut
-        exact h_relOut
-    · rw [ite_eq_right h_V_check] at h_output_mem_V_run_support
-      change some (stmtOut, oStmtOut) ∈ MonadAttach.support
-        ((simulateQ impl (pure none : OracleComp []ₒ (Option _))).run' s)
-        at h_output_mem_V_run_support
-      rw [simulateQ_pure] at h_output_mem_V_run_support
-      change some (stmtOut, oStmtOut) ∈ MonadAttach.support
-        (Prod.fst <$> (pure none : StateT σ ProbComp _).run s)
-        at h_output_mem_V_run_support
-      rw [StateT.run_pure] at h_output_mem_V_run_support
-      simp only [_root_.map_pure, support_pure, Set.mem_singleton_iff, reduceCtorEq]
-        at h_output_mem_V_run_support
+    vcv_guard [finalSumcheckVerifier_run_eq_guarded] at probEvent_relOut_gt_0
+    obtain ⟨h_check, h_relOut⟩ := probEvent_relOut_gt_0
+    simp only [Fin.reduceLast, Fin.isValue]
+    simp only [finalSumcheckRelOut, finalSumcheckRelOutProp, Set.mem_ofPred_eq] at h_relOut
+    unfold finalSumcheckKStateProp
+    exact ⟨h_check, h_relOut⟩
 
 omit [DecidableEq 𝔽q] [CharP L 2] in
 /-- Round-by-round knowledge soundness for the final sumcheck step. -/

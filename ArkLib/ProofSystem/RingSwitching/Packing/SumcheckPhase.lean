@@ -430,40 +430,11 @@ def iteratedSumcheckKnowledgeStateFunction (i : Fin ℓ') :
       simp at hDir
   toFun_full := fun ⟨stmtIn, oStmtIn⟩ tr witOut h_relOut => by
     change (pSpecSumcheckRound L).FullTranscript at tr
-    simp only [StateT.run'_eq, gt_iff_lt, OracleComp.OptionT.prEvent_mk_pos_iff,
-      Prod.exists] at h_relOut
-    rcases h_relOut with ⟨stmtOut, oStmtOut, h_output, h_relOut⟩
-    erw [iteratedSumcheckVerifier_run_eq_guarded] at h_output
-    simp only [support_bind, Set.mem_iUnion, exists_prop] at h_output
-    rcases h_output with ⟨s, _hs_init, h_output⟩
-    by_cases h_check : (∑ b ∈ (boolDomain L ℓ').points i,
-        (tr.messages ⟨0, rfl⟩).val.eval b) = stmtIn.sumcheck_target
-    · rw [ite_eq_left h_check] at h_output
-      change some (stmtOut, oStmtOut) ∈ MonadAttach.support
-        ((simulateQ impl (pure (some _) : OracleComp []ₒ (Option _))).run' s) at h_output
-      rw [simulateQ_pure] at h_output
-      change some (stmtOut, oStmtOut) ∈ MonadAttach.support
-        (Prod.fst <$> (pure (some _) : StateT σ ProbComp _).run s) at h_output
-      rw [StateT.run_pure] at h_output
-      simp only [map_pure, support_pure, Set.mem_singleton_iff,
-        Option.some.injEq] at h_output
-      have h_stmt := congrArg Prod.fst h_output
-      have h_oracle := congrArg Prod.snd h_output
-      change stmtOut = _ at h_stmt
-      change oStmtOut = oStmtIn at h_oracle
-      rw [h_stmt, h_oracle] at h_relOut
-      change _ ∧ _ at h_relOut
-      change _ ∧ _
-      exact ⟨h_check, h_relOut.2⟩
-    · rw [ite_eq_right h_check] at h_output
-      change some (stmtOut, oStmtOut) ∈ MonadAttach.support
-        ((simulateQ impl (pure none : OracleComp []ₒ (Option _))).run' s) at h_output
-      rw [simulateQ_pure] at h_output
-      change some (stmtOut, oStmtOut) ∈ MonadAttach.support
-        (Prod.fst <$> (pure none : StateT σ ProbComp _).run s) at h_output
-      rw [StateT.run_pure] at h_output
-      simp only [map_pure, support_pure, Set.mem_singleton_iff,
-        Option.some_ne_none] at h_output
+    vcv_guard [iteratedSumcheckVerifier_run_eq_guarded] at h_relOut
+    obtain ⟨h_check, h_relOut⟩ := h_relOut
+    change _ ∧ _ at h_relOut
+    change _ ∧ _
+    exact ⟨h_check, h_relOut.2⟩
 
 section
 local instance : DecidableEq K := Classical.decEq K
@@ -977,36 +948,9 @@ noncomputable def finalSumcheckKnowledgeStateFunction {σ : Type} (init : ProbCo
     exact hc.trans (congrArg (_ * ·) he.symm)
   toFun_full := fun (stmt, oStmt) tr witOut h => by
     change (pSpecFinalSumcheck L).FullTranscript at tr
-    simp only [StateT.run'_eq, gt_iff_lt, OracleComp.OptionT.prEvent_mk_pos_iff,
-      Prod.exists] at h
-    obtain ⟨stmtOut, oStmtOut, hmem, hrel⟩ := h
-    erw [finalVerifier_run κ L K P ℓ ℓ' h_l aOStmtIn stmt oStmt tr] at hmem
-    simp only [support_bind, Set.mem_iUnion, exists_prop] at hmem
-    obtain ⟨s, _, hmem⟩ := hmem
-    split at hmem
-    · rename_i hc
-      change some (stmtOut, oStmtOut) ∈ MonadAttach.support
-        ((simulateQ impl (pure (some _) : OracleComp []ₒ (Option _))).run' s) at hmem
-      rw [simulateQ_pure] at hmem
-      change some (stmtOut, oStmtOut) ∈ MonadAttach.support
-        (Prod.fst <$> (pure (some _) : StateT σ ProbComp _).run s) at hmem
-      rw [StateT.run_pure] at hmem
-      simp only [map_pure, support_pure, Set.mem_singleton_iff,
-        Option.some.injEq] at hmem
-      have hstmt := congrArg Prod.fst hmem
-      have ho := congrArg Prod.snd hmem
-      change stmtOut = _ at hstmt
-      change oStmtOut = oStmt at ho
-      rw [hstmt, ho] at hrel
-      exact ⟨hc, hrel.1.symm, hrel.2, rfl⟩
-    · change some (stmtOut, oStmtOut) ∈ MonadAttach.support
-        ((simulateQ impl (pure none : OracleComp []ₒ (Option _))).run' s) at hmem
-      rw [simulateQ_pure] at hmem
-      change some (stmtOut, oStmtOut) ∈ MonadAttach.support
-        (Prod.fst <$> (pure none : StateT σ ProbComp _).run s) at hmem
-      rw [StateT.run_pure] at hmem
-      simp only [map_pure, support_pure, Set.mem_singleton_iff,
-        reduceCtorEq] at hmem
+    vcv_guard [finalVerifier_run κ L K P ℓ ℓ' h_l aOStmtIn stmt oStmt tr] at h
+    obtain ⟨hc, hrel⟩ := h
+    exact ⟨hc, hrel.1.symm, hrel.2, rfl⟩
 
 section
 local instance : DecidableEq K := Classical.decEq K
