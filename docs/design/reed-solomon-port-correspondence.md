@@ -211,6 +211,16 @@ polynomial `P`, and each divisibility needs agreement only at its own point. The
 the source form. The rank bound and the interpolant use `LinearMap.finrank_range_pi_le_sum` and
 `LinearMap.exists_ne_zero_map_eq_zero_of_finrank_range_lt` from P3 slice 10.
 
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder/RateCertificate.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/FirstOrder/RateCertificate.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`FirstOrderFiniteRateParameters.rankCount_mul_lt_dimensionCount` and `exists_firstOrderRate_symbolicCertificate` keep their names. `FirstOrderFiniteRateParameters.kernelHeight_le_challengeDegree` keeps its name and drops the unnecessary `0 < n` hypothesis. `FirstOrderSymbolicCertificate.toCurve` keeps its name and is placed in the canonical `FirstOrder.CurveCertificate` owner. The new shared theorem `differentialSpecialization_eq_zero_of_firstOrderSpace` derives specialization vanishing from first-order support and local constraints and is used by both first-order curve-certificate constructors.
+
+`firstOrderExponents_subset_degree_two` was not ported because the destination rank theorem accepts arbitrary degree and agreement parameters directly. `firstOrder_rate_curve_matrix_rank_le` was not added because `rank_firstOrderLocalConstraintMatrix_le`, together with the existing first-order rank-count identity, covers it.
+
+The existing `ArkLibTest/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder.lean` acceptance file checks strict dimension surplus and the kernel-height bound for concrete two-point rate parameters, constructs a rate certificate over `ZMod 5` and converts it to a curve certificate, and applies the shared specialization theorem to that certificate.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder/Space.lean`
 
 Ported from
