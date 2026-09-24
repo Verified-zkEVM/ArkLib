@@ -575,19 +575,24 @@ example :
   exact (add_sum_degreeOf_positiveDegreeFactorClasses_le none (some (some (1 : Fin 2)))
     positiveProductRootFirst).trans hroot
 
-private noncomputable abbrev clearedDegreeTwoExample : MvPolynomial Unit (Polynomial ℚ) :=
-  clearedSubstitution C (C (Polynomial.X : Polynomial ℚ))
-    (fun _ : Unit ↦ C (Polynomial.X : Polynomial ℚ)) (fun _ ↦ 1) 1
-    (C (Polynomial.X : Polynomial ℚ) * X ())
-
-/-- Clearing a substitution attains the degree-two coefficient bound for `t * Y`. -/
-example : CoeffNatDegreeLE clearedDegreeTwoExample 2 ∧
-    (clearedDegreeTwoExample.coeff 0).natDegree = 2 := by
+/-- An independent coefficient bound can be attained after clearing substitution. -/
+example : CoeffNatDegreeLE
+    (clearedSubstitution C (C (1 : Polynomial ℚ))
+      (fun _ : Unit ↦ C (1 : Polynomial ℚ)) (fun _ ↦ 1) 1
+      (C (Polynomial.X : Polynomial ℚ) * X ()) : MvPolynomial Unit (Polynomial ℚ)) 1 ∧
+    ((clearedSubstitution C (C (1 : Polynomial ℚ))
+      (fun _ : Unit ↦ C (1 : Polynomial ℚ)) (fun _ ↦ 1) 1
+      (C (Polynomial.X : Polynomial ℚ) * X ()) :
+        MvPolynomial Unit (Polynomial ℚ)).coeff 0).natDegree = 1 := by
+  have hQ : CoeffNatDegreeLE
+      (C (Polynomial.X : Polynomial ℚ) * X () : MvPolynomial Unit (Polynomial ℚ)) 1 := by
+    exact (coeffNatDegreeLE_C (p := (Polynomial.X : Polynomial ℚ)) (by simp)).mul
+      (coeffNatDegreeLE_X ())
   constructor
   · apply CoeffNatDegreeLE.clearedSubstitution
-      (S := C (Polynomial.X : Polynomial ℚ))
-      (N := fun _ : Unit ↦ C (Polynomial.X : Polynomial ℚ))
-      (d := fun _ ↦ 1) (H := 1) (h := 1) (a := 1)
+      (S := C (1 : Polynomial ℚ))
+      (N := fun _ : Unit ↦ C (1 : Polynomial ℚ))
+      (d := fun _ ↦ 1) (H := 1) (h := 0) (a := 1)
       (Q := C (Polynomial.X : Polynomial ℚ) * X ())
     · exact coeffNatDegreeLE_C (by simp)
     · intro _
@@ -599,41 +604,10 @@ example : CoeffNatDegreeLE clearedDegreeTwoExample 2 ∧
         exact Finset.mem_singleton.mp (support_monomial_subset hm)
       subst m
       simp [Finsupp.weight_apply]
-    · intro m _
-      have hcoeff : CoeffNatDegreeLE
-          (C (Polynomial.X : Polynomial ℚ) * X ()) 1 := by
-        exact (coeffNatDegreeLE_C (p := (Polynomial.X : Polynomial ℚ)) (by simp)).mul
-          (coeffNatDegreeLE_X ())
-      exact hcoeff m
-  · simp [clearedDegreeTwoExample, clearedSubstitution, C_mul_X_eq_monomial,
-      support_monomial, Finsupp.weight_apply]
-
-/-- A coefficient bound can be independent of the denominator bound. -/
-example : CoeffNatDegreeLE
-    (clearedSubstitution C (C (1 : Polynomial ℚ))
-      (fun _ : Unit ↦ C (1 : Polynomial ℚ)) (fun _ ↦ 1) 1
-      (C (Polynomial.X : Polynomial ℚ) * X ()) : MvPolynomial Unit (Polynomial ℚ)) 1 := by
-  have hQ : CoeffNatDegreeLE
-      (C (Polynomial.X : Polynomial ℚ) * X () : MvPolynomial Unit (Polynomial ℚ)) 1 := by
-    exact (coeffNatDegreeLE_C (p := (Polynomial.X : Polynomial ℚ)) (by simp)).mul
-      (coeffNatDegreeLE_X ())
-  apply CoeffNatDegreeLE.clearedSubstitution
-    (S := C (1 : Polynomial ℚ))
-    (N := fun _ : Unit ↦ C (1 : Polynomial ℚ))
-    (d := fun _ ↦ 1) (H := 1) (h := 0) (a := 1)
-    (Q := C (Polynomial.X : Polynomial ℚ) * X ())
-  · exact coeffNatDegreeLE_C (by simp)
-  · intro _
-    exact coeffNatDegreeLE_C (by simp)
-  · intro m hm
-    have hm' : m = Finsupp.single () 1 := by
-      change m ∈ (C (Polynomial.X : Polynomial ℚ) * X ()).support at hm
-      rw [C_mul_X_eq_monomial] at hm
-      exact Finset.mem_singleton.mp (support_monomial_subset hm)
-    subst m
-    simp [Finsupp.weight_apply]
-  · intro m hm
-    exact hQ m
+    · intro m hm
+      exact hQ m
+  · simp [clearedSubstitution, C_mul_X_eq_monomial, support_monomial,
+      Finsupp.weight_apply]
 
 /-- The coefficient and jet degree bounds flatten to bidegree `(1, 1)` for `t * Y`. -/
 example : (optionEquivRight ℚ Unit).symm paramTimesVar ∈
