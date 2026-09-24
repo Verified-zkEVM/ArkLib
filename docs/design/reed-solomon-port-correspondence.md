@@ -1752,6 +1752,18 @@ ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`,
 Deferred: scalar providers of the line guarantee (list-decoding and curve-counting results) and
 the probability form of the count.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/CodewordBound.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/CodewordBound.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`agreeingPolynomials_encard_le_closePolynomialSet`, `lambda_le_ceil_of_closePolynomialSet_bound`, and `prescribed_geometric_lambda_bound` keep their names and results. The transfer uses the current `Fintype.card_fin` representation. The geometric bound uses the canonical `xi` and `harmonic` parameters in place of the source's explicit `27/10` and `harmonicNumber` parameters. No public declaration was omitted.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/CurveCertificate.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/CurveCertificate.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`exists_closePolynomial_list_of_curve_certificate_actualStages`, `close_list_bound_of_curve_certificate_directJetCoarse`, and `close_list_bound_of_curve_certificate_of_jetCharacteristic` keep their names and results. The proofs use the current `SymbolicReceivedCurve.Certificate`, `SeparantChain`, agreement-list, and direct-jet APIs. No public declaration was omitted.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/FiniteField.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/FiniteField.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
