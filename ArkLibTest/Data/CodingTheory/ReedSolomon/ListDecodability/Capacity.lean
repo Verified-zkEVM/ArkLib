@@ -4,7 +4,9 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
+import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.Basic
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.WeightedSupportInterpolant
+import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.WeightedSupport
 import Mathlib.Data.Nat.Prime.Infinite
 
 /-!
@@ -32,6 +34,14 @@ private def sampleA : ℕ := agreementThreshold sampleDelta sampleN sampleMessag
 private def sampleK : ℕ :=
   weightedSupportAmbientDimension sampleDelta sampleN sampleMessageDim
 private def sampleFieldLower : ℕ := max sampleN (2 * (sampleM * sampleA + sampleD))
+
+private def onePointDomain : Fin 1 ↪ ZMod 2 where
+  toFun _ := 0
+  inj' _ _ _ := Subsingleton.elim _ _
+
+private theorem onePointThreshold :
+    agreementThreshold 1 (Fintype.card (Fin 1)) 1 = 2 := by
+  simp [agreementThreshold]
 
 /-- The prescribed parameters have a concrete finite block and prime field. -/
 private theorem prescribedSampleSetup :
@@ -175,6 +185,52 @@ example :
     (4 * sampleM * q ^ sampleD : ℕ) < q ^ sampleMessageDim := by
       simpa only [sampleMessageDim] using hpow
     _ = Nat.card (Polynomial.degreeLT (ZMod q) sampleMessageDim) := hcard.symm
+
+/-- The prescribed weighted-support instance has a certified capacity-gap list bound. -/
+example :
+    ∃ q : ℕ, q.Prime ∧ ∃ domain : Fin sampleN ↪ ZMod q,
+      Nonempty (CapacityGapCertificate sampleDelta domain 1
+        (4 * sampleM * q ^ (2 * sampleD))) := by
+  obtain ⟨q, hq, hnq, -, -, domain, -, -, -⟩ := prescribedSampleSetup
+  have hdge2 : 2 ≤ capacityDerivativeOrder sampleDelta := by
+    have h := (capacityDerivativeOrder_lower (δ := sampleDelta)
+      (by norm_num [sampleDelta]) (by norm_num [sampleDelta])).1
+    omega
+  have hm : 0 < weightedSupportMultiplicity (capacityDerivativeOrder sampleDelta) :=
+    weightedSupportMultiplicity_pos_iff.mpr hdge2
+  have hblock :
+      8 * weightedSupportMultiplicity (capacityDerivativeOrder sampleDelta) ≤ sampleN := by
+    exact le_rfl
+  have hkn : 1 ≤ sampleN := by
+    dsimp only [sampleN]
+    omega
+  obtain ⟨hbound, _hlarge⟩ := weightedSupport_capacity_list_bound_four_mul sampleDelta
+    (by norm_num [sampleDelta]) (by norm_num [sampleDelta]) sampleN 1 q hblock
+    (by decide) hkn hq hnq domain
+  exact ⟨q, hq, domain, by simpa only [sampleM, sampleD] using hbound⟩
+
+/-- A pointwise agreement bound constructs a certificate on the singleton code. -/
+example : Nonempty (CapacityGapCertificate 1 onePointDomain 1 0) := by
+  refine ⟨CapacityGapCertificate.ofPointwiseBound (by norm_num) (by decide)
+    (domain := onePointDomain) (messageDim := 1) (listBound := 0) ?_⟩
+  intro received
+  have hEmpty : agreeingPolynomials onePointDomain 1
+      (agreementThreshold 1 (Fintype.card (Fin 1)) 1) received = ∅ := by
+    apply Set.eq_empty_iff_forall_notMem.mpr
+    intro p hp
+    have hAgreementLe : Code.agree
+        (ReedSolomon.evalOnPoints onePointDomain p) received ≤ 1 := by
+      simpa using (Code.agree_le_card
+        (u := ReedSolomon.evalOnPoints onePointDomain p) (v := received))
+    have hAgreementLt : Code.agree
+        (ReedSolomon.evalOnPoints onePointDomain p) received < 2 :=
+      hAgreementLe.trans_lt (by decide)
+    change agreementThreshold 1 (Fintype.card (Fin 1)) 1 ≤
+      Code.agree (ReedSolomon.evalOnPoints onePointDomain p) received at hp
+    rw [onePointThreshold] at hp
+    exact (Nat.not_le_of_gt hAgreementLt) hp
+  rw [hEmpty]
+  simp
 
 end
 end WeightedSupportInterpolantTest
