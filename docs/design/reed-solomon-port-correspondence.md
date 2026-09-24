@@ -113,6 +113,14 @@ jet-degree budget `B` with `C + 2H ≤ B`; neither assumption is needed.
 
 `finrank_interpolationSpace_lowerBound`: /-- The source's rectangular lower bound:
 
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder/CurveCertificate.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/FirstOrder/CurveSymbolic.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`FirstOrderCurveCertificate` keeps its name, mathematical fields, and specialization contract. Its interpolant field uses the destination API's `SourceColumn.interpolant`. No declarations were omitted.
+
+The matching `ArkLibTest/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder.lean` remains unchanged and covers first-order support, interpolation, rank, and shifted-height cases. No example was added for this data-only declaration.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder/CurveHeightCounting.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/FirstOrder/CurveHeightCounting.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
