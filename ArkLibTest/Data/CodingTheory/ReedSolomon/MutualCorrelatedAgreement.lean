@@ -33,7 +33,7 @@ import Mathlib.Tactic.Order
 import Mathlib.Data.Fin.VecNotation
 import Mathlib.FieldTheory.Finite.Extension
 
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerBatchedPointRecognition
+import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerBatchedAdmissibility
 import Mathlib.Algebra.Field.ZMod
 
 /-! # Acceptance cases for Reed–Solomon mutual correlated agreement -/
@@ -770,34 +770,36 @@ private theorem component_powerBatchedAgreementCuts : ∀ i ∈ Finset.univ,
   rw [hreceived] at hpair
   rw [hbatch]
   exact hpair
+noncomputable local instance graphComponentDecidableEq : DecidableEq ℚ := Classical.decEq _
 
-/-- A positive-dimensional prime component determines one base-field tuple whose graph contains
-its regular points, with nonzero restricted separant. -/
-example :
-    ∃ P : Fin 2 → ℚ[X], (∀ t, (P t).degree < 1) ∧
-      (∀ i ∈ Finset.univ, ∀ t, (P t).eval (domain i) = componentWord i) ∧
-      (∀ x ∈ {x | x ∈ zeroLocus ComponentField
-          (componentIdeal (E := ComponentField)) ∧
-        aeval x (jointInitialJetSeparant (r := 0) (0 : ComponentField)
-              (componentEquation (E := ComponentField))) ≠ 0},
-        x = fun i ↦ (powerBatchedJetGraphMap (r := 0) 0
-          (fun t ↦ (P t).map (algebraMap ℚ ComponentField)) i).eval (x none)) ∧
-      aeval (powerBatchedJetGraphMap (r := 0) 0
-        (fun t ↦ (P t).map (algebraMap ℚ ComponentField)))
-        (jointInitialJetSeparant (r := 0) (0 : ComponentField)
-          (componentEquation (E := ComponentField))) ≠ 0 := by
-  have hprime : (componentIdeal (E := ComponentField)).IsPrime := componentIdeal_isPrime
-  obtain ⟨P, hP, hsample, hgraph, -, -, hsep⟩ :=
-    exists_polynomialGraph_of_primeTaylorComponent (domain := domain)
-      (w := fun _ : Fin 2 ↦ fun i ↦ componentWord i)
-      (sample := Finset.univ) (hsample := by simp)
-      (φ := algebraMap ℚ ComponentField) (center := 0)
-      (Q := componentEquation (E := ComponentField)) (hK := by omega) (τ := 2)
-      (hτ := by intro l; fin_cases l <;> omega)
-      (I := componentIdeal (E := ComponentField)) (hsep := component_separant_notMem)
-      (hdim := componentIdeal_degree_pos) (hhigh := component_highCuts)
-      (hcuts := component_powerBatchedAgreementCuts)
-  exact ⟨P, hP, hsample, hgraph, hsep⟩
+example : ∃ P : Fin 2 → ℚ[X],
+    IsAdmissibleChartTupleAtExponent domain (fun _ ↦ componentWord)
+      (algebraMap ℚ ComponentField) 0 (componentEquation (E := ComponentField)) 2 1 1 2 P ∧
+    rationalTaylorPolynomial 0
+      (MvPolynomial.map (Polynomial.evalRingHom (0 : ComponentField)) componentEquation) 2
+      (chartTupleJet (algebraMap ℚ ComponentField) 0 0 P) =
+      powerBatchedPolynomial (fun t ↦ (P t).map (algebraMap ℚ ComponentField)) 0 := by
+  obtain ⟨P, hP, hgraph⟩ := exists_admissibleChartTuple_of_primeTaylorComponent_agreements
+    (K := 2) (k := 1) (L := 1) (r := 0) (ℓ := 1) domain (fun _ ↦ componentWord)
+    Finset.univ (by simp) (by omega) (algebraMap ℚ ComponentField) 0
+    (componentEquation (E := ComponentField)) (by omega) 2 (by intro l; omega)
+    (componentIdeal (E := ComponentField)) componentIdeal_isPrime component_separant_notMem
+    componentIdeal_degree_pos component_initialEquation_mem component_highCuts
+    component_powerBatchedAgreementCuts
+  let x : Option (Fin 1) → ComponentField := fun _ ↦ 0
+  have hx : x ∈ {x | x ∈ zeroLocus ComponentField (componentIdeal (E := ComponentField)) ∧
+      aeval x (jointInitialJetSeparant (0 : ComponentField) componentEquation) ≠ 0} := by
+    simp [x, componentIdeal, componentVariable, zeroLocus_span, jointInitialJetSeparant,
+      initialJetSeparant, separant, Fin.last, componentEquation]
+  have hpoint : x = fun j ↦ j.elim 0 (chartTupleJet (algebraMap ℚ ComponentField) 0 0 P) := by
+    funext j; cases j with
+    | none => rfl
+    | some j =>
+      simpa [chartTupleJet, powerBatchedJetGraphMap] using congrFun (hgraph x hx) (some j)
+  have hz : (chartTuplePullback (algebraMap ℚ ComponentField) 0 P
+      (jointInitialJetSeparant 0 componentEquation)).eval 0 ≠ 0 := by
+    simpa only [eval_chartTuplePullback, ← hpoint] using hx.2
+  exact ⟨P, hP, (hP.specialize (by intro l; omega) (by omega) 0 hz).2.2.2⟩
 
 /-- The prime component's joint cut forces the tuple's value at its evaluation point. -/
 example : ∃ P : Fin 2 → ℚ[X], (∀ t, (P t).degree < 1) ∧
@@ -822,8 +824,6 @@ example : ∃ P : Fin 2 → ℚ[X], (∀ t, (P t).degree < 1) ∧
     (hgraph := hgraph) (hpoly := hpoly) (i := 0)
     (hcut := component_powerBatchedAgreementCuts 0 (by simp))
   exact ⟨P, hP, hagreement⟩
-
-noncomputable local instance graphComponentDecidableEq : DecidableEq ℚ := Classical.decEq _
 
 open Classical in
 /-- One joint agreement cut for a two-entry tuple yields a common agreement. -/

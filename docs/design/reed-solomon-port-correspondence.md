@@ -1852,6 +1852,12 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordi
 
 Acceptance cases in `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement.lean` exhibit a nonempty retained family and check its graph-coordinate degree bound, then exhibit a retained pair and an exceptional set of size zero for a one-point domain with a one-point sample. No public source declarations were omitted.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedAdmissibility.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/GraphAdmissibility.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+The graph restriction, specialized jet, Taylor coefficient, admissibility structure and its fields, evaluation identities, and specialization theorem keep their names. `exists_admissibleChartTuple_of_symbolic_prime_agreements_of_exponent` is renamed to `exists_admissibleChartTuple_of_primeTaylorComponent_agreements`; its mathematical result is unchanged and uses the existing prime-component graph theorem and joint equations. The symbolic equation names are supplied by the existing joint Taylor-chart API. No public declarations from the source unit were left out.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedComponentAgreement.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/ComponentAgreement.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -4546,6 +4552,10 @@ Acceptance cases check the polynomial-valued source prime bound with a polynomia
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/Frobenius/GraphCounting.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 An acceptance case applies `admissibleFrobeniusPairs_card_le_degreeOf` to a singleton family containing an admissible pair from the existing concrete component example. Its initial-equation identity is shared by the ideal-membership and nonvanishing proofs.
+
+Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+An acceptance example applies `exists_admissibleChartTuple_of_primeTaylorComponent_agreements` to the existing component ideal, agreement cuts, and separant fixtures. It specializes the returned admissible tuple at zero and checks the Taylor reconstruction identity.
 
 ## `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart.lean`
 
