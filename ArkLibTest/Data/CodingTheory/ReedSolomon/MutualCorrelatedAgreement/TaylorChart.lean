@@ -5,7 +5,9 @@ Authors: Quang Dao
 -/
 
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TaylorChart.PointRecognition
+import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TaylorChart.PairCounting
 import Mathlib.Algebra.Field.ZMod
+import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 import Mathlib.Tactic.NormNum
 
 /-!
@@ -385,6 +387,103 @@ example :
   refine ⟨F₀, G₀, hF, hG, ?_, ?_, hchart.1, hchart.2⟩
   · simpa only [hdom] using hsample0.1
   · simpa only [hdom] using hsample0.2
+
+end
+
+end ReedSolomon
+
+namespace ReedSolomon
+
+noncomputable section
+
+/-- The specialization of a concrete degree-one pair has degree below two. -/
+example :
+    (correlatedPairSpecialization (RingHom.id ℚ) (3 : ℚ)
+      (Polynomial.X, Polynomial.C (2 : ℚ))).degree < 2 := by
+  exact degree_correlatedPairSpecialization_lt (RingHom.id ℚ) 3
+    (Polynomial.X, Polynomial.C (2 : ℚ))
+    (by norm_num [Polynomial.degree_X]) (by norm_num [Polynomial.degree_C])
+
+private abbrev PairCountingField := AlgebraicClosure ℚ
+
+private def pairCountingEquation :
+    DifferentialPolynomial (Polynomial PairCountingField) 0 :=
+  MvPolynomial.X (some (0 : Fin 1))
+
+private def pairCountingPair : Polynomial ℚ × Polynomial ℚ := (0, 0)
+
+private def pairCountingIota : ℚ →+* PairCountingField := algebraMap ℚ PairCountingField
+
+private theorem pairCountingSeparantEval :
+    (chartPairPullback pairCountingIota (0 : PairCountingField) pairCountingPair
+      (jointInitialJetSeparant 0 pairCountingEquation)).eval 0 ≠ 0 := by
+  rw [jointInitialJetSeparant, eval_chartPairPullback_symbolic]
+  simp [initialJetSeparant, pairCountingEquation, pairCountingPair, separant]
+
+private theorem pairCountingAdmissible :
+    IsAdmissibleChartPair pointDomain (fun _ ↦ 0) (fun _ ↦ 0) pairCountingIota 0
+      pairCountingEquation 1 1 1 pairCountingPair := by
+  refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · simp [pairCountingPair]
+  · simp [pairCountingPair]
+  · norm_num [pairCountingPair, pointDomain, commonPolynomialAgreementSet]
+  · simp [chartPairPullback, jointInitialJetEquation, initialJetEquation,
+      pairCountingEquation, pairCountingPair, affinePairCurve, polynomialJet]
+  · intro l hl
+    omega
+  · intro hzero
+    apply pairCountingSeparantEval
+    simpa using congrArg (fun p : PairCountingField[X] ↦ p.eval 0) hzero
+  · intro l
+    fin_cases l
+    simp [chartPairPullback, jointTaylorReconstructionError, jointCommonTaylorNumerator,
+      jointInitialJetSeparant, commonTaylorNumeratorOver, pairCountingEquation,
+      pairCountingPair, rationalTaylorNumeratorOver, affinePairCurve, polynomialJet]
+
+private def pairCountingPairs : Finset (Polynomial ℚ × Polynomial ℚ) :=
+  {pairCountingPair}
+
+/-- A regular challenge specializes a concrete admissible pair to its Taylor reconstruction. -/
+example :
+    rationalTaylorPolynomial (0 : PairCountingField)
+      (MvPolynomial.map (Polynomial.evalRingHom (0 : PairCountingField)) pairCountingEquation)
+      1 (chartPairJet pairCountingIota 0 0 pairCountingPair) =
+        correlatedPairSpecialization pairCountingIota 0 pairCountingPair := by
+  exact (pairCountingAdmissible.specialize (by omega) 0 (by
+    exact pairCountingSeparantEval)).2.2.2
+
+/-- The finite-set incidence bound applies to a nonempty concrete admissible-pair set. -/
+example : pairCountingPair ∈ pairCountingPairs ∧ (pairCountingPairs.card : ℚ) ≤ 1 := by
+  constructor
+  · simp [pairCountingPairs]
+  · have hbound := admissibleChartPairs_card_le pointDomain (fun _ ↦ 0) (fun _ ↦ 0)
+      pairCountingIota (0 : PairCountingField) pairCountingEquation 1 1 1 1
+      (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+      (by simp [pairCountingEquation, MvPolynomial.weightedTotalDegree,
+        MvPolynomial.support_X])
+      pairCountingPairs (by
+        intro pair hp
+        have hpair : pair = pairCountingPair := by simpa [pairCountingPairs] using hp
+        subst pair
+        exact pairCountingAdmissible)
+    simpa using hbound
+
+/-- The filtered family of concrete admissible pairs obeys the same incidence bound. -/
+example :
+    pairCountingPair ∈ admissibleChartPairFamily pointDomain (fun _ ↦ 0) (fun _ ↦ 0)
+      pairCountingIota (0 : PairCountingField) pairCountingEquation 1 1 1 ∧
+    ((admissibleChartPairFamily pointDomain (fun _ ↦ 0) (fun _ ↦ 0) pairCountingIota
+      (0 : PairCountingField) pairCountingEquation 1 1 1).card : ℚ) ≤ 1 := by
+  constructor
+  · exact (mem_admissibleChartPairFamily_iff pointDomain (fun _ ↦ 0) (fun _ ↦ 0)
+      pairCountingIota (0 : PairCountingField) pairCountingEquation 1 1 1 (by norm_num)
+      pairCountingPair).2 pairCountingAdmissible
+  · have hbound := admissibleChartPairFamily_card_le pointDomain (fun _ ↦ 0) (fun _ ↦ 0)
+      pairCountingIota (0 : PairCountingField) pairCountingEquation 1 1 1 1
+      (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+      (by simp [pairCountingEquation, MvPolynomial.weightedTotalDegree,
+        MvPolynomial.support_X])
+    simpa using hbound
 
 end
 

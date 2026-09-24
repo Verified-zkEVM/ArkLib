@@ -1937,6 +1937,16 @@ Merges `FirstOrder/Squarefree/Bounds.lean` and `FirstOrder/Squarefree/SingularTa
 `r ≤ j` and `A.natDegree = r`, and `singularTail_map_eq_zero_of_common_root` drops both `IsDomain`
 assumptions.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/PairCounting.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/PairCounting.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`chartPairPullback` → `chartPairPullback`, `chartPairJet` → `chartPairJet`, `IsAdmissibleChartPair` → `IsAdmissibleChartPair`, `eval_chartPairPullback_symbolic` → `eval_chartPairPullback_symbolic`, `degree_correlatedPairSpecialization_lt` → `degree_correlatedPairSpecialization_lt`, `coeff_taylor_correlatedPairSpecialization` → `coeff_taylor_correlatedPairSpecialization`, `IsAdmissibleChartPair.specialize` → `IsAdmissibleChartPair.specialize`, `admissibleChartPairs_card_le` → `admissibleChartPairs_card_le`, `admissibleChartPairFamily` → `admissibleChartPairFamily`, `mem_admissibleChartPairFamily_iff` → `mem_admissibleChartPairFamily_iff`, and `admissibleChartPairFamily_card_le` → `admissibleChartPairFamily_card_le`.
+
+The chart numerator exponent defaulted to `2*K` in the source and is explicit in the destination API. Generalized `admissibleChartPairs_card_le` and `admissibleChartPairFamily_card_le` to remove the positive-`k` premise: for `k > 0` they retain the source incidence estimate, and for `k = 0` the degree conditions force every pair to zero, yielding a singleton bound.
+
+The private source helper `jetDegree_pos_of_initialSeparant_ne_zero` was not ported because the destination incidence theorem handles regular-jet counting without its positivity premise. The existing acceptance file `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart.lean` retains the degree-specialization example and adds a concrete admissible-pair example covering specialization and both cardinal bounds.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/PointRecognition.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/PointRecognition.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -2579,6 +2589,10 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/G
 
 `exists_regular_solution_jet_family` is not ported because its default-`2K` exponent is a thin wrapper; use `exists_regular_solution_jet_family_of_exponent` with `taylorExponentSufficient_two_mul` when that exponent is needed. `totalJetDegree_map_eq` is covered by `PolynomialDifferential.jetTotalDegree_map_eq` in `BaseChange.lean`. `exists_forall_jetEvaluation_ne_zero_map` is retained in the combined module as the common-center theorem, but has no corresponding declaration in this unit's source snapshot.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Geometry/RegularCounting.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`finite_regular_solutions_card_le` → `card_le_of_regular_solutions_agreement`. The result allows any algebraically closed field extension and an explicit sufficient Taylor exponent, uses the sharp numerator `n - k + 1` and `jetTotalDegree`, and drops the positive-degree and positive-`k` assumptions.
+
 ## `ArkLib/Data/Polynomial/Differential/TaylorChartAlgebra.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Symbolic/TaylorCuts.lean` at ArkLib revision
@@ -2688,6 +2702,10 @@ positive-dimensional prime containing the high cuts and not containing the separ
 fewer than `k` agreement equations at distinct points. The test derives the source statement,
 with `Fin n ↪ F`, `τ = 2K`, `0 < k ≤ A ≤ n` and the subtype cut list, and shows that `r < K` and
 `A - k + 1 ≤ #ι` are needed.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Geometry/SharpCounting.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`finite_regularHighCutJets_card_le_sharp_of_exponent` and `finite_regularHighCutJets_card_le_sharp` are covered by `card_le_of_highTaylorCuts_of_agreement_sharp`. The theorem accepts any finite index type and an explicit sufficient Taylor exponent, uses `jetTotalDegree`, and does not require positive degree, positive `k`, or a global nonzero-separant hypothesis; regularity remains an assumption for each jet. The fixed `2 * K` case is covered by `taylorExponentSufficient_two_mul`, so `finite_regularHighCutJets_card_le_sharp` is not a separate declaration.
 
 ## `ArkLib/Data/Polynomial/Differential/TaylorIndexWeight.lean`
 
@@ -4565,6 +4583,14 @@ Moved the retained-curve acceptance cases to the differential directory test. Th
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/PolynomialCurve/Witness.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 The acceptance case checks the generalized agreement characterization with a concrete characteristic-two solution and a cubic received curve.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Geometry/SharpCounting.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+A singleton-jet case exercises `card_le_of_highTaylorCuts_of_agreement_sharp`.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Geometry/RegularCounting.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+The shared acceptance example applies `exists_regular_solution_jet_family_of_exponent` to the nonempty singleton family `{0}` for `Q = Y₀` over `ℚ`, and applies `card_le_of_regular_solutions_agreement` to the same family with one evaluation point.
 
 ## `ArkLibTest/Data/Probability/Uniform.lean`
 
