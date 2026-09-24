@@ -11,6 +11,7 @@ public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionS
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.RateBound
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.BlockLength
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.FiniteRatio
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.UniformEnvelope
 
 /-!
 # Rate-dependent partition-support curve certificates
@@ -26,6 +27,8 @@ the degree, dimension and agreement bounds needed for this construction.
 * `exists_partitionSupport_curve_certificate_of_paddedRateBlockThreshold` and
   `exists_partitionSupport_curve_certificate_of_rateBlockThreshold`: the two block-length
   thresholds supply the certificate parameters.
+* `RatePartitionEnvelope.exists_curve_certificate`: a closed-form multiplicity envelope gives a
+  uniform jet cap and challenge height `150ν`.
 
 ## References
 
@@ -175,5 +178,84 @@ theorem exists_partitionSupport_curve_certificate_of_rateBlockThreshold {F : Typ
   have hD : 0 < ⌊rate * n⌋₊ := by omega
   exact exists_partitionSupport_curve_certificate_of_rateBlockGuards parameters hrate hagreement
     hd hD hDlower hkD hagreementUpper hAn centers received hreceived
+
+namespace RatePartition
+
+/-- A closed-form multiplicity envelope gives a symbolic curve certificate with total-jet cap
+`⌈m / δ²⌉₊ - 1` and challenge height `150` times that cap. -/
+theorem RatePartitionEnvelope.exists_curve_certificate {F : Type*} [Field F]
+    {δ scale : ℝ} {n k A ℓ : ℕ}
+    (e : RatePartitionEnvelope δ (closedMultiplicity scale (uniformDerivativeOrder δ)) n k A)
+    (hδ : 0 < δ) (hδone : δ < 1) (hd : 500 ≤ uniformDerivativeOrder δ)
+    (hscale : 1 < scale * (uniformDerivativeOrder δ : ℝ) ^ 3)
+    (hAn : A ≤ n) (centers : Fin n ↪ F) (received : Fin n → F[X])
+    (hreceived : ∀ i, (received i).natDegree ≤ ℓ) :
+    Nonempty (SymbolicReceivedCurve.Certificate A k ℓ
+      (⌈(closedMultiplicity scale (uniformDerivativeOrder δ) : ℝ) / δ ^ 2⌉₊ - 1)
+      (uniformDerivativeOrder δ)
+      (ℓ * (150 * (⌈(closedMultiplicity scale (uniformDerivativeOrder δ) : ℝ) /
+        δ ^ 2⌉₊ - 1))) centers received) := by
+  let d := uniformDerivativeOrder δ
+  let m := closedMultiplicity scale d
+  let ν := ⌈(m : ℝ) / δ ^ 2⌉₊ - 1
+  have hdpos : 0 < d := by dsimp [d]; exact uniformDerivativeOrder_pos δ
+  have hmpos : 0 < m := by
+    apply Nat.ceil_pos.mpr
+    have hscale_pos : 0 < scale := by
+      by_contra h
+      have hscale_nonpos : scale ≤ 0 := le_of_not_gt h
+      have hd3_nonneg : (0 : ℝ) ≤ (d : ℝ) ^ 3 := by positivity
+      nlinarith
+    have hdcast : (1 : ℝ) ≤ d := by exact_mod_cast (show 1 ≤ d by omega)
+    have hlog : 0 < Real.log (6 * (d : ℝ)) := Real.log_pos (by nlinarith)
+    exact mul_pos (mul_pos hscale_pos (by positivity)) hlog
+  have hνpos : 0 < ν := by
+    have hδ2 : 0 < δ ^ 2 := sq_pos_of_pos hδ
+    have hδ2one : δ ^ 2 < 1 := by nlinarith [hδone]
+    have hmreal : (1 : ℝ) ≤ m := by exact_mod_cast (show 1 ≤ m by omega)
+    have hratio : 1 < (m : ℝ) / δ ^ 2 := (lt_div_iff₀ hδ2).2 (by linarith)
+    have hratio' : (↑(1 : ℕ) : ℝ) < (m : ℝ) / δ ^ 2 := by simpa using hratio
+    have hceil : 1 < ⌈(m : ℝ) / δ ^ 2⌉₊ := Nat.lt_ceil.mpr hratio'
+    dsimp [ν]
+    omega
+  have hD : 0 < e.ambientDegree := by
+    have horder := e.order_le
+    omega
+  have hW : 0 < partitionWeightBudget e.rate e.agreement d m := by
+    simpa only [d, m] using partitionWeightBudget_closedMultiplicity_pos
+      e.rate_pos e.rate_lt_agreement.le hscale
+  have hdegree : ∀ u, PartitionSupportEligible e.ambientDegree d
+      (partitionWeightBudget e.rate e.agreement d m) (m * A : ℕ) u →
+      totalJetDegree u ≤ ν := by
+    intro u hu
+    have htotal := totalJetDegree_lt_of_partitionSupportEligible hD hu
+    have hambient : (0 : ℝ) < e.ambientDegree := by exact_mod_cast hD
+    have hδ2 : 0 < δ ^ 2 := sq_pos_of_pos hδ
+    have hbound : ((m * A : ℕ) : ℝ) / e.ambientDegree ≤ (m : ℝ) / δ ^ 2 := by
+      apply (div_le_div_iff₀ hambient hδ2).2
+      have hAn' : (A : ℝ) ≤ n := by exact_mod_cast hAn
+      have hm' : (0 : ℝ) ≤ m := Nat.cast_nonneg _
+      push_cast
+      nlinarith [mul_le_mul_of_nonneg_left e.ambient_lower hm',
+        mul_le_mul_of_nonneg_left hAn' (mul_nonneg hm' hδ2.le)]
+    have hceil : (m : ℝ) / δ ^ 2 ≤ ⌈(m : ℝ) / δ ^ 2⌉₊ := Nat.le_ceil _
+    have hlt : (totalJetDegree u : ℝ) < ⌈(m : ℝ) / δ ^ 2⌉₊ :=
+      htotal.trans_le (hbound.trans hceil)
+    change totalJetDegree u ≤ ⌈(m : ℝ) / δ ^ 2⌉₊ - 1
+    exact Nat.le_sub_one_of_lt (by exact_mod_cast hlt)
+  obtain ⟨cert⟩ := exists_partitionSupport_curve_certificate_of_finiteRatio hD hd
+    hmpos e.rate_pos (e.rate_pos.trans e.rate_lt_agreement) hW e.message_le
+    e.rate_upper e.agreement_lower centers received hreceived hdegree
+    (by norm_num : (1 : ℝ) < 151 / 150) e.ratio_gt.le
+  have hγeq : (151 / 150 : ℝ) = 1 + 1 / (150 : ℝ) := by norm_num
+  have hheight : marginHeight ν (151 / 150 : ℝ) = 150 * ν := by
+    rw [hγeq]
+    exact marginHeight_one_add_inv hνpos (by norm_num)
+  have cert' : Nonempty (SymbolicReceivedCurve.Certificate A k ℓ ν d
+      (ℓ * (150 * ν)) centers received) := by
+    simpa only [hheight] using (show Nonempty _ from ⟨cert⟩)
+  simpa only [d, m, ν] using cert'
+
+end RatePartition
 
 end ReedSolomon.HiddenDerivative
