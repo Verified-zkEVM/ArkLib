@@ -1687,6 +1687,14 @@ No public declaration from this source module was omitted. The separate
 `agreeingPolynomials_eq_empty_of_card_lt` API is not duplicated; pointwise emptiness follows from
 `DecoderCertificate.decoder_eq_empty_of_card_lt`.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/ComponentDimension.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/ComponentDimension.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Ported the chart and source coefficient maps, localization lemmas, prime degree bounds, hereditary component bounds, and finite hybrid incidence theorem. Renamed `chart_prime_hilbertPolynomial_natDegree_le_of_agreements_of_exponent` to `chart_prime_affineHilbertPolynomial_natDegree_le_of_agreements_of_exponent`, and renamed both `symbolicSource_prime_hilbertPolynomial_natDegree_le_of_...` theorems to use the canonical `affineHilbertPolynomial` name. The chart bound now removes the `c ≤ k` premise. The polynomial source kernel theorem removes primality and separant nonvanishing assumptions. The finite incidence theorem removes `A ≤ n` and the unused initial separant nonvanishing premise.
+
+The local symbolic source equation and numerator definitions now use `jointInitialJetEquation`, `jointInitialJetSeparant`, `jointCommonTaylorNumerator`, and `jointTaylorAgreementEquation`. The chart and source localization arguments share a private comparison proof. Principal-open and agreement-index helpers were replaced by direct zero-locus/set membership and `Set.ncard` expressions. The affine kernel specialization was omitted as unused; the component-or-excluded interface was omitted because no theorem in the unit uses it; the separate source prime Hilbert-degree wrapper is covered by the existing generic `MvPolynomial.natDegree_affineHilbertPolynomial_le_of_mem` theorem.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/EquationDescent.lean`
 
 Ported from `HiddenDerivative/RootFinding/MutualCorrelatedAgreement/EquationDescent.lean` at ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d:
@@ -3828,6 +3836,10 @@ place of the conjunction `natDegree ≤ k ∧ #(cutsInIdeal P cuts) ≤ k - natD
 primality, and counting with `Set.ncard` instead of the source's `cutsInIdeal` Finset. The test
 derives the conjunction and shows that positive dimension is needed.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/ComponentDimension.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Added `MvPolynomial.natDegree_affineHilbertPolynomial_add_ncard_le_of_polynomialCoefficientEvaluation`, a generic bound for the affine Hilbert degree plus the size of a set of polynomial-evaluation equations contained in an ideal of dimension greater than one. The source unit had no declaration with this name; this theorem provides the set-indexed count bound used by the source component theorem.
+
 ## `ArkLib/ToMathlib/RingTheory/MvPolynomial/CappedBidegree.lean`
 
 Ported from the index and submodule part of
@@ -4202,6 +4214,10 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Poly
 
 Acceptance cases check a positive-dimensional prime component's sample interpolation, graph coverage, and nonzero restricted separant. They also check the single-tuple and finite-family exact-agreement bounds with positive power batching, including two distinct family candidates.
 
+Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Acceptance cases check a source prime with an actual agreement cut that improves its degree bound, a chart prime with a nonempty cut family, the chart/source/first-order component bounds, and the affine received-line specialization. The finite-incidence case checks finiteness, the hybrid cardinality bound, and a regular origin satisfying an agreement cut.
+
 ## `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart.lean`
 
 Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/PointRecognition.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -4244,3 +4260,9 @@ PMF computation is not added, and `$ᵖ` plus `Pr_{…}[…]` remain retired syn
 Ported from `ArkLibTest/ToMathlib/MvPolynomial.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 Acceptance cases check both evaluation directions using nonconstant polynomials and distinct values for the distinguished and remaining variables.
+
+## `ArkLibTest/ToMathlib/RingTheory/MvPolynomial.lean`
+
+Ported from `ArkLibTest/ToMathlib/RingTheory/MvPolynomial.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+The acceptance case checks the generic count theorem on a dimension-two coordinate ideal containing one evaluation equation.
