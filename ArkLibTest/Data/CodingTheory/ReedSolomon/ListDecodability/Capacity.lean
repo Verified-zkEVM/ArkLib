@@ -581,19 +581,17 @@ example :
       ((1 : ℕ) : ℝ) ≤ (⌊sampleRate * n⌋₊ : ℝ) := by exact_mod_cast hfloor
       _ ≤ sampleRate * n := Nat.floor_le (by positivity)
   refine ⟨p, n, rfl, ?_⟩
-  exact hbound ℚ n 1 n hn (by norm_num) (by simpa using hkR) hAn (by rfl)
+  have hSelector := hbound ℚ n 1 n hn (by norm_num) (by simpa using hkR) hAn (by rfl)
     (ratePartitionSampleDomain n) (fun _ => 0)
     (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
+  have hDirect := ReedSolomon.ratePartition_close_list_bound (F := ℚ) (p := p) (n := n)
+    (k := 1) (A := n) hR hRa haone hd hn (by norm_num) (by simpa using hkR) hAn (by rfl)
+    (ratePartitionSampleDomain n) (fun _ => 0)
+    (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
+  exact ⟨hDirect.1, hSelector.2⟩
 
 private noncomputable def uniformSampleDelta : ℝ := 1 / 5
 private noncomputable def uniformSampleLength : ℕ := uniformBlockThreshold uniformSampleDelta
-
-private def uniformSampleDomain : Fin uniformSampleLength ↪ ℚ where
-  toFun i := (i.val : ℚ)
-  inj' i j hij := by
-    change (i.val : ℚ) = (j.val : ℚ) at hij
-    apply Fin.ext
-    exact_mod_cast hij
 
 private theorem uniformSampleGap :
     ((1 : ℕ) : ℝ) + uniformSampleDelta * uniformSampleLength ≤ uniformSampleLength := by
@@ -620,9 +618,10 @@ private theorem uniformSampleGap :
 open Classical in
 /-- The uniform small-gap bound holds at the selected block length over the rationals. -/
 example :
-    (closePolynomialSet uniformSampleDomain (fun _ => (0 : ℚ)) 1 uniformSampleLength).Finite ∧
-      ((closePolynomialSet uniformSampleDomain (fun _ => (0 : ℚ)) 1 uniformSampleLength).ncard :
-        ℝ) ≤
+    (closePolynomialSet (ratePartitionSampleDomain uniformSampleLength)
+      (fun _ => (0 : ℚ)) 1 uniformSampleLength).Finite ∧
+      ((closePolynomialSet (ratePartitionSampleDomain uniformSampleLength)
+        (fun _ => (0 : ℚ)) 1 uniformSampleLength).ncard : ℝ) ≤
         (uniformJetCap uniformSampleDelta : ℝ) ^ 2 *
           (2 * uniformJetCap uniformSampleDelta / uniformSampleDelta) ^
             uniformDerivativeOrder uniformSampleDelta * uniformSampleLength ^
@@ -630,19 +629,20 @@ example :
       (let d := uniformDerivativeOrder uniformSampleDelta
        let ν := uniformJetCap uniformSampleDelta
        let C : ℝ := (ν : ℝ) ^ 2 * (2 * ν / uniformSampleDelta) ^ d
-      (closePolynomialSet uniformSampleDomain (fun _ => (0 : ℚ)) 1
+      (closePolynomialSet (ratePartitionSampleDomain uniformSampleLength) (fun _ => (0 : ℚ)) 1
         uniformSampleLength).Finite ∧
-         ((closePolynomialSet uniformSampleDomain (fun _ => (0 : ℚ)) 1
-           uniformSampleLength).ncard : ℝ) ≤ C * uniformSampleLength ^ d) := by
+         ((closePolynomialSet (ratePartitionSampleDomain uniformSampleLength) (fun _ => (0 : ℚ))
+           1 uniformSampleLength).ncard : ℝ) ≤ C * uniformSampleLength ^ d) := by
   have hchar : ringChar ℚ = 0 ∨ uniformSampleLength ≤ ringChar ℚ :=
     Or.inl (ringChar.eq_zero : ringChar ℚ = 0)
   have hExpanded := uniformRatePartition_close_list_bound
     (δ := uniformSampleDelta) (n := uniformSampleLength) (k := 1) (A := uniformSampleLength)
     (by norm_num [uniformSampleDelta]) (by norm_num [uniformSampleDelta]) (by rfl)
-    (by norm_num) uniformSampleGap (by rfl) uniformSampleDomain (fun _ => 0) hchar
+    (by norm_num) uniformSampleGap (by rfl) (ratePartitionSampleDomain uniformSampleLength)
+    (fun _ => 0) hchar
   exact ⟨hExpanded.1, hExpanded.2, uniform_capacity_list_bound uniformSampleDelta
     (by norm_num [uniformSampleDelta]) (by norm_num [uniformSampleDelta])
     uniformSampleLength 1 uniformSampleLength (by rfl) (by norm_num) uniformSampleGap
-    (by rfl) uniformSampleDomain (fun _ => 0) hchar⟩
+    (by rfl) (ratePartitionSampleDomain uniformSampleLength) (fun _ => 0) hchar⟩
 
 end RatePartitionAcceptance
