@@ -136,6 +136,18 @@ example :
     exact mk_X_mem_quotientDegreeLE _ _
   exact affineHilbertFunction_le_of_injective incl hinj hX 3
 
+example :
+    ∃ m c, 0 < m ∧ 0 < c ∧ ∀ N,
+      affineHilbertFunction (Ideal.span {(X 0 : MvPolynomial (Fin 1) ℚ)}) N ≤
+        m * affineHilbertFunction (⊥ : Ideal (MvPolynomial (Fin 1) ℚ)) (c * N) := by
+  let f : MvPolynomial (Fin 1) ℚ →ₐ[ℚ] MvPolynomial (Fin 1) ℚ := AlgHom.id _ _
+  let g : (MvPolynomial (Fin 1) ℚ ⧸ (⊥ : Ideal (MvPolynomial (Fin 1) ℚ))) →ₐ[ℚ]
+      (MvPolynomial (Fin 1) ℚ ⧸ Ideal.span {(X 0 : MvPolynomial (Fin 1) ℚ)}) :=
+    Ideal.quotientMapₐ _ f bot_le
+  have hf : Function.Surjective f := fun x ↦ ⟨x, rfl⟩
+  have hg : Function.Surjective g := Ideal.quotientMap_surjective (H := bot_le) hf
+  exact exists_affineHilbertFunction_le_mul_of_finite g (AlgHom.Finite.of_surjective g hg)
+
 example : Module.finrank ℚ (quotientBidegreeLE
     (Ideal.span {(X none : MvPolynomial (Option (Fin 1)) ℚ)}) 1 1) ≤ 2 := by
   have hg0 : (X none : MvPolynomial (Option (Fin 1)) ℚ) ≠ 0 := X_ne_zero none
