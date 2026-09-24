@@ -120,7 +120,8 @@ lemma filter_map_conflict_length (hp : p ≥ n + 2) (hn : 1 ≤ n)
   set arr := (Array.range p).filterMap fun i =>
     if h : i < p then
       let x : ZMod p := (⟨i, h⟩ : Fin p)
-      if srs.1[0] ^ x.val ≠ srs.1[1]'(Nat.lt_add_of_pos_left hn) ∧ x ≠ αᵢ then some x
+      if srs.1[0]'(Nat.succ_pos n) ^ x.val ≠ srs.1[1]'(Nat.lt_add_of_pos_left hn) ∧
+          x ≠ αᵢ then some x
       else none
     else none
   -- Convert Array.size to Finset.card via Nodup
@@ -134,17 +135,19 @@ lemma filter_map_conflict_length (hp : p ≥ n + 2) (hn : 1 ≤ n)
   -- The complement (univ \ S) contains only x where srs.1[0]^x.val = srs.1[1] ∨ x = αᵢ,
   -- i.e., at most 2 elements (≤ 1 discrete log solution + αᵢ).
   have hCompl : (Finset.univ \ S).card ≤ 2 := by
-    -- orderOf srs.1[0] = p (since srs.1[0] ≠ 1 in a group of prime order)
-    have hord : orderOf srs.1[0] = p := by
-      have hdvd : orderOf srs.1[0] ∣ p := by
-        have := orderOf_dvd_natCard (G := G₁) srs.1[0]
+    set g₀ := srs.1[0]'(Nat.succ_pos n) with hg₀
+    set h₁ := srs.1[1]'(Nat.lt_add_of_pos_left hn) with hh₁
+    -- orderOf g₀ = p (since g₀ ≠ 1 in a group of prime order)
+    have hord : orderOf g₀ = p := by
+      have hdvd : orderOf g₀ ∣ p := by
+        have := orderOf_dvd_natCard (G := G₁) g₀
         rwa [PrimeOrderWith.hCard] at this
       rcases (Nat.dvd_prime Fact.out).1 hdvd with h1 | hp'
       · exact absurd (orderOf_eq_one_iff.1 h1) hgen
       · exact hp'
     -- Injectivity of x ↦ g^x.val for x : ZMod p
     have hinj : ∀ a b : ZMod p,
-        srs.1[0] ^ a.val = srs.1[0] ^ b.val → a = b := by
+        g₀ ^ a.val = g₀ ^ b.val → a = b := by
       intro a b heq
       rw [pow_eq_pow_iff_modEq, hord] at heq
       have hval : a.val = b.val := by
@@ -155,7 +158,7 @@ lemma filter_map_conflict_length (hp : p ≥ n + 2) (hn : 1 ≤ n)
         _ = b := ZMod.natCast_zmod_val b
     -- Any x satisfying the condition is in S
     have hmem : ∀ x : ZMod p,
-        srs.1[0] ^ x.val ≠ srs.1[1]'(Nat.lt_add_of_pos_left hn) → x ≠ αᵢ → x ∈ S := by
+        g₀ ^ x.val ≠ h₁ → x ≠ αᵢ → x ∈ S := by
       intro x hpow hneα
       change x ∈ arr.toList.toFinset
       simp only [List.mem_toFinset, arr, Array.toList_filterMap, Array.toList_range,
@@ -166,7 +169,7 @@ lemma filter_map_conflict_length (hp : p ≥ n + 2) (hn : 1 ≤ n)
     -- The complement ⊆ {x | g^x.val = h} ∪ {αᵢ}
     have hsub : Finset.univ \ S ⊆
         Finset.univ.filter (fun x : ZMod p =>
-          srs.1[0] ^ x.val = srs.1[1]'(Nat.lt_add_of_pos_left hn)) ∪ {αᵢ} := by
+          g₀ ^ x.val = h₁) ∪ {αᵢ} := by
       intro x hx
       simp only [Finset.mem_sdiff, Finset.mem_univ, true_and] at hx
       simp only [Finset.mem_union, Finset.mem_filter, Finset.mem_univ, true_and,
@@ -175,17 +178,17 @@ lemma filter_map_conflict_length (hp : p ≥ n + 2) (hn : 1 ≤ n)
       exact hx (hmem x h.1 h.2)
     -- The filter set has ≤ 1 element (injectivity of g^·)
     have hfilt : (Finset.univ.filter (fun x : ZMod p =>
-        srs.1[0] ^ x.val = srs.1[1]'(Nat.lt_add_of_pos_left hn))).card ≤ 1 := by
+        g₀ ^ x.val = h₁)).card ≤ 1 := by
       rw [Finset.card_le_one]
       intro a ha b hb
       simp only [Finset.mem_filter, Finset.mem_univ, true_and] at ha hb
       exact hinj a b (ha ▸ hb ▸ rfl)
     calc (Finset.univ \ S).card
         ≤ (Finset.univ.filter (fun x : ZMod p =>
-            srs.1[0] ^ x.val = srs.1[1]'(Nat.lt_add_of_pos_left hn)) ∪ {αᵢ}).card :=
+            g₀ ^ x.val = h₁) ∪ {αᵢ}).card :=
           Finset.card_le_card hsub
       _ ≤ (Finset.univ.filter (fun x : ZMod p =>
-            srs.1[0] ^ x.val = srs.1[1]'(Nat.lt_add_of_pos_left hn))).card +
+            g₀ ^ x.val = h₁)).card +
           ({αᵢ} : Finset _).card := Finset.card_union_le _ _
       _ ≤ 2 := by simp only [Finset.card_singleton]; omega
   -- sdiff identity: (univ \ S).card + S.card = p
@@ -203,7 +206,8 @@ lemma choose_s_conflict_size (hp : p ≥ n + 2) (hn : 1 ≤ n)
   set arr := (Array.range p).filterMap fun i =>
     if h : i < p then
       let x : ZMod p := (⟨i, h⟩ : Fin p)
-      if srs.1[0] ^ x.val ≠ srs.1[1]'(Nat.lt_add_of_pos_left hn) ∧ x ≠ αᵢ then some x
+      if srs.1[0]'(Nat.succ_pos n) ^ x.val ≠ srs.1[1]'(Nat.lt_add_of_pos_left hn) ∧
+          x ≠ αᵢ then some x
       else none
     else none
   have hnodup : arr.toList.Nodup := filter_map_conflict_nodup αᵢ srs hn
@@ -226,7 +230,8 @@ lemma choose_s_conflict_alpha (hn : 1 ≤ n) (αᵢ : ZMod p)
   set arr := (Array.range p).filterMap fun i =>
     if h : i < p then
       let x : ZMod p := (⟨i, h⟩ : Fin p)
-      if srs.1[0] ^ x.val ≠ srs.1[1]'(Nat.lt_add_of_pos_left hn) ∧ x ≠ αᵢ then some x
+      if srs.1[0]'(Nat.succ_pos n) ^ x.val ≠ srs.1[1]'(Nat.lt_add_of_pos_left hn) ∧
+          x ≠ αᵢ then some x
       else none
     else none
   simp only [List.mem_toFinset]
@@ -265,7 +270,8 @@ lemma choose_s_conflict_tau (hn : 1 ≤ n) (αᵢ : ZMod p) (τ : ZMod p)
   set arr := (Array.range p).filterMap fun i =>
     if h : i < p then
       let x : ZMod p := (⟨i, h⟩ : Fin p)
-      if srs.1[0] ^ x.val ≠ srs.1[1]'(Nat.lt_add_of_pos_left hn) ∧ x ≠ αᵢ then some x
+      if srs.1[0]'(Nat.succ_pos n) ^ x.val ≠ srs.1[1]'(Nat.lt_add_of_pos_left hn) ∧
+          x ≠ αᵢ then some x
       else none
     else none
   simp only [List.mem_toFinset]
@@ -327,7 +333,7 @@ lemma h1_ne_one (hp : p ≥ n + 2) (hpG1 : Nat.card G₁ = p) (hn : 1 ≤ n)
     (hsrs : srs = Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ)
     (hgen : srs.1[0] ≠ 1) :
     let S := chooseSConflict αᵢ srs hn
-    let Zₛ := ∏ s ∈ S, (X - C s)
+    let Zₛ : CPolynomial (ZMod p) := ∏ s ∈ S, (X - C s)
     let h₁ := KZG.commit srs.1 (Zₛ.coeff ∘ Fin.val)
     h₁ ≠ 1 := by
     intro S Zₛ h₁
@@ -370,18 +376,16 @@ lemma conflict_query_ne_tau (hpG1 : Nat.card G₁ = p) (hn : 1 ≤ n)
   obtain ⟨cm, hc⟩ := Groups.exists_zmod_power_of_generator hpG1 hg₁ hord c
   obtain ⟨prf₁, hprf₁⟩ := Groups.exists_zmod_power_of_generator hpG1 hg₁ hord pf₁
   obtain ⟨prf₂, hprf₂⟩ := Groups.exists_zmod_power_of_generator hpG1 hg₁ hord pf₂
-  have hfield_verify₁ : cm = prf₁ * (τ - α₁) + β₁ := by
-    grind [verify_opening_equation pairing α₁ β₁ τ cm prf₁ c pf₁ srs hsrs hpair
-      hc hprf₁ hverify₁]
-  have hfield_verify₂ : cm = prf₂ * (τ - α₁) + β₂ := by
-    rw [← hα] at hverify₂
-    grind [verify_opening_equation pairing α₁ β₂ τ cm prf₂ c pf₂ srs hsrs hpair
-      hc hprf₂ hverify₂]
-  have hfield_conflict : prf₁ * (τ - α₁) + β₁ = prf₂ * (τ - α₁) + β₂ := by
-    simp_all
+  have hfield_verify₁ : cm = prf₁ * (τ - α₁) + β₁ := eq_add_of_sub_eq
+    (verify_opening_equation pairing α₁ β₁ τ cm prf₁ c pf₁ srs hsrs hpair hc hprf₁ hverify₁)
+  rw [← hα] at hverify₂
+  have hfield_verify₂ : cm = prf₂ * (τ - α₁) + β₂ := eq_add_of_sub_eq
+    (verify_opening_equation pairing α₁ β₂ τ cm prf₂ c pf₂ srs hsrs hpair hc hprf₂ hverify₂)
+  have hfield_conflict : prf₁ * (τ - α₁) + β₁ = prf₂ * (τ - α₁) + β₂ :=
+    hfield_verify₁.symm.trans hfield_verify₂
   apply hβ
-  have hzero : τ - α₁ = 0 := by simp [hατ]
-  simpa [hzero] using hfield_conflict
+  rwa [hατ, sub_self, MulZeroClass.mul_zero, MulZeroClass.mul_zero, _root_.zero_add,
+    _root_.zero_add] at hfield_conflict
 
 /-- The conflict-branch solution satisfies the ARSDH exponent equation. -/
 lemma h1_zs_eq_h2 (hp : p ≥ n + 2) (hpG1 : Nat.card G₁ = p) (hn : 1 ≤ n)
@@ -394,10 +398,10 @@ lemma h1_zs_eq_h2 (hp : p ≥ n + 2) (hpG1 : Nat.card G₁ = p) (hn : 1 ≤ n)
     (hverify₂ : KZG.verifyOpening (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
       srs.2 c pf₂ α₂ β₂) :
     let S := chooseSConflict α₁ srs hn
-    let Zₛ := ∏ s ∈ S, (X - C s)
+    let Zₛ : CPolynomial (ZMod p) := ∏ s ∈ S, (X - C s)
     let h₁ := KZG.commit srs.1 (Zₛ.coeff ∘ Fin.val)
     let h₂ : G₁ := (pf₁ / pf₂) ^ (1 / (β₂ - β₁)).val
-    let Zₛᵤₐ := ∏ s ∈ S ∪ {α₁} , (X - C s)
+    let Zₛᵤₐ : CPolynomial (ZMod p) := ∏ s ∈ S ∪ {α₁} , (X - C s)
     h₂ = h₁ ^ (1 / Zₛᵤₐ.eval τ).val := by
     intro S Zₛ h₁ h₂ Zₛᵤₐ
     -- Prove RHS: `h₁ ^ (1 / Zₛᵤₐ.eval τ) = g₁ ^ (1 / (τ - α₁))`.
@@ -438,15 +442,13 @@ lemma h1_zs_eq_h2 (hp : p ≥ n + 2) (hpG1 : Nat.card G₁ = p) (hn : 1 ≤ n)
     obtain ⟨cm, hc⟩ := Groups.exists_zmod_power_of_generator hpG1 hg₁ hord c
     obtain ⟨prf₁, hprf₁⟩ := Groups.exists_zmod_power_of_generator hpG1 hg₁ hord pf₁
     obtain ⟨prf₂, hprf₂⟩ := Groups.exists_zmod_power_of_generator hpG1 hg₁ hord pf₂
-    have hfield_verify₁ : cm = prf₁ * (τ - α₁) + β₁ := by
-      grind [verify_opening_equation pairing α₁ β₁ τ cm prf₁ c pf₁ srs hsrs hpair
-        hc hprf₁ hverify₁]
-    have hfield_verify₂ : cm = prf₂ * (τ - α₁) + β₂ := by
-      rw [← hα] at hverify₂
-      grind [verify_opening_equation pairing α₁ β₂ τ cm prf₂ c pf₂ srs hsrs hpair
-        hc hprf₂ hverify₂]
-    have hfield_conflict : prf₁ * (τ - α₁) + β₁ = prf₂ * (τ - α₁) + β₂ := by
-      simp_all
+    have hfield_verify₁ : cm = prf₁ * (τ - α₁) + β₁ := eq_add_of_sub_eq
+      (verify_opening_equation pairing α₁ β₁ τ cm prf₁ c pf₁ srs hsrs hpair hc hprf₁ hverify₁)
+    rw [← hα] at hverify₂
+    have hfield_verify₂ : cm = prf₂ * (τ - α₁) + β₂ := eq_add_of_sub_eq
+      (verify_opening_equation pairing α₁ β₂ τ cm prf₂ c pf₂ srs hsrs hpair hc hprf₂ hverify₂)
+    have hfield_conflict : prf₁ * (τ - α₁) + β₁ = prf₂ * (τ - α₁) + β₂ :=
+      hfield_verify₁.symm.trans hfield_verify₂
     have hfield_solution : (prf₁ - prf₂)/(β₂ - β₁) = 1/(τ - α₁) := by
       have hβ_ne : β₂ - β₁ ≠ 0 := sub_ne_zero.mpr (Ne.symm hβ)
       have hτα : τ - α₁ ≠ 0 := by
@@ -471,14 +473,14 @@ lemma h1_zs_eq_h2 (hp : p ≥ n + 2) (hpG1 : Nat.card G₁ = p) (hn : 1 ≤ n)
       have := congr_arg ZMod.val hcast
       rw [ZMod.val_natCast] at this
       exact this
-    simp_all
+    exact hlhs.trans hrhs.symm
 
 /-- ARSDH output for the conflicting-evaluations branch of the reduction. -/
 def conflictingEvaluationsArsdhOutput {L : ℕ} (hn : 1 ≤ n)
     (tr : FunctionBindingExtTranscript (p := p) n L G₁ G₂) (i₁ i₂ : Fin L) :
     FunctionBindingArsdhOutput (p := p) G₁ :=
   let S := chooseSConflict (tr.queryOf i₁) tr.srs hn
-  let Zₛ := ∏ s ∈ S, (X - C s)
+  let Zₛ : CPolynomial (ZMod p) := ∏ s ∈ S, (X - C s)
   let h₁ := KZG.commit tr.srs.1 (Zₛ.coeff ∘ Fin.val)
   let h₂ : G₁ := (tr.proofs i₁ / tr.proofs i₂) ^
     (1 / (tr.responseOf i₂ - tr.responseOf i₁)).val

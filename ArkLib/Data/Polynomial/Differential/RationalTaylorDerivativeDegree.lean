@@ -7,6 +7,7 @@ module
 
 public import ArkLib.Data.MvPolynomial.WeightedDegree
 public import ArkLib.Data.Polynomial.Differential.RationalTaylorAlgebra
+public import ArkLib.Data.Polynomial.Differential.TaylorChart
 public import ArkLib.Data.Polynomial.Differential.TaylorIndexWeight
 public import ArkLib.ToMathlib.MvPolynomial.ClearedSubstitution
 
@@ -25,6 +26,7 @@ then follows for every sufficient denominator exponent.
   bound on every rational Taylor numerator.
 * `degreeOf_commonTaylorNumeratorOver_le`: every numerator padded to a sufficient exponent has a
   bound of `τ * (v - 1) + l` in the highest jet variable.
+* `degreeOf_commonTaylorNumerator_firstOrder_le`: the field-valued first-order specialization.
 
 ## References
 
@@ -43,8 +45,7 @@ variable {F : Type*} {r : ℕ}
 
 /-- The initial separant has degree at most one less in the highest jet variable. -/
 theorem degreeOf_initialJetSeparant_le [CommSemiring F] [Nontrivial F]
-    (center : Polynomial F)
-    (Q : DifferentialPolynomial (Polynomial F) r) :
+    (center : F) (Q : DifferentialPolynomial F r) :
     (initialJetSeparant center Q).degreeOf (Fin.last r) ≤
       Q.degreeOf (some (Fin.last r)) - 1 := by
   rw [← weightedTotalDegree_piSingle]
@@ -174,6 +175,52 @@ theorem degreeOf_commonTaylorNumeratorOver_firstOrder
     rw [weightedTotalDegree_indexWeight_eq_jetDegree_one, jetDegree]
     exact hjet
   simpa using degreeOf_commonTaylorNumeratorOver_le center Q v K τ hτ (by omega) hv hQ l
+
+/-- If the highest jet variable of a first-order differential polynomial has degree at most `v`,
+the padded Taylor numerator has degree at most `τ * (v - 1) + l` in that variable. -/
+theorem degreeOf_commonTaylorNumerator_firstOrder_le [Field F] (center : F)
+    (Q : DifferentialPolynomial F 1) (v K τ : ℕ)
+    (hτ : TaylorExponentSufficient 1 K τ) (hv : 0 < v)
+    (hjet : Q.degreeOf (some 1) ≤ v) (l : Fin K) :
+    (commonTaylorNumerator center Q τ l.val).degreeOf 1 ≤ τ * (v - 1) + l.val := by
+  let Qover : DifferentialPolynomial (Polynomial F) 1 := MvPolynomial.map Polynomial.C Q
+  have hjet' : Q.degreeOf (some 1) ≤ v := hjet
+  rw [MvPolynomial.degreeOf_def] at hjet'
+  have hQover : Qover.degreeOf (some 1) ≤ v := by
+    rw [MvPolynomial.degreeOf_def]
+    change Multiset.count (some 1) (MvPolynomial.map Polynomial.C Q).degrees ≤ v
+    exact (Multiset.count_le_of_le (some 1)
+      (MvPolynomial.degrees_map_le (p := Q) (f := Polynomial.C))).trans hjet'
+  have hover := degreeOf_commonTaylorNumeratorOver_firstOrder
+    (Polynomial.C center) Qover v K τ hτ hv hQover l
+  have hmap :
+      (MvPolynomial.map (Polynomial.aeval (0 : F)).toRingHom
+        (commonTaylorNumeratorOver (F := F) (Polynomial.C center) Qover τ l.val)).degreeOf 1 ≤
+        (commonTaylorNumeratorOver (F := F) (Polynomial.C center) Qover τ l.val).degreeOf 1 := by
+    simp only [MvPolynomial.degreeOf_def]
+    exact Multiset.count_le_of_le 1
+      (MvPolynomial.degrees_map_le
+        (p := commonTaylorNumeratorOver (F := F) (Polynomial.C center) Qover τ l.val)
+        (f := (Polynomial.aeval (0 : F)).toRingHom))
+  have hQeval :
+      MvPolynomial.map (Polynomial.aeval (0 : F)).toRingHom Qover = Q := by
+    dsimp only [Qover]
+    rw [MvPolynomial.map_map]
+    have he : (Polynomial.aeval (0 : F)).toRingHom.comp Polynomial.C = RingHom.id F := by
+      ext x
+      simp
+    rw [he]
+    exact MvPolynomial.map_id Q
+  have hspec := map_commonTaylorNumeratorOver_eq
+    (F := F) (φ := Polynomial.aeval (0 : F)) (Polynomial.C center) Qover τ l.val
+  rw [hQeval] at hspec
+  have hspec' :
+      MvPolynomial.map (Polynomial.aeval (0 : F)).toRingHom
+          (commonTaylorNumeratorOver (F := F) (Polynomial.C center) Qover τ l.val) =
+        commonTaylorNumerator center Q τ l.val := by
+    simpa using hspec
+  rw [← hspec']
+  exact hmap.trans hover
 
 end
 

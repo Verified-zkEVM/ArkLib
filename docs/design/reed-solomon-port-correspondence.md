@@ -1032,6 +1032,12 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/Fi
 
 Ported the first-order automatic agreement, surplus, multiplicity, derivative cap, jet degree, source and rank counts, challenge height, and density definitions. Renamed `automaticBeta` to `automaticDerivativeRatio`; the associated derivative-ratio theorems use the new name. The first derivative-ratio positivity theorem drops unused rate and threshold guards, and the upper-bound theorems drop an unused agreement upper guard. Generalized `automatic_sourceDensity_sub_rankDensityEnvelope` by dropping unused agreement assumptions. Reused the generic counts from `RoundedCounts`. The source threshold, recipe-specific count and surplus results, and scaled-height floor result are covered by existing first-order declarations; unused recipe helpers and challenge-height applications were not exposed.
 
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/DerivativeCappedCounting.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Geometry/DerivativeCounting.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`finite_regularHighCutJets_card_le_derivativeCapped_of_exponent` is specialized from the generic `card_le_of_firstOrderHighTaylorCuts_of_agreement_capped` theorem in `ArkLib.Data.Polynomial.Differential.TaylorChartIncidence`, using the first-order stage caps. It drops the global separant and positive `j` and `k` assumptions and expresses agreement counts with `Set.ncard`. The source `degreeOf_initialJetSeparant_firstOrder_le` is covered by the existing generalized `degreeOf_initialJetSeparant_le`. The private positivity helper is unnecessary because regularity on each set member supplies the needed nonzero equation, and the private two-jet cap-membership helper is replaced by a private general capped-degree helper. No public source declaration remains unported.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/FiniteRateParameters.lean`
 
 Ported from `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/FiniteRateParameters.lean` at ArkLib revision
@@ -1773,6 +1779,12 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/HiddenDerivat
 In `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/SolutionEmbedding.lean`, the general form `agreeingPolynomialsToBoundedSolution` → `solutionEmbeddingOf` accepts any root proof on list members; `agreeingPolynomialToBoundedSolution_polynomial` → `solutionEmbeddingOf_polynomial` gives its polynomial-preservation law. The new subtype projection theorem `agreeingPolynomial_boundedSolution_polynomial` supports this direct construction.
 
 No source public declarations were omitted. The generic `boundedSolutionOfPolynomial` constructor and its preservation theorem were removed; callers construct the bounded-solution subtype directly.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/Parameters.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/Parameters.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`exists_prescribed_correlated_parameters` keeps its name and is generalized by dropping the source hypothesis `0 < k`. It uses the current `SymbolicReceivedCurve.Certificate` and `receivedLine` APIs. The theorem gives a symbolic received-line certificate, size and agreement bounds, and all binomial pivots below the block length from the characteristic bound. A concrete rational acceptance case checks that the certificate conclusion is inhabited. The `prescribed_correlated_extension_pivots` wrapper was not ported: its base-field pivot statement is the final conjunct of the parameter theorem, and extension-field nonvanishing follows by injectivity of the field homomorphism at existing use sites, so no generic wrapper was added.
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/ProductBounds.lean`
 

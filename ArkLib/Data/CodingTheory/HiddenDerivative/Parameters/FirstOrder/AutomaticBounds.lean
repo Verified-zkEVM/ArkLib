@@ -132,11 +132,11 @@ theorem half_agreement_slack_le_automaticGapBracket {rho eta : ℝ}
     have ha₀rho : rho < a₀ := ha₁rho.trans_le ha₀a₁
     have hfirst : 2 ≤ (a₀ + a₁) / rho := by
       apply (le_div_iff₀ hrho).2
-      nlinarith
+      linarith
     have hsecond : -(3 / 4 : ℝ) ≤
         3 * (a₀ + a₁ - 2) / (4 * (2 - rho)) := by
       apply (le_div_iff₀ (mul_pos (by norm_num) (by linarith))).2
-      nlinarith
+      linarith
     linarith
   have hdiff :
       automaticGapBracket rho (firstOrderRateThreshold rho + eta) =
@@ -149,12 +149,12 @@ theorem half_agreement_slack_le_automaticGapBracket {rho eta : ℝ}
     unfold firstOrderCleanExpression
     field_simp [ne_of_gt hrho, ne_of_gt (show 0 < 2 - rho by linarith)]
       at hroot' ⊢
-    nlinarith
+    linear_combination hroot'
   change (a₀ - a₁) / 2 ≤ automaticGapBracket rho
     (firstOrderRateThreshold rho + eta)
   rw [hdiff]
   have hmul := mul_le_mul_of_nonneg_left hcoef (sub_nonneg.mpr ha₀a₁)
-  nlinarith
+  linarith
 
 /-- The normalized surplus is bounded below by a rate-only multiple of the public slack. -/
 theorem automaticSurplusSlope_mul_eta_le {rho eta : ℝ}
@@ -251,7 +251,7 @@ theorem automaticMultiplicity_le_inv_eta {rho eta : ℝ}
       rw [le_div_iff₀ heta]
       unfold automaticSurplusSlope
       field_simp [ne_of_gt heta, ne_of_gt hgap]
-      nlinarith
+      linarith [mul_le_mul_of_nonneg_left hetaOne hgap.le]
 
 /-- The normalized derivative cap has the same inverse-slack bound as the multiplicity. -/
 theorem automaticDerivativeCap_le_inv_eta {rho eta : ℝ}
@@ -314,7 +314,7 @@ theorem automaticJetDegree_le_inv_eta {rho eta : ℝ}
     (hceil.le.trans (by simpa only [add_comm] using add_le_add_right hdiv 1)) heta.le
   unfold automaticJetBoundConstant
   field_simp [ne_of_gt hrho, ne_of_gt heta] at hscaled' ⊢
-  nlinarith
+  linarith [mul_le_mul_of_nonneg_right hetaOne hrho.le]
 
 /-- The continuous rank density stays below one throughout the automatic range. -/
 theorem automaticRankDensityEnvelope_le_one {rho a : ℝ}
@@ -344,11 +344,10 @@ theorem automaticRankCount_le_four_mul_cube {rho a : ℝ}
     hrho hrhoOne ha haOne
   have hdensity := automaticRankDensityEnvelope_le_one hrho hrhoOne ha haOne
   have hm0 : (0 : ℝ) ≤ m := by positivity
-  have hmul : (m : ℝ) ^ 3 * automaticRankDensityEnvelope rho a ≤ m ^ 3 := by
-    nlinarith [mul_nonneg (pow_nonneg hm0 3)
-      (sub_nonneg.mpr hdensity)]
+  have hmul : (m : ℝ) ^ 3 * automaticRankDensityEnvelope rho a ≤ m ^ 3 :=
+    mul_le_of_le_one_right (pow_nonneg hm0 3) hdensity
   dsimp only [m] at hm hrank hmul ⊢
-  nlinarith [mul_nonneg (sq_nonneg (automaticMultiplicity rho a : ℝ))
+  linarith [mul_nonneg (sq_nonneg (automaticMultiplicity rho a : ℝ))
     (sub_nonneg.mpr hm)]
 
 /-- The literal automatic challenge height is at most a rate-only multiple of `eta⁻²`. -/
@@ -409,7 +408,7 @@ theorem automaticChallengeHeight_le_inv_eta_sq {rho eta : ℝ}
     rw [div_le_div_iff₀ (mul_pos hc heta) (mul_pos hc (sq_pos_of_pos heta))]
     have := mul_le_mul_of_nonneg_left hmu (by norm_num : (0 : ℝ) ≤ 16)
     field_simp [ne_of_gt heta] at this ⊢
-    nlinarith
+    exact this
   have hetaOne : eta ≤ 1 := by
     have := automatic_eta_lt_rateGap haOne
     have hthresholdPos := (rate_lt_firstOrderRateThreshold hrho hrhoOne).trans' hrho
@@ -427,10 +426,9 @@ theorem automaticChallengeHeight_le_inv_eta_sq {rho eta : ℝ}
           automaticSurplusSlope rho) / eta ^ 2
       rw [le_div_iff₀ (sq_pos_of_pos heta)]
       have hjet0 := (automaticJetBoundConstant_pos hrho hrhoOne).le
-      have hetaSqOne : eta ^ 2 ≤ 1 := by
-        nlinarith [mul_nonneg heta.le (sub_nonneg.mpr hetaOne)]
+      have hetaSqOne : eta ^ 2 ≤ 1 := pow_le_one₀ heta.le hetaOne
       field_simp [ne_of_gt heta, ne_of_gt hc]
-      nlinarith
+      linarith
 
 /-- The automatic staircase moment is at most a rate-only multiple of `eta⁻³`. -/
 theorem automaticStaircaseMoment_le_inv_eta_cube {rho eta : ℝ}
@@ -660,7 +658,7 @@ theorem automaticListConstant_le_cubic_slack_envelope {rho eta : ℝ} {n D A : �
   dsimp only [a, C, q, mu, M] at hbound ⊢
   unfold automaticListBoundConstant
   field_simp [ne_of_gt heta] at hbound ⊢
-  nlinarith
+  exact hbound
 
 /-- The automatic closed exceptional-set constant has a quintic slack envelope and quadratic
 block-length dependence. -/
@@ -694,7 +692,7 @@ theorem automaticExceptionConstant_le_quintic_slack_envelope {rho eta : ℝ} {n 
   dsimp only [a, C, q, mu, M, h] at hbound ⊢
   unfold automaticExceptionBoundConstant
   field_simp [ne_of_gt heta] at hbound ⊢
-  nlinarith
+  exact hbound
 
 /-- The public physical-rate guards imply both explicit automatic closed envelopes at once. -/
 theorem automaticClosedListAndExceptionBounds {rho eta : ℝ} {n k D A : ℕ}
@@ -714,7 +712,7 @@ theorem automaticClosedListAndExceptionBounds {rho eta : ℝ} {n k D A : ℕ}
         automaticExceptionBoundConstant rho * n ^ 2 / eta ^ 5 := by
   have hnReal : (0 : ℝ) < n := by exact_mod_cast hn
   have hD : (D : ℝ) ≤ rho * n := automatic_degree_le_rate_mul hDdef hk
-  have hrhoN : rho * (n : ℝ) < n := by nlinarith
+  have hrhoN : rho * (n : ℝ) < n := mul_lt_of_lt_one_left hnReal hrhoOne
   have hDnLt : D < n := by exact_mod_cast hD.trans_lt hrhoN
   have hDn : D ≤ n := hDnLt.le
   have haRho : rho < firstOrderRateThreshold rho + eta :=
