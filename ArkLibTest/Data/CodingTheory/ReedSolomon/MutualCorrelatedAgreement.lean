@@ -8,6 +8,7 @@ import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.ExtensionD
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.EquationDescent
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FullDimension
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FrobeniusAdmissibility
+import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FrobeniusRetainedFamily
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.GraphLine
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.GraphLineComponent
 import
@@ -1387,6 +1388,8 @@ private theorem extractedAdmissibleFrobeniusPair :
       simpa [componentWord, Polynomial.C_0] using component_admissibility_cut 0 (by simp))
   exact ⟨F₀, G₀, hP⟩
 
+local instance : DecidableEq ComponentField := Classical.decEq _
+
 example :
     ∃ F₀ G₀ : ℚ[X],
       ({(F₀, G₀)} : Finset (ℚ[X] × ℚ[X])).card ≤
@@ -1404,6 +1407,56 @@ example :
       rw [Finset.mem_singleton] at hmem
       cases hmem
       exact hP)
+
+example :
+    0 < (frobeniusRetainedPairFamily domain componentWord componentWord
+      (algebraMap ℚ ComponentField) (fun _ ↦ (0 : ComponentField)) 0
+      (componentEquation (E := ComponentField)) 1 1 2 1).card ∧
+    (frobeniusRetainedPairFamily domain componentWord componentWord
+      (algebraMap ℚ ComponentField) (fun _ ↦ (0 : ComponentField)) 0
+      (componentEquation (E := ComponentField)) 1 1 2 1).card ≤
+      (jointInitialJetEquation (r := 0) (0 : ComponentField)
+        (componentEquation (E := ComponentField))).degreeOf (some 0) := by
+  obtain ⟨F₀, G₀, hP⟩ := extractedAdmissibleFrobeniusPair
+  have hmem := (mem_frobeniusRetainedPairFamily_iff domain componentWord componentWord
+    (algebraMap ℚ ComponentField) (fun _ ↦ (0 : ComponentField)) 0
+    (componentEquation (E := ComponentField)) 1 1 2 1 (F₀, G₀)).mpr hP
+  have hbound := frobeniusRetainedPairFamily_card_le (K := 1) (k := 1)
+    domain componentWord componentWord (algebraMap ℚ ComponentField)
+    (fun _ ↦ (0 : ComponentField)) 0 (componentEquation (E := ComponentField)) 1 0 2
+    (by norm_num) (by norm_num) (taylorExponentSufficient_two_mul 0 1)
+    component_initialEquation_ne_zero
+  exact ⟨Finset.card_pos.mpr ⟨(F₀, G₀), hmem⟩, hbound⟩
+
+example :
+    ∃ F₀ G₀ : ℚ[X],
+      (F₀, G₀) ∈ frobeniusRetainedPairFamily domain componentWord componentWord
+        (algebraMap ℚ ComponentField) (fun _ ↦ (0 : ComponentField)) 0
+        (componentEquation (E := ComponentField)) 1 1 2 1 ∧
+      ∃ exceptional : Finset ComponentField, exceptional.card = 0 ∧
+        ∀ P ∈ frobeniusRetainedPairFamily domain componentWord componentWord
+            (algebraMap ℚ ComponentField) (fun _ ↦ (0 : ComponentField)) 0
+            (componentEquation (E := ComponentField)) 1 1 2 1,
+          ∀ z ∉ exceptional,
+            polynomialAgreementSet (domain.trans ⟨algebraMap ℚ ComponentField,
+              (algebraMap ℚ ComponentField).injective⟩)
+                (fun i ↦ algebraMap ℚ ComponentField (componentWord i) +
+                  z * algebraMap ℚ ComponentField (componentWord i))
+                (P.1.map (algebraMap ℚ ComponentField) +
+                  Polynomial.C z * P.2.map (algebraMap ℚ ComponentField)) =
+              commonPolynomialAgreementSet domain componentWord componentWord P.1 P.2 := by
+  classical
+  obtain ⟨F₀, G₀, hP⟩ := extractedAdmissibleFrobeniusPair
+  have hmem := (mem_frobeniusRetainedPairFamily_iff domain componentWord componentWord
+    (algebraMap ℚ ComponentField) (fun _ ↦ (0 : ComponentField)) 0
+    (componentEquation (E := ComponentField)) 1 1 2 1 (F₀, G₀)).mpr hP
+  obtain ⟨exceptional, hcard, hagree⟩ := exists_exceptional_frobeniusRetainedPairFamily
+    domain componentWord componentWord (algebraMap ℚ ComponentField)
+    (fun _ ↦ (0 : ComponentField)) 0 (componentEquation (E := ComponentField)) 1 1 2 1
+  have hcard' : exceptional.card = 0 := by
+    apply Nat.eq_zero_of_le_zero
+    simpa [Fintype.card_fin] using hcard
+  exact ⟨F₀, G₀, hmem, exceptional, hcard', hagree⟩
 
 example :
     ∃ F₀ G₀ : ℚ[X],
