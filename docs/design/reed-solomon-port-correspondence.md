@@ -689,6 +689,14 @@ recovered in the tests.
 The source's lower bound `finrank_interpolationSpace_lowerBound` is in
 `Interpolation/Dimension.lean`. Deferred: the shell counts.
 
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/JohnsonCertificate.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Ordinary/JohnsonCertificate.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`JohnsonColumnIndex`, `JohnsonLocalRowIndex`, `JohnsonRowIndex`, `johnsonColumns`, `johnsonColumns_y₀`, `johnsonColumns_x`, `johnsonColumns_totalJetDegree`, `johnsonColumns_injective`, `johnsonLocalRow`, `johnsonConstraintMatrix`, `johnsonFinMatrix`, `johnsonFinRowWeight`, `card_johnsonColumnIndex`, `sum_johnsonColumns_slots`, `sum_johnsonFinRowWeight_slots`, `johnsonConstraintMatrix_kernel_iff`, `johnsonFinMatrix_kernel_iff`, `johnsonConstraintMatrix_degree_le`, `JohnsonSymbolicCertificate`, and `johnsonInterpolant_jetDegree_le` retain their names. `johnsonLocalRow_localJetDegree` is generalized to the current local jet-degree weight interface. The matrix vanishing results remove the received-polynomial degree bound, and `johnsonFinMatrix_degree_le` removes an unused row-weight premise. `exists_johnson_symbolic_certificate` removes the unused agreement-at-most-one and threshold-at-most-length assumptions.
+
+The generic `SourceColumn.coeff_interpolant_natDegree_le` covers `coeff_johnsonInterpolant_natDegree_le`; `interpolant_mem_weightedSupportSpace` covers `interpolant_mem_johnsonWeightedSupport`; and the jet-degree bound follows from `SourceColumn.interpolant_totalJetDegree_le`, so `support_johnsonInterpolant_subset_range` is not needed. The source `TaylorHeight` import is unnecessary because its coefficient-height API is not used by the certificate proof. The weighted-support and specialization soundness declarations are in the existing `Symbolic/Soundness.lean` owner.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/WeightedSupportCertificate.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Symbolic/ReceivedLine.lean` and `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Symbolic/ReceivedCurve.lean` at ArkLib revision
@@ -1784,6 +1792,10 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Tayl
 
 `exists_graphLine_pair_of_symbolic_sample_of_exponent` keeps its name and mathematical substance in the canonical point-recognition owner. It supplies recognition for every sufficient exponent.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/Frobenius/TaylorChart.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`exists_frobeniusGraphLine_of_symbolic_sample` keeps its name. It is generalized from `Fin n` to an arbitrary embedded coordinate type and requires root equations only on the sample, as used by interpolation. The source file's only public declaration is covered; its interpolation and Taylor-cut helpers already live in the current `GraphLine` and `TaylorChartAlgebra` APIs, so nothing is deferred or unported.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TupleSpecialization.lean`
 
 Ported from
@@ -2109,6 +2121,10 @@ specialization modules at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a085
 The total-jet-degree API is extracted from
 `HiddenDerivative/RootFinding/Counting/TotalJetDegreeRootCount.lean` at the same revision.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Symbolic/TaylorDerivativeSupport.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`degreeOf_initialJetEquationOver_firstOrder` became `PolynomialDifferential.degreeOf_initialJetEquation_le`. The bound now applies at arbitrary differential order over a nontrivial commutative semiring.
+
 ## `ArkLib/Data/Polynomial/Differential/JetPrefix.lean`
 
 Ported from ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d.
@@ -2200,6 +2216,18 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/S
 `initialJetEquationOver_mem_restrictBidegree` and `initialJetSeparantOver_mem_restrictBidegree` become `initialJetEquation_mem_restrictBidegree` and `initialJetSeparant_mem_restrictBidegree` for the current `initialJetEquation` and `initialJetSeparant` APIs. The exponent and default-exponent forms of `commonTaylorNumeratorOver_mem_restrictBidegree` and `taylorAgreementEquationOver_mem_restrictBidegree` are each represented by one explicit-exponent theorem with a sufficiency proof. The agreement bound is stated for a received polynomial over `F[X]`. Separate coefficient-degree and jet-degree bounds support the rectangle results; the jet bounds use `jetTotalDegree`. Default-exponent wrappers are covered using `taylorExponentSufficient_two_mul`, and `flattenChallenge_jetDegree_le` is covered by `MvPolynomial.totalDegree_optionEquivRight`. The agreement-equation definition is supplied by main and retained unchanged; no source theorem remains blocked.
 
 The shared coefficient and bidegree results are generalized in `ArkLib/ToMathlib/MvPolynomial/PolynomialCoefficients.lean` and `ArkLib/ToMathlib/RingTheory/MvPolynomial/Bidegree.lean`: `source_mem_restrictBidegree_mono` becomes `mem_restrictBidegree_mono` for arbitrary `MvPolynomial` coefficients; private `challengeHeightLE_clearedSubstitution` becomes `CoeffNatDegreeLE.clearedSubstitution`, generalized to commutative semirings; and `flattenChallenge_challengeDegree_le` becomes `weightedTotalDegree_optionEquivRight_symm_coefficientDegree_le`, generalized to arbitrary variable types and nontrivial commutative semirings. `flattenChallenge_mem_restrictBidegree` is likewise generalized to those variable and semiring assumptions. The acceptance cases are in `ArkLibTest/Data/Polynomial/Differential.lean`, `ArkLibTest/ToMathlib/MvPolynomial.lean`, and `ArkLibTest/ToMathlib/RingTheory/MvPolynomial.lean`.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Symbolic/TaylorDerivativeSupport.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`initialJetEquationOver_mem_restrictDerivativeBidegree` became `PolynomialDifferential.initialJetEquation_mem_restrictCappedBidegree`. It now applies at arbitrary differential order and uses the destination capped-bidegree API.
+
+`commonTaylorNumeratorOver_mem_restrictDerivativeBidegree` became `PolynomialDifferential.commonTaylorNumeratorOver_mem_restrictCappedBidegree`. It states the same mathematical bounds with the destination degree and membership APIs.
+
+`degreeOf_taylorAgreementEquationOver_firstOrder` retains its name as `PolynomialDifferential.degreeOf_taylorAgreementEquationOver_firstOrder`. It keeps the same degree bound for arbitrary polynomial centers and evaluation points.
+
+`taylorAgreementEquationOver_mem_restrictDerivativeBidegree` became `PolynomialDifferential.taylorAgreementEquationOver_mem_restrictCappedBidegree`. It states the same mathematical bounds with the destination degree and membership APIs.
+
+`derivativeWeight_eq_piSingle` was not ported because it is a source-specific encoding helper. The destination capped-bidegree API bounds an indexed coordinate directly, and the existing `weightedTotalDegree_indexWeight_eq_jetDegree_one` supplies the needed first-order weighted-degree fact.
 
 ## `ArkLib/Data/Polynomial/Differential/RationalTaylorDerivativeDegree.lean`
 
@@ -3316,6 +3344,10 @@ Ported from `ArkLib/ToMathlib/AlgebraicGeometry/Incidence/GraphPullback.lean` at
 
 `aeval_map_optionEquivRight` and `aeval_optionEquivRight_symm` keep their names and are generalized from fields to commutative semiring algebras.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Symbolic/TaylorDerivativeSupport.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Added `MvPolynomial.optionEquivRight_symm_mem_restrictCappedBidegree`. It combines coefficient, total-degree, and coordinate bounds after flattening, using the existing weighted-degree identity for the coordinate bound.
+
 ## `ArkLib/ToMathlib/MvPolynomial/RootContraction.lean`
 
 Ported from `ArkLib/ToMathlib/MvPolynomial/RootContraction.lean` at the source revision. The
@@ -3877,6 +3909,10 @@ formula as `cappedBidegreeMixedVolume_eq` under `c ≤ b`; `mixedDerivativeImage
 is now `cappedBidegreeMixedVolume_mono_left`. New, with no source counterpart:
 `cappedBidegreeMixedVolume_mono_right`.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Symbolic/TaylorDerivativeSupport.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`mem_restrictDerivativeBidegree_of_bidegree` became `MvPolynomial.mem_restrictCappedBidegree_of_mem_restrictBidegree`. It applies to an arbitrary indexed coordinate and turns a bidegree rectangle plus a coordinate-degree bound into a capped bidegree bound.
+
 ## `ArkLib/ToMathlib/RingTheory/MvPolynomial/CappedDegree.lean`
 
 Ported from the exponent and submodule part of
@@ -4232,6 +4268,10 @@ Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/
 
 The acceptance cases consolidate default and exponent-aware point recognition with `K = 2`, `k = 1`, sample values `(0, 1)`, challenge `2`, and the high cut at `l = 1`; the exponent-aware case uses `τ = 1`. The new shared fixture declarations are `quadraticJetSampleEquation` and `quadraticJetSampleEquation_highNumerator_eq`. The equation has order-one numerator `−(Y₀ − 2)²`, which vanishes at the selected jet and is proved nonzero by evaluation at `Y₀ = 0`.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/Frobenius/TaylorChart.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+The acceptance case adds a concrete characteristic-two example with a nonzero one-point sample and checks the Frobenius chart reconstruction.
+
 ## `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/PointRecognition.lean`
 
 Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/PointRecognition.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -4247,6 +4287,10 @@ The acceptance module retains main's coefficient-map and regular-jet examples, h
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Geometry/SolutionEmbedding.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 The acceptance cases check `exists_regular_solution_jet_family_of_exponent` on `Y₀ = 0` over `ℚ` with `K = 2`, `k = 1`, and `τ = 4`, including the one-element family, initial equation, nonzero separant, the cut at order one, and agreement at two positions. They also check `exists_forall_jetEvaluation_ne_zero_map` for a nonempty regular family over `ZMod 2` and its algebraic closure.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Symbolic/TaylorDerivativeSupport.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Concrete `recursiveEq` examples check the initial-equation cap and degree, the common-numerator cap, and the Taylor-agreement cap and degree.
 
 ## `ArkLibTest/Data/Probability/Uniform.lean`
 
@@ -4268,3 +4312,13 @@ PMF computation is not added, and `$ᵖ` plus `Pr_{…}[…]` remain retired syn
 Ported from `ArkLibTest/ToMathlib/MvPolynomial.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 Acceptance cases check both evaluation directions using nonconstant polynomials and distinct values for the distinguished and remaining variables.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Symbolic/TaylorDerivativeSupport.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+An acceptance case checks that flattening preserves a separate cap on a polynomial variable.
+
+## `ArkLibTest/ToMathlib/RingTheory/MvPolynomial.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Symbolic/TaylorDerivativeSupport.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+An acceptance case checks capped-bidegree membership from a bidegree rectangle and a separate variable-degree bound.

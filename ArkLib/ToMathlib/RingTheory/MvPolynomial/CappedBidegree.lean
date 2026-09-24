@@ -43,6 +43,8 @@ so the statements on points in `ArkLib.ToMathlib.RingTheory.MvPolynomial.Monomia
   bidegree map as a surjective monomial map.
 * `MvPolynomial.cappedBidegreeExponents`, `MvPolynomial.restrictCappedBidegree`: the capped
   exponents and polynomials.
+* `MvPolynomial.mem_restrictCappedBidegree_of_mem_restrictBidegree`: a bidegree rectangle and a
+  separate variable-degree bound give a capped bidegree bound.
 * `MvPolynomial.mul_mem_restrictCappedBidegree`: the bounds add under multiplication.
 * `MvPolynomial.monomialMap_mem_restrictCappedBidegree`: total degree `N` maps to bounds
   `(a * N, b * N, c * N)`.
@@ -195,6 +197,20 @@ theorem mem_restrictCappedBidegree {P : MvPolynomial (Option σ) R} :
 theorem restrictCappedBidegree_le_restrictBidegree :
     restrictCappedBidegree σ R i a b c ≤ restrictBidegree σ R a b :=
   restrictSupport_mono R cappedBidegreeExponents_subset_bidegreeExponents
+
+/-- Intersecting a bidegree rectangle with a coordinate-degree bound caps that coordinate by the
+smaller of its total-degree and separate bounds. -/
+theorem mem_restrictCappedBidegree_of_mem_restrictBidegree
+    {P : MvPolynomial (Option σ) R} {c : ℕ}
+    (hP : P ∈ restrictBidegree σ R a b) (hc : P.degreeOf (some i) ≤ c) :
+    P ∈ restrictCappedBidegree σ R i a b (min b c) := by
+  rw [mem_restrictBidegree] at hP
+  rw [mem_restrictCappedBidegree]
+  intro m hm
+  have hmP := hP m hm
+  refine ⟨hmP.1, hmP.2, le_min ?_ ?_⟩
+  · exact (Finsupp.le_degree i _).trans hmP.2
+  · exact (monomial_le_degreeOf (some i) hm).trans hc
 
 /-- The bounds of capped polynomials add under multiplication. -/
 theorem mul_mem_restrictCappedBidegree {a' b' c' : ℕ} {P Q : MvPolynomial (Option σ) R}
