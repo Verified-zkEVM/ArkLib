@@ -44,6 +44,9 @@ example : ¬ UniformExactPowerAgreement domain2 swapWords 1 2 0 ∧
     exact hnot (hagree 1 (by simp [hempty]) (C 1) (by simp) (by rw [hfull]; simp))
   · simpa using uniformExactPowerAgreement_constantCode domain2 swapWords 2
 
+example : UniformExactPowerAgreement domain2 swapWords 2 2 0 :=
+  uniformExactPowerAgreement_fullDimension domain2 swapWords
+
 end ConstantCodeTest
 
 namespace InterpolationFamilyTest

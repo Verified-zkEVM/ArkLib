@@ -83,6 +83,9 @@ interleaved statements are in `ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.
   evaluations lifts to a polynomial decomposition.
 * `ReedSolomon.uniformExactPowerAgreement_singleton`: a single received word has uniform exact
   power agreement with no exceptional challenge.
+* `ReedSolomon.exists_exactPower_fullDimension` and
+  `ReedSolomon.uniformExactPowerAgreement_fullDimension`: every full-agreement candidate has exact
+  power agreement at full message dimension, with no exceptional challenge.
 * `ReedSolomon.hasExactPowerAgreement_id_iff_hasExactAgreement` and
   `ReedSolomon.uniformExactPowerAgreement_iff_uniformExactAgreement`: the polynomial predicates
   are the code-level predicates for `univariatePowersGenerator`.
@@ -472,6 +475,55 @@ theorem uniformExactPowerAgreement_singleton (domain : ι ↪ F) (w : Fin 1 → 
   · simp [powerBatchedPolynomial]
   · ext i
     simp [powerBatchedWord]
+
+/-- At full message dimension, one tuple of interpolants explains every candidate that agrees
+with the batched word on all coordinates, and its agreement set is the tuple's common agreement
+set. -/
+theorem exists_exactPower_fullDimension (domain : ι ↪ F) (w : Fin (ℓ + 1) → ι → F) :
+    ∃ P : Fin (ℓ + 1) → F[X], (∀ t, (P t).degree < Fintype.card ι) ∧
+      ∀ z (Q : F[X]), Q.degree < Fintype.card ι →
+        Fintype.card ι ≤ (polynomialAgreementSet domain (powerBatchedWord w z) Q).card →
+        HasExactPowerAgreement domain w (RingHom.id F) (Fintype.card ι) z Q := by
+  classical
+  obtain ⟨P, hP, hsample, hrecognize⟩ :=
+    exists_polynomialGraph_of_sample (k := Fintype.card ι) domain w Finset.univ (by simp)
+  refine ⟨P, hP, ?_⟩
+  intro z Q hQ hcard
+  have hfull : polynomialAgreementSet domain (powerBatchedWord w z) Q = Finset.univ := by
+    apply Finset.eq_univ_of_card
+    have hupper : (polynomialAgreementSet domain (powerBatchedWord w z) Q).card ≤
+        Fintype.card ι := by
+      simpa using (polynomialAgreementSet domain (powerBatchedWord w z) Q).card_le_univ
+    exact Nat.le_antisymm hupper hcard
+  have heval : ∀ i ∈ (Finset.univ : Finset ι),
+      Q.eval (domain i) = ∑ t, z ^ t.val * w t i := by
+    intro i hi
+    have hmem : i ∈ polynomialAgreementSet domain (powerBatchedWord w z) Q := by
+      rw [hfull]
+      exact hi
+    simpa only [powerBatchedWord] using (Finset.mem_filter.mp hmem).2
+  refine (hasExactPowerAgreement_id_iff domain w _ z Q).mpr ?_
+  refine ⟨P, hP, ?_, ?_⟩
+  · simpa only [Polynomial.map_id, RingHom.id_apply] using
+      hrecognize (RingHom.id F) z Q hQ (fun i _ ↦ heval i (Finset.mem_univ i))
+  · have hfullMapped :
+        polynomialAgreementSet domain (powerBatchedWord w z) Q = Finset.univ := hfull
+    rw [hfullMapped]
+    symm
+    apply Finset.eq_univ_of_forall
+    intro i
+    simp only [commonCurveAgreementSet, Finset.mem_filter, Finset.mem_univ, true_and]
+    exact hsample i (Finset.mem_univ i)
+
+/-- At full message dimension, uniform exact power agreement holds with no exceptional
+challenges. -/
+theorem uniformExactPowerAgreement_fullDimension (domain : ι ↪ F)
+    (w : Fin (ℓ + 1) → ι → F) :
+    UniformExactPowerAgreement domain w (Fintype.card ι) (Fintype.card ι) 0 := by
+  obtain ⟨P, hP, hgood⟩ := exists_exactPower_fullDimension domain w
+  refine ⟨∅, by simp, ?_⟩
+  intro z _ Q hQ hcard
+  exact hgood z Q hQ hcard
 
 end Exact
 
