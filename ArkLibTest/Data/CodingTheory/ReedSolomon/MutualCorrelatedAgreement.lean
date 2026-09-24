@@ -37,6 +37,8 @@ import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerBatch
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerBatchedIncidence
 import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerBatchedExceptionalChallenges
+import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerBatchedRegularEquation
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerBatchedPointRecognition
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerBatchedFrobeniusFamily
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.SingularTail
@@ -1454,3 +1456,41 @@ example : (firstOrderCurveFiberStageOne 2 exampleJet exampleCap (regularTaylorEx
         automaticDerivativeRatio, automaticAgreement, automaticGapBracket,
         firstOrderCleanExpression, firstOrderRateBeta, ht]
 end ReedSolomon.FirstOrder.Squarefree
+
+namespace ReedSolomon.PowerBatchedRegularEquationTest
+private abbrev regularField := AlgebraicClosure ℚ
+private def regularDomain : Fin 1 ↪ ℚ :=
+  ⟨fun _ ↦ 0, fun _ _ _ ↦ Subsingleton.elim _ _⟩
+private def regularWord : Fin 1 → Fin 1 → ℚ := fun _ _ ↦ 0
+private noncomputable abbrev regularMap : ℚ →+* regularField := algebraMap ℚ regularField
+private noncomputable abbrev regularEquation :
+    DifferentialPolynomial regularField[X] 0 := MvPolynomial.X (some (0 : Fin 1))
+open Classical in
+example : ∃ exceptional : Finset regularField,
+    (exceptional.card : ℚ) ≤ regularPowerBatchedAgreementBound 1 0 0 1 1 1 1 1 1 ∧
+    ∀ z ∉ exceptional,
+      letI : DecidableEq ℚ := fun a b ↦ Classical.propDecidable (a = b)
+      letI : DecidableEq regularField := fun a b ↦ Classical.propDecidable (a = b)
+      ∀ P : regularField[X], P.degree < 1 →
+      1 ≤ (polynomialAgreementSet
+        (regularDomain.trans ⟨regularMap, regularMap.injective⟩)
+        (powerBatchedWord (fun t i ↦ regularMap (regularWord t i)) z) P).card →
+      differentialSpecialization (challengeSpecialization regularEquation z) P = 0 →
+      differentialSpecialization
+        (separant (challengeSpecialization regularEquation z) (Fin.last 0)) P ≠ 0 →
+      HasExactPowerAgreement regularDomain regularWord regularMap 1 z P := by
+  have hjet : jetTotalDegree regularEquation ≤ 1 := by
+    rw [jetTotalDegree_le_iff]
+    intro u hu
+    have hu' : u = Finsupp.single (some (0 : Fin 1)) 1 := by
+      simpa only [regularEquation, MvPolynomial.support_X, Finset.mem_singleton] using hu
+    subst u
+    norm_num [totalJetDegree, jetDegreeWeight, Finsupp.weight]
+  have hheight : CoeffNatDegreeLE regularEquation 1 := by
+    exact (coeffNatDegreeLE_X (some (0 : Fin 1))).mono (by omega)
+  exact exists_exceptional_regularPowerBatchedAgreement
+    regularDomain regularWord regularMap regularEquation 1 1 1 1 1 1
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num) hjet hheight (by intro i hi hiK; omega)
+
+end ReedSolomon.PowerBatchedRegularEquationTest
