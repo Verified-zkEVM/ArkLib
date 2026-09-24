@@ -19,6 +19,7 @@ import
 import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerBatchedGeometricTransfer
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.LineToAffine
+import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerToLine
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TupleSpecialization
 import ArkLibTest.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TaylorChart
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.ComponentDimension
@@ -1443,5 +1444,35 @@ example :
   simpa [componentRetainedPairs, Fintype.card_fin] using
     exists_exceptional_frobeniusRetainedPairFamily domain componentWord componentWord
       componentMap (fun _ ↦ (0 : ComponentField)) 0 componentJet 1 1 2 1
+
+/-- Degree-one power agreement on one coordinate supplies the exact line interface. -/
+example : LineExactAgreementBound pointDomain 1 1 0 := by
+  apply lineExactAgreementBound_of_powerAgreement_one pointDomain 0
+  intro w
+  refine ⟨∅, by simp, ?_⟩
+  intro z _ Q hQ hclose
+  have hset : polynomialAgreementSet pointDomain (powerBatchedWord w z) Q = univ :=
+    Finset.eq_univ_of_card _
+      (le_antisymm (Finset.card_le_univ _) (by simpa [Fintype.card_fin] using hclose))
+  have hword : powerBatchedWord w z 0 = w 0 0 + z * w 1 0 := by
+    simp [powerBatchedWord, Fin.sum_univ_two]
+  have hval : Q.eval (pointDomain 0) = w 0 0 + z * w 1 0 := by
+    calc
+      Q.eval (pointDomain 0) = powerBatchedWord w z 0 :=
+        (mem_polynomialAgreementSet ..).mp (hset ▸ Finset.mem_univ (0 : Fin 1))
+      _ = w 0 0 + z * w 1 0 := hword
+  have hcoeff : Q.coeff 0 = w 0 0 + z * w 1 0 := by
+    simpa [pointDomain] using (coeff_zero_eq_eval_zero Q).trans hval
+  have hconst : Q = Polynomial.C (w 0 0 + z * w 1 0) := by
+    rw [eq_C_of_degree_le_zero (Order.lt_succ_iff.mp hQ), hcoeff]
+  apply (hasExactPowerAgreement_id_iff pointDomain w 1 z Q).mpr
+  refine ⟨![Polynomial.C (w 0 0), Polynomial.C (w 1 0)], ?_, ?_, ?_⟩
+  · intro t
+    fin_cases t <;> exact (degree_C_le).trans_lt (by norm_num)
+  · simpa [powerBatchedPolynomial, Fin.sum_univ_two, Polynomial.smul_eq_C_mul] using hconst
+  · rw [hset]
+    ext i
+    fin_cases i
+    simp [commonCurveAgreementSet, pointDomain]
 end
 end ReedSolomon.GraphLineComponentTest
