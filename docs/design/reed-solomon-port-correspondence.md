@@ -2140,6 +2140,14 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/S
 
 The shared coefficient and bidegree results are generalized in `ArkLib/ToMathlib/MvPolynomial/PolynomialCoefficients.lean` and `ArkLib/ToMathlib/RingTheory/MvPolynomial/Bidegree.lean`: `source_mem_restrictBidegree_mono` becomes `mem_restrictBidegree_mono` for arbitrary `MvPolynomial` coefficients; private `challengeHeightLE_clearedSubstitution` becomes `CoeffNatDegreeLE.clearedSubstitution`, generalized to commutative semirings; and `flattenChallenge_challengeDegree_le` becomes `weightedTotalDegree_optionEquivRight_symm_coefficientDegree_le`, generalized to arbitrary variable types and nontrivial commutative semirings. `flattenChallenge_mem_restrictBidegree` is likewise generalized to those variable and semiring assumptions. The acceptance cases are in `ArkLibTest/Data/Polynomial/Differential.lean`, `ArkLibTest/ToMathlib/MvPolynomial.lean`, and `ArkLibTest/ToMathlib/RingTheory/MvPolynomial.lean`.
 
+## `ArkLib/Data/Polynomial/Differential/RationalTaylorDerivativeDegree.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Symbolic/TaylorDerivativeDegree.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Renamed `degreeOf_initialJetSeparantOver_firstOrder` to `degreeOf_initialJetSeparant_le` and generalized it from fields to nontrivial commutative semirings. Added `degreeOf_rationalTaylorNumeratorOver_le` and `degreeOf_commonTaylorNumeratorOver_le` for arbitrary positive differential order over fields. `degreeOf_rationalTaylorNumeratorOver_firstOrder` and `degreeOf_commonTaylorNumeratorOver_firstOrder` keep their names as first-order specializations.
+
+`flattenChallenge_degreeOf_le` was not given a wrapper because the existing weighted-degree identities already provide the coordinate-degree identity. The redundant `degreeOf_optionEquivRight_symm_le` declaration and its constant-coefficient test were removed.
+
 ## `ArkLib/Data/Polynomial/Differential/RationalTaylorJointDegree.lean`
 
 Ported from `Symbolic/TaylorHeight.lean` and `Symbolic/TaylorDegree.lean` under the same source

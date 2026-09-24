@@ -15,6 +15,7 @@ import ArkLib.Data.Polynomial.Differential.JetPrefix
 import ArkLib.Data.Polynomial.Differential.JetPrefixPresentation
 import ArkLib.Data.Polynomial.Differential.RationalTaylor
 import ArkLib.Data.Polynomial.Differential.RationalTaylorAlgebra
+import ArkLib.Data.Polynomial.Differential.RationalTaylorDerivativeDegree
 import ArkLib.Data.Polynomial.Differential.RationalTaylorJointDegree
 import ArkLib.Data.Polynomial.Differential.RecursiveCount
 import ArkLib.Data.Polynomial.Differential.RegularIteration
@@ -761,27 +762,31 @@ example :
         (constantJet (F := ℚ)) ⟨0, by omega⟩
   · simpa using hSparse 1 (by decide)
 
-/-! ### Joint-degree numerator bound -/
-/-- At index `2`, the numerator for `Y₁² + t Y₀` at center `0` has joint degree at most `3`. -/
+private abbrev padded := commonTaylorNumeratorOver ℚ (Polynomial.C 0) recursiveEq 6 2
+/-- Recursive degree bounds for the separant and Taylor numerators of `Y₁² + t Y₀`. -/
 example :
-    jointTotalDegree
-      (rationalTaylorNumeratorOver ℚ (Polynomial.C 0) recursiveEq 2) ≤ 3 := by
-  simpa using jointTotalDegree_rationalTaylorNumeratorOver_le_of_coeffNatDegreeLE 0
-    recursiveEq 2 1 recursiveJet_le recursiveHeight 2
-private abbrev padded : MvPolynomial (Fin 2) (Polynomial ℚ) :=
-  commonTaylorNumeratorOver ℚ (Polynomial.C 0) recursiveEq 6 2
-
-/-- At index `2`, the padded common numerator satisfies its degree and bidegree bounds. -/
-example : CoeffNatDegreeLE padded 6 ∧ padded.totalDegree ≤ 7 ∧ flat padded ∈ rect 6 7 := by
-  exact ⟨coeffNatDegreeLE_commonTaylorNumeratorOver_le 0 recursiveEq 1 6 2
-      (by norm_num) recursiveHeight,
-    totalDegree_commonTaylorNumeratorOver_le_of_jet_and_exponent
-      (center := Polynomial.C 0) recursiveEq 2 3 6 (by norm_num)
-      (taylorExponentSufficient_two_mul 1 3) recursiveJet_le
-      ⟨2, by decide⟩,
-    commonTaylorNumeratorOver_mem_restrictBidegree 0 recursiveEq 1 2 3 6
+    (initialJetSeparant (Polynomial.C 0) recursiveEq).degreeOf (Fin.last 1) ≤
+      recursiveEq.degreeOf (some (Fin.last 1)) - 1 ∧
+    (rationalTaylorNumeratorOver ℚ (Polynomial.C 0) recursiveEq 2).degreeOf
+      (Fin.last 1) ≤ 3 ∧
+    (commonTaylorNumeratorOver ℚ (Polynomial.C 0) recursiveEq 6 2).degreeOf
+      (Fin.last 1) ≤ 8 ∧
+    jointTotalDegree (rationalTaylorNumeratorOver ℚ (Polynomial.C 0) recursiveEq 2) ≤ 3 ∧
+    flat padded ∈ rect 6 7 := by
+  have hQ := (weightedTotalDegree_indexWeight_eq_jetDegree_one recursiveEq).trans_le
+    ((jetDegree_le_total recursiveEq 1).trans recursiveJet_le)
+  refine ⟨?_, ?_, ?_, ?_, ?_⟩
+  · exact degreeOf_initialJetSeparant_le (Polynomial.C 0) recursiveEq
+  · simpa using degreeOf_rationalTaylorNumeratorOver_le (F := ℚ) (r := 1)
+      (Polynomial.C 0) recursiveEq 2 (by norm_num) (by norm_num) hQ 2
+  · simpa using degreeOf_commonTaylorNumeratorOver_le (F := ℚ) (r := 1)
+      (Polynomial.C 0) recursiveEq 2 3 6 (taylorExponentSufficient_two_mul 1 3)
+      (by norm_num) (by norm_num) hQ ⟨2, by decide⟩
+  · simpa using jointTotalDegree_rationalTaylorNumeratorOver_le_of_coeffNatDegreeLE 0
+      recursiveEq 2 1 recursiveJet_le recursiveHeight 2
+  · exact commonTaylorNumeratorOver_mem_restrictBidegree 0 recursiveEq 1 2 3 6
       (taylorExponentSufficient_two_mul 1 3) recursiveHeight
-      (by norm_num) recursiveJet_le ⟨2, by decide⟩⟩
+      (by norm_num) recursiveJet_le ⟨2, by decide⟩
 
 /-! ### Shifted jets -/
 
@@ -1081,11 +1086,6 @@ example :
   exact h
 
 /-! ### A common regular center and Taylor-chart geometry -/
-
-private theorem aeval_initialJetEquation_taylorLinearEquation (jet : Fin 2 → ℚ) :
-    aeval jet (initialJetEquation 0 (taylorLinearEquation ℚ)) = jet 1 := by
-  rw [aeval_initialJetEquation]
-  simp [jetEvaluation, taylorLinearEquation]
 
 private theorem aeval_initialJetSeparant_taylorLinearEquation (jet : Fin 2 → ℚ) :
     aeval jet (initialJetSeparant 0 (taylorLinearEquation ℚ)) = 1 := by
