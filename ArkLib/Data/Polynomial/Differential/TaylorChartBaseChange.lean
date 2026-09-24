@@ -7,6 +7,7 @@ module
 
 public import ArkLib.Data.Polynomial.Differential.BaseChange
 public import ArkLib.Data.Polynomial.Differential.TaylorChartGeometry
+public import ArkLib.Data.Polynomial.Differential.TaylorChartIncidence
 
 /-!
 # Coefficient extension of rational Taylor charts
@@ -22,6 +23,8 @@ initial equation, high Taylor cuts, and received-word agreement bounds.
   infinite target domain.
 * `exists_regular_solution_jet_family_of_exponent`: regular solution families embed into a chart
   with any sufficient common Taylor exponent.
+* `card_le_of_regular_solutions_agreement`: regular polynomial solutions obey the sharp agreement
+  bound after passage to an algebraically closed extension.
 
 ## References
 
@@ -137,4 +140,58 @@ theorem exists_regular_solution_jet_family_of_exponent
             aeval (polynomialJet center (Polynomial.map f P₀))
               (taylorAgreementEquation center QE K τ (f (domain i)) (f (received i))) = 0)).card :=
           by rw [hcut]
+
+open Classical in
+/-- A finite family of regular polynomial solutions over `F` with degree below `k` and at least
+`A` agreements on distinct evaluation points has size at most
+`jetTotalDegree Q * (((n - k + 1) * B) / (A - k + 1)) ^ r` over any algebraically closed field
+extension, where `B = rationalTaylorCutDegreeBound Q τ` for a sufficient exponent `τ`. -/
+theorem card_le_of_regular_solutions_agreement
+    {F E : Type*} [Field F] [Field E] [IsAlgClosed E] [Algebra F E] {r : ℕ}
+    (Q : DifferentialPolynomial F r) (K k τ : ℕ)
+    (hτ : TaylorExponentSufficient r K τ) (hK : r < K) (hkK : k ≤ K)
+    {n A : ℕ} (domain : Fin n ↪ F) (received : Fin n → F)
+    (hkA : k ≤ A) (hAn : A ≤ n)
+    (S : Finset (Polynomial F))
+    (hdegree : ∀ P ∈ S, P.degree < k)
+    (hsol : ∀ P ∈ S, differentialSpecialization Q P = 0)
+    (hsep : ∀ P ∈ S, differentialSpecialization (separant Q (Fin.last r)) P ≠ 0)
+    (hbin : ∀ i, r < i → i < K → (i.choose r : F) ≠ 0)
+    (hagree : ∀ P ∈ S,
+      A ≤ (Finset.univ.filter fun i ↦ P.eval (domain i) = received i).card) :
+    (S.card : ℚ) ≤ jetTotalDegree Q *
+      (((((n - k + 1) * rationalTaylorCutDegreeBound Q τ : ℕ) : ℚ) /
+        ((A - k + 1 : ℕ) : ℚ))) ^ r := by
+  classical
+  let f : F →+* E := algebraMap F E
+  let QE := MvPolynomial.map f Q
+  have hbinE : ∀ i, r < i → i < K → (i.choose r : E) ≠ 0 := by
+    intro i hir hiK hz
+    apply hbin i hir hiK
+    exact f.injective (by simpa using hz)
+  obtain ⟨center, J, hcard, hJ⟩ := exists_regular_solution_jet_family_of_exponent
+    f Q K k τ hτ hkK S domain received hdegree hsol hsep hbinE hagree
+  let domainE : Fin n ↪ E := domain.trans ⟨f, f.injective⟩
+  have hcount := card_le_of_highTaylorCuts_of_agreement_sharp center QE hτ hK
+    domainE (fun i ↦ f (received i)) domainE.injective hkA (by simpa using hAn) J
+    (fun jet hjet ↦ by
+      obtain ⟨hinit, hsep, hcuts, -⟩ := hJ jet hjet
+      refine ⟨hinit, hsep, ?_⟩
+      intro l hkl hlK
+      exact hcuts ⟨l, hlK⟩ hkl)
+    (fun jet hjet ↦ by
+      obtain ⟨-, -, -, hagreeJet⟩ := hJ jet hjet
+      have hfilter : ({i | aeval jet
+          (taylorAgreementEquation center QE K τ (domainE i) (f (received i))) = 0} :
+          Set (Fin n)) =
+          (Finset.univ.filter (fun i ↦ aeval jet
+            (taylorAgreementEquation center QE K τ (domainE i) (f (received i))) = 0) :
+            Finset (Fin n)) := by
+        ext i
+        simp only [Set.mem_ofPred_eq, Finset.mem_coe, Finset.mem_filter,
+          Finset.mem_univ, true_and]
+      rw [hfilter, Set.ncard_coe_finset]
+      exact hagreeJet)
+  rw [hcard] at hcount
+  simpa [QE, rationalTaylorCutDegreeBound, jetTotalDegree_map_eq f.injective] using hcount
 end PolynomialDifferential
