@@ -74,31 +74,68 @@ private theorem hr₀ : ∀ i j, M₀ i j ≠ 0 → i ∈ Set.range r₀ := by
 
 /-- Restricting the selected rows preserves the kernel and rank. -/
 example :
-    (M₀.submatrix r₀ id *ᵥ ![1, -1] = 0 ↔ M₀ *ᵥ ![1, -1] = 0) ∧
+    ![1, -1] ≠ (0 : Fin 2 → ℚ) ∧ M₀ *ᵥ ![1, -1] = 0 ∧
+      (M₀.submatrix r₀ id *ᵥ ![1, -1] = 0 ↔ M₀ *ᵥ ![1, -1] = 0) ∧
       (M₀.submatrix r₀ id).rank = M₀.rank := by
-  exact ⟨Matrix.submatrix_mulVec_eq_zero_iff_of_ne_zero_mem_range M₀ r₀ hr₀ _,
+  refine ⟨by norm_num, ?_, Matrix.submatrix_mulVec_eq_zero_iff_of_ne_zero_mem_range M₀ r₀ hr₀ _,
     Matrix.rank_submatrix_eq_of_ne_zero_mem_range M₀ r₀ hr₀⟩
+  ext i
+  fin_cases i <;> norm_num [M₀, Matrix.mulVec, Fin.sum_univ_two]
 
-private def productRowsMatrix : Matrix (Fin 2 × Fin 1) (Fin 2) ℚ :=
-  fun row column => if row.1 = column then 1 else 0
+private def productRowsMatrix : Matrix (Fin 2 × Fin 1) (Fin 3) ℚ :=
+  fun row column => if row.1.castLE (by omega) = column then 1 else 0
+
+private theorem productRowsBlockRank (i : Fin 2) :
+    Matrix.rank (fun row : Fin 1 => fun column : Fin 3 =>
+      productRowsMatrix (i, row) column) = 1 := by
+  let B : Matrix (Fin 1) (Fin 3) ℚ := fun row column =>
+    if i.castLE (by omega) = column then 1 else 0
+  have hup : B.rank ≤ 1 := by
+    simpa using (Matrix.rank_le_card_height B)
+  let c : Fin 1 → Fin 3 := fun _ => i.castLE (by omega)
+  have hminor : (B.submatrix id c) = (1 : Matrix (Fin 1) (Fin 1) ℚ) := by
+    ext row column
+    fin_cases row
+    fin_cases column
+    rw [Matrix.submatrix_apply]
+    simp [B, c]
+  have hlow : 1 ≤ B.rank := by
+    have := Matrix.rank_submatrix_le B id c
+    rw [hminor, Matrix.rank_one] at this
+    simpa using this
+  change B.rank = 1
+  exact Nat.le_antisymm hup hlow
 
 /-- Splitting a two-row matrix into singleton blocks bounds its rank by their rank sum. -/
 example : productRowsMatrix.rank ≤
-    ∑ i : Fin 2, Matrix.rank (fun row column => productRowsMatrix (i, row) column) :=
-  Matrix.rank_prod_rows_le_sum productRowsMatrix
+    ∑ i : Fin 2, Matrix.rank (fun row column => productRowsMatrix (i, row) column) ∧
+      (∑ i : Fin 2, Matrix.rank (fun row column => productRowsMatrix (i, row) column)) = 2 ∧
+      (∑ i : Fin 2, Matrix.rank (fun row column => productRowsMatrix (i, row) column)) <
+        Fintype.card (Fin 3) := by
+  have hsum : (∑ i : Fin 2,
+      Matrix.rank (fun row column => productRowsMatrix (i, row) column)) = 2 := by
+    simp only [Fin.sum_univ_two]
+    rw [productRowsBlockRank 0, productRowsBlockRank 1]
+  refine ⟨Matrix.rank_prod_rows_le_sum productRowsMatrix, hsum, ?_⟩
+  rw [hsum]
+  norm_num
 
 /-- A concrete nonzero kernel vector factors through a primitive one. -/
-example : ∃ g : ℤ, ∃ u : Fin 2 → ℤ, g ≠ 0 ∧ ![1, 0] = g • u ∧
-    u ≠ 0 ∧ (0 : Matrix (Fin 1) (Fin 2) ℤ) *ᵥ u = 0 ∧
-      Ideal.span (Set.range u) = ⊤ := by
-  exact (0 : Matrix (Fin 1) (Fin 2) ℤ).exists_primitive_kernel_vector_eq_smul
-    (v := ![1, 0]) (by norm_num) (by simp)
+private def primitiveKernelMatrix : Matrix (Fin 1) (Fin 2) ℤ := !![1, 1]
 
-/-- The unit ideal prevents this concrete vector from vanishing modulo `5`. -/
-example : (fun j : Fin 2 => ((![2, 3] j : ℤ) : ZMod 5)) ≠ 0 := by
-  have hgcd : Finset.univ.gcd ![(2 : ℤ), 3] = 1 := by decide
-  exact Ideal.comp_ne_zero_of_span_range_eq_top
-    (Ideal.span_range_eq_top_iff_univ_gcd_eq_one.mpr hgcd) (Int.castRingHom (ZMod 5))
+example : ∃ g : ℤ, ∃ u : Fin 2 → ℤ, g ≠ 0 ∧ ![2, -2] = g • u ∧
+    u ≠ 0 ∧ primitiveKernelMatrix *ᵥ u = 0 ∧
+      Ideal.span (Set.range u) = ⊤ := by
+  exact primitiveKernelMatrix.exists_primitive_kernel_vector_eq_smul
+    (v := ![2, -2]) (by norm_num)
+    (by ext i; fin_cases i; norm_num [primitiveKernelMatrix, Matrix.mulVec, Fin.sum_univ_two])
+
+/-- The unit ideal prevents an infinite indexed integer family from vanishing modulo `5`. -/
+example : (fun _ : ℕ => ((1 : ℤ) : ZMod 5)) ≠ 0 := by
+  have hspan : Ideal.span (Set.range fun _ : ℕ => (1 : ℤ)) = ⊤ := by
+    rw [Ideal.eq_top_iff_one]
+    exact Ideal.subset_span ⟨0, rfl⟩
+  exact Ideal.comp_ne_zero_of_span_range_eq_top hspan (Int.castRingHom (ZMod 5))
 
 private def rowBasisMatrix : Matrix (Fin 2) (Fin 2) ℚ := !![1, 0; 0, 1]
 

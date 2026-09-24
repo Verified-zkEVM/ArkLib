@@ -5,12 +5,14 @@ Authors: Quang Dao
 -/
 
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.ChallengeDegree
+import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.ColumnHeight
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.ConstraintMatrix
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.CurveHeight
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.LocalRank
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.ReceivedCurve
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.SourceColumn
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.WeightedSupport
+import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.PartitionRank
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.Soundness
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.WeightedSupportCertificate
 import Mathlib.FieldTheory.RatFunc.Basic
@@ -291,11 +293,31 @@ example : Nonempty (Fin 1 × LowContactIndex 1 1) ∧ ∃ v : Fin 1 → ℚ[X], 
     ∀ _ : Fin 1, SatisfiesLocalConstraints 1 (Polynomial.C (0 : ℚ))
       (receivedLine (0 : ℚ) 0) (SourceColumn.interpolant receivedLineColumns v) := by
   refine ⟨⟨(0 : Fin 1), ⟨0, by simp [localContactOrder]⟩⟩, ?_⟩
-  exact exists_primitive_receivedLine_interpolant_of_rank_le (d := 1) (m := 1) (ν := 0)
-    (fun _ : Fin 1 => (0 : ℚ)) (fun _ => 0) (fun _ => 0) receivedLineColumns
-    receivedLineColumnsInjective (by intro j; fin_cases j; decide)
-    (algebraMap ℚ[X] (RatFunc ℚ)) (IsFractionRing.injective ℚ[X] (RatFunc ℚ))
-    (s := 0) receivedLineMatrixRankZero (by decide)
+  obtain ⟨v, hv, hvdeg, hspan, hmap, hconstraints⟩ :=
+    exists_primitive_receivedLine_interpolant_of_column_height (m := 1) (h := 0)
+    (centers := fun _ : Fin 1 => (0 : ℚ)) (f := fun _ => 0) (g := fun _ => 0)
+    receivedLineColumns receivedLineColumnsInjective (algebraMap ℚ[X] (RatFunc ℚ))
+    (IsFractionRing.injective ℚ[X] (RatFunc ℚ)) (s := 0) receivedLineMatrixRankZero (by decide)
+  refine ⟨v, hv, ?_, hspan, hmap, hconstraints⟩
+  intro j
+  fin_cases j
+  simpa [receivedLineColumns] using
+    (Polynomial.natDegree_le_of_mem_degreeLT_succ (hvdeg 0))
+
+private theorem sourceColumnsDerivativeWeight : ∀ j,
+    fullDerivativeJetWeight (sourceColumns j).exponent ≤ 0 := by
+  intro j
+  fin_cases j <;> change (sourceColumns _).exponent.weight jetDerivativeWeight ≤ 0 <;>
+    rw [SourceColumn.weight_exponent] <;> simp [jetDerivativeWeight, sourceColumns]
+
+example : ((supportedLocalConstraintMatrix 1
+      (fun _ : Fin 1 => Polynomial.C (0 : ℚ)) (fun _ => (0 : ℚ[X])) sourceColumns).map
+      (algebraMap ℚ[X] (RatFunc ℚ))).rank ≤ 1 * localDerivativeCoordinateBudget 1 1 0 := by
+  have hbudget : localDerivativeCoordinateBudget 1 1 0 = 1 := by decide
+  simpa [hbudget] using
+    (rank_map_supportedLocalConstraintMatrix_le_of_derivative_weight
+      (F := ℚ) (d := 1) (m := 1) (W := 0) (centers := fun _ => 0)
+      (received := fun _ => 0) sourceColumns sourceColumnsDerivativeWeight)
 private def nonzeroSupportColumns : Fin 1 → SourceColumn 1 :=
   fun _ => ⟨0, 1, fun _ => 0⟩
 
