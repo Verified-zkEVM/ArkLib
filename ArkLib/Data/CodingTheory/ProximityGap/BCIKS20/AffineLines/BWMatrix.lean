@@ -969,7 +969,8 @@ theorem RS_exists_nonzero_kernelVec_of_det_eq_zero_natDegree_le_one (e : ℕ)
     ∃ (I J : Fin r ↪ Fin n), Matrix.det (K.submatrix I J) ≠ 0
   have hP0 : P 0 := by
     refine ⟨Function.Embedding.ofIsEmpty, Function.Embedding.ofIsEmpty, ?_⟩
-    simp
+    rw [Matrix.det_isEmpty]
+    exact @one_ne_zero F[X] _ _ NeZero.one
   let r : ℕ := Nat.findGreatest P n
   have hPr : P r := by
     have h :=
@@ -996,26 +997,25 @@ theorem RS_exists_nonzero_kernelVec_of_det_eq_zero_natDegree_le_one (e : ℕ)
     exact (Nat.lt_succ_iff.mp this)
   have hnotP_succ : ¬ P (r + 1) := by
     have hr1_le : r + 1 ≤ n := Nat.succ_le_of_lt hr_lt
-    have hk : Nat.findGreatest P n < r + 1 := by
-      simp [r]
+    have hk : Nat.findGreatest P n < r + 1 := Nat.lt_succ_self _
     exact Nat.findGreatest_is_greatest (P := P) (n := n) (k := r + 1) hk hr1_le
   have hcard_lt_I : (Finset.univ.map I).card < (Finset.univ : Finset (Fin n)).card := by
-    simpa [Finset.card_map, Finset.card_univ, Fintype.card_fin] using hr_lt
+    simp only [Finset.card_map, Finset.card_univ, Fintype.card_fin]
+    exact hr_lt
   obtain ⟨i0, -, hi0_not_mem⟩ := Finset.exists_mem_notMem_of_card_lt_card hcard_lt_I
   have hi0 : i0 ∉ Set.range I := by
     intro hi
     rcases hi with ⟨t, rfl⟩
-    have : (I t) ∈ (Finset.univ.map I) := by
-      simp
+    have : (I t) ∈ (Finset.univ.map I) := Finset.mem_map_of_mem I (Finset.mem_univ t)
     exact hi0_not_mem this
   have hcard_lt_J : (Finset.univ.map J).card < (Finset.univ : Finset (Fin n)).card := by
-    simpa [Finset.card_map, Finset.card_univ, Fintype.card_fin] using hr_lt
+    simp only [Finset.card_map, Finset.card_univ, Fintype.card_fin]
+    exact hr_lt
   obtain ⟨j0, -, hj0_not_mem⟩ := Finset.exists_mem_notMem_of_card_lt_card hcard_lt_J
   have hj0 : j0 ∉ Set.range J := by
     intro hj
     rcases hj with ⟨t, rfl⟩
-    have : (J t) ∈ (Finset.univ.map J) := by
-      simp
+    have : (J t) ∈ (Finset.univ.map J) := Finset.mem_map_of_mem J (Finset.mem_univ t)
     exact hj0_not_mem this
   let I' : Fin (r + 1) ↪ Fin n := Fin.Embedding.snoc I hi0
   let J' : Fin (r + 1) ↪ Fin n := Fin.Embedding.snoc J hj0
@@ -1035,13 +1035,11 @@ theorem RS_exists_nonzero_kernelVec_of_det_eq_zero_natDegree_le_one (e : ℕ)
     have hUL :
         u (Fin.last r) =
           (-1 : F[X]) ^ ((Fin.last r : ℕ) + (Fin.last r : ℕ)) * Matrix.det (K.submatrix I J) := by
-      dsimp [u]
-      rw [hAdj]
-      simp [hBsub]
+      change B.adjugate (Fin.last r) (Fin.last r) = _
+      rw [hAdj, hBsub]
     have hsign :
         ((-1 : F[X]) ^ ((Fin.last r : ℕ) + (Fin.last r : ℕ))) ≠ 0 := by
-      have hbase : (-1 : F[X]) ≠ 0 := by
-        simp
+      have hbase : (-1 : F[X]) ≠ 0 := neg_ne_zero.2 (@one_ne_zero F[X] _ _ NeZero.one)
       exact pow_ne_zero _ hbase
     rw [hUL]
     exact mul_ne_zero hsign hIJ
@@ -1057,7 +1055,6 @@ theorem RS_exists_nonzero_kernelVec_of_det_eq_zero_natDegree_le_one (e : ℕ)
         u t =
           (-1 : F[X]) ^ ((Fin.last r : ℕ) + (t : ℕ)) *
             Matrix.det (B.submatrix Fin.castSucc t.succAbove) := by
-      dsimp [u]
       exact RS_adjugate_fin_succ_eq_det_submatrix_last_castSucc (n := r) (B := B) (t := t)
     let M : Matrix (Fin r) (Fin r) F[X] := B.submatrix Fin.castSucc t.succAbove
     have hdegM : ∀ i j, (M i j).natDegree ≤ 1 := by
@@ -1067,12 +1064,10 @@ theorem RS_exists_nonzero_kernelVec_of_det_eq_zero_natDegree_le_one (e : ℕ)
     have hdetMdeg : (Matrix.det M).natDegree ≤ r :=
       RS_natDegree_det_le_of_entry_natDegree_le_one r M hdegM
     have hmuldeg : (u t).natDegree ≤ (Matrix.det M).natDegree := by
-      rw [hAdj]
-      dsimp [M]
-      have hconst :
-          (-1 : F[X]) ^ (r + (t : ℕ)) = Polynomial.C ((-1 : F) ^ (r + (t : ℕ))) := by
-        simp
-      rw [hconst]
+      have hconst : (-1 : F[X]) ^ ((Fin.last r : ℕ) + (t : ℕ)) =
+          Polynomial.C ((-1 : F) ^ ((Fin.last r : ℕ) + (t : ℕ))) := by
+        rw [Polynomial.C_pow, Polynomial.C_neg, Polynomial.C_1]
+      rw [hAdj, hconst]
       exact Polynomial.natDegree_C_mul_le _ _
     have : (u t).natDegree ≤ r := le_trans hmuldeg hdetMdeg
     exact le_trans this hr_le_e
