@@ -1971,6 +1971,12 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Poly
 
 Renamed `exists_polynomialGraph_of_symbolic_prime_sample_of_exponent` to `exists_polynomialGraph_of_primeTaylorComponent`. It uses the destination joint Taylor cuts and recognizes a graph for tuples of arbitrary length. Added `powerBatchedJetGraphMap`. The result also proves ideal vanishing on the graph and nonvanishing of the restricted separant. The wrapper declarations `symbolicSourceCurveAgreement_of_exponent` and `symbolicSourceCurveAgreement` were not ported: their cut polynomial is `jointTaylorAgreementEquation`, and the default-exponent case follows by taking exponent `2 * K`.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedComponentRecognition.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`frobeniusPowerInitialGraph`, `exists_frobeniusPowerGraph_of_symbolic_sample`, and `exists_frobeniusPowerGraph_of_symbolic_prime_sample` keep their names; `frobeniusPowerGraphMap` is new. The initial graph is generalized from fields to commutative semirings. Both recognition theorems are generalized from `Fin n` to any embedded index type and require Frobenius roots only on the sample. The prime-component result uses the current joint Taylor and `aeval` APIs to express its symbolic cuts and graph restrictions. The proof reuses `exists_frobeniusPowerGraph_polynomials_of_sample` for interpolation and sparse expansion.
+
+`symbolicSourceFrobeniusPowerAgreement` was not ported because `jointTaylorAgreementEquation` in `TaylorChartAlgebra.lean` covers it without a wrapper. The acceptance cases in `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement.lean` give a concrete symbolic chart example and a regular prime-component example; both establish sample cuts, and the latter supplies the prime ideal, positive dimension, and nonzero separant.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedExceptionalChallenges.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/ExceptionalChallenges.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -2048,6 +2054,12 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Tayl
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/ComponentRecognition.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 The graph-line component result now uses the shared `aeval_jointInitialJetSeparant`, `aeval_jointCommonTaylorNumerator`, and `aeval_jointTaylorAgreementEquation` results from `TaylorChartAlgebra`, and `regular_principalOpen_graph_restriction` from `PrincipalOpenParametrization`.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedRegularEquation.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/RegularEquation.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Renamed `regularSymbolicCurveBadChallenges` to `regularPowerBatchedBadChallenges` and `regularSymbolicCurveMCABound` to `regularPowerBatchedAgreementBound`; the predicate and rational formula are unchanged, with the current exact-power-agreement API and agreement meaning. Renamed `finite_regularSymbolicCurveBadChallenges_card_le` to `finite_regularPowerBatchedBadChallenges_card_le`, `regularSymbolicCurveBadChallenges_finite` to `regularPowerBatchedBadChallenges_finite`, and `exists_exceptional_regularSymbolicCurveMCA` to `exists_exceptional_regularPowerBatchedAgreement`. Generalized the degree and height premises of these three theorems to `jetTotalDegree` and `CoeffNatDegreeLE`. No public declarations were omitted. The common-center and Taylor-reconstruction helpers use `PolynomialDifferential.exists_forall_jetEvaluation_ne_zero_of_family` and `rationalTaylorPolynomial_polynomialJet`.
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerToLine.lean`
 
@@ -2178,6 +2190,10 @@ not ported here.
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/GraphCounting.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 `polynomialTupleFamily`, `mem_polynomialTupleFamily_of_commonAgreement`, `polynomialTupleFamily_card_le`, and `mem_polynomialTupleFamily_iff` retain their names and are generalized from `Fin n` to finite embedded coordinate types.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/PowerAgreement.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`frobeniusPowerCoordinate`, `frobeniusPowerCoordinate_eval`, and `frobeniusPowerCoordinate_natDegree_le` keep their names. The sparse coordinate is defined by expanding `powerBatchedCoordinate`; all three declarations are generalized from fields to commutative semirings. The acceptance case in `ArkLibTest/Data/CodingTheory/ReedSolomon.lean` checks evaluation at `2` and the degree bound for three values with scale `2`.
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/PowerAgreement/ConstantCode.lean`
 
