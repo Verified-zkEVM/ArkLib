@@ -532,7 +532,7 @@ private abbrev rationalId : ℚ →ₐ[ℚ] ℚ := AlgHom.id ℚ ℚ
 example :
     map (Polynomial.aeval (2 : ℚ)).toRingHom
         (taylorAgreementEquationOver (F := ℚ) (0 : Polynomial ℚ)
-          (constantDerivativeEquation (Polynomial ℚ)) 2 Polynomial.X Polynomial.X) =
+          (constantDerivativeEquation (Polynomial ℚ)) 2 Polynomial.X Polynomial.X (τ := 4)) =
       X (0 : Fin 2) + C (2 : ℚ) * X (1 : Fin 2) - C (2 : ℚ) := by
   have hnum0 :
       commonTaylorNumeratorOver ℚ (0 : Polynomial ℚ)
@@ -548,7 +548,7 @@ example :
       initialJetSeparant, separant]
   have hcut :
       taylorAgreementEquationOver (F := ℚ) (0 : Polynomial ℚ)
-        (constantDerivativeEquation (Polynomial ℚ)) 2 Polynomial.X Polynomial.X =
+        (constantDerivativeEquation (Polynomial ℚ)) 2 Polynomial.X Polynomial.X (τ := 4) =
         X (0 : Fin 2) + C Polynomial.X * X (1 : Fin 2) - C Polynomial.X := by
     simp [taylorAgreementEquationOver, hnum0, hnum1, initialJetSeparant,
       constantDerivativeEquation, separant]
@@ -561,14 +561,14 @@ example :
     aeval (constantJet (F := ℚ))
         (map rationalId.toRingHom
           (taylorAgreementEquationOver (F := ℚ) (0 : ℚ) (constantDerivativeEquation ℚ)
-            1 (4 : ℚ) 1)) = 0 := by
+            1 (4 : ℚ) 1 (τ := 2))) = 0 := by
   have hS : aeval (constantJet (F := ℚ))
       (map rationalId.toRingHom (initialJetSeparant (0 : ℚ)
         (constantDerivativeEquation ℚ))) ≠ 0 := by
     norm_num [rationalId, map_initialJetSeparant, initialJetSeparant, separant,
       constantDerivativeEquation, constantJet]
-  apply (aeval_map_taylorAgreementEquationOver_eq_zero_iff (F := ℚ) rationalId
-    (0 : ℚ) (constantDerivativeEquation ℚ) 1 (constantJet (F := ℚ)) hS (4 : ℚ) (1 : ℚ)).2
+  apply (aeval_map_taylorAgreementEquationOver_eq_zero_iff_of_exponent (F := ℚ) rationalId _ _ 1 2
+    (taylorExponentSufficient_two_mul 1 1) (constantJet (F := ℚ)) hS (4 : ℚ) (1 : ℚ)).2
   have h0 : rationalTaylorCoefficient (0 : ℚ) (constantDerivativeEquation ℚ)
       (constantJet (F := ℚ)) 0 = 1 := by
     simpa [constantJet] using
@@ -622,10 +622,11 @@ example :
   have hcoeff : (Polynomial.taylor 0
       (rationalTaylorPolynomial 0 scaledEquation 2 (zeroJetVector (F := ℚ) 1))).coeff 1 =
         (1 / 2 : ℚ) := by
-    rw [coeff_taylor_rationalTaylorPolynomial]
+    rw [rationalTaylorPolynomial, Polynomial.coeff_taylor_centeredCoefficientPrefix]
     simp [rationalTaylorCoefficient_scaledEquation_one]
-  have hnum := aeval_map_commonTaylorNumeratorOver_reconstruction (F := ℚ) rationalId
-    0 scaledEquation 2 (zeroJetVector (F := ℚ) 1) hS ⟨1, by omega⟩
+  have hnum := aeval_map_commonTaylorNumeratorOver_reconstruction_of_exponent (F := ℚ)
+    rationalId 0 scaledEquation 2 4 (taylorExponentSufficient_two_mul 0 2)
+    (zeroJetVector (F := ℚ) 1) hS ⟨1, by omega⟩
   have hcoeff' : (Polynomial.taylor (rationalId 0)
       (rationalTaylorPolynomial (rationalId 0)
         (map rationalId.toRingHom scaledEquation) 2 (zeroJetVector (F := ℚ) 1))).coeff 1 =
@@ -656,9 +657,9 @@ example :
     norm_num [commonTaylorNumerator, rationalTaylorNumerator, initialJetSeparant, separant,
       constantDerivativeEquation, constantJet]
   simpa [constantDerivativeEquation] using
-    degree_rationalTaylorPolynomial_lt_of_symbolic_high_cuts (F := ℚ)
-      (Polynomial.aeval (0 : ℚ)) 0 (constantDerivativeEquation (Polynomial ℚ)) 2 1
-      (constantJet (F := ℚ)) hS hhigh
+    degree_rationalTaylorPolynomial_lt_of_symbolic_high_cuts_and_exponent (F := ℚ)
+      (Polynomial.aeval (0 : ℚ)) 0 (constantDerivativeEquation (Polynomial ℚ)) 2 1 4
+      (taylorExponentSufficient_two_mul 1 2) (constantJet (F := ℚ)) hS hhigh
 
 /-- A nonconstant center contributes its parameter degree to the initial equation. -/
 example : jointTotalDegree (initialJetEquation Polynomial.X independentVariableEquation) ≤ 1 := by
@@ -696,7 +697,7 @@ private theorem recursiveHeight : CoeffNatDegreeLE recursiveEq 1 :=
 example :
     jointTotalDegree (taylorAgreementEquationOver (F := ℚ) (Polynomial.C 0)
       recursiveEq 3 (Polynomial.C 1)
-      (Polynomial.C 0 + Polynomial.X * Polynomial.C 1)) ≤ 13 := by
+      (Polynomial.C 0 + Polynomial.X * Polynomial.C 1) (τ := 6)) ≤ 13 := by
   simpa using jointTotalDegree_taylorAgreementEquationOver_le_of_coeffNatDegreeLE_and_exponent
     (F := ℚ) (r := 1) 0 1 0 1 recursiveEq 2 1 3 6
     (taylorExponentSufficient_two_mul 1 3) recursiveJet_le recursiveHeight
@@ -712,7 +713,7 @@ example : flat (initialJetEquation (Polynomial.C 0) recursiveEq) ∈ rect 1 2 �
 example :
     (optionEquivRight ℚ (Fin 2)).symm
       (taylorAgreementEquationOver (F := ℚ) (Polynomial.C 0) recursiveEq 3
-        (Polynomial.C 1) (Polynomial.C 0 + Polynomial.X * Polynomial.C 1)) ∈
+        (Polynomial.C 1) (Polynomial.C 0 + Polynomial.X * Polynomial.C 1) (τ := 6)) ∈
       restrictBidegree (Fin 2) ℚ 7 7 := by
   simpa using taylorAgreementEquationOver_mem_restrictBidegree (F := ℚ) (r := 1)
     0 1 Polynomial.X recursiveEq 1 1 2 3 6 (taylorExponentSufficient_two_mul 1 3)
@@ -749,21 +750,16 @@ example :
         rationalTaylorNumeratorOver_eq]
       simp [rationalTaylorNumerator, constantDerivativeEquation, initialJetSeparant,
         separant, constantJet]
-  have hcoeff0 : rationalTaylorCoefficient (0 : ℚ)
-      (map (Polynomial.aeval (R := ℚ) (0 : ℚ)).toRingHom
-        (constantDerivativeEquation (Polynomial ℚ)))
-      (constantJet (F := ℚ)) 0 = 1 := by
-    simpa [constantJet] using rationalTaylorCoefficient_initial (0 : ℚ)
-      (map (Polynomial.aeval (R := ℚ) (0 : ℚ)).toRingHom
-        (constantDerivativeEquation (Polynomial ℚ)))
-        (constantJet (F := ℚ)) ⟨0, by omega⟩
   have hSparse := sparse_rationalTaylorPolynomial_of_symbolic_cuts
     (φ := Polynomial.aeval (R := ℚ) (0 : ℚ)) (center := Polynomial.C (0 : ℚ))
     (Q := (constantDerivativeEquation (Polynomial ℚ))) (K := 2) (s := 2) (τ := 4)
     (hτ := taylorExponentSufficient_two_mul 1 2) (jet := constantJet (F := ℚ)) hS hcuts
   constructor
-  · rw [coeff_taylor_rationalTaylorPolynomial]
-    exact hcoeff0
+  · rw [rationalTaylorPolynomial, Polynomial.coeff_taylor_centeredCoefficientPrefix]
+    simpa [constantJet] using rationalTaylorCoefficient_initial (0 : ℚ)
+      (map (Polynomial.aeval (R := ℚ) (0 : ℚ)).toRingHom
+        (constantDerivativeEquation (Polynomial ℚ)))
+        (constantJet (F := ℚ)) ⟨0, by omega⟩
   · simpa using hSparse 1 (by decide)
 
 private abbrev padded := commonTaylorNumeratorOver ℚ (Polynomial.C 0) recursiveEq 6 2
@@ -887,13 +883,14 @@ example :
         (taylorAgreementEquation 0 (taylorLinearEquation ℚ) 3 6 3 9) = 0 ∧
       aeval (polynomialJet 0 (Polynomial.X ^ 2 : Polynomial ℚ))
         (taylorAgreementEquation 0 (taylorLinearEquation ℚ) 3 6 3 8) ≠ 0 := by
-  have h := aeval_taylorAgreementEquation_polynomialJet_eq_zero_iff 0
-    (taylorLinearEquation ℚ) (Polynomial.X ^ 2) differentialSpecialization_taylorLinearEquation
-    (by rw [jetEvaluation_separant_taylorLinearEquation]; norm_num)
-    (taylorExponentSufficient_two_mul 1 3) degree_X_sq_lt_three
+  have hrec := rationalTaylorPolynomial_polynomialJet 0 (taylorLinearEquation ℚ)
+    (Polynomial.X ^ 2) differentialSpecialization_taylorLinearEquation
+    (by rw [jetEvaluation_separant_taylorLinearEquation]; norm_num) degree_X_sq_lt_three
     (fun i hi _ ↦ choose_one_ne_zero i hi)
-  rw [h, Ne, h]
-  norm_num
+  have hcut := taylorAgreementEquation_eq_zero_iff 0 (taylorLinearEquation ℚ)
+    (taylorExponentSufficient_two_mul 1 3) (polynomialJet 0 (Polynomial.X ^ 2))
+    (by rw [aeval_initialJetSeparant, jetEvaluation_separant_taylorLinearEquation]; norm_num)
+  rw [hcut 3 9, Ne, hcut 3 8, hrec]; norm_num
 
 /-! ### Index weight -/
 

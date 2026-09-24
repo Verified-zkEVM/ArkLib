@@ -25,8 +25,8 @@ of `Q = 0` of degree at most `D`. Assume the binomial hypothesis
 The proof double counts pairs (solution, chain witness). Every solution has at least `q - H` chain
 witnesses (`exists_chainWitness`). At a fixed point `a`, the chain-witnessed solutions have
 distinct Hasse jets (`ChainWitness.eq_of_polynomialJet_eq`), and these jets are zeros of the
-polynomial `jetFiberHom a Q` in `d + 1` variables, which is nonzero when there is a chain witness
-at `a` and has total degree at most `jetTotalDegree Q`. The Schwartz–Zippel count
+polynomial `initialJetEquation a Q` in `d + 1` variables. This polynomial is nonzero when there is
+a chain witness at `a` and has total degree at most `jetTotalDegree Q`. The Schwartz–Zippel count
 (`MvPolynomial.card_filter_eval_eq_zero_le`) bounds them by `jetTotalDegree Q * q ^ d`. The total
 jet degree of `Q` enters once: there is no factor for the length of the singular chain or for the
 individual jet degrees.
@@ -69,34 +69,36 @@ finite set of polynomials of degree at most `D`, and assume the binomial hypothe
 `((k + s).choose s : F) ≠ 0` for `0 < k`, `k + s ≤ D`. Then at most `jetTotalDegree Q * q ^ d`
 elements of `roots` have `a` as a chain witness.
 
-If `jetFiberHom a Q = 0` there are none (`ChainWitness.jetFiberHom_ne_zero`). Otherwise their Hasse
-jets at `a` are distinct zeros of `jetFiberHom a Q`, a nonzero polynomial in `d + 1` variables of
-total degree at most `jetTotalDegree Q`. -/
+If `initialJetEquation a Q = 0` there are none (`ChainWitness.initialJetEquation_ne_zero`).
+Otherwise their Hasse jets at `a` are distinct zeros of `initialJetEquation a Q`, a nonzero
+polynomial in `d + 1` variables of total degree at most `jetTotalDegree Q`. -/
 theorem card_filter_chainWitness_le [CommRing F] [IsDomain F] [Finite F]
     (Q : DifferentialPolynomial F d) {D : ℕ} (roots : Finset F[X])
     (hdegree : ∀ P ∈ roots, P.degree ≤ D)
     (hbinom : ∀ k s, 0 < k → k + s ≤ D → ((k + s).choose s : F) ≠ 0) (a : F) :
     #{P ∈ roots | ChainWitness Q P a} ≤ jetTotalDegree Q * Nat.card F ^ d := by
   have := Fintype.ofFinite F
-  by_cases hzero : jetFiberHom a Q = 0
-  · rw [filter_false_of_mem fun P _ h ↦ h.jetFiberHom_ne_zero hzero, card_empty]
+  by_cases hzero : initialJetEquation a Q = 0
+  · rw [filter_false_of_mem fun P _ h ↦ h.initialJetEquation_ne_zero hzero, card_empty]
     exact Nat.zero_le _
   calc
     #{P ∈ roots | ChainWitness Q P a}
         ≤ #{x ∈ Fintype.piFinset fun _ ↦ (univ : Finset F) |
-            MvPolynomial.eval x (jetFiberHom a Q) = 0} := by
+            MvPolynomial.eval x (initialJetEquation a Q) = 0} := by
       refine card_le_card_of_injOn (polynomialJet a) (fun P hP ↦ ?_) fun P hP P' hP' h ↦ ?_
       · refine mem_filter.mpr ⟨Fintype.mem_piFinset.mpr fun _ ↦ mem_univ _, ?_⟩
-        rw [eval_jetFiberHom]
+        rw [← MvPolynomial.coe_aeval_eq_eval]
+        change MvPolynomial.aeval (polynomialJet a P) (initialJetEquation a Q) = 0
+        rw [aeval_initialJetEquation]
         exact (mem_filter.mp hP).2.jetEvaluation_eq_zero
       · have hP := mem_filter.mp hP
         have hP' := mem_filter.mp hP'
         exact hP.2.eq_of_polynomialJet_eq hP'.2 (hdegree P hP.1) (hdegree P' hP'.1) hbinom h
-    _ ≤ (jetFiberHom a Q).totalDegree * #(univ : Finset F) ^ d :=
+    _ ≤ (initialJetEquation a Q).totalDegree * #(univ : Finset F) ^ d :=
       MvPolynomial.card_filter_eval_eq_zero_le hzero _
     _ ≤ jetTotalDegree Q * Nat.card F ^ d := by
       rw [card_univ, Fintype.card_eq_nat_card]
-      exact Nat.mul_le_mul_right _ (totalDegree_jetFiberHom_le Q a)
+      exact Nat.mul_le_mul_right _ (totalDegree_initialJetEquation_le a Q)
 
 /-- **Counting solutions by the total jet degree.** Let `F` be a finite domain with `q` elements,
 `Q ≠ 0` satisfying the cast hypotheses at every jet, and `roots` a finite set of solutions of
