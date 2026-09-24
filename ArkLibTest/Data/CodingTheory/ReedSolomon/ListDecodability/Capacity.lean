@@ -11,6 +11,8 @@ import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.WeightedSu
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.WeightedSupport
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.FiniteField
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.GeometricBound
+import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.RatePartition
+import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.UniformRate
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.CurveCertificate
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.Counting
 import Mathlib.Data.Nat.Prime.Infinite
@@ -19,8 +21,8 @@ import Mathlib.Data.Nat.Prime.Infinite
 # Acceptance cases for Reed–Solomon capacity list bounds
 
 The examples cover weighted-support interpolation, finite-field capacity bounds, transfer from
-close-polynomial counts to codeword-list bounds, and actual-stage and gap bounds from concrete
-received-curve certificates.
+close-polynomial counts to codeword-list bounds, actual-stage and gap bounds from concrete
+received-curve certificates, and fixed-rate and uniform rate-partition bounds.
 -/
 
 open Finset PolynomialDifferential ReedSolomon ReedSolomon.HiddenDerivative
@@ -519,3 +521,128 @@ example :
     simp
   refine ⟨list, (hexact 0).2 ⟨by simp, ?_⟩, hhalf (by norm_num)⟩
   rw [hagreement]
+
+open ReedSolomon.HiddenDerivative.RatePartition
+
+section RatePartitionAcceptance
+
+noncomputable local instance : DecidableEq ℚ := Classical.decEq _
+
+private def ratePartitionSampleDomain (n : ℕ) : Fin n ↪ ℚ where
+  toFun i := (i.val : ℚ)
+  inj' i j hij := by
+    change (i.val : ℚ) = (j.val : ℚ) at hij
+    apply Fin.ext
+    exact_mod_cast hij
+
+private noncomputable def sampleRate : ℝ := 1 / 2
+private noncomputable def sampleGap : ℝ := 1 / 4
+private noncomputable def sampleAgreement : ℝ := sampleRate + sampleGap
+private noncomputable def sampleOrder : ℕ := fixedRatePartitionOrder sampleRate sampleGap
+
+private theorem sampleRateGate :
+    0 < sampleRate ∧ sampleRate < sampleAgreement ∧ sampleAgreement < 1 ∧
+      500 ≤ sampleOrder ∧ 1 < rateGamma sampleRate sampleAgreement sampleOrder := by
+  refine ⟨by norm_num [sampleRate], ?_, ?_, ?_, ?_⟩
+  · norm_num [sampleRate, sampleAgreement, sampleGap]
+  · norm_num [sampleRate, sampleAgreement, sampleGap]
+  · simpa only [sampleOrder] using fixedRatePartitionOrder_ge_500 sampleRate sampleGap
+  · simpa only [sampleOrder, sampleAgreement] using
+      fixedRateGamma_gt_one (by norm_num [sampleRate]) (by norm_num [sampleGap])
+
+open Classical in
+/-- The fixed-rate gate yields a complete-list bound at its selected block length. -/
+example :
+    ∃ p : PartitionFiniteParameters sampleRate sampleAgreement sampleOrder,
+      ∃ n : ℕ,
+        n = rateBlockThreshold sampleRate sampleOrder p.multiplicity ∧
+        (closePolynomialSet (ratePartitionSampleDomain n) (fun _ => (0 : ℚ)) 1 n).Finite ∧
+          ((closePolynomialSet (ratePartitionSampleDomain n) (fun _ => (0 : ℚ)) 1 n).ncard :
+            ℝ) ≤
+            (rateJetCap sampleRate p.multiplicity : ℝ) ^ 2 *
+              (2 * rateJetCap sampleRate p.multiplicity / (sampleAgreement - sampleRate)) ^
+                sampleOrder * n ^ sampleOrder := by
+  obtain ⟨hR, hRa, haone, hd, hgate⟩ := sampleRateGate
+  obtain ⟨p, hbound⟩ := ReedSolomon.exists_ratePartition_list_bound hR hRa haone hd hgate
+  let n := rateBlockThreshold sampleRate sampleOrder p.multiplicity
+  have hn : rateBlockThreshold sampleRate sampleOrder p.multiplicity ≤ n := by rfl
+  have hAn : sampleAgreement * n ≤ n := by
+    have hn_nonneg : (0 : ℝ) ≤ n := Nat.cast_nonneg _
+    nlinarith
+  have hguards := rateBlockThreshold_guards (rate := sampleRate)
+    (agreement := sampleAgreement) (order := sampleOrder) (multiplicity := p.multiplicity)
+    (n := n) (k := 0) (A := n) hR (hRa.trans haone) hn
+    (by simpa using mul_nonneg hR.le (Nat.cast_nonneg n)) hAn
+  have hfloor : 1 ≤ ⌊sampleRate * n⌋₊ := by
+    have := hguards.1
+    omega
+  have hkR : ((1 : ℕ) : ℝ) ≤ sampleRate * n := by
+    calc
+      ((1 : ℕ) : ℝ) ≤ (⌊sampleRate * n⌋₊ : ℝ) := by exact_mod_cast hfloor
+      _ ≤ sampleRate * n := Nat.floor_le (by positivity)
+  refine ⟨p, n, rfl, ?_⟩
+  have hSelector := hbound ℚ n 1 n hn (by norm_num) (by simpa using hkR) hAn (by rfl)
+    (ratePartitionSampleDomain n) (fun _ => 0)
+    (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
+  have hDirect := ReedSolomon.ratePartition_close_list_bound (F := ℚ) (p := p) (n := n)
+    (k := 1) (A := n) hR hRa haone hd hn (by norm_num) (by simpa using hkR) hAn (by rfl)
+    (ratePartitionSampleDomain n) (fun _ => 0)
+    (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
+  exact ⟨hDirect.1, hSelector.2⟩
+
+private noncomputable def uniformSampleDelta : ℝ := 1 / 5
+private noncomputable def uniformSampleLength : ℕ := uniformBlockThreshold uniformSampleDelta
+
+private theorem uniformSampleGap :
+    ((1 : ℕ) : ℝ) + uniformSampleDelta * uniformSampleLength ≤ uniformSampleLength := by
+  have hm : 1 ≤ uniformMultiplicity uniformSampleDelta := by
+    have := add_two_le_uniformMultiplicity uniformSampleDelta
+    omega
+  have hm' : 1 ≤ uniformMultiplicity (1 / 5 : ℝ) := by
+    simpa [uniformSampleDelta] using hm
+  have hm_real : (1 : ℝ) ≤ (uniformMultiplicity (1 / 5 : ℝ) : ℝ) := by
+    exact_mod_cast hm'
+  have hsize := (uniformBlockThreshold_guards (δ := uniformSampleDelta)
+    (n := uniformSampleLength) (by norm_num [uniformSampleDelta])
+    (by norm_num [uniformSampleDelta]) (by rfl)).1
+  norm_num [uniformSampleDelta] at hsize
+  have hn50 : (50 : ℝ) ≤ uniformSampleLength := by
+    have hmult : (2 : ℝ) ≤ 2 * (uniformMultiplicity (1 / 5) : ℝ) := by
+      nlinarith [hm_real]
+    have hle := hmult.trans hsize
+    norm_num at hle
+    linarith
+  norm_num [uniformSampleDelta]
+  nlinarith [hn50]
+
+open Classical in
+/-- The uniform small-gap bound holds at the selected block length over the rationals. -/
+example :
+    (closePolynomialSet (ratePartitionSampleDomain uniformSampleLength)
+      (fun _ => (0 : ℚ)) 1 uniformSampleLength).Finite ∧
+      ((closePolynomialSet (ratePartitionSampleDomain uniformSampleLength)
+        (fun _ => (0 : ℚ)) 1 uniformSampleLength).ncard : ℝ) ≤
+        (uniformJetCap uniformSampleDelta : ℝ) ^ 2 *
+          (2 * uniformJetCap uniformSampleDelta / uniformSampleDelta) ^
+            uniformDerivativeOrder uniformSampleDelta * uniformSampleLength ^
+              uniformDerivativeOrder uniformSampleDelta ∧
+      (let d := uniformDerivativeOrder uniformSampleDelta
+       let ν := uniformJetCap uniformSampleDelta
+       let C : ℝ := (ν : ℝ) ^ 2 * (2 * ν / uniformSampleDelta) ^ d
+      (closePolynomialSet (ratePartitionSampleDomain uniformSampleLength) (fun _ => (0 : ℚ)) 1
+        uniformSampleLength).Finite ∧
+         ((closePolynomialSet (ratePartitionSampleDomain uniformSampleLength) (fun _ => (0 : ℚ))
+           1 uniformSampleLength).ncard : ℝ) ≤ C * uniformSampleLength ^ d) := by
+  have hchar : ringChar ℚ = 0 ∨ uniformSampleLength ≤ ringChar ℚ :=
+    Or.inl (ringChar.eq_zero : ringChar ℚ = 0)
+  have hExpanded := uniformRatePartition_close_list_bound
+    (δ := uniformSampleDelta) (n := uniformSampleLength) (k := 1) (A := uniformSampleLength)
+    (by norm_num [uniformSampleDelta]) (by norm_num [uniformSampleDelta]) (by rfl)
+    (by norm_num) uniformSampleGap (by rfl) (ratePartitionSampleDomain uniformSampleLength)
+    (fun _ => 0) hchar
+  exact ⟨hExpanded.1, hExpanded.2, uniform_capacity_list_bound uniformSampleDelta
+    (by norm_num [uniformSampleDelta]) (by norm_num [uniformSampleDelta])
+    uniformSampleLength 1 uniformSampleLength (by rfl) (by norm_num) uniformSampleGap
+    (by rfl) (ratePartitionSampleDomain uniformSampleLength) (fun _ => 0) hchar⟩
+
+end RatePartitionAcceptance
