@@ -813,7 +813,7 @@ example : challengeBoundChallenges.Nonempty ∧
     (F := ℚ) (E := PairCountingField) (n := 4) (r := 1) challengeBoundDomain
     challengeBoundFirstWord challengeBoundSecondWord pairCountingIota 0 challengeBoundEquation
     2 2 2 3 1 0 (by omega) (by omega) (by omega) (by omega) (by omega) (by omega)
-    (by omega) hjet hheight challengeBoundChallenges (fun _ ↦ 0) (fun _ ↦ challengeBoundJet)
+    hjet hheight challengeBoundChallenges (fun _ ↦ 0) (fun _ ↦ challengeBoundJet)
     hchart hagree hbad
   refine ⟨by simp [challengeBoundChallenges], ?_⟩
   norm_num [challengeBoundChallenges] at hbound ⊢

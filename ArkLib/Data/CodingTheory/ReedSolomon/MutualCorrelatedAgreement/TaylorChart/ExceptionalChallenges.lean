@@ -89,7 +89,7 @@ theorem finite_symbolicTaylorChart_badChallenges_card_le [DecidableEq F] [Decida
     [IsAlgClosed E] (domain : Fin n ↪ F) (f g : Fin n → F) (iota : F →+* E)
     (center : E) (Q : DifferentialPolynomial E[X] r) (K k L A v h : ℕ)
     (hK : r < K) (hkK : k ≤ K) (hk : 0 < k) (hkL : k ≤ L)
-    (hLA : L ≤ A) (hAn : A ≤ n) (hv : 0 < v)
+    (hLA : L ≤ A) (hAn : A ≤ n)
     (hjet : Q.weightedTotalDegree (fun i ↦ i.elim 0 (fun _ ↦ 1)) ≤ v)
     (hheight : CoeffNatDegreeLE Q h)
     (challenges : Finset E) (witness : E → E[X]) (jet : E → Fin (r + 1) → E)
