@@ -25,9 +25,9 @@ Every solution of a nonzero equation that satisfies the cast hypotheses has a no
 roots of `R` is a chain witness (`exists_chainWitness`): `R` is the separant specialization at the
 first regular stage.
 
-The partial specialization `jetFiberHom a` sets `X = a` and keeps the jet variables. A chain
-witness at `a` forces `jetFiberHom a Q ≠ 0`, and the total degree of `jetFiberHom a Q` is at most
-`jetTotalDegree Q`; the root count in `TotalJetDegreeCount` uses both.
+The initial equation `initialJetEquation a Q` is `Q` with `X = a`. A chain witness at `a` forces
+`initialJetEquation a Q ≠ 0`, and its total degree is at most `jetTotalDegree Q`; the root count in
+`TotalJetDegreeCount` uses both. The specialization and its basic laws are defined in `JetDegree`.
 
 ## Main statements
 
@@ -35,8 +35,8 @@ witness at `a` forces `jetFiberHom a Q ≠ 0`, and the total degree of `jetFiber
 * `ChainWitness.eq_of_polynomialJet_eq`: chain witnesses at one point are determined by the jet.
 * `exists_chainWitness`: all but at most `differentialWeightedDegree D Q - (D - d)` points are
   chain witnesses.
-* `jetFiberHom`, `eval_jetFiberHom`, `jetFiberHom_separant`, `totalDegree_jetFiberHom_le` and
-  `ChainWitness.jetFiberHom_ne_zero`.
+* `ChainWitness.initialJetEquation_ne_zero`: a chain witness forces a nonzero initial equation,
+  using the specialization and its derivative law from `JetDegree`.
 
 ## References
 
@@ -132,76 +132,22 @@ theorem exists_chainWitness [NoZeroDivisors F] {Q : DifferentialPolynomial F d} 
           omega
         · rwa [← eval_differentialSpecialization]
 
-/-! ### Specializing the independent variable -/
+/-! ### Nonvanishing of the initial equation -/
 
-/-- Set the independent variable `X` to `a` and keep the jet variables: the ring homomorphism
-from polynomials in `X, Y₀, …, Y_d` to polynomials in `Y₀, …, Y_d`. -/
-def jetFiberHom (a : F) : DifferentialPolynomial F d →+* MvPolynomial (Fin (d + 1)) F :=
-  MvPolynomial.eval₂Hom MvPolynomial.C fun v ↦ match v with
-    | none => MvPolynomial.C a
-    | some j => MvPolynomial.X j
-
-/-- Evaluating `jetFiberHom a Q` at a scalar jet is the jet evaluation of `Q` at `a`. -/
-theorem eval_jetFiberHom (Q : DifferentialPolynomial F d) (a : F) (jet : Fin (d + 1) → F) :
-    MvPolynomial.eval jet (jetFiberHom a Q) = jetEvaluation Q a jet := by
-  induction Q using MvPolynomial.induction_on with
-  | C c => simp [jetFiberHom, jetEvaluation]
-  | add Q R hQ hR => simp [map_add, hQ, hR, jetEvaluation]
-  | mul_X Q v hQ =>
-      cases v <;> simp [map_mul, jetFiberHom, jetEvaluation] at hQ ⊢ <;> simp [hQ]
-
-/-- Setting `X = a` commutes with differentiation in a jet variable. -/
-theorem jetFiberHom_separant (Q : DifferentialPolynomial F d) (a : F) (s : Fin (d + 1)) :
-    jetFiberHom a (separant Q s) = MvPolynomial.pderiv s (jetFiberHom a Q) := by
-  classical
-  unfold separant
-  induction Q using MvPolynomial.induction_on with
-  | C c => simp [jetFiberHom]
-  | add Q R hQ hR => simp only [map_add, hQ, hR]
-  | mul_X Q v hQ =>
-      simp only [Derivation.leibniz, MvPolynomial.pderiv_X, smul_eq_mul, map_add, map_mul, hQ]
-      cases v <;> simp [jetFiberHom, Pi.single_apply]
-
-/-- Setting `X = a` does not increase the total degree in the jet variables: each monomial loses
-its power of `X` and keeps its jet exponents. -/
-theorem totalDegree_jetFiberHom_le (Q : DifferentialPolynomial F d) (a : F) :
-    (jetFiberHom a Q).totalDegree ≤ jetTotalDegree Q := by
-  classical
-  conv_lhs => rw [MvPolynomial.as_sum Q]
-  rw [map_sum]
-  refine MvPolynomial.totalDegree_finsetSum_le fun u hu ↦ ?_
-  rw [jetFiberHom, MvPolynomial.eval₂Hom_monomial]
-  refine (MvPolynomial.totalDegree_mul _ _).trans ?_
-  rw [MvPolynomial.totalDegree_C, zero_add]
-  refine (MvPolynomial.totalDegree_finsetProd _ _).trans ?_
-  calc
-    ∑ v ∈ u.support, ((match v with
-      | none => MvPolynomial.C a
-      | some j => MvPolynomial.X j) ^ u v).totalDegree
-        ≤ ∑ v ∈ u.support, u v * jetDegreeWeight v := by
-          refine Finset.sum_le_sum fun v _ ↦ ?_
-          cases v with
-          | none => simpa using MvPolynomial.totalDegree_pow (MvPolynomial.C a) (u none)
-          | some j =>
-              simpa [MvPolynomial.X_pow_eq_monomial] using
-                MvPolynomial.totalDegree_monomial_le (Finsupp.single j (u (some j))) (1 : F)
-    _ = totalJetDegree u := by simp [totalJetDegree, Finsupp.weight_apply, Finsupp.sum]
-    _ ≤ jetTotalDegree Q := MvPolynomial.le_weightedTotalDegree _ hu
-
-/-- If `a` is a chain witness for some solution, then `Q` does not vanish identically on the fiber
-`X = a`: the separant at the regular stage is nonzero at a jet, and a separant of the zero
-polynomial is zero. -/
-theorem ChainWitness.jetFiberHom_ne_zero {Q : DifferentialPolynomial F d} {P : F[X]} {a : F}
-    (h : ChainWitness Q P a) : jetFiberHom a Q ≠ 0 := by
+/-- If `a` is a chain witness for some solution, then the initial equation is nonzero: the
+separant at the regular stage is nonzero at a jet, and a partial derivative of the zero polynomial
+is zero. -/
+theorem ChainWitness.initialJetEquation_ne_zero {Q : DifferentialPolynomial F d} {P : F[X]} {a : F}
+    (h : ChainWitness Q P a) : initialJetEquation a Q ≠ 0 := by
   induction h with
   | regular _ _ hreg =>
       intro hzero
       apply hreg
-      rw [← eval_jetFiberHom, jetFiberHom_separant, hzero, map_zero, map_zero]
+      rw [← aeval_initialJetEquation, ← pderiv_initialJetEquation, hzero, map_zero, map_zero]
   | singular _ _ _ ih =>
       intro hzero
       apply ih
-      rw [jetFiberHom_separant, hzero, map_zero]
+      rw [← pderiv_initialJetEquation, hzero, map_zero]
 
 end CommSemiring
 

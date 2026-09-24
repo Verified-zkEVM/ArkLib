@@ -24,6 +24,8 @@ strict surplus gives a primitive interpolant satisfying the local constraints at
   executable sum over total jet degree and first-jet exponent.
 * `firstOrderCurveShiftedRowSlotCount_le_bound`: the actual graded row count is bounded by its
   numerical profile.
+* `firstOrderCurveShiftedRowSlotBound_le_of_rankBound`: a pointwise rank profile bounds the
+  shifted row-slot sum.
 * `exists_primitive_firstOrderCurve_interpolant_of_shifted_height` and its numerical-bound form:
   a shifted slot surplus gives a primitive interpolant with per-column degree bounds.
 
@@ -103,6 +105,16 @@ def firstOrderCurveShiftedRowSlotBound
     (D A m M μ n ℓ h : ℕ) : ℕ :=
   Finset.sum (Finset.range (μ + 1)) fun t ↦
     n * firstOrderGradedRankBound D A m M t * (h + 1 - ℓ * t)
+
+/-- The shifted row-slot bound is monotone in any pointwise upper bound on the rank profile. -/
+theorem firstOrderCurveShiftedRowSlotBound_le_of_rankBound
+    (D A m M μ n ℓ h : ℕ) (rankBound : ℕ → ℕ)
+    (hrank : ∀ t, firstOrderGradedRankBound D A m M t ≤ rankBound t) :
+    firstOrderCurveShiftedRowSlotBound D A m M μ n ℓ h ≤
+      ∑ t ∈ Finset.range (μ + 1), n * rankBound t * (h + 1 - ℓ * t) := by
+  apply Finset.sum_le_sum
+  intro t ht
+  exact Nat.mul_le_mul_right (h + 1 - ℓ * t) (Nat.mul_le_mul_left n (hrank t))
 
 /-- The actual compressed-row slot count is bounded by the numerical block-rank profile. -/
 theorem firstOrderCurveShiftedRowSlotCount_le_bound

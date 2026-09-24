@@ -121,6 +121,10 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation
 
 `firstOrderCurveShiftedRowSlotBound_eq_sumRangeFrom` and `firstOrderCurveShiftedHeightSlotCount_eq_sumRangeFrom` were not ported because each only unfolds `Finset.sumRangeFrom` at start zero and neither has a consumer. `firstOrderCurveShiftedRowSlotBound_le_of_rankBound` was not ported because it has no consumer; a needed concrete profile comparison can be proved directly from finite-sum monotonicity.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/FirstOrder/CurveHeightCounting.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`firstOrderCurveShiftedRowSlotBound_le_of_rankBound` keeps its name and proves the shifted row-slot sum is bounded by any pointwise upper bound on the graded-rank profile. No declaration from this source file was omitted.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder/CurveRank.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/FirstOrder/CurveRank.lean` at ArkLib revision
@@ -732,6 +736,14 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation
 
 The interpolant total-jet-degree bounds are moved to `SourceColumn` and generalized to arbitrary finite column types; coefficient maps for the mapped bound target commutative semirings. The existing `SourceColumn.coeff_interpolant_natDegree_le` is generalized from `Fin N` to any finite column type and reused by the rank-based constructor. `SatisfiesLocalConstraints.map` is added to transport local constraints through coefficient maps. Separate `challengeHeight_le` and `jetWeight_le` aliases are not added because their bounds are available through `challengeDegree_le` and `jetTotalDegree_le`. `Matrix.kernel_height_lt_div_margin` is deferred to the RateHeight port because it has no consumer in this branch. Source support-certificate and jet-prefix imports are replaced by existing received-curve, source-column, and separant-chain APIs.
 
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/PartitionRank.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Symbolic/RatePartitionMatrix.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`mapped_curve_block_eq_local_matrix` became `localConstraintMatrix_map`, generalizing the algebra-map block identity to entrywise base change of the full matrix along any ring homomorphism. `monomial_local_matrix_rank_le` became `localConstraintCoordinates_rank_le_of_derivative_weight`, generalizing from monomial columns to arbitrary finite families of differential polynomials whose support has derivative-order weight at most `W`. The old symbolic weighted-support `Matrix.rank_prod_rows_le_sum` became a generic product-row rank bound in `ArkLib.ToMathlib.LinearAlgebra.Matrix.Rank`. `finiteConstraintMatrix_rank_le_partition` became `rank_map_supportedLocalConstraintMatrix_le_of_derivative_weight`, using the existing supported-row matrix and `localDerivativeCoordinateBudget` to bound rank by the number of points times the local budget.
+
+The separate `mapped_curve_block_eq_local_matrix` wrapper and `monomial_local_matrix_rank_le` theorem were not ported because the generalized theorems cover them. The `Matrix.rowBlock` helper was not ported because its row-block lambda is inlined into the generic product-row rank theorem.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/ReceivedCurve.lean`
 
 From `Symbolic/ReceivedLine.lean` and `Symbolic/ReceivedCurve.lean` under
@@ -746,6 +758,12 @@ and `SymbolicReceivedCurve` flattened into `ReedSolomon.HiddenDerivative`.
 injective ring hom into a field, nonvanishing holds for every ring hom into a nontrivial semiring,
 and the line theorem drops the `M *ᵥ v = 0` conjunct. `Symbolic/Soundness.lean` is not ported
 here.
+
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/Soundness.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/WeightedSupportInterpolant.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`map_interpolant_mem_weightedSupportSpace` is unchanged. It proves that coefficient specialization preserves the weighted-support bound, using the canonical source-column and weighted-support APIs. The support index uses `weightedSupportExponents` directly; no `WeightedSupportIndex` alias is retained.
 
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/SourceColumn.lean`
 
@@ -1039,6 +1057,12 @@ at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`. `curveStageZero` 
 `curveStageOne_mono_derivative_of_factors` are now `orderOneCurveStageCharge_mono_total` (without
 `r ≤ v`) and `orderOneCurveStageCharge_mono_derivative`, and `curveStageZero_le_one_of_factors`
 is now `orderZeroCurveStageCharge_le_orderOne`, with `0 ≤ s` in place of `1 ≤ s`.
+
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/Uniform.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/FirstOrder/Uniform.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+The source declarations map into the destination namespace as follows: `ReedSolomon.uniformFirstOrderGradedRankProfile` → `ReedSolomon.HiddenDerivative.uniformFirstOrderGradedRankProfile`; `ReedSolomon.firstOrderGradedRankBound_le_uniformFirstOrderProfile` → `ReedSolomon.HiddenDerivative.firstOrderGradedRankBound_le_uniformFirstOrderProfile`; `ReedSolomon.uniformFirstOrderHeightWeightSum`, `ReedSolomon.uniformFirstOrderHeightTotalDegreeSum`, `ReedSolomon.uniformFirstOrderHeightFirstJetSum`, and `ReedSolomon.uniformFirstOrderRowWeightSum` → the same names under `ReedSolomon.HiddenDerivative`; the four corresponding `_eq` theorems → the same names under `ReedSolomon.HiddenDerivative`; `ReedSolomon.uniformFirstOrder_parameters` → `ReedSolomon.HiddenDerivative.uniformFirstOrder_parameters`. `uniformFirstOrder_parameters` drops the unnecessary `2 ≤ n` and `A ≤ n` premises; `2 ≤ k` and `25 * k + 6 * n ≤ 25 * A` suffice. The fixed profile values, sum, and weighted sum are checked in acceptance examples rather than exported as library theorems because they have no production consumers.
 
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FreeOrder.lean`
 
@@ -1564,6 +1588,14 @@ ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`,
 
 Deferred: scalar providers of the line guarantee (list-decoding and curve-counting results) and
 the probability form of the count.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/WeightedSupportInterpolant.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/WeightedSupportInterpolant.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`exists_weightedSupport_interpolant_of_fixed_margin`, `exists_prescribed_weightedSupport_construction_core`, `exists_prescribed_weightedSupport_construction`, and `HiddenDerivativeInterpolationCertificate.agreeingPolynomials_encard_le_totalJetDegree` retain their mathematical guarantees using the destination weighted-support, harmonic, parameter, certificate, and root-count APIs. The first theorem specializes the symbolic kernel construction at challenge zero; the prescribed construction uses the existing capacity parameters. The final theorem uses the solution embedding and bounded-solution root count to obtain the extension-field list bound `4 * m * q ^ (e * d)`.
+
+The symbolic height bound was renamed from `noBand_kernel_height_lt` to `kernel_height_lt_twelve_mul_of_margin`. The matrix block rank argument uses the range embedding and finite-dimensional rank bound. `map_projectLowContact` and `map_unscaledLocalSubstitution` are supplied by the existing local-constraint API. `WeightedSupportIndex` is not retained as an alias; support uses `weightedSupportExponents`. The three differential-specialization agreement lemmas are outside the unit's main statements, since the list bound uses the existing solution embedding and bounded-solution root count.
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/HiddenDerivativeBound.lean`
 
@@ -2098,7 +2130,7 @@ longer takes `K`; `l` is a natural number instead of an element of `Fin K`.
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Symbolic/TaylorSpecialization.lean` at ArkLib revision
 `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
-`map_rationalTaylorNumeratorOver_eq` keeps its name and mathematical contract in the destination owner module. `eval_rationalTaylorNumeratorOver` and `eval₂AlgHom_rationalTaylorNumeratorOver` keep their names and source-shaped specializations.
+`map_rationalTaylorNumeratorOver_eq` keeps its name and mathematical contract in the destination owner module; it also handles polynomial evaluation as a field-valued algebra-map specialization.
 
 ## `ArkLib/Data/Polynomial/Differential/RationalTaylorBidegree.lean`
 
@@ -2107,6 +2139,14 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/S
 `initialJetEquationOver_mem_restrictBidegree` and `initialJetSeparantOver_mem_restrictBidegree` become `initialJetEquation_mem_restrictBidegree` and `initialJetSeparant_mem_restrictBidegree` for the current `initialJetEquation` and `initialJetSeparant` APIs. The exponent and default-exponent forms of `commonTaylorNumeratorOver_mem_restrictBidegree` and `taylorAgreementEquationOver_mem_restrictBidegree` are each represented by one explicit-exponent theorem with a sufficiency proof. The agreement bound is stated for a received polynomial over `F[X]`. Separate coefficient-degree and jet-degree bounds support the rectangle results; the jet bounds use `jetTotalDegree`. Default-exponent wrappers are covered using `taylorExponentSufficient_two_mul`, and `flattenChallenge_jetDegree_le` is covered by `MvPolynomial.totalDegree_optionEquivRight`. The agreement-equation definition is supplied by main and retained unchanged; no source theorem remains blocked.
 
 The shared coefficient and bidegree results are generalized in `ArkLib/ToMathlib/MvPolynomial/PolynomialCoefficients.lean` and `ArkLib/ToMathlib/RingTheory/MvPolynomial/Bidegree.lean`: `source_mem_restrictBidegree_mono` becomes `mem_restrictBidegree_mono` for arbitrary `MvPolynomial` coefficients; private `challengeHeightLE_clearedSubstitution` becomes `CoeffNatDegreeLE.clearedSubstitution`, generalized to commutative semirings; and `flattenChallenge_challengeDegree_le` becomes `weightedTotalDegree_optionEquivRight_symm_coefficientDegree_le`, generalized to arbitrary variable types and nontrivial commutative semirings. `flattenChallenge_mem_restrictBidegree` is likewise generalized to those variable and semiring assumptions. The acceptance cases are in `ArkLibTest/Data/Polynomial/Differential.lean`, `ArkLibTest/ToMathlib/MvPolynomial.lean`, and `ArkLibTest/ToMathlib/RingTheory/MvPolynomial.lean`.
+
+## `ArkLib/Data/Polynomial/Differential/RationalTaylorDerivativeDegree.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Symbolic/TaylorDerivativeDegree.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Renamed `degreeOf_initialJetSeparantOver_firstOrder` to `degreeOf_initialJetSeparant_le` and generalized it from fields to nontrivial commutative semirings. Added `degreeOf_rationalTaylorNumeratorOver_le` and `degreeOf_commonTaylorNumeratorOver_le` for arbitrary positive differential order over fields. `degreeOf_rationalTaylorNumeratorOver_firstOrder` and `degreeOf_commonTaylorNumeratorOver_firstOrder` keep their names as first-order specializations.
+
+`flattenChallenge_degreeOf_le` was not given a wrapper because the existing weighted-degree identities already provide the coordinate-degree identity. The redundant `degreeOf_optionEquivRight_symm_le` declaration and its constant-coefficient test were removed.
 
 ## `ArkLib/Data/Polynomial/Differential/RationalTaylorJointDegree.lean`
 
@@ -2242,12 +2282,14 @@ default-exponent theorem and an `_of_exponent` theorem is one theorem taking
 `0 < v` hypothesis. Renamed: `initialJetEquation_ne_zero_of_separant_ne_zero` (from
 `Geometry/InitialGeometry.lean`) to `initialJetEquation_ne_zero_of_initialJetSeparant_ne_zero`,
 `initialJetEquation_solution` to `aeval_initialJetEquation_polynomialJet`,
-`commonTaylorNumerator_solution` to `aeval_commonTaylorNumerator_polynomialJet`,
+`commonTaylorNumerator_solution` to `aeval_commonTaylorNumerator` together with
+`rationalTaylorCoefficient_eq_solution`,
 `rationalTaylorMap_eq_solution` to `rationalTaylorMap_polynomialJet`,
 `degree_rationalTaylorPolynomial_lt_of_high_cuts` to `degree_rationalTaylorPolynomial_lt`,
-`taylorAgreementEquation_solution` to `aeval_taylorAgreementEquation_polynomialJet`,
+`taylorAgreementEquation_solution` to `aeval_taylorAgreementEquation` together with
+`rationalTaylorPolynomial_polynomialJet`,
 `polynomialJet_agreement_cut_iff` (from `Geometry/SolutionGeometry.lean`) to
-`aeval_taylorAgreementEquation_polynomialJet_eq_zero_iff`, and
+`taylorAgreementEquation_eq_zero_iff` together with `rationalTaylorPolynomial_polynomialJet`,
 `eq_of_high_cuts_and_agreement_cuts` to `eq_of_highTaylorCuts_of_agreement`, which takes
 `Set.InjOn domain T` and `k ≤ T.card` instead of an embedding `Fin n ↪ F` with `T.card = k`.
 `rationalTaylorCutDegreeBound` comes from `Geometry/HighCutGeometry.lean` with `τ` in place of
@@ -2263,7 +2305,7 @@ Not ported: `exists_common_regular_center_algebraicClosure` is an algebra-map sp
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Symbolic/TaylorSpecialization.lean` at ArkLib revision
 `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
-`commonTaylorNumeratorOver_eq` is a new bridge identifying the algebra-valued common numerator with the field-valued definition. `map_commonTaylorNumeratorOver_eq` keeps its name and is generalized to the destination's natural Taylor index and arbitrary exponent, without a finite-index bound. `eval_commonTaylorNumeratorOver` keeps its name and specializes using the destination API's natural index through `l.val`.
+`commonTaylorNumeratorOver_eq` is a new bridge identifying the algebra-valued common numerator with the field-valued definition. `map_commonTaylorNumeratorOver_eq` keeps its name and is generalized to the destination's natural Taylor index and arbitrary exponent, without a finite-index bound; it also handles polynomial evaluation as a field-valued algebra-map specialization.
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Geometry/SolutionEmbedding.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
@@ -2282,16 +2324,13 @@ evaluation lemmas are placed in the existing `TaylorChart` module. These mapping
 generalized to commutative semirings and arbitrary ring maps, and the evaluation theorem to maps
 between commutative semirings.
 
-The following declarations keep their names: `taylorAgreementEquationOver`,
-`map_taylorAgreementEquationOver`, `map_taylorAgreementEquationOver_eq`,
-`aeval_map_taylorAgreementEquationOver_of_exponent`, `aeval_map_taylorAgreementEquationOver`,
+The declarations `taylorAgreementEquationOver`, `map_taylorAgreementEquationOver`,
+`map_taylorAgreementEquationOver_eq`, `aeval_map_taylorAgreementEquationOver_of_exponent`,
 `aeval_map_taylorAgreementEquationOver_eq_zero_iff_of_exponent`,
-`aeval_map_taylorAgreementEquationOver_eq_zero_iff`,
-`degree_rationalTaylorPolynomial_lt_of_symbolic_high_cuts_and_exponent`,
-`degree_rationalTaylorPolynomial_lt_of_symbolic_high_cuts`,
-`aeval_map_commonTaylorNumeratorOver_reconstruction_of_exponent`, and
-`aeval_map_commonTaylorNumeratorOver_reconstruction`. The agreement equation keeps the same
-mathematics and uses the destination common-exponent API.
+`degree_rationalTaylorPolynomial_lt_of_symbolic_high_cuts_and_exponent`, and
+`aeval_map_commonTaylorNumeratorOver_reconstruction_of_exponent` keep their general statements.
+The default-exponent twins were removed; callers pass `τ` and its sufficiency proof. The
+agreement equation keeps the same mathematics and uses the destination common-exponent API.
 
 Not ported: `initialJetEquationOver` is covered by the existing, more general `initialJetEquation`
 in `TaylorChart`; `map_initialJetSeparantOver_eq` is covered by the existing
@@ -2302,7 +2341,7 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/S
 
 `challengeHeightLE_initialJetEquationOver` becomes `coeffNatDegreeLE_initialJetEquation`, using the existing `CoeffNatDegreeLE` API. `jointTotalDegree_initialJetEquationOver_le` becomes `jointTotalDegree_initialJetEquation_le`, with the center generalized from a constant to any polynomial. `jointTotalDegree_initialJetEquationOver_le_of_source` becomes `jointTotalDegree_initialJetEquation_le_of_coeffNatDegreeLE`, generalized to `CoeffNatDegreeLE` and `jetTotalDegree`.
 
-The agreement bounds `jointTotalDegree_taylorAgreementEquationOver_le_of_exponent` and `jointTotalDegree_taylorAgreementEquationOver_le` keep their names. `jointTotalDegree_taylorAgreementEquationOver_le_of_source_and_exponent` and `jointTotalDegree_taylorAgreementEquationOver_le_of_source` become `jointTotalDegree_taylorAgreementEquationOver_le_of_coeffNatDegreeLE_and_exponent` and `jointTotalDegree_taylorAgreementEquationOver_le_of_coeffNatDegreeLE`; these use `jetTotalDegree` and `CoeffNatDegreeLE` and require no positive-degree premise. `sparse_rationalTaylorPolynomial_of_symbolic_cuts` keeps its name and uses main's common-numerator reconstruction identity.
+The general agreement bound `jointTotalDegree_taylorAgreementEquationOver_le_of_exponent` keeps its name. The default-exponent specialization was removed; callers pass `τ := 2 * K` with `taylorExponentSufficient_two_mul` when they need that exponent. `jointTotalDegree_taylorAgreementEquationOver_le_of_source_and_exponent` becomes `jointTotalDegree_taylorAgreementEquationOver_le_of_coeffNatDegreeLE_and_exponent`; the source default-exponent bound was removed. These use `jetTotalDegree` and `CoeffNatDegreeLE` and require no positive-degree premise. `sparse_rationalTaylorPolynomial_of_symbolic_cuts` keeps its name and uses main's common-numerator reconstruction identity.
 
 `totalDegree_initialJetEquationOver_le` is not ported because the existing, more general `PolynomialDifferential.totalDegree_initialJetEquation_le` covers it. The source `taylorAgreementEquationOver` definition and `aeval_map_commonTaylorNumeratorOver_reconstruction_of_exponent` are supplied by main under those destination names.
 

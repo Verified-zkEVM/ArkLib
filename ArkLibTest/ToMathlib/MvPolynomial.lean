@@ -83,6 +83,33 @@ example :
   rw [hvalue, totalDegree_X_pow] at hbound ⊢
   exact ⟨hbound, rfl⟩
 
+/-- A nonconstant mapped coefficient contributes to a weighted cleared-substitution bound. -/
+example :
+    weightedTotalDegree (fun _ : Unit ↦ 2)
+      (clearedSubstitution
+        (Polynomial.aeval (X () : MvPolynomial Unit ℚ)).toRingHom
+        (1 : MvPolynomial Unit ℚ) (fun _ : Unit ↦ 1) (fun _ ↦ 0) 0
+        (C (Polynomial.X : Polynomial ℚ) : MvPolynomial Unit (Polynomial ℚ))) ≤ 2 := by
+  apply weightedTotalDegree_clearedSubstitution_le_of_coeff
+    (f := (Polynomial.aeval (X () : MvPolynomial Unit ℚ)).toRingHom)
+    (S := (1 : MvPolynomial Unit ℚ)) (N := fun _ : Unit ↦ 1)
+    (d := fun _ ↦ 0) (e := fun _ ↦ 0) (w := fun _ : Unit ↦ 2)
+    (H := 0) (b := 0) (v := 2)
+    (Q := C (Polynomial.X : Polynomial ℚ))
+  · rw [← C_1, weightedTotalDegree_C]
+  · intro i
+    rw [← C_1, weightedTotalDegree_C]
+  · intro m hm
+    simp [Finsupp.weight_apply]
+  · intro m hm
+    classical
+    have hm0 : m = 0 := by
+      have hm' := hm
+      rw [support_C, ite_eq_right Polynomial.X_ne_zero] at hm'
+      exact Finset.mem_singleton.mp hm'
+    subst m
+    simp [weightedTotalDegree, support_X, Finsupp.weight_single]
+
 /-! ### Complete homogeneous polynomials -/
 
 /-- The power-sum identity evaluates `h₂(1, 2)` to `7`. -/
@@ -713,3 +740,27 @@ example :
 end
 
 end MvPolynomialEvaluationTest
+
+/-! ### Separate-variable degree bounds -/
+
+/-- A one-variable monomial remains within the cleared-substitution degree budget. -/
+example :
+    (clearedSubstitution C (X (0 : Fin 1) : MvPolynomial (Fin 1) ℚ)
+      (fun _ : Fin 1 ↦ X (0 : Fin 1)) (fun _ : Fin 1 ↦ 1) 1
+      (X (0 : Fin 1) : MvPolynomial (Fin 1) ℚ)).degreeOf 0 ≤ 2 := by
+  apply degreeOf_clearedSubstitution (R := ℚ) (i := (0 : Fin 1))
+    (S := X 0) (N := fun _ : Fin 1 ↦ X 0) (d := fun _ : Fin 1 ↦ 1)
+    (w := fun _ : Fin 1 ↦ 1) (H := 1) (b := 1) (v := 1)
+  · simp
+  · intro j
+    simp
+  · intro m hm
+    have hm' : m = Finsupp.single (0 : Fin 1) 1 := by
+      simpa only [support_X, Finset.mem_singleton] using hm
+    rw [hm']
+    simp [Finsupp.weight_single]
+  · intro m hm
+    have hm' : m = Finsupp.single (0 : Fin 1) 1 := by
+      simpa only [support_X, Finset.mem_singleton] using hm
+    rw [hm']
+    simp [Finsupp.weight_single]
