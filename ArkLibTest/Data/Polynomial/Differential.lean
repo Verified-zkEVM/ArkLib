@@ -338,8 +338,8 @@ example : derivativeDescent cubicEquation 1 ≠ 0 ∧
     rw [highestActiveJet_eq_some_max cubicEquation (by simp [hactive])]
     simp [hactive]
   have hcast : JetDegreeCastsNeZero cubicEquation 1 := by
-    apply jetDegreeCastsNeZero_of_ringChar
-    exact Or.inl (ringChar.eq_zero : ringChar ℚ = 0)
+    exact (jetDegreeCastsNeZero_of_jetTotalDegree_charGuard le_rfl
+      (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))) 1
   exact derivativeDescent_spec_of_highestActiveJet_eq_some hhighest hcast
 
 /-! ### Direct regular iteration -/
@@ -1493,5 +1493,6 @@ example :
   exact ⟨positiveCurveEquation_yOneDegree_le retainedCurveEquation,
     positiveCurveEquation_jetTotalDegree_le retainedCurveEquation,
     positiveCurveEquation_coeffNatDegreeLE retainedCurveEquation⟩
+
 end
 end PolynomialDifferential
