@@ -24,8 +24,6 @@ separant chain.
 
 * `firstOrderCurveStageCap_add_height_eq_of_factors` identifies the stage cap with the curve
   bound.
-* `firstOrderCurveJointRatio_one_le`, `firstOrderCurveFiberRatio_one_le`, and
-  `firstOrderCurveDirectRatio_one_le` bound the three curve incidence factors.
 * `SeparantChain.sum_firstOrderCurveStageCharge_add_height_le_of_factors` bounds the terminal
   height and all stage charges by the curve bound.
 * `sum_firstOrderCurveStageCharge_add_height_le_of_directRatio` specializes the order-one factor
@@ -64,24 +62,6 @@ def firstOrderCurveFiberRatio (n k L : ℕ) : ℚ :=
 /-- The direct joint incidence ratio for an order-one stage. -/
 def firstOrderCurveDirectRatio (n k A : ℕ) : ℚ :=
   firstOrderCurveIncidenceRatio n k A
-
-/-- The split joint ratio is at least one when its agreement size is at most `n`. -/
-theorem firstOrderCurveJointRatio_one_le {n L A : ℕ} (hAn : A ≤ n) :
-    1 ≤ firstOrderCurveJointRatio n L A := by
-  unfold firstOrderCurveJointRatio firstOrderCurveIncidenceRatio
-  simpa using (one_le_incidenceFactor (T := L) (b := 1) hAn one_pos)
-
-/-- The fiber ratio is at least one when its agreement size is at most `n`. -/
-theorem firstOrderCurveFiberRatio_one_le {n k L : ℕ} (hLn : L ≤ n) :
-    1 ≤ firstOrderCurveFiberRatio n k L := by
-  unfold firstOrderCurveFiberRatio firstOrderCurveIncidenceRatio
-  simpa using (one_le_incidenceFactor (T := k) (b := 1) hLn one_pos)
-
-/-- The direct order-one joint ratio is at least one when its agreement size is at most `n`. -/
-theorem firstOrderCurveDirectRatio_one_le {n k A : ℕ} (hAn : A ≤ n) :
-    1 ≤ firstOrderCurveDirectRatio n k A := by
-  unfold firstOrderCurveDirectRatio firstOrderCurveIncidenceRatio
-  simpa using (one_le_incidenceFactor (T := k) (b := 1) hAn one_pos)
 
 /-- Splitting at `L` can only increase the joint ratio relative to going directly from `k`
 to `A`. -/
@@ -186,8 +166,12 @@ theorem sum_firstOrderCurveStageCharge_add_height_le_of_factors
   let s := firstOrderCurveJointRatio n L A
   let t := firstOrderCurveFiberRatio n k L
   let c : ℚ := ((ell * (n - L) : ℕ) : ℚ)
-  have hs : 1 ≤ s := firstOrderCurveJointRatio_one_le hAn
-  have ht : 1 ≤ t := firstOrderCurveFiberRatio_one_le (hLA.trans hAn)
+  have hs : 1 ≤ s := by
+    simpa [s, firstOrderCurveJointRatio, firstOrderCurveIncidenceRatio] using
+      one_le_incidenceFactor (T := L) (b := 1) hAn one_pos
+  have ht : 1 ≤ t := by
+    simpa [t, firstOrderCurveFiberRatio, firstOrderCurveIncidenceRatio] using
+      one_le_incidenceFactor (T := k) (b := 1) (hLA.trans hAn) one_pos
   have hs0 : 0 ≤ s := (by positivity)
   have ht0 : 0 ≤ t := (by positivity)
   have hη0 : 0 ≤ η := (by positivity)
@@ -227,7 +211,9 @@ theorem sum_firstOrderCurveStageCharge_add_height_le_of_directRatio
         (η := firstOrderCurveDirectRatio n k A) :=
   hc.sum_firstOrderCurveStageCharge_add_height_le_of_factors τ
     (firstOrderCurveDirectRatio n k A)
-    (firstOrderCurveDirectRatio_one_le hAn)
+    (by
+      simpa [firstOrderCurveDirectRatio, firstOrderCurveIncidenceRatio] using
+        one_le_incidenceFactor (T := k) (b := 1) hAn one_pos)
     hμ hM hK hLA hAn
 
 end PolynomialDifferential.SeparantChain
