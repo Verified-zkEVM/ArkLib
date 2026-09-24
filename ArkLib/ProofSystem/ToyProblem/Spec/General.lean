@@ -1033,7 +1033,7 @@ lemma accepts_of_mem_support_verifier_run
       split at hresult
       · rename_i hcond
         exact hcond
-      · contradiction
+      · exact absurd hresult (Option.some_ne_none a)
 
 omit [Fintype ι] [DecidableEq ι] [Fintype F] [Fintype A] in
 /-- Round-by-round-framework wrapper for `accepts_of_mem_support_verifier_run`, consuming the
