@@ -13,6 +13,8 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.MomentSource
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.RateBound
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.CurveCertificate
+import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.RateCertificate
+import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.ClosedMultiplicity
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.Moment
 
 /-!
@@ -384,3 +386,151 @@ example : Nonempty (SymbolicReceivedCurve.Certificate 2 2 0 1 0 0 twoCenters zer
       rw [hcard]
       norm_num [partitionSourceCount, localDerivativeCoordinateBudget, contactThreshold,
         weightedHigherJetCount, Finset.natWeightedSimplex, Finset.sum_range_succ])
+
+private def rationalCenters (n : ℕ) : Fin n ↪ ℚ where
+  toFun i := i.val
+  inj' := by
+    intro i j hij
+    apply Fin.ext
+    change (i.val : ℚ) = (j.val : ℚ) at hij
+    exact_mod_cast hij
+
+private noncomputable def zeroReceivedOf (n : ℕ) : Fin n → Polynomial ℚ := fun _ ↦ 0
+
+private theorem finiteCertificateRatio_gt_two :
+    2 < RatePartition.partitionFiniteRatio (1 / 10) (9 / 10) 500
+      (RatePartition.closedMultiplicity 1000 500) := by
+  have hlog : Real.log (3000 : ℝ) < 9 := by
+    apply (Real.log_lt_iff_lt_exp (by norm_num)).2
+    have hpow : (27 / 10 : ℝ) ^ 9 < Real.exp 1 ^ 9 :=
+      pow_lt_pow_left₀ (by
+        have h := Real.exp_one_gt_d9
+        norm_num at h ⊢
+        linarith) (by norm_num) (by norm_num)
+    have hexp9 : Real.exp 9 = Real.exp 1 ^ 9 := by
+      rw [← Real.exp_nat_mul]
+      norm_num
+    rw [hexp9]
+    exact (by norm_num : (3000 : ℝ) < (27 / 10 : ℝ) ^ 9).trans hpow
+  have hone : (1 / 3 : ℝ) < Real.exp (-1) := by
+    have h := Real.exp_neg_one_gt_d9
+    norm_num at h ⊢
+    linarith
+  have htail : (1 / 3 : ℝ) <
+      Real.exp (-((1 / 9 : ℝ) * Real.log (3000 : ℝ))) := by
+    have harg : -1 < -((1 / 9 : ℝ) * Real.log 3000) := by nlinarith
+    exact hone.trans (Real.exp_lt_exp.mpr harg)
+  have hloss := RatePartition.closedMultiplicityLoss_thousand_lt (by norm_num : 6 ≤ 500)
+  have hratio := RatePartition.partitionFiniteRatio_closedMultiplicity_gt
+    (rate := 1 / 10) (agreement := 9 / 10) (scale := 1000) (η := 1) (order := 500)
+    (by norm_num) (by norm_num) (by norm_num) (hloss.trans (by norm_num))
+  have hratio' :
+      (27 / 20 : ℝ) * (1 / 10) * (500 + 1) *
+          Real.exp (-((1 / 9 : ℝ) * Real.log 3000)) * Real.exp (-1) <
+        RatePartition.partitionFiniteRatio (1 / 10) (9 / 10) 500
+          (RatePartition.closedMultiplicity 1000 500) := by
+    convert hratio using 1; norm_num
+  have hbase : (2 : ℝ) <
+      (27 / 20 : ℝ) * (1 / 10) * (500 + 1) *
+        Real.exp (-((1 / 9 : ℝ) * Real.log 3000)) * Real.exp (-1) := by
+    calc
+      2 < (27 / 20 : ℝ) * (1 / 10) * (500 + 1) * (1 / 3) * (1 / 3) := by norm_num
+      _ < _ := by gcongr
+  exact hbase.trans hratio'
+
+private noncomputable def finiteCertificateParameters :
+    RatePartition.PartitionFiniteParameters (1 / 10) (9 / 10) 500 where
+  multiplicity := RatePartition.closedMultiplicity 1000 500
+  multiplicity_pos := by
+    have h := RatePartition.add_two_le_closedMultiplicity (scale := 1000) (order := 500)
+      (by norm_num) (by norm_num)
+    omega
+  weightBudget_pos := RatePartition.partitionWeightBudget_closedMultiplicity_pos
+    (rate := 1 / 10) (agreement := 9 / 10) (scale := 1000) (order := 500)
+    (by norm_num) (by norm_num) (by norm_num)
+  one_lt_finiteRatio := by linarith [finiteCertificateRatio_gt_two]
+
+/-- A finite ratio above two yields a height-controlled certificate at ten received points. -/
+example : Nonempty (SymbolicReceivedCurve.Certificate 10 1 0
+    (RatePartition.rateJetCap (1 / 10) finiteCertificateParameters.multiplicity) 500
+    (0 * RatePartition.marginHeight
+      (RatePartition.rateJetCap (1 / 10) finiteCertificateParameters.multiplicity) 2)
+    (rationalCenters 10) (zeroReceivedOf 10)) := by
+  have hdegree : ∀ u, PartitionSupportEligible 1 500
+      (RatePartition.partitionWeightBudget (1 / 10) (9 / 10) 500
+        finiteCertificateParameters.multiplicity)
+      ((finiteCertificateParameters.multiplicity * 10 : ℕ) : ℝ) u →
+      totalJetDegree u ≤ RatePartition.rateJetCap (1 / 10)
+        finiteCertificateParameters.multiplicity := by
+    intro u hu
+    exact RatePartition.partitionSupport_totalJetDegree_le_rateJetCap
+      (D := 1) (d := 500)
+      (W := RatePartition.partitionWeightBudget (1 / 10) (9 / 10) 500
+        finiteCertificateParameters.multiplicity)
+      (m := finiteCertificateParameters.multiplicity) (n := 10) (A := 10) (rate := 1 / 10)
+      (by norm_num) (by norm_num) (by norm_num) (by norm_num) hu
+  have hratioTwo : (2 : ℝ) ≤ RatePartition.partitionFiniteRatio (1 / 10) (9 / 10) 500
+      finiteCertificateParameters.multiplicity := by
+    change (2 : ℝ) ≤ RatePartition.partitionFiniteRatio (1 / 10) (9 / 10) 500
+      (RatePartition.closedMultiplicity 1000 500)
+    exact finiteCertificateRatio_gt_two.le
+  simpa only [zero_mul] using
+    exists_partitionSupport_curve_certificate_of_finiteRatio (F := ℚ) (rate := 1 / 10)
+      (agreement := 9 / 10) (γ := 2) (D := 1) (d := 500)
+      (m := finiteCertificateParameters.multiplicity) (n := 10) (k := 1) (A := 10) (ℓ := 0)
+      (ν := RatePartition.rateJetCap (1 / 10) finiteCertificateParameters.multiplicity)
+      (by norm_num) (by norm_num) finiteCertificateParameters.multiplicity_pos (by norm_num)
+      (by norm_num) finiteCertificateParameters.weightBudget_pos (by norm_num) (by norm_num)
+      (by norm_num) (rationalCenters 10) (zeroReceivedOf 10)
+      (by intro i; simp [zeroReceivedOf]) hdegree (by norm_num) hratioTwo
+
+/-- The padded block-length threshold gives a concrete rate-dependent certificate. -/
+example : ∃ n k : ℕ,
+    n = RatePartition.paddedRateBlockThreshold (1 / 10) 500
+      finiteCertificateParameters.multiplicity ∧ k = ⌊(1 / 10 : ℝ) * n⌋₊ ∧
+    Nonempty (SymbolicReceivedCurve.Certificate n k 0
+      (RatePartition.rateJetCap (1 / 10) finiteCertificateParameters.multiplicity) 500
+      (0 * RatePartition.marginHeight
+        (RatePartition.rateJetCap (1 / 10) finiteCertificateParameters.multiplicity)
+        (RatePartition.partitionFiniteRatio (1 / 10) (9 / 10) 500
+          finiteCertificateParameters.multiplicity))
+      (rationalCenters n) (zeroReceivedOf n)) := by
+  let n := RatePartition.paddedRateBlockThreshold (1 / 10) 500
+    finiteCertificateParameters.multiplicity
+  let k := ⌊(1 / 10 : ℝ) * n⌋₊
+  refine ⟨n, k, rfl, rfl, ?_⟩
+  simpa only [zero_mul] using
+    exists_partitionSupport_curve_certificate_of_paddedRateBlockThreshold (F := ℚ)
+      (rate := 1 / 10) (agreement := 9 / 10) (d := 500) (n := n) (k := k) (A := n)
+      (ℓ := 0) finiteCertificateParameters (by norm_num) (by norm_num) (by norm_num)
+      (by norm_num : 500 ≤ 500) le_rfl
+      (by dsimp [k]; exact Nat.floor_le (by positivity))
+      (by
+        have hn_nonneg : (0 : ℝ) ≤ (n : ℝ) := Nat.cast_nonneg _
+        nlinarith)
+      le_rfl (rationalCenters n) (zeroReceivedOf n) (by intro i; simp [zeroReceivedOf])
+
+/-- The mathematical block-length threshold also gives a concrete rate-dependent certificate. -/
+example : ∃ n k : ℕ,
+    n = RatePartition.rateBlockThreshold (1 / 10) 500
+      finiteCertificateParameters.multiplicity ∧ k = ⌊(1 / 10 : ℝ) * n⌋₊ ∧
+    Nonempty (SymbolicReceivedCurve.Certificate n k 0
+      (RatePartition.rateJetCap (1 / 10) finiteCertificateParameters.multiplicity) 500
+      (0 * RatePartition.marginHeight
+        (RatePartition.rateJetCap (1 / 10) finiteCertificateParameters.multiplicity)
+        (RatePartition.partitionFiniteRatio (1 / 10) (9 / 10) 500
+          finiteCertificateParameters.multiplicity))
+      (rationalCenters n) (zeroReceivedOf n)) := by
+  let n := RatePartition.rateBlockThreshold (1 / 10) 500 finiteCertificateParameters.multiplicity
+  let k := ⌊(1 / 10 : ℝ) * n⌋₊
+  refine ⟨n, k, rfl, rfl, ?_⟩
+  simpa only [zero_mul] using
+    exists_partitionSupport_curve_certificate_of_rateBlockThreshold (F := ℚ)
+      (rate := 1 / 10) (agreement := 9 / 10) (d := 500) (n := n) (k := k) (A := n)
+      (ℓ := 0) finiteCertificateParameters (by norm_num) (by norm_num) (by norm_num)
+      (by norm_num : 500 ≤ 500) le_rfl
+      (by dsimp [k]; exact Nat.floor_le (by positivity))
+      (by
+        have hn_nonneg : (0 : ℝ) ≤ (n : ℝ) := Nat.cast_nonneg _
+        nlinarith)
+      le_rfl (rationalCenters n) (zeroReceivedOf n) (by intro i; simp [zeroReceivedOf])
