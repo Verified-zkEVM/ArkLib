@@ -103,6 +103,35 @@ theorem exists_partitionSupport_curve_certificate_of_finiteRatio {F : Type*} [Fi
   exact ⟨{ cert with challengeDegree_le := fun u ↦
     (cert.challengeDegree_le u).trans hheight' }⟩
 
+private theorem exists_partitionSupport_curve_certificate_of_rateBlockGuards {F : Type*}
+    [Field F] {rate agreement : ℝ} {d n k A ℓ : ℕ}
+    (parameters : RatePartition.PartitionFiniteParameters rate agreement d)
+    (hrate : 0 < rate) (hagreement : 0 < agreement) (hd : 500 ≤ d)
+    (hD : 0 < ⌊rate * n⌋₊)
+    (hDlower : rate * n / 2 ≤ ⌊rate * n⌋₊)
+    (hkD : k ≤ ⌊rate * n⌋₊)
+    (hagreementUpper : agreement * n ≤ A) (hAn : A ≤ n)
+    (centers : Fin n ↪ F) (received : Fin n → F[X])
+    (hreceived : ∀ i, (received i).natDegree ≤ ℓ) :
+    Nonempty (SymbolicReceivedCurve.Certificate A k ℓ (RatePartition.rateJetCap rate
+      parameters.multiplicity) d
+      (ℓ * RatePartition.marginHeight (RatePartition.rateJetCap rate parameters.multiplicity)
+        (RatePartition.partitionFiniteRatio rate agreement d parameters.multiplicity))
+      centers received) := by
+  have hDn : (⌊rate * n⌋₊ : ℝ) ≤ rate * n := Nat.floor_le (by positivity)
+  have hdegree : ∀ u, PartitionSupportEligible (⌊rate * n⌋₊) d
+      (RatePartition.partitionWeightBudget rate agreement d parameters.multiplicity)
+      (parameters.multiplicity * A : ℕ) u →
+      totalJetDegree u ≤ RatePartition.rateJetCap rate parameters.multiplicity := by
+    intro u hu
+    exact RatePartition.partitionSupport_totalJetDegree_le_rateJetCap
+      (d := d) (W := RatePartition.partitionWeightBudget rate agreement d parameters.multiplicity)
+      (m := parameters.multiplicity) (A := A) hD hrate hDlower hAn hu
+  exact exists_partitionSupport_curve_certificate_of_finiteRatio hD hd
+    parameters.multiplicity_pos hrate hagreement parameters.weightBudget_pos
+    (hkD.trans (Nat.le_succ _)) hDn hagreementUpper centers received hreceived hdegree
+    parameters.one_lt_finiteRatio le_rfl
+
 /-- A padded rate block-length threshold gives a symbolic received-curve certificate using the
 finite ratio of the selected multiplicity. -/
 theorem exists_partitionSupport_curve_certificate_of_paddedRateBlockThreshold {F : Type*}
@@ -122,19 +151,8 @@ theorem exists_partitionSupport_curve_certificate_of_paddedRateBlockThreshold {F
   obtain ⟨hdD, hDlower, hkD, -, -, -, -, -⟩ :=
     RatePartition.paddedRateBlockThreshold_guards hrate hrateOne hn hk hagreementUpper
   have hD : 0 < ⌊rate * n⌋₊ := by omega
-  have hDn : (⌊rate * n⌋₊ : ℝ) ≤ rate * n := Nat.floor_le (by positivity)
-  have hdegree : ∀ u, PartitionSupportEligible (⌊rate * n⌋₊) d
-      (RatePartition.partitionWeightBudget rate agreement d parameters.multiplicity)
-      (parameters.multiplicity * A : ℕ) u →
-      totalJetDegree u ≤ RatePartition.rateJetCap rate parameters.multiplicity := by
-    intro u hu
-    exact RatePartition.partitionSupport_totalJetDegree_le_rateJetCap
-      (d := d) (W := RatePartition.partitionWeightBudget rate agreement d parameters.multiplicity)
-      (m := parameters.multiplicity) (A := A) hD hrate hDlower hAn hu
-  exact exists_partitionSupport_curve_certificate_of_finiteRatio hD hd
-    parameters.multiplicity_pos hrate hagreement parameters.weightBudget_pos
-    (hkD.trans (Nat.le_succ _)) hDn hagreementUpper centers received hreceived hdegree
-    parameters.one_lt_finiteRatio le_rfl
+  exact exists_partitionSupport_curve_certificate_of_rateBlockGuards parameters hrate hagreement
+    hd hD hDlower hkD hagreementUpper hAn centers received hreceived
 
 /-- A mathematical rate block-length threshold gives a symbolic received-curve certificate using
 the finite ratio of the selected multiplicity. -/
@@ -155,18 +173,7 @@ theorem exists_partitionSupport_curve_certificate_of_rateBlockThreshold {F : Typ
   obtain ⟨hdD, hDlower, hkD, -, -, -, -, -⟩ :=
     RatePartition.rateBlockThreshold_guards hrate hrateOne hn hk hagreementUpper
   have hD : 0 < ⌊rate * n⌋₊ := by omega
-  have hDn : (⌊rate * n⌋₊ : ℝ) ≤ rate * n := Nat.floor_le (by positivity)
-  have hdegree : ∀ u, PartitionSupportEligible (⌊rate * n⌋₊) d
-      (RatePartition.partitionWeightBudget rate agreement d parameters.multiplicity)
-      (parameters.multiplicity * A : ℕ) u →
-      totalJetDegree u ≤ RatePartition.rateJetCap rate parameters.multiplicity := by
-    intro u hu
-    exact RatePartition.partitionSupport_totalJetDegree_le_rateJetCap
-      (d := d) (W := RatePartition.partitionWeightBudget rate agreement d parameters.multiplicity)
-      (m := parameters.multiplicity) (A := A) hD hrate hDlower hAn hu
-  exact exists_partitionSupport_curve_certificate_of_finiteRatio hD hd
-    parameters.multiplicity_pos hrate hagreement parameters.weightBudget_pos
-    (hkD.trans (Nat.le_succ _)) hDn hagreementUpper centers received hreceived hdegree
-    parameters.one_lt_finiteRatio le_rfl
+  exact exists_partitionSupport_curve_certificate_of_rateBlockGuards parameters hrate hagreement
+    hd hD hDlower hkD hagreementUpper hAn centers received hreceived
 
 end ReedSolomon.HiddenDerivative
