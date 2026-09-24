@@ -141,6 +141,7 @@ private lemma BerlekampWelchCondition_to_Solution [NeZero n]
   rcases h with ⟨h_cond, h_E_deg, h_E_coeff, h_Q_deg⟩
   refine is_berlekamp_welch_solution_ext fun i ↦ ?p₁
   let bound := 2 * e + k
+  have hb : bound = 2 * e + k := rfl
   generalize eq : BerlekampWelchMatrix _ _ _ f = M₁
   let leftσ : Finset _ := {j : Fin bound | j < e}
   let rightσ : Finset _ := univ (α := Fin bound) \ leftσ
@@ -149,48 +150,53 @@ private lemma BerlekampWelchCondition_to_Solution [NeZero n]
   calc _ = ∑ j : Fin bound, if ↑j < e
                             then E.coeff ↑j * M₁ i j
                             else Q.coeff (↑j - e) * M₁ i j := by
-                              simp [Matrix.mulVec_eq_sum, ite_apply]; rfl
+                              simp only [Matrix.mulVec, dotProduct, E_and_Q_to_a_solution]
+                              exact sum_congr rfl fun j _ ↦ by split_ifs <;> ring
        _ = f i * σ₁ + σ₂ := by
         rw [sum_ite]
         exact eq ▸ eq₁ ▸ eq₂ ▸
           congr_arg₂ _
-            (by rw [mul_sum]; exact sum_congr rfl fun _ _ ↦ by rw [
-                                                                 bwm_of_pos (by aesop), Rhs
-                                                               ]; ring)
-            (sum_congr (by aesop) fun j hj ↦ by rw [bwm_of_neg (by aesop)])
+            (by rw [mul_sum]; exact sum_congr rfl fun x hx ↦ by
+                  rw [bwm_of_pos (mem_filter.mp hx).2, Rhs]; ring)
+            (sum_congr
+              (by ext; simp only [rightσ, leftσ, mem_sdiff, mem_univ, mem_filter, true_and])
+              fun j hj ↦ by
+                rw [bwm_of_neg (by
+                  simpa only [rightσ, leftσ, mem_sdiff, mem_univ, mem_filter, true_and, not_lt]
+                    using hj)])
   replace eq₁ : eval (ωs i) E - ωs i ^ e * E.coeff e = σ₁ := calc
                 _ = ∑ i_1 ∈ range (e + 1), E.coeff i_1 * ωs i ^ i_1 - ωs i ^ e * E.coeff e :=
                   by rw [eval_eq_sum_range, h_E_deg]
                 _ = ∑ x ∈ range e, E.coeff x * ωs i ^ x :=
                   by rw [sum_range_succ]; ring
-                _ = σ₁ := by rw [←eq₁]; symm
-                             apply sum_nbij (i := Fin.val) <;>
-                               try intros a _; aesop (add safe (by existsi ⟨a, by omega⟩))
-                                                     (add simp Set.InjOn)
-  let δσ := {j | j < e + k}.toFinset
-  replace eq₂ : -eval (ωs i) Q = σ₂ := calc
-                _              = -∑ j ∈ δσ.attach, ωs i ^ j.1 * Q.coeff j := by
-                  rw [
-                    eval_eq_sum, neg_inj,
-                    sum_eq_of_subset (s := δσ) _ (by simp) fun _ hj ↦
-                      by rw [mem_support_iff, ←ite_le_natDegree_coeff _ _ inferInstance] at hj
-                         aesop (add safe (by omega)),
-                    ←sum_attach
-                  ]
-                  ac_rfl
-                _              = σ₂ := by
-                  simp only [
-                    ←eq₂, mul_neg, sum_neg_distrib, neg_inj, ←sum_attach (s := rightσ)
-                  ]
-                  let F (n : {x // x ∈ δσ}) : {x // x ∈ rightσ} :=
-                    ⟨⟨n.1 + e, by aesop (add safe (by omega))⟩, by aesop⟩
-                  have : Function.Bijective F :=
-                    ⟨
-                      fun _ ↦ by aesop,
-                      fun a ↦ by use ⟨a - e, by aesop (add safe (by omega))⟩; aesop
-                    ⟩
-                  apply sum_bijective F <;> aesop (add safe [(by omega), (by ring)])
-  aesop (add safe (by ring))
+                _ = σ₁ := by
+                  rw [← eq₁]
+                  refine Finset.sum_bij' (fun l hl ↦ (⟨l, by
+                      simp only [mem_range] at hl; omega⟩ : Fin bound)) (fun j _ ↦ j.1)
+                    ?_ ?_ ?_ ?_ ?_
+                  · intro l hl
+                    simpa only [leftσ, mem_filter, mem_univ, true_and, mem_range] using hl
+                  · intro j hj
+                    simpa only [leftσ, mem_filter, mem_univ, true_and, mem_range] using hj
+                  · intro l _; rfl
+                  · intro j _; rfl
+                  · intro l _; rfl
+  replace eq₂ : -eval (ωs i) Q = σ₂ := by
+    have hQ : Q.natDegree < e + k := by omega
+    rw [← eq₂, eval_eq_sum_range' hQ, ← Finset.sum_neg_distrib]
+    refine Finset.sum_bij' (fun l hl ↦ (⟨l + e, by simp only [mem_range] at hl; omega⟩ : Fin bound))
+      (fun j _ ↦ j.1 - e) ?_ ?_ ?_ ?_ ?_
+    · intro l _; simp only [rightσ, leftσ, mem_sdiff, mem_univ, mem_filter, true_and, not_lt]; omega
+    · intro j hj
+      simp only [rightσ, leftσ, mem_sdiff, mem_univ, mem_filter, true_and, not_lt] at hj
+      simp only [mem_range]; omega
+    · intro l _; simp
+    · intro j hj
+      simp only [rightσ, leftσ, mem_sdiff, mem_univ, mem_filter, true_and, not_lt] at hj
+      ext; simp only; omega
+    · intro l _; simp
+  rw [← eq₁, ← eq₂, h_cond i, h_E_coeff]
+  ring
 
 open Fin
 open Polynomial
