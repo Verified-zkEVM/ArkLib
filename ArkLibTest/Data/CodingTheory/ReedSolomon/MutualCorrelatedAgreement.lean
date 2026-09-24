@@ -31,7 +31,7 @@ import Mathlib.Tactic.NormNum
 import Mathlib.Tactic.Order
 import Mathlib.Data.Fin.VecNotation
 import Mathlib.FieldTheory.Finite.Extension
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerBatchedAdmissibility
+
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerBatchedGraphCounting
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerBatchedIncidence
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerBatchedPointRecognition
@@ -771,35 +771,35 @@ private theorem component_powerBatchedAgreementCuts : ∀ i ∈ Finset.univ,
   rw [hbatch]
   exact hpair
 noncomputable local instance graphComponentDecidableEq : DecidableEq ℚ := Classical.decEq _
-
-example : ∃ P : Fin 2 → ℚ[X],
-    IsAdmissibleChartTupleAtExponent domain (fun _ ↦ componentWord)
-      (algebraMap ℚ ComponentField) 0 (componentEquation (E := ComponentField)) 2 1 1 2 P ∧
-    rationalTaylorPolynomial 0
-      (MvPolynomial.map (Polynomial.evalRingHom (0 : ComponentField)) componentEquation) 2
-      (chartTupleJet (algebraMap ℚ ComponentField) 0 0 P) =
-      powerBatchedPolynomial (fun t ↦ (P t).map (algebraMap ℚ ComponentField)) 0 := by
-  obtain ⟨P, hP, hgraph⟩ := exists_admissibleChartTuple_of_primeTaylorComponent_agreements
-    (K := 2) (k := 1) (L := 1) (r := 0) (ℓ := 1) domain (fun _ ↦ componentWord)
-    Finset.univ (by simp) (by omega) (algebraMap ℚ ComponentField) 0
-    (componentEquation (E := ComponentField)) (by omega) 2 (by intro l; omega)
-    (componentIdeal (E := ComponentField)) componentIdeal_isPrime component_separant_notMem
-    componentIdeal_degree_pos component_initialEquation_mem component_highCuts
-    component_powerBatchedAgreementCuts
+example : let F : Finset (Fin 2 → ℚ[X]) := admissibleChartTupleFamilyAtExponent domain
+                      (fun _ : Fin 2 ↦ componentWord)
+                      (algebraMap ℚ ComponentField) 0
+                      (componentEquation (E := ComponentField)) 2 1 1 2
+          F.Nonempty ∧ (F.card : ℚ) ≤
+            (jetTotalDegree (componentEquation (E := ComponentField)) : ℚ) := by
+  dsimp only
   let x : Option (Fin 1) → ComponentField := fun _ ↦ 0
   have hx : x ∈ {x | x ∈ zeroLocus ComponentField (componentIdeal (E := ComponentField)) ∧
       aeval x (jointInitialJetSeparant (0 : ComponentField) componentEquation) ≠ 0} := by
     simp [x, componentIdeal, componentVariable, zeroLocus_span, jointInitialJetSeparant,
       initialJetSeparant, separant, Fin.last, componentEquation]
-  have hpoint : x = fun j ↦ j.elim 0 (chartTupleJet (algebraMap ℚ ComponentField) 0 0 P) := by
-    funext j; cases j with
-    | none => rfl
-    | some j =>
-      simpa [chartTupleJet, powerBatchedJetGraphMap] using congrFun (hgraph x hx) (some j)
-  have hz : (chartTuplePullback (algebraMap ℚ ComponentField) 0 P
-      (jointInitialJetSeparant 0 componentEquation)).eval 0 ≠ 0 := by
-    simpa only [eval_chartTuplePullback, ← hpoint] using hx.2
-  exact ⟨P, hP, (hP.specialize (by intro l; omega) (by omega) 0 hz).2.2.2⟩
+  have hprincipal := principalOpen_subset_admissibleChartTupleGraphLocus domain
+    (fun _ : Fin 2 ↦ componentWord) (algebraMap ℚ ComponentField) 0
+    (componentEquation (E := ComponentField)) 2 1 1 2 (by omega) (by omega)
+    (by intro l; omega) (componentIdeal (E := ComponentField)) componentIdeal_isPrime
+    component_separant_notMem componentIdeal_degree_pos component_initialEquation_mem
+    component_highCuts (by
+      apply Nat.succ_le_of_lt; rw [Set.ncard_pos]
+      exact ⟨0, by simpa [domain_zero, componentWord] using
+        component_powerBatchedAgreementCuts 0 (by simp)⟩)
+  obtain ⟨P, hP, _⟩ := hprincipal hx
+  have hfamily := (mem_admissibleChartTupleFamilyAtExponent_iff domain
+    (fun _ ↦ componentWord) _ 0 componentEquation 2 1 1 2 (by omega) P).2 hP
+  have hcount := admissibleChartTupleFamilyAtExponent_card_le domain
+    (fun _ : Fin 2 ↦ componentWord) (algebraMap ℚ ComponentField) 0 componentEquation
+    2 1 1 (jetTotalDegree (componentEquation (E := ComponentField))) 2 (by intro l; omega)
+    (by omega) (by omega) (by omega) (by omega) (by omega) le_rfl
+  exact ⟨⟨P, hfamily⟩, by simpa using hcount⟩
 
 /-- The prime component's joint cut forces the tuple's value at its evaluation point. -/
 example : ∃ P : Fin 2 → ℚ[X], (∀ t, (P t).degree < 1) ∧

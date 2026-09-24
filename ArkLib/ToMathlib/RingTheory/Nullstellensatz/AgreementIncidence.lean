@@ -100,6 +100,8 @@ the points on the whole family.
 * `MvPolynomial.card_le_of_agreement_off_excluded_of_hypersurface`: the incidence bound for points
   on a hypersurface `g = 0` cut by further equations, with the factor `deg g` in place of the
   affine degree and exponent `Nat.card σ - 1`.
+* `MvPolynomial.card_le_of_agreement_off_excluded_of_principalCut`: a bound for points on a
+  principal cut inside a prime variety, using its affine degree and the cut degree.
 * `MvPolynomial.card_le_incidenceProduct_of_agreement_off_excluded_of_iteratedRetainedCutFamily`
   and `MvPolynomial.card_le_of_agreement_off_excluded_sharp_of_iteratedRetainedCutFamily`: the
   incidence bounds for points on the iterated retained cut family of a family of primes by a list

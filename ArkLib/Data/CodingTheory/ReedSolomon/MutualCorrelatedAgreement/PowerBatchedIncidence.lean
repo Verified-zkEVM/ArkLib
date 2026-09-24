@@ -190,23 +190,27 @@ theorem finite_admissibleChartTupleIncidence_off_graphs
   have hgDegree : g.totalDegree + 1 ≤ v + 1 := by
     have hdeg := (totalDegree_initialJetEquation_le (Polynomial.C center) Q).trans hjet
     exact Nat.add_le_add_right hdeg 1
-  have hhighDegree : ∀ l, (high l).totalDegree + M + 1 ≤ B := by
-    intro l
-    have hrect := commonTaylorNumeratorOver_mem_restrictBidegree center Q h v K M hτ
-      hheight hv hjet l.val
-    have hdegree : (high l).totalDegree ≤ 1 + M * (v - 1) := by
-      simpa only [high] using totalDegree_of_restrictBidegree hrect
-    have he : M * (v - 1) + M = M * v := by
+  have bidegree_to_totalDegree_bound
+      {p : MvPolynomial (Fin (r + 1)) E[X]}
+      (hp : p.totalDegree ≤ 1 + M * (v - 1)) : p.totalDegree + M + 1 ≤ B := by
+    have hmv : M * (v - 1) + M = M * v := by
       calc
         _ = M * (v - 1) + M * 1 := by rw [Nat.mul_one]
         _ = M * ((v - 1) + 1) := by rw [Nat.mul_add]
         _ = M * v := by rw [Nat.sub_add_cancel (by omega)]
     calc
       _ ≤ (1 + M * (v - 1)) + M + 1 :=
-        Nat.add_le_add_right (Nat.add_le_add_right hdegree M) 1
+        Nat.add_le_add_right (Nat.add_le_add_right hp M) 1
       _ = 2 + (M * (v - 1) + M) := by omega
-      _ = 2 + M * v := by rw [he]
+      _ = 2 + M * v := by rw [hmv]
       _ = B := by dsimp only [B, M]
+  have hhighDegree : ∀ l, (high l).totalDegree + M + 1 ≤ B := by
+    intro l
+    have hrect := commonTaylorNumeratorOver_mem_restrictBidegree center Q h v K M hτ
+      hheight hv hjet l.val
+    have hdegree : (high l).totalDegree ≤ 1 + M * (v - 1) := by
+      simpa only [high] using totalDegree_of_restrictBidegree hrect
+    exact bidegree_to_totalDegree_bound hdegree
   have hcutsDegree : ∀ i, (cuts i).totalDegree + M + 1 ≤ B := by
     intro i
     have hy : (powerBatchedCoordinate fun t ↦ iota (w t i)).natDegree ≤ ℓ :=
@@ -216,17 +220,7 @@ theorem finite_admissibleChartTupleIncidence_off_graphs
       (powerBatchedCoordinate fun t ↦ iota (w t i)) Q ℓ h v K M hτ hy hheight hv hjet
     have hdegree : (cuts i).totalDegree ≤ 1 + M * (v - 1) := by
       simpa only [cuts] using totalDegree_of_restrictBidegree hrect
-    have he : M * (v - 1) + M = M * v := by
-      calc
-        _ = M * (v - 1) + M * 1 := by rw [Nat.mul_one]
-        _ = M * ((v - 1) + 1) := by rw [Nat.mul_add]
-        _ = M * v := by rw [Nat.sub_add_cancel (by omega)]
-    calc
-      _ ≤ (1 + M * (v - 1)) + M + 1 :=
-        Nat.add_le_add_right (Nat.add_le_add_right hdegree M) 1
-      _ = 2 + (M * (v - 1) + M) := by omega
-      _ = 2 + M * v := by rw [he]
-      _ = B := by dsimp only [B, M]
+    exact bidegree_to_totalDegree_bound hdegree
   have hgSource : (optionEquivRight E (Fin (r + 1))).symm g ≠ 0 := by
     simpa only [g, jointInitialJetEquation] using hinit
   have hsSource : (optionEquivRight E (Fin (r + 1))).symm s ≠ 0 := by

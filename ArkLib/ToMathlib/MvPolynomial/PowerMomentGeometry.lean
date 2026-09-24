@@ -18,11 +18,11 @@ public import Mathlib.SetTheory.Cardinal.NatCard
 /-!
 # Geometry of power-moment coordinates
 
-The power-moment map identifies a polynomial ring in lifted coordinates with a polynomial ring
-in one challenge variable and the source variables. Weighted filtrations bound the Hilbert
-function and affine degree of its kernel. The point maps identify the lifted zero locus with the
-source coordinates, and the incidence theorem transfers finite agreement bounds through this
-parametrization.
+The power-moment map is surjective and has the moment ideal as its kernel, so the quotient of the
+lifted polynomial ring by that ideal is isomorphic to the source polynomial ring. Weighted
+filtrations bound the Hilbert function and affine degree of the kernel. The point maps identify
+the lifted zero locus with the source coordinates, and the incidence theorem transfers finite
+agreement bounds through this parametrization.
 
 ## Main statements
 
