@@ -1953,6 +1953,12 @@ Merges `FirstOrder/Squarefree/Bounds.lean` and `FirstOrder/Squarefree/SingularTa
 `r ≤ j` and `A.natDegree = r`, and `singularTail_map_eq_zero_of_common_root` drops both `IsDomain`
 assumptions.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/ExceptionalChallenges.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/ExceptionalChallenges.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Renamed `ReedSolomon.finite_sourceChart_bad_challenges_card_le` to `ReedSolomon.finite_symbolicTaylorChart_badChallenges_card_le`. The mathematical bound is unchanged; it uses destination joint-chart equations, `CoeffNatDegreeLE`, and current set-cardinality APIs. The source height predicate was replaced, the mapped domain uses `domain.trans ⟨iota, iota.injective⟩`, the incidence boundary condition is derived from existing bounds, and the unused assumption `0 < v` was removed. No public source declaration was omitted. Private source evaluation helpers are handled by joint-chart evaluation APIs or remain private proof steps; `source_initial_ne_zero_of_regular` is represented by private `jointInitial_ne_zero_of_regular`.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/Incidence.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/Incidence.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -1976,6 +1982,10 @@ The private source helper `jetDegree_pos_of_initialSeparant_ne_zero` was not por
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/PairCounting.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 `admissibleChartPairs_card_le_sharp` and `admissibleChartPairFamily_card_le_sharp` keep their source names. Both bounds now allow `k = 0`, where the degree constraints force every admissible pair to be zero and the count is at most one. For positive `k`, they use the factor `v * (((n - k + 1) * (1 + 2 * K * (v - 1)) / (L - k + 1)) ^ r)`. The proof specializes the generic sharp high-cut incidence theorem after choosing a challenge that preserves pair injectivity. No public source declaration was omitted. The source-private `jetDegree_pos_of_initialSeparant_ne_zero_sharp` was not ported because the current generic sharp incidence theorem has no positive jet-degree premise.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/PairCounting.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Promoted the private chart-pullback evaluation helper to the public identity `ReedSolomon.eval_chartPairPullback_joint`. The source report lists no public declaration for this identity.
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/PointRecognition.lean`
 
@@ -4603,6 +4613,10 @@ The acceptance case adds a concrete characteristic-two example with a nonzero on
 Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 Acceptance examples check both sharp bounds on a concrete nonempty admissible-pair set and its filtered family at `r = 0`; each bound evaluates to one.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/ExceptionalChallenges.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+An acceptance example checks a concrete nonempty singleton challenge set, its regular chart, three agreements, the absence of an exact degree-bounded pair, and the resulting bound of 12.
 
 ## `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/PointRecognition.lean`
 
