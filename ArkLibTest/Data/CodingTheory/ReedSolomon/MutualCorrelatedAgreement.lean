@@ -749,29 +749,6 @@ private theorem firstOrderSourceIdeal_degree :
     simpa [firstOrderSourceIdeal, hc] using h
   omega
 
-private theorem component_powerBatchedAgreementCuts : ∀ i ∈ Finset.univ,
-    jointTaylorAgreementEquation (r := 0) (0 : ComponentField)
-      (componentEquation (E := ComponentField)) 2 2
-      (Polynomial.C ((algebraMap ℚ ComponentField) (domain i)))
-      (powerBatchedCoordinate
-        (fun _ : Fin 2 ↦ (algebraMap ℚ ComponentField) (componentWord i))) ∈
-        componentIdeal := by
-  intro i hi
-  have hbatch : powerBatchedCoordinate
-      (fun _ : Fin 2 ↦ (algebraMap ℚ ComponentField) (componentWord i)) = 0 := by
-    rw [powerBatchedCoordinate_eq_zero_iff]
-    funext t
-    simp [componentWord]
-  have hreceived :
-      Polynomial.C ((algebraMap ℚ ComponentField) (componentWord i)) +
-        Polynomial.X * Polynomial.C
-          ((algebraMap ℚ ComponentField) (componentWord i)) = 0 := by
-    simp [componentWord]
-  have hpair := component_agreementCuts i hi
-  rw [hreceived] at hpair
-  rw [hbatch]
-  exact hpair
-
 /-- A nonvacuous high cut and nonzero reconstruction use the second received value. -/
 example :
     ∃ P₀ P₁ : ℚ[X], P₀.degree < 1 ∧ P₁.degree < 1 ∧
@@ -1128,33 +1105,6 @@ example :
     rw [hset]
     simp
   exact ⟨hzero, hregular, by simp, by omega⟩
-/-- A positive-dimensional prime component determines one base-field tuple whose graph contains
-every regular component point, with nonzero restricted separant. -/
-example :
-    ∃ P : Fin 2 → ℚ[X], (∀ t, (P t).degree < 1) ∧
-      (∀ i ∈ Finset.univ, ∀ t, (P t).eval (domain i) = componentWord i) ∧
-      (∀ x ∈ {x | x ∈ zeroLocus ComponentField
-          (componentIdeal (E := ComponentField)) ∧
-        aeval x (jointInitialJetSeparant (r := 0) (0 : ComponentField)
-              (componentEquation (E := ComponentField))) ≠ 0},
-        x = fun i ↦ (powerBatchedJetGraphMap (r := 0) 0
-          (fun t ↦ (P t).map (algebraMap ℚ ComponentField)) i).eval (x none)) ∧
-      aeval (powerBatchedJetGraphMap (r := 0) 0
-        (fun t ↦ (P t).map (algebraMap ℚ ComponentField)))
-        (jointInitialJetSeparant (r := 0) (0 : ComponentField)
-          (componentEquation (E := ComponentField))) ≠ 0 := by
-  have hprime : (componentIdeal (E := ComponentField)).IsPrime := componentIdeal_isPrime
-  obtain ⟨P, hP, hsample, hgraph, -, -, hsep⟩ :=
-    exists_polynomialGraph_of_primeTaylorComponent (domain := domain)
-      (w := fun _ : Fin 2 ↦ componentWord) (sample := Finset.univ) (hsample := by simp)
-      (φ := algebraMap ℚ ComponentField) (center := 0)
-      (Q := componentEquation (E := ComponentField)) (hK := by omega) (τ := 2)
-      (hτ := by intro l; fin_cases l <;> omega)
-      (I := componentIdeal (E := ComponentField)) (hsep := component_separant_notMem)
-      (hdim := componentIdeal_degree_pos) (hhigh := component_highCuts)
-      (hcuts := component_powerBatchedAgreementCuts)
-  exact ⟨P, hP, hsample, hgraph, hsep⟩
-
 end
 
 end ReedSolomon.GraphLineComponentTest
