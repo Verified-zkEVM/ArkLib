@@ -681,6 +681,29 @@ recovered in the tests.
 The source's lower bound `finrank_interpolationSpace_lowerBound` is in
 `Interpolation/Dimension.lean`. Deferred: the shell counts.
 
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/WeightedSupportCertificate.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Symbolic/ReceivedLine.lean` and `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Symbolic/ReceivedCurve.lean` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`SymbolicReceivedInterpolation.Certificate` is covered by
+`SymbolicReceivedCurve.Certificate` at `ℓ = 1` with
+`w i = receivedLine (f i) (g i)`; no separate certificate type is needed.
+`exists_weightedSupport_certificate_of_fixed_margin` and
+`exists_weightedSupport_certificate_of_rate` construct this certificate for finite point types.
+`exists_prescribed_symbolic_weightedSupport_certificate` drops the unused positive-message-
+dimension premise. The source strict coefficient-degree bound
+`coeff_interpolant_natDegree_lt` is covered by
+`SourceColumn.coeff_interpolant_natDegree_le` at cutoff `B - 1`. The weighted-support degree
+wrappers `totalJetDegree_interpolant_le_two_mul_sub_one`,
+`jetTotalDegree_map_interpolant_le_two_mul_sub_one`, `totalJetDegree_interpolant_le_pred`, and
+`jetTotalDegree_map_interpolant_lt` are covered by
+`SourceColumn.interpolant_totalJetDegree_le` and
+`SourceColumn.map_interpolant_jetTotalDegree_le`, together with
+`totalJetDegree_le_pred_of_weightedSupportEligible`. The unused
+`map_interpolant_mem_weightedSupportSpace` helper was not retained; its result follows from
+`SourceColumn.map_interpolant` and `interpolant_mem_weightedSupportSpace`.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/ChallengeDegree.lean`
 
 From the challenge-degree part of
@@ -784,9 +807,9 @@ The consolidated acceptance cases, including this port's coefficient-height, sup
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Symbolic/WeightedSupport.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
-`SourceColumn.ofExponent` and `SourceColumn.exponent_ofExponent` keep their names and move to the existing `Symbolic/SourceColumn` owner. `noBand_kernel_height_lt` → `kernel_height_lt_twelve_mul_of_margin`; the renamed theorem describes its margin hypothesis and height bound. The remaining declarations keep their names and mathematical statements, adapted to the current support API and local-constraint operator. The full symbolic matrix rank bound uses the existing `LinearMap.finrank_range_pi_le_sum`.
+`SourceColumn.ofExponent` and `SourceColumn.exponent_ofExponent` keep their names and move to the existing `Symbolic/SourceColumn` owner. `noBand_kernel_height_lt` → `kernel_height_lt_twelve_mul_of_margin`; the renamed theorem describes its margin hypothesis and height bound. `localConstraintBlock_rank_le_base_actual` gives the point-block rank bound for arbitrary received polynomials, and `receivedLine_block_rank_le_base_actual` is derived as its received-line specialization. The full symbolic matrix rank bound uses `Matrix.rank_prod_rows_le_sum`.
 
-The private `map_unscaledLocalImage` helper is subsumed by the existing `map_unscaledLocalSubstitution`. The private `localConstraintCoordinatesAt_monomial_map` helper is generalized to `map_localConstraintCoordinatesAt`, which handles every differential polynomial. No new generic matrix API is added: the block helper is local to the proof, and the rank bound uses the existing linear-map rank-sum result. `WeightedSupportIndex` is replaced by the subtype of the existing `weightedSupportExponents`; `to` appears only in overview prose and is not a declaration.
+The private `map_unscaledLocalImage` helper is subsumed by the existing `map_unscaledLocalSubstitution`. The private `localConstraintCoordinatesAt_monomial_map` helper is generalized to `map_localConstraintCoordinatesAt`, which handles every differential polynomial. `WeightedSupportIndex` is replaced by the subtype of the existing `weightedSupportExponents`; `to` appears only in overview prose and is not a declaration.
 
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/WeightedSupport/FloorTransfer.lean`
 
@@ -1680,6 +1703,12 @@ Ported from `HiddenDerivative/RootFinding/MutualCorrelatedAgreement/ExtensionDes
 
 Not ported: the standalone exceptional correlated-agreement wrapper from this dependency; the equation-descent theorem performs the exceptional-set pullback directly.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedComponentRecognition.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/ComponentRecognition.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Renamed `exists_polynomialGraph_of_symbolic_prime_sample_of_exponent` to `exists_polynomialGraph_of_primeTaylorComponent`. It uses the destination joint Taylor cuts and recognizes a graph for tuples of arbitrary length. Added `powerBatchedJetGraphMap`. The result also proves ideal vanishing on the graph and nonvanishing of the restricted separant. The wrapper declarations `symbolicSourceCurveAgreement_of_exponent` and `symbolicSourceCurveAgreement` were not ported: their cut polynomial is `jointTaylorAgreementEquation`, and the default-exponent case follows by taking exponent `2 * K`.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedPointRecognition.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/PointRecognition.lean` at ArkLib revision
@@ -1688,6 +1717,10 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Poly
 `commonCurveAgreementSet_map` and `exists_exceptional_powerBatched_extension` keep their names; both are generalized from `Fin n` to any finite coordinate type, and the exceptional bound uses `Fintype.card α`. `powerBatchedJetGraph` and `polynomialJet_powerBatched` keep their names and statements. `exists_polynomialGraph_of_symbolic_sample_of_exponent` keeps its name and is generalized to an arbitrary embedded coordinate type without requiring it to be finite. Its regularity, high-cut, and agreement premises use the field-valued Taylor-chart API after specialization at each challenge.
 
 No declarations from the source were left out. The intermediate over-algebra bridge statements are not duplicated; the main theorem specializes `ReedSolomon.exists_polynomialGraph_of_sample` from `PowerAgreement` and uses the available field-valued Taylor-chart results. The source import `TaylorChart.PointRecognition` is unavailable in this checkout, so its helper bridge layer was replaced by that API.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/ExceptionalSet.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`exists_exceptional_exactPowerAgreement` and `exists_exceptional_exactPowerAgreement_family` keep their names and are generalized from `Fin n` coordinates to any finite coordinate type. The family result delegates to `exists_exceptional_powerBatched_family` on the mapped polynomial family and uses each original tuple as its exact-agreement witness.
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/GraphLineComponent.lean`
 
@@ -1698,6 +1731,10 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Tayl
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/ComponentAgreement.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 `symbolicSourceAgreement_eq_zero_iff_of_exponent` and `symbolicSourceAgreement_eq_zero_iff` → `aeval_jointTaylorAgreementEquation_eq_zero_iff`; the two forms are combined into a theorem for every sufficient exponent `τ`, using the joint chart API. `commonAgreement_of_symbolicSourceAgreement_mem_prime_of_exponent` and `commonAgreement_of_symbolicSourceAgreement_mem_prime` → `commonAgreement_of_jointTaylorAgreementEquation_mem_prime`; it uses any sufficient exponent and the current affine-pair curve parametrization. `exists_graphLine_pair_of_symbolic_prime_agreements_of_exponent` and `exists_graphLine_pair_of_symbolic_prime_agreements` → `exists_graphLine_pair_of_regular_component_agreements`; it uses any sufficient exponent and returns the regular-component parametrization and restriction identities with the common-agreement bound. No source declarations are unported; the default-exponent forms are covered by the exponent-general statements and have no separate wrappers.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/ComponentRecognition.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+The graph-line component result now uses the shared `aeval_jointInitialJetSeparant`, `aeval_jointCommonTaylorNumerator`, and `aeval_jointTaylorAgreementEquation` results from `TaylorChartAlgebra`, and `regular_principalOpen_graph_restriction` from `PrincipalOpenParametrization`.
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/SingularTail.lean`
 
@@ -2349,6 +2386,10 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Tayl
 
 `symbolicSourceInitialEquation`, `symbolicSourceSeparant`, `symbolicSourceNumerator`, `symbolicSourceAgreement`, and `symbolicSourceReconstructionError` move to the `PolynomialDifferential` owner as `jointInitialJetEquation`, `jointInitialJetSeparant`, `jointCommonTaylorNumerator`, `jointTaylorAgreementEquation`, and `jointTaylorReconstructionError`. The equations keep their substance; the common numerator takes the exponent explicitly. `jointTaylorAgreementEquation` combines the two source agreement declarations and is defined using `taylorAgreementEquationOver`. `affinePairCurve` adds a polynomial-valued parametrization of the affine pair graph. The initial equation and separant use only a commutative semiring, and the affine-pair curve uses only a semiring.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/ComponentRecognition.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Moved the joint-cut evaluation results into the polynomial differential owner and renamed `eval_jointInitialJetSeparant`, `eval_jointCommonTaylorNumerator`, and `eval_jointTaylorAgreementEquation` to `aeval_jointInitialJetSeparant`, `aeval_jointCommonTaylorNumerator`, and `aeval_jointTaylorAgreementEquation`, respectively. They specialize the challenge before evaluating the jet.
+
 ## `ArkLib/Data/Polynomial/Differential/TaylorChartGeometry.lean`
 
 Ported from `Geometry/AgreementGeometry.lean`, `Geometry/SolutionGeometry.lean` and part of
@@ -2950,6 +2991,13 @@ The row selector is extracted and generalized from
 replaces the span-induction argument inside
 `Matrix.exists_ne_zero_mulVec_eq_zero_natDegree_le_of_rank_eq` at the same revision, which was
 specialized to polynomial matrices, `Fin` indices, and the rational function field.
+
+## `ArkLib/ToMathlib/LinearAlgebra/Matrix/RowBlocks.lean`
+
+Ported from the matrix rank argument in `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Symbolic/WeightedSupport.lean` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`Matrix.rank_prod_rows_le_sum` is a new generic rank bound for matrices whose row indices are products. It bounds the full matrix rank by the sum of the ranks of the blocks at each first-coordinate index. The generic helper is newly added for the weighted-support curve rank proof; there is no source declaration to leave out.
 
 ## `ArkLib/ToMathlib/LinearAlgebra/Matrix/SupportedRows.lean`
 
@@ -4105,6 +4153,12 @@ Deferred: the forward direction for points in a proper algebraically closed exte
 Its proof needs the finitely many maximal ideals of the quotient, since the functions from a
 finite set to `K` do not form a finite-dimensional `k`-space.
 
+## `ArkLib/ToMathlib/RingTheory/Nullstellensatz/PrincipalOpenParametrization.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/ComponentRecognition.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Added `regular_principalOpen_graph_restriction`, which gives ideal restriction and cut nonvanishing when a polynomial graph covers the regular principal open of a positive-dimensional prime component. This shared result is used by both component-recognition results.
+
 ## `ArkLibTest/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition.lean`
 
 Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/RatePartition.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -4143,6 +4197,10 @@ The joint-chart case reuses the shared concrete equation and numerator identity,
 Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 Added an acceptance example on the algebraic-closure prime-component fixture. It checks a degree-bounded pair and a nonzero common-agreement count.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/ComponentRecognition.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Acceptance cases check a positive-dimensional prime component's sample interpolation, graph coverage, and nonzero restricted separant. They also check the single-tuple and finite-family exact-agreement bounds with positive power batching, including two distinct family candidates.
 
 ## `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart.lean`
 

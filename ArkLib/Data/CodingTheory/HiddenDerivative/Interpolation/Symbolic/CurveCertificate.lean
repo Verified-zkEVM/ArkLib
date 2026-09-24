@@ -70,6 +70,12 @@ namespace Certificate
 variable {ι : Type uι} {F : Type u} [Fintype ι] [Field F] {A k ℓ ν d h : ℕ}
   {centers : ι ↪ F} {w : ι → F[X]}
 
+/-- Increasing the challenge-degree bound preserves a symbolic curve certificate. -/
+def weakenChallengeDegree {h' : ℕ}
+    (cert : Certificate.{uι, u} A k ℓ ν d h centers w) (hh : h ≤ h') :
+    Certificate.{uι, u} A k ℓ ν d h' centers w :=
+  { cert with challengeDegree_le := fun u => (cert.challengeDegree_le u).trans hh }
+
 /-- Universal nonvanishing under specialization implies the equation is nonzero. -/
 theorem nonzero (cert : Certificate.{uι, u} A k ℓ ν d h centers w) : cert.Q ≠ 0 := by
   intro hzero
