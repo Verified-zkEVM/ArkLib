@@ -295,6 +295,9 @@ private abbrev componentEquation {E : Type*} [CommRing E] :
     (MvPolynomial.X none : DifferentialPolynomial E[X] 0) *
       MvPolynomial.X (some (0 : Fin 1))
 
+private abbrev componentCoordinateEquation {E : Type*} [CommRing E] :
+    DifferentialPolynomial E[X] 0 := MvPolynomial.X (some (0 : Fin 1))
+
 private abbrev componentVariable {E : Type*} [CommSemiring E] :
     MvPolynomial (Option (Fin 1)) E := X (some (0 : Fin 1))
 
@@ -843,6 +846,69 @@ example : ∃ P : Fin 2 → ℚ[X], (∀ t, (P t).degree < 1) ∧
       (hdim := componentIdeal_degree_pos) (hhigh := component_highCuts)
       (hcuts := component_powerBatchedAgreementCuts)
   exact ⟨P, hP, hcommon⟩
+
+/-- A sparse sample cut on the regular prime component determines its Frobenius graph. -/
+example :
+    ∃ P : Fin 2 → ℚ[X], (∀ t, (P t).degree < 1) ∧
+      (∀ i ∈ (Finset.univ : Finset (Fin 1)), ∀ t,
+        (P t).eval (domain i) = componentWord i) ∧
+      aeval (frobeniusPowerGraphMap (center := (0 : ComponentField)) 1
+        (fun t ↦ (P t).map (algebraMap ℚ ComponentField)))
+        (jointInitialJetSeparant (r := 0) (0 : ComponentField)
+          (componentCoordinateEquation (E := ComponentField))) ≠ 0 := by
+  have hprime : (componentIdeal (E := ComponentField)).IsPrime := componentIdeal_isPrime
+  have hsep := componentIdeal_one_notMem
+  obtain ⟨P, hdegree, hsample, _, _, hseparant⟩ :=
+    exists_frobeniusPowerGraph_of_symbolic_prime_sample
+      (domain := domain) (values := fun _ : Fin 2 ↦ componentWord)
+      (sample := univ) (k := 1) (ℓ := 1) (hsample := by simp)
+      (ι := algebraMap ℚ ComponentField) (p := 1) (e := 0)
+      (roots := fun _ ↦ 0) (hroots := by intro i _; fin_cases i; simp [domain_zero])
+      (center := 0) (Q := componentCoordinateEquation)
+      (K := 1) (hK := by omega) (hKk := by norm_num) (τ := 0)
+      (hτ := by intro l; fin_cases l; omega) (I := componentIdeal)
+      (hsep := by simpa [jointInitialJetSeparant, initialJetSeparant, separant,
+        Fin.last, componentCoordinateEquation] using hsep)
+      (hdim := componentIdeal_degree_pos)
+      (hsparse := by intro l hl; simp at hl)
+      (hcuts := by
+        intro i _
+        fin_cases i
+        simpa [componentWord, jointTaylorAgreementEquation, taylorAgreementEquationOver,
+          commonTaylorNumeratorOver, rationalTaylorNumeratorOver,
+          componentCoordinateEquation, frobeniusPowerCoordinate,
+          powerBatchedCoordinate] using component_generator_mem)
+  exact ⟨P, hdegree, hsample, hseparant⟩
+
+/-- A regular chart point at zero satisfies sparse Frobenius graph reconstruction. -/
+example : ∃ P : Fin 2 → ℚ[X], (∀ t, (P t).degree < 1) ∧
+    (∀ i ∈ (Finset.univ : Finset (Fin 1)), ∀ t,
+      (P t).eval (domain i) = componentWord i) ∧
+    (0 : ComponentField) =
+      (frobeniusPowerInitialGraph (center := (0 : ComponentField)) 1
+        (fun t ↦ (P t).map (algebraMap ℚ ComponentField)) 0).eval 0 := by
+  obtain ⟨P, hdegree, hsample, hrecognize⟩ :=
+    exists_frobeniusPowerGraph_of_symbolic_sample
+      (domain := domain) (values := fun _ : Fin 2 ↦ componentWord)
+      (sample := univ) (k := 1) (ℓ := 1) (hsample := by simp)
+      (ι := algebraMap ℚ ComponentField) (p := 1) (e := 0)
+      (roots := fun _ ↦ 0) (hroots := by intro i _; fin_cases i; simp [domain_zero])
+      (center := 0) (Q := componentCoordinateEquation)
+      (K := 1) (hK := by omega) (hKk := by norm_num) (τ := 0)
+      (hτ := by intro l; fin_cases l; omega)
+  have hsep : aeval (fun _ : Fin 1 ↦ (0 : ComponentField))
+      (map (Polynomial.evalRingHom (0 : ComponentField))
+        (initialJetSeparant (Polynomial.C 0) componentCoordinateEquation)) ≠ 0 := by
+    simp [initialJetSeparant, separant, Fin.last, componentCoordinateEquation]
+  have hresult := hrecognize 0 (fun _ ↦ 0) hsep
+    (by intro l hl; simp at hl)
+    (by
+      intro i _
+      fin_cases i
+      simp [taylorAgreementEquationOver, commonTaylorNumeratorOver,
+        rationalTaylorNumeratorOver, componentWord, componentCoordinateEquation,
+        frobeniusPowerCoordinate, powerBatchedCoordinate])
+  exact ⟨P, hdegree, hsample, (by simpa using hresult.2)⟩
 
 end
 
