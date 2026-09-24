@@ -113,8 +113,11 @@ private theorem uniformFirstOrderMca_shiftedHeightSlot_accounting
   rw [hweight, hdegree, hfirstJet] at haccounting
   exact haccounting
 
-set_option maxHeartbeats 10000000 in
--- The nine exact interval branches require more than the default heartbeat budget.
+/-- The compressed-row weight sum for the fixed rank profile at height `276`. -/
+private theorem uniformFirstOrderMca_rowWeightSum_eq :
+    ∑ t ∈ Finset.range 24, uniformFirstOrderGradedRankProfile t * (277 - t) = 81530 := by
+  decide
+
 /-- The support `(12, 4, 23)` has a strict shifted-slot surplus at height
 `276` throughout the gap-`6/25` regime. -/
 theorem uniformFirstOrderMca_heightSlotCount (n k A : ℕ)
@@ -132,9 +135,10 @@ theorem uniformFirstOrderMca_heightSlotCount (n k A : ℕ)
     calc
       _ ≤ ∑ t ∈ Finset.range (23 + 1),
           n * uniformFirstOrderGradedRankProfile t * (276 + 1 - t) := hrow
-      _ = n * 81530 := by
-        norm_num [Finset.sum_range_succ, uniformFirstOrderGradedRankProfile]
-        ring
+      _ = n * ∑ t ∈ Finset.range 24, uniformFirstOrderGradedRankProfile t * (277 - t) := by
+        rw [Finset.mul_sum]
+        exact Finset.sum_congr rfl fun t _ ↦ Nat.mul_assoc _ _ _
+      _ = n * 81530 := by rw [uniformFirstOrderMca_rowWeightSum_eq]
   let slotTerm := fun t ↦
     ∑ b ∈ Finset.range (min t 4 + 1),
       (12 * A + b - D * t) * (276 + 1 - t)
@@ -237,10 +241,12 @@ theorem uniformFirstOrderMca_regularFiberStageSum_four_one : regularFiberStageSu
 theorem uniformFirstOrderMca_regularFiberStageSum_four (D : ℕ) (hD : 2 ≤ D) :
     regularFiberStageSum D 23 4 = 724 * (D - 2) + 486 := by
   obtain ⟨d, rfl⟩ : ∃ d, D = d + 2 := ⟨D - 2, by omega⟩
-  norm_num [regularFiberStageSum, Finset.sum_range_succ, regularTaylorExponent,
-    firstOrderCurveFiberStageOne, firstOrderTaylorTotalCap,
-    firstOrderTaylorDerivativeCap,
-    MvPolynomial.cappedDegreeMixedVolume]
+  have hτ : regularTaylorExponent (d + 2) = 2 * d + 1 := by
+    unfold regularTaylorExponent
+    omega
+  simp only [regularFiberStageSum, Finset.sum_range_succ, Finset.sum_range_zero, hτ,
+    firstOrderCurveFiberStageOne, firstOrderTaylorTotalCap, firstOrderTaylorDerivativeCap,
+    MvPolynomial.cappedDegreeMixedVolume, Nat.reduceSub, Nat.add_sub_cancel, zero_add]
   omega
 
 /-- Exact joint-family degree at the identity-pair endpoint. -/
@@ -257,43 +263,26 @@ theorem uniformFirstOrderMca_regularJointStageSum_four (D : ℕ) (hD : 2 ≤ D) 
     regularJointStageSum D 276 23 4 =
       1149264 * (D - 2) ^ 2 + 1418984 * (D - 2) + 423252 := by
   obtain ⟨d, rfl⟩ : ∃ d, D = d + 2 := ⟨D - 2, by omega⟩
-  norm_num [regularJointStageSum, Finset.sum_range_succ,
-    firstOrderCurveJointStageOne, firstOrderTaylorTotalCap,
-    firstOrderTaylorDerivativeCap, firstOrderCurveFiberStageOne,
-    regularTaylorExponent, MvPolynomial.cappedBidegreeMixedVolume,
-    MvPolynomial.cappedDegreeMixedVolume]
-  have hτ : 2 * (d + 2) - 3 = 2 * d + 1 := by omega
-  simp only [hτ]
-  have hm1 : d + 2 ≤ 1 + (2 * d + 1) * 19 := by omega
-  have hm2 : 2 * d + 1 + (d + 2) ≤ 1 + (2 * d + 1) * 20 := by omega
-  have hm3 : (2 * d + 1) * 2 + (d + 2) ≤ 1 + (2 * d + 1) * 21 := by omega
-  have hm4 : (2 * d + 1) * 3 + (d + 2) ≤ 1 + (2 * d + 1) * 22 := by omega
-  simp only [min_eq_right hm1, min_eq_right hm2, min_eq_right hm3,
-    min_eq_right hm4]
-  have hs1 : 1 + (2 * d + 1) * 19 - (d + 2) = 18 + 37 * d := by omega
-  have hs2 : 1 + (2 * d + 1) * 20 - (2 * d + 1 + (d + 2)) =
-      18 + 37 * d := by omega
-  have hs3 : 1 + (2 * d + 1) * 21 - ((2 * d + 1) * 2 + (d + 2)) =
-      18 + 37 * d := by omega
-  have hs4 : 1 + (2 * d + 1) * 22 - ((2 * d + 1) * 3 + (d + 2)) =
-      18 + 37 * d := by omega
-  simp only [hs1, hs2, hs3, hs4]
-  have hsq {c t : ℕ} (hct : c ≤ t) : c ^ 2 ≤ 2 * t * c := by
-    rw [pow_two]
-    calc
-      c * c ≤ t * c := Nat.mul_le_mul_right c hct
-      _ ≤ (2 * t) * c := Nat.mul_le_mul_right c (by omega)
-      _ = 2 * t * c := by ring
-  have hle1 : (d + 2) ^ 2 ≤ 2 * (1 + (2 * d + 1) * 19) * (d + 2) := hsq hm1
-  have hle2 : (2 * d + 1 + (d + 2)) ^ 2 ≤
-      2 * (1 + (2 * d + 1) * 20) * (2 * d + 1 + (d + 2)) := hsq hm2
-  have hle3 : ((2 * d + 1) * 2 + (d + 2)) ^ 2 ≤
-      2 * (1 + (2 * d + 1) * 21) * ((2 * d + 1) * 2 + (d + 2)) := hsq hm3
-  have hle4 : ((2 * d + 1) * 3 + (d + 2)) ^ 2 ≤
-      2 * (1 + (2 * d + 1) * 22) * ((2 * d + 1) * 3 + (d + 2)) := hsq hm4
-  apply Nat.cast_injective (R := ℤ)
-  push_cast [Nat.cast_sub hle1, Nat.cast_sub hle2, Nat.cast_sub hle3,
-    Nat.cast_sub hle4]
+  have hτ : regularTaylorExponent (d + 2) = 2 * d + 1 := by
+    unfold regularTaylorExponent
+    omega
+  simp only [regularJointStageSum, Finset.sum_range_succ, Finset.sum_range_zero, hτ,
+    firstOrderCurveJointStageOne, firstOrderTaylorTotalCap, firstOrderTaylorDerivativeCap,
+    MvPolynomial.cappedBidegreeMixedVolume, MvPolynomial.cappedDegreeMixedVolume,
+    Nat.reduceSub, Nat.add_sub_cancel, zero_add]
+  have hm0 : min (1 + (2 * d + 1) * 19) ((2 * d + 1) * 0 + (d + 2)) =
+      (2 * d + 1) * 0 + (d + 2) := min_eq_right (by omega)
+  have hm1 : min (1 + (2 * d + 1) * 20) ((2 * d + 1) * 1 + (d + 2)) =
+      (2 * d + 1) * 1 + (d + 2) := min_eq_right (by omega)
+  have hm2 : min (1 + (2 * d + 1) * 21) ((2 * d + 1) * 2 + (d + 2)) =
+      (2 * d + 1) * 2 + (d + 2) := min_eq_right (by omega)
+  have hm3 : min (1 + (2 * d + 1) * 22) ((2 * d + 1) * 3 + (d + 2)) =
+      (2 * d + 1) * 3 + (d + 2) := min_eq_right (by omega)
+  have hs0 : 1 + (2 * d + 1) * 19 - ((2 * d + 1) * 0 + (d + 2)) = 18 + 37 * d := by omega
+  have hs1 : 1 + (2 * d + 1) * 20 - ((2 * d + 1) * 1 + (d + 2)) = 18 + 37 * d := by omega
+  have hs2 : 1 + (2 * d + 1) * 21 - ((2 * d + 1) * 2 + (d + 2)) = 18 + 37 * d := by omega
+  have hs3 : 1 + (2 * d + 1) * 22 - ((2 * d + 1) * 3 + (d + 2)) = 18 + 37 * d := by omega
+  rw [hm0, hm1, hm2, hm3, hs0, hs1, hs2, hs3]
   ring
 
 /-! ## The one-forty-second retention split -/
@@ -361,7 +350,7 @@ theorem uniformFirstOrderMcaSplit_retainedCoordinateRatio_le {n D A : ℕ}
             ((42 * N * (d - r + 1) : ℕ) : ℝ) := by
           push_cast
           rw [Nat.cast_sub hrN, Nat.cast_sub hrd]
-          nlinarith
+          linarith
         exact_mod_cast hreal
   unfold retainedCoordinateRatio agreementIncidenceRatio
   rw [hden]
@@ -433,8 +422,6 @@ theorem uniformFirstOrderMca_degree_mul_agreementIncidenceRatio_le {n D A : ℕ}
   have hsquare : (0 : ℝ) ≤ (2 * D - n) ^ 2 := sq_nonneg _
   nlinarith
 
-set_option maxHeartbeats 2000000 in
--- The exact four-stage and rational-coefficient normalization exceeds the default budget.
 /-- At the one-forty-second retention split, every actual derivative degree at most four has
 raw exceptional charge at most `1304562211/984 * n²`.  The rational coefficient is strictly
 below the public integral ceiling `1325775`. -/
@@ -460,43 +447,18 @@ theorem uniformFirstOrderMca_exceptionCharge_le
   have htail : n - L ≤ n := Nat.sub_le n L
   have hnR : (2 : ℝ) ≤ n := by exact_mod_cast hn
   have hn0 : (0 : ℝ) ≤ n := by positivity
-  have hnSquareFour : (4 : ℝ) ≤ (n : ℝ) ^ 2 := by nlinarith
-  have hnTwice : (2 : ℝ) * n ≤ (n : ℝ) ^ 2 := by nlinarith
+  have hnTwice : (2 : ℝ) * n ≤ (n : ℝ) ^ 2 := by
+    rw [sq]
+    exact mul_le_mul_of_nonneg_right hnR hn0
+  have hnSquareFour : (4 : ℝ) ≤ (n : ℝ) ^ 2 := by linarith
   have hordinary : ordinaryTailCharge theta n D 276 (23 - e) ≤
       (399671 / 24 : ℝ) * (n : ℝ) ^ 2 := by
-    calc
-      ordinaryTailCharge theta n D 276 (23 - e) ≤
-          ordinaryTailCharge theta n D 276 23 :=
-      ordinaryTailCharge_le htheta (Nat.sub_le _ _)
-      _ = (45 : ℝ) * 276 + theta * (276 + 23 + 4 * D * 23 * 276) +
-          (n - D - 1 : ℕ) * 23 := by
-        simp only [ordinaryTailCharge, ite_eq_right (by norm_num : (23 : ℕ) ≠ 0)]
-        norm_num
-      _ ≤ (399671 / 24 : ℝ) * (n : ℝ) ^ 2 := by
-        have hconstant : (45 : ℝ) * 276 ≤
-            ((45 : ℝ) * 276 / 4) * (n : ℝ) ^ 2 := by nlinarith
-        have hsmall : theta * ((276 + 23 : ℕ) : ℝ) ≤
-            (((276 + 23 : ℕ) : ℝ) * (25 / 6 : ℝ) / 4) *
-              (n : ℝ) ^ 2 := by
-          have hfirst : theta * ((276 + 23 : ℕ) : ℝ) ≤
-              (25 / 6 : ℝ) * ((276 + 23 : ℕ) : ℝ) := by gcongr
-          norm_num at hfirst ⊢
-          nlinarith
-        have hdegree : theta * ((4 * D * 23 * 276 : ℕ) : ℝ) ≤
-            ((23 : ℝ) * 276 * (25 / 6 : ℝ) / 2) * (n : ℝ) ^ 2 := by
-          have hlinear : (4 : ℝ) * 23 * 276 * ((D : ℝ) * theta) ≤
-              (4 : ℝ) * 23 * 276 * ((25 / 24 : ℝ) * n) := by gcongr
-          push_cast
-          norm_num at hlinear ⊢
-          nlinarith
-        have hlastCast : (((n - D - 1 : ℕ) : ℝ)) ≤ n := by
-          exact_mod_cast (show n - D - 1 ≤ n from Nat.sub_le n (D + 1))
-        have hlast : (((n - D - 1 : ℕ) : ℝ)) * 23 ≤
-            (23 / 2 : ℝ) * (n : ℝ) ^ 2 := by
-          have : (((n - D - 1 : ℕ) : ℝ)) * 23 ≤ (n : ℝ) * 23 := by gcongr
-          nlinarith
-        ring_nf at hconstant hsmall hdegree hlast ⊢
-        linarith
+    refine (ordinaryTailCharge_le htheta (Nat.sub_le _ _)).trans ?_
+    have hlastCast : (((n - D - 1 : ℕ) : ℝ)) ≤ n := by
+      exact_mod_cast (show n - D - 1 ≤ n from Nat.sub_le n (D + 1))
+    simp only [ordinaryTailCharge, OfNat.ofNat_ne_zero, ↓reduceIte, Nat.reduceMul,
+      Nat.reduceSub, Nat.cast_ofNat]
+    linarith
   have hJNat : regularJointStageSum D 276 23 e ≤ 1149264 * D ^ 2 := by
     by_cases hDone : D = 1
     · subst D
