@@ -1422,6 +1422,29 @@ example :
   let f : ZMod 2 →+* AlgebraicClosure (ZMod 2) := algebraMap _ _
   exact exists_forall_jetEvaluation_ne_zero_map f f.injective Q {0} 0 hregular
 
+/-! ### Taylor chart coefficient extension -/
+
+/-- The exponent theorem produces a one-point chart for the zero polynomial solution. -/
+example : ∃ J : Finset (Fin 1 → ℚ), J.card = 1 := by
+  obtain ⟨_center, J, hcard, _⟩ :=
+    exists_regular_solution_jet_family_of_exponent
+      (f := RingHom.id ℚ) (Q := zeroJetEquation ℚ 0) (K := 2) (k := 1)
+      (τ := 4) (taylorExponentSufficient_two_mul 0 2) (by norm_num)
+      {0} (A := 0) (domain := fun _ : Fin 1 ↦ 0) (received := fun _ ↦ 0)
+      (hdegree := by simp)
+      (hsol := by
+        intro P hP
+        rw [Finset.mem_singleton.mp hP]
+        simp [zeroJetEquation])
+      (hsep := by
+        intro P hP
+        rw [Finset.mem_singleton.mp hP]
+        simp [zeroJetEquation, separant, differentialSpecialization,
+          differentialSpecializationHom])
+      (hbin := by simp)
+      (hagree := by intro P hP; exact Nat.zero_le _)
+  exact ⟨J, hcard⟩
+
 example :
     ∃ exceptional : Finset ℚ, exceptional.card ≤ 1 ∧ 0 ∈ exceptional := by
   let Q : DifferentialPolynomial (Polynomial ℚ) 0 := MvPolynomial.C Polynomial.X
