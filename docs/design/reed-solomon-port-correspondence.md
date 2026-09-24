@@ -1240,7 +1240,7 @@ for `c = 2`, with the explicit threshold `⌈32 / θ⌉`.
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/RatePartition/FixedRateGate.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
-`fixedRatePartitionMultiplicity`, `fixedRatePartitionMultiplicity_spec`, `fixedRatePartitionFiniteParameters`, and `exists_fixedRatePartitionFiniteParameters` retain their names. The selector uses the main branch's `rateMultiplicity` and `rateMultiplicity_spec` to package positive finite weight budget and ratio greater than one in `PartitionFiniteParameters`.
+`fixedRatePartitionMultiplicity`, `fixedRatePartitionMultiplicity_spec`, and `fixedRatePartitionFiniteParameters` retain their names. `exists_fixedRatePartitionFiniteParameters` is not ported: its `Nonempty` conclusion is `⟨fixedRatePartitionFiniteParameters hrate hgap⟩`. The selector uses the main branch's `rateMultiplicity` and `rateMultiplicity_spec` to package positive finite weight budget and ratio greater than one in `PartitionFiniteParameters`.
 
 A separate `leastPartitionFiniteMultiplicity` family is not ported because `rateMultiplicity`, `rateMultiplicity_spec`, and `rateMultiplicity_minimal` already provide the generic selector API.
 
@@ -1262,7 +1262,7 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/RatePartition/MathematicalUniform.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
-Renamed `uniformRatePartitionMathematicalMultiplicity`, `uniformRatePartitionMathematicalJetBound`, `uniformRatePartitionMathematicalLength`, `uniformRatePartitionMathematicalLength_eq_ceil`, `uniformRatePartitionOrder_ge_519`, `uniformRatePartitionOrder_le_mathematicalJetBound`, `uniformRatePartitionMathematical_integer_guards`, `uniformRatePartitionMathematical_totalJetDegree_le`, `uniformRatePartitionMathematical_low_ratio_gt`, and `uniformRatePartitionMathematical_high_ratio_gt` to their `uniformMathematical...` or `uniformDerivativeOrder...` destination names. `exists_mathematicalRatePartitionEnvelope` keeps its name and specializes the shared `RatePartitionEnvelope` at `uniformMathematicalMultiplicity δ`. The total-jet bound uses the equivalent `PartitionSupportEligible` predicate, and the scale-300 ratio proofs share one finite-ratio argument and reuse the generalized gamma bounds.
+Renamed `uniformRatePartitionMathematicalMultiplicity`, `uniformRatePartitionMathematicalJetBound`, `uniformRatePartitionMathematicalLength`, `uniformRatePartitionMathematicalLength_eq_ceil`, `uniformRatePartitionOrder_ge_519`, `uniformRatePartitionOrder_le_mathematicalJetBound`, `uniformRatePartitionMathematical_integer_guards`, `uniformRatePartitionMathematical_totalJetDegree_le`, `uniformRatePartitionMathematical_low_ratio_gt`, and `uniformRatePartitionMathematical_high_ratio_gt` to their `uniformMathematical...` or `uniformDerivativeOrder...` destination names. `uniformDerivativeOrder_ge_519` is stated in `UniformGamma.lean`, where it replaces the weaker order bound. `exists_mathematicalRatePartitionEnvelope` keeps its name and specializes the shared `RatePartitionEnvelope` at `uniformMathematicalMultiplicity δ`. The total-jet bound uses the equivalent `PartitionSupportEligible` predicate, and the scale-300 ratio proofs share one finite-ratio argument and reuse the generalized gamma bounds.
 
 `uniformCapacityLengthThreshold300` is deferred because this unit has no consumer; its first consumers are in the ListDecodability and MutualCorrelatedAgreement mathematical-uniform capacity units. `ratePartitionMathematicalMultiplicity_ge_order` is covered by the stronger generic `add_two_le_closedMultiplicity`, which needs only scale at least 3 and order at least 1.
 
@@ -1351,7 +1351,7 @@ Renamed `UniformRatePartitionEnvelope` to `RatePartitionEnvelope` and generalize
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/RatePartition/UniformGamma.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
-`uniformRatePartitionOrder_ge_500` is now `uniformDerivativeOrder_ge_500`. The four uniform-order theorems `uniformRatePartitionGamma_low_base_gt`, `uniformRatePartitionGamma_low_gt`, `uniformRatePartitionGamma_high_base_gt`, and `uniformRatePartitionGamma_high_gt` are now `uniformRateGamma_low_base_gt`, `uniformRateGamma_low_gt`, `uniformRateGamma_high_base_gt`, and `uniformRateGamma_high_gt`. The corresponding arbitrary-order bounds are generalized to positive orders satisfying the logarithmic lower bound and are named `rateGamma_low_base_gt`, `rateGamma_low_gt`, `rateGamma_high_base_gt`, and `rateGamma_high_gt`. The bounds cover low- and high-rate margins, with and without the finite-multiplicity factor.
+`uniformRatePartitionOrder_ge_500` is covered by the stronger `uniformDerivativeOrder_ge_519`, which has the same hypotheses and lives in this file. The four uniform-order theorems `uniformRatePartitionGamma_low_base_gt`, `uniformRatePartitionGamma_low_gt`, `uniformRatePartitionGamma_high_base_gt`, and `uniformRatePartitionGamma_high_gt` are now `uniformRateGamma_low_base_gt`, `uniformRateGamma_low_gt`, `uniformRateGamma_high_base_gt`, and `uniformRateGamma_high_gt`. The corresponding arbitrary-order bounds are generalized to positive orders satisfying the logarithmic lower bound and are named `rateGamma_low_base_gt`, `rateGamma_low_gt`, `rateGamma_high_base_gt`, and `rateGamma_high_gt`. The bounds cover low- and high-rate margins, with and without the finite-multiplicity factor.
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/RatePartition/UniformGamma.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
@@ -1889,9 +1889,9 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordi
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FrobeniusComponentRecognition.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
-`frobeniusInitialGraph` keeps its name and is generalized from a `Fin 1` jet-coordinate function to `Option (Fin 1)`, with the challenge coordinate mapped to `X`, and from fields to commutative semirings. `exists_frobeniusGraph_of_symbolic_prime_sample` keeps its name and is generalized from `Fin n` to an arbitrary embedded type `ι`; Frobenius roots are required only at sampled indices. The theorem uses the current affine Hilbert polynomial and graph-restriction APIs.
+`frobeniusInitialGraph` keeps its name and is generalized from a `Fin 1` jet-coordinate function to `Option (Fin 1)`, with the challenge coordinate mapped to `X`, and from fields to commutative semirings. `exists_frobeniusGraph_of_symbolic_prime_sample` keeps its name and is generalized from `Fin n` to an arbitrary embedded type `ι`; Frobenius roots are required only at sampled indices. The theorem is derived from the two-term case of `exists_frobeniusPowerGraph_of_symbolic_prime_sample`.
 
-`symbolicSourceFrobeniusAgreement` is not added because the existing `jointTaylorAgreementEquation` in `PolynomialDifferential.TaylorChartAlgebra` covers it. No new acceptance example was retained: a trial concrete component example exceeded 200,000 heartbeats, and the existing TaylorChart acceptance module exercises the point-recognition result.
+`symbolicSourceFrobeniusAgreement` is not added because the existing `jointTaylorAgreementEquation` in `PolynomialDifferential.TaylorChartAlgebra` covers it. An acceptance case in `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement.lean` recognizes the zero pair on a positive-dimensional prime component from a one-point sparse sample cut.
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FrobeniusRetainedFamily.lean`
 
@@ -1922,6 +1922,23 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Poly
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/ComponentRecognition.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 Renamed `exists_polynomialGraph_of_symbolic_prime_sample_of_exponent` to `exists_polynomialGraph_of_primeTaylorComponent`. It uses the destination joint Taylor cuts and recognizes a graph for tuples of arbitrary length. Added `powerBatchedJetGraphMap`. The result also proves ideal vanishing on the graph and nonvanishing of the restricted separant. The wrapper declarations `symbolicSourceCurveAgreement_of_exponent` and `symbolicSourceCurveAgreement` were not ported: their cut polynomial is `jointTaylorAgreementEquation`, and the default-exponent case follows by taking exponent `2 * K`.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedFrobeniusFamily.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedFrobeniusFamily.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`frobeniusRetainedPowerTupleFamily` → `frobeniusRetainedPowerTupleFamily`,
+`mem_frobeniusRetainedPowerTupleFamily_iff` → `mem_frobeniusRetainedPowerTupleFamily_iff`,
+`frobeniusRetainedPowerTupleFamily_card_le` → `frobeniusRetainedPowerTupleFamily_card_le`, and
+`exists_exceptional_frobeniusRetainedPowerTupleFamily` →
+`exists_exceptional_frobeniusRetainedPowerTupleFamily` keep their names. The retained-family
+API and its bounds now accept any finite coordinate type instead of only `Fin n`. The
+cardinality theorem uses `jointInitialJetEquation` for the current initial-equation API; the
+exceptional-set theorem specializes the generic exact-power-agreement family bound.
+
+No declarations from this source file were left out. The related source wrapper
+`uniformExactPowerAgreement_descend` is covered by the existing
+`uniformExactPowerAgreement_of_extension` theorem in `PowerAgreement`.
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedGeometricTransfer.lean`
 
@@ -1977,6 +1994,12 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Tayl
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/ComponentRecognition.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 The graph-line component result now uses the shared `aeval_jointInitialJetSeparant`, `aeval_jointCommonTaylorNumerator`, and `aeval_jointTaylorAgreementEquation` results from `TaylorChartAlgebra`, and `regular_principalOpen_graph_restriction` from `PrincipalOpenParametrization`.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerToLine.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/PowerToLine.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`exactCorrelatedPair_of_powerAgreement_one` keeps its name and turns exact degree-one power agreement for two constituents into an exact correlated-pair witness, preserving the degree bounds and full agreement-set equality. `lineExactAgreementBound_of_powerAgreement_one` keeps its name and is generalized from a rational budget and finite field to a real budget over any field. Both source public declarations are ported. A one-coordinate acceptance case exercises the line-bound conversion, and another directly applies the exact-pair bridge with an explicit exact-power witness over `pointDomain`.
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerTupleCounting.lean`
 
@@ -4772,6 +4795,12 @@ Acceptance examples exercise the total-degree cast theorem and check `characteri
 Ported from `ArkLibTest/Data/Polynomial/Differential.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 The singleton `Y₀ = 0` example instantiates `card_mul_le_jetTotalDegree_mul`, the rational recursive count, its square-bound corollary, the agreement-derived regular-branch budget, the generic finite agreement theorem, and the sharp regular-agreement count. The standalone `Y₀ + Y₁` degree illustration was removed to keep the file under 1,500 lines while retaining the main theorem examples.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Counting/TaylorCharZeroSolutions.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+No library declarations were added. `separant_ne_zero_of_dependsOnJet_charZero` is covered by `PolynomialDifferential.separant_ne_zero`, using `jetDegreeCastsNeZero_of_ringChar` and `JetDegreeCastsNeZero.natCast_jetDegree_ne_zero`. `regularSolutions_card_le_of_agreement_charZero` is covered by `PolynomialDifferential.card_le_of_regular_solutions_agreement` together with `regularBranchRatBudget_of_agreement`, which allows general agreement predicates and a sufficient Taylor exponent. `boundedSolution_card_le_sq_totalJetDegree_charZero` is covered by `PolynomialDifferential.boundedSolution_card_le_sq_totalJetDegree`, using the characteristic-zero cast condition and the agreement-derived regular-branch budget. `finite_agreement_solutions_card_le_charZero` is covered by `PolynomialDifferential.finite_solutions_card_le_sq_totalJetDegree_of_agreement`; the Reed–Solomon close-polynomial specialization is `ReedSolomon.closePolynomialSet_card_le_of_differential_equation`.
+
+An acceptance example checks generic separant nonvanishing for `Y₀ = 0` over `ℚ`, deriving the cast condition from characteristic zero. Existing examples in this file cover the generic square, finite-agreement, and regular-branch bounds. No production declarations were ported because the source results are covered by these more general APIs.
 
 ## `ArkLibTest/Data/Probability/Uniform.lean`
 

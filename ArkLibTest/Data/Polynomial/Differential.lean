@@ -967,6 +967,11 @@ private theorem castsNeZero_constantDerivativeEquation {F : Type*} [CommRing F] 
   obtain rfl : k = 1 := by omega
   simp
 
+/-- The active formal derivative of `Y₀` is nonzero over `ℚ`. -/
+example : separant (zeroJetEquation ℚ 0) 0 ≠ 0 := by
+  apply separant_ne_zero
+  norm_num [zeroJetEquation, jetDegree]
+
 /-- Over `ZMod 3`, `y' = 0` has exactly three solutions of degree at most `2`: the constants. -/
 example : Nat.card (BoundedSolution (constantDerivativeEquation (ZMod 3)) 2) = 3 := by
   have h : Nat.card (BoundedSolution (constantDerivativeEquation (ZMod 3)) 2) *
@@ -1443,16 +1448,11 @@ example :
     D 0 ≠ D 1 ∧ ∃ center : ℚ, ∀ i ∈ Finset.univ,
       jetEvaluation (D i) center (polynomialJet center (0 : Polynomial ℚ)) ≠ 0 := by
   intro D
-  constructor
-  · intro h
-    have h' : MvPolynomial.C (σ := JetVariable 0) (1 : ℚ) =
-        MvPolynomial.C (σ := JetVariable 0) 2 := by simpa [D] using h
-    have h'' : (1 : ℚ) = 2 := (MvPolynomial.C_inj ℚ 1 2).mp h'
-    norm_num at h''
-  · apply exists_forall_jetEvaluation_ne_zero_of_family Finset.univ D (fun _ ↦ 0)
-    intro i hi
-    fin_cases i <;>
-      simp [D, differentialSpecialization, differentialSpecializationHom]
+  refine ⟨?_, exists_forall_jetEvaluation_ne_zero_of_family univ D (fun _ ↦ 0) ?_⟩
+  · change C 1 ≠ C 2
+    exact mt (MvPolynomial.C_inj ℚ 1 2).mp (by norm_num)
+  · intro i hi
+    fin_cases i <;> simp [D, differentialSpecialization, differentialSpecializationHom]
 
 example :
     ∃ exceptional : Finset ℚ, exceptional.card ≤ 1 ∧ 0 ∈ exceptional := by

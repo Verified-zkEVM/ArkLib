@@ -113,8 +113,8 @@ example : 500 ≤ fixedRatePartitionOrder (1 / 2) (1 / 4) ∧
     (gap := 1 / 4) (by norm_num) (by norm_num)
   exact ⟨fixedRatePartitionOrder_ge_500 (rate := 1 / 2) (gap := 1 / 4),
     fixedRateGamma_gt_one (by norm_num) (by norm_num), hm, hbudget, hratio,
-    exists_fixedRatePartitionFiniteParameters (rate := 1 / 2) (gap := 1 / 4)
-      (by norm_num) (by norm_num)⟩
+    ⟨fixedRatePartitionFiniteParameters (rate := 1 / 2) (gap := 1 / 4)
+      (by norm_num) (by norm_num)⟩⟩
 
 /-- At rate `1`, gap `1` and order `5`, the positive exponent margin supplies finite parameters.
 -/
@@ -148,9 +148,10 @@ example : ∃ gapBound : ℝ, 0 < gapBound ∧ ∀ gap : ℝ, 0 < gap → gap < 
 
 /-! ### Uniform rate-gamma margins -/
 
-/-- The uniform order at gap `1/5` gives the low- and high-rate base bounds and margins. -/
+/-- The uniform order at gap `1/5` is at least `519` and gives the low- and high-rate base bounds
+and margins. -/
 example :
-    500 ≤ uniformDerivativeOrder (1 / 5 : ℝ) ∧
+    519 ≤ uniformDerivativeOrder (1 / 5 : ℝ) ∧
     Real.exp (3 / 2 - Real.log (40 / 9 : ℝ)) <
       rateGamma (2 * (1 / 5 : ℝ) ^ 2) (1 / 5) (uniformDerivativeOrder (1 / 5)) ∧
     Real.exp (3 / 2 - Real.log (40 / 9 : ℝ)) <
@@ -161,7 +162,7 @@ example :
     (151 / 150 : ℝ) <
       rateGamma (1 / 2) (1 / 2 + 1 / 5) (uniformDerivativeOrder (1 / 5)) *
         Real.exp (-1 / 1000) := by
-  exact ⟨uniformDerivativeOrder_ge_500 (by norm_num) (by norm_num),
+  exact ⟨uniformDerivativeOrder_ge_519 (by norm_num) (by norm_num),
     uniformRateGamma_low_base_gt (by norm_num) (by norm_num),
     uniformRateGamma_high_base_gt (R := 1 / 2) (δ := 1 / 5)
       (by norm_num) (by norm_num) (by norm_num) (by norm_num),
@@ -332,10 +333,6 @@ example : Nonempty (RatePartitionEnvelope (1 / 5 : ℝ)
   · omega
 
 /-! ### Scale-300 mathematical parameters -/
-
-/-- The mathematical derivative order exceeds `518` at the concrete gap `1/5`. -/
-example : 519 ≤ uniformDerivativeOrder (1 / 5 : ℝ) := by
-  exact uniformDerivativeOrder_ge_519 (by norm_num) (by norm_num)
 
 /-- The mathematical length, jet cap and integer guards hold at `δ = 1/5`. -/
 example :

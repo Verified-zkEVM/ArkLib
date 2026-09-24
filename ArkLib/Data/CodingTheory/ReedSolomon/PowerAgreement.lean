@@ -77,6 +77,8 @@ interleaved statements are in `ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.
 * `ReedSolomon.HasExactPowerAgreement.descend` and
   `ReedSolomon.uniformExactPowerAgreement_of_extension`: exact power agreement descends from an
   extension field.
+* `ReedSolomon.uniformExactPowerAgreement_of_all_samples`: retaining all common-sample
+  interpolants gives a characteristic-free uniform recovery bound.
 * `ReedSolomon.determinedByAgreement_code`: Reed–Solomon codewords of message length `k` are
   determined by `a ≥ k` agreements.
 * `ReedSolomon.exists_powerBatchedPolynomial_eq`: a codeword decomposition of a polynomial's
@@ -563,6 +565,60 @@ theorem uniformExactPowerAgreement_of_extension (domain : ι ↪ F) (w : Fin (�
   rwa [powerBatchedWord_map, polynomialAgreementSet_map]
 
 end Descent
+
+section AllSamples
+
+variable {F ι : Type*} [Field F] [Fintype ι] [DecidableEq F] {ℓ k L : ℕ}
+
+/-- Retaining every common-sample interpolant gives uniform exact recovery over any field. One
+exceptional set works for every challenge outside it and every close polynomial, with at most
+`(|ι| choose k) * (ℓ * (|ι| - k))` exceptional challenges. -/
+theorem uniformExactPowerAgreement_of_all_samples (domain : ι ↪ F)
+    (w : Fin (ℓ + 1) → ι → F) (hkL : k ≤ L) :
+    UniformExactPowerAgreement domain w k L
+      ((Fintype.card ι).choose k * (ℓ * (Fintype.card ι - k))) := by
+  classical
+  let family := polynomialTupleFamily domain w k
+  have hdegree : ∀ P ∈ family, ∀ t, (P t).degree < k := by
+    intro P hP
+    exact ((mem_polynomialTupleFamily_iff domain w P k).mp hP).1
+  have hcommon : ∀ P ∈ family, k ≤ (commonCurveAgreementSet domain w P).card := by
+    intro P hP
+    exact ((mem_polynomialTupleFamily_iff domain w P k).mp hP).2
+  obtain ⟨exceptional, hcard, hgood⟩ :=
+    exists_exceptional_powerBatched_family domain w family k hcommon
+  refine ⟨exceptional, ?_, ?_⟩
+  · exact hcard.trans
+      (Nat.mul_le_mul_right _ (polynomialTupleFamily_card_le domain w k))
+  · intro z hz Q hQdegree hAgreement
+    have hkAgreement : k ≤
+        (polynomialAgreementSet domain (powerBatchedWord w z) Q).card :=
+      hkL.trans hAgreement
+    obtain ⟨sample, hsampleSubset, hsampleCard⟩ :=
+      Finset.exists_subset_card_eq hkAgreement
+    obtain ⟨P, hPdegree, hPsample, hPidentity⟩ :=
+      exists_polynomialGraph_of_sample domain w sample hsampleCard
+    have hPcommon : k ≤ (commonCurveAgreementSet domain w P).card := by
+      rw [← hsampleCard]
+      apply Finset.card_le_card
+      intro i hi
+      simpa only [commonCurveAgreementSet, Finset.mem_filter, Finset.mem_univ,
+        true_and] using hPsample i hi
+    have hPmem : P ∈ family := by
+      exact (mem_polynomialTupleFamily_iff domain w P k).mpr ⟨hPdegree, hPcommon⟩
+    have hQsample : ∀ i ∈ sample,
+        Q.eval (domain i) = ∑ t, z ^ t.val * w t i := by
+      intro i hi
+      exact (Finset.mem_filter.mp (hsampleSubset hi)).2
+    have hQidentity : Q = powerBatchedPolynomial P z := by
+      simpa only [Polynomial.map_id] using
+        hPidentity (RingHom.id F) z Q hQdegree hQsample
+    refine (hasExactPowerAgreement_id_iff domain w k z Q).mpr
+      ⟨P, hPdegree, hQidentity, ?_⟩
+    rw [hQidentity]
+    exact hgood P hPmem z hz
+
+end AllSamples
 
 section CodeLevel
 

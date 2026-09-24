@@ -17,14 +17,14 @@ public import Mathlib.Analysis.SpecialFunctions.Log.NegMulLog
 
 This file proves low-rate and high-rate lower bounds for `rateGamma` when the derivative order
 satisfies `3 / (2 * δ) ≤ log d`. It also verifies that `uniformDerivativeOrder δ` satisfies this
-condition, is at least `500` for `0 < δ < 6/25`, and retains a `151/150` margin after the
+condition, is at least `519` for `0 < δ < 6/25`, and retains a `151/150` margin after the
 multiplicity factor `exp (-1/1000)` in both rate branches.
 
 ## Main statements
 
 * `rateGamma_low_base_gt`, `rateGamma_high_base_gt`: lower bounds before finite-multiplicity loss.
 * `rateGamma_low_gt`, `rateGamma_high_gt`: lower bounds after the loss `exp (-1/1000)`.
-* `uniformDerivativeOrder_ge_500` and the four `uniformRateGamma_*` specializations.
+* `uniformDerivativeOrder_ge_519` and the four `uniformRateGamma_*` specializations.
 * `log_forty_ninths_lt_d9`: a numerical upper bound used for the scale-300 margin.
 
 ## References
@@ -86,32 +86,23 @@ private theorem log_six_eq :
   rw [← Real.log_mul (by norm_num : (2 : ℝ) ≠ 0) (by norm_num : (3 : ℝ) ≠ 0)]
   norm_num
 
-private theorem log_five_hundred_lt : Real.log 500 < (311 / 50 : ℝ) := by
-  have hlog : Real.log (500 : ℝ) = 2 * Real.log 2 + 3 * Real.log 5 := by
-    calc
-      Real.log (500 : ℝ) = Real.log ((2 : ℝ) ^ 2 * (5 : ℝ) ^ 3) := by norm_num
-      _ = Real.log ((2 : ℝ) ^ 2) + Real.log ((5 : ℝ) ^ 3) := by
-        rw [Real.log_mul] <;> positivity
-      _ = 2 * Real.log 2 + 3 * Real.log 5 := by
-        rw [Real.log_pow, Real.log_pow]
-        norm_num
-  rw [hlog]
-  linarith [Real.log_two_lt_d9, Real.log_five_lt_d9]
-
-/-- For `0 < δ < 6/25`, the uniform derivative order is at least `500`. -/
-theorem uniformDerivativeOrder_ge_500 {δ : ℝ} (hδ : 0 < δ) (hδmax : δ < 6 / 25) :
-    500 ≤ uniformDerivativeOrder δ := by
-  have hexponent : (311 / 50 : ℝ) < 3 / (2 * δ) := by
+/-- The uniform derivative order is at least `519` for `0 < δ < 6/25`. -/
+theorem uniformDerivativeOrder_ge_519 {δ : ℝ} (hδ : 0 < δ) (hδmax : δ < 6 / 25) :
+    519 ≤ uniformDerivativeOrder δ := by
+  have hexponent : (25 / 4 : ℝ) < 3 / (2 * δ) := by
     apply (lt_div_iff₀ (mul_pos (by norm_num) hδ)).2
     nlinarith
-  have hlog : Real.log 500 < 3 / (2 * δ) :=
-    (log_five_hundred_lt).trans hexponent
-  have hexp : (500 : ℝ) < Real.exp (3 / (2 * δ)) := by
-    rw [← Real.exp_log (by norm_num : (0 : ℝ) < 500)]
-    exact Real.exp_lt_exp.mpr hlog
+  have hseries := Real.sum_le_exp_of_nonneg (show (0 : ℝ) ≤ 25 / 4 by norm_num) 20
+  have h518 : (518 : ℝ) < Real.exp (25 / 4) := by
+    norm_num [Finset.sum_range_succ] at hseries ⊢
+    exact lt_of_lt_of_le (by norm_num) hseries
+  have hexp : (518 : ℝ) < Real.exp (3 / (2 * δ)) :=
+    h518.trans (Real.exp_lt_exp.mpr hexponent)
   have heq : (3 / 2 : ℝ) / δ = 3 / (2 * δ) := by field_simp
-  rw [uniformDerivativeOrder, heq]
-  exact_mod_cast hexp.le.trans (Nat.le_ceil (Real.exp (3 / (2 * δ))))
+  have hceil : (518 : ℝ) < uniformDerivativeOrder δ := by
+    rw [uniformDerivativeOrder, heq]
+    exact hexp.trans_le (Nat.le_ceil _)
+  exact_mod_cast hceil
 
 private theorem uniform_margin_numeric :
     (151 / 150 : ℝ) <

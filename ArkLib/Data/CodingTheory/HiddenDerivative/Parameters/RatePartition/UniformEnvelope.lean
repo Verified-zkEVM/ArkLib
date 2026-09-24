@@ -172,7 +172,8 @@ theorem exists_uniformRatePartitionEnvelope {δ : ℝ} {n k A : ℕ}
     (hgap : (k : ℝ) + δ * n ≤ A) (hAn : A ≤ n) :
     Nonempty (RatePartitionEnvelope δ (uniformMultiplicity δ) n k A) := by
   have hδone : δ < 1 := by linarith
-  have hd500 := uniformDerivativeOrder_ge_500 hδ hδsmall
+  have hd500 : 500 ≤ uniformDerivativeOrder δ :=
+    (by norm_num : 500 ≤ 519).trans (uniformDerivativeOrder_ge_519 hδ hδsmall)
   have hmorder : uniformDerivativeOrder δ + 2 ≤ uniformMultiplicity δ :=
     add_two_le_uniformMultiplicity δ
   obtain ⟨hsize', _hmn, _hν, _hνn⟩ :=
