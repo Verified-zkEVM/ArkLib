@@ -7,7 +7,9 @@ module
 
 public import ArkLib.Commitments.Functional.Hachi.Concrete
 public import ArkLib.Commitments.Functional.Hachi.QuadEval.Soundness
+public import Mathlib.NumberTheory.LucasPrimality
 public import Mathlib.Tactic.NormNum.Prime
+public import Mathlib.Tactic.ReduceModChar
 
 /-!
 # The `ℓ = 30` Hachi parameters, at `τ = 5`
@@ -134,12 +136,20 @@ def honestZBound : ℕ := 2 ^ hachiR * hachiOmega * (hachiB / 2)
 
 instance : NeZero hachiQ := ⟨by norm_num [hachiQ]⟩
 
--- `norm_num`'s Pratt-certificate prime extension needs a deeper recursion budget than the
--- default at a 32-bit modulus; the elaboration itself is fast (a few seconds).
-set_option maxRecDepth 20000 in
-/-- **`q = 4294967197` is prime.** Proved, not assumed: `norm_num`'s prime extension produces a
-Pratt certificate, so no `decide`/`native_decide` is involved. -/
-theorem hachiQ_prime : Nat.Prime hachiQ := by norm_num [hachiQ]
+/-- **`q = 4294967197` is prime.** Proved, not assumed, by a Lucas (Pratt) certificate: `6` has
+order `q - 1 = 2² · 3 · 13 · 67 · 163 · 2521` in `ZMod q`. The modular powers are evaluated by
+`reduce_mod_char`, and the small prime factors by `norm_num`; no `native_decide` is involved. -/
+theorem hachiQ_prime : Nat.Prime hachiQ := by
+  refine lucas_primality hachiQ 6 (by unfold hachiQ; reduce_mod_char) fun r hr hdvd ↦ ?_
+  have hfac : hachiQ - 1 = 2 * 2 * 3 * 13 * 67 * 163 * 2521 := by norm_num [hachiQ]
+  rw [hfac] at hdvd
+  simp only [hr.dvd_mul] at hdvd
+  rcases hdvd with (((((h | h) | h) | h) | h) | h) | h <;>
+    obtain rfl := (Nat.prime_dvd_prime_iff_eq hr (by norm_num)).1 h <;>
+    · unfold hachiQ
+      norm_num
+      reduce_mod_char
+      decide
 
 instance : Fact (Nat.Prime hachiQ) := ⟨hachiQ_prime⟩
 

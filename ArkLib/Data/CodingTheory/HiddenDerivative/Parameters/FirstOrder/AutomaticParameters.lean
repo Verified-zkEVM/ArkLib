@@ -41,8 +41,6 @@ namespace ReedSolomon.HiddenDerivative
 
 noncomputable section
 
-set_option autoImplicit false
-
 /-- The tuned agreement, bounded by the requested agreement and the midpoint to one. -/
 def automaticAgreement (rho a : ℝ) : ℝ :=
   min a ((1 + firstOrderRateThreshold rho) / 2)

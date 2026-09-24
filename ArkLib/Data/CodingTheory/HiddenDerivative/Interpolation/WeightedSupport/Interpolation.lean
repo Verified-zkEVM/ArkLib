@@ -103,8 +103,6 @@ open Polynomial
 open SymbolicReceivedInterpolation
 open WeightedSupportParameters
 
-set_option maxHeartbeats 800000 in
--- Elaborating the symbolic matrix witness crosses the full weighted-support rank construction.
 /-- A strict dimension margin gives a nonzero interpolant in the weighted-support space that
 satisfies all local constraints and both decoder degree bounds. -/
 theorem exists_weightedSupport_interpolant_of_fixed_margin
