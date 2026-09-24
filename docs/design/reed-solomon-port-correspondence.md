@@ -1949,6 +1949,16 @@ Merges `FirstOrder/Squarefree/Bounds.lean` and `FirstOrder/Squarefree/SingularTa
 `r ≤ j` and `A.natDegree = r`, and `singularTail_map_eq_zero_of_common_root` drops both `IsDomain`
 assumptions.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/Incidence.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/Incidence.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Renamed `sourceChartHighCuts` to `jointTaylorHighCutList`, `symbolicSourceNumerator_mem_sourceChartHighCuts` to `jointCommonTaylorNumerator_mem_jointTaylorHighCutList`, `sourceChartPairLocus` to `admissibleChartPairGraphLocus`, `principalOpen_subset_sourceChartPairLocus` to `principalOpen_subset_admissibleChartPairGraphLocus`, `finite_sourceChart_points_off_pairs_card_le` to `finite_regularJointTaylorChartPoints_off_admissiblePairGraphs_card_le`, and `finite_sourceChart_points_off_pairs_card_le_of_source` to `finite_regularJointTaylorChartPoints_off_admissiblePairGraphs_card_le_of_jetDegree`.
+
+The graph-locus inclusion uses `Set.ncard` cut counts and the explicit exponent `2 * K`. The finite incidence bound uses `L ≤ A` and `A - L + 1 ≤ n`, counts agreement indices with `Set.ncard`, and drops the unnecessary positive cut-degree premise. Its specialization uses `jetTotalDegree` and `CoeffNatDegreeLE` and drops the positive jet-degree premise. No public source declarations were omitted; finite index-set encodings are expressed directly with `Set.ncard`.
+
+The matching acceptance module `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart.lean` replaces the high-cut membership example with two concrete singleton-set examples, one for each finite incidence bound.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/PairCounting.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/PairCounting.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
