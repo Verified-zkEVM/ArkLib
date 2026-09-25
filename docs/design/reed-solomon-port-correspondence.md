@@ -1927,6 +1927,12 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capa
 
 Renamed `exists_curveMCA_of_certificate` to `exists_exceptional_exactPowerAgreement_of_certificate` and `exists_curveMCA_of_certificate_of_jetCharacteristic` to `exists_exceptional_exactPowerAgreement_of_certificate_of_jetCharacteristic`. Both declarations remove `[DecidableEq E]`; the block-length endpoint also removes the redundant `0 < n` premise, derives the jet-characteristic guard, and applies the jet-characteristic endpoint. Both public declarations are ported.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/FixedRateExplicitGate.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/FixedRateExplicitGate.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Renamed `fixedRatePartitionOrder_lineMCA` to `fixedRatePartitionOrder_line_exactCorrelatedPair`. The mathematical guarantee is unchanged; the theorem specializes the existing general rate-partition line theorem using the current fixed-rate parameter selector and order bound. It uses the destination parameters `RatePartition.rateBlockThreshold`, `rateJetCap`, `marginHeight`, and `partitionFiniteRatio`, together with `polynomialCurveProductAgreementConstant`. Nothing was deferred or not ported.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/Parameters.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/Parameters.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
