@@ -1881,6 +1881,14 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/Bo
 
 `automaticFirstOrder_closePolynomialSet_finite_and_card_le`, `automatic_first_order_list_bound`, `automatic_first_order_list_bound_of_slack`, `automaticFirstOrder_closePolynomialSet_at_ceil_finite_and_card_le`, and `automatic_first_order_squarefree_list_bound_of_slack` keep their names. The private close-set membership equivalence is restated using the destination agreement-set API. No advertised declaration from the unit was omitted.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/FiniteLengthParameters.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/FiniteLengthParameters.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`finiteLengthSlack`, `finiteLengthSlack_pos`, `eta_le_finiteLengthSlack`, `finiteLengthSlack_inv_le_length`, `div_finiteLengthSlack_sq_le_div_eta_sq`, `div_finiteLengthSlack_four_le_div_eta_four`, and `squarefreeListExpression_le_finiteLength` retain their names. The positivity, slack comparison, and inverse-power comparison declarations were generalized by dropping `0 < n`; the inverse-length bound retains that premise. The squarefree theorem uses `regularTaylorExponent` in place of the source parameter `hybridTau`.
+
+`finiteLengthMCAEnvelope`, `finiteLengthMCAEnvelope_le_rateEnvelope`, `finiteLengthMCAEnvelope_le`, and `finiteLengthMCAEnvelope_le_inv_eta` were renamed to `finiteLengthMcaEnvelope`, `finiteLengthMcaEnvelope_le_rateEnvelope`, `finiteLengthMcaEnvelope_le`, and `finiteLengthMcaEnvelope_le_inv_eta` to match ArkLib's `Mca` casing. The public rate-envelope theorem was included although it was omitted from the source declaration inventory. All 11 public source declarations are represented; none were left unported.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/Profile.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/Profile.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
