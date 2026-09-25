@@ -2147,6 +2147,12 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordi
 
 Acceptance cases in `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement.lean` exhibit a nonempty retained family and check its graph-coordinate degree bound, then exhibit a retained pair and an exceptional set of size zero for a one-point domain with a one-point sample. No public source declarations were omitted.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/FactorBudget.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/FactorBudget.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Renamed `ordinaryFrobeniusPowerMixedDegree` to `ordinaryFrobeniusCurveMixedDegree` and generalized it with the polynomial curve degree `ell`. Renamed and generalized `ordinaryFrobeniusPowerMixedDegree_eq` and `ordinaryFrobeniusPowerMixedDegree_le` to give its exact form and coarse upper bound; the exact form also covers `b = 0`. Renamed `ordinaryPowerFactorRaw` to `ordinaryCurveFactorRaw`, `ordinaryFrobeniusPower_charge_le` to `ordinaryFrobeniusCurve_charge_le`, and `ordinaryPowerFactorRaw_le_mul` to `ordinaryCurveFactorRaw_le_line_mul`. `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary.lean` checks the exact and coarse degree bounds, the Frobenius curve charge, and the curve-to-line charge comparison at positive parameters.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedAdmissibility.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/GraphAdmissibility.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -2346,6 +2352,10 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordi
 `exists_exceptional_frobeniusPowerSeparableSolutions_at` → `exists_exceptional_frobeniusPowerSeparableSolutions_at`, generalized to the current `CoeffNatDegreeLE` and `jetTotalDegree` interfaces and with the source assumption `A ≤ n` dropped. The separate `exists_exceptional_frobeniusPowerSeparableSolutions` wrapper was not ported because the arbitrary-threshold theorem covers it at `L = k` with `k ≤ A`.
 
 The acceptance case in `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement.lean` instantiates the theorem for a linear equation, derives the cardinality bound, and shows that zero must be exceptional because its witness has no exact power agreement.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerTupleSeparableBound.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`exists_exceptional_frobeniusPowerFactorSolutions` retains its name and specializes the arbitrary-threshold separable bound at threshold `D + 1`, expressing the exceptional-set cardinality bound with `ordinaryCurveFactorRaw` and the current coefficient-height and jet-degree interfaces. It uses `exists_exceptional_frobeniusPowerSeparableSolutions_at`. `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement.lean` checks the separable exceptional-set bound and its guarantee for the nonconstant `regularBoundValues` fixture, including the cardinality bound of `1` and membership of `0` in the exceptional set. For the constant word with `D = 1` and `A = n = 2`, it checks a factor-set cardinality bound of `1`, a selected challenge outside the set, and the exact-agreement guarantee there; the zero polynomial solves the specialized equation and agrees at both domain points. All seven source declarations have counterparts; none were omitted. The merged acceptance file retains the incidence examples from `main`.
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/SingularTail.lean`
 
