@@ -8,6 +8,12 @@ import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Squarefree.Factorwise
 import Mathlib.Tactic.NormNum
 
+/-!
+# Factorwise agreement acceptance tests
+
+Concrete rational examples check the actual-degree and capped factorwise agreement list bounds.
+-/
+
 open MvPolynomial Polynomial PolynomialDifferential
 open ReedSolomon.FirstOrder.Squarefree ReedSolomon.HiddenDerivative
 
