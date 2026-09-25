@@ -42,15 +42,6 @@ open Polynomial HiddenDerivative
 
 universe u
 
-open Classical in
-private theorem mem_closePolynomialSet_iff_agreement
-    {F : Type*} [Field F] {n k A : ℕ}
-    (domain : Fin n ↪ F) (received : Fin n → F) (P : F[X]) :
-    P ∈ closePolynomialSet domain received k A ↔
-      P.degree < k ∧
-        A ≤ (Finset.univ.filter fun i ↦ P.eval (domain i) = received i).card := by
-  simp [closePolynomialSet, polynomialAgreementSet]
-
 private theorem uniformFirstOrder_stage_le (k : ℕ) (hk : 2 ≤ k) :
     firstOrderCurveFiberStageOne k 22 4 (regularTaylorExponent (k - 1)) ≤ 294 * k - 428 := by
   by_cases hkTwo : k = 2
@@ -201,7 +192,7 @@ private theorem exists_uniformFirstOrder_list_of_two_le
   have hsolutions : ∀ P ∈ hfin.toFinset, P.degree < k ∧
       A ≤ (Finset.univ.filter fun i ↦ P.eval (domain i) = received i).card := by
     intro P hP
-    exact (mem_closePolynomialSet_iff_agreement domain received P).mp (hfin.mem_toFinset.mp hP)
+    exact hfin.mem_toFinset.mp hP
   obtain ⟨cert⟩ : Nonempty (FirstOrderSymbolicCertificate.{u, u} (F := F)
       D A 12 4 22 k 851 domain received (fun _ ↦ 0)
         (firstOrderColumns (D := D) (A := A) (m := 12) (M := 4) (μ := 22))) :=

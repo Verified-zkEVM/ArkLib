@@ -67,32 +67,16 @@ theorem mathematicalUniformRatePartition_close_list_bound {F : Type u} [Field F]
           n ^ uniformDerivativeOrder δ := by
   classical
   obtain ⟨e⟩ := exists_mathematicalRatePartitionEnvelope hδ hδsmall hn hk hgap hAn
-  have hd := uniformDerivativeOrder_ge_519 hδ hδsmall
-  have hδone : δ < 1 := by linarith
-  have hm : 0 < uniformMathematicalMultiplicity δ :=
-    lt_of_lt_of_le (by omega) (add_two_le_closedMultiplicity (by norm_num)
-      (by omega : 1 ≤ uniformDerivativeOrder δ))
-  obtain ⟨_, _, hν, _⟩ := uniformMathematical_integer_guards hδ hδone hm hn
-  have hscale : (1 : ℝ) < 300 * (uniformDerivativeOrder δ : ℝ) ^ 3 := by
-    have hd' : (519 : ℝ) ≤ uniformDerivativeOrder δ := by exact_mod_cast hd
-    nlinarith [sq_nonneg (uniformDerivativeOrder δ : ℝ)]
-  obtain ⟨cert⟩ := e.exists_curve_certificate (scale := 300) hδ hδone (by omega) hscale hAn
+  obtain ⟨hd, hδone, hscale, hν, -⟩ := uniformMathematical_certificate_guards hδ hδsmall hn
+  obtain ⟨cert⟩ := e.exists_curve_certificate (scale := 300) hδ hδone hd hscale hAn
     domain (fun i ↦ Polynomial.C (received i)) (fun _ ↦ by simp)
   have hkA : k ≤ A := by
     have h : (k : ℝ) ≤ A := by nlinarith [mul_nonneg hδ.le (Nat.cast_nonneg n)]
     exact_mod_cast h
-  let K := max k (uniformDerivativeOrder δ + 1)
-  have hKn : K ≤ n := max_le (hkA.trans hAn) (by have := e.order_le; have := e.ambient_le; omega)
-  have hdν := uniformDerivativeOrder_le_mathematicalJetBound hδ hδsmall
-  have hchar' : ringChar F = 0 ∨ max (K - 1) (uniformMathematicalJetBound δ) < ringChar F := by
-    refine hchar.imp_right fun hc ↦ ?_
-    have hkchar := (Nat.le_max_left _ _).trans_lt hc
-    have hνchar := (Nat.le_max_right _ _).trans_lt hc
-    dsimp only [K]
-    omega
   exact close_list_bound_of_curve_certificate_of_jetCharacteristic domain received cert hk
-    (Nat.le_max_left _ _) (Nat.lt_succ_self _ |>.trans_le (Nat.le_max_right _ _)) hKn hkA hAn
-    hν hδ hgap hchar'
+    (Nat.le_max_left _ _) (Nat.lt_succ_self _ |>.trans_le (Nat.le_max_right _ _))
+    (max_le (hkA.trans hAn) (by have := e.order_le; have := e.ambient_le; omega)) hkA hAn
+    hν hδ hgap (uniformMathematical_ringChar_guard hδ hδsmall hchar)
 
 /-- The list coefficient `max (ν² (2ν/δ)^d) (4/(3δ))`, where `ν` is the mathematical jet cap and
 `d` the uniform derivative order at gap `δ`, and `4/(3δ)` is the pairwise Johnson bound. -/
@@ -118,8 +102,6 @@ theorem mathematicalUniform_capacity_list_bound
       ((closePolynomialSet domain received k A).ncard : ℝ) ≤
         mathematicalUniformListConstant δ * n ^ uniformDerivativeOrder δ := by
   have hnBase : uniformMathematicalLength δ ≤ n := (le_max_left _ _).trans hn
-  have hnJohnson : ⌈(4 : ℝ) * uniformMathematicalJetBound δ / δ ^ 2⌉₊ ≤ n :=
-    (le_max_right _ _).trans hn
   have hpow : (1 : ℝ) ≤ (n : ℝ) ^ uniformDerivativeOrder δ := by
     have hkA : (k : ℝ) ≤ A := hgap.trans' (le_add_of_nonneg_right (by positivity))
     have hkn : k ≤ n := by exact_mod_cast hkA.trans (by exact_mod_cast hAn : (A : ℝ) ≤ n)
@@ -134,14 +116,9 @@ theorem mathematicalUniform_capacity_list_bound
     have hkJet : k ≤ uniformMathematicalJetBound δ := by
       by_contra hjet
       exact hsupport (Or.inr (max_lt hdegreeChar (by omega)))
-    have hscale : 4 * ((k : ℝ) - 1) ≤ δ ^ 2 * n := by
-      have hjet : (4 : ℝ) * uniformMathematicalJetBound δ / δ ^ 2 ≤ n :=
-        (Nat.le_ceil _).trans (by exact_mod_cast hnJohnson)
-      have hkJetR : (k : ℝ) ≤ uniformMathematicalJetBound δ := by exact_mod_cast hkJet
-      have := (div_le_iff₀ (sq_pos_of_pos hδ)).mp hjet
-      nlinarith
     obtain ⟨hfinite, hcard⟩ := closePolynomialSet_finite_and_ncard_le_pairwiseJohnson_of_gap
-      domain received hδ hk hscale hgap
+      domain received hδ hk
+      (four_mul_pred_le_sq_mul_of_le_uniformMathematicalJetBound hδ hn hkJet) hgap
     refine ⟨hfinite, hcard.trans ?_⟩
     calc
       4 / (3 * δ) ≤ mathematicalUniformListConstant δ := le_max_right _ _

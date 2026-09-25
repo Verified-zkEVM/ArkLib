@@ -23,9 +23,10 @@ outside which every close candidate `P` on the received line `f + z g` is `P₀ 
 `Agr(f + z g, P) = Agr(f, P₀) ∩ Agr(g, P₁)`. The field may be infinite and have any
 characteristic.
 
-A weighted Johnson certificate `IsJohnsonWeightedCertificate n D A m B H` with jet cutoff `B ≤ D`
-gives the same conclusion with the sharper count `johnsonWeightedRefinedExceptionCount n D A B H`,
-through the free-retention charge of ordinary equations.
+A weighted Johnson certificate `IsJohnsonWeightedCertificate n D A m B H` with jet cutoff
+`B ≤ 2 D + 1` gives the same conclusion with the count
+`johnsonWeightedRefinedExceptionCount n D A B H`, through the free-retention charge of ordinary
+equations.
 
 ## Main statements
 
@@ -190,28 +191,28 @@ theorem exists_johnson_line_exactCorrelatedPair_of_gap
     exact hdegree
   simpa only [hDk] using hgood z hz P hdegree' hagree
 
-/-- For root degree `B ≤ D`, the one-line fixed-split ordinary charge at incidence ratio
+/-- For root degree `B ≤ 2 D + 1`, the one-line fixed-split ordinary charge at incidence ratio
 `(n - D) / (A - D)` is the weighted Johnson count `johnsonWeightedRefinedExceptionCount`. -/
 theorem ordinaryUnifiedPowerFactorRaw_one_eq_johnsonWeightedRefinedExceptionCount
-    {n D A B H : ℕ} (hBD : B ≤ D) :
+    {n D A B H : ℕ} (hB : B ≤ 2 * D + 1) :
     ordinaryUnifiedPowerFactorRaw (((n - D : ℕ) : ℚ) / ((A - D : ℕ) : ℚ)) n D 1 B H =
       johnsonWeightedRefinedExceptionCount n D A B H := by
   unfold ordinaryUnifiedPowerFactorRaw johnsonWeightedRefinedExceptionCount
-  rw [ordinaryPsi_eq_sharp (by omega)]
+  rw [ordinaryPsi_eq_sharp hB]
   push_cast
   ring
 
 open Classical in
 /-- **Weighted Johnson exact correlated agreement.** For a weighted Johnson certificate
-`IsJohnsonWeightedCertificate n D A m B H` with `1 ≤ D`, `D + 1 ≤ A ≤ n` and `B ≤ D`, one set of
-at most `johnsonWeightedRefinedExceptionCount n D A B H` challenges is chosen before the challenge
-and candidate. Outside it, every polynomial of degree at most `D` agreeing with `f + z g` on at
-least `A` points has an exact correlated pair, over an arbitrary field. -/
+`IsJohnsonWeightedCertificate n D A m B H` with `1 ≤ D`, `D + 1 ≤ A ≤ n` and `B ≤ 2 D + 1`, one
+set of at most `johnsonWeightedRefinedExceptionCount n D A B H` challenges is chosen before the
+challenge and candidate. Outside it, every polynomial of degree at most `D` agreeing with `f + z g`
+on at least `A` points has an exact correlated pair, over an arbitrary field. -/
 theorem exists_weightedJohnson_line_exactCorrelatedPair
     {F : Type*} [Field F] {n D A m B H : ℕ}
     (domain : Fin n ↪ F) (f g : Fin n → F)
     (hcert : IsJohnsonWeightedCertificate n D A m B H)
-    (hD : 1 ≤ D) (hDA : D + 1 ≤ A) (hAn : A ≤ n) (hBD : B ≤ D) :
+    (hD : 1 ≤ D) (hDA : D + 1 ≤ A) (hAn : A ≤ n) (hB : B ≤ 2 * D + 1) :
     ∃ exceptional : Finset F,
       (exceptional.card : ℚ) ≤ johnsonWeightedRefinedExceptionCount n D A B H ∧
       ∀ z ∉ exceptional, ∀ P : F[X], P.degree < D + 1 →
@@ -228,7 +229,7 @@ theorem exists_weightedJohnson_line_exactCorrelatedPair
     cert.challengeDegree_le cert.jetDegree_le
   rw [ordinaryUnifiedPowerFactorAtOrHeight_of_pos n D 1 B H A (D + 1) hcert.2.1,
     ordinaryUnifiedPowerFactorAt_succ_eq n D 1 B H A hDA hAn,
-    ordinaryUnifiedPowerFactorRaw_one_eq_johnsonWeightedRefinedExceptionCount hBD] at hcard
+    ordinaryUnifiedPowerFactorRaw_one_eq_johnsonWeightedRefinedExceptionCount hB] at hcard
   refine ⟨ex, hcard, fun z hz P hdegree hagree ↦ ?_⟩
   have hsound := (cert.specialization_sound (RingHom.id F) z).2
     (polynomialAgreementSet domain (fun i ↦ f i + z * g i) P) P hdegree hagree

@@ -65,14 +65,14 @@ theorem mcaError_affineLine_johnson_le
     johnsonAgreement n D eta * n by ring]
 
 /-- **Weighted Johnson affine-line MCA error.** For a weighted Johnson certificate
-`IsJohnsonWeightedCertificate n D A m B H` with `1 ≤ D`, `D + 1 ≤ A ≤ n` and `B ≤ D`, the
+`IsJohnsonWeightedCertificate n D A m B H` with `1 ≤ D`, `D + 1 ≤ A ≤ n` and `B ≤ 2 D + 1`, the
 affine-line MCA error of the Reed–Solomon code of dimension `D + 1` over a finite field, at any
 radius whose agreement threshold is at least `A`, is at most
 `min 1 (johnsonWeightedRefinedExceptionCount n D A B H / |F|)`. -/
 theorem mcaError_affineLine_weightedJohnson_le
     {F : Type} [Field F] [Fintype F] [SampleableType F] {n D A m B H : ℕ}
     (domain : Fin n ↪ F) (hcert : IsJohnsonWeightedCertificate n D A m B H)
-    (hD : 1 ≤ D) (hDA : D + 1 ≤ A) (hAn : A ≤ n) (hBD : B ≤ D)
+    (hD : 1 ≤ D) (hDA : D + 1 ≤ A) (hAn : A ≤ n) (hB : B ≤ 2 * D + 1)
     (radius : ℝ) (hthreshold : A ≤ ⌈(n : ℝ) * (1 - radius)⌉₊) :
     mcaError (AffineLineGenerator F) (code domain (D + 1)) radius ≤
       min 1 (ENNReal.ofReal
@@ -82,7 +82,7 @@ theorem mcaError_affineLine_weightedJohnson_le
       (johnsonWeightedRefinedExceptionCount n D A B H : ℝ) := by
     intro f g
     obtain ⟨ex, hcard, hgood⟩ :=
-      exists_weightedJohnson_line_exactCorrelatedPair domain f g hcert hD hDA hAn hBD
+      exists_weightedJohnson_line_exactCorrelatedPair domain f g hcert hD hDA hAn hB
     refine ⟨ex, by exact_mod_cast hcard, fun z hz P hP hagree ↦ ?_⟩
     obtain ⟨pair, hp0, hp1, heq, hset⟩ := hgood z hz P hP (by convert hagree)
     refine ⟨pair.1, pair.2, hp0, hp1, ?_, ?_⟩
