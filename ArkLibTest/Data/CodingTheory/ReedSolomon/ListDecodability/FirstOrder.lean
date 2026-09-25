@@ -352,9 +352,31 @@ example :
   apply finiteLengthMcaEnvelope_le_rateEnvelope (C := 1) (q := 1) (lambda := 1)
   all_goals norm_num
 
-/-- The low-rate finite-length slope is positive at a rate on the stationary branch. -/
-example : 0 < lowRateFiniteLengthSlope (1 / 16 : ℝ) := by
+/-- The low-rate selectors satisfy their margin and count bounds at concrete parameters. -/
+example :
+    0 < lowRateFiniteLengthSlope (1 / 16 : ℝ) ∧
+    lowRateFiniteLengthSlope (1 / 16 : ℝ) * finiteLengthSlack (1 / 8 : ℝ) 64 ≤
+      lowRateFiniteLengthDensityMargin (1 / 16 : ℝ) (1 / 8 : ℝ) 64 ∧
+    (lowRateFiniteLengthMultiplicity (1 / 16 : ℝ) (1 / 8 : ℝ) 64 : ℝ) ^ 3 *
+        firstOrderSourceDensity (finiteLengthRate (1 / 16 : ℝ) 64)
+          (lowRateFiniteLengthCertifiedAgreement (1 / 16 : ℝ) (1 / 8 : ℝ))
+          (firstOrderLowRateBeta (1 / 16 : ℝ)) ≤
+      lowRateFiniteLengthSourceCount (1 / 16 : ℝ) (1 / 8 : ℝ) 64 ∧
+    (lowRateFiniteLengthRankCount (1 / 16 : ℝ) (1 / 8 : ℝ) 64 : ℝ) ≤
+      (lowRateFiniteLengthMultiplicity (1 / 16 : ℝ) (1 / 8 : ℝ) 64 : ℝ) ^ 3 *
+          firstOrderRankDensity (firstOrderLowRateBeta (1 / 16 : ℝ)) +
+        lowRateFiniteLengthRankRoundingConstant (1 / 16 : ℝ) *
+          (lowRateFiniteLengthMultiplicity (1 / 16 : ℝ) (1 / 8 : ℝ) 64 : ℝ) ^ 2 ∧
+    3 * (lowRateFiniteLengthMultiplicity (1 / 16 : ℝ) (1 / 8 : ℝ) 64 : ℝ) ^ 3 *
+        lowRateFiniteLengthDensityMargin (1 / 16 : ℝ) (1 / 8 : ℝ) 64 / 4 ≤
+      lowRateFiniteLengthSourceCount (1 / 16 : ℝ) (1 / 8 : ℝ) 64 -
+        lowRateFiniteLengthRankCount (1 / 16 : ℝ) (1 / 8 : ℝ) 64 := by
+  let rho : ℝ := 1 / 16
+  let eta : ℝ := 1 / 8
+  let n : ℕ := 64
+  have hrho : 0 < rho := by norm_num [rho]
   let t := firstOrderLowRateScale (1 / 16 : ℝ)
+  let u := firstOrderLowRateStationaryU (1 / 16 : ℝ)
   have htPos : 0 ≤ t := by
     dsimp only [t, firstOrderLowRateScale]
     positivity
@@ -363,8 +385,53 @@ example : 0 < lowRateFiniteLengthSlope (1 / 16 : ℝ) := by
     exact firstOrderLowRateScale_sq (by norm_num)
   have htLt : t < 1 / 4 := by
     nlinarith [sq_nonneg (t - 1 / 4)]
+  have huPos : 0 < u := firstOrderLowRateStationaryU_pos hrho
+  have huCubic : u ^ 2 * (u + 3) = t := by
+    simpa only [firstOrderStationaryCubic, u, t] using
+      firstOrderLowRateStationaryU_cubic hrho
+  have huLt : u < 1 := by
+    by_contra hu
+    have huOne : 1 ≤ u := le_of_not_gt hu
+    have huSq : 1 ≤ u ^ 2 := by nlinarith [sq_nonneg (u - 1)]
+    have huCube : 0 ≤ u ^ 2 * (u - 1) :=
+      mul_nonneg (sq_nonneg u) (sub_nonneg.mpr huOne)
+    nlinarith [huCubic, htLt, huSq, huCube]
   have hregime : FirstOrderLowRateRegime (1 / 16 : ℝ) := by
     change t * (t + 3) < 1
     nlinarith [htSq, htLt]
   have hlow := (firstOrderLowRateRegime_iff_lt_rateSwitch (1 / 16 : ℝ)).1 hregime
-  exact lowRateFiniteLengthSlope_pos (by norm_num) hlow
+  have hthresholdEq : firstOrderLowRateThreshold rho = t * (1 + u) := by
+    simpa only [rho, t, u] using firstOrderLowRateThreshold_eq_scale_mul_one_add hrho
+  have hthresholdLt : t * (1 + u) < 1 / 2 := by
+    calc
+      t * (1 + u) < 1 / 4 * (1 + u) :=
+        mul_lt_mul_of_pos_right htLt (by linarith [huPos])
+      _ < 1 / 4 * 2 :=
+        mul_lt_mul_of_pos_left (by linarith [huLt]) (by norm_num)
+      _ = 1 / 2 := by norm_num
+  have haOne : firstOrderLowRateThreshold rho + eta < 1 := by
+    rw [hthresholdEq]
+    dsimp only [eta]
+    linarith [hthresholdLt]
+  have heta : 0 < eta := by norm_num [eta]
+  have hn : (2 : ℝ) ≤ rho * n := by norm_num [rho, n]
+  have hslope := lowRateFiniteLengthSlope_mul_slack_le_margin
+    (rho := rho) (eta := eta) (n := n) hrho hlow heta haOne hn
+  have hsource := lowRateFiniteLengthSourceDensity_mul_cube_le_sourceCount
+    (rho := rho) (eta := eta) (n := n) hrho hlow heta haOne hn
+  have hrank0 := firstOrderRankCount_floor_le_density_add_rounding
+    (firstOrderLowRateBeta_pos hrho).le (lowRateFiniteLengthMultiplicity rho eta n)
+  have hrank : (lowRateFiniteLengthRankCount rho eta n : ℝ) ≤
+      (lowRateFiniteLengthMultiplicity rho eta n : ℝ) ^ 3 *
+          firstOrderRankDensity (firstOrderLowRateBeta rho) +
+        lowRateFiniteLengthRankRoundingConstant rho *
+          (lowRateFiniteLengthMultiplicity rho eta n : ℝ) ^ 2 := by
+    simpa only [lowRateFiniteLengthRankCount, lowRateFiniteLengthDerivativeCap,
+      lowRateFiniteLengthRankRoundingConstant] using hrank0
+  have hgap := lowRateFiniteLength_count_gap
+    (rho := rho) (eta := eta) (n := n) hrho hlow heta haOne hn
+  refine ⟨lowRateFiniteLengthSlope_pos hrho hlow, ?_, ?_, ?_, ?_⟩
+  · exact hslope
+  · exact hsource
+  · exact hrank
+  · exact hgap
