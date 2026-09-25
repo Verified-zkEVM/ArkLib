@@ -2220,6 +2220,10 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordi
 
 `finite_frobeniusPowerRegularBadWitnesses_card_le_at` and `finite_frobeniusPowerRegularBadWitnesses_card_le` → `finite_frobeniusPowerRegularBadChallenges_card_le`. The new arbitrary-threshold theorem is generalized to the current joint Taylor and degree interfaces and drops the `A ≤ n` assumption. Its specialization at `L = k` covers the source default-threshold theorem, so no fixed-threshold wrapper was added. No mathematical result was left out. The shared acceptance file imports the module and checks a nonempty singleton challenge set at zero over a two-point complex domain; the zero witness agrees at both coordinates, and exact power agreement would require a degree-below-one second message polynomial to take both values zero and one. The example invokes the theorem and verifies `1 ≤ 2`.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/PolynomialCurve/RegularChart.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`finite_frobeniusPowerRegularBadWitnesses_card_le_of_separant_at` and `finite_frobeniusPowerRegularBadWitnesses_card_le_of_separant` are covered by `finite_frobeniusPowerRegularBadChallenges_card_le_of_separant_at`. The quantitative claim is unchanged; the theorem uses the current coefficient-height, jet-degree, and mapped-domain interfaces and drops the source assumption `A ≤ n`. Specializing at `L = k` covers the default-threshold statement, so it has no separate declaration. The private helper `ordinary_source_initial_ne_zero_of_regular` is covered by `jointInitialJetEquation_ne_zero_of_regular`. The shared classic acceptance module invokes the theorem on a nonempty singleton challenge set over a two-point complex domain, with `L = A = 2`, and checks the bound `1 ≤ 1`.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/SingularTail.lean`
 
 Merges `FirstOrder/Squarefree/Bounds.lean` and `FirstOrder/Squarefree/SingularTail.lean` under
