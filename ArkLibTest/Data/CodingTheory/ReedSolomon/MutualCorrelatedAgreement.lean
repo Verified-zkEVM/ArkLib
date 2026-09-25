@@ -854,9 +854,10 @@ private theorem badChallengeEquation_regular :
     (badChallengeChartAtZero).2.2.1
 private theorem badChallengeExponent : TaylorExponentSufficient 1 2 2 := by intro l; omega
 /-- A nonempty regular set outside tuple graphs satisfies the first-order incidence bound. -/
-example : ∃ B : ℚ, B = regularPowerBatchedInitialMixedDegreeTwo 1 2 1 1 (τ := 2) *
-    (((1 - 0 + 1 : ℕ) : ℚ) / ((0 - 0 + 1 : ℕ) : ℚ)) *
-      (((1 - 0 + 1 : ℕ) : ℚ) / ((0 - 0 + 1 : ℕ) : ℚ)) ∧ 0 < B := by
+example : incidencePoints.Nonempty ∧
+    (incidencePoints.card : ℚ) ≤ regularPowerBatchedInitialMixedDegreeTwo 1 2 1 1 (τ := 2) *
+      (((1 - 0 + 1 : ℕ) : ℚ) / ((0 - 0 + 1 : ℕ) : ℚ)) *
+        (((1 - 0 + 1 : ℕ) : ℚ) / ((0 - 0 + 1 : ℕ) : ℚ)) := by
   classical
   have hnonempty : incidencePoints.Nonempty :=
     by simp [incidencePoints]
@@ -883,8 +884,7 @@ example : ∃ B : ℚ, B = regularPowerBatchedInitialMixedDegreeTwo 1 2 1 1 (τ 
     (by simp [regularPowerBatchedCutChallengeDegree])
     (by omega) (by omega) (by omega) (by omega) (by omega) badChallengeEquation_regular
     badChallengeEquation_jetDegree badChallengeEquation_height incidencePoints hS hA
-  exact ⟨_, rfl,
-    (Nat.cast_pos.mpr (Finset.card_pos.mpr hnonempty)).trans_le hbound⟩
+  exact ⟨hnonempty, hbound⟩
 
 /-- A sparse sample cut on the regular prime component determines its Frobenius graph. -/
 example :
