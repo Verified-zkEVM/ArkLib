@@ -26,6 +26,8 @@ constraint hypotheses.
 
 * `FirstOrderCurveCertificate`: a primitive interpolant with bounded support and uniform
   specialization soundness along a received polynomial curve.
+* `firstOrderSymbolicCertificate_specialization_at_zero`: the degree bounds and soundness of a
+  symbolic certificate after specializing its challenge at zero.
 * `differentialSpecialization_eq_zero_of_firstOrderSpace`: support and local constraints imply
   vanishing after specialization at sufficiently many agreeing points.
 * `FirstOrderSymbolicCertificate.toCurve`: views a line certificate as a degree-one curve
@@ -53,7 +55,61 @@ namespace ReedSolomon.HiddenDerivative
 
 noncomputable section
 
-variable {F : Type*} [Field F]
+universe u₀
+
+variable {F : Type u₀} [Field F]
+
+open Classical in
+/-- A first-order symbolic certificate specializes at zero challenge to a nonzero equation with
+the declared jet-degree bounds, whose zeros include every sufficiently agreeing polynomial. -/
+theorem firstOrderSymbolicCertificate_specialization_at_zero
+    {D A m M μ k h n N : ℕ}
+    (domain : Fin n ↪ F) (received : Fin n → F)
+    (columns : Fin N → SourceColumn 1)
+    (cert : FirstOrderSymbolicCertificate.{u₀, u₀} (F := F) D A m M μ k h
+      domain received (fun _ ↦ 0) columns) :
+    ∃ Q : DifferentialPolynomial F 1,
+      Q ≠ 0 ∧ jetTotalDegree Q ≤ μ ∧ jetDegree Q (1 : Fin 2) ≤ M ∧
+        ∀ P : F[X], P.degree < k →
+          A ≤ ({i : Fin n | P.eval (domain i) = received i} : Set (Fin n)).ncard →
+            differentialSpecialization Q P = 0 := by
+  let φ := Polynomial.eval₂RingHom (RingHom.id F) 0
+  let Q : DifferentialPolynomial F 1 := MvPolynomial.map φ cert.Q
+  obtain ⟨hQ, hsound⟩ := cert.specialization_sound (E := F) (RingHom.id F) 0
+  have hdegreeQ : jetTotalDegree Q ≤ μ := by
+    rw [jetTotalDegree_le_iff]
+    intro u hu
+    have huQ : u ∈ cert.Q.support := MvPolynomial.support_map_subset φ cert.Q hu
+    simpa [totalJetDegree, Finsupp.degree_eq_sum, Finsupp.some_apply] using
+      cert.totalJetDegree_le u huQ
+  have hfirstQ : jetDegree Q (1 : Fin 2) ≤ M := by
+    apply MvPolynomial.degreeOf_le_iff.mpr
+    intro exponent hexponent
+    have hsource : exponent ∈ cert.Q.support :=
+      MvPolynomial.support_map_subset φ cert.Q hexponent
+    have hcap := cert.firstJetDegree_le exponent hsource
+    have hfirst : exponent (some (⟨1, by omega⟩ : Fin 2)) ≤ M := by
+      simpa only [firstJetExponent_eq_coordinates Nat.one_pos,
+        jetExponentCoordinatesEquiv_apply] using hcap
+    have hcoord : (⟨1, by omega⟩ : Fin 2) = 1 := Fin.ext rfl
+    simpa only [hcoord] using hfirst
+  have hsound' : ∀ P : F[X], P.degree < k →
+      A ≤ ({i : Fin n | P.eval (domain i) = received i} : Set (Fin n)).ncard →
+        differentialSpecialization Q P = 0 := by
+    intro P hdegree hagreementCount
+    let indices := Finset.univ.filter fun i ↦ P.eval (domain i) = received i
+    have hagreement :
+        ({i : Fin n | P.eval (domain i) = received i} : Set (Fin n)) =
+          (indices : Set (Fin n)) := by
+      ext i
+      simp [indices]
+    have hcard : A ≤ indices.card := by
+      rw [hagreement, Set.ncard_coe_finset] at hagreementCount
+      exact hagreementCount
+    apply hsound indices P hdegree hcard
+    intro i hi
+    simpa using (Finset.mem_filter.mp hi).2
+  exact ⟨Q, hQ, hdegreeQ, hfirstQ, hsound'⟩
 
 /-- A primitive first-order interpolant with support and specialization soundness along a
 received polynomial curve. -/

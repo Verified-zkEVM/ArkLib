@@ -1980,6 +1980,12 @@ Ported from `HiddenDerivative/RootFinding/MutualCorrelatedAgreement/ExtensionDes
 
 Not ported: the standalone exceptional correlated-agreement wrapper from this dependency; the equation-descent theorem performs the exceptional-set pullback directly.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/Certificates.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/CertificateList.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`firstOrder_finite_agreement_solutions_card_le_squarefree` keeps its name and is generalized to direct degree and agreement conditions, dropping redundant `k ≤ n` and `0 < M` hypotheses. The module applies the shared `firstOrderSymbolicCertificate_specialization_at_zero` API, which specializes a symbolic certificate at zero challenge and provides its nonzero equation, jet-degree bounds, and agreement-solution soundness for both squarefree and tight list bounds.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/Factorwise.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/FactorwiseList.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -1987,6 +1993,16 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Firs
 `FixedWordSingularTail`, `finite_factorwise_agreement_solutions_card_le_actual`, and `finite_factorwise_agreement_solutions_card_le` keep their names. The actual-degree theorem no longer requires the unused `hQ`, `hjet`, and `hderiv` assumptions. The module was renamed from `FactorwiseList` to `Factorwise` so its generated root import stays within 100 characters. The source wrappers `positiveEquation` and `rootFirst` are not introduced; the existing `radicalPrimPart` API supplies the positive-degree factor product.
 
 The source's private `positiveRootProduct_eq_one_of_rootDegree_eq_zero'` argument is covered by the public `MvPolynomial.radicalPrimPart_eq_one_of_degreeOf_eq_zero`, generalized to any selected coordinate in `ArkLib/ToMathlib/MvPolynomial/RadicalSplit.lean`. The regular Taylor estimate `finite_regular_agreement_solutions_card_le_regularTaylor` combines the existing identity-pair and derivative-capped estimates in `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/AgreementCounting.lean`; the hybrid counting proof also uses it. No public declaration from the unit was omitted.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/RetainedTail.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/RetainedTail.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+The retained-tail API keeps the challenge as a polynomial coordinate and constructs the retained content-times-derivative-resultant equation. The unchanged-role declarations are `flattenedContentCoefficient`, `flattenedSingularPolynomial`, `remainingCoordinateEquiv`, `remainingCoordinateEquiv_natDegree`, `retainedContentAsPolynomial`, `retainedPositiveAsPolynomial`, `flattenedContentCoefficient_ne_zero`, `retainedPositiveAsPolynomial_natDegree`, `remainingCoordinateEquiv_flattenedSingularPolynomial`, `retainedContent_yZeroDegree_le`, `retainedPositive_yZeroCoefficientTriangle`, `flattenedSingularPolynomial_yZeroDegree_le`, `degreeOf_flattenedContentCoefficient_le`, `retainedPositive_degreeX_le`, `flattenedSingularPolynomial_challengeDegree_le`, `singularCoordinateEquiv`, `singularCurveEquation`, `ordinaryFlatten_singularCurveEquation`, `singularCurveEquation_degree_le`, `singularCurveEquation_ne_zero`, `retainedSpecializationHom`, `retainedRootSpecializationHom`, `retainedRootSpecializationHom_eq_eval_rootPolynomial`, `retainedRootSpecializationHom_flattenedContent`, `retainedRootSpecializationHom_flattenedRootFirst`, `positiveCurveEquation_specialization_eq`, `positiveCurveSeparant_specialization_eq`, `retainedSpecializationHom_flattenedSingularPolynomial`, and `singularCurveEquation_routes_nonregular`.
+
+`flattenedContent_add_positive_jetWeight_le` is now `retainedContent_add_positiveJetDegree_le`, using canonical jet degree and removing the unnecessary nonzero-input hypothesis. `singularCurveEquation_challengeHeightLE` is now `singularCurveEquation_coeffNatDegreeLE`. `flattenedRootFirst_positiveCurveEquation` and `flattenedRootFirst_separant_positiveCurveEquation` are now `challengeRetainingRootFirst_positiveCurveEquation` and `challengeRetainingRootFirst_separant_positiveCurveEquation`, respectively. The map from flattened root-first coordinates is exposed as `challengeRetainingRootFirst_fromFlattenedRootFirst`, and its derivative law is exposed for `Y₁` as `challengeRetainingRootFirst_pderiv`.
+
+The root-first multiplication identity, repeated in the source retained-tail module, is shared from the retained-curve owner as `jetTotalDegree_fromFlattenedRootFirst_mul`. The generic coefficient-degree bound is owned by `OptionWeightedDegree` as `degreeOf_coeff_optionEquivLeft_add_le_weight`; it generalizes the coefficient-degree argument to `Option σ` weights with the distinguished and selected coordinates positively weighted. The coefficient-variable derivative transport is owned by `PolynomialCoefficients` as `optionEquivRight_symm_pderiv` and generalizes to arbitrary variable types and commutative semirings. The arbitrary-coordinate `flattenChallenge_pderiv` law is not exposed; the needed `Y₁` case lives in the retained-curve owner. `flattenedSingularPolynomial_map_eq_zero_of_content_or_commonRoot` is generalized from domain targets to commutative-ring targets. `flattenedPositiveRootProduct_eq_one_of_rootDegree_eq_zero` is covered by the existing `MvPolynomial.radicalPrimPart_eq_one_of_degreeOf_eq_zero`. `retainedRootJetWeight` remains private coordinate-view bookkeeping, `flattened_content_add_positive_challengeDegree_le` remains a private helper, and the private `flattenChallenge_specialization` helper is inlined into `retainedRootSpecializationHom_flattenedRootFirst`.
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/TailBound.lean`
 
@@ -2197,6 +2213,12 @@ Renamed `sourceFrobeniusPowerSparseCuts` to `frobeniusPowerSparseTaylorNumerator
 The default locus and principal-open wrappers are covered at `L = k`, as is the default finite bound. `symbolicSourceFrobeniusPowerAgreement_mem_restrictBidegree` is covered by the existing generalized `jointTaylorAgreementEquation_mem_regularPowerBatchedCutBidegree_of_exponent`, so no source-specific wrapper was added.
 
 The shared acceptance file includes concrete instances for the common-agreement theorem and principal-open graph inclusion on a zero tuple, and the finite incidence bound on a nonempty singleton outside the retained graphs. It also tests `finite_regularHighCutJets_card_le_dimensionSensitive_of_exponent` with the first-order chart, `commonAgreement_of_jointTaylorAgreementEquation_mem_prime` with a proved zero cut, and `chart_prime_affineHilbertPolynomial_natDegree_le_of_agreements_of_exponent` with a nonempty cut. The shared acceptance module built successfully with caching disabled, and the file is under the 1,500-line limit.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerTupleRegularBound.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/PolynomialCurve/RegularBound.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`finite_frobeniusPowerRegularBadWitnesses_card_le_at` and `finite_frobeniusPowerRegularBadWitnesses_card_le` → `finite_frobeniusPowerRegularBadChallenges_card_le`. The new arbitrary-threshold theorem is generalized to the current joint Taylor and degree interfaces and drops the `A ≤ n` assumption. Its specialization at `L = k` covers the source default-threshold theorem, so no fixed-threshold wrapper was added. No mathematical result was left out. The shared acceptance file imports the module and checks a nonempty singleton challenge set at zero over a two-point complex domain; the zero witness agrees at both coordinates, and exact power agreement would require a degree-below-one second message polynomial to take both values zero and one. The example invokes the theorem and verifies `1 ≤ 2`.
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/SingularTail.lean`
 
