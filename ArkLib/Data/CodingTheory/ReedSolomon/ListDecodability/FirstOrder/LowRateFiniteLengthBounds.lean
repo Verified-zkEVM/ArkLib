@@ -7,6 +7,7 @@ module
 
 public import
   ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.LowRateFiniteLength
+public import ArkLib.ToMathlib.Algebra.Order.Floor.Ratio
 
 /-!
 # Rate-only bounds for low-rate finite-length selectors
@@ -191,7 +192,7 @@ theorem lowRateFiniteLengthJetDegree_le_inv_slack
   have hm := lowRateFiniteLengthMultiplicity_le_inv_slack hrho hlow heta haOne hn
   change (Nat.ceil ((m : ℝ) * a / R) : ℝ) ≤
     (2 * lowRateMultiplicityBoundConstant rho / rho + 1) / s
-  exact natCeil_mul_div_le_inv_slack hrho hs hsOne ha0 (le_of_lt haOne')
+  exact Nat.cast_ceil_mul_div_le_inv_slack hrho hs hsOne ha0 (le_of_lt haOne')
     hR hRhalf hm
 
 /-- The selected low-rate challenge height is bounded by inverse slack squared. -/
@@ -253,7 +254,7 @@ theorem lowRateFiniteLengthChallengeHeight_le_inv_slack_sq
     nlinarith [mul_le_mul_of_nonneg_left hmSqCube hcrank]
   have hB : (B : ℝ) ≤ cB / s :=
     lowRateFiniteLengthJetDegree_le_inv_slack hrho hlow heta haOne hn
-  have hhelper := maxOneFloor_mul_div_le_inv_slack_sq
+  have hhelper := Nat.cast_max_one_floor_mul_div_le_inv_slack_sq
     hm hs hsOne hc hcr hcB hr hB hgapLower
   have hchallenge : (lowRateFiniteLengthChallengeHeight rho eta n : ℝ) ≤
       (1 + 4 * cr * cB / (3 * c)) / s ^ 2 := by
