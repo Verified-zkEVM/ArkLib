@@ -1905,6 +1905,14 @@ The declarations `automaticSurplusSlope_mul_finiteLengthSlack_le_margin`, `finit
 
 `finiteLengthRankCount_le_two_mul_cube` is covered by `firstOrderRankCount_le_two_mul_cube` in `RoundedCounts`. The weakening `finiteLengthChallengeHeight_le_common_inv_slack_sq_of_count_gap` was not ported because its common-constant comparison is inlined in the final common-height theorem. `one_le_finiteLengthParameterBoundConstant` follows from the outer `max 1`, so it was not added. The private rounded-count proof block was unnecessary after using the existing generic rounded-count estimates.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/LowRateFiniteLength.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/LowRateFiniteLength.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`lowRateEtaSlope` → `lowRateAgreementSlackSlope` and `lowRateEtaSlope_mul_eta_le_fixed_margin` → `lowRateAgreementSlackSlope_mul_slack_le_fixed_margin` use agreement-slack naming. `lowRateFiniteLengthCertifiedAgreement`, `lowRateFiniteLengthCertifiedAgreement_ge_half_slack`, `lowRateFiniteLengthCertifiedAgreement_lt_one`, `lowRateFiniteLengthCertifiedAgreement_pos`, `lowRateFiniteLengthDensityMargin`, `lowRateFiniteLengthDerivativeCap`, `lowRateFiniteLengthJetDegree`, `lowRateFiniteLengthMultiplicity`, `lowRateFiniteLengthRankCount`, `lowRateFiniteLengthRankRoundingConstant`, `lowRateFiniteLengthSlope`, `lowRateFiniteLengthSourceCount`, and `lowRateInverseLengthSlope` retain their names and statements. `lowRateFiniteLengthDensityMargin_pos`, `lowRateFiniteLengthMultiplicity_pos`, `lowRateFiniteLengthSlope_mul_slack_le_margin`, `lowRateFiniteLengthSlope_pos`, `lowRateFiniteLengthSourceDensity_mul_cube_le_sourceCount`, and `lowRateFiniteLength_count_gap` drop the `rho < 1` premise. `lowRateInverseLengthSlope_div_length_le_gain` drops `rho < 1` and the low-rate branch premise. The first-order acceptance cases in `ArkLibTest/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder.lean` check slope positivity and the margin, source-count, generic rank-rounding, and count-gap bounds at `rho = 1/16`, `eta = 1/8`, and `n = 64`.
+
+The source declaration `lowRateFiniteLengthRankCount_le_density_add_rounding` is covered by `firstOrderRankCount_floor_le_density_add_rounding`, which is applied directly in `lowRateFiniteLength_count_gap`. The source-count rounding application uses the generic `cube_mul_sourceDensity_le_firstOrderSourceCount` result.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/Profile.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/Profile.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
