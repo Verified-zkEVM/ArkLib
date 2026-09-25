@@ -16,6 +16,7 @@ public import
 public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.HybridCurveTransfer
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.Equation
+public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerToLine
 
 /-!
 # Retained squarefree first-order curve agreement
@@ -24,22 +25,31 @@ The regular positive-factor locus and its retained singular tail give one except
 exact power agreement with a retained squarefree first-order curve. The singular tail is an
 order-zero equation, and the ordinary equation bound discharges it in every characteristic. A
 finite first-order curve certificate supplies the equation, and exact power agreement descends
-from the extension field to the base field.
+from the extension field to the base field. On a line, a symbolic line certificate at the balanced
+split gives exact correlated pairs outside a set bounded by the closed line envelope.
 
 ## Main statements
 
 * `retainedOrdinaryCurveAgreementCharge` defines the ordinary-tail charge.
 * `retainedSquarefreeCurveAgreementCharge` adds the regular derivative-capped charge.
-* `exists_exceptional_retainedSquarefreeCurveAgreement_of_tail` combines the regular and
-  singular loci into one exceptional set.
+* `exists_exceptional_retainedSquarefreeCurveAgreement_of_singularTail` combines the regular
+  locus with a singular tail of any charge into one exceptional set, and
+  `exists_exceptional_retainedSquarefreeCurveAgreement_of_tail` is its instance at the
+  ordinary-tail charge.
 * `hasRetainedOrdinaryCurveAgreementTransfer_singularCurveEquation` discharges the singular tail.
 * `exists_exceptional_retainedSquarefreeCurveAgreement` gives the bound without a tail premise.
 * `exists_extensionExceptional_retainedSquarefreeCurveAgreement_of_certificate` and
   `exists_baseExceptional_retainedSquarefreeCurveAgreement_of_certificate` apply it to a finite
   first-order curve certificate over the extension and the base field.
+* `FirstOrderCurveCertificate.map_Q_ne_zero` and
+  `FirstOrderCurveCertificate.map_Q_specialization_eq_zero` state that the extended certificate
+  equation is nonzero and vanishes at every sufficiently agreeing polynomial.
 * `retainedSquarefreeLineAgreementEnvelope` is the closed line envelope, and
   `retainedSquarefreeCurveAgreementCharge_balancedSplit_le` bounds the line charge at the
   balanced split by it.
+* `exists_extensionExceptional_retainedSquarefreeLineAgreement_of_certificate` and
+  `exists_baseExceptional_retainedSquarefreeLineAgreement_of_certificate` give exact correlated
+  pairs from a symbolic line certificate over the extension and the base field.
 
 ## References
 
@@ -91,9 +101,11 @@ def HasRetainedOrdinaryCurveAgreementTransfer
       HasExactPowerAgreement domain values iota (D + 1) z P
 
 open Classical in
-/-- A retained squarefree equation and its singular-tail transfer give one exceptional set.
-Outside it, every qualifying root of the equation has exact power agreement. -/
-theorem exists_exceptional_retainedSquarefreeCurveAgreement_of_tail
+/-- A retained squarefree equation whose singular tail has an exceptional set of size at most
+`tailBound` has one exceptional set of size at most `tailBound` plus the regular
+derivative-capped charge. Outside it, every qualifying root of the equation has exact power
+agreement. -/
+theorem exists_exceptional_retainedSquarefreeCurveAgreement_of_singularTail
     {F E : Type*} [Field F] [Field E] [instF : DecidableEq F]
     [instE : DecidableEq E]
     [IsAlgClosed E] {n D ell L A B M H : ℕ}
@@ -105,12 +117,17 @@ theorem exists_exceptional_retainedSquarefreeCurveAgreement_of_tail
     (hM : 1 ≤ M) (hMB : M ≤ B)
     (hjet : jetTotalDegree Q ≤ B) (hderiv : Q.degreeOf (some 1) ≤ M)
     (hheight : CoeffNatDegreeLE Q H)
-    (hchar : ringChar F = 0 ∨ max D M < ringChar F)
-    (htail : HasRetainedOrdinaryCurveAgreementTransfer (D := D) (A := A)
-      (B := B) (M := M) (H := H) domain values iota (singularCurveEquation Q)) :
+    (hchar : ringChar F = 0 ∨ max D M < ringChar F) (tailBound : ℝ)
+    (htail : ∃ exceptional : Finset E, (exceptional.card : ℝ) ≤ tailBound ∧
+      ∀ z ∉ exceptional, ∀ P : E[X], P.degree < D + 1 →
+        A ≤ (polynomialAgreementSet (domain.trans ⟨iota, iota.injective⟩)
+          (powerBatchedWord (fun t i ↦ iota (values t i)) z) P).card →
+        differentialSpecialization (challengeSpecialization (singularCurveEquation Q) z) P = 0 →
+        HasExactPowerAgreement domain values iota (D + 1) z P) :
     ∃ exceptional : Finset E,
-      (exceptional.card : ℝ) ≤ retainedSquarefreeCurveAgreementCharge
-        (HiddenDerivative.agreementIncidenceRatio n D A) n D ell L A B M H ∧
+      (exceptional.card : ℝ) ≤ tailBound +
+        (regularPowerBatchedDerivativeCappedBoundTwo n ell (D + 1) (D + 1)
+          L A B M H (regularTaylorExponent D) : ℝ) ∧
       ∀ z ∉ exceptional, ∀ P : E[X], P.degree < D + 1 →
         A ≤ (polynomialAgreementSet (domain.trans ⟨iota, iota.injective⟩)
           (powerBatchedWord (fun t i ↦ iota (values t i)) z) P).card →
@@ -180,7 +197,6 @@ theorem exists_exceptional_retainedSquarefreeCurveAgreement_of_tail
   · have hcard : (exceptional.card : ℝ) ≤
         (tailExceptional.card : ℝ) + regularExceptional.card := by
       exact_mod_cast Finset.card_union_le tailExceptional regularExceptional
-    unfold retainedSquarefreeCurveAgreementCharge
     apply hcard.trans
     exact add_le_add htailCard (by exact_mod_cast hregularCard)
   · intro z hz P hdegree hagree hroot
@@ -202,6 +218,33 @@ theorem exists_exceptional_retainedSquarefreeCurveAgreement_of_tail
     · apply htailGood z hzTail P hdegree hagree
       exact singularCurveEquation_routes_nonregular Q hQ z P hroot
         (Or.inl hpositive)
+
+/-- A retained squarefree equation and its singular-tail transfer give one exceptional set.
+Outside it, every qualifying root of the equation has exact power agreement. -/
+theorem exists_exceptional_retainedSquarefreeCurveAgreement_of_tail
+    {F E : Type*} [Field F] [Field E] [DecidableEq F] [DecidableEq E]
+    [IsAlgClosed E] {n D ell L A B M H : ℕ}
+    (domain : Fin n ↪ F) (values : Fin (ell + 1) → Fin n → F)
+    (iota : F →+* E)
+    (Q : DifferentialPolynomial E[X] 1) (hQ : Q ≠ 0)
+    (hD : 1 ≤ D) (hDL : D + 1 ≤ L) (hLA : L ≤ A) (hAn : A ≤ n)
+    (hellH : 0 < ell + H)
+    (hM : 1 ≤ M) (hMB : M ≤ B)
+    (hjet : jetTotalDegree Q ≤ B) (hderiv : Q.degreeOf (some 1) ≤ M)
+    (hheight : CoeffNatDegreeLE Q H)
+    (hchar : ringChar F = 0 ∨ max D M < ringChar F)
+    (htail : HasRetainedOrdinaryCurveAgreementTransfer (D := D) (A := A)
+      (B := B) (M := M) (H := H) domain values iota (singularCurveEquation Q)) :
+    ∃ exceptional : Finset E,
+      (exceptional.card : ℝ) ≤ retainedSquarefreeCurveAgreementCharge
+        (HiddenDerivative.agreementIncidenceRatio n D A) n D ell L A B M H ∧
+      ∀ z ∉ exceptional, ∀ P : E[X], P.degree < D + 1 →
+        A ≤ (polynomialAgreementSet (domain.trans ⟨iota, iota.injective⟩)
+          (powerBatchedWord (fun t i ↦ iota (values t i)) z) P).card →
+        differentialSpecialization (challengeSpecialization Q z) P = 0 →
+    HasExactPowerAgreement domain values iota (D + 1) z P :=
+  exists_exceptional_retainedSquarefreeCurveAgreement_of_singularTail domain values iota Q hQ
+    hD hDL hLA hAn hellH hM hMB hjet hderiv hheight hchar _ htail
 
 open Classical in
 /-- For `1 ≤ D`, `0 < ell`, `D + 1 ≤ A ≤ n` and `1 ≤ M ≤ B`, the singular tail of a first-order
@@ -278,6 +321,41 @@ theorem exists_exceptional_retainedSquarefreeCurveAgreement
 
 universe u
 
+/-- The equation of a first-order curve certificate stays nonzero after extending its
+coefficients along a field embedding. -/
+theorem _root_.ReedSolomon.HiddenDerivative.FirstOrderCurveCertificate.map_Q_ne_zero
+    {F E : Type u} [Field F] [Field E] {n N Dcert A m M B k H : ℕ}
+    {domain : Fin n ↪ F} {w : Fin n → F[X]} {columns : Fin N → SourceColumn 1}
+    (cert : FirstOrderCurveCertificate.{u, u} Dcert A m M B k H domain w columns)
+    (iota : F →+* E) :
+    MvPolynomial.map (Polynomial.mapRingHom iota) cert.Q ≠ 0 := by
+  intro hzero
+  have hspecial := (cert.specialization_sound iota 0).1
+  rw [← MvPolynomial.eval_map_coefficients, hzero, map_zero] at hspecial
+  exact hspecial rfl
+
+/-- After extending its coefficients along `iota` and specializing the challenge at `z`, the
+equation of a first-order curve certificate for a power-batched word vanishes at every
+polynomial of degree `< k` with at least `A` agreements with the batched word at `z`. -/
+theorem _root_.ReedSolomon.HiddenDerivative.FirstOrderCurveCertificate.map_Q_specialization_eq_zero
+    {F E : Type u} [Field F] [Field E] [DecidableEq E] {n N Dcert A m M B k H ell : ℕ}
+    {domain : Fin n ↪ F} {values : Fin (ell + 1) → Fin n → F} {columns : Fin N → SourceColumn 1}
+    (cert : FirstOrderCurveCertificate.{u, u} Dcert A m M B k H domain
+      (fun i ↦ powerBatchedCoordinate fun t ↦ values t i) columns)
+    (iota : F →+* E) (z : E) (P : E[X]) (hdegree : P.degree < k)
+    (hagree : A ≤ (polynomialAgreementSet (domain.trans ⟨iota, iota.injective⟩)
+      (powerBatchedWord (fun t i ↦ iota (values t i)) z) P).card) :
+    differentialSpecialization
+      (challengeSpecialization (MvPolynomial.map (Polynomial.mapRingHom iota) cert.Q) z) P =
+        0 := by
+  have hroot := (cert.specialization_sound iota z).2 _ P hdegree hagree fun i hi ↦ by
+    rw [eval₂_powerBatchedCoordinate_eq_powerBatchedWord]
+    exact (Finset.mem_filter.mp hi).2
+  have hEval : (Polynomial.aeval z).toRingHom = Polynomial.evalRingHom z := by
+    ext <;> simp
+  rw [challengeSpecialization, hEval, MvPolynomial.eval_map_coefficients]
+  exact hroot
+
 /-- A finite first-order curve certificate with recovery degree `k - 1 ≥ 1`, jet-degree cap `B`,
 derivative cap `1 ≤ M ≤ B` and challenge height `H` gives an extension-field exceptional set
 bounded by `retainedSquarefreeCurveAgreementCharge`. Outside it, every polynomial of degree
@@ -300,33 +378,21 @@ theorem exists_extensionExceptional_retainedSquarefreeCurveAgreement_of_certific
           (powerBatchedWord (fun t i ↦ iota (values t i)) z) P).card →
         HasExactPowerAgreement domain values iota k z P := by
   let Q := MvPolynomial.map (Polynomial.mapRingHom iota) cert.Q
-  have hQ : Q ≠ 0 := by
-    intro hzero
-    have hspecial := (cert.specialization_sound iota 0).1
-    rw [← MvPolynomial.eval_map_coefficients] at hspecial
-    exact hspecial (by
-      rw [show MvPolynomial.map (Polynomial.mapRingHom iota) cert.Q = 0 from hzero, map_zero])
   have hjet : jetTotalDegree Q ≤ B :=
     (jetTotalDegree_map_le _ cert.Q).trans
       ((jetTotalDegree_le_iff cert.Q B).mpr cert.totalJetDegree_le)
   have hderiv : Q.degreeOf (some 1) ≤ M :=
     (jetDegree_map_le _ cert.Q 1).trans cert.jetDegree_one_le
   obtain ⟨exceptional, hcard, hgood⟩ := exists_exceptional_retainedSquarefreeCurveAgreement
-    domain values iota Q hQ (by omega) (by omega) hLA hAn hell hM hMB hjet hderiv
-    (CoeffNatDegreeLE.map_coefficients iota cert.Q cert.challengeDegree_le) hchar
+    domain values iota Q (cert.map_Q_ne_zero iota) (by omega) (by omega) hLA hAn hell hM hMB
+    hjet hderiv (CoeffNatDegreeLE.map_coefficients iota cert.Q cert.challengeDegree_le) hchar
   have hk1 : k - 1 + 1 = k := by omega
   refine ⟨exceptional, hcard, ?_⟩
   intro z hz P hdegree hagree
-  have hroot := (cert.specialization_sound iota z).2 _ P hdegree hagree fun i hi ↦ by
-    rw [eval₂_powerBatchedCoordinate_eq_powerBatchedWord]
-    exact (Finset.mem_filter.mp hi).2
-  have hEval : (Polynomial.aeval z).toRingHom = Polynomial.evalRingHom z := by
-    ext <;> simp
   have hdegree' : P.degree < ((k - 1 : ℕ) : WithBot ℕ) + 1 := by
     rwa [show ((k - 1 : ℕ) : WithBot ℕ) + 1 = k by exact_mod_cast hk1]
-  have hout := hgood z hz P hdegree' hagree (by
-    rw [challengeSpecialization, hEval, MvPolynomial.eval_map_coefficients]
-    exact hroot)
+  have hout := hgood z hz P hdegree' hagree
+    (cert.map_Q_specialization_eq_zero iota z P hdegree hagree)
   rwa [hk1] at hout
 
 /-- The certificate bound of
@@ -433,6 +499,85 @@ theorem retainedSquarefreeCurveAgreementCharge_balancedSplit_le
         ring
   unfold retainedSquarefreeCurveAgreementCharge retainedSquarefreeLineAgreementEnvelope
   linarith
+
+/-- A symbolic line certificate for `f` and `g` is a curve certificate for the degree-one
+power-batched coordinates of `![f, g]`. -/
+private theorem nonempty_lineCurveCertificate
+    {F : Type u} [Field F] {n N Dcert A m M B k H : ℕ}
+    {domain : Fin n ↪ F} {f g : Fin n → F} {columns : Fin N → SourceColumn 1}
+    (cert : FirstOrderSymbolicCertificate.{u, u} Dcert A m M B k H domain f g columns) :
+    Nonempty (FirstOrderCurveCertificate.{u, u} Dcert A m M B k H domain
+      (fun i ↦ powerBatchedCoordinate fun t ↦ ![f, g] t i) columns) := by
+  have hword : (fun i ↦ receivedLine (f i) (g i)) =
+      fun i ↦ powerBatchedCoordinate fun t ↦ ![f, g] t i := by
+    funext i
+    rw [receivedLine, powerBatchedCoordinate, Fin.sum_univ_two]
+    simp only [Fin.val_zero, Fin.val_one, Matrix.cons_val_zero, Matrix.cons_val_one,
+      Polynomial.monomial_zero_left, Polynomial.X_mul_C, Polynomial.C_mul_X_eq_monomial]
+  exact ⟨hword ▸ cert.toCurve⟩
+
+/-- A finite first-order symbolic certificate for the line through `f` and `g`, with recovery
+degree `k - 1 ≥ 1`, `k ≤ A ≤ n`, jet-degree cap `B` and derivative cap `1 ≤ M ≤ B`, gives an
+extension-field exceptional set bounded by `retainedSquarefreeLineAgreementEnvelope`. Outside it,
+every polynomial of degree `< k` with at least `A` agreements with `f + z g` has an exact
+correlated pair. -/
+theorem exists_extensionExceptional_retainedSquarefreeLineAgreement_of_certificate
+    {F E : Type u} [Field F] [Field E] [DecidableEq F] [DecidableEq E] [IsAlgClosed E]
+    {n N Dcert A m M B k H : ℕ}
+    (domain : Fin n ↪ F) (f g : Fin n → F) (iota : F →+* E)
+    (columns : Fin N → SourceColumn 1)
+    (cert : FirstOrderSymbolicCertificate.{u, u} Dcert A m M B k H domain f g columns)
+    (hk : 2 ≤ k) (hkA : k ≤ A) (hAn : A ≤ n) (hM : 1 ≤ M) (hMB : M ≤ B)
+    (hchar : ringChar F = 0 ∨ max (k - 1) M < ringChar F) :
+    ∃ exceptional : Finset E,
+      (exceptional.card : ℝ) ≤ retainedSquarefreeLineAgreementEnvelope
+        (HiddenDerivative.agreementIncidenceRatio n (k - 1) A) n (k - 1) B M H ∧
+      ∀ z ∉ exceptional, ∀ P : E[X], P.degree < k →
+        A ≤ (polynomialAgreementSet (domain.trans ⟨iota, iota.injective⟩)
+          (fun i ↦ iota (f i) + z * iota (g i)) P).card →
+        HasExactCorrelatedPair domain f g iota k z P := by
+  obtain ⟨curveCert⟩ := nonempty_lineCurveCertificate cert
+  have hkL : k ≤ balancedSplit (k - 1) A :=
+    Nat.le_of_pred_lt (lt_balancedSplit (D := k - 1) (by omega))
+  obtain ⟨exceptional, hcard, hgood⟩ :=
+    exists_extensionExceptional_retainedSquarefreeCurveAgreement_of_certificate
+      (ell := 1) domain ![f, g] iota columns curveCert hk hkL (balancedSplit_le (by omega)) hAn
+      one_pos hM hMB hchar
+  refine ⟨exceptional, hcard.trans (retainedSquarefreeCurveAgreementCharge_balancedSplit_le
+    (by omega) (by omega) hAn hM hMB), fun z hz P hdegree hagree ↦ ?_⟩
+  exact exactCorrelatedPair_of_powerAgreement_one domain ![f, g] iota z P
+    (hgood z hz P hdegree (by rwa [powerBatchedWord_pair_eq]))
+
+/-- The line bound of
+`exists_extensionExceptional_retainedSquarefreeLineAgreement_of_certificate` over the base field:
+the exceptional set lies in the base field, and the exact correlated pair is found there. -/
+theorem exists_baseExceptional_retainedSquarefreeLineAgreement_of_certificate
+    {F E : Type u} [Field F] [Field E] [DecidableEq F] [IsAlgClosed E]
+    {n N Dcert A m M B k H : ℕ}
+    (domain : Fin n ↪ F) (f g : Fin n → F) (iota : F →+* E)
+    (columns : Fin N → SourceColumn 1)
+    (cert : FirstOrderSymbolicCertificate.{u, u} Dcert A m M B k H domain f g columns)
+    (hk : 2 ≤ k) (hkA : k ≤ A) (hAn : A ≤ n) (hM : 1 ≤ M) (hMB : M ≤ B)
+    (hchar : ringChar F = 0 ∨ max (k - 1) M < ringChar F) :
+    ∃ exceptional : Finset F,
+      (exceptional.card : ℝ) ≤ retainedSquarefreeLineAgreementEnvelope
+        (HiddenDerivative.agreementIncidenceRatio n (k - 1) A) n (k - 1) B M H ∧
+      ∀ z ∉ exceptional, ∀ P : F[X], P.degree < k →
+        A ≤ (polynomialAgreementSet domain (fun i ↦ f i + z * g i) P).card →
+        HasExactCorrelatedPair domain f g (RingHom.id F) k z P := by
+  obtain ⟨curveCert⟩ := nonempty_lineCurveCertificate cert
+  have hkL : k ≤ balancedSplit (k - 1) A :=
+    Nat.le_of_pred_lt (lt_balancedSplit (D := k - 1) (by omega))
+  have hword (z : F) : powerBatchedWord ![f, g] z = fun i ↦ f i + z * g i :=
+    powerBatchedWord_pair_eq f g (RingHom.id F) z
+  obtain ⟨exceptional, hcard, hgood⟩ :=
+    exists_baseExceptional_retainedSquarefreeCurveAgreement_of_certificate
+      (ell := 1) domain ![f, g] iota columns curveCert hk hkL (balancedSplit_le (by omega)) hAn
+      one_pos hM hMB hchar
+  refine ⟨exceptional, hcard.trans (retainedSquarefreeCurveAgreementCharge_balancedSplit_le
+    (by omega) (by omega) hAn hM hMB), fun z hz P hdegree hagree ↦ ?_⟩
+  exact exactCorrelatedPair_of_powerAgreement_one domain ![f, g] (RingHom.id F) z P
+    (hgood z hz P hdegree (by rwa [hword]))
 
 end
 

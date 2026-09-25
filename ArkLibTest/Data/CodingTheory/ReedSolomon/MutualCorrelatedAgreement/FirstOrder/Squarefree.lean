@@ -14,6 +14,8 @@ import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Squarefree.RetainedTail
 import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Squarefree.CurveMCA
+import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Squarefree.SharpCurveMCA
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.SingularTail
 import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 import Mathlib.Tactic.NormNum
@@ -22,7 +24,8 @@ import Mathlib.Tactic.NormNum
 # Squarefree agreement acceptance tests
 
 Concrete rational examples check factorwise and squarefree certificate counts, retained-tail
-routing, degree envelopes, challenge heights, and nonvanishing.
+routing, degree envelopes, challenge heights, nonvanishing, and the line and sharp certificate
+theorems.
 -/
 
 open MvPolynomial Polynomial PolynomialDifferential
@@ -441,3 +444,33 @@ example :
       retainedSquarefreeLineAgreementEnvelope (agreementIncidenceRatio 4 1 3) 4 1 1 1 0 :=
   retainedSquarefreeCurveAgreementCharge_balancedSplit_le
     (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+
+/-- A symbolic line certificate gives a base-field challenge at which the zero polynomial has an
+exact correlated pair with the zero line. -/
+example : ∃ z : ℚ, ReedSolomon.HasExactCorrelatedPair factorwiseDomain (fun _ ↦ 0) (fun _ ↦ 0)
+    (RingHom.id ℚ) 2 z 0 := by
+  obtain ⟨cert⟩ := certificateWithPositiveDerivativeCap
+  obtain ⟨exceptional, -, hgood⟩ :=
+    exists_baseExceptional_retainedSquarefreeLineAgreement_of_certificate
+      (E := AlgebraicClosure ℚ) factorwiseDomain (fun _ ↦ 0) (fun _ ↦ 0)
+      (algebraMap ℚ (AlgebraicClosure ℚ)) _ cert
+      (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+      (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
+  obtain ⟨z, hz⟩ := Finset.exists_notMem exceptional
+  exact ⟨z, hgood z hz 0 (WithBot.bot_lt_coe 2) (by
+    norm_num [ReedSolomon.polynomialAgreementSet])⟩
+
+/-- The sharp optimized certificate bound gives a base-field challenge at which the zero
+polynomial has exact power agreement with the zero line. -/
+example : ∃ z : ℚ, ReedSolomon.HasExactPowerAgreement factorwiseDomain certificateValues
+    (RingHom.id ℚ) 2 z 0 := by
+  obtain ⟨exceptional, -, hgood⟩ :=
+    exists_baseExceptional_retainedSquarefreeCurveAgreement_sharpOptimized_of_certificate
+      (E := AlgebraicClosure ℚ) (L := 2) factorwiseDomain certificateValues
+      (algebraMap ℚ (AlgebraicClosure ℚ)) _ certificateCurve
+      (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+      (by norm_num) (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
+  obtain ⟨z, hz⟩ := Finset.exists_notMem exceptional
+  exact ⟨z, hgood z hz 0 (WithBot.bot_lt_coe 2) (by
+    norm_num [ReedSolomon.polynomialAgreementSet, ReedSolomon.powerBatchedWord,
+      certificateValues])⟩
