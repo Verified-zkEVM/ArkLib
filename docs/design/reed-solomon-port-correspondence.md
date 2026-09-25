@@ -1981,6 +1981,14 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Frob
 
 `symbolicSourceFrobeniusAgreement` is not added because the existing `jointTaylorAgreementEquation` in `PolynomialDifferential.TaylorChartAlgebra` covers it. An acceptance case in `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement.lean` recognizes the zero pair on a positive-dimensional prime component from a one-point sparse sample cut.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FrobeniusIncidence.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/Frobenius/Incidence.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Renamed `sourceFrobeniusSparseCuts` to `frobeniusSparseTaylorCuts` and `sourceFrobeniusGraphLocus` to `admissibleFrobeniusPairGraphLocus`; their content is unchanged. Renamed `principalOpen_subset_sourceFrobeniusGraphLocus` to `principalOpen_subset_admissibleFrobeniusPairGraphLocus`, expressing cut counts with `Set.ncard`. Renamed `finite_sourceFrobenius_points_off_graphs_card_le` to `finite_frobeniusChartPoints_off_admissiblePairGraphs_card_le`. This finite bound uses the current coefficient-height and agreement-count APIs and omits the unnecessary premise `A ≤ n`.
+
+Did not port `symbolicSourceFrobeniusAgreement_mem_restrictBidegree`: the existing `jointTaylorAgreementEquation_mem_regularPowerBatchedCutBidegree_of_exponent` covers it, and the finite theorem uses that result with local degree conversions, so no public specialization was added. Acceptance cases for the principal-open theorem and finite incidence theorem were added to `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement.lean`.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FrobeniusRetainedFamily.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/Frobenius/RetainedFamily.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
