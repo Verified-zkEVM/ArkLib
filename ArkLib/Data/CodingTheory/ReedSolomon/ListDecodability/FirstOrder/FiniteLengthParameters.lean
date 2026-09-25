@@ -140,7 +140,7 @@ private theorem monomial_le_rateMonomial {C q n : ℝ} (hC : 1 ≤ C) (hq : 1 �
 /-- The real-arithmetic core of `finiteLengthMcaEnvelope_le_rateEnvelope`, with `b` and `h`
 standing for `B (2M + 1)` and `H (2M + 1)`, `s` for `2b - 1` and `t` for `n - D - 1`. -/
 private theorem mcaEnvelope_arith_le {C q n lambda D t B M H b h s : ℝ}
-    (hC : 1 ≤ C) (hq : 1 ≤ q) (hn : 1 ≤ n) (hqN : q ≤ n) (hD0 : 0 ≤ D) (hD : D ≤ n)
+    (hC : 1 ≤ C) (hq : 1 ≤ q) (hqN : q ≤ n) (hD0 : 0 ≤ D) (hD : D ≤ n)
     (ht0 : 0 ≤ t) (ht : t ≤ n) (hlambda0 : 0 ≤ lambda) (hlambda : lambda ≤ C) (hB0 : 0 ≤ B)
     (hB : B ≤ C * q) (hM0 : 0 ≤ M) (hM : M ≤ C * q) (hH0 : 0 ≤ H) (hH : H ≤ C * q ^ 2)
     (hb0 : 0 ≤ b) (hb : b ≤ 3 * C ^ 2 * q ^ 2) (hh0 : 0 ≤ h) (hh : h ≤ 3 * C ^ 2 * q ^ 3)
@@ -150,6 +150,7 @@ private theorem mcaEnvelope_arith_le {C q n lambda D t B M H b h s : ℝ}
       140 * C ^ 6 * n ^ 2 * q ^ 4 := by
   have hC0 : 0 ≤ C := zero_le_one.trans hC
   have hq0 : 0 ≤ q := zero_le_one.trans hq
+  have hn : 1 ≤ n := hq.trans hqN
   have hn0 : 0 ≤ n := zero_le_one.trans hn
   have hbh0 : 0 ≤ b * h := mul_nonneg hb0 hh0
   have hbh : b * h ≤ 3 * C ^ 2 * q ^ 2 * (3 * C ^ 2 * q ^ 3) :=
@@ -181,7 +182,7 @@ private theorem mcaEnvelope_arith_le {C q n lambda D t B M H b h s : ℝ}
 /-- The line-MCA envelope is at most `140 C⁶ n² q⁴` under the displayed parameter bounds. -/
 theorem finiteLengthMcaEnvelope_le_rateEnvelope
     {C q lambda : ℝ} {n D B M H : ℕ}
-    (hC : 1 ≤ C) (hq : 1 ≤ q) (hn : 1 ≤ n) (hqN : q ≤ n)
+    (hC : 1 ≤ C) (hq : 1 ≤ q) (_hn : 1 ≤ n) (hqN : q ≤ n)
     (hDn : D ≤ n) (hlambda0 : 0 ≤ lambda) (hlambda : lambda ≤ C)
     (hB : (B : ℝ) ≤ C * q) (hM : (M : ℝ) ≤ C * q)
     (hH : (H : ℝ) ≤ C * q ^ 2) :
@@ -204,7 +205,7 @@ theorem finiteLengthMcaEnvelope_le_rateEnvelope
       _ = 3 * C ^ 2 * q ^ 3 := by ring
   have hs : ((2 * (B * (2 * M + 1)) - 1 : ℕ) : ℝ) ≤ 2 * ((B * (2 * M + 1) : ℕ) : ℝ) := by
     exact_mod_cast Nat.sub_le _ 1
-  exact mcaEnvelope_arith_le hC hq (by exact_mod_cast hn) hqN (Nat.cast_nonneg D)
+  exact mcaEnvelope_arith_le hC hq hqN (Nat.cast_nonneg D)
     (by exact_mod_cast hDn) (Nat.cast_nonneg _) (by exact_mod_cast Nat.sub_le n (D + 1))
     hlambda0 hlambda
     (Nat.cast_nonneg B) hB (Nat.cast_nonneg M) hM (Nat.cast_nonneg H) hH (Nat.cast_nonneg _) hb
