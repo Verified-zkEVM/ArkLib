@@ -142,10 +142,6 @@ theorem exists_exceptional_retainedSquarefreeCurveAgreement_of_tail
           HasExactPowerAgreement domain values iota (D + 1) z P := by
     by_cases hDone : D = 1
     · subst D
-      obtain ⟨exceptional, hcard, hgood⟩ :=
-        exists_exceptional_regularPowerBatchedAgreement_identityPair
-          domain values iota (positiveCurveEquation Q) L A B M H hDL hLA hAn
-          (by omega) hpositiveJet hpositiveHeight
       have hresult :=
         exists_exceptional_regularPowerBatchedAgreement_identityPair
           domain values iota (positiveCurveEquation Q) L A B M H hDL hLA hAn
