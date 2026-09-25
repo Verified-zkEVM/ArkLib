@@ -30,6 +30,8 @@ constraint hypotheses.
   vanishing after specialization at sufficiently many agreeing points.
 * `FirstOrderSymbolicCertificate.toCurve`: views a line certificate as a degree-one curve
   certificate.
+* `FirstOrderCurveCertificate.jetDegree_one_le`: the actual `Y₁` degree is bounded by the
+  certificate's derivative cap.
 * `FirstOrderCurveCertificate.exists_exceptional_of_regular_stage_bounds_of_factors`: combines
   per-stage regularity bounds into one exceptional set bounded by the curve envelope.
 * `exists_finite_firstOrder_curve_certificate_of_heightSlotCount`: a strict shifted-slot surplus
@@ -232,6 +234,18 @@ universe u
 variable {F E : Type u} [Field F] [Field E] {D A m M μ k h n N : ℕ}
   {domain : Fin n ↪ F} {w : Fin n → F[X]} {columns : Fin N → SourceColumn 1}
 
+/-- The actual `Y₁` degree of a first-order curve certificate is bounded by its derivative cap. -/
+theorem jetDegree_one_le
+    (cert : FirstOrderCurveCertificate.{u, u} D A m M μ k h domain w columns) :
+    jetDegree cert.Q 1 ≤ M := by
+  rw [jetDegree, MvPolynomial.degreeOf_le_iff]
+  intro u hu
+  have hfirst : u (some (⟨1, by omega⟩ : Fin 2)) ≤ M := by
+    simpa only [firstJetExponent_eq_coordinates Nat.one_pos,
+      jetExponentCoordinatesEquiv_apply] using cert.firstJetDegree_le u hu
+  have hcoord : (⟨1, by omega⟩ : Fin 2) = 1 := Fin.ext rfl
+  simpa only [hcoord] using hfirst
+
 /-- Uniform exceptional sets for regular stages combine into a single set bounded by the
 first-order curve envelope. -/
 theorem exists_exceptional_of_regular_stage_bounds_of_factors
@@ -270,14 +284,7 @@ theorem exists_exceptional_of_regular_stage_bounds_of_factors
   have hμ : jetTotalDegree cert.Q ≤ μ := by
     rw [jetTotalDegree_le_iff]
     exact cert.totalJetDegree_le
-  have hM : jetDegree cert.Q 1 ≤ M := by
-    rw [jetDegree, MvPolynomial.degreeOf_le_iff]
-    intro u hu
-    have hfirst : u (some (⟨1, by omega⟩ : Fin 2)) ≤ M := by
-      simpa only [firstJetExponent_eq_coordinates Nat.one_pos,
-        jetExponentCoordinatesEquiv_apply] using cert.firstJetDegree_le u hu
-    have hcoord : (⟨1, by omega⟩ : Fin 2) = 1 := Fin.ext rfl
-    simpa only [hcoord] using hfirst
+  have hM := cert.jetDegree_one_le
   have hnodup : stages.Nodup := by
     exact hc.pairwise_stages.imp (fun hab heq ↦ by
       cases heq

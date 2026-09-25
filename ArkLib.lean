@@ -181,6 +181,8 @@ public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.Br
 public import
   ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.DerivativeCappedCounting
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.FiniteRateParameters
+public import
+  ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.HybridAgreementCounting
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.HybridConstants
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.HybridRateEnvelope
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.LowRateStationary
