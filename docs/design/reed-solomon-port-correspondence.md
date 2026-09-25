@@ -1939,6 +1939,14 @@ Ported from `HiddenDerivative/RootFinding/MutualCorrelatedAgreement/ExtensionDes
 
 Not ported: the standalone exceptional correlated-agreement wrapper from this dependency; the equation-descent theorem performs the exceptional-set pullback directly.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/Factorwise.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/FactorwiseList.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`FixedWordSingularTail`, `finite_factorwise_agreement_solutions_card_le_actual`, and `finite_factorwise_agreement_solutions_card_le` keep their names. The actual-degree theorem no longer requires the unused `hQ`, `hjet`, and `hderiv` assumptions. The module was renamed from `FactorwiseList` to `Factorwise` so its generated root import stays within 100 characters. The source wrappers `positiveEquation` and `rootFirst` are not introduced; the existing `radicalPrimPart` API supplies the positive-degree factor product.
+
+The source's private `positiveRootProduct_eq_one_of_rootDegree_eq_zero'` argument is covered by the public `MvPolynomial.radicalPrimPart_eq_one_of_degreeOf_eq_zero`, generalized to any selected coordinate in `ArkLib/ToMathlib/MvPolynomial/RadicalSplit.lean`. The regular Taylor estimate `finite_regular_agreement_solutions_card_le_regularTaylor` combines the existing identity-pair and derivative-capped estimates in `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/AgreementCounting.lean`; the hybrid counting proof also uses it. No public declaration from the unit was omitted.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FrobeniusAdmissibility.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FrobeniusAdmissibility.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -4845,6 +4853,12 @@ An acceptance case applies `admissibleFrobeniusPairs_card_le_degreeOf` to a sing
 Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 An acceptance example applies `exists_admissibleChartTuple_of_primeTaylorComponent_agreements` to the existing component ideal, agreement cuts, and separant fixtures. It specializes the returned admissible tuple at zero and checks the Taylor reconstruction identity.
+
+## `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/FactorwiseList.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Acceptance cases check singleton instances of `finite_factorwise_agreement_solutions_card_le_actual` and `finite_factorwise_agreement_solutions_card_le`.
 
 ## `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart.lean`
 
