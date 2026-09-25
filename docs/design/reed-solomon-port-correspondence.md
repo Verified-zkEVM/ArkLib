@@ -1951,6 +1951,17 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capa
 
 Renamed `fixedRatePartitionOrder_lineMCA` to `fixedRatePartitionOrder_line_exactCorrelatedPair`. The mathematical guarantee is unchanged; the theorem specializes the existing general rate-partition line theorem using the current fixed-rate parameter selector and order bound. It uses the destination parameters `RatePartition.rateBlockThreshold`, `rateJetCap`, `marginHeight`, and `partitionFiniteRatio`, together with `polynomialCurveProductAgreementConstant`. Nothing was deferred or not ported.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/MathematicalUniformRate.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/MathematicalUniformRate.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+- `exists_mathematicalUniformRatePartition_curveMCA` → `ReedSolomon.exists_mathematicalUniformRatePartition_curve_exactPowerAgreement`. It drops the unused `[DecidableEq E]`. It uses main's names `polynomialCurveProductAgreementConstant`, `uniformMathematical*` and `uniformDerivativeOrder`, and states the mapped domain as `domain.trans ⟨iota, _⟩`, as in `UniformRate`.
+- `exists_mathematicalUniformRatePartition_baseCurveMCA` → `ReedSolomon.exists_mathematicalUniformRatePartition_baseCurve_exactPowerAgreement`, unchanged. Descent goes through main's `uniformExactPowerAgreement_of_extension`.
+- `uniformCapacityLineConstant300` → `ReedSolomon.mathematicalUniformLineAgreementConstant`, unchanged.
+- `exists_mathematicalUniformRatePartition_lineMCA` → `ReedSolomon.exists_mathematicalUniformRatePartition_line_exactCorrelatedPair`, unchanged. The constant-message branch uses main's `uniformExactPowerAgreement_constantCode`, whose bound `choose 2 / max (A-1) 1` replaces the source's `if A = 1`, so the source's positivity side condition on `A` is gone. The two power-to-line conversions share one private helper, `exists_line_exactCorrelatedPair_of_powerAgreement`. When the curve characteristic guard fails, the line theorem uses the Johnson gap bound, so it needs only `char F = 0 ∨ k - 1 < char F`.
+
+The curve theorems keep the source's sharp guard `max (k - 1) ν < char F` and do not use main's `UniformRate` form `n ≤ char F`. The private `exists_uniformCapacity_lineMCA_johnson` moved to the Johnson owner as `exists_johnson_line_exactCorrelatedPair_of_gap`. No source declaration was left out.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/Parameters.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/Parameters.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -2186,6 +2197,24 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordi
 `frobeniusRetainedPairFamily`, `mem_frobeniusRetainedPairFamily_iff`, `frobeniusRetainedPairFamily_card_le`, and `exists_exceptional_frobeniusRetainedPairFamily` retain their names. They are generalized from `Fin n` to any finite embedded coordinate type. The retained family is expressed as a filter of the existing correlated-pair family. The cardinality bound uses the joint initial equation; a global root premise is unnecessary because root equations are included in each admissible pair's sample witness. The exceptional-set theorem specializes the existing exceptional-set theorem for correlated pairs.
 
 Historical acceptance cases in `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement.lean` exhibited a nonempty retained family and checked its graph-coordinate degree bound, then exhibited a retained pair and an exceptional set of size zero for a one-point domain with a one-point sample. The current consolidated suite has no retained-family example. No public source declarations were omitted.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Johnson/Agreement.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Johnson/Certificate.lean` and `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Johnson/Agreement.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`exists_exceptional_johnsonMCA` (Certificate) and `exists_exceptional_johnson_lineMCA_allChar` (Agreement) were the same statement with the arguments in a different order. They become `ReedSolomon.exists_johnson_line_exactCorrelatedPair`. The unused hypothesis `johnsonAgreement n D eta ≤ 1` is dropped, since main's `exists_johnson_symbolic_certificate` no longer needs it. `johnsonE0` is renamed `johnsonExceptionCount`. `exists_exceptional_johnson_lineMCA_at_ceil` becomes `exists_johnson_line_exactCorrelatedPair_ceil`, unchanged apart from making `n D eta` implicit and reordering the arguments.
+
+The source's private `exists_uniformCapacity_lineMCA_johnson` (in `Capacity/MathematicalUniformRate`) becomes the public `exists_johnson_line_exactCorrelatedPair_of_gap`, because it is a general Johnson statement and the line theorem uses it. Its hypotheses `⌈4ν/δ²⌉₊ ≤ n` and `k ≤ ν` (with `ν` the mathematical jet cap) are generalized to the parameter-free `4 (k - 1) ≤ δ² n`, and the `DecidableEq F` argument is dropped.
+
+Not ported: `exists_exceptional_johnson_lineMCA_allChar` as a separate declaration, because it would duplicate `exists_johnson_line_exactCorrelatedPair`.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Johnson/Probability.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Johnson/Probability.lean` and `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Johnson/Agreement.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`johnson_mcaError_le` (Probability) and `johnson_lineMCA_probability` (Agreement) become one theorem, `ReedSolomon.mcaError_affineLine_johnson_le`. It is unchanged except that it adds `[SampleableType F]`, which main's `mcaError` requires. The module is kept separate from `Johnson/Agreement` so the capacity module does not import `LineToAffine`.
+
+Not ported: `johnson_lineMCA_probability` as a separate declaration, because it has the same statement as `mcaError_affineLine_johnson_le`.
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/BaseEquation.lean`
 
@@ -5256,6 +5285,10 @@ The acceptance example specializes the existing `exists_exceptional_frobeniusPow
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/Frobenius/FactorSolutions.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 The source declaration `exists_exceptional_frobeniusFactorSolutions` is covered by `exists_exceptional_frobeniusPowerFactorSolutions`, generalized from a single line to polynomial curves with arbitrary tuple length and the current coefficient-height and jet-degree interfaces. The acceptance example checks the tuple-length-one conversion from exact power agreement to an exact correlated pair using `exactCorrelatedPair_of_powerAgreement_one`. No source declaration is left uncovered. A separate single-line wrapper was omitted because the generalized theorem and conversion theorem already provide its statement.
+
+## `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity.lean`
+
+Acceptance examples at `δ = 1/5` and `n = uniformMathematicalCapacityLength (1/5)`, with the gap hypothesis derived from the integer guards. There is one example each for the extension-field curve, base-field curve and line theorems, over `ℚ` (and `AlgebraicClosure ℚ`). Each exhibits a challenge outside the exceptional set with an exact witness for the zero candidate.
 
 ## `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder.lean`
 
