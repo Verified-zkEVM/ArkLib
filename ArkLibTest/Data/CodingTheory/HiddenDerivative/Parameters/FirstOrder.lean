@@ -253,12 +253,6 @@ private theorem hybridVariable_totalDegree {R : Type*} [CommSemiring R] [Nontriv
   rw [Finsupp.weight_single]
   simp [jetDegreeWeight]
 
-private theorem hybridPolynomialVariable_totalDegree {F : Type*} [Field F]
-    (i : Fin 2) :
-    jetTotalDegree
-      (MvPolynomial.X (some i) : DifferentialPolynomial (Polynomial F) 1) = 1 :=
-  hybridVariable_totalDegree i
-
 private instance : Fact (Nat.Prime 2) := ⟨Nat.prime_two⟩
 
 private noncomputable abbrev smallCharacteristicFirstOrderEquation {F : Type*} [Field F] :
@@ -281,7 +275,7 @@ example : Nonempty (FirstOrderHybridDescent constantFirstOrderEquation 0 0) ∧
       (smallCharacteristicFirstOrderEquation (F := ZMod 2))
     · simp [smallCharacteristicFirstOrderEquation]
     · rw [smallCharacteristicFirstOrderEquation,
-      hybridPolynomialVariable_totalDegree (F := ZMod 2)]
+      hybridVariable_totalDegree (R := Polynomial (ZMod 2))]
       norm_num
     · simp [smallCharacteristicFirstOrderEquation, jetDegree]
     · exact Or.inr (by norm_num [smallCharacteristicFirstOrderEquation,
@@ -365,9 +359,6 @@ private noncomputable abbrev hybridFieldEquation : DifferentialPolynomial ℚ 1 
 private noncomputable abbrev hybridSymbolicEquation :
     DifferentialPolynomial (Polynomial ℚ) 1 :=
   MvPolynomial.X (some (0 : Fin 2))
-
-private noncomputable abbrev hybridFieldTailEquation : DifferentialPolynomial ℚ 0 :=
-  MvPolynomial.X (some (0 : Fin 1))
 
 private noncomputable abbrev hybridSymbolicTailEquation :
     DifferentialPolynomial (Polynomial ℚ) 0 :=

@@ -30,8 +30,8 @@ is `2 * Y_s = 0`, and over `ZMod 4` the derivative of `2 * Y_s ^ 2` is `4 * Y_s 
 * `characteristic_bounds_of_max`: split a joint cutoff into total-degree and pivot bounds.
 * `jetDegree_separant_le_sub_one`, `jetDegree_separant_eq_sub_one` and `separant_ne_zero`: one
   derivative in `Y_s`.
-* `jetDerivative`: the `a`-fold partial derivative in `Y_s`, with
-  `jetDegree_jetDerivative_eq_sub` and `jetDerivative_ne_zero`.
+* `jetDerivative`: the `a`-fold partial derivative in `Y_s`, with degree, total-degree, and
+  nonvanishing bounds.
 * `derivativeDescent`: the `t`-fold derivative, where `t = jetDegree Q s`.
   `jetDegree_derivativeDescent_eq_zero` and `active_lt_of_derivativeDescent` hold in every
   characteristic; `derivativeDescent_ne_zero` needs the cast hypothesis.
@@ -196,6 +196,17 @@ theorem jetDegree_jetDerivative_le_sub (Q : DifferentialPolynomial F d) (s : Fin
 theorem jetDegree_jetDerivative_le (Q : DifferentialPolynomial F d) (s j : Fin (d + 1))
     (a : ℕ) : jetDegree (jetDerivative Q s a) j ≤ jetDegree Q j :=
   MvPolynomial.degreeOf_iterate_pderiv_le (some s) (some j) a Q
+
+/-- `a` derivatives in a jet variable lower total jet degree by at least `a`. -/
+theorem jetTotalDegree_jetDerivative_le_sub (Q : DifferentialPolynomial F d)
+    (s : Fin (d + 1)) (a : ℕ) :
+    jetTotalDegree (jetDerivative Q s a) ≤ jetTotalDegree Q - a := by
+  induction a with
+  | zero => simp [jetDerivative]
+  | succ a ih =>
+      rw [jetDerivative_succ]
+      have hstep := separant_total_le (jetDerivative Q s a) s
+      omega
 
 /-- If `F` has no zero divisors and the cast hypothesis holds, then `a` derivatives in `Y_s`
 lower the degree in `Y_s` by exactly `a`, in truncated subtraction.

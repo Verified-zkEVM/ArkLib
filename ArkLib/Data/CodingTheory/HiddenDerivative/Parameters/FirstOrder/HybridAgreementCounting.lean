@@ -148,16 +148,10 @@ theorem exists_firstOrderFieldDescent
       jetDerivative Q 1 j ≠ 0 ∧ jetDegree (jetDerivative Q 1 j) 1 = e - j := by
     exact ⟨jetDerivative_ne_zero hQ 1 hj hcasts,
       jetDegree_jetDerivative_eq_sub Q 1 j hcasts⟩
-  have hstageWeight (j : ℕ) (hj : j ≤ e) :
-      jetTotalDegree (jetDerivative Q 1 j) ≤ μ - j := by
-    induction j with
-    | zero => simpa using hweight
-    | succ j ih =>
-        have hj' : j ≤ e := by omega
-        have hprev := ih hj'
-        rw [jetDerivative_succ]
-        have htotal := separant_total_le (jetDerivative Q 1 j) (1 : Fin 2)
-        omega
+  have hstageWeight (j : ℕ) (_hj : j ≤ e) :
+      jetTotalDegree (jetDerivative Q 1 j) ≤ μ - j :=
+    (jetTotalDegree_jetDerivative_le_sub Q 1 j).trans
+      (Nat.sub_le_sub_right hweight j)
   have htailDegree : jetDegree (jetDerivative Q 1 e) (1 : Fin 2) = 0 := by
     rw [jetDegree_jetDerivative_eq_sub Q 1 e hcasts]
     exact Nat.sub_self e
@@ -257,13 +251,9 @@ theorem exists_firstOrderHybridDescent {F : Type*} [Field F]
     exact ⟨jetDerivative_ne_zero hQ 1 hjQ hcasts,
       jetDegree_jetDerivative_eq_sub Q 1 j hcasts⟩
   have hstageWeight (j : ℕ) :
-      jetTotalDegree (jetDerivative Q (1 : Fin 2) j) ≤ μ - j := by
-    induction j with
-    | zero => simpa [jetDerivative] using hweight
-    | succ j ih =>
-        rw [jetDerivative_succ]
-        have hstep := separant_total_le (jetDerivative Q (1 : Fin 2) j) (1 : Fin 2)
-        omega
+      jetTotalDegree (jetDerivative Q (1 : Fin 2) j) ≤ μ - j :=
+    (jetTotalDegree_jetDerivative_le_sub Q (1 : Fin 2) j).trans
+      (Nat.sub_le_sub_right hweight j)
   have htailDegree : jetDegree (jetDerivative Q (1 : Fin 2) e) (1 : Fin 2) = 0 := by
     simpa [e] using (hstages e le_rfl).2
   obtain ⟨tail⟩ := exists_jetPrefixPresentation_firstOrder_of_jetDegree_zero
@@ -341,80 +331,6 @@ theorem FirstOrderHybridDescent.root_coverage {F E : Type*} [Field F] [CommSemir
       rw [jetDerivative_succ, ← map_separant]
     rw [← hstep]
     exact hnext
-
-open Classical in
-/-- A degree-one message equation is bounded by the identity-pair Taylor incidence count. -/
-theorem finite_regular_agreement_solutions_card_le_identityPair
-    {F : Type*} [Field F]
-    (Q : DifferentialPolynomial F 1) (j r : ℕ)
-    (hjet : jetTotalDegree Q ≤ j)
-    {n A : ℕ} (domain : Fin n ↪ F) (received : Fin n → F)
-    (hA : 2 ≤ A) (hAn : A ≤ n)
-    (S : Finset F[X])
-    (hdegree : ∀ P ∈ S, P.degree < 2)
-    (hsol : ∀ P ∈ S, differentialSpecialization Q P = 0)
-    (hsep : ∀ P ∈ S, differentialSpecialization (separant Q 1) P ≠ 0)
-    (hagree : ∀ P ∈ S,
-      A ≤ (Finset.univ.filter fun i ↦ P.eval (domain i) = received i).card) :
-    (S.card : ℚ) ≤ firstOrderCurveFiberStageOne 2 j r 0 *
-      (((n - 1 : ℕ) : ℚ) / ((A - 1 : ℕ) : ℚ)) := by
-  classical
-  let E := AlgebraicClosure F
-  let scalar : F →+* E := algebraMap F E
-  let QE := MvPolynomial.map scalar Q
-  have htau : TaylorExponentSufficient 1 2 0 := by
-    simpa using taylorExponentSufficient_firstOrder_tight 1
-  obtain ⟨center, jets, hcard, hjets⟩ := exists_regular_solution_jet_family_of_exponent
-    (A := A) scalar Q 2 2 0 htau le_rfl S domain received hdegree hsol hsep (by omega) hagree
-  by_cases hempty : jets = ∅
-  · have hScard : S.card = 0 := by simpa [hempty] using hcard.symm
-    rw [hScard, Nat.cast_zero]
-    positivity
-  have hsepE : initialJetSeparant center QE ≠ 0 := by
-    obtain ⟨jet, hjetmem⟩ := Finset.nonempty_iff_ne_empty.mpr hempty
-    intro hz
-    exact (hjets jet hjetmem).2.1 (by rw [hz, map_zero])
-  have hdegreeE : jetTotalDegree QE ≤ j := by
-    rw [jetTotalDegree_map_eq scalar.injective Q]
-    exact hjet
-  have hcount := card_le_of_highTaylorCuts_of_agreement_sharp center QE htau (by omega)
-    (fun i ↦ scalar (domain i)) (fun i ↦ scalar (received i))
-    (fun i j hij ↦ domain.injective (scalar.injective hij)) hA (by simpa using hAn) jets
-    (fun jet hjetmem ↦ ⟨(hjets jet hjetmem).1, (hjets jet hjetmem).2.1,
-      fun l hl hlK ↦ by omega⟩)
-    (fun jet hjetmem ↦ by
-      let agreementSet := Finset.univ.filter fun i : Fin n ↦
-        MvPolynomial.aeval jet (taylorAgreementEquation center QE 2 0
-          (scalar (domain i)) (scalar (received i))) = 0
-      have hset : {i | MvPolynomial.aeval jet (taylorAgreementEquation center QE 2 0
-          (scalar (domain i)) (scalar (received i))) = 0} =
-            (agreementSet : Set (Fin n)) := by
-        ext i
-        simp only [Set.mem_ofPred_eq, Finset.mem_coe, Finset.mem_filter,
-          Finset.mem_univ, true_and, agreementSet]
-      rw [hset, Set.ncard_coe_finset]
-      exact (hjets jet hjetmem).2.2.2)
-  rw [hcard] at hcount
-  have hdegreeCast :
-      (jetTotalDegree QE : ℚ) ≤ (j : ℚ) := by
-    exact_mod_cast hdegreeE
-  have hratio : (0 : ℚ) ≤ ((n - 1 : ℕ) : ℚ) / (A - 1 : ℕ) :=
-    div_nonneg (by positivity) (by positivity)
-  have hn : n - 2 + 1 = n - 1 := by omega
-  have hA' : A - 2 + 1 = A - 1 := by omega
-  rw [Fintype.card_fin] at hcount
-  simp only [rationalTaylorCutDegreeBound, zero_mul, Nat.add_zero, hn, hA', pow_one, mul_one]
-    at hcount
-  calc
-    (S.card : ℚ) ≤
-        jetTotalDegree QE *
-          (((n - 1 : ℕ) : ℚ) / (A - 1 : ℕ)) := hcount
-    _ ≤ j * (((n - 1 : ℕ) : ℚ) / (A - 1 : ℕ)) :=
-      mul_le_mul_of_nonneg_right hdegreeCast hratio
-    _ = firstOrderCurveFiberStageOne 2 j r 0 *
-        (((n - 1 : ℕ) : ℚ) / (A - 1 : ℕ)) := by
-      simp [firstOrderCurveFiberStageOne, firstOrderTaylorTotalCap,
-        firstOrderTaylorDerivativeCap, MvPolynomial.cappedDegreeMixedVolume]
 
 open Classical in
 private theorem finite_firstOrder_hybrid_agreement_solutions_card_le_raw_of_stages
