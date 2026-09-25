@@ -22,8 +22,9 @@ interface for affine lines.
 * `ReedSolomon.powerAgreement_one_of_exactCorrelatedPair`: an exact correlated-pair witness gives
   degree-one exact power agreement.
 * `ReedSolomon.powerBatchedWord_pair_eq`: the degree-one power-batched word is the correlated line.
-* `ReedSolomon.lineExactAgreementBound_of_powerAgreement_one`: a uniform degree-one power
-  guarantee gives a uniform exact-agreement bound for lines.
+* `ReedSolomon.lineExactAgreementBound_of_exactCorrelatedPair`,
+  `ReedSolomon.lineExactAgreementBound_of_powerAgreement_one`: a uniform exact correlated-pair
+  or degree-one power guarantee gives a uniform exact-agreement bound for lines.
 
 ## References
 
@@ -83,6 +84,21 @@ theorem exactCorrelatedPair_of_powerAgreement_one
     rw [hw] at hagree
     simpa [commonCurveAgreementSet, commonPolynomialAgreementSet,
       Fin.forall_fin_two] using hagree
+
+/-- A uniform exact correlated-pair guarantee for the base-field lines gives the exact-agreement
+interface for affine lines. -/
+theorem lineExactAgreementBound_of_exactCorrelatedPair {A : ℕ} (domain : Fin n ↪ F) (B : ℝ)
+    (hpair : ∀ f g : Fin n → F, ∃ exceptional : Finset F,
+      (exceptional.card : ℝ) ≤ B ∧ ∀ z ∉ exceptional, ∀ P : F[X], P.degree < k →
+        A ≤ (polynomialAgreementSet domain (fun i ↦ f i + z * g i) P).card →
+        HasExactCorrelatedPair domain f g (RingHom.id F) k z P) :
+    LineExactAgreementBound domain k A B := by
+  intro f g
+  obtain ⟨ex, hcard, hgood⟩ := hpair f g
+  refine ⟨ex, hcard, fun z hz P hP hagree ↦ ?_⟩
+  obtain ⟨pair, hp0, hp1, hPeq, hset⟩ := hgood z hz P hP hagree
+  exact ⟨pair.1, pair.2, hp0, hp1, by simpa [correlatedPairSpecialization] using hPeq,
+    by simpa using hset⟩
 
 /-- A uniform two-constituent power theorem gives the scalar exact-line interface. -/
 theorem lineExactAgreementBound_of_powerAgreement_one
