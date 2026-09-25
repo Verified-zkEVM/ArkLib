@@ -64,15 +64,15 @@ private noncomputable def agreementEquation : DifferentialPolynomial (ZMod 2)[X]
 noncomputable section
 
 local instance : DecidableEq E₄ := Classical.decEq E₄
-
-/-- A nonzero affine line descends from the degree-two extension. -/
-example : HasExactCorrelatedPair pointDomain (fun _ ↦ (1 : ZMod 2)) (fun _ ↦ 0)
+/-- A nonzero affine line descends and gives degree-one power agreement. -/
+example : HasExactPowerAgreement pointDomain ![fun _ ↦ (1 : ZMod 2), fun _ ↦ 0]
     (RingHom.id (ZMod 2)) 2 1 (1 + X) :=
-  HasExactCorrelatedPair.descend pointDomain _ _ (algebraMap (ZMod 2) E₄) 2 1 (1 + X)
-    ⟨(1, X), by norm_num, by norm_num, by simp [correlatedPairSpecialization], by
-      ext i
-      fin_cases i
-      simp [polynomialAgreementSet, commonPolynomialAgreementSet, pointDomain]⟩
+  powerAgreement_one_of_exactCorrelatedPair pointDomain (fun _ ↦ 1) (fun _ ↦ 0)
+    (RingHom.id (ZMod 2)) 1 (1 + X)
+    (HasExactCorrelatedPair.descend pointDomain _ _ (algebraMap (ZMod 2) E₄) 2 1 (1 + X)
+      ⟨(1, X), by norm_num, by norm_num, by simp [correlatedPairSpecialization], by
+        ext i; fin_cases i; simp [polynomialAgreementSet, commonPolynomialAgreementSet,
+          pointDomain]⟩)
 
 /-- The equation `Y = X` descends from `E₄`: its constant solution at `z = 1` is correlated. -/
 example : HasExactCorrelatedPair pointDomain (fun _ ↦ (0 : ZMod 2)) (fun _ ↦ 1)
