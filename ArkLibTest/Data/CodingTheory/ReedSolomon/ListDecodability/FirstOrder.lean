@@ -5,6 +5,7 @@ Authors: Quang Dao
 -/
 
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.Bounds
+import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.FiniteLengthParameters
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.Profile
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.NormNum
@@ -17,6 +18,7 @@ theorem over `ℚ`.
 -/
 
 open Polynomial ReedSolomon ReedSolomon.HiddenDerivative
+open ReedSolomon.FirstOrder ReedSolomon.FirstOrder.Squarefree
 
 private def rationalEvaluationDomain : Fin 4 ↪ ℚ :=
   ⟨fun i ↦ (i.val : ℚ), fun i j h ↦ by
@@ -202,3 +204,30 @@ example :
   constructor
   · simp
   · simp [smallFirstOrderProfile, finiteEvaluationDomain]
+
+/-- The finite-length correction absorbs the inverse slack at length four. -/
+example : 1 / finiteLengthSlack (0 : ℝ) 4 ≤ 4 := by
+  apply finiteLengthSlack_inv_le_length (eta := 0) (n := 4)
+  all_goals norm_num
+
+/-- The squarefree list envelope applies with positive slack and finite length. -/
+example :
+    (firstOrderCurveFiberStageOne (1 + 1) 1 1 (regularTaylorExponent 1) : ℝ) * 1 +
+        ordinaryDegreeEnvelope 1 1 ≤
+      7 * (1 : ℝ) ^ 3 * (4 : ℝ) / finiteLengthSlack (1 / 4 : ℝ) 4 ^ 2 := by
+  apply squarefreeListExpression_le_finiteLength (C := 1) (eta := 1 / 4)
+    (n := 4) (D := 1) (B := 1) (M := 1) (lambda := 1)
+  all_goals norm_num [finiteLengthSlack]
+
+/-- The line-MCA expression has the fourth-power finite-length envelope. -/
+example :
+    finiteLengthMcaEnvelope 1 4 1 1 1 1 ≤
+      140 * (1 : ℝ) ^ 6 * 4 ^ 2 / finiteLengthSlack (1 / 4 : ℝ) 4 ^ 4 := by
+  apply finiteLengthMcaEnvelope_le (C := 1) (eta := 1 / 4) (lambda := 1)
+  all_goals norm_num [finiteLengthSlack]
+
+/-- The inverse-slack line envelope gives a concrete rate-envelope instance. -/
+example :
+    finiteLengthMcaEnvelope 1 4 1 1 1 1 ≤ 140 * (1 : ℝ) ^ 6 * 4 ^ 2 * 1 ^ 4 := by
+  apply finiteLengthMcaEnvelope_le_rateEnvelope (C := 1) (q := 1) (lambda := 1)
+  all_goals norm_num
