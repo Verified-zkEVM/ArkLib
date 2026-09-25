@@ -12,6 +12,7 @@ public import
 public import ArkLib.Data.CodingTheory.ReedSolomon.PowerAgreement
 public import ArkLib.Data.Polynomial.Differential.FrobeniusTaylorWitness
 public import ArkLib.Data.Polynomial.Differential.RationalTaylorBidegree
+import ArkLib.Data.Polynomial.Differential.TaylorChartGeometry
 public import ArkLib.ToMathlib.MvPolynomial.FrobeniusPullback
 public import ArkLib.ToMathlib.MvPolynomial.PolynomialCoefficients
 /-!
@@ -20,11 +21,15 @@ public import ArkLib.ToMathlib.MvPolynomial.PolynomialCoefficients
 Finite families of regular expanded solutions with many agreements but no exact power agreement
 are bounded by the incidence of regular points outside retained tuple graphs and the exceptional
 challenges for retained tuples.
+A common regular Taylor center can be selected from witness separants to apply this bound without
+a prescribed center.
 
 ## Main statements
 
 * `finite_frobeniusPowerRegularBadChallenges_card_le` gives the bound at any retained-agreement
   threshold `L` between `k` and the requested agreement `A`.
+* `finite_frobeniusPowerRegularBadChallenges_card_le_of_separant_at` chooses a common regular
+  Taylor center for a finite family and applies the bound.
 
 ## References
 
@@ -250,6 +255,71 @@ theorem finite_frobeniusPowerRegularBadChallenges_card_le [IsAlgClosed E]
   have hdQ : (discarded.card : ℚ) ≤ (ℓ * (n - L) * b : ℕ) := by
     exact_mod_cast hexcbound
   linarith
+
+private theorem span_singleton_ne_top_of_aeval_eq_zero {σ : Type*}
+    (g : MvPolynomial σ E) (x : σ → E) (hx : aeval x g = 0) :
+    Ideal.span ({g} : Set (MvPolynomial σ E)) ≠ ⊤ := by
+  intro htop
+  have hgunit : IsUnit g := Ideal.span_singleton_eq_top.mp htop
+  have hevalunit : IsUnit (MvPolynomial.aeval x g) := hgunit.map (MvPolynomial.aeval x)
+  rw [hx] at hevalunit
+  exact not_isUnit_zero hevalunit
+
+open Classical in
+/-- A finite family of regular Frobenius witnesses satisfies the bound at every retained-
+agreement threshold between `k` and `A`. -/
+theorem finite_frobeniusPowerRegularBadChallenges_card_le_of_separant_at [IsAlgClosed E]
+    {L : ℕ}
+    (domain : Fin n ↪ F) (values : Fin (ℓ + 1) → Fin n → F) (ι : F →+* E)
+    (roots : Fin n → E) (Q : DifferentialPolynomial E[X] 0)
+    (p e τ h b A : ℕ) [ExpChar E p]
+    (hroots : ∀ i, roots i ^ (p ^ e) = ι (domain i))
+    (hK : 0 < K) (hKk : K ≤ p ^ e * k) (hτ : TaylorExponentSufficient 0 K τ)
+    (hτpos : 0 < τ) (hℓ : 0 < ℓ) (hb : 0 < b)
+    (hkL : k ≤ L) (hLA : L ≤ A)
+    (hheight : CoeffNatDegreeLE Q h) (hjet : jetTotalDegree Q ≤ b)
+    (challenges : Finset E) (witness : E → E[X])
+    (hdegree : ∀ z ∈ challenges, (expand E (p ^ e) (witness z)).degree < K)
+    (hsol : ∀ z ∈ challenges,
+      differentialSpecialization (challengeSpecialization Q z)
+        (expand E (p ^ e) (witness z)) = 0)
+    (hsep : ∀ z ∈ challenges,
+      differentialSpecialization
+        (separant (challengeSpecialization Q z) (Fin.last 0))
+        (expand E (p ^ e) (witness z)) ≠ 0)
+    (hagree : ∀ z ∈ challenges, A ≤
+      (polynomialAgreementSet (domain.trans ⟨ι, ι.injective⟩)
+        (powerBatchedWord (fun t i ↦ ι (values t i)) (z ^ (p ^ e)))
+        (witness z)).card)
+    (hbad : ∀ z ∈ challenges,
+      ¬HasExactPowerAgreement domain values ι k (z ^ (p ^ e)) (witness z)) :
+    (challenges.card : ℚ) ≤
+      (h * (1 + τ * (b - 1)) + b * (p ^ e * ℓ + τ * h) : ℕ) *
+        (((n - L + 1 : ℕ) : ℚ) / ((A - L + 1 : ℕ) : ℚ)) +
+      (ℓ * (n - L) * b : ℕ) := by
+  classical
+  obtain hempty | ⟨z, hz⟩ := challenges.eq_empty_or_nonempty
+  · subst challenges
+    positivity
+  obtain ⟨center, hc⟩ := exists_forall_jetEvaluation_ne_zero_of_family challenges
+    (fun z ↦ separant (challengeSpecialization Q z) (Fin.last 0))
+    (fun z ↦ expand E (p ^ e) (witness z)) hsep
+  have hinit : jointInitialJetEquation center Q ≠ 0 := by
+    apply jointInitialJetEquation_ne_zero_of_regular center z Q
+      (polynomialJet center (expand E (p ^ e) (witness z)))
+    rw [aeval_initialJetSeparant]
+    exact hc z hz
+  have hchart := frobeniusExpansion_satisfies_jointTaylorCuts Q center z (witness z)
+    p e K τ hτ (hdegree z hz) (hsol z hz) (by
+      rw [aeval_initialJetSeparant]
+      exact hc z hz)
+  have hproper := span_singleton_ne_top_of_aeval_eq_zero
+    (jointInitialJetEquation center Q)
+    (fun i : Option (Fin 1) ↦ i.elim z fun j ↦
+      polynomialJet center (expand E (p ^ e) (witness z)) j) hchart.1
+  exact finite_frobeniusPowerRegularBadChallenges_card_le
+    domain values ι roots center Q p e τ h b A hroots hK hKk hτ hτpos hℓ hb hkL hLA
+      hheight hjet hinit hproper challenges witness hdegree hsol hc hagree hbad
 
 end ReedSolomon
 
