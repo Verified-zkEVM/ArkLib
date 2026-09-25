@@ -7,6 +7,7 @@ Authors: Quang Dao
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.Midpoint
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.Parameters
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.SharpCountingBound
+import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.ProductCounting
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.WeightedSupport.ScalarParameters
 
 /-! # Acceptance case for correlated-agreement capacity bounds -/
@@ -121,3 +122,23 @@ example :
     (by norm_num) (by norm_num) (by norm_num) (by norm_num)
     (by intro i hi; norm_num) (by intro i hi; norm_num) (by intro i hi; norm_num)
     (by intro i hi; norm_num)
+
+/-- The product cutoff bounds a concrete one-stage regular agreement family. -/
+example :
+    let L := correlatedProductCutoff 1 1 6
+    (1 : ℝ) + ∑ _i ∈ (Finset.univ : Finset (Fin 1)),
+      (regularPowerBatchedAgreementSharpBound 1 8 1 4 1 L 6 1 1 (τ := 0) : ℝ) ≤
+      polynomialCurveProductAgreementConstant (1 / 2) 1 1 1 * (8 : ℝ) ^ (1 + 1) := by
+  simpa using regularPowerBatchedAgreementSharp_product_finiteStage_le
+    (S := (Finset.univ : Finset (Fin 1))) (order := fun _ ↦ 1)
+    (jetDegree := fun _ ↦ 1) (height := fun _ ↦ 1)
+    (δ := 1 / 2) (n := 8) (K := 4) (k := 1) (A := 6) (ℓ := 1) (v := 1) (h := 1)
+    (d := 1) (τ := 0)
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (by intro i hi; norm_num) (by intro i hi; norm_num) (by intro i hi; norm_num)
+    (by intro i hi; norm_num)
+
+/-- The prescribed product-based coefficient is positive at a concrete small gap. -/
+example : 0 < prescribedProductAgreementConstant (1 / 5) :=
+  prescribedProductAgreementConstant_pos (by norm_num) (by norm_num)
