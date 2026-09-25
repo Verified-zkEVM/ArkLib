@@ -165,6 +165,18 @@ private theorem assemblyUnifiedFactorGood :
   rw [hcard]
   simp [ordinaryUnifiedPowerFactorRawAt, assemblyHeight]
 
+private theorem assemblyCurveFactorGood :
+    ∀ c ∈ MvPolynomial.positiveDegreeFactorClasses (0 : Fin 1) assemblyQ,
+      ∃ ex : Finset Unit,
+        (ex.card : ℚ) ≤ ordinaryCurveFactorRaw 0 1 0 1
+          (MvPolynomial.degreeOf (0 : Fin 1) c.rep) (assemblyHeight c.rep) ∧
+        ∀ w ∉ ex, ∀ y, assemblyEval w y c.rep = 0 → y = 0 := by
+  intro c hc
+  refine ⟨∅, ?_, ?_⟩
+  · simp [ordinaryCurveFactorRaw, assemblyHeight]
+  · intro w hw y hy
+    exact assemblyFactorRoot hc y hy
+
 private theorem assemblyRootBudget : MvPolynomial.degreeOf (0 : Fin 1) assemblyQ ≤ 1 := by
   simp [assemblyQ]
 
@@ -224,3 +236,39 @@ example : (25 : ℚ) ≤ ordinaryCurveFactorRaw 1 5 1 2 2 3 := by
 
 example : ordinaryCurveFactorRaw 1 5 1 2 2 3 ≤ 2 * ordinaryFactorRaw 1 5 1 2 2 := by
   exact ordinaryCurveFactorRaw_le_line_mul 1 5 1 2 2 3 2 (by norm_num) (by norm_num)
+
+example : ordinaryCurveFactorRaw 1 5 1 2 1 3 ≤ 44 := by
+  calc
+    ordinaryCurveFactorRaw 1 5 1 2 1 3 ≤
+        ((2 * 2 - 1 : ℕ) + 1 * (1 + 4 * 1 * 2)) * 3 +
+        (1 * 2 + (2 * (5 - 1 - 1) : ℕ)) * 1 :=
+      ordinaryCurveFactorRaw_le_linear (theta := 1) (n := 5) (D := 1) (ell := 2)
+        (a := 1) (mu := 2) 3 (by norm_num)
+        (Nat.le_of_lt (by norm_num : (1 : ℕ) < 2))
+    _ = 44 := by norm_num
+
+example : ordinaryCurveFactorRaw 1 5 1 2 2 3 = 52 := by
+  calc
+    ordinaryCurveFactorRaw 1 5 1 2 2 3 =
+        ((2 * 2 - 1 : ℕ) + 1 * (1 + 4 * 1 * 2)) * 3 +
+        (1 * 2 + (2 * (5 - 1 - 1) : ℕ)) * 2 :=
+      ordinaryCurveFactorRaw_eq_linear 1 5 1 2 2 3
+    _ = 52 := by norm_num
+
+example : (∑ _i ∈ (Finset.univ : Finset (Fin 2)),
+    ordinaryCurveFactorRaw 0 4 1 2 1 1) ≤ ordinaryCurveFactorRaw 0 4 1 2 2 2 := by
+  have h := ordinaryCurveFactorRaw_sum_le (S := (Finset.univ : Finset (Fin 2)))
+    (a := fun _ : Fin 2 ↦ 1) (height := fun _ : Fin 2 ↦ 1)
+    (theta := 0) (n := 4) (D := 1) (ell := 2) (mu := 2) (H := 2) (contentHeight := 0)
+    (by norm_num) (by norm_num) (by simp) (by simp)
+  simpa using h
+
+example : ∃ ex : Finset Unit, (ex.card : ℚ) ≤ ordinaryCurveFactorRaw 0 1 0 1 1 0 ∧
+    (∀ w ∉ ex, ∀ y, assemblyEval w y assemblyQ = 0 → y = 0) ∧
+    assemblyEval () 0 assemblyQ = 0 := by
+  have hresult := exists_exceptional_ordinaryCurveFactorAssembly
+    (i := 0) (Q := assemblyQ) (by exact MvPolynomial.X_ne_zero _) assemblyEval
+    (fun _ y ↦ y = 0) assemblyHeight 0 1 0 1 1 0 (by norm_num) (by norm_num)
+    assemblyRootBudget assemblyHeightBudget assemblyContentGood assemblyCurveFactorGood
+  rcases hresult with ⟨ex, hcard, hgood⟩
+  exact ⟨ex, hcard, hgood, assemblyRootAtZero⟩
