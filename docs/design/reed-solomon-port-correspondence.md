@@ -2181,7 +2181,7 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Poly
 
 `exists_polynomialGraph_of_symbolic_prime_agreements_of_exponent` became `exists_polynomialGraph_of_primeTaylorComponent_agreements`. It handles any index set of size `L` with `k ≤ L`, chooses the interpolation sample internally, and returns the graph and ideal restriction facts.
 
-`symbolicSourceCurveAgreement_eq_zero_iff_of_exponent` was not ported because `PolynomialDifferential.aeval_map_taylorAgreementEquationOver_eq_zero_iff_of_exponent` covers it generically. Historical acceptance cases checked direct constituent agreement on the prime-component fixture and tuple extraction from one joint cut for a two-entry tuple; neither case is in the current consolidated suite.
+`symbolicSourceCurveAgreement_eq_zero_iff_of_exponent` was not ported because `PolynomialDifferential.aeval_map_taylorAgreementEquationOver_eq_zero_iff_of_exponent` covers it generically. The current consolidated suite includes a compact positive-dimensional prime-component example constructing a degree-bounded tuple with a nonempty common-agreement set. The earlier separate constituent-agreement and two-entry tuple-extraction examples remain historical.
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedComponentRecognition.lean`
 
@@ -5122,35 +5122,36 @@ Acceptance cases check the exact-ceiling and closed cardinality bounds, finite-s
 
 **Historical port-time test notes, not current suite coverage.** The following descriptions record
 acceptance cases that existed at earlier port revisions. The consolidated suite currently retains
-11 concrete examples: extension descent, exact-line transfer, graph-line recognition and its
-exceptional bound, tuple collision and avoiding specialization, a positive-dimensional prime
-component graph case, Frobenius incidence on that component, symbolic point recognition with a
-nonzero second tuple component, and concrete derivative-capped challenge and incidence bounds,
-including regular and separable exceptional-set bounds.
+15 concrete examples: extension descent, exact-line transfer, graph-line recognition and its
+exceptional bound, tuple collision and avoiding specialization; on the shared positive-dimensional
+prime-component fixture, graph parametrization, common-agreement extraction, admissible chart-tuple
+construction, principal-open chart-graph inclusion, admissible Frobenius-pair construction, and
+principal-open Frobenius-graph inclusion; symbolic point recognition with a nonzero second tuple
+component; and derivative-capped challenge, exceptional-set, and first-order incidence bounds.
 
 Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
-Historical acceptance cases reused the shared concrete equation and numerator identity for the joint-chart case, and checked graph parametrization of regular points for the `K = 2`, `k = 1` component case. These cases are not in the current consolidated suite; current coverage is summarized above.
+The earlier joint-chart acceptance case reusing the shared concrete equation and numerator identity remains historical. The former `K = 2`, `k = 1` component graph case is covered by the current shared fixture: it uses the returned graph proof to show the zero regular point lies on the recognized graph. Current coverage is summarized above.
 
 Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
-A historical acceptance example used the algebraic-closure prime-component fixture to check a degree-bounded pair and a nonzero common-agreement count. It is not in the current consolidated suite.
+A historical acceptance example used the algebraic-closure prime-component fixture to check a degree-bounded pair and a nonzero common-agreement count. The current suite retains a compact component-agreement case on the shared fixture, producing a degree-bounded tuple with at least one common agreement.
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/ComponentRecognition.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
-Historical acceptance cases checked a positive-dimensional prime component's sample interpolation, graph coverage, and nonzero restricted separant, along with single-tuple and finite-family exact-agreement bounds. The current suite keeps one compact positive-dimensional component graph-pair instance.
+Historical acceptance cases checked a positive-dimensional prime component's sample interpolation, graph coverage, and nonzero restricted separant, along with single-tuple and finite-family exact-agreement bounds. The current suite keeps a compact graph-pair instance with the regular zero point on the returned graph; the shared fixture also supports the component-agreement, chart-admissibility, and incidence examples summarized above.
 
 Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
-Historical acceptance cases checked polynomial-valued source-prime bounds, a degree-zero chart prime, chart/source/first-order component bounds, and finite incidence counts. They are not in the current consolidated suite.
+Historical acceptance cases checked polynomial-valued source-prime bounds, a degree-zero chart prime, chart/source/first-order component bounds, and finite incidence counts. Those broader bounds remain historical; the current suite includes principal-open chart-graph inclusion and Frobenius-graph inclusion instances on the shared component fixture.
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/Frobenius/GraphCounting.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
-A historical acceptance case applied `admissibleFrobeniusPairs_card_le_degreeOf` to a singleton family containing an admissible pair from the concrete component fixture. That test is not in the current consolidated suite; the production theorem remains unchanged.
+A historical acceptance case applied `admissibleFrobeniusPairs_card_le_degreeOf` to a singleton family containing an admissible pair from the concrete component fixture; that specific cardinal-bound example remains historical, and the production theorem is unchanged. The current suite checks a concrete admissible Frobenius pair and the zero point's membership in its graph.
 
 Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
-A historical acceptance example applied `exists_admissibleChartTuple_of_primeTaylorComponent_agreements` to the component ideal, agreement cuts, and separant fixtures. It is not in the current consolidated suite.
+A historical acceptance example applied `exists_admissibleChartTuple_of_primeTaylorComponent_agreements` to the component ideal, agreement cuts, and separant fixtures. The current suite retains a compact instance of this theorem, constructing an admissible tuple and using its returned graph proof to place the zero regular point on that tuple's graph.
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/SharpGeneralEquation.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 

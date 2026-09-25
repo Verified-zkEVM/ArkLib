@@ -197,6 +197,13 @@ private theorem componentZero_mem_zeroLocus :
   rw [zeroLocus_span]
   simp [componentVariable]
 
+private theorem componentZero_regular :
+    (fun _ : Option (Fin 1) ↦ (0 : MCAField)) ∈ zeroLocus MCAField componentIdeal ∧
+      aeval (fun _ : Option (Fin 1) ↦ (0 : MCAField))
+        (jointInitialJetSeparant (0 : MCAField) componentEquation) ≠ 0 := by
+  exact ⟨componentZero_mem_zeroLocus, by
+    simp [jointInitialJetSeparant, initialJetSeparant, separant, componentEquation, Fin.last]⟩
+
 /-- A positive-dimensional prime component with a nonzero separant yields a concrete graph pair. -/
 example : ∃ P₀ P₁ : ℚ[X], P₀.degree < 1 ∧ P₁.degree < 1 ∧
     P₀.eval 0 = 0 ∧ P₁.eval 0 = 0 ∧
@@ -218,12 +225,7 @@ example : ∃ P₀ P₁ : ℚ[X], P₀.degree < 1 ∧ P₁.degree < 1 ∧
         rw [componentDomain_zero, map_zero]
         rw [show Polynomial.C (0 : MCAField) + Polynomial.X * Polynomial.C 0 = 0 by simp]
         exact componentAgreementCut_mem)
-  have hregular : (fun _ : Option (Fin 1) ↦ (0 : MCAField)) ∈
-      zeroLocus MCAField componentIdeal ∧
-      aeval (fun _ : Option (Fin 1) ↦ (0 : MCAField))
-        (jointInitialJetSeparant (0 : MCAField) componentEquation) ≠ 0 :=
-    ⟨componentZero_mem_zeroLocus, by
-      simp [jointInitialJetSeparant, initialJetSeparant, separant, componentEquation, Fin.last]⟩
+  have hregular := componentZero_regular
   obtain ⟨z, hz⟩ := hgraph _ hregular
   have hvalues := hsample 0 (by simp)
   exact ⟨P₀, P₁, hP₀, hP₁, by simpa only [componentDomain_zero] using hvalues.1,
@@ -268,8 +270,7 @@ example : ∃ P : Fin 2 → ℚ[X],
       (algebraMap ℚ MCAField) 0 componentEquation 1 1 1 0 P' ∧
     (fun _ : Option (Fin 1) ↦ (0 : MCAField)) = fun j ↦
       (powerBatchedJetGraphMap (r := 0) 0 (fun t ↦ (P' t).map (algebraMap ℚ MCAField)) j).eval 0
-  exact ⟨P, hP, hgraph _ ⟨componentZero_mem_zeroLocus, by
-    simp [jointInitialJetSeparant, initialJetSeparant, separant, componentEquation, Fin.last]⟩⟩
+  exact ⟨P, hP, hgraph _ componentZero_regular⟩
 
 example : (fun _ : Option (Fin 1) ↦ (0 : MCAField)) ∈
     admissibleChartTupleGraphLocus componentDomain componentWords
@@ -287,8 +288,7 @@ example : (fun _ : Option (Fin 1) ↦ (0 : MCAField)) ∈
     (by omega) (by omega) (by intro l; omega) componentIdeal componentIdeal_prime
     componentSeparant_notMem componentIdeal_positiveDimension componentInitialEquation_mem
     (by intro l hl; omega) hcuts
-  exact hsubset ⟨componentZero_mem_zeroLocus, by
-    simp [jointInitialJetSeparant, initialJetSeparant, separant, componentEquation, Fin.last]⟩
+  exact hsubset componentZero_regular
 
 example : ∃ F₀ G₀ : ℚ[X],
     IsAdmissibleFrobeniusPair componentDomain (fun _ ↦ 0) (fun _ ↦ 0)
@@ -313,8 +313,7 @@ example : ∃ F₀ G₀ : ℚ[X],
       intro i hi
       obtain rfl : i = 0 := Subsingleton.elim _ _
       simpa [componentDomain_zero, pow_one] using componentAgreementCut_mem)
-  exact ⟨F₀, G₀, hP, hgraph _ ⟨componentZero_mem_zeroLocus, by
-    simp [jointInitialJetSeparant, initialJetSeparant, separant, componentEquation, Fin.last]⟩⟩
+  exact ⟨F₀, G₀, hP, hgraph _ componentZero_regular⟩
 
 /-- The zero point of the same positive-dimensional component lies on a Frobenius pair graph. -/
 example : ∃ x : Option (Fin 1) → MCAField,
@@ -346,13 +345,9 @@ example : ∃ x : Option (Fin 1) → MCAField,
       rw [show Polynomial.C (0 : MCAField) + Polynomial.X * Polynomial.C 0 = 0 by simp]
       exact componentAgreementCut_mem)
   refine ⟨fun _ ↦ 0, ?_, ?_, ?_⟩
-  · exact componentZero_mem_zeroLocus
-  · simp [jointInitialJetSeparant, initialJetSeparant, separant, componentEquation, Fin.last]
-  · simpa only [pow_zero, one_pow] using hsubset (by
-      constructor
-      · exact componentZero_mem_zeroLocus
-      · simp [jointInitialJetSeparant, initialJetSeparant, separant, componentEquation,
-          Fin.last])
+  · exact componentZero_regular.1
+  · exact componentZero_regular.2
+  · simpa only [pow_zero, one_pow] using hsubset componentZero_regular
 
 private def recognitionDomain : Fin 1 ↪ ZMod 3 :=
   ⟨fun _ ↦ 0, fun _ _ _ ↦ Subsingleton.elim _ _⟩
