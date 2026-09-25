@@ -7,6 +7,7 @@ module
 
 public import
   ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.DerivativeCappedCounting
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.HybridConstants
 public import ArkLib.Data.Polynomial.Differential.FirstOrderStageSum
 public import ArkLib.Data.Polynomial.Differential.RecursiveCount
 public import ArkLib.Data.Polynomial.Differential.TaylorChartBaseChange
@@ -28,6 +29,7 @@ uniform cap-sensitive bound at exponent `2 * K`.
 * `finite_regular_agreement_solutions_card_le_derivativeCapped_of_exponent`: the regular-solution
   derivative-capped count.
 * `finite_regular_agreement_solutions_card_le_identityPair`: the degree-one identity-pair count.
+* `finite_regular_agreement_solutions_card_le_regularTaylor`: the regular Taylor count.
 * `finite_firstOrder_agreement_solutions_card_le_tight_of_exponent`: the exact-exponent count.
 * `firstOrderTightListWeight_two_mul_le` and
   `finite_firstOrder_agreement_solutions_card_le_sharp`: the uniform comparison and count.
@@ -302,6 +304,42 @@ theorem finite_regular_agreement_solutions_card_le_identityPair
         (((n - 1 : ℕ) : ℚ) / (A - 1 : ℕ)) := by
       simp [firstOrderCurveFiberStageOne, firstOrderTaylorTotalCap,
         firstOrderTaylorDerivativeCap, MvPolynomial.cappedDegreeMixedVolume]
+
+open Classical in
+/-- A regular first-order solution family is bounded by its regular Taylor incidence charge
+times the sharp agreement ratio. -/
+theorem finite_regular_agreement_solutions_card_le_regularTaylor
+    (Q : DifferentialPolynomial F 1) (D j r : ℕ)
+    (hregime : D = 1 ∨ 1 < D ∧ 0 < r)
+    (hjet : jetTotalDegree Q ≤ j) (hderiv : jetDegree Q 1 ≤ r) (hrj : r ≤ j)
+    {n A : ℕ} (domain : Fin n ↪ F) (received : Fin n → F)
+    (hDA : D + 1 ≤ A) (hAn : A ≤ n)
+    (S : Finset F[X])
+    (hdegree : ∀ P ∈ S, P.degree < D + 1)
+    (hsol : ∀ P ∈ S, differentialSpecialization Q P = 0)
+    (hsep : ∀ P ∈ S, differentialSpecialization (separant Q 1) P ≠ 0)
+    (hbin : ∀ i, 1 < i → i < D + 1 → (i.choose 1 : F) ≠ 0)
+    (hagree : ∀ P ∈ S,
+      A ≤ (Finset.univ.filter fun i ↦ P.eval (domain i) = received i).card) :
+    (S.card : ℚ) ≤ firstOrderCurveFiberStageOne (D + 1) j r (regularTaylorExponent D) *
+      (((n - D : ℕ) : ℚ) / ((A - D : ℕ) : ℚ)) := by
+  rcases hregime with hDone | ⟨hD, hr⟩
+  · subst D
+    simpa [regularTaylorExponent] using
+      finite_regular_agreement_solutions_card_le_identityPair Q j r hjet domain received
+        (by omega) hAn S hdegree hsol hsep hagree
+  · have hτ : TaylorExponentSufficient 1 (D + 1) (regularTaylorExponent D) := by
+      simpa [regularTaylorExponent] using taylorExponentSufficient_firstOrder_tight D
+    have hτpos : 0 < regularTaylorExponent D := by
+      unfold regularTaylorExponent
+      omega
+    have hcount := finite_regular_agreement_solutions_card_le_derivativeCapped_of_exponent
+      Q (D + 1) (D + 1) j r (regularTaylorExponent D)
+      hτ hτpos (by omega) le_rfl hr hrj hjet hderiv domain received (by omega) hAn S
+      hdegree hsol hsep hbin hagree
+    have hn : n - (D + 1) + 1 = n - D := by omega
+    have hA' : A - (D + 1) + 1 = A - D := by omega
+    simpa only [hn, hA'] using hcount
 
 /-- Every finite family of accepted polynomial solutions of a first-order equation is bounded by
 the exact sum of its order-zero and derivative-capped order-one stage charges. -/

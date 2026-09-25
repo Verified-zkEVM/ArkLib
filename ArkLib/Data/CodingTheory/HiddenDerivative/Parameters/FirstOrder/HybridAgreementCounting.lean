@@ -358,8 +358,6 @@ private theorem finite_firstOrder_hybrid_agreement_solutions_card_le_raw_of_stag
     rw [Nat.choose_one_right]
     apply natCast_ne_zero_of_ringChar_eq_zero_or_lt hchar (by omega)
     exact (show i ≤ D by omega).trans (Nat.le_max_left D e)
-  have hτ : TaylorExponentSufficient 1 (D + 1) (regularTaylorExponent D) := by
-    simpa [regularTaylorExponent] using taylorExponentSufficient_firstOrder_tight D
   let tailRoots := S.filter fun P ↦
     differentialSpecialization tail P = 0
   let stageRoots : Fin e → Finset F[X] := fun j ↦ S.filter fun P ↦
@@ -383,37 +381,21 @@ private theorem finite_firstOrder_hybrid_agreement_solutions_card_le_raw_of_stag
     have hregular : ((stageRoots j).card : ℚ) ≤
         firstOrderCurveFiberStageOne (D + 1) (μ - j) (e - j) (regularTaylorExponent D) *
           (((n - D : ℕ) : ℚ) / (A - D : ℕ)) := by
-      by_cases hDone : D = 1
-      · subst D
-        have hn : n - 2 + 1 = n - 1 := by omega
-        have hA' : A - 2 + 1 = A - 1 := by omega
-        simpa only [Nat.reduceAdd, regularTaylorExponent, Nat.reduceMul, Nat.reduceSub,
-          hn, hA'] using finite_regular_agreement_solutions_card_le_identityPair
-            (stage j) (μ - j) (e - j) hjet domain received (by omega) hAn (stageRoots j)
-            (fun P hP ↦ (haccept P (Finset.mem_filter.mp hP).1).1)
-            (fun P hP ↦ (Finset.mem_filter.mp hP).2.1)
-            (fun P hP ↦ by
-              simpa only [show (Fin.last 1 : Fin 2) = 1 by decide] using
-                (Finset.mem_filter.mp hP).2.2)
-            (fun P hP ↦ (haccept P (Finset.mem_filter.mp hP).1).2)
-      · have hτpos : 0 < regularTaylorExponent D := by
-          unfold regularTaylorExponent
-          omega
-        have hnum : n - (D + 1) + 1 = n - D := by omega
-        have hden : A - (D + 1) + 1 = A - D := by omega
-        simpa only [hnum, hden] using
-          finite_regular_agreement_solutions_card_le_derivativeCapped_of_exponent
-            (stage j)
-            (D + 1) (D + 1) (μ - j) (e - j) (regularTaylorExponent D)
-            hτ hτpos (by omega) le_rfl hu huv hjet hderiv domain received
-            (by omega) hAn (stageRoots j)
-            (fun P hP ↦ (haccept P (Finset.mem_filter.mp hP).1).1)
-            (fun P hP ↦ (Finset.mem_filter.mp hP).2.1)
-            (fun P hP ↦ by
-              simpa only [show (Fin.last 1 : Fin 2) = 1 by decide] using
-                (Finset.mem_filter.mp hP).2.2)
-            hbin
-            (fun P hP ↦ (haccept P (Finset.mem_filter.mp hP).1).2)
+      exact finite_regular_agreement_solutions_card_le_regularTaylor
+        (stage j) D (μ - j) (e - j)
+        (by
+          by_cases hDone : D = 1
+          · exact Or.inl hDone
+          · exact Or.inr ⟨by omega, hu⟩)
+        hjet hderiv huv domain received hDA hAn
+        (stageRoots j)
+        (fun P hP ↦ (haccept P (Finset.mem_filter.mp hP).1).1)
+        (fun P hP ↦ (Finset.mem_filter.mp hP).2.1)
+        (fun P hP ↦ by
+          simpa only [show (Fin.last 1 : Fin 2) = 1 by decide] using
+            (Finset.mem_filter.mp hP).2.2)
+        hbin
+        (fun P hP ↦ (haccept P (Finset.mem_filter.mp hP).1).2)
     have hregularReal : ((stageRoots j).card : ℝ) ≤
         (firstOrderCurveFiberStageOne
           (D + 1) (μ - j) (e - j) (regularTaylorExponent D) : ℝ) *

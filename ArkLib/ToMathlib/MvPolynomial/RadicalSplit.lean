@@ -51,6 +51,8 @@ This file makes no characteristic, separability or incidence claim.
 * `MvPolynomial.map_radicalContent_add_map_radicalPrimPart_le`, `map_radicalPrimPart_le` and
   their specializations `totalDegree_radicalPrimPart_le` and `degreeOf_radicalPrimPart_le`: the
   degree budgets for the two products.
+* `MvPolynomial.radicalPrimPart_eq_one_of_degreeOf_eq_zero`: a zero degree in the selected
+  variable makes the positive-degree factor product empty.
 * `MvPolynomial.exists_exceptional_of_factor_exceptional`: the combination of exceptional sets.
 -/
 
@@ -279,6 +281,25 @@ theorem totalDegree_radicalPrimPart_le (i : σ) (Q : MvPolynomial σ R) :
 theorem degreeOf_radicalPrimPart_le (i j : σ) (Q : MvPolynomial σ R) :
     degreeOf j (radicalPrimPart i Q) ≤ degreeOf j Q :=
   map_radicalPrimPart_le (fun _ _ hx hy ↦ degreeOf_mul_eq hx hy) i Q
+
+/-- If the primitive-part radical has degree zero in `X i`, then it is the empty product. -/
+theorem radicalPrimPart_eq_one_of_degreeOf_eq_zero (i : σ) (Q : MvPolynomial σ R)
+    (hdegree : degreeOf i (radicalPrimPart i Q) = 0) :
+    radicalPrimPart i Q = 1 := by
+  classical
+  have hempty : positiveDegreeFactorClasses i Q = ∅ := by
+    apply Finset.eq_empty_iff_forall_notMem.mpr
+    intro a ha
+    have hpos := (mem_positiveDegreeFactorClasses.mp ha).2
+    have hle : degreeOf i a.rep ≤ degreeOf i (radicalPrimPart i Q) := by
+      rw [radicalPrimPart, degreeOf_prod_eq]
+      · exact Finset.single_le_sum
+          (fun b _ ↦ Nat.zero_le (degreeOf i b.rep)) ha
+      · intro b hb
+        exact (irreducible_rep_of_mem_positiveDegreeFactorClasses hb).ne_zero
+    omega
+  rw [radicalPrimPart, hempty]
+  simp
 
 /-- The degrees in `X i` of the positive-degree factors sum to at most the degree of `Q` in
 `X i`. -/

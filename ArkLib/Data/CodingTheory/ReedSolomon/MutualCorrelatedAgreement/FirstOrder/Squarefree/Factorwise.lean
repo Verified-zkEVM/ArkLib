@@ -14,6 +14,7 @@ public import ArkLib.ToMathlib.MvPolynomial.RadicalSplit
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.AgreementCounting
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.HybridAgreementCounting
 import ArkLib.Data.MvPolynomial.WeightedDegree.Products
+import ArkLib.ToMathlib.MvPolynomial.PDeriv
 
 /-!
 # Factorwise first-order agreement counting
@@ -63,38 +64,6 @@ structure FixedWordSingularTail
         (separant (radicalPrimPart (some (1 : Fin 2)) Q) (1 : Fin 2)) P = 0) →
     differentialSpecialization equation P = 0
 
-private theorem natCast_ne_zero_of_factorwise_char_guard
-    {F : Type*} [Field F] {D M i : ℕ}
-    (hchar : ringChar F = 0 ∨ max D M < ringChar F)
-    (hi : 0 < i) (hiD : i ≤ D) : (i : F) ≠ 0 := by
-  intro hz
-  have hdiv := (ringChar.spec F i).mp hz
-  rcases hchar with hzero | hpositive
-  · rw [hzero, zero_dvd_iff] at hdiv
-    omega
-  · exact Nat.not_dvd_of_pos_of_lt hi
-      ((hiD.trans (Nat.le_max_left D M)).trans_lt hpositive) hdiv
-
-private theorem radicalPrimPart_eq_one_of_degreeOf_eq_zero
-    {F : Type*} [Field F] (Q : DifferentialPolynomial F 1)
-    (hdegree : degreeOf (some (1 : Fin 2)) (radicalPrimPart (some 1) Q) = 0) :
-    radicalPrimPart (some 1) Q = 1 := by
-  classical
-  have hempty : positiveDegreeFactorClasses (some (1 : Fin 2)) Q = ∅ := by
-    apply Finset.eq_empty_iff_forall_notMem.mpr
-    intro a ha
-    have hpos := (mem_positiveDegreeFactorClasses.mp ha).2
-    have hle : degreeOf (some (1 : Fin 2)) a.rep ≤
-        degreeOf (some (1 : Fin 2)) (radicalPrimPart (some 1) Q) := by
-      rw [radicalPrimPart, degreeOf_prod_eq]
-      · exact Finset.single_le_sum
-          (fun b _ ↦ Nat.zero_le (degreeOf (some (1 : Fin 2)) b.rep)) ha
-      · intro b hb
-        exact (irreducible_rep_of_mem_positiveDegreeFactorClasses hb).ne_zero
-    omega
-  rw [radicalPrimPart, hempty]
-  simp
-
 open Classical in
 /-- One regular derivative-capped family and a supplied order-zero equation bound every accepted
 solution. The regular charge uses the actual jet and `Y₁` degrees of the positive-degree radical
@@ -102,9 +71,8 @@ part. -/
 theorem finite_factorwise_agreement_solutions_card_le_actual
     {F : Type u} [Field F] {n D A B M : ℕ}
     (domain : Fin n ↪ F) (received : Fin n → F)
-    (Q : DifferentialPolynomial F 1) (hQ : Q ≠ 0)
+    (Q : DifferentialPolynomial F 1)
     (hD : 1 ≤ D) (hkA : D + 1 ≤ A) (hAn : A ≤ n)
-    (hjet : jetTotalDegree Q ≤ B) (hderiv : jetDegree Q 1 ≤ M)
     (hchar : ringChar F = 0 ∨ max D M < ringChar F)
     (tail : FixedWordSingularTail Q B M)
     (S : Finset F[X])
@@ -128,35 +96,21 @@ theorem finite_factorwise_agreement_solutions_card_le_actual
   have hbin : ∀ i, 1 < i → i < D + 1 → (i.choose 1 : F) ≠ 0 := by
     intro i hi hiK
     rw [Nat.choose_one_right]
-    exact natCast_ne_zero_of_factorwise_char_guard hchar (by omega) (by omega)
-  have htau : TaylorExponentSufficient 1 (D + 1) (regularTaylorExponent D) := by
-    simpa only [regularTaylorExponent] using taylorExponentSufficient_firstOrder_tight D
+    apply natCast_ne_zero_of_ringChar_eq_zero_or_lt hchar (by omega)
+    exact (show i ≤ D by omega).trans (Nat.le_max_left D M)
   let j := jetTotalDegree (radicalPrimPart (some (1 : Fin 2)) Q)
   let r := jetDegree (radicalPrimPart (some (1 : Fin 2)) Q) 1
   have hrj : r ≤ j := jetDegree_le_total (radicalPrimPart (some (1 : Fin 2)) Q) 1
-  have hpositiveJet : j ≤ B := by
-    have hdvd : radicalPrimPart (some (1 : Fin 2)) Q ∣ Q :=
-      radicalPrimPart_dvd_self (some (1 : Fin 2)) Q
-    have hdegree : jetTotalDegree (radicalPrimPart (some (1 : Fin 2)) Q) ≤
-        jetTotalDegree Q := by
-      unfold jetTotalDegree
-      exact weightedTotalDegree_le_of_dvd jetDegreeWeight hdvd hQ
-    exact hdegree.trans hjet
-  have hpositiveDerivative : r ≤ M := by
-    have hdegree : jetDegree (radicalPrimPart (some (1 : Fin 2)) Q) 1 ≤ jetDegree Q 1 := by
-      simpa [jetDegree] using
-        degreeOf_radicalPrimPart_le (some (1 : Fin 2)) (some (1 : Fin 2)) Q
-    exact hdegree.trans hderiv
-  have hregularCardQ : (regularRoots.card : ℚ) ≤
-      firstOrderCurveFiberStageOne (D + 1) j r (regularTaylorExponent D) *
-        (((n - (D + 1) + 1 : ℕ) : ℚ) / ((A - (D + 1) + 1 : ℕ) : ℚ)) := by
+  have hregularCard : (regularRoots.card : ℝ) ≤
+      (firstOrderCurveFiberStageOne (D + 1) j r (regularTaylorExponent D) : ℝ) *
+        ((n - D : ℕ) : ℝ) / (A - D : ℕ) := by
     by_cases hr : r = 0
     · have hempty : regularRoots = ∅ := by
         ext P
         constructor
         · intro hP
           obtain ⟨_, hroot, _⟩ := Finset.mem_filter.mp hP
-          have hone := radicalPrimPart_eq_one_of_degreeOf_eq_zero Q (by
+          have hone := radicalPrimPart_eq_one_of_degreeOf_eq_zero (some (1 : Fin 2)) Q (by
             simpa only [r, jetDegree] using hr)
           have hrootOne :
               differentialSpecialization (radicalPrimPart (some (1 : Fin 2)) Q) P = 1 := by
@@ -166,45 +120,29 @@ theorem finite_factorwise_agreement_solutions_card_le_actual
           exact (one_ne_zero hroot).elim
         · simp
       rw [hempty]
-      positivity
-    · by_cases hDone : D = 1
-      · subst D
-        have hn : n - 2 + 1 = n - 1 := by omega
-        have hA' : A - 2 + 1 = A - 1 := by omega
-        simpa only [Nat.reduceAdd, regularTaylorExponent, Nat.reduceMul, Nat.reduceSub,
-          hn, hA'] using
-          finite_regular_agreement_solutions_card_le_identityPair
-            (radicalPrimPart (some (1 : Fin 2)) Q) j r le_rfl domain received (by omega)
-            hAn regularRoots
-            (fun P hP ↦ (haccept P (Finset.mem_filter.mp hP).1).1)
-            (fun P hP ↦ (Finset.mem_filter.mp hP).2.1)
-            (fun P hP ↦ by
-              simpa only [show (Fin.last 1 : Fin 2) = 1 by decide] using
-                (Finset.mem_filter.mp hP).2.2)
-            (fun P hP ↦ (haccept P (Finset.mem_filter.mp hP).1).2)
-      · apply finite_regular_agreement_solutions_card_le_derivativeCapped_of_exponent
-          (radicalPrimPart (some (1 : Fin 2)) Q) (D + 1) (D + 1) j r
-          (regularTaylorExponent D) htau (by unfold regularTaylorExponent; omega)
-          (by omega) le_rfl (by omega) hrj le_rfl le_rfl domain received
-          hkA hAn regularRoots
-        · intro P hP
-          exact (haccept P (Finset.mem_filter.mp hP).1).1
-        · intro P hP
-          exact (Finset.mem_filter.mp hP).2.1
-        · intro P hP
+      simp only [Finset.card_empty, Nat.cast_zero]
+      have hAd : (0 : ℝ) < (A - D : ℕ) := by exact_mod_cast (by omega : 0 < A - D)
+      have hstage : (0 : ℝ) ≤
+          (firstOrderCurveFiberStageOne (D + 1) j r (regularTaylorExponent D) : ℝ) :=
+        Nat.cast_nonneg _
+      have hn : (0 : ℝ) ≤ ((n - D : ℕ) : ℝ) := Nat.cast_nonneg _
+      exact div_nonneg (mul_nonneg hstage hn) hAd.le
+    · have hregularQ := finite_regular_agreement_solutions_card_le_regularTaylor
+        (radicalPrimPart (some (1 : Fin 2)) Q) D j r
+        (by
+          by_cases hDone : D = 1
+          · exact Or.inl hDone
+          · exact Or.inr ⟨by omega, Nat.pos_of_ne_zero hr⟩)
+        le_rfl le_rfl hrj domain received hkA hAn regularRoots
+        (fun P hP ↦ (haccept P (Finset.mem_filter.mp hP).1).1)
+        (fun P hP ↦ (Finset.mem_filter.mp hP).2.1)
+        (fun P hP ↦ by
           simpa only [show (Fin.last 1 : Fin 2) = 1 by decide] using
-            (Finset.mem_filter.mp hP).2.2
-        · exact hbin
-        · intro P hP
-          exact (haccept P (Finset.mem_filter.mp hP).1).2
-  have hregularCard : (regularRoots.card : ℝ) ≤
-      (firstOrderCurveFiberStageOne (D + 1) j r (regularTaylorExponent D) : ℝ) *
-        ((n - D : ℕ) : ℝ) / (A - D : ℕ) := by
-    have hcast := (Rat.cast_le (K := ℝ)).mpr hregularCardQ
-    have hnum : n - (D + 1) + 1 = n - D := by omega
-    have hden : A - (D + 1) + 1 = A - D := by omega
-    simpa only [hnum, hden, Rat.cast_natCast, Rat.cast_mul, Rat.cast_div, mul_div_assoc]
-      using hcast
+            (Finset.mem_filter.mp hP).2.2)
+        hbin
+        (fun P hP ↦ (haccept P (Finset.mem_filter.mp hP).1).2)
+      have hcast := (Rat.cast_le (K := ℝ)).mpr hregularQ
+      simpa only [Rat.cast_natCast, Rat.cast_mul, Rat.cast_div, mul_div_assoc] using hcast
   have htailBound : HasOrderZeroTailListBound (D := D) (A := A)
       (b := ordinaryDegreeEnvelope B M) domain received tail.equation :=
     hasOrderZeroTailListBound_of_nonzero domain received tail.nonzero tail.degree_le
@@ -276,8 +214,8 @@ theorem finite_factorwise_agreement_solutions_card_le
       firstOrderCurveFiberStageOne (D + 1) B M (regularTaylorExponent D) :=
     (firstOrderCurveFiberStageOne_mono_total hjB).trans
       (firstOrderCurveFiberStageOne_mono_derivative hrM hMB)
-  have hactual := finite_factorwise_agreement_solutions_card_le_actual domain received Q hQ
-    hD hkA hAn hjet hderiv hchar tail S hsol haccept
+  have hactual := finite_factorwise_agreement_solutions_card_le_actual domain received Q
+    hD hkA hAn hchar tail S hsol haccept
   calc
     (S.card : ℝ) ≤
         (firstOrderCurveFiberStageOne (D + 1) j r (regularTaylorExponent D) : ℝ) *
