@@ -1405,8 +1405,8 @@ private abbrev regularBoundEquation :
     DifferentialPolynomial RegularBoundField[X] 0 := X (some (0 : Fin 1))
 private def regularBoundWitness (_ : RegularBoundField) : RegularBoundField[X] := 0
 
-example : ({(0 : RegularBoundField)} : Finset RegularBoundField).Nonempty ∧
-    (({(0 : RegularBoundField)} : Finset RegularBoundField).card : ℚ) ≤ 1 := by
+example : ∃ exceptional : Finset RegularBoundField,
+    exceptional.card ≤ 1 ∧ (0 : RegularBoundField) ∈ exceptional := by
   classical
   have hroots : ∀ i, regularBoundDomain i ^ (1 ^ 0) = regularBoundDomain i := by simp
   have hτ : TaylorExponentSufficient 0 1 1 := by
@@ -1425,15 +1425,10 @@ example : ({(0 : RegularBoundField)} : Finset RegularBoundField).Nonempty ∧
     ext i
     fin_cases i <;> simp [polynomialAgreementSet, regularBoundDomain,
       regularBoundValues, regularBoundWitness, powerBatchedWord]
-  have hagree : ∀ z ∈ ({(0 : RegularBoundField)} : Finset RegularBoundField), 2 ≤
-      (polynomialAgreementSet regularBoundDomain (powerBatchedWord regularBoundValues (z ^ (1 ^ 0)))
-        (regularBoundWitness z)).card := by
-    intro z hz
-    have : z = 0 := Finset.mem_singleton.mp hz
-    subst z
-    norm_num only [zero_pow (by norm_num : (1 ^ 0 : ℕ) ≠ 0)]
-    rw [hleft]
-    simp
+  have hdomain : regularBoundDomain.trans ⟨RingHom.id ℂ,
+      (RingHom.id ℂ).injective⟩ = regularBoundDomain := by
+    ext i
+    rfl
   have hbad : ∀ z ∈ ({(0 : RegularBoundField)} : Finset RegularBoundField),
       ¬HasExactPowerAgreement regularBoundDomain regularBoundValues (RingHom.id ℂ) 1
         (z ^ (1 ^ 0)) (regularBoundWitness z) := by
@@ -1468,18 +1463,31 @@ example : ({(0 : RegularBoundField)} : Finset RegularBoundField).Nonempty ∧
         _ = (P 1).eval (regularBoundDomain 1) := heval
         _ = 1 := by simpa [regularBoundValues, regularBoundDomain] using h1 1
     exact zero_ne_one hfalse
-  have hbound := finite_frobeniusPowerRegularBadChallenges_card_le_of_separant_at
-    (F := ℂ) (E := ℂ) (n := 2) (k := 1) (K := 1) (ℓ := 1) (L := 2)
-    regularBoundDomain regularBoundValues (RingHom.id ℂ) regularBoundDomain
-      regularBoundEquation 1 0 1 0 1 2
-    hroots (by norm_num) (by norm_num) hτ (by norm_num) (by norm_num) (by norm_num)
-    (by norm_num) (by norm_num) (coeffNatDegreeLE_X (some (0 : Fin 1))) hjet
-    {(0 : ℂ)} regularBoundWitness (by intro z hz; norm_num [regularBoundWitness])
-    (by intro z hz; simp [regularBoundEquation, regularBoundWitness, challengeSpecialization,
-      differentialSpecialization, differentialSpecializationHom])
-    (by intro z hz; norm_num [regularBoundEquation, regularBoundWitness, challengeSpecialization,
-      differentialSpecialization, differentialSpecializationHom, separant]) hagree hbad
-  exact ⟨(by simp), by norm_num at hbound ⊢⟩
+  obtain ⟨exceptional, hcard, hgood⟩ :=
+    exists_exceptional_frobeniusPowerRegularSolutions_at
+      (F := ℂ) (E := ℂ) (n := 2) (k := 1) (K := 1) (ℓ := 1) (L := 2)
+      regularBoundDomain regularBoundValues (RingHom.id ℂ) regularBoundDomain
+      regularBoundEquation 1 0 1 0 1 2 hroots (by norm_num) (by norm_num) hτ
+      (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+      (coeffNatDegreeLE_X (some (0 : Fin 1))) hjet
+  have hzero : (0 : ℂ) ∈ exceptional := by
+    by_contra hz
+    apply hbad 0 (by simp)
+    apply hgood 0 hz (regularBoundWitness 0)
+    · norm_num [regularBoundWitness]
+    · simp [regularBoundEquation, regularBoundWitness, challengeSpecialization,
+        differentialSpecialization, differentialSpecializationHom]
+    · norm_num [regularBoundEquation, regularBoundWitness, challengeSpecialization,
+        differentialSpecialization, differentialSpecializationHom, separant]
+    · rw [hdomain]
+      norm_num [RingHom.id_apply]
+      change 2 ≤ (polynomialAgreementSet regularBoundDomain
+        (powerBatchedWord regularBoundValues 0) (regularBoundWitness 0)).card
+      rw [hleft]
+      simp
+  refine ⟨exceptional, ?_, hzero⟩
+  norm_num at hcard
+  exact hcard
 
 end
 
