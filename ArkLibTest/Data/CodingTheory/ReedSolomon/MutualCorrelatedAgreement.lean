@@ -516,7 +516,11 @@ example : (positiveChallenges.card : ℚ) ≤ positiveDerivativeBound ∧
     ∃ exceptional : Finset MCAField,
       (exceptional.card : ℚ) ≤ positiveDerivativeBound ∧ 0 ∈ exceptional ∧
     ∃ regularExceptional : Finset MCAField,
-      regularExceptional.card ≤ 2 ∧ 0 ∈ regularExceptional ∧
+      regularExceptional.card ≤ 2 ∧
+      (∃ w : MCAField, w ∉ regularExceptional ∧
+        HasExactCorrelatedPair positiveChallengeDomain
+          (regularBoundConstantValues 0) (regularBoundConstantValues 1)
+          (RingHom.id MCAField) 1 w 0) ∧
     ∃ curveExceptional : Finset MCAField,
       curveExceptional.card ≤ 1 ∧
     ∃ w : MCAField, w ∉ curveExceptional ∧
@@ -573,7 +577,7 @@ example : (positiveChallenges.card : ℚ) ≤ positiveDerivativeBound ∧
   obtain ⟨regularExceptional, hregularCard, hregularGood⟩ :=
     exists_exceptional_frobeniusPowerSeparableSolutions_at
       (n := 2) (k := 1) (K := 1) (ℓ := 1) (L := 1)
-      positiveChallengeDomain regularBoundValues
+      positiveChallengeDomain regularBoundConstantValues
       (RingHom.id MCAField) positiveChallengeDomain
       componentEquation 1 0 1 0 1 2 (by simp)
       (by norm_num) (by norm_num)
@@ -583,14 +587,23 @@ example : (positiveChallenges.card : ℚ) ≤ positiveDerivativeBound ∧
       componentEquation_jetDegree (MvPolynomial.X_prime).irreducible
       (by simp [componentEquation, MvPolynomial.pderiv_X])
       (by simp [componentEquation])
-  have hregularZero : (0 : MCAField) ∈ regularExceptional := by
-    by_contra hz
-    apply positiveChallenge_isBad
-    simpa [regularBoundValues, RingHom.id_apply] using
-      hregularGood 0 hz 0 (by norm_num) (by
-        simp [componentEquation, challengeSpecialization, differentialSpecialization,
-          differentialSpecializationHom]) (by
-        simpa [RingHom.id_apply] using positiveChallenge_two_agreements)
+  have hregularCard' : regularExceptional.card ≤ 2 := by
+    norm_num at hregularCard
+    exact_mod_cast hregularCard
+  obtain ⟨w, -, hw⟩ := Finset.exists_mem_notMem_of_card_lt_card
+    (s := regularExceptional) (t := {(0 : MCAField), 1, 2})
+    (Nat.lt_of_le_of_lt (by exact_mod_cast hregularCard') (by norm_num))
+  have hregularPower := hregularGood w hw 0 (by norm_num) (by
+    simp [componentEquation, challengeSpecialization, differentialSpecialization,
+      differentialSpecializationHom]) (by
+    norm_num [polynomialAgreementSet, positiveChallengeDomain,
+      regularBoundConstantValues, powerBatchedWord])
+  have hregularPower' : HasExactPowerAgreement positiveChallengeDomain
+      regularBoundConstantValues (RingHom.id MCAField) 1 w 0 := by
+    simpa using hregularPower
+  have hregularPair := exactCorrelatedPair_of_powerAgreement_one
+    positiveChallengeDomain regularBoundConstantValues (RingHom.id MCAField) w 0
+    hregularPower'
   obtain ⟨curveExceptional, hcurveCard, hcurveGood⟩ :=
     exists_exceptional_frobeniusPowerFactorSolutions (n := 2) (ℓ := 1)
       positiveChallengeDomain regularBoundConstantValues (RingHom.id _)
@@ -600,7 +613,7 @@ example : (positiveChallenges.card : ℚ) ≤ positiveDerivativeBound ∧
       MvPolynomial.X_prime.irreducible (by simp [componentEquation])
       (by simp [componentEquation])
   refine ⟨hbound, exceptional, hcard, hzero, regularExceptional,
-    (by norm_num at hregularCard; exact_mod_cast hregularCard), hregularZero,
+    hregularCard', ⟨w, hw, hregularPair⟩,
     curveExceptional,
     (by norm_num [ordinaryCurveFactorRaw] at hcurveCard; exact_mod_cast hcurveCard), ?_⟩
   obtain ⟨w, -, hw⟩ := Finset.exists_mem_notMem_of_card_lt_card
