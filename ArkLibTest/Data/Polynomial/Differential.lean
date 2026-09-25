@@ -110,16 +110,14 @@ private theorem jetTotalDegree_constantDerivativeEquation_le {F : Type*} [CommRi
 
 private abbrev E₄ := FiniteField.Extension (ZMod 2) 2 2
 
-/-- The injective map from `ZMod 2` to its degree-two extension preserves the jet degree of
-`Y₀ ^ 2`. -/
+/-- The degree-two extension preserves the jet degree of `Y₀ ^ 2`. -/
 example :
     jetDegree (MvPolynomial.map (algebraMap (ZMod 2) E₄)
       (X (some 0) ^ 2 : DifferentialPolynomial (ZMod 2) 0)) 0 = 2 := by
   rw [jetDegree_map_eq (algebraMap (ZMod 2) E₄).injective]
   simp [jetDegree]
 
-/-- Differential specialization commutes with the coefficient extension `ZMod 2 → E₄` on
-`Q = X + Y₀` at `P = X + 1`; both sides evaluate to `1`. -/
+/-- Specialization at `X + 1` commutes with the coefficient extension `ZMod 2 → E₄`. -/
 example :
     let f := algebraMap (ZMod 2) E₄
     let Q : DifferentialPolynomial (ZMod 2) 0 :=
@@ -137,8 +135,7 @@ example :
   simp [Q, P, differentialSpecialization, differentialSpecializationHom, h2]
 
 open Classical in
-/-- Mapping the nonempty regular solution family `{X}` through `ZMod 2 → E₄` preserves its
-degree, equation, and nonzero separant. -/
+/-- Coefficient extension preserves the regular solution family `{X}`. -/
 example :
     let f := algebraMap (ZMod 2) E₄
     let Q : DifferentialPolynomial (ZMod 2) 0 := X (some 0) - X none
@@ -475,6 +472,15 @@ example : Nonempty (JetPrefixPresentation productEquation 1) :=
   nonempty_jetPrefixPresentation _
     (isHighestActiveJet_of_highestActiveJet_eq_some highestActiveJet_productEquation)
 
+example : Nonempty (JetPrefixPresentation (X (some 1) : DifferentialPolynomial ℚ 2) 1) :=
+  exists_jetPrefixPresentation_of_vars_subset_range (X (some 1)) 1 (by simp [jetPrefixEmbedding])
+
+example : Nonempty (JetPrefixPresentation (X (some 0) : DifferentialPolynomial ℚ 1) 0) :=
+  exists_jetPrefixPresentation_firstOrder_of_jetDegree_zero _
+    (MvPolynomial.degreeOf_X_of_ne (by decide))
+
+example := root_reaches_tail_or_regular_stage (fun j : ℕ => j) 1 rfl
+
 /-! ### Rational Taylor coefficients -/
 
 /-- The equation `y' = 2x`, as the differential polynomial `Y₁ - 2X`. -/
@@ -638,8 +644,7 @@ example :
   norm_num at hnum ⊢
   exact hnum
 
-/-- Symbolic high cuts for `Y₁` at the zero jet force the reconstruction to have degree below
-one. -/
+/-- The zero-jet high cuts force the rational Taylor reconstruction degree below one. -/
 example :
     (rationalTaylorPolynomial 0 (X (some 1) : DifferentialPolynomial ℚ 1) 2
       (constantJet (F := ℚ))).degree
@@ -828,8 +833,7 @@ private theorem isRegularJet_squareEquation3 (c : ZMod 3) (hc : c ^ 2 = 1) (hc0 
       Matrix.cons_val_fin_one, Nat.reduceSub, pow_one]
     exact mul_ne_zero (by decide) hc0
 
-/-- `Y₀ ^ 2 - 1 = 0` over `ZMod 3` has exactly two regular jets at `0`, attaining the degree
-bound. -/
+/-- `Y₀ ^ 2 - 1` has two regular jets over `ZMod 3`, attaining the degree bound. -/
 example :
     #{jet ∈ Fintype.piFinset (fun _ : Fin 1 ↦ (univ : Finset (ZMod 3))) |
       IsRegularJet squareEquation3 0 0 jet} = 2 := by
@@ -926,8 +930,7 @@ example :
   rw [firstJet_residual_coeff_one, mem_support_iff, X, C_mul_monomial, coeff_monomial]
   norm_num
 
-/-- Evaluating the first displacement coefficient of the `Y₀` residual recovers the chosen
-coefficient of the polynomial prefix. -/
+/-- The first displacement coefficient of the `Y₀` residual is the chosen prefix coefficient. -/
 private abbrev residualCoefficients : ℕ → ℚ := fun i ↦ if i = 0 then 3 else 5
 
 example :
@@ -938,8 +941,7 @@ example :
     (K := 2) (h := 1) (Q := X (some 0))]
   simp [Polynomial.centeredCoefficientPrefix, residualCoefficients]
 
-/-- Mapping the zeroth residual coefficient through `ℤ → ZMod 2` agrees with the mapped
-equation. -/
+/-- The zeroth residual coefficient commutes with `ℤ → ZMod 2`. -/
 example :
     MvPolynomial.map (Int.castRingHom (ZMod 2))
       ((optionEquivLeft ℤ (Fin 2)
@@ -1116,8 +1118,7 @@ private theorem highTaylorCutsIdeal_one_two_le :
   subst l
   exact Ideal.subset_span (by simp)
 
-/-- For `y' = 2x`, one agreement point and the index-1 high cut determine the regular jet
-in the length-two Taylor chart, and the locus contains the zero jet. -/
+/-- For `y' = 2x`, one agreement point and the index-1 high cut isolate the zero jet. -/
 example :
     Nonempty (regularAgreementCutLocus indexOneHighCutIdeal 0 (taylorLinearEquation ℚ) 2 4
       (fun _ : Fin 1 ↦ (0 : ℚ)) (fun _ : Fin 1 ↦ (0 : ℚ))) ∧
@@ -1237,8 +1238,7 @@ example :
 private abbrev frobeniusInseparableEquation :
     DifferentialPolynomial (Polynomial (ZMod 2)) 0 := X none - X (some 0) ^ 2
 
-/-- The flattened equation evaluates to `7` at the root, independent-variable, and challenge
-values `2`, `3`, and `5`. -/
+/-- The flattened equation evaluates to `7` at root `2`, independent `3`, and challenge `5`. -/
 example :
     MvPolynomial.eval
         (fun o : Option (Fin 2) => o.elim (2 : ℚ) (fun i => Fin.cases 3 (fun _ => 5) i))

@@ -25,6 +25,9 @@ uniform cap-sensitive bound at exponent `2 * K`.
 
 * `firstOrderListWeight` and `firstOrderTightListWeight`: uniform and exact stage-charge sums.
 * `firstOrderTightListWeight_nonneg`: nonnegativity of the exact charge.
+* `finite_regular_agreement_solutions_card_le_derivativeCapped_of_exponent`: the regular-solution
+  derivative-capped count.
+* `finite_regular_agreement_solutions_card_le_identityPair`: the degree-one identity-pair count.
 * `finite_firstOrder_agreement_solutions_card_le_tight_of_exponent`: the exact-exponent count.
 * `firstOrderTightListWeight_two_mul_le` and
   `finite_firstOrder_agreement_solutions_card_le_sharp`: the uniform comparison and count.
@@ -160,7 +163,10 @@ private theorem regularSolutions_card_le_of_agreement_orderZero
     simpa using hstage
   exact hstage'.trans (by exact_mod_cast hQ'Degree)
 
-private theorem finite_regular_solutions_card_le_derivativeCapped_of_exponent
+open Classical in
+/-- A finite regular family of accepted first-order solutions is bounded by its derivative-capped
+Taylor incidence charge. -/
+theorem finite_regular_agreement_solutions_card_le_derivativeCapped_of_exponent
     (Q : DifferentialPolynomial F 1) (K k j r τ : ℕ)
     (hτ : TaylorExponentSufficient 1 K τ) (hτpos : 0 < τ) (hK : 1 < K)
     (hkK : k ≤ K) (hr : 0 < r) (hrj : r ≤ j)
@@ -173,7 +179,7 @@ private theorem finite_regular_solutions_card_le_derivativeCapped_of_exponent
     (hsep : ∀ P ∈ regular, differentialSpecialization (separant Q 1) P ≠ 0)
     (hbin : ∀ i, 1 < i → i < K → (i.choose 1 : F) ≠ 0)
     (hagree : ∀ P ∈ regular,
-      A ≤ ({i : Fin n | P.eval (domain i) = received i}).ncard) :
+      A ≤ (Finset.univ.filter fun i ↦ P.eval (domain i) = received i).card) :
     (regular.card : ℚ) ≤ firstOrderCurveFiberStageOne K j r τ *
       (((n - k + 1 : ℕ) : ℚ) / ((A - k + 1 : ℕ) : ℚ)) := by
   classical
@@ -184,13 +190,8 @@ private theorem finite_regular_solutions_card_le_derivativeCapped_of_exponent
     intro i hi hiK hz
     apply hbin i hi hiK
     exact f.injective (by simpa using hz)
-  have hagree' : ∀ P ∈ regular,
-      A ≤ (Finset.univ.filter fun i ↦ P.eval (domain i) = received i).card := by
-    intro P hP
-    rw [← agreement_ncard_eq_filter_card domain received P]
-    exact hagree P hP
   obtain ⟨center, J, hcard, hJ⟩ := exists_regular_solution_jet_family_of_exponent
-    f Q K k τ hτ hkK regular domain received hdegree hsol hsep hbinE hagree'
+    f Q K k τ hτ hkK regular domain received hdegree hsol hsep hbinE hagree
   by_cases hJempty : J = ∅
   · have hScard : regular.card = 0 := by simpa [hJempty] using hcard.symm
     rw [hScard, Nat.cast_zero]
@@ -228,6 +229,79 @@ private theorem finite_regular_solutions_card_le_derivativeCapped_of_exponent
         exact (hJ jet hjetmem).2.2.2)
   rw [hcard] at hcount
   exact hcount
+
+open Classical in
+/-- A degree-one message equation is bounded by the identity-pair Taylor incidence count. -/
+theorem finite_regular_agreement_solutions_card_le_identityPair
+    (Q : DifferentialPolynomial F 1) (j r : ℕ)
+    (hjet : jetTotalDegree Q ≤ j)
+    {n A : ℕ} (domain : Fin n ↪ F) (received : Fin n → F)
+    (hA : 2 ≤ A) (hAn : A ≤ n)
+    (S : Finset F[X])
+    (hdegree : ∀ P ∈ S, P.degree < 2)
+    (hsol : ∀ P ∈ S, differentialSpecialization Q P = 0)
+    (hsep : ∀ P ∈ S, differentialSpecialization (separant Q 1) P ≠ 0)
+    (hagree : ∀ P ∈ S,
+      A ≤ (Finset.univ.filter fun i ↦ P.eval (domain i) = received i).card) :
+    (S.card : ℚ) ≤ firstOrderCurveFiberStageOne 2 j r 0 *
+      (((n - 1 : ℕ) : ℚ) / ((A - 1 : ℕ) : ℚ)) := by
+  classical
+  let E := AlgebraicClosure F
+  let scalar : F →+* E := algebraMap F E
+  let QE := MvPolynomial.map scalar Q
+  have htau : TaylorExponentSufficient 1 2 0 := by
+    simpa using taylorExponentSufficient_firstOrder_tight 1
+  obtain ⟨center, jets, hcard, hjets⟩ := exists_regular_solution_jet_family_of_exponent
+    (A := A) scalar Q 2 2 0 htau le_rfl S domain received hdegree hsol hsep (by omega) hagree
+  by_cases hempty : jets = ∅
+  · have hScard : S.card = 0 := by simpa [hempty] using hcard.symm
+    rw [hScard, Nat.cast_zero]
+    positivity
+  have hsepE : initialJetSeparant center QE ≠ 0 := by
+    obtain ⟨jet, hjetmem⟩ := Finset.nonempty_iff_ne_empty.mpr hempty
+    intro hz
+    exact (hjets jet hjetmem).2.1 (by rw [hz, map_zero])
+  have hdegreeE : jetTotalDegree QE ≤ j := by
+    rw [jetTotalDegree_map_eq scalar.injective Q]
+    exact hjet
+  have hcount := card_le_of_highTaylorCuts_of_agreement_sharp center QE htau (by omega)
+    (fun i ↦ scalar (domain i)) (fun i ↦ scalar (received i))
+    (fun i j hij ↦ domain.injective (scalar.injective hij)) hA (by simpa using hAn) jets
+    (fun jet hjetmem ↦ ⟨(hjets jet hjetmem).1, (hjets jet hjetmem).2.1,
+      fun l hl hlK ↦ by omega⟩)
+    (fun jet hjetmem ↦ by
+      let agreementSet := Finset.univ.filter fun i : Fin n ↦
+        MvPolynomial.aeval jet (taylorAgreementEquation center QE 2 0
+          (scalar (domain i)) (scalar (received i))) = 0
+      have hset : {i | MvPolynomial.aeval jet (taylorAgreementEquation center QE 2 0
+          (scalar (domain i)) (scalar (received i))) = 0} =
+            (agreementSet : Set (Fin n)) := by
+        ext i
+        simp only [Set.mem_ofPred_eq, Finset.mem_coe, Finset.mem_filter,
+          Finset.mem_univ, true_and, agreementSet]
+      rw [hset, Set.ncard_coe_finset]
+      exact (hjets jet hjetmem).2.2.2)
+  rw [hcard] at hcount
+  have hdegreeCast :
+      (jetTotalDegree QE : ℚ) ≤ (j : ℚ) := by
+    exact_mod_cast hdegreeE
+  have hratio : (0 : ℚ) ≤ ((n - 1 : ℕ) : ℚ) / (A - 1 : ℕ) :=
+    div_nonneg (by positivity) (by positivity)
+  have hn : n - 2 + 1 = n - 1 := by omega
+  have hA' : A - 2 + 1 = A - 1 := by omega
+  rw [Fintype.card_fin] at hcount
+  simp only [rationalTaylorCutDegreeBound, zero_mul, Nat.add_zero, hn, hA', pow_one, mul_one]
+    at hcount
+  calc
+    (S.card : ℚ) ≤
+        jetTotalDegree QE *
+          (((n - 1 : ℕ) : ℚ) / (A - 1 : ℕ)) := hcount
+    _ ≤ j * (((n - 1 : ℕ) : ℚ) / (A - 1 : ℕ)) :=
+      mul_le_mul_of_nonneg_right hdegreeCast hratio
+    _ = firstOrderCurveFiberStageOne 2 j r 0 *
+        (((n - 1 : ℕ) : ℚ) / (A - 1 : ℕ)) := by
+      simp [firstOrderCurveFiberStageOne, firstOrderTaylorTotalCap,
+        firstOrderTaylorDerivativeCap, MvPolynomial.cappedDegreeMixedVolume]
 
 /-- Every finite family of accepted polynomial solutions of a first-order equation is bounded by
 the exact sum of its order-zero and derivative-capped order-one stage charges. -/
@@ -324,7 +398,7 @@ theorem finite_firstOrder_agreement_solutions_card_le_tight_of_exponent
         exact Subtype.ext (Subtype.ext heq)
       have hpolynomialCard : polynomials.card = regular.card :=
         Finset.card_image_of_injective regular hinjective
-      have hcount := finite_regular_solutions_card_le_derivativeCapped_of_exponent
+      have hcount := finite_regular_agreement_solutions_card_le_derivativeCapped_of_exponent
         stage.1 K k (jetTotalDegree stage.1) (jetDegree stage.1 (1 : Fin 2)) τ
         (hτ 1 (by omega)) hτpos hK hkK
         hactive
@@ -342,6 +416,7 @@ theorem finite_firstOrder_agreement_solutions_card_le_tight_of_exponent
         hbin
         (fun P hP ↦ by
           rcases Finset.mem_image.mp hP with ⟨solution, hsolution, rfl⟩
+          rw [← agreement_ncard_eq_filter_card domain received solution.polynomial]
           exact (hregularAccepts solution hsolution).2)
       rw [hpolynomialCard] at hcount
       simpa [stageCost, firstOrderStageCharge, c₁, ratio, hs] using hcount
