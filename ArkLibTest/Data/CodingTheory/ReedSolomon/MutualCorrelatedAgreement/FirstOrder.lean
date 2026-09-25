@@ -8,6 +8,22 @@ import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder
 import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 import Mathlib.Tactic.NormNum
 
+/-!
+# First-order curve agreement acceptance tests
+
+Concrete rational examples exercise base-field and extension-field exceptional-set bounds
+for first-order power-batched curves.
+
+## Main statements
+
+* The height-slot bound has a nonvacuous base-field instance at the tight exponent.
+* Height-slot and finite-certificate bounds have nonvacuous extension-field instances.
+
+## References
+
+* [DKT26]
+-/
+
 open Polynomial Finset PolynomialDifferential ReedSolomon ReedSolomon.HiddenDerivative
 
 noncomputable section
