@@ -340,12 +340,6 @@ def automaticFiniteRateParameters {rho a : ℝ} (hrho : 0 < rho) (hrhoOne : rho 
       automaticJetDegree] using
       automaticRankCount_lt_sourceCount hrho hrhoOne ha haOne
 
-/-- The automatic finite-rate parameters retain the selected multiplicity. -/
-theorem automaticFiniteRateParameters_multiplicity {rho a : ℝ} (hrho : 0 < rho)
-    (hrhoOne : rho < 1) (ha : firstOrderRateThreshold rho < a) (haOne : a < 1) :
-    (automaticFiniteRateParameters hrho hrhoOne ha haOne).multiplicity =
-      automaticMultiplicity rho a := rfl
-
 /-- The automatic finite-rate parameters have the automatic total jet-degree cap. -/
 theorem automaticFiniteRateParameters_jetDegree {rho a : ℝ} (hrho : 0 < rho)
     (hrhoOne : rho < 1) (ha : firstOrderRateThreshold rho < a) (haOne : a < 1) :
