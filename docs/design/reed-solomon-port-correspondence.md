@@ -1915,6 +1915,12 @@ No public declaration from this source module was omitted. The separate
 `agreeingPolynomials_eq_empty_of_card_lt` API is not duplicated; pointwise emptiness follows from
 `DecoderCertificate.decoder_eq_empty_of_card_lt`.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/SharpCountingBound.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/SharpCountingBound.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Kept `correlatedMidpoint_ratios_le_two_div`, `polynomialCurveSharpStageBound`, and `polynomialCurveSharpStageBound_le_uniform`. Renamed `polynomialCurveSharpMCAConstant` to `polynomialCurveSharpAgreementConstant`, `regularSymbolicCurveMCASharpBound_midpoint_le_stageBound` to `regularPowerBatchedAgreementSharpBound_midpoint_le_stageBound`, and `regularSymbolicCurveMCASharp_finiteStage_uniform_le` to `regularPowerBatchedAgreementSharp_finiteStage_uniform_le`; the agreement theorems use the current power-batched API. `polynomialCurveSharpUniformStageBound` is not ported as a separate definition because `polynomialCurveSharpStageBound δ n ℓ v h d` supplies that bound at cap `d`. The capacity acceptance cases check midpoint ratios, the midpoint stage bound, uniformization from order `1` to cap `2`, and the finite-family bound.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/ComponentDimension.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/ComponentDimension.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -2110,6 +2116,10 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Poly
 Renamed `sourceCurveInitialMixedDegree` to `regularPowerBatchedInitialMixedDegree` and `regularSymbolicCurveMCASharpBound` to `regularPowerBatchedAgreementSharpBound`. Generalized the incidence theorem to the joint chart API with `k ≤ A` and explicit terminal graph recognition as `finite_powerBatched_regular_points_off_admissible_graphs_card_le_sharp_of_terminal_recognition`; derived `finite_powerBatched_regular_points_off_admissible_graphs_card_le_sharp_of_exponent` for the internally recognized `k ≤ L` case. Generalized the finite bad-challenge bound and exceptional-set theorem to arbitrary derivative order and the current power-batched API as `finite_powerBatchedBadChallenges_card_le_sharp_of_exponent`, `finite_regularPowerBatchedBadChallenges_card_le_sharp_of_exponent`, and `exists_exceptional_regularPowerBatchedAgreement_sharp_of_exponent`.
 
 Did not port `sourceCurveCutDerivativeDegree` because the generic capped-bidegree theorem supplies its cap. The common Taylor numerator, high cuts, agreement equation, and initial equation bounds are covered by generic capped-bidegree theorems. No joint Reed–Solomon separant wrapper is retained because the generic initial-separant support theorem covers it.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/SharpGeneralEquation.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Renamed `sourceCurveCutJetDegree_le` to `regularPowerBatchedCutJetDegree_le_two_mul`, `sourceCurveCutChallengeDegree_mul_le` to `regularPowerBatchedCutChallengeDegree_le_three_mul`, and `sourceCurveInitialMixedDegree_le_uniformCaps` to `regularPowerBatchedInitialMixedDegree_le_uniformCaps`. These bounds generalize to an explicit `τ ≤ 2*n`; the challenge-degree bound also takes `H ≤ ℓ*h`. Renamed `regularSymbolicCurveMCASharpBound_mono_exponent` to `regularPowerBatchedAgreementSharpBound_mono_exponent` and placed it in the module that owns the agreement budget. The acceptance cases check all three degree bounds and exponent monotonicity from `τ = 0` to `τ' = 1`.
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerToLine.lean`
 
@@ -3457,6 +3467,10 @@ pairwise `r ≤ s` comparison to the `Monotone` property. `dimensionSensitiveInc
 and `hybridDimensionSensitiveIncidenceProduct_min_le` keep their names and statements.
 `hybridDimensionSensitiveIncidenceProduct_eq_factor_mul` keeps its name and is generalized from
 `s ≤ k` to `s ≤ k + 1`. Nothing was deferred or left unported.
+
+Ported from `ArkLib/ToMathlib/AlgebraicGeometry/Incidence/ProductBounds.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Added `natCastRatio_le_div_of_scaled_lower_bound`, a general ordered-field ratio bound that replaces the private `midpoint_ratio_le_two_div` helper. The enumerative acceptance case checks it with `δ = scale = 1`, `n = 2`, `N = 1`, and `D = 2`.
 
 ## `ArkLib/ToMathlib/Combinatorics/Enumerative/MonomialCount.lean`
 
