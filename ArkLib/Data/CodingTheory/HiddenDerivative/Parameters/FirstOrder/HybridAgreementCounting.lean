@@ -34,6 +34,8 @@ closed first-order list constant.
 * `FirstOrderHybridDescent`, `exists_firstOrderHybridDescent`, and
   `FirstOrderHybridDescent.root_coverage`: symbolic actual-degree descent and its specialization
   coverage.
+* `FirstOrderHybridDescent.tail_rootDegree_le`: the `Y₀` degree of the order-zero tail is at most
+  the residual jet budget.
 * `FirstOrderCurveCertificate.exists_hybridDescent` and
   `FirstOrderCurveCertificate.exists_hybridDescent_of_derivativeCap_lt_ringChar`: certificate
   bridges to the symbolic descent.
@@ -333,6 +335,14 @@ theorem FirstOrderHybridDescent.root_coverage {F E : Type*} [Field F] [CommSemir
       rw [jetDerivative_succ, ← map_separant]
     rw [← hstep]
     exact hnext
+
+/-- The order-zero tail has degree in `Y₀` at most the total jet budget left after the actual
+`Y₁` degree. -/
+theorem FirstOrderHybridDescent.tail_rootDegree_le {F : Type*} [Field F]
+    {Q : DifferentialPolynomial F[X] 1} {μ M : ℕ} (descent : FirstOrderHybridDescent Q μ M) :
+    jetDegree descent.tail.equation 0 ≤ μ - descent.actualDegree :=
+  (jetDegree_le_total _ 0).trans <| descent.tail.jetTotalDegree_equation.trans_le <|
+    descent.stage_jetTotalDegree_le _ le_rfl
 
 open Classical in
 private theorem finite_firstOrder_hybrid_agreement_solutions_card_le_raw_of_stages
