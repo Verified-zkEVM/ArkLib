@@ -48,48 +48,6 @@ namespace ReedSolomon
 
 variable {F E : Type*} [Field F] [Field E] {n ℓ : ℕ}
 
-/-- First-order common Taylor cuts whose challenge and jet coordinates are all retained. -/
-private def derivativeCappedHighCuts (center : E) (Q : DifferentialPolynomial E[X] 1)
-    (K k τ : ℕ) : List (MvPolynomial (Option (Fin 2)) E) :=
-  ((Finset.univ.filter fun l : Fin K => k ≤ l.val).toList).map
-    (fun l ↦ jointCommonTaylorNumerator center Q τ l)
-
-private theorem derivativeImageInitialEval (center z : E)
-    (Q : DifferentialPolynomial E[X] 1) (jet : Fin 2 → E) :
-    aeval (fun i ↦ i.elim z jet) (jointInitialJetEquation center Q) =
-      aeval jet (initialJetEquation center (MvPolynomial.map (Polynomial.evalRingHom z) Q)) := by
-  simpa [Polynomial.evalRingHom] using
-    aeval_jointInitialJetEquation center Q (fun i ↦ i.elim z jet)
-
-private theorem derivativeImageSeparantEval (center z : E)
-    (Q : DifferentialPolynomial E[X] 1) (jet : Fin 2 → E) :
-    aeval (fun i ↦ i.elim z jet) (jointInitialJetSeparant center Q) =
-      aeval jet (initialJetSeparant center (MvPolynomial.map (Polynomial.evalRingHom z) Q)) := by
-  simpa [Polynomial.evalRingHom] using
-    aeval_jointInitialJetSeparant center Q (fun i ↦ i.elim z jet)
-
-private theorem derivativeImageNumeratorEval (center z : E)
-    (Q : DifferentialPolynomial E[X] 1) (K τ : ℕ) (l : Fin K)
-    (jet : Fin 2 → E) :
-    aeval (fun i ↦ i.elim z jet) (jointCommonTaylorNumerator center Q τ l) =
-      aeval jet (commonTaylorNumerator
-        center (MvPolynomial.map (Polynomial.evalRingHom z) Q) τ l.val) := by
-  simpa [Polynomial.evalRingHom] using
-    aeval_jointCommonTaylorNumerator center Q τ l (fun i ↦ i.elim z jet)
-
-private theorem derivativeImageAgreementEval (center z alpha : E)
-    (values : Fin (ℓ + 1) → E) (Q : DifferentialPolynomial E[X] 1)
-    (K τ : ℕ) (jet : Fin 2 → E) :
-    aeval (fun i ↦ i.elim z jet)
-        (jointTaylorAgreementEquation center Q K τ (Polynomial.C alpha)
-          (powerBatchedCoordinate values)) =
-      aeval jet (taylorAgreementEquation center
-        (MvPolynomial.map (Polynomial.evalRingHom z) Q) K τ alpha
-        (∑ t, z ^ t.val * values t)) := by
-  simpa [Polynomial.eval_C, Polynomial.evalRingHom, powerBatchedCoordinate_eval] using
-    aeval_jointTaylorAgreementEquation center Q K τ (Polynomial.C alpha)
-      (powerBatchedCoordinate values) (fun i ↦ i.elim z jet)
-
 /-- Exact dimension-sensitive incidence outside admissible tuple graphs at a sufficient Taylor
 exponent, with the derivative degree of the defining equation kept separate from its total jet
 degree. -/
@@ -99,7 +57,7 @@ theorem
     (domain : Fin n ↪ F) (w : Fin (ℓ + 1) → Fin n → F) (iota : F →+* E)
     (center : E) (Q : DifferentialPolynomial E[X] 1) (K k L A v u h τ : ℕ)
     (hτ : TaylorExponentSufficient 1 K τ) (hτpos : 0 < τ)
-    (hK : 1 < K) (hkK : k ≤ K) (hkL : k ≤ L) (hLA : L ≤ A) (_hAn : A ≤ n)
+    (hK : 1 < K) (hkK : k ≤ K) (hkL : k ≤ L) (hLA : L ≤ A)
     (hD : 0 < ℓ + h) (hv : 0 < v) (hu : 0 < u) (huv : u ≤ v)
     (hinit : jointInitialJetEquation center Q ≠ 0)
     (hjet : jetTotalDegree Q ≤ v) (hheight : CoeffNatDegreeLE Q h)
@@ -124,7 +82,7 @@ theorem
   obtain ⟨x₀, hx₀⟩ := Finset.nonempty_iff_ne_empty.mpr hempty
   let g := jointInitialJetEquation center Q
   let s := jointInitialJetSeparant center Q
-  let high := derivativeCappedHighCuts center Q K k τ
+  let high := regularPowerBatchedHighCuts center Q K k τ
   let cuts : Fin n → MvPolynomial (Option (Fin 2)) E := fun i ↦
     jointTaylorAgreementEquation center Q K τ (Polynomial.C (iota (domain i)))
       (powerBatchedCoordinate (fun t ↦ iota (w t i)))
@@ -221,7 +179,7 @@ theorem
     refine ⟨hm'.1.trans hha, hm'.2.1.trans hvb, hm'.2.2.trans huc⟩
   have hhigh : ∀ f ∈ high, f ∈ restrictCappedBidegree (Fin 2) E (Fin.last 1) a b c := by
     intro f hf
-    simp only [high, derivativeCappedHighCuts, List.mem_map, Finset.mem_toList,
+    simp only [high, regularPowerBatchedHighCuts, List.mem_map, Finset.mem_toList,
       Finset.mem_filter, Finset.mem_univ, true_and] at hf
     obtain ⟨l, _, rfl⟩ := hf
     have hmem := commonTaylorNumeratorOver_mem_restrictCappedBidegree center Q h v u K τ
@@ -269,7 +227,7 @@ theorem
         jointCommonTaylorNumerator center Q τ l ∈ J := by
       intro l hl
       apply hhighJ
-      simp only [high, derivativeCappedHighCuts, List.mem_map, Finset.mem_toList,
+      simp only [high, regularPowerBatchedHighCuts, List.mem_map, Finset.mem_toList,
         Finset.mem_filter, Finset.mem_univ, true_and]
       exact ⟨l, hl, rfl⟩
     have hcomponent := symbolicSourcePolynomial_dimensionSensitive_component_of_exponent
@@ -291,7 +249,7 @@ theorem
     · simpa only [g] using hgJ
     · intro l hl
       apply hhighJ
-      simp only [high, derivativeCappedHighCuts, List.mem_map, Finset.mem_toList,
+      simp only [high, regularPowerBatchedHighCuts, List.mem_map, Finset.mem_toList,
         Finset.mem_filter, Finset.mem_univ, true_and]
       exact ⟨l, hl, rfl⟩
     · simpa only [cuts] using hcutsJ
@@ -305,7 +263,7 @@ theorem
         intro x hx
         refine ⟨(hS x hx).1, (hS x hx).2.1, ?_, (hS x hx).2.2.2⟩
         intro f hf
-        simp only [high, derivativeCappedHighCuts, List.mem_map, Finset.mem_toList,
+        simp only [high, regularPowerBatchedHighCuts, List.mem_map, Finset.mem_toList,
           Finset.mem_filter, Finset.mem_univ, true_and] at hf
         obtain ⟨l, hl, rfl⟩ := hf
         exact (hS x hx).2.2.1 l hl) hA'
@@ -357,114 +315,12 @@ private theorem finite_powerBatchedBadChallenges_card_le_of_derivativeCapped_com
       ((ℓ * (n - L) : ℕ) : ℚ) *
         (firstOrderCurveFiberStageOne K v u τ : ℚ) *
           (((n - k + 1 : ℕ) : ℚ) / ((L - k + 1 : ℕ) : ℚ)) := by
-  let admissible := IsAdmissibleChartTupleAtExponent domain w iota center Q K k L τ
-  let tuples := (polynomialTupleFamily domain w k).filter admissible
-  have htuple (P : Fin (ℓ + 1) → F[X]) (hP : P ∈ tuples) :=
-    (Finset.mem_filter.mp hP).2
-  obtain ⟨exceptional, hexc, hexact⟩ := exists_exceptional_exactPowerAgreement_family
-    (k := k) (L := L) domain w iota tuples
-      (fun P hP ↦ (htuple P hP).degree) (fun P hP ↦ (htuple P hP).common)
-  let remaining := challenges \ exceptional
-  let point : E → Option (Fin 2) → E := fun z i ↦ i.elim z (jet z)
-  have hpointinj : Function.Injective point := by
-    intro z z' heq
-    exact congrFun heq none
-  let S := remaining.image point
-  have hcard : S.card = remaining.card := Finset.card_image_of_injective _ hpointinj
-  have hoff (z : E) (hz : z ∈ remaining) :
-      point z ∉ admissibleChartTupleGraphLocus domain w iota center Q K k L τ := by
-    obtain ⟨hzc, hze⟩ := Finset.mem_sdiff.mp hz
-    rintro ⟨P, hP, heq⟩
-    have hjetEq : jet z = chartTupleJet iota center z P := by
-      funext j
-      exact congrFun heq (some j)
-    have hs := (hchart z hzc).2.2.1
-    have hregular :
-        (chartTuplePullback iota center P (jointInitialJetSeparant center Q)).eval z ≠ 0 := by
-      rw [eval_chartTuplePullback]
-      rw [derivativeImageSeparantEval]
-      simpa [hjetEq] using hs
-    have hrec := (hP.specialize hτ hkK z hregular).2.2.2
-    have hw : witness z = powerBatchedPolynomial (fun t ↦ (P t).map iota) z := by
-      rw [← (hchart z hzc).2.2.2.2, hjetEq]
-      exact hrec
-    have hPmem : P ∈ tuples := by
-      apply Finset.mem_filter.mpr
-      exact ⟨mem_polynomialTupleFamily_of_commonAgreement domain w P k hP.degree
-        (hkL.trans hP.common), hP⟩
-    apply hbad z hzc
-    rw [hw]
-    exact hexact P hPmem z hze
-  have hoffbound : (remaining.card : ℚ) ≤ offBound := by
-    rw [← hcard]
-    apply hoffBound S
-    · intro x hx
-      obtain ⟨z, hz, rfl⟩ := Finset.mem_image.mp hx
-      have hzc := (Finset.mem_sdiff.mp hz).1
-      refine ⟨?_, ?_, ?_, hoff z hz⟩
-      · exact (derivativeImageInitialEval center z Q (jet z)).trans (hchart z hzc).2.1
-      · rw [derivativeImageSeparantEval]
-        exact (hchart z hzc).2.2.1
-      · intro l hl
-        rw [derivativeImageNumeratorEval]
-        exact (hchart z hzc).2.2.2.1 l hl
-    · intro x hx
-      obtain ⟨z, hz, rfl⟩ := Finset.mem_image.mp hx
-      have hzc := (Finset.mem_sdiff.mp hz).1
-      let domainE := domain.trans ⟨iota, iota.injective⟩
-      let received := powerBatchedWord (fun t i ↦ iota (w t i)) z
-      have hsubset :
-          (polynomialAgreementSet domainE received (witness z) : Set (Fin n)) ⊆
-            {i | aeval (point z) (jointTaylorAgreementEquation center Q K τ
-              (Polynomial.C (iota (domain i)))
-              (powerBatchedCoordinate (fun t ↦ iota (w t i)))) = 0} := by
-        intro i hi
-        have hi' := (mem_polynomialAgreementSet domainE received (witness z) i).mp hi
-        change aeval (point z) (jointTaylorAgreementEquation center Q K τ
-          (Polynomial.C (iota (domain i)))
-          (powerBatchedCoordinate (fun t ↦ iota (w t i)))) = 0
-        have heval : aeval (point z) (jointTaylorAgreementEquation center Q K τ
-            (Polynomial.C (iota (domain i)))
-            (powerBatchedCoordinate (fun t ↦ iota (w t i)))) =
-          aeval (jet z) (taylorAgreementEquation center
-            (MvPolynomial.map (Polynomial.evalRingHom z) Q) K τ (iota (domain i))
-            (received i)) := by
-          simpa only [point, received, powerBatchedWord] using
-            derivativeImageAgreementEval center z (iota (domain i))
-              (fun t ↦ iota (w t i)) Q K τ (jet z)
-        rw [heval, taylorAgreementEquation_eq_zero_iff center _ hτ (jet z)
-            (hchart z hzc).2.2.1 (iota (domain i)) (received i),
-          (hchart z hzc).2.2.2.2]
-        exact hi'
-      calc
-        A ≤ (polynomialAgreementSet domainE received (witness z)).card := hagree z hzc
-        _ = (polynomialAgreementSet domainE received (witness z) : Set (Fin n)).ncard :=
-          (Set.ncard_coe_finset _).symm
-        _ ≤ _ := Set.ncard_le_ncard hsubset
-  have htuplebound := htupleBound tuples htuple
-  have hexcbound : (exceptional.card : ℚ) ≤
-      ((ℓ * (n - L) : ℕ) : ℚ) *
-        (firstOrderCurveFiberStageOne K v u τ : ℚ) *
-          (((n - k + 1 : ℕ) : ℚ) / ((L - k + 1 : ℕ) : ℚ)) := by
-    have he' : exceptional.card ≤ tuples.card * (ℓ * (Fintype.card (Fin n) - L)) := by
-      exact_mod_cast hexc
-    have he : (exceptional.card : ℚ) ≤
-        (tuples.card : ℚ) * ((ℓ * (n - L) : ℕ) : ℚ) := by
-      exact_mod_cast (by simpa only [Fintype.card_fin] using he')
-    apply he.trans
-    have hm := mul_le_mul_of_nonneg_right htuplebound
-      (show (0 : ℚ) ≤ ((ℓ * (n - L) : ℕ) : ℚ) by positivity)
-    simpa only [mul_assoc, mul_comm, mul_left_comm] using hm
-  have hcover : challenges.card ≤ remaining.card + exceptional.card := by
-    have he := Finset.card_sdiff_add_card_inter challenges exceptional
-    have hi := Finset.card_le_card (Finset.inter_subset_right :
-      challenges ∩ exceptional ⊆ exceptional)
-    dsimp only [remaining]
-    omega
-  have hcoverQ : (challenges.card : ℚ) ≤
-      (remaining.card : ℚ) + (exceptional.card : ℚ) := by
-    exact_mod_cast hcover
-  exact hcoverQ.trans (add_le_add hoffbound hexcbound)
+  let tupleBound := (firstOrderCurveFiberStageOne K v u τ : ℚ) *
+    (((n - k + 1 : ℕ) : ℚ) / ((L - k + 1 : ℕ) : ℚ))
+  have hbound := finite_powerBatchedBadChallenges_card_le_of_tuple_bound_of_exponent
+    domain w iota center Q K k L A τ hτ hkK hkL tupleBound htupleBound offBound hoffBound
+    challenges witness jet hchart hagree hbad
+  simpa only [tupleBound, mul_assoc] using hbound
 
 /-! ### Challenge bounds -/
 
@@ -487,7 +343,7 @@ theorem finite_powerBatchedBadChallenges_card_le_derivativeCapped_of_exponent
     (domain : Fin n ↪ F) (w : Fin (ℓ + 1) → Fin n → F) (iota : F →+* E)
     (center : E) (Q : DifferentialPolynomial E[X] 1) (K k L A v u h τ : ℕ)
     (hτ : TaylorExponentSufficient 1 K τ) (hτpos : 0 < τ)
-    (hK : 1 < K) (hkK : k ≤ K) (_hk : 0 < k) (hkL : k ≤ L)
+    (hK : 1 < K) (hkK : k ≤ K) (hkL : k ≤ L)
     (hLA : L ≤ A) (hAn : A ≤ n) (hD : 0 < ℓ + h) (hv : 0 < v)
     (hu : 0 < u) (huv : u ≤ v)
     (hjet : jetTotalDegree Q ≤ v) (hheight : CoeffNatDegreeLE Q h)
@@ -533,7 +389,7 @@ theorem finite_powerBatchedBadChallenges_card_le_derivativeCapped_of_exponent
           (((n - k + 1 : ℕ) : ℚ) / ((A - k + 1 : ℕ) : ℚ)))
       (fun S hS hA ↦
         finite_powerBatched_regular_points_off_graphs_card_le_derivativeCapped_of_exponent
-        domain w iota center Q K k L A v u h τ hτ hτpos hK hkK hkL hLA hAn
+        domain w iota center Q K k L A v u h τ hτ hτpos hK hkK hkL hLA
           hD hv hu huv hinit hjet hheight hderiv S hS hA)
       challenges witness jet hchart hagree hbad
 
@@ -544,7 +400,7 @@ theorem finite_regularPowerBatchedBadChallenges_card_le_derivativeCapped_of_expo
     (domain : Fin n ↪ F) (w : Fin (ℓ + 1) → Fin n → F) (iota : F →+* E)
     (Q : DifferentialPolynomial E[X] 1) (K k L A v u h τ : ℕ)
     (hτ : TaylorExponentSufficient 1 K τ) (hτpos : 0 < τ)
-    (hK : 1 < K) (hkK : k ≤ K) (hk : 0 < k) (hkL : k ≤ L)
+    (hK : 1 < K) (hkK : k ≤ K) (hkL : k ≤ L)
     (hLA : L ≤ A) (hAn : A ≤ n) (hD : 0 < ℓ + h) (hv : 0 < v)
     (hu : 0 < u) (huv : u ≤ v)
     (hjet : jetTotalDegree Q ≤ v) (hheight : CoeffNatDegreeLE Q h)
@@ -559,7 +415,7 @@ theorem finite_regularPowerBatchedBadChallenges_card_le_derivativeCapped_of_expo
       (regularPowerBatchedDerivativeCappedBoundTwo n ℓ K k L A v u h τ) ?_ S hS
   intro center challenges witness jet hchart hagree hbad
   exact finite_powerBatchedBadChallenges_card_le_derivativeCapped_of_exponent
-    domain w iota center Q K k L A v u h τ hτ hτpos hK hkK hk hkL hLA hAn hD hv
+    domain w iota center Q K k L A v u h τ hτ hτpos hK hkK hkL hLA hAn hD hv
       hu huv hjet hheight hderiv challenges witness jet hchart hagree hbad
 
 open Classical in
@@ -570,7 +426,7 @@ theorem exists_exceptional_regularPowerBatchedAgreement_derivativeCapped_of_expo
     (domain : Fin n ↪ F) (w : Fin (ℓ + 1) → Fin n → F) (iota : F →+* E)
     (Q : DifferentialPolynomial E[X] 1) (K k L A v u h τ : ℕ)
     (hτ : TaylorExponentSufficient 1 K τ) (hτpos : 0 < τ)
-    (hK : 1 < K) (hkK : k ≤ K) (hk : 0 < k) (hkL : k ≤ L)
+    (hK : 1 < K) (hkK : k ≤ K) (hkL : k ≤ L)
     (hLA : L ≤ A) (hAn : A ≤ n) (hD : 0 < ℓ + h) (hv : 0 < v)
     (hu : 0 < u) (huv : u ≤ v)
     (hjet : jetTotalDegree Q ≤ v) (hheight : CoeffNatDegreeLE Q h)
@@ -591,11 +447,11 @@ theorem exists_exceptional_regularPowerBatchedAgreement_derivativeCapped_of_expo
       (regularPowerBatchedBadChallenges domain w iota Q k A).Finite := by
     apply Set.finite_of_forall_finset_card_le (R := ℚ) fun S hS ↦
       finite_regularPowerBatchedBadChallenges_card_le_derivativeCapped_of_exponent
-        domain w iota Q K k L A v u h τ hτ hτpos hK hkK hk hkL hLA hAn hD hv
+        domain w iota Q K k L A v u h τ hτ hτpos hK hkK hkL hLA hAn hD hv
         hu huv hjet hheight hderiv hbin S hS
   refine ⟨hfinite.toFinset, ?_, ?_⟩
   · apply finite_regularPowerBatchedBadChallenges_card_le_derivativeCapped_of_exponent
-      domain w iota Q K k L A v u h τ hτ hτpos hK hkK hk hkL hLA hAn hD hv
+      domain w iota Q K k L A v u h τ hτ hτpos hK hkK hkL hLA hAn hD hv
       hu huv hjet hheight hderiv hbin
     exact fun z hz ↦ hfinite.mem_toFinset.mp hz
   · intro z hz P hdegree hagree hsol hsep
