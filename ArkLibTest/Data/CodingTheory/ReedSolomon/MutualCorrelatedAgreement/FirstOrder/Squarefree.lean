@@ -8,12 +8,16 @@ import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Squarefree.Factorwise
 import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Squarefree.TailBound
+import
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Squarefree.CertificateList
+import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Squarefree.RetainedTail
 import Mathlib.Tactic.NormNum
 
 /-!
-# Factorwise agreement acceptance tests
+# Squarefree agreement acceptance tests
 
-Concrete rational examples check the actual-degree and capped factorwise agreement list bounds.
+Concrete rational examples check factorwise list bounds and the symbolic-certificate count.
 -/
 
 open MvPolynomial Polynomial PolynomialDifferential
@@ -91,6 +95,41 @@ example :
       constructor
       · exact WithBot.bot_lt_coe 2
       · norm_num [factorwiseReceived, factorwiseDomain])
+
+private theorem certificateWithPositiveDerivativeCap :
+    Nonempty (FirstOrderSymbolicCertificate (F := ℚ) 1 2 1 1 1 2 1
+      factorwiseDomain (fun _ ↦ 0) (fun _ ↦ 0)
+      (firstOrderColumns (D := 1) (A := 2) (m := 1) (M := 1) (μ := 1))) := by
+  have hheight : firstOrderCurveShiftedRowSlotBound 1 2 1 1 1 2 1 1 <
+      firstOrderCurveShiftedHeightSlotCount 1 2 1 1 1 1 1 := by decide
+  exact exists_finite_firstOrder_symbolic_certificate_of_heightSlotCount
+    (F := ℚ) (D := 1) (A := 2) (m := 1) (M := 1) (μ := 1) (k := 2) (h := 1)
+    (by norm_num) (by norm_num) (by norm_num) factorwiseDomain (fun _ ↦ 0) (fun _ ↦ 0)
+    hheight
+
+private noncomputable def certificateSolutions : Finset ℚ[X] := {0}
+
+/-- A concrete symbolic certificate with a positive derivative cap bounds an actual solution. -/
+example :
+    (certificateSolutions.card : ℝ) ≤
+      (firstOrderCurveFiberStageOne 2 1 1 (regularTaylorExponent 1) : ℝ) *
+          ((2 - 2 + 1 : ℕ) : ℝ) / (2 - 2 + 1 : ℕ) +
+        ordinaryDegreeEnvelope 1 1 := by
+  obtain ⟨cert⟩ := certificateWithPositiveDerivativeCap
+  exact firstOrder_finite_agreement_solutions_card_le_squarefree
+    (D := 1) (A := 2) (m := 1) (M := 1) (μ := 1) (k := 2) (h := 1) (n := 2)
+    factorwiseDomain (fun _ ↦ 0)
+    (firstOrderColumns (D := 1) (A := 2) (m := 1) (M := 1) (μ := 1)) cert
+    (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num)
+    (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
+    certificateSolutions (by
+      intro P hP
+      simp only [certificateSolutions, Finset.mem_singleton] at hP
+      subst P
+      constructor
+      · exact WithBot.bot_lt_coe 2
+      · norm_num [factorwiseDomain])
 
 example :
     (factorwiseSolutions.card : ℝ) ≤
