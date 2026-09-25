@@ -264,6 +264,45 @@ theorem finite_frobeniusPowerRegularBadChallenges_card_le [IsAlgClosed E]
   linarith
 
 open Classical in
+private theorem finite_frobeniusRegularBadChallenges_card_le_of_powerBound
+    (domain : Fin n ↪ F) (f g : Fin n → F) (ι : F →+* E)
+    (p e τ h b A : ℕ) (challenges : Finset E) (witness : E → E[X])
+    (hagree : ∀ z ∈ challenges, A ≤
+      (polynomialAgreementSet (domain.trans ⟨ι, ι.injective⟩)
+        (fun i ↦ ι (f i) + z ^ (p ^ e) * ι (g i)) (witness z)).card)
+    (hbad : ∀ z ∈ challenges,
+      ¬HasExactCorrelatedPair domain f g ι k (z ^ (p ^ e)) (witness z))
+    (hbound : ∀ (values : Fin 2 → Fin n → F),
+      (∀ z ∈ challenges, A ≤
+        (polynomialAgreementSet (domain.trans ⟨ι, ι.injective⟩)
+          (powerBatchedWord (fun t i ↦ ι (values t i)) (z ^ (p ^ e)))
+          (witness z)).card) →
+      (∀ z ∈ challenges,
+        ¬HasExactPowerAgreement domain values ι k (z ^ (p ^ e)) (witness z)) →
+      (challenges.card : ℚ) ≤
+        (h * (1 + τ * (b - 1)) + b * (p ^ e + τ * h) : ℕ) *
+          (((n - k + 1 : ℕ) : ℚ) / ((A - k + 1 : ℕ) : ℚ)) +
+        ((n - k) * b : ℕ)) :
+    (challenges.card : ℚ) ≤
+      (h * (1 + τ * (b - 1)) + b * (p ^ e + τ * h) : ℕ) *
+        (((n - k + 1 : ℕ) : ℚ) / ((A - k + 1 : ℕ) : ℚ)) +
+      ((n - k) * b : ℕ) := by
+  let values : Fin 2 → Fin n → F := fun t i ↦ if t.val = 0 then f i else g i
+  apply hbound values
+  · intro z hz
+    have hword : powerBatchedWord (fun t i ↦ ι (values t i)) (z ^ (p ^ e)) =
+        (fun i ↦ ι (f i) + z ^ (p ^ e) * ι (g i)) := by
+      funext i
+      simp [powerBatchedWord, Fin.sum_univ_two, values]
+    rw [hword]
+    exact hagree z hz
+  · intro z hz hpower
+    apply hbad z hz
+    have hpair := exactCorrelatedPair_of_powerAgreement_one domain values ι
+      (z ^ (p ^ e)) (witness z) hpower
+    simpa [values] using hpair
+
+open Classical in
 /-- A finite family of regular Frobenius witnesses with at least `A` agreements and no exact
 correlated-pair representation satisfies the bound
 `(h * (1 + τ * (b - 1)) + b * (p ^ e + τ * h)) * (n - k + 1) / (A - k + 1) + (n - k) * b`. -/
@@ -295,24 +334,13 @@ theorem finite_frobeniusRegularBadChallenges_card_le [IsAlgClosed E]
       (h * (1 + τ * (b - 1)) + b * (p ^ e + τ * h) : ℕ) *
         (((n - k + 1 : ℕ) : ℚ) / ((A - k + 1 : ℕ) : ℚ)) +
       ((n - k) * b : ℕ) := by
-  let values : Fin 2 → Fin n → F := fun t i ↦ if t.val = 0 then f i else g i
-  have hbound := finite_frobeniusPowerRegularBadChallenges_card_le
+  apply finite_frobeniusRegularBadChallenges_card_le_of_powerBound
+    domain f g ι p e τ h b A challenges witness hagree hbad
+  intro values hagreePower hbadPower
+  simpa using finite_frobeniusPowerRegularBadChallenges_card_le
     (L := k) (ℓ := 1) domain values ι roots center Q p e τ h b A
     hroots hK hKk hτ hτpos (by omega) hb le_rfl hkA hheight hjet hinit hproper
-    challenges witness hdegree hsol hsep ?_ ?_
-  · simpa using hbound
-  · intro z hz
-    have hword : powerBatchedWord (fun t i ↦ ι (values t i)) (z ^ (p ^ e)) =
-        (fun i ↦ ι (f i) + z ^ (p ^ e) * ι (g i)) := by
-      funext i
-      simp [powerBatchedWord, Fin.sum_univ_two, values]
-    rw [hword]
-    exact hagree z hz
-  · intro z hz hpower
-    apply hbad z hz
-    have hpair := exactCorrelatedPair_of_powerAgreement_one domain values ι
-      (z ^ (p ^ e)) (witness z) hpower
-    simpa [values] using hpair
+    challenges witness hdegree hsol hsep hagreePower hbadPower
 
 private theorem span_singleton_ne_top_of_aeval_eq_zero {σ : Type*}
     (g : MvPolynomial σ E) (x : σ → E) (hx : aeval x g = 0) :
@@ -476,24 +504,13 @@ theorem finite_frobeniusRegularBadChallenges_card_le_of_separant [IsAlgClosed E]
       (h * (1 + τ * (b - 1)) + b * (p ^ e + τ * h) : ℕ) *
         (((n - k + 1 : ℕ) : ℚ) / ((A - k + 1 : ℕ) : ℚ)) +
       ((n - k) * b : ℕ) := by
-  let values : Fin 2 → Fin n → F := fun t i ↦ if t.val = 0 then f i else g i
-  have hbound := finite_frobeniusPowerRegularBadChallenges_card_le_of_separant_at
+  apply finite_frobeniusRegularBadChallenges_card_le_of_powerBound
+    domain f g ι p e τ h b A challenges witness hagree hbad
+  intro values hagreePower hbadPower
+  simpa using finite_frobeniusPowerRegularBadChallenges_card_le_of_separant_at
     (L := k) (ℓ := 1) domain values ι roots Q p e τ h b A
     hroots hK hKk hτ hτpos (by omega) hb le_rfl hkA hheight hjet
-    challenges witness hdegree hsol hsep ?_ ?_
-  · simpa using hbound
-  · intro z hz
-    have hword : powerBatchedWord (fun t i ↦ ι (values t i)) (z ^ (p ^ e)) =
-        (fun i ↦ ι (f i) + z ^ (p ^ e) * ι (g i)) := by
-      funext i
-      simp [powerBatchedWord, Fin.sum_univ_two, values]
-    rw [hword]
-    exact hagree z hz
-  · intro z hz hpower
-    apply hbad z hz
-    have hpair := exactCorrelatedPair_of_powerAgreement_one domain values ι
-      (z ^ (p ^ e)) (witness z) hpower
-    simpa [values] using hpair
+    challenges witness hdegree hsol hsep hagreePower hbadPower
 
 end ReedSolomon
 
