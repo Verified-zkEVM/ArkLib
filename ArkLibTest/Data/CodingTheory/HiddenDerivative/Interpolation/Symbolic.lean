@@ -176,6 +176,19 @@ example : ∃ cert : SymbolicReceivedCurve.Certificate 2 1 1 3 1 35 twoPointEmbe
       rw [← hcut] at hmargin
       exact hmargin)
   exact ⟨cert, cert.exists_separantChain (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))⟩
+
+/-- The fixed-margin construction also accepts a quadratic received curve. -/
+example : Nonempty (SymbolicReceivedCurve.Certificate 2 1 2 3 1 71 twoPointEmbedding
+    (fun _ : Fin 2 => Polynomial.X ^ 2 + 1)) := by
+  have hmargin := twoPointFixedMargin (F := ℚ)
+  have hcut : ((1 : ℕ) : ℝ) * 2 * (1 + (1 : ℝ)) = 4 := by norm_num
+  rw [← hcut] at hmargin
+  exact SymbolicReceivedCurve.exists_certificate_of_fixed_margin
+    (F := ℚ) (d := 1) (D := 1) (m := 2) (W := 0) (A := 2) (k := 1) (ℓ := 2)
+    (g₀ := 1) Nat.one_pos (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num) twoPointEmbedding (fun _ => Polynomial.X ^ 2 + 1)
+    (by intro i; norm_num) hmargin
+
 private noncomputable def twoPointWeightedColumns : Fin (Fintype.card
     (↥(weightedSupportExponents 1 1 0 2 Nat.one_pos))) → SourceColumn 1 :=
   weightedSupportColumns (d := 1) (W := 0) (L := 2) Nat.one_pos
