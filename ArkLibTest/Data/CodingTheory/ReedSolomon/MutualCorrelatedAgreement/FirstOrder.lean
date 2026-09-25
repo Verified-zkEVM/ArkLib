@@ -6,6 +6,7 @@ Authors: Quang Dao
 
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.CurveAgreement
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.HybridCurveTransfer
+import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.HybridTransfer
 import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 import Mathlib.Analysis.Complex.Polynomial.Basic
 import Mathlib.Tactic.NormNum
@@ -14,12 +15,13 @@ import Mathlib.Tactic.NormNum
 # First-order curve agreement acceptance tests
 
 Concrete examples exercise first-order power-batched curve bounds over rational and complex
-fields.
+fields, and the conversion of an exact pair witness to degree-one power agreement.
 
 ## Main statements
 
 * Height-slot and certificate bounds have nonvacuous base-field and extension-field instances.
 * Regular-stage, hybrid, and optimized exceptional-set bounds have concrete instances.
+* An exact correlated-pair witness gives exact degree-one power agreement.
 
 ## References
 
@@ -34,6 +36,17 @@ private def curveDomain : Fin 1 ↪ ℚ :=
   ⟨fun _ ↦ 0, fun _ _ _ ↦ Subsingleton.elim _ _⟩
 
 private def curveValues : Fin 1 → Fin 1 → ℚ := fun _ _ ↦ 0
+
+/-- The zero correlated pair gives exact degree-one power agreement on a one-point domain. -/
+example : HasExactPowerAgreement curveDomain ![fun _ ↦ (0 : ℚ), fun _ ↦ (0 : ℚ)]
+    (RingHom.id ℚ) 1 0 (0 : ℚ[X]) := by
+  apply powerAgreement_one_of_exactCorrelatedPair curveDomain (fun _ ↦ 0) (fun _ ↦ 0)
+    (RingHom.id ℚ) 0 0
+  refine ⟨(0, 0), by simp, by simp, ?_, ?_⟩
+  · simp [correlatedPairSpecialization]
+  · ext i
+    fin_cases i
+    simp [polynomialAgreementSet, commonPolynomialAgreementSet, curveDomain]
 
 private theorem curveHeightSurplus :
     firstOrderCurveShiftedRowSlotBound 1 1 2 1 1 1 0 1 <

@@ -11,14 +11,17 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.PowerAgreement
 /-!
 # Exact line agreement from degree-one power batching
 
-At batching degree one, exact power agreement for two words gives an exact correlated-pair
-witness. A uniform exact power guarantee therefore supplies the exact-agreement interface for
-affine lines.
+At batching degree one, exact power agreement for two words is equivalent to an exact
+correlated-pair witness. A uniform exact power guarantee therefore supplies the exact-agreement
+interface for affine lines.
 
 ## Main statements
 
 * `ReedSolomon.exactCorrelatedPair_of_powerAgreement_one`: degree-one exact power agreement gives
   an exact correlated-pair witness.
+* `ReedSolomon.powerAgreement_one_of_exactCorrelatedPair`: an exact correlated-pair witness gives
+  degree-one exact power agreement.
+* `ReedSolomon.powerBatchedWord_pair_eq`: the degree-one power-batched word is the correlated line.
 * `ReedSolomon.lineExactAgreementBound_of_powerAgreement_one`: a uniform degree-one power
   guarantee gives a uniform exact-agreement bound for lines.
 
@@ -36,6 +39,30 @@ open Polynomial
 namespace ReedSolomon
 
 variable {F E : Type*} [Field F] [Field E] [DecidableEq F] [DecidableEq E] {n k : ℕ}
+
+omit [DecidableEq F] [DecidableEq E] in
+/-- Degree-one power batching of two words is their correlated line. -/
+theorem powerBatchedWord_pair_eq (f g : Fin n → F) (ι : F →+* E) (z : E) :
+    powerBatchedWord (fun t i ↦ ι (![f, g] t i)) z =
+      (fun i ↦ ι (f i) + z * ι (g i)) := by
+  funext i
+  simp [powerBatchedWord, Fin.sum_univ_two]
+
+/-- An exact correlated-pair witness gives exact degree-one power agreement. -/
+theorem powerAgreement_one_of_exactCorrelatedPair
+    (domain : Fin n ↪ F) (f g : Fin n → F) (ι : F →+* E) (z : E) (Q : E[X])
+    (h : HasExactCorrelatedPair domain f g ι k z Q) :
+    HasExactPowerAgreement domain ![f, g] ι k z Q := by
+  obtain ⟨pair, hdeg0, hdeg1, hQ, hagree⟩ := h
+  let P : Fin 2 → F[X] := ![pair.1, pair.2]
+  refine ⟨P, ?_, ?_, ?_⟩
+  · intro t
+    fin_cases t <;> assumption
+  · simpa [P, powerBatchedPolynomial, correlatedPairSpecialization,
+      Fin.sum_univ_two, Polynomial.smul_eq_C_mul] using hQ
+  · rw [powerBatchedWord_pair_eq f g ι z]
+    simpa [P, commonCurveAgreementSet, commonPolynomialAgreementSet,
+      Fin.forall_fin_two] using hagree
 
 /-- Exact power agreement for two constituents is exact correlated-pair agreement. -/
 theorem exactCorrelatedPair_of_powerAgreement_one
