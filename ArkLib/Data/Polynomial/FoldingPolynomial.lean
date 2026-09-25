@@ -188,49 +188,12 @@ private lemma folding_polynomial_def_ind_case {q f : F[X]}
   (h₂ : q.degree > 0) :
   foldingPolynomial q f = (Polynomial.map Polynomial.C (f % q)) +
     Polynomial.C Polynomial.X * foldingPolynomial q (f / q) := by
-      have h_fold :
-        ∀ {deg : ℕ},
-          deg ≥ f.natDegree →
-            foldingPolynomial q f =
-              Polynomial.map Polynomial.C (f % q) +
-                Polynomial.C Polynomial.X *
-                  foldingPolynomial q (f / q) := by
-        intros deg hdeg
-        rw [foldingPolynomial]
-        have h_fold :
-          ∀ {deg : ℕ},
-            deg ≥ f.natDegree →
-              foldingPolynomialAux q f deg =
-                Polynomial.map Polynomial.C (f % q) +
-                  Polynomial.C Polynomial.X *
-                    foldingPolynomialAux q (f / q) (deg - 1) := by
-          intros deg hdeg
-          induction deg generalizing f with
-          | zero =>
-            obtain ⟨c, hc⟩ : ∃ c : F, f = Polynomial.C c :=
-              ⟨f.coeff 0, Polynomial.eq_C_of_natDegree_le_zero hdeg⟩
-            simp_all +decide only [gt_iff_lt, ge_iff_le, natDegree_C, zero_le, zero_tsub]
-            exact absurd h₁ (not_le_of_gt (lt_of_le_of_lt (Polynomial.degree_C_le) h₂))
-          | succ deg ih =>
-            rw [foldingPolynomialAux]
-            rw [ite_eq_right h₂.not_ge, ite_eq_right (not_lt_of_ge h₁)]
-            rfl
-        convert h_fold hdeg using 1
-        · exact folding_polynomial_aux_natDegree_fuel_is_enough hdeg
-        · have h_fold_eq :
-            foldingPolynomial q (f / q)
-              = foldingPolynomialAux q (f / q) (deg - 1) := by
-            have h_deg : (f / q).natDegree ≤ deg - 1 := by
-              have h_deg : (f / q).natDegree ≤ f.natDegree - q.natDegree := by
-                rw [natDegree_div_eq_sub_of_degree_le
-                  (Polynomial.ne_zero_of_degree_gt h₂) h₁]
-              exact le_trans h_deg (Nat.sub_le_sub_right hdeg _)
-                |> le_trans
-                <| Nat.sub_le_sub_left (Polynomial.natDegree_pos_iff_degree_pos.mpr h₂) _
-            apply folding_polynomial_aux_natDegree_fuel_is_enough
-            assumption
-          rw [h_fold_eq]
-      exact h_fold le_rfl
+  have hqpos := natDegree_pos_iff_degree_pos.mpr h₂
+  have hfpos := natDegree_pos_iff_degree_pos.mpr (h₂.trans_le h₁)
+  have hdiv := natDegree_div_eq_sub_of_degree_le (ne_zero_of_degree_gt h₂) h₁
+  obtain ⟨n, hn⟩ : ∃ n, f.natDegree = n + 1 := ⟨f.natDegree - 1, by omega⟩
+  rw [foldingPolynomial, hn, foldingPolynomialAux_succ h₂ h₁, foldingPolynomial,
+    folding_polynomial_aux_natDegree_fuel_is_enough (fuel := n) (by omega)]
 
 lemma substitution_property_of_folding_polynomial {q f : F[X]} :
     ((foldingPolynomial q f).map (Polynomial.compRingHom q)).eval X = f := by

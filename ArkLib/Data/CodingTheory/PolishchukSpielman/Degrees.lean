@@ -108,19 +108,13 @@ lemma ps_descend_eval_y {F : Type} [Field F]
 
 lemma ps_eval_x_eq_map {F : Type} [CommSemiring F]
     (x : F) (f : F[X][Y]) :
-    evalX x f = f.map (evalRingHom x) := by
-  classical
-  ext n; simp [evalX, toFinsupp_apply]
+    evalX x f = f.map (evalRingHom x) :=
+  evalX_eq_map x f
 
 lemma ps_eval_y_eq_eval_x_swap {F : Type} [CommRing F]
     (y : F) (f : F[X][Y]) :
-    evalY y f = evalX y (swap f) := by
-  let : Algebra F[X] F[X] := Polynomial.algebra (R := F) (A := F)
-  convert aveal_eq_map_swap y f using 1
-  · unfold evalY; simp [Polynomial.aeval_def]
-  · -- By definition of `evalX`, we have `evalX y (swap f) = (swap f).map (evalRingHom y)`.
-    rw [ps_eval_x_eq_map]
-    rfl
+    evalY y f = evalX y (swap f) :=
+  evalY_eq_evalX_swap y f
 
 lemma ps_exists_x_preserve_nat_degree_y {F : Type} [Field F]
     (B : F[X][Y]) (hB : B ≠ 0) (P_x : Finset F)
@@ -257,8 +251,5 @@ lemma ps_is_rel_prime_swap {F : Type} [CommRing F] {A B : F[X][Y]}
   simpa [f] using this
 
 lemma ps_nat_degree_y_swap {F : Type} [CommRing F]
-    (f : F[X][Y]) : natDegreeY (swap f) = degreeX f := by
-  have h := ps_degree_x_swap (swap f)
-  have hs : swap (swap f) = f := swap.left_inv f
-  rw [hs] at h
-  exact h.symm
+    (f : F[X][Y]) : natDegreeY (swap f) = degreeX f :=
+  natDegreeY_swap f
