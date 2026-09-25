@@ -237,6 +237,24 @@ example : (25 : ℚ) ≤ ordinaryCurveFactorRaw 1 5 1 2 2 3 := by
 example : ordinaryCurveFactorRaw 1 5 1 2 2 3 ≤ 2 * ordinaryFactorRaw 1 5 1 2 2 := by
   exact ordinaryCurveFactorRaw_le_line_mul 1 5 1 2 2 3 2 (by norm_num) (by norm_num)
 
+example : ordinaryCurveFactorRaw 1 5 1 2 1 3 ≤ 44 := by
+  calc
+    ordinaryCurveFactorRaw 1 5 1 2 1 3 ≤
+        ((2 * 2 - 1 : ℕ) + 1 * (1 + 4 * 1 * 2)) * 3 +
+        (1 * 2 + (2 * (5 - 1 - 1) : ℕ)) * 1 :=
+      ordinaryCurveFactorRaw_le_linear (theta := 1) (n := 5) (D := 1) (ell := 2)
+        (a := 1) (mu := 2) 3 (by norm_num)
+        (Nat.le_of_lt (by norm_num : (1 : ℕ) < 2))
+    _ = 44 := by norm_num
+
+example : ordinaryCurveFactorRaw 1 5 1 2 2 3 = 52 := by
+  calc
+    ordinaryCurveFactorRaw 1 5 1 2 2 3 =
+        ((2 * 2 - 1 : ℕ) + 1 * (1 + 4 * 1 * 2)) * 3 +
+        (1 * 2 + (2 * (5 - 1 - 1) : ℕ)) * 2 :=
+      ordinaryCurveFactorRaw_eq_linear 1 5 1 2 2 3
+    _ = 52 := by norm_num
+
 example : (∑ _i ∈ (Finset.univ : Finset (Fin 2)),
     ordinaryCurveFactorRaw 0 4 1 2 1 1) ≤ ordinaryCurveFactorRaw 0 4 1 2 2 2 := by
   have h := ordinaryCurveFactorRaw_sum_le (S := (Finset.univ : Finset (Fin 2)))

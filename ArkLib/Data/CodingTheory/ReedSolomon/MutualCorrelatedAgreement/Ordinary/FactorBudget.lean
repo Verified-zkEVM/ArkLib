@@ -424,24 +424,19 @@ the product term `theta * 4Dah`. -/
 theorem ordinaryFactorRaw_le_linear {theta : ℚ} (n D : ℕ) {a mu : ℕ} (h : ℕ)
     (htheta : 0 ≤ theta) (ha : a ≤ mu) :
     ordinaryFactorRaw theta n D a h ≤
-      ((2 * mu - 1 : ℕ) + theta * (1 + 4 * D * mu)) * h + (theta + (n - D - 1 : ℕ)) * a := by
-  have hsub : 2 * a - 1 ≤ 2 * mu - 1 := by omega
-  have hfirst : (((2 * a - 1) * h : ℕ) : ℚ) ≤ (2 * mu - 1 : ℕ) * (h : ℚ) := by
-    exact_mod_cast Nat.mul_le_mul_right h hsub
-  have hprod : ((a : ℚ) * h) ≤ (mu : ℚ) * h := by gcongr
-  unfold ordinaryFactorRaw
-  push_cast at hfirst ⊢
-  nlinarith [mul_nonneg htheta (mul_nonneg (show (0 : ℚ) ≤ 4 * D by positivity)
-    (sub_nonneg.mpr hprod))]
+      ((2 * mu - 1 : ℕ) + theta * (1 + 4 * D * mu)) * h +
+        (theta + (n - D - 1 : ℕ)) * a := by
+  simpa [ordinaryCurveFactorRaw, ordinaryFactorRaw] using
+    (ordinaryCurveFactorRaw_le_linear n D 1 h htheta ha)
 
 /-- At the total budgets, the charge equals the linear function of
 `ordinaryFactorRaw_le_linear`. -/
 theorem ordinaryFactorRaw_eq_linear (theta : ℚ) (n D mu H : ℕ) :
     ordinaryFactorRaw theta n D mu H =
-      ((2 * mu - 1 : ℕ) + theta * (1 + 4 * D * mu)) * H + (theta + (n - D - 1 : ℕ)) * mu := by
-  unfold ordinaryFactorRaw
-  push_cast
-  ring
+      ((2 * mu - 1 : ℕ) + theta * (1 + 4 * D * mu)) * H +
+        (theta + (n - D - 1 : ℕ)) * mu := by
+  simpa [ordinaryCurveFactorRaw, ordinaryFactorRaw] using
+    (ordinaryCurveFactorRaw_eq_linear theta n D 1 mu H)
 
 /-- The content height plus the charges of the factors indexed by `S` is at most the charge of
 the whole polynomial, when the root degrees add up to at most `mu` and the content and factor
@@ -454,15 +449,9 @@ theorem ordinaryFactorRaw_sum_le {I : Type*} (S : Finset I) (a height : I → �
     (hh : contentHeight + ∑ i ∈ S, height i ≤ H) :
     (contentHeight : ℚ) + ∑ i ∈ S, ordinaryFactorRaw theta n D (a i) (height i) ≤
       ordinaryFactorRaw theta n D mu H := by
-  rw [ordinaryFactorRaw_eq_linear]
-  refine Finset.add_sum_le_mul_add_mul_of_le S (h := fun i ↦ (height i : ℚ))
-    (a := fun i ↦ (a i : ℚ)) (Nat.cast_nonneg _) ?_ (by positivity) ?_ (by exact_mod_cast hh)
-    (by exact_mod_cast ha)
-  · have hcast : (1 : ℚ) ≤ (2 * mu - 1 : ℕ) := by exact_mod_cast (by omega : 1 ≤ 2 * mu - 1)
-    exact hcast.trans (le_add_of_nonneg_right (mul_nonneg htheta (by positivity)))
-  · intro i hi
-    exact ordinaryFactorRaw_le_linear n D _ htheta
-      ((Finset.single_le_sum (fun _ _ ↦ Nat.zero_le _) hi).trans ha)
+  simpa [ordinaryCurveFactorRaw, ordinaryFactorRaw] using
+    (ordinaryCurveFactorRaw_sum_le S a height theta n D 1 mu H contentHeight
+      htheta hmu ha hh)
 
 /-! ### Per-factor charges with the unified coefficient -/
 

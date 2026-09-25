@@ -49,6 +49,25 @@ variable {R σ W V K Fn : Type*} [CommRing R] [IsDomain R] [UniqueFactorizationM
   [CommMonoidWithZero K] [NoZeroDivisors K] [FunLike Fn (MvPolynomial σ R) K]
   [MonoidWithZeroHomClass Fn (MvPolynomial σ R) K]
 
+omit [IsDomain R] in
+private theorem exists_exceptional_factorAssembly_of_budget
+    (i : σ) (Q : MvPolynomial σ R) (hQ : Q ≠ 0)
+    (ev : W → V → Fn) (Good : W → V → Prop) (height : MvPolynomial σ R → ℕ)
+    (charge : Associates (MvPolynomial σ R) → ℚ) (budget : ℚ)
+    (hbudget : (height (radicalContent i Q) : ℚ) +
+      ∑ c ∈ positiveDegreeFactorClasses i Q, charge c ≤ budget)
+    (hcontent : ∃ ex : Finset W, ex.card ≤ height (radicalContent i Q) ∧
+      ∀ w ∉ ex, ∀ v, ev w v (radicalContent i Q) ≠ 0)
+    (hfactors : ∀ c ∈ positiveDegreeFactorClasses i Q, ∃ ex : Finset W,
+      (ex.card : ℚ) ≤ charge c ∧ ∀ w ∉ ex, ∀ v, ev w v c.rep = 0 → Good w v) :
+    ∃ ex : Finset W, (ex.card : ℚ) ≤ budget ∧
+      ∀ w ∉ ex, ∀ v, ev w v Q = 0 → Good w v := by
+  obtain ⟨contentEx, hcCard, hc⟩ := hcontent
+  obtain ⟨ex, hcard, hgood⟩ := exists_exceptional_of_factor_exceptional (α := ℚ) i hQ ev Good
+    (height (radicalContent i Q)) charge
+    ⟨contentEx, Nat.cast_le.mpr hcCard, hc⟩ hfactors
+  exact ⟨ex, hcard.trans hbudget, hgood⟩
+
 /-- Combine the content exception with the exceptions of the distinct positive-root-degree
 factors, charging the coarse per-factor charge `ordinaryFactorRaw`. If the content radical
 vanishes only for challenges in a set of size at most its height, and each factor `c` has a set of
@@ -72,16 +91,13 @@ theorem exists_exceptional_ordinaryFactorAssembly
       ∀ w ∉ ex, ∀ v, ev w v c.rep = 0 → Good w v) :
     ∃ ex : Finset W, (ex.card : ℚ) ≤ ordinaryFactorRaw theta n D mu H ∧
       ∀ w ∉ ex, ∀ v, ev w v Q = 0 → Good w v := by
-  obtain ⟨contentEx, hcCard, hc⟩ := hcontent
-  have hsum := ordinaryFactorRaw_sum_le (positiveDegreeFactorClasses i Q)
+  have hbudget := ordinaryFactorRaw_sum_le (positiveDegreeFactorClasses i Q)
     (fun c ↦ degreeOf i c.rep) (fun c ↦ height c.rep) theta n D mu H
     (height (radicalContent i Q)) htheta hmu
     ((sum_degreeOf_positiveDegreeFactorClasses_le i Q).trans hroot) hheight
-  obtain ⟨ex, hcard, hgood⟩ := exists_exceptional_of_factor_exceptional (α := ℚ) i hQ ev Good
-    (height (radicalContent i Q))
+  exact exists_exceptional_factorAssembly_of_budget i Q hQ ev Good height
     (fun c ↦ ordinaryFactorRaw theta n D (degreeOf i c.rep) (height c.rep))
-    ⟨contentEx, Nat.cast_le.mpr hcCard, hc⟩ hfactors
-  exact ⟨ex, hcard.trans hsum, hgood⟩
+    (ordinaryFactorRaw theta n D mu H) hbudget hcontent hfactors
 
 /-- If the content radical has an exceptional set bounded by its height and each positive-degree
 factor has an exceptional set bounded by `ordinaryCurveFactorRaw`, then the zeros of `Q` are good
@@ -103,16 +119,13 @@ theorem exists_exceptional_ordinaryCurveFactorAssembly
       ∀ w ∉ ex, ∀ v, ev w v c.rep = 0 → Good w v) :
     ∃ ex : Finset W, (ex.card : ℚ) ≤ ordinaryCurveFactorRaw theta n D ell mu H ∧
       ∀ w ∉ ex, ∀ v, ev w v Q = 0 → Good w v := by
-  obtain ⟨contentEx, hcCard, hc⟩ := hcontent
-  have hsum := ordinaryCurveFactorRaw_sum_le (positiveDegreeFactorClasses i Q)
+  have hbudget := ordinaryCurveFactorRaw_sum_le (positiveDegreeFactorClasses i Q)
     (fun c ↦ degreeOf i c.rep) (fun c ↦ height c.rep) theta n D ell mu H
     (height (radicalContent i Q)) htheta hmu
     ((sum_degreeOf_positiveDegreeFactorClasses_le i Q).trans hroot) hheight
-  obtain ⟨ex, hcard, hgood⟩ := exists_exceptional_of_factor_exceptional (α := ℚ) i hQ ev
-    Good (height (radicalContent i Q))
+  exact exists_exceptional_factorAssembly_of_budget i Q hQ ev Good height
     (fun c ↦ ordinaryCurveFactorRaw theta n D ell (degreeOf i c.rep) (height c.rep))
-    ⟨contentEx, Nat.cast_le.mpr hcCard, hc⟩ hfactors
-  exact ⟨ex, hcard.trans hsum, hgood⟩
+    (ordinaryCurveFactorRaw theta n D ell mu H) hbudget hcontent hfactors
 
 /-- Combine the content exception with the exceptions of the distinct positive-root-degree
 factors, charging the free-retention charge `ordinaryUnifiedPowerFactorRawAt` with `ell` rows and
@@ -137,15 +150,13 @@ theorem exists_exceptional_ordinaryUnifiedPowerFactorAssembly
       ∀ w ∉ ex, ∀ v, ev w v c.rep = 0 → Good w v) :
     ∃ ex : Finset W, (ex.card : ℚ) ≤ ordinaryUnifiedPowerFactorRawAt theta n D ell B H L ∧
       ∀ w ∉ ex, ∀ v, ev w v Q = 0 → Good w v := by
-  obtain ⟨contentEx, hcCard, hc⟩ := hcontent
-  have hsum := ordinaryUnifiedPowerFactorRawAt_sum_le (positiveDegreeFactorClasses i Q)
+  have hbudget := ordinaryUnifiedPowerFactorRawAt_sum_le (positiveDegreeFactorClasses i Q)
     (fun c ↦ degreeOf i c.rep) (fun c ↦ height c.rep) theta n D ell B H L
     (height (radicalContent i Q)) htheta hB
     ((sum_degreeOf_positiveDegreeFactorClasses_le i Q).trans hroot) hheight
-  obtain ⟨ex, hcard, hgood⟩ := exists_exceptional_of_factor_exceptional (α := ℚ) i hQ ev Good
-    (height (radicalContent i Q))
-    (fun c ↦ ordinaryUnifiedPowerFactorRawAt theta n D ell (degreeOf i c.rep) (height c.rep) L)
-    ⟨contentEx, Nat.cast_le.mpr hcCard, hc⟩ hfactors
-  exact ⟨ex, hcard.trans hsum, hgood⟩
+  exact exists_exceptional_factorAssembly_of_budget i Q hQ ev Good height
+    (fun c ↦ ordinaryUnifiedPowerFactorRawAt theta n D ell
+      (degreeOf i c.rep) (height c.rep) L)
+    (ordinaryUnifiedPowerFactorRawAt theta n D ell B H L) hbudget hcontent hfactors
 
 end ReedSolomon
