@@ -488,35 +488,26 @@ lemma E_and_Q_unique
   {ωs f : Fin n → F}
   (he : 2 * e < n - k + 1)
   (hk_n : k ≤ n)
-  (h_Q : Q ≠ 0)
-  (h_Q' : Q' ≠ 0)
+  (_h_Q : Q ≠ 0)
+  (_h_Q' : Q' ≠ 0)
   (h_inj : Function.Injective ωs)
   (h_bw₁ : BerlekampWelchCondition e k ωs f E Q)
   (h_bw₂ : BerlekampWelchCondition e k ωs f E' Q') : E * Q' = E' * Q := by
-  classical
-  let R := E * Q' - E' * Q
-  have hr_deg : R.natDegree ≤ 2 * e + k - 1 := by
-    simp only [R]
-    apply Nat.le_trans (natDegree_add_le _ _)
-    simp [
-      natDegree_mul
-        (BerlekampWelch_E_ne_zero h_bw₁)
-        h_Q',
-      natDegree_neg,
-      natDegree_mul
-        (BerlekampWelch_E_ne_zero h_bw₂)
-        h_Q
-      ]
-    aesop (add safe cases BerlekampWelchCondition) (add safe (by omega))
-  by_cases hr : R = 0
-  · rw [←add_zero (E' * Q), ←hr]; ring
-  · let roots := Multiset.ofList <| (List.finRange n).map ωs
-    have hsub : (⟨roots, by simp only [Multiset.coe_nodup, roots]; rw [List.nodup_map_iff h_inj]
-                            exact List.nodup_finRange _⟩ : Finset F).val ⊆ R.roots := fun _ _ ↦ by
-      aesop (add safe cases BerlekampWelchCondition) (add safe (by ring))
-    have hcard := card_le_degree_of_subset_roots hsub
-    simp only [Order.lt_add_one_iff, ne_eq, Finset.card_mk] at *
-    cases k <;> cases e <;> aesop (add safe (by omega))
+  have hr_deg : (E * Q' - E' * Q).natDegree ≤ 2 * e + k - 1 := by
+    have h₁ := natDegree_mul_le (p := E) (q := Q')
+    have h₂ := natDegree_mul_le (p := E') (q := Q)
+    have := natDegree_sub_le (E * Q') (E' * Q)
+    have := h_bw₁.E_natDegree; have := h_bw₁.Q_natDegree
+    have := h_bw₂.E_natDegree; have := h_bw₂.Q_natDegree
+    omega
+  have hr : E * Q' - E' * Q = 0 := by
+    refine eq_zero_of_natDegree_lt_card_of_eval_eq_zero _ h_inj (fun i ↦ ?_) ?_
+    · rw [eval_sub, eval_mul, eval_mul, h_bw₁.cond i, h_bw₂.cond i]
+      ring
+    · rw [Fintype.card_fin]
+      have := NeZero.pos n
+      omega
+  exact sub_eq_zero.mp hr
 
 end
 
