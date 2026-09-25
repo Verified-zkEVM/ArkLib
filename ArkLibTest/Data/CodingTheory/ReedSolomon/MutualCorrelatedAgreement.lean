@@ -303,77 +303,67 @@ private theorem component_agreementCuts : ∀ i ∈ Finset.univ,
 private abbrev firstOrderChartEquation : DifferentialPolynomial ComponentField 1 :=
   MvPolynomial.X (Fin.last 1)
 
-private abbrev firstOrderSourceEquation : DifferentialPolynomial ComponentField[X] 1 :=
-  MvPolynomial.X (some (Fin.last 1))
-
-private def firstOrderChartIdeal : Ideal (ChartRing 1 ComponentField) :=
-  Ideal.span {(MvPolynomial.X (Fin.last 1) : ChartRing 1 ComponentField)}
-
-private def firstOrderSourceIdeal : Ideal (SourceRing 1 ComponentField) :=
-  Ideal.span {(MvPolynomial.X (some (Fin.last 1)) : SourceRing 1 ComponentField)}
-
 private def firstOrderTestPoints : Fin 1 ↪ ComponentField :=
   ⟨fun _ ↦ 0, fun _ _ _ ↦ Subsingleton.elim _ _⟩
 
 private def firstOrderChartValues : Fin 1 → ComponentField := fun _ ↦ 0
 
-private abbrev firstOrderChartCut (i : Fin 1) : ChartRing 1 ComponentField :=
-  taylorAgreementEquation (0 : ComponentField) firstOrderChartEquation 2 2
-    (firstOrderTestPoints i) (firstOrderChartValues i)
+private def firstOrderRegularJet : Fin 2 → ComponentField := fun _ ↦ 0
 
-private abbrev firstOrderSourceCut (i : Fin 1) : SourceRing 1 ComponentField :=
-  jointTaylorAgreementEquation (0 : ComponentField) firstOrderSourceEquation 2 2
-    (Polynomial.C (firstOrderTestPoints i)) 0
+private def firstOrderRegularJets : Finset (Fin 2 → ComponentField) :=
+  {firstOrderRegularJet}
 
-private theorem firstOrderChartIdeal_isPrime : firstOrderChartIdeal.IsPrime :=
-  (Ideal.span_singleton_prime (X_ne_zero _)).mpr X_prime
-
-private theorem firstOrderSourceIdeal_isPrime : firstOrderSourceIdeal.IsPrime :=
-  (Ideal.span_singleton_prime (X_ne_zero _)).mpr X_prime
-
-private theorem firstOrderChartSeparant_notMem :
-    initialJetSeparant (0 : ComponentField) firstOrderChartEquation ∉ firstOrderChartIdeal := by
-  simpa [firstOrderChartEquation, initialJetSeparant, initialJetEquation, separant] using
-    (Ideal.ne_top_iff_one _).mp firstOrderChartIdeal_isPrime.ne_top
-
-private theorem firstOrderSourceSeparant_notMem :
-    jointInitialJetSeparant (0 : ComponentField) firstOrderSourceEquation ∉
-      firstOrderSourceIdeal := by
-  simpa [jointInitialJetSeparant, firstOrderSourceEquation, initialJetSeparant,
-    initialJetEquation, separant] using (Ideal.ne_top_iff_one _).mp
-    firstOrderSourceIdeal_isPrime.ne_top
-
-private theorem firstOrderChartHigh : ∀ l : Fin 2, 1 ≤ l.val →
-    commonTaylorNumerator (0 : ComponentField) firstOrderChartEquation 2 l.val ∈
-      firstOrderChartIdeal := by
-  intro l hl
-  obtain rfl : l = 1 := Fin.ext (by omega)
-  simp [commonTaylorNumerator, rationalTaylorNumerator, firstOrderChartEquation,
-    initialJetSeparant, separant, firstOrderChartIdeal]
-
-private theorem firstOrderSourceHigh : ∀ l : Fin 2, 1 ≤ l.val →
-    jointCommonTaylorNumerator (0 : ComponentField) firstOrderSourceEquation 2 l ∈
-      firstOrderSourceIdeal := by
-  intro l hl
-  obtain rfl : l = 1 := Fin.ext (by omega)
-  simp [jointCommonTaylorNumerator, commonTaylorNumeratorOver, rationalTaylorNumeratorOver,
-    firstOrderSourceEquation, initialJetSeparant, separant, firstOrderSourceIdeal]
-
-private theorem firstOrderChartIdeal_degree :
-    (affineHilbertPolynomial firstOrderChartIdeal).natDegree = 1 := by
-  have h := natDegree_affineHilbertPolynomial_span_singleton_add_one
-    (f := (MvPolynomial.X (Fin.last 1) : ChartRing 1 ComponentField)) (X_ne_zero _)
-    firstOrderChartIdeal_isPrime.ne_top
-  simp only [Nat.card_eq_fintype_card, Fintype.card_fin] at h
-  unfold firstOrderChartIdeal; omega
-
-private theorem firstOrderSourceIdeal_degree :
-    (affineHilbertPolynomial firstOrderSourceIdeal).natDegree = 2 := by
-  have h := natDegree_affineHilbertPolynomial_span_singleton_add_one
-    (f := (MvPolynomial.X (some (Fin.last 1)) : SourceRing 1 ComponentField))
-    (X_ne_zero _) firstOrderSourceIdeal_isPrime.ne_top
-  simp only [Nat.card_eq_fintype_card, Fintype.card_option, Fintype.card_fin] at h
-  unfold firstOrderSourceIdeal; omega
+/-- A singleton regular jet satisfies the dimension-sensitive high-cut incidence bound. -/
+example : firstOrderRegularJets.Nonempty ∧
+    (firstOrderRegularJets.card : ℚ) ≤ (jetTotalDegree firstOrderChartEquation : ℚ) *
+      (rationalTaylorCutDegreeBound firstOrderChartEquation 2 : ℚ) ^ 1 *
+        dimensionSensitiveIncidenceProduct 1 1 1 1 1 := by
+  have hS : ∀ jet ∈ firstOrderRegularJets,
+      aeval jet (initialJetEquation (0 : ComponentField) firstOrderChartEquation) = 0 ∧
+      aeval jet (initialJetSeparant (0 : ComponentField) firstOrderChartEquation) ≠ 0 ∧
+      ∀ l : {l : Fin 2 // 1 ≤ l.val},
+        aeval jet (commonTaylorNumerator (0 : ComponentField)
+          firstOrderChartEquation 2 l.val) = 0 := by
+    intro jet hj
+    have hj' : jet = firstOrderRegularJet := by
+      simpa [firstOrderRegularJets] using hj
+    subst jet
+    refine ⟨by simp [firstOrderChartEquation, firstOrderRegularJet, initialJetEquation],
+      by simp [firstOrderChartEquation, initialJetSeparant, separant], ?_⟩
+    intro l
+    have hl : l.val = 1 := by omega
+    simp [hl, firstOrderRegularJet, commonTaylorNumerator, rationalTaylorNumerator,
+      firstOrderChartEquation, initialJetSeparant, separant]
+  have hA : ∀ jet ∈ firstOrderRegularJets, 1 ≤
+      {i | aeval jet (taylorAgreementEquation (0 : ComponentField)
+        firstOrderChartEquation 2 2 (firstOrderTestPoints i)
+          (firstOrderChartValues i)) = 0}.ncard := by
+    intro jet hj
+    have hj' : jet = firstOrderRegularJet := by
+      simpa [firstOrderRegularJets] using hj
+    subst jet
+    apply (Set.ncard_pos (Set.toFinite _)).2
+    have hτ : TaylorExponentSufficient 1 2 2 := by intro l; omega
+    have hsep : aeval firstOrderRegularJet
+        (initialJetSeparant 0 firstOrderChartEquation) ≠ 0 := by
+      simp [firstOrderChartEquation, initialJetSeparant, separant]
+    have hpoly : rationalTaylorPolynomial 0 firstOrderChartEquation 2
+        firstOrderRegularJet = 0 := by
+      simp [rationalTaylorPolynomial, Polynomial.centeredCoefficientPrefix,
+        firstOrderRegularJet, rationalTaylorCoefficient_initial]
+    refine ⟨0, ?_⟩
+    change aeval firstOrderRegularJet (taylorAgreementEquation 0 firstOrderChartEquation
+      2 2 (firstOrderTestPoints 0) (firstOrderChartValues 0)) = 0
+    simp only [firstOrderTestPoints, firstOrderChartValues]
+    rw [taylorAgreementEquation_eq_zero_iff 0 firstOrderChartEquation hτ
+      firstOrderRegularJet hsep]
+    simp [hpoly]
+  have hbound := finite_regularHighCutJets_card_le_dimensionSensitive_of_exponent
+    (center := (0 : ComponentField)) (Q := firstOrderChartEquation)
+    (K := 2) (k := 1) (τ := 2) (by intro l; omega) (by omega) (by omega)
+    firstOrderTestPoints firstOrderChartValues (by omega) (by omega)
+    firstOrderRegularJets hS hA
+  exact ⟨by simp [firstOrderRegularJets], hbound⟩
 
 /-- The two-point evaluation domain `{0, 1}` in `ℚ`. -/
 private def pairDomain : Fin 2 ↪ ℚ :=
@@ -395,6 +385,49 @@ private theorem component_zeroCut_mem (alpha : ComponentField) :
         (1 + MvPolynomial.C (Polynomial.C alpha)) * MvPolynomial.X 0 by ring,
     map_mul, optionEquivRight_symm_X]
   exact Ideal.mul_mem_left _ _ component_generator_mem
+
+/-- A proved zero-pair cut forces the reconstructed polynomials to match the sample. -/
+example : (0 : ℚ[X]).eval (domain 0) = 0 ∧ (0 : ℚ[X]).eval (domain 0) = 0 := by
+  have hzero (x : Option (Fin 1) → ComponentField)
+      (hx : x ∈ zeroLocus ComponentField (componentIdeal (E := ComponentField)))
+      (j : Fin 1) : x (some j) = 0 := by
+    obtain rfl : j = 0 := Subsingleton.elim _ _
+    simpa [componentIdeal, componentVariable, zeroLocus_span] using hx
+  exact @commonAgreement_of_jointTaylorAgreementEquation_mem_prime
+    ComponentField inferInstance 0 ℚ inferInstance 1 inferInstance
+    domain (fun _ : Fin 1 ↦ (0 : ℚ)) (fun _ ↦ 0) (algebraMap ℚ ComponentField)
+    0 componentEquation 2 2 (by intro l; omega) componentIdeal componentIdeal_isPrime
+    component_separant_notMem componentIdeal_degree_pos 0 0
+    (fun x hx ↦ ⟨x none, funext fun j ↦ by
+      cases j with
+      | none => simp [affinePairCurve]
+      | some j => simp [affinePairCurve, polynomialJet, hzero x hx.1 j]⟩)
+    (fun x hx _ ↦ by
+      have hjet : (fun j ↦ x (some j)) = polynomialJet (d := 0) 0 (0 : ComponentField[X]) := by
+        funext j; simp [polynomialJet, hzero x hx j]
+      rw [hjet, rationalTaylorPolynomial_polynomialJet _ _ 0 ?_ ?_
+        (by rw [Polynomial.degree_zero]; exact WithBot.bot_lt_coe 2) ?_]
+      · simp
+      · simp [differentialSpecialization, differentialSpecializationHom]
+      · simp [separant, Fin.last, jetEvaluation]
+      · intro i _ _; simp)
+    0 (by simpa [domain_zero] using component_zeroCut_mem (0 : ComponentField))
+
+/-- A nonempty agreement cut lowers the affine Hilbert degree of this chart prime to zero. -/
+example : (affineHilbertPolynomial
+    (Ideal.span {(MvPolynomial.X (0 : Fin 1) : ChartRing 0 ComponentField)})).natDegree ≤ 0 := by
+  have hP : (Ideal.span {(MvPolynomial.X (0 : Fin 1) : ChartRing 0 ComponentField)}).IsPrime :=
+    (Ideal.span_singleton_prime (X_ne_zero _)).mpr X_prime
+  simpa using chart_prime_affineHilbertPolynomial_natDegree_le_of_agreements_of_exponent
+    (center := (0 : ComponentField))
+    (Q := (MvPolynomial.X (0 : Fin 1) : DifferentialPolynomial ComponentField 0))
+    (K := 1) (k := 1) (c := 1) (τ := 0)
+    (by intro l; fin_cases l; decide) (by omega) (by omega) _ hP
+    (by simpa [initialJetSeparant, initialJetEquation, separant] using
+      (Ideal.ne_top_iff_one _).mp hP.ne_top)
+    (by intro l hl; fin_cases l; omega) firstOrderTestPoints firstOrderChartValues fun i ↦ by
+      simp [taylorAgreementEquation, commonTaylorNumerator, rationalTaylorNumerator,
+        initialJetSeparant, separant, firstOrderTestPoints, firstOrderChartValues]
 
 /-- Every regular point of a prime component lies on the recognized graph line, and agreement
 cuts at two points, one more than the degree bound `k = 1`, give a pair with two common
@@ -470,40 +503,6 @@ example :
       (algebraMap ℚ ComponentField) 0 componentEquation 2 2 (by intro l; omega) componentIdeal
       component_separant_notMem componentIdeal_degree_pos P hgraph hpoly 0
       (component_powerBatchedAgreementCuts 0 (by simp))⟩, R, hR, by convert hcommon⟩
-
-/-- The positive-dimensional chart and source bounds include empty-cut boundary cases; the chart
-bound forces the cut count to zero. -/
-example :
-    (affineHilbertPolynomial firstOrderChartIdeal).natDegree +
-        {i : Fin 1 | firstOrderChartCut i ∈ firstOrderChartIdeal}.ncard ≤ 1 ∧
-      (affineHilbertPolynomial firstOrderSourceIdeal).natDegree +
-        {i : Fin 1 | firstOrderSourceCut i ∈ firstOrderSourceIdeal}.ncard ≤ 2 ∧
-      {i : Fin 1 | firstOrderSourceCut i ∈ firstOrderSourceIdeal}.ncard = 0 := by
-  have hτ : TaylorExponentSufficient 1 2 2 := by intro l; fin_cases l <;> omega
-  have hd : 1 < (affineHilbertPolynomial firstOrderSourceIdeal).natDegree := by
-    rw [firstOrderSourceIdeal_degree]; omega
-  have hline := (symbolicSource_dimensionSensitive_component_of_exponent
-    (center := (0 : ComponentField)) (Q := firstOrderSourceEquation) (K := 2) (k := 1) (n := 1)
-    (τ := 2) hτ (by omega) (by omega) firstOrderSourceIdeal firstOrderSourceIdeal_isPrime
-    firstOrderSourceSeparant_notMem firstOrderSourceHigh firstOrderTestPoints 0 0).2 hd
-  have hfirst := (firstOrder_symbolicSource_dimensionSensitive_component_of_exponent
-    (center := (0 : ComponentField)) (Q := firstOrderSourceEquation) (K := 2) (n := 1)
-    (τ := 2) hτ (by omega) firstOrderSourceIdeal firstOrderSourceIdeal_isPrime
-    firstOrderSourceSeparant_notMem firstOrderSourceHigh firstOrderTestPoints 0 0).2 hd
-  rw [firstOrderSourceIdeal_degree] at hline
-  have hcount : {i : Fin 1 | firstOrderSourceCut i ∈ firstOrderSourceIdeal}.ncard = 0 :=
-    Nat.eq_zero_of_le_zero (by simpa [firstOrderSourceCut, firstOrderTestPoints] using hline)
-  refine ⟨chart_dimensionSensitive_component_of_exponent (center := (0 : ComponentField))
-    (Q := firstOrderChartEquation) (K := 2) (k := 1) (n := 1) (τ := 2) hτ (by omega) (by omega)
-    firstOrderChartIdeal firstOrderChartIdeal_isPrime firstOrderChartSeparant_notMem
-    firstOrderChartHigh firstOrderTestPoints firstOrderChartValues
-    (by rw [firstOrderChartIdeal_degree]; omega), ?_,
-    by simpa [firstOrderSourceCut, firstOrderTestPoints] using hfirst⟩
-  rw [hcount, Nat.add_zero]
-  exact (symbolicSourcePolynomial_dimensionSensitive_component_of_exponent
-    (center := (0 : ComponentField)) (Q := firstOrderSourceEquation) (K := 2) (k := 1) (n := 1)
-    (τ := 2) hτ (by omega) (by omega) firstOrderSourceIdeal firstOrderSourceIdeal_isPrime
-    firstOrderSourceSeparant_notMem firstOrderSourceHigh firstOrderTestPoints 0).1
 
 noncomputable local instance graphComponentDecidableEq : DecidableEq ℚ := Classical.decEq _
 
