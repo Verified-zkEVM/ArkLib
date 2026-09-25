@@ -376,17 +376,20 @@ example :
     lowRateFiniteLengthDerivativeCap (1 / 16 : ℝ) (1 / 8 : ℝ) 64 ≤
       lowRateFiniteLengthJetDegree (1 / 16 : ℝ) (1 / 8 : ℝ) 64 ∧
     (lowRateFiniteLengthMultiplicity (1 / 16 : ℝ) (1 / 8 : ℝ) 64 : ℝ) ≤
-      lowRateParameterBoundConstant (1 / 16) /
+      lowRateMultiplicityBoundConstant (1 / 16) /
         finiteLengthSlack (1 / 8 : ℝ) 64 ∧
     (lowRateFiniteLengthDerivativeCap (1 / 16 : ℝ) (1 / 8 : ℝ) 64 : ℝ) ≤
-      lowRateParameterBoundConstant (1 / 16) /
+      lowRateDerivativeCapBoundConstant (1 / 16) /
         finiteLengthSlack (1 / 8 : ℝ) 64 ∧
     (lowRateFiniteLengthJetDegree (1 / 16 : ℝ) (1 / 8 : ℝ) 64 : ℝ) ≤
-      lowRateParameterBoundConstant (1 / 16) /
+      lowRateJetBoundConstant (1 / 16) /
         finiteLengthSlack (1 / 8 : ℝ) 64 ∧
     (lowRateFiniteLengthChallengeHeight (1 / 16 : ℝ) (1 / 8 : ℝ) 64 : ℝ) ≤
+      lowRateHeightBoundConstant (1 / 16) /
+        finiteLengthSlack (1 / 8 : ℝ) 64 ^ 2 ∧
+    (lowRateFiniteLengthMultiplicity (1 / 16 : ℝ) (1 / 8 : ℝ) 64 : ℝ) ≤
       lowRateParameterBoundConstant (1 / 16) /
-        finiteLengthSlack (1 / 8 : ℝ) 64 ^ 2 := by
+        finiteLengthSlack (1 / 8 : ℝ) 64 := by
   let rho : ℝ := 1 / 16
   let eta : ℝ := 1 / 8
   let n : ℕ := 64
@@ -452,9 +455,15 @@ example :
     (rho := rho) (eta := eta) (n := n) hrho heta haOne hn
   have hparameters := lowRateFiniteLength_parameter_bounds
     (rho := rho) (eta := eta) (n := n) hrho hlow heta haOne hn
-  refine ⟨lowRateFiniteLengthSlope_pos hrho hlow, ?_, ?_, ?_, ?_, hslack, hcap, ?_⟩
+  refine ⟨lowRateFiniteLengthSlope_pos hrho hlow, ?_, ?_, ?_, ?_, hslack, hcap,
+    ?_, ?_, ?_, ?_, ?_⟩
   · exact hslope
   · exact hsource
   · exact hrank
   · exact hgap
-  · exact hparameters
+  · exact lowRateFiniteLengthMultiplicity_le_inv_slack hrho hlow heta haOne hn
+  · exact lowRateFiniteLengthDerivativeCap_le_inv_slack hrho hlow heta haOne hn
+  · exact lowRateFiniteLengthJetDegree_le_inv_slack hrho hlow heta haOne hn
+  · exact lowRateFiniteLengthChallengeHeight_le_inv_slack_sq
+      hrho hlow heta haOne hn
+  · exact hparameters.1

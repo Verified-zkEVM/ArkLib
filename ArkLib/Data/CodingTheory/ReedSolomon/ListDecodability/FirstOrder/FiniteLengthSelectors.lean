@@ -31,6 +31,8 @@ The density and height bounds are stated on the branch where the derivative rati
   literal interpolation parameters.
 * `finiteLengthChallengeHeight_le_inv_slack_sq_of_count_gap` takes a finite surplus as a premise.
 * `finiteLengthChallengeHeight_le_common_inv_slack_sq` bounds the exact challenge height.
+* `natCeil_mul_div_le_inv_slack` and `maxOneFloor_mul_div_le_inv_slack_sq` give shared selector
+  arithmetic bounds.
 
 ## References
 
@@ -308,9 +310,14 @@ def finiteLengthParameterBoundConstant (rho : ℝ) : ℝ :=
 /-- Finite-length slack is below one when a threshold exceeds the rate and leaves room. -/
 theorem finiteLengthSlack_lt_one_of_threshold
     {rho threshold eta : ℝ} {n : ℕ}
-    (hrho : 0 < rho) (hthreshold : rho < threshold)
+    (hthreshold : rho < threshold)
     (haOne : threshold + eta < 1) (hn : (2 : ℝ) ≤ rho * n) :
     finiteLengthSlack eta n < 1 := by
+  have hrho : 0 < rho := by
+    by_contra h
+    have hprod : rho * (n : ℝ) ≤ 0 :=
+      mul_nonpos_of_nonpos_of_nonneg (le_of_not_gt h) (Nat.cast_nonneg _)
+    linarith
   have hn0 : (0 : ℝ) < n := by
     exact_mod_cast length_pos_of_two_le_rate_mul_length hn
   have hinv : 1 / (n : ℝ) ≤ rho / 2 := by
@@ -326,7 +333,7 @@ theorem finiteLengthSlack_lt_one_of_rate
     (haOne : firstOrderRateThreshold rho + eta < 1)
     (hn : (2 : ℝ) ≤ rho * n) :
     finiteLengthSlack eta n < 1 := by
-  exact finiteLengthSlack_lt_one_of_threshold hrho
+  exact finiteLengthSlack_lt_one_of_threshold
     (rate_lt_firstOrderRateThreshold hrho hrhoOne) haOne hn
 
 /-- The finite-length density margin is positive on the clean rank branch. -/
@@ -475,6 +482,44 @@ theorem finiteLengthDerivativeCap_le_jetDegree
     exact hbcutFixed.trans_le (div_le_div_of_nonneg_left ha0.le hrn hrnle.le)
   exact natFloor_mul_le_natCeil_mul_div hbcut.le
 
+/-- The ceiling of a multiplicity-scaled agreement has inverse-slack size. -/
+theorem natCeil_mul_div_le_inv_slack
+    {rho slack agreement rate C : ℝ} {m : ℕ}
+    (hrho : 0 < rho) (hslack : 0 < slack) (hslackOne : slack ≤ 1)
+    (hagreement : 0 ≤ agreement) (hagreementOne : agreement ≤ 1)
+    (hrate : 0 < rate) (hrateLower : rho / 2 ≤ rate)
+    (hm : (m : ℝ) ≤ C / slack) :
+    (Nat.ceil ((m : ℝ) * agreement / rate) : ℝ) ≤
+      (2 * C / rho + 1) / slack := by
+  have hm0 : (0 : ℝ) ≤ m := Nat.cast_nonneg _
+  have hma : (m : ℝ) * agreement ≤ m := by
+    nlinarith [mul_nonneg hm0 (sub_nonneg.mpr hagreementOne)]
+  have hratio : (m : ℝ) / rate ≤ 2 * (m : ℝ) / rho := by
+    rw [div_le_iff₀ hrate, div_eq_mul_inv]
+    field_simp [ne_of_gt hrho]
+    nlinarith
+  have harg : (m : ℝ) * agreement / rate ≤ 2 * C / (rho * slack) := by
+    calc
+      (m : ℝ) * agreement / rate ≤ (m : ℝ) / rate :=
+        div_le_div_of_nonneg_right hma hrate.le
+      _ ≤ 2 * (m : ℝ) / rho := hratio
+      _ ≤ 2 * (C / slack) / rho := by
+        exact div_le_div_of_nonneg_right
+          (mul_le_mul_of_nonneg_left hm (by norm_num)) hrho.le
+      _ = 2 * C / (rho * slack) := by ring
+  have hceil : (Nat.ceil ((m : ℝ) * agreement / rate) : ℝ) <
+      (m : ℝ) * agreement / rate + 1 := by
+    apply Nat.ceil_lt_add_one
+    exact div_nonneg (mul_nonneg hm0 hagreement) hrate.le
+  calc
+    (Nat.ceil ((m : ℝ) * agreement / rate) : ℝ) ≤
+        2 * C / (rho * slack) + 1 :=
+      (hceil.trans_le (by simpa [add_comm] using add_le_add_right harg 1)).le
+    _ = (2 * C / rho + slack) / slack := by
+      field_simp [ne_of_gt hrho, ne_of_gt hslack]
+    _ ≤ (2 * C / rho + 1) / slack := by gcongr
+    _ = _ := by ring
+
 /-- The literal total jet degree has inverse finite-length-slack size. -/
 theorem finiteLengthJetDegree_le_inv_slack
     {rho eta : ℝ} {n : ℕ}
@@ -499,51 +544,68 @@ theorem finiteLengthJetDegree_le_inv_slack
     exact finiteLengthSlack_pos heta
   have hsOne : s ≤ 1 :=
     (finiteLengthSlack_lt_one_of_rate hrho hrhoOne haOne hn).le
-  have harg : (m : ℝ) * a / rn ≤ 2 * cm / (rho * s) := by
-    have hm0 : (0 : ℝ) ≤ m := Nat.cast_nonneg _
-    have hma : (m : ℝ) * a ≤ m := by nlinarith
-    have hratio : (m : ℝ) / rn ≤ 2 * (m : ℝ) / rho := by
-      rw [div_le_iff₀ hrn, div_eq_mul_inv]
-      field_simp [ne_of_gt hrho]
-      nlinarith
-    dsimp only [m, a, rn, s, cm] at hm ⊢
-    calc
-      (finiteLengthMultiplicity rho eta n : ℝ) *
-          finiteLengthCertifiedAgreement rho eta / finiteLengthRate rho n ≤
-          (finiteLengthMultiplicity rho eta n : ℝ) / finiteLengthRate rho n := by
-        exact div_le_div_of_nonneg_right hma hrn.le
-      _ ≤ 2 * finiteLengthMultiplicity rho eta n / rho := hratio
-      _ ≤ 2 * finiteLengthMultiplicityBoundConstant rho /
-          (rho * finiteLengthSlack eta n) := by
-        calc
-          2 * (finiteLengthMultiplicity rho eta n : ℝ) / rho ≤
-              2 * (finiteLengthMultiplicityBoundConstant rho /
-                finiteLengthSlack eta n) / rho := by gcongr
-          _ = _ := by ring
-  have hceil : (finiteLengthJetDegree rho eta n : ℝ) <
-      (m : ℝ) * a / rn + 1 := by
-    dsimp only [m, a, rn]
-    unfold finiteLengthJetDegree
-    apply Nat.ceil_lt_add_one
-    exact div_nonneg (mul_nonneg (Nat.cast_nonneg _)
-      (by exact (hrho.trans (rho_lt_automaticAgreement hrho hrhoOne (by linarith))).le))
-      hrn.le
-  calc
-    (finiteLengthJetDegree rho eta n : ℝ) ≤
-        2 * cm / (rho * s) + 1 := by
-      exact (hceil.trans_le (by simpa [add_comm] using add_le_add_right harg 1)).le
-    _ ≤ finiteLengthJetBoundConstant rho / s := by
-      have hcm : 0 ≤ cm := by
-        dsimp only [cm]
-        unfold finiteLengthMultiplicityBoundConstant
-        positivity [automaticSurplusSlope_pos hrho hrhoOne]
-      calc
-        2 * cm / (rho * s) + 1 = (2 * cm / rho + s) / s := by
-          field_simp [ne_of_gt hrho, ne_of_gt hs]
-        _ ≤ (2 * cm / rho + 1) / s := by gcongr
-        _ = finiteLengthJetBoundConstant rho / s := by rfl
+  have ha0 : 0 ≤ a := by
+    dsimp only [a]
+    exact (hrho.trans (rho_lt_automaticAgreement hrho hrhoOne (by linarith))).le
+  change (Nat.ceil ((m : ℝ) * a / rn) : ℝ) ≤
+    (2 * cm / rho + 1) / s
+  exact natCeil_mul_div_le_inv_slack
+    hrho hs hsOne ha0 (le_of_lt haOne') hrn hrnHalf hm
 
 /-! ## Exact finite count gap -/
+
+/-- A rank and jet bound with a cubic count gap bounds the floored challenge quotient. -/
+theorem maxOneFloor_mul_div_le_inv_slack_sq
+    {m rank jet : ℕ} {slack slope rankConstant jetConstant gap : ℝ}
+    (hm : 0 < (m : ℝ)) (hslack : 0 < slack) (hslackOne : slack ≤ 1)
+    (hslope : 0 < slope) (hrankConstant : 0 ≤ rankConstant)
+    (hjetConstant : 0 ≤ jetConstant)
+    (hrank : (rank : ℝ) ≤ rankConstant * (m : ℝ) ^ 3)
+    (hjet : (jet : ℝ) ≤ jetConstant / slack)
+    (hgap : 3 * (m : ℝ) ^ 3 * (slope * slack) / 4 ≤ gap) :
+    ((Nat.max 1 ⌊(rank : ℝ) * jet / gap⌋₊ : ℕ) : ℝ) ≤
+      (1 + 4 * rankConstant * jetConstant / (3 * slope)) / slack ^ 2 := by
+  have hgapPos : 0 < gap := by
+    exact (by positivity : 0 < 3 * (m : ℝ) ^ 3 * (slope * slack) / 4).trans_le hgap
+  have hnum : (rank : ℝ) * jet ≤
+      rankConstant * (m : ℝ) ^ 3 * (jetConstant / slack) := by
+    gcongr
+  have hquot : (rank : ℝ) * jet / gap ≤
+      4 * rankConstant * jetConstant / (3 * slope * slack ^ 2) := by
+    calc
+      (rank : ℝ) * jet / gap ≤
+          (rankConstant * (m : ℝ) ^ 3 * (jetConstant / slack)) / gap :=
+        div_le_div_of_nonneg_right hnum hgapPos.le
+      _ ≤ (rankConstant * (m : ℝ) ^ 3 * (jetConstant / slack)) /
+          (3 * (m : ℝ) ^ 3 * (slope * slack) / 4) := by
+        exact div_le_div_of_nonneg_left (by positivity) (by positivity) hgap
+      _ = 4 * rankConstant * jetConstant / (3 * slope * slack ^ 2) := by
+        field_simp [ne_of_gt hm, ne_of_gt hslope, ne_of_gt hslack]
+  have hquot0 : 0 ≤ (rank : ℝ) * jet / gap := by positivity
+  have hheight : ((Nat.max 1 ⌊(rank : ℝ) * jet / gap⌋₊ : ℕ) : ℝ) ≤
+      1 + (rank : ℝ) * jet / gap := by
+    rw [Nat.cast_max, Nat.cast_one]
+    apply max_le
+    · linarith
+    · exact (Nat.floor_le hquot0).trans (by linarith)
+  calc
+    ((Nat.max 1 ⌊(rank : ℝ) * jet / gap⌋₊ : ℕ) : ℝ) ≤
+        1 + 4 * rankConstant * jetConstant / (3 * slope * slack ^ 2) := by
+      linarith
+    _ = 1 + (4 * rankConstant * jetConstant / (3 * slope)) / slack ^ 2 := by
+      ring
+    _ ≤ (1 + 4 * rankConstant * jetConstant / (3 * slope)) / slack ^ 2 := by
+      have hslackSq : slack ^ 2 ≤ 1 := pow_le_one₀ hslack.le hslackOne
+      have hK : 0 ≤ 4 * rankConstant * jetConstant / (3 * slope) := by positivity
+      rw [le_div_iff₀ (sq_pos_of_pos hslack)]
+      calc
+        (1 + 4 * rankConstant * jetConstant / (3 * slope) / slack ^ 2) * slack ^ 2 =
+            slack ^ 2 + 4 * rankConstant * jetConstant / (3 * slope) := by
+          field_simp [ne_of_gt hslack]
+        _ ≤ 1 + 4 * rankConstant * jetConstant / (3 * slope) := by
+          simpa [add_comm] using
+            add_le_add_right hslackSq (4 * rankConstant * jetConstant / (3 * slope))
+    _ = _ := by ring_nf
 
 /-- The exact finite-length local rank loses at most `3 m²` against the cubic density. -/
 theorem finiteLengthRankCount_le_density_add_three_mul_sq
@@ -691,8 +753,6 @@ theorem finiteLengthChallengeHeight_le_inv_slack_sq_of_count_gap
     dsimp only [m, N, R, c, s] at hgap ⊢
     exact (div_le_div_of_nonneg_right
       (mul_le_mul_of_nonneg_left hdelta (by positivity)) (by norm_num)).trans hgap
-  have hgapPos : 0 < N - R := by
-    exact (by positivity : 0 < 3 * (m : ℝ) ^ 3 * (c * s) / 4).trans_le hgapLower
   have hM : finiteLengthDerivativeCap rho eta n ≤ m :=
     finiteLengthDerivativeCap_le_multiplicity
       hrhoOne haOne hbetaHalf
@@ -706,45 +766,17 @@ theorem finiteLengthChallengeHeight_le_inv_slack_sq_of_count_gap
     dsimp only [cB]
     unfold finiteLengthJetBoundConstant finiteLengthMultiplicityBoundConstant
     positivity
-  have hnum : (R : ℝ) * B ≤ 2 * (m : ℝ) ^ 3 * (cB / s) := by
-    gcongr
-  have hquot : (R : ℝ) * B / (N - R) ≤ 8 * cB / (3 * c * s ^ 2) := by
-    calc
-      (R : ℝ) * B / (N - R) ≤
-          (2 * (m : ℝ) ^ 3 * (cB / s)) / (N - R) := by
-        exact div_le_div_of_nonneg_right hnum hgapPos.le
-      _ ≤
-          (2 * (m : ℝ) ^ 3 * (cB / s)) /
-            (3 * (m : ℝ) ^ 3 * (c * s) / 4) := by
-        exact div_le_div_of_nonneg_left (by positivity) (by positivity) hgapLower
-      _ = 8 * cB / (3 * c * s ^ 2) := by
-        field_simp [ne_of_gt hm, ne_of_gt hc, ne_of_gt hs]
-        ring
-  have hq0 : 0 ≤ (R : ℝ) * B / (N - R) := by positivity
-  have hheight : (finiteLengthChallengeHeight rho eta n : ℝ) ≤
-      1 + (R : ℝ) * B / (N - R) := by
-    unfold finiteLengthChallengeHeight
-    rw [Nat.cast_max, Nat.cast_one]
-    apply max_le
-    · linarith
-    · exact (Nat.floor_le hq0).trans (by linarith)
-  have hK : 0 ≤ 8 * cB / (3 * c) := by positivity
+  have hhelper := maxOneFloor_mul_div_le_inv_slack_sq hm hs hsOne hc (by norm_num)
+    hcB hR hB hgapLower
+  have hchallenge : (finiteLengthChallengeHeight rho eta n : ℝ) ≤
+      (1 + 4 * 2 * cB / (3 * c)) / s ^ 2 := by
+    simpa only [finiteLengthChallengeHeight, B, R, N] using hhelper
   calc
     (finiteLengthChallengeHeight rho eta n : ℝ) ≤
-        1 + (R : ℝ) * B / (N - R) := hheight
-    _ ≤ 1 + 8 * cB / (3 * c * s ^ 2) := by linarith
-    _ = 1 + (8 * cB / (3 * c)) / s ^ 2 := by ring
-    _ ≤ (1 + 8 * cB / (3 * c)) / s ^ 2 := by
-      have hsSq : s ^ 2 ≤ 1 := by
-        nlinarith [mul_nonneg hs.le (sub_nonneg.mpr hsOne)]
-      have hone : 1 ≤ 1 / s ^ 2 := by
-        rw [le_div_iff₀ (sq_pos_of_pos hs)]
-        simpa using hsSq
-      calc
-        1 + (8 * cB / (3 * c)) / s ^ 2 ≤
-            1 / s ^ 2 + (8 * cB / (3 * c)) / s ^ 2 := by gcongr
-        _ = (1 + 8 * cB / (3 * c)) / s ^ 2 := by ring
-    _ = finiteLengthHeightBoundConstant rho / s ^ 2 := by rfl
+        (1 + 4 * 2 * cB / (3 * c)) / s ^ 2 := hchallenge
+    _ = finiteLengthHeightBoundConstant rho / s ^ 2 := by
+      dsimp only [finiteLengthHeightBoundConstant, cB, c, s]
+      ring
 
 /-- The selected multiplicity, derivative cap, and jet degree share one inverse-slack envelope. -/
 theorem finiteLength_multiplicity_derivativeCap_jetDegree_bounds

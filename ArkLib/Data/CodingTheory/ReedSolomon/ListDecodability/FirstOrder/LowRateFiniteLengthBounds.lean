@@ -82,7 +82,7 @@ theorem lowRateFiniteLengthSlack_lt_one
     finiteLengthSlack eta n < 1 := by
   have hregime := (firstOrderLowRateRegime_iff_lt_rateSwitch rho).2 hlow
   have hthreshold := rate_lt_firstOrderLowRateThreshold hrho hregime
-  exact finiteLengthSlack_lt_one_of_threshold hrho hthreshold haOne hn
+  exact finiteLengthSlack_lt_one_of_threshold hthreshold haOne hn
 
 /-- The selected low-rate multiplicity is bounded by inverse slack. -/
 theorem lowRateFiniteLengthMultiplicity_le_inv_slack
@@ -186,35 +186,13 @@ theorem lowRateFiniteLengthJetDegree_le_inv_slack
   have hsOne : s ≤ 1 := (lowRateFiniteLengthSlack_lt_one hrho hlow haOne hn).le
   have hR : 0 < R := finiteLengthRate_pos hrho hn
   have hRhalf : rho / 2 ≤ R := half_rate_le_finiteLengthRate hn
+  have ha0 : 0 ≤ a := (lowRateFiniteLengthCertifiedAgreement_pos hrho heta.le).le
   have haOne' : a < 1 := lowRateFiniteLengthCertifiedAgreement_lt_one haOne
   have hm := lowRateFiniteLengthMultiplicity_le_inv_slack hrho hlow heta haOne hn
-  have harg : (m : ℝ) * a / R ≤
-      2 * lowRateMultiplicityBoundConstant rho / (rho * s) := by
-    have hma : (m : ℝ) * a ≤ m := by
-      have hm0 : (0 : ℝ) ≤ m := Nat.cast_nonneg _
-      nlinarith
-    have hratio : (m : ℝ) / R ≤ 2 * (m : ℝ) / rho := by
-      rw [div_le_iff₀ hR]
-      field_simp [ne_of_gt hrho]
-      nlinarith
-    calc
-      (m : ℝ) * a / R ≤ (m : ℝ) / R := div_le_div_of_nonneg_right hma hR.le
-      _ ≤ 2 * (m : ℝ) / rho := hratio
-      _ ≤ 2 * (lowRateMultiplicityBoundConstant rho / s) / rho := by gcongr
-      _ = 2 * lowRateMultiplicityBoundConstant rho / (rho * s) := by ring
-  have hceil : (lowRateFiniteLengthJetDegree rho eta n : ℝ) <
-      (m : ℝ) * a / R + 1 := by
-    dsimp only [m, a, R]
-    unfold lowRateFiniteLengthJetDegree
-    exact Nat.ceil_lt_add_one (div_nonneg
-      (mul_nonneg (Nat.cast_nonneg _) (lowRateFiniteLengthCertifiedAgreement_pos hrho heta.le).le)
-      hR.le)
-  calc
-    _ ≤ 2 * lowRateMultiplicityBoundConstant rho / (rho * s) + 1 := by linarith
-    _ = (2 * lowRateMultiplicityBoundConstant rho / rho + s) / s := by
-      field_simp [ne_of_gt hrho, ne_of_gt hs]
-    _ ≤ (2 * lowRateMultiplicityBoundConstant rho / rho + 1) / s := by gcongr
-    _ = lowRateJetBoundConstant rho / s := by rfl
+  change (Nat.ceil ((m : ℝ) * a / R) : ℝ) ≤
+    (2 * lowRateMultiplicityBoundConstant rho / rho + 1) / s
+  exact natCeil_mul_div_le_inv_slack hrho hs hsOne ha0 (le_of_lt haOne')
+    hR hRhalf hm
 
 /-- The selected low-rate challenge height is bounded by inverse slack squared. -/
 theorem lowRateFiniteLengthChallengeHeight_le_inv_slack_sq
@@ -258,8 +236,6 @@ theorem lowRateFiniteLengthChallengeHeight_le_inv_slack_sq
   have hgapLower : 3 * (m : ℝ) ^ 3 * (c * s) / 4 ≤ N - r := by
     exact (div_le_div_of_nonneg_right
       (mul_le_mul_of_nonneg_left hdelta (by positivity)) (by norm_num)).trans hgap
-  have hgapPos : 0 < N - r :=
-    (by positivity : 0 < 3 * (m : ℝ) ^ 3 * (c * s) / 4).trans_le hgapLower
   have hrank0 := firstOrderRankCount_floor_le_density_add_rounding
     (firstOrderLowRateBeta_pos hrho).le (lowRateFiniteLengthMultiplicity rho eta n)
   have hrank : (lowRateFiniteLengthRankCount rho eta n : ℝ) ≤
@@ -277,39 +253,16 @@ theorem lowRateFiniteLengthChallengeHeight_le_inv_slack_sq
     nlinarith [mul_le_mul_of_nonneg_left hmSqCube hcrank]
   have hB : (B : ℝ) ≤ cB / s :=
     lowRateFiniteLengthJetDegree_le_inv_slack hrho hlow heta haOne hn
-  have hquot : (r : ℝ) * B / (N - r) ≤ 4 * cr * cB / (3 * c * s ^ 2) := by
-    calc
-      (r : ℝ) * B / (N - r) ≤
-          (cr * (m : ℝ) ^ 3 * (cB / s)) / (N - r) := by
-        exact div_le_div_of_nonneg_right
-          (mul_le_mul hr hB (Nat.cast_nonneg _) (by positivity)) hgapPos.le
-      _ ≤ (cr * (m : ℝ) ^ 3 * (cB / s)) /
-          (3 * (m : ℝ) ^ 3 * (c * s) / 4) := by
-        exact div_le_div_of_nonneg_left (by positivity) (by positivity) hgapLower
-      _ = 4 * cr * cB / (3 * c * s ^ 2) := by
-        field_simp [ne_of_gt hm, ne_of_gt hc, ne_of_gt hs]
-  have hquot0 : 0 ≤ (r : ℝ) * B / (N - r) := by positivity
-  have hheight : (lowRateFiniteLengthChallengeHeight rho eta n : ℝ) ≤
-      1 + (r : ℝ) * B / (N - r) := by
-    unfold lowRateFiniteLengthChallengeHeight
-    rw [Nat.cast_max, Nat.cast_one]
-    apply max_le
-    · linarith
-    · exact (Nat.floor_le (by positivity)).trans (by linarith)
+  have hhelper := maxOneFloor_mul_div_le_inv_slack_sq
+    hm hs hsOne hc hcr hcB hr hB hgapLower
+  have hchallenge : (lowRateFiniteLengthChallengeHeight rho eta n : ℝ) ≤
+      (1 + 4 * cr * cB / (3 * c)) / s ^ 2 := by
+    simpa only [lowRateFiniteLengthChallengeHeight, B, r, N] using hhelper
   calc
-    _ ≤ 1 + 4 * cr * cB / (3 * c * s ^ 2) := hheight.trans (by linarith)
-    _ = 1 + (4 * cr * cB / (3 * c)) / s ^ 2 := by ring
-    _ ≤ (1 + 4 * cr * cB / (3 * c)) / s ^ 2 := by
-      have hsSq : s ^ 2 ≤ 1 := pow_le_one₀ hs.le hsOne
-      have hK : 0 ≤ 4 * cr * cB / (3 * c) := by positivity
-      rw [le_div_iff₀ (sq_pos_of_pos hs)]
-      calc
-        (1 + 4 * cr * cB / (3 * c) / s ^ 2) * s ^ 2 =
-            s ^ 2 + 4 * cr * cB / (3 * c) := by
-          field_simp [ne_of_gt hs]
-        _ ≤ 1 + 4 * cr * cB / (3 * c) := by
-          simpa only [add_comm] using add_le_add_right hsSq (4 * cr * cB / (3 * c))
-    _ = lowRateHeightBoundConstant rho / s ^ 2 := by rfl
+    (lowRateFiniteLengthChallengeHeight rho eta n : ℝ) ≤
+        (1 + 4 * cr * cB / (3 * c)) / s ^ 2 := hchallenge
+    _ = lowRateHeightBoundConstant rho / s ^ 2 := by
+      dsimp only [lowRateHeightBoundConstant, cr, cB, c, s]
 
 /-- One rate-only constant bounds all low-rate finite-length interpolation parameters. -/
 theorem lowRateFiniteLength_parameter_bounds
