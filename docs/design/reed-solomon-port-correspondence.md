@@ -2214,6 +2214,12 @@ The default locus and principal-open wrappers are covered at `L = k`, as is the 
 
 The shared acceptance file includes concrete instances for the common-agreement theorem and principal-open graph inclusion on a zero tuple, and the finite incidence bound on a nonempty singleton outside the retained graphs. It also tests `finite_regularHighCutJets_card_le_dimensionSensitive_of_exponent` with the first-order chart, `commonAgreement_of_jointTaylorAgreementEquation_mem_prime` with a proved zero cut, and `chart_prime_affineHilbertPolynomial_natDegree_le_of_agreements_of_exponent` with a nonempty cut. The shared acceptance module built successfully with caching disabled, and the file is under the 1,500-line limit.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerTupleRegularBound.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/PolynomialCurve/RegularBound.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`finite_frobeniusPowerRegularBadWitnesses_card_le_at` and `finite_frobeniusPowerRegularBadWitnesses_card_le` → `finite_frobeniusPowerRegularBadChallenges_card_le`. The new arbitrary-threshold theorem is generalized to the current joint Taylor and degree interfaces and drops the `A ≤ n` assumption. Its specialization at `L = k` covers the source default-threshold theorem, so no fixed-threshold wrapper was added. No mathematical result was left out. The shared acceptance file imports the module and checks a nonempty singleton challenge set at zero over a two-point complex domain; the zero witness agrees at both coordinates, and exact power agreement would require a degree-below-one second message polynomial to take both values zero and one. The example invokes the theorem and verifies `1 ≤ 2`.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/SingularTail.lean`
 
 Merges `FirstOrder/Squarefree/Bounds.lean` and `FirstOrder/Squarefree/SingularTail.lean` under
