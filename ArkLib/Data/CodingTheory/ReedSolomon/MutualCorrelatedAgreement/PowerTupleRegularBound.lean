@@ -20,7 +20,8 @@ public import ArkLib.ToMathlib.MvPolynomial.PolynomialCoefficients
 
 Finite families of regular expanded solutions with many agreements but no exact power agreement
 are bounded by the incidence of regular points outside retained tuple graphs and the exceptional
-challenges for retained tuples.
+challenges for retained tuples. These bounds also give one finite exceptional set that controls
+all such solutions at each challenge.
 A common regular Taylor center can be selected from witness separants to apply this bound without
 a prescribed center.
 
@@ -30,6 +31,8 @@ a prescribed center.
   threshold `L` between `k` and the requested agreement `A`.
 * `finite_frobeniusPowerRegularBadChallenges_card_le_of_separant_at` chooses a common regular
   Taylor center for a finite family and applies the bound.
+* `exists_exceptional_frobeniusPowerRegularSolutions_at` gives one bounded exceptional set for
+  every retained-agreement threshold `L` between `k` and `A`.
 
 ## References
 
@@ -320,6 +323,74 @@ theorem finite_frobeniusPowerRegularBadChallenges_card_le_of_separant_at [IsAlgC
   exact finite_frobeniusPowerRegularBadChallenges_card_le
     domain values ι roots center Q p e τ h b A hroots hK hKk hτ hτpos hℓ hb hkL hLA
       hheight hjet hinit hproper challenges witness hdegree hsol hc hagree hbad
+
+open Classical in
+/-- A bounded finite set contains every regular Frobenius witness with many agreements but no
+exact power agreement, at a retained-agreement threshold `L`. -/
+theorem exists_exceptional_frobeniusPowerRegularSolutions_at [IsAlgClosed E]
+    {L : ℕ}
+    (domain : Fin n ↪ F) (values : Fin (ℓ + 1) → Fin n → F) (ι : F →+* E)
+    (roots : Fin n → E) (Q : DifferentialPolynomial E[X] 0)
+    (p e τ h b A : ℕ) [ExpChar E p]
+    (hroots : ∀ i, roots i ^ (p ^ e) = ι (domain i))
+    (hK : 0 < K) (hKk : K ≤ p ^ e * k) (hτ : TaylorExponentSufficient 0 K τ)
+    (hτpos : 0 < τ) (hℓ : 0 < ℓ) (hb : 0 < b)
+    (hkL : k ≤ L) (hLA : L ≤ A)
+    (hheight : CoeffNatDegreeLE Q h) (hjet : jetTotalDegree Q ≤ b) :
+    ∃ exceptional : Finset E,
+      (exceptional.card : ℚ) ≤
+        (h * (1 + τ * (b - 1)) + b * (p ^ e * ℓ + τ * h) : ℕ) *
+          (((n - L + 1 : ℕ) : ℚ) / ((A - L + 1 : ℕ) : ℚ)) +
+        (ℓ * (n - L) * b : ℕ) ∧
+      ∀ z ∉ exceptional, ∀ P : E[X],
+        (expand E (p ^ e) P).degree < K →
+        differentialSpecialization (challengeSpecialization Q z) (expand E (p ^ e) P) = 0 →
+        differentialSpecialization (separant (challengeSpecialization Q z) (Fin.last 0))
+          (expand E (p ^ e) P) ≠ 0 →
+        A ≤ (polynomialAgreementSet (domain.trans ⟨ι, ι.injective⟩)
+          (powerBatchedWord (fun t i ↦ ι (values t i)) (z ^ (p ^ e))) P).card →
+        HasExactPowerAgreement domain values ι k (z ^ (p ^ e)) P := by
+  classical
+  let bad : Set E := {z | ∃ P : E[X],
+    (expand E (p ^ e) P).degree < K ∧
+    differentialSpecialization (challengeSpecialization Q z) (expand E (p ^ e) P) = 0 ∧
+    differentialSpecialization (separant (challengeSpecialization Q z) (Fin.last 0))
+      (expand E (p ^ e) P) ≠ 0 ∧
+    A ≤ (polynomialAgreementSet (domain.trans ⟨ι, ι.injective⟩)
+      (powerBatchedWord (fun t i ↦ ι (values t i)) (z ^ (p ^ e))) P).card ∧
+    ¬HasExactPowerAgreement domain values ι k (z ^ (p ^ e)) P}
+  let bound : ℚ :=
+    (h * (1 + τ * (b - 1)) + b * (p ^ e * ℓ + τ * h) : ℕ) *
+      (((n - L + 1 : ℕ) : ℚ) / ((A - L + 1 : ℕ) : ℚ)) +
+    (ℓ * (n - L) * b : ℕ)
+  have hfinitebound (S : Finset E) (hS : ↑S ⊆ bad) : (S.card : ℚ) ≤ bound := by
+    let witness (z : E) : E[X] := if hz : z ∈ S then Classical.choose (hS hz) else 0
+    have hz (z : E) (hz : z ∈ S) := Classical.choose_spec (hS hz)
+    apply finite_frobeniusPowerRegularBadChallenges_card_le_of_separant_at
+      domain values ι roots Q p e τ h b A hroots hK hKk hτ hτpos hℓ hb
+        hkL hLA hheight hjet S witness
+    · intro z hzs
+      simpa [witness, hzs] using (hz z hzs).1
+    · intro z hzs
+      simpa [witness, hzs] using (hz z hzs).2.1
+    · intro z hzs
+      simpa [witness, hzs] using (hz z hzs).2.2.1
+    · intro z hzs
+      simpa [witness, hzs] using (hz z hzs).2.2.2.1
+    · intro z hzs
+      simpa [witness, hzs] using (hz z hzs).2.2.2.2
+  have hfinite : bad.Finite := by
+    by_contra hinfinite
+    obtain ⟨N, hN⟩ := exists_nat_gt bound
+    obtain ⟨S, hS, hcard⟩ := Set.Infinite.exists_subset_card_eq hinfinite N
+    have hbnd := hfinitebound S hS
+    rw [hcard] at hbnd
+    exact (not_lt_of_ge hbnd) hN
+  refine ⟨hfinite.toFinset, hfinitebound _ (by simp), ?_⟩
+  intro z hz P hdeg hsol hsep hagree
+  by_contra hbad
+  apply hz
+  exact hfinite.mem_toFinset.mpr ⟨P, hdeg, hsol, hsep, hagree, hbad⟩
 
 end ReedSolomon
 
