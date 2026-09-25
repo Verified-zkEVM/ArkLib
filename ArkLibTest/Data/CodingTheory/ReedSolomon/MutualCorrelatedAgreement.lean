@@ -15,6 +15,7 @@ import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerBatch
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerBatchedIncidence
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerBatchedComponentAgreement
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerBatchedPointRecognition
+import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerTupleRegularBound
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerTupleSeparableBound
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TupleSpecialization
 import Mathlib.Analysis.Complex.Polynomial.Basic
@@ -622,6 +623,34 @@ private theorem positiveChallenge_no_correlatedPair :
     (by simpa [commonCurveAgreementSet, commonPolynomialAgreementSet,
       positiveChallengeDomain, regularBoundValues, polynomialAgreementSet] using hsets.symm)
   intro t; fin_cases t <;> assumption
+
+/-- The ordinary exceptional set contains the nonrepresentable regular solution. -/
+example : ∃ exceptional : Finset MCAField,
+    (exceptional.card : ℚ) ≤ 2 ∧ 0 ∈ exceptional := by
+  obtain ⟨exceptional, hcard, hgood⟩ :=
+    exists_exceptional_frobeniusRegularSolutions
+      (F := MCAField) (E := MCAField) (n := 2) (k := 1) (K := 1)
+      positiveChallengeDomain (regularBoundValues 0) (regularBoundValues 1)
+      (RingHom.id MCAField) positiveChallengeDomain componentEquation
+      (p := 1) (e := 0) (τ := 2) (h := 0) (b := 1) (A := 2)
+      (by intro i; simp [positiveChallengeDomain])
+      (by norm_num) (by norm_num) (taylorExponentSufficient_two_mul 0 1)
+      (by norm_num) (by norm_num) (by norm_num)
+      (coeffNatDegreeLE_X (some (0 : Fin 1))) componentEquation_jetDegree
+  have hcard' : (exceptional.card : ℚ) ≤ 2 := by
+    norm_num at hcard
+    exact_mod_cast hcard
+  have hzero : 0 ∈ exceptional := by
+    by_contra hzero
+    have hrepresented := hgood 0 hzero 0 (by simp)
+      (by simp [componentEquation, challengeSpecialization, differentialSpecialization,
+        differentialSpecializationHom])
+      (by simp [componentEquation, challengeSpecialization, separant,
+        differentialSpecialization, differentialSpecializationHom, Fin.last])
+      (by norm_num [positiveChallengeDomain, regularBoundValues, polynomialAgreementSet])
+    exact positiveChallenge_no_correlatedPair (by simpa using hrepresented)
+  exact ⟨exceptional, hcard', hzero⟩
+
 /-- The supplied-center ordinary bound applies to the nonempty challenge set. -/
 example : positiveChallenges.Nonempty ∧ (positiveChallenges.card : ℚ) ≤ 2 := by
   have hregularBound := finite_frobeniusRegularBadChallenges_card_le
