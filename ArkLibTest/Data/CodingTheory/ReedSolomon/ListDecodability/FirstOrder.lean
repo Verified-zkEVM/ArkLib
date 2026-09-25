@@ -8,6 +8,7 @@ import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.Bounds
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.FiniteLengthParameters
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.FiniteLengthSelectors
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.LowRateFiniteLength
+import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.LowRateFiniteLengthBounds
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.Profile
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.NormNum
@@ -370,7 +371,22 @@ example :
     3 * (lowRateFiniteLengthMultiplicity (1 / 16 : ℝ) (1 / 8 : ℝ) 64 : ℝ) ^ 3 *
         lowRateFiniteLengthDensityMargin (1 / 16 : ℝ) (1 / 8 : ℝ) 64 / 4 ≤
       lowRateFiniteLengthSourceCount (1 / 16 : ℝ) (1 / 8 : ℝ) 64 -
-        lowRateFiniteLengthRankCount (1 / 16 : ℝ) (1 / 8 : ℝ) 64 := by
+        lowRateFiniteLengthRankCount (1 / 16 : ℝ) (1 / 8 : ℝ) 64 ∧
+    finiteLengthSlack (1 / 8 : ℝ) 64 < 1 ∧
+    lowRateFiniteLengthDerivativeCap (1 / 16 : ℝ) (1 / 8 : ℝ) 64 ≤
+      lowRateFiniteLengthJetDegree (1 / 16 : ℝ) (1 / 8 : ℝ) 64 ∧
+    (lowRateFiniteLengthMultiplicity (1 / 16 : ℝ) (1 / 8 : ℝ) 64 : ℝ) ≤
+      lowRateParameterBoundConstant (1 / 16) /
+        finiteLengthSlack (1 / 8 : ℝ) 64 ∧
+    (lowRateFiniteLengthDerivativeCap (1 / 16 : ℝ) (1 / 8 : ℝ) 64 : ℝ) ≤
+      lowRateParameterBoundConstant (1 / 16) /
+        finiteLengthSlack (1 / 8 : ℝ) 64 ∧
+    (lowRateFiniteLengthJetDegree (1 / 16 : ℝ) (1 / 8 : ℝ) 64 : ℝ) ≤
+      lowRateParameterBoundConstant (1 / 16) /
+        finiteLengthSlack (1 / 8 : ℝ) 64 ∧
+    (lowRateFiniteLengthChallengeHeight (1 / 16 : ℝ) (1 / 8 : ℝ) 64 : ℝ) ≤
+      lowRateParameterBoundConstant (1 / 16) /
+        finiteLengthSlack (1 / 8 : ℝ) 64 ^ 2 := by
   let rho : ℝ := 1 / 16
   let eta : ℝ := 1 / 8
   let n : ℕ := 64
@@ -430,8 +446,15 @@ example :
       lowRateFiniteLengthRankRoundingConstant] using hrank0
   have hgap := lowRateFiniteLength_count_gap
     (rho := rho) (eta := eta) (n := n) hrho hlow heta haOne hn
-  refine ⟨lowRateFiniteLengthSlope_pos hrho hlow, ?_, ?_, ?_, ?_⟩
+  have hslack := lowRateFiniteLengthSlack_lt_one
+    (rho := rho) (eta := eta) (n := n) hrho hlow haOne hn
+  have hcap := lowRateFiniteLengthDerivativeCap_le_jetDegree
+    (rho := rho) (eta := eta) (n := n) hrho heta haOne hn
+  have hparameters := lowRateFiniteLength_parameter_bounds
+    (rho := rho) (eta := eta) (n := n) hrho hlow heta haOne hn
+  refine ⟨lowRateFiniteLengthSlope_pos hrho hlow, ?_, ?_, ?_, ?_, hslack, hcap, ?_⟩
   · exact hslope
   · exact hsource
   · exact hrank
   · exact hgap
+  · exact hparameters

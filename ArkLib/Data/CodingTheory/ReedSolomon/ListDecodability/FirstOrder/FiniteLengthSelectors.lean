@@ -25,6 +25,7 @@ The density and height bounds are stated on the branch where the derivative rati
 
 ## Main statements
 
+* `finiteLengthSlack_lt_one_of_threshold` gives a threshold-independent slack comparison.
 * `finiteLengthDensityMargin_pos` and `finiteLength_count_gap` give a positive finite surplus.
 * `finiteLengthMultiplicity_le_inv_slack` and `finiteLengthJetDegree_le_inv_slack` bound the
   literal interpolation parameters.
@@ -304,6 +305,20 @@ def finiteLengthParameterBoundConstant (rho : ℝ) : ℝ :=
   max 1 (max (finiteLengthMultiplicityBoundConstant rho)
     (max (finiteLengthJetBoundConstant rho) (finiteLengthHeightBoundConstant rho)))
 
+/-- Finite-length slack is below one when a threshold exceeds the rate and leaves room. -/
+theorem finiteLengthSlack_lt_one_of_threshold
+    {rho threshold eta : ℝ} {n : ℕ}
+    (hrho : 0 < rho) (hthreshold : rho < threshold)
+    (haOne : threshold + eta < 1) (hn : (2 : ℝ) ≤ rho * n) :
+    finiteLengthSlack eta n < 1 := by
+  have hn0 : (0 : ℝ) < n := by
+    exact_mod_cast length_pos_of_two_le_rate_mul_length hn
+  have hinv : 1 / (n : ℝ) ≤ rho / 2 := by
+    rw [div_le_iff₀ hn0]
+    nlinarith
+  unfold finiteLengthSlack
+  linarith
+
 /-- The finite-length slack is below one under the stated rate and length guards. -/
 theorem finiteLengthSlack_lt_one_of_rate
     {rho eta : ℝ} {n : ℕ}
@@ -311,17 +326,8 @@ theorem finiteLengthSlack_lt_one_of_rate
     (haOne : firstOrderRateThreshold rho + eta < 1)
     (hn : (2 : ℝ) ≤ rho * n) :
     finiteLengthSlack eta n < 1 := by
-  have hn0 : (0 : ℝ) < n := by
-    by_contra h
-    have : (n : ℝ) = 0 := le_antisymm (le_of_not_gt h) (Nat.cast_nonneg n)
-    rw [this, mul_zero] at hn
-    norm_num at hn
-  have hinv : 1 / (n : ℝ) ≤ rho / 2 := by
-    rw [div_le_iff₀ hn0]
-    nlinarith
-  have hthreshold := rate_lt_firstOrderRateThreshold hrho hrhoOne
-  unfold finiteLengthSlack
-  linarith
+  exact finiteLengthSlack_lt_one_of_threshold hrho
+    (rate_lt_firstOrderRateThreshold hrho hrhoOne) haOne hn
 
 /-- The finite-length density margin is positive on the clean rank branch. -/
 theorem finiteLengthDensityMargin_pos
@@ -448,12 +454,9 @@ the floor itself. -/
 theorem finiteLengthDerivativeCap_le_jetDegree
     {rho eta : ℝ} {n : ℕ}
     (hrho : 0 < rho) (hrhoOne : rho < 1) (heta : 0 < eta)
-    (haOne : firstOrderRateThreshold rho + eta < 1)
     (hn : (2 : ℝ) ≤ rho * n) :
     finiteLengthDerivativeCap rho eta n ≤ finiteLengthJetDegree rho eta n := by
   have hrn : 0 < finiteLengthRate rho n := finiteLengthRate_pos hrho hn
-  have hb0 : 0 ≤ finiteLengthDerivativeRatio rho eta :=
-    (automaticDerivativeRatio_pos hrhoOne haOne).le
   have hbcutFixed : finiteLengthDerivativeRatio rho eta <
       finiteLengthCertifiedAgreement rho eta / rho :=
     automaticDerivativeRatio_lt_agreement_div_rate hrho hrhoOne (by linarith)
@@ -470,23 +473,7 @@ theorem finiteLengthDerivativeCap_le_jetDegree
   have hbcut : finiteLengthDerivativeRatio rho eta <
       finiteLengthCertifiedAgreement rho eta / finiteLengthRate rho n := by
     exact hbcutFixed.trans_le (div_le_div_of_nonneg_left ha0.le hrn hrnle.le)
-  have hm0 : (0 : ℝ) ≤ finiteLengthMultiplicity rho eta n := Nat.cast_nonneg _
-  have hfloor : (finiteLengthDerivativeCap rho eta n : ℝ) ≤
-      finiteLengthDerivativeRatio rho eta * finiteLengthMultiplicity rho eta n := by
-    unfold finiteLengthDerivativeCap
-    exact Nat.floor_le (mul_nonneg hb0 hm0)
-  have hmul : finiteLengthDerivativeRatio rho eta * finiteLengthMultiplicity rho eta n ≤
-      finiteLengthMultiplicity rho eta n * finiteLengthCertifiedAgreement rho eta /
-        finiteLengthRate rho n := by
-    calc
-      _ ≤ (finiteLengthCertifiedAgreement rho eta / finiteLengthRate rho n) *
-          finiteLengthMultiplicity rho eta n := by gcongr
-      _ = _ := by ring
-  have hceil : finiteLengthMultiplicity rho eta n * finiteLengthCertifiedAgreement rho eta /
-      finiteLengthRate rho n ≤ (finiteLengthJetDegree rho eta n : ℝ) := by
-    unfold finiteLengthJetDegree
-    exact Nat.le_ceil _
-  exact_mod_cast hfloor.trans (hmul.trans hceil)
+  exact natFloor_mul_le_natCeil_mul_div hbcut.le
 
 /-- The literal total jet degree has inverse finite-length-slack size. -/
 theorem finiteLengthJetDegree_le_inv_slack
