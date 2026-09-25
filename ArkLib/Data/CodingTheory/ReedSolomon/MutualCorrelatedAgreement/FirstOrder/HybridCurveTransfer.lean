@@ -49,24 +49,6 @@ def hybridCurveJointStageSum (D ell h mu e : ℕ) : ℕ :=
     firstOrderCurveJointStageOne (D + 1) ell h (mu - i) (e - i)
       (HiddenDerivative.regularTaylorExponent D)
 
-/-- The largest coefficient degree in the challenge variable among the coefficients of `Q`. -/
-def challengeCoefficientHeight {E : Type*} [Field E]
-    (Q : DifferentialPolynomial E[X] 1) : ℕ :=
-  Q.support.sup fun u ↦ (Q.coeff u).natDegree
-
-/-- Every coefficient of an equation has degree at most its challenge coefficient height. -/
-theorem coeffNatDegreeLE_challengeCoefficientHeight {E : Type*} [Field E]
-    (Q : DifferentialPolynomial E[X] 1) :
-    CoeffNatDegreeLE Q (challengeCoefficientHeight Q) := by
-  classical
-  intro u
-  by_cases hu : u ∈ Q.support
-  · exact Finset.le_sup (f := fun u : JetVariable 1 →₀ ℕ ↦ (Q.coeff u).natDegree) hu
-  · have hzero : Q.coeff u = 0 := by
-      by_contra hne
-      exact hu (MvPolynomial.mem_support_iff.mpr hne)
-    simp [challengeCoefficientHeight, hzero]
-
 /-- Minimum over precisely the admissible integer retention thresholds. -/
 def curveRetentionMinimum (D A : ℕ) (charge : ℕ → ℝ) : ℝ :=
   if h : D < A then
@@ -156,18 +138,6 @@ theorem regularPowerBatchedDerivativeCappedBoundTwo_eq_hybridCurveStage
     hnumA, hdenA, hdenL, HiddenDerivative.regularTaylorExponent]
   ring
 
-private theorem natCast_ne_zero_of_max_char_guard
-    {E : Type*} [Field E] {D M i : ℕ}
-    (hchar : ringChar E = 0 ∨ max D M < ringChar E) (hi : 0 < i) (hiD : i ≤ D) :
-    (i : E) ≠ 0 := by
-  intro hz
-  have hdiv := (ringChar.spec E i).mp hz
-  rcases hchar with hzero | hpos
-  · rw [hzero, zero_dvd_iff] at hdiv
-    omega
-  · exact Nat.not_dvd_of_pos_of_lt hi
-      ((hiD.trans (Nat.le_max_left D M)).trans_lt hpos) hdiv
-
 /-- The exact regular-stage exceptional sets for an actual-degree descent, unioned into one
 set.  This is the regular half of the hybrid transfer and carries the exact raw stage sum. -/
 theorem exists_exceptional_firstOrder_regularCurveStages
@@ -229,7 +199,8 @@ theorem exists_exceptional_firstOrder_regularCurveStages
   have hbin : ∀ i, 1 < i → i < D + 1 → (i.choose 1 : E) ≠ 0 := by
     intro i hi hiK
     rw [Nat.choose_one_right]
-    exact natCast_ne_zero_of_max_char_guard (M := 0) (by simpa using hcharE) (by omega) (by omega)
+    exact natCast_ne_zero_of_ringChar_eq_zero_or_lt (n := D)
+      (by simpa using hcharE) (by omega) (by omega)
   have hτ : TaylorExponentSufficient 1 (D + 1) (HiddenDerivative.regularTaylorExponent D) := by
     simpa only [HiddenDerivative.regularTaylorExponent] using
       taylorExponentSufficient_firstOrder_tight D
