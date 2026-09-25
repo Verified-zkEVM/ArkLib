@@ -41,8 +41,12 @@ open Classical in
 /-- The complete list over `ℚ` is finite and contains the zero polynomial. -/
 example :
     (classicalRationalClosePolynomialSet (Nat.ceil ((3 / 4 : ℝ) * 4))).Finite ∧
-      (0 : ℚ[X]) ∈ classicalRationalClosePolynomialSet (Nat.ceil ((3 / 4 : ℝ) * 4)) := by
-  obtain ⟨hfinite, _hraw, _hceil, _hclosed⟩ :=
+      (0 : ℚ[X]) ∈ classicalRationalClosePolynomialSet (Nat.ceil ((3 / 4 : ℝ) * 4)) ∧
+      ((classicalRationalClosePolynomialSet (Nat.ceil ((3 / 4 : ℝ) * 4))).ncard : ℝ) ≤
+        firstOrderListConstant
+          (agreementIncidenceRatio 4 (2 - 1) (Nat.ceil ((3 / 4 : ℝ) * 4))) (2 - 1)
+          (automaticJetDegree (1 / 2) (3 / 4)) (automaticDerivativeCap (1 / 2) (3 / 4)) := by
+  obtain ⟨hfinite, _hraw, _hceil, hclosed⟩ :=
     automaticFirstOrder_closePolynomialSet_at_ceil_finite_and_card_le
       (rho := 1 / 2) (a := 3 / 4) (n := 4) (k := 2)
       (by norm_num : (0 : ℝ) < 1 / 2) (by norm_num : (1 / 2 : ℝ) < 1)
@@ -52,11 +56,105 @@ example :
       rationalEvaluationDomain (fun _ ↦ 0)
       (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
   change (classicalRationalClosePolynomialSet (Nat.ceil ((3 / 4 : ℝ) * 4))).Finite at hfinite
+  change
+    ((classicalRationalClosePolynomialSet (Nat.ceil ((3 / 4 : ℝ) * 4))).ncard : ℝ) ≤
+      firstOrderListConstant
+        (agreementIncidenceRatio 4 (2 - 1) (Nat.ceil ((3 / 4 : ℝ) * 4))) (2 - 1)
+        (automaticJetDegree (1 / 2) (3 / 4))
+        (automaticDerivativeCap (1 / 2) (3 / 4)) at hclosed
   refine ⟨hfinite, ?_⟩
+  refine ⟨?_, hclosed⟩
   unfold classicalRationalClosePolynomialSet closePolynomialSet
   simp only [Set.mem_ofPred_eq]
   exact ⟨WithBot.bot_lt_coe 2,
     by norm_num [polynomialAgreementSet, rationalEvaluationDomain]⟩
+
+open Classical in
+/-- The automatic finite-rate theorem bounds the complete rational close-polynomial set. -/
+example :
+    (classicalRationalClosePolynomialSet 3).Finite ∧
+      ((classicalRationalClosePolynomialSet 3).ncard : ℝ) ≤
+        maxFirstOrderListCharge (agreementIncidenceRatio 4 1 3) 1
+          (automaticJetDegree (1 / 2) (3 / 4))
+          (automaticDerivativeCap (1 / 2) (3 / 4)) := by
+  obtain ⟨hfinite, hraw, _, _⟩ :=
+    automaticFirstOrder_closePolynomialSet_finite_and_card_le
+      (rho := 1 / 2) (a := 3 / 4) (n := 4) (D := 1) (A := 3) (k := 2)
+      (by norm_num : (0 : ℝ) < 1 / 2) (by norm_num : (1 / 2 : ℝ) < 1)
+      half_rate_threshold_lt_three_quarters (by norm_num : (3 / 4 : ℝ) < 1)
+      (by norm_num : 0 < 4) (by norm_num) (by norm_num : 2 ≤ 2)
+      (by norm_num : (2 : ℝ) ≤ (1 / 2) * 4) (by norm_num : (3 / 4 : ℝ) * 4 ≤ 3)
+      (by norm_num : 3 ≤ 4) rationalEvaluationDomain (fun _ ↦ 0)
+      (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
+  change (classicalRationalClosePolynomialSet 3).Finite at hfinite
+  change ((classicalRationalClosePolynomialSet 3).ncard : ℝ) ≤
+    maxFirstOrderListCharge (agreementIncidenceRatio 4 1 3) 1
+      (automaticJetDegree (1 / 2) (3 / 4))
+      (automaticDerivativeCap (1 / 2) (3 / 4)) at hraw
+  exact ⟨hfinite, hraw⟩
+
+open Classical in
+/-- The explicit first-order envelope bounds a concrete rational complete list. -/
+example :
+    let D := 2 - 1
+    let θ := agreementIncidenceRatio 4 D 3
+    let M := automaticDerivativeCap (1 / 2) (3 / 4)
+    let μ := automaticJetDegree (1 / 2) (3 / 4)
+    let T := stageStaircase μ M
+    let Λ : ℝ := 2 * D * θ * T + (μ - M : ℕ)
+    (classicalRationalClosePolynomialSet 3).Finite ∧
+      ((classicalRationalClosePolynomialSet 3).ncard : ℝ) ≤ Λ := by
+  exact automatic_first_order_list_bound (1 / 2) (3 / 4)
+    (by norm_num : (0 : ℝ) < 1 / 2) (by norm_num : (1 / 2 : ℝ) < 1)
+    half_rate_threshold_lt_three_quarters (by norm_num : (3 / 4 : ℝ) < 1)
+    4 2 3 (by norm_num : 0 < 4) (by norm_num : 2 ≤ 2)
+    (by norm_num : (2 : ℝ) ≤ (1 / 2) * 4)
+    (by norm_num : (3 / 4 : ℝ) * 4 ≤ 3) (by norm_num : 3 ≤ 4)
+    rationalEvaluationDomain (Or.inl (ringChar.eq_zero : ringChar ℚ = 0)) (fun _ ↦ 0)
+
+open Classical in
+/-- Positive slack gives a finite rational list with the first-order envelope bound. -/
+example :
+    let a := firstOrderRateThreshold (1 / 2 : ℝ) + (1 / 8 : ℝ)
+    let D := 2 - 1
+    let θ := agreementIncidenceRatio 4 D 4
+    let M := automaticDerivativeCap (1 / 2) a
+    let μ := automaticJetDegree (1 / 2) a
+    let T := stageStaircase μ M
+    let Λ : ℝ := 2 * D * θ * T + (μ - M : ℕ)
+    (classicalRationalClosePolynomialSet 4).Finite ∧
+      ((classicalRationalClosePolynomialSet 4).ncard : ℝ) ≤ Λ := by
+  have haOne : firstOrderRateThreshold (1 / 2 : ℝ) + (1 / 8 : ℝ) < 1 := by
+    linarith [half_rate_threshold_lt_three_quarters]
+  have hA : (firstOrderRateThreshold (1 / 2 : ℝ) + (1 / 8 : ℝ)) * 4 ≤
+      (4 : ℝ) := by
+    linarith [half_rate_threshold_lt_three_quarters]
+  exact automatic_first_order_list_bound_of_slack (1 / 2) (1 / 8)
+    (by norm_num : (0 : ℝ) < 1 / 2) (by norm_num : (1 / 2 : ℝ) < 1)
+    (by norm_num : (0 : ℝ) < 1 / 8) haOne 4 2 4
+    (by norm_num : 0 < 4) (by norm_num : 2 ≤ 2)
+    (by norm_num : (2 : ℝ) ≤ (1 / 2) * 4) hA (by norm_num : 4 ≤ 4)
+    rationalEvaluationDomain (Or.inl (ringChar.eq_zero : ringChar ℚ = 0)) (fun _ ↦ 0)
+
+open Classical in
+/-- The squarefree automatic bound applies to a concrete rational complete list. -/
+example :
+    (classicalRationalClosePolynomialSet 4).Finite ∧
+      ((classicalRationalClosePolynomialSet 4).ncard : ℝ) ≤
+        FirstOrder.Squarefree.automaticSquarefreeListBoundConstant (1 / 2) * 4 /
+          (1 / 8 : ℝ) ^ 2 := by
+  have haOne : firstOrderRateThreshold (1 / 2 : ℝ) + (1 / 8 : ℝ) < 1 := by
+    linarith [half_rate_threshold_lt_three_quarters]
+  have hA : (firstOrderRateThreshold (1 / 2 : ℝ) + (1 / 8 : ℝ)) * 4 ≤
+      (4 : ℝ) := by
+    linarith [half_rate_threshold_lt_three_quarters]
+  exact automatic_first_order_squarefree_list_bound_of_slack (1 / 2) (1 / 8)
+    (by norm_num : (0 : ℝ) < 1 / 2) (by norm_num : (1 / 2 : ℝ) < 1)
+    (by norm_num : (0 : ℝ) < 1 / 8) haOne 4 2 4
+    (by norm_num : 0 < 4) (by norm_num : 2 ≤ 2)
+    (by norm_num : (2 : ℝ) ≤ (1 / 2) * 4) hA (by norm_num : 4 ≤ 4)
+    rationalEvaluationDomain (fun _ ↦ 0)
+    (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
 
 private def smallFirstOrderProfile :
     ReedSolomon.HiddenDerivative.CurveProfile.LineProfile :=
@@ -85,6 +183,19 @@ example :
   apply finiteListBound_of_profile (p := smallFirstOrderProfile) (by decide) rfl
     (by decide) (by decide) finiteEvaluationDomain (fun _ ↦ 0)
     (Or.inl ringChar.eq_zero)
+  intro P hP
+  have hPzero : P = 0 := by simpa using hP
+  subst P
+  constructor
+  · simp
+  · simp [smallFirstOrderProfile, finiteEvaluationDomain]
+
+/-- The squarefree profile envelope also bounds the same concrete polynomial family. -/
+example :
+    (({0} : Finset ℚ[X]).card : ℝ) ≤ squarefreeListEnvelope smallFirstOrderProfile := by
+  apply finiteSquarefreeListBound_of_profile (p := smallFirstOrderProfile) (by decide) rfl
+    (by decide) (by decide) (by decide) finiteEvaluationDomain (fun _ ↦ 0)
+    (Or.inl ringChar.eq_zero) {0}
   intro P hP
   have hPzero : P = 0 := by simpa using hP
   subst P

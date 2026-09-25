@@ -7,6 +7,7 @@ module
 
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.RateBound
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.RoundedCounts
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.FiniteRateParameters
 public import Mathlib.Algebra.Order.Floor.Ring
 public import Mathlib.Tactic.FieldSimp
 public import Mathlib.Tactic.Linarith
@@ -24,6 +25,8 @@ rounded-count API.
 
 * `automaticMultiplicity`, `automaticDerivativeCap`, and `automaticJetDegree` define the rounded
   interpolation parameters.
+* `automaticFiniteRateParameters` packages the automatic recipe as a finite-rate certificate,
+  with `automaticAgreement_mul_le` bounding its agreement budget.
 * `automaticSourceCount` and `automaticRankCount` define the finite source and rank counts.
 * `automaticSurplusQuarter_le_source_sub_rank` gives a positive finite surplus after rounding.
 * `automaticChallengeHeight` is defined from the resulting source-to-rank quotient.
@@ -320,6 +323,50 @@ theorem automaticRankCount_lt_sourceCount {rho a : ℝ}
       (automaticMultiplicity rho a : ℝ) ^ 3 * automaticSurplus rho a / 4 := by
     positivity
   linarith
+
+/-- The automatic recipe as a finite-rate parameter certificate at the automatic agreement. -/
+def automaticFiniteRateParameters {rho a : ℝ} (hrho : 0 < rho) (hrhoOne : rho < 1)
+    (ha : firstOrderRateThreshold rho < a) (haOne : a < 1) :
+    FirstOrderFiniteRateParameters rho (automaticAgreement rho a) where
+  multiplicity := automaticMultiplicity rho a
+  multiplicity_pos := automaticMultiplicity_pos hrho hrhoOne ha haOne
+  surplus := by
+    simpa [FirstOrderFiniteRateTest, FirstOrderFiniteRateParameters.derivativeCap,
+      FirstOrderFiniteRateParameters.rankCount, FirstOrderFiniteRateParameters.sourceCount,
+      automaticRankCount_eq_raw hrho hrhoOne ha haOne,
+      automaticSourceCount_eq_raw hrho hrhoOne ha haOne,
+      automaticDerivativeCapRaw, automaticDerivativeRatio, automaticAgreement,
+      firstOrderRateDerivativeCap, firstOrderRateBeta, firstOrderRateJetDegree,
+      automaticJetDegree] using
+      automaticRankCount_lt_sourceCount hrho hrhoOne ha haOne
+
+/-- The automatic finite-rate parameters retain the selected multiplicity. -/
+theorem automaticFiniteRateParameters_multiplicity {rho a : ℝ} (hrho : 0 < rho)
+    (hrhoOne : rho < 1) (ha : firstOrderRateThreshold rho < a) (haOne : a < 1) :
+    (automaticFiniteRateParameters hrho hrhoOne ha haOne).multiplicity =
+      automaticMultiplicity rho a := rfl
+
+/-- The automatic finite-rate parameters have the automatic total jet-degree cap. -/
+theorem automaticFiniteRateParameters_jetDegree {rho a : ℝ} (hrho : 0 < rho)
+    (hrhoOne : rho < 1) (ha : firstOrderRateThreshold rho < a) (haOne : a < 1) :
+    (automaticFiniteRateParameters hrho hrhoOne ha haOne).jetDegree =
+      automaticJetDegree rho a := rfl
+
+/-- The automatic finite-rate parameters have the automatic derivative cap. -/
+theorem automaticFiniteRateParameters_derivativeCap {rho a : ℝ} (hrho : 0 < rho)
+    (hrhoOne : rho < 1) (ha : firstOrderRateThreshold rho < a) (haOne : a < 1) :
+    (automaticFiniteRateParameters hrho hrhoOne ha haOne).derivativeCap =
+      automaticDerivativeCap rho a := by
+  rw [automaticDerivativeCap_eq_raw hrho hrhoOne ha haOne]
+  rfl
+
+/-- The automatic agreement times the block length is at most the requested agreement budget. -/
+theorem automaticAgreement_mul_le {rho a : ℝ} {n A : ℕ} (hA : a * n ≤ A) :
+    automaticAgreement rho a * n ≤ A := by
+  calc
+    automaticAgreement rho a * n ≤ a * n :=
+      mul_le_mul_of_nonneg_right (automaticAgreement_le rho a) (Nat.cast_nonneg n)
+    _ ≤ A := hA
 
 /-- The denominator of the automatic challenge-height quotient is positive. -/
 theorem automaticChallengeDenominator_pos {rho a : ℝ}

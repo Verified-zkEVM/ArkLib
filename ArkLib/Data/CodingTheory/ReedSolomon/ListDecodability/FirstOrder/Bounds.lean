@@ -327,7 +327,6 @@ theorem automatic_first_order_squarefree_list_bound_of_slack
     have hrhok := (rate_lt_firstOrderRateThreshold hrho hrhoOne).trans ha
     have hnR : (0 : ℝ) < n := by exact_mod_cast hn
     exact_mod_cast (hkRate.trans (mul_le_mul_of_nonneg_right hrhok.le hnR.le) |>.trans hA)
-  have hkn : k ≤ n := hkA.trans hAn
   have hD : 1 ≤ D := by dsimp only [D]; omega
   have hDn : D ≤ n := by dsimp only [D]; omega
   have hDA : D < A := by dsimp only [D]; omega
@@ -384,56 +383,23 @@ theorem automatic_first_order_squarefree_list_bound_of_slack
       dsimp only [M, B]
       unfold automaticDerivativeCap
       exact min_le_right _ _
-    let agreement := automaticAgreement rho a
-    have hmpos : 0 < automaticMultiplicity rho a :=
-      automaticMultiplicity_pos hrho hrhoOne ha haOne
-    have hagreementPos : 0 < agreement :=
-      hrho.trans (rho_lt_automaticAgreement hrho hrhoOne ha)
-    have hArate : agreement * n ≤ A := by
+    let p := automaticFiniteRateParameters hrho hrhoOne ha haOne
+    obtain ⟨cert⟩ := exists_automaticFirstOrder_symbolicCertificate
+      hrho hrhoOne ha haOne hn (show D = k - 1 from rfl) hk hkRate hA
+      domain received (fun _ ↦ 0)
+    have hMBcert : p.derivativeCap ≤ p.jetDegree := by
       calc
-        agreement * n ≤ a * n :=
-          mul_le_mul_of_nonneg_right (automaticAgreement_le rho a) (by positivity)
-        _ ≤ A := hA
-    have hAposReal : (0 : ℝ) < A := by
-      have hpos : (0 : ℝ) < agreement * n :=
-        mul_pos hagreementPos (Nat.cast_pos.mpr hn)
-      exact hpos.trans_le hArate
-    have hApos : 0 < A := by exact_mod_cast hAposReal
-    have hbudget : 0 < automaticMultiplicity rho a * A := Nat.mul_pos hmpos hApos
-    have hthresholdD : 0 < D := by omega
-    have hkD : k ≤ D + 1 := by omega
-    let hp : FirstOrderFiniteRateParameters rho agreement := {
-      multiplicity := automaticMultiplicity rho a
-      multiplicity_pos := hmpos
-      surplus := by
-        simpa [FirstOrderFiniteRateTest, FirstOrderFiniteRateParameters.derivativeCap,
-          FirstOrderFiniteRateParameters.rankCount, FirstOrderFiniteRateParameters.sourceCount,
-          automaticRankCount_eq_raw hrho hrhoOne ha haOne,
-          automaticSourceCount_eq_raw hrho hrhoOne ha haOne, agreement,
-          automaticDerivativeCapRaw, automaticDerivativeRatio, automaticAgreement,
-          firstOrderRateDerivativeCap, firstOrderRateBeta, firstOrderRateJetDegree,
-          automaticJetDegree] using
-          automaticRankCount_lt_sourceCount hrho hrhoOne ha haOne }
-    have hbudget' : 0 < hp.multiplicity * A := by
-      change 0 < automaticMultiplicity rho a * A
-      exact hbudget
-    obtain ⟨cert⟩ := exists_firstOrderRate_symbolicCertificate hp hn hthresholdD hbudget'
-      hkD hDrate hArate domain received (fun _ ↦ 0)
-    have hjetCap : hp.jetDegree = B := by
-      change firstOrderRateJetDegree rho agreement (automaticMultiplicity rho a) =
-        automaticJetDegree rho a
-      rfl
-    have hderivCap : hp.derivativeCap = M := by
-      change firstOrderRateDerivativeCap rho agreement (automaticMultiplicity rho a) =
-        automaticDerivativeCap rho a
-      rw [automaticDerivativeCap_eq_raw hrho hrhoOne ha haOne]
-      rfl
-    have hMBcert : hp.derivativeCap ≤ hp.jetDegree := by
-      rw [hderivCap, hjetCap]
-      exact hMB
+        p.derivativeCap = M := by
+          simpa [p, M] using
+            automaticFiniteRateParameters_derivativeCap hrho hrhoOne ha haOne
+        _ ≤ B := hMB
+        _ = p.jetDegree := by
+          simpa [p, B] using
+            (automaticFiniteRateParameters_jetDegree hrho hrhoOne ha haOne).symm
     have hcharCert : ringChar F = 0 ∨
-        max (k - 1) hp.derivativeCap < ringChar F := by
-      simpa only [hderivCap] using hchar
+        max (k - 1) p.derivativeCap < ringChar F := by
+      simpa only [p, M,
+        automaticFiniteRateParameters_derivativeCap hrho hrhoOne ha haOne] using hchar
     let list := hOld.1.toFinset
     have hsolutions : ∀ P ∈ list, P.degree < k ∧
         A ≤ (Finset.univ.filter fun i ↦ P.eval (domain i) = received i).card := by
@@ -442,15 +408,18 @@ theorem automatic_first_order_squarefree_list_bound_of_slack
         (hOld.1.mem_toFinset.mp hP)
     have hcard := FirstOrder.Squarefree.firstOrder_finite_agreement_solutions_card_le_squarefree
       domain received
-        (firstOrderColumns (D := D) (A := A) (m := hp.multiplicity)
-          (M := hp.derivativeCap) (μ := hp.jetDegree)) cert hk hkA hAn
+        (firstOrderColumns (D := D) (A := A) (m := p.multiplicity)
+          (M := p.derivativeCap) (μ := p.jetDegree)) cert hk hkA hAn
         hMBcert hcharCert list hsolutions
     have hbound := FirstOrder.Squarefree.automaticSquarefreeListExpression_le
       hrho hrhoOne heta haOne (show 1 ≤ n by omega) hD hDn hDA hDrate hA hM
     have hncard := Set.ncard_eq_toFinset_card _ hOld.1
     rw [hncard]
     exact hcard.trans (by
-      simpa only [D, M, B, a, hderivCap, hjetCap, agreementIncidenceRatio,
+      simpa only [D, M, B, a, p,
+        automaticFiniteRateParameters_derivativeCap hrho hrhoOne ha haOne,
+        automaticFiniteRateParameters_jetDegree hrho hrhoOne ha haOne,
+        agreementIncidenceRatio,
         mul_div_assoc,
         (show k - 1 + 1 = k by omega),
         (show n - k + 1 = n - (k - 1) by omega),
