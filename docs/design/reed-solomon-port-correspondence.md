@@ -2195,6 +2195,10 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordi
 
 Ported `exists_exceptional_irreducibleOrdinaryEquation` under the same name, using the current `CoeffNatDegreeLE` interface. The theorem gives a bounded exceptional set for sufficiently agreeing, low-degree solutions of an irreducible ordinary equation and an exact correlated-pair representation outside that set in every characteristic. Nothing was omitted. The acceptance case in `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary.lean` applies it to `Y₀` over `ℂ`, obtains an exceptional set of size at most one, and exhibits a point outside it with an exact correlated-pair witness.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/PolynomialCurve/Irreducible.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`exists_exceptional_irreducibleOrdinaryPowerEquation` → `exists_exceptional_irreducibleOrdinaryPowerEquation`. The theorem is mathematically unchanged and uses `CoeffNatDegreeLE`, `ordinaryCurveFactorRaw`, and the current exact-power-agreement interface. The existing two-message correlated-pair theorem now specializes this tuple theorem at `ℓ = 1`, using the power-batched word identity, the exact-agreement conversion, and equality of the curve and line charges. Nothing was deferred or left unported.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedAdmissibility.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/GraphAdmissibility.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -5238,6 +5242,12 @@ Acceptance cases check the base-field height theorem at the tight exponent, the 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/FactorwiseList.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 Acceptance cases check singleton instances of `finite_factorwise_agreement_solutions_card_le_actual` and `finite_factorwise_agreement_solutions_card_le`.
+
+## `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary.lean`
+
+Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+An acceptance example checks an exceptional set of size at most one and exact power agreement at a challenge outside it for zero messages over `ℂ`.
 
 ## `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart.lean`
 
