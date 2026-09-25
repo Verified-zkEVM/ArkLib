@@ -153,9 +153,12 @@ example : certifiedEnlargedRankBound 1 2 1 0 = 5 := by
   rw [certifiedEnlargedRankBound_one_eq_firstOrderRankCount]
   decide
 
-/-- The signed cubic count bounds the rank count at multiplicity `2`, cap `1`. -/
-example : (firstOrderRankCount 2 1 : ℝ) ≤ firstOrderRankCubicUpperCount 2 1 :=
-  firstOrderRankCount_le_cubicUpperCount 2 1
+/-- At multiplicity `2`, cap `1` satisfies both cubic rank bounds. -/
+example : (firstOrderRankCount 2 1 : ℝ) ≤ firstOrderRankCubicUpperCount 2 1 ∧
+    firstOrderRankCount 2 1 ≤ 2 * 2 ^ 3 := by
+  constructor
+  · exact firstOrderRankCount_le_cubicUpperCount 2 1
+  · exact firstOrderRankCount_le_two_mul_cube (by norm_num) (by norm_num)
 
 /-- The rounded rank estimate at `m = 4`, `β = 1/2`. -/
 example : (firstOrderRankCount 4 ⌊(1 / 2 : ℝ) * 4⌋₊ : ℝ) ≤

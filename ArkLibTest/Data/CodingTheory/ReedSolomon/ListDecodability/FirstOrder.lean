@@ -6,6 +6,7 @@ Authors: Quang Dao
 
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.Bounds
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.FiniteLengthParameters
+import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.FiniteLengthSelectors
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.Profile
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.NormNum
@@ -28,6 +29,10 @@ private def rationalEvaluationDomain : Fin 4 ↪ ℚ :=
 private noncomputable def classicalRationalClosePolynomialSet (A : ℕ) : Set ℚ[X] :=
   @closePolynomialSet ℚ (inferInstance : Field ℚ)
     (fun x y ↦ Classical.propDecidable (x = y)) 4 rationalEvaluationDomain (fun _ ↦ 0) 2 A
+
+private noncomputable def classicalRationalLowDimensionClosePolynomialSet : Set ℚ[X] :=
+  @closePolynomialSet ℚ (inferInstance : Field ℚ)
+    (fun x y ↦ Classical.propDecidable (x = y)) 4 rationalEvaluationDomain (fun _ ↦ 0) 1 1
 
 private theorem half_rate_threshold_lt_three_quarters :
     firstOrderRateThreshold (1 / 2 : ℝ) < 3 / 4 := by
@@ -179,6 +184,44 @@ private def finiteEvaluationDomain : Fin 2 ↪ ℚ :=
     change (i.val : ℚ) = (j.val : ℚ) at h
     exact Fin.ext (by exact_mod_cast h)⟩
 
+private noncomputable def classicalRationalTwoPointClosePolynomialSet : Set ℚ[X] :=
+  @closePolynomialSet ℚ (inferInstance : Field ℚ)
+    (fun x y ↦ Classical.propDecidable (x = y)) 2 finiteEvaluationDomain (fun _ ↦ 0) 2 2
+
+private theorem finiteLengthPositiveCapCertificate :
+    Nonempty (FirstOrderSymbolicCertificate (F := ℚ) 1 2 1 1 1 2 1
+      finiteEvaluationDomain (fun _ ↦ 0) (fun _ ↦ 0)
+      (firstOrderColumns (D := 1) (A := 2) (m := 1) (M := 1) (μ := 1))) := by
+  have hheight : firstOrderCurveShiftedRowSlotBound 1 2 1 1 1 2 1 1 <
+      firstOrderCurveShiftedHeightSlotCount 1 2 1 1 1 1 1 := by decide
+  exact exists_finite_firstOrder_symbolic_certificate_of_heightSlotCount
+    (F := ℚ) (D := 1) (A := 2) (m := 1) (M := 1) (μ := 1) (k := 2) (h := 1)
+    (by norm_num) (by norm_num) (by norm_num) finiteEvaluationDomain (fun _ ↦ 0)
+    (fun _ ↦ 0) hheight
+
+open Classical in
+/-- A positive-cap certificate bounds a concrete two-point rational close list. -/
+example :
+    classicalRationalTwoPointClosePolynomialSet.Finite ∧
+      (0 : ℚ[X]) ∈ classicalRationalTwoPointClosePolynomialSet ∧
+      ((classicalRationalTwoPointClosePolynomialSet.ncard : ℝ)) ≤
+        7 * (1 : ℝ) ^ 3 * 2 / finiteLengthSlack (1 / 4) 2 ^ 2 := by
+  obtain ⟨cert⟩ := finiteLengthPositiveCapCertificate
+  have hbound := closePolynomialSet_finite_and_card_le_finiteLength_of_certificate
+    (C := 1) (eta := 1 / 4) (k := 2) (A := 2) (n := 2)
+    finiteEvaluationDomain (fun _ ↦ 0)
+    (firstOrderColumns (D := 1) (A := 2) (m := 1) (M := 1) (μ := 1)) cert
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (Or.inl (ringChar.eq_zero : ringChar ℚ = 0)) (by norm_num) (by norm_num)
+    (by norm_num [finiteLengthSlack]) (by norm_num) (by norm_num [finiteLengthSlack])
+  have hzero :
+      (0 : ℚ[X]) ∈ classicalRationalTwoPointClosePolynomialSet := by
+    unfold classicalRationalTwoPointClosePolynomialSet closePolynomialSet
+    simp only [Set.mem_ofPred_eq]
+    exact ⟨WithBot.bot_lt_coe 2,
+      by norm_num [polynomialAgreementSet, finiteEvaluationDomain]⟩
+  exact ⟨hbound.1, hzero, hbound.2⟩
+
 /-- A verified profile bounds a concrete nonempty family of agreeing polynomials. -/
 example :
     (({0} : Finset ℚ[X]).card : ℚ) ≤ tightListEnvelope smallFirstOrderProfile := by
@@ -204,6 +247,71 @@ example :
   constructor
   · simp
   · simp [smallFirstOrderProfile, finiteEvaluationDomain]
+
+/-- Incidence gives a nonempty finite-length list bound for dimension one over `ℚ`. -/
+example :
+    classicalRationalLowDimensionClosePolynomialSet.Finite ∧
+      (0 : ℚ[X]) ∈ classicalRationalLowDimensionClosePolynomialSet ∧
+      ((classicalRationalLowDimensionClosePolynomialSet.ncard : ℝ)) ≤
+        7 * (1 : ℝ) ^ 3 * 4 / finiteLengthSlack (1 / 4) 4 ^ 2 := by
+  have hbound := closePolynomialSet_finite_and_card_le_finiteLength_of_dimension_le_one
+    (C := 1) (eta := 1 / 4) (k := 1) (A := 1)
+    rationalEvaluationDomain (fun _ ↦ 0)
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num [finiteLengthSlack])
+  have hzero : (0 : ℚ[X]) ∈ classicalRationalLowDimensionClosePolynomialSet := by
+    unfold classicalRationalLowDimensionClosePolynomialSet closePolynomialSet
+    simp only [Set.mem_ofPred_eq]
+    exact ⟨WithBot.bot_lt_coe 1,
+      by norm_num [polynomialAgreementSet, rationalEvaluationDomain]⟩
+  exact ⟨hbound.1, hzero, hbound.2⟩
+
+/-- Concrete finite-length selectors have a positive margin, count gap, and common bounds. -/
+example :
+    0 < finiteLengthDensityMargin (1 / 2) (1 / 8) 4 ∧
+      3 * (finiteLengthMultiplicity (1 / 2) (1 / 8) 4 : ℝ) ^ 3 *
+          finiteLengthDensityMargin (1 / 2) (1 / 8) 4 / 4 ≤
+        finiteLengthSourceCount (1 / 2) (1 / 8) 4 -
+          finiteLengthRankCount (1 / 2) (1 / 8) 4 ∧
+      ((finiteLengthMultiplicity (1 / 2) (1 / 8) 4 : ℝ) ≤
+          finiteLengthParameterBoundConstant (1 / 2) /
+            finiteLengthSlack (1 / 8) 4 ∧
+        (finiteLengthDerivativeCap (1 / 2) (1 / 8) 4 : ℝ) ≤
+          finiteLengthParameterBoundConstant (1 / 2) /
+            finiteLengthSlack (1 / 8) 4 ∧
+        (finiteLengthJetDegree (1 / 2) (1 / 8) 4 : ℝ) ≤
+          finiteLengthParameterBoundConstant (1 / 2) /
+            finiteLengthSlack (1 / 8) 4) ∧
+      (finiteLengthChallengeHeight (1 / 2) (1 / 8) 4 : ℝ) ≤
+        finiteLengthParameterBoundConstant (1 / 2) /
+          finiteLengthSlack (1 / 8) 4 ^ 2 := by
+  have hthreshold : firstOrderRateThreshold (1 / 2 : ℝ) < 3 / 4 :=
+    half_rate_threshold_lt_three_quarters
+  have hrateThreshold : (1 / 2 : ℝ) < firstOrderRateThreshold (1 / 2) :=
+    rate_lt_firstOrderRateThreshold (R := 1 / 2) (by norm_num) (by norm_num)
+  have haOne : firstOrderRateThreshold (1 / 2 : ℝ) + 1 / 8 < 1 := by
+    linarith
+  have hbetaHalf : finiteLengthDerivativeRatio (1 / 2) (1 / 8) ≤ 1 / 2 := by
+    have hagreement : (1 / 2 : ℝ) <
+        automaticAgreement (1 / 2) (firstOrderRateThreshold (1 / 2) + 1 / 8) := by
+      rw [automaticAgreement_eq_min]
+      apply lt_min
+      · linarith [hrateThreshold]
+      · linarith [hrateThreshold]
+    unfold finiteLengthDerivativeRatio automaticDerivativeRatio firstOrderRateBeta
+    norm_num
+    linarith
+  have hmargin := finiteLengthDensityMargin_pos (rho := 1 / 2) (eta := 1 / 8) (n := 4)
+    (by norm_num) (by norm_num) (by norm_num) haOne (by norm_num) hbetaHalf
+  have hgap := finiteLength_count_gap (rho := 1 / 2) (eta := 1 / 8) (n := 4)
+    (by norm_num) (by norm_num) (by norm_num) haOne (by norm_num) hbetaHalf
+  have hparameters := finiteLength_multiplicity_derivativeCap_jetDegree_bounds
+    (rho := 1 / 2) (eta := 1 / 8) (n := 4)
+    (by norm_num) (by norm_num) (by norm_num) haOne (by norm_num) hbetaHalf
+  have hheight := finiteLengthChallengeHeight_le_common_inv_slack_sq
+    (rho := 1 / 2) (eta := 1 / 8) (n := 4)
+    (by norm_num) (by norm_num) (by norm_num) haOne (by norm_num) hbetaHalf
+  exact ⟨hmargin, hgap, hparameters, hheight⟩
 
 /-- The line-MCA envelope has a concrete inverse-`eta` bound. -/
 example :

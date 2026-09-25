@@ -59,6 +59,8 @@ below the corresponding residual of the code, and the scaled kernel-height quoti
 * `certifiedEnlargedRankBound_one_eq_firstOrderRankCount`: the certified rank bound at derivative
   order one is `firstOrderRankCount`.
 * `firstOrderRankCount_le_cubicUpperCount`: `r(m, M)` is below a signed cubic count.
+* `firstOrderRankCount_le_two_mul_cube`: a positive multiplicity and `M ≤ m` give a coarse
+  cubic upper bound on the local rank count.
 * `firstOrderRankCount_floor_le`: the rank rounding estimate with loss `3 m²`.
 * `firstOrderRankCount_floor_le_density_add_rounding_upper` and
   `firstOrderRankCount_floor_le_density_add_rounding`: the sharper rounding estimate against the
@@ -72,8 +74,7 @@ below the corresponding residual of the code, and the scaled kernel-height quoti
 
 ## References
 
-* [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient
-  Decoding and Smaller Cryptographic Proofs*][DKT26]
+* [DKT26]
 -/
 
 @[expose] public section
@@ -758,6 +759,23 @@ theorem scaledKernelHeight_le_floor {n N r mu : ℕ} {N₀ : ℝ} (hsurplus : (r
         exact div_le_div_of_nonneg_left (by positivity) (by positivity) hden
       _ = (r : ℝ) * mu / (N₀ - r) := mul_div_mul_left _ _ hnR.ne'
   exact Nat.le_floor ((Nat.cast_div_le).trans hfrac)
+
+/-- A positive multiplicity and derivative cap `M ≤ m` give a cubic bound on the local rank. -/
+theorem firstOrderRankCount_le_two_mul_cube {m M : ℕ} (hm : 0 < m) (hM : M ≤ m) :
+    firstOrderRankCount m M ≤ 2 * m ^ 3 := by
+  have hone : m + 1 ≤ 2 * m := by omega
+  unfold firstOrderRankCount
+  calc
+    (∑ s ∈ Finset.range m,
+        ((s + 1) * (M + 1) - (2 * s + 1 - m) * (s + M + 1 - m))) ≤
+        ∑ _s ∈ Finset.range m, m * (m + 1) := by
+      apply Finset.sum_le_sum
+      intro s hs
+      exact (Nat.sub_le _ _).trans (Nat.mul_le_mul
+        (Finset.mem_range.mp hs) (Nat.add_le_add_right hM 1))
+    _ = m * (m * (m + 1)) := by simp
+    _ ≤ m * (m * (2 * m)) := by gcongr
+    _ = 2 * m ^ 3 := by ring
 
 end
 
