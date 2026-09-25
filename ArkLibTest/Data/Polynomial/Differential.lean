@@ -1378,7 +1378,6 @@ example := (frobeniusExpansion_satisfies_jointTaylorCuts (E := ZMod 2) (X (some 
   (Polynomial.X ^ 3 + Polynomial.C (1 : ZMod 2))
 
 /-! ### Ordinary root presentations -/
-
 /-- For the concrete irreducible equation `Y₀` over `ℚ[X]`, the exceptional set is empty. -/
 example :
     ∃ exceptional : Finset ℚ, exceptional.card ≤ 0 ∧
@@ -1449,7 +1448,6 @@ example :
     exact hspec_ne
   let f : ZMod 2 →+* AlgebraicClosure (ZMod 2) := algebraMap _ _
   exact exists_forall_jetEvaluation_ne_zero_map f f.injective Q {0} 0 hregular
-
 /-- Two distinct regular equations admit a common Taylor center. -/
 example :
     let D : Fin 2 → DifferentialPolynomial ℚ 0 :=
@@ -1493,6 +1491,8 @@ example :
   rw [orderZeroAsPolynomial_eval]
   simp [differentialSpecialization, differentialSpecializationHom]
   ring
-
+example : CoeffNatDegreeLE (positiveCurveEquation
+    (MvPolynomial.X (some (0 : Fin 2)) : DifferentialPolynomial (Polynomial ℚ) 1)) 0 := by
+  exact positiveCurveEquation_coeffNatDegreeLE_of_input _ (coeffNatDegreeLE_X _)
 end
 end PolynomialDifferential
