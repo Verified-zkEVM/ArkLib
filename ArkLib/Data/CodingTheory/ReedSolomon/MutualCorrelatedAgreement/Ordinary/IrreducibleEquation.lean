@@ -22,6 +22,8 @@ controlling all sufficiently agreeing polynomial solutions in every characterist
 
 * `ReedSolomon.exists_exceptional_irreducibleOrdinaryEquation` gives the ordinary factor bound
   without specifying a Frobenius exponent or a pulled equation.
+* `ReedSolomon.exists_exceptional_irreducibleOrdinaryPowerEquation` gives the polynomial-curve
+  factor bound for exact power agreement.
 
 ## References
 
@@ -97,6 +99,63 @@ theorem exists_exceptional_irreducibleOrdinaryEquation
     have hout' := exactCorrelatedPair_of_powerAgreement_one domain ![f, g] ι
       (w ^ (p ^ e)) P hout
     simpa [hw] using hout'
+
+open Classical in
+/-- If `Q` is irreducible with positive root degree and coefficient height at most `h`, then there
+is an exceptional set with size at most the value of `ordinaryCurveFactorRaw` at
+`((n - D : ℕ) : ℚ) / ((A - D : ℕ) : ℚ)`, `n`, `D`, `ℓ`, `Q.degreeOf (some 0)`, and `h`.
+For `0 < D, ℓ` and `D + 1 ≤ A ≤ n`, every degree-`< D + 1` specialized solution with at least
+`A` agreements has exact power agreement outside this set. -/
+theorem exists_exceptional_irreducibleOrdinaryPowerEquation
+    {F E : Type*} [Field F] [Field E] [IsAlgClosed E] {n ℓ : ℕ}
+    (domain : Fin n ↪ F) (values : Fin (ℓ + 1) → Fin n → F) (ι : F →+* E)
+    (Q : DifferentialPolynomial E[X] 0) (D h A : ℕ)
+    (hD : 0 < D) (hℓ : 0 < ℓ) (hDA : D + 1 ≤ A) (hAn : A ≤ n)
+    (hheight : CoeffNatDegreeLE Q h)
+    (hirr : Irreducible Q) (hpos : 0 < Q.degreeOf (some 0)) :
+    ∃ exceptional : Finset E,
+      (exceptional.card : ℚ) ≤ ordinaryCurveFactorRaw
+        (((n - D : ℕ) : ℚ) / ((A - D : ℕ) : ℚ)) n D ℓ (Q.degreeOf (some 0)) h ∧
+      ∀ z ∉ exceptional, ∀ P : E[X], P.degree < D + 1 →
+        differentialSpecialization (challengeSpecialization Q z) P = 0 →
+        A ≤ (polynomialAgreementSet (domain.trans ⟨ι, ι.injective⟩)
+          (powerBatchedWord (fun t i ↦ ι (values t i)) z) P).card →
+        HasExactPowerAgreement domain values ι (D + 1) z P := by
+  classical
+  let p := ringExpChar E
+  obtain ⟨e, H, hHirr, hHder, hHdegree, _, hHheight, htransport⟩ :=
+    exists_frobeniusEquation p hpos hirr hheight
+  have hHpos : 0 < H.degreeOf (some 0) := by
+    by_contra! hz
+    have hz' := Nat.eq_zero_of_le_zero hz
+    rw [hz', zero_mul] at hHdegree
+    omega
+  have hHjet : jetTotalDegree H ≤ H.degreeOf (some 0) := by
+    rw [jetTotalDegree_eq_jetDegree_zero, jetDegree]
+  obtain ⟨ex, hexCard, hex⟩ := exists_exceptional_frobeniusPowerFactorSolutions
+    domain values ι H p e D h (H.degreeOf (some 0)) A hD hℓ hHpos hDA hAn hHheight
+    hHjet hHirr hHder rfl
+  have heq : p ^ e * H.degreeOf (some 0) = Q.degreeOf (some 0) := by
+    simpa only [Nat.mul_comm] using hHdegree
+  have hEval (x : E) : (Polynomial.aeval x).toRingHom = Polynomial.evalRingHom x := by
+    apply Polynomial.ringHom_ext
+    · intro a
+      simp
+    · simp
+  refine ⟨ex, ?_, ?_⟩
+  · simpa only [heq] using hexCard
+  · intro z hz P hdegree hroot hagree
+    let w := (iterateFrobeniusEquiv E p e).symm z
+    have hw : w ^ (p ^ e) = z := (iterateFrobeniusEquiv E p e).apply_symm_apply z
+    have hHroot : differentialSpecialization (challengeSpecialization H w)
+        (expand E (p ^ e) P) = 0 := by
+      rw [challengeSpecialization, hEval]
+      apply htransport P w
+      rw [hw]
+      simpa only [challengeSpecialization, hEval] using hroot
+    have hout := hex w (by simpa only [hw] using hz) P hdegree hHroot
+      (by simpa only [hw] using hagree)
+    simpa only [hw] using hout
 
 end ReedSolomon
 
