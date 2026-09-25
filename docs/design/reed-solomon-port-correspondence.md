@@ -2077,39 +2077,6 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Poly
 
 Renamed `regularSymbolicCurveBadChallenges` to `regularPowerBatchedBadChallenges` and `regularSymbolicCurveMCABound` to `regularPowerBatchedAgreementBound`; the predicate and rational formula are unchanged, with the current exact-power-agreement API and agreement meaning. Renamed `finite_regularSymbolicCurveBadChallenges_card_le` to `finite_regularPowerBatchedBadChallenges_card_le`, `regularSymbolicCurveBadChallenges_finite` to `regularPowerBatchedBadChallenges_finite`, and `exists_exceptional_regularSymbolicCurveMCA` to `exists_exceptional_regularPowerBatchedAgreement`. Generalized the degree and height premises of these three theorems to `jetTotalDegree` and `CoeffNatDegreeLE`. No public declarations were omitted. The common-center and Taylor-reconstruction helpers use `PolynomialDifferential.exists_forall_jetEvaluation_ne_zero_of_family` and `rationalTaylorPolynomial_polynomialJet`.
 
-## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedSharpRegularAgreement.lean`
-
-Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/SharpRegularEquation.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
-
-Renamed `sourceCurveCutChallengeDegree`, `sourceCurveCutJetDegree`, and
-`sourceCurveInitialMixedDegreeTwo` to their `regularPowerBatched*` forms.
-`regularSymbolicCurveMCASharpBoundTwo` becomes
-`regularPowerBatchedAgreementSharpBoundTwo`. The common numerator rectangle theorem covers
-`commonTaylorNumeratorOver_mem_sourceCurveCutBidegree_of_exponent` and
-`symbolicSourceNumerator_mem_sourceCurveCutBidegree`. The agreement rectangle theorem covers
-`symbolicSourceCurveAgreement_mem_sourceCurveCutBidegree` and its exponent form. The finite
-off-graph incidence theorem covers `finite_sourceCurve_points_off_tuples_card_le_hybrid_two_of_exponent`.
-The finite bad-challenge theorem with a supplied off-graph bound covers
-`finite_sourceCurve_bad_challenges_card_le_of_source_bound_of_exponent`; the first-order
-specialization covers `finite_sourceCurve_bad_challenges_card_le_hybrid_two_of_exponent`.
-The fixed-center bound, finite regular bound, and exceptional-set theorem use the
-`regularPowerBatched` APIs. The `_hybrid_two_of_exponent` theorems are renamed to
-`_firstOrder_of_exponent`.
-
-Not ported: `sourceCurveInitialMixedDegreeOne` and `regularSymbolicCurveMCASharpBoundOne` have
-no source proof establishing a bound, and no consumer uses them.
-`symbolicSourceInitialEquation_mem_restrictBidegree` is covered by
-`initialJetEquation_mem_restrictBidegree`. The cut-rectangle theorems
-`symbolicSourceInitialEquation_mem_sourceCurveCutBidegree[_of_exponent]` and
-`symbolicSourceSeparant_mem_sourceCurveCutBidegree[_of_exponent]` are covered by
-`initialJetEquation_mem_restrictBidegree` and `initialJetSeparant_mem_restrictBidegree` in
-`RationalTaylorBidegree.lean`, followed by `mem_restrictBidegree_mono`.
-`sourceCurveHighCuts_mem_sourceCurveCutBidegree_of_exponent` is covered by
-`jointCommonTaylorNumerator_mem_regularPowerBatchedCutBidegree_of_exponent`. Default-exponent
-forms specialize at `τ = 2 * K`. The private helpers `set_finite_of_finset_card_le_rational` and
-`span_singleton_ne_top_of_aeval_eq_zero` are replaced by
-`Set.finite_of_forall_finset_card_le` and `Ideal.span_singleton_ne_top`.
-
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerToLine.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/PowerToLine.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
