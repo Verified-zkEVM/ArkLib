@@ -15,7 +15,7 @@ import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerBatchedComponentRecognition
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerTupleCounting
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerTupleIncidence
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerTupleRegularBound
+import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerTupleSeparableBound
 import ArkLib.Data.CodingTheory.ReedSolomon.PowerAgreement.ConstantCode
 import Mathlib.Analysis.Complex.Polynomial.Basic
 import
@@ -1420,6 +1420,12 @@ example : ∃ exceptional : Finset RegularBoundField,
       simpa [regularBoundEquation, MvPolynomial.support_X] using hu
     rw [hu']
     simp [totalJetDegree_eq_sum]
+  have hirr : Irreducible regularBoundEquation := by
+    exact (MvPolynomial.X_prime : Prime regularBoundEquation).irreducible
+  have hder : pderiv (some (0 : Fin 1)) regularBoundEquation ≠ 0 := by
+    simp [regularBoundEquation, MvPolynomial.pderiv_X]
+  have hdegree : regularBoundEquation.degreeOf (some (0 : Fin 1)) = 1 := by
+    simp [regularBoundEquation]
   have hleft : polynomialAgreementSet regularBoundDomain (powerBatchedWord regularBoundValues 0)
       (regularBoundWitness 0) = Finset.univ := by
     ext i
@@ -1464,12 +1470,12 @@ example : ∃ exceptional : Finset RegularBoundField,
         _ = 1 := by simpa [regularBoundValues, regularBoundDomain] using h1 1
     exact zero_ne_one hfalse
   obtain ⟨exceptional, hcard, hgood⟩ :=
-    exists_exceptional_frobeniusPowerRegularSolutions_at
+    exists_exceptional_frobeniusPowerSeparableSolutions_at
       (F := ℂ) (E := ℂ) (n := 2) (k := 1) (K := 1) (ℓ := 1) (L := 2)
       regularBoundDomain regularBoundValues (RingHom.id ℂ) regularBoundDomain
       regularBoundEquation 1 0 1 0 1 2 hroots (by norm_num) (by norm_num) hτ
       (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
-      (coeffNatDegreeLE_X (some (0 : Fin 1))) hjet
+      (coeffNatDegreeLE_X (some (0 : Fin 1))) hjet hirr hder hdegree
   have hzero : (0 : ℂ) ∈ exceptional := by
     by_contra hz
     apply hbad 0 (by simp)
@@ -1477,8 +1483,6 @@ example : ∃ exceptional : Finset RegularBoundField,
     · norm_num [regularBoundWitness]
     · simp [regularBoundEquation, regularBoundWitness, challengeSpecialization,
         differentialSpecialization, differentialSpecializationHom]
-    · norm_num [regularBoundEquation, regularBoundWitness, challengeSpecialization,
-        differentialSpecialization, differentialSpecializationHom, separant]
     · rw [hdomain]
       norm_num [RingHom.id_apply]
       change 2 ≤ (polynomialAgreementSet regularBoundDomain
