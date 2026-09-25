@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 
 import
-ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Squarefree.FactorwiseList
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Squarefree.Factorwise
 import Mathlib.Tactic.NormNum
 
 open MvPolynomial Polynomial PolynomialDifferential
