@@ -2085,6 +2085,14 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Firs
 
 `firstOrder_finite_agreement_solutions_card_le_squarefree` keeps its name and is generalized to direct degree and agreement conditions, dropping redundant `k ≤ n` and `0 < M` hypotheses. The module applies the shared `firstOrderSymbolicCertificate_specialization_at_zero` API, which specializes a symbolic certificate at zero challenge and provides its nonzero equation, jet-degree bounds, and agreement-solution soundness for both squarefree and tight list bounds.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/CurveMCA.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/CurveMCA.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Renamed `retainedOrdinaryMCARaw` to `retainedOrdinaryCurveAgreementCharge`, `retainedSquarefreeCurveMCARaw` to `retainedSquarefreeCurveAgreementCharge`, `HasRetainedOrdinaryCurveTransfer` to `HasRetainedOrdinaryCurveAgreementTransfer`, and `exists_exceptional_retainedSquarefreeCurveMCA_of_tail` to `exists_exceptional_retainedSquarefreeCurveAgreement_of_tail`. The exceptional-set theorem uses the current power-batched derivative-capped API, regular Taylor exponent, coefficient-height API, and power-agreement API; its degree-one case uses the identity-pair result. The source `hybridTau` and `hybridTheta` are represented by `regularTaylorExponent` and `agreementIncidenceRatio`.
+
+Added `PolynomialDifferential.positiveCurveEquation_coeffNatDegreeLE_of_input` in the existing `PolynomialDifferential.RetainedCurve` owner. It generalizes the retained positive equation's coefficient-height bound to conclude it stays within the input equation's height. No public source declaration was omitted. The private characteristic helper is replaced by `natCast_ne_zero_of_ringChar_eq_zero_or_lt`.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/Factorwise.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/FactorwiseList.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
