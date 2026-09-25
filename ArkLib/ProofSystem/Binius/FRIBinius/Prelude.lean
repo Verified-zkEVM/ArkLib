@@ -6,7 +6,9 @@ Authors: Chung Thai Nguyen, Quang Dao
 module
 
 public import ArkLib.ProofSystem.RingSwitching.Packing.Prelude
+public import ArkLib.ProofSystem.RingSwitching.Packing.CoordinateLaws
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.Spec
+public import ArkLib.ProofSystem.RingSwitching.Packing.BBFSmallFieldIOPCS
 
 /-!
 # FRI-Binius IOPCS Prelude
@@ -29,7 +31,8 @@ variable (L : Type) [Field L] [Fintype L] [DecidableEq L] [CharP L 2]
 variable (K : Type) [Field K] [Fintype K] [DecidableEq K]
 variable [h_Fq_char_prime : Fact (Nat.Prime (ringChar K))] [hF₂ : Fact (Fintype.card K = 2)]
 variable [Algebra K L]
-variable (β : Basis (Fin (2 ^ κ)) K L)
+variable (β : Basis (Fin (2 ^ κ)) K L) [hβ_lin_indep : Fact (LinearIndependent K β)]
+  [h_β₀_eq_1 : Fact (β 0 = 1)]
 variable (ℓ ℓ' 𝓡 ϑ γ_repetitions : ℕ) [NeZero ℓ] [NeZero ℓ'] [NeZero 𝓡] [NeZero ϑ]
 variable (h_ℓ_add_R_rate : ℓ' + 𝓡 < 2 ^ κ)
 variable (h_l : ℓ = ℓ' + κ)
@@ -50,13 +53,40 @@ instance linearIndependentBooleanHypercubeBasis : Fact (LinearIndependent K ⇑�
   constructor
   exact β.linearIndependent
 
-def BinaryBasefoldAbstractOStmtIn : (RingSwitching.AbstractOStmtIn L ℓ') where
-  ιₛᵢ := Fin (BinaryBasefold.toOutCodewordsCount ℓ' ϑ (i:=0))
-  OStmtIn := BinaryBasefold.OracleStatement K β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0
-  Oₛᵢ := Binius.BinaryBasefold.instOracleStatementBinaryBasefold K β
-    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ) (i := 0)
-  initialCompatibility := fun ⟨t, oStmt⟩ =>
-    Binius.BinaryBasefold.firstOracleWitnessConsistencyProp K β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      t (f₀ := Binius.BinaryBasefold.getFirstOracle K β oStmt)
+/-- Reuse the Binary Basefold adapter: exact compatibility for honest completeness,
+and unique-decoding proximity for knowledge soundness. -/
+def BinaryBasefoldAbstractOStmtIn : RingSwitching.AbstractOStmtIn (L := L) (ℓ' := ℓ') :=
+  Binius.RingSwitching.BBFSmallFieldIOPCS.bbfAbstractOStmtIn K β
+    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ)
+
+/-- Non-reducible profile wrapper for the FRI-Binius prelude, mirroring the
+`BBFSmallFieldIOPCS.bbfProfile` pattern: kept as a plain (non-`@[reducible]`) `def` so that the
+abstract projection `P.A` is used as the discrimination-tree key for instance synthesis, instead
+of eagerly unfolding `tensorProductProfile` to `L ⊗[K] L`. -/
+def bbfSumcheckProfile (κ : ℕ) [NeZero κ] (L : Type) [Field L]
+    (K : Type) [Field K] [Algebra K L] (β : Basis (Fin κ → Fin 2) K L) :
+    RingSwitching.RingSwitchingProfile K L κ :=
+  RingSwitching.tensorProductProfile κ K L β
+
+/-- The concrete FRI-Binius profile satisfies the separately stated coordinate conditions. -/
+theorem bbfSumcheckProfile_coordinateLaws (κ : ℕ) [NeZero κ] (L : Type) [Field L]
+    (K : Type) [Field K] [Algebra K L] (β : Basis (Fin κ → Fin 2) K L) :
+    RingSwitching.CoordinateLaws (bbfSumcheckProfile κ L K β) :=
+  RingSwitching.tensorProductProfile_coordinateLaws κ K L β
+
+/-- The `BinaryBasefold.SumcheckMultiplierParam` corresponding to the Ring-Switching
+sumcheck multiplier parameter. `BinaryBasefold.SumcheckMultiplierParam` only carries the
+`multpoly` field, so we forget the extra `combinator`/`degCombinator` data of the structured
+`Sumcheck.Structured.SumcheckMultiplierParam`.
+
+The tensor profile is built from the Boolean-hypercube basis `β` via the non-reducible
+`bbfSumcheckProfile` wrapper; its multiplier polynomial is unchanged. -/
+def RingSwitching_BBFSumcheckMultParam (κ : ℕ) [NeZero κ] (L : Type) [Field L] [Fintype L]
+    [DecidableEq L] [CharP L 2] (K : Type) [Field K] [Fintype K] [DecidableEq K] [Algebra K L]
+    (β : Basis (Fin κ → Fin 2) K L) (ℓ ℓ' : ℕ) [NeZero ℓ] [NeZero ℓ'] (h_l : ℓ = ℓ' + κ) :
+    Binius.BinaryBasefold.SumcheckMultiplierParam L ℓ'
+      (RingSwitching.RingSwitchingBaseContext κ L K ℓ (bbfSumcheckProfile κ L K β)) where
+  multpoly := (RingSwitching.RingSwitching_SumcheckMultParam κ L K
+    (bbfSumcheckProfile κ L K β) ℓ ℓ' h_l).multpoly
 
 end Binius.FRIBinius

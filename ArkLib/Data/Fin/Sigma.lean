@@ -22,6 +22,8 @@ universe u v w
 
 open Finset
 
+-- Non-terminal `simp` in the `dflatten`/`embedSum` inductions is intentional here.
+
 namespace Fin
 
 def addCast {n : ℕ} (m : ℕ) (i : Fin n) : Fin (m + n) := ⟨i, Nat.lt_add_left m i.2⟩

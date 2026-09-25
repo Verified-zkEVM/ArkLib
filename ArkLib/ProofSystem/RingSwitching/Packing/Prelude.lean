@@ -265,12 +265,31 @@ structure AbstractOStmtIn where
   -- The abstract initial compatibility relation, which along with
   -- MLPEvalRelation, forms the initial input relation for the MLIOPCS.
   initialCompatibility : (MultilinearPoly L ℓ') × (∀ j, OStmtIn j) → Prop
+  /-- Honest inputs may require exact compatibility, rather than decoding proximity. -/
+  strictInitialCompatibility : (MultilinearPoly L ℓ') × (∀ j, OStmtIn j) → Prop :=
+    initialCompatibility
+  /-- Honest compatibility also satisfies the relation used for knowledge soundness. -/
+  strictInitialCompatibility_implies_initialCompatibility :
+    ∀ oStmt t, strictInitialCompatibility ⟨t, oStmt⟩ → initialCompatibility ⟨t, oStmt⟩ := by
+      intros
+      assumption
+
+/-- The same oracle interface, with honest compatibility as its input relation. -/
+def AbstractOStmtIn.strictView (aOStmtIn : AbstractOStmtIn L ℓ') : AbstractOStmtIn L ℓ' where
+  ιₛᵢ := aOStmtIn.ιₛᵢ
+  OStmtIn := aOStmtIn.OStmtIn
+  Oₛᵢ := aOStmtIn.Oₛᵢ
+  initialCompatibility := aOStmtIn.strictInitialCompatibility
 
 def AbstractOStmtIn.toRelInput (aOStmtIn : AbstractOStmtIn L ℓ') :
     Set (((MLPEvalStatement L ℓ') × (∀ j, aOStmtIn.OStmtIn j)) × (WitMLP L ℓ')) :=
   {input |
     MLPEvalRelation L ℓ' aOStmtIn.ιₛᵢ aOStmtIn.OStmtIn input
     ∧ aOStmtIn.initialCompatibility ⟨input.2.t, input.1.2⟩}
+
+/-- Evaluation and honest oracle compatibility, used for perfect completeness. -/
+def AbstractOStmtIn.toStrictRelInput (aOStmtIn : AbstractOStmtIn L ℓ') :=
+  aOStmtIn.strictView.toRelInput
 
 structure MLIOPCS extends (AbstractOStmtIn L ℓ') where
   /-- Protocol specification -/
@@ -288,7 +307,7 @@ structure MLIOPCS extends (AbstractOStmtIn L ℓ') where
     OracleProof.perfectCompleteness (oSpec := []ₒ)
       (Statement := MLPEvalStatement L ℓ') (OStatement := OStmtIn)
       (Witness := WitMLP L ℓ') (pSpec := pSpec) (init := init) (impl := impl)
-      (relation := toAbstractOStmtIn.toRelInput)
+      (relation := toAbstractOStmtIn.toStrictRelInput)
       (oracleProof := oracleReduction)
   -- RBR knowledge error function for the MLIOPCS
   rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0
@@ -466,6 +485,10 @@ def sumcheckRoundRelation (aOStmtIn : AbstractOStmtIn L ℓ') (i : Fin (ℓ' + 1
     (∀ j, aOStmtIn.OStmtIn j)) × SumcheckWitness L ℓ' i) :=
   { ((stmt, oStmt), wit) | sumcheckRoundRelationProp κ L K P ℓ ℓ' h_l
     aOStmtIn i stmt oStmt wit }
+
+/-- Sumcheck relation with honest initial oracle compatibility. -/
+def strictSumcheckRoundRelation (aOStmtIn : AbstractOStmtIn L ℓ') (i : Fin (ℓ' + 1)) :=
+  sumcheckRoundRelation κ L K P ℓ ℓ' h_l aOStmtIn.strictView i
 
 end Relations
 

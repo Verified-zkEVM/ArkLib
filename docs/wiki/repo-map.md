@@ -648,6 +648,29 @@ home_page/            site assets and assembled website root
   `Composition/Sequential/Append/Security.lean` remain admitted and must not anchor a standalone
   security claim. Completeness composition uses the proved interfaces with explicit shared-state
   hypotheses.
+- Binary Basefold's fold step separates protocol execution and completeness in
+  `ProofSystem/Binius/BinaryBasefold/Steps/Fold/Protocol.lean` from the RBR extractor,
+  knowledge-state functions, and soundness proofs in `Steps/Fold.lean`. The latter publicly
+  re-exports the protocol module, so callers needing the whole step import `Steps/Fold.lean`.
+- Binary Basefold's `Prelude/Fibers.lean` contains index and fiber preliminaries;
+  `Prelude/Folding.lean` contains folding operators and matrix identities. `Prelude.lean`
+  publicly re-exports these and establishes polynomial-evaluation preservation.
+- Binary Basefold's core interaction is split into `CoreInteractionPhase/Protocol.lean`
+  (component/composed protocols), `CoreInteractionPhase/Security.lean` (block security), and
+  `CoreInteractionPhase.lean` (final assembly and bounds). The existing entry module publicly
+  re-exports both submodules.
+- Binary Basefold's `Basic/IndexAndSumcheck.lean` owns index arithmetic and sumcheck polynomial
+  projections; `Basic.lean` publicly re-exports it and adds protocol contexts and oracle helpers.
+  Final-sumcheck decoding and extraction lemmas live in `Steps/FinalSumcheck/Extraction.lean`;
+  `Steps/FinalSumcheck.lean` contains the protocol and its security wrappers.
+- Binary Basefold perfect completeness uses exact, honestly encoded oracle inputs;
+  knowledge soundness uses the relaxed unique-decoding proximity relation. At round zero,
+  the witness codeword equals the encoding in both relations, but only the strict relation
+  requires the supplied oracle to equal it. `Packing/Prelude.lean` carries this distinction
+  through `AbstractOStmtIn.strictInitialCompatibility` and `toStrictRelInput`.
+  The default strict compatibility equals ordinary compatibility, preserving interfaces
+  whose completeness and soundness relations already coincide. `strictView` changes only
+  the compatibility predicate, not the oracle carriers or protocol execution.
 - Ring switching is a **family of constructions, not one protocol** — the umbrella
   `ProofSystem/RingSwitching/Basic.lean` carries the taxonomy over two construction folders.
   `Packing/` is the small→large packing family: `Profile.lean` holds the shared
@@ -656,6 +679,15 @@ home_page/            site assets and assembled website root
   constructor `tensorProductProfile`, `Spec`, `BatchingPhase`, `SumcheckPhase`, `General`; RBR
   soundness, `[IsDomain L]`); Binius instantiates it in `ProofSystem/Binius/FRIBinius/`
   (`biniusProfile`), and Hachi's §3 packing head is the intended next `Profile` instance.
+  `Packing/TensorLemmas.lean` proves the final public-multiplier identity for the concrete
+  tensor-product profile. It uses the actual right-factor basis coordinates, without adding
+  an unsupported identity to the generic two-reconstruction-law profile.
+  `Packing/CoordinateLaws.lean` keeps the additional coordinate identities in a separate
+  proposition and proves them for the tensor instance. `Packing/Compatibility.lean` separately
+  states polynomial uniqueness for a fixed oracle and transports it to strict compatibility;
+  it is not a requirement on every profile or oracle interface.
+  The `BatchingPhase/Algebra.lean` and `SumcheckPhase/Algebra.lean` helpers isolate honest
+  batching identities and the final multiplier/projection identities from protocol execution.
   `Lift/` is the **generic HMZ25 lift** (large quotient ring →
   field, CWSS at `k = 2d`): `Presentation.lean` is its data layer (proof-free
   `Presentation R S` + `IsPresentation` laws over any monic modulus — not cyclotomic-specific

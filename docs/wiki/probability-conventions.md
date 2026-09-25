@@ -44,8 +44,10 @@ that an execution is impossible.
 
 Replace `Pr_{…}[…]` and `$ᵖ` with native event notation and sampling. Replace PMF-specific
 applications, sums, and support arguments with native event or measure lemmas; changing only
-the notation is insufficient. Import VCVio modules directly: the former `ArkLib.ToVCVio`
-compatibility tree and `ArkLib.Data.Probability.Notation` have been removed.
+the notation is insufficient. Import VCVio's public owner modules directly for probability
+semantics. The retired probability compatibility modules and `ArkLib.Data.Probability.Notation`
+have been removed. `ArkLib.ToVCVio.Simulation` retains structural protocol-run, query, and loop
+support proofs using the native interfaces; it does not restore the retired probability API.
 
 Run `./scripts/validate.sh --axioms` before committing. Validation runs
 `lake exe retiredsweep --require-empty`: every ArkLib declaration's type and body must avoid

@@ -46,9 +46,13 @@ to `packMLE`, the honest folded element, and the instance's own algebraic identi
   `tensorProductProfile` lives in `Prelude.lean`, after the tensor-algebra definitions it is
   built from.
 
-## Instantiations
+## Original proposed instantiations — historical design intent
 
-| field | Binius ([DP24]) | Hachi §3 head ([NOZ26], planned) |
+The following mapping records Alexander Hicks's original profile design (commit `4e914a2bff`).
+The Hachi column is a proposed interpretation, not a verified instance of the profile or its
+tensor-packing security theorems; it is retained to preserve the motivation for generalization.
+
+| field | Binius ([DP24]) | Hachi §3 head ([NOZ26], originally planned) |
 |---|---|---|
 | `B`, `L` | small field `K`, tower field `L` | `R_q^H ≅ F_{q^k}`, `R_q` |
 | `basis` | binary `K`-basis of `L`, rank `2^κ` | `ψ`; ArkLib `κ = log₂(d/k)` |
@@ -56,9 +60,33 @@ to `packMLE`, the honest folded element, and the instance's own algebraic identi
 | `φ₀`, `φ₁` | `α ↦ α ⊗ 1`, `α ↦ 1 ⊗ α` | `id`, the automorphism `σ₋₁` |
 | `decomposeRows`/`Columns` | `L`-coords of `ŝ` in `L ⊗_K L` | coords of `Y ∈ R_q` via `ψ` |
 
-The implemented profile is `tensorProductProfile`; the Hachi column records a proposed adapter,
-whose reconstruction and protocol identities remain to be proved. The tensor profile discharges
-both reconstruction laws by `Basis.sum_repr` for the corresponding base-changed basis.
+## Tensor instance and scope
+
+The implemented profile is `tensorProductProfile`: a binary `K`-basis of `L`, carrier
+`L ⊗[K] L`, and embeddings `α ↦ α ⊗ 1` and `α ↦ 1 ⊗ α`. It discharges both
+reconstruction laws by `Basis.sum_repr` for the corresponding base-changed basis.
+The DP24 packing proofs additionally require the separately proved `CoordinateLaws`;
+those tensor-coordinate identities do not follow from this data-only profile alone.
+
+Hachi's trace head is not claimed as an instance of these tensor-packing security theorems.
+Its `ψ` coefficient packing and scaled trace pairing require their own reconstruction and
+readback identities, preserving Hachi's weak-opening and norm conditions. In particular,
+replacing the tensor carrier by `L` with identity/automorphism embeddings does not generally
+preserve faithful tensor coordinates. Shared reconstruction interfaces, rather than a universal
+tensor profile, are the appropriate boundary for such a generalization.
+
+## Generalization path
+
+[PR #615](https://github.com/Verified-zkEVM/ArkLib/pull/615), as inspected at `ca7a257707`,
+separates faithful tensor profiles from Hachi's trace head while sharing finite-coordinate
+and checked-observation reconstruction. Its tensor profile supplies two-sided coordinate
+inverses and agreement of the embeddings on the base ring, from which the coordinate identities
+are derived. This branch keeps the existing profile data unchanged and places the additional
+DP24 proof conditions in `CoordinateLaws`; it does not require Hachi clients to implement them.
+A future integration can discharge these conditions from the stronger tensor profile and reuse
+the shared reconstruction interfaces for Hachi. The row/column conventions differ between this
+branch and that PR revision, so the adapter must explicitly check their orientation.
+
 The `Lift` construction
 (`../Lift/`) does not instantiate this profile at all — see the family umbrella
 `ArkLib/ProofSystem/RingSwitching/Basic.lean` for the taxonomy.
