@@ -374,6 +374,15 @@ private theorem aeval_optionEquivRight_symm {A : Type*} [CommRing A] [Algebra E 
       simp only [map_mul, hp, MvPolynomial.optionEquivRight_symm_X, MvPolynomial.aeval_X,
         MvPolynomial.map_X]
 
+/-- An algebra map out of the source ring sends a flattened source polynomial to the evaluation at
+the jet images of its coefficients, each evaluated at the challenge image. -/
+private theorem algHom_optionEquivRight_symm {L : Type*} [CommRing L] [Algebra E L]
+    (g : SourceRing r E →ₐ[E] L) (p : MvPolynomial (Fin (r + 1)) E[X]) :
+    g ((MvPolynomial.optionEquivRight E (Fin (r + 1))).symm p) =
+      aeval (fun j ↦ g (MvPolynomial.X (some j)))
+        (MvPolynomial.map (Polynomial.aeval (g (MvPolynomial.X none))).toRingHom p) :=
+  (DFunLike.congr_fun (MvPolynomial.aeval_unique g) _).trans (aeval_optionEquivRight_symm _ p)
+
 /-- Below the differential order, the reconstructed coefficients recover the actual jet
 coordinates in the retained source localization. -/
 theorem localizedSourceCoefficient_eq_jet_of_exponent
@@ -391,17 +400,13 @@ theorem localizedSourceCoefficient_eq_jet_of_exponent
     Localization.Away.isDomain fun hz ↦ hs (Ideal.Quotient.eq_zero_iff_mem.mp hz)
   let g : SourceRing r E →ₐ[E] SourceAway P s :=
     (IsScalarTower.toAlgHom E (SourceRing r E ⧸ P) _).comp (Ideal.Quotient.mkₐ E P)
-  have hflat (p : MvPolynomial (Fin (r + 1)) E[X]) :
-      aeval (fun j ↦ g (MvPolynomial.X (some j)))
-        (MvPolynomial.map (Polynomial.aeval (g (MvPolynomial.X none))).toRingHom p) =
-        g ((MvPolynomial.optionEquivRight E (Fin (r + 1))).symm p) :=
-    ((DFunLike.congr_fun (MvPolynomial.aeval_unique g) _).trans
-      (aeval_optionEquivRight_symm _ p)).symm
   have key := aeval_map_commonTaylorNumeratorOver_mul_pow_eq_jet
     (Polynomial.aeval (g (MvPolynomial.X none))) (Polynomial.C center) Q K τ hτ hK _
     (IsLocalization.Away.invSelf (Ideal.Quotient.mk P s))
-    (by rw [hflat]; exact IsLocalization.Away.mul_invSelf (Ideal.Quotient.mk P s)) l hl
-  rw [hflat] at key
+    (by
+      rw [← algHom_optionEquivRight_symm]
+      exact IsLocalization.Away.mul_invSelf (Ideal.Quotient.mk P s)) l hl
+  rw [← algHom_optionEquivRight_symm] at key
   exact key
 
 /-- Map the challenge and the first `k` reconstructed coefficients into a retained source
@@ -458,27 +463,23 @@ private theorem aeval_polynomialCoefficientEvaluation_eq_zero {L : Type*} [CommR
     aeval v (polynomialCoefficientEvaluation k (α - center) received) = 0 := by
   let s := jointInitialJetSeparant center Q
   let ψ : E[X] →ₐ[E] L := Polynomial.aeval (g (MvPolynomial.X none))
-  have hflat (p : MvPolynomial (Fin (r + 1)) E[X]) :
-      g ((MvPolynomial.optionEquivRight E (Fin (r + 1))).symm p) =
-        aeval (fun j ↦ g (MvPolynomial.X (some j))) (MvPolynomial.map ψ.toRingHom p) :=
-    (DFunLike.congr_fun (MvPolynomial.aeval_unique g) _).trans
-      (aeval_optionEquivRight_symm _ p)
   have hnum (l : Fin K) :
       aeval (fun j ↦ g (MvPolynomial.X (some j)))
-        (MvPolynomial.map ψ.toRingHom
+        (MvPolynomial.map (Polynomial.aeval (g (MvPolynomial.X none))).toRingHom
           (commonTaylorNumeratorOver (F := E) (Polynomial.C center) Q τ l.val)) =
         g (jointCommonTaylorNumerator center Q τ l) :=
-    (hflat _).symm
+    (algHom_optionEquivRight_symm g _).symm
   have hsep :
       aeval (fun j ↦ g (MvPolynomial.X (some j)))
-        (MvPolynomial.map ψ.toRingHom
+        (MvPolynomial.map (Polynomial.aeval (g (MvPolynomial.X none))).toRingHom
           (initialJetSeparant (Polynomial.C center) Q)) = g s :=
-    (hflat _).symm
+    (algHom_optionEquivRight_symm g _).symm
   have hcutEq :
       (∑ l : Fin K, (algebraMap E L (α - center)) ^ l.val *
         g (jointCommonTaylorNumerator center Q τ l)) -
           ψ received * g s ^ τ = 0 := by
-    rw [jointTaylorAgreementEquation, taylorAgreementEquationOver, hflat] at hcut
+    rw [jointTaylorAgreementEquation, taylorAgreementEquationOver,
+      algHom_optionEquivRight_symm] at hcut
     simp only [map_sub, map_sum, map_mul, map_pow, MvPolynomial.map_C] at hcut
     simp only [MvPolynomial.aeval_C] at hcut
     simp_rw [hnum] at hcut

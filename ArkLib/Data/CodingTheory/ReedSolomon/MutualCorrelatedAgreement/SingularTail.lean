@@ -151,6 +151,12 @@ theorem mul_sq_le_rate_envelope {C : ℝ} (q : ℝ) {n : ℕ} (hC : 1 ≤ C) (hn
     _ ≤ (C * q) ^ 2 * (C * n) := mul_le_mul_of_nonneg_left hCn (sq_nonneg _)
     _ = C ^ 3 * n * q ^ 2 := by ring
 
+/-- If `1 ≤ C`, `1 ≤ q` and `1 ≤ n`, then `C q ≤ C³ n q²`. -/
+theorem mul_le_rate_envelope {C q : ℝ} {n : ℕ} (hC : 1 ≤ C) (hq : 1 ≤ q) (hn : 1 ≤ n) :
+    C * q ≤ C ^ 3 * n * q ^ 2 :=
+  (le_self_pow₀ (one_le_mul_of_one_le_of_one_le hC hq) two_ne_zero).trans
+    (mul_sq_le_rate_envelope q hC hn)
+
 /-- A common incidence ratio and two degree caps give the inverse-square slack envelope. -/
 theorem squarefreeListExpression_le_rate_envelope
     {C q lambda : ℝ} {n D B M : ℕ}
@@ -170,8 +176,7 @@ theorem squarefreeListExpression_le_rate_envelope
           2 * (C * q) * (C * q) + C * q := by
     gcongr
   have htwo := mul_sq_le_rate_envelope q hC hn
-  have hone : C * q ≤ C ^ 3 * n * q ^ 2 :=
-    (le_self_pow₀ (one_le_mul_of_one_le_of_one_le hC hq) two_ne_zero).trans htwo
+  have hone := mul_le_rate_envelope hC hq hn
   linarith
 
 /-- A rate-only coefficient for the squarefree inverse-square list envelope. -/

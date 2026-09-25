@@ -358,12 +358,11 @@ theorem automatic_first_order_squarefree_list_bound_of_slack
         _ = automaticJetBoundConstant rho * q := div_eq_mul_one_div _ _
         _ ≤ C * q := mul_le_mul_of_nonneg_right
           (automaticJetBoundConstant_le_envelope rho) (zero_le_one.trans hq)
-    have hlarge : 0 ≤ C ^ 3 * n * q ^ 2 := by positivity
+    have hnonneg : 0 ≤ C ^ 3 * n * q ^ 2 := by positivity
     calc
       ((closePolynomialSet domain received k A).ncard : ℝ) ≤ B := hcard
       _ ≤ C * q := hB
-      _ ≤ (C * q) ^ 2 := le_self_pow₀ (one_le_mul_of_one_le_of_one_le hC hq) two_ne_zero
-      _ ≤ C ^ 3 * n * q ^ 2 := FirstOrder.Squarefree.mul_sq_le_rate_envelope q hC hn
+      _ ≤ C ^ 3 * n * q ^ 2 := FirstOrder.Squarefree.mul_le_rate_envelope hC hq hn
       _ ≤ 7 * C ^ 3 * n * q ^ 2 := by linarith
       _ = FirstOrder.Squarefree.automaticSquarefreeListBoundConstant rho * n /
           eta ^ 2 := by
