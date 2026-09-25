@@ -397,3 +397,47 @@ example :
       constructor
       · exact WithBot.bot_lt_coe 2
       · norm_num [factorwiseReceived, factorwiseDomain])
+
+private def certificateValues : Fin 2 → Fin 2 → ℚ := fun _ _ ↦ 0
+
+private theorem certificateHeightSurplus :
+    firstOrderCurveShiftedRowSlotBound 1 2 1 1 1 2 1 1 <
+      firstOrderCurveShiftedHeightSlotCount 1 2 1 1 1 1 1 := by
+  norm_num [firstOrderCurveShiftedRowSlotBound, firstOrderGradedRankBound,
+    firstOrderGradedSourceCount, firstOrderCurveShiftedHeightSlotCount, Finset.sum_range_succ]
+
+/-- The zero line over two points has a finite first-order curve certificate at recovery
+degree `1`. -/
+private noncomputable def certificateCurve :
+    FirstOrderCurveCertificate (F := ℚ) 1 2 1 1 1 2 1 factorwiseDomain
+      (fun i ↦ ReedSolomon.powerBatchedCoordinate (fun t ↦ certificateValues t i))
+      (firstOrderColumns (D := 1) (A := 2) (m := 1) (M := 1) (μ := 1)) :=
+  Classical.choice <| exists_finite_firstOrder_curve_certificate_of_heightSlotCount
+    (D := 1) (A := 2) (m := 1) (M := 1) (μ := 1) (k := 2) (h := 1) (n := 2)
+    1 (by norm_num) (by norm_num) (by norm_num) factorwiseDomain _
+    (by intro i; norm_num [ReedSolomon.powerBatchedCoordinate, certificateValues])
+    certificateHeightSurplus
+
+/-- A finite certificate gives a base-field challenge at which the zero polynomial has exact
+power agreement with the zero line. -/
+example : ∃ z : ℚ, ReedSolomon.HasExactPowerAgreement factorwiseDomain certificateValues
+    (RingHom.id ℚ) 2 z 0 := by
+  obtain ⟨exceptional, -, hgood⟩ :=
+    exists_baseExceptional_retainedSquarefreeCurveAgreement_of_certificate
+      (E := AlgebraicClosure ℚ) (L := 2) factorwiseDomain certificateValues
+      (algebraMap ℚ (AlgebraicClosure ℚ)) _ certificateCurve
+      (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+      (by norm_num) (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
+  obtain ⟨z, hz⟩ := Finset.exists_notMem exceptional
+  exact ⟨z, hgood z hz 0 (WithBot.bot_lt_coe 2) (by
+    norm_num [ReedSolomon.polynomialAgreementSet, ReedSolomon.powerBatchedWord,
+      certificateValues])⟩
+
+/-- On a line of length `4` with agreement `3` and recovery degree `1`, the retained charge at
+the balanced split is at most the closed line envelope. -/
+example :
+    retainedSquarefreeCurveAgreementCharge (agreementIncidenceRatio 4 1 3) 4 1 1
+        (balancedSplit 1 3) 3 1 1 0 ≤
+      retainedSquarefreeLineAgreementEnvelope (agreementIncidenceRatio 4 1 3) 4 1 1 1 0 :=
+  retainedSquarefreeCurveAgreementCharge_balancedSplit_le
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)

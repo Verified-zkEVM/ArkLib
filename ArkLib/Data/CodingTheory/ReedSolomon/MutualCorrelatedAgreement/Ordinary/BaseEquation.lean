@@ -6,8 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.Equation
-public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.EquationDescent
-public import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
+import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerToLine
 
 /-!
 # Exceptional challenges for ordinary equations over an arbitrary field
@@ -48,29 +47,19 @@ theorem exists_exceptional_ordinaryEquation_base
         differentialSpecialization (challengeSpecialization Q z) P = 0 →
         A ≤ (polynomialAgreementSet domain (fun i ↦ f i + z * g i) P).card →
         HasExactCorrelatedPair domain f g (RingHom.id F) (D + 1) z P := by
-  classical
-  let E := AlgebraicClosure F
-  let ι := algebraMap F E
-  let QE := MvPolynomial.map (Polynomial.mapRingHom ι) Q
-  have hQE : QE ≠ 0 := by
-    intro hz
-    apply hQ
-    apply MvPolynomial.map_injective (Polynomial.mapRingHom ι)
-      (Polynomial.map_injective ι ι.injective)
-    simpa only [map_zero] using hz
-  have hQheight : CoeffNatDegreeLE QE h := hheight.map_coefficients ι
-  have hQdegree : QE.degreeOf (some 0) ≤ mu := by
-    apply MvPolynomial.degreeOf_le_iff.mpr
-    intro u hu
-    exact (MvPolynomial.monomial_le_degreeOf (some 0)
-      (MvPolynomial.support_map_subset _ _ hu)).trans hdegree
-  obtain ⟨ex, hexCard, hex⟩ := exists_exceptional_ordinaryEquation
-    domain f g ι QE D h mu A hQE hD hmu hDA hAn hQheight hQdegree
-  obtain ⟨baseEx, hbaseCard, hbase⟩ := exists_exceptional_equation_correlatedAgreement_descend
-    domain f g ι Q (D + 1) A ex (fun z hz P hP hagree hroot => by
-      convert hex z hz P hP hroot hagree)
-  refine ⟨baseEx, le_trans (by exact_mod_cast hbaseCard) hexCard, ?_⟩
+  obtain ⟨exceptional, hcard, hgood⟩ := exists_baseExceptional_ordinaryPowerEquation
+    (ℓ := 1) domain ![f, g] Q D h mu (D + 1) A hQ hD (by omega) (by omega) hDA hheight hdegree
+  rw [ordinaryUnifiedPowerFactorAtOrHeight_of_pos n D 1 mu h A (D + 1) hmu,
+    ordinaryUnifiedPowerFactorAt_succ_eq n D 1 mu h A hDA hAn] at hcard
+  have hcharge : ordinaryCurveFactorRaw (((n - D : ℕ) : ℚ) / ((A - D : ℕ) : ℚ)) n D 1 mu h =
+      ordinaryFactorRaw (((n - D : ℕ) : ℚ) / ((A - D : ℕ) : ℚ)) n D mu h := by
+    simp [ordinaryCurveFactorRaw, ordinaryFactorRaw]
+  have hword (z : F) : powerBatchedWord ![f, g] z = fun i ↦ f i + z * g i := by
+    exact powerBatchedWord_pair_eq f g (RingHom.id F) z
+  refine ⟨exceptional, hcard.trans ((ordinaryUnifiedPowerFactorRaw_le_ordinaryCurveFactorRaw
+    n 1 mu h (by positivity) hD).trans_eq hcharge), ?_⟩
   intro z hz P hP hroot hagree
-  exact hbase z hz P hP hagree hroot
+  exact exactCorrelatedPair_of_powerAgreement_one domain ![f, g] (RingHom.id F) z P
+    (hgood z hz P hP hroot (by rwa [hword]))
 
 end ReedSolomon
