@@ -47,8 +47,7 @@ of [DKTZ26].
 * The Taylor numerators, including high cuts, and agreement equations fit one common bidegree
   rectangle. The initial equation uses `initialJetEquation_mem_restrictBidegree` in its tighter
   `(h, v)` rectangle.
-* The joint-evaluation theorems specialize Taylor equations and numerators at a challenge point,
-  and `regularPowerBatchedHighCuts` collects the retained high numerators.
+* `regularPowerBatchedHighCuts` collects the retained high numerators.
 * `finite_powerBatched_regular_points_off_admissible_graphs_card_le_sharp_of_terminal_recognition`
   accepts terminal graph recognition and only requires `k ≤ A`;
   `finite_powerBatched_regular_points_off_admissible_graphs_card_le_sharp_of_exponent` derives
@@ -83,7 +82,7 @@ open Polynomial MvPolynomial
 variable {F E : Type*} [Field F] [Field E] {n ℓ : ℕ}
 
 /-- Evaluating a joint initial-jet equation specializes its polynomial coefficients. -/
-theorem aeval_jointInitialJetEquation_specialize {r : ℕ} (center z : E)
+private theorem aeval_jointInitialJetEquation_specialize {r : ℕ} (center z : E)
     (Q : DifferentialPolynomial E[X] r) (jet : Fin (r + 1) → E) :
     aeval (fun i ↦ i.elim z jet) (jointInitialJetEquation center Q) =
       aeval jet (initialJetEquation center (MvPolynomial.map (Polynomial.evalRingHom z) Q)) := by
@@ -91,7 +90,7 @@ theorem aeval_jointInitialJetEquation_specialize {r : ℕ} (center z : E)
     aeval_jointInitialJetEquation center Q (fun i ↦ i.elim z jet)
 
 /-- Evaluating a joint initial-jet separant specializes its polynomial coefficients. -/
-theorem aeval_jointInitialJetSeparant_specialize {r : ℕ} (center z : E)
+private theorem aeval_jointInitialJetSeparant_specialize {r : ℕ} (center z : E)
     (Q : DifferentialPolynomial E[X] r) (jet : Fin (r + 1) → E) :
     aeval (fun i ↦ i.elim z jet) (jointInitialJetSeparant center Q) =
       aeval jet (initialJetSeparant center (MvPolynomial.map (Polynomial.evalRingHom z) Q)) := by
@@ -99,7 +98,7 @@ theorem aeval_jointInitialJetSeparant_specialize {r : ℕ} (center z : E)
     aeval_jointInitialJetSeparant center Q (fun i ↦ i.elim z jet)
 
 /-- Evaluating a joint Taylor numerator specializes its polynomial coefficients. -/
-theorem aeval_jointCommonTaylorNumerator_specialize {r : ℕ} (center z : E)
+private theorem aeval_jointCommonTaylorNumerator_specialize {r : ℕ} (center z : E)
     (Q : DifferentialPolynomial E[X] r) (τ K : ℕ) (l : Fin K)
     (jet : Fin (r + 1) → E) :
     aeval (fun i ↦ i.elim z jet) (jointCommonTaylorNumerator center Q τ l) =
@@ -109,7 +108,7 @@ theorem aeval_jointCommonTaylorNumerator_specialize {r : ℕ} (center z : E)
     aeval_jointCommonTaylorNumerator center Q τ l (fun i ↦ i.elim z jet)
 
 /-- Evaluating a joint Taylor agreement equation specializes its polynomial coefficients. -/
-theorem aeval_jointTaylorAgreementEquation_specialize {r : ℕ} (center z alpha : E)
+private theorem aeval_jointTaylorAgreementEquation_specialize {r : ℕ} (center z alpha : E)
     (values : Fin (ℓ + 1) → E) (Q : DifferentialPolynomial E[X] r)
     (K τ : ℕ) (jet : Fin (r + 1) → E) :
     aeval (fun i ↦ i.elim z jet)
