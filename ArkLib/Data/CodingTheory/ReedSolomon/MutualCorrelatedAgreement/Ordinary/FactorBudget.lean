@@ -64,6 +64,11 @@ of the whole polynomial. This summation is
   factor charges fit the total charge.
 * `ReedSolomon.ordinaryUnifiedPowerFactorAt_succ_eq`: the free-retention budget at threshold
   `L = D + 1` is the fixed-split budget.
+* `ReedSolomon.ordinaryFrobeniusCurveMixedDegree_le_unified` and
+  `ordinaryFrobeniusCurve_charge_le_unifiedAt`: a Frobenius factor over a polynomial curve is
+  charged no more than the free-retention charge at its original root degree.
+* `ReedSolomon.ordinaryUnifiedPowerFactorRaw_le_ordinaryCurveFactorRaw`: the fixed-split charge
+  is at most the curve-factor charge.
 
 ## References
 
@@ -585,5 +590,50 @@ theorem ordinaryUnifiedPowerFactorRaw_sum_le {I : Type*} (S : Finset I)
   simpa only [ordinaryUnifiedPowerFactorRaw_eq_rawAt] using
     ordinaryUnifiedPowerFactorRawAt_sum_le S degree height theta n D ell B H (D + 1)
       contentHeight htheta hB hdegree hheight
+
+/-! ### Curve factors with the unified coefficient -/
+
+/-- The polynomial-curve mixed degree is at most `ell * (s * b) + h * ordinaryPsi D (s * b)`, with
+no hypothesis on `D`, `ell`, `h`, `s` or `b`. -/
+theorem ordinaryFrobeniusCurveMixedDegree_le_unified (D ell h s b : ℕ) :
+    ordinaryFrobeniusCurveMixedDegree D ell h s b ≤
+      ell * (s * b) + h * ordinaryPsi D (s * b) := by
+  rw [ordinaryFrobeniusCurveMixedDegree_eq D ell h s b]
+  have hcoefficient := ordinaryFrobenius_unified_factor D s b
+  nlinarith
+
+/-- A Frobenius pullback over a degree-`ell` polynomial curve, with separable degree `b` and power
+`s`, is charged at most the free-retention charge of a factor of root degree `s * b` at every
+retention threshold `L`. The hypothesis `1 ≤ s` is needed to compare `b` with `s * b`, and
+`0 ≤ theta` to compare the incidence terms. -/
+theorem ordinaryFrobeniusCurve_charge_le_unifiedAt (theta : ℚ) (n D ell h s b L : ℕ)
+    (htheta : 0 ≤ theta) (hs : 1 ≤ s) :
+    ((2 * b - 1) * h : ℕ) + theta * ordinaryFrobeniusCurveMixedDegree D ell h s b +
+        (ell * ((n - L) * b) : ℕ) ≤
+      ordinaryUnifiedPowerFactorRawAt theta n D ell (s * b) h L := by
+  have hbs : b ≤ s * b := Nat.le_mul_of_pos_left b (by omega)
+  have hmixed := ordinaryFrobeniusCurveMixedDegree_le_unified D ell h s b
+  unfold ordinaryUnifiedPowerFactorRawAt
+  apply add_le_add
+  · apply add_le_add
+    · exact_mod_cast Nat.mul_le_mul_right h
+        (Nat.sub_le_sub_right (Nat.mul_le_mul_left 2 hbs) 1)
+    · exact mul_le_mul_of_nonneg_left (by exact_mod_cast hmixed) htheta
+  · exact_mod_cast Nat.mul_le_mul_left ell (Nat.mul_le_mul_left (n - L) hbs)
+
+/-- The fixed-split charge is at most the curve-factor charge `ordinaryCurveFactorRaw`, since
+`ordinaryPsi D B ≤ 1 + 4 * D * B`. The hypothesis `1 ≤ D` is needed: `ordinaryPsi 0 2 = 3`. -/
+theorem ordinaryUnifiedPowerFactorRaw_le_ordinaryCurveFactorRaw {theta : ℚ} (n : ℕ) {D : ℕ}
+    (ell B H : ℕ) (htheta : 0 ≤ theta) (hD : 1 ≤ D) :
+    ordinaryUnifiedPowerFactorRaw theta n D ell B H ≤ ordinaryCurveFactorRaw theta n D ell B H := by
+  have hpsi : ordinaryPsi D B ≤ 1 + 4 * D * B := by
+    rcases Nat.eq_zero_or_pos B with rfl | hB
+    · simp [ordinaryPsi]
+    · exact (ordinaryPsi_le_four_mul hD hB).trans (Nat.le_add_left _ _)
+  have hmiddle : ell * B + H * ordinaryPsi D B ≤ H + ell * B + 4 * D * B * H := by
+    have := Nat.mul_le_mul_left H hpsi
+    nlinarith
+  unfold ordinaryUnifiedPowerFactorRaw ordinaryCurveFactorRaw
+  gcongr
 
 end ReedSolomon
