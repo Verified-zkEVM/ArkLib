@@ -1060,6 +1060,10 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/Fi
 
 Ported the first-order automatic agreement, surplus, multiplicity, derivative cap, jet degree, source and rank counts, challenge height, and density definitions. Renamed `automaticBeta` to `automaticDerivativeRatio`; the associated derivative-ratio theorems use the new name. The first derivative-ratio positivity theorem drops unused rate and threshold guards, and the upper-bound theorems drop an unused agreement upper guard. Generalized `automatic_sourceDensity_sub_rankDensityEnvelope` by dropping unused agreement assumptions. Reused the generic counts from `RoundedCounts`. The source threshold, recipe-specific count and surplus results, and scaled-height floor result are covered by existing first-order declarations; unused recipe helpers and challenge-height applications were not exposed.
 
+Ported from `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/AutomaticParameters.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+The automatic parameter-record construction formerly local to `finite_automaticFirstOrder_hybrid_agreement_solutions_card_le` is now the shared owner-layer definition `automaticFiniteRateParameters`. The new projection identities are `automaticFiniteRateParameters_jetDegree` and `automaticFiniteRateParameters_derivativeCap`. The consumers' agreement-budget calculation is factored into `automaticAgreement_mul_le`.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/DerivativeCappedCounting.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Geometry/DerivativeCounting.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -1102,6 +1106,10 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/F
 `HasOrderZeroTailListBound`, `hasOrderZeroTailListBound_of_nonzero`, `FirstOrderFieldDescent` and its fields, `exists_firstOrderFieldDescent`, and `FirstOrderFieldDescent.root_coverage` retain their names. The field descent tail uses `JetPrefixPresentation`. The symbolic `FirstOrderHybridDescent`, its fields, `exists_firstOrderHybridDescent`, and `FirstOrderHybridDescent.root_coverage` retain their names; the descent drops the unused coefficient-height parameter, represents its tail with `JetPrefixPresentation`, and root coverage is generalized to commutative semiring coefficients.
 
 `FirstOrderCurveCertificate.exists_hybridDescent` retains its name and actual-degree characteristic guard. `FirstOrderCurveCertificate.exists_hybridDescent_of_derivativeCap_lt_ringChar` retains its name and uses the public derivative-cap guard; both omit the unused challenge-height parameter. `finite_firstOrder_hybrid_agreement_solutions_card_le_raw_of_tail`, `finite_firstOrder_hybrid_agreement_solutions_card_le_optimized_of_tail`, `finite_firstOrder_field_hybrid_agreement_solutions_card_le_raw`, `finite_firstOrder_field_hybrid_agreement_solutions_card_le_optimized`, `finite_firstOrder_field_hybrid_agreement_solutions_card_le`, and `finite_automaticFirstOrder_hybrid_agreement_solutions_card_le` retain their names and bounds. The optimized symbolic and field bounds share a private charge, ceiling, and closed-bound helper.
+
+Ported from `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/HybridAgreementCounting.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+The local symbolic-certificate construction in the automatic hybrid and squarefree bounds is factored into the shared theorem `exists_automaticFirstOrder_symbolicCertificate`. Both automatic consumers use this bridge.
 
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/HybridConstants.lean`
 
@@ -1866,6 +1874,18 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/C
 The declarations map to themselves: `directJetAgreementSolutions` → `directJetAgreementSolutions`, `directJetStageCharge` → `directJetStageCharge`, `directJetCommonOrderSum` → `directJetCommonOrderSum`, `finite_actualStage_regularSolutions_card_le_dimensionSensitive` → `finite_actualStage_regularSolutions_card_le_dimensionSensitive`, `finset_card_le_directJetStageCharge_sum` → `finset_card_le_directJetStageCharge_sum`, `directJetAgreementSolutions_finite_and_ncard_le_chain` → `directJetAgreementSolutions_finite_and_ncard_le_chain`, `directJetStageCharge_sum_le_commonOrderSum` → `directJetStageCharge_sum_le_commonOrderSum`, `directJetCommonOrderSum_le_coarse` → `directJetCommonOrderSum_le_coarse`, `exists_chain_directJetAgreementSolutions_finite_and_ncard_le` → `exists_chain_directJetAgreementSolutions_finite_and_ncard_le`, and `exists_directJetList_actualStages_and_bounds` → `exists_directJetList_actualStages_and_bounds`. The stage charge now expresses `jetWeight` and `SymbolicSeparantChain.Stage` as `jetTotalDegree` and `SeparantStage`; the chain bound uses the current `SeparantChain` API. The regular-stage theorem derives its degree and equation hypotheses from agreement-set membership and uses the current `closePolynomialSet` API.
 
 Did not port `directJetAgreementSolutions_finite_and_ncard_le_coarse`, since it follows from `closePolynomialSet_finite` and `closePolynomialSet_card_le_of_differential_equation`. The characteristic-zero declarations are covered by existing general theorems: `separant_ne_zero` with `JetDegreeCastsNeZero`, `card_le_of_regular_solutions_agreement`, `boundedSolution_card_le_sq_totalJetDegree`, and `finite_solutions_card_le_sq_totalJetDegree_of_agreement` with the Reed–Solomon close-polynomial specialization.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/Bounds.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/Bounds.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`automaticFirstOrder_closePolynomialSet_finite_and_card_le`, `automatic_first_order_list_bound`, `automatic_first_order_list_bound_of_slack`, `automaticFirstOrder_closePolynomialSet_at_ceil_finite_and_card_le`, and `automatic_first_order_squarefree_list_bound_of_slack` keep their names. The private close-set membership equivalence is restated using the destination agreement-set API. No advertised declaration from the unit was omitted.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/Profile.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/Profile.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`tightListEnvelope`, `squarefreeListEnvelope`, `finiteListBound_of_profile`, and `finiteSquarefreeListBound_of_profile` keep their names. The finite-list theorems drop the redundant `p.k ≤ p.n` assumption. Their agreement condition uses the equivalent set-cardinality formulation. The squarefree theorem also drops `0 < p.firstDerivativeCap` and retains `p.firstDerivativeCap ≤ p.totalJetCap`; its envelope uses the destination regular Taylor exponent API.
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/HiddenDerivativeBound.lean`
 
@@ -4984,6 +5004,12 @@ Added a concrete nonvacuity example over `ℚ` for one degree-`< 1` solution agr
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Counting/DirectJetList.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 Added `ZMod 5` acceptance examples showing the zero polynomial as an agreeing root, applying the regular-stage estimate, and obtaining the finite actual-chain, common-order, and coarse bounds from the final theorem.
+
+## `ArkLibTest/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/Profile.lean` and `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/Bounds.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Acceptance cases check the exact-ceiling and closed cardinality bounds, finite-set and explicit-envelope automatic bounds, both slack bounds, and tight and squarefree profile bounds on a concrete singleton family over `ℚ`.
 
 ## `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement.lean`
 
