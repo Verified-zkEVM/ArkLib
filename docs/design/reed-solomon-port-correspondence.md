@@ -2113,6 +2113,12 @@ Renamed `finite_sourceCurve_points_off_tuples_card_le_hybrid_two_of_exponent` to
 
 The order-zero declarations `sourceCurveInitialMixedDegreeOne` and `regularSymbolicCurveMCASharpBoundOne` were not ported because the source proves no bound about them and no consumer uses them. The initial-equation rectangle is covered by `initialJetEquation_mem_restrictBidegree`; initial-equation and separant cut rectangles follow from `initialJetEquation_mem_restrictBidegree` and `initialJetSeparant_mem_restrictBidegree` with `mem_restrictBidegree_mono`. The high-cut result is covered by the generalized common Taylor numerator theorem. Paired declarations without `_of_exponent` are the `τ = 2 * K` cases of their exponent theorems. Private helpers `set_finite_of_finset_card_le_rational` and `span_singleton_ne_top_of_aeval_eq_zero` are replaced by `Set.finite_of_forall_finset_card_le` and `Ideal.span_singleton_ne_top`.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/SharpGeneralEquation.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Renamed `sourceCurveInitialMixedDegree` to `regularPowerBatchedInitialMixedDegree` and `regularSymbolicCurveMCASharpBound` to `regularPowerBatchedAgreementSharpBound`. Generalized the incidence theorem to the joint chart API with `k ≤ A` and explicit terminal graph recognition as `finite_powerBatched_regular_points_off_admissible_graphs_card_le_sharp_of_terminal_recognition`; derived `finite_powerBatched_regular_points_off_admissible_graphs_card_le_sharp_of_exponent` for the internally recognized `k ≤ L` case. Generalized the finite bad-challenge bound and exceptional-set theorem to arbitrary derivative order and the current power-batched API as `finite_powerBatchedBadChallenges_card_le_sharp_of_exponent`, `finite_regularPowerBatchedBadChallenges_card_le_sharp_of_exponent`, and `exists_exceptional_regularPowerBatchedAgreement_sharp_of_exponent`.
+
+Did not port `sourceCurveCutDerivativeDegree` because the generic capped-bidegree theorem supplies its cap. The common Taylor numerator, high cuts, agreement equation, and initial equation bounds are covered by generic capped-bidegree theorems. No joint Reed–Solomon separant wrapper is retained because the generic initial-separant support theorem covers it.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerToLine.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/PowerToLine.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -2684,6 +2690,10 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/S
 `taylorAgreementEquationOver_mem_restrictDerivativeBidegree` became `PolynomialDifferential.taylorAgreementEquationOver_mem_restrictCappedBidegree`. It states the same mathematical bounds with the destination degree and membership APIs.
 
 `derivativeWeight_eq_piSingle` was not ported because it is a source-specific encoding helper. The destination capped-bidegree API bounds an indexed coordinate directly, and the existing `weightedTotalDegree_indexWeight_eq_jetDegree_one` supplies the needed first-order weighted-degree fact.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/DerivativeSupport.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Generalized `symbolicSourceSeparant_mem_sourceCurveCutDerivativeBidegree` as `initialJetSeparant_mem_restrictCappedBidegree` for arbitrary differential order, with an explicit highest-jet degree cap.
 
 ## `ArkLib/Data/Polynomial/Differential/RationalTaylorDerivativeDegree.lean`
 
@@ -4888,6 +4898,10 @@ Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement.
 
 An acceptance example applies `exists_admissibleChartTuple_of_primeTaylorComponent_agreements` to the existing component ideal, agreement cuts, and separant fixtures. It specializes the returned admissible tuple at zero and checks the Taylor reconstruction identity.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/SharpGeneralEquation.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Acceptance examples invoke the sharp fixed-center bound, check the finite regular bad-set bound, and check the exceptional-set result on the nonempty bad-challenge fixture, including that challenge zero lies in the exceptional set. A nonempty incidence fixture checks the explicit terminal-recognition bound and invokes the internally recognized specialization.
+
 ## `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/FactorwiseList.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -4969,6 +4983,10 @@ No library declarations were added. The acceptance example computes that `Y₁` 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/FirstOrder/HybridDescent.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 Acceptance examples check a supported `Y₁` polynomial at its proper depth-one prefix, a `Y₀` polynomial at prefix depth zero through the degree-zero constructor, and the finite-stage split at endpoint one for the identity sequence. The test uses the shared generic hybrid-variable degree fact directly.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/DerivativeSupport.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+An acceptance example checks the generic initial-separant cap on the recursive equation fixture.
 
 ## `ArkLibTest/Data/Probability/Uniform.lean`
 

@@ -16,38 +16,43 @@ public import
 public import ArkLib.Data.Polynomial.Differential.RationalTaylorBidegree
 public import ArkLib.Data.Polynomial.Differential.TaylorChartAlgebra
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.BidegreeIncidence
+public import ArkLib.ToMathlib.Combinatorics.Enumerative.IncidenceProduct
 /-!
 # Sharp regular power-batched agreement bounds
 
-For a first-order differential equation over a polynomial ring, put
+For an order-`r` differential equation over a polynomial ring, put
 
 ```text
 a = ell + tau*h,
 b = 1 + tau*(v-1),
+J = h*b^(r+1) + (r+1)*v*a*b^r.
 ```
 
-Write `lambda1 = (n-L+1)/(A-L+1)`,
-`lambda2 = (n-k+1)/(A-k+1)`, and `mu = (n-k+1)/(L-k+1)`. The first-order formula is
+The arbitrary-order dimension-sensitive bound is
 
 ```text
-first order: (h*b^2 + 2*v*a*b) * lambda1*lambda2 + ell*(n-L)*v*(b*mu).
+J * ((n-L+1)/(A-L+1)) * P_r(A)
+  + ell*(n-L)*v*b^r*P_r(L),
 ```
 
-The first-order incidence theorem applies sharp bidegree incidence away from admissible tuple
-graphs. Sharp tuple counting bounds the retained graphs, and each graph contributes at most
-`ell * (n-L)` accidental roots. A common regular Taylor center lifts the fixed-center estimate
-to every finite family of bad challenges, yielding one finite exceptional set. The sharp bounds
-use the estimates in Section 5.6, Theorem 5.14 and Corollary 5.15 of [DKTZ26].
+where `P_r(T) = prod_{j<r} (n-k+j+1)/(T-k+j+1)`. The incidence estimate applies away from
+admissible tuple graphs. Sharp tuple counting bounds the retained graphs, and each graph
+contributes at most `ell * (n-L)` accidental roots. A common regular Taylor center lifts the
+fixed-center estimate to every finite family of bad challenges, yielding one finite exceptional
+set. At order one, the estimates specialize to Section 5.6, Theorem 5.14 and Corollary 5.15
+of [DKTZ26].
 
 ## Main statements
 
 * The Taylor numerators, including high cuts, and agreement equations fit one common bidegree
   rectangle. The initial equation uses `initialJetEquation_mem_restrictBidegree` in its tighter
   `(h, v)` rectangle.
-* `finite_powerBatched_regular_points_off_admissible_graphs_card_le_firstOrder_of_exponent`
-  bounds regular points outside admissible tuple graphs.
-* `finite_powerBatchedBadChallenges_card_le_firstOrder_of_exponent` combines incidence and tuple
-  counting; `exists_exceptional_regularPowerBatchedAgreement_firstOrder_of_exponent` gives one
+* `finite_powerBatched_regular_points_off_admissible_graphs_card_le_sharp_of_terminal_recognition`
+  accepts terminal graph recognition and only requires `k ≤ A`;
+  `finite_powerBatched_regular_points_off_admissible_graphs_card_le_sharp_of_exponent` derives
+  recognition internally when `k ≤ L`.
+* `finite_powerBatchedBadChallenges_card_le_sharp_of_exponent` combines incidence and tuple
+  counting; `exists_exceptional_regularPowerBatchedAgreement_sharp_of_exponent` gives one
   exceptional set for all regular bad challenges.
 
 ## References
@@ -130,6 +135,22 @@ def regularPowerBatchedAgreementSharpBoundTwo
       ((((n - k + 1) * regularPowerBatchedCutJetDegree K v (τ := τ) : ℕ) : ℚ) /
         ((L - k + 1 : ℕ) : ℚ))
 
+/-- Mixed affine degree of the pulled-back order-`r` initial hypersurface. -/
+def regularPowerBatchedInitialMixedDegree (r ℓ K v h : ℕ) (τ : ℕ := 2 * K) : ℕ :=
+  h * regularPowerBatchedCutJetDegree K v (τ := τ) ^ (r + 1) +
+    (r + 1) * v * regularPowerBatchedCutChallengeDegree ℓ K h (τ := τ) *
+      regularPowerBatchedCutJetDegree K v (τ := τ) ^ r
+
+/-- Sharp dimension-sensitive regular agreement budget at derivative order `r`. -/
+def regularPowerBatchedAgreementSharpBound
+    (r n ℓ K k L A v h : ℕ) (τ : ℕ := 2 * K) : ℚ :=
+  (regularPowerBatchedInitialMixedDegree r ℓ K v h (τ := τ) : ℚ) *
+      (((n - L + 1 : ℕ) : ℚ) / ((A - L + 1 : ℕ) : ℚ)) *
+      dimensionSensitiveIncidenceProduct n A k 1 r +
+    ((ℓ * (n - L) : ℕ) : ℚ) * (v : ℚ) *
+      (regularPowerBatchedCutJetDegree K v (τ := τ) : ℚ) ^ r *
+      dimensionSensitiveIncidenceProduct n L k 1 r
+
 /-- A joint common Taylor numerator fits the common cut rectangle at exponent `τ`. -/
 theorem jointCommonTaylorNumerator_mem_regularPowerBatchedCutBidegree_of_exponent
     {r : ℕ} (center : E) (Q : DifferentialPolynomial E[X] r)
@@ -160,6 +181,271 @@ theorem jointTaylorAgreementEquation_mem_regularPowerBatchedCutBidegree_of_expon
     regularPowerBatchedCutJetDegree] using
       taylorAgreementEquationOver_mem_restrictBidegree center x y Q ℓ h v K τ
         hτ hy hheight hv hjet
+
+/-- Regular points outside admissible tuple graphs satisfy the sharp bidegree incidence bound at
+arbitrary derivative order and every positive sufficient Taylor exponent, given terminal
+recognition of the retained components. -/
+theorem
+    finite_powerBatched_regular_points_off_admissible_graphs_card_le_sharp_of_terminal_recognition
+    {r : ℕ} [DecidableEq F] [IsAlgClosed E]
+    (domain : Fin n ↪ F) (w : Fin (ℓ + 1) → Fin n → F) (iota : F →+* E)
+    (center : E) (Q : DifferentialPolynomial E[X] r) (K k L A v h τ : ℕ)
+    (hτ : TaylorExponentSufficient r K τ) (hτpos : 0 < τ)
+    (hK : r < K) (hkK : k ≤ K) (hkA : k ≤ A) (hLA : L ≤ A) (hAn : A ≤ n)
+    (hD : 0 < ℓ + h) (hv : 0 < v)
+    (hinit : jointInitialJetEquation center Q ≠ 0)
+    (hjet : jetTotalDegree Q ≤ v) (hheight : CoeffNatDegreeLE Q h)
+    (hterminal : ∀ J : Ideal (MvPolynomial (Option (Fin (r + 1))) E),
+      J.IsPrime → jointInitialJetSeparant center Q ∉ J →
+      jointInitialJetEquation center Q ∈ J →
+      (∀ l : Fin K, k ≤ l.val → jointCommonTaylorNumerator center Q τ l ∈ J) →
+      0 < (affineHilbertPolynomial J).natDegree →
+      L ≤ {i : Fin n | jointTaylorAgreementEquation center Q K τ
+        (Polynomial.C (iota (domain i)))
+        (powerBatchedCoordinate fun t ↦ iota (w t i)) ∈ J}.ncard →
+      {x | x ∈ zeroLocus E J ∧ aeval x (jointInitialJetSeparant center Q) ≠ 0} ⊆
+        admissibleChartTupleGraphLocus domain w iota center Q K k L τ)
+    (S : Finset (Option (Fin (r + 1)) → E))
+    (hS : ∀ x ∈ S, aeval x (jointInitialJetEquation center Q) = 0 ∧
+      aeval x (jointInitialJetSeparant center Q) ≠ 0 ∧
+      (∀ l : Fin K, k ≤ l.val →
+        aeval x (jointCommonTaylorNumerator center Q τ l) = 0) ∧
+      x ∉ admissibleChartTupleGraphLocus domain w iota center Q K k L τ)
+    (hA : ∀ x ∈ S, A ≤ {i | aeval x (jointTaylorAgreementEquation center Q K τ
+      (Polynomial.C (iota (domain i)))
+      (powerBatchedCoordinate (fun t ↦ iota (w t i)))) = 0}.ncard) :
+    (S.card : ℚ) ≤ regularPowerBatchedInitialMixedDegree r ℓ K v h (τ := τ) *
+      (((n - L + 1 : ℕ) : ℚ) / ((A - L + 1 : ℕ) : ℚ)) *
+        dimensionSensitiveIncidenceProduct n A k 1 r := by
+  classical
+  by_cases hempty : S = ∅
+  · subst S
+    simp only [Finset.card_empty, Nat.cast_zero]
+    exact mul_nonneg
+      (mul_nonneg (by positivity) (by positivity))
+      (dimensionSensitiveIncidenceProduct_nonneg n A k 1 r)
+  obtain ⟨x₀, hx₀⟩ := Finset.nonempty_iff_ne_empty.mpr hempty
+  let g := jointInitialJetEquation center Q
+  let s := jointInitialJetSeparant center Q
+  let high := sharpHighCuts center Q K k τ
+  let cuts : Fin n → MvPolynomial (Option (Fin (r + 1))) E := fun i ↦
+    jointTaylorAgreementEquation center Q K τ (Polynomial.C (iota (domain i)))
+      (powerBatchedCoordinate (fun t ↦ iota (w t i)))
+  have ha : 0 < regularPowerBatchedCutChallengeDegree ℓ K h (τ := τ) := by
+    unfold regularPowerBatchedCutChallengeDegree
+    by_cases hℓ : 0 < ℓ
+    · omega
+    · have hh : 0 < h := by omega
+      exact Nat.add_pos_right ℓ (Nat.mul_pos hτpos hh)
+  have hb : 0 < regularPowerBatchedCutJetDegree K v (τ := τ) := by
+    simp only [regularPowerBatchedCutJetDegree]
+    omega
+  have hnotunit : ¬ IsUnit g := by
+    intro hg
+    have heval : IsUnit (aeval x₀ g) := hg.map (MvPolynomial.aeval x₀)
+    rw [(hS x₀ hx₀).1] at heval
+    exact not_isUnit_zero heval
+  have hproper :
+      Ideal.span ({g} : Set (MvPolynomial (Option (Fin (r + 1))) E)) ≠ ⊤ :=
+    Ideal.span_singleton_ne_top hnotunit
+  have hinit' : g ≠ 0 := by
+    simpa only [g] using hinit
+  have hinitRect : g ∈ restrictBidegree (Fin (r + 1)) E
+      (regularPowerBatchedCutChallengeDegree ℓ K h (τ := τ))
+      (regularPowerBatchedCutJetDegree K v (τ := τ)) := by
+    have hrect := initialJetEquation_mem_restrictBidegree center Q h v hheight hjet
+    have hchall : h ≤ regularPowerBatchedCutChallengeDegree ℓ K h (τ := τ) := by
+      unfold regularPowerBatchedCutChallengeDegree
+      exact (Nat.le_mul_of_pos_left h hτpos).trans (Nat.le_add_left _ _)
+    have hjet' : v ≤ regularPowerBatchedCutJetDegree K v (τ := τ) := by
+      unfold regularPowerBatchedCutJetDegree
+      calc
+        v = (v - 1) + 1 := by omega
+        _ ≤ τ * (v - 1) + 1 := Nat.add_le_add_right
+          (Nat.le_mul_of_pos_left _ hτpos) _
+        _ = 1 + τ * (v - 1) := by omega
+    change jointInitialJetEquation center Q ∈ restrictBidegree (Fin (r + 1)) E
+      (regularPowerBatchedCutChallengeDegree ℓ K h (τ := τ))
+      (regularPowerBatchedCutJetDegree K v (τ := τ))
+    exact mem_restrictBidegree_mono hrect hchall hjet'
+  have hsepRect : s ∈ restrictBidegree (Fin (r + 1)) E
+      (regularPowerBatchedCutChallengeDegree ℓ K h (τ := τ))
+      (regularPowerBatchedCutJetDegree K v (τ := τ)) := by
+    have hrect := initialJetSeparant_mem_restrictBidegree center Q h v hheight hjet
+    have hchall : h ≤ regularPowerBatchedCutChallengeDegree ℓ K h (τ := τ) := by
+      unfold regularPowerBatchedCutChallengeDegree
+      exact (Nat.le_mul_of_pos_left h hτpos).trans (Nat.le_add_left _ _)
+    change jointInitialJetSeparant center Q ∈ restrictBidegree (Fin (r + 1)) E
+      (regularPowerBatchedCutChallengeDegree ℓ K h (τ := τ))
+      (regularPowerBatchedCutJetDegree K v (τ := τ))
+    have hjet' : v - 1 ≤ regularPowerBatchedCutJetDegree K v (τ := τ) := by
+      unfold regularPowerBatchedCutJetDegree
+      calc
+        v - 1 ≤ τ * (v - 1) := Nat.le_mul_of_pos_left _ hτpos
+        _ ≤ 1 + τ * (v - 1) := Nat.le_add_left _ _
+    exact mem_restrictBidegree_mono hrect hchall hjet'
+  have hhighRect : ∀ f ∈ high, f ∈ restrictBidegree (Fin (r + 1)) E
+      (regularPowerBatchedCutChallengeDegree ℓ K h (τ := τ))
+      (regularPowerBatchedCutJetDegree K v (τ := τ)) := by
+    intro f hf
+    simp only [high, sharpHighCuts, List.mem_map, Finset.mem_toList,
+      Finset.mem_filter, Finset.mem_univ, true_and] at hf
+    obtain ⟨l, hl, rfl⟩ := hf
+    exact jointCommonTaylorNumerator_mem_regularPowerBatchedCutBidegree_of_exponent
+      center Q ℓ K h v τ hτ hv hheight hjet l
+  have hcutsRect : ∀ i, cuts i ∈ restrictBidegree (Fin (r + 1)) E
+      (regularPowerBatchedCutChallengeDegree ℓ K h (τ := τ))
+      (regularPowerBatchedCutJetDegree K v (τ := τ)) := by
+    intro i
+    exact jointTaylorAgreementEquation_mem_regularPowerBatchedCutBidegree_of_exponent
+      center (iota (domain i)) (powerBatchedCoordinate (fun t ↦ iota (w t i)))
+      Q ℓ K h v τ hτ (powerBatchedCoordinate_natDegree_le _) hv hheight hjet
+  have hdim : ∀ J : Ideal (MvPolynomial (Option (Fin (r + 1))) E),
+      J.IsPrime → s ∉ J → g ∈ J → (∀ f ∈ high, f ∈ J) →
+      0 < (affineHilbertPolynomial J).natDegree →
+      (affineHilbertPolynomial J).natDegree ≤ k + 1 ∧
+        (1 < (affineHilbertPolynomial J).natDegree →
+          ({i | cuts i ∈ J}.ncard) ≤ k + 1 - (affineHilbertPolynomial J).natDegree) := by
+    intro J hJ hsJ hgJ hhighJ hdJ
+    have hhigh' : ∀ l : Fin K, k ≤ l.val →
+        jointCommonTaylorNumerator center Q τ l ∈ J := by
+      intro l hl
+      apply hhighJ
+      simp only [high, sharpHighCuts, List.mem_map, Finset.mem_toList,
+        Finset.mem_filter, Finset.mem_univ, true_and]
+      exact ⟨l, hl, rfl⟩
+    have hcomponent := symbolicSourcePolynomial_dimensionSensitive_component_of_exponent
+      center Q K k n τ hτ hK hkK J hJ hsJ hhigh' (domain.trans ⟨iota, iota.injective⟩)
+      (fun i ↦ powerBatchedCoordinate (fun t ↦ iota (w t i)))
+    simpa only [cuts, Function.Embedding.trans_apply,
+      Function.Embedding.coeFn_mk] using hcomponent
+  have hterminal' : ∀ J : Ideal (MvPolynomial (Option (Fin (r + 1))) E),
+      J.IsPrime → s ∉ J → g ∈ J → (∀ f ∈ high, f ∈ J) →
+      0 < (affineHilbertPolynomial J).natDegree →
+      L ≤ ({i | cuts i ∈ J}.ncard) →
+        {x | x ∈ zeroLocus E J ∧ aeval x s ≠ 0} ⊆
+          admissibleChartTupleGraphLocus domain w iota center Q K k L τ := by
+    intro J hJ hsJ hgJ hhighJ hdJ hcutsJ
+    apply hterminal J hJ
+    · simpa only [s] using hsJ
+    · simpa only [g] using hgJ
+    · intro l hl
+      apply hhighJ
+      simp only [high, sharpHighCuts, List.mem_map, Finset.mem_toList,
+        Finset.mem_filter, Finset.mem_univ, true_and]
+      exact ⟨l, hl, rfl⟩
+    · exact hdJ
+    · simpa only [cuts] using hcutsJ
+  have hbound : (S.card : ℚ) ≤
+      affineDegree ((Ideal.span {g}).comap
+        (bidegreeMap (Fin (r + 1)) E
+          (regularPowerBatchedCutChallengeDegree ℓ K h (τ := τ))
+          (regularPowerBatchedCutJetDegree K v (τ := τ)))) *
+        hybridDimensionSensitiveIncidenceProduct n A L k 1
+          (min ((affineHilbertPolynomial (Ideal.span {g})).natDegree - 1) k + 1) := by
+    apply bidegreeHypersurface_incidence_off_excluded_hybrid
+      ha hb hLA hkA hAn g s hinit hproper hinitRect hsepRect high hhighRect
+      cuts hcutsRect (admissibleChartTupleGraphLocus domain w iota center Q K k L τ)
+      hdim hterminal' S ?_ ?_
+    · intro x hx
+      refine ⟨(hS x hx).1, (hS x hx).2.1, ?_, (hS x hx).2.2.2⟩
+      intro f hf
+      simp only [high, sharpHighCuts, List.mem_map, Finset.mem_toList,
+        Finset.mem_filter, Finset.mem_univ, true_and] at hf
+      obtain ⟨l, hl, rfl⟩ := hf
+      exact (hS x hx).2.2.1 l hl
+    · simpa only [cuts] using hA
+  have hdegree : affineDegree ((Ideal.span {g}).comap
+      (bidegreeMap (Fin (r + 1)) E
+        (regularPowerBatchedCutChallengeDegree ℓ K h (τ := τ))
+        (regularPowerBatchedCutJetDegree K v (τ := τ)))) ≤
+      regularPowerBatchedInitialMixedDegree r ℓ K v h (τ := τ) := by
+    have hrect := initialJetEquation_mem_restrictBidegree center Q h v hheight hjet
+    have hdegree := affineDegree_comap_bidegreeMap_span_singleton_le ha hb hinit' hrect
+    have hr : r + 1 - 1 = r := by omega
+    simpa only [g, regularPowerBatchedInitialMixedDegree,
+      regularPowerBatchedCutChallengeDegree, regularPowerBatchedCutJetDegree, hr,
+      Nat.card_eq_fintype_card, Fintype.card_fin] using hdegree
+  have hd : (affineHilbertPolynomial (Ideal.span {g})).natDegree = r + 1 := by
+    have hd := natDegree_affineHilbertPolynomial_span_singleton_add_one hinit' hproper
+    simp only [Nat.card_eq_fintype_card, Fintype.card_option, Fintype.card_fin] at hd
+    omega
+  rw [hd] at hbound
+  have hbound' : (S.card : ℚ) ≤ affineDegree ((Ideal.span {g}).comap
+      (bidegreeMap (Fin (r + 1)) E
+        (regularPowerBatchedCutChallengeDegree ℓ K h (τ := τ))
+        (regularPowerBatchedCutJetDegree K v (τ := τ)))) *
+        hybridDimensionSensitiveIncidenceProduct n A L k 1 (min r k + 1) := by
+    simpa only [Nat.add_sub_cancel] using hbound
+  calc
+    (S.card : ℚ) ≤ affineDegree ((Ideal.span {g}).comap
+        (bidegreeMap (Fin (r + 1)) E
+          (regularPowerBatchedCutChallengeDegree ℓ K h (τ := τ))
+          (regularPowerBatchedCutJetDegree K v (τ := τ)))) *
+        hybridDimensionSensitiveIncidenceProduct n A L k 1 (min r k + 1) := hbound'
+    _ ≤ (regularPowerBatchedInitialMixedDegree r ℓ K v h (τ := τ) : ℚ) *
+        hybridDimensionSensitiveIncidenceProduct n A L k 1 (min r k + 1) :=
+      mul_le_mul_of_nonneg_right hdegree (by
+        rw [hybridDimensionSensitiveIncidenceProduct_eq_factor_mul n A L k 1
+          (min r k) hkA hAn (by omega)]
+        exact mul_nonneg (div_nonneg (by positivity) (by positivity))
+          (dimensionSensitiveIncidenceProduct_nonneg n A k 1 (min r k)))
+    _ ≤ (regularPowerBatchedInitialMixedDegree r ℓ K v h (τ := τ) : ℚ) *
+        ((((n - L + 1 : ℕ) : ℚ) / ((A - L + 1 : ℕ) : ℚ)) *
+          dimensionSensitiveIncidenceProduct n A k 1 r) :=
+      mul_le_mul_of_nonneg_left
+        (by
+          simpa only [Nat.mul_one, Nat.cast_one, Nat.cast_mul] using
+            hybridDimensionSensitiveIncidenceProduct_min_le n A L k 1 r
+              hkA hAn one_pos) (by positivity)
+    _ = _ := by ring
+
+/-- Regular points outside admissible tuple graphs satisfy the sharp bidegree incidence bound at
+arbitrary derivative order and every positive sufficient Taylor exponent. The terminal graph
+recognition premise is discharged internally when `k ≤ L`. -/
+theorem finite_powerBatched_regular_points_off_admissible_graphs_card_le_sharp_of_exponent
+    {r : ℕ} [DecidableEq F] [IsAlgClosed E]
+    (domain : Fin n ↪ F) (w : Fin (ℓ + 1) → Fin n → F) (iota : F →+* E)
+    (center : E) (Q : DifferentialPolynomial E[X] r) (K k L A v h τ : ℕ)
+    (hτ : TaylorExponentSufficient r K τ) (hτpos : 0 < τ)
+    (hK : r < K) (hkK : k ≤ K) (hkL : k ≤ L) (hLA : L ≤ A) (hAn : A ≤ n)
+    (hD : 0 < ℓ + h) (hv : 0 < v)
+    (hinit : jointInitialJetEquation center Q ≠ 0)
+    (hjet : jetTotalDegree Q ≤ v) (hheight : CoeffNatDegreeLE Q h)
+    (S : Finset (Option (Fin (r + 1)) → E))
+    (hS : ∀ x ∈ S, aeval x (jointInitialJetEquation center Q) = 0 ∧
+      aeval x (jointInitialJetSeparant center Q) ≠ 0 ∧
+      (∀ l : Fin K, k ≤ l.val →
+        aeval x (jointCommonTaylorNumerator center Q τ l) = 0) ∧
+      x ∉ admissibleChartTupleGraphLocus domain w iota center Q K k L τ)
+    (hA : ∀ x ∈ S, A ≤ {i | aeval x (jointTaylorAgreementEquation center Q K τ
+      (Polynomial.C (iota (domain i)))
+      (powerBatchedCoordinate (fun t ↦ iota (w t i)))) = 0}.ncard) :
+    (S.card : ℚ) ≤ regularPowerBatchedInitialMixedDegree r ℓ K v h (τ := τ) *
+      (((n - L + 1 : ℕ) : ℚ) / ((A - L + 1 : ℕ) : ℚ)) *
+        dimensionSensitiveIncidenceProduct n A k 1 r := by
+  have hterminal : ∀ J : Ideal (MvPolynomial (Option (Fin (r + 1))) E),
+      J.IsPrime → jointInitialJetSeparant center Q ∉ J →
+      jointInitialJetEquation center Q ∈ J →
+      (∀ l : Fin K, k ≤ l.val → jointCommonTaylorNumerator center Q τ l ∈ J) →
+      0 < (affineHilbertPolynomial J).natDegree →
+      L ≤ {i : Fin n | jointTaylorAgreementEquation center Q K τ
+        (Polynomial.C (iota (domain i)))
+        (powerBatchedCoordinate fun t ↦ iota (w t i)) ∈ J}.ncard →
+      {x | x ∈ zeroLocus E J ∧ aeval x (jointInitialJetSeparant center Q) ≠ 0} ⊆
+        admissibleChartTupleGraphLocus domain w iota center Q K k L τ := by
+    intro J hJ hsJ hgJ hhighJ hdJ hcutsJ
+    apply principalOpen_subset_admissibleChartTupleGraphLocus
+      domain w iota center Q K k L τ hK hkL hτ J hJ
+    · exact hsJ
+    · exact hdJ
+    · exact hgJ
+    · exact hhighJ
+    · exact hcutsJ
+  exact
+    finite_powerBatched_regular_points_off_admissible_graphs_card_le_sharp_of_terminal_recognition
+    domain w iota center Q K k L A v h τ hτ hτpos hK hkK (hkL.trans hLA) hLA hAn hD hv
+    hinit hjet hheight hterminal S hS hA
 
 /-- Regular points outside admissible tuple graphs satisfy the first-order bidegree incidence
 bound at every sufficient Taylor exponent. -/
@@ -415,6 +701,64 @@ theorem finite_powerBatchedBadChallenges_card_le_of_off_graph_bound_of_exponent
   exact hcoverQ.trans (add_le_add hoffbound hexcbound)
 
 open Classical in
+/-- The exact fixed-center sharp agreement bound at arbitrary derivative order and a positive
+sufficient Taylor exponent. -/
+theorem finite_powerBatchedBadChallenges_card_le_sharp_of_exponent
+    {r : ℕ} [IsAlgClosed E]
+    (domain : Fin n ↪ F) (w : Fin (ℓ + 1) → Fin n → F) (iota : F →+* E)
+    (center : E) (Q : DifferentialPolynomial E[X] r) (K k L A v h τ : ℕ)
+    (hτ : TaylorExponentSufficient r K τ) (hτpos : 0 < τ)
+    (hK : r < K) (hkK : k ≤ K) (hkL : k ≤ L) (hLA : L ≤ A) (hAn : A ≤ n)
+    (hD : 0 < ℓ + h) (hv : 0 < v)
+    (hjet : jetTotalDegree Q ≤ v) (hheight : CoeffNatDegreeLE Q h)
+    (challenges : Finset E) (witness : E → E[X]) (jet : E → Fin (r + 1) → E)
+    (hchart : ∀ z ∈ challenges,
+      let Qz := MvPolynomial.map (Polynomial.evalRingHom z) Q
+      (witness z).degree < k ∧
+        aeval (jet z) (initialJetEquation center Qz) = 0 ∧
+        aeval (jet z) (initialJetSeparant center Qz) ≠ 0 ∧
+        (∀ l : Fin K, k ≤ l.val →
+          aeval (jet z) (commonTaylorNumerator center Qz τ l.val) = 0) ∧
+        rationalTaylorPolynomial center Qz K (jet z) = witness z)
+    (hagree : ∀ z ∈ challenges,
+      A ≤ (polynomialAgreementSet ((domain.trans ⟨iota, iota.injective⟩))
+        (powerBatchedWord (fun t i ↦ iota (w t i)) z) (witness z)).card)
+    (hbad : ∀ z ∈ challenges,
+      ¬ HasExactPowerAgreement domain w iota k z (witness z)) :
+    (challenges.card : ℚ) ≤
+      regularPowerBatchedAgreementSharpBound r n ℓ K k L A v h (τ := τ) := by
+  by_cases hempty : challenges = ∅
+  · subst challenges
+    simp only [Finset.card_empty, Nat.cast_zero]
+    unfold regularPowerBatchedAgreementSharpBound
+    exact add_nonneg
+      (mul_nonneg (mul_nonneg (by positivity) (by positivity))
+        (dimensionSensitiveIncidenceProduct_nonneg n A k 1 r))
+      (mul_nonneg (mul_nonneg (mul_nonneg (by positivity) (by positivity)) (by positivity))
+        (dimensionSensitiveIncidenceProduct_nonneg n L k 1 r))
+  obtain ⟨z₀, hz₀⟩ := Finset.nonempty_iff_ne_empty.mpr hempty
+  have hinit := jointInitialJetEquation_ne_zero_of_regular center z₀ Q (jet z₀)
+    (hchart z₀ hz₀).2.2.1
+  have hbound := finite_powerBatchedBadChallenges_card_le_of_off_graph_bound_of_exponent
+    domain w iota center Q K k L A v τ hτ hK hkK hkL hLA hAn hjet
+    ((regularPowerBatchedInitialMixedDegree r ℓ K v h (τ := τ) : ℚ) *
+      (((n - L + 1 : ℕ) : ℚ) / ((A - L + 1 : ℕ) : ℚ)) *
+        dimensionSensitiveIncidenceProduct n A k 1 r)
+    (fun S hS hA ↦ by
+      calc
+        (S.card : ℚ) ≤ regularPowerBatchedInitialMixedDegree r ℓ K v h (τ := τ) *
+            (((n - L + 1 : ℕ) : ℚ) / ((A - L + 1 : ℕ) : ℚ)) *
+              dimensionSensitiveIncidenceProduct n A k 1 r :=
+          finite_powerBatched_regular_points_off_admissible_graphs_card_le_sharp_of_exponent
+            domain w iota center Q K k L A v h τ hτ hτpos hK hkK hkL hLA hAn hD hv
+            hinit hjet hheight S hS hA
+        _ = (regularPowerBatchedInitialMixedDegree r ℓ K v h (τ := τ) : ℚ) *
+            (((n - L + 1 : ℕ) : ℚ) / ((A - L + 1 : ℕ) : ℚ)) *
+              dimensionSensitiveIncidenceProduct n A k 1 r := rfl)
+    challenges witness jet hchart hagree hbad
+  simpa only [regularPowerBatchedAgreementSharpBound] using hbound
+
+open Classical in
 /-- Exact fixed-center first-order bad-challenge bound at a sufficient Taylor exponent.  The
 joint term uses the direct dimension-sensitive factor, while the persistent-tuple term uses the
 fixed-challenge coefficient-space factor. -/
@@ -555,6 +899,67 @@ theorem finite_regularPowerBatchedBadChallenges_card_le_of_fixed_center_of_expon
     simpa only [witness, dite_eq_left hz] using (hw z hz).2.1
   · intro z hz
     simpa only [witness, dite_eq_left hz] using (hw z hz).2.2.2.2
+
+open Classical in
+/-- Every finite set of regular bad challenges satisfies the sharp dimension-sensitive bound at
+arbitrary derivative order and a positive sufficient Taylor exponent. -/
+theorem finite_regularPowerBatchedBadChallenges_card_le_sharp_of_exponent
+    {r : ℕ} [IsAlgClosed E]
+    (domain : Fin n ↪ F) (w : Fin (ℓ + 1) → Fin n → F) (iota : F →+* E)
+    (Q : DifferentialPolynomial E[X] r) (K k L A v h τ : ℕ)
+    (hτ : TaylorExponentSufficient r K τ) (hτpos : 0 < τ)
+    (hK : r < K) (hkK : k ≤ K) (hkL : k ≤ L) (hLA : L ≤ A) (hAn : A ≤ n)
+    (hD : 0 < ℓ + h) (hv : 0 < v)
+    (hjet : jetTotalDegree Q ≤ v) (hheight : CoeffNatDegreeLE Q h)
+    (hbin : ∀ i, r < i → i < K → (i.choose r : E) ≠ 0)
+    (S : Finset E)
+    (hS : ↑S ⊆ regularPowerBatchedBadChallenges domain w iota Q k A) :
+    (S.card : ℚ) ≤ regularPowerBatchedAgreementSharpBound r n ℓ K k L A v h (τ := τ) := by
+  apply finite_regularPowerBatchedBadChallenges_card_le_of_fixed_center_of_exponent
+    domain w iota Q K k A τ hkK hbin
+      (regularPowerBatchedAgreementSharpBound r n ℓ K k L A v h (τ := τ)) ?_ S hS
+  intro center challenges witness jet hchart hagree hbad
+  exact finite_powerBatchedBadChallenges_card_le_sharp_of_exponent
+    domain w iota center Q K k L A v h τ hτ hτpos hK hkK hkL hLA hAn hD hv
+      hjet hheight challenges witness jet hchart hagree hbad
+
+open Classical in
+/-- A single sharply bounded exceptional set works for every regular order-`r` solution at a
+positive sufficient Taylor exponent. -/
+theorem exists_exceptional_regularPowerBatchedAgreement_sharp_of_exponent
+    {r : ℕ} [IsAlgClosed E]
+    (domain : Fin n ↪ F) (w : Fin (ℓ + 1) → Fin n → F) (iota : F →+* E)
+    (Q : DifferentialPolynomial E[X] r) (K k L A v h τ : ℕ)
+    (hτ : TaylorExponentSufficient r K τ) (hτpos : 0 < τ)
+    (hK : r < K) (hkK : k ≤ K) (hkL : k ≤ L) (hLA : L ≤ A) (hAn : A ≤ n)
+    (hD : 0 < ℓ + h) (hv : 0 < v)
+    (hjet : jetTotalDegree Q ≤ v) (hheight : CoeffNatDegreeLE Q h)
+    (hbin : ∀ i, r < i → i < K → (i.choose r : E) ≠ 0) :
+    ∃ exceptional : Finset E,
+      (exceptional.card : ℚ) ≤
+        regularPowerBatchedAgreementSharpBound r n ℓ K k L A v h (τ := τ) ∧
+      ∀ z ∉ exceptional, ∀ P : E[X], P.degree < k →
+        A ≤ (polynomialAgreementSet ((domain.trans ⟨iota, iota.injective⟩))
+          (powerBatchedWord (fun t i ↦ iota (w t i)) z) P).card →
+        differentialSpecialization (challengeSpecialization Q z) P = 0 →
+        differentialSpecialization
+          (separant (challengeSpecialization Q z) (Fin.last r)) P ≠ 0 →
+        HasExactPowerAgreement domain w iota k z P := by
+  have hfinite :
+      (regularPowerBatchedBadChallenges domain w iota Q k A).Finite := by
+    apply Set.finite_of_forall_finset_card_le (R := ℚ) fun S hS ↦
+      finite_regularPowerBatchedBadChallenges_card_le_sharp_of_exponent
+        domain w iota Q K k L A v h τ hτ hτpos hK hkK hkL hLA hAn hD hv
+        hjet hheight hbin S hS
+  refine ⟨hfinite.toFinset, ?_, ?_⟩
+  · apply finite_regularPowerBatchedBadChallenges_card_le_sharp_of_exponent
+      domain w iota Q K k L A v h τ hτ hτpos hK hkK hkL hLA hAn hD hv
+      hjet hheight hbin
+    exact fun z hz ↦ hfinite.mem_toFinset.mp hz
+  · intro z hz P hdegree hagree hsol hsep
+    by_contra hbad
+    apply hz
+    exact hfinite.mem_toFinset.mpr ⟨P, hdegree, hagree, hsol, hsep, hbad⟩
 
 open Classical in
 /-- Every finite set of regular first-order bad challenges satisfies the exact
