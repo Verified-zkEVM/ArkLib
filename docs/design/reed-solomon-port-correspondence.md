@@ -1313,9 +1313,11 @@ Reed–Solomon half of `simplexMaximumExpectation_upperTail_sq_le` is
 lower-tail proof; the unused `momentErrorPolynomial`/`momentErrorRatio` variant is not ported.
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition/BlockLength.lean`
 
-Ported from
-`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/RatePartition/BlockLength.lean`
-at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`. `ratePartitionJetBound` is now
+Ported from `BlockLength.lean` and the definitions of `Parameters.lean` in
+`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/RatePartition/` at ArkLib
+revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`.
+
+From `Parameters.lean`: `ratePartitionJetBound` is now
 `rateJetCap`, `ratePartitionMathematicalLength` is now `rateBlockThreshold`,
 `ratePartitionLength` is now `paddedRateBlockThreshold`, and `ratePartitionHeight` is now
 `marginHeight`. `ratePartition_mathematical_length_guards` is now `rateBlockThreshold_guards`,
@@ -1323,6 +1325,16 @@ without the source's `0 < d`; `ratePartition_length_guards` is now
 `paddedRateBlockThreshold_guards`, which proves `2m < n` where the source proved `2m ≤ n`.
 `ratePartitionHeight_uniform`, the case `k = 150`, is now `marginHeight_one_add_inv` for every
 positive `k`.
+
+From `BlockLength.lean`: `rateJetCap` and `rateJetCap_pos` keep their names. The source's
+`rateBlockThreshold` is the padded threshold, so it is now `paddedRateBlockThreshold`, not main's
+`rateBlockThreshold`. `rateBlockThreshold_guards` and `rateBlockThreshold_ambient` are now
+`paddedRateBlockThreshold_guards`, which states the derived guards instead of the source's real
+inequalities. `rateHeight` is not a definition: it is
+`marginHeight (rateJetCap rate multiplicity) (partitionFiniteRatio rate agreement order multiplicity)`.
+`partitionSupport_totalJetDegree_le_rateJetCap` keeps its name in
+`HiddenDerivative/Interpolation/PartitionSupport/RateBound.lean`. `rate_ceil_agreement_bounds` is
+not ported; it combines the guards with `Nat.le_ceil` and `Nat.ceil_le`.
 
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition/ClosedMultiplicity.lean`
 
@@ -1342,9 +1354,14 @@ numeric lemmas. `ratePartitionClosedMultiplicity_ge_order`, which assumed `500 �
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition/FiniteRatio.lean`
 
 Merges `FiniteRatio.lean`, `Convergence.lean` and `FiniteParameters.lean` from the same source
-directory. `ratePartitionWeight` is now `partitionWeightBudget`, `ratePartitionFiniteRatio` is now
-`partitionFiniteRatio`, and the source's local inverse radius is the definition
-`partitionInverseRadius`. `ratePartitionFiniteRatio_eq` is now
+directory, with the matching definitions of `Parameters.lean`. In `FiniteRatio.lean`,
+`partitionWeightBudget` keeps its name, `partitionLambda` is now `partitionInverseRadius`,
+`finiteGamma` is now `partitionFiniteRatio`, `rateGamma_eq_exp` is now `rateGamma_eq_exponential`
+in `Gate.lean`, `tendsto_partitionLambda` and `tendsto_finiteGamma` are now
+`tendsto_partitionInverseRadius` and `tendsto_partitionFiniteRatio`, and
+`exists_finiteGamma_gt_one` is now `exists_partitionFiniteRatio_gt` for any bound. In
+`Parameters.lean`, `ratePartitionWeight` is now `partitionWeightBudget` and
+`ratePartitionFiniteRatio` is now `partitionFiniteRatio`. `ratePartitionFiniteRatio_eq` is now
 `partitionFiniteRatio_eq_weightBudget`, `tendsto_ratePartitionFiniteRatio` and the Convergence
 lemmas are now `tendsto_partitionWeightBudget_div`, `tendsto_partitionInverseRadius` and
 `tendsto_partitionFiniteRatio`, and
@@ -3383,7 +3400,7 @@ ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d, which were stated over
 * The exponential envelope inside `localRank_weightedHigherJetCount_le_exp` is
   `Real.add_pow_le_pow_mul_exp`.
 
-Ported from `ArkLib/ToMathlib/Analysis/SpecificLimits/GeometricBounds.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/GeometricCounting.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 Renamed `geometric_ratio_le` to `agreementGap_geometricRatio_le` and `geometric_count_le_manuscript_bound` to `geometricCount_le_of_agreementGap`. Generalized both conclusions from `ℝ` to any linearly ordered field; the count theorem retains its rational count premise. The characteristic-based binomial pivot condition is covered by `PolynomialDifferential.natCast_choose_ne_zero_of_ringChar`, specialized at each index and combined with binomial symmetry, so it was not ported. No Reed–Solomon wrapper was added because the numerical statements have no Reed–Solomon-specific data.
 
@@ -5021,7 +5038,7 @@ PMF computation is not added, and `$ᵖ` plus `Pr_{…}[…]` remain retired syn
 
 ## `ArkLibTest/ToMathlib/Analysis/SpecificLimits.lean`
 
-Ported from `ArkLib/ToMathlib/Analysis/SpecificLimits/GeometricBounds.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/GeometricCounting.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 Acceptance examples check the ratio bound at `n = K = A = 2`, `k = 1`, `ν = 2`, and `δ = 1/2`, and the count bound for `L = 20`, `m = d = 1`.
 
