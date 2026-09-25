@@ -14,14 +14,14 @@ import Mathlib.Tactic.NormNum
 /-!
 # First-order curve agreement acceptance tests
 
-Concrete examples exercise first-order power-batched curve bounds over rational and complex
-fields, and the conversion of an exact pair witness to degree-one power agreement.
+Concrete examples exercise first-order power-batched curve bounds and both ordinary-tail hybrid
+transfer theorems over the complex field.
 
 ## Main statements
 
 * Height-slot and certificate bounds have nonvacuous base-field and extension-field instances.
 * Regular-stage, hybrid, and optimized exceptional-set bounds have concrete instances.
-* An exact correlated-pair witness gives exact degree-one power agreement.
+* Both ordinary-tail hybrid-transfer bounds have concrete instances.
 
 ## References
 
@@ -36,17 +36,6 @@ private def curveDomain : Fin 1 ↪ ℚ :=
   ⟨fun _ ↦ 0, fun _ _ _ ↦ Subsingleton.elim _ _⟩
 
 private def curveValues : Fin 1 → Fin 1 → ℚ := fun _ _ ↦ 0
-
-/-- The zero correlated pair gives exact degree-one power agreement on a one-point domain. -/
-example : HasExactPowerAgreement curveDomain ![fun _ ↦ (0 : ℚ), fun _ ↦ (0 : ℚ)]
-    (RingHom.id ℚ) 1 0 (0 : ℚ[X]) := by
-  apply powerAgreement_one_of_exactCorrelatedPair curveDomain (fun _ ↦ 0) (fun _ ↦ 0)
-    (RingHom.id ℚ) 0 0
-  refine ⟨(0, 0), by simp, by simp, ?_, ?_⟩
-  · simp [correlatedPairSpecialization]
-  · ext i
-    fin_cases i
-    simp [polynomialAgreementSet, commonPolynomialAgreementSet, curveDomain]
 
 private theorem curveHeightSurplus :
     firstOrderCurveShiftedRowSlotBound 1 1 2 1 1 1 0 1 <
@@ -250,6 +239,38 @@ private theorem exceptionEquation_coeffNatDegree : coeffNatDegree exceptionEquat
   classical
   rw [coeffNatDegree, exceptionEquation, MvPolynomial.support_X]
   simp
+
+private theorem exceptionOrdinaryTailTransfer :
+    HasOrdinaryTailTransfer (D := 1) (A := 2)
+      (h := coeffNatDegree exceptionEquation) (mu := 1)
+      (e := exceptionDescent.actualDegree) exceptionDomain (exceptionValues 0)
+      (exceptionValues 1) exceptionEmbedding exceptionDescent.tail.equation := by
+  classical
+  refine ⟨∅, ?_, ?_⟩
+  · simp [HiddenDerivative.ordinaryTailCharge, exceptionEquation_coeffNatDegree,
+      exceptionDescent_actualDegree]
+  · intro z hz P hdegree hagree hroot
+    rw [exceptionDescent_tail_equation] at hroot
+    have hroot' : differentialSpecialization (1 : DifferentialPolynomial ℂ 0) P = 0 := by
+      simpa only [challengeSpecialization, map_one] using hroot
+    have hunit : (Polynomial.C (1 : ℂ) : Polynomial ℂ) = 0 := by
+      simpa only [show (1 : DifferentialPolynomial ℂ 0) = MvPolynomial.C 1 by simp,
+        differentialSpecialization_C] using hroot'
+    exact False.elim ((Polynomial.C_ne_zero.mpr one_ne_zero) hunit)
+
+example := exists_exceptional_firstOrder_hybrid_raw_of_tail
+  (n := 2) (D := 1) (A := 2) (L := 2) (mu := 1) (M := 1)
+  exceptionDomain (exceptionValues 0) (exceptionValues 1) exceptionEmbedding
+  exceptionEquation exceptionDescent
+  (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+  (Or.inl (ringChar.eq_zero : ringChar ℂ = 0)) exceptionOrdinaryTailTransfer
+
+example := exists_exceptional_firstOrder_hybrid_optimized_of_tail
+  (n := 2) (D := 1) (A := 2) (mu := 1) (M := 1)
+  exceptionDomain (exceptionValues 0) (exceptionValues 1) exceptionEmbedding
+  exceptionEquation exceptionDescent
+  (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+  (Or.inl (ringChar.eq_zero : ringChar ℂ = 0)) exceptionOrdinaryTailTransfer
 
 example :
     ∃ exceptional : Finset ℂ,

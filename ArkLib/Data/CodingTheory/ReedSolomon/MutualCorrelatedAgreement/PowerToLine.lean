@@ -75,8 +75,11 @@ theorem exactCorrelatedPair_of_powerAgreement_one
       Polynomial.smul_eq_C_mul] using hQ
   · have hw : powerBatchedWord (fun t i ↦ ι (w t i)) z =
         (fun i ↦ ι (w 0 i) + z * ι (w 1 i)) := by
-      funext i
-      simp [powerBatchedWord, Fin.sum_univ_two]
+      have hw : w = ![w 0, w 1] := by
+        funext t
+        fin_cases t <;> rfl
+      rw [hw]
+      exact powerBatchedWord_pair_eq (w 0) (w 1) ι z
     rw [hw] at hagree
     simpa [commonCurveAgreementSet, commonPolynomialAgreementSet,
       Fin.forall_fin_two] using hagree
@@ -95,8 +98,11 @@ theorem lineExactAgreementBound_of_powerAgreement_one
   refine ⟨ex, hcard, ?_⟩
   intro z hz Q hdeg hagree
   have hw : powerBatchedWord (ℓ := 1) ![f, g] z = (fun i ↦ f i + z * g i) := by
-    funext i
-    simp [powerBatchedWord, Fin.sum_univ_two]
+    have hword : (fun t i ↦ (RingHom.id F) (![f, g] t i)) = ![f, g] := by
+      funext t
+      fin_cases t <;> rfl
+    rw [← hword]
+    exact powerBatchedWord_pair_eq f g (RingHom.id F) z
   have h := hgood z hz Q hdeg (by rwa [hw])
   obtain ⟨pair, hp0, hp1, hQ, heq⟩ :=
     exactCorrelatedPair_of_powerAgreement_one domain ![f, g] (RingHom.id F) z Q h
