@@ -9,6 +9,7 @@ public import Mathlib.Algebra.Order.BigOperators.Ring.Finset
 public import Mathlib.Algebra.Order.Field.Basic
 public import Mathlib.Data.Rat.Cast.Order
 import Mathlib.Data.Rat.Cast.Lemmas
+import Mathlib.Tactic.FieldSimp
 public import Mathlib.Tactic.IntervalCases
 public import Mathlib.Tactic.Linarith
 public import Mathlib.Tactic.Positivity
@@ -59,6 +60,7 @@ with a threshold.
 * `natCast_shiftedRatio_le_one_div` and
   `dimensionSensitiveIncidenceProduct_le_one_div_pow_of_gap`: shifted ratios and their products
   are bounded by powers of `1 / δ` under a linear gap condition.
+* `natCastRatio_le_div_of_scaled_lower_bound`: a denominator lower bound gives a ratio bound.
 * `dimensionSensitiveIncidenceProduct_mono_dimension` and
   `dimensionSensitiveIncidenceProduct_le_first_pow`: monotonicity and a fixed-threshold power
   bound.
@@ -101,6 +103,23 @@ theorem natCast_shiftedRatio_le_one_div {K : Type*} [Field K] [LinearOrder K]
   have hxy' := mul_le_mul_of_nonneg_right hxy hj
   have hδ' := mul_le_mul_of_nonneg_right hδone hj
   nlinarith
+
+/-- A lower bound `δ * n / scale ≤ D` bounds `N / D` by `scale / δ` whenever `N ≤ n` and
+both scale factors are positive. -/
+theorem natCastRatio_le_div_of_scaled_lower_bound {K : Type*} [Field K] [LinearOrder K]
+    [IsStrictOrderedRing K] (δ scale : K) (n N D : ℕ)
+    (hδ : 0 < δ) (hscale : 0 < scale) (hn : 0 < n) (hN : N ≤ n)
+    (hD : δ * (n : K) / scale ≤ (D : K)) :
+    (N : K) / D ≤ scale / δ := by
+  have hn' : (0 : K) < n := by exact_mod_cast hn
+  have hDpos : (0 : K) < D := lt_of_lt_of_le (by positivity) hD
+  apply (div_le_iff₀ hDpos).mpr
+  have hscaleNonneg : (0 : K) ≤ scale / δ := by positivity
+  have hmul := mul_le_mul_of_nonneg_left hD hscaleNonneg
+  have hcancel : (scale / δ) * (δ * (n : K) / scale) = n := by
+    field_simp
+  rw [hcancel] at hmul
+  exact (show (N : K) ≤ n by exact_mod_cast hN).trans hmul
 
 /-- The incidence factor `((n - T + 1) * b) / (A - T + 1)` is at least one when `A ≤ n` and
 `0 < b`, for every threshold `T`. -/
