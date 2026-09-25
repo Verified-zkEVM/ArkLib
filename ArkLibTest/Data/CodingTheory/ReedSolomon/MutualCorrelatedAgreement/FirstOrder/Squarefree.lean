@@ -398,14 +398,6 @@ example :
       · exact WithBot.bot_lt_coe 2
       · norm_num [factorwiseReceived, factorwiseDomain])
 
-private def certificateDomain : Fin 2 ↪ ℚ where
-  toFun i := (i.val : ℚ)
-  inj' := by
-    intro i j hij
-    change (i.val : ℚ) = (j.val : ℚ) at hij
-    apply Fin.ext
-    exact_mod_cast hij
-
 private def certificateValues : Fin 2 → Fin 2 → ℚ := fun _ _ ↦ 0
 
 private theorem certificateHeightSurplus :
@@ -417,22 +409,22 @@ private theorem certificateHeightSurplus :
 /-- The zero line over two points has a finite first-order curve certificate at recovery
 degree `1`. -/
 private noncomputable def certificateCurve :
-    FirstOrderCurveCertificate (F := ℚ) 1 2 1 1 1 2 1 certificateDomain
+    FirstOrderCurveCertificate (F := ℚ) 1 2 1 1 1 2 1 factorwiseDomain
       (fun i ↦ ReedSolomon.powerBatchedCoordinate (fun t ↦ certificateValues t i))
       (firstOrderColumns (D := 1) (A := 2) (m := 1) (M := 1) (μ := 1)) :=
   Classical.choice <| exists_finite_firstOrder_curve_certificate_of_heightSlotCount
     (D := 1) (A := 2) (m := 1) (M := 1) (μ := 1) (k := 2) (h := 1) (n := 2)
-    1 (by norm_num) (by norm_num) (by norm_num) certificateDomain _
+    1 (by norm_num) (by norm_num) (by norm_num) factorwiseDomain _
     (by intro i; norm_num [ReedSolomon.powerBatchedCoordinate, certificateValues])
     certificateHeightSurplus
 
 /-- A finite certificate gives a base-field challenge at which the zero polynomial has exact
 power agreement with the zero line. -/
-example : ∃ z : ℚ, ReedSolomon.HasExactPowerAgreement certificateDomain certificateValues
+example : ∃ z : ℚ, ReedSolomon.HasExactPowerAgreement factorwiseDomain certificateValues
     (RingHom.id ℚ) 2 z 0 := by
   obtain ⟨exceptional, -, hgood⟩ :=
     exists_baseExceptional_retainedSquarefreeCurveAgreement_of_certificate
-      (E := AlgebraicClosure ℚ) (L := 2) certificateDomain certificateValues
+      (E := AlgebraicClosure ℚ) (L := 2) factorwiseDomain certificateValues
       (algebraMap ℚ (AlgebraicClosure ℚ)) _ certificateCurve
       (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
       (by norm_num) (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))

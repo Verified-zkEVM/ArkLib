@@ -356,7 +356,7 @@ example : ∃ ex : Finset Unit, (ex.card : ℚ) ≤ ordinaryCurveFactorRaw 0 1 0
   rcases hresult with ⟨ex, hcard, hgood⟩
   exact ⟨ex, hcard, hgood, assemblyRootAtZero⟩
 
-private def baseEquationDomain : Fin 2 ↪ ℚ where
+private def threePointDomain : Fin 3 ↪ ℚ where
   toFun i := (i.val : ℚ)
   inj' := by
     intro i j hij
@@ -364,17 +364,18 @@ private def baseEquationDomain : Fin 2 ↪ ℚ where
     apply Fin.ext
     exact_mod_cast hij
 
-/-- Over `ℚ`, the reducible equation `Y₀²` has an exceptional set of size at most `2` outside
-which the zero root of the zero curve has exact power agreement. -/
+/-- Over `ℚ`, on three points with retention threshold `L = D + 2`, the reducible equation `Y₀²`
+has an exceptional set of size at most `2` outside which the zero root of the zero curve has
+exact power agreement. -/
 example : ∃ exceptional : Finset ℚ, (exceptional.card : ℚ) ≤ 2 ∧ ∃ z ∉ exceptional,
-    HasExactPowerAgreement (ℓ := 1) baseEquationDomain (fun _ _ ↦ 0) (RingHom.id ℚ) 2 z 0 := by
+    HasExactPowerAgreement (ℓ := 1) threePointDomain (fun _ _ ↦ 0) (RingHom.id ℚ) 2 z 0 := by
   classical
   let squareEquation : DifferentialPolynomial ℚ[X] 0 := MvPolynomial.X (some 0) ^ 2
   have hheight : CoeffNatDegreeLE squareEquation 0 := by
     simpa [squareEquation] using
       (CoeffNatDegreeLE.pow (coeffNatDegreeLE_X (some (0 : Fin 1))) 2)
   obtain ⟨exceptional, hcard, hgood⟩ := exists_baseExceptional_ordinaryPowerEquation
-    (ℓ := 1) baseEquationDomain (fun _ _ ↦ 0) squareEquation 1 0 2 2 2
+    (ℓ := 1) threePointDomain (fun _ _ ↦ 0) squareEquation 1 0 2 3 3
     (pow_ne_zero 2 (MvPolynomial.X_ne_zero _)) (by norm_num) (by norm_num) (by norm_num)
     (by norm_num) hheight (by simp [squareEquation])
   have hcard' : (exceptional.card : ℚ) ≤ 2 := by
