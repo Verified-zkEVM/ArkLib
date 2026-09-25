@@ -7,6 +7,9 @@ module
 
 public import Mathlib.Algebra.Order.Floor.Ring
 public import Mathlib.Algebra.Order.Archimedean.Real.Basic
+public import Mathlib.Algebra.CharP.Algebra
+public import
+  ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.FiniteRatio
 public import Mathlib.Tactic.FieldSimp
 public import Mathlib.Tactic.Linarith
 public import Mathlib.Tactic.NormNum
@@ -41,6 +44,8 @@ The height of a curve family is chosen from a certified ratio `γ > 1` as
 ## Main statements
 
 * `rateBlockThreshold_guards`, `paddedRateBlockThreshold_guards`: the guards above.
+* `rateBlockThreshold_exactAgreementGuards`: the shared numerical and characteristic guards for
+  exact-agreement certificate endpoints.
 * `marginHeight_one_add_inv`: `marginHeight ν (1 + 1/k) = k ν` for positive `k` and `ν`.
 * `kernel_height_le_marginHeight`: a strict rank margin bounds the polynomial-kernel height.
 
@@ -116,6 +121,56 @@ theorem rateBlockThreshold_guards {rate agreement : ℝ} {order multiplicity n k
       nlinarith [Nat.cast_nonneg multiplicity (α := ℝ)]
     exact_mod_cast (show 2 * (multiplicity : ℝ) < n by linarith)
   · exact_mod_cast (show (2 : ℝ) ≤ n by linarith)
+
+/-- The block threshold and rate assumptions give the common size, degree, and characteristic
+guards needed by exact-agreement certificate endpoints. -/
+theorem rateBlockThreshold_exactAgreementGuards {F : Type*} [Semiring F]
+    {rate agreement : ℝ} {order n k A : ℕ}
+    (p : PartitionFiniteParameters rate agreement order)
+    (hrate : 0 < rate) (hrateAgreement : rate < agreement) (hagreementOne : agreement < 1)
+    (hn : rateBlockThreshold rate order p.multiplicity ≤ n)
+    (hkRate : (k : ℝ) ≤ rate * n) (hgap : agreement * n ≤ A)
+    (hchar : ringChar F = 0 ∨
+      max (max (k - 1) order) (rateJetCap rate p.multiplicity) < ringChar F) :
+    k ≤ max k (order + 1) ∧ order < max k (order + 1) ∧ max k (order + 1) ≤ n ∧
+      k ≤ A ∧ 0 < rateJetCap rate p.multiplicity ∧
+      0 < marginHeight (rateJetCap rate p.multiplicity)
+        (partitionFiniteRatio rate agreement order p.multiplicity) ∧
+      (ringChar F = 0 ∨
+        max (max k (order + 1) - 1) (rateJetCap rate p.multiplicity) < ringChar F) := by
+  obtain ⟨_, _, hkD, hDn, _, _, _, _⟩ :=
+    rateBlockThreshold_guards hrate (hrateAgreement.trans hagreementOne) hn hkRate hgap
+  let K := max k (order + 1)
+  have hkK : k ≤ K := Nat.le_max_left _ _
+  have horderK : order < K :=
+    lt_of_lt_of_le (Nat.lt_succ_self order) (Nat.le_max_right _ _)
+  have hKn : K ≤ n := by
+    apply max_le
+    · exact hkD.trans (by omega)
+    · omega
+  have hkA : k ≤ A := by
+    have h : (k : ℝ) ≤ A := hkRate.trans
+      ((mul_le_mul_of_nonneg_right hrateAgreement.le (Nat.cast_nonneg n)).trans hgap)
+    exact_mod_cast h
+  have hcap : 0 < rateJetCap rate p.multiplicity := by
+    apply Nat.lt_ceil.mpr
+    have hm : (0 : ℝ) < p.multiplicity := by exact_mod_cast p.multiplicity_pos
+    simpa only [Nat.cast_zero] using (show (0 : ℝ) < 2 * p.multiplicity / rate by positivity)
+  have hheight : 0 < marginHeight (rateJetCap rate p.multiplicity)
+      (partitionFiniteRatio rate agreement order p.multiplicity) := by
+    exact lt_of_lt_of_le Nat.zero_lt_one (le_max_left _ _)
+  have hKsub : K - 1 ≤ max (k - 1) order := by
+    rcases le_total k (order + 1) with hko | hok
+    · rw [show K = order + 1 by simp [K, max_eq_right hko]]
+      exact Nat.le_max_right _ _
+    · rw [show K = k by simp [K, max_eq_left hok]]
+      exact Nat.le_max_left _ _
+  have hchar' : ringChar F = 0 ∨
+      max (K - 1) (rateJetCap rate p.multiplicity) < ringChar F := by
+    apply hchar.imp_right
+    intro hc
+    exact (max_le_max hKsub le_rfl).trans_lt hc
+  exact ⟨hkK, horderK, hKn, hkA, hcap, hheight, hchar'⟩
 
 /-- A block length `n ≥ paddedRateBlockThreshold R d m` with `0 < R < 1` satisfies, for
 `D = ⌊R n⌋₊`, the guards `d + 1 ≤ D`, `R n / 2 ≤ D`, `k ≤ D`, `D + 1 ≤ n`, `⌈2m/R⌉₊ < n`,

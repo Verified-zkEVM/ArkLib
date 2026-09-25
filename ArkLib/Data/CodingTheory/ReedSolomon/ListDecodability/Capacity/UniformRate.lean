@@ -58,25 +58,10 @@ theorem uniformRatePartition_close_list_bound {F : Type*} [Field F]
           (2 * uniformJetCap δ / δ) ^ uniformDerivativeOrder δ *
           n ^ uniformDerivativeOrder δ := by
   obtain ⟨e⟩ := exists_uniformRatePartitionEnvelope hδ hδsmall hn hk hgap hAn
-  have hd : 500 ≤ uniformDerivativeOrder δ := by
-    exact (by norm_num : 500 ≤ 519).trans (uniformDerivativeOrder_ge_519 hδ hδsmall)
-  have hδone : δ < 1 := by linarith
-  obtain ⟨_, _, hν, hνn⟩ :=
-    uniformBlockThreshold_guards hδ hδone.le hn
-  have hscale : (1 : ℝ) < 1000 * (uniformDerivativeOrder δ : ℝ) ^ 3 := by
-    have hd' : (500 : ℝ) ≤ uniformDerivativeOrder δ := by exact_mod_cast hd
-    nlinarith [sq_nonneg (uniformDerivativeOrder δ : ℝ)]
+  obtain ⟨hd, hδone, hν, _hνn, hscale, hkA, hchar'⟩ :=
+    uniformEnvelope_exactAgreementGuards e hδ hδsmall hn hgap hchar
   obtain ⟨cert⟩ := e.exists_curve_certificate hδ hδone hd hscale hAn
     domain (fun i ↦ Polynomial.C (received i)) (fun _ ↦ by simp)
-  have hkA : k ≤ A := by
-    have h : (k : ℝ) ≤ A := by nlinarith [Nat.cast_nonneg n (α := ℝ)]
-    exact_mod_cast h
-  have hchar' :
-      ringChar F = 0 ∨ max (e.ambientDegree + 1 - 1) (uniformJetCap δ) < ringChar F := by
-    apply hchar.imp_right
-    intro hc
-    have hD := e.ambient_le
-    exact (max_lt (by omega) hνn).trans_le hc
   exact close_list_bound_of_curve_certificate_of_jetCharacteristic
     domain received cert hk e.message_le
     (by have := e.order_le; omega) e.ambient_le hkA hAn hν hδ hgap hchar'

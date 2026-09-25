@@ -1,0 +1,280 @@
+/-
+Copyright (c) 2026 ArkLib Contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Quang Dao
+-/
+module
+
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.CertificateBound
+public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerToLine
+public import
+  ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.RateCertificate
+import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
+/-!
+# Rate-partition bounds for Reed–Solomon correlated agreement
+
+Finite rate-partition parameters give exceptional-set bounds for exact agreement on power-batched
+curves. The results cover curves over an algebraic closure, curves over the received-word field,
+and affine lines. A limiting rate condition also selects parameters that work uniformly over
+fields, block lengths, codes, and received lines.
+
+## Main statements
+
+* `exists_ratePartition_curve_exactPowerAgreement`: an extension-field bound for exact power
+  agreement.
+* `exists_ratePartition_baseCurve_exactPowerAgreement`: the corresponding bound over the
+  received-word field.
+* `exists_ratePartition_line_exactCorrelatedPair`: the specialization to affine lines.
+* `exists_ratePartition_line_exactCorrelatedPair_parameters`: parameter selection from a strict
+  rate condition.
+
+## References
+
+* [DKTZ26]
+-/
+
+@[expose] public section
+
+noncomputable section
+
+namespace ReedSolomon
+
+open Polynomial HiddenDerivative
+
+universe u
+
+open Classical in
+/-- A finite rate-partition parameter record bounds the exceptional challenges for exact power
+agreement on a power-batched received curve. The exceptional set is chosen after the curve and
+works uniformly for every later challenge and candidate.
+
+The candidate may lie in an algebraically closed extension of the received-word field. Outside
+the exceptional set, each candidate of degree below `k` with at least `A` agreements is a power
+combination of base-field polynomials of degree below `k`; its full agreement set equals their
+common agreement set.
+-/
+theorem exists_ratePartition_curve_exactPowerAgreement
+    -- Work over a received-word field and an algebraically closed geometric extension.
+    {F E : Type u} [Field F] [Field E] [IsAlgClosed E]
+    -- Fix the rate envelope, agreement fraction, derivative order, and code/curve sizes.
+    {R a : ℝ} {d n k A ℓ : ℕ}
+    -- The finite interpolation parameters have already been chosen from `(R,a,d)`.
+    (p : RatePartition.PartitionFiniteParameters R a d)
+    -- Fix the rate window and derivative order.
+    (hR : 0 < R) (hRa : R < a) (haone : a < 1) (hd : 500 ≤ d)
+    -- The block length clears every rounding, jet, and reconstruction guard selected by `p`.
+    (hn : RatePartition.rateBlockThreshold R d p.multiplicity ≤ n)
+    -- Messages have positive dimension and rate at most `R`; candidates agree at least `a`.
+    (hk : 0 < k) (hkR : (k : ℝ) ≤ R * n) (haA : a * n ≤ A) (hAn : A ≤ n)
+    -- A positive-degree challenge curve is evaluated on `n` distinct base-field points.
+    (hℓ : 0 < ℓ) (domain : Fin n ↪ F) (values : Fin (ℓ + 1) → Fin n → F)
+    -- The embedding supports geometric counting; the characteristic guard is on `F`.
+    (iota : F →+* E) (hchar : ringChar F = 0 ∨
+      max (max (k - 1) d) (RatePartition.rateJetCap R p.multiplicity) < ringChar F) :
+    -- One finite set is selected before both the challenge `z` and candidate `P`.
+    ∃ exceptional : Finset E,
+      -- Its size is bounded by `ℓ * C_E * n^(d+1)` with gap `δ = a-R`.
+      (exceptional.card : ℝ) ≤ (ℓ : ℝ) * polynomialCurveProductAgreementConstant (a - R)
+        (RatePartition.rateJetCap R p.multiplicity)
+        (RatePartition.marginHeight (RatePartition.rateJetCap R p.multiplicity)
+          (RatePartition.partitionFiniteRatio R a d p.multiplicity)) d * (n : ℝ) ^ (d + 1) ∧
+      -- Every challenge outside that set is good simultaneously for every candidate.
+      ∀ z ∉ exceptional,
+        -- The candidate may live over `E`, but must have ordinary degree below `k`.
+        ∀ P : E[X], P.degree < k →
+        -- A candidate entering the conclusion agrees with the batched word at `A` positions.
+        A ≤ (polynomialAgreementSet (domain.trans ⟨iota, iota.injective⟩)
+          (powerBatchedWord (fun t i ↦ iota (values t i)) z) P).card →
+        -- It descends to base-field witnesses and has exactly their common agreement set.
+        HasExactPowerAgreement domain values iota k z P := by
+  obtain ⟨cert⟩ :=
+    exists_partitionSupport_curve_certificate_of_rateBlockThreshold p hR (hRa.trans haone)
+    (hR.trans hRa) hd hn hkR haA hAn domain
+    (fun i ↦ powerBatchedCoordinate fun t ↦ values t i)
+    (fun _ ↦ powerBatchedCoordinate_natDegree_le _)
+  let K := max k (d + 1)
+  obtain ⟨hkK, hdK, hKn, hkA, hν, hh, hchar'⟩ :=
+    RatePartition.rateBlockThreshold_exactAgreementGuards p hR hRa haone hn hkR haA hchar
+  apply exists_exceptional_exactPowerAgreement_of_certificate_of_jetCharacteristic domain values
+    iota cert hk
+    hkK (by omega) hdK hKn hkA hAn hν hh hℓ
+    le_rfl (sub_pos.mpr hRa) (by linarith) ?_ hchar'
+  nlinarith
+open Classical in
+/-- A finite rate-partition parameter record bounds exceptional challenges for exact power
+agreement over the received-word field. The exceptional set is chosen for the whole curve before
+the challenge and candidate are selected.
+
+For every nonexceptional challenge, a degree-`< k` candidate with at least `A` agreements is a
+power combination of degree-`< k` polynomials over the received-word field, and its full
+agreement set equals their common agreement set.
+-/
+theorem exists_ratePartition_baseCurve_exactPowerAgreement
+    -- All algebraic data and the returned exceptional challenges now lie in one field.
+    {F : Type u} [Field F]
+    -- Fix the rate data, derivative order, block length, code, threshold, and curve degree.
+    {R a : ℝ} {d n k A ℓ : ℕ}
+    -- The finite parameter record was selected before the field and received curve.
+    (p : RatePartition.PartitionFiniteParameters R a d)
+    -- The same strict rate window and order floor as the extension-field theorem.
+    (hR : 0 < R) (hRa : R < a) (haone : a < 1) (hd : 500 ≤ d)
+    -- The block length exceeds the threshold determined by `p`.
+    (hn : RatePartition.rateBlockThreshold R d p.multiplicity ≤ n)
+    -- The code rate and integral agreement threshold realize the real parameters.
+    (hk : 0 < k) (hkR : (k : ℝ) ≤ R * n) (haA : a * n ≤ A) (hAn : A ≤ n)
+    -- Supply a positive-degree received curve on `n` distinct evaluation points.
+    (hℓ : 0 < ℓ) (domain : Fin n ↪ F) (values : Fin (ℓ + 1) → Fin n → F)
+    -- Characteristic zero is unrestricted; positive characteristic clears all degree caps.
+    (hchar : ringChar F = 0 ∨
+      max (max (k - 1) d) (RatePartition.rateJetCap R p.multiplicity) < ringChar F) :
+    -- The descended exceptional set is selected before every challenge and candidate.
+    ∃ exceptional : Finset F,
+      -- Descent does not increase the exact `ℓ * C_E * n^(d+1)` cardinality bound.
+      (exceptional.card : ℝ) ≤ (ℓ : ℝ) * polynomialCurveProductAgreementConstant (a - R)
+        (RatePartition.rateJetCap R p.multiplicity)
+        (RatePartition.marginHeight (RatePartition.rateJetCap R p.multiplicity)
+          (RatePartition.partitionFiniteRatio R a d p.multiplicity)) d * (n : ℝ) ^ (d + 1) ∧
+      -- Every later base-field challenge outside the set works for every candidate.
+      ∀ z ∉ exceptional,
+        -- Ordinary degree includes the zero polynomial and requires `P.degree < k`.
+        ∀ P : F[X], P.degree < k →
+        -- The candidate must meet the integral agreement threshold on the batched word.
+        A ≤ (polynomialAgreementSet domain (powerBatchedWord values z) P).card →
+        -- Base-field constituents reproduce `P` and exactly its complete agreement set.
+        HasExactPowerAgreement domain values (RingHom.id F) k z P := by
+  let E := AlgebraicClosure F
+  let iota : F →+* E := algebraMap F E
+  obtain ⟨ex, hc, hg⟩ := exists_ratePartition_curve_exactPowerAgreement p hR hRa haone hd hn hk
+    hkR haA hAn
+    hℓ domain values iota hchar
+  obtain ⟨ex', hc', hg'⟩ :=
+    uniformExactPowerAgreement_of_extension domain values iota k A ex hg
+  exact ⟨ex', (Nat.cast_le.mpr hc').trans hc, hg'⟩
+
+open Classical in
+/-- A finite rate-partition parameter record bounds exceptional challenges for exact agreement
+on an affine line of received words. The challenge word is `i ↦ f i + z * g i`. Put
+`δ = a-R`, `ν = RatePartition.rateJetCap R p.multiplicity`,
+`γ = RatePartition.partitionFiniteRatio R a d p.multiplicity`, and
+`h = RatePartition.marginHeight ν γ`. One exceptional set has size at most
+
+`C_E * n^(d+1)`, where
+`C_E = h + 2^d * ν^(d+2) * (1/δ)^d * (h*(d+1)*(3d+5)/δ + 3)`.
+
+For each nonexceptional challenge, every close degree-`< k` polynomial `P` has witnesses
+`P₀,P₁ : F[X]`, each of degree below `k`, such that `P=P₀+zP₁`. The conclusion additionally
+identifies the entire agreement set of `P` with the positions where `P₀` agrees with `f` and
+`P₁` agrees with `g`. This full-set equality excludes accidental agreements created only by
+cancellation at `z`.
+-/
+theorem exists_ratePartition_line_exactCorrelatedPair
+    -- The received line, candidate, witnesses, and exceptional challenges all lie over `F`.
+    {F : Type u} [Field F]
+    -- Fix the rate data, derivative order, and integral code parameters.
+    {R a : ℝ} {d n k A : ℕ}
+    -- The record fixes the finite multiplicity, jet cap, ratio, and symbolic height.
+    (p : RatePartition.PartitionFiniteParameters R a d)
+    -- The fixed-order theorem assumes `0 < R < a < 1` and `d ≥ 500`.
+    (hR : 0 < R) (hRa : R < a) (haone : a < 1) (hd : 500 ≤ d)
+    -- The block length is beyond the finite threshold attached to `p`.
+    (hn : RatePartition.rateBlockThreshold R d p.multiplicity ≤ n)
+    -- Messages have dimension at least one, rate at most `R`, and agreement at least `a`.
+    (hk : 0 < k) (hkR : (k : ℝ) ≤ R * n) (haA : a * n ≤ A) (hAn : A ≤ n)
+    -- `domain` gives distinct evaluation points; `f` and `g` span the received line.
+    (domain : Fin n ↪ F) (f g : Fin n → F)
+    -- The positive characteristic, when present, exceeds `k-1`, `d`, and the jet cap.
+    (hchar : ringChar F = 0 ∨
+      max (max (k - 1) d) (RatePartition.rateJetCap R p.multiplicity) < ringChar F) :
+    -- A single exceptional set works for all subsequently quantified challenges and candidates.
+    ∃ exceptional : Finset F,
+      -- Its size is bounded by `C_E * n^(d+1)` at gap `a-R`.
+      (exceptional.card : ℝ) ≤ polynomialCurveProductAgreementConstant (a - R)
+        (RatePartition.rateJetCap R p.multiplicity)
+        (RatePartition.marginHeight (RatePartition.rateJetCap R p.multiplicity)
+          (RatePartition.partitionFiniteRatio R a d p.multiplicity)) d * (n : ℝ) ^ (d + 1) ∧
+      -- Every challenge outside the set is good for every candidate polynomial.
+      ∀ z ∉ exceptional,
+        -- Candidate messages use ordinary polynomial degree below `k`.
+        ∀ P : F[X], P.degree < k →
+        -- Enter the conclusion when `P` agrees with the challenge word in at least `A` places.
+        A ≤ (polynomialAgreementSet domain (fun i ↦ f i + z * g i) P).card →
+        -- Recover two base-field witnesses and equality of the full agreement sets.
+        HasExactCorrelatedPair domain f g (RingHom.id F) k z P := by
+  obtain ⟨ex, hc, hg⟩ :=
+    exists_ratePartition_baseCurve_exactPowerAgreement p hR hRa haone hd hn hk hkR haA hAn
+    (by norm_num : 0 < 1) domain ![f, g] hchar
+  refine ⟨ex, by simpa only [Nat.cast_one, one_mul] using hc, ?_⟩
+  intro z hz P hP hA
+  have hw : powerBatchedWord (ℓ := 1) ![f, g] z = (fun i ↦ f i + z * g i) := by
+    funext i
+    simp [powerBatchedWord, Fin.sum_univ_two]
+  have h := hg z hz P hP (by rwa [hw])
+  simpa using exactCorrelatedPair_of_powerAgreement_one domain ![f, g] (RingHom.id F) z P h
+open Classical in
+/-- A strict limiting rate condition selects one parameter record before the field and received
+line are chosen.
+
+The limiting gate is
+
+`Γ(R,a,d) = (27/20) * R * (d+1) / (6d)^(R/a) > 1`.
+
+From this strict surplus the theorem first chooses a finite parameter record for `(R, a, d)`.
+Consequently its multiplicity `m`, jet cap `ν`, finite ratio `γ_m`, symbolic height `h`, length
+threshold, and exceptional coefficient `C_E` all depend only on `(R,a,d)`. The field, block
+length, code dimension, agreement threshold, evaluation points, and received line are quantified
+after `p`.
+
+For every admissible later choice, the theorem returns one exceptional set before `z` and `P`.
+The final `HasExactCorrelatedPair` supplies degree-`< k` witnesses `P₀,P₁`, proves
+`P=P₀+zP₁`, and equates the candidate's complete agreement set with the common agreement set.
+The resulting line theorem works for every later field, block length, code, agreement threshold,
+evaluation domain and received line satisfying its hypotheses.
+-/
+theorem exists_ratePartition_line_exactCorrelatedPair_parameters
+    -- The real rate data and derivative order are fixed before any finite parameter search.
+    {R a : ℝ} {d : ℕ}
+    -- The fixed-order regime is `0 < R < a < 1` with `d ≥ 500`.
+    (hR : 0 < R) (hRa : R < a) (haone : a < 1) (hd : 500 ≤ d)
+    -- Strict limiting surplus makes the finite parameter search terminate.
+    (hgate : 1 < RatePartition.rateGamma R a d) :
+    -- This witness fixes every rate-partition constant solely from `(R,a,d)`.
+    ∃ p : RatePartition.PartitionFiniteParameters R a d,
+      -- The field and integral code parameters are chosen only after `p`.
+      ∀ (F : Type u) [Field F] (n k A : ℕ),
+      -- Require the selected length threshold and a positive message dimension.
+      RatePartition.rateBlockThreshold R d p.multiplicity ≤ n → 0 < k →
+      -- The realized rate is at most `R`, while the integral threshold realizes `a`.
+      (k : ℝ) ≤ R * n → a * n ≤ A → A ≤ n →
+      -- The statement is uniform over every distinct evaluation set and received line.
+      ∀ (domain : Fin n ↪ F) (f g : Fin n → F),
+      -- The positive characteristic clears the message, derivative, and jet degrees.
+      (ringChar F = 0 ∨
+        max (max (k - 1) d) (RatePartition.rateJetCap R p.multiplicity) < ringChar F) →
+      -- One set is chosen from the line before the challenge and candidate.
+      ∃ exceptional : Finset F,
+        -- The exact exceptional budget is `C_E * n^(d+1)` for the fixed parameter record.
+        (exceptional.card : ℝ) ≤ polynomialCurveProductAgreementConstant (a - R)
+          (RatePartition.rateJetCap R p.multiplicity)
+          (RatePartition.marginHeight (RatePartition.rateJetCap R p.multiplicity)
+            (RatePartition.partitionFiniteRatio R a d p.multiplicity)) d * (n : ℝ) ^ (d + 1) ∧
+        -- Every nonexceptional challenge works simultaneously for every close candidate.
+        ∀ z ∉ exceptional,
+          -- The candidate has ordinary degree below the message dimension.
+          ∀ P : F[X], P.degree < k →
+          -- At least `A` agreements trigger the exact-witness conclusion.
+          A ≤ (polynomialAgreementSet domain (fun i ↦ f i + z * g i) P).card →
+          -- The candidate is a witness-line point with exactly the common agreement set.
+          HasExactCorrelatedPair domain f g (RingHom.id F) k z P := by
+  have hdpos : 0 < d := by omega
+  have hlimit : 1 < (27 / 20 : ℝ) * R * (d + 1) *
+      Real.exp (-(R / a * Real.log (6 * (d : ℝ)))) := by
+    rw [← RatePartition.rateGamma_eq_exponential (rate := R) (agreement := a) hdpos]
+    exact hgate
+  obtain ⟨p⟩ :=
+    RatePartition.PartitionFiniteParameters.nonempty hR (hR.trans hRa) hdpos hlimit
+  exact ⟨p, fun _ _ _ _ _ hn hk hkR haA hAn domain f g hchar ↦
+    exists_ratePartition_line_exactCorrelatedPair p hR hRa haone hd hn hk hkR haA hAn domain f g
+      hchar⟩
+
+end ReedSolomon
