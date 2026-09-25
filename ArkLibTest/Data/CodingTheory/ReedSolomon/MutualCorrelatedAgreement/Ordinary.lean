@@ -249,6 +249,24 @@ example : ∃ exceptional : Finset ℂ, (exceptional.card : ℚ) ≤ 2 ∧
       differentialSpecialization, differentialSpecializationHom]) (by
       norm_num [polynomialAgreementSet, ordinaryEquationDomain])
   exact ⟨exceptional, hcard', z, hz, hpair⟩
+example : ∃ exceptional : Finset ℂ, (exceptional.card : ℚ) ≤ 1 ∧
+    ∃ z ∉ exceptional, HasExactPowerAgreement (ℓ := 1) ordinaryEquationDomain
+      (fun _ _ ↦ 0) (RingHom.id ℂ) 2 z 0 := by
+  classical
+  obtain ⟨exceptional, hcard, hgood⟩ := exists_exceptional_irreducibleOrdinaryPowerEquation
+    (ℓ := 1) ordinaryEquationDomain (fun _ _ ↦ 0) (RingHom.id ℂ) ordinaryEquation
+    1 0 2 (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (coeffNatDegreeLE_X (some (0 : Fin 1))) MvPolynomial.X_prime.irreducible (by simp)
+  have hcard' : (exceptional.card : ℚ) ≤ 1 := by
+    simpa [ordinaryEquation, ordinaryCurveFactorRaw] using hcard
+  have hcardNat : exceptional.card ≤ 1 := by exact_mod_cast hcard'
+  obtain ⟨z, -, hz⟩ := Finset.exists_mem_notMem_of_card_lt_card
+    (s := exceptional) (t := ({0, 1} : Finset ℂ))
+    (Nat.lt_of_le_of_lt hcardNat (by norm_num))
+  have hpower := hgood z hz 0 (by simp)
+    (by simp [ordinaryEquation, challengeSpecialization]) (by
+      norm_num [polynomialAgreementSet, powerBatchedWord])
+  exact ⟨exceptional, hcard', z, hz, hpower⟩
 
 example : (MvPolynomial.positiveDegreeFactorClasses (0 : Fin 1) assemblyQ).Nonempty ∧
     (∃ ex : Finset Unit, (ex.card : ℚ) ≤ ordinaryFactorRaw 0 1 0 1 0 ∧
