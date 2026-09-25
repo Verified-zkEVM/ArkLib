@@ -2097,6 +2097,20 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Firs
 
 The source `exists_exceptional_firstOrder_regularStages` is covered by the existing more general `exists_exceptional_firstOrder_regularCurveStages`; `exists_hybridERaw_eq_hybridERawAtDegree` by `exists_curveRetentionMinimum`; `hybridERawAtDegree_le_hybridEOptimizedRaw` by `HiddenDerivative.minFirstOrderExceptionCharge_le_maxMin`; and `regularSymbolicCurveMCADerivativeBoundTwo_eq_hybrid_stage` by `regularPowerBatchedDerivativeCappedBoundTwo_eq_hybridCurveStage`. `ringChar_eq_of_injective_fieldHom` remains a local proof step in the existing generalized regular-stage theorem, with no consumer needing a separate public helper.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/OrdinaryTail.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/OrdinaryTail.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`FirstOrderHybridDescent.hasOrdinaryTailTransfer` keeps its name. It proves that for every first-order hybrid descent of a symbolic equation `Q`, the order-zero tail satisfies `HasOrdinaryTailTransfer`, with coefficient height `coeffNatDegree Q` and charge `ordinaryTailCharge` at the residual jet budget `μ - e`. The proof splits on the budget: a positive budget uses `exists_exceptional_ordinaryEquation`, and a zero budget uses `PolynomialDifferential.exists_exceptional_jet_independent_content`.
+
+Adapted to the height-free descent `FirstOrderHybridDescent Q μ M`. The height parameter is removed and fixed to `coeffNatDegree Q`. `Q` is implicit because the descent determines it. The theorem takes arbitrary `[DecidableEq F] [DecidableEq E]` instances instead of the source's `open Classical in` statement, and replaces them internally by the classical ones via `Subsingleton.elim`. The source's `hybridOrdinaryRaw` and `hybridTheta` become `ordinaryTailCharge` and `agreementIncidenceRatio`. The tail premise of the raw and optimized first-order hybrid transfer theorems now follows from `1 ≤ D < A ≤ n` alone.
+
+`FirstOrderHybridDescent.tail_rootDegree_le` keeps its name but is placed in `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/HybridAgreementCounting.lean`, the owner of `FirstOrderHybridDescent`, and is listed in that module's `## Main statements`. The statement uses `jetDegree … 0`, which is definitionally `degreeOf (some 0)`, and the proof uses `jetDegree_le_total`, `JetPrefixPresentation.jetTotalDegree_equation` and `stage_jetTotalDegree_le`.
+
+The source's coefficient-height induction through iterated jet derivatives is replaced by the new general lemma `MvPolynomial.CoeffNatDegreeLE.iterate_pderiv` in `ArkLib/ToMathlib/MvPolynomial/PolynomialCoefficients.lean`. It also replaces an identical inline induction in `exists_exceptional_firstOrder_regularCurveStages` in `HybridCurveTransfer.lean`.
+
+Not ported: `FirstOrderHybridDescent.tail_challengeHeight_le`, because the descent has no height field; the height bound comes from `CoeffNatDegreeLE.iterate_pderiv` and `JetPrefixPresentation.natDegree_coeff_equation_le`. `exists_exceptional_ordinaryContent` is not ported because `PolynomialDifferential.exists_exceptional_jet_independent_content` is used directly.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/Certificates.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/CertificateList.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:

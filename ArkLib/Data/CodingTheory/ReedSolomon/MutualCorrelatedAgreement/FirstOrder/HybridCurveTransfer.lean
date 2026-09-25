@@ -173,15 +173,8 @@ theorem exists_exceptional_firstOrder_regularCurveStages
   have hdecE : instE = (fun a b : E ↦ Classical.propDecidable (a = b)) :=
     Subsingleton.elim _ _
   let h := coeffNatDegree Q
-  have hQheight : CoeffNatDegreeLE Q h := by
-    simpa [h] using coeffNatDegreeLE_coeffNatDegree Q
-  have hstageHeight (j : ℕ) :
-      CoeffNatDegreeLE (jetDerivative Q (1 : Fin 2) j) h := by
-    induction j with
-    | zero => simpa using hQheight
-    | succ j ih =>
-        rw [jetDerivative_succ]
-        exact ih.pderiv (some (1 : Fin 2))
+  have hstageHeight (j : ℕ) : CoeffNatDegreeLE (jetDerivative Q (1 : Fin 2) j) h :=
+    (coeffNatDegreeLE_coeffNatDegree Q).iterate_pderiv _ j
   let e := descent.actualDegree
   have heμ : e ≤ mu := by
     have hdegree := descent.stage_degree 0 (Nat.zero_le e)
