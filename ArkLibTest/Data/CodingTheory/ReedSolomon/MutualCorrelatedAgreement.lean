@@ -614,6 +614,41 @@ example : (positiveChallenges.card : ℚ) ≤ positiveDerivativeBound ∧
       (by norm_num [polynomialAgreementSet, positiveChallengeDomain,
         regularBoundConstantValues, powerBatchedWord])⟩
 
+private theorem positiveChallenge_no_correlatedPair :
+    ¬ HasExactCorrelatedPair positiveChallengeDomain (regularBoundValues 0)
+      (regularBoundValues 1) (RingHom.id MCAField) 1 0 0 := by
+  rintro ⟨⟨P₀, P₁⟩, hP₀, hP₁, -, hsets⟩
+  apply positiveChallenge_no_common ![P₀, P₁] ?_
+    (by simpa [commonCurveAgreementSet, commonPolynomialAgreementSet,
+      positiveChallengeDomain, regularBoundValues, polynomialAgreementSet] using hsets.symm)
+  intro t; fin_cases t <;> assumption
+/-- The ordinary two-message bound applies to the nonempty challenge set. -/
+example : positiveChallenges.Nonempty ∧ (positiveChallenges.card : ℚ) ≤ 2 := by
+  have hregularBound := finite_frobeniusRegularBadChallenges_card_le
+    (F := MCAField) (E := MCAField) (n := 2) (k := 1) (K := 1)
+    (domain := positiveChallengeDomain) (f := regularBoundValues 0)
+    (g := regularBoundValues 1) (ι := RingHom.id MCAField)
+    (roots := positiveChallengeDomain) (center := 0) (Q := componentEquation)
+    (p := 1) (e := 0) (τ := 2) (h := 0) (b := 1) (A := 2) (by simp)
+    (by norm_num) (by norm_num) (taylorExponentSufficient_two_mul 0 1)
+    (by norm_num) (by norm_num) (by norm_num)
+    (coeffNatDegreeLE_X (some (0 : Fin 1))) componentEquation_jetDegree
+    (by simp [jointInitialJetEquation, initialJetEquation, componentEquation])
+    (by simpa [jointInitialJetEquation, initialJetEquation, componentEquation,
+      componentIdeal, componentVariable] using componentIdeal_prime.ne_top)
+    positiveChallenges positiveChallengeWitness
+    (by simp [positiveChallenges, positiveChallengeWitness])
+    (by simp [positiveChallenges, positiveChallengeWitness, componentEquation,
+      challengeSpecialization, differentialSpecialization, differentialSpecializationHom])
+    (by simp [positiveChallenges, componentEquation, challengeSpecialization, separant,
+      jetEvaluation, polynomialJet])
+    (by intro z hz; obtain rfl := Finset.mem_singleton.mp hz; norm_num
+      [positiveChallengeDomain, regularBoundValues, positiveChallengeWitness,
+        polynomialAgreementSet])
+    (by simpa [positiveChallenges, positiveChallengeWitness] using
+      positiveChallenge_no_correlatedPair)
+  exact ⟨by simp [positiveChallenges], by
+    convert hregularBound using 1; norm_num [positiveChallenges]⟩
 private def incidencePoint : Option (Fin 2) → MCAField := fun _ ↦ 0
 
 private theorem incidencePoint_regular :

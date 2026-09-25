@@ -2371,6 +2371,10 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordi
 
 `exists_exceptional_frobeniusPowerRegularSolutions_at` keeps its name. It now uses `CoeffNatDegreeLE` and `jetTotalDegree`, and does not require `A ≤ n`. A historical acceptance example specialized the arbitrary-threshold theorem over `ℂ` and showed that zero lies in an exceptional set of cardinality at most one; it is not in the current consolidated suite. The fixed-threshold `exists_exceptional_frobeniusPowerRegularSolutions` is covered by the theorem at `L = k`; no wrapper was added.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerTupleRegularBound.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Renamed `finite_frobeniusRegularBadWitnesses_card_le` to `finite_frobeniusRegularBadChallenges_card_le`. This public specialization states the two-message correlated-pair bound, omits the redundant `A ≤ n` assumption, and uses current API interfaces.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerTupleSeparableBound.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/PolynomialCurve/Separable.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -5174,6 +5178,10 @@ A historical acceptance example applied `exists_admissibleChartTuple_of_primeTay
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/SharpGeneralEquation.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 Historical acceptance cases invoked the sharp fixed-center and terminal-recognition bounds and checked finite regular and exceptional bad-challenge sets. The current consolidated suite retains one nonempty derivative-capped bad-challenge bound instance, as summarized above.
+
+Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Kept the nonempty two-message ordinary regular-bound instance. Added concrete checks applying `finite_powerBatchedBadChallenges_card_le_derivativeCapped_of_exponent`, `exists_exceptional_regularPowerBatchedAgreement_derivativeCapped_of_exponent`, and `exists_exceptional_frobeniusPowerSeparableSolutions_at`, with their cardinal bounds, to the challenge set `{0}` over `ℂ`. Removed the standalone finite polynomial-tuple collision example to meet the shared file limit; the stronger root-avoiding specialization example remains.
 
 ## `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder.lean`
 
