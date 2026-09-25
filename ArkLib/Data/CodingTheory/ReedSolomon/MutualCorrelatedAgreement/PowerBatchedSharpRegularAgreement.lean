@@ -47,11 +47,10 @@ of [DKTZ26].
 * The Taylor numerators, including high cuts, and agreement equations fit one common bidegree
   rectangle. The initial equation uses `initialJetEquation_mem_restrictBidegree` in its tighter
   `(h, v)` rectangle.
-* `regularPowerBatchedCutDerivativeDegree` and
-  `jointInitialJetSeparant_mem_regularPowerBatchedCutDerivativeBidegree` give the derivative cap
-  and the first-order separant support bound.
-* `finite_powerBatched_regular_points_off_admissible_graphs_card_le_sharp_of_exponent`
-  bounds regular points outside admissible tuple graphs at arbitrary derivative order.
+* `finite_powerBatched_regular_points_off_admissible_graphs_card_le_sharp_of_terminal_recognition`
+  accepts terminal graph recognition and only requires `k ≤ A`;
+  `finite_powerBatched_regular_points_off_admissible_graphs_card_le_sharp_of_exponent` derives
+  recognition internally when `k ≤ L`.
 * `finite_powerBatchedBadChallenges_card_le_sharp_of_exponent` combines incidence and tuple
   counting; `exists_exceptional_regularPowerBatchedAgreement_sharp_of_exponent` gives one
   exceptional set for all regular bad challenges.
@@ -120,10 +119,6 @@ def regularPowerBatchedCutChallengeDegree (ℓ K h : ℕ) (τ : ℕ := 2 * K) : 
 /-- Total-jet-degree bound of the common Taylor rectangle at exponent `τ`. -/
 def regularPowerBatchedCutJetDegree (K v : ℕ) (τ : ℕ := 2 * K) : ℕ := 1 + τ * (v - 1)
 
-/-- First-derivative-degree cap of the common Taylor cuts at exponent `τ`. -/
-def regularPowerBatchedCutDerivativeDegree (K v d : ℕ) (τ : ℕ := 2 * K) : ℕ :=
-  min (regularPowerBatchedCutJetDegree K v (τ := τ)) (τ * (d - 1) + (K - 1))
-
 /-- Mixed affine degree of the pulled-back first-order initial hypersurface. -/
 def regularPowerBatchedInitialMixedDegreeTwo (ℓ K v h : ℕ) (τ : ℕ := 2 * K) : ℕ :=
   h * regularPowerBatchedCutJetDegree K v (τ := τ) ^ 2 +
@@ -187,54 +182,29 @@ theorem jointTaylorAgreementEquation_mem_regularPowerBatchedCutBidegree_of_expon
       taylorAgreementEquationOver_mem_restrictBidegree center x y Q ℓ h v K τ
         hτ hy hheight hv hjet
 
-/-- The first-order initial separant fits the common derivative-capped cut rectangle. -/
-theorem jointInitialJetSeparant_mem_regularPowerBatchedCutDerivativeBidegree
-    (center : E) (Q : DifferentialPolynomial E[X] 1)
-    (ℓ K h v d τ : ℕ) (hτpos : 0 < τ)
-    (hheight : CoeffNatDegreeLE Q h) (hjet : jetTotalDegree Q ≤ v)
-    (hderiv : Q.degreeOf (some 1) ≤ d) :
-    jointInitialJetSeparant center Q ∈
-      restrictCappedBidegree (Fin 2) E 1
-        (regularPowerBatchedCutChallengeDegree ℓ K h (τ := τ))
-        (regularPowerBatchedCutJetDegree K v (τ := τ))
-        (regularPowerBatchedCutDerivativeDegree K v d (τ := τ)) := by
-  have hbase := initialJetSeparant_mem_restrictCappedBidegree center Q h v d hheight hjet hderiv
-  have hchall : h ≤ regularPowerBatchedCutChallengeDegree ℓ K h (τ := τ) := by
-    unfold regularPowerBatchedCutChallengeDegree
-    exact (Nat.le_mul_of_pos_left h hτpos).trans (Nat.le_add_left _ _)
-  have hjet' : v - 1 ≤ regularPowerBatchedCutJetDegree K v (τ := τ) := by
-    unfold regularPowerBatchedCutJetDegree
-    calc
-      v - 1 ≤ τ * (v - 1) := Nat.le_mul_of_pos_left _ hτpos
-      _ ≤ 1 + τ * (v - 1) := Nat.le_add_left _ _
-  have hderiv' : d - 1 ≤ τ * (d - 1) + (K - 1) := by
-    have hmul : d - 1 ≤ τ * (d - 1) := Nat.le_mul_of_pos_left _ hτpos
-    omega
-  have hcap : min (v - 1) (d - 1) ≤
-      regularPowerBatchedCutDerivativeDegree K v d (τ := τ) := by
-    exact min_le_min hjet' (by simpa only [regularPowerBatchedCutDerivativeDegree] using hderiv')
-  change (optionEquivRight E (Fin 2)).symm
-      (initialJetSeparant (Polynomial.C center) Q) ∈
-    restrictCappedBidegree (Fin 2) E 1
-      (regularPowerBatchedCutChallengeDegree ℓ K h (τ := τ))
-      (regularPowerBatchedCutJetDegree K v (τ := τ))
-      (regularPowerBatchedCutDerivativeDegree K v d (τ := τ))
-  rw [mem_restrictCappedBidegree] at hbase ⊢
-  intro m hm
-  have hm' := hbase m hm
-  exact ⟨hm'.1.trans hchall, hm'.2.1.trans hjet', hm'.2.2.trans hcap⟩
-
 /-- Regular points outside admissible tuple graphs satisfy the sharp bidegree incidence bound at
-arbitrary derivative order and every sufficient Taylor exponent. -/
-theorem finite_powerBatched_regular_points_off_admissible_graphs_card_le_sharp_of_exponent
+arbitrary derivative order and every positive sufficient Taylor exponent, given terminal
+recognition of the retained components. -/
+theorem
+    finite_powerBatched_regular_points_off_admissible_graphs_card_le_sharp_of_terminal_recognition
     {r : ℕ} [DecidableEq F] [IsAlgClosed E]
     (domain : Fin n ↪ F) (w : Fin (ℓ + 1) → Fin n → F) (iota : F →+* E)
     (center : E) (Q : DifferentialPolynomial E[X] r) (K k L A v h τ : ℕ)
     (hτ : TaylorExponentSufficient r K τ) (hτpos : 0 < τ)
-    (hK : r < K) (hkK : k ≤ K) (hkL : k ≤ L) (hLA : L ≤ A) (hAn : A ≤ n)
+    (hK : r < K) (hkK : k ≤ K) (hkA : k ≤ A) (hLA : L ≤ A) (hAn : A ≤ n)
     (hD : 0 < ℓ + h) (hv : 0 < v)
     (hinit : jointInitialJetEquation center Q ≠ 0)
     (hjet : jetTotalDegree Q ≤ v) (hheight : CoeffNatDegreeLE Q h)
+    (hterminal : ∀ J : Ideal (MvPolynomial (Option (Fin (r + 1))) E),
+      J.IsPrime → jointInitialJetSeparant center Q ∉ J →
+      jointInitialJetEquation center Q ∈ J →
+      (∀ l : Fin K, k ≤ l.val → jointCommonTaylorNumerator center Q τ l ∈ J) →
+      0 < (affineHilbertPolynomial J).natDegree →
+      L ≤ {i : Fin n | jointTaylorAgreementEquation center Q K τ
+        (Polynomial.C (iota (domain i)))
+        (powerBatchedCoordinate fun t ↦ iota (w t i)) ∈ J}.ncard →
+      {x | x ∈ zeroLocus E J ∧ aeval x (jointInitialJetSeparant center Q) ≠ 0} ⊆
+        admissibleChartTupleGraphLocus domain w iota center Q K k L τ)
     (S : Finset (Option (Fin (r + 1)) → E))
     (hS : ∀ x ∈ S, aeval x (jointInitialJetEquation center Q) = 0 ∧
       aeval x (jointInitialJetSeparant center Q) ≠ 0 ∧
@@ -349,22 +319,23 @@ theorem finite_powerBatched_regular_points_off_admissible_graphs_card_le_sharp_o
       (fun i ↦ powerBatchedCoordinate (fun t ↦ iota (w t i)))
     simpa only [cuts, Function.Embedding.trans_apply,
       Function.Embedding.coeFn_mk] using hcomponent
-  have hterminal : ∀ J : Ideal (MvPolynomial (Option (Fin (r + 1))) E),
+  have hterminal' : ∀ J : Ideal (MvPolynomial (Option (Fin (r + 1))) E),
       J.IsPrime → s ∉ J → g ∈ J → (∀ f ∈ high, f ∈ J) →
       0 < (affineHilbertPolynomial J).natDegree →
       L ≤ ({i | cuts i ∈ J}.ncard) →
         {x | x ∈ zeroLocus E J ∧ aeval x s ≠ 0} ⊆
           admissibleChartTupleGraphLocus domain w iota center Q K k L τ := by
-    intro J hJ hsJ hgJ hhighJ hdJ hcutsJ x hx
-    have hsubset := principalOpen_subset_admissibleChartTupleGraphLocus
-      domain w iota center Q K k L τ hK hkL hτ J hJ hsJ hdJ hgJ
-      (fun l hl ↦ by
-        apply hhighJ
-        simp only [high, sharpHighCuts, List.mem_map, Finset.mem_toList,
-          Finset.mem_filter, Finset.mem_univ, true_and]
-        exact ⟨l, hl, rfl⟩)
-      (by simpa only [cuts] using hcutsJ)
-    exact hsubset hx
+    intro J hJ hsJ hgJ hhighJ hdJ hcutsJ
+    apply hterminal J hJ
+    · simpa only [s] using hsJ
+    · simpa only [g] using hgJ
+    · intro l hl
+      apply hhighJ
+      simp only [high, sharpHighCuts, List.mem_map, Finset.mem_toList,
+        Finset.mem_filter, Finset.mem_univ, true_and]
+      exact ⟨l, hl, rfl⟩
+    · exact hdJ
+    · simpa only [cuts] using hcutsJ
   have hbound : (S.card : ℚ) ≤
       affineDegree ((Ideal.span {g}).comap
         (bidegreeMap (Fin (r + 1)) E
@@ -373,9 +344,9 @@ theorem finite_powerBatched_regular_points_off_admissible_graphs_card_le_sharp_o
         hybridDimensionSensitiveIncidenceProduct n A L k 1
           (min ((affineHilbertPolynomial (Ideal.span {g})).natDegree - 1) k + 1) := by
     apply bidegreeHypersurface_incidence_off_excluded_hybrid
-      ha hb hLA (hkL.trans hLA) hAn g s hinit hproper hinitRect hsepRect high hhighRect
+      ha hb hLA hkA hAn g s hinit hproper hinitRect hsepRect high hhighRect
       cuts hcutsRect (admissibleChartTupleGraphLocus domain w iota center Q K k L τ)
-      hdim hterminal S ?_ ?_
+      hdim hterminal' S ?_ ?_
     · intro x hx
       refine ⟨(hS x hx).1, (hS x hx).2.1, ?_, (hS x hx).2.2.2⟩
       intro f hf
@@ -416,7 +387,7 @@ theorem finite_powerBatched_regular_points_off_admissible_graphs_card_le_sharp_o
         hybridDimensionSensitiveIncidenceProduct n A L k 1 (min r k + 1) :=
       mul_le_mul_of_nonneg_right hdegree (by
         rw [hybridDimensionSensitiveIncidenceProduct_eq_factor_mul n A L k 1
-          (min r k) (hkL.trans hLA) hAn (by omega)]
+          (min r k) hkA hAn (by omega)]
         exact mul_nonneg (div_nonneg (by positivity) (by positivity))
           (dimensionSensitiveIncidenceProduct_nonneg n A k 1 (min r k)))
     _ ≤ (regularPowerBatchedInitialMixedDegree r ℓ K v h (τ := τ) : ℚ) *
@@ -426,8 +397,55 @@ theorem finite_powerBatched_regular_points_off_admissible_graphs_card_le_sharp_o
         (by
           simpa only [Nat.mul_one, Nat.cast_one, Nat.cast_mul] using
             hybridDimensionSensitiveIncidenceProduct_min_le n A L k 1 r
-              (hkL.trans hLA) hAn one_pos) (by positivity)
+              hkA hAn one_pos) (by positivity)
     _ = _ := by ring
+
+/-- Regular points outside admissible tuple graphs satisfy the sharp bidegree incidence bound at
+arbitrary derivative order and every positive sufficient Taylor exponent. The terminal graph
+recognition premise is discharged internally when `k ≤ L`. -/
+theorem finite_powerBatched_regular_points_off_admissible_graphs_card_le_sharp_of_exponent
+    {r : ℕ} [DecidableEq F] [IsAlgClosed E]
+    (domain : Fin n ↪ F) (w : Fin (ℓ + 1) → Fin n → F) (iota : F →+* E)
+    (center : E) (Q : DifferentialPolynomial E[X] r) (K k L A v h τ : ℕ)
+    (hτ : TaylorExponentSufficient r K τ) (hτpos : 0 < τ)
+    (hK : r < K) (hkK : k ≤ K) (hkL : k ≤ L) (hLA : L ≤ A) (hAn : A ≤ n)
+    (hD : 0 < ℓ + h) (hv : 0 < v)
+    (hinit : jointInitialJetEquation center Q ≠ 0)
+    (hjet : jetTotalDegree Q ≤ v) (hheight : CoeffNatDegreeLE Q h)
+    (S : Finset (Option (Fin (r + 1)) → E))
+    (hS : ∀ x ∈ S, aeval x (jointInitialJetEquation center Q) = 0 ∧
+      aeval x (jointInitialJetSeparant center Q) ≠ 0 ∧
+      (∀ l : Fin K, k ≤ l.val →
+        aeval x (jointCommonTaylorNumerator center Q τ l) = 0) ∧
+      x ∉ admissibleChartTupleGraphLocus domain w iota center Q K k L τ)
+    (hA : ∀ x ∈ S, A ≤ {i | aeval x (jointTaylorAgreementEquation center Q K τ
+      (Polynomial.C (iota (domain i)))
+      (powerBatchedCoordinate (fun t ↦ iota (w t i)))) = 0}.ncard) :
+    (S.card : ℚ) ≤ regularPowerBatchedInitialMixedDegree r ℓ K v h (τ := τ) *
+      (((n - L + 1 : ℕ) : ℚ) / ((A - L + 1 : ℕ) : ℚ)) *
+        dimensionSensitiveIncidenceProduct n A k 1 r := by
+  have hterminal : ∀ J : Ideal (MvPolynomial (Option (Fin (r + 1))) E),
+      J.IsPrime → jointInitialJetSeparant center Q ∉ J →
+      jointInitialJetEquation center Q ∈ J →
+      (∀ l : Fin K, k ≤ l.val → jointCommonTaylorNumerator center Q τ l ∈ J) →
+      0 < (affineHilbertPolynomial J).natDegree →
+      L ≤ {i : Fin n | jointTaylorAgreementEquation center Q K τ
+        (Polynomial.C (iota (domain i)))
+        (powerBatchedCoordinate fun t ↦ iota (w t i)) ∈ J}.ncard →
+      {x | x ∈ zeroLocus E J ∧ aeval x (jointInitialJetSeparant center Q) ≠ 0} ⊆
+        admissibleChartTupleGraphLocus domain w iota center Q K k L τ := by
+    intro J hJ hsJ hgJ hhighJ hdJ hcutsJ
+    apply principalOpen_subset_admissibleChartTupleGraphLocus
+      domain w iota center Q K k L τ hK hkL hτ J hJ
+    · exact hsJ
+    · exact hdJ
+    · exact hgJ
+    · exact hhighJ
+    · exact hcutsJ
+  exact
+    finite_powerBatched_regular_points_off_admissible_graphs_card_le_sharp_of_terminal_recognition
+    domain w iota center Q K k L A v h τ hτ hτpos hK hkK (hkL.trans hLA) hLA hAn hD hv
+    hinit hjet hheight hterminal S hS hA
 
 /-- Regular points outside admissible tuple graphs satisfy the first-order bidegree incidence
 bound at every sufficient Taylor exponent. -/
@@ -683,8 +701,8 @@ theorem finite_powerBatchedBadChallenges_card_le_of_off_graph_bound_of_exponent
   exact hcoverQ.trans (add_le_add hoffbound hexcbound)
 
 open Classical in
-/-- The exact fixed-center sharp agreement bound at arbitrary derivative order and a sufficient
-Taylor exponent. -/
+/-- The exact fixed-center sharp agreement bound at arbitrary derivative order and a positive
+sufficient Taylor exponent. -/
 theorem finite_powerBatchedBadChallenges_card_le_sharp_of_exponent
     {r : ℕ} [IsAlgClosed E]
     (domain : Fin n ↪ F) (w : Fin (ℓ + 1) → Fin n → F) (iota : F →+* E)
@@ -884,7 +902,7 @@ theorem finite_regularPowerBatchedBadChallenges_card_le_of_fixed_center_of_expon
 
 open Classical in
 /-- Every finite set of regular bad challenges satisfies the sharp dimension-sensitive bound at
-arbitrary derivative order and a sufficient Taylor exponent. -/
+arbitrary derivative order and a positive sufficient Taylor exponent. -/
 theorem finite_regularPowerBatchedBadChallenges_card_le_sharp_of_exponent
     {r : ℕ} [IsAlgClosed E]
     (domain : Fin n ↪ F) (w : Fin (ℓ + 1) → Fin n → F) (iota : F →+* E)
@@ -907,7 +925,7 @@ theorem finite_regularPowerBatchedBadChallenges_card_le_sharp_of_exponent
 
 open Classical in
 /-- A single sharply bounded exceptional set works for every regular order-`r` solution at a
-sufficient Taylor exponent. -/
+positive sufficient Taylor exponent. -/
 theorem exists_exceptional_regularPowerBatchedAgreement_sharp_of_exponent
     {r : ℕ} [IsAlgClosed E]
     (domain : Fin n ↪ F) (w : Fin (ℓ + 1) → Fin n → F) (iota : F →+* E)

@@ -700,16 +700,17 @@ private abbrev flat (p : MvPolynomial (Fin 2) (Polynomial ℚ)) :=
   (optionEquivRight ℚ (Fin 2)).symm p
 private abbrev rect (h v : ℕ) := restrictBidegree (Fin 2) ℚ h v
 example : flat (initialJetEquation (Polynomial.C 0) recursiveEq) ∈ rect 1 2 ∧
-    flat (initialJetSeparant (Polynomial.C 0) recursiveEq) ∈ rect 1 1 ∧
+    flat (initialJetSeparant (Polynomial.C 0) recursiveEq) ∈
+      restrictCappedBidegree (Fin 2) ℚ (Fin.last 1) 1 1 1 ∧
     flat (initialJetEquation (Polynomial.C 0) recursiveEq) ∈
       restrictCappedBidegree (Fin 2) ℚ 1 1 2 2 ∧
     (initialJetEquation (Polynomial.C 0) recursiveEq).degreeOf (Fin.last 1) ≤ 2 := by
   exact ⟨initialJetEquation_mem_restrictBidegree 0 recursiveEq 1 2 recursiveHeight
-    recursiveJet_le, ⟨initialJetSeparant_mem_restrictBidegree 0 recursiveEq 1 2 recursiveHeight
-    recursiveJet_le, ⟨initialJetEquation_mem_restrictCappedBidegree 0 recursiveEq 1 2 2
-    recursiveHeight recursiveJet_le recursiveDerivativeDegree,
+    recursiveJet_le, ⟨initialJetSeparant_mem_restrictCappedBidegree 0 recursiveEq 1 2 2
+      recursiveHeight recursiveJet_le recursiveDerivativeDegree,
+    ⟨initialJetEquation_mem_restrictCappedBidegree 0 recursiveEq 1 2 2
+      recursiveHeight recursiveJet_le recursiveDerivativeDegree,
     (degreeOf_initialJetEquation_le _ _).trans recursiveDerivativeDegree⟩⟩⟩
-
 example : ((optionEquivRight ℚ (Fin 2)).symm
       (taylorAgreementEquationOver (F := ℚ) (Polynomial.C 0) recursiveEq 1
         (Polynomial.C 1) (0 : Polynomial ℚ) (τ := 6)) ∈
@@ -728,7 +729,6 @@ example : ((optionEquivRight ℚ (Fin 2)).symm
     (by simpa using (degreeOf_taylorAgreementEquationOver_firstOrder (F := ℚ) (Polynomial.C 0)
       (Polynomial.C 1) (Polynomial.C 0) recursiveEq 2 1 6 (by intro l; omega) (by norm_num)
       recursiveDerivativeDegree))⟩
-
 /-- For `Y₁` at the regular jet `(1, 0)`, the symbolic cuts force coefficient `1` to vanish. -/
 example :
     (Polynomial.taylor (0 : ℚ)
