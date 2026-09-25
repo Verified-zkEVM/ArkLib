@@ -16,12 +16,16 @@ The order-zero tail of a first-order hybrid descent satisfies the ordinary-tail 
 interface. Its `Y₀` degree is at most the residual jet budget `mu - e`. When that budget is
 positive, the exceptional-set theorem for ordinary equations applies. When it is zero, the tail
 is independent of its jet, and outside at most `coeffNatDegree Q` challenges it has no
-specialized root.
+specialized root. For power-batched words of polynomial curves, the tail satisfies the
+free-retention bound `hybridCurveTail` at every retention threshold.
 
 ## Main statements
 
 * `ReedSolomon.HiddenDerivative.FirstOrderHybridDescent.hasOrdinaryTailTransfer`: the tail of
   every first-order hybrid descent satisfies `ReedSolomon.HasOrdinaryTailTransfer`.
+* `ReedSolomon.HiddenDerivative.FirstOrderHybridDescent.exists_exceptional_ordinaryCurveTail`:
+  the tail has one exceptional set of size at most `hybridCurveTail` outside which close roots
+  have exact power agreement with a polynomial curve.
 
 ## References
 
@@ -69,5 +73,45 @@ theorem HiddenDerivative.FirstOrderHybridDescent.hasOrdinaryTailTransfer
     simp only [b, hb, ↓reduceIte]
     convert hcardReal using 1
     simp [ordinaryFactorRaw, agreementIncidenceRatio, h, b]
+
+/-- Let `Q` have coefficient height at most `h`, and let `e` be the actual degree of a
+first-order hybrid descent of `Q`. For `0 < D, ell` and every retention threshold `D < L ≤ A`,
+the order-zero tail has one exceptional set of size at most
+`hybridCurveTail n D ell (mu - e) h A L`. Outside it, every degree-`< D + 1` root of the
+specialized tail with at least `A` agreements with the power-batched word has exact power
+agreement. -/
+theorem HiddenDerivative.FirstOrderHybridDescent.exists_exceptional_ordinaryCurveTail
+    {F E : Type*} [Field F] [Field E] [instF : DecidableEq F] [instE : DecidableEq E]
+    [IsAlgClosed E] {n D A L h mu M ell : ℕ} (domain : Fin n ↪ F)
+    (values : Fin (ell + 1) → Fin n → F) (iota : F →+* E)
+    {Q : DifferentialPolynomial E[X] 1} (descent : FirstOrderHybridDescent Q mu M)
+    (hheight : CoeffNatDegreeLE Q h) (hell : 0 < ell) (hD : 1 ≤ D) (hDL : D < L)
+    (hLA : L ≤ A) :
+    ∃ exceptional : Finset E,
+      (exceptional.card : ℝ) ≤ hybridCurveTail n D ell (mu - descent.actualDegree) h A L ∧
+      ∀ z ∉ exceptional, ∀ P : E[X], P.degree < D + 1 →
+        A ≤ (polynomialAgreementSet (domain.trans ⟨iota, iota.injective⟩)
+          (powerBatchedWord (fun t i ↦ iota (values t i)) z) P).card →
+        differentialSpecialization (challengeSpecialization descent.tail.equation z) P = 0 →
+        HasExactPowerAgreement domain values iota (D + 1) z P := by
+  obtain rfl : instF = fun a b ↦ Classical.propDecidable (a = b) := Subsingleton.elim _ _
+  obtain rfl : instE = fun a b ↦ Classical.propDecidable (a = b) := Subsingleton.elim _ _
+  let b := mu - descent.actualDegree
+  have htailHeight : CoeffNatDegreeLE descent.tail.equation h :=
+    descent.tail.natDegree_coeff_equation_le (hheight.iterate_pderiv _ descent.actualDegree)
+  have hdegree : descent.tail.equation.degreeOf (some 0) ≤ b := descent.tail_rootDegree_le
+  rcases Nat.eq_zero_or_pos b with hb | hb
+  · obtain ⟨exceptional, hcard, hgood⟩ := exists_exceptional_jet_independent_content
+      descent.tail.equation descent.tail_nonzero (by omega) htailHeight
+    refine ⟨exceptional, ?_, fun z hz P _ _ hroot ↦ (hgood z hz P hroot).elim⟩
+    rw [hybridCurveTail, show mu - descent.actualDegree = 0 from hb,
+      ordinaryUnifiedPowerFactorAtOrHeight_zero]
+    exact_mod_cast hcard
+  · obtain ⟨exceptional, hcard, hgood⟩ := exists_exceptional_ordinaryPowerEquation_unifiedAt
+      domain values iota descent.tail.equation D h b L A descent.tail_nonzero (by omega) hell
+      hb hDL hLA htailHeight hdegree
+    refine ⟨exceptional, ?_, fun z hz P hP hagree hroot ↦ hgood z hz P hP hroot hagree⟩
+    rw [hybridCurveTail, ordinaryUnifiedPowerFactorAtOrHeight_of_pos _ _ _ _ _ _ _ hb]
+    exact_mod_cast hcard
 
 end ReedSolomon
