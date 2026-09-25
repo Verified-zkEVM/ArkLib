@@ -506,7 +506,7 @@ theorem closePolynomialSet_finite_and_card_le_finiteLength_of_certificate
     (columns : Fin N → SourceColumn 1)
     (cert : FirstOrderSymbolicCertificate.{u, u} (F := F)
       D A m M mu k h domain received (fun _ ↦ 0) columns)
-    (hn : 2 ≤ n) (hk : 2 ≤ k) (hkn : k ≤ n) (hkA : k ≤ A) (hAn : A ≤ n)
+    (hk : 2 ≤ k) (hkA : k ≤ A) (hAn : A ≤ n)
     (hM : 1 ≤ M) (hMmu : M ≤ mu)
     (hchar : ringChar F = 0 ∨ max (k - 1) M < ringChar F)
     (hC : 1 ≤ C) (heta : 0 < eta) (hsOne : finiteLengthSlack eta n ≤ 1)
@@ -518,6 +518,11 @@ theorem closePolynomialSet_finite_and_card_le_finiteLength_of_certificate
   let T := closePolynomialSet domain received k A
   let lambda : ℝ := ((n - k + 1 : ℕ) : ℝ) / (A - k + 1 : ℕ)
   let bound : ℝ := 7 * C ^ 3 * n / finiteLengthSlack eta n ^ 2
+  have hkn : k ≤ n := hkA.trans hAn
+  have hn : 2 ≤ n := hk.trans hkn
+  have hnPos : 1 ≤ n := by omega
+  have hDPos : 1 ≤ k - 1 := by omega
+  have hDn : k - 1 ≤ n := (Nat.sub_le _ _).trans hkn
   have hlambda0 : 0 ≤ lambda := by
     dsimp only [lambda]
     positivity
@@ -529,8 +534,8 @@ theorem closePolynomialSet_finite_and_card_le_finiteLength_of_certificate
       domain received columns cert hk hkA hAn hMmu hchar S hS
     apply hraw.trans
     have hnumeric := squarefreeListExpression_le_finiteLength
-      hC heta (show 1 ≤ n by omega) hsOne (show 1 ≤ k - 1 by omega)
-      (show k - 1 ≤ n by omega) hM hMmu hlambda0 (by simpa only [lambda] using hlambda) hmu
+      hC heta hnPos hsOne hDPos hDn hM hMmu hlambda0
+      (by simpa only [lambda] using hlambda) hmu
     simpa only [lambda, bound, show k - 1 + 1 = k by omega, mul_div_assoc] using hnumeric
   have hfinite : T.Finite := closePolynomialSet_finite domain received hkA
   refine ⟨hfinite, ?_⟩
@@ -549,7 +554,7 @@ theorem closePolynomialSet_finite_and_card_le_inv_eta_of_certificate
     (columns : Fin N → SourceColumn 1)
     (cert : FirstOrderSymbolicCertificate.{u, u} (F := F)
       D A m M mu k h domain received (fun _ ↦ 0) columns)
-    (hn : 2 ≤ n) (hk : 2 ≤ k) (hkn : k ≤ n) (hkA : k ≤ A) (hAn : A ≤ n)
+    (hk : 2 ≤ k) (hkA : k ≤ A) (hAn : A ≤ n)
     (hM : 1 ≤ M) (hMmu : M ≤ mu)
     (hchar : ringChar F = 0 ∨ max (k - 1) M < ringChar F)
     (hC : 1 ≤ C) (heta : 0 < eta) (hsOne : finiteLengthSlack eta n ≤ 1)
@@ -560,7 +565,7 @@ theorem closePolynomialSet_finite_and_card_le_inv_eta_of_certificate
         7 * C ^ 3 * n / eta ^ 2 := by
   obtain ⟨hfinite, hcard⟩ :=
     closePolynomialSet_finite_and_card_le_finiteLength_of_certificate
-      domain received columns cert hn hk hkn hkA hAn hM hMmu hchar hC heta hsOne
+      domain received columns cert hk hkA hAn hM hMmu hchar hC heta hsOne
         hlambda hmu
   refine ⟨hfinite, hcard.trans ?_⟩
   exact div_finiteLengthSlack_sq_le_div_eta_sq

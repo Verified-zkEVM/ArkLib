@@ -28,7 +28,7 @@ The density and height bounds are stated on the branch where the derivative rati
 * `finiteLengthDensityMargin_pos` and `finiteLength_count_gap` give a positive finite surplus.
 * `finiteLengthMultiplicity_le_inv_slack` and `finiteLengthJetDegree_le_inv_slack` bound the
   literal interpolation parameters.
-* The challenge-height bounds with `_of_count_gap` take a finite surplus as a premise.
+* `finiteLengthChallengeHeight_le_inv_slack_sq_of_count_gap` takes a finite surplus as a premise.
 * `finiteLengthChallengeHeight_le_common_inv_slack_sq` bounds the exact challenge height.
 
 ## References
@@ -106,7 +106,7 @@ theorem finiteLengthRate_eq {rho : ℝ} {n : ℕ} (hn : 0 < n) :
 
 /-- The finite rate is at least half the fixed rate when `rho * n ≥ 2`. -/
 theorem half_rate_le_finiteLengthRate {rho : ℝ} {n : ℕ}
-    (_hrho : 0 < rho) (hn : (2 : ℝ) ≤ rho * n) :
+    (hn : (2 : ℝ) ≤ rho * n) :
     rho / 2 ≤ finiteLengthRate rho n := by
   have hn0 : (0 : ℝ) < n := by
     by_contra h
@@ -123,7 +123,7 @@ theorem half_rate_le_finiteLengthRate {rho : ℝ} {n : ℕ}
 theorem finiteLengthRate_pos {rho : ℝ} {n : ℕ}
     (hrho : 0 < rho) (hn : (2 : ℝ) ≤ rho * n) :
     0 < finiteLengthRate rho n := by
-  exact (half_pos hrho).trans_le (half_rate_le_finiteLengthRate hrho hn)
+  exact (half_pos hrho).trans_le (half_rate_le_finiteLengthRate hn)
 
 /-- A rate-length product of at least two forces positive block length. -/
 theorem length_pos_of_two_le_rate_mul_length {rho : ℝ} {n : ℕ}
@@ -303,12 +303,6 @@ def finiteLengthHeightBoundConstant (rho : ℝ) : ℝ :=
 def finiteLengthParameterBoundConstant (rho : ℝ) : ℝ :=
   max 1 (max (finiteLengthMultiplicityBoundConstant rho)
     (max (finiteLengthJetBoundConstant rho) (finiteLengthHeightBoundConstant rho)))
-
-/-- The common parameter-bound constant is at least one. -/
-theorem one_le_finiteLengthParameterBoundConstant (rho : ℝ) :
-    1 ≤ finiteLengthParameterBoundConstant rho := by
-  unfold finiteLengthParameterBoundConstant
-  exact le_max_left _ _
 
 /-- The finite-length slack is below one under the stated rate and length guards. -/
 theorem finiteLengthSlack_lt_one_of_rate
@@ -508,7 +502,7 @@ theorem finiteLengthJetDegree_le_inv_slack
   let rn := finiteLengthRate rho n
   let s := finiteLengthSlack eta n
   let cm := finiteLengthMultiplicityBoundConstant rho
-  have hrnHalf : rho / 2 ≤ rn := half_rate_le_finiteLengthRate hrho hn
+  have hrnHalf : rho / 2 ≤ rn := half_rate_le_finiteLengthRate hn
   have hrn : 0 < rn := finiteLengthRate_pos hrho hn
   have haOne' : a < 1 := automaticAgreement_lt_one haOne
   have hm := finiteLengthMultiplicity_le_inv_slack
@@ -677,15 +671,6 @@ theorem finiteLength_count_gap
   dsimp only [delta, finiteLengthDensityMargin, m, beta] at hround hsource hrank' ⊢
   nlinarith
 
-/-- A coarse bound on the exact local-rank count, sufficient for the height estimate. -/
-theorem finiteLengthRankCount_le_two_mul_cube
-    {rho eta : ℝ} {n : ℕ}
-    (hm : 0 < finiteLengthMultiplicity rho eta n)
-    (hM : finiteLengthDerivativeCap rho eta n ≤ finiteLengthMultiplicity rho eta n) :
-    finiteLengthRankCount rho eta n ≤
-      2 * finiteLengthMultiplicity rho eta n ^ 3 := by
-  simpa only [finiteLengthRankCount] using firstOrderRankCount_le_two_mul_cube hm hM
-
 /-- An explicit finite count gap bounds the exact challenge height by the inverse-square slack. -/
 theorem finiteLengthChallengeHeight_le_inv_slack_sq_of_count_gap
     {rho eta : ℝ} {n : ℕ}
@@ -725,7 +710,8 @@ theorem finiteLengthChallengeHeight_le_inv_slack_sq_of_count_gap
     finiteLengthDerivativeCap_le_multiplicity
       hrhoOne haOne hbetaHalf
   have hR : (R : ℝ) ≤ 2 * (m : ℝ) ^ 3 := by
-    exact_mod_cast finiteLengthRankCount_le_two_mul_cube hmNat hM
+    dsimp only [R, finiteLengthRankCount, m]
+    exact_mod_cast firstOrderRankCount_le_two_mul_cube hmNat hM
   have hB : (B : ℝ) ≤ cB / s := by
     exact finiteLengthJetDegree_le_inv_slack
       hrho hrhoOne heta haOne hn hbetaHalf
@@ -808,27 +794,6 @@ theorem finiteLength_multiplicity_derivativeCap_jetDegree_bounds
     (finiteLengthJetDegree_le_inv_slack
       hrho hrhoOne heta haOne hn hbetaHalf).trans hcBDiv⟩
 
-/-- An explicit finite count gap bounds the challenge height using the common parameter constant. -/
-theorem finiteLengthChallengeHeight_le_common_inv_slack_sq_of_count_gap
-    {rho eta : ℝ} {n : ℕ}
-    (hrho : 0 < rho) (hrhoOne : rho < 1) (heta : 0 < eta)
-    (haOne : firstOrderRateThreshold rho + eta < 1)
-    (hn : (2 : ℝ) ≤ rho * n)
-    (hbetaHalf : finiteLengthDerivativeRatio rho eta ≤ 1 / 2)
-    (hgap : 3 * (finiteLengthMultiplicity rho eta n : ℝ) ^ 3 *
-        finiteLengthDensityMargin rho eta n / 4 ≤
-      finiteLengthSourceCount rho eta n - finiteLengthRankCount rho eta n) :
-    (finiteLengthChallengeHeight rho eta n : ℝ) ≤
-      finiteLengthParameterBoundConstant rho / finiteLengthSlack eta n ^ 2 := by
-  have hsSq : 0 ≤ finiteLengthSlack eta n ^ 2 := sq_nonneg _
-  have hcH : finiteLengthHeightBoundConstant rho ≤
-      finiteLengthParameterBoundConstant rho := by
-    unfold finiteLengthParameterBoundConstant
-    exact le_max_of_le_right (le_max_of_le_right (le_max_right _ _))
-  exact (finiteLengthChallengeHeight_le_inv_slack_sq_of_count_gap
-    hrho hrhoOne heta haOne hn hbetaHalf hgap).trans
-      (div_le_div_of_nonneg_right hcH hsSq)
-
 /-- The literal challenge height has inverse-square finite-length-slack size, with the exact
 floor quotient and `max 1` endpoint. -/
 theorem finiteLengthChallengeHeight_le_inv_slack_sq
@@ -852,9 +817,13 @@ theorem finiteLengthChallengeHeight_le_common_inv_slack_sq
     (hbetaHalf : finiteLengthDerivativeRatio rho eta ≤ 1 / 2) :
     (finiteLengthChallengeHeight rho eta n : ℝ) ≤
       finiteLengthParameterBoundConstant rho / finiteLengthSlack eta n ^ 2 := by
-  exact finiteLengthChallengeHeight_le_common_inv_slack_sq_of_count_gap
+  have hheight := finiteLengthChallengeHeight_le_inv_slack_sq
     hrho hrhoOne heta haOne hn hbetaHalf
-      (finiteLength_count_gap hrho hrhoOne heta haOne hn hbetaHalf)
+  have hcH : finiteLengthHeightBoundConstant rho ≤
+      finiteLengthParameterBoundConstant rho := by
+    unfold finiteLengthParameterBoundConstant
+    exact le_max_of_le_right (le_max_of_le_right (le_max_right _ _))
+  exact hheight.trans (div_le_div_of_nonneg_right hcH (sq_nonneg _))
 
 end
 
