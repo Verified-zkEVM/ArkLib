@@ -201,3 +201,26 @@ example : (∑ _i ∈ (Finset.univ : Finset (Fin 2)),
     (theta := 0) (n := 4) (D := 1) (mu := 2) (H := 2) (contentHeight := 0)
     (by norm_num) (by norm_num) (by simp) (by simp)
   simpa using h
+
+example : ordinaryFrobeniusCurveMixedDegree 1 2 3 2 1 = 16 := by
+  calc
+    ordinaryFrobeniusCurveMixedDegree 1 2 3 2 1 =
+        3 + 2 * (2 * 1) + (2 * 1 * 2 - 1) * 3 * (2 * 1 - 1) :=
+      ordinaryFrobeniusCurveMixedDegree_eq 1 2 3 2 1
+    _ = 16 := by norm_num
+
+example : ordinaryFrobeniusCurveMixedDegree 1 2 3 2 1 ≤ 31 := by
+  calc
+    ordinaryFrobeniusCurveMixedDegree 1 2 3 2 1 ≤
+        3 + 2 * (2 * 1) + 4 * 1 * 3 * (2 * 1) :=
+      ordinaryFrobeniusCurveMixedDegree_le 1 2 3 2 1
+    _ = 31 := by norm_num
+
+example : (25 : ℚ) ≤ ordinaryCurveFactorRaw 1 5 1 2 2 3 := by
+  have h := ordinaryFrobeniusCurve_charge_le 1 5 1 2 3 2 1
+    (by norm_num) (by norm_num)
+  norm_num [ordinaryFrobeniusCurveMixedDegree] at h
+  exact h
+
+example : ordinaryCurveFactorRaw 1 5 1 2 2 3 ≤ 2 * ordinaryFactorRaw 1 5 1 2 2 := by
+  exact ordinaryCurveFactorRaw_le_line_mul 1 5 1 2 2 3 2 (by norm_num) (by norm_num)
