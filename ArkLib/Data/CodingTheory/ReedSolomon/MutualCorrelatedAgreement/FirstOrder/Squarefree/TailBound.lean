@@ -12,6 +12,7 @@ public import ArkLib.Data.MvPolynomial.RadicalSplit.Separable
 public import ArkLib.Data.MvPolynomial.WeightedDegree.Products
 public import ArkLib.Data.Polynomial.ResultantDegree
 public import ArkLib.Data.Polynomial.ResultantSpecialization
+public import ArkLib.Data.Polynomial.Differential.OrderZeroPresentation
 public import ArkLib.ToMathlib.MvPolynomial.OptionWeightedDegree
 public import ArkLib.ToMathlib.MvPolynomial.PDeriv
 public import ArkLib.ToMathlib.MvPolynomial.SupportWeight
@@ -111,14 +112,13 @@ theorem fromFirstOrderRootCoordinates_weightedTotalDegree
     (R : MvPolynomial (Option (Fin 2)) F) :
     R.weightedTotalDegree rootJetWeight =
       jetTotalDegree (fromFirstOrderRootCoordinates R) := by
-  unfold jetTotalDegree
-  rw [fromFirstOrderRootCoordinates, renameEquiv_apply,
-    weightedTotalDegree_rename_of_injective firstOrderRootEquiv.symm.injective]
-  congr 1
-  funext v
-  rcases v with _ | j
-  · rfl
-  · fin_cases j <;> rfl
+  calc
+    R.weightedTotalDegree rootJetWeight =
+        (firstOrderRootCoordinates (fromFirstOrderRootCoordinates R)).weightedTotalDegree
+          rootJetWeight := by
+      rw [firstOrderRootCoordinates_fromFirstOrderRootCoordinates]
+    _ = jetTotalDegree (fromFirstOrderRootCoordinates R) :=
+      firstOrderRootCoordinates_weightedTotalDegree _
 
 /-- The positive-degree radical factor, returned to first-order coordinates. -/
 def positiveJetFactor (Q : DifferentialPolynomial F 1) : DifferentialPolynomial F 1 :=
@@ -482,15 +482,13 @@ theorem singularAsPolynomial_eq_singularTail (Q : DifferentialPolynomial F 1) :
   congr 2
   exact (Polynomial.derivative_map _ remainingPolynomialEquiv.toRingHom).symm
 
-/-- Evaluating the singular polynomial in `Y₀` is its remaining-coordinate specialization. -/
-theorem singularAsPolynomial_eval (Q : DifferentialPolynomial F 1) (P : F[X]) :
-    (singularAsPolynomial Q).eval P =
-      remainingSpecializationHom P (singularPolynomial Q) := by
-  exact remainingSpecializationHom_eq_eval P (singularPolynomial Q)
-
-/-- The content coefficient polynomial has degree at most the total jet degree of the input. -/
+/-- The content coefficient polynomial has degree at most the jet degree of the content factor.
+-/
 theorem contentAsPolynomial_natDegree_le (Q : DifferentialPolynomial F 1) :
-    (contentAsPolynomial Q).natDegree ≤ jetTotalDegree Q := by
+    (contentAsPolynomial Q).natDegree ≤
+      jetTotalDegree
+        (fromFirstOrderRootCoordinates
+          (radicalContent none (firstOrderRootCoordinates Q))) := by
   rw [contentAsPolynomial, remainingPolynomialEquiv_natDegree, contentCoefficient]
   change degreeOf (0 : Fin 2)
       ((optionEquivLeft F (Fin 2)
@@ -498,116 +496,14 @@ theorem contentAsPolynomial_natDegree_le (Q : DifferentialPolynomial F 1) :
   have hcoeff := degreeOf_coeff_optionEquivLeft_add_le_rootJetWeight
     (radicalContent none (firstOrderRootCoordinates Q)) 0 0 le_rfl
     (degreeOf_radicalContent _ _)
-  have hcontent := map_radicalContent_add_map_radicalPrimPart_le
-    (d := fun R ↦ R.weightedTotalDegree rootJetWeight)
-    (fun p q hp hq ↦ weightedTotalDegree_mul rootJetWeight p q hp hq)
-    none (firstOrderRootCoordinates Q)
   calc
     _ ≤ (radicalContent none (firstOrderRootCoordinates Q)).weightedTotalDegree
           rootJetWeight := by simpa using hcoeff
-    _ ≤ (firstOrderRootCoordinates Q).weightedTotalDegree rootJetWeight :=
-      (Nat.le_add_right _ _).trans hcontent
-    _ = jetTotalDegree Q := firstOrderRootCoordinates_weightedTotalDegree Q
-
-/-- Reindex the order-zero variables so `Y₀` is the outer variable and `X` is its coefficient.
--/
-def orderZeroVariableEquiv : JetVariable 0 ≃ Fin 2 :=
-  (_root_.finSuccEquiv 1).symm.trans (Equiv.swap 0 1)
-
-/-- Regard an order-zero differential equation as a polynomial in `Y₀` over `F[X]`. -/
-def orderZeroAsPolynomial (Q : DifferentialPolynomial F 0) : F[X][X] :=
-  Polynomial.map (MvPolynomial.uniqueAlgEquiv F (Fin 1)).toRingHom
-    (MvPolynomial.finSuccEquiv F 1 (MvPolynomial.rename orderZeroVariableEquiv Q))
-
-/-- Convert a polynomial in `Y₀` over `F[X]` to an order-zero differential equation. -/
-def orderZeroOfPolynomial (R : F[X][X]) : DifferentialPolynomial F 0 :=
-  (MvPolynomial.renameEquiv F orderZeroVariableEquiv).symm
-    ((MvPolynomial.finSuccEquiv F 1).symm
-      ((Polynomial.mapEquiv
-        (MvPolynomial.uniqueAlgEquiv F (Fin 1)).toRingEquiv).symm R))
-
-/-- Converting a polynomial to an order-zero equation and back returns that polynomial. -/
-@[simp]
-theorem orderZeroAsPolynomial_orderZeroOfPolynomial (R : F[X][X]) :
-    orderZeroAsPolynomial (orderZeroOfPolynomial R) = R := by
-  unfold orderZeroAsPolynomial orderZeroOfPolynomial
-  rw [← MvPolynomial.renameEquiv_apply, AlgEquiv.apply_symm_apply,
-    AlgEquiv.apply_symm_apply]
-  change (Polynomial.mapEquiv
-    (MvPolynomial.uniqueAlgEquiv F (Fin 1)).toRingEquiv)
-      ((Polynomial.mapEquiv
-        (MvPolynomial.uniqueAlgEquiv F (Fin 1)).toRingEquiv).symm R) = R
-  exact RingEquiv.apply_symm_apply _ R
-
-/-- The total jet degree of an order-zero equation is the degree of its outer polynomial. -/
-theorem orderZeroOfPolynomial_jetTotalDegree (R : F[X][X]) :
-    jetTotalDegree (orderZeroOfPolynomial R) = R.natDegree := by
-  have hweight : jetTotalDegree (orderZeroOfPolynomial R) =
-      degreeOf (some (0 : Fin 1)) (orderZeroOfPolynomial R) := by
-    unfold jetTotalDegree
-    rw [← MvPolynomial.weightedTotalDegree_piSingle (some (0 : Fin 1))]
-    congr 1
-    funext i
-    rcases i with _ | j
-    · simp [jetDegreeWeight]
-    · fin_cases j
-      simp [jetDegreeWeight]
-  rw [hweight]
-  have hdegree : degreeOf (0 : Fin 2)
-      (MvPolynomial.rename orderZeroVariableEquiv (orderZeroOfPolynomial R)) =
-        degreeOf (some (0 : Fin 1)) (orderZeroOfPolynomial R) := by
-    have hrename := MvPolynomial.degreeOf_rename_of_injective
-      orderZeroVariableEquiv.injective (some (0 : Fin 1))
-        (p := orderZeroOfPolynomial R)
-    rw [show orderZeroVariableEquiv (some (0 : Fin 1)) = (0 : Fin 2) by decide] at hrename
-    exact hrename
-  rw [← hdegree, ← MvPolynomial.natDegree_finSuccEquiv]
-  have hmapdeg := Polynomial.natDegree_map_eq_of_injective
-    (f := (MvPolynomial.uniqueAlgEquiv F (Fin 1)).toRingHom)
-    (MvPolynomial.uniqueAlgEquiv F (Fin 1)).injective
-    (MvPolynomial.finSuccEquiv F 1
-      (MvPolynomial.rename orderZeroVariableEquiv (orderZeroOfPolynomial R)))
-  rw [← hmapdeg]
-  change (orderZeroAsPolynomial (orderZeroOfPolynomial R)).natDegree = R.natDegree
-  exact congrArg Polynomial.natDegree (orderZeroAsPolynomial_orderZeroOfPolynomial R)
-
-/-- Evaluating the order-zero polynomial in `Y₀` is differential specialization. -/
-theorem orderZeroAsPolynomial_eval (Q : DifferentialPolynomial F 0) (P : F[X]) :
-    (orderZeroAsPolynomial Q).eval P = differentialSpecialization Q P := by
-  let lhs : DifferentialPolynomial F 0 →ₐ[F] F[X] :=
-    ((Polynomial.aeval P).restrictScalars F).comp
-      (((Polynomial.mapAlgHom
-        (MvPolynomial.uniqueAlgEquiv F (Fin 1)).toAlgHom).restrictScalars F).comp
-          ((MvPolynomial.finSuccEquiv F 1).toAlgHom.comp
-            (MvPolynomial.renameEquiv F orderZeroVariableEquiv).toAlgHom))
-  have hlhs : lhs Q = (orderZeroAsPolynomial Q).eval P := by rfl
-  rw [← hlhs]
-  change lhs Q = differentialSpecializationHom P Q
-  congr 1
-  apply MvPolynomial.algHom_ext
-  intro v
-  rcases v with _ | j
-  · dsimp [lhs]
-    rw [MvPolynomial.renameEquiv_apply, MvPolynomial.rename_X,
-      differentialSpecialization_x]
-    change Polynomial.eval P (Polynomial.map
-        (MvPolynomial.uniqueAlgEquiv F (Fin 1)).toRingHom
-          (MvPolynomial.finSuccEquiv F 1 (MvPolynomial.X (1 : Fin 2)))) = Polynomial.X
-    rw [show (1 : Fin 2) = (0 : Fin 1).succ by decide,
-      MvPolynomial.finSuccEquiv_X_succ]
-    rw [Polynomial.map_C, Polynomial.eval_C]
-    simp [MvPolynomial.X]
-  · fin_cases j
-    dsimp [lhs]
-    rw [MvPolynomial.renameEquiv_apply, MvPolynomial.rename_X,
-      differentialSpecialization_jet]
-    rw [show orderZeroVariableEquiv (some (0 : Fin 1)) = (0 : Fin 2) by decide]
-    change Polynomial.eval P (Polynomial.map
-        (MvPolynomial.uniqueAlgEquiv F (Fin 1)).toRingHom
-          (MvPolynomial.finSuccEquiv F 1 (MvPolynomial.X (0 : Fin 2)))) =
-      Polynomial.hasseDeriv 0 P
-    rw [MvPolynomial.finSuccEquiv_X_zero, Polynomial.map_X, Polynomial.eval_X]
-    simp
+    _ = jetTotalDegree
+          (fromFirstOrderRootCoordinates
+            (radicalContent none (firstOrderRootCoordinates Q))) :=
+      fromFirstOrderRootCoordinates_weightedTotalDegree
+        (radicalContent none (firstOrderRootCoordinates Q))
 
 /-- The constructed order-zero singular equation. -/
 def singularEquation (Q : DifferentialPolynomial F 1) : DifferentialPolynomial F 0 :=
@@ -636,7 +532,9 @@ theorem singularEquation_routes_nonregular
     rootFirstSpecializationHom P
       (radicalPrimPart none (firstOrderRootCoordinates Q)) = 0 at hsplit
   rw [← orderZeroAsPolynomial_eval, singularEquation,
-    orderZeroAsPolynomial_orderZeroOfPolynomial, singularAsPolynomial_eval]
+    orderZeroAsPolynomial_orderZeroOfPolynomial]
+  change (remainingPolynomialEquiv (singularPolynomial Q)).eval P = 0
+  rw [remainingSpecializationHom_eq_eval P (singularPolynomial Q)]
   rcases hsplit with hcontent | hpositive
   · rw [singularPolynomial, map_mul, remainingSpecializationHom_contentCoefficient,
       hcontent, zero_mul]
@@ -690,7 +588,8 @@ theorem singularEquation_routes_nonregular
         change (singularTail (contentAsPolynomial Q) (positiveAsPolynomial Q) r).eval P = 0
           at htail
         rw [← singularAsPolynomial_eq_singularTail] at htail
-        rw [singularAsPolynomial_eval] at htail
+        change (remainingPolynomialEquiv (singularPolynomial Q)).eval P = 0 at htail
+        rw [remainingSpecializationHom_eq_eval P (singularPolynomial Q)] at htail
         exact htail
 
 /-- The content-resultant polynomial has degree at most the ordinary-degree envelope. -/
@@ -715,10 +614,11 @@ theorem singularEquation_degree_le (Q : DifferentialPolynomial F 1)
       _ ≤ M := hderiv
   have hcontentDegree : (contentAsPolynomial Q).natDegree ≤
       (radicalContent none (firstOrderRootCoordinates Q)).weightedTotalDegree rootJetWeight := by
-    rw [contentAsPolynomial, remainingPolynomialEquiv_natDegree, contentCoefficient]
-    exact (degreeOf_coeff_optionEquivLeft_add_le_rootJetWeight
-      (radicalContent none (firstOrderRootCoordinates Q)) 0 0 le_rfl
-      (degreeOf_radicalContent _ _)).trans_eq (by simp)
+    calc
+      _ ≤ jetTotalDegree (fromFirstOrderRootCoordinates
+            (radicalContent none (firstOrderRootCoordinates Q))) :=
+        contentAsPolynomial_natDegree_le Q
+      _ = _ := (fromFirstOrderRootCoordinates_weightedTotalDegree _).symm
   have hsplit := map_radicalContent_add_map_radicalPrimPart_le
     (d := fun R ↦ R.weightedTotalDegree rootJetWeight)
     (fun p q hp hq ↦ weightedTotalDegree_mul rootJetWeight p q hp hq)

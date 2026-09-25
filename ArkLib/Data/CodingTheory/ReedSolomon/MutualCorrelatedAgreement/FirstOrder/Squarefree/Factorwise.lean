@@ -19,10 +19,10 @@ import ArkLib.ToMathlib.MvPolynomial.PDeriv
 /-!
 # Factorwise first-order agreement counting
 
-The positive-degree radical part of a first-order equation accounts for solutions on its regular
-branch. A supplied order-zero equation accounts for the remaining solutions. The resulting list
-bound uses the actual jet and `Y₁` degrees of the radical part, with a degree envelope for
-the tail.
+The regular branch can use either the positive-degree radical part or a chosen equation with a
+root-coverage condition. A supplied order-zero equation accounts for solutions outside that
+branch. The list bounds use actual regular-equation degrees or declared caps, with a degree
+envelope for the tail.
 
 ## Main statements
 
@@ -33,6 +33,8 @@ the tail.
 * `finite_factorwise_agreement_solutions_card_le_actual_of_regular_equation`: the actual-degree
   bound for a chosen regular equation.
 * `finite_factorwise_agreement_solutions_card_le`: the list bound at declared degree caps.
+* `finite_factorwise_agreement_solutions_card_le_of_regular_equation`: the capped bound for a
+  chosen regular equation.
 
 ## References
 
