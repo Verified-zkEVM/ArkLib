@@ -2270,6 +2270,10 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordi
 
 `finite_frobeniusPowerRegularBadWitnesses_card_le_of_separant_at` and `finite_frobeniusPowerRegularBadWitnesses_card_le_of_separant` are covered by `finite_frobeniusPowerRegularBadChallenges_card_le_of_separant_at`. The quantitative claim is unchanged; the theorem uses the current coefficient-height, jet-degree, and mapped-domain interfaces and drops the source assumption `A ≤ n`. Specializing at `L = k` covers the default-threshold statement, so it has no separate declaration. The private helper `ordinary_source_initial_ne_zero_of_regular` is covered by `jointInitialJetEquation_ne_zero_of_regular`. The shared classic acceptance module invokes the theorem on a nonempty singleton challenge set over a two-point complex domain, with `L = A = 2`, and checks the bound `1 ≤ 1`.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/PolynomialCurve/Regular.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`exists_exceptional_frobeniusPowerRegularSolutions_at` keeps its name. It now uses `CoeffNatDegreeLE` and `jetTotalDegree`, and does not require `A ≤ n`. The shared acceptance example in `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement.lean` specializes the arbitrary-threshold theorem over `ℂ` and shows that zero lies in an exceptional set of cardinality at most one. The fixed-threshold `exists_exceptional_frobeniusPowerRegularSolutions` is covered by the theorem at `L = k`; no wrapper was added.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/SingularTail.lean`
 
 Merges `FirstOrder/Squarefree/Bounds.lean` and `FirstOrder/Squarefree/SingularTail.lean` under
