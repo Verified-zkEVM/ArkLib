@@ -1877,11 +1877,23 @@ In `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/SolutionEmbedding.le
 
 No source public declarations were omitted. The generic `boundedSolutionOfPolynomial` constructor and its preservation theorem were removed; callers construct the bounded-solution subtype directly.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/CertificateBound.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/CertificateBound.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Renamed `exists_curveMCA_of_certificate` to `exists_exceptional_exactPowerAgreement_of_certificate` and `exists_curveMCA_of_certificate_of_jetCharacteristic` to `exists_exceptional_exactPowerAgreement_of_certificate_of_jetCharacteristic`. Both declarations remove `[DecidableEq E]`; the block-length endpoint also removes the redundant `0 < n` premise, derives the jet-characteristic guard, and applies the jet-characteristic endpoint. Both public declarations are ported.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/Parameters.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/Parameters.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 `exists_prescribed_correlated_parameters` keeps its name and is generalized by dropping the source hypothesis `0 < k`. It uses the current `SymbolicReceivedCurve.Certificate` and `receivedLine` APIs. The theorem gives a symbolic received-line certificate, size and agreement bounds, and all binomial pivots below the block length from the characteristic bound. A concrete rational acceptance case checks that the certificate conclusion is inhabited. The `prescribed_correlated_extension_pivots` wrapper was not ported: its base-field pivot statement is the final conjunct of the parameter theorem, and extension-field nonvanishing follows by injectivity of the field homomorphism at existing use sites, so no generic wrapper was added.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/PrescribedCurve.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/PrescribedCurve.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Renamed `exists_prescribedCurveMCA_exact` to `exists_exceptional_exactPowerAgreement_with_prescribed_stageBounds` and `exists_prescribedCurveMCA` to `exists_exceptional_exactPowerAgreement_of_prescribedCurve`. The stage-bounds declaration removes `[DecidableEq F]` and `[DecidableEq E]`; the prescribed-curve declaration removes `[DecidableEq E]`. Both public declarations are ported.
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/ProductBounds.lean`
 
