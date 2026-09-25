@@ -33,10 +33,10 @@ power costs nothing beyond the root degree `s * b`), at most
 equals the sharp coefficient `1 + (2 * D - 1) * (2 * B - 1)` for `B ≤ 2 * D + 1` and adds the
 positive part `2 * (B - 2 * D - 1)` beyond that range.
 
-The per-factor charges `ordinaryFactorRaw` and `ordinaryUnifiedPowerFactorRawAt` are bounded by a
-linear function of height and root degree whose coefficients depend only on the total budgets.
-Since heights and root degrees add up over the factorization, the content height plus all factor
-charges fits the charge of the whole polynomial. This summation is
+The line, polynomial-curve and unified per-factor charges are bounded by a linear function of
+height and root degree whose coefficients depend only on the total budgets. Since heights and root
+degrees add up over the factorization, the content height plus all factor charges fits the charge
+of the whole polynomial. This summation is
 `Finset.add_sum_le_mul_add_mul_of_le`.
 
 ## Main statements
@@ -56,10 +56,12 @@ charges fits the charge of the whole polynomial. This summation is
 * `ReedSolomon.ordinaryCurveFactorRaw` is the curve-factor charge;
   `ordinaryFrobeniusCurve_charge_le` and `ordinaryCurveFactorRaw_le_line_mul` compare these
   charges with the line charge.
-* `ReedSolomon.ordinaryFactorRaw_le_linear`, `ordinaryUnifiedPowerFactorRawAt_le_linear`: the
-  linear bounds on per-factor charges, with equality at the total budgets.
-* `ReedSolomon.ordinaryFactorRaw_sum_le`, `ordinaryUnifiedPowerFactorRawAt_sum_le`,
-  `ordinaryUnifiedPowerFactorRaw_sum_le`: content plus factor charges fit the total charge.
+* `ReedSolomon.ordinaryFactorRaw_le_linear`, `ordinaryCurveFactorRaw_le_linear`, and
+  `ordinaryUnifiedPowerFactorRawAt_le_linear`: the linear bounds on per-factor charges;
+  `ordinaryCurveFactorRaw_eq_linear` gives equality at the total budgets.
+* `ReedSolomon.ordinaryFactorRaw_sum_le`, `ordinaryCurveFactorRaw_sum_le`,
+  `ordinaryUnifiedPowerFactorRawAt_sum_le`, `ordinaryUnifiedPowerFactorRaw_sum_le`: content plus
+  factor charges fit the total charge.
 * `ReedSolomon.ordinaryUnifiedPowerFactorAt_succ_eq`: the free-retention budget at threshold
   `L = D + 1` is the fixed-split budget.
 
@@ -345,6 +347,55 @@ theorem ordinaryCurveFactorRaw_le_line_mul (theta : ℚ) (n D ell a h H : ℕ)
   exact add_le_add
     (add_le_add (by exact_mod_cast hfirst)
       (mul_le_mul_of_nonneg_left (by exact_mod_cast hmixed) htheta)) le_rfl
+
+/-- For root degree `a ≤ mu`, the curve-factor charge is at most the linear function
+`((2mu - 1) + theta(1 + 4D mu)) h + (theta ell + ell(n - D - 1)) a`. -/
+theorem ordinaryCurveFactorRaw_le_linear {theta : ℚ} (n D ell : ℕ) {a mu : ℕ} (h : ℕ)
+    (htheta : 0 ≤ theta) (ha : a ≤ mu) :
+    ordinaryCurveFactorRaw theta n D ell a h ≤
+      ((2 * mu - 1 : ℕ) + theta * (1 + 4 * D * mu)) * h +
+        (theta * ell + (ell * (n - D - 1) : ℕ)) * a := by
+  have hsub : 2 * a - 1 ≤ 2 * mu - 1 := by omega
+  have hfirst : (((2 * a - 1) * h : ℕ) : ℚ) ≤ (2 * mu - 1 : ℕ) * (h : ℚ) := by
+    exact_mod_cast Nat.mul_le_mul_right h hsub
+  have hprod : ((a : ℚ) * h) ≤ (mu : ℚ) * h := by gcongr
+  unfold ordinaryCurveFactorRaw
+  push_cast at hfirst ⊢
+  nlinarith [mul_nonneg htheta (mul_nonneg (show (0 : ℚ) ≤ 4 * D by positivity)
+    (sub_nonneg.mpr hprod))]
+
+/-- At the total budgets, the curve-factor charge equals the linear function of
+`ordinaryCurveFactorRaw_le_linear`. -/
+theorem ordinaryCurveFactorRaw_eq_linear (theta : ℚ) (n D ell mu H : ℕ) :
+    ordinaryCurveFactorRaw theta n D ell mu H =
+      ((2 * mu - 1 : ℕ) + theta * (1 + 4 * D * mu)) * H +
+        (theta * ell + (ell * (n - D - 1) : ℕ)) * mu := by
+  unfold ordinaryCurveFactorRaw
+  push_cast
+  ring
+
+/-- The content height plus the curve-factor charges indexed by `S` is at most the charge of the
+whole polynomial when root degrees and heights fit their total budgets. The hypothesis `1 ≤ mu`
+is needed: for `mu = 0`, `theta = 0`, `S = ∅`, and content height `H = 1`, the left side is `1`
+while the right side is `0`. -/
+theorem ordinaryCurveFactorRaw_sum_le {I : Type*} (S : Finset I) (a height : I → ℕ)
+    (theta : ℚ) (n D ell mu H contentHeight : ℕ)
+    (htheta : 0 ≤ theta) (hmu : 1 ≤ mu)
+    (ha : ∑ i ∈ S, a i ≤ mu)
+    (hh : contentHeight + ∑ i ∈ S, height i ≤ H) :
+    (contentHeight : ℚ) +
+        ∑ i ∈ S, ordinaryCurveFactorRaw theta n D ell (a i) (height i) ≤
+      ordinaryCurveFactorRaw theta n D ell mu H := by
+  rw [ordinaryCurveFactorRaw_eq_linear]
+  refine Finset.add_sum_le_mul_add_mul_of_le S (h := fun i ↦ (height i : ℚ))
+    (a := fun i ↦ (a i : ℚ)) (Nat.cast_nonneg _) ?_ (by positivity) ?_
+    (by exact_mod_cast hh) (by exact_mod_cast ha)
+  · have hcast : (1 : ℚ) ≤ (2 * mu - 1 : ℕ) := by
+      exact_mod_cast (by omega : 1 ≤ 2 * mu - 1)
+    exact hcast.trans (le_add_of_nonneg_right (mul_nonneg htheta (by positivity)))
+  · intro i hi
+    exact ordinaryCurveFactorRaw_le_linear n D ell _ htheta
+      ((Finset.single_le_sum (fun _ _ ↦ Nat.zero_le _) hi).trans ha)
 
 /-- A Frobenius pullback with separable degree `b` and power `s` is charged at most as a factor
 of root degree `s * b`. The hypothesis `1 ≤ s` is needed: for `s = 0`, `b = 1` and `h = 1` the
