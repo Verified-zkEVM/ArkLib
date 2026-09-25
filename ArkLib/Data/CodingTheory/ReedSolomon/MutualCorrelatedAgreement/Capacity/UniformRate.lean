@@ -26,9 +26,12 @@ power agreement with base-field constituents and the same complete agreement set
 
 ## Main statements
 
-* `ReedSolomon.exists_uniformRatePartition_curveMCA`: extension-field curve agreement.
-* `ReedSolomon.exists_uniformRatePartition_baseCurveMCA`: base-field curve agreement.
-* `ReedSolomon.exists_uniformRatePartition_lineMCA`: exact agreement on affine lines.
+* `ReedSolomon.exists_uniformRatePartition_curve_exactPowerAgreement`: extension-field curve
+  agreement.
+* `ReedSolomon.exists_uniformRatePartition_baseCurve_exactPowerAgreement`: base-field curve
+  agreement.
+* `ReedSolomon.exists_uniformRatePartition_line_exactCorrelatedPair`: exact agreement on affine
+  lines.
 
 ## References
 
@@ -48,7 +51,7 @@ universe u
 open Classical in
 /-- The uniform rate-partition parameters give an explicit exceptional-set bound for a
 power-batched received curve over an algebraically closed extension. -/
-theorem exists_uniformRatePartition_curveMCA {F E : Type u} [Field F] [Field E]
+theorem exists_uniformRatePartition_curve_exactPowerAgreement {F E : Type u} [Field F] [Field E]
     [IsAlgClosed E] {δ : ℝ} {n k A ℓ : ℕ} (hδ : 0 < δ) (hδsmall : δ < 6 / 25)
     (hn : uniformBlockThreshold δ ≤ n) (hk : 0 < k)
     (hgap : (k : ℝ) + δ * n ≤ A) (hAn : A ≤ n) (hℓ : 0 < ℓ)
@@ -67,26 +70,11 @@ theorem exists_uniformRatePartition_curveMCA {F E : Type u} [Field F] [Field E]
   let ν := uniformJetCap δ
   obtain ⟨e⟩ := HiddenDerivative.RatePartition.exists_uniformRatePartitionEnvelope
     hδ hδsmall hn hk hgap hAn
-  have hd := uniformDerivativeOrder_ge_519 hδ hδsmall
-  have hd500 : 500 ≤ d := (by norm_num : 500 ≤ 519).trans hd
-  have hδone : δ < 1 := by linarith
-  obtain ⟨_hsize, _hmn, hν, hνn⟩ := uniformBlockThreshold_guards hδ hδone.le hn
-  have hscale : (1 : ℝ) < 1000 * (d : ℝ) ^ 3 := by
-    have hd' : (500 : ℝ) ≤ d := by exact_mod_cast hd500
-    nlinarith [sq_nonneg (d : ℝ)]
+  obtain ⟨hd500, hδone, hν, _hνn, hscale, hkA, hchar'⟩ :=
+    HiddenDerivative.RatePartition.uniformEnvelope_exactAgreementGuards e hδ hδsmall hn hgap hchar
   obtain ⟨cert⟩ := e.exists_curve_certificate (scale := 1000) hδ hδone hd500 hscale hAn
     domain (fun i ↦ powerBatchedCoordinate fun t ↦ values t i)
     (fun _ ↦ powerBatchedCoordinate_natDegree_le _)
-  have hkA : k ≤ A := by
-    have h : (k : ℝ) ≤ A := by
-      nlinarith [mul_nonneg hδ.le (Nat.cast_nonneg n)]
-    exact_mod_cast h
-  have hchar' : ringChar F = 0 ∨
-      max (e.ambientDegree + 1 - 1) ν < ringChar F := by
-    apply hchar.imp_right
-    intro hc
-    have hD := e.ambient_le
-    exact (max_lt (by omega) hνn).trans_le hc
   have hh : 0 < 150 * ν := by positivity
   exact exists_exceptional_exactPowerAgreement_of_certificate_of_jetCharacteristic
     domain values iota cert hk e.message_le (by omega) (by have := e.order_le; omega)
@@ -94,7 +82,7 @@ theorem exists_uniformRatePartition_curveMCA {F E : Type u} [Field F] [Field E]
 
 open Classical in
 /-- The extension-field curve bound descends to challenges and candidates over the base field. -/
-theorem exists_uniformRatePartition_baseCurveMCA {F : Type u} [Field F]
+theorem exists_uniformRatePartition_baseCurve_exactPowerAgreement {F : Type u} [Field F]
     {δ : ℝ} {n k A ℓ : ℕ} (hδ : 0 < δ) (hδsmall : δ < 6 / 25)
     (hn : uniformBlockThreshold δ ≤ n) (hk : 0 < k)
     (hgap : (k : ℝ) + δ * n ≤ A) (hAn : A ≤ n) (hℓ : 0 < ℓ)
@@ -110,7 +98,7 @@ theorem exists_uniformRatePartition_baseCurveMCA {F : Type u} [Field F]
   classical
   let E := AlgebraicClosure F
   let iota : F →+* E := algebraMap F E
-  obtain ⟨exceptional, hcard, hgood⟩ := exists_uniformRatePartition_curveMCA
+  obtain ⟨exceptional, hcard, hgood⟩ := exists_uniformRatePartition_curve_exactPowerAgreement
     hδ hδsmall hn hk hgap hAn hℓ domain values iota hchar
   have hdesc : UniformExactPowerAgreement domain values k A exceptional.card :=
     uniformExactPowerAgreement_of_extension domain values iota k A exceptional hgood
@@ -125,7 +113,8 @@ theorem exists_uniformRatePartition_baseCurveMCA {F : Type u} [Field F]
 open Classical in
 /-- The degree-one specialization gives exact correlated-pair agreement on every line outside
 one exceptional set. -/
-theorem exists_uniformRatePartition_lineMCA {F : Type u} [Field F] {δ : ℝ} {n k A : ℕ}
+theorem exists_uniformRatePartition_line_exactCorrelatedPair {F : Type u} [Field F] {δ : ℝ}
+    {n k A : ℕ}
     (hδ : 0 < δ) (hδsmall : δ < 6 / 25) (hn : uniformBlockThreshold δ ≤ n)
     (hk : 0 < k) (hgap : (k : ℝ) + δ * n ≤ A) (hAn : A ≤ n)
     (domain : Fin n ↪ F) (f g : Fin n → F)
@@ -138,7 +127,8 @@ theorem exists_uniformRatePartition_lineMCA {F : Type u} [Field F] {δ : ℝ} {n
         A ≤ (polynomialAgreementSet domain (fun i ↦ f i + z * g i) P).card →
         HasExactCorrelatedPair domain f g (RingHom.id F) k z P := by
   classical
-  obtain ⟨exceptional, hcard, hgood⟩ := exists_uniformRatePartition_baseCurveMCA
+  obtain ⟨exceptional, hcard, hgood⟩ :=
+    exists_uniformRatePartition_baseCurve_exactPowerAgreement
     hδ hδsmall hn hk hgap hAn (by norm_num : 0 < 1) domain ![f, g] hchar
   refine ⟨exceptional, by simpa using hcard, ?_⟩
   intro z hz P hP hA

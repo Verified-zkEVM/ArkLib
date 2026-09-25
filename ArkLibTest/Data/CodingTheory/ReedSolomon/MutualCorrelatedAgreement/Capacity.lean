@@ -25,6 +25,16 @@ open Polynomial ReedSolomon
 open ReedSolomon.HiddenDerivative ReedSolomon.HiddenDerivative.WeightedSupportParameters
 open PolynomialDifferential
 
+noncomputable section
+
+private theorem algebraicClosureInfinite : Infinite (AlgebraicClosure ℚ) := by
+  exact Infinite.of_injective (algebraMap ℚ (AlgebraicClosure ℚ))
+    (algebraMap ℚ (AlgebraicClosure ℚ)).injective
+
+local instance : Infinite (AlgebraicClosure ℚ) := algebraicClosureInfinite
+local instance : DecidableEq ℚ := Classical.decEq _
+local instance : DecidableEq (AlgebraicClosure ℚ) := Classical.decEq _
+
 example : correlatedMidpoint (1 / 2) 10 2 ≤ 8 ∧
     (1 / 2 : ℝ) * (10 : ℕ) / 2 ≤ ((8 - correlatedMidpoint (1 / 2) 10 2 + 1 : ℕ) : ℝ) := by
   obtain ⟨-, h, -, h', -⟩ := correlatedMidpoint_bounds (1 / 2) 10 2 8 (by norm_num)
@@ -91,9 +101,6 @@ example :
     push_cast
     have hmR : (1 : ℝ) ≤ m := by exact_mod_cast Nat.one_le_iff_ne_zero.mpr hm.ne'
     nlinarith
-  have _hline := exists_prescribedLineMCA (F := ℚ) (E := AlgebraicClosure ℚ)
-    δ n 1 centers f g iota hδ hδmax (by norm_num) (by simpa [xi] using hblock) hA
-    (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
   have hparams := exists_prescribed_correlated_parameters (F := ℚ) δ n 1 centers f g
     hδ hδmax hblock hA (Or.inl (by simp))
   have _hprescribed := exists_exceptional_exactPowerAgreement_of_prescribedCurve
@@ -104,6 +111,81 @@ example :
     (F := ℚ) (E := AlgebraicClosure ℚ) δ n 1 1 centers values iota
     hδ hδmax (by norm_num) (by norm_num) hblock hA (Or.inl (by simp))
   exact hparams.1
+
+open Classical in
+/-- The prescribed-line bound supplies exact witnesses for a zero candidate on a zero line. -/
+example :
+    let δ : ℝ := 1 / 5
+    let d := Nat.ceil (Real.exp (xi / δ))
+    let H : ℝ := harmonic (d - 1)
+    let m := Nat.ceil (100 * (d : ℝ) ^ 2 * H)
+    let n := 8 * m
+    let centers : Fin n ↪ ℚ :=
+      ⟨fun i => (i : ℚ), fun a b h => by
+        apply Fin.ext
+        change (a.val : ℚ) = (b.val : ℚ) at h
+        exact_mod_cast h⟩
+    ∃ exceptional : Finset (AlgebraicClosure ℚ),
+      (exceptional.card : ℝ) ≤ prescribedProductAgreementConstant δ *
+        (n : ℝ) ^ (Nat.ceil (Real.exp (xi / δ)) + 1) ∧
+      ∃ z ∉ exceptional, HasExactCorrelatedPair
+        centers (fun _ ↦ 0) (fun _ ↦ 0)
+        (algebraMap ℚ (AlgebraicClosure ℚ)) 1 z (0 : (AlgebraicClosure ℚ)[X]) := by
+  let δ : ℝ := 1 / 5
+  let d := Nat.ceil (Real.exp (xi / δ))
+  let H : ℝ := harmonic (d - 1)
+  let m := Nat.ceil (100 * (d : ℝ) ^ 2 * H)
+  let n := 8 * m
+  let centers : Fin n ↪ ℚ :=
+    ⟨fun i => (i : ℚ), fun a b h => by
+      apply Fin.ext
+      change (a.val : ℚ) = (b.val : ℚ) at h
+      exact_mod_cast h⟩
+  let f : Fin n → ℚ := fun _ => 0
+  let g : Fin n → ℚ := fun _ => 0
+  let iota : ℚ →+* AlgebraicClosure ℚ := algebraMap ℚ (AlgebraicClosure ℚ)
+  have hδ : 0 < δ := by norm_num [δ]
+  have hδmax : δ < 1 / 4 := by norm_num [δ]
+  have ho := prescribed_order_lower δ hδ hδmax.le
+  have hH : (0 : ℝ) < (harmonic (d - 1) : ℝ) := by
+    have hxi : 0 < xi := by norm_num [xi]
+    simpa only [d] using (div_pos hxi hδ).trans_le ho.2.2
+  have hdlower : 48000 ≤ d := by simpa only [d] using ho.1
+  have hd : 0 < d := by omega
+  have hm : 0 < m := by
+    dsimp only [m]
+    apply Nat.ceil_pos.mpr
+    have hdR : (0 : ℝ) < d := by exact_mod_cast hd
+    positivity
+  have hblock :
+      let d := Nat.ceil (Real.exp (xi / δ))
+      let H : ℝ := harmonic (d - 1)
+      let m := Nat.ceil (100 * (d : ℝ) ^ 2 * H)
+      8 * m ≤ n := by
+    dsimp only
+    exact Nat.le_refl _
+  have hA : agreementThreshold δ n 1 ≤ n := by
+    apply (agreementThreshold_le_iff_real hδ.le n 1 n).mpr
+    have hnR : (n : ℝ) = 8 * m := by norm_num [n]
+    rw [hnR]
+    dsimp [δ]
+    push_cast
+    have hmR : (1 : ℝ) ≤ m := by exact_mod_cast Nat.one_le_iff_ne_zero.mpr hm.ne'
+    nlinarith
+  obtain ⟨exceptional, hbound, hgood⟩ := exists_prescribedLine_exactCorrelatedPair
+    (F := ℚ) (E := AlgebraicClosure ℚ) δ n 1 centers f g iota hδ hδmax (by norm_num)
+    (by simpa [xi] using hblock) hA
+    (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
+  have hset (z : AlgebraicClosure ℚ) :
+      polynomialAgreementSet (centers.trans ⟨iota, iota.injective⟩)
+        (fun i ↦ iota (f i) + z * iota (g i)) (0 : (AlgebraicClosure ℚ)[X]) =
+        Finset.univ := by
+    ext i
+    simp [polynomialAgreementSet, f, g]
+  obtain ⟨z, hz⟩ := Finset.exists_notMem exceptional
+  refine ⟨exceptional, ?_, z, hz, ?_⟩
+  · simpa [δ, n, xi, m, d, H] using hbound
+  · exact hgood z hz 0 (by simp) (by rw [hset z]; simpa using hA)
 
 example :
     let L := correlatedMidpoint (1 / 2) 8 1
@@ -302,6 +384,25 @@ private noncomputable def mcaParameters :
 private noncomputable def mcaLength : ℕ :=
   rateBlockThreshold mcaRate mcaOrder mcaParameters.multiplicity
 
+private theorem fixedRateThresholdRate
+    (p : PartitionFiniteParameters mcaRate mcaAgreement mcaOrder) :
+    ((1 : ℕ) : ℝ) ≤ mcaRate * rateBlockThreshold mcaRate mcaOrder p.multiplicity := by
+  obtain ⟨hR, hRa, haone, _, _⟩ := mcaRateGate
+  let n := rateBlockThreshold mcaRate mcaOrder p.multiplicity
+  have hn : rateBlockThreshold mcaRate mcaOrder p.multiplicity ≤ n := Nat.le_refl _
+  have hAn : mcaAgreement * n ≤ n := by
+    have ha : mcaAgreement ≤ 1 := by norm_num [mcaRate, mcaAgreement, mcaGap]
+    nlinarith [Nat.cast_nonneg n (α := ℝ)]
+  have hn0 : (0 : ℝ) ≤ (n : ℝ) := by exact_mod_cast Nat.zero_le n
+  have hk0 : ((0 : ℕ) : ℝ) ≤ mcaRate * n := by
+    simpa only [Nat.cast_zero] using mul_nonneg hR.le hn0
+  have hfloorLower : mcaOrder + 1 ≤ ⌊mcaRate * n⌋₊ :=
+    (rateBlockThreshold_guards hR (hRa.trans haone) hn hk0 hAn).1
+  have hfloor : 1 ≤ ⌊mcaRate * n⌋₊ := by omega
+  calc
+    ((1 : ℕ) : ℝ) ≤ (⌊mcaRate * n⌋₊ : ℝ) := by exact_mod_cast hfloor
+    _ ≤ mcaRate * n := Nat.floor_le (by positivity)
+
 private def mcaDomain (n : ℕ) : Fin n ↪ ℚ where
   toFun i := (i.val : ℚ)
   inj' i j hij := by
@@ -310,26 +411,6 @@ private def mcaDomain (n : ℕ) : Fin n ↪ ℚ where
     exact_mod_cast hij
 
 private def mcaValues (n : ℕ) : Fin 2 → Fin n → ℚ := fun _ _ => 0
-
-private theorem mcaLengthRate : ((1 : ℕ) : ℝ) ≤ mcaRate * mcaLength := by
-  obtain ⟨hR, hRa, haone, hd, _⟩ := mcaRateGate
-  have hn : rateBlockThreshold mcaRate mcaOrder mcaParameters.multiplicity ≤ mcaLength :=
-    Nat.le_refl _
-  have hAn : mcaAgreement * mcaLength ≤ mcaLength := by
-    have ha : mcaAgreement ≤ 1 := by norm_num [mcaRate, mcaAgreement, mcaGap]
-    nlinarith [Nat.cast_nonneg mcaLength (α := ℝ)]
-  have hn0 : (0 : ℝ) ≤ (mcaLength : ℝ) := by exact_mod_cast Nat.zero_le mcaLength
-  have hk0 : ((0 : ℕ) : ℝ) ≤ mcaRate * mcaLength := by
-    have hproduct : (0 : ℝ) ≤ mcaRate * (mcaLength : ℝ) :=
-      mul_nonneg (by norm_num [mcaRate]) hn0
-    simpa only [Nat.cast_zero] using hproduct
-  have hguards := rateBlockThreshold_guards (rate := mcaRate) (agreement := mcaAgreement)
-    (order := mcaOrder) (multiplicity := mcaParameters.multiplicity) (n := mcaLength)
-    (k := 0) (A := mcaLength) hR (hRa.trans haone) hn hk0 hAn
-  have hfloor : 1 ≤ ⌊mcaRate * mcaLength⌋₊ := by omega
-  calc
-    ((1 : ℕ) : ℝ) ≤ (⌊mcaRate * mcaLength⌋₊ : ℝ) := by exact_mod_cast hfloor
-    _ ≤ mcaRate * mcaLength := Nat.floor_le (by positivity)
 
 private theorem mcaLengthAgreement : mcaAgreement * mcaLength ≤ mcaLength := by
   have ha : mcaAgreement ≤ 1 := by norm_num [mcaRate, mcaAgreement, mcaGap]
@@ -343,16 +424,29 @@ example :
         (mcaAgreement - mcaRate) (rateJetCap mcaRate mcaParameters.multiplicity)
         (marginHeight (rateJetCap mcaRate mcaParameters.multiplicity)
           (partitionFiniteRatio mcaRate mcaAgreement mcaOrder mcaParameters.multiplicity))
-        mcaOrder * (mcaLength : ℝ) ^ (mcaOrder + 1) := by
+        mcaOrder * (mcaLength : ℝ) ^ (mcaOrder + 1) ∧
+      ∃ z ∉ exceptional, HasExactPowerAgreement (mcaDomain mcaLength) (mcaValues mcaLength)
+        (algebraMap ℚ (AlgebraicClosure ℚ)) 1 z (0 : (AlgebraicClosure ℚ)[X]) := by
   obtain ⟨hR, hRa, haone, hd, _⟩ := mcaRateGate
   have hn : rateBlockThreshold mcaRate mcaOrder mcaParameters.multiplicity ≤ mcaLength :=
     Nat.le_refl _
-  obtain ⟨exceptional, hbound, _⟩ := exists_ratePartition_curveMCA
+  obtain ⟨exceptional, hbound, hgood⟩ := exists_ratePartition_curve_exactPowerAgreement
     (F := ℚ) (E := AlgebraicClosure ℚ) (n := mcaLength) (k := 1) (A := mcaLength)
-    (ℓ := 1) mcaParameters hR hRa haone hd hn (by norm_num) mcaLengthRate mcaLengthAgreement
+    (ℓ := 1) mcaParameters hR hRa haone hd hn (by norm_num)
+    (fixedRateThresholdRate mcaParameters) mcaLengthAgreement
     le_rfl (by norm_num) (mcaDomain mcaLength) (mcaValues mcaLength)
     (algebraMap ℚ (AlgebraicClosure ℚ)) (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
-  exact ⟨exceptional, by simpa using hbound⟩
+  have hset (z : AlgebraicClosure ℚ) :
+      polynomialAgreementSet
+        ((mcaDomain mcaLength).trans ⟨algebraMap ℚ (AlgebraicClosure ℚ),
+          (algebraMap ℚ (AlgebraicClosure ℚ)).injective⟩)
+        (powerBatchedWord (fun t i ↦ algebraMap ℚ (AlgebraicClosure ℚ)
+          (mcaValues mcaLength t i)) z) (0 : (AlgebraicClosure ℚ)[X]) = Finset.univ := by
+    ext i
+    simp [polynomialAgreementSet, powerBatchedWord, mcaValues]
+  obtain ⟨z, hz⟩ := Finset.exists_notMem exceptional
+  refine ⟨exceptional, by simpa using hbound, z, hz, ?_⟩
+  exact hgood z hz 0 (by simp) (by rw [hset z]; simp)
 
 open Classical in
 /-- The fixed-rate parameters give a base-field curve agreement bound over `ℚ`. -/
@@ -362,16 +456,26 @@ example :
         (mcaAgreement - mcaRate) (rateJetCap mcaRate mcaParameters.multiplicity)
         (marginHeight (rateJetCap mcaRate mcaParameters.multiplicity)
           (partitionFiniteRatio mcaRate mcaAgreement mcaOrder mcaParameters.multiplicity))
-        mcaOrder * (mcaLength : ℝ) ^ (mcaOrder + 1) := by
+        mcaOrder * (mcaLength : ℝ) ^ (mcaOrder + 1) ∧
+      ∃ z ∉ exceptional, HasExactPowerAgreement (mcaDomain mcaLength) (mcaValues mcaLength)
+        (RingHom.id ℚ) 1 z (0 : ℚ[X]) := by
   obtain ⟨hR, hRa, haone, hd, _⟩ := mcaRateGate
   have hn : rateBlockThreshold mcaRate mcaOrder mcaParameters.multiplicity ≤ mcaLength :=
     Nat.le_refl _
-  obtain ⟨exceptional, hbound, _⟩ := exists_ratePartition_baseCurveMCA
+  obtain ⟨exceptional, hbound, hgood⟩ := exists_ratePartition_baseCurve_exactPowerAgreement
     (F := ℚ) (n := mcaLength) (k := 1) (A := mcaLength) (ℓ := 1) mcaParameters
-    hR hRa haone hd hn (by norm_num) mcaLengthRate mcaLengthAgreement le_rfl (by norm_num)
+    hR hRa haone hd hn (by norm_num) (fixedRateThresholdRate mcaParameters)
+    mcaLengthAgreement le_rfl (by norm_num)
     (mcaDomain mcaLength) (mcaValues mcaLength)
     (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
-  exact ⟨exceptional, by simpa using hbound⟩
+  have hset (z : ℚ) :
+      polynomialAgreementSet (mcaDomain mcaLength)
+        (powerBatchedWord (mcaValues mcaLength) z) (0 : ℚ[X]) = Finset.univ := by
+    ext i
+    simp [polynomialAgreementSet, powerBatchedWord, mcaValues]
+  obtain ⟨z, hz⟩ := Finset.exists_notMem exceptional
+  refine ⟨exceptional, by simpa using hbound, z, hz, ?_⟩
+  exact hgood z hz 0 (by simp) (by rw [hset z]; simp)
 
 open Classical in
 /-- The fixed-rate parameters give an affine-line agreement bound over `ℚ`. -/
@@ -381,15 +485,26 @@ example :
         (mcaAgreement - mcaRate) (rateJetCap mcaRate mcaParameters.multiplicity)
         (marginHeight (rateJetCap mcaRate mcaParameters.multiplicity)
           (partitionFiniteRatio mcaRate mcaAgreement mcaOrder mcaParameters.multiplicity))
-        mcaOrder * (mcaLength : ℝ) ^ (mcaOrder + 1) := by
+        mcaOrder * (mcaLength : ℝ) ^ (mcaOrder + 1) ∧
+      ∃ z ∉ exceptional,
+        HasExactCorrelatedPair (mcaDomain mcaLength) (fun _ ↦ 0) (fun _ ↦ 0) (RingHom.id ℚ)
+          1 z (0 : ℚ[X]) := by
   obtain ⟨hR, hRa, haone, hd, _⟩ := mcaRateGate
   have hn : rateBlockThreshold mcaRate mcaOrder mcaParameters.multiplicity ≤ mcaLength :=
     Nat.le_refl _
-  obtain ⟨exceptional, hbound, _⟩ := exists_ratePartition_lineMCA
+  obtain ⟨exceptional, hbound, hgood⟩ := exists_ratePartition_line_exactCorrelatedPair
     (F := ℚ) (n := mcaLength) (k := 1) (A := mcaLength) mcaParameters hR hRa haone hd hn
-    (by norm_num) mcaLengthRate mcaLengthAgreement le_rfl (mcaDomain mcaLength)
+    (by norm_num) (fixedRateThresholdRate mcaParameters) mcaLengthAgreement le_rfl
+    (mcaDomain mcaLength)
     (fun _ => 0) (fun _ => 0) (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
-  exact ⟨exceptional, by simpa using hbound⟩
+  have hset (z : ℚ) :
+      polynomialAgreementSet (mcaDomain mcaLength) (fun i ↦ 0 + z * 0) (0 : ℚ[X]) =
+        Finset.univ := by
+    ext i
+    simp [polynomialAgreementSet]
+  obtain ⟨z, hz⟩ := Finset.exists_notMem exceptional
+  refine ⟨exceptional, by simpa using hbound, z, hz, ?_⟩
+  exact hgood z hz 0 (by simp) (by rw [hset z]; simp)
 
 open Classical in
 /-- The strict fixed-rate gate selects parameters that yield a concrete line bound over `ℚ`. -/
@@ -400,35 +515,31 @@ example :
           (mcaAgreement - mcaRate) (rateJetCap mcaRate p.multiplicity)
           (marginHeight (rateJetCap mcaRate p.multiplicity)
             (partitionFiniteRatio mcaRate mcaAgreement mcaOrder p.multiplicity)) mcaOrder *
-          (rateBlockThreshold mcaRate mcaOrder p.multiplicity : ℝ) ^ (mcaOrder + 1) := by
+          (rateBlockThreshold mcaRate mcaOrder p.multiplicity : ℝ) ^ (mcaOrder + 1) ∧
+        ∃ z ∉ exceptional, HasExactCorrelatedPair
+          (mcaDomain (rateBlockThreshold mcaRate mcaOrder p.multiplicity)) (fun _ ↦ 0)
+          (fun _ ↦ 0) (RingHom.id ℚ) 1 z (0 : ℚ[X]) := by
   obtain ⟨hR, hRa, haone, hd, hgate⟩ := mcaRateGate
-  obtain ⟨p, hline⟩ := exists_ratePartition_lineMCA_parameters hR hRa haone hd hgate
+  obtain ⟨p, hline⟩ := exists_ratePartition_line_exactCorrelatedPair_parameters hR hRa haone hd
+    hgate
   let n := rateBlockThreshold mcaRate mcaOrder p.multiplicity
   have hn : rateBlockThreshold mcaRate mcaOrder p.multiplicity ≤ n := Nat.le_refl _
   have hkR : ((1 : ℕ) : ℝ) ≤ mcaRate * n := by
-    have hAn : mcaAgreement * n ≤ n := by
-      have ha : mcaAgreement ≤ 1 := by norm_num [mcaRate, mcaAgreement, mcaGap]
-      nlinarith [Nat.cast_nonneg n (α := ℝ)]
-    have hn0 : (0 : ℝ) ≤ (n : ℝ) := by exact_mod_cast Nat.zero_le n
-    have hguards := rateBlockThreshold_guards (rate := mcaRate) (agreement := mcaAgreement)
-      (order := mcaOrder) (multiplicity := p.multiplicity) (n := n) (k := 0) (A := n)
-      hR (hRa.trans haone) hn
-      (by
-        have hn0 : (0 : ℝ) ≤ (n : ℝ) := by exact_mod_cast Nat.zero_le n
-        have hproduct : (0 : ℝ) ≤ mcaRate * (n : ℝ) :=
-          mul_nonneg (by norm_num [mcaRate]) hn0
-        simpa only [Nat.cast_zero] using hproduct) hAn
-    have hfloor : 1 ≤ ⌊mcaRate * n⌋₊ := by omega
-    calc
-      ((1 : ℕ) : ℝ) ≤ (⌊mcaRate * n⌋₊ : ℝ) := by exact_mod_cast hfloor
-      _ ≤ mcaRate * n := Nat.floor_le (by positivity)
+    simpa [n] using fixedRateThresholdRate p
   have haA : mcaAgreement * n ≤ n := by
     have ha : mcaAgreement ≤ 1 := by norm_num [mcaRate, mcaAgreement, mcaGap]
     nlinarith [Nat.cast_nonneg n (α := ℝ)]
-  obtain ⟨exceptional, hbound, _⟩ := hline ℚ n 1 n hn (by norm_num) hkR haA le_rfl
+  obtain ⟨exceptional, hbound, hgood⟩ := hline ℚ n 1 n hn (by norm_num) hkR haA le_rfl
     (mcaDomain n) (fun _ => 0) (fun _ => 0)
     (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
-  exact ⟨p, exceptional, by simpa [n] using hbound⟩
+  have hset (z : ℚ) : polynomialAgreementSet (mcaDomain n) (fun i ↦ 0 + z * 0)
+      (0 : ℚ[X]) =
+      Finset.univ := by
+    ext i
+    simp [polynomialAgreementSet]
+  obtain ⟨z, hz⟩ := Finset.exists_notMem exceptional
+  refine ⟨p, exceptional, by simpa [n] using hbound, z, hz, ?_⟩
+  exact hgood z hz 0 (by simp) (by rw [hset z]; simp)
 
 private noncomputable def uniformMcaGap : ℝ := 1 / 5
 private noncomputable def uniformMcaLength : ℕ := uniformBlockThreshold uniformMcaGap
@@ -460,15 +571,28 @@ example :
       (exceptional.card : ℝ) ≤ (1 : ℝ) * polynomialCurveProductAgreementConstant uniformMcaGap
         (uniformJetCap uniformMcaGap) (150 * uniformJetCap uniformMcaGap)
         (uniformDerivativeOrder uniformMcaGap) *
-        (uniformMcaLength : ℝ) ^ (uniformDerivativeOrder uniformMcaGap + 1) := by
-  obtain ⟨exceptional, hbound, _⟩ := exists_uniformRatePartition_curveMCA
+        (uniformMcaLength : ℝ) ^ (uniformDerivativeOrder uniformMcaGap + 1) ∧
+      ∃ z ∉ exceptional, HasExactPowerAgreement (mcaDomain uniformMcaLength)
+        (mcaValues uniformMcaLength) (algebraMap ℚ (AlgebraicClosure ℚ)) 1 z
+        (0 : (AlgebraicClosure ℚ)[X]) := by
+  obtain ⟨exceptional, hbound, hgood⟩ := exists_uniformRatePartition_curve_exactPowerAgreement
     (F := ℚ) (E := AlgebraicClosure ℚ) (δ := uniformMcaGap) (n := uniformMcaLength)
     (k := 1) (A := uniformMcaLength) (ℓ := 1)
     (by norm_num [uniformMcaGap]) (by norm_num [uniformMcaGap]) uniformMcaBlockLength
     (by norm_num) uniformMcaAgreementGap le_rfl (by norm_num)
     (mcaDomain uniformMcaLength) (mcaValues uniformMcaLength)
     (algebraMap ℚ (AlgebraicClosure ℚ)) (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
-  exact ⟨exceptional, by simpa using hbound⟩
+  have hset (z : AlgebraicClosure ℚ) :
+      polynomialAgreementSet
+        ((mcaDomain uniformMcaLength).trans ⟨algebraMap ℚ (AlgebraicClosure ℚ),
+          (algebraMap ℚ (AlgebraicClosure ℚ)).injective⟩)
+        (powerBatchedWord (fun t i ↦ algebraMap ℚ (AlgebraicClosure ℚ)
+          (mcaValues uniformMcaLength t i)) z) (0 : (AlgebraicClosure ℚ)[X]) = Finset.univ := by
+    ext i
+    simp [polynomialAgreementSet, powerBatchedWord, mcaValues]
+  obtain ⟨z, hz⟩ := Finset.exists_notMem exceptional
+  refine ⟨exceptional, by simpa using hbound, z, hz, ?_⟩
+  exact hgood z hz 0 (by simp) (by rw [hset z]; simp)
 
 open Classical in
 /-- The uniform parameters give a base-field curve agreement bound over `ℚ`. -/
@@ -477,14 +601,23 @@ example :
       (exceptional.card : ℝ) ≤ (1 : ℝ) * polynomialCurveProductAgreementConstant uniformMcaGap
         (uniformJetCap uniformMcaGap) (150 * uniformJetCap uniformMcaGap)
         (uniformDerivativeOrder uniformMcaGap) *
-        (uniformMcaLength : ℝ) ^ (uniformDerivativeOrder uniformMcaGap + 1) := by
-  obtain ⟨exceptional, hbound, _⟩ := exists_uniformRatePartition_baseCurveMCA
+        (uniformMcaLength : ℝ) ^ (uniformDerivativeOrder uniformMcaGap + 1) ∧
+      ∃ z ∉ exceptional, HasExactPowerAgreement (mcaDomain uniformMcaLength)
+        (mcaValues uniformMcaLength) (RingHom.id ℚ) 1 z (0 : ℚ[X]) := by
+  obtain ⟨exceptional, hbound, hgood⟩ :=
+    exists_uniformRatePartition_baseCurve_exactPowerAgreement
     (δ := uniformMcaGap) (n := uniformMcaLength) (k := 1) (A := uniformMcaLength)
     (ℓ := 1) (by norm_num [uniformMcaGap]) (by norm_num [uniformMcaGap])
     uniformMcaBlockLength (by norm_num) uniformMcaAgreementGap le_rfl (by norm_num)
     (mcaDomain uniformMcaLength) (mcaValues uniformMcaLength)
     (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
-  exact ⟨exceptional, by simpa using hbound⟩
+  have hset (z : ℚ) : polynomialAgreementSet (mcaDomain uniformMcaLength)
+      (powerBatchedWord (mcaValues uniformMcaLength) z) (0 : ℚ[X]) = Finset.univ := by
+    ext i
+    simp [polynomialAgreementSet, powerBatchedWord, mcaValues]
+  obtain ⟨z, hz⟩ := Finset.exists_notMem exceptional
+  refine ⟨exceptional, by simpa using hbound, z, hz, ?_⟩
+  exact hgood z hz 0 (by simp) (by rw [hset z]; simp)
 
 open Classical in
 /-- The uniform parameters give an affine-line agreement bound over `ℚ`. -/
@@ -493,13 +626,21 @@ example :
       (exceptional.card : ℝ) ≤ polynomialCurveProductAgreementConstant uniformMcaGap
         (uniformJetCap uniformMcaGap) (150 * uniformJetCap uniformMcaGap)
         (uniformDerivativeOrder uniformMcaGap) *
-        (uniformMcaLength : ℝ) ^ (uniformDerivativeOrder uniformMcaGap + 1) := by
-  obtain ⟨exceptional, hbound, _⟩ := exists_uniformRatePartition_lineMCA
+        (uniformMcaLength : ℝ) ^ (uniformDerivativeOrder uniformMcaGap + 1) ∧
+      ∃ z ∉ exceptional, HasExactCorrelatedPair (mcaDomain uniformMcaLength) (fun _ ↦ 0)
+        (fun _ ↦ 0) (RingHom.id ℚ) 1 z (0 : ℚ[X]) := by
+  obtain ⟨exceptional, hbound, hgood⟩ := exists_uniformRatePartition_line_exactCorrelatedPair
     (δ := uniformMcaGap) (n := uniformMcaLength) (k := 1) (A := uniformMcaLength)
     (by norm_num [uniformMcaGap]) (by norm_num [uniformMcaGap]) uniformMcaBlockLength
     (by norm_num) uniformMcaAgreementGap le_rfl (mcaDomain uniformMcaLength)
     (fun _ => 0) (fun _ => 0) (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
-  exact ⟨exceptional, by simpa using hbound⟩
+  have hset (z : ℚ) : polynomialAgreementSet (mcaDomain uniformMcaLength)
+      (fun i ↦ 0 + z * 0) (0 : ℚ[X]) = Finset.univ := by
+    ext i
+    simp [polynomialAgreementSet]
+  obtain ⟨z, hz⟩ := Finset.exists_notMem exceptional
+  refine ⟨exceptional, by simpa using hbound, z, hz, ?_⟩
+  exact hgood z hz 0 (by simp) (by rw [hset z]; simp)
 
 example :
     ∃ bad : Finset (AlgebraicClosure ℚ),

@@ -17,7 +17,8 @@ an exact correlated-pair conclusion.
 
 ## Main statements
 
-* `ReedSolomon.exists_prescribedLineMCA`: exact correlated agreement outside one finite set.
+* `ReedSolomon.exists_prescribedLine_exactCorrelatedPair`: exact correlated agreement outside one
+  finite set.
 
 ## References
 
@@ -37,7 +38,8 @@ universe u
 open Classical in
 /-- Under the prescribed small-gap hypotheses, all sufficiently agreeing line polynomials outside
 one finite exceptional set have exact correlated-pair witnesses. -/
-theorem exists_prescribedLineMCA {F E : Type u} [Field F] [Field E] [IsAlgClosed E]
+theorem exists_prescribedLine_exactCorrelatedPair {F E : Type u} [Field F] [Field E]
+    [IsAlgClosed E]
     (δ : ℝ) (n k : ℕ) (domain : Fin n ↪ F) (f g : Fin n → F) (iota : F →+* E)
     (hδ : 0 < δ) (hδ' : δ < 1 / 4) (hk : 0 < k)
     (hblock : 8 * Nat.ceil

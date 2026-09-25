@@ -21,10 +21,13 @@ fields, block lengths, codes, and received lines.
 
 ## Main statements
 
-* `exists_ratePartition_curveMCA`: an extension-field bound for exact power agreement.
-* `exists_ratePartition_baseCurveMCA`: the corresponding bound over the received-word field.
-* `exists_ratePartition_lineMCA`: the specialization to affine lines.
-* `exists_ratePartition_lineMCA_parameters`: parameter selection from a strict rate condition.
+* `exists_ratePartition_curve_exactPowerAgreement`: an extension-field bound for exact power
+  agreement.
+* `exists_ratePartition_baseCurve_exactPowerAgreement`: the corresponding bound over the
+  received-word field.
+* `exists_ratePartition_line_exactCorrelatedPair`: the specialization to affine lines.
+* `exists_ratePartition_line_exactCorrelatedPair_parameters`: parameter selection from a strict
+  rate condition.
 
 ## References
 
@@ -51,7 +54,7 @@ the exceptional set, each candidate of degree below `k` with at least `A` agreem
 combination of base-field polynomials of degree below `k`; its full agreement set equals their
 common agreement set.
 -/
-theorem exists_ratePartition_curveMCA
+theorem exists_ratePartition_curve_exactPowerAgreement
     -- Work over a received-word field and an algebraically closed geometric extension.
     {F E : Type u} [Field F] [Field E] [IsAlgClosed E]
     -- Fix the rate envelope, agreement fraction, derivative order, and code/curve sizes.
@@ -85,42 +88,14 @@ theorem exists_ratePartition_curveMCA
           (powerBatchedWord (fun t i ↦ iota (values t i)) z) P).card →
         -- It descends to base-field witnesses and has exactly their common agreement set.
         HasExactPowerAgreement domain values iota k z P := by
-  obtain ⟨hdD, hDlower, hkD, hDn, hνn, hmn, hceil, hn2⟩ :=
-    RatePartition.rateBlockThreshold_guards hR (hRa.trans haone) hn hkR haA
   obtain ⟨cert⟩ :=
     exists_partitionSupport_curve_certificate_of_rateBlockThreshold p hR (hRa.trans haone)
     (hR.trans hRa) hd hn hkR haA hAn domain
     (fun i ↦ powerBatchedCoordinate fun t ↦ values t i)
     (fun _ ↦ powerBatchedCoordinate_natDegree_le _)
   let K := max k (d + 1)
-  have hkK : k ≤ K := Nat.le_max_left _ _
-  have hdK : d < K := lt_of_lt_of_le (Nat.lt_succ_self d) (Nat.le_max_right _ _)
-  have hKn : K ≤ n := by
-    apply max_le
-    · exact hkD.trans (by omega)
-    · omega
-  have hkA : k ≤ A := by
-    have h : (k : ℝ) ≤ A := hkR.trans
-      ((mul_le_mul_of_nonneg_right hRa.le (Nat.cast_nonneg n)).trans haA)
-    exact_mod_cast h
-  have hν : 0 < RatePartition.rateJetCap R p.multiplicity := by
-    apply Nat.lt_ceil.mpr
-    have hm : (0 : ℝ) < p.multiplicity := by exact_mod_cast p.multiplicity_pos
-    simpa only [Nat.cast_zero] using (show (0 : ℝ) < 2 * p.multiplicity / R by positivity)
-  have hh : 0 < RatePartition.marginHeight (RatePartition.rateJetCap R p.multiplicity)
-      (RatePartition.partitionFiniteRatio R a d p.multiplicity) := lt_of_lt_of_le Nat.zero_lt_one
-        (le_max_left _ _)
-  have hKsub : K - 1 ≤ max (k - 1) d := by
-    rcases le_total k (d + 1) with hkd | hdk
-    · rw [show K = d + 1 by simp [K, max_eq_right hkd]]
-      exact Nat.le_max_right _ _
-    · rw [show K = k by simp [K, max_eq_left hdk]]
-      exact Nat.le_max_left _ _
-  have hchar' : ringChar F = 0 ∨
-      max (K - 1) (RatePartition.rateJetCap R p.multiplicity) < ringChar F := by
-    apply hchar.imp_right
-    intro hc
-    exact (max_le_max hKsub le_rfl).trans_lt hc
+  obtain ⟨hkK, hdK, hKn, hkA, hν, hh, hchar'⟩ :=
+    RatePartition.rateBlockThreshold_exactAgreementGuards p hR hRa haone hn hkR haA hchar
   apply exists_exceptional_exactPowerAgreement_of_certificate_of_jetCharacteristic domain values
     iota cert hk
     hkK (by omega) hdK hKn hkA hAn hν hh hℓ
@@ -135,7 +110,7 @@ For every nonexceptional challenge, a degree-`< k` candidate with at least `A` a
 power combination of degree-`< k` polynomials over the received-word field, and its full
 agreement set equals their common agreement set.
 -/
-theorem exists_ratePartition_baseCurveMCA
+theorem exists_ratePartition_baseCurve_exactPowerAgreement
     -- All algebraic data and the returned exceptional challenges now lie in one field.
     {F : Type u} [Field F]
     -- Fix the rate data, derivative order, block length, code, threshold, and curve degree.
@@ -170,7 +145,8 @@ theorem exists_ratePartition_baseCurveMCA
         HasExactPowerAgreement domain values (RingHom.id F) k z P := by
   let E := AlgebraicClosure F
   let iota : F →+* E := algebraMap F E
-  obtain ⟨ex, hc, hg⟩ := exists_ratePartition_curveMCA p hR hRa haone hd hn hk hkR haA hAn
+  obtain ⟨ex, hc, hg⟩ := exists_ratePartition_curve_exactPowerAgreement p hR hRa haone hd hn hk
+    hkR haA hAn
     hℓ domain values iota hchar
   obtain ⟨ex', hc', hg'⟩ :=
     uniformExactPowerAgreement_of_extension domain values iota k A ex hg
@@ -192,7 +168,7 @@ identifies the entire agreement set of `P` with the positions where `P₀` agree
 `P₁` agrees with `g`. This full-set equality excludes accidental agreements created only by
 cancellation at `z`.
 -/
-theorem exists_ratePartition_lineMCA
+theorem exists_ratePartition_line_exactCorrelatedPair
     -- The received line, candidate, witnesses, and exceptional challenges all lie over `F`.
     {F : Type u} [Field F]
     -- Fix the rate data, derivative order, and integral code parameters.
@@ -225,7 +201,8 @@ theorem exists_ratePartition_lineMCA
         A ≤ (polynomialAgreementSet domain (fun i ↦ f i + z * g i) P).card →
         -- Recover two base-field witnesses and equality of the full agreement sets.
         HasExactCorrelatedPair domain f g (RingHom.id F) k z P := by
-  obtain ⟨ex, hc, hg⟩ := exists_ratePartition_baseCurveMCA p hR hRa haone hd hn hk hkR haA hAn
+  obtain ⟨ex, hc, hg⟩ :=
+    exists_ratePartition_baseCurve_exactPowerAgreement p hR hRa haone hd hn hk hkR haA hAn
     (by norm_num : 0 < 1) domain ![f, g] hchar
   refine ⟨ex, by simpa only [Nat.cast_one, one_mul] using hc, ?_⟩
   intro z hz P hP hA
@@ -254,14 +231,14 @@ The final `HasExactCorrelatedPair` supplies degree-`< k` witnesses `P₀,P₁`, 
 The resulting line theorem works for every later field, block length, code, agreement threshold,
 evaluation domain and received line satisfying its hypotheses.
 -/
-theorem exists_ratePartition_lineMCA_parameters
+theorem exists_ratePartition_line_exactCorrelatedPair_parameters
     -- The real rate data and derivative order are fixed before any finite parameter search.
     {R a : ℝ} {d : ℕ}
     -- The fixed-order regime is `0 < R < a < 1` with `d ≥ 500`.
     (hR : 0 < R) (hRa : R < a) (haone : a < 1) (hd : 500 ≤ d)
     -- Strict limiting surplus makes the finite parameter search terminate.
     (hgate : 1 < RatePartition.rateGamma R a d) :
-    -- This witness fixes every list/MCA constant solely from `(R,a,d)`.
+    -- This witness fixes every rate-partition constant solely from `(R,a,d)`.
     ∃ p : RatePartition.PartitionFiniteParameters R a d,
       -- The field and integral code parameters are chosen only after `p`.
       ∀ (F : Type u) [Field F] (n k A : ℕ),
@@ -297,6 +274,7 @@ theorem exists_ratePartition_lineMCA_parameters
   obtain ⟨p⟩ :=
     RatePartition.PartitionFiniteParameters.nonempty hR (hR.trans hRa) hdpos hlimit
   exact ⟨p, fun _ _ _ _ _ hn hk hkR haA hAn domain f g hchar ↦
-    exists_ratePartition_lineMCA p hR hRa haone hd hn hk hkR haA hAn domain f g hchar⟩
+    exists_ratePartition_line_exactCorrelatedPair p hR hRa haone hd hn hk hkR haA hAn domain f g
+      hchar⟩
 
 end ReedSolomon

@@ -53,38 +53,13 @@ theorem ratePartition_close_list_bound
       ((closePolynomialSet domain received k A).ncard : ℝ) ≤
         (RatePartition.rateJetCap R p.multiplicity : ℝ) ^ 2 *
           (2 * RatePartition.rateJetCap R p.multiplicity / (a - R)) ^ d * n ^ d := by
-  obtain ⟨hdD, hDlower, hkD, hDn, hνn, hmn, hceil, hn2⟩ :=
-    RatePartition.rateBlockThreshold_guards hR (hRa.trans haone) hn hkR haA
   obtain ⟨cert⟩ := exists_partitionSupport_curve_certificate_of_rateBlockThreshold p hR
     (hRa.trans haone)
     (hR.trans hRa) hd hn hkR haA hAn domain (fun i ↦ Polynomial.C (received i))
     (fun _ ↦ by simp)
   let K := max k (d + 1)
-  have hkK : k ≤ K := Nat.le_max_left _ _
-  have hdK : d < K := lt_of_lt_of_le (Nat.lt_succ_self d) (Nat.le_max_right _ _)
-  have hKn : K ≤ n := by
-    apply max_le
-    · exact hkD.trans (by omega)
-    · omega
-  have hkA : k ≤ A := by
-    have h : (k : ℝ) ≤ A := hkR.trans
-      ((mul_le_mul_of_nonneg_right hRa.le (Nat.cast_nonneg n)).trans haA)
-    exact_mod_cast h
-  have hν : 0 < RatePartition.rateJetCap R p.multiplicity := by
-    apply Nat.lt_ceil.mpr
-    have hm : (0 : ℝ) < p.multiplicity := by exact_mod_cast p.multiplicity_pos
-    simpa only [Nat.cast_zero] using (show (0 : ℝ) < 2 * p.multiplicity / R by positivity)
-  have hKsub : K - 1 ≤ max (k - 1) d := by
-    rcases le_total k (d + 1) with hkd | hdk
-    · rw [show K = d + 1 by simp [K, max_eq_right hkd]]
-      exact Nat.le_max_right _ _
-    · rw [show K = k by simp [K, max_eq_left hdk]]
-      exact Nat.le_max_left _ _
-  have hchar' : ringChar F = 0 ∨
-      max (K - 1) (RatePartition.rateJetCap R p.multiplicity) < ringChar F := by
-    apply hchar.imp_right
-    intro hc
-    exact (max_le_max hKsub le_rfl).trans_lt hc
+  obtain ⟨hkK, hdK, hKn, hkA, hν, _, hchar'⟩ :=
+    RatePartition.rateBlockThreshold_exactAgreementGuards p hR hRa haone hn hkR haA hchar
   apply close_list_bound_of_curve_certificate_of_jetCharacteristic domain received cert hk
     hkK hdK hKn hkA hAn hν (sub_pos.mpr hRa) ?_ hchar'
   nlinarith
