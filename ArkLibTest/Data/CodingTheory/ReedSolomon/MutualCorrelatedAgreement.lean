@@ -16,7 +16,7 @@ import
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerTupleCounting
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerTupleIncidence
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FrobeniusIncidence
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerTupleRegularBound
+import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerTupleSeparableBound
 import ArkLib.Data.CodingTheory.ReedSolomon.PowerAgreement.ConstantCode
 import Mathlib.Analysis.Complex.Polynomial.Basic
 import
@@ -704,14 +704,16 @@ example : positiveChallenges.Nonempty ∧
   have hτregular : TaylorExponentSufficient 0 1 1 := by
     intro l; fin_cases l; norm_num [TaylorExponentSufficient]
   obtain ⟨regularExceptional, hregularCard, hregularGood⟩ :=
-    exists_exceptional_frobeniusPowerRegularSolutions_at
+    exists_exceptional_frobeniusPowerSeparableSolutions_at
       (F := ComponentField) (E := ComponentField) (n := 2) (k := 1) (K := 1)
       (ℓ := 1) (L := 2) positiveChallengeDomain positiveChallengeWords
       (RingHom.id ComponentField) positiveChallengeDomain
       (componentCoordinateEquation (E := ComponentField)) 1 0 1 0 1 2 hroots
       (by norm_num) (by norm_num) hτregular (by norm_num) (by norm_num) (by norm_num)
       (by norm_num) (by norm_num) (coeffNatDegreeLE_X (some (0 : Fin 1)))
-      componentCoordinateEquation_jetDegree
+      componentCoordinateEquation_jetDegree (MvPolynomial.X_prime).irreducible
+      (by simp [componentCoordinateEquation, MvPolynomial.pderiv_X])
+      (by simp [componentCoordinateEquation])
   have hdomain : positiveChallengeDomain.trans ⟨RingHom.id ComponentField,
       (RingHom.id ComponentField).injective⟩ = positiveChallengeDomain := by
     ext i; rfl
@@ -728,9 +730,7 @@ example : positiveChallenges.Nonempty ∧
         (by norm_num : (1 ^ 0 : ℕ) ≠ 0)] using positiveChallenge_two_agreements
     have hregular := hregularGood 0 hz 0 (by norm_num [positiveChallengeWitness]) (by
       simp [componentCoordinateEquation, challengeSpecialization, differentialSpecialization,
-        differentialSpecializationHom]) (by
-      norm_num [componentCoordinateEquation, challengeSpecialization, separant,
-        differentialSpecialization, differentialSpecializationHom]) hagree0
+        differentialSpecializationHom]) hagree0
     simpa only [zero_pow (by norm_num : (1 ^ 0 : ℕ) ≠ 0)] using hregular
   exact ⟨by simp [positiveChallenges], hbound, exceptional, hcard, hzero, regularExceptional,
     by norm_num at hregularCard; exact_mod_cast hregularCard, hregularZero⟩
