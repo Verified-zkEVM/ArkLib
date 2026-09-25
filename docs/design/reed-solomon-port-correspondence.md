@@ -2389,6 +2389,10 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordi
 
 Renamed `finite_frobeniusRegularBadWitnesses_card_le_of_separant` to `finite_frobeniusRegularBadChallenges_card_le_of_separant`. The theorem uses `CoeffNatDegreeLE` and `jetTotalDegree`, and drops the unnecessary source assumption `A ≤ n`. It selects a common regular center and specializes the arbitrary-tuple bound at tuple length two and retained threshold `k`. The private center-selection and ideal-properness helpers are covered by `exists_forall_jetEvaluation_ne_zero_of_family`, `jointInitialJetEquation_ne_zero_of_regular`, and the existing singleton-span properness argument. A private helper shares the two-message conversion between the supplied-center and center-free bounds.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/Frobenius/RegularSolutions.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`exists_exceptional_frobeniusRegularSolutions` keeps its name. It is generalized to `CoeffNatDegreeLE` and `jetTotalDegree` and no longer requires `A ≤ n`. The proof specializes the power-batched exceptional-set theorem to `ℓ = 1` and `L = k`, then converts exact power agreement to exact correlated-pair agreement. No declarations were omitted.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerTupleSeparableBound.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/PolynomialCurve/Separable.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -5200,6 +5204,10 @@ Kept the nonempty two-message ordinary regular-bound instance. Added concrete ch
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/Frobenius/RegularChart.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 Acceptance examples apply the supplied-center theorem and the new center-free theorem to the existing nonempty singleton challenge set over the two-point field fixture. Each example verifies `card ≤ 2`.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/Frobenius/RegularSolutions.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+An acceptance example checks a concrete two-message instance and shows that challenge zero belongs to an exceptional set of size at most two.
 
 ## `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder.lean`
 
