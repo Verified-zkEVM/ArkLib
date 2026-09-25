@@ -16,7 +16,7 @@ public import
 
 The intermediate product cutoff gives a scalar cost bound for each regular stage. Uniformizing
 over stage orders and summing over a finite family gives one coefficient depending only on the
-gap, the stage count, and the degree cap.
+gap, the stage count, terminal height, and the degree cap.
 
 ## Main statements
 
