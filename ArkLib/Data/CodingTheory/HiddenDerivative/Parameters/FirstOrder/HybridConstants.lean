@@ -65,6 +65,8 @@ most `2 θ`. All comparisons are between real numbers, before any ceiling is tak
 * `maxFirstOrderListCharge_le_firstOrderListConstant`,
   `maxMinFirstOrderExceptionCharge_le_firstOrderExceptionConstant`: the optimized constants are at
   most the closed ones.
+* `maxMinFirstOrderExceptionCharge_mono_height`, `firstOrderExceptionConstant_mono_height`: the
+  optimized and closed exception constants increase with the challenge degree.
 
 ## References
 
@@ -610,6 +612,79 @@ theorem maxMinFirstOrderExceptionCharge_le_firstOrderExceptionConstant {n D A h 
   exact (minFirstOrderExceptionCharge_le (lt_balancedSplit hDA) (balancedSplit_le hDA.le)).trans
     (firstOrderExceptionCharge_balancedSplit_le hD hDA hAn
       (Nat.lt_succ_iff.mp (Finset.mem_range.mp he)) hMμ)
+
+/-! ### Monotonicity in the challenge degree -/
+
+/-- The regular joint stage sum increases with the challenge degree. -/
+theorem regularJointStageSum_mono_height {D h h' μ e : ℕ} (hh : h ≤ h') :
+    regularJointStageSum D h μ e ≤ regularJointStageSum D h' μ e :=
+  Finset.sum_le_sum fun _ _ ↦ firstOrderCurveJointStageOne_mono_height hh
+
+/-- For `0 ≤ θ`, the ordinary-tail charge increases with the challenge degree. -/
+theorem ordinaryTailCharge_mono_height {θ : ℝ} {n D h h' b : ℕ} (hθ : 0 ≤ θ) (hh : h ≤ h') :
+    ordinaryTailCharge θ n D h b ≤ ordinaryTailCharge θ n D h' b := by
+  have hh' : (h : ℝ) ≤ h' := by exact_mod_cast hh
+  unfold ordinaryTailCharge
+  split_ifs
+  · exact hh'
+  · gcongr
+
+/-- For `0 ≤ θ`, the exception charge increases with the challenge degree. -/
+theorem firstOrderExceptionCharge_mono_height {θ : ℝ} {n D A h h' μ e L : ℕ} (hθ : 0 ≤ θ)
+    (hh : h ≤ h') :
+    firstOrderExceptionCharge θ n D A h μ e L ≤ firstOrderExceptionCharge θ n D A h' μ e L := by
+  have hjoint : (regularJointStageSum D h μ e : ℝ) ≤ regularJointStageSum D h' μ e := by
+    exact_mod_cast regularJointStageSum_mono_height hh
+  have hratio : 0 ≤ retainedCoordinateRatio n A L := by
+    unfold retainedCoordinateRatio
+    positivity
+  unfold firstOrderExceptionCharge
+  gcongr ?_ + _ * _ * ?_ + _
+  exact ordinaryTailCharge_mono_height hθ hh
+
+/-- For `0 ≤ θ`, the minimum of the exception charge over splits increases with the challenge
+degree. -/
+theorem minFirstOrderExceptionCharge_mono_height {θ : ℝ} {n D A h h' μ e : ℕ} (hθ : 0 ≤ θ)
+    (hh : h ≤ h') :
+    minFirstOrderExceptionCharge θ n D A h μ e ≤ minFirstOrderExceptionCharge θ n D A h' μ e := by
+  classical
+  by_cases hDA : D < A
+  · obtain ⟨L, hL, hmin⟩ : ∃ L ∈ Finset.Icc (D + 1) A,
+        firstOrderExceptionCharge θ n D A h' μ e L =
+          minFirstOrderExceptionCharge θ n D A h' μ e := by
+      unfold minFirstOrderExceptionCharge
+      simp only [hDA, ↓reduceDIte]
+      exact Finset.mem_image.mp (Finset.min'_mem _ _)
+    obtain ⟨hDL, hLA⟩ := Finset.mem_Icc.mp hL
+    rw [← hmin]
+    exact (minFirstOrderExceptionCharge_le hDL hLA).trans
+      (firstOrderExceptionCharge_mono_height hθ hh)
+  · simp [minFirstOrderExceptionCharge, hDA]
+
+/-- For `0 ≤ θ`, the optimized exception charge increases with the challenge degree. -/
+theorem maxMinFirstOrderExceptionCharge_mono_height {θ : ℝ} {n D A h h' μ M : ℕ} (hθ : 0 ≤ θ)
+    (hh : h ≤ h') :
+    maxMinFirstOrderExceptionCharge θ n D A h μ M ≤
+      maxMinFirstOrderExceptionCharge θ n D A h' μ M := by
+  classical
+  obtain ⟨e, he, hmax⟩ : ∃ e ∈ Finset.range (M + 1),
+      minFirstOrderExceptionCharge θ n D A h μ e =
+        maxMinFirstOrderExceptionCharge θ n D A h μ M := by
+    unfold maxMinFirstOrderExceptionCharge
+    exact Finset.mem_image.mp (Finset.max'_mem _ _)
+  rw [← hmax]
+  exact (minFirstOrderExceptionCharge_mono_height hθ hh).trans
+    (minFirstOrderExceptionCharge_le_maxMin (Nat.lt_succ_iff.mp (Finset.mem_range.mp he)))
+
+/-- For `0 ≤ θ`, the closed exception constant increases with the challenge degree. -/
+theorem firstOrderExceptionConstant_mono_height {θ : ℝ} {n D h h' μ M : ℕ} (hθ : 0 ≤ θ)
+    (hh : h ≤ h') :
+    firstOrderExceptionConstant θ n D h μ M ≤ firstOrderExceptionConstant θ n D h' μ M := by
+  have hT := stageStaircase_nonneg μ M
+  unfold firstOrderExceptionConstant
+  gcongr ?_ + ?_ + _
+  · exact ordinaryTailCharge_mono_height hθ hh
+  · gcongr
 
 end
 

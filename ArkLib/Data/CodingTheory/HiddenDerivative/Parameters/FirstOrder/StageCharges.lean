@@ -43,8 +43,8 @@ separate direct incidence factor `η`.
 * `firstOrderCurveFiberStageOne`, `firstOrderCurveJointStageOne`: the order-one stage degrees.
 * `le_firstOrderCurveFiberStageOne`: an order-one fiber degree is at least `j` when `2 ≤ K`.
 * `firstOrderCurveFiberStageOne_mono_total`, `firstOrderCurveFiberStageOne_mono_derivative`,
-  `firstOrderCurveJointStageOne_mono_total`, `firstOrderCurveJointStageOne_mono_derivative`:
-  monotonicity of the stage degrees.
+  `firstOrderCurveJointStageOne_mono_total`, `firstOrderCurveJointStageOne_mono_derivative`,
+  `firstOrderCurveJointStageOne_mono_height`: monotonicity of the stage degrees.
 * `firstOrderCurveFiberStageOne_le_mul_totalCap`: without the derivative cap the fiber degree is
   at most `j b`.
 * `firstOrderCurveBound`, `firstOrderCurveBound_mono_directFactor`: the curve bound.
@@ -189,6 +189,12 @@ theorem firstOrderCurveJointStageOne_mono_derivative {K ell h τ j r q : ℕ} (h
       (firstOrderTaylorDerivativeCap_le_totalCap ..) le_rfl le_rfl
       (firstOrderTaylorDerivativeCap_mono_derivative hrq)).trans
     (cappedBidegreeMixedVolume_mono_left le_rfl le_rfl hrq)
+
+/-- The joint stage degree increases with the challenge degree. -/
+theorem firstOrderCurveJointStageOne_mono_height {K ell τ j r h h' : ℕ} (hh : h ≤ h') :
+    firstOrderCurveJointStageOne K ell h j r τ ≤ firstOrderCurveJointStageOne K ell h' j r τ := by
+  unfold firstOrderCurveJointStageOne cappedBidegreeMixedVolume
+  gcongr
 
 /-- The fixed-fiber degree summed over the order-one stages. The stage of total jet degree
 `t + 1` has first-derivative degree `t + 1 - (μ - min M μ)`. -/
