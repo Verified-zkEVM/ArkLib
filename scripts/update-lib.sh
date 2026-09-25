@@ -42,7 +42,14 @@ printf 'module\n\n' > "$tmp_file"
 while IFS= read -r lean_path; do
   module_path="${lean_path%.lean}"
   module_path="${module_path//\//.}"
-  if (( ${#module_path} + 14 > 100 )); then
+  if (( ${#module_path} > 100 )); then
+    echo "ERROR: Module path exceeds the 100-character line limit: $module_path" >&2
+    exit 1
+  elif (( ${#module_path} == 100 )); then
+    printf 'public import\n%s\n' "$module_path" >> "$tmp_file"
+  elif (( ${#module_path} == 99 )); then
+    printf 'public import\n %s\n' "$module_path" >> "$tmp_file"
+  elif (( ${#module_path} + 14 > 100 )); then
     printf 'public import\n  %s\n' "$module_path" >> "$tmp_file"
   else
     printf 'public import %s\n' "$module_path" >> "$tmp_file"
