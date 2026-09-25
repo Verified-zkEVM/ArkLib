@@ -471,3 +471,11 @@ private def uniformLineDomain : Fin 3 ↪ ℚ := ⟨![0, 1, 2], by decide⟩
 example := exists_uniformFirstOrder_lineMca_of_two_le 3 2 3 uniformLineDomain (fun _ ↦ 0)
   (fun _ ↦ 1) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
   (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
+
+private def ternaryLineDomain : Fin 3 ↪ ZMod 3 := ⟨![0, 1, 2], by decide⟩
+
+/-- The uniform line-agreement bound applies over `ZMod 3` at `k = 2`, where the characteristic is
+below the first-order derivative cap. -/
+example := exists_uniformFirstOrder_lineMca 3 2 3 ternaryLineDomain (fun _ ↦ 0) (fun _ ↦ 1)
+  (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+  (Or.inr (by rw [ZMod.ringChar_zmod_n]; norm_num))
