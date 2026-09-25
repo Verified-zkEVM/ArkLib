@@ -143,11 +143,6 @@ private noncomputable def tupleChallenge : Fin 2 → ℚ[X] := ![0, 1]
 private theorem tuples_ne : tupleOne ≠ tupleChallenge := fun h ↦ by
   simpa [tupleOne, tupleChallenge] using congrFun h 0
 
-example :
-    {z : ℚ | powerBatchedPolynomial (fun t ↦ (tupleOne t).map (RingHom.id ℚ)) z =
-      powerBatchedPolynomial (fun t ↦ (tupleChallenge t).map (RingHom.id ℚ)) z}.Finite :=
-  finite_polynomialTuple_collisions (RingHom.id ℚ) tuples_ne
-
 example : ∃ z : ℚ, z ≠ 1 ∧ z ≠ 0 ∧
     powerBatchedPolynomial (fun t ↦ (tupleOne t).map (RingHom.id ℚ)) z ≠
       powerBatchedPolynomial (fun t ↦ (tupleChallenge t).map (RingHom.id ℚ)) z := by
@@ -632,16 +627,9 @@ private theorem positiveChallenge_no_correlatedPair :
     ¬ HasExactCorrelatedPair positiveChallengeDomain (positiveChallengeWords 0)
       (positiveChallengeWords 1) (RingHom.id ComponentField) 1 0 0 := by
   rintro ⟨⟨P₀, P₁⟩, hP₀, hP₁, -, hsets⟩
-  have hcommon : commonCurveAgreementSet positiveChallengeDomain positiveChallengeWords
-      ![P₀, P₁] = univ := by
-    have hpoly : commonPolynomialAgreementSet positiveChallengeDomain
-        (positiveChallengeWords 0) (positiveChallengeWords 1) P₀ P₁ = univ := by
-      rw [← hsets]
-      ext i
-      simp [polynomialAgreementSet, positiveChallengeDomain, positiveChallengeWords]
-    simpa [commonCurveAgreementSet, commonPolynomialAgreementSet, positiveChallengeWords]
-      using hpoly
-  apply positiveChallenge_no_common ![P₀, P₁] ?_ hcommon
+  apply positiveChallenge_no_common ![P₀, P₁] ?_
+    (by simpa [commonCurveAgreementSet, commonPolynomialAgreementSet,
+      positiveChallengeDomain, positiveChallengeWords, polynomialAgreementSet] using hsets.symm)
   intro t
   fin_cases t
   · exact hP₀
@@ -649,11 +637,12 @@ private theorem positiveChallenge_no_correlatedPair :
 private theorem positiveChallenge_two_agreements :
     2 ≤ (polynomialAgreementSet positiveChallengeDomain
       (powerBatchedWord positiveChallengeWords 0) 0).card := by
-  exact Nat.succ_le_of_lt (Finset.one_lt_card.mpr ⟨0,
-    by simp [polynomialAgreementSet, positiveChallengeDomain, positiveChallengeWords,
-      powerBatchedWord], 1,
-    by simp [polynomialAgreementSet, positiveChallengeDomain, positiveChallengeWords,
-      powerBatchedWord], by decide⟩)
+  apply Nat.succ_le_of_lt (Finset.one_lt_card.mpr ?_)
+  exact ⟨0, by simp [polynomialAgreementSet, positiveChallengeDomain,
+    positiveChallengeWords, powerBatchedWord], 1, by simp [polynomialAgreementSet,
+    positiveChallengeDomain, positiveChallengeWords, powerBatchedWord], by decide⟩
+private abbrev positiveDerivativeBound :=
+  regularPowerBatchedDerivativeCappedBoundTwo 2 1 2 1 2 2 1 1 1 2
 /-- The ordinary regular bound applies to the nonempty two-agreement challenge set. -/
 example : positiveChallenges.Nonempty ∧ (positiveChallenges.card : ℚ) ≤ 2 := by
   have hregularBound := finite_frobeniusRegularBadChallenges_card_le
@@ -683,10 +672,67 @@ example : positiveChallenges.Nonempty ∧ (positiveChallenges.card : ℚ) ≤ 2 
       intro z hz
       obtain rfl := Finset.mem_singleton.mp hz
       simpa [positiveChallengeWitness] using positiveChallenge_no_correlatedPair)
-  have hregularBound' : (positiveChallenges.card : ℚ) ≤ 2 := by
+  exact ⟨by simp [positiveChallenges], by
     convert hregularBound using 1
-    norm_num [positiveChallenges]
-  exact ⟨by simp [positiveChallenges], hregularBound'⟩
+    norm_num [positiveChallenges]⟩
+/-- The derivative-capped and separable bounds apply to concrete bad challenges. -/
+example :
+    (positiveChallenges.card : ℚ) ≤ positiveDerivativeBound ∧
+    (∃ exceptional : Finset ComponentField,
+      (exceptional.card : ℚ) ≤ positiveDerivativeBound) ∧
+    (∃ separableExceptional : Finset ComponentField,
+      separableExceptional.card ≤ 1) := by
+  have hchart : ∀ z ∈ positiveChallenges,
+      let Qz := MvPolynomial.map (Polynomial.evalRingHom z) badChallengeEquation
+      (positiveChallengeWitness z).degree < 1 ∧
+        aeval (positiveChallengeJet z) (initialJetEquation 0 Qz) = 0 ∧
+        aeval (positiveChallengeJet z) (initialJetSeparant 0 Qz) ≠ 0 ∧
+        (∀ l : Fin 2, 1 ≤ l.val →
+          aeval (positiveChallengeJet z) (commonTaylorNumerator 0 Qz 2 l.val) = 0) ∧
+        rationalTaylorPolynomial 0 Qz 2 (positiveChallengeJet z) =
+          positiveChallengeWitness z := by
+    intro z hz
+    obtain rfl := Finset.mem_singleton.mp hz
+    rcases badChallengeChartAtZero with ⟨hd, hi, hs, hc, ht⟩
+    exact ⟨hd, hi, hs, (fun l hl ↦ hc l (by omega)), by
+      change rationalTaylorPolynomial 0 _ 2 (fun _ ↦ 0) = 0; exact ht⟩
+  have hagree : ∀ z ∈ positiveChallenges, 2 ≤
+      (polynomialAgreementSet positiveChallengeDomain
+        (powerBatchedWord positiveChallengeWords z) (positiveChallengeWitness z)).card := by
+    intro z hz
+    obtain rfl := Finset.mem_singleton.mp hz
+    exact positiveChallenge_two_agreements
+  have hfinite := finite_powerBatchedBadChallenges_card_le_derivativeCapped_of_exponent
+    positiveChallengeDomain positiveChallengeWords (RingHom.id _) 0 badChallengeEquation
+    2 1 2 2 1 1 1 2 badChallengeExponent (by omega) (by omega) (by omega)
+    (by omega) (by omega) (by omega) (by omega) (by omega) (by omega) (by omega)
+    badChallengeEquation_jetDegree badChallengeEquation_height
+    (by simp [badChallengeEquation]) positiveChallenges
+    positiveChallengeWitness positiveChallengeJet hchart hagree (by
+      intro z hz
+      obtain rfl := Finset.mem_singleton.mp hz
+      exact positiveChallenge_isBad)
+  obtain ⟨exceptional, hcard, _hgood⟩ :=
+    exists_exceptional_regularPowerBatchedAgreement_derivativeCapped_of_exponent
+      positiveChallengeDomain positiveChallengeWords (RingHom.id _) badChallengeEquation
+      2 1 2 2 1 1 1 2 badChallengeExponent (by omega) (by omega) (by omega)
+      (by omega) (by omega) (by omega) (by omega) (by omega) (by omega) (by omega)
+      badChallengeEquation_jetDegree badChallengeEquation_height
+      (by simp [badChallengeEquation]) (by intro i hi _; omega)
+  obtain ⟨separableExceptional, hseparableCard, _hseparableGood⟩ :=
+    exists_exceptional_frobeniusPowerSeparableSolutions_at
+      (F := ComponentField) (E := ComponentField) (n := 2) (k := 1) (K := 1)
+      (ℓ := 1) (L := 2) positiveChallengeDomain positiveChallengeWords
+      (RingHom.id ComponentField) positiveChallengeDomain
+      (componentCoordinateEquation (E := ComponentField)) 1 0 1 0 1 2 (by simp)
+      (by norm_num) (by norm_num) (by intro l; fin_cases l; omega)
+      (by norm_num) (by norm_num) (by norm_num)
+      (by norm_num) (by norm_num) (coeffNatDegreeLE_X (some (0 : Fin 1)))
+      componentCoordinateEquation_jetDegree (MvPolynomial.X_prime).irreducible
+      (by simp [componentCoordinateEquation, MvPolynomial.pderiv_X])
+      (by simp [componentCoordinateEquation])
+  exact ⟨hfinite, ⟨exceptional, hcard⟩,
+    ⟨separableExceptional, by norm_num at hseparableCard; exact_mod_cast hseparableCard⟩⟩
 private def incidencePoint : Option (Fin 2) → ComponentField := fun _ ↦ 0
 private theorem incidencePoint_regular :
     aeval incidencePoint (jointInitialJetEquation 0 badChallengeEquation) = 0 ∧
