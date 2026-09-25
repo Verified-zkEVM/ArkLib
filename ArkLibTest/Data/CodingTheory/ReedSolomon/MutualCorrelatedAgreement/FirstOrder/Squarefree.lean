@@ -12,7 +12,10 @@ import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Squarefree.Certificates
 import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Squarefree.RetainedTail
+import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Squarefree.CurveMCA
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.SingularTail
+import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 import Mathlib.Tactic.NormNum
 
 /-!
@@ -175,6 +178,67 @@ example :
       constructor
       · exact WithBot.bot_lt_coe 2
       · norm_num [factorwiseReceived, factorwiseDomain])
+
+private theorem retainedCurveTransferTest_jetTotalDegree :
+    jetTotalDegree
+      (MvPolynomial.X (some (0 : Fin 2)) :
+        DifferentialPolynomial (AlgebraicClosure ℚ)[X] 1) ≤ 1 := by
+  refine (jetTotalDegree_le_iff _ 1).mpr fun u hu ↦ ?_
+  rw [MvPolynomial.support_X, Finset.mem_singleton] at hu
+  rw [hu]
+  simp [totalJetDegree_eq_sum, Fin.sum_univ_two]
+
+noncomputable local instance : DecidableEq (AlgebraicClosure ℚ) := Classical.decEq _
+
+/-- A concrete retained squarefree equation has a bounded exact-agreement exceptional set. -/
+example :
+    ∃ exceptional : Finset (AlgebraicClosure ℚ),
+      (exceptional.card : ℝ) ≤
+        retainedSquarefreeCurveAgreementCharge
+          (agreementIncidenceRatio 2 1 2) 2 1 0 2 2 1 1 1 ∧
+      ∀ z ∉ exceptional, ∀ P : (AlgebraicClosure ℚ)[X], P.degree < 2 →
+        2 ≤ (ReedSolomon.polynomialAgreementSet
+          (factorwiseDomain.trans ⟨algebraMap ℚ (AlgebraicClosure ℚ),
+            (algebraMap ℚ (AlgebraicClosure ℚ)).injective⟩)
+          (ReedSolomon.powerBatchedWord
+            (fun (_ : Fin 1) (i : Fin 2) ↦ algebraMap ℚ (AlgebraicClosure ℚ)
+              (factorwiseReceived i)) z) P).card →
+        differentialSpecialization
+          (challengeSpecialization
+            (MvPolynomial.X (some (0 : Fin 2)) :
+              DifferentialPolynomial (AlgebraicClosure ℚ)[X] 1) z) P = 0 →
+        ReedSolomon.HasExactPowerAgreement factorwiseDomain
+          (fun (_ : Fin 1) (i : Fin 2) ↦ factorwiseReceived i)
+          (algebraMap ℚ (AlgebraicClosure ℚ)) 2 z P := by
+  classical
+  let iota : ℚ →+* AlgebraicClosure ℚ := algebraMap _ _
+  let values : Fin 1 → Fin 2 → ℚ := fun _ i ↦ factorwiseReceived i
+  let Q : DifferentialPolynomial (AlgebraicClosure ℚ)[X] 1 :=
+    MvPolynomial.X (some (0 : Fin 2))
+  have hQ : Q ≠ 0 := MvPolynomial.X_ne_zero _
+  have hjet : jetTotalDegree Q ≤ 1 := retainedCurveTransferTest_jetTotalDegree
+  have hderiv : Q.degreeOf (some (1 : Fin 2)) ≤ 1 := by
+    change degreeOf (some (1 : Fin 2))
+      (MvPolynomial.X (some (0 : Fin 2)) :
+        DifferentialPolynomial (AlgebraicClosure ℚ)[X] 1) ≤ 1
+    rw [degreeOf_X_of_ne (by decide)]
+    norm_num
+  have hheight : CoeffNatDegreeLE Q 1 :=
+    (coeffNatDegreeLE_X _).mono (by omega)
+  have htail : HasRetainedOrdinaryCurveAgreementTransfer
+      (D := 1) (A := 2) (B := 1) (M := 1) (H := 1)
+      factorwiseDomain values iota (singularCurveEquation Q) := by
+    refine ⟨∅, ?_, ?_⟩
+    · norm_num [retainedOrdinaryCurveAgreementCharge, agreementIncidenceRatio]
+    · intro z hz P hdegree hagree hroot
+      exact ReedSolomon.hasExactPowerAgreement_singleton
+        factorwiseDomain values iota 2 z P hdegree hagree
+  exact exists_exceptional_retainedSquarefreeCurveAgreement_of_tail
+    (D := 1) (ell := 0) (L := 2) (A := 2) (B := 1) (M := 1) (H := 1)
+    factorwiseDomain values iota Q hQ
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num) (by norm_num)
+    hjet hderiv hheight (Or.inl (ringChar.eq_zero : ringChar ℚ = 0)) htail
 
 private noncomputable abbrev retainedTailTestEquation : DifferentialPolynomial ℚ[X] 1 :=
   MvPolynomial.X (some (0 : Fin 2))
