@@ -33,6 +33,8 @@ bounds for the closed list and exceptional-set constants.
   `automaticExceptionConstant_le_quintic_slack_envelope` bound the closed list and exceptional-set
   constants.
 * `automaticClosedListAndExceptionBounds` derives both closed bounds from the physical-rate guards.
+* `automaticListBoundConstant_pos`, `automaticExceptionBoundConstant_pos`: both rate-only
+  envelope coefficients are positive.
 
 ## References
 
@@ -481,6 +483,19 @@ theorem automaticRateEnvelopeConstant_one_le (rho : ℝ) :
     1 ≤ automaticRateEnvelopeConstant rho := by
   unfold automaticRateEnvelopeConstant
   exact le_max_left _ _
+
+/-- The rate-only coefficient of the cubic list envelope is positive. -/
+theorem automaticListBoundConstant_pos (rho : ℝ) : 0 < automaticListBoundConstant rho := by
+  have hC := zero_lt_one.trans_le (automaticRateEnvelopeConstant_one_le rho)
+  unfold automaticListBoundConstant
+  positivity
+
+/-- The rate-only coefficient of the quintic exception envelope is positive. -/
+theorem automaticExceptionBoundConstant_pos (rho : ℝ) :
+    0 < automaticExceptionBoundConstant rho := by
+  have hC := zero_lt_one.trans_le (automaticRateEnvelopeConstant_one_le rho)
+  unfold automaticExceptionBoundConstant
+  positivity
 
 /-- The common envelope constant dominates the inverse first-order rate gap. -/
 theorem automaticRateGapInv_le_rateEnvelopeConstant (rho : ℝ) :

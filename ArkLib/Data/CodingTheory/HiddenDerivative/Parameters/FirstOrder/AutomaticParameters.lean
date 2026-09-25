@@ -26,7 +26,8 @@ rounded-count API.
 * `automaticMultiplicity`, `automaticDerivativeCap`, and `automaticJetDegree` define the rounded
   interpolation parameters.
 * `automaticFiniteRateParameters` packages the automatic recipe as a finite-rate certificate,
-  with `automaticAgreement_mul_le` bounding its agreement budget.
+  with `automaticAgreement_mul_le` bounding its agreement budget;
+  `automaticFiniteRateParameters_challengeDegree` identifies its challenge degree.
 * `automaticSourceCount` and `automaticRankCount` define the finite source and rank counts.
 * `automaticSurplusQuarter_le_source_sub_rank` gives a positive finite surplus after rounding.
 * `automaticChallengeHeight` is defined from the resulting source-to-rank quotient.
@@ -352,6 +353,15 @@ theorem automaticFiniteRateParameters_derivativeCap {rho a : ℝ} (hrho : 0 < rh
     (automaticFiniteRateParameters hrho hrhoOne ha haOne).derivativeCap =
       automaticDerivativeCap rho a := by
   rw [automaticDerivativeCap_eq_raw hrho hrhoOne ha haOne]
+  rfl
+
+/-- The automatic finite-rate parameters have the automatic challenge height. -/
+theorem automaticFiniteRateParameters_challengeDegree {rho a : ℝ} (hrho : 0 < rho)
+    (hrhoOne : rho < 1) (ha : firstOrderRateThreshold rho < a) (haOne : a < 1) :
+    (automaticFiniteRateParameters hrho hrhoOne ha haOne).challengeDegree =
+      automaticChallengeHeight rho a := by
+  rw [automaticChallengeHeight, automaticSourceCount, automaticRankCount,
+    automaticDerivativeCap_eq_raw hrho hrhoOne ha haOne]
   rfl
 
 /-- The automatic agreement times the block length is at most the requested agreement budget. -/
