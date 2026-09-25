@@ -2173,6 +2173,12 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordi
 
 Historical acceptance cases in `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement.lean` exhibited a nonempty retained family and checked its graph-coordinate degree bound, then exhibited a retained pair and an exceptional set of size zero for a one-point domain with a one-point sample. The current consolidated suite has no retained-family example. No public source declarations were omitted.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/BaseEquation.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/Equations/BaseEquation.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`exists_exceptional_ordinaryEquation_base` keeps its name and mathematical content. For a nonzero ordinary equation over an arbitrary field, it gives one finite exceptional set of challenges, of size at most `ordinaryFactorRaw ((n - D) / (A - D)) n D mu h`, outside which every base-field root of degree at most `D` that agrees with the line on at least `A` points has an exact correlated-pair witness. The height premise is `CoeffNatDegreeLE Q h` instead of the source's `ChallengeHeightLE Q h`, matching main's `exists_exceptional_ordinaryEquation`. The theorem takes `[DecidableEq F]` as an instance argument instead of the source's `open Classical in`, so `polynomialAgreementSet` and `HasExactCorrelatedPair` in the conclusion work with any decidable-equality instance. The proof uses `convert` to match the classical instances that come from `exists_exceptional_ordinaryEquation`. Nothing was left unported: the source file has one declaration. It is a separate module rather than part of `Ordinary/Equation.lean`, which would otherwise need `EquationDescent` and `AlgebraicClosure` as extra imports.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/Equation.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/Equations/Equation.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -5244,6 +5250,12 @@ Acceptance cases check the base-field height theorem at the tight exponent, the 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/FactorwiseList.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 Acceptance cases check singleton instances of `finite_factorwise_agreement_solutions_card_le_actual` and `finite_factorwise_agreement_solutions_card_le`.
+
+## `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/Equations/BaseEquation.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+An acceptance example takes the equation `Y₀²` over `ℚ` on a two-point domain, with `f = g = 0`, `D = 1`, `h = 0`, `mu = 2` and `A = 2`. It gets an exceptional set of size at most 2 from `exists_exceptional_ordinaryEquation_base`, picks a challenge in `{0, 1, 2}` outside that set, and derives an exact correlated-pair witness for the zero root, so the conclusion is not vacuous.
 
 ## `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart.lean`
 
