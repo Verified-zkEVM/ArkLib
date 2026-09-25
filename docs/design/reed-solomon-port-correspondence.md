@@ -1940,6 +1940,16 @@ No public declaration from this source module was omitted. The separate
 `agreeingPolynomials_eq_empty_of_card_lt` API is not duplicated; pointwise emptiness follows from
 `DecoderCertificate.decoder_eq_empty_of_card_lt`.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/ProductCounting.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/ProductCounting.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Renamed `polynomialCurveProductMCAConstant` to `polynomialCurveProductAgreementConstant`, `prescribedMCAConstant` to `prescribedProductAgreementConstant`, `prescribedMCAConstant_pos` to `prescribedProductAgreementConstant_pos`, `regularSymbolicCurveMCASharpBound_product_le_stage` to `regularPowerBatchedAgreementSharpBound_product_le_stage`, and `regularSymbolicCurveMCASharp_product_finiteStage_le` to `regularPowerBatchedAgreementSharp_product_finiteStage_le`. The product scalar formula and prescribed coefficient are unchanged. The prescribed coefficient uses the current equivalent `xi` and `harmonic` definitions. The regular-stage statements use the current power-batched API and existing generalized degree-cap bounds to supply exponent bounds. `polynomialCurveProductStageBound`, `product_stage_bound`, `polynomialCurveProductStageBound_le_uniform`, and `product_stages_aggregate` keep their names; the product cutoff estimate bounds each regular stage, uniformizes its order, and aggregates a finite family under one height cap.
+
+Did not port `sourceCurveCutJetDegree_le_uniformCaps_of_exponent`, which is covered by `regularPowerBatchedCutJetDegree_le_two_mul` after deriving `τ ≤ 2*n` from `τ ≤ 2*K` and `K ≤ n`. Did not port `sourceCurveInitialMixedDegree_le_uniformCaps_of_exponent`, which is covered by `regularPowerBatchedInitialMixedDegree_le_uniformCaps` with the same derived exponent bound.
+
+Acceptance cases for `product_stage_bound`, stage uniformization, scalar aggregation, the regular-stage bound, the finite-stage bound, and prescribed-coefficient positivity were appended to `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity.lean`.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/SharpCountingBound.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/SharpCountingBound.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
