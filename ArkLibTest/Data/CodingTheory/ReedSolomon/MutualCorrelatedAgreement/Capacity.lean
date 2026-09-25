@@ -14,6 +14,8 @@ import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.P
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.RatePartition
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.FixedRateExplicitGate
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.UniformRate
+import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.MathematicalUniformRate
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.FixedRateGate
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.WeightedSupport.ScalarParameters
 import ArkLib.Data.Polynomial.Differential.Basic
@@ -661,3 +663,98 @@ example :
     (by norm_num) (by norm_num) (by norm_num) (by norm_num)
     (Or.inl (by norm_num))
   exact ⟨bad, by simpa using hbound⟩
+
+private noncomputable def mathMcaGap : ℝ := 1 / 5
+private noncomputable def mathMcaLength : ℕ := uniformMathematicalCapacityLength mathMcaGap
+
+private theorem mathMcaBaseLength : uniformMathematicalLength mathMcaGap ≤ mathMcaLength :=
+  le_max_left _ _
+
+private theorem mathMcaAgreementGap :
+    ((1 : ℕ) : ℝ) + mathMcaGap * mathMcaLength ≤ mathMcaLength := by
+  have hm : 0 < uniformMathematicalMultiplicity mathMcaGap :=
+    lt_of_lt_of_le (by omega) (add_two_le_closedMultiplicity (by norm_num)
+      (by have := uniformDerivativeOrder_pos mathMcaGap; omega))
+  obtain ⟨-, -, hν, hνn⟩ := uniformMathematical_integer_guards (n := mathMcaLength)
+    (by norm_num [mathMcaGap]) (by norm_num [mathMcaGap]) hm mathMcaBaseLength
+  have hn : (2 : ℝ) ≤ mathMcaLength := by exact_mod_cast (show 2 ≤ mathMcaLength by omega)
+  norm_num [mathMcaGap]
+  linarith
+
+open Classical in
+/-- The mathematical uniform parameters give an extension-field curve agreement bound over `ℚ`. -/
+example :
+    ∃ exceptional : Finset (AlgebraicClosure ℚ),
+      (exceptional.card : ℝ) ≤ (1 : ℝ) * polynomialCurveProductAgreementConstant mathMcaGap
+        (uniformMathematicalJetBound mathMcaGap) (150 * uniformMathematicalJetBound mathMcaGap)
+        (uniformDerivativeOrder mathMcaGap) *
+        (mathMcaLength : ℝ) ^ (uniformDerivativeOrder mathMcaGap + 1) ∧
+      ∃ z ∉ exceptional, HasExactPowerAgreement (mcaDomain mathMcaLength)
+        (mcaValues mathMcaLength) (algebraMap ℚ (AlgebraicClosure ℚ)) 1 z
+        (0 : (AlgebraicClosure ℚ)[X]) := by
+  obtain ⟨exceptional, hbound, hgood⟩ :=
+    exists_mathematicalUniformRatePartition_curve_exactPowerAgreement
+    (F := ℚ) (E := AlgebraicClosure ℚ) (δ := mathMcaGap) (n := mathMcaLength)
+    (k := 1) (A := mathMcaLength) (ℓ := 1)
+    (by norm_num [mathMcaGap]) (by norm_num [mathMcaGap]) mathMcaBaseLength
+    (by norm_num) mathMcaAgreementGap le_rfl (by norm_num)
+    (mcaDomain mathMcaLength) (mcaValues mathMcaLength)
+    (algebraMap ℚ (AlgebraicClosure ℚ)) (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
+  have hset (z : AlgebraicClosure ℚ) :
+      polynomialAgreementSet
+        ((mcaDomain mathMcaLength).trans ⟨algebraMap ℚ (AlgebraicClosure ℚ),
+          (algebraMap ℚ (AlgebraicClosure ℚ)).injective⟩)
+        (powerBatchedWord (fun t i ↦ algebraMap ℚ (AlgebraicClosure ℚ)
+          (mcaValues mathMcaLength t i)) z) (0 : (AlgebraicClosure ℚ)[X]) = Finset.univ := by
+    ext i
+    simp [polynomialAgreementSet, powerBatchedWord, mcaValues]
+  obtain ⟨z, hz⟩ := Finset.exists_notMem exceptional
+  refine ⟨exceptional, by simpa using hbound, z, hz, ?_⟩
+  exact hgood z hz 0 (by simp) (by rw [hset z]; simp)
+
+open Classical in
+/-- The mathematical uniform parameters give a base-field curve agreement bound over `ℚ`. -/
+example :
+    ∃ exceptional : Finset ℚ,
+      (exceptional.card : ℝ) ≤ (1 : ℝ) * polynomialCurveProductAgreementConstant mathMcaGap
+        (uniformMathematicalJetBound mathMcaGap) (150 * uniformMathematicalJetBound mathMcaGap)
+        (uniformDerivativeOrder mathMcaGap) *
+        (mathMcaLength : ℝ) ^ (uniformDerivativeOrder mathMcaGap + 1) ∧
+      ∃ z ∉ exceptional, HasExactPowerAgreement (mcaDomain mathMcaLength)
+        (mcaValues mathMcaLength) (RingHom.id ℚ) 1 z (0 : ℚ[X]) := by
+  obtain ⟨exceptional, hbound, hgood⟩ :=
+    exists_mathematicalUniformRatePartition_baseCurve_exactPowerAgreement
+    (δ := mathMcaGap) (n := mathMcaLength) (k := 1) (A := mathMcaLength) (ℓ := 1)
+    (by norm_num [mathMcaGap]) (by norm_num [mathMcaGap]) mathMcaBaseLength
+    (by norm_num) mathMcaAgreementGap le_rfl (by norm_num)
+    (mcaDomain mathMcaLength) (mcaValues mathMcaLength)
+    (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
+  have hset (z : ℚ) : polynomialAgreementSet (mcaDomain mathMcaLength)
+      (powerBatchedWord (mcaValues mathMcaLength) z) (0 : ℚ[X]) = Finset.univ := by
+    ext i
+    simp [polynomialAgreementSet, powerBatchedWord, mcaValues]
+  obtain ⟨z, hz⟩ := Finset.exists_notMem exceptional
+  refine ⟨exceptional, by simpa using hbound, z, hz, ?_⟩
+  exact hgood z hz 0 (by simp) (by rw [hset z]; simp)
+
+open Classical in
+/-- The mathematical uniform parameters give an affine-line agreement bound over `ℚ`. -/
+example :
+    ∃ exceptional : Finset ℚ,
+      (exceptional.card : ℝ) ≤ mathematicalUniformLineAgreementConstant mathMcaGap *
+        (mathMcaLength : ℝ) ^ (uniformDerivativeOrder mathMcaGap + 1) ∧
+      ∃ z ∉ exceptional, HasExactCorrelatedPair (mcaDomain mathMcaLength) (fun _ ↦ 0)
+        (fun _ ↦ 0) (RingHom.id ℚ) 1 z (0 : ℚ[X]) := by
+  obtain ⟨exceptional, hbound, hgood⟩ :=
+    exists_mathematicalUniformRatePartition_line_exactCorrelatedPair
+    (δ := mathMcaGap) (n := mathMcaLength) (k := 1) (A := mathMcaLength)
+    (by norm_num [mathMcaGap]) (by norm_num [mathMcaGap]) le_rfl (by norm_num)
+    mathMcaAgreementGap le_rfl (mcaDomain mathMcaLength) (fun _ => 0) (fun _ => 0)
+    (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
+  have hset (z : ℚ) : polynomialAgreementSet (mcaDomain mathMcaLength)
+      (fun i ↦ 0 + z * 0) (0 : ℚ[X]) = Finset.univ := by
+    ext i
+    simp [polynomialAgreementSet]
+  obtain ⟨z, hz⟩ := Finset.exists_notMem exceptional
+  refine ⟨exceptional, hbound, z, hz, ?_⟩
+  exact hgood z hz 0 (by simp) (by rw [hset z]; simp)
