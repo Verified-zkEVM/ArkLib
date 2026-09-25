@@ -348,6 +348,7 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.DirectJetLis
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.Bounds
 public import
   ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.FiniteLengthParameters
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.FiniteLengthSelectors
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.Profile
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.HiddenDerivativeBound
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.PairwiseJohnson
