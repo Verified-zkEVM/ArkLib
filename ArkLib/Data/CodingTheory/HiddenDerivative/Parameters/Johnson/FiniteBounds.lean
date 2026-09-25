@@ -200,6 +200,14 @@ theorem johnsonT_ge_seven_halves (n D : ℕ) (eta : ℝ) :
       simpa only [add_comm] using add_le_add_right hm (1 / 2)
     _ = johnsonT n D eta := by rfl
 
+/-- The comparison shift satisfies `t_B ≥ 7/2`, for all parameters. -/
+theorem johnsonComparisonShift_ge_seven_halves (n D : ℕ) (eta : ℝ) :
+    7 / 2 ≤ johnsonComparisonShift n D eta := by
+  have hm : (3 : ℝ) ≤ johnsonComparisonMultiplicity n D eta := by
+    exact_mod_cast le_max_right ⌈√(johnsonRhoMinus n D) / eta⌉₊ 3
+  unfold johnsonComparisonShift
+  linarith only [hm]
+
 /-- The half-gap inequality `√ρ₋ / 2 ≤ m η` used by the interpolation step, from the ceiling in
 `johnsonM`. Only `η > 0` is needed; for `η ≤ 0` the ceiling is `0` and the inequality can fail. -/
 theorem johnson_half_gap (n D : ℕ) {eta : ℝ} (heta : 0 < eta) :
@@ -709,11 +717,7 @@ theorem johnsonComparisonEstimate_leading_lt {n D : ℕ} {eta : ℝ}
   have hn : (0 : ℝ) < n := by exact_mod_cast (show 0 < n by omega)
   have hrho : 0 < rho := johnsonRhoMinus_pos hD hDn
   have hx : 0 < x := Real.sqrt_pos.2 hrho
-  have htB : 0 < tB := by
-    unfold tB johnsonComparisonShift
-    have : (3 : ℝ) ≤ johnsonComparisonMultiplicity n D eta := by
-      exact_mod_cast le_max_right ⌈√(johnsonRhoMinus n D) / eta⌉₊ 3
-    linarith only [this]
+  have htB : 0 < tB := lt_of_lt_of_le (by norm_num) (johnsonComparisonShift_ge_seven_halves n D eta)
   have hgamma : 0 ≤ johnsonGamma n D eta := sub_nonneg.2 ha
   have hden : 0 < 3 * x ^ 3 := by positivity
   have hextra : 0 ≤ 3 * tB * johnsonGamma n D eta * rho := by positivity
@@ -742,11 +746,7 @@ theorem johnsonComparisonEstimate_pos {n D : ℕ} {eta : ℝ}
   have hn : (0 : ℝ) < n := by exact_mod_cast (show 0 < n by omega)
   have hrho : 0 < rho := johnsonRhoMinus_pos hD hDn
   have hx : 0 < x := Real.sqrt_pos.2 hrho
-  have htB : 0 < tB := by
-    unfold tB johnsonComparisonShift
-    have hm : (3 : ℝ) ≤ johnsonComparisonMultiplicity n D eta := by
-      exact_mod_cast le_max_right ⌈√(johnsonRhoMinus n D) / eta⌉₊ 3
-    linarith only [hm]
+  have htB : 0 < tB := lt_of_lt_of_le (by norm_num) (johnsonComparisonShift_ge_seven_halves n D eta)
   have hleading0 : 0 < (2 * tB ^ 5 / (3 * x ^ 3)) * n := by positivity
   exact lt_trans hleading0 (johnsonComparisonEstimate_leading_lt hD hDn ha)
 
@@ -771,11 +771,7 @@ theorem johnsonExceptionCount_div_comparisonEstimate_lt {n D A : ℕ} {eta : ℝ
     exact hx.1.ne'
   have hx2 : x ^ 2 = rho := Real.sq_sqrt hrho.le
   have ht : 0 < t := lt_of_lt_of_le (by norm_num) (johnsonT_ge_seven_halves n D eta)
-  have htBLower : 7 / 2 ≤ tB := by
-    unfold tB johnsonComparisonShift
-    have hm : (3 : ℝ) ≤ johnsonComparisonMultiplicity n D eta := by
-      exact_mod_cast le_max_right ⌈√(johnsonRhoMinus n D) / eta⌉₊ 3
-    linarith only [hm]
+  have htBLower : 7 / 2 ≤ tB := johnsonComparisonShift_ge_seven_halves n D eta
   have htB : 0 < tB := lt_of_lt_of_le (by norm_num) htBLower
   have httB : t ≤ tB := johnsonT_le_comparisonShift n D heta
   have htCube : t ^ 3 ≤ tB ^ 3 := pow_le_pow_left₀ ht.le httB 3

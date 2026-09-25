@@ -91,7 +91,7 @@ theorem uniformDerivativeOrder_ge_519 {δ : ℝ} (hδ : 0 < δ) (hδmax : δ < 6
     519 ≤ uniformDerivativeOrder δ := by
   have hexponent : (25 / 4 : ℝ) < 3 / (2 * δ) := by
     apply (lt_div_iff₀ (mul_pos (by norm_num) hδ)).2
-    linarith only [hδmax]
+    nlinarith
   have hseries := Real.sum_le_exp_of_nonneg (show (0 : ℝ) ≤ 25 / 4 by norm_num) 20
   have h518 : (518 : ℝ) < Real.exp (25 / 4) := by
     norm_num [Finset.sum_range_succ] at hseries ⊢

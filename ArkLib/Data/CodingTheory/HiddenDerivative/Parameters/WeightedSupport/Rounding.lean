@@ -411,11 +411,12 @@ theorem residualMeanVariance_le (gap variance q : ℝ)
             (4 * (residualFraction * q * (998 / 1000))) := by
         rw [residualFraction_eq, xi]
         ring
-      _ ≤ _ := mul_le_mul_of_nonneg_left (by linarith) (mul_nonneg hq.le hc.le)
-  have hunit' : 1 ≤ q * (1 / 2000) := by linarith
+      _ ≤ _ := mul_le_mul_of_nonneg_left (mul_le_mul_of_nonneg_left hlower (by norm_num))
+        (mul_nonneg hq.le hc.le)
+  have hunit' : 1 ≤ q * (1 / 2000) := by linarith only [hunit]
   have hscaled := mul_le_mul_of_nonneg_left averageResidualError_le hq.le
   refine ⟨hgap, ?_⟩
-  linarith
+  linarith only [hupper, hvarCorrection, hunit', hscaled]
 
 /-- The per-fiber bound consumed by the weighted local-rank theorem. With `θ = 3 / 8`,
 `ξ = 27 / 10`, `W = ⌊(1 + θ g) d m / H⌋₊` and a contact residual `r < m`, let
