@@ -756,6 +756,14 @@ recovered in the tests.
 The source's lower bound `finrank_interpolationSpace_lowerBound` is in
 `Interpolation/Dimension.lean`. Deferred: the shell counts.
 
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/CurveSupportCertificate.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Symbolic/CurveSupportCertificate.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`exists_certificate_of_fixed_margin`, `exists_weightedSupport_certificate_of_rate`, and `exists_prescribed_certificate` retain their source names. `exists_certificate_of_fixed_margin` is generalized from `Fin n` points to any finite point type. The rate and prescribed constructors preserve the curve statement and use the current harmonic API. `exists_prescribed_certificate` omits the unused positive message-dimension premise.
+
+`Certificate` is already represented by `SymbolicReceivedCurve.Certificate` in `CurveCertificate.lean`; no theorem from this unit was left out.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/JohnsonCertificate.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Ordinary/JohnsonCertificate.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
