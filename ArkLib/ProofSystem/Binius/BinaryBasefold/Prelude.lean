@@ -827,11 +827,30 @@ theorem fold_advances_evaluation_poly
   ∀ (y : (sDomain 𝔽q β h_ℓ_add_R_rate)
     ⟨i+1, by omega⟩), f_i_plus_1 y = P_i_plus_1.eval y.val := by
   classical
-  intro P_i f_i f_i_plus_1 new_coeffs P_i_plus_1 y
-  let fiberMap := qMap_total_fiber 𝔽q β (i := ⟨i, by omega⟩) (steps := 1)
+  simp only
+  intro y
+  set fiberMap := qMap_total_fiber 𝔽q β (i := ⟨i, by omega⟩) (steps := 1)
     (h_i_add_steps := by simp only; omega) (y := y)
-  let x₀ := fiberMap 0
-  let x₁ := fiberMap 1
+  set x₀ := fiberMap 0
+  set x₁ := fiberMap 1
+  set P_i := intermediateEvaluationPoly 𝔽q β h_ℓ_add_R_rate
+    (i := ⟨i, by omega⟩) (h_i := by simp only; omega) coeffs
+  set new_coeffs := fun j : Fin (2^(ℓ - (i + 1))) =>
+    (1 - r_chal) * (coeffs ⟨j.val * 2, by
+      have h : j.val * 2 < 2^(ℓ - (i + 1)) * 2 := by omega
+      have h2 : 2^(ℓ - i) = 2^(ℓ - (i + 1)) * 2 := by
+        conv_rhs => enter[2]; rw [←Nat.pow_one 2]
+        rw [←pow_add]; congr
+        rw [Nat.sub_add_eq_sub_sub_rev (h1 := by omega) (h2 := by omega)]
+        -- ⊢ ℓ - ↑i = ℓ - (↑i + 1 - 1)
+        rw [Nat.add_sub_cancel (n := i) (m := 1)]
+      omega
+    ⟩) +
+    r_chal * (coeffs ⟨j.val * 2 + 1, by
+      apply mul_two_add_bit_lt_two_pow (c := ℓ - i) (a := j) (b := ℓ - (↑i + 1)) (i := 1)
+      · omega
+      · omega
+    ⟩)
   have h_eval_qMap (k : Fin 2) : (AdditiveNTT.qMap 𝔽q β ⟨i, by omega⟩
       (by simp only; omega)).eval (fiberMap k).val = y := by
     have h := iteratedQuotientMap_k_eq_1_is_qMap 𝔽q β h_ℓ_add_R_rate
@@ -843,36 +862,137 @@ theorem fold_advances_evaluation_poly
       (x := fiberMap k) (y := y).mpr
         (by rw [pointToIterateQuotientIndex_qMap_total_fiber_eq_self])
     rw [h_res]
-  -- The two fiber points differ by the first basis vector of `S⁽ⁱ⁾`, which is `1`.
+  have h_eval_qMap_x₀ : (AdditiveNTT.qMap 𝔽q β ⟨i, by omega⟩
+      (by simp only; omega)).eval x₀.val = y := by
+    simpa only [x₀] using h_eval_qMap 0
+  have h_eval_qMap_x₁ : (AdditiveNTT.qMap 𝔽q β ⟨i, by omega⟩
+      (by simp only; omega)).eval x₁.val = y := by
+    simpa only [x₁] using h_eval_qMap 1
+  have hx₀ := qMap_total_fiber_basis_sum_repr 𝔽q β i (steps := 1)
+    (h_i_add_steps := by omega) y 0
+  have hx₁ := qMap_total_fiber_basis_sum_repr 𝔽q β i (steps := 1)
+    (h_i_add_steps := by omega) y 1
+  simp only [Fin.isValue] at hx₀ hx₁
   have h_fiber_diff : x₁.val - x₀.val = 1 := by
-    have hx₀ : x₀ = _ := qMap_total_fiber_one_level_eq 𝔽q β i (by omega) y 0
-    have hx₁ : x₁ = _ := qMap_total_fiber_one_level_eq 𝔽q β i (by omega) y 1
-    rw [hx₀, hx₁]
-    simp only [Fin2ToF2, Fin.isValue, one_ne_zero, ↓reduceIte, one_smul, Submodule.coe_add,
-      get_sDomain_first_basis_eq_1, zero_smul, zero_add, add_sub_cancel_right]
-  let P₀ := evenRefinement 𝔽q β h_ℓ_add_R_rate
+    simp only [Fin.isValue, x₁, x₀, fiberMap]
+    rw [hx₁, hx₀]
+    simp only [Fin.isValue, AddSubmonoidClass.coe_finsetSum, SetLike.val_smul]
+    have h_index : ℓ + 𝓡 - i = (ℓ + 𝓡 - (i.val + 1)) + 1 := by omega
+    rw! (castMode := .all) [h_index]
+    rw [Fin.sum_univ_succ, Fin.sum_univ_succ] -- (free_term + y_repr) - (free_term + y_repr) = 1
+    -- First, simplify the free terms
+    simp only [fiber_coeff, eqRec_eq_cast, lt_one_iff, reducePow, Fin.isValue,
+      Fin.coe_ofNat_eq_mod, mod_succ, dite_smul, ite_smul, zero_smul, one_smul, zero_mod]
+    have h_cast_0 :
+        (cast (Eq.symm h_index ▸ rfl : Fin (ℓ + 𝓡 - (↑i + 1) + 1) = Fin (ℓ + 𝓡 - ↑i)) 0).val =
+        0 := by
+      rw [←Fin.cast_eq_cast (h := by omega)]
+      rw [Fin.cast_val_eq_val (h_eq := by omega)]
+      simp only [Fin.coe_ofNat_eq_mod, mod_succ_eq_iff_lt, succ_eq_add_one, lt_add_iff_pos_left]
+      omega
+    have h_cast_1 :
+        (cast (Eq.symm h_index ▸ rfl : Fin (ℓ + 𝓡 - (↑i + 1) + 1) = Fin (ℓ + 𝓡 - ↑i)) 1).val =
+        1 := by
+      rw [←Fin.cast_eq_cast (h := by omega)]
+      rw [Fin.cast_val_eq_val (h_eq := by omega)]
+      simp only [Fin.coe_ofNat_eq_mod, mod_succ_eq_iff_lt, succ_eq_add_one,
+        lt_add_iff_pos_left, tsub_pos_iff_lt]
+      omega
+    simp only [h_cast_0, ↓reduceDIte]
+    have h_getBit_0_of_0 : Nat.getBit (k := 0) (n := 0) = 0 := by
+      simp only [getBit, shiftRight_zero, and_one_is_mod, zero_mod]
+    have h_getBit_0_of_1 : Nat.getBit (k := 0) (n := 1) = 1 := by
+      simp only [getBit, shiftRight_zero, Nat.and_self]
+    simp only [h_getBit_0_of_1, one_ne_zero, ↓reduceIte, h_getBit_0_of_0, zero_add]
+    rw! (castMode := .all) [←h_index]
+    rw [cast_eq]
+    simp only [get_sDomain_basis, Fin.coe_ofNat_eq_mod, zero_mod, add_zero, cast_eq]
+    rw [normalizedWᵢ_eval_βᵢ_eq_1 𝔽q β]
+    ring_nf
+    conv_rhs => rw [←add_zero (a := 1)]
+    rw [add_sub_assoc]
+    congr 1
+    rw [sub_eq_zero]
+    apply Finset.sum_congr (h := by rfl)
+    simp only [mem_univ, congr_eqRec, Fin.val_succ, Nat.add_eq_zero_iff, one_ne_zero, and_false,
+      ↓reduceDIte, add_tsub_cancel_right, Fin.eta, imp_self, implies_true]
+  set P_i_plus_1 := intermediateEvaluationPoly 𝔽q β h_ℓ_add_R_rate
+    (i := ⟨i + 1, by omega⟩) (h_i := by simp only; omega) new_coeffs
+  have h_odd_coeff_index (j : Fin (2 ^ (ℓ - (i + 1)))) :
+      j.val * 2 + 1 < 2 ^ (ℓ - i) := by
+    have h1 : ℓ - (i + 1) + 1 = ℓ - i := by omega
+    have h2 : 2 ^ (ℓ - (i + 1) + 1) = 2 ^ (ℓ - i) := by rw [h1]
+    have h3 : 2 ^ (ℓ - (i + 1)) * 2 = 2 ^ (ℓ - (i + 1) + 1) := by rw [pow_succ]
+    rw [← h2, ← h3]
+    omega
+  -- Set up the even and odd refinement polynomials
+  set P₀_coeffs := fun j : Fin (2^(ℓ - (i + 1))) => coeffs ⟨j.val * 2, by
+    exact Nat.lt_of_succ_lt (h_odd_coeff_index j)⟩
+  set P₁_coeffs := fun j : Fin (2^(ℓ - (i + 1))) => coeffs ⟨j.val * 2 + 1, by
+    exact h_odd_coeff_index j⟩
+  set P₀ := evenRefinement 𝔽q β h_ℓ_add_R_rate
     (i := ⟨i, by omega⟩) (h_i := by simp only; omega) coeffs
-  let P₁ := oddRefinement 𝔽q β h_ℓ_add_R_rate
+  set P₁ := oddRefinement 𝔽q β h_ℓ_add_R_rate
     (i := ⟨i, by omega⟩) (h_i := by simp only; omega) coeffs
   have h_P_i_eval := evaluation_poly_split_identity 𝔽q β h_ℓ_add_R_rate
     (i := ⟨i, by omega⟩) (h_i := by simp only; omega) coeffs
   -- Equation 39 : P^(i)(X) = P₀^(i+1)(q^(i)(X)) + X · P₁^(i+1)(q^(i)(X))
-  have h_equation_39 (k : Fin 2) :
-      P_i.eval (fiberMap k).val = P₀.eval y.val + (fiberMap k).val * P₁.eval y.val := by
+  have h_equation_39_x₀ : P_i.eval x₀.val = P₀.eval y.val + x₀.val * P₁.eval y.val := by
     simp only [h_P_i_eval, Polynomial.eval_add, eval_comp,
-      h_eval_qMap k, Polynomial.eval_mul, Polynomial.eval_X, P_i, P₀, P₁]
+      h_eval_qMap_x₀, Polynomial.eval_mul, Polynomial.eval_X, P_i, P₀, P₁]
+  have h_equation_39_x₁ : P_i.eval x₁.val = P₀.eval y.val + x₁.val * P₁.eval y.val := by
+    simp only [h_P_i_eval, Polynomial.eval_add, eval_comp,
+      h_eval_qMap_x₁, Polynomial.eval_mul, Polynomial.eval_X, P_i, P₀, P₁]
+  set f_i := fun (x : (sDomain 𝔽q β h_ℓ_add_R_rate) ⟨i, by omega⟩) => P_i.eval (x.val : L)
+  set f_i_plus_1 := fold (i := ⟨i, by omega⟩) (h_i := by omega) (f := f_i) (r_chal := r_chal)
+  -- Unfold the definition of f_i_plus_1 using the fold function
+  have h_fold_def : f_i_plus_1 y =
+      f_i x₀ * ((1 - r_chal) * x₁.val - r_chal) +
+      f_i x₁ * (r_chal - (1 - r_chal) * x₀.val) := rfl
+  -- Main calculation following the outline
   calc f_i_plus_1 y
-    = P_i.eval x₀.val * ((1 - r_chal) * x₁.val - r_chal) +
-        P_i.eval x₁.val * (r_chal - (1 - r_chal) * x₀.val) := rfl
-    _ = P₀.eval y.val * (1 - r_chal) + P₁.eval y.val * r_chal := by
-      rw [h_equation_39 0, h_equation_39 1]
-      linear_combination (P₀.eval y.val * (1 - r_chal) + P₁.eval y.val * r_chal) * h_fiber_diff
+    = f_i x₀ * ((1 - r_chal) * x₁.val - r_chal) +
+        f_i x₁ * (r_chal - (1 - r_chal) * x₀.val) := h_fold_def
+    _ = P_i.eval x₀.val * ((1 - r_chal) * x₁.val - r_chal) +
+        P_i.eval x₁.val * (r_chal - (1 - r_chal) * x₀.val) := by simp only [f_i]
+    _ = (P₀.eval y.val + x₀.val * P₁.eval y.val) * ((1 - r_chal) * x₁.val - r_chal) +
+        (P₀.eval y.val + x₁.val * P₁.eval y.val) * (r_chal - (1 - r_chal) * x₀.val) := by
+      rw [h_equation_39_x₀, h_equation_39_x₁]
+    _ = P₀.eval y.val * ((1 - r_chal) * x₁.val - r_chal + r_chal - (1 - r_chal) * x₀.val) +
+        P₁.eval y.val * (x₀.val * ((1 - r_chal) * x₁.val - r_chal) +
+          x₁.val * (r_chal - (1 - r_chal) * x₀.val)) := by ring
+    _ = P₀.eval y.val * ((1 - r_chal) * (x₁.val - x₀.val)) +
+        P₁.eval y.val * ((x₁.val - x₀.val) * r_chal) := by ring
+    _ = P₀.eval y.val * (1 - r_chal) + P₁.eval y.val * r_chal := by rw [h_fiber_diff]; ring
     _ = P_i_plus_1.eval y.val := by
       simp only [P_i_plus_1, P₀, P₁, new_coeffs, evenRefinement, oddRefinement,
-        intermediateEvaluationPoly, Fin.eta, Polynomial.eval_finsetSum, Polynomial.eval_mul,
-        Polynomial.eval_C, Finset.sum_mul, ← Finset.sum_add_distrib]
-      refine Finset.sum_congr rfl fun j _ => ?_
-      ring
+        intermediateEvaluationPoly]
+      conv_lhs => enter [1]; rw [mul_comm, ←Polynomial.eval_C_mul]
+      conv_lhs => enter [2]; rw [mul_comm, ←Polynomial.eval_C_mul]
+      -- ⊢ eval y (C (1-r) * ∑...) + eval y (C r * ∑...) = eval y (∑...)
+      rw [←Polynomial.eval_add]
+      -- ⊢ poly_left.eval y = poly_right.eval y
+      congr
+      simp_rw [mul_sum, ←Finset.sum_add_distrib]
+      -- We now prove that the terms inside the sums are equal for each index.
+      apply Finset.sum_congr rfl
+      intro j hj
+      have h_j_lt : j.val < 2 ^ (ℓ - (↑i + 1)) := by
+        rw [Nat.sub_add_eq]
+        omega
+      conv_lhs => enter [1]; rw [mul_comm (a := Polynomial.C (coeffs ⟨j.val * 2, by
+        rw [←Nat.add_zero (j.val * 2)]
+        apply mul_two_add_bit_lt_two_pow (c := ℓ - i) (a := j) (b := ℓ - (↑i + 1))
+          (i := 0) (by omega) (by omega)⟩)), ←mul_assoc,
+        mul_comm (a := Polynomial.C (1 - r_chal))]; rw [mul_assoc]
+      conv_lhs => enter [2]; rw [mul_comm (a := Polynomial.C (coeffs ⟨j.val * 2 + 1, by
+        apply mul_two_add_bit_lt_two_pow (c := ℓ - i) (a := j) (b := ℓ - (↑i + 1))
+          (i := 1) (by omega) (by omega)⟩)), ←mul_assoc,
+        mul_comm (a := Polynomial.C r_chal)]; rw [mul_assoc]
+      conv_rhs => rw [mul_comm]
+      rw [←mul_add]
+      congr
+      simp only [←Polynomial.C_mul, ←Polynomial.C_add]
 
 /-- Given a point `v ∈ S^(0)`, extract the middle `steps` bits `{v_i, ..., v_{i+steps-1}}`
 as a `Fin (2 ^ steps)`. -/
@@ -1155,9 +1275,17 @@ theorem fiberwise_dist_lt_imp_dist_lt_unique_decoding_radius (i : Fin ℓ) (step
   let d_H := Code.distFromCode f C_i
   let d_i := BBF_CodeDistance ℓ 𝓡 (⟨i, by omega⟩)
   let d_i_plus_steps := BBF_CodeDistance ℓ 𝓡 ⟨i.val + steps, by omega⟩
-  -- `BBF_CodeDistance` is a successor.
-  have h_d_i_gt_0 : d_i > 0 := Nat.succ_pos _
-  have h_C_i_nonempty : Nonempty C_i := ⟨0⟩
+  have h_d_i_gt_0 : d_i > 0 := by
+    dsimp [d_i, BBF_CodeDistance] -- ⊢ 2 ^ (ℓ + 𝓡 - ↑i) - 2 ^ (ℓ - ↑i) + 1 > 0
+    have h_exp_lt : ℓ - i.val < ℓ + 𝓡 - i.val := by
+      exact Nat.sub_lt_sub_right (a := ℓ) (b := ℓ + 𝓡) (c := i.val) (by omega) (by
+        apply Nat.lt_add_of_pos_right; exact pos_of_neZero 𝓡)
+    have h_pow_lt : 2 ^ (ℓ - i.val) < 2 ^ (ℓ + 𝓡 - i.val) := by
+      exact Nat.pow_lt_pow_right (by norm_num) h_exp_lt
+    omega
+  have h_C_i_nonempty : Nonempty C_i := by
+    simp only [nonempty_subtype, C_i]
+    exact Submodule.nonempty (BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ⟨i.val, by omega⟩)
   -- 1. Relate Hamming distance `d_H` to fiber-wise distance `d_fw`.
   obtain ⟨g', h_g'_mem, h_g'_min_card⟩ : ∃ g' ∈ C_i, d_fw
     = (fiberwiseDisagreementSet 𝔽q β i steps h_i_add_steps f g').ncard := by
@@ -1184,12 +1312,12 @@ theorem fiberwise_dist_lt_imp_dist_lt_unique_decoding_radius (i : Fin ℓ) (step
     change (Δ₀(f, g') : ℕ∞) ≤ ↑d_fw * ((2 ^ steps : ℕ) : ℕ∞)
     rw [←ENat.natCast_mul, ENat.natCast_le_natCast, h_g'_min_card]
     -- Let ΔH be the finset of actually bad x points where f and g' disagree.
-    let ΔH := Finset.filter (fun x => f x ≠ g' x) Finset.univ
+    set ΔH := Finset.filter (fun x => f x ≠ g' x) Finset.univ
     have h_dist_eq_card : hammingDist f g' = ΔH.card := by
       simp only [hammingDist, ne_eq, ΔH]
     rw [h_dist_eq_card]
     -- Y_bad is the set of quotient points y that THERE EXISTS a bad fiber point x
-    let Y_bad := fiberwiseDisagreementSet 𝔽q β i steps h_i_add_steps f g'
+    set Y_bad := fiberwiseDisagreementSet 𝔽q β i steps h_i_add_steps f g'
     simp only at * -- simplify domain indices everywhere
     -- ⊢ #ΔH ≤ Y_bad.ncard * 2 ^ steps
     have hFinType_Y_bad : Fintype Y_bad := by exact Fintype.ofFinite ↑Y_bad
@@ -1210,10 +1338,29 @@ theorem fiberwise_dist_lt_imp_dist_lt_unique_decoding_radius (i : Fin ℓ) (step
         (h_destIdx := by simp) (h_destIdx_le := h_i_add_steps) x
       apply Finset.mem_biUnion.mpr; use y_of_x
       -- ⊢ y_of_x ∈ Y_bad.toFinset ∧ x ∈ qMap_total_fiber(y_of_x)
-      -- one bad fiber point of y_of_x is x itself
-      have h_elemenet_Y_bad : y_of_x ∈ Y_bad.toFinset :=
-        Set.mem_toFinset.mpr ⟨x, rfl, hx_in_ΔH.2⟩
+      have h_elemenet_Y_bad : y_of_x ∈ Y_bad.toFinset := by
+        -- ⊢ y ∈ Y_bad.toFinset
+        rw [Set.mem_toFinset]
+        simp only [fiberwiseDisagreementSet, iteratedQuotientMap, ne_eq, Subtype.exists, Y_bad]
+        -- one bad fiber point of y_of_x is x itself
+        let X := x.val
+        have h_X_in_source : X ∈ sDomain 𝔽q β h_ℓ_add_R_rate (i := ⟨i, by omega⟩) := by
+          exact Submodule.coe_mem x
+        use X
+        use h_X_in_source
+        -- ⊢ Ŵ_steps⁽ⁱ⁾(X) = y (iterated quotient map) ∧ ¬f ⟨X, ⋯⟩ = g' ⟨X, ⋯⟩
+        have h_forward_iterated_qmap : Polynomial.eval X
+            (intermediateNormVpoly 𝔽q β h_ℓ_add_R_rate (i := ⟨↑i, by omega⟩)
+              (k := steps) (h_k := h_i_add_steps)) = y_of_x := by
+          simp only [iteratedQuotientMap, X, y_of_x];
+        have h_eval_diff : f ⟨X, by omega⟩ ≠ g' ⟨X, by omega⟩ := by
+          unfold X
+          simp only [Subtype.coe_eta, ne_eq, hx_in_ΔH, not_false_eq_true]
+        simp only [h_forward_iterated_qmap, Subtype.coe_eta, h_eval_diff,
+          not_false_eq_true, and_self]
       simp only [h_elemenet_Y_bad, true_and]
+      set qMapFiber := qMap_total_fiber 𝔽q β (i := ⟨i, by omega⟩) (steps := steps)
+        (h_i_add_steps := by apply Nat.lt_add_of_pos_right_of_le; omega) (y := y_of_x)
       simp only [coe_univ, Set.image_univ, Set.toFinset_range, mem_image, mem_univ, true_and]
       use (pointToIterateQuotientIndex (i := ⟨i, by omega⟩) (steps := steps)
         (h_i_add_steps := by omega) (x := x))
@@ -1245,7 +1392,7 @@ theorem fiberwise_dist_lt_imp_dist_lt_unique_decoding_radius (i : Fin ℓ) (step
       simp only [sum_const, Set.toFinset_card, smul_eq_mul, ge_iff_le]
       conv_rhs => rw [←_root_.Nat.card_coe_set_eq] -- convert .ncard back to .card
       -- ⊢ Fintype.card ↑Y_bad ≤ Nat.card ↑Y_bad
-      simp only [card_eq_fintype_card, Y_bad, le_refl]
+      simp only [card_eq_fintype_card, le_refl]
     · -- Prove that the fibers for distinct quotient points y₁, y₂ are disjoint.
       intro y₁ hy₁ y₂ hy₂ hy_ne
       have h_disjoint := qMap_total_fiber_disjoint (i := ⟨↑i, by omega⟩) (steps := steps)
@@ -1274,10 +1421,11 @@ theorem fiberwise_dist_lt_imp_dist_lt_unique_decoding_radius (i : Fin ℓ) (step
     dsimp [d_i, d_i_plus_steps, BBF_CodeDistance]
     rw [Nat.sub_mul, ←Nat.pow_add, ←Nat.pow_add];
     have h1 : ℓ + 𝓡 - (↑i + steps) + steps = ℓ + 𝓡 - i := by
-      rw [← Nat.sub_sub, Nat.sub_add_cancel
-        (Nat.le_sub_of_add_le' (h_i_add_steps.trans (Nat.le_add_right ℓ 𝓡)))]
+      rw [Nat.sub_add_eq_sub_sub_rev (h1 := by omega) (h2 := by omega),
+        Nat.add_sub_cancel (n := i) (m := steps)]
     have h2 : (ℓ - (↑i + steps) + steps) = ℓ - i := by
-      rw [← Nat.sub_sub, Nat.sub_add_cancel (Nat.le_sub_of_add_le' h_i_add_steps)]
+      rw [Nat.sub_add_eq_sub_sub_rev (h1 := by omega) (h2 := by omega),
+        Nat.add_sub_cancel (n := i) (m := steps)]
     rw [h1, h2]
   -- 4. Conclusion : Chain the inequalities to prove `2 * d_H < d_i`.
   -- We know `d_H` is finite, since `C_i` is nonempty.
@@ -1294,14 +1442,18 @@ theorem fiberwise_dist_lt_imp_dist_lt_unique_decoding_radius (i : Fin ℓ) (step
         rw [←ENat.natCast_le_natCast]
         exact le_of_eq_of_le (id (Eq.symm h_dH_eq)) h_dist_bridge
     calc 2 * d_H_nat
-      _ ≤ 2 * (d_fw * 2 ^ steps) := Nat.mul_le_mul_left 2 h_bridge_nat
-      _ = (2 * d_fw) * 2 ^ steps := (Nat.mul_assoc _ _ _).symm
-      _ ≤ (d_i_plus_steps - 1) * 2 ^ steps := Nat.mul_le_mul_right _ h_fw_bound
+      _ ≤ 2 * (d_fw * 2 ^ steps) := by gcongr
+      _ = (2 * d_fw) * 2 ^ steps := by rw [mul_assoc]
+      _ ≤ (d_i_plus_steps - 1) * 2 ^ steps := by gcongr;
       _ = d_i - 1 := h_algebraic_identity
+  simp only [d_H, d_H_nat] at h_dH_eq
   -- This final line is equivalent to the goal statement.
-  change (2 : ℕ∞) * d_H < d_i
   rw [h_dH_eq]
-  exact_mod_cast Nat.lt_of_le_pred h_d_i_gt_0 h_final_inequality
+  -- ⊢ 2 * ↑Δ₀(f, C_i).toNat < ↑(BBF_CodeDistance ℓ 𝓡 ⟨↑i, ⋯⟩)
+  change ((2 : ℕ) : ℕ∞) * ↑Δ₀(f, C_i).toNat < ↑(BBF_CodeDistance ℓ 𝓡 ⟨↑i, by omega⟩)
+  rw [←ENat.natCast_mul, ENat.natCast_lt_natCast]
+  apply Nat.lt_of_le_pred (n := 2 * Δ₀(f, C_i).toNat) (m := d_i) (h := h_d_i_gt_0)
+    (h_final_inequality)
 
 end SoundnessTools
 end
