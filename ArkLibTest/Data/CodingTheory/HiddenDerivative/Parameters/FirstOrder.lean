@@ -498,6 +498,29 @@ example : (hybridSolutions.card : ℚ) ≤
       rcases Finset.mem_singleton.mp hP with rfl
       simp [hybridReceived])
 
+/-- The shared regular Taylor estimate bounds the concrete degree-two regular singleton. -/
+example : (hybridSolutions.card : ℚ) ≤
+    firstOrderCurveFiberStageOne 3 1 1 (regularTaylorExponent 2) *
+      (((4 - 2 : ℕ) : ℚ) / ((3 - 2 : ℕ) : ℚ)) := by
+  exact finite_regular_agreement_solutions_card_le_regularTaylor
+    (MvPolynomial.X (some (1 : Fin 2))) 2 1 1 (Or.inr ⟨by norm_num, by norm_num⟩)
+    (by rw [hybridVariable_totalDegree (R := ℚ)])
+    (by rw [jetDegree, MvPolynomial.degreeOf_X_self]) (by norm_num)
+    hybridDomain hybridReceived (by norm_num) (by norm_num) hybridSolutions
+    (fun P hP ↦ lt_trans (hybridSolutions_accepted P hP).1 (by norm_num))
+    hybridJetOneSolutions
+    (fun P hP ↦ by
+      rcases Finset.mem_singleton.mp hP with rfl
+      simp [separant, pderiv_X, differentialSpecialization, differentialSpecializationHom])
+    (by
+      intro i hi hiK
+      have : i = 2 := by omega
+      subst i
+      norm_num [Nat.choose_one_right])
+    (fun P hP ↦ by
+      rcases Finset.mem_singleton.mp hP with rfl
+      simp [hybridReceived])
+
 /-- The symbolic raw hybrid bound applies to the shared accepted singleton. -/
 example : (hybridSolutions.card : ℝ) ≤
     firstOrderListCharge (agreementIncidenceRatio 4 1 3) 1 3

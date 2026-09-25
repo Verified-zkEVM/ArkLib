@@ -408,6 +408,19 @@ example : totalDegree (radicalContent 0 radicalSplitPolynomial) +
       totalDegree radicalSplitPolynomial :=
   add_sum_totalDegree_positiveDegreeFactorClasses_le 0 radicalSplitPolynomial
 
+/-- The radical part of `X 0` in the unrelated coordinate `1` has degree zero and equals `1`. -/
+example : radicalPrimPart (1 : Fin 2) (X 0 : MvPolynomial (Fin 2) ℚ) = 1 := by
+  have hdegree : degreeOf (1 : Fin 2) (X 0 : MvPolynomial (Fin 2) ℚ) = 0 := by
+    rw [degreeOf_X_of_ne (by decide)]
+  have hradical :
+      degreeOf (1 : Fin 2)
+          (radicalPrimPart (1 : Fin 2) (X 0 : MvPolynomial (Fin 2) ℚ)) = 0 :=
+    Nat.eq_zero_of_le_zero
+      ((degreeOf_radicalPrimPart_le (1 : Fin 2) (1 : Fin 2)
+        (X 0 : MvPolynomial (Fin 2) ℚ)).trans_eq hdegree)
+  exact radicalPrimPart_eq_one_of_degreeOf_eq_zero (1 : Fin 2)
+    (X 0 : MvPolynomial (Fin 2) ℚ) hradical
+
 /-- For the nonconstant polynomial `X`, a proper challenge exception leaves a root whose challenge
 is nonzero, so the combined exceptional-set conclusion has content. -/
 example : ∃ ex : Finset (Fin 3), (ex.card : ℤ) ≤ 2 ∧
