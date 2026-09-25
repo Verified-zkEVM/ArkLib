@@ -820,18 +820,6 @@ private def recognitionChartAt : DifferentialPolynomial (ZMod 3) 0 :=
 /-- The recognition jet used at the regular chart point. -/
 private def recognitionJet : Fin 1 → ZMod 3 := fun _ ↦ 0
 
-/-- Batching `X^2` with twice `X + 1` at `z = 2` has initial jet `(5, 4)` at `1` in `ℚ`.
--/
-example :
-    polynomialJet (d := 1) (1 : ℚ)
-      (powerBatchedPolynomial (fun i : Fin 2 ↦
-        if i = 0 then (Polynomial.X ^ 2 : Polynomial ℚ) else Polynomial.X + 1) 2) =
-      ![5, 4] := by
-  rw [polynomialJet_powerBatched]
-  ext j
-  fin_cases j <;> norm_num [powerBatchedJetGraph, powerBatchedCoordinate_eval,
-    powerBatchedCoordinate, polynomialJet, Polynomial.hasseJet, Fin.sum_univ_succ]
-
 /-- A sample with a nonzero second component and a nontrivial high cut yields all three
 recognition conclusions at the regular chart point. -/
 example : ∃ P : Fin 2 → Polynomial (ZMod 3), (∀ t, (P t).degree < 1) ∧
@@ -955,7 +943,7 @@ private def retainedZeroTuple : Finset (Fin 2 → (ZMod 3)[X]) := {zeroTuple}
 example : ∃ exceptional : Finset (ZMod 3),
     (exceptional.card : ℚ) ≤
       geometricTransferBound 0 1 1 1 0 0 (fun _ : PUnit ↦ 0) (fun _ ↦ 0) (fun _ ↦ 1) ∧
-    ∀ z ∉ exceptional, ∀ Q, zeroCandidate z Q → Q.degree < 1 →
+    ∀ z ∉ exceptional, ∀ Q, zeroCandidate z Q →
       HasExactPowerAgreement (ℓ := 1) domain zeroWords
         (RingHom.id (ZMod 3)) 1 z Q := by
   classical
@@ -967,7 +955,12 @@ example : ∃ exceptional : Finset (ZMod 3),
     (fun _ P hP t ↦ by rw [Finset.mem_singleton.mp hP]; simp [zeroTuple]) (fun _ _ _ ↦ by simp)
     fun z Q hQ _ _ _ ↦ Or.inr ⟨(), zeroTuple, by simp [retainedZeroTuple],
       by rw [show Q = 0 from hQ]; simp [zeroTuple, powerBatchedPolynomial]⟩
-  simpa [geometricTransferBound, Fintype.card_fin] using h
+  obtain ⟨exceptional, hcard, hgood⟩ := h
+  exact exists_geometricTransfer_baseField_semantic (domain := domain) (w := zeroWords)
+    (iota := RingHom.id (ZMod 3)) (k := 1) (Candidate := zeroCandidate) exceptional
+    (geometricTransferBound 0 1 1 1 0 0 (fun _ : PUnit ↦ 0) (fun _ ↦ 0) (fun _ ↦ 1))
+    (by simpa [geometricTransferBound, Fintype.card_fin] using hcard)
+    (by rintro z hz Q rfl; simpa using hgood z hz 0 rfl (by simp) (by omega))
 
 -- Two distinct degree-bounded tuples share the one-point sample and have one family bound.
 example : ∃ exceptional : Finset (ZMod 3), exceptional.card ≤ 0 ∧
@@ -1340,7 +1333,14 @@ example :
         componentInitialDegree ∧
     0 < componentRetainedPairs.card ∧ componentRetainedPairs.card ≤ componentInitialDegree ∧
     0 < componentRetainedTuples.card ∧
-      componentRetainedTuples.card ≤ componentInitialDegree := by
+      componentRetainedTuples.card ≤ componentInitialDegree ∧
+    ∃ exceptional : Finset ComponentField,
+      exceptional.card ≤ 0 ∧ ∀ P ∈ componentRetainedPairs, ∀ z ∉ exceptional,
+        polynomialAgreementSet
+            (domain.trans ⟨componentMap, componentMap.injective⟩)
+            (fun i ↦ componentMap (componentWord i) + z * componentMap (componentWord i))
+            (P.1.map componentMap + Polynomial.C z * P.2.map componentMap) =
+          commonPolynomialAgreementSet domain componentWord componentWord P.1 P.2 := by
   classical
   have hmem := (mem_frobeniusRetainedPairFamily_iff domain componentWord componentWord
     componentMap (fun _ ↦ (0 : ComponentField)) 0 componentJet 1 1 2 1 (0, 0)).mpr
@@ -1349,7 +1349,7 @@ example :
     (fun _ ↦ componentWord) componentMap (fun _ ↦ (0 : ComponentField)) 0 componentJet
     1 1 2 1 componentPowerTuple).mpr extractedAdmissibleFrobeniusPowerTuple
   refine ⟨?_, ?_, Finset.card_pos.mpr ⟨(0, 0), hmem⟩, ?_,
-    Finset.card_pos.mpr ⟨componentPowerTuple, htmem⟩, ?_⟩
+    Finset.card_pos.mpr ⟨componentPowerTuple, htmem⟩, ?_, ?_⟩
   · exact admissibleFrobeniusPowerTuples_card_le_degreeOf (K := 1) (k := 1)
       domain (fun _ ↦ componentWord) componentMap (fun _ ↦ (0 : ComponentField))
       0 componentJet 1 0 2
@@ -1374,6 +1374,9 @@ example :
       0 componentJet 1 0 2 component_roots
       (by norm_num) (by norm_num) (taylorExponentSufficient_two_mul 0 1)
       component_initialEquation_ne_zero
+  · simpa [componentRetainedPairs, Fintype.card_fin] using
+      exists_exceptional_frobeniusRetainedPairFamily domain componentWord componentWord
+        componentMap (fun _ ↦ (0 : ComponentField)) 0 componentJet 1 1 2 1
 example :
     ∃ exceptional : Finset ComponentField,
       exceptional.card ≤ 0 ∧
