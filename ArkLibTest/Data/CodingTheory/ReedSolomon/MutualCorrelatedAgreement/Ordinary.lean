@@ -11,7 +11,7 @@ import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.I
 import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 import Mathlib.Analysis.Complex.Polynomial.Basic
 
-/-! # Acceptance cases for ordinary factor assembly and budget bounds -/
+/-! # Acceptance cases for ordinary factor bounds and equations -/
 
 open ReedSolomon
 open Polynomial PolynomialDifferential MvPolynomial
@@ -221,23 +221,32 @@ example : ∃ exceptional : Finset ℂ, (exceptional.card : ℚ) ≤ 1 ∧
     norm_num [polynomialAgreementSet, ordinaryEquationDomain])
   exact ⟨exceptional, hcard', z, hz, hpair⟩
 
-example : ∃ exceptional : Finset ℂ, (exceptional.card : ℚ) ≤ 1 ∧
+example : ∃ exceptional : Finset ℂ, (exceptional.card : ℚ) ≤ 2 ∧
     ∃ z ∉ exceptional,
       HasExactCorrelatedPair ordinaryEquationDomain (fun _ ↦ 0) (fun _ ↦ 0)
         (RingHom.id ℂ) 2 z 0 := by
   classical
+  let squareEquation : DifferentialPolynomial ℂ[X] 0 := ordinaryEquation ^ 2
+  have hQ : squareEquation ≠ 0 := by
+    dsimp [squareEquation, ordinaryEquation]
+    exact pow_ne_zero 2 (MvPolynomial.X_ne_zero _)
+  have hheight : CoeffNatDegreeLE squareEquation 0 := by
+    simpa [squareEquation, ordinaryEquation] using
+      (CoeffNatDegreeLE.pow (coeffNatDegreeLE_X (some (0 : Fin 1))) 2)
+  have hdegree : squareEquation.degreeOf (some 0) ≤ 2 := by
+    simp [squareEquation, ordinaryEquation]
   obtain ⟨exceptional, hcard, hgood⟩ := exists_exceptional_ordinaryEquation
-    ordinaryEquationDomain (fun _ ↦ 0) (fun _ ↦ 0) (RingHom.id ℂ) ordinaryEquation
-    1 0 1 2 (by exact MvPolynomial.X_ne_zero _) (by norm_num) (by norm_num)
-    (by norm_num) (by norm_num) (coeffNatDegreeLE_X (some (0 : Fin 1))) (by simp)
-  have hcard' : (exceptional.card : ℚ) ≤ 1 := by
-    simpa [ordinaryEquation, ordinaryFactorRaw] using hcard
-  have hcardNat : exceptional.card ≤ 1 := by exact_mod_cast hcard'
+    ordinaryEquationDomain (fun _ ↦ 0) (fun _ ↦ 0) (RingHom.id ℂ) squareEquation
+    1 0 2 2 hQ (by norm_num) (by norm_num) (by norm_num) (by norm_num) hheight hdegree
+  have hcard' : (exceptional.card : ℚ) ≤ 2 := by
+    simpa [ordinaryFactorRaw] using hcard
+  have hcardNat : exceptional.card ≤ 2 := by exact_mod_cast hcard'
   obtain ⟨z, -, hz⟩ := Finset.exists_mem_notMem_of_card_lt_card
-    (s := exceptional) (t := ({0, 1} : Finset ℂ))
+    (s := exceptional) (t := ({0, 1, 2} : Finset ℂ))
     (Nat.lt_of_le_of_lt hcardNat (by norm_num))
   have hpair := hgood z hz 0 (by simp)
-    (by simp [ordinaryEquation, challengeSpecialization]) (by
+    (by simp [squareEquation, ordinaryEquation, challengeSpecialization,
+      differentialSpecialization, differentialSpecializationHom]) (by
       norm_num [polynomialAgreementSet, ordinaryEquationDomain])
   exact ⟨exceptional, hcard', z, hz, hpair⟩
 

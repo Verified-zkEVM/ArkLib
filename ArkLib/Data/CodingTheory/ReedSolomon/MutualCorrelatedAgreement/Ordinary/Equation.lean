@@ -70,15 +70,6 @@ theorem exists_exceptional_ordinaryEquation
   have hev (z : E) (P : E[X]) (R : MvPolynomial (Option (Fin 2)) E) :
       ev z P R = differentialSpecialization
         (challengeSpecialization (ordinaryUnflatten E R) z) P := rfl
-  have hcontentHeight :
-      (radicalContent none flat).degreeOf (some 1) ≤ h := by
-    calc
-      _ ≤ (radicalContent none flat).degreeOf (some 1) +
-          ∑ c ∈ positiveDegreeFactorClasses none flat, c.rep.degreeOf (some 1) :=
-        Nat.le_add_right _ _
-      _ ≤ flat.degreeOf (some 1) :=
-        add_sum_degreeOf_positiveDegreeFactorClasses_le none (some 1) flat
-      _ ≤ h := hflatHeight
   have hc : ∃ ex : Finset E, ex.card ≤ height (radicalContent none flat) ∧
       ∀ z ∉ ex, ∀ P, ev z P (radicalContent none flat) ≠ 0 := by
     obtain ⟨ex, hcard, hgood⟩ := exists_exceptional_jet_independent_content
