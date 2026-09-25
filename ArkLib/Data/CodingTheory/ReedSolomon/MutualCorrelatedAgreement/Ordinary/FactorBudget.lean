@@ -44,18 +44,28 @@ charges fits the charge of the whole polynomial. This summation is
 * `ReedSolomon.ordinaryFrobeniusMixedDegree_eq`, `ordinaryFrobeniusMixedDegree_le`,
   `ordinaryFrobeniusMixedDegree_le_sharp`, `ordinaryFrobeniusMixedDegree_le_unified`: the
   exact value of the mixed chart degree and its three upper bounds.
+* `ReedSolomon.ordinaryFrobeniusCurveMixedDegree` is the chart degree for a Frobenius factor over
+  a polynomial curve; `ordinaryFrobeniusCurveMixedDegree_eq` and
+  `ordinaryFrobeniusCurveMixedDegree_le` give its exact form and a coarse upper bound.
 * `ReedSolomon.ordinaryFrobenius_sharp_factor`, `ordinaryFrobenius_unified_factor`: the
   coefficient comparisons behind the sharp and unified bounds.
 * `ReedSolomon.ordinaryPsi_eq_sharp`, `ordinaryPsi_mono`, `ordinaryPsi_le_four_mul`: the unified
   coefficient agrees with the sharp one up to `2 * D + 1`, is monotone, and is at most `4 * D * B`.
 * `ReedSolomon.ordinaryFrobenius_charge_le`: a pullback factor is charged no more than a factor of
   root degree `s * b`.
+* `ReedSolomon.ordinaryCurveFactorRaw` is the curve-factor charge;
+  `ordinaryFrobeniusCurve_charge_le` and `ordinaryCurveFactorRaw_le_line_mul` compare these
+  charges with the line charge.
 * `ReedSolomon.ordinaryFactorRaw_le_linear`, `ordinaryUnifiedPowerFactorRawAt_le_linear`: the
   linear bounds on per-factor charges, with equality at the total budgets.
 * `ReedSolomon.ordinaryFactorRaw_sum_le`, `ordinaryUnifiedPowerFactorRawAt_sum_le`,
   `ordinaryUnifiedPowerFactorRaw_sum_le`: content plus factor charges fit the total charge.
 * `ReedSolomon.ordinaryUnifiedPowerFactorAt_succ_eq`: the free-retention budget at threshold
   `L = D + 1` is the fixed-split budget.
+
+## References
+
+* [DKT26]
 -/
 
 @[expose] public section
@@ -73,31 +83,110 @@ the separable root degree, so the factor has root degree `s * b`. Subtraction is
 def ordinaryFrobeniusMixedDegree (D h s b : ℕ) : ℕ :=
   h * (1 + (2 * D * s - 1) * (b - 1)) + b * (s + (2 * D * s - 1) * h)
 
+private theorem frobeniusMixedDegree_eq_aux (D h s b c : ℕ) :
+    h * (1 + (2 * D * s - 1) * (b - 1)) + b * (c + (2 * D * s - 1) * h) =
+      h + b * c + (2 * D * s - 1) * h * (2 * b - 1) := by
+  rcases Nat.eq_zero_or_pos b with rfl | hb
+  · simp
+  obtain ⟨b, rfl⟩ := Nat.exists_eq_add_of_le hb
+  simp only [Nat.add_sub_cancel_left, Nat.mul_add, Nat.mul_one]
+  have ht : 2 + 2 * b - 1 = 1 + 2 * b := by omega
+  rw [ht]
+  ring
+
+private theorem frobeniusMixedDegree_le_aux (D h s b c : ℕ) :
+    h * (1 + (2 * D * s - 1) * (b - 1)) + b * (c + (2 * D * s - 1) * h) ≤
+      h + b * c + 4 * D * h * (s * b) := by
+  rw [frobeniusMixedDegree_eq_aux]
+  have hprod : (2 * D * s - 1) * h * (2 * b - 1) ≤ (2 * D * s) * h * (2 * b) := by
+    gcongr <;> omega
+  calc
+    h + b * c + (2 * D * s - 1) * h * (2 * b - 1) ≤
+        h + b * c + (2 * D * s) * h * (2 * b) := Nat.add_le_add_left hprod _
+    _ = h + b * c + 4 * D * h * (s * b) := by ring
+
 /-- The reconstruction and separable fiber degrees combine to
 `h + s * b + (2 * D * s - 1) * h * (2 * b - 1)`. For `b = 0` both sides equal `h`, since
 `2 * 0 - 1 = 0` in `ℕ`, so no hypothesis on `b` is needed. -/
 theorem ordinaryFrobeniusMixedDegree_eq (D h s b : ℕ) :
     ordinaryFrobeniusMixedDegree D h s b =
       h + s * b + (2 * D * s - 1) * h * (2 * b - 1) := by
-  rcases Nat.eq_zero_or_pos b with rfl | hb
-  · simp [ordinaryFrobeniusMixedDegree]
-  obtain ⟨b, rfl⟩ := Nat.exists_eq_add_of_le hb
-  simp only [ordinaryFrobeniusMixedDegree, Nat.add_sub_cancel_left, Nat.mul_add, Nat.mul_one]
-  have ht : 2 + 2 * b - 1 = 1 + 2 * b := by omega
-  rw [ht]
-  ring
+  change h * (1 + (2 * D * s - 1) * (b - 1)) +
+      b * (s + (2 * D * s - 1) * h) = _
+  calc
+    _ = h + b * s + (2 * D * s - 1) * h * (2 * b - 1) :=
+      frobeniusMixedDegree_eq_aux D h s b s
+    _ = h + s * b + (2 * D * s - 1) * h * (2 * b - 1) := by ring
 
 /-- The mixed chart degree is at most `h + s * b + 4 * D * h * (s * b)`: the inseparability
 power `s` costs nothing beyond the root degree `s * b` of the factor. -/
 theorem ordinaryFrobeniusMixedDegree_le (D h s b : ℕ) :
     ordinaryFrobeniusMixedDegree D h s b ≤ h + s * b + 4 * D * h * (s * b) := by
-  rw [ordinaryFrobeniusMixedDegree_eq D h s b]
-  have hprod : (2 * D * s - 1) * h * (2 * b - 1) ≤ (2 * D * s) * h * (2 * b) := by
-    gcongr <;> omega
+  change h * (1 + (2 * D * s - 1) * (b - 1)) +
+      b * (s + (2 * D * s - 1) * h) ≤ _
   calc
-    h + s * b + (2 * D * s - 1) * h * (2 * b - 1) ≤
-        h + s * b + (2 * D * s) * h * (2 * b) := Nat.add_le_add_left hprod _
+    _ ≤ h + b * s + 4 * D * h * (s * b) := frobeniusMixedDegree_le_aux D h s b s
     _ = h + s * b + 4 * D * h * (s * b) := by ring
+
+/-! ### Polynomial-curve mixed degree and charge -/
+
+/-- The chart degree for a Frobenius factor over a degree-`ell` polynomial curve. Here `D` bounds
+the message degree, `h` is the factor height, `s` is its Frobenius power, and `b` is the
+separable root degree. -/
+def ordinaryFrobeniusCurveMixedDegree (D ell h s b : ℕ) : ℕ :=
+  h * (1 + (2 * D * s - 1) * (b - 1)) + b * (s * ell + (2 * D * s - 1) * h)
+
+/-- The polynomial-curve chart degree is linear in the curve degree. -/
+theorem ordinaryFrobeniusCurveMixedDegree_eq (D ell h s b : ℕ) :
+    ordinaryFrobeniusCurveMixedDegree D ell h s b =
+      h + ell * (s * b) + (2 * D * s - 1) * h * (2 * b - 1) := by
+  change h * (1 + (2 * D * s - 1) * (b - 1)) +
+      b * (s * ell + (2 * D * s - 1) * h) = _
+  calc
+    _ = h + b * (s * ell) + (2 * D * s - 1) * h * (2 * b - 1) :=
+      frobeniusMixedDegree_eq_aux D h s b (s * ell)
+    _ = h + ell * (s * b) + (2 * D * s - 1) * h * (2 * b - 1) := by ring
+
+/-- The polynomial-curve mixed degree is at most
+`h + ell * (s * b) + 4 * D * h * (s * b)`. -/
+theorem ordinaryFrobeniusCurveMixedDegree_le (D ell h s b : ℕ) :
+    ordinaryFrobeniusCurveMixedDegree D ell h s b ≤
+      h + ell * (s * b) + 4 * D * h * (s * b) := by
+  change h * (1 + (2 * D * s - 1) * (b - 1)) +
+      b * (s * ell + (2 * D * s - 1) * h) ≤ _
+  calc
+    _ ≤ h + b * (s * ell) + 4 * D * h * (s * b) :=
+      frobeniusMixedDegree_le_aux D h s b (s * ell)
+    _ = h + ell * (s * b) + 4 * D * h * (s * b) := by ring
+
+/-- The exceptional-set charge of a factor of root degree `a` and height `h` over a degree-`ell`
+polynomial curve: `(2a - 1)h + theta * (h + ell*a + 4Dah) + ell*(n - D - 1)*a`. -/
+def ordinaryCurveFactorRaw (theta : ℚ) (n D ell a h : ℕ) : ℚ :=
+  ((2 * a - 1) * h : ℕ) +
+    theta * (h + ell * a + 4 * D * a * h : ℕ) + (ell * ((n - D - 1) * a) : ℕ)
+
+/-- A pulled Frobenius factor is charged by the polynomial-curve budget at its original root degree.
+The assumptions `1 ≤ s` and `0 ≤ theta` are needed to compare the degree and incidence terms. -/
+theorem ordinaryFrobeniusCurve_charge_le (theta : ℚ) (n D ell h s b : ℕ)
+    (htheta : 0 ≤ theta) (hs : 1 ≤ s) :
+    ((2 * b - 1) * h : ℕ) + theta * ordinaryFrobeniusCurveMixedDegree D ell h s b +
+        (ell * ((n - D - 1) * b) : ℕ) ≤ ordinaryCurveFactorRaw theta n D ell (s * b) h := by
+  have hbs : b ≤ s * b := Nat.le_mul_of_pos_left b (by omega : 0 < s)
+  have hfirst : (2 * b - 1) * h ≤ (2 * (s * b) - 1) * h := by
+    exact Nat.mul_le_mul_right h (Nat.sub_le_sub_right (Nat.mul_le_mul_left 2 hbs) 1)
+  have hmixed : ordinaryFrobeniusCurveMixedDegree D ell h s b ≤
+      h + ell * (s * b) + 4 * D * (s * b) * h := by
+    have hdegree := ordinaryFrobeniusCurveMixedDegree_le D ell h s b
+    rw [show 4 * D * h * (s * b) = 4 * D * (s * b) * h by ring] at hdegree
+    exact hdegree
+  have hlast : ell * ((n - D - 1) * b) ≤ ell * ((n - D - 1) * (s * b)) := by
+    gcongr
+  unfold ordinaryCurveFactorRaw
+  apply add_le_add
+  · apply add_le_add
+    · exact_mod_cast hfirst
+    · exact mul_le_mul_of_nonneg_left (by exact_mod_cast hmixed) htheta
+  · exact_mod_cast hlast
 
 /-- The polynomial identity behind the sharp comparison:
 `(2D - 1)(2sb - 1) - (2Ds - 1)(2b - 1) = 2(s - 1)(D - b)` in any commutative ring. -/
@@ -232,6 +321,30 @@ is the incidence ratio and `n` the block length. -/
 def ordinaryFactorRaw (theta : ℚ) (n D a h : ℕ) : ℚ :=
   ((2 * a - 1) * h : ℕ) + theta * (h + a + 4 * D * a * h : ℕ) +
     ((n - D - 1) * a : ℕ)
+
+/-- A curve-factor charge is at most `ell` copies of the line charge when its height is at most
+`ell` times the line height. -/
+theorem ordinaryCurveFactorRaw_le_line_mul (theta : ℚ) (n D ell a h H : ℕ)
+    (htheta : 0 ≤ theta) (hh : h ≤ ell * H) :
+    ordinaryCurveFactorRaw theta n D ell a h ≤ ell * ordinaryFactorRaw theta n D a H := by
+  have hfirst : (2 * a - 1) * h ≤ (2 * a - 1) * (ell * H) := Nat.mul_le_mul_left _ hh
+  have hmixed : h + ell * a + 4 * D * a * h ≤ ell * (H + a + 4 * D * a * H) := by
+    calc
+      h + ell * a + 4 * D * a * h ≤
+          ell * H + ell * a + 4 * D * a * (ell * H) := by gcongr
+      _ = ell * (H + a + 4 * D * a * H) := by ring
+  have hrhs : ell * ordinaryFactorRaw theta n D a H =
+      (((2 * a - 1) * (ell * H) : ℕ) : ℚ) +
+        theta * ((ell * (H + a + 4 * D * a * H) : ℕ) : ℚ) +
+        ((ell * ((n - D - 1) * a) : ℕ) : ℚ) := by
+    unfold ordinaryFactorRaw
+    push_cast
+    ring
+  rw [hrhs]
+  unfold ordinaryCurveFactorRaw
+  exact add_le_add
+    (add_le_add (by exact_mod_cast hfirst)
+      (mul_le_mul_of_nonneg_left (by exact_mod_cast hmixed) htheta)) le_rfl
 
 /-- A Frobenius pullback with separable degree `b` and power `s` is charged at most as a factor
 of root degree `s * b`. The hypothesis `1 ≤ s` is needed: for `s = 0`, `b = 1` and `h = 1` the

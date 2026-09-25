@@ -12,6 +12,7 @@ import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.C
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.PrescribedCurve
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.PrescribedLine
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.RatePartition
+import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.FixedRateExplicitGate
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.UniformRate
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.FixedRateGate
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.WeightedSupport.ScalarParameters
@@ -489,11 +490,13 @@ example :
       ∃ z ∉ exceptional,
         HasExactCorrelatedPair (mcaDomain mcaLength) (fun _ ↦ 0) (fun _ ↦ 0) (RingHom.id ℚ)
           1 z (0 : ℚ[X]) := by
-  obtain ⟨hR, hRa, haone, hd, _⟩ := mcaRateGate
+  obtain ⟨hR, _, haone, _, _⟩ := mcaRateGate
+  have hgap : 0 < mcaGap := by norm_num [mcaGap]
   have hn : rateBlockThreshold mcaRate mcaOrder mcaParameters.multiplicity ≤ mcaLength :=
     Nat.le_refl _
-  obtain ⟨exceptional, hbound, hgood⟩ := exists_ratePartition_line_exactCorrelatedPair
-    (F := ℚ) (n := mcaLength) (k := 1) (A := mcaLength) mcaParameters hR hRa haone hd hn
+  obtain ⟨exceptional, hbound, hgood⟩ := fixedRatePartitionOrder_line_exactCorrelatedPair
+    (R := mcaRate) (δ := mcaGap) hR hgap haone
+    (F := ℚ) (n := mcaLength) (k := 1) (A := mcaLength) hn
     (by norm_num) (fixedRateThresholdRate mcaParameters) mcaLengthAgreement le_rfl
     (mcaDomain mcaLength)
     (fun _ => 0) (fun _ => 0) (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
@@ -503,7 +506,8 @@ example :
     ext i
     simp [polynomialAgreementSet]
   obtain ⟨z, hz⟩ := Finset.exists_notMem exceptional
-  refine ⟨exceptional, by simpa using hbound, z, hz, ?_⟩
+  refine ⟨exceptional, ?_, z, hz, ?_⟩
+  · simpa [mcaAgreement, mcaGap, mcaOrder, mcaParameters] using hbound
   exact hgood z hz 0 (by simp) (by rw [hset z]; simp)
 
 open Classical in
