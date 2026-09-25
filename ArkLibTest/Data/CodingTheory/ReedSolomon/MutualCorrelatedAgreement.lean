@@ -566,16 +566,13 @@ private def positiveChallenges : Finset ComponentField := {0}
 private def positiveChallengeWitness (_ : ComponentField) : ComponentField[X] := 0
 private def positiveChallengeJet (_ : ComponentField) : Fin 2 → ComponentField := fun _ ↦ 0
 private theorem badChallengeEquation_jetDegree : jetTotalDegree badChallengeEquation ≤ 1 := by
-  rw [jetTotalDegree_le_iff]
-  rintro u hu
+  rw [jetTotalDegree_le_iff]; rintro u hu
   simp [badChallengeEquation, MvPolynomial.support_X] at hu
   subst u
   simp [totalJetDegree_eq_sum]
 private theorem badChallengeEquation_height : CoeffNatDegreeLE badChallengeEquation 1 := by
   exact (coeffNatDegreeLE_X (some (Fin.last 1))).mono (by omega)
-private theorem badChallengeExponent : TaylorExponentSufficient 1 2 2 := by
-  intro l
-  omega
+private theorem badChallengeExponent : TaylorExponentSufficient 1 2 2 := by intro l; omega
 private theorem badChallengeChartAtZero :
     let Qz := MvPolynomial.map (Polynomial.evalRingHom (0 : ComponentField))
       badChallengeEquation
@@ -601,11 +598,9 @@ private theorem badChallengeChartAtZero :
     simpa using rationalTaylorCoefficient_initial 0 Qz (fun _ : Fin 2 ↦ 0) l
   have hpoly := rationalTaylorPolynomial_polynomialJet 0 Qz (0 : ComponentField[X])
     hsolution hseparant (K := 2) (WithBot.bot_lt_coe 2) (by intro i hi hil; omega)
-  rw [← hjet] at hpoly
-  refine ⟨by simp, ?_, hsep, ?_, ?_⟩
+  rw [← hjet] at hpoly; refine ⟨by simp, ?_, hsep, ?_, ?_⟩
   · simp [initialJetEquation, badChallengeEquation]
-  · intro l _
-    exact aeval_commonTaylorNumerator_eq_zero 0 Qz (fun _ ↦ 0) 2 hsep (hcoeff l)
+  · intro l _; exact aeval_commonTaylorNumerator_eq_zero 0 Qz (fun _ ↦ 0) 2 hsep (hcoeff l)
   · exact hpoly
 private theorem positiveChallenge_no_common (P : Fin 2 → ComponentField[X])
     (hdegree : ∀ t, (P t).degree < 1)
@@ -642,9 +637,12 @@ example : (positiveChallenges.card : ℚ) ≤ positiveDerivativeBound ∧
     ∃ exceptional : Finset ComponentField,
       (exceptional.card : ℚ) ≤ positiveDerivativeBound ∧ 0 ∈ exceptional ∧
     ∃ regularExceptional : Finset ComponentField,
-      0 ∈ regularExceptional ∧
-    ∃ w : ComponentField, HasExactPowerAgreement positiveChallengeDomain
-      regularBoundConstantValues (RingHom.id ComponentField) 2 w 0 := by
+      regularExceptional.card ≤ 1 ∧ 0 ∈ regularExceptional ∧
+    ∃ curveExceptional : Finset ComponentField,
+      curveExceptional.card ≤ 1 ∧
+    ∃ w : ComponentField, w ∉ curveExceptional ∧
+      HasExactPowerAgreement positiveChallengeDomain regularBoundConstantValues
+        (RingHom.id ComponentField) 2 w 0 := by
   have hjet := badChallengeEquation_jetDegree
   have hheight := badChallengeEquation_height
   have hchart : ∀ z ∈ positiveChallenges,
@@ -692,7 +690,7 @@ example : (positiveChallenges.card : ℚ) ≤ positiveDerivativeBound ∧
         differentialSpecializationHom])
       (by simp [badChallengeEquation, challengeSpecialization, separant,
         differentialSpecialization, differentialSpecializationHom, Fin.last])
-  obtain ⟨regularExceptional, _hregularCard, hregularGood⟩ :=
+  obtain ⟨regularExceptional, hregularCard, hregularGood⟩ :=
     exists_exceptional_frobeniusPowerSeparableSolutions_at
       (n := 2) (k := 1) (K := 1) (ℓ := 1) (L := 2)
       positiveChallengeDomain regularBoundValues
@@ -712,8 +710,7 @@ example : (positiveChallenges.card : ℚ) ≤ positiveDerivativeBound ∧
       hregularGood 0 hz 0 (by norm_num) (by
         simp [componentCoordinateEquation, challengeSpecialization, differentialSpecialization,
           differentialSpecializationHom]) (by
-        simpa [RingHom.id_apply] using
-          positiveChallenge_two_agreements)
+        simpa [RingHom.id_apply] using positiveChallenge_two_agreements)
   obtain ⟨curveExceptional, hcurveCard, hcurveGood⟩ :=
     exists_exceptional_frobeniusPowerFactorSolutions (n := 2) (ℓ := 1)
       positiveChallengeDomain regularBoundConstantValues (RingHom.id _)
@@ -722,12 +719,15 @@ example : (positiveChallenges.card : ℚ) ≤ positiveDerivativeBound ∧
       (coeffNatDegreeLE_X (some (0 : Fin 1))) componentCoordinateEquation_jetDegree
       MvPolynomial.X_prime.irreducible (by simp [componentCoordinateEquation])
       (by simp [componentCoordinateEquation])
-  refine ⟨hbound, exceptional, hcard, hzero, regularExceptional, hregularZero, ?_⟩
+  refine ⟨hbound, exceptional, hcard, hzero, regularExceptional,
+    (by norm_num at hregularCard; exact_mod_cast hregularCard), hregularZero,
+    curveExceptional,
+    (by norm_num [ordinaryCurveFactorRaw] at hcurveCard; exact_mod_cast hcurveCard), ?_⟩
   obtain ⟨w, -, hw⟩ := Finset.exists_mem_notMem_of_card_lt_card
       (s := curveExceptional) (t := {(0 : ComponentField), 1})
       (Nat.lt_of_le_of_lt (by exact_mod_cast (by simpa [ordinaryCurveFactorRaw] using hcurveCard))
         (by norm_num))
-  exact ⟨w, by
+  exact ⟨w, hw, by
     simpa [pow_one] using hcurveGood w (by simpa [pow_one] using hw) 0
       (by rw [Polynomial.degree_zero]; exact WithBot.bot_lt_coe 2)
       (by simp [componentCoordinateEquation, challengeSpecialization, differentialSpecialization,
