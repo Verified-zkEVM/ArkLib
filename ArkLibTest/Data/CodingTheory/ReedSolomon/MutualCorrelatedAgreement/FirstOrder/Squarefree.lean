@@ -8,6 +8,7 @@ import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Squarefree.Factorwise
 import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Squarefree.TailBound
+import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.SingularTail
 import Mathlib.Tactic.NormNum
 
 /-!
@@ -134,6 +135,38 @@ example :
       constructor
       · exact WithBot.bot_lt_coe 2
       · norm_num [factorwiseReceived, factorwiseDomain])
+
+namespace ReedSolomon.FirstOrder.Squarefree
+
+open Polynomial ReedSolomon.HiddenDerivative
+
+private noncomputable abbrev exampleRho : ℝ := 2 / 49
+private noncomputable abbrev exampleEta : ℝ := 1 / 100
+private noncomputable abbrev exampleAgreement := firstOrderRateThreshold exampleRho + exampleEta
+private noncomputable abbrev exampleJet := automaticJetDegree exampleRho exampleAgreement
+private noncomputable abbrev exampleCap := automaticDerivativeCap exampleRho exampleAgreement
+
+example : (firstOrderCurveFiberStageOne 2 exampleJet exampleCap (regularTaylorExponent 1) : ℝ) *
+    agreementIncidenceRatio 100 1 20 + ordinaryDegreeEnvelope exampleJet exampleCap ≤
+    automaticSquarefreeListBoundConstant exampleRho * 100 / exampleEta ^ 2 := by
+  have ht : firstOrderRateThreshold exampleRho = 79 / 455 := by
+    unfold firstOrderRateThreshold exampleRho
+    rw [show (2 / 49 : ℝ) * (5 - 2 / 49) * (2 - 2 / 49) = (216 / 343 : ℝ) ^ 2 by norm_num,
+      Real.sqrt_sq_eq_abs]
+    norm_num
+  have hc : (2 : ℝ) < (⌈4 / ((1081506391 : ℝ) / 42598400000)⌉₊ : ℝ) := by
+    exact_mod_cast Nat.lt_ceil.mpr (by norm_num)
+  apply automaticSquarefreeListExpression_le (rho := exampleRho) (eta := exampleEta)
+  all_goals norm_num [ht,
+    automaticDerivativeCap, automaticDerivativeCapRaw, automaticMultiplicity, automaticSurplus,
+    automaticDerivativeRatio, automaticAgreement, automaticGapBracket, firstOrderCleanExpression,
+    firstOrderRateBeta]
+  · constructor
+    · nlinarith [hc]
+    · norm_num [automaticJetDegree, automaticMultiplicity, automaticSurplus,
+        automaticDerivativeRatio, automaticAgreement, automaticGapBracket,
+        firstOrderCleanExpression, firstOrderRateBeta, ht]
+end ReedSolomon.FirstOrder.Squarefree
 
 example :
     (factorwiseSolutions.card : ℝ) ≤

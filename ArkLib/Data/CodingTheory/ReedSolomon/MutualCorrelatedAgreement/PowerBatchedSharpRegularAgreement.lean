@@ -54,6 +54,8 @@ of [DKTZ26].
 * `finite_powerBatchedBadChallenges_card_le_sharp_of_exponent` combines incidence and tuple
   counting; `exists_exceptional_regularPowerBatchedAgreement_sharp_of_exponent` gives one
   exceptional set for all regular bad challenges.
+* `regularPowerBatchedAgreementSharpBound_mono_exponent` shows that the explicit agreement budget
+  is monotone in the Taylor exponent.
 * `regularPowerBatchedCutJetDegree_le_two_mul`,
   `regularPowerBatchedCutChallengeDegree_le_three_mul`, and
   `regularPowerBatchedInitialMixedDegree_le_uniformCaps` bound the cut and mixed degrees under
@@ -1093,5 +1095,16 @@ theorem regularPowerBatchedInitialMixedDegree_le_uniformCaps
     _ = ℓ * h * (3 * r + 5) * 2 ^ r * v ^ (r + 1) * n ^ (r + 1) := by
       rw [pow_succ]
       ring
+
+/-- Increasing the Taylor exponent only increases the explicit agreement budget. -/
+theorem regularPowerBatchedAgreementSharpBound_mono_exponent
+    (r n ℓ K k L A v h τ τ' : ℕ) (hτ : τ ≤ τ') :
+    regularPowerBatchedAgreementSharpBound r n ℓ K k L A v h (τ := τ) ≤
+      regularPowerBatchedAgreementSharpBound r n ℓ K k L A v h (τ := τ') := by
+  have hPA := dimensionSensitiveIncidenceProduct_nonneg n A k 1 r
+  have hPL := dimensionSensitiveIncidenceProduct_nonneg n L k 1 r
+  unfold regularPowerBatchedAgreementSharpBound regularPowerBatchedInitialMixedDegree
+    regularPowerBatchedCutJetDegree regularPowerBatchedCutChallengeDegree
+  gcongr
 
 end ReedSolomon

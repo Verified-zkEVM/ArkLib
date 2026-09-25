@@ -89,6 +89,25 @@ example :
     correlatedMidpoint_ratios_le_two_div (δ := 1 / 2) (n := 8) (k := 1) (A := 6)
       (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
 
+/-- The midpoint budget bounds a concrete order-one agreement stage. -/
+example :
+    (regularPowerBatchedAgreementSharpBound 1 8 1 4 1
+      (correlatedMidpoint (1 / 2) 8 1) 6 1 1 : ℝ) ≤
+      polynomialCurveSharpStageBound (1 / 2) 8 1 1 1 1 := by
+  simpa [correlatedMidpoint] using
+    regularPowerBatchedAgreementSharpBound_midpoint_le_stageBound
+      (δ := 1 / 2) (r := 1) (n := 8) (K := 4) (k := 1) (A := 6)
+      (ℓ := 1) (j := 1) (H := 1) (v := 1) (h := 1)
+      (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+      (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+
+/-- Increasing an order-one stage to its cap preserves the concrete scalar bound. -/
+example : polynomialCurveSharpStageBound (1 / 2) 8 1 1 1 1 ≤
+    polynomialCurveSharpStageBound (1 / 2) 8 1 1 1 2 := by
+  exact polynomialCurveSharpStageBound_le_uniform
+    (δ := 1 / 2) (n := 8) (ℓ := 1) (v := 1) (h := 1) (r := 1) (d := 2)
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+
 example :
     let L := correlatedMidpoint (1 / 2) 8 1
     (1 : ℝ) + ∑ _i ∈ (Finset.univ : Finset (Fin 1)),

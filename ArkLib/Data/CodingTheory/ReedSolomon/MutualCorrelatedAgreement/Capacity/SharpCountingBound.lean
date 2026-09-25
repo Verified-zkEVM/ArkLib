@@ -19,13 +19,11 @@ into an explicit scalar bound for each stage, then for any finite family of stag
 ## Main statements
 
 * `correlatedMidpoint_ratios_le_two_div`: both midpoint incidence ratios are at most `2 / δ`.
-* `polynomialCurveSharpAgreementConstant` and
-  `polynomialCurveSharpUniformStageBound`: the scalar coefficient and uniform stage budget.
+* `polynomialCurveSharpAgreementConstant`: the scalar coefficient for the finite-stage bound.
 * `polynomialCurveSharpStageBound` and `polynomialCurveSharpStageBound_le_uniform`: per-order
   and uniform bounds for an individual stage.
 * `regularPowerBatchedAgreementSharpBound_midpoint_le_stageBound` and
   `regularPowerBatchedAgreementSharp_finiteStage_uniform_le`: midpoint and finite-family bounds.
-* `regularPowerBatchedAgreementSharpBound_mono_exponent`: monotonicity in the Taylor exponent.
 
 ## References
 
@@ -134,18 +132,11 @@ theorem regularPowerBatchedAgreementSharpBound_midpoint_le_stageBound (δ : ℝ)
       simp only [mul_pow, pow_succ]
       ring
 
-/-- The uniform single-stage bound after replacing the actual order by the certificate cap. -/
-noncomputable def polynomialCurveSharpUniformStageBound
-    (δ : ℝ) (n ℓ v h d : ℕ) : ℝ :=
-  (ℓ : ℝ) * 2 ^ d * (v : ℝ) ^ (d + 1) *
-    ((h : ℝ) * (3 * d + 5) * (2 / δ) ^ (d + 1) + (2 / δ) ^ d) *
-      (n : ℝ) ^ (d + 1)
-
 /-- A stage of order at most `d` is bounded by the uniform midpoint scalar. -/
 theorem polynomialCurveSharpStageBound_le_uniform (δ : ℝ) (n ℓ v h r d : ℕ)
     (hδ : 0 < δ) (hδone : δ ≤ 1) (hn : 0 < n) (hv : 0 < v) (hr : r ≤ d) :
     polynomialCurveSharpStageBound δ n ℓ v h r ≤
-      polynomialCurveSharpUniformStageBound δ n ℓ v h d := by
+      polynomialCurveSharpStageBound δ n ℓ v h d := by
   let c := 2 / δ
   have hc : (1 : ℝ) ≤ c := by
     dsimp only [c]
@@ -179,7 +170,7 @@ theorem polynomialCurveSharpStageBound_le_uniform (δ : ℝ) (n ℓ v h r d : �
       _ ≤ ℓ * (2 ^ d * v ^ (d + 1)) := mul_le_mul_of_nonneg_left
         (mul_le_mul hpowTwo hpowV (by positivity) (by positivity)) (by positivity)
       _ = (ℓ : ℝ) * 2 ^ d * v ^ (d + 1) := by ring
-  unfold polynomialCurveSharpStageBound polynomialCurveSharpUniformStageBound
+  unfold polynomialCurveSharpStageBound
   dsimp only [c] at hbracket
   exact mul_le_mul (mul_le_mul hpref hbracket (by positivity) (by positivity)) hpowN
     (by positivity) (by positivity)
@@ -201,9 +192,9 @@ theorem regularPowerBatchedAgreementSharp_finiteStage_uniform_le
       (ℓ : ℝ) * polynomialCurveSharpAgreementConstant δ v h d * (n : ℝ) ^ (d + 1) := by
   dsimp only
   let L := correlatedMidpoint δ n k
-  let B := polynomialCurveSharpUniformStageBound δ n ℓ v h d
+  let B := polynomialCurveSharpStageBound δ n ℓ v h d
   have hB : 0 ≤ B := by
-    dsimp [B, polynomialCurveSharpUniformStageBound]
+    dsimp [B, polynomialCurveSharpStageBound]
     positivity
   have hstage (i : ι) (hi : i ∈ S) :
       (regularPowerBatchedAgreementSharpBound (order i) n ℓ K k L A
@@ -236,18 +227,7 @@ theorem regularPowerBatchedAgreementSharp_finiteStage_uniform_le
       add_le_add hterminal hsum
     _ = (ℓ : ℝ) * polynomialCurveSharpAgreementConstant δ v h d *
         (n : ℝ) ^ (d + 1) := by
-      unfold B polynomialCurveSharpUniformStageBound polynomialCurveSharpAgreementConstant
+      unfold B polynomialCurveSharpStageBound polynomialCurveSharpAgreementConstant
       ring
-
-/-- Increasing the certified Taylor exponent only increases the explicit mixed-degree budget. -/
-theorem regularPowerBatchedAgreementSharpBound_mono_exponent
-    (r n ℓ K k L A v h τ τ' : ℕ) (hτ : τ ≤ τ') :
-    regularPowerBatchedAgreementSharpBound r n ℓ K k L A v h (τ := τ) ≤
-      regularPowerBatchedAgreementSharpBound r n ℓ K k L A v h (τ := τ') := by
-  have hPA := dimensionSensitiveIncidenceProduct_nonneg n A k 1 r
-  have hPL := dimensionSensitiveIncidenceProduct_nonneg n L k 1 r
-  unfold regularPowerBatchedAgreementSharpBound regularPowerBatchedInitialMixedDegree
-    regularPowerBatchedCutJetDegree regularPowerBatchedCutChallengeDegree
-  gcongr
 
 end ReedSolomon
