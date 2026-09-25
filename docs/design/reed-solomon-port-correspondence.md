@@ -1204,6 +1204,10 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/Fi
 
 Not ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/FirstOrder/AllMSourceRounding.lean`: `firstOrderSourceDensity_mul_cube_le_rateSourceCount` is covered by `cube_mul_sourceDensity_le_firstOrderSourceCount`, generalized to any `mu` above the floor cutoff and to `m = 0`. Taking `mu = ⌈m a / R⌉₊` gives the corresponding ceiling-cap bound whenever the source theorem's numeric hypotheses hold.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/FiniteLengthSelectors.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Added the generic theorem `firstOrderRankCount_le_two_mul_cube`. It has no source declaration; it replaces the selector-specific `finiteLengthRankCount_le_two_mul_cube`, since the height proof can use the generic result directly.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/StageCharges.lean`
 
 Ported from
@@ -1881,6 +1885,10 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/Bo
 
 `automaticFirstOrder_closePolynomialSet_finite_and_card_le`, `automatic_first_order_list_bound`, `automatic_first_order_list_bound_of_slack`, `automaticFirstOrder_closePolynomialSet_at_ceil_finite_and_card_le`, and `automatic_first_order_squarefree_list_bound_of_slack` keep their names. The private close-set membership equivalence is restated using the destination agreement-set API. No advertised declaration from the unit was omitted.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/FiniteLengthList.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`closePolynomialSet_finite_and_card_le_finiteLength_of_dimension_le_one` and `closePolynomialSet_finite_and_card_le_inv_eta_of_dimension_le_one` retain their names. `closePolynomialSet_finite_and_card_le_finiteLength_of_certificate` retains its name and conclusion, and derives `2 ≤ n` and `k ≤ n` from the certificate hypotheses. `closePolynomialSet_finite_and_card_le_inv_eta_of_certificate` retains its name and uses the finite-length certificate bound with the same derived inequalities. The inverse-eta results are retained as weaker-denominator bounds. The module reuses the existing agreement-membership equivalence.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/FiniteLengthParameters.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/FiniteLengthParameters.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -1888,6 +1896,14 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/Fi
 `finiteLengthSlack`, `finiteLengthSlack_pos`, `eta_le_finiteLengthSlack`, `finiteLengthSlack_inv_le_length`, `div_finiteLengthSlack_sq_le_div_eta_sq`, `div_finiteLengthSlack_four_le_div_eta_four`, and `squarefreeListExpression_le_finiteLength` retain their names. The positivity, slack comparison, and inverse-power comparison declarations were generalized by dropping `0 < n`; the inverse-length bound retains that premise. The squarefree theorem uses `regularTaylorExponent` in place of the source parameter `hybridTau`.
 
 `finiteLengthMCAEnvelope`, `finiteLengthMCAEnvelope_le_rateEnvelope`, `finiteLengthMCAEnvelope_le`, and `finiteLengthMCAEnvelope_le_inv_eta` were renamed to `finiteLengthMcaEnvelope`, `finiteLengthMcaEnvelope_le_rateEnvelope`, `finiteLengthMcaEnvelope_le`, and `finiteLengthMcaEnvelope_le_inv_eta` to match ArkLib's `Mca` casing. The public rate-envelope theorem was included although it was omitted from the source declaration inventory. All 11 public source declarations are represented; none were left unported.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/FiniteLengthSelectors.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/FiniteLengthSelectors.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+The declarations `automaticSurplusSlope_mul_finiteLengthSlack_le_margin`, `finiteLengthCertifiedAgreement`, `finiteLengthChallengeHeight`, `finiteLengthChallengeHeight_le_common_inv_slack_sq`, `finiteLengthChallengeHeight_le_inv_slack_sq`, `finiteLengthChallengeHeight_le_inv_slack_sq_of_count_gap`, `finiteLengthDensityMargin`, `finiteLengthDensityMargin_pos`, `finiteLengthDerivativeCap`, `finiteLengthDerivativeCap_le_inv_slack`, `finiteLengthDerivativeCap_le_jetDegree`, `finiteLengthDerivativeRatio`, `finiteLengthHeightBoundConstant`, `finiteLengthJetBoundConstant`, `finiteLengthJetDegree`, `finiteLengthJetDegree_le_inv_slack`, `finiteLengthMultiplicity`, `finiteLengthMultiplicityBoundConstant`, `finiteLengthMultiplicity_le_inv_slack`, `finiteLengthMultiplicity_pos`, `finiteLengthParameterBoundConstant`, `finiteLengthRankCount`, `finiteLengthRankRoundingConstant`, `finiteLengthRate`, `finiteLengthRate_eq`, `finiteLengthRate_lt_rate`, `finiteLengthRate_pos`, `finiteLengthSlack_lt_one_of_rate`, `finiteLengthSourceCount`, `finiteLength_count_gap`, `finiteLength_fixedRateMargin_eq_surplus`, `finiteLength_multiplicity_derivativeCap_jetDegree_bounds`, `length_pos_of_two_le_rate_mul_length`, and `sourceDensity_gain_at_finiteLengthRate` retain their names. `finiteLengthDerivativeCap_le_multiplicity`, `finiteLengthRankCount_le_density_add_three_mul_sq`, and `half_rate_le_finiteLengthRate` were generalized by dropping `0 < rho`, `0 < eta`, and `2 ≤ rho * n`; `finiteLengthSourceDensity_mul_cube_le_sourceCount` drops the derivative-ratio bound `≤ 1 / 2`.
+
+`finiteLengthRankCount_le_two_mul_cube` is covered by `firstOrderRankCount_le_two_mul_cube` in `RoundedCounts`. The weakening `finiteLengthChallengeHeight_le_common_inv_slack_sq_of_count_gap` was not ported because its common-constant comparison is inlined in the final common-height theorem. `one_le_finiteLengthParameterBoundConstant` follows from the outer `max 1`, so it was not added. The private rounded-count proof block was unnecessary after using the existing generic rounded-count estimates.
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/Profile.lean`
 
