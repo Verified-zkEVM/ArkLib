@@ -12,6 +12,7 @@ import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.C
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.PrescribedCurve
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.PrescribedLine
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.RatePartition
+import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.FixedRateExplicitGate
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.UniformRate
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.FixedRateGate
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.WeightedSupport.ScalarParameters
@@ -359,6 +360,62 @@ example :
     (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
     (by norm_num) (by norm_num)
   exact ⟨bad, by simpa using hbound⟩
+
+open Classical in
+/-- The explicit fixed-rate parameters give exact witnesses on a zero line over `ℚ`. -/
+example :
+    let rate : ℝ := 1 / 2
+    let gap : ℝ := 1 / 4
+    let order := RatePartition.fixedRatePartitionOrder rate gap
+    let parameters := RatePartition.fixedRatePartitionFiniteParameters (rate := rate)
+      (gap := gap)
+      (by norm_num [rate]) (by norm_num [gap])
+    let n := RatePartition.rateBlockThreshold rate order parameters.multiplicity
+    let k := ⌊rate * n⌋₊
+    let domain : Fin n ↪ ℚ := ⟨fun i ↦ (i : ℚ), fun i j hij ↦ by
+      apply Fin.ext
+      change (i.val : ℚ) = (j.val : ℚ) at hij
+      exact_mod_cast hij⟩
+    ∃ exceptional : Finset ℚ, ∃ z ∉ exceptional,
+      HasExactCorrelatedPair domain (fun _ ↦ 0) (fun _ ↦ 0) (RingHom.id ℚ) k z
+        (0 : ℚ[X]) := by
+  dsimp only
+  let rate : ℝ := 1 / 2
+  let gap : ℝ := 1 / 4
+  let order := RatePartition.fixedRatePartitionOrder rate gap
+  let parameters := RatePartition.fixedRatePartitionFiniteParameters (rate := rate)
+    (gap := gap)
+    (by norm_num [rate]) (by norm_num [gap])
+  let n := RatePartition.rateBlockThreshold rate order parameters.multiplicity
+  let k := ⌊rate * n⌋₊
+  let domain : Fin n ↪ ℚ := ⟨fun i ↦ (i : ℚ), fun i j hij ↦ by
+    apply Fin.ext
+    change (i.val : ℚ) = (j.val : ℚ) at hij
+    exact_mod_cast hij⟩
+  have hrate : 0 < rate := by norm_num [rate]
+  have hgap : 0 < gap := by norm_num [gap]
+  have horderOne : rate < 1 := by norm_num [rate]
+  have hn : RatePartition.rateBlockThreshold rate order parameters.multiplicity ≤ n := by
+    rfl
+  have hkRate : (k : ℝ) ≤ rate * n := by
+    dsimp [k]
+    exact Nat.floor_le (by positivity)
+  have hagreement : (rate + gap) * n ≤ n := by
+    have hsum : rate + gap = (3 / 4 : ℝ) := by norm_num [rate, gap]
+    rw [hsum]
+    nlinarith [show (0 : ℝ) ≤ (n : ℝ) by positivity]
+  have hguards := RatePartition.rateBlockThreshold_guards hrate horderOne hn hkRate hagreement
+  have hk : 0 < k := by
+    have horder : order + 1 ≤ k := by simpa [k] using hguards.1
+    omega
+  obtain ⟨exceptional, _, hgood⟩ := fixedRatePartitionOrder_line_exactCorrelatedPair
+    (R := rate) (δ := gap) hrate hgap (by norm_num [rate, gap]) (F := ℚ)
+    n k n hn hk hkRate hagreement (Nat.le_refl n) domain (fun _ ↦ 0) (fun _ ↦ 0)
+    (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
+  obtain ⟨z, hz⟩ := Finset.exists_notMem exceptional
+  refine ⟨exceptional, z, hz, ?_⟩
+  apply hgood z hz 0 (by simp)
+  simp [polynomialAgreementSet]
 
 open ReedSolomon.HiddenDerivative.RatePartition
 
