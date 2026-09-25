@@ -231,6 +231,17 @@ private theorem exceptionDescent_tail_equation :
           (jetDerivative exceptionEquation (1 : Fin 2) exceptionDescent.actualDegree) 0))
   exact h
 
+private theorem constantOneTail_has_no_root (z : ℂ) (P : Polynomial ℂ)
+    (hroot : differentialSpecialization
+      (challengeSpecialization (1 : DifferentialPolynomial (Polynomial ℂ) 0) z) P = 0) :
+    False := by
+  have hroot' : differentialSpecialization (1 : DifferentialPolynomial ℂ 0) P = 0 := by
+    simpa only [challengeSpecialization, map_one] using hroot
+  have hunit : (Polynomial.C (1 : ℂ) : Polynomial ℂ) = 0 := by
+    simpa only [show (1 : DifferentialPolynomial ℂ 0) = MvPolynomial.C 1 by simp,
+      differentialSpecialization_C] using hroot'
+  exact (Polynomial.C_ne_zero.mpr one_ne_zero) hunit
+
 private def exceptionValues : Fin 2 → Fin 2 → ℂ := fun _ _ ↦ 0
 
 private def exceptionEmbedding : ℂ →+* ℂ := RingHom.id ℂ
@@ -251,12 +262,7 @@ private theorem exceptionOrdinaryTailTransfer :
       exceptionDescent_actualDegree]
   · intro z hz P hdegree hagree hroot
     rw [exceptionDescent_tail_equation] at hroot
-    have hroot' : differentialSpecialization (1 : DifferentialPolynomial ℂ 0) P = 0 := by
-      simpa only [challengeSpecialization, map_one] using hroot
-    have hunit : (Polynomial.C (1 : ℂ) : Polynomial ℂ) = 0 := by
-      simpa only [show (1 : DifferentialPolynomial ℂ 0) = MvPolynomial.C 1 by simp,
-        differentialSpecialization_C] using hroot'
-    exact False.elim ((Polynomial.C_ne_zero.mpr one_ne_zero) hunit)
+    exact False.elim (constantOneTail_has_no_root z P hroot)
 
 example := exists_exceptional_firstOrder_hybrid_raw_of_tail
   (n := 2) (D := 1) (A := 2) (L := 2) (mu := 1) (M := 1)
@@ -323,12 +329,7 @@ example :
         refine ⟨∅, by norm_num, ?_⟩
         intro z hz P hdegree hagree hroot
         rw [exceptionDescent_tail_equation] at hroot
-        have hroot' : differentialSpecialization (1 : DifferentialPolynomial ℂ 0) P = 0 := by
-          simpa only [challengeSpecialization, map_one] using hroot
-        have hunit : (Polynomial.C (1 : ℂ) : Polynomial ℂ) = 0 := by
-          simpa only [show (1 : DifferentialPolynomial ℂ 0) = MvPolynomial.C 1 by simp,
-            differentialSpecialization_C] using hroot'
-        exact False.elim ((Polynomial.C_ne_zero.mpr one_ne_zero) hunit))
+        exact False.elim (constantOneTail_has_no_root z P hroot))
 
 example :
     ∃ exceptional : Finset ℂ,
@@ -357,9 +358,4 @@ example :
           norm_num
         · intro z hz P hdegree hagree hroot
           rw [exceptionDescent_tail_equation] at hroot
-          have hroot' : differentialSpecialization (1 : DifferentialPolynomial ℂ 0) P = 0 := by
-            simpa only [challengeSpecialization, map_one] using hroot
-          have hunit : (Polynomial.C (1 : ℂ) : Polynomial ℂ) = 0 := by
-            simpa only [show (1 : DifferentialPolynomial ℂ 0) = MvPolynomial.C 1 by simp,
-              differentialSpecialization_C] using hroot'
-          exact False.elim ((Polynomial.C_ne_zero.mpr one_ne_zero) hunit))
+          exact False.elim (constantOneTail_has_no_root z P hroot))
