@@ -8,12 +8,18 @@ import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.M
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.Parameters
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.SharpCountingBound
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.ProductCounting
+import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.CertificateBound
+import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.PrescribedCurve
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.WeightedSupport.ScalarParameters
+import ArkLib.Data.Polynomial.Differential.Basic
+import ArkLib.Data.Polynomial.Differential.JetDegree
+import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 
 /-! # Acceptance case for correlated-agreement capacity bounds -/
 
-open ReedSolomon
+open Polynomial ReedSolomon
 open ReedSolomon.HiddenDerivative ReedSolomon.HiddenDerivative.WeightedSupportParameters
+open PolynomialDifferential
 
 example : correlatedMidpoint (1 / 2) 10 2 ≤ 8 ∧
     (1 / 2 : ℝ) * (10 : ℕ) / 2 ≤ ((8 - correlatedMidpoint (1 / 2) 10 2 + 1 : ℕ) : ℝ) := by
@@ -184,3 +190,88 @@ example :
 /-- The prescribed product-based coefficient is positive at a concrete small gap. -/
 example : 0 < prescribedProductAgreementConstant (1 / 5) :=
   prescribedProductAgreementConstant_pos (by norm_num) (by norm_num)
+
+private def tinyCertificateDomain : Fin 3 ↪ ℚ :=
+  ⟨fun i => (i : ℚ), fun i j h => by
+    apply Fin.ext
+    change (i.val : ℚ) = (j.val : ℚ) at h
+    exact_mod_cast h⟩
+
+private def tinyCertificateValues : Fin 2 → Fin 3 → ℚ := fun _ _ => 0
+
+private noncomputable def tinyCurveCertificate :
+    SymbolicReceivedCurve.Certificate 2 1 1 1 1 1 tinyCertificateDomain
+      (fun i => powerBatchedCoordinate fun t => tinyCertificateValues t i) := by
+  classical
+  let Q : DifferentialPolynomial ℚ[X] 1 := MvPolynomial.X (some (0 : Fin 2))
+  refine ⟨Q, ?_, ?_, ?_⟩
+  · intro u
+    by_cases hu : Finsupp.single (some (0 : Fin 2)) 1 = u
+    · simp [Q, MvPolynomial.coeff_X, hu]
+    · simp [Q, MvPolynomial.coeff_X, hu]
+  · intro u hu
+    change u ∈ (MvPolynomial.X (some (0 : Fin 2))).support at hu
+    rw [MvPolynomial.support_X, Finset.mem_singleton] at hu
+    rw [hu]
+    simp [totalJetDegree, Finsupp.weight_single, jetDegreeWeight]
+  · intro E _ ρ z
+    have hmap :
+        MvPolynomial.map (Polynomial.eval₂RingHom ρ z) Q =
+          MvPolynomial.X (some (0 : Fin 2)) := by
+      simp [Q]
+    have hdegree :
+        jetTotalDegree (MvPolynomial.X (some (0 : Fin 2)) : DifferentialPolynomial E 1) ≤ 1 := by
+      apply (jetTotalDegree_le_iff _ 1).2
+      intro u hu
+      rw [MvPolynomial.support_X, Finset.mem_singleton] at hu
+      rw [hu]
+      simp [totalJetDegree, Finsupp.weight_single, jetDegreeWeight]
+    refine ⟨by rw [hmap]; exact MvPolynomial.X_ne_zero _, ?_, ?_⟩
+    · rw [hmap]
+      exact hdegree
+    · intro indices P hP hcard hagree
+      rw [hmap, differentialSpecialization_jet]
+      obtain ⟨i, hi⟩ := Finset.card_pos.mp (by omega : 0 < indices.card)
+      have hroot : P.eval (ρ (tinyCertificateDomain i)) = 0 := by
+        simpa [tinyCertificateValues, powerBatchedCoordinate] using hagree i hi
+      by_cases hzero : P = 0
+      · simp [hzero]
+      · have hnat : P.natDegree < 1 := (natDegree_lt_iff_degree_lt hzero).mpr hP
+        have hnatZero : P.natDegree = 0 := by omega
+        have hcoeff : P.coeff 0 = 0 := by
+          rw [eq_C_of_natDegree_eq_zero hnatZero, Polynomial.eval_C] at hroot
+          exact hroot
+        have hpoly : P = 0 := by
+          rw [eq_C_of_natDegree_eq_zero hnatZero]
+          simp [hcoeff]
+        simp [hpoly]
+
+example :
+    ∃ bad : Finset (AlgebraicClosure ℚ),
+      (bad.card : ℝ) ≤
+        polynomialCurveProductAgreementConstant (1 / 3) 1 1 1 * (3 : ℝ) ^ 2 := by
+  obtain ⟨bad, hbound, _⟩ := exists_curveMCA_of_certificate
+    (F := ℚ) (E := AlgebraicClosure ℚ) (n := 3) (k := 1) (A := 2) (K := 2)
+    (ℓ := 1) (ν := 1) (d := 1) (height := 1) (h := 1) (δ := 1 / 3)
+    tinyCertificateDomain tinyCertificateValues (algebraMap ℚ (AlgebraicClosure ℚ))
+    tinyCurveCertificate
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num)
+  exact ⟨bad, by simpa using hbound⟩
+
+example :
+    ∃ bad : Finset (AlgebraicClosure ℚ),
+      (bad.card : ℝ) ≤
+        polynomialCurveProductAgreementConstant (1 / 3) 1 1 1 * (3 : ℝ) ^ 2 := by
+  obtain ⟨bad, hbound, _⟩ := exists_curveMCA_of_certificate_of_jetCharacteristic
+    (F := ℚ) (E := AlgebraicClosure ℚ) (n := 3) (k := 1) (A := 2) (K := 2)
+    (d := 1) (ν := 1) (H := 1) (h := 1) (ℓ := 1) (δ := 1 / 3)
+    tinyCertificateDomain tinyCertificateValues (algebraMap ℚ (AlgebraicClosure ℚ))
+    tinyCurveCertificate
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (Or.inl (by norm_num))
+  exact ⟨bad, by simpa using hbound⟩
