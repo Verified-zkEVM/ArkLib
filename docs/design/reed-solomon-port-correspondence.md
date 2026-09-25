@@ -2129,6 +2129,16 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordi
 
 The shared acceptance file uses a concrete zero tuple for specialization and singleton tuple counting. A zero-pair witness covers admissible-pair counting, retained-family nonemptiness and its cardinality bound. The exceptional-family example states `exceptional.card ≤ 0` and equality of affine and common agreement sets for every retained pair. The standalone tuple admissibility example and simplification-only uniqueness example were removed.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerTupleIncidence.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/PolynomialCurve/Incidence.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Renamed `sourceFrobeniusPowerSparseCuts` to `frobeniusPowerSparseTaylorNumerators`; its mathematical content is unchanged and it uses the joint Taylor numerator API. Generalized `sourceFrobeniusPowerGraphLocusAt` and `sourceFrobeniusPowerGraphLocus` as `admissibleFrobeniusPowerTupleGraphLocus`, with finite embedded coordinate types, `Set.ncard`, and a free agreement threshold. Generalized `commonAgreement_of_frobeniusPowerCut_mem_prime` from `Fin n` to arbitrary coordinate types and renamed it `commonAgreement_of_frobeniusPowerAgreementEquation_mem_prime`. Generalized `principalOpen_subset_sourceFrobeniusPowerGraphLocusAt` and `principalOpen_subset_sourceFrobeniusPowerGraphLocus` to finite embedded coordinate types and a free agreement threshold, under `principalOpen_subset_admissibleFrobeniusPowerTupleGraphLocus`. The finite bound combines `finite_sourceFrobeniusPower_points_off_graphs_card_le_at` and `finite_sourceFrobeniusPower_points_off_graphs_card_le` as `finite_frobeniusPowerTupleIncidence_off_graphs_card_le`; it uses the free threshold and `Set.ncard`, and drops the source assumption `A ≤ n`.
+
+The default locus and principal-open wrappers are covered at `L = k`, as is the default finite bound. `symbolicSourceFrobeniusPowerAgreement_mem_restrictBidegree` is covered by the existing generalized `jointTaylorAgreementEquation_mem_regularPowerBatchedCutBidegree_of_exponent`, so no source-specific wrapper was added.
+
+The shared acceptance file includes concrete instances for the common-agreement theorem and principal-open graph inclusion on a zero tuple, and the finite incidence bound on a nonempty singleton outside the retained graphs. It also tests `finite_regularHighCutJets_card_le_dimensionSensitive_of_exponent` with the first-order chart, `commonAgreement_of_jointTaylorAgreementEquation_mem_prime` with a proved zero cut, and `chart_prime_affineHilbertPolynomial_natDegree_le_of_agreements_of_exponent` with a nonempty cut. The shared acceptance module built successfully with caching disabled, and the file is under the 1,500-line limit.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/SingularTail.lean`
 
 Merges `FirstOrder/Squarefree/Bounds.lean` and `FirstOrder/Squarefree/SingularTail.lean` under
