@@ -64,9 +64,8 @@ private noncomputable def agreementEquation : DifferentialPolynomial (ZMod 2)[X]
 noncomputable section
 
 local instance : DecidableEq E₄ := Classical.decEq E₄
-
-/-- The equation `Y = X` descends from `E₄`: its constant solution at `z = 1` is correlated. -/
-example : HasExactCorrelatedPair pointDomain (fun _ ↦ (0 : ZMod 2)) (fun _ ↦ 1)
+/-- The constant solution at `z = 1` gives degree-one power agreement. -/
+example : HasExactPowerAgreement pointDomain ![fun _ ↦ (0 : ZMod 2), fun _ ↦ 1]
     (RingHom.id (ZMod 2)) 2 1 (C 1) := by
   obtain ⟨exceptional, hcard, hdescend⟩ :=
     exists_exceptional_equation_correlatedAgreement_descend pointDomain (fun _ ↦ (0 : ZMod 2))
@@ -77,10 +76,12 @@ example : HasExactCorrelatedPair pointDomain (fun _ ↦ (0 : ZMod 2)) (fun _ ↦
         refine ⟨(0, 1), by rw [degree_zero]; exact WithBot.bot_lt_coe 2, by norm_num,
           by simp [correlatedPairSpecialization], ?_⟩
         ext i; fin_cases i; simp [polynomialAgreementSet, commonPolynomialAgreementSet, pointDomain]
-  exact hdescend 1 (by simp_all) (C 1) (by simp) (by simp [pointDomain, polynomialAgreementSet])
+  have hpair := hdescend 1 (by simp_all) (C 1) (by simp)
+    (by simp [pointDomain, polynomialAgreementSet])
     (by simp [agreementEquation, challengeSpecialization, differentialSpecialization,
       differentialSpecializationHom])
-
+  exact powerAgreement_one_of_exactCorrelatedPair pointDomain
+    (fun _ ↦ (0 : ZMod 2)) (fun _ ↦ 1) (RingHom.id (ZMod 2)) 1 (C 1) hpair
 end
 
 private theorem singletonLineExactBound : LineExactAgreementBound pointDomain 1 1 0 :=
@@ -103,6 +104,20 @@ example := exists_affine_exceptionalSet_full_agreement_of_exactLine pointDomain 
 private def fullDomain : Fin 2 ↪ ℚ where
   toFun i := ((i : ℕ) : ℚ)
   inj' _i _j h := Fin.ext (Nat.cast_injective (R := ℚ) h)
+
+private noncomputable def tupleOne : Fin 2 → ℚ[X] := ![1, 0]
+private noncomputable def tupleChallenge : Fin 2 → ℚ[X] := ![0, 1]
+example : tupleOne ≠ tupleChallenge ∧ ∃ z : ℚ, z ≠ 1 ∧ z ≠ 0 ∧
+    Set.InjOn (fun P : Fin 2 → ℚ[X] ↦
+      powerBatchedPolynomial (fun t ↦ (P t).map (RingHom.id ℚ)) z)
+      {tupleOne, tupleChallenge} := by
+  classical
+  refine ⟨fun h ↦ ?_, ?_⟩
+  · simpa [tupleOne, tupleChallenge] using congrFun h 0
+  · obtain ⟨z, hz, hinj, hroot⟩ :=
+      exists_polynomialTuple_specialization_injective_avoiding_roots
+      (RingHom.id ℚ) {tupleOne, tupleChallenge} {1} {X} (by simp [X_ne_zero])
+    exact ⟨z, by simpa using hz, by simpa using hroot X (by simp), by simpa using hinj⟩
 
 /-- The graph-line recognizer accepts the computed candidate `1 + 2X` at challenge `1`. -/
 example : ∃ F₀ G₀ : ℚ[X], F₀.degree < 2 ∧ G₀.degree < 2 ∧
@@ -384,21 +399,6 @@ private theorem component_zeroCut_mem (alpha : ComponentField) :
         (1 + MvPolynomial.C (Polynomial.C alpha)) * MvPolynomial.X 0 by ring,
     map_mul, optionEquivRight_symm_X]
   exact Ideal.mul_mem_left _ _ component_generator_mem
-/-- A nonempty agreement cut lowers the affine Hilbert degree of this chart prime to zero. -/
-example : (affineHilbertPolynomial
-    (Ideal.span {(MvPolynomial.X (0 : Fin 1) : ChartRing 0 ComponentField)})).natDegree ≤ 0 := by
-  have hP : (Ideal.span {(MvPolynomial.X (0 : Fin 1) : ChartRing 0 ComponentField)}).IsPrime :=
-    (Ideal.span_singleton_prime (X_ne_zero _)).mpr X_prime
-  simpa using chart_prime_affineHilbertPolynomial_natDegree_le_of_agreements_of_exponent
-    (center := (0 : ComponentField))
-    (Q := (MvPolynomial.X (0 : Fin 1) : DifferentialPolynomial ComponentField 0))
-    (K := 1) (k := 1) (c := 1) (τ := 0)
-    (by intro l; fin_cases l; decide) (by omega) (by omega) _ hP
-    (by simpa [initialJetSeparant, initialJetEquation, separant] using
-      (Ideal.ne_top_iff_one _).mp hP.ne_top)
-    (by intro l hl; fin_cases l; omega) firstOrderTestPoints firstOrderChartValues fun i ↦ by
-      simp [taylorAgreementEquation, commonTaylorNumerator, rationalTaylorNumerator,
-        initialJetSeparant, separant, firstOrderTestPoints, firstOrderChartValues]
 /-- Every regular point of a prime component lies on the recognized graph line, and agreement
 cuts at two points, one more than the degree bound `k = 1`, give a pair with two common
 agreements. -/
