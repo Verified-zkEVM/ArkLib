@@ -6,10 +6,14 @@ Authors: Quang Dao
 
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.FactorAssembly
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.FactorBudget
+import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.IrreducibleEquation
+import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
+import Mathlib.Analysis.Complex.Polynomial.Basic
 
 /-! # Acceptance cases for ordinary factor assembly and budget bounds -/
 
 open ReedSolomon
+open Polynomial PolynomialDifferential MvPolynomial
 
 open scoped BigOperators
 
@@ -185,6 +189,36 @@ private theorem assemblyHeightBudget :
       ∑ c ∈ MvPolynomial.positiveDegreeFactorClasses (0 : Fin 1) assemblyQ,
         assemblyHeight c.rep ≤ 0 := by
   simp [assemblyHeight]
+
+private def ordinaryEquationDomain : Fin 2 ↪ ℂ where
+  toFun i := (i.val : ℂ)
+  inj' := by
+    intro i j hij
+    change (i.val : ℂ) = (j.val : ℂ) at hij
+    apply Fin.ext
+    exact_mod_cast hij
+
+private noncomputable abbrev ordinaryEquation : DifferentialPolynomial ℂ[X] 0 :=
+  MvPolynomial.X (some (0 : Fin 1))
+
+example : ∃ exceptional : Finset ℂ, (exceptional.card : ℚ) ≤ 1 ∧
+    ∃ z ∉ exceptional,
+      HasExactCorrelatedPair ordinaryEquationDomain (fun _ ↦ 0) (fun _ ↦ 0)
+        (RingHom.id ℂ) 2 z 0 := by
+  classical
+  obtain ⟨exceptional, hcard, hgood⟩ := exists_exceptional_irreducibleOrdinaryEquation
+    ordinaryEquationDomain (fun _ ↦ 0) (fun _ ↦ 0) (RingHom.id ℂ) ordinaryEquation
+    1 0 2 (by norm_num) (by norm_num) (by norm_num)
+    (coeffNatDegreeLE_X (some (0 : Fin 1))) MvPolynomial.X_prime.irreducible (by simp)
+  have hcard' : (exceptional.card : ℚ) ≤ 1 := by
+    simpa [ordinaryEquation, ordinaryFactorRaw] using hcard
+  have hcardNat : exceptional.card ≤ 1 := by exact_mod_cast hcard'
+  obtain ⟨z, -, hz⟩ := Finset.exists_mem_notMem_of_card_lt_card
+    (s := exceptional) (t := ({0, 1} : Finset ℂ))
+    (Nat.lt_of_le_of_lt hcardNat (by norm_num))
+  have hpair := hgood z hz 0 (by simp) (by simp [ordinaryEquation, challengeSpecialization]) (by
+    norm_num [polynomialAgreementSet, ordinaryEquationDomain])
+  exact ⟨exceptional, hcard', z, hz, hpair⟩
 
 example : (MvPolynomial.positiveDegreeFactorClasses (0 : Fin 1) assemblyQ).Nonempty ∧
     (∃ ex : Finset Unit, (ex.card : ℚ) ≤ ordinaryFactorRaw 0 1 0 1 0 ∧
