@@ -5068,6 +5068,13 @@ Acceptance cases check the exact-ceiling and closed cardinality bounds, finite-s
 
 ## `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement.lean`
 
+**Historical port-time test notes, not current suite coverage.** The following descriptions record
+acceptance cases that existed at earlier port revisions. The consolidated suite currently retains
+11 concrete examples: extension descent, exact-line transfer, graph-line recognition and its
+exceptional bound, tuple collision and avoiding specialization, a positive-dimensional prime
+component graph case, Frobenius incidence on that component, symbolic point recognition with a
+nonzero second tuple component, and a nonempty derivative-capped bad-challenge bound.
+
 Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 The joint-chart case reuses the shared concrete equation and numerator identity, derives the joint-coordinate identity by flattening, and checks that the order-one numerator vanishes at the selected point while remaining nonzero at another jet. The component case uses `K = 2`, `k = 1`; its `l = 1` numerator is the nonzero jet variable `Y₀`, proved to lie in the prime component ideal. It checks that the returned graph parametrizes every regular point of that component. Existing cases for extension descent, exact agreement, graph-line recognition, singular tails, and tuple specialization remain covered.
