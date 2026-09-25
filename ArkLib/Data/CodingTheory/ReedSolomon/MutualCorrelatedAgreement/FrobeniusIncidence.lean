@@ -57,31 +57,6 @@ def admissibleFrobeniusPairGraphLocus (domain : Fin n ↪ F) (f g : Fin n → F)
     x = fun i ↦ (frobeniusInitialGraph center s (F₀.map iota) (G₀.map iota) i).eval
       (x none)}
 
-/-- The agreement equation on the Frobenius curve lies in its Taylor bidegree rectangle. -/
-theorem frobeniusAgreementEquation_mem_restrictBidegree
-    (center alpha u v : E) (Q : DifferentialPolynomial E[X] 0)
-    (s h b K τ : ℕ) (hτ : TaylorExponentSufficient 0 K τ) (hb : 0 < b)
-    (hheight : CoeffNatDegreeLE Q h)
-    (hjet : Q.weightedTotalDegree (fun i ↦ i.elim 0 (fun _ ↦ 1)) ≤ b) :
-    jointTaylorAgreementEquation center Q K τ (Polynomial.C alpha)
-        (Polynomial.C u + Polynomial.X ^ s * Polynomial.C v) ∈
-      restrictBidegree (Fin 1) E (s + τ * h) (1 + τ * (b - 1)) := by
-  have hjet' : jetTotalDegree Q ≤ b := by
-    have hw : (jetDegreeWeight : JetVariable 0 → ℕ) =
-        fun i ↦ i.elim 0 (fun _ ↦ 1) := by
-      funext i
-      cases i <;> rfl
-    rw [jetTotalDegree, hw]
-    exact hjet
-  have hy : (Polynomial.C u + Polynomial.X ^ s * Polynomial.C v).natDegree ≤ s := by
-    apply natDegree_add_le_of_degree_le
-    · simp
-    · exact (natDegree_mul_C_le _ _).trans (natDegree_X_pow_le s)
-  simpa only [jointTaylorAgreementEquation] using
-    taylorAgreementEquationOver_mem_restrictBidegree center alpha
-      (Polynomial.C u + Polynomial.X ^ s * Polynomial.C v) Q s h b K τ hτ hy hheight hb
-      hjet'
-
 /-- Positive-dimensional regular prime components with enough agreement cuts lie on an
 admissible Frobenius pair graph. -/
 theorem principalOpen_subset_admissibleFrobeniusPairGraphLocus [IsAlgClosed E]
@@ -215,8 +190,23 @@ theorem finite_frobeniusChartPoints_off_admissiblePairGraphs_card_le [IsAlgClose
       (Polynomial.C (iota (f i)) + Polynomial.X ^ (p ^ e) * Polynomial.C (iota (g i))))
     (by
       intro i
-      exact frobeniusAgreementEquation_mem_restrictBidegree center (roots i)
-        (iota (f i)) (iota (g i)) Q (p ^ e) h b K τ hτ hb hheight hjet)
+      have hy : (Polynomial.C (iota (f i)) + Polynomial.X ^ (p ^ e) *
+          Polynomial.C (iota (g i))).natDegree ≤ p ^ e := by
+        apply natDegree_add_le_of_degree_le
+        · simp
+        · exact (natDegree_mul_C_le _ _).trans (natDegree_X_pow_le _)
+      have hjet' : jetTotalDegree Q ≤ b := by
+        have hw : (jetDegreeWeight : JetVariable 0 → ℕ) =
+            fun i ↦ i.elim 0 (fun _ ↦ 1) := by
+          funext i
+          cases i <;> rfl
+        rw [jetTotalDegree, hw]
+        exact hjet
+      simpa only [jointTaylorAgreementEquation, regularPowerBatchedCutChallengeDegree,
+        regularPowerBatchedCutJetDegree] using
+        jointTaylorAgreementEquation_mem_regularPowerBatchedCutBidegree_of_exponent
+          center (roots i) (Polynomial.C (iota (f i)) + Polynomial.X ^ (p ^ e) *
+            Polynomial.C (iota (g i))) Q (p ^ e) K h b τ hτ hy hb hheight hjet')
     (admissibleFrobeniusPairGraphLocus domain f g iota roots center Q K k τ (p ^ e))
     (fun I hI hs hi hsp hd hc ↦ principalOpen_subset_admissibleFrobeniusPairGraphLocus
       domain f g iota p e roots hroots center Q hK hKk τ hτ I (hI := hI) hs hi hsp hd hc)
