@@ -22,8 +22,10 @@ product-based incidence estimates yield a scalar bound linear in the batching le
 
 ## Main statements
 
-* `exists_prescribedCurveMCA_exact`: an exact exceptional-set bound using actual separant stages.
-* `exists_prescribedCurveMCA`: the corresponding explicit scalar bound.
+* `exists_exceptional_exactPowerAgreement_with_prescribed_stageBounds`: an exact
+  exceptional-set bound using actual separant stages.
+* `exists_exceptional_exactPowerAgreement_of_prescribedCurve`: the corresponding explicit
+  scalar bound.
 
 ## References
 
@@ -44,8 +46,10 @@ open scoped BigOperators
 universe u
 
 open Classical in
-/-- The prescribed certificate yields an exceptional-set bound using each actual separant stage. -/
-theorem exists_prescribedCurveMCA_exact {F E : Type u} [Field F] [Field E]
+/-- A prescribed certificate yields exact power agreement outside a set bounded by its actual
+separant stages. -/
+theorem exists_exceptional_exactPowerAgreement_with_prescribed_stageBounds
+    {F E : Type u} [Field F] [Field E]
     [IsAlgClosed E]
     (δ : ℝ) (n k ℓ : ℕ) (domain : Fin n ↪ F)
     (values : Fin (ℓ + 1) → Fin n → F) (iota : F →+* E)
@@ -119,8 +123,9 @@ theorem exists_prescribedCurveMCA_exact {F E : Type u} [Field F] [Field E]
     exact hactive.trans_le (jetDegree_le_total stage.1 stage.2)
 
 open Classical in
-/-- One finite exceptional set bounds exact agreement for every prescribed power-batched curve. -/
-theorem exists_prescribedCurveMCA {F E : Type u} [Field F] [Field E]
+/-- The prescribed curve bound gives exact power agreement outside one scalar-bounded finite set. -/
+theorem exists_exceptional_exactPowerAgreement_of_prescribedCurve {F E : Type u} [Field F]
+    [Field E]
     [IsAlgClosed E]
     (δ : ℝ) (n k ℓ : ℕ) (domain : Fin n ↪ F)
     (values : Fin (ℓ + 1) → Fin n → F) (iota : F →+* E)
@@ -154,7 +159,8 @@ theorem exists_prescribedCurveMCA {F E : Type u} [Field F] [Field E]
   obtain ⟨hn, _hm, hν, _hνm, _hνn, _hdK, _hkK, hKn, _hkA, hgap⟩ :=
     prescribed_geometric_parameters δ n k hδ hδ' hblock hA
   obtain ⟨stages, exceptional, hcard, hstages, horders, hweights, hexact⟩ :=
-    exists_prescribedCurveMCA_exact δ n k ℓ domain values iota hδ hδ' hk hℓ
+    exists_exceptional_exactPowerAgreement_with_prescribed_stageBounds δ n k ℓ domain values
+      iota hδ hδ' hk hℓ
       hblock hA hchar
   refine ⟨exceptional, ?_, hexact⟩
   have hcardR : (exceptional.card : ℝ) ≤ (H : ℝ) +

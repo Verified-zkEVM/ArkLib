@@ -27,6 +27,7 @@ example : correlatedMidpoint (1 / 2) 10 2 ≤ 8 ∧
     (by norm_num) (by norm_num)
   exact ⟨h, h'⟩
 
+open Classical in
 example :
     let δ : ℝ := 1 / 5
     let d := Nat.ceil (Real.exp (xi / δ))
@@ -56,6 +57,8 @@ example :
       exact_mod_cast h⟩
   let f : Fin n → ℚ := fun i => (i : ℚ)
   let g : Fin n → ℚ := fun _ => 0
+  let values : Fin 2 → Fin n → ℚ := fun t i => if t = 0 then f i else g i
+  let iota : ℚ →+* AlgebraicClosure ℚ := algebraMap ℚ (AlgebraicClosure ℚ)
   have hδ : 0 < δ := by norm_num [δ]
   have hδmax : δ < 1 / 4 := by norm_num [δ]
   have ho := prescribed_order_lower δ hδ hδmax.le
@@ -86,6 +89,13 @@ example :
     nlinarith
   have hparams := exists_prescribed_correlated_parameters (F := ℚ) δ n 1 centers f g
     hδ hδmax hblock hA (Or.inl (by simp))
+  have _hprescribed := exists_exceptional_exactPowerAgreement_of_prescribedCurve
+    (F := ℚ) (E := AlgebraicClosure ℚ) δ n 1 1 centers values iota
+    hδ hδmax (by norm_num) (by norm_num) hblock hA (Or.inl (by simp))
+  have _hprescribedStages :=
+    exists_exceptional_exactPowerAgreement_with_prescribed_stageBounds
+    (F := ℚ) (E := AlgebraicClosure ℚ) δ n 1 1 centers values iota
+    hδ hδmax (by norm_num) (by norm_num) hblock hA (Or.inl (by simp))
   exact hparams.1
 
 example :
@@ -250,12 +260,12 @@ example :
     ∃ bad : Finset (AlgebraicClosure ℚ),
       (bad.card : ℝ) ≤
         polynomialCurveProductAgreementConstant (1 / 3) 1 1 1 * (3 : ℝ) ^ 2 := by
-  obtain ⟨bad, hbound, _⟩ := exists_curveMCA_of_certificate
+  obtain ⟨bad, hbound, _⟩ := exists_exceptional_exactPowerAgreement_of_certificate
     (F := ℚ) (E := AlgebraicClosure ℚ) (n := 3) (k := 1) (A := 2) (K := 2)
     (ℓ := 1) (ν := 1) (d := 1) (height := 1) (h := 1) (δ := 1 / 3)
     tinyCertificateDomain tinyCertificateValues (algebraMap ℚ (AlgebraicClosure ℚ))
     tinyCurveCertificate
-    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num)
     (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
     (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
     (by norm_num) (by norm_num)
@@ -265,7 +275,8 @@ example :
     ∃ bad : Finset (AlgebraicClosure ℚ),
       (bad.card : ℝ) ≤
         polynomialCurveProductAgreementConstant (1 / 3) 1 1 1 * (3 : ℝ) ^ 2 := by
-  obtain ⟨bad, hbound, _⟩ := exists_curveMCA_of_certificate_of_jetCharacteristic
+  obtain ⟨bad, hbound, _⟩ :=
+    exists_exceptional_exactPowerAgreement_of_certificate_of_jetCharacteristic
     (F := ℚ) (E := AlgebraicClosure ℚ) (n := 3) (k := 1) (A := 2) (K := 2)
     (d := 1) (ν := 1) (H := 1) (h := 1) (ℓ := 1) (δ := 1 / 3)
     tinyCertificateDomain tinyCertificateValues (algebraMap ℚ (AlgebraicClosure ℚ))
