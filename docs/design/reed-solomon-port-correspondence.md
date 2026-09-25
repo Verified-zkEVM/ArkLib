@@ -5209,6 +5209,10 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordi
 
 An acceptance example checks a concrete two-message instance and shows that challenge zero belongs to an exceptional set of size at most two.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/Frobenius/SeparableSolutions.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+The acceptance example specializes the existing `exists_exceptional_frobeniusPowerSeparableSolutions_at` at `ℓ = 1` and `L = k`, checks the exceptional-set cardinality, and exhibits a challenge outside the set with an exact correlated pair using `exactCorrelatedPair_of_powerAgreement_one`. Both declarations are already on `main`, so there are no renamed or generalized declarations. The source wrapper `exists_exceptional_frobeniusSeparableSolutions` is not added because the existing bound and exact-agreement conversion cover its statement; the source file has no other declarations.
+
 ## `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder.lean`
 
 Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
