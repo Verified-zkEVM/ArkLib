@@ -2173,6 +2173,12 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordi
 
 Historical acceptance cases in `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement.lean` exhibited a nonempty retained family and checked its graph-coordinate degree bound, then exhibited a retained pair and an exceptional set of size zero for a one-point domain with a one-point sample. The current consolidated suite has no retained-family example. No public source declarations were omitted.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/Equation.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/Equations/Equation.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`ReedSolomon.exists_exceptional_ordinaryEquation` → `ReedSolomon.exists_exceptional_ordinaryEquation`. The theorem retains its mathematical content and replaces the `ChallengeHeightLE` premise with the equivalent `CoeffNatDegreeLE` coefficient-height premise. No declarations were omitted. The matching `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary.lean` acceptance case uses a reducible `Y₀²` equation, obtains an exceptional set of size at most two, and exhibits an outside challenge with an exact correlated-pair witness.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/FactorAssembly.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/PolynomialCurve/Assembly.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
