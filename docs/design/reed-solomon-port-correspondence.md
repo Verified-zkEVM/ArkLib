@@ -2070,6 +2070,10 @@ Ported from `HiddenDerivative/RootFinding/MutualCorrelatedAgreement/EquationDesc
 
 Not ported: `ChallengeHeightLE` as a separate predicate, because main already provides `MvPolynomial.CoeffNatDegreeLE`. The standalone exceptional correlated-agreement wrapper is also omitted because this theorem performs that exceptional-set pullback directly.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/UnifiedCurve.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`exists_exceptional_equation_powerAgreement_descend` is new. It is the power-batched analogue of `exists_exceptional_equation_correlatedAgreement_descend`, over any finite index type, and replaces the inline pullback that the two source base-field theorems repeated.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/ExtensionDescent.lean`
 
 Ported from `HiddenDerivative/RootFinding/MutualCorrelatedAgreement/ExtensionDescent.lean` at ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d:
@@ -2124,6 +2128,16 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Firs
 Renamed `retainedOrdinaryMCARaw` to `retainedOrdinaryCurveAgreementCharge`, `retainedSquarefreeCurveMCARaw` to `retainedSquarefreeCurveAgreementCharge`, `HasRetainedOrdinaryCurveTransfer` to `HasRetainedOrdinaryCurveAgreementTransfer`, and `exists_exceptional_retainedSquarefreeCurveMCA_of_tail` to `exists_exceptional_retainedSquarefreeCurveAgreement_of_tail`. The exceptional-set theorem uses the current power-batched derivative-capped API, regular Taylor exponent, coefficient-height API, and power-agreement API; its degree-one case uses the identity-pair result. The source `hybridTau` and `hybridTheta` are represented by `regularTaylorExponent` and `agreementIncidenceRatio`.
 
 Added `PolynomialDifferential.positiveCurveEquation_coeffNatDegreeLE_of_input` in the existing `PolynomialDifferential.RetainedCurve` owner. It generalizes the retained positive equation's coefficient-height bound to conclude it stays within the input equation's height. No public source declaration was omitted. The private characteristic helper is replaced by `natCast_ne_zero_of_ringChar_eq_zero_or_lt`.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/CurveUnified.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`hasRetainedOrdinaryCurveTransfer_of_unified` → `hasRetainedOrdinaryCurveAgreementTransfer_singularCurveEquation`, dropping `Q ≠ 0` and weakening the characteristic guard from `max D M < ringChar F` to `M < ringChar F`. `exists_exceptional_retainedSquarefreeCurveMCA_unified` → `exists_exceptional_retainedSquarefreeCurveAgreement`, unchanged mathematically. `ordinaryUnifiedPowerFactorRaw_le_retainedOrdinaryMCARaw` is replaced by `ordinaryUnifiedPowerFactorRaw_le_ordinaryCurveFactorRaw` in `Ordinary/FactorBudget.lean`.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/Certificate.lean`: `exists_extensionExceptional_retainedSquarefreeCurveMCA_of_certificate` → `exists_extensionExceptional_retainedSquarefreeCurveAgreement_of_certificate`, unchanged. `exists_baseExceptional_retainedSquarefreeCurveMCA_of_certificate` → `exists_baseExceptional_retainedSquarefreeCurveAgreement_of_certificate`, dropping the `[DecidableEq E]` argument that its statement does not use. The `_of_tail` variants of both are not ported because the tail premise is always discharged by `hasRetainedOrdinaryCurveAgreementTransfer_singularCurveEquation` and nothing else in the source uses them. The private helper `degreeOf_extendSymbolicCoefficients_le` is covered by main's `jetDegree_map_le`. `family` is not a declaration of this source file.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/CurveBounds.lean`: `retainedSquarefreeLineMCAEnvelope` → `retainedSquarefreeLineAgreementEnvelope`, unchanged. `retainedSquarefreeCurveMCARaw_balanced_line_le` → `retainedSquarefreeCurveAgreementCharge_balancedSplit_le`, unchanged.
+
+The file now also imports `Ordinary.Equation`, `CurveCertificate` and `HybridCurveTransfer`, the last for `regularPowerBatchedDerivativeCappedBoundTwo_eq_hybridCurveStage`.
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/Factorwise.lean`
 
@@ -2193,11 +2207,23 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordi
 
 `exists_exceptional_ordinaryEquation_base` keeps its name and mathematical content. For a nonzero ordinary equation over an arbitrary field, it gives one finite exceptional set of challenges, of size at most `ordinaryFactorRaw ((n - D) / (A - D)) n D mu h`, outside which every base-field root of degree at most `D` that agrees with the line on at least `A` points has an exact correlated-pair witness. The height premise is `CoeffNatDegreeLE Q h` instead of the source's `ChallengeHeightLE Q h`, matching main's `exists_exceptional_ordinaryEquation`. The theorem takes `[DecidableEq F]` as an instance argument instead of the source's `open Classical in`, so `polynomialAgreementSet` and `HasExactCorrelatedPair` in the conclusion work with any decidable-equality instance. The proof uses `convert` to match the classical instances that come from `exists_exceptional_ordinaryEquation`. Nothing was left unported: the source file has one declaration. It is a separate module rather than part of `Ordinary/Equation.lean`, which would otherwise need `EquationDescent` and `AlgebraicClosure` as extra imports.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/UnifiedCurve.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+No new declarations. `exists_exceptional_ordinaryEquation_base`, which came from main, keeps its statement and is now the `ℓ = 1`, `L = D + 1` case of `exists_baseExceptional_ordinaryPowerEquation`. Its imports shrink to `Ordinary.Equation` plus a private `PowerToLine` import.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/Equation.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/Equations/Equation.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 `ReedSolomon.exists_exceptional_ordinaryEquation` → `ReedSolomon.exists_exceptional_ordinaryEquation`. The theorem retains its mathematical content and replaces the `ChallengeHeightLE` premise with the equivalent `CoeffNatDegreeLE` coefficient-height premise. No declarations were omitted. The matching `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary.lean` acceptance case uses a reducible `Y₀²` equation, obtains an exceptional set of size at most two, and exhibits an outside challenge with an exact correlated-pair witness.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/UnifiedCurve.lean` and `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/PolynomialCurve/Equation.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`exists_exceptional_ordinaryPowerEquation_freeRetention` → `exists_exceptional_ordinaryPowerEquation_unifiedAt`, renamed to match the `ordinaryUnifiedPowerFactorAt` charge. It drops the unused `D + 2 ≤ n` and `A ≤ n`. `exists_exceptional_ordinaryPowerEquation` keeps its name and statement apart from `CoeffNatDegreeLE` and the embedding-composition domain; its proof is now the `L = D + 1` specialization of `_unifiedAt` plus the charge comparison. `exists_exceptional_ordinaryEquation` is now the `ℓ = 1` case of it.
+
+`exists_exceptional_ordinaryPowerEquation_base_freeRetention_allDegrees`, `_base_freeRetention`, `_base_zeroDegree` and `_base_unified` → `exists_baseExceptional_ordinaryPowerEquation`. It drops `D + 2 ≤ n` and `A ≤ n` and takes `[DecidableEq F]` instead of classical decidability. It charges root degree zero by its height.
+
+Not ported: `exists_exceptional_ordinaryPowerEquation_unified` and `_unifiedAt_succ` (`L := D + 1` cases), `exists_exceptional_ordinaryPowerFactorAssembly_unifiedAt` and `_unified` (covered by main's `exists_exceptional_ordinaryUnifiedPowerFactorAssembly`), and `exists_exceptional_ordinaryPowerEquation_freeRetention_of_certificates` (the `ν = Unit` instance of `exists_geometricTransfer_exceptional`, with only its own acceptance test as a user; deferred pending a maintainer decision).
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/FactorAssembly.lean`
 
@@ -2215,6 +2241,12 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordi
 
 `ordinaryPowerFactorRaw_sum_le` became `ordinaryCurveFactorRaw_sum_le`. Added `ordinaryCurveFactorRaw_le_linear` and `ordinaryCurveFactorRaw_eq_linear` as the linear bound and equality used by the summation result. The line-charge linear, equality, and summation results specialize the polynomial-curve results at `ell = 1`. The source charge is already present as `ordinaryCurveFactorRaw`; its source import resolves to the existing `Ordinary.FactorBudget` module. The unused source argument `0 < ell` was omitted.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/UnifiedCurve.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`ordinaryFrobeniusPowerMixedDegree_le_unified` → `ordinaryFrobeniusCurveMixedDegree_le_unified`, following main's `ordinaryFrobeniusCurveMixedDegree`. The hypotheses `1 ≤ D`, `1 ≤ s` and `1 ≤ b` are dropped. `ordinaryFrobeniusPower_charge_le_unifiedAt` → `ordinaryFrobeniusCurve_charge_le_unifiedAt`, dropping `1 ≤ D` and `1 ≤ b`. `ordinaryFrobeniusPower_charge_le_unified` is not ported because it is the `L := D + 1` case of the `unifiedAt` theorem, via `ordinaryUnifiedPowerFactorRaw_eq_rawAt`.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/CurveUnified.lean`: `ordinaryUnifiedPowerFactorRaw_le_retainedOrdinaryMCARaw` → `ordinaryUnifiedPowerFactorRaw_le_ordinaryCurveFactorRaw`. It is a comparison with the curve-factor charge and drops the hypothesis `1 ≤ B`. The singular-tail proof now goes through `exists_exceptional_ordinaryPowerEquation`, whose charge is exactly `retainedOrdinaryCurveAgreementCharge` at `b = B(2M+1)`, `h = H(2M+1)`.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/IrreducibleEquation.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/Factors/IrreducibleEquation.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -2224,6 +2256,10 @@ Ported `exists_exceptional_irreducibleOrdinaryEquation` under the same name, usi
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/PolynomialCurve/Irreducible.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 `exists_exceptional_irreducibleOrdinaryPowerEquation` → `exists_exceptional_irreducibleOrdinaryPowerEquation`. The theorem is mathematically unchanged and uses `CoeffNatDegreeLE`, `ordinaryCurveFactorRaw`, and the current exact-power-agreement interface. The existing two-message correlated-pair theorem now specializes this tuple theorem at `ℓ = 1`, using the power-batched word identity, the exact-agreement conversion, and equality of the curve and line charges. Nothing was deferred or left unported.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/UnifiedCurve.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`exists_exceptional_irreducibleOrdinaryPowerEquation_unifiedAt`, with the same name, dropping the unused `A ≤ n`. The existing `exists_exceptional_irreducibleOrdinaryPowerEquation` keeps its statement and is now proved from it. `exists_exceptional_irreducibleOrdinaryPowerEquation_unified` is not ported for the same reason as the Frobenius factor version.
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedAdmissibility.lean`
 
@@ -2440,6 +2476,10 @@ The consolidated acceptance example applies the theorem to the concrete linear e
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerTupleSeparableBound.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 `exists_exceptional_frobeniusPowerFactorSolutions` retains its name and specializes the arbitrary-threshold separable bound at threshold `D + 1`, expressing the exceptional-set cardinality bound with `ordinaryCurveFactorRaw` and the current coefficient-height and jet-degree interfaces. It uses `exists_exceptional_frobeniusPowerSeparableSolutions_at`. The consolidated acceptance example also checks the factor bound on the constant zero-word fixture, selects a challenge outside the exceptional set, and establishes exact agreement there. All seven source declarations have counterparts; none were omitted.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/UnifiedCurve.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`exists_exceptional_frobeniusPowerFactorSolutions_unifiedAt`, with the same name. It uses `CoeffNatDegreeLE` and `jetTotalDegree` and drops the unused `A ≤ n`. The existing `exists_exceptional_frobeniusPowerFactorSolutions` keeps its statement and is now proved from it. `exists_exceptional_frobeniusPowerFactorSolutions_unified` is not ported because it is the `L := D + 1` case followed by a rewrite with `ordinaryUnifiedPowerFactorAt_succ_eq`.
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/SingularTail.lean`
 
@@ -5269,6 +5309,10 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Firs
 
 Acceptance cases check singleton instances of `finite_factorwise_agreement_solutions_card_le_actual` and `finite_factorwise_agreement_solutions_card_le`.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/Certificate.lean` and `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/CurveBounds.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+An acceptance example builds a finite first-order curve certificate at recovery degree `1` for the zero line over the file's two-point domain `factorwiseDomain`, and applies `exists_baseExceptional_retainedSquarefreeCurveAgreement_of_certificate` to exhibit a base-field challenge with exact power agreement. This also exercises the extension theorem, the tail-free theorem and the tail discharge. A second example is one concrete instance of `retainedSquarefreeCurveAgreementCharge_balancedSplit_le`.
+
 ## `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary.lean`
 
 Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -5277,6 +5321,10 @@ An acceptance example checks an exceptional set of size at most one and exact po
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/Equations/BaseEquation.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 An acceptance example takes the equation `Y₀²` over `ℚ` on a two-point domain, with `f = g = 0`, `D = 1`, `h = 0`, `mu = 2` and `A = 2`. It gets an exceptional set of size at most 2 from `exists_exceptional_ordinaryEquation_base`, picks a challenge in `{0, 1, 2}` outside that set, and derives an exact correlated-pair witness for the zero root, so the conclusion is not vacuous.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/UnifiedCurve.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+An acceptance example applies `exists_baseExceptional_ordinaryPowerEquation` over `ℚ` to the reducible equation `Y₀²` on a three-point domain, with `n = 3`, `D = 1`, `ℓ = 1`, `h = 0`, `B = 2` and `L = A = 3`. The retention threshold `L = D + 2` lies in the free-retention regime that the fixed-split theorems do not reach. The charge `ordinaryUnifiedPowerFactorAtOrHeight 3 1 1 2 0 3 3` simplifies to `2`, and the example exhibits a challenge outside the exceptional set at which the zero root has exact power agreement with the zero word. Main's existing example for `exists_exceptional_ordinaryEquation_base` is unchanged and covers the fixed split.
 
 ## `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart.lean`
 
