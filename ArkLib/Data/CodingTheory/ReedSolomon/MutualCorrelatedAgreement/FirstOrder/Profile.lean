@@ -42,13 +42,13 @@ noncomputable section
 
 /-- The sharp retained squarefree charge of a profile at regular threshold `split`, with the
 ordinary threshold fixed at `D + 1` for the candidate degree `D = k - 1`. -/
-def squarefreeSharpCurveEnvelope (p : LineProfile) (split : ℕ) : ℚ :=
+def squarefreeSharpCurveEnvelope (p : LineProfile) (split : ℕ) : ℝ :=
   retainedSquarefreeCurveSharpChargeAt p.n p.candidateDegree p.batchingDegree
     (p.candidateDegree + 1) split p.agreement p.totalJetCap p.firstDerivativeCap p.height
 
 /-- The sharp retained squarefree charge of a profile at regular threshold `split`, with the
 ordinary threshold minimized independently. -/
-def squarefreeSharpOptimizedCurveEnvelope (p : LineProfile) (split : ℕ) : ℚ :=
+def squarefreeSharpOptimizedCurveEnvelope (p : LineProfile) (split : ℕ) : ℝ :=
   retainedSquarefreeCurveSharpOptimizedCharge p.n p.candidateDegree p.batchingDegree split
     p.agreement p.totalJetCap p.firstDerivativeCap p.height
 
@@ -75,7 +75,7 @@ theorem exists_exceptional_exactPowerAgreement_squarefreeSharpOptimized
     (iota : F →+* E)
     (hchar : ringChar F = 0 ∨ max (p.k - 1) p.firstDerivativeCap < ringChar F) :
     ∃ exceptional : Finset F,
-      (exceptional.card : ℚ) ≤ squarefreeSharpOptimizedCurveEnvelope p split ∧
+      (exceptional.card : ℝ) ≤ squarefreeSharpOptimizedCurveEnvelope p split ∧
       ∀ z ∉ exceptional, ∀ P : F[X], P.degree < p.k →
         p.agreement ≤ (polynomialAgreementSet domain (powerBatchedWord values z) P).card →
         HasExactPowerAgreement domain values (RingHom.id F) p.k z P := by

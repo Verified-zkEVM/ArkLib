@@ -25,9 +25,10 @@ optimized charge is itself the size of one exceptional set fixed before the chal
 ## Main statements
 
 * `retainedSquarefreeCurveSharpChargeAt` is the sharp charge at thresholds `L₀` and `L`, and
-  `retainedSquarefreeCurveSharpOptimizedCharge` minimizes its ordinary part over `L₀`.
-* `exists_retainedSquarefreeOrdinaryCurveMinimum` shows the minimum is attained, and
-  `retainedSquarefreeCurveSharpOptimizedCharge_le_chargeAt` compares it with every threshold.
+  `retainedSquarefreeCurveSharpOptimizedCharge` minimizes its ordinary part over `L₀` with
+  `curveRetentionMinimum`.
+* `retainedSquarefreeCurveSharpOptimizedCharge_le_chargeAt` compares the optimized charge with
+  every threshold.
 * `exists_exceptional_retainedSquarefreeCurveAgreement_sharpAt` and
   `exists_exceptional_retainedSquarefreeCurveAgreement_sharpOptimized` bound the exceptional set
   of a retained squarefree equation by these charges.
@@ -52,55 +53,23 @@ noncomputable section
 
 /-- The ordinary content-resultant charge at retention threshold `L₀`: the free-retention charge
 with root degree `ordinaryDegreeEnvelope B M` and height `resultantChallengeEnvelope H M`. -/
-def retainedSquarefreeOrdinaryCurveChargeAt (n D ell L₀ A B M H : ℕ) : ℚ :=
-  ordinaryUnifiedPowerFactorAt n D ell
-    (ordinaryDegreeEnvelope B M) (resultantChallengeEnvelope H M) A L₀
+def retainedSquarefreeOrdinaryCurveChargeAt (n D ell L₀ A B M H : ℕ) : ℝ :=
+  (ordinaryUnifiedPowerFactorAt n D ell
+    (ordinaryDegreeEnvelope B M) (resultantChallengeEnvelope H M) A L₀ : ℝ)
 
 /-- The sharp retained squarefree charge with ordinary threshold `L₀` and regular threshold `L`.
 -/
-def retainedSquarefreeCurveSharpChargeAt (n D ell L₀ L A B M H : ℕ) : ℚ :=
+def retainedSquarefreeCurveSharpChargeAt (n D ell L₀ L A B M H : ℕ) : ℝ :=
   retainedSquarefreeOrdinaryCurveChargeAt n D ell L₀ A B M H +
-    regularPowerBatchedDerivativeCappedBoundTwo n ell (D + 1) (D + 1)
-      L A B M H (regularTaylorExponent D)
+    (regularPowerBatchedDerivativeCappedBoundTwo n ell (D + 1) (D + 1)
+      L A B M H (regularTaylorExponent D) : ℝ)
 
-/-- The minimum ordinary content-resultant charge over the thresholds `D + 1 ≤ L₀ ≤ A`, and `0`
-when there is no such threshold. -/
-def retainedSquarefreeOrdinaryCurveMinimum (n D ell A B M H : ℕ) : ℚ :=
-  if h : D < A then
-    ((Finset.Icc (D + 1) A).image fun L₀ ↦
-      retainedSquarefreeOrdinaryCurveChargeAt n D ell L₀ A B M H).min'
-      (Finset.image_nonempty.mpr ⟨D + 1, Finset.mem_Icc.mpr ⟨le_rfl, h⟩⟩)
-  else 0
-
-/-- The sharp retained squarefree charge with the ordinary threshold minimized independently of
-the regular threshold `L`. -/
-def retainedSquarefreeCurveSharpOptimizedCharge (n D ell L A B M H : ℕ) : ℚ :=
-  retainedSquarefreeOrdinaryCurveMinimum n D ell A B M H +
-    regularPowerBatchedDerivativeCappedBoundTwo n ell (D + 1) (D + 1)
-      L A B M H (regularTaylorExponent D)
-
-/-- Every admissible ordinary threshold bounds the ordinary minimum. -/
-theorem retainedSquarefreeOrdinaryCurveMinimum_le {n D ell A B M H L₀ : ℕ}
-    (hDL₀ : D < L₀) (hL₀A : L₀ ≤ A) :
-    retainedSquarefreeOrdinaryCurveMinimum n D ell A B M H ≤
-      retainedSquarefreeOrdinaryCurveChargeAt n D ell L₀ A B M H := by
-  unfold retainedSquarefreeOrdinaryCurveMinimum
-  simp only [hDL₀.trans_le hL₀A, ↓reduceDIte]
-  exact Finset.min'_le _ _
-    (Finset.mem_image.mpr ⟨L₀, Finset.mem_Icc.mpr ⟨hDL₀, hL₀A⟩, rfl⟩)
-
-/-- For `D < A`, the ordinary minimum is attained by a threshold `D < L₀ ≤ A`. -/
-theorem exists_retainedSquarefreeOrdinaryCurveMinimum {n D ell A B M H : ℕ} (hDA : D < A) :
-    ∃ L₀, D < L₀ ∧ L₀ ≤ A ∧
-      retainedSquarefreeOrdinaryCurveChargeAt n D ell L₀ A B M H =
-        retainedSquarefreeOrdinaryCurveMinimum n D ell A B M H := by
-  unfold retainedSquarefreeOrdinaryCurveMinimum
-  simp only [hDA, ↓reduceDIte]
-  obtain ⟨L₀, hL₀, heq⟩ := Finset.mem_image.mp (Finset.min'_mem
-    ((Finset.Icc (D + 1) A).image fun L₀ ↦
-      retainedSquarefreeOrdinaryCurveChargeAt n D ell L₀ A B M H)
-    (Finset.image_nonempty.mpr ⟨D + 1, Finset.mem_Icc.mpr ⟨le_rfl, hDA⟩⟩))
-  exact ⟨L₀, (Finset.mem_Icc.mp hL₀).1, (Finset.mem_Icc.mp hL₀).2, heq⟩
+/-- The sharp retained squarefree charge with the ordinary threshold minimized over
+`D < L₀ ≤ A`, independently of the regular threshold `L`. -/
+def retainedSquarefreeCurveSharpOptimizedCharge (n D ell L A B M H : ℕ) : ℝ :=
+  curveRetentionMinimum D A (retainedSquarefreeOrdinaryCurveChargeAt n D ell · A B M H) +
+    (regularPowerBatchedDerivativeCappedBoundTwo n ell (D + 1) (D + 1)
+      L A B M H (regularTaylorExponent D) : ℝ)
 
 /-- The optimized sharp charge is at most the sharp charge at every admissible ordinary
 threshold `D < L₀ ≤ A`. -/
@@ -108,7 +77,7 @@ theorem retainedSquarefreeCurveSharpOptimizedCharge_le_chargeAt {n D ell L₀ L 
     (hDL₀ : D < L₀) (hL₀A : L₀ ≤ A) :
     retainedSquarefreeCurveSharpOptimizedCharge n D ell L A B M H ≤
       retainedSquarefreeCurveSharpChargeAt n D ell L₀ L A B M H :=
-  add_le_add_left (retainedSquarefreeOrdinaryCurveMinimum_le hDL₀ hL₀A) _
+  add_le_add_left (curveRetentionMinimum_le _ hDL₀ hL₀A) _
 
 /-- A retained squarefree first-order equation with jet degree at most `B`, `Y₁` degree at most
 `1 ≤ M ≤ B` and coefficient height at most `H` has one exceptional set of size at most
@@ -128,7 +97,7 @@ theorem exists_exceptional_retainedSquarefreeCurveAgreement_sharpAt
     (hheight : CoeffNatDegreeLE Q H)
     (hchar : ringChar F = 0 ∨ max D M < ringChar F) :
     ∃ exceptional : Finset E,
-      (exceptional.card : ℚ) ≤ retainedSquarefreeCurveSharpChargeAt n D ell L₀ L A B M H ∧
+      (exceptional.card : ℝ) ≤ retainedSquarefreeCurveSharpChargeAt n D ell L₀ L A B M H ∧
       ∀ z ∉ exceptional, ∀ P : E[X], P.degree < D + 1 →
         A ≤ (polynomialAgreementSet (domain.trans ⟨iota, iota.injective⟩)
           (powerBatchedWord (fun t i ↦ iota (values t i)) z) P).card →
@@ -148,20 +117,19 @@ theorem exists_exceptional_retainedSquarefreeCurveAgreement_sharpAt
       (singularCurveEquation_coeffNatDegreeLE Q hheight hM hderiv)
       (singularCurveEquation_degree_le Q hjet hderiv hMB)
   have htail : ∃ exceptional : Finset E, (exceptional.card : ℝ) ≤
-      (retainedSquarefreeOrdinaryCurveChargeAt n D ell L₀ A B M H : ℝ) ∧
+      retainedSquarefreeOrdinaryCurveChargeAt n D ell L₀ A B M H ∧
       ∀ z ∉ exceptional, ∀ P : E[X], P.degree < D + 1 →
         A ≤ (polynomialAgreementSet (domain.trans ⟨iota, iota.injective⟩)
           (powerBatchedWord (fun t i ↦ iota (values t i)) z) P).card →
         differentialSpecialization (challengeSpecialization (singularCurveEquation Q) z) P = 0 →
         HasExactPowerAgreement domain values iota (D + 1) z P :=
-    ⟨tailExceptional, by exact_mod_cast htailCard, fun z hz P hdegree hagree hroot ↦ by
-      convert htailGood z hz P hdegree hroot (by convert hagree)⟩
+    ⟨tailExceptional, by unfold retainedSquarefreeOrdinaryCurveChargeAt; exact_mod_cast htailCard,
+      fun z hz P hdegree hagree hroot ↦ by
+        convert htailGood z hz P hdegree hroot (by convert hagree)⟩
   obtain ⟨exceptional, hcard, hgood⟩ :=
     exists_exceptional_retainedSquarefreeCurveAgreement_of_singularTail domain values iota Q hQ
       hD hDL hLA hAn (by omega) hM hMB hjet hderiv hheight hchar _ htail
-  refine ⟨exceptional, ?_, hgood⟩
-  unfold retainedSquarefreeCurveSharpChargeAt
-  exact_mod_cast hcard
+  exact ⟨exceptional, hcard, hgood⟩
 
 /-- The bound of `exists_exceptional_retainedSquarefreeCurveAgreement_sharpAt` at the attained
 ordinary minimum: one exceptional set of size at most
@@ -177,15 +145,14 @@ theorem exists_exceptional_retainedSquarefreeCurveAgreement_sharpOptimized
     (hheight : CoeffNatDegreeLE Q H)
     (hchar : ringChar F = 0 ∨ max D M < ringChar F) :
     ∃ exceptional : Finset E,
-      (exceptional.card : ℚ) ≤ retainedSquarefreeCurveSharpOptimizedCharge n D ell L A B M H ∧
+      (exceptional.card : ℝ) ≤ retainedSquarefreeCurveSharpOptimizedCharge n D ell L A B M H ∧
       ∀ z ∉ exceptional, ∀ P : E[X], P.degree < D + 1 →
         A ≤ (polynomialAgreementSet (domain.trans ⟨iota, iota.injective⟩)
           (powerBatchedWord (fun t i ↦ iota (values t i)) z) P).card →
         differentialSpecialization (challengeSpecialization Q z) P = 0 →
         HasExactPowerAgreement domain values iota (D + 1) z P := by
-  obtain ⟨L₀, hDL₀, hL₀A, hL₀⟩ :=
-    exists_retainedSquarefreeOrdinaryCurveMinimum (n := n) (ell := ell) (B := B) (M := M)
-      (H := H) (show D < A by omega)
+  obtain ⟨L₀, hDL₀, hL₀A, hL₀⟩ := exists_curveRetentionMinimum
+    (retainedSquarefreeOrdinaryCurveChargeAt n D ell · A B M H) (show D < A by omega)
   obtain ⟨exceptional, hcard, hgood⟩ :=
     exists_exceptional_retainedSquarefreeCurveAgreement_sharpAt domain values iota Q hQ hD
       hDL₀ hL₀A hDL hLA hAn hell hM hMB hjet hderiv hheight hchar
@@ -210,30 +177,18 @@ theorem exists_extensionExceptional_retainedSquarefreeCurveAgreement_sharpOptimi
     (hell : 0 < ell) (hM : 1 ≤ M) (hMB : M ≤ B)
     (hchar : ringChar F = 0 ∨ max (k - 1) M < ringChar F) :
     ∃ exceptional : Finset E,
-      (exceptional.card : ℚ) ≤
+      (exceptional.card : ℝ) ≤
         retainedSquarefreeCurveSharpOptimizedCharge n (k - 1) ell L A B M H ∧
       ∀ z ∉ exceptional, ∀ P : E[X], P.degree < k →
         A ≤ (polynomialAgreementSet (domain.trans ⟨iota, iota.injective⟩)
           (powerBatchedWord (fun t i ↦ iota (values t i)) z) P).card →
         HasExactPowerAgreement domain values iota k z P := by
-  let Q := MvPolynomial.map (Polynomial.mapRingHom iota) cert.Q
-  have hjet : jetTotalDegree Q ≤ B :=
-    (jetTotalDegree_map_le _ cert.Q).trans
-      ((jetTotalDegree_le_iff cert.Q B).mpr cert.totalJetDegree_le)
-  have hderiv : Q.degreeOf (some 1) ≤ M :=
-    (jetDegree_map_le _ cert.Q 1).trans cert.jetDegree_one_le
   obtain ⟨exceptional, hcard, hgood⟩ :=
     exists_exceptional_retainedSquarefreeCurveAgreement_sharpOptimized
-      domain values iota Q (cert.map_Q_ne_zero iota) (by omega) (by omega) hLA hAn hell hM
-      hMB hjet hderiv (CoeffNatDegreeLE.map_coefficients iota cert.Q cert.challengeDegree_le)
-      hchar
-  have hk1 : k - 1 + 1 = k := by omega
-  refine ⟨exceptional, hcard, fun z hz P hdegree hagree ↦ ?_⟩
-  have hdegree' : P.degree < ((k - 1 : ℕ) : WithBot ℕ) + 1 := by
-    rwa [show ((k - 1 : ℕ) : WithBot ℕ) + 1 = k by exact_mod_cast hk1]
-  have hout := hgood z hz P hdegree' hagree
-    (cert.map_Q_specialization_eq_zero iota z P hdegree hagree)
-  rwa [hk1] at hout
+      domain values iota _ (cert.map_Q_ne_zero iota) (by omega) (by omega) hLA hAn hell hM
+      hMB (cert.jetTotalDegree_map_Q_le iota) (cert.degreeOf_map_Q_le iota)
+      (CoeffNatDegreeLE.map_coefficients iota cert.Q cert.challengeDegree_le) hchar
+  exact ⟨exceptional, hcard, cert.exactPowerAgreement_of_map_Q iota (by omega) hgood⟩
 
 /-- The certificate bound of
 `exists_extensionExceptional_retainedSquarefreeCurveAgreement_sharpOptimized_of_certificate`
@@ -250,7 +205,7 @@ theorem exists_baseExceptional_retainedSquarefreeCurveAgreement_sharpOptimized_o
     (hell : 0 < ell) (hM : 1 ≤ M) (hMB : M ≤ B)
     (hchar : ringChar F = 0 ∨ max (k - 1) M < ringChar F) :
     ∃ exceptional : Finset F,
-      (exceptional.card : ℚ) ≤
+      (exceptional.card : ℝ) ≤
         retainedSquarefreeCurveSharpOptimizedCharge n (k - 1) ell L A B M H ∧
       ∀ z ∉ exceptional, ∀ P : F[X], P.degree < k →
         A ≤ (polynomialAgreementSet domain (powerBatchedWord values z) P).card →
@@ -261,7 +216,7 @@ theorem exists_baseExceptional_retainedSquarefreeCurveAgreement_sharpOptimized_o
       domain values iota columns cert hk hkL hLA hAn hell hM hMB hchar
   obtain ⟨exceptional, hcardBase, hgoodBase⟩ :=
     uniformExactPowerAgreement_of_extension domain values iota k A extensionExceptional hgood
-  exact ⟨exceptional, (show (exceptional.card : ℚ) ≤ extensionExceptional.card by
+  exact ⟨exceptional, (show (exceptional.card : ℝ) ≤ extensionExceptional.card by
     exact_mod_cast hcardBase).trans hcard, hgoodBase⟩
 
 end

@@ -41,9 +41,13 @@ split gives exact correlated pairs outside a set bounded by the closed line enve
 * `exists_extensionExceptional_retainedSquarefreeCurveAgreement_of_certificate` and
   `exists_baseExceptional_retainedSquarefreeCurveAgreement_of_certificate` apply it to a finite
   first-order curve certificate over the extension and the base field.
-* `FirstOrderCurveCertificate.map_Q_ne_zero` and
-  `FirstOrderCurveCertificate.map_Q_specialization_eq_zero` state that the extended certificate
-  equation is nonzero and vanishes at every sufficiently agreeing polynomial.
+* `FirstOrderCurveCertificate.map_Q_ne_zero`,
+  `FirstOrderCurveCertificate.map_Q_specialization_eq_zero`,
+  `FirstOrderCurveCertificate.jetTotalDegree_map_Q_le` and
+  `FirstOrderCurveCertificate.degreeOf_map_Q_le` state that the extended certificate equation is
+  nonzero, vanishes at every sufficiently agreeing polynomial and keeps the certificate's degree
+  caps; `FirstOrderCurveCertificate.exactPowerAgreement_of_map_Q` turns recovery for its roots
+  into recovery for every sufficiently agreeing polynomial.
 * `retainedSquarefreeLineAgreementEnvelope` is the closed line envelope, and
   `retainedSquarefreeCurveAgreementCharge_balancedSplit_le` bounds the line charge at the
   balanced split by it.
@@ -356,6 +360,57 @@ theorem _root_.ReedSolomon.HiddenDerivative.FirstOrderCurveCertificate.map_Q_spe
   rw [challengeSpecialization, hEval, MvPolynomial.eval_map_coefficients]
   exact hroot
 
+/-- The equation of a first-order curve certificate keeps its jet-degree cap `B` after extending
+its coefficients along a field embedding. -/
+theorem _root_.ReedSolomon.HiddenDerivative.FirstOrderCurveCertificate.jetTotalDegree_map_Q_le
+    {F E : Type u} [Field F] [Field E] {n N Dcert A m M B k H : ℕ}
+    {domain : Fin n ↪ F} {w : Fin n → F[X]} {columns : Fin N → SourceColumn 1}
+    (cert : FirstOrderCurveCertificate.{u, u} Dcert A m M B k H domain w columns)
+    (iota : F →+* E) :
+    jetTotalDegree (MvPolynomial.map (Polynomial.mapRingHom iota) cert.Q) ≤ B :=
+  (jetTotalDegree_map_le _ cert.Q).trans
+    ((jetTotalDegree_le_iff cert.Q B).mpr cert.totalJetDegree_le)
+
+/-- The equation of a first-order curve certificate keeps its derivative cap `M` in `Y₁` after
+extending its coefficients along a field embedding. -/
+theorem _root_.ReedSolomon.HiddenDerivative.FirstOrderCurveCertificate.degreeOf_map_Q_le
+    {F E : Type u} [Field F] [Field E] {n N Dcert A m M B k H : ℕ}
+    {domain : Fin n ↪ F} {w : Fin n → F[X]} {columns : Fin N → SourceColumn 1}
+    (cert : FirstOrderCurveCertificate.{u, u} Dcert A m M B k H domain w columns)
+    (iota : F →+* E) :
+    (MvPolynomial.map (Polynomial.mapRingHom iota) cert.Q).degreeOf (some 1) ≤ M :=
+  (jetDegree_map_le _ cert.Q 1).trans cert.jetDegree_one_le
+
+/-- For `1 ≤ k`, if outside `exceptional` every root of degree `< (k - 1) + 1` of the extended
+certificate equation with at least `A` agreements has exact power agreement, then outside
+`exceptional` every polynomial of degree `< k` with at least `A` agreements has exact power
+agreement. -/
+theorem _root_.ReedSolomon.HiddenDerivative.FirstOrderCurveCertificate.exactPowerAgreement_of_map_Q
+    {F E : Type u} [Field F] [Field E] [DecidableEq F] [DecidableEq E]
+    {n N Dcert A m M B k H ell : ℕ}
+    {domain : Fin n ↪ F} {values : Fin (ell + 1) → Fin n → F} {columns : Fin N → SourceColumn 1}
+    (cert : FirstOrderCurveCertificate.{u, u} Dcert A m M B k H domain
+      (fun i ↦ powerBatchedCoordinate fun t ↦ values t i) columns)
+    (iota : F →+* E) (hk : 1 ≤ k) {exceptional : Finset E}
+    (hgood : ∀ z ∉ exceptional, ∀ P : E[X], P.degree < (k - 1 : ℕ) + 1 →
+      A ≤ (polynomialAgreementSet (domain.trans ⟨iota, iota.injective⟩)
+        (powerBatchedWord (fun t i ↦ iota (values t i)) z) P).card →
+      differentialSpecialization
+        (challengeSpecialization (MvPolynomial.map (Polynomial.mapRingHom iota) cert.Q) z) P =
+          0 →
+      HasExactPowerAgreement domain values iota (k - 1 + 1) z P) :
+    ∀ z ∉ exceptional, ∀ P : E[X], P.degree < k →
+      A ≤ (polynomialAgreementSet (domain.trans ⟨iota, iota.injective⟩)
+        (powerBatchedWord (fun t i ↦ iota (values t i)) z) P).card →
+      HasExactPowerAgreement domain values iota k z P := by
+  intro z hz P hdegree hagree
+  have hk1 : k - 1 + 1 = k := by omega
+  have hdegree' : P.degree < ((k - 1 : ℕ) : WithBot ℕ) + 1 := by
+    rwa [show ((k - 1 : ℕ) : WithBot ℕ) + 1 = k by exact_mod_cast hk1]
+  have hout := hgood z hz P hdegree' hagree
+    (cert.map_Q_specialization_eq_zero iota z P hdegree hagree)
+  rwa [hk1] at hout
+
 /-- A finite first-order curve certificate with recovery degree `k - 1 ≥ 1`, jet-degree cap `B`,
 derivative cap `1 ≤ M ≤ B` and challenge height `H` gives an extension-field exceptional set
 bounded by `retainedSquarefreeCurveAgreementCharge`. Outside it, every polynomial of degree
@@ -377,23 +432,11 @@ theorem exists_extensionExceptional_retainedSquarefreeCurveAgreement_of_certific
         A ≤ (polynomialAgreementSet (domain.trans ⟨iota, iota.injective⟩)
           (powerBatchedWord (fun t i ↦ iota (values t i)) z) P).card →
         HasExactPowerAgreement domain values iota k z P := by
-  let Q := MvPolynomial.map (Polynomial.mapRingHom iota) cert.Q
-  have hjet : jetTotalDegree Q ≤ B :=
-    (jetTotalDegree_map_le _ cert.Q).trans
-      ((jetTotalDegree_le_iff cert.Q B).mpr cert.totalJetDegree_le)
-  have hderiv : Q.degreeOf (some 1) ≤ M :=
-    (jetDegree_map_le _ cert.Q 1).trans cert.jetDegree_one_le
   obtain ⟨exceptional, hcard, hgood⟩ := exists_exceptional_retainedSquarefreeCurveAgreement
-    domain values iota Q (cert.map_Q_ne_zero iota) (by omega) (by omega) hLA hAn hell hM hMB
-    hjet hderiv (CoeffNatDegreeLE.map_coefficients iota cert.Q cert.challengeDegree_le) hchar
-  have hk1 : k - 1 + 1 = k := by omega
-  refine ⟨exceptional, hcard, ?_⟩
-  intro z hz P hdegree hagree
-  have hdegree' : P.degree < ((k - 1 : ℕ) : WithBot ℕ) + 1 := by
-    rwa [show ((k - 1 : ℕ) : WithBot ℕ) + 1 = k by exact_mod_cast hk1]
-  have hout := hgood z hz P hdegree' hagree
-    (cert.map_Q_specialization_eq_zero iota z P hdegree hagree)
-  rwa [hk1] at hout
+    domain values iota _ (cert.map_Q_ne_zero iota) (by omega) (by omega) hLA hAn hell hM hMB
+    (cert.jetTotalDegree_map_Q_le iota) (cert.degreeOf_map_Q_le iota)
+    (CoeffNatDegreeLE.map_coefficients iota cert.Q cert.challengeDegree_le) hchar
+  exact ⟨exceptional, hcard, cert.exactPowerAgreement_of_map_Q iota (by omega) hgood⟩
 
 /-- The certificate bound of
 `exists_extensionExceptional_retainedSquarefreeCurveAgreement_of_certificate` over the base
