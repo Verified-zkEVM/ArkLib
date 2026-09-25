@@ -44,14 +44,14 @@ the block length. The extra `1/n` absorbs the one-degree difference between mess
 and maximum polynomial degree `k - 1`; replacing `s` by `eta` gives the coarser headline bounds. -/
 def finiteLengthSlack (eta : ℝ) (n : ℕ) : ℝ := eta + 1 / (n : ℝ)
 
-/-- The finite-length slack is positive for positive `eta` and positive `n`. -/
-theorem finiteLengthSlack_pos {eta : ℝ} {n : ℕ} (heta : 0 < eta) (hn : 0 < n) :
+/-- The finite-length slack is positive for positive `eta`. -/
+theorem finiteLengthSlack_pos {eta : ℝ} {n : ℕ} (heta : 0 < eta) :
     0 < finiteLengthSlack eta n := by
   unfold finiteLengthSlack
   positivity
 
-/-- The finite-length slack is at least `eta` when the length is positive. -/
-theorem eta_le_finiteLengthSlack {eta : ℝ} {n : ℕ} (hn : 0 < n) :
+/-- The finite-length slack is at least `eta`. -/
+theorem eta_le_finiteLengthSlack {eta : ℝ} {n : ℕ} :
     eta ≤ finiteLengthSlack eta n := by
   unfold finiteLengthSlack
   exact le_add_of_nonneg_right (by positivity)
@@ -74,22 +74,24 @@ theorem finiteLengthSlack_inv_le_length {eta : ℝ} {n : ℕ}
       apply mul_le_mul_of_nonneg_left _ hn'.le
       linarith
 
-/-- Replacing the finite-length slack by `eta` only weakens an inverse-power bound. -/
+private theorem div_finiteLengthSlack_pow_le_div_eta_pow
+    {C eta : ℝ} {n : ℕ} (hC : 0 ≤ C) (heta : 0 < eta) (p : ℕ) :
+    C / finiteLengthSlack eta n ^ p ≤ C / eta ^ p := by
+  have hs := eta_le_finiteLengthSlack (eta := eta) (n := n)
+  exact div_le_div_of_nonneg_left hC (pow_pos heta p)
+    (pow_le_pow_left₀ heta.le hs p)
+
+/-- Replacing the finite-length slack by `eta` only weakens a square-power bound. -/
 theorem div_finiteLengthSlack_sq_le_div_eta_sq
-    {C eta : ℝ} {n : ℕ} (hC : 0 ≤ C) (heta : 0 < eta) (hn : 0 < n) :
-    C / finiteLengthSlack eta n ^ 2 ≤ C / eta ^ 2 := by
-  have hs := eta_le_finiteLengthSlack (eta := eta) hn
-  have hspos := finiteLengthSlack_pos heta hn
-  exact div_le_div_of_nonneg_left hC (sq_pos_of_pos heta)
-    (pow_le_pow_left₀ heta.le hs 2)
+    {C eta : ℝ} {n : ℕ} (hC : 0 ≤ C) (heta : 0 < eta) :
+    C / finiteLengthSlack eta n ^ 2 ≤ C / eta ^ 2 :=
+  div_finiteLengthSlack_pow_le_div_eta_pow hC heta 2
 
 /-- Replacing the finite-length slack by `eta` only weakens a fourth-power bound. -/
 theorem div_finiteLengthSlack_four_le_div_eta_four
-    {C eta : ℝ} {n : ℕ} (hC : 0 ≤ C) (heta : 0 < eta) (hn : 0 < n) :
-    C / finiteLengthSlack eta n ^ 4 ≤ C / eta ^ 4 := by
-  have hs := eta_le_finiteLengthSlack (eta := eta) hn
-  exact div_le_div_of_nonneg_left hC (pow_pos heta 4)
-    (pow_le_pow_left₀ heta.le hs 4)
+    {C eta : ℝ} {n : ℕ} (hC : 0 ≤ C) (heta : 0 < eta) :
+    C / finiteLengthSlack eta n ^ 4 ≤ C / eta ^ 4 :=
+  div_finiteLengthSlack_pow_le_div_eta_pow hC heta 4
 
 /-- A common inverse-finite-slack cap gives the squarefree list envelope
 `O(n / (eta + 1/n)^2)`. -/
@@ -105,7 +107,7 @@ theorem squarefreeListExpression_le_finiteLength
       7 * C ^ 3 * n / finiteLengthSlack eta n ^ 2 := by
   let s := finiteLengthSlack eta n
   let q := 1 / s
-  have hs : 0 < s := finiteLengthSlack_pos heta (by omega)
+  have hs : 0 < s := finiteLengthSlack_pos heta
   have hq : 1 ≤ q := by
     dsimp only [q]
     exact (one_le_div hs).2 hsOne
@@ -372,7 +374,7 @@ theorem finiteLengthMcaEnvelope_le
       140 * C ^ 6 * n ^ 2 / finiteLengthSlack eta n ^ 4 := by
   let s := finiteLengthSlack eta n
   let q := 1 / s
-  have hs : 0 < s := finiteLengthSlack_pos heta (by omega)
+  have hs : 0 < s := finiteLengthSlack_pos heta
   have hq : 1 ≤ q := (one_le_div hs).2 hsOne
   have hqN : q ≤ (n : ℝ) := by
     dsimp only [q, s]
@@ -399,7 +401,7 @@ theorem finiteLengthMcaEnvelope_le_inv_eta
   apply (finiteLengthMcaEnvelope_le hC heta hn hsOne hDn hlambda0 hlambda
     hB hM hH).trans
   exact div_finiteLengthSlack_four_le_div_eta_four
-    (by positivity : 0 ≤ 140 * C ^ 6 * (n : ℝ) ^ 2) heta (by omega)
+    (by positivity : 0 ≤ 140 * C ^ 6 * (n : ℝ) ^ 2) heta
 
 end
 

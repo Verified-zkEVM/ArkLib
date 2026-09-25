@@ -205,10 +205,21 @@ example :
   · simp
   · simp [smallFirstOrderProfile, finiteEvaluationDomain]
 
-/-- The finite-length correction absorbs the inverse slack at length four. -/
-example : 1 / finiteLengthSlack (0 : ℝ) 4 ≤ 4 := by
-  apply finiteLengthSlack_inv_le_length (eta := 0) (n := 4)
-  all_goals norm_num
+/-- The line-MCA envelope has a concrete inverse-`eta` bound. -/
+example :
+    finiteLengthMcaEnvelope 1 4 1 1 1 1 ≤
+      140 * (1 : ℝ) ^ 6 * 4 ^ 2 / (1 / 4 : ℝ) ^ 4 := by
+  apply finiteLengthMcaEnvelope_le_inv_eta (C := 1) (eta := 1 / 4) (lambda := 1)
+  · norm_num
+  · norm_num
+  · norm_num
+  · norm_num [finiteLengthSlack]
+  · norm_num
+  · norm_num
+  · norm_num
+  · norm_num [finiteLengthSlack]
+  · norm_num [finiteLengthSlack]
+  · norm_num [finiteLengthSlack]
 
 /-- The squarefree list envelope applies with positive slack and finite length. -/
 example :
