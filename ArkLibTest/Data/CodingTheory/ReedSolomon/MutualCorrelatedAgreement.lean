@@ -1377,19 +1377,6 @@ example :
 example :
     ∃ exceptional : Finset ComponentField,
       exceptional.card ≤ 0 ∧
-      ∀ P ∈ componentRetainedPairs, ∀ z ∉ exceptional,
-      polynomialAgreementSet
-          (domain.trans ⟨componentMap, componentMap.injective⟩)
-          (fun i ↦ componentMap (componentWord i) + z * componentMap (componentWord i))
-          (P.1.map componentMap + Polynomial.C z * P.2.map componentMap) =
-          commonPolynomialAgreementSet domain componentWord componentWord P.1 P.2 := by
-  simpa [componentRetainedPairs, Fintype.card_fin] using
-    exists_exceptional_frobeniusRetainedPairFamily domain componentWord componentWord
-      componentMap (fun _ ↦ (0 : ComponentField)) 0 componentJet 1 1 2 1
-
-example :
-    ∃ exceptional : Finset ComponentField,
-      exceptional.card ≤ 0 ∧
       ∀ P ∈ componentRetainedTuples, ∀ z ∉ exceptional,
         letI : DecidableEq ℚ := fun a b ↦ Classical.propDecidable (a = b)
         letI : DecidableEq ComponentField := fun a b ↦ Classical.propDecidable (a = b)
