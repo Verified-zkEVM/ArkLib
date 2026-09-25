@@ -43,7 +43,7 @@ This file records both degrees.
 * `MvPolynomial.CoeffNatDegreeLE` and its closure lemmas, including
   `MvPolynomial.coeffNatDegree`, `MvPolynomial.coeffNatDegreeLE_coeffNatDegree`,
   `MvPolynomial.CoeffNatDegreeLE.map_coefficients`, `MvPolynomial.CoeffNatDegreeLE.aeval`,
-  `MvPolynomial.CoeffNatDegreeLE.pderiv`, and
+  `MvPolynomial.CoeffNatDegreeLE.pderiv`, `MvPolynomial.CoeffNatDegreeLE.iterate_pderiv`, and
   `MvPolynomial.CoeffNatDegreeLE.clearedSubstitution`.
 * `MvPolynomial.optionEquivRight_symm_mem_restrictBidegree`: coefficient and jet degree bounds
   give a bidegree bound after flattening.
@@ -347,6 +347,15 @@ theorem pderiv (hP : CoeffNatDegreeLE P a) (i : σ) :
   rw [coeff_pderiv, hc]
   exact Polynomial.natDegree_mul_le_of_le (hP (m + Finsupp.single i 1))
     (Polynomial.natDegree_C _).le
+
+/-- Iterated formal differentiation keeps the coefficient degree bound. -/
+theorem iterate_pderiv (hP : CoeffNatDegreeLE P a) (i : σ) (k : ℕ) :
+    CoeffNatDegreeLE ((MvPolynomial.pderiv i)^[k] P) a := by
+  induction k with
+  | zero => exact hP
+  | succ k ih =>
+    rw [Function.iterate_succ_apply']
+    exact ih.pderiv i
 
 end CoeffNatDegreeLE
 
