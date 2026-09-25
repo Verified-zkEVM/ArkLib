@@ -1474,14 +1474,14 @@ example :
   exact hregular 0 hzero 0 (by rw [hspec]; rfl)
 /-! ### Order-zero and root-first degree checks -/
 example :
-    jetTotalDegree
-      (orderZeroOfPolynomial (Polynomial.X ^ 2 + 1 : Polynomial (Polynomial ℚ))) = 2 ∧
+    jetDegree (orderZeroOfPolynomial (Polynomial.X ^ 2 + 1 : Polynomial (Polynomial ℚ))) 0 = 2 ∧
     jetTotalDegree (fromFlattenedRootFirst
       ((X none : MvPolynomial (Option (JetVariable 1)) ℚ) * X (some (some 0)))) = 2 := by
-  rw [orderZeroOfPolynomial_jetTotalDegree,
-    jetTotalDegree_fromFlattenedRootFirst_mul _ _ (by simp) (by simp)]
-  norm_num [jetTotalDegree, fromFlattenedRootFirst, MvPolynomial.weightedTotalDegree,
-    jetDegreeWeight, Finsupp.weight_single, Equiv.swap_apply_def, MvPolynomial.support_X]
+  constructor
+  · norm_num [← jetTotalDegree_eq_jetDegree_zero, orderZeroOfPolynomial_jetTotalDegree]
+  · rw [jetTotalDegree_fromFlattenedRootFirst_mul _ _ (by simp) (by simp)]
+    norm_num [jetTotalDegree, fromFlattenedRootFirst, MvPolynomial.weightedTotalDegree,
+      jetDegreeWeight, Finsupp.weight_single, Equiv.swap_apply_def, MvPolynomial.support_X]
 /-- Evaluating the order-zero view of `X + Y₀²` at `X + 1` gives `X² + 3X + 1`. -/
 example :
     (orderZeroAsPolynomial

@@ -16,6 +16,7 @@ in `Y₀` over `F[X]`, preserving total jet degree and differential specializati
 
 ## Main statements
 
+* `jetTotalDegree_eq_jetDegree_zero`: total jet degree is the degree in the only jet variable.
 * `orderZeroAsPolynomial` and `orderZeroOfPolynomial`: the two polynomial presentations.
 * `orderZeroOfPolynomial_jetTotalDegree` and `orderZeroAsPolynomial_eval`: degree and evaluation
   laws for the conversion.
@@ -36,6 +37,20 @@ open Polynomial MvPolynomial
 universe u
 
 variable {F : Type u} [CommSemiring F]
+
+/-- For an order-zero differential polynomial, total jet degree is its degree in `Y₀`. -/
+theorem jetTotalDegree_eq_jetDegree_zero (Q : DifferentialPolynomial F 0) :
+    jetTotalDegree Q = jetDegree Q 0 := by
+  classical
+  rw [jetTotalDegree, jetDegree,
+    ← MvPolynomial.weightedTotalDegree_piSingle (some (0 : Fin 1))]
+  congr 1
+  funext i
+  cases i with
+  | none => simp [jetDegreeWeight]
+  | some j =>
+    fin_cases j
+    simp [jetDegreeWeight]
 
 /-- Reindex the order-zero variables so `Y₀` is the outer variable and `X` is its coefficient.
 -/
@@ -70,17 +85,7 @@ theorem orderZeroAsPolynomial_orderZeroOfPolynomial (R : F[X][X]) :
 /-- The total jet degree of an order-zero equation is the degree of its outer polynomial. -/
 theorem orderZeroOfPolynomial_jetTotalDegree (R : F[X][X]) :
     jetTotalDegree (orderZeroOfPolynomial R) = R.natDegree := by
-  have hweight : jetTotalDegree (orderZeroOfPolynomial R) =
-      degreeOf (some (0 : Fin 1)) (orderZeroOfPolynomial R) := by
-    unfold jetTotalDegree
-    rw [← MvPolynomial.weightedTotalDegree_piSingle (some (0 : Fin 1))]
-    congr 1
-    funext i
-    rcases i with _ | j
-    · simp [jetDegreeWeight]
-    · fin_cases j
-      simp [jetDegreeWeight]
-  rw [hweight]
+  rw [jetTotalDegree_eq_jetDegree_zero, jetDegree]
   have hdegree : degreeOf (0 : Fin 2)
       (MvPolynomial.rename orderZeroVariableEquiv (orderZeroOfPolynomial R)) =
         degreeOf (some (0 : Fin 1)) (orderZeroOfPolynomial R) := by
