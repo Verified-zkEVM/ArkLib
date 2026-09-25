@@ -8,13 +8,18 @@ import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Squarefree.Factorwise
 import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Squarefree.TailBound
+import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Squarefree.Certificates
+import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Squarefree.RetainedTail
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.SingularTail
 import Mathlib.Tactic.NormNum
 
 /-!
-# Factorwise agreement acceptance tests
+# Squarefree agreement acceptance tests
 
-Concrete rational examples check the actual-degree and capped factorwise agreement list bounds.
+Concrete rational examples check factorwise and squarefree certificate counts, retained-tail
+routing, degree envelopes, challenge heights, and nonvanishing.
 -/
 
 open MvPolynomial Polynomial PolynomialDifferential
@@ -93,6 +98,41 @@ example :
       · exact WithBot.bot_lt_coe 2
       · norm_num [factorwiseReceived, factorwiseDomain])
 
+private theorem certificateWithPositiveDerivativeCap :
+    Nonempty (FirstOrderSymbolicCertificate (F := ℚ) 1 2 1 1 1 2 1
+      factorwiseDomain (fun _ ↦ 0) (fun _ ↦ 0)
+      (firstOrderColumns (D := 1) (A := 2) (m := 1) (M := 1) (μ := 1))) := by
+  have hheight : firstOrderCurveShiftedRowSlotBound 1 2 1 1 1 2 1 1 <
+      firstOrderCurveShiftedHeightSlotCount 1 2 1 1 1 1 1 := by decide
+  exact exists_finite_firstOrder_symbolic_certificate_of_heightSlotCount
+    (F := ℚ) (D := 1) (A := 2) (m := 1) (M := 1) (μ := 1) (k := 2) (h := 1)
+    (by norm_num) (by norm_num) (by norm_num) factorwiseDomain (fun _ ↦ 0) (fun _ ↦ 0)
+    hheight
+
+private noncomputable def certificateSolutions : Finset ℚ[X] := {0}
+
+/-- A concrete symbolic certificate with a positive derivative cap bounds an actual solution. -/
+example :
+    (certificateSolutions.card : ℝ) ≤
+      (firstOrderCurveFiberStageOne 2 1 1 (regularTaylorExponent 1) : ℝ) *
+          ((2 - 2 + 1 : ℕ) : ℝ) / (2 - 2 + 1 : ℕ) +
+        ordinaryDegreeEnvelope 1 1 := by
+  obtain ⟨cert⟩ := certificateWithPositiveDerivativeCap
+  exact firstOrder_finite_agreement_solutions_card_le_squarefree
+    (D := 1) (A := 2) (m := 1) (M := 1) (μ := 1) (k := 2) (h := 1) (n := 2)
+    factorwiseDomain (fun _ ↦ 0)
+    (firstOrderColumns (D := 1) (A := 2) (m := 1) (M := 1) (μ := 1)) cert
+    (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num)
+    (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
+    certificateSolutions (by
+      intro P hP
+      simp only [certificateSolutions, Finset.mem_singleton] at hP
+      subst P
+      constructor
+      · exact WithBot.bot_lt_coe 2
+      · norm_num [factorwiseDomain])
+
 example :
     (factorwiseSolutions.card : ℝ) ≤
       (firstOrderCurveFiberStageOne 2
@@ -135,6 +175,80 @@ example :
       constructor
       · exact WithBot.bot_lt_coe 2
       · norm_num [factorwiseReceived, factorwiseDomain])
+
+private noncomputable abbrev retainedTailTestEquation : DifferentialPolynomial ℚ[X] 1 :=
+  MvPolynomial.X (some (0 : Fin 2))
+
+private theorem retainedTailTest_positiveEquation :
+    positiveCurveEquation retainedTailTestEquation = 1 := by
+  have hcoordinates :
+      challengeRetainingRootFirst retainedTailTestEquation =
+        (MvPolynomial.X (some (some (0 : Fin 2))) :
+          MvPolynomial (Option (JetVariable 1)) ℚ) := by
+    simp [challengeRetainingRootFirst, retainedTailTestEquation, Equiv.swap_apply_def]
+  have hrootDegree :
+      degreeOf none (challengeRetainingRootFirst retainedTailTestEquation) = 0 := by
+    rw [hcoordinates]
+    rw [degreeOf_X_of_ne (by decide)]
+  have hpositiveDegree :
+      degreeOf none (radicalPrimPart none
+        (challengeRetainingRootFirst retainedTailTestEquation)) = 0 :=
+    le_antisymm
+      ((degreeOf_radicalPrimPart_le none none
+        (challengeRetainingRootFirst retainedTailTestEquation)).trans_eq hrootDegree)
+      (Nat.zero_le _)
+  have hpositive := radicalPrimPart_eq_one_of_degreeOf_eq_zero none
+    (challengeRetainingRootFirst retainedTailTestEquation) hpositiveDegree
+  simpa [positiveCurveEquation, fromFlattenedRootFirst] using
+    congrArg fromFlattenedRootFirst hpositive
+
+/-- A concrete first-order equation is routed to its singular tail after specialization. -/
+example :
+    differentialSpecialization
+      (challengeSpecialization (singularCurveEquation retainedTailTestEquation) 0) 0 = 0 := by
+  apply singularCurveEquation_routes_nonregular retainedTailTestEquation
+    (MvPolynomial.X_ne_zero _) 0 0
+  · simp [retainedTailTestEquation, challengeSpecialization,
+      differentialSpecialization, differentialSpecializationHom]
+  · left
+    rw [retainedTailTest_positiveEquation]
+    simp [challengeSpecialization, differentialSpecialization, differentialSpecializationHom]
+
+/-- The retained singular polynomial satisfies its `Y₀` degree bound on a concrete equation. -/
+example :
+    (singularCurveEquation retainedTailTestEquation).degreeOf (some 0) ≤
+      ordinaryDegreeEnvelope 1 1 := by
+  apply singularCurveEquation_degree_le retainedTailTestEquation
+  · change weightedTotalDegree jetDegreeWeight
+      (MvPolynomial.monomial (Finsupp.single (some (0 : Fin 2)) 1) (1 : ℚ[X])) ≤ 1
+    rw [weightedTotalDegree_monomial _ _ _ (by norm_num)]
+    simp [Finsupp.weight_single, jetDegreeWeight]
+  · change degreeOf (some (1 : Fin 2))
+      (MvPolynomial.X (some (0 : Fin 2)) : DifferentialPolynomial ℚ[X] 1) ≤ 1
+    rw [degreeOf_X_of_ne (by decide)]
+    norm_num
+  · norm_num
+
+/-- The challenge-degree envelope applies to a concrete retained singular equation. -/
+example : CoeffNatDegreeLE (singularCurveEquation retainedTailTestEquation) 0 := by
+  apply singularCurveEquation_coeffNatDegreeLE (H := 0) (M := 1)
+  · change CoeffNatDegreeLE
+      (MvPolynomial.X (some (0 : Fin 2)) : DifferentialPolynomial ℚ[X] 1) 0
+    exact coeffNatDegreeLE_X _
+  · norm_num
+  · change degreeOf (some (1 : Fin 2))
+      (MvPolynomial.X (some (0 : Fin 2)) : DifferentialPolynomial ℚ[X] 1) ≤ 1
+    rw [degreeOf_X_of_ne (by decide)]
+    norm_num
+
+/-- A concrete retained singular equation is nonzero in characteristic zero. -/
+example : singularCurveEquation retainedTailTestEquation ≠ 0 := by
+  apply singularCurveEquation_ne_zero (M := 1)
+  · change degreeOf (some (1 : Fin 2))
+      (MvPolynomial.X (some (0 : Fin 2)) : DifferentialPolynomial ℚ[X] 1) ≤ 1
+    rw [degreeOf_X_of_ne (by decide)]
+    norm_num
+  · exact Or.inl (ringChar.eq_zero : ringChar ℚ = 0)
 
 namespace ReedSolomon.FirstOrder.Squarefree
 

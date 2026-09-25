@@ -1474,16 +1474,16 @@ example :
   by_contra hzero
   have hspec : challengeSpecialization Q 0 = 0 := by simp [Q, challengeSpecialization]
   exact hregular 0 hzero 0 (by rw [hspec]; rfl)
-
-/-! ### Order-zero polynomial presentations -/
-
-/-- The order-zero equation recovered from `Z² + 1` has total jet degree two. -/
+/-! ### Order-zero and root-first degree checks -/
 example :
     jetTotalDegree
-      (orderZeroOfPolynomial (Polynomial.X ^ 2 + 1 : Polynomial (Polynomial ℚ))) = 2 := by
-  rw [orderZeroOfPolynomial_jetTotalDegree]
-  norm_num
-
+      (orderZeroOfPolynomial (Polynomial.X ^ 2 + 1 : Polynomial (Polynomial ℚ))) = 2 ∧
+    jetTotalDegree (fromFlattenedRootFirst
+      ((X none : MvPolynomial (Option (JetVariable 1)) ℚ) * X (some (some 0)))) = 2 := by
+  rw [orderZeroOfPolynomial_jetTotalDegree,
+    jetTotalDegree_fromFlattenedRootFirst_mul _ _ (by simp) (by simp)]
+  norm_num [jetTotalDegree, fromFlattenedRootFirst, MvPolynomial.weightedTotalDegree,
+    jetDegreeWeight, Finsupp.weight_single, Equiv.swap_apply_def, MvPolynomial.support_X]
 /-- Evaluating the order-zero view of `X + Y₀²` at `X + 1` gives `X² + 3X + 1`. -/
 example :
     (orderZeroAsPolynomial

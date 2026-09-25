@@ -346,43 +346,8 @@ theorem degreeOf_coeff_optionEquivLeft_add_le_rootJetWeight
     (hdegree : degreeOf none V = b) :
     degreeOf (0 : Fin 2) ((optionEquivLeft F (Fin 2) V).coeff i) + i ≤
       V.weightedTotalDegree rootJetWeight := by
-  classical
-  have hiweight : i ≤ V.weightedTotalDegree rootJetWeight := by
-    calc
-      i ≤ b := hi
-      _ = degreeOf none V := hdegree.symm
-      _ ≤ V.weightedTotalDegree rootJetWeight := by
-        apply degreeOf_le_iff.mpr
-        intro u hu
-        have h := le_weightedTotalDegree rootJetWeight hu
-        have hnone : u none ≤ u.weight rootJetWeight := by
-          rw [Finsupp.weight_eq_sum]
-          simp [rootJetWeight]
-        exact hnone.trans h
-  have hdeg : degreeOf (0 : Fin 2) ((optionEquivLeft F (Fin 2) V).coeff i) ≤
-      V.weightedTotalDegree rootJetWeight - i := by
-    apply degreeOf_le_iff.mpr
-    intro u hu
-    have hexp : u.embDomain .some + Finsupp.single none i = u.optionElim i := by
-      ext (_ | j) <;> simp
-    have hsource : u.embDomain .some + Finsupp.single none i ∈ V.support := by
-      rw [hexp]
-      exact (MvPolynomial.mem_support_coeff_optionEquivLeft F).mp hu
-    have hle := le_weightedTotalDegree rootJetWeight hsource
-    have hemb : Finsupp.weight rootJetWeight (u.embDomain .some) = u 0 := by
-      have hw : (fun j : Fin 2 ↦ rootJetWeight (Function.Embedding.some j)) =
-          Pi.single 0 1 := by
-        funext j
-        fin_cases j <;> simp [rootJetWeight]
-      rw [Finsupp.weight_apply]
-      rw [Finsupp.sum_embDomain, ← Finsupp.weight_apply, hw,
-        Finsupp.weight_single_one_apply]
-    have hsingle : u 0 + i =
-        (u.embDomain .some + Finsupp.single none i).weight rootJetWeight := by
-      rw [map_add, hemb, Finsupp.weight_single]
-      simp [rootJetWeight]
-    omega
-  omega
+  exact degreeOf_coeff_optionEquivLeft_add_le_weight rootJetWeight 0
+    (by decide) (by simp [rootJetWeight]) V i b hi hdegree
 
 /-- The positive-root polynomial has the actual `Y₁` degree of the positive-jet factor. -/
 theorem positiveAsPolynomial_natDegree (Q : DifferentialPolynomial F 1) :
