@@ -65,6 +65,7 @@ below the corresponding residual of the code, and the scaled kernel-height quoti
 * `firstOrderRankCount_floor_le_density_add_rounding_upper` and
   `firstOrderRankCount_floor_le_density_add_rounding`: the sharper rounding estimate against the
   exact piecewise rank density, on the upper branch and uniformly.
+* `natFloor_mul_le_natCeil_mul_div`: a ratio bound orders a natural floor below a natural ceiling.
 * `cube_mul_sourceDensity_le_firstOrderSourceCount`: the source rounding estimate with no loss.
 * `cube_mul_densityGap_sub_le_sourceCount_sub_rankCount`: the combined finite surplus.
 * `mul_max_rateResidual_le_max_residual`: comparison of source residuals with code residuals.
@@ -472,6 +473,17 @@ theorem firstOrderRankCount_floor_le_density_add_rounding
       nlinarith [mul_nonneg hbeta0 hmSq])
   · exact firstOrderRankCount_floor_le_density_add_rounding_upper
       (le_of_not_ge hbetaHalf) m
+
+/-- The natural floor `⌊β m⌋₊` is at most `⌈m a / R⌉₊` when `β ≤ a / R`. -/
+theorem natFloor_mul_le_natCeil_mul_div {beta agreement rate : ℝ} {m : ℕ}
+    (hcut : beta ≤ agreement / rate) :
+    ⌊beta * m⌋₊ ≤ ⌈(m : ℝ) * agreement / rate⌉₊ := by
+  have hmul : beta * (m : ℝ) ≤ (m : ℝ) * agreement / rate := by
+    calc
+      beta * (m : ℝ) ≤ (agreement / rate) * m :=
+        mul_le_mul_of_nonneg_right hcut (Nat.cast_nonneg _)
+      _ = (m : ℝ) * agreement / rate := by ring
+  exact (Nat.floor_mono hmul).trans (Nat.floor_le_ceil _)
 
 /-! ## The source rounding estimate -/
 

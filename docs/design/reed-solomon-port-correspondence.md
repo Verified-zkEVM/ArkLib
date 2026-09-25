@@ -1913,6 +1913,16 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/Lo
 
 The source declaration `lowRateFiniteLengthRankCount_le_density_add_rounding` is covered by `firstOrderRankCount_floor_le_density_add_rounding`, which is applied directly in `lowRateFiniteLength_count_gap`. The source-count rounding application uses the generic `cube_mul_sourceDensity_le_firstOrderSourceCount` result.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/LowRateFiniteLengthBounds.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/LowRateFiniteLengthBounds.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+The declarations `lowRateFiniteLengthChallengeHeight`, `lowRateMultiplicityBoundConstant`, `lowRateDerivativeCapBoundConstant`, `lowRateJetBoundConstant`, `lowRateRankBoundConstant`, `lowRateHeightBoundConstant`, `lowRateParameterBoundConstant`, `lowRateFiniteLengthSlack_lt_one`, `lowRateFiniteLengthMultiplicity_le_inv_slack`, `lowRateFiniteLengthDerivativeCap_le_inv_slack`, `lowRateFiniteLengthDerivativeCap_le_jetDegree`, `lowRateFiniteLengthJetDegree_le_inv_slack`, `lowRateFiniteLengthChallengeHeight_le_inv_slack_sq`, and `lowRateFiniteLength_parameter_bounds` keep their names. The low-rate slack and inverse-slack bounds no longer assume `rho < 1`. The derivative-cap/jet-degree theorem also drops unused `rho < 1` and low-rate branch assumptions. The shared threshold slack comparison in `FiniteLengthSelectors.lean` derives rate positivity from the length guard. The generic selector derivative-cap/jet-degree theorem drops its unused threshold-plus-slack upper bound.
+
+The generic floor-to-ceiling comparison is shared in `RoundedCounts.lean`. In `Ratio.lean`, `natCeil_mul_div_le_inv_slack` is generalized from `ℝ` to ordered fields with a floor structure and renamed `Nat.cast_ceil_mul_div_le_inv_slack`; `maxOneFloor_mul_div_le_inv_slack_sq` receives the same generalization and is renamed `Nat.cast_max_one_floor_mul_div_le_inv_slack_sq`. The low-rate challenge-height proof reuses the shared rank-count rounding estimate instead of adding a low-rate wrapper.
+
+`one_le_lowRateParameterBoundConstant` is not ported because the outer `max 1` gives the inequality directly and no main statement uses it. An acceptance case in the matching `ArkLibTest` file checks the slack bound, derivative-cap/jet-degree comparison, all four individual parameter bounds, and the shared parameter bound at `rho = 1/16`, `eta = 1/8`, and `n = 64`.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/Profile.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/Profile.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:

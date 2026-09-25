@@ -11,6 +11,7 @@ public import
   ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.RoundedCounts
 public import
   ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.FiniteLengthParameters
+public import ArkLib.ToMathlib.Algebra.Order.Floor.Ratio
 
 /-!
 # Length-dependent first-order interpolation selectors
@@ -25,6 +26,7 @@ The density and height bounds are stated on the branch where the derivative rati
 
 ## Main statements
 
+* `finiteLengthSlack_lt_one_of_threshold` gives a threshold-independent slack comparison.
 * `finiteLengthDensityMargin_pos` and `finiteLength_count_gap` give a positive finite surplus.
 * `finiteLengthMultiplicity_le_inv_slack` and `finiteLengthJetDegree_le_inv_slack` bound the
   literal interpolation parameters.
@@ -304,6 +306,25 @@ def finiteLengthParameterBoundConstant (rho : ℝ) : ℝ :=
   max 1 (max (finiteLengthMultiplicityBoundConstant rho)
     (max (finiteLengthJetBoundConstant rho) (finiteLengthHeightBoundConstant rho)))
 
+/-- Finite-length slack is below one when a threshold exceeds the rate and leaves room. -/
+theorem finiteLengthSlack_lt_one_of_threshold
+    {rho threshold eta : ℝ} {n : ℕ}
+    (hthreshold : rho < threshold)
+    (haOne : threshold + eta < 1) (hn : (2 : ℝ) ≤ rho * n) :
+    finiteLengthSlack eta n < 1 := by
+  have hrho : 0 < rho := by
+    by_contra h
+    have hprod : rho * (n : ℝ) ≤ 0 :=
+      mul_nonpos_of_nonpos_of_nonneg (le_of_not_gt h) (Nat.cast_nonneg _)
+    linarith
+  have hn0 : (0 : ℝ) < n := by
+    exact_mod_cast length_pos_of_two_le_rate_mul_length hn
+  have hinv : 1 / (n : ℝ) ≤ rho / 2 := by
+    rw [div_le_iff₀ hn0]
+    nlinarith
+  unfold finiteLengthSlack
+  linarith
+
 /-- The finite-length slack is below one under the stated rate and length guards. -/
 theorem finiteLengthSlack_lt_one_of_rate
     {rho eta : ℝ} {n : ℕ}
@@ -311,17 +332,8 @@ theorem finiteLengthSlack_lt_one_of_rate
     (haOne : firstOrderRateThreshold rho + eta < 1)
     (hn : (2 : ℝ) ≤ rho * n) :
     finiteLengthSlack eta n < 1 := by
-  have hn0 : (0 : ℝ) < n := by
-    by_contra h
-    have : (n : ℝ) = 0 := le_antisymm (le_of_not_gt h) (Nat.cast_nonneg n)
-    rw [this, mul_zero] at hn
-    norm_num at hn
-  have hinv : 1 / (n : ℝ) ≤ rho / 2 := by
-    rw [div_le_iff₀ hn0]
-    nlinarith
-  have hthreshold := rate_lt_firstOrderRateThreshold hrho hrhoOne
-  unfold finiteLengthSlack
-  linarith
+  exact finiteLengthSlack_lt_one_of_threshold
+    (rate_lt_firstOrderRateThreshold hrho hrhoOne) haOne hn
 
 /-- The finite-length density margin is positive on the clean rank branch. -/
 theorem finiteLengthDensityMargin_pos
@@ -448,12 +460,9 @@ the floor itself. -/
 theorem finiteLengthDerivativeCap_le_jetDegree
     {rho eta : ℝ} {n : ℕ}
     (hrho : 0 < rho) (hrhoOne : rho < 1) (heta : 0 < eta)
-    (haOne : firstOrderRateThreshold rho + eta < 1)
     (hn : (2 : ℝ) ≤ rho * n) :
     finiteLengthDerivativeCap rho eta n ≤ finiteLengthJetDegree rho eta n := by
   have hrn : 0 < finiteLengthRate rho n := finiteLengthRate_pos hrho hn
-  have hb0 : 0 ≤ finiteLengthDerivativeRatio rho eta :=
-    (automaticDerivativeRatio_pos hrhoOne haOne).le
   have hbcutFixed : finiteLengthDerivativeRatio rho eta <
       finiteLengthCertifiedAgreement rho eta / rho :=
     automaticDerivativeRatio_lt_agreement_div_rate hrho hrhoOne (by linarith)
@@ -470,23 +479,7 @@ theorem finiteLengthDerivativeCap_le_jetDegree
   have hbcut : finiteLengthDerivativeRatio rho eta <
       finiteLengthCertifiedAgreement rho eta / finiteLengthRate rho n := by
     exact hbcutFixed.trans_le (div_le_div_of_nonneg_left ha0.le hrn hrnle.le)
-  have hm0 : (0 : ℝ) ≤ finiteLengthMultiplicity rho eta n := Nat.cast_nonneg _
-  have hfloor : (finiteLengthDerivativeCap rho eta n : ℝ) ≤
-      finiteLengthDerivativeRatio rho eta * finiteLengthMultiplicity rho eta n := by
-    unfold finiteLengthDerivativeCap
-    exact Nat.floor_le (mul_nonneg hb0 hm0)
-  have hmul : finiteLengthDerivativeRatio rho eta * finiteLengthMultiplicity rho eta n ≤
-      finiteLengthMultiplicity rho eta n * finiteLengthCertifiedAgreement rho eta /
-        finiteLengthRate rho n := by
-    calc
-      _ ≤ (finiteLengthCertifiedAgreement rho eta / finiteLengthRate rho n) *
-          finiteLengthMultiplicity rho eta n := by gcongr
-      _ = _ := by ring
-  have hceil : finiteLengthMultiplicity rho eta n * finiteLengthCertifiedAgreement rho eta /
-      finiteLengthRate rho n ≤ (finiteLengthJetDegree rho eta n : ℝ) := by
-    unfold finiteLengthJetDegree
-    exact Nat.le_ceil _
-  exact_mod_cast hfloor.trans (hmul.trans hceil)
+  exact natFloor_mul_le_natCeil_mul_div hbcut.le
 
 /-- The literal total jet degree has inverse finite-length-slack size. -/
 theorem finiteLengthJetDegree_le_inv_slack
@@ -512,49 +505,13 @@ theorem finiteLengthJetDegree_le_inv_slack
     exact finiteLengthSlack_pos heta
   have hsOne : s ≤ 1 :=
     (finiteLengthSlack_lt_one_of_rate hrho hrhoOne haOne hn).le
-  have harg : (m : ℝ) * a / rn ≤ 2 * cm / (rho * s) := by
-    have hm0 : (0 : ℝ) ≤ m := Nat.cast_nonneg _
-    have hma : (m : ℝ) * a ≤ m := by nlinarith
-    have hratio : (m : ℝ) / rn ≤ 2 * (m : ℝ) / rho := by
-      rw [div_le_iff₀ hrn, div_eq_mul_inv]
-      field_simp [ne_of_gt hrho]
-      nlinarith
-    dsimp only [m, a, rn, s, cm] at hm ⊢
-    calc
-      (finiteLengthMultiplicity rho eta n : ℝ) *
-          finiteLengthCertifiedAgreement rho eta / finiteLengthRate rho n ≤
-          (finiteLengthMultiplicity rho eta n : ℝ) / finiteLengthRate rho n := by
-        exact div_le_div_of_nonneg_right hma hrn.le
-      _ ≤ 2 * finiteLengthMultiplicity rho eta n / rho := hratio
-      _ ≤ 2 * finiteLengthMultiplicityBoundConstant rho /
-          (rho * finiteLengthSlack eta n) := by
-        calc
-          2 * (finiteLengthMultiplicity rho eta n : ℝ) / rho ≤
-              2 * (finiteLengthMultiplicityBoundConstant rho /
-                finiteLengthSlack eta n) / rho := by gcongr
-          _ = _ := by ring
-  have hceil : (finiteLengthJetDegree rho eta n : ℝ) <
-      (m : ℝ) * a / rn + 1 := by
-    dsimp only [m, a, rn]
-    unfold finiteLengthJetDegree
-    apply Nat.ceil_lt_add_one
-    exact div_nonneg (mul_nonneg (Nat.cast_nonneg _)
-      (by exact (hrho.trans (rho_lt_automaticAgreement hrho hrhoOne (by linarith))).le))
-      hrn.le
-  calc
-    (finiteLengthJetDegree rho eta n : ℝ) ≤
-        2 * cm / (rho * s) + 1 := by
-      exact (hceil.trans_le (by simpa [add_comm] using add_le_add_right harg 1)).le
-    _ ≤ finiteLengthJetBoundConstant rho / s := by
-      have hcm : 0 ≤ cm := by
-        dsimp only [cm]
-        unfold finiteLengthMultiplicityBoundConstant
-        positivity [automaticSurplusSlope_pos hrho hrhoOne]
-      calc
-        2 * cm / (rho * s) + 1 = (2 * cm / rho + s) / s := by
-          field_simp [ne_of_gt hrho, ne_of_gt hs]
-        _ ≤ (2 * cm / rho + 1) / s := by gcongr
-        _ = finiteLengthJetBoundConstant rho / s := by rfl
+  have ha0 : 0 ≤ a := by
+    dsimp only [a]
+    exact (hrho.trans (rho_lt_automaticAgreement hrho hrhoOne (by linarith))).le
+  change (Nat.ceil ((m : ℝ) * a / rn) : ℝ) ≤
+    (2 * cm / rho + 1) / s
+  exact Nat.cast_ceil_mul_div_le_inv_slack
+    hrho hs hsOne ha0 (le_of_lt haOne') hrn hrnHalf hm
 
 /-! ## Exact finite count gap -/
 
@@ -704,8 +661,6 @@ theorem finiteLengthChallengeHeight_le_inv_slack_sq_of_count_gap
     dsimp only [m, N, R, c, s] at hgap ⊢
     exact (div_le_div_of_nonneg_right
       (mul_le_mul_of_nonneg_left hdelta (by positivity)) (by norm_num)).trans hgap
-  have hgapPos : 0 < N - R := by
-    exact (by positivity : 0 < 3 * (m : ℝ) ^ 3 * (c * s) / 4).trans_le hgapLower
   have hM : finiteLengthDerivativeCap rho eta n ≤ m :=
     finiteLengthDerivativeCap_le_multiplicity
       hrhoOne haOne hbetaHalf
@@ -719,45 +674,18 @@ theorem finiteLengthChallengeHeight_le_inv_slack_sq_of_count_gap
     dsimp only [cB]
     unfold finiteLengthJetBoundConstant finiteLengthMultiplicityBoundConstant
     positivity
-  have hnum : (R : ℝ) * B ≤ 2 * (m : ℝ) ^ 3 * (cB / s) := by
-    gcongr
-  have hquot : (R : ℝ) * B / (N - R) ≤ 8 * cB / (3 * c * s ^ 2) := by
-    calc
-      (R : ℝ) * B / (N - R) ≤
-          (2 * (m : ℝ) ^ 3 * (cB / s)) / (N - R) := by
-        exact div_le_div_of_nonneg_right hnum hgapPos.le
-      _ ≤
-          (2 * (m : ℝ) ^ 3 * (cB / s)) /
-            (3 * (m : ℝ) ^ 3 * (c * s) / 4) := by
-        exact div_le_div_of_nonneg_left (by positivity) (by positivity) hgapLower
-      _ = 8 * cB / (3 * c * s ^ 2) := by
-        field_simp [ne_of_gt hm, ne_of_gt hc, ne_of_gt hs]
-        ring
-  have hq0 : 0 ≤ (R : ℝ) * B / (N - R) := by positivity
-  have hheight : (finiteLengthChallengeHeight rho eta n : ℝ) ≤
-      1 + (R : ℝ) * B / (N - R) := by
-    unfold finiteLengthChallengeHeight
-    rw [Nat.cast_max, Nat.cast_one]
-    apply max_le
-    · linarith
-    · exact (Nat.floor_le hq0).trans (by linarith)
-  have hK : 0 ≤ 8 * cB / (3 * c) := by positivity
+  have hhelper := Nat.cast_max_one_floor_mul_div_le_inv_slack_sq
+    hm hs hsOne hc (by norm_num)
+    hcB hR hB hgapLower
+  have hchallenge : (finiteLengthChallengeHeight rho eta n : ℝ) ≤
+      (1 + 4 * 2 * cB / (3 * c)) / s ^ 2 := by
+    simpa only [finiteLengthChallengeHeight, B, R, N] using hhelper
   calc
     (finiteLengthChallengeHeight rho eta n : ℝ) ≤
-        1 + (R : ℝ) * B / (N - R) := hheight
-    _ ≤ 1 + 8 * cB / (3 * c * s ^ 2) := by linarith
-    _ = 1 + (8 * cB / (3 * c)) / s ^ 2 := by ring
-    _ ≤ (1 + 8 * cB / (3 * c)) / s ^ 2 := by
-      have hsSq : s ^ 2 ≤ 1 := by
-        nlinarith [mul_nonneg hs.le (sub_nonneg.mpr hsOne)]
-      have hone : 1 ≤ 1 / s ^ 2 := by
-        rw [le_div_iff₀ (sq_pos_of_pos hs)]
-        simpa using hsSq
-      calc
-        1 + (8 * cB / (3 * c)) / s ^ 2 ≤
-            1 / s ^ 2 + (8 * cB / (3 * c)) / s ^ 2 := by gcongr
-        _ = (1 + 8 * cB / (3 * c)) / s ^ 2 := by ring
-    _ = finiteLengthHeightBoundConstant rho / s ^ 2 := by rfl
+        (1 + 4 * 2 * cB / (3 * c)) / s ^ 2 := hchallenge
+    _ = finiteLengthHeightBoundConstant rho / s ^ 2 := by
+      dsimp only [finiteLengthHeightBoundConstant, cB, c, s]
+      ring
 
 /-- The selected multiplicity, derivative cap, and jet degree share one inverse-slack envelope. -/
 theorem finiteLength_multiplicity_derivativeCap_jetDegree_bounds
