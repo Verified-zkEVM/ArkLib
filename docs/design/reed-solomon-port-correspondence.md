@@ -2098,6 +2098,19 @@ Not ported: the standalone exceptional correlated-agreement wrapper from this de
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrderCurve.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 Ported `exists_extensionExceptional_firstOrderCurve_of_certificate_of_exponent`, `exists_extensionExceptional_firstOrderCurve_of_heightSlotCount_of_exponent`, `exists_baseExceptional_firstOrderCurve_of_certificate_of_exponent`, and `exists_baseExceptional_firstOrderCurve_of_heightSlotCount_of_exponent` under the same names. Generalized each theorem by removing the `0 < k` assumption. The extension-field bounds come from a finite curve certificate or a strict shifted-height surplus, and the base-field bounds follow by uniform exact-agreement descent. The two height-slot tight wrappers were not ported because each only specializes its exponent theorem to `2K - 3`; the acceptance case uses the exponent theorem directly.
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/HybridCurveRecovery.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/HybridCurveRecovery.lean`, `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/HybridCurveBase.lean` and `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/HybridCurveCertificate.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`, merged into one module:
+
+- `exists_exceptional_firstOrder_hybridCurve_optimized` keeps its name. It drops `hDn`, renames `jetWeight` to `jetTotalDegree`, states the height premise as `CoeffNatDegreeLE Q h`, takes `DecidableEq` instances, and uses the domain `domain.trans ⟨iota, _⟩`.
+- `exists_exceptional_firstOrder_hybridCurve_base_optimized` → `exists_baseExceptional_firstOrder_hybridCurve_optimized`. Renamed to main's `exists_baseExceptional_*` convention and drops `hDn`. The proof uses main's `exists_exceptional_equation_powerAgreement_descend` instead of a hand-written preimage argument.
+- `exists_exceptional_firstOrder_hybridCurve_base_including_fullDimension` → `exists_baseExceptional_firstOrder_hybridCurve_including_fullDimension`. Renamed the same way; the statement is otherwise unchanged apart from main's conventions.
+- `exists_baseExceptional_firstOrderCurve_of_heightSlotCount_optimized_fullAgreement` → `exists_baseExceptional_firstOrderCurve_of_heightSlotCount_optimized`. This is the agreement-set form under the shorter name, with `[DecidableEq F]` added.
+
+Not ported: the source `exists_baseExceptional_firstOrderCurve_of_heightSlotCount_optimized` in its "every agreeing index set" form. Any `indices` with `A ≤ indices.card` on which `P` agrees is a subset of `polynomialAgreementSet`, so the ported agreement-set form covers it; the downstream `HybridCurveEndpoints.lean` will need that subset step when ported. `therefore` in the unit's declaration list is a word from a source docstring, not a declaration.
+
+The curve tail theorem `HiddenDerivative.FirstOrderHybridDescent.hasOrdinaryCurveTailTransfer` from `HybridCurveRecovery.lean` was ported to `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/OrdinaryTail.lean` as `ReedSolomon.HiddenDerivative.FirstOrderHybridDescent.exists_exceptional_ordinaryCurveTail`, next to the pair version. Renamed because there is no curve-transfer predicate. It drops `hDn : D + 2 ≤ n` and `hAn : A ≤ n`, takes the height as `CoeffNatDegreeLE Q h` on the starting equation, and takes `[DecidableEq F] [DecidableEq E]` instead of `open Classical`.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/HybridCurveTransfer.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/HybridCurveTransfer.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -5335,6 +5348,13 @@ Acceptance examples at `δ = 1/5` and `n = uniformMathematicalCapacityLength (1/
 Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 Acceptance cases check the base-field height theorem at the tight exponent, the base-field certificate theorem, and the extension-field height and certificate theorems. Both certificate cases reuse a certificate for the same one-point zero curve over `ℚ`.
+
+Ported from the new declarations above; the source revision has no matching examples. Acceptance examples:
+
+- `exists_exceptional_firstOrder_hybridCurve_optimized` over `ℂ` for the equation `Y₁` (`n = 2`, `D = 1`, `A = 2`, `h = 0`, `mu = M = 1`), with every hypothesis discharged concretely. This also exercises `exists_exceptional_ordinaryCurveTail`.
+- `exists_baseExceptional_firstOrder_hybridCurve_optimized` on the same instance, with `ℂ` as the base field.
+- `exists_baseExceptional_firstOrderCurve_of_heightSlotCount_optimized` over `ℚ` at three points (`D = 1`, `A = n = 3`, `ell = 1`, `m = 1`, `M = 0`, `mu = 1`, `h = 1`). The slot surplus (6 < 8) is checked by `norm_num`, and the example finds a challenge outside the exceptional set where the zero candidate has full agreement and exact power agreement. This also goes through `exists_baseExceptional_firstOrder_hybridCurve_including_fullDimension`.
+- The three existing examples for the changed `HybridCurveTransfer` theorems now pass `coeffNatDegreeLE_coeffNatDegree _`.
 
 ## `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree.lean`
 
