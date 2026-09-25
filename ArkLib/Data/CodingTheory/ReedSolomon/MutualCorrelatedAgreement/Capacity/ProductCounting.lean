@@ -43,7 +43,7 @@ namespace ReedSolomon
 open scoped BigOperators
 open HiddenDerivative.WeightedSupportParameters
 
-/-- The product-based agreement coefficient, including the terminal height. -/
+/-- The product agreement coefficient, including the terminal height. -/
 noncomputable def polynomialCurveProductAgreementConstant (δ : ℝ) (v h d : ℕ) : ℝ :=
   h + 2 ^ d * (v : ℝ) ^ (d + 2) * (1 / δ) ^ d *
     ((h : ℝ) * (d + 1) * (3 * d + 5) / δ + 3)
@@ -106,7 +106,7 @@ theorem polynomialCurveProductStageBound_le_uniform (δ : ℝ) (n ℓ v h d r : 
   gcongr
   norm_num
 
-/-- At most `v` stages and the terminal height give the gap-only product coefficient. -/
+/-- At most `v` stages and the terminal height yield the product agreement coefficient. -/
 theorem product_stages_aggregate {ι : Type*} (S : Finset ι) (cost : ι → ℝ)
     (δ : ℝ) (n ℓ v h d : ℕ) (hδ : 0 < δ) (hn : 0 < n)
     (hcard : S.card ≤ v)

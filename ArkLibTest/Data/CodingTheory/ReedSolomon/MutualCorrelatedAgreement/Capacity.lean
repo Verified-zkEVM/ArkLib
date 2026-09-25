@@ -109,6 +109,48 @@ example : polynomialCurveSharpStageBound (1 / 2) 8 1 1 1 1 ≤
     (δ := 1 / 2) (n := 8) (ℓ := 1) (v := 1) (h := 1) (r := 1) (d := 2)
     (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
 
+/-- The product cutoff bounds both contributions for a concrete stage. -/
+example :
+    let L := correlatedProductCutoff 2 1 6
+    (1 : ℝ) * (((8 - L + 1 : ℕ) : ℝ) / ((6 - L + 1 : ℕ) : ℝ)) *
+        (dimensionSensitiveIncidenceProduct 8 6 1 1 1 : ℝ) +
+      (1 : ℝ) * ((8 - L : ℕ) : ℝ) * 1 * ((1 : ℕ) ^ 1 : ℝ) *
+        (dimensionSensitiveIncidenceProduct 8 L 1 1 1 : ℝ) ≤
+      polynomialCurveProductStageBound (1 / 2) 8 1 1 1 2 1 := by
+  simpa using product_stage_bound (1 / 2) 8 1 6 2 1 1 1 1 1 1 1
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+
+/-- Increasing a product stage from order one to its cap preserves the scalar bound. -/
+example : polynomialCurveProductStageBound (1 / 2) 8 1 1 1 2 1 ≤
+    polynomialCurveProductStageBound (1 / 2) 8 1 1 1 2 2 := by
+  exact polynomialCurveProductStageBound_le_uniform
+    (δ := 1 / 2) (n := 8) (ℓ := 1) (v := 1) (h := 1) (d := 2) (r := 1)
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+
+/-- The scalar aggregate bounds one concrete family of product stages. -/
+example :
+    ((1 * 1 : ℕ) : ℝ) +
+      ∑ _i ∈ (Finset.univ : Finset (Fin 1)), (1 : ℝ) ≤
+        (1 : ℝ) * polynomialCurveProductAgreementConstant (1 / 2) 1 1 1 * (8 : ℝ) ^ 2 := by
+  simpa using product_stages_aggregate
+    (S := (Finset.univ : Finset (Fin 1))) (cost := fun _ ↦ (1 : ℝ))
+    (δ := 1 / 2) (n := 8) (ℓ := 1) (v := 1) (h := 1) (d := 1)
+    (by norm_num) (by norm_num) (by norm_num)
+    (by intro i hi; norm_num [polynomialCurveProductStageBound])
+
+/-- The product scalar bounds a concrete regular agreement stage. -/
+example :
+    let L := correlatedProductCutoff 1 1 6
+    (regularPowerBatchedAgreementSharpBound 1 8 1 4 1 L 6 1 1 (τ := 0) : ℝ) ≤
+      polynomialCurveProductStageBound (1 / 2) 8 1 1 1 1 1 := by
+  simpa using regularPowerBatchedAgreementSharpBound_product_le_stage
+    (δ := 1 / 2) (r := 1) (n := 8) (K := 4) (k := 1) (A := 6)
+    (ℓ := 1) (j := 1) (H := 1) (v := 1) (h := 1) (d := 1) (τ := 0)
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num)
+
 example :
     let L := correlatedMidpoint (1 / 2) 8 1
     (1 : ℝ) + ∑ _i ∈ (Finset.univ : Finset (Fin 1)),
