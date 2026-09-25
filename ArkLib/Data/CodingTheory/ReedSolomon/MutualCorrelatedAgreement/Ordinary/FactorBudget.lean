@@ -83,30 +83,49 @@ the separable root degree, so the factor has root degree `s * b`. Subtraction is
 def ordinaryFrobeniusMixedDegree (D h s b : ℕ) : ℕ :=
   h * (1 + (2 * D * s - 1) * (b - 1)) + b * (s + (2 * D * s - 1) * h)
 
+private theorem frobeniusMixedDegree_eq_aux (D h s b c : ℕ) :
+    h * (1 + (2 * D * s - 1) * (b - 1)) + b * (c + (2 * D * s - 1) * h) =
+      h + b * c + (2 * D * s - 1) * h * (2 * b - 1) := by
+  rcases Nat.eq_zero_or_pos b with rfl | hb
+  · simp
+  obtain ⟨b, rfl⟩ := Nat.exists_eq_add_of_le hb
+  simp only [Nat.add_sub_cancel_left, Nat.mul_add, Nat.mul_one]
+  have ht : 2 + 2 * b - 1 = 1 + 2 * b := by omega
+  rw [ht]
+  ring
+
+private theorem frobeniusMixedDegree_le_aux (D h s b c : ℕ) :
+    h * (1 + (2 * D * s - 1) * (b - 1)) + b * (c + (2 * D * s - 1) * h) ≤
+      h + b * c + 4 * D * h * (s * b) := by
+  rw [frobeniusMixedDegree_eq_aux]
+  have hprod : (2 * D * s - 1) * h * (2 * b - 1) ≤ (2 * D * s) * h * (2 * b) := by
+    gcongr <;> omega
+  calc
+    h + b * c + (2 * D * s - 1) * h * (2 * b - 1) ≤
+        h + b * c + (2 * D * s) * h * (2 * b) := Nat.add_le_add_left hprod _
+    _ = h + b * c + 4 * D * h * (s * b) := by ring
+
 /-- The reconstruction and separable fiber degrees combine to
 `h + s * b + (2 * D * s - 1) * h * (2 * b - 1)`. For `b = 0` both sides equal `h`, since
 `2 * 0 - 1 = 0` in `ℕ`, so no hypothesis on `b` is needed. -/
 theorem ordinaryFrobeniusMixedDegree_eq (D h s b : ℕ) :
     ordinaryFrobeniusMixedDegree D h s b =
       h + s * b + (2 * D * s - 1) * h * (2 * b - 1) := by
-  rcases Nat.eq_zero_or_pos b with rfl | hb
-  · simp [ordinaryFrobeniusMixedDegree]
-  obtain ⟨b, rfl⟩ := Nat.exists_eq_add_of_le hb
-  simp only [ordinaryFrobeniusMixedDegree, Nat.add_sub_cancel_left, Nat.mul_add, Nat.mul_one]
-  have ht : 2 + 2 * b - 1 = 1 + 2 * b := by omega
-  rw [ht]
-  ring
+  change h * (1 + (2 * D * s - 1) * (b - 1)) +
+      b * (s + (2 * D * s - 1) * h) = _
+  calc
+    _ = h + b * s + (2 * D * s - 1) * h * (2 * b - 1) :=
+      frobeniusMixedDegree_eq_aux D h s b s
+    _ = h + s * b + (2 * D * s - 1) * h * (2 * b - 1) := by ring
 
 /-- The mixed chart degree is at most `h + s * b + 4 * D * h * (s * b)`: the inseparability
 power `s` costs nothing beyond the root degree `s * b` of the factor. -/
 theorem ordinaryFrobeniusMixedDegree_le (D h s b : ℕ) :
     ordinaryFrobeniusMixedDegree D h s b ≤ h + s * b + 4 * D * h * (s * b) := by
-  rw [ordinaryFrobeniusMixedDegree_eq D h s b]
-  have hprod : (2 * D * s - 1) * h * (2 * b - 1) ≤ (2 * D * s) * h * (2 * b) := by
-    gcongr <;> omega
+  change h * (1 + (2 * D * s - 1) * (b - 1)) +
+      b * (s + (2 * D * s - 1) * h) ≤ _
   calc
-    h + s * b + (2 * D * s - 1) * h * (2 * b - 1) ≤
-        h + s * b + (2 * D * s) * h * (2 * b) := Nat.add_le_add_left hprod _
+    _ ≤ h + b * s + 4 * D * h * (s * b) := frobeniusMixedDegree_le_aux D h s b s
     _ = h + s * b + 4 * D * h * (s * b) := by ring
 
 /-! ### Polynomial-curve mixed degree and charge -/
@@ -121,27 +140,23 @@ def ordinaryFrobeniusCurveMixedDegree (D ell h s b : ℕ) : ℕ :=
 theorem ordinaryFrobeniusCurveMixedDegree_eq (D ell h s b : ℕ) :
     ordinaryFrobeniusCurveMixedDegree D ell h s b =
       h + ell * (s * b) + (2 * D * s - 1) * h * (2 * b - 1) := by
-  rcases Nat.eq_zero_or_pos b with rfl | hb
-  · simp [ordinaryFrobeniusCurveMixedDegree]
-  obtain ⟨b, rfl⟩ := Nat.exists_eq_add_of_le hb
-  simp only [ordinaryFrobeniusCurveMixedDegree, Nat.add_sub_cancel_left, Nat.mul_add,
-    Nat.mul_one]
-  have ht : 2 + 2 * b - 1 = 1 + 2 * b := by omega
-  rw [ht]
-  ring
+  change h * (1 + (2 * D * s - 1) * (b - 1)) +
+      b * (s * ell + (2 * D * s - 1) * h) = _
+  calc
+    _ = h + b * (s * ell) + (2 * D * s - 1) * h * (2 * b - 1) :=
+      frobeniusMixedDegree_eq_aux D h s b (s * ell)
+    _ = h + ell * (s * b) + (2 * D * s - 1) * h * (2 * b - 1) := by ring
 
 /-- The polynomial-curve mixed degree is at most
 `h + ell * (s * b) + 4 * D * h * (s * b)`. -/
 theorem ordinaryFrobeniusCurveMixedDegree_le (D ell h s b : ℕ) :
     ordinaryFrobeniusCurveMixedDegree D ell h s b ≤
       h + ell * (s * b) + 4 * D * h * (s * b) := by
-  rw [ordinaryFrobeniusCurveMixedDegree_eq D ell h s b]
-  have hprod : (2 * D * s - 1) * h * (2 * b - 1) ≤
-      (2 * D * s) * h * (2 * b) := by
-    gcongr <;> omega
+  change h * (1 + (2 * D * s - 1) * (b - 1)) +
+      b * (s * ell + (2 * D * s - 1) * h) ≤ _
   calc
-    h + ell * (s * b) + (2 * D * s - 1) * h * (2 * b - 1) ≤
-        h + ell * (s * b) + (2 * D * s) * h * (2 * b) := Nat.add_le_add_left hprod _
+    _ ≤ h + b * (s * ell) + 4 * D * h * (s * b) :=
+      frobeniusMixedDegree_le_aux D h s b (s * ell)
     _ = h + ell * (s * b) + 4 * D * h * (s * b) := by ring
 
 /-- The exceptional-set charge of a factor of root degree `a` and height `h` over a degree-`ell`

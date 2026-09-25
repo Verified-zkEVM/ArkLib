@@ -1405,20 +1405,17 @@ private abbrev regularBoundEquation :
     DifferentialPolynomial RegularBoundField[X] 0 := X (some (0 : Fin 1))
 private def regularBoundWitness (_ : RegularBoundField) : RegularBoundField[X] := 0
 
-example : ∃ exceptional : Finset RegularBoundField,
-    exceptional.card ≤ 1 ∧ (0 : RegularBoundField) ∈ exceptional := by
+example : ∃ exceptional : Finset ℂ, exceptional.card ≤ 1 ∧ (0 : ℂ) ∈ exceptional ∧
+    ∃ curveExceptional : Finset ℂ, curveExceptional.card ≤ 1 := by
   classical
   have hroots : ∀ i, regularBoundDomain i ^ (1 ^ 0) = regularBoundDomain i := by simp
   have hτ : TaylorExponentSufficient 0 1 1 := by
-    intro l
-    fin_cases l
-    norm_num [TaylorExponentSufficient]
+    intro l; fin_cases l; norm_num [TaylorExponentSufficient]
   have hjet : jetTotalDegree regularBoundEquation ≤ 1 := by
     rw [jetTotalDegree_le_iff]
-    intro u hu
-    have hu' : u = Finsupp.single (some (0 : Fin 1)) 1 := by
-      simpa [regularBoundEquation, MvPolynomial.support_X] using hu
-    rw [hu']
+    rintro u hu
+    rw [show u = Finsupp.single (some (0 : Fin 1)) 1 by
+      simpa [regularBoundEquation, MvPolynomial.support_X] using hu]
     simp [totalJetDegree_eq_sum]
   have hirr : Irreducible regularBoundEquation := by
     exact (MvPolynomial.X_prime : Prime regularBoundEquation).irreducible
@@ -1432,9 +1429,7 @@ example : ∃ exceptional : Finset RegularBoundField,
     fin_cases i <;> simp [polynomialAgreementSet, regularBoundDomain,
       regularBoundValues, regularBoundWitness, powerBatchedWord]
   have hdomain : regularBoundDomain.trans ⟨RingHom.id ℂ,
-      (RingHom.id ℂ).injective⟩ = regularBoundDomain := by
-    ext i
-    rfl
+      (RingHom.id ℂ).injective⟩ = regularBoundDomain := by ext i; rfl
   have hbad : ∀ z ∈ ({(0 : RegularBoundField)} : Finset RegularBoundField),
       ¬HasExactPowerAgreement regularBoundDomain regularBoundValues (RingHom.id ℂ) 1
         (z ^ (1 ^ 0)) (regularBoundWitness z) := by
@@ -1448,8 +1443,7 @@ example : ∃ exceptional : Finset RegularBoundField,
         (regularBoundWitness 0)).mp hexact0
     have hcommon : commonCurveAgreementSet regularBoundDomain regularBoundValues P =
         Finset.univ := by
-      rw [← hsets]
-      exact hleft
+      exact hsets.symm.trans hleft
     have h0 :=
       (mem_commonCurveAgreementSet regularBoundDomain regularBoundValues P 0).mp
         (by rw [hcommon]; simp)
@@ -1489,10 +1483,16 @@ example : ∃ exceptional : Finset RegularBoundField,
         (powerBatchedWord regularBoundValues 0) (regularBoundWitness 0)).card
       rw [hleft]
       simp
-  refine ⟨exceptional, ?_, hzero⟩
-  norm_num at hcard
-  exact hcard
-
+  obtain ⟨curveExceptional, hcurveCard, _⟩ :=
+    exists_exceptional_frobeniusPowerFactorSolutions
+      (F := ℂ) (E := ℂ) (n := 2) (ℓ := 1) regularBoundDomain
+      regularBoundValues (RingHom.id ℂ) regularBoundEquation 1 0 1 0 1 2
+      (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+      (coeffNatDegreeLE_X (some (0 : Fin 1))) hjet hirr hder hdegree
+  refine ⟨exceptional, ?_, hzero, curveExceptional, ?_⟩
+  · norm_num at hcard
+    exact hcard
+  · simpa [ordinaryCurveFactorRaw] using hcurveCard
 end
 
 end ReedSolomon.FrobeniusRegularBoundAcceptanceTest
