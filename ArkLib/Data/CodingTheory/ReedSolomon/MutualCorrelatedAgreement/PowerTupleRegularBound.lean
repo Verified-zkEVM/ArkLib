@@ -34,7 +34,7 @@ a prescribed center.
   threshold `L` between `k` and the requested agreement `A`.
 * `finite_frobeniusRegularBadChallenges_card_le` gives its two-message correlated-pair form.
 * `finite_frobeniusPowerRegularBadChallenges_card_le_of_separant_at` chooses a common regular
-  Taylor center for a finite family and applies the bound.
+  center; `finite_frobeniusRegularBadChallenges_card_le_of_separant` gives the two-message bound.
 * `exists_exceptional_frobeniusPowerRegularSolutions_at` gives one bounded exceptional set for
   every retained-agreement threshold `L` between `k` and `A`.
 
@@ -446,6 +446,54 @@ theorem exists_exceptional_frobeniusPowerRegularSolutions_at [IsAlgClosed E]
   by_contra hbad
   apply hz
   exact hfinite.mem_toFinset.mpr ⟨P, hdeg, hsol, hsep, hagree, hbad⟩
+
+open Classical in
+/-- A finite family of regular Frobenius witnesses with at least `A` agreements and no exact
+correlated-pair representation satisfies the two-message bound without a supplied center. -/
+theorem finite_frobeniusRegularBadChallenges_card_le_of_separant [IsAlgClosed E]
+    (domain : Fin n ↪ F) (f g : Fin n → F) (ι : F →+* E)
+    (roots : Fin n → E) (Q : DifferentialPolynomial E[X] 0)
+    (p e τ h b A : ℕ) [ExpChar E p]
+    (hroots : ∀ i, roots i ^ (p ^ e) = ι (domain i))
+    (hK : 0 < K) (hKk : K ≤ p ^ e * k) (hτ : TaylorExponentSufficient 0 K τ)
+    (hτpos : 0 < τ) (hb : 0 < b) (hkA : k ≤ A)
+    (hheight : CoeffNatDegreeLE Q h) (hjet : jetTotalDegree Q ≤ b)
+    (challenges : Finset E) (witness : E → E[X])
+    (hdegree : ∀ z ∈ challenges, (expand E (p ^ e) (witness z)).degree < K)
+    (hsol : ∀ z ∈ challenges,
+      differentialSpecialization (challengeSpecialization Q z)
+        (expand E (p ^ e) (witness z)) = 0)
+    (hsep : ∀ z ∈ challenges,
+      differentialSpecialization
+        (separant (challengeSpecialization Q z) (Fin.last 0))
+        (expand E (p ^ e) (witness z)) ≠ 0)
+    (hagree : ∀ z ∈ challenges, A ≤
+      (polynomialAgreementSet (domain.trans ⟨ι, ι.injective⟩)
+        (fun i ↦ ι (f i) + z ^ (p ^ e) * ι (g i)) (witness z)).card)
+    (hbad : ∀ z ∈ challenges,
+      ¬HasExactCorrelatedPair domain f g ι k (z ^ (p ^ e)) (witness z)) :
+    (challenges.card : ℚ) ≤
+      (h * (1 + τ * (b - 1)) + b * (p ^ e + τ * h) : ℕ) *
+        (((n - k + 1 : ℕ) : ℚ) / ((A - k + 1 : ℕ) : ℚ)) +
+      ((n - k) * b : ℕ) := by
+  let values : Fin 2 → Fin n → F := fun t i ↦ if t.val = 0 then f i else g i
+  have hbound := finite_frobeniusPowerRegularBadChallenges_card_le_of_separant_at
+    (L := k) (ℓ := 1) domain values ι roots Q p e τ h b A
+    hroots hK hKk hτ hτpos (by omega) hb le_rfl hkA hheight hjet
+    challenges witness hdegree hsol hsep ?_ ?_
+  · simpa using hbound
+  · intro z hz
+    have hword : powerBatchedWord (fun t i ↦ ι (values t i)) (z ^ (p ^ e)) =
+        (fun i ↦ ι (f i) + z ^ (p ^ e) * ι (g i)) := by
+      funext i
+      simp [powerBatchedWord, Fin.sum_univ_two, values]
+    rw [hword]
+    exact hagree z hz
+  · intro z hz hpower
+    apply hbad z hz
+    have hpair := exactCorrelatedPair_of_powerAgreement_one domain values ι
+      (z ^ (p ^ e)) (witness z) hpower
+    simpa [values] using hpair
 
 end ReedSolomon
 
