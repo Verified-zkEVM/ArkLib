@@ -1,5 +1,17 @@
+/-
+Copyright (c) 2026 ArkLib Contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Quang Dao
+-/
+
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.HybridCurveTransfer
 import Mathlib.Analysis.Complex.Polynomial.Basic
+
+/-!
+# Hybrid first-order curve transfer acceptance tests
+
+Concrete examples exercise the regular-stage, tail-combined, and optimized exception theorems.
+-/
 
 open ReedSolomon HiddenDerivative PolynomialDifferential MvPolynomial
 
@@ -51,9 +63,9 @@ private def exceptionValues : Fin 2 → Fin 2 → ℂ := fun _ _ ↦ 0
 
 private def exceptionEmbedding : ℂ →+* ℂ := RingHom.id ℂ
 
-private theorem exceptionEquation_height : challengeCoefficientHeight exceptionEquation = 0 := by
+private theorem exceptionEquation_coeffNatDegree : coeffNatDegree exceptionEquation = 0 := by
   classical
-  rw [challengeCoefficientHeight, exceptionEquation, MvPolynomial.support_X]
+  rw [coeffNatDegree, exceptionEquation, MvPolynomial.support_X]
   simp
 
 example :
@@ -61,7 +73,7 @@ example :
       (exceptional.card : ℝ) ≤
         HiddenDerivative.retainedCoordinateRatio 2 2 2 *
             HiddenDerivative.agreementIncidenceRatio 2 1 2 *
-              hybridCurveJointStageSum 1 1 (challengeCoefficientHeight exceptionEquation) 1
+              hybridCurveJointStageSum 1 1 (coeffNatDegree exceptionEquation) 1
                 exceptionDescent.actualDegree +
           ((1 : ℕ) : ℝ) * ((2 - 2 : ℕ) : ℝ) *
             HiddenDerivative.fixedCoordinateRatio 2 1 2 *
@@ -88,7 +100,7 @@ example :
 example :
     ∃ exceptional : Finset ℂ,
       (exceptional.card : ℝ) ≤
-        0 + hybridCurveRegular 2 1 1 2 (challengeCoefficientHeight exceptionEquation)
+        0 + hybridCurveRegular 2 1 1 2 (coeffNatDegree exceptionEquation)
           1 exceptionDescent.actualDegree 2 ∧
       ∀ z ∉ exceptional, ∀ P : Polynomial ℂ,
         P.degree < (↑(1 : ℕ) + 1) →
@@ -117,7 +129,7 @@ example :
 example :
     ∃ exceptional : Finset ℂ,
       (exceptional.card : ℝ) ≤
-        hybridCurveOptimized 2 1 1 2 (challengeCoefficientHeight exceptionEquation) 1 1 ∧
+        hybridCurveOptimized 2 1 1 2 (coeffNatDegree exceptionEquation) 1 1 ∧
       ∀ z ∉ exceptional, ∀ P : Polynomial ℂ,
         P.degree < (↑(1 : ℕ) + 1) →
         2 ≤ (polynomialAgreementSet
@@ -137,7 +149,7 @@ example :
         subst L₀
         refine ⟨∅, ?_, ?_⟩
         · rw [hybridCurveTail, exceptionDescent_actualDegree, Nat.sub_self,
-          exceptionEquation_height, ordinaryUnifiedPowerFactorAtOrHeight_zero]
+          exceptionEquation_coeffNatDegree, ordinaryUnifiedPowerFactorAtOrHeight_zero]
           norm_num
         · intro z hz P hdegree hagree hroot
           rw [exceptionDescent_tail_equation] at hroot

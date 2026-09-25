@@ -25,7 +25,7 @@ and the degree in `X` of its coefficients. Mathlib's `MvPolynomial.optionEquivRi
 This file records both degrees.
 
 * `MvPolynomial.CoeffNatDegreeLE P h` says that every coefficient of `P` has `natDegree ≤ h`.
-  `MvPolynomial.challengeCoefficientHeight` computes such a bound from the finite support. The
+  `MvPolynomial.coeffNatDegree` computes such a bound from the finite support. The
   predicate is closed under sums and products (the bounds add), and under substitution of
   polynomials whose coefficients are constants, which includes formal differentiation. Cleared
   substitution has a corresponding coefficient-degree bound.
@@ -41,8 +41,7 @@ This file records both degrees.
 * `MvPolynomial.optionEquivRight_symm_pderiv`: partial derivatives in a polynomial coefficient
   variable agree with the corresponding derivative after flattening.
 * `MvPolynomial.CoeffNatDegreeLE` and its closure lemmas, including
-  `MvPolynomial.challengeCoefficientHeight`,
-  `MvPolynomial.coeffNatDegreeLE_challengeCoefficientHeight`,
+  `MvPolynomial.coeffNatDegree`, `MvPolynomial.coeffNatDegreeLE_coeffNatDegree`,
   `MvPolynomial.CoeffNatDegreeLE.map_coefficients`, `MvPolynomial.CoeffNatDegreeLE.aeval`,
   `MvPolynomial.CoeffNatDegreeLE.pderiv`, and
   `MvPolynomial.CoeffNatDegreeLE.clearedSubstitution`.
@@ -182,12 +181,12 @@ def CoeffNatDegreeLE (P : MvPolynomial σ (Polynomial R)) (h : ℕ) : Prop :=
   ∀ m, (P.coeff m).natDegree ≤ h
 
 /-- The largest degree of the polynomial coefficients of `P`. -/
-def challengeCoefficientHeight (P : MvPolynomial σ (Polynomial R)) : ℕ :=
+def coeffNatDegree (P : MvPolynomial σ (Polynomial R)) : ℕ :=
   P.support.sup fun m ↦ (P.coeff m).natDegree
 
-/-- Every coefficient of `P` has degree at most `challengeCoefficientHeight P`. -/
-theorem coeffNatDegreeLE_challengeCoefficientHeight (P : MvPolynomial σ (Polynomial R)) :
-    CoeffNatDegreeLE P (challengeCoefficientHeight P) := by
+/-- Every coefficient of `P` has degree at most `coeffNatDegree P`. -/
+theorem coeffNatDegreeLE_coeffNatDegree (P : MvPolynomial σ (Polynomial R)) :
+    CoeffNatDegreeLE P (coeffNatDegree P) := by
   classical
   intro m
   by_cases hm : m ∈ P.support
@@ -195,7 +194,7 @@ theorem coeffNatDegreeLE_challengeCoefficientHeight (P : MvPolynomial σ (Polyno
   · have hzero : P.coeff m = 0 := by
       by_contra hne
       exact hm (MvPolynomial.mem_support_iff.mpr hne)
-    simp [challengeCoefficientHeight, hzero]
+    simp [coeffNatDegree, hzero]
 
 /-- A constant `p` has coefficient degree at most `h` when `p.natDegree ≤ h`. -/
 theorem coeffNatDegreeLE_C {p : Polynomial R} {h : ℕ} (hp : p.natDegree ≤ h) :
