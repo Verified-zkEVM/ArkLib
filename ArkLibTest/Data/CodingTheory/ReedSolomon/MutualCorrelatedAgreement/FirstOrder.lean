@@ -16,8 +16,8 @@ for first-order power-batched curves.
 
 ## Main statements
 
-* The height-slot bound has a nonvacuous base-field instance at the tight exponent.
-* Height-slot and finite-certificate bounds have nonvacuous extension-field instances.
+* Height-slot and certificate bounds have nonvacuous base-field instances.
+* Height-slot and certificate bounds have nonvacuous extension-field instances.
 
 ## References
 
@@ -40,6 +40,17 @@ private theorem curveHeightSurplus :
     firstOrderGradedSourceCount, firstOrderCurveShiftedHeightSlotCount,
     Finset.sum_range_succ]
 
+/-- The one-point zero curve has a finite first-order curve certificate. -/
+private def curveCertificate :
+    FirstOrderCurveCertificate (F := ℚ) 1 1 2 1 1 1 1 curveDomain
+      (fun i ↦ powerBatchedCoordinate (fun t ↦ curveValues t i))
+      (firstOrderColumns (D := 1) (A := 1) (m := 2) (M := 1) (μ := 1)) := by
+  exact Classical.choice <| exists_finite_firstOrder_curve_certificate_of_heightSlotCount
+    (D := 1) (A := 1) (m := 2) (M := 1) (μ := 1) (k := 1) (h := 1) (n := 1)
+    0 (by norm_num) (by norm_num) (by norm_num) curveDomain
+    (fun i ↦ powerBatchedCoordinate (fun t ↦ curveValues t i))
+    (by intro i; norm_num [powerBatchedCoordinate, curveValues]) curveHeightSurplus
+
 private theorem algebraicClosureInfinite : Infinite (AlgebraicClosure ℚ) := by
   exact Infinite.of_injective (algebraMap ℚ (AlgebraicClosure ℚ))
     (algebraMap ℚ (AlgebraicClosure ℚ)).injective
@@ -58,6 +69,30 @@ example : ∃ z : ℚ, ∃ P : ℚ[X], P.degree < 1 ∧
       (μ := 1) (k := 1) (h := 1) (n := 1) (K := 2) (L := 1) (ell := 0)
       curveDomain curveValues (algebraMap ℚ (AlgebraicClosure ℚ))
       (by norm_num) (by norm_num) (by norm_num) curveHeightSurplus
+      (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+      (by norm_num) 1 (taylorExponentSufficient_two_mul_sub_three 0 2)
+      (taylorExponentSufficient_two_mul_sub_three 1 2) (by norm_num) (by simp)
+  obtain ⟨z, hz⟩ := Finset.exists_notMem exceptional
+  refine ⟨z, 0, by simp, ?_, ?_⟩
+  · have hset : polynomialAgreementSet curveDomain (powerBatchedWord curveValues z)
+        (0 : ℚ[X]) = Finset.univ := by
+      ext i
+      simp [polynomialAgreementSet, powerBatchedWord, curveValues]
+    rw [hset]
+    simp
+  · apply hgood z hz 0 (by simp)
+    simp [polynomialAgreementSet, powerBatchedWord, curveValues]
+
+/-- A finite first-order curve certificate gives the base-field bound. -/
+example : ∃ z : ℚ, ∃ P : ℚ[X], P.degree < 1 ∧
+    1 ≤ (polynomialAgreementSet curveDomain (powerBatchedWord curveValues z) P).card ∧
+    HasExactPowerAgreement curveDomain curveValues (RingHom.id ℚ) 1 z P := by
+  classical
+  obtain ⟨exceptional, _, hgood⟩ :=
+    exists_baseExceptional_firstOrderCurve_of_certificate_of_exponent
+      (D := 1) (A := 1) (m := 2) (M := 1) (μ := 1) (k := 1) (h := 1) (n := 1)
+      (K := 2) (L := 1) (ell := 0) curveDomain curveValues
+      (algebraMap ℚ (AlgebraicClosure ℚ)) _ curveCertificate
       (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
       (by norm_num) 1 (taylorExponentSufficient_two_mul_sub_three 0 2)
       (taylorExponentSufficient_two_mul_sub_three 1 2) (by norm_num) (by simp)
@@ -123,16 +158,10 @@ example : ∃ z : AlgebraicClosure ℚ, ∃ P : (AlgebraicClosure ℚ)[X], P.deg
   let extensionDomain := curveDomain.trans ⟨iota, iota.injective⟩
   let extensionValues : Fin 1 → Fin 1 → AlgebraicClosure ℚ :=
     fun t i ↦ iota (curveValues t i)
-  obtain ⟨cert⟩ :=
-    exists_finite_firstOrder_curve_certificate_of_heightSlotCount
-      (D := 1) (A := 1) (m := 2) (M := 1) (μ := 1) (k := 1) (h := 1) (n := 1)
-      0 (by norm_num) (by norm_num) (by norm_num) curveDomain
-      (fun i ↦ powerBatchedCoordinate (fun t ↦ curveValues t i))
-      (by intro i; norm_num [powerBatchedCoordinate, curveValues]) curveHeightSurplus
   obtain ⟨exceptional, _, hgood⟩ :=
     exists_extensionExceptional_firstOrderCurve_of_certificate_of_exponent
       (D := 1) (A := 1) (m := 2) (M := 1) (μ := 1) (k := 1) (h := 1) (n := 1)
-      (K := 2) (L := 1) (ell := 0) curveDomain curveValues iota _ cert
+      (K := 2) (L := 1) (ell := 0) curveDomain curveValues iota _ curveCertificate
       (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
       (by norm_num) 1 (taylorExponentSufficient_two_mul_sub_three 0 2)
       (taylorExponentSufficient_two_mul_sub_three 1 2) (by norm_num) (by simp)

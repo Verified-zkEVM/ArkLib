@@ -53,6 +53,32 @@ noncomputable section
 
 universe u
 
+private theorem jetPrefixPresentation_specialization
+    {F E : Type*} [Field F] [Field E]
+    {stageQ : DifferentialPolynomial F[X] 1} {stage : Fin 2}
+    (pres : JetPrefixPresentation stageQ stage) (iota : F →+* E) (z : E) (P : E[X]) :
+    differentialSpecialization
+        (MvPolynomial.map (Polynomial.evalRingHom z)
+          (MvPolynomial.map (Polynomial.mapRingHom iota) pres.equation)) P =
+      differentialSpecialization (MvPolynomial.map (Polynomial.eval₂RingHom iota z) stageQ) P ∧
+    differentialSpecialization
+        (separant
+          (MvPolynomial.map (Polynomial.evalRingHom z)
+            (MvPolynomial.map (Polynomial.mapRingHom iota) pres.equation))
+          (Fin.last stage.val)) P =
+      differentialSpecialization
+        (separant (MvPolynomial.map (Polynomial.eval₂RingHom iota z) stageQ) stage) P := by
+  have hspecialize (Q : DifferentialPolynomial F[X] stage.val) :=
+    MvPolynomial.eval_map_coefficients iota z Q
+  let mappedPres := pres.map (Polynomial.eval₂RingHom iota z)
+  constructor
+  · rw [hspecialize pres.equation]
+    exact mappedPres.differentialSpecialization_equation P
+  · rw [← map_separant, ← map_separant,
+      hspecialize (separant pres.equation (Fin.last stage.val))]
+    rw [map_separant]
+    exact mappedPres.differentialSpecialization_separant_equation P
+
 /-- A finite first-order curve certificate gives an extension-field exceptional set bounded by
 the cap-sensitive polynomial-curve envelope. -/
 theorem exists_extensionExceptional_firstOrderCurve_of_certificate_of_exponent
@@ -168,36 +194,25 @@ theorem exists_extensionExceptional_firstOrderCurve_of_certificate_of_exponent
             simp only [polynomialAgreementSet, Finset.mem_filter, Finset.mem_univ, true_and]
             rw [← eval₂_powerBatchedCoordinate_eq_powerBatchedWord values iota z i]
             exact hvalues i hi
-          · have hspecialize (Q : DifferentialPolynomial F[X] 0) :=
-              MvPolynomial.eval_map_coefficients iota z Q
-            let mappedPres := pres.map (Polynomial.eval₂RingHom iota z)
-            change differentialSpecialization
+          · change differentialSpecialization
               (MvPolynomial.map (Polynomial.evalRingHom z)
                 (MvPolynomial.map (Polynomial.mapRingHom iota) pres.equation)) P = 0
-            rw [hspecialize pres.equation]
-            change differentialSpecialization mappedPres.equation P = 0
-            rw [mappedPres.differentialSpecialization_equation P]
-            exact hsolution
-          · have hspecialize (Q : DifferentialPolynomial F[X] 0) :=
-              MvPolynomial.eval_map_coefficients iota z Q
-            let mappedPres := pres.map (Polynomial.eval₂RingHom iota z)
-            change differentialSpecialization
+            exact (jetPrefixPresentation_specialization pres iota z P).1.trans hsolution
+          · change differentialSpecialization
               (separant
                 (MvPolynomial.map (Polynomial.evalRingHom z)
                   (MvPolynomial.map (Polynomial.mapRingHom iota) pres.equation))
                 (Fin.last 0)) P ≠ 0
-            rw [← map_separant, ← map_separant,
-              hspecialize (separant pres.equation (Fin.last 0))]
-            rw [map_separant]
-            change differentialSpecialization
-              (separant mappedPres.equation (Fin.last 0)) P ≠ 0
             have hpresSep :
                 differentialSpecialization
-                    (separant mappedPres.equation (Fin.last 0)) P =
+                    (separant
+                      (MvPolynomial.map (Polynomial.evalRingHom z)
+                        (MvPolynomial.map (Polynomial.mapRingHom iota) pres.equation))
+                      (Fin.last 0)) P =
                   differentialSpecialization
                     (separant (MvPolynomial.map (Polynomial.eval₂RingHom iota z) stageQ)
                       (0 : Fin 2)) P := by
-              simpa using mappedPres.differentialSpecialization_separant_equation P
+              simpa using (jetPrefixPresentation_specialization pres iota z P).2
             rw [hpresSep]
             exact hseparant
         have hdecEqE : decEqE = Classical.decEq E := Subsingleton.elim _ _
@@ -267,36 +282,25 @@ theorem exists_extensionExceptional_firstOrderCurve_of_certificate_of_exponent
             simp only [polynomialAgreementSet, Finset.mem_filter, Finset.mem_univ, true_and]
             rw [← eval₂_powerBatchedCoordinate_eq_powerBatchedWord values iota z i]
             exact hvalues i hi
-          · have hspecialize (Q : DifferentialPolynomial F[X] 1) :=
-              MvPolynomial.eval_map_coefficients iota z Q
-            let mappedPres := pres.map (Polynomial.eval₂RingHom iota z)
-            change differentialSpecialization
+          · change differentialSpecialization
               (MvPolynomial.map (Polynomial.evalRingHom z)
                 (MvPolynomial.map (Polynomial.mapRingHom iota) pres.equation)) P = 0
-            rw [hspecialize pres.equation]
-            change differentialSpecialization mappedPres.equation P = 0
-            rw [mappedPres.differentialSpecialization_equation P]
-            exact hsolution
-          · have hspecialize (Q : DifferentialPolynomial F[X] 1) :=
-              MvPolynomial.eval_map_coefficients iota z Q
-            let mappedPres := pres.map (Polynomial.eval₂RingHom iota z)
-            change differentialSpecialization
+            exact (jetPrefixPresentation_specialization pres iota z P).1.trans hsolution
+          · change differentialSpecialization
               (separant
                 (MvPolynomial.map (Polynomial.evalRingHom z)
                   (MvPolynomial.map (Polynomial.mapRingHom iota) pres.equation))
                 (Fin.last 1)) P ≠ 0
-            rw [← map_separant, ← map_separant,
-              hspecialize (separant pres.equation (Fin.last 1))]
-            rw [map_separant]
-            change differentialSpecialization
-              (separant mappedPres.equation (Fin.last 1)) P ≠ 0
             have hpresSep :
                 differentialSpecialization
-                    (separant mappedPres.equation (Fin.last 1)) P =
+                    (separant
+                      (MvPolynomial.map (Polynomial.evalRingHom z)
+                        (MvPolynomial.map (Polynomial.mapRingHom iota) pres.equation))
+                      (Fin.last 1)) P =
                   differentialSpecialization
                     (separant (MvPolynomial.map (Polynomial.eval₂RingHom iota z) stageQ)
                       (1 : Fin 2)) P := by
-              simpa using mappedPres.differentialSpecialization_separant_equation P
+              simpa using (jetPrefixPresentation_specialization pres iota z P).2
             rw [hpresSep]
             exact hseparant
         have hdecEqE : decEqE = Classical.decEq E := Subsingleton.elim _ _
