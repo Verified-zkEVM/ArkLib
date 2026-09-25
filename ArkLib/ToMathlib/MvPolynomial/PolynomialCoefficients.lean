@@ -37,6 +37,8 @@ This file records both degrees.
 * `MvPolynomial.aeval_map_optionEquivRight` and
   `MvPolynomial.aeval_optionEquivRight_symm`: evaluation through the flattened variable
   equivalence.
+* `MvPolynomial.optionEquivRight_symm_pderiv`: partial derivatives in a polynomial coefficient
+  variable agree with the corresponding derivative after flattening.
 * `MvPolynomial.CoeffNatDegreeLE` and its closure lemmas, including
   `MvPolynomial.CoeffNatDegreeLE.map_coefficients`, `MvPolynomial.CoeffNatDegreeLE.aeval` and
   `MvPolynomial.CoeffNatDegreeLE.pderiv` and `MvPolynomial.CoeffNatDegreeLE.clearedSubstitution`.
@@ -81,6 +83,67 @@ theorem optionEquivRight_symm_C (p : Polynomial R) :
   have h := Polynomial.aeval_algHom_apply
     (IsScalarTower.toAlgHom R (Polynomial R) (MvPolynomial σ (Polynomial R))) Polynomial.X p
   simpa [Polynomial.aeval_X_left_apply, algebraMap_eq] using h.symm
+
+private theorem pderiv_aeval_X_none (i : σ) (p : Polynomial R) :
+    pderiv (some i) (Polynomial.aeval
+      (X none : MvPolynomial (Option σ) R) p) = 0 := by
+  classical
+  induction p using Polynomial.induction_on' with
+  | add p q hp hq => simp only [map_add, hp, hq]; simp
+  | monomial n a =>
+      rw [← Polynomial.C_mul_X_pow_eq_monomial, Polynomial.aeval_mul,
+        Polynomial.aeval_C, map_pow, Polynomial.aeval_X]
+      rw [pderiv_mul, algebraMap_eq, pderiv_C, pderiv_pow,
+        pderiv_X_of_ne (by simp)]
+      simp
+
+/-- The inverse of `optionEquivRight` carries a coefficient-variable derivative to the
+corresponding derivative in the `some` coordinate. -/
+theorem optionEquivRight_symm_pderiv (i : σ)
+    (P : MvPolynomial σ (Polynomial R)) :
+    (optionEquivRight R σ).symm (pderiv i P) =
+      pderiv (some i) ((optionEquivRight R σ).symm P) := by
+  classical
+  induction P using MvPolynomial.induction_on with
+  | C p =>
+      rw [pderiv_C, map_zero, optionEquivRight_symm_C]
+      exact (pderiv_aeval_X_none i p).symm
+  | add P Q hP hQ =>
+      let φ := (optionEquivRight R σ).symm
+      have hp : pderiv i (P + Q) = pderiv i P + pderiv i Q := map_add _ _ _
+      have hφ : φ (P + Q) = φ P + φ Q := map_add _ _ _
+      have hp' : pderiv (some i) (φ P + φ Q) =
+          pderiv (some i) (φ P) + pderiv (some i) (φ Q) := map_add _ _ _
+      change φ (pderiv i (P + Q)) = pderiv (some i) (φ (P + Q))
+      have hP' : φ (pderiv i P) = pderiv (some i) (φ P) := by
+        simpa only [φ] using hP
+      have hQ' : φ (pderiv i Q) = pderiv (some i) (φ Q) := by
+        simpa only [φ] using hQ
+      calc
+        φ (pderiv i (P + Q)) = φ (pderiv i P + pderiv i Q) := by rw [hp]
+        _ = φ (pderiv i P) + φ (pderiv i Q) := map_add _ _ _
+        _ = pderiv (some i) (φ P) + pderiv (some i) (φ Q) := by rw [hP', hQ']
+        _ = pderiv (some i) (φ P + φ Q) := hp'.symm
+        _ = pderiv (some i) (φ (P + Q)) := by rw [hφ]
+  | mul_X P j hP =>
+      let φ := (optionEquivRight R σ).symm
+      have hvar : φ (pderiv i (X j : MvPolynomial σ (Polynomial R))) =
+          pderiv (some i) (φ (X j)) := by
+        by_cases hji : j = i
+        · subst j
+          simp [φ]
+        · simp [φ, hji]
+      have hmul : φ (P * X j) = φ P * φ (X j) := map_mul _ _ _
+      change φ (pderiv i (P * X j)) = pderiv (some i) (φ (P * X j))
+      calc
+        _ = φ (pderiv i P * X j + P * pderiv i (X j)) := by
+          rw [pderiv_mul]
+        _ = φ (pderiv i P) * φ (X j) + φ P * φ (pderiv i (X j)) := by
+          rw [map_add, map_mul, map_mul]
+        _ = pderiv (some i) (φ P) * φ (X j) +
+              φ P * pderiv (some i) (φ (X j)) := by rw [hP, hvar]
+        _ = pderiv (some i) (φ P * φ (X j)) := by rw [pderiv_mul]
+        _ = pderiv (some i) (φ (P * X j)) := by rw [hmul]
 
 /-- Evaluating a flattened polynomial after specializing its distinguished variable is the same
 as evaluating the original polynomial in all its variables. -/
