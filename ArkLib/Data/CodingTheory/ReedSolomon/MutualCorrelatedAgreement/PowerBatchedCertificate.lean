@@ -9,6 +9,7 @@ public import
   ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.CurveCertificate
 public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerBatchedSharpRegularAgreement
+public import ArkLib.Data.CodingTheory.ReedSolomon.PowerAgreement
 public import ArkLib.Data.Polynomial.Differential.BaseChange
 public import ArkLib.ToMathlib.MvPolynomial.PolynomialCoefficients
 
@@ -41,17 +42,6 @@ universe u
 
 variable {F E : Type u} [Field F] [Field E]
   {n A k ℓ ν d h : ℕ} {domain : Fin n ↪ F}
-
-private theorem eval₂_powerBatchedCoordinate_eq_powerBatchedWord
-    (values : Fin (ℓ + 1) → Fin n → F) (iota : F →+* E) (z : E) (i : Fin n) :
-    (powerBatchedCoordinate fun t ↦ values t i).eval₂ iota z =
-      powerBatchedWord (fun t j ↦ iota (values t j)) z i := by
-  rw [Polynomial.eval₂_eq_eval_map]
-  have hmap : (powerBatchedCoordinate fun t ↦ values t i).map iota =
-      powerBatchedCoordinate fun t ↦ iota (values t i) := by
-    simp [powerBatchedCoordinate, Polynomial.map_sum]
-  rw [hmap, powerBatchedCoordinate_eval]
-  rfl
 
 open Classical in
 private theorem Certificate.exists_exceptional_powerBatchedAgreement_of_stage_bounds
