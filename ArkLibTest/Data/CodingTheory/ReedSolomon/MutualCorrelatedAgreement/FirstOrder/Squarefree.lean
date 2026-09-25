@@ -6,6 +6,8 @@ Authors: Quang Dao
 
 import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Squarefree.Factorwise
+import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Squarefree.TailBound
 import Mathlib.Tactic.NormNum
 
 /-!
@@ -65,6 +67,32 @@ example :
     factorwiseDomain factorwiseReceived factorwiseEquation (by norm_num) (by norm_num)
     (by norm_num) (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
     factorwiseTail factorwiseSolutions
+    factorwise_solutions_are_roots (by
+      intro P hP
+      simp only [factorwiseSolutions, Finset.mem_singleton] at hP
+      subst P
+      constructor
+      · exact WithBot.bot_lt_coe 2
+      · norm_num [factorwiseReceived, factorwiseDomain])
+
+example :
+    (factorwiseSolutions.card : ℝ) ≤
+      (firstOrderCurveFiberStageOne 2 1 1 (regularTaylorExponent 1) : ℝ) *
+          ((2 - 1 : ℕ) : ℝ) / (2 - 1 : ℕ) + ordinaryDegreeEnvelope 1 1 := by
+  exact finite_squarefree_agreement_solutions_card_le
+    factorwiseDomain factorwiseReceived factorwiseEquation (MvPolynomial.X_ne_zero _)
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (by
+      change weightedTotalDegree jetDegreeWeight
+        (MvPolynomial.monomial (Finsupp.single (some (0 : Fin 2)) 1) (1 : ℚ)) ≤ 1
+      rw [weightedTotalDegree_monomial _ _ _ (by norm_num)]
+      simp [Finsupp.weight_single, jetDegreeWeight])
+    (by
+      change degreeOf (some (1 : Fin 2))
+        (MvPolynomial.X (some (0 : Fin 2)) : DifferentialPolynomial ℚ 1) ≤ 1
+      rw [degreeOf_X_of_ne (by decide)]
+      norm_num)
+    (Or.inl (ringChar.eq_zero : ringChar ℚ = 0)) factorwiseSolutions
     factorwise_solutions_are_roots (by
       intro P hP
       simp only [factorwiseSolutions, Finset.mem_singleton] at hP
