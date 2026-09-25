@@ -2097,6 +2097,20 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Firs
 
 The source `exists_exceptional_firstOrder_regularStages` is covered by the existing more general `exists_exceptional_firstOrder_regularCurveStages`; `exists_hybridERaw_eq_hybridERawAtDegree` by `exists_curveRetentionMinimum`; `hybridERawAtDegree_le_hybridEOptimizedRaw` by `HiddenDerivative.minFirstOrderExceptionCharge_le_maxMin`; and `regularSymbolicCurveMCADerivativeBoundTwo_eq_hybrid_stage` by `regularPowerBatchedDerivativeCappedBoundTwo_eq_hybridCurveStage`. `ringChar_eq_of_injective_fieldHom` remains a local proof step in the existing generalized regular-stage theorem, with no consumer needing a separate public helper.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/OrdinaryTail.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/OrdinaryTail.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`FirstOrderHybridDescent.hasOrdinaryTailTransfer` keeps its name. It proves that for every first-order hybrid descent of a symbolic equation `Q`, the order-zero tail satisfies `HasOrdinaryTailTransfer`, with coefficient height `coeffNatDegree Q` and charge `ordinaryTailCharge` at the residual jet budget `μ - e`. The proof splits on the budget: a positive budget uses `exists_exceptional_ordinaryEquation`, and a zero budget uses `PolynomialDifferential.exists_exceptional_jet_independent_content`.
+
+Adapted to the height-free descent `FirstOrderHybridDescent Q μ M`. The height parameter is removed and fixed to `coeffNatDegree Q`. `Q` is implicit because the descent determines it. The theorem takes arbitrary `[DecidableEq F] [DecidableEq E]` instances instead of the source's `open Classical in` statement, and replaces them internally by the classical ones via `Subsingleton.elim`. The source's `hybridOrdinaryRaw` and `hybridTheta` become `ordinaryTailCharge` and `agreementIncidenceRatio`. The tail premise of the raw and optimized first-order hybrid transfer theorems now follows from `1 ≤ D < A ≤ n` alone.
+
+`FirstOrderHybridDescent.tail_rootDegree_le` keeps its name but is placed in `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/HybridAgreementCounting.lean`, the owner of `FirstOrderHybridDescent`, and is listed in that module's `## Main statements`. The statement uses `jetDegree … 0`, which is definitionally `degreeOf (some 0)`, and the proof uses `jetDegree_le_total`, `JetPrefixPresentation.jetTotalDegree_equation` and `stage_jetTotalDegree_le`.
+
+The source's coefficient-height induction through iterated jet derivatives is replaced by the new general lemma `MvPolynomial.CoeffNatDegreeLE.iterate_pderiv` in `ArkLib/ToMathlib/MvPolynomial/PolynomialCoefficients.lean`. It also replaces an identical inline induction in `exists_exceptional_firstOrder_regularCurveStages` in `HybridCurveTransfer.lean`.
+
+Not ported: `FirstOrderHybridDescent.tail_challengeHeight_le`, because the descent has no height field; the height bound comes from `CoeffNatDegreeLE.iterate_pderiv` and `JetPrefixPresentation.natDegree_coeff_equation_le`. `exists_exceptional_ordinaryContent` is not ported because `PolynomialDifferential.exists_exceptional_jet_independent_content` is used directly.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/Certificates.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/CertificateList.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -2172,6 +2186,12 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordi
 `frobeniusRetainedPairFamily`, `mem_frobeniusRetainedPairFamily_iff`, `frobeniusRetainedPairFamily_card_le`, and `exists_exceptional_frobeniusRetainedPairFamily` retain their names. They are generalized from `Fin n` to any finite embedded coordinate type. The retained family is expressed as a filter of the existing correlated-pair family. The cardinality bound uses the joint initial equation; a global root premise is unnecessary because root equations are included in each admissible pair's sample witness. The exceptional-set theorem specializes the existing exceptional-set theorem for correlated pairs.
 
 Historical acceptance cases in `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement.lean` exhibited a nonempty retained family and checked its graph-coordinate degree bound, then exhibited a retained pair and an exceptional set of size zero for a one-point domain with a one-point sample. The current consolidated suite has no retained-family example. No public source declarations were omitted.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/BaseEquation.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/Equations/BaseEquation.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`exists_exceptional_ordinaryEquation_base` keeps its name and mathematical content. For a nonzero ordinary equation over an arbitrary field, it gives one finite exceptional set of challenges, of size at most `ordinaryFactorRaw ((n - D) / (A - D)) n D mu h`, outside which every base-field root of degree at most `D` that agrees with the line on at least `A` points has an exact correlated-pair witness. The height premise is `CoeffNatDegreeLE Q h` instead of the source's `ChallengeHeightLE Q h`, matching main's `exists_exceptional_ordinaryEquation`. The theorem takes `[DecidableEq F]` as an instance argument instead of the source's `open Classical in`, so `polynomialAgreementSet` and `HasExactCorrelatedPair` in the conclusion work with any decidable-equality instance. The proof uses `convert` to match the classical instances that come from `exists_exceptional_ordinaryEquation`. Nothing was left unported: the source file has one declaration. It is a separate module rather than part of `Ordinary/Equation.lean`, which would otherwise need `EquationDescent` and `AlgebraicClosure` as extra imports.
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/Equation.lean`
 
@@ -5254,6 +5274,9 @@ Acceptance cases check singleton instances of `finite_factorwise_agreement_solut
 Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 An acceptance example checks an exceptional set of size at most one and exact power agreement at a challenge outside it for zero messages over `ℂ`.
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/Equations/BaseEquation.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+An acceptance example takes the equation `Y₀²` over `ℚ` on a two-point domain, with `f = g = 0`, `D = 1`, `h = 0`, `mu = 2` and `A = 2`. It gets an exceptional set of size at most 2 from `exists_exceptional_ordinaryEquation_base`, picks a challenge in `{0, 1, 2}` outside that set, and derives an exact correlated-pair witness for the zero root, so the conclusion is not vacuous.
 
 ## `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart.lean`
 

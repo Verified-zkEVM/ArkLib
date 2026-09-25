@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
+import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.BaseEquation
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.FactorAssembly
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.FactorBudget
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.Equation
@@ -384,3 +385,38 @@ example : ∃ exceptional : Finset ℚ, (exceptional.card : ℚ) ≤ 2 ∧ ∃ z
   · simp [squareEquation, challengeSpecialization, differentialSpecialization,
       differentialSpecializationHom]
   · norm_num [polynomialAgreementSet, powerBatchedWord]
+
+private def rationalEquationDomain : Fin 2 ↪ ℚ where
+  toFun i := (i.val : ℚ)
+  inj' := by
+    intro i j hij
+    change (i.val : ℚ) = (j.val : ℚ) at hij
+    apply Fin.ext
+    exact_mod_cast hij
+
+example : ∃ exceptional : Finset ℚ, (exceptional.card : ℚ) ≤ 2 ∧
+    ∃ z ∉ exceptional,
+      HasExactCorrelatedPair rationalEquationDomain (fun _ ↦ 0) (fun _ ↦ 0)
+        (RingHom.id ℚ) 2 z 0 := by
+  classical
+  let squareEquation : DifferentialPolynomial ℚ[X] 0 := MvPolynomial.X (some 0) ^ 2
+  have hQ : squareEquation ≠ 0 := pow_ne_zero 2 (MvPolynomial.X_ne_zero _)
+  have hheight : CoeffNatDegreeLE squareEquation 0 := by
+    simpa [squareEquation] using
+      (CoeffNatDegreeLE.pow (coeffNatDegreeLE_X (R := ℚ) (some (0 : Fin 1))) 2)
+  have hdegree : squareEquation.degreeOf (some 0) ≤ 2 := by
+    simp [squareEquation]
+  obtain ⟨exceptional, hcard, hgood⟩ := exists_exceptional_ordinaryEquation_base
+    rationalEquationDomain (fun _ ↦ 0) (fun _ ↦ 0) squareEquation
+    1 0 2 2 hQ (by norm_num) (by norm_num) (by norm_num) (by norm_num) hheight hdegree
+  have hcard' : (exceptional.card : ℚ) ≤ 2 := by
+    simpa [ordinaryFactorRaw] using hcard
+  have hcardNat : exceptional.card ≤ 2 := by exact_mod_cast hcard'
+  obtain ⟨z, -, hz⟩ := Finset.exists_mem_notMem_of_card_lt_card
+    (s := exceptional) (t := ({0, 1, 2} : Finset ℚ))
+    (Nat.lt_of_le_of_lt hcardNat (by norm_num))
+  have hpair := hgood z hz 0 (by simp)
+    (by simp [squareEquation, challengeSpecialization,
+      differentialSpecialization, differentialSpecializationHom]) (by
+      norm_num [polynomialAgreementSet, rationalEquationDomain])
+  exact ⟨exceptional, hcard', z, hz, hpair⟩
