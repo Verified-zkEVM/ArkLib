@@ -512,10 +512,15 @@ example :
 private noncomputable abbrev paramTimesVar : MvPolynomial Unit (Polynomial ℚ) :=
   C Polynomial.X * X ()
 
-/-- Each coefficient of `t * Y` has degree at most `1` in `t`. -/
-example : CoeffNatDegreeLE paramTimesVar 1 := by
-  simpa using (coeffNatDegreeLE_C (σ := Unit) (p := (Polynomial.X : Polynomial ℚ))
-    (by simp)).mul (coeffNatDegreeLE_X ())
+/-- The coefficient height of `t * Y` is one, so every coefficient has degree at most one. -/
+example : coeffNatDegree paramTimesVar = 1 ∧ CoeffNatDegreeLE paramTimesVar 1 := by
+  have hheight : coeffNatDegree paramTimesVar = 1 := by
+    classical
+    simp [coeffNatDegree, paramTimesVar, C_mul_X_eq_monomial, support_monomial,
+      coeff_monomial]
+  refine ⟨hheight, ?_⟩
+  rw [← hheight]
+  exact coeffNatDegreeLE_coeffNatDegree paramTimesVar
 
 /-- Moving `X none` out as a polynomial variable commutes with casting coefficients to `ℚ`. -/
 example :
