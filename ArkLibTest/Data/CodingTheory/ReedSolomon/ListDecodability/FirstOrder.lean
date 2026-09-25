@@ -7,6 +7,7 @@ Authors: Quang Dao
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.Bounds
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.FiniteLengthParameters
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.FiniteLengthSelectors
+import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.LowRateFiniteLength
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.Profile
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.NormNum
@@ -350,3 +351,20 @@ example :
     finiteLengthMcaEnvelope 1 4 1 1 1 1 ≤ 140 * (1 : ℝ) ^ 6 * 4 ^ 2 * 1 ^ 4 := by
   apply finiteLengthMcaEnvelope_le_rateEnvelope (C := 1) (q := 1) (lambda := 1)
   all_goals norm_num
+
+/-- The low-rate finite-length slope is positive at a rate on the stationary branch. -/
+example : 0 < lowRateFiniteLengthSlope (1 / 16 : ℝ) := by
+  let t := firstOrderLowRateScale (1 / 16 : ℝ)
+  have htPos : 0 ≤ t := by
+    dsimp only [t, firstOrderLowRateScale]
+    positivity
+  have htSq : t ^ 2 = (1 / 16 : ℝ) / 2 := by
+    dsimp only [t]
+    exact firstOrderLowRateScale_sq (by norm_num)
+  have htLt : t < 1 / 4 := by
+    nlinarith [sq_nonneg (t - 1 / 4)]
+  have hregime : FirstOrderLowRateRegime (1 / 16 : ℝ) := by
+    change t * (t + 3) < 1
+    nlinarith [htSq, htLt]
+  have hlow := (firstOrderLowRateRegime_iff_lt_rateSwitch (1 / 16 : ℝ)).1 hregime
+  exact lowRateFiniteLengthSlope_pos (by norm_num) hlow
