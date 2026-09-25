@@ -214,7 +214,8 @@ theorem centeringErrorBounds (d m : ℕ) (g H : ℝ)
   have hBterm : (d.choose 2 : ℝ) * H / (d * m) ≤ 1 / (200 * (d : ℝ)) := by
     calc
       _ = ((d.choose 2 : ℝ) / m) * H / d := by ring
-      _ ≤ (1 / (200 * H)) * H / d := by gcongr
+      _ ≤ (1 / (200 * H)) * H / d :=
+        div_le_div_of_nonneg_right (mul_le_mul_of_nonneg_right hB hH.le) hdR.le
       _ = 1 / (200 * d) := by field_simp
   have hxiH : xi * H ≤ g * H ^ 2 := by
     have := mul_le_mul_of_nonneg_right hgH hH.le
@@ -240,7 +241,10 @@ theorem centeringErrorBounds (d m : ℕ) (g H : ℝ)
       _ ≤ g * (19 / 365) / (200 * xi) := by
         apply (div_le_div_iff₀ (by positivity : (0 : ℝ) < 200 * d)
           (by norm_num [xi] : (0 : ℝ) < 200 * xi)).2
-        nlinarith only [hxiD]
+        rw [one_mul]
+        calc
+          200 * xi ≤ 200 * (g * (19 / 365) * d) := mul_le_mul_of_nonneg_left hxiD (by norm_num)
+          _ = g * (19 / 365) * (200 * d) := by ring
   have hlowerCoeff :
       (19 / 365 : ℝ) ^ 2 / xi + (19 / 365) / (200 * xi) ≤
         (2 / 1000) * residualFraction := by
@@ -260,16 +264,17 @@ theorem centeringErrorBounds (d m : ℕ) (g H : ℝ)
     have hscaled := mul_le_mul_of_nonneg_right hlowerNormalized hmR.le
     have e : (H / d + (d.choose 2 : ℝ) * H / (d * m)) * m =
         (m : ℝ) * H / d + d.choose 2 * H / d := by field_simp
-    linarith
+    exact e ▸ hscaled
   have hdTerm : (d : ℝ) ≤ g * m / (270 * H) := by
     apply (le_div_iff₀ (by positivity : (0 : ℝ) < 270 * H)).2
-    simpa [mul_assoc, mul_left_comm, mul_comm] using hgm
+    calc
+      (d : ℝ) * (270 * H) = 270 * d * H := by ring
+      _ ≤ g * m := hgm
   have hHterm : H / d ≤ g * m / (270 * d ^ 2) := by
-    apply (div_le_iff₀ hdR).2
-    rw [show (g * m / (270 * d ^ 2)) * d = g * m / (270 * d) by
-      field_simp]
-    apply (le_div_iff₀ (by positivity : (0 : ℝ) < 270 * d)).2
-    simpa [mul_assoc, mul_left_comm, mul_comm] using hgm
+    rw [div_le_div_iff₀ hdR (by positivity)]
+    calc
+      H * (270 * d ^ 2) = 270 * d * H * d := by ring
+      _ ≤ g * m * d := mul_le_mul_of_nonneg_right hgm hdR.le
   have hgm0 : 0 ≤ g * (m : ℝ) := by positivity
   have hdTerm' : (d : ℝ) ≤ g * m / (270 * (54 / 5)) :=
     hdTerm.trans (div_le_div_of_nonneg_left hgm0 (by norm_num)
@@ -299,8 +304,7 @@ theorem centeringErrorBounds (d m : ℕ) (g H : ℝ)
       H / d ≤ ((19 / 365 : ℝ) * Real.sqrt d) / d :=
         div_le_div_of_nonneg_right hHupper hdR.le
       _ = (19 / 365 : ℝ) / Real.sqrt d := by
-        field_simp [hsqrt.ne', hdR.ne']
-        nlinarith only [hsqrtSq]
+        rw [mul_div_assoc, Real.sqrt_div_self', mul_one_div]
       _ ≤ (19 / 365 : ℝ) / 219 :=
         div_le_div_of_nonneg_left (by norm_num) (by norm_num) hsqrtLower
   have hBterm' : (d.choose 2 : ℝ) * H / (d * m) ≤ 1 / (200 * 48000) := by
@@ -318,7 +322,7 @@ theorem centeringErrorBounds (d m : ℕ) (g H : ℝ)
       calc
         (1 / 1000 : ℝ) = (1 / 1000) * 1 := by ring
         _ ≤ (1 / 1000) * (1 + theta * g) :=
-          mul_le_mul_of_nonneg_left (by linarith) (by norm_num)
+          mul_le_mul_of_nonneg_left (le_add_of_nonneg_right hθg) (by norm_num)
     exact hbound.trans (hc.trans htheta)
   have hradius : (m : ℝ) + d.choose 2 ≤
       (1 / 1000) * ((1 + theta * g) * d * m / H) := by
@@ -326,8 +330,8 @@ theorem centeringErrorBounds (d m : ℕ) (g H : ℝ)
       (m : ℝ) + d.choose 2 =
           (H / d + (d.choose 2 : ℝ) * H / (d * m)) * (d * m / H) := by
         field_simp
-      _ ≤ ((1 / 1000) * (1 + theta * g)) * (d * m / H) := by
-        gcongr
+      _ ≤ ((1 / 1000) * (1 + theta * g)) * (d * m / H) :=
+        mul_le_mul_of_nonneg_right hradiusNormalized (by positivity)
       _ = (1 / 1000) * ((1 + theta * g) * d * m / H) := by ring
   exact ⟨hlower, hupper, hradius⟩
 
@@ -389,7 +393,7 @@ theorem residualMeanVariance_le (gap variance q : ℝ)
     0 < gap ∧ gap + variance / (4 * gap) + 1 ≤ q * (448 / 625) := by
   have hgap : 0 < gap := by
     have : 0 < residualFraction * q * (998 / 1000) := by
-      norm_num [residualFraction, theta]
+      rw [residualFraction_eq]
       positivity
     exact this.trans_le hlower
   have hvarCorrection : variance / (4 * gap) ≤
@@ -398,14 +402,21 @@ theorem residualMeanVariance_le (gap variance q : ℝ)
     apply (div_le_iff₀ (mul_pos (by norm_num) hgap)).2
     have hc : 0 < (329 / 200 : ℝ) * (1001 / 1000) ^ 2 /
         (4 * residualFraction * (998 / 1000) * xi ^ 2) := by
-      norm_num [residualFraction, theta, xi]
-    have hmul := mul_le_mul_of_nonneg_left hlower hc.le
-    norm_num [residualFraction, theta, xi] at hvariance hmul ⊢
-    nlinarith
-  have hunit' : 1 ≤ q * (1 / 2000) := by linarith
+      rw [residualFraction_eq]
+      exact div_pos (by norm_num) (mul_pos (by norm_num) (pow_pos xi_pos 2))
+    calc
+      variance ≤ q ^ 2 * (1001 / 1000) ^ 2 / xi ^ 2 * (329 / 200) := hvariance
+      _ = q * ((329 / 200) * (1001 / 1000) ^ 2 /
+            (4 * residualFraction * (998 / 1000) * xi ^ 2)) *
+            (4 * (residualFraction * q * (998 / 1000))) := by
+        rw [residualFraction_eq, xi]
+        ring
+      _ ≤ _ := mul_le_mul_of_nonneg_left (mul_le_mul_of_nonneg_left hlower (by norm_num))
+        (mul_nonneg hq.le hc.le)
+  have hunit' : 1 ≤ q * (1 / 2000) := by linarith only [hunit]
   have hscaled := mul_le_mul_of_nonneg_left averageResidualError_le hq.le
   refine ⟨hgap, ?_⟩
-  nlinarith
+  linarith only [hupper, hvarCorrection, hunit', hscaled]
 
 /-- The per-fiber bound consumed by the weighted local-rank theorem. With `θ = 3 / 8`,
 `ξ = 27 / 10`, `W = ⌊(1 + θ g) d m / H⌋₊` and a contact residual `r < m`, let
@@ -444,8 +455,10 @@ theorem prescribedFiberMeanVariance_le (d m r W : ℕ) (g H H2 : ℝ)
     (by simpa [mul_assoc] using hradius') hH2max
   have hunit : (2000 : ℝ) ≤ g * m := by
     have hdR : (48000 : ℝ) ≤ d := by exact_mod_cast hd
-    have hHd : 0 ≤ (d : ℝ) * H := by positivity
-    nlinarith
+    calc
+      (2000 : ℝ) ≤ 270 * 48000 * (54 / 5) := by norm_num
+      _ ≤ 270 * d * H := by gcongr
+      _ ≤ g * m := hgm
   refine residualMeanVariance_le gap variance (g * m) (by positivity) ?_ ?_ ?_ hunit
   · have e : residualFraction * (g * m) * (998 / 1000) = (1 - theta) * g * m * (1 - 2 / 1000) := by
       rw [residualFraction]; ring
