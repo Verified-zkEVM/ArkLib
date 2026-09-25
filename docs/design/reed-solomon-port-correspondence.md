@@ -2189,6 +2189,12 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordi
 
 `ordinaryPowerFactorRaw_sum_le` became `ordinaryCurveFactorRaw_sum_le`. Added `ordinaryCurveFactorRaw_le_linear` and `ordinaryCurveFactorRaw_eq_linear` as the linear bound and equality used by the summation result. The line-charge linear, equality, and summation results specialize the polynomial-curve results at `ell = 1`. The source charge is already present as `ordinaryCurveFactorRaw`; its source import resolves to the existing `Ordinary.FactorBudget` module. The unused source argument `0 < ell` was omitted.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/IrreducibleEquation.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/Factors/IrreducibleEquation.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Ported `exists_exceptional_irreducibleOrdinaryEquation` under the same name, using the current `CoeffNatDegreeLE` interface. The theorem gives a bounded exceptional set for sufficiently agreeing, low-degree solutions of an irreducible ordinary equation and an exact correlated-pair representation outside that set in every characteristic. Nothing was omitted. The acceptance case in `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary.lean` applies it to `Y₀` over `ℂ`, obtains an exceptional set of size at most one, and exhibits a point outside it with an exact correlated-pair witness.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedAdmissibility.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/GraphAdmissibility.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -2889,6 +2895,10 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/F
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/TailBound.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 Moved `orderZeroVariableEquiv`, `orderZeroAsPolynomial`, `orderZeroOfPolynomial`, `orderZeroAsPolynomial_orderZeroOfPolynomial`, and `orderZeroAsPolynomial_eval` into the generic differential-polynomial owner. Generalized the presentation and evaluation laws from fields to commutative semirings. Renamed `orderZeroOfPolynomial_jetWeight` to `orderZeroOfPolynomial_jetTotalDegree` and generalized it to commutative semirings and canonical `jetTotalDegree`. No listed source declaration was omitted from this presentation; the separate `singularAsPolynomial_eval` wrapper remained unnecessary because `remainingSpecializationHom_eq_eval` covers its use.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/Factors/IrreducibleEquation.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Renamed `ordinary_jetWeight_eq_degreeOf` to `jetTotalDegree_eq_jetDegree_zero`. The identity is stated through the canonical jet-degree API in the existing `OrderZeroPresentation` owner and replaces a duplicate local calculation. The acceptance case in `ArkLibTest/Data/Polynomial/Differential.lean` computes the jet degree of `orderZeroOfPolynomial (X ^ 2 + 1)` using this theorem.
 
 ## `ArkLib/Data/Polynomial/Differential/RationalTaylor.lean`
 
