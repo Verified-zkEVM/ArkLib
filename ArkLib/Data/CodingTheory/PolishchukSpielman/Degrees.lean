@@ -45,50 +45,22 @@ lemma ps_bx_lt_nx {b_x b_y : ℕ} {n_x n_y : ℕ+}
     (by rw [le_div_iff₀ (Nat.cast_pos.mpr n_x.pos )]; norm_cast; linarith) (by positivity)
 
 lemma ps_by_lt_ny {b_x b_y : ℕ} {n_x n_y : ℕ+}
-    (h_le_1 : 1 > (b_x : ℚ) / (n_x : ℚ) + (b_y : ℚ) / (n_y : ℚ)) : b_y < (n_y : ℕ) := by
-  exact_mod_cast
-    (by nlinarith [show (0 : ℚ) ≤ b_x / (n_x : ℚ) by positivity,
-    show (0 : ℚ) ≤ b_y / (n_y : ℚ) by positivity,
-      mul_div_cancel₀ (b_x : ℚ) (show (n_x : ℚ) ≠ 0 by positivity),
-      mul_div_cancel₀ (b_y : ℚ) (show (n_y : ℚ) ≠ 0 by positivity),
-      show (n_x : ℚ) > 0 by positivity, show (n_y : ℚ) > 0 by positivity] : (b_y : ℚ) < n_y)
+    (h_le_1 : 1 > (b_x : ℚ) / (n_x : ℚ) + (b_y : ℚ) / (n_y : ℚ)) : b_y < (n_y : ℕ) :=
+  ps_bx_lt_nx (b_y := b_x) (n_y := n_x) (by rwa [add_comm])
 
 lemma ps_card_eval_x_eq_zero_le_degree_x {F : Type} [Field F] [DecidableEq F]
     (A : F[X][Y]) (hA : A ≠ 0) (P : Finset F) :
-    (P.filter (fun x ↦ evalX x A = 0)).card ≤ degreeX A := by
-  by_contra! h_contra;
-  obtain ⟨j₀, hj₀⟩ : ∃ j₀, (A.coeff j₀).natDegree = degreeX A ∧ A.coeff j₀ ≠ 0 := by
-    have h_exists_j₀ : ∃ j₀ ∈ A.support, ∀ n ∈ A.support,
-        (A.coeff n).natDegree ≤ (A.coeff j₀).natDegree := by
-      exact exists_max_image _ _ (nonempty_of_ne_empty (by aesop))
-    obtain ⟨j₀, hj₀₁, hj₀₂⟩ := h_exists_j₀
-    exact ⟨j₀, le_antisymm (le_sup (f := fun n ↦ (A.coeff n).natDegree) hj₀₁)
-      (Finset.sup_le fun n hn ↦ hj₀₂ n hn), by aesop⟩
-  -- Let $P_A$ be the set of $x \in P$ such that $A(x, Y) = 0$.
-  set PA := P.filter (fun x ↦ evalX x A = 0) with hPA_def;
-  have h_coeff_zero : ∀ x ∈ PA, (A.coeff j₀).eval x = 0 := by
-    intro x hx
-    replace hx := congr_arg (fun f ↦ f.coeff j₀) (mem_filter.mp hx |>.2)
-    aesop
-  exact absurd (Finset.card_le_card
-    (show PA ⊆ ((A.coeff j₀).roots.toFinset) from fun x hx ↦ by aesop))
-    (by exact not_le.mpr <| lt_of_le_of_lt (Multiset.toFinset_card_le _) <|
-      Nat.lt_of_le_of_lt (card_roots' _) <| by aesop)
+    (P.filter (fun x ↦ evalX x A = 0)).card ≤ degreeX A :=
+  card_evalX_eq_zero_le_degreeX A hA P
 
 lemma ps_card_eval_y_eq_zero_le_nat_degree_y {F : Type} [Field F] [DecidableEq F]
     (A : F[X][Y]) (hA : A ≠ 0) (P : Finset F) :
     (P.filter (fun y ↦ evalY y A = 0)).card ≤ natDegreeY A := by
-  set A_poly : Polynomial (Polynomial F) := A
-  have hA_poly : A_poly ≠ 0 := by assumption
-  have h_roots : ((P.filter <| fun y ↦ A_poly.eval (C y) = 0).image (fun y ↦ C y)).card ≤
-      A_poly.natDegree := by
-    have h_roots : (P.filter (fun y ↦ A_poly.eval (C y) = 0)).image (fun y ↦ C y) ⊆
-        A_poly.roots.toFinset := by intro; aesop
-    exact le_trans (card_le_card h_roots)
-      (le_trans (Multiset.toFinset_card_le _) (card_roots' _)) |> le_trans <| by aesop
-  generalize_proofs at *
-  rw [Finset.card_image_of_injective _ fun x y hxy ↦ by simpa using hxy] at h_roots
-  aesop
+  calc (P.filter (fun y ↦ evalY y A = 0)).card
+      = (P.filter (fun y ↦ evalX y (swap A) = 0)).card := by simp_rw [evalY_eq_evalX_swap]
+    _ ≤ degreeX (swap A) :=
+      card_evalX_eq_zero_le_degreeX (swap A) (EmbeddingLike.map_ne_zero_iff.mpr hA) P
+    _ = natDegreeY A := degreeX_swap A
 
 lemma ps_coeff_mul_monomial_ite {R : Type} [Semiring R]
     (A : R[X]) (j i : ℕ) (r : R) :
@@ -106,66 +78,18 @@ lemma ps_coeff_mul_sum_monomial {R : Type} [CommRing R]
         then A.coeff (i - (j : ℕ)) * c j else 0 := by
   classical
   have hdeg : ∀ N : ℕ, m < N → A.coeff N = 0 := (natDegree_le_iff_coeff_eq_zero).1 hm
-  simp [Finset.mul_sum, finsetSum_coeff, ps_coeff_mul_monomial_ite]
-  grind only [cases Or]
-
-private lemma ps_swap_coeff {F : Type} [CommRing F] (g : F[X][Y]) (i j : ℕ) :
-    ((swap g).coeff j).coeff i = (g.coeff i).coeff j := by
-  -- By definition of swap, we have that swap g = ∑ i, ∑ j, g.coeff j * X^i * Y^j.
-  have h_swap_def : ∀ g : F[X][Y], swap g = ∑ i ∈ g.support,
-      ∑ j ∈ (g.coeff i).support, monomial j (monomial i ((g.coeff i).coeff j)) := by
-    intro g
-    simp [swap, eval_finsetSum, aeval_def, eval₂_eq_sum, sum_def,
-      ← C_mul_X_pow_eq_monomial, Finset.sum_mul _ _ _ ]
-    ac_rfl
-  simp only [h_swap_def, finsetSum_coeff, coeff_monomial, sum_ite_eq', mem_support_iff, ne_eq]
-  rw [Finset.sum_eq_single i] <;> simp_all only [swap_apply, mem_support_iff, ne_eq]
-  · split_ifs <;> simp_all
-  · intro b hb hb'; split_ifs <;> simp_all [coeff_monomial]
-  · push Not; intro h; simp [h]
-
-private lemma ps_degree_x_swap_le {F : Type} [CommRing F] (f : F[X][Y]) :
-    degreeX (swap f) ≤ natDegreeY f := by
-  by_contra h_contra
-  obtain ⟨n, hn⟩ : ∃ n ∈ (swap f).support,
-      (swap f).coeff n ≠ 0 ∧ (swap f).coeff n ≠ 0 ∧ ((swap f).coeff n).natDegree > f.natDegree := by
-    unfold degreeX at h_contra; aesop;
-  obtain ⟨m, hm⟩ : ∃ m > f.natDegree, ((swap f).coeff n).coeff m ≠ 0 := by
-    exact ⟨((swap f).coeff n).natDegree, hn.2.2.2, by aesop⟩
-  have h_coeff_swap : ((swap f).coeff n).coeff m = (f.coeff m).coeff n := by
-    exact ps_swap_coeff f m n
-  exact hm.2 (h_coeff_swap.symm ▸ by rw [coeff_eq_zero_of_natDegree_lt hm.1]; aesop)
-
-private lemma ps_degree_x_swap_ge {F : Type} [CommRing F] (f : F[X][Y]) (hf : f ≠ 0) :
-    natDegreeY f ≤ degreeX (swap f) := by
-  obtain ⟨N, hN⟩ : ∃ N, N = f.natDegree ∧ f.coeff N ≠ 0 := by
-    simp_all only [ne_eq, ↓existsAndEq, coeff_natDegree, leadingCoeff_eq_zero,
-      not_false_eq_true, and_self]
-  obtain ⟨n, hn⟩ : ∃ n, n = (f.coeff N).natDegree ∧ (f.coeff N).coeff n ≠ 0 := by
-    contrapose! hN; aesop;
-  have h_swap_coeff_nonzero : ((swap f).coeff n).coeff N ≠ 0 := by
-    rw [ps_swap_coeff f N n]
-    exact hn.2
-  have h_swap_coeff_nonzero_natDegree : (swap f).coeff n ≠ 0 := fun h ↦
-    h_swap_coeff_nonzero (by rw [h, Polynomial.coeff_zero])
-  have h_swap_coeff_nonzero_natDegree_le : Nat.max (((swap f).coeff n).natDegree)
-      (Nat.max (((swap f).coeff n).natDegree) N) ≤ degreeX (swap f) := by
-    refine le_trans ?_ (Finset.le_sup <| show n ∈ ((swap f).support) from ?_) <;>
-      simp_all only [ne_eq, ext_iff, coeff_zero, not_forall, coeff_natDegree, swap_apply,
-        le_sup_left, sup_of_le_right, sup_le_iff, le_refl, true_and]
-    · exact le_natDegree_of_ne_zero h_swap_coeff_nonzero |> le_trans (by aesop)
-    · aesop
-  have h_swap_coeff_nonzero_natDegree_le_natDegreeY : N ≤ Nat.max (((swap f).coeff n).natDegree)
-      (Nat.max (((swap f).coeff n).natDegree) N) := le_max_of_le_right (le_max_right _ _)
-  have h_final : f.natDegree ≤ degreeX (swap f) := by
-    bv_omega
-  exact h_final
+  rw [Finset.mul_sum, finsetSum_coeff]
+  refine Finset.sum_congr rfl fun j _ ↦ ?_
+  rw [ps_coeff_mul_monomial_ite]
+  by_cases h1 : (j : ℕ) ≤ i
+  · by_cases h2 : i ≤ (j : ℕ) + m
+    · rw [ite_eq_left h1, ite_eq_left ⟨h1, h2⟩]
+    · rw [ite_eq_left h1, ite_eq_right fun h ↦ h2 h.2, hdeg _ (by omega), zero_mul]
+  · rw [ite_eq_right h1, ite_eq_right fun h ↦ h1 h.1]
 
 lemma ps_degree_x_swap {F : Type} [CommRing F] (f : F[X][Y]) :
-    degreeX (swap f) = natDegreeY f := by
-  by_cases hf : f = 0
-  · subst hf; simp [degreeX, natDegreeY]
-  · exact le_antisymm (ps_degree_x_swap_le f) (ps_degree_x_swap_ge f hf)
+    degreeX (swap f) = natDegreeY f :=
+  degreeX_swap f
 
 lemma ps_descend_eval_x {F : Type} [Field F]
     {A B G A1 B1 : F[X][Y]} (hA : A = G * A1) (hB : B = G * B1)
@@ -184,102 +108,28 @@ lemma ps_descend_eval_y {F : Type} [Field F]
 
 lemma ps_eval_x_eq_map {F : Type} [CommSemiring F]
     (x : F) (f : F[X][Y]) :
-    evalX x f = f.map (evalRingHom x) := by
-  classical
-  ext n; simp [evalX, toFinsupp_apply]
+    evalX x f = f.map (evalRingHom x) :=
+  evalX_eq_map x f
 
 lemma ps_eval_y_eq_eval_x_swap {F : Type} [CommRing F]
     (y : F) (f : F[X][Y]) :
-    evalY y f = evalX y (swap f) := by
-  let : Algebra F[X] F[X] := Polynomial.algebra (R := F) (A := F)
-  convert aveal_eq_map_swap y f using 1
-  · unfold evalY; simp [Polynomial.aeval_def]
-  · -- By definition of `evalX`, we have `evalX y (swap f) = (swap f).map (evalRingHom y)`.
-    rw [ps_eval_x_eq_map]
-    rfl
+    evalY y f = evalX y (swap f) :=
+  evalY_eq_evalX_swap y f
 
 lemma ps_exists_x_preserve_nat_degree_y {F : Type} [Field F]
     (B : F[X][Y]) (hB : B ≠ 0) (P_x : Finset F)
     (hcard : P_x.card > degreeX B) :
     ∃ x ∈ P_x, (evalX x B).natDegree = natDegreeY B := by
-  obtain ⟨x, hx⟩ : ∃ x ∈ P_x, (B.coeff (natDegreeY B)).eval x ≠ 0 := by
-    have h_p_ne_zero : natDegree (B.coeff (natDegreeY B)) < P_x.card := by
-      exact lt_of_le_of_lt
-        (Finset.le_sup (f := fun n ↦ (B.coeff n).natDegree)
-          (natDegree_mem_support_of_nonzero hB))
-        hcard
-    by_contra h_contra; push Not at h_contra
-    have h_poly_zero : leadingCoeffY B = 0 :=
-      eq_zero_of_degree_lt_of_eval_finset_eq_zero P_x
-        (degree_le_natDegree.trans_lt (by exact_mod_cast h_p_ne_zero))
-        h_contra
-    exact absurd h_poly_zero (Polynomial.leadingCoeff_ne_zero.mpr hB)
-  refine ⟨x, hx.1, le_antisymm ?_ ?_⟩
-  · rw [evalX]
-    simp only [natDegree_le_iff_degree_le, degree_le_iff_coeff_zero, Nat.cast_lt,
-      coeff_ofFinsupp, Finsupp.mapRange_apply]
-    intro m hm
-    rw [toFinsupp_apply, coeff_eq_zero_of_natDegree_lt hm]
-    simp
-  · refine le_natDegree_of_ne_zero ?_
-    convert hx.2 using 1
-    all_goals rfl
+  classical
+  exact exists_x_preserve_natDegreeY B hB P_x hcard
 
 lemma ps_exists_y_preserve_degree_x {F : Type} [Field F]
     (B : F[X][Y]) (hB : B ≠ 0) (P_y : Finset F) (hcard : P_y.card > natDegreeY B) :
     ∃ y ∈ P_y, (evalY y B).natDegree = degreeX B := by
-  revert B hB P_y hcard;
-  intro B hB P_y hcard
-  set d := degreeX B with hd
-  set g := B.sum (fun j p ↦ Polynomial.monomial j (p.coeff d)) with hg
-  have hg_ne_zero : g ≠ 0 := by
-    obtain ⟨j0, hj0⟩ : ∃ j0 ∈ B.support, (B.coeff j0).natDegree = d := by
-      have h_sup : ∃ j0 ∈ B.support, ∀ j ∈ B.support,
-          (B.coeff j).natDegree ≤ (B.coeff j0).natDegree := by
-        apply_rules [Finset.exists_max_image]; aesop
-      generalize_proofs at *; (
-      exact ⟨h_sup.choose, h_sup.choose_spec.1, le_antisymm
-        (Finset.le_sup (f := fun j ↦ (B.coeff j).natDegree) h_sup.choose_spec.1)
-        (Finset.sup_le fun j hj ↦ h_sup.choose_spec.2 j hj)⟩)
-    have h_nonzero_term : (B.coeff j0).coeff d ≠ 0 := by
-      rw [← hj0.2, coeff_natDegree]; aesop
-    have h_g_nonzero : g.coeff j0 = (B.coeff j0).coeff d := by
-      simp only [coeff_sum, coeff_monomial, hg, hd]
-      rw [sum_def]
-      aesop
-    exact fun h ↦ h_nonzero_term (by rw [← h_g_nonzero, h, coeff_zero])
-  have hg_natDegree : natDegree g ≤ natDegreeY B := by
-    refine le_trans (natDegree_sum_le _ _) (Finset.sup_le ?_)
-    intro j hj
-    exact (natDegree_monomial_le _).trans (le_natDegree_of_mem_supp _ hj)
-  have hg_eval_nonzero : ∃ y ∈ P_y, g.eval y ≠ 0 := by
-    by_contra! hcard_contra
-    exact hg_ne_zero (eq_zero_of_degree_lt_of_eval_finset_eq_zero P_y
-      (degree_le_natDegree.trans_lt (by exact_mod_cast lt_of_le_of_lt hg_natDegree hcard))
-      hcard_contra)
-  obtain ⟨y, hy⟩ := hg_eval_nonzero
-  use y, hy.left
-  have h_deg_y : (evalY y B).natDegree ≤ d := by
-    have h_deg_y : ∀ j ∈ B.support, natDegree (B.coeff j) ≤ d :=
-      fun j hj ↦ Finset.le_sup (f := fun n ↦ (B.coeff n).natDegree) hj
-    rw [evalY, eval_eq_sum, sum_def]
-    exact le_trans
-      (natDegree_sum_le _ _) (Finset.sup_le fun i hi ↦ le_trans (natDegree_mul_le ..) (by aesop))
-  have h_deg_y_eq : (evalY y B).coeff d = g.eval y := by
-    simp only [sum_def, eval_finsetSum, eval_monomial, g]
-    unfold evalY
-    simp only [eval_eq_sum, sum_def, finsetSum_coeff]
-    refine Finset.sum_congr rfl fun i hi ↦ ?_
-    induction i <;> simp_all [coeff_mul, coeff_C, pow_succ']; ring_nf
-    rw [sum_eq_single (degreeX B, 0)] <;> simp only [mem_antidiagonal, ne_eq,
-      Nat.sum_antidiagonal_eq_sum_range_succ_mk, Nat.succ_eq_add_one, sum_ite_eq', mem_range,
-      Order.lt_add_one_iff, zero_le, ↓reduceIte, tsub_zero, mul_eq_zero, Prod.forall, Prod.mk.injEq,
-      not_and]
-    all_goals ring_nf
-    · simp [coeff_zero_eq_eval_zero, eval_pow, eval_C]
-    · intro a b hab h; rcases b with (_ | b) <;> simp_all [coeff_eq_zero_of_natDegree_lt]
-    · aesop
-  exact le_antisymm h_deg_y (le_natDegree_of_ne_zero (by aesop))
+  classical
+  obtain ⟨y, hy, hdeg⟩ := exists_x_preserve_natDegreeY (swap B)
+    (EmbeddingLike.map_ne_zero_iff.mpr hB) P_y (by rwa [degreeX_swap])
+  exact ⟨y, hy, by rw [evalY_eq_evalX_swap, hdeg, natDegreeY_swap]⟩
 
 lemma ps_filter_nonzero_card_y {F : Type} [Field F] [DecidableEq F]
     (A : F[X][Y]) (hA : A ≠ 0) (P_y : Finset F) (bound : ℕ)
@@ -310,41 +160,37 @@ lemma ps_degX_bound {F : Type} [Field F]
     (h_by_lt_ny : b_y < n_y) :
     degreeX P ≤ b_x - a_x := by
   classical
-  by_contra h_contra
-  obtain ⟨y, hy⟩ : ∃ y ∈ P_y, (evalY y P).natDegree = degreeX P ∧ evalY y A ≠ 0 := by
-    have h_card_filter : (P_y.filter (fun y ↦ evalY y A ≠ 0)).card > natDegreeY P := by
-      have h_filter_card : (P_y.filter (fun y ↦ evalY y A ≠ 0)).card > b_y - natDegreeY A := by
-        apply_rules [ps_filter_nonzero_card_y]
-        all_goals linarith
-      grind +qlia [natDegreeY, Polynomial.natDegree_mul]
-    have := ps_exists_y_preserve_degree_x P hP (P_y.filter (fun y ↦ evalY y A ≠ 0)) ?_ <;> aesop
+  have hdegB : natDegreeY B = natDegreeY P + natDegreeY A := hBA ▸ natDegree_mul hP hA
+  have h_card : natDegreeY P < (P_y.filter (fun y ↦ evalY y A ≠ 0)).card := by
+    have := ps_filter_nonzero_card_y A hA P_y b_y (h_f_degY.trans h_by_ge_ay) (by omega)
+    omega
+  obtain ⟨y, hy, hdeg⟩ := ps_exists_y_preserve_degree_x P hP _ h_card
+  obtain ⟨hyP, hyA⟩ := Finset.mem_filter.1 hy
   -- Since $B = P * A$, we have $evalY y B = evalY y P * evalY y A$.
-  have h_eval_Y_B : evalY y B = evalY y P * evalY y A := by unfold evalY; aesop
-  have := h_quot_x y hy.1
-  simp_all
-  linarith
+  have h_eval_Y_B : evalY y B = evalY y P * evalY y A := by rw [hBA, evalY, eval_mul]; rfl
+  have h_eval_Y_P : evalY y P = quot_x y :=
+    mul_right_cancel₀ hyA (h_eval_Y_B.symm.trans (h_quot_x y hyP).2)
+  exact hdeg ▸ h_eval_Y_P ▸ (h_quot_x y hyP).1
 
 lemma ps_degY_bound {F : Type} [Field F]
     {A B P : F[X][Y]} (hA : A ≠ 0) (hP : P ≠ 0) (hBA : B = P * A)
     (b_x b_y a_x a_y : ℕ) (n_x : ℕ+) (h_bx_ge_ax : b_x ≥ a_x)
-    (h_f_degX : a_x ≥ degreeX A) (h_g_degY : b_y ≥ natDegreeY B)
+    (h_f_degX : a_x ≥ degreeX A) (_h_g_degY : b_y ≥ natDegreeY B)
     (P_x : Finset F) (h_card_Px : n_x ≤ P_x.card) (quot_y : F → F[X])
     (h_quot_y : ∀ x ∈ P_x, (quot_y x).natDegree ≤ b_y - a_y ∧ evalX x B = (quot_y x) * (evalX x A))
     (h_bx_lt_nx : b_x < (n_x : ℕ)) (hdegX_P_le : degreeX P ≤ b_x - a_x) :
     natDegreeY P ≤ b_y - a_y := by
   classical
-  obtain ⟨x, hx⟩ : ∃ x ∈ P_x, (evalX x A) ≠ 0 ∧ (evalX x P).natDegree = natDegreeY P := by
-    have h_filter : (P_x.filter (fun x ↦ (evalX x A) ≠ 0)).card > (degreeX P) := by
-      have := ps_filter_nonzero_card_x A hA P_x b_x (by linarith) (by linarith); simp_all; omega
-    obtain ⟨x, hx⟩ : ∃ x ∈ P_x.filter (fun x ↦ (evalX x A) ≠ 0),
-        (evalX x P).natDegree = (natDegreeY P) := by apply_rules [ps_exists_x_preserve_nat_degree_y]
-    aesop
+  have h_filter : degreeX P < (P_x.filter (fun x ↦ evalX x A ≠ 0)).card := by
+    have := ps_filter_nonzero_card_x A hA P_x b_x (h_f_degX.trans h_bx_ge_ax) (by omega)
+    omega
+  obtain ⟨x, hx, hdeg⟩ := ps_exists_x_preserve_nat_degree_y P hP _ h_filter
+  obtain ⟨hxP, hxA⟩ := Finset.mem_filter.1 hx
   -- Since $evalX x B = quot_y x * evalX x A$, we have $evalX x P = quot_y x$.
   have h_evalX_P : evalX x P = quot_y x := by
     have h_evalX_P : evalX x B = evalX x P * evalX x A := by rw [hBA, evalX_mul]
-    exact mul_left_cancel₀ hx.2.1 <| by
-      linear_combination h_evalX_P.symm.trans (h_quot_y x hx.1 |>.2)
-  exact hx.2.2 ▸ h_evalX_P ▸ h_quot_y x hx.1 |>.1
+    exact mul_right_cancel₀ hxA (h_evalX_P.symm.trans (h_quot_y x hxP).2)
+  exact hdeg ▸ h_evalX_P ▸ (h_quot_y x hxP).1
 
 lemma ps_degree_bounds_of_mul {F : Type} [Field F]
     (a_x a_y b_x b_y : ℕ) (n_x n_y : ℕ+)
@@ -405,8 +251,5 @@ lemma ps_is_rel_prime_swap {F : Type} [CommRing F] {A B : F[X][Y]}
   simpa [f] using this
 
 lemma ps_nat_degree_y_swap {F : Type} [CommRing F]
-    (f : F[X][Y]) : natDegreeY (swap f) = degreeX f := by
-  have h := ps_degree_x_swap (swap f)
-  have hs : swap (swap f) = f := swap.left_inv f
-  rw [hs] at h
-  exact h.symm
+    (f : F[X][Y]) : natDegreeY (swap f) = degreeX f :=
+  natDegreeY_swap f
