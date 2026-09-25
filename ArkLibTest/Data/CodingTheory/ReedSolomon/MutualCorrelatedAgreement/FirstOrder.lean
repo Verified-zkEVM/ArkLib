@@ -7,6 +7,7 @@ Authors: Quang Dao
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.CurveAgreement
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.HybridCurveTransfer
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.HybridTransfer
+import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.OrdinaryTail
 import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 import Mathlib.Analysis.Complex.Polynomial.Basic
 import Mathlib.Tactic.NormNum
@@ -22,6 +23,7 @@ transfer theorems over the complex field.
 * Height-slot and certificate bounds have nonvacuous base-field and extension-field instances.
 * Regular-stage, hybrid, and optimized exceptional-set bounds have concrete instances.
 * Both ordinary-tail hybrid-transfer bounds have concrete instances.
+* The order-zero tail of a concrete descent discharges the ordinary-tail transfer premise.
 
 ## References
 
@@ -359,3 +361,13 @@ example :
         · intro z hz P hdegree hagree hroot
           rw [exceptionDescent_tail_equation] at hroot
           exact False.elim (constantOneTail_has_no_root z P hroot))
+
+/-- The tail of a concrete descent supplies the ordinary-tail premise of the hybrid transfer. -/
+example := exists_exceptional_firstOrder_hybrid_optimized_of_tail
+  (n := 2) (D := 1) (A := 2) (mu := 1) (M := 1)
+  exceptionDomain (exceptionValues 0) (exceptionValues 1) exceptionEmbedding
+  exceptionEquation exceptionDescent
+  (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+  (Or.inl (ringChar.eq_zero : ringChar ℂ = 0))
+  (exceptionDescent.hasOrdinaryTailTransfer exceptionDomain (exceptionValues 0)
+    (exceptionValues 1) exceptionEmbedding (by norm_num) (by norm_num) (by norm_num))
