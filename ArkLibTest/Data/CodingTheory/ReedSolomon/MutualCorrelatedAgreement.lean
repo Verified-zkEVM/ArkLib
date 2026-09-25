@@ -704,33 +704,26 @@ example : positiveChallenges.Nonempty ∧
         differentialSpecializationHom])
       (by simp [badChallengeEquation, challengeSpecialization, separant,
         differentialSpecialization, differentialSpecializationHom, Fin.last])
-  have hJ : jointInitialJetEquation 0 incidenceEquation = componentVariable := by
-    simp [jointInitialJetEquation, initialJetEquation, incidenceEquation,
-      componentCoordinateEquation, componentVariable]
-  have hinit : jointInitialJetEquation 0 incidenceEquation ≠ 0 :=
-    hJ ▸ X_ne_zero _
-  have hproper : Ideal.span ({jointInitialJetEquation 0 incidenceEquation} :
-      Set (MvPolynomial (Option (Fin 1)) ComponentField)) ≠ ⊤ :=
-    hJ ▸ componentIdeal_isPrime.ne_top
   have hregularJetDegree : jetTotalDegree incidenceEquation ≤ 1 := by
     simpa [incidenceEquation] using
       (jetTotalDegree_map_le (Polynomial.mapRingHom (algebraMap ℚ ComponentField))
         (componentCoordinateEquation (E := ℚ))).trans componentCoordinateJetDegree
-  have hregularBound := finite_frobeniusPowerRegularBadChallenges_card_le
+  have hregularBound := finite_frobeniusPowerRegularBadChallenges_card_le_of_separant_at
     (F := ComponentField) (E := ComponentField) (n := 2) (k := 1) (K := 1) (ℓ := 1) (L := 1)
     positiveChallengeDomain positiveChallengeWords (RingHom.id ComponentField)
-    positiveChallengeDomain 0 incidenceEquation 1 0 1 0 1 2
+    positiveChallengeDomain incidenceEquation 1 0 1 0 1 2
     (by intro i; simp) (by norm_num) (by norm_num)
     (by intro l; fin_cases l; norm_num [TaylorExponentSufficient])
     (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
-    (coeffNatDegreeLE_X (some (0 : Fin 1))) hregularJetDegree hinit hproper
+    (coeffNatDegreeLE_X (some (0 : Fin 1))) hregularJetDegree
     positiveChallenges positiveChallengeWitness
     (by intro z hz; norm_num [positiveChallengeWitness])
     (by intro z hz; simp [incidenceEquation, componentCoordinateEquation,
       positiveChallengeWitness, challengeSpecialization, differentialSpecialization,
       differentialSpecializationHom])
     (by intro z hz; norm_num [incidenceEquation, componentCoordinateEquation,
-      positiveChallengeWitness, challengeSpecialization, separant, jetEvaluation, polynomialJet])
+      positiveChallengeWitness, challengeSpecialization, separant,
+      differentialSpecialization, differentialSpecializationHom, Fin.last])
     hregularAgreement (by
       intro z hz
       simpa [Finset.mem_singleton.mp hz, positiveChallengeWitness] using positiveChallenge_isBad)

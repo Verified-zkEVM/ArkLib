@@ -345,13 +345,19 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.Wei
 public import
   ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.WeightedSupportInterpolant
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.DirectJetList
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.Bounds
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.Profile
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.HiddenDerivativeBound
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.PairwiseJohnson
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListSpecification
 public import ArkLib.Data.CodingTheory.ReedSolomon.Multilinear
 public import ArkLib.Data.CodingTheory.ReedSolomon.Multiplicity
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.CertificateBound
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.Midpoint
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.Parameters
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.PrescribedCurve
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.ProductBounds
 public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.ProductCounting
@@ -360,6 +366,8 @@ public import
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.ComponentDimension
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.EquationDescent
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.ExtensionDescent
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.CurveAgreement
 public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Squarefree.Certificates
 public import
