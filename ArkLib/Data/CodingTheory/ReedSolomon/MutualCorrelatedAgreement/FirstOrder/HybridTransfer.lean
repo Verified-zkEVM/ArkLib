@@ -99,7 +99,7 @@ theorem exists_exceptional_firstOrder_hybrid_raw_of_tail
     · exact hroot
   obtain ⟨exceptional, hcard, hgood⟩ :=
     exists_exceptional_firstOrder_hybridCurve_of_tail domain ![f, g] iota Q descent
-      (by norm_num) hD hDL hLA hAn hchar _ htailPower
+      (coeffNatDegreeLE_coeffNatDegree Q) (by norm_num) hD hDL hLA hAn hchar _ htailPower
   refine ⟨exceptional, ?_, hgood⟩
   calc
     (exceptional.card : ℝ) ≤
