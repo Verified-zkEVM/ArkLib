@@ -829,8 +829,8 @@ private theorem capacityLineLength_half : capacityLineLength (1 / 2) ≤ 4 := by
 /-- Line agreement at gap `1/2` over `ℚ`, with `n = 4`, `k = 1` and `A = 3`. -/
 example : LineExactAgreementBound (capacityDomain 4) 1 3
     (capacityLineConstant (1 / 2) * (4 : ℝ) ^ (capacityLineDerivativeOrder (1 / 2) + 1)) :=
-  capacity_lineAgreement (by norm_num) 4 1 3 capacityLineLength_half one_pos (by norm_num)
-    (by norm_num) ℚ (Or.inl ringChar.eq_zero) (capacityDomain 4)
+  capacity_lineAgreement (by norm_num) 4 1 3 capacityLineLength_half one_pos (by norm_num) ℚ
+    (Or.inl ringChar.eq_zero) (capacityDomain 4)
 
 /-- Affine-family agreement at gap `1/2` over `ZMod 5`, with `n = 4`, `k = 1` and one direction. -/
 example := (capacity_lineAgreement (δ := 1 / 2) (by norm_num)).affineAgreement (by norm_num) 4 1
@@ -847,7 +847,6 @@ example := (capacity_lineAgreement (δ := 1 / 2) (by norm_num)).mcaError_le (k :
 `A = n`. -/
 example := capacity_powerBatchingAgreement (δ := 1 / 2) (by norm_num) 1
   (capacityPowerLength (1 / 2)) 1 (capacityPowerLength (1 / 2)) one_pos le_rfl one_pos
-  (by have := four_le_capacityPowerLength (1 / 2); omega)
   (by
     have : (4 : ℝ) ≤ capacityPowerLength (1 / 2) := by
       exact_mod_cast four_le_capacityPowerLength (1 / 2)
