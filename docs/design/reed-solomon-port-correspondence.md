@@ -1947,6 +1947,16 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Firs
 
 The source's private `positiveRootProduct_eq_one_of_rootDegree_eq_zero'` argument is covered by the public `MvPolynomial.radicalPrimPart_eq_one_of_degreeOf_eq_zero`, generalized to any selected coordinate in `ArkLib/ToMathlib/MvPolynomial/RadicalSplit.lean`. The regular Taylor estimate `finite_regular_agreement_solutions_card_le_regularTaylor` combines the existing identity-pair and derivative-capped estimates in `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/AgreementCounting.lean`; the hybrid counting proof also uses it. No public declaration from the unit was omitted.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/TailBound.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/TailBound.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`rootFirst` and `fromRootFirst` became `firstOrderRootCoordinates` and `fromFirstOrderRootCoordinates`; the coordinate round trips and the root-degree identity were added. `fromRootFirst_rootJetWeight` became the more general `fromFirstOrderRootCoordinates_weightedTotalDegree`, stated using `jetTotalDegree`. `positiveEquation` became `positiveJetFactor`, the root-coordinate radical positive factor. New bounds cover its total jet degree and `Y₁` degree. The specialization theorems `rootFirst_separant_positiveEquation`, `positiveEquation_specialization_eq`, and `positiveSeparant_specialization_eq` became `firstOrderRootCoordinates_separant_positiveJetFactor`, `positiveJetFactor_specialization_eq`, and `positiveJetFactor_separant_specialization_eq`.
+
+The singular equation and polynomial declarations retain their names except for `singularEquation_ne_zero`, which no longer requires a nonzero-input premise. The construction uses radical content and the derivative resultant of the positive-jet factor, proves the equation nonzero and within the ordinary-degree envelope, and routes content roots and singular positive-factor roots. `finite_squarefree_agreement_solutions_card_le` specializes the generic capped count and drops unused positivity premises. The order-zero presentation declarations were moved to `PolynomialDifferential` in `ArkLib/Data/Polynomial/Differential/OrderZeroPresentation.lean` and generalized there.
+
+`positiveResultant_ne_zero` is covered by `Polynomial.resultant_derivative_ne_zero_ordinaryRootPolynomial`; `positiveRootProduct_eq_one_of_rootDegree_eq_zero` is covered by `MvPolynomial.radicalPrimPart_eq_one_of_degreeOf_eq_zero`. The `positiveRootProduct_rootJetWeight` wrapper is unnecessary because `fromFirstOrderRootCoordinates_weightedTotalDegree` provides the general identity. `singularAsPolynomial_eval` is covered by `remainingSpecializationHom_eq_eval` and has no separate wrapper. The factorwise additions are in `Factorwise.lean`: they introduce `FixedWordRegularTail` and actual-degree and capped counts for a chosen regular equation, while retaining the radical-part APIs as a specialization.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FrobeniusAdmissibility.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FrobeniusAdmissibility.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -2587,6 +2597,12 @@ slope, a binomial coefficient times that value, is a unit or left-regular.
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/FirstOrder/FirstOrderHybridList.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 `exists_firstOrderFieldTailPresentation` became `exists_jetPrefixPresentation_firstOrder_of_jetDegree_zero`, generalized to commutative semirings. Added `exists_jetPrefixPresentation_of_vars_subset_range`, which constructs a prefix presentation from variable-support inclusion. The `FirstOrderFieldTailPresentation` wrapper and its `nonzero`, `specialization`, and `jetWeight` results use the generic `JetPrefixPresentation` nonzero, differential-specialization, and total-degree methods instead.
+
+## `ArkLib/Data/Polynomial/Differential/OrderZeroPresentation.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/TailBound.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Moved `orderZeroVariableEquiv`, `orderZeroAsPolynomial`, `orderZeroOfPolynomial`, `orderZeroAsPolynomial_orderZeroOfPolynomial`, and `orderZeroAsPolynomial_eval` into the generic differential-polynomial owner. Generalized the presentation and evaluation laws from fields to commutative semirings. Renamed `orderZeroOfPolynomial_jetWeight` to `orderZeroOfPolynomial_jetTotalDegree` and generalized it to commutative semirings and canonical `jetTotalDegree`. No listed source declaration was omitted from this presentation; the separate `singularAsPolynomial_eval` wrapper remained unnecessary because `remainingSpecializationHom_eq_eval` covers its use.
 
 ## `ArkLib/Data/Polynomial/Differential/RationalTaylor.lean`
 
