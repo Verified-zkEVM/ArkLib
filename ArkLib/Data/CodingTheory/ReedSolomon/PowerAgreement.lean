@@ -64,6 +64,8 @@ interleaved statements are in `ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.
 * `ReedSolomon.frobeniusPowerCoordinate_eval` and
   `ReedSolomon.frobeniusPowerCoordinate_natDegree_le`: evaluation and degree bounds for sparse
   coordinates.
+* `ReedSolomon.eval₂_powerBatchedCoordinate_eq_powerBatchedWord`: coordinate evaluation commutes
+  with an injective field map.
 * `ReedSolomon.exists_exceptional_powerBatched_agreement` and
   `ReedSolomon.exists_exceptional_powerBatched_family`: outside at most `ℓ * (|ι| - L)`
   challenges per tuple, the agreement set of the batched polynomial is the common agreement set.
@@ -216,6 +218,20 @@ theorem powerBatchedCoordinate_injective :
   simp [powerBatchedCoordinate]
 
 end Coordinate
+
+/-- Mapping and evaluating a power-batched coordinate polynomial gives the corresponding
+extension-field word coordinate. -/
+theorem eval₂_powerBatchedCoordinate_eq_powerBatchedWord
+    {F E : Type*} [Field F] [Field E] {n ℓ : ℕ}
+    (values : Fin (ℓ + 1) → Fin n → F) (iota : F →+* E) (z : E) (i : Fin n) :
+    (powerBatchedCoordinate fun t ↦ values t i).eval₂ iota z =
+      powerBatchedWord (fun t j ↦ iota (values t j)) z i := by
+  rw [Polynomial.eval₂_eq_eval_map]
+  have hmap : (powerBatchedCoordinate fun t ↦ values t i).map iota =
+      powerBatchedCoordinate fun t ↦ iota (values t i) := by
+    simp [powerBatchedCoordinate, Polynomial.map_sum]
+  rw [hmap, powerBatchedCoordinate_eval]
+  rfl
 
 section Discrepancy
 

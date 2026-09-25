@@ -34,7 +34,6 @@ field.
   field bound from a finite first-order curve certificate.
 * `exists_baseExceptional_firstOrderCurve_of_certificate_of_exponent` descends that bound.
 * The height-slot theorems construct the certificate from a strict shifted-height surplus.
-* `exists_baseExceptional_firstOrderCurve_of_heightSlotCount_tight` uses exponent `2K - 3`.
 
 ## References
 
@@ -53,18 +52,6 @@ open HiddenDerivative
 noncomputable section
 
 universe u
-
-private theorem eval₂_powerBatchedCoordinate_eq_powerBatchedWord
-    {F E : Type u} [Field F] [Field E] {n ell : ℕ}
-    (values : Fin (ell + 1) → Fin n → F) (iota : F →+* E) (z : E) (i : Fin n) :
-    (powerBatchedCoordinate fun t ↦ values t i).eval₂ iota z =
-      powerBatchedWord (fun t j ↦ iota (values t j)) z i := by
-  rw [Polynomial.eval₂_eq_eval_map]
-  have hmap : (powerBatchedCoordinate fun t ↦ values t i).map iota =
-      powerBatchedCoordinate fun t ↦ iota (values t i) := by
-    simp [powerBatchedCoordinate, Polynomial.map_sum]
-  rw [hmap, powerBatchedCoordinate_eval]
-  rfl
 
 /-- A finite first-order curve certificate gives an extension-field exceptional set bounded by
 the cap-sensitive polynomial-curve envelope. -/
@@ -416,28 +403,6 @@ theorem exists_baseExceptional_firstOrderCurve_of_heightSlotCount_of_exponent
     (fun i ↦ powerBatchedCoordinate_natDegree_le fun t ↦ values t i) hheight
   exact exists_baseExceptional_firstOrderCurve_of_certificate_of_exponent
     domain values iota _ cert hK hkK hkL hLA hAn hcurve τ hτ0 hτ1 hτpos hchar
-
-/-- The maintained base-field curve bound uses the common Taylor exponent `2K - 3`. -/
-theorem exists_baseExceptional_firstOrderCurve_of_heightSlotCount_tight
-    {F E : Type u} [Field F] [Field E] [DecidableEq F] [IsAlgClosed E]
-    {D A m M μ k h n K L ell : ℕ}
-    (domain : Fin n ↪ F) (values : Fin (ell + 1) → Fin n → F) (iota : F →+* E)
-    (hD : 0 < D) (hbudget : 0 < m * A) (hkD : k ≤ D + 1)
-    (hheight : firstOrderCurveShiftedRowSlotBound D A m M μ n ell h <
-      firstOrderCurveShiftedHeightSlotCount D A m M μ ell h)
-    (hK : 1 < K) (hkK : k ≤ K) (hkL : k ≤ L)
-    (hLA : L ≤ A) (hAn : A ≤ n) (hcurve : 0 < ell + h)
-    (hchar : ringChar F = 0 ∨ max (K - 1) μ < ringChar F) :
-    ∃ exceptional : Finset F,
-      (exceptional.card : ℚ) ≤ firstOrderCurveBound n K k L A μ M ell h
-        (τ := 2 * K - 3) (η := firstOrderCurveDirectRatio n k A) ∧
-      ∀ z ∉ exceptional, ∀ P : F[X], P.degree < k →
-        A ≤ (polynomialAgreementSet domain (powerBatchedWord values z) P).card →
-        HasExactPowerAgreement domain values (RingHom.id F) k z P := by
-  exact exists_baseExceptional_firstOrderCurve_of_heightSlotCount_of_exponent
-    domain values iota hD hbudget hkD hheight hK hkK hkL hLA hAn hcurve
-      (2 * K - 3) (taylorExponentSufficient_two_mul_sub_three 0 K)
-      (taylorExponentSufficient_two_mul_sub_three 1 K) (by omega) hchar
 
 end
 
