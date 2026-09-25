@@ -189,6 +189,110 @@ example : Nonempty (SymbolicReceivedCurve.Certificate 2 1 2 3 1 71 twoPointEmbed
     (by norm_num) (by norm_num) twoPointEmbedding (fun _ => Polynomial.X ^ 2 + 1)
     (by intro i; norm_num) hmargin
 
+private def curveTestEmbedding (n : ℕ) : Fin n ↪ ℚ where
+  toFun i := (i.val : ℚ)
+  inj' := by
+    intro i j h
+    change (i.val : ℚ) = (j.val : ℚ) at h
+    apply Fin.ext
+    exact_mod_cast h
+
+private noncomputable def quadraticReceivedCurve (n : ℕ) : Fin n → ℚ[X] :=
+  fun _ => Polynomial.X ^ 2 + 1
+
+private noncomputable def curveTestOrder : ℕ :=
+  Nat.ceil (Real.exp (xi * 8))
+
+private noncomputable def curveTestHarmonic : ℝ := harmonic (curveTestOrder - 1)
+
+private noncomputable def curveTestMultiplicity : ℕ :=
+  Nat.ceil (100 * (curveTestOrder : ℝ) ^ 2 * curveTestHarmonic)
+
+private noncomputable def curveTestLength : ℕ := 8 * curveTestMultiplicity
+
+private theorem curveTestMultiplicity_pos : 0 < curveTestMultiplicity := by
+  have hx : xi / (1 / 8 : ℝ) = xi * 8 := by
+    field_simp
+  have hH : xi / (1 / 8 : ℝ) ≤ curveTestHarmonic := by
+    simpa [curveTestOrder, curveTestHarmonic, hx] using
+      (prescribed_order_lower (1 / 8 : ℝ) (by norm_num) (by norm_num)).2.2
+  have hHpos : 0 < curveTestHarmonic := by
+    exact (div_pos xi_pos (by norm_num)).trans_le hH
+  have hdpos : 0 < curveTestOrder := by
+    dsimp [curveTestOrder]
+    exact Nat.ceil_pos.mpr (Real.exp_pos _)
+  change 0 < Nat.ceil (100 * (curveTestOrder : ℝ) ^ 2 * curveTestHarmonic)
+  apply Nat.ceil_pos.mpr
+  positivity
+
+/-- The prescribed rate constructor applies to a quadratic received curve. -/
+example : Nonempty (SymbolicReceivedCurve.Certificate curveTestLength 0 2
+    (2 * curveTestMultiplicity - 1) curveTestOrder
+    (12 * (2 * (2 * curveTestMultiplicity - 1)) - 1)
+    (curveTestEmbedding curveTestLength) (quadraticReceivedCurve curveTestLength)) := by
+  let D := 4 * curveTestMultiplicity
+  have hm : 0 < curveTestMultiplicity := curveTestMultiplicity_pos
+  have hn : 0 < curveTestLength := by
+    dsimp [curveTestLength]
+    omega
+  have hD : 0 < D := by omega
+  have hρ : (D : ℝ) / curveTestLength = 1 / 2 := by
+    dsimp [D, curveTestLength]
+    push_cast
+    have hmR : (curveTestMultiplicity : ℝ) ≠ 0 := by exact_mod_cast hm.ne'
+    field_simp [hmR]
+    norm_num
+  have hρlo : (1 / 8 : ℝ) / 3 ≤ (D : ℝ) / curveTestLength := by
+    rw [hρ]
+    norm_num
+  have hρhi : (D : ℝ) / curveTestLength ≤ 1 - (1 / 8 : ℝ) := by
+    rw [hρ]
+    norm_num
+  have hslack : (D : ℝ) *
+      (1 + rateGap (1 / 8 : ℝ) ((D : ℝ) / curveTestLength)) ≤ curveTestLength := by
+    rw [hρ]
+    calc
+      (D : ℝ) * (1 + rateGap (1 / 8 : ℝ) (1 / 2)) ≤ (D : ℝ) * 2 := by
+        apply mul_le_mul_of_nonneg_left _ (Nat.cast_nonneg D)
+        have := rateGap_le_one (1 / 8 : ℝ) (1 / 2)
+        linarith
+      _ = curveTestLength := by
+        dsimp [D, curveTestLength]
+        push_cast
+        ring
+  have hcert := SymbolicReceivedCurve.exists_weightedSupport_certificate_of_rate
+    (F := ℚ) (δ := 1 / 8) (n := curveTestLength) (D := D)
+    (A := curveTestLength) (k := 0) (ℓ := 2)
+    (curveTestEmbedding curveTestLength) (quadraticReceivedCurve curveTestLength)
+    (by intro i; norm_num [quadraticReceivedCurve]) (by omega) (by norm_num) (by norm_num)
+    hn hD hρlo hρhi (by omega) hslack
+  simpa [curveTestOrder, curveTestHarmonic, curveTestMultiplicity, D] using hcert
+
+/-- The prescribed block constructor applies to a quadratic received curve. -/
+example : Nonempty (SymbolicReceivedCurve.Certificate
+    (ReedSolomon.agreementThreshold (1 / 8 : ℝ) curveTestLength 0) 0 2
+    (2 * curveTestMultiplicity - 1) curveTestOrder
+    (12 * (2 * (2 * curveTestMultiplicity - 1)) - 1)
+    (curveTestEmbedding curveTestLength) (quadraticReceivedCurve curveTestLength)) := by
+  have hx : xi / (1 / 8 : ℝ) = xi * 8 := by
+    field_simp
+  have hA : ReedSolomon.agreementThreshold (1 / 8 : ℝ) curveTestLength 0 ≤ curveTestLength := by
+    apply (ReedSolomon.agreementThreshold_le_iff_real (by norm_num)
+      curveTestLength 0 curveTestLength).2
+    have hnR : (0 : ℝ) ≤ (curveTestLength : ℝ) := Nat.cast_nonneg _
+    nlinarith
+  have hcert := SymbolicReceivedCurve.exists_prescribed_certificate
+    (F := ℚ) (δ := 1 / 8) (n := curveTestLength) (k := 0) (ℓ := 2)
+    (curveTestEmbedding curveTestLength) (quadraticReceivedCurve curveTestLength)
+    (by intro i; norm_num [quadraticReceivedCurve]) (by omega) (by norm_num) (by norm_num)
+    (by
+      dsimp only
+      rw [hx]
+      change 8 * curveTestMultiplicity ≤ curveTestLength
+      exact Nat.le_of_eq rfl)
+    hA
+  simpa [curveTestOrder, curveTestHarmonic, curveTestMultiplicity] using hcert
+
 private noncomputable def twoPointWeightedColumns : Fin (Fintype.card
     (↥(weightedSupportExponents 1 1 0 2 Nat.one_pos))) → SourceColumn 1 :=
   weightedSupportColumns (d := 1) (W := 0) (L := 2) Nat.one_pos

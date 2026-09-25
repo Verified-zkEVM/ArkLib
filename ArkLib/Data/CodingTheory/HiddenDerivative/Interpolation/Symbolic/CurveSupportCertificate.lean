@@ -87,41 +87,22 @@ theorem exists_certificate_of_fixed_margin {F : Type*} [Field F] {ι : Type*} [F
     have hrpos : (0 : ℝ) ≤ r := Nat.cast_nonneg r
     have hrlt : (r : ℝ) < N := by nlinarith
     exact_mod_cast hrlt
-  have hrN' : r < Fintype.card (Fin N) := by
-    simpa only [Fintype.card_fin] using hrN
-  obtain ⟨v, _hv, hvdeg, _hp, hnozero, hconstraints⟩ :=
-    exists_primitive_weightedSupport_interpolant hD m ℓ ν centers w hw columns hcolumns hy₀
-      hband hrN'
-  have hvheight : ∀ j, (v j).natDegree < 12 * (ℓ * ν) := by
-    intro j
-    have hvdeg' : (v j).natDegree ≤ r * (ℓ * ν) / (N - r) := by
-      simpa only [Fintype.card_fin] using hvdeg j
-    have hle : ((v j).natDegree : ℝ) ≤
-        ((r * (ℓ * ν) / (N - r) : ℕ) : ℝ) := by
-      exact Nat.cast_le.mpr hvdeg'
-    have hlt := hle.trans_lt
-      (kernel_height_lt_twelve_mul_of_margin N r (ℓ * ν) (Nat.mul_pos hℓ hν) hmargin')
-    exact_mod_cast hlt
-  have hvdegree : ∀ j, (v j).natDegree ≤ 12 * (ℓ * ν) - 1 := by
-    intro j
-    exact Nat.le_sub_one_of_lt (hvheight j)
-  let Q : DifferentialPolynomial F[X] d := SourceColumn.interpolant columns v
-  refine ⟨⟨Q, ?_, ?_, ?_⟩⟩
-  · exact SourceColumn.coeff_interpolant_natDegree_le columns hcolumns v hvdegree
-  · exact SourceColumn.interpolant_totalJetDegree_le columns hdegree v
-  · intro E _ ι z
-    refine ⟨hnozero (Polynomial.eval₂RingHom ι z), ?_, ?_⟩
-    · exact SourceColumn.map_interpolant_jetTotalDegree_le
-        (Polynomial.eval₂RingHom ι z) columns hdegree v
-    · intro indices P hP hcard hagreements
-      have hPnat : P.natDegree ≤ D := by
-        by_cases hz : P = 0
-        · simp [hz]
-        · have hk : P.natDegree < k := (Polynomial.natDegree_lt_iff_degree_lt hz).mpr hP
-          omega
-      exact differentialSpecialization_curve_interpolant_eq_zero_of_agreements
-        hD hL hbudget centers w columns hband v hconstraints ι z indices P hPnat
-        centers.injective.injOn hcard hagreements
+  have hrank :
+      ((supportedLocalConstraintMatrix m (fun i => Polynomial.C (centers i)) w columns).map
+        (algebraMap F[X] (RatFunc F))).rank ≤ r := by
+    rw [rank_map_supportedLocalConstraintMatrix]
+    exact localConstraintMatrix_rank_le_weightedSupport hD (fun i => centers i) w columns hband
+  obtain ⟨cert⟩ := exists_certificate_of_rank_bound (L := L) (r := r)
+    hL hbudget hkD centers w hw columns hcolumns hy₀ hdegree hband
+    (algebraMap F[X] (RatFunc F)) (IsFractionRing.injective F[X] (RatFunc F)) hrank
+    (by simpa only [Fintype.card_fin] using hrN)
+  have hchallenge := kernel_height_lt_twelve_mul_of_margin N r (ℓ * ν)
+    (Nat.mul_pos hℓ hν) hmargin'
+  have hchallenge' : r * (ℓ * ν) / (N - r) ≤ 12 * (ℓ * ν) - 1 := by
+    apply Nat.le_sub_one_of_lt
+    exact_mod_cast hchallenge
+  exact ⟨cert.weakenChallengeDegree (by
+    simpa only [Fintype.card_fin] using hchallenge')⟩
 
 /-- The prescribed rate interval constructs a polynomial-curve certificate. -/
 theorem exists_weightedSupport_certificate_of_rate {F : Type*} [Field F]
