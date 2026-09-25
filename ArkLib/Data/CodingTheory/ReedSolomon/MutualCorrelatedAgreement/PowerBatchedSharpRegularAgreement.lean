@@ -58,6 +58,12 @@ of [DKTZ26].
 * `finite_powerBatchedBadChallenges_card_le_sharp_of_exponent` combines incidence and tuple
   counting; `exists_exceptional_regularPowerBatchedAgreement_sharp_of_exponent` gives one
   exceptional set for all regular bad challenges.
+* `regularPowerBatchedAgreementSharpBound_mono_exponent` shows that the explicit agreement budget
+  is monotone in the Taylor exponent.
+* `regularPowerBatchedCutJetDegree_le_two_mul`,
+  `regularPowerBatchedCutChallengeDegree_le_three_mul`, and
+  `regularPowerBatchedInitialMixedDegree_le_uniformCaps` bound the cut and mixed degrees under
+  explicit caps on the Taylor exponent and stage parameters.
 
 ## References
 
@@ -1092,5 +1098,77 @@ theorem exists_exceptional_regularPowerBatchedAgreement_firstOrder_of_exponent
     by_contra hbad
     apply hz
     exact hfinite.mem_toFinset.mpr ⟨P, hdegree, hagree, hsol, hsep, hbad⟩
+
+/-- The common Taylor jet-degree cap is at most `2 * n * v` if `τ ≤ 2*n` and `v` is positive. -/
+theorem regularPowerBatchedCutJetDegree_le_two_mul
+    (K n v τ : ℕ) (hn : 0 < n) (hτ : τ ≤ 2 * n) (hv : 0 < v) :
+    regularPowerBatchedCutJetDegree K v (τ := τ) ≤ 2 * n * v := by
+  have hτv : τ * (v - 1) ≤ 2 * n * (v - 1) := Nat.mul_le_mul_right _ hτ
+  have hbase : 1 ≤ 2 * n := by omega
+  unfold regularPowerBatchedCutJetDegree
+  calc
+    1 + τ * (v - 1) ≤ 1 + 2 * n * (v - 1) := Nat.add_le_add_left hτv _
+    _ ≤ 2 * n + 2 * n * (v - 1) := Nat.add_le_add_right hbase _
+    _ = 2 * n * (1 + (v - 1)) := by simp [Nat.mul_add]
+    _ = 2 * n * v := by rw [Nat.add_sub_of_le (by omega : 1 ≤ v)]
+
+/-- The common Taylor challenge-degree cap is at most `3 * n * ℓ * h` if `τ ≤ 2*n`,
+`h > 0`, and the challenge height is at most `ℓ*h`. -/
+theorem regularPowerBatchedCutChallengeDegree_le_three_mul
+    (n ℓ K H τ h : ℕ) (hn : 0 < n) (hτ : τ ≤ 2 * n) (hh : 0 < h)
+    (hH : H ≤ ℓ * h) :
+    regularPowerBatchedCutChallengeDegree ℓ K H (τ := τ) ≤ 3 * n * ℓ * h := by
+  have hℓn : ℓ ≤ n * ℓ := Nat.le_mul_of_pos_left ℓ hn
+  have hℓnh : ℓ ≤ n * ℓ * h := hℓn.trans (Nat.le_mul_of_pos_right _ hh)
+  have hτH : τ * H ≤ 2 * n * (ℓ * h) := Nat.mul_le_mul hτ hH
+  unfold regularPowerBatchedCutChallengeDegree
+  calc
+    ℓ + τ * H ≤ n * ℓ * h + 2 * n * (ℓ * h) := Nat.add_le_add hℓnh hτH
+    _ = 3 * n * ℓ * h := by ring
+
+/-- The mixed degree is bounded uniformly in the stage jet degree and challenge height under
+`j ≤ v`, `H ≤ ℓ*h`, and `τ ≤ 2*n`. -/
+theorem regularPowerBatchedInitialMixedDegree_le_uniformCaps
+    (r n K ℓ j H v h τ : ℕ) (hn : 0 < n) (hτ : τ ≤ 2 * n) (hj : 0 < j)
+    (hh : 0 < h) (hjv : j ≤ v) (hH : H ≤ ℓ * h) :
+    regularPowerBatchedInitialMixedDegree r ℓ K j H (τ := τ) ≤
+      ℓ * h * (3 * r + 5) * 2 ^ r * v ^ (r + 1) * n ^ (r + 1) := by
+  let b := regularPowerBatchedCutJetDegree K j (τ := τ)
+  let a := regularPowerBatchedCutChallengeDegree ℓ K H (τ := τ)
+  have hb : b ≤ 2 * n * v :=
+    (regularPowerBatchedCutJetDegree_le_two_mul K n j τ hn hτ hj).trans
+      (Nat.mul_le_mul_left (2 * n) hjv)
+  have ha : a ≤ 3 * n * ℓ * h :=
+    regularPowerBatchedCutChallengeDegree_le_three_mul n ℓ K H τ h hn hτ hh hH
+  have hbpow : b ^ (r + 1) ≤ (2 * n * v) ^ (r + 1) := Nat.pow_le_pow_left hb _
+  have hbpow' : b ^ r ≤ (2 * n * v) ^ r := Nat.pow_le_pow_left hb _
+  have hfirst := Nat.mul_le_mul hH hbpow
+  have hsecond := Nat.mul_le_mul
+    (Nat.mul_le_mul (Nat.mul_le_mul_left (r + 1) hjv) ha) hbpow'
+  unfold regularPowerBatchedInitialMixedDegree
+  dsimp only [a, b] at hbpow hbpow' hfirst hsecond ⊢
+  calc
+    H * regularPowerBatchedCutJetDegree K j (τ := τ) ^ (r + 1) +
+        (r + 1) * j * regularPowerBatchedCutChallengeDegree ℓ K H (τ := τ) *
+          regularPowerBatchedCutJetDegree K j (τ := τ) ^ r ≤
+      ℓ * h * (2 * n * v) ^ (r + 1) +
+        ((r + 1) * v * (3 * n * ℓ * h)) * (2 * n * v) ^ r := by
+      apply Nat.add_le_add
+      · exact hfirst
+      · exact hsecond
+    _ = ℓ * h * (3 * r + 5) * 2 ^ r * v ^ (r + 1) * n ^ (r + 1) := by
+      rw [pow_succ]
+      ring
+
+/-- Increasing the Taylor exponent only increases the explicit agreement budget. -/
+theorem regularPowerBatchedAgreementSharpBound_mono_exponent
+    (r n ℓ K k L A v h τ τ' : ℕ) (hτ : τ ≤ τ') :
+    regularPowerBatchedAgreementSharpBound r n ℓ K k L A v h (τ := τ) ≤
+      regularPowerBatchedAgreementSharpBound r n ℓ K k L A v h (τ := τ') := by
+  have hPA := dimensionSensitiveIncidenceProduct_nonneg n A k 1 r
+  have hPL := dimensionSensitiveIncidenceProduct_nonneg n L k 1 r
+  unfold regularPowerBatchedAgreementSharpBound regularPowerBatchedInitialMixedDegree
+    regularPowerBatchedCutJetDegree regularPowerBatchedCutChallengeDegree
+  gcongr
 
 end ReedSolomon

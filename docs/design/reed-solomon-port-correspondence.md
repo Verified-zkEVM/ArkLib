@@ -1915,6 +1915,12 @@ No public declaration from this source module was omitted. The separate
 `agreeingPolynomials_eq_empty_of_card_lt` API is not duplicated; pointwise emptiness follows from
 `DecoderCertificate.decoder_eq_empty_of_card_lt`.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/SharpCountingBound.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/SharpCountingBound.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Kept `correlatedMidpoint_ratios_le_two_div`, `polynomialCurveSharpStageBound`, and `polynomialCurveSharpStageBound_le_uniform`. Renamed `polynomialCurveSharpMCAConstant` to `polynomialCurveSharpAgreementConstant`, `regularSymbolicCurveMCASharpBound_midpoint_le_stageBound` to `regularPowerBatchedAgreementSharpBound_midpoint_le_stageBound`, and `regularSymbolicCurveMCASharp_finiteStage_uniform_le` to `regularPowerBatchedAgreementSharp_finiteStage_uniform_le`; the agreement theorems use the current power-batched API. `polynomialCurveSharpUniformStageBound` is not ported as a separate definition because `polynomialCurveSharpStageBound δ n ℓ v h d` supplies that bound at cap `d`. The capacity acceptance cases check midpoint ratios, the midpoint stage bound, uniformization from order `1` to cap `2`, and the finite-family bound.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/ComponentDimension.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/ComponentDimension.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -2111,6 +2117,10 @@ Renamed `sourceCurveInitialMixedDegree` to `regularPowerBatchedInitialMixedDegre
 
 Did not port `sourceCurveCutDerivativeDegree` because the generic capped-bidegree theorem supplies its cap. The common Taylor numerator, high cuts, agreement equation, and initial equation bounds are covered by generic capped-bidegree theorems. No joint Reed–Solomon separant wrapper is retained because the generic initial-separant support theorem covers it.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/SharpGeneralEquation.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Renamed `sourceCurveCutJetDegree_le` to `regularPowerBatchedCutJetDegree_le_two_mul`, `sourceCurveCutChallengeDegree_mul_le` to `regularPowerBatchedCutChallengeDegree_le_three_mul`, and `sourceCurveInitialMixedDegree_le_uniformCaps` to `regularPowerBatchedInitialMixedDegree_le_uniformCaps`. These bounds generalize to an explicit `τ ≤ 2*n`; the challenge-degree bound also takes `H ≤ ℓ*h`. Renamed `regularSymbolicCurveMCASharpBound_mono_exponent` to `regularPowerBatchedAgreementSharpBound_mono_exponent` and placed it in the module that owns the agreement budget. The acceptance cases check all three degree bounds and exponent monotonicity from `τ = 0` to `τ' = 1`.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerToLine.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/PowerToLine.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -2128,6 +2138,16 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordi
 `Ordinary.PolynomialCurve.Counting.admissibleFrobeniusPowerTuples_card_le_degreeOf` → `ReedSolomon.admissibleFrobeniusPowerTuples_card_le_degreeOf`, generalized from `Fin n` to an arbitrary embedded coordinate type. No declarations from the counting source were left out. The imported adapter `Ordinary.PolynomialCurve.Admissible.exists_admissibleFrobeniusPowerTuple_of_symbolic_prime_sample` is not added because constructing admissible tuples from prime components is outside this counting unit.
 
 The shared acceptance file uses a concrete zero tuple for specialization and singleton tuple counting. A zero-pair witness covers admissible-pair counting, retained-family nonemptiness and its cardinality bound. The exceptional-family example states `exceptional.card ≤ 0` and equality of affine and common agreement sets for every retained pair. The standalone tuple admissibility example and simplification-only uniqueness example were removed.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerTupleIncidence.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/PolynomialCurve/Incidence.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Renamed `sourceFrobeniusPowerSparseCuts` to `frobeniusPowerSparseTaylorNumerators`; its mathematical content is unchanged and it uses the joint Taylor numerator API. Generalized `sourceFrobeniusPowerGraphLocusAt` and `sourceFrobeniusPowerGraphLocus` as `admissibleFrobeniusPowerTupleGraphLocus`, with finite embedded coordinate types, `Set.ncard`, and a free agreement threshold. Generalized `commonAgreement_of_frobeniusPowerCut_mem_prime` from `Fin n` to arbitrary coordinate types and renamed it `commonAgreement_of_frobeniusPowerAgreementEquation_mem_prime`. Generalized `principalOpen_subset_sourceFrobeniusPowerGraphLocusAt` and `principalOpen_subset_sourceFrobeniusPowerGraphLocus` to finite embedded coordinate types and a free agreement threshold, under `principalOpen_subset_admissibleFrobeniusPowerTupleGraphLocus`. The finite bound combines `finite_sourceFrobeniusPower_points_off_graphs_card_le_at` and `finite_sourceFrobeniusPower_points_off_graphs_card_le` as `finite_frobeniusPowerTupleIncidence_off_graphs_card_le`; it uses the free threshold and `Set.ncard`, and drops the source assumption `A ≤ n`.
+
+The default locus and principal-open wrappers are covered at `L = k`, as is the default finite bound. `symbolicSourceFrobeniusPowerAgreement_mem_restrictBidegree` is covered by the existing generalized `jointTaylorAgreementEquation_mem_regularPowerBatchedCutBidegree_of_exponent`, so no source-specific wrapper was added.
+
+The shared acceptance file includes concrete instances for the common-agreement theorem and principal-open graph inclusion on a zero tuple, and the finite incidence bound on a nonempty singleton outside the retained graphs. It also tests `finite_regularHighCutJets_card_le_dimensionSensitive_of_exponent` with the first-order chart, `commonAgreement_of_jointTaylorAgreementEquation_mem_prime` with a proved zero cut, and `chart_prime_affineHilbertPolynomial_natDegree_le_of_agreements_of_exponent` with a nonempty cut. The shared acceptance module built successfully with caching disabled, and the file is under the 1,500-line limit.
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/SingularTail.lean`
 
@@ -3457,6 +3477,10 @@ pairwise `r ≤ s` comparison to the `Monotone` property. `dimensionSensitiveInc
 and `hybridDimensionSensitiveIncidenceProduct_min_le` keep their names and statements.
 `hybridDimensionSensitiveIncidenceProduct_eq_factor_mul` keeps its name and is generalized from
 `s ≤ k` to `s ≤ k + 1`. Nothing was deferred or left unported.
+
+Ported from `ArkLib/ToMathlib/AlgebraicGeometry/Incidence/ProductBounds.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Added `natCastRatio_le_div_of_scaled_lower_bound`, a general ordered-field ratio bound that replaces the private `midpoint_ratio_le_two_div` helper. The enumerative acceptance case checks it with `δ = scale = 1`, `n = 2`, `N = 1`, and `D = 2`.
 
 ## `ArkLib/ToMathlib/Combinatorics/Enumerative/MonomialCount.lean`
 
