@@ -2031,6 +2031,14 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Firs
 
 Renamed `hybridCurveJ1` to `hybridCurveJointStageSum` and `regularSymbolicCurveMCADerivativeBoundTwo_eq_hybrid_curve_stage` to `regularPowerBatchedDerivativeCappedBoundTwo_eq_hybridCurveStage` to match the current summation and power-batched APIs. The declarations `curveRetentionMinimum`, `curveRetentionMinimum_le`, `exists_curveRetentionMinimum`, `hybridCurveTail`, `hybridCurveRegular`, `hybridCurveAtDegree`, `hybridCurveOptimized`, `hybridCurveAtDegree_le_pair`, `hybridCurveAtDegree_le_optimized`, `exists_exceptional_firstOrder_regularCurveStages`, `exists_exceptional_firstOrder_hybridCurve_of_tail`, and `exists_exceptional_firstOrder_hybridCurve_optimized_of_tail` keep their names. The exception theorems use the height-free descent API and derive the coefficient-height bound from `Q`. No public source declarations were left out. The private characteristic helper was removed because `natCast_ne_zero_of_ringChar_eq_zero_or_lt` supplies the general result.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/HybridTransfer.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/HybridTransfer.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`HasOrdinaryTailTransfer` keeps its name and packages the order-zero exceptional-set guarantee using `ordinaryTailCharge` and the mapped-domain API. `exists_exceptional_firstOrder_hybrid_raw_of_tail` keeps its name and combines the ordinary tail with the regular first-order stages at a fixed split, bounding the exceptional set by `firstOrderExceptionCharge`; its coefficient degree is derived from `Q`. `exists_exceptional_firstOrder_hybrid_optimized_of_tail` keeps its name and drops `1 ≤ μ`, weakens the characteristic guard to `ringChar F = 0 ∨ D < ringChar F`, and gives the current optimized charge, ceiling, and closed-constant bounds.
+
+The source `exists_exceptional_firstOrder_regularStages` is covered by the existing more general `exists_exceptional_firstOrder_regularCurveStages`; `exists_hybridERaw_eq_hybridERawAtDegree` by `exists_curveRetentionMinimum`; `hybridERawAtDegree_le_hybridEOptimizedRaw` by `HiddenDerivative.minFirstOrderExceptionCharge_le_maxMin`; and `regularSymbolicCurveMCADerivativeBoundTwo_eq_hybrid_stage` by `regularPowerBatchedDerivativeCappedBoundTwo_eq_hybridCurveStage`. `ringChar_eq_of_injective_fieldHom` remains a local proof step in the existing generalized regular-stage theorem, with no consumer needing a separate public helper.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/Certificates.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/CertificateList.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -2242,6 +2250,10 @@ Renamed `sourceCurveCutJetDegree_le` to `regularPowerBatchedCutJetDegree_le_two_
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/PowerToLine.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 `exactCorrelatedPair_of_powerAgreement_one` keeps its name and turns exact degree-one power agreement for two constituents into an exact correlated-pair witness, preserving the degree bounds and full agreement-set equality. `lineExactAgreementBound_of_powerAgreement_one` keeps its name and is generalized from a rational budget and finite field to a real budget over any field. Both source public declarations are ported. A one-coordinate acceptance case exercises the line-bound conversion, and another directly applies the exact-pair bridge with an explicit exact-power witness over `pointDomain`.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/PowerToLine.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`powerBatchedWord_pair_eq` names the identity between the degree-one power-batched word and the correlated line. `powerAgreement_one_of_exactCorrelatedPair` adds the converse from an exact correlated-pair witness to exact degree-one power agreement. No declarations from this source file were omitted.
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerTupleCounting.lean`
 
