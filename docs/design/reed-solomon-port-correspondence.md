@@ -1915,6 +1915,12 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capa
 
 Renamed `exists_prescribedCurveMCA_exact` to `exists_exceptional_exactPowerAgreement_with_prescribed_stageBounds` and `exists_prescribedCurveMCA` to `exists_exceptional_exactPowerAgreement_of_prescribedCurve`. The stage-bounds declaration removes `[DecidableEq F]` and `[DecidableEq E]`; the prescribed-curve declaration removes `[DecidableEq E]`. Both public declarations are ported.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/PrescribedLine.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/PrescribedLine.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Renamed `exists_prescribedLineMCA` to `exists_prescribedLine_exactCorrelatedPair`. The theorem drops the decidable-equality assumptions and uses the prescribed-curve and power-to-line APIs. Its acceptance case checks a zero line and zero candidate.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/ProductBounds.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/ProductBounds.lean` at ArkLib revision
@@ -1982,11 +1988,23 @@ Did not port `sourceCurveCutJetDegree_le_uniformCaps_of_exponent`, which is cove
 
 Acceptance cases for `product_stage_bound`, stage uniformization, scalar aggregation, the regular-stage bound, the finite-stage bound, and prescribed-coefficient positivity were appended to `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity.lean`.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/RatePartition.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/RatePartition.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Renamed `exists_ratePartition_curveMCA` to `exists_ratePartition_curve_exactPowerAgreement`; it uses the current finite-parameter, block-length, and certificate APIs. Renamed `exists_ratePartition_baseCurveMCA` to `exists_ratePartition_baseCurve_exactPowerAgreement`; its mathematical statement is unchanged and uses the current extension-descent API. Renamed `exists_ratePartition_lineMCA` to `exists_ratePartition_line_exactCorrelatedPair` and `exists_ratePartition_lineMCA_parameters` to `exists_ratePartition_line_exactCorrelatedPair_parameters`; their mathematical statements are unchanged and specialize the base-field curve guarantee through power-to-line, with the parameter theorem selecting finite parameters from the strict rate gate. The acceptance cases retain each exceptional-set bound and apply its guarantee to a zero candidate and zero received word at a challenge outside the exceptional set.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/SharpCountingBound.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/SharpCountingBound.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 Kept `correlatedMidpoint_ratios_le_two_div`, `polynomialCurveSharpStageBound`, and `polynomialCurveSharpStageBound_le_uniform`. Renamed `polynomialCurveSharpMCAConstant` to `polynomialCurveSharpAgreementConstant`, `regularSymbolicCurveMCASharpBound_midpoint_le_stageBound` to `regularPowerBatchedAgreementSharpBound_midpoint_le_stageBound`, and `regularSymbolicCurveMCASharp_finiteStage_uniform_le` to `regularPowerBatchedAgreementSharp_finiteStage_uniform_le`; the agreement theorems use the current power-batched API. `polynomialCurveSharpUniformStageBound` is not ported as a separate definition because `polynomialCurveSharpStageBound δ n ℓ v h d` supplies that bound at cap `d`. The capacity acceptance cases check midpoint ratios, the midpoint stage bound, uniformization from order `1` to cap `2`, and the finite-family bound.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/UniformRate.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/UniformRate.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Renamed `exists_uniformRatePartition_curveMCA` to `exists_uniformRatePartition_curve_exactPowerAgreement`. It drops the extension decidable-equality assumption and uses the current uniform envelope and certificate APIs. Renamed `exists_uniformRatePartition_baseCurveMCA` to `exists_uniformRatePartition_baseCurve_exactPowerAgreement`; its mathematical statement is unchanged and descends the extension-field guarantee. Renamed `exists_uniformRatePartition_lineMCA` to `exists_uniformRatePartition_line_exactCorrelatedPair`; its mathematical statement is unchanged and specializes the base-field curve guarantee through power-to-line. The acceptance cases retain each exceptional-set bound and apply its guarantee to a zero candidate and zero received word at a challenge outside the exceptional set.
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/ComponentDimension.lean`
 
