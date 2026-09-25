@@ -84,3 +84,36 @@ example : mcaError (AffineLineGenerator (ZMod 5)) (code johnsonFiniteDomain 2) (
     ZMod.card] at h
   norm_num at h ⊢
   exact h
+
+/-- The weighted Johnson parameters at length `3`, degree `1`, agreement `3`, multiplicity `1`,
+jet cutoff `1` and height `1` form a certificate, with weighted count `5`. -/
+private theorem weightedJohnsonCertificate_three :
+    IsJohnsonWeightedCertificate 3 1 3 1 1 1 :=
+  ⟨le_rfl, le_rfl, by norm_num, by decide, by decide⟩
+
+/-- On the zero line of length `3`, some challenge outside at most `5` exceptional challenges
+recovers the zero candidate. -/
+example : ∃ exceptional : Finset ℚ,
+    (exceptional.card : ℚ) ≤ 5 ∧
+    ∃ z ∉ exceptional, HasExactCorrelatedPair (natDomain 3) 0 0 (RingHom.id ℚ) 2 z 0 := by
+  obtain ⟨exceptional, hcard, hgood⟩ := exists_weightedJohnson_line_exactCorrelatedPair
+    (natDomain 3) 0 0 weightedJohnsonCertificate_three le_rfl (by norm_num) le_rfl le_rfl
+  obtain ⟨z, hz⟩ := Finset.exists_notMem exceptional
+  refine ⟨exceptional, hcard.trans (by norm_num [johnsonWeightedRefinedExceptionCount]), z, hz,
+    ?_⟩
+  convert hgood z hz 0 (by rw [degree_zero]; exact WithBot.bot_lt_coe _) ?_
+  simp [polynomialAgreementSet]
+
+local instance : Fact (Nat.Prime 7) := ⟨by decide⟩
+
+private def weightedJohnsonFiniteDomain : Fin 3 ↪ ZMod 7 := ⟨![0, 1, 2], by decide⟩
+
+/-- Over `ZMod 7` at length `3` and dimension `2`, the weighted certificate bounds the
+affine-line MCA error at radius `0` by `5 / 7`. -/
+example : mcaError (AffineLineGenerator (ZMod 7)) (code weightedJohnsonFiniteDomain 2) 0 ≤
+    ENNReal.ofReal (5 / 7) := by
+  have h := mcaError_affineLine_weightedJohnson_le weightedJohnsonFiniteDomain
+    weightedJohnsonCertificate_three le_rfl (by norm_num) le_rfl le_rfl 0 (by norm_num)
+  rw [ZMod.card] at h
+  norm_num [johnsonWeightedRefinedExceptionCount] at h
+  exact h
