@@ -22,8 +22,8 @@ transfer theorems over the complex field.
 
 * Height-slot and certificate bounds have nonvacuous base-field and extension-field instances.
 * Regular-stage, hybrid, and optimized exceptional-set bounds have concrete instances.
-* Both ordinary-tail hybrid-transfer bounds have concrete instances.
-* The order-zero tail of a concrete descent discharges the ordinary-tail transfer premise.
+* Both ordinary-tail hybrid-transfer bounds have concrete instances, with the ordinary-tail
+  premise supplied by the order-zero tail of a concrete descent.
 
 ## References
 
@@ -257,14 +257,9 @@ private theorem exceptionOrdinaryTailTransfer :
     HasOrdinaryTailTransfer (D := 1) (A := 2)
       (h := coeffNatDegree exceptionEquation) (mu := 1)
       (e := exceptionDescent.actualDegree) exceptionDomain (exceptionValues 0)
-      (exceptionValues 1) exceptionEmbedding exceptionDescent.tail.equation := by
-  classical
-  refine ⟨∅, ?_, ?_⟩
-  · simp [HiddenDerivative.ordinaryTailCharge, exceptionEquation_coeffNatDegree,
-      exceptionDescent_actualDegree]
-  · intro z hz P hdegree hagree hroot
-    rw [exceptionDescent_tail_equation] at hroot
-    exact False.elim (constantOneTail_has_no_root z P hroot)
+      (exceptionValues 1) exceptionEmbedding exceptionDescent.tail.equation :=
+  exceptionDescent.hasOrdinaryTailTransfer exceptionDomain (exceptionValues 0)
+    (exceptionValues 1) exceptionEmbedding (by norm_num) (by norm_num) (by norm_num)
 
 example := exists_exceptional_firstOrder_hybrid_raw_of_tail
   (n := 2) (D := 1) (A := 2) (L := 2) (mu := 1) (M := 1)
@@ -361,13 +356,3 @@ example :
         · intro z hz P hdegree hagree hroot
           rw [exceptionDescent_tail_equation] at hroot
           exact False.elim (constantOneTail_has_no_root z P hroot))
-
-/-- The tail of a concrete descent supplies the ordinary-tail premise of the hybrid transfer. -/
-example := exists_exceptional_firstOrder_hybrid_optimized_of_tail
-  (n := 2) (D := 1) (A := 2) (mu := 1) (M := 1)
-  exceptionDomain (exceptionValues 0) (exceptionValues 1) exceptionEmbedding
-  exceptionEquation exceptionDescent
-  (by norm_num) (by norm_num) (by norm_num) (by norm_num)
-  (Or.inl (ringChar.eq_zero : ringChar ℂ = 0))
-  (exceptionDescent.hasOrdinaryTailTransfer exceptionDomain (exceptionValues 0)
-    (exceptionValues 1) exceptionEmbedding (by norm_num) (by norm_num) (by norm_num))

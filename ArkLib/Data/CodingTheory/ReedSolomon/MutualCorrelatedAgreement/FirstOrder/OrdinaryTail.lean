@@ -49,14 +49,9 @@ theorem HiddenDerivative.FirstOrderHybridDescent.hasOrdinaryTailTransfer
   obtain rfl : instE = fun a b ↦ Classical.propDecidable (a = b) := Subsingleton.elim _ _
   let h := coeffNatDegree Q
   let b := mu - descent.actualDegree
-  have hstageHeight (j : ℕ) : CoeffNatDegreeLE (jetDerivative Q (1 : Fin 2) j) h := by
-    induction j with
-    | zero => exact coeffNatDegreeLE_coeffNatDegree Q
-    | succ j ih =>
-        rw [jetDerivative_succ]
-        exact ih.pderiv (some (1 : Fin 2))
   have hheight : CoeffNatDegreeLE descent.tail.equation h :=
-    descent.tail.natDegree_coeff_equation_le (hstageHeight descent.actualDegree)
+    descent.tail.natDegree_coeff_equation_le
+      ((coeffNatDegreeLE_coeffNatDegree Q).iterate_pderiv _ descent.actualDegree)
   have hdegree : descent.tail.equation.degreeOf (some 0) ≤ b := descent.tail_rootDegree_le
   unfold HasOrdinaryTailTransfer ordinaryTailCharge
   by_cases hb : b = 0
