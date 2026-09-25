@@ -58,8 +58,6 @@ open Polynomial Finset ReedSolomon PolynomialDifferential ReedSolomon.HiddenDeri
 private abbrev E₄ := FiniteField.Extension (ZMod 2) 2 2
 private def pointDomain : Fin 1 ↪ ZMod 2 :=
   ⟨fun _ ↦ 0, fun _ _ _ ↦ Subsingleton.elim _ _⟩
-private noncomputable def agreementEquation : DifferentialPolynomial (ZMod 2)[X] 0 :=
-  MvPolynomial.X (some 0) - MvPolynomial.C (Polynomial.X)
 
 noncomputable section
 
@@ -93,28 +91,23 @@ private theorem singletonLineExactBound : LineExactAgreementBound pointDomain 1 
     · rw [hagree]; ext i; fin_cases i; simp [commonPolynomialAgreementSet, pointDomain]⟩
 
 private def affineValues : Fin 2 → Fin 1 → ZMod 2 := ![fun _ ↦ 1, fun _ ↦ 0]
-
 example := exists_affine_exceptionalSet_full_agreement_of_exactLine pointDomain 0
   singletonLineExactBound 0 (by norm_num [pointDomain]) (by norm_num) affineValues
 
 private def fullDomain : Fin 2 ↪ ℚ where
   toFun i := ((i : ℕ) : ℚ)
   inj' _i _j h := Fin.ext (Nat.cast_injective (R := ℚ) h)
-
 private noncomputable def tupleOne : Fin 2 → ℚ[X] := ![1, 0]
 private noncomputable def tupleChallenge : Fin 2 → ℚ[X] := ![0, 1]
 example : tupleOne ≠ tupleChallenge ∧ ∃ z : ℚ, z ≠ 1 ∧ z ≠ 0 ∧
     Set.InjOn (fun P : Fin 2 → ℚ[X] ↦
       powerBatchedPolynomial (fun t ↦ (P t).map (RingHom.id ℚ)) z)
-      {tupleOne, tupleChallenge} := by
-  classical
-  refine ⟨fun h ↦ ?_, ?_⟩
-  · simpa [tupleOne, tupleChallenge] using congrFun h 0
-  · obtain ⟨z, hz, hinj, hroot⟩ :=
-      exists_polynomialTuple_specialization_injective_avoiding_roots
-      (RingHom.id ℚ) {tupleOne, tupleChallenge} {1} {X} (by simp [X_ne_zero])
-    exact ⟨z, by simpa using hz, by simpa using hroot X (by simp), by simpa using hinj⟩
-
+      {tupleOne, tupleChallenge} := by classical
+  refine ⟨by norm_num [tupleOne, tupleChallenge], ?_⟩
+  obtain ⟨z, hz, hinj, hroot⟩ :=
+    exists_polynomialTuple_specialization_injective_avoiding_roots
+    (RingHom.id ℚ) {tupleOne, tupleChallenge} {1} {X} (by simp [X_ne_zero])
+  exact ⟨z, by simpa using hz, by simpa using hroot X (by simp), by simpa using hinj⟩
 /-- The graph-line recognizer accepts the computed candidate `1 + 2X` at challenge `1`. -/
 example : ∃ F₀ G₀ : ℚ[X], F₀.degree < 2 ∧ G₀.degree < 2 ∧
     (∀ i ∈ (Finset.univ : Finset (Fin 2)),
@@ -294,7 +287,7 @@ private def firstOrderChartValues : Fin 1 → ComponentField := fun _ ↦ 0
 private def firstOrderRegularJet : Fin 2 → ComponentField := fun _ ↦ 0
 private def firstOrderRegularJets : Finset (Fin 2 → ComponentField) :=
   {firstOrderRegularJet}
-/-- Chart and source dimension budgets include the chart-prime zero-cut bound. -/
+/-- The chart and source dimension budgets hold for nonempty order-one cuts. -/
 example :
     firstOrderRegularJets.Nonempty ∧
     (firstOrderRegularJets.card : ℚ) ≤ (jetTotalDegree firstOrderChartEquation : ℚ) *
@@ -303,7 +296,6 @@ example :
     ((affineHilbertPolynomial chartIdeal).natDegree +
         {i | taylorAgreementEquation 0 firstOrderChartEquation 2 2
           (firstOrderTestPoints i) (firstOrderChartValues i) ∈ chartIdeal}.ncard ≤ 1) ∧
-      (affineHilbertPolynomial chartIdeal).natDegree ≤ 1 ∧
       (affineHilbertPolynomial sourceIdeal).natDegree ≤ 2 ∧
       (affineHilbertPolynomial sourceIdeal).natDegree +
         {i | jointTaylorAgreementEquation 0 sourceEquation 2 2
@@ -371,12 +363,7 @@ example :
     chart_dimensionSensitive_component_of_exponent (center := 0)
     (Q := firstOrderChartEquation) (K := 2) (k := 1) (n := 1) (τ := 2) hτ (by omega)
     (by omega) chartIdeal hChartPrime hChartSeparant hChartHigh firstOrderTestPoints
-    firstOrderChartValues hChartDimension,
-    chart_prime_affineHilbertPolynomial_natDegree_le_of_agreements_of_exponent
-      (center := 0) (Q := firstOrderChartEquation) (K := 2) (k := 1) (c := 0) (τ := 2)
-      hτ (by omega) (by omega) chartIdeal hChartPrime hChartSeparant hChartHigh
-      (⟨Fin.elim0, by intro i; exact Fin.elim0 i⟩ : Fin 0 ↪ ComponentField)
-      Fin.elim0 (fun i ↦ i.elim0), hpoly.1, ?_, ?_⟩
+    firstOrderChartValues hChartDimension, hpoly.1, ?_, ?_⟩
   · simp [firstOrderTestPoints] at hline ⊢; omega
   · simpa [firstOrderTestPoints] using
       (firstOrder_symbolicSource_dimensionSensitive_component_of_exponent
@@ -401,9 +388,22 @@ private theorem component_zeroCut_mem (alpha : ComponentField) :
         (1 + MvPolynomial.C (Polynomial.C alpha)) * MvPolynomial.X 0 by ring,
     map_mul, optionEquivRight_symm_X]
   exact Ideal.mul_mem_left _ _ component_generator_mem
-/-- Every regular point of a prime component lies on the recognized graph line, and agreement
-cuts at two points, one more than the degree bound `k = 1`, give a pair with two common
-agreements. -/
+/-- A nonempty agreement cut lowers the affine Hilbert degree of this chart prime to zero. -/
+example := by
+  have hP : (Ideal.span {(MvPolynomial.X 0 : ChartRing 0 ComponentField)}).IsPrime :=
+    (Ideal.span_singleton_prime (X_ne_zero _)).mpr X_prime
+  exact chart_prime_affineHilbertPolynomial_natDegree_le_of_agreements_of_exponent
+    (center := (0 : ComponentField))
+    (Q := (MvPolynomial.X (0 : Fin 1) : DifferentialPolynomial ComponentField 0))
+    (K := 1) (k := 1) (c := 1) (τ := 0)
+    (by intro l; fin_cases l; decide) (by omega) (by omega) _ hP
+    (by simpa [initialJetSeparant, initialJetEquation, separant] using
+      (Ideal.ne_top_iff_one _).mp hP.ne_top)
+    (by intro l hl; fin_cases l; omega) firstOrderTestPoints firstOrderChartValues fun i ↦ by
+      simp [taylorAgreementEquation, commonTaylorNumerator, rationalTaylorNumerator,
+        initialJetSeparant, separant, firstOrderTestPoints, firstOrderChartValues]
+/-- Every regular point of a prime component lies on its graph line; two cuts above `k = 1`
+yield a pair with two common agreements. -/
 example :
     (∃ P₀ P₁ : ℚ[X], ∀ x, x ∈ zeroLocus ComponentField (componentIdeal (E := ComponentField)) ∧
       aeval x (jointInitialJetSeparant (r := 0) (0 : ComponentField)
