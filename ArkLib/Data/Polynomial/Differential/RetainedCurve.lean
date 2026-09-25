@@ -24,7 +24,8 @@ exact jet degree and the separate bounds on `Y₁` and the challenge.
 * `positiveCurveEquation_jetTotalDegree_le` and `positiveCurveEquation_yOneDegree_le`: the jet
   and `Y₁` degree bounds for the retained equation.
 * `jetTotalDegree_fromFlattenedRootFirst_mul`: additivity of jet degree on root-first products.
-* `positiveCurveEquation_coeffNatDegreeLE`: the coefficient challenge height bound.
+* `positiveCurveEquation_coeffNatDegreeLE` and
+  `positiveCurveEquation_coeffNatDegreeLE_of_input`: coefficient challenge height bounds.
 * `curveJetView_totalDegree`: the two-variable view computes the jet degree.
 * `fromFlattenedRootFirst_rootFirstChallenge` and
   `challengeRetainingRootFirst_fromFlattenedRootFirst`: the root-first coordinate maps are
@@ -307,6 +308,42 @@ theorem positiveCurveEquation_coeffNatDegreeLE (Q : DifferentialPolynomial F[X] 
       rw [hopt]
       exact Polynomial.mem_support_iff.mp hmem
     simpa using (MvPolynomial.monomial_le_degreeOf none hsource).trans_eq hdegree
+
+/-- The retained positive-factor equation does not increase the coefficient challenge height.
+-/
+theorem positiveCurveEquation_coeffNatDegreeLE_of_input
+    (Q : DifferentialPolynomial F[X] 1) {H : ℕ}
+    (hheight : CoeffNatDegreeLE Q H) :
+    CoeffNatDegreeLE (positiveCurveEquation Q) H := by
+  have hchallenge :
+      degreeOf (some (some (1 : Fin 2))) (challengeRetainingRootFirst Q) ≤ H := by
+    classical
+    let T := (optionEquivRight F (JetVariable 1)).symm Q
+    have hT : degreeOf none T ≤ H := by
+      have hweight : T.weightedTotalDegree (fun v ↦ v.elim 1 fun _ ↦ 0) ≤ H :=
+        weightedTotalDegree_optionEquivRight_symm_coefficientDegree_le hheight
+      have hweights : (fun v : Option (JetVariable 1) ↦ v.elim 1 fun _ ↦ 0) =
+          Pi.single none 1 := by
+        funext v
+        cases v <;> simp
+      have hweight' : T.weightedTotalDegree (Pi.single none 1) ≤ H := by
+        simpa only [hweights] using hweight
+      rw [← weightedTotalDegree_piSingle none T]
+      exact hweight'
+    have hrename := degreeOf_rename_of_injective
+      (Equiv.swap none (some (some (1 : Fin 2)))).injective none (p := T)
+    change degreeOf (some (some (1 : Fin 2)))
+        (rename (Equiv.swap none (some (some 1))) T) ≤ H
+    have hrename' : degreeOf (some (some (1 : Fin 2)))
+        (rename (Equiv.swap none (some (some 1))) T) = degreeOf none T := by
+      simpa [Equiv.swap_apply_def] using hrename
+    exact hrename'.le.trans hT
+  have hprim :
+      degreeOf (some (some (1 : Fin 2)))
+        (radicalPrimPart none (challengeRetainingRootFirst Q)) ≤ H :=
+    (degreeOf_radicalPrimPart_le none (some (some (1 : Fin 2)))
+      (challengeRetainingRootFirst Q)).trans hchallenge
+  exact (positiveCurveEquation_coeffNatDegreeLE Q).mono hprim
 
 end
 
