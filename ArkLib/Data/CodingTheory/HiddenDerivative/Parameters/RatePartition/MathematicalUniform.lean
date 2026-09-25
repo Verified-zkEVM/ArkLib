@@ -26,6 +26,8 @@ dimension and agreement.
 * `uniformMathematical_totalJetDegree_le`, `uniformMathematical_low_ratio_gt`, and
   `uniformMathematical_high_ratio_gt`.
 * `exists_mathematicalRatePartitionEnvelope`, a specialization of `exists_ratePartitionEnvelope`.
+* `uniformMathematicalCapacityLength`, the length threshold combining the mathematical length with
+  the Johnson length `⌈4 ν / δ²⌉₊` at the jet cap `ν`.
 
 ## References
 
@@ -227,5 +229,10 @@ theorem exists_mathematicalRatePartitionEnvelope {δ : ℝ} {n k A : ℕ}
     exact uniformMathematical_high_ratio_gt hδ hδsmall hRlow hRtop
   exact exists_ratePartitionEnvelope hδ hδsmall hk hgap hAn hmorder hsize
     (uniformMathematical_low_ratio_gt hδ hδsmall) hhigh
+
+/-- The capacity length threshold: the mathematical length, and at least `4 ν / δ²` for the jet
+cap `ν`, so that message dimensions up to the jet cap lie in the Johnson regime. -/
+def uniformMathematicalCapacityLength (δ : ℝ) : ℕ :=
+  max (uniformMathematicalLength δ) ⌈(4 : ℝ) * uniformMathematicalJetBound δ / δ ^ 2⌉₊
 
 end ReedSolomon.HiddenDerivative.RatePartition
