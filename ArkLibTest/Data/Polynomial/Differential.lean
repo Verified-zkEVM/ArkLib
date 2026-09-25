@@ -14,6 +14,7 @@ import ArkLib.Data.Polynomial.Differential.FrobeniusEquation
 import ArkLib.Data.Polynomial.Differential.FrobeniusTaylorWitness
 import ArkLib.Data.Polynomial.Differential.JetPrefix
 import ArkLib.Data.Polynomial.Differential.JetPrefixPresentation
+import ArkLib.Data.Polynomial.Differential.OrderZeroPresentation
 import ArkLib.Data.Polynomial.Differential.RationalTaylor
 import ArkLib.Data.Polynomial.Differential.RationalTaylorAlgebra
 import ArkLib.Data.Polynomial.Differential.RationalTaylorDerivativeDegree
@@ -936,7 +937,8 @@ private abbrev residualCoefficients : ℕ → ℚ := fun i ↦ if i = 0 then 3 e
 example :
     aeval (fun i : Fin 2 ↦ residualCoefficients i.val)
       ((optionEquivLeft ℚ (Fin 2)
-        (universalTaylorResidual 2 0 (X (some 0) : DifferentialPolynomial ℚ 0))).coeff 1) = 5 := by
+        (universalTaylorResidual 2 0
+          (X (some 0) : DifferentialPolynomial ℚ 0))).coeff 1) = 5 := by
   rw [aeval_universalTaylorResidual_coeff (center := 0) (c := residualCoefficients)
     (K := 2) (h := 1) (Q := X (some 0))]
   simp [Polynomial.centeredCoefficientPrefix, residualCoefficients]
@@ -1473,26 +1475,24 @@ example :
   have hspec : challengeSpecialization Q 0 = 0 := by simp [Q, challengeSpecialization]
   exact hregular 0 hzero 0 (by rw [hspec]; rfl)
 
-/-! ### Retained curve equations -/
+/-! ### Order-zero polynomial presentations -/
 
-private abbrev retainedCurveEquation : DifferentialPolynomial (Polynomial ℚ) 1 :=
-  C (Polynomial.X + 1) * X (some 1) ^ 2 + X none
-
+/-- The order-zero equation recovered from `Z² + 1` has total jet degree two. -/
 example :
-    (curveJetView (challengeRetainingRootFirst retainedCurveEquation)).totalDegree =
-      jetTotalDegree retainedCurveEquation := by
-  rw [curveJetView_totalDegree, fromFlattenedRootFirst_rootFirstChallenge]
+    jetTotalDegree
+      (orderZeroOfPolynomial (Polynomial.X ^ 2 + 1 : Polynomial (Polynomial ℚ))) = 2 := by
+  rw [orderZeroOfPolynomial_jetTotalDegree]
+  norm_num
 
-example : differentialSpecialization (constantDerivativeEquation ℚ) 0 = 0 ∧
-      (differentialSpecialization (radicalContent (some 1)
-        (constantDerivativeEquation ℚ)) 0 = 0 ∨
-       differentialSpecialization (radicalPrimPart (some 1)
-        (constantDerivativeEquation ℚ)) 0 = 0) := by
-  have hsplit := MvPolynomial.map_radicalContent_mul_radicalPrimPart_eq_zero_iff
-    (differentialSpecializationHom (0 : Polynomial ℚ)) (some 1)
-    (Q := constantDerivativeEquation ℚ) (MvPolynomial.X_ne_zero (some 1))
-  rw [map_mul, mul_eq_zero, differentialSpecializationHom_apply] at hsplit
-  exact ⟨by simp [constantDerivativeEquation],
-    hsplit.mpr (by simp [constantDerivativeEquation])⟩
+/-- Evaluating the order-zero view of `X + Y₀²` at `X + 1` gives `X² + 3X + 1`. -/
+example :
+    (orderZeroAsPolynomial
+      (MvPolynomial.X none + MvPolynomial.X (some (0 : Fin 1)) ^ 2 :
+        DifferentialPolynomial ℚ 0)).eval (Polynomial.X + 1) =
+      Polynomial.X ^ 2 + 3 * Polynomial.X + 1 := by
+  rw [orderZeroAsPolynomial_eval]
+  simp [differentialSpecialization, differentialSpecializationHom]
+  ring
+
 end
 end PolynomialDifferential
