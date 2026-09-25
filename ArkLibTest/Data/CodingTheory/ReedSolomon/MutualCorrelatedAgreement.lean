@@ -1401,12 +1401,16 @@ private def regularBoundDomain : Fin 2 ↪ ℂ where
   toFun i := i.val
   inj' _i _j h := Fin.ext (Nat.cast_injective (R := ℂ) h)
 private def regularBoundValues : Fin 2 → Fin 2 → ℂ := fun t i ↦ if t = 0 then 0 else i.val
+private def regularBoundConstantValues : Fin 2 → Fin 2 → ℂ := fun _ _ ↦ 0
 private abbrev regularBoundEquation :
     DifferentialPolynomial RegularBoundField[X] 0 := X (some (0 : Fin 1))
 private def regularBoundWitness (_ : RegularBoundField) : RegularBoundField[X] := 0
 
-example : ∃ exceptional : Finset ℂ, exceptional.card ≤ 1 ∧ (0 : ℂ) ∈ exceptional ∧
-    ∃ curveExceptional : Finset ℂ, curveExceptional.card ≤ 1 := by
+example : ∃ regularExceptional : Finset ℂ, (regularExceptional.card : ℚ) ≤ 1 ∧
+    ∃ curveExceptional : Finset ℂ, curveExceptional.card ≤ 1 ∧
+      ∃ w : ℂ, w ∉ curveExceptional ∧
+        HasExactPowerAgreement regularBoundDomain regularBoundConstantValues
+          (RingHom.id ℂ) 2 w 0 := by
   classical
   have hroots : ∀ i, regularBoundDomain i ^ (1 ^ 0) = regularBoundDomain i := by simp
   have hτ : TaylorExponentSufficient 0 1 1 := by
@@ -1423,76 +1427,56 @@ example : ∃ exceptional : Finset ℂ, exceptional.card ≤ 1 ∧ (0 : ℂ) ∈
     simp [regularBoundEquation, MvPolynomial.pderiv_X]
   have hdegree : regularBoundEquation.degreeOf (some (0 : Fin 1)) = 1 := by
     simp [regularBoundEquation]
-  have hleft : polynomialAgreementSet regularBoundDomain (powerBatchedWord regularBoundValues 0)
-      (regularBoundWitness 0) = Finset.univ := by
-    ext i
-    fin_cases i <;> simp [polynomialAgreementSet, regularBoundDomain,
-      regularBoundValues, regularBoundWitness, powerBatchedWord]
-  have hdomain : regularBoundDomain.trans ⟨RingHom.id ℂ,
-      (RingHom.id ℂ).injective⟩ = regularBoundDomain := by ext i; rfl
-  have hbad : ∀ z ∈ ({(0 : RegularBoundField)} : Finset RegularBoundField),
-      ¬HasExactPowerAgreement regularBoundDomain regularBoundValues (RingHom.id ℂ) 1
-        (z ^ (1 ^ 0)) (regularBoundWitness z) := by
-    intro z hz hexact
-    have : z = 0 := Finset.mem_singleton.mp hz
-    subst z
-    have hexact0 : HasExactPowerAgreement regularBoundDomain regularBoundValues (RingHom.id ℂ) 1 0
-        (regularBoundWitness 0) := by simpa using hexact
-    obtain ⟨P, hdeg, hpoly, hsets⟩ :=
-      (hasExactPowerAgreement_id_iff regularBoundDomain regularBoundValues 1 0
-        (regularBoundWitness 0)).mp hexact0
-    have hcommon : commonCurveAgreementSet regularBoundDomain regularBoundValues P =
-        Finset.univ := by
-      exact hsets.symm.trans hleft
-    have h0 :=
-      (mem_commonCurveAgreementSet regularBoundDomain regularBoundValues P 0).mp
-        (by rw [hcommon]; simp)
-    have h1 :=
-      (mem_commonCurveAgreementSet regularBoundDomain regularBoundValues P 1).mp
-        (by rw [hcommon]; simp)
-    have hconst : P 1 = Polynomial.C ((P 1).coeff 0) := by
-      apply eq_C_of_degree_le_zero
-      exact Order.lt_succ_iff.mp (hdeg 1)
-    have heval : (P 1).eval (regularBoundDomain 0) = (P 1).eval (regularBoundDomain 1) := by
-      rw [hconst]
-      simp
-    have hfalse : (0 : ℂ) = 1 := by
-      calc
-        0 = (P 1).eval (regularBoundDomain 0) := by
-          simpa [regularBoundValues, regularBoundDomain] using (h0 1).symm
-        _ = (P 1).eval (regularBoundDomain 1) := heval
-        _ = 1 := by simpa [regularBoundValues, regularBoundDomain] using h1 1
-    exact zero_ne_one hfalse
-  obtain ⟨exceptional, hcard, hgood⟩ :=
+  obtain ⟨regularExceptional, hregularCard, _⟩ :=
     exists_exceptional_frobeniusPowerSeparableSolutions_at
       (F := ℂ) (E := ℂ) (n := 2) (k := 1) (K := 1) (ℓ := 1) (L := 2)
       regularBoundDomain regularBoundValues (RingHom.id ℂ) regularBoundDomain
       regularBoundEquation 1 0 1 0 1 2 hroots (by norm_num) (by norm_num) hτ
       (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
       (coeffNatDegreeLE_X (some (0 : Fin 1))) hjet hirr hder hdegree
-  have hzero : (0 : ℂ) ∈ exceptional := by
-    by_contra hz
-    apply hbad 0 (by simp)
-    apply hgood 0 hz (regularBoundWitness 0)
-    · norm_num [regularBoundWitness]
-    · simp [regularBoundEquation, regularBoundWitness, challengeSpecialization,
-        differentialSpecialization, differentialSpecializationHom]
-    · rw [hdomain]
-      norm_num [RingHom.id_apply]
-      change 2 ≤ (polynomialAgreementSet regularBoundDomain
-        (powerBatchedWord regularBoundValues 0) (regularBoundWitness 0)).card
-      rw [hleft]
-      simp
-  obtain ⟨curveExceptional, hcurveCard, _⟩ :=
+  obtain ⟨curveExceptional, hcurveCard, hcurveGood⟩ :=
     exists_exceptional_frobeniusPowerFactorSolutions
       (F := ℂ) (E := ℂ) (n := 2) (ℓ := 1) regularBoundDomain
-      regularBoundValues (RingHom.id ℂ) regularBoundEquation 1 0 1 0 1 2
+      regularBoundConstantValues (RingHom.id ℂ) regularBoundEquation 1 0 1 0 1 2
       (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
       (coeffNatDegreeLE_X (some (0 : Fin 1))) hjet hirr hder hdegree
-  refine ⟨exceptional, ?_, hzero, curveExceptional, ?_⟩
-  · norm_num at hcard
-    exact hcard
-  · simpa [ordinaryCurveFactorRaw] using hcurveCard
+  have hcurveCardQ : (curveExceptional.card : ℚ) ≤ 1 := by
+    simpa [ordinaryCurveFactorRaw] using hcurveCard
+  have hcurveCardNat : curveExceptional.card ≤ 1 := by exact_mod_cast hcurveCardQ
+  have hchallenge : ∃ w : ℂ, w ∉ curveExceptional := by
+    by_cases hzero : (0 : ℂ) ∈ curveExceptional
+    · have hone : (1 : ℂ) ∉ curveExceptional := by
+        intro hone
+        have hsubset : ({(0 : ℂ), 1} : Finset ℂ) ⊆ curveExceptional := by
+          intro x hx
+          simp only [Finset.mem_insert, Finset.mem_singleton] at hx
+          rcases hx with rfl | rfl
+          · exact hzero
+          · exact hone
+        have htwo : 2 ≤ curveExceptional.card := by
+          calc
+            2 = ({(0 : ℂ), 1} : Finset ℂ).card := by norm_num
+            _ ≤ curveExceptional.card := Finset.card_le_card hsubset
+        omega
+      exact ⟨1, hone⟩
+    · exact ⟨0, hzero⟩
+  obtain ⟨w, hw⟩ := hchallenge
+  have hdegreeCandidate : (0 : ℂ[X]).degree < 2 := by
+    rw [Polynomial.degree_zero]
+    exact WithBot.bot_lt_coe 2
+  have hsolution : differentialSpecialization (challengeSpecialization regularBoundEquation w)
+      (expand ℂ (1 ^ 0) (0 : ℂ[X])) = 0 := by
+    simp [regularBoundEquation, challengeSpecialization, differentialSpecialization,
+      differentialSpecializationHom]
+  have hagree : 2 ≤ (polynomialAgreementSet
+      (regularBoundDomain.trans ⟨RingHom.id ℂ, (RingHom.id ℂ).injective⟩)
+      (powerBatchedWord (fun t i ↦ RingHom.id ℂ (regularBoundConstantValues t i))
+        (w ^ (1 ^ 0))) (0 : ℂ[X])).card := by
+    norm_num [polynomialAgreementSet, regularBoundDomain, regularBoundConstantValues,
+      powerBatchedWord]
+  refine ⟨regularExceptional, ?_, curveExceptional, hcurveCardNat, w, hw, ?_⟩
+  · simpa using hregularCard
+  · simpa using hcurveGood w (by simpa using hw) (0 : ℂ[X]) hdegreeCandidate hsolution hagree
 end
 
 end ReedSolomon.FrobeniusRegularBoundAcceptanceTest
