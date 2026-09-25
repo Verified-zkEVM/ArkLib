@@ -516,7 +516,7 @@ example : (positiveChallenges.card : ℚ) ≤ positiveDerivativeBound ∧
     ∃ exceptional : Finset MCAField,
       (exceptional.card : ℚ) ≤ positiveDerivativeBound ∧ 0 ∈ exceptional ∧
     ∃ regularExceptional : Finset MCAField,
-      regularExceptional.card ≤ 1 ∧ 0 ∈ regularExceptional ∧
+      regularExceptional.card ≤ 2 ∧ 0 ∈ regularExceptional ∧
     ∃ curveExceptional : Finset MCAField,
       curveExceptional.card ≤ 1 ∧
     ∃ w : MCAField, w ∉ curveExceptional ∧
@@ -572,7 +572,7 @@ example : (positiveChallenges.card : ℚ) ≤ positiveDerivativeBound ∧
         differentialSpecialization, differentialSpecializationHom, Fin.last])
   obtain ⟨regularExceptional, hregularCard, hregularGood⟩ :=
     exists_exceptional_frobeniusPowerSeparableSolutions_at
-      (n := 2) (k := 1) (K := 1) (ℓ := 1) (L := 2)
+      (n := 2) (k := 1) (K := 1) (ℓ := 1) (L := 1)
       positiveChallengeDomain regularBoundValues
       (RingHom.id MCAField) positiveChallengeDomain
       componentEquation 1 0 1 0 1 2 (by simp)
