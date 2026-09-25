@@ -352,8 +352,9 @@ private lemma mul_sub_add_one_le_of_le
 /-- The bookkeeping shared by the Wronskian proofs of `isSubspaceDesign_frsCode_sub_one` and
 `isSubspaceDesign_umCode_sub_one`. A code of dimension `min k (s * n)` is a subspace design for
 the `(k-1)`-level profile once every nonzero `A ≤ C` of dimension `σ ≤ s` satisfies the root
-count `(s - σ + 1) * ∑ i, dim Aᵢ ≤ σ * (k - 1)` in the regime `1 ≤ k ≤ s * n`. Outside that
-regime the rate saturates at `1`, and the sharper block count `sum_finrank_inf_ker_le` suffices. -/
+count `(s - σ + 1) * ∑ i, dim Aᵢ ≤ σ * (k - 1)` in the regime `1 ≤ k ≤ s * n`. For
+`k > s * n` the rate saturates at `1` and the sharper block count `sum_finrank_inf_ker_le`
+suffices; `k = 0` forces `A = ⊥`. -/
 private lemma isSubspaceDesign_sub_one_of_count
     {ι : Type*} [Fintype ι] [Nonempty ι] {F : Type*} [Field F] {k s : ℕ}
     (C : Submodule F (ι → Fin s → F))
@@ -636,15 +637,17 @@ Admissibility is hypothesised at the canonical point set `Finset.univ.map domain
 the other `frsCode` statements; restrict it from a larger ambient point set with
 `ReedSolomon.Folded.Admissible.subset`.
 
-The proof is a Wronskian root count. Outside the main regime the bound is bookkeeping:
-every block dimension is at most `σ := dim A`, which settles `σ = 0` and `τ r ≥ 1`. In the
-remaining regime `1 ≤ r ≤ s` and `k < n * (s - r + 1)`, so the `n * s` folded evaluation
-points are distinct and nonzero, the encoder is injective on `degreeLT F k`, and `A`
-together with each `A ⊓ ker (proj i)` lifts to message-side subspaces `B` and `Nᵢ ≤ B` of
-the same dimension, the latter consisting of polynomials vanishing on the whole orbit
-`{domain i * ω ^ j | j < s}`. The `ω`-folded Wronskian `W` of a basis of `B` is nonzero and
-has `deg W ≤ σ * (k - 1)`, while each of the `n * (s - σ + 1)` distinct points
-`domain i * ω ^ m` with `m ≤ s - σ` is a root of `W` of multiplicity at least `dim Nᵢ`.
+The proof is a Wronskian root count. Outside `1 ≤ r ≤ s`, and for `A = ⊥`, the bound
+follows from `dim (A ⊓ ker (proj i)) ≤ σ := dim A`. When `k > s * n` the rate is `1`, and it
+follows from `sum_finrank_inf_ker_le`. This bookkeeping is shared with
+`isSubspaceDesign_umCode_sub_one`. In the remaining regime `1 ≤ r ≤ s` and `1 ≤ k ≤ s * n`,
+the `n * s` folded evaluation points are distinct and nonzero, the encoder is injective on
+`degreeLT F k`, and `A` together with each `A ⊓ ker (proj i)` lifts to message-side
+subspaces `B` and `Nᵢ ≤ B` of the same dimension, the latter consisting of polynomials
+vanishing on the whole orbit `{domain i * ω ^ j | j < s}`. The `ω`-folded Wronskian `W` of a
+basis of `B` is nonzero and has `deg W ≤ σ * (k - 1)`, while each of the `n * (s - σ + 1)`
+distinct points `domain i * ω ^ m` with `m ≤ s - σ` is a root of `W` of multiplicity at least
+`dim Nᵢ`.
 Comparing the two gives `(s - σ + 1) * ∑ i, dim (A ⊓ ker (proj i)) ≤ σ * (k - 1)`, and
 `σ ≤ r` turns this into the design bound. -/
 theorem isSubspaceDesign_frsCode_sub_one
@@ -841,6 +844,31 @@ theorem isSubspaceDesign_frsCode_sub_one
   rw [← hprod]
   exact le_trans hcount hWdegle
 
+/-- The `1/n`-relaxation from the `(k-1)`-level profile to [ABF26] Theorem 2.18's printed
+profile `τ r = s * ρ / (s - r + 1)`, shared by `isSubspaceDesign_frsCode` and
+`isSubspaceDesign_umCode`. -/
+private lemma isSubspaceDesign_of_sub_one
+    {ι : Type*} [Fintype ι] [Nonempty ι] {F : Type*} [Field F] {s : ℕ}
+    (C : Submodule F (ι → Fin s → F))
+    (h : IsSubspaceDesign s (fun r ↦
+      if r ∈ Finset.Icc 1 s then
+        (s * (LinearCode.alphabetRate C : ℝ) - 1 / Fintype.card ι) / (s - r + 1)
+      else 1) C) :
+    IsSubspaceDesign s (fun r ↦
+      if r ∈ Finset.Icc 1 s then
+        s * (LinearCode.alphabetRate C : ℝ) / (s - r + 1)
+      else 1) C := by
+  refine h.mono_tau fun r => ?_
+  by_cases hr : r ∈ Finset.Icc 1 s
+  · rw [ite_eq_left hr, ite_eq_left hr, sub_div]
+    have hb_pos : (0 : ℝ) < (s : ℝ) - r + 1 := by
+      have : (r : ℝ) ≤ s := by exact_mod_cast (Finset.mem_Icc.mp hr).2
+      linarith only [this]
+    have hdrop : (0 : ℝ) ≤ (1 / (Fintype.card ι : ℝ)) / ((s : ℝ) - r + 1) :=
+      div_nonneg (by positivity) hb_pos.le
+    linarith only [hdrop]
+  · rw [ite_eq_right hr, ite_eq_right hr]
+
 /-- Folded Reed-Solomon codes are subspace designs for [ABF26] Theorem 2.18's printed profile
 
   `τ r = s * ρ / (s - r + 1)` for `1 ≤ r ≤ s`, and `τ r = 1` otherwise.
@@ -863,24 +891,8 @@ theorem isSubspaceDesign_frsCode
           (s - r + 1)
       else 1
     IsSubspaceDesign s τ (ReedSolomon.Folded.frsCode domain k s ω) := by
-  intro τ
-  have hτdef : ∀ x : ℕ, τ x =
-      if x ∈ Finset.Icc 1 s then
-        s * (LinearCode.alphabetRate (ReedSolomon.Folded.frsCode domain k s ω) : ℝ) /
-          (s - x + 1)
-      else 1 := fun _ => rfl
-  refine (isSubspaceDesign_frsCode_sub_one domain k s ω hFn hω_adm hω_gen).mono_tau fun r => ?_
-  rw [hτdef r]
-  by_cases hr : r ∈ Finset.Icc 1 s
-  · simp only [hr, ite_true]
-    have hb_pos : (0 : ℝ) < (s : ℝ) - r + 1 := by
-      have : (r : ℝ) ≤ s := by exact_mod_cast (Finset.mem_Icc.mp hr).2
-      linarith only [this]
-    have hn_pos : (0 : ℝ) < Fintype.card ι := by exact_mod_cast Fintype.card_pos
-    rw [sub_div]
-    have hdrop : (0 : ℝ) ≤ (1 / (Fintype.card ι : ℝ)) / ((s : ℝ) - r + 1) := by positivity
-    linarith only [hdrop]
-  · simp [hr]
+  exact isSubspaceDesign_of_sub_one _
+    (isSubspaceDesign_frsCode_sub_one domain k s ω hFn hω_adm hω_gen)
 
 /-- Univariate multiplicity codes are subspace designs for the profile
 
@@ -1060,23 +1072,6 @@ theorem isSubspaceDesign_umCode
           (ReedSolomon.Multiplicity.umCode domain k s) : ℝ) / (s - r + 1)
       else 1
     IsSubspaceDesign s τ (ReedSolomon.Multiplicity.umCode domain k s) := by
-  intro τ
-  have hτdef : ∀ x : ℕ, τ x =
-      if x ∈ Finset.Icc 1 s then
-        s * (LinearCode.alphabetRate
-          (ReedSolomon.Multiplicity.umCode domain k s) : ℝ) / (s - x + 1)
-      else 1 := fun _ => rfl
-  refine (isSubspaceDesign_umCode_sub_one domain k s hchar).mono_tau fun r => ?_
-  rw [hτdef r]
-  by_cases hr : r ∈ Finset.Icc 1 s
-  · simp only [hr, ite_true]
-    have hb_pos : (0 : ℝ) < (s : ℝ) - r + 1 := by
-      have : (r : ℝ) ≤ s := by exact_mod_cast (Finset.mem_Icc.mp hr).2
-      linarith only [this]
-    have hn_pos : (0 : ℝ) < Fintype.card ι := by exact_mod_cast Fintype.card_pos
-    rw [sub_div]
-    have hdrop : (0 : ℝ) ≤ (1 / (Fintype.card ι : ℝ)) / ((s : ℝ) - r + 1) := by positivity
-    linarith only [hdrop]
-  · simp [hr]
+  exact isSubspaceDesign_of_sub_one _ (isSubspaceDesign_umCode_sub_one domain k s hchar)
 
 end CodingTheory
