@@ -1406,24 +1406,13 @@ private abbrev regularBoundEquation :
 private def regularBoundWitness (_ : RegularBoundField) : RegularBoundField[X] := 0
 
 example : ({(0 : RegularBoundField)} : Finset RegularBoundField).Nonempty ∧
-    (({(0 : RegularBoundField)} : Finset RegularBoundField).card : ℚ) ≤ 2 := by
+    (({(0 : RegularBoundField)} : Finset RegularBoundField).card : ℚ) ≤ 1 := by
   classical
   have hroots : ∀ i, regularBoundDomain i ^ (1 ^ 0) = regularBoundDomain i := by simp
   have hτ : TaylorExponentSufficient 0 1 1 := by
     intro l
     fin_cases l
     norm_num [TaylorExponentSufficient]
-  have hJ : jointInitialJetEquation (0 : RegularBoundField) regularBoundEquation =
-      (X (some (0 : Fin 1)) : MvPolynomial (Option (Fin 1)) RegularBoundField) := by
-    simp [jointInitialJetEquation, regularBoundEquation, initialJetEquation]
-  have hinit : jointInitialJetEquation (0 : RegularBoundField) regularBoundEquation ≠ 0 := by
-    rw [hJ]
-    exact X_ne_zero _
-  have hproper : Ideal.span
-      ({jointInitialJetEquation (0 : RegularBoundField) regularBoundEquation} :
-        Set (MvPolynomial (Option (Fin 1)) RegularBoundField)) ≠ ⊤ := by
-    rw [hJ]
-    exact ((Ideal.span_singleton_prime (X_ne_zero _)).mpr X_prime).ne_top
   have hjet : jetTotalDegree regularBoundEquation ≤ 1 := by
     rw [jetTotalDegree_le_iff]
     intro u hu
@@ -1479,17 +1468,17 @@ example : ({(0 : RegularBoundField)} : Finset RegularBoundField).Nonempty ∧
         _ = (P 1).eval (regularBoundDomain 1) := heval
         _ = 1 := by simpa [regularBoundValues, regularBoundDomain] using h1 1
     exact zero_ne_one hfalse
-  have hbound := finite_frobeniusPowerRegularBadChallenges_card_le
-    (F := ℂ) (E := ℂ) (n := 2) (k := 1) (K := 1) (ℓ := 1) (L := 1)
-    regularBoundDomain regularBoundValues (RingHom.id ℂ) regularBoundDomain 0
+  have hbound := finite_frobeniusPowerRegularBadChallenges_card_le_of_separant_at
+    (F := ℂ) (E := ℂ) (n := 2) (k := 1) (K := 1) (ℓ := 1) (L := 2)
+    regularBoundDomain regularBoundValues (RingHom.id ℂ) regularBoundDomain
       regularBoundEquation 1 0 1 0 1 2
     hroots (by norm_num) (by norm_num) hτ (by norm_num) (by norm_num) (by norm_num)
-    (by norm_num) (by norm_num) (coeffNatDegreeLE_X (some (0 : Fin 1))) hjet hinit hproper
+    (by norm_num) (by norm_num) (coeffNatDegreeLE_X (some (0 : Fin 1))) hjet
     {(0 : ℂ)} regularBoundWitness (by intro z hz; norm_num [regularBoundWitness])
     (by intro z hz; simp [regularBoundEquation, regularBoundWitness, challengeSpecialization,
       differentialSpecialization, differentialSpecializationHom])
     (by intro z hz; norm_num [regularBoundEquation, regularBoundWitness, challengeSpecialization,
-      separant, jetEvaluation, polynomialJet]) hagree hbad
+      differentialSpecialization, differentialSpecializationHom, separant]) hagree hbad
   exact ⟨(by simp), by norm_num at hbound ⊢⟩
 
 end
