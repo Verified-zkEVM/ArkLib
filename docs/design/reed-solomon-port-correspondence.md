@@ -2012,6 +2012,12 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Poly
 
 The graph restriction, specialized jet, Taylor coefficient, admissibility structure and its fields, evaluation identities, and specialization theorem keep their names. `exists_admissibleChartTuple_of_symbolic_prime_agreements_of_exponent` is renamed to `exists_admissibleChartTuple_of_primeTaylorComponent_agreements`; its mathematical result is unchanged and uses the existing prime-component graph theorem and joint equations. The symbolic equation names are supplied by the existing joint Taylor-chart API. No public declarations from the source unit were left out.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedCertificate.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/Certificate.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Renamed `exists_exceptional_symbolicCurveMCA_sharp` to `Certificate.exists_exceptional_powerBatchedAgreement_sharp_of_exponent`. The theorem now uses the current certificate and power-batched APIs and charges each stage by its actual jet degree. The `eval₂_powerBatchedCoordinate_eq_powerBatchedWord` equality remains a private proof bridge because no public consumer needs a separate theorem for it.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedComponentAgreement.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/ComponentAgreement.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -2033,6 +2039,14 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Powe
 `frobeniusPowerInitialGraph`, `exists_frobeniusPowerGraph_of_symbolic_sample`, and `exists_frobeniusPowerGraph_of_symbolic_prime_sample` keep their names; `frobeniusPowerGraphMap` is new. The initial graph is generalized from fields to commutative semirings. Both recognition theorems are generalized from `Fin n` to any embedded index type and require Frobenius roots only on the sample. The prime-component result uses the current joint Taylor and `aeval` APIs to express its symbolic cuts and graph restrictions. The proof reuses `exists_frobeniusPowerGraph_polynomials_of_sample` for interpolation and sparse expansion.
 
 `symbolicSourceFrobeniusPowerAgreement` was not ported because `jointTaylorAgreementEquation` in `TaylorChartAlgebra.lean` covers it without a wrapper. The acceptance cases in `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement.lean` give a concrete symbolic chart example and a regular prime-component example; both establish sample cuts, and the latter supplies the prime ideal, positive dimension, and nonzero separant.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedDerivativeImage.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/DerivativeImage.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Renamed `finite_sourceCurve_points_off_tuples_card_le_derivativeCapped_of_exponent` to `finite_powerBatched_regular_points_off_graphs_card_le_derivativeCapped_of_exponent` and generalized it to the admissible-graph API, removing the unused `A ≤ n` premise. Renamed `regularSymbolicCurveMCADerivativeBoundTwo` to `regularPowerBatchedDerivativeCappedBoundTwo`; its mathematical bound is unchanged in the power-batched API. Renamed `finite_sourceCurve_bad_challenges_card_le_derivativeCapped_of_exponent`, `finite_regularSymbolicCurveBadChallenges_card_le_derivativeCapped_of_exponent`, and `exists_exceptional_regularSymbolicCurveMCA_derivativeCapped_of_exponent` to their `powerBatched` / `regularPowerBatched` names and removed the unused `0 < k` premise from the finite bound and the propagated premise from the regular-family bound and exceptional-set result. Renamed the identity-pair finite challenge bound, regular-family bound, and exceptional-set result to `finite_powerBatchedBadChallenges_card_le_identityPair`, `finite_regularPowerBatchedBadChallenges_card_le_identityPair`, and `exists_exceptional_regularPowerBatchedAgreement_identityPair`; these mathematical conclusions are unchanged in the current API.
+
+The four `_specialize` evaluation bridges remain private and reuse the existing `TaylorChartAlgebra` lemmas. The shared fixed-center tuple-bound theorem was extracted into the sharp power-batched agreement module for use by both sharp and derivative-capped challenge bounds.
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedExceptionalChallenges.lean`
 
