@@ -133,6 +133,10 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation
 
 `exists_exceptional_of_regular_stage_bounds_of_factors` keeps its name. The theorem combines regular-stage exceptional sets into a finite set bounded by the first-order curve envelope. It drops the unused assumptions `0 < k` and `k ≤ L`. The exponent-specialized `exists_exceptional_of_regular_stage_bounds_of_exponent` was not ported because it is a direct-ratio specialization of the factors theorem, and the ratio lower bound follows from the existing incidence estimate.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/FirstOrder/FirstOrderHybridList.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Added `FirstOrderCurveCertificate.jetDegree_one_le`, a public certificate degree bound. The two `exists_hybridDescent` certificate bridges are in `HybridAgreementCounting`; both remove the unused challenge-height parameter. The first retains the actual-degree characteristic guard, and the second uses the public derivative-cap guard.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder/CurveHeightCounting.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/FirstOrder/CurveHeightCounting.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -1028,6 +1032,10 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/F
 
 `firstOrderListWeight`, `firstOrderTightListWeight`, `firstOrderTightListWeight_nonneg`, `firstOrderTightListWeight_two_mul_le`, and `finite_firstOrder_agreement_solutions_card_le_sharp` keep their names. `finite_firstOrder_agreement_solutions_card_le_tight_of_exponent` also keeps its name and has the unused premise `K ≤ n` removed; the sharp-count theorem likewise drops that premise. Added `boundedSolution_card_le_separantChainStageSum` to `ArkLib/Data/Polynomial/Differential/RecursiveCount.lean` as a generic composition theorem for stage-dependent regular-branch costs along an explicit separant chain, representing the source-local regular-stage estimate and recursive induction. No public source declaration was left out. The first-order acceptance example exercises the exact count, sharp count, uniform comparison, and charge nonnegativity; the differential-polynomial acceptance example checks the `Y₁` stage charge and applies the stage-sum theorem to a nonempty bounded-solution set along `challengeChain`.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/FirstOrder/FirstOrderList.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`finite_regular_agreement_solutions_card_le_derivativeCapped_of_exponent` now has one public proof stated with filter cardinality; its internal ncard caller converts through the agreement-cardinality equivalence. `finite_regular_agreement_solutions_card_le_identityPair` was moved beside it. The identity-pair theorem retains its degree-one identity-pair incidence bound.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/AutomaticBounds.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/FirstOrder/AutomaticBounds.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -1078,6 +1086,14 @@ corollary are covered by the existing `firstOrderRankCubicUpperCount` and
 existing `certifiedEnlargedRankBound_one_eq_firstOrderRateRankCount`, generalized to every
 higher-jet budget. The scaled kernel-height bound follows from the stronger
 `scaledKernelHeight_le_floor`; the source-shaped max-one bound is derived in the acceptance test.
+
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/HybridAgreementCounting.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/FirstOrder/FirstOrderHybridList.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`HasOrderZeroTailListBound`, `hasOrderZeroTailListBound_of_nonzero`, `FirstOrderFieldDescent` and its fields, `exists_firstOrderFieldDescent`, and `FirstOrderFieldDescent.root_coverage` retain their names. The field descent tail uses `JetPrefixPresentation`. The symbolic `FirstOrderHybridDescent`, its fields, `exists_firstOrderHybridDescent`, and `FirstOrderHybridDescent.root_coverage` retain their names; the descent drops the unused coefficient-height parameter, represents its tail with `JetPrefixPresentation`, and root coverage is generalized to commutative semiring coefficients.
+
+`FirstOrderCurveCertificate.exists_hybridDescent` retains its name and actual-degree characteristic guard. `FirstOrderCurveCertificate.exists_hybridDescent_of_derivativeCap_lt_ringChar` retains its name and uses the public derivative-cap guard; both omit the unused challenge-height parameter. `finite_firstOrder_hybrid_agreement_solutions_card_le_raw_of_tail`, `finite_firstOrder_hybrid_agreement_solutions_card_le_optimized_of_tail`, `finite_firstOrder_field_hybrid_agreement_solutions_card_le_raw`, `finite_firstOrder_field_hybrid_agreement_solutions_card_le_optimized`, `finite_firstOrder_field_hybrid_agreement_solutions_card_le`, and `finite_automaticFirstOrder_hybrid_agreement_solutions_card_le` retain their names and bounds. The optimized symbolic and field bounds share a private charge, ceiling, and closed-bound helper.
 
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/HybridConstants.lean`
 
@@ -2450,6 +2466,10 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/Ta
 
 `ReedSolomon.HiddenDerivative.geometric_characteristic_components` became `PolynomialDifferential.characteristic_bounds_of_max`. It generalizes the field result to commutative semirings and drops the unnecessary `0 < K` assumption. `ReedSolomon.geometric_below_characteristic` became `PolynomialDifferential.jetDegreeCastsNeZero_of_jetTotalDegree_charGuard`. It generalizes to any commutative semiring and the current `JetDegreeCastsNeZero` contract, without the unused message-dimension and block-length parameters. The source-shaped `IsBelowCharacteristic (k - 1) Q` result is not recreated because that bundled predicate is absent from the current API; the jet-degree consequence is supplied in the operational cast form, and ambient-cutoff bounds remain separate in the current certificate API.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/FirstOrder/HybridDescent.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`PolynomialDifferential.root_reaches_tail_or_regular_stage` retains its name and is now owned by the generic derivative-descent module. Added `PolynomialDifferential.jetTotalDegree_jetDerivative_le_sub`, a coefficient-generic total-degree bound on iterated jet derivatives; both descent constructors use it.
+
 ## `ArkLib/Data/Polynomial/Differential/DirectRegularLift.lean`
 
 This file ports the semantic content of `RootFinding/Regular/DirectRegularCoefficient.lean` and
@@ -2543,6 +2563,12 @@ are new.
 `IsRegularJet` keeps the source's condition that the separant value is nonzero. Over a field this
 is what the lifting theorems need; over a general commutative ring they instead assume that the
 slope, a binomial coefficient times that value, is a unit or left-regular.
+
+## `ArkLib/Data/Polynomial/Differential/JetPrefixPresentation.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/FirstOrder/FirstOrderHybridList.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`exists_firstOrderFieldTailPresentation` became `exists_jetPrefixPresentation_firstOrder_of_jetDegree_zero`, generalized to commutative semirings. Added `exists_jetPrefixPresentation_of_vars_subset_range`, which constructs a prefix presentation from variable-support inclusion. The `FirstOrderFieldTailPresentation` wrapper and its `nonzero`, `specialization`, and `jetWeight` results use the generic `JetPrefixPresentation` nonzero, differential-specialization, and total-degree methods instead.
 
 ## `ArkLib/Data/Polynomial/Differential/RationalTaylor.lean`
 
@@ -4726,11 +4752,19 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation
 
 An acceptance example uses the rate certificate to obtain a curve certificate, constructs a separant chain, and shows that any agreeing degree-<2 candidate for the two-point zero word is zero. It then selects a challenge outside the finite exceptional set in an infinite extension field.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/FirstOrder/FirstOrderHybridList.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+An acceptance example invokes `FirstOrderCurveCertificate.jetDegree_one_le` on a concrete curve certificate.
+
 ## `ArkLibTest/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder.lean`
 
 Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/FirstOrder.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 Extended the existing acceptance file with a concrete five-part `automaticParameterBounds` case at rate `1/2` and slack `1/8`, concrete closed list and exception envelope cases, a one-stage direct-ratio separant-chain bound, and the cap identity through `firstOrderCurveStageCap_add_height_eq_of_factors`. Removed the redundant ratio restatement; no separate acceptance module was added.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/FirstOrder/FirstOrderHybridList.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+A nonempty singleton solution family exercises both root-coverage theorems, the regular derivative-capped and identity-pair counts, symbolic raw and optimized counts, field raw and optimized counts, the direct field theorem, and the automatic theorem. Descent examples cover characteristic zero at degree zero and characteristic two at actual degree one with total cap three. A concrete finite-characteristic curve certificate invokes both characteristic-guarded certificate bridges.
 
 ## `ArkLibTest/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition.lean`
 
@@ -4883,6 +4917,10 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Firs
 No library declarations were added. The acceptance example computes that `Y₁` specializes to zero over `ℚ` at the zero polynomial, then applies `MvPolynomial.map_radicalContent_mul_radicalPrimPart_eq_zero_iff` with `differentialSpecializationHom` to establish the radical-factor zero disjunction. This records the proof recipe for the future `TailBound` port.
 
 `root_content_or_positive` is covered by that generic theorem, followed by `map_mul`, `mul_eq_zero`, and `differentialSpecializationHom_apply`. The root-first declarations `contentEquation`, `positiveEquation`, `fromRootFirst`, `rootFirst_fromRootFirst`, `fromRootFirst_rootFirst`, `fromRootFirst_mul`, `rootFirstSpecializationHom`, `rootFirstSpecializationHom_rootFirst`, and `rootFirstSpecializationHom_fromRootFirst` are not ported; the root-first presentation remains outside the P6 slice 6 API boundary. The nonvanishing, divisibility, and degree declarations are covered by the corresponding existing generic `MvPolynomial` APIs listed in the report. The former direct theorem-application example for retained-curve degree bounds was replaced by this computed split example.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/FirstOrder/HybridDescent.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Acceptance examples check a supported `Y₁` polynomial at its proper depth-one prefix, a `Y₀` polynomial at prefix depth zero through the degree-zero constructor, and the finite-stage split at endpoint one for the identity sequence. The test uses the shared generic hybrid-variable degree fact directly.
 
 ## `ArkLibTest/Data/Probability/Uniform.lean`
 
