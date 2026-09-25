@@ -11,6 +11,8 @@ public import
   ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.HybridAgreementCounting
 public import ArkLib.Data.CodingTheory.ReedSolomon.AgreementList
 public import
+  ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.FiniteLengthParameters
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Squarefree.Certificates
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.SingularTail
 public import ArkLib.ToMathlib.Set.Finite
@@ -20,7 +22,7 @@ public import ArkLib.ToMathlib.Set.Finite
 
 The automatic first-order parameters give finite and explicit bounds for the complete list of
 polynomials agreeing with a received word. The optimized bound retains the real list charge and
-its natural ceiling; a closed expression gives the paper-facing list constant. A squarefree
+its natural ceiling; a closed expression gives the list constant. A squarefree
 certificate improves the dependence on positive agreement slack to an inverse square.
 
 ## Main statements
@@ -31,6 +33,10 @@ certificate improves the dependence on positive agreement slack to an inverse sq
 * `automatic_first_order_list_bound_of_slack` and
   `automaticFirstOrder_closePolynomialSet_at_ceil_finite_and_card_le`: slack and ceiling forms.
 * `automatic_first_order_squarefree_list_bound_of_slack`: the inverse-square slack bound.
+* `FirstOrder.closePolynomialSet_finite_and_card_le_finiteLength_of_certificate`:
+  the finite-length bound for a certified complete list.
+* `FirstOrder.closePolynomialSet_finite_and_card_le_finiteLength_of_dimension_le_one`:
+  the finite-length bound for dimensions at most one.
 
 ## References
 
@@ -424,6 +430,143 @@ theorem automatic_first_order_squarefree_list_bound_of_slack
         (show k - 1 + 1 = k by omega),
         (show n - k + 1 = n - (k - 1) by omega),
         (show A - k + 1 = A - (k - 1) by omega)] using hbound)
+
+namespace FirstOrder
+
+open HiddenDerivative
+open FirstOrder.Squarefree
+
+open Classical in
+/-- For dimensions zero or one, agreement incidence gives the finite-length list bound without
+an interpolation certificate. -/
+theorem closePolynomialSet_finite_and_card_le_finiteLength_of_dimension_le_one
+    {F : Type*} [Field F] {C eta : ℝ} {n k A : ℕ}
+    (domain : Fin n ↪ F) (received : Fin n → F)
+    (hn : 1 ≤ n) (hk : k ≤ 1) (hkA : k ≤ A)
+    (hC : 1 ≤ C) (heta : 0 < eta) (hsOne : finiteLengthSlack eta n ≤ 1) :
+    (closePolynomialSet domain received k A).Finite ∧
+      ((closePolynomialSet domain received k A).ncard : ℝ) ≤
+        7 * C ^ 3 * n / finiteLengthSlack eta n ^ 2 := by
+  obtain ⟨list, hlist, hincidence⟩ :=
+    exists_closePolynomial_finset_with_incidence_bound domain received hkA
+  have hcard : list.card ≤ n := by
+    rcases Nat.le_one_iff_eq_zero_or_eq_one.mp hk with rfl | rfl
+    · simp only [Nat.choose_zero_right, mul_one] at hincidence
+      exact hincidence.trans hn
+    · have hA : 1 ≤ A := hkA
+      calc
+        list.card ≤ list.card * A := Nat.le_mul_of_pos_right _ (by omega)
+        _ ≤ n := by simpa using hincidence
+  have hfinite : (closePolynomialSet domain received k A).Finite :=
+    closePolynomialSet_finite domain received hkA
+  refine ⟨hfinite, ?_⟩
+  have hfinset : hfinite.toFinset = list := by
+    ext P
+    rw [hfinite.mem_toFinset]
+    exact (hlist P).symm
+  rw [Set.ncard_eq_toFinset_card _ hfinite, hfinset]
+  have hcardReal : (list.card : ℝ) ≤ n := by exact_mod_cast hcard
+  apply hcardReal.trans
+  have hs : 0 < finiteLengthSlack eta n := finiteLengthSlack_pos heta
+  have hsSq : finiteLengthSlack eta n ^ 2 ≤ 1 :=
+    pow_le_one₀ hs.le hsOne
+  have hCPow : (1 : ℝ) ≤ C ^ 3 := one_le_pow₀ hC
+  rw [le_div_iff₀ (sq_pos_of_pos hs)]
+  have hn0 : (0 : ℝ) ≤ n := by positivity
+  nlinarith [mul_nonneg hn0 (sub_nonneg.mpr hsSq),
+    mul_nonneg hn0 (sub_nonneg.mpr hCPow)]
+
+open Classical in
+/-- For dimensions zero or one, the complete list size is bounded using the inverse square of
+the agreement slack. -/
+theorem closePolynomialSet_finite_and_card_le_inv_eta_of_dimension_le_one
+    {F : Type*} [Field F] {C eta : ℝ} {n k A : ℕ}
+    (domain : Fin n ↪ F) (received : Fin n → F)
+    (hn : 1 ≤ n) (hk : k ≤ 1) (hkA : k ≤ A)
+    (hC : 1 ≤ C) (heta : 0 < eta) (hsOne : finiteLengthSlack eta n ≤ 1) :
+    (closePolynomialSet domain received k A).Finite ∧
+      ((closePolynomialSet domain received k A).ncard : ℝ) ≤
+        7 * C ^ 3 * n / eta ^ 2 := by
+  obtain ⟨hfinite, hcard⟩ :=
+    closePolynomialSet_finite_and_card_le_finiteLength_of_dimension_le_one
+      domain received hn hk hkA hC heta hsOne
+  refine ⟨hfinite, hcard.trans ?_⟩
+  exact div_finiteLengthSlack_sq_le_div_eta_sq
+    (by positivity : 0 ≤ 7 * C ^ 3 * (n : ℝ)) heta
+
+universe u
+
+open Classical in
+/-- An actual finite first-order certificate whose exact caps fit the finite-length envelope
+gives a bound for the complete squarefree agreement list. -/
+theorem closePolynomialSet_finite_and_card_le_finiteLength_of_certificate
+    {F : Type u} [Field F] {C eta : ℝ}
+    {D A m M mu k h n N : ℕ}
+    (domain : Fin n ↪ F) (received : Fin n → F)
+    (columns : Fin N → SourceColumn 1)
+    (cert : FirstOrderSymbolicCertificate.{u, u} (F := F)
+      D A m M mu k h domain received (fun _ ↦ 0) columns)
+    (hn : 2 ≤ n) (hk : 2 ≤ k) (hkn : k ≤ n) (hkA : k ≤ A) (hAn : A ≤ n)
+    (hM : 1 ≤ M) (hMmu : M ≤ mu)
+    (hchar : ringChar F = 0 ∨ max (k - 1) M < ringChar F)
+    (hC : 1 ≤ C) (heta : 0 < eta) (hsOne : finiteLengthSlack eta n ≤ 1)
+    (hlambda : ((n - k + 1 : ℕ) : ℝ) / (A - k + 1 : ℕ) ≤ C)
+    (hmu : (mu : ℝ) ≤ C / finiteLengthSlack eta n) :
+    (closePolynomialSet domain received k A).Finite ∧
+      ((closePolynomialSet domain received k A).ncard : ℝ) ≤
+        7 * C ^ 3 * n / finiteLengthSlack eta n ^ 2 := by
+  let T := closePolynomialSet domain received k A
+  let lambda : ℝ := ((n - k + 1 : ℕ) : ℝ) / (A - k + 1 : ℕ)
+  let bound : ℝ := 7 * C ^ 3 * n / finiteLengthSlack eta n ^ 2
+  have hlambda0 : 0 ≤ lambda := by
+    dsimp only [lambda]
+    positivity
+  have hsem (S : Finset F[X])
+      (hS : ∀ P ∈ S, P.degree < k ∧
+        A ≤ (Finset.univ.filter fun i ↦ P.eval (domain i) = received i).card) :
+    (S.card : ℝ) ≤ bound := by
+    have hraw := firstOrder_finite_agreement_solutions_card_le_squarefree
+      domain received columns cert hk hkA hAn hMmu hchar S hS
+    apply hraw.trans
+    have hnumeric := squarefreeListExpression_le_finiteLength
+      hC heta (show 1 ≤ n by omega) hsOne (show 1 ≤ k - 1 by omega)
+      (show k - 1 ≤ n by omega) hM hMmu hlambda0 (by simpa only [lambda] using hlambda) hmu
+    simpa only [lambda, bound, show k - 1 + 1 = k by omega, mul_div_assoc] using hnumeric
+  have hfinite : T.Finite := closePolynomialSet_finite domain received hkA
+  refine ⟨hfinite, ?_⟩
+  rw [Set.ncard_eq_toFinset_card _ hfinite]
+  exact hsem hfinite.toFinset (fun P hP ↦
+    (mem_closePolynomialSet_iff_agreement domain received P).mp
+      (hfinite.mem_toFinset.mp hP))
+
+open Classical in
+/-- A finite first-order certificate bounds the complete agreement list using the inverse square
+of the agreement slack. -/
+theorem closePolynomialSet_finite_and_card_le_inv_eta_of_certificate
+    {F : Type u} [Field F] {C eta : ℝ}
+    {D A m M mu k h n N : ℕ}
+    (domain : Fin n ↪ F) (received : Fin n → F)
+    (columns : Fin N → SourceColumn 1)
+    (cert : FirstOrderSymbolicCertificate.{u, u} (F := F)
+      D A m M mu k h domain received (fun _ ↦ 0) columns)
+    (hn : 2 ≤ n) (hk : 2 ≤ k) (hkn : k ≤ n) (hkA : k ≤ A) (hAn : A ≤ n)
+    (hM : 1 ≤ M) (hMmu : M ≤ mu)
+    (hchar : ringChar F = 0 ∨ max (k - 1) M < ringChar F)
+    (hC : 1 ≤ C) (heta : 0 < eta) (hsOne : finiteLengthSlack eta n ≤ 1)
+    (hlambda : ((n - k + 1 : ℕ) : ℝ) / (A - k + 1 : ℕ) ≤ C)
+    (hmu : (mu : ℝ) ≤ C / finiteLengthSlack eta n) :
+    (closePolynomialSet domain received k A).Finite ∧
+      ((closePolynomialSet domain received k A).ncard : ℝ) ≤
+        7 * C ^ 3 * n / eta ^ 2 := by
+  obtain ⟨hfinite, hcard⟩ :=
+    closePolynomialSet_finite_and_card_le_finiteLength_of_certificate
+      domain received columns cert hn hk hkn hkA hAn hM hMmu hchar hC heta hsOne
+        hlambda hmu
+  refine ⟨hfinite, hcard.trans ?_⟩
+  exact div_finiteLengthSlack_sq_le_div_eta_sq
+    (by positivity : 0 ≤ 7 * C ^ 3 * (n : ℝ)) heta
+
+end FirstOrder
 
 end
 

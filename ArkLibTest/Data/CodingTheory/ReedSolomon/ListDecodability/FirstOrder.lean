@@ -6,6 +6,7 @@ Authors: Quang Dao
 
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.Bounds
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.FiniteLengthParameters
+import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.FiniteLengthSelectors
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.Profile
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.NormNum
@@ -28,6 +29,10 @@ private def rationalEvaluationDomain : Fin 4 ↪ ℚ :=
 private noncomputable def classicalRationalClosePolynomialSet (A : ℕ) : Set ℚ[X] :=
   @closePolynomialSet ℚ (inferInstance : Field ℚ)
     (fun x y ↦ Classical.propDecidable (x = y)) 4 rationalEvaluationDomain (fun _ ↦ 0) 2 A
+
+private noncomputable def classicalRationalLowDimensionClosePolynomialSet : Set ℚ[X] :=
+  @closePolynomialSet ℚ (inferInstance : Field ℚ)
+    (fun x y ↦ Classical.propDecidable (x = y)) 4 rationalEvaluationDomain (fun _ ↦ 0) 1 1
 
 private theorem half_rate_threshold_lt_three_quarters :
     firstOrderRateThreshold (1 / 2 : ℝ) < 3 / 4 := by
@@ -204,6 +209,45 @@ example :
   constructor
   · simp
   · simp [smallFirstOrderProfile, finiteEvaluationDomain]
+
+/-- Incidence gives a nonempty finite-length list bound for dimension one over `ℚ`. -/
+example :
+    classicalRationalLowDimensionClosePolynomialSet.Finite ∧
+      (0 : ℚ[X]) ∈ classicalRationalLowDimensionClosePolynomialSet ∧
+      ((classicalRationalLowDimensionClosePolynomialSet.ncard : ℝ)) ≤
+        7 * (1 : ℝ) ^ 3 * 4 / finiteLengthSlack (1 / 4) 4 ^ 2 := by
+  have hbound := closePolynomialSet_finite_and_card_le_finiteLength_of_dimension_le_one
+    (C := 1) (eta := 1 / 4) (k := 1) (A := 1)
+    rationalEvaluationDomain (fun _ ↦ 0)
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num [finiteLengthSlack])
+  have hzero : (0 : ℚ[X]) ∈ classicalRationalLowDimensionClosePolynomialSet := by
+    unfold classicalRationalLowDimensionClosePolynomialSet closePolynomialSet
+    simp only [Set.mem_ofPred_eq]
+    exact ⟨WithBot.bot_lt_coe 1,
+      by norm_num [polynomialAgreementSet, rationalEvaluationDomain]⟩
+  exact ⟨hbound.1, hzero, hbound.2⟩
+
+/-- The finite-length density margin is positive for a concrete rate and block length. -/
+example : 0 < finiteLengthDensityMargin (1 / 2) (1 / 8) 4 := by
+  have hthreshold : firstOrderRateThreshold (1 / 2 : ℝ) < 3 / 4 :=
+    half_rate_threshold_lt_three_quarters
+  have hrateThreshold : (1 / 2 : ℝ) < firstOrderRateThreshold (1 / 2) :=
+    rate_lt_firstOrderRateThreshold (R := 1 / 2) (by norm_num) (by norm_num)
+  have haOne : firstOrderRateThreshold (1 / 2 : ℝ) + 1 / 8 < 1 := by
+    linarith
+  have hbetaHalf : finiteLengthDerivativeRatio (1 / 2) (1 / 8) ≤ 1 / 2 := by
+    have hagreement : (1 / 2 : ℝ) <
+        automaticAgreement (1 / 2) (firstOrderRateThreshold (1 / 2) + 1 / 8) := by
+      rw [automaticAgreement_eq_min]
+      apply lt_min
+      · linarith [hrateThreshold]
+      · linarith [hrateThreshold]
+    unfold finiteLengthDerivativeRatio automaticDerivativeRatio firstOrderRateBeta
+    norm_num
+    linarith
+  exact finiteLengthDensityMargin_pos (by norm_num) (by norm_num) (by norm_num)
+    haOne (by norm_num) hbetaHalf
 
 /-- The line-MCA envelope has a concrete inverse-`eta` bound. -/
 example :
