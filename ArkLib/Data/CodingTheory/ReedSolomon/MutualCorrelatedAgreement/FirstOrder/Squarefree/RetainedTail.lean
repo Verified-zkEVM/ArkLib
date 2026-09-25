@@ -143,26 +143,7 @@ theorem retainedContent_add_positiveJetDegree_le (Q : DifferentialPolynomial F[X
     jetTotalDegree (fromFlattenedRootFirst
         (radicalContent none (challengeRetainingRootFirst Q))) +
       jetTotalDegree (positiveCurveEquation Q) ≤ jetTotalDegree Q := by
-  have hadd : ∀ p q : MvPolynomial (Option (JetVariable 1)) F,
-      p ≠ 0 → q ≠ 0 →
-        jetTotalDegree (fromFlattenedRootFirst (p * q)) =
-          jetTotalDegree (fromFlattenedRootFirst p) +
-            jetTotalDegree (fromFlattenedRootFirst q) := by
-    intro p q hp hq
-    have hp' : fromFlattenedRootFirst p ≠ 0 := by
-      intro hzero
-      have h := congrArg challengeRetainingRootFirst hzero
-      rw [challengeRetainingRootFirst_fromFlattenedRootFirst] at h
-      exact hp (by simpa [challengeRetainingRootFirst] using h)
-    have hq' : fromFlattenedRootFirst q ≠ 0 := by
-      intro hzero
-      have h := congrArg challengeRetainingRootFirst hzero
-      rw [challengeRetainingRootFirst_fromFlattenedRootFirst] at h
-      exact hq (by simpa [challengeRetainingRootFirst] using h)
-    rw [show fromFlattenedRootFirst (p * q) =
-      fromFlattenedRootFirst p * fromFlattenedRootFirst q by
-        simp [fromFlattenedRootFirst]]
-    exact weightedTotalDegree_mul jetDegreeWeight _ _ hp' hq'
+  have hadd := jetTotalDegree_fromFlattenedRootFirst_mul (F := F)
   have hdegree := MvPolynomial.map_radicalContent_add_map_radicalPrimPart_le
     (d := fun R ↦ jetTotalDegree (fromFlattenedRootFirst R)) hadd none
       (challengeRetainingRootFirst Q)
