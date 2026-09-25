@@ -1980,6 +1980,12 @@ Ported from `HiddenDerivative/RootFinding/MutualCorrelatedAgreement/ExtensionDes
 
 Not ported: the standalone exceptional correlated-agreement wrapper from this dependency; the equation-descent theorem performs the exceptional-set pullback directly.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/HybridCurveTransfer.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/HybridCurveTransfer.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Renamed `hybridCurveJ1` to `hybridCurveJointStageSum` and `regularSymbolicCurveMCADerivativeBoundTwo_eq_hybrid_curve_stage` to `regularPowerBatchedDerivativeCappedBoundTwo_eq_hybridCurveStage` to match the current summation and power-batched APIs. The declarations `curveRetentionMinimum`, `curveRetentionMinimum_le`, `exists_curveRetentionMinimum`, `hybridCurveTail`, `hybridCurveRegular`, `hybridCurveAtDegree`, `hybridCurveOptimized`, `hybridCurveAtDegree_le_pair`, `hybridCurveAtDegree_le_optimized`, `exists_exceptional_firstOrder_regularCurveStages`, `exists_exceptional_firstOrder_hybridCurve_of_tail`, and `exists_exceptional_firstOrder_hybridCurve_optimized_of_tail` keep their names. The exception theorems use the height-free descent API and derive the coefficient-height bound from `Q`. No public source declarations were left out. The private characteristic helper was removed because `natCast_ne_zero_of_ringChar_eq_zero_or_lt` supplies the general result.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/Certificates.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/CertificateList.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -3953,6 +3959,10 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Firs
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/Degree.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 `challengeHeightLE_clearedSubstitution` becomes `CoeffNatDegreeLE.clearedSubstitution`. The generic theorem takes an independent coefficient bound `a`, concludes `H * h + a`, and restricts the coefficient bound to `Q.support`, weaker than the source's all-coefficient hypothesis. The source `ChallengeHeightLE` predicate and its `mono`, `const`, `mul_bound`, `pow_bound`, and `sum_bound` lemmas are represented by `CoeffNatDegreeLE` and its existing closure lemmas. The source `prod_bound` helper is not promoted because no public result in this unit needs it; the finite-product estimate is handled internally. The private copy in `TaylorBidegree.lean` is subsumed and needs no separate entry.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/HybridCurveTransfer.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Generalized `ReedSolomon.challengeCoefficientHeight` to `MvPolynomial.coeffNatDegree`, the maximum degree of the polynomial coefficients for arbitrary variable types and commutative semiring coefficients. Renamed `ReedSolomon.coeffNatDegreeLE_challengeCoefficientHeight` to `MvPolynomial.coeffNatDegreeLE_coeffNatDegree`; this proves that the computed bound applies to every coefficient. The exception results derive this height from the equation `Q` instead of requiring it as an input.
 
 ## `ArkLib/ToMathlib/MvPolynomial/PowerMomentGeometry.lean`
 
