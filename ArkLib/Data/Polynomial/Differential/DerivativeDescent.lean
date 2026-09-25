@@ -37,6 +37,8 @@ is `2 * Y_s = 0`, and over `ZMod 4` the derivative of `2 * Y_s ^ 2` is `4 * Y_s 
   characteristic; `derivativeDescent_ne_zero` needs the cast hypothesis.
 * `derivativeDescent_spec_of_highestActiveJet_eq_some`: the descent from the computed highest
   active jet is nonzero and depends only on jets of lower order.
+* `root_reaches_tail_or_regular_stage`: a finite sequence starting at zero reaches zero at its
+  endpoint or has a zero stage followed by a nonzero stage.
 
 ## References
 
@@ -50,6 +52,20 @@ namespace PolynomialDifferential
 noncomputable section
 
 variable {F : Type*} {d : ℕ} [CommSemiring F]
+
+/-- A finite sequence starting at zero reaches zero at its endpoint or has a zero stage followed
+by a nonzero stage. -/
+theorem root_reaches_tail_or_regular_stage
+    {R : Type*} [Zero R] (stage : ℕ → R) (e : ℕ) (hzero : stage 0 = 0) :
+    stage e = 0 ∨ ∃ j < e, stage j = 0 ∧ stage (j + 1) ≠ 0 := by
+  induction e with
+  | zero => exact Or.inl hzero
+  | succ e ih =>
+      rcases ih with htail | ⟨j, hj, hstage, hnext⟩
+      · by_cases hnext : stage (e + 1) = 0
+        · exact Or.inl hnext
+        · exact Or.inr ⟨e, Nat.lt_succ_self e, htail, hnext⟩
+      · exact Or.inr ⟨j, hj.trans (Nat.lt_succ_self e), hstage, hnext⟩
 
 /-! ### The cast hypothesis -/
 

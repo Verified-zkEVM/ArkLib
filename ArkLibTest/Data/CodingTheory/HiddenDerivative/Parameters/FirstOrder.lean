@@ -326,15 +326,8 @@ private noncomputable def hybridCurveCertificate :
     hybridFiniteFieldDomain (fun _ ↦ 0) (fun _ ↦ 0))).toCurve
 
 private theorem hybridCurveCertificate_jetDegree_le :
-    jetDegree hybridCurveCertificate.Q 1 ≤ concreteFiniteParameters.derivativeCap := by
-  rw [jetDegree, MvPolynomial.degreeOf_le_iff]
-  intro u hu
-  have hfirst : u (some (⟨1, by omega⟩ : Fin 2)) ≤
-      concreteFiniteParameters.derivativeCap := by
-    simpa only [firstJetExponent_eq_coordinates Nat.one_pos,
-      jetExponentCoordinatesEquiv_apply] using hybridCurveCertificate.firstJetDegree_le u hu
-  have hcoord : (⟨1, by omega⟩ : Fin 2) = 1 := Fin.ext rfl
-  simpa only [hcoord] using hfirst
+    jetDegree hybridCurveCertificate.Q 1 ≤ concreteFiniteParameters.derivativeCap :=
+  hybridCurveCertificate.jetDegree_one_le
 
 /-- A concrete curve certificate satisfies both characteristic-guarded descent bridges. -/
 example :

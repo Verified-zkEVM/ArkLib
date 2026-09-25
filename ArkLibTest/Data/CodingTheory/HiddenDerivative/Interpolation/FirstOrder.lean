@@ -59,6 +59,9 @@ private noncomputable def smallFirstOrderRateCertificate :
     (by norm_num) (by norm_num) hbudget (by norm_num) (by norm_num) (by norm_num)
     smallFirstOrderCenters (fun _ ↦ 0) (fun _ ↦ 0))
 
+/-- The concrete curve certificate respects its derivative cap in `Y₁`. -/
+example := smallFirstOrderRateCertificate.toCurve.jetDegree_one_le
+
 /-- The concrete two-point rate choice has strict surplus over its interpolation dimension. -/
 example :
     2 * smallFirstOrderRateParameters.rankCount < firstOrderDimensionCount 1 2

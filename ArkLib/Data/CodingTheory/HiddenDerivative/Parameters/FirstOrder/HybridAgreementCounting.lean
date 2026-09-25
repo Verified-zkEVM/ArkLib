@@ -34,7 +34,6 @@ closed first-order list constant.
 * `FirstOrderHybridDescent`, `exists_firstOrderHybridDescent`, and
   `FirstOrderHybridDescent.root_coverage`: symbolic actual-degree descent and its specialization
   coverage.
-* `root_reaches_tail_or_regular_stage`: a generic split for a finite sequence of zero stages.
 * `FirstOrderCurveCertificate.exists_hybridDescent` and
   `FirstOrderCurveCertificate.exists_hybridDescent_of_derivativeCap_lt_ringChar`: certificate
   bridges to the symbolic descent.
@@ -174,20 +173,6 @@ theorem exists_firstOrderFieldDescent
     tail := tail
     tail_nonzero := tail.equation_ne_zero ((hstages e le_rfl).1)
   }⟩
-
-/-- A zero-valued stage sequence reaches its endpoint or has a zero stage followed by a
-nonzero stage before the endpoint. -/
-theorem root_reaches_tail_or_regular_stage
-    {R : Type*} [Zero R] (stage : ℕ → R) (e : ℕ) (hzero : stage 0 = 0) :
-    stage e = 0 ∨ ∃ j < e, stage j = 0 ∧ stage (j + 1) ≠ 0 := by
-  induction e with
-  | zero => exact Or.inl hzero
-  | succ e ih =>
-      rcases ih with htail | ⟨j, hj, hstage, hnext⟩
-      · by_cases hnext : stage (e + 1) = 0
-        · exact Or.inl hnext
-        · exact Or.inr ⟨e, Nat.lt_succ_self e, htail, hnext⟩
-      · exact Or.inr ⟨j, hj.trans (Nat.lt_succ_self e), hstage, hnext⟩
 
 namespace FirstOrderFieldDescent
 
