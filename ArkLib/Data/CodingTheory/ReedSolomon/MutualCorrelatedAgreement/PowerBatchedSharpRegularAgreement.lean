@@ -26,12 +26,11 @@ a = ell + tau*h,
 b = 1 + tau*(v-1),
 ```
 
-Write `lambda1 = (n-L+1)/(A-L+1)` and
-`lambda2 = (n-k+1)/(L-k+1)`. The two formulas are
+Write `lambda1 = (n-L+1)/(A-L+1)`,
+`lambda2 = (n-k+1)/(A-k+1)`, and `mu = (n-k+1)/(L-k+1)`. The first-order formula is
 
 ```text
-order zero: (h*b + v*a) * lambda1 + ell*(n-L)*v,
-order one:  (h*b^2 + 2*v*a*b) * lambda1*lambda2 + ell*(n-L)*v*(b*lambda2).
+first order: (h*b^2 + 2*v*a*b) * lambda1*lambda2 + ell*(n-L)*v*(b*mu).
 ```
 
 The first-order incidence theorem applies sharp bidegree incidence away from admissible tuple
@@ -42,8 +41,9 @@ use the estimates in Section 5.6, Theorem 5.14 and Corollary 5.15 of [DKTZ26].
 
 ## Main statements
 
-* The `joint*Bidegree` theorems give one common rectangle for the equation, separant, Taylor
-  numerators, high cuts, and agreement equations.
+* The Taylor numerators, including high cuts, and agreement equations fit one common bidegree
+  rectangle. The initial equation uses `initialJetEquation_mem_restrictBidegree` in its tighter
+  `(h, v)` rectangle.
 * `finite_powerBatched_regular_points_off_admissible_graphs_card_le_firstOrder_of_exponent`
   bounds regular points outside admissible tuple graphs.
 * `finite_powerBatchedBadChallenges_card_le_firstOrder_of_exponent` combines incidence and tuple
@@ -103,15 +103,6 @@ private theorem sharp_joint_agreement_eval {r : ℕ} (center z alpha : E)
     aeval_jointTaylorAgreementEquation center Q K τ (Polynomial.C alpha)
       (powerBatchedCoordinate values) (fun i ↦ i.elim z jet)
 
-private theorem span_singleton_ne_top_of_aeval_eq_zero {σ : Type*}
-    (g : MvPolynomial σ E) (x : σ → E) (hx : aeval x g = 0) :
-    Ideal.span ({g} : Set (MvPolynomial σ E)) ≠ ⊤ := by
-  intro htop
-  have hgunit : IsUnit g := Ideal.span_singleton_eq_top.mp htop
-  have hevalunit : IsUnit (MvPolynomial.aeval x g) := hgunit.map (MvPolynomial.aeval x)
-  rw [hx] at hevalunit
-  exact not_isUnit_zero hevalunit
-
 private def sharpHighCuts {r : ℕ} (center : E) (Q : DifferentialPolynomial E[X] r)
     (K k τ : ℕ) : List (MvPolynomial (Option (Fin (r + 1))) E) :=
   ((Finset.univ.filter fun l : Fin K => k ≤ l.val).toList).map
@@ -129,18 +120,6 @@ def regularPowerBatchedInitialMixedDegreeTwo (ℓ K v h : ℕ) (τ : ℕ := 2 * 
     2 * v * regularPowerBatchedCutChallengeDegree ℓ K h (τ := τ) *
       regularPowerBatchedCutJetDegree K v (τ := τ)
 
-/-- Mixed affine degree of the pulled-back order-zero initial hypersurface. -/
-def regularPowerBatchedInitialMixedDegreeOne (ℓ K v h : ℕ) (τ : ℕ := 2 * K) : ℕ :=
-  h * regularPowerBatchedCutJetDegree K v (τ := τ) +
-    v * regularPowerBatchedCutChallengeDegree ℓ K h (τ := τ)
-
-/-- Sharp regular order-zero agreement budget from incidence and exact tuple roots. -/
-def regularPowerBatchedAgreementSharpBoundOne
-    (n ℓ K L A v h : ℕ) (τ : ℕ := 2 * K) : ℚ :=
-  (regularPowerBatchedInitialMixedDegreeOne ℓ K v h (τ := τ) : ℚ) *
-      (((n - L + 1 : ℕ) : ℚ) / ((A - L + 1 : ℕ) : ℚ)) +
-    ((ℓ * (n - L) : ℕ) : ℚ) * (v : ℚ)
-
 /-- Sharp regular first-order agreement budget from incidence and exact tuple roots. -/
 def regularPowerBatchedAgreementSharpBoundTwo
     (n ℓ K k L A v h : ℕ) (τ : ℕ := 2 * K)
@@ -150,41 +129,6 @@ def regularPowerBatchedAgreementSharpBoundTwo
     ((ℓ * (n - L) : ℕ) : ℚ) * (v : ℚ) *
       ((((n - k + 1) * regularPowerBatchedCutJetDegree K v (τ := τ) : ℕ) : ℚ) /
         ((L - k + 1 : ℕ) : ℚ))
-
-/-- The joint initial equation fits the common Taylor cut rectangle at exponent `τ`. -/
-theorem jointInitialJetEquation_mem_regularPowerBatchedCutBidegree_of_exponent
-    {r : ℕ} (center : E) (Q : DifferentialPolynomial E[X] r)
-    (ℓ K h v τ : ℕ) (hτpos : 0 < τ) (hv : 0 < v)
-    (hheight : CoeffNatDegreeLE Q h)
-    (hjet : jetTotalDegree Q ≤ v) :
-    jointInitialJetEquation center Q ∈ restrictBidegree (Fin (r + 1)) E
-      (regularPowerBatchedCutChallengeDegree ℓ K h (τ := τ))
-      (regularPowerBatchedCutJetDegree K v (τ := τ)) := by
-  have hrect := initialJetEquation_mem_restrictBidegree center Q h v hheight hjet
-  have hh : h ≤ τ * h := Nat.le_mul_of_pos_left h hτpos
-  have hv' : v - 1 ≤ τ * (v - 1) := Nat.le_mul_of_pos_left _ hτpos
-  have hchallenge : h ≤ ℓ + τ * h := by omega
-  have hjet' : v ≤ 1 + τ * (v - 1) := by omega
-  simpa only [jointInitialJetEquation, regularPowerBatchedCutChallengeDegree,
-    regularPowerBatchedCutJetDegree] using
-      mem_restrictBidegree_mono hrect hchallenge hjet'
-
-/-- The joint initial separant fits the common Taylor cut rectangle at exponent `τ`. -/
-theorem jointInitialJetSeparant_mem_regularPowerBatchedCutBidegree_of_exponent
-    {r : ℕ} (center : E) (Q : DifferentialPolynomial E[X] r)
-    (ℓ K h v τ : ℕ) (hτpos : 0 < τ) (hheight : CoeffNatDegreeLE Q h)
-    (hjet : jetTotalDegree Q ≤ v) :
-    jointInitialJetSeparant center Q ∈ restrictBidegree (Fin (r + 1)) E
-      (regularPowerBatchedCutChallengeDegree ℓ K h (τ := τ))
-      (regularPowerBatchedCutJetDegree K v (τ := τ)) := by
-  have hrect := initialJetSeparant_mem_restrictBidegree center Q h v hheight hjet
-  have hh : h ≤ τ * h := Nat.le_mul_of_pos_left h hτpos
-  have hv : v - 1 ≤ τ * (v - 1) := Nat.le_mul_of_pos_left _ hτpos
-  have hchallenge : h ≤ ℓ + τ * h := by omega
-  have hjet' : v - 1 ≤ 1 + τ * (v - 1) := by omega
-  simpa only [jointInitialJetSeparant, regularPowerBatchedCutChallengeDegree,
-    regularPowerBatchedCutJetDegree] using
-      mem_restrictBidegree_mono hrect hchallenge hjet'
 
 /-- A joint common Taylor numerator fits the common cut rectangle at exponent `τ`. -/
 theorem jointCommonTaylorNumerator_mem_regularPowerBatchedCutBidegree_of_exponent
@@ -200,19 +144,6 @@ theorem jointCommonTaylorNumerator_mem_regularPowerBatchedCutBidegree_of_exponen
   simpa only [jointCommonTaylorNumerator, regularPowerBatchedCutChallengeDegree,
     regularPowerBatchedCutJetDegree] using
       mem_restrictBidegree_mono hrect (Nat.le_add_left _ _) le_rfl
-
-/-- Every common high cut fits the common Taylor cut rectangle at exponent `τ`. -/
-theorem jointTaylorHighCuts_mem_regularPowerBatchedCutBidegree_of_exponent
-    {r : ℕ} (center : E) (Q : DifferentialPolynomial E[X] r)
-    (ℓ K k h v τ : ℕ) (hτ : TaylorExponentSufficient r K τ) (hv : 0 < v)
-    (hheight : CoeffNatDegreeLE Q h) (hjet : jetTotalDegree Q ≤ v) :
-    ∀ l : Fin K, k ≤ l.val →
-      jointCommonTaylorNumerator center Q τ l ∈ restrictBidegree (Fin (r + 1)) E
-        (regularPowerBatchedCutChallengeDegree ℓ K h (τ := τ))
-        (regularPowerBatchedCutJetDegree K v (τ := τ)) := by
-  intro l hl
-  exact jointCommonTaylorNumerator_mem_regularPowerBatchedCutBidegree_of_exponent
-    center Q ℓ K h v τ hτ hv hheight hjet l
 
 /-- A joint agreement equation with a received polynomial of degree at most `ℓ` fits the
 common Taylor cut rectangle at exponent `τ`. -/
@@ -270,8 +201,13 @@ theorem finite_powerBatched_regular_points_off_admissible_graphs_card_le_firstOr
   have hb : 0 < regularPowerBatchedCutJetDegree K v (τ := τ) := by
     simp only [regularPowerBatchedCutJetDegree]
     omega
+  have hnotunit : ¬ IsUnit g := by
+    intro hg
+    have hevalunit : IsUnit (aeval x₀ g) := hg.map (MvPolynomial.aeval x₀)
+    rw [(hS x₀ hx₀).1] at hevalunit
+    exact not_isUnit_zero hevalunit
   have hproper : Ideal.span ({g} : Set (MvPolynomial (Option (Fin 2)) E)) ≠ ⊤ :=
-    span_singleton_ne_top_of_aeval_eq_zero g x₀ (hS x₀ hx₀).1
+    Ideal.span_singleton_ne_top hnotunit
   change (S.card : ℚ) ≤ (h * regularPowerBatchedCutJetDegree K v (τ := τ) ^ 2 +
     2 * v * regularPowerBatchedCutChallengeDegree ℓ K h (τ := τ) *
       regularPowerBatchedCutJetDegree K v (τ := τ) : ℕ) *
@@ -647,15 +583,6 @@ theorem finite_regularPowerBatchedBadChallenges_card_le_firstOrder_of_exponent
     domain w iota center Q K k L A v h τ hτ hτpos hK hkK hkL hLA hAn hD hv
       hjet hheight challenges witness jet hchart hagree hbad
 
-private theorem set_finite_of_finset_card_le_rational {X : Type*} (T : Set X) (B : ℚ)
-    (hbound : ∀ S : Finset X, ↑S ⊆ T → (S.card : ℚ) ≤ B) : T.Finite := by
-  by_contra hinfinite
-  obtain ⟨N, hN⟩ := exists_nat_gt B
-  obtain ⟨S, hS, hcard⟩ := Set.Infinite.exists_subset_card_eq hinfinite N
-  have hb := hbound S hS
-  rw [hcard] at hb
-  exact (not_lt_of_ge hb) hN
-
 open Classical in
 /-- A single dimension-sensitively bounded exceptional set works for every regular first-order
 solution at the supplied Taylor exponent.  The conclusion retains the exact full agreement-set
@@ -683,12 +610,10 @@ theorem exists_exceptional_regularPowerBatchedAgreement_firstOrder_of_exponent
         HasExactPowerAgreement domain w iota k z P := by
   have hfinite :
       (regularPowerBatchedBadChallenges domain w iota Q k A).Finite := by
-    apply set_finite_of_finset_card_le_rational _
-      (regularPowerBatchedAgreementSharpBoundTwo n ℓ K k L A v h (τ := τ)
-        (η := ((n - k + 1 : ℕ) : ℚ) / ((A - k + 1 : ℕ) : ℚ)))
-    exact finite_regularPowerBatchedBadChallenges_card_le_firstOrder_of_exponent
+    apply Set.finite_of_forall_finset_card_le (R := ℚ) fun S hS ↦
+      finite_regularPowerBatchedBadChallenges_card_le_firstOrder_of_exponent
       domain w iota Q K k L A v h τ hτ hτpos hK hkK hkL hLA hAn hD hv
-        hjet hheight hbin
+        hjet hheight hbin S hS
   refine ⟨hfinite.toFinset, ?_, ?_⟩
   · apply finite_regularPowerBatchedBadChallenges_card_le_firstOrder_of_exponent
       domain w iota Q K k L A v h τ hτ hτpos hK hkK hkL hLA hAn hD hv
