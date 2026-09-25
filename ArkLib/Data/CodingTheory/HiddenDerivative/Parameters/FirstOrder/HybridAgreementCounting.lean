@@ -43,6 +43,8 @@ closed first-order list constant.
 * `finite_firstOrder_field_hybrid_agreement_solutions_card_le_raw`: the actual-degree list bound.
 * `finite_firstOrder_field_hybrid_agreement_solutions_card_le_optimized`: the optimized, ceiling,
   and closed bounds.
+* `exists_automaticFirstOrder_symbolicCertificate` constructs a certificate from the automatic
+  finite-rate parameters.
 * `finite_automaticFirstOrder_hybrid_agreement_solutions_card_le`: the automatic parameter bound.
 
 ## References
@@ -654,6 +656,35 @@ theorem finite_firstOrder_field_hybrid_agreement_solutions_card_le
   exact finite_firstOrder_field_hybrid_agreement_solutions_card_le_optimized
     domain received Q descent hD hDA hAn hMμ hchar S hsol haccept
 
+/-- The automatic first-order parameters construct a symbolic certificate for every received
+line. -/
+theorem exists_automaticFirstOrder_symbolicCertificate
+    {F : Type*} [Field F] {rho a : ℝ} {n D A k : ℕ}
+    (hrho : 0 < rho) (hrhoOne : rho < 1)
+    (ha : firstOrderRateThreshold rho < a) (haOne : a < 1)
+    (hn : 0 < n) (hD : D = k - 1) (hk : 2 ≤ k)
+    (hkRate : (k : ℝ) ≤ rho * n) (hA : a * n ≤ A)
+    (centers : Fin n ↪ F) (f g : Fin n → F) :
+    let p := automaticFiniteRateParameters hrho hrhoOne ha haOne
+    Nonempty (FirstOrderSymbolicCertificate (F := F)
+      D A p.multiplicity p.derivativeCap p.jetDegree k p.challengeDegree centers f g
+      (firstOrderColumns (D := D) (A := A) (m := p.multiplicity)
+        (M := p.derivativeCap) (μ := p.jetDegree))) := by
+  let p := automaticFiniteRateParameters hrho hrhoOne ha haOne
+  have hagreementPos : 0 < automaticAgreement rho a :=
+    hrho.trans (rho_lt_automaticAgreement hrho hrhoOne ha)
+  have hArate : automaticAgreement rho a * n ≤ A := automaticAgreement_mul_le hA
+  have hAposReal : (0 : ℝ) < A := by
+    have hpos : (0 : ℝ) < automaticAgreement rho a * n :=
+      mul_pos hagreementPos (Nat.cast_pos.mpr hn)
+    exact hpos.trans_le hArate
+  have hApos : 0 < A := by exact_mod_cast hAposReal
+  have hbudget : 0 < p.multiplicity * A := Nat.mul_pos p.multiplicity_pos hApos
+  have hDpos : 0 < D := by omega
+  have hkD : k ≤ D + 1 := by omega
+  exact exists_firstOrderRate_symbolicCertificate p hn hDpos hbudget hkD
+    (automatic_degree_le_rate_mul hD hkRate) hArate centers f g
+
 open Classical in
 /-- The literal automatic first-order parameters produce optimized, ceiling, and closed list
 bounds for every received word. -/
@@ -675,62 +706,27 @@ theorem finite_automaticFirstOrder_hybrid_agreement_solutions_card_le
         (automaticJetDegree rho a) (automaticDerivativeCap rho a) ∧
       (S.card : ℝ) ≤ firstOrderListConstant (agreementIncidenceRatio n D A) D
         (automaticJetDegree rho a) (automaticDerivativeCap rho a) := by
-  let m := automaticMultiplicity rho a
-  let agreement := automaticAgreement rho a
-  have hmpos : 0 < m := automaticMultiplicity_pos hrho hrhoOne ha haOne
-  have hagreementPos : 0 < agreement :=
-    hrho.trans (rho_lt_automaticAgreement hrho hrhoOne ha)
-  have hArate : agreement * n ≤ A := by
-    calc
-      agreement * n ≤ a * n :=
-        mul_le_mul_of_nonneg_right (automaticAgreement_le rho a) (by positivity)
-      _ ≤ A := hA
-  have hAposReal : (0 : ℝ) < A := by
-    have hpos : (0 : ℝ) < agreement * n := mul_pos hagreementPos (Nat.cast_pos.mpr hn)
-    exact hpos.trans_le hArate
-  have hApos : 0 < A := by exact_mod_cast hAposReal
-  have hbudget : 0 < m * A := Nat.mul_pos hmpos hApos
-  have hDrate : (D : ℝ) ≤ rho * n := automatic_degree_le_rate_mul hD hkRate
-  let hp : FirstOrderFiniteRateParameters rho agreement := {
-    multiplicity := m
-    multiplicity_pos := hmpos
-    surplus := by
-      simpa [FirstOrderFiniteRateTest, FirstOrderFiniteRateParameters.derivativeCap,
-        FirstOrderFiniteRateParameters.rankCount, FirstOrderFiniteRateParameters.sourceCount,
-        automaticRankCount_eq_raw hrho hrhoOne ha haOne,
-        automaticSourceCount_eq_raw hrho hrhoOne ha haOne, m, agreement,
-        automaticDerivativeCapRaw, automaticDerivativeRatio, automaticAgreement,
-        firstOrderRateDerivativeCap, firstOrderRateBeta, firstOrderRateJetDegree,
-        automaticJetDegree] using
-        automaticRankCount_lt_sourceCount hrho hrhoOne ha haOne }
-  have hthresholdD : 0 < D := by omega
-  have hkD : k ≤ D + 1 := by omega
-  have hbudget' : 0 < hp.multiplicity * A := by
-    change 0 < m * A
-    exact hbudget
-  obtain ⟨cert⟩ := exists_firstOrderRate_symbolicCertificate hp hn hthresholdD hbudget'
-    hkD hDrate hArate domain received received
+  let p := automaticFiniteRateParameters hrho hrhoOne ha haOne
+  have hArate : automaticAgreement rho a * n ≤ A := automaticAgreement_mul_le hA
+  obtain ⟨cert⟩ := exists_automaticFirstOrder_symbolicCertificate
+    (F := F) hrho hrhoOne ha haOne hn hD hk hkRate hA domain received received
   let phi := Polynomial.eval₂RingHom (RingHom.id F) (0 : F)
   let Q : DifferentialPolynomial F 1 := MvPolynomial.map phi cert.Q
   obtain ⟨hQ, hsound⟩ := cert.specialization_sound (RingHom.id F) 0
-  have hweightCert : jetTotalDegree cert.Q ≤ hp.jetDegree := by
+  have hweightCert : jetTotalDegree cert.Q ≤ p.jetDegree := by
     rw [jetTotalDegree_le_iff]
     exact cert.totalJetDegree_le
-  have hjetCap : hp.jetDegree = automaticJetDegree rho a := by
-    change firstOrderRateJetDegree rho agreement m = automaticJetDegree rho a
-    rfl
   have hweight : jetTotalDegree Q ≤ automaticJetDegree rho a := by
-    exact (jetTotalDegree_map_le phi cert.Q).trans (hweightCert.trans_eq hjetCap)
-  have hdegreeCert : jetDegree cert.Q 1 ≤ hp.derivativeCap := by
-    change jetDegree cert.toCurve.Q 1 ≤ hp.derivativeCap
+    exact (jetTotalDegree_map_le phi cert.Q).trans
+      (hweightCert.trans_eq
+        (automaticFiniteRateParameters_jetDegree hrho hrhoOne ha haOne))
+  have hdegreeCert : jetDegree cert.Q 1 ≤ p.derivativeCap := by
+    change jetDegree cert.toCurve.Q 1 ≤ p.derivativeCap
     exact cert.toCurve.jetDegree_one_le
-  have hderivCap : hp.derivativeCap = automaticDerivativeCap rho a := by
-    rw [automaticDerivativeCap_eq_raw hrho hrhoOne ha haOne]
-    change firstOrderRateDerivativeCap rho agreement m = automaticDerivativeCapRaw rho a
-    rfl
   have hdegree : jetDegree Q 1 ≤ automaticDerivativeCap rho a := by
     exact (jetDegree_map_le phi cert.Q 1).trans
-      (hdegreeCert.trans_eq hderivCap)
+      (hdegreeCert.trans_eq
+        (automaticFiniteRateParameters_derivativeCap hrho hrhoOne ha haOne))
   have hsol : ∀ P ∈ S, differentialSpecialization Q P = 0 := by
     intro P hP
     let indices := Finset.univ.filter fun i ↦ P.eval (domain i) = received i
@@ -743,12 +739,14 @@ theorem finite_automaticFirstOrder_hybrid_agreement_solutions_card_le
   have hDpos : 1 ≤ D := by omega
   have hDA : D < A := by
     have hkrho : (k : ℝ) ≤ rho * n := hkRate
-    have hrhoAgreement : rho < agreement := rho_lt_automaticAgreement hrho hrhoOne ha
+    have hrhoAgreement : rho < automaticAgreement rho a :=
+      rho_lt_automaticAgreement hrho hrhoOne ha
     have hnreal : (0 : ℝ) < n := Nat.cast_pos.mpr hn
     have hkAreal : (k : ℝ) ≤ A := by
       exact (calc
           (k : ℝ) ≤ rho * n := hkrho
-          _ < agreement * n := mul_lt_mul_of_pos_right hrhoAgreement hnreal
+          _ < automaticAgreement rho a * n :=
+            mul_lt_mul_of_pos_right hrhoAgreement hnreal
           _ ≤ A := hArate).le
     have hkA : k ≤ A := by exact_mod_cast hkAreal
     omega
