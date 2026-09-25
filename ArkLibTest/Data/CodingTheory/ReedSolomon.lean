@@ -75,6 +75,13 @@ example : Code.DeterminedByAgreement (code domain3 2) 2 :=
 example : UniformExactPowerAgreement domain3 ![![1, 2, 5]] 2 0 0 :=
   uniformExactPowerAgreement_singleton domain3 _ 2 0
 
+/-- One received word has exact power agreement when the candidate agrees at enough points. -/
+example : HasExactPowerAgreement domain3 (fun _ : Fin 1 => fun _ => (0 : ℚ))
+    (RingHom.id ℚ) 1 0 (0 : ℚ[X]) := by
+  apply hasExactPowerAgreement_singleton
+  · norm_num
+  · norm_num [polynomialAgreementSet, powerBatchedWord, domain3]
+
 private noncomputable def domain2 : Fin 2 ↪ ZMod 2 :=
   ⟨fun i ↦ (i.val : ZMod 2), fun a b h ↦ by
     fin_cases a <;> fin_cases b <;> simp_all⟩

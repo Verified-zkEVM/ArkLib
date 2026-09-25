@@ -77,6 +77,8 @@ interleaved statements are in `ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.
 * `ReedSolomon.HasExactPowerAgreement.descend` and
   `ReedSolomon.uniformExactPowerAgreement_of_extension`: exact power agreement descends from an
   extension field.
+* `ReedSolomon.hasExactPowerAgreement_singleton`: one constituent has exact power agreement
+  whenever a degree-bounded candidate has at least `k` agreements.
 * `ReedSolomon.uniformExactPowerAgreement_of_all_samples`: retaining all common-sample
   interpolants gives a characteristic-free uniform recovery bound.
 * `ReedSolomon.determinedByAgreement_code`: Reed–Solomon codewords of message length `k` are
@@ -467,6 +469,31 @@ theorem hasExactPowerAgreement_id_iff (domain : ι ↪ F) (w : Fin (ℓ + 1) →
   have hdomain : domain.trans ⟨RingHom.id F, (RingHom.id F).injective⟩ = domain :=
     Function.Embedding.ext fun _ ↦ rfl
   simp only [HasExactPowerAgreement, Polynomial.map_id, RingHom.id_apply, hdomain]
+
+/-- For one constituent, any degree-`< k` polynomial agreeing with the batched word in at least
+`k` positions is the scalar extension of its base-field interpolant and has exact agreement. -/
+theorem hasExactPowerAgreement_singleton (domain : ι ↪ F) (w : Fin 1 → ι → F)
+    (iota : F →+* E) (k : ℕ) (z : E) (Q : E[X]) (hdegree : Q.degree < k)
+    (hagree : k ≤ (polynomialAgreementSet (domain.trans ⟨iota, iota.injective⟩)
+      (powerBatchedWord (fun t i ↦ iota (w t i)) z) Q).card) :
+    HasExactPowerAgreement domain w iota k z Q := by
+  classical
+  obtain ⟨sample, hsample, hcard⟩ := Finset.exists_subset_card_eq hagree
+  obtain ⟨P, hPdegree, _hPsample, hrecognize⟩ :=
+    exists_polynomialGraph_of_sample domain w sample hcard
+  have hQ : Q = powerBatchedPolynomial (fun t ↦ (P t).map iota) z := by
+    apply hrecognize iota z Q hdegree
+    intro i hi
+    have hi' := (Finset.mem_filter.mp (hsample hi)).2
+    simpa only [powerBatchedWord, Function.Embedding.trans_apply,
+      Function.Embedding.coeFn_mk] using hi'
+  refine ⟨P, hPdegree, hQ, ?_⟩
+  ext i
+  simp only [polynomialAgreementSet, commonCurveAgreementSet, Finset.mem_filter,
+    Finset.mem_univ, true_and]
+  rw [hQ, powerBatchedPolynomial_eval]
+  simp [powerBatchedWord, Polynomial.eval_map, Polynomial.eval₂_at_apply,
+    iota.injective.eq_iff]
 
 /-- A single received word has uniform exact power agreement with no exceptional challenge, for
 every degree bound `k` and agreement threshold `L`: the witness is `P 0 = Q`. -/
