@@ -65,25 +65,21 @@ noncomputable section
 
 local instance : DecidableEq E₄ := Classical.decEq E₄
 /-- The constant solution at `z = 1` gives degree-one power agreement. -/
-example : HasExactPowerAgreement pointDomain ![fun _ ↦ (0 : ZMod 2), fun _ ↦ 1]
-    (RingHom.id (ZMod 2)) 2 1 (C 1) := by
-  obtain ⟨exceptional, hcard, hdescend⟩ :=
-    exists_exceptional_equation_correlatedAgreement_descend pointDomain (fun _ ↦ (0 : ZMod 2))
-      (fun _ ↦ 1) (algebraMap (ZMod 2) E₄) agreementEquation 2 1 ∅ fun z _ P _ _ hroot ↦ by
-        obtain rfl : P = C z := sub_eq_zero.mp (by
-          simpa [agreementEquation, challengeSpecialization, differentialSpecialization,
-            differentialSpecializationHom] using hroot)
-        refine ⟨(0, 1), by rw [degree_zero]; exact WithBot.bot_lt_coe 2, by norm_num,
-          by simp [correlatedPairSpecialization], ?_⟩
-        ext i; fin_cases i; simp [polynomialAgreementSet, commonPolynomialAgreementSet, pointDomain]
-  have hpair := hdescend 1 (by simp_all) (C 1) (by simp)
-    (by simp [pointDomain, polynomialAgreementSet])
-    (by simp [agreementEquation, challengeSpecialization, differentialSpecialization,
-      differentialSpecializationHom])
-  exact powerAgreement_one_of_exactCorrelatedPair pointDomain
-    (fun _ ↦ (0 : ZMod 2)) (fun _ ↦ 1) (RingHom.id (ZMod 2)) 1 (C 1) hpair
+example : HasExactCorrelatedPair pointDomain (fun _ ↦ (0 : ZMod 2)) (fun _ ↦ 1)
+    (RingHom.id (ZMod 2)) 2 1 (C 1) ∧
+    HasExactPowerAgreement pointDomain ![fun _ ↦ (0 : ZMod 2), fun _ ↦ 1]
+      (RingHom.id (ZMod 2)) 2 1 (C 1) := by
+  have hpair : HasExactCorrelatedPair pointDomain (fun _ ↦ (0 : ZMod 2)) (fun _ ↦ 1)
+      (RingHom.id (ZMod 2)) 2 1 (C 1) :=
+    HasExactCorrelatedPair.descend pointDomain (fun _ ↦ (0 : ZMod 2)) (fun _ ↦ 1)
+      (algebraMap (ZMod 2) E₄) 2 1 (C 1)
+      ⟨(0, 1), WithBot.bot_lt_coe 2, degree_C_le.trans_lt (by norm_num),
+        by simp [correlatedPairSpecialization], by
+          ext i; fin_cases i
+          simp [polynomialAgreementSet, commonPolynomialAgreementSet, pointDomain]⟩
+  exact ⟨hpair, powerAgreement_one_of_exactCorrelatedPair pointDomain
+    (fun _ ↦ 0) (fun _ ↦ 1) (RingHom.id (ZMod 2)) 1 (C 1) hpair⟩
 end
-
 private theorem singletonLineExactBound : LineExactAgreementBound pointDomain 1 1 0 :=
   fun f g ↦ ⟨∅, by simp, fun z _ P hP hclose ↦ by
     have hagree : polynomialAgreementSet pointDomain (fun i ↦ f i + z * g i) P = Finset.univ :=
@@ -298,7 +294,7 @@ private def firstOrderChartValues : Fin 1 → ComponentField := fun _ ↦ 0
 private def firstOrderRegularJet : Fin 2 → ComponentField := fun _ ↦ 0
 private def firstOrderRegularJets : Finset (Fin 2 → ComponentField) :=
   {firstOrderRegularJet}
-/-- The chart and source dimension budgets hold for nonempty order-one cuts. -/
+/-- Chart and source dimension budgets include the chart-prime zero-cut bound. -/
 example :
     firstOrderRegularJets.Nonempty ∧
     (firstOrderRegularJets.card : ℚ) ≤ (jetTotalDegree firstOrderChartEquation : ℚ) *
@@ -307,6 +303,7 @@ example :
     ((affineHilbertPolynomial chartIdeal).natDegree +
         {i | taylorAgreementEquation 0 firstOrderChartEquation 2 2
           (firstOrderTestPoints i) (firstOrderChartValues i) ∈ chartIdeal}.ncard ≤ 1) ∧
+      (affineHilbertPolynomial chartIdeal).natDegree ≤ 1 ∧
       (affineHilbertPolynomial sourceIdeal).natDegree ≤ 2 ∧
       (affineHilbertPolynomial sourceIdeal).natDegree +
         {i | jointTaylorAgreementEquation 0 sourceEquation 2 2
@@ -374,7 +371,12 @@ example :
     chart_dimensionSensitive_component_of_exponent (center := 0)
     (Q := firstOrderChartEquation) (K := 2) (k := 1) (n := 1) (τ := 2) hτ (by omega)
     (by omega) chartIdeal hChartPrime hChartSeparant hChartHigh firstOrderTestPoints
-    firstOrderChartValues hChartDimension, hpoly.1, ?_, ?_⟩
+    firstOrderChartValues hChartDimension,
+    chart_prime_affineHilbertPolynomial_natDegree_le_of_agreements_of_exponent
+      (center := 0) (Q := firstOrderChartEquation) (K := 2) (k := 1) (c := 0) (τ := 2)
+      hτ (by omega) (by omega) chartIdeal hChartPrime hChartSeparant hChartHigh
+      (⟨Fin.elim0, by intro i; exact Fin.elim0 i⟩ : Fin 0 ↪ ComponentField)
+      Fin.elim0 (fun i ↦ i.elim0), hpoly.1, ?_, ?_⟩
   · simp [firstOrderTestPoints] at hline ⊢; omega
   · simpa [firstOrderTestPoints] using
       (firstOrder_symbolicSource_dimensionSensitive_component_of_exponent
@@ -719,19 +721,17 @@ example : positiveChallenges.Nonempty ∧ (positiveChallenges.card : ℚ) ≤ 2 
     (by simpa [jointInitialJetEquation, initialJetEquation, incidenceEquation,
       componentIdeal, componentVariable] using componentIdeal_isPrime.ne_top)
     positiveChallenges positiveChallengeWitness
-    (by intro z hz; simp [positiveChallengeWitness])
-    (by intro z hz; simp [incidenceEquation, componentCoordinateEquation,
-      positiveChallengeWitness, challengeSpecialization, differentialSpecialization,
+    (by simp [positiveChallenges, positiveChallengeWitness])
+    (by simp [positiveChallenges, positiveChallengeWitness, incidenceEquation,
+      componentCoordinateEquation, challengeSpecialization, differentialSpecialization,
       differentialSpecializationHom])
-    (by intro z hz; simp [incidenceEquation, componentCoordinateEquation,
+    (by simp [positiveChallenges, incidenceEquation, componentCoordinateEquation,
       challengeSpecialization, separant, jetEvaluation, polynomialJet])
     (by intro z hz; obtain rfl := Finset.mem_singleton.mp hz; norm_num
       [positiveChallengeDomain, regularBoundValues, positiveChallengeWitness,
         polynomialAgreementSet])
-    (by
-      intro z hz
-      obtain rfl := Finset.mem_singleton.mp hz
-      simpa [positiveChallengeWitness] using positiveChallenge_no_correlatedPair)
+    (by simpa [positiveChallenges, positiveChallengeWitness] using
+      positiveChallenge_no_correlatedPair)
   exact ⟨by simp [positiveChallenges], by
     convert hregularBound using 1; norm_num [positiveChallenges]⟩
 private def incidencePoint : Option (Fin 2) → ComponentField := fun _ ↦ 0
