@@ -136,12 +136,12 @@ theorem rs_lambda_large_prime
     dsimp [A]
     field_simp [_hα_pos.ne']
   let s : ℝ := β / (4 * (A + 1))
-  have hs : 0 < s := div_pos _hβ_pos (mul_pos (by norm_num) (by linarith only [hA]))
+  have hs : 0 < s := div_pos _hβ_pos (mul_pos (by norm_num) (by linarith))
   have hsA : s * A ≤ β / 4 := by
     dsimp [s]
-    have hden : 0 < 4 * (A + 1) := mul_pos (by norm_num) (by linarith only [hA])
+    have hden : 0 < 4 * (A + 1) := mul_pos (by norm_num) (by linarith)
     rw [div_mul_eq_mul_div, div_le_iff₀ hden]
-    linarith only [_hβ_pos]
+    nlinarith
   have hxTop : Filter.Tendsto (fun p : ℕ => (p : ℝ) ^ α) Filter.atTop Filter.atTop :=
     (tendsto_rpow_atTop _hα_pos).comp tendsto_natCast_atTop_atTop
   have hsTop : Filter.Tendsto (fun p : ℕ => (p : ℝ) ^ s) Filter.atTop Filter.atTop :=
@@ -198,7 +198,7 @@ theorem rs_lambda_large_prime
       apply Nat.le_floor
       rw [Nat.cast_sub ha, hδmul]
       have hceil := Nat.le_ceil (A * (p : ℝ) ^ α)
-      linarith only [hceil]
+      linarith
     exact ⟨hp2, hk, ha, hδ, hradius⟩
   have hEx : ∀ᶠ p : ℕ in Filter.atTop,
       1 ≤ (p : ℝ) ^ α ∧ 4 * (α + s + 1) / β ≤ (p : ℝ) ^ α := by
@@ -223,7 +223,7 @@ theorem rs_lambda_large_prime
     have hceil : (⌈A * (p : ℝ) ^ α⌉₊ : ℝ) < A * (p : ℝ) ^ α + 1 :=
       Nat.ceil_lt_add_one (mul_nonneg hA.le hxpos.le)
     have haAx : (⌈A * (p : ℝ) ^ α⌉₊ : ℝ) ≤ (A + 1) * (p : ℝ) ^ α := by
-      linarith only [hceil, hx.1]
+      nlinarith only [hceil, hx.1]
     have hpowprod : (p : ℝ) ^ s * (p : ℝ) ^ α = (p : ℝ) ^ (α + s) := by
       rw [mul_comm, ← Real.rpow_add hpR]
     have haPow : (2 * ⌈A * (p : ℝ) ^ α⌉₊ : ℝ) ≤ (p : ℝ) ^ (α + s) := by
@@ -244,7 +244,7 @@ theorem rs_lambda_large_prime
       have hmul := mul_lt_mul_of_pos_left hceil (add_pos _hα_pos hs)
       have hsAx := mul_le_mul_of_nonneg_right hsA hxpos.le
       have hAeqx := congrArg (fun z : ℝ => z * (p : ℝ) ^ α) hAeq
-      linarith only [hk, hscale, hmul, hsAx, hAeqx]
+      nlinarith only [hk, hscale, hmul, hsAx, hAeqx]
     have hpowhalf : (p : ℝ) ^ α * (p : ℝ) ^ (1 - α) = (p : ℝ) := by
       rw [← Real.rpow_add hpR]
       convert Real.rpow_one (p : ℝ) using 2
@@ -267,7 +267,7 @@ theorem rs_lambda_large_prime
       (p : ℝ) ^ p * ((Real.exp (-2) / 2) * (p : ℝ) ^ (β * x / 2)) <
         (p : ℝ) ^ k * ((p.choose a : ℝ) * (((p - 1 : ℕ) : ℝ) ^ (p - a))) := by
     have hp1R : (1 : ℝ) < p := by exact_mod_cast (show 1 < p by omega)
-    have hpR : (0 : ℝ) < p := zero_lt_one.trans hp1R
+    have hpR : (0 : ℝ) < p := by linarith
     have hap : a ≤ p := by omega
     have hdenpos : 0 < (2 * a : ℝ) ^ a := by positivity
     have hden : (2 * a : ℝ) ^ a < (p : ℝ) ^ ((k : ℝ) - β * x / 2) := by
@@ -278,7 +278,7 @@ theorem rs_lambda_large_prime
           rw [← Real.rpow_natCast, ← Real.rpow_mul (by positivity)]
         _ < (p : ℝ) ^ ((k : ℝ) - β * x / 2) := by
           apply Real.rpow_lt_rpow_of_exponent_lt hp1R
-          linarith only [hak]
+          linarith
     have hquot : (p : ℝ) ^ (β * x / 2) <
         (p : ℝ) ^ k / (2 * a : ℝ) ^ a := by
       rw [lt_div_iff₀ hdenpos]
@@ -309,17 +309,20 @@ theorem rs_lambda_large_prime
           _ ≤ (p.choose a : ℝ) := Nat.pow_le_choose a p
       have hid : ((p : ℝ) / 2) ^ a / (a : ℝ) ^ a =
           (p : ℝ) ^ a / (2 * a : ℝ) ^ a := by
-        rw [div_pow, mul_pow, div_div]
+        rw [div_pow, mul_pow]
+        field_simp
       rw [← hid]
       exact hraw
     have hfactor : Real.exp (-2) * (p : ℝ) ^ (p - a) ≤
         ((p - 1 : ℕ) : ℝ) ^ (p - a) := by
       have hp2R : (2 : ℝ) ≤ p := by exact_mod_cast hp2
-      have hp1subR : (0 : ℝ) < (p : ℝ) - 1 := by linarith only [hp2R]
+      have hp1subR : (0 : ℝ) < (p : ℝ) - 1 := by linarith
       have hrpos : 0 < 1 - 1 / (p : ℝ) := by
         rw [sub_pos, div_lt_one hpR]
-        exact hp1R
-      have hrle : 1 - 1 / (p : ℝ) ≤ 1 := sub_le_self _ (by positivity)
+        linarith
+      have hrle : 1 - 1 / (p : ℝ) ≤ 1 := by
+        have : 0 ≤ 1 / (p : ℝ) := by positivity
+        linarith
       have hlog0 := Real.one_sub_inv_le_log_of_pos hrpos
       have hcalc : -2 ≤ (p : ℝ) * (1 - (1 - 1 / (p : ℝ))⁻¹) := by
         field_simp
@@ -341,8 +344,9 @@ theorem rs_lambda_large_prime
         _ = ((1 - 1 / (p : ℝ)) * (p : ℝ)) ^ (p - a) := by rw [mul_pow]
         _ = (((p - 1 : ℕ) : ℝ)) ^ (p - a) := by
           congr 1
-          rw [Nat.cast_sub (by omega : 1 ≤ p), Nat.cast_one, sub_mul, one_mul, one_div,
-            inv_mul_cancel₀ hpR.ne']
+          rw [Nat.cast_sub (by omega : 1 ≤ p)]
+          push_cast
+          field_simp
     have hprod : Real.exp (-2) * ((p : ℝ) ^ p / (2 * a : ℝ) ^ a) ≤
         (p.choose a : ℝ) * (((p - 1 : ℕ) : ℝ) ^ (p - a)) := by
       have hm := mul_le_mul hchoose hfactor (by positivity) (by positivity)
@@ -350,9 +354,10 @@ theorem rs_lambda_large_prime
         Real.exp (-2) * ((p : ℝ) ^ p / (2 * a : ℝ) ^ a) =
             ((p : ℝ) ^ a / (2 * a : ℝ) ^ a) *
               (Real.exp (-2) * (p : ℝ) ^ (p - a)) := by
-          rw [show (p : ℝ) ^ p = (p : ℝ) ^ a * (p : ℝ) ^ (p - a) by
-            rw [← pow_add, Nat.add_sub_cancel' hap]]
-          ring
+          field_simp
+          rw [← pow_add]
+          congr 2
+          omega
         _ ≤ _ := hm
     calc
       (p : ℝ) ^ p * ((Real.exp (-2) / 2) * (p : ℝ) ^ (β * x / 2)) <
@@ -363,7 +368,8 @@ theorem rs_lambda_large_prime
         calc
           Real.exp (-2) / 2 * (p : ℝ) ^ (β * x / 2) <
               Real.exp (-2) * (p : ℝ) ^ (β * x / 2) := by
-            exact mul_lt_mul_of_pos_right (half_lt_self he) (Real.rpow_pos_of_pos hpR _)
+            apply mul_lt_mul_of_pos_right _ (Real.rpow_pos_of_pos hpR _)
+            linarith
           _ < Real.exp (-2) * ((p : ℝ) ^ k / (2 * a : ℝ) ^ a) :=
             mul_lt_mul_of_pos_left hquot he
       _ = (p : ℝ) ^ k *
