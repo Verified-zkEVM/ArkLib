@@ -6,6 +6,7 @@ Authors: Quang Dao
 
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.Midpoint
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.Parameters
+import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.SharpCountingBound
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.WeightedSupport.ScalarParameters
 
 /-! # Acceptance case for correlated-agreement capacity bounds -/
@@ -79,3 +80,25 @@ example :
   have hparams := exists_prescribed_correlated_parameters (F := ℚ) δ n 1 centers f g
     hδ hδmax hblock hA (Or.inl (by simp))
   exact hparams.1
+
+example :
+    let L := correlatedMidpoint (1 / 2) 8 1
+    (((8 - L + 1 : ℕ) : ℝ) / ((6 - L + 1 : ℕ) : ℝ) ≤ 2 / (1 / 2 : ℝ)) ∧
+      (((8 - 1 + 1 : ℕ) : ℝ) / ((L - 1 + 1 : ℕ) : ℝ) ≤ 2 / (1 / 2 : ℝ)) := by
+  simpa [correlatedMidpoint] using
+    correlatedMidpoint_ratios_le_two_div (δ := 1 / 2) (n := 8) (k := 1) (A := 6)
+      (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+
+example :
+    let L := correlatedMidpoint (1 / 2) 8 1
+    (1 : ℝ) + ∑ _i ∈ (Finset.univ : Finset (Fin 1)),
+      (regularPowerBatchedAgreementSharpBound 1 8 1 4 1 L 6 1 1 : ℝ) ≤
+      polynomialCurveSharpAgreementConstant (1 / 2) 1 1 1 * (8 : ℝ) ^ (1 + 1) := by
+  simpa using regularPowerBatchedAgreementSharp_finiteStage_uniform_le
+    (S := (Finset.univ : Finset (Fin 1))) (order := fun _ ↦ 1)
+    (jetDegree := fun _ ↦ 1) (height := fun _ ↦ 1)
+    (δ := 1 / 2) (n := 8) (K := 4) (k := 1) (A := 6) (ℓ := 1) (v := 1) (h := 1) (d := 1)
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (by intro i hi; norm_num) (by intro i hi; norm_num) (by intro i hi; norm_num)
+    (by intro i hi; norm_num)
