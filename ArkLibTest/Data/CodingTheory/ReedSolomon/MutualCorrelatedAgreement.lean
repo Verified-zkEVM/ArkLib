@@ -8,7 +8,6 @@ import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.ExtensionD
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.EquationDescent
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FullDimension
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FrobeniusAdmissibility
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FrobeniusIncidence
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FrobeniusRetainedFamily
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.GraphLine
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.GraphLineComponent
@@ -38,13 +37,14 @@ import Mathlib.Data.Fin.VecNotation
 import Mathlib.FieldTheory.Finite.Extension
 
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerBatchedGraphCounting
+import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FrobeniusIncidence
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerBatchedIncidence
 import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerBatchedExceptionalChallenges
 import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerBatchedRegularEquation
-import
-  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerBatchedSharpRegularAgreement
+import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerBatchedCertificate
+import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerBatchedDerivativeImage
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerBatchedPointRecognition
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerBatchedFrobeniusFamily
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.SingularTail
@@ -65,18 +65,16 @@ noncomputable section
 
 local instance : DecidableEq E₄ := Classical.decEq E₄
 
-/-- A nonzero affine line descends from the degree-two extension. -/
+/-- Two correlated pairs descend through the degree-two extension. -/
 example : HasExactCorrelatedPair pointDomain (fun _ ↦ (1 : ZMod 2)) (fun _ ↦ 0)
-    (RingHom.id (ZMod 2)) 2 1 (1 + X) :=
-  HasExactCorrelatedPair.descend pointDomain _ _ (algebraMap (ZMod 2) E₄) 2 1 (1 + X)
+    (RingHom.id (ZMod 2)) 2 1 (1 + X) ∧
+    HasExactCorrelatedPair pointDomain (fun _ ↦ (0 : ZMod 2)) (fun _ ↦ 1)
+    (RingHom.id (ZMod 2)) 2 1 (C 1) := by
+  refine ⟨HasExactCorrelatedPair.descend pointDomain _ _ (algebraMap (ZMod 2) E₄) 2 1 (1 + X)
     ⟨(1, X), by norm_num, by norm_num, by simp [correlatedPairSpecialization], by
       ext i
       fin_cases i
-      simp [polynomialAgreementSet, commonPolynomialAgreementSet, pointDomain]⟩
-
-/-- The equation `Y = X` descends from `E₄`: its constant solution at `z = 1` is correlated. -/
-example : HasExactCorrelatedPair pointDomain (fun _ ↦ (0 : ZMod 2)) (fun _ ↦ 1)
-    (RingHom.id (ZMod 2)) 2 1 (C 1) := by
+      simp [polynomialAgreementSet, commonPolynomialAgreementSet, pointDomain]⟩, ?_⟩
   obtain ⟨exceptional, hcard, hdescend⟩ :=
     exists_exceptional_equation_correlatedAgreement_descend pointDomain (fun _ ↦ (0 : ZMod 2))
       (fun _ ↦ 1) (algebraMap (ZMod 2) E₄) agreementEquation 2 1 ∅ fun z _ P _ _ hroot ↦ by
@@ -92,35 +90,18 @@ example : HasExactCorrelatedPair pointDomain (fun _ ↦ (0 : ZMod 2)) (fun _ ↦
 
 end
 
-/-- Degree-one power agreement on one coordinate supplies the exact line interface. -/
-private theorem singletonLineExactBound : LineExactAgreementBound pointDomain 1 1 0 := by
-  apply lineExactAgreementBound_of_powerAgreement_one pointDomain 0
-  intro w
-  refine ⟨∅, by simp, ?_⟩
-  intro z _ Q hQ hclose
-  have hset : polynomialAgreementSet pointDomain (powerBatchedWord w z) Q = univ :=
-    Finset.eq_univ_of_card _
-      (le_antisymm (Finset.card_le_univ _) (by simpa [Fintype.card_fin] using hclose))
-  have hword : powerBatchedWord w z 0 = w 0 0 + z * w 1 0 := by
-    simp [powerBatchedWord, Fin.sum_univ_two]
-  have hval : Q.eval (pointDomain 0) = w 0 0 + z * w 1 0 := by
-    calc
-      Q.eval (pointDomain 0) = powerBatchedWord w z 0 :=
-        (mem_polynomialAgreementSet ..).mp (hset ▸ Finset.mem_univ (0 : Fin 1))
-      _ = w 0 0 + z * w 1 0 := hword
-  have hcoeff : Q.coeff 0 = w 0 0 + z * w 1 0 := by
-    simpa [pointDomain] using (coeff_zero_eq_eval_zero Q).trans hval
-  have hconst : Q = Polynomial.C (w 0 0 + z * w 1 0) := by
-    rw [eq_C_of_degree_le_zero (Order.lt_succ_iff.mp hQ), hcoeff]
-  apply (hasExactPowerAgreement_id_iff pointDomain w 1 z Q).mpr
-  refine ⟨![Polynomial.C (w 0 0), Polynomial.C (w 1 0)], ?_, ?_, ?_⟩
-  · intro t
-    fin_cases t <;> exact (degree_C_le).trans_lt (by norm_num)
-  · simpa [powerBatchedPolynomial, Fin.sum_univ_two, Polynomial.smul_eq_C_mul] using hconst
-  · rw [hset]
-    ext i
-    fin_cases i
-    simp [commonCurveAgreementSet, pointDomain]
+private theorem singletonLineExactBound : LineExactAgreementBound pointDomain 1 1 0 :=
+  fun f g ↦ ⟨∅, by simp, fun z _ P hP hclose ↦ by
+    have hagree : polynomialAgreementSet pointDomain (fun i ↦ f i + z * g i) P = Finset.univ :=
+      Finset.eq_univ_of_card _
+        (le_antisymm (Finset.card_le_univ _) (by simpa [Fintype.card_fin] using hclose))
+    have heval := (mem_polynomialAgreementSet ..).mp (hagree ▸ Finset.mem_univ (0 : Fin 1))
+    refine ⟨C (f 0), C (g 0), degree_C_le.trans_lt (by norm_num),
+      degree_C_le.trans_lt (by norm_num), ?_, ?_⟩
+    · rw [eq_C_of_degree_le_zero (Order.lt_succ_iff.mp hP), coeff_zero_eq_eval_zero,
+        ← C_mul, ← C_add, ← heval]; rfl
+    · rw [hagree]; ext i; fin_cases i; simp [commonPolynomialAgreementSet, pointDomain]⟩
+
 private def affineValues : Fin 2 → Fin 1 → ZMod 2 := ![fun _ ↦ 1, fun _ ↦ 0]
 
 example := exists_affine_exceptionalSet_full_agreement_of_exactLine pointDomain 0
@@ -130,7 +111,6 @@ private def fullDomain : Fin 2 ↪ ℚ where
   toFun i := ((i : ℕ) : ℚ)
   inj' _i _j h := Fin.ext (Nat.cast_injective (R := ℚ) h)
 
-/-- The graph-line recognizer accepts the computed candidate `1 + 2X` at challenge `1`. -/
 example : ∃ F₀ G₀ : ℚ[X], F₀.degree < 2 ∧ G₀.degree < 2 ∧
     (∀ i ∈ (Finset.univ : Finset (Fin 2)),
       F₀.eval (fullDomain i) = ![1, 2] i ∧ G₀.eval (fullDomain i) = ![0, 1] i) ∧
@@ -143,15 +123,12 @@ example : ∃ F₀ G₀ : ℚ[X], F₀.degree < 2 ∧ G₀.degree < 2 ∧
   fin_cases i <;> norm_num [fullDomain]
   exacts [rfl, show (1 + 2 * 1 : ℚ) = 3 by norm_num]
 
-/-- The exceptional bound is attained when the graph agrees at only one coordinate. -/
 example : ∃ exceptional : Finset ℚ, exceptional.card ≤ 1 ∧ 0 ∈ exceptional := by
   obtain ⟨exceptional, hcard, hagreement⟩ :=
-    exists_exceptional_graphLine_challenges fullDomain ![0, 0] ![0, 1]
-      (0 : ℚ[X]) 0 (RingHom.id ℚ)
+    exists_exceptional_graphLine_challenges fullDomain ![0, 0] ![0, 1] 0 0 (RingHom.id ℚ)
   have hcommon : commonPolynomialAgreementSet fullDomain ![0, 0] ![0, 1] 0 0 = {0} := by
     ext i; fin_cases i <;> simp [commonPolynomialAgreementSet, fullDomain]
-  refine ⟨exceptional, by simpa [hcommon, Fintype.card_fin] using hcard,
-    by_contra fun hz ↦ ?_⟩
+  refine ⟨exceptional, by simpa [hcommon] using hcard, by_contra fun hz ↦ ?_⟩
   have hone : (1 : Fin 2) ∈ ({0} : Finset (Fin 2)) := by
     rw [← hcommon, ← hagreement 0 hz]; simp [polynomialAgreementSet, fullDomain]
   simp at hone
@@ -163,12 +140,11 @@ private theorem tuples_ne : tupleOne ≠ tupleChallenge := fun h ↦ by
 
 example :
     {z : ℚ | powerBatchedPolynomial (fun t ↦ (tupleOne t).map (RingHom.id ℚ)) z =
-      powerBatchedPolynomial (fun t ↦ (tupleChallenge t).map (RingHom.id ℚ)) z}.Finite :=
-  finite_polynomialTuple_collisions (RingHom.id ℚ) tuples_ne
-
-example : ∃ z : ℚ, z ≠ 1 ∧ z ≠ 0 ∧
+      powerBatchedPolynomial (fun t ↦ (tupleChallenge t).map (RingHom.id ℚ)) z}.Finite ∧
+    ∃ z : ℚ, z ≠ 1 ∧ z ≠ 0 ∧
     powerBatchedPolynomial (fun t ↦ (tupleOne t).map (RingHom.id ℚ)) z ≠
       powerBatchedPolynomial (fun t ↦ (tupleChallenge t).map (RingHom.id ℚ)) z := by
+  refine ⟨finite_polynomialTuple_collisions (RingHom.id ℚ) tuples_ne, ?_⟩
   classical
   obtain ⟨z, hz, hinj, hroot⟩ := exists_polynomialTuple_specialization_injective_avoiding_roots
     (RingHom.id ℚ) {tupleOne, tupleChallenge} {1} {X} (by simp [X_ne_zero])
@@ -322,34 +298,9 @@ private theorem component_agreementCuts : ∀ i ∈ Finset.univ,
 
 private abbrev firstOrderChartEquation : DifferentialPolynomial ComponentField 1 :=
   MvPolynomial.X (Fin.last 1)
-
-private def firstOrderChartIdeal : Ideal (ChartRing 1 ComponentField) :=
-  Ideal.span {(MvPolynomial.X (Fin.last 1) : ChartRing 1 ComponentField)}
-
 private def firstOrderTestPoints : Fin 1 ↪ ComponentField :=
   ⟨fun _ ↦ 0, fun _ _ _ ↦ Subsingleton.elim _ _⟩
 private def firstOrderChartValues : Fin 1 → ComponentField := fun _ ↦ 0
-
-private abbrev firstOrderChartCut (i : Fin 1) : ChartRing 1 ComponentField :=
-  taylorAgreementEquation (0 : ComponentField) firstOrderChartEquation 2 2
-    (firstOrderTestPoints i) (firstOrderChartValues i)
-
-private theorem firstOrderChartIdeal_isPrime : firstOrderChartIdeal.IsPrime :=
-  (Ideal.span_singleton_prime (X_ne_zero _)).mpr X_prime
-
-private theorem firstOrderChartSeparant_notMem :
-    initialJetSeparant (0 : ComponentField) firstOrderChartEquation ∉ firstOrderChartIdeal := by
-  simpa [firstOrderChartEquation, initialJetSeparant, initialJetEquation, separant] using
-    (Ideal.ne_top_iff_one _).mp firstOrderChartIdeal_isPrime.ne_top
-
-private theorem firstOrderChartHigh : ∀ l : Fin 2, 1 ≤ l.val →
-    commonTaylorNumerator (0 : ComponentField) firstOrderChartEquation 2 l.val ∈
-      firstOrderChartIdeal := by
-  intro l hl
-  obtain rfl : l = 1 := Fin.ext (by omega)
-  simp [commonTaylorNumerator, rationalTaylorNumerator, firstOrderChartEquation,
-    initialJetSeparant, separant, firstOrderChartIdeal]
-
 private def firstOrderRegularJet : Fin 2 → ComponentField := fun _ ↦ 0
 private def firstOrderRegularJets : Finset (Fin 2 → ComponentField) :=
   {firstOrderRegularJet}
@@ -365,9 +316,7 @@ example : firstOrderRegularJets.Nonempty ∧
         aeval jet (commonTaylorNumerator (0 : ComponentField)
           firstOrderChartEquation 2 l.val) = 0 := by
     intro jet hj
-    have hj' : jet = firstOrderRegularJet := Finset.mem_singleton.mp (by
-      simpa [firstOrderRegularJets] using hj)
-    subst jet
+    rcases Finset.mem_singleton.mp (by simpa [firstOrderRegularJets] using hj) with rfl
     refine ⟨by simp [firstOrderChartEquation, firstOrderRegularJet, initialJetEquation],
       by simp [firstOrderChartEquation, initialJetSeparant, separant], ?_⟩
     intro l
@@ -386,29 +335,9 @@ example : firstOrderRegularJets.Nonempty ∧
     firstOrderRegularJets hS hA
   exact ⟨by simp [firstOrderRegularJets], hbound⟩
 
-/-- A retained chart prime with one nonempty agreement cut has degree zero. -/
-example :
-    (affineHilbertPolynomial
-      (Ideal.span
-        {(MvPolynomial.X (0 : Fin 1) : ChartRing 0 ComponentField)})).natDegree ≤ 0 := by
-  have hP : (Ideal.span {(MvPolynomial.X (0 : Fin 1) : ChartRing 0 ComponentField)}).IsPrime :=
-    (Ideal.span_singleton_prime (X_ne_zero _)).mpr X_prime
-  simpa using chart_prime_affineHilbertPolynomial_natDegree_le_of_agreements_of_exponent
-    (center := (0 : ComponentField))
-    (Q := (MvPolynomial.X (0 : Fin 1) : DifferentialPolynomial ComponentField 0))
-    (K := 1) (k := 1) (c := 1) (τ := 0)
-    (by intro l; fin_cases l; decide) (by omega) (by omega) _ hP
-    (by simpa [initialJetSeparant, initialJetEquation, separant] using
-      (Ideal.ne_top_iff_one _).mp hP.ne_top)
-    (by intro l hl; fin_cases l; omega) firstOrderTestPoints firstOrderChartValues fun i ↦ by
-      simp [taylorAgreementEquation, commonTaylorNumerator, rationalTaylorNumerator,
-        initialJetSeparant, separant, firstOrderTestPoints, firstOrderChartValues]
-
-/-- The two-point evaluation domain `{0, 1}` in `ℚ`. -/
 private def pairDomain : Fin 2 ↪ ℚ :=
   ⟨fun i ↦ (i : ℚ), fun i j h ↦ Fin.ext (by simpa using h)⟩
 
-/-- The component contains the agreement cut for the zero pair at every challenge point. -/
 private theorem component_zeroCut_mem (alpha : ComponentField) :
     jointTaylorAgreementEquation (r := 0) (0 : ComponentField)
       (componentEquation (E := ComponentField)) 2 2 (Polynomial.C alpha) 0 ∈ componentIdeal := by
@@ -432,6 +361,20 @@ example : (0 : ℚ[X]).eval (domain 0) = 0 ∧ (0 : ℚ[X]).eval (domain 0) = 0 
       (j : Fin 1) : x (some j) = 0 := by
     obtain rfl : j = 0 := Subsingleton.elim _ _
     simpa [componentIdeal, componentVariable, zeroLocus_span] using hx
+  have _ : (affineHilbertPolynomial
+      (Ideal.span {(MvPolynomial.X 0 : ChartRing 0 ComponentField)})).natDegree ≤ 0 := by
+    have hP : (Ideal.span {(MvPolynomial.X (0 : Fin 1) : ChartRing 0 ComponentField)}).IsPrime :=
+      (Ideal.span_singleton_prime (X_ne_zero _)).mpr X_prime
+    simpa using chart_prime_affineHilbertPolynomial_natDegree_le_of_agreements_of_exponent
+      (center := (0 : ComponentField))
+      (Q := (MvPolynomial.X (0 : Fin 1) : DifferentialPolynomial ComponentField 0))
+      (K := 1) (k := 1) (c := 1) (τ := 0)
+      (by intro l; fin_cases l; decide) (by omega) (by omega) _ hP
+      (by simpa [initialJetSeparant, initialJetEquation, separant] using
+        (Ideal.ne_top_iff_one _).mp hP.ne_top)
+      (by intro l hl; fin_cases l; omega) firstOrderTestPoints firstOrderChartValues fun i ↦ by
+        simp [taylorAgreementEquation, commonTaylorNumerator, rationalTaylorNumerator,
+          initialJetSeparant, separant, firstOrderTestPoints, firstOrderChartValues]
   exact @commonAgreement_of_jointTaylorAgreementEquation_mem_prime
     ComponentField inferInstance 0 ℚ inferInstance 1 inferInstance
     domain (fun _ : Fin 1 ↦ (0 : ℚ)) (fun _ ↦ 0) (algebraMap ℚ ComponentField)
@@ -452,9 +395,7 @@ example : (0 : ℚ[X]).eval (domain 0) = 0 ∧ (0 : ℚ[X]).eval (domain 0) = 0 
       · intro i _ _; simp)
     0 (by simpa [domain_zero] using component_zeroCut_mem (0 : ComponentField))
 
-/-- Every regular point of a prime component lies on the recognized graph line, and agreement
-cuts at two points, one more than the degree bound `k = 1`, give a pair with two common
-agreements. -/
+/-- Regular points lie on a graph and yield two agreements. -/
 example :
     (∃ P₀ P₁ : ℚ[X], ∀ x,
       x ∈ zeroLocus ComponentField (componentIdeal (E := ComponentField)) ∧
@@ -496,8 +437,7 @@ private theorem component_powerBatchedAgreementCuts : ∀ i ∈ Finset.univ,
   simpa [componentWord] using component_agreementCuts i hi
 
 open Classical in
-/-- A polynomial-valued received word with a proved cut gives a concrete source prime bound, and
-the component recognizes tuples that match the word at the cut and have a common agreement. -/
+/-- A polynomial-valued sample bounds its prime and yields an agreeing tuple. -/
 example :
     (affineHilbertPolynomial (componentIdeal (E := ComponentField))).natDegree ≤ 1 ∧
       (∃ P : Fin 2 → ℚ[X], (∀ t, (P t).degree < 1) ∧
@@ -539,27 +479,62 @@ private theorem componentRegularPoint_mem : componentRegularPoint ∈
   simp [componentIdeal, componentVariable, zeroLocus_span, jointInitialJetSeparant,
     initialJetSeparant, separant, Fin.last, componentEquation]
 
+private theorem componentAdmissibleTupleWitness : ∃ P : Fin 2 → ℚ[X],
+    IsAdmissibleChartTupleAtExponent domain (fun _ ↦ componentWord)
+      (algebraMap ℚ ComponentField) 0 (componentEquation (E := ComponentField)) 2 1 1 2 P := by
+  obtain ⟨P, hP, _⟩ := exists_admissibleChartTuple_of_primeTaylorComponent_agreements
+    (K := 2) (k := 1) (L := 1) domain (fun _ ↦ componentWord) univ (by simp) (by omega)
+    (algebraMap ℚ ComponentField) 0 componentEquation (by omega) 2 (by intro l; omega)
+    componentIdeal componentIdeal_isPrime component_separant_notMem componentIdeal_degree_pos
+    component_initialEquation_mem component_highCuts component_powerBatchedAgreementCuts
+  exact ⟨P, hP⟩
+
+/-- A nonempty family of admissible tuples has a nonempty regular high-cut jet image. -/
+example : ∃ z : ComponentField, ∃ jets : Finset (Fin 1 → ComponentField),
+    jets.Nonempty ∧ jets.card = 1 ∧
+      ∀ jet ∈ jets, aeval jet (initialJetSeparant 0
+        (MvPolynomial.map (Polynomial.evalRingHom z) componentEquation)) ≠ 0 := by
+  obtain ⟨P, hP⟩ := componentAdmissibleTupleWitness
+  have hτ : TaylorExponentSufficient 0 2 2 := by intro l; fin_cases l <;> omega
+  have htuples : ∀ R ∈ ({P} : Finset (Fin 2 → ℚ[X])),
+      IsAdmissibleChartTupleAtExponent domain (fun _ ↦ componentWord)
+        (algebraMap ℚ ComponentField) 0 componentEquation 2 1 1 2 R := by
+    intro R hR
+    rcases Finset.mem_singleton.mp hR with rfl
+    exact hP
+  obtain ⟨z, jets, _, himage, _, hcard, hregular, _⟩ :=
+    exists_regularHighCutJetImage_of_admissibleChartTuples domain
+      (fun _ ↦ componentWord) (algebraMap ℚ ComponentField) 0 componentEquation
+      2 1 1 2 hτ (by omega) {P} htuples
+  exact ⟨z, jets, ⟨_, himage P (by simp)⟩, by simpa using hcard,
+    fun jet hj ↦ (hregular jet hj).2.1⟩
+
 local instance : DecidableEq ComponentField := Classical.decEq _
-private abbrev badChallengeDomain : Fin 1 ↪ ComponentField :=
-  domain.trans ⟨algebraMap ℚ ComponentField, RingHom.injective _⟩
-private def badChallengeWords : Fin 2 → Fin 1 → ComponentField := ![fun _ ↦ 0, fun _ ↦ 1]
 private abbrev badChallengeEquation : DifferentialPolynomial ComponentField[X] 1 :=
-  MvPolynomial.X (some (Fin.last 1)) + MvPolynomial.C (Polynomial.X : ComponentField[X])
-private def badChallenges : Finset ComponentField := {0}
-private def badChallengeWitness (_ : ComponentField) : ComponentField[X] := 0
+  MvPolynomial.X (some (Fin.last 1))
+private def positiveChallengeDomain : Fin 2 ↪ ComponentField where
+  toFun i := (i.val : ComponentField)
+  inj' _ _ h := Fin.ext (Nat.cast_inj.mp h)
+private def positiveChallengeWords : Fin 2 → Fin 2 → ComponentField :=
+  fun t i ↦ if t.val = 0 then 0 else i.val
+private def positiveChallenges : Finset ComponentField := {0}
+private def positiveChallengeWitness (_ : ComponentField) : ComponentField[X] := 0
+private def positiveChallengeJet (_ : ComponentField) : Fin 2 → ComponentField := fun _ ↦ 0
 private theorem badChallengeEquation_jetDegree : jetTotalDegree badChallengeEquation ≤ 1 := by
-  rw [jetTotalDegree_le_iff]; intro u hu
-  rcases Finset.mem_union.mp (MvPolynomial.support_add hu) with h | h
-  · simp [MvPolynomial.support_X] at h; subst u; simp [totalJetDegree_eq_sum]
-  · simp [MvPolynomial.support_C] at h; subst u; simp [totalJetDegree_eq_sum]
+  rw [jetTotalDegree_le_iff]
+  rintro u hu
+  simp [badChallengeEquation, MvPolynomial.support_X] at hu
+  subst u
+  simp [totalJetDegree_eq_sum]
 private theorem badChallengeEquation_height : CoeffNatDegreeLE badChallengeEquation 1 := by
-  apply CoeffNatDegreeLE.add
-  · exact fun m ↦ (coeffNatDegreeLE_X _ m).trans (by omega)
-  · exact coeffNatDegreeLE_C (by simp)
+  exact (coeffNatDegreeLE_X (some (Fin.last 1))).mono (by omega)
+private theorem badChallengeExponent : TaylorExponentSufficient 1 2 2 := by
+  intro l
+  omega
 private theorem badChallengeChartAtZero :
     let Qz := MvPolynomial.map (Polynomial.evalRingHom (0 : ComponentField))
       badChallengeEquation
-    (badChallengeWitness 0).degree < 0 ∧
+    (0 : ComponentField[X]).degree < 1 ∧
       aeval (fun _ : Fin 2 ↦ (0 : ComponentField)) (initialJetEquation 0 Qz) = 0 ∧
       aeval (fun _ : Fin 2 ↦ (0 : ComponentField)) (initialJetSeparant 0 Qz) ≠ 0 ∧
       (∀ l : Fin 2, 0 ≤ l.val → aeval (fun _ : Fin 2 ↦ (0 : ComponentField))
@@ -577,158 +552,227 @@ private theorem badChallengeChartAtZero :
   have hjet : (fun _ : Fin 2 ↦ (0 : ComponentField)) =
       polynomialJet 0 (0 : ComponentField[X]) := by ext j; fin_cases j <;> simp [polynomialJet]
   have hcoeff : ∀ l : Fin 2,
-      rationalTaylorCoefficient 0 Qz (fun _ ↦ (0 : ComponentField)) l.val = 0 := by
-    intro l
-    rw [hjet]
-    rw [rationalTaylorCoefficient_eq_solution 0 Qz (0 : ComponentField[X]) hsolution
-      hseparant l.val (by intro i hi hil; omega), Polynomial.taylor_coeff]
-    simp
+      rationalTaylorCoefficient 0 Qz (fun _ ↦ (0 : ComponentField)) l.val = 0 := fun l ↦ by
+    simpa using rationalTaylorCoefficient_initial 0 Qz (fun _ : Fin 2 ↦ 0) l
   have hpoly := rationalTaylorPolynomial_polynomialJet 0 Qz (0 : ComponentField[X])
     hsolution hseparant (K := 2) (WithBot.bot_lt_coe 2) (by intro i hi hil; omega)
   rw [← hjet] at hpoly
-  refine ⟨by simp [badChallengeWitness], ?_, hsep, ?_, ?_⟩
+  refine ⟨by simp, ?_, hsep, ?_, ?_⟩
   · simp [initialJetEquation, badChallengeEquation]
   · intro l _
     exact aeval_commonTaylorNumerator_eq_zero 0 Qz (fun _ ↦ 0) 2 hsep (hcoeff l)
   · exact hpoly
-private def incidencePoint : Option (Fin 2) → ComponentField := fun j ↦ j.elim 0 ![0, 0]
-private def incidencePoints : Finset (Option (Fin 2) → ComponentField) := {incidencePoint}
+private theorem positiveChallenge_no_common (P : Fin 2 → ComponentField[X])
+    (hdegree : ∀ t, (P t).degree < 1)
+    (hcommon : commonCurveAgreementSet positiveChallengeDomain positiveChallengeWords P = univ) :
+    False := by
+  have h0 := ((mem_commonCurveAgreementSet positiveChallengeDomain
+    positiveChallengeWords P 0).mp (by rw [hcommon]; simp)) 1
+  have h1 := ((mem_commonCurveAgreementSet positiveChallengeDomain
+    positiveChallengeWords P 1).mp (by rw [hcommon]; simp)) 1
+  rw [eq_C_of_degree_le_zero (Order.lt_succ_iff.mp (hdegree 1))] at h0 h1
+  norm_num [positiveChallengeDomain, positiveChallengeWords] at h0 h1
+  exact zero_ne_one (h0.symm.trans h1)
+private theorem positiveChallenge_isBad :
+    ¬ HasExactPowerAgreement positiveChallengeDomain positiveChallengeWords
+      (RingHom.id ComponentField) 1 0 0 := by
+  rintro ⟨P, hdegree, -, hsets⟩
+  apply positiveChallenge_no_common P hdegree
+  rw [← hsets]
+  ext i
+  simp [polynomialAgreementSet, positiveChallengeDomain, positiveChallengeWords,
+    powerBatchedWord]
+private abbrev positiveDerivativeBound :=
+  regularPowerBatchedDerivativeCappedBoundTwo 2 1 2 1 1 1 1 1 1 2
+/-- A nonempty positive-rate bad set has the derivative-capped finite and exceptional bounds. -/
+example : positiveChallenges.Nonempty ∧
+    (positiveChallenges.card : ℚ) ≤ positiveDerivativeBound ∧
+    ∃ exceptional : Finset ComponentField,
+      (exceptional.card : ℚ) ≤ positiveDerivativeBound ∧ 0 ∈ exceptional := by
+  have hjet := badChallengeEquation_jetDegree
+  have hheight := badChallengeEquation_height
+  have hchart : ∀ z ∈ positiveChallenges,
+      let Qz := MvPolynomial.map (Polynomial.evalRingHom z) badChallengeEquation
+      (positiveChallengeWitness z).degree < 1 ∧
+        aeval (positiveChallengeJet z) (initialJetEquation 0 Qz) = 0 ∧
+        aeval (positiveChallengeJet z) (initialJetSeparant 0 Qz) ≠ 0 ∧
+        (∀ l : Fin 2, 1 ≤ l.val →
+          aeval (positiveChallengeJet z) (commonTaylorNumerator 0 Qz 2 l.val) = 0) ∧
+        rationalTaylorPolynomial 0 Qz 2 (positiveChallengeJet z) = positiveChallengeWitness z := by
+    intro z hz
+    obtain rfl := Finset.mem_singleton.mp hz
+    rcases badChallengeChartAtZero with ⟨hd, hi, hs, hc, ht⟩
+    exact ⟨hd, hi, hs,
+      (fun l hl ↦ hc l (by omega)),
+      by
+        change rationalTaylorPolynomial 0
+          (MvPolynomial.map (Polynomial.evalRingHom 0) badChallengeEquation) 2
+          (fun _ : Fin 2 ↦ (0 : ComponentField)) = 0
+        exact ht⟩
+  have hagree : ∀ z ∈ positiveChallenges, 1 ≤
+      (polynomialAgreementSet positiveChallengeDomain
+        (powerBatchedWord positiveChallengeWords z) (positiveChallengeWitness z)).card := by
+    intro z hz
+    obtain rfl := Finset.mem_singleton.mp hz
+    have hmem : (0 : Fin 2) ∈ polynomialAgreementSet positiveChallengeDomain
+        (powerBatchedWord positiveChallengeWords 0) (positiveChallengeWitness 0) := by
+      simp [polynomialAgreementSet, positiveChallengeDomain, positiveChallengeWords,
+        positiveChallengeWitness, powerBatchedWord]
+    exact Nat.succ_le_of_lt (Finset.card_pos.mpr ⟨0, hmem⟩)
+  have hbad : ∀ z ∈ positiveChallenges,
+      ¬ HasExactPowerAgreement positiveChallengeDomain positiveChallengeWords
+        (RingHom.id _) 1 z (positiveChallengeWitness z) := by
+    intro z hz
+    obtain rfl := Finset.mem_singleton.mp hz
+    exact positiveChallenge_isBad
+  have hbound := finite_powerBatchedBadChallenges_card_le_derivativeCapped_of_exponent
+    positiveChallengeDomain positiveChallengeWords (RingHom.id _) 0 badChallengeEquation
+    2 1 1 1 1 1 1 2 badChallengeExponent (by omega) (by omega) (by omega)
+    (by omega) (by omega) (by omega) (by omega) (by omega) (by omega) (by omega)
+    hjet hheight
+    (by simp [badChallengeEquation]) positiveChallenges positiveChallengeWitness
+    positiveChallengeJet hchart hagree hbad
+  obtain ⟨exceptional, hcard, hgood⟩ :=
+    exists_exceptional_regularPowerBatchedAgreement_derivativeCapped_of_exponent
+      positiveChallengeDomain positiveChallengeWords (RingHom.id _) badChallengeEquation
+      2 1 1 1 1 1 1 2 badChallengeExponent (by omega) (by omega) (by omega)
+      (by omega) (by omega) (by omega) (by omega) (by omega) (by omega) (by omega)
+      hjet hheight
+      (by simp [badChallengeEquation]) (by omega)
+  have hzero : (0 : ComponentField) ∈ exceptional := by
+    by_contra hz
+    apply hbad 0 (by simp [positiveChallenges])
+    exact hgood 0 hz 0 (by simp) (hagree 0 (by simp [positiveChallenges]))
+      (by simp [badChallengeEquation, challengeSpecialization, differentialSpecialization,
+        differentialSpecializationHom])
+      (by simp [badChallengeEquation, challengeSpecialization, separant,
+        differentialSpecialization, differentialSpecializationHom, Fin.last])
+  exact ⟨by simp [positiveChallenges], hbound, exceptional, hcard, hzero⟩
+private def incidencePoint : Option (Fin 2) → ComponentField := fun _ ↦ 0
 private theorem incidencePoint_regular :
     aeval incidencePoint (jointInitialJetEquation 0 badChallengeEquation) = 0 ∧
       aeval incidencePoint (jointInitialJetSeparant 0 badChallengeEquation) ≠ 0 ∧
       (∀ l : Fin 2, 0 ≤ l.val →
-        aeval incidencePoint (jointCommonTaylorNumerator 0 badChallengeEquation 2 l) = 0) ∧
-      incidencePoint ∉ admissibleChartTupleGraphLocus badChallengeDomain
-        badChallengeWords (RingHom.id _) 0 badChallengeEquation 2 0 0 2 := by
+        aeval incidencePoint (jointCommonTaylorNumerator 0 badChallengeEquation 2 l) = 0) := by
   let x : Option (Fin 2) → ComponentField := incidencePoint
-  have hvector : (![0, 0] : Fin 2 → ComponentField) = fun _ ↦ 0 := by
-    ext j; fin_cases j <;> simp
   have hsep := (badChallengeChartAtZero).2.2.1
-  refine ⟨?_, ?_, ?_, ?_⟩
+  refine ⟨?_, ?_, ?_⟩
   · rw [aeval_jointInitialJetEquation]
-    simpa [x, incidencePoint, badChallengeEquation, hvector] using
-      badChallengeChartAtZero.2.1
+    simpa [x, incidencePoint, badChallengeEquation] using
+      (badChallengeChartAtZero).2.1
   · rw [aeval_jointInitialJetSeparant]
-    simpa [x, incidencePoint, badChallengeEquation, hvector] using hsep
+    simpa [x, incidencePoint, badChallengeEquation] using hsep
   · intro l hl
     rw [aeval_jointCommonTaylorNumerator]
-    simpa [x, incidencePoint, badChallengeEquation, hvector] using
-      badChallengeChartAtZero.2.2.2.1 l hl
-  · rintro ⟨P, hP, -⟩
-    have hzero (t : Fin 2) : P t = 0 :=
-      Polynomial.degree_eq_bot.mp (Nat.WithBot.lt_zero_iff.mp (hP.degree t))
-    have heval := congrArg (Polynomial.eval (1 : ComponentField)) hP.initial
-    rw [eval_chartTuplePullback] at heval
-    simp [jointInitialJetEquation, initialJetEquation, badChallengeEquation,
-      chartTupleJet, powerBatchedJetGraph, powerBatchedCoordinate, polynomialJet,
-      hasseJet_apply, hzero] at heval
+    simpa [x, incidencePoint, badChallengeEquation] using
+      (badChallengeChartAtZero).2.2.2.1 l hl
 private theorem badChallengeEquation_regular :
     jointInitialJetEquation 0 badChallengeEquation ≠ 0 := by
   exact jointInitialJetEquation_ne_zero_of_regular (center := (0 : ComponentField))
     (z := (0 : ComponentField)) badChallengeEquation (fun _ ↦ 0)
-    badChallengeChartAtZero.2.2.1
-private theorem badChallengeExponent : TaylorExponentSufficient 1 2 2 := by intro l; omega
-/-- Both sharp incidence bounds apply to a nonempty regular set outside tuple graphs. -/
-example : incidencePoints.Nonempty ∧
-    ((incidencePoints.card : ℚ) ≤
-        regularPowerBatchedInitialMixedDegree 1 1 2 1 1 (τ := 2) *
-          (((1 - 0 + 1 : ℕ) : ℚ) / ((0 - 0 + 1 : ℕ) : ℚ)) *
-            dimensionSensitiveIncidenceProduct 1 0 0 1 1) ∧
-    ((incidencePoints.card : ℚ) ≤
-        regularPowerBatchedInitialMixedDegree 1 1 2 1 1 (τ := 2) *
-          (((1 - 0 + 1 : ℕ) : ℚ) / ((0 - 0 + 1 : ℕ) : ℚ)) *
-            dimensionSensitiveIncidenceProduct 1 0 0 1 1) := by
-  classical
-  have hS : ∀ y ∈ incidencePoints,
-      aeval y (jointInitialJetEquation 0 badChallengeEquation) = 0 ∧
-      aeval y (jointInitialJetSeparant 0 badChallengeEquation) ≠ 0 ∧
-      (∀ l : Fin 2, 0 ≤ l.val →
-        aeval y (jointCommonTaylorNumerator 0 badChallengeEquation 2 l) = 0) ∧
-      y ∉ admissibleChartTupleGraphLocus badChallengeDomain badChallengeWords
-        (RingHom.id _) 0 badChallengeEquation 2 0 0 2 := by
-    intro y hy
-    obtain rfl : y = incidencePoint := Finset.mem_singleton.mp hy
-    exact incidencePoint_regular
-  have hA : ∀ y ∈ incidencePoints, 0 ≤
-      ({i : Fin 1 | aeval y (jointTaylorAgreementEquation 0 badChallengeEquation 2 2
-        (Polynomial.C (badChallengeDomain i))
-      (powerBatchedCoordinate (fun t ↦ badChallengeWords t i))) = 0} :
-        Set (Fin 1)).ncard := by intro y hy; omega
-  have hsharpBound :=
-    finite_powerBatched_regular_points_off_admissible_graphs_card_le_sharp_of_terminal_recognition
-      badChallengeDomain badChallengeWords (RingHom.id _) 0 badChallengeEquation
-      2 0 0 0 1 1 2 badChallengeExponent (by omega) (by omega) (by omega) (by omega)
-      (by omega) (by omega) (by omega) (by omega) badChallengeEquation_regular
-      badChallengeEquation_jetDegree badChallengeEquation_height (by
-        intro J hJ hsJ hgJ hhighJ hdJ hcutsJ
-        exact principalOpen_subset_admissibleChartTupleGraphLocus
-          badChallengeDomain badChallengeWords (RingHom.id _) 0 badChallengeEquation
-          2 0 0 2 (by omega) (by omega) badChallengeExponent J hJ hsJ hdJ hgJ hhighJ hcutsJ)
-      incidencePoints hS hA
-  have hinternalBound :=
-    finite_powerBatched_regular_points_off_admissible_graphs_card_le_sharp_of_exponent
-      badChallengeDomain badChallengeWords (RingHom.id _) 0 badChallengeEquation
-      2 0 0 0 1 1 2 badChallengeExponent (by omega) (by omega) (by omega) (by omega)
-      (by omega) (by omega) (by omega) (by omega) badChallengeEquation_regular
-      badChallengeEquation_jetDegree badChallengeEquation_height incidencePoints hS hA
-  have _ :=
-    finite_powerBatched_regular_points_off_admissible_graphs_card_le_firstOrder_of_exponent
-      (domain := badChallengeDomain) (w := badChallengeWords) (iota := RingHom.id _)
-      (center := 0) (Q := badChallengeEquation) (K := 2) (k := 0) (L := 0) (A := 0)
-      (v := 1) (h := 1) (τ := 2) badChallengeExponent
-      (by simp [regularPowerBatchedCutChallengeDegree])
-      (by omega) (by omega) (by omega) (by omega) (by omega) badChallengeEquation_regular
-      badChallengeEquation_jetDegree badChallengeEquation_height incidencePoints hS hA
-  exact ⟨by simp [incidencePoints], hsharpBound, hinternalBound⟩
-/-- A sparse sample cut on the regular prime component determines its Frobenius graph. -/
-example :
-    (∃ P : Fin 2 → ℚ[X], (∀ t, (P t).degree < 1) ∧
-      (∀ i ∈ (Finset.univ : Finset (Fin 1)), ∀ t,
-        (P t).eval (domain i) = componentWord i) ∧
-      aeval (frobeniusPowerGraphMap (center := (0 : ComponentField)) 1
-        (fun t ↦ (P t).map (algebraMap ℚ ComponentField)))
-        (jointInitialJetSeparant (r := 0) (0 : ComponentField)
-          (componentCoordinateEquation (E := ComponentField))) ≠ 0) ∧
-    (∃ P : Fin 2 → ℚ[X], (∀ t, (P t).degree < 1) ∧
-      (0 : ComponentField) =
-        (frobeniusPowerInitialGraph (center := (0 : ComponentField)) 1
-          (fun t ↦ (P t).map (algebraMap ℚ ComponentField)) 0).eval 0) := by
-  have hprime : (componentIdeal (E := ComponentField)).IsPrime := componentIdeal_isPrime
-  have hsep := componentIdeal_one_notMem
-  have hτ : TaylorExponentSufficient 0 1 0 := by intro l; fin_cases l; omega
-  obtain ⟨P, hdegree, hsample, _, _, hseparant⟩ :=
-    exists_frobeniusPowerGraph_of_symbolic_prime_sample (k := 1) (K := 1) (ℓ := 1)
-      domain (fun _ : Fin 2 ↦ componentWord) univ (by simp) (algebraMap ℚ ComponentField)
-      1 0 (fun _ ↦ 0) (by intro i _; fin_cases i; simp [domain_zero]) 0
-      componentCoordinateEquation (by omega) (by norm_num) 0 hτ componentIdeal
-      (by simpa [jointInitialJetSeparant, initialJetSeparant, separant,
-        Fin.last, componentCoordinateEquation] using hsep) componentIdeal_degree_pos
-      (by intro l hl; simp at hl)
-      (by intro i _; fin_cases i; simpa [componentWord, jointTaylorAgreementEquation,
-        taylorAgreementEquationOver, commonTaylorNumeratorOver, rationalTaylorNumeratorOver,
-        componentCoordinateEquation, frobeniusPowerCoordinate, powerBatchedCoordinate]
-        using component_generator_mem)
-  have hgeneric := exists_frobeniusPowerGraph_of_symbolic_sample (k := 1) (K := 1) (ℓ := 1)
-    domain (fun _ : Fin 2 ↦ componentWord) univ (by simp) (algebraMap ℚ ComponentField)
-    1 0 (fun _ ↦ 0) (by intro i _; fin_cases i; simp [domain_zero]) 0
-    componentCoordinateEquation (by omega) (by norm_num) 0 hτ
-  obtain ⟨P', hdegree', _, hrecognize⟩ := hgeneric
-  have hresult := hrecognize 0 (fun _ ↦ 0)
-    (by simp [initialJetSeparant, separant, Fin.last, componentCoordinateEquation])
-    (by intro l hl; simp at hl)
-    (by intro i _; fin_cases i; simp [taylorAgreementEquationOver, commonTaylorNumeratorOver,
-      rationalTaylorNumeratorOver, componentWord, componentCoordinateEquation,
-      frobeniusPowerCoordinate, powerBatchedCoordinate])
-  exact ⟨⟨P, hdegree, hsample, hseparant⟩,
-    ⟨P', hdegree', by simpa using hresult.2⟩⟩
+    (badChallengeChartAtZero).2.2.1
+private def positiveIncidencePoints : Finset (Option (Fin 2) → ComponentField) :=
+  {incidencePoint}
+private theorem positiveIncidencePoint_offGraph :
+    incidencePoint ∉ admissibleChartTupleGraphLocus positiveChallengeDomain
+      positiveChallengeWords (RingHom.id _) 0 badChallengeEquation 2 1 2 2 := by
+  rintro ⟨P, hP, -⟩
+  apply positiveChallenge_no_common P hP.degree
+  exact Finset.eq_univ_of_card _ (le_antisymm (Finset.card_le_univ _) hP.common)
+private theorem positiveIncidencePoint_agrees (i : Fin 2) :
+    aeval incidencePoint (jointTaylorAgreementEquation 0 badChallengeEquation 2 2
+      (Polynomial.C (positiveChallengeDomain i))
+      (powerBatchedCoordinate (fun t ↦ positiveChallengeWords t i))) = 0 := by
+  rw [aeval_jointTaylorAgreementEquation]
+  have hcut := aeval_taylorAgreementEquation 0
+    (MvPolynomial.map (Polynomial.evalRingHom (0 : ComponentField)) badChallengeEquation)
+    badChallengeExponent (fun _ : Fin 2 ↦ (0 : ComponentField))
+    (badChallengeChartAtZero).2.2.1 (positiveChallengeDomain i) 0
+  have ht := (badChallengeChartAtZero).2.2.2.2
+  rw [ht] at hcut
+  simpa [incidencePoint, positiveChallengeDomain, positiveChallengeWords,
+    powerBatchedCoordinate, badChallengeEquation] using hcut
 
-/-- The pair form of Frobenius component recognition reads the zero pair off the same sparse
-sample cut and keeps the separant nonzero on its graph. -/
-example :
-    ∃ F₀ G₀ : ℚ[X], F₀.degree < 1 ∧ G₀.degree < 1 ∧
-      F₀.eval 0 = 0 ∧ G₀.eval 0 = 0 ∧
-      aeval (frobeniusInitialGraph (0 : ComponentField) 1
-        (F₀.map (algebraMap ℚ ComponentField))
+/-- A nonempty positive-k first-order incidence set satisfies the derivative-capped bound. -/
+example : positiveIncidencePoints.Nonempty ∧
+    (positiveIncidencePoints.card : ℚ) ≤
+      (firstOrderCurveJointStageOne 2 1 1 1 1 2 : ℚ) := by
+  have hS : ∀ x ∈ positiveIncidencePoints,
+      aeval x (jointInitialJetEquation 0 badChallengeEquation) = 0 ∧
+      aeval x (jointInitialJetSeparant 0 badChallengeEquation) ≠ 0 ∧
+      (∀ l : Fin 2, 1 ≤ l.val →
+        aeval x (jointCommonTaylorNumerator 0 badChallengeEquation 2 l) = 0) ∧
+      x ∉ admissibleChartTupleGraphLocus positiveChallengeDomain positiveChallengeWords
+        (RingHom.id _) 0 badChallengeEquation 2 1 2 2 := by
+    intro x hx
+    obtain rfl := Finset.mem_singleton.mp hx
+    exact ⟨(incidencePoint_regular).1, (incidencePoint_regular).2.1,
+      fun l hl ↦ (incidencePoint_regular).2.2 l (by omega),
+      positiveIncidencePoint_offGraph⟩
+  have hA : ∀ x ∈ positiveIncidencePoints, 2 ≤
+      ({i : Fin 2 | aeval x (jointTaylorAgreementEquation 0 badChallengeEquation 2 2
+        (Polynomial.C (positiveChallengeDomain i))
+        (powerBatchedCoordinate (fun t ↦ positiveChallengeWords t i))) = 0} :
+        Set (Fin 2)).ncard := by
+    intro x hx
+    obtain rfl := Finset.mem_singleton.mp hx
+    have hset : {i : Fin 2 | aeval incidencePoint
+        (jointTaylorAgreementEquation 0 badChallengeEquation 2 2
+          (Polynomial.C (positiveChallengeDomain i))
+          (powerBatchedCoordinate (fun t ↦ positiveChallengeWords t i))) = 0} =
+        Set.univ := by
+      ext i
+      simp [positiveIncidencePoint_agrees]
+    rw [hset]
+    simp
+  have hbound := finite_powerBatched_regular_points_off_graphs_card_le_derivativeCapped_of_exponent
+    positiveChallengeDomain positiveChallengeWords (RingHom.id _) 0 badChallengeEquation
+    2 1 2 2 1 1 1 2 badChallengeExponent (by omega) (by omega) (by omega) (by omega)
+    (by omega) (by omega) (by omega) (by omega) (by omega) badChallengeEquation_regular
+    badChallengeEquation_jetDegree badChallengeEquation_height (by simp [badChallengeEquation])
+    positiveIncidencePoints hS hA
+  have hterminal : ∀ J : Ideal (MvPolynomial (Option (Fin 2)) ComponentField),
+      J.IsPrime → jointInitialJetSeparant 0 badChallengeEquation ∉ J →
+      jointInitialJetEquation 0 badChallengeEquation ∈ J →
+      (∀ l : Fin 2, 1 ≤ l.val →
+        jointCommonTaylorNumerator 0 badChallengeEquation 2 l ∈ J) →
+      0 < (affineHilbertPolynomial J).natDegree →
+      2 ≤ {i : Fin 2 | jointTaylorAgreementEquation 0 badChallengeEquation 2 2
+        (Polynomial.C (positiveChallengeDomain i))
+        (powerBatchedCoordinate (fun t ↦ positiveChallengeWords t i)) ∈ J}.ncard →
+      {x | x ∈ zeroLocus ComponentField J ∧
+        aeval x (jointInitialJetSeparant 0 badChallengeEquation) ≠ 0} ⊆
+        admissibleChartTupleGraphLocus positiveChallengeDomain positiveChallengeWords
+          (RingHom.id _) 0 badChallengeEquation 2 1 2 2 := by
+    intro J hJ hs hg hhigh hd hcuts
+    exact principalOpen_subset_admissibleChartTupleGraphLocus
+      positiveChallengeDomain positiveChallengeWords (RingHom.id _) 0 badChallengeEquation
+      2 1 2 2 (by omega) (by omega) badChallengeExponent J hJ hs hd hg hhigh hcuts
+  have _ :=
+    finite_powerBatched_regular_points_off_admissible_graphs_card_le_sharp_of_terminal_recognition
+      positiveChallengeDomain positiveChallengeWords (RingHom.id _) 0 badChallengeEquation
+      2 1 2 2 1 1 2 badChallengeExponent (by omega) (by omega) (by omega) (by omega)
+      (by omega) (by omega) (by omega) (by omega) badChallengeEquation_regular
+      badChallengeEquation_jetDegree badChallengeEquation_height hterminal positiveIncidencePoints
+      hS hA
+  have _ := finite_powerBatched_regular_points_off_admissible_graphs_card_le_sharp_of_exponent
+    positiveChallengeDomain positiveChallengeWords (RingHom.id _) 0 badChallengeEquation
+    2 1 2 2 1 1 2 badChallengeExponent (by omega) (by omega) (by omega) (by omega)
+    (by omega) (by omega) (by omega) (by omega) badChallengeEquation_regular
+    badChallengeEquation_jetDegree badChallengeEquation_height positiveIncidencePoints hS hA
+  have _ := finite_powerBatched_regular_points_off_admissible_graphs_card_le_firstOrder_of_exponent
+    (domain := positiveChallengeDomain) (w := positiveChallengeWords) (iota := RingHom.id _)
+    (center := 0) (Q := badChallengeEquation) (K := 2) (k := 1) (L := 2) (A := 2)
+    (v := 1) (h := 1) (τ := 2) badChallengeExponent
+    (by norm_num [regularPowerBatchedCutChallengeDegree])
+    (by omega) (by omega) (by omega) (by omega) (by omega) badChallengeEquation_regular
+    badChallengeEquation_jetDegree badChallengeEquation_height positiveIncidencePoints hS hA
+  exact ⟨by simp [positiveIncidencePoints], by simpa using hbound⟩
+
+/-- The pair recognizer returns zero polynomials on a sparse sample. -/
+example : ∃ F₀ G₀ : ℚ[X], F₀.degree < 1 ∧ G₀.degree < 1 ∧
+    F₀.eval 0 = 0 ∧ G₀.eval 0 = 0 ∧
+    aeval (frobeniusInitialGraph (0 : ComponentField) 1 (F₀.map (algebraMap ℚ ComponentField))
       (G₀.map (algebraMap ℚ ComponentField)))
       (jointInitialJetSeparant (r := 0) (0 : ComponentField)
         (componentCoordinateEquation (E := ComponentField))) ≠ 0 := by
@@ -749,148 +793,6 @@ example :
   exact ⟨F₀, G₀, hF₀, hG₀, by simpa [componentWord, domain_zero] using h₀,
     by simpa [componentWord, domain_zero] using h₁, hseparant⟩
 
-private abbrev finiteIncidenceEquation : DifferentialPolynomial ComponentField[X] 0 :=
-  componentCoordinateEquation (E := ComponentField)
-private def finiteIncidencePoint : Option (Fin 1) → ComponentField := fun _ ↦ 0
-private def finiteIncidenceSet : Finset (Option (Fin 1) → ComponentField) :=
-  {finiteIncidencePoint}
-private def finiteIncidenceLeft : Fin 1 → ℚ := fun _ ↦ 0
-private def finiteIncidenceRight : Fin 1 → ℚ := fun _ ↦ 1
-private abbrev finiteIncidenceGraph : Set (Option (Fin 1) → ComponentField) :=
-  admissibleFrobeniusPairGraphLocus domain finiteIncidenceLeft finiteIncidenceRight
-    (algebraMap ℚ ComponentField) (fun i ↦ algebraMap ℚ ComponentField (domain i)) 0
-    finiteIncidenceEquation 1 1 1 1
-private abbrev finiteIncidenceAgreement (i : Fin 1) :=
-  jointTaylorAgreementEquation 0 finiteIncidenceEquation 1 1
-    (Polynomial.C ((algebraMap ℚ ComponentField) (domain i)))
-    (Polynomial.C ((algebraMap ℚ ComponentField) (finiteIncidenceLeft i)) +
-      Polynomial.X ^ (1 ^ 0) *
-        Polynomial.C ((algebraMap ℚ ComponentField) (finiteIncidenceRight i)))
-private def finiteIncidenceAgreementSet (x : Option (Fin 1) → ComponentField) : Set (Fin 1) :=
-  {i | aeval x (finiteIncidenceAgreement i) = 0}
-private theorem finiteIncidenceEquation_height : CoeffNatDegreeLE finiteIncidenceEquation 0 :=
-  coeffNatDegreeLE_X _
-private theorem finiteIncidenceEquation_jetDegree :
-    weightedTotalDegree (fun i : JetVariable 0 ↦ i.elim 0 (fun _ ↦ 1))
-      finiteIncidenceEquation ≤ 1 := by
-  simp [finiteIncidenceEquation, componentCoordinateEquation, weightedTotalDegree,
-    MvPolynomial.support_X]
-private theorem finiteIncidencePoint_initial :
-    aeval finiteIncidencePoint (jointInitialJetEquation 0 finiteIncidenceEquation) = 0 := by
-  rw [aeval_jointInitialJetEquation]
-  simp [finiteIncidencePoint, finiteIncidenceEquation, initialJetEquation]
-private theorem finiteIncidencePoint_separant :
-    aeval (fun _ : Fin 1 ↦ (0 : ComponentField))
-      (initialJetSeparant 0
-        (MvPolynomial.map (Polynomial.evalRingHom (0 : ComponentField)) finiteIncidenceEquation))
-      ≠ 0 := by
-  norm_num [finiteIncidenceEquation, initialJetSeparant, separant, Fin.last]
-private theorem finiteIncidenceEquation_span_proper :
-    Ideal.span {jointInitialJetEquation 0 finiteIncidenceEquation} ≠ ⊤ := by
-  rw [Ne, Ideal.span_singleton_eq_top]
-  intro hu
-  have hu' := hu.map (MvPolynomial.aeval finiteIncidencePoint)
-  rw [finiteIncidencePoint_initial] at hu'
-  exact hu'.ne_zero rfl
-private theorem finiteIncidencePoint_notGraph :
-    finiteIncidencePoint ∉ finiteIncidenceGraph := by
-  rintro ⟨F₀, G₀, hP, _⟩
-  obtain ⟨sample, hcard, hsample⟩ := hP.sample
-  have hmem : (0 : Fin 1) ∈ sample := by
-    have hne : sample.Nonempty := Finset.card_pos.mp (by rw [hcard]; norm_num)
-    obtain ⟨i, hi⟩ := hne
-    have hzero : i = (0 : Fin 1) := Subsingleton.elim _ _
-    simpa [hzero] using hi
-  have hFG : F₀.eval 0 = 0 ∧ G₀.eval 0 = 1 := by
-    simpa [domain_zero, finiteIncidenceLeft, finiteIncidenceRight] using
-      ⟨(hsample 0 hmem).2.1, (hsample 0 hmem).2.2.1⟩
-  have hF : F₀ = 0 := by
-    exact (eq_C_of_degree_le_zero (Order.lt_succ_iff.mp hP.degree_left)).trans
-      (by simp [coeff_zero_eq_eval_zero, hFG.1])
-  have hG : G₀ = 1 := by
-    exact (eq_C_of_degree_le_zero (Order.lt_succ_iff.mp hP.degree_right)).trans
-      (by simp [coeff_zero_eq_eval_zero, hFG.2])
-  have hbad : (Polynomial.X : Polynomial ComponentField) = 0 := by
-    simpa [jointInitialJetEquation, finiteIncidenceEquation, initialJetEquation,
-      frobeniusInitialGraph, hF, hG] using hP.initial
-  have heval := congrArg (Polynomial.eval (1 : ComponentField)) hbad
-  norm_num at heval
-private theorem finiteIncidencePoint_agreement :
-    aeval finiteIncidencePoint (finiteIncidenceAgreement 0) = 0 := by
-  have hτ : TaylorExponentSufficient 0 1 1 := by intro l; omega
-  have hsep : aeval (fun _ : Fin 1 ↦ (0 : ComponentField))
-      (initialJetSeparant 0
-        (MvPolynomial.map (Polynomial.evalRingHom (0 : ComponentField)) finiteIncidenceEquation))
-      ≠ 0 := finiteIncidencePoint_separant
-  have hrec : (rationalTaylorPolynomial 0
-      (MvPolynomial.map (Polynomial.evalRingHom (0 : ComponentField)) finiteIncidenceEquation)
-      1 (fun _ ↦ (0 : ComponentField))).eval 0 = 0 := by
-    simpa [rationalTaylorPolynomial, Polynomial.centeredCoefficientPrefix] using
-      (rationalTaylorCoefficient_initial (0 : ComponentField)
-        (MvPolynomial.map (Polynomial.evalRingHom (0 : ComponentField)) finiteIncidenceEquation)
-        (fun _ ↦ (0 : ComponentField)) (0 : Fin 1))
-  rw [finiteIncidenceAgreement, aeval_jointTaylorAgreementEquation]
-  simpa [finiteIncidencePoint, domain_zero, finiteIncidenceLeft, finiteIncidenceRight] using
-    (taylorAgreementEquation_eq_zero_iff (0 : ComponentField)
-      (MvPolynomial.map (Polynomial.evalRingHom (0 : ComponentField)) finiteIncidenceEquation)
-      hτ (fun _ ↦ (0 : ComponentField)) hsep 0 0).2 hrec
-/-- A nonempty finite set of regular chart points outside Frobenius pair graphs satisfies the
-finite incidence bound. -/
-example : finiteIncidenceSet.Nonempty ∧ (finiteIncidenceSet.card : ℚ) ≤ 1 := by
-  classical
-  have hS : ∀ x ∈ finiteIncidenceSet,
-      aeval x (jointInitialJetEquation 0 finiteIncidenceEquation) = 0 ∧
-      aeval x (jointInitialJetSeparant 0 finiteIncidenceEquation) ≠ 0 ∧
-      (∀ q ∈ frobeniusSparseTaylorCuts 0 finiteIncidenceEquation 1 1 (1 ^ 0),
-        aeval x q = 0) ∧
-      x ∉ finiteIncidenceGraph := by
-    intro x hx
-    have hx' : x = finiteIncidencePoint := Finset.mem_singleton.mp hx
-    subst x
-    refine ⟨finiteIncidencePoint_initial, ?_,
-      (by intro q hq; simp [frobeniusSparseTaylorCuts] at hq), finiteIncidencePoint_notGraph⟩
-    rw [aeval_jointInitialJetSeparant]
-    simpa [finiteIncidencePoint] using finiteIncidencePoint_separant
-  have hA : ∀ x ∈ finiteIncidenceSet, 1 ≤ (finiteIncidenceAgreementSet x).ncard := by
-    intro x hx
-    have hx' : x = finiteIncidencePoint := Finset.mem_singleton.mp hx
-    subst x
-    apply (Set.ncard_pos (Set.toFinite _)).2
-    exact ⟨0, finiteIncidencePoint_agreement⟩
-  have hbound := finite_frobeniusChartPoints_off_admissiblePairGraphs_card_le
-    (F := ℚ) (E := ComponentField) (n := 1) (k := 1) (K := 1)
-    (domain := domain) (f := finiteIncidenceLeft) (g := finiteIncidenceRight)
-    (iota := algebraMap ℚ ComponentField) (p := 1) (e := 0)
-    (roots := fun i ↦ algebraMap ℚ ComponentField (domain i))
-    (hroots := by intro i; simp) (center := (0 : ComponentField))
-    (Q := finiteIncidenceEquation) (hK := by omega) (hKk := by omega)
-    (τ := 1) (h := 0) (b := 1) (A := 1) (hτ := by intro l; omega)
-    (hτpos := by omega) (hb := by omega) (hkA := by omega)
-    (hheight := finiteIncidenceEquation_height) (hjet := finiteIncidenceEquation_jetDegree)
-    (hinit := jointInitialJetEquation_ne_zero_of_regular (0 : ComponentField) 0
-      finiteIncidenceEquation (fun _ ↦ 0) finiteIncidencePoint_separant)
-    (hproper := finiteIncidenceEquation_span_proper) (S := finiteIncidenceSet) hS hA
-  exact ⟨by simp [finiteIncidenceSet], by simpa using hbound⟩
-example := principalOpen_subset_admissibleFrobeniusPairGraphLocus
-  (F := ℚ) (E := ComponentField) (n := 1) (k := 1) (K := 1)
-  (domain := domain) (f := componentWord) (g := componentWord)
-  (iota := algebraMap ℚ ComponentField) (p := 1) (e := 0)
-  (roots := fun i ↦ algebraMap ℚ ComponentField (domain i))
-  (hroots := by intro i; simp) (center := (0 : ComponentField))
-  (Q := componentCoordinateEquation) (hK := by omega) (hKk := by omega) (τ := 0)
-  (hτ := by intro l; fin_cases l; omega) (I := componentIdeal)
-  (hI := componentIdeal_isPrime)
-  (hs := by simpa [jointInitialJetSeparant, initialJetSeparant, separant,
-    componentCoordinateEquation] using componentIdeal_one_notMem)
-  (hinit := by simpa [jointInitialJetEquation, initialJetEquation,
-    componentCoordinateEquation] using component_generator_mem)
-  (hsparse := by intro q hq; simp [frobeniusSparseTaylorCuts] at hq)
-  (hd := componentIdeal_degree_pos) (hcuts := by
-    apply (Set.ncard_pos (Set.toFinite _)).2
-    refine ⟨0, ?_⟩
-    simpa [componentWord, domain_zero, jointTaylorAgreementEquation, taylorAgreementEquationOver,
-      commonTaylorNumeratorOver, rationalTaylorNumeratorOver, initialJetSeparant, separant,
-      componentCoordinateEquation, componentVariable] using component_generator_mem)
 end
 
 end ReedSolomon.GraphLineComponentTest
@@ -899,28 +801,35 @@ namespace ReedSolomon.PowerBatchedPointRecognitionTest
 
 noncomputable section
 
-/-- The one-point evaluation domain at zero over `ZMod 3`. -/
+private abbrev E₉ := FiniteField.Extension (ZMod 3) 3 2
 private def domain : Fin 1 ↪ ZMod 3 :=
   ⟨fun _ ↦ 0, fun _ _ _ ↦ Subsingleton.elim _ _⟩
-
 private theorem domain_zero : domain (0 : Fin 1) = 0 := rfl
-
+private def exceptionalDomain : Fin 2 ↪ ZMod 3 :=
+  ⟨fun i ↦ (i.val : ZMod 3), by decide⟩
+private def exceptionalWords : Fin 2 → Fin 2 → ZMod 3 :=
+  fun t i ↦ if t = 0 then 0 else if i = 0 then 0 else 1
+private def exceptionalPolynomials : Fin 2 → Polynomial (ZMod 3) :=
+  fun _ ↦ 0
 private def recognitionWords : Fin 2 → Fin 1 → ZMod 3 :=
   fun t _ ↦ if t = 0 then 2 else 1
-
-/-- The differential equation whose regular chart reconstructs the zero polynomial. -/
 private def recognitionChart : DifferentialPolynomial (Polynomial (ZMod 3)) 0 :=
   MvPolynomial.X (some (0 : Fin 1))
-
-/-- The chart specialized at the recognition challenge `1`. -/
 private def recognitionChartAt : DifferentialPolynomial (ZMod 3) 0 :=
   MvPolynomial.map (Polynomial.evalRingHom (1 : ZMod 3)) recognitionChart
-
-/-- The recognition jet used at the regular chart point. -/
 private def recognitionJet : Fin 1 → ZMod 3 := fun _ ↦ 0
 
-/-- A sample with a nonzero second component and a nontrivial high cut yields all three
-recognition conclusions at the regular chart point. -/
+example :
+    polynomialJet (d := 1) (1 : ℚ)
+      (powerBatchedPolynomial (fun i : Fin 2 ↦
+        if i = 0 then (Polynomial.X ^ 2 : Polynomial ℚ) else Polynomial.X + 1) 2) =
+      ![5, 4] := by
+  rw [polynomialJet_powerBatched]
+  ext j
+  fin_cases j <;> norm_num [powerBatchedJetGraph, powerBatchedCoordinate_eval,
+    powerBatchedCoordinate, polynomialJet, Polynomial.hasseJet, Fin.sum_univ_succ]
+
+/-- A nonzero sample tuple yields a regular high-cut jet. -/
 example : ∃ P : Fin 2 → Polynomial (ZMod 3), (∀ t, (P t).degree < 1) ∧
     (∀ i ∈ ({0} : Finset (Fin 1)), ∀ t, (P t).eval (domain i) = recognitionWords t i) ∧
     rationalTaylorPolynomial (0 : ZMod 3) recognitionChartAt 2 recognitionJet =
@@ -964,13 +873,41 @@ example : ∃ P : Fin 2 → Polynomial (ZMod 3), (∀ t, (P t).degree < 1) ∧
       show (2 + 1 : ZMod 3) = 0 by decide]
 
 local instance : DecidableEq (ZMod 3) := Classical.decEq _
-local instance : DecidableEq (ZMod 3) := Classical.decEq _
+local instance : DecidableEq E₉ := Classical.decEq _
+
+/-- A tuple has one exceptional challenge after scalar extension. -/
+example : ∃ exceptional : Finset E₉, exceptional.card ≤ 1 ∧ (∀ z ∉ exceptional,
+      polynomialAgreementSet
+        (exceptionalDomain.trans
+          ⟨algebraMap (ZMod 3) E₉, (algebraMap (ZMod 3) E₉).injective⟩)
+        (powerBatchedWord (fun t i ↦ algebraMap (ZMod 3) E₉ (exceptionalWords t i)) z)
+        (powerBatchedPolynomial
+          (fun t ↦ (exceptionalPolynomials t).map (algebraMap (ZMod 3) E₉)) z) = {0}) ∧
+    commonCurveAgreementSet
+      (exceptionalDomain.trans ⟨algebraMap (ZMod 3) E₉, (algebraMap (ZMod 3) E₉).injective⟩)
+      (fun t i ↦ algebraMap (ZMod 3) E₉ (exceptionalWords t i))
+      (fun t ↦ (exceptionalPolynomials t).map (algebraMap (ZMod 3) E₉)) = {0} := by
+  have hbase : commonCurveAgreementSet exceptionalDomain exceptionalWords
+      exceptionalPolynomials = {0} := by
+    ext i; fin_cases i <;> simp [commonCurveAgreementSet, Fin.forall_fin_two,
+      exceptionalWords, exceptionalPolynomials, exceptionalDomain]
+  obtain ⟨exceptional, hbound, hgood⟩ := exists_exceptional_powerBatched_extension
+    exceptionalDomain exceptionalWords exceptionalPolynomials (algebraMap (ZMod 3) E₉) 1
+    (by simp [hbase])
+  exact ⟨exceptional, by simpa using hbound, fun z hz ↦ (hgood z hz).trans hbase,
+    (commonCurveAgreementSet_map ..).trans hbase⟩
 
 private def batchedWords : Fin 2 → Fin 1 → ZMod 3 :=
   fun t _ ↦ if t = 0 then 0 else 1
 
 private def batchedTuple : Fin 2 → (ZMod 3)[X] :=
   fun t ↦ if t = 0 then 0 else Polynomial.C 1
+
+private def alternateBatchedTuple : Fin 2 → (ZMod 3)[X] :=
+  fun t ↦ if t = 0 then 0 else Polynomial.C 1 + Polynomial.X
+
+private def candidateFamily : Finset (Fin 2 → (ZMod 3)[X]) :=
+  {batchedTuple, alternateBatchedTuple}
 
 private theorem batchedTuple_common :
     1 ≤ (commonCurveAgreementSet domain batchedWords batchedTuple).card := by
@@ -980,61 +917,81 @@ private theorem batchedTuple_common :
     fin_cases t <;> simp [batchedTuple, batchedWords, domain]
   exact Nat.succ_le_of_lt (Finset.card_pos.mpr ⟨0, hmem⟩)
 
+private theorem candidateFamily_degree :
+    ∀ P ∈ candidateFamily, ∀ t, (P t).degree < 2 := by
+  intro P hP t
+  simp only [candidateFamily, Finset.mem_insert, Finset.mem_singleton] at hP
+  rcases hP with rfl | rfl <;> refine lt_of_le_of_lt (b := 1) ?_ (by decide) <;>
+    simp only [batchedTuple, alternateBatchedTuple] <;> split_ifs <;> compute_degree!
+
+private theorem candidateFamily_common :
+    ∀ P ∈ candidateFamily,
+      1 ≤ (commonCurveAgreementSet domain batchedWords P).card := by
+  intro P hP
+  simp only [candidateFamily, Finset.mem_insert, Finset.mem_singleton] at hP
+  rcases hP with rfl | rfl
+  · exact batchedTuple_common
+  refine Finset.card_pos.mpr ⟨0, (mem_commonCurveAgreementSet ..).2 fun t ↦ ?_⟩
+  fin_cases t <;> simp [alternateBatchedTuple, batchedWords, domain_zero]
+
+private theorem batchedCandidates_ne : batchedTuple ≠ alternateBatchedTuple := by
+  intro h
+  have h1 := congrFun h (1 : Fin 2)
+  simp [batchedTuple, alternateBatchedTuple] at h1
+
 private def zeroTuple : Fin 2 → (ZMod 3)[X] := fun _ ↦ 0
-
 private def zeroWords : Fin 2 → Fin 1 → ZMod 3 := fun _ _ ↦ 0
-
 private def zeroCandidate : ZMod 3 → (ZMod 3)[X] → Prop := fun _ Q ↦ Q = 0
-
 private def retainedZeroTuple : Finset (Fin 2 → (ZMod 3)[X]) := {zeroTuple}
 
--- One retained zero tuple covers every degree-bounded zero candidate.
-example : ∃ exceptional : Finset (ZMod 3),
+example : (∃ exceptional : Finset (ZMod 3),
     (exceptional.card : ℚ) ≤
       geometricTransferBound 0 1 1 1 0 0 (fun _ : PUnit ↦ 0) (fun _ ↦ 0) (fun _ ↦ 1) ∧
     ∀ z ∉ exceptional, ∀ Q, zeroCandidate z Q → Q.degree < 1 →
       HasExactPowerAgreement (ℓ := 1) domain zeroWords
-        (RingHom.id (ZMod 3)) 1 z Q := by
+        (RingHom.id (ZMod 3)) 1 z Q) ∧
+    (∃ exceptional : Finset (ZMod 3), exceptional.card = 0 ∧
+      ∀ z ∉ exceptional, ∀ Q, zeroCandidate z Q →
+        HasExactPowerAgreement (ℓ := 1) domain zeroWords (RingHom.id (ZMod 3)) 1 z Q) ∧
+    (∃ exceptional : Finset (ZMod 3), exceptional.card ≤ 0 ∧
+      ∀ z ∉ exceptional,
+        HasExactPowerAgreement domain batchedWords (RingHom.id (ZMod 3)) 1 z
+          (powerBatchedPolynomial (fun t ↦ (batchedTuple t).map (RingHom.id (ZMod 3))) z)) ∧
+    (∃ exceptional : Finset (ZMod 3), exceptional.card ≤ 0 ∧
+      ∀ P ∈ candidateFamily, ∀ z ∉ exceptional,
+        HasExactPowerAgreement domain batchedWords (RingHom.id (ZMod 3)) 2 z
+          (powerBatchedPolynomial (fun t ↦ (P t).map (RingHom.id (ZMod 3))) z)) := by
   classical
-  have h := exists_geometricTransfer_exceptional
-    (α := Fin 1) (ν := PUnit) (k := 1) (ℓ := 1) (L := 0) (A := 0)
-    domain zeroWords (RingHom.id (ZMod 3)) zeroCandidate ∅
-    (fun _ ↦ 0) (fun _ ↦ 0) (fun _ ↦ 1) (fun _ ↦ ∅) (fun _ ↦ retainedZeroTuple)
-    (fun _ ↦ by simp) (fun _ ↦ by simp [retainedZeroTuple, dimensionSensitiveIncidenceProduct])
-    (fun _ P hP t ↦ by rw [Finset.mem_singleton.mp hP]; simp [zeroTuple]) (fun _ _ _ ↦ by simp)
-    fun z Q hQ _ _ _ ↦ Or.inr ⟨(), zeroTuple, by simp [retainedZeroTuple],
-      by rw [show Q = 0 from hQ]; simp [zeroTuple, powerBatchedPolynomial]⟩
-  simpa [geometricTransferBound, Fintype.card_fin] using h
-
--- The identity embedding pulls back an empty exceptional set to an empty base-field set.
-example : ∃ exceptional : Finset (ZMod 3), exceptional.card = 0 ∧
-    ∀ z ∉ exceptional, ∀ Q, zeroCandidate z Q →
-      HasExactPowerAgreement (ℓ := 1) domain zeroWords
-        (RingHom.id (ZMod 3)) 1 z Q := by
-  classical
-  obtain ⟨exceptional, hcard, hgood⟩ :=
-    exists_geometricTransfer_baseField_semantic (domain := domain) (w := zeroWords)
-      (iota := RingHom.id (ZMod 3)) (k := 1) (Candidate := zeroCandidate)
-      (exceptional := ∅) (bound := 0) (by simp) fun z _ Q hQ ↦ by
-        subst Q
-        exact ⟨zeroTuple, fun t ↦ by simp [zeroTuple],
-          by simp [zeroTuple, powerBatchedPolynomial], by
-            ext i
-            simp [zeroWords, zeroTuple, commonCurveAgreementSet, polynomialAgreementSet,
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · have h := exists_geometricTransfer_exceptional
+      (α := Fin 1) (ν := PUnit) (k := 1) (ℓ := 1) (L := 0) (A := 0)
+      domain zeroWords (RingHom.id (ZMod 3)) zeroCandidate ∅
+      (fun _ ↦ 0) (fun _ ↦ 0) (fun _ ↦ 1) (fun _ ↦ ∅) (fun _ ↦ retainedZeroTuple)
+      (fun _ ↦ by simp)
+      (fun _ ↦ by simp[retainedZeroTuple,dimensionSensitiveIncidenceProduct])
+      (fun _ P hP t ↦ by rw [Finset.mem_singleton.mp hP];simp[zeroTuple])
+      (fun _ _ _ ↦ by simp)
+      fun z Q hQ _ _ _ ↦ Or.inr ⟨(), zeroTuple, by simp [retainedZeroTuple],
+        by rw [show Q = 0 from hQ]; simp [zeroTuple, powerBatchedPolynomial]⟩
+    simpa [geometricTransferBound, Fintype.card_fin] using h
+  · obtain ⟨exceptional, hcard, hgood⟩ :=
+      exists_geometricTransfer_baseField_semantic (domain := domain) (w := zeroWords)
+        (iota := RingHom.id (ZMod 3)) (k := 1) (Candidate := zeroCandidate)
+        (exceptional := ∅) (bound := 0) (by simp) fun z _ Q hQ ↦ by
+          subst Q
+          exact ⟨zeroTuple, fun t ↦ by simp [zeroTuple],
+            by simp [zeroTuple, powerBatchedPolynomial],
+            by ext i; simp [zeroWords, zeroTuple, commonCurveAgreementSet, polynomialAgreementSet,
               powerBatchedWord]⟩
-  exact ⟨exceptional, Nat.eq_zero_of_le_zero (by exact_mod_cast hcard), hgood⟩
-
--- The degree-one tuple uses the positive challenge term in exact power agreement.
-example : ∃ exceptional : Finset (ZMod 3), exceptional.card ≤ 0 ∧
-    ∀ z ∉ exceptional,
-      HasExactPowerAgreement domain batchedWords (RingHom.id (ZMod 3)) 1 z
-        (powerBatchedPolynomial
-          (fun t ↦ (batchedTuple t).map (RingHom.id (ZMod 3))) z) := by
-  classical
-  have h := exists_exceptional_exactPowerAgreement (α := Fin 1) (ℓ := 1) (k := 1) (L := 1)
-    domain batchedWords batchedTuple (RingHom.id (ZMod 3))
-    (by intro t; fin_cases t <;> norm_num [batchedTuple]) batchedTuple_common
-  simpa [Fintype.card_fin] using h
+    exact ⟨exceptional, Nat.eq_zero_of_le_zero (by exact_mod_cast hcard), hgood⟩
+  · have h := exists_exceptional_exactPowerAgreement (α := Fin 1) (ℓ := 1) (k := 1) (L := 1)
+      domain batchedWords batchedTuple (RingHom.id (ZMod 3))
+      (by intro t; fin_cases t <;> norm_num [batchedTuple]) batchedTuple_common
+    simpa [Fintype.card_fin] using h
+  · have h := exists_exceptional_exactPowerAgreement_family
+      (α := Fin 1) (ℓ := 1) (k := 2) (L := 1) domain batchedWords
+      (RingHom.id (ZMod 3)) candidateFamily candidateFamily_degree candidateFamily_common
+    simpa [Fintype.card_fin, candidateFamily, batchedCandidates_ne] using h
 
 /-- A singleton sample recognizes the zero sparse Frobenius pullback. -/
 example : ∃ P : Fin 2 → (ZMod 2)[X],
@@ -1062,6 +1019,48 @@ end ReedSolomon.PowerBatchedPointRecognitionTest
 namespace ReedSolomon.GraphLineComponentTest
 
 noncomputable section
+
+private def zeroCertificateValues : Fin 2 → Fin 1 → ℚ := fun _ _ ↦ 0
+private theorem componentCoordinateJetDegree :
+    jetTotalDegree (componentCoordinateEquation (E := ℚ)) ≤ 1 := by
+  rw [jetTotalDegree_le_iff]
+  intro u hu
+  simp [componentCoordinateEquation, MvPolynomial.support_X] at hu
+  subst u
+  simp [totalJetDegree_eq_sum]
+private def zeroCurveCertificate :
+    SymbolicReceivedCurve.Certificate 1 1 1 1 0 0 domain
+      (fun i ↦ powerBatchedCoordinate (fun t ↦ zeroCertificateValues t i)) := by
+  refine ⟨componentCoordinateEquation, ?_, ?_, ?_⟩
+  · exact coeffNatDegreeLE_X (some (0 : Fin 1))
+  · exact (jetTotalDegree_le_iff _ _).mp componentCoordinateJetDegree
+  · intro E _ ρ z
+    refine ⟨by simp [componentCoordinateEquation], ?_, ?_⟩
+    · exact (jetTotalDegree_map_le (Polynomial.eval₂RingHom ρ z)
+        (componentCoordinateEquation (E := ℚ))).trans componentCoordinateJetDegree
+    · intro indices P hdegree hcard hagree
+      obtain ⟨i, hi⟩ := Finset.card_pos.mp (by omega : 0 < indices.card)
+      have hi0 : i = 0 := Subsingleton.elim _ _
+      subst i
+      have hval : P.eval 0 = 0 := by
+        simpa [domain_zero, zeroCertificateValues, powerBatchedCoordinate] using hagree 0 hi
+      have hconst := eq_C_of_degree_le_zero (Order.lt_succ_iff.mp hdegree)
+      have hzero : P = 0 := by
+        rw [hconst, coeff_zero_eq_eval_zero]
+        simpa using hval
+      simpa [componentCoordinateEquation, differentialSpecialization,
+        differentialSpecializationHom] using hzero
+
+example := zeroCurveCertificate.exists_exceptional_powerBatchedAgreement_sharp_of_exponent
+  (algebraMap ℚ ComponentField) 1 1 1
+  (by
+    intro r hr
+    have hr0 : r = 0 := by omega
+    subst r
+    intro l
+    omega)
+  (by omega) (by omega) (by omega) (by omega) (by omega) (by omega) (by omega)
+  (Or.inl (ringChar.eq_zero : ringChar ℚ = 0)) (by omega)
 
 private theorem component_cut_eq_length_one :
     taylorAgreementEquationOver (F := ComponentField) (0 : ComponentField[X])
@@ -1232,7 +1231,38 @@ private theorem componentRegularPoint_not_incidenceGraph :
       componentCoordinateEquation, componentVariable]] at hinitial
   simp [frobeniusPowerGraphMap, frobeniusPowerInitialGraph, frobeniusPowerCoordinate,
     powerBatchedCoordinate, hzero, incidenceValues, componentVariable] at hinitial
+private theorem incidencePairCut_zero :
+    aeval componentRegularPoint
+      (jointTaylorAgreementEquation 0 incidenceEquation 1 2 (Polynomial.C 0)
+        (Polynomial.C 0 + Polynomial.X * Polynomial.C 1)) = 0 := by
+  have hsep : aeval componentRegularPoint
+      (jointInitialJetSeparant 0 incidenceEquation) ≠ 0 := by
+    simp [jointInitialJetSeparant, initialJetSeparant, separant, incidenceEquation,
+      componentCoordinateEquation, Fin.last]
+  rw [aeval_jointTaylorAgreementEquation_eq_zero_iff 0 incidenceEquation 1 2
+    (taylorExponentSufficient_two_mul 0 1) componentRegularPoint hsep 0 0 1]
+  rw [incidenceTaylor_zero]
+  simp [componentRegularPoint]
+private theorem componentRegularPoint_not_pairGraph :
+    componentRegularPoint ∉ admissibleFrobeniusPairGraphLocus domain (fun _ ↦ 0) (fun _ ↦ 1)
+      componentMap (fun _ ↦ 0) 0 incidenceEquation 1 1 2 1 := by
+  rintro ⟨F₀, G₀, hP, -⟩
+  obtain ⟨sample, hcard, hsample⟩ := hP.sample
+  have hmem : (0 : Fin 1) ∈ sample := by
+    obtain ⟨i, hi⟩ := Finset.card_pos.mp (by rw [hcard]; norm_num)
+    simpa [Subsingleton.elim i (0 : Fin 1)] using hi
+  have hcoeff := congrArg (fun P : ComponentField[X] ↦ P.coeff 1) hP.initial
+  have hG' : (Polynomial.aeval (0 : ComponentField)) (G₀.map componentMap) = 0 := by
+    simpa [jointInitialJetEquation, initialJetEquation, incidenceEquation,
+      componentCoordinateEquation, frobeniusInitialGraph] using hcoeff
+  have hG_eval : (G₀.map componentMap).eval (componentMap 0) = 1 := by
+    rw [Polynomial.eval_map_apply]
+    simpa [domain_zero] using congrArg componentMap (hsample 0 hmem).2.2.1
+  have hG1 : (Polynomial.aeval (0 : ComponentField)) (G₀.map componentMap) = 1 := by
+    simpa [Polynomial.aeval_def, componentMap] using hG_eval
+  norm_num [hG1] at hG'
 example : ({componentRegularPoint} : Finset (Option (Fin 1) → ComponentField)).Nonempty ∧
+    (({componentRegularPoint} : Finset (Option (Fin 1) → ComponentField)).card : ℚ) ≤ 1 ∧
     (({componentRegularPoint} : Finset (Option (Fin 1) → ComponentField)).card : ℚ) ≤ 1 := by
   classical
   have hheight : CoeffNatDegreeLE incidenceEquation 0 := by
@@ -1278,28 +1308,9 @@ example : ({componentRegularPoint} : Finset (Option (Fin 1) → ComponentField))
             (fun t ↦ componentMap (incidenceValues t i)))) = 0}.ncard := by
     intro x hx
     rcases Finset.mem_singleton.mp hx with rfl
-    have hsep : aeval componentRegularPoint
-        (jointInitialJetSeparant 0 incidenceEquation) ≠ 0 := by
-      simp [jointInitialJetSeparant, initialJetSeparant, separant, incidenceEquation,
-        componentCoordinateEquation, Fin.last]
-    have hzero : aeval componentRegularPoint
-        (jointTaylorAgreementEquation 0 incidenceEquation 1 2 (Polynomial.C 0)
-          (frobeniusPowerCoordinate 1
-            (fun t ↦ componentMap (incidenceValues t (0 : Fin 1))))) = 0 := by
-      have hcalc : aeval componentRegularPoint
-          (jointTaylorAgreementEquation 0 incidenceEquation 1 2 (Polynomial.C 0)
-            (Polynomial.C 0 + Polynomial.X * Polynomial.C 1)) = 0 := by
-        rw [aeval_jointTaylorAgreementEquation_eq_zero_iff 0 incidenceEquation 1 2
-          (taylorExponentSufficient_two_mul 0 1) componentRegularPoint hsep 0 0 1]
-        rw [incidenceTaylor_zero]
-        simp [componentRegularPoint]
-      simpa [incidenceValues, frobeniusPowerCoordinate, powerBatchedCoordinate,
-        Polynomial.smul_eq_C_mul, Polynomial.X] using hcalc
-    have hp : 0 < {i : Fin 1 | aeval componentRegularPoint
-        (jointTaylorAgreementEquation 0 incidenceEquation 1 2 (Polynomial.C 0)
-          (frobeniusPowerCoordinate 1 (fun t ↦ componentMap (incidenceValues t i)))) = 0}.ncard :=
-      (Set.ncard_pos).2 ⟨0, hzero⟩
-    omega
+    apply Nat.succ_le_of_lt ((Set.ncard_pos).2 ⟨0, ?_⟩)
+    simpa [incidenceValues, frobeniusPowerCoordinate, powerBatchedCoordinate,
+      Polynomial.smul_eq_C_mul, Polynomial.X] using incidencePairCut_zero
   have hbound := finite_frobeniusPowerTupleIncidence_off_graphs_card_le
     (domain := domain) (values := incidenceValues) (ι := componentMap)
     (p := 1) (e := 0) (roots := fun _ ↦ 0) component_roots (center := 0)
@@ -1307,8 +1318,45 @@ example : ({componentRegularPoint} : Finset (Option (Fin 1) → ComponentField))
     (τ := 2) (h := 0) (b := 1) (A := 1) (taylorExponentSufficient_two_mul 0 1)
     (by omega) (by omega) (by omega) (by omega) (by omega) hheight hjet hinit hproper
     ({componentRegularPoint} : Finset (Option (Fin 1) → ComponentField)) hS hA
-  refine ⟨by simp, ?_⟩
-  convert hbound using 1; norm_num
+  have hS_pair : ∀ x ∈ ({componentRegularPoint} :
+      Finset (Option (Fin 1) → ComponentField)),
+      aeval x (jointInitialJetEquation 0 incidenceEquation) = 0 ∧
+      aeval x (jointInitialJetSeparant 0 incidenceEquation) ≠ 0 ∧
+      (∀ q ∈ frobeniusSparseTaylorCuts 0 incidenceEquation 1 2 1, aeval x q = 0) ∧
+      x ∉ admissibleFrobeniusPairGraphLocus domain (fun _ ↦ 0) (fun _ ↦ 1)
+        componentMap (fun _ ↦ 0) 0 incidenceEquation 1 1 2 1 := by
+    intro x hx
+    rcases Finset.mem_singleton.mp hx with rfl
+    obtain ⟨hi, hs, _, _⟩ := hS componentRegularPoint (by simp)
+    exact ⟨hi, hs, by simp [frobeniusSparseTaylorCuts],
+      componentRegularPoint_not_pairGraph⟩
+  have hA_pair : ∀ x ∈ ({componentRegularPoint} :
+      Finset (Option (Fin 1) → ComponentField)),
+      1 ≤ {i : Fin 1 | aeval x
+        (jointTaylorAgreementEquation 0 incidenceEquation 1 2 (Polynomial.C 0)
+          (Polynomial.C (componentMap 0) + Polynomial.X ^ 1 * Polynomial.C (componentMap 1))) =
+        0}.ncard := by
+    intro x hx
+    simpa [componentMap, incidenceValues, frobeniusPowerCoordinate, powerBatchedCoordinate,
+      Polynomial.smul_eq_C_mul, Polynomial.X, pow_one] using hA x hx
+  have hw : (jetDegreeWeight : JetVariable 0 → ℕ) = fun i ↦ i.elim 0 (fun _ ↦ 1) := by
+    funext i
+    cases i <;> rfl
+  have hweighted : weightedTotalDegree (fun i : JetVariable 0 ↦ i.elim 0 (fun _ ↦ 1))
+      incidenceEquation ≤ 1 := by
+    rw [← hw, ← jetTotalDegree]
+    exact hjet
+  have hboundPair := finite_frobeniusChartPoints_off_admissiblePairGraphs_card_le
+    (F := ℚ) (E := ComponentField) (n := 1) (k := 1) (K := 1)
+    (domain := domain) (f := fun _ ↦ 0) (g := fun _ ↦ 1) (iota := componentMap)
+    (p := 1) (e := 0) (roots := fun _ ↦ 0) component_roots (center := 0)
+    (Q := incidenceEquation) (by omega) (by norm_num) (τ := 2) (h := 0) (b := 1) (A := 1)
+    (taylorExponentSufficient_two_mul 0 1) (by omega) (by omega) (by omega)
+    (coeffNatDegreeLE_X (some (0 : Fin 1))) hweighted hinit hproper
+    ({componentRegularPoint} : Finset (Option (Fin 1) → ComponentField)) hS_pair hA_pair
+  refine ⟨by simp, ?_, ?_⟩
+  · convert hbound using 1; norm_num
+  · convert hboundPair using 1; norm_num
 private theorem extractedAdmissibleFrobeniusPair :
     IsAdmissibleFrobeniusPair domain componentWord componentWord
       componentMap (fun _ ↦ 0) 0 componentJet 1 1 2 1 0 0 := by
@@ -1418,18 +1466,6 @@ example :
     exists_exceptional_frobeniusRetainedPairFamily domain componentWord componentWord
       componentMap (fun _ ↦ (0 : ComponentField)) 0 componentJet 1 1 2 1
 
-/-- Exact power agreement for zero words yields an exact correlated pair. -/
-example : HasExactCorrelatedPair pointDomain (fun _ ↦ (0 : ZMod 2)) (fun _ ↦ 0)
-    (RingHom.id (ZMod 2)) 1 0 0 := by
-  apply exactCorrelatedPair_of_powerAgreement_one pointDomain
-    ![fun _ ↦ (0 : ZMod 2), fun _ ↦ 0] (RingHom.id (ZMod 2)) 0 0
-  refine ⟨![0, 0], ?_, ?_, ?_⟩
-  · intro t
-    fin_cases t <;> simp
-  · simp [powerBatchedPolynomial]
-  · ext i
-    fin_cases i
-    simp [powerBatchedWord, commonCurveAgreementSet, pointDomain]
 example :
     ∃ exceptional : Finset ComponentField,
       exceptional.card ≤ 0 ∧
@@ -1445,22 +1481,18 @@ example :
 end
 end ReedSolomon.GraphLineComponentTest
 
-/-- The Taylor jet cut has degree at most eight at the concrete capped exponent. -/
-example : regularPowerBatchedCutJetDegree 2 2 (τ := 4) ≤ 8 :=
-  regularPowerBatchedCutJetDegree_le_two_mul 2 2 2 4 (by norm_num) (by norm_num) (by norm_num)
-
-/-- The Taylor challenge cut has degree at most six at the concrete capped exponent. -/
-example : regularPowerBatchedCutChallengeDegree 1 1 1 (τ := 4) ≤ 6 :=
-  regularPowerBatchedCutChallengeDegree_le_three_mul 2 1 1 1 4 1
-    (by norm_num) (by norm_num) (by norm_num) (by norm_num)
-
-/-- The mixed degree is below its concrete uniform cap for a one-stage order-one chart. -/
-example : regularPowerBatchedInitialMixedDegree 1 1 1 2 1 (τ := 4) ≤ 256 :=
-  regularPowerBatchedInitialMixedDegree_le_uniformCaps 1 2 1 1 2 1 2 1 4
-    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
-
-/-- Raising the Taylor exponent from zero to one increases the concrete agreement budget. -/
+/-- Concrete Taylor-cut degree and agreement-budget inequalities. -/
 example :
+    regularPowerBatchedCutJetDegree 2 2 (τ := 4) ≤ 8 ∧
+    regularPowerBatchedCutChallengeDegree 1 1 1 (τ := 4) ≤ 6 ∧
+    regularPowerBatchedInitialMixedDegree 1 1 1 2 1 (τ := 4) ≤ 256 ∧
     regularPowerBatchedAgreementSharpBound 1 2 1 1 1 1 2 1 1 (τ := 0) ≤
-      regularPowerBatchedAgreementSharpBound 1 2 1 1 1 1 2 1 1 (τ := 1) :=
-  regularPowerBatchedAgreementSharpBound_mono_exponent 1 2 1 1 1 1 2 1 1 0 1 (by norm_num)
+      regularPowerBatchedAgreementSharpBound 1 2 1 1 1 1 2 1 1 (τ := 1) := by
+  exact ⟨regularPowerBatchedCutJetDegree_le_two_mul 2 2 2 4
+      (by norm_num) (by norm_num) (by norm_num),
+    regularPowerBatchedCutChallengeDegree_le_three_mul 2 1 1 1 4 1
+      (by norm_num) (by norm_num) (by norm_num) (by norm_num),
+    regularPowerBatchedInitialMixedDegree_le_uniformCaps 1 2 1 1 2 1 2 1 4
+      (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num),
+    regularPowerBatchedAgreementSharpBound_mono_exponent 1 2 1 1 1 1 2 1 1 0 1
+      (by norm_num)⟩
