@@ -37,6 +37,8 @@ a prescribed center.
   center; `finite_frobeniusRegularBadChallenges_card_le_of_separant` gives the two-message bound.
 * `exists_exceptional_frobeniusPowerRegularSolutions_at` gives one bounded exceptional set for
   every retained-agreement threshold `L` between `k` and `A`.
+* `exists_exceptional_frobeniusRegularSolutions` gives the two-message correlated-pair form at
+  the threshold `k`.
 
 ## References
 
@@ -474,6 +476,45 @@ theorem exists_exceptional_frobeniusPowerRegularSolutions_at [IsAlgClosed E]
   by_contra hbad
   apply hz
   exact hfinite.mem_toFinset.mpr ⟨P, hdeg, hsol, hsep, hagree, hbad⟩
+
+open Classical in
+/-- One finite exceptional set controls all regular two-message Frobenius solutions with many
+agreements and no exact correlated-pair representation. -/
+theorem exists_exceptional_frobeniusRegularSolutions [IsAlgClosed E]
+    (domain : Fin n ↪ F) (f g : Fin n → F) (ι : F →+* E)
+    (roots : Fin n → E) (Q : DifferentialPolynomial E[X] 0)
+    (p e τ h b A : ℕ) [ExpChar E p]
+    (hroots : ∀ i, roots i ^ (p ^ e) = ι (domain i))
+    (hK : 0 < K) (hKk : K ≤ p ^ e * k) (hτ : TaylorExponentSufficient 0 K τ)
+    (hτpos : 0 < τ) (hb : 0 < b) (hkA : k ≤ A)
+    (hheight : CoeffNatDegreeLE Q h) (hjet : jetTotalDegree Q ≤ b) :
+    ∃ exceptional : Finset E,
+      (exceptional.card : ℚ) ≤
+        (h * (1 + τ * (b - 1)) + b * (p ^ e + τ * h) : ℕ) *
+          (((n - k + 1 : ℕ) : ℚ) / ((A - k + 1 : ℕ) : ℚ)) + ((n - k) * b : ℕ) ∧
+      ∀ w ∉ exceptional, ∀ P : E[X],
+        (expand E (p ^ e) P).degree < K →
+        differentialSpecialization (challengeSpecialization Q w) (expand E (p ^ e) P) = 0 →
+        differentialSpecialization (separant (challengeSpecialization Q w) (Fin.last 0))
+          (expand E (p ^ e) P) ≠ 0 →
+        A ≤ (polynomialAgreementSet (domain.trans ⟨ι, ι.injective⟩)
+          (fun i ↦ ι (f i) + w ^ (p ^ e) * ι (g i)) P).card →
+        HasExactCorrelatedPair domain f g ι k (w ^ (p ^ e)) P := by
+  obtain ⟨exceptional, hcard, hgood⟩ :=
+    exists_exceptional_frobeniusPowerRegularSolutions_at
+      (ℓ := 1) (L := k) domain ![f, g] ι roots Q p e τ h b A
+      hroots hK hKk hτ hτpos (by omega) hb le_rfl hkA hheight hjet
+  refine ⟨exceptional, ?_, ?_⟩
+  · simpa using hcard
+  · intro w hw P hdegree hsolution hregular hagreement
+    have hpowerAgreement : A ≤
+        (polynomialAgreementSet (domain.trans ⟨ι, ι.injective⟩)
+          (powerBatchedWord (fun t i ↦ ι (![f, g] t i)) (w ^ (p ^ e))) P).card := by
+      rw [powerBatchedWord_pair_eq]
+      exact hagreement
+    have hpower := hgood w hw P hdegree hsolution hregular hpowerAgreement
+    simpa using exactCorrelatedPair_of_powerAgreement_one domain ![f, g] ι
+      (w ^ (p ^ e)) P hpower
 
 open Classical in
 /-- A finite family of regular Frobenius witnesses with at least `A` agreements and no exact
