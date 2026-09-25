@@ -97,17 +97,17 @@ private theorem antitoneOn_errorQuadratic_log_div :
     field_simp
   refine antitoneOn_of_deriv_nonpos (convex_Ici 500) ?_ ?_ ?_
   · exact fun x hx ↦
-      (hderiv x (by linarith [mem_Ici.1 hx])).continuousAt.continuousWithinAt
+      (hderiv x (lt_of_lt_of_le (by norm_num) (mem_Ici.1 hx))).continuousAt.continuousWithinAt
   · intro x hx
     rw [interior_Ici] at hx
-    exact (hderiv x (by linarith [mem_Ioi.1 hx])).differentiableAt.differentiableWithinAt
+    exact (hderiv x (lt_trans (by norm_num) (mem_Ioi.1 hx))).differentiableAt.differentiableWithinAt
   · intro x hx
     rw [interior_Ici] at hx
-    have hx0 : 0 < x := by linarith [mem_Ioi.1 hx]
-    have hlog : 0 < Real.log x := Real.log_pos (by linarith [mem_Ioi.1 hx])
+    have hx0 : 0 < x := lt_trans (by norm_num) (mem_Ioi.1 hx)
+    have hlog : 0 < Real.log x := Real.log_pos (lt_trans (by norm_num) (mem_Ioi.1 hx))
     rw [(hderiv x hx0).deriv]
     refine div_nonpos_of_nonpos_of_nonneg ?_ (sq_nonneg x)
-    nlinarith [sq_nonneg (Real.log x - 163 / 100)]
+    linarith only [sq_nonneg (Real.log x - 163 / 100), hlog]
 
 /-- For `500 ≤ d`, the error term `q (log d) / d` is at most `q (311 / 50) / 500`. -/
 private theorem errorQuadratic_log_div_le {d : ℕ} (hd : 500 ≤ d) :
@@ -118,7 +118,9 @@ private theorem errorQuadratic_log_div_le {d : ℕ} (hd : 500 ≤ d) :
   have hlog500 : (0 : ℝ) < Real.log 500 := Real.log_pos (by norm_num)
   have hu := log_five_hundred_lt
   refine hanti.trans (div_le_div_of_nonneg_right ?_ (by norm_num))
-  nlinarith
+  have hprod : 0 ≤ (311 / 50 - Real.log 500) * ((311 / 50 - 15721 / 12525) + Real.log 500) :=
+    mul_nonneg (sub_nonneg.2 hu.le) (add_nonneg (by norm_num) hlog500.le)
+  linarith only [hprod]
 
 /-- The numerical core of the lower-tail estimate: with `D = d`, `H = harmonic d`,
 `Q = ∑ i < d, 1 / (i + 1) ^ 2`, `L = log d` and `A = log 6`, the exact average of
@@ -132,24 +134,32 @@ private theorem lt_affine_moment_of_bounds
           3 * (41 / 25)) / D <
       (A + L) ^ 2 - 2 * (A + L) * D * (H / (D + 1)) +
         D ^ 2 * ((H ^ 2 + Q) / ((D + 1) * (D + 2))) := by
-  have hD0 : 0 < D := by linarith
-  have hD1 : 0 < D + 1 := by linarith
-  have hD2 : 0 < D + 2 := by linarith
-  have ht : 0 < L + 29 / 50 := by linarith
-  have hHu : H < L + 29 / 50 := by linarith
+  have hD0 : 0 < D := lt_of_lt_of_le (by norm_num) hD
+  have hD1 : 0 < D + 1 := add_pos hD0 one_pos
+  have ht : 0 < L + 29 / 50 := add_pos_of_nonneg_of_pos hL (by norm_num)
+  have hHu : H < L + 29 / 50 := sub_lt_iff_lt_add'.mp hHupper
   have hres : (121 / 100 : ℝ) + (L + 29 / 50) / (D + 1) <
       A + L - D * H / (D + 1) := by
-    field_simp
-    linarith [mul_lt_mul_of_pos_left hA hD1, mul_lt_mul_of_pos_left hHu hD0]
+    rw [← sub_pos]
+    have hid : A + L - D * H / (D + 1) - (121 / 100 + (L + 29 / 50) / (D + 1)) =
+        ((A - 179 / 100) * (D + 1) + D * (L + 29 / 50 - H)) / (D + 1) := by
+      field_simp
+      ring
+    rw [hid]
+    exact div_pos (add_pos_of_pos_of_nonneg (mul_pos (sub_pos.2 hA) hD1)
+      (mul_nonneg hD0.le (sub_pos.2 hHu).le)) hD1
   have hratio : (500 / 501 : ℝ) * (L + 29 / 50) / D ≤
       (L + 29 / 50) / (D + 1) := by
-    field_simp
-    linarith
+    rw [div_le_div_iff₀ hD0 hD1]
+    calc
+      (500 / 501 : ℝ) * (L + 29 / 50) * (D + 1) = (L + 29 / 50) * (500 / 501 * (D + 1)) := by
+        ring
+      _ ≤ (L + 29 / 50) * D := mul_le_mul_of_nonneg_left (by linarith only [hD]) ht.le
   have hbias : (121 / 100 : ℝ) ^ 2 +
       2 * (121 / 100) * (500 / 501) * (L + 29 / 50) / D <
         (A + L - D * H / (D + 1)) ^ 2 := by
     have hres' : (121 / 100 : ℝ) + (500 / 501) * (L + 29 / 50) / D <
-        A + L - D * H / (D + 1) := by linarith
+        A + L - D * H / (D + 1) := (add_le_add le_rfl hratio).trans_lt hres
     have hleft : 0 ≤ (121 / 100 : ℝ) + (500 / 501) * (L + 29 / 50) / D := by positivity
     have hsquares := (sq_lt_sq₀ hleft (hleft.trans_lt hres').le).2 hres'
     calc
@@ -159,19 +169,18 @@ private theorem lt_affine_moment_of_bounds
         have hexp : (121 / 100 + (500 / 501) * (L + 29 / 50) / D) ^ 2 =
             (121 / 100 : ℝ) ^ 2 + 2 * (121 / 100) * (500 / 501) * (L + 29 / 50) / D +
               ((500 / 501) * (L + 29 / 50) / D) ^ 2 := by ring
-        linarith
+        rw [hexp]
+        exact le_add_of_nonneg_right hr
       _ < (A + L - D * H / (D + 1)) ^ 2 := hsquares
   have hcoefQ : 1 - 3 / D < D ^ 2 / ((D + 1) * (D + 2)) := by
     rw [one_sub_div hD0.ne', div_lt_div_iff₀ hD0 (by positivity)]
-    linarith
+    linarith only [hD0]
   have hcoefH : D ^ 2 / ((D + 1) ^ 2 * (D + 2)) ≤ 1 / D := by
     rw [div_le_div_iff₀ (by positivity) hD0]
-    linarith [sq_nonneg D]
+    linarith only [sq_nonneg D, hD0]
   have hvcoef : (41 / 25 : ℝ) * (1 - 3 / D) < Q * (D ^ 2 / ((D + 1) * (D + 2))) := by
-    have hone : 0 < 1 - 3 / D := by
-      apply sub_pos.mpr
-      apply (div_lt_iff₀ hD0).2
-      linarith
+    have hone : 0 < 1 - 3 / D :=
+      sub_pos.mpr ((div_lt_one hD0).mpr (lt_of_lt_of_le (by norm_num) hD))
     calc
       (41 / 25 : ℝ) * (1 - 3 / D) < 41 / 25 * (D ^ 2 / ((D + 1) * (D + 2))) :=
         mul_lt_mul_of_pos_left hcoefQ (by norm_num)
@@ -182,12 +191,12 @@ private theorem lt_affine_moment_of_bounds
   have hHterm : D ^ 2 * H ^ 2 / ((D + 1) ^ 2 * (D + 2)) ≤ (L + 29 / 50) ^ 2 / D := by
     have hcoefH0 : 0 ≤ D ^ 2 / ((D + 1) ^ 2 * (D + 2)) := by positivity
     calc
-      D ^ 2 * H ^ 2 / ((D + 1) ^ 2 * (D + 2)) = (D ^ 2 / ((D + 1) ^ 2 * (D + 2))) * H ^ 2 := by
-        ring
+      D ^ 2 * H ^ 2 / ((D + 1) ^ 2 * (D + 2)) = (D ^ 2 / ((D + 1) ^ 2 * (D + 2))) * H ^ 2 :=
+        mul_div_right_comm _ _ _
       _ ≤ (D ^ 2 / ((D + 1) ^ 2 * (D + 2))) * (L + 29 / 50) ^ 2 :=
         mul_le_mul_of_nonneg_left hHsq.le hcoefH0
       _ ≤ (1 / D) * (L + 29 / 50) ^ 2 := mul_le_mul_of_nonneg_right hcoefH (sq_nonneg _)
-      _ = (L + 29 / 50) ^ 2 / D := by ring
+      _ = (L + 29 / 50) ^ 2 / D := one_div_mul_eq_div _ _
   have hvariance : (41 / 25 : ℝ) * (1 - 3 / D) - (L + 29 / 50) ^ 2 / D <
       D ^ 2 * ((H ^ 2 + Q) / ((D + 1) * (D + 2))) - (D * H / (D + 1)) ^ 2 := by
     have hid : D ^ 2 * ((H ^ 2 + Q) / ((D + 1) * (D + 2))) - (D * H / (D + 1)) ^ 2 =
@@ -195,15 +204,19 @@ private theorem lt_affine_moment_of_bounds
       field_simp
       ring
     rw [hid]
-    linarith
+    exact (sub_lt_sub_right hvcoef _).trans_le (sub_le_sub_left hHterm _)
   have hdecomp :
       (A + L) ^ 2 - 2 * (A + L) * D * (H / (D + 1)) +
           D ^ 2 * ((H ^ 2 + Q) / ((D + 1) * (D + 2))) =
         (A + L - D * H / (D + 1)) ^ 2 +
           (D ^ 2 * ((H ^ 2 + Q) / ((D + 1) * (D + 2))) - (D * H / (D + 1)) ^ 2) := by ring
   rw [hdecomp]
-  ring_nf at hbias hvariance ⊢
-  linarith
+  calc
+    (121 / 100 : ℝ) ^ 2 + 41 / 25 -
+        ((L + 29 / 50) ^ 2 - 2 * (121 / 100) * (500 / 501) * (L + 29 / 50) + 3 * (41 / 25)) / D =
+        ((121 / 100 : ℝ) ^ 2 + 2 * (121 / 100) * (500 / 501) * (L + 29 / 50) / D) +
+          ((41 / 25 : ℝ) * (1 - 3 / D) - (L + 29 / 50) ^ 2 / D) := by ring
+    _ < _ := add_lt_add hbias hvariance
 
 /-! ### Moments on the weighted simplex -/
 
@@ -269,9 +282,9 @@ private theorem lowerTail_sq_gt_of_budget_one {d : ℕ} (hd : 500 ≤ d) :
         max (d * ∑ i, u i - Real.log d - Real.log 6) 0 ^ 2 := by
     funext u
     rcases le_total (d * ∑ i, u i - Real.log d - Real.log 6) 0 with h | h
-    · rw [max_eq_right h, max_eq_left (by linarith)]
+    · rw [max_eq_right h, max_eq_left (by linarith only [h])]
       ring
-    · rw [max_eq_left h, max_eq_right (by linarith)]
+    · rw [max_eq_left h, max_eq_right (by linarith only [h])]
       ring
   rw [hsplit, setAverage_fun_sub (hI _ (by fun_prop)) (hI _ (by fun_prop)),
     setAverage_weightedSimplex_succ_sub_mul_sum_sq d one_pos]
@@ -279,7 +292,7 @@ private theorem lowerTail_sq_gt_of_budget_one {d : ℕ} (hd : 500 ≤ d) :
   have hlog : 0 ≤ Real.log d := Real.log_nonneg (by exact_mod_cast hd1)
   have hharm : 0 ≤ (harmonic d : ℝ) := by
     rw [harmonic_eq_sum_fin]
-    positivity
+    exact sum_nonneg fun i _ ↦ by positivity
   have haffine := lt_affine_moment_of_bounds (D := (d : ℝ)) (H := (harmonic d : ℝ))
     (Q := ∑ i : Fin d, 1 / ((i : ℝ) + 1) ^ 2) (L := Real.log d) (A := Real.log 6)
     (by exact_mod_cast hd) hlog hharm (Real.harmonic_sub_log_lt (by omega))
@@ -292,7 +305,9 @@ private theorem lowerTail_sq_gt_of_budget_one {d : ℕ} (hd : 500 ≤ d) :
   have hendpoint : (27 / 10 : ℝ) < (121 / 100) ^ 2 + 41 / 25 - 1 / 3 -
       ((311 / 50 : ℝ) ^ 2 - 15721 / 12525 * (311 / 50) + 4829141 / 1252500) / 500 := by
     norm_num
-  linarith
+  exact ((hendpoint.trans_eq (sub_right_comm _ _ _)).trans_le
+    (sub_le_sub_right (sub_le_sub_left herror _) _)).trans
+      ((sub_lt_sub_right haffine _).trans_le (sub_le_sub_left htail _))
 
 /-- The squared lower tail of the coordinate sum on the weighted simplex with weights `1, …, d`:
 for `500 ≤ d` and `0 < W`,

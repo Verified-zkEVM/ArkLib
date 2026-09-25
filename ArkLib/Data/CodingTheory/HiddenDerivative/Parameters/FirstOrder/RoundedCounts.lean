@@ -289,7 +289,8 @@ theorem firstOrderRankCount_floor_le {beta : ℝ} (m : ℕ) (hb0 : 0 ≤ beta)
   have hmR : (0 : ℝ) < m := Nat.cast_pos.mpr hm
   have hMReal : (M : ℝ) ≤ beta * m := Nat.floor_le (by positivity)
   have hMNat : M ≤ m := by
-    have : (M : ℝ) ≤ m := by nlinarith
+    have : (M : ℝ) ≤ m := by
+      linarith only [hMReal, mul_le_mul_of_nonneg_right hb34 hmR.le, hmR]
     exact_mod_cast this
   have hu0 : 0 ≤ u := by positivity
   have hub : u ≤ beta := (div_le_iff₀ hmR).2 hMReal
@@ -419,7 +420,8 @@ theorem firstOrderRankCount_floor_le_density_add_rounding_upper
     dsimp only [M]
     exact Nat.lt_floor_add_one _
   have hhalf : m ≤ 2 * M + 1 := by
-    have hreal : (m : ℝ) < 2 * ((M : ℝ) + 1) := by nlinarith
+    have hreal : (m : ℝ) < 2 * ((M : ℝ) + 1) := by
+      linarith only [hMlt, mul_le_mul_of_nonneg_right hbeta hmReal.le]
     have hnat : m < 2 * (M + 1) := by exact_mod_cast hreal
     omega
   rw [show ⌊beta * m⌋₊ = M by rfl,
@@ -438,19 +440,15 @@ theorem firstOrderRankCount_floor_le_density_add_rounding_upper
     push_cast at hMle ⊢
     have hh : (0 : ℝ) ≤ h := Nat.cast_nonneg _
     have hhOne : (1 : ℝ) ≤ h := by exact_mod_cast (show 1 ≤ h by omega)
-    have hM0 : (0 : ℝ) ≤ M := Nat.cast_nonneg _
-    have hmul1 := mul_le_mul_of_nonneg_right hMle hh
-    have hmul := mul_le_mul_of_nonneg_right hMle (sq_nonneg (h : ℝ))
-    ring_nf at ⊢
-    nlinarith [mul_nonneg (sub_nonneg.mpr hhOne) hh, mul_nonneg hM0 hh]
+    linarith only [mul_nonneg (mul_nonneg hh (by linarith only [hh] : (0 : ℝ) ≤ h + 1))
+        (sub_nonneg.mpr hMle), mul_nonneg hbeta0 (sq_nonneg (h : ℝ)),
+      mul_nonneg hh (by linarith only [hhOne] : (0 : ℝ) ≤ 21 / 2 * h - 7 / 6)]
   · have hdiv : (2 * h + 1) / 2 = h := by omega
     simp only [hdiv, linearSum, squareSum]
     push_cast at hMle ⊢
     have hh : (0 : ℝ) ≤ h := Nat.cast_nonneg _
-    have hM0 : (0 : ℝ) ≤ M := Nat.cast_nonneg _
-    have hmul := mul_le_mul_of_nonneg_right hMle (sq_nonneg ((2 : ℝ) * h + 1))
-    nlinarith [sq_nonneg (beta : ℝ),
-      sq_nonneg ((M : ℝ) - beta * (2 * h + 1)), mul_nonneg hM0 hh]
+    linarith only [mul_nonneg (sq_nonneg ((h : ℝ) + 1)) (sub_nonneg.mpr hMle),
+      mul_nonneg hbeta0 (sq_nonneg (h : ℝ)), mul_nonneg hbeta0 hh, hbeta0, sq_nonneg (h : ℝ), hh]
 
 /-- Exact floor rounding against the piecewise rank density, uniformly on both branches. -/
 theorem firstOrderRankCount_floor_le_density_add_rounding
@@ -470,7 +468,7 @@ theorem firstOrderRankCount_floor_le_density_add_rounding
       (hbetaHalf.trans (by norm_num : (1 / 2 : ℝ) ≤ 3 / 4))
     exact h.trans (by
       have hmSq : 0 ≤ (m : ℝ) ^ 2 := sq_nonneg _
-      nlinarith [mul_nonneg hbeta0 hmSq])
+      linarith only [mul_nonneg hbeta0 hmSq])
   · exact firstOrderRankCount_floor_le_density_add_rounding_upper
       (le_of_not_ge hbetaHalf) m
 
@@ -507,8 +505,8 @@ private theorem sourceRoundingModel_ge {z u c v beta : ℝ} (hz1 : 1 ≤ z) (hbz
       unfold sourceRoundingModel
       ring
     rw [← sub_nonneg, hid]
-    have : 0 ≤ c - (z + v) := by linarith
-    have : 0 ≤ z + 2 * v - c := by linarith
+    have : 0 ≤ c - (z + v) := sub_nonneg.2 hzc
+    have : 0 ≤ z + 2 * v - c := sub_nonneg.2 hcz
     positivity
   have hquad : 0 ≤ (u - z) ^ 2 + (u - z) * (beta - z) + (beta - z) ^ 2 := by
     have hquad_eq :
@@ -526,13 +524,13 @@ private theorem sourceRoundingModel_ge {z u c v beta : ℝ} (hz1 : 1 ≤ z) (hbz
     have hfac : 0 ≤ (u - beta) / 6 := div_nonneg (sub_nonneg.mpr hbu) (by norm_num)
     rw [← sub_nonneg, hid]
     exact mul_nonneg hfac hquad
-  have hbracket : 0 ≤ z - u / 2 + v / 3 := by nlinarith
+  have hbracket : 0 ≤ z - u / 2 + v / 3 := by linarith only [hub, hbz, hz1, hv1, hv0]
   have hround : 0 ≤ v * u * (z - u / 2 + v / 3) := by positivity
   have hid : sourceRoundingModel z u (z + v) v =
       (u * z ^ 2 / 2 - z * u ^ 2 / 2 + u ^ 3 / 6) + v * u * (z - u / 2 + v / 3) := by
     unfold sourceRoundingModel
     ring
-  linarith
+  exact hbase.trans ((le_add_of_nonneg_right hround).trans (hid.symm.le.trans hconcave))
 
 private theorem sourcePolynomialCount_div_cube_eq_model {rate z : ℝ} {m M L : ℕ} (hm : 0 < m)
     (hML : M ≤ L) :
@@ -623,11 +621,11 @@ theorem cube_mul_sourceDensity_le_firstOrderSourceCount {rate a beta : ℝ} {m m
         have htL : (t : ℝ) ≤ L := by exact_mod_cast Nat.lt_succ_iff.mp (mem_range.mp ht)
         have h1 : (t : ℝ) ≤ m * a / rate := htL.trans hLReal
         rw [le_div_iff₀ hrate] at h1
-        linarith
+        linarith only [h1]
       _ ≤ ∑ t ∈ range (mu + 1), (min t M + 1 : ℕ) * max (m * a - rate * t) 0 := by
         apply sum_le_sum_of_subset_of_nonneg
         · exact range_subset_range.mpr (by omega)
-        · exact fun t _ _ => by positivity
+        · exact fun t _ _ => mul_nonneg (Nat.cast_nonneg _) (le_max_right _ _)
   have harg : rate * (z + (m : ℝ)⁻¹) = a + rate / m := by
     rw [hz]
     field_simp
@@ -637,16 +635,16 @@ theorem cube_mul_sourceDensity_le_firstOrderSourceCount {rate a beta : ℝ} {m m
     rw [harg, sourcePolynomialCount_shift_eq hm] at h
     rw [← hQ] at h
     rw [h, hu, hc, hv]
-  have hz1 : 1 ≤ z := (le_div_iff₀ hrate).2 (by linarith)
+  have hz1 : 1 ≤ z := (le_div_iff₀ hrate).2 ((one_mul rate).trans_le hra)
   have hbu : beta ≤ u := by
     rw [hu, le_div_iff₀ hmR]
     push_cast
-    linarith
+    exact hMlt.le
   have hub : u ≤ beta + v := by
     rw [hu, hv, show beta + (m : ℝ)⁻¹ = (beta * m + 1) / m by field_simp,
       div_le_div_iff_of_pos_right hmR]
     push_cast
-    linarith
+    linarith only [hMReal]
   have hu0 : 0 ≤ u := by positivity
   have hv0 : 0 ≤ v := by positivity
   have hv1 : v ≤ 1 := inv_le_one_of_one_le₀ (by exact_mod_cast hm)
@@ -654,23 +652,24 @@ theorem cube_mul_sourceDensity_le_firstOrderSourceCount {rate a beta : ℝ} {m m
     rw [hz, hv, hc, le_div_iff₀ hmR,
       show (a / rate + (m : ℝ)⁻¹) * m = m * a / rate + 1 by field_simp]
     push_cast
-    linarith
+    linarith only [hLlt]
   have hcz : c ≤ z + 2 * v := by
     rw [hz, hv, hc, div_le_iff₀ hmR,
       show (a / rate + 2 * (m : ℝ)⁻¹) * m = m * a / rate + 2 by field_simp]
     push_cast
-    linarith
+    linarith only [hLReal]
   have hmodel := sourceRoundingModel_ge hz1 hba hbu hub hu0 hv0 hv1 hzc hcz
   have hdensity : beta * a ^ 2 / (2 * rate) - a * beta ^ 2 / 2 + rate * beta ^ 3 / 6 =
       rate * (beta * z ^ 2 / 2 - z * beta ^ 2 / 2 + beta ^ 3 / 6) := by
-    rw [hz]
-    field_simp
+    have h1 : rate * z = a := by rw [hz]; field_simp
+    have h2 : rate * z ^ 2 = a ^ 2 / rate := by rw [hz]; field_simp
+    linear_combination (-(beta / 2)) * h2 + (beta ^ 2 / 2) * h1
   have hnorm : beta * a ^ 2 / (2 * rate) - a * beta ^ 2 / 2 + rate * beta ^ 3 / 6 ≤
       Q / (m : ℝ) ^ 3 := by
     rw [hdensity, hnormalized]
     exact mul_le_mul_of_nonneg_left hmodel hrate.le
   rw [le_div_iff₀ (by positivity)] at hnorm
-  linarith
+  exact (mul_comm _ _).trans_le (hnorm.trans hQle)
 
 /-- The finite source-minus-rank surplus at the rounded caps `M = ⌊β m⌋₊` and
 `μ ≥ ⌊m a / R⌋₊` is at least `m³ S - 3 m²`, where
@@ -684,7 +683,7 @@ theorem cube_mul_densityGap_sub_le_sourceCount_sub_rankCount {rate a beta : ℝ}
         firstOrderRankCount m ⌊beta * m⌋₊ := by
   have hsource := cube_mul_sourceDensity_le_firstOrderSourceCount hrate hra hb0 hba hmu
   have hrank := firstOrderRankCount_floor_le m hb0 hb34
-  linarith
+  linarith only [hsource, hrank]
 
 /-! ## Consumers of a finite surplus -/
 
@@ -700,7 +699,7 @@ theorem mul_max_rateResidual_le_max_residual {rate a : ℝ} {n D A m t : ℕ}
       mul_nonneg (Nat.cast_nonneg m) (sub_nonneg.mpr hA)
     have ht : 0 ≤ (t : ℝ) * (rate * n - D) :=
       mul_nonneg (Nat.cast_nonneg t) (sub_nonneg.mpr hD)
-    nlinarith
+    linarith only [hm, ht]
   · rw [max_eq_right hx, mul_zero]
     exact le_max_right _ _
 
@@ -710,7 +709,7 @@ private theorem max_nat_sub_le_nat_add_sub (x y b : ℕ) :
   · rw [max_eq_left (sub_nonneg.mpr (by exact_mod_cast hyx)), Nat.cast_sub (by omega)]
     push_cast
     have hb : (0 : ℝ) ≤ (b : ℝ) := Nat.cast_nonneg b
-    nlinarith
+    linarith only [hb]
   · have hxy : x ≤ y := by omega
     rw [max_eq_right (sub_nonpos.mpr (by exact_mod_cast hxy))]
     positivity
@@ -756,13 +755,13 @@ theorem scaledKernelHeight_le_floor {n N r mu : ℕ} {N₀ : ℝ} (hsurplus : (r
   have hnrN : n * r < N := by
     have : ((n * r : ℕ) : ℝ) < N := by
       push_cast
-      nlinarith
+      exact (mul_lt_mul_of_pos_left hsurplus hnR).trans_le hN
     exact_mod_cast this
   have hgap : 0 < N₀ - r := sub_pos.mpr hsurplus
   have hden : (n : ℝ) * (N₀ - r) ≤ ((N - n * r : ℕ) : ℝ) := by
     rw [Nat.cast_sub hnrN.le]
     push_cast
-    nlinarith
+    linarith only [hN]
   have hfrac : ((n * r * mu : ℕ) : ℝ) / ((N - n * r : ℕ) : ℝ) ≤ (r : ℝ) * mu / (N₀ - r) :=
     calc
       ((n * r * mu : ℕ) : ℝ) / ((N - n * r : ℕ) : ℝ) ≤
