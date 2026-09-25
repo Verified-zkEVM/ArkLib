@@ -102,3 +102,8 @@ example : hybridDimensionSensitiveIncidenceProduct 10 5 2 3 1 2 =
 example : dimensionSensitiveIncidenceProduct 10 5 3 1 1 ≤
     ((10 - 3 + 1 : ℕ) : ℚ) / (5 - 3 + 1 : ℕ) :=
   dimensionSensitiveIncidenceProduct_le_one (by norm_num) (by norm_num)
+
+/-- A scaled denominator lower bound controls this concrete natural-cast ratio. -/
+example : (1 : ℚ) / 2 ≤ 1 := by
+  simpa using natCastRatio_le_div_of_scaled_lower_bound (K := ℚ) 1 1 2 1 2
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
