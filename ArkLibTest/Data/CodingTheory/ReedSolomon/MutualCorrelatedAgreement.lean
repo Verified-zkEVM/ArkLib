@@ -754,16 +754,15 @@ private theorem badChallengeChartAtZero :
   · intro l _
     exact aeval_commonTaylorNumerator_eq_zero 0 Qz (fun _ ↦ 0) 2 hsep (hcoeff l)
   · exact hpoly
-/-- A nonempty bad-challenge set satisfies the finite and exceptional first-order bounds. -/
+/-- A nonempty bad-challenge fixture satisfies the sharp finite and exceptional-set bounds. -/
 example : badChallenges.Nonempty ∧
-    (badChallenges.card : ℚ) ≤ regularPowerBatchedAgreementSharpBoundTwo
-      1 1 2 0 0 0 1 1 (τ := 2) (η := 2) ∧
+    (badChallenges.card : ℚ) ≤
+      regularPowerBatchedAgreementSharpBound 1 1 1 2 0 0 0 1 1 (τ := 2) ∧
     (∃ exceptional : Finset ComponentField,
-      (exceptional.card : ℚ) ≤ regularPowerBatchedAgreementSharpBoundTwo
-        1 1 2 0 0 0 1 1 (τ := 2) (η := 2) ∧ (0 : ComponentField) ∈ exceptional) := by
-  classical
-  have hjet := badChallengeEquation_jetDegree
-  have hheight := badChallengeEquation_height
+      (exceptional.card : ℚ) ≤
+        regularPowerBatchedAgreementSharpBound 1 1 1 2 0 0 0 1 1 (τ := 2) ∧
+        (0 : ComponentField) ∈ exceptional) := by
+  have hjet := badChallengeEquation_jetDegree; have hheight := badChallengeEquation_height
   have hagree : ∀ z ∈ badChallenges, 0 ≤
       (polynomialAgreementSet badChallengeDomain (powerBatchedWord badChallengeWords z)
         (badChallengeWitness z)).card := by intro z hz; omega
@@ -792,32 +791,42 @@ example : badChallenges.Nonempty ∧
     have hz0 : z = 0 := Finset.mem_singleton.mp hz
     subst z
     exact badChallengeChartAtZero
-  have hbound := finite_powerBatchedBadChallenges_card_le_firstOrder_of_exponent
+  have _ := finite_powerBatchedBadChallenges_card_le_sharp_of_exponent
     badChallengeDomain badChallengeWords (RingHom.id _) 0 badChallengeEquation
     2 0 0 0 1 1 2 (by intro l; omega) (by omega) (by omega) (by omega)
     (by omega) (by omega) (by omega) (by omega) (by omega) hjet hheight
     badChallenges badChallengeWitness (fun _ ↦ fun _ ↦ 0) hchart hagree hbad
+  have hregular : (badChallenges : Set ComponentField) ⊆
+      regularPowerBatchedBadChallenges badChallengeDomain badChallengeWords
+        (RingHom.id _) badChallengeEquation 0 0 := by
+    intro z hz
+    obtain rfl : z = 0 := by simpa [badChallenges] using hz
+    refine ⟨0, by simp, ?_, ?_, ?_, hbad 0 (by simp [badChallenges])⟩
+    all_goals simp [challengeSpecialization, badChallengeEquation,
+      differentialSpecialization, differentialSpecializationHom, separant, Fin.last]
+  have hbin : ∀ i : ℕ, 1 < i → i < 2 → (i.choose 1 : ComponentField) ≠ 0 := by omega
+  have hregularBound := finite_regularPowerBatchedBadChallenges_card_le_sharp_of_exponent
+    badChallengeDomain badChallengeWords (RingHom.id _) badChallengeEquation
+    2 0 0 0 1 1 2 (by intro l; omega) (by omega) (by omega) (by omega)
+    (by omega) (by omega) (by omega) (by omega) (by omega) hjet hheight hbin
+    badChallenges hregular
   obtain ⟨exceptional, hexBound, hexAgreement⟩ :=
-    exists_exceptional_regularPowerBatchedAgreement_firstOrder_of_exponent
+    exists_exceptional_regularPowerBatchedAgreement_sharp_of_exponent
       badChallengeDomain badChallengeWords (RingHom.id _) badChallengeEquation
       2 0 0 0 1 1 2 (by intro l; omega) (by omega) (by omega) (by omega)
       (by omega) (by omega) (by omega) (by omega) (by omega) hjet hheight
-      (by intro i hi hiK; omega)
-  have hzeroBad := hbad 0 (by simp [badChallenges])
+      hbin
   have hzeroExceptional : (0 : ComponentField) ∈ exceptional := by
     by_contra hz
-    exact hzeroBad (hexAgreement 0 hz 0 (by simp) (by omega)
+    exact hbad 0 (by simp [badChallenges]) (hexAgreement 0 hz 0 (by simp) (by omega)
       (by simp [badChallengeEquation, challengeSpecialization, differentialSpecialization,
         differentialSpecializationHom])
       (by simp [badChallengeEquation, challengeSpecialization, separant,
         differentialSpecialization, differentialSpecializationHom, Fin.last]))
-  exact ⟨by simp [badChallenges],
-    by simpa [regularPowerBatchedAgreementSharpBoundTwo] using hbound,
-    ⟨exceptional, by simpa [regularPowerBatchedAgreementSharpBoundTwo] using hexBound,
-      hzeroExceptional⟩⟩
+  exact ⟨by simp [badChallenges], hregularBound,
+    ⟨exceptional, hexBound, hzeroExceptional⟩⟩
 private def incidencePoint : Option (Fin 2) → ComponentField := fun j ↦ j.elim 0 ![0, 0]
-private def incidencePoints : Finset (Option (Fin 2) → ComponentField) :=
-  Finset.cons incidencePoint ∅ (by simp)
+private def incidencePoints : Finset (Option (Fin 2) → ComponentField) := {incidencePoint}
 private theorem incidencePoint_regular :
     aeval incidencePoint (jointInitialJetEquation 0 badChallengeEquation) = 0 ∧
       aeval incidencePoint (jointInitialJetSeparant 0 badChallengeEquation) ≠ 0 ∧
@@ -853,14 +862,13 @@ private theorem badChallengeEquation_regular :
     (z := (0 : ComponentField)) badChallengeEquation (fun _ ↦ 0)
     (badChallengeChartAtZero).2.2.1
 private theorem badChallengeExponent : TaylorExponentSufficient 1 2 2 := by intro l; omega
-/-- A nonempty regular set outside tuple graphs satisfies the first-order incidence bound. -/
+/-- Both sharp incidence bounds apply to a nonempty regular set outside tuple graphs. -/
 example : incidencePoints.Nonempty ∧
-    (incidencePoints.card : ℚ) ≤ regularPowerBatchedInitialMixedDegreeTwo 1 2 1 1 (τ := 2) *
-      (((1 - 0 + 1 : ℕ) : ℚ) / ((0 - 0 + 1 : ℕ) : ℚ)) *
-        (((1 - 0 + 1 : ℕ) : ℚ) / ((0 - 0 + 1 : ℕ) : ℚ)) := by
+    ((incidencePoints.card : ℚ) ≤
+        regularPowerBatchedInitialMixedDegree 1 1 2 1 1 (τ := 2) *
+          (((1 - 0 + 1 : ℕ) : ℚ) / ((0 - 0 + 1 : ℕ) : ℚ)) *
+            dimensionSensitiveIncidenceProduct 1 0 0 1 1) := by
   classical
-  have hnonempty : incidencePoints.Nonempty :=
-    by simp [incidencePoints]
   have hS : ∀ y ∈ incidencePoints,
       aeval y (jointInitialJetEquation 0 badChallengeEquation) = 0 ∧
       aeval y (jointInitialJetSeparant 0 badChallengeEquation) ≠ 0 ∧
@@ -874,17 +882,26 @@ example : incidencePoints.Nonempty ∧
   have hA : ∀ y ∈ incidencePoints, 0 ≤
       ({i : Fin 1 | aeval y (jointTaylorAgreementEquation 0 badChallengeEquation 2 2
         (Polynomial.C (badChallengeDomain i))
-        (powerBatchedCoordinate (fun t ↦ badChallengeWords t i))) = 0} :
+      (powerBatchedCoordinate (fun t ↦ badChallengeWords t i))) = 0} :
         Set (Fin 1)).ncard := by intro y hy; omega
-  have hbound :=
-    finite_powerBatched_regular_points_off_admissible_graphs_card_le_firstOrder_of_exponent
-    (domain := badChallengeDomain) (w := badChallengeWords) (iota := RingHom.id _)
-    (center := 0) (Q := badChallengeEquation) (K := 2) (k := 0) (L := 0) (A := 0)
-    (v := 1) (h := 1) (τ := 2) badChallengeExponent
-    (by simp [regularPowerBatchedCutChallengeDegree])
-    (by omega) (by omega) (by omega) (by omega) (by omega) badChallengeEquation_regular
-    badChallengeEquation_jetDegree badChallengeEquation_height incidencePoints hS hA
-  exact ⟨hnonempty, hbound⟩
+  have hsharpBound :=
+    finite_powerBatched_regular_points_off_admissible_graphs_card_le_sharp_of_terminal_recognition
+      badChallengeDomain badChallengeWords (RingHom.id _) 0 badChallengeEquation
+      2 0 0 0 1 1 2 badChallengeExponent (by omega) (by omega) (by omega) (by omega)
+      (by omega) (by omega) (by omega) (by omega) badChallengeEquation_regular
+      badChallengeEquation_jetDegree badChallengeEquation_height (by
+        intro J hJ hsJ hgJ hhighJ hdJ hcutsJ
+        exact principalOpen_subset_admissibleChartTupleGraphLocus
+          badChallengeDomain badChallengeWords (RingHom.id _) 0 badChallengeEquation
+          2 0 0 2 (by omega) (by omega) badChallengeExponent J hJ hsJ hdJ hgJ hhighJ hcutsJ)
+      incidencePoints hS hA
+  have _ :=
+    finite_powerBatched_regular_points_off_admissible_graphs_card_le_sharp_of_exponent
+      badChallengeDomain badChallengeWords (RingHom.id _) 0 badChallengeEquation
+      2 0 0 0 1 1 2 badChallengeExponent (by omega) (by omega) (by omega) (by omega)
+      (by omega) (by omega) (by omega) (by omega) badChallengeEquation_regular
+      badChallengeEquation_jetDegree badChallengeEquation_height incidencePoints hS hA
+  exact ⟨by simp [incidencePoints], hsharpBound⟩
 
 /-- A sparse sample cut on the regular prime component determines its Frobenius graph. -/
 example :
