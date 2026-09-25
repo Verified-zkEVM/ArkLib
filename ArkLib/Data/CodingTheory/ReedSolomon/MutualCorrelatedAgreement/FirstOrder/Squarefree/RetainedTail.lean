@@ -14,13 +14,14 @@ public import ArkLib.Data.Polynomial.Differential.FrobeniusEquation
 public import ArkLib.Data.MvPolynomial.RadicalSplit.Separable
 public import ArkLib.Data.Polynomial.ResultantDegree
 public import ArkLib.Data.Polynomial.ResultantSpecialization
+public import ArkLib.ToMathlib.MvPolynomial.OptionWeightedDegree
 
 /-!
 # Singular tails with a retained challenge
 
 This file constructs the content-resultant equation while keeping the challenge as a polynomial
 coordinate. The resulting equation bounds solutions outside the regular positive-factor locus;
-its degree bounds control both the independent variable and the challenge.
+its degree bounds control `Y₀` and the challenge.
 
 ## Main statements
 
@@ -29,7 +30,7 @@ its degree bounds control both the independent variable and the challenge.
 * `singularCurveEquation_routes_nonregular` routes every nonregular solution to the singular
   equation.
 * `singularCurveEquation_degree_le` and `singularCurveEquation_coeffNatDegreeLE` bound its
-  independent-variable degree and challenge coefficient degrees.
+  `Y₀` degree and challenge coefficient degrees.
 
 ## References
 
@@ -138,42 +139,38 @@ theorem retainedPositiveAsPolynomial_natDegree (Q : DifferentialPolynomial F[X] 
 
 /-- The content degree plus the positive-factor jet degree is bounded by the input jet degree.
 -/
-theorem retainedContent_add_positiveJetDegree_le (Q : DifferentialPolynomial F[X] 1)
-    (hQ : Q ≠ 0) :
+theorem retainedContent_add_positiveJetDegree_le (Q : DifferentialPolynomial F[X] 1) :
     jetTotalDegree (fromFlattenedRootFirst
         (radicalContent none (challengeRetainingRootFirst Q))) +
       jetTotalDegree (positiveCurveEquation Q) ≤ jetTotalDegree Q := by
-  let R := challengeRetainingRootFirst Q
-  have hR : R ≠ 0 := by
-    intro hzero
-    have hzero' : fromFlattenedRootFirst R = 0 := by
-      rw [hzero]
-      simp [fromFlattenedRootFirst]
-    have hQzero : Q = 0 := by
-      simpa only [R, fromFlattenedRootFirst_rootFirstChallenge] using hzero'
-    exact hQ hQzero
-  have hcontent : radicalContent none R ≠ 0 := radicalContent_ne_zero none R
-  have hpositive : radicalPrimPart none R ≠ 0 := radicalPrimPart_ne_zero none R
-  have hfactor :
-      radicalContent none R * radicalPrimPart none R ∣ R :=
-    radicalContent_mul_radicalPrimPart_dvd_self none R
-  have hmapDvd : curveJetView (radicalContent none R * radicalPrimPart none R) ∣
-      curveJetView R := map_dvd curveJetView.toRingHom hfactor
-  have hdegree := totalDegree_le_of_dvd_of_isDomain hmapDvd
-    ((curveJetView).injective.ne_iff.mpr hR)
-  rw [map_mul, totalDegree_mul_of_isDomain
-    ((curveJetView).injective.ne_iff.mpr hcontent)
-    ((curveJetView).injective.ne_iff.mpr hpositive)] at hdegree
-  calc
-    _ = (curveJetView (radicalContent none R)).totalDegree +
-        (curveJetView (radicalPrimPart none R)).totalDegree := by
-      simp only [positiveCurveEquation, R, ← curveJetView_totalDegree]
-    _ ≤ (curveJetView R).totalDegree := hdegree
-    _ = jetTotalDegree Q := by
-      rw [curveJetView_totalDegree]
-      change jetTotalDegree (fromFlattenedRootFirst
-        (challengeRetainingRootFirst Q)) = jetTotalDegree Q
-      rw [fromFlattenedRootFirst_rootFirstChallenge]
+  have hadd : ∀ p q : MvPolynomial (Option (JetVariable 1)) F,
+      p ≠ 0 → q ≠ 0 →
+        jetTotalDegree (fromFlattenedRootFirst (p * q)) =
+          jetTotalDegree (fromFlattenedRootFirst p) +
+            jetTotalDegree (fromFlattenedRootFirst q) := by
+    intro p q hp hq
+    have hp' : fromFlattenedRootFirst p ≠ 0 := by
+      intro hzero
+      have h := congrArg challengeRetainingRootFirst hzero
+      rw [challengeRetainingRootFirst_fromFlattenedRootFirst] at h
+      exact hp (by simpa [challengeRetainingRootFirst] using h)
+    have hq' : fromFlattenedRootFirst q ≠ 0 := by
+      intro hzero
+      have h := congrArg challengeRetainingRootFirst hzero
+      rw [challengeRetainingRootFirst_fromFlattenedRootFirst] at h
+      exact hq (by simpa [challengeRetainingRootFirst] using h)
+    rw [show fromFlattenedRootFirst (p * q) =
+      fromFlattenedRootFirst p * fromFlattenedRootFirst q by
+        simp [fromFlattenedRootFirst]]
+    exact weightedTotalDegree_mul jetDegreeWeight _ _ hp' hq'
+  have hdegree := MvPolynomial.map_radicalContent_add_map_radicalPrimPart_le
+    (d := fun R ↦ jetTotalDegree (fromFlattenedRootFirst R)) hadd none
+      (challengeRetainingRootFirst Q)
+  change jetTotalDegree (fromFlattenedRootFirst
+      (radicalContent none (challengeRetainingRootFirst Q))) +
+    jetTotalDegree (fromFlattenedRootFirst
+      (radicalPrimPart none (challengeRetainingRootFirst Q))) ≤ _ at hdegree
+  simpa only [positiveCurveEquation, fromFlattenedRootFirst_rootFirstChallenge] using hdegree
 
 /-- The singular polynomial becomes the generic singular tail in a chosen coordinate view. -/
 theorem remainingCoordinateEquiv_flattenedSingularPolynomial
@@ -218,47 +215,6 @@ theorem retainedContent_yZeroDegree_le (Q : DifferentialPolynomial F[X] 1) :
   exact (hcoord.trans hle).trans_eq (by
     rw [retainedRootJetWeight_curveJetView, curveJetView_totalDegree])
 
-private theorem degreeOf_coeff_add_le_retainedRootJetWeight
-    (V : MvPolynomial (Option (JetVariable 1)) F) (i b : ℕ) (hi : i ≤ b)
-    (hdegree : degreeOf none V = b) :
-    degreeOf (some (0 : Fin 2)) ((optionEquivLeft F (JetVariable 1) V).coeff i) + i ≤
-      V.weightedTotalDegree retainedRootJetWeight := by
-  classical
-  have hiweight : i ≤ V.weightedTotalDegree retainedRootJetWeight := by
-    calc
-      i ≤ b := hi
-      _ = degreeOf none V := hdegree.symm
-      _ ≤ V.weightedTotalDegree retainedRootJetWeight :=
-        degreeOf_le_weightedTotalDegree retainedRootJetWeight none (by decide) V
-  have hdeg :
-      degreeOf (some (0 : Fin 2)) ((optionEquivLeft F (JetVariable 1) V).coeff i) ≤
-        V.weightedTotalDegree retainedRootJetWeight - i := by
-    apply degreeOf_le_iff.mpr
-    intro u hu
-    have hexp : u.embDomain .some + Finsupp.single none i = u.optionElim i := by
-      ext (_ | j) <;> simp
-    have hsource : u.embDomain .some + Finsupp.single none i ∈ V.support := by
-      rw [hexp]
-      exact (mem_support_coeff_optionEquivLeft F).mp hu
-    have hle := le_weightedTotalDegree retainedRootJetWeight hsource
-    have hemb : Finsupp.weight retainedRootJetWeight (u.embDomain .some) =
-        u (some (0 : Fin 2)) := by
-      have hw : (fun j : JetVariable 1 ↦ retainedRootJetWeight (some j)) =
-          Pi.single (some (0 : Fin 2)) 1 := by
-        funext j
-        rcases j with _ | k
-        · rfl
-        · fin_cases k <;> rfl
-      rw [Finsupp.weight_apply, Finsupp.sum_embDomain, ← Finsupp.weight_apply]
-      change Finsupp.weight (fun j ↦ retainedRootJetWeight (some j)) u = _
-      rw [hw, Finsupp.weight_single_one_apply]
-    have hsingle : u (some (0 : Fin 2)) + i =
-        (u.embDomain .some + Finsupp.single none i).weight retainedRootJetWeight := by
-      rw [map_add, hemb, Finsupp.weight_single]
-      simp [retainedRootJetWeight]
-    omega
-  omega
-
 /-- Every coefficient of the retained positive root polynomial fits its `Y₀` degree triangle.
 -/
 theorem retainedPositive_yZeroCoefficientTriangle (Q : DifferentialPolynomial F[X] 1)
@@ -273,7 +229,8 @@ theorem retainedPositive_yZeroCoefficientTriangle (Q : DifferentialPolynomial F[
   change degreeOf (some (0 : Fin 2))
       ((optionEquivLeft F (JetVariable 1)
         (radicalPrimPart none (challengeRetainingRootFirst Q))).coeff i) + i ≤ _
-  have h := degreeOf_coeff_add_le_retainedRootJetWeight
+  have h := degreeOf_coeff_optionEquivLeft_add_le_weight retainedRootJetWeight
+    (some (0 : Fin 2)) (by decide) (by simp [retainedRootJetWeight])
     (radicalPrimPart none (challengeRetainingRootFirst Q)) i
     (degreeOf none (radicalPrimPart none (challengeRetainingRootFirst Q))) hi rfl
   exact h.trans_eq (by
@@ -282,7 +239,7 @@ theorem retainedPositive_yZeroCoefficientTriangle (Q : DifferentialPolynomial F[
 
 /-- The `Y₀` degree of the retained singular polynomial fits the ordinary degree envelope. -/
 theorem flattenedSingularPolynomial_yZeroDegree_le
-    (Q : DifferentialPolynomial F[X] 1) (hQ : Q ≠ 0)
+    (Q : DifferentialPolynomial F[X] 1)
     {B M : ℕ} (hjet : jetTotalDegree Q ≤ B)
     (hderiv : jetDegree Q 1 ≤ M) (hMB : M ≤ B) :
     degreeOf (some (0 : Fin 2)) (flattenedSingularPolynomial Q) ≤
@@ -294,7 +251,7 @@ theorem flattenedSingularPolynomial_yZeroDegree_le
     (radicalContent none (challengeRetainingRootFirst Q)))
   let j := jetTotalDegree (positiveCurveEquation Q)
   have hbudget : bU + j ≤ B :=
-    (retainedContent_add_positiveJetDegree_le Q hQ).trans hjet
+    (retainedContent_add_positiveJetDegree_le Q).trans hjet
   have hcontent : (retainedContentAsPolynomial Q (some 0)).natDegree ≤ bU :=
     retainedContent_yZeroDegree_le Q
   by_cases hrzero : r = 0
@@ -476,7 +433,7 @@ theorem ordinaryFlatten_singularCurveEquation
 
 /-- The order-zero singular equation has the ordinary degree envelope. -/
 theorem singularCurveEquation_degree_le
-    (Q : DifferentialPolynomial F[X] 1) (hQ : Q ≠ 0)
+    (Q : DifferentialPolynomial F[X] 1)
     {B M : ℕ} (hjet : jetTotalDegree Q ≤ B)
     (hderiv : jetDegree Q 1 ≤ M) (hMB : M ≤ B) :
     (singularCurveEquation Q).degreeOf (some 0) ≤ ordinaryDegreeEnvelope B M := by
@@ -488,7 +445,7 @@ theorem singularCurveEquation_degree_le
   change degreeOf none
     (rename singularCoordinateEquiv (flattenedSingularPolynomial Q)) ≤ _
   rw [hrename]
-  exact flattenedSingularPolynomial_yZeroDegree_le Q hQ hjet hderiv hMB
+  exact flattenedSingularPolynomial_yZeroDegree_le Q hjet hderiv hMB
 
 /-- The singular equation's challenge coefficient degrees fit the derivative-resultant
 envelope. -/
@@ -602,22 +559,6 @@ theorem retainedRootSpecializationHom_flattenedContent
     Polynomial.eval_C]
   rfl
 
-private theorem challengeRetainingRootFirst_fromFlattenedRootFirst
-    (R : MvPolynomial (Option (JetVariable 1)) F) :
-    challengeRetainingRootFirst (fromFlattenedRootFirst R) = R := by
-  rw [challengeRetainingRootFirst, fromFlattenedRootFirst]
-  have hswap : renameEquiv F (Equiv.swap none (some (some 1)))
-      (renameEquiv F (Equiv.swap none (some (some 1))) R) = R := by
-    let e : MvPolynomial (Option (JetVariable 1)) F ≃ₐ[F]
-        MvPolynomial (Option (JetVariable 1)) F :=
-      renameEquiv F (Equiv.swap none (some (some (1 : Fin 2))))
-    have he : e = e.symm := by simp [e, Equiv.symm_swap]
-    calc
-      e (e R) = e.symm (e R) := congrArg (fun f : _ ≃ₐ[F] _ ↦ f _) he
-      _ = R := AlgEquiv.symm_apply_apply _ _
-  rw [AlgEquiv.symm_apply_apply]
-  exact hswap
-
 /-- The retained positive equation is the positive radical factor in root-first coordinates. -/
 theorem challengeRetainingRootFirst_positiveCurveEquation
     (Q : DifferentialPolynomial F[X] 1) :
@@ -669,85 +610,6 @@ theorem positiveCurveEquation_specialization_eq
   rw [challengeRetainingRootFirst_positiveCurveEquation,
     retainedRootSpecializationHom_eq_eval_rootPolynomial]
   rfl
-
-/-- The root-first coordinate change sends the `Y₁` partial derivative to the root derivative.
--/
-private theorem pderiv_aeval_X_none (i : JetVariable 1) (r : Polynomial F) :
-    MvPolynomial.pderiv (some i) (Polynomial.aeval
-      (MvPolynomial.X none : MvPolynomial (Option (JetVariable 1)) F) r) = 0 := by
-  classical
-  induction r using Polynomial.induction_on' with
-  | add r s hr hs =>
-      simp only [map_add, hr, hs]
-      simp
-  | monomial n a =>
-      rw [← Polynomial.C_mul_X_pow_eq_monomial, Polynomial.aeval_mul,
-        Polynomial.aeval_C, map_pow, Polynomial.aeval_X]
-      rw [MvPolynomial.pderiv_mul, MvPolynomial.algebraMap_eq, MvPolynomial.pderiv_C,
-        MvPolynomial.pderiv_pow, MvPolynomial.pderiv_X_of_ne (by simp)]
-      simp
-
-private theorem optionEquivRight_symm_pderiv
-    (i : JetVariable 1) (Q : MvPolynomial (JetVariable 1) F[X]) :
-    (optionEquivRight F (JetVariable 1)).symm (pderiv i Q) =
-      pderiv (some i) ((optionEquivRight F (JetVariable 1)).symm Q) := by
-  classical
-  induction Q using MvPolynomial.induction_on with
-  | C r =>
-      rw [MvPolynomial.pderiv_C, map_zero, MvPolynomial.optionEquivRight_symm_C]
-      exact (pderiv_aeval_X_none i r).symm
-  | add Q R hQ hR =>
-      let φ := (optionEquivRight F (JetVariable 1)).symm
-      have hp : pderiv i (Q + R) = pderiv i Q + pderiv i R := map_add _ _ _
-      have hφ : φ (Q + R) = φ Q + φ R := map_add _ _ _
-      have hp' : pderiv (some i) (φ Q + φ R) =
-          pderiv (some i) (φ Q) + pderiv (some i) (φ R) := map_add _ _ _
-      change φ (pderiv i (Q + R)) = pderiv (some i) (φ (Q + R))
-      have hQ' : φ (pderiv i Q) = pderiv (some i) (φ Q) := by
-        simpa only [φ] using hQ
-      have hR' : φ (pderiv i R) = pderiv (some i) (φ R) := by
-        simpa only [φ] using hR
-      calc
-        φ (pderiv i (Q + R)) = φ (pderiv i Q + pderiv i R) := by rw [hp]
-        _ = φ (pderiv i Q) + φ (pderiv i R) := map_add _ _ _
-        _ = pderiv (some i) (φ Q) + pderiv (some i) (φ R) := by rw [hQ', hR']
-        _ = pderiv (some i) (φ Q + φ R) := hp'.symm
-        _ = pderiv (some i) (φ (Q + R)) := by rw [hφ]
-  | mul_X Q j hQ =>
-      let φ := (optionEquivRight F (JetVariable 1)).symm
-      have hvar : φ (pderiv i (X j : MvPolynomial (JetVariable 1) F[X])) =
-          pderiv (some i) (φ (X j)) := by
-        by_cases hji : j = i
-        · subst j
-          simp [φ]
-        · simp [φ, hji]
-      have hmul : φ (Q * X j) = φ Q * φ (X j) := map_mul _ _ _
-      change φ (pderiv i (Q * X j)) = pderiv (some i) (φ (Q * X j))
-      calc
-        _ = φ (pderiv i Q * X j + Q * pderiv i (X j)) := by
-          rw [MvPolynomial.pderiv_mul]
-        _ = φ (pderiv i Q) * φ (X j) + φ Q * φ (pderiv i (X j)) := by
-          rw [map_add, map_mul, map_mul]
-        _ = pderiv (some i) (φ Q) * φ (X j) +
-              φ Q * pderiv (some i) (φ (X j)) := by
-          rw [hQ, hvar]
-        _ = pderiv (some i) (φ Q * φ (X j)) := by
-          rw [MvPolynomial.pderiv_mul]
-        _ = pderiv (some i) (φ (Q * X j)) := by rw [hmul]
-
-/-- The root-first coordinate change sends the `Y₁` partial derivative to the root derivative.
--/
-theorem challengeRetainingRootFirst_pderiv
-    (Q : DifferentialPolynomial F[X] 1) :
-    challengeRetainingRootFirst (pderiv (some (1 : Fin 2)) Q) =
-      pderiv none (challengeRetainingRootFirst Q) := by
-  let e : Option (JetVariable 1) ≃ Option (JetVariable 1) :=
-    Equiv.swap none (some (some (1 : Fin 2)))
-  have hrename := MvPolynomial.pderiv_rename e.injective (some (some (1 : Fin 2)))
-    ((optionEquivRight F (JetVariable 1)).symm Q)
-  unfold challengeRetainingRootFirst
-  rw [optionEquivRight_symm_pderiv]
-  simpa [e, renameEquiv_apply, Equiv.swap_apply_def] using hrename.symm
 
 /-- The retained positive equation's separant is the root derivative of its positive factor. -/
 theorem challengeRetainingRootFirst_separant_positiveCurveEquation

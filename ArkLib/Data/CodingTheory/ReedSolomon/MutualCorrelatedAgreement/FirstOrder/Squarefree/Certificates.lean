@@ -55,32 +55,21 @@ theorem firstOrder_finite_agreement_solutions_card_le_squarefree
       (firstOrderCurveFiberStageOne k μ M (regularTaylorExponent (k - 1)) : ℝ) *
           ((n - k + 1 : ℕ) : ℝ) / (A - k + 1 : ℕ) +
         ordinaryDegreeEnvelope μ M := by
-  let φ := Polynomial.eval₂RingHom (RingHom.id F) 0
-  let Q : DifferentialPolynomial F 1 := MvPolynomial.map φ cert.Q
-  obtain ⟨hQ, hsound⟩ := cert.specialization_sound (RingHom.id F) 0
-  have hdegreeQ : jetTotalDegree Q ≤ μ := by
-    rw [jetTotalDegree_le_iff]
-    intro u hu
-    have huQ : u ∈ cert.Q.support := MvPolynomial.support_map_subset φ cert.Q hu
-    simpa [totalJetDegree, Finsupp.degree_eq_sum, Finsupp.some_apply] using
-      cert.totalJetDegree_le u huQ
-  have hfirstQ : jetDegree Q (1 : Fin 2) ≤ M := by
-    apply MvPolynomial.degreeOf_le_iff.mpr
-    intro exponent hexponent
-    have hsource : exponent ∈ cert.Q.support :=
-      MvPolynomial.support_map_subset φ cert.Q hexponent
-    have hcap := cert.firstJetDegree_le exponent hsource
-    have hfirst : exponent (some (⟨1, by omega⟩ : Fin 2)) ≤ M := by
-      simpa only [firstJetExponent_eq_coordinates Nat.one_pos,
-        jetExponentCoordinatesEquiv_apply] using hcap
-    have hcoord : (⟨1, by omega⟩ : Fin 2) = 1 := Fin.ext rfl
-    simpa only [hcoord] using hfirst
+  obtain ⟨Q, hQ, hdegreeQ, hfirstQ, hsound⟩ :=
+    firstOrderSymbolicCertificate_specialization_at_zero domain received columns cert
   have hsol : ∀ P ∈ S, differentialSpecialization Q P = 0 := by
     intro P hP
-    let indices := Finset.univ.filter fun i ↦ P.eval (domain i) = received i
-    apply hsound indices P (hS P hP).1 (hS P hP).2
-    intro i hi
-    simpa using (Finset.mem_filter.mp hi).2
+    have hagreementCount :
+        A ≤ ({i : Fin n | P.eval (domain i) = received i} : Set (Fin n)).ncard := by
+      let indices := Finset.univ.filter fun i ↦ P.eval (domain i) = received i
+      have hagreement :
+          ({i : Fin n | P.eval (domain i) = received i} : Set (Fin n)) =
+            (indices : Set (Fin n)) := by
+        ext i
+        simp [indices]
+      rw [hagreement, Set.ncard_coe_finset]
+      exact (hS P hP).2
+    exact hsound P (hS P hP).1 hagreementCount
   have hsquarefree := finite_squarefree_agreement_solutions_card_le
     domain received Q hQ (D := k - 1) (A := A) (B := μ) (M := M)
       (by omega) (by omega) hAn hMμ hdegreeQ hfirstQ hchar S hsol

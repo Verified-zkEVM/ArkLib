@@ -25,7 +25,10 @@ exact jet degree and the separate bounds on `Y₁` and the challenge.
   and `Y₁` degree bounds for the retained equation.
 * `positiveCurveEquation_coeffNatDegreeLE`: the coefficient challenge height bound.
 * `curveJetView_totalDegree`: the two-variable view computes the jet degree.
-* `fromFlattenedRootFirst_rootFirstChallenge`: the root-first coordinate map is invertible.
+* `fromFlattenedRootFirst_rootFirstChallenge` and
+  `challengeRetainingRootFirst_fromFlattenedRootFirst`: the root-first coordinate maps are
+  inverse.
+* `challengeRetainingRootFirst_pderiv`: the root-first map transports the `Y₁` derivative.
 
 ## References
 
@@ -162,6 +165,40 @@ theorem fromFlattenedRootFirst_rootFirstChallenge
         congrArg (fun f : _ ≃ₐ[F] _ ↦ f _) he
       _ = _ := AlgEquiv.symm_apply_apply _ _
   rw [hswap, AlgEquiv.apply_symm_apply]
+
+/-- Applying the root-first coordinate map after recovering from those coordinates returns the
+original polynomial. -/
+theorem challengeRetainingRootFirst_fromFlattenedRootFirst
+    (R : MvPolynomial (Option (JetVariable 1)) F) :
+    challengeRetainingRootFirst (fromFlattenedRootFirst R) = R := by
+  rw [challengeRetainingRootFirst, fromFlattenedRootFirst]
+  have hswap : renameEquiv F (Equiv.swap none (some (some 1)))
+      (renameEquiv F (Equiv.swap none (some (some 1))) R) = R := by
+    let e : MvPolynomial (Option (JetVariable 1)) F ≃ₐ[F]
+        MvPolynomial (Option (JetVariable 1)) F :=
+      renameEquiv F (Equiv.swap none (some (some (1 : Fin 2))))
+    have he : e = e.symm := by simp [e, Equiv.symm_swap]
+    calc
+      e (e R) = e.symm (e R) := congrArg (fun f : _ ≃ₐ[F] _ ↦ f _) he
+      _ = R := AlgEquiv.symm_apply_apply _ _
+  calc
+    _ = renameEquiv F (Equiv.swap none (some (some 1)))
+        (renameEquiv F (Equiv.swap none (some (some 1))) R) := by
+      rw [AlgEquiv.symm_apply_apply]
+    _ = R := hswap
+
+/-- The root-first coordinate map sends the `Y₁` partial derivative to the root derivative. -/
+theorem challengeRetainingRootFirst_pderiv
+    (Q : DifferentialPolynomial F[X] 1) :
+    challengeRetainingRootFirst (pderiv (some (1 : Fin 2)) Q) =
+      pderiv none (challengeRetainingRootFirst Q) := by
+  let e : Option (JetVariable 1) ≃ Option (JetVariable 1) :=
+    Equiv.swap none (some (some (1 : Fin 2)))
+  have hrename := MvPolynomial.pderiv_rename e.injective (some (some (1 : Fin 2)))
+    ((optionEquivRight F (JetVariable 1)).symm Q)
+  unfold challengeRetainingRootFirst
+  rw [MvPolynomial.optionEquivRight_symm_pderiv]
+  simpa [e, renameEquiv_apply, Equiv.swap_apply_def] using hrename.symm
 
 /-- Removing repeated positive-`Y₁` factors does not increase total jet degree. -/
 theorem positiveCurveEquation_jetTotalDegree_le (Q : DifferentialPolynomial F[X] 1) :
