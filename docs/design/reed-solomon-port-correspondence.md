@@ -5213,6 +5213,10 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordi
 
 The acceptance example specializes the existing `exists_exceptional_frobeniusPowerSeparableSolutions_at` at `ℓ = 1` and `L = k`, checks the exceptional-set cardinality, and exhibits a challenge outside the set with an exact correlated pair using `exactCorrelatedPair_of_powerAgreement_one`. Both declarations are already on `main`, so there are no renamed or generalized declarations. The source wrapper `exists_exceptional_frobeniusSeparableSolutions` is not added because the existing bound and exact-agreement conversion cover its statement; the source file has no other declarations.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/Frobenius/FactorSolutions.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+The source declaration `exists_exceptional_frobeniusFactorSolutions` is covered by `exists_exceptional_frobeniusPowerFactorSolutions`, generalized from a single line to polynomial curves with arbitrary tuple length and the current coefficient-height and jet-degree interfaces. The acceptance example checks the tuple-length-one conversion from exact power agreement to an exact correlated pair using `exactCorrelatedPair_of_powerAgreement_one`. No source declaration is left uncovered. A separate single-line wrapper was omitted because the generalized theorem and conversion theorem already provide its statement.
+
 ## `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder.lean`
 
 Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
