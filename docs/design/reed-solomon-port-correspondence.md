@@ -1829,6 +1829,12 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/Curv
 
 `exists_closePolynomial_list_of_curve_certificate_actualStages`, `close_list_bound_of_curve_certificate_directJetCoarse`, and `close_list_bound_of_curve_certificate_of_jetCharacteristic` keep their names and results. The proofs use the current `SymbolicReceivedCurve.Certificate`, `SeparantChain`, agreement-list, and direct-jet APIs. No public declaration was omitted.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/ExactLists.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+The module moved to `Capacity/ExactLists.lean` so it sits with the other capacity modules and does not look like an umbrella for `Capacity/*`. `capacityLengthThreshold` and `capacityListBound` are unchanged, written with main's `weightedSupportMultiplicity (capacityDerivativeOrder δ)`. `HasCapacityLists` drops the premise `A ≤ 2 * n`, which no proof used, so the property is stronger; it keeps the conjunct `n < A → list = ∅`. `HasCapacityLists.mono`, `CapacityListBounds` and `uniformFirstOrder_capacity_list` are unchanged. `exists_capacity_list` drops `δ < 1`, since main's `exists_field_bounded_capacity_list` does not need it. `rateCapacityLengthThreshold` (using `uniformMathematicalCapacityLength`), `rateCapacityListBound` (using `mathematicalUniformListConstant`) and `exists_rateCapacity_list` are unchanged. The source names `capacityLengthThreshold`, `capacityListBound` and `exists_capacity_list` are kept for the weighted-support family, and `rateCapacity*` for the all-rate family. The long source docstring was rewritten to describe only the API present on main. The private helpers are ported as private declarations.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/FiniteField.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/FiniteField.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -1846,6 +1852,14 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/Rate
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/GeometricBound.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 `prescribed_geometric_finite_list_bound` and `prescribed_geometric_close_list_bound` keep their names. They use the current prescribed weighted-support parameters and symbolic certificate APIs to give geometric bounds for finite sublists and the complete close-polynomial set. The geometric ratio/counting lemmas, parameters, certificate, and characteristic/cast facts are reused from their current owners. No public source declaration from this module was omitted.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/MathematicalUniformRate.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/MathematicalUniformRate.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`mathematicalUniformRatePartition_close_list_bound` keeps its statement apart from main's parameter names (`uniformMathematicalLength`, `uniformMathematicalJetBound`, `uniformDerivativeOrder`). Its proof now goes through main's `close_list_bound_of_curve_certificate_of_jetCharacteristic` instead of the coarse direct-jet bound plus `geometric_ratio_le`. `uniformCapacityListConstant300` → `mathematicalUniformListConstant` with the same definition under main's parameter names. `uniform_capacity_list_bound_300` → `mathematicalUniform_capacity_list_bound`; its threshold is main's `uniformMathematicalCapacityLength`, which is the source's `uniformCapacityLengthThreshold300`. The conclusion is written directly instead of through `let d`/`let C`, and the Johnson branch uses the new public gap theorem `closePolynomialSet_finite_and_ncard_le_pairwiseJohnson_of_gap` in `ListDecodability/PairwiseJohnson.lean`. That theorem generalizes the source's private `uniformCapacity_close_list_bound_johnson`: the hypotheses `⌈4ν/δ²⌉₊ ≤ n` and `k ≤ ν` become `4 (k - 1) ≤ δ² n`, and `A ≤ n` and `DecidableEq F` are dropped.
+
+Not ported: `mathematicalUniformRatePartition_close_list_bound_of_length_characteristic`, a compatibility wrapper with no consumer that only weakens the characteristic guard to `n ≤ char F`.
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/RatePartition.lean`
 
@@ -1928,6 +1942,12 @@ The generic floor-to-ceiling comparison is shared in `RoundedCounts.lean`. In `R
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/Profile.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 `tightListEnvelope`, `squarefreeListEnvelope`, `finiteListBound_of_profile`, and `finiteSquarefreeListBound_of_profile` keep their names. The finite-list theorems drop the redundant `p.k ≤ p.n` assumption. Their agreement condition uses the equivalent set-cardinality formulation. The squarefree theorem also drops `0 < p.firstDerivativeCap` and retains `p.firstDerivativeCap ≤ p.totalJetCap`; its envelope uses the destination regular Taylor exponent API.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/Uniform.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/Uniform.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`exists_uniformFirstOrder_list` keeps its name and statement. The internals use main's names: `regularTaylorExponent` for `hybridTau` and `MvPolynomial.cappedDegreeMixedVolume` for `AffineHilbert.fixedFiberDerivativeImageDegree`. They also use main's argument order for `firstOrder_finite_agreement_solutions_card_le_squarefree`, main's `closePolynomialSet_finite_and_ncard_le_pairwiseJohnson` (`Code.pairwiseJohnsonListBound`), and `exists_closePolynomial_finset_one_card_le_div` for `k = 1`. The private helpers are ported as private declarations, except that `uniformFirstOrder_ordinaryEnvelope_eq` is inlined.
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/HiddenDerivativeBound.lean`
 
