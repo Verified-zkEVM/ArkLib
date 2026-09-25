@@ -85,17 +85,20 @@ theorem boosted_frs_radius_le_list_radius
   have hsub : 1 ≤ 2 * t := by omega
   simp only [Nat.cast_mul, Nat.cast_ofNat, Nat.cast_sub hsub, Nat.cast_one]
   have htR3 : (3 : ℝ) ≤ t := by exact_mod_cast ht
-  have htR : (0 : ℝ) < t := by nlinarith
+  have htR : (0 : ℝ) < t := by linarith only [htR3]
   have hsR : (4 : ℝ) * (t : ℝ) ^ 2 < s := by exact_mod_cast hs
-  have ha : (0 : ℝ) < 2 * t - 1 := by nlinarith only [htR3]
+  have ha : (0 : ℝ) < 2 * t - 1 := by linarith only [htR3]
   have hb : (0 : ℝ) < t + 1 := by positivity
-  have hd : (0 : ℝ) < (s : ℝ) - t + 1 := by nlinarith only [hsR, htR3]
+  have hts : (t : ℝ) < s := by
+    have h : t < s := (Nat.le_mul_self t).trans_lt (by rw [sq] at hs; omega)
+    exact_mod_cast h
+  have hd : (0 : ℝ) < (s : ℝ) - t + 1 := by linarith only [hts]
   rw [div_le_iff₀ ha]
   rw [div_mul_eq_mul_div]
   rw [div_mul_eq_mul_div]
   rw [le_div_iff₀ hb]
   field_simp
-  have hgap : (0 : ℝ) ≤ s - 4 * (t : ℝ) ^ 2 := by linarith
+  have hgap : (0 : ℝ) ≤ s - 4 * (t : ℝ) ^ 2 := by linarith only [hsR]
   have hgap_t : (0 : ℝ) ≤ (s - 4 * (t : ℝ) ^ 2) * t :=
     mul_nonneg hgap htR.le
   have ht2 : (0 : ℝ) ≤ (t : ℝ) ^ 2 := sq_nonneg (t : ℝ)
@@ -613,15 +616,14 @@ private theorem aligned_affineLine_global_close
         simpa only [U] using (show
           (((lineAgreementSeeds f₀ f₁ (fun α => u₀ + α • u₁) T i).card : ℕ) : ℝ) ≤ 1 by
             exact_mod_cast hone)
-      have hbR : (1 : ℝ) ≤ b := by exact_mod_cast (le_of_lt hb)
-      nlinarith
+      linarith only [honeR]
     · rw [ite_eq_right hi]
       have hcardNat : (lineAgreementSeeds f₀ f₁ U T i).card ≤ T.card :=
         Finset.card_filter_le _ _
       have hcardR : ((lineAgreementSeeds f₀ f₁ U T i).card : ℝ) ≤ b := by
         rw [hTcard] at hcardNat
         exact_mod_cast hcardNat
-      norm_num at hcardR ⊢
+      rw [mul_zero, add_zero]
       exact hcardR
   have hindicator :
       (∑ i : ι, if i ∈ D then (1 : ℝ) else 0) = (D.card : ℝ) := by
@@ -645,7 +647,7 @@ private theorem aligned_affineLine_global_close
         ring
   have hcount : ((b : ℝ) - 1) * (D.card : ℝ) ≤
       (b : ℝ) * δ * Fintype.card ι := by
-    nlinarith
+    linarith only [hlower, hupper]
   have hDcard : D.card =
       hammingDist (f₀ + γ • f₁) (u₀ + γ • u₁) := by
     simpa only [D] using
@@ -653,11 +655,11 @@ private theorem aligned_affineLine_global_close
         (f₀ + γ • f₁) (u₀ + γ • u₁)).symm
   have hn : (0 : ℝ) < Fintype.card ι := by exact_mod_cast Fintype.card_pos
   have hbR : (1 : ℝ) < b := by exact_mod_cast hb
-  have hb1 : (0 : ℝ) < (b : ℝ) - 1 := by linarith
+  have hb1 : (0 : ℝ) < (b : ℝ) - 1 := by linarith only [hbR]
   rw [Code.relHammingDist_coe, div_le_iff₀ hn]
   rw [div_mul_eq_mul_div, le_div_iff₀ hb1]
   rw [← hDcard]
-  nlinarith
+  linarith only [hcount]
 
 noncomputable def linePinnedSeedsOn
     {ι : Type} [Fintype ι] [DecidableEq ι]
@@ -884,30 +886,30 @@ theorem sharpSubspaceProfile_two_mul_le_rate_add
     (_hR0 : 0 ≤ R) (hR1 : R ≤ 1) :
     sharpSubspaceProfile (ι := ι) s R (2 * t) ≤
       R + 1 / (2 * (t : ℝ)) := by
-  classical
   have htR : (0 : ℝ) < t := by exact_mod_cast ht
   have ht1R : (1 : ℝ) ≤ t := by exact_mod_cast ht
   have hsR : (4 : ℝ) * (t : ℝ) ^ 2 < s := by exact_mod_cast hs
-  have h2ts : 2 * t ≤ s := by nlinarith
+  have h2ts : 2 * t ≤ s :=
+    calc 2 * t = 2 * t * 1 := (mul_one _).symm
+      _ ≤ 2 * t * (2 * t) := Nat.mul_le_mul_left _ (by omega)
+      _ = 4 * t ^ 2 := by ring
+      _ ≤ s := hs.le
+  have h2tsR : (2 : ℝ) * t ≤ s := by exact_mod_cast h2ts
   have hmem : 2 * t ∈ Finset.Icc 1 s := Finset.mem_Icc.mpr ⟨by omega, h2ts⟩
   have hval : sharpSubspaceProfile (ι := ι) s R (2 * t) =
       ((s : ℝ) * R - 1 / Fintype.card ι) /
         ((s : ℝ) - 2 * t + 1) := by
-    simp only [sharpSubspaceProfile, hmem, ite_true]
-    congr 1
-    push_cast
-    ring
-  have hden_pos : (0 : ℝ) < (s : ℝ) - 2 * t + 1 := by nlinarith
-  have hfac_nonneg : (0 : ℝ) ≤ 2 * t - 1 := by nlinarith
+    rw [sharpSubspaceProfile, ite_eq_left hmem, Nat.cast_mul, Nat.cast_ofNat]
+  have hden_pos : (0 : ℝ) < (s : ℝ) - 2 * t + 1 := by linarith only [h2tsR]
+  have hfac_nonneg : (0 : ℝ) ≤ 2 * t - 1 := by linarith only [ht1R]
   have haux : (2 : ℝ) * t - 1 ≤
       (1 / (2 * t)) * ((s : ℝ) - 2 * t + 1) := by
-    rw [one_div_mul_eq_div, le_div_iff₀ (by positivity)]
-    nlinarith
-  have hRt : R * (2 * (t : ℝ) - 1) ≤ 2 * t - 1 := by
-    nlinarith [mul_nonneg (sub_nonneg.mpr hR1) hfac_nonneg]
+    rw [one_div_mul_eq_div, le_div_iff₀ (mul_pos two_pos htR)]
+    linarith only [hsR]
+  have hRt : R * (2 * (t : ℝ) - 1) ≤ 2 * t - 1 := mul_le_of_le_one_left hfac_nonneg hR1
   have hinv_nonneg : (0 : ℝ) ≤ 1 / Fintype.card ι := by positivity
   rw [hval, div_le_iff₀ hden_pos]
-  nlinarith
+  linarith only [haux, hRt, hinv_nonneg]
 
 open scoped NNReal in
 open scoped BigOperators in
