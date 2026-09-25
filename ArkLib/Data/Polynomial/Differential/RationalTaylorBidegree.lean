@@ -26,6 +26,8 @@ separant, padded Taylor numerators, and agreement equations therefore lie in bid
 
 * `initialJetEquation_mem_restrictBidegree` and
   `initialJetSeparant_mem_restrictBidegree`: the initial equation and separant rectangles.
+* `initialJetSeparant_mem_restrictCappedBidegree`: a separate highest-jet bound for the
+  initial separant at arbitrary differential order.
 * `commonTaylorNumeratorOver_mem_restrictBidegree`: the rectangle for a padded Taylor numerator.
 * `taylorAgreementEquationOver_mem_restrictBidegree`: the rectangle for an agreement equation
   with a received polynomial of bounded degree.
@@ -73,6 +75,34 @@ theorem initialJetSeparant_mem_restrictBidegree (center : F)
   · exact coeffNatDegreeLE_initialJetSeparant Q center hheight
   · exact (totalDegree_initialJetSeparant_le (Polynomial.C center) Q).trans
       (Nat.sub_le_sub_right hjet 1)
+
+/-- The flattened initial separant lies in the capped rectangle given by the
+coefficient, jet, and highest-jet degrees of `Q`. -/
+theorem initialJetSeparant_mem_restrictCappedBidegree (center : F)
+    (Q : DifferentialPolynomial (Polynomial F) r) (h v c : ℕ)
+    (hheight : CoeffNatDegreeLE Q h) (hjet : jetTotalDegree Q ≤ v)
+    (hhighest : Q.degreeOf (some (Fin.last r)) ≤ c) :
+    (optionEquivRight F (Fin (r + 1))).symm
+      (initialJetSeparant (Polynomial.C center) Q) ∈
+        restrictCappedBidegree (Fin (r + 1)) F (Fin.last r) h (v - 1)
+          (min (v - 1) (c - 1)) := by
+  apply mem_restrictCappedBidegree_of_mem_restrictBidegree
+    (initialJetSeparant_mem_restrictBidegree center Q h v hheight hjet)
+  have hflat :
+      ((optionEquivRight F (Fin (r + 1))).symm
+        (initialJetSeparant (Polynomial.C center) Q)).degreeOf (some (Fin.last r)) =
+        (initialJetSeparant (Polynomial.C center) Q).degreeOf (Fin.last r) := by
+    simpa only [AlgEquiv.apply_symm_apply] using
+      (degreeOf_optionEquivRight
+        ((optionEquivRight F (Fin (r + 1))).symm
+          (initialJetSeparant (Polynomial.C center) Q)) (Fin.last r)).symm
+  rw [hflat]
+  have hsep := (degreeOf_initialJetSeparant_le (Polynomial.C center) Q).trans
+    (Nat.sub_le_sub_right hhighest 1)
+  have hsep' :
+      (initialJetSeparant (Polynomial.C center) Q).degreeOf (Fin.last r) ≤ c - 1 := by
+    simpa using hsep
+  exact hsep'
 
 /-- A common Taylor numerator padded to a sufficient exponent lies in its challenge and jet degree
 rectangle. -/
