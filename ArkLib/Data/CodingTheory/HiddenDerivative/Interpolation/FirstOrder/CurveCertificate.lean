@@ -34,6 +34,9 @@ constraint hypotheses.
   certificate.
 * `FirstOrderCurveCertificate.jetDegree_one_le`: the actual `Y₁` degree is bounded by the
   certificate's derivative cap.
+* `FirstOrderCurveCertificate.map_Q_ne_zero`, `FirstOrderCurveCertificate.jetTotalDegree_map_Q_le`
+  and `FirstOrderCurveCertificate.degreeOf_map_Q_le`: extending the coefficients of the equation
+  along a field embedding keeps it nonzero and keeps its jet-degree and derivative caps.
 * `FirstOrderCurveCertificate.exists_exceptional_of_regular_stage_bounds_of_factors`: combines
   per-stage regularity bounds into one exceptional set bounded by the curve envelope.
 * `exists_finite_firstOrder_curve_certificate_of_heightSlotCount`: a strict shifted-slot surplus
@@ -301,6 +304,34 @@ theorem jetDegree_one_le
       jetExponentCoordinatesEquiv_apply] using cert.firstJetDegree_le u hu
   have hcoord : (⟨1, by omega⟩ : Fin 2) = 1 := Fin.ext rfl
   simpa only [hcoord] using hfirst
+
+/-- The equation of a first-order curve certificate stays nonzero after extending its
+coefficients along a field embedding. -/
+theorem map_Q_ne_zero
+    (cert : FirstOrderCurveCertificate.{u, u} D A m M μ k h domain w columns)
+    (iota : F →+* E) :
+    MvPolynomial.map (Polynomial.mapRingHom iota) cert.Q ≠ 0 := by
+  intro hzero
+  have hspecial := (cert.specialization_sound iota 0).1
+  rw [← MvPolynomial.eval_map_coefficients, hzero, map_zero] at hspecial
+  exact hspecial rfl
+
+/-- The equation of a first-order curve certificate keeps its jet-degree cap `μ` after extending
+its coefficients along a field embedding. -/
+theorem jetTotalDegree_map_Q_le
+    (cert : FirstOrderCurveCertificate.{u, u} D A m M μ k h domain w columns)
+    (iota : F →+* E) :
+    jetTotalDegree (MvPolynomial.map (Polynomial.mapRingHom iota) cert.Q) ≤ μ :=
+  (jetTotalDegree_map_le _ cert.Q).trans
+    ((jetTotalDegree_le_iff cert.Q μ).mpr cert.totalJetDegree_le)
+
+/-- The equation of a first-order curve certificate keeps its derivative cap `M` in `Y₁` after
+extending its coefficients along a field embedding. -/
+theorem degreeOf_map_Q_le
+    (cert : FirstOrderCurveCertificate.{u, u} D A m M μ k h domain w columns)
+    (iota : F →+* E) :
+    (MvPolynomial.map (Polynomial.mapRingHom iota) cert.Q).degreeOf (some 1) ≤ M :=
+  (jetDegree_map_le _ cert.Q 1).trans cert.jetDegree_one_le
 
 /-- Uniform exceptional sets for regular stages combine into a single set bounded by the
 first-order curve envelope. -/

@@ -7,7 +7,7 @@ module
 
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder.Profile
 public import
-  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Squarefree.SharpCurveMCA
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Squarefree.SharpCurve
 
 /-!
 # Sharp squarefree curve agreement from interpolation profiles

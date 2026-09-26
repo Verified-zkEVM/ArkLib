@@ -41,13 +41,10 @@ split gives exact correlated pairs outside a set bounded by the closed line enve
 * `exists_extensionExceptional_retainedSquarefreeCurveAgreement_of_certificate` and
   `exists_baseExceptional_retainedSquarefreeCurveAgreement_of_certificate` apply it to a finite
   first-order curve certificate over the extension and the base field.
-* `FirstOrderCurveCertificate.map_Q_ne_zero`,
-  `FirstOrderCurveCertificate.map_Q_specialization_eq_zero`,
-  `FirstOrderCurveCertificate.jetTotalDegree_map_Q_le` and
-  `FirstOrderCurveCertificate.degreeOf_map_Q_le` state that the extended certificate equation is
-  nonzero, vanishes at every sufficiently agreeing polynomial and keeps the certificate's degree
-  caps; `FirstOrderCurveCertificate.exactPowerAgreement_of_map_Q` turns recovery for its roots
-  into recovery for every sufficiently agreeing polynomial.
+* `FirstOrderCurveCertificate.map_Q_specialization_eq_zero` states that the extended certificate
+  equation vanishes at every sufficiently agreeing polynomial, and
+  `FirstOrderCurveCertificate.exactPowerAgreement_of_map_Q` turns recovery for its roots into
+  recovery for every sufficiently agreeing polynomial.
 * `retainedSquarefreeLineAgreementEnvelope` is the closed line envelope, and
   `retainedSquarefreeCurveAgreementCharge_balancedSplit_le` bounds the line charge at the
   balanced split by it.
@@ -325,19 +322,6 @@ theorem exists_exceptional_retainedSquarefreeCurveAgreement
 
 universe u
 
-/-- The equation of a first-order curve certificate stays nonzero after extending its
-coefficients along a field embedding. -/
-theorem _root_.ReedSolomon.HiddenDerivative.FirstOrderCurveCertificate.map_Q_ne_zero
-    {F E : Type u} [Field F] [Field E] {n N Dcert A m M B k H : ℕ}
-    {domain : Fin n ↪ F} {w : Fin n → F[X]} {columns : Fin N → SourceColumn 1}
-    (cert : FirstOrderCurveCertificate.{u, u} Dcert A m M B k H domain w columns)
-    (iota : F →+* E) :
-    MvPolynomial.map (Polynomial.mapRingHom iota) cert.Q ≠ 0 := by
-  intro hzero
-  have hspecial := (cert.specialization_sound iota 0).1
-  rw [← MvPolynomial.eval_map_coefficients, hzero, map_zero] at hspecial
-  exact hspecial rfl
-
 /-- After extending its coefficients along `iota` and specializing the challenge at `z`, the
 equation of a first-order curve certificate for a power-batched word vanishes at every
 polynomial of degree `< k` with at least `A` agreements with the batched word at `z`. -/
@@ -359,27 +343,6 @@ theorem _root_.ReedSolomon.HiddenDerivative.FirstOrderCurveCertificate.map_Q_spe
     ext <;> simp
   rw [challengeSpecialization, hEval, MvPolynomial.eval_map_coefficients]
   exact hroot
-
-/-- The equation of a first-order curve certificate keeps its jet-degree cap `B` after extending
-its coefficients along a field embedding. -/
-theorem _root_.ReedSolomon.HiddenDerivative.FirstOrderCurveCertificate.jetTotalDegree_map_Q_le
-    {F E : Type u} [Field F] [Field E] {n N Dcert A m M B k H : ℕ}
-    {domain : Fin n ↪ F} {w : Fin n → F[X]} {columns : Fin N → SourceColumn 1}
-    (cert : FirstOrderCurveCertificate.{u, u} Dcert A m M B k H domain w columns)
-    (iota : F →+* E) :
-    jetTotalDegree (MvPolynomial.map (Polynomial.mapRingHom iota) cert.Q) ≤ B :=
-  (jetTotalDegree_map_le _ cert.Q).trans
-    ((jetTotalDegree_le_iff cert.Q B).mpr cert.totalJetDegree_le)
-
-/-- The equation of a first-order curve certificate keeps its derivative cap `M` in `Y₁` after
-extending its coefficients along a field embedding. -/
-theorem _root_.ReedSolomon.HiddenDerivative.FirstOrderCurveCertificate.degreeOf_map_Q_le
-    {F E : Type u} [Field F] [Field E] {n N Dcert A m M B k H : ℕ}
-    {domain : Fin n ↪ F} {w : Fin n → F[X]} {columns : Fin N → SourceColumn 1}
-    (cert : FirstOrderCurveCertificate.{u, u} Dcert A m M B k H domain w columns)
-    (iota : F →+* E) :
-    (MvPolynomial.map (Polynomial.mapRingHom iota) cert.Q).degreeOf (some 1) ≤ M :=
-  (jetDegree_map_le _ cert.Q 1).trans cert.jetDegree_one_le
 
 /-- For `1 ≤ k`, if outside `exceptional` every root of degree `< (k - 1) + 1` of the extended
 certificate equation with at least `A` agreements has exact power agreement, then outside
