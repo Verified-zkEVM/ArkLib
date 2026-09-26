@@ -18,6 +18,7 @@ rate-dependent constants and share one parameter bound.
 
 ## Main statements
 
+* `lowRateFiniteLengthSlack_lt_one_of_one_le_rate_mul_length` bounds slack at positive length.
 * `lowRateFiniteLengthMultiplicity_le_inv_slack` bounds the multiplicity by inverse slack.
 * `lowRateFiniteLengthJetDegree_le_inv_slack` bounds the total jet degree by inverse slack.
 * `lowRateFiniteLengthChallengeHeight_le_inv_slack_sq` bounds the challenge height by inverse
@@ -84,6 +85,24 @@ theorem lowRateFiniteLengthSlack_lt_one
   have hregime := (firstOrderLowRateRegime_iff_lt_rateSwitch rho).2 hlow
   have hthreshold := rate_lt_firstOrderLowRateThreshold hrho hregime
   exact finiteLengthSlack_lt_one_of_threshold hthreshold haOne hn
+
+/-- The finite-length slack is below one when the rate times length is at least one. -/
+theorem lowRateFiniteLengthSlack_lt_one_of_one_le_rate_mul_length
+    {rho eta : ℝ} {n : ℕ}
+    (hrho : 0 < rho) (hlow : rho < firstOrderRateSwitch)
+    (haOne : firstOrderLowRateThreshold rho + eta < 1)
+    (hn : 1 ≤ rho * n) :
+    finiteLengthSlack eta n < 1 := by
+  have hnPos : (0 : ℝ) < n := by
+    have hprod : 0 < rho * (n : ℝ) := lt_of_lt_of_le zero_lt_one hn
+    nlinarith [hrho]
+  have hinv : 1 / (n : ℝ) ≤ rho := by
+    rw [div_le_iff₀ hnPos]
+    simpa [mul_comm] using hn
+  have hregime := (firstOrderLowRateRegime_iff_lt_rateSwitch rho).2 hlow
+  have hthreshold := rate_lt_firstOrderLowRateThreshold hrho hregime
+  unfold finiteLengthSlack
+  linarith
 
 /-- The selected low-rate multiplicity is bounded by inverse slack. -/
 theorem lowRateFiniteLengthMultiplicity_le_inv_slack

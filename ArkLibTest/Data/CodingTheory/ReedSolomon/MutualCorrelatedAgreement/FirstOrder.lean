@@ -10,6 +10,7 @@ import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.HybridCurveProfile
 import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.FiniteLengthRateBounds
+import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Branchwise
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.HybridTransfer
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.OrdinaryTail
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Profile
@@ -50,6 +51,7 @@ transfer theorems over the complex field.
   complete-list bound, and exact correlated agreement outside bounded exceptional sets.
 * Automatic finite-length rate bounds give complete lists and exceptional sets over `ℚ`; the
   finite-field consequence bounds constant-code sampling error over `ZMod 2749`.
+* Low-rate and branchwise bounds give concrete complete lists and exact line agreement.
 
 ## References
 
@@ -830,3 +832,160 @@ example :
     (1 / 2) (1 / 8) 4 1 (by norm_num) (by norm_num) (by norm_num)
     halfRate_slack_lt_one halfRate_finiteLengthDerivativeRatio_le_half
     (by norm_num) (by norm_num) finiteDomain (Or.inl rfl)
+
+private def lowRateDomain : Fin 64 ↪ ℚ :=
+  ⟨fun i ↦ i.val, by
+    intro i j h
+    exact Fin.ext (Nat.cast_injective h)⟩
+
+private theorem sixteenth_lowRate_conditions :
+    (1 / 16 : ℝ) < firstOrderRateSwitch ∧
+      firstOrderLowRateThreshold (1 / 16 : ℝ) + 1 / 8 < 1 := by
+  let t := firstOrderLowRateScale (1 / 16 : ℝ)
+  let u := firstOrderLowRateStationaryU (1 / 16 : ℝ)
+  have htSq : t ^ 2 = (1 / 16 : ℝ) / 2 := by
+    dsimp only [t]
+    exact firstOrderLowRateScale_sq (by norm_num)
+  have htPos : 0 ≤ t := by
+    dsimp only [t, firstOrderLowRateScale]
+    positivity
+  have htLt : t < 1 / 4 := by
+    nlinarith [sq_nonneg (t - 1 / 4)]
+  have huPos : 0 < u := firstOrderLowRateStationaryU_pos (by norm_num)
+  have huCubic : u ^ 2 * (u + 3) = t := by
+    simpa only [firstOrderStationaryCubic, u, t] using
+      firstOrderLowRateStationaryU_cubic (by norm_num : (0 : ℝ) < 1 / 16)
+  have huLt : u < 1 := by
+    by_contra hu
+    have huOne : 1 ≤ u := le_of_not_gt hu
+    have huSq : 1 ≤ u ^ 2 := by nlinarith [sq_nonneg (u - 1)]
+    have huCube : 0 ≤ u ^ 2 * (u - 1) :=
+      mul_nonneg (sq_nonneg u) (sub_nonneg.mpr huOne)
+    nlinarith [huCubic, htLt, huSq, huCube]
+  have hregime : FirstOrderLowRateRegime (1 / 16 : ℝ) := by
+    change t * (t + 3) < 1
+    nlinarith [htSq, htLt]
+  have hlow := (firstOrderLowRateRegime_iff_lt_rateSwitch (1 / 16 : ℝ)).1 hregime
+  have hthresholdEq : firstOrderLowRateThreshold (1 / 16 : ℝ) = t * (1 + u) := by
+    simpa only [t, u] using
+      firstOrderLowRateThreshold_eq_scale_mul_one_add
+        (by norm_num : (0 : ℝ) < 1 / 16)
+  have hthresholdLt : t * (1 + u) < 1 / 2 := by
+    calc
+      t * (1 + u) < 1 / 4 * (1 + u) :=
+        mul_lt_mul_of_pos_right htLt (by linarith [huPos])
+      _ < 1 / 4 * 2 :=
+        mul_lt_mul_of_pos_left (by linarith [huLt]) (by norm_num)
+      _ = 1 / 2 := by norm_num
+  refine ⟨hlow, ?_⟩
+  rw [hthresholdEq]
+  linarith [hthresholdLt]
+
+/-- At rate `1/16`, the sixty-four-point zero line admits a symbolic certificate. -/
+example := exists_lowRateFiniteLengthFirstOrder_symbolicCertificate
+  (F := ℚ) (rho := 1 / 16) (eta := 1 / 8) (n := 64) (k := 2) (A := 64)
+  (by norm_num) (by norm_num) sixteenth_lowRate_conditions.2 (by norm_num)
+  sixteenth_lowRate_conditions.1 (by norm_num) (by norm_num)
+  (by nlinarith [sixteenth_lowRate_conditions.2])
+  lowRateDomain (fun _ ↦ 0) (fun _ ↦ 0)
+
+private def lowRateFiniteDomain : Fin 64 ↪ ZMod 2749 where
+  toFun i := i.val
+  inj' i j h := by
+    apply Fin.ext
+    have hi : i.val < 2749 := i.isLt.trans_le (by norm_num)
+    have hj : j.val < 2749 := j.isLt.trans_le (by norm_num)
+    simpa only [ZMod.val_natCast, Nat.mod_eq_of_lt hi, Nat.mod_eq_of_lt hj]
+      using congrArg ZMod.val h
+
+/-- The low-rate finite-field bound controls MCA error for a sixty-four-point constant code. -/
+example := lowRate_finiteLength_mcaError_le
+  (1 / 16) (1 / 8) 64 1 (by norm_num) sixteenth_lowRate_conditions.1
+  (by norm_num) sixteenth_lowRate_conditions.2 (by norm_num) (by norm_num)
+  lowRateFiniteDomain (Or.inl rfl)
+
+/-- At rate `1/16`, the sixty-four-point zero word has a bounded complete list and a
+nonexceptional challenge with exact correlated agreement. -/
+example :
+    (closePolynomialSet lowRateDomain (fun _ ↦ 0) 2 64).Finite ∧
+    (0 : ℚ[X]) ∈ closePolynomialSet lowRateDomain (fun _ ↦ 0) 2 64 ∧
+    ∃ exceptional : Finset ℚ,
+      (exceptional.card : ℝ) ≤
+        140 * lowRateFiniteLengthMcaParameterConstant (1 / 16) ^ 6 * 64 ^ 2 /
+          finiteLengthSlack (1 / 8) 64 ^ 4 ∧
+      ∃ z ∉ exceptional,
+        HasExactCorrelatedPair lowRateDomain (fun _ ↦ 0) (fun _ ↦ 0)
+          (RingHom.id ℚ) 2 z 0 := by
+  obtain ⟨hlist, hline⟩ := lowRate_finiteLength_rate_bounds
+    (F := ℚ) (E := AlgebraicClosure ℚ) (rho := 1 / 16) (eta := 1 / 8)
+    (n := 64) (k := 2) (A := 64)
+    (by norm_num) sixteenth_lowRate_conditions.1
+    (by norm_num) sixteenth_lowRate_conditions.2
+    (by norm_num) (by norm_num)
+    (by nlinarith [sixteenth_lowRate_conditions.2]) (by norm_num)
+    lowRateDomain (algebraMap ℚ (AlgebraicClosure ℚ))
+    (Or.inr (Or.inl (ringChar.eq_zero : ringChar ℚ = 0)))
+  obtain ⟨exceptional, hcard, hgood⟩ := hline (fun _ ↦ 0) (fun _ ↦ 0)
+  obtain ⟨z, hz⟩ := Finset.exists_notMem exceptional
+  refine ⟨(hlist (fun _ ↦ 0)).1, ?_, exceptional, hcard, z, hz, ?_⟩
+  · change (0 : ℚ[X]).degree < 2 ∧
+      64 ≤ (polynomialAgreementSet lowRateDomain (fun _ ↦ 0) 0).card
+    constructor
+    · exact WithBot.bot_lt_coe 2
+    · norm_num [polynomialAgreementSet, lowRateDomain]
+  · exact hgood z hz 0 (WithBot.bot_lt_coe 2) (by
+      norm_num [polynomialAgreementSet, lowRateDomain])
+
+private theorem halfRate_above_rateSwitch : firstOrderRateSwitch ≤ (1 / 2 : ℝ) := by
+  have hsq : (Real.sqrt 13) ^ 2 = (13 : ℝ) := Real.sq_sqrt (by norm_num)
+  have hnon : 0 ≤ Real.sqrt 13 := Real.sqrt_nonneg _
+  unfold firstOrderRateSwitch
+  nlinarith
+
+private theorem halfRate_branch_slack_lt_one :
+    firstOrderBranchThreshold (1 / 2 : ℝ) + 1 / 8 < 1 := by
+  rw [firstOrderBranchThreshold_eq_clean halfRate_above_rateSwitch]
+  exact halfRate_slack_lt_one
+
+/-- The branch selector gives finite-slack list and line bounds at rate `1/2`. -/
+example := firstOrderBranch_finiteLength_finiteSlack_bounds
+  (1 / 2) (1 / 8) 4 1 4
+  (by norm_num) (by norm_num) (by norm_num) halfRate_branch_slack_lt_one
+  (by norm_num) (by norm_num) (by nlinarith [halfRate_branch_slack_lt_one])
+  (by norm_num) rationalDomain (Or.inl rfl)
+
+/-- The branchwise finite-field bound controls MCA error for a four-point constant code. -/
+example := firstOrderBranch_finiteLength_mcaError_le
+  (1 / 2) (1 / 8) 4 1
+  (by norm_num) (by norm_num) (by norm_num) halfRate_branch_slack_lt_one
+  (by norm_num) (by norm_num) finiteDomain (Or.inl rfl)
+
+/-- Above the rate switch, the four-point zero word has a finite constant-code list and exact
+correlated agreement at a nonexceptional challenge. -/
+example :
+    (closePolynomialSet rationalDomain (fun _ ↦ 0) 1 4).Finite ∧
+    (0 : ℚ[X]) ∈ closePolynomialSet rationalDomain (fun _ ↦ 0) 1 4 ∧
+    ∃ exceptional : Finset ℚ,
+      (exceptional.card : ℝ) ≤
+        140 * firstOrderBranchFiniteLengthMcaConstant (1 / 2) ^ 6 * 4 ^ 2 /
+          (1 / 8) ^ 4 ∧
+      ∃ z ∉ exceptional,
+        HasExactCorrelatedPair rationalDomain (fun _ ↦ 0) (fun _ ↦ 0)
+          (RingHom.id ℚ) 1 z 0 := by
+  have haOne : firstOrderBranchThreshold (1 / 2 : ℝ) + 1 / 8 < 1 := by
+    exact halfRate_branch_slack_lt_one
+  obtain ⟨hlist, hline⟩ := firstOrderBranch_finiteLength_rate_bounds
+    (1 / 2) (1 / 8) 4 1 4
+    (by norm_num) (by norm_num) (by norm_num) haOne
+    (by norm_num) (by norm_num) (by nlinarith [haOne]) (by norm_num)
+    rationalDomain (Or.inl rfl)
+  obtain ⟨exceptional, hcard, hgood⟩ := hline (fun _ ↦ 0) (fun _ ↦ 0)
+  obtain ⟨z, hz⟩ := Finset.exists_notMem exceptional
+  refine ⟨(hlist (fun _ ↦ 0)).1, ?_, exceptional, hcard, z, hz, ?_⟩
+  · change (0 : ℚ[X]).degree < 1 ∧
+      4 ≤ (polynomialAgreementSet rationalDomain (fun _ ↦ 0) 0).card
+    constructor
+    · exact WithBot.bot_lt_coe 1
+    · norm_num [polynomialAgreementSet, rationalDomain]
+  · exact hgood z hz 0 (WithBot.bot_lt_coe 1) (by
+      norm_num [polynomialAgreementSet, rationalDomain])
