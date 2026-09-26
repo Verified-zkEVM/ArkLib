@@ -103,6 +103,7 @@ Naming follows [`docs/wiki/interaction-naming.md`](../wiki/interaction-naming.md
 | Finite ordered composition | `Oracle/Composition` (`ExecutionInterface`) | #891 |
 | Direct native strategy execution | `Oracle/CoreRun.executeStrategiesCore` | #1216 |
 | General native composition soundness | `Interaction/CompositionSoundness` | #1218 |
+| Fixed-prover, reachable, and averaged native bounds | `run_appendFlat_soundness_fixed`, `_of_support`, `_ae`, and `_weighted_ae` | C1, #1222 |
 
 Sumcheck on the typed layer:
 
@@ -149,10 +150,19 @@ path and counterpart output; effects inside that strategy remain unrestricted.
 
 Under lawful distribution semantics, a prefix truth-transition bound `ε₁` and a suffix bound `ε₂`
 give a final bound `ε₁ + ε₂`. If suffix soundness requires admissibility, a prefix inadmissibility
-bound `δ` gives `ε₁ + δ + ε₂`. The suffix premise covers every false, admissible prefix path and
-output, including unreachable ones, and every native suffix strategy. Probabilities are
-unconditioned successful-output mass; missing mass is not a classified runtime fault. A native
-two-guess client over `ZMod 17` instantiates the bound as `2/17`.
+bound `δ` gives `ε₁ + δ + ε₂`. The original uniform theorem covers every false, admissible prefix
+path and output, including unreachable ones, and every native suffix strategy.
+
+The fixed-prover forms require a prefix bound only for the chosen whole prover's actual prefix.
+The reachable form requires suffix security only on its structurally supported boundary results;
+the almost-everywhere form permits a probability-zero exceptional set. The weighted form averages
+branch-dependent suffix errors outside a charged prefix event. The boundary includes the actual
+returned prover continuation and private memory. `AppendBoundary` is an abbreviation for that
+existing runner output, not another strategy or execution representation.
+
+These bounds concern unconditioned successful-output mass; they need neither losslessness nor
+commuting effects. Missing mass is not a classified runtime fault. A native two-guess client over
+`ZMod 17` instantiates the uniform bound as `2/17`.
 
 This plain-tree result does not yet compose restricted oracle verifiers or their closing
 resources. The structural-to-runtime append bridge, paired world resources, access admissibility,

@@ -33,10 +33,10 @@ an effect at that boundary, represent it as a protocol move or prove the local e
 For Sumcheck, the final equality between the original polynomial oracle and the claimed value stays
 in the output oracle relation; it is not an extra final verifier query.
 
-## Active work: oracle composition (C1–C8)
+## Oracle composition sequence (C1–C8)
 
-The issue IDs are the tracking record for these steps. C1 and C2 can proceed in parallel; the rest
-follow the dependencies shown below.
+C1 is implemented in this source revision. C2 is next; the remaining steps follow the
+dependencies below. The issues record implementation PRs and merge status.
 
 ```mermaid
 flowchart TD
@@ -65,32 +65,17 @@ They are the entry point for later protocol clients.
 
 ### C1 — Reachable and weighted soundness bounds
 
-**Tracked in:** [issue #1222](https://github.com/Verified-zkEVM/ArkLib/issues/1222).
+**Implemented.** Tracked in [issue #1222](https://github.com/Verified-zkEVM/ArkLib/issues/1222).
 
-**Proposed PR:** `feat(interaction): add reachable soundness bounds`.
+[`CompositionSoundness.lean`](../../ArkLib/Interaction/CompositionSoundness.lean) now provides
+fixed-prover, support, almost-everywhere, and weighted bounds using VCVio's existing measure
+semantics. It retains the uniform `ε₁ + ε₂` and `ε₁ + δ + ε₂` interfaces as corollaries.
+The exact assumptions belong to [the security chapter](03-adversarial-oracle-execution.md#42-probability-premises-at-the-actual-boundary).
 
-**Depends on:** none; may proceed alongside C2.
-
-Extend [`CompositionSoundness.lean`](../../ArkLib/Interaction/CompositionSoundness.lean) using
-VCVio's existing measure and event-bound tools. The current theorem asks for a prefix bound for
-every prefix strategy and a suffix bound for every intermediate path and output, including
-unreachable ones. Add useful versions for the actual whole prover, for reachable boundary results,
-and for suffix errors that vary by result. Keep the current uniform `ε₁ + ε₂` and
-`ε₁ + δ + ε₂` statements as easy-to-use corollaries.
-
-For an exceptional set `E` of boundary results, actual boundary distribution `μ`, and suffix error
-bound `e(b)` at boundary `b`, the target is
-`Pr[success] ≤ Pr[E] + ∫_{b∉E} e(b) dμ(b)`. This averages the suffix error over actual boundary
-results outside `E`; it does not require one worst-case bound everywhere.
-
-Also add an almost-everywhere form: a suffix premise may fail on a set of boundary results with
-probability zero. Where support is defined, a result can lie in the support and still have
-probability zero, so support membership alone is not a positive-mass condition.
-
-**Acceptance check:** Use two public branches with different suffix errors and an invalid boundary
-that the prefix cannot reach. Also include a supported boundary point of probability zero where the
-suffix bound fails. The theorem should retain branch-specific errors and ignore both exceptions.
-Do not introduce new probability semantics beside VCVio.
+The acceptance client distinguishes two branch-dependent errors, an unreachable boundary, and a
+structurally supported response of probability zero. The latter demonstrates why a support premise
+is stronger than an almost-everywhere premise. See [current status](00-current-status.md) for the
+available declarations. C1 required no dependency changes.
 
 ### C2 — Oracle path and access laws
 
