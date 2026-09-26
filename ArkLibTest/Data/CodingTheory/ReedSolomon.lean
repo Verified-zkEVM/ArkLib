@@ -23,24 +23,24 @@ open Polynomial ReedSolomon CoreDefinitions
 namespace ReedSolomonAcceptance
 
 -- Block length `10`, message length `3`, gap `1 / 4`: the threshold is `3 + ⌈5 / 2⌉ = 6`.
-example : agreementThreshold (1 / 4) 10 3 = 6 := by
+example : capacityAgreementThreshold (1 / 4) 10 3 = 6 := by
   have hceil : ⌈(5 / 2 : ℝ)⌉₊ = 3 := by
     rw [Nat.ceil_eq_iff (by decide)]
     norm_num
   apply Nat.le_antisymm
-  · exact (agreementThreshold_le_iff_real (by norm_num) 10 3 6).2 (by norm_num)
-  · norm_num [agreementThreshold, hceil]
+  · exact (capacityAgreementThreshold_le_iff_real (by norm_num) 10 3 6).2 (by norm_num)
+  · norm_num [capacityAgreementThreshold, hceil]
 
 example :
-    agreementThreshold (1 / 4) 4 2 ≤ Code.agree ![false, false, false, false]
+    capacityAgreementThreshold (1 / 4) 4 2 ≤ Code.agree ![false, false, false, false]
         ![true, false, false, false] ∧
       (Code.relHammingDist ![true, false, false, false] ![false, false, false, false] : ℝ) ≤
         capacityRadius (1 / 4) 4 2 ∧
       Code.agree ![false, false, false, false] ![true, false, false, false] = 3 ∧
       (Code.relHammingDist ![true, false, false, false] ![false, false, false, false] : ℝ) =
         1 / 4 ∧ capacityRadius (1 / 4) 4 2 = 1 / 4 := by
-  have hthreshold : agreementThreshold (1 / 4) 4 2 ≤ 3 := by
-    exact (agreementThreshold_le_iff_real (by norm_num) 4 2 3).2 (by norm_num)
+  have hthreshold : capacityAgreementThreshold (1 / 4) 4 2 ≤ 3 := by
+    exact (capacityAgreementThreshold_le_iff_real (by norm_num) 4 2 3).2 (by norm_num)
   have hagree : Code.agree ![false, false, false, false] ![true, false, false, false] = 3 := by
     decide
   have hdist : (Code.relHammingDist ![true, false, false, false]
@@ -52,7 +52,7 @@ example :
   constructor
   · simpa [hagree] using hthreshold
   · constructor
-    · exact (relHammingDist_le_capacityRadius_iff_agreementThreshold_le
+    · exact (relHammingDist_le_capacityRadius_iff_capacityAgreementThreshold_le
         (delta := 1 / 4) (messageDim := 2) (by norm_num) (by decide)
         ![false, false, false, false] ![true, false, false, false]).mpr
           (by simpa [hagree] using hthreshold)

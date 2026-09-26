@@ -95,11 +95,6 @@ the harmonic number `harmonic (d - 1)` is `0`, so `m = 0` (see
 def weightedSupportMultiplicity (d : ℕ) : ℕ :=
   ⌈100 * (d : ℝ) ^ 2 * harmonic (d - 1)⌉₊
 
-/-- The unrounded multiplicity is at most `m`. -/
-theorem le_weightedSupportMultiplicity (d : ℕ) :
-    100 * (d : ℝ) ^ 2 * harmonic (d - 1) ≤ weightedSupportMultiplicity d :=
-  Nat.le_ceil _
-
 /-- The multiplicity is positive exactly when `2 ≤ d`: for `d = 0` the factor `d ^ 2` vanishes,
 and for `d = 1` the factor `harmonic 0` vanishes. -/
 theorem weightedSupportMultiplicity_pos_iff {d : ℕ} :
@@ -152,8 +147,8 @@ theorem prescribed_geometric_parameters
       let d := Nat.ceil (Real.exp (xi / δ))
       let m := Nat.ceil (100 * (d : ℝ) ^ 2 * harmonic (d - 1))
       8 * m ≤ n)
-    (hA : agreementThreshold δ n k ≤ n) :
-    let A := agreementThreshold δ n k
+    (hA : capacityAgreementThreshold δ n k ≤ n) :
+    let A := capacityAgreementThreshold δ n k
     let d := Nat.ceil (Real.exp (xi / δ))
     let m := Nat.ceil (100 * (d : ℝ) ^ 2 * harmonic (d - 1))
     let ν := 2 * m - 1
@@ -164,7 +159,7 @@ theorem prescribed_geometric_parameters
   let m := Nat.ceil (100 * (d : ℝ) ^ 2 * harmonic (d - 1))
   let ν := 2 * m - 1
   let K := max k (Nat.floor (δ * n / 2))
-  let A := agreementThreshold δ n k
+  let A := capacityAgreementThreshold δ n k
   have hblock' : 8 * m ≤ n := by simpa only [d, m] using hblock
   have hblock'' :
       let d := Nat.ceil (Real.exp (xi / δ))
@@ -174,7 +169,7 @@ theorem prescribed_geometric_parameters
     dsimp only
     exact hblock'
   have hA' : k + Nat.ceil (δ * n) ≤ n := by
-    simpa only [agreementThreshold] using hA
+    simpa only [capacityAgreementThreshold] using hA
   have hb := prescribedBlockBounds δ n k hδ hδmax.le hblock'' hA'
   obtain ⟨hn, hD, hdD, _, _, hKn, _⟩ := hb
   have ho := prescribed_order_lower δ hδ hδmax.le
@@ -195,7 +190,7 @@ theorem prescribed_geometric_parameters
   have hKn' : K ≤ n := by simpa only [K] using hKn
   have hkA : k ≤ A := by dsimp [A]; exact Nat.le_add_right _ _
   have hgap : (k : ℝ) + δ * n ≤ A :=
-    (agreementThreshold_le_iff_real hδ.le n k _).mp le_rfl
+    (capacityAgreementThreshold_le_iff_real hδ.le n k _).mp le_rfl
   exact ⟨hn, hm, hν, hνm, hνn, hdK, hkK, hKn', hkA, hgap⟩
 
 end ReedSolomon

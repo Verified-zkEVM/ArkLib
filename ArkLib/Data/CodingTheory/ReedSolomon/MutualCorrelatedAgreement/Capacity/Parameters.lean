@@ -63,9 +63,9 @@ theorem exists_prescribed_correlated_parameters {F : Type u} [Field F]
       let H : ℝ := harmonic (d - 1)
       let m := Nat.ceil (100 * (d : ℝ) ^ 2 * H)
       8 * m ≤ n)
-    (hA : agreementThreshold δ n k ≤ n)
+    (hA : capacityAgreementThreshold δ n k ≤ n)
     (hchar : ringChar F = 0 ∨ n ≤ ringChar F) :
-    let A := agreementThreshold δ n k
+    let A := capacityAgreementThreshold δ n k
     let d := Nat.ceil (Real.exp (xi / δ))
     let H : ℝ := harmonic (d - 1)
     let m := Nat.ceil (100 * (d : ℝ) ^ 2 * H)

@@ -167,7 +167,7 @@ theorem exists_capacity_list (δ : ℝ) (hδ : 0 < δ) :
     unfold capacityListBound
     positivity
   let _ : Fact q.Prime := ⟨hq⟩
-  have hthreshold := (agreementThreshold_le_iff_real hδ.le n k A).mpr hA
+  have hthreshold := (capacityAgreementThreshold_le_iff_real hδ.le n k A).mpr hA
   have hblock : 8 * weightedSupportMultiplicity (capacityDerivativeOrder δ) ≤ n := by
     simpa only [capacityLengthThreshold, ite_eq_right hlarge] using hn
   have hgeom := prescribed_geometric_finite_list_bound δ n k α y hδ hδsmall hk

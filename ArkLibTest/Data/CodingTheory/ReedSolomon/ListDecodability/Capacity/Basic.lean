@@ -21,11 +21,11 @@ private def singletonDomain : Fin 1 ↪ ZMod 2 where
   inj' _ _ _ := Subsingleton.elim _ _
 
 private theorem singletonThreshold :
-    agreementThreshold 1 (Fintype.card (Fin 1)) 1 = 2 := by
-  simp [agreementThreshold]
+    capacityAgreementThreshold 1 (Fintype.card (Fin 1)) 1 = 2 := by
+  simp [capacityAgreementThreshold]
 
 private def singletonDecoder : DecoderCertificate singletonDomain 1
-    (agreementThreshold 1 (Fintype.card (Fin 1)) 1) 0 where
+    (capacityAgreementThreshold 1 (Fintype.card (Fin 1)) 1) 0 where
   enumerate _ := ∅
   isExact := by
     intro received p
@@ -49,7 +49,7 @@ private noncomputable def singletonCapacityCertificate :
     (by norm_num) (by decide) singletonDecoder (by
       intro received
       have hEmpty : agreeingPolynomials singletonDomain 1
-          (agreementThreshold 1 (Fintype.card (Fin 1)) 1) received = ∅ := by
+          (capacityAgreementThreshold 1 (Fintype.card (Fin 1)) 1) received = ∅ := by
         ext p
         simp only [Set.mem_empty_iff_false, iff_false]
         intro hAgreement
@@ -79,7 +79,7 @@ example {ι F : Type*} [Semiring F] [DecidableEq F] [Fintype ι]
 example {ι F : Type*} [Semiring F] [DecidableEq F] [Fintype ι]
     {delta : ℝ} {domain : ι ↪ F} {messageDim listBound : ℕ}
     (certificate : CapacityGapCertificate delta domain messageDim listBound)
-    (hThreshold : Fintype.card ι < agreementThreshold delta (Fintype.card ι) messageDim)
+    (hThreshold : Fintype.card ι < capacityAgreementThreshold delta (Fintype.card ι) messageDim)
     (received : ι → F) :
     certificate.decoderCertificate.decoder received = ∅ :=
   certificate.empty_of_threshold_exceeds hThreshold received
@@ -87,7 +87,7 @@ example {ι F : Type*} [Semiring F] [DecidableEq F] [Fintype ι]
 example {ι F : Type*} [Semiring F] [DecidableEq F] [Fintype ι]
     {delta : ℝ} {domain : ι ↪ F} {messageDim listBound : ℕ}
     (decoderCertificate : DecoderCertificate domain messageDim
-      (agreementThreshold delta (Fintype.card ι) messageDim) listBound)
+      (capacityAgreementThreshold delta (Fintype.card ι) messageDim) listBound)
     (lambda_le :
       Code.Lambda (ReedSolomon.code domain messageDim : Set (ι → F))
         (capacityRadius delta (Fintype.card ι) messageDim) ≤ (listBound : ℕ∞)) :
@@ -102,5 +102,5 @@ example {ι F : Type*} [Semiring F] [DecidableEq F] [Fintype ι] {delta : ℝ}
         (capacityRadius delta (Fintype.card ι) messageDim) =
       (fun p : MessagePolynomial F messageDim => ReedSolomon.evalOnPoints domain p) ''
         agreeingPolynomials domain messageDim
-          (agreementThreshold delta (Fintype.card ι) messageDim) received :=
+          (capacityAgreementThreshold delta (Fintype.card ι) messageDim) received :=
   closeCodewordsRel_eq_eval_image_agreeingPolynomials hdelta hn domain received

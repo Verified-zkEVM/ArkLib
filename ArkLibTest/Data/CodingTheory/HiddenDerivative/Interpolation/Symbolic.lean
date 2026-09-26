@@ -270,14 +270,15 @@ example : Nonempty (SymbolicReceivedCurve.Certificate curveTestLength 0 2
 
 /-- The prescribed block constructor applies to a quadratic received curve. -/
 example : Nonempty (SymbolicReceivedCurve.Certificate
-    (ReedSolomon.agreementThreshold (1 / 8 : ℝ) curveTestLength 0) 0 2
+    (ReedSolomon.capacityAgreementThreshold (1 / 8 : ℝ) curveTestLength 0) 0 2
     (2 * curveTestMultiplicity - 1) curveTestOrder
     (12 * (2 * (2 * curveTestMultiplicity - 1)) - 1)
     (curveTestEmbedding curveTestLength) (quadraticReceivedCurve curveTestLength)) := by
   have hx : xi / (1 / 8 : ℝ) = xi * 8 := by
     field_simp
-  have hA : ReedSolomon.agreementThreshold (1 / 8 : ℝ) curveTestLength 0 ≤ curveTestLength := by
-    apply (ReedSolomon.agreementThreshold_le_iff_real (by norm_num)
+  have hA : ReedSolomon.capacityAgreementThreshold (1 / 8 : ℝ) curveTestLength 0 ≤
+      curveTestLength := by
+    apply (ReedSolomon.capacityAgreementThreshold_le_iff_real (by norm_num)
       curveTestLength 0 curveTestLength).2
     have hnR : (0 : ℝ) ≤ (curveTestLength : ℝ) := Nat.cast_nonneg _
     nlinarith

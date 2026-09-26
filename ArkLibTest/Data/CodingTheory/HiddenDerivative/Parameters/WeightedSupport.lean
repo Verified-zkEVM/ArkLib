@@ -77,8 +77,8 @@ example :
       8 * m ≤ n := by
     dsimp only
     exact Nat.le_refl _
-  have hA : agreementThreshold δ n 1 ≤ n := by
-    apply (agreementThreshold_le_iff_real hδ.le n 1 n).mpr
+  have hA : capacityAgreementThreshold δ n 1 ≤ n := by
+    apply (capacityAgreementThreshold_le_iff_real hδ.le n 1 n).mpr
     have hnR : (n : ℝ) = 8 * m := by norm_num [n]
     rw [hnR]
     dsimp [δ]

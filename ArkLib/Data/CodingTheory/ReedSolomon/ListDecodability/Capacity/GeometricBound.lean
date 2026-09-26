@@ -50,14 +50,14 @@ theorem prescribed_geometric_finite_list_bound
       let d := Nat.ceil (Real.exp (xi / δ))
       let m := Nat.ceil (100 * (d : ℝ) ^ 2 * harmonic (d - 1))
       8 * m ≤ n)
-    (hA : agreementThreshold δ n k ≤ n) (hchar : ringChar F = 0 ∨ n ≤ ringChar F)
+    (hA : capacityAgreementThreshold δ n k ≤ n) (hchar : ringChar F = 0 ∨ n ≤ ringChar F)
     (S : Finset F[X])
-    (hS : ∀ P ∈ S, P ∈ closePolynomialSet domain received k (agreementThreshold δ n k)) :
+    (hS : ∀ P ∈ S, P ∈ closePolynomialSet domain received k (capacityAgreementThreshold δ n k)) :
     let d := Nat.ceil (Real.exp (xi / δ))
     let m := Nat.ceil (100 * (d : ℝ) ^ 2 * harmonic (d - 1))
     (S.card : ℝ) ≤ 4 * (m : ℝ) ^ 2 * (4 * m / δ) ^ d * n ^ d := by
   classical
-  let A := agreementThreshold δ n k
+  let A := capacityAgreementThreshold δ n k
   let d := Nat.ceil (Real.exp (xi / δ))
   let m := Nat.ceil (100 * (d : ℝ) ^ 2 * harmonic (d - 1))
   let ν := 2 * m - 1
@@ -113,15 +113,15 @@ theorem prescribed_geometric_close_list_bound
       let d := Nat.ceil (Real.exp (xi / δ))
       let m := Nat.ceil (100 * (d : ℝ) ^ 2 * harmonic (d - 1))
       8 * m ≤ n)
-    (hA : agreementThreshold δ n k ≤ n) (hchar : ringChar F = 0 ∨ n ≤ ringChar F) :
+    (hA : capacityAgreementThreshold δ n k ≤ n) (hchar : ringChar F = 0 ∨ n ≤ ringChar F) :
     let d := Nat.ceil (Real.exp (xi / δ))
     let m := Nat.ceil (100 * (d : ℝ) ^ 2 * harmonic (d - 1))
-    (closePolynomialSet domain received k (agreementThreshold δ n k)).Finite ∧
-      ((closePolynomialSet domain received k (agreementThreshold δ n k)).ncard : ℝ) ≤
+    (closePolynomialSet domain received k (capacityAgreementThreshold δ n k)).Finite ∧
+      ((closePolynomialSet domain received k (capacityAgreementThreshold δ n k)).ncard : ℝ) ≤
         4 * (m : ℝ) ^ 2 * (4 * m / δ) ^ d * n ^ d := by
   classical
   have hfinite := closePolynomialSet_finite domain received
-    (show k ≤ agreementThreshold δ n k from Nat.le_add_right _ _)
+    (show k ≤ capacityAgreementThreshold δ n k from Nat.le_add_right _ _)
   refine ⟨hfinite, ?_⟩
   rw [Set.ncard_eq_toFinset_card _ hfinite]
   exact prescribed_geometric_finite_list_bound δ n k domain received hδ hδmax hk hblock hA
