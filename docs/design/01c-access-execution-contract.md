@@ -96,6 +96,12 @@ continues with the actual remaining prover strategy and the input resources and 
 same prefix run. See [the composition contract](02-oracle-reduction-core.md#5-composition) for the
 execution theorem's exact boundary and effect-order constraints.
 
+For composition through an exported interface, `Verifier.appendExported` restricts the suffix's
+initial source signature to the prefix's declared export. It expands those queries using the
+prefix's own programs, extends the route with each new oracle message, and closes the final claim
+using the resources of the actual composed run. The suffix constructor receives the public path
+and statement, not the raw prefix handler.
+
 A single-run erasure law must hold at the `OracleComp` level before an ambient handler is
 chosen. Test a stateful ambient handler so that reordered or duplicated queries are observable.
 Do not invoke `LawfulCommMonad` to hide a schedule mismatch. General sequential security,

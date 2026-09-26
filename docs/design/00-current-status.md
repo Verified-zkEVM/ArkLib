@@ -103,7 +103,8 @@ Naming follows [`docs/wiki/interaction-naming.md`](../wiki/interaction-naming.md
 | Finite ordered composition | `Oracle/Composition` (`ExecutionInterface`) | #891 |
 | Direct native strategy execution | `Oracle/CoreRun.executeStrategiesCore` | #1216 |
 | General native composition soundness | `Interaction/CompositionSoundness` | #1218 |
-| Restricted verifier composition for every whole native prover | `Oracle/Sequential.executeStrategies_append` | this revision; [#1224](https://github.com/Verified-zkEVM/ArkLib/issues/1224) |
+| Restricted verifier composition for every whole native prover | `Oracle/Sequential.executeStrategies_append` | #1233 |
+| Composition through exported oracle interfaces and actual claim closing | `Oracle/SourceRouting.executeStrategies_appendExported_close` | this revision; [#1225](https://github.com/Verified-zkEVM/ArkLib/issues/1225) |
 | Oracle append paths, runtime roles, access, and query answers | `Oracle/TypeTree`, `Oracle/TypeTree/Decoration`, `Oracle/Access`, `Oracle/RunSources` | #1232 |
 | Fixed-prover, reachable, and averaged native bounds | `run_appendFlat_soundness_fixed`, `_of_support`, `_ae`, and `_weighted_ae` | #1231 |
 
@@ -188,9 +189,20 @@ The execution clients retain private memory across a challenge and public abort,
 and verifier-owned first suffix moves, and check the terminal action occurs once. A separate
 counterexample distinguishes an action before a prover send from moving it after that send.
 
-Exported-interface routing, composition soundness for these oracle verifiers, direct native
-persistent-runtime execution, access admissibility, and fault accounting remain separate
-obligations.
+`Verifier.appendExported` lets the suffix query only the prefix's exported interface and its own
+new oracle messages. `executeStrategies_appendExported_close` proves that the composed run and
+sequential interpretation return the same concrete path, private prover output, and closed claim.
+The intermediate handler is the exported oracle evaluated using the actual prefix resources.
+The theorem permits public-path-dependent final statements and oracle families, preserves ambient
+effect order, and does not require identical raw and exported query logs.
+
+The exported-interface clients hide a source slot, expand one exported query into two source
+queries, and retain private prover memory and the ordered ambient log. A separate client chooses
+between different final statement and oracle realization types through a public Boolean, then
+checks the actual closed statement and answer in both branches.
+
+Composition soundness for these oracle verifiers, direct native persistent-runtime execution,
+access admissibility, and fault accounting remain separate obligations.
 
 The legacy verifier correspondence is honest-execution only: the legacy verifier reads the input
 polynomial for its next target, while the typed verifier reads the sent polynomial. Both relation
