@@ -125,27 +125,6 @@ def mathematicalUniformLineAgreementConstant (δ : ℝ) : ℝ :=
     (343 / 3)
 
 open Classical in
-/-- An exceptional set for exact power agreement of the pair `![f, g]` is an exceptional set for
-exact correlated-pair agreement on the line `f + z g`. -/
-private theorem exists_line_exactCorrelatedPair_of_powerAgreement
-    {F : Type u} [Field F] {n k A : ℕ} {B : ℝ} (domain : Fin n ↪ F) (f g : Fin n → F)
-    (h : ∃ exceptional : Finset F, (exceptional.card : ℝ) ≤ B ∧
-      ∀ z ∉ exceptional, ∀ P : F[X], P.degree < k →
-        A ≤ (polynomialAgreementSet domain (powerBatchedWord ![f, g] z) P).card →
-        HasExactPowerAgreement domain ![f, g] (RingHom.id F) k z P) :
-    ∃ exceptional : Finset F, (exceptional.card : ℝ) ≤ B ∧
-      ∀ z ∉ exceptional, ∀ P : F[X], P.degree < k →
-        A ≤ (polynomialAgreementSet domain (fun i ↦ f i + z * g i) P).card →
-        HasExactCorrelatedPair domain f g (RingHom.id F) k z P := by
-  obtain ⟨exceptional, hcard, hgood⟩ := h
-  refine ⟨exceptional, hcard, fun z hz P hP hA ↦ ?_⟩
-  have hword : powerBatchedWord (ℓ := 1) ![f, g] z = (fun i ↦ f i + z * g i) := by
-    funext i
-    simp [powerBatchedWord, Fin.sum_univ_two]
-  exact exactCorrelatedPair_of_powerAgreement_one domain ![f, g] (RingHom.id F) z P
-    (hgood z hz P hP (by rwa [hword]))
-
-open Classical in
 /-- **Mathematical uniform exact line agreement.** At length at least
 `uniformMathematicalCapacityLength δ`, one set of at most
 `mathematicalUniformLineAgreementConstant δ * n^(d+1)` challenges is exceptional for exact
