@@ -7,17 +7,30 @@ on:
     branches: ["main"]
   merge_group:
     types: [checks_requested]
+  # Nightly clean build of `main`: the absolute build-time trend, and a check that nothing passes
+  # only because of the build cache.
+  schedule:
+    - cron: "40 6 * * *"
   workflow_dispatch:
+    inputs:
+      clean_build:
+        description: "Ignore the build cache and build the library from scratch"
+        type: boolean
+        default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Runs on `main` save the build cache that later runs start from, so a newer push waits for the
+  # running one instead of cancelling it.
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   build:
     runs-on: ubuntu-24.04
     permissions:
       contents: read
+    env:
+      CLEAN_BUILD: ${{ github.event_name == 'schedule' || inputs.clean_build == true }}
 
     steps:
       - name: Cleanup to free disk space
@@ -67,6 +80,7 @@ jobs:
           echo "BUILD_TIMING_METADATA_PATH=$RUNNER_TEMP/build-timing-artifact/metadata.json" >> "$GITHUB_ENV"
           echo "BUILD_TIMING_REPORT=$RUNNER_TEMP/build-timing.md" >> "$GITHUB_ENV"
           echo "SOURCE_TRUST_REPORT=$RUNNER_TEMP/source-trust.json" >> "$GITHUB_ENV"
+          echo "MODULE_TIMES_BASE=$RUNNER_TEMP/module-times-base.json" >> "$GITHUB_ENV"
           echo "BUILD_TIMING_SOURCE_SHA=$SOURCE_SHA" >> "$GITHUB_ENV"
           echo "BUILD_TIMING_SOURCE_BRANCH=$SOURCE_BRANCH" >> "$GITHUB_ENV"
           echo "BUILD_TIMING_TEST_NAME=Validation wrapper" >> "$GITHUB_ENV"
@@ -79,16 +93,36 @@ jobs:
             echo "EOF"
           } >> "$GITHUB_ENV"
 
-      - name: Restore Lean cache
+      # Two caches with different lifetimes. Dependencies change only with the manifest; the
+      # ArkLib build changes with every commit, so it is saved per `main` run and restored from the
+      # newest one. Lake decides what to rebuild from content hashes of each module's source and
+      # imports, so a restored build is only a starting point: whatever this checkout changed, and
+      # everything importing it, is rebuilt. Lake regenerates the `*.setup.json` files per build and
+      # never reads old ones; leaving them out halves the uncompressed size.
+      - name: Restore dependency cache
         uses: actions/cache/restore@v6
-        id: lake-cache
+        id: deps-cache
         with:
-          path: ./.lake
-          key: ${{ runner.os }}-lean-ci-${{ hashFiles('lake-manifest.json') }}
+          path: |
+            .lake/packages
+            !.lake/packages/**/*.setup.json
+          key: ${{ runner.os }}-lean-deps-${{ hashFiles('lake-manifest.json', 'lean-toolchain') }}
+          # On a dependency bump, start from the previous packages; Lake checks out the new
+          # revisions and rebuilds only the packages that changed.
           restore-keys: |
-            ${{ runner.os }}-lean-ci-
-            ${{ runner.os }}-lean-docs-${{ hashFiles('lake-manifest.json') }}
-            ${{ runner.os }}-lean-docs-
+            ${{ runner.os }}-lean-deps-
+
+      - name: Restore build cache
+        if: env.CLEAN_BUILD != 'true'
+        uses: actions/cache/restore@v6
+        with:
+          path: |
+            .lake/build
+            !.lake/build/**/*.setup.json
+          key: ${{ runner.os }}-arklib-build-${{ hashFiles('lake-manifest.json', 'lean-toolchain') }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-arklib-build-${{ hashFiles('lake-manifest.json', 'lean-toolchain') }}-
+            ${{ runner.os }}-arklib-build-
 
       - uses: actions/setup-python@v7
         with:
@@ -124,14 +158,16 @@ jobs:
       - name: Fetch dependency cache
         run: lake exe cache get
 
-      - name: Time clean build
+      # The module times recorded with the restored build are this run's per-module baseline.
+      - name: Keep cached module times as the baseline
         run: |
-          bash scripts/build_timing_report.sh run clean_build "$BUILD_TIMING_RESULTS" -- \
-            bash -eo pipefail -c 'rm -rf .lake/build && lake build'
+          if [ -f .lake/build/arklib-module-times.json ]; then
+            cp .lake/build/arklib-module-times.json "$MODULE_TIMES_BASE"
+          fi
 
-      - name: Time warm rebuild
+      - name: Time library build
         run: |
-          bash scripts/build_timing_report.sh run warm_rebuild "$BUILD_TIMING_RESULTS" -- \
+          bash scripts/build_timing_report.sh run library_build "$BUILD_TIMING_RESULTS" -- \
             bash -eo pipefail -c 'lake build'
 
       # VCVio's FFI C sources live in git submodules that Lake does not fetch, and every
@@ -147,10 +183,10 @@ jobs:
 
       # `validate.sh` runs `lake exe toyproblem-runtime` and `lake exe hachi-runtime`, which link
       # the native `.c.o` chain for the whole dependency graph. That work is billed here rather
-      # than to the validation wrapper: the `.lake` cache key is `hashFiles('lake-manifest.json')`,
-      # so a dependency bump misses the cache and the compile costs ~5 minutes, which used to read
-      # as a wrapper regression. Every compiled executable `validate.sh` runs belongs in this
-      # command; otherwise its link cost silently lands in the `test_path` row instead.
+      # than to the validation wrapper: a dependency bump misses the dependency cache and the
+      # compile costs ~5 minutes, which used to read as a wrapper regression. Every compiled
+      # executable `validate.sh` runs belongs in this command; otherwise its link cost silently
+      # lands in the `test_path` row instead.
       - name: Time native build
         run: |
           bash scripts/build_timing_report.sh run native_build "$BUILD_TIMING_RESULTS" -- \
@@ -172,12 +208,34 @@ jobs:
           bash scripts/build_timing_report.sh run test_path "$BUILD_TIMING_RESULTS" -- \
             bash -eo pipefail -c './scripts/validate.sh'
 
-      - name: Save Lean cache
-        if: success() && steps.lake-cache.outputs.cache-hit != 'true'
+      - name: Record module times
+        run: |
+          python3 scripts/module_times.py update .lake/build/arklib-module-times.json \
+            --commit "$GITHUB_SHA" \
+            "$BUILD_TIMING_LOG_DIR/library_build.log" "$BUILD_TIMING_LOG_DIR/test_path.log"
+
+      # Only `main` writes caches. Pull request and merge-queue runs restore them and discard their
+      # own build, so untrusted code never publishes an artifact another run would load, and PR
+      # builds do not evict the `main` caches from the repository's 10 GB budget.
+      - name: Save dependency cache
+        if: github.ref == 'refs/heads/main' && steps.deps-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v6
         with:
-          path: ./.lake
-          key: ${{ runner.os }}-lean-ci-${{ hashFiles('lake-manifest.json') }}
+          path: |
+            .lake/packages
+            !.lake/packages/**/*.setup.json
+          key: ${{ steps.deps-cache.outputs.cache-primary-key }}
+
+      # Keyed by run as well as commit, so a nightly clean build of an already-cached commit still
+      # lands; restores take the newest match.
+      - name: Save build cache
+        if: github.ref == 'refs/heads/main'
+        uses: actions/cache/save@v6
+        with:
+          path: |
+            .lake/build
+            !.lake/build/**/*.setup.json
+          key: ${{ runner.os }}-arklib-build-${{ hashFiles('lake-manifest.json', 'lean-toolchain') }}-${{ github.sha }}-${{ github.run_id }}
 
       - name: Build blueprint declaration environment
         run: lake build ArkLibBlueprint
@@ -229,9 +287,9 @@ jobs:
           BUILD_TIMING_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
           BUILD_TIMING_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before || '' }}
           BUILD_TIMING_REF: ${{ github.head_ref || github.ref_name }}
-          BUILD_TIMING_CACHE_EXACT_HIT: ${{ steps.lake-cache.outputs.cache-hit }}
-          BUILD_TIMING_CACHE_PRIMARY_KEY: ${{ steps.lake-cache.outputs.cache-primary-key }}
-          BUILD_TIMING_CACHE_MATCHED_KEY: ${{ steps.lake-cache.outputs.cache-matched-key }}
+          BUILD_TIMING_CACHE_EXACT_HIT: ${{ steps.deps-cache.outputs.cache-hit }}
+          BUILD_TIMING_CACHE_PRIMARY_KEY: ${{ steps.deps-cache.outputs.cache-primary-key }}
+          BUILD_TIMING_CACHE_MATCHED_KEY: ${{ steps.deps-cache.outputs.cache-matched-key }}
         run: |
           rm -rf "$BUILD_TIMING_ARTIFACT_DIR"
           mkdir -p "$BUILD_TIMING_ARTIFACT_DIR"
@@ -239,8 +297,16 @@ jobs:
           if [ -f "$BUILD_TIMING_RESULTS" ]; then
             cp "$BUILD_TIMING_RESULTS" "$BUILD_TIMING_ARTIFACT_DIR/results.jsonl"
           fi
-          if [ -f "$BUILD_TIMING_LOG_DIR/clean_build.log" ]; then
-            cp "$BUILD_TIMING_LOG_DIR/clean_build.log" "$BUILD_TIMING_ARTIFACT_DIR/clean_build.log"
+          for log in library_build test_path; do
+            if [ -f "$BUILD_TIMING_LOG_DIR/$log.log" ]; then
+              cp "$BUILD_TIMING_LOG_DIR/$log.log" "$BUILD_TIMING_ARTIFACT_DIR/$log.log"
+            fi
+          done
+          if [ -f "$MODULE_TIMES_BASE" ]; then
+            cp "$MODULE_TIMES_BASE" "$BUILD_TIMING_ARTIFACT_DIR/module-times-base.json"
+          fi
+          if [ -f .lake/build/arklib-module-times.json ]; then
+            cp .lake/build/arklib-module-times.json "$BUILD_TIMING_ARTIFACT_DIR/module-times.json"
           fi
           if [ -f "$SOURCE_TRUST_REPORT" ]; then
             cp "$SOURCE_TRUST_REPORT" "$BUILD_TIMING_ARTIFACT_DIR/source-trust.json"
@@ -258,7 +324,8 @@ jobs:
       - name: Render build timing report
         if: always()
         run: |
-          bash scripts/build_timing_report.sh render "$BUILD_TIMING_RESULTS" > "$BUILD_TIMING_REPORT"
+          BUILD_TIMING_LOG_DIR="$BUILD_TIMING_ARTIFACT_DIR" bash scripts/build_timing_report.sh \
+            render "$BUILD_TIMING_ARTIFACT_DIR/results.jsonl" > "$BUILD_TIMING_REPORT"
           cat "$BUILD_TIMING_REPORT" >> "$GITHUB_STEP_SUMMARY"
 
   # This job is never instantiated for a pull_request event, so PR-head code receives
