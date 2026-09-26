@@ -22,6 +22,8 @@ interface for affine lines.
 * `ReedSolomon.powerAgreement_one_of_exactCorrelatedPair`: an exact correlated-pair witness gives
   degree-one exact power agreement.
 * `ReedSolomon.powerBatchedWord_pair_eq`: the degree-one power-batched word is the correlated line.
+* `ReedSolomon.exists_line_exactCorrelatedPair_of_powerAgreement`: an exceptional set for exact
+  degree-one power agreement is an exceptional set for exact correlated-pair agreement.
 * `ReedSolomon.lineExactAgreementBound_of_exactCorrelatedPair`,
   `ReedSolomon.lineExactAgreementBound_of_powerAgreement_one`: a uniform exact correlated-pair
   or degree-one power guarantee gives a uniform exact-agreement bound for lines.
@@ -84,6 +86,26 @@ theorem exactCorrelatedPair_of_powerAgreement_one
     rw [hw] at hagree
     simpa [commonCurveAgreementSet, commonPolynomialAgreementSet,
       Fin.forall_fin_two] using hagree
+
+/-- An exceptional set for exact power agreement of the pair `![f, g]` is an exceptional set for
+exact correlated-pair agreement on the line `f + z g`. -/
+theorem exists_line_exactCorrelatedPair_of_powerAgreement {A : ℕ} {B : ℝ}
+    (domain : Fin n ↪ F) (f g : Fin n → F)
+    (h : ∃ exceptional : Finset F, (exceptional.card : ℝ) ≤ B ∧
+      ∀ z ∉ exceptional, ∀ P : F[X], P.degree < k →
+        A ≤ (polynomialAgreementSet domain (powerBatchedWord ![f, g] z) P).card →
+        HasExactPowerAgreement domain ![f, g] (RingHom.id F) k z P) :
+    ∃ exceptional : Finset F, (exceptional.card : ℝ) ≤ B ∧
+      ∀ z ∉ exceptional, ∀ P : F[X], P.degree < k →
+        A ≤ (polynomialAgreementSet domain (fun i ↦ f i + z * g i) P).card →
+        HasExactCorrelatedPair domain f g (RingHom.id F) k z P := by
+  obtain ⟨exceptional, hcard, hgood⟩ := h
+  refine ⟨exceptional, hcard, fun z hz P hP hA ↦ ?_⟩
+  have hword : powerBatchedWord (ℓ := 1) ![f, g] z = (fun i ↦ f i + z * g i) := by
+    funext i
+    simp [powerBatchedWord, Fin.sum_univ_two]
+  exact exactCorrelatedPair_of_powerAgreement_one domain ![f, g] (RingHom.id F) z P
+    (hgood z hz P hP (by rwa [hword]))
 
 /-- A uniform exact correlated-pair guarantee for the base-field lines gives the exact-agreement
 interface for affine lines. -/
