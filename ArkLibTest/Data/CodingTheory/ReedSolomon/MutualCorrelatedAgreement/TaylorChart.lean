@@ -267,7 +267,7 @@ example :
   · simpa only [Fin.val_one] using hsetup.2.1 1 (by norm_num)
   · exact quadraticJetSampleEquation_highNumerator_ne 1
 
-/-- The default-exponent theorem recognizes the same pair at exponent `2K`. -/
+/-- The exponent-aware theorem recognizes the same pair when specialized at `τ = 2 * K`. -/
 example :
     ∃ P₀ P₁ : ℚ[X], P₀.degree < 1 ∧ P₁.degree < 1 ∧
       P₀.eval 0 = 0 ∧ P₁.eval 0 = 1 ∧
@@ -322,7 +322,7 @@ example :
     ∃ F₀ G₀ : (ZMod 2)[X], F₀.degree < 1 ∧ G₀.degree < 1 ∧
       F₀.eval 1 = 1 ∧ G₀.eval 1 = 1 ∧
       rationalTaylorPolynomial (0 : ZMod 2)
-          (MvPolynomial.map (Polynomial.evalRingHom (1 : ZMod 2)) frobeniusSampleEquation) 1
+          (MvPolynomial.map (Polynomial.evalRingHom (1 : ZMod 2)) frobeniusSampleEquation) 2
           frobeniusSampleJet =
         expand (ZMod 2) (2 ^ 1)
           (F₀.map (RingHom.id (ZMod 2)) +
@@ -345,57 +345,88 @@ example :
         subst i
         rw [RingHom.id_apply, hdom]
         norm_num) (center := 0)
-      (Q := frobeniusSampleEquation) (k := 1) (K := 1) (by omega) (by norm_num) 2
-      (taylorExponentSufficient_two_mul 0 1)
+      (Q := frobeniusSampleEquation) (k := 1) (K := 2) (by omega) (by norm_num) 4
+      (taylorExponentSufficient_two_mul 0 2)
   have hS : MvPolynomial.aeval frobeniusSampleJet
       (MvPolynomial.map (Polynomial.evalRingHom (1 : ZMod 2))
         (initialJetSeparant (Polynomial.C (0 : ZMod 2)) frobeniusSampleEquation)) ≠ 0 := by
     simp [frobeniusSampleEquation, initialJetSeparant, separant]
-  have hsparse : ∀ l : Fin 1, ¬2 ^ 1 ∣ l.val →
+  have hSφ : MvPolynomial.aeval frobeniusSampleJet
+      (MvPolynomial.map φ.toRingHom
+        (initialJetSeparant (Polynomial.C (0 : ZMod 2)) frobeniusSampleEquation)) ≠ 0 := by
+    simpa only [hφ] using hS
+  have hjet : polynomialJet (d := 0) (0 : ZMod 2) (0 : (ZMod 2)[X]) =
+      frobeniusSampleJet := by
+    funext j
+    fin_cases j
+    simp [frobeniusSampleJet, polynomialJet, Polynomial.hasseJet_apply]
+  have hsolution :
+      differentialSpecialization (MvPolynomial.map φ.toRingHom frobeniusSampleEquation)
+        (0 : (ZMod 2)[X]) = 0 := by
+    simp [frobeniusSampleEquation, differentialSpecialization, differentialSpecializationHom]
+  have hseparant :
+      jetEvaluation
+          (separant (MvPolynomial.map φ.toRingHom frobeniusSampleEquation) (Fin.last 0)) 0
+        (polynomialJet (d := 0) 0 (0 : (ZMod 2)[X])) ≠ 0 := by
+    have hsep := map_initialJetSeparant φ.toRingHom (Polynomial.C 0) frobeniusSampleEquation
+    rw [hjet, ← aeval_initialJetSeparant]
+    rw [show φ.toRingHom (Polynomial.C (0 : ZMod 2)) = 0 by simp [φ]] at hsep
+    rw [← hsep]
+    exact hSφ
+  have hpoly :
+      rationalTaylorPolynomial 0 (MvPolynomial.map φ.toRingHom frobeniusSampleEquation) 2
+        frobeniusSampleJet = 0 := by
+    rw [← hjet]
+    exact rationalTaylorPolynomial_polynomialJet 0
+      (MvPolynomial.map φ.toRingHom frobeniusSampleEquation) 0 hsolution hseparant
+      (by rw [Polynomial.degree_zero]; exact WithBot.bot_lt_coe 2)
+      (by intro i hi hiK; norm_num)
+  have hsparse : ∀ l : Fin 2, ¬2 ^ 1 ∣ l.val →
       MvPolynomial.aeval frobeniusSampleJet
         (MvPolynomial.map (Polynomial.evalRingHom (1 : ZMod 2))
           (commonTaylorNumeratorOver (F := ZMod 2) (Polynomial.C 0)
-            frobeniusSampleEquation 2 l.val)) = 0 := by
+            frobeniusSampleEquation 4 l.val)) = 0 := by
     intro l hl
-    have hl0 : l.val = 0 := by omega
-    have hdiv : 2 ^ 1 ∣ l.val := by rw [hl0]; exact dvd_zero _
-    exact (hl hdiv).elim
+    have hl_one : l = (1 : Fin 2) := Fin.ext (by omega)
+    subst l
+    have hnum := aeval_map_commonTaylorNumeratorOver_reconstruction_of_exponent
+      (F := ZMod 2) φ (Polynomial.C 0) frobeniusSampleEquation 2 4
+      (taylorExponentSufficient_two_mul 0 2) frobeniusSampleJet hSφ
+      ⟨1, by omega⟩
+    have hcoeff :
+        (Polynomial.taylor (φ (Polynomial.C (0 : ZMod 2)))
+          (rationalTaylorPolynomial (φ (Polynomial.C 0))
+            (MvPolynomial.map φ.toRingHom frobeniusSampleEquation) 2
+            frobeniusSampleJet)).coeff 1 = 0 := by
+      rw [show φ (Polynomial.C (0 : ZMod 2)) = 0 by simp [φ], hpoly]
+      simp
+    rw [hcoeff] at hnum
+    simp only [mul_zero] at hnum
+    rw [← hφ]
+    simpa only [Fin.val_one] using hnum
   have hcuts : ∀ i : Fin 1, i ∈ Finset.univ →
       MvPolynomial.aeval frobeniusSampleJet
         (MvPolynomial.map (Polynomial.evalRingHom (1 : ZMod 2))
           (taylorAgreementEquationOver (F := ZMod 2) (Polynomial.C 0)
-            frobeniusSampleEquation 1 (Polynomial.C (1 : ZMod 2))
+            frobeniusSampleEquation 2 (Polynomial.C (1 : ZMod 2))
             (Polynomial.C (1 : ZMod 2) + Polynomial.X ^ (2 ^ 1) *
-              Polynomial.C (1 : ZMod 2)) (τ := 2))) = 0 := by
+              Polynomial.C (1 : ZMod 2)) (τ := 4))) = 0 := by
     intro i hi
     have hvalue :
         (rationalTaylorPolynomial (φ (Polynomial.C (0 : ZMod 2)))
-          (MvPolynomial.map φ.toRingHom frobeniusSampleEquation) 1 frobeniusSampleJet).eval
+          (MvPolynomial.map φ.toRingHom frobeniusSampleEquation) 2 frobeniusSampleJet).eval
             (φ (Polynomial.C (1 : ZMod 2))) =
           φ (Polynomial.C (1 : ZMod 2) + Polynomial.X ^ (2 ^ 1) *
             Polynomial.C (1 : ZMod 2)) := by
       have hcenter : φ (Polynomial.C (0 : ZMod 2)) = 0 := by simp [φ]
       have hx : φ (Polynomial.C (1 : ZMod 2)) = 1 := by simp [φ]
-      have hc : rationalTaylorCoefficient (0 : ZMod 2)
-          (MvPolynomial.map φ.toRingHom frobeniusSampleEquation) frobeniusSampleJet 0 = 0 := by
-        simpa [frobeniusSampleJet] using
-          rationalTaylorCoefficient_initial (0 : ZMod 2)
-            (MvPolynomial.map φ.toRingHom frobeniusSampleEquation) frobeniusSampleJet (0 : Fin 1)
-      have hcEval : rationalTaylorCoefficient (0 : ZMod 2)
-          (MvPolynomial.map (Polynomial.evalRingHom (1 : ZMod 2)) frobeniusSampleEquation)
-            frobeniusSampleJet 0 = 0 := by
-        simpa only [hφ] using hc
       have hsum : (1 : ZMod 2) + 1 = 0 := by
         exact ZMod.natCast_self' 1
-      rw [hcenter, hx, eval_rationalTaylorPolynomial]
-      simp [hcEval, hsum, φ]
-    have hSφ : MvPolynomial.aeval frobeniusSampleJet
-        (MvPolynomial.map φ.toRingHom
-          (initialJetSeparant (Polynomial.C (0 : ZMod 2)) frobeniusSampleEquation)) ≠ 0 := by
-      simpa only [hφ] using hS
+      rw [hcenter, hx, hpoly]
+      simp [hsum, φ]
     have hcut := (aeval_map_taylorAgreementEquationOver_eq_zero_iff_of_exponent
-      (F := ZMod 2) φ (Polynomial.C 0) frobeniusSampleEquation 1 2
-      (taylorExponentSufficient_two_mul 0 1) frobeniusSampleJet hSφ
+      (F := ZMod 2) φ (Polynomial.C 0) frobeniusSampleEquation 2 4
+      (taylorExponentSufficient_two_mul 0 2) frobeniusSampleJet hSφ
       (Polynomial.C (1 : ZMod 2))
       (Polynomial.C (1 : ZMod 2) + Polynomial.X ^ (2 ^ 1) *
         Polynomial.C (1 : ZMod 2))).2 hvalue

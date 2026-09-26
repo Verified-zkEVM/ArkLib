@@ -7,6 +7,7 @@ module
 
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.GraphLine
 public import ArkLib.Data.Polynomial.Differential.TaylorChartAlgebra
+import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerBatchedPointRecognition
 
 /-!
 # Graph-line recognition on symbolic Taylor charts
@@ -68,40 +69,56 @@ theorem exists_graphLine_pair_of_symbolic_sample_of_exponent
                 (initialJetSeparant (Polynomial.C center) Q)) ^ τ *
                 (Polynomial.taylor center
                   (P₀.map iota + Polynomial.C z * P₁.map iota)).coeff l.val := by
-  obtain ⟨P₀, P₁, hP₀, hP₁, hsamplePair, hrecognize⟩ :=
-    exists_graphLine_polynomials_of_sample domain f g sample hsample
-  refine ⟨P₀, P₁, hP₀, hP₁, hsamplePair, ?_⟩
-  intro z jet hS hhigh hcuts
-  let φ : E[X] →ₐ[E] E := Polynomial.aeval z
-  have hcenter : φ (Polynomial.C center) = center := by simp [φ]
-  have hφ : φ.toRingHom = Polynomial.evalRingHom z := by
-    ext a <;> simp [φ, Polynomial.evalRingHom]
-  have hdegree :
-      (rationalTaylorPolynomial center (map (Polynomial.evalRingHom z) Q) K jet).degree < k := by
-    simpa only [hcenter, hφ] using
-      degree_rationalTaylorPolynomial_lt_of_symbolic_high_cuts_and_exponent
-        φ (Polynomial.C center) Q K k τ hτ jet hS hhigh
-  have hagree : ∀ i ∈ sample,
-      (rationalTaylorPolynomial center (map (Polynomial.evalRingHom z) Q) K jet).eval
-          (domain.trans ⟨iota, iota.injective⟩ i) = iota (f i) + z * iota (g i) := by
-    intro i hi
-    have heval := (aeval_map_taylorAgreementEquationOver_eq_zero_iff_of_exponent φ
-      (Polynomial.C center) Q K τ hτ jet hS (Polynomial.C (iota (domain i)))
-      (Polynomial.C (iota (f i)) + Polynomial.X * Polynomial.C (iota (g i)))).mp
-        (hcuts i hi)
-    have heval' :
-        (rationalTaylorPolynomial center (map (Polynomial.evalRingHom z) Q) K jet).eval
-            (domain.trans ⟨iota, iota.injective⟩ i) = iota (f i) + iota (g i) * z := by
-      simpa [hcenter, hφ, φ] using heval
-    exact heval'.trans (by ring)
-  have hpoly := hrecognize iota z _ hdegree hagree
-  refine ⟨hpoly, ?_, ?_⟩
-  · rw [← polynomialJet_add_C_mul center z, ← hpoly,
-      polynomialJet_rationalTaylorPolynomial center _ hK]
-  · intro l
-    have hcoeff := aeval_map_commonTaylorNumeratorOver_reconstruction_of_exponent φ
-      (Polynomial.C center) Q K τ hτ jet hS l
-    simpa only [hφ, hcenter, hpoly] using hcoeff
+  obtain ⟨P, hP, hsampleP, hrecognize⟩ :=
+    exists_polynomialGraph_of_symbolic_sample_of_exponent (ℓ := 1)
+      domain ![f, g] sample hsample iota center Q hK τ hτ
+  refine ⟨P 0, P 1, hP 0, hP 1, ?_, ?_⟩
+  · intro i hi
+    exact ⟨by simpa using hsampleP i hi 0, by simpa using hsampleP i hi 1⟩
+  · intro z jet hS hhigh hcuts
+    let φ : E[X] →ₐ[E] E := Polynomial.aeval z
+    have hφ : φ.toRingHom = Polynomial.evalRingHom z := by
+      ext a <;> simp [φ, Polynomial.evalRingHom]
+    have hS' : aeval jet (initialJetSeparant center (map (Polynomial.evalRingHom z) Q))
+        ≠ 0 := by
+      rw [← hφ, map_initialJetSeparant] at hS
+      simpa [φ] using hS
+    have hhigh' : ∀ l : Fin K, k ≤ l.val →
+        aeval jet (commonTaylorNumerator center
+          (map (Polynomial.evalRingHom z) Q) τ l.val) = 0 := by
+      intro l hl
+      have hh := hhigh l hl
+      rw [← hφ, map_commonTaylorNumeratorOver_eq] at hh
+      simpa [φ] using hh
+    have hcuts' : ∀ i ∈ sample,
+        aeval jet (taylorAgreementEquation center
+          (map (Polynomial.evalRingHom z) Q) K τ (iota (domain i))
+          ((powerBatchedCoordinate (fun t ↦ iota (![f, g] t i))).eval z)) = 0 := by
+      intro i hi
+      have hc := hcuts i hi
+      rw [← hφ, map_taylorAgreementEquationOver_eq] at hc
+      simpa [φ, powerBatchedCoordinate, Fin.sum_univ_two] using hc
+    obtain ⟨hpoly, hjet, hcoeff⟩ := hrecognize z jet hS' hhigh' hcuts'
+    refine ⟨?_, ?_, ?_⟩
+    · simpa [powerBatchedPolynomial, Fin.sum_univ_two, Polynomial.smul_eq_C_mul]
+        using hpoly
+    · simpa [powerBatchedJetGraph, powerBatchedCoordinate_eval, Fin.sum_univ_two]
+        using hjet
+    · intro l
+      have hc := hcoeff l
+      have hNmap : map (Polynomial.evalRingHom z)
+          (commonTaylorNumeratorOver E (Polynomial.C center) Q τ l.val) =
+          commonTaylorNumerator center (map (Polynomial.evalRingHom z) Q) τ l.val := by
+        rw [← hφ, map_commonTaylorNumeratorOver_eq]
+        simp [φ]
+      have hSmap : map (Polynomial.evalRingHom z)
+          (initialJetSeparant (Polynomial.C center) Q) =
+          initialJetSeparant center (map (Polynomial.evalRingHom z) Q) := by
+        rw [← hφ, map_initialJetSeparant]
+        simp [φ]
+      rw [hNmap, hSmap]
+      simpa [powerBatchedPolynomial, Fin.sum_univ_two,
+        Polynomial.smul_eq_C_mul] using hc
 
 
 end
