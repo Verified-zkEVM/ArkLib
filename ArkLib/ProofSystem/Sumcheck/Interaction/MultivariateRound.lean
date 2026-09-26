@@ -233,7 +233,7 @@ theorem executeCore_sampled_eq [DecidableEq R] (i : Fin n)
     Protocol.oracleWith_tree, Protocol.oracleWith_roles, Protocol.oracleWith_oracles,
     Protocol.public_tree, Protocol.public_roles, Protocol.public_oracles,
     Protocol.done_tree, Protocol.done_roles, Protocol.done_oracles,
-    Verifier.toCounterpart,
+    Verifier.toCounterpart, Verifier.toCounterpartWith,
     TypeTree.toTypeTree_oracle, TypeTree.toTypeTree_public, TypeTree.toTypeTree_done,
     TypeTree.RoleDecoration.toTypeTreeRoles_oracle,
     TypeTree.RoleDecoration.toTypeTreeRoles_public,

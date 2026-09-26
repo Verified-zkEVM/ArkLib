@@ -59,7 +59,7 @@ theorem executeCommitted_eq [DecidableEq F] (challenge : ProbComp F)
     Protocol.oracleWith_tree, Protocol.oracleWith_roles, Protocol.oracleWith_oracles,
     Protocol.public_tree, Protocol.public_roles, Protocol.public_oracles,
     Protocol.done_tree, Protocol.done_roles, Protocol.done_oracles,
-    Verifier.toCounterpart,
+    Verifier.toCounterpart, Verifier.toCounterpartWith,
     TypeTree.toTypeTree_oracle, TypeTree.toTypeTree_public, TypeTree.toTypeTree_done,
     TypeTree.RoleDecoration.toTypeTreeRoles_oracle,
     TypeTree.RoleDecoration.toTypeTreeRoles_public,
@@ -79,7 +79,8 @@ theorem executeCommitted_eq [DecidableEq F] (challenge : ProbComp F)
     rw [QueryImpl.simulateQ_liftComp_left_eq_of_apply _ (QueryImpl.id' unifSpec)
       (fun _ => rfl), simulateQ_id']
   simp only [id_eq, simulateQ_bind, simulateQ_pure, hc, bind_assoc, pure_bind,
-    simulateQ_map, simulate_terminal, map_pure]
+    simulateQ_map, TypeTree.accessAfter_oracle, TypeTree.accessAfter_public,
+    TypeTree.accessAfter_done, simulate_terminal, map_pure]
   simp only [bind_pure_comp]
   congr 1
   funext r

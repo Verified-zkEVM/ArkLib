@@ -221,7 +221,7 @@ theorem executeSampled_eq [DecidableEq R] (challenge : ProbComp R) (p : Message 
     Protocol.oracleWith_tree, Protocol.oracleWith_roles, Protocol.oracleWith_oracles,
     Protocol.public_tree, Protocol.public_roles, Protocol.public_oracles,
     Protocol.done_tree, Protocol.done_roles, Protocol.done_oracles,
-    Verifier.toCounterpart,
+    Verifier.toCounterpart, Verifier.toCounterpartWith,
     TypeTree.toTypeTree_oracle, TypeTree.toTypeTree_public, TypeTree.toTypeTree_done,
     TypeTree.RoleDecoration.toTypeTreeRoles_oracle,
     TypeTree.RoleDecoration.toTypeTreeRoles_public,
@@ -234,7 +234,8 @@ theorem executeSampled_eq [DecidableEq R] (challenge : ProbComp R) (p : Message 
     _root_.Interaction.TwoParty.participantProfile,
     _root_.Interaction.TwoParty.collectParticipantOutputs]
   simp only [id_eq, simulateQ_bind, simulateQ_pure, simulate_challenge, bind_assoc, pure_bind,
-    simulateQ_map, simulate_terminal, ite_eq_left h, map_pure]
+    simulateQ_map, TypeTree.accessAfter_oracle, TypeTree.accessAfter_public,
+    TypeTree.accessAfter_done, simulate_terminal, ite_eq_left h, map_pure]
   simp only [bind_pure_comp]
   rfl
 

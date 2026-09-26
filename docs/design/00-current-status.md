@@ -1,7 +1,7 @@
 # Current status
 
 **Status date:** 2026-09-26. **Scope:** the supported dependency baseline, what the typed
-oracle-reduction layer already provides on `main`, and its remaining proof gaps.
+oracle-reduction layer provides in this source revision, and its remaining proof gaps.
 
 The typed core, the first world-backed execution artifacts, and the Sumcheck acceptance slices have
 landed (AR-1 through AR-10B; ArkLib #851–#892). Native full-protocol Sumcheck now has a
@@ -88,7 +88,7 @@ The typed layer lives under `ArkLib/Interaction/` and `ArkLib/ProofSystem/Sumche
 with acceptance clients under `ArkLibTest/Interaction/` and `ArkLibTest/ProofSystem/Sumcheck/`.
 Naming follows [`docs/wiki/interaction-naming.md`](../wiki/interaction-naming.md).
 
-| Area | Modules | Landed in |
+| Area | Modules | Implementation |
 |---|---|---|
 | Plain dependent reductions | `Interaction/Reduction.lean` | #851 |
 | Oracle type trees, paths, decorations | `Oracle/TypeTree`, `Oracle/TypeTree/Decoration` | #852, #853 |
@@ -103,7 +103,8 @@ Naming follows [`docs/wiki/interaction-naming.md`](../wiki/interaction-naming.md
 | Finite ordered composition | `Oracle/Composition` (`ExecutionInterface`) | #891 |
 | Direct native strategy execution | `Oracle/CoreRun.executeStrategiesCore` | #1216 |
 | General native composition soundness | `Interaction/CompositionSoundness` | #1218 |
-| Oracle append paths, runtime roles, access, and query answers | `Oracle/TypeTree`, `Oracle/TypeTree/Decoration`, `Oracle/Access`, `Oracle/RunSources` | C2, #1223 |
+| Restricted verifier composition for every whole native prover | `Oracle/Sequential.executeStrategies_append` | this revision; [#1224](https://github.com/Verified-zkEVM/ArkLib/issues/1224) |
+| Oracle append paths, runtime roles, access, and query answers | `Oracle/TypeTree`, `Oracle/TypeTree/Decoration`, `Oracle/Access`, `Oracle/RunSources` | #1232 |
 | Fixed-prover, reachable, and averaged native bounds | `run_appendFlat_soundness_fixed`, `_of_support`, `_ae`, and `_weighted_ae` | #1231 |
 
 Sumcheck on the typed layer:
@@ -175,9 +176,21 @@ The acceptance example selects different suffix shapes through a public Boolean 
 the initial oracle, prefix message, and suffix messages return `[7, 11, 19]` or `[7, 11, 23, 29]`
 under both handlers. It also checks mixed prover/verifier roles and hidden message data.
 
-The plain-tree soundness result and these path laws do not yet compose restricted oracle verifiers.
-That execution theorem, exported-interface routing, paired world resources, access admissibility,
-and fault accounting remain separate obligations.
+`Oracle/Sequential.executeStrategies_append` now connects restricted verifier append to the
+actual paired run, for every whole native prover and dependent private output family. Its prefix
+returns an ordinary value; a pure function selects the suffix verifier from that value and the
+public prefix path. The suffix uses the actual remaining prover strategy and the handler built
+from the original inputs and prefix messages. The final verifier action runs once. This is equality
+of open oracle programs, so ambient effects retain their order without a commutativity premise.
+Read-only source handlers are deterministic and total; this result introduces no probability claim.
+
+The execution clients retain private memory across a challenge and public abort, check prover-owned
+and verifier-owned first suffix moves, and check the terminal action occurs once. A separate
+counterexample distinguishes an action before a prover send from moving it after that send.
+
+Exported-interface routing, composition soundness for these oracle verifiers, direct native
+persistent-runtime execution, access admissibility, and fault accounting remain separate
+obligations.
 
 The legacy verifier correspondence is honest-execution only: the legacy verifier reads the input
 polynomial for its next target, while the typed verifier reads the sent polynomial. Both relation

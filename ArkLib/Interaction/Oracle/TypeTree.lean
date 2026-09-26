@@ -266,5 +266,66 @@ theorem toTypeTree_append : (tree : TypeTree.{u}) →
       funext message
       exact toTypeTree_append (rest PUnit.unit) (fun path => suffix ⟨PUnit.unit, path⟩)
 
+namespace ExecutionPath
+
+private theorem runtimePath_node_heq {Moves : Type u}
+    {left right : Moves → _root_.Interaction.TypeTree}
+    (h : ∀ move, left move = right move) (move : Moves)
+    {first : _root_.Interaction.TypeTree.Path (left move)}
+    {second : _root_.Interaction.TypeTree.Path (right move)} (hpath : HEq first second) :
+    HEq (⟨move, first⟩ : _root_.Interaction.TypeTree.Path
+      (_root_.Interaction.TypeTree.node Moves left))
+      (⟨move, second⟩ : _root_.Interaction.TypeTree.Path
+        (_root_.Interaction.TypeTree.node Moves right)) := by
+  have same := funext h
+  cases same
+  cases hpath
+  rfl
+
+private theorem toTypeTreePath_append_heq : (tree : TypeTree.{u}) →
+    (suffix : BranchPath tree → TypeTree.{u}) →
+    (path : _root_.Interaction.TypeTree.Path tree.toTypeTree) →
+    (rest : _root_.Interaction.TypeTree.Path
+      (suffix (ofTypeTreePath path).toBranchPath).toTypeTree) →
+    HEq (ExecutionPath.toTypeTreePath (PFunctor.FreeM.PathAlong.append runtimeLens tree suffix
+      (ofTypeTreePath path) (ofTypeTreePath rest)))
+      (PFunctor.FreeM.Path.append tree.toTypeTree
+        (fun p => (suffix (ofTypeTreePath p).toBranchPath).toTypeTree) path rest)
+  | .done, _, path, rest => by
+      cases path
+      exact heq_of_eq (toTypeTreePath_ofTypeTreePath rest)
+  | .public _ branches, suffix, path, rest => by
+      apply runtimePath_node_heq
+        (fun move => toTypeTree_append (branches move) (fun p => suffix ⟨move, p⟩))
+        path.1
+      exact toTypeTreePath_append_heq (branches path.1)
+        (fun p => suffix ⟨path.1, p⟩) path.2 rest
+  | .oracle _ branches, suffix, path, rest => by
+      apply runtimePath_node_heq
+        (fun _ => toTypeTree_append (branches PUnit.unit) (fun p => suffix ⟨PUnit.unit, p⟩))
+        path.1
+      exact toTypeTreePath_append_heq (branches PUnit.unit)
+        (fun p => suffix ⟨PUnit.unit, p⟩) path.2 rest
+
+/-- Joining runtime paths and then recovering their concrete oracle messages agrees with joining
+those messages directly. The cast identifies only the runtime trees proved equal by append. -/
+theorem ofTypeTreePath_append (tree : TypeTree.{u})
+    (suffix : BranchPath tree → TypeTree.{u})
+    (path : _root_.Interaction.TypeTree.Path tree.toTypeTree)
+    (rest : _root_.Interaction.TypeTree.Path
+      (suffix (ofTypeTreePath path).toBranchPath).toTypeTree) :
+    ofTypeTreePath (cast (congrArg _root_.Interaction.TypeTree.Path
+      (toTypeTree_append tree suffix).symm)
+      (PFunctor.FreeM.Path.append tree.toTypeTree
+        (fun p => (suffix (ofTypeTreePath p).toBranchPath).toTypeTree) path rest)) =
+      PFunctor.FreeM.PathAlong.append runtimeLens tree suffix
+        (ofTypeTreePath path) (ofTypeTreePath rest) := by
+  have same := eq_of_heq ((cast_heq (congrArg _root_.Interaction.TypeTree.Path
+    (toTypeTree_append tree suffix).symm) _).trans
+      (toTypeTreePath_append_heq tree suffix path rest).symm)
+  rw [same, ofTypeTreePath_toTypeTreePath]
+
+end ExecutionPath
+
 end TypeTree
 end Interaction.Oracle

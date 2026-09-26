@@ -113,6 +113,23 @@ it to closed oracle claims. `Problem` adds claim-dependent witnesses, admissibil
 that entails admissibility. `language` existentially quantifies the witness. `Relation` removes the
 admissibility restriction; it does not assert that every claim has a witness.
 
+## Verifier strategies and fragments
+
+`Verifier.Fragment` is the existing restricted strategy type with a chosen family of leaf values.
+Queries still run at the protocol nodes, using their declared access. Returning a leaf value does
+not execute a terminal action. `Verifier.Strategy` is the completed-protocol specialization whose
+leaf value is the final query program; `executeStrategies` runs that program once.
+
+Both forms use the same recursive interpreter, `toCounterpartWith`. `toCounterpartValue` returns
+a fragment's value directly; `toCounterpart` leaves the translated final query program for the
+executor to run. The interpreter receives concrete messages and maintains the handler. Verifier
+authoring receives only the declared query interface.
+
+`Verifier.appendFragment` joins a value-returning prefix to a suffix selected by a pure function of
+the public prefix path and returned value. The path determines the suffix tree, roles, and oracle
+interfaces; the value selects its strategy within that tree. `Verifier.append` specializes the
+suffix to a completed verifier. Neither operation executes a pending action at the join.
+
 ## Execution data and closing
 
 `CoreRun` stores a concrete path, initial behavior, private output, and the terminal open claim.
