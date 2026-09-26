@@ -27,6 +27,10 @@ home_page/            site assets and assembled website root
 - `ArkLib/Interaction/Oracle/` refines generic type trees with public/oracle positions, keeps
   structural `BranchPath` separate from concrete `ExecutionPath` messages, and adds position-typed
   role/interface decorations plus the minimal decorated `Oracle.Protocol` bundle.
+- `Interaction/Oracle/Composition.lean` executes finite chains through closed claims and private
+  state. `Interaction/Oracle/OrderedSoundness.lean` accumulates per-stage false-to-accepted-true
+  errors for that optional executor. Its native measure theorem excludes rejection and does not
+  yet provide the world-backed, admissibility-aware soundness game.
 - `ArkLib/OracleReduction/` remains the conceptual center of the legacy reduction and security
   layer while protocol clients migrate.
 - `ArkLib/Data/`, `ArkLib/ToMathlib/`, and `ArkLib/ToCompPoly/` support the

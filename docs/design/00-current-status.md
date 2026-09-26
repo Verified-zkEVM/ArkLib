@@ -1,10 +1,11 @@
 # Current status
 
-**Status date:** 2026-09-22. **Scope:** the supported dependency baseline, what the typed
+**Status date:** 2026-09-25. **Scope:** the supported dependency baseline, what the typed
 oracle-reduction layer already provides on `main`, and the next open work.
 
 The typed core, the first world-backed execution artifacts, and the Sumcheck acceptance slices have
-landed (AR-1 through AR-10B; ArkLib #851–#892). No declaration under `ArkLib/Interaction/` or
+landed (AR-1 through AR-10B; ArkLib #851–#892). Optional ordered execution now also has a generic
+soundness error accumulation theorem. No declaration under `ArkLib/Interaction/` or
 `ArkLib/ProofSystem/Sumcheck/Interaction/` uses `sorry`. The next work is protocol evidence beyond
 Sumcheck (FRI and Spartan slices), multi-round Sumcheck soundness, and the admissibility-aware
 ordinary soundness composition theorem. State restoration and the compiler remain blocked on the
@@ -101,6 +102,15 @@ Naming follows [`docs/wiki/interaction-naming.md`](../wiki/interaction-naming.md
 | Accept/reject/fault outcomes | `Oracle/Terminal`, `Oracle/TerminalRun`, `Oracle/TerminalMeasure` | #886 |
 | Ordered world phases | `Oracle/WorldSegments`, `Oracle/PhasedExecution`, `Oracle/PhasedRun` | #889 |
 | Finite ordered composition | `Oracle/Composition` (`ExecutionInterface`) | #891 |
+| Optional ordered soundness | `Oracle/OrderedSoundness` (`OrderedExecution.run_soundness_measure`) | — |
+
+`OrderedExecution.run_soundness_measure` bounds the mass of accepted true final states by the sum
+of per-stage errors, starting from a false input. Each stage's bound ranges over every false input
+state, including its closed oracle behavior and private prover state. Rejection is excluded from
+the event; true inputs need no preservation premise. The theorem uses the chosen native measure
+semantics of the ambient oracle specification and discrete measurable boundary states, without a
+countability assumption. It does not supply a persistent-world game, output-admissibility bound,
+or fault budget. Those remain obligations of the general ordinary soundness composition theorem.
 
 Sumcheck on the typed layer:
 
@@ -151,7 +161,7 @@ In roadmap order (see [`05-roadmap.md`](05-roadmap.md)):
 
 | Item | Roadmap phase | Dependency |
 |---|---|---|
-| Multi-round Sumcheck soundness over `ExecutionInterface` composition | 3–4 | unblocked |
+| Multi-round Sumcheck soundness over `ExecutionInterface` composition | 3–4 | generic optional accumulation available; per-round bridge and adversary adapter open |
 | One FRI slice (derived virtual view) with a two-way legacy bridge | 3 | unblocked |
 | One Spartan-like slice (fresh prover message) with a two-way legacy bridge | 3 | unblocked |
 | Admissibility-aware ordinary soundness composition | 4 | unblocked; #889 does not yet connect the world-query classifier to `availableContext` |

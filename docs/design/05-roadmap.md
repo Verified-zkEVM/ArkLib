@@ -22,7 +22,7 @@ two months, and XL is an open-ended program.
 The alignment slice (#811) fixed the initial train at Lean 4.33.1, VCVio `f9dc47d9`, and PolyFun
 `c0c92369`. The current supported train is recorded in `00-current-status.md`.
 
-**Progress as of 2026-09-22:**
+**Progress as of 2026-09-25:**
 
 | Phase | Status | Evidence |
 |---|---|---|
@@ -31,7 +31,7 @@ The alignment slice (#811) fixed the initial train at Lean 4.33.1, VCVio `f9dc47
 | 2 — Minimum viable protocol | done | AR-7 #872, AR-8 #874 |
 | 3 — Composition and two contrasting protocols | Sumcheck composition done; FRI and Spartan slices open | #879, #883, #891, #892 |
 | Parallel upstream lane | items 1–2 done; items 3–4 open | VCVio `Runtime` and `WithFailure` |
-| 4 — World-backed execution and ordinary security | artifacts done; composition theorem open | AR-9A #884, AR-9B #886, AR-10A #880, AR-10B #889 |
+| 4 — World-backed execution and ordinary security | artifacts and optional error accumulation done; world-backed composition open | AR-9A #884, AR-9B #886, AR-10A #880, AR-10B #889; `Oracle/OrderedSoundness` |
 | 5 — State restoration | not started | blocked on upstream lane items 3–4 |
 | 6 — Compiler | not started | follows Phase 5 |
 
@@ -146,9 +146,14 @@ Prove ordinary soundness composition in its honest form:
 **Gate:** the Sumcheck, FRI, and Spartan slices have two-way legacy bridges; the composition theorem
 is sorry-free; no theorem recreates unrestricted stateful composition.
 
-**Status:** AR-9A (#884), AR-9B (#886), AR-10A (#880), and AR-10B (#889) landed. The ordinary
-soundness composition theorem and multi-round Sumcheck soundness are open. #889's world-query
-classifier is not yet connected to `availableContext`, so its profile additivity proves neither
+**Status:** AR-9A (#884), AR-9B (#886), AR-10A (#880), and AR-10B (#889) landed.
+`OrderedExecution.run_soundness_measure` now proves additive false-to-accepted-true error bounds
+for the optional ordered executor under its native oracle measure semantics. The next Sumcheck
+step is to prove the sampled multivariate round bound through the actual closed claim, then
+instantiate this theorem and provide the randomized adaptive-prover interface.
+The general admissibility-aware, world-backed composition theorem remains open: it must connect
+terminal outcomes and runtime state/history to the suffix security premise and account for faults.
+#889's world-query classifier is not yet connected to `availableContext`, so its profile additivity proves neither
 access admissibility nor a cost bound.
 
 ## Phase 5 — State restoration and extractor calculus [L]
