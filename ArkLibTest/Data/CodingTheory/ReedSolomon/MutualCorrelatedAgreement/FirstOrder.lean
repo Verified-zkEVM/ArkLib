@@ -9,6 +9,7 @@ import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.HybridCurveRecovery
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.HybridTransfer
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.OrdinaryTail
+import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Profile
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.AutomaticHybrid
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.AutomaticMcaError
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.RateBounds
@@ -31,6 +32,8 @@ transfer theorems over the complex field.
 * Regular-stage, hybrid, and optimized exceptional-set bounds have concrete instances.
 * Both ordinary-tail hybrid-transfer bounds have concrete instances, with the ordinary-tail
   premise supplied by the order-zero tail of a concrete descent.
+* A concrete curve-verified profile gives a base-field challenge with exact power agreement
+  through the sharp optimized squarefree bound.
 * The hybrid transfer for a nonzero equation has concrete extension-field and base-field
   instances.
 * The automatic recipe at rate `1/2` and agreement `3/4`, the rate-slack bounds at slack `1/8`,
@@ -544,3 +547,42 @@ below the first-order derivative cap. -/
 example := exists_uniformFirstOrder_lineMca 3 2 3 ternaryLineDomain (fun _ ↦ 0) (fun _ ↦ 1)
   (by norm_num) (by norm_num) (by norm_num) (by norm_num)
   (Or.inr (by rw [ZMod.ringChar_zmod_n]; norm_num))
+
+/-! ### Sharp squarefree profile bound -/
+
+/-- A curve-verified profile at `n = k = A = 2` with derivative cap `1`. -/
+private def sharpSquarefreeProfile : ReedSolomon.HiddenDerivative.CurveProfile.LineProfile :=
+  { n := 2
+    k := 2
+    agreement := 2
+    multiplicity := 1
+    firstDerivativeCap := 1
+    totalJetCap := 1
+    batchingDegree := 1
+    supportDimension := 5
+    localRank := 2
+    columnY₀Weight := 1
+    height := 1
+    heightSlots := 9 }
+
+private def sharpProfileDomain : Fin 2 ↪ ℚ :=
+  ⟨fun i ↦ (i.val : ℚ), fun i j h ↦ by
+    change (i.val : ℚ) = (j.val : ℚ) at h
+    exact Fin.ext (by exact_mod_cast h)⟩
+
+private def sharpProfileValues : Fin 2 → Fin 2 → ℚ := fun _ _ ↦ 0
+
+/-- The sharp optimized profile bound gives a base-field challenge at which the zero polynomial
+has exact power agreement with the zero line. -/
+example : ∃ z : ℚ, HasExactPowerAgreement sharpProfileDomain sharpProfileValues
+    (RingHom.id ℚ) 2 z 0 := by
+  obtain ⟨exceptional, -, hgood⟩ :=
+    exists_exceptional_exactPowerAgreement_squarefreeSharpOptimized
+      (E := AlgebraicClosure ℚ) (p := sharpSquarefreeProfile) (by decide) 2
+      ⟨le_rfl, le_rfl, le_rfl⟩ Nat.one_pos le_rfl le_rfl sharpProfileDomain
+      sharpProfileValues (algebraMap ℚ (AlgebraicClosure ℚ))
+      (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
+  obtain ⟨z, hz⟩ := Finset.exists_notMem exceptional
+  exact ⟨z, hgood z hz 0 (WithBot.bot_lt_coe 2) (by
+    norm_num [sharpSquarefreeProfile, polynomialAgreementSet, powerBatchedWord,
+      sharpProfileValues])⟩
