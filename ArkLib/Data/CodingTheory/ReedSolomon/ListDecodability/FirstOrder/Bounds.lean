@@ -35,6 +35,8 @@ certificate improves the dependence on positive agreement slack to an inverse sq
 * `automatic_first_order_squarefree_list_bound_of_slack`: the inverse-square slack bound.
 * `FirstOrder.closePolynomialSet_finite_and_card_le_finiteLength_of_certificate`:
   the finite-length bound for a certified complete list.
+* `FirstOrder.closePolynomialSet_finite_and_card_le_finiteLength_of_bounded_certificate`:
+  the finite-length list bound for either derivative-cap endpoint.
 * `FirstOrder.closePolynomialSet_finite_and_card_le_finiteLength_of_dimension_le_one`:
   the finite-length bound for dimensions at most one.
 
@@ -45,7 +47,7 @@ certificate improves the dependence on positive agreement slack to an inverse sq
 
 @[expose] public section
 
-open Polynomial
+open Polynomial PolynomialDifferential
 
 namespace ReedSolomon
 
@@ -554,6 +556,85 @@ theorem closePolynomialSet_finite_and_card_le_inv_eta_of_certificate
   refine ⟨hfinite, hcard.trans ?_⟩
   exact div_finiteLengthSlack_sq_le_div_eta_sq
     (by positivity : 0 ≤ 7 * C ^ 3 * (n : ℝ)) heta
+
+open Classical in
+/-- A generic certificate-to-complete-list bridge with explicit finite-length support bounds.
+It handles the exact `M = 0` ordinary endpoint as well as the positive squarefree branch. -/
+theorem closePolynomialSet_finite_and_card_le_finiteLength_of_bounded_certificate
+    {F : Type u} [Field F] {C eta : ℝ}
+    {Dcert A m M B k H n N : ℕ}
+    (domain : Fin n ↪ F) (received : Fin n → F)
+    (columns : Fin N → SourceColumn 1)
+    (cert : FirstOrderSymbolicCertificate.{u, u} (F := F)
+      Dcert A m M B k H domain received (fun _ ↦ 0) columns)
+    (hn : 2 ≤ n) (hk : 2 ≤ k) (hkA : k ≤ A) (hAn : A ≤ n)
+    (hMB : M ≤ B)
+    (hchar : ringChar F = 0 ∨ max (k - 1) M < ringChar F)
+    (hC : 1 ≤ C) (heta : 0 < eta) (hsOne : finiteLengthSlack eta n ≤ 1)
+    (hlambda : ((n - k + 1 : ℕ) : ℝ) / (A - k + 1 : ℕ) ≤ C)
+    (hB : (B : ℝ) ≤ C / finiteLengthSlack eta n) :
+    (closePolynomialSet domain received k A).Finite ∧
+      ((closePolynomialSet domain received k A).ncard : ℝ) ≤
+        7 * C ^ 3 * n / finiteLengthSlack eta n ^ 2 := by
+  by_cases hMzero : M = 0
+  · let T := closePolynomialSet domain received k A
+    have hfinite : T.Finite := closePolynomialSet_finite domain received hkA
+    let phi := Polynomial.eval₂RingHom (RingHom.id F) 0
+    let Q : DifferentialPolynomial F 1 := MvPolynomial.map phi cert.Q
+    obtain ⟨hQ, hsound⟩ := cert.specialization_sound (RingHom.id F) 0
+    have hweight : jetTotalDegree Q ≤ B := by
+      exact (jetTotalDegree_map_le phi cert.Q).trans
+        ((jetTotalDegree_le_iff cert.Q B).mpr cert.totalJetDegree_le)
+    have hdegree : jetDegree Q (1 : Fin 2) ≤ M := by
+      exact (jetDegree_map_le phi cert.Q (1 : Fin 2)).trans
+        cert.toCurve.jetDegree_one_le
+    have hsem (S : Finset F[X])
+        (hS : ∀ P ∈ S, P.degree < k ∧
+          A ≤ (Finset.univ.filter fun i ↦ P.eval (domain i) = received i).card) :
+        (S.card : ℝ) ≤ B := by
+      have hsol : ∀ P ∈ S, differentialSpecialization Q P = 0 := by
+        intro P hP
+        let indices := Finset.univ.filter fun i ↦ P.eval (domain i) = received i
+        apply hsound indices P (hS P hP).1 (hS P hP).2
+        intro i hi
+        simpa using (Finset.mem_filter.mp hi).2
+      have hraw := HiddenDerivative.finite_firstOrder_field_hybrid_agreement_solutions_card_le
+        domain received Q hQ hweight hdegree (by omega) (by omega) hAn hMB hchar S hsol
+          (fun P hP ↦ by
+            have hkEq : ((k - 1 : ℕ) : WithBot ℕ) + 1 = (k : WithBot ℕ) := by
+              exact_mod_cast (Nat.sub_add_cancel (by omega : 1 ≤ k))
+            simpa only [hkEq] using hS P hP)
+      simpa only [hMzero, firstOrderListConstant, stageStaircase, Nat.cast_zero,
+        mul_zero, zero_mul, zero_div, zero_add, add_zero, Nat.sub_zero] using hraw.2.2
+    refine ⟨hfinite, ?_⟩
+    rw [Set.ncard_eq_toFinset_card _ hfinite]
+    apply (hsem hfinite.toFinset (fun P hP ↦
+      (show P.degree < k ∧ A ≤ (Finset.univ.filter fun i ↦ P.eval (domain i) = received i).card by
+        simpa [T, closePolynomialSet, polynomialAgreementSet] using
+          (hfinite.mem_toFinset.mp hP)))).trans
+    let s := finiteLengthSlack eta n
+    have hs : 0 < s := finiteLengthSlack_pos (n := n) heta
+    have hnOne : (1 : ℝ) ≤ n := by exact_mod_cast (show 1 ≤ n by omega)
+    have hC0 : 0 ≤ C := zero_le_one.trans hC
+    calc
+      (B : ℝ) ≤ C / s := hB
+      _ ≤ 7 * C ^ 3 * n / s ^ 2 := by
+        rw [le_div_iff₀ (sq_pos_of_pos hs)]
+        have hCs : C / s * s ^ 2 = C * s := by
+          field_simp [ne_of_gt hs]
+        rw [hCs]
+        have hCs : C ≤ C ^ 3 := by
+          nlinarith [mul_nonneg hC0 (sub_nonneg.mpr hC),
+            mul_nonneg (sq_nonneg C) (sub_nonneg.mpr hC)]
+        calc
+          C * s ≤ C := mul_le_of_le_one_right hC0 hsOne
+          _ ≤ C ^ 3 := hCs
+          _ ≤ 7 * C ^ 3 * n := by
+            have hC3 : 0 ≤ C ^ 3 := by positivity
+            nlinarith [mul_nonneg hC3 (zero_le_one.trans hnOne)]
+  · exact closePolynomialSet_finite_and_card_le_finiteLength_of_certificate
+      domain received columns cert hk hkA hAn
+        (Nat.one_le_iff_ne_zero.mpr hMzero) hMB hchar hC heta hsOne hlambda hB
 
 end FirstOrder
 

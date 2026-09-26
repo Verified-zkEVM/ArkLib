@@ -27,6 +27,7 @@ finite-length slack and the exceptional challenge set by an inverse-fourth slack
 * `exists_finiteLengthFirstOrder_symbolicCertificate` constructs the line certificate.
 * `closePolynomialSet_finite_and_card_le_finiteLength_of_selector_certificate` bounds the list.
 * `exists_exceptional_finiteLengthMca_of_selector_certificate` gives exact line agreement.
+* `exists_exceptional_firstOrderMca_of_bounded_certificate` bounds both certificate endpoints.
 * `finiteLength_completeList_and_exceptionalMca_of_selector_certificates` combines both bounds.
 
 ## References
@@ -249,32 +250,72 @@ theorem exists_finiteLengthFirstOrder_symbolicCertificate
     centers w Q hQsupport hconstraints iota z indices P hPdegree hcard hagreeCurve
 
 open Classical in
-private theorem exists_exceptional_finiteLengthMca_zero_derivative
+/-- Generic ordinary-endpoint descent for an actual first-order certificate with exact
+derivative cap zero.  The exceptional set is selected before the challenge and candidate. -/
+theorem exists_exceptional_firstOrderMca_zero_derivative_of_certificate
     {F : Type u} [Field F]
-    {rho eta : ℝ} {n N Dcert k A : ℕ}
+    {n N Dcert k A m B H : ℕ}
     (hk : 2 ≤ k) (hkA : k ≤ A) (hAn : A ≤ n)
     (domain : Fin n ↪ F) (f g : Fin n → F)
     (columns : Fin N → SourceColumn 1)
-    (cert : FirstOrderSymbolicCertificate.{u, u} Dcert A
-      (finiteLengthMultiplicity rho eta n)
-      (finiteLengthDerivativeCap rho eta n)
-      (finiteLengthJetDegree rho eta n) k
-      (finiteLengthChallengeHeight rho eta n) domain f g columns)
-    (hMzero : finiteLengthDerivativeCap rho eta n = 0)
-    (hchar : ringChar F = 0 ∨
-      max (k - 1) (finiteLengthDerivativeCap rho eta n) < ringChar F) :
+    (cert : FirstOrderSymbolicCertificate.{u, u} Dcert A m 0 B k H
+      domain f g columns)
+    (hchar : ringChar F = 0 ∨ max (k - 1) 0 < ringChar F) :
     ∃ exceptional : Finset F,
       (exceptional.card : ℝ) ≤
-        firstOrderExceptionConstant (agreementIncidenceRatio n (k - 1) A)
-          n (k - 1) (finiteLengthChallengeHeight rho eta n)
-          (finiteLengthJetDegree rho eta n) (finiteLengthDerivativeCap rho eta n) ∧
+        firstOrderExceptionConstant (agreementIncidenceRatio n (k - 1) A) n (k - 1) H B 0 ∧
       ∀ z ∉ exceptional, ∀ P : F[X], P.degree < k →
         A ≤ (polynomialAgreementSet domain (fun i ↦ f i + z * g i) P).card →
         HasExactCorrelatedPair domain f g (RingHom.id F) k z P := by
   obtain ⟨exceptional, _, _, hcard, hgood⟩ :=
     cert.exists_exceptional_hybrid (D := k - 1) (by omega) (by omega)
-      (by omega) hAn (by simp [hMzero]) hchar
+      (by omega) hAn (by simp) hchar
   exact ⟨exceptional, hcard, hgood⟩
+
+open Classical in
+/-- A generic certificate-to-MCA bridge with explicit finite-length arithmetic and support
+premises.  It preserves the ordinary `M = 0` endpoint and exact full agreement sets. -/
+theorem exists_exceptional_firstOrderMca_of_bounded_certificate
+    {F E : Type u} [Field F] [Field E] [IsAlgClosed E]
+    {C eta : ℝ} {n N Dcert k A m M B H : ℕ}
+    (domain : Fin n ↪ F) (f g : Fin n → F) (iota : F →+* E)
+    (columns : Fin N → SourceColumn 1)
+    (cert : FirstOrderSymbolicCertificate.{u, u} Dcert A m M B k H
+      domain f g columns)
+    (hn : 1 ≤ n) (hk : 2 ≤ k) (hkA : k ≤ A) (hAn : A ≤ n)
+    (hBpos : 1 ≤ B) (hMB : M ≤ B)
+    (hchar : ringChar F = 0 ∨ max (k - 1) M < ringChar F)
+    (hC : 1 ≤ C) (heta : 0 < eta) (hsOne : finiteLengthSlack eta n ≤ 1)
+    (hDn : k - 1 ≤ n)
+    (htheta : agreementIncidenceRatio n (k - 1) A ≤ C)
+    (hB : (B : ℝ) ≤ C / finiteLengthSlack eta n)
+    (hM : (M : ℝ) ≤ C / finiteLengthSlack eta n)
+    (hH : (H : ℝ) ≤ C / finiteLengthSlack eta n ^ 2) :
+    ∃ exceptional : Finset F,
+      (exceptional.card : ℝ) ≤ 140 * C ^ 6 * n ^ 2 /
+        finiteLengthSlack eta n ^ 4 ∧
+      ∀ z ∉ exceptional, ∀ P : F[X], P.degree < k →
+        A ≤ (polynomialAgreementSet domain (fun i ↦ f i + z * g i) P).card →
+        HasExactCorrelatedPair domain f g (RingHom.id F) k z P := by
+  have htheta0 : 0 ≤ agreementIncidenceRatio n (k - 1) A := by
+    unfold agreementIncidenceRatio
+    positivity
+  have hEnvelope := finiteLengthMcaEnvelope_le hC heta hn hsOne hDn htheta0 htheta hB hM hH
+  by_cases hMzero : M = 0
+  · subst M
+    obtain ⟨exceptional, hcard, hgood⟩ :=
+      exists_exceptional_firstOrderMca_zero_derivative_of_certificate
+        hk hkA hAn domain f g columns cert hchar
+    refine ⟨exceptional, hcard.trans ?_, hgood⟩
+    rw [firstOrderExceptionConstant_zero_eq_finiteLengthMcaEnvelope _ _ _ _ _ hBpos]
+    exact hEnvelope
+  · obtain ⟨exceptional, hcard, hgood⟩ :=
+      Squarefree.exists_baseExceptional_retainedSquarefreeLineAgreement_of_certificate
+        domain f g iota columns cert hk hkA hAn
+          (Nat.one_le_iff_ne_zero.mpr hMzero) hMB hchar
+    refine ⟨exceptional, hcard.trans ?_, hgood⟩
+    rw [Squarefree.retainedSquarefreeLineAgreementEnvelope_eq_finiteLengthMcaEnvelope]
+    exact hEnvelope
 
 /-- The constant-polynomial endpoint needs no interpolation equation.  Pairwise collisions of
 received coordinates are the only exceptional challenges. -/
@@ -543,71 +584,32 @@ theorem closePolynomialSet_finite_and_card_le_finiteLength_of_selector_certifica
     have hnTwo : 2 ≤ n := hkTwo.trans hkn
     have hMB : M ≤ B := finiteLengthDerivativeCap_le_jetDegree
       hrho hrhoOne heta hn
-    by_cases hMzero : M = 0
-    · let T := closePolynomialSet domain received k A
-      have hfinite : T.Finite := closePolynomialSet_finite domain received hkA
-      let phi := Polynomial.eval₂RingHom (RingHom.id F) 0
-      let Q : DifferentialPolynomial F 1 := MvPolynomial.map phi cert.Q
-      obtain ⟨hQ, hsound⟩ := cert.specialization_sound (RingHom.id F) 0
-      have hweight : jetTotalDegree Q ≤ B := by
-        exact (jetTotalDegree_map_le phi cert.Q).trans
-          (jetTotalDegree_le_iff _ _ |>.2 cert.totalJetDegree_le)
-      have hdegree : jetDegree Q (1 : Fin 2) ≤ M := by
-        exact (jetDegree_map_le phi cert.Q (1 : Fin 2)).trans
-          cert.toCurve.jetDegree_one_le
-      have hsem (S : Finset F[X])
-          (hS : ∀ P ∈ S, P.degree < k ∧
-            A ≤ (Finset.univ.filter fun i ↦ P.eval (domain i) = received i).card) :
-          (S.card : ℝ) ≤ B := by
-        have hsol : ∀ P ∈ S, differentialSpecialization Q P = 0 := by
-          intro P hP
-          let indices := Finset.univ.filter fun i ↦ P.eval (domain i) = received i
-          apply hsound indices P (hS P hP).1 (hS P hP).2
-          intro i hi
-          simpa using (Finset.mem_filter.mp hi).2
-        have hraw := HiddenDerivative.finite_firstOrder_field_hybrid_agreement_solutions_card_le
-          domain received Q hQ hweight hdegree (by omega) (by omega) hAn hMB hchar S hsol
-            (fun P hP ↦ by
-              have hkEq : ((k - 1 : ℕ) : WithBot ℕ) + 1 = (k : WithBot ℕ) := by
-                exact_mod_cast (Nat.sub_add_cancel (by omega : 1 ≤ k))
-              simpa only [hkEq] using hS P hP)
-        simpa only [M, B, hMzero, firstOrderListConstant, stageStaircase, Nat.cast_zero,
-          mul_zero, zero_mul, zero_div, zero_add, add_zero, Nat.sub_zero] using hraw.2.2
-      refine ⟨hfinite, ?_⟩
-      rw [Set.ncard_eq_toFinset_card _ hfinite]
-      apply (hsem hfinite.toFinset (fun P hP ↦
-        (by simpa [T, closePolynomialSet, polynomialAgreementSet] using
-          (hfinite.mem_toFinset.mp hP)))).trans
-      exact finiteLengthSelectorJetDegree_le_listEnvelope
+    have htheta : agreementIncidenceRatio n (k - 1) A ≤ C := by
+      have hDn : k - 1 ≤ n := by omega
+      have hDA : k - 1 < A := by omega
+      have hthetaRate := agreementIncidenceRatio_le_one_div_sub hDn hDA hDrate hA
+        (show rho < firstOrderRateThreshold rho + eta by
+          exact (rate_lt_firstOrderRateThreshold hrho hrhoOne).trans
+            (lt_add_of_pos_right _ heta))
+      calc
+        agreementIncidenceRatio n (k - 1) A ≤
+            1 / (firstOrderRateThreshold rho + eta - rho) := hthetaRate
+        _ ≤ 1 / (firstOrderRateThreshold rho - rho) := by
+          exact div_le_div_of_nonneg_left zero_le_one
+            (sub_pos.mpr (rate_lt_firstOrderRateThreshold hrho hrhoOne)) (by linarith)
+        _ ≤ automaticRateEnvelopeConstant rho :=
+          automaticRateGapInv_le_rateEnvelopeConstant rho
+        _ ≤ C := le_max_right _ _
+    have hlambda : ((n - k + 1 : ℕ) : ℝ) / (A - k + 1 : ℕ) ≤ C := by
+      simpa only [C, agreementIncidenceRatio, show n - k + 1 = n - (k - 1) by omega,
+        show A - k + 1 = A - (k - 1) by omega] using htheta
+    obtain ⟨_hm, _hMsel, hBsel⟩ :=
+      finiteLength_multiplicity_derivativeCap_jetDegree_bounds
         hrho hrhoOne heta haOne hn hbetaHalf
-    · have hM : 1 ≤ M := Nat.one_le_iff_ne_zero.mpr hMzero
-      have htheta : agreementIncidenceRatio n (k - 1) A ≤ C := by
-        have hDn : k - 1 ≤ n := by omega
-        have hDA : k - 1 < A := by omega
-        have hthetaRate := agreementIncidenceRatio_le_one_div_sub hDn hDA hDrate hA
-          (show rho < firstOrderRateThreshold rho + eta by
-            exact (rate_lt_firstOrderRateThreshold hrho hrhoOne).trans
-              (lt_add_of_pos_right _ heta))
-        calc
-          agreementIncidenceRatio n (k - 1) A ≤
-              1 / (firstOrderRateThreshold rho + eta - rho) := hthetaRate
-          _ ≤ 1 / (firstOrderRateThreshold rho - rho) := by
-            exact div_le_div_of_nonneg_left zero_le_one
-              (sub_pos.mpr (rate_lt_firstOrderRateThreshold hrho hrhoOne)) (by linarith)
-          _ ≤ automaticRateEnvelopeConstant rho :=
-            automaticRateGapInv_le_rateEnvelopeConstant rho
-          _ ≤ C := le_max_right _ _
-      have hlambda : ((n - k + 1 : ℕ) : ℝ) / (A - k + 1 : ℕ) ≤ C := by
-        simpa only [C, agreementIncidenceRatio, show n - k + 1 = n - (k - 1) by omega,
-          show A - k + 1 = A - (k - 1) by omega] using htheta
-      obtain ⟨_hm, _hMsel, hBsel⟩ :=
-        finiteLength_multiplicity_derivativeCap_jetDegree_bounds
-          hrho hrhoOne heta haOne hn hbetaHalf
-      have hB : (B : ℝ) ≤ C / s := by
-        exact hBsel.trans (div_le_div_of_nonneg_right (le_max_left _ _) hs.le)
-      exact closePolynomialSet_finite_and_card_le_finiteLength_of_certificate
-        domain received columns cert hkTwo hkA hAn hM hMB hchar hC heta hsOne
-          hlambda hB
+    have hB : (B : ℝ) ≤ C / s := by
+      exact hBsel.trans (div_le_div_of_nonneg_right (le_max_left _ _) hs.le)
+    exact closePolynomialSet_finite_and_card_le_finiteLength_of_bounded_certificate
+      domain received columns cert hnTwo hkTwo hkA hAn hMB hchar hC heta hsOne hlambda hB
   · have hkOne : k ≤ 1 := by omega
     exact closePolynomialSet_finite_and_card_le_finiteLength_of_dimension_le_one
       domain received hnOne hkOne hkA hC heta hsOne
@@ -664,12 +666,12 @@ private theorem exists_exceptional_finiteLengthMca_of_selector_certificate_of_tw
     finiteLengthSelectorMcaEnvelope_le
       hrho hrhoOne heta haOne hn hbetaHalf hDrate hA hAn
   by_cases hMzero : finiteLengthDerivativeCap rho eta n = 0
-  · obtain ⟨exceptional, hcard, hgood⟩ :=
-      exists_exceptional_finiteLengthMca_zero_derivative
-        hk hkA hAn
-        domain f g columns cert hMzero hchar
+  · simp only [hMzero] at cert hchar
+    obtain ⟨exceptional, hcard, hgood⟩ :=
+      exists_exceptional_firstOrderMca_zero_derivative_of_certificate
+        hk hkA hAn domain f g columns cert hchar
     refine ⟨exceptional, hcard.trans ?_, hgood⟩
-    rw [hMzero, firstOrderExceptionConstant_zero_eq_finiteLengthMcaEnvelope]
+    rw [firstOrderExceptionConstant_zero_eq_finiteLengthMcaEnvelope]
     · simpa [hMzero] using hEnvelope
     · exact finiteLengthJetDegree_pos hrho hrhoOne heta haOne hn hbetaHalf
   · have hM : 1 ≤ finiteLengthDerivativeCap rho eta n :=
