@@ -152,9 +152,15 @@ quantifying over ordinary prover strategies with effectful challenge-dependent c
 Its final evaluation obligation remains an output oracle relation. The proof does not use a
 separate state-kernel executor or establish general world-backed composition.
 
-The ordinary soundness composition theorem remains open. #889's world-query classifier is not
-yet connected to `availableContext`, so its profile additivity proves neither access admissibility
-nor a cost bound.
+`Interaction/CompositionSoundness` now gives the plain native append theorem: exact execution
+factorization for every whole prover strategy, additive soundness `ε₁ + ε₂`, and the variant
+`ε₁ + δ + ε₂` for an explicit inadmissibility error. The probability theorem requires lawful
+distribution semantics; the execution equation itself does not require commutative effects.
+
+World-backed oracle soundness composition remains open. The next bridge must connect restricted
+oracle-verifier append, actual closing resources, and world interpretation to that native
+factorization. #889's world-query classifier is not yet connected to `availableContext`, so its
+profile additivity proves neither access admissibility nor a cost bound.
 
 ## Phase 5 — State restoration and extractor calculus [L]
 

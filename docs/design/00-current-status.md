@@ -1,14 +1,16 @@
 # Current status
 
-**Status date:** 2026-09-25. **Scope:** the supported dependency baseline, what the typed
+**Status date:** 2026-09-26. **Scope:** the supported dependency baseline, what the typed
 oracle-reduction layer already provides on `main`, and the next open work.
 
 The typed core, the first world-backed execution artifacts, and the Sumcheck acceptance slices have
 landed (AR-1 through AR-10B; ArkLib #851–#892). Native full-protocol Sumcheck now has a
-verifier with explicit abort and soundness against arbitrary native prover continuations. No declaration under `ArkLib/Interaction/` or
-`ArkLib/ProofSystem/Sumcheck/Interaction/` uses `sorry`. The next work is protocol evidence beyond
-Sumcheck (FRI and Spartan slices) and the admissibility-aware
-ordinary soundness composition theorem. State restoration and the compiler remain blocked on the
+verifier with explicit abort and soundness against arbitrary native prover continuations. Plain
+native interaction now has additive composition soundness, including an explicit admissibility
+error. No declaration under `ArkLib/Interaction/` or
+`ArkLib/ProofSystem/Sumcheck/Interaction/` uses `sorry`. The next work is the restricted-oracle and
+world-backed composition bridge, and protocol evidence beyond Sumcheck (FRI and Spartan slices).
+State restoration and the compiler remain blocked on the
 upstream gaps listed below.
 
 ## Supported baseline
@@ -139,7 +141,22 @@ probabilistic completeness is one for any challenge program.
 `Oracle/Composition` and the earlier `ArbitraryRounds` clients execute sequences of separate
 reductions across explicit interfaces. Those execution results do not by themselves establish
 soundness for arbitrary strategies on a composed interaction tree. The native Sumcheck theorem
-follows the actual full-tree execution directly. General world-backed composition, admissibility,
+follows the actual full-tree execution directly.
+
+`Interaction/CompositionSoundness` proves composition for arbitrary strategies on a plain native
+appended tree. Its exact execution equation extracts the actual suffix strategy and preserves
+all effects under any lawful monad. The suffix counterpart is selected purely from the prefix
+path and counterpart output; effects inside that strategy remain unrestricted.
+
+Under lawful distribution semantics, a prefix truth-transition bound `ε₁` and a suffix bound `ε₂`
+give a final bound `ε₁ + ε₂`. If suffix soundness requires admissibility, a prefix inadmissibility
+bound `δ` gives `ε₁ + δ + ε₂`. The suffix premise covers every false, admissible prefix path and
+output, including unreachable ones, and every native suffix strategy. Probabilities are
+unconditioned successful-output mass; missing mass is not a classified runtime fault. A native
+two-guess client over `ZMod 17` instantiates the bound as `2/17`.
+
+This plain-tree result does not yet compose restricted oracle verifiers or their closing
+resources. The structural-to-runtime append bridge, paired world resources, access admissibility,
 and fault accounting remain separate obligations.
 
 The legacy verifier correspondence is honest-execution only: the legacy verifier reads the input
