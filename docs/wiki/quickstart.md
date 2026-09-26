@@ -5,6 +5,13 @@ Use it as the main guide for routine local checks.
 
 ## Dependency versions
 
+Before a large contribution or a forward-port, fetch the intended upstream remote and
+compare your branch with its merge target (`git log HEAD..origin/main --oneline`,
+`git diff HEAD origin/main -- lean-toolchain lakefile.toml lake-manifest.json`).
+Review intervening API additions before writing replacement infrastructure. If the
+checkout contains unrelated work, use a separate worktree for the forward-port and
+leave that work intact.
+
 The Lean 4.34 upgrade uses Lean, Mathlib, cslib, and doc-gen4 `v4.34.0`.
 `lakefile.toml` pins CompPoly to its `v4.34.0` release and VCVio to an exact commit; `lake-manifest.json` records
 the complete resolved dependency set, including the PolyFun revision selected by VCVio.
