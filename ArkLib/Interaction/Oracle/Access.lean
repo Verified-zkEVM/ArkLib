@@ -6,6 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.Interaction.Oracle.Protocol
+public import ArkLib.Interaction.Oracle.Virtual
 public import VCVio.OracleComp.SimSemantics.Append
 
 /-!
@@ -24,7 +25,7 @@ Concrete handlers, reachability, resource identity, and verifier execution are s
 
 @[expose] public section
 
-universe u v
+universe u v w x
 
 open OracleComp OracleSpec
 
@@ -102,6 +103,18 @@ theorem eval_queryLatest {Messages : Type u} (access : PFunctor.{v, u})
   rw [queryLatest, simulateQ_spec_query, extendImpl_latest]
 
 end Access
+
+/-- Adding a sent message preserves every previously available virtual oracle's behavior. -/
+@[simp]
+theorem VirtualOracle.eval_sumWeaken_extendImpl {I : Type w} {Data : I → Type u}
+    {family : OracleFamily.{w, u, x} I Data} {Messages : Type u}
+    (access : PFunctor.{v, u})
+    (view : VirtualOracle (OracleSpec.ofPFunctor access) family)
+    (interface : OracleInterface.{u, v} Messages)
+    (impl : QueryImpl (OracleSpec.ofPFunctor access) Id) (message : Messages) :
+    (view.sumWeaken interface.spec).eval (Access.extendImpl access interface impl message) =
+      view.eval impl :=
+  VirtualOracle.eval_sumWeaken view interface.spec impl _
 
 namespace TypeTree
 

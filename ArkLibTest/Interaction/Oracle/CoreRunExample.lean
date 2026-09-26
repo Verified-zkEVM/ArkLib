@@ -63,11 +63,20 @@ def prover (message hidden : Nat) : Prover.Strategy ambient protocol.tree protoc
   let _ ← liftM (ambient.query 0)
   return ⟨(message, hidden), hidden⟩
 
-/-- Package the actual strategies for the core executor. -/
+/-- Package the actual strategies for reduction-based clients. -/
 def reduction (accept : Bool) : Reduction ambient protocol input.toPFunctor Unit (Nat × Nat)
     (fun _ => Nat) (TerminalClaim protocol input.toPFunctor (fun _ => Nat) (fun _ => output)) where
   prover := fun _ witness => pure (prover witness.1 witness.2)
   verifier := fun _ => verifier accept
+
+/-- An effectful setup variant checks the boundary before native strategy execution. -/
+def reductionWithSetup (accept : Bool) :
+    Reduction ambient protocol input.toPFunctor Unit (Nat × Nat) (fun _ => Nat)
+      (TerminalClaim protocol input.toPFunctor (fun _ => Nat) (fun _ => output)) :=
+  { reduction accept with
+    prover := fun _ witness => do
+      let _ ← liftM (ambient.query 3)
+      return prover witness.1 witness.2 }
 
 /-- Log each ambient event without assuming effect commutativity. -/
 def logger : QueryImpl ambient (StateM (List Nat)) := fun tag => do
@@ -75,7 +84,9 @@ def logger : QueryImpl ambient (StateM (List Nat)) := fun tag => do
 
 /-- Observe the exported core executor. -/
 def observed (accept : Bool) (message hidden : Nat) :=
-  (simulateQ logger (executeCore (reduction accept) (fun _ => 7) () (message, hidden))).run []
+  (simulateQ logger (executeStrategiesCore (protocol := protocol)
+    (initial := input.toPFunctor) (fun _ => 7)
+    (prover message hidden) (verifier accept))).run []
 
 example (hidden : Nat) : (observed true 11 hidden).2 = [0, 1, 2] := rfl
 
@@ -93,5 +104,10 @@ example (hidden : Nat) :
       some (26 : Nat) := rfl
 
 example (message hidden : Nat) : (observed false message hidden).1.closed = none := rfl
+
+/-- Setup runs once before the same message, receive and terminal effects. -/
+example (hidden : Nat) :
+    (simulateQ logger (executeCore (reductionWithSetup true) (fun _ => 7) () (11, hidden))).run [] =
+      ((observed true 11 hidden).1, [3, 0, 1, 2]) := rfl
 
 end Interaction.Oracle.CoreRunExample

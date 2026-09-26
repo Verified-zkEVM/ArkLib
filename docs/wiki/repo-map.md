@@ -28,11 +28,17 @@ home_page/            site assets and assembled website root
   structural `BranchPath` separate from concrete `ExecutionPath` messages, and adds position-typed
   role/interface decorations plus the minimal decorated `Oracle.Protocol` bundle.
 - `ProofSystem/Sumcheck/Interaction/Protocol.lean` defines the full native sum-check tree,
-  restricted verifier, and execution through `executeCore`. Prover memory lives in ordinary
+  restricted verifier, and direct execution through `executeStrategiesCore`. Prover memory lives
+  in ordinary
   strategy continuations. `ProtocolSoundness.lean` proves the final output oracle relation bound;
   `MultivariateSoundness.lean` supplies the one-round polynomial projection bound.
   `ProtocolCompleteness.lean` defines the honest native strategy and proves support-level and
   probability-one completeness.
+- `Interaction/Oracle/CoreRun.lean` offers `executeStrategiesCore` for ready native strategies.
+  `executeCore` runs reduction setup and delegates to that entry point. Both retain the actual
+  input behavior, path and outputs for closing; `executeCore_eq_execute` preserves the existing
+  execution law for reduction clients. `Access.lean` supplies the common virtual-view preservation
+  law when a new message extends the available oracle signature.
 - `Interaction/Oracle/Composition.lean` supplies a separate sequential execution combinator.
   Its explicit interface handoffs are not a substitute for a native strategy execution theorem.
 - `ArkLib/OracleReduction/` remains the conceptual center of the legacy reduction and security

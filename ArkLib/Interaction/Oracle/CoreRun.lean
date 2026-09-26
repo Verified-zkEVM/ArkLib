@@ -15,7 +15,8 @@ public import ArkLib.Interaction.Oracle.Claim
 The executor pairs its actual path, input behavior, private output, and verifier-produced claim.
 `CoreRun.closed` accepts no replacement handler: it derives answers from these paired resources.
 The carrier alone does not certify that an execution occurred. Execution theorems concern
-`executeCore`; arbitrary record values carry no reachability or probability assertion.
+`executeStrategiesCore` or reduction-based `executeCore`; arbitrary record values carry no
+reachability or probability assertion.
 
 `none` is an explicit verifier rejection. Runtime faults, missing probability mass, query logs,
 and security games remain outside this trace-free boundary.
@@ -111,7 +112,44 @@ theorem closed_eq_concrete_iff (run : CoreRun protocol initial Stmt Out OutP)
 
 end CoreRun
 
-/-- Execute the existing restricted strategies and retain the resources needed for closing. -/
+/-- Execute native strategies and retain their actual outputs together with the input behavior
+used by the same run. The ordinary strategy executor runs the terminal verifier action once. -/
+def executeStrategiesCore {ι : Type u} {ambient : OracleSpec.{u, u} ι}
+    {protocol : Oracle.Protocol.{u}} {initial : PFunctor.{u, u}}
+    {Stmt : protocol.tree.BranchPath → Type u}
+    {Idx : protocol.tree.BranchPath → Type u}
+    {Obj : (path : protocol.tree.BranchPath) → Idx path → Type u}
+    {Out : (path : protocol.tree.BranchPath) → OracleFamily (Idx path) (Obj path)}
+    {OutP : protocol.tree.ExecutionPath → Type u}
+    (impl : QueryImpl (OracleSpec.ofPFunctor initial) Id)
+    (prover : Prover.Strategy ambient protocol.tree protocol.roles OutP)
+    (verifier : Verifier.Strategy ambient protocol.tree protocol.roles protocol.oracles initial
+      (TerminalClaim protocol initial Stmt Out)) :
+    OracleComp ambient (CoreRun protocol initial Stmt Out OutP) := do
+  let result ← executeStrategies ambient protocol.tree protocol.roles protocol.oracles initial
+    impl prover verifier
+  return ⟨result.1, impl, result.2.1, result.2.2⟩
+
+/-- Native core execution adds only the paired-resource record to the existing executor.
+This is an equality of open programs, before any ambient oracle interpretation. -/
+theorem executeStrategiesCore_eq_executeStrategies
+    {ι : Type u} {ambient : OracleSpec.{u, u} ι}
+    {protocol : Oracle.Protocol.{u}} {initial : PFunctor.{u, u}}
+    {Stmt : protocol.tree.BranchPath → Type u}
+    {Idx : protocol.tree.BranchPath → Type u}
+    {Obj : (path : protocol.tree.BranchPath) → Idx path → Type u}
+    {Out : (path : protocol.tree.BranchPath) → OracleFamily (Idx path) (Obj path)}
+    {OutP : protocol.tree.ExecutionPath → Type u}
+    (impl : QueryImpl (OracleSpec.ofPFunctor initial) Id)
+    (prover : Prover.Strategy ambient protocol.tree protocol.roles OutP)
+    (verifier : Verifier.Strategy ambient protocol.tree protocol.roles protocol.oracles initial
+      (TerminalClaim protocol initial Stmt Out)) :
+    executeStrategiesCore impl prover verifier = (do
+      let result ← executeStrategies ambient protocol.tree protocol.roles protocol.oracles initial
+        impl prover verifier
+      return ⟨result.1, impl, result.2.1, result.2.2⟩) := rfl
+
+/-- Construct a reduction's prover strategy, then use the common native core executor. -/
 def executeCore {ι : Type u} {ambient : OracleSpec.{u, u} ι}
     {protocol : Oracle.Protocol.{u}} {initial : PFunctor.{u, u}}
     {StatementIn : Type v} {WitnessIn : Type w}
@@ -124,8 +162,26 @@ def executeCore {ι : Type u} {ambient : OracleSpec.{u, u} ι}
       (TerminalClaim protocol initial Stmt Out))
     (impl : QueryImpl (OracleSpec.ofPFunctor initial) Id) (stmt : StatementIn) (wit : WitnessIn) :
     OracleComp ambient (CoreRun protocol initial Stmt Out OutP) := do
-  let result ← reduction.execute impl stmt wit
-  return ⟨result.1, impl, result.2.1, result.2.2⟩
+  let prover ← reduction.prover stmt wit
+  executeStrategiesCore impl prover (reduction.verifier stmt)
+
+/-- Reduction setup is followed by the same native strategy entry point, with no extra execution
+or replacement of the input resources. -/
+theorem executeCore_eq_executeStrategiesCore
+    {ι : Type u} {ambient : OracleSpec.{u, u} ι}
+    {protocol : Oracle.Protocol.{u}} {initial : PFunctor.{u, u}}
+    {StatementIn : Type v} {WitnessIn : Type w}
+    {Stmt : protocol.tree.BranchPath → Type u}
+    {Idx : protocol.tree.BranchPath → Type u}
+    {Obj : (path : protocol.tree.BranchPath) → Idx path → Type u}
+    {Out : (path : protocol.tree.BranchPath) → OracleFamily (Idx path) (Obj path)}
+    {OutP : protocol.tree.ExecutionPath → Type u}
+    (reduction : Reduction ambient protocol initial StatementIn WitnessIn OutP
+      (TerminalClaim protocol initial Stmt Out))
+    (impl : QueryImpl (OracleSpec.ofPFunctor initial) Id) (stmt : StatementIn) (wit : WitnessIn) :
+    executeCore reduction impl stmt wit = (do
+      let prover ← reduction.prover stmt wit
+      executeStrategiesCore impl prover (reduction.verifier stmt)) := rfl
 
 /-- The public executor is the ordinary execution followed only by packaging its own outputs. -/
 theorem executeCore_eq_execute {ι : Type u} {ambient : OracleSpec.{u, u} ι}
@@ -141,6 +197,7 @@ theorem executeCore_eq_execute {ι : Type u} {ambient : OracleSpec.{u, u} ι}
     (impl : QueryImpl (OracleSpec.ofPFunctor initial) Id) (stmt : StatementIn) (wit : WitnessIn) :
     executeCore reduction impl stmt wit = (do
       let result ← reduction.execute impl stmt wit
-      return ⟨result.1, impl, result.2.1, result.2.2⟩) := rfl
+      return ⟨result.1, impl, result.2.1, result.2.2⟩) := by
+  simp only [executeCore, executeStrategiesCore, Reduction.execute, bind_assoc]
 
 end Interaction.Oracle

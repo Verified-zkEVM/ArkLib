@@ -94,7 +94,8 @@ theorem executeLogged_erase {ι : Type u} {ambient : OracleSpec.{u, u} ι}
     (impl : QueryImpl (OracleSpec.ofPFunctor initial) Id) (stmt : StatementIn) (wit : WitnessIn) :
     LoggedRun.core <$> executeLogged reduction impl stmt wit =
       executeCore reduction impl stmt wit := by
-  simp only [executeLogged, executeCore, Reduction.execute, map_bind, map_pure, bind_assoc]
+  simp only [executeLogged, executeCore_eq_execute,
+    Reduction.execute, map_bind, map_pure, bind_assoc]
   congr 1
   funext prover
   have h := executeStrategiesLogged_erase ambient protocol.tree protocol.roles protocol.oracles

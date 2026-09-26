@@ -139,7 +139,8 @@ theorem executeCore_eq [DecidableEq R] (i : Fin n)
       pure (if (domain.map (fun x => q.val.eval x)).sum = stmt.target then
         acceptedRun R n deg i stmt impl q r
       else { acceptedRun R n deg i stmt impl q r with outcome := none }) := by
-  simp only [executeCore, _root_.Interaction.Oracle.Reduction.execute, reduction, pure_bind]
+  simp only [executeCore_eq_execute, _root_.Interaction.Oracle.Reduction.execute,
+    reduction, pure_bind]
   change ((simulateQ (Verifier.liftAccessImpl ambient (access R n deg)
       (Access.extendImpl (polynomialFamily R n deg).spec.toPFunctor
         (polynomialInterface R deg) impl q))
@@ -226,7 +227,7 @@ theorem executeCore_sampled_eq [DecidableEq R] (i : Fin n)
       (do
         let r ← challenge
         executeCore (reduction R n deg ambient i domain r) impl stmt q) := by
-  simp only [executeCore, _root_.Interaction.Oracle.Reduction.execute, sampledReduction,
+  simp only [executeCore_eq_execute, _root_.Interaction.Oracle.Reduction.execute, sampledReduction,
     reduction, pure_bind]
   simp only [executeStrategies, prover, sampledVerifier, verifier, protocol,
     Protocol.oracleWith_tree, Protocol.oracleWith_roles, Protocol.oracleWith_oracles,
