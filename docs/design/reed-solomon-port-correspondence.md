@@ -2168,6 +2168,34 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Firs
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrderCurve.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 Ported `exists_extensionExceptional_firstOrderCurve_of_certificate_of_exponent`, `exists_extensionExceptional_firstOrderCurve_of_heightSlotCount_of_exponent`, `exists_baseExceptional_firstOrderCurve_of_certificate_of_exponent`, and `exists_baseExceptional_firstOrderCurve_of_heightSlotCount_of_exponent` under the same names. Generalized each theorem by removing the `0 < k` assumption. The extension-field bounds come from a finite curve certificate or a strict shifted-height surplus, and the base-field bounds follow by uniform exact-agreement descent. The two height-slot tight wrappers were not ported because each only specializes its exponent theorem to `2K - 3`; the acceptance case uses the exponent theorem directly.
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/FiniteLengthMca.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/FiniteLengthMCA.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`finiteLengthMCAParameterConstant` → `finiteLengthMcaParameterConstant` and `one_le_finiteLengthMCAParameterConstant` → `one_le_finiteLengthMcaParameterConstant` keep their bounds with the destination `Mca` casing. The new `square_le_finiteLengthMcaExceptionBudget` gives the shared constant-code endpoint bound for any envelope constant at least one and finite-length slack at most one. `Squarefree.retainedSquarefreeLineMCAEnvelope_eq_finiteLengthMCAEnvelope` → `Squarefree.retainedSquarefreeLineAgreementEnvelope_eq_finiteLengthMcaEnvelope` uses the existing squarefree envelope, and `hybridEClosed_zero_eq_finiteLengthMCAEnvelope` → `firstOrderExceptionConstant_zero_eq_finiteLengthMcaEnvelope` uses the current hybrid constant.
+
+`exists_finiteLengthFirstOrder_symbolicCertificate` keeps its name and mathematical certificate, using current rank and first-order interpolation APIs. `exists_exceptional_exactLineMCA_one` → `exists_exceptional_exactLineMca_one` keeps the constant-code result. `finiteLengthSelectorMCAEnvelope_le` → `finiteLengthSelectorMcaEnvelope_le` and `finiteLengthSelectorMCAEnvelope_le_inv_eta` → `finiteLengthSelectorMcaEnvelope_le_inv_eta` drop the unused `2 ≤ k` premise. `finiteLengthSelectorJetDegree_le_listEnvelope` keeps its name and bound.
+
+`closePolynomialSet_finite_and_card_le_finiteLength_of_selector_certificate` keeps its name and bound, using the existing generic positive-cap certificate theorem. `exists_exceptional_finiteLengthMCA_of_selector_certificate` → `exists_exceptional_finiteLengthMca_of_selector_certificate` and `exists_exceptional_finiteLengthMCA_of_selector_certificate_inv_eta` → `exists_exceptional_finiteLengthMca_of_selector_certificate_inv_eta` retain exact agreement and the inverse-fourth and eta-only bounds. `finiteLength_completeList_and_exceptionalMCA_of_selector_certificates` → `finiteLength_completeList_and_exceptionalMca_of_selector_certificates` and `finiteLength_completeList_and_exceptionalMCA_of_selector_certificates_inv_eta` → `finiteLength_completeList_and_exceptionalMca_of_selector_certificates_inv_eta` retain the joint list and exception results.
+
+The zero derivative-cap proof uses the current symbolic-certificate hybrid theorem. Source names for `hybridTheta`, `hybridEClosed`, the threshold, and retained lines are expressed through the current `agreementIncidenceRatio`, `firstOrderExceptionConstant`, `firstOrderRateThreshold`, and retained squarefree line APIs. The private close-set membership helper was not ported because unfolding `closePolynomialSet` and `polynomialAgreementSet` suffices. The two private mapped-degree helpers and line coefficient-degree helper were not ported because `jetTotalDegree_map_le` and `jetDegree_map_le` in `PolynomialDifferential` cover them.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/FiniteLengthRateBounds.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/FiniteLengthRateBounds.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`automaticFirstOrder_finiteLength_finiteSlack_bounds` and `automaticFirstOrder_finiteLength_rate_bounds` keep their names and respective finite-slack and eta-only list and line bounds. `automaticFirstOrder_finiteLength_mcaError_le` keeps its name and error bound, with the current affine-line API's `[SampleableType F]` instance. The automatic-rate results construct the symbolic certificates internally.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/HybridCurveProfile.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/HybridCurveProfile.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`CurveCertificate.hybridOptimizedCurveEnvelope` → `ReedSolomon.hybridOptimizedCurveEnvelope`, `CurveCertificate.bestCurveEnvelope` → `ReedSolomon.bestCurveEnvelope`, and `CurveCertificate.bestOptimizedCurveEnvelope` → `ReedSolomon.bestOptimizedCurveEnvelope` keep the profile quantities using current profile fields, including `candidateDegree`. `CurveCertificate.bestOptimizedCurveEnvelope_le_best` → `ReedSolomon.bestOptimizedCurveEnvelope_le_best` keeps its comparison.
+
+`exists_exceptional_exact_powerAgreement_hybrid_optimized` → `exists_exceptional_exactPowerAgreement_hybridOptimized` drops `2 ≤ k`, which profile verification implies. `exists_exceptional_exact_powerAgreement_best_optimized` → `exists_exceptional_exactPowerAgreement_bestOptimized` drops that premise and the unnecessary `k < n` hypothesis. `exists_exceptional_exact_powerAgreement_best` → `exists_exceptional_exactPowerAgreement_best` drops the implied `2 ≤ k` premise. The recovery statements use profile verification to establish the message-dimension lower bound.
+
+`CurveCertificate.bestCurveEnvelope_le_hybrid` and `CurveCertificate.bestCurveEnvelope_le_squarefree` were not ported because `bestCurveEnvelope` is a minimum and Mathlib's `min_le_left` and `min_le_right` give these projections directly.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/HybridCurveRecovery.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/HybridCurveRecovery.lean`, `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/HybridCurveBase.lean` and `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/HybridCurveCertificate.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`, merged into one module:
@@ -2209,6 +2237,15 @@ The source's coefficient-height induction through iterated jet derivatives is re
 
 Not ported: `FirstOrderHybridDescent.tail_challengeHeight_le`, because the descent has no height field; the height bound comes from `CoeffNatDegreeLE.iterate_pderiv` and `JetPrefixPresentation.natDegree_coeff_equation_le`. `exists_exceptional_ordinaryContent` is not ported because `PolynomialDifferential.exists_exceptional_jet_independent_content` is used directly.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Profile.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/Sharp.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`, in namespace `ReedSolomon` instead of `ReedSolomon.CurveCertificate`:
+
+- `squarefreeSharpCurveEnvelope` keeps its name and is now `ℝ`-valued, defined as the sharp charge at `L₀ = D + 1`. `ordinaryUnifiedPowerFactorAt_succ_eq` shows it equals the source's `(n - D)/(A - D)` expression whenever `D + 1 ≤ A ≤ n`.
+- `squarefreeSharpOptimizedCurveEnvelope` keeps its name and is now `ℝ`-valued instead of `ℚ`.
+- `squarefreeSharpOptimizedCurveEnvelope_le_fixed` keeps its name and drops `A ≤ n`.
+- `exists_exceptional_exact_powerAgreement_squarefree_sharp_optimized` → `exists_exceptional_exactPowerAgreement_squarefreeSharpOptimized`. Drops `k < n` and takes `[DecidableEq F]` instead of `open Classical in`.
+- Not ported: `exists_exceptional_exact_powerAgreement_squarefree_sharp` (fixed threshold) is covered by the optimized profile theorem plus `squarefreeSharpOptimizedCurveEnvelope_le_fixed`, and `exists_exceptional_exact_powerAgreement_squarefree_sharp_le` is a `hcard.trans hbound` wrapper.
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/RateBounds.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/RateBounds.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -2239,6 +2276,13 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Firs
 
 The file now also imports `Ordinary.Equation`, `CurveCertificate` and `HybridCurveTransfer`, the last for `regularPowerBatchedDerivativeCappedBoundTwo_eq_hybridCurveStage`.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/LineCertificate.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d` and extended with the shared certificate and union lemmas:
+
+- `exists_exceptional_retainedSquarefreeCurveAgreement_of_singularTail` is new. It generalizes `exists_exceptional_retainedSquarefreeCurveAgreement_of_tail` to an arbitrary tail bound `tailBound : ℝ`; its body is the old `_of_tail` proof, and `_of_tail` is now a one-line instance. It replaces the duplicated regular-plus-tail union proofs in the source's sharp theorems.
+- `FirstOrderCurveCertificate.map_Q_ne_zero`, `map_Q_specialization_eq_zero`, `jetTotalDegree_map_Q_le`, `degreeOf_map_Q_le` and `exactPowerAgreement_of_map_Q` are new. They factor out the certificate-to-equation step (nonvanishing, degree caps, root soundness and the `k - 1 + 1 = k` recovery transfer), which the curve certificate theorem did inline and the source repeated in each `_of_certificate` theorem.
+- `exists_extensionExceptional_retainedSquarefreeLineMCA_of_certificate` → `exists_extensionExceptional_retainedSquarefreeLineAgreement_of_certificate`, and `exists_baseExceptional_retainedSquarefreeLineMCA_of_certificate` → `exists_baseExceptional_retainedSquarefreeLineAgreement_of_certificate`. Renames: `hybridTheta` → `agreementIncidenceRatio`, `retainedSquarefreeLineMCAEnvelope` → `retainedSquarefreeLineAgreementEnvelope`, `mappedDomain domain iota` → `domain.trans ⟨iota, _⟩`. The extension theorem concludes `HasExactCorrelatedPair domain f g iota k z P` instead of `HasExactPowerAgreement domain ![f, g] iota k z P`; the two are equivalent through `exactCorrelatedPair_of_powerAgreement_one` and `powerAgreement_one_of_exactCorrelatedPair`. It specializes the curve certificate theorem at `ell = 1` and `L = balancedSplit (k - 1) A`, followed by `retainedSquarefreeCurveAgreementCharge_balancedSplit_le`. The base theorem specializes the base-field curve certificate theorem instead of re-running the descent inline.
+- Not ported: `exists_extensionExceptional_retainedSquarefreeLineMCA_of_certificate_of_tail` and `exists_baseExceptional_retainedSquarefreeLineMCA_of_certificate_of_tail`, because the tail is always discharged by `hasRetainedOrdinaryCurveAgreementTransfer_singularCurveEquation`, as slice 82 decided for the curve `_of_tail` certificate theorems. The private helpers `line_degreeOf_extendSymbolicCoefficients_le` and `hasRetainedOrdinaryLineTransfer_of_certificate` are covered by `jetDegree_map_le` and the curve theorem.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/Factorwise.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/FactorwiseList.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -2256,6 +2300,17 @@ The retained-tail API keeps the challenge as a polynomial coordinate and constru
 `flattenedContent_add_positive_jetWeight_le` is now `retainedContent_add_positiveJetDegree_le`, using canonical jet degree and removing the unnecessary nonzero-input hypothesis. `singularCurveEquation_challengeHeightLE` is now `singularCurveEquation_coeffNatDegreeLE`. `flattenedRootFirst_positiveCurveEquation` and `flattenedRootFirst_separant_positiveCurveEquation` are now `challengeRetainingRootFirst_positiveCurveEquation` and `challengeRetainingRootFirst_separant_positiveCurveEquation`, respectively. The map from flattened root-first coordinates is exposed as `challengeRetainingRootFirst_fromFlattenedRootFirst`, and its derivative law is exposed for `Y₁` as `challengeRetainingRootFirst_pderiv`.
 
 The root-first multiplication identity, repeated in the source retained-tail module, is shared from the retained-curve owner as `jetTotalDegree_fromFlattenedRootFirst_mul`. The generic coefficient-degree bound is owned by `OptionWeightedDegree` as `degreeOf_coeff_optionEquivLeft_add_le_weight`; it generalizes the coefficient-degree argument to `Option σ` weights with the distinguished and selected coordinates positively weighted. The coefficient-variable derivative transport is owned by `PolynomialCoefficients` as `optionEquivRight_symm_pderiv` and generalizes to arbitrary variable types and commutative semirings. The arbitrary-coordinate `flattenChallenge_pderiv` law is not exposed; the needed `Y₁` case lives in the retained-curve owner. `flattenedSingularPolynomial_map_eq_zero_of_content_or_commonRoot` is generalized from domain targets to commutative-ring targets. `flattenedPositiveRootProduct_eq_one_of_rootDegree_eq_zero` is covered by the existing `MvPolynomial.radicalPrimPart_eq_one_of_degreeOf_eq_zero`. `retainedRootJetWeight` remains private coordinate-view bookkeeping, `flattened_content_add_positive_challengeDegree_le` remains a private helper, and the private `flattenChallenge_specialization` helper is inlined into `retainedRootSpecializationHom_flattenedRootFirst`.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/SharpCurveMCA.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/Sharp.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+- `retainedSquarefreeOrdinaryCurveMCAAt` → `retainedSquarefreeOrdinaryCurveChargeAt`, `retainedSquarefreeCurveMCASharpRawAt` → `retainedSquarefreeCurveSharpChargeAt`, and `retainedSquarefreeCurveMCASharpOptimizedRaw` → `retainedSquarefreeCurveSharpOptimizedCharge`. All three are now `ℝ`-valued (the cast of the `ℚ` free-retention charge), like main's curve charges. The ordinary part of the optimized charge is `curveRetentionMinimum D A (retainedSquarefreeOrdinaryCurveChargeAt n D ell · A B M H)`.
+- `retainedSquarefreeCurveMCASharpOptimizedRaw_le_fixed` → `retainedSquarefreeCurveSharpOptimizedCharge_le_chargeAt`. Generalized from `L₀ = D + 1` to any admissible `D < L₀ ≤ A`, and drops `A ≤ n`.
+- `exists_exceptional_retainedSquarefreeCurveMCA_sharp_at` → `exists_exceptional_retainedSquarefreeCurveAgreement_sharpAt`. Drops `D + 2 ≤ n` and takes `[DecidableEq F] [DecidableEq E]` instead of `open Classical in`.
+- `exists_exceptional_retainedSquarefreeCurveMCA_sharp_optimized` → `exists_exceptional_retainedSquarefreeCurveAgreement_sharpOptimized`. Drops `D + 2 ≤ n`.
+- `exists_extensionExceptional_retainedSquarefreeCurveMCA_sharp_optimized_of_certificate` → `exists_extensionExceptional_retainedSquarefreeCurveAgreement_sharpOptimized_of_certificate`, and `exists_baseExceptional_retainedSquarefreeCurveMCA_sharp_optimized_of_certificate` → `exists_baseExceptional_retainedSquarefreeCurveAgreement_sharpOptimized_of_certificate`. Both drop `k < n`.
+- Not ported: `retainedSquarefreeOrdinaryCurveMinimum`, `retainedSquarefreeOrdinaryCurveMinimum_le` and `exists_retainedSquarefreeOrdinaryCurveMinimum`, because main's `curveRetentionMinimum`, `curveRetentionMinimum_le` and `exists_curveRetentionMinimum` cover them. The fixed-threshold (`L₀ = D + 1`) forms `retainedSquarefreeOrdinaryCurveMCARaw`, `retainedSquarefreeCurveMCASharpRaw`, `retainedSquarefreeCurveMCASharpRawAt_succ_eq`, `exists_exceptional_retainedSquarefreeCurveMCA_sharp` and `exists_{extension,base}Exceptional_retainedSquarefreeCurveMCA_sharp_of_certificate` are each an instance of the `_sharpAt` or charge-at-`D + 1` forms, one `ordinaryUnifiedPowerFactorAt_succ_eq` rewrite away, or the optimized theorem followed by `retainedSquarefreeCurveSharpOptimizedCharge_le_chargeAt`; they would be wrappers. The private helpers `natCast_ne_zero_of_sharp_char_guard`, `exists_exceptional_positiveCurveEquation_regular` and `degreeOf_extendSymbolicCoefficients_le` are covered by the regular branch inside `_of_singularTail` and by `jetDegree_map_le`.
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/TailBound.lean`
 
@@ -5431,6 +5486,9 @@ Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/
 
 Acceptance cases check the base-field height theorem at the tight exponent, the base-field certificate theorem, and the extension-field height and certificate theorems. Both certificate cases reuse a certificate for the same one-point zero curve over `ℚ`.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/Sharp.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+An acceptance example builds a concrete profile with derivative cap `1`, checks that it is curve-verified by `decide`, and applies `exists_exceptional_exactPowerAgreement_squarefreeSharpOptimized` to get a base-field challenge with exact power agreement for `0`.
 Acceptance examples appended for the new declarations:
 
 - `exists_exceptional_firstOrder_hybrid` and `exists_exceptional_firstOrder_hybrid_base` on the equation `Y₁` over `ℂ` with `n = 2`, `D = 1`, `A = 2`, `h = 0`, `μ = M = 1`, with all hypotheses discharged by computation.
@@ -5454,6 +5512,10 @@ Acceptance cases check singleton instances of `finite_factorwise_agreement_solut
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/Certificate.lean` and `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/CurveBounds.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 An acceptance example builds a finite first-order curve certificate at recovery degree `1` for the zero line over the file's two-point domain `factorwiseDomain`, and applies `exists_baseExceptional_retainedSquarefreeCurveAgreement_of_certificate` to exhibit a base-field challenge with exact power agreement. This also exercises the extension theorem, the tail-free theorem and the tail discharge. A second example is one concrete instance of `retainedSquarefreeCurveAgreementCharge_balancedSplit_le`.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/LineCertificate.lean` and `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/Sharp.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+An acceptance example takes a concrete rational symbolic line certificate (`n = k = A = 2`, `M = B = 1`) and uses `exists_baseExceptional_retainedSquarefreeLineAgreement_of_certificate` to get a challenge at which `0` has an exact correlated pair with the zero line. A second example uses the concrete curve certificate `certificateCurve` with `exists_baseExceptional_retainedSquarefreeCurveAgreement_sharpOptimized_of_certificate` to get exact power agreement. The existing `_of_tail` example still passes and exercises the refactored general theorem with the ordinary-tail charge.
 
 ## `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary.lean`
 
