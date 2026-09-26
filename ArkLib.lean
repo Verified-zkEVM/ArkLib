@@ -335,9 +335,11 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.Basic
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.CodewordBound
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.CurveCertificate
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.ExactLists
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.FiniteField
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.FixedRateExplicitGate
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.GeometricBound
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.MathematicalUniformRate
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.QuarterGap
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.RatePartition
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.UniformRate
@@ -353,6 +355,7 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.L
 public import
   ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.LowRateFiniteLengthBounds
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.Profile
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.Uniform
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.HiddenDerivativeBound
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.PairwiseJohnson
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListSpecification
@@ -380,13 +383,20 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Com
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.EquationDescent
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.ExtensionDescent
 public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.AutomaticHybrid
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.AutomaticMcaError
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.CurveAgreement
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.HybridCurveRecovery
 public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.HybridCurveTransfer
 public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.HybridTransfer
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.OrdinaryTail
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Profile
+public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.RateBounds
 public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Squarefree.Certificates
 public import
@@ -399,6 +409,8 @@ public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Squarefree.SharpCurveMCA
 public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Squarefree.TailBound
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.UniformLineMca
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FrobeniusAdmissibility
 public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FrobeniusComponentRecognition

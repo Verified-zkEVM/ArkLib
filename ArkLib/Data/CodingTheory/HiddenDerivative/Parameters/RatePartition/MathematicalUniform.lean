@@ -28,6 +28,10 @@ dimension and agreement.
 * `exists_mathematicalRatePartitionEnvelope`, a specialization of `exists_ratePartitionEnvelope`.
 * `uniformMathematicalCapacityLength`, the length threshold combining the mathematical length with
   the Johnson length `⌈4 ν / δ²⌉₊` at the jet cap `ν`.
+* `uniformMathematical_certificate_guards` and `uniformMathematical_ringChar_guard`: the order,
+  scale, jet-cap and characteristic guards of the scale-`300` certificate.
+* `four_mul_pred_le_sq_mul_of_le_uniformMathematicalJetBound`: message dimensions up to the jet cap
+  satisfy the Johnson scale condition at the capacity length.
 
 ## References
 
@@ -234,5 +238,49 @@ theorem exists_mathematicalRatePartitionEnvelope {δ : ℝ} {n k A : ℕ}
 cap `ν`, so that message dimensions up to the jet cap lie in the Johnson regime. -/
 def uniformMathematicalCapacityLength (δ : ℝ) : ℕ :=
   max (uniformMathematicalLength δ) ⌈(4 : ℝ) * uniformMathematicalJetBound δ / δ ^ 2⌉₊
+
+/-- Guards of the scale-`300` certificate: for `0 < δ < 6/25` and length at least
+`uniformMathematicalLength δ`, the uniform order `d` is at least `500`, `δ < 1`,
+`1 < 300 d³`, and the jet cap is positive and at least `d`. -/
+theorem uniformMathematical_certificate_guards {δ : ℝ} {n : ℕ}
+    (hδ : 0 < δ) (hδsmall : δ < 6 / 25) (hn : uniformMathematicalLength δ ≤ n) :
+    500 ≤ uniformDerivativeOrder δ ∧ δ < 1 ∧
+      1 < 300 * (uniformDerivativeOrder δ : ℝ) ^ 3 ∧
+      0 < uniformMathematicalJetBound δ ∧
+      uniformDerivativeOrder δ ≤ uniformMathematicalJetBound δ := by
+  have hd := uniformDerivativeOrder_ge_519 hδ hδsmall
+  have hδone : δ < 1 := by linarith
+  have hm : 0 < uniformMathematicalMultiplicity δ :=
+    lt_of_lt_of_le (by omega) (add_two_le_closedMultiplicity (by norm_num)
+      (by omega : 1 ≤ uniformDerivativeOrder δ))
+  obtain ⟨_, _, hν, _⟩ := uniformMathematical_integer_guards hδ hδone hm hn
+  have hd' : (519 : ℝ) ≤ uniformDerivativeOrder δ := by exact_mod_cast hd
+  exact ⟨by omega, hδone, by nlinarith [sq_nonneg (uniformDerivativeOrder δ : ℝ)], hν,
+    uniformDerivativeOrder_le_mathematicalJetBound hδ hδsmall⟩
+
+/-- A characteristic that is zero or exceeds `max (k - 1) ν`, for the jet cap `ν`, is zero or
+exceeds `max (K - 1) ν` for the ambient dimension `K = max k (d + 1)` at the uniform order `d`. -/
+theorem uniformMathematical_ringChar_guard {F : Type*} [NonAssocSemiring F] {δ : ℝ} {k : ℕ}
+    (hδ : 0 < δ) (hδsmall : δ < 6 / 25)
+    (hchar : ringChar F = 0 ∨ max (k - 1) (uniformMathematicalJetBound δ) < ringChar F) :
+    ringChar F = 0 ∨ max (max k (uniformDerivativeOrder δ + 1) - 1)
+      (uniformMathematicalJetBound δ) < ringChar F := by
+  have hdν := uniformDerivativeOrder_le_mathematicalJetBound hδ hδsmall
+  refine hchar.imp_right fun hc ↦ ?_
+  have hkchar := (Nat.le_max_left _ _).trans_lt hc
+  have hνchar := (Nat.le_max_right _ _).trans_lt hc
+  omega
+
+/-- At length at least `uniformMathematicalCapacityLength δ`, every message dimension `k` at most
+the jet cap satisfies `4 (k - 1) ≤ δ² n`. -/
+theorem four_mul_pred_le_sq_mul_of_le_uniformMathematicalJetBound {δ : ℝ} {n k : ℕ}
+    (hδ : 0 < δ) (hn : uniformMathematicalCapacityLength δ ≤ n)
+    (hk : k ≤ uniformMathematicalJetBound δ) :
+    4 * ((k : ℝ) - 1) ≤ δ ^ 2 * n := by
+  have hjet : (4 : ℝ) * uniformMathematicalJetBound δ / δ ^ 2 ≤ n :=
+    (Nat.le_ceil _).trans (by exact_mod_cast (le_max_right _ _).trans hn)
+  have hkJet : (k : ℝ) ≤ uniformMathematicalJetBound δ := by exact_mod_cast hk
+  have := (div_le_iff₀ (sq_pos_of_pos hδ)).mp hjet
+  nlinarith
 
 end ReedSolomon.HiddenDerivative.RatePartition

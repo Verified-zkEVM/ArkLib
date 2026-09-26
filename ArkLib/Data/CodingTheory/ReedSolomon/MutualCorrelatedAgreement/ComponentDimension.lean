@@ -80,6 +80,37 @@ def localizedChartCoefficient (center : E) (Q : DifferentialPolynomial E r) (K :
       (Ideal.Quotient.mk P (commonTaylorNumerator center Q τ l.val)) *
     IsLocalization.Away.invSelf (Ideal.Quotient.mk P (initialJetSeparant center Q)) ^ τ
 
+/-- In a domain `L`, if `u` inverts the evaluated initial separant, then the common numerators
+cleared by `u ^ τ` recover the jets below the differential order. -/
+private theorem aeval_map_commonTaylorNumeratorOver_mul_pow_eq_jet {A L : Type*} [CommRing A]
+    [Algebra E A] [CommRing L] [IsDomain L] [Algebra E L] (φ : A →ₐ[E] L) (center : A)
+    (Q : DifferentialPolynomial A r) (K τ : ℕ) (hτ : TaylorExponentSufficient r K τ)
+    (hK : r < K) (y : Fin (r + 1) → L) (u : L)
+    (hu : aeval y (MvPolynomial.map φ.toRingHom (initialJetSeparant center Q)) * u = 1)
+    (l : Fin K) (hl : l.val ≤ r) :
+    aeval y (MvPolynomial.map φ.toRingHom (commonTaylorNumeratorOver (F := E) center Q τ l.val)) *
+      u ^ τ = y ⟨l.val, by omega⟩ := by
+  let Frac := FractionRing L
+  let ψ : A →ₐ[E] Frac := (IsScalarTower.toAlgHom E L Frac).comp φ
+  let x : Fin (r + 1) → Frac := fun j ↦ algebraMap L Frac (y j)
+  have hmap (p : MvPolynomial (Fin (r + 1)) A) :
+      algebraMap L Frac (aeval y (MvPolynomial.map φ.toRingHom p)) =
+        aeval x (MvPolynomial.map ψ.toRingHom p) := by
+    induction p using MvPolynomial.induction_on with
+    | C a => simp [ψ]
+    | add p q hp hq => simp only [map_add, hp, hq]
+    | mul_X p j hp => simp only [map_mul, hp, MvPolynomial.map_X, MvPolynomial.aeval_X, x]
+  have hsep : aeval x (MvPolynomial.map ψ.toRingHom (initialJetSeparant center Q)) *
+      algebraMap L Frac u = 1 := by
+    rw [← hmap, ← map_mul, hu, map_one]
+  have hrec := aeval_map_commonTaylorNumeratorOver_reconstruction_of_exponent ψ center Q K τ
+    hτ x (left_ne_zero_of_mul_eq_one hsep) l
+  have hjet := congrFun (polynomialJet_rationalTaylorPolynomial (ψ center)
+    (MvPolynomial.map ψ.toRingHom Q) hK x) ⟨l.val, by omega⟩
+  rw [polynomialJet, Polynomial.hasseJet_eq_taylor_coeff] at hjet
+  apply IsFractionRing.injective L Frac
+  rw [map_mul, map_pow, hmap, hrec, hjet, mul_right_comm, ← mul_pow, hsep, one_pow, one_mul]
+
 /-- Below the differential order, reconstructed coefficients recover the chart jets after the
 separant has been inverted. -/
 theorem localizedChartCoefficient_eq_jet_of_exponent
@@ -90,56 +121,21 @@ theorem localizedChartCoefficient_eq_jet_of_exponent
     localizedChartCoefficient center Q K P l (τ := τ) =
       localizedChartJet P (initialJetSeparant center Q) ⟨l.val, by omega⟩ := by
   let s := initialJetSeparant center Q
-  let L := ChartAway P s
   let _ : P.IsPrime := hP
-  have hs0 : Ideal.Quotient.mk P s ≠ 0 := by
-    intro hz
-    exact hs (Ideal.Quotient.eq_zero_iff_mem.mp hz)
-  let _ : IsDomain L := Localization.Away.isDomain hs0
-  let Frac := FractionRing L
-  let emb : L →+* Frac := algebraMap L Frac
-  let x : Fin (r + 1) → Frac := fun j ↦ emb (localizedChartJet P s j)
-  let φ : E →ₐ[E] Frac := Algebra.ofId E Frac
-  let src : ChartRing r E →ₐ[E] Frac :=
-    (IsScalarTower.toAlgHom E L Frac).comp
-      ((IsScalarTower.toAlgHom E (ChartRing r E ⧸ P) L).comp (Ideal.Quotient.mkₐ E P))
-  have hsrc : src = MvPolynomial.aeval x := by
-    apply MvPolynomial.algHom_ext
-    intro j
-    simp only [src, x, localizedChartJet, AlgHom.comp_apply, MvPolynomial.aeval_X,
-      IsScalarTower.toAlgHom_apply]
-    rfl
-  have heval (p : ChartRing r E) :
-      emb (algebraMap (ChartRing r E ⧸ P) L (Ideal.Quotient.mk P p)) = aeval x p := by
-    exact DFunLike.congr_fun hsrc p
-  have hsepEval : aeval x
-      (MvPolynomial.map φ.toRingHom (initialJetSeparant center Q)) =
-      emb (algebraMap (ChartRing r E ⧸ P) L (Ideal.Quotient.mk P s)) :=
-    (MvPolynomial.aeval_map_algebraMap Frac x _).trans (heval s).symm
-  have hsepNe : aeval x
-      (MvPolynomial.map φ.toRingHom (initialJetSeparant center Q)) ≠ 0 := by
-    rw [hsepEval]
-    exact ((IsLocalization.Away.algebraMap_isUnit (Ideal.Quotient.mk P s)).map emb).ne_zero
-  have hrec := aeval_map_commonTaylorNumeratorOver_reconstruction_of_exponent φ center Q K τ
-    hτ x hsepNe l
-  have hnumEval : aeval x (MvPolynomial.map φ.toRingHom
-      (commonTaylorNumeratorOver (F := E) center Q τ l.val)) =
-      emb (algebraMap (ChartRing r E ⧸ P) L
-        (Ideal.Quotient.mk P (commonTaylorNumerator center Q τ l.val))) := by
-    rw [commonTaylorNumeratorOver_self]
-    exact (MvPolynomial.aeval_map_algebraMap Frac x _).trans (heval _).symm
-  have hcancel :
-      emb (algebraMap (ChartRing r E ⧸ P) L (Ideal.Quotient.mk P s)) ^ τ *
-          emb (IsLocalization.Away.invSelf (Ideal.Quotient.mk P s)) ^ τ = 1 := by
-    rw [← mul_pow, ← map_mul, IsLocalization.Away.mul_invSelf, map_one, one_pow]
-  have hjet := congrFun
-    (polynomialJet_rationalTaylorPolynomial (φ center) (MvPolynomial.map φ.toRingHom Q)
-      hK x) ⟨l.val, by omega⟩
-  rw [polynomialJet, Polynomial.hasseJet_eq_taylor_coeff] at hjet
-  apply IsFractionRing.injective L Frac
-  rw [localizedChartCoefficient, map_mul, map_pow, ← hnumEval, hrec, hsepEval, mul_right_comm,
-    hcancel, one_mul]
-  exact hjet
+  let _ : IsDomain (ChartAway P s) :=
+    Localization.Away.isDomain fun hz ↦ hs (Ideal.Quotient.eq_zero_iff_mem.mp hz)
+  let g : ChartRing r E →ₐ[E] ChartAway P s :=
+    (IsScalarTower.toAlgHom E (ChartRing r E ⧸ P) _).comp (Ideal.Quotient.mkₐ E P)
+  have hg (p : ChartRing r E) :
+      aeval (fun j ↦ g (MvPolynomial.X j))
+        (MvPolynomial.map (Algebra.ofId E (ChartAway P s)).toRingHom p) = g p :=
+    (MvPolynomial.aeval_map_algebraMap _ _ p).trans
+      (DFunLike.congr_fun (MvPolynomial.aeval_unique g) p).symm
+  have key := aeval_map_commonTaylorNumeratorOver_mul_pow_eq_jet (Algebra.ofId E _) center Q K τ
+    hτ hK _ (IsLocalization.Away.invSelf (Ideal.Quotient.mk P s))
+    (by rw [hg]; exact IsLocalization.Away.mul_invSelf (Ideal.Quotient.mk P s)) l hl
+  rw [hg, commonTaylorNumeratorOver_self] at key
+  exact key
 
 /-- Map the first `k` reconstructed coefficients into a retained fixed Taylor chart. -/
 def chartCoefficientMap (center : E) (Q : DifferentialPolynomial E r)
@@ -204,6 +200,29 @@ private theorem sum_castLE_mul_pow_eq_of_cleared {L : Type*} [CommRing L] {K k �
   simp_rw [← mul_assoc]
   rw [← Finset.sum_mul, hfull, mul_assoc, hcancel, mul_one]
 
+/-- An algebra map that kills a Taylor agreement cut and every high numerator, and whose separant
+image has inverse `u`, kills the fixed coefficient evaluation at the cleared low numerators. -/
+private theorem aeval_fixedCoefficientEvaluation_eq_zero {L : Type*} [CommRing L] [Algebra E L]
+    (g : ChartRing r E →ₐ[E] L) (u : L) (center : E) (Q : DifferentialPolynomial E r)
+    (K k τ : ℕ) (hkK : k ≤ K) (α y : E) (v : Fin k → L)
+    (hv : ∀ l, v l = g (commonTaylorNumerator center Q τ (Fin.castLE hkK l).val) * u ^ τ)
+    (hcut : g (taylorAgreementEquation center Q K α y (τ := τ)) = 0)
+    (hhigh : ∀ l : Fin K, k ≤ l.val → g (commonTaylorNumerator center Q τ l.val) = 0)
+    (hu : g (initialJetSeparant center Q) * u = 1) :
+    aeval v (fixedCoefficientEvaluation k (α - center) y) = 0 := by
+  have hcutEq :
+      (∑ l : Fin K, (algebraMap E L (α - center)) ^ l.val *
+        g (commonTaylorNumerator center Q τ l.val)) -
+          algebraMap E L y * g (initialJetSeparant center Q) ^ τ = 0 := by
+    simpa only [taylorAgreementEquation, map_sub, map_sum, map_mul, map_pow,
+      MvPolynomial.algHom_C] using hcut
+  have hlocalized := sum_castLE_mul_pow_eq_of_cleared hkK _ _ _ u
+    (fun l : Fin K ↦ g (commonTaylorNumerator center Q τ l.val)) hcutEq hhigh
+    (by rw [← mul_pow, hu, one_pow])
+  rw [fixedCoefficientEvaluation, map_sub, map_sum]
+  simp only [map_mul, map_pow, MvPolynomial.aeval_C, MvPolynomial.aeval_X, hv]
+  exact sub_eq_zero.mpr hlocalized
+
 /-- A retained Taylor agreement cut becomes its ordinary coefficient-evaluation equation under
 the fixed-chart coefficient map. -/
 theorem fixedCoefficientEvaluation_mem_ker_chartCoefficientMap_of_exponent
@@ -214,43 +233,18 @@ theorem fixedCoefficientEvaluation_mem_ker_chartCoefficientMap_of_exponent
       commonTaylorNumerator center Q τ l.val ∈ P) :
     fixedCoefficientEvaluation k (α - center) y ∈
       RingHom.ker (chartCoefficientMap center Q K k hkK P (τ := τ)).toRingHom := by
-  let _ : DistribMulAction (ChartRing r E ⧸ P) (ChartRing r E ⧸ P) := inferInstance
   let s := initialJetSeparant center Q
-  let L := ChartAway P s
-  let src : ChartRing r E →ₐ[E] L :=
-    (IsScalarTower.toAlgHom E (ChartRing r E ⧸ P) L).comp (Ideal.Quotient.mkₐ E P)
-  have hcut0 : src (taylorAgreementEquation center Q K α y (τ := τ)) = 0 := by
-    change algebraMap (ChartRing r E ⧸ P) L
-      (Ideal.Quotient.mk P (taylorAgreementEquation center Q K α y (τ := τ))) = 0
-    rw [Ideal.Quotient.eq_zero_iff_mem.mpr hcut, map_zero]
-  have hhigh0 (l : Fin K) (hl : k ≤ l.val) :
-      src (commonTaylorNumerator center Q τ l.val) = 0 := by
-    change algebraMap (ChartRing r E ⧸ P) L
-      (Ideal.Quotient.mk P
-        (commonTaylorNumerator center Q τ l.val)) = 0
-    rw [Ideal.Quotient.eq_zero_iff_mem.mpr (hhigh l hl), map_zero]
-  have hcancel : src s ^ τ *
-      IsLocalization.Away.invSelf (Ideal.Quotient.mk P s) ^ τ = 1 := by
-    have hbase : src s * IsLocalization.Away.invSelf (Ideal.Quotient.mk P s) = 1 :=
-      IsLocalization.Away.mul_invSelf (S := L) (Ideal.Quotient.mk P s)
-    simpa only [mul_pow, one_pow] using congrArg (fun q : L ↦ q ^ τ) hbase
-  have hcutEq :
-      (∑ l : Fin K, (algebraMap E L (α - center)) ^ l.val *
-        src (commonTaylorNumerator center Q τ l.val)) -
-          algebraMap E L y * src s ^ τ = 0 := by
-    simpa only [taylorAgreementEquation, map_sub, map_sum, map_mul, map_pow,
-      MvPolynomial.algHom_C] using hcut0
-  have hlocalized :
-      (∑ l : Fin k, (algebraMap E L (α - center)) ^ l.val *
-        localizedChartCoefficient center Q K P (Fin.castLE hkK l) (τ := τ)) =
-          algebraMap E L y :=
-    sum_castLE_mul_pow_eq_of_cleared hkK _ _ _ _
-      (fun l : Fin K ↦ src (commonTaylorNumerator center Q τ l.val)) hcutEq hhigh0 hcancel
+  let g : ChartRing r E →ₐ[E] ChartAway P s :=
+    (IsScalarTower.toAlgHom E (ChartRing r E ⧸ P) _).comp (Ideal.Quotient.mkₐ E P)
+  have hg (p : ChartRing r E) (hp : p ∈ P) : g p = 0 :=
+    show algebraMap (ChartRing r E ⧸ P) (ChartAway P s) (Ideal.Quotient.mk P p) = 0 by
+      rw [Ideal.Quotient.eq_zero_iff_mem.mpr hp, map_zero]
   change chartCoefficientMap center Q K k hkK P (τ := τ)
     (fixedCoefficientEvaluation k (α - center) y) = 0
-  rw [fixedCoefficientEvaluation, map_sub, map_sum]
-  simp only [chartCoefficientMap, map_mul, map_pow, MvPolynomial.aeval_C, MvPolynomial.aeval_X]
-  exact sub_eq_zero.mpr hlocalized
+  exact aeval_fixedCoefficientEvaluation_eq_zero g
+    (IsLocalization.Away.invSelf (Ideal.Quotient.mk P s)) center Q K k τ hkK α y _
+    (fun _ ↦ rfl) (hg _ hcut) (fun l hl ↦ hg _ (hhigh l hl))
+    (IsLocalization.Away.mul_invSelf (S := ChartAway P s) (Ideal.Quotient.mk P s))
 
 /-- A retained fixed Taylor-chart prime containing `c` distinct agreement cuts has dimension at
 most `k-c`.  The proof reuses the ordinary Vandermonde quotient bound and the generic
@@ -380,6 +374,15 @@ private theorem aeval_optionEquivRight_symm {A : Type*} [CommRing A] [Algebra E 
       simp only [map_mul, hp, MvPolynomial.optionEquivRight_symm_X, MvPolynomial.aeval_X,
         MvPolynomial.map_X]
 
+/-- An algebra map out of the source ring sends a flattened source polynomial to the evaluation at
+the jet images of its coefficients, each evaluated at the challenge image. -/
+private theorem algHom_optionEquivRight_symm {L : Type*} [CommRing L] [Algebra E L]
+    (g : SourceRing r E →ₐ[E] L) (p : MvPolynomial (Fin (r + 1)) E[X]) :
+    g ((MvPolynomial.optionEquivRight E (Fin (r + 1))).symm p) =
+      aeval (fun j ↦ g (MvPolynomial.X (some j)))
+        (MvPolynomial.map (Polynomial.aeval (g (MvPolynomial.X none))).toRingHom p) :=
+  (DFunLike.congr_fun (MvPolynomial.aeval_unique g) _).trans (aeval_optionEquivRight_symm _ p)
+
 /-- Below the differential order, the reconstructed coefficients recover the actual jet
 coordinates in the retained source localization. -/
 theorem localizedSourceCoefficient_eq_jet_of_exponent
@@ -392,65 +395,19 @@ theorem localizedSourceCoefficient_eq_jet_of_exponent
       localizedSourceJet P (jointInitialJetSeparant center Q)
         ⟨l.val, by omega⟩ := by
   let s := jointInitialJetSeparant center Q
-  let L := SourceAway P s
   let _ : P.IsPrime := hP
-  have hs0 : Ideal.Quotient.mk P s ≠ 0 := by
-    intro h
-    exact hs (Ideal.Quotient.eq_zero_iff_mem.mp h)
-  let _ : IsDomain L := Localization.Away.isDomain hs0
-  let Frac := FractionRing L
-  let emb : L →+* Frac := algebraMap L Frac
-  let x : Option (Fin (r + 1)) → Frac
-    | none => emb (localizedSourceChallenge P s)
-    | some j => emb (localizedSourceJet P s j)
-  let sourceHom : SourceRing r E →ₐ[E] Frac :=
-    (IsScalarTower.toAlgHom E L Frac).comp
-      ((IsScalarTower.toAlgHom E (SourceRing r E ⧸ P) L).comp
-        (Ideal.Quotient.mkₐ E P))
-  have hsourceHom : sourceHom = MvPolynomial.aeval x := by
-    apply MvPolynomial.algHom_ext
-    intro j
-    cases j <;>
-      simp only [sourceHom, x, localizedSourceChallenge, localizedSourceJet, emb,
-        AlgHom.comp_apply, MvPolynomial.aeval_X, IsScalarTower.toAlgHom_apply] <;> rfl
-  have heval (p : SourceRing r E) :
-      emb (algebraMap (SourceRing r E ⧸ P) L (Ideal.Quotient.mk P p)) = aeval x p := by
-    exact DFunLike.congr_fun hsourceHom p
-  let φ : E[X] →ₐ[E] Frac := Polynomial.aeval (x none)
-  have hflatten (p : MvPolynomial (Fin (r + 1)) E[X]) :
-      aeval x ((MvPolynomial.optionEquivRight E (Fin (r + 1))).symm p) =
-        aeval (fun j ↦ x (some j)) (MvPolynomial.map φ.toRingHom p) :=
-    aeval_optionEquivRight_symm x p
-  have hsepEval : aeval (fun j ↦ x (some j))
-      (MvPolynomial.map φ.toRingHom
-        (initialJetSeparant (Polynomial.C center : E[X]) Q)) =
-        emb (algebraMap (SourceRing r E ⧸ P) L (Ideal.Quotient.mk P s)) :=
-    (hflatten _).symm.trans (heval s).symm
-  have hsepNe : aeval (fun j ↦ x (some j))
-      (MvPolynomial.map φ.toRingHom
-        (initialJetSeparant (Polynomial.C center : E[X]) Q)) ≠ 0 := by
-    rw [hsepEval]
-    exact ((IsLocalization.Away.algebraMap_isUnit (Ideal.Quotient.mk P s)).map emb).ne_zero
-  have hrec := aeval_map_commonTaylorNumeratorOver_reconstruction_of_exponent φ
-    (Polynomial.C center) Q K τ hτ (fun j ↦ x (some j)) hsepNe l
-  have hnumEval : aeval (fun j ↦ x (some j))
-      (MvPolynomial.map φ.toRingHom
-        (commonTaylorNumeratorOver (F := E) (Polynomial.C center : E[X]) Q τ l.val)) =
-        emb (algebraMap (SourceRing r E ⧸ P) L
-          (Ideal.Quotient.mk P (jointCommonTaylorNumerator center Q τ l))) :=
-    (hflatten _).symm.trans (heval _).symm
-  have hcancel :
-      emb (algebraMap (SourceRing r E ⧸ P) L (Ideal.Quotient.mk P s)) ^ τ *
-          emb (IsLocalization.Away.invSelf (Ideal.Quotient.mk P s)) ^ τ = 1 := by
-    rw [← mul_pow, ← map_mul, IsLocalization.Away.mul_invSelf, map_one, one_pow]
-  have hjet := congrFun
-    (polynomialJet_rationalTaylorPolynomial (φ (Polynomial.C center))
-      (MvPolynomial.map φ.toRingHom Q) hK (fun j ↦ x (some j))) ⟨l.val, by omega⟩
-  rw [polynomialJet, Polynomial.hasseJet_eq_taylor_coeff] at hjet
-  apply IsFractionRing.injective L Frac
-  rw [localizedSourceCoefficient, map_mul, map_pow, ← hnumEval, hrec, hsepEval, mul_right_comm,
-    hcancel, one_mul]
-  exact hjet
+  let _ : IsDomain (SourceAway P s) :=
+    Localization.Away.isDomain fun hz ↦ hs (Ideal.Quotient.eq_zero_iff_mem.mp hz)
+  let g : SourceRing r E →ₐ[E] SourceAway P s :=
+    (IsScalarTower.toAlgHom E (SourceRing r E ⧸ P) _).comp (Ideal.Quotient.mkₐ E P)
+  have key := aeval_map_commonTaylorNumeratorOver_mul_pow_eq_jet
+    (Polynomial.aeval (g (MvPolynomial.X none))) (Polynomial.C center) Q K τ hτ hK _
+    (IsLocalization.Away.invSelf (Ideal.Quotient.mk P s))
+    (by
+      rw [← algHom_optionEquivRight_symm]
+      exact IsLocalization.Away.mul_invSelf (Ideal.Quotient.mk P s)) l hl
+  rw [← algHom_optionEquivRight_symm] at key
+  exact key
 
 /-- Map the challenge and the first `k` reconstructed coefficients into a retained source
 localization. -/
@@ -491,6 +448,60 @@ theorem sourceCoordinate_mem_range_sourceCoefficientMap_of_exponent
     rw [localizedSourceCoefficient, Ideal.Quotient.eq_zero_iff_mem.mpr
       (hhigh _ (Nat.le_of_not_gt hjk)), map_zero, zero_mul]
 
+/-- An algebra map that kills a polynomial-valued agreement cut and every high numerator, and
+whose separant image has inverse `u`, kills the polynomial coefficient evaluation at the challenge
+image and the cleared low numerators. -/
+private theorem aeval_polynomialCoefficientEvaluation_eq_zero {L : Type*} [CommRing L]
+    [Algebra E L] (g : SourceRing r E →ₐ[E] L) (u : L) (center : E)
+    (Q : DifferentialPolynomial E[X] r) (K k τ : ℕ) (hkK : k ≤ K) (α : E) (received : E[X])
+    (v : Option (Fin k) → L) (hvnone : v none = g (MvPolynomial.X none))
+    (hvsome : ∀ l, v (some l) =
+      g (jointCommonTaylorNumerator center Q τ (Fin.castLE hkK l)) * u ^ τ)
+    (hcut : g (jointTaylorAgreementEquation center Q K τ (Polynomial.C α) received) = 0)
+    (hhigh : ∀ l : Fin K, k ≤ l.val → g (jointCommonTaylorNumerator center Q τ l) = 0)
+    (hu : g (jointInitialJetSeparant center Q) * u = 1) :
+    aeval v (polynomialCoefficientEvaluation k (α - center) received) = 0 := by
+  let s := jointInitialJetSeparant center Q
+  let ψ : E[X] →ₐ[E] L := Polynomial.aeval (g (MvPolynomial.X none))
+  have hnum (l : Fin K) :
+      aeval (fun j ↦ g (MvPolynomial.X (some j)))
+        (MvPolynomial.map (Polynomial.aeval (g (MvPolynomial.X none))).toRingHom
+          (commonTaylorNumeratorOver (F := E) (Polynomial.C center) Q τ l.val)) =
+        g (jointCommonTaylorNumerator center Q τ l) :=
+    (algHom_optionEquivRight_symm g _).symm
+  have hsep :
+      aeval (fun j ↦ g (MvPolynomial.X (some j)))
+        (MvPolynomial.map (Polynomial.aeval (g (MvPolynomial.X none))).toRingHom
+          (initialJetSeparant (Polynomial.C center) Q)) = g s :=
+    (algHom_optionEquivRight_symm g _).symm
+  have hcutEq :
+      (∑ l : Fin K, (algebraMap E L (α - center)) ^ l.val *
+        g (jointCommonTaylorNumerator center Q τ l)) -
+          ψ received * g s ^ τ = 0 := by
+    rw [jointTaylorAgreementEquation, taylorAgreementEquationOver,
+      algHom_optionEquivRight_symm] at hcut
+    simp only [map_sub, map_sum, map_mul, map_pow, MvPolynomial.map_C] at hcut
+    simp only [MvPolynomial.aeval_C] at hcut
+    simp_rw [hnum] at hcut
+    rw [hsep] at hcut
+    change (∑ l : Fin K, (ψ (Polynomial.C α) - ψ (Polynomial.C center)) ^ l.val *
+        g (jointCommonTaylorNumerator center Q τ l)) -
+      ψ received * g s ^ τ = 0 at hcut
+    have hx : ψ (Polynomial.C α) - ψ (Polynomial.C center) =
+        algebraMap E L (α - center) := by
+      simp [ψ]
+    rw [hx] at hcut
+    exact hcut
+  have hlocalized := sum_castLE_mul_pow_eq_of_cleared hkK _ (ψ received) _ u
+    (fun l : Fin K ↦ g (jointCommonTaylorNumerator center Q τ l)) hcutEq hhigh
+    (by rw [← mul_pow, hu, one_pow])
+  have hreceived : aeval v (received.eval₂ MvPolynomial.C (MvPolynomial.X none)) = ψ received := by
+    rw [← MvPolynomial.algebraMap_eq, ← Polynomial.aeval_def, ← Polynomial.aeval_algHom_apply,
+      MvPolynomial.aeval_X, hvnone]
+  rw [polynomialCoefficientEvaluation, map_sub, hreceived, map_sum]
+  simp only [map_mul, map_pow, MvPolynomial.aeval_C, MvPolynomial.aeval_X, hvsome]
+  exact sub_eq_zero.mpr hlocalized
+
 /-- A retained polynomial-valued symbolic agreement cut becomes the corresponding coefficient
 evaluation equation under the source coefficient map. -/
 theorem polynomialCoefficientEvaluation_mem_ker_sourceCoefficientMap_of_exponent
@@ -502,92 +513,18 @@ theorem polynomialCoefficientEvaluation_mem_ker_sourceCoefficientMap_of_exponent
       jointCommonTaylorNumerator center Q τ l ∈ P) :
     polynomialCoefficientEvaluation k (α - center) received ∈
       RingHom.ker (sourceCoefficientMap center Q K k hkK P (τ := τ)).toRingHom := by
-  let _ : DistribMulAction (SourceRing r E ⧸ P) (SourceRing r E ⧸ P) := inferInstance
   let s := jointInitialJetSeparant center Q
-  let L := SourceAway P s
-  let src : SourceRing r E →ₐ[E] L :=
-    (IsScalarTower.toAlgHom E (SourceRing r E ⧸ P) L).comp (Ideal.Quotient.mkₐ E P)
-  have hcut0 : src (jointTaylorAgreementEquation center Q K τ (Polynomial.C α) received) = 0 := by
-    change algebraMap (SourceRing r E ⧸ P) L
-      (Ideal.Quotient.mk P
-        (jointTaylorAgreementEquation center Q K τ (Polynomial.C α) received)) = 0
-    rw [Ideal.Quotient.eq_zero_iff_mem.mpr hcut, map_zero]
-  have hhigh0 (l : Fin K) (hl : k ≤ l.val) :
-      src (jointCommonTaylorNumerator center Q τ l) = 0 := by
-    change algebraMap (SourceRing r E ⧸ P) L
-      (Ideal.Quotient.mk P (jointCommonTaylorNumerator center Q τ l)) = 0
-    rw [Ideal.Quotient.eq_zero_iff_mem.mpr (hhigh l hl), map_zero]
-  have hcancel : src s ^ τ *
-      IsLocalization.Away.invSelf (Ideal.Quotient.mk P s) ^ τ = 1 := by
-    have hbase : src s * IsLocalization.Away.invSelf (Ideal.Quotient.mk P s) = 1 := by
-      exact IsLocalization.Away.mul_invSelf (S := L) (Ideal.Quotient.mk P s)
-    simpa only [mul_pow, one_pow] using congrArg (fun q : L ↦ q ^ τ) hbase
-  let ψ : E[X] →ₐ[E] L := Polynomial.aeval (src (MvPolynomial.X none))
-  have hsrcFlatten (p : MvPolynomial (Fin (r + 1)) E[X]) :
-      src ((MvPolynomial.optionEquivRight E (Fin (r + 1))).symm p) =
-        aeval (fun j ↦ src (MvPolynomial.X (some j))) (MvPolynomial.map ψ.toRingHom p) :=
-    (DFunLike.congr_fun (MvPolynomial.aeval_unique src) _).trans
-      (aeval_optionEquivRight_symm _ p)
-  have hnum (l : Fin K) :
-      aeval (fun j ↦ src (MvPolynomial.X (some j)))
-        (MvPolynomial.map ψ.toRingHom
-          (commonTaylorNumeratorOver (F := E) (Polynomial.C center) Q τ l.val)) =
-        src (jointCommonTaylorNumerator center Q τ l) := by
-    exact (hsrcFlatten
-      (commonTaylorNumeratorOver (F := E) (Polynomial.C center) Q τ l.val)).symm
-  have hsep :
-      aeval (fun j ↦ src (MvPolynomial.X (some j)))
-        (MvPolynomial.map ψ.toRingHom
-          (initialJetSeparant (Polynomial.C center) Q)) = src s := by
-    exact (hsrcFlatten (initialJetSeparant (Polynomial.C center) Q)).symm
-  have hcutEq :
-      (∑ l : Fin K, (algebraMap E L (α - center)) ^ l.val *
-        src (jointCommonTaylorNumerator center Q τ l)) -
-          ψ received * src s ^ τ = 0 := by
-    rw [jointTaylorAgreementEquation, taylorAgreementEquationOver] at hcut0
-    rw [hsrcFlatten] at hcut0
-    simp only [map_sub, map_sum, map_mul, map_pow, MvPolynomial.map_C] at hcut0
-    simp only [MvPolynomial.aeval_C] at hcut0
-    simp_rw [hnum] at hcut0
-    rw [hsep] at hcut0
-    change (∑ l : Fin K, (ψ (Polynomial.C α) - ψ (Polynomial.C center)) ^ l.val *
-        src (jointCommonTaylorNumerator center Q τ l)) -
-      ψ received * src s ^ τ = 0 at hcut0
-    have hx : ψ (Polynomial.C α) - ψ (Polynomial.C center) =
-        algebraMap E L (α - center) := by
-      simp [ψ]
-    rw [hx] at hcut0
-    exact hcut0
-  have hlocalized :
-      (∑ l : Fin k, (algebraMap E L (α - center)) ^ l.val *
-        localizedSourceCoefficient center Q K P (Fin.castLE hkK l) (τ := τ)) =
-          received.eval₂ (algebraMap E L) (localizedSourceChallenge P s) :=
-    sum_castLE_mul_pow_eq_of_cleared hkK _ (ψ received) _ _
-      (fun l : Fin K ↦ src (jointCommonTaylorNumerator center Q τ l)) hcutEq hhigh0 hcancel
-  let Φ := sourceCoefficientMap center Q K k hkK P (τ := τ)
-  change Φ (polynomialCoefficientEvaluation k (α - center) received) = 0
-  have hC (a : E) : Φ (MvPolynomial.C a) =
-      algebraMap E (SourceAway P (jointInitialJetSeparant center Q)) a := by
-    simp [Φ, sourceCoefficientMap]
-  have hX (j : Option (Fin k)) : Φ (MvPolynomial.X j) =
-      match j with
-      | none => localizedSourceChallenge P (jointInitialJetSeparant center Q)
-      | some l => localizedSourceCoefficient center Q K P (Fin.castLE hkK l) (τ := τ) := by
-    simp [Φ, sourceCoefficientMap]
-  rw [polynomialCoefficientEvaluation, map_sub]
-  have hreceived :=
-    Polynomial.hom_eval₂ received MvPolynomial.C Φ.toRingHom (MvPolynomial.X none)
-  change Φ (received.eval₂ MvPolynomial.C (MvPolynomial.X none)) =
-    received.eval₂ (Φ.toRingHom.comp MvPolynomial.C) (Φ (MvPolynomial.X none)) at hreceived
-  rw [hreceived]
-  have hmap : Φ.toRingHom.comp MvPolynomial.C =
-      algebraMap E (SourceAway P (jointInitialJetSeparant center Q)) := by
-    ext a
-    exact hC a
-  rw [hmap]
-  simp only [map_sum, map_mul, hC, hX]
-  simp_rw [map_pow]
-  exact sub_eq_zero.mpr hlocalized
+  let g : SourceRing r E →ₐ[E] SourceAway P s :=
+    (IsScalarTower.toAlgHom E (SourceRing r E ⧸ P) _).comp (Ideal.Quotient.mkₐ E P)
+  have hg (p : SourceRing r E) (hp : p ∈ P) : g p = 0 :=
+    show algebraMap (SourceRing r E ⧸ P) (SourceAway P s) (Ideal.Quotient.mk P p) = 0 by
+      rw [Ideal.Quotient.eq_zero_iff_mem.mpr hp, map_zero]
+  change sourceCoefficientMap center Q K k hkK P (τ := τ)
+    (polynomialCoefficientEvaluation k (α - center) received) = 0
+  exact aeval_polynomialCoefficientEvaluation_eq_zero g
+    (IsLocalization.Away.invSelf (Ideal.Quotient.mk P s)) center Q K k τ hkK α received _ rfl
+    (fun _ ↦ rfl) (hg _ hcut) (fun l hl ↦ hg _ (hhigh l hl))
+    (IsLocalization.Away.mul_invSelf (S := SourceAway P s) (Ideal.Quotient.mk P s))
 
 /-- A retained source prime containing `c` agreement cuts at distinct evaluation points has
 dimension at most `k + 1 - c`.

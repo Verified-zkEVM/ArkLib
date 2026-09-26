@@ -58,6 +58,10 @@ private theorem exponentOneSufficient : TaylorExponentSufficient 0 2 1 := by
   intro l
   fin_cases l <;> norm_num [TaylorExponentSufficient]
 
+private theorem initialJetSeparant_quadraticJetSampleEquation :
+    initialJetSeparant (Polynomial.C 0) quadraticJetSampleEquation = 1 := by
+  simp [initialJetSeparant, quadraticJetSampleEquation, separant, Fin.last]
+
 /-- The order-one common Taylor numerator of `quadraticJetSampleEquation` equals
 `-(Y₀ - 2)²`. -/
 theorem quadraticJetSampleEquation_highNumerator_eq (τ : ℕ) :
@@ -94,8 +98,7 @@ theorem quadraticJetSampleEquation_highNumerator_eq (τ : ℕ) :
       quadraticJetSampleEquation 1 =
         -(MvPolynomial.X (0 : Fin 1) - MvPolynomial.C (Polynomial.C (2 : ℚ))) ^ 2 := by
     rw [rationalTaylorNumeratorOver, dite_eq_right (by omega), hcoeff]
-    rw [show initialJetSeparant (Polynomial.C 0) quadraticJetSampleEquation = 1 by
-      simp [initialJetSeparant, quadraticJetSampleEquation, separant, Fin.last]]
+    rw [initialJetSeparant_quadraticJetSampleEquation]
     have hN : (fun i : Fin 1 ↦ rationalTaylorNumeratorOver ℚ (Polynomial.C 0)
         quadraticJetSampleEquation i.val) = fun _ : Fin 1 ↦ MvPolynomial.X (0 : Fin 1) := by
       funext i
@@ -108,14 +111,14 @@ theorem quadraticJetSampleEquation_highNumerator_eq (τ : ℕ) :
     rw [hN, hd]
     norm_num [Nat.choose_zero_right]
     rw [hsubst]
-  rw [commonTaylorNumeratorOver, hnumerator]
-  simp [initialJetSeparant, quadraticJetSampleEquation, separant, Fin.last]
+  rw [commonTaylorNumeratorOver, hnumerator, initialJetSeparant_quadraticJetSampleEquation, one_pow,
+    mul_one]
 
 private theorem quadraticJetSampleEquation_highNumerator_ne (τ : ℕ) :
-    map (Polynomial.evalRingHom (2 : ℚ))
+    MvPolynomial.map (Polynomial.evalRingHom (2 : ℚ))
       (commonTaylorNumeratorOver ℚ (Polynomial.C 0) quadraticJetSampleEquation τ 1) ≠ 0 := by
   have hvalue : MvPolynomial.aeval (fun _ : Fin 1 ↦ (0 : ℚ))
-      (map (Polynomial.evalRingHom (2 : ℚ))
+      (MvPolynomial.map (Polynomial.evalRingHom (2 : ℚ))
         (commonTaylorNumeratorOver ℚ (Polynomial.C 0) quadraticJetSampleEquation τ 1)) = -4 := by
     rw [quadraticJetSampleEquation_highNumerator_eq]
     norm_num
@@ -126,29 +129,30 @@ private theorem quadraticJetSampleEquation_highNumerator_ne (τ : ℕ) :
 private theorem concreteTaylorChartSetup (τ : ℕ)
     (hτ : TaylorExponentSufficient 0 2 τ) :
     MvPolynomial.aeval concreteJet
-        (map (Polynomial.evalRingHom 2)
+        (MvPolynomial.map (Polynomial.evalRingHom 2)
           (initialJetSeparant (Polynomial.C 0) quadraticJetSampleEquation)) ≠ 0 ∧
       (∀ l : Fin 2, 1 ≤ l.val →
         MvPolynomial.aeval concreteJet
-          (map (Polynomial.evalRingHom 2)
+          (MvPolynomial.map (Polynomial.evalRingHom 2)
             (commonTaylorNumeratorOver ℚ (Polynomial.C 0)
               quadraticJetSampleEquation τ l.val)) = 0) ∧
       (∀ i ∈ Finset.univ, MvPolynomial.aeval concreteJet
-        (map (Polynomial.evalRingHom 2)
+        (MvPolynomial.map (Polynomial.evalRingHom 2)
           (taylorAgreementEquationOver (F := ℚ) (Polynomial.C 0) quadraticJetSampleEquation 2
             (Polynomial.C (pointDomain i)) (Polynomial.C 0 + Polynomial.X * Polynomial.C 1)
             (τ := τ))) = 0) ∧
       rationalTaylorPolynomial (0 : ℚ)
-        (map (Polynomial.evalRingHom 2) quadraticJetSampleEquation) 2 concreteJet =
+        (MvPolynomial.map (Polynomial.evalRingHom 2) quadraticJetSampleEquation) 2 concreteJet =
         Polynomial.C 2 := by
   let φ : Polynomial ℚ →ₐ[ℚ] ℚ := challengeHom
   have hφ : φ.toRingHom = Polynomial.evalRingHom (2 : ℚ) := challengeHom_toRingHom
   have hS : MvPolynomial.aeval concreteJet
-      (map (Polynomial.evalRingHom 2)
+      (MvPolynomial.map (Polynomial.evalRingHom 2)
         (initialJetSeparant (Polynomial.C 0) quadraticJetSampleEquation)) ≠ 0 := by
-    simp [quadraticJetSampleEquation, initialJetSeparant, separant, Fin.last]
+    rw [initialJetSeparant_quadraticJetSampleEquation, map_one, map_one]
+    exact one_ne_zero
   have hSφ : MvPolynomial.aeval concreteJet
-      (map φ.toRingHom
+      (MvPolynomial.map φ.toRingHom
         (initialJetSeparant (Polynomial.C 0) quadraticJetSampleEquation)) ≠ 0 := by
     simpa only [hφ] using hS
   have hjet : polynomialJet (d := 0) (0 : ℚ) (Polynomial.C 2 : ℚ[X]) = concreteJet := by
@@ -156,24 +160,28 @@ private theorem concreteTaylorChartSetup (τ : ℕ)
     fin_cases j
     simp [concreteJet, polynomialJet, Polynomial.hasseJet_apply]
   have hsolution :
-    differentialSpecialization (map φ.toRingHom quadraticJetSampleEquation)
+    differentialSpecialization (MvPolynomial.map φ.toRingHom quadraticJetSampleEquation)
         (Polynomial.C 2 : ℚ[X]) = 0 := by
     simp [quadraticJetSampleEquation, φ, differentialSpecialization,
       differentialSpecializationHom, challengeHom]
   have hseparant :
-      jetEvaluation (separant (map φ.toRingHom quadraticJetSampleEquation) (Fin.last 0)) 0
+      jetEvaluation
+          (separant (MvPolynomial.map φ.toRingHom quadraticJetSampleEquation) (Fin.last 0)) 0
         (polynomialJet (d := 0) 0 (Polynomial.C 2 : ℚ[X])) ≠ 0 := by
-    rw [hjet]
-    norm_num [jetEvaluation, separant, quadraticJetSampleEquation, φ, challengeHom]
+    have hsep := map_initialJetSeparant φ.toRingHom (Polynomial.C 0) quadraticJetSampleEquation
+    rw [initialJetSeparant_quadraticJetSampleEquation, map_one, Polynomial.C_0, map_zero] at hsep
+    rw [hjet, ← aeval_initialJetSeparant, ← hsep, map_one]
+    exact one_ne_zero
   have hpoly :
-      rationalTaylorPolynomial 0 (map φ.toRingHom quadraticJetSampleEquation) 2 concreteJet =
+      rationalTaylorPolynomial 0 (MvPolynomial.map φ.toRingHom quadraticJetSampleEquation) 2
+        concreteJet =
       Polynomial.C 2 := by
     rw [← hjet]
     exact rationalTaylorPolynomial_polynomialJet 0
-      (map φ.toRingHom quadraticJetSampleEquation) (Polynomial.C 2) hsolution hseparant
+      (MvPolynomial.map φ.toRingHom quadraticJetSampleEquation) (Polynomial.C 2) hsolution hseparant
       (by norm_num) (by intro i hi hiK; norm_num)
   have hhigh : ∀ l : Fin 2, 1 ≤ l.val → MvPolynomial.aeval concreteJet
-      (map (Polynomial.evalRingHom 2)
+      (MvPolynomial.map (Polynomial.evalRingHom 2)
         (commonTaylorNumeratorOver ℚ (Polynomial.C 0)
           quadraticJetSampleEquation τ l.val)) = 0 := by
     intro l hl
@@ -185,7 +193,8 @@ private theorem concreteTaylorChartSetup (τ : ℕ)
     have hcoeff :
         (Polynomial.taylor (φ (Polynomial.C (0 : ℚ)))
           (rationalTaylorPolynomial (φ (Polynomial.C 0))
-            (map φ.toRingHom quadraticJetSampleEquation) 2 concreteJet)).coeff 1 = 0 := by
+            (MvPolynomial.map φ.toRingHom quadraticJetSampleEquation) 2
+            concreteJet)).coeff 1 = 0 := by
       rw [show φ (Polynomial.C (0 : ℚ)) = 0 by simp [φ, challengeHom], hpoly]
       simp
     rw [hcoeff] at hnum
@@ -193,7 +202,7 @@ private theorem concreteTaylorChartSetup (τ : ℕ)
     rw [← hφ]
     simpa only [Fin.val_one] using hnum
   have hcuts : ∀ i ∈ Finset.univ, MvPolynomial.aeval concreteJet
-      (map (Polynomial.evalRingHom 2)
+      (MvPolynomial.map (Polynomial.evalRingHom 2)
         (taylorAgreementEquationOver (F := ℚ) (Polynomial.C 0) quadraticJetSampleEquation 2
           (Polynomial.C (pointDomain i)) (Polynomial.C 0 + Polynomial.X * Polynomial.C 1)
           (τ := τ))) = 0 := by
@@ -219,22 +228,22 @@ example :
       P₀.eval 0 = 0 ∧ P₁.eval 0 = 1 ∧
       (Polynomial.C 2 * P₁.map (RingHom.id ℚ)).eval 0 = 2 ∧
       MvPolynomial.aeval concreteJet
-        (map (Polynomial.evalRingHom 2)
+        (MvPolynomial.map (Polynomial.evalRingHom 2)
           (commonTaylorNumeratorOver ℚ (Polynomial.C 0) quadraticJetSampleEquation 1 1)) = 0 ∧
-      map (Polynomial.evalRingHom 2)
+      MvPolynomial.map (Polynomial.evalRingHom 2)
         (commonTaylorNumeratorOver ℚ (Polynomial.C 0) quadraticJetSampleEquation 1 1) ≠ 0 ∧
       rationalTaylorPolynomial (0 : ℚ)
-          (map (Polynomial.evalRingHom 2) quadraticJetSampleEquation) 2 concreteJet =
+          (MvPolynomial.map (Polynomial.evalRingHom 2) quadraticJetSampleEquation) 2 concreteJet =
         P₀.map (RingHom.id ℚ) + Polynomial.C 2 * P₁.map (RingHom.id ℚ) ∧
       concreteJet = (fun j ↦
         polynomialJet (d := 0) (0 : ℚ) (P₀.map (RingHom.id ℚ)) j +
           2 * polynomialJet (d := 0) (0 : ℚ) (P₁.map (RingHom.id ℚ)) j) ∧
       ∀ l : Fin 2,
         MvPolynomial.aeval concreteJet
-            (map (Polynomial.evalRingHom 2)
+            (MvPolynomial.map (Polynomial.evalRingHom 2)
               (commonTaylorNumeratorOver ℚ (Polynomial.C 0) quadraticJetSampleEquation 1 l.val)) =
           MvPolynomial.aeval concreteJet
-              (map (Polynomial.evalRingHom 2)
+              (MvPolynomial.map (Polynomial.evalRingHom 2)
                 (initialJetSeparant (Polynomial.C 0) quadraticJetSampleEquation)) ^ 1 *
             (Polynomial.taylor (0 : ℚ) (P₀.map (RingHom.id ℚ) +
               Polynomial.C 2 * P₁.map (RingHom.id ℚ))).coeff l.val := by
@@ -263,22 +272,22 @@ example :
       P₀.eval 0 = 0 ∧ P₁.eval 0 = 1 ∧
       (Polynomial.C 2 * P₁.map (RingHom.id ℚ)).eval 0 = 2 ∧
       MvPolynomial.aeval concreteJet
-        (map (Polynomial.evalRingHom 2)
+        (MvPolynomial.map (Polynomial.evalRingHom 2)
           (commonTaylorNumeratorOver ℚ (Polynomial.C 0) quadraticJetSampleEquation 4 1)) = 0 ∧
-      map (Polynomial.evalRingHom 2)
+      MvPolynomial.map (Polynomial.evalRingHom 2)
         (commonTaylorNumeratorOver ℚ (Polynomial.C 0) quadraticJetSampleEquation 4 1) ≠ 0 ∧
       rationalTaylorPolynomial (0 : ℚ)
-          (map (Polynomial.evalRingHom 2) quadraticJetSampleEquation) 2 concreteJet =
+          (MvPolynomial.map (Polynomial.evalRingHom 2) quadraticJetSampleEquation) 2 concreteJet =
         P₀.map (RingHom.id ℚ) + Polynomial.C 2 * P₁.map (RingHom.id ℚ) ∧
       concreteJet = (fun j ↦
         polynomialJet (d := 0) (0 : ℚ) (P₀.map (RingHom.id ℚ)) j +
           2 * polynomialJet (d := 0) (0 : ℚ) (P₁.map (RingHom.id ℚ)) j) ∧
       ∀ l : Fin 2,
         MvPolynomial.aeval concreteJet
-            (map (Polynomial.evalRingHom 2)
+            (MvPolynomial.map (Polynomial.evalRingHom 2)
               (commonTaylorNumeratorOver ℚ (Polynomial.C 0) quadraticJetSampleEquation 4 l.val)) =
           MvPolynomial.aeval concreteJet
-              (map (Polynomial.evalRingHom 2)
+              (MvPolynomial.map (Polynomial.evalRingHom 2)
                 (initialJetSeparant (Polynomial.C 0) quadraticJetSampleEquation)) ^ 4 *
             (Polynomial.taylor (0 : ℚ) (P₀.map (RingHom.id ℚ) +
               Polynomial.C 2 * P₁.map (RingHom.id ℚ))).coeff l.val := by
@@ -312,7 +321,7 @@ example :
     ∃ F₀ G₀ : (ZMod 2)[X], F₀.degree < 1 ∧ G₀.degree < 1 ∧
       F₀.eval 1 = 1 ∧ G₀.eval 1 = 1 ∧
       rationalTaylorPolynomial (0 : ZMod 2)
-          (map (Polynomial.evalRingHom (1 : ZMod 2)) frobeniusSampleEquation) 1
+          (MvPolynomial.map (Polynomial.evalRingHom (1 : ZMod 2)) frobeniusSampleEquation) 1
           frobeniusSampleJet =
         expand (ZMod 2) (2 ^ 1)
           (F₀.map (RingHom.id (ZMod 2)) +
@@ -338,12 +347,12 @@ example :
       (Q := frobeniusSampleEquation) (k := 1) (K := 1) (by omega) (by norm_num) 2
       (taylorExponentSufficient_two_mul 0 1)
   have hS : MvPolynomial.aeval frobeniusSampleJet
-      (map (Polynomial.evalRingHom (1 : ZMod 2))
+      (MvPolynomial.map (Polynomial.evalRingHom (1 : ZMod 2))
         (initialJetSeparant (Polynomial.C (0 : ZMod 2)) frobeniusSampleEquation)) ≠ 0 := by
     simp [frobeniusSampleEquation, initialJetSeparant, separant]
   have hsparse : ∀ l : Fin 1, ¬2 ^ 1 ∣ l.val →
       MvPolynomial.aeval frobeniusSampleJet
-        (map (Polynomial.evalRingHom (1 : ZMod 2))
+        (MvPolynomial.map (Polynomial.evalRingHom (1 : ZMod 2))
           (commonTaylorNumeratorOver (F := ZMod 2) (Polynomial.C 0)
             frobeniusSampleEquation 2 l.val)) = 0 := by
     intro l hl
@@ -352,7 +361,7 @@ example :
     exact (hl hdiv).elim
   have hcuts : ∀ i : Fin 1, i ∈ Finset.univ →
       MvPolynomial.aeval frobeniusSampleJet
-        (map (Polynomial.evalRingHom (1 : ZMod 2))
+        (MvPolynomial.map (Polynomial.evalRingHom (1 : ZMod 2))
           (taylorAgreementEquationOver (F := ZMod 2) (Polynomial.C 0)
             frobeniusSampleEquation 1 (Polynomial.C (1 : ZMod 2))
             (Polynomial.C (1 : ZMod 2) + Polynomial.X ^ (2 ^ 1) *
@@ -360,19 +369,19 @@ example :
     intro i hi
     have hvalue :
         (rationalTaylorPolynomial (φ (Polynomial.C (0 : ZMod 2)))
-          (map φ.toRingHom frobeniusSampleEquation) 1 frobeniusSampleJet).eval
+          (MvPolynomial.map φ.toRingHom frobeniusSampleEquation) 1 frobeniusSampleJet).eval
             (φ (Polynomial.C (1 : ZMod 2))) =
           φ (Polynomial.C (1 : ZMod 2) + Polynomial.X ^ (2 ^ 1) *
             Polynomial.C (1 : ZMod 2)) := by
       have hcenter : φ (Polynomial.C (0 : ZMod 2)) = 0 := by simp [φ]
       have hx : φ (Polynomial.C (1 : ZMod 2)) = 1 := by simp [φ]
       have hc : rationalTaylorCoefficient (0 : ZMod 2)
-          (map φ.toRingHom frobeniusSampleEquation) frobeniusSampleJet 0 = 0 := by
+          (MvPolynomial.map φ.toRingHom frobeniusSampleEquation) frobeniusSampleJet 0 = 0 := by
         simpa [frobeniusSampleJet] using
           rationalTaylorCoefficient_initial (0 : ZMod 2)
-            (map φ.toRingHom frobeniusSampleEquation) frobeniusSampleJet (0 : Fin 1)
+            (MvPolynomial.map φ.toRingHom frobeniusSampleEquation) frobeniusSampleJet (0 : Fin 1)
       have hcEval : rationalTaylorCoefficient (0 : ZMod 2)
-          (map (Polynomial.evalRingHom (1 : ZMod 2)) frobeniusSampleEquation)
+          (MvPolynomial.map (Polynomial.evalRingHom (1 : ZMod 2)) frobeniusSampleEquation)
             frobeniusSampleJet 0 = 0 := by
         simpa only [hφ] using hc
       have hsum : (1 : ZMod 2) + 1 = 0 := by
@@ -380,7 +389,7 @@ example :
       rw [hcenter, hx, eval_rationalTaylorPolynomial]
       simp [hcEval, hsum, φ]
     have hSφ : MvPolynomial.aeval frobeniusSampleJet
-        (map φ.toRingHom
+        (MvPolynomial.map φ.toRingHom
           (initialJetSeparant (Polynomial.C (0 : ZMod 2)) frobeniusSampleEquation)) ≠ 0 := by
       simpa only [hφ] using hS
     have hcut := (aeval_map_taylorAgreementEquationOver_eq_zero_iff_of_exponent
@@ -961,7 +970,7 @@ private theorem regularBadEquation_height : CoeffNatDegreeLE regularBadEquation 
     (some (0 : Fin 1))
 
 private theorem regularBadBinomial :
-    ∀ i, 0 < i → i < 1 → (i.choose 0 : AlgebraicClosureField) ≠ 0 := by
+    ∀ i : ℕ, 0 < i → i < 1 → (i.choose 0 : AlgebraicClosureField) ≠ 0 := by
   intro i hi hiK
   omega
 

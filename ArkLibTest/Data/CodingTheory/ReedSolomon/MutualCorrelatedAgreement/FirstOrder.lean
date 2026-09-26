@@ -6,12 +6,19 @@ Authors: Quang Dao
 
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.CurveAgreement
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.HybridCurveTransfer
+import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.HybridCurveRecovery
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.HybridTransfer
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.OrdinaryTail
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Profile
+import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.AutomaticHybrid
+import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.AutomaticMcaError
+import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.RateBounds
+import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.UniformLineMca
 import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 import Mathlib.Analysis.Complex.Polynomial.Basic
+import Mathlib.Algebra.Field.ZMod
 import Mathlib.Tactic.NormNum
+import Mathlib.Tactic.NormNum.Prime
 
 /-!
 # First-order curve agreement acceptance tests
@@ -27,6 +34,13 @@ transfer theorems over the complex field.
   premise supplied by the order-zero tail of a concrete descent.
 * A concrete curve-verified profile gives a base-field challenge with exact power agreement
   through the sharp optimized squarefree bound.
+* The hybrid transfer for a nonzero equation has concrete extension-field and base-field
+  instances.
+* The automatic recipe at rate `1/2` and agreement `3/4`, the rate-slack bounds at slack `1/8`,
+  and both finite-field MCA error bounds over `ZMod 2749` have concrete instances.
+* The uniform line-agreement bound has a concrete rational instance.
+* Optimized curve recovery has concrete instances over an algebraically closed field, over an
+  arbitrary field, and from a strict shifted-height slot surplus.
 
 ## References
 
@@ -304,6 +318,7 @@ example :
   exact exists_exceptional_firstOrder_regularCurveStages
     (n := 2) (D := 1) (A := 2) (L := 2) (mu := 1) (M := 1) (ell := 1)
     exceptionDomain exceptionValues exceptionEmbedding exceptionEquation exceptionDescent
+    (coeffNatDegreeLE_coeffNatDegree _)
     (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
     (Or.inl (ringChar.eq_zero : ringChar ℂ = 0))
 
@@ -324,6 +339,7 @@ example :
   exact exists_exceptional_firstOrder_hybridCurve_of_tail
     (n := 2) (D := 1) (A := 2) (L := 2) (mu := 1) (M := 1) (ell := 1)
     exceptionDomain exceptionValues exceptionEmbedding exceptionEquation exceptionDescent
+    (coeffNatDegreeLE_coeffNatDegree _)
     (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
     (Or.inl (ringChar.eq_zero : ringChar ℂ = 0)) 0 (by
         refine ⟨∅, by norm_num, ?_⟩
@@ -347,7 +363,7 @@ example :
   exact exists_exceptional_firstOrder_hybridCurve_optimized_of_tail
     (n := 2) (D := 1) (A := 2) (mu := 1) (M := 1) (ell := 1)
     exceptionDomain exceptionValues exceptionEmbedding exceptionEquation exceptionDescent
-    (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (coeffNatDegreeLE_coeffNatDegree _) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
     (Or.inl (ringChar.eq_zero : ringChar ℂ = 0)) (by
         intro L₀ hDL₀ hL₀A
         have hL₀ : L₀ = 2 := by omega
@@ -359,6 +375,171 @@ example :
         · intro z hz P hdegree hagree hroot
           rw [exceptionDescent_tail_equation] at hroot
           exact False.elim (constantOneTail_has_no_root z P hroot))
+
+/-! ### Automatic first-order hybrid transfer -/
+
+/-- The hybrid transfer applies to the equation `Y₁` over `ℂ`. -/
+example := exists_exceptional_firstOrder_hybrid
+  (n := 2) (D := 1) (A := 2) (h := 0) (mu := 1) (M := 1)
+  exceptionDomain (exceptionValues 0) (exceptionValues 1) exceptionEmbedding exceptionEquation
+  (by simp [exceptionEquation]) exceptionEquation_totalDegree.le
+  (by simp [jetDegree, exceptionEquation, MvPolynomial.degreeOf_X_self])
+  (MvPolynomial.coeffNatDegreeLE_X _) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+  (Or.inl (ringChar.eq_zero : ringChar ℂ = 0))
+
+/-- The base-field hybrid transfer applies to the same equation, with `ℂ` as the base field. -/
+example := exists_exceptional_firstOrder_hybrid_base
+  (n := 2) (D := 1) (A := 2) (h := 0) (mu := 1) (M := 1)
+  exceptionDomain (exceptionValues 0) (exceptionValues 1) exceptionEquation
+  (by simp [exceptionEquation]) exceptionEquation_totalDegree.le
+  (by simp [jetDegree, exceptionEquation, MvPolynomial.degreeOf_X_self])
+  (MvPolynomial.coeffNatDegreeLE_X _) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+  (Or.inl (ringChar.eq_zero : ringChar ℂ = 0))
+
+private theorem halfRate_threshold_lt_three_quarters :
+    firstOrderRateThreshold (1 / 2 : ℝ) < 3 / 4 := by
+  rw [firstOrderRateThreshold]
+  have hroot : Real.sqrt (27 / 8 : ℝ) < 33 / 16 := by
+    rw [Real.sqrt_lt' (by norm_num : (0 : ℝ) < 33 / 16)]
+    norm_num
+  rw [show (1 / 2 : ℝ) * (5 - 1 / 2) * (2 - 1 / 2) = 27 / 8 by norm_num]
+  rw [div_lt_iff₀ (by norm_num : (0 : ℝ) < 8 - 1 / 2)]
+  nlinarith
+
+private def rationalDomain : Fin 4 ↪ ℚ := ⟨![0, 1, 2, 3], by decide⟩
+
+/-- The automatic recipe at rate `1/2` and agreement `3/4` gives the extension-field transfer. -/
+example := exists_automaticFirstOrder_hybridEquation (rho := 1 / 2) (a := 3 / 4)
+  (n := 4) (D := 1) (A := 3) (k := 2) (by norm_num) (by norm_num)
+  halfRate_threshold_lt_three_quarters (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+  (by norm_num) (by norm_num) (by norm_num) (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
+  rationalDomain (fun _ ↦ 0) (fun _ ↦ 1) (algebraMap ℚ ℂ)
+
+/-- The automatic recipe at rate `1/2` and agreement `3/4` gives the base-field transfer. -/
+example := exists_automaticFirstOrder_hybridEquation_base (rho := 1 / 2) (a := 3 / 4)
+  (n := 4) (D := 1) (A := 3) (k := 2) (by norm_num) (by norm_num)
+  halfRate_threshold_lt_three_quarters (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+  (by norm_num) (by norm_num) (by norm_num) (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
+  rationalDomain (fun _ ↦ 0) (fun _ ↦ 1)
+
+/-- The closed exceptional-set bound along a rational received line. -/
+example := automatic_first_order_line_agreement (1 / 2) (3 / 4) (by norm_num) (by norm_num)
+  halfRate_threshold_lt_three_quarters (by norm_num) 4 2 3 (by norm_num) (by norm_num)
+  (by norm_num) (by norm_num) (by norm_num) rationalDomain
+  (Or.inl (ringChar.eq_zero : ringChar ℚ = 0)) (fun _ ↦ 0) (fun _ ↦ 1)
+
+private theorem halfRate_slack_lt_one : firstOrderRateThreshold (1 / 2 : ℝ) + 1 / 8 < 1 := by
+  linarith [halfRate_threshold_lt_three_quarters]
+
+/-- The rate-slack list and line-agreement envelopes over `ℚ` at slack `1/8`. -/
+example := automaticFirstOrder_rate_bounds (1 / 2) (1 / 8) 4 2 4 (by norm_num) (by norm_num)
+  (by norm_num) halfRate_slack_lt_one (by norm_num) (by norm_num) (by norm_num)
+  (by linarith [halfRate_threshold_lt_three_quarters]) (by norm_num) rationalDomain
+  (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
+
+local instance : Fact (Nat.Prime 2749) := ⟨by norm_num⟩
+
+private def finiteDomain : Fin 4 ↪ ZMod 2749 := ⟨![0, 1, 2, 3], by decide⟩
+
+/-- At rate `1/2` and slack `1/8`, the derivative cap stays below `2749`. -/
+private theorem finiteField_charGuard :
+    ringChar (ZMod 2749) = 0 ∨ max (2 - 1)
+      (automaticDerivativeCap (1 / 2) (firstOrderRateThreshold (1 / 2) + 1 / 8)) <
+        ringChar (ZMod 2749) := by
+  refine Or.inr ?_
+  have hcap := automaticDerivativeCap_le_inv_eta (rho := 1 / 2) (eta := 1 / 8) (by norm_num)
+    (by norm_num) (by norm_num) halfRate_slack_lt_one
+  have hgap : 1 / 4 < 1 - firstOrderRateThreshold (1 / 2 : ℝ) := by
+    linarith [halfRate_threshold_lt_three_quarters]
+  have hfrac : 256 / (3 * (1 - firstOrderRateThreshold (1 / 2 : ℝ))) < 1024 / 3 := by
+    rw [div_lt_iff₀ (by linarith)]
+    nlinarith
+  have hbound : (automaticDerivativeCap (1 / 2) (firstOrderRateThreshold (1 / 2) + 1 / 8) : ℝ) <
+      2749 := by
+    refine hcap.trans_lt ?_
+    unfold automaticMultiplicityBoundConstant automaticRateGap
+    linarith
+  rw [ZMod.ringChar_zmod_n]
+  exact max_lt (by norm_num) (by exact_mod_cast hbound)
+
+/-- The finite-field line MCA error bounds over `ZMod 2749`. -/
+example := automaticFirstOrder_hybrid_mcaError_le (rho := 1 / 2)
+  (a := firstOrderRateThreshold (1 / 2) + 1 / 8) (n := 4) (k := 2) (by norm_num) (by norm_num)
+  (by linarith) halfRate_slack_lt_one (by norm_num) (by norm_num) (by norm_num) finiteDomain
+  finiteField_charGuard
+
+/-- The quintic slack envelope bounds the line MCA error over `ZMod 2749`. -/
+example := automaticFirstOrder_rate_mcaError_le (1 / 2) (1 / 8) 4 2 (by norm_num) (by norm_num)
+  (by norm_num) halfRate_slack_lt_one (by norm_num) (by norm_num) (by norm_num) finiteDomain
+  finiteField_charGuard
+
+private def uniformLineDomain : Fin 3 ↪ ℚ := ⟨![0, 1, 2], by decide⟩
+
+/-- The uniform line-agreement bound applies at `n = 3`, `k = 2` and `A = 3` over `ℚ`. -/
+example := exists_uniformFirstOrder_lineMca_of_two_le 3 2 3 uniformLineDomain (fun _ ↦ 0)
+  (fun _ ↦ 1) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+  (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
+/-- Optimized curve recovery over `ℂ` applies to the equation `Y₁`. -/
+example := exists_exceptional_firstOrder_hybridCurve_optimized
+  (n := 2) (D := 1) (A := 2) (h := 0) (mu := 1) (M := 1)
+  exceptionDomain exceptionValues exceptionEmbedding exceptionEquation
+  (by simp [exceptionEquation]) exceptionEquation_totalDegree.le
+  (by simp [jetDegree, exceptionEquation, MvPolynomial.degreeOf_X_self])
+  (coeffNatDegreeLE_X _)
+  (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+  (Or.inl (ringChar.eq_zero : ringChar ℂ = 0))
+
+/-- The base-field form applies to the same equation, with the algebraic closure internal. -/
+example := exists_baseExceptional_firstOrder_hybridCurve_optimized
+  (n := 2) (D := 1) (A := 2) (h := 0) (mu := 1) (M := 1)
+  exceptionDomain exceptionValues exceptionEquation
+  (by simp [exceptionEquation]) exceptionEquation_totalDegree.le
+  (by simp [jetDegree, exceptionEquation, MvPolynomial.degreeOf_X_self])
+  (coeffNatDegreeLE_X _)
+  (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+  (Or.inl (ringChar.eq_zero : ringChar ℂ = 0))
+
+private def recoveryDomain : Fin 3 ↪ ℚ where
+  toFun i := (i.val : ℚ)
+  inj' := by
+    intro i j hij
+    change (i.val : ℚ) = (j.val : ℚ) at hij
+    exact Fin.ext (by exact_mod_cast hij)
+
+private def recoveryValues : Fin 2 → Fin 3 → ℚ := fun _ _ ↦ 0
+
+private theorem recoveryHeightSurplus :
+    firstOrderCurveShiftedRowSlotBound 1 3 1 0 1 3 1 1 <
+      firstOrderCurveShiftedHeightSlotCount 1 3 1 0 1 1 1 := by
+  norm_num [firstOrderCurveShiftedRowSlotBound, firstOrderGradedRankBound,
+    firstOrderGradedSourceCount, firstOrderCurveShiftedHeightSlotCount,
+    Finset.sum_range_succ]
+
+/-- A shifted-height slot surplus at three rational points below full dimension gives optimized
+curve recovery: outside the exceptional set, the zero candidate has exact power agreement. -/
+example : ∃ z : ℚ, ∃ P : ℚ[X], P.degree < 2 ∧
+    3 ≤ (polynomialAgreementSet recoveryDomain (powerBatchedWord recoveryValues z) P).card ∧
+    HasExactPowerAgreement recoveryDomain recoveryValues (RingHom.id ℚ) 2 z P := by
+  obtain ⟨exceptional, _, hgood⟩ :=
+    exists_baseExceptional_firstOrderCurve_of_heightSlotCount_optimized
+      (D := 1) (A := 3) (m := 1) (M := 0) (mu := 1) (h := 1) recoveryDomain recoveryValues
+      le_rfl (by norm_num) recoveryHeightSurplus (by norm_num) (by norm_num) le_rfl
+      (Or.inr (Or.inl (ringChar.eq_zero : ringChar ℚ = 0)))
+  obtain ⟨z, hz⟩ := Finset.exists_notMem exceptional
+  have hagree : 3 ≤ (polynomialAgreementSet recoveryDomain
+      (powerBatchedWord recoveryValues z) (0 : ℚ[X])).card := by
+    have hset : polynomialAgreementSet recoveryDomain (powerBatchedWord recoveryValues z)
+        (0 : ℚ[X]) = Finset.univ := by
+      ext i
+      simp [polynomialAgreementSet, powerBatchedWord, recoveryValues]
+    rw [hset]
+    simp
+  have hdegree : (0 : ℚ[X]).degree < 2 := by
+    rw [Polynomial.degree_zero]
+    exact WithBot.bot_lt_coe 2
+  exact ⟨z, 0, hdegree, hagree, hgood z hz 0 hdegree hagree⟩
+
+/-! ### Sharp squarefree profile bound -/
 
 /-- A curve-verified profile at `n = k = A = 2` with derivative cap `1`. -/
 private def sharpSquarefreeProfile : ReedSolomon.HiddenDerivative.CurveProfile.LineProfile :=
