@@ -1959,6 +1959,40 @@ In `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/SolutionEmbedding.le
 
 No source public declarations were omitted. The generic `boundedSolutionOfPolynomial` constructor and its preservation theorem were removed; callers construct the bounded-solution subtype directly.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Only the sharp interface is ported, and it drops the `sharp` prefix. The parameter definitions are named `capacityLine*` and `capacityPower*` because a bare `capacityDerivativeOrder` would clash with `HiddenDerivative.capacityDerivativeOrder`.
+
+- `sharpCapacityDerivativeOrder` → `capacityLineDerivativeOrder`, unchanged.
+- `sharpCapacityLengthThreshold` → `capacityLineLength`. The branch for `δ ≥ 6/25` is `4` instead of `max 4 23`, because the first-order theorem needs only `2 ≤ n`.
+- `sharpCapacityLineConstant` → `capacityLineConstant`, unchanged. Small gaps use `mathematicalUniformLineAgreementConstant`, formerly `uniformCapacityLineConstant300`.
+- `sharpCapacityLengthThreshold_ge_four` → `four_le_capacityLineLength`; `one_le_sharpCapacityLineConstant` → `one_le_capacityLineConstant`, with `δ` explicit.
+- `HasSharpCapacityLineAgreement` → `HasCapacityLineAgreement`. The hypothesis `k ≤ n` is dropped because no proof uses it. The conclusion is `LineExactAgreementBound domain k A (E n)`, equivalent to the source's per-`(f, g)` `HasExactCorrelatedPair` form. The guard becomes `ringChar F = 0 ∨ k - 1 < ringChar F`, equivalent to the source's because `ringChar F ≠ 1`.
+- `sharpCapacity_lineAgreement` → `capacity_lineAgreement`, with `δ` implicit. The adapter `lineExactAgreementBound_sharpCapacity` is absorbed.
+- `exists_sharpCapacity_lineAgreement` → `exists_capacity_lineAgreement`; it also covers the old `exists_capacity_lineAgreement`.
+- `HasSharpCapacityAffineAgreement` → `HasCapacityAffineAgreement`. The hypothesis `1 ≤ s` is dropped, the guard is simplified as for lines, and the threshold is written `k + δ n ≤ card`.
+- `sharpCapacity_affineAgreement` and the witness part of `sharpCapacity_affineAgreement_and_mcaError` → `HasCapacityLineAgreement.affineAgreement`, proved for any line predicate at any gap `0 ≤ δ`.
+- `sharpCapacity_mcaError` and the error part of `sharpCapacity_affineAgreement_and_mcaError` → `HasCapacityLineAgreement.mcaError_le`, for any line predicate with no sign condition on `δ`. The radius is `capacityRadius δ n k`. The affine-space bound holds for every `s`. It adds `[SampleableType F]`, which `mcaError` requires.
+- `exists_sharpCapacity_affineAgreement` → `exists_capacity_affineAgreement`; `exists_sharpCapacity_mcaError` → `exists_capacity_mcaError`, which also adds `[SampleableType F]`, drops `1 ≤ s` and uses `capacityRadius δ n k`.
+- `sharpCapacityPowerGap`, `sharpCapacityPowerDerivativeOrder`, `sharpCapacityPowerJetBound`, `sharpCapacityPowerLengthThreshold` → `capacityPowerGap`, `capacityPowerDerivativeOrder`, `capacityPowerJetBound`, `capacityPowerLength`, unchanged.
+- `sharpCapacityPowerConstant` → `capacityPowerConstant`, defined as `max C 1` instead of `C + 1`, which is no larger.
+- `sharpCapacityPowerLengthThreshold_ge_four` → `four_le_capacityPowerLength`; `one_le_sharpCapacityPowerConstant` → `one_le_capacityPowerConstant`, which no longer needs `0 < δ`.
+- `HasSharpCapacityPowerBatchingAgreement` → `HasCapacityPowerBatchingAgreement`. The characteristic bound `ν` is a parameter `(δ N ν E)` instead of being fixed to `sharpCapacityPowerJetBound δ`, and `k ≤ n` is dropped.
+- `sharpCapacity_powerBatchingAgreement` → `capacity_powerBatchingAgreement`, with `ν := capacityPowerJetBound δ`.
+- `exists_sharpCapacity_powerBatchingAgreement` → `exists_capacity_powerBatchingAgreement`, with `ν` also existential: `∃ N d ν C, 4 ≤ N ∧ ν < N ∧ 0 < C ∧ …`. The conjunct `ν < N` lets a caller who knows only `n ≤ char F` discharge the characteristic guard.
+
+Not ported:
+- The old 1000-based `HasCapacityLineAgreement`, `exists_capacity_lineAgreement`, `HasCapacityAffineAgreement`, `exists_capacity_affineAgreement`, `exists_capacity_affineAgreement_and_mcaError`, `exists_capacity_mcaError`, `HasCapacityPowerBatchingAgreement` and `exists_capacity_powerBatchingAgreement`, with guard `ringChar F = 0 ∨ n ≤ ringChar F`. The sharp versions subsume them, since `n ≤ char F` implies `k - 1 < char F` and the new power theorem records `ν < N ≤ n`.
+- `uniformFirstOrder_capacity_lineAgreement`, covered by `capacity_lineAgreement` at `δ ≥ 6/25` and by `exists_uniformFirstOrder_lineMca`.
+- `HasHalfGapLineAgreement`, `halfGap_lineAgreement`, `halfGap_capacity_lineAgreement`, covered by the more general `exists_exceptionalSet_exactAgreement_of_messageDim_add_half_blockLength_le`, which works over any `Fintype ι` and needs neither `0 < k`, `k ≤ n` nor `A ≤ n`.
+- `sharpCapacityJetBound`, because no statement uses it; `sharpCapacityDerivativeOrder_pos`, because the `k = 1` branch is handled inside the line sub-theorems.
+- `sharpCapacityLineConstant_pos`, `sharpCapacityPowerConstant_pos`, one step from the `one_le_*` lemmas.
+- `lineExactAgreementBound_sharpCapacity`, because the line predicate now concludes `LineExactAgreementBound` directly.
+- `sharpCapacity_affineAgreement_and_mcaError`, `sharpCapacity_affineAgreement`, `sharpCapacity_mcaError`, which are `(capacity_lineAgreement hδ).affineAgreement hδ.le` and `(capacity_lineAgreement hδ).mcaError_le …`; a named wrapper would only fix arguments.
+- The private `constantCurveExceptionalBound_le_power`, inlined, since the constant-code bound `ℓ * (n.choose 2) / max (A - 1) 1` needs no case split.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/CertificateBound.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/CertificateBound.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
