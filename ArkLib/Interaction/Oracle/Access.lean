@@ -8,6 +8,7 @@ module
 public import ArkLib.Interaction.Oracle.Protocol
 public import ArkLib.Interaction.Oracle.Virtual
 public import VCVio.OracleComp.SimSemantics.Append
+public import PolyFun.PFunctor.Free.Cursor.Append
 
 /-!
 # Accumulated oracle access
@@ -210,6 +211,54 @@ theorem accessAfter_oracle (Messages : Type u) (rest : PUnit.{u + 1} → Oracle.
     accessAfter (.oracle Messages rest) oracles initial path =
       accessAfter (rest path.1) (oracles.2 path.1) (Access.extend initial oracles.1) path.2 :=
   rfl
+
+/-- A cursor in the selected suffix starts with exactly the access accumulated along the prefix.
+The interfaces are the append decoration's own suffix interfaces, restricted to this branch. -/
+theorem accessAt_joinRight :
+    (tree : Oracle.TypeTree.{u}) → (suffix : BranchPath tree → Oracle.TypeTree.{u}) →
+    (path : BranchPath tree) → (cursor : PFunctor.FreeM.Cursor (suffix path)) →
+    (first : OracleDecoration.{u, v} tree) →
+    (second : (p : BranchPath tree) → OracleDecoration.{u, v} (suffix p)) →
+    (initial : PFunctor.{v, u}) →
+    accessAt (PFunctor.FreeM.Cursor.joinRight tree suffix path cursor)
+      (Decoration.append first second) initial =
+        accessAt cursor (second path) (accessAfter tree first initial path)
+  | .done, _, _, _, _, _, _ => rfl
+  | .public _ rest, suffix, path, cursor, first, second, initial =>
+      accessAt_joinRight (rest path.1) (fun tail => suffix ⟨path.1, tail⟩) path.2 cursor
+        (first.2 path.1) (fun tail => second ⟨path.1, tail⟩) initial
+  | .oracle _ rest, suffix, path, cursor, first, second, initial =>
+      accessAt_joinRight (rest path.1) (fun tail => suffix ⟨path.1, tail⟩) path.2 cursor
+        (first.2 path.1) (fun tail => second ⟨path.1, tail⟩) (Access.extend initial first.1)
+
+/-- Final access of an appended path is obtained by accumulating the prefix, then its selected
+suffix. Public choices retain their dependent suffix shapes. -/
+theorem accessAfter_append (tree : Oracle.TypeTree.{u})
+    (suffix : BranchPath tree → Oracle.TypeTree.{u})
+    (first : OracleDecoration.{u, v} tree)
+    (second : (p : BranchPath tree) → OracleDecoration.{u, v} (suffix p))
+    (initial : PFunctor.{v, u}) (path : BranchPath tree) (rest : BranchPath (suffix path)) :
+    accessAfter (PFunctor.FreeM.append tree suffix) (Decoration.append first second) initial
+      (PFunctor.FreeM.Path.append tree suffix path rest) =
+        accessAfter (suffix path) (second path) (accessAfter tree first initial path) rest := by
+  unfold accessAfter
+  rw [← PFunctor.FreeM.Cursor.joinRight_ofPath]
+  exact accessAt_joinRight tree suffix path _ first second initial
+
+/-- The final signature computed from actual runtime messages agrees with the split execution's
+signature. Hidden messages remain in the execution paths; public projections index access. -/
+theorem accessAfter_append_execution (tree : Oracle.TypeTree.{u})
+    (suffix : BranchPath tree → Oracle.TypeTree.{u})
+    (first : OracleDecoration.{u, v} tree)
+    (second : (p : BranchPath tree) → OracleDecoration.{u, v} (suffix p))
+    (initial : PFunctor.{v, u}) (path : ExecutionPath tree)
+    (rest : ExecutionPath (suffix path.toBranchPath)) :
+    accessAfter (PFunctor.FreeM.append tree suffix) (Decoration.append first second) initial
+      (ExecutionPath.toBranchPath
+        (PFunctor.FreeM.PathAlong.append runtimeLens tree suffix path rest)) =
+        accessAfter (suffix path.toBranchPath) (second path.toBranchPath)
+          (accessAfter tree first initial path.toBranchPath) rest.toBranchPath := by
+  rw [ExecutionPath.toBranchPath_append, accessAfter_append]
 
 /-- Equal public branch projections give identical available signatures. This says nothing about
 equality of the concrete handlers: different hidden payloads can give different query answers. -/

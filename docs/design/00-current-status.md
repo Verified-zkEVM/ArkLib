@@ -103,7 +103,8 @@ Naming follows [`docs/wiki/interaction-naming.md`](../wiki/interaction-naming.md
 | Finite ordered composition | `Oracle/Composition` (`ExecutionInterface`) | #891 |
 | Direct native strategy execution | `Oracle/CoreRun.executeStrategiesCore` | #1216 |
 | General native composition soundness | `Interaction/CompositionSoundness` | #1218 |
-| Fixed-prover, reachable, and averaged native bounds | `run_appendFlat_soundness_fixed`, `_of_support`, `_ae`, and `_weighted_ae` | C1, #1222 |
+| Oracle append paths, runtime roles, access, and query answers | `Oracle/TypeTree`, `Oracle/TypeTree/Decoration`, `Oracle/Access`, `Oracle/RunSources` | C2, #1223 |
+| Fixed-prover, reachable, and averaged native bounds | `run_appendFlat_soundness_fixed`, `_of_support`, `_ae`, and `_weighted_ae` | #1231 |
 
 Sumcheck on the typed layer:
 
@@ -164,8 +165,18 @@ These bounds concern unconditioned successful-output mass; they need neither los
 commuting effects. Missing mass is not a classified runtime fault. A native two-guess client over
 `ZMod 17` instantiates the uniform bound as `2/17`.
 
-This plain-tree result does not yet compose restricted oracle verifiers or their closing
-resources. The structural-to-runtime append bridge, paired world resources, access admissibility,
+Oracle append now preserves the runtime tree and its roles. Concrete path append and split agree
+with public path projection, and accumulated access agrees with processing the prefix then the
+suffix. `closingImpl_append` and `simulateQ_closingImpl_append` prove that the resulting deterministic
+handlers answer all queries identically. These laws apply to supplied concrete paths; they do not
+assert that a prover and verifier generated those paths.
+
+The acceptance example selects different suffix shapes through a public Boolean move. Queries to
+the initial oracle, prefix message, and suffix messages return `[7, 11, 19]` or `[7, 11, 23, 29]`
+under both handlers. It also checks mixed prover/verifier roles and hidden message data.
+
+The plain-tree soundness result and these path laws do not yet compose restricted oracle verifiers.
+That execution theorem, exported-interface routing, paired world resources, access admissibility,
 and fault accounting remain separate obligations.
 
 The legacy verifier correspondence is honest-execution only: the legacy verifier reads the input

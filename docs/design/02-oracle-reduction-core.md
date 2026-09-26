@@ -197,13 +197,19 @@ equation extracts the actual suffix strategy from every whole prover on the appe
 requires only a lawful monad. Selecting the suffix counterpart is a pure function of the prefix
 path and counterpart output; effects inside either strategy remain unrestricted.
 
-Plain native append permits the suffix tree to depend on the complete prefix path. The proposed
-restricted oracle append must instead select its shape from `BranchPath`, the public structural
+Plain native append permits the suffix tree to depend on the complete prefix path. Oracle append
+selects its shape from `BranchPath`, the public structural
 path which hides concrete oracle messages. The runtime `ExecutionPath` retains those messages to
 interpret resource answers. Verifier-local query results may affect the verifier's strategy within
 the selected shape, and query-dependent public moves may select structural branches. A private
 computation cannot silently choose a different tree: that choice must be represented in public
 branching or supported by a coherent extension of the interaction model.
+
+The append laws in `Oracle/TypeTree` and `Oracle/TypeTree/Decoration` preserve the runtime tree
+and its roles under this projection. `Oracle/Access` and `Oracle/RunSources` show that a concrete
+appended path accumulates the same access and answers queries identically to its prefix followed
+by its suffix. These path laws are available. Connecting them to the restricted verifier
+interpreter and the actual paired run is the next execution obligation.
 
 ### 5.3 Effect order and terminal computation
 
