@@ -113,6 +113,20 @@ theorem projected_sum_of_relationRound (i : Fin n)
     rw [Fin.append_left_snoc, Fin.append_cast_right]
     rfl
 
+/-- The projected sum claim and the current multivariate relation are equivalent. -/
+theorem projected_sum_iff_relationRound (i : Fin n)
+    (stmt : Spec.StatementRound R n i.castSucc) (p : Spec.OracleStatement R n deg ()) :
+    ((univ.map D).toList.map (fun x =>
+      (projectedRoundPolynomial R n deg D i stmt.challenges p).val.eval x)).sum =
+        stmt.target ↔ ((stmt, fun _ => p), ()) ∈ Spec.relationRound R n deg D i.castSucc := by
+  let total := ∑ x ∈ (univ.map D) ^ᶠ (n - i.val),
+    p.val.eval (Fin.append stmt.challenges x ∘ Fin.cast (by simp))
+  have h := projected_sum_of_relationRound R n deg D i
+    ⟨total, stmt.challenges⟩ p (by rfl)
+  change _ = total at h
+  change _ = stmt.target ↔ total = stmt.target
+  rw [h]
+
 /-- Updating the target to the projected evaluation establishes the next multivariate round. -/
 theorem relationRound_projected_output (i : Fin n)
     (stmt : Spec.StatementRound R n i.castSucc) (p : Spec.OracleStatement R n deg ())
@@ -132,6 +146,20 @@ theorem relationRound_projected_output (i : Fin n)
     congr 1
     rw [Fin.append_cast_right]
     rfl
+
+/-- For an arbitrary next target, the successor relation is exactly projected evaluation. -/
+theorem relationRound_output_iff (i : Fin n)
+    (stmt : Spec.StatementRound R n i.castSucc) (p : Spec.OracleStatement R n deg ())
+    (r target : R) :
+    (((⟨target, Fin.snoc stmt.challenges r⟩ : Spec.StatementRound R n i.succ),
+      fun _ => p), ()) ∈ Spec.relationRound R n deg D i.succ ↔
+      (projectedRoundPolynomial R n deg D i stmt.challenges p).val.eval r = target := by
+  have h := relationRound_projected_output R n deg D i stmt p r
+  change (∑ x ∈ (univ.map D) ^ᶠ (n - i.succ.val),
+    p.val.eval (Fin.append (Fin.snoc stmt.challenges r) x ∘ Fin.cast (by simp))) = _ at h
+  change (∑ x ∈ (univ.map D) ^ᶠ (n - i.succ.val),
+    p.val.eval (Fin.append (Fin.snoc stmt.challenges r) x ∘ Fin.cast (by simp))) = target ↔ _
+  rw [h]
 
 /-- Actual virtual-input execution is complete from the multivariate round relation. -/
 theorem executeCore_projected_of_relationRound [DecidableEq R] {ι : Type}
