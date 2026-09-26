@@ -7,6 +7,9 @@ Authors: Quang Dao
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.CurveAgreement
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.HybridCurveTransfer
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.HybridCurveRecovery
+import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.HybridCurveProfile
+import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.FiniteLengthRateBounds
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.HybridTransfer
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.OrdinaryTail
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Profile
@@ -41,6 +44,12 @@ transfer theorems over the complex field.
 * The uniform line-agreement bound has a concrete rational instance.
 * Optimized curve recovery has concrete instances over an algebraically closed field, over an
   arbitrary field, and from a strict shifted-height slot surplus.
+* A verified profile gives exact power agreement at the best optimized envelope.
+* A verified profile also gives exact agreement at the optimized hybrid envelope.
+* Literal finite-length selectors over four rational evaluation points give a certificate, a
+  complete-list bound, and exact correlated agreement outside bounded exceptional sets.
+* Automatic finite-length rate bounds give complete lists and exceptional sets over `ℚ`; the
+  finite-field consequence bounds constant-code sampling error over `ZMod 2749`.
 
 ## References
 
@@ -48,6 +57,7 @@ transfer theorems over the complex field.
 -/
 
 open Polynomial Finset PolynomialDifferential ReedSolomon ReedSolomon.HiddenDerivative
+  ReedSolomon.FirstOrder CoreDefinitions
 
 noncomputable section
 
@@ -431,6 +441,20 @@ example := automatic_first_order_line_agreement (1 / 2) (3 / 4) (by norm_num) (b
 private theorem halfRate_slack_lt_one : firstOrderRateThreshold (1 / 2 : ℝ) + 1 / 8 < 1 := by
   linarith [halfRate_threshold_lt_three_quarters]
 
+private theorem halfRate_finiteLengthDerivativeRatio_le_half :
+    finiteLengthDerivativeRatio (1 / 2) (1 / 8) ≤ 1 / 2 := by
+  have hrateThreshold : (1 / 2 : ℝ) < firstOrderRateThreshold (1 / 2) :=
+    rate_lt_firstOrderRateThreshold (R := 1 / 2) (by norm_num) (by norm_num)
+  have hagreement : (1 / 2 : ℝ) <
+      automaticAgreement (1 / 2) (firstOrderRateThreshold (1 / 2) + 1 / 8) := by
+    rw [automaticAgreement_eq_min]
+    apply lt_min
+    · linarith [hrateThreshold]
+    · linarith [hrateThreshold]
+  unfold finiteLengthDerivativeRatio automaticDerivativeRatio firstOrderRateBeta
+  norm_num
+  linarith
+
 /-- The rate-slack list and line-agreement envelopes over `ℚ` at slack `1/8`. -/
 example := automaticFirstOrder_rate_bounds (1 / 2) (1 / 8) 4 2 4 (by norm_num) (by norm_num)
   (by norm_num) halfRate_slack_lt_one (by norm_num) (by norm_num) (by norm_num)
@@ -586,3 +610,223 @@ example : ∃ z : ℚ, HasExactPowerAgreement sharpProfileDomain sharpProfileVal
   exact ⟨z, hgood z hz 0 (WithBot.bot_lt_coe 2) (by
     norm_num [sharpSquarefreeProfile, polynomialAgreementSet, powerBatchedWord,
       sharpProfileValues])⟩
+
+open Classical in
+/-- The best optimized profile bound gives one exceptional set and a good rational challenge. -/
+example :
+    letI : DecidableEq ℚ := Classical.decEq ℚ
+    ∃ exceptional : Finset ℚ,
+    (exceptional.card : ℝ) ≤ bestOptimizedCurveEnvelope sharpSquarefreeProfile 2 ∧
+    ∃ z ∉ exceptional, HasExactPowerAgreement sharpProfileDomain sharpProfileValues
+      (RingHom.id ℚ) 2 z 0 := by
+  obtain ⟨exceptional, hcard, hgood⟩ :=
+    exists_exceptional_exactPowerAgreement_bestOptimized
+      (E := AlgebraicClosure ℚ) (p := sharpSquarefreeProfile) (by decide) 2
+      ⟨le_rfl, le_rfl, le_rfl⟩ (by norm_num [sharpSquarefreeProfile]) le_rfl le_rfl
+      sharpProfileDomain
+      sharpProfileValues (algebraMap ℚ (AlgebraicClosure ℚ))
+      (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
+  obtain ⟨z, hz⟩ := Finset.exists_notMem exceptional
+  exact ⟨exceptional, hcard, z, hz, hgood z hz 0 (WithBot.bot_lt_coe 2) (by
+    norm_num [sharpSquarefreeProfile, polynomialAgreementSet, powerBatchedWord,
+      sharpProfileValues])⟩
+
+noncomputable local instance : DecidableEq ℚ := Classical.decEq ℚ
+
+/-- The optimized hybrid profile also gives a bounded exceptional set and exact agreement for
+the zero polynomial on the verified rational curve. -/
+example : ∃ exceptional : Finset ℚ,
+    (exceptional.card : ℝ) ≤ hybridOptimizedCurveEnvelope sharpSquarefreeProfile ∧
+    ∃ z ∉ exceptional, HasExactPowerAgreement sharpProfileDomain sharpProfileValues
+      (RingHom.id ℚ) 2 z 0 := by
+  obtain ⟨exceptional, hcard, hgood⟩ :=
+    exists_exceptional_exactPowerAgreement_hybridOptimized
+      (p := sharpSquarefreeProfile) (by decide) le_rfl le_rfl
+      (by norm_num [sharpSquarefreeProfile]) sharpProfileDomain sharpProfileValues
+      (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
+  obtain ⟨z, hz⟩ := Finset.exists_notMem exceptional
+  refine ⟨exceptional, hcard, z, hz, ?_⟩
+  simpa only [sharpSquarefreeProfile] using hgood z hz 0 (WithBot.bot_lt_coe 2) (by
+    norm_num [sharpSquarefreeProfile, polynomialAgreementSet, powerBatchedWord,
+      sharpProfileValues])
+
+/-! ### Finite-length selectors and rate bounds -/
+
+/-- At rate `1/2`, the literal finite-length selectors give a symbolic certificate for a
+four-point rational zero line. -/
+private theorem rationalFiniteLengthZeroCertificate :
+    Nonempty (FirstOrderSymbolicCertificate (F := ℚ) 1 4
+      (finiteLengthMultiplicity (1 / 2) (1 / 8) 4)
+      (finiteLengthDerivativeCap (1 / 2) (1 / 8) 4)
+      (finiteLengthJetDegree (1 / 2) (1 / 8) 4) 2
+      (finiteLengthChallengeHeight (1 / 2) (1 / 8) 4)
+      rationalDomain (fun _ ↦ 0) (fun _ ↦ 0)
+      (firstOrderColumns (D := 1) (A := 4)
+        (m := finiteLengthMultiplicity (1 / 2) (1 / 8) 4)
+        (M := finiteLengthDerivativeCap (1 / 2) (1 / 8) 4)
+        (μ := finiteLengthJetDegree (1 / 2) (1 / 8) 4))) := by
+  exact exists_finiteLengthFirstOrder_symbolicCertificate
+    (rho := 1 / 2) (eta := 1 / 8) (n := 4) (k := 2) (A := 4)
+    (by norm_num) (by norm_num) (by norm_num) halfRate_slack_lt_one (by norm_num)
+    halfRate_finiteLengthDerivativeRatio_le_half (by norm_num) (by norm_num)
+    (by nlinarith [halfRate_slack_lt_one]) rationalDomain (fun _ ↦ 0) (fun _ ↦ 0)
+
+private noncomputable def rationalFiniteLengthZeroCertificateValue :=
+  Classical.choice rationalFiniteLengthZeroCertificate
+
+/-- A four-point zero word belongs to a finite complete list with the literal selector bound. -/
+example :
+    (closePolynomialSet rationalDomain (fun _ ↦ 0) 2 4).Finite ∧
+    (0 : ℚ[X]) ∈ closePolynomialSet rationalDomain (fun _ ↦ 0) 2 4 ∧
+    ((closePolynomialSet rationalDomain (fun _ ↦ 0) 2 4).ncard : ℝ) ≤
+      7 * finiteLengthMcaParameterConstant (1 / 2) ^ 3 * 4 /
+        finiteLengthSlack (1 / 8) 4 ^ 2 := by
+  obtain ⟨hfinite, hcard⟩ :=
+    closePolynomialSet_finite_and_card_le_finiteLength_of_selector_certificate
+      (rho := 1 / 2) (eta := 1 / 8) (n := 4) (k := 2) (A := 4)
+      (by norm_num) (by norm_num) (by norm_num) halfRate_slack_lt_one
+      (by norm_num) halfRate_finiteLengthDerivativeRatio_le_half
+      (by norm_num) (by nlinarith [halfRate_slack_lt_one]) (by norm_num)
+      rationalDomain (fun _ ↦ 0)
+      (firstOrderColumns (D := 1) (A := 4)
+        (m := finiteLengthMultiplicity (1 / 2) (1 / 8) 4)
+        (M := finiteLengthDerivativeCap (1 / 2) (1 / 8) 4)
+        (μ := finiteLengthJetDegree (1 / 2) (1 / 8) 4))
+      rationalFiniteLengthZeroCertificateValue
+      (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
+  refine ⟨hfinite, ?_, hcard⟩
+  change (0 : ℚ[X]).degree < 2 ∧
+    4 ≤ (polynomialAgreementSet rationalDomain (fun _ ↦ 0) 0).card
+  constructor
+  · exact WithBot.bot_lt_coe 2
+  · norm_num [polynomialAgreementSet, rationalDomain]
+
+/-- The literal selector certificate bounds exceptional challenges, and a zero candidate has
+exact correlated agreement outside that set. -/
+example : ∃ exceptional : Finset ℚ,
+    (exceptional.card : ℝ) ≤
+      140 * finiteLengthMcaParameterConstant (1 / 2) ^ 6 * 4 ^ 2 /
+        finiteLengthSlack (1 / 8) 4 ^ 4 ∧
+    ∃ z ∉ exceptional,
+      HasExactCorrelatedPair rationalDomain (fun _ ↦ 0) (fun _ ↦ 0)
+        (RingHom.id ℚ) 2 z 0 := by
+  obtain ⟨exceptional, hcard, hgood⟩ :=
+    exists_exceptional_finiteLengthMca_of_selector_certificate
+      (E := AlgebraicClosure ℚ) (rho := 1 / 2) (eta := 1 / 8)
+      (n := 4) (k := 2) (A := 4)
+      (by norm_num) (by norm_num) (by norm_num) halfRate_slack_lt_one
+      (by norm_num) halfRate_finiteLengthDerivativeRatio_le_half
+      (by norm_num) (by norm_num) (by nlinarith [halfRate_slack_lt_one])
+      (by norm_num) rationalDomain (fun _ ↦ 0) (fun _ ↦ 0)
+      (algebraMap ℚ (AlgebraicClosure ℚ))
+      (firstOrderColumns (D := 1) (A := 4)
+        (m := finiteLengthMultiplicity (1 / 2) (1 / 8) 4)
+        (M := finiteLengthDerivativeCap (1 / 2) (1 / 8) 4)
+        (μ := finiteLengthJetDegree (1 / 2) (1 / 8) 4))
+      rationalFiniteLengthZeroCertificateValue
+      (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
+  obtain ⟨z, hz⟩ := Finset.exists_notMem exceptional
+  exact ⟨exceptional, hcard, z, hz,
+    hgood z hz 0 (WithBot.bot_lt_coe 2) (by
+      norm_num [polynomialAgreementSet, rationalDomain])⟩
+
+/-- The same zero word has both a bounded complete list and a nonexceptional exact correlated
+pair under the combined finite-length theorem. -/
+example :
+    ((closePolynomialSet rationalDomain (fun _ ↦ 0) 2 4).Finite ∧
+      ((closePolynomialSet rationalDomain (fun _ ↦ 0) 2 4).ncard : ℝ) ≤
+        7 * finiteLengthMcaParameterConstant (1 / 2) ^ 3 * 4 /
+          finiteLengthSlack (1 / 8) 4 ^ 2) ∧
+    ∃ exceptional : Finset ℚ,
+      (exceptional.card : ℝ) ≤
+        140 * finiteLengthMcaParameterConstant (1 / 2) ^ 6 * 4 ^ 2 /
+          finiteLengthSlack (1 / 8) 4 ^ 4 ∧
+      ∃ z ∉ exceptional,
+        HasExactCorrelatedPair rationalDomain (fun _ ↦ 0) (fun _ ↦ 0)
+          (RingHom.id ℚ) 2 z 0 := by
+  obtain ⟨hlist, exceptional, hcard, hgood⟩ :=
+    finiteLength_completeList_and_exceptionalMca_of_selector_certificates
+      (E := AlgebraicClosure ℚ) (rho := 1 / 2) (eta := 1 / 8)
+      (n := 4) (k := 2) (A := 4)
+      (by norm_num) (by norm_num) (by norm_num) halfRate_slack_lt_one
+      (by norm_num) halfRate_finiteLengthDerivativeRatio_le_half
+      (by norm_num) (by norm_num) (by nlinarith [halfRate_slack_lt_one])
+      (by norm_num) rationalDomain (fun _ ↦ 0) (fun _ ↦ 0)
+      (algebraMap ℚ (AlgebraicClosure ℚ))
+      (firstOrderColumns (D := 1) (A := 4)
+        (m := finiteLengthMultiplicity (1 / 2) (1 / 8) 4)
+        (M := finiteLengthDerivativeCap (1 / 2) (1 / 8) 4)
+        (μ := finiteLengthJetDegree (1 / 2) (1 / 8) 4))
+      (firstOrderColumns (D := 1) (A := 4)
+        (m := finiteLengthMultiplicity (1 / 2) (1 / 8) 4)
+        (M := finiteLengthDerivativeCap (1 / 2) (1 / 8) 4)
+        (μ := finiteLengthJetDegree (1 / 2) (1 / 8) 4))
+      rationalFiniteLengthZeroCertificateValue rationalFiniteLengthZeroCertificateValue
+      (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
+  obtain ⟨z, hz⟩ := Finset.exists_notMem exceptional
+  exact ⟨hlist, exceptional, hcard, z, hz,
+    hgood z hz 0 (WithBot.bot_lt_coe 2) (by
+      norm_num [polynomialAgreementSet, rationalDomain])⟩
+
+/-- Automatic finite-length bounds make the four-point rational zero list finite and give a
+nonexceptional exact correlated pair with the exact finite-length slack. -/
+example :
+    ((closePolynomialSet rationalDomain (fun _ ↦ 0) 2 4).Finite ∧
+      ((closePolynomialSet rationalDomain (fun _ ↦ 0) 2 4).ncard : ℝ) ≤
+        7 * finiteLengthMcaParameterConstant (1 / 2) ^ 3 * 4 /
+          finiteLengthSlack (1 / 8) 4 ^ 2) ∧
+    ∃ exceptional : Finset ℚ,
+      (exceptional.card : ℝ) ≤
+        140 * finiteLengthMcaParameterConstant (1 / 2) ^ 6 * 4 ^ 2 /
+          finiteLengthSlack (1 / 8) 4 ^ 4 ∧
+      ∃ z ∉ exceptional,
+        HasExactCorrelatedPair rationalDomain (fun _ ↦ 0) (fun _ ↦ 0)
+          (RingHom.id ℚ) 2 z 0 := by
+  obtain ⟨hlist, hline⟩ := automaticFirstOrder_finiteLength_finiteSlack_bounds
+    (1 / 2) (1 / 8) 4 2 4 (by norm_num) (by norm_num) (by norm_num)
+    halfRate_slack_lt_one halfRate_finiteLengthDerivativeRatio_le_half
+    (by norm_num) (by norm_num) (by nlinarith [halfRate_slack_lt_one])
+    (by norm_num) rationalDomain
+    (Or.inr (Or.inl (ringChar.eq_zero : ringChar ℚ = 0)))
+  obtain ⟨exceptional, hcard, hgood⟩ := hline (fun _ ↦ 0) (fun _ ↦ 0)
+  obtain ⟨z, hz⟩ := Finset.exists_notMem exceptional
+  exact ⟨hlist (fun _ ↦ 0), exceptional, hcard, z, hz,
+    hgood z hz 0 (WithBot.bot_lt_coe 2) (by
+      norm_num [polynomialAgreementSet, rationalDomain])⟩
+
+/-- The inverse-`eta` automatic bounds retain both a finite rational zero list and exact
+agreement at a challenge outside the exceptional set. -/
+example :
+    ((closePolynomialSet rationalDomain (fun _ ↦ 0) 2 4).Finite ∧
+      ((closePolynomialSet rationalDomain (fun _ ↦ 0) 2 4).ncard : ℝ) ≤
+        7 * finiteLengthMcaParameterConstant (1 / 2) ^ 3 * 4 / (1 / 8) ^ 2) ∧
+    ∃ exceptional : Finset ℚ,
+      (exceptional.card : ℝ) ≤
+        140 * finiteLengthMcaParameterConstant (1 / 2) ^ 6 * 4 ^ 2 / (1 / 8) ^ 4 ∧
+      ∃ z ∉ exceptional,
+        HasExactCorrelatedPair rationalDomain (fun _ ↦ 0) (fun _ ↦ 0)
+          (RingHom.id ℚ) 2 z 0 := by
+  obtain ⟨hlist, hline⟩ := automaticFirstOrder_finiteLength_rate_bounds
+    (1 / 2) (1 / 8) 4 2 4 (by norm_num) (by norm_num) (by norm_num)
+    halfRate_slack_lt_one halfRate_finiteLengthDerivativeRatio_le_half
+    (by norm_num) (by norm_num) (by nlinarith [halfRate_slack_lt_one])
+    (by norm_num) rationalDomain
+    (Or.inr (Or.inl (ringChar.eq_zero : ringChar ℚ = 0)))
+  obtain ⟨exceptional, hcard, hgood⟩ := hline (fun _ ↦ 0) (fun _ ↦ 0)
+  obtain ⟨z, hz⟩ := Finset.exists_notMem exceptional
+  exact ⟨hlist (fun _ ↦ 0), exceptional, hcard, z, hz,
+    hgood z hz 0 (WithBot.bot_lt_coe 2) (by
+      norm_num [polynomialAgreementSet, rationalDomain])⟩
+
+/-- The finite-field automatic bound controls sampling error for the four-point constant code
+over `ZMod 2749`. -/
+example :
+    mcaError (AffineLineGenerator (ZMod 2749)) (code finiteDomain 1)
+        (1 - (firstOrderRateThreshold (1 / 2) + 1 / 8)) ≤
+      min 1 (ENNReal.ofReal
+        ((140 * finiteLengthMcaParameterConstant (1 / 2) ^ 6 * 4 ^ 2 /
+          (1 / 8) ^ 4) / (Fintype.card (ZMod 2749) : ℝ))) := by
+  exact automaticFirstOrder_finiteLength_mcaError_le
+    (1 / 2) (1 / 8) 4 1 (by norm_num) (by norm_num) (by norm_num)
+    halfRate_slack_lt_one halfRate_finiteLengthDerivativeRatio_le_half
+    (by norm_num) (by norm_num) finiteDomain (Or.inl rfl)
