@@ -229,7 +229,7 @@ multi-let files, and every one fails with a 20000-heartbeat typeclass timeout. T
 `Entropy/Counting.rsCode_disjoint_supported_of_small`, `JohnsonLower.rs_monomial_agreement_card_le_two_mul`,
 `Powers/Incidence.powers_coefficients_eq_of_agree_on_distinct_seeds`,
 `Subfield/Algebra.subfield_ca_interpolant_unique`,
-`UniqueDecoding/Internal.rs_exists_oversized_bivariate_ab(_of_dimension)`,
+`UniqueDecoding/Internal.rs_exists_oversized_bivariate_ab_of_dimension`,
 `Errors.exists_forall_notMem_of_card_le`, `LineDecoding.affine_collision_injective`,
 `LineDecoding.exists_outside_finite_union_submodules`,
 `PolynomialGenerator.isMCAGenerator_of_isPolynomialGeneratorOf` (+2 each), and
