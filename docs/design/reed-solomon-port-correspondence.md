@@ -247,6 +247,10 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation
 
 The existing `ArkLibTest/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder.lean` acceptance file checks strict dimension surplus and the kernel-height bound for concrete two-point rate parameters, constructs a rate certificate over `ZMod 5` and converts it to a curve certificate, and applies the shared specialization theorem to that certificate.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/LowRateSemantics.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Added `exists_firstOrder_symbolicCertificate_of_rank_and_height`, a shared rank-and-height constructor extracted from the interpolation-to-certificate proofs for the general-rate, automatic finite-length, and low-rate selectors. Selector-specific count arguments remain with those theorems. The helper is public so the selector modules can import it.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder/Space.lean`
 
 Ported from
@@ -1903,6 +1907,10 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/Fi
 
 `closePolynomialSet_finite_and_card_le_finiteLength_of_dimension_le_one` and `closePolynomialSet_finite_and_card_le_inv_eta_of_dimension_le_one` retain their names. `closePolynomialSet_finite_and_card_le_finiteLength_of_certificate` retains its name and conclusion, and derives `2 ≤ n` and `k ≤ n` from the certificate hypotheses. `closePolynomialSet_finite_and_card_le_inv_eta_of_certificate` retains its name and uses the finite-length certificate bound with the same derived inequalities. The inverse-eta results are retained as weaker-denominator bounds. The module reuses the existing agreement-membership equivalence.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/LowRateSemantics.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`closePolynomialSet_finite_and_card_le_finiteLength_of_bounded_certificate` keeps its name and finite-length conclusion. The list-bounds owner now derives `k ≤ n` from `k ≤ A ≤ n`.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/FiniteLengthParameters.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/FiniteLengthParameters.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -1936,6 +1944,10 @@ The declarations `lowRateFiniteLengthChallengeHeight`, `lowRateMultiplicityBound
 The generic floor-to-ceiling comparison is shared in `RoundedCounts.lean`. In `Ratio.lean`, `natCeil_mul_div_le_inv_slack` is generalized from `ℝ` to ordered fields with a floor structure and renamed `Nat.cast_ceil_mul_div_le_inv_slack`; `maxOneFloor_mul_div_le_inv_slack_sq` receives the same generalization and is renamed `Nat.cast_max_one_floor_mul_div_le_inv_slack_sq`. The low-rate challenge-height proof reuses the shared rank-count rounding estimate instead of adding a low-rate wrapper.
 
 `one_le_lowRateParameterBoundConstant` is not ported because the outer `max 1` gives the inequality directly and no main statement uses it. An acceptance case in the matching `ArkLibTest` file checks the slack bound, derivative-cap/jet-degree comparison, all four individual parameter bounds, and the shared parameter bound at `rho = 1/16`, `eta = 1/8`, and `n = 64`.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/LowRateSemantics.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`lowRateFiniteLengthSlack_lt_one_of_one_le_rate_mul_length` keeps its name and moves to the low-rate finite-length bounds owner. Its unused `rho < 1` premise was dropped.
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/Profile.lean`
 
@@ -2163,6 +2175,14 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Firs
 
 `automaticFirstOrder_hybrid_mcaError_le` keeps its name and adds `[SampleableType F]`, which main's `mcaError` requires. The three line bounds go through the new `lineExactAgreementBound_of_exactCorrelatedPair` (in `PowerToLine.lean`) instead of three copies of the conversion. The module was renamed from `AutomaticHybridProbability` because the source module name is 101 characters and cannot be imported within the 100-character limit.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Branchwise.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Branchwise.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`finiteLengthDerivativeRatio_le_half_of_rateSwitch_le` and `firstOrderBranchFiniteLengthDerivativeCap` keep their names. `firstOrderBranchFiniteLengthMCAConstant` → `firstOrderBranchFiniteLengthMcaConstant` and `one_le_firstOrderBranchFiniteLengthMCAConstant` → `one_le_firstOrderBranchFiniteLengthMcaConstant` use ArkLib capitalization.
+
+`firstOrderBranch_finiteLength_finiteSlack_bounds` and `firstOrderBranch_finiteLength_rate_bounds` keep their names and conclusions. `firstOrderBranch_finiteLength_mcaError_le` keeps its name and adds `[SampleableType F]` for the current MCA probability API. The facade selects low-rate or automatic bounds at the rate switch and retains the source citation `[DKTZ26]`.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/CurveAgreement.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrderCurve.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -2179,6 +2199,10 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Firs
 `closePolynomialSet_finite_and_card_le_finiteLength_of_selector_certificate` keeps its name and bound, using the existing generic positive-cap certificate theorem. `exists_exceptional_finiteLengthMCA_of_selector_certificate` → `exists_exceptional_finiteLengthMca_of_selector_certificate` and `exists_exceptional_finiteLengthMCA_of_selector_certificate_inv_eta` → `exists_exceptional_finiteLengthMca_of_selector_certificate_inv_eta` retain exact agreement and the inverse-fourth and eta-only bounds. `finiteLength_completeList_and_exceptionalMCA_of_selector_certificates` → `finiteLength_completeList_and_exceptionalMca_of_selector_certificates` and `finiteLength_completeList_and_exceptionalMCA_of_selector_certificates_inv_eta` → `finiteLength_completeList_and_exceptionalMca_of_selector_certificates_inv_eta` retain the joint list and exception results.
 
 The zero derivative-cap proof uses the current symbolic-certificate hybrid theorem. Source names for `hybridTheta`, `hybridEClosed`, the threshold, and retained lines are expressed through the current `agreementIncidenceRatio`, `firstOrderExceptionConstant`, `firstOrderRateThreshold`, and retained squarefree line APIs. The private close-set membership helper was not ported because unfolding `closePolynomialSet` and `polynomialAgreementSet` suffices. The two private mapped-degree helpers and line coefficient-degree helper were not ported because `jetTotalDegree_map_le` and `jetDegree_map_le` in `PolynomialDifferential` cover them.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/LowRateSemantics.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`exists_exceptional_firstOrderMCA_zero_derivative_of_certificate` → `exists_exceptional_firstOrderMca_zero_derivative_of_certificate` drops the unused algebraic-closure field, embedding, and positive jet-degree premise. `exists_exceptional_firstOrderMCA_of_bounded_certificate` → `exists_exceptional_firstOrderMca_of_bounded_certificate` keeps its mathematical conclusion. Both are generic certificate bridges in the finite-length MCA owner, and the automatic selector proofs reuse them. The original zero-derivative descent proof is covered by `FirstOrderSymbolicCertificate.exists_exceptional_hybrid`.
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/FiniteLengthRateBounds.lean`
 
@@ -2222,6 +2246,18 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Firs
 `HasOrdinaryTailTransfer` keeps its name and packages the order-zero exceptional-set guarantee using `ordinaryTailCharge` and the mapped-domain API. `exists_exceptional_firstOrder_hybrid_raw_of_tail` keeps its name and combines the ordinary tail with the regular first-order stages at a fixed split, bounding the exceptional set by `firstOrderExceptionCharge`; its coefficient degree is derived from `Q`. `exists_exceptional_firstOrder_hybrid_optimized_of_tail` keeps its name and drops `1 ≤ μ`, weakens the characteristic guard to `ringChar F = 0 ∨ D < ringChar F`, and gives the current optimized charge, ceiling, and closed-constant bounds.
 
 The source `exists_exceptional_firstOrder_regularStages` is covered by the existing more general `exists_exceptional_firstOrder_regularCurveStages`; `exists_hybridERaw_eq_hybridERawAtDegree` by `exists_curveRetentionMinimum`; `hybridERawAtDegree_le_hybridEOptimizedRaw` by `HiddenDerivative.minFirstOrderExceptionCharge_le_maxMin`; and `regularSymbolicCurveMCADerivativeBoundTwo_eq_hybrid_stage` by `regularPowerBatchedDerivativeCappedBoundTwo_eq_hybridCurveStage`. `ringChar_eq_of_injective_fieldHom` remains a local proof step in the existing generalized regular-stage theorem, with no consumer needing a separate public helper.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/LowRateSemantics.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/LowRateSemantics.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`exists_lowRateFiniteLengthFirstOrder_symbolicCertificate`, `lowRate_closePolynomialSet_finite_and_card_le_finiteLength`, `lowRate_closePolynomialSet_finite_and_card_le_inv_eta`, `lowRateFiniteLengthJetDegree_pos`, `lowRate_finiteLength_rate_bounds`, and `lowRate_finiteLength_mcaError_le` keep their names and drop unused `rho < 1`. The list and rate conclusions and the rate theorem's quantifier order are unchanged. The finite-field MCA error theorem adds `[SampleableType F]` for the current probability API. The positive-cap theorem retains the algebraic-closure parameter used for squarefree descent.
+
+`lowRateHybridEnvelopeConstant` keeps its name. `lowRateFiniteLengthMCAParameterConstant` → `lowRateFiniteLengthMcaParameterConstant` and `one_le_lowRateFiniteLengthMCAParameterConstant` → `one_le_lowRateFiniteLengthMcaParameterConstant` use ArkLib capitalization. `lowRate_hybridTheta_le_parameterConstant` → `lowRate_agreementIncidenceRatio_le_parameterConstant` follows the current incidence-ratio API and drops unused `rho < 1`.
+
+`exists_exceptional_lowRateFiniteLengthMCA` → `exists_exceptional_lowRateFiniteLengthMca`, `exists_exceptional_lowRateFiniteLengthMCA_inv_eta` → `exists_exceptional_lowRateFiniteLengthMca_inv_eta`, `lowRate_finiteLength_completeList_and_exceptionalMCA` → `lowRate_finiteLength_completeList_and_exceptionalMca`, and `lowRate_finiteLength_completeList_and_exceptionalMCA_inv_eta` → `lowRate_finiteLength_completeList_and_exceptionalMca_inv_eta`. These keep their conclusions and drop unused `rho < 1`.
+
+The public `lowRate_closePolynomialSet_finite_and_card_le_finiteLength_of_dimension_le_one` and `exists_exceptional_lowRateFiniteLengthMCA_one` were not ported. Both only fixed the envelope constant for generic theorems, and their sole consumer was the low-rate facade. It instead uses `closePolynomialSet_finite_and_card_le_finiteLength_of_dimension_le_one` with `C := lowRateFiniteLengthMcaParameterConstant rho` and `one_le_lowRateFiniteLengthMcaParameterConstant rho`, or `exists_exceptional_exactLineMca_one` with `square_le_finiteLengthMcaExceptionBudget`. The private `lowRate_specialized_weightedTotalDegree_map_le`, `lowRate_specialized_degreeOf_map_le`, and `lowRate_line_degreeOf_extendSymbolicCoefficients_le` are covered by existing jet-degree map lemmas.
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/OrdinaryTail.lean`
 
@@ -5502,6 +5538,10 @@ Ported from the new declarations above; the source revision has no matching exam
 - `exists_baseExceptional_firstOrder_hybridCurve_optimized` on the same instance, with `ℂ` as the base field.
 - `exists_baseExceptional_firstOrderCurve_of_heightSlotCount_optimized` over `ℚ` at three points (`D = 1`, `A = n = 3`, `ell = 1`, `m = 1`, `M = 0`, `mu = 1`, `h = 1`). The slot surplus (6 < 8) is checked by `norm_num`, and the example finds a challenge outside the exceptional set where the zero candidate has full agreement and exact power agreement. This also goes through `exists_baseExceptional_firstOrder_hybridCurve_including_fullDimension`.
 - The three existing examples for the changed `HybridCurveTransfer` theorems now pass `coeffNatDegreeLE_coeffNatDegree _`.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/LowRateSemantics.lean` and `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Branchwise.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Acceptance examples check the low-rate symbolic certificate, complete-list and exact correlated-agreement rate bounds, and finite-field MCA error at concrete `1/16`-rate parameters. They also check branchwise finite-slack bounds, rate bounds, and finite-field MCA error at concrete `1/2`-rate parameters.
 
 ## `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree.lean`
 
