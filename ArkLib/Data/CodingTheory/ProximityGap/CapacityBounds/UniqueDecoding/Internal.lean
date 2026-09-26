@@ -182,7 +182,8 @@ private noncomputable def bchks_pair_disagreements {ι K : Type} [Fintype ι] [D
 /-- Natural-number arithmetic behind the interpolation parameters: once `k + 2e + 2 ≤ n`, the gap
 `n - k - 2e + 1` is positive, and the degree bounds `n - k - e` and `n - e - 1` satisfy the
 identities used by the dimension count. -/
-private theorem bchks_parameter_nat_facts {n k e : ℕ} (hk : 0 < k) (hmargin : k + 2 * e + 2 ≤ n) :
+private theorem interpolation_parameter_nat_facts {n k e : ℕ} (hk : 0 < k)
+    (hmargin : k + 2 * e + 2 ≤ n) :
     0 < n - k - 2 * e + 1 ∧ n - k - e + (k - 1) = n - e - 1 ∧ n - k - e ≤ n - e - 1 ∧
       n - e - 1 - (n - k - e) = k - 1 ∧ n - e - 1 < n - e ∧ e + (n - k - e) = n - k ∧
       (n - k - e + 1) + (n - e - 1 + 1) = n + (n - k - 2 * e + 1) ∧ n - e - 1 + 1 = n - e ∧
@@ -234,7 +235,7 @@ private theorem bchks_parameter_facts_of_target_hypotheses
       0 < gap ∧ ax + (k - 1) = bx ∧ ax ≤ bx ∧ bx - ax = k - 1 ∧ bx < n - e ∧ e + ax = n - k ∧
         (ax + 1) + (bx + 1) = n + gap ∧ bx + 1 = n - e ∧ gap + k + 2 * e = n + 1 ∧
         bx + e + 1 = n :=
-    bchks_parameter_nat_facts hk hmargin
+    interpolation_parameter_nat_facts hk hmargin
   have hgapR_pos : (0 : ℝ) < gap := by exact_mod_cast hgap_pos
   have hbxn : bx < n := lt_of_lt_of_le hbxrem (Nat.sub_le n e)
   have hk_card : k ≤ Fintype.card ι :=
@@ -615,24 +616,6 @@ private theorem rs_exists_oversized_bivariate_ab_of_dimension
   have hdeg := bchks_interpolant_pair_degree_bounds ax bx dz hdz ab
   have hvert := bchks_interpolant_pair_vertical_identity (domain : ι → F) u ax bx dz ab hab_ker
   exact ⟨AB.1, AB.2, hA0, hdeg.1, hdeg.2.1, hdeg.2.2.1, hdeg.2.2.2, hvert⟩
-
-omit [Nonempty ι] [DecidableEq ι] [Fintype F] [DecidableEq F] in
-private theorem rs_exists_oversized_bivariate_ab (domain : ι ↪ F) (u : Fin 2 → ι → F)
-    (n k e gap ax bx dz : ℕ) (δ : NNReal)
-    (hn : n = Fintype.card ι)
-    (hfacts : BchksParameterFacts n k e gap ax bx dz δ) :
-    ∃ A B : Polynomial (Polynomial F),
-      A ≠ 0 ∧
-      Polynomial.Bivariate.degreeX A ≤ ax ∧
-      Polynomial.Bivariate.natDegreeY A ≤ dz - 1 ∧
-      Polynomial.Bivariate.degreeX B ≤ bx ∧
-      Polynomial.Bivariate.natDegreeY B ≤ dz ∧
-      (∀ i : ι,
-        Polynomial.Bivariate.evalX (domain i) B =
-          (Polynomial.C (u 0 i) + Polynomial.X * Polynomial.C (u 1 i)) *
-            Polynomial.Bivariate.evalX (domain i) A) :=
-  rs_exists_oversized_bivariate_ab_of_dimension domain u ax bx dz hfacts.dz_pos
-    (hn ▸ hfacts.bx_lt_n) (hn ▸ hfacts.dimension_strict)
 
 private theorem bchks_eval_x_eval_eq_eval_y_eval {K : Type} [Field K]
     (x z : K) (f : Polynomial (Polynomial K)) :
@@ -1223,7 +1206,8 @@ private theorem rs_exists_affine_pair_of_many_good_coeffs_pos
     bchks_ps_ratio_lt_one_basic n bx dz good.card (δ : ℝ)
       hfacts.bx_ratio_lt hdz_card
   obtain ⟨A, B, hA0, hAX, hAY, hBX, hBY, hAB⟩ :=
-    rs_exists_oversized_bivariate_ab domain u n k e gap ax bx dz δ hn hfacts
+    rs_exists_oversized_bivariate_ab_of_dimension domain u ax bx dz hfacts.dz_pos
+      (hn ▸ hfacts.bx_lt_n) (hn ▸ hfacts.dimension_strict)
   obtain ⟨P, Qx, hBA, hPX, hPY, hQcard, hQsub, hQeval⟩ :=
     bchks_exists_global_affine_quotient_basic
       (k := k) (n := n) (e := e) (ax := ax) (bx := bx) (dz := dz)

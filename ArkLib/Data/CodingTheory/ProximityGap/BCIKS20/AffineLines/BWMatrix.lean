@@ -52,23 +52,6 @@ theorem BW_homMatrix_entry_natDegree_eq_zero_of_ge {F : Type} [Field F] {ι : Ty
   simp [BW_homMatrix, hle]
 
 open Polynomial in
-theorem BW_homMatrix_entry_natDegree_eq_zero_of_ge_comm {F : Type} [Field F] {ι : Type} [Fintype ι]
-    (e k : ℕ) (ωs : ι → F) (f0 f1 : ι → F) (i : ι)
-    (j : Fin ((e + 1) + (e + k))) (hj : e + 1 ≤ j.1) :
-    (BW_homMatrix (ι := ι) e k (fun i => (Polynomial.C (ωs i) : F[X]))
-        (fun i => Polynomial.C (f0 i) + Polynomial.C (f1 i) * Polynomial.X) i j).natDegree = 0 := by
-  have h :=
-    BW_homMatrix_entry_natDegree_eq_zero_of_ge (ι := ι) (F := F) e k ωs f0 f1 i j hj
-  have hfun :
-      (fun i : ι => Polynomial.C (f0 i) + Polynomial.X * Polynomial.C (f1 i))
-        = (fun i : ι => Polynomial.C (f0 i) + Polynomial.C (f1 i) * Polynomial.X) := by
-    funext i'
-    rw [mul_comm Polynomial.X (Polynomial.C (f1 i'))]
-  -- rewrite the auxiliary lemma with the commuting multiplication
-  simpa [hfun] using h
-
-
-open Polynomial in
 theorem BW_homMatrix_entry_natDegree_le_one {F : Type} [Field F] {ι : Type} [Fintype ι] (e k : ℕ)
     (ωs : ι → F) (f0 f1 : ι → F) (i : ι)
     (j : Fin ((e + 1) + (e + k))) :
@@ -304,17 +287,6 @@ theorem RS_det_submatrix_eq_zero_of_det_eq_zero (n : ℕ)
       J.equivOfFiniteSelfEmbedding from rfl, Matrix.det_permute', Matrix.det_permute, hdet,
     mul_zero, mul_zero]
 
-open Matrix in
-open Polynomial in
-theorem RS_exists_nonzero_kernelVec_of_det_eq_zero {F : Type} [Field F] (e : ℕ)
-    (K : Matrix (Fin (e + 1)) (Fin (e + 1)) (Polynomial F))
-    (hdet : Matrix.det K = 0) :
-    ∃ a : Fin (e + 1) → (Polynomial F), a ≠ 0 ∧ Matrix.mulVec K a = 0 := by
-  classical
-  rcases (Matrix.exists_mulVec_eq_zero_iff (M := K)).2 hdet with ⟨a, ha0, hmul⟩
-  refine ⟨a, ha0, ?_⟩
-  simpa using hmul
-
 omit [Fintype F] [DecidableEq ι] in
 theorem RS_floor_mul_card_ι_add_deg_le_card_ι_of_le_relUDR {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
     [NeZero deg] (hdeg : deg ≤ Fintype.card ι)
@@ -329,27 +301,9 @@ theorem RS_floor_mul_card_ι_add_one_le_card_ι_of_le_relUDR {deg : ℕ} {domain
     [NeZero deg] (hdeg : deg ≤ Fintype.card ι)
     (hδ : δ ≤ relativeUniqueDecodingRadius (ι := ι) (F := F)
       (C := ReedSolomon.code domain deg)) :
-    Nat.floor (δ * Fintype.card ι) + 1 ≤ Fintype.card ι := by
-  classical
-  -- abbreviate the main numerals
-  set n : ℕ := Fintype.card ι
-  set e : ℕ := Nat.floor (δ * n)
-  have heBW : 2 * e < n - deg + 1 := by
-    simpa [n, e] using (RS_BW_bound_of_le_relUDR (deg := deg) (domain := domain) (δ := δ) hdeg hδ)
-  have hdegpos : 0 < deg := Nat.pos_of_ne_zero (NeZero.ne deg)
-  have hdeg1 : 1 ≤ deg := Nat.succ_le_iff.2 hdegpos
-  have hle : n - deg + 1 ≤ n := by
-    calc
-      n - deg + 1 ≤ n - deg + deg := by
-        exact Nat.add_le_add_left hdeg1 (n - deg)
-      _ = n := by
-        exact Nat.sub_add_cancel (by simpa [n] using hdeg)
-  have h2 : 2 * e < n := lt_of_lt_of_le heBW hle
-  have hele : e ≤ 2 * e := by
-    simp [two_mul]
-  have hlt : e < n := lt_of_le_of_lt hele h2
-  -- finish
-  simpa [n, e, Nat.succ_eq_add_one] using (Nat.succ_le_of_lt hlt)
+    Nat.floor (δ * Fintype.card ι) + 1 ≤ Fintype.card ι :=
+  (Nat.add_le_add_left NeZero.one_le _).trans
+    (RS_floor_mul_card_ι_add_deg_le_card_ι_of_le_relUDR hdeg hδ)
 
 open Polynomial in
 open Matrix in
