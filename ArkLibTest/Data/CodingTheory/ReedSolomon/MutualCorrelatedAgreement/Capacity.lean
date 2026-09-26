@@ -38,6 +38,15 @@ local instance : Infinite (AlgebraicClosure ℚ) := algebraicClosureInfinite
 local instance : DecidableEq ℚ := Classical.decEq _
 local instance : DecidableEq (AlgebraicClosure ℚ) := Classical.decEq _
 
+/-- At gap `1 / 5`, the order-one agreement threshold of a block of length `8 m` fits in the
+block. -/
+private theorem agreementThreshold_one_fifth_le (m : ℕ) (hm : 0 < m) :
+    agreementThreshold (1 / 5 : ℝ) (8 * m) 1 ≤ 8 * m := by
+  apply (agreementThreshold_le_iff_real (by norm_num) (8 * m) 1 (8 * m)).mpr
+  have hmR : (1 : ℝ) ≤ m := by exact_mod_cast hm
+  push_cast
+  linarith
+
 example : correlatedMidpoint (1 / 2) 10 2 ≤ 8 ∧
     (1 / 2 : ℝ) * (10 : ℕ) / 2 ≤ ((8 - correlatedMidpoint (1 / 2) 10 2 + 1 : ℕ) : ℝ) := by
   obtain ⟨-, h, -, h', -⟩ := correlatedMidpoint_bounds (1 / 2) 10 2 8 (by norm_num)
@@ -96,14 +105,7 @@ example :
       8 * m ≤ n := by
     dsimp only
     exact Nat.le_refl _
-  have hA : agreementThreshold δ n 1 ≤ n := by
-    apply (agreementThreshold_le_iff_real hδ.le n 1 n).mpr
-    have hnR : (n : ℝ) = 8 * m := by norm_num [n]
-    rw [hnR]
-    dsimp [δ]
-    push_cast
-    have hmR : (1 : ℝ) ≤ m := by exact_mod_cast Nat.one_le_iff_ne_zero.mpr hm.ne'
-    nlinarith
+  have hA : agreementThreshold δ n 1 ≤ n := agreementThreshold_one_fifth_le m hm
   have hparams := exists_prescribed_correlated_parameters (F := ℚ) δ n 1 centers f g
     hδ hδmax hblock hA (Or.inl (by simp))
   have _hprescribed := exists_exceptional_exactPowerAgreement_of_prescribedCurve
@@ -167,14 +169,7 @@ example :
       8 * m ≤ n := by
     dsimp only
     exact Nat.le_refl _
-  have hA : agreementThreshold δ n 1 ≤ n := by
-    apply (agreementThreshold_le_iff_real hδ.le n 1 n).mpr
-    have hnR : (n : ℝ) = 8 * m := by norm_num [n]
-    rw [hnR]
-    dsimp [δ]
-    push_cast
-    have hmR : (1 : ℝ) ≤ m := by exact_mod_cast Nat.one_le_iff_ne_zero.mpr hm.ne'
-    nlinarith
+  have hA : agreementThreshold δ n 1 ≤ n := agreementThreshold_one_fifth_le m hm
   obtain ⟨exceptional, hbound, hgood⟩ := exists_prescribedLine_exactCorrelatedPair
     (F := ℚ) (E := AlgebraicClosure ℚ) δ n 1 centers f g iota hδ hδmax (by norm_num)
     (by simpa [xi] using hblock) hA
@@ -183,12 +178,11 @@ example :
       polynomialAgreementSet (centers.trans ⟨iota, iota.injective⟩)
         (fun i ↦ iota (f i) + z * iota (g i)) (0 : (AlgebraicClosure ℚ)[X]) =
         Finset.univ := by
-    ext i
-    simp [polynomialAgreementSet, f, g]
+    refine Finset.eq_univ_of_forall fun i ↦ (mem_polynomialAgreementSet _ _ _ i).2 ?_
+    simp only [f, g, eval_zero, map_zero, mul_zero, add_zero]
   obtain ⟨z, hz⟩ := Finset.exists_notMem exceptional
-  refine ⟨exceptional, ?_, z, hz, ?_⟩
-  · simpa [δ, n, xi, m, d, H] using hbound
-  · exact hgood z hz 0 (by simp) (by rw [hset z]; simpa using hA)
+  refine ⟨exceptional, hbound, z, hz, ?_⟩
+  exact hgood z hz 0 (by simp) (by rw [hset z, Finset.card_univ, Fintype.card_fin]; exact hA)
 
 example :
     let L := correlatedMidpoint (1 / 2) 8 1
