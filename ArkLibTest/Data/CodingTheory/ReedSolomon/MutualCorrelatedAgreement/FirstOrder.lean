@@ -7,6 +7,9 @@ Authors: Quang Dao
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.CurveAgreement
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.HybridCurveTransfer
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.HybridCurveRecovery
+import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.HybridCurveProfile
+import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.FiniteLengthRateBounds
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.HybridTransfer
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.OrdinaryTail
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Profile
@@ -41,6 +44,8 @@ transfer theorems over the complex field.
 * The uniform line-agreement bound has a concrete rational instance.
 * Optimized curve recovery has concrete instances over an algebraically closed field, over an
   arbitrary field, and from a strict shifted-height slot surplus.
+* A verified profile gives exact power agreement at the best optimized envelope.
+* A constant-code line has a nonexceptional challenge with exact correlated agreement.
 
 ## References
 
@@ -586,3 +591,36 @@ example : ∃ z : ℚ, HasExactPowerAgreement sharpProfileDomain sharpProfileVal
   exact ⟨z, hgood z hz 0 (WithBot.bot_lt_coe 2) (by
     norm_num [sharpSquarefreeProfile, polynomialAgreementSet, powerBatchedWord,
       sharpProfileValues])⟩
+
+open Classical in
+/-- The best optimized profile bound gives one exceptional set and a good rational challenge. -/
+example :
+    letI : DecidableEq ℚ := Classical.decEq ℚ
+    ∃ exceptional : Finset ℚ,
+    (exceptional.card : ℝ) ≤ bestOptimizedCurveEnvelope sharpSquarefreeProfile 2 ∧
+    ∃ z ∉ exceptional, HasExactPowerAgreement sharpProfileDomain sharpProfileValues
+      (RingHom.id ℚ) 2 z 0 := by
+  obtain ⟨exceptional, hcard, hgood⟩ :=
+    exists_exceptional_exactPowerAgreement_bestOptimized
+      (E := AlgebraicClosure ℚ) (p := sharpSquarefreeProfile) (by decide) 2
+      ⟨le_rfl, le_rfl, le_rfl⟩ (by norm_num [sharpSquarefreeProfile]) le_rfl le_rfl
+      sharpProfileDomain
+      sharpProfileValues (algebraMap ℚ (AlgebraicClosure ℚ))
+      (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
+  obtain ⟨z, hz⟩ := Finset.exists_notMem exceptional
+  exact ⟨exceptional, hcard, z, hz, hgood z hz 0 (WithBot.bot_lt_coe 2) (by
+    norm_num [sharpSquarefreeProfile, polynomialAgreementSet, powerBatchedWord,
+      sharpProfileValues])⟩
+
+/-! ### Constant-code finite-length endpoint -/
+
+/-- A received zero line over the rationals has a nonexceptional challenge with an exact
+constant-polynomial correlated pair. -/
+example : ∃ z : ℚ, HasExactCorrelatedPair sharpProfileDomain (fun _ ↦ 0)
+    (fun _ ↦ 0) (RingHom.id ℚ) 1 z 0 := by
+  obtain ⟨exceptional, _, hgood⟩ :=
+    ReedSolomon.FirstOrder.exists_exceptional_exactLineMca_one 2 1 sharpProfileDomain
+      (fun _ ↦ 0) (fun _ ↦ 0) (by norm_num)
+  obtain ⟨z, hz⟩ := Finset.exists_notMem exceptional
+  refine ⟨z, hgood z hz 0 (WithBot.bot_lt_coe 1) ?_⟩
+  norm_num [polynomialAgreementSet]
