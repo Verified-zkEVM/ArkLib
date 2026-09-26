@@ -2168,6 +2168,34 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Firs
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrderCurve.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 Ported `exists_extensionExceptional_firstOrderCurve_of_certificate_of_exponent`, `exists_extensionExceptional_firstOrderCurve_of_heightSlotCount_of_exponent`, `exists_baseExceptional_firstOrderCurve_of_certificate_of_exponent`, and `exists_baseExceptional_firstOrderCurve_of_heightSlotCount_of_exponent` under the same names. Generalized each theorem by removing the `0 < k` assumption. The extension-field bounds come from a finite curve certificate or a strict shifted-height surplus, and the base-field bounds follow by uniform exact-agreement descent. The two height-slot tight wrappers were not ported because each only specializes its exponent theorem to `2K - 3`; the acceptance case uses the exponent theorem directly.
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/FiniteLengthMca.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/FiniteLengthMCA.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`finiteLengthMCAParameterConstant` → `finiteLengthMcaParameterConstant` and `one_le_finiteLengthMCAParameterConstant` → `one_le_finiteLengthMcaParameterConstant` keep their bounds with the destination `Mca` casing. The new `square_le_finiteLengthMcaExceptionBudget` gives the shared constant-code endpoint bound for any envelope constant at least one and finite-length slack at most one. `Squarefree.retainedSquarefreeLineMCAEnvelope_eq_finiteLengthMCAEnvelope` → `Squarefree.retainedSquarefreeLineAgreementEnvelope_eq_finiteLengthMcaEnvelope` uses the existing squarefree envelope, and `hybridEClosed_zero_eq_finiteLengthMCAEnvelope` → `firstOrderExceptionConstant_zero_eq_finiteLengthMcaEnvelope` uses the current hybrid constant.
+
+`exists_finiteLengthFirstOrder_symbolicCertificate` keeps its name and mathematical certificate, using current rank and first-order interpolation APIs. `exists_exceptional_exactLineMCA_one` → `exists_exceptional_exactLineMca_one` keeps the constant-code result. `finiteLengthSelectorMCAEnvelope_le` → `finiteLengthSelectorMcaEnvelope_le` and `finiteLengthSelectorMCAEnvelope_le_inv_eta` → `finiteLengthSelectorMcaEnvelope_le_inv_eta` drop the unused `2 ≤ k` premise. `finiteLengthSelectorJetDegree_le_listEnvelope` keeps its name and bound.
+
+`closePolynomialSet_finite_and_card_le_finiteLength_of_selector_certificate` keeps its name and bound, using the existing generic positive-cap certificate theorem. `exists_exceptional_finiteLengthMCA_of_selector_certificate` → `exists_exceptional_finiteLengthMca_of_selector_certificate` and `exists_exceptional_finiteLengthMCA_of_selector_certificate_inv_eta` → `exists_exceptional_finiteLengthMca_of_selector_certificate_inv_eta` retain exact agreement and the inverse-fourth and eta-only bounds. `finiteLength_completeList_and_exceptionalMCA_of_selector_certificates` → `finiteLength_completeList_and_exceptionalMca_of_selector_certificates` and `finiteLength_completeList_and_exceptionalMCA_of_selector_certificates_inv_eta` → `finiteLength_completeList_and_exceptionalMca_of_selector_certificates_inv_eta` retain the joint list and exception results.
+
+The zero derivative-cap proof uses the current symbolic-certificate hybrid theorem. Source names for `hybridTheta`, `hybridEClosed`, the threshold, and retained lines are expressed through the current `agreementIncidenceRatio`, `firstOrderExceptionConstant`, `firstOrderRateThreshold`, and retained squarefree line APIs. The private close-set membership helper was not ported because unfolding `closePolynomialSet` and `polynomialAgreementSet` suffices. The two private mapped-degree helpers and line coefficient-degree helper were not ported because `jetTotalDegree_map_le` and `jetDegree_map_le` in `PolynomialDifferential` cover them.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/FiniteLengthRateBounds.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/FiniteLengthRateBounds.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`automaticFirstOrder_finiteLength_finiteSlack_bounds` and `automaticFirstOrder_finiteLength_rate_bounds` keep their names and respective finite-slack and eta-only list and line bounds. `automaticFirstOrder_finiteLength_mcaError_le` keeps its name and error bound, with the current affine-line API's `[SampleableType F]` instance. The automatic-rate results construct the symbolic certificates internally.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/HybridCurveProfile.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/HybridCurveProfile.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`CurveCertificate.hybridOptimizedCurveEnvelope` → `ReedSolomon.hybridOptimizedCurveEnvelope`, `CurveCertificate.bestCurveEnvelope` → `ReedSolomon.bestCurveEnvelope`, and `CurveCertificate.bestOptimizedCurveEnvelope` → `ReedSolomon.bestOptimizedCurveEnvelope` keep the profile quantities using current profile fields, including `candidateDegree`. `CurveCertificate.bestOptimizedCurveEnvelope_le_best` → `ReedSolomon.bestOptimizedCurveEnvelope_le_best` keeps its comparison.
+
+`exists_exceptional_exact_powerAgreement_hybrid_optimized` → `exists_exceptional_exactPowerAgreement_hybridOptimized` drops `2 ≤ k`, which profile verification implies. `exists_exceptional_exact_powerAgreement_best_optimized` → `exists_exceptional_exactPowerAgreement_bestOptimized` drops that premise and the unnecessary `k < n` hypothesis. `exists_exceptional_exact_powerAgreement_best` → `exists_exceptional_exactPowerAgreement_best` drops the implied `2 ≤ k` premise. The recovery statements use profile verification to establish the message-dimension lower bound.
+
+`CurveCertificate.bestCurveEnvelope_le_hybrid` and `CurveCertificate.bestCurveEnvelope_le_squarefree` were not ported because `bestCurveEnvelope` is a minimum and Mathlib's `min_le_left` and `min_le_right` give these projections directly.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/HybridCurveRecovery.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/HybridCurveRecovery.lean`, `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/HybridCurveBase.lean` and `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/HybridCurveCertificate.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`, merged into one module:
