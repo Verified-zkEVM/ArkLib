@@ -161,16 +161,16 @@ theorem exists_prescribed_certificate {F : Type*} [Field F] (δ : ℝ) (n k ℓ 
       let H : ℝ := harmonic (d - 1)
       let m := Nat.ceil (100 * (d : ℝ) ^ 2 * H)
       8 * m ≤ n)
-    (hA : ReedSolomon.agreementThreshold δ n k ≤ n) :
+    (hA : ReedSolomon.capacityAgreementThreshold δ n k ≤ n) :
     let d := Nat.ceil (Real.exp (xi / δ))
     let H : ℝ := harmonic (d - 1)
     let m := Nat.ceil (100 * (d : ℝ) ^ 2 * H)
-    Nonempty (Certificate (ReedSolomon.agreementThreshold δ n k) k ℓ (2 * m - 1) d
+    Nonempty (Certificate (ReedSolomon.capacityAgreementThreshold δ n k) k ℓ (2 * m - 1) d
       (12 * (ℓ * (2 * m - 1)) - 1) centers w) := by
   let K := max k ⌊δ * n / 2⌋₊
   let D := K - 1
   have hA' : k + ⌈δ * n⌉₊ ≤ n := by
-    simpa [ReedSolomon.agreementThreshold] using hA
+    simpa [ReedSolomon.capacityAgreementThreshold] using hA
   obtain ⟨hn, hD, _, hρlo, hρhi, _, hslack⟩ :=
     prescribedBlockBounds δ n k hδ hδmax.le hblock hA'
   have hkD : k ≤ D + 1 := by
@@ -178,7 +178,7 @@ theorem exists_prescribed_certificate {F : Type*} [Field F] (δ : ℝ) (n k ℓ 
     dsimp [D]
     omega
   have hcert := exists_weightedSupport_certificate_of_rate δ n D
-    (ReedSolomon.agreementThreshold δ n k) k ℓ centers w hw hℓ hδ hδmax.le hn hD
+    (ReedSolomon.capacityAgreementThreshold δ n k) k ℓ centers w hw hℓ hδ hδmax.le hn hD
     hρlo hρhi hkD hslack
   simpa only [xi] using hcert
 

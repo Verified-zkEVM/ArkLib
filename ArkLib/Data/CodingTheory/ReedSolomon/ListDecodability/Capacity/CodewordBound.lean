@@ -60,24 +60,24 @@ theorem lambda_le_ceil_of_closePolynomialSet_bound
     {δ : ℝ} (hδ : 0 ≤ δ) {n k : ℕ} (hn : 0 < n)
     (domain : Fin n ↪ F) (B : ℝ)
     (hB : ∀ received : Fin n → F,
-      (closePolynomialSet domain received k (agreementThreshold δ n k)).Finite ∧
-        ((closePolynomialSet domain received k (agreementThreshold δ n k)).ncard : ℝ) ≤ B) :
+      (closePolynomialSet domain received k (capacityAgreementThreshold δ n k)).Finite ∧
+        ((closePolynomialSet domain received k (capacityAgreementThreshold δ n k)).ncard : ℝ) ≤ B) :
     Code.Lambda (ReedSolomon.code domain k : Set (Fin n → F)) (capacityRadius δ n k) ≤
       (Nat.ceil B : ℕ∞) := by
   classical
   have hBound : ∀ received : Fin n → F,
       (agreeingPolynomials domain k
-        (agreementThreshold δ (Fintype.card (Fin n)) k) received).encard ≤
+        (capacityAgreementThreshold δ (Fintype.card (Fin n)) k) received).encard ≤
         (Nat.ceil B : ℕ∞) := by
     intro received
     apply (agreeingPolynomials_encard_le_closePolynomialSet
-      (A := agreementThreshold δ (Fintype.card (Fin n)) k) domain received).trans
+      (A := capacityAgreementThreshold δ (Fintype.card (Fin n)) k) domain received).trans
     apply Set.encard_le_coe_iff_finite_ncard_le.mpr
     have hclose := hB received
     refine ⟨?_, ?_⟩
     · simpa only [Fintype.card_fin] using hclose.1
     · have hclose' : ((closePolynomialSet domain received k
-          (agreementThreshold δ (Fintype.card (Fin n)) k)).ncard : ℝ) ≤ B := by
+          (capacityAgreementThreshold δ (Fintype.card (Fin n)) k)).ncard : ℝ) ≤ B := by
         simpa only [Fintype.card_fin] using hclose.2
       exact_mod_cast hclose'.trans (Nat.le_ceil B)
   have hLambda := lambda_le_of_forall_agreeingPolynomials_encard_le hδ
@@ -94,7 +94,7 @@ theorem prescribed_geometric_lambda_bound
       let d := Nat.ceil (Real.exp (xi / δ))
       let m := Nat.ceil (100 * (d : ℝ) ^ 2 * harmonic (d - 1))
       8 * m ≤ n)
-    (hA : agreementThreshold δ n k ≤ n) (hchar : ringChar F = 0 ∨ n ≤ ringChar F) :
+    (hA : capacityAgreementThreshold δ n k ≤ n) (hchar : ringChar F = 0 ∨ n ≤ ringChar F) :
     let d := Nat.ceil (Real.exp (xi / δ))
     let m := Nat.ceil (100 * (d : ℝ) ^ 2 * harmonic (d - 1))
     Code.Lambda (ReedSolomon.code domain k : Set (Fin n → F)) (capacityRadius δ n k) ≤

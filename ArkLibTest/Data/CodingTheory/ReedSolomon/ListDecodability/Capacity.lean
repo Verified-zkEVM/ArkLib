@@ -44,7 +44,7 @@ private def sampleN : ℕ :=
 private def sampleD : ℕ := capacityDerivativeOrder sampleDelta
 private def sampleM : ℕ := weightedSupportMultiplicity sampleD
 private def sampleMessageDim : ℕ := sampleD + 1
-private def sampleA : ℕ := agreementThreshold sampleDelta sampleN sampleMessageDim
+private def sampleA : ℕ := capacityAgreementThreshold sampleDelta sampleN sampleMessageDim
 private def sampleK : ℕ :=
   weightedSupportAmbientDimension sampleDelta sampleN sampleMessageDim
 private def sampleFieldLower : ℕ := max sampleN (2 * (sampleM * sampleA + sampleD))
@@ -79,23 +79,25 @@ private theorem prescribedSampleSetup :
         using congrArg ZMod.val hij
   }
   have hDge2 : 2 ≤ sampleD := by
-    have hd := capacityDerivativeOrder_lower (δ := sampleDelta) (by norm_num [sampleDelta])
-      (by norm_num [sampleDelta])
+    have hd := (prescribed_order_lower sampleDelta (by norm_num [sampleDelta])
+      (by norm_num [sampleDelta])).1
+    rw [← capacityDerivativeOrder_eq_ceil (by norm_num [sampleDelta])] at hd
     dsimp [sampleD]
     omega
   have hm : 1 ≤ sampleM := by
     dsimp [sampleM]
     exact Nat.succ_le_of_lt (weightedSupportMultiplicity_pos_iff.mpr hDge2)
   have hHlower : (108 / 5 : ℝ) ≤ harmonic (sampleD - 1) := by
-    have h := (capacityDerivativeOrder_lower (δ := sampleDelta)
+    have h := (prescribed_order_lower sampleDelta
       (by norm_num [sampleDelta]) (by norm_num [sampleDelta])).2.2
+    rw [← capacityDerivativeOrder_eq_ceil (by norm_num [sampleDelta])] at h
     change ReedSolomon.HiddenDerivative.WeightedSupportParameters.xi / sampleDelta ≤
       harmonic (sampleD - 1) at h
     norm_num [ReedSolomon.HiddenDerivative.WeightedSupportParameters.xi, sampleDelta] at h
     exact h
   have hHge1 : (1 : ℝ) ≤ harmonic (sampleD - 1) := by linarith
   have hmLower : 100 * (sampleD : ℝ) ^ 2 * harmonic (sampleD - 1) ≤ sampleM := by
-    exact_mod_cast le_weightedSupportMultiplicity sampleD
+    exact Nat.le_ceil _
   have hDreal : (1 : ℝ) ≤ sampleD := by
     exact_mod_cast (show 1 ≤ sampleD by omega)
   have hMsquare : 100 * (sampleD : ℝ) ^ 2 ≤ sampleM := by
@@ -128,8 +130,8 @@ private theorem prescribedSampleSetup :
       push_cast
       ring
     rw [hreal, Nat.ceil_natCast]
-  have hA : agreementThreshold sampleDelta sampleN sampleMessageDim ≤ sampleN := by
-    rw [agreementThreshold, hceil]
+  have hA : capacityAgreementThreshold sampleDelta sampleN sampleMessageDim ≤ sampleN := by
+    rw [capacityAgreementThreshold, hceil]
     change sampleMessageDim + sampleM ≤ 8 * sampleM
     dsimp [sampleMessageDim]
     omega
@@ -185,12 +187,13 @@ example :
         (4 * sampleM * q ^ sampleD : ℕ∞) := by
     simpa only [one_mul, Nat.cast_mul, Nat.cast_pow, Nat.cast_ofNat] using hbound
   have hdge2 : 2 ≤ sampleD := by
-    have h := (capacityDerivativeOrder_lower (δ := sampleDelta)
+    have h := (prescribed_order_lower sampleDelta
       (by norm_num [sampleDelta]) (by norm_num [sampleDelta])).1
+    rw [← capacityDerivativeOrder_eq_ceil (by norm_num [sampleDelta])] at h
     dsimp [sampleD]
     omega
   have hA : 2 ≤ sampleA := by
-    dsimp [sampleA, agreementThreshold, sampleMessageDim]
+    dsimp [sampleA, capacityAgreementThreshold, sampleMessageDim]
     omega
   have hfour : 4 * sampleM < q := by
     have hstrict : 4 * sampleM < 2 * (sampleM * sampleA + sampleD) := by
@@ -239,7 +242,7 @@ example :
     exact Nat.mul_pos (Nat.mul_pos (by decide) hmpos) (Nat.pow_pos hq.pos)
   have hpointwise : ∀ received : Fin sampleN → ZMod q,
       (agreeingPolynomials domain sampleMessageDim
-        (agreementThreshold sampleDelta (Fintype.card (Fin sampleN)) sampleMessageDim)
+        (capacityAgreementThreshold sampleDelta (Fintype.card (Fin sampleN)) sampleMessageDim)
         received).encard ≤
           ((4 * sampleM * q ^ (2 * sampleD) : ℕ) : ℕ∞) := by
     intro received
@@ -313,7 +316,7 @@ private theorem prescribedGeometricSampleData :
 
 private theorem geometricSampleZero_mem :
     (0 : Polynomial ℚ) ∈ closePolynomialSet geometricSampleDomain (fun _ ↦ 0)
-      sampleMessageDim (agreementThreshold sampleDelta sampleN sampleMessageDim) := by
+      sampleMessageDim (capacityAgreementThreshold sampleDelta sampleN sampleMessageDim) := by
   obtain ⟨_, hA, _⟩ := prescribedGeometricSampleData
   rw [closePolynomialSet]
   refine ⟨by simp, ?_⟩
@@ -331,7 +334,7 @@ example :
     (({(0 : Polynomial ℚ)} : Finset (Polynomial ℚ)).card : ℝ) ≤
         4 * (m : ℝ) ^ 2 * (4 * m / sampleDelta) ^ d * sampleN ^ d ∧
       (0 : Polynomial ℚ) ∈ closePolynomialSet geometricSampleDomain (fun _ ↦ 0)
-        sampleMessageDim (agreementThreshold sampleDelta sampleN sampleMessageDim) := by
+        sampleMessageDim (capacityAgreementThreshold sampleDelta sampleN sampleMessageDim) := by
   obtain ⟨hk, hA, hblock⟩ := prescribedGeometricSampleData
   have hbound := prescribed_geometric_finite_list_bound sampleDelta sampleN sampleMessageDim
     geometricSampleDomain (fun _ ↦ 0) (by norm_num [sampleDelta])
@@ -350,11 +353,11 @@ example :
     let d := Nat.ceil (Real.exp (xi / sampleDelta))
     let m := Nat.ceil (100 * (d : ℝ) ^ 2 * harmonic (d - 1))
     (0 : Polynomial ℚ) ∈ closePolynomialSet geometricSampleDomain (fun _ ↦ 0)
-        sampleMessageDim (agreementThreshold sampleDelta sampleN sampleMessageDim) ∧
+        sampleMessageDim (capacityAgreementThreshold sampleDelta sampleN sampleMessageDim) ∧
       (closePolynomialSet geometricSampleDomain (fun _ ↦ 0) sampleMessageDim
-        (agreementThreshold sampleDelta sampleN sampleMessageDim)).Finite ∧
+        (capacityAgreementThreshold sampleDelta sampleN sampleMessageDim)).Finite ∧
         ((closePolynomialSet geometricSampleDomain (fun _ ↦ 0) sampleMessageDim
-          (agreementThreshold sampleDelta sampleN sampleMessageDim)).ncard : ℝ) ≤
+          (capacityAgreementThreshold sampleDelta sampleN sampleMessageDim)).ncard : ℝ) ≤
           4 * (m : ℝ) ^ 2 * (4 * m / sampleDelta) ^ d * sampleN ^ d := by
   obtain ⟨hk, hA, hblock⟩ := prescribedGeometricSampleData
   have hbound := prescribed_geometric_close_list_bound sampleDelta sampleN sampleMessageDim
@@ -376,13 +379,13 @@ example :
 example :
     Code.Lambda (ReedSolomon.code singletonAgreementDomain 1 : Set (Fin 1 → ℚ))
         (capacityRadius 0 1 1) ≤ 1 := by
-  have hthreshold : agreementThreshold 0 1 1 = 1 := by
-    norm_num [agreementThreshold]
+  have hthreshold : capacityAgreementThreshold 0 1 1 = 1 := by
+    norm_num [capacityAgreementThreshold]
   have hB : ∀ received : Fin 1 → ℚ,
       (closePolynomialSet singletonAgreementDomain received 1
-        (agreementThreshold 0 1 1)).Finite ∧
+        (capacityAgreementThreshold 0 1 1)).Finite ∧
         ((closePolynomialSet singletonAgreementDomain received 1
-          (agreementThreshold 0 1 1)).ncard : ℝ) ≤ 1 := by
+          (capacityAgreementThreshold 0 1 1)).ncard : ℝ) ≤ 1 := by
     intro received
     rw [hthreshold]
     refine ⟨closePolynomialSet_finite singletonAgreementDomain received (by norm_num), ?_⟩

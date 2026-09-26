@@ -79,12 +79,12 @@ theorem exists_field_bounded_capacity_list
     (if (1 / 4 : ℝ) ≤ delta then 1 else 8 * m) ≤ n → _
   intro n k q A hn hk hkn hq hnq hA alpha y
   let : Fact q.Prime := ⟨hq⟩
-  have hthreshold := (agreementThreshold_le_iff_real hdelta.le n k A).mpr hA
+  have hthreshold := (capacityAgreementThreshold_le_iff_real hdelta.le n k A).mpr hA
   have hsubset : agreeingPolynomials alpha k A y ⊆
-      agreeingPolynomials alpha k (agreementThreshold delta n k) y := by
+      agreeingPolynomials alpha k (capacityAgreementThreshold delta n k) y := by
     intro P hP
     change A ≤ Code.agree (ReedSolomon.evalOnPoints alpha P) y at hP
-    change agreementThreshold delta n k ≤ Code.agree (ReedSolomon.evalOnPoints alpha P) y
+    change capacityAgreementThreshold delta n k ≤ Code.agree (ReedSolomon.evalOnPoints alpha P) y
     exact hthreshold.trans hP
   have hmono := Set.encard_mono hsubset
   have listEmptyOfOversizedThreshold (list : Finset (Polynomial (ZMod q)))
@@ -101,7 +101,7 @@ theorem exists_field_bounded_capacity_list
   · have hquarterBound := agreeingPolynomials_encard_lt_blockLength_of_quarter
       hquarter alpha hk (by simpa only [Fintype.card_fin] using hkn) y
     have hquarterBound' :
-        (agreeingPolynomials alpha k (agreementThreshold delta n k) y).encard < n := by
+        (agreeingPolynomials alpha k (capacityAgreementThreshold delta n k) y).encard < n := by
       simpa only [Fintype.card_fin] using hquarterBound
     have hbound := hmono.trans_lt hquarterBound'
     obtain ⟨list, hexact, hcard⟩ := exists_finset_polynomial_list alpha k A y
@@ -112,7 +112,7 @@ theorem exists_field_bounded_capacity_list
       have hhalfBound := agreeingPolynomials_encard_le_one_of_half
         hhalf alpha hk (by simpa only [Fintype.card_fin] using hkn) y
       have hhalfBound' :
-          (agreeingPolynomials alpha k (agreementThreshold delta n k) y).encard ≤ 1 := by
+          (agreeingPolynomials alpha k (capacityAgreementThreshold delta n k) y).encard ≤ 1 := by
         simpa only [Fintype.card_fin] using hhalfBound
       have h := hmono.trans hhalfBound'
       rw [← hcard] at h
@@ -128,7 +128,7 @@ theorem exists_field_bounded_capacity_list
     obtain ⟨⟨certificate⟩, hlarge⟩ := hbound n k q hblock hk hkn hq hnq alpha
     have hcertificateBound := (certificate.pointwiseListBound y).1
     have hcertificateBound' :
-        (agreeingPolynomials alpha k (agreementThreshold delta n k) y).encard ≤
+        (agreeingPolynomials alpha k (capacityAgreementThreshold delta n k) y).encard ≤
           ((4 * m * q ^ (2 * d) : ℕ) : ℕ∞) := by
       simpa only [Fintype.card_fin, d, m] using hcertificateBound
     have hbound' := hmono.trans hcertificateBound'
@@ -153,7 +153,7 @@ theorem exists_field_bounded_capacity_list
         change list.card ≤ 4 * m * q ^ d
         have hlargeCertificateBound := (largeCertificate.pointwiseListBound y).1
         have hlargeCertificateBound' :
-            (agreeingPolynomials alpha k (agreementThreshold delta n k) y).encard ≤
+            (agreeingPolynomials alpha k (capacityAgreementThreshold delta n k) y).encard ≤
               ((4 * m * q ^ d : ℕ) : ℕ∞) := by
           simpa only [Fintype.card_fin, d, m] using hlargeCertificateBound
         exact_mod_cast hcard.le.trans (hmono.trans hlargeCertificateBound')

@@ -45,7 +45,7 @@ theorem exists_prescribedLine_exactCorrelatedPair {F E : Type u} [Field F] [Fiel
     (hblock : 8 * Nat.ceil
       (100 * (Nat.ceil (Real.exp ((27 / 10) / δ)) : ℝ) ^ 2 *
         harmonic (Nat.ceil (Real.exp ((27 / 10) / δ)) - 1)) ≤ n)
-    (hA : agreementThreshold δ n k ≤ n)
+    (hA : capacityAgreementThreshold δ n k ≤ n)
     (hchar :
       let d := Nat.ceil (Real.exp ((27 / 10) / δ))
       let m := Nat.ceil (100 * (d : ℝ) ^ 2 * harmonic (d - 1))
@@ -56,7 +56,7 @@ theorem exists_prescribedLine_exactCorrelatedPair {F E : Type u} [Field F] [Fiel
       (exceptional.card : ℝ) ≤ prescribedProductAgreementConstant δ *
         (n : ℝ) ^ (Nat.ceil (Real.exp ((27 / 10) / δ)) + 1) ∧
       ∀ z ∉ exceptional, ∀ P : E[X], P.degree < k →
-        agreementThreshold δ n k ≤
+        capacityAgreementThreshold δ n k ≤
           (polynomialAgreementSet (domain.trans ⟨iota, iota.injective⟩)
             (fun i ↦ iota (f i) + z * iota (g i)) P).card →
         HasExactCorrelatedPair domain f g iota k z P := by
@@ -71,7 +71,7 @@ theorem exists_prescribedLine_exactCorrelatedPair {F E : Type u} [Field F] [Fiel
       (fun i ↦ iota (f i) + z * iota (g i)) := by
     funext i
     simp [values, powerBatchedWord, Fin.sum_univ_two]
-  have hagree' : agreementThreshold δ n k ≤
+  have hagree' : capacityAgreementThreshold δ n k ≤
       (polynomialAgreementSet (domain.trans ⟨iota, iota.injective⟩)
         (powerBatchedWord (fun t i ↦ iota (values t i)) z) P).card := by
     rw [hword]

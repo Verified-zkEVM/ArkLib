@@ -36,11 +36,7 @@ from the order bounds in `Parameters/WeightedSupport/ScalarParameters.lean` and 
 ## Main statements
 
 * `capacityDerivativeOrder_eq_zero`, `capacityDerivativeOrder_eq_ceil`: the two branches.
-* `capacityDerivativeOrder_lower`: for `0 < δ < 1 / 4`, `48000 ≤ d`, `ξ / δ ≤ log d` and
-  `ξ / δ ≤ harmonic (d - 1)`.
 * `weightedSupportMultiplicity_pos_iff`: `0 < m ↔ 2 ≤ d`.
-* `capacity_block_bounds`: for `0 < δ < 1 / 4`, `8 m ≤ n` and `k + ⌈δ n⌉₊ ≤ n`, the order is
-  below the ambient degree `K - 1` and `k ≤ K ≤ n`.
 * `prescribed_geometric_parameters`: the prescribed order, multiplicity and Taylor cutoff satisfy
   the size and agreement bounds used by geometric list counting.
 
@@ -78,15 +74,6 @@ theorem capacityDerivativeOrder_eq_ceil {δ : ℝ} (hδ : δ < 1 / 4) :
     capacityDerivativeOrder δ = ⌈Real.exp (xi / δ)⌉₊ := by
   exact ite_eq_right (not_le_of_gt hδ)
 
-/-- For `0 < δ < 1 / 4`, the derivative order `d` satisfies `48000 ≤ d`, `ξ / δ ≤ log d` and
-`ξ / δ ≤ harmonic (d - 1)`. This is `prescribed_order_lower` at the weighted-support branch; the
-bound `δ < 1 / 4` is what selects that branch, and `0 < δ` makes `ξ / δ` large. -/
-theorem capacityDerivativeOrder_lower {δ : ℝ} (hδ : 0 < δ) (hδmax : δ < 1 / 4) :
-    48000 ≤ capacityDerivativeOrder δ ∧ xi / δ ≤ Real.log (capacityDerivativeOrder δ) ∧
-      xi / δ ≤ (harmonic (capacityDerivativeOrder δ - 1) : ℝ) := by
-  rw [capacityDerivativeOrder_eq_ceil hδmax]
-  exact prescribed_order_lower δ hδ hδmax.le
-
 /-- The weighted-support multiplicity `m = ⌈100 d ^ 2 harmonic (d - 1)⌉₊` at derivative order `d`.
 
 The capacity construction uses it at `d = capacityDerivativeOrder δ` with `δ < 1 / 4`. For `d ≤ 1`
@@ -94,11 +81,6 @@ the harmonic number `harmonic (d - 1)` is `0`, so `m = 0` (see
 `weightedSupportMultiplicity_pos_iff`). -/
 def weightedSupportMultiplicity (d : ℕ) : ℕ :=
   ⌈100 * (d : ℝ) ^ 2 * harmonic (d - 1)⌉₊
-
-/-- The unrounded multiplicity is at most `m`. -/
-theorem le_weightedSupportMultiplicity (d : ℕ) :
-    100 * (d : ℝ) ^ 2 * harmonic (d - 1) ≤ weightedSupportMultiplicity d :=
-  Nat.le_ceil _
 
 /-- The multiplicity is positive exactly when `2 ≤ d`: for `d = 0` the factor `d ^ 2` vanishes,
 and for `d = 1` the factor `harmonic 0` vanishes. -/
@@ -129,21 +111,6 @@ its exponent of `q` from `2 d` to `d`. The natural subtraction is truncated, so 
 def LargeFieldCondition (δ : ℝ) (n k q d m : ℕ) : Prop :=
   2 * (m * (k + ⌈δ * n⌉₊) + d - weightedSupportAmbientDimension δ n k) ≤ q
 
-/-- The block bounds at the capacity parameters. Let `0 < δ < 1 / 4`,
-`d = capacityDerivativeOrder δ`, `m = weightedSupportMultiplicity d` and
-`K = weightedSupportAmbientDimension δ n k`. If `8 m ≤ n` and `k + ⌈δ n⌉₊ ≤ n`, then `0 < n`,
-`d < K - 1` and `k ≤ K ≤ n`. This is `prescribedBlockBounds` for these definitions. The block
-condition `8 m ≤ n` is what makes `δ n` large compared with `d ^ 2`; the threshold condition
-`k + ⌈δ n⌉₊ ≤ n` gives `K ≤ n`. -/
-theorem capacity_block_bounds {δ : ℝ} {n k : ℕ} (hδ : 0 < δ) (hδmax : δ < 1 / 4)
-    (hblock : 8 * weightedSupportMultiplicity (capacityDerivativeOrder δ) ≤ n)
-    (hA : k + ⌈δ * n⌉₊ ≤ n) :
-    0 < n ∧ capacityDerivativeOrder δ < weightedSupportAmbientDimension δ n k - 1 ∧
-      k ≤ weightedSupportAmbientDimension δ n k ∧ weightedSupportAmbientDimension δ n k ≤ n := by
-  rw [capacityDerivativeOrder_eq_ceil hδmax] at hblock ⊢
-  obtain ⟨hn, -, hdD, -, -, hK, -⟩ := prescribedBlockBounds δ n k hδ hδmax.le hblock hA
-  exact ⟨hn, hdD, le_max_left _ _, hK⟩
-
 /-- The prescribed order and multiplicity give the size and agreement bounds for geometric
 list counting. -/
 theorem prescribed_geometric_parameters
@@ -152,8 +119,8 @@ theorem prescribed_geometric_parameters
       let d := Nat.ceil (Real.exp (xi / δ))
       let m := Nat.ceil (100 * (d : ℝ) ^ 2 * harmonic (d - 1))
       8 * m ≤ n)
-    (hA : agreementThreshold δ n k ≤ n) :
-    let A := agreementThreshold δ n k
+    (hA : capacityAgreementThreshold δ n k ≤ n) :
+    let A := capacityAgreementThreshold δ n k
     let d := Nat.ceil (Real.exp (xi / δ))
     let m := Nat.ceil (100 * (d : ℝ) ^ 2 * harmonic (d - 1))
     let ν := 2 * m - 1
@@ -164,7 +131,7 @@ theorem prescribed_geometric_parameters
   let m := Nat.ceil (100 * (d : ℝ) ^ 2 * harmonic (d - 1))
   let ν := 2 * m - 1
   let K := max k (Nat.floor (δ * n / 2))
-  let A := agreementThreshold δ n k
+  let A := capacityAgreementThreshold δ n k
   have hblock' : 8 * m ≤ n := by simpa only [d, m] using hblock
   have hblock'' :
       let d := Nat.ceil (Real.exp (xi / δ))
@@ -174,7 +141,7 @@ theorem prescribed_geometric_parameters
     dsimp only
     exact hblock'
   have hA' : k + Nat.ceil (δ * n) ≤ n := by
-    simpa only [agreementThreshold] using hA
+    simpa only [capacityAgreementThreshold] using hA
   have hb := prescribedBlockBounds δ n k hδ hδmax.le hblock'' hA'
   obtain ⟨hn, hD, hdD, _, _, hKn, _⟩ := hb
   have ho := prescribed_order_lower δ hδ hδmax.le
@@ -195,7 +162,7 @@ theorem prescribed_geometric_parameters
   have hKn' : K ≤ n := by simpa only [K] using hKn
   have hkA : k ≤ A := by dsimp [A]; exact Nat.le_add_right _ _
   have hgap : (k : ℝ) + δ * n ≤ A :=
-    (agreementThreshold_le_iff_real hδ.le n k _).mp le_rfl
+    (capacityAgreementThreshold_le_iff_real hδ.le n k _).mp le_rfl
   exact ⟨hn, hm, hν, hνm, hνn, hdK, hkK, hKn', hkA, hgap⟩
 
 end ReedSolomon

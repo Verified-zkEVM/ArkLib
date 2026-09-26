@@ -96,11 +96,11 @@ theorem exists_prescribed_symbolic_weightedSupport_certificate {F : Type*} [Fiel
       let H : ℝ := harmonic (d - 1)
       let m := Nat.ceil (100 * (d : ℝ) ^ 2 * H)
       8 * m ≤ n)
-    (hA : ReedSolomon.agreementThreshold δ n k ≤ n) :
+    (hA : ReedSolomon.capacityAgreementThreshold δ n k ≤ n) :
     let d := Nat.ceil (Real.exp (xi / δ))
     let H : ℝ := harmonic (d - 1)
     let m := Nat.ceil (100 * (d : ℝ) ^ 2 * H)
-    Nonempty (SymbolicReceivedCurve.Certificate (ReedSolomon.agreementThreshold δ n k) k 1
+    Nonempty (SymbolicReceivedCurve.Certificate (ReedSolomon.capacityAgreementThreshold δ n k) k 1
       (2 * m - 1) d (12 * (2 * m - 1) - 1) centers
       (fun i => receivedLine (f i) (g i))) := by
   simpa only [Nat.one_mul] using

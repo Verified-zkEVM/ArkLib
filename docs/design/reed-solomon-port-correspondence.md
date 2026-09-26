@@ -1443,7 +1443,7 @@ low-rate ambient bounds follow by specializing these guards to the uniform order
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/TaylorCutoff.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
-`ReedSolomon.prescribed_geometric_parameters` keeps its name. It gives the prescribed order, multiplicity, Taylor cutoff, ambient dimension, and agreement bounds, dropping the unused `0 < k` assumption and using the current harmonic and agreement-threshold APIs.
+`ReedSolomon.prescribed_geometric_parameters` keeps its name. It gives the prescribed order, multiplicity, Taylor cutoff, ambient dimension, and agreement bounds, dropping the unused `0 < k` assumption and using the current harmonic and agreement-threshold APIs. The source-shaped `capacityDerivativeOrder_lower` is `WeightedSupportParameters.prescribed_order_lower` after `capacityDerivativeOrder_eq_ceil`; `capacity_block_bounds` follows from `WeightedSupportParameters.prescribedBlockBounds` and `Nat.le_max_left`.
 
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Substitution.lean`
 
@@ -1534,7 +1534,7 @@ type;
 ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`,
 `ArkLib/Data/CodingTheory/ReedSolomon/Interleaved/AnchoredAgreement.lean`: `candidateSet_finite`
 and `candidateFamily_card_le` bound anchored candidates through
-`relHammingDist_le_capacityRadius_iff_agreementThreshold_le` at the radius
+`ReedSolomon.relHammingDist_le_capacityRadius_iff_capacityAgreementThreshold_le` at the radius
 `capacityRadius delta n k = 1 - k / n - delta`, with the agreement threshold
 `k + ⌈delta * n⌉ ≤ a`. That threshold implies `1 - a / n ≤ capacityRadius delta n k`, so the
 statements here, at the radius `1 - a / n` and for an arbitrary code, imply the source ones by
@@ -1545,7 +1545,7 @@ statements here, at the radius `1 - a / n` and for an arbitrary code, imply the 
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/WeightedSupport.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
-`exists_weightedSupport_hiddenDerivativeConstruction`, `weightedSupport_capacity_list_bound_four_mul`, and `weightedSupport_capacity_list_bound` keep their names and mathematical statements. The construction theorem specializes the existing prescribed construction result. The pointwise list bound uses the destination's order-indexed multiplicity API and gives prefactor `4m` with exponent `2d`, refined to `d` under the large-field condition. The packaged theorem provides `WeightedSupportListBound` using the existing multiplicity positivity characterization. The generic `CapacityGapCertificate.ofPointwiseBound` helper was added to the existing capacity owner file; it has no source declaration and turns pointwise finite-list bounds into exact decoder certificates over arbitrary finite coordinate types. `weightedSupportMultiplicity_pos` was not ported because `weightedSupportMultiplicity_pos_iff` together with `capacityDerivativeOrder_lower` covers it.
+`exists_weightedSupport_hiddenDerivativeConstruction`, `weightedSupport_capacity_list_bound_four_mul`, and `weightedSupport_capacity_list_bound` keep their names and mathematical statements. The construction theorem specializes the existing prescribed construction result. The pointwise list bound uses the destination's order-indexed multiplicity API and gives prefactor `4m` with exponent `2d`, refined to `d` under the large-field condition. The packaged theorem provides `WeightedSupportListBound` using the existing multiplicity positivity characterization. The generic `CapacityGapCertificate.ofPointwiseBound` helper was added to the existing capacity owner file; it has no source declaration and turns pointwise finite-list bounds into exact decoder certificates over arbitrary finite coordinate types. `weightedSupportMultiplicity_pos` was not ported because `weightedSupportMultiplicity_pos_iff` together with `WeightedSupportParameters.prescribed_order_lower` and `capacityDerivativeOrder_eq_ceil` covers it.
 
 The acceptance cases in `ArkLibTest/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity.lean` check the construction contract, the pointwise bound constructor, and the packaged theorem at the prescribed sample parameters. The samples put the zero polynomial in the agreement list at a threshold no greater than the block length, and the pointwise-bound case supplies a positive finite list bound.
 
@@ -1644,9 +1644,13 @@ Added `closePolynomialSet_card_le_of_differential_equation`, a thin specializati
 ## `ArkLib/Data/CodingTheory/ReedSolomon/AgreementThreshold.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/AgreementThreshold.lean` at ArkLib revision
-`a5aa2677fee4e3a79d6bb05136631cce4a08587d`, with the same names. `agreementThreshold`,
-`capacityRadius` and `agreementThreshold_le_iff_real` are unchanged;
-`relHammingDist_le_capacityRadius_iff_agreementThreshold_le` holds for any finite coordinate type
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`, with the same formulas. Source
+`agreementThreshold` maps to `ReedSolomon.capacityAgreementThreshold`, and source
+`agreementThreshold_le_iff_real` maps to
+`ReedSolomon.capacityAgreementThreshold_le_iff_real`; `capacityRadius` is unchanged. Source
+`relHammingDist_le_capacityRadius_iff_agreementThreshold_le` maps to
+`ReedSolomon.relHammingDist_le_capacityRadius_iff_capacityAgreementThreshold_le`, which holds for
+any finite coordinate type
 in place of `Fin blockLength`, and goes through the new `Code.relHammingDist_le_one_sub_div_iff`
 of `ArkLib.Data.CodingTheory.ListDecodability.AgreementRadius`.
 ## `ArkLib/Data/CodingTheory/ReedSolomon/Agreement.lean`
@@ -1687,7 +1691,8 @@ ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`,
 
 Deferred: `mcaError_interleaved_le_of_exactAgreement` needs `LineExactAgreementBound` and
 `mcaError_affineLine_le_of_exactAgreement` from `MutualCorrelatedAgreement/LineToAffine.lean`, and
-`lambda_rs_le_of_finite_polynomial_agreement_bound` needs `capacityRadius`, `agreementThreshold`
+`lambda_rs_le_of_finite_polynomial_agreement_bound` needs `capacityRadius`,
+`ReedSolomon.capacityAgreementThreshold`
 and `lambda_le_of_forall_agreeingPolynomials_encard_le` from
 `ListDecodability/Capacity/CodewordBound.lean` and its imports. None of these is on main. The
 interleaving step of the first is already `ProximityGap.mcaError_interleaved_eq`.
@@ -1705,7 +1710,8 @@ ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`,
 * `candidateSet_finite`, `candidateFamily`, `mem_candidateFamily` and `candidateFamily_card_le`
   are replaced by `encard_candidateSet_le_Lambda` and `finite_candidateSet_of_Lambda_le`, which
   bound the set itself instead of a `Finset` built from a finiteness proof. The source's radius
-  `capacityRadius delta n (T + 3)` with the threshold `agreementThreshold delta n (T + 3) ≤ A`
+  `capacityRadius delta n (T + 3)` with the threshold
+  `ReedSolomon.capacityAgreementThreshold delta n (T + 3) ≤ A`
   is replaced by the radius `1 - A / n`, which is at most the source radius under that
   threshold; the conversion is `Code.encard_setOf_le_agree_encode_le_Lambda`. The hypotheses
   `0 ≤ delta` and `0 < n` are not needed.
@@ -2071,11 +2077,16 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/Basi
 
 `polynomialListBound`, `CapacityGapCertificate`, `CapacityGapCertificate.ofDecoderCertificate`,
 `PointwiseListBound`, `CapacityGapCertificate.pointwiseListBound`,
-`UniformPrimeFieldCapacityListBound`, `UniformPrimeFieldCapacityListBound.exists_uniform_pointwise_bound`,
-`QuarterGapListBound`, and `WeightedSupportListBound` keep their names. The certificate and
+`UniformPrimeFieldCapacityListBound`, `QuarterGapListBound`, and
+`WeightedSupportListBound` keep their names. The source
+`UniformPrimeFieldCapacityListBound.exists_uniform_pointwise_bound` is omitted: apply
+`CapacityGapCertificate.pointwiseListBound` to the certificate supplied by
+`UniformPrimeFieldCapacityListBound`. The certificate and
 pointwise-list APIs generalize from `Fin n` over `ZMod q` to arbitrary finite coordinate types and
 semiring alphabets where applicable. The all-rate prime-field specifications remain over `Fin n`.
-`WeightedSupportListBound` uses the destination weighted-support parameter names.
+`WeightedSupportListBound` uses the destination weighted-support parameter names. The
+`CapacityGapCertificate.empty_of_threshold_exceeds` field is omitted because
+`DecoderCertificate.decoder_eq_empty_of_card_lt` supplies the same conclusion.
 
 Also ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/Radius.lean` at
 the same ArkLib revision, `closeCodewordsRel_eq_eval_image_agreeingPolynomials`,

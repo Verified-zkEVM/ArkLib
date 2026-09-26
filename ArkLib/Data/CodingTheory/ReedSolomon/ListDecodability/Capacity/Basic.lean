@@ -21,8 +21,7 @@ all-rate prime-field bounds and their large-gap and weighted-support regimes.
 ## Main statements
 
 * `polynomialListBound`: the field-size polynomial bound from a prefactor and exponent.
-* `CapacityGapCertificate`: an exact decoder, a `Code.Lambda` bound, and the oversized-threshold
-  empty-list property.
+* `CapacityGapCertificate`: an exact decoder and a `Code.Lambda` bound.
 * `CapacityGapCertificate.pointwiseListBound`: the decoder certificate bounds each polynomial
   agreement list and makes it empty above the block length.
 * `CapacityGapCertificate.ofDecoderCertificate` and
@@ -62,41 +61,35 @@ structure CapacityGapCertificate (delta : ℝ) {ι F : Type*} [Semiring F] [Deci
     [Fintype ι] (domain : ι ↪ F) (messageDim listBound : ℕ) where
   /-- An exact decoder for the integral agreement threshold. -/
   decoderCertificate : DecoderCertificate domain messageDim
-    (agreementThreshold delta (Fintype.card ι) messageDim) listBound
+    (capacityAgreementThreshold delta (Fintype.card ι) messageDim) listBound
   /-- The canonical maximized point-list bound at the capacity-gap radius. -/
   lambda_le :
     Code.Lambda (ReedSolomon.code domain messageDim : Set (ι → F))
       (capacityRadius delta (Fintype.card ι) messageDim) ≤ (listBound : ℕ∞)
-  /-- The requested list is empty when its integral threshold exceeds the block length. -/
-  empty_of_threshold_exceeds :
-    Fintype.card ι < agreementThreshold delta (Fintype.card ι) messageDim →
-      ∀ received, decoderCertificate.decoder received = ∅
 
 /-- Package an exact decoder and a `Lambda` bound into a capacity-gap certificate. -/
 def CapacityGapCertificate.ofDecoderCertificate {delta : ℝ}
     {ι F : Type*} [Semiring F] [DecidableEq F] [Fintype ι] {domain : ι ↪ F}
     {messageDim listBound : ℕ}
     (decoderCertificate : DecoderCertificate domain messageDim
-      (agreementThreshold delta (Fintype.card ι) messageDim) listBound)
+      (capacityAgreementThreshold delta (Fintype.card ι) messageDim) listBound)
     (lambda_le :
       Code.Lambda (ReedSolomon.code domain messageDim : Set (ι → F))
         (capacityRadius delta (Fintype.card ι) messageDim) ≤ (listBound : ℕ∞)) :
     CapacityGapCertificate delta domain messageDim listBound where
   decoderCertificate := decoderCertificate
   lambda_le := lambda_le
-  empty_of_threshold_exceeds hThreshold received :=
-    decoderCertificate.decoder_eq_empty_of_card_lt hThreshold received
 
 /-- The pointwise combinatorial content for one received word. -/
 def PointwiseListBound {ι F : Type*} [Semiring F] [DecidableEq F] [Fintype ι]
     (delta : ℝ) (domain : ι ↪ F) (messageDim listBound : ℕ)
     (received : ι → F) : Prop :=
   (agreeingPolynomials domain messageDim
-      (agreementThreshold delta (Fintype.card ι) messageDim) received).encard ≤
+      (capacityAgreementThreshold delta (Fintype.card ι) messageDim) received).encard ≤
         (listBound : ℕ∞) ∧
-    (Fintype.card ι < agreementThreshold delta (Fintype.card ι) messageDim →
+    (Fintype.card ι < capacityAgreementThreshold delta (Fintype.card ι) messageDim →
       agreeingPolynomials domain messageDim
-        (agreementThreshold delta (Fintype.card ι) messageDim) received = ∅)
+        (capacityAgreementThreshold delta (Fintype.card ι) messageDim) received = ∅)
 
 /-- A capacity-gap certificate supplies the pointwise polynomial-list bound at every received
 word. -/
@@ -107,11 +100,11 @@ theorem CapacityGapCertificate.pointwiseListBound {delta : ℝ}
     (received : ι → F) :
     PointwiseListBound delta domain messageDim listBound received := by
   have hSet : agreeingPolynomials domain messageDim
-      (agreementThreshold delta (Fintype.card ι) messageDim) received =
+      (capacityAgreementThreshold delta (Fintype.card ι) messageDim) received =
     (certificate.decoderCertificate.decoder received :
       Set (MessagePolynomial F messageDim)) := by
     ext p
-    change agreementThreshold delta (Fintype.card ι) messageDim ≤
+    change capacityAgreementThreshold delta (Fintype.card ι) messageDim ≤
         Code.agree (ReedSolomon.evalOnPoints domain p) received ↔
       p ∈ certificate.decoderCertificate.decoder received
     exact ⟨certificate.decoderCertificate.mem_of_agreement_le,
@@ -133,7 +126,7 @@ theorem closeCodewordsRel_eq_eval_image_agreeingPolynomials
         (capacityRadius delta (Fintype.card ι) messageDim) =
       (fun p : MessagePolynomial F messageDim => ReedSolomon.evalOnPoints domain p) ''
         agreeingPolynomials domain messageDim
-          (agreementThreshold delta (Fintype.card ι) messageDim) received := by
+          (capacityAgreementThreshold delta (Fintype.card ι) messageDim) received := by
   ext codeword
   rw [Code.mem_closeCodewordsRel_iff]
   constructor
@@ -145,14 +138,14 @@ theorem closeCodewordsRel_eq_eval_image_agreeingPolynomials
     let message : MessagePolynomial F messageDim :=
       ⟨p, Polynomial.mem_degreeLT.mpr hDegree⟩
     refine ⟨message, ?_, rfl⟩
-    change agreementThreshold delta (Fintype.card ι) messageDim ≤
+    change capacityAgreementThreshold delta (Fintype.card ι) messageDim ≤
       Code.agree (ReedSolomon.evalOnPoints domain message) received
-    exact (relHammingDist_le_capacityRadius_iff_agreementThreshold_le
+    exact (relHammingDist_le_capacityRadius_iff_capacityAgreementThreshold_le
       hdelta hn _ _).mp hDistance
   · rintro ⟨message, hAgreement, rfl⟩
     refine ⟨ReedSolomon.evalOnPoints_mem_code_of_degree_lt
       (Polynomial.mem_degreeLT.mp message.2), ?_⟩
-    exact (relHammingDist_le_capacityRadius_iff_agreementThreshold_le
+    exact (relHammingDist_le_capacityRadius_iff_capacityAgreementThreshold_le
       hdelta hn _ _).mpr hAgreement
 
 /-- The Lambda bound associated with a pointwise bound on polynomial agreement lists. -/
@@ -162,7 +155,8 @@ theorem lambda_le_of_forall_agreeingPolynomials_encard_le
     (listBound : ℕ∞)
     (hBound : ∀ received : ι → F,
       (agreeingPolynomials domain messageDim
-        (agreementThreshold delta (Fintype.card ι) messageDim) received).encard ≤ listBound) :
+        (capacityAgreementThreshold delta (Fintype.card ι) messageDim) received).encard ≤
+          listBound) :
     Code.Lambda (ReedSolomon.code domain messageDim : Set (ι → F))
       (capacityRadius delta (Fintype.card ι) messageDim) ≤ listBound := by
   rw [Code.Lambda_le_iff_forall_encard_le]
@@ -176,10 +170,10 @@ def CapacityGapCertificate.ofDecoderCertificateAndPointwiseBound {delta : ℝ}
     (hdelta : 0 ≤ delta) {ι F : Type*} [Semiring F] [DecidableEq F] [Fintype ι]
     (hn : 0 < Fintype.card ι) {domain : ι ↪ F} {messageDim listBound : ℕ}
     (decoderCertificate : DecoderCertificate domain messageDim
-      (agreementThreshold delta (Fintype.card ι) messageDim) listBound)
+      (capacityAgreementThreshold delta (Fintype.card ι) messageDim) listBound)
     (hBound : ∀ received : ι → F,
       (agreeingPolynomials domain messageDim
-        (agreementThreshold delta (Fintype.card ι) messageDim) received).encard ≤
+        (capacityAgreementThreshold delta (Fintype.card ι) messageDim) received).encard ≤
           (listBound : ℕ∞)) :
     CapacityGapCertificate delta domain messageDim listBound :=
   CapacityGapCertificate.ofDecoderCertificate decoderCertificate
@@ -193,13 +187,13 @@ def CapacityGapCertificate.ofPointwiseBound {delta : ℝ}
     {messageDim listBound : ℕ}
     (hBound : ∀ received : ι → F,
       (agreeingPolynomials domain messageDim
-        (agreementThreshold delta (Fintype.card ι) messageDim) received).encard ≤
+        (capacityAgreementThreshold delta (Fintype.card ι) messageDim) received).encard ≤
           (listBound : ℕ∞)) :
     CapacityGapCertificate delta domain messageDim listBound := by
   classical
   let finiteList := fun received ↦ Set.finite_of_encard_le_coe (hBound received)
   let decoderCertificate : DecoderCertificate domain messageDim
-      (agreementThreshold delta (Fintype.card ι) messageDim) listBound := {
+      (capacityAgreementThreshold delta (Fintype.card ι) messageDim) listBound := {
     enumerate := fun received ↦ (finiteList received).toFinset
     isExact := by
       intro received p
@@ -228,19 +222,6 @@ def UniformPrimeFieldCapacityListBound : Prop :=
           Nonempty (CapacityGapCertificate delta domain messageDim
             (polynomialListBound fieldSize listFactor listExponent))
 
-/-- A uniform capacity-gap certificate bounds the polynomial list at every received word. -/
-theorem UniformPrimeFieldCapacityListBound.exists_uniform_pointwise_bound
-    (h : UniformPrimeFieldCapacityListBound) {delta : ℝ}
-    (hdelta : 0 < delta) (hOne : delta < 1) :
-    ∃ N B E : ℕ, 0 < B ∧ ∀ n k q : ℕ,
-      N ≤ n → 0 < k → k ≤ n → q.Prime → n ≤ q →
-      ∀ (domain : Fin n ↪ ZMod q) (received : Fin n → ZMod q),
-        PointwiseListBound delta domain k (polynomialListBound q B E) received := by
-  obtain ⟨N, B, E, hB, hCertificate⟩ := h delta hdelta hOne
-  refine ⟨N, B, E, hB, fun n k q hn hk hkn hq hnq domain received ↦ ?_⟩
-  obtain ⟨certificate⟩ := hCertificate n k q hn hk hkn hq hnq domain
-  exact certificate.pointwiseListBound received
-
 /-- Uniform certificates at gaps of at least one quarter. For gaps below one half, every list has
 strictly fewer than four times the field size elements; at least one half, each has size at most
 one. -/
@@ -257,7 +238,7 @@ def QuarterGapListBound : Prop :=
             (delta < (1 / 2 : ℝ) →
               ∀ received : Fin blockLength → ZMod fieldSize,
                 (agreeingPolynomials domain messageDim
-                  (agreementThreshold delta blockLength messageDim) received).encard <
+                  (capacityAgreementThreshold delta blockLength messageDim) received).encard <
                     ((4 * fieldSize : ℕ) : ℕ∞))
 
 /-- Below gap one quarter, weighted-support parameters give list bounds `B(delta) * q^(2d)`

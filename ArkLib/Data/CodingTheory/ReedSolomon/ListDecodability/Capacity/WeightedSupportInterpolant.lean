@@ -63,32 +63,32 @@ private theorem exists_prescribed_weightedSupport_construction_core
       let H : ℝ := harmonic (d - 1)
       let m := Nat.ceil (100 * (d : ℝ) ^ 2 * H)
       8 * m ≤ n)
-    (hnq : n ≤ q) (hA : agreementThreshold δ n k ≤ n) :
+    (hnq : n ≤ q) (hA : capacityAgreementThreshold δ n k ≤ n) :
     let d := Nat.ceil (Real.exp (xi / δ))
     let H : ℝ := harmonic (d - 1)
     let m := Nat.ceil (100 * (d : ℝ) ^ 2 * H)
     let K := max k (Nat.floor (δ * n / 2))
     ∃ construction : HiddenDerivativeInterpolationCertificate
-        (k := k) (A := agreementThreshold δ n k) d m domain received,
+        (k := k) (A := capacityAgreementThreshold δ n k) d m domain received,
       construction.ambientDim = K ∧ jetTotalDegree construction.interpolant < 2 * m := by
   let d := Nat.ceil (Real.exp (xi / δ))
   let H : ℝ := harmonic (d - 1)
   let m := Nat.ceil (100 * (d : ℝ) ^ 2 * H)
   let K := max k (Nat.floor (δ * n / 2))
   let D := K - 1
-  let A := agreementThreshold δ n k
+  let A := capacityAgreementThreshold δ n k
   let g := rateGap δ ((D : ℝ) / n)
   let W := Nat.floor ((1 + theta * g) * d * m / H)
   have hblock' : 8 * m ≤ n := by simpa only [m, H, d] using hblock
   have hA' : k + ⌈δ * n⌉₊ ≤ n := by
-    simpa only [agreementThreshold] using hA
+    simpa only [capacityAgreementThreshold] using hA
   have hb := prescribedBlockBounds δ n k hδ hδmax.le
     (by simpa only [H, d, m] using hblock) hA'
   have hb' :
       0 < n ∧ 0 < D ∧ d < D ∧ δ / 3 ≤ (D : ℝ) / n ∧
         (D : ℝ) / n ≤ 1 - δ ∧ K ≤ n ∧
           (D : ℝ) * (1 + g) ≤ A := by
-    simpa only [d, K, D, A, g, xi, agreementThreshold, rateGap] using hb
+    simpa only [d, K, D, A, g, xi, capacityAgreementThreshold, rateGap] using hb
   obtain ⟨hn, hD, hdD, hρlo, hρhi, hKn, hslack⟩ := hb'
   have hρ : 0 < (D : ℝ) / n :=
     div_pos (Nat.cast_pos.mpr hD) (Nat.cast_pos.mpr hn)
@@ -160,12 +160,12 @@ theorem exists_prescribed_weightedSupport_construction
     (domain : Fin n ↪ ZMod q) (received : Fin n → ZMod q)
     (hδ : 0 < δ) (hδmax : δ < 1 / 4) (hk : 0 < k)
     (hblock : 8 * weightedSupportMultiplicity (capacityDerivativeOrder δ) ≤ n)
-    (hnq : n ≤ q) (hA : agreementThreshold δ n k ≤ n) :
+    (hnq : n ≤ q) (hA : capacityAgreementThreshold δ n k ≤ n) :
     let d := capacityDerivativeOrder δ
     let m := weightedSupportMultiplicity (capacityDerivativeOrder δ)
     let K := weightedSupportAmbientDimension δ n k
     ∃ construction : HiddenDerivativeInterpolationCertificate
-        (k := k) (A := agreementThreshold δ n k) d m domain received,
+        (k := k) (A := capacityAgreementThreshold δ n k) d m domain received,
       construction.ambientDim = K ∧ jetTotalDegree construction.interpolant < 2 * m := by
   let d := Nat.ceil (Real.exp (xi / δ))
   let m := Nat.ceil (100 * (d : ℝ) ^ 2 * harmonic (d - 1))

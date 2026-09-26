@@ -57,14 +57,14 @@ theorem exists_exceptional_exactPowerAgreement_with_prescribed_stageBounds
     (hblock : 8 * Nat.ceil
       (100 * (Nat.ceil (Real.exp (xi / δ)) : ℝ) ^ 2 *
         harmonic (Nat.ceil (Real.exp (xi / δ)) - 1)) ≤ n)
-    (hA : agreementThreshold δ n k ≤ n)
+    (hA : capacityAgreementThreshold δ n k ≤ n)
     (hchar :
       let d := Nat.ceil (Real.exp (xi / δ))
       let m := Nat.ceil (100 * (d : ℝ) ^ 2 * harmonic (d - 1))
       let ν := 2 * m - 1
       let K := max k (Nat.floor (δ * n / 2))
       ringChar F = 0 ∨ max (K - 1) ν < ringChar F) :
-    let A := agreementThreshold δ n k
+    let A := capacityAgreementThreshold δ n k
     let d := Nat.ceil (Real.exp (xi / δ))
     let m := Nat.ceil (100 * (d : ℝ) ^ 2 * harmonic (d - 1))
     let ν := 2 * m - 1
@@ -85,7 +85,7 @@ theorem exists_exceptional_exactPowerAgreement_with_prescribed_stageBounds
         HasExactPowerAgreement domain values iota k z P := by
   classical
   dsimp only
-  let A := agreementThreshold δ n k
+  let A := capacityAgreementThreshold δ n k
   let d := Nat.ceil (Real.exp (xi / δ))
   let m := Nat.ceil (100 * (d : ℝ) ^ 2 * harmonic (d - 1))
   let ν := 2 * m - 1
@@ -133,7 +133,7 @@ theorem exists_exceptional_exactPowerAgreement_of_prescribedCurve {F E : Type u}
     (hblock : 8 * Nat.ceil
       (100 * (Nat.ceil (Real.exp (xi / δ)) : ℝ) ^ 2 *
         harmonic (Nat.ceil (Real.exp (xi / δ)) - 1)) ≤ n)
-    (hA : agreementThreshold δ n k ≤ n)
+    (hA : capacityAgreementThreshold δ n k ≤ n)
     (hchar :
       let d := Nat.ceil (Real.exp (xi / δ))
       let m := Nat.ceil (100 * (d : ℝ) ^ 2 * harmonic (d - 1))
@@ -144,12 +144,12 @@ theorem exists_exceptional_exactPowerAgreement_of_prescribedCurve {F E : Type u}
       (exceptional.card : ℝ) ≤ (ℓ : ℝ) * prescribedProductAgreementConstant δ *
         (n : ℝ) ^ (Nat.ceil (Real.exp (xi / δ)) + 1) ∧
       ∀ z ∉ exceptional, ∀ P : E[X], P.degree < k →
-        agreementThreshold δ n k ≤
+        capacityAgreementThreshold δ n k ≤
           (polynomialAgreementSet (domain.trans ⟨iota, iota.injective⟩)
             (powerBatchedWord (fun t i ↦ iota (values t i)) z) P).card →
         HasExactPowerAgreement domain values iota k z P := by
   classical
-  let A := agreementThreshold δ n k
+  let A := capacityAgreementThreshold δ n k
   let d := Nat.ceil (Real.exp (xi / δ))
   let m := Nat.ceil (100 * (d : ℝ) ^ 2 * harmonic (d - 1))
   let ν := 2 * m - 1

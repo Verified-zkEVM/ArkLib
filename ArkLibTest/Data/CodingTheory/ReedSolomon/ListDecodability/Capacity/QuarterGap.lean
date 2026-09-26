@@ -36,7 +36,7 @@ private def finDomain {n q : ℕ} (hnq : n ≤ q) : Fin n ↪ ZMod q where
 
 /-- With two evaluation points, the threshold at gap one quarter is two. -/
 example :
-    (agreeingPolynomials boolDomain 1 (agreementThreshold (1 / 4) 2 1)
+    (agreeingPolynomials boolDomain 1 (capacityAgreementThreshold (1 / 4) 2 1)
       (fun _ : Bool => 0)).encard < (2 : ℕ∞) := by
   exact agreeingPolynomials_encard_lt_blockLength_of_quarter
     (ι := Bool) (F := ZMod 3) (delta := 1 / 4) (by norm_num) boolDomain
@@ -44,7 +44,7 @@ example :
 
 /-- At the half-gap threshold, the same two-coordinate list has size at most one. -/
 example :
-    (agreeingPolynomials boolDomain 1 (agreementThreshold (1 / 2) 2 1)
+    (agreeingPolynomials boolDomain 1 (capacityAgreementThreshold (1 / 2) 2 1)
       (fun _ : Bool => 0)).encard ≤ 1 := by
   exact agreeingPolynomials_encard_le_one_of_half
     (ι := Bool) (F := ZMod 3) (delta := 1 / 2) (by norm_num) boolDomain
@@ -54,7 +54,7 @@ example :
 example {F : Type*} [Field F] [DecidableEq F] {delta : ℝ} {n k : ℕ}
     (hdelta : (1 / 4 : ℝ) ≤ delta) (domain : Fin n ↪ F)
     (hk : 0 < k) (hkn : k ≤ n) (received : Fin n → F) :
-    (agreeingPolynomials domain k (agreementThreshold delta n k) received).encard <
+    (agreeingPolynomials domain k (capacityAgreementThreshold delta n k) received).encard <
       (n : ℕ∞) := by
     simpa only [Fintype.card_fin] using
     agreeingPolynomials_encard_lt_blockLength_of_quarter
@@ -72,7 +72,7 @@ example :
           (∀ received, (certificate.decoderCertificate.decoder received).card ≤ 4 * q) ∧
           PointwiseListBound (1 / 4) domain 1 (4 * q) (fun _ => 0) ∧
           ∀ received : Fin n → ZMod q,
-            (agreeingPolynomials domain 1 (agreementThreshold (1 / 4) n 1)
+            (agreeingPolynomials domain 1 (capacityAgreementThreshold (1 / 4) n 1)
               received).encard < ((4 * q : ℕ) : ℕ∞) := by
   obtain ⟨threshold, hThreshold⟩ :=
     quarter_gap_list_bound (1 / 4) (by norm_num) (by norm_num)
@@ -87,7 +87,7 @@ example :
       Nonempty (CapacityGapCertificate (1 / 4) domain 1 (4 * q)) ∧
         ((1 / 4 : ℝ) < (1 / 2 : ℝ) →
           ∀ received : Fin n → ZMod q,
-            (agreeingPolynomials domain 1 (agreementThreshold (1 / 4) n 1)
+            (agreeingPolynomials domain 1 (capacityAgreementThreshold (1 / 4) n 1)
               received).encard < ((4 * q : ℕ) : ℕ∞)) := by
     have hHalf : ¬ (1 / 2 : ℝ) ≤ (1 / 4 : ℝ) := by norm_num
     simpa only [ite_eq_right hHalf] using hInstance
@@ -100,5 +100,5 @@ example :
 /-- At zero coordinates no list can have size strictly less than the block length. -/
 example (received : Fin 0 → ZMod 2) :
     ¬ (agreeingPolynomials emptyDomain 0
-      (agreementThreshold (1 / 4) 0 0) received).encard < (0 : ℕ∞) := by
+      (capacityAgreementThreshold (1 / 4) 0 0) received).encard < (0 : ℕ∞) := by
   simp

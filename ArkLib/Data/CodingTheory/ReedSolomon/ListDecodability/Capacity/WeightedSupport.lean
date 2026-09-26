@@ -65,7 +65,7 @@ theorem weightedSupport_capacity_list_bound_four_mul
   let d := capacityDerivativeOrder δ
   let m := weightedSupportMultiplicity d
   let K := weightedSupportAmbientDimension δ n k
-  let A := agreementThreshold δ n k
+  let A := capacityAgreementThreshold δ n k
   have hn : 0 < n := hk.trans_le hkn
   have emptyList (received : Fin n → ZMod q) (hAn : n < A) :
       agreeingPolynomials domain k A received = ∅ := by
@@ -121,7 +121,7 @@ theorem weightedSupport_capacity_list_bound_four_mul
       (by simpa only [d, m, A, Fintype.card_fin] using pointwiseTwo)⟩
   · intro hlarge
     have hlarge' : 2 * (m * A + d - K) ≤ q ^ 1 := by
-      simpa only [LargeFieldCondition, agreementThreshold, d, m, K, A, pow_one] using hlarge
+      simpa only [LargeFieldCondition, capacityAgreementThreshold, d, m, K, A, pow_one] using hlarge
     exact ⟨CapacityGapCertificate.ofPointwiseBound hδ.le
       (by simpa only [Fintype.card_fin] using hn) (domain := domain)
       (by
@@ -135,7 +135,9 @@ theorem weightedSupport_capacity_list_bound : WeightedSupportListBound := by
   let m := weightedSupportMultiplicity d
   have hm : 0 < m :=
     (weightedSupportMultiplicity_pos_iff).2 (by
-      have := (capacityDerivativeOrder_lower hδ hδmax).1
+      have := (HiddenDerivative.WeightedSupportParameters.prescribed_order_lower
+        δ hδ hδmax.le).1
+      rw [← capacityDerivativeOrder_eq_ceil hδmax] at this
       dsimp only [d]
       omega)
   exact ⟨hm, 4 * m, by positivity,

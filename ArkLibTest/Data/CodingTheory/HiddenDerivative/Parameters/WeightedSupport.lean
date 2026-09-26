@@ -77,8 +77,8 @@ example :
       8 * m ≤ n := by
     dsimp only
     exact Nat.le_refl _
-  have hA : agreementThreshold δ n 1 ≤ n := by
-    apply (agreementThreshold_le_iff_real hδ.le n 1 n).mpr
+  have hA : capacityAgreementThreshold δ n 1 ≤ n := by
+    apply (capacityAgreementThreshold_le_iff_real hδ.le n 1 n).mpr
     have hnR : (n : ℝ) = 8 * m := by norm_num [n]
     rw [hnR]
     dsimp [δ]
@@ -121,8 +121,9 @@ example :
 /-! ### Capacity parameters -/
 
 /-- At `δ = 1 / 8` the order is at least `48000`. -/
-example : 48000 ≤ capacityDerivativeOrder (1 / 8) :=
-  (capacityDerivativeOrder_lower (by norm_num) (by norm_num)).1
+example : 48000 ≤ capacityDerivativeOrder (1 / 8) := by
+  rw [capacityDerivativeOrder_eq_ceil (by norm_num)]
+  exact (prescribed_order_lower (1 / 8) (by norm_num) (by norm_num)).1
 
 /-- At `δ = 1/8`, `n = 8m` and `k = m`, the capacity bounds hold with positive `k`. -/
 example :
@@ -136,8 +137,9 @@ example :
   let n := 8 * m
   let K := weightedSupportAmbientDimension δ n m
   have hd : 2 ≤ capacityDerivativeOrder δ := by
-    have h := (capacityDerivativeOrder_lower (δ := δ) (by norm_num [δ])
+    have h := (prescribed_order_lower δ (by norm_num [δ])
       (by norm_num [δ])).1
+    rw [← capacityDerivativeOrder_eq_ceil (by norm_num [δ])] at h
     omega
   have hm : 0 < m := weightedSupportMultiplicity_pos_iff.mpr hd
   have hceil : ⌈δ * (n : ℝ)⌉₊ = m := by
@@ -147,10 +149,20 @@ example :
     dsimp [n]
     omega
   have hblock : 8 * m ≤ n := by dsimp [n]; omega
-  have h := capacity_block_bounds (δ := δ) (n := n) (k := m)
-    (by norm_num [δ]) (by norm_num [δ]) (by change 8 * m ≤ n; exact hblock) hA
-  rcases h with ⟨hn, hD, hk, hKhi⟩
-  exact ⟨hm, hn, hD, hk, hKhi⟩
+  have horder : capacityDerivativeOrder δ = ⌈Real.exp (xi / δ)⌉₊ :=
+    capacityDerivativeOrder_eq_ceil (by norm_num [δ])
+  have hblock' :
+      let d := ⌈Real.exp (xi / δ)⌉₊
+      let H : ℝ := harmonic (d - 1)
+      let m' := ⌈100 * (d : ℝ) ^ 2 * H⌉₊
+      8 * m' ≤ n := by
+    simpa only [m, weightedSupportMultiplicity, horder] using hblock
+  have h := prescribedBlockBounds δ n m (by norm_num [δ]) (by norm_num [δ]) hblock' hA
+  rcases h with ⟨hn, -, hD, -, -, hKhi, -⟩
+  have hk : m ≤ K := Nat.le_max_left _ _
+  have hD' : capacityDerivativeOrder δ < K - 1 := by
+    simpa only [K, weightedSupportAmbientDimension, horder] using hD
+  exact ⟨hm, hn, hD', hk, hKhi⟩
 
 /-! ### Dimension inputs -/
 

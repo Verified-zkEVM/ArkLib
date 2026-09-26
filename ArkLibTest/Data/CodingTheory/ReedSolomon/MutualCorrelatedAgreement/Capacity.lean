@@ -40,9 +40,9 @@ local instance : DecidableEq (AlgebraicClosure ℚ) := Classical.decEq _
 
 /-- At gap `1 / 5`, the order-one agreement threshold of a block of length `8 m` fits in the
 block. -/
-private theorem agreementThreshold_one_fifth_le (m : ℕ) (hm : 0 < m) :
-    agreementThreshold (1 / 5 : ℝ) (8 * m) 1 ≤ 8 * m := by
-  apply (agreementThreshold_le_iff_real (by norm_num) (8 * m) 1 (8 * m)).mpr
+private theorem capacityAgreementThreshold_one_fifth_le (m : ℕ) (hm : 0 < m) :
+    capacityAgreementThreshold (1 / 5 : ℝ) (8 * m) 1 ≤ 8 * m := by
+  apply (capacityAgreementThreshold_le_iff_real (by norm_num) (8 * m) 1 (8 * m)).mpr
   have hmR : (1 : ℝ) ≤ m := by exact_mod_cast hm
   push_cast
   linarith
@@ -68,7 +68,7 @@ example :
         exact_mod_cast h⟩
     let f : Fin n → ℚ := fun i => (i : ℚ)
     let g : Fin n → ℚ := fun _ => 0
-    Nonempty (SymbolicReceivedCurve.Certificate (agreementThreshold δ n 1) 1 1 ν d
+    Nonempty (SymbolicReceivedCurve.Certificate (capacityAgreementThreshold δ n 1) 1 1 ν d
       (12 * ν - 1) centers (fun i => receivedLine (f i) (g i))) := by
   let δ : ℝ := 1 / 5
   let d := Nat.ceil (Real.exp (xi / δ))
@@ -105,7 +105,7 @@ example :
       8 * m ≤ n := by
     dsimp only
     exact Nat.le_refl _
-  have hA : agreementThreshold δ n 1 ≤ n := agreementThreshold_one_fifth_le m hm
+  have hA : capacityAgreementThreshold δ n 1 ≤ n := capacityAgreementThreshold_one_fifth_le m hm
   have hparams := exists_prescribed_correlated_parameters (F := ℚ) δ n 1 centers f g
     hδ hδmax hblock hA (Or.inl (by simp))
   have _hprescribed := exists_exceptional_exactPowerAgreement_of_prescribedCurve
@@ -169,7 +169,7 @@ example :
       8 * m ≤ n := by
     dsimp only
     exact Nat.le_refl _
-  have hA : agreementThreshold δ n 1 ≤ n := agreementThreshold_one_fifth_le m hm
+  have hA : capacityAgreementThreshold δ n 1 ≤ n := capacityAgreementThreshold_one_fifth_le m hm
   obtain ⟨exceptional, hbound, hgood⟩ := exists_prescribedLine_exactCorrelatedPair
     (F := ℚ) (E := AlgebraicClosure ℚ) δ n 1 centers f g iota hδ hδmax (by norm_num)
     (by simpa [xi] using hblock) hA
