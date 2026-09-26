@@ -238,19 +238,21 @@ python3 -m pip install leanblueprint
 ## CI Mapping
 
 - [`../../.github/workflows/ci.yml`](../../.github/workflows/ci.yml)
-  runs the timing-enabled main build on PRs and pushes to `main`, measures a
-  clean build, a warm rebuild, and the `./scripts/validate.sh` path, runs the
+  runs the timing-enabled main build on PRs, merge groups, pushes to `main`, and a nightly
+  schedule. It builds incrementally from the latest `main` build (see
+  [Build Cache](#build-cache)), times the library build, the native build, and the
+  `./scripts/validate.sh` path, runs the
   source trust inventory plus axiom-sweep fixture matrix and library regression baseline
   (all axiom verdicts enforcing), and reuses that build for blueprint/declaration
   validation and API-documentation generation. The PR-head job has read-only contents
   permission; on pushes, a separate job deploys its generated static-site artifact with
   Pages/OIDC permission. It uploads timing artifacts consumed by the trusted
   [`../../.github/workflows/build-timing-report.yml`](../../.github/workflows/build-timing-report.yml)
-  workflow, which computes the baseline comparison and posts the PR report.
+  workflow, which renders the report and posts it on the PR.
 - [`../../.github/workflows/interaction.yml`](../../.github/workflows/interaction.yml)
   provides focused compilation and zero-warning checks for typed Interaction production and
   acceptance modules. It also runs on feature-base stacked PRs. Its read-only job restores,
-  but never saves, the shared `.lake` cache and does not retain checkout credentials. Passing
+  but never saves, the dependency and build caches and does not retain checkout credentials. Passing
   this check does not waive the full validation/axiom gate for the eventual `main` target.
 - [`../../.github/workflows/check-imports.yml`](../../.github/workflows/check-imports.yml)
   checks that `ArkLib.lean` matches the tracked source tree.
@@ -266,26 +268,45 @@ The CI validation path includes the Lean-native source-policy gate. PR-only timi
 comments remain attached to the ordinary PR run and are intentionally skipped for merge groups,
 which do not carry a pull-request payload.
 
+## Build Cache
+
+CI keeps two caches. The dependency cache holds `.lake/packages` and is keyed by
+`lake-manifest.json` and `lean-toolchain`. The build cache holds ArkLib's own `.lake/build`; every
+`main` run saves one, and every run restores the newest. Lake decides what to rebuild from content
+hashes of each module's source and imports, so a restored build is only a starting point: a PR
+rebuilds the modules it changed and everything that imports them, and nothing else. Lake stores
+each module's messages in its trace, so warnings from modules it does not rebuild are replayed and
+the warning budgets still see them.
+
+Only `main` saves caches. Pull request and merge-queue runs restore them and discard their own
+build, so untrusted code never publishes an artifact another run loads, and the repository's 10 GB
+cache budget holds `main` builds only. For the same reason a push to `main` waits for the running
+`main` build instead of cancelling it.
+
+The nightly scheduled run, and a manual run with `clean_build` set, skips the build cache and
+builds from scratch. That keeps an absolute build-time trend and checks that nothing passes only
+because of stale cached output.
+
 ## Manual Timing Helper
 
 If you need to reproduce the timing workflow locally, the same helper script can
 capture a measurement and render a report:
 
 ```bash
-bash scripts/build_timing_report.sh run clean_build /tmp/build-timing.jsonl -- \
-  bash -eo pipefail -c 'rm -rf .lake/build && lake build'
-bash scripts/build_timing_report.sh run warm_rebuild /tmp/build-timing.jsonl -- \
+export BUILD_TIMING_LOG_DIR=/tmp/build-timing
+bash scripts/build_timing_report.sh run library_build /tmp/build-timing/results.jsonl -- \
   bash -eo pipefail -c 'lake build'
-bash scripts/build_timing_report.sh run native_build /tmp/build-timing.jsonl -- \
+bash scripts/build_timing_report.sh run native_build /tmp/build-timing/results.jsonl -- \
   bash -eo pipefail -c 'lake build toyproblem-runtime hachi-runtime lint-style'
-bash scripts/build_timing_report.sh run test_path /tmp/build-timing.jsonl -- \
+bash scripts/build_timing_report.sh run test_path /tmp/build-timing/results.jsonl -- \
   bash -eo pipefail -c './scripts/validate.sh'
-bash scripts/build_timing_report.sh render /tmp/build-timing.jsonl
+bash scripts/build_timing_report.sh render /tmp/build-timing/results.jsonl
 ```
 
 Read the rows in that order, because they share one tree and each leaves it warmer:
 
-- `clean_build` and `warm_rebuild` bracket the incremental-build signal.
+- `library_build` is `lake build` on whatever the build cache left: the changed modules and their
+  importers, or everything when no cache was restored.
 - `native_build` carries the `.c.o` chain that the compiled executables link — currently
   `toyproblem-runtime`, `hachi-runtime`, and `lint-style`. It is the row that swings on `.lake`
   cache state, so a dependency bump shows its cost here. **Adding a compiled executable to
@@ -296,13 +317,14 @@ Read the rows in that order, because they share one tree and each leaves it warm
   `--axioms` never appear in it.
 
 A row whose measurement could not be taken renders as `measurement failed`, not as a missing row.
-Per-target times are printed with the precision Lake reported (`22`, `3.5`, `0.770`); Lake emits
-whole seconds above 10s, so those figures are not accurate to two decimals.
 
-For PRs, the trusted reporter compares only with a successful timing artifact whose push SHA is
-the PR's exact measured base. If that artifact is unavailable or expired, the report says so and
-shows current measurements without inventing a substitute baseline. A previous PR update answers a
-different question and is therefore not used as the regression baseline.
+Wall time of an incremental build depends on how much the change invalidated, so it is not
+comparable across PRs. The per-module comparison is. Lake prints `Built <module> (<time>)` exactly
+for the modules it rebuilt, and `scripts/module_times.py` keeps a table of the latest such time
+for every module in `.lake/build/arklib-module-times.json`, which travels with the build cache.
+The report compares each rebuilt module against that table, and the table's sum before and after
+the run estimates clean-build compile time without running a clean build. Module times are printed
+with the precision Lake reported (`22`, `3.5`, `0.770`); Lake emits whole seconds above 10s.
 
 Timing artifacts include the PR head, actual measured checkout (normally GitHub's synthetic PR
 merge commit), exact base, dependency-manifest hash, exact/fallback cache state, and runner

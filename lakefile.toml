@@ -33,7 +33,7 @@ rev = "lean4.18.0"
 [[require]]
 name = "CompPoly"
 git = "https://github.com/Verified-zkEVM/CompPoly"
-rev = "v4.34.0-patch2"
+rev = "964dc5cd40d04360d546de54cc4caaf315047ccf"
 
 [[lean_lib]]
 name = "ArkLibLintPlugin"
