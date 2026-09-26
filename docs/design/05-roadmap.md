@@ -35,7 +35,7 @@ in the output oracle relation; it is not an extra final verifier query.
 
 ## Oracle composition sequence (C1–C8)
 
-C1 is implemented in this source revision. C2 is next; the remaining steps follow the
+C1 and C2 are implemented in this source revision. C3 is next; the remaining steps follow the
 dependencies below. The issues record implementation PRs and merge status.
 
 ```mermaid
@@ -79,22 +79,16 @@ available declarations. C1 required no dependency changes.
 
 ### C2 — Oracle path and access laws
 
-**Tracked in:** [issue #1223](https://github.com/Verified-zkEVM/ArkLib/issues/1223).
+**Implemented.** Tracked in [issue #1223](https://github.com/Verified-zkEVM/ArkLib/issues/1223).
 
-**Proposed PR:** `feat(interaction): prove append laws for oracle access`.
+The owning modules now connect oracle append to runtime trees and roles, concrete path append and
+split, accumulated access, and deterministic query answers. The laws reuse PolyFun's existing
+paths and decorations and the existing closing handler. They add no resource representation or
+executor. See [current status](00-current-status.md) for their scope.
 
-**Depends on:** none; may proceed alongside C1.
-
-Connect tree append and path splitting to the access accumulated by the actual path. Work in the
-owning modules: [`TypeTree`](../../ArkLib/Interaction/Oracle/TypeTree.lean),
-[`Access`](../../ArkLib/Interaction/Oracle/Access.lean), and
-[`RunSources`](../../ArkLib/Interaction/Oracle/RunSources.lean). Reuse existing path-composition,
-access-composition, and query-evaluation laws; prove the missing append-specific connections instead
-of defining another resource representation.
-
-**Acceptance check:** Use a public branch whose suffix shapes differ. Show that a query to the
-original oracle, a message sent in the prefix, and a message sent in the suffix each receive the
-same answer in the combined and split execution.
+The acceptance client uses two genuinely different suffix shapes, mixed prover/verifier roles,
+and distinct initial, prefix, and suffix oracle answers. This establishes the path and handler
+facts needed by C3; it does not yet prove that restricted verifier execution composes.
 
 ### C3 — Restricted verifier composition
 

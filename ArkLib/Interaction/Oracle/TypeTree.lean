@@ -220,7 +220,51 @@ theorem toBranchPath_oracle (Messages : Type u) (rest : PUnit.{u + 1} → TypeTr
     path.toBranchPath = ⟨PUnit.unit, ExecutionPath.toBranchPath path.2⟩ :=
   rfl
 
+/-- Public projection respects dependent append. The suffix is selected by the prefix's public
+structural path, while both execution paths retain their concrete oracle messages. -/
+@[simp]
+theorem toBranchPath_append (tree : TypeTree.{u})
+    (suffix : BranchPath tree → TypeTree.{u}) (path : ExecutionPath tree)
+    (rest : ExecutionPath (suffix path.toBranchPath)) :
+    ExecutionPath.toBranchPath
+      (PFunctor.FreeM.PathAlong.append runtimeLens tree suffix path rest) =
+      PFunctor.FreeM.Path.append tree suffix path.toBranchPath rest.toBranchPath :=
+  PFunctor.FreeM.PathAlong.projectPathAlong_append runtimeLens tree suffix path rest
+
+/-- Splitting a concrete append path and then projecting each piece agrees with splitting its
+public projection. The suffix stays indexed by the recovered prefix's public choices. -/
+theorem toBranchPath_split (tree : TypeTree.{u})
+    (suffix : BranchPath tree → TypeTree.{u})
+    (path : ExecutionPath (PFunctor.FreeM.append tree suffix)) :
+    let pieces := PFunctor.FreeM.PathAlong.split runtimeLens tree suffix path
+    PFunctor.FreeM.Path.split tree suffix path.toBranchPath =
+      ⟨ExecutionPath.toBranchPath pieces.1, ExecutionPath.toBranchPath pieces.2⟩ := by
+  let pieces := PFunctor.FreeM.PathAlong.split runtimeLens tree suffix path
+  have h := (PFunctor.FreeM.PathAlong.projectPathAlong_append runtimeLens tree suffix
+    pieces.1 pieces.2).symm.trans (congrArg
+      (PFunctor.FreeM.projectPathAlong runtimeLens (PFunctor.FreeM.append tree suffix))
+      (PFunctor.FreeM.PathAlong.append_split runtimeLens tree suffix path))
+  exact (PFunctor.FreeM.Path.split_append tree suffix _ _).symm.trans
+    (congrArg (PFunctor.FreeM.Path.split tree suffix) h) |>.symm
+
 end ExecutionPath
+
+/-- Erasing the oracle/public distinction commutes with append. Runtime suffix selection forgets
+oracle payloads and uses the prefix's public structural choices. -/
+theorem toTypeTree_append : (tree : TypeTree.{u}) →
+    (suffix : BranchPath tree → TypeTree.{u}) →
+    toTypeTree (PFunctor.FreeM.append tree suffix) =
+      PFunctor.FreeM.append tree.toTypeTree (fun path =>
+        (suffix (ExecutionPath.ofTypeTreePath path).toBranchPath).toTypeTree)
+  | .done, _ => rfl
+  | .public Moves rest, suffix => by
+      apply congrArg (_root_.Interaction.TypeTree.node Moves)
+      funext move
+      exact toTypeTree_append (rest move) (fun path => suffix ⟨move, path⟩)
+  | .oracle Messages rest, suffix => by
+      apply congrArg (_root_.Interaction.TypeTree.node Messages)
+      funext message
+      exact toTypeTree_append (rest PUnit.unit) (fun path => suffix ⟨PUnit.unit, path⟩)
 
 end TypeTree
 end Interaction.Oracle
