@@ -1,5 +1,5 @@
 {
-  "count": 85,
+  "count": 89,
   "entries": {
     "ABF26": {
       "authors": [
@@ -423,6 +423,30 @@
       "venue": "Journal of the ACM",
       "year": "2023"
     },
+    "BCPZZ26": {
+      "authors": [
+        "Joshua Brakensiek",
+        "Yeyuan Chen",
+        "Aaron Putterman",
+        "Zihan Zhang",
+        "Kai Zhe Zheng"
+      ],
+      "authors_text": "Joshua Brakensiek and Yeyuan Chen and Aaron Putterman and Zihan Zhang and Kai Zhe Zheng",
+      "doi": "",
+      "entry_type": "misc",
+      "fields": {
+        "author": "Joshua Brakensiek and Yeyuan Chen and Aaron Putterman and Zihan Zhang and Kai Zhe Zheng",
+        "howpublished": "Electronic Colloquium on Computational Complexity, Report TR26-164",
+        "title": "Algorithmic List Decoding of {Reed--Solomon} Codes up to Capacity in the Low-Rate Regime",
+        "url": "https://eccc.weizmann.ac.il/report/2026/164/",
+        "year": "2026"
+      },
+      "key": "BCPZZ26",
+      "title": "Algorithmic List Decoding of {Reed--Solomon} Codes up to Capacity in the Low-Rate Regime",
+      "url": "https://eccc.weizmann.ac.il/report/2026/164/",
+      "venue": "",
+      "year": "2026"
+    },
     "BCS16": {
       "authors": [
         "Ben-Sasson, Eli",
@@ -744,6 +768,50 @@
       "url": "https://eprint.iacr.org/2025/2010",
       "venue": "",
       "year": "2025"
+    },
+    "DKT26": {
+      "authors": [
+        "Quang Dao",
+        "Scott Duke Kominers",
+        "Justin Thaler"
+      ],
+      "authors_text": "Quang Dao and Scott Duke Kominers and Justin Thaler",
+      "doi": "",
+      "entry_type": "misc",
+      "fields": {
+        "author": "Quang Dao and Scott Duke Kominers and Justin Thaler",
+        "howpublished": "Cryptology {ePrint} Archive, Paper 2026/2056",
+        "title": "{Reed--Solomon} Codes Beyond {Johnson}: Efficient Decoding and Smaller Cryptographic Proofs",
+        "url": "https://eprint.iacr.org/2026/2056",
+        "year": "2026"
+      },
+      "key": "DKT26",
+      "title": "{Reed--Solomon} Codes Beyond {Johnson}: Efficient Decoding and Smaller Cryptographic Proofs",
+      "url": "https://eprint.iacr.org/2026/2056",
+      "venue": "",
+      "year": "2026"
+    },
+    "DKTZ26": {
+      "authors": [
+        "Quang Dao",
+        "Scott Duke Kominers",
+        "Justin Thaler",
+        "Kai Zhe Zheng"
+      ],
+      "authors_text": "Quang Dao and Scott Duke Kominers and Justin Thaler and Kai Zhe Zheng",
+      "doi": "",
+      "entry_type": "unpublished",
+      "fields": {
+        "author": "Quang Dao and Scott Duke Kominers and Justin Thaler and Kai Zhe Zheng",
+        "note": "Manuscript revision",
+        "title": "{Reed--Solomon} List Decoding and Mutual Correlated Agreement up to Capacity",
+        "year": "2026"
+      },
+      "key": "DKTZ26",
+      "title": "{Reed--Solomon} List Decoding and Mutual Correlated Agreement up to Capacity",
+      "url": "",
+      "venue": "",
+      "year": "2026"
     },
     "DP23": {
       "authors": [
@@ -1446,6 +1514,29 @@
       "url": "https://cacr.uwaterloo.ca/techreports/2010/cacr2010-10.pdf",
       "venue": "",
       "year": "2010"
+    },
+    "Kop15": {
+      "authors": [
+        "Kopparty, Swastik"
+      ],
+      "authors_text": "Kopparty, Swastik",
+      "doi": "",
+      "entry_type": "article",
+      "fields": {
+        "author": "Kopparty, Swastik",
+        "journal": "Theory of Computing",
+        "number": "5",
+        "pages": "149--182",
+        "title": "List-Decoding Multiplicity Codes",
+        "url": "https://theoryofcomputing.org/articles/v011a005/",
+        "volume": "11",
+        "year": "2015"
+      },
+      "key": "Kop15",
+      "title": "List-Decoding Multiplicity Codes",
+      "url": "https://theoryofcomputing.org/articles/v011a005/",
+      "venue": "Theory of Computing",
+      "year": "2015"
     },
     "LCH14": {
       "authors": [
