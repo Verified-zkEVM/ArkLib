@@ -10,9 +10,10 @@ public import ArkLib.Interaction.Oracle.LoggedExecution
 /-!
 # Paired logged executions
 
-`executeLogged` pairs a core run with the ordered source observations made during that run.
-The supported constructor accepts a reduction and its inputs, never separately supplied outputs
-and traces. Membership in a runner distribution remains the provenance criterion.
+`executeStrategiesLoggedRun` pairs native strategy execution with its ordered source observations.
+`executeLogged` prepares a reduction's prover in the same ambient program, then uses this runner.
+Both entry points retain outputs and traces from one execution. Membership in a runner distribution
+remains the provenance criterion.
 -/
 
 @[expose] public section
@@ -61,6 +62,46 @@ def closed (run : LoggedRun protocol initial Stmt Out OutP) := run.core.closed
 
 end LoggedRun
 
+/-- Execute native strategies once, retaining their paired core result and source observations. -/
+@[no_expose]
+def executeStrategiesLoggedRun {ι : Type u} {ambient : OracleSpec.{u, u} ι}
+    {protocol : Oracle.Protocol.{u}} {initial : PFunctor.{u, u}}
+    {Stmt : protocol.tree.BranchPath → Type u}
+    {Idx : protocol.tree.BranchPath → Type u}
+    {Obj : (path : protocol.tree.BranchPath) → Idx path → Type u}
+    {Out : (path : protocol.tree.BranchPath) → OracleFamily (Idx path) (Obj path)}
+    {OutP : protocol.tree.ExecutionPath → Type u}
+    (impl : QueryImpl (OracleSpec.ofPFunctor initial) Id)
+    (prover : Prover.Strategy ambient protocol.tree protocol.roles OutP)
+    (verifier : Verifier.Strategy ambient protocol.tree protocol.roles protocol.oracles initial
+      (TerminalClaim protocol initial Stmt Out)) :
+    OracleComp ambient (LoggedRun protocol initial Stmt Out OutP) := do
+  let result ← executeStrategiesLogged ambient protocol.tree protocol.roles protocol.oracles
+    initial impl prover verifier
+  return ⟨⟨result.path, impl, result.proverOut, result.verifierOut⟩, result.sourceLog⟩
+
+/-- Erasing native source instrumentation recovers the same ordinary core execution. -/
+theorem executeStrategiesLoggedRun_erase {ι : Type u} {ambient : OracleSpec.{u, u} ι}
+    {protocol : Oracle.Protocol.{u}} {initial : PFunctor.{u, u}}
+    {Stmt : protocol.tree.BranchPath → Type u}
+    {Idx : protocol.tree.BranchPath → Type u}
+    {Obj : (path : protocol.tree.BranchPath) → Idx path → Type u}
+    {Out : (path : protocol.tree.BranchPath) → OracleFamily (Idx path) (Obj path)}
+    {OutP : protocol.tree.ExecutionPath → Type u}
+    (impl : QueryImpl (OracleSpec.ofPFunctor initial) Id)
+    (prover : Prover.Strategy ambient protocol.tree protocol.roles OutP)
+    (verifier : Verifier.Strategy ambient protocol.tree protocol.roles protocol.oracles initial
+      (TerminalClaim protocol initial Stmt Out)) :
+    LoggedRun.core <$> executeStrategiesLoggedRun impl prover verifier =
+      executeStrategiesCore impl prover verifier := by
+  have h := executeStrategiesLogged_erase ambient protocol.tree protocol.roles protocol.oracles
+    initial impl prover verifier
+  have lifted := congrArg (fun program =>
+    (fun result => (⟨result.1, impl, result.2.1, result.2.2⟩ :
+      CoreRun protocol initial Stmt Out OutP)) <$> program) h
+  simpa only [executeStrategiesLoggedRun, executeStrategiesCore, map_bind, map_pure,
+    Functor.map_map, LoggedResult.erase, bind_pure_comp] using lifted
+
 /-- Run the prover setup and both strategies once, pairing the core result with its source log. -/
 @[no_expose]
 def executeLogged {ι : Type u} {ambient : OracleSpec.{u, u} ι}
@@ -76,9 +117,7 @@ def executeLogged {ι : Type u} {ambient : OracleSpec.{u, u} ι}
     (impl : QueryImpl (OracleSpec.ofPFunctor initial) Id) (stmt : StatementIn) (wit : WitnessIn) :
     OracleComp ambient (LoggedRun protocol initial Stmt Out OutP) := do
   let prover ← reduction.prover stmt wit
-  let result ← executeStrategiesLogged ambient protocol.tree protocol.roles protocol.oracles
-    initial impl prover (reduction.verifier stmt)
-  return ⟨⟨result.path, impl, result.proverOut, result.verifierOut⟩, result.sourceLog⟩
+  executeStrategiesLoggedRun impl prover (reduction.verifier stmt)
 
 /-- Erasing the log recovers the existing trace-free core executor as an open ambient program. -/
 theorem executeLogged_erase {ι : Type u} {ambient : OracleSpec.{u, u} ι}
@@ -94,15 +133,9 @@ theorem executeLogged_erase {ι : Type u} {ambient : OracleSpec.{u, u} ι}
     (impl : QueryImpl (OracleSpec.ofPFunctor initial) Id) (stmt : StatementIn) (wit : WitnessIn) :
     LoggedRun.core <$> executeLogged reduction impl stmt wit =
       executeCore reduction impl stmt wit := by
-  simp only [executeLogged, executeCore_eq_execute,
-    Reduction.execute, map_bind, map_pure, bind_assoc]
+  simp only [executeLogged, executeCore, map_bind]
   congr 1
   funext prover
-  have h := executeStrategiesLogged_erase ambient protocol.tree protocol.roles protocol.oracles
-    initial impl prover (reduction.verifier stmt)
-  have lifted := congrArg (fun program =>
-    (fun result => (⟨result.1, impl, result.2.1, result.2.2⟩ :
-      CoreRun protocol initial Stmt Out OutP)) <$> program) h
-  simpa only [Functor.map_map, LoggedResult.erase, bind_pure_comp] using lifted
+  exact executeStrategiesLoggedRun_erase impl prover (reduction.verifier stmt)
 
 end Interaction.Oracle
