@@ -155,7 +155,7 @@ theorem sparse_floor_exponent_budget
       ((Nat.floor (α * m) * W : ℕ) : ℝ) := by
     norm_num only [Nat.cast_mul]
     dsimp only [δ] at hWδ
-    nlinarith
+    linarith
   exact_mod_cast hreal.le
 
 /-- The numerics imply sparse existence — the probabilistic-method step, done by counting. -/
@@ -350,7 +350,7 @@ theorem sparse_ratio_base_bound
   have hdenLower : (1 - α) * m < ((m + 1 - a : ℕ) : ℝ) := by
     rw [Nat.cast_sub haLe]
     norm_num only [Nat.cast_add, Nat.cast_one]
-    nlinarith
+    linarith
   have hdenPos : (0 : ℝ) < (m + 1 - a : ℕ) :=
     (mul_pos hdenBase hmR).trans hdenLower
   apply (div_lt_div_iff₀ hdenPos hdenBase).2
@@ -969,7 +969,7 @@ theorem robust_minimum_distance_barrier :
           mul_le_mul_of_nonneg_right hαSecond hKOne.le
         _ = γ / 16 := by
           field_simp [ne_of_gt hKOne]
-        _ ≤ γ / 4 := by nlinarith
+        _ ≤ γ / 4 := by linarith
     have hqPower := small_alphabet_power_bound
       q params.dZero n α η K γ hα.le hη hK.le hqSmall
       hdZero hone hαK

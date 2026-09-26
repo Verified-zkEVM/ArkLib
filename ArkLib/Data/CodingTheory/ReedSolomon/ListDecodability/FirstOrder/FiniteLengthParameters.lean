@@ -59,20 +59,9 @@ theorem eta_le_finiteLengthSlack {eta : ℝ} {n : ℕ} :
 /-- The one-degree saving gives the exact absorption inequality `1/s ≤ n`. -/
 theorem finiteLengthSlack_inv_le_length {eta : ℝ} {n : ℕ}
     (heta : 0 ≤ eta) (hn : 0 < n) :
-    1 / finiteLengthSlack eta n ≤ n := by
+    1 / finiteLengthSlack eta n ≤ n :=
   have hn' : (0 : ℝ) < n := by exact_mod_cast hn
-  have hs : 0 < finiteLengthSlack eta n := by
-    unfold finiteLengthSlack
-    positivity
-  rw [div_le_iff₀ hs]
-  unfold finiteLengthSlack
-  have hone : (n : ℝ) * (1 / (n : ℝ)) = 1 := by
-    field_simp
-  calc
-    1 = (n : ℝ) * (1 / (n : ℝ)) := hone.symm
-    _ ≤ (n : ℝ) * (eta + 1 / (n : ℝ)) := by
-      apply mul_le_mul_of_nonneg_left _ hn'.le
-      linarith
+  (one_div_le (by unfold finiteLengthSlack; positivity) hn').2 (le_add_of_nonneg_left heta)
 
 private theorem div_finiteLengthSlack_pow_le_div_eta_pow
     {C eta : ℝ} {n : ℕ} (hC : 0 ≤ C) (heta : 0 < eta) (p : ℕ) :
@@ -105,23 +94,11 @@ theorem squarefreeListExpression_le_finiteLength
     (firstOrderCurveFiberStageOne (D + 1) B M (regularTaylorExponent D) : ℝ) * lambda +
         ordinaryDegreeEnvelope B M ≤
       7 * C ^ 3 * n / finiteLengthSlack eta n ^ 2 := by
-  let s := finiteLengthSlack eta n
-  let q := 1 / s
-  have hs : 0 < s := finiteLengthSlack_pos heta
-  have hq : 1 ≤ q := by
-    dsimp only [q]
-    exact (one_le_div hs).2 hsOne
-  have hB' : (B : ℝ) ≤ C * q := by
-    dsimp only [q, s]
-    simpa only [div_eq_mul_inv, one_mul] using hB
-  calc
-    _ ≤ 7 * C ^ 3 * n * q ^ 2 :=
-      FirstOrder.Squarefree.squarefreeListExpression_le_rate_envelope hC hq hn hD hDn hM hMB
-        hlambda0 hlambda hB'
-    _ = 7 * C ^ 3 * n / s ^ 2 := by
-      dsimp only [q]
-      field_simp [ne_of_gt hs]
-    _ = 7 * C ^ 3 * n / finiteLengthSlack eta n ^ 2 := by rfl
+  have hs : 0 < finiteLengthSlack eta n := finiteLengthSlack_pos heta
+  have hraw := FirstOrder.Squarefree.squarefreeListExpression_le_rate_envelope hC
+    ((one_le_div hs).2 hsOne) hn hD hDn hM hMB hlambda0 hlambda
+    (hB.trans_eq (div_eq_mul_one_div _ _))
+  rwa [one_div_pow, ← div_eq_mul_one_div] at hraw
 
 /-- Exact finite first-order line-MCA expression.  The natural subtractions preserve the
 small-length and full-agreement boundary behavior of the semantic counting theorem. -/
@@ -135,231 +112,104 @@ def finiteLengthMcaEnvelope
     (48 * (D : ℝ) ^ 2 * H + 16 * D) * lambda ^ 2 * B * M +
     8 * D * ((n - D - 1 : ℕ) : ℝ) * lambda * B * M
 
+/-- A monomial `C^a n^c q^d` with `a ≤ 6`, `c ≤ 2` and `c + d ≤ 6` is at most `C⁶ n² q⁴` when
+`1 ≤ C` and `1 ≤ q ≤ n`. -/
+private theorem monomial_le_rateMonomial {C q n : ℝ} (hC : 1 ≤ C) (hq : 1 ≤ q) (hqn : q ≤ n)
+    {a c d : ℕ} (ha : a ≤ 6 := by norm_num) (hc : c ≤ 2 := by norm_num)
+    (hcd : c + d ≤ 6 := by norm_num) :
+    C ^ a * n ^ c * q ^ d ≤ C ^ 6 * n ^ 2 * q ^ 4 := by
+  have hq0 : 0 ≤ q := zero_le_one.trans hq
+  have hn : 1 ≤ n := hq.trans hqn
+  have hnq : n ^ c * q ^ d ≤ n ^ 2 * q ^ 4 := by
+    rcases le_or_gt d 4 with hd | hd
+    · exact mul_le_mul (pow_le_pow_right₀ hn hc) (pow_le_pow_right₀ hq hd)
+        (pow_nonneg hq0 d) (pow_nonneg (zero_le_one.trans hn) 2)
+    · obtain ⟨e, rfl⟩ := Nat.exists_eq_add_of_lt hd
+      calc
+        n ^ c * q ^ (4 + e + 1) = n ^ c * q ^ (e + 1) * q ^ 4 := by ring
+        _ ≤ n ^ c * n ^ (e + 1) * q ^ 4 := by gcongr
+        _ = n ^ (c + (e + 1)) * q ^ 4 := by ring
+        _ ≤ n ^ 2 * q ^ 4 :=
+          mul_le_mul_of_nonneg_right (pow_le_pow_right₀ hn (by omega)) (pow_nonneg hq0 4)
+  calc
+    C ^ a * n ^ c * q ^ d = C ^ a * (n ^ c * q ^ d) := by ring
+    _ ≤ C ^ 6 * (n ^ 2 * q ^ 4) :=
+      mul_le_mul (pow_le_pow_right₀ hC ha) hnq (by positivity) (by positivity)
+    _ = C ^ 6 * n ^ 2 * q ^ 4 := by ring
+
+/-- The real-arithmetic core of `finiteLengthMcaEnvelope_le_rateEnvelope`, with `b` and `h`
+standing for `B (2M + 1)` and `H (2M + 1)`, `s` for `2b - 1` and `t` for `n - D - 1`. -/
+private theorem mcaEnvelope_arith_le {C q n lambda D t B M H b h s : ℝ}
+    (hC : 1 ≤ C) (hq : 1 ≤ q) (hqN : q ≤ n) (hD0 : 0 ≤ D) (hD : D ≤ n)
+    (ht0 : 0 ≤ t) (ht : t ≤ n) (hlambda0 : 0 ≤ lambda) (hlambda : lambda ≤ C) (hB0 : 0 ≤ B)
+    (hB : B ≤ C * q) (hM0 : 0 ≤ M) (hM : M ≤ C * q) (hH0 : 0 ≤ H) (hH : H ≤ C * q ^ 2)
+    (hb0 : 0 ≤ b) (hb : b ≤ 3 * C ^ 2 * q ^ 2) (hh0 : 0 ≤ h) (hh : h ≤ 3 * C ^ 2 * q ^ 3)
+    (hs : s ≤ 2 * b) :
+    s * h + lambda * (h + b + 4 * D * b * h) + t * b +
+        (48 * D ^ 2 * H + 16 * D) * lambda ^ 2 * B * M + 8 * D * t * lambda * B * M ≤
+      140 * C ^ 6 * n ^ 2 * q ^ 4 := by
+  have hC0 : 0 ≤ C := zero_le_one.trans hC
+  have hq0 : 0 ≤ q := zero_le_one.trans hq
+  have hn : 1 ≤ n := hq.trans hqN
+  have hn0 : 0 ≤ n := zero_le_one.trans hn
+  have hbh0 : 0 ≤ b * h := mul_nonneg hb0 hh0
+  have hbh : b * h ≤ 3 * C ^ 2 * q ^ 2 * (3 * C ^ 2 * q ^ 3) :=
+    mul_le_mul hb hh hh0 (by positivity)
+  have hfirst : s * h ≤ 2 * b * h := mul_le_mul_of_nonneg_right hs hh0
+  have hDbh : D * (b * h) ≤ n * (b * h) := mul_le_mul_of_nonneg_right hD hbh0
+  have hmiddle : lambda * (h + b + 4 * D * b * h) ≤ C * (h + b + 4 * n * (b * h)) :=
+    mul_le_mul hlambda (by linarith) (by positivity) hC0
+  have htail : t * b ≤ n * b := mul_le_mul_of_nonneg_right ht hb0
+  have hregular : (48 * D ^ 2 * H + 16 * D) * lambda ^ 2 * B * M ≤
+      (48 * n ^ 2 * (C * q ^ 2) + 16 * n) * C ^ 2 * (C * q) * (C * q) := by
+    gcongr
+  have hlast : 8 * D * t * lambda * B * M ≤ 8 * n * n * C * (C * q) * (C * q) := by
+    gcongr
+  have hCh := mul_le_mul_of_nonneg_left hh hC0
+  have hCb := mul_le_mul_of_nonneg_left hb hC0
+  have hnb := mul_le_mul_of_nonneg_left hb hn0
+  have hCnbh := mul_le_mul_of_nonneg_left hbh (mul_nonneg hC0 hn0)
+  have := monomial_le_rateMonomial (a := 4) (c := 0) (d := 5) hC hq hqN
+  have := monomial_le_rateMonomial (a := 3) (c := 0) (d := 3) hC hq hqN
+  have := monomial_le_rateMonomial (a := 3) (c := 0) (d := 2) hC hq hqN
+  have := monomial_le_rateMonomial (a := 5) (c := 1) (d := 5) hC hq hqN
+  have := monomial_le_rateMonomial (a := 2) (c := 1) (d := 2) hC hq hqN
+  have := monomial_le_rateMonomial (a := 5) (c := 2) (d := 4) hC hq hqN
+  have := monomial_le_rateMonomial (a := 4) (c := 1) (d := 2) hC hq hqN
+  have := monomial_le_rateMonomial (a := 3) (c := 2) (d := 2) hC hq hqN
+  linarith
+
 /-- The line-MCA envelope is at most `140 C⁶ n² q⁴` under the displayed parameter bounds. -/
 theorem finiteLengthMcaEnvelope_le_rateEnvelope
     {C q lambda : ℝ} {n D B M H : ℕ}
-    (hC : 1 ≤ C) (hq : 1 ≤ q) (hn : 1 ≤ n) (hqN : q ≤ n)
+    (hC : 1 ≤ C) (hq : 1 ≤ q) (_hn : 1 ≤ n) (hqN : q ≤ n)
     (hDn : D ≤ n) (hlambda0 : 0 ≤ lambda) (hlambda : lambda ≤ C)
     (hB : (B : ℝ) ≤ C * q) (hM : (M : ℝ) ≤ C * q)
     (hH : (H : ℝ) ≤ C * q ^ 2) :
     finiteLengthMcaEnvelope lambda n D B M H ≤ 140 * C ^ 6 * n ^ 2 * q ^ 4 := by
-  let x := C * q
-  let b : ℝ := B * (2 * M + 1)
-  let h : ℝ := H * (2 * M + 1)
-  have hC0 : 0 ≤ C := zero_le_one.trans hC
   have hq0 : 0 ≤ q := zero_le_one.trans hq
-  have hn0 : (0 : ℝ) ≤ n := by positivity
-  have hx1 : 1 ≤ x := by
-    dsimp only [x]
-    nlinarith [mul_nonneg (sub_nonneg.mpr hC) (sub_nonneg.mpr hq)]
-  have htwoM : 2 * (M : ℝ) + 1 ≤ 3 * x := by
-    have := hM
-    dsimp only [x] at hx1 ⊢
-    nlinarith
-  have hb : b ≤ 3 * x ^ 2 := by
-    dsimp only [b]
+  have hC0 : 0 ≤ C := zero_le_one.trans hC
+  have htwoM : 2 * (M : ℝ) + 1 ≤ 3 * (C * q) := by
+    linarith [one_le_mul_of_one_le_of_one_le hC hq]
+  have hb : ((B * (2 * M + 1) : ℕ) : ℝ) ≤ 3 * C ^ 2 * q ^ 2 := by
+    push_cast
     calc
-      (B : ℝ) * (2 * M + 1) ≤ x * (3 * x) := by gcongr
-      _ = 3 * x ^ 2 := by ring
-  have hh : h ≤ 3 * C ^ 2 * q ^ 3 := by
-    dsimp only [h]
+      (B : ℝ) * (2 * M + 1) ≤ C * q * (3 * (C * q)) :=
+        mul_le_mul hB htwoM (by positivity) (by positivity)
+      _ = 3 * C ^ 2 * q ^ 2 := by ring
+  have hh : ((H * (2 * M + 1) : ℕ) : ℝ) ≤ 3 * C ^ 2 * q ^ 3 := by
+    push_cast
     calc
-      (H : ℝ) * (2 * M + 1) ≤ (C * q ^ 2) * (3 * x) := by gcongr
-      _ = 3 * C ^ 2 * q ^ 3 := by dsimp only [x]; ring
-  have hD : (D : ℝ) ≤ n := by exact_mod_cast hDn
-  have htail : ((n - D - 1 : ℕ) : ℝ) ≤ n := by
-    exact_mod_cast Nat.sub_le n (D + 1)
-  have hqN' : q ≤ (n : ℝ) := by exact_mod_cast hqN
-  have hb0 : 0 ≤ b := by positivity
-  have hh0 : 0 ≤ h := by positivity
-  have hB0 : (0 : ℝ) ≤ B := by positivity
-  have hM0 : (0 : ℝ) ≤ M := by positivity
-  have hH0 : (0 : ℝ) ≤ H := by positivity
-  have htwoB : (((2 * (B * (2 * M + 1)) - 1 : ℕ) : ℝ)) ≤ 2 * b := by
-    calc
-      (((2 * (B * (2 * M + 1)) - 1 : ℕ) : ℝ)) ≤
-          ((2 * (B * (2 * M + 1)) : ℕ) : ℝ) := by
-        exact_mod_cast Nat.sub_le (2 * (B * (2 * M + 1))) 1
-      _ = 2 * b := by simp [b]
-  have hraw : finiteLengthMcaEnvelope lambda n D B M H ≤
-      2 * b * h + C * (h + b + 4 * n * b * h) + n * b +
-        (48 * n ^ 2 * (C * q ^ 2) + 16 * n) * C ^ 2 *
-          (C * q) * (C * q) +
-        8 * n * n * C * (C * q) * (C * q) := by
-    have hfirst : (((2 * (B * (2 * M + 1)) - 1 : ℕ) : ℝ)) * h ≤ 2 * b * h := by
-      gcongr
-    have hmiddle :
-        lambda * (h + b + 4 * (D : ℝ) * b * h) ≤
-          C * (h + b + 4 * n * b * h) := by
-      gcongr
-    have htailTerm : ((n - D - 1 : ℕ) : ℝ) * b ≤ (n : ℝ) * b := by
-      gcongr
-    have hregular :
-        (48 * (D : ℝ) ^ 2 * H + 16 * D) * lambda ^ 2 * B * M ≤
-          (48 * (n : ℝ) ^ 2 * (C * q ^ 2) + 16 * n) * C ^ 2 *
-            (C * q) * (C * q) := by
-      gcongr
-    have hlast :
-        8 * (D : ℝ) * ((n - D - 1 : ℕ) : ℝ) * lambda * B * M ≤
-          8 * (n : ℝ) * n * C * (C * q) * (C * q) := by
-      gcongr
-    unfold finiteLengthMcaEnvelope
-    dsimp only
-    norm_num only [Nat.cast_mul, Nat.cast_add, Nat.cast_one]
-    linarith
-  let Z := C ^ 6 * (n : ℝ) ^ 2 * q ^ 4
-  have hn1 : (1 : ℝ) ≤ n := by exact_mod_cast hn
-  have hC3C6 : C ^ 3 ≤ C ^ 6 := by
-    calc
-      C ^ 3 = C ^ 3 * 1 := by ring
-      _ ≤ C ^ 3 * C ^ 3 := by gcongr; exact one_le_pow₀ hC
-      _ = C ^ 6 := by ring
-  have hC2C6 : C ^ 2 ≤ C ^ 6 := by
-    calc
-      C ^ 2 = C ^ 2 * 1 := by ring
-      _ ≤ C ^ 2 * C ^ 4 := by gcongr; exact one_le_pow₀ hC
-      _ = C ^ 6 := by ring
-  have hC4C6 : C ^ 4 ≤ C ^ 6 := by
-    calc
-      C ^ 4 = C ^ 4 * 1 := by ring
-      _ ≤ C ^ 4 * C ^ 2 := by gcongr; exact one_le_pow₀ hC
-      _ = C ^ 6 := by ring
-  have hC5C6 : C ^ 5 ≤ C ^ 6 := by
-    calc
-      C ^ 5 = C ^ 5 * 1 := by ring
-      _ ≤ C ^ 5 * C := by gcongr
-      _ = C ^ 6 := by ring
-  have hnN2 : (n : ℝ) ≤ (n : ℝ) ^ 2 := by
-    calc
-      (n : ℝ) = (n : ℝ) * 1 := by ring
-      _ ≤ (n : ℝ) * n := by gcongr
-      _ = (n : ℝ) ^ 2 := by ring
-  have hq2q4 : q ^ 2 ≤ q ^ 4 := by
-    calc
-      q ^ 2 = q ^ 2 * 1 := by ring
-      _ ≤ q ^ 2 * q ^ 2 := by gcongr; exact one_le_pow₀ hq
-      _ = q ^ 4 := by ring
-  have hq3q4 : q ^ 3 ≤ q ^ 4 := by
-    calc
-      q ^ 3 = q ^ 3 * 1 := by ring
-      _ ≤ q ^ 3 * q := by gcongr
-      _ = q ^ 4 := by ring
-  have hq5 : q ^ 5 ≤ (n : ℝ) * q ^ 4 := by
-    calc
-      q ^ 5 = q * q ^ 4 := by ring
-      _ ≤ (n : ℝ) * q ^ 4 := by gcongr
-  have hb' : b ≤ 3 * C ^ 2 * q ^ 2 := by
-    calc
-      b ≤ 3 * x ^ 2 := hb
-      _ = 3 * C ^ 2 * q ^ 2 := by dsimp only [x]; ring
-  have hbh : b * h ≤ 9 * C ^ 4 * q ^ 5 := by
-    calc
-      b * h ≤ (3 * C ^ 2 * q ^ 2) * (3 * C ^ 2 * q ^ 3) := by gcongr
-      _ = 9 * C ^ 4 * q ^ 5 := by ring
-  have hbhZ : b * h ≤ 9 * Z := by
-    apply hbh.trans
-    dsimp only [Z]
-    have hqpow : q ^ 5 ≤ (n : ℝ) * q ^ 4 := by
-      calc
-        q ^ 5 = q * q ^ 4 := by ring
-        _ ≤ (n : ℝ) * q ^ 4 := by gcongr
-    calc
-      9 * C ^ 4 * q ^ 5 ≤ 9 * C ^ 4 * ((n : ℝ) * q ^ 4) := by gcongr
-      _ ≤ 9 * C ^ 6 * ((n : ℝ) * q ^ 4) := by gcongr
-      _ ≤ 9 * C ^ 6 * ((n : ℝ) ^ 2 * q ^ 4) := by gcongr
-      _ = 9 * Z := by dsimp only [Z]; ring
-  have hChZ : C * h ≤ 3 * Z := by
-    apply (mul_le_mul_of_nonneg_left hh hC0).trans
-    calc
-      C * (3 * C ^ 2 * q ^ 3) = 3 * C ^ 3 * q ^ 3 := by ring
-      _ ≤ 3 * C ^ 6 * q ^ 3 := by gcongr
-      _ ≤ 3 * C ^ 6 * q ^ 4 := by gcongr
-      _ ≤ 3 * C ^ 6 * ((n : ℝ) ^ 2 * q ^ 4) := by
-        have hn2 : (1 : ℝ) ≤ (n : ℝ) ^ 2 := one_le_pow₀ hn1
-        gcongr
-        simpa only [one_mul] using
-          mul_le_mul_of_nonneg_right hn2 (pow_nonneg hq0 4)
-      _ = 3 * Z := by dsimp only [Z]; ring
-  have hCbZ : C * b ≤ 3 * Z := by
-    apply (mul_le_mul_of_nonneg_left hb hC0).trans
-    calc
-      C * (3 * x ^ 2) = 3 * C ^ 3 * q ^ 2 := by dsimp only [x]; ring
-      _ ≤ 3 * C ^ 6 * q ^ 2 := by gcongr
-      _ ≤ 3 * C ^ 6 * q ^ 4 := by gcongr
-      _ ≤ 3 * C ^ 6 * ((n : ℝ) ^ 2 * q ^ 4) := by
-        have hn2 : (1 : ℝ) ≤ (n : ℝ) ^ 2 := one_le_pow₀ hn1
-        gcongr
-        simpa only [one_mul] using
-          mul_le_mul_of_nonneg_right hn2 (pow_nonneg hq0 4)
-      _ = 3 * Z := by dsimp only [Z]; ring
-  have hCnbhZ : 4 * C * (n : ℝ) * b * h ≤ 36 * Z := by
-    calc
-      4 * C * (n : ℝ) * b * h = 4 * C * (n : ℝ) * (b * h) := by ring
-      _ ≤ 4 * C * (n : ℝ) * (9 * C ^ 4 * q ^ 5) := by gcongr
-      _ = 36 * C ^ 5 * (n : ℝ) * q ^ 5 := by ring
-      _ ≤ 36 * C ^ 5 * (n : ℝ) * ((n : ℝ) * q ^ 4) := by
-        gcongr
-      _ = 36 * C ^ 5 * (n : ℝ) ^ 2 * q ^ 4 := by ring
-      _ ≤ 36 * C ^ 6 * (n : ℝ) ^ 2 * q ^ 4 := by gcongr
-      _ = 36 * Z := by dsimp only [Z]; ring
-  have hnbZ : (n : ℝ) * b ≤ 3 * Z := by
-    apply (mul_le_mul_of_nonneg_left hb hn0).trans
-    calc
-      (n : ℝ) * (3 * x ^ 2) = 3 * C ^ 2 * (n : ℝ) * q ^ 2 := by
-        dsimp only [x]
-        ring
-      _ ≤ 3 * C ^ 6 * (n : ℝ) * q ^ 2 := by gcongr
-      _ ≤ 3 * C ^ 6 * (n : ℝ) ^ 2 * q ^ 2 := by gcongr
-      _ ≤ 3 * C ^ 6 * (n : ℝ) ^ 2 * q ^ 4 := by gcongr
-      _ = 3 * Z := by dsimp only [Z]; ring
-  have hregularZ :
-      (48 * (n : ℝ) ^ 2 * (C * q ^ 2) + 16 * n) * C ^ 2 *
-          (C * q) * (C * q) ≤ 64 * Z := by
-    have hfirst : C ^ 5 * (n : ℝ) ^ 2 * q ^ 4 ≤ Z := by
-      dsimp only [Z]
-      gcongr
-    have hsecond : C ^ 4 * (n : ℝ) * q ^ 2 ≤ Z := by
-      calc
-        C ^ 4 * (n : ℝ) * q ^ 2 ≤ C ^ 6 * (n : ℝ) * q ^ 2 := by gcongr
-        _ ≤ C ^ 6 * (n : ℝ) ^ 2 * q ^ 2 := by gcongr
-        _ ≤ C ^ 6 * (n : ℝ) ^ 2 * q ^ 4 := by gcongr
-        _ = Z := by dsimp only [Z]
-    calc
-      (48 * (n : ℝ) ^ 2 * (C * q ^ 2) + 16 * n) * C ^ 2 *
-          (C * q) * (C * q) =
-        48 * (C ^ 5 * (n : ℝ) ^ 2 * q ^ 4) +
-          16 * (C ^ 4 * (n : ℝ) * q ^ 2) := by ring
-      _ ≤ 48 * Z + 16 * Z := by gcongr
-      _ = 64 * Z := by ring
-  have hlastZ :
-      8 * (n : ℝ) * n * C * (C * q) * (C * q) ≤ 8 * Z := by
-    calc
-      8 * (n : ℝ) * n * C * (C * q) * (C * q) =
-          8 * C ^ 3 * (n : ℝ) ^ 2 * q ^ 2 := by ring
-      _ ≤ 8 * C ^ 6 * (n : ℝ) ^ 2 * q ^ 2 := by gcongr
-      _ ≤ 8 * C ^ 6 * (n : ℝ) ^ 2 * q ^ 4 := by gcongr
-      _ = 8 * Z := by dsimp only [Z]; ring
-  have hZ0 : 0 ≤ Z := by positivity
-  have htwoBh : 2 * b * h ≤ 18 * Z := by
-    calc
-      2 * b * h = 2 * (b * h) := by ring
-      _ ≤ 2 * (9 * Z) := by gcongr
-      _ = 18 * Z := by ring
-  have hline : C * (h + b + 4 * n * b * h) ≤ 42 * Z := by
-    calc
-      C * (h + b + 4 * n * b * h) = C * h + C * b + 4 * C * n * b * h := by ring
-      _ ≤ 3 * Z + 3 * Z + 36 * Z := by gcongr
-      _ = 42 * Z := by ring
-  calc
-    finiteLengthMcaEnvelope lambda n D B M H ≤
-        2 * b * h + C * (h + b + 4 * n * b * h) + n * b +
-          (48 * n ^ 2 * (C * q ^ 2) + 16 * n) * C ^ 2 *
-            (C * q) * (C * q) +
-          8 * n * n * C * (C * q) * (C * q) := hraw
-    _ ≤ 18 * Z + 42 * Z + 3 * Z + 64 * Z + 8 * Z := by gcongr
-    _ = 135 * Z := by ring
-    _ ≤ 140 * Z := by nlinarith [hZ0]
-    _ = 140 * C ^ 6 * n ^ 2 * q ^ 4 := by dsimp only [Z]; ring
+      (H : ℝ) * (2 * M + 1) ≤ C * q ^ 2 * (3 * (C * q)) :=
+        mul_le_mul hH htwoM (by positivity) (by positivity)
+      _ = 3 * C ^ 2 * q ^ 3 := by ring
+  have hs : ((2 * (B * (2 * M + 1)) - 1 : ℕ) : ℝ) ≤ 2 * ((B * (2 * M + 1) : ℕ) : ℝ) := by
+    exact_mod_cast Nat.sub_le _ 1
+  exact mcaEnvelope_arith_le hC hq hqN (Nat.cast_nonneg D)
+    (by exact_mod_cast hDn) (Nat.cast_nonneg _) (by exact_mod_cast Nat.sub_le n (D + 1))
+    hlambda0 hlambda
+    (Nat.cast_nonneg B) hB (Nat.cast_nonneg M) hM (Nat.cast_nonneg H) hH (Nat.cast_nonneg _) hb
+    (Nat.cast_nonneg _) hh hs
 
 /-- The line-MCA envelope is at most `140 C⁶ n² / (eta + 1/n)⁴` under the displayed bounds. -/
 theorem finiteLengthMcaEnvelope_le
@@ -376,16 +226,12 @@ theorem finiteLengthMcaEnvelope_le
   let q := 1 / s
   have hs : 0 < s := finiteLengthSlack_pos heta
   have hq : 1 ≤ q := (one_le_div hs).2 hsOne
-  have hqN : q ≤ (n : ℝ) := by
-    dsimp only [q, s]
-    exact finiteLengthSlack_inv_le_length heta.le (by omega)
+  have hqN : q ≤ (n : ℝ) := finiteLengthSlack_inv_le_length heta.le (by omega)
   have hraw := finiteLengthMcaEnvelope_le_rateEnvelope hC hq hn hqN hDn
-    hlambda0 hlambda (by simpa [q, s, div_eq_mul_inv] using hB)
-      (by simpa [q, s, div_eq_mul_inv] using hM)
-      (by dsimp only [q, s]; field_simp [ne_of_gt hs] at hH ⊢; nlinarith)
-  dsimp only [q, s] at hraw ⊢
-  field_simp [ne_of_gt hs] at hraw ⊢
-  nlinarith
+    hlambda0 hlambda (hB.trans_eq (div_eq_mul_one_div _ _))
+      (hM.trans_eq (div_eq_mul_one_div _ _))
+      (hH.trans_eq (by rw [one_div_pow, div_eq_mul_one_div]))
+  rwa [one_div_pow, ← div_eq_mul_one_div] at hraw
 
 /-- The line-MCA envelope is at most `140 C⁶ n² / eta⁴` under the displayed bounds. -/
 theorem finiteLengthMcaEnvelope_le_inv_eta

@@ -138,22 +138,24 @@ theorem regularPowerBatchedDerivativeCappedBoundTwo_eq_hybridCurveStage
     hnumA, hdenA, hdenL, HiddenDerivative.regularTaylorExponent]
   ring
 
-/-- The exact regular-stage exceptional sets for an actual-degree descent, unioned into one
-set.  This is the regular half of the hybrid transfer and carries the exact raw stage sum. -/
+/-- The exact regular-stage exceptional sets for an actual-degree descent of an equation with
+coefficient height at most `h`, unioned into one set.  This is the regular half of the hybrid
+transfer and carries the exact raw stage sum. -/
 theorem exists_exceptional_firstOrder_regularCurveStages
     {F E : Type*} [Field F] [Field E] [instF : DecidableEq F]
     [instE : DecidableEq E] [IsAlgClosed E]
-    {n D A L mu M ell : ℕ} (domain : Fin n ↪ F)
+    {n D A L h mu M ell : ℕ} (domain : Fin n ↪ F)
     (values : Fin (ell + 1) → Fin n → F)
     (iota : F →+* E) (Q : DifferentialPolynomial E[X] 1)
     (descent : HiddenDerivative.FirstOrderHybridDescent Q mu M)
+    (hheight : CoeffNatDegreeLE Q h)
     (hell : 0 < ell) (hD : 1 ≤ D) (hDL : D < L) (hLA : L ≤ A) (hAn : A ≤ n)
     (hchar : ringChar F = 0 ∨ D < ringChar F) :
     ∃ exceptional : Finset E,
       (exceptional.card : ℝ) ≤
         HiddenDerivative.retainedCoordinateRatio n A L *
             HiddenDerivative.agreementIncidenceRatio n D A *
-              hybridCurveJointStageSum D ell (coeffNatDegree Q) mu
+              hybridCurveJointStageSum D ell h mu
                 descent.actualDegree +
           ell * (n - L : ℕ) * HiddenDerivative.fixedCoordinateRatio n D L *
             HiddenDerivative.regularFiberStageSum D mu descent.actualDegree ∧
@@ -172,9 +174,8 @@ theorem exists_exceptional_firstOrder_regularCurveStages
     Subsingleton.elim _ _
   have hdecE : instE = (fun a b : E ↦ Classical.propDecidable (a = b)) :=
     Subsingleton.elim _ _
-  let h := coeffNatDegree Q
   have hstageHeight (j : ℕ) : CoeffNatDegreeLE (jetDerivative Q (1 : Fin 2) j) h :=
-    (coeffNatDegreeLE_coeffNatDegree Q).iterate_pderiv _ j
+    hheight.iterate_pderiv _ j
   let e := descent.actualDegree
   have heμ : e ≤ mu := by
     have hdegree := descent.stage_degree 0 (Nat.zero_le e)
@@ -322,10 +323,11 @@ set with the exact raw hybrid charge at the chosen retention split `L`. -/
 theorem exists_exceptional_firstOrder_hybridCurve_of_tail
     {F E : Type*} [Field F] [Field E] [instF : DecidableEq F]
     [instE : DecidableEq E] [IsAlgClosed E]
-    {n D A L mu M ell : ℕ} (domain : Fin n ↪ F)
+    {n D A L h mu M ell : ℕ} (domain : Fin n ↪ F)
     (values : Fin (ell + 1) → Fin n → F)
     (iota : F →+* E) (Q : DifferentialPolynomial E[X] 1)
     (descent : HiddenDerivative.FirstOrderHybridDescent Q mu M)
+    (hheight : CoeffNatDegreeLE Q h)
     (hell : 0 < ell) (hD : 1 ≤ D) (hDL : D < L) (hLA : L ≤ A) (hAn : A ≤ n)
     (hchar : ringChar F = 0 ∨ D < ringChar F)
     (tailBound : ℝ)
@@ -338,8 +340,7 @@ theorem exists_exceptional_firstOrder_hybridCurve_of_tail
         HasExactPowerAgreement domain values iota (D + 1) z P) :
     ∃ exceptional : Finset E,
       (exceptional.card : ℝ) ≤
-        tailBound + hybridCurveRegular n D ell A (coeffNatDegree Q)
-          mu descent.actualDegree L ∧
+        tailBound + hybridCurveRegular n D ell A h mu descent.actualDegree L ∧
       ∀ z ∉ exceptional, ∀ P : E[X], P.degree < D + 1 →
         A ≤ (polynomialAgreementSet (domain.trans ⟨iota, iota.injective⟩)
           (powerBatchedWord (fun t i ↦ iota (values t i)) z) P).card →
@@ -347,7 +348,7 @@ theorem exists_exceptional_firstOrder_hybridCurve_of_tail
         HasExactPowerAgreement domain values iota (D + 1) z P := by
   obtain ⟨tailExceptional, htailCard, htailGood⟩ := htail
   obtain ⟨regularExceptional, hregularCard, hregularGood⟩ :=
-    exists_exceptional_firstOrder_regularCurveStages domain values iota Q descent
+    exists_exceptional_firstOrder_regularCurveStages domain values iota Q descent hheight
       hell hD hDL hLA hAn hchar
   let exceptional := tailExceptional ∪ regularExceptional
   refine ⟨exceptional, ?_, ?_⟩
@@ -388,16 +389,16 @@ the permitted actual derivative degrees. The ordinary theorem is supplied indepe
 theorem exists_exceptional_firstOrder_hybridCurve_optimized_of_tail
     {F E : Type*} [Field F] [Field E] [DecidableEq F] [DecidableEq E]
     [IsAlgClosed E]
-    {n D A mu M ell : ℕ} (domain : Fin n ↪ F)
+    {n D A h mu M ell : ℕ} (domain : Fin n ↪ F)
     (values : Fin (ell + 1) → Fin n → F) (iota : F →+* E)
     (Q : DifferentialPolynomial E[X] 1)
     (descent : HiddenDerivative.FirstOrderHybridDescent Q mu M)
+    (hheight : CoeffNatDegreeLE Q h)
     (hell : 0 < ell) (hD : 1 ≤ D) (hDA : D < A) (hAn : A ≤ n)
     (hchar : ringChar F = 0 ∨ D < ringChar F)
     (htail : ∀ L₀, D < L₀ → L₀ ≤ A → ∃ exceptional : Finset E,
       (exceptional.card : ℝ) ≤
-        hybridCurveTail n D ell (mu - descent.actualDegree)
-          (coeffNatDegree Q) A L₀ ∧
+        hybridCurveTail n D ell (mu - descent.actualDegree) h A L₀ ∧
       ∀ z ∉ exceptional, ∀ P : E[X], P.degree < D + 1 →
         A ≤ (polynomialAgreementSet (domain.trans ⟨iota, iota.injective⟩)
           (powerBatchedWord (fun t i ↦ iota (values t i)) z) P).card →
@@ -405,29 +406,24 @@ theorem exists_exceptional_firstOrder_hybridCurve_optimized_of_tail
         HasExactPowerAgreement domain values iota (D + 1) z P) :
     ∃ exceptional : Finset E,
       (exceptional.card : ℝ) ≤
-        hybridCurveOptimized n D ell A (coeffNatDegree Q) mu M ∧
+        hybridCurveOptimized n D ell A h mu M ∧
       ∀ z ∉ exceptional, ∀ P : E[X], P.degree < D + 1 →
         A ≤ (polynomialAgreementSet (domain.trans ⟨iota, iota.injective⟩)
           (powerBatchedWord (fun t i ↦ iota (values t i)) z) P).card →
         differentialSpecialization (challengeSpecialization Q z) P = 0 →
         HasExactPowerAgreement domain values iota (D + 1) z P := by
   obtain ⟨L₀, hDL₀, hL₀A, hL₀⟩ := exists_curveRetentionMinimum
-    (hybridCurveTail n D ell (mu - descent.actualDegree)
-      (coeffNatDegree Q) A) hDA
+    (hybridCurveTail n D ell (mu - descent.actualDegree) h A) hDA
   obtain ⟨L, hDL, hLA, hL⟩ := exists_curveRetentionMinimum
     (fun L ↦ curveRetentionMinimum D A
-      (hybridCurveTail n D ell (mu - descent.actualDegree)
-        (coeffNatDegree Q) A) +
-        hybridCurveRegular n D ell A (coeffNatDegree Q) mu
-          descent.actualDegree L) hDA
+      (hybridCurveTail n D ell (mu - descent.actualDegree) h A) +
+        hybridCurveRegular n D ell A h mu descent.actualDegree L) hDA
   obtain ⟨exceptional, hcard, hgood⟩ :=
-    exists_exceptional_firstOrder_hybridCurve_of_tail domain values iota Q descent
+    exists_exceptional_firstOrder_hybridCurve_of_tail domain values iota Q descent hheight
       hell hD hDL hLA hAn hchar _ (htail L₀ hDL₀ hL₀A)
   refine ⟨exceptional, ?_, hgood⟩
   rw [hL₀, hL] at hcard
-  exact hcard.trans
-    (hybridCurveAtDegree_le_optimized (H := coeffNatDegree Q)
-      descent.actualDegree_le)
+  exact hcard.trans (hybridCurveAtDegree_le_optimized (H := h) descent.actualDegree_le)
 
 end
 
