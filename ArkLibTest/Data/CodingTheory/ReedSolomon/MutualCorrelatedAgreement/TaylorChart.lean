@@ -5,6 +5,7 @@ Authors: Quang Dao
 -/
 
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TaylorChart.PointRecognition
+import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FrobeniusComponentRecognition
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TaylorChart.PairCounting
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TaylorChart.Incidence
 import
@@ -20,10 +21,10 @@ import Mathlib.Tactic.NormNum
 /-!
 # Acceptance tests for symbolic Taylor chart recognition
 
-The default and exponent-aware point theorems use the same concrete sample and regular chart
-point. The sample values `(0, 1)`, challenge `2`, and high cut at `l = 1` make reconstruction
-nonvacuous when `K = 2` and `k = 1`. A characteristic-two sample also checks sparse Frobenius
-Taylor-chart recognition.
+The point theorem is tested at the default exponent and at exponent one on the same concrete
+sample and regular chart point. The sample values `(0, 1)`, challenge `2`, and high cut at `l = 1`
+make reconstruction nonvacuous when `K = 2` and `k = 1`. A characteristic-two sample also checks
+sparse Frobenius Taylor-chart recognition.
 -/
 
 open MvPolynomial Polynomial
@@ -292,9 +293,9 @@ example :
             (Polynomial.taylor (0 : ℚ) (P₀.map (RingHom.id ℚ) +
               Polynomial.C 2 * P₁.map (RingHom.id ℚ))).coeff l.val := by
   obtain ⟨P₀, P₁, hP₀, hP₁, hsample, hrecognize⟩ :=
-    exists_graphLine_pair_of_symbolic_sample (n := 1) (k := 1) (K := 2) (r := 0)
+    exists_graphLine_pair_of_symbolic_sample_of_exponent (n := 1) (k := 1) (K := 2) (r := 0)
       pointDomain (fun _ ↦ 0) (fun _ ↦ 1) Finset.univ (by simp) (RingHom.id ℚ) 0
-      quadraticJetSampleEquation (by omega)
+      quadraticJetSampleEquation (by omega) 4 (taylorExponentSufficient_two_mul 0 2)
   have hsetup := concreteTaylorChartSetup 4 (taylorExponentSufficient_two_mul 0 2)
   have hresult := hrecognize 2 concreteJet hsetup.1 hsetup.2.1 hsetup.2.2.1
   refine ⟨P₀, P₁, hP₀, hP₁, ?_, ?_, ?_, hsetup.2.1 1 (by norm_num),

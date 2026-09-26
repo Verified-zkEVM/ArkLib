@@ -18,6 +18,8 @@ This is the two-term case of `ReedSolomon.exists_frobeniusPowerGraph_of_symbolic
 
 ## Main statements
 
+* `ReedSolomon.exists_frobeniusGraphLine_of_symbolic_sample`: one sample recognizes the
+  Frobenius pullback of a regular order-zero symbolic Taylor chart.
 * `ReedSolomon.exists_frobeniusGraph_of_symbolic_prime_sample`: recognition of a Frobenius graph
   from sparse Taylor cuts on a positive-dimensional prime component.
 
@@ -62,6 +64,55 @@ private theorem frobeniusPowerGraphMap_two {E : Type*} [CommSemiring E] (center 
   | some j =>
     simp [frobeniusPowerGraphMap, frobeniusPowerInitialGraph, frobeniusInitialGraph,
       frobeniusPowerCoordinate_two]
+
+/-- A sample determines a base-field pair whose Frobenius pullback reconstructs every regular
+order-zero symbolic Taylor chart satisfying the sparse and agreement cuts. Roots are needed only
+at sample positions. -/
+theorem exists_frobeniusGraphLine_of_symbolic_sample
+    {F E ι : Type*} [Field F] [Field E] {k K : ℕ}
+    (domain : ι ↪ F) (f g : ι → F) (sample : Finset ι)
+    (hsample : sample.card = k) (iota : F →+* E) (p e : ℕ) [ExpChar E p]
+    (roots : ι → E) (hroots : ∀ i ∈ sample, roots i ^ (p ^ e) = iota (domain i))
+    (center : E) (Q : DifferentialPolynomial E[X] 0)
+    (hK : 0 < K) (hKk : K ≤ p ^ e * k) (τ : ℕ)
+    (hτ : TaylorExponentSufficient 0 K τ) :
+    ∃ F₀ G₀ : F[X], F₀.degree < k ∧ G₀.degree < k ∧
+      (∀ i ∈ sample, F₀.eval (domain i) = f i ∧ G₀.eval (domain i) = g i) ∧
+      ∀ (w : E) (jet : Fin 1 → E),
+        MvPolynomial.aeval jet (MvPolynomial.map (Polynomial.evalRingHom w)
+          (initialJetSeparant (Polynomial.C center) Q)) ≠ 0 →
+        (∀ l : Fin K, ¬p ^ e ∣ l.val →
+          MvPolynomial.aeval jet (MvPolynomial.map (Polynomial.evalRingHom w)
+            (commonTaylorNumeratorOver (F := E) (Polynomial.C center) Q τ l.val)) = 0) →
+        (∀ i ∈ sample,
+          MvPolynomial.aeval jet (MvPolynomial.map (Polynomial.evalRingHom w)
+            (taylorAgreementEquationOver (F := E) (Polynomial.C center) Q K
+              (Polynomial.C (roots i))
+              (Polynomial.C (iota (f i)) + Polynomial.X ^ (p ^ e) *
+                Polynomial.C (iota (g i))) (τ := τ))) = 0) →
+        rationalTaylorPolynomial center (MvPolynomial.map (Polynomial.evalRingHom w) Q) K jet =
+            expand E (p ^ e)
+              (F₀.map iota + Polynomial.C (w ^ (p ^ e)) * G₀.map iota) ∧
+          jet 0 = (F₀.map iota).eval (center ^ (p ^ e)) +
+            w ^ (p ^ e) * (G₀.map iota).eval (center ^ (p ^ e)) := by
+  obtain ⟨P, hP, hsampleP, hrecognize⟩ :=
+    exists_frobeniusPowerGraph_of_symbolic_sample (ℓ := 1) domain ![f, g] sample hsample
+      iota p e roots hroots center Q hK hKk τ hτ
+  refine ⟨P 0, P 1, hP 0, hP 1, ?_, ?_⟩
+  · intro i hi
+    exact ⟨by simpa using hsampleP i hi 0, by simpa using hsampleP i hi 1⟩
+  · intro w jet hS hsparse hcuts
+    obtain ⟨hpoly, hjet⟩ := hrecognize w jet hS hsparse
+      (fun i hi ↦ by simpa [frobeniusPowerCoordinate_two] using hcuts i hi)
+    refine ⟨?_, ?_⟩
+    · simpa [powerBatchedPolynomial, Fin.sum_univ_two, Polynomial.smul_eq_C_mul]
+        using hpoly
+    · calc
+        jet 0 = (frobeniusPowerInitialGraph center (p ^ e)
+            (fun t ↦ (P t).map iota) 0).eval w := hjet
+        _ = _ := by
+          simp [frobeniusPowerInitialGraph, frobeniusPowerCoordinate_two]
+          ring
 
 variable {F E ι : Type*} [Field F] [Field E] {k K : ℕ}
 
