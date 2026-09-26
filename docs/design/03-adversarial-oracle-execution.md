@@ -96,6 +96,21 @@ Sound(r₁, R₀ → R₁, ε₁)
   proved by splitting the accepting event on the intermediate claim (true / false-but-admissible / inadmissible). With persistent Γ, the suffix theorem is parameterized by the actual prefix history; same-labeled ROs do not compose by label. Terminal offline KS does **not** generically compose — the valid routes remain prefix-measurable middle extraction, auxiliary-input-robust stage-one KS, or RBRTE grafting.
 - **Knowledge:** the event includes extractor failure; no realization clause (coherence is completeness's). `KS → soundness` needs a causally-available witness supplier, not the bare existential.
 
+### Refinement for the next composition proofs
+
+The contract above is a sufficient common case, not a claim about the weakest assumptions.
+The [composition plan C1–C8](06-composition-plan.md) also targets bounds averaged over the actual
+intermediate distribution. Preserve the correlation between oracle state and prover memory;
+do not restart the world, reveal hidden state, or silently choose a new adversary after conditioning
+on it. A bound for every fixed hidden state can be stronger than the intended cryptographic claim.
+
+An error that depends on the intermediate result can be integrated instead of replaced by its
+supremum. The no-terminal-world-query condition is sufficient for the first boundary theorem;
+read-only claim queries may become effect-free after interpretation. General effectful boundaries
+need an explicit scheduling argument. The fault term applies when faults count as security failure;
+an accepted-output-only bound need not charge missing mass as acceptance. Existing terminal
+observation laws keep accepted mass unchanged and account for missing mass separately.
+
 ## 5. State restoration (first-class, scheduled early — D5)
 
 The SR game is ArkLib's but is *the* hypothesis of compiled-layer theorems (CY: BCS soundness is stated against ε_SR at salt size λ+s_FS — unstateable without it). Definition shape, faithful to CY 16854:

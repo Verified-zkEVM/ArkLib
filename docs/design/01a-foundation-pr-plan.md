@@ -1,6 +1,8 @@
 # Foundation status and ArkLib landing plan
 
-This is the live implementation plan. It contains only two kinds of work:
+This page records the foundation train and remaining upstream work. The next implementation
+sequence is [composition plan C1–C8](06-composition-plan.md), tracked from
+[issue #1](https://github.com/Verified-zkEVM/ArkLib/issues/1). This page contains two kinds of work:
 
 1. current upstream gaps with a named ArkLib consumer; and
 2. ArkLib PR slices that can be reviewed and validated independently.
@@ -112,7 +114,9 @@ its owning repository, but ArkLib must not stabilize a private duplicate.
 
 Protocol evidence beyond these slices also landed: multivariate round projection (#879), two
 sequential rounds (#883), one-round soundness (#881), finite ordered composition (#891), and
-arbitrary-round honest completeness (#892).
+arbitrary-round honest completeness (#892). Native full Sumcheck soundness and completeness
+landed in #1214; #1216 made direct native execution the shared entry point; #1218 proved
+ordinary native composition soundness. Restricted oracle composition remains planned in C1–C8.
 
 ### AR-0 — align the dependency and design baseline
 
@@ -284,7 +288,8 @@ At this point the central record signatures may freeze provisionally.
 
 AR-9A/9B and AR-10A/10B pass against the supported VCVio artifact and outcome boundaries. Ordinary
 soundness composition is stated with output admissibility and history-dependent suffix security.
-**Partially passed:** the artifact slices have landed; the composition theorem is open.
+**Partially passed:** execution records and ordinary native composition (#1218) have landed.
+Composition for restricted oracle verifiers and persistent worlds remains open; see C1–C8.
 
 ### Compiler checkpoint
 

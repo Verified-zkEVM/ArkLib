@@ -154,9 +154,30 @@ def VirtualOracle.substWithSuffix
 
 Stage two sees the *declared middle interface* (`A.asBehaviorSource` — behavior only) plus its own suffix resources; never stage one's hidden environment. Sharing/renaming/weakening are explicit context morphisms; duplicating a handle is contraction along a resource identity, not forming a disjoint union. The implemented ordinary-substitution laws (`subst_assoc`, identities) use `VirtualOracle.SemEquiv`: the same answers under every deterministic handler. Suffix substitution currently exposes its evaluation equation. Source presentation changes use `SourceEquiv`, which includes inverse environment maps and is a separate notion. Compiler theorems will require an operational relation preserving typed traces, order, multiplicity, and cost; no such relation or law is supplied by the virtual-oracle API. **Reduction-level operational associativity is not promised.** A three-stage client first uses PolyFun's existing `TypeTree.Chain.then`, path equivalence, and `reassoc` laws. Only a concrete failure of that API justifies a smaller upstream extension; a new presentation datatype remains the last fallback.
 
-What `subst` does *not* subsume: interactive-phase monad retargeting (`retargetMonads` / `retargetAmbientWithRoute`) remains — it rewrites receiver-node access during interaction, not terminal claims. Sequential execution decomposition must be proved order-preserving (no generic commutativity for `OracleComp` worlds); the commutative-monad proof from the plain layer is scoped to the pure stateless case.
+`subst` replaces queries in exported oracle programs. It does not by itself route access at
+intermediate verifier actions; that execution bridge is part of C3–C4.
+`Reduction.execute_then` requires a commutative monad for general effectful suffix construction.
+The newer `run_appendFlat_splitPrefix` requires only a lawful monad because choosing the returned
+suffix strategy is pure. Effects inside that strategy remain allowed. Neither result permits
+reordering arbitrary queries to a persistent oracle world.
 
 Deliberately separate (not `subst`): shared-prefix products, lock-step repetition, batched shared challenges — later combinators with their own challenge scoping.
+
+### Execution constraints for the next composition work
+
+The [composition plan](06-composition-plan.md) distinguishes continuing one protocol with all
+accumulated access from starting a reduction through only its exported oracle interface.
+
+Native append selects the suffix tree from public structural branches. Data computed privately by
+the verifier can affect its strategy, but cannot select a different tree unless that choice is
+already represented in the protocol. Also, a pending terminal action cannot silently move before
+a prover-owned suffix move. The first implementation composes fragments returning values at the
+boundary; effects at their existing nodes remain allowed. Broader cases need a proved ordering law
+or an explicit change to the interaction model, not a second executor.
+
+A handoff that becomes effect-free after interpreting read-only resources is a useful sufficient
+case, not the weakest possible condition. Logging may still observe those reads, so equality after
+erasing logs does not establish equality of logged executions.
 
 ## 6. Core security shape (Δ side; games live in 03)
 

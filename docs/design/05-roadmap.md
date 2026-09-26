@@ -22,16 +22,20 @@ two months, and XL is an open-ended program.
 The alignment slice (#811) fixed the initial train at Lean 4.33.1, VCVio `f9dc47d9`, and PolyFun
 `c0c92369`. The current supported train is recorded in `00-current-status.md`.
 
-**Progress as of 2026-09-22:**
+**Progress as of 2026-09-26:**
+
+The next priority is [composition plan C1–C8](06-composition-plan.md), tracked from
+[issue #1](https://github.com/Verified-zkEVM/ArkLib/issues/1). It specifies the PRs, assumptions,
+and tests; this page retains the longer-term phases.
 
 | Phase | Status | Evidence |
 |---|---|---|
 | Alignment | done | #811 |
 | 1 — Typed core | done | AR-1 through AR-6B: #851–#871 |
 | 2 — Minimum viable protocol | done | AR-7 #872, AR-8 #874 |
-| 3 — Composition and two contrasting protocols | Sumcheck composition done; FRI and Spartan slices open | #879, #883, #891, #892 |
+| 3 — Composition and two contrasting protocols | ordered Sumcheck execution done; native oracle composition and FRI/Spartan slices open | #879, #883, #891, #892; native Sumcheck #1214 |
 | Parallel upstream lane | items 1–2 done; items 3–4 open | VCVio `Runtime` and `WithFailure` |
-| 4 — World-backed execution and ordinary security | artifacts done; composition theorem open | AR-9A #884, AR-9B #886, AR-10A #880, AR-10B #889 |
+| 4 — World-backed execution and ordinary security | artifacts and plain native composition done; oracle/world composition open | #884, #886, #880, #889; #1216, #1218 |
 | 5 — State restoration | not started | blocked on upstream lane items 3–4 |
 | 6 — Compiler | not started | follows Phase 5 |
 
@@ -43,8 +47,8 @@ closed as superseded; the prototype remains on `archive/oracle-reduction-v2-pre-
 | Track | Purpose | Current dependency |
 |---|---|---|
 | Core semantics | typed reductions, oracle trees, sources, virtual claims, closing | landed |
-| Protocol evidence | Sumcheck first, then FRI and Spartan | Sumcheck landed; FRI and Spartan unblocked |
-| Execution and ordinary security | world-backed artifacts, outcomes, admissibility-aware composition | artifacts landed; composition theorem unblocked |
+| Protocol evidence | Sumcheck first, then FRI and Spartan | native Sumcheck landed; reusable composition takes priority before FRI/Spartan |
+| Execution and ordinary security | world-backed artifacts, outcomes, admissibility-aware composition | artifacts and plain native theorem landed; C1–C8 supply remaining oracle/world theory |
 | State restoration | causal trace calculus, salted games, extractor views | PolyFun transducer and VCVio specialization/conditioning gaps |
 | Compiler | guarantee transport and backend adapters | core composition plus state-restoration evidence |
 
@@ -104,10 +108,11 @@ preservation wait for the world-backed execution artifact; they are not asserted
 laws; a three-stage example uses existing chain reassociation or records the exact missing upstream
 law.
 
-**Status:** Sumcheck composition done. #883 runs two rounds through the actual closed claim; #891
+**Status:** ordered Sumcheck composition is proved. #883 runs two rounds through the actual closed claim; #891
 adds finite ordered composition across `ExecutionInterface` boundaries; #892 executes any
 consecutive interval of rounds with honest completeness, checked on a three-variable client. The
-FRI and Spartan-like slices are open.
+FRI and Spartan-like slices are open. These ordered results do not prove composition for every
+whole native prover; the oracle bridge is C2–C5 of the composition plan.
 
 ## Parallel upstream lane — Close only demonstrated gaps [M–L]
 
@@ -139,12 +144,18 @@ Prove ordinary soundness composition in its honest form:
 
 - the first reduction is sound;
 - its output is admissible except with explicit error;
-- the suffix is sound for every reachable intermediate claim and actual prefix history;
+- the suffix bound applies to the actual distribution of intermediate claims, prover memory,
+  and oracle state; reachable pointwise bounds are sufficient when available;
 - sequential execution preserves order and state;
-- the total error includes soundness, inadmissibility, suffix, and fault terms.
+- the total error includes prefix and suffix soundness and input-assumption failures; charge
+  faults separately when the exported security event counts them as failure.
 
-**Gate:** the Sumcheck, FRI, and Spartan slices have two-way legacy bridges; the composition theorem
-is sorry-free; no theorem recreates unrestricted stateful composition.
+**Composition gate:** C1–C8 pass their stated tests, including a Sumcheck proof using generic
+composition and a persistent-world client with justified input assumptions. The composition
+theorem has no admissions and preserves the actual oracle state and prover memory.
+
+FRI and Spartan correspondence proofs remain broader protocol-migration goals; they are not
+prerequisites for this composition milestone.
 
 **Status:** AR-9A (#884), AR-9B (#886), AR-10A (#880), and AR-10B (#889) landed.
 `Sumcheck/Interaction/ProtocolSoundness` proves soundness of the full native Sumcheck interaction,
@@ -229,7 +240,7 @@ Landed stages are marked `[done]`.
 ```text
 alignment [done]
   → typed core [done] → Sumcheck bridge [done] → typed composition
-                                                  [Sumcheck done; FRI, Spartan open]
+                                                  [ordered Sumcheck done; native oracle bridge, FRI, Spartan open]
                                                       │
 VCVio artifact + outcome [done] ────────────────────┘→ ordinary security [open]
 

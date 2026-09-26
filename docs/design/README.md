@@ -1,7 +1,7 @@
 # ArkLib typed interaction and oracle-reduction design
 
 **Initial design:** 2026-07-13. **Last source audit:** 2026-08-29.
-**Last status update:** 2026-09-22.
+**Last status update:** 2026-09-26.
 **Status:** normative architecture with a staged implementation.
 
 ArkLib's current `OracleReduction` layer made ambitious formalizations possible, but its central
@@ -21,6 +21,10 @@ Start with [`00-current-status.md`](00-current-status.md). It is the operational
 the supported dependency revisions, available APIs, missing foundations, landed ArkLib slices, and
 open work.
 
+For the next implementation work, read [the composition plan](06-composition-plan.md).
+[Issue #1](https://github.com/Verified-zkEVM/ArkLib/issues/1) tracks the framework and links its
+individual work items. The plan records decisions; issues record progress.
+
 The other pages have narrower jobs:
 
 | Document | Purpose | Stability |
@@ -35,6 +39,7 @@ The other pages have narrower jobs:
 | [`03-adversarial-oracle-execution.md`](03-adversarial-oracle-execution.md) | Worlds, traces, games, state restoration, extractors, and budgets | normative core, fluid periphery |
 | [`04-oracle-elimination-compiler.md`](04-oracle-elimination-compiler.md) | Compiler passes, backend capabilities, and guarantee transport | normative interfaces, fluid internals |
 | [`05-roadmap.md`](05-roadmap.md) | Implementation phases, gates, and parallel upstream work | operational |
+| [`06-composition-plan.md`](06-composition-plan.md) | Next eight composition PRs, assumptions, decisions, and acceptance tests | planned work |
 
 Read them in that order for a full architecture review. To start implementation, read `00`, the
 relevant ArkLib slice in `01a`, and then the owning normative page. AR-3A and AR-3B additionally

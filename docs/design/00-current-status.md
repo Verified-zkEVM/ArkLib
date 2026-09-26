@@ -8,8 +8,10 @@ landed (AR-1 through AR-10B; ArkLib #851–#892). Native full-protocol Sumcheck 
 verifier with explicit abort and soundness against arbitrary native prover continuations. Plain
 native interaction now has additive composition soundness, including an explicit admissibility
 error. No declaration under `ArkLib/Interaction/` or
-`ArkLib/ProofSystem/Sumcheck/Interaction/` uses `sorry`. The next work is the restricted-oracle and
-world-backed composition bridge, and protocol evidence beyond Sumcheck (FRI and Spartan slices).
+`ArkLib/ProofSystem/Sumcheck/Interaction/` uses `sorry`. The next priority is the
+[composition plan C1–C8](06-composition-plan.md): compose restricted
+oracle verifiers, then prove soundness while preserving oracle state and prover memory. FRI and
+Spartan remain later protocol clients.
 State restoration and the compiler remain blocked on the
 upstream gaps listed below.
 
@@ -104,6 +106,8 @@ Naming follows [`docs/wiki/interaction-naming.md`](../wiki/interaction-naming.md
 | Accept/reject/fault outcomes | `Oracle/Terminal`, `Oracle/TerminalRun`, `Oracle/TerminalMeasure` | #886 |
 | Ordered world phases | `Oracle/WorldSegments`, `Oracle/PhasedExecution`, `Oracle/PhasedRun` | #889 |
 | Finite ordered composition | `Oracle/Composition` (`ExecutionInterface`) | #891 |
+| Direct native strategy execution | `Oracle/CoreRun.executeStrategiesCore` | #1216 |
+| General native composition soundness | `Interaction/CompositionSoundness` | #1218 |
 
 Sumcheck on the typed layer:
 
@@ -116,8 +120,8 @@ Sumcheck on the typed layer:
 | Two sequential rounds through the actual closed claim | `MultivariateRound`, `Sequential` | #883 |
 | Arbitrary consecutive rounds, honest completeness | `executeRoundsSampled_perfectCompleteness`, `executeRounds_uniform_perfectCompleteness` and measure forms | #892 |
 | Actual multivariate round soundness | `MultivariateRound.executeCore_sampled_soundness` | — |
-| Native full-protocol soundness | `Native.execute_soundness` in `ProtocolSoundness` | — |
-| Native honest completeness | `Native.execute_support_completeness`, `Native.execute_perfectCompleteness` in `ProtocolCompleteness` | — |
+| Native full-protocol soundness | `Native.execute_soundness` in `ProtocolSoundness` | #1214 |
+| Native honest completeness | `Native.execute_support_completeness`, `Native.execute_perfectCompleteness` in `ProtocolCompleteness` | #1214 |
 
 `Sumcheck/Interaction/Protocol` defines one oracle interaction tree. Each round receives a
 univariate polynomial oracle, then the verifier publicly aborts or supplies a fresh challenge.
@@ -163,8 +167,10 @@ The legacy verifier correspondence is honest-execution only: the legacy verifier
 polynomial for its next target, while the typed verifier reads the sent polynomial. Both relation
 directions are proved for arbitrary claims.
 
-The legacy `OracleReduction` layer is unchanged. Its carrier remains `ProtocolSpec n`, and its
-unrestricted stateful composition theorems remain admitted.
+The legacy `OracleReduction` layer remains in use. Its carrier is `ProtocolSpec n`; several
+unrestricted stateful composition theorems remain admitted. Existing legacy repairs are tracked
+separately in [#676](https://github.com/Verified-zkEVM/ArkLib/issues/676). The native results above
+do not remove admissions from legacy clients.
 
 The preserved `archive/oracle-reduction-v2-pre-split` branch contains the earlier interaction-native
 prototype and protocol ports (FRI, Spartan, Fiat–Shamir, BCS, boundary transport, security
@@ -178,7 +184,8 @@ The current source audit preserves the central model:
 1. An open oracle claim contains a public statement and source-scoped virtual output oracles.
 2. A virtual oracle is a typed query program over declared source capabilities.
 3. Its extensional meaning is obtained under the handler produced by the same execution.
-4. Closing is run-derived; callers cannot close a claim with an unrelated handler.
+4. Supported execution closes claims using that run's resources. The general `closeWith` helper
+   accepts a handler but does not itself prove that it came from an execution.
 5. Relations consume closed claims, not derivation histories.
 6. Composition is typed-tree append plus handler substitution and explicit context morphisms.
 7. `SourceCtx` is extensional; `OracleModel` assigns meaning and promises to stable names,
@@ -193,13 +200,14 @@ not already express.
 
 ## Open work
 
-In roadmap order (see [`05-roadmap.md`](05-roadmap.md)):
+The immediate order is C1–C8 in [the composition plan](06-composition-plan.md), tracked from
+[issue #1](https://github.com/Verified-zkEVM/ArkLib/issues/1). The broader roadmap remains below:
 
 | Item | Roadmap phase | Dependency |
 |---|---|---|
-| One FRI slice (derived virtual view) with a two-way legacy bridge | 3 | unblocked |
-| One Spartan-like slice (fresh prover message) with a two-way legacy bridge | 3 | unblocked |
-| Admissibility-aware ordinary soundness composition | 4 | unblocked; #889 does not yet connect the world-query classifier to `availableContext` |
+| One FRI slice (derived virtual view) with a two-way legacy bridge | 3 | deferred until reusable composition is exercised by Sumcheck |
+| One Spartan-like slice (fresh prover message) with a two-way legacy bridge | 3 | same priority as FRI |
+| Oracle and persistent-world soundness composition | 4 | C1–C8; #889 does not yet connect query classification to available access |
 | Salted state restoration, extractor calculus, RBR-to-SR implications | 5 | PolyFun transducer; VCVio conditioning facade |
 | Oracle-elimination compiler, typed BCS and Fiat–Shamir | 6 | Phase 5 plus the VCVio error-bearing reduction package |
 | Broad FRI/Spartan/BCS/Nova migration; deletion of the legacy namespace | after 4 | per-protocol two-way correspondences |
