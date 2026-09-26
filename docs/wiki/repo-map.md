@@ -31,6 +31,10 @@ home_page/            site assets and assembled website root
   state. `Interaction/Oracle/OrderedSoundness.lean` accumulates per-stage false-to-accepted-true
   errors for that optional executor. Its native measure theorem excludes rejection and does not
   yet provide the world-backed, admissibility-aware soundness game.
+- `ProofSystem/Sumcheck/Interaction/MultivariateSoundness.lean` transports the existing
+  univariate bound to the actual closed multivariate round. `AdaptiveRounds.lean` threads
+  randomized message kernels and private state through the ordered executor;
+  `AdaptiveSoundness.lean` accumulates their errors under fresh uniform challenges.
 - `ArkLib/OracleReduction/` remains the conceptual center of the legacy reduction and security
   layer while protocol clients migrate.
 - `ArkLib/Data/`, `ArkLib/ToMathlib/`, and `ArkLib/ToCompPoly/` support the

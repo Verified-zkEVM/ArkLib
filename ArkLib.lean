@@ -791,11 +791,14 @@ public import ArkLib.ProofSystem.Stir.ProximityGap
 public import ArkLib.ProofSystem.Stir.Quotienting
 public import ArkLib.ProofSystem.Sumcheck.Domain
 public import ArkLib.ProofSystem.Sumcheck.Impl.Basic
+public import ArkLib.ProofSystem.Sumcheck.Interaction.AdaptiveRounds
+public import ArkLib.ProofSystem.Sumcheck.Interaction.AdaptiveSoundness
 public import ArkLib.ProofSystem.Sumcheck.Interaction.ArbitraryCompleteness
 public import ArkLib.ProofSystem.Sumcheck.Interaction.ArbitraryRounds
 public import ArkLib.ProofSystem.Sumcheck.Interaction.Closing
 public import ArkLib.ProofSystem.Sumcheck.Interaction.Legacy
 public import ArkLib.ProofSystem.Sumcheck.Interaction.MultivariateRound
+public import ArkLib.ProofSystem.Sumcheck.Interaction.MultivariateSoundness
 public import ArkLib.ProofSystem.Sumcheck.Interaction.Projection
 public import ArkLib.ProofSystem.Sumcheck.Interaction.ProjectionTransport
 public import ArkLib.ProofSystem.Sumcheck.Interaction.Sequential

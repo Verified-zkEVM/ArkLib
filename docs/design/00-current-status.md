@@ -5,11 +5,10 @@ oracle-reduction layer already provides on `main`, and the next open work.
 
 The typed core, the first world-backed execution artifacts, and the Sumcheck acceptance slices have
 landed (AR-1 through AR-10B; ArkLib #851–#892). Optional ordered execution now also has a generic
-soundness error accumulation theorem. No declaration under `ArkLib/Interaction/` or
-`ArkLib/ProofSystem/Sumcheck/Interaction/` uses `sorry`. The next work is protocol evidence beyond
-Sumcheck (FRI and Spartan slices), multi-round Sumcheck soundness, and the admissibility-aware
-ordinary soundness composition theorem. State restoration and the compiler remain blocked on the
-upstream gaps listed below.
+soundness error accumulation theorem, with an adaptive multi-round Sumcheck instance. No
+declaration under `ArkLib/Interaction/` or `ArkLib/ProofSystem/Sumcheck/Interaction/` uses `sorry`. The next work is protocol evidence beyond
+Sumcheck (FRI and Spartan slices) and the admissibility-aware ordinary soundness composition
+theorem. State restoration and the compiler remain blocked on the upstream gaps listed below.
 
 ## Supported baseline
 
@@ -122,6 +121,18 @@ Sumcheck on the typed layer:
 | One-round reduction soundness, error `deg` over the field size | `executeCommitted_soundness`, `executeRandomCommitment_soundness` and measure forms | #881 |
 | Two sequential rounds through the actual closed claim | `MultivariateRound`, `Sequential` | #883 |
 | Arbitrary consecutive rounds, honest completeness | `executeRoundsSampled_perfectCompleteness`, `executeRounds_uniform_perfectCompleteness` and measure forms | #892 |
+| Actual multivariate round soundness | `MultivariateRound.executeCore_sampled_soundness` | — |
+| Randomized adaptive ordered-round soundness | `AdaptiveRounds`, `AdaptiveSoundness` | — |
+
+The adaptive Sumcheck executor threads private prover state and the reached public statement.
+Each message kernel runs before a fresh independent uniform receiver challenge. For a retained
+oracle realized by a multivariate polynomial of individual degree at most `deg` and a false
+initial claim, the mass of accepted true final claims after `count` consecutive rounds is at most
+`count * (deg / |F|)`.
+The bound uses the global degree cap on every adversarial message, including when an honest
+projection has smaller coordinate degree. Rejection short-circuits the remaining rounds.
+This result instantiates optional ordered execution; it does not supply the world-backed
+admissibility or fault guarantees described above.
 
 The legacy verifier correspondence is honest-execution only: the legacy verifier reads the input
 polynomial for its next target, while the typed verifier reads the sent polynomial. Both relation
@@ -161,7 +172,6 @@ In roadmap order (see [`05-roadmap.md`](05-roadmap.md)):
 
 | Item | Roadmap phase | Dependency |
 |---|---|---|
-| Multi-round Sumcheck soundness over `ExecutionInterface` composition | 3–4 | generic optional accumulation available; per-round bridge and adversary adapter open |
 | One FRI slice (derived virtual view) with a two-way legacy bridge | 3 | unblocked |
 | One Spartan-like slice (fresh prover message) with a two-way legacy bridge | 3 | unblocked |
 | Admissibility-aware ordinary soundness composition | 4 | unblocked; #889 does not yet connect the world-query classifier to `availableContext` |

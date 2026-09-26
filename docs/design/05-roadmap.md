@@ -148,9 +148,10 @@ is sorry-free; no theorem recreates unrestricted stateful composition.
 
 **Status:** AR-9A (#884), AR-9B (#886), AR-10A (#880), and AR-10B (#889) landed.
 `OrderedExecution.run_soundness_measure` now proves additive false-to-accepted-true error bounds
-for the optional ordered executor under its native oracle measure semantics. The next Sumcheck
-step is to prove the sampled multivariate round bound through the actual closed claim, then
-instantiate this theorem and provide the randomized adaptive-prover interface.
+for the optional ordered executor under its native oracle measure semantics. Sumcheck now
+instantiates it through the actual sampled multivariate round and a randomized adaptive-prover
+interface with private state. Its accepted-true error bound is `count * (deg / |F|)` from a false
+initial claim, with a retained polynomial-realized oracle and fresh uniform receiver challenges.
 The general admissibility-aware, world-backed composition theorem remains open: it must connect
 terminal outcomes and runtime state/history to the suffix security premise and account for faults.
 #889's world-query classifier is not yet connected to `availableContext`, so its profile additivity proves neither
