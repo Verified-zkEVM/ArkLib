@@ -10,14 +10,15 @@ import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.FiniteLe
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.LowRateFiniteLength
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.LowRateFiniteLengthBounds
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.Profile
+import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.Uniform
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.NormNum
 
 /-!
 # First-order Reed–Solomon list-bound acceptance cases
 
-Concrete examples exercise the automatic complete-list theorem and the profile-based finite-family
-theorem over `ℚ`.
+Concrete examples exercise the automatic complete-list theorem, the profile-based finite-family
+theorem and the uniform `307 n` list at gap `6/25` over `ℚ`.
 -/
 
 open Polynomial ReedSolomon ReedSolomon.HiddenDerivative
@@ -467,3 +468,12 @@ example :
   · exact lowRateFiniteLengthChallengeHeight_le_inv_slack_sq
       hrho hlow heta haOne hn
   · exact hparameters.1
+
+/-- At length `4`, dimension `2` and agreement `4 ≥ 2 + (6/25) 4`, the complete list has at most
+`307 * 4` members. -/
+example (received : Fin 4 → ℚ) :
+    ∃ list : Finset ℚ[X],
+      (∀ P, P ∈ list ↔ P ∈ closePolynomialSet rationalEvaluationDomain received 2 4) ∧
+      list.card ≤ 307 * 4 :=
+  exists_uniformFirstOrder_list 4 2 4 rationalEvaluationDomain received (by norm_num)
+    (by norm_num) le_rfl (by norm_num) fun _ ↦ Or.inl ringChar.eq_zero

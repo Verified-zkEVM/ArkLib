@@ -74,34 +74,20 @@ theorem exists_mathematicalUniformRatePartition_curve_exactPowerAgreement
         HasExactPowerAgreement domain values iota k z P := by
   classical
   obtain ⟨e⟩ := exists_mathematicalRatePartitionEnvelope hδ hδsmall hn hk hgap hAn
-  have hd := uniformDerivativeOrder_ge_519 hδ hδsmall
-  have hδone : δ < 1 := by linarith
-  have hm : 0 < uniformMathematicalMultiplicity δ :=
-    lt_of_lt_of_le (by omega) (add_two_le_closedMultiplicity (by norm_num)
-      (by omega : 1 ≤ uniformDerivativeOrder δ))
-  obtain ⟨_, _, hν, _⟩ := uniformMathematical_integer_guards hδ hδone hm hn
-  have hscale : (1 : ℝ) < 300 * (uniformDerivativeOrder δ : ℝ) ^ 3 := by
-    have hd' : (519 : ℝ) ≤ uniformDerivativeOrder δ := by exact_mod_cast hd
-    nlinarith [sq_nonneg (uniformDerivativeOrder δ : ℝ)]
-  obtain ⟨cert⟩ := e.exists_curve_certificate (scale := 300) hδ hδone (by omega) hscale hAn
+  obtain ⟨hd, hδone, hscale, hν, -⟩ := uniformMathematical_certificate_guards hδ hδsmall hn
+  obtain ⟨cert⟩ := e.exists_curve_certificate (scale := 300) hδ hδone hd hscale hAn
     domain (fun i ↦ powerBatchedCoordinate fun t ↦ values t i)
     (fun _ ↦ powerBatchedCoordinate_natDegree_le _)
   have hkA : k ≤ A := by
     have h : (k : ℝ) ≤ A := by nlinarith [mul_nonneg hδ.le (Nat.cast_nonneg n)]
     exact_mod_cast h
-  let K := max k (uniformDerivativeOrder δ + 1)
-  have hKn : K ≤ n := max_le (hkA.trans hAn) (by have := e.order_le; have := e.ambient_le; omega)
-  have hdν := uniformDerivativeOrder_le_mathematicalJetBound hδ hδsmall
-  have hchar' : ringChar F = 0 ∨ max (K - 1) (uniformMathematicalJetBound δ) < ringChar F := by
-    refine hchar.imp_right fun hc ↦ ?_
-    have hkchar := (Nat.le_max_left _ _).trans_lt hc
-    have hνchar := (Nat.le_max_right _ _).trans_lt hc
-    dsimp only [K]
-    omega
+  have hKn : max k (uniformDerivativeOrder δ + 1) ≤ n :=
+    max_le (hkA.trans hAn) (by have := e.order_le; have := e.ambient_le; omega)
   exact exists_exceptional_exactPowerAgreement_of_certificate_of_jetCharacteristic
     domain values iota cert hk (Nat.le_max_left _ _) (by omega)
     (Nat.lt_succ_self _ |>.trans_le (Nat.le_max_right _ _)) hKn hkA hAn hν
-    (by positivity) hℓ le_rfl hδ hδone.le hgap hchar'
+    (by positivity) hℓ le_rfl hδ hδone.le hgap
+    (uniformMathematical_ringChar_guard hδ hδsmall hchar)
 
 open Classical in
 /-- The extension-field curve bound descends to challenges and candidates over the base field. -/
@@ -159,8 +145,6 @@ theorem exists_mathematicalUniformRatePartition_line_exactCorrelatedPair
         HasExactCorrelatedPair domain f g (RingHom.id F) k z P := by
   classical
   have hnBase : uniformMathematicalLength δ ≤ n := (le_max_left _ _).trans hn
-  have hnJohnson : ⌈(4 : ℝ) * uniformMathematicalJetBound δ / δ ^ 2⌉₊ ≤ n :=
-    (le_max_right _ _).trans hn
   have hd := uniformDerivativeOrder_ge_519 hδ hδsmall
   have hnR : (0 : ℝ) ≤ n := Nat.cast_nonneg n
   have hkA : (k : ℝ) ≤ A := hgap.trans' (le_add_of_nonneg_right (by positivity))
@@ -196,14 +180,9 @@ theorem exists_mathematicalUniformRatePartition_line_exactCorrelatedPair
     have hkJet : k ≤ uniformMathematicalJetBound δ := by
       by_contra hjet
       exact hsupport (Or.inr (max_lt hdegreeChar (by omega)))
-    have hscale : 4 * ((k : ℝ) - 1) ≤ δ ^ 2 * n := by
-      have hjet : (4 : ℝ) * uniformMathematicalJetBound δ / δ ^ 2 ≤ n :=
-        (Nat.le_ceil _).trans (by exact_mod_cast hnJohnson)
-      have hkJetR : (k : ℝ) ≤ uniformMathematicalJetBound δ := by exact_mod_cast hkJet
-      have := (div_le_iff₀ (sq_pos_of_pos hδ)).mp hjet
-      nlinarith
     obtain ⟨exceptional, hcard, hgood⟩ := exists_johnson_line_exactCorrelatedPair_of_gap
-      domain f g hδ (by omega) hscale hgap hAn
+      domain f g hδ (by omega)
+      (four_mul_pred_le_sq_mul_of_le_uniformMathematicalJetBound hδ hn hkJet) hgap hAn
     exact ⟨exceptional, hcard.le.trans hJohnson, hgood⟩
 
 end ReedSolomon

@@ -355,35 +355,19 @@ theorem automatic_first_order_squarefree_list_bound_of_slack
       calc
         (B : ℝ) ≤ automaticJetBoundConstant rho / eta :=
           automaticJetDegree_le_inv_eta hrho hrhoOne heta haOne
-        _ = automaticJetBoundConstant rho * q := by dsimp only [q]; ring
-        _ ≤ C * q := by
-          gcongr
-          exact automaticJetBoundConstant_le_envelope rho
-    have hN : (1 : ℝ) ≤ n := by exact_mod_cast hn
-    have hC0 : 0 ≤ C := zero_le_one.trans hC
-    have hq0 : 0 ≤ q := zero_le_one.trans hq
-    have hx : 1 ≤ C * q := by
-      nlinarith [mul_nonneg (sub_nonneg.mpr hC) (sub_nonneg.mpr hq)]
-    have hCN : 1 ≤ C * (n : ℝ) := by
-      nlinarith [mul_nonneg (sub_nonneg.mpr hC) (sub_nonneg.mpr hN)]
-    have hsquare : C * q ≤ (C * q) ^ 2 := by
-      nlinarith [mul_nonneg (mul_nonneg hC0 hq0) (sub_nonneg.mpr hx)]
-    have hlarge : (C * q) ^ 2 ≤ C ^ 3 * n * q ^ 2 := by
-      have hnonneg : 0 ≤ (C * q) ^ 2 := sq_nonneg _
-      have := mul_nonneg hnonneg (sub_nonneg.mpr hCN)
-      nlinarith
+        _ = automaticJetBoundConstant rho * q := div_eq_mul_one_div _ _
+        _ ≤ C * q := mul_le_mul_of_nonneg_right
+          (automaticJetBoundConstant_le_envelope rho) (zero_le_one.trans hq)
+    have hnonneg : 0 ≤ C ^ 3 * n * q ^ 2 := by positivity
     calc
       ((closePolynomialSet domain received k A).ncard : ℝ) ≤ B := hcard
       _ ≤ C * q := hB
-      _ ≤ C ^ 3 * n * q ^ 2 := hsquare.trans hlarge
-      _ ≤ FirstOrder.Squarefree.automaticSquarefreeListBoundConstant rho * n /
+      _ ≤ C ^ 3 * n * q ^ 2 := FirstOrder.Squarefree.mul_le_rate_envelope hC hq hn
+      _ ≤ 7 * C ^ 3 * n * q ^ 2 := by linarith
+      _ = FirstOrder.Squarefree.automaticSquarefreeListBoundConstant rho * n /
           eta ^ 2 := by
-        dsimp only [C, q]
         unfold FirstOrder.Squarefree.automaticSquarefreeListBoundConstant
-        field_simp [ne_of_gt heta]
-        have hnonneg : 0 ≤ automaticRateEnvelopeConstant rho ^ 3 * (n : ℝ) := by
-          positivity
-        nlinarith
+        rw [one_div_pow, ← div_eq_mul_one_div]
   · have hM : 1 ≤ M := Nat.one_le_iff_ne_zero.mpr hMzero
     have hMB : M ≤ B := by
       dsimp only [M, B]
@@ -473,7 +457,7 @@ theorem closePolynomialSet_finite_and_card_le_finiteLength_of_dimension_le_one
   have hCPow : (1 : ℝ) ≤ C ^ 3 := one_le_pow₀ hC
   rw [le_div_iff₀ (sq_pos_of_pos hs)]
   have hn0 : (0 : ℝ) ≤ n := by positivity
-  nlinarith [mul_nonneg hn0 (sub_nonneg.mpr hsSq),
+  linarith [mul_nonneg hn0 (sub_nonneg.mpr hsSq),
     mul_nonneg hn0 (sub_nonneg.mpr hCPow)]
 
 open Classical in

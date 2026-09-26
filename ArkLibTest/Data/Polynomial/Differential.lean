@@ -523,7 +523,7 @@ private abbrev scaledExpEquation : DifferentialPolynomial (Polynomial ℚ) 1 :=
 
 /-- The numerator of `y' = t y` specializes at the nonzero parameter `t = 5`. -/
 example :
-    map (Polynomial.aeval (5 : ℚ)).toRingHom
+    MvPolynomial.map (Polynomial.aeval (5 : ℚ)).toRingHom
         (rationalTaylorNumeratorOver ℚ 0 scaledExpEquation 2) =
       rationalTaylorNumerator 0
         (X (some 1) - C (5 : ℚ) * X (some 0) : DifferentialPolynomial ℚ 1) 2 := by
@@ -539,7 +539,7 @@ private abbrev rationalId : ℚ →ₐ[ℚ] ℚ := AlgHom.id ℚ ℚ
 
 /-- The mapped agreement equation for `Y₁` at parameter `2` is `Y₀ + 2Y₁ - 2`. -/
 example :
-    map (Polynomial.aeval (2 : ℚ)).toRingHom
+    MvPolynomial.map (Polynomial.aeval (2 : ℚ)).toRingHom
         (taylorAgreementEquationOver (F := ℚ) (0 : Polynomial ℚ)
           (constantDerivativeEquation (Polynomial ℚ)) 2 Polynomial.X Polynomial.X (τ := 4)) =
       X (0 : Fin 2) + C (2 : ℚ) * X (1 : Fin 2) - C (2 : ℚ) := by
@@ -568,11 +568,11 @@ example :
 /-- At the regular jet `(1, 0)`, the mapped symbolic agreement equation vanishes. -/
 example :
     aeval (constantJet (F := ℚ))
-        (map rationalId.toRingHom
+        (MvPolynomial.map rationalId.toRingHom
           (taylorAgreementEquationOver (F := ℚ) (0 : ℚ) (constantDerivativeEquation ℚ)
             1 (4 : ℚ) 1 (τ := 2))) = 0 := by
   have hS : aeval (constantJet (F := ℚ))
-      (map rationalId.toRingHom (initialJetSeparant (0 : ℚ)
+      (MvPolynomial.map rationalId.toRingHom (initialJetSeparant (0 : ℚ)
         (constantDerivativeEquation ℚ))) ≠ 0 := by
     norm_num [rationalId, map_initialJetSeparant, initialJetSeparant, separant,
       constantDerivativeEquation, constantJet]
@@ -619,12 +619,12 @@ private theorem rationalTaylorCoefficient_scaledEquation_one :
 
 /-- The common-numerator reconstruction theorem computes coefficient `1` of `X / 2`. -/
 example :
-    aeval (zeroJetVector (F := ℚ) 1) (map rationalId.toRingHom
+    aeval (zeroJetVector (F := ℚ) 1) (MvPolynomial.map rationalId.toRingHom
       (commonTaylorNumeratorOver ℚ 0 scaledEquation 4 1)) = 8 := by
-  have hSval : aeval (zeroJetVector (F := ℚ) 1) (map rationalId.toRingHom
+  have hSval : aeval (zeroJetVector (F := ℚ) 1) (MvPolynomial.map rationalId.toRingHom
       (initialJetSeparant 0 scaledEquation)) = 2 := by
     simpa [rationalId] using initialJetSeparant_scaledEquation
-  have hS : aeval (zeroJetVector (F := ℚ) 1) (map rationalId.toRingHom
+  have hS : aeval (zeroJetVector (F := ℚ) 1) (MvPolynomial.map rationalId.toRingHom
       (initialJetSeparant 0 scaledEquation)) ≠ 0 := by
     rw [hSval]
     norm_num
@@ -638,7 +638,8 @@ example :
     (zeroJetVector (F := ℚ) 1) hS ⟨1, by omega⟩
   have hcoeff' : (Polynomial.taylor (rationalId 0)
       (rationalTaylorPolynomial (rationalId 0)
-        (map rationalId.toRingHom scaledEquation) 2 (zeroJetVector (F := ℚ) 1))).coeff 1 =
+        (MvPolynomial.map rationalId.toRingHom scaledEquation) 2
+        (zeroJetVector (F := ℚ) 1))).coeff 1 =
         (1 / 2 : ℚ) := by
     simpa [rationalId] using hcoeff
   rw [hSval, hcoeff'] at hnum
@@ -650,12 +651,12 @@ example :
     (rationalTaylorPolynomial 0 (X (some 1) : DifferentialPolynomial ℚ 1) 2
       (constantJet (F := ℚ))).degree
       < 1 := by
-  have hS : aeval (constantJet (F := ℚ)) (map (Polynomial.aeval (0 : ℚ)).toRingHom
+  have hS : aeval (constantJet (F := ℚ)) (MvPolynomial.map (Polynomial.aeval (0 : ℚ)).toRingHom
       (initialJetSeparant 0 (constantDerivativeEquation (Polynomial ℚ)))) ≠ 0 := by
     rw [map_initialJetSeparant]
     norm_num [initialJetSeparant, separant, constantDerivativeEquation, constantJet]
   have hhigh : ∀ l : Fin 2, 1 ≤ l.val →
-      aeval (constantJet (F := ℚ)) (map (Polynomial.aeval (0 : ℚ)).toRingHom
+      aeval (constantJet (F := ℚ)) (MvPolynomial.map (Polynomial.aeval (0 : ℚ)).toRingHom
         (commonTaylorNumeratorOver ℚ 0
           (constantDerivativeEquation (Polynomial ℚ)) 4 l.val)) = 0 := by
     intro l hl
@@ -734,23 +735,23 @@ example : ((optionEquivRight ℚ (Fin 2)).symm
 example :
     (Polynomial.taylor (0 : ℚ)
       (rationalTaylorPolynomial (0 : ℚ)
-        (map (Polynomial.aeval (R := ℚ) (0 : ℚ)).toRingHom
+        (MvPolynomial.map (Polynomial.aeval (R := ℚ) (0 : ℚ)).toRingHom
           (constantDerivativeEquation (Polynomial ℚ)))
         2 (constantJet (F := ℚ)))).coeff 0 = 1 ∧
     (Polynomial.taylor (0 : ℚ)
       (rationalTaylorPolynomial (0 : ℚ)
-        (map (Polynomial.aeval (R := ℚ) (0 : ℚ)).toRingHom
+        (MvPolynomial.map (Polynomial.aeval (R := ℚ) (0 : ℚ)).toRingHom
           (constantDerivativeEquation (Polynomial ℚ)))
         2 (constantJet (F := ℚ)))).coeff 1 = 0 := by
   have hS : aeval (constantJet (F := ℚ))
-      (map (Polynomial.aeval (R := ℚ) (0 : ℚ)).toRingHom
+      (MvPolynomial.map (Polynomial.aeval (R := ℚ) (0 : ℚ)).toRingHom
         (initialJetSeparant (Polynomial.C (0 : ℚ))
           (constantDerivativeEquation (Polynomial ℚ)))) ≠ 0 := by
     rw [map_initialJetSeparant]
     simp [constantDerivativeEquation, initialJetSeparant, separant]
   have hcuts : ∀ l : Fin 2, ¬2 ∣ l.val →
       aeval (constantJet (F := ℚ))
-        (map (Polynomial.aeval (R := ℚ) (0 : ℚ)).toRingHom
+        (MvPolynomial.map (Polynomial.aeval (R := ℚ) (0 : ℚ)).toRingHom
           (commonTaylorNumeratorOver ℚ (Polynomial.C (0 : ℚ))
             (constantDerivativeEquation (Polynomial ℚ))
             4 l.val)) = 0 := by
@@ -768,7 +769,7 @@ example :
   constructor
   · rw [rationalTaylorPolynomial, Polynomial.coeff_taylor_centeredCoefficientPrefix]
     simpa [constantJet] using rationalTaylorCoefficient_initial (0 : ℚ)
-      (map (Polynomial.aeval (R := ℚ) (0 : ℚ)).toRingHom
+      (MvPolynomial.map (Polynomial.aeval (R := ℚ) (0 : ℚ)).toRingHom
         (constantDerivativeEquation (Polynomial ℚ)))
         (constantJet (F := ℚ)) ⟨0, by omega⟩
   · simpa using hSparse 1 (by decide)
@@ -1027,7 +1028,7 @@ example :
     jetDegreeCastsNeZero_of_ringChar (Or.inl ringChar.eq_zero)
   have hdegree : jetTotalDegree Q ≤ 1 := by
     simpa [Q, zeroJetEquation, jetDegree] using jetTotalDegree_le_sum_jetDegree Q
-  have hbin : ∀ r, r ≤ 0 → ∀ i, r < i → i < 1 → (i.choose r : ℚ) ≠ 0 := by omega
+  have hbin : ∀ r : ℕ, r ≤ 0 → ∀ i : ℕ, r < i → i < 1 → (i.choose r : ℚ) ≠ 0 := by omega
   have hsolution : ∀ P ∈ roots, differentialSpecialization Q P = 0 := by
     simp [roots, Q, zeroJetEquation]
   have hmul := card_mul_le_jetTotalDegree_mul hQ hcast roots hsolution (left := 1)
@@ -1322,8 +1323,7 @@ example :
         (X (some 0) ^ 2 : DifferentialPolynomial (Polynomial (ZMod 2)) 0) 0 := by
       simpa using (MvPolynomial.CoeffNatDegreeLE.pow
         (MvPolynomial.coeffNatDegreeLE_X (R := ZMod 2) (some 0)) 2)
-    change MvPolynomial.CoeffNatDegreeLE
-      (X none + -(X (some 0) ^ 2 : DifferentialPolynomial (Polynomial (ZMod 2)) 0)) 0
+    rw [frobeniusInseparableEquation, sub_eq_add_neg]
     have hminus : MvPolynomial.CoeffNatDegreeLE
         (-(X (some 0) ^ 2 : DifferentialPolynomial (Polynomial (ZMod 2)) 0)) 0 := by
       intro m

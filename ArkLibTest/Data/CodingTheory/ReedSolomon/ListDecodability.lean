@@ -5,13 +5,15 @@ Authors: Quang Dao
 -/
 
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.DirectJetList
+import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.PairwiseJohnson
 import ArkLibTest.Data.CodingTheory.HiddenDerivative.Interpolation
 
 /-!
-# Direct-jet list-bound acceptance cases
+# Direct-jet and pairwise Johnson list-bound acceptance cases
 
 The order-zero equation `Y₀` over `ZMod 5` has the zero polynomial as a regular agreeing root.
-The examples apply the regular-stage estimate and the complete actual-stage chain bound.
+The examples apply the regular-stage estimate and the complete actual-stage chain bound. A last
+example applies the pairwise Johnson gap bound at length `16`.
 -/
 
 open MvPolynomial PolynomialDifferential ReedSolomon ReedSolomon.HiddenDerivative
@@ -91,3 +93,21 @@ example :
       decide)
 
 end DirectJetListTest
+
+namespace PairwiseJohnsonTest
+
+private def natDomain (n : ℕ) : Fin n ↪ ℚ := ⟨fun i ↦ (i : ℚ), fun i j h ↦ by
+  apply Fin.ext
+  change (i.val : ℚ) = (j.val : ℚ) at h
+  exact_mod_cast h⟩
+
+/-- At length `16`, dimension `2`, gap `1/2` and agreement `10`, the list has at most `8/3`
+members. -/
+example : ((ReedSolomon.closePolynomialSet (natDomain 16) 0 2 10).ncard : ℝ) ≤ 8 / 3 := by
+  have h := (ReedSolomon.closePolynomialSet_finite_and_ncard_le_pairwiseJohnson_of_gap
+    (natDomain 16) 0 (k := 2) (A := 10) (δ := 1 / 2) (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num)).2
+  norm_num at h
+  convert h
+
+end PairwiseJohnsonTest
