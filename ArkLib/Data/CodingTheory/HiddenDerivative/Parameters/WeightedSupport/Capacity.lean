@@ -36,11 +36,7 @@ from the order bounds in `Parameters/WeightedSupport/ScalarParameters.lean` and 
 ## Main statements
 
 * `capacityDerivativeOrder_eq_zero`, `capacityDerivativeOrder_eq_ceil`: the two branches.
-* `capacityDerivativeOrder_lower`: for `0 < δ < 1 / 4`, `48000 ≤ d`, `ξ / δ ≤ log d` and
-  `ξ / δ ≤ harmonic (d - 1)`.
 * `weightedSupportMultiplicity_pos_iff`: `0 < m ↔ 2 ≤ d`.
-* `capacity_block_bounds`: for `0 < δ < 1 / 4`, `8 m ≤ n` and `k + ⌈δ n⌉₊ ≤ n`, the order is
-  below the ambient degree `K - 1` and `k ≤ K ≤ n`.
 * `prescribed_geometric_parameters`: the prescribed order, multiplicity and Taylor cutoff satisfy
   the size and agreement bounds used by geometric list counting.
 
@@ -78,15 +74,6 @@ theorem capacityDerivativeOrder_eq_ceil {δ : ℝ} (hδ : δ < 1 / 4) :
     capacityDerivativeOrder δ = ⌈Real.exp (xi / δ)⌉₊ := by
   exact ite_eq_right (not_le_of_gt hδ)
 
-/-- For `0 < δ < 1 / 4`, the derivative order `d` satisfies `48000 ≤ d`, `ξ / δ ≤ log d` and
-`ξ / δ ≤ harmonic (d - 1)`. This is `prescribed_order_lower` at the weighted-support branch; the
-bound `δ < 1 / 4` is what selects that branch, and `0 < δ` makes `ξ / δ` large. -/
-theorem capacityDerivativeOrder_lower {δ : ℝ} (hδ : 0 < δ) (hδmax : δ < 1 / 4) :
-    48000 ≤ capacityDerivativeOrder δ ∧ xi / δ ≤ Real.log (capacityDerivativeOrder δ) ∧
-      xi / δ ≤ (harmonic (capacityDerivativeOrder δ - 1) : ℝ) := by
-  rw [capacityDerivativeOrder_eq_ceil hδmax]
-  exact prescribed_order_lower δ hδ hδmax.le
-
 /-- The weighted-support multiplicity `m = ⌈100 d ^ 2 harmonic (d - 1)⌉₊` at derivative order `d`.
 
 The capacity construction uses it at `d = capacityDerivativeOrder δ` with `δ < 1 / 4`. For `d ≤ 1`
@@ -123,21 +110,6 @@ its exponent of `q` from `2 d` to `d`. The natural subtraction is truncated, so 
 `2 max 0 (m A + d - K)`. -/
 def LargeFieldCondition (δ : ℝ) (n k q d m : ℕ) : Prop :=
   2 * (m * (k + ⌈δ * n⌉₊) + d - weightedSupportAmbientDimension δ n k) ≤ q
-
-/-- The block bounds at the capacity parameters. Let `0 < δ < 1 / 4`,
-`d = capacityDerivativeOrder δ`, `m = weightedSupportMultiplicity d` and
-`K = weightedSupportAmbientDimension δ n k`. If `8 m ≤ n` and `k + ⌈δ n⌉₊ ≤ n`, then `0 < n`,
-`d < K - 1` and `k ≤ K ≤ n`. This is `prescribedBlockBounds` for these definitions. The block
-condition `8 m ≤ n` is what makes `δ n` large compared with `d ^ 2`; the threshold condition
-`k + ⌈δ n⌉₊ ≤ n` gives `K ≤ n`. -/
-theorem capacity_block_bounds {δ : ℝ} {n k : ℕ} (hδ : 0 < δ) (hδmax : δ < 1 / 4)
-    (hblock : 8 * weightedSupportMultiplicity (capacityDerivativeOrder δ) ≤ n)
-    (hA : k + ⌈δ * n⌉₊ ≤ n) :
-    0 < n ∧ capacityDerivativeOrder δ < weightedSupportAmbientDimension δ n k - 1 ∧
-      k ≤ weightedSupportAmbientDimension δ n k ∧ weightedSupportAmbientDimension δ n k ≤ n := by
-  rw [capacityDerivativeOrder_eq_ceil hδmax] at hblock ⊢
-  obtain ⟨hn, -, hdD, -, -, hK, -⟩ := prescribedBlockBounds δ n k hδ hδmax.le hblock hA
-  exact ⟨hn, hdD, le_max_left _ _, hK⟩
 
 /-- The prescribed order and multiplicity give the size and agreement bounds for geometric
 list counting. -/

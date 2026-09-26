@@ -21,8 +21,7 @@ all-rate prime-field bounds and their large-gap and weighted-support regimes.
 ## Main statements
 
 * `polynomialListBound`: the field-size polynomial bound from a prefactor and exponent.
-* `CapacityGapCertificate`: an exact decoder, a `Code.Lambda` bound, and the oversized-threshold
-  empty-list property.
+* `CapacityGapCertificate`: an exact decoder and a `Code.Lambda` bound.
 * `CapacityGapCertificate.pointwiseListBound`: the decoder certificate bounds each polynomial
   agreement list and makes it empty above the block length.
 * `CapacityGapCertificate.ofDecoderCertificate` and
@@ -67,10 +66,6 @@ structure CapacityGapCertificate (delta : ℝ) {ι F : Type*} [Semiring F] [Deci
   lambda_le :
     Code.Lambda (ReedSolomon.code domain messageDim : Set (ι → F))
       (capacityRadius delta (Fintype.card ι) messageDim) ≤ (listBound : ℕ∞)
-  /-- The requested list is empty when its integral threshold exceeds the block length. -/
-  empty_of_threshold_exceeds :
-    Fintype.card ι < capacityAgreementThreshold delta (Fintype.card ι) messageDim →
-      ∀ received, decoderCertificate.decoder received = ∅
 
 /-- Package an exact decoder and a `Lambda` bound into a capacity-gap certificate. -/
 def CapacityGapCertificate.ofDecoderCertificate {delta : ℝ}
@@ -84,8 +79,6 @@ def CapacityGapCertificate.ofDecoderCertificate {delta : ℝ}
     CapacityGapCertificate delta domain messageDim listBound where
   decoderCertificate := decoderCertificate
   lambda_le := lambda_le
-  empty_of_threshold_exceeds hThreshold received :=
-    decoderCertificate.decoder_eq_empty_of_card_lt hThreshold received
 
 /-- The pointwise combinatorial content for one received word. -/
 def PointwiseListBound {ι F : Type*} [Semiring F] [DecidableEq F] [Fintype ι]

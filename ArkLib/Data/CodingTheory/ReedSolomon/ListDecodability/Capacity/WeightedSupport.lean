@@ -135,7 +135,9 @@ theorem weightedSupport_capacity_list_bound : WeightedSupportListBound := by
   let m := weightedSupportMultiplicity d
   have hm : 0 < m :=
     (weightedSupportMultiplicity_pos_iff).2 (by
-      have := (capacityDerivativeOrder_lower hδ hδmax).1
+      have := (HiddenDerivative.WeightedSupportParameters.prescribed_order_lower
+        δ hδ hδmax.le).1
+      rw [← capacityDerivativeOrder_eq_ceil hδmax] at this
       dsimp only [d]
       omega)
   exact ⟨hm, 4 * m, by positivity,

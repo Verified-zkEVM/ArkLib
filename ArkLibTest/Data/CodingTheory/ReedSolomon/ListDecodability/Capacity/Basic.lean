@@ -82,7 +82,7 @@ example {ι F : Type*} [Semiring F] [DecidableEq F] [Fintype ι]
     (hThreshold : Fintype.card ι < capacityAgreementThreshold delta (Fintype.card ι) messageDim)
     (received : ι → F) :
     certificate.decoderCertificate.decoder received = ∅ :=
-  certificate.empty_of_threshold_exceeds hThreshold received
+  certificate.decoderCertificate.decoder_eq_empty_of_card_lt hThreshold received
 
 example {ι F : Type*} [Semiring F] [DecidableEq F] [Fintype ι]
     {delta : ℝ} {domain : ι ↪ F} {messageDim listBound : ℕ}

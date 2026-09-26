@@ -79,16 +79,18 @@ private theorem prescribedSampleSetup :
         using congrArg ZMod.val hij
   }
   have hDge2 : 2 ≤ sampleD := by
-    have hd := capacityDerivativeOrder_lower (δ := sampleDelta) (by norm_num [sampleDelta])
-      (by norm_num [sampleDelta])
+    have hd := (prescribed_order_lower sampleDelta (by norm_num [sampleDelta])
+      (by norm_num [sampleDelta])).1
+    rw [← capacityDerivativeOrder_eq_ceil (by norm_num [sampleDelta])] at hd
     dsimp [sampleD]
     omega
   have hm : 1 ≤ sampleM := by
     dsimp [sampleM]
     exact Nat.succ_le_of_lt (weightedSupportMultiplicity_pos_iff.mpr hDge2)
   have hHlower : (108 / 5 : ℝ) ≤ harmonic (sampleD - 1) := by
-    have h := (capacityDerivativeOrder_lower (δ := sampleDelta)
+    have h := (prescribed_order_lower sampleDelta
       (by norm_num [sampleDelta]) (by norm_num [sampleDelta])).2.2
+    rw [← capacityDerivativeOrder_eq_ceil (by norm_num [sampleDelta])] at h
     change ReedSolomon.HiddenDerivative.WeightedSupportParameters.xi / sampleDelta ≤
       harmonic (sampleD - 1) at h
     norm_num [ReedSolomon.HiddenDerivative.WeightedSupportParameters.xi, sampleDelta] at h
@@ -185,8 +187,9 @@ example :
         (4 * sampleM * q ^ sampleD : ℕ∞) := by
     simpa only [one_mul, Nat.cast_mul, Nat.cast_pow, Nat.cast_ofNat] using hbound
   have hdge2 : 2 ≤ sampleD := by
-    have h := (capacityDerivativeOrder_lower (δ := sampleDelta)
+    have h := (prescribed_order_lower sampleDelta
       (by norm_num [sampleDelta]) (by norm_num [sampleDelta])).1
+    rw [← capacityDerivativeOrder_eq_ceil (by norm_num [sampleDelta])] at h
     dsimp [sampleD]
     omega
   have hA : 2 ≤ sampleA := by
