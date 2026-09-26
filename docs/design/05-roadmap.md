@@ -146,10 +146,15 @@ Prove ordinary soundness composition in its honest form:
 **Gate:** the Sumcheck, FRI, and Spartan slices have two-way legacy bridges; the composition theorem
 is sorry-free; no theorem recreates unrestricted stateful composition.
 
-**Status:** AR-9A (#884), AR-9B (#886), AR-10A (#880), and AR-10B (#889) landed. The ordinary
-soundness composition theorem and multi-round Sumcheck soundness are open. #889's world-query
-classifier is not yet connected to `availableContext`, so its profile additivity proves neither
-access admissibility nor a cost bound.
+**Status:** AR-9A (#884), AR-9B (#886), AR-10A (#880), and AR-10B (#889) landed.
+`Sumcheck/Interaction/ProtocolSoundness` proves soundness of the full native Sumcheck interaction,
+quantifying over ordinary prover strategies with effectful challenge-dependent continuations.
+Its final evaluation obligation remains an output oracle relation. The proof does not use a
+separate state-kernel executor or establish general world-backed composition.
+
+The ordinary soundness composition theorem remains open. #889's world-query classifier is not
+yet connected to `availableContext`, so its profile additivity proves neither access admissibility
+nor a cost bound.
 
 ## Phase 5 — State restoration and extractor calculus [L]
 

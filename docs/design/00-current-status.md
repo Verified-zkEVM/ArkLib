@@ -1,12 +1,13 @@
 # Current status
 
-**Status date:** 2026-09-22. **Scope:** the supported dependency baseline, what the typed
+**Status date:** 2026-09-25. **Scope:** the supported dependency baseline, what the typed
 oracle-reduction layer already provides on `main`, and the next open work.
 
 The typed core, the first world-backed execution artifacts, and the Sumcheck acceptance slices have
-landed (AR-1 through AR-10B; ArkLib #851–#892). No declaration under `ArkLib/Interaction/` or
+landed (AR-1 through AR-10B; ArkLib #851–#892). Native full-protocol Sumcheck now has a
+verifier with explicit abort and soundness against arbitrary native prover continuations. No declaration under `ArkLib/Interaction/` or
 `ArkLib/ProofSystem/Sumcheck/Interaction/` uses `sorry`. The next work is protocol evidence beyond
-Sumcheck (FRI and Spartan slices), multi-round Sumcheck soundness, and the admissibility-aware
+Sumcheck (FRI and Spartan slices) and the admissibility-aware
 ordinary soundness composition theorem. State restoration and the compiler remain blocked on the
 upstream gaps listed below.
 
@@ -112,6 +113,31 @@ Sumcheck on the typed layer:
 | One-round reduction soundness, error `deg` over the field size | `executeCommitted_soundness`, `executeRandomCommitment_soundness` and measure forms | #881 |
 | Two sequential rounds through the actual closed claim | `MultivariateRound`, `Sequential` | #883 |
 | Arbitrary consecutive rounds, honest completeness | `executeRoundsSampled_perfectCompleteness`, `executeRounds_uniform_perfectCompleteness` and measure forms | #892 |
+| Actual multivariate round soundness | `MultivariateRound.executeCore_sampled_soundness` | — |
+| Native full-protocol soundness | `Native.execute_soundness` in `ProtocolSoundness` | — |
+| Native honest completeness | `Native.execute_support_completeness`, `Native.execute_perfectCompleteness` in `ProtocolCompleteness` | — |
+
+`Sumcheck/Interaction/Protocol` defines one oracle interaction tree. Each round receives a
+univariate polynomial oracle, then the verifier publicly aborts or supplies a fresh challenge.
+The prover is the ordinary `Interaction.Oracle.Prover.Strategy`: its continuations retain private
+memory and may perform effects after receiving the challenge. There is no separate private-state
+kernel in the security statement. `Native.execute` invokes `executeCore` on those strategies.
+
+The verifier queries the sent polynomial for its sum check and next target. It exports the
+original polynomial oracle through a virtual view, retaining the accumulated access to earlier
+messages. At the last leaf, the output relation says that this retained oracle evaluated at the
+full challenge vector equals the final target. This is a relation on the output, not a final
+verifier query. From a false initial claim over an oracle realized by a polynomial of individual
+degree at most `deg`, soundness bounds the probability of a non-rejected true output by
+`count * deg / |F|` for fresh uniform challenges. The honest native strategy sends the projected
+round polynomials. From a true initial claim, every supported execution returns a true output;
+probabilistic completeness is one for any challenge program.
+
+`Oracle/Composition` and the earlier `ArbitraryRounds` clients execute sequences of separate
+reductions across explicit interfaces. Those execution results do not by themselves establish
+soundness for arbitrary strategies on a composed interaction tree. The native Sumcheck theorem
+follows the actual full-tree execution directly. General world-backed composition, admissibility,
+and fault accounting remain separate obligations.
 
 The legacy verifier correspondence is honest-execution only: the legacy verifier reads the input
 polynomial for its next target, while the typed verifier reads the sent polynomial. Both relation
@@ -151,7 +177,6 @@ In roadmap order (see [`05-roadmap.md`](05-roadmap.md)):
 
 | Item | Roadmap phase | Dependency |
 |---|---|---|
-| Multi-round Sumcheck soundness over `ExecutionInterface` composition | 3–4 | unblocked |
 | One FRI slice (derived virtual view) with a two-way legacy bridge | 3 | unblocked |
 | One Spartan-like slice (fresh prover message) with a two-way legacy bridge | 3 | unblocked |
 | Admissibility-aware ordinary soundness composition | 4 | unblocked; #889 does not yet connect the world-query classifier to `availableContext` |
