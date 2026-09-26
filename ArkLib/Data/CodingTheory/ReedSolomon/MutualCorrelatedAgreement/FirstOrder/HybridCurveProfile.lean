@@ -63,14 +63,6 @@ theorem bestOptimizedCurveEnvelope_le_best (p : LineProfile) (split : ℕ)
     bestOptimizedCurveEnvelope p split ≤ bestCurveEnvelope p split := by
   exact min_le_min le_rfl (squarefreeSharpOptimizedCurveEnvelope_le_fixed p split hDA)
 
-/-- The best fixed-threshold curve bound is no larger than its hybrid branch. -/
-theorem bestCurveEnvelope_le_hybrid (p : LineProfile) (split : ℕ) :
-    bestCurveEnvelope p split ≤ hybridOptimizedCurveEnvelope p := min_le_left _ _
-
-/-- The best fixed-threshold curve bound is no larger than its squarefree branch. -/
-theorem bestCurveEnvelope_le_squarefree (p : LineProfile) (split : ℕ) :
-    bestCurveEnvelope p split ≤ squarefreeSharpCurveEnvelope p split := min_le_right _ _
-
 universe u
 
 open Classical in

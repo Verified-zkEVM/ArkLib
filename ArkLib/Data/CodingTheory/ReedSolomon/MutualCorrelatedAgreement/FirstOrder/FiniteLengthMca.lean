@@ -57,6 +57,21 @@ theorem one_le_finiteLengthMcaParameterConstant (rho : ℝ) :
     1 ≤ finiteLengthMcaParameterConstant rho := by
   exact (le_max_left _ _).trans (le_max_left _ _)
 
+/-- A quadratic collision count fits the finite-length exception budget whenever the slack is
+at most one and the envelope constant is at least one. -/
+theorem square_le_finiteLengthMcaExceptionBudget
+    {C eta : ℝ} {n : ℕ} (hC : 1 ≤ C) (heta : 0 < eta)
+    (hsOne : finiteLengthSlack eta n ≤ 1) :
+    (n : ℝ) ^ 2 ≤ 140 * C ^ 6 * n ^ 2 / finiteLengthSlack eta n ^ 4 := by
+  have hsPos := finiteLengthSlack_pos (n := n) heta
+  have hCpow : 1 ≤ C ^ 6 := one_le_pow₀ hC
+  rw [le_div_iff₀ (pow_pos hsPos 4)]
+  have hsFour : finiteLengthSlack eta n ^ 4 ≤ 1 := pow_le_one₀ hsPos.le hsOne
+  have hnSq : (0 : ℝ) ≤ (n : ℝ) ^ 2 := sq_nonneg _
+  calc
+    (n : ℝ) ^ 2 * finiteLengthSlack eta n ^ 4 ≤ (n : ℝ) ^ 2 := by nlinarith
+    _ ≤ 140 * C ^ 6 * (n : ℝ) ^ 2 := by nlinarith
+
 /-- The retained squarefree line expression equals the finite-length envelope at every length
 and code rate, including boundary cases with truncated natural subtraction. -/
 theorem Squarefree.retainedSquarefreeLineAgreementEnvelope_eq_finiteLengthMcaEnvelope
@@ -237,10 +252,6 @@ open Classical in
 private theorem exists_exceptional_finiteLengthMca_zero_derivative
     {F : Type u} [Field F]
     {rho eta : ℝ} {n N Dcert k A : ℕ}
-    (_hrho : 0 < rho) (_hrhoOne : rho < 1) (_heta : 0 < eta)
-    (_haOne : firstOrderRateThreshold rho + eta < 1)
-    (_hn : (2 : ℝ) ≤ rho * n)
-    (_hbetaHalf : finiteLengthDerivativeRatio rho eta ≤ 1 / 2)
     (hk : 2 ≤ k) (hkA : k ≤ A) (hAn : A ≤ n)
     (domain : Fin n ↪ F) (f g : Fin n → F)
     (columns : Fin N → SourceColumn 1)
@@ -350,7 +361,7 @@ theorem finiteLengthSelectorMcaEnvelope_le
     (haOne : firstOrderRateThreshold rho + eta < 1)
     (hn : (2 : ℝ) ≤ rho * n)
     (hbetaHalf : finiteLengthDerivativeRatio rho eta ≤ 1 / 2)
-    (_hk : 2 ≤ k) (hDrate : (((k - 1 : ℕ) : ℝ)) ≤ rho * n)
+    (hDrate : (((k - 1 : ℕ) : ℝ)) ≤ rho * n)
     (hA : (firstOrderRateThreshold rho + eta) * n ≤ A)
     (hAn : A ≤ n) :
     let C := finiteLengthMcaParameterConstant rho
@@ -424,7 +435,7 @@ theorem finiteLengthSelectorMcaEnvelope_le_inv_eta
     (haOne : firstOrderRateThreshold rho + eta < 1)
     (hn : (2 : ℝ) ≤ rho * n)
     (hbetaHalf : finiteLengthDerivativeRatio rho eta ≤ 1 / 2)
-    (hk : 2 ≤ k) (hDrate : (((k - 1 : ℕ) : ℝ)) ≤ rho * n)
+    (hDrate : (((k - 1 : ℕ) : ℝ)) ≤ rho * n)
     (hA : (firstOrderRateThreshold rho + eta) * n ≤ A)
     (hAn : A ≤ n) :
     let C := finiteLengthMcaParameterConstant rho
@@ -436,7 +447,7 @@ theorem finiteLengthSelectorMcaEnvelope_le_inv_eta
       140 * C ^ 6 * n ^ 2 / eta ^ 4 := by
   dsimp only
   apply (finiteLengthSelectorMcaEnvelope_le hrho hrhoOne heta haOne hn hbetaHalf
-    hk hDrate hA hAn).trans
+    hDrate hA hAn).trans
   exact div_finiteLengthSlack_four_le_div_eta_four
     (by positivity : 0 ≤ 140 * finiteLengthMcaParameterConstant rho ^ 6 * (n : ℝ) ^ 2)
       heta
@@ -651,11 +662,11 @@ private theorem exists_exceptional_finiteLengthMca_of_selector_certificate_of_tw
         140 * finiteLengthMcaParameterConstant rho ^ 6 * n ^ 2 /
           finiteLengthSlack eta n ^ 4 :=
     finiteLengthSelectorMcaEnvelope_le
-      hrho hrhoOne heta haOne hn hbetaHalf hk hDrate hA hAn
+      hrho hrhoOne heta haOne hn hbetaHalf hDrate hA hAn
   by_cases hMzero : finiteLengthDerivativeCap rho eta n = 0
   · obtain ⟨exceptional, hcard, hgood⟩ :=
       exists_exceptional_finiteLengthMca_zero_derivative
-        hrho hrhoOne heta haOne hn hbetaHalf hk hkA hAn
+        hk hkA hAn
         domain f g columns cert hMzero hchar
     refine ⟨exceptional, hcard.trans ?_, hgood⟩
     rw [hMzero, firstOrderExceptionConstant_zero_eq_finiteLengthMcaEnvelope]
@@ -716,19 +727,10 @@ theorem exists_exceptional_finiteLengthMca_of_selector_certificate
     obtain ⟨exceptional, hcard, hgood⟩ :=
       exists_exceptional_exactLineMca_one n A domain f g hAPos
     refine ⟨exceptional, hcard.trans ?_, hgood⟩
-    let C := finiteLengthMcaParameterConstant rho
-    let s := finiteLengthSlack eta n
-    have hC : 1 ≤ C := one_le_finiteLengthMcaParameterConstant rho
-    have hs : 0 < s := finiteLengthSlack_pos heta
-    have hsOne : s ≤ 1 :=
+    have hsOne : finiteLengthSlack eta n ≤ 1 :=
       (finiteLengthSlack_lt_one_of_rate hrho hrhoOne haOne hn).le
-    rw [le_div_iff₀ (pow_pos hs 4)]
-    have hsFour : s ^ 4 ≤ 1 := pow_le_one₀ hs.le hsOne
-    have hCpow : 1 ≤ C ^ 6 := one_le_pow₀ hC
-    have hnSq : (0 : ℝ) ≤ (n : ℝ) ^ 2 := sq_nonneg _
-    calc
-      (n : ℝ) ^ 2 * s ^ 4 ≤ (n : ℝ) ^ 2 := by nlinarith
-      _ ≤ 140 * C ^ 6 * (n : ℝ) ^ 2 := by nlinarith
+    exact square_le_finiteLengthMcaExceptionBudget
+      (one_le_finiteLengthMcaParameterConstant rho) heta hsOne
 
 open Classical in
 /-- The same selector-to-semantics theorem with the simpler inverse-`eta` exception budget. -/

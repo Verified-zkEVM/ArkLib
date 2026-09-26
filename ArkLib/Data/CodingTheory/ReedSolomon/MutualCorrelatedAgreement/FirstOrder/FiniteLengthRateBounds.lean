@@ -138,15 +138,7 @@ theorem automaticFirstOrder_finiteLength_finiteSlack_bounds
       obtain ⟨exceptional, hcard, hgood⟩ :=
         exists_exceptional_exactLineMca_one n A domain f g hAPos
       refine ⟨exceptional, hcard.trans ?_, hgood⟩
-      have hsPos := finiteLengthSlack_pos (n := n) heta
-      have hCpow : 1 ≤ finiteLengthMcaParameterConstant rho ^ 6 := one_le_pow₀ hC
-      rw [le_div_iff₀ (pow_pos hsPos 4)]
-      have hsFour : finiteLengthSlack eta n ^ 4 ≤ 1 := pow_le_one₀ hsPos.le hsOne
-      have hnSq : (0 : ℝ) ≤ (n : ℝ) ^ 2 := sq_nonneg _
-      calc
-        (n : ℝ) ^ 2 * finiteLengthSlack eta n ^ 4 ≤ (n : ℝ) ^ 2 := by nlinarith
-        _ ≤ 140 * finiteLengthMcaParameterConstant rho ^ 6 * (n : ℝ) ^ 2 := by
-          nlinarith
+      exact square_le_finiteLengthMcaExceptionBudget hC heta hsOne
 
 open Classical in
 /-- Automatic semantic finite-length bounds on the clean first-order selector branch.
