@@ -14,10 +14,12 @@ and performs another effect before constructing the second message. A noncommuta
 checks the actual effect order, including the response to a public abort.
 -/
 
+open Interaction.Oracle
+
 namespace Sumcheck.Interaction.Native.Test
 
 open OracleComp OracleSpec Polynomial
-open _root_.Interaction.Oracle
+open MultivariateRound
 
 noncomputable section
 
@@ -32,7 +34,8 @@ abbrev events : OracleSpec (Fin 4) := Fin 4 →ₒ ZMod 17
 def event (i : Fin 4) : OracleComp events (ZMod 17) := liftM (events.query i)
 
 /-- The last native response retains a terminal effect on both possible public branches. -/
-def lastProver (a b r : ZMod 17) : Prover (ZMod 17) 1 events 1 := by
+def lastProver (a b r : ZMod 17) : Prover.Strategy events (protocol (ZMod 17) 1 1).tree
+    (protocol (ZMod 17) 1 1).roles (fun _ => Unit) := by
   refine pure ⟨affine (b + a) (a * r + 1), ?_⟩
   intro choice
   cases choice <;> exact do
@@ -40,7 +43,8 @@ def lastProver (a b r : ZMod 17) : Prover (ZMod 17) 1 events 1 := by
     return ()
 
 /-- This is an ordinary native strategy; private memory is captured by its continuations. -/
-def adaptive : Prover (ZMod 17) 1 events 2 := by
+def adaptive : Prover.Strategy events (protocol (ZMod 17) 1 2).tree
+    (protocol (ZMod 17) 1 2).roles (fun _ => Unit) := by
   refine do
     let a ← event 0
     return ⟨affine a 1, ?_⟩
@@ -53,7 +57,7 @@ def adaptive : Prover (ZMod 17) 1 events 2 := by
       let b ← event 2
       return lastProver a b r
 
-def original : (family (ZMod 17) 2 1).Behavior := fun _ => (0 : ZMod 17)
+def original : (polynomialFamily (ZMod 17) 2 1).Behavior := fun _ => (0 : ZMod 17)
 
 def initial : Spec.StatementRound (ZMod 17) 2 0 := ⟨1, Fin.elim0⟩
 
@@ -61,10 +65,11 @@ def record : QueryImpl events (StateM (List (Fin 4))) := fun i => do
   modify (fun seen => seen ++ [i])
   return ![7, 3, 5, 11] i
 
-/-- The ordinary executor receives the native prover itself as its private input. -/
+/-- Run the native strategy directly, without packaging it as a reduction witness. -/
 def run (domain : List (ZMod 17)) :=
   execute (ZMod 17) 2 1 events (event 1) domain 2 0 (by decide)
-    (family (ZMod 17) 2 1).spec.toPFunctor (VirtualOracle.id (family (ZMod 17) 2 1))
+    (polynomialFamily (ZMod 17) 2 1).spec.toPFunctor
+    (VirtualOracle.id (polynomialFamily (ZMod 17) 2 1))
     initial original adaptive
 
 set_option backward.isDefEq.respectTransparency false in
@@ -76,12 +81,12 @@ theorem two_rounds : run [0] = (do
     let s ← event 1
     let _ ← event 3
     return some (⟨⟨(b + a) * s + (a * r + 1), ![r, s]⟩, original⟩ :
-      ClosedClaim (FinalStatement (ZMod 17) 2) (family (ZMod 17) 2 1))) := by
+      ClosedClaim (FinalStatement (ZMod 17) 2) (polynomialFamily (ZMod 17) 2 1))) := by
   have hvec (r s : ZMod 17) : Fin.snoc (Fin.snoc Fin.elim0 r) s = ![r, s] := by
     funext i
     fin_cases i <;> rfl
-  simp [run, execute_succ, execute_zero, adaptive, lastProver, affine, initial, hvec,
-    extendRoot_eval]
+  simp [run, execute_succ, execute_zero, adaptive, lastProver, affine, initial, hvec]
+  congr 1
 
 /-- A noncommutative handler observes all five effects in the required order. -/
 example : (simulateQ record ((fun result => result.map (fun claim => claim.stmt.target)) <$>

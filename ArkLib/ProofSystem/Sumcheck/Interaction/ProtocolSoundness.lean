@@ -21,10 +21,11 @@ by induction on the remaining protocol rounds.
 
 @[expose] public section
 
+open Interaction.Oracle
+
 namespace Sumcheck.Interaction.MultivariateRound
 
 open OracleComp OracleSpec
-open _root_.Interaction.Oracle
 open SingleRound
 open scoped ENNReal
 
@@ -58,7 +59,6 @@ end Sumcheck.Interaction.MultivariateRound
 namespace Sumcheck.Interaction.Native
 
 open OracleComp OracleSpec
-open _root_.Interaction.Oracle
 open SingleRound MultivariateRound
 open scoped ENNReal
 
@@ -73,19 +73,22 @@ satisfies its original-oracle evaluation relation is at most `count * deg / |F|`
 
 The prover's response to each challenge is an arbitrary effectful native continuation. Its
 effects execute after that challenge; no external private-state or message-kernel representation
-is assumed. All accumulated source slots remain available, while `root` identifies the original
-oracle view. The final relation is a predicate on the actual output behavior and does not add a
+is assumed. All accumulated source slots remain available, while `originalOracle` identifies the
+original oracle view. The final relation is a predicate on the actual output behavior and does not
+add a
 verifier query. -/
 theorem execute_soundness {m : ℕ} (D : Fin m ↪ F)
     (count start : ℕ) (finish : start + count = n) (A : PFunctor)
-    (root : VirtualOracle (OracleSpec.ofPFunctor A) (family F n deg))
+    (originalOracle : VirtualOracle (OracleSpec.ofPFunctor A) (polynomialFamily F n deg))
     (stmt : Spec.StatementRound F n ⟨start, by omega⟩)
     (impl : QueryImpl (OracleSpec.ofPFunctor A) Id)
-    (prover : Prover F deg unifSpec count) (p : Spec.OracleStatement F n deg ())
-    (hroot : root.eval impl = (family F n deg).behaviorOfRealizations (fun _ => p))
-    (hfalse : ¬ closedRelation F n deg D ⟨start, by omega⟩ ⟨stmt, root.eval impl⟩) :
+    (prover : Prover.Strategy unifSpec (protocol F deg count).tree
+      (protocol F deg count).roles (fun _ => Unit)) (p : Spec.OracleStatement F n deg ())
+    (horiginal : originalOracle.eval impl =
+      (polynomialFamily F n deg).behaviorOfRealizations (fun _ => p))
+    (hfalse : ¬ closedRelation F n deg D ⟨start, by omega⟩ ⟨stmt, originalOracle.eval impl⟩) :
     Pr{let result ← (execute F n deg unifSpec ($ᵗ F) (Finset.univ.map D).toList
-      count start finish A root stmt impl prover)}[
+      count start finish A originalOracle stmt impl prover)}[
         result.map (outputRelation F n deg) = some True] ≤
       (count : ENNReal) * deg / Fintype.card F := by
   induction count generalizing start A with
@@ -94,7 +97,7 @@ theorem execute_soundness {m : ℕ} (D : Fin m ↪ F)
     rw [execute_zero]
     simpa [outputRelation] using
       (fun h => hfalse ((closedRelation_last_iff F start deg D
-        ⟨stmt, root.eval impl⟩).mpr h))
+        ⟨stmt, originalOracle.eval impl⟩).mpr h))
   | succ count ih =>
     rw [execute_succ]
     refine prEvent_bind_le_of_forall_le _ _ _ ?_
@@ -105,30 +108,32 @@ theorem execute_soundness {m : ℕ} (D : Fin m ↪ F)
       let i : Fin n := ⟨start, by omega⟩
       let good : F → Prop := fun r => closedRelation F n deg D i.succ
         ⟨⟨q.val.eval r, Fin.snoc stmt.challenges r⟩,
-          (family F n deg).behaviorOfRealizations (fun _ => p)⟩
+          (polynomialFamily F n deg).behaviorOfRealizations (fun _ => p)⟩
       have hbad : Pr{let r ← ($ᵗ F)}[good r] ≤ (deg : ENNReal) / Fintype.card F :=
         uniform_successor_soundness n deg F D i stmt p q (by
           change ¬ closedRelation F n deg D ⟨start, by omega⟩
-            ⟨stmt, (family F n deg).behaviorOfRealizations (fun _ => p)⟩
-          rw [← hroot]
+            ⟨stmt, (polynomialFamily F n deg).behaviorOfRealizations (fun _ => p)⟩
+          rw [← horiginal]
           exact hfalse) hcheck
       have hbound := prEvent_bind_le_prEvent_add ($ᵗ F)
         (fun r => do
           let next ← respond (some r)
           execute F n deg unifSpec ($ᵗ F) (Finset.univ.map D).toList count (start + 1)
             (by omega) (Access.extend A (polynomialInterface F deg))
-            (extendRoot F n deg A root) ⟨q.val.eval r, Fin.snoc stmt.challenges r⟩
+            (originalOracle.sumWeaken (polynomialInterface F deg).spec)
+            ⟨q.val.eval r, Fin.snoc stmt.challenges r⟩
             (Access.extendImpl A (polynomialInterface F deg) impl q) next)
         good (fun result => result.map (outputRelation F n deg) = some True)
         (ε := (count : ENNReal) * deg / Fintype.card F) (fun r hr => by
           refine prEvent_bind_le_of_forall_le _ _ _ ?_
           intro next
           apply ih (start + 1) (by omega) (Access.extend A (polynomialInterface F deg))
-            (extendRoot F n deg A root) ⟨q.val.eval r, Fin.snoc stmt.challenges r⟩
+            (originalOracle.sumWeaken (polynomialInterface F deg).spec)
+            ⟨q.val.eval r, Fin.snoc stmt.challenges r⟩
             (Access.extendImpl A (polynomialInterface F deg) impl q) next
-          · rw [extendRoot_eval]
-            exact hroot
-          · rw [extendRoot_eval, hroot]
+          · rw [VirtualOracle.eval_sumWeaken_extendImpl]
+            exact horiginal
+          · rw [VirtualOracle.eval_sumWeaken_extendImpl, horiginal]
             exact hr)
       refine hbound.trans ?_
       calc

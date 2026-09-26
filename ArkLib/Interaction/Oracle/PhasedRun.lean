@@ -234,7 +234,8 @@ theorem executePhased_closed {StatementIn WitnessIn : Type}
     PhasedRun.closedResult <$> executePhased reduction impl stmt wit =
       (fun run => ⟨run.path.toBranchPath, run.closed⟩) <$>
         executeCore reduction impl stmt wit := by
-  simp only [executePhased, executePhases, executeCore, Reduction.execute, map_bind, map_pure]
+  simp only [executePhased, executePhases, executeCore_eq_execute,
+    Reduction.execute, map_bind, map_pure]
   conv_rhs => rw [← loggingOracle.fst_map_run_simulateQ (reduction.prover stmt wit)]
   simp only [bind_map_left, bind_assoc]
   apply bind_congr

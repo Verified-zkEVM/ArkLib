@@ -97,7 +97,7 @@ theorem executeCore_honest [DecidableEq R] (p : Message R deg)
     (h : (domain.map (fun x => p.val.eval x)).sum = target) :
     executeCore (claimReduction R deg ambient domain r) (inputImpl R deg p) target p =
       pure (honestRun R deg p r) := by
-  simp only [executeCore, _root_.Interaction.Oracle.Reduction.execute, claimReduction,
+  simp only [executeCore_eq_execute, _root_.Interaction.Oracle.Reduction.execute, claimReduction,
     pure_bind]
   change ((simulateQ (Verifier.liftAccessImpl ambient (access R deg)
       (Access.extendImpl (inputSpec R).toPFunctor (polynomialInterface R deg)
@@ -215,7 +215,7 @@ theorem executeSampled_eq [DecidableEq R] (challenge : ProbComp R) (p : Message 
     (domain : List R) (target : R)
     (h : (domain.map (fun x => p.val.eval x)).sum = target) :
     executeSampled R deg challenge p domain target = honestRun R deg p <$> challenge := by
-  simp only [executeSampled, executeCore, _root_.Interaction.Oracle.Reduction.execute,
+  simp only [executeSampled, executeCore_eq_execute, _root_.Interaction.Oracle.Reduction.execute,
     sampledClaimReduction, pure_bind]
   simp only [executeStrategies, prover, sampledClaimVerifier, protocol,
     Protocol.oracleWith_tree, Protocol.oracleWith_roles, Protocol.oracleWith_oracles,

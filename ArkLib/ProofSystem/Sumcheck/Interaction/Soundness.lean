@@ -53,7 +53,7 @@ theorem executeCommitted_eq [DecidableEq F] (challenge : ProbComp F)
     (p q : Message F deg) (domain : List F) (target : F) :
     executeCommitted F deg challenge p q domain target =
       committedRun F deg p q domain target <$> challenge := by
-  simp only [executeCommitted, executeCore, _root_.Interaction.Oracle.Reduction.execute,
+  simp only [executeCommitted, executeCore_eq_execute, _root_.Interaction.Oracle.Reduction.execute,
     sampledClaimReduction, pure_bind]
   simp only [executeStrategies, prover, sampledClaimVerifier, protocol,
     Protocol.oracleWith_tree, Protocol.oracleWith_roles, Protocol.oracleWith_oracles,

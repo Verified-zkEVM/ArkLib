@@ -20,10 +20,11 @@ challenge program is arbitrary; no intermediate relation premise is supplied by 
 
 @[expose] public section
 
+open Interaction.Oracle
+
 namespace Sumcheck.Interaction.Native
 
 open OracleComp OracleSpec
-open _root_.Interaction.Oracle
 open SingleRound MultivariateRound
 
 noncomputable section
@@ -34,7 +35,8 @@ variable {ι : Type} (ambient : OracleSpec ι)
 /-- Honest messages use the actual public prefix; memory lives in ordinary native continuations. -/
 def honestProver : (count start : ℕ) → (finish : start + count = n) →
     Spec.StatementRound R n ⟨start, by omega⟩ → Spec.OracleStatement R n deg () →
-    Prover R deg ambient count
+    Prover.Strategy ambient (protocol R deg count).tree
+      (protocol R deg count).roles (fun _ => Unit)
   | 0, _, _, _, _ => ()
   | count + 1, start, finish, stmt, p =>
       let q := Spec.SingleRound.projectedRoundPolynomial R n deg D ⟨start, by omega⟩
@@ -49,13 +51,15 @@ variable [DecidableEq R]
 /-- Every supported native honest execution accepts a true original-oracle evaluation claim. -/
 theorem execute_support_completeness (challenge : OracleComp ambient R)
     (count start : ℕ) (finish : start + count = n) (A : PFunctor)
-    (root : VirtualOracle (OracleSpec.ofPFunctor A) (family R n deg))
+    (originalOracle : VirtualOracle (OracleSpec.ofPFunctor A) (polynomialFamily R n deg))
     (stmt : Spec.StatementRound R n ⟨start, by omega⟩)
     (impl : QueryImpl (OracleSpec.ofPFunctor A) Id) (p : Spec.OracleStatement R n deg ())
-    (hroot : root.eval impl = (family R n deg).behaviorOfRealizations (fun _ => p))
-    (hcurrent : closedRelation R n deg D ⟨start, by omega⟩ ⟨stmt, root.eval impl⟩) :
+    (horiginal : originalOracle.eval impl =
+      (polynomialFamily R n deg).behaviorOfRealizations (fun _ => p))
+    (hcurrent : closedRelation R n deg D ⟨start, by omega⟩
+      ⟨stmt, originalOracle.eval impl⟩) :
     ∀ result ∈ support (execute R n deg ambient challenge (Finset.univ.map D).toList
-      count start finish A root stmt impl
+      count start finish A originalOracle stmt impl
         (honestProver R n deg D ambient count start finish stmt p)),
       result.map (outputRelation R n deg) = some True := by
   induction count generalizing start A with
@@ -65,7 +69,8 @@ theorem execute_support_completeness (challenge : OracleComp ambient R)
     intro result hresult
     rw [support_pure] at hresult
     subst result
-    have hrel := (closedRelation_last_iff R start deg D ⟨stmt, root.eval impl⟩).mp hcurrent
+    have hrel := (closedRelation_last_iff R start deg D
+      ⟨stmt, originalOracle.eval impl⟩).mp hcurrent
     change some (outputRelation R (start + 0) deg _) = some True
     have hprefix : stmt.challenges ∘ Fin.cast (rfl : start = start) = stmt.challenges := by
       funext j
@@ -77,7 +82,7 @@ theorem execute_support_completeness (challenge : OracleComp ambient R)
     let i : Fin n := ⟨start, by omega⟩
     let q := Spec.SingleRound.projectedRoundPolynomial R n deg D i stmt.challenges p
     have hconcrete : ((stmt, fun _ => p), ()) ∈ Spec.relationRound R n deg D i.castSucc := by
-      rw [hroot] at hcurrent
+      rw [horiginal] at hcurrent
       exact hcurrent
     have hcheck : ((Finset.univ.map D).toList.map (fun x => q.val.eval x)).sum = stmt.target :=
       projected_sum_of_relationRound R n deg D i stmt p hconcrete
@@ -88,29 +93,32 @@ theorem execute_support_completeness (challenge : OracleComp ambient R)
     intro result hresult
     obtain ⟨r, _, hnext⟩ := support_bind_exists hresult
     apply ih (start + 1) (by omega) (Access.extend A (polynomialInterface R deg))
-      (extendRoot R n deg A root) ⟨q.val.eval r, Fin.snoc stmt.challenges r⟩
+      (originalOracle.sumWeaken (polynomialInterface R deg).spec)
+      ⟨q.val.eval r, Fin.snoc stmt.challenges r⟩
       (Access.extendImpl A (polynomialInterface R deg) impl q)
-    · rw [extendRoot_eval]
-      exact hroot
-    · rw [extendRoot_eval, hroot]
+    · rw [VirtualOracle.eval_sumWeaken_extendImpl]
+      exact horiginal
+    · rw [VirtualOracle.eval_sumWeaken_extendImpl, horiginal]
       exact relationRound_projected_output R n deg D i stmt p r
     · exact hnext
 
 /-- Actual native honest execution has probability-one completeness for any challenge program. -/
 theorem execute_perfectCompleteness (challenge : ProbComp R)
     (count start : ℕ) (finish : start + count = n) (A : PFunctor)
-    (root : VirtualOracle (OracleSpec.ofPFunctor A) (family R n deg))
+    (originalOracle : VirtualOracle (OracleSpec.ofPFunctor A) (polynomialFamily R n deg))
     (stmt : Spec.StatementRound R n ⟨start, by omega⟩)
     (impl : QueryImpl (OracleSpec.ofPFunctor A) Id) (p : Spec.OracleStatement R n deg ())
-    (hroot : root.eval impl = (family R n deg).behaviorOfRealizations (fun _ => p))
-    (hcurrent : closedRelation R n deg D ⟨start, by omega⟩ ⟨stmt, root.eval impl⟩) :
+    (horiginal : originalOracle.eval impl =
+      (polynomialFamily R n deg).behaviorOfRealizations (fun _ => p))
+    (hcurrent : closedRelation R n deg D ⟨start, by omega⟩
+      ⟨stmt, originalOracle.eval impl⟩) :
     Pr{let result ← (execute R n deg unifSpec challenge (Finset.univ.map D).toList
-      count start finish A root stmt impl
+      count start finish A originalOracle stmt impl
         (honestProver R n deg D unifSpec count start finish stmt p))}[
         result.map (outputRelation R n deg) = some True] = 1 :=
   prEvent_eq_one_of_forall_mem_support _ _
-    (execute_support_completeness R n deg D unifSpec challenge count start finish A root stmt impl p
-      hroot hcurrent)
+    (execute_support_completeness R n deg D unifSpec challenge count start finish A
+      originalOracle stmt impl p horiginal hcurrent)
 
 end
 end Sumcheck.Interaction.Native

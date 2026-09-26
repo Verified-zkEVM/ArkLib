@@ -121,7 +121,10 @@ Sumcheck on the typed layer:
 univariate polynomial oracle, then the verifier publicly aborts or supplies a fresh challenge.
 The prover is the ordinary `Interaction.Oracle.Prover.Strategy`: its continuations retain private
 memory and may perform effects after receiving the challenge. There is no separate private-state
-kernel in the security statement. `Native.execute` invokes `executeCore` on those strategies.
+kernel in the security statement. `Native.execute` passes those strategies directly to
+`executeStrategiesCore`, then closes the actual run. A prover strategy is not repackaged as a
+reduction witness. The reduction entry point `executeCore` performs prover setup and delegates to
+the same strategy entry point. Both paths use `executeStrategies` and the same paired resources.
 
 The verifier queries the sent polynomial for its sum check and next target. It exports the
 original polynomial oracle through a virtual view, retaining the accumulated access to earlier
