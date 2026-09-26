@@ -104,7 +104,8 @@ Naming follows [`docs/wiki/interaction-naming.md`](../wiki/interaction-naming.md
 | Direct native strategy execution | `Oracle/CoreRun.executeStrategiesCore` | #1216 |
 | General native composition soundness | `Interaction/CompositionSoundness` | #1218 |
 | Restricted verifier composition for every whole native prover | `Oracle/Sequential.executeStrategies_append` | #1233 |
-| Composition through exported oracle interfaces and actual claim closing | `Oracle/SourceRouting.executeStrategies_appendExported_close` | this revision; [#1225](https://github.com/Verified-zkEVM/ArkLib/issues/1225) |
+| Composition through exported oracle interfaces and actual claim closing | `Oracle/SourceRouting.executeStrategies_appendExported_close` | #1234 |
+| Weighted and uniform soundness for exported oracle composition | `Oracle/CompositionSoundness` | this revision; [#1226](https://github.com/Verified-zkEVM/ArkLib/issues/1226) |
 | Oracle append paths, runtime roles, access, and query answers | `Oracle/TypeTree`, `Oracle/TypeTree/Decoration`, `Oracle/Access`, `Oracle/RunSources` | #1232 |
 | Fixed-prover, reachable, and averaged native bounds | `run_appendFlat_soundness_fixed`, `_of_support`, `_ae`, and `_weighted_ae` | #1231 |
 
@@ -139,7 +140,8 @@ verifier query. From a false initial claim over an oracle realized by a polynomi
 degree at most `deg`, soundness bounds the probability of a non-rejected true output by
 `count * deg / |F|` for fresh uniform challenges. The honest native strategy sends the projected
 round polynomials. From a true initial claim, every supported execution returns a true output;
-probabilistic completeness is one for any challenge program.
+probabilistic completeness is one for any `ProbComp` challenge, whose oracle specification is
+normalized. Support preservation alone makes no assertion about total successful mass.
 
 `Oracle/Composition` and the earlier `ArbitraryRounds` clients execute sequences of separate
 reductions across explicit interfaces. Those execution results do not by themselves establish
@@ -201,8 +203,32 @@ queries, and retain private prover memory and the ordered ambient log. A separat
 between different final statement and oracle realization types through a public Boolean, then
 checks the actual closed statement and answer in both branches.
 
-Composition soundness for these oracle verifiers, direct native persistent-runtime execution,
-access admissibility, and fault accounting remain separate obligations.
+`Oracle/CompositionSoundness` proves weighted and uniform bounds for this actual composed oracle
+execution. It charges true intermediate claims, false intermediate claims outside the next
+protocol's assumptions, and suffix success from false admissible claims. The suffix premise
+includes the final verifier action and closing with actual resources. It need only hold almost
+everywhere under the chosen whole prover's actual prefix distribution. The uniform bound is
+`εtruth + εinvalid + εsuffix`; the weighted bound averages the suffix error instead.
+
+A probability example exports the input value plus a public sample. The suffix queries that
+exported oracle and makes a fresh random final decision. Its true-midpoint mass is `1/2`, its
+false-inadmissible mass is zero, and its average remaining error is `1/4`, giving a `3/4` bound.
+A supported probability-zero branch violates the pointwise suffix bound, exercising the weaker
+almost-everywhere premise. True midpoint claims need not satisfy the suffix assumptions; they
+have already been charged.
+
+`Sumcheck/Interaction/Composition` proves that the existing native Sumcheck execution equals its
+first round followed by the remaining rounds through `appendExported`. It uses the same whole
+prover, including the actual continuation returned after a challenge or abort. Honest full-protocol
+completeness now follows through this execution equation, with its exported statements unchanged.
+The soundness proof also applies the generic oracle composition theorem at each round, recovering
+`count * deg / |F|` under the existing hypotheses. The previous separate induction is retired.
+The final original-polynomial equality remains an output oracle relation, with no added query.
+
+The theorem uses total deterministic source handlers and lawful probability semantics for the
+ambient oracle computation. It does not yet interpret a persistent stateful runtime. Direct native
+persistent-runtime execution, access admissibility, and fault accounting remain separate steps in
+the roadmap.
 
 The legacy verifier correspondence is honest-execution only: the legacy verifier reads the input
 polynomial for its next target, while the typed verifier reads the sent polynomial. Both relation

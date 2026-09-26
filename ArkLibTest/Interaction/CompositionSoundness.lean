@@ -289,5 +289,59 @@ theorem weighted_success :
     (fun _ => False) (fun _ out => out = true) error hsuffix
   simpa only [prEvent_const_of_not _ not_false, zero_add, average_error] using h
 
+
+/-- The final action makes a fresh query and can reject an otherwise accepted suffix. -/
+def finishWithQuery (_ : TypeTree.Path (tree.append (fun _ => TypeTree.done)))
+    (_ : Unit) (accepted : Bool) : M Bool := do
+  let sample ← query (spec := branchSpec) ()
+  return accepted && sample == 1
+
+/-- The final query halves the success mass on an accepted branch. -/
+theorem finishWithQuery_mass (path : TypeTree.Path (tree.append (fun _ => TypeTree.done)))
+    (accepted : Bool) :
+    Pr{let answer ← finishWithQuery path () accepted}[answer = true] =
+      if accepted then (1 / 2 : ENNReal) else 0 := by
+  unfold finishWithQuery
+  rw [prEvent_bind_eq_lintegral_of_discrete, OracleComp.evalDist_query]
+  change (∫⁻ sample : Fin 3,
+    Pr{let answer ← (pure (accepted && sample == 1) : M Bool)}[answer = true]
+      ∂branchMeasure) = _
+  cases accepted <;>
+    simp [branchMeasure, lintegral_add_measure, lintegral_smul_measure]
+
+/-- The composition bound includes the final query, giving `1/4` instead of `1/2`. -/
+theorem weighted_success_after_final_query :
+    Pr{let answer ← (do
+      let result ← run (tree.append (fun _ => TypeTree.done))
+        (roles.append (fun _ => PUnit.unit)) prover
+        (StrategyOver.TwoParty.Counterpart.appendFlat (Output₂ := fun _ => Bool)
+          prefixVerifier suffixVerifier)
+      finishWithQuery result.1 result.2.1 result.2.2)}[answer = true] ≤
+        (1 / 4 : ENNReal) := by
+  have hsuffix : ∀ᵐ b ∂𝒟[run tree roles (StrategyOver.TwoParty.Focal.splitPrefix prover)
+      prefixVerifier], ¬ False →
+        Pr{let answer ← (do
+          let result ← run .done PUnit.unit b.2.1 (suffixVerifier b.1 b.2.2)
+          finishWithQuery (PFunctor.FreeM.Path.append tree (fun _ => TypeTree.done) b.1 result.1)
+            result.2.1 result.2.2)}[answer = true] ≤ error b / 2 := by
+    rw [prefix_measure, ae_add_measure_iff]
+    constructor <;> apply Measure.ae_smul_measure <;>
+      rw [ae_dirac_iff MeasurableSet.of_discrete] <;> intro _ <;>
+      simp only [boundary, suffixVerifier, run, InteractionOver.runTypeTree,
+        participantProfile, collectParticipantOutputs, pure_bind]
+    all_goals rw [finishWithQuery_mass]
+    all_goals norm_num [error, boundary]
+  have h := run_appendFlat_soundness_weighted_ae_finish (OutputC := fun _ => Bool)
+    prover prefixVerifier suffixVerifier (fun _ => False)
+    finishWithQuery (fun answer => answer = true) (fun b => error b / 2) hsuffix
+  have havg : (∫⁻ b in {_b : Boundary | ¬ False}, error b / 2
+      ∂𝒟[run tree roles (StrategyOver.TwoParty.Focal.splitPrefix prover) prefixVerifier]) =
+        (1 / 4 : ENNReal) := by
+    rw [prefix_measure]
+    simp [lintegral_add_measure, lintegral_smul_measure, error, boundary, Fin.ext_iff,
+      ← ENNReal.mul_inv]
+    norm_num
+  simpa only [prEvent_const_of_not _ not_false, zero_add, havg] using h
+
 end
 end NativeCompositionTest.Weighted

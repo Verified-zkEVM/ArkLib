@@ -40,6 +40,28 @@ def protocol : ℕ → Protocol
         | none => .done
         | some _ => protocol count)
 
+/-- One oracle polynomial and a public challenge, with `none` announcing rejection. -/
+def firstRoundProtocol : Protocol :=
+  .oracleWith (Message R deg) (polynomialInterface R deg)
+    (.public .receiver (Option R) fun _ => .done)
+/-- Rejection ends the protocol; a successful challenge leaves the remaining rounds. -/
+def remainingProtocol (count : ℕ) (path : (firstRoundProtocol R deg).tree.BranchPath) : Protocol :=
+  match path.2.1 with
+  | none => .done
+  | some _ => protocol R deg count
+/-- The existing native protocol is the first round followed by the remaining public branch. -/
+theorem protocol_succ_eq_append (count : ℕ) : protocol R deg (count + 1) =
+    ⟨PFunctor.FreeM.append (firstRoundProtocol R deg).tree
+        (fun path => (remainingProtocol R deg count path).tree),
+      PFunctor.FreeM.Displayed.Decoration.append (firstRoundProtocol R deg).roles
+        (fun path => (remainingProtocol R deg count path).roles),
+      PFunctor.FreeM.Displayed.Decoration.append (firstRoundProtocol R deg).oracles
+        (fun path => (remainingProtocol R deg count path).oracles)⟩ := by
+  unfold protocol firstRoundProtocol remainingProtocol
+  simp only [Protocol.oracleWith, Protocol.public, Protocol.done,
+    PFunctor.FreeM.append, PFunctor.FreeM.Displayed.Decoration.append]
+  congr 3
+
 /-- The final claim has the full challenge vector and the claimed evaluation. -/
 abbrev FinalStatement := Spec.StatementRound R n (Fin.last n)
 
@@ -188,6 +210,41 @@ theorem execute_succ (challenge : OracleComp ambient R) (domain : List R)
     simp only [simulate_latest, pure_bind, bind_assoc]
     rfl
   · rfl
+
+/-- Equal original-oracle behavior gives the same native execution and optional closed claim.
+
+Both sides use the same statement, challenge program, and arbitrary whole native prover.
+Their source interfaces and total deterministic handlers may differ. The equality preserves
+ambient effects, including responses to public abort; it does not compare raw source query logs.
+This theorem observes the optional closed claim, as does `execute`. -/
+theorem execute_eq_of_originalOracle_eq (challenge : OracleComp ambient R) (domain : List R)
+    (count start : ℕ) (finish : start + count = n) (A B : PFunctor)
+    (viewA : VirtualOracle (ofPFunctor A) (polynomialFamily R n deg))
+    (viewB : VirtualOracle (ofPFunctor B) (polynomialFamily R n deg))
+    (stmt : Spec.StatementRound R n ⟨start, by omega⟩)
+    (implA : QueryImpl (ofPFunctor A) Id) (implB : QueryImpl (ofPFunctor B) Id)
+    (prover : Prover.Strategy ambient (protocol R deg count).tree
+      (protocol R deg count).roles (fun _ => Unit))
+    (hview : viewA.eval implA = viewB.eval implB) :
+    execute R n deg ambient challenge domain count start finish A viewA stmt implA prover =
+      execute R n deg ambient challenge domain count start finish B viewB stmt implB prover := by
+  induction count generalizing start A B with
+  | zero => simp only [execute_zero, hview]
+  | succ count ih =>
+    rw [execute_succ, execute_succ]
+    apply bind_congr
+    rintro ⟨q, respond⟩
+    change Message R deg at q
+    by_cases check : (domain.map (fun x => q.val.eval x)).sum = stmt.target
+    · simp only [check, ↓reduceIte]
+      apply bind_congr
+      intro r
+      apply bind_congr
+      intro next
+      apply ih
+      rw [VirtualOracle.eval_sumWeaken_extendImpl, VirtualOracle.eval_sumWeaken_extendImpl]
+      exact hview
+    · simp only [check, ↓reduceIte]
 
 end
 end Sumcheck.Interaction.Native

@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Sumcheck.Interaction.Protocol
+public import ArkLib.ProofSystem.Sumcheck.Interaction.Composition
 public import VCVio.OracleComp.EvalDist.Measure
 
 /-!
@@ -86,23 +86,27 @@ theorem execute_support_completeness (challenge : OracleComp ambient R)
       exact hcurrent
     have hcheck : ((Finset.univ.map D).toList.map (fun x => q.val.eval x)).sum = stmt.target :=
       projected_sum_of_relationRound R n deg D i stmt p hconcrete
-    rw [execute_succ]
+    rw [execute_eq_appendExported, execute_appendExported_succ]
     simp only [honestProver, pure_bind]
     dsimp only [q, i] at hcheck
     rw [ite_eq_left hcheck]
     intro result hresult
     obtain ⟨r, _, hnext⟩ := support_bind_exists hresult
-    apply ih (start + 1) (by omega) (Access.extend A (polynomialInterface R deg))
-      (originalOracle.sumWeaken (polynomialInterface R deg).spec)
+    apply ih (start + 1) (by omega) (polynomialFamily R n deg).spec.toPFunctor
+      (VirtualOracle.id (polynomialFamily R n deg))
       ⟨q.val.eval r, Fin.snoc stmt.challenges r⟩
-      (Access.extendImpl A (polynomialInterface R deg) impl q)
-    · rw [VirtualOracle.eval_sumWeaken_extendImpl]
+      (originalOracle.eval impl)
+    · rw [VirtualOracle.eval_id]
       exact horiginal
-    · rw [VirtualOracle.eval_sumWeaken_extendImpl, horiginal]
+    · rw [VirtualOracle.eval_id, horiginal]
       exact relationRound_projected_output R n deg D i stmt p r
     · exact hnext
 
-/-- Actual native honest execution has probability-one completeness for any challenge program. -/
+/-- Actual native honest execution has probability-one completeness for any `ProbComp` challenge.
+
+`ProbComp` uses a normalized oracle specification, so the challenge and the whole finite honest
+execution have total mass one. For an arbitrary ambient challenge computation, the support theorem
+above proves truth of every returned claim without asserting that a result is returned. -/
 theorem execute_perfectCompleteness (challenge : ProbComp R)
     (count start : ℕ) (finish : start + count = n) (A : PFunctor)
     (originalOracle : VirtualOracle (OracleSpec.ofPFunctor A) (polynomialFamily R n deg))
