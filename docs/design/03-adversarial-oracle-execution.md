@@ -139,12 +139,15 @@ is for the proof and does not grant the prover access to hidden fields.
 
 Let `E` be the prefix event charged as an error: a true intermediate claim reached from a false
 input, or an accepted claim outside the suffix's admissibility assumptions. If the actual suffix
-success probability after boundary `b` is bounded by a measurable `e(b)` outside `E`, the proposed
+success probability after boundary `b` is bounded by a measurable `e(b)` outside `E`, the
 weighted bound is
 
 ```text
 Pr[final success] ≤ μ(E) + ∫ over boundaries outside E, e(b) dμ(b).
 ```
+
+This bound is proved for plain native append. Its restricted-oracle and persistent-world
+applications still need their execution and interpretation bridges.
 
 The suffix measure or kernel must describe the actual remaining execution. Its definition needs
 an order-preserving sequential decomposition and appropriate lawful measure semantics. Obtaining
@@ -166,8 +169,8 @@ Support reachability means structural possibility under the chosen program, incl
 strategy. It is not necessarily positive probability: a supported result may have measure zero.
 Almost-everywhere premises and integrals require the relevant measurability facts. Uniform bounds
 are corollaries of the broader target, and there is no requirement to prove security at unreachable
-boundaries for one fixed execution. The current plain theorem provides the uniform form; these
-refinements and their oracle/runtime applications remain planned.
+boundaries for one fixed execution. The plain native layer provides these fixed-prover, support,
+almost-everywhere, and weighted forms. Their restricted-oracle and persistent-runtime applications remain planned.
 
 ### 4.3 Hidden state and adversary information
 
