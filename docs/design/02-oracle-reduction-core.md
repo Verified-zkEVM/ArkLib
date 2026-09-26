@@ -1,12 +1,14 @@
 # 02 — Oracle Reduction Core: Claims, Closing, and Composition
 
-**Normative.** The Δ-side design: what an oracle reduction is, what its output claim is, how claims
-close and compose. Supersedes the round-3 document's §§0–6.8 with the round-4 repairs applied; the
-raw history remains on the preserved
-[`archive/oracle-reduction-v2-pre-split`](https://github.com/Verified-zkEVM/ArkLib/tree/archive/oracle-reduction-v2-pre-split/docs/design/archive)
-branch.
+**Architecture and semantic requirements.** This chapter explains the read-only claim-resource
+layer, denoted Δ: what an oracle reduction receives, what it exports, and how those claims close
+and compose. The reader is assumed to know protocols, oracles, and soundness. Code snippets are
+schematic descriptions unless linked to an implemented declaration.
+[Current status](00-current-status.md) records the proved results; the
+[roadmap](05-roadmap.md) records implementation targets. Persistent worlds and probability
+premises belong to [the execution chapter](03-adversarial-oracle-execution.md).
 
-## 1. Ontology
+## 1. What an oracle reduction contains
 
 An oracle reduction transforms claims about oracles into new claims about (possibly derived) oracles. Four layers, four purposes:
 
@@ -19,15 +21,18 @@ An oracle reduction transforms claims about oracles into new claims about (possi
 
 Three objects around any oracle, never conflated: **(1)** concrete data (a polynomial), **(2)** arbitrary behavior (answers to all queries), **(3)** a query program deriving answers from other resources. The verifier defines (3); relations consume (2); the honest prover often has (1). The stable point:
 
-> the plan is the operational representation; behavior is its mathematical meaning; concrete data is an optional witness to that behavior.
+> A virtual oracle program is the operational representation; behavior is its mathematical meaning;
+> concrete data is an optional witness to that behavior.
 
-**The running example** (one FRI round) and the full motivation (why selection-only and data-only designs fail; the `main`-branch autopsy) are preserved in the archive; the two sentences that matter: a real FRI round contains *both* a derived virtual fold view *and* a fresh prover-sent word `g`, checked against each other by sampling — so output schemas must record which slots are derived and which are fresh; and the old `embed`-only design is why `main` could never state lenses, verifier append, or any composition security theorem.
+A FRI round illustrates why both derived and fresh oracles matter. It exports a virtual fold of
+an earlier word and receives a fresh prover word `g`, then checks their agreement by sampling.
+An output interface must be able to contain both views. Exporting only existing resource handles
+cannot express the derived view; exporting only concrete data hides how later queries are routed.
 
 ## 2. Representation-indexed claims
 
-One intended claim shape, three representations (round-4 unification). These snippets are design
-equations; exact universes and implicit arguments remain provisional until AR-4A through AR-7 in
-`01a` elaborate:
+The implemented [claim layer](../../ArkLib/Interaction/Oracle/Claim.lean) uses one claim shape
+with three representations. Omitting universe and indexing arguments, its structure is:
 
 ```lean
 structure ClaimWith (Rep : OracleFamily → Type) (Stmt : Type) (Out : OracleFamily) where
@@ -42,6 +47,11 @@ abbrev ConcreteClaim Stmt Out            := ClaimWith (fun O => ∀ i, O.Realiza
 
 Representation morphisms into behavior: `eval` (open → closed, per handler) and `OracleFamily.behaviorOfRealizations` (realizations → behavior). `ConcreteClaim.closesTo` states that interpreting a concrete claim gives exactly the specified closed claim. This is equality of statements and observable behavior; it does not assert honesty, relation membership, or execution provenance. `stmt` is produced by the verifier's own (possibly query-dependent) terminal computation; scalar outputs computed from oracle queries (sumcheck's `Tᵢ := sᵢ(rᵢ)`, STIR shift values) live in `stmt`, never in the oracle component. `stmt` is *run*-determined, not env-determined — the joint execution artifact (`03` §2) ties them; there is no theorem "`ClosedClaim` is a function of `Env`" and none should be attempted.
 
+Sumcheck gives a concrete distinction between a verifier query and an output relation. Its final
+claim retains the original polynomial oracle; the relation says that this oracle evaluated at the
+full challenge vector equals the final target. This is an obligation on the closed output, not an
+extra final verifier query to the original polynomial.
+
 ## 3. Core objects
 
 ### 3.1 Families and behavior
@@ -54,9 +64,13 @@ abbrev OracleFamily.Behavior {I : Type u} {Data : I → Type v}
     (Out : OracleFamily.{u, v, w} I Data) := QueryImpl ([Data]ₒ' Out.interface) Id
 ```
 
-(Repair C5: interfaces are explicit structure data; use ArkLib's explicit-instance spec notation `[…]ₒ'` throughout — a structure field is not a typeclass instance.)
+Interfaces are explicit structure data. ArkLib's explicit-instance spec notation `[…]ₒ'` supplies
+the chosen interface without assuming that a structure field is a typeclass instance.
 
-Structured semantics is an optional presentation (`SemanticPresentation`: `Sem`, `behavior : Sem → Behavior`), with injectivity (`FaithfulPresentation`) opt-in. Relations authored on a presentation owe behavioral invariance.
+An optional structured presentation can provide a type `Sem` and a map `Sem → Behavior`, with
+injectivity as an additional assumption. These proposed `SemanticPresentation` and
+`FaithfulPresentation` interfaces are conveniences for clients. Relations authored on any such
+presentation must be invariant under equality of behavior.
 
 ### 3.2 Source contexts
 
@@ -129,7 +143,15 @@ def OpenClaim.closeWith (c) (ρ : QueryImpl srcSpec Id) : ClosedClaim Stmt Out :
   ⟨c.stmt, c.oracles.eval ρ⟩
 ```
 
-`closeWith` is a semantic helper. Games never let a prover pair an arbitrary claim with an unrelated handler: the **joint execution artifact** (`03` §2) produces the claim and its closing handler together, and closing is a projection. (Round-4 repair C1/C2: the former `AcceptedRun`/`runClosed` sketches are replaced by the artifact; both were untyped as written — the branch-path index, prover payload, and Γ trace all live in the artifact.) Closing forgets the *presentation*, never needed resources: anything a later stage needs is an exported output slot (identity view); a fused implementation may optimize through old sources beneath the interface.
+`closeWith` is a semantic helper; it accepts a handler explicitly. Supported games instead use
+[`CoreRun.closed`](../../ArkLib/Interaction/Oracle/CoreRun.lean), which closes with the input
+behavior and messages paired by the same execution. The carrier alone does not certify that a run
+occurred: executor equations or support membership supply that provenance.
+
+Closing forgets the presentation while retaining the exported behavior. If a later reduction needs
+an earlier resource, the output interface must export it, for example by an identity view. A fused
+implementation may use the original sources beneath that interface, provided it proves the routing
+and observation laws described below.
 
 ## 4. Constructors
 
@@ -137,7 +159,80 @@ Minimal set: `id`/passthrough, `reindex`, `sumWeaken`, `mapSource`, `substSource
 
 ## 5. Composition
 
-Handler substitution with explicit interfaces:
+Composition has two claim-resource boundaries. They require different access rules even when a
+fused implementation runs both through the same interaction tree. A third boundary, persistent
+world state, is covered in [the execution chapter](03-adversarial-oracle-execution.md).
+
+```mermaid
+flowchart LR
+    A["One interaction: public path, remaining prover strategy, accumulated access"] --> B["Next fragment"]
+    C["Between reductions: exported statement and oracle behavior, private payload"] --> D["Next reduction through the exported interface"]
+    E["Persistent runtime: actual residual state and ordered history"] --> F["Next execution from that state"]
+```
+
+### 5.1 Continuing one interaction or starting the next reduction
+
+Inside one interaction, a suffix continues from the prefix's public structural path, verifier-local
+values, and accumulated oracle access. The prover continues with the actual remaining strategy,
+including its private memory. Earlier oracle messages remain available at the declared interfaces;
+their representations do not become arguments to verifier authoring code.
+
+Between reductions, the suffix receives the declared exported statement and oracle behavior, plus
+any separately carried private prover payload. It queries that exported interface. The prefix's
+input resources and sent messages implement the interface, but the suffix verifier cannot inspect
+their hidden environment. [`ExecutionInterface` and `ClosedStage`](../../ArkLib/Interaction/Oracle/Composition.lean)
+express this boundary for ordered execution of separate reductions. Their sequencing laws do not
+establish equality with one flattened native tree or a general composition-security theorem.
+
+An exported virtual oracle may derive one answer from several source queries, transform an answer,
+or hide a source slot entirely. Consequently, the exported-query log and source-query log need not
+be identical. A routing theorem must preserve their specified relationship, including query order,
+responses, multiplicity, and any charged expansion cost.
+
+### 5.2 Native strategies and suffix shape
+
+“Native” means using the existing interaction tree, prover strategy, and paired runner directly.
+The plain [`run_appendFlat_splitPrefix`](../../ArkLib/Interaction/CompositionSoundness.lean)
+equation extracts the actual suffix strategy from every whole prover on the appended tree. It
+requires only a lawful monad. Selecting the suffix counterpart is a pure function of the prefix
+path and counterpart output; effects inside either strategy remain unrestricted.
+
+Plain native append permits the suffix tree to depend on the complete prefix path. The proposed
+restricted oracle append must instead select its shape from `BranchPath`, the public structural
+path which hides concrete oracle messages. The runtime `ExecutionPath` retains those messages to
+interpret resource answers. Verifier-local query results may affect the verifier's strategy within
+the selected shape, and query-dependent public moves may select structural branches. A private
+computation cannot silently choose a different tree: that choice must be represented in public
+branching or supported by a coherent extension of the interaction model.
+
+### 5.3 Effect order and terminal computation
+
+The current [verifier interpreter](../../ArkLib/Interaction/Oracle/Execution.lean) returns a pending
+terminal computation. `executeStrategies` executes the paired interaction first and then runs that
+computation exactly once. Appending a suffix can remove the intermediate terminal leaf, so simply
+moving its callback to the beginning of the suffix is not an execution law. For example, a check
+performed after the first suffix send can observe a different world state from the same check
+performed before that send.
+
+The first restricted composition target joins fragments returning ordinary data at the boundary,
+with no pending interpreted action there. This is a sufficient initial scope; effects at existing
+protocol nodes and private prover continuations remain allowed. A client needing an effectful
+boundary can preserve its actual schedule, place the action at an explicit protocol node, or prove
+that the particular crossed effects can be interchanged for the claimed observation. A global
+commutative-monad assumption is stronger than this local requirement. An explicit barrier that
+changes the schedule needs its own execution law; changing only a final callback is insufficient.
+The existing paired runner remains the execution semantics.
+
+“No pending effect” is a condition after interpretation. A deterministic read-only Δ query may
+normalize to an ordinary value under its pure handler. The common first world-backed target thus
+allows read-only claim resources while excluding terminal-view Γ queries. However, logging can
+still observe Δ reads: an equation after log erasure does not establish logged execution equality.
+General effectful boundaries require a proved ordering argument, rather than an assumption that
+all effectful composition is impossible.
+
+### 5.4 Virtual substitution and routing
+
+Handler substitution uses explicit interfaces:
 
 ```lean
 def SourceCtx.sum (S T : SourceCtx) : SourceCtx          -- alternative queries; paired environments
@@ -147,37 +242,30 @@ def VirtualOracle.substWithSuffix
     (v : VirtualOracle S.spec A) (extra : OracleSpec J)
     (w : VirtualOracle (A.spec + extra) B) : VirtualOracle (S.spec + extra) B
 
--- For extra := T.spec, the interpreted suffix remains unchanged:
+-- For extra := T.spec:
 -- (v.substWithSuffix T.spec w).eval (QueryImpl.add ρS ρT)
 --   = w.eval (QueryImpl.add (v.eval ρS) ρT)
 ```
 
-Stage two sees the *declared middle interface* (`A.asBehaviorSource` — behavior only) plus its own suffix resources; never stage one's hidden environment. Sharing/renaming/weakening are explicit context morphisms; duplicating a handle is contraction along a resource identity, not forming a disjoint union. The implemented ordinary-substitution laws (`subst_assoc`, identities) use `VirtualOracle.SemEquiv`: the same answers under every deterministic handler. Suffix substitution currently exposes its evaluation equation. Source presentation changes use `SourceEquiv`, which includes inverse environment maps and is a separate notion. Compiler theorems will require an operational relation preserving typed traces, order, multiplicity, and cost; no such relation or law is supplied by the virtual-oracle API. **Reduction-level operational associativity is not promised.** A three-stage client first uses PolyFun's existing `TypeTree.Chain.then`, path equivalence, and `reassoc` laws. Only a concrete failure of that API justifies a smaller upstream extension; a new presentation datatype remains the last fallback.
+Sharing, renaming, and weakening are explicit context morphisms. Duplicating a handle is contraction
+along a resource identity; it does not create a fresh source by disjoint union. The implemented
+ordinary-substitution laws (`subst_assoc` and identities) use `VirtualOracle.SemEquiv`: the same
+answers under every deterministic handler. Suffix substitution exposes the evaluation equation
+above. Source presentation changes use `SourceEquiv`, whose inverse environment maps serve a
+separate purpose.
 
-`subst` replaces queries in exported oracle programs. It does not by itself route access at
-intermediate verifier actions; that execution bridge is part of C3–C4.
-`Reduction.execute_then` requires a commutative monad for general effectful suffix construction.
-The newer `run_appendFlat_splitPrefix` requires only a lawful monad because choosing the returned
-suffix strategy is pure. Effects inside that strategy remain allowed. Neither result permits
-reordering arbitrary queries to a persistent oracle world.
+`subst` replaces queries in exported oracle programs. It does not route access at intermediate
+verifier actions or prove that the closing resources match a composed native run. Those are
+execution-bridge obligations. Likewise, ArkLib's [`Reduction.execute_then`](../../ArkLib/Interaction/Reduction.lean) requires a commutative
+monad for general effectful suffix construction, while the native split equation uses pure suffix
+selection. Neither law permits reordering arbitrary persistent-world queries.
 
-Deliberately separate (not `subst`): shared-prefix products, lock-step repetition, batched shared challenges — later combinators with their own challenge scoping.
-
-### Execution constraints for the next composition work
-
-The [composition plan](06-composition-plan.md) distinguishes continuing one protocol with all
-accumulated access from starting a reduction through only its exported oracle interface.
-
-Native append selects the suffix tree from public structural branches. Data computed privately by
-the verifier can affect its strategy, but cannot select a different tree unless that choice is
-already represented in the protocol. Also, a pending terminal action cannot silently move before
-a prover-owned suffix move. The first implementation composes fragments returning values at the
-boundary; effects at their existing nodes remain allowed. Broader cases need a proved ordering law
-or an explicit change to the interaction model, not a second executor.
-
-A handoff that becomes effect-free after interpreting read-only resources is a useful sufficient
-case, not the weakest possible condition. Logging may still observe those reads, so equality after
-erasing logs does not establish equality of logged executions.
+Compiler proofs need an operational relation preserving typed traces, order, multiplicity, and
+cost; extensional virtual-oracle equivalence does not supply it. Reduction-level operational
+associativity is not promised. A three-stage client should first use PolyFun's existing
+`TypeTree.Chain.then`, path equivalences, and reassociation laws. Extend the upstream interface only
+when a concrete client demonstrates a missing law. Shared-prefix products, lock-step repetition,
+and batched shared challenges remain separate combinators with their own challenge scopes.
 
 ## 6. Core security shape (Δ side; games live in 03)
 
@@ -195,11 +283,14 @@ def Problem.language (P) (ctx) (claim) : Prop := ∃ w, P.rel ctx claim w
 abbrev Relation (S) := { P : Problem S // P.admissible = fun _ _ => True }  -- promise-free
 ```
 
-(Repair C4: one object; `Relation` is the degenerate case; closed oracle claim families are the specialization `Claim ctx := ClosedClaim (Stmt ctx) (Out ctx)`.) Relations receive public context, a **closed claim**, and a witness — never the environment, the plan, or provenance. `admissible` covers promises, well-formedness, size bounds, and accumulator invariants (input promise / output-admissibility obligation / inductive invariant are different *proof roles* of the same mechanism, kept as named aliases). Impl-facing predicates are **generated adapters** by evaluation + closing; legacy handwritten predicates owe a two-way equivalence proof, per protocol (repair C6 — there is no generic bridge, and the legacy namespace survives until every consumer is bridged).
+`Relation` is the promise-free case. Closed oracle claim families specialize
+`Claim ctx := ClosedClaim (Stmt ctx) (Out ctx)`. Relations receive public context, a **closed claim**, and a witness — never the environment, the plan, or provenance. `admissible` covers promises, well-formedness, size bounds, and accumulator invariants (input promise / output-admissibility obligation / inductive invariant are different *proof roles* of the same mechanism, kept as named aliases). Impl-facing predicates are **generated adapters** by evaluation + closing; legacy handwritten predicates owe a two-way equivalence proof, per protocol. There is no generic bridge; the legacy namespace remains until every consumer is bridged.
 
 Completeness requires `ConcreteClaim.closesTo` (including statement agreement) and `rel_out` on the closed claim; the old `OutputRealizes` is a derived interpreter lemma; literal data equality only under `Faithful` interfaces. Soundness/KS/RBR games, extractors, outcomes (`accept/reject/fault`), and error accounting are `03`'s subject — they require the execution layer.
 
 ## 7. Materialization
+
+The planned representation-refinement interface has the following shape:
 
 ```lean
 structure Materialization (Src : SourceCtx) (v : VirtualOracle Src.spec Out)
@@ -211,7 +302,9 @@ structure Materialization (Src : SourceCtx) (v : VirtualOracle Src.spec Out)
 -- ExecutableMaterialization extends it with cost.
 ```
 
-Total (all real uses in the repo are); never load-bearing for security; the honest home of the two retired reification APIs; the attachment point for L6 refinement work.
+Materialization is total in this design and supports concrete representation and later executable
+refinement. Security is stated on oracle behavior and closed claims; it does not rely on selecting
+a concrete representation of every adversarial behavior.
 
 ## 8. Universe and notation discipline
 

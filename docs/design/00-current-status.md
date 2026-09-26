@@ -1,19 +1,14 @@
 # Current status
 
 **Status date:** 2026-09-26. **Scope:** the supported dependency baseline, what the typed
-oracle-reduction layer already provides on `main`, and the next open work.
+oracle-reduction layer already provides on `main`, and its remaining proof gaps.
 
 The typed core, the first world-backed execution artifacts, and the Sumcheck acceptance slices have
 landed (AR-1 through AR-10B; ArkLib #851–#892). Native full-protocol Sumcheck now has a
 verifier with explicit abort and soundness against arbitrary native prover continuations. Plain
 native interaction now has additive composition soundness, including an explicit admissibility
 error. No declaration under `ArkLib/Interaction/` or
-`ArkLib/ProofSystem/Sumcheck/Interaction/` uses `sorry`. The next priority is the
-[composition plan C1–C8](06-composition-plan.md): compose restricted
-oracle verifiers, then prove soundness while preserving oracle state and prover memory. FRI and
-Spartan remain later protocol clients.
-State restoration and the compiler remain blocked on the
-upstream gaps listed below.
+`ArkLib/ProofSystem/Sumcheck/Interaction/` uses `sorry`. The [roadmap](05-roadmap.md) defines the next implementation steps and links their tracking issues.
 
 ## Supported baseline
 
@@ -177,37 +172,13 @@ prototype and protocol ports (FRI, Spartan, Fiat–Shamir, BCS, boundary transpo
 notions). It is a source bank, not a merge base. Its code uses pre-`TypeTree` PolyFun names and
 older VCVio semantics, so each port is rewritten and re-audited on a fresh ArkLib base.
 
-## Architecture retained from the design
+## Where the remaining work is specified
 
-The current source audit preserves the central model:
+The [roadmap](05-roadmap.md) owns the implementation sequence. The
+[core design](02-oracle-reduction-core.md#5-composition) explains oracle-interface and execution
+constraints; the [security design](03-adversarial-oracle-execution.md#4-games-and-ordinary-soundness-composition) explains the intended
+probability and persistent-world theorems. These are plans beyond the proved results listed here.
 
-1. An open oracle claim contains a public statement and source-scoped virtual output oracles.
-2. A virtual oracle is a typed query program over declared source capabilities.
-3. Its extensional meaning is obtained under the handler produced by the same execution.
-4. Supported execution closes claims using that run's resources. The general `closeWith` helper
-   accepts a handler but does not itself prove that it came from an execution.
-5. Relations consume closed claims, not derivation histories.
-6. Composition is typed-tree append plus handler substitution and explicit context morphisms.
-7. `SourceCtx` is extensional; `OracleModel` assigns meaning and promises to stable names,
-   `NamedContext` selects distinct names, and `NamedContext.View` expresses aliasing.
-8. Semantic equivalence and operational trace/resource equivalence remain distinct.
-9. Ordinary soundness composition requires output admissibility and a history-dependent suffix
-   theorem.
-10. Oracle guarantees become explicit backend obligations during compilation.
-
-ArkLib introduces only protocol-specific structure that the supported PolyFun and VCVio APIs do
-not already express.
-
-## Open work
-
-The immediate order is C1–C8 in [the composition plan](06-composition-plan.md), tracked from
-[issue #1](https://github.com/Verified-zkEVM/ArkLib/issues/1). The broader roadmap remains below:
-
-| Item | Roadmap phase | Dependency |
-|---|---|---|
-| One FRI slice (derived virtual view) with a two-way legacy bridge | 3 | deferred until reusable composition is exercised by Sumcheck |
-| One Spartan-like slice (fresh prover message) with a two-way legacy bridge | 3 | same priority as FRI |
-| Oracle and persistent-world soundness composition | 4 | C1–C8; #889 does not yet connect query classification to available access |
-| Salted state restoration, extractor calculus, RBR-to-SR implications | 5 | PolyFun transducer; VCVio conditioning facade |
-| Oracle-elimination compiler, typed BCS and Fiat–Shamir | 6 | Phase 5 plus the VCVio error-bearing reduction package |
-| Broad FRI/Spartan/BCS/Nova migration; deletion of the legacy namespace | after 4 | per-protocol two-way correspondences |
+Supported execution closes a claim with resources from the same run. The general `closeWith`
+helper accepts a handler; its type alone does not establish execution provenance. Security
+statements therefore use the actual runner distribution, rather than arbitrary constructed records.

@@ -1,271 +1,318 @@
-# Implementation roadmap
+# Interaction framework roadmap
 
-**Fluid by design.** The destination is ambitious, but each phase has a falsifiable exit gate and
-a concrete reason to exist. When Lean or a real protocol contradicts a proposed record layout, the
-architecture follows the evidence while preserving the semantic invariants in `02` through `04`.
+**Status date: 2026-09-26.** This is the single active roadmap for implementation of ArkLib's typed
+interaction framework. The [current-status page](00-current-status.md) records what has landed and
+the supported dependency versions. The design documents define the model: see the
+[oracle-reduction core](02-oracle-reduction-core.md),
+[oracle execution and security games](03-adversarial-oracle-execution.md), and
+[oracle-elimination compiler](04-oracle-elimination-compiler.md).
 
-Effort words are planning signals: S is days, M is roughly one to three weeks, L is roughly one to
-two months, and XL is an open-ended program.
+The immediate goal is to compose restricted oracle protocols using the ordinary interaction
+runner, then prove soundness while preserving the prover's private memory, actual oracle resources,
+and any persistent runtime state.
 
-## 1. Standing rules
+**Status terms:** *Landed* means on `main`; *active* means one of the next composition steps below;
+*later* means a follow-up client or project that uses the composition work; *conditional* means do
+the work only when a real client demonstrates the need.
 
-- Every implementation PR starts from current `main`; the archived prototype is a source bank.
-- The legacy security namespace remains until each migrated protocol has a proved correspondence.
-- Security-shaped changes include the exact game, observation, failure boundary, budget, and loss.
-- Foundation gaps go to the lowest owning library. A temporary adapter names its upstream
-  destination and includes a deletion test.
-- A compiler pass does not land before the execution and trace facts used by its security proof.
-- Each completed phase updates `00-current-status.md` and this roadmap in the same PR.
+## Scope and contracts
 
-## 2. Starting point and progress
+Continue from the ordinary paired runner and the native results listed in
+[current status](00-current-status.md). Preserve the prover's actual continuation, its private
+memory, declared oracle access, and the order of effects. Do not add a second executor or a separate
+prover-state machine.
 
-The alignment slice (#811) fixed the initial train at Lean 4.33.1, VCVio `f9dc47d9`, and PolyFun
-`c0c92369`. The current supported train is recorded in `00-current-status.md`.
+The exact tree, access, closing, and effect-order contracts belong to the
+[access and execution contract](01c-access-execution-contract.md) and
+[oracle-reduction core](02-oracle-reduction-core.md). Persistent state, the adversary's view,
+security events, and fault accounting belong to
+[oracle execution and security games](03-adversarial-oracle-execution.md). The first verifier
+composition result uses a boundary that returns data and has no pending action. If a protocol needs
+an effect at that boundary, represent it as a protocol move or prove the local effect-order law.
 
-**Progress as of 2026-09-26:**
+For Sumcheck, the final equality between the original polynomial oracle and the claimed value stays
+in the output oracle relation; it is not an extra final verifier query.
 
-The next priority is [composition plan C1–C8](06-composition-plan.md), tracked from
-[issue #1](https://github.com/Verified-zkEVM/ArkLib/issues/1). It specifies the PRs, assumptions,
-and tests; this page retains the longer-term phases.
+## Active work: oracle composition (C1–C8)
 
-| Phase | Status | Evidence |
-|---|---|---|
-| Alignment | done | #811 |
-| 1 — Typed core | done | AR-1 through AR-6B: #851–#871 |
-| 2 — Minimum viable protocol | done | AR-7 #872, AR-8 #874 |
-| 3 — Composition and two contrasting protocols | ordered Sumcheck execution done; native oracle composition and FRI/Spartan slices open | #879, #883, #891, #892; native Sumcheck #1214 |
-| Parallel upstream lane | items 1–2 done; items 3–4 open | VCVio `Runtime` and `WithFailure` |
-| 4 — World-backed execution and ordinary security | artifacts and plain native composition done; oracle/world composition open | #884, #886, #880, #889; #1216, #1218 |
-| 5 — State restoration | not started | blocked on upstream lane items 3–4 |
-| 6 — Compiler | not started | follows Phase 5 |
+The issue IDs are the tracking record for these steps. C1 and C2 can proceed in parallel; the rest
+follow the dependencies shown below.
 
-The early interaction-native prototype (#433) and its stacked extractions (#532, #570, #580) were
-closed as superseded; the prototype remains on `archive/oracle-reduction-v2-pre-split`.
-
-## 3. Parallel tracks
-
-| Track | Purpose | Current dependency |
-|---|---|---|
-| Core semantics | typed reductions, oracle trees, sources, virtual claims, closing | landed |
-| Protocol evidence | Sumcheck first, then FRI and Spartan | native Sumcheck landed; reusable composition takes priority before FRI/Spartan |
-| Execution and ordinary security | world-backed artifacts, outcomes, admissibility-aware composition | artifacts and plain native theorem landed; C1–C8 supply remaining oracle/world theory |
-| State restoration | causal trace calculus, salted games, extractor views | PolyFun transducer and VCVio specialization/conditioning gaps |
-| Compiler | guarantee transport and backend adapters | core composition plus state-restoration evidence |
-
-The tracks are coordinated by consumers, not by waiting for a synchronized three-repository mega
-release.
-
-## Phase 1 — Typed core [L]
-
-Land AR-1 through AR-6B in the order described in `01a`:
-
-1. plain dependent reductions;
-2. oracle type trees, path projections, and decorations;
-3. accumulated oracle access and execution;
-4. extensional sources, named oracle contexts, and their models;
-5. virtual substitution;
-6. open/closed claims and run-derived closing.
-
-The archived implementation may donate proof ideas and small coherent definitions. Each port is
-rewritten against the supported PolyFun API and reviewed at its new abstraction boundary.
-
-**Gate:** public equations are usable; no new `sorry`; the legacy layer is unchanged; no caller can
-close a claim with an unrelated handler.
-
-**Status:** done (#851–#871).
-
-## Phase 2 — Minimum viable protocol [M]
-
-Port one programmatic single-round Sumcheck. Its output includes a query-derived scalar and a
-degree-bounded oracle slot. Prove perfect completeness through the actual execution and closing
-path, then prove a two-way protocol-specific bridge to the legacy presentation.
-
-This is the first moment the new abstraction earns its name. Before this theorem, record layouts
-are informed hypotheses. After it, they are an API with evidence.
-
-**Gate:** AR-7 and AR-8 are sorry-free; the guarantee representation is exercised; the bridge is
-two-way; no generic migration theorem is claimed.
-
-**Fallback:** if a unified dependent claim record fights elaboration, use a small family of
-concrete records connected by explicit morphisms. Uniform packaging is a convenience, not a reason
-to obscure the semantics.
-
-**Status:** done. #872 proves one-round honest completeness through closing. #874 proves both
-relation directions for arbitrary claims; its verifier correspondence is honest-execution only,
-because the legacy verifier reads the input polynomial where the typed verifier reads the sent one.
-#881 adds one-round reduction soundness.
-
-## Phase 3 — Composition and two contrasting protocols [L]
-
-Add a two-round composite that exercises cursor decomposition, `TypeTree.Chain.then`, virtual
-substitution, and explicit source routing. Then port one FRI slice and one Spartan-like slice so the
-design sees both a derived virtual view and a fresh prover message.
-
-Semantic composition is proved up to extensional equivalence. Operational trace and cost
-preservation wait for the world-backed execution artifact; they are not asserted from syntax alone.
-
-**Gate:** the middle boundary is visibly handler substitution; public constructors have evaluation
-laws; a three-stage example uses existing chain reassociation or records the exact missing upstream
-law.
-
-**Status:** ordered Sumcheck composition is proved. #883 runs two rounds through the actual closed claim; #891
-adds finite ordered composition across `ExecutionInterface` boundaries; #892 executes any
-consecutive interval of rounds with honest completeness, checked on a three-variable client. The
-FRI and Spartan-like slices are open. These ordered results do not prove composition for every
-whole native prover; the oracle bridge is C2–C5 of the composition plan.
-
-## Parallel upstream lane — Close only demonstrated gaps [M–L]
-
-The first downstream clients drive four focused foundation additions:
-
-1. a VCVio runner-produced resumable artifact with state and named trace regions;
-2. a VCVio accept/reject/fault materialization boundary;
-3. a PolyFun causal finite-trace transducer plus VCVio query-log certificates;
-4. VCVio conditioning/dynamic-programming and error-bearing reduction APIs required by the first
-   state-restoration or compiler theorem.
-
-Do not implement all four speculatively. The early typed-core work proceeds while these interfaces
-are designed against their actual consumers.
-
-**Gate per addition:** the owning repository's tests and laws pass, and the named ArkLib client uses
-the API without a parallel local abstraction.
-
-**Status:** items 1 and 2 are available in VCVio (`VCVio.OracleComp.Runtime`,
-`VCVio.EvalDist.WithFailure`) and consumed by #884 and #886. Protocol-level accept/reject/fault
-classification stays in ArkLib's `Interaction.Terminal`. Items 3 and 4 are open.
-
-## Phase 4 — World-backed execution and ordinary security [L]
-
-Add AR-9A, AR-9B, AR-10A, and AR-10B. One supported artifact now relates the core run, persistent
-world state, ordered query trace, protocol prefix, and resource profile. Terminal decoding crosses
-one named missing-mass boundary.
-
-Prove ordinary soundness composition in its honest form:
-
-- the first reduction is sound;
-- its output is admissible except with explicit error;
-- the suffix bound applies to the actual distribution of intermediate claims, prover memory,
-  and oracle state; reachable pointwise bounds are sufficient when available;
-- sequential execution preserves order and state;
-- the total error includes prefix and suffix soundness and input-assumption failures; charge
-  faults separately when the exported security event counts them as failure.
-
-**Composition gate:** C1–C8 pass their stated tests, including a Sumcheck proof using generic
-composition and a persistent-world client with justified input assumptions. The composition
-theorem has no admissions and preserves the actual oracle state and prover memory.
-
-FRI and Spartan correspondence proofs remain broader protocol-migration goals; they are not
-prerequisites for this composition milestone.
-
-**Status:** AR-9A (#884), AR-9B (#886), AR-10A (#880), and AR-10B (#889) landed.
-`Sumcheck/Interaction/ProtocolSoundness` proves soundness of the full native Sumcheck interaction,
-quantifying over ordinary prover strategies with effectful challenge-dependent continuations.
-Its final evaluation obligation remains an output oracle relation. The proof does not use a
-separate state-kernel executor or establish general world-backed composition.
-
-`Interaction/CompositionSoundness` now gives the plain native append theorem: exact execution
-factorization for every whole prover strategy, additive soundness `ε₁ + ε₂`, and the variant
-`ε₁ + δ + ε₂` for an explicit inadmissibility error. The probability theorem requires lawful
-distribution semantics; the execution equation itself does not require commutative effects.
-
-World-backed oracle soundness composition remains open. The next bridge must connect restricted
-oracle-verifier append, actual closing resources, and world interpretation to that native
-factorization. #889's world-query classifier is not yet connected to `availableContext`, so its
-profile additivity proves neither access admissibility nor a cost bound.
-
-## Phase 5 — State restoration and extractor calculus [L]
-
-Build salted state-restoration games, world-trace views, causal segmentation and backtracking,
-straightline and rewinding extractors, and the exact implication map between ArkLib's stronger
-round-by-round notions and the Chiesa–Yogev-compatible notions.
-
-The transducer pipeline is explicit:
-
-```text
-segment Fiat–Shamir events
-  → stateful multi-configuration Merkle extraction
-  → hash-chain backtracking
-  → state-restoration trace adaptation
-  → inner IOP extractor
+```mermaid
+flowchart TD
+    C1["C1 · Reachable and weighted error bounds"]
+    C2["C2 · Oracle path and access laws"]
+    C3["C3 · Restricted verifier composition"]
+    C4["C4 · Exported oracle interfaces"]
+    C5["C5 · Apply composition soundness to Sumcheck"]
+    C6["C6 · Direct execution in a persistent runtime"]
+    C7["C7 · Soundness over the actual runtime distribution"]
+    C8["C8 · Prove access and query costs are valid"]
+    C2 --> C3 --> C4
+    C1 --> C5
+    C4 --> C5
+    C4 --> C6
+    C1 --> C7
+    C5 --> C7
+    C6 --> C7 --> C8
 ```
 
-Each arrow carries causality, trace-order, resource, error, and running-time evidence. The
-stateful online Merkle extractor remains a backend capability rather than being flattened into a
-pure list pass.
+### Milestone 1 — Oracle composition and complete Sumcheck (C1–C5)
 
-**Gate:** prove the named RBR-to-SR and knowledge implications under explicit replay, entropy,
-budget, and error hypotheses. Document the non-theorem that terminal offline knowledge soundness
-does not compose without a stronger intermediate interface.
+These five steps prove that restricted oracle protocols compose correctly. They then use the
+composition theorems to recover the existing Sumcheck soundness bound and completeness result.
+They are the entry point for later protocol clients.
 
-## Phase 6 — Oracle-elimination compiler [XL]
+### C1 — Reachable and weighted soundness bounds
 
-Land interfaces before passes:
+**Tracked in:** [issue #1222](https://github.com/Verified-zkEVM/ArkLib/issues/1222).
 
-1. reified oracle guarantees and resource metadata;
-2. backend assignments and complete capability games;
-3. typed finite or staged read plans;
-4. represent, lower, and boundary-transport passes;
-5. concrete Merkle and homomorphic adapters;
-6. interactive BCS and Fiat–Shamir security transfer;
-7. exact BCS knowledge soundness through the extractor pipeline.
+**Proposed PR:** `feat(interaction): add reachable soundness bounds`.
 
-The first Merkle adapter consumes VCVio's supported shared-ROM extraction theorem. The first
-homomorphic conformance case uses Nova/Pedersen-style commitment action. Unsupported capabilities
-remain absent rather than being filled with placeholder propositions.
+**Depends on:** none; may proceed alongside C2.
 
-**Gate per pass:** functional correctness, ordinary soundness, extraction, and privacy obligations
-are classified exactly as in `04`; every ideal guarantee either reaches a backend proof or produces
-an explicit assignment failure.
+Extend [`CompositionSoundness.lean`](../../ArkLib/Interaction/CompositionSoundness.lean) using
+VCVio's existing measure and event-bound tools. The current theorem asks for a prefix bound for
+every prefix strategy and a suffix bound for every intermediate path and output, including
+unreachable ones. Add useful versions for the actual whole prover, for reachable boundary results,
+and for suffix errors that vary by result. Keep the current uniform `ε₁ + ε₂` and
+`ε₁ + δ + ε₂` statements as easy-to-use corollaries.
 
-## Phase 7 and beyond — Widening [XL]
+For an exceptional set `E` of boundary results, actual boundary distribution `μ`, and suffix error
+bound `e(b)` at boundary `b`, the target is
+`Pr[success] ≤ Pr[E] + ∫_{b∉E} e(b) dμ(b)`. This averages the suffix error over actual boundary
+results outside `E`; it does not require one worst-case bound everywhere.
 
-Widen only after the core compiler path works:
+Also add an almost-everywhere form: a suffix premise may fail on a set of boundary results with
+probability zero. Where support is defined, a result can lie in the support and still have
+probability zero, so support membership alone is not a positive-mass condition.
 
-- zero knowledge and witness indistinguishability with programmable worlds and local-view
-  simulators;
-- preprocessing and holography with persistent five-phase games;
-- parallel and shared-prefix combinators;
-- KZG, Pedersen, IPA, and lattice-backed capability records;
-- indifferentiability and alternative oracle models;
-- executable refinement, representation correctness, and resource-trace correspondence;
-- quantum access through a separate linear execution model.
+**Acceptance check:** Use two public branches with different suffix errors and an invalid boundary
+that the prefix cannot reach. Also include a supported boundary point of probability zero where the
+suffix bound fails. The theorem should retain branch-specific errors and ignore both exceptions.
+Do not introduce new probability semantics beside VCVio.
 
-A new backend is complete only when one scheme theorem travels end to end through its actual
-security reduction and resource transform.
+### C2 — Oracle path and access laws
 
-## 4. Current dependency sketch
+**Tracked in:** [issue #1223](https://github.com/Verified-zkEVM/ArkLib/issues/1223).
 
-Landed stages are marked `[done]`.
+**Proposed PR:** `feat(interaction): prove append laws for oracle access`.
 
-```text
-alignment [done]
-  → typed core [done] → Sumcheck bridge [done] → typed composition
-                                                  [ordered Sumcheck done; native oracle bridge, FRI, Spartan open]
-                                                      │
-VCVio artifact + outcome [done] ────────────────────┘→ ordinary security [open]
+**Depends on:** none; may proceed alongside C1.
 
-PolyFun transducer
-  → VCVio query-log certificates + conditioning
-  → state restoration
-  → compiler
-  → widening
-```
+Connect tree append and path splitting to the access accumulated by the actual path. Work in the
+owning modules: [`TypeTree`](../../ArkLib/Interaction/Oracle/TypeTree.lean),
+[`Access`](../../ArkLib/Interaction/Oracle/Access.lean), and
+[`RunSources`](../../ArkLib/Interaction/Oracle/RunSources.lean). Reuse existing path-composition,
+access-composition, and query-evaluation laws; prove the missing append-specific connections instead
+of defining another resource representation.
 
-## 5. Risks and redirection
+**Acceptance check:** Use a public branch whose suffix shapes differ. Show that a query to the
+original oracle, a message sent in the prefix, and a message sent in the suffix each receive the
+same answer in the combined and split execution.
 
-1. **Claim-index friction.** Prefer several honest records and explicit morphisms over one opaque
-   dependent bundle.
-2. **Runner-boundary slippage.** Early typed work proceeds, but general security waits for one
-   execution-derived artifact.
-3. **Trace plumbing growth.** Land generic causality and certified specialization before copying
-   list-partition proofs across compiler passes.
-4. **Security quantifier drift.** Treat a failed composition bridge as evidence about the theorem,
-   not an invitation to weaken its name.
-5. **Compiler gravity.** The compiler is valuable only after claims, closing, ordinary security,
-   and state restoration are real APIs.
-6. **Over-general upstream work.** Every new foundation names its first consumer and the mutation or
-   counterexample its laws reject.
+### C3 — Restricted verifier composition
 
-When implementation redirects the plan, preserve the reason in the owning normative document and
-update the status page. Do not accumulate an alternative architecture beside the one the clients
-actually use.
+**Tracked in:** [issue #1224](https://github.com/Verified-zkEVM/ArkLib/issues/1224).
+
+**Proposed PR:** `feat(interaction): compose native oracle verifiers`.
+
+**Depends on:** C2.
+
+Extend the existing restricted-verifier interpreter in
+[`Execution.lean`](../../ArkLib/Interaction/Oracle/Execution.lean) so it can represent fragments
+that return ordinary values, while keeping the current effectful terminal form for completed
+protocols. Prove that the composed verifier runs through the ordinary paired runner and that the
+suffix uses the continuation returned by the actual prefix for every whole prover. Do not add a
+second recursive executor.
+
+**Acceptance check:** A prover has effects before and after challenges and retains private memory
+between fragments. Exercise public abort and its prover response. Show the final verifier action
+runs once, and show that composing the fragments preserves the actual effect order. Start with a
+boundary that has no pending action.
+
+### C4 — Exported oracle interfaces and closing
+
+**Tracked in:** [issue #1225](https://github.com/Verified-zkEVM/ArkLib/issues/1225).
+
+**Proposed PR:** `feat(interaction): compose exported oracle interfaces`.
+
+**Depends on:** C2 and C3.
+
+Connect verifier composition to [`Virtual.lean`](../../ArkLib/Interaction/Oracle/Virtual.lean),
+[`Claim.lean`](../../ArkLib/Interaction/Oracle/Claim.lean), and
+[`RunSources.lean`](../../ArkLib/Interaction/Oracle/RunSources.lean). A suffix may query only the
+oracle interface exported by the prefix. Interpret those queries using the input resources and
+messages from that same prefix execution, then prove that closing the output claim agrees with this
+interpretation. A caller must not replace those resources with an unrelated handler.
+
+**Acceptance check:** Export an oracle that combines or transforms source answers and hides another
+source slot. Run the two Sumcheck rounds through the composed interface. Preserve the actual
+prover continuation and challenge/abort behavior. One exported query may expand to several source
+queries, so do not require the two query logs to be identical.
+
+### C5 — Apply soundness composition to Sumcheck
+
+**Tracked in:** [issue #1226](https://github.com/Verified-zkEVM/ArkLib/issues/1226).
+
+**Proposed PR:** `feat(interaction): derive oracle soundness composition`.
+
+**Depends on:** C1 and C4.
+
+Prove a soundness theorem for the actual composed oracle execution. State separate bounds for a
+false claim becoming true at the boundary, the prefix failing the suffix's input assumptions, and
+the suffix succeeding from a false admissible claim. Include the weighted form from C1 as well as
+the familiar uniform-error corollary. Derive the two-round Sumcheck bound `2d / |F|` for fresh
+uniform challenges through this API, then extend the argument to the existing arbitrary-round
+statement. Keep the current public Sumcheck theorem until the new derivation proves the same
+claim. The final polynomial equality remains in the output oracle relation.
+
+**Acceptance check:** The formal derivation follows the same execution used by the existing native
+Sumcheck theorem and applies to every ordinary whole-protocol prover. Derive the uniform
+`count * d / |F|` soundness bound and honest completeness through the same composed execution; the
+completeness result must cover the whole protocol, not only one round. Prove true-output
+preservation for every supported honest execution. Claim probability-one completeness only when
+the challenge computation has total successful mass one (or state the required mass explicitly).
+
+### Milestone 2 — Persistent runtime composition (C6–C8)
+
+These steps connect the oracle-composition theorems to persistent runtime state, ordered logs, and
+resource accounting. They preserve correlations with the prover's actual view without revealing
+hidden runtime state to the prover. The native runner remains the execution engine.
+
+### C6 — Direct execution in a persistent runtime
+
+**Tracked in:** [issue #1227](https://github.com/Verified-zkEVM/ArkLib/issues/1227).
+
+**Proposed PR:** `refactor(interaction): run native strategies in the shared runtime`.
+
+**Depends on:** C4.
+
+Extend the direct-strategy entry point through VCVio's existing runtime adapter in
+[`Runtime.lean`](../../ArkLib/Interaction/Oracle/Runtime.lean). Reduction entry points should
+prepare their strategies, then call the shared runner. Prove that erasing runtime instrumentation
+recovers ordinary execution, while retaining the actual final state and ordered log across both
+fragments. Reuse VCVio's runtime; do not build an ArkLib-only state machine.
+
+**Acceptance check:** Use one counter or cache in both fragments. Show its second-fragment behavior
+depends on the state left by the first, and show that the combined log has the same order as the
+actual execution.
+
+### C7 — Soundness over the actual runtime distribution
+
+**Tracked in:** [issue #1228](https://github.com/Verified-zkEVM/ArkLib/issues/1228).
+
+**Proposed PR:** `feat(interaction): prove runtime composition soundness`.
+
+**Depends on:** C1, C5, and C6.
+
+Combine the weighted soundness result with the persistent-runtime execution law. The suffix bound
+must apply to the actual distribution of runtime state, prover memory, intermediate claim, and
+relevant history. Preserve what the prover has learned; do not require the prover to be secure for
+each fixed hidden runtime state, and do not let it choose a strategy after seeing hidden state.
+Keep rejection, explicit returned faults, and missing probability mass distinct. Charge an explicit
+fault term only when the theorem's event or model requires it.
+
+**Acceptance check:** Use a hidden random bit and a prover that guesses it. The average success
+bound should be useful even though conditioning on the fixed bit makes one guess succeed surely.
+Make the prover's allowed view explicit in the experiment.
+
+### C8 — Prove oracle access and query costs are valid
+
+**Tracked in:** [issue #1229](https://github.com/Verified-zkEVM/ArkLib/issues/1229).
+
+**Proposed PR:** `feat(interaction): certify composed oracle access and cost`.
+
+**Depends on:** C6 and C7.
+
+Connect the classifications in [`WorldSegments`](../../ArkLib/Interaction/Oracle/WorldSegments.lean)
+to resources actually available at each point in execution. Show that resource identity and
+intentional sharing survive composition, charge for the source queries used to answer virtual
+queries, and prove how prefix and suffix budgets combine. Apply C7 to one concrete runtime client.
+
+**Acceptance check:** Cover a shared resource, a virtual query that expands to multiple source
+queries, and an unavailable query. The unavailable query must not receive a valid resource or cost
+certificate. #889's current profile additivity alone does not establish these properties.
+
+## Later protocol clients
+
+FRI and Spartan protocol slices can start after C1–C5, once the oracle-composition and soundness
+API has been exercised by Sumcheck. They do not wait for persistent-world work in C6–C8 unless a
+slice makes a world-state, trace, or cost claim.
+
+- **FRI slice:** use a derived virtual oracle view and prove a two-way bridge to the established
+  presentation.
+- **Spartan-like slice:** use a fresh prover message and prove the corresponding two-way bridge.
+- **Broader migration:** port further FRI, Spartan, BCS, and Nova protocols one at a time. Keep the
+  legacy security namespace until each migrated protocol has its own proved correspondence.
+
+For each slice, record the exact statement, oracle interface, prover information, success event,
+and error bound. A protocol's use of the generic API is evidence for that client; it does not
+automatically prove every legacy equivalence.
+
+## Later extraction and compiler work
+
+### State restoration and knowledge composition
+
+After runtime and log composition are available, prove the causal trace and witness facts needed by
+extractors and state-restoration games. The generic PolyFun causal finite-trace transducer and a
+VCVio query-log specialization are current upstream gaps. A reusable conditioning and dynamic-
+programming interface may also be needed; add it when the first formalization requires it.
+
+Knowledge soundness needs an additional causal argument. An extractor for the completed protocol
+does not automatically provide a witness at the point where the suffix needs it. A composition
+theorem must establish prefix-available witness extraction or a suitable guarantee against the
+information passed to the suffix. The design and exact games belong in
+[03-adversarial-oracle-execution.md](03-adversarial-oracle-execution.md).
+
+### Oracle-elimination compiler
+
+Build the compiler only after the ordinary security, runtime, query-trace, and extraction results
+needed by its passes exist. Follow the interfaces and pass order in
+[04-oracle-elimination-compiler.md](04-oracle-elimination-compiler.md): represent ideal oracle
+guarantees, assign backends, plan reads, lower and transport claims, then prove concrete Merkle and
+homomorphic adapters. Carry soundness, extraction, privacy, query costs, and running time through
+each pass. Do not fill unsupported backend capabilities with placeholder guarantees.
+
+### AR-11 — Merkle adapter
+
+The first Merkle backend adapter depends on the named-context and source-routing API (#864), the
+persistent runtime (#884), terminal outcomes (#886), and the access/resource evidence from C8. It
+must adapt VCVio's existing shared-ROM execution and extractability theorem to ArkLib's declared
+oracle interface. Do not restate the VCVio security game in ArkLib. This adapter supplies one
+backend capability; it does not by itself prove the full Fiat–Shamir, BCS, or compiler theorem.
+
+## Conditional upstream work
+
+Use upstream PolyFun or VCVio only for a demonstrated client need. VCVio's runtime and
+failure-to-return support are already available. The missing generic trace transducer, certified
+query-log bridge, reusable conditioning, or error-bearing reduction API should be added at its
+owning repository when an ArkLib proof needs that exact capability. Operational
+`DynSystem.Prefix` concatenation is needed only if a client cannot use ordinary monadic sequencing.
+Any temporary adapter must name the upstream destination, have a deletion condition, and disappear
+when the upstream API lands.
+
+If a real protocol needs an effect at an intermediate boundary, first express it at an explicit
+interaction node. If that cannot preserve the protocol, prove the local effect-order law or propose
+the smallest coherent PolyFun extension. If a suffix tree needs a dependency not represented by
+the interaction's public choices, document that client and propose the needed upstream change. Do
+not assume global effect commutativity and do not create a second ArkLib executor to work around
+either limitation.
+
+## Delivery rules
+
+- Start each implementation PR from current `main` and give it one main theorem or API as its
+  focus. Include the laws, acceptance examples, and documentation needed to use that result.
+- Reuse a supported upstream API before adding another wrapper or executor. Put reusable additions
+  in the library that owns them; remove temporary ArkLib adapters when the upstream API lands.
+- Use a real protocol or security theorem to test each foundational API. Keep the legacy namespace
+  until each migrated protocol has a proved correspondence.
+- Keep dependency bumps separate from theorem changes. Add no new `sorry` and run the repository's
+  required validation before commit.
+- Update [00-current-status.md](00-current-status.md) when a result lands.
+
+Use names and docstrings that a cryptographer can understand without knowing the internal Lean
+representation. State who chooses the prover, what the verifier observes, which event is bounded,
+and how the error depends on the assumptions. Have an independent reviewer explain the principal
+theorem in those terms and compare it with the intended game. Treat a failed proof as evidence about
+the theorem or its assumptions, not as a reason to hide a stronger claim behind a weaker name.
