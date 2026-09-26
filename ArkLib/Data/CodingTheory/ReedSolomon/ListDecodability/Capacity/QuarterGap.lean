@@ -118,50 +118,27 @@ private lemma pairwiseJohnsonListBound_quarter_gap_arithmetic {n messageDim A : 
   have hDcast : (D : ℝ) = (messageDim : ℝ) - 1 := by
     norm_num [D, Nat.cast_sub (by omega : 1 ≤ messageDim)]
   have hGapReal : (n : ℝ) + (n : ℝ) * D ≤ (A : ℝ) * A := by
-    rw [hDcast]; nlinarith [sq_nonneg ((messageDim : ℝ) - (n : ℝ) / 4)]
+    rw [hDcast]
+    linarith [sq_nonneg ((messageDim : ℝ) - (n : ℝ) / 4),
+      mul_le_mul hA hA (by positivity) (by positivity)]
   have hGap : n + n * D ≤ A * A := by exact_mod_cast hGapReal
   have hpositive : n * D < A * A := by omega
   have hDenPos : 0 < A * A - n * D := Nat.sub_pos_of_lt hpositive
   have hNumLt : A - D < A * A - n * D := by
-    by_cases hDZero : D = 0
-    · have hAReal : 2 ≤ (A : ℝ) := by
-        have hnReal : (1 : ℝ) ≤ n := by exact_mod_cast hn
-        have hkReal : (1 : ℝ) ≤ messageDim := by exact_mod_cast hMessageDim
-        have hAgtReal : (1 : ℝ) < A := by nlinarith [hA]
-        have hAgtNat : 1 < A := by exact_mod_cast hAgtReal
-        have hANat : 2 ≤ A := by omega
-        exact_mod_cast hANat
-      have hANat : 2 ≤ A := by exact_mod_cast hAReal
-      have hARealStrict : (A : ℝ) < (A : ℝ) * A := by nlinarith
-      have hANatStrict : A < A * A := by exact_mod_cast hARealStrict
-      simpa [hDZero] using hANatStrict
-    · have hDPos : 0 < D := Nat.pos_of_ne_zero hDZero
-      by_cases hAle : A ≤ n
-      · have hADLt : A - D < n := by omega
-        exact hADLt.trans_le (by omega)
-      · have hAn : n + 1 ≤ A := by omega
-        have hDn : D ≤ n - 1 := by omega
-        have hMon : 0 ≤ ((A : ℝ) - (n + 1)) * ((A : ℝ) + n) :=
-          mul_nonneg (sub_nonneg.mpr (by exact_mod_cast hAn)) (by positivity)
-        have hDproduct : (D : ℝ) * ((n : ℝ) - 1) ≤ ((n : ℝ) - 1) ^ 2 := by
-          have hDnReal : (D : ℝ) ≤ (n : ℝ) - 1 := by
-            have hDplus : D + 1 ≤ n := by omega
-            have hDplusReal : (D : ℝ) + 1 ≤ n := by exact_mod_cast hDplus
-            linarith
-          have hnOneReal : (1 : ℝ) ≤ n := by exact_mod_cast Nat.succ_le_of_lt hn
-          calc
-            (D : ℝ) * ((n : ℝ) - 1) ≤ ((n : ℝ) - 1) * ((n : ℝ) - 1) :=
-              mul_le_mul_of_nonneg_right hDnReal (sub_nonneg.mpr hnOneReal)
-            _ = ((n : ℝ) - 1) ^ 2 := by ring
-        have hStrictReal : (A : ℝ) - D < (A : ℝ) ^ 2 - (n : ℝ) * D := by
+    suffices A + n * D < A * A + D by omega
+    rcases Nat.lt_or_ge n A with hnA | hAn
+    · have hAA := Nat.mul_le_mul_left A hnA
+      have hnD : n * D < n * A := Nat.mul_lt_mul_of_pos_left (by omega) hn
+      linarith
+    · rcases Nat.eq_zero_or_pos D with hD0 | hDPos
+      · have hA1 : (1 : ℝ) < A := by
+          have hkReal : (1 : ℝ) ≤ messageDim := by exact_mod_cast hMessageDim
           have hnReal : (0 : ℝ) < n := by exact_mod_cast hn
-          nlinarith [hMon, hDproduct]
-        have hDA : D ≤ A := (Nat.sub_le _ _).trans hMessageDimLeA
-        have hStrictCast : ((A - D : ℕ) : ℝ) < (A * A - n * D : ℕ) := by
-          rw [Nat.cast_sub hDA, Nat.cast_sub (Nat.le_of_lt hpositive)]
-          push_cast
-          nlinarith [hStrictReal]
-        exact_mod_cast hStrictCast
+          linarith
+        have hAA := Nat.mul_le_mul_right A (show 2 ≤ A by exact_mod_cast hA1)
+        rw [hD0, Nat.mul_zero]
+        omega
+      · omega
   refine ⟨hpositive, hDenPos, ?_⟩
   rw [Code.pairwiseJohnsonListBound, Nat.div_lt_iff_lt_mul hDenPos]
   exact Nat.mul_lt_mul_of_pos_left hNumLt hn

@@ -118,7 +118,7 @@ theorem rs_Lambda_extended_le_of_epsCa_int_radius
   have hDpos : (0 : ℝ) < (q : ℝ) - n - k * ε * q := by
     have hmul := mul_lt_mul_of_pos_right _hε_lt hkqpos
     rw [div_mul_cancel₀ _ hkqpos.ne'] at hmul
-    nlinarith
+    linarith
   change Lambda Ckp ((f : ℝ) / n) ≤ (Nat.ceil B : ℕ∞)
   apply Lambda_le_of_forall_finset_card_le
   intro u T hT
