@@ -35,7 +35,7 @@ in the output oracle relation; it is not an extra final verifier query.
 
 ## Oracle composition sequence (C1–C8)
 
-C1–C3 are implemented in this source revision. C4 is next; the remaining steps follow the
+C1–C3 have landed. C4 is implemented in this source revision; the remaining steps follow the
 dependencies below. The issues record implementation PRs and merge status.
 
 ```mermaid
@@ -94,9 +94,9 @@ facts used by C3. The C2 path laws alone make no claim about execution by a prov
 
 ### C3 — Restricted verifier composition
 
-**Tracked in:** [issue #1224](https://github.com/Verified-zkEVM/ArkLib/issues/1224).
-
-**Implemented in this source revision.** C3 uses C2's path and access laws.
+**Landed in [PR #1233](https://github.com/Verified-zkEVM/ArkLib/pull/1233).**
+Tracked in [issue #1224](https://github.com/Verified-zkEVM/ArkLib/issues/1224).
+C3 uses C2's path and access laws.
 
 `Verifier.Fragment` returns an ordinary leaf value; `Verifier.Strategy` retains the completed
 form with a final oracle action. Both use the same recursive interpreter.
@@ -113,16 +113,18 @@ pending prefix action across the next send is outside this theorem's scope.
 
 **Tracked in:** [issue #1225](https://github.com/Verified-zkEVM/ArkLib/issues/1225).
 
-**Proposed PR:** `feat(interaction): compose exported oracle interfaces`.
+**Implemented in this source revision.**
 
 **Depends on:** C2 and C3.
 
-Connect verifier composition to [`Virtual.lean`](../../ArkLib/Interaction/Oracle/Virtual.lean),
-[`Claim.lean`](../../ArkLib/Interaction/Oracle/Claim.lean), and
-[`RunSources.lean`](../../ArkLib/Interaction/Oracle/RunSources.lean). A suffix may query only the
-oracle interface exported by the prefix. Interpret those queries using the input resources and
-messages from that same prefix execution, then prove that closing the output claim agrees with this
-interpretation. A caller must not replace those resources with an unrelated handler.
+[`SourceRouting.lean`](../../ArkLib/Interaction/Oracle/SourceRouting.lean) connects verifier
+composition to virtual oracle substitution and claim closing. `Verifier.appendExported` takes a
+prefix returning a statement and an exported oracle interface. The suffix receives that statement
+and is written against only that interface; each new oracle message adds its own query slot.
+`executeStrategies_appendExported_close` proves agreement with sequential execution using the
+actual prefix resources and the actual remaining prover strategy. Closing the final claim uses
+those same resources. The [composition contract](02-oracle-reduction-core.md#54-virtual-substitution-and-routing)
+records the precise scope and restrictions.
 
 **Acceptance check:** Export an oracle that combines or transforms source answers and hides another
 source slot. Run the two Sumcheck rounds through the composed interface. Preserve the actual
@@ -140,7 +142,8 @@ queries, so do not require the two query logs to be identical.
 Prove a soundness theorem for the actual composed oracle execution. State separate bounds for a
 false claim becoming true at the boundary, the prefix failing the suffix's input assumptions, and
 the suffix succeeding from a false admissible claim. Include the weighted form from C1 as well as
-the familiar uniform-error corollary. Derive the two-round Sumcheck bound `2d / |F|` for fresh
+the familiar uniform-error corollary. Measure success after the final verifier action has run and
+the returned claim has been closed using the actual resources. Derive the two-round Sumcheck bound `2d / |F|` for fresh
 uniform challenges through this API, then extend the argument to the existing arbitrary-round
 statement. Keep the current public Sumcheck theorem until the new derivation proves the same
 claim. The final polynomial equality remains in the output oracle relation.
@@ -279,8 +282,11 @@ either limitation.
 
 ## Delivery rules
 
-- Start each implementation PR from current `main` and give it one main theorem or API as its
-  focus. Include the laws, acceptance examples, and documentation needed to use that result.
+- Give each implementation PR one main theorem or API as its focus. Include the laws, acceptance
+  examples, and documentation needed to use that result.
+- Begin the next step while the current PR runs validation or CI, using isolated build outputs.
+  Merge in dependency order after validation and independent review. After a dependency merges,
+  bring the next PR onto the updated `main` and verify that the change was preserved.
 - Reuse a supported upstream API before adding another wrapper or executor. Put reusable additions
   in the library that owns them; remove temporary ArkLib adapters when the upstream API lands.
 - Use a real protocol or security theorem to test each foundational API. Keep the legacy namespace

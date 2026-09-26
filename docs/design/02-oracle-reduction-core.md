@@ -221,8 +221,8 @@ open oracle program with: run the prefix; take its returned prover continuation 
 value; run the selected suffix using that continuation and the prefix's actual resource handler;
 then run the returned final action once. It also preserves the complete concrete path and the
 prover's dependent private output. Source handlers are total deterministic read-only handlers.
-Ambient queries remain open, with no probability or commutativity assumption. Exported-interface
-routing between reductions is the next separate step.
+Ambient queries remain open, with no probability or commutativity assumption. The next subsection
+on virtual substitution describes composition through a restricted exported interface.
 
 ### 5.3 Effect order and terminal computation
 
@@ -276,9 +276,29 @@ answers under every deterministic handler. Suffix substitution exposes the evalu
 above. Source presentation changes use `SourceEquiv`, whose inverse environment maps serve a
 separate purpose.
 
-`subst` replaces queries in exported oracle programs. It does not route access at intermediate
-verifier actions or prove that the closing resources match a composed native run. Those are
-execution-bridge obligations. Likewise, ArkLib's [`Reduction.execute_then`](../../ArkLib/Interaction/Reduction.lean) requires a commutative
+`subst` replaces queries in exported oracle programs.
+[`SourceRouting.lean`](../../ArkLib/Interaction/Oracle/SourceRouting.lean) applies this substitution
+throughout a restricted verifier: its node queries, final action, and returned claim programs.
+When another oracle message arrives, the route preserves that new query slot and continues to
+expand queries to the earlier exported interface. Ambient queries retain their original order.
+
+`Verifier.appendExported` uses these routes with the ordinary verifier append. The prefix returns
+an `OpenClaim`; the suffix constructor receives its statement and public path, and its source
+signature is the exported oracle family. It does not receive the prefix's raw handler or query
+programs. The main law, `executeStrategies_appendExported_close`, compares actual execution with
+running the suffix under the exported behavior of that same prefix execution. It preserves the
+whole prover's actual continuation, complete path, dependent private output, and final closed
+claim. Final statement types and oracle families may depend on the public path. The initial
+source handler is deterministic and total; ambient effects remain open.
+
+The prefix must return its claim without a pending terminal action. Public branches determine
+suffix shapes, including abort branches; returning `none` at a terminal leaf does not by itself
+skip a nonempty suffix. The current API uses fixed index types for the intermediate and final
+oracle families, while their realization types and interfaces may vary with the public path.
+No equality of raw and exported query logs is asserted: one exported query may require several
+source queries. This is an execution and closing theorem, with no probability or soundness premise.
+
+ArkLib's [`Reduction.execute_then`](../../ArkLib/Interaction/Reduction.lean) requires a commutative
 monad for general effectful suffix construction, while the native split equation uses pure suffix
 selection. Neither law permits reordering arbitrary persistent-world queries.
 

@@ -677,6 +677,7 @@ public import ArkLib.Interaction.Oracle.RunSources
 public import ArkLib.Interaction.Oracle.Runtime
 public import ArkLib.Interaction.Oracle.Sequential
 public import ArkLib.Interaction.Oracle.Source
+public import ArkLib.Interaction.Oracle.SourceRouting
 public import ArkLib.Interaction.Oracle.Terminal
 public import ArkLib.Interaction.Oracle.TerminalMeasure
 public import ArkLib.Interaction.Oracle.TerminalRun

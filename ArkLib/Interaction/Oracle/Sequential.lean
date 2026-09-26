@@ -137,7 +137,8 @@ private theorem run_cast_roles {m : Type u → Type u} [Monad m]
   cases h
   rfl
 
-private theorem run_onAppendedRuntime {ι : Type u} (ambient : OracleSpec.{u, u} ι)
+/-- Transport a paired run to the native appended runtime, retaining the actual path and outputs. -/
+theorem run_onAppendedRuntime {ι : Type u} (ambient : OracleSpec.{u, u} ι)
     (tree : Oracle.TypeTree.{u}) (suffix : tree.BranchPath → Oracle.TypeTree.{u})
     (first : tree.RoleDecoration)
     (second : (p : tree.BranchPath) → (suffix p).RoleDecoration)
@@ -645,7 +646,9 @@ private theorem simulateQ_access_heq {ι : Type u} (ambient : OracleSpec.{u, u} 
   rfl
 
 set_option backward.isDefEq.respectTransparency false in
-private theorem finish_append_action {ι : Type u} (ambient : OracleSpec.{u, u} ι)
+/-- Interpret an appended final action using the actual prefix and suffix source handlers.
+Canonical signature and public-path casts preserve the same open ambient program. -/
+theorem finish_append_action {ι : Type u} (ambient : OracleSpec.{u, u} ι)
     (tree : Oracle.TypeTree.{u}) (suffix : tree.BranchPath → Oracle.TypeTree.{u})
     (firstOracles : tree.OracleDecoration)
     (secondOracles : (p : tree.BranchPath) → (suffix p).OracleDecoration)
@@ -711,7 +714,8 @@ private theorem finish_append_action {ι : Type u} (ambient : OracleSpec.{u, u} 
     (cast_heq _ _).symm
   exact (cast_heq _ _).trans (cast_heq _ action)
 
-private theorem run_counterpart_mapOutput {m : Type u → Type u} [Monad m] [LawfulMonad m]
+/-- Mapping a counterpart output maps the same output returned by the ordinary paired runner. -/
+theorem run_counterpart_mapOutput {m : Type u → Type u} [Monad m] [LawfulMonad m]
     {tree : Interaction.TypeTree.{u}} {roles : TwoParty.RoleDecoration tree}
     {OutP A B : tree.Path → Type u}
     (f : (path : tree.Path) → A path → B path)
