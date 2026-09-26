@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
+import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.ExtensionDescent
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.EquationDescent
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.GraphLine
@@ -810,3 +811,47 @@ example : positiveIncidencePoints.Nonempty ∧
   exact ⟨by simp [positiveIncidencePoints], by simpa using hbound⟩
 
 end
+
+/-! ### Mutual correlated agreement up to capacity -/
+
+section Capacity
+
+local instance : Fact (Nat.Prime 5) := ⟨by decide⟩
+
+private def capacityDomain (n : ℕ) : Fin n ↪ ℚ :=
+  ⟨fun i ↦ (i.val : ℚ), fun i j hij ↦ Fin.ext (by simpa using hij)⟩
+
+private def capacityFiniteDomain : Fin 4 ↪ ZMod 5 := ⟨![0, 1, 2, 3], by decide⟩
+
+private theorem capacityLineLength_half : capacityLineLength (1 / 2) ≤ 4 := by
+  norm_num [capacityLineLength]
+
+/-- Line agreement at gap `1/2` over `ℚ`, with `n = 4`, `k = 1` and `A = 3`. -/
+example : LineExactAgreementBound (capacityDomain 4) 1 3
+    (capacityLineConstant (1 / 2) * (4 : ℝ) ^ (capacityLineDerivativeOrder (1 / 2) + 1)) :=
+  capacity_lineAgreement (by norm_num) 4 1 3 capacityLineLength_half one_pos (by norm_num) ℚ
+    (Or.inl ringChar.eq_zero) (capacityDomain 4)
+
+/-- Affine-family agreement at gap `1/2` over `ZMod 5`, with `n = 4`, `k = 1` and one direction. -/
+example := (capacity_lineAgreement (δ := 1 / 2) (by norm_num)).affineAgreement (by norm_num) 4 1
+  capacityLineLength_half one_pos (by norm_num) (ZMod 5)
+  (Or.inr (by rw [ZMod.ringChar_zmod_n]; norm_num)) capacityFiniteDomain 1 (fun _ ↦ 0)
+  (fun _ _ ↦ 1)
+
+/-- The line and affine-space MCA errors at gap `1/2` over `ZMod 5`, with `n = 4` and `k = 1`. -/
+example := (capacity_lineAgreement (δ := 1 / 2) (by norm_num)).mcaError_le (k := 1)
+  capacityLineLength_half one_pos (by norm_num) (Or.inr (by rw [ZMod.ringChar_zmod_n]; norm_num))
+  capacityFiniteDomain
+
+/-- Power batching at gap `1/2` over `ℚ` at the length threshold, with `ℓ = 1`, `k = 1` and
+`A = n`. -/
+example := capacity_powerBatchingAgreement (δ := 1 / 2) (by norm_num) 1
+  (capacityPowerLength (1 / 2)) 1 (capacityPowerLength (1 / 2)) one_pos le_rfl one_pos
+  (by
+    have : (4 : ℝ) ≤ capacityPowerLength (1 / 2) := by
+      exact_mod_cast four_le_capacityPowerLength (1 / 2)
+    push_cast
+    linarith)
+  ℚ (Or.inl rfl) (capacityDomain _) ![fun _ ↦ 0, fun _ ↦ 1]
+
+end Capacity
