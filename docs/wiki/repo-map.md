@@ -27,14 +27,14 @@ home_page/            site assets and assembled website root
 - `ArkLib/Interaction/Oracle/` refines generic type trees with public/oracle positions, keeps
   structural `BranchPath` separate from concrete `ExecutionPath` messages, and adds position-typed
   role/interface decorations plus the minimal decorated `Oracle.Protocol` bundle.
-- `Interaction/Oracle/Composition.lean` executes finite chains through closed claims and private
-  state. `Interaction/Oracle/OrderedSoundness.lean` accumulates per-stage false-to-accepted-true
-  errors for that optional executor. Its native measure theorem excludes rejection and does not
-  yet provide the world-backed, admissibility-aware soundness game.
-- `ProofSystem/Sumcheck/Interaction/MultivariateSoundness.lean` transports the existing
-  univariate bound to the actual closed multivariate round. `AdaptiveRounds.lean` threads
-  randomized message kernels and private state through the ordered executor;
-  `AdaptiveSoundness.lean` accumulates their errors under fresh uniform challenges.
+- `ProofSystem/Sumcheck/Interaction/Protocol.lean` defines the full native sum-check tree,
+  restricted verifier, and execution through `executeCore`. Prover memory lives in ordinary
+  strategy continuations. `ProtocolSoundness.lean` proves the final output oracle relation bound;
+  `MultivariateSoundness.lean` supplies the one-round polynomial projection bound.
+  `ProtocolCompleteness.lean` defines the honest native strategy and proves support-level and
+  probability-one completeness.
+- `Interaction/Oracle/Composition.lean` supplies a separate sequential execution combinator.
+  Its explicit interface handoffs are not a substitute for a native strategy execution theorem.
 - `ArkLib/OracleReduction/` remains the conceptual center of the legacy reduction and security
   layer while protocol clients migrate.
 - `ArkLib/Data/`, `ArkLib/ToMathlib/`, and `ArkLib/ToCompPoly/` support the

@@ -655,7 +655,6 @@ public import ArkLib.Interaction.Oracle.CoreRun
 public import ArkLib.Interaction.Oracle.Execution
 public import ArkLib.Interaction.Oracle.LoggedExecution
 public import ArkLib.Interaction.Oracle.LoggedRun
-public import ArkLib.Interaction.Oracle.OrderedSoundness
 public import ArkLib.Interaction.Oracle.PhasedExecution
 public import ArkLib.Interaction.Oracle.PhasedRun
 public import ArkLib.Interaction.Oracle.Prefix
@@ -791,8 +790,6 @@ public import ArkLib.ProofSystem.Stir.ProximityGap
 public import ArkLib.ProofSystem.Stir.Quotienting
 public import ArkLib.ProofSystem.Sumcheck.Domain
 public import ArkLib.ProofSystem.Sumcheck.Impl.Basic
-public import ArkLib.ProofSystem.Sumcheck.Interaction.AdaptiveRounds
-public import ArkLib.ProofSystem.Sumcheck.Interaction.AdaptiveSoundness
 public import ArkLib.ProofSystem.Sumcheck.Interaction.ArbitraryCompleteness
 public import ArkLib.ProofSystem.Sumcheck.Interaction.ArbitraryRounds
 public import ArkLib.ProofSystem.Sumcheck.Interaction.Closing
@@ -801,6 +798,9 @@ public import ArkLib.ProofSystem.Sumcheck.Interaction.MultivariateRound
 public import ArkLib.ProofSystem.Sumcheck.Interaction.MultivariateSoundness
 public import ArkLib.ProofSystem.Sumcheck.Interaction.Projection
 public import ArkLib.ProofSystem.Sumcheck.Interaction.ProjectionTransport
+public import ArkLib.ProofSystem.Sumcheck.Interaction.Protocol
+public import ArkLib.ProofSystem.Sumcheck.Interaction.ProtocolCompleteness
+public import ArkLib.ProofSystem.Sumcheck.Interaction.ProtocolSoundness
 public import ArkLib.ProofSystem.Sumcheck.Interaction.Sequential
 public import ArkLib.ProofSystem.Sumcheck.Interaction.SingleRound
 public import ArkLib.ProofSystem.Sumcheck.Interaction.Soundness

@@ -4,11 +4,12 @@
 oracle-reduction layer already provides on `main`, and the next open work.
 
 The typed core, the first world-backed execution artifacts, and the Sumcheck acceptance slices have
-landed (AR-1 through AR-10B; ArkLib #851–#892). Optional ordered execution now also has a generic
-soundness error accumulation theorem, with an adaptive multi-round Sumcheck instance. No
-declaration under `ArkLib/Interaction/` or `ArkLib/ProofSystem/Sumcheck/Interaction/` uses `sorry`. The next work is protocol evidence beyond
-Sumcheck (FRI and Spartan slices) and the admissibility-aware ordinary soundness composition
-theorem. State restoration and the compiler remain blocked on the upstream gaps listed below.
+landed (AR-1 through AR-10B; ArkLib #851–#892). Native full-protocol Sumcheck now has a
+verifier with explicit abort and soundness against arbitrary native prover continuations. No declaration under `ArkLib/Interaction/` or
+`ArkLib/ProofSystem/Sumcheck/Interaction/` uses `sorry`. The next work is protocol evidence beyond
+Sumcheck (FRI and Spartan slices) and the admissibility-aware
+ordinary soundness composition theorem. State restoration and the compiler remain blocked on the
+upstream gaps listed below.
 
 ## Supported baseline
 
@@ -101,15 +102,6 @@ Naming follows [`docs/wiki/interaction-naming.md`](../wiki/interaction-naming.md
 | Accept/reject/fault outcomes | `Oracle/Terminal`, `Oracle/TerminalRun`, `Oracle/TerminalMeasure` | #886 |
 | Ordered world phases | `Oracle/WorldSegments`, `Oracle/PhasedExecution`, `Oracle/PhasedRun` | #889 |
 | Finite ordered composition | `Oracle/Composition` (`ExecutionInterface`) | #891 |
-| Optional ordered soundness | `Oracle/OrderedSoundness` (`OrderedExecution.run_soundness_measure`) | — |
-
-`OrderedExecution.run_soundness_measure` bounds the mass of accepted true final states by the sum
-of per-stage errors, starting from a false input. Each stage's bound ranges over every false input
-state, including its closed oracle behavior and private prover state. Rejection is excluded from
-the event; true inputs need no preservation premise. The theorem uses the chosen native measure
-semantics of the ambient oracle specification and discrete measurable boundary states, without a
-countability assumption. It does not supply a persistent-world game, output-admissibility bound,
-or fault budget. Those remain obligations of the general ordinary soundness composition theorem.
 
 Sumcheck on the typed layer:
 
@@ -122,17 +114,30 @@ Sumcheck on the typed layer:
 | Two sequential rounds through the actual closed claim | `MultivariateRound`, `Sequential` | #883 |
 | Arbitrary consecutive rounds, honest completeness | `executeRoundsSampled_perfectCompleteness`, `executeRounds_uniform_perfectCompleteness` and measure forms | #892 |
 | Actual multivariate round soundness | `MultivariateRound.executeCore_sampled_soundness` | — |
-| Randomized adaptive ordered-round soundness | `AdaptiveRounds`, `AdaptiveSoundness` | — |
+| Native full-protocol soundness | `Native.execute_soundness` in `ProtocolSoundness` | — |
+| Native honest completeness | `Native.execute_support_completeness`, `Native.execute_perfectCompleteness` in `ProtocolCompleteness` | — |
 
-The adaptive Sumcheck executor threads private prover state and the reached public statement.
-Each message kernel runs before a fresh independent uniform receiver challenge. For a retained
-oracle realized by a multivariate polynomial of individual degree at most `deg` and a false
-initial claim, the mass of accepted true final claims after `count` consecutive rounds is at most
-`count * (deg / |F|)`.
-The bound uses the global degree cap on every adversarial message, including when an honest
-projection has smaller coordinate degree. Rejection short-circuits the remaining rounds.
-This result instantiates optional ordered execution; it does not supply the world-backed
-admissibility or fault guarantees described above.
+`Sumcheck/Interaction/Protocol` defines one oracle interaction tree. Each round receives a
+univariate polynomial oracle, then the verifier publicly aborts or supplies a fresh challenge.
+The prover is the ordinary `Interaction.Oracle.Prover.Strategy`: its continuations retain private
+memory and may perform effects after receiving the challenge. There is no separate private-state
+kernel in the security statement. `Native.execute` invokes `executeCore` on those strategies.
+
+The verifier queries the sent polynomial for its sum check and next target. It exports the
+original polynomial oracle through a virtual view, retaining the accumulated access to earlier
+messages. At the last leaf, the output relation says that this retained oracle evaluated at the
+full challenge vector equals the final target. This is a relation on the output, not a final
+verifier query. From a false initial claim over an oracle realized by a polynomial of individual
+degree at most `deg`, soundness bounds the probability of a non-rejected true output by
+`count * deg / |F|` for fresh uniform challenges. The honest native strategy sends the projected
+round polynomials. From a true initial claim, every supported execution returns a true output;
+probabilistic completeness is one for any challenge program.
+
+`Oracle/Composition` and the earlier `ArbitraryRounds` clients execute sequences of separate
+reductions across explicit interfaces. Those execution results do not by themselves establish
+soundness for arbitrary strategies on a composed interaction tree. The native Sumcheck theorem
+follows the actual full-tree execution directly. General world-backed composition, admissibility,
+and fault accounting remain separate obligations.
 
 The legacy verifier correspondence is honest-execution only: the legacy verifier reads the input
 polynomial for its next target, while the typed verifier reads the sent polynomial. Both relation
