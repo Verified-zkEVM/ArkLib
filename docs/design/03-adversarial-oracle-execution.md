@@ -48,10 +48,16 @@ The current layers are:
 | VCVio `RunResult` | Runner output, residual world state, and ordered surface-query log | `VCVio.OracleComp.Runtime` |
 
 `executeStrategiesCore` executes ordinary prover and restricted verifier strategies directly.
-`executeCore` prepares a reduction's prover strategy and delegates to that shared path. The
-logged, terminal, and phased adapters have erasure or observation laws relating their outputs to
-the corresponding ordinary execution. Extending this direct-strategy path through composed
-world-backed execution remains a target, rather than a new independent state-machine semantics.
+`executeStrategiesLoggedRun` pairs that execution with its source log.
+`executeStrategiesWithRuntime` runs the logged program in one initialized runtime; the direct
+phased entry uses the existing phased interpreter. Erasure preserves the core result and actual
+final state, and the phased/logged comparison preserves paired source observations and ordered
+ambient history. These are execution equalities, not runtime soundness bounds.
+
+Reduction entry points prepare the prover inside the same runtime and delegate to the shared
+strategy runner. Setup may issue ambient queries, so moving it outside the runtime or initializing
+again would change the experiment. The terminal adapters retain their existing outcome and erasure
+contracts.
 
 Closing uses the recorded input behavior and messages from the same concrete path. Source logs
 record Δ queries; world logs record Γ surface queries. `LoggedRun.verifierLocalView` is derived
@@ -59,6 +65,11 @@ from the enclosing log, public path, and terminal output, without replay. Recove
 observations by replay would require an additional determinism theorem. A runtime surface log
 also omits import queries performed by initialization or the handler, so it need not determine the
 residual state.
+
+An exported oracle query may execute several lower-level source queries. The proved
+`withQueryLog_simulateQ` law records those actual handler programs and their query order. It does
+not compare the logs by mapping each exported entry to one source entry. The runtime acceptance
+client exercises this expansion alongside an ordinary native continuation and a shared counter.
 
 Keep four views distinct: the concrete `ExecutionPath`, the `VerifierLocalView`, the world-query
 log, and the proposed state-restoration move trace. A public path and verifier result omit local
