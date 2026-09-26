@@ -14,6 +14,8 @@ import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.GeometricB
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.RatePartition
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.FixedRateExplicitGate
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.UniformRate
+import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.MathematicalUniformRate
+import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.ExactLists
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.CurveCertificate
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.Counting
 import Mathlib.Data.Nat.Prime.Infinite
@@ -23,7 +25,8 @@ import Mathlib.Data.Nat.Prime.Infinite
 
 The examples cover weighted-support interpolation, finite-field capacity bounds, transfer from
 close-polynomial counts to codeword-list bounds, actual-stage and gap bounds from concrete
-received-curve certificates, and fixed-rate and uniform rate-partition bounds.
+received-curve certificates, fixed-rate, uniform and mathematical uniform rate-partition bounds,
+and exact capacity lists at every rate.
 -/
 
 open Finset PolynomialDifferential ReedSolomon ReedSolomon.HiddenDerivative
@@ -697,4 +700,81 @@ example :
     uniformSampleLength 1 uniformSampleLength (by rfl) (by norm_num) uniformSampleGap
     (by rfl) (ratePartitionSampleDomain uniformSampleLength) (fun _ => 0) hchar⟩
 
+private noncomputable def mathSampleDelta : ℝ := 1 / 5
+private noncomputable def mathSampleLength : ℕ := uniformMathematicalCapacityLength mathSampleDelta
+
+private theorem mathSampleGap :
+    ((1 : ℕ) : ℝ) + mathSampleDelta * mathSampleLength ≤ mathSampleLength := by
+  have hm : 0 < uniformMathematicalMultiplicity mathSampleDelta :=
+    lt_of_lt_of_le (by omega) (add_two_le_closedMultiplicity (by norm_num)
+      (by have := uniformDerivativeOrder_pos mathSampleDelta; omega))
+  obtain ⟨-, -, hν, hνn⟩ := uniformMathematical_integer_guards (n := mathSampleLength)
+    (by norm_num [mathSampleDelta]) (by norm_num [mathSampleDelta]) hm (le_max_left _ _)
+  have hn : (2 : ℝ) ≤ mathSampleLength := by exact_mod_cast (show 2 ≤ mathSampleLength by omega)
+  norm_num [mathSampleDelta]
+  linarith
+
+open Classical in
+/-- The mathematical uniform capacity bound holds at the selected block length over the
+rationals. -/
+example :
+    (closePolynomialSet (ratePartitionSampleDomain mathSampleLength)
+      (fun _ => (0 : ℚ)) 1 mathSampleLength).Finite ∧
+      ((closePolynomialSet (ratePartitionSampleDomain mathSampleLength)
+        (fun _ => (0 : ℚ)) 1 mathSampleLength).ncard : ℝ) ≤
+        mathematicalUniformListConstant mathSampleDelta *
+          mathSampleLength ^ uniformDerivativeOrder mathSampleDelta :=
+  mathematicalUniform_capacity_list_bound mathSampleDelta (by norm_num [mathSampleDelta])
+    (by norm_num [mathSampleDelta]) mathSampleLength 1 mathSampleLength le_rfl (by norm_num)
+    mathSampleGap le_rfl (ratePartitionSampleDomain mathSampleLength) (fun _ => 0)
+    (Or.inl ringChar.eq_zero)
+
 end RatePartitionAcceptance
+
+section ExactListsAcceptance
+
+local instance : Fact (Nat.Prime 23) := ⟨by decide⟩
+
+private def exactListDomain : Fin 23 ↪ ZMod 23 where
+  toFun i := (i.val : ZMod 23)
+  inj' i j hij := by
+    apply Fin.ext
+    simpa only [ZMod.val_natCast, Nat.mod_eq_of_lt i.isLt, Nat.mod_eq_of_lt j.isLt]
+      using congrArg ZMod.val hij
+
+/-- At gap `6/25` over `ZMod 23` with `q = n = 23`, dimension `2` and agreement `8`, the exact
+list has at most `307 * 23` members. -/
+example (received : Fin 23 → ZMod 23) :
+    ∃ list : Finset (Polynomial (ZMod 23)),
+      (∀ P, P ∈ list ↔ P.degree < 2 ∧
+        8 ≤ Code.agree (fun i ↦ P.eval (exactListDomain i)) received) ∧
+      (list.card : ℝ) ≤ 307 * 23 := by
+  obtain ⟨list, hexact, -, hcard⟩ := exists_rateCapacity_list (6 / 25) (by norm_num)
+    23 2 23 8 (by norm_num [rateCapacityLengthThreshold]) (by norm_num) (by norm_num)
+    Fact.out le_rfl (by norm_num) exactListDomain received
+  exact ⟨list, hexact, by simpa [rateCapacityListBound] using hcard⟩
+
+local instance : Fact (Nat.Prime 5) := ⟨by decide⟩
+
+private def quarterGapDomain : Fin 4 ↪ ZMod 5 where
+  toFun i := (i.val : ZMod 5)
+  inj' i j hij := by
+    apply Fin.ext
+    have hi : i.val < 5 := i.isLt.trans_le (by decide)
+    have hj : j.val < 5 := j.isLt.trans_le (by decide)
+    simpa only [ZMod.val_natCast, Nat.mod_eq_of_lt hi, Nat.mod_eq_of_lt hj]
+      using congrArg ZMod.val hij
+
+private def quarterGapReceived : Fin 4 → ZMod 5 := fun i => if (i : ℕ) < 2 then 0 else 1
+
+/-- At gap `1/4` over `ZMod 5` with length `4`, dimension `1` and agreement `2`, the exact list
+for the word `(0, 0, 1, 1)` contains both constants `0` and `1`, and has fewer than `4` members. -/
+example : ∃ list : Finset (Polynomial (ZMod 5)), 0 ∈ list ∧ 1 ∈ list ∧ list.card < 4 := by
+  obtain ⟨list, hexact, -, hbounds⟩ := exists_capacity_list (1 / 4) (by norm_num)
+    4 1 5 2 (by norm_num [capacityLengthThreshold]) (by norm_num) (by norm_num) Fact.out
+    (by norm_num) (by norm_num) quarterGapDomain quarterGapReceived
+  refine ⟨list, (hexact 0).2 ⟨by simp, ?_⟩, (hexact 1).2 ⟨by simp, ?_⟩,
+    hbounds.quarterGap le_rfl⟩ <;> simp only [Polynomial.eval_zero, Polynomial.eval_one] <;>
+    decide
+
+end ExactListsAcceptance
