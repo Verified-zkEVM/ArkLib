@@ -182,32 +182,6 @@ theorem exists_finiteLengthFirstOrder_symbolicCertificate
       (r : ℝ) = (n : ℝ) * rlocal := by simp [r]
       _ < (n : ℝ) * Nzero := mul_lt_mul_of_pos_left hsurplus hnReal
       _ ≤ firstOrderDimensionCount D A m M mu := hsourceLower)
-  have hy₀ : ∀ j, (columns j).y₀ ≤ mu := by
-    intro j
-    rw [← SourceColumn.exponent_zero]
-    exact firstOrder_y₀_le_μ (firstOrderColumns_eligible
-      (D := D) (A := A) (m := m) (M := M) (μ := mu) j)
-  have hw : ∀ i, (w i).natDegree ≤ 1 := fun i ↦ natDegree_receivedLine_le (f i) (g i)
-  have hrank :
-      ((localConstraintMatrix m (fun i ↦ Polynomial.C (centers i)) w columns).map
-        (algebraMap F[X] (RatFunc F))).rank ≤ r := by
-    calc
-      _ ≤ n * certifiedEnlargedRankBound 1 m M 0 := by
-        simpa only [Fintype.card_fin] using
-          rank_firstOrderLocalConstraintMatrix_le (D := D) (A := A) (m := m) (M := M)
-            (μ := mu) (fun i ↦ centers i) w columns
-            (fun j ↦ firstOrderColumns_eligible
-              (D := D) (A := A) (m := m) (M := M) (μ := mu) j)
-      _ = r := by
-        rw [certifiedEnlargedRankBound_one_eq_firstOrderRankCount]
-        rfl
-  have hrN' : r < Fintype.card (Fin (Fintype.card ↑(firstOrderExponents D A m M mu))) := by
-    simpa [N, Fintype.card_coe] using hrN
-  obtain ⟨v, _hv, hvdegree, hprimitive, hnonzero, hconstraints⟩ :=
-    exists_primitive_interpolant_of_rank_le m 1 mu (fun i ↦ centers i) w hw columns
-      firstOrderColumns_injective hy₀ (algebraMap F[X] (RatFunc F))
-      (IsFractionRing.injective F[X] (RatFunc F)) hrank hrN'
-  let Q : DifferentialPolynomial F[X] 1 := SourceColumn.interpolant columns v
   have hheight : r * mu / (N - r) ≤ h := by
     rw [hN]
     have hkernel := scaledKernelHeight_le_floor
@@ -216,38 +190,17 @@ theorem exists_finiteLengthFirstOrder_symbolicCertificate
     exact hkernel.trans (by
       simpa only [h, mu, rlocal, Nzero, finiteLengthChallengeHeight] using
         (Nat.le_max_right 1 ⌊(rlocal : ℝ) * mu / (Nzero - rlocal)⌋₊))
-  have hvheight : ∀ j, (v j).natDegree ≤ h := by
-    intro j
-    apply (hvdegree j).trans
-    simpa [N] using hheight
-  have hQsupport : Q ∈ firstOrderSpace F[X] D A m M mu :=
-    interpolant_mem_firstOrderSpace columns firstOrderColumns_eligible v
-  have hfirstJet : ∀ exponent ∈ Q.support, firstJetExponent exponent ≤ M := by
-    intro exponent hexponent
-    exact (mem_firstOrderSpace_iff.mp hQsupport exponent hexponent).1
-  have htotalJet : ∀ exponent ∈ Q.support, totalJetDegree exponent ≤ mu := by
-    intro exponent hexponent
-    exact (mem_firstOrderSpace_iff.mp hQsupport exponent hexponent).2.1
-  refine ⟨⟨v, Q, rfl, hprimitive,
-    SourceColumn.coeff_interpolant_natDegree_le columns firstOrderColumns_injective v hvheight,
-    hQsupport, hfirstJet, htotalJet, hconstraints, ?_⟩⟩
-  intro E _ iota z
-  refine ⟨hnonzero (Polynomial.eval₂RingHom iota z), ?_⟩
-  intro indices P hPdegree hcard hagreements
-  have hagreeCurve : ∀ i ∈ indices,
-      P.eval (iota (centers i)) = (w i).eval₂ iota z := by
-    intro i hi
-    rw [hagreements i hi]
-    simp [w, receivedLine]
-    ring
-  exact differentialSpecialization_eq_zero_of_firstOrderSpace
-    (by omega : k ≤ D + 1)
-    (Nat.mul_pos hmPos (by
+  have hbudget : 0 < m * A :=
+    Nat.mul_pos hmPos (by
       have haPos : 0 < firstOrderRateThreshold rho + eta :=
         (hrho.trans (rate_lt_firstOrderRateThreshold hrho hrhoOne)).trans
           (lt_add_of_pos_right _ heta)
-      exact_mod_cast (mul_pos haPos (by exact_mod_cast hnPos) |>.trans_le hA)))
-    centers w Q hQsupport hconstraints iota z indices P hPdegree hcard hagreeCurve
+      exact_mod_cast (mul_pos haPos (by exact_mod_cast hnPos) |>.trans_le hA))
+  exact exists_firstOrder_symbolicCertificate_of_rank_and_height
+    hbudget (by omega : k ≤ D + 1)
+    (by simpa only [r, N, rlocal, finiteLengthRankCount, m, M, mu] using hrN)
+    (by simpa only [r, N, rlocal, finiteLengthRankCount, m, M, mu] using hheight)
+    centers f g
 
 open Classical in
 /-- Generic ordinary-endpoint descent for an actual first-order certificate with exact

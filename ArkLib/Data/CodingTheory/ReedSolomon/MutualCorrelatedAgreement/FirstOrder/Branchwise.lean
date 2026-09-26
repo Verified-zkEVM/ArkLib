@@ -173,7 +173,7 @@ theorem firstOrderBranch_finiteLength_finiteSlack_bounds
     let E := AlgebraicClosure F
     simpa [firstOrderBranchFiniteLengthMcaConstant, hlow] using
       (lowRate_finiteLength_rate_bounds (F := F) (E := E)
-        hrho hrhoOne hlow heta haOneLow hk hkRate hALow hAn
+        hrho hlow heta haOneLow hk hkRate hALow hAn
           domain (algebraMap F E) hcharLow)
   · have hclean : firstOrderRateSwitch ≤ rho := not_lt.mp hlow
     have haOneClean : firstOrderRateThreshold rho + eta < 1 := by

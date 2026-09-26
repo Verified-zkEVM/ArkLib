@@ -881,6 +881,29 @@ private theorem sixteenth_lowRate_conditions :
   rw [hthresholdEq]
   linarith [hthresholdLt]
 
+/-- At rate `1/16`, the sixty-four-point zero line admits a symbolic certificate. -/
+example := exists_lowRateFiniteLengthFirstOrder_symbolicCertificate
+  (F := ℚ) (rho := 1 / 16) (eta := 1 / 8) (n := 64) (k := 2) (A := 64)
+  (by norm_num) (by norm_num) sixteenth_lowRate_conditions.2 (by norm_num)
+  sixteenth_lowRate_conditions.1 (by norm_num) (by norm_num)
+  (by nlinarith [sixteenth_lowRate_conditions.2])
+  lowRateDomain (fun _ ↦ 0) (fun _ ↦ 0)
+
+private def lowRateFiniteDomain : Fin 64 ↪ ZMod 2749 where
+  toFun i := i.val
+  inj' i j h := by
+    apply Fin.ext
+    have hi : i.val < 2749 := i.isLt.trans_le (by norm_num)
+    have hj : j.val < 2749 := j.isLt.trans_le (by norm_num)
+    simpa only [ZMod.val_natCast, Nat.mod_eq_of_lt hi, Nat.mod_eq_of_lt hj]
+      using congrArg ZMod.val h
+
+/-- The low-rate finite-field bound controls MCA error for a sixty-four-point constant code. -/
+example := lowRate_finiteLength_mcaError_le
+  (1 / 16) (1 / 8) 64 1 (by norm_num) sixteenth_lowRate_conditions.1
+  (by norm_num) sixteenth_lowRate_conditions.2 (by norm_num) (by norm_num)
+  lowRateFiniteDomain (Or.inl rfl)
+
 /-- At rate `1/16`, the sixty-four-point zero word has a bounded complete list and a
 nonexceptional challenge with exact correlated agreement. -/
 example :
@@ -896,7 +919,7 @@ example :
   obtain ⟨hlist, hline⟩ := lowRate_finiteLength_rate_bounds
     (F := ℚ) (E := AlgebraicClosure ℚ) (rho := 1 / 16) (eta := 1 / 8)
     (n := 64) (k := 2) (A := 64)
-    (by norm_num) (by norm_num) sixteenth_lowRate_conditions.1
+    (by norm_num) sixteenth_lowRate_conditions.1
     (by norm_num) sixteenth_lowRate_conditions.2
     (by norm_num) (by norm_num)
     (by nlinarith [sixteenth_lowRate_conditions.2]) (by norm_num)
@@ -919,6 +942,24 @@ private theorem halfRate_above_rateSwitch : firstOrderRateSwitch ≤ (1 / 2 : �
   unfold firstOrderRateSwitch
   nlinarith
 
+private theorem halfRate_branch_slack_lt_one :
+    firstOrderBranchThreshold (1 / 2 : ℝ) + 1 / 8 < 1 := by
+  rw [firstOrderBranchThreshold_eq_clean halfRate_above_rateSwitch]
+  exact halfRate_slack_lt_one
+
+/-- The branch selector gives finite-slack list and line bounds at rate `1/2`. -/
+example := firstOrderBranch_finiteLength_finiteSlack_bounds
+  (1 / 2) (1 / 8) 4 1 4
+  (by norm_num) (by norm_num) (by norm_num) halfRate_branch_slack_lt_one
+  (by norm_num) (by norm_num) (by nlinarith [halfRate_branch_slack_lt_one])
+  (by norm_num) rationalDomain (Or.inl rfl)
+
+/-- The branchwise finite-field bound controls MCA error for a four-point constant code. -/
+example := firstOrderBranch_finiteLength_mcaError_le
+  (1 / 2) (1 / 8) 4 1
+  (by norm_num) (by norm_num) (by norm_num) halfRate_branch_slack_lt_one
+  (by norm_num) (by norm_num) finiteDomain (Or.inl rfl)
+
 /-- Above the rate switch, the four-point zero word has a finite constant-code list and exact
 correlated agreement at a nonexceptional challenge. -/
 example :
@@ -932,8 +973,7 @@ example :
         HasExactCorrelatedPair rationalDomain (fun _ ↦ 0) (fun _ ↦ 0)
           (RingHom.id ℚ) 1 z 0 := by
   have haOne : firstOrderBranchThreshold (1 / 2 : ℝ) + 1 / 8 < 1 := by
-    rw [firstOrderBranchThreshold_eq_clean halfRate_above_rateSwitch]
-    exact halfRate_slack_lt_one
+    exact halfRate_branch_slack_lt_one
   obtain ⟨hlist, hline⟩ := firstOrderBranch_finiteLength_rate_bounds
     (1 / 2) (1 / 8) 4 1 4
     (by norm_num) (by norm_num) (by norm_num) haOne
