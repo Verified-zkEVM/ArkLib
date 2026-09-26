@@ -168,7 +168,8 @@ theorem execute_succ (challenge : OracleComp ambient R) (domain : List R)
   simp only [protocol, verifier, Protocol.oracleWith_tree, Protocol.oracleWith_roles,
     Protocol.oracleWith_oracles, Protocol.public_tree, Protocol.public_roles,
     Protocol.public_oracles, Protocol.done_tree, Protocol.done_roles,
-    Verifier.toCounterpart, TypeTree.toTypeTree_oracle, TypeTree.toTypeTree_public,
+    Verifier.toCounterpart, Verifier.toCounterpartWith,
+    TypeTree.toTypeTree_oracle, TypeTree.toTypeTree_public,
     TypeTree.RoleDecoration.toTypeTreeRoles_oracle,
     TypeTree.RoleDecoration.toTypeTreeRoles_public, TypeTree.RoleDecoration.toTypeTreeRoles_done]
   dsimp only [TwoParty.run,

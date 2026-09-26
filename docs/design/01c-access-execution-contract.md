@@ -88,6 +88,14 @@ statement as a function of the environment alone. Monadic continuation construct
 silently move effects across any of the boundaries above. A richer authoring language with
 arbitrary local binds would require its own order-preserving execution law.
 
+`Verifier.Fragment` generalizes the same restricted strategy to return ordinary leaf values.
+`Verifier.Strategy` retains the completed-protocol convention above. Both use one recursive
+interpreter. Appending a value fragment selects its suffix through a pure function of the public
+prefix path and returned value; it does not execute a terminal query at the join. The suffix
+continues with the actual remaining prover strategy and the input resources and messages from that
+same prefix run. See [the composition contract](02-oracle-reduction-core.md#5-composition) for the
+execution theorem's exact boundary and effect-order constraints.
+
 A single-run erasure law must hold at the `OracleComp` level before an ambient handler is
 chosen. Test a stateful ambient handler so that reordered or duplicated queries are observable.
 Do not invoke `LawfulCommMonad` to hide a schedule mismatch. General sequential security,

@@ -192,7 +192,7 @@ responses, multiplicity, and any charged expansion cost.
 ### 5.2 Native strategies and suffix shape
 
 “Native” means using the existing interaction tree, prover strategy, and paired runner directly.
-The plain [`run_appendFlat_splitPrefix`](../../ArkLib/Interaction/CompositionSoundness.lean)
+The plain [`run_appendFlat_splitPrefix`](../../ArkLib/Interaction/Reduction.lean)
 equation extracts the actual suffix strategy from every whole prover on the appended tree. It
 requires only a lawful monad. Selecting the suffix counterpart is a pure function of the prefix
 path and counterpart output; effects inside either strategy remain unrestricted.
@@ -208,8 +208,21 @@ branching or supported by a coherent extension of the interaction model.
 The append laws in `Oracle/TypeTree` and `Oracle/TypeTree/Decoration` preserve the runtime tree
 and its roles under this projection. `Oracle/Access` and `Oracle/RunSources` show that a concrete
 appended path accumulates the same access and answers queries identically to its prefix followed
-by its suffix. These path laws are available. Connecting them to the restricted verifier
-interpreter and the actual paired run is the next execution obligation.
+by its suffix. The restricted-verifier composition layer in
+[`Oracle/Sequential.lean`](../../ArkLib/Interaction/Oracle/Sequential.lean) uses these laws.
+`Verifier.appendFragment` joins a prefix returning an ordinary value with a suffix selected from
+that value and the public prefix path. `toCounterpartValue_appendFragment` proves that interpreting
+this composed verifier gives native counterpart append. The suffix interpreter receives the
+handler built from the actual prefix messages and the original input handler.
+
+`executeStrategies_append` lifts this to actual execution for every ordinary whole prover,
+including arbitrary effects and private memory in its continuations. It equates the combined
+open oracle program with: run the prefix; take its returned prover continuation and verifier
+value; run the selected suffix using that continuation and the prefix's actual resource handler;
+then run the returned final action once. It also preserves the complete concrete path and the
+prover's dependent private output. Source handlers are total deterministic read-only handlers.
+Ambient queries remain open, with no probability or commutativity assumption. Exported-interface
+routing between reductions is the next separate step.
 
 ### 5.3 Effect order and terminal computation
 
@@ -220,9 +233,12 @@ moving its callback to the beginning of the suffix is not an execution law. For 
 performed after the first suffix send can observe a different world state from the same check
 performed before that send.
 
-The first restricted composition target joins fragments returning ordinary data at the boundary,
-with no pending interpreted action there. This is a sufficient initial scope; effects at existing
-protocol nodes and private prover continuations remain allowed. A client needing an effectful
+`Verifier.Fragment` uses the existing restricted authoring syntax with an ordinary leaf value.
+`Verifier.Strategy` is the completed form, whose leaf is a terminal oracle program. Both use the
+same recursive interpreter. `Verifier.append` joins a value-returning prefix fragment with a
+completed suffix verifier. There is no pending prefix action to move across the join; only the
+suffix carries a final action. Effects at existing protocol nodes and in private prover
+continuations remain allowed. A client needing an effectful
 boundary can preserve its actual schedule, place the action at an explicit protocol node, or prove
 that the particular crossed effects can be interchanged for the claimed observation. A global
 commutative-monad assumption is stronger than this local requirement. An explicit barrier that

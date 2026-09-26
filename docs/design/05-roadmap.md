@@ -35,7 +35,7 @@ in the output oracle relation; it is not an extra final verifier query.
 
 ## Oracle composition sequence (C1–C8)
 
-C1 and C2 are implemented in this source revision. C3 is next; the remaining steps follow the
+C1–C3 are implemented in this source revision. C4 is next; the remaining steps follow the
 dependencies below. The issues record implementation PRs and merge status.
 
 ```mermaid
@@ -65,7 +65,8 @@ They are the entry point for later protocol clients.
 
 ### C1 — Reachable and weighted soundness bounds
 
-**Implemented.** Tracked in [issue #1222](https://github.com/Verified-zkEVM/ArkLib/issues/1222).
+**Landed in [PR #1231](https://github.com/Verified-zkEVM/ArkLib/pull/1231).**
+Tracked in [issue #1222](https://github.com/Verified-zkEVM/ArkLib/issues/1222).
 
 [`CompositionSoundness.lean`](../../ArkLib/Interaction/CompositionSoundness.lean) now provides
 fixed-prover, support, almost-everywhere, and weighted bounds using VCVio's existing measure
@@ -79,7 +80,8 @@ available declarations. C1 required no dependency changes.
 
 ### C2 — Oracle path and access laws
 
-**Implemented.** Tracked in [issue #1223](https://github.com/Verified-zkEVM/ArkLib/issues/1223).
+**Landed in [PR #1232](https://github.com/Verified-zkEVM/ArkLib/pull/1232).**
+Tracked in [issue #1223](https://github.com/Verified-zkEVM/ArkLib/issues/1223).
 
 The owning modules now connect oracle append to runtime trees and roles, concrete path append and
 split, accumulated access, and deterministic query answers. The laws reuse PolyFun's existing
@@ -88,27 +90,24 @@ executor. See [current status](00-current-status.md) for their scope.
 
 The acceptance client uses two genuinely different suffix shapes, mixed prover/verifier roles,
 and distinct initial, prefix, and suffix oracle answers. This establishes the path and handler
-facts needed by C3; it does not yet prove that restricted verifier execution composes.
+facts used by C3. The C2 path laws alone make no claim about execution by a prover and verifier.
 
 ### C3 — Restricted verifier composition
 
 **Tracked in:** [issue #1224](https://github.com/Verified-zkEVM/ArkLib/issues/1224).
 
-**Proposed PR:** `feat(interaction): compose native oracle verifiers`.
+**Implemented in this source revision.** C3 uses C2's path and access laws.
 
-**Depends on:** C2.
+`Verifier.Fragment` returns an ordinary leaf value; `Verifier.Strategy` retains the completed
+form with a final oracle action. Both use the same recursive interpreter.
+[`Sequential.lean`](../../ArkLib/Interaction/Oracle/Sequential.lean) provides `Verifier.append`
+and `executeStrategies_append`. The theorem splits every whole native prover at the actual
+boundary, preserving its remaining strategy, private output, oracle resources, and effect order.
+Its exact constraints belong to [the composition contract](02-oracle-reduction-core.md#5-composition).
 
-Extend the existing restricted-verifier interpreter in
-[`Execution.lean`](../../ArkLib/Interaction/Oracle/Execution.lean) so it can represent fragments
-that return ordinary values, while keeping the current effectful terminal form for completed
-protocols. Prove that the composed verifier runs through the ordinary paired runner and that the
-suffix uses the continuation returned by the actual prefix for every whole prover. Do not add a
-second recursive executor.
-
-**Acceptance check:** A prover has effects before and after challenges and retains private memory
-between fragments. Exercise public abort and its prover response. Show the final verifier action
-runs once, and show that composing the fragments preserves the actual effect order. Start with a
-boundary that has no pending action.
+The acceptance client checks private memory, challenge and abort responses, both possible owners
+of the first suffix move, and one final action. An effect-order counterexample shows why moving a
+pending prefix action across the next send is outside this theorem's scope.
 
 ### C4 — Exported oracle interfaces and closing
 

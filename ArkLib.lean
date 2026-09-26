@@ -675,6 +675,7 @@ public import ArkLib.Interaction.Oracle.Protocol
 public import ArkLib.Interaction.Oracle.Resource
 public import ArkLib.Interaction.Oracle.RunSources
 public import ArkLib.Interaction.Oracle.Runtime
+public import ArkLib.Interaction.Oracle.Sequential
 public import ArkLib.Interaction.Oracle.Source
 public import ArkLib.Interaction.Oracle.Terminal
 public import ArkLib.Interaction.Oracle.TerminalMeasure

@@ -160,7 +160,8 @@ theorem executeStrategiesLogged_erase {ι : Type u} (ambient : OracleSpec.{u, u}
       executeStrategies ambient tree roles oracles initial impl prover verifier := by
   induction tree generalizing initial with
   | done =>
-      simp only [executeStrategiesLogged, executeStrategies, Verifier.toCounterpart,
+      simp only [executeStrategiesLogged, executeStrategies,
+        Verifier.toCounterpart, Verifier.toCounterpartWith,
         TypeTree.toTypeTree_done, TypeTree.RoleDecoration.toTypeTreeRoles_done, TwoParty.run_done,
         pure_bind, map_bind, map_pure, LoggedResult.erase]
       simp only [bind_pure_comp]
@@ -174,7 +175,8 @@ theorem executeStrategiesLogged_erase {ι : Type u} (ambient : OracleSpec.{u, u}
   | «public» Moves rest ih =>
       rcases roles with ⟨role, roles⟩
       cases role <;>
-        simp only [executeStrategiesLogged, executeStrategies, Verifier.toCounterpart,
+        simp only [executeStrategiesLogged, executeStrategies,
+          Verifier.toCounterpart, Verifier.toCounterpartWith,
           TypeTree.toTypeTree_public, TypeTree.RoleDecoration.toTypeTreeRoles_public,
           map_bind, map_pure, LoggedResult.erase]
       · erw [TwoParty.run_sender]
@@ -220,7 +222,8 @@ theorem executeStrategiesLogged_erase {ι : Type u} (ambient : OracleSpec.{u, u}
             at lifted ⊢
         exact lifted
   | «oracle» Messages rest ih =>
-      simp only [executeStrategiesLogged, executeStrategies, Verifier.toCounterpart,
+      simp only [executeStrategiesLogged, executeStrategies,
+        Verifier.toCounterpart, Verifier.toCounterpartWith,
         TypeTree.toTypeTree_oracle, TypeTree.RoleDecoration.toTypeTreeRoles_oracle,
         map_bind, map_pure, LoggedResult.erase]
       erw [TwoParty.run_sender]
