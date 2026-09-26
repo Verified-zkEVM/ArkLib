@@ -1,6 +1,8 @@
 # AR-3A / AR-3B semantic acceptance contract
 
-This refines the corresponding slices in [the landing plan](01a-foundation-pr-plan.md).
+This specifies the access and execution contract established by the
+[foundation slices](01a-foundation-pr-plan.md). Remaining implementation work is tracked in the
+[roadmap](05-roadmap.md).
 The [naming contract](01b-type-tree-rename-cutover.md) and
 [core claim design](02-oracle-reduction-core.md) remain in force. These are acceptance
 requirements, not a statement that validation has already passed.
