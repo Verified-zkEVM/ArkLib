@@ -22,15 +22,17 @@ home_page/            site assets and assembled website root
 
 ## Conceptual Layering
 
-- `ArkLib/Interaction/` is the new typed-interaction foundation. Its plain reduction layer is
-  intentionally independent of oracle, probability, and legacy protocol semantics.
+- `ArkLib/Interaction/` is the new typed-interaction foundation. Its `Reduction.lean` module
+  is independent of oracle, probability, and legacy protocol semantics.
+  `CompositionSoundness.lean` adds an exact native append execution law and quantitative
+  soundness under lawful distribution semantics, with an explicit admissibility-error variant.
+  It quantifies over ordinary whole-tree prover strategies and uses the existing paired runner.
 - `ArkLib/Interaction/Oracle/` refines generic type trees with public/oracle positions, keeps
   structural `BranchPath` separate from concrete `ExecutionPath` messages, and adds position-typed
   role/interface decorations plus the minimal decorated `Oracle.Protocol` bundle.
 - `ProofSystem/Sumcheck/Interaction/Protocol.lean` defines the full native sum-check tree,
   restricted verifier, and direct execution through `executeStrategiesCore`. Prover memory lives
-  in ordinary
-  strategy continuations. `ProtocolSoundness.lean` proves the final output oracle relation bound;
+  in ordinary strategy continuations. `ProtocolSoundness.lean` proves the final output oracle relation bound;
   `MultivariateSoundness.lean` supplies the one-round polynomial projection bound.
   `ProtocolCompleteness.lean` defines the honest native strategy and proves support-level and
   probability-one completeness.
