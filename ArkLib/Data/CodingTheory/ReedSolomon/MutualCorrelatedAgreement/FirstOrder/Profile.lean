@@ -60,7 +60,7 @@ theorem squarefreeSharpOptimizedCurveEnvelope_le_fixed (p : LineProfile) (split 
 
 universe u
 
-/-- A curve-verified profile with `2 ≤ k`, positive batching degree, derivative cap
+/-- A curve-verified profile (so `2 ≤ k`) with positive batching degree, derivative cap
 `1 ≤ M ≤ B` and regular threshold `k ≤ split ≤ A ≤ n` has, for every received curve over `F`,
 one base-field exceptional set of size at most `squarefreeSharpOptimizedCurveEnvelope p split`.
 Outside it, every candidate of degree `< k` with at least `A` agreements has exact power
@@ -69,7 +69,7 @@ theorem exists_exceptional_exactPowerAgreement_squarefreeSharpOptimized
     {F E : Type u} [Field F] [Field E] [DecidableEq F] [IsAlgClosed E]
     {p : LineProfile} (hp : p.CurveVerification) (split : ℕ)
     (hsplit : p.k ≤ split ∧ split ≤ p.agreement ∧ p.agreement ≤ p.n)
-    (hk : 2 ≤ p.k) (hell : 0 < p.batchingDegree)
+    (hell : 0 < p.batchingDegree)
     (hM : 1 ≤ p.firstDerivativeCap) (hMB : p.firstDerivativeCap ≤ p.totalJetCap)
     (domain : Fin p.n ↪ F) (values : Fin (p.batchingDegree + 1) → Fin p.n → F)
     (iota : F →+* E)
@@ -79,6 +79,10 @@ theorem exists_exceptional_exactPowerAgreement_squarefreeSharpOptimized
       ∀ z ∉ exceptional, ∀ P : F[X], P.degree < p.k →
         p.agreement ≤ (polynomialAgreementSet domain (powerBatchedWord values z) P).card →
         HasExactPowerAgreement domain values (RingHom.id F) p.k z P := by
+  have hk : 2 ≤ p.k := by
+    have := hp.1
+    unfold LineProfile.candidateDegree at this
+    omega
   obtain ⟨cert⟩ := hp.exists_certificate domain
     (fun i ↦ powerBatchedCoordinate fun t ↦ values t i)
     (fun i ↦ powerBatchedCoordinate_natDegree_le fun t ↦ values t i)

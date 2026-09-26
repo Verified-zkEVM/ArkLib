@@ -579,7 +579,7 @@ example : ∃ z : ℚ, HasExactPowerAgreement sharpProfileDomain sharpProfileVal
   obtain ⟨exceptional, -, hgood⟩ :=
     exists_exceptional_exactPowerAgreement_squarefreeSharpOptimized
       (E := AlgebraicClosure ℚ) (p := sharpSquarefreeProfile) (by decide) 2
-      ⟨le_rfl, le_rfl, le_rfl⟩ le_rfl Nat.one_pos le_rfl le_rfl sharpProfileDomain
+      ⟨le_rfl, le_rfl, le_rfl⟩ Nat.one_pos le_rfl le_rfl sharpProfileDomain
       sharpProfileValues (algebraMap ℚ (AlgebraicClosure ℚ))
       (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
   obtain ⟨z, hz⟩ := Finset.exists_notMem exceptional

@@ -126,10 +126,8 @@ theorem exists_exceptional_retainedSquarefreeCurveAgreement_sharpAt
     ⟨tailExceptional, by unfold retainedSquarefreeOrdinaryCurveChargeAt; exact_mod_cast htailCard,
       fun z hz P hdegree hagree hroot ↦ by
         convert htailGood z hz P hdegree hroot (by convert hagree)⟩
-  obtain ⟨exceptional, hcard, hgood⟩ :=
-    exists_exceptional_retainedSquarefreeCurveAgreement_of_singularTail domain values iota Q hQ
-      hD hDL hLA hAn (by omega) hM hMB hjet hderiv hheight hchar _ htail
-  exact ⟨exceptional, hcard, hgood⟩
+  exact exists_exceptional_retainedSquarefreeCurveAgreement_of_singularTail domain values iota Q
+    hQ hD hDL hLA hAn (by omega) hM hMB hjet hderiv hheight hchar _ htail
 
 /-- The bound of `exists_exceptional_retainedSquarefreeCurveAgreement_sharpAt` at the attained
 ordinary minimum: one exceptional set of size at most
