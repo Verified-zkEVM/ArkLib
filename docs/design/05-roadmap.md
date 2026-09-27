@@ -164,7 +164,7 @@ hidden runtime state to the prover. The native runner remains the execution engi
 
 ### C6 — Direct execution in a persistent runtime
 
-**Implemented in this revision.** Tracked in
+**Implemented in [PR #1236](https://github.com/Verified-zkEVM/ArkLib/pull/1236).** Tracked in
 [issue #1227](https://github.com/Verified-zkEVM/ArkLib/issues/1227).
 C6 uses C4 and reuses VCVio's existing runtime.
 
@@ -178,24 +178,26 @@ The acceptance client checks counter answers `1, 2, 3` across prover setup and b
 stages, with final state `3`. A separate actual exported-interface client checks one-to-many source
 query expansion, private prover output, and exact source and ambient logs. The generic
 `withQueryLog_simulateQ` law compares these logs through the handler's actual query programs.
-Persistent-runtime soundness and resource certificates remain C7 and C8.
+C7 below adds the probability bound; C8 supplies access and cost certificates.
 
 ### C7 — Soundness over the actual runtime distribution
 
 **Tracked in:** [issue #1228](https://github.com/Verified-zkEVM/ArkLib/issues/1228).
 
-**Proposed PR:** `feat(interaction): prove runtime composition soundness`.
+**Implementation:** `Oracle/RuntimeSoundness`; acceptance examples in
+`ArkLibTest/Interaction/Oracle/RuntimeSoundness`.
 
 **Depends on:** C1, C5, and C6.
 
-Combine the weighted soundness result with the persistent-runtime execution law. The suffix bound
-must apply to the actual distribution of runtime state, prover memory, intermediate claim, and
-relevant history. Preserve what the prover has learned; do not require the prover to be secure for
-each fixed hidden runtime state, and do not let it choose a strategy after seeing hidden state.
-State the main suffix premise as an average bound over that actual joint distribution. A bound
-for almost every fixed full boundary is a useful stronger corollary, not a required premise.
-Clients must prove the average bound using the runtime's own behavior; erasing logs does not
-transfer ordinary oracle soundness to an arbitrary stateful runtime.
+`Oracle/RuntimeSoundness` now connects the actual native execution split to one persistent
+runtime. Its main theorem bounds final closed-claim success by an exceptional prefix event plus
+an average suffix error. The averaging uses the actual joint distribution of runtime state,
+prover continuation, intermediate claim, and ambient history.
+
+The client proves that average suffix bound for its runtime. The theorem does not require a bound
+at each fixed hidden state, and the whole prover is fixed before runtime initialization. A bound
+for almost every fixed full result after the prefix gives a stronger, convenient sufficient
+condition. Erasing logs alone does not transfer ordinary oracle soundness to an arbitrary runtime.
 
 The suffix program receives the actual prefix output, including the extracted native continuation.
 Runtime resumption supplies hidden state internally. A function called a prover view does not by
@@ -204,10 +206,11 @@ chooses a message. Retain the actual state and ordered ambient history in the ex
 Keep rejection, explicit returned faults, and missing probability mass distinct. Charge an explicit
 fault term only when the theorem's event or model requires it.
 
-**Acceptance check:** Sample a hidden random bit once and let the prover commit a guess before any
-answer reveals the bit. Prove the average `1/2` bound even though conditioning on the fixed bit
-makes one guess succeed surely. Then reveal the bit before the commitment: the actual continuation
-should win with probability one, so the same `1/2` suffix premise must fail.
+**Acceptance:** The native hidden-bit client initializes its secret once. A fixed guess made before
+any revealing answer succeeds with probability `1/2`, and the proof applies the main composition
+theorem. A matching fixed secret gives success one, ruling out a uniform fixed-secret half bound.
+A second fixed whole prover queries the secret before committing and succeeds with probability one;
+its averaged half premise is proved false. Both clients retain the actual query history and state.
 
 ### C8 — Prove oracle access and query costs are valid
 
