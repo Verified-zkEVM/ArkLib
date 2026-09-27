@@ -198,15 +198,33 @@ Almost-everywhere premises and integrals require the relevant measurability fact
 are corollaries of the broader target, and there is no requirement to prove security at unreachable
 boundaries for one fixed execution. The plain native layer provides these fixed-prover, support,
 almost-everywhere, and weighted forms. Restricted oracle composition provides the
-almost-everywhere weighted bound and its uniform corollary. Persistent-runtime applications remain
-planned.
+almost-everywhere weighted bound and its uniform corollary. `Oracle/RuntimeSoundness` extends
+the execution split to one persistent runtime, under the averaged suffix premise below.
 
 ### 4.3 Hidden state and adversary information
 
-The world-backed theorem must preserve the joint prefix distribution of residual world state,
-private prover continuation, intermediate claim, and relevant history. A suffix bound for a fixed
-public claim in a freshly initialized runtime loses this correlation and does not justify
-composition. Nor may a proof choose a new adversary after revealing hidden state.
+`executeStrategiesWithRuntime_appendExported_soundness` bounds the probability that the actual
+native execution returns a closed claim satisfying the final relation. It fixes the whole prover
+before runtime setup and splits execution at the prover's actual continuation. The split retains
+the runtime state and ordered ambient history from that run.
+
+Write `μ` for the joint distribution after the prefix and `E` for an exceptional event at that
+point. For each result `b`, resume the actual suffix with the saved state and let `s(b)` be its
+success probability. The theorem assumes the average bound
+
+```text
+∫ outside E, s(b) dμ(b) ≤ ∫ outside E, error(b) dμ(b)
+```
+
+and concludes `Pr[final relation holds] ≤ Pr[E] + ∫ outside E, error(b) dμ(b)`.
+The client chooses `E` and proves this premise for its runtime. For example, `E` can include a true
+intermediate claim or a false claim outside the suffix theorem's assumptions. The integral uses the
+actual probability mass, without conditioning on acceptance or renormalizing missing mass.
+
+The suffix receives the prefix output, including its native prover continuation. Runtime resumption
+supplies hidden state internally. The mathematical premise may inspect that state; it does not give
+the prover permission to read it. Replacing the actual suffix by one with a fresh hidden state would
+lose its correlation with prover memory and would not meet the theorem's premise.
 
 For example, suppose the world samples a hidden uniform bit and a prover which has learned nothing
 about it always guesses zero. Its average success is one-half. Conditional on the secret being
@@ -216,8 +234,8 @@ bound cannot be applied to the actual suffix: its prover now has that informatio
 with probability one.
 
 Pointwise suffix bounds for every reachable hidden state are a sufficient special case when a
-protocol proves them. The broader target averages over the actual correlated experiment while
-restricting strategy selection and adaptation to information the prover really observed. The
+protocol proves them. The main theorem averages over the actual correlated experiment. A concrete client must still
+show which queries the prover can issue and what their answers reveal. The
 boundary may expose hidden state to mathematical analysis without exposing it to the adversary.
 
 ### 4.4 Common first scope and error accounting
@@ -236,9 +254,9 @@ actual remaining distribution. True intermediate claims are already charged by `
 charge them again. Splitting successful runs into true, false admissible, and false inadmissible
 intermediate claims yields the target
 `ε₁ + δ + sup ε₂`; retaining variable suffix errors gives the integral above. Add `ε_fault` when
-the exported bad event or fault guarantee requires it. A claim of general world-backed composition
-waits for the execution, closing, admissibility, and distribution bridges; this contract is not an
-already proved theorem.
+the exported bad event or fault guarantee requires it. The runtime theorem proves the execution and averaging step. It does not establish these
+protocol-specific error bounds automatically: clients must prove them for the actual prefix and
+suffix, including any access restrictions or runtime invariants they rely on.
 
 ## 5. State restoration
 

@@ -102,7 +102,8 @@ Naming follows [`docs/wiki/interaction-naming.md`](../wiki/interaction-naming.md
 | Ordered world phases | `Oracle/WorldSegments`, `Oracle/PhasedExecution`, `Oracle/PhasedRun` | #889 |
 | Finite ordered composition | `Oracle/Composition` (`ExecutionInterface`) | #891 |
 | Direct native strategy execution | `Oracle/CoreRun.executeStrategiesCore` | #1216 |
-| Direct native logged, phased, and persistent-runtime execution | `Oracle/LoggedRun`, `Oracle/PhasedRun`, `Oracle/Runtime` | this revision; [#1227](https://github.com/Verified-zkEVM/ArkLib/issues/1227) |
+| Direct native logged, phased, and persistent-runtime execution | `Oracle/LoggedRun`, `Oracle/PhasedRun`, `Oracle/Runtime` | #1236 |
+| Native composition inside one persistent runtime | `Oracle/RuntimeSoundness` | this revision; [#1228](https://github.com/Verified-zkEVM/ArkLib/issues/1228) |
 | General native composition soundness | `Interaction/CompositionSoundness` | #1218 |
 | Restricted verifier composition for every whole native prover | `Oracle/Sequential.executeStrategies_append` | #1233 |
 | Composition through exported oracle interfaces and actual claim closing | `Oracle/SourceRouting.executeStrategies_appendExported_close` | #1234 |
@@ -227,8 +228,10 @@ The soundness proof also applies the generic oracle composition theorem at each 
 The final original-polynomial equality remains an output oracle relation, with no added query.
 
 The soundness theorem uses total deterministic source handlers and lawful probability semantics
-for the ambient computation. A bound for its interpretation in a persistent stateful runtime is
-still C7; access and cost certificates remain C8.
+for the ambient computation. `Oracle/RuntimeSoundness` proves composition
+inside a persistent runtime when the client bounds average suffix success over the actual prefix
+distribution. This is a separate hypothesis about that runtime, not an automatic transfer of the
+Sumcheck bound. Access and cost certificates remain C8.
 
 Direct native provers can now use `executeStrategiesLoggedRun`, `executeStrategiesWithRuntime`,
 and `executeStrategiesPhasedWithRuntime`. They reuse the existing interpreters. Reduction setup
@@ -241,6 +244,19 @@ state `3`, and the exact query order. Another actual exported-interface client c
 exported query expands to two source queries, followed by a fresh-message query. Its source answers
 are `[7, 1, 2]`. `withQueryLog_simulateQ` records the queries made by the routing programs; it does
 not equate one exported log entry with one source entry.
+
+The runtime soundness theorem fixes the whole native prover before setup. Its prefix distribution
+retains the prover continuation, intermediate claim, runtime state, and ambient history together.
+Its bound is the probability of a chosen exceptional prefix event plus the average remaining error.
+The suffix receives the actual prefix output; hidden state is handled internally by runtime
+resumption. Clients prove the average bound for this experiment. A separate execution equality
+retains the final state and history while observing the final closed claim.
+
+The hidden-bit runtime client checks both information patterns. Committing a fixed guess before
+learning the secret gives success exactly `1/2` and instantiates the main theorem. Reading the
+secret first gives success one and violates that theorem's half-error premise. Conditioning on a
+matching fixed secret also gives success one. The tests retain the actual ordered query history,
+so the proof cannot silently discard what the prover learned.
 
 The legacy verifier correspondence is honest-execution only: the legacy verifier reads the input
 polynomial for its next target, while the typed verifier reads the sent polynomial. Both relation
