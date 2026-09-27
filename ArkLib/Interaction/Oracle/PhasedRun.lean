@@ -222,8 +222,8 @@ theorem executePhased_logView {StatementIn WitnessIn : Type}
       (fun result => (result.1.observation, result.2)) <$>
         (executeLogged reduction impl stmt wit).withQueryLog := by
   rw [executePhased, executePhases_logView]
-  simp [executeLogged, OracleComp.withQueryLog_bind, LoggedRun.observation, LoggedResult.observe,
-    monad_norm]
+  simp [executeLogged, executeStrategiesLoggedRun, OracleComp.withQueryLog_bind,
+    LoggedRun.observation, LoggedResult.observe, monad_norm]
 
 /-- Closing the phased artifact agrees with closing the trace-free artifact produced by the
 same reduction execution. -/
@@ -350,6 +350,81 @@ def executePhasedWithRuntime {ι κ : Type} {Import : OracleSpec ι} {Surface : 
     (reduction : Reduction Surface protocol initial StatementIn WitnessIn OutP OutV)
     (impl : QueryImpl (OracleSpec.ofPFunctor initial) Id) (stmt : StatementIn) (wit : WitnessIn) :=
   runtime.run (executePhased reduction impl stmt wit)
+
+/-- Execute already prepared native strategies with their local phases in one shared runtime. -/
+def executeStrategiesPhasedWithRuntime {ι κ : Type}
+    {Import : OracleSpec ι} {Surface : OracleSpec κ} (runtime : OracleRuntime Import Surface)
+    {protocol : Oracle.Protocol} {initial : PFunctor}
+    {OutP : protocol.tree.ExecutionPath → Type} {OutV : protocol.tree.BranchPath → Type}
+    (impl : QueryImpl (OracleSpec.ofPFunctor initial) Id)
+    (prover : Prover.Strategy Surface protocol.tree protocol.roles OutP)
+    (verifier : Verifier.Strategy Surface protocol.tree protocol.roles protocol.oracles initial
+      OutV) :=
+  runtime.run (executePhases Surface protocol.tree protocol.roles protocol.oracles initial impl
+    (pure prover) verifier)
+
+/-- Direct native phase observations agree with the logged program before runtime interpretation. -/
+theorem executeStrategiesPhases_logView {ι : Type} {ambient : OracleSpec ι}
+    {protocol : Oracle.Protocol} {initial : PFunctor}
+    {Stmt : protocol.tree.BranchPath → Type} {Idx : protocol.tree.BranchPath → Type}
+    {Obj : (path : protocol.tree.BranchPath) → Idx path → Type}
+    {Out : (path : protocol.tree.BranchPath) → OracleFamily (Idx path) (Obj path)}
+    {OutP : protocol.tree.ExecutionPath → Type}
+    (impl : QueryImpl (OracleSpec.ofPFunctor initial) Id)
+    (prover : Prover.Strategy ambient protocol.tree protocol.roles OutP)
+    (verifier : Verifier.Strategy ambient protocol.tree protocol.roles protocol.oracles initial
+      (TerminalClaim protocol initial Stmt Out)) :
+    PhasedRun.logView <$>
+        executePhases ambient protocol.tree protocol.roles protocol.oracles initial impl
+          (pure prover) verifier =
+      (fun result => (result.1.observation, result.2)) <$>
+        (executeStrategiesLoggedRun impl prover verifier).withQueryLog := by
+  rw [executePhases_logView]
+  simp [executeStrategiesLoggedRun, OracleComp.withQueryLog_bind, LoggedRun.observation,
+    LoggedResult.observe, monad_norm]
+
+/-- Native phased and logged runtime entry points retain the same paired source/world observations
+and actual final state. The world trace on the left comes from the execution's local phases. -/
+theorem executeStrategiesPhasedWithRuntime_logView {ι κ : Type}
+    {Import : OracleSpec ι} {Surface : OracleSpec κ} (runtime : OracleRuntime Import Surface)
+    {protocol : Oracle.Protocol} {initial : PFunctor}
+    {Stmt : protocol.tree.BranchPath → Type} {Idx : protocol.tree.BranchPath → Type}
+    {Obj : (path : protocol.tree.BranchPath) → Idx path → Type}
+    {Out : (path : protocol.tree.BranchPath) → OracleFamily (Idx path) (Obj path)}
+    {OutP : protocol.tree.ExecutionPath → Type}
+    (impl : QueryImpl (OracleSpec.ofPFunctor initial) Id)
+    (prover : Prover.Strategy Surface protocol.tree protocol.roles OutP)
+    (verifier : Verifier.Strategy Surface protocol.tree protocol.roles protocol.oracles initial
+      (TerminalClaim protocol initial Stmt Out)) :
+    (fun result => (result.output.logView, result.state)) <$>
+        executeStrategiesPhasedWithRuntime runtime impl prover verifier =
+      (fun result => ((result.output.observation, result.trace), result.state)) <$>
+        executeStrategiesWithRuntime runtime impl prover verifier := by
+  unfold executeStrategiesPhasedWithRuntime executeStrategiesWithRuntime
+  rw [OracleRuntime.run_eq, OracleRuntime.run_eq]
+  simp only [map_bind]
+  congr 1
+  funext state
+  let phases := executePhases Surface protocol.tree protocol.roles protocol.oracles initial impl
+    (pure prover) verifier
+  let logged := executeStrategiesLoggedRun impl prover verifier
+  have erased := runtime.runFrom_eraseTrace state phases
+  have paired := congrArg (fun program =>
+    (fun result => (result.1.logView, result.2)) <$> program) erased
+  have observed := runtime.runFrom_observe state logged
+  have loggedPair := congrArg (fun program =>
+    (fun result => ((result.1.observation, result.2.2), result.2.1)) <$> program) observed
+  have same := congrArg (runtime.handler.runState state)
+    (executeStrategiesPhases_logView impl prover verifier)
+  calc
+    _ = (fun result => (result.1.logView, result.2)) <$>
+        runtime.handler.runState state phases := by
+      simpa only [Functor.map_map] using paired
+    _ = (fun result => ((result.1.1.observation, result.1.2), result.2)) <$>
+        runtime.handler.runState state logged.withQueryLog := by
+      simpa [phases, logged, QueryImpl.Stateful.runState, monad_norm] using same
+    _ = _ := by
+      simpa only [Functor.map_map] using loggedPair.symm
 
 /-- On a supported runtime result, the derived chronological protocol regions are exactly its
 world-surface log. The runtime support witness supplies provenance; the carrier alone does not. -/

@@ -77,6 +77,18 @@ theorem loggedLiftAccessImpl_erase {ι : Type u} (ambient : OracleSpec.{u, u} ι
 
 end Verifier
 
+/-- Logging after substitution records the target queries actually made by each handler program.
+One source query may make zero, one, or many target queries, in the handler's execution order.
+The right side interprets source queries with these logged programs rather than mapping entries
+of a source-level log. -/
+theorem withQueryLog_simulateQ {ι κ : Type} {source : OracleSpec ι}
+    {target : OracleSpec κ} {A : Type}
+    (route : QueryImpl source (OracleComp target)) (program : OracleComp source A) :
+    (simulateQ route program).withQueryLog =
+      (simulateQ (QueryImpl.compose target.loggingOracle route) program).run := by
+  unfold OracleComp.withQueryLog OracleSpec.loggingOracle
+  rw [QueryImpl.simulateQ_compose]
+
 /-- One generic execution's outputs and ordered source observations. The executor owns pairing. -/
 structure LoggedResult (tree : Oracle.TypeTree.{u}) (oracles : tree.OracleDecoration)
     (initial : PFunctor.{u, u}) (OutP : tree.ExecutionPath → Type u)

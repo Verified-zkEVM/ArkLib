@@ -102,10 +102,11 @@ Naming follows [`docs/wiki/interaction-naming.md`](../wiki/interaction-naming.md
 | Ordered world phases | `Oracle/WorldSegments`, `Oracle/PhasedExecution`, `Oracle/PhasedRun` | #889 |
 | Finite ordered composition | `Oracle/Composition` (`ExecutionInterface`) | #891 |
 | Direct native strategy execution | `Oracle/CoreRun.executeStrategiesCore` | #1216 |
+| Direct native logged, phased, and persistent-runtime execution | `Oracle/LoggedRun`, `Oracle/PhasedRun`, `Oracle/Runtime` | this revision; [#1227](https://github.com/Verified-zkEVM/ArkLib/issues/1227) |
 | General native composition soundness | `Interaction/CompositionSoundness` | #1218 |
 | Restricted verifier composition for every whole native prover | `Oracle/Sequential.executeStrategies_append` | #1233 |
 | Composition through exported oracle interfaces and actual claim closing | `Oracle/SourceRouting.executeStrategies_appendExported_close` | #1234 |
-| Weighted and uniform soundness for exported oracle composition | `Oracle/CompositionSoundness` | this revision; [#1226](https://github.com/Verified-zkEVM/ArkLib/issues/1226) |
+| Weighted and uniform soundness for exported oracle composition | `Oracle/CompositionSoundness` | [#1235](https://github.com/Verified-zkEVM/ArkLib/pull/1235) |
 | Oracle append paths, runtime roles, access, and query answers | `Oracle/TypeTree`, `Oracle/TypeTree/Decoration`, `Oracle/Access`, `Oracle/RunSources` | #1232 |
 | Fixed-prover, reachable, and averaged native bounds | `run_appendFlat_soundness_fixed`, `_of_support`, `_ae`, and `_weighted_ae` | #1231 |
 
@@ -225,10 +226,21 @@ The soundness proof also applies the generic oracle composition theorem at each 
 `count * deg / |F|` under the existing hypotheses. The previous separate induction is retired.
 The final original-polynomial equality remains an output oracle relation, with no added query.
 
-The theorem uses total deterministic source handlers and lawful probability semantics for the
-ambient oracle computation. It does not yet interpret a persistent stateful runtime. Direct native
-persistent-runtime execution, access admissibility, and fault accounting remain separate steps in
-the roadmap.
+The soundness theorem uses total deterministic source handlers and lawful probability semantics
+for the ambient computation. A bound for its interpretation in a persistent stateful runtime is
+still C7; access and cost certificates remain C8.
+
+Direct native provers can now use `executeStrategiesLoggedRun`, `executeStrategiesWithRuntime`,
+and `executeStrategiesPhasedWithRuntime`. They reuse the existing interpreters. Reduction setup
+stays inside the same initialized runtime, even when setup makes oracle queries. Erasure retains
+the core execution and actual final state; the phased/logged comparison retains paired source
+observations and ordered ambient history. These execution laws add no probability assumption.
+
+The runtime client checks counter answers `1, 2, 3` across setup and both protocol stages, final
+state `3`, and the exact query order. Another actual exported-interface client checks that one
+exported query expands to two source queries, followed by a fresh-message query. Its source answers
+are `[7, 1, 2]`. `withQueryLog_simulateQ` records the queries made by the routing programs; it does
+not equate one exported log entry with one source entry.
 
 The legacy verifier correspondence is honest-execution only: the legacy verifier reads the input
 polynomial for its next target, while the typed verifier reads the sent polynomial. Both relation

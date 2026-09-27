@@ -133,7 +133,7 @@ queries, so do not require the two query logs to be identical.
 
 ### C5 — Apply soundness composition to Sumcheck
 
-**Implemented in this revision.** Tracked in
+**Implemented in [PR #1235](https://github.com/Verified-zkEVM/ArkLib/pull/1235).** Tracked in
 [issue #1226](https://github.com/Verified-zkEVM/ArkLib/issues/1226).
 C5 uses C1 and C4.
 
@@ -164,23 +164,21 @@ hidden runtime state to the prover. The native runner remains the execution engi
 
 ### C6 — Direct execution in a persistent runtime
 
-**Tracked in:** [issue #1227](https://github.com/Verified-zkEVM/ArkLib/issues/1227).
+**Implemented in this revision.** Tracked in
+[issue #1227](https://github.com/Verified-zkEVM/ArkLib/issues/1227).
+C6 uses C4 and reuses VCVio's existing runtime.
 
-**Proposed PR:** `refactor(interaction): run native strategies in the shared runtime`.
+The direct native-strategy entry points now cover logged, phased, and persistent-runtime
+execution. Reduction setup remains inside the same initialized runtime, including any ambient
+queries it makes. Erasure recovers ordinary core execution with the actual final state. The
+phased/logged comparison also preserves the paired source observations and chronological ambient
+history. No new interpreter or ArkLib-only state machine is introduced.
 
-**Depends on:** C4.
-
-Extend the direct-strategy entry point through VCVio's existing runtime adapter in
-[`Runtime.lean`](../../ArkLib/Interaction/Oracle/Runtime.lean). Reduction entry points should
-prepare their strategies inside the same initialized runtime, then call the shared strategy
-runner. Prover setup may make ambient queries, so it must not move outside that runtime or cause
-a second initialization. Prove that erasing runtime instrumentation recovers ordinary execution,
-while retaining the actual final state and ordered log across setup and both fragments. Reuse VCVio's runtime; do not build an ArkLib-only state machine.
-
-**Acceptance check:** Use one counter or cache in both fragments. Show its second-fragment behavior
-depends on the state left by the first, and show that the combined log has the same order as the
-actual execution. Include a prover-setup query so the test also detects moving setup outside the
-runtime or resetting state between setup and interaction.
+The acceptance client checks counter answers `1, 2, 3` across prover setup and both protocol
+stages, with final state `3`. A separate actual exported-interface client checks one-to-many source
+query expansion, private prover output, and exact source and ambient logs. The generic
+`withQueryLog_simulateQ` law compares these logs through the handler's actual query programs.
+Persistent-runtime soundness and resource certificates remain C7 and C8.
 
 ### C7 — Soundness over the actual runtime distribution
 
