@@ -103,11 +103,13 @@ Naming follows [`docs/wiki/interaction-naming.md`](../wiki/interaction-naming.md
 | Finite ordered composition | `Oracle/Composition` (`ExecutionInterface`) | #891 |
 | Direct native strategy execution | `Oracle/CoreRun.executeStrategiesCore` | #1216 |
 | Direct native logged, phased, and persistent-runtime execution | `Oracle/LoggedRun`, `Oracle/PhasedRun`, `Oracle/Runtime` | #1236 |
-| Native composition inside one persistent runtime | `Oracle/RuntimeSoundness` | this revision; [#1228](https://github.com/Verified-zkEVM/ArkLib/issues/1228) |
+| Native composition inside one persistent runtime | `Oracle/RuntimeSoundness` | [#1237](https://github.com/Verified-zkEVM/ArkLib/pull/1237) |
 | General native composition soundness | `Interaction/CompositionSoundness` | #1218 |
 | Restricted verifier composition for every whole native prover | `Oracle/Sequential.executeStrategies_append` | #1233 |
 | Composition through exported oracle interfaces and actual claim closing | `Oracle/SourceRouting.executeStrategies_appendExported_close` | #1234 |
 | Weighted and uniform soundness for exported oracle composition | `Oracle/CompositionSoundness` | [#1235](https://github.com/Verified-zkEVM/ArkLib/pull/1235) |
+| Available query names preserved by continuation and append | `Oracle/Prefix`, `Oracle/Access` | this revision; [#1229](https://github.com/Verified-zkEVM/ArkLib/issues/1229) |
+| Actual-route access and weighted query budgets | `Data/OracleComp/QueryBounds` | this revision; [#1229](https://github.com/Verified-zkEVM/ArkLib/issues/1229) |
 | Oracle append paths, runtime roles, access, and query answers | `Oracle/TypeTree`, `Oracle/TypeTree/Decoration`, `Oracle/Access`, `Oracle/RunSources` | #1232 |
 | Fixed-prover, reachable, and averaged native bounds | `run_appendFlat_soundness_fixed`, `_of_support`, `_ae`, and `_weighted_ae` | #1231 |
 
@@ -231,7 +233,8 @@ The soundness theorem uses total deterministic source handlers and lawful probab
 for the ambient computation. `Oracle/RuntimeSoundness` proves composition
 inside a persistent runtime when the client bounds average suffix success over the actual prefix
 distribution. This is a separate hypothesis about that runtime, not an automatic transfer of the
-Sumcheck bound. Access and cost certificates remain C8.
+Sumcheck bound. The access and cost results below provide separate guarantees about the actual
+queries a client issues.
 
 Direct native provers can now use `executeStrategiesLoggedRun`, `executeStrategiesWithRuntime`,
 and `executeStrategiesPhasedWithRuntime`. They reuse the existing interpreters. Reduction setup
@@ -257,6 +260,37 @@ learning the secret gives success exactly `1/2` and instantiates the main theore
 secret first gives success one and violates that theorem's half-error premise. Conditioning on a
 matching fixed secret also gives success one. The tests retain the actual ordered query history,
 so the proof cannot silently discard what the prover learned.
+
+Canonical source-query names now come from the concrete prefix's available context. Continuing
+execution preserves earlier names; appending a later protocol transports the same names and
+messages through its cursor map. Initial names identify raw input queries. Names for received
+oracles identify their send edges, preserving sharing across query arguments. A future send cannot
+be named by a currently available query.
+
+`Data/OracleComp/QueryBounds` proves access and cost bounds for the actual query substitution.
+If each allowed exported query routes only to allowed source queries, the whole routed program
+satisfies that access condition. If each route fits its exported query's charge, the routed program
+inherits the exported program's total budget. Charges may vary by query; repeated calls to one
+shared oracle each incur their cost. Prefix and suffix budgets add, and pure output observations
+preserve and reflect the same cost bound. These laws need no probability or independence assumption.
+
+Cost bounds cover complete paths allowed by the query types. The separate access condition also
+checks a query whose answer type is empty; a vacuous complete-path cost bound does not authorize it.
+A two-send native client checks a virtual query that reads the same old oracle twice, followed by
+one fresh-oracle query: actual source answers `[1, 1, 2]`, private output `3`, closed statement `4`,
+and weighted source budget `5` when old calls cost one and fresh calls cost three. Its phased run
+supplies the actual join and terminal prefixes used by those certificates. The prior resource name
+is preserved by that run's context inclusion, and the fresh resource fails access at the join.
+The phased/logged comparison ties the repeated source calls to the same execution; ambient phase
+logs remain distinct from source-query logs.
+
+The resource-certified runtime client imports C7's same hidden-bit fixture and half-bound theorem.
+It proves that the verifier returns the certified export, that the actual routed suffix uses allowed
+queries with cost at most five, and that the complete native runtime makes exactly one charged
+imported-randomness query. Its actual ambient history costs four under separate weights one for the
+dummy query and three for revelation. The informed prover costs seven and succeeds surely.
+These are guarantees for those fixed native provers, not a theorem that access or cost bounds alone
+imply soundness for arbitrary adversaries.
 
 The legacy verifier correspondence is honest-execution only: the legacy verifier reads the input
 polynomial for its next target, while the typed verifier reads the sent polynomial. Both relation

@@ -276,6 +276,19 @@ answers under every deterministic handler. Suffix substitution exposes the evalu
 above. Source presentation changes use `SourceEquiv`, whose inverse environment maps serve a
 separate purpose.
 
+The concrete prefix API now supplies names for the queries actually available at that point.
+`ExecutionPrefix.queryIndex` returns an index in the existing `availableContext`; `queryName`
+reads its name. Initial names identify raw input queries. A received oracle is named by its crossed
+send edge, so two arguments to that same oracle share the same resource name. This does not infer
+an abstract input-oracle identity from arbitrary raw query tags.
+
+`queryName_comp` keeps every earlier name unchanged when execution continues, using the actual
+old-slot inclusions. `queryName_liftAppend` transports those names through the canonical cursor
+map when a later protocol is appended. Concrete prefix transport retains the same public choices
+and hidden messages. `queryName_ne_future` rules out naming a send edge beyond the current prefix.
+These laws concern an actual prefix's access signature; a cursor alone still does not prove that a
+particular prover reaches it.
+
 `subst` replaces queries in exported oracle programs.
 [`SourceRouting.lean`](../../ArkLib/Interaction/Oracle/SourceRouting.lean) applies this substitution
 throughout a restricted verifier: its node queries, final action, and returned claim programs.
@@ -297,6 +310,17 @@ skip a nonempty suffix. The current API uses fixed index types for the intermedi
 oracle families, while their realization types and interfaces may vary with the public path.
 No equality of raw and exported query logs is asserted: one exported query may require several
 source queries. This is an execution and closing theorem, with no probability or soundness premise.
+
+[`Data/OracleComp/QueryBounds.lean`](../../ArkLib/Data/OracleComp/QueryBounds.lean) accounts for the
+same routing programs used by substitution. Each exported query has a charge large enough to pay
+for every source query in its actual route. A bound on the exported program then gives the same
+bound on its routed source program. Charges may differ by query; a virtual call that reads the
+same source twice pays twice. Sequential prefix and suffix budgets add under the same cost model.
+
+Access is a separate obligation. `allQueriesSatisfy_simulateQ` transports an allowed-query
+condition through that same route when every allowed exported query expands only to allowed source
+queries. A cheap query may still be unavailable. In particular, a cost bound by itself does not
+certify that an oracle message has already been sent.
 
 ArkLib's [`Reduction.execute_then`](../../ArkLib/Interaction/Reduction.lean) requires a commutative
 monad for general effectful suffix construction, while the native split equation uses pure suffix

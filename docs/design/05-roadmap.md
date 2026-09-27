@@ -184,7 +184,8 @@ C7 below adds the probability bound; C8 supplies access and cost certificates.
 
 **Tracked in:** [issue #1228](https://github.com/Verified-zkEVM/ArkLib/issues/1228).
 
-**Implementation:** `Oracle/RuntimeSoundness`; acceptance examples in
+**Implemented in [PR #1237](https://github.com/Verified-zkEVM/ArkLib/pull/1237):**
+`Oracle/RuntimeSoundness`; acceptance examples in
 `ArkLibTest/Interaction/Oracle/RuntimeSoundness`.
 
 **Depends on:** C1, C5, and C6.
@@ -216,18 +217,35 @@ its averaged half premise is proved false. Both clients retain the actual query 
 
 **Tracked in:** [issue #1229](https://github.com/Verified-zkEVM/ArkLib/issues/1229).
 
-**Proposed PR:** `feat(interaction): certify composed oracle access and cost`.
+**Implementation:** `Oracle/Access`, `Oracle/Prefix`, and `Data/OracleComp/QueryBounds`;
+acceptance examples in `ArkLibTest/Interaction/Oracle/QueryBounds` and `RuntimeQueryBounds`.
 
 **Depends on:** C6 and C7.
 
-Connect the classifications in [`WorldSegments`](../../ArkLib/Interaction/Oracle/WorldSegments.lean)
-to resources actually available at each point in execution. Show that resource identity and
-intentional sharing survive composition, charge for the source queries used to answer virtual
-queries, and prove how prefix and suffix budgets combine. Apply C7 to one concrete runtime client.
+`Oracle/Prefix` derives available query names from the actual accumulated source signature.
+Continuation and append preserve earlier identities and concrete messages. `Data/OracleComp/QueryBounds`
+transports allowed-query conditions through the actual route, bounds its weighted query expansion,
+and adds sequential budgets. The same received oracle may be queried repeatedly; its name stays
+shared and each query still contributes to the cost.
 
-**Acceptance check:** Cover a shared resource, a virtual query that expands to multiple source
-queries, and an unavailable query. The unavailable query must not receive a valid resource or cost
-certificate. #889's current profile additivity alone does not establish these properties.
+The generic access condition checks all authored queries. Cost bounds cover complete paths, so a
+numerical cost certificate alone does not establish availability. The pinned cost layer uses small
+query/response types and natural-number costs; the structural prefix laws retain their universes.
+No independent stages, normalized probability distribution or nonempty answer types are needed for
+these generic laws.
+
+**Acceptance:** The actual phased two-send run supplies the join and terminal prefixes used by
+its source-resource certificates. It retains a shared old oracle, expands one virtual query into
+two old calls, then reads a fresh oracle. Its weighted bound is five, and a completed execution
+rules out budget four. The fresh resource fails access at the actual join for every cost budget.
+Ambient phase logs and source-query logs remain distinct.
+
+The second client imports C7's same hidden-bit experiment and half-bound theorem. It proves actual
+export provenance, source access, a routed suffix budget of five, a whole-runtime imported-query
+budget of one, and actual ambient history charges four and seven for the guessing and informed
+provers. The latter still succeeds surely. Certificates accompany the fixed-prover security proof;
+they do not turn a numerical budget into a soundness theorem for arbitrary adversaries.
+Arbitrary world-query classifiers still require a separate proof connecting labels to resources.
 
 ## Later protocol clients
 
