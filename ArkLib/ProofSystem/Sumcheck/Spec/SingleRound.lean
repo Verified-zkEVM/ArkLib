@@ -391,16 +391,16 @@ variable [DecidableEq R] [SampleableType R]
 def verifier : Verifier oSpec (StmtIn R × (∀ i, OStmtIn R deg i))
     (StmtOut R × (∀ i, OStmtOut R deg i)) (pSpec R deg) where
   verify := fun ⟨target, oStmt⟩ transcript => do
-    letI polyLE := transcript 0
+    let polyLE : R⦃≤ deg⦄[X] := transcript 0
     guard (∑ x ∈ (univ.map D), polyLE.val.eval x = target)
-    letI chal := transcript 1
-    pure ⟨⟨(oStmt ()).val.eval chal, chal⟩, fun _ => oStmt ()⟩
+    let chal : R := transcript 1
+    pure ⟨⟨polyLE.val.eval chal, chal⟩, fun _ => oStmt ()⟩
 
 /-- The simple verifier rejects an inconsistent round sum, then computes its next statement. -/
 def verifierGuardedForm : (verifier R deg D oSpec).GuardedForm where
   check := fun input tr => decide (∑ x ∈ (univ.map D), (tr 0).val.eval x = input.1)
   out := fun input tr =>
-    (((input.2 ()).val.eval (tr 1), tr 1), fun _ => input.2 ())
+    (((tr 0).val.eval (tr 1), tr 1), fun _ => input.2 ())
   verify_eq := by
     intro input tr
     simp only [verifier, OracleComp.guard_eq]
@@ -431,7 +431,7 @@ def oracleVerifier : OracleVerifier oSpec (StmtIn R) (OStmtIn R deg) (StmtOut R)
     guard (evals.sum = target)
     let newTarget ← OptionT.lift <| OracleComp.liftComp
       (OracleComp.lift <|
-        OracleSpec.query (show [OStmtIn R deg]ₒ.Domain from ⟨(), chal default⟩))
+        OracleSpec.query (show [(pSpec R deg).Message]ₒ.Domain from ⟨default, chal default⟩))
       _
     pure (newTarget, chal default)
   outputOracle := .inl {
@@ -1114,6 +1114,22 @@ def verifier (i : Fin n) : Verifier oSpec
 --   hEq := fun _ => rfl
 
 end Unfolded
+
+omit [SampleableType R] in
+/-- Projecting the input and lifting the output gives the explicit legacy round verifier. -/
+theorem verifier_eq_unfolded (i : Fin n) :
+    verifier R n deg D oSpec i = Unfolded.verifier R n deg D oSpec i := by
+  ext ⟨stmt, oStmt⟩ transcript
+  rcases hq : transcript 0 with ⟨q, hqdeg⟩
+  simp [verifier, Verifier.liftContext, Simple.verifier, Unfolded.verifier,
+    oStmtLens, Statement.Lens.proj, Statement.Lens.lift, hq, OracleComp.guard_eq]
+
+/-- The executable oracle projection preserves the repaired legacy verifier. -/
+theorem oracleVerifier_eq_verifier (i : Fin n) :
+    (oracleVerifier R n deg D oSpec i).toVerifier = verifier R n deg D oSpec i := by
+  rw [oracleVerifier, OracleVerifier.liftContext_toVerifier_comm,
+    Simple.oracleVerifier_eq_verifier, oStmtExecutableLens_toLens]
+  rfl
 
 end SingleRound
 

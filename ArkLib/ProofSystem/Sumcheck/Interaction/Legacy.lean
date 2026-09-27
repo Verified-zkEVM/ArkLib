@@ -8,12 +8,13 @@ module
 public import ArkLib.ProofSystem.Sumcheck.Interaction.Closing
 
 /-!
-# Single-round legacy relation and honest-execution correspondence
+# Single-round legacy relation and verifier-execution correspondence
 
 The input and output relation theorems are bidirectional for arbitrary concrete claims. The
-verifier-execution theorem is restricted to the honest case: the legacy verifier reads the original
-input polynomial for the next target, while the typed verifier reads the polynomial actually sent.
-They agree when the same polynomial supplies both roles.
+verifier-execution theorem compares scalar outputs for arbitrary sent polynomials and fixed
+challenges, including rejection. Both verifiers read the sent polynomial for the next target and
+retain the input polynomial as the output oracle. This is a single-round correspondence; it does
+not identify the legacy and native security games or transfer their soundness theorems.
 -/
 
 @[expose] public section
@@ -103,6 +104,19 @@ theorem legacy_prover_run {ι : Type} (ambient : OracleSpec ι)
     fin_cases i <;> rfl
   simp only [Spec.SingleRound.Simple.prover, pure_bind, monadLift_pure, simulateQ_pure]
   erw [ht]
+
+/-- Legacy verifier execution agrees with the typed scalar output for any round message. -/
+theorem legacy_verifier_correspondence [DecidableEq R]
+    {ι : Type} (ambient : OracleSpec ι) {m : ℕ} (D : Fin m ↪ R)
+    (p q : Message R deg) (target r : R) :
+    (Option.map Prod.fst) <$>
+      ((Spec.SingleRound.Simple.oracleVerifier R deg D ambient).toVerifier.verify
+        (target, fun _ ↦ p) (legacyTranscript R deg q r)).run =
+      (fun result ↦ result.2.2) <$>
+        executeAt R deg ambient p q (Finset.univ.map D).toList target r := by
+  rw [Spec.SingleRound.Simple.oracleVerifier_eq_verifier, executeAt_eq]
+  by_cases h : (∑ x, q.val.eval (D x)) = target <;>
+    simp [Spec.SingleRound.Simple.verifier, Finset.sum_map_toList, h]
 
 /-- Honest legacy verifier execution agrees with the typed executor's scalar output. -/
 theorem legacy_honest_verifier_correspondence [DecidableEq R] [SampleableType R]
