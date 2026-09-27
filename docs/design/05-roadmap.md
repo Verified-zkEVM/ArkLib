@@ -263,7 +263,10 @@ following Sumcheck work before starting the FRI and Spartan migrations.
 2. **Computable honest prover.** Construct each round polynomial directly from CompPoly multivariate
    data, for the existing general degree and summation-domain parameters. Prove projection and
    whole-prover correspondence, transfer completeness, and execute the actual honest interaction.
-   Mathematical conversions belong in proofs, not in the running algorithm.
+   Mathematical conversions belong in proofs, not in the running algorithm. This source revision
+   implements the general finite-enumeration construction in `Impl/Projection`, and proves actual
+   honest execution correspondence and completeness in `Interaction/ComputableCompleteness`.
+   The compiled runtime client uses the computational input oracle and honest strategy.
 3. **Native round-by-round security.** Define the security condition on actual execution prefixes,
    instantiate it with Sumcheck's proved per-challenge bound, and prove the connection to the full
    error bound. Distinguish a bound for every fixed prefix from an average over an actual run.

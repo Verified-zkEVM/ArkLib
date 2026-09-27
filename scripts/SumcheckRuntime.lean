@@ -3,7 +3,7 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.ProofSystem.Sumcheck.Interaction.Computable
+import ArkLib.ProofSystem.Sumcheck.Interaction.ComputableCompleteness
 import Mathlib.Algebra.Field.ZMod
 
 /-!
@@ -80,7 +80,8 @@ def run (domain : List F) :=
 /-- Observe the scalar output and the original oracle separately from verifier acceptance. -/
 def observe (domain : List F) : Option (F × F × F × F) × List (Fin 4) :=
   (simulateQ record ((fun result => result.map fun claim =>
-    (claim.stmt.target, claim.stmt.challenges ⟨0, by decide⟩, claim.stmt.challenges ⟨1, by decide⟩,
+    (claim.stmt.target, claim.stmt.challenges ⟨0, by decide⟩,
+      claim.stmt.challenges ⟨1, by decide⟩,
       claim.oracles ⟨(), claim.stmt.challenges⟩)) <$> run domain)).run []
 
 def check (label : String) (ok : Unit → Bool) : IO Unit := do
@@ -96,6 +97,95 @@ def runChecks : IO Unit := do
   check "public abort runs the prover response and stops before the challenge" fun _ =>
     observe [] == (none, [0, 2])
 
+
+/-- A directly constructed polynomial `x² + 3xy + 2y² + 5`. -/
+def quadratic : CPoly.CMvPolynomial 2 F :=
+  let x := CPoly.CMvPolynomial.X (0 : Fin 2)
+  let y := CPoly.CMvPolynomial.X (1 : Fin 2)
+  x ^ 2 + CPoly.CMvPolynomial.C 3 * x * y + CPoly.CMvPolynomial.C 2 * y ^ 2 +
+    CPoly.CMvPolynomial.C 5
+
+theorem quadratic_degree : ∀ j, quadratic.degreeOf j ≤ 2 := by
+  intro j
+  rw [congrFun (CPoly.degreeOf_equiv (S := F) (p := quadratic)) j]
+  change (CPoly.polyRingEquiv (n := 2) (R := F) quadratic).degreeOf j ≤ 2
+  simp only [quadratic, map_add, map_mul, map_pow, CPoly.coe_polyRingEquiv,
+    CPoly.CMvPolynomial.fromCMvPolynomial_X, CPoly.CMvPolynomial.fromCMvPolynomial_C]
+  have hx : (MvPolynomial.X (0 : Fin 2) : MvPolynomial (Fin 2) F).degreeOf j ≤ 1 := by
+    simp only [MvPolynomial.degreeOf_X]
+    split <;> omega
+  have hy : (MvPolynomial.X (1 : Fin 2) : MvPolynomial (Fin 2) F).degreeOf j ≤ 1 := by
+    simp only [MvPolynomial.degreeOf_X]
+    split <;> omega
+  refine (MvPolynomial.degreeOf_add_le j _ _).trans (max_le ?_ ?_)
+  · refine (MvPolynomial.degreeOf_add_le j _ _).trans (max_le ?_ ?_)
+    · refine (MvPolynomial.degreeOf_add_le j _ _).trans (max_le ?_ ?_)
+      · exact (MvPolynomial.degreeOf_pow_le j _ 2).trans (by omega)
+      · refine (MvPolynomial.degreeOf_mul_le j _ _).trans ?_
+        have hcx := (MvPolynomial.degreeOf_C_mul_le _ j (3 : F)).trans hx
+        omega
+    · exact (MvPolynomial.degreeOf_C_mul_le _ j (2 : F)).trans
+        ((MvPolynomial.degreeOf_pow_le j _ 2).trans (by omega))
+  · simp
+
+def three : Fin 3 ↪ F := ⟨fun i => (i.val : F), by decide⟩
+
+def quadraticOriginal : (MultivariateRound.polynomialFamily F 2 2).Behavior :=
+  Sumcheck.Impl.Computable.inputImpl quadratic 2
+
+def quadraticInitial : Sumcheck.Spec.StatementRound F 2 0 := ⟨15, Fin.elim0⟩
+
+/-- Fixed challenge `4`; the log counts its actual native sampling queries. -/
+def quadraticRecord : QueryImpl events (StateM (List (Fin 4))) := fun i => do
+  modify (fun seen => seen ++ [i])
+  return 4
+
+def quadraticRun :=
+  Computable.execute F 2 2 events (event 1) [0, 1, 2] 2 0 (by decide)
+    (MultivariateRound.polynomialFamily F 2 2).spec.toPFunctor
+    (VirtualOracle.id (MultivariateRound.polynomialFamily F 2 2))
+    quadraticInitial quadraticOriginal
+    (Computable.honestProver F 2 2 three events 2 0 (by decide) quadraticInitial
+      quadratic quadratic_degree)
+
+def quadraticObserve : Option (F × F × F × F) × List (Fin 4) :=
+  (simulateQ quadraticRecord ((fun result => result.map fun claim =>
+    (claim.stmt.target, claim.stmt.challenges ⟨0, by decide⟩,
+      claim.stmt.challenges ⟨1, by decide⟩,
+      claim.oracles ⟨(), claim.stmt.challenges⟩)) <$> quadraticRun)).run []
+
+def quadraticFinal : Sumcheck.Spec.StatementRound F 2 (Fin.last 2) := ⟨16, ![4, 4]⟩
+
+def quadraticZeroRun :=
+  Computable.execute F 2 2 events (event 1) [] 0 2 (by decide)
+    (MultivariateRound.polynomialFamily F 2 2).spec.toPFunctor
+    (VirtualOracle.id (MultivariateRound.polynomialFamily F 2 2))
+    quadraticFinal quadraticOriginal
+    (Computable.honestProver F 2 2 three events 0 2 (by decide) quadraticFinal
+      quadratic quadratic_degree)
+
+def quadraticZeroObserve : Option (F × F × F × F) × List (Fin 4) :=
+  (simulateQ quadraticRecord ((fun result => result.map fun claim =>
+    (claim.stmt.target, claim.stmt.challenges ⟨0, by decide⟩,
+      claim.stmt.challenges ⟨1, by decide⟩,
+      claim.oracles ⟨(), claim.stmt.challenges⟩)) <$> quadraticZeroRun)).run []
+
+/-- The total sum `117`, first-round value `109`, and final value `101`, reduced modulo `17`,
+are calculated independently of the projection implementation. -/
+def quadraticChecks : IO Unit := do
+  check "direct multivariate quadratic and cross term" fun _ =>
+    (([0, 1, 2] : List F).map fun x =>
+      (([0, 1, 2] : List F).map fun y => quadratic.eval ![x, y]).sum).sum == 15 &&
+    quadratic.eval ![4, 4] == 16 &&
+    (Sumcheck.Impl.Computable.projectedMessage three (0 : Fin 2) Fin.elim0 quadratic
+      quadratic_degree).val.evalHorner 4 == 7
+  check "honest native two rounds and retained computational original" fun _ =>
+    quadraticObserve == (some (16, 4, 4, 16), [1, 1])
+  check "zero rounds retain computational original without sampling" fun _ =>
+    quadraticZeroObserve == (some (16, 4, 4, 16), [])
+
 end SumcheckRuntime
 
-def main : IO Unit := SumcheckRuntime.runChecks
+def main : IO Unit := do
+  SumcheckRuntime.runChecks
+  SumcheckRuntime.quadraticChecks
