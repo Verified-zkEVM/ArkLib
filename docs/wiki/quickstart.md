@@ -190,7 +190,7 @@ it gives the expected answer — are checked by compiled executables under `scri
 | --- | --- | --- |
 | `toyproblem-runtime` | `scripts/ToyProblemRuntime.lean` | the toy-problem launch cone |
 | `hachi-runtime` | `scripts/HachiRuntime.lean` | the nonrecursive Hachi honest-prover path |
-| `sumcheck-runtime` | `scripts/SumcheckRuntime.lean` | CompPoly messages through native Sumcheck, including private continuation effects and public abort |
+| `sumcheck-runtime` | `scripts/SumcheckRuntime.lean` | CompPoly messages and honest multivariate execution, including private effects, public abort and the retained original oracle |
 
 **Put them here, not under `ArkLib/`.** A file under `ArkLib/` is picked up by the generated
 library root, so a `#eval` in one is paid on every build by everyone; and `#eval` runs in the

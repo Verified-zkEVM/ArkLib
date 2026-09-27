@@ -128,6 +128,8 @@ Sumcheck on the typed layer:
 | Native honest completeness | `Native.execute_support_completeness`, `Native.execute_perfectCompleteness` in `ProtocolCompleteness` | #1214 |
 | Computable round messages and verifier | `Impl/Representation`, `Interaction/Computable` | — |
 | Soundness for computable-message strategies | `Computable.execute_soundness` in `ComputableSoundness` | — |
+| Computable honest messages and original oracle | `Impl/Projection` | — |
+| Completeness for the computable honest prover | `Computable.execute_support_completeness`, `Computable.execute_perfectCompleteness` | — |
 
 `Sumcheck/Interaction/Protocol` defines one oracle interaction tree. Each round receives a
 univariate polynomial oracle, then the verifier publicly aborts or supplies a fresh challenge.
@@ -158,10 +160,22 @@ proof-only: the computational verifier runs directly on CompPoly data. Its sound
 retains the same bound and original-oracle assumptions. `sumcheck-runtime` checks the compiled
 native path, including private memory, effect order and rejection, with fixed test challenges.
 
-This establishes computational round messages and verifier execution, not a computational honest
-prover or an optimized Sumcheck implementation. The current honest strategy still constructs
-mathematical polynomials. Native round-by-round and knowledge-security definitions and extraction
-remain separate work; legacy declarations with admissions are not repaired by this result.
+`Impl/Projection` constructs each honest round message directly from a CompPoly multivariate
+polynomial. It splits out the current variable, evaluates the other variables at prior challenges
+and every remaining domain point, and sums the resulting univariate polynomials. The proved
+correspondence covers arbitrary individual degree bounds and finite domains. `inputImpl` evaluates
+the original CompPoly polynomial directly; its equality to the mathematical oracle behavior is a
+separate theorem.
+
+`Computable.honestProver` uses this construction in ordinary native continuations. Its complete
+execution equals the mathematical honest execution, giving support completeness and perfect
+completeness under the same true-input and original-oracle assumptions. The compiled runtime
+client exercises a quadratic with a cross term over a three-element domain, its retained original
+oracle, and execution with no rounds left.
+
+This is a computable finite-enumeration prover; it makes no efficiency claim. Optimized multilinear
+algorithms, native round-by-round and knowledge-security definitions, and extraction remain
+separate work. Legacy declarations with admissions are not repaired by these results.
 
 `Oracle/Composition` and the earlier `ArbitraryRounds` clients execute sequences of separate
 reductions across explicit interfaces. Those execution results do not by themselves establish
