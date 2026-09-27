@@ -113,6 +113,82 @@ example : ¬ outputRelation (ZMod 17) 2 1 ⟨⟨7, ![3, 3]⟩, original⟩ := by
   change (0 : ZMod 17) ≠ 7
   decide
 
+/-- The terminal native response samples again, including after rejection. -/
+def sampledLast (a b r : ZMod 17) :
+    Prover.Strategy unifSpec (protocol (ZMod 17) 1 1).tree
+      (protocol (ZMod 17) 1 1).roles (fun _ => Unit) := by
+  refine pure ⟨affine (a + b) (a * r + 1), ?_⟩
+  intro choice
+  cases choice <;> exact do
+    let _ ← ($ᵗ (ZMod 17))
+    return ()
+
+/-- Private sampled memory survives the challenge and contributes to the next actual message. -/
+def sampledAdaptive : Prover.Strategy unifSpec (protocol (ZMod 17) 1 2).tree
+    (protocol (ZMod 17) 1 2).roles (fun _ => Unit) := by
+  refine do
+    let a ← ($ᵗ (ZMod 17))
+    return ⟨affine a 1, ?_⟩
+  intro choice
+  cases choice with
+  | none => exact do
+      let _ ← ($ᵗ (ZMod 17))
+      return ()
+  | some r => exact do
+      let b ← ($ᵗ (ZMod 17))
+      return sampledLast a b r
+
+/-- Two actual native rounds, with sampled private memory and response effects, satisfy the
+nonvacuous composition-derived bound on the original closed output relation. -/
+example : Pr{let result ← (execute (ZMod 17) 2 1 unifSpec ($ᵗ (ZMod 17)) [0]
+    2 0 (by decide) (polynomialFamily (ZMod 17) 2 1).spec.toPFunctor
+    (VirtualOracle.id (polynomialFamily (ZMod 17) 2 1)) initial original sampledAdaptive)}[
+      result.map (outputRelation (ZMod 17) 2 1) = some True] ≤ (2 : ENNReal) / 17 := by
+  let D : Fin 1 ↪ ZMod 17 := ⟨fun _ => 0, fun _ _ _ => Subsingleton.elim _ _⟩
+  have horiginal : (VirtualOracle.id (polynomialFamily (ZMod 17) 2 1)).eval original =
+      (polynomialFamily (ZMod 17) 2 1).behaviorOfRealizations
+        (fun _ => (0 : Spec.OracleStatement (ZMod 17) 2 1 ())) := by
+    rw [VirtualOracle.eval_id]
+    funext q
+    change (0 : ZMod 17) = (0 : MvPolynomial (Fin 2) (ZMod 17)).eval q.2
+    simp
+  have hfalse : ¬ closedRelation (ZMod 17) 2 1 D 0
+      ⟨initial, (VirtualOracle.id (polynomialFamily (ZMod 17) 2 1)).eval original⟩ := by
+    simp [closedRelation, initial, VirtualOracle.eval_id, original]
+  have hbound := execute_soundness 2 1 (ZMod 17) D 2 0 (by decide)
+    (polynomialFamily (ZMod 17) 2 1).spec.toPFunctor
+    (VirtualOracle.id (polynomialFamily (ZMod 17) 2 1)) initial original sampledAdaptive
+    0 horiginal hfalse
+  have hdomain : (Finset.univ.map D).toList = [0] := by
+    simp only [Finset.univ_unique, Finset.map_singleton, Finset.toList_singleton]
+    rfl
+  rw [hdomain] at hbound
+  simpa only [Nat.cast_ofNat, Nat.cast_one, mul_one, ZMod.card] using hbound
+
+set_option backward.isDefEq.respectTransparency false in
+/-- Closing the actual composed run preserves its challenge and continuation effect order. -/
+example : (simulateQ record ((fun result => result.map (fun claim => claim.stmt.target)) <$>
+    ((fun result => result.2.2.map (fun claim => claim.closeWith
+      (result.1.closingImpl (protocol (ZMod 17) 1 2).oracles
+        (polynomialFamily (ZMod 17) 2 1).spec.toPFunctor original))) <$>
+    executeStrategies events (protocol (ZMod 17) 1 2).tree (protocol (ZMod 17) 1 2).roles
+      (protocol (ZMod 17) 1 2).oracles (polynomialFamily (ZMod 17) 2 1).spec.toPFunctor
+      original adaptive (composedVerifier (ZMod 17) 2 1 events (event 1) [0] 1 0
+        (by decide) (polynomialFamily (ZMod 17) 2 1).spec.toPFunctor
+        (VirtualOracle.id (polynomialFamily (ZMod 17) 2 1)) initial)))).run [] =
+      (some 7, [0, 1, 2, 1, 3]) := by
+  have h := execute_eq_appendExported (ZMod 17) 2 1 events (event 1) [0] 1 0
+    (by decide) (polynomialFamily (ZMod 17) 2 1).spec.toPFunctor
+    (VirtualOracle.id (polynomialFamily (ZMod 17) 2 1)) initial original adaptive
+  have hrecord := congrArg (fun program => (simulateQ record
+    ((fun result => result.map (fun claim => claim.stmt.target)) <$> program)).run []) h
+  refine hrecord.symm.trans ?_
+  change (simulateQ record ((fun result => result.map (fun claim => claim.stmt.target)) <$>
+    run [0])).run [] = _
+  rw [two_rounds]
+  simp [record, event, simulateQ_bind, simulateQ_map]
+  rfl
+
 end
 end Sumcheck.Interaction.Native.Test
 

@@ -113,7 +113,7 @@ pending prefix action across the next send is outside this theorem's scope.
 
 **Tracked in:** [issue #1225](https://github.com/Verified-zkEVM/ArkLib/issues/1225).
 
-**Implemented in this source revision.**
+**Merged:** [PR #1234](https://github.com/Verified-zkEVM/ArkLib/pull/1234).
 
 **Depends on:** C2 and C3.
 
@@ -133,27 +133,28 @@ queries, so do not require the two query logs to be identical.
 
 ### C5 — Apply soundness composition to Sumcheck
 
-**Tracked in:** [issue #1226](https://github.com/Verified-zkEVM/ArkLib/issues/1226).
+**Implemented in this revision.** Tracked in
+[issue #1226](https://github.com/Verified-zkEVM/ArkLib/issues/1226).
+C5 uses C1 and C4.
 
-**Proposed PR:** `feat(interaction): derive oracle soundness composition`.
+[`Oracle/CompositionSoundness.lean`](../../ArkLib/Interaction/Oracle/CompositionSoundness.lean)
+proves uniform and weighted bounds for the actual composed oracle execution. It separately charges
+true intermediate claims, false claims outside the suffix assumptions, and success from false
+admissible claims. A true intermediate claim is not charged twice. The suffix event includes the
+final verifier action and closing under the actual resources.
 
-**Depends on:** C1 and C4.
+[`Sumcheck/Interaction/Composition.lean`](../../ArkLib/ProofSystem/Sumcheck/Interaction/Composition.lean)
+identifies the existing native execution with its first round followed by the remaining rounds.
+The soundness proof now applies the general oracle bound to recover `count * deg / |F|`, retaining
+the original theorem statement and its arbitrary whole native prover. Honest full-protocol
+completeness follows through the same composed execution. Support truth holds for any ambient
+challenge program; probability-one completeness uses normalized `ProbComp` execution. The final
+polynomial equality remains in the output oracle relation.
 
-Prove a soundness theorem for the actual composed oracle execution. State separate bounds for a
-false claim becoming true at the boundary, the prefix failing the suffix's input assumptions, and
-the suffix succeeding from a false admissible claim. Include the weighted form from C1 as well as
-the familiar uniform-error corollary. Measure success after the final verifier action has run and
-the returned claim has been closed using the actual resources. Derive the two-round Sumcheck bound `2d / |F|` for fresh
-uniform challenges through this API, then extend the argument to the existing arbitrary-round
-statement. Keep the current public Sumcheck theorem until the new derivation proves the same
-claim. The final polynomial equality remains in the output oracle relation.
-
-**Acceptance check:** The formal derivation follows the same execution used by the existing native
-Sumcheck theorem and applies to every ordinary whole-protocol prover. Derive the uniform
-`count * d / |F|` soundness bound and honest completeness through the same composed execution; the
-completeness result must cover the whole protocol, not only one round. Prove true-output
-preservation for every supported honest execution. Claim probability-one completeness only when
-the challenge computation has total successful mass one (or state the required mass explicitly).
+The oracle probability client checks a derived exported oracle, a random final decision, separate
+truth and input-assumption errors, and a supported branch of probability zero. The native clients
+check adaptive two-round execution and the original challenge/abort effect order. Current
+constraints belong to [the security chapter](03-adversarial-oracle-execution.md#42-probability-premises-at-the-actual-boundary).
 
 ### Milestone 2 — Persistent runtime composition (C6–C8)
 
@@ -171,13 +172,15 @@ hidden runtime state to the prover. The native runner remains the execution engi
 
 Extend the direct-strategy entry point through VCVio's existing runtime adapter in
 [`Runtime.lean`](../../ArkLib/Interaction/Oracle/Runtime.lean). Reduction entry points should
-prepare their strategies, then call the shared runner. Prove that erasing runtime instrumentation
-recovers ordinary execution, while retaining the actual final state and ordered log across both
-fragments. Reuse VCVio's runtime; do not build an ArkLib-only state machine.
+prepare their strategies inside the same initialized runtime, then call the shared strategy
+runner. Prover setup may make ambient queries, so it must not move outside that runtime or cause
+a second initialization. Prove that erasing runtime instrumentation recovers ordinary execution,
+while retaining the actual final state and ordered log across setup and both fragments. Reuse VCVio's runtime; do not build an ArkLib-only state machine.
 
 **Acceptance check:** Use one counter or cache in both fragments. Show its second-fragment behavior
 depends on the state left by the first, and show that the combined log has the same order as the
-actual execution.
+actual execution. Include a prover-setup query so the test also detects moving setup outside the
+runtime or resetting state between setup and interaction.
 
 ### C7 — Soundness over the actual runtime distribution
 
@@ -191,12 +194,22 @@ Combine the weighted soundness result with the persistent-runtime execution law.
 must apply to the actual distribution of runtime state, prover memory, intermediate claim, and
 relevant history. Preserve what the prover has learned; do not require the prover to be secure for
 each fixed hidden runtime state, and do not let it choose a strategy after seeing hidden state.
+State the main suffix premise as an average bound over that actual joint distribution. A bound
+for almost every fixed full boundary is a useful stronger corollary, not a required premise.
+Clients must prove the average bound using the runtime's own behavior; erasing logs does not
+transfer ordinary oracle soundness to an arbitrary stateful runtime.
+
+The suffix program receives the actual prefix output, including the extracted native continuation.
+Runtime resumption supplies hidden state internally. A function called a prover view does not by
+itself restrict information: the experiment must show which answers the prover receives before it
+chooses a message. Retain the actual state and ordered ambient history in the execution equality.
 Keep rejection, explicit returned faults, and missing probability mass distinct. Charge an explicit
 fault term only when the theorem's event or model requires it.
 
-**Acceptance check:** Use a hidden random bit and a prover that guesses it. The average success
-bound should be useful even though conditioning on the fixed bit makes one guess succeed surely.
-Make the prover's allowed view explicit in the experiment.
+**Acceptance check:** Sample a hidden random bit once and let the prover commit a guess before any
+answer reveals the bit. Prove the average `1/2` bound even though conditioning on the fixed bit
+makes one guess succeed surely. Then reveal the bit before the commitment: the actual continuation
+should win with probability one, so the same `1/2` suffix premise must fail.
 
 ### C8 — Prove oracle access and query costs are valid
 

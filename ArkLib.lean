@@ -659,11 +659,13 @@ public import ArkLib.Data.Polynomial.UniversalHenselNumerator
 public import ArkLib.Data.Probability.Combinatorial
 public import ArkLib.Data.Probability.Instances
 public import ArkLib.Data.Probability.KoalaBear
+public import ArkLib.Data.Probability.Sequential
 public import ArkLib.Data.Probability.Uniform
 public import ArkLib.Interaction.CompositionSoundness
 public import ArkLib.Interaction.Oracle.Access
 public import ArkLib.Interaction.Oracle.Claim
 public import ArkLib.Interaction.Oracle.Composition
+public import ArkLib.Interaction.Oracle.CompositionSoundness
 public import ArkLib.Interaction.Oracle.CoreRun
 public import ArkLib.Interaction.Oracle.Execution
 public import ArkLib.Interaction.Oracle.LoggedExecution
@@ -808,6 +810,7 @@ public import ArkLib.ProofSystem.Sumcheck.Impl.Basic
 public import ArkLib.ProofSystem.Sumcheck.Interaction.ArbitraryCompleteness
 public import ArkLib.ProofSystem.Sumcheck.Interaction.ArbitraryRounds
 public import ArkLib.ProofSystem.Sumcheck.Interaction.Closing
+public import ArkLib.ProofSystem.Sumcheck.Interaction.Composition
 public import ArkLib.ProofSystem.Sumcheck.Interaction.Legacy
 public import ArkLib.ProofSystem.Sumcheck.Interaction.MultivariateRound
 public import ArkLib.ProofSystem.Sumcheck.Interaction.MultivariateSoundness

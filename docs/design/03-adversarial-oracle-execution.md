@@ -108,7 +108,7 @@ remains in that runtime between adversarial phases. A persistent state can be co
 prover's memory and prior oracle answers; using the same oracle label in two stages does not
 establish a common experiment.
 
-### 4.1 Existing plain composition and the oracle target
+### 4.1 Plain and restricted-oracle composition
 
 For a false input, ordinary reduction soundness bounds the successful-output mass of a true output
 claim. The proved plain native append theorem combines a prefix truth-transition bound `ε₁` with
@@ -119,10 +119,17 @@ native suffix strategy. The execution equation needs only a lawful monad; its pr
 needs lawful distribution semantics. It does not assume independent stages, uniform challenges,
 finite message sets, or lossless execution.
 
-Restricted oracle composition must additionally identify the actual intermediate closed claim,
-route suffix queries through its exported interface, and preserve the world interpretation and
-schedule. Those bridges are targets. Existing phase logs and profile-additivity laws do not
-already prove their security premises.
+The restricted-oracle theorem in `Oracle/CompositionSoundness` identifies the actual intermediate
+closed claim and routes suffix queries through its exported interface. Its prefix is one ordinary
+whole prover's actual prefix, including the continuation it returns. The theorem requires suffix
+security only almost everywhere at false admissible boundary claims, and it charges false
+inadmissible claims separately from true claims. The final event observes a returned claim after
+the verifier's final action and closing with the actual execution resources.
+
+This result uses total deterministic source handlers and lawful probability semantics for the
+ambient oracle computation. Persistent world interpretation and its correlated state remain a
+separate target. Existing phase logs and profile-additivity laws do not establish those security
+premises.
 
 ### 4.2 Probability premises at the actual boundary
 
@@ -139,15 +146,24 @@ is for the proof and does not grant the prover access to hidden fields.
 
 Let `E` be the prefix event charged as an error: a true intermediate claim reached from a false
 input, or an accepted claim outside the suffix's admissibility assumptions. If the actual suffix
-success probability after boundary `b` is bounded by a measurable `e(b)` outside `E`, the
+success probability after boundary `b` is bounded by `e(b)` outside `E`, the
 weighted bound is
 
 ```text
 Pr[final success] ≤ μ(E) + ∫ over boundaries outside E, e(b) dμ(b).
 ```
 
-This bound is proved for plain native append. Its restricted-oracle and persistent-world
-applications still need their execution and interpretation bridges.
+This bound is proved for plain native append. It also allows a final action after the whole
+interaction: the suffix premise includes that action, and the final event observes its result.
+For example, if the verifier makes one last random query and may reject, those effects and that
+rejection belong inside the probability being bounded. The action runs after the prover's last
+response. No assumption allows moving it earlier.
+
+The reusable probability argument is a specialization of VCVio's existing weighted bound for
+sequential computations. It retains missing mass, and the local bound only needs to hold almost
+everywhere. The error function itself does not need a separate measurability assumption.
+The restricted-oracle theorem applies this bound to the actual exported-interface execution.
+A persistent-world application still needs its joint state and interpretation bridges.
 
 The suffix measure or kernel must describe the actual remaining execution. Its definition needs
 an order-preserving sequential decomposition and appropriate lawful measure semantics. Obtaining
@@ -170,7 +186,9 @@ strategy. It is not necessarily positive probability: a supported result may hav
 Almost-everywhere premises and integrals require the relevant measurability facts. Uniform bounds
 are corollaries of the broader target, and there is no requirement to prove security at unreachable
 boundaries for one fixed execution. The plain native layer provides these fixed-prover, support,
-almost-everywhere, and weighted forms. Their restricted-oracle and persistent-runtime applications remain planned.
+almost-everywhere, and weighted forms. Restricted oracle composition provides the
+almost-everywhere weighted bound and its uniform corollary. Persistent-runtime applications remain
+planned.
 
 ### 4.3 Hidden state and adversary information
 
@@ -201,9 +219,11 @@ become ordinary values after interpretation; their observable logs must still be
 effectful boundaries follow the scheduling requirements in
 [the claim-resource chapter](02-oracle-reduction-core.md#53-effect-order-and-terminal-computation).
 
-The proposed common-case security contract combines prefix soundness `ε₁`, accepted-output
-inadmissibility `δ`, and suffix soundness under the actual remaining distribution. Splitting
-successful runs into true, false-admissible, and inadmissible intermediate claims yields the target
+The proposed common-case security contract combines prefix soundness `ε₁`, the probability `δ` of
+a false intermediate claim outside the suffix's input assumptions, and suffix soundness under the
+actual remaining distribution. True intermediate claims are already charged by `ε₁`; `δ` need not
+charge them again. Splitting successful runs into true, false admissible, and false inadmissible
+intermediate claims yields the target
 `ε₁ + δ + sup ε₂`; retaining variable suffix errors gives the integral above. Add `ε_fault` when
 the exported bad event or fault guarantee requires it. A claim of general world-backed composition
 waits for the execution, closing, admissibility, and distribution bridges; this contract is not an

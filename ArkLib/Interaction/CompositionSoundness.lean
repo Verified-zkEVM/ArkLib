@@ -6,7 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.Interaction.Reduction
-public import VCVio.EvalDist.ProbabilityBounds
+public import ArkLib.Data.Probability.Sequential
 public import VCVio.EvalDist.Monad.Measure
 
 /-!
@@ -19,8 +19,11 @@ pure, while its internal effects and its responses to challenges remain unrestri
 
 The probability bounds apply to monads with lawful distribution semantics. They compose a
 prefix truth-transition bound with soundness of the actual suffix counterpart. An admissibility
-variant also charges for prefix outputs outside the suffix theorem's domain. These are ordinary
-native interaction theorems, not soundness theorems for stateful oracle-world interpretations.
+variant also charges for prefix outputs outside the suffix theorem's domain. The weighted bound
+can include a final action after the whole interaction, such as the verifier's last oracle queries
+and decision to return a claim. Its pure observation case gives the original output-event bound.
+These theorems concern native interactions; persistent oracle-state interpretations need their
+own execution and soundness results.
 -/
 
 @[expose] public section
@@ -65,6 +68,52 @@ variable
       (OutputP := OutputP) (MidC := MidC) → Prop)
     (Success : (t : TypeTree.Path (s₁.append s₂)) → OutputC t → Prop)
 
+/-- Run `finish` after the whole interaction and bound success of its returned value.
+
+For this fixed whole prover, average the suffix error over its actual prefix outputs outside
+`Exceptional`, and charge the probability of `Exceptional` separately. The suffix premise includes
+`finish`, so it covers a verifier's final oracle queries or possible rejection. The final action
+receives the actual full path and both participants' outputs; it runs after the last response.
+
+The premise only needs to hold almost everywhere. Neither phase nor `finish` must be lossless,
+and no commutativity of effects is required. -/
+theorem run_appendFlat_soundness_weighted_ae_finish
+    {α : Type}
+    (finish : (t : TypeTree.Path (s₁.append s₂)) → OutputP t → OutputC t → m α)
+    (FinalSuccess : α → Prop)
+    (error : AppendBoundary (m := m) (s₂ := s₂) (r₂ := r₂)
+      (OutputP := OutputP) (MidC := MidC) → ENNReal)
+    (hsuffix : letI : MeasurableSpace (AppendBoundary (m := m) (s₂ := s₂) (r₂ := r₂)
+        (OutputP := OutputP) (MidC := MidC)) := ⊤
+      ∀ᵐ b ∂𝒟[run s₁ r₁ (Focal.splitPrefix prover) counterpart₁], ¬ Exceptional b →
+        Pr{let value ← (do
+          let result ← run (s₂ b.1) (r₂ b.1) b.2.1 (counterpart₂ b.1 b.2.2)
+          finish (PFunctor.FreeM.Path.append s₁ s₂ b.1 result.1) result.2.1 result.2.2)}[
+            FinalSuccess value] ≤ error b) :
+    let : MeasurableSpace (AppendBoundary (m := m) (s₂ := s₂) (r₂ := r₂)
+      (OutputP := OutputP) (MidC := MidC)) := ⊤
+    Pr{let value ← (do
+      let result ← run (s₁.append s₂) (r₁.append r₂) prover
+        (Counterpart.appendFlat counterpart₁ counterpart₂)
+      finish result.1 result.2.1 result.2.2)}[FinalSuccess value] ≤
+      Pr{let b ← run s₁ r₁ (Focal.splitPrefix prover) counterpart₁}[Exceptional b] +
+        ∫⁻ b in {b | ¬ Exceptional b}, error b
+          ∂𝒟[run s₁ r₁ (Focal.splitPrefix prover) counterpart₁] := by
+  classical
+  let : MeasurableSpace (AppendBoundary (m := m) (s₂ := s₂) (r₂ := r₂)
+    (OutputP := OutputP) (MidC := MidC)) := ⊤
+  have execution : (do
+      let result ← run (s₁.append s₂) (r₁.append r₂) prover
+        (Counterpart.appendFlat counterpart₁ counterpart₂)
+      finish result.1 result.2.1 result.2.2) = (do
+      let b ← run s₁ r₁ (Focal.splitPrefix prover) counterpart₁
+      let result ← run (s₂ b.1) (r₂ b.1) b.2.1 (counterpart₂ b.1 b.2.2)
+      finish (PFunctor.FreeM.Path.append s₁ s₂ b.1 result.1) result.2.1 result.2.2) := by
+    rw [run_appendFlat_splitPrefix]
+    simp only [bind_assoc, pure_bind]
+  rw [execution]
+  exact prEvent_bind_le_prEvent_add_lintegral_ae _ _ Exceptional FinalSuccess error hsuffix
+
 /-- For one whole prover, average the branch-dependent suffix errors over its actual prefix
 outputs outside `Exceptional`, and charge the probability of `Exceptional`. The suffix premise
 only holds almost everywhere, so it may fail even at a structurally supported boundary of zero
@@ -88,28 +137,11 @@ theorem run_appendFlat_soundness_weighted_ae
   classical
   let : MeasurableSpace (AppendBoundary (m := m) (s₂ := s₂) (r₂ := r₂)
     (OutputP := OutputP) (MidC := MidC)) := ⊤
-  rw [run_appendFlat_splitPrefix, prEvent_bind_eq_lintegral_of_discrete,
-    prEvent_eq_evalDist_of_discrete]
-  have hpoint := hsuffix.mono (fun b hb => show
-      Pr{let result ← (do
-        let ⟨p, outP, outC⟩ ← run (s₂ b.1) (r₂ b.1) b.2.1 (counterpart₂ b.1 b.2.2)
-        pure ⟨PFunctor.FreeM.Path.append s₁ s₂ b.1 p, outP, outC⟩ :
-          m ((t : TypeTree.Path (s₁.append s₂)) × OutputP t × OutputC t))}[
-        Success result.1 result.2.2] ≤
-      {b | Exceptional b}.indicator (fun _ => (1 : ENNReal)) b +
-        {b | ¬ Exceptional b}.indicator error b from by
-    by_cases he : Exceptional b
-    · simp only [Set.indicator_of_mem (show b ∈ {b | Exceptional b} from he),
-        Set.indicator_of_notMem (show b ∉ {b | ¬ Exceptional b} from not_not.mpr he), add_zero]
-      exact prEvent_le_one _ _
-    · simp only [Set.indicator_of_notMem (show b ∉ {b | Exceptional b} from he),
-        Set.indicator_of_mem (show b ∈ {b | ¬ Exceptional b} from he), zero_add]
-      simpa only [bind_assoc, pure_bind] using hb he)
-  refine (lintegral_mono_ae hpoint).trans_eq ?_
-  rw [lintegral_add_left Measurable.of_discrete,
-    lintegral_indicator MeasurableSet.of_discrete,
-    lintegral_indicator MeasurableSet.of_discrete]
-  simp only [setLIntegral_const, one_mul]
+  have h := run_appendFlat_soundness_weighted_ae_finish prover counterpart₁ counterpart₂ Exceptional
+    (fun path _ out => pure (⟨path, out⟩ : (t : TypeTree.Path (s₁.append s₂)) × OutputC t))
+    (fun result => Success result.1 result.2) error
+    (by simpa only [bind_assoc, pure_bind] using hsuffix)
+  simpa only [bind_assoc, pure_bind] using h
 
 /-- The weighted bound only needs suffix security at structurally reachable outputs of this
 whole prover's prefix. Reachability includes the actual returned continuation. Unlike the
