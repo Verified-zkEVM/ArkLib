@@ -7,7 +7,7 @@ module
 
 public import ArkLib.OracleReduction.ProtocolSpec.Basic
 public import ArkLib.Data.Probability.Instances
-public import VCVio.OracleComp.QueryTracking.LoggingOracle
+public import VCVio.OracleComp.QueryTracking.LoggingOracle.Core
 public import VCVio.EvalDist.Monad.Branch
 public import VCVio.OracleComp.Constructions.SampleableType.NativeMeasure
 

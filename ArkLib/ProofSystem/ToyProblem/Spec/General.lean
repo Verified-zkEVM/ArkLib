@@ -12,7 +12,7 @@ public import ArkLib.Data.CodingTheory.ProximityGap.Errors
 public import ArkLib.ProofSystem.ToyProblem.SoundnessBounds
 public import VCVio.OracleComp.QueryTracking.RandomOracle.Simulation
 public import VCVio.OracleComp.SimSemantics.OptionT.Basic
-public import VCVio.OracleComp.SimSemantics.StateT.Basic
+public import VCVio.OracleComp.SimSemantics.StateT.Basic.Native
 public import ArkLib.OracleReduction.Security.RbrGame
 
 /-!

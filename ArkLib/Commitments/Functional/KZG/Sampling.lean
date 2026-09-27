@@ -7,7 +7,7 @@ module
 
 public import VCVio.OracleComp.QueryTracking.RandomOracle.Simulation
 public import VCVio.OracleComp.SimSemantics.OptionT.Basic
-public import VCVio.OracleComp.SimSemantics.StateT.Basic
+public import VCVio.OracleComp.SimSemantics.StateT.Basic.Native
 public import Mathlib.Algebra.Field.ZMod
 
 /-!
