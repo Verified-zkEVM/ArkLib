@@ -46,7 +46,7 @@ abbrev firstProtocol := Interaction.Oracle.Protocol.oracleWith (SingleRound.Mess
 
 /-- The prefix has the full native verifier's one-round public abort shape. -/
 example : protocol Nat 1 1 = firstProtocol := by
-  unfold protocol
+  unfold protocol Core.protocol
   congr 2
   funext choice
   cases choice <;> rfl

@@ -809,10 +809,13 @@ public import ArkLib.ProofSystem.Stir.ProximityGap
 public import ArkLib.ProofSystem.Stir.Quotienting
 public import ArkLib.ProofSystem.Sumcheck.Domain
 public import ArkLib.ProofSystem.Sumcheck.Impl.Basic
+public import ArkLib.ProofSystem.Sumcheck.Impl.Representation
 public import ArkLib.ProofSystem.Sumcheck.Interaction.ArbitraryCompleteness
 public import ArkLib.ProofSystem.Sumcheck.Interaction.ArbitraryRounds
 public import ArkLib.ProofSystem.Sumcheck.Interaction.Closing
 public import ArkLib.ProofSystem.Sumcheck.Interaction.Composition
+public import ArkLib.ProofSystem.Sumcheck.Interaction.Computable
+public import ArkLib.ProofSystem.Sumcheck.Interaction.ComputableSoundness
 public import ArkLib.ProofSystem.Sumcheck.Interaction.Legacy
 public import ArkLib.ProofSystem.Sumcheck.Interaction.MultivariateRound
 public import ArkLib.ProofSystem.Sumcheck.Interaction.MultivariateSoundness

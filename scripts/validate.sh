@@ -22,6 +22,7 @@ Default checks:
   - ./scripts/test-lint-plugin.sh
   - lake exe toyproblem-runtime
   - lake exe hachi-runtime
+  - lake exe sumcheck-runtime
   - fail on non-`sorry` warnings under ArkLib/
   - ./scripts/test-retiredsweep.sh and lake exe retiredsweep --require-empty
   - ./scripts/check-imports.sh
@@ -116,6 +117,10 @@ echo "# Running nonrecursive-Hachi compiled runtime checks"
 # Default target only: the composed opening run (`--full`) is dominated by the honest sumcheck
 # prover and is far too slow to gate on. See scripts/HachiRuntime.lean.
 lake exe hachi-runtime
+
+echo ""
+echo "# Running computable Sumcheck runtime checks"
+lake exe sumcheck-runtime
 
 echo ""
 echo "# Checking umbrella imports"

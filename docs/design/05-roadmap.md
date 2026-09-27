@@ -7,11 +7,12 @@ the supported dependency versions. The design documents define the model: see th
 [oracle execution and security games](03-adversarial-oracle-execution.md), and
 [oracle-elimination compiler](04-oracle-elimination-compiler.md).
 
-The immediate goal is to compose restricted oracle protocols using the ordinary interaction
-runner, then prove soundness while preserving the prover's private memory, actual oracle resources,
-and any persistent runtime state.
+The composition milestones C1–C8 are merged. The immediate goal is to complete native Sumcheck:
+computable messages and honest execution, round-by-round security, and precisely stated extraction
+guarantees. Preserve the ordinary interaction runner, private prover memory and actual oracle
+resources throughout this work.
 
-**Status terms:** *Landed* means on `main`; *active* means one of the next composition steps below;
+**Status terms:** *Landed* means on `main`; *active* means one of the next implementation steps below;
 *later* means a follow-up client or project that uses the composition work; *conditional* means do
 the work only when a real client demonstrates the need.
 
@@ -35,8 +36,8 @@ in the output oracle relation; it is not an extra final verifier query.
 
 ## Oracle composition sequence (C1–C8)
 
-C1–C3 have landed. C4 is implemented in this source revision; the remaining steps follow the
-dependencies below. The issues record implementation PRs and merge status.
+C1–C8 landed in #1231–#1238. The dependencies below record how the results fit together; the
+issues record their implementation PRs and merge status.
 
 ```mermaid
 flowchart TD
@@ -247,11 +248,40 @@ provers. The latter still succeeds surely. Certificates accompany the fixed-prov
 they do not turn a numerical budget into a soundness theorem for arbitrary adversaries.
 Arbitrary world-query classifiers still require a separate proof connecting labels to resources.
 
+## Complete native Sumcheck first
+
+The full native ordinary-soundness and honest-completeness theorems are proved. They do not finish
+the computational implementation or the round-by-round and knowledge-security work. Complete the
+following Sumcheck work before starting the FRI and Spartan migrations.
+
+1. **Computable messages and verifier.** Use bounded CompPoly coefficient arrays and Horner
+   evaluation in the existing native protocol. Keep one verifier definition, prove whole-execution
+   correspondence for arbitrary native provers, and transfer the existing soundness bound. Compile
+   and run a client that checks private continuation effects, public abort and the output relation.
+   This source revision implements this step in `Impl/Representation`, `Interaction/Protocol`,
+   `Interaction/Computable` and `Interaction/ComputableSoundness`.
+2. **Computable honest prover.** Construct each round polynomial directly from CompPoly multivariate
+   data, for the existing general degree and summation-domain parameters. Prove projection and
+   whole-prover correspondence, transfer completeness, and execute the actual honest interaction.
+   Mathematical conversions belong in proofs, not in the running algorithm.
+3. **Native round-by-round security.** Define the security condition on actual execution prefixes,
+   instantiate it with Sumcheck's proved per-challenge bound, and prove the connection to the full
+   error bound. Distinguish a bound for every fixed prefix from an average over an actual run.
+4. **Knowledge and extraction.** Define native knowledge and round-by-round knowledge games with
+   explicit extractor access and timing. Current oracle Sumcheck has a `Unit` witness: its
+   polynomial is already an input oracle. A theorem recovering a hidden polynomial or committed
+   witness needs a different, explicit witness relation. Prove the required implication and
+   composition results without inheriting the legacy admissions.
+5. **Efficient implementations and legacy migration.** Optimize the Boolean multilinear case using
+   CompPoly evaluation tables, with proved message/update algorithms and separately stated costs.
+   The computable general prover alone makes no efficiency claim. Repair or migrate legacy
+   Sumcheck claims with correspondence and axiom checks; do not treat the native result as silently
+   proving those old declarations.
+
 ## Later protocol clients
 
-FRI and Spartan protocol slices can start after C1–C5, once the oracle-composition and soundness
-API has been exercised by Sumcheck. They do not wait for persistent-world work in C6–C8 unless a
-slice makes a world-state, trace, or cost claim.
+FRI and Spartan slices follow the Sumcheck work above. The composition infrastructure is ready;
+protocol migration is deferred while the computational and security contracts are completed.
 
 - **FRI slice:** use a derived virtual oracle view and prove a two-way bridge to the established
   presentation.

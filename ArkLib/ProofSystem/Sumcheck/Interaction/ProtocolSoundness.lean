@@ -216,7 +216,7 @@ theorem execute_soundness {m : ℕ} (D : Fin m ↪ F)
   | zero =>
     subst n
     rw [execute_zero]
-    simpa [outputRelation] using
+    simpa [outputRelation, Core.outputRelation] using
       (fun h => hfalse ((closedRelation_last_iff F start deg D
         ⟨stmt, originalOracle.eval impl⟩).mpr h))
   | succ count ih =>

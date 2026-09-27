@@ -97,6 +97,13 @@ srcDir = "scripts"
 root = "HachiRuntime"
 allowNonModules = true
 
+# Compiled checks for CompPoly-backed messages through the shared native Sumcheck executor.
+[[lean_exe]]
+name = "sumcheck-runtime"
+srcDir = "scripts"
+root = "SumcheckRuntime"
+allowNonModules = true
+
 # Lean-native, exception-free source-policy gate. Since the executable imports Lake, it must link
 # Lake explicitly; keeping it out of the default target avoids adding linter-only dependencies to
 # the library build graph.

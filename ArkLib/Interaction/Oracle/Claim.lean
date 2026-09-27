@@ -54,6 +54,7 @@ variable {I : Type x} {srcSpec : OracleSpec.{x, v} I}
   {Stmt : Type s} {Out : OracleFamily.{u, v, w} OutIdx OutRealization}
 
 /-- Interpret the oracle component while retaining the run-determined statement. -/
+@[macro_inline]
 def closeWith (c : OpenClaim srcSpec Stmt Out) (impl : QueryImpl srcSpec Id) :
     ClosedClaim Stmt Out := ⟨c.stmt, c.oracles.eval impl⟩
 

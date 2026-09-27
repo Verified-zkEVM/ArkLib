@@ -126,6 +126,8 @@ Sumcheck on the typed layer:
 | Actual multivariate round soundness | `MultivariateRound.executeCore_sampled_soundness` | — |
 | Native full-protocol soundness | `Native.execute_soundness` in `ProtocolSoundness` | #1214 |
 | Native honest completeness | `Native.execute_support_completeness`, `Native.execute_perfectCompleteness` in `ProtocolCompleteness` | #1214 |
+| Computable round messages and verifier | `Impl/Representation`, `Interaction/Computable` | — |
+| Soundness for computable-message strategies | `Computable.execute_soundness` in `ComputableSoundness` | — |
 
 `Sumcheck/Interaction/Protocol` defines one oracle interaction tree. Each round receives a
 univariate polynomial oracle, then the verifier publicly aborts or supplies a fresh challenge.
@@ -146,6 +148,20 @@ degree at most `deg`, soundness bounds the probability of a non-rejected true ou
 round polynomials. From a true initial claim, every supported execution returns a true output;
 probabilistic completeness is one for any `ProbComp` challenge, whose oracle specification is
 normalized. Support preservation alone makes no assertion about total successful mass.
+
+`Native.Core` owns the single protocol and verifier definition, parameterized by the message
+carrier and its evaluation operation. `Native` retains the mathematical presentation;
+`Computable` specializes it to bounded CompPoly coefficient arrays and Horner evaluation.
+`execute_eq_native` proves equality of actual closed executions after interpreting each sent
+message, preserving private continuations and effects on public abort. The interpretation is
+proof-only: the computational verifier runs directly on CompPoly data. Its soundness theorem
+retains the same bound and original-oracle assumptions. `sumcheck-runtime` checks the compiled
+native path, including private memory, effect order and rejection, with fixed test challenges.
+
+This establishes computational round messages and verifier execution, not a computational honest
+prover or an optimized Sumcheck implementation. The current honest strategy still constructs
+mathematical polynomials. Native round-by-round and knowledge-security definitions and extraction
+remain separate work; legacy declarations with admissions are not repaired by this result.
 
 `Oracle/Composition` and the earlier `ArbitraryRounds` clients execute sequences of separate
 reductions across explicit interfaces. Those execution results do not by themselves establish
