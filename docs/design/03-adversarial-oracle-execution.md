@@ -138,9 +138,9 @@ inadmissible claims separately from true claims. The final event observes a retu
 the verifier's final action and closing with the actual execution resources.
 
 This result uses total deterministic source handlers and lawful probability semantics for the
-ambient oracle computation. Persistent world interpretation and its correlated state remain a
-separate target. Existing phase logs and profile-additivity laws do not establish those security
-premises.
+ambient oracle computation. Section 4.3 gives the separate persistent-runtime theorem and its
+actual-distribution premise. Existing phase logs and profile-additivity laws alone do not establish
+that security premise.
 
 ### 4.2 Probability premises at the actual boundary
 
@@ -257,6 +257,35 @@ intermediate claims yields the target
 the exported bad event or fault guarantee requires it. The runtime theorem proves the execution and averaging step. It does not establish these
 protocol-specific error bounds automatically: clients must prove them for the actual prefix and
 suffix, including any access restrictions or runtime invariants they rely on.
+
+### 4.5 Access and query budgets
+
+The route-access and cost theorems in `Data/OracleComp/QueryBounds` apply to the same `simulateQ`
+program. Access checks every query in the authored program and in each allowed query's route.
+Canonical prefix names connect source tags to the input queries and oracle sends already available.
+A resource name assigned by an arbitrary classifier is not evidence of access. The two-send client
+uses the actual phased run's join and terminal prefixes for its source-resource certificates and
+connects its source log through the phased/logged equality. `WorldPhase.queries` remains the ambient
+query log; it is not identified with the source-capability log. A general arbitrary-classifier
+profile still needs an independent proof connecting those labels to actual resources.
+
+The weighted cost theorem bounds every complete execution allowed by the query types. If an
+exported query has charge `c`, its routing program must have source cost at most `c`. The routed
+program then inherits the exported program's budget. Repeated calls count repeatedly even when
+they name the same received oracle. The bind theorem adds prefix and suffix budgets without a
+probability or independence assumption.
+
+These cost bounds use complete execution paths. If a query has no possible answer, there may be no
+complete path to bound. The separate access predicate still checks that query, so it can reject an
+unavailable resource even when a complete-path cost bound is vacuous. The pinned cost API uses
+small query and response types; the structural naming laws retain the prefix API's universes.
+
+`RuntimeQueryBounds` reuses C7's exact guessing prover and experiment. Its conjunction proves
+actual export provenance, source and routed-suffix certificates, the complete runtime's imported
+query budget, the actual ambient history charge, and the same half-bound theorem. The imported
+query count and the weighted ambient/source charges use separate cost models. The informed prover
+retains its real query history and success one; these resource facts do not supply its missing
+half-error premise.
 
 ## 5. State restoration
 

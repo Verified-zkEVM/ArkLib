@@ -581,6 +581,7 @@ public import ArkLib.Data.MvPolynomial.WeightedDegree
 public import ArkLib.Data.MvPolynomial.WeightedDegree.Products
 public import ArkLib.Data.MvPolynomial.WeightedHomogeneous
 public import ArkLib.Data.MvPolynomial.WeightedOrder
+public import ArkLib.Data.OracleComp.QueryBounds
 public import ArkLib.Data.Polynomial.BinaryTrace
 public import ArkLib.Data.Polynomial.BinaryTraceQuotient
 public import ArkLib.Data.Polynomial.Bivariate

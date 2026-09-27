@@ -185,6 +185,21 @@ theorem accessAt_comp {tree : Oracle.TypeTree.{u}} (first : PFunctor.FreeM.Curso
       accessAt second (OracleDecoration.restrict first oracles) (accessAt first oracles initial) :=
   accessAlong_comp first.spine second.spine oracles initial
 
+/-- Appending a later protocol does not change the source queries available inside the prefix. -/
+theorem accessAlong_liftAppend : {tree residual : TypeTree} →
+    (spine : PFunctor.FreeM.Cursor.Spine tree residual) → (suffix : tree.BranchPath → TypeTree) →
+    (first : tree.OracleDecoration) →
+    (second : (p : tree.BranchPath) → (suffix p).OracleDecoration) → (initial : PFunctor) →
+    accessAlong (spine.liftAppend suffix) (Decoration.append first second) initial =
+      accessAlong spine first initial
+  | _, _, .root _, _, _, _, _ => rfl
+  | _, _, .down (a := Position.public _) answer tail, suffix, first, second, initial =>
+      accessAlong_liftAppend tail (fun p => suffix ⟨answer, p⟩) (first.2 answer)
+        (fun p => second ⟨answer, p⟩) initial
+  | _, _, .down (a := Position.oracle _) answer tail, suffix, first, second, initial =>
+      accessAlong_liftAppend tail (fun p => suffix ⟨answer, p⟩) (first.2 answer)
+        (fun p => second ⟨answer, p⟩) (Access.extend initial first.1)
+
 /-- Available signature after a complete structural path, derived from the terminal cursor. -/
 def accessAfter (tree : Oracle.TypeTree.{u}) (oracles : OracleDecoration.{u, v} tree)
     (initial : PFunctor.{v, u}) (path : BranchPath tree) : PFunctor.{v, u} :=
