@@ -162,7 +162,8 @@ private theorem splitPrefix_native (count : ℕ)
         (remainingProtocol R deg count
           (TypeTree.ExecutionPath.ofTypeTreePath p).toBranchPath).roles)
       (Output := fun _ => Unit) prover = prover := by
-  simp only [firstRoundProtocol, Protocol.oracleWith_tree, Protocol.oracleWith_roles,
+  simp only [firstRoundProtocol, Core.firstRoundProtocol, Protocol.oracleWith_tree,
+    Protocol.oracleWith_roles,
     Protocol.public_tree, Protocol.public_roles, Protocol.done_tree, Protocol.done_roles,
     TypeTree.toTypeTree_oracle, TypeTree.toTypeTree_public, TypeTree.toTypeTree_done,
     TypeTree.RoleDecoration.toTypeTreeRoles_oracle, TypeTree.RoleDecoration.toTypeTreeRoles_public,
@@ -201,7 +202,8 @@ theorem exportedPrefixRun_firstRound (challenge : OracleComp ambient R) (domain 
             ⟨(), originalOracle.sumWeaken (polynomialInterface R deg).spec⟩⟩) := by
   unfold exportedPrefixRun
   rw [onAppendedRuntime_native, splitPrefix_native]
-  simp only [firstRoundProtocol, Protocol.oracleWith_tree, Protocol.oracleWith_roles,
+  simp only [firstRoundProtocol, Core.firstRoundProtocol, Protocol.oracleWith_tree,
+    Protocol.oracleWith_roles,
     Protocol.oracleWith_oracles, Protocol.public_tree, Protocol.public_roles,
     Protocol.public_oracles, Protocol.done_tree, Protocol.done_roles, Protocol.done_oracles,
     TypeTree.toTypeTree_oracle, TypeTree.toTypeTree_public, TypeTree.toTypeTree_done,
@@ -280,12 +282,13 @@ theorem execute_appendExported_succ (challenge : OracleComp ambient R) (domain :
     intro r
     apply bind_congr
     intro next
-    simp only [firstRoundProtocol, Protocol.oracleWith_tree, Protocol.public_tree,
+    simp only [firstRoundProtocol, Core.firstRoundProtocol, Protocol.oracleWith_tree,
+      Protocol.public_tree,
       Protocol.done_tree, Protocol.oracleWith_oracles, Protocol.public_oracles,
       Protocol.done_oracles]
     simp only [TypeTree.ExecutionPath.ofTypeTreePath,
       PFunctor.FreeM.mapLensPathToPathAlong,
-      remainingProtocol,
+      remainingProtocol, Core.remainingProtocol,
       remainingVerifier]
     dsimp only [TypeTree.ExecutionPath.toBranchPath, PFunctor.FreeM.projectPathAlong,
       PFunctor.FreeM.projectPathAlongLocalMap, PFunctor.FreeM.Displayed.LocalMap.toHom,
@@ -303,18 +306,20 @@ theorem execute_appendExported_succ (challenge : OracleComp ambient R) (domain :
         (polynomialFamily R n deg).spec.toPFunctor
         (VirtualOracle.id (polynomialFamily R n deg))
         ⟨q.val.eval r, Fin.snoc stmt.challenges r⟩)
-    simpa only [execute, TwoParty.run, map_eq_pure_bind, bind_assoc, pure_bind, bind_pure,
+    simpa only [execute, Core.execute, protocol, verifier, FinalStatement, TwoParty.run,
+      map_eq_pure_bind, bind_assoc, pure_bind, bind_pure,
       InteractionOver.TwoParty.pairedTypeTree, InteractionOver.TwoParty.paired, TerminalClaim]
       using closed.symm
   · simp only [hcheck, ↓reduceIte, pure_bind, bind_assoc]
     apply bind_congr
     intro next
-    simp only [firstRoundProtocol, Protocol.oracleWith_tree, Protocol.public_tree,
+    simp only [firstRoundProtocol, Core.firstRoundProtocol, Protocol.oracleWith_tree,
+      Protocol.public_tree,
       Protocol.done_tree, Protocol.oracleWith_oracles, Protocol.public_oracles,
       Protocol.done_oracles]
     simp only [TypeTree.ExecutionPath.ofTypeTreePath,
       PFunctor.FreeM.mapLensPathToPathAlong,
-      remainingProtocol,
+      remainingProtocol, Core.remainingProtocol,
       remainingVerifier]
     dsimp only [TypeTree.ExecutionPath.toBranchPath, PFunctor.FreeM.projectPathAlong,
       PFunctor.FreeM.projectPathAlongLocalMap, PFunctor.FreeM.Displayed.LocalMap.toHom,
@@ -326,6 +331,7 @@ theorem execute_appendExported_succ (challenge : OracleComp ambient R) (domain :
     rw [VirtualOracle.eval_sumWeaken_extendImpl]
     rfl
 
+set_option backward.isDefEq.respectTransparency false in
 /-- The composed verifier has the same actual closed result as the existing native verifier,
 for every whole prover, including its effectful response to rejection. -/
 theorem execute_eq_appendExported (challenge : OracleComp ambient R) (domain : List R)
@@ -343,7 +349,9 @@ theorem execute_eq_appendExported (challenge : OracleComp ambient R) (domain : L
         (protocol R deg (count + 1)).roles (protocol R deg (count + 1)).oracles A impl prover
         (composedVerifier R n deg ambient challenge domain count start finish A originalOracle
           stmt) := by
-  rw [execute_appendExported_succ, execute_succ]
+  rw [execute_succ R n deg ambient challenge domain count start finish A originalOracle stmt
+    impl prover]
+  rw [execute_appendExported_succ]
   apply bind_congr
   rintro ⟨q, respond⟩
   change Message R deg at q

@@ -66,7 +66,9 @@ variable {protocol : Oracle.Protocol.{u}} {initial : PFunctor.{u, u}}
     {Out : (path : protocol.tree.BranchPath) → OracleFamily (Idx path) (Obj path)}
     {OutP : protocol.tree.ExecutionPath → Type u}
 
-/-- Close using only this run's input and sent messages. -/
+/-- Close using only this run's input and sent messages. Compiler inlining keeps the output
+realization interface out of execution, while retaining the path's actual paired handler. -/
+@[macro_inline]
 def closed (run : CoreRun protocol initial Stmt Out OutP) :
     Option (ClosedClaim (Stmt run.path.toBranchPath) (Out run.path.toBranchPath)) :=
   run.outcome.map fun claim =>
@@ -114,6 +116,7 @@ end CoreRun
 
 /-- Execute native strategies and retain their actual outputs together with the input behavior
 used by the same run. The ordinary strategy executor runs the terminal verifier action once. -/
+@[macro_inline]
 def executeStrategiesCore {ι : Type u} {ambient : OracleSpec.{u, u} ι}
     {protocol : Oracle.Protocol.{u}} {initial : PFunctor.{u, u}}
     {Stmt : protocol.tree.BranchPath → Type u}
