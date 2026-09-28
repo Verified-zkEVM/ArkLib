@@ -152,6 +152,25 @@ lemma mem_toFinset_iff_mem [Fintype ι] [DecidableEq F] :
 lemma mem_toFinset_self [Fintype ι] [DecidableEq F] {i : ι} :
     ω i ∈ ω.toFinset := CosetFftDomainClass.mem_toFinset_self
 
+/-- The indexing type and the subtype of domain elements describe the same finite domain. -/
+noncomputable def equivToFinset [Fintype ι] [DecidableEq F] (ω : CosetFftDomain ι F) :
+    ι ≃ ω.toFinset :=
+  Equiv.ofBijective (fun i ↦ ⟨ω i, mem_toFinset_self⟩) ⟨
+    fun _ _ h ↦ injective (congrArg Subtype.val h),
+    fun ⟨x, hx⟩ ↦ by
+      obtain ⟨i, rfl⟩ := mem_toFinset_iff_mem.mp hx
+      exact ⟨i, rfl⟩⟩
+
+@[simp]
+theorem equivToFinset_apply [Fintype ι] [DecidableEq F] (ω : CosetFftDomain ι F) (i : ι) :
+    ω.equivToFinset i = ⟨ω i, mem_toFinset_self⟩ := rfl
+
+@[simp]
+theorem equivToFinset_symm_apply [Fintype ι] [DecidableEq F]
+    (ω : CosetFftDomain ι F) (x : ω.toFinset) :
+    ω (ω.equivToFinset.symm x) = x.val :=
+  congrArg Subtype.val (ω.equivToFinset.apply_symm_apply x)
+
 end CosetFftDomain
 
 end Domain

@@ -1,0 +1,9 @@
+bibkey: GMW25
+source_kind: paper-and-implementation
+canonical_url: https://eprint.iacr.org/2025/1993
+paper_version: "March 27, 2026"
+paper_sha256: "60e64486e2eaa08c2885926a9711ea3f66c5a47cdddc5cfb3b0b63bfa81e0218"
+implementation_url: https://github.com/zksecurity/simple-rbr-fri
+implementation_commit: "5d99bc7bcabc7b640e063f4d75f17d8262e00a8a"
+committed_artifacts: []
+notes: "Paper supplied locally; source PDF is not redistributed. Implementation used for guidance."

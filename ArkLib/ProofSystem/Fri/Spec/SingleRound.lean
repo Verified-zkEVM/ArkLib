@@ -20,9 +20,10 @@ public import Mathlib.Logic.Function.Basic
 /-!
 # The FRI protocol
 
-  We describe the FRI oracle reduction as a composition of many single rounds, and a final
-  (zero-interaction) query round where the oracle verifier makes all queries to all received oracle
-  codewords.
+  The FRI oracle reduction composes non-final folding rounds, a final folding round that
+  checks the transmitted polynomial's degree, and a public-coin query round. Each folding
+  round retains the complete oracle history. The query challenge is a vector of initial-domain
+  positions; the verifier checks every folding transition along each projected query path.
 
   This formalisation tries to encompass all of the generalisations of the FRI
   low-degree test covered in [FRI1216].
@@ -101,6 +102,10 @@ def FinalOracleStatement
     if j.1 = k + 1
     then CompPoly.CPolynomial F
     else ((ω.subdomain (∑ j' ∈ finRangeTo _ j.1, (s j').1)).toFinset → F)
+
+/-- Read the explicitly transmitted final polynomial from a completed oracle transcript. -/
+def finalPolynomial (o : ∀ j, FinalOracleStatement s ω j) : CompPoly.CPolynomial F :=
+  cast (by simp [FinalOracleStatement]) (o (Fin.last (k + 1)))
 
 /-- The FRI protocol has as witness the polynomial that is supposed to correspond to the codeword in
   the oracle statement. We use `CompPoly.CPolynomial`, the computable representation, by way of the
@@ -240,9 +245,8 @@ namespace FoldPhase
 --     (x₀ : F) : Prop :=
 --   ∀ s₀ : evalDomain D x (∑ j' ∈ (List.take j.1 (List.finRange (k + 1))).toFinset, s j'),
 --       let queries :
---           List
---             (evalDomain D x
---               (∑ j' ∈ (List.take j.1 (List.finRange (k + 1))).toFinset, s j')) :=
+--           List (evalDomain D x
+--             (∑ j' ∈ (List.take j.1 (List.finRange (k + 1))).toFinset, s j')) :=
 --             List.map
 --               (
 --                 fun r =>
@@ -272,23 +276,25 @@ namespace FoldPhase
 --     let x₀  := stmt j;
 --     roundConsistent cond f f' x₀
 
-/- The FRI non-final folding round input relation, with proximity parameter `δ`, f
-   for the `i`th round. -/
-def inputRelation (cond : ∑ i, (s i).1 ≤ n) (δ : ℝ≥0) :
+/-- The latest oracle word before non-final folding round `i` is within relative Hamming
+distance `δ` of the degree-bounded witness polynomial's evaluations on its domain. -/
+def inputRelation (_cond : ∑ i, (s i).1 ≤ n) (δ : ℝ≥0) :
     Set
       (
         (Statement F i.castSucc × (∀ j, OracleStatement s ω i.castSucc j)) ×
         Witness F s d i.castSucc.castSucc
-      ) := sorry
+      ) := {sw | Code.relHammingDist (sw.1.2 (Fin.last i.val))
+        (fun x ↦ sw.2.1.eval x.1) ≤ δ}
 
-/- The FRI non-final folding round output relation, with proximity parameter `δ`,
-   for the `i`th round. -/
-def outputRelation (cond : ∑ i, (s i).1 ≤ n) (δ : ℝ≥0) :
+/-- The latest oracle word after non-final folding round `i` is within relative Hamming
+distance `δ` of the output degree-bounded witness polynomial's evaluations on its domain. -/
+def outputRelation (_cond : ∑ i, (s i).1 ≤ n) (δ : ℝ≥0) :
     Set
       (
         (Statement F i.succ × (∀ j, OracleStatement s ω i.succ j)) ×
         Witness F s d i.succ.castSucc
-      ) := sorry
+      ) := {sw | Code.relHammingDist (sw.1.2 (Fin.last (i.val + 1)))
+        (fun x ↦ sw.2.1.eval x.1) ≤ δ}
 
 /-- Each round of the FRI protocol begins with the verifier sending a random field element as the
   challenge to the prover, and ends with the prover sending an oracle to
@@ -343,9 +349,30 @@ noncomputable instance {i : Fin k} : ∀ j, Fintype ((pSpec s (ω := ω) i).Chal
   subst h_j_eq_0
   simpa [pSpec, Challenge] using (inferInstance : Fintype F)
 
-/-- The prover for the `i`-th round of the FRI protocol. It first receives the challenge,
-    then does an `s` degree split of this polynomial. Finally, it returns the evaluation of
-    this polynomial on the next evaluation domain. -/
+/-- Preserve the existing oracle transcript and append the next polynomial evaluation. -/
+def appendFoldOracle
+    (o : ∀ j, OracleStatement s ω i.castSucc j) (p : CompPoly.CPolynomial F) :
+    ∀ j, OracleStatement s ω i.succ j :=
+  fun j ↦ if h : j.1 < i.1 + 1 then o ⟨j.1, h⟩ else fun x ↦ p.eval x.1
+
+/-- Appending a folded word preserves every previously committed oracle, including the
+latest one. In particular, round zero preserves the input oracle. -/
+@[simp]
+theorem appendFoldOracle_castSucc
+    (o : ∀ j, OracleStatement s ω i.castSucc j) (p : CompPoly.CPolynomial F)
+    (j : Fin (i.val + 1)) :
+    appendFoldOracle s i o p j.castSucc = o j := by
+  simp [appendFoldOracle, j.isLt]
+
+/-- The only new oracle is the evaluation of the folded polynomial on the next domain. -/
+@[simp]
+theorem appendFoldOracle_last
+    (o : ∀ j, OracleStatement s ω i.castSucc j) (p : CompPoly.CPolynomial F) :
+    appendFoldOracle s i o p (Fin.last (i.val + 1)) = fun x ↦ p.eval x.1 := by
+  simp [appendFoldOracle]
+  rfl
+
+/-- The honest prover folds its witness and appends its evaluation to the oracle transcript. -/
 def foldProver :
     OracleProver []ₒ
     (Statement F i.castSucc) (OracleStatement s ω i.castSucc) (Witness F s d i.castSucc.castSucc)
@@ -380,12 +407,7 @@ def foldProver :
     ⟨
       ⟨
         chals,
-        fun j ↦
-          if h : j.1 < i.1
-          then o ⟨j.1, by
-            rw [Fin.val_castSucc]
-            exact Nat.lt_add_right 1 h⟩
-          else fun x ↦ p.1.eval x.1
+        appendFoldOracle s i o p.1
       ⟩,
       p
     ⟩
@@ -485,9 +507,8 @@ namespace FinalFoldPhase
 --       let β := f'.eval (s₀.1.1 ^ (2 ^ s));
 --         RoundConsistency.roundConsistencyCheck x₀ pts β
 
-/- Input relation for the final folding round. This is currently sorried out, to be filled in later.
--/
-def inputRelation (cond : ∑ i, (s i).1 ≤ n) (δ : ℝ≥0) :
+/-- Proximity of the last oracle word to the polynomial witness before the final fold. -/
+def inputRelation (_cond : ∑ i, (s i).1 ≤ n) (δ : ℝ≥0) :
     Set
       (
         (
@@ -495,16 +516,21 @@ def inputRelation (cond : ∑ i, (s i).1 ≤ n) (δ : ℝ≥0) :
           (∀ j, OracleStatement s ω (Fin.last k) j)
         ) ×
         Witness F s d (Fin.last k).castSucc
-      ) := sorry
+      ) := {sw | Code.relHammingDist (sw.1.2 (Fin.last k))
+        (fun x ↦ sw.2.1.eval x.1) ≤ δ}
 
-/- Output relation for the final folding round. This is currently sorried out, to be filled in
-later. -/
-def outputRelation (cond : ∑ i, (s i).1 ≤ n) (δ : ℝ≥0) :
+/-- Proximity of the transmitted final polynomial's evaluations to the final witness.
+The witness type enforces the final degree bound. These stage relations describe proximity;
+soundness of the full protocol additionally uses the query checks against the retained history. -/
+def outputRelation (_cond : ∑ i, (s i).1 ≤ n) (δ : ℝ≥0) :
     Set
       (
         (FinalStatement F k × ∀ j, FinalOracleStatement s ω j) ×
         Witness F s d (Fin.last (k + 1))
-      ) := sorry
+      ) := {sw | Code.relHammingDist
+        (fun x : (ω.subdomain (∑ j, (s j).1)).toFinset ↦
+          (finalPolynomial s sw.1.2).eval x.1)
+        (fun x ↦ sw.2.1.eval x.1) ≤ δ}
 
 /-- The final folding round of the FRI protocol begins with the verifier sending a random field
   element as the challenge to the prover, then in contrast to the previous folding rounds simply
@@ -648,14 +674,11 @@ def finalFoldVerifier :
         have jEq : j = Fin.last (k + 1) := Fin.ext (by simpa using h)
         subst j
         unfold instOracleInterfaceMessagePSpec finalOracleStatementInterface
-        simp only [Fin.val_last, finRangeTo, ↓reduceDIte, read,
-          readThe, MonadReaderOf.read, ReaderT.read, cast_cast, bind_pure_comp,
-          Fin.vcons_fin_zero, Nat.reduceAdd, Fin.isValue, Message,
-          OracleInterface.instDefault]
+        simp only [Fin.val_last, finRangeTo, ↓reduceDIte,
+          cast_cast, bind_pure_comp, Fin.vcons_fin_zero, Nat.reduceAdd, Fin.isValue, Message]
         congr 1
         case e_1 =>
-          simp only [FinalOracleStatement, Fin.val_last, ↓reduceIte, Fin.isValue,
-            Fin.vcons_one]
+          simp only [FinalOracleStatement, Fin.val_last, ↓reduceIte, Fin.isValue, Fin.vcons_one]
         case e_2 => simp only [↓reduceIte]
         case e_3 =>
           simp only [FinalOracleStatement, Fin.val_last, finRangeTo, Fin.isValue]
@@ -671,20 +694,18 @@ def finalFoldVerifier :
             intro q q' hq
             refine Function.hfunext (by simp) ?_
             intro st st' hst
-            simp only [Functor.map, Pure.pure]
+            simp only [Functor.map]
             exact (cast_heq _ st).trans hst
       · simp only
         unfold instOracleInterfaceOracleStatement finalOracleStatementInterface
-        simp only [h, finRangeTo, ↓reduceDIte, read, readThe, MonadReaderOf.read,
-          ReaderT.read, bind_pure_comp, Fin.val_last, OracleInterface.instFunction,
-          OracleContext.ofFunction]
+        simp only [finRangeTo, cast_cast, bind_pure_comp, Fin.val_last]
         congr 1
         case e_1 =>
           simp only [FinalOracleStatement, h, ↓reduceIte, finRangeTo]
           rfl
         case e_2 => simp only [h, ↓reduceIte]
         case e_3 =>
-          simp only [FinalOracleStatement, finRangeTo]
+          simp only [h, FinalOracleStatement, finRangeTo, ↓reduceDIte]
           congr 1
           case e_1 => simp [h]
           case e_2 =>
@@ -756,7 +777,7 @@ def pSpec : ProtocolSpec 1 :=
   ⟨!v[.V_to_P], !v[Fin l → (ω.subdomain 0).toFinset]⟩
 
 /- `OracleInterface` instances for the query round `pSpec`. -/
-instance : ∀ j, OracleInterface ((pSpec (ω := ω) l).Message j) := fun j ↦
+instance : ∀ j, OracleInterface.{0, 0} ((pSpec (ω := ω) l).Message j) := fun j ↦
   match j with
   | ⟨0, h⟩ => nomatch h
 
@@ -839,95 +860,83 @@ def getConst (k : ℕ) (s : Fin (k + 1) → ℕ+) :
       (show [FinalOracleStatement s ω]ₒ.Domain from
         ⟨(Fin.last (k + 1)), (by simpa using ())⟩)))
 
-/- Verifier for query round of the FRI protocol. Runs `l` checks on uniformly
-   sampled points in the first evaluation domain against the oracles sent during
-   every folding round. -/
+/-- Project an initial-domain query to the input domain of folding round `i`. -/
+def queryPoint (k_le_n : (∑ j, (s j).1) ≤ n) (i : Fin (k + 1))
+    (x : (ω.subdomain 0).toFinset) :
+    (ω.subdomain (∑ j ∈ finRangeTo (k + 1) i.val, (s j).1)).toFinset :=
+  ⟨x.val ^ (2 ^ (∑ j ∈ finRangeTo (k + 1) i.val, (s j).1)),
+    CosetFftDomainClass.pow_mem_subdomain_of_mem_subdomain_0_toFinset
+      ((Finset.sum_le_sum_of_subset (t := Finset.univ) (by simp)).trans k_le_n) x.property⟩
+
 open CosetFftDomain in
 open FftDomain in
 open CosetFftDomainClass in
+/-- The complete folding block queried at one projected position. The ordering is the
+existing FFT-domain enumeration used by the executable verifier. -/
+def queryBlock (k_le_n : (∑ j, (s j).1) ≤ n) (i : Fin (k + 1))
+    (x : (ω.subdomain 0).toFinset) :
+    List (ω.subdomain (∑ j ∈ finRangeTo (k + 1) i.val, (s j).1)).toFinset :=
+  (ω.toFftDomain.subdomain (n - (s i).1)).toList.map fun r ↦
+    ⟨r.val * (queryPoint s k_le_n i x).val, by
+      rw [CosetFftDomainClass.mem_toFinset_iff_mem]
+      apply mem_subdomain_of_mem_fft_subdomain_of_mem_subdomain (i := n - s i)
+      · have hi : (s i).val ≤ n :=
+          (Finset.single_le_sum (f := fun j ↦ (s j : ℕ)) (by simp) (by simp)).trans k_le_n
+        rw [Nat.le_sub_iff_add_le hi]
+        calc
+          _ = ∑ j ∈ finRangeTo (k + 1) (i.val + 1), (s j).val := by
+            rw [sum_finRangeTo_add_one]
+            rfl
+          _ ≤ ∑ j, (s j).val := Finset.sum_le_sum_of_subset (by simp)
+          _ ≤ n := k_le_n
+      · exact FftDomain.mem_toFinset_iff_mem.mp r.property
+      · exact CosetFftDomain.mem_toFinset_iff_mem.mp (queryPoint s k_le_n i x).property⟩
+
+/-- Read the purported folded value, using a point query except at the final polynomial. -/
+def queryNext (k_le_n : (∑ j, (s j).1) ≤ n) (p : CompPoly.CPolynomial F)
+    (i : Fin (k + 1)) (x : (ω.subdomain 0).toFinset) :
+    OracleComp [FinalOracleStatement s ω]ₒ F :=
+  if h : i.val < k then
+    queryCodeword k s (i := ⟨i.val + 1, by omega⟩)
+      ⟨(queryPoint s k_le_n i x).val ^ (2 ^ (s i).val), by
+        rw [sum_finRangeTo_add_one, CosetFftDomainClass.mem_toFinset_iff_mem]
+        apply CosetFftDomainClass.pow_mem_of_mem
+          (h := CosetFftDomainClass.mem_toFinset_iff_mem.mp
+            (queryPoint s k_le_n i x).property)
+        rw [← sum_finRangeTo_add_one]
+        exact (Finset.sum_le_sum_of_subset (t := Finset.univ) (by simp)).trans k_le_n⟩
+  else pure (p.eval ((queryPoint s k_le_n i x).val ^ (2 ^ (s (Fin.last k)).val)))
+
+/-- Execute one local folding check. This helper preserves the query ordering and uses
+the same computable interpolant as the original inlined verifier. -/
+def checkRound (k_le_n : (∑ j, (s j).1) ≤ n) (p : CompPoly.CPolynomial F)
+    (α : F) (i : Fin (k + 1)) (x : (ω.subdomain 0).toFinset) :
+    OracleComp [FinalOracleStatement s ω]ₒ Bool := do
+  let pts ← (queryBlock s k_le_n i x).mapM fun q ↦ do
+    let v ← queryCodeword k s q
+    pure (q.val, v)
+  let β ← queryNext s k_le_n p i x
+  pure (RoundConsistency.roundConsistencyCheck α pts.get β)
+
+/-- The query verifier's computational core only reads the committed oracle history.
+Both loops short-circuit on the first failed local check. -/
+def verifyQueries (k_le_n : (∑ j', (s j').1) ≤ n) (l : ℕ)
+    (prevChallenges : FinalStatement F k) (xs : Fin l → (ω.subdomain 0).toFinset) :
+    OptionT (OracleComp [FinalOracleStatement s ω]ₒ) (FinalStatement F k) := do
+    let p ← getConst (ω := ω) k s
+    for m in List.finRange l do
+      for i in List.finRange (k + 1) do
+        guard (← checkRound s k_le_n p (prevChallenges i) i (xs m))
+    pure prevChallenges
+
+/-- Run every local folding check along each independently sampled initial-domain query. -/
 def queryVerifier (k_le_n : (∑ j', (s j').1) ≤ n) (l : ℕ) :
     OracleVerifier []ₒ
-    (FinalStatement F k) (FinalOracleStatement s ω)
-    (FinalStatement F k) (FinalOracleStatement s ω)
-    (pSpec (ω := ω) l) where
-  verify := fun prevChallenges roundChallenge ↦ do
-    let (p : CompPoly.CPolynomial F) ← getConst (ω := ω) k s
-    for m in (List.finRange l) do
-      let s₀ := roundChallenge ⟨1, by aesop⟩ m
-      discard <|
-        (List.finRange (k + 1)).mapM
-              (fun i ↦
-                do
-                  let x₀ := prevChallenges i
-                  let s₀ :
-                    (ω.subdomain
-                      (∑ j' ∈ finRangeTo _ i.1, (s j').1)).toFinset :=
-                    ⟨s₀ ^ (2 ^ (∑ j' ∈ finRangeTo _ i.1, (s j').1)),
-                      CosetFftDomainClass.pow_mem_subdomain_of_mem_subdomain_0_toFinset
-                        (Nat.le_trans
-                          (Finset.sum_le_sum_of_subset (t := Finset.univ) (by simp))
-                          k_le_n) s₀.2⟩
-                  let queries :
-                    List (
-                      ω.subdomain
-                        (∑ j' ∈ finRangeTo _ i.1, (s j').1)
-                    ).toFinset :=
-                    List.map
-                      (fun (r : (ω.toFftDomain.subdomain (n - (s i).1)).toFinset) ↦
-                        ⟨
-                          r * s₀,
-                          by {
-                            rw [CosetFftDomainClass.mem_toFinset_iff_mem]
-                            apply mem_subdomain_of_mem_fft_subdomain_of_mem_subdomain (i := n - s i)
-                            · {
-                                rw [Nat.le_sub_iff_add_le (by {
-                                  exact Nat.le_trans (m := ∑ j', ↑(s j'))
-                                    (by {
-                                      apply Finset.single_le_sum (f := fun i ↦ (s i : ℕ))
-                                        (by simp) (by simp)
-                                    }) k_le_n
-                                })]
-                                trans (∑ j' ∈ finRangeTo (k + 1) (↑i + 1), ↑(s j'))
-                                · rw [sum_finRangeTo_add_one (n := k)]
-                                  rfl
-                                · trans
-                                  · exact (Finset.sum_le_sum_of_subset (t := Finset.univ) (by simp))
-                                  · exact k_le_n
-                              }
-                            · obtain ⟨r, hr⟩ := r
-                              exact FftDomain.mem_toFinset_iff_mem.mp hr
-                            · obtain ⟨s₀, hs₀⟩ := s₀
-                              exact CosetFftDomain.mem_toFinset_iff_mem.mp hs₀
-                          }
-                        ⟩
-                      )
-                      (ω.toFftDomain.subdomain (n - (s i).1)).toList
-                  let (pts : List (F × F)) ←
-                    List.mapM
-                      (fun q ↦ queryCodeword (ω := ω) k s q >>= fun v ↦ pure (q.1, v))
-                      queries
-                  let β ←
-                    if h : i.1 < k
-                    then
-                      queryCodeword (ω := ω) k s (i := ⟨i.1.succ, Order.lt_add_one_iff.mpr h⟩)
-                        ⟨s₀.1 ^ (2 ^ (s i).1), by {
-                          simp only
-                          rw [sum_finRangeTo_add_one, CosetFftDomainClass.mem_toFinset_iff_mem]
-                          apply CosetFftDomainClass.pow_mem_of_mem
-                            (i := s i)
-                            (h := CosetFftDomainClass.mem_toFinset_iff_mem.1 s₀.2)
-                          trans (∑ j' ∈ finRangeTo (k + 1) (↑i : ℕ).succ, (s j').1)
-                          · rw [Nat.succ_eq_add_one, sum_finRangeTo_add_one]
-                            rfl
-                          · trans
-                            · exact (Finset.sum_le_sum_of_subset (t := Finset.univ) (by simp))
-                            · exact k_le_n
-                        }⟩
-                    else
-                      pure (p.eval (s₀.1 ^ (2 ^ (s (Fin.last k)).1)))
-                  guard (RoundConsistency.roundConsistencyCheck x₀ (List.get pts) β)
-              )
-    pure prevChallenges
+      (FinalStatement F k) (FinalOracleStatement s ω)
+      (FinalStatement F k) (FinalOracleStatement s ω)
+      (pSpec (ω := ω) l) where
+  verify := fun prevChallenges roundChallenge ↦ OptionT.mk <|
+    liftM (verifyQueries s k_le_n l prevChallenges (roundChallenge ⟨0, by simp⟩)).run
   outputOracle := .inl {
     embed := ⟨
       fun j ↦ Sum.inl j,
@@ -939,9 +948,9 @@ def queryVerifier (k_le_n : (∑ j', (s j').1) ≤ n) (l : ℕ) :
 /- Query round oracle reduction. -/
 def queryOracleReduction :
     OracleReduction []ₒ
-    (FinalStatement F k) (FinalOracleStatement s ω) (Witness F s d (Fin.last (k + 1)))
-    (FinalStatement F k) (FinalOracleStatement s ω) (Witness F s d (Fin.last (k + 1)))
-    (pSpec (ω := ω) l) where
+      (FinalStatement F k) (FinalOracleStatement s ω) (Witness F s d (Fin.last (k + 1)))
+      (FinalStatement F k) (FinalOracleStatement s ω) (Witness F s d (Fin.last (k + 1)))
+      (pSpec (ω := ω) l) where
   prover := queryProver s d l
   verifier := queryVerifier s (round_bound domain_size_cond) l
 

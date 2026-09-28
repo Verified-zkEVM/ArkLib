@@ -16,6 +16,9 @@ a review record: a verdict about one branch at one commit does not belong here.
 
 Current audit pages:
 
+- [`fri-soundness.md`](fri-soundness.md) - the revised FRI analysis, executable specification
+  review, and end-to-end ordinary and round-by-round protocol soundness.
+
 - [`open-problems-list-decoding-and-correlated-agreement.md`](open-problems-list-decoding-and-correlated-agreement.md)
   - per-statement status matrix for [`ABF26`](../papers/ABF26.md), covering the coding-theory
     code families, Johnson bounds, subspace designs, and extension codes.

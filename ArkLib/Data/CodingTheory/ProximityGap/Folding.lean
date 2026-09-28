@@ -529,7 +529,9 @@ theorem iteratedFoldWord_mem_code_of_mem_code {d : ℕ} [FoldingContext k d n]
   iteratedFoldWord_mem_code_of_mem_code_aux FoldingContextLeft.k_le_d
     FoldingContextRight.d_le_n hf
 
-private noncomputable def foldWordAuxCoeff (domain : SmoothCosetFftDomain n F)
+/-- The coefficient words of the block interpolants. Their powers combination is the folded
+word, and agreement of every coefficient word lifts to agreement before folding. -/
+noncomputable def foldWordAuxCoeff (domain : SmoothCosetFftDomain n F)
   (f : Word F (Fin (2 ^ n))) (k : ℕ) (i : Fin (2 ^ k)) (x : F) : F :=
   (foldWordAux domain f k x).coeff i
 
@@ -547,9 +549,10 @@ private lemma foldWordAux_coeff_eq_foldWordAuxCoeff_nat {i : ℕ} :
   · rw [Polynomial.coeff_eq_zero_of_natDegree_lt <|
             lt_of_lt_of_le foldWordAux_natDegree <| by simpa using h]
 
-private lemma foldWordAux_eq_sum_of_foldWordAuxCoeff :
-  foldWordAux domain f k x =
-    ∑ j, Polynomial.C (foldWordAuxCoeff domain f k j x) * Y ^ j.val := by
+/-- Reconstruct a block interpolant from its coefficient words. -/
+lemma foldWordAux_eq_sum_of_foldWordAuxCoeff :
+    foldWordAux domain f k x =
+      ∑ j, Polynomial.C (foldWordAuxCoeff domain f k j x) * Y ^ j.val := by
   ext n
   simp only [finsetSum_coeff, coeff_C_mul, coeff_X_pow, mul_ite, mul_one, mul_zero]
   by_cases hlt : n < 2 ^ k
@@ -560,10 +563,11 @@ private lemma foldWordAux_eq_sum_of_foldWordAuxCoeff :
     exact symm ∘ Finset.sum_eq_zero <| fun x _ ↦ match x with
       | ⟨x, hx⟩ => by aesop (add safe (by omega))
 
-private lemma foldValue_eq_sum_of_foldAuxCoeff_mul_pow_alpha
-  {α : F} :
-  foldValue domain f k α x =
-    ∑ j, (foldWordAuxCoeff domain f k j x) * α ^ j.val := by
+/-- Folding is the powers-generator combination of the block-interpolation coefficients. -/
+lemma foldValue_eq_sum_of_foldAuxCoeff_mul_pow_alpha
+    {α : F} :
+    foldValue domain f k α x =
+      ∑ j, (foldWordAuxCoeff domain f k j x) * α ^ j.val := by
   aesop
     (add simp
       [foldValue,

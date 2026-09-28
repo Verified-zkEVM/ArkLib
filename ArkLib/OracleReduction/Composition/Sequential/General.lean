@@ -96,6 +96,28 @@ lemma seqCompose_succ {m : ℕ} (Stmt : Fin (m + 2) → Type)
     (V : (i : Fin (m + 1)) → Verifier oSpec (Stmt i.castSucc) (Stmt i.succ) (pSpec i)) :
     seqCompose Stmt V = append (V 0) (seqCompose (Stmt ∘ Fin.succ) (fun i => V (Fin.succ i))) := rfl
 
+/-- A deterministic invariant for sequential verification. If each component takes its
+designated input state to the next one, the composed verifier takes the first state to the
+last. This statement concerns verification only and imposes no honesty on transcripts. -/
+theorem seqCompose_run_eq_pure {m : ℕ} (Stmt : Fin (m + 1) → Type)
+    {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
+    (V : (i : Fin m) → Verifier oSpec (Stmt i.castSucc) (Stmt i.succ) (pSpec i))
+    (tr : ∀ i, (pSpec i).FullTranscript) (state : ∀ i, Stmt i)
+    (hstep : ∀ i, (V i).run (state i.castSucc) (tr i) = pure (state i.succ)) :
+    (seqCompose Stmt V).run (state 0) (FullTranscript.seqCompose tr) =
+      pure (state (Fin.last m)) := by
+  induction m with
+  | zero => rfl
+  | succ m ih =>
+    have hzero := hstep 0
+    simp only [Fin.castSucc_zero] at hzero
+    change ((V 0).append (seqCompose (Stmt ∘ Fin.succ) (fun i ↦ V i.succ))).run
+      (state 0) (tr 0 ++ₜ FullTranscript.seqCompose (fun i ↦ tr i.succ)) = _
+    erw [append_run,
+      FullTranscript.append_fst, FullTranscript.append_snd, hzero, pure_bind]
+    exact ih (Stmt ∘ Fin.succ) (fun i ↦ V i.succ) (fun i ↦ tr i.succ)
+      (fun i ↦ state i.succ) (fun i ↦ hstep i.succ)
+
 end Verifier
 
 namespace Reduction
