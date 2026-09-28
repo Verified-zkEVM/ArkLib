@@ -201,7 +201,7 @@ theorem linear_mcaError_ge_information_set
       rw [hrc, div_self hcardF_ne]
       exact min_eq_right ((one_le_div hcardF_pos).mpr (by exact_mod_cast h))
   have hPr : (↑(min ((m : ℝ≥0) / (Fintype.card F : ℝ≥0)) 1) : ℝ≥0∞) ≤
-      Pr{let γ ←$ᵗ F}[IsMCA (AffineLineGenerator F) C γ U (δ : ℝ)] := by
+      Pr{γ ←$ᵗ F}[IsMCA (AffineLineGenerator F) C γ U (δ : ℝ)] := by
     rw [SampleableType.prEvent_uniformSample]
     simp only [← ENNReal.coe_natCast]
     rw [← ENNReal.coe_div hcardF_ne, ENNReal.coe_le_coe, hmin_eq]
@@ -209,6 +209,6 @@ theorem linear_mcaError_ge_information_set
   refine le_trans hPr ?_
   unfold mcaError
   exact le_iSup (fun V : Fin 2 → (ι → F) =>
-    Pr{let γ ←$ᵗ F}[IsMCA (AffineLineGenerator F) C γ V (δ : ℝ)]) U
+    Pr{γ ←$ᵗ F}[IsMCA (AffineLineGenerator F) C γ V (δ : ℝ)]) U
 
 end ProximityGap

@@ -385,7 +385,7 @@ omit [Nonempty ι] in
 theorem card_RS_goodCoeffs_gt_of_prob_gt_n_div_q
     [SampleableType F] {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0} (u : WordStack F (Fin 2) ι)
     (hprob :
-      Pr{let z ← $ᵗ F}[δᵣ(u 0 + z • u 1, ReedSolomon.code domain deg) ≤ δ]
+      Pr{z ← $ᵗ F}[δᵣ(u 0 + z • u 1, ReedSolomon.code domain deg) ≤ δ]
         > (Fintype.card ι : ℝ≥0) / (Fintype.card F : ℝ≥0)) :
     (RS_goodCoeffs (deg := deg) (domain := domain) u δ).card > Fintype.card ι := by
   classical
@@ -394,13 +394,13 @@ theorem card_RS_goodCoeffs_gt_of_prob_gt_n_div_q
     δᵣ(u 0 + z • u 1, ReedSolomon.code domain deg) ≤ δ
   -- Native uniform probability is the accepted fraction of field elements.
   have hPr :
-      Pr{let z ← $ᵗ F}[P z] =
+      Pr{z ← $ᵗ F}[P z] =
         ((Finset.filter (α := F) P Finset.univ).card : ENNReal) /
           (Fintype.card F : ENNReal) :=
     SampleableType.prEvent_uniformSample P
   -- restate the hypothesis using `P`
   have hprobP :
-      Pr{let z ← $ᵗ F}[ P z ] > (Fintype.card ι : ℝ≥0) / (Fintype.card F : ℝ≥0) := by
+      Pr{z ← $ᵗ F}[ P z ] > (Fintype.card ι : ℝ≥0) / (Fintype.card F : ℝ≥0) := by
     simpa [P] using hprob
   -- rewrite the probability lower bound as a ratio comparison
   have hprobQ := hprobP

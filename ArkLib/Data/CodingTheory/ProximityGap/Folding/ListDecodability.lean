@@ -426,7 +426,7 @@ private lemma folding_reflects_balls_aux [Fintype F] [SampleableType F] [Folding
   let δ' : I := ⟨δ, by aesop, by {
               rw [show 1 = NNReal.toReal 1 by norm_cast, ←NNReal.toReal_le]
               exact le_trans (le_of_lt δ_lt) (by simp)}⟩
-  Pr{let α ←$ᵗ F}[
+  Pr{α ←$ᵗ F}[
     ¬(Λ𞁒(code (ω.subdomain 1 : Fin (2 ^ (n - 1)) ↪ F) (2 ^ (d - 1)),
              k - 1, ω.subdomain 1, foldWord ω f 1 α, δ)) ⊆
       Set.image
@@ -541,7 +541,7 @@ theorem folding_reflects_balls [Fintype F] [SampleableType F] [FoldingContext k 
   let δ' : I := ⟨δ, by aesop, by {
               rw [show 1 = NNReal.toReal 1 by norm_cast, ←NNReal.toReal_le]
               exact le_trans (le_of_lt δ_lt) (by simp)}⟩
-  Pr{let α ←$ᵗ F}[
+  Pr{α ←$ᵗ F}[
     (Λ𞁒(code (ω.subdomain 1 : Fin (2 ^ (n - 1)) ↪ F) (2 ^ (d - 1)),
              k - 1, ω.subdomain 1, foldWord ω f 1 α, δ)) ≠
       Set.image
@@ -572,7 +572,7 @@ private theorem iterated_folding_reflects_balls_aux [Fintype F] [SampleableType 
         (code (ω.subdomain (i + 1) : Fin (2 ^ (n - (i + 1))) ↪ F) (2 ^ (d - i - 1)))) →
       (∀ i, i < k → δ < 1 - (LinearCode.rate
         (code (ω.subdomain (i + 1) : Fin (2 ^ (n - (i + 1))) ↪ F) (2 ^ (d - i - 1))) : ℝ≥0)) →
-      Pr{let α ←$ᵗ (Fin k → F) }[
+      Pr{α ←$ᵗ (Fin k → F) }[
         Λ𞁒(code (ω.subdomain k : Fin (2 ^ (n - k)) ↪ F) (2 ^ (d - k)), b, ω.subdomain k,
             iteratedFoldWord ω f k α, δ) ≠
           Set.image (fun u ↦ iteratedFoldWord ω u k α)
@@ -592,7 +592,7 @@ private theorem iterated_folding_reflects_balls_aux [Fintype F] [SampleableType 
         subdomain_subdomain_one (by omega)
       -- the per-round bound for the last round, on the `k`-th subdomain
       have hlast : ∀ w : Word F (Fin (2 ^ (n - k))),
-          Pr{let x ←$ᵗ F }[
+          Pr{x ←$ᵗ F }[
             Λ𞁒(code ((ω.subdomain k).subdomain 1 : Fin (2 ^ (n - k - 1)) ↪ F) (2 ^ (d - k - 1)),
                 b + 1 - 1, (ω.subdomain k).subdomain 1,
                 foldWord (ω.subdomain k) w 1 x, δ) ≠
@@ -665,7 +665,7 @@ theorem iterated_folding_reflects_balls [Fintype F] [SampleableType F]
       (code (ω.subdomain (i + 1) : Fin (2 ^ (n - (i + 1))) ↪ F) (2 ^ (d - i - 1))))
     (hrate : ∀ i, i < k → δ < 1 - (LinearCode.rate
       (code (ω.subdomain (i + 1) : Fin (2 ^ (n - (i + 1))) ↪ F) (2 ^ (d - i - 1))) : ℝ≥0)) :
-    Pr{let α ←$ᵗ (Fin k → F) }[
+    Pr{α ←$ᵗ (Fin k → F) }[
       Set.image (fun u ↦ iteratedFoldWord ω u k α)
           (Λ𞁒(code (ω : Fin (2 ^ n) ↪ F) (2 ^ d), k, ω, f, δ)) ≠
         {v | v ∈ (code (ω.subdomain k : Fin (2 ^ (n - k)) ↪ F) (2 ^ (d - k)) :

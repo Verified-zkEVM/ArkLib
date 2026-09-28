@@ -73,8 +73,8 @@ theorem ReedSolomon_ProximityGapAffineLines_UniqueDecoding [Nontrivial (ReedSolo
     rw [div_mul]
     simp only [ne_eq, Nat.cast_eq_zero, Fintype.card_ne_zero, not_false_eq_true, div_self, div_one]
     exact he_le_NNReal
-  have h_rewrite_prob : Pr{let z ← $ᵗ A}[Δ₀((1 - z) • u₀ + z • u₁, CRS) ≤ e]
-    = Pr{let z ← $ᵗ A}[Δ₀(u₀ + z • (u₁ - u₀), CRS) ≤ e] := by
+  have h_rewrite_prob : Pr{z ← $ᵗ A}[Δ₀((1 - z) • u₀ + z • u₁, CRS) ≤ e]
+    = Pr{z ← $ᵗ A}[Δ₀(u₀ + z • (u₁ - u₀), CRS) ≤ e] := by
     congr  -- Peel away the Pr{...} wrapper
     funext z
     congr! 1 -- Focus on the term inside Δ₀
@@ -105,7 +105,7 @@ theorem ReedSolomon_ProximityGapAffineLines_UniqueDecoding [Nontrivial (ReedSolo
   simp_rw [relDistFromCode_le_iff_distFromCode_le] at h_correlated_agreement
   let h_u₀_and_u₁_sub_u₀_CA := h_correlated_agreement uShifted (by
     rw [h_δ_mul_n_eq_e]
-    simp only [Fin.isValue, bind_pure_comp, ne_eq, Nat.cast_eq_zero, Fintype.card_ne_zero,
+    simp only [Fin.isValue, ne_eq, Nat.cast_eq_zero, Fintype.card_ne_zero,
       not_false_eq_true, ENNReal.coe_div, ENNReal.coe_natCast, gt_iff_lt]
     simp only [ENNReal.coe_natCast] at h_prob_affine_line_close_gt
     simpa only [bind_pure_comp, n, uShifted, CRS, finMapTwoWords, Fin.isValue,

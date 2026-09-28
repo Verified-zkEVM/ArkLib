@@ -23,12 +23,13 @@ open scoped NNReal ENNReal ProbabilityTheory
 
 private theorem prEvent_guarded_map {α β : Type} (oa : ProbComp α)
     (check : α → Bool) (f : α → β) (p : β → Prop) :
-    Pr{let b ← (do
+    Pr{b ← (do
       let a ← (liftM oa : OptionT ProbComp α)
       if check a then pure (f a) else failure)}[p b] =
-      Pr{let a ← oa}[check a = true ∧ p (f a)] := by
-  rw [← OptionT.prEvent_bind_guard, bind_assoc]
-  refine congrArg (𝒟[·] {True}) (bind_congr fun a => ?_)
+      Pr{a ← oa}[check a = true ∧ p (f a)] := by
+  rw [← OptionT.prEvent_bind_guard, map_bind]
+  congr 1
+  refine bind_congr fun a => ?_
   by_cases h : check a = true <;> simp [h]
 
 namespace Reduction
@@ -66,7 +67,7 @@ theorem completeness_iff_of_guarded_verifier
     (rel₁ : Set (Stmt₁ × Wit₁)) (rel₂ : Set (Stmt₂ × Wit₂)) (ε : ℝ≥0) :
     R.completeness init impl rel₁ rel₂ ε ↔
       ∀ stmt wit, (stmt, wit) ∈ rel₁ →
-        1 - (ε : ℝ≥0∞) ≤ Pr{let q ← do
+        1 - (ε : ℝ≥0∞) ≤ Pr{q ← do
           (simulateQ (QueryImpl.addLift impl challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
             (R.prover.run stmt wit)).run (← init)}[G.check stmt q.1.1 = true ∧
           (G.out stmt q.1.1, q.1.2.2) ∈ rel₂ ∧ q.1.2.1 = G.out stmt q.1.1] := by
@@ -92,7 +93,7 @@ theorem completeness_iff_of_guarded_verifier
     refine bind_congr fun s => ?_
     refine bind_congr fun q => ?_
     by_cases hc : G.check stmt q.1.1 = true <;> simp [hc]
-  simp only [hrun, prEvent_guarded_map, ← bind_assoc]
+  simp only [hrun, prEvent_guarded_map]
 
 /-- Completeness from every deterministic oracle state implies completeness from any initial
 state distribution. The verifier is guarded, so initialization is the only outer mixture. -/
@@ -141,7 +142,7 @@ theorem append_completeness_of_guarded_prover_factorization
   have hnext := hsecond q₁.2 q₁.1.2.1 q₁.1.2.2 (by
     rw [hGood.2.2]
     exact hGood.2.1)
-  simpa only [bind_assoc, pure_bind, Function.comp_def, VA,
+  simpa only [bind_assoc, pure_bind, prEvent_norm, VA,
     Verifier.GuardedForm.append, FullTranscript.append_fst, FullTranscript.append_snd,
     hGood.1, Bool.true_and, ← hGood.2.2] using hnext
 

@@ -54,7 +54,7 @@ theorem proximity_gap_RSCodes {k t : ℕ} [NeZero k] [NeZero t] {deg : ℕ} {dom
   set S : Finset (ι → F) := Affine.AffSpanFinset (C i) with hS_def
   -- Case split on whether the proximity probability is ≤ ε.
   by_cases hcase :
-      Pr{let x ← $ᵗ S}[δᵣ(x.val, (ReedSolomon.toFinset domain deg)) ≤ δ] ≤
+      Pr{x ← $ᵗ S}[δᵣ(x.val, (ReedSolomon.toFinset domain deg)) ≤ δ] ≤
         (errorBound δ deg domain : ℝ≥0)
   · -- Right Xor branch: `Pr ≤ ε ∧ ¬(Pr = 1)`.
     refine Or.inr ⟨hcase, ?_⟩
@@ -111,7 +111,7 @@ theorem proximity_gap_RSCodes {k t : ℕ} [NeZero k] [NeZero t] {deg : ℕ} {dom
         push Not at hnotclose
         -- All elements of S equal C i 0, which is NOT δ-close, so Pr = 0.
         have hPr_eq :
-            Pr{let x ← $ᵗ S}[δᵣ(x.val, (ReedSolomon.toFinset domain deg)) ≤ δ] = 0 := by
+            Pr{x ← $ᵗ S}[δᵣ(x.val, (ReedSolomon.toFinset domain deg)) ≤ δ] = 0 := by
           rw [SampleableType.prEvent_uniformSample (α := ↥S)
             (p := fun x => δᵣ(x.val, (ReedSolomon.toFinset domain deg : Set _)) ≤ δ)]
           have : (Finset.univ : Finset ↥S).filter
@@ -187,12 +187,12 @@ theorem proximity_gap_RSCodes {k t : ℕ} [NeZero k] [NeZero t] {deg : ℕ} {dom
             exact ⟨j', by simp [Fin.tail]⟩
       -- Step 2: Transfer the probability.
       have hPr_aff :
-          Pr{let y ← $ᵗ ↥(Affine.affineSubspaceAtOrigin (F := F)
+          Pr{y ← $ᵗ ↥(Affine.affineSubspaceAtOrigin (F := F)
             (u' 0) (Fin.tail u'))}[
             δᵣ(y.1, (ReedSolomon.code domain deg : Set (ι → F))) ≤ δ] >
           (errorBound δ deg domain : ℝ≥0) := by
         have hcase_code : (errorBound δ deg domain : ℝ≥0) <
-            Pr{let x ← $ᵗ S}[δᵣ(x.val,
+            Pr{x ← $ᵗ S}[δᵣ(x.val,
               (ReedSolomon.code domain deg : Set (ι → F))) ≤ δ] := by
           convert hcase using 3; simp [ReedSolomon.toFinset]
         -- haff_eq + hS_def give: the carrier of affineSubspaceAtOrigin = ↑S

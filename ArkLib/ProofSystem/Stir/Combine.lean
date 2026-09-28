@@ -528,7 +528,7 @@ theorem combine_theorem
   (δ : ℝ≥0) (hδPos : δ > 0)
   (hδLt : δ < (min (1 - (ReedSolomon.sqrtRate dstar φ))
                    (1 - (rate (code φ dstar)) - 1 / Fintype.card ι)))
-  (hProb : Pr{let r ← $ᵗ F}[δᵣ((combine φ dstar r fs degs), (code φ dstar)) ≤ δ] >
+  (hProb : Pr{r ← $ᵗ F}[δᵣ((combine φ dstar r fs degs), (code φ dstar)) ≤ δ] >
     (m * (dstar + 1) - ∑ i, degs i - 1) * ProximityGap.errorBound δ dstar φ) :
     ∃ S : Finset ι, S.card ≥ (1 - δ) * (Fintype.card ι) ∧
       ∃ v : Fin m → ι → F, ∀ i,

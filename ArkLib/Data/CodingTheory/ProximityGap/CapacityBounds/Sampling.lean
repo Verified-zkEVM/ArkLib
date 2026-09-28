@@ -43,7 +43,7 @@ theorem linear_close_probability_le_epsCa
     (_h_δ' : (δ' : ENNReal) = ⨆ u : ι → F, δᵣ(u, (C : Set (ι → F))))
     (_hδ_pos : 0 < δ) (_hδ_lt : δ < δ') :
     ((Fintype.card F - 1 : ℝ≥0) / Fintype.card F : ENNReal)
-        * Pr{let u ← $ᵗ (ι → F)}[δᵣ(u, (C : Set (ι → F))) ≤ δ] ≤
+        * Pr{u ← $ᵗ (ι → F)}[δᵣ(u, (C : Set (ι → F))) ≤ δ] ≤
       epsCa (F := F) (A := F) ((C : Set (ι → F))) δ δ := by
   classical
   let Good : (ι → F) → Prop := fun w => δᵣ(w, (C : Set (ι → F))) ≤ (δ : ENNReal)
@@ -101,8 +101,8 @@ theorem linear_close_probability_le_epsCa
     omega
   have havg :
       ((Fintype.card F - 1 : ℝ≥0) / Fintype.card F : ENNReal) *
-          Pr{let w ← $ᵗ (ι → F)}[Good w] ≤
-        Pr{let r ← $ᵗ F}[Good (z + r • d)] := by
+          Pr{w ← $ᵗ (ι → F)}[Good w] ≤
+        Pr{r ← $ᵗ F}[Good (z + r • d)] := by
     rw [SampleableType.prEvent_uniformSample,
       SampleableType.prEvent_uniformSample]
     change ((Fintype.card F - 1 : ENNReal) / Fintype.card F) *
@@ -132,7 +132,7 @@ theorem linear_close_probability_le_epsCa
     apply hz
     simpa [Good, u] using hzero
   have hline :
-      Pr{let r ← $ᵗ F}[Good (z + r • d)] ≤
+      Pr{r ← $ᵗ F}[Good (z + r • d)] ≤
         epsCa (F := F) (A := F) (C : Set (ι → F)) δ δ := by
     unfold epsCa
     refine le_iSup_of_le u (le_of_eq ?_)

@@ -223,19 +223,19 @@ theorem executeStrategies_appendExported_soundness_weighted_ae
       Stmt Data Export OutP => Admissible (TypeTree.ExecutionPath.ofTypeTreePath b.1).toBranchPath
         (b.2.2.closeWith ((TypeTree.ExecutionPath.ofTypeTreePath b.1).closingImpl
           firstOracles initial impl))
-    (Pr{let b ← prefixProgram}[trueMid b] ≤ εtruth) →
-    (Pr{let b ← prefixProgram}[¬ trueMid b ∧ ¬ admissible b] ≤ εinvalid) →
+    (Pr{b ← prefixProgram}[trueMid b] ≤ εtruth) →
+    (Pr{b ← prefixProgram}[¬ trueMid b ∧ ¬ admissible b] ≤ εinvalid) →
     (letI : MeasurableSpace (ExportedBoundary ambient tree suffix secondRoles firstOracles initial
       Stmt Data Export OutP) := ⊤;
       ∀ᵐ b ∂𝒟[prefixProgram], ¬ trueMid b → admissible b →
-        Pr{let result ← (exportedSuffixRun ambient tree suffix secondRoles firstOracles
+        Pr{result ← (exportedSuffixRun ambient tree suffix secondRoles firstOracles
           secondOracles initial impl Stmt Data Export FinalStmt FinalData Final OutP second b)}[
             result.2.map (TruthFinal (PFunctor.FreeM.Path.append tree suffix
               (TypeTree.ExecutionPath.ofTypeTreePath b.1).toBranchPath result.1)) = some True] ≤
           error b) →
     (let : MeasurableSpace (ExportedBoundary ambient tree suffix secondRoles firstOracles initial
       Stmt Data Export OutP) := ⊤;
-      Pr{let result ← (executeStrategies ambient (PFunctor.FreeM.append tree suffix)
+      Pr{result ← (executeStrategies ambient (PFunctor.FreeM.append tree suffix)
         (PFunctor.FreeM.Displayed.Decoration.append firstRoles secondRoles)
         (PFunctor.FreeM.Displayed.Decoration.append firstOracles secondOracles) initial impl prover
         (appendExported ambient tree suffix firstRoles secondRoles firstOracles secondOracles
@@ -268,15 +268,15 @@ theorem executeStrategies_appendExported_soundness_weighted_ae
       exportedSuffixRun ambient tree suffix secondRoles firstOracles secondOracles initial impl
         Stmt Data Export FinalStmt FinalData Final OutP second b
   have hnext : ∀ᵐ b ∂𝒟[prefixProgram], ¬ (trueMid b ∨ ¬ admissible b) →
-      Pr{let truth ← next b}[truth] ≤ error b := by
+      Pr{truth ← next b}[truth] ≤ error b := by
     apply hsuffix.mono
     intro b hb hg
     simpa only [next, map_eq_pure_bind] using hb (fun ht => hg (Or.inl ht))
       (not_not.mp (fun ha => hg (Or.inr ha)))
   have bound := prEvent_bind_le_prEvent_add_lintegral_ae prefixProgram next
     (fun b => trueMid b ∨ ¬ admissible b) (fun truth => truth) error
-    (by simpa only [bind_pure] using hnext)
-  have hevent : Pr{let b ← prefixProgram}[trueMid b ∨ ¬ admissible b] ≤
+    (by simpa only [id_map'] using hnext)
+  have hevent : Pr{b ← prefixProgram}[trueMid b ∨ ¬ admissible b] ≤
       εtruth + εinvalid := by
     have heq : (fun b => trueMid b ∨ ¬ admissible b) =
         (fun b => trueMid b ∨ (¬ trueMid b ∧ ¬ admissible b)) := by
@@ -315,19 +315,19 @@ theorem executeStrategies_appendExported_soundness_ae
       Stmt Data Export OutP => Admissible (TypeTree.ExecutionPath.ofTypeTreePath b.1).toBranchPath
         (b.2.2.closeWith ((TypeTree.ExecutionPath.ofTypeTreePath b.1).closingImpl
           firstOracles initial impl))
-    (Pr{let b ← prefixProgram}[trueMid b] ≤ εtruth) →
-    (Pr{let b ← prefixProgram}[¬ trueMid b ∧ ¬ admissible b] ≤ εinvalid) →
+    (Pr{b ← prefixProgram}[trueMid b] ≤ εtruth) →
+    (Pr{b ← prefixProgram}[¬ trueMid b ∧ ¬ admissible b] ≤ εinvalid) →
     (letI : MeasurableSpace (ExportedBoundary ambient tree suffix secondRoles firstOracles initial
       Stmt Data Export OutP) := ⊤;
       ∀ᵐ b ∂𝒟[prefixProgram], ¬ trueMid b → admissible b →
-        Pr{let result ← (exportedSuffixRun ambient tree suffix secondRoles firstOracles
+        Pr{result ← (exportedSuffixRun ambient tree suffix secondRoles firstOracles
           secondOracles initial impl Stmt Data Export FinalStmt FinalData Final OutP second b)}[
             result.2.map (TruthFinal (PFunctor.FreeM.Path.append tree suffix
               (TypeTree.ExecutionPath.ofTypeTreePath b.1).toBranchPath result.1)) = some True] ≤
           εsuffix) →
     (let : MeasurableSpace (ExportedBoundary ambient tree suffix secondRoles firstOracles initial
       Stmt Data Export OutP) := ⊤;
-      Pr{let result ← (executeStrategies ambient (PFunctor.FreeM.append tree suffix)
+      Pr{result ← (executeStrategies ambient (PFunctor.FreeM.append tree suffix)
         (PFunctor.FreeM.Displayed.Decoration.append firstRoles secondRoles)
         (PFunctor.FreeM.Displayed.Decoration.append firstOracles secondOracles) initial impl prover
         (appendExported ambient tree suffix firstRoles secondRoles firstOracles secondOracles

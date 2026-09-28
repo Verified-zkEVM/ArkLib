@@ -346,7 +346,7 @@ lemma prob_of_bad_pts
     [SampleableType (Matrix.rowSpan U_star)]
     (he : (e : ℚ≥0) < ‖(RScodeSet α deg)‖₀ / 3)
     (hU : e < Δ₀(⋈|U_star, (ReedSolomon.code α deg)^⋈κ)) :
-    Pr{let w_star ← $ᵗ (Matrix.rowSpan U_star)}[
+    Pr{w_star ← $ᵗ (Matrix.rowSpan U_star)}[
         Δ₀(w_star, RScodeSet α deg) ≤ e]
       ≤ (‖(RScodeSet α deg)‖₀ : ENNReal) / Fintype.card F := by
   classical
@@ -386,7 +386,7 @@ lemma prob_of_bad_pts
         exact hline_le w
       _ = Fintype.card S * d := by rw [Finset.sum_const, Finset.card_univ, smul_eq_mul]
   have hprob :
-      Pr{let w_star ← $ᵗ (Matrix.rowSpan U_star)}[Δ₀(w_star, RS) ≤ e] =
+      Pr{w_star ← $ᵗ (Matrix.rowSpan U_star)}[Δ₀(w_star, RS) ≤ e] =
         (bad.card : ENNReal) / Fintype.card S := by
     rw [SampleableType.prEvent_uniformSample]
   rw [hprob]

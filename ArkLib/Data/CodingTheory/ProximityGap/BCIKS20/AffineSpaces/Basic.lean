@@ -130,8 +130,8 @@ theorem prob_uniform_shift_invariant {ι : Type} [Fintype ι] [Nonempty ι]
     (hshift : ∀ a ∈ (U : Finset (ι → F)), ∀ z : F, a + z • dir ∈ (U : Finset (ι → F)))
     {V : Set (ι → F)} {δ : ℝ≥0} :
     ∀ z : F,
-      Pr{let a ←$ᵗ U}[δᵣ(a.1 + z • dir, V) ≤ δ] =
-        Pr{let a ←$ᵗ U}[δᵣ(a.1, V) ≤ δ] := by
+      Pr{a ←$ᵗ U}[δᵣ(a.1 + z • dir, V) ≤ δ] =
+        Pr{a ←$ᵗ U}[δᵣ(a.1, V) ≤ δ] := by
   intro z
   classical
   let shiftEquiv : (U : Type) ≃ (U : Type) :=
@@ -158,48 +158,48 @@ theorem exists_basepoint_with_large_line_prob_aux {ι : Type} [Fintype ι] [None
     (dir : ι → F)
     (hshift : ∀ a ∈ (U : Finset (ι → F)), ∀ z : F, a + z • dir ∈ (U : Finset (ι → F)))
     {V : Set (ι → F)} {δ ε : ℝ≥0} :
-    Pr{let u ←$ᵗ U}[δᵣ(u.1, V) ≤ δ] > ε →
-      ∃ a : U, Pr{let z ←$ᵗ F}[δᵣ(a.1 + z • dir, V) ≤ δ] > ε  := by
+    Pr{u ←$ᵗ U}[δᵣ(u.1, V) ≤ δ] > ε →
+      ∃ a : U, Pr{z ←$ᵗ F}[δᵣ(a.1 + z • dir, V) ≤ δ] > ε  := by
   intro hprob
   classical
   let : MeasurableSpace U := ⊤
   let : MeasurableSpace F := ⊤
   let good : (ι → F) → Prop := fun w => δᵣ(w, V) ≤ δ
-  let lineProb (a : U) : ENNReal := Pr{let z ← $ᵗ F}[good (a.1 + z • dir)]
-  let P2 : ENNReal := Pr{let a ← $ᵗ U; let z ← $ᵗ F}[good (a.1 + z • dir)]
+  let lineProb (a : U) : ENNReal := Pr{z ← $ᵗ F}[good (a.1 + z • dir)]
+  let P2 : ENNReal := Pr{a ← $ᵗ U; z ← $ᵗ F}[good (a.1 + z • dir)]
   have hP2_integral : P2 = ∫⁻ a, lineProb a ∂𝒟[$ᵗ U] := by
-    change Pr{let a ← $ᵗ U; let z ← $ᵗ F}[good (a.1 + z • dir)] =
-      ∫⁻ a, Pr{let z ← $ᵗ F}[good (a.1 + z • dir)] ∂𝒟[$ᵗ U]
-    simpa only [id_eq, bind_pure] using
+    change Pr{a ← $ᵗ U; z ← $ᵗ F}[good (a.1 + z • dir)] =
+      ∫⁻ a, Pr{z ← $ᵗ F}[good (a.1 + z • dir)] ∂𝒟[$ᵗ U]
+    simpa only [id_map, bind_pure_comp] using
       (prEvent_bind_eq_lintegral_of_discrete ($ᵗ U)
         (fun a : U => do
           let z ← $ᵗ F
           return good (a.1 + z • dir)) id)
   have hswap :
-      P2 = Pr{let z ← $ᵗ F; let a ← $ᵗ U}[good (a.1 + z • dir)] := by
-    change Pr{let a ← $ᵗ U; let z ← $ᵗ F}[good (a.1 + z • dir)] = _
+      P2 = Pr{z ← $ᵗ F; a ← $ᵗ U}[good (a.1 + z • dir)] := by
+    change Pr{a ← $ᵗ U; z ← $ᵗ F}[good (a.1 + z • dir)] = _
     calc
-      Pr{let a ← $ᵗ U; let z ← $ᵗ F}[good (a.1 + z • dir)] =
-          Pr{let za ← $ᵗ (F × U)}[good (za.2.1 + za.1 • dir)] := by
+      Pr{a ← $ᵗ U; z ← $ᵗ F}[good (a.1 + z • dir)] =
+          Pr{za ← $ᵗ (F × U)}[good (za.2.1 + za.1 • dir)] := by
         exact SampleableType.prEvent_uniformSample_pair_of_bijective
           (g := fun (a : U) (z : F) => (z, a)) (Equiv.prodComm U F).bijective
           (fun za : F × U => good (za.2.1 + za.1 • dir))
-      _ = Pr{let z ← $ᵗ F; let a ← $ᵗ U}[good (a.1 + z • dir)] :=
+      _ = Pr{z ← $ᵗ F; a ← $ᵗ U}[good (a.1 + z • dir)] :=
         SampleableType.prEvent_uniformSample_prod
           (fun za : F × U => good (za.2.1 + za.1 • dir))
-  have hP2_eq : P2 = Pr{let u ← $ᵗ U}[good u.1] := by
+  have hP2_eq : P2 = Pr{u ← $ᵗ U}[good u.1] := by
     rw [hswap]
     have hsplit :
-        Pr{let z ← $ᵗ F; let a ← $ᵗ U}[good (a.1 + z • dir)] =
-          ∫⁻ z, Pr{let a ← $ᵗ U}[good (a.1 + z • dir)] ∂𝒟[$ᵗ F] := by
-      simpa only [id_eq, bind_pure] using
+        Pr{z ← $ᵗ F; a ← $ᵗ U}[good (a.1 + z • dir)] =
+          ∫⁻ z, Pr{a ← $ᵗ U}[good (a.1 + z • dir)] ∂𝒟[$ᵗ F] := by
+      simpa only [id_map, bind_pure_comp] using
         (prEvent_bind_eq_lintegral_of_discrete ($ᵗ F)
           (fun z : F => do
             let a ← $ᵗ U
             return good (a.1 + z • dir)) id)
     rw [hsplit]
     have hconst : ∀ z : F,
-        Pr{let a ← $ᵗ U}[good (a.1 + z • dir)] = Pr{let a ← $ᵗ U}[good a.1] := by
+        Pr{a ← $ᵗ U}[good (a.1 + z • dir)] = Pr{a ← $ᵗ U}[good a.1] := by
       intro z
       simpa [good] using
         (prob_uniform_shift_invariant (U := U) (dir := dir) (hshift := hshift)
@@ -235,8 +235,8 @@ theorem exists_basepoint_with_large_line_prob {ι : Type} [Fintype ι] [Nonempty
       change (0 : ι → F) ∈ ((U'_sub : Set (ι → F)).toFinset)
       rw [Set.mem_toFinset]
       exact U'_sub.zero_mem
-    Pr{let u ←$ᵗ U}[δᵣ(u.1, V) ≤ δ] > ε →
-      ∃ a : U, Pr{let z ←$ᵗ F}[δᵣ(a.1 + z • dir, V) ≤ δ] > ε := by
+    Pr{u ←$ᵗ U}[δᵣ(u.1, V) ≤ δ] > ε →
+      ∃ a : U, Pr{z ←$ᵗ F}[δᵣ(a.1 + z • dir, V) ≤ δ] > ε := by
   classical
   let U' : Finset (ι → F) := (U'_sub : Set (ι → F)).toFinset
   let U : Finset (ι → F) := U'.image (fun x => u0 + x)
@@ -285,7 +285,7 @@ theorem average_proximity_implies_proximity_of_linear_subspace
       exact U'_submodule.zero_mem
     letI ε : ℝ≥0 := ProximityGap.errorBound δ (k + 1) domain
     letI V := ReedSolomon.code domain (k + 1)
-    Pr{let u ←$ᵗ U}[δᵣ(u.1, V) ≤ δ] > ε → ∀ u' ∈ U', δᵣ(u', V) ≤ δ := by
+    Pr{u ←$ᵗ U}[δᵣ(u.1, V) ≤ δ] > ε → ∀ u' ∈ U', δᵣ(u', V) ≤ δ := by
   classical
   intro hprob u' hu'
   have hu'_sub :
@@ -315,7 +315,7 @@ theorem average_proximity_implies_proximity_of_linear_subspace
       jointAgreement (C := ReedSolomon.code domain (k + 1)) (δ := δ)
         (W := Code.finMapTwoWords a.1 u') := by
     apply hCA
-    change Pr{let z ← $ᵗ F}[
+    change Pr{z ← $ᵗ F}[
       δᵣ(a.1 + z • u', ReedSolomon.code domain (k + 1)) ≤ δ] > _
     exact hline
   have :
@@ -383,8 +383,8 @@ kernel of the linear part), so pushforward of uniform gives uniform. -/
 theorem prob_coeff_eq_prob_affine {k : ℕ} [NeZero k]
     (u0 : ι → F) (dirs : Fin k → ι → F)
     (P : (ι → F) → Prop) :
-    Pr{let r ← $ᵗ (Fin k → F)}[P (u0 + ∑ i : Fin k, r i • dirs i)] =
-    Pr{let y ← $ᵗ (Affine.affineSubspaceAtOrigin (F := F) u0 dirs)}[P ↑y] := by
+    Pr{r ← $ᵗ (Fin k → F)}[P (u0 + ∑ i : Fin k, r i • dirs i)] =
+    Pr{y ← $ᵗ (Affine.affineSubspaceAtOrigin (F := F) u0 dirs)}[P ↑y] := by
   classical
   -- Reduce both sides to cardinality fractions via SampleableType.prEvent_uniformSample.
   rw [SampleableType.prEvent_uniformSample (fun r : Fin k → F => P (u0 + ∑ i, r i • dirs i))]
@@ -488,8 +488,8 @@ theorem affine_prob_eq_finset_prob {k : ℕ} [NeZero k]
     (u0 : ι → F) (dirs : Fin k → ι → F)
     (P : (ι → F) → Prop)
     [Nonempty (affineFinset u0 dirs)] :
-    Pr{let y ← $ᵗ (Affine.affineSubspaceAtOrigin (F := F) u0 dirs)}[P ↑y] =
-    Pr{let y ← $ᵗ (affineFinset u0 dirs)}[P ↑y] := by
+    Pr{y ← $ᵗ (Affine.affineSubspaceAtOrigin (F := F) u0 dirs)}[P ↑y] =
+    Pr{y ← $ᵗ (affineFinset u0 dirs)}[P ↑y] := by
   classical
   rw [SampleableType.prEvent_uniformSample
     (fun y : ↥(Affine.affineSubspaceAtOrigin (F := F) u0 dirs) => P ↑y)]
@@ -639,8 +639,8 @@ Proof strategy:
 theorem all_affine_elements_close {k : ℕ} [NeZero k]
     (u : Fin (k + 1) → ι → F) {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
     (hδ : δ ≤ 1 - ReedSolomon.sqrtRate deg domain)
-    (hPr : Pr{
-      let y ← $ᵗ (Affine.affineSubspaceAtOrigin (F := F) (u 0) (Fin.tail u))}[δᵣ(↑y,
+    (hPr : Pr{y ←
+      $ᵗ (Affine.affineSubspaceAtOrigin (F := F) (u 0) (Fin.tail u))}[δᵣ(↑y,
         (ReedSolomon.code domain deg : Set (ι → F))) ≤ δ] >
       ProximityGap.errorBound δ deg domain) :
     ∀ x ∈ (Affine.affineSubspaceAtOrigin (F := F) (u 0) (Fin.tail u) : Set (ι → F)),
@@ -653,7 +653,7 @@ theorem all_affine_elements_close {k : ℕ} [NeZero k]
     apply Finset.Nonempty.to_subtype
     exact ⟨u 0, Finset.mem_image.2 ⟨0, by simp [Set.mem_toFinset],
       by simp⟩⟩
-  have hPr_fin : Pr{let y ← $ᵗ (affineFinset (u 0) (Fin.tail u))}[
+  have hPr_fin : Pr{y ← $ᵗ (affineFinset (u 0) (Fin.tail u))}[
       δᵣ(↑y, (V : Set (ι → F))) ≤ δ] > ProximityGap.errorBound δ deg domain := by
     rw [← affine_prob_eq_finset_prob (u 0) (Fin.tail u)
       (fun w => δᵣ(w, (V : Set (ι → F))) ≤ δ)]
@@ -670,7 +670,7 @@ theorem all_affine_elements_close {k : ℕ} [NeZero k]
     have hJA : Code.jointAgreement (C := (V : Set (ι → F))) (δ := δ)
         (W := Code.finMapTwoWords a.1 dir) := by
       apply RS_correlatedAgreement_affineLines hδ
-      change Pr{let z ← $ᵗ F}[δᵣ(a.1 + z • dir, (V : Set (ι → F))) ≤ δ] > _
+      change Pr{z ← $ᵗ F}[δᵣ(a.1 + z • dir, (V : Set (ι → F))) ≤ δ] > _
       exact hline
     exact jointAgreement_implies_second_proximity
       (ι := ι) (F := F) (C := (V : Set (ι → F)))
@@ -688,7 +688,7 @@ theorem all_affine_elements_close {k : ℕ} [NeZero k]
     have hne : Nonempty spanU_aff := by
       apply Finset.Nonempty.to_subtype
       exact ⟨0, Finset.mem_image.2 ⟨0, Set.mem_toFinset.mpr spanU.zero_mem, by simp⟩⟩
-    have hPr_span : Pr{let y ← $ᵗ spanU_aff}[
+    have hPr_span : Pr{y ← $ᵗ spanU_aff}[
         δᵣ(↑y, (V : Set (ι → F))) ≤ δ] >
         ProximityGap.errorBound δ deg domain := by
       by_cases hε_lt : ProximityGap.errorBound δ deg domain < 1
@@ -705,7 +705,7 @@ theorem all_affine_elements_close {k : ℕ} [NeZero k]
             simp only [spanU_aff, Finset.mem_image] at hy
             obtain ⟨x, hx, rfl⟩ := hy; simp only [zero_add]
             exact h_dirs_close x (by rw [← hspan_eq]; exact Set.mem_toFinset.mp hx)
-          calc Pr{let y ← $ᵗ spanU_aff}[δᵣ(↑y, (V : Set (ι → F))) ≤ δ]
+          calc Pr{y ← $ᵗ spanU_aff}[δᵣ(↑y, (V : Set (ι → F))) ≤ δ]
               = 1 := by
                 exact (SampleableType.prEvent_uniformSample_eq_one_iff _).2 hall
             _ > _ := by exact_mod_cast hε_lt
@@ -866,9 +866,7 @@ theorem all_affine_elements_close {k : ℕ} [NeZero k]
             exact Prod.ext hc_eq (Subtype.ext (Subtype.ext hx_eq))
       · push Not at hε_lt
         exact absurd hPr_fin (not_lt.mpr (le_trans
-          (prEvent_le_one ($ᵗ (affineFinset (u 0) (Fin.tail u)))
-            (fun y => δᵣ(↑y, (V : Set (ι → F))) ≤ δ))
-          (by exact_mod_cast hε_lt)))
+          (prEvent_le_one _) (by exact_mod_cast hε_lt)))
     intro x hx
     rcases exists_basepoint_with_large_line_prob (U'_sub := spanU) (u0 := 0)
       (dir := x) (hdir := hx) (V := (V : Set (ι → F))) (δ := δ)
@@ -876,7 +874,7 @@ theorem all_affine_elements_close {k : ℕ} [NeZero k]
     have hJA : Code.jointAgreement (C := (V : Set (ι → F))) (δ := δ)
         (W := Code.finMapTwoWords a.1 x) := by
       apply RS_correlatedAgreement_affineLines hδ
-      change Pr{let z ← $ᵗ F}[δᵣ(a.1 + z • x, (V : Set (ι → F))) ≤ δ] > _
+      change Pr{z ← $ᵗ F}[δᵣ(a.1 + z • x, (V : Set (ι → F))) ≤ δ] > _
       exact hline
     exact jointAgreement_implies_second_proximity
       (ι := ι) (F := F) (C := (V : Set (ι → F)))

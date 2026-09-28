@@ -278,7 +278,7 @@ theorem pure_accepting_of_mem
     (stmt : Stmt₁) (tr : pSpec.FullTranscript)
     (lang : Set Stmt₂) (out : Stmt₂)
     (hV : V.verify stmt tr = pure out) (hout : out ∈ lang) :
-      Pr{let stmtOut ← OptionT.mk do
+      Pr{stmtOut ← OptionT.mk do
         (simulateQ impl (V.run stmt tr)).run' (← init)}[stmtOut ∈ lang] = 1 := by
   refine OptionT.prEvent_mk_simulateQ_run'_eq_one_of_support init impl _ _ ?_
   intro o ho
@@ -294,7 +294,7 @@ theorem mem_of_pure_accepting
     (stmt : Stmt₁) (tr : pSpec.FullTranscript)
     (lang : Set Stmt₂) (out : Stmt₂)
     (hV : V.verify stmt tr = pure out)
-    (hAcc : Pr{let stmtOut ← OptionT.mk do
+    (hAcc : Pr{stmtOut ← OptionT.mk do
       (simulateQ impl (V.run stmt tr)).run' (← init)}[stmtOut ∈ lang] = 1) :
       out ∈ lang := by
   -- The underlying probabilistic computation is `init >>= fun _ => pure (some out)`.

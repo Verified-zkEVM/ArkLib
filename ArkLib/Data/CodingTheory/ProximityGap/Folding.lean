@@ -897,7 +897,7 @@ theorem folding_preserves_distance
   (_δ_gt_0 : 0 < δ)
   (δ_lt : δ < min (δᵣ(f, ReedSolomon.code (domain : Fin (2 ^ n) ↪ F) (2 ^ d)))
     (1 - (ReedSolomon.sqrtRate (2 ^ d) (domain : Fin (2 ^ n) ↪ F)))) :
-    Pr{ let r ←$ᵗ F}[δᵣ(foldWord domain f k r,
+    Pr{ r ←$ᵗ F}[δᵣ(foldWord domain f k r,
       ReedSolomon.code (domain.subdomain k : Fin (2 ^ (n - k)) ↪ F)
       (2 ^ (d - k))) ≤ δ] ≤
         ((2 ^ k) - 1) * ProximityGap.errorBound δ (2 ^ (d - k))

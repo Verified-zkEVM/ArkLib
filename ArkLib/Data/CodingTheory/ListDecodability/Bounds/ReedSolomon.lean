@@ -605,7 +605,7 @@ theorem rs_random_domain_lambda_le
     (_hF : (n : ℝ) + (k : ℝ) * 2 ^ ((10 * ℓ : ℝ) / η) ≤ Fintype.card F)
     [Nonempty {S : Finset F // S.card = n}] :
     ENNReal.ofReal (1 - 2 ^ (-(ℓ * n : ℝ))) ≤
-      Pr{ let S ← $ᵗ {S : Finset F // S.card = n} }[
+      Pr{ S ← $ᵗ {S : Finset F // S.card = n} }[
         Lambda ((ReedSolomon.code
               (Function.Embedding.subtype (fun x : F => x ∈ (S : Finset F))) k :
             Set (↥(S : Finset F) → F)))

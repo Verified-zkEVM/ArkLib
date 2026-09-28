@@ -102,8 +102,8 @@ theorem committedRun_true_iff [DecidableEq F] (p q : Message F deg)
 /-- Ambient failure is preserved; rejection is instead an explicit completed run. -/
 theorem executeCommitted_failure [DecidableEq F] (challenge : ProbComp F)
     (p q : Message F deg) (domain : List F) (target : F) :
-    Pr{let _ ← executeCommitted F deg challenge p q domain target}[True] =
-      Pr{let _ ← challenge}[True] := by
+    Pr{_ ← executeCommitted F deg challenge p q domain target}[True] =
+      Pr{_ ← challenge}[True] := by
   rw [executeCommitted_eq, prEvent_map]
 
 /-- A failed sum check cannot produce any closed output claim. -/
@@ -116,13 +116,13 @@ theorem committedRun_rejects [DecidableEq F] (p q : Message F deg)
 /-- `prEvent_eq_evalDist_map` at `OracleComp unifSpec`, stated so that the `Pr{...}` side uses
 the same `Bind`/`Pure` instances as `do` notation elaborated at this monad. -/
 private theorem prEvent_eq_evalDist_map_unifSpec {α : Type} (mx : OracleComp unifSpec α)
-    (p : α → Prop) : Pr{let x ← mx}[p x] = 𝒟[p <$> mx] {True} :=
+    (p : α → Prop) : Pr{x ← mx}[p x] = 𝒟[p <$> mx] {True} :=
   prEvent_eq_evalDist_map mx p
 
 /-- `prEvent_bind_le_of_forall_le` at `OracleComp unifSpec`, with `do`-notation instances. -/
 private theorem prEvent_bind_le_of_forall_le_unifSpec {α β : Type}
     (mx : OracleComp unifSpec α) (f : α → OracleComp unifSpec β) (q : β → Prop) {ε : ENNReal}
-    (h : ∀ a, Pr{let y ← f a}[q y] ≤ ε) : Pr{let y ← mx >>= f}[q y] ≤ ε :=
+    (h : ∀ a, Pr{y ← f a}[q y] ≤ ε) : Pr{y ← mx >>= f}[q y] ≤ ε :=
   prEvent_bind_le_of_forall_le mx f q h
 
 variable [Fintype F] [DecidableEq F] [SampleableType F]
@@ -130,7 +130,7 @@ variable [Fintype F] [DecidableEq F] [SampleableType F]
 /-- Soundness against every polynomial fixed before the fresh uniform challenge. -/
 theorem executeCommitted_soundness (p q : Message F deg) (domain : List F) (target : F)
     (hfalse : (domain.map (fun x => p.val.eval x)).sum ≠ target) :
-    Pr{let run ← executeCommitted F deg ($ᵗ F) p q domain target}[
+    Pr{run ← executeCommitted F deg ($ᵗ F) p q domain target}[
       run.closed.map (closedOutputRelation F deg) = some True] ≤
         (deg : ENNReal) / Fintype.card F := by
   rw [executeCommitted_eq, prEvent_map]
@@ -167,7 +167,7 @@ The commitment distribution may depend on `p`, the domain and target, but is sam
 theorem executeRandomCommitment_soundness (messages : ProbComp (Message F deg))
     (p : Message F deg) (domain : List F) (target : F)
     (hfalse : (domain.map (fun x => p.val.eval x)).sum ≠ target) :
-    Pr{let run ← messages >>= fun q => executeCommitted F deg ($ᵗ F) p q domain target}[
+    Pr{run ← messages >>= fun q => executeCommitted F deg ($ᵗ F) p q domain target}[
       run.closed.map (closedOutputRelation F deg) = some True] ≤
         (deg : ENNReal) / Fintype.card F := by
   exact prEvent_bind_le_of_forall_le_unifSpec _ _ _

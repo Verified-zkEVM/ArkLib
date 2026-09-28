@@ -36,7 +36,7 @@ lemma prob_schwartz_zippel_mv_polynomial_of_totalDegree_le
     {R : Type} [CommRing R] [IsDomain R] [Fintype R] [SampleableType R]
     {n d : ℕ}
     (P : MvPolynomial (Fin n) R) (h_nonzero : P ≠ 0) (h_deg : P.totalDegree ≤ d) :
-    Pr{let r ← $ᵗ (Fin n → R)}[MvPolynomial.eval r P = 0] ≤
+    Pr{r ← $ᵗ (Fin n → R)}[MvPolynomial.eval r P = 0] ≤
       (d : ℝ≥0∞) / Fintype.card R := open scoped Classical in by
   let : Field R := @Fintype.fieldOfDomain R _ _ (Classical.decEq R) _
   exact prob_eval_zero_univ_le_div P h_nonzero h_deg
@@ -47,7 +47,7 @@ lemma prob_schwartz_zippel_mv_polynomial
     {R : Type} [CommRing R] [IsDomain R] [Fintype R] [SampleableType R]
     {n : ℕ}
     (P : MvPolynomial (Fin n) R) (h_nonzero : P ≠ 0) (h_deg : P.totalDegree ≤ n) :
-    Pr{let r ← $ᵗ (Fin n → R)}[MvPolynomial.eval r P = 0] ≤
+    Pr{r ← $ᵗ (Fin n → R)}[MvPolynomial.eval r P = 0] ≤
       (n : ℝ≥0∞) / Fintype.card R :=
   prob_schwartz_zippel_mv_polynomial_of_totalDegree_le P h_nonzero h_deg
 
@@ -56,7 +56,7 @@ lemma prob_polynomial_identity_le
     {R : Type} [CommRing R] [IsDomain R] [Fintype R] [SampleableType R]
     {m d : ℕ} (P : MvPolynomial (Fin m) R)
     (h_nonzero : P ≠ 0) (h_indiv_deg : ∀ i, P.degreeOf i < d) :
-    Pr{let r ← $ᵗ (Fin m → R)}[MvPolynomial.eval r P = 0] ≤
+    Pr{r ← $ᵗ (Fin m → R)}[MvPolynomial.eval r P = 0] ≤
       (m * (d - 1) : ℕ) / (Fintype.card R : ℝ≥0∞) := by
   have h_total_deg : P.totalDegree ≤ m * (d - 1) :=
     MvPolynomial.totalDegree_le_of_degreeOf_lt P h_indiv_deg
@@ -68,11 +68,11 @@ lemma prob_polynomial_identity_le
 theorem prob_dotProduct_eq_zero_eq_inv_card
     {F : Type} [Field F] [Fintype F] [SampleableType F] {k : ℕ}
     (d : Fin k → F) (hd : d ≠ 0) :
-    Pr{let v ← $ᵗ (Fin k → F)}[(∑ j, d j * v j) = 0] =
+    Pr{v ← $ᵗ (Fin k → F)}[(∑ j, d j * v j) = 0] =
       (Fintype.card F : ℝ≥0∞)⁻¹ := open scoped Classical in by
   let p : (Fin k → F) → Prop := fun v ↦ ∑ j, d j * v j = 0
   let decP : DecidablePred p := fun _ ↦ Classical.propDecidable _
-  change Pr{let v ← $ᵗ (Fin k → F)}[p v] = (Fintype.card F : ℝ≥0∞)⁻¹
+  change Pr{v ← $ᵗ (Fin k → F)}[p v] = (Fintype.card F : ℝ≥0∞)⁻¹
   set L : (Fin k → F) →ₗ[F] F := ∑ j, d j • LinearMap.proj j with hL
   have hLapply : ∀ v, L v = ∑ j, d j * v j := by
     intro v
@@ -123,7 +123,7 @@ theorem prob_dotProduct_eq_zero_eq_inv_card
 theorem prob_dotProduct_eq_zero_le
     {F : Type} [Field F] [Fintype F] [SampleableType F] {k : ℕ}
     (d : Fin k → F) (hd : d ≠ 0) :
-    Pr{let v ← $ᵗ (Fin k → F)}[(∑ j, d j * v j) = 0] ≤
+    Pr{v ← $ᵗ (Fin k → F)}[(∑ j, d j * v j) = 0] ≤
       (Fintype.card F : ℝ≥0∞)⁻¹ :=
   le_of_eq (prob_dotProduct_eq_zero_eq_inv_card d hd)
 
@@ -133,11 +133,11 @@ theorem prob_dotProduct_eq_zero_le
 `A` is `(|A| / |ι|) ^ t`. -/
 theorem prob_uniform_pi_mem_finset_eq
     {ι : Type} [Fintype ι] [SampleableType ι] (A : Finset ι) (t : ℕ) :
-    Pr{let xs ← $ᵗ (Fin t → ι)}[∀ i, xs i ∈ A] =
+    Pr{xs ← $ᵗ (Fin t → ι)}[∀ i, xs i ∈ A] =
       ((A.card : ℝ≥0∞) / Fintype.card ι) ^ t := open scoped Classical in by
   let p : (Fin t → ι) → Prop := fun xs ↦ ∀ i, xs i ∈ A
   let decP : DecidablePred p := fun _ ↦ Classical.propDecidable _
-  change Pr{let xs ← $ᵗ (Fin t → ι)}[p xs] = _
+  change Pr{xs ← $ᵗ (Fin t → ι)}[p xs] = _
   rw [@SampleableType.prEvent_uniformSample _ _ _ p decP]
   have hfilter : @Finset.filter (Fin t → ι) p decP Finset.univ =
       Fintype.piFinset (fun _ : Fin t ↦ A) := by
@@ -151,7 +151,7 @@ theorem prob_uniform_pi_mem_finset_eq
 /-- `≤`-form of `prob_uniform_pi_mem_finset_eq`. -/
 theorem prob_uniform_pi_mem_finset_le
     {ι : Type} [Fintype ι] [SampleableType ι] (A : Finset ι) (t : ℕ) :
-    Pr{let xs ← $ᵗ (Fin t → ι)}[∀ i, xs i ∈ A] ≤
+    Pr{xs ← $ᵗ (Fin t → ι)}[∀ i, xs i ∈ A] ≤
       ((A.card : ℝ≥0∞) / Fintype.card ι) ^ t :=
   le_of_eq (prob_uniform_pi_mem_finset_eq A t)
 

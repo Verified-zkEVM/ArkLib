@@ -124,7 +124,7 @@ theorem execute_perfectCompleteness (challenge : ProbComp R)
         (fun _ => toOracleStatement poly hpoly))
     (hcurrent : closedRelation R n deg D ⟨start, by omega⟩
       ⟨stmt, originalOracle.eval impl⟩) :
-    Pr{let result ← (execute R n deg unifSpec challenge (Finset.univ.map D).toList
+    Pr{result ← (execute R n deg unifSpec challenge (Finset.univ.map D).toList
       count start finish A originalOracle stmt impl
         (honestProver R n deg D unifSpec count start finish stmt poly hpoly))}[
         result.map (Native.outputRelation R n deg) = some True] = 1 := by

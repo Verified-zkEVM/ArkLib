@@ -459,7 +459,7 @@ private theorem epsCa_le_one
   refine iSup_le fun u => ?_
   split_ifs
   · exact zero_le_one
-  · exact prEvent_le_one _ _
+  · exact prEvent_le_one _
 
 open scoped ProbabilityTheory in
 theorem epsCa_eq_one_of_all_folds_close_not_joint
@@ -473,7 +473,7 @@ theorem epsCa_eq_one_of_all_folds_close_not_joint
   let _ := Fintype.ofFinite F
   refine le_antisymm (epsCa_le_one C δ δ) ?_
   have hprob :
-      Pr{let γ ← $ᵗ F}[Code.relDistFromCode (u 0 + γ • u 1) C ≤ (δ : ENNReal)] = 1 := by
+      Pr{γ ← $ᵗ F}[Code.relDistFromCode (u 0 + γ • u 1) C ≤ (δ : ENNReal)] = 1 := by
     rw [SampleableType.prEvent_uniformSample]
     have hfilter :
         Finset.univ.filter (fun γ : F =>
@@ -486,15 +486,15 @@ theorem epsCa_eq_one_of_all_folds_close_not_joint
     · simp
     · simp
   calc
-    1 = Pr{let γ ← $ᵗ F}[Code.relDistFromCode (u 0 + γ • u 1) C ≤ (δ : ENNReal)] := hprob.symm
+    1 = Pr{γ ← $ᵗ F}[Code.relDistFromCode (u 0 + γ • u 1) C ≤ (δ : ENNReal)] := hprob.symm
     _ = (if Code.jointProximity C (u := u) δ then 0
-        else Pr{let γ ← $ᵗ F}[
+        else Pr{γ ← $ᵗ F}[
           Code.relDistFromCode (u 0 + γ • u 1) C ≤ (δ : ENNReal)]) := (ite_eq_right hjoint).symm
     _ ≤ epsCa (F := F) (A := F) C δ δ := by
       unfold epsCa
       exact le_iSup (fun w : Code.WordStack F (Fin 2) ι =>
         if Code.jointProximity C (u := w) δ then 0
-        else Pr{let γ ← $ᵗ F}[
+        else Pr{γ ← $ᵗ F}[
           Code.relDistFromCode (w 0 + γ • w 1) C ≤ (δ : ENNReal)]) u
 
 theorem exists_base_all_translates_close_of_bad_count

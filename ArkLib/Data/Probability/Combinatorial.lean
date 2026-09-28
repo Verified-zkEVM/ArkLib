@@ -331,7 +331,7 @@ under the uniform oracle semantics of `ProbComp`. -/
 theorem exists_large_image_of_pairwise_collision_bound_of_probComp
     {S T : Type} [Fintype S]
     (Φ : ProbComp (S → T)) (ε : ENNReal)
-    (hΦ : ∀ x y : S, x ≠ y → Pr{let φ ← Φ}[φ x = φ y] ≤ ε) :
+    (hΦ : ∀ x y : S, x ≠ y → Pr{φ ← Φ}[φ x = φ y] ≤ ε) :
     ∃ φ ∈ MonadAttach.support Φ,
       (Fintype.card S : ENNReal) / (1 + (Fintype.card S - 1) * ε) ≤
         ((@Finset.image S T (Classical.decEq T) φ Finset.univ).card : ENNReal) := by

@@ -86,17 +86,17 @@ theorem run_appendFlat_soundness_weighted_ae_finish
     (hsuffix : letI : MeasurableSpace (AppendBoundary (m := m) (s₂ := s₂) (r₂ := r₂)
         (OutputP := OutputP) (MidC := MidC)) := ⊤
       ∀ᵐ b ∂𝒟[run s₁ r₁ (Focal.splitPrefix prover) counterpart₁], ¬ Exceptional b →
-        Pr{let value ← (do
+        Pr{value ← (do
           let result ← run (s₂ b.1) (r₂ b.1) b.2.1 (counterpart₂ b.1 b.2.2)
           finish (PFunctor.FreeM.Path.append s₁ s₂ b.1 result.1) result.2.1 result.2.2)}[
             FinalSuccess value] ≤ error b) :
     let : MeasurableSpace (AppendBoundary (m := m) (s₂ := s₂) (r₂ := r₂)
       (OutputP := OutputP) (MidC := MidC)) := ⊤
-    Pr{let value ← (do
+    Pr{value ← (do
       let result ← run (s₁.append s₂) (r₁.append r₂) prover
         (Counterpart.appendFlat counterpart₁ counterpart₂)
       finish result.1 result.2.1 result.2.2)}[FinalSuccess value] ≤
-      Pr{let b ← run s₁ r₁ (Focal.splitPrefix prover) counterpart₁}[Exceptional b] +
+      Pr{b ← run s₁ r₁ (Focal.splitPrefix prover) counterpart₁}[Exceptional b] +
         ∫⁻ b in {b | ¬ Exceptional b}, error b
           ∂𝒟[run s₁ r₁ (Focal.splitPrefix prover) counterpart₁] := by
   classical
@@ -125,13 +125,13 @@ theorem run_appendFlat_soundness_weighted_ae
     (hsuffix : letI : MeasurableSpace (AppendBoundary (m := m) (s₂ := s₂) (r₂ := r₂)
         (OutputP := OutputP) (MidC := MidC)) := ⊤
       ∀ᵐ b ∂𝒟[run s₁ r₁ (Focal.splitPrefix prover) counterpart₁], ¬ Exceptional b →
-        Pr{let result ← run (s₂ b.1) (r₂ b.1) b.2.1 (counterpart₂ b.1 b.2.2)}[Success
+        Pr{result ← run (s₂ b.1) (r₂ b.1) b.2.1 (counterpart₂ b.1 b.2.2)}[Success
           (PFunctor.FreeM.Path.append s₁ s₂ b.1 result.1) result.2.2] ≤ error b) :
     let : MeasurableSpace (AppendBoundary (m := m) (s₂ := s₂) (r₂ := r₂)
       (OutputP := OutputP) (MidC := MidC)) := ⊤
-    Pr{let result ← (run (s₁.append s₂) (r₁.append r₂) prover
+    Pr{result ← (run (s₁.append s₂) (r₁.append r₂) prover
       (Counterpart.appendFlat counterpart₁ counterpart₂))}[Success result.1 result.2.2] ≤
-      Pr{let b ← run s₁ r₁ (Focal.splitPrefix prover) counterpart₁}[Exceptional b] +
+      Pr{b ← run s₁ r₁ (Focal.splitPrefix prover) counterpart₁}[Exceptional b] +
         ∫⁻ b in {b | ¬ Exceptional b}, error b
           ∂𝒟[run s₁ r₁ (Focal.splitPrefix prover) counterpart₁] := by
   classical
@@ -140,8 +140,8 @@ theorem run_appendFlat_soundness_weighted_ae
   have h := run_appendFlat_soundness_weighted_ae_finish prover counterpart₁ counterpart₂ Exceptional
     (fun path _ out => pure (⟨path, out⟩ : (t : TypeTree.Path (s₁.append s₂)) × OutputC t))
     (fun result => Success result.1 result.2) error
-    (by simpa only [bind_assoc, pure_bind] using hsuffix)
-  simpa only [bind_assoc, pure_bind] using h
+    (by simpa only [bind_assoc, pure_bind, prEvent_norm] using hsuffix)
+  simpa only [bind_assoc, pure_bind, prEvent_norm] using h
 
 /-- The weighted bound only needs suffix security at structurally reachable outputs of this
 whole prover's prefix. Reachability includes the actual returned continuation. Unlike the
@@ -152,13 +152,13 @@ theorem run_appendFlat_soundness_weighted_of_support
       (OutputP := OutputP) (MidC := MidC) → ENNReal)
     (hsuffix : ∀ b ∈ support (run s₁ r₁ (Focal.splitPrefix prover) counterpart₁),
       ¬ Exceptional b →
-        Pr{let result ← run (s₂ b.1) (r₂ b.1) b.2.1 (counterpart₂ b.1 b.2.2)}[Success
+        Pr{result ← run (s₂ b.1) (r₂ b.1) b.2.1 (counterpart₂ b.1 b.2.2)}[Success
           (PFunctor.FreeM.Path.append s₁ s₂ b.1 result.1) result.2.2] ≤ error b) :
     let : MeasurableSpace (AppendBoundary (m := m) (s₂ := s₂) (r₂ := r₂)
       (OutputP := OutputP) (MidC := MidC)) := ⊤
-    Pr{let result ← (run (s₁.append s₂) (r₁.append r₂) prover
+    Pr{result ← (run (s₁.append s₂) (r₁.append r₂) prover
       (Counterpart.appendFlat counterpart₁ counterpart₂))}[Success result.1 result.2.2] ≤
-      Pr{let b ← run s₁ r₁ (Focal.splitPrefix prover) counterpart₁}[Exceptional b] +
+      Pr{b ← run s₁ r₁ (Focal.splitPrefix prover) counterpart₁}[Exceptional b] +
         ∫⁻ b in {b | ¬ Exceptional b}, error b
           ∂𝒟[run s₁ r₁ (Focal.splitPrefix prover) counterpart₁] := by
   let : MeasurableSpace (AppendBoundary (m := m) (s₂ := s₂) (r₂ := r₂)
@@ -170,13 +170,13 @@ theorem run_appendFlat_soundness_weighted_of_support
 suffix bound only almost everywhere under that prefix's actual output distribution. -/
 theorem run_appendFlat_soundness_ae
     (ε₁ ε₂ : ENNReal)
-    (hprefix : Pr{let b ← run s₁ r₁ (Focal.splitPrefix prover) counterpart₁}[Exceptional b] ≤ ε₁)
+    (hprefix : Pr{b ← run s₁ r₁ (Focal.splitPrefix prover) counterpart₁}[Exceptional b] ≤ ε₁)
     (hsuffix : letI : MeasurableSpace (AppendBoundary (m := m) (s₂ := s₂) (r₂ := r₂)
         (OutputP := OutputP) (MidC := MidC)) := ⊤
       ∀ᵐ b ∂𝒟[run s₁ r₁ (Focal.splitPrefix prover) counterpart₁], ¬ Exceptional b →
-        Pr{let result ← run (s₂ b.1) (r₂ b.1) b.2.1 (counterpart₂ b.1 b.2.2)}[Success
+        Pr{result ← run (s₂ b.1) (r₂ b.1) b.2.1 (counterpart₂ b.1 b.2.2)}[Success
           (PFunctor.FreeM.Path.append s₁ s₂ b.1 result.1) result.2.2] ≤ ε₂) :
-    Pr{let result ← (run (s₁.append s₂) (r₁.append r₂) prover
+    Pr{result ← (run (s₁.append s₂) (r₁.append r₂) prover
       (Counterpart.appendFlat counterpart₁ counterpart₂))}[Success result.1 result.2.2] ≤
       ε₁ + ε₂ := by
   let : MeasurableSpace (AppendBoundary (m := m) (s₂ := s₂) (r₂ := r₂)
@@ -191,12 +191,12 @@ theorem run_appendFlat_soundness_ae
 theorem run_appendFlat_soundness_of_support
     [MonadAttach m] [WeaklyLawfulMonadAttach m]
     (ε₁ ε₂ : ENNReal)
-    (hprefix : Pr{let b ← run s₁ r₁ (Focal.splitPrefix prover) counterpart₁}[Exceptional b] ≤ ε₁)
+    (hprefix : Pr{b ← run s₁ r₁ (Focal.splitPrefix prover) counterpart₁}[Exceptional b] ≤ ε₁)
     (hsuffix : ∀ b ∈ support (run s₁ r₁ (Focal.splitPrefix prover) counterpart₁),
       ¬ Exceptional b →
-        Pr{let result ← run (s₂ b.1) (r₂ b.1) b.2.1 (counterpart₂ b.1 b.2.2)}[Success
+        Pr{result ← run (s₂ b.1) (r₂ b.1) b.2.1 (counterpart₂ b.1 b.2.2)}[Success
           (PFunctor.FreeM.Path.append s₁ s₂ b.1 result.1) result.2.2] ≤ ε₂) :
-    Pr{let result ← (run (s₁.append s₂) (r₁.append r₂) prover
+    Pr{result ← (run (s₁.append s₂) (r₁.append r₂) prover
       (Counterpart.appendFlat counterpart₁ counterpart₂))}[Success result.1 result.2.2] ≤
       ε₁ + ε₂ := by
   let : MeasurableSpace (AppendBoundary (m := m) (s₂ := s₂) (r₂ := r₂)
@@ -209,11 +209,11 @@ theorem run_appendFlat_soundness_of_support
 covers all boundary triples; the support and almost-everywhere variants restrict that premise. -/
 theorem run_appendFlat_soundness_fixed
     (ε₁ ε₂ : ENNReal)
-    (hprefix : Pr{let b ← run s₁ r₁ (Focal.splitPrefix prover) counterpart₁}[Exceptional b] ≤ ε₁)
+    (hprefix : Pr{b ← run s₁ r₁ (Focal.splitPrefix prover) counterpart₁}[Exceptional b] ≤ ε₁)
     (hsuffix : ∀ b, ¬ Exceptional b →
-        Pr{let result ← run (s₂ b.1) (r₂ b.1) b.2.1 (counterpart₂ b.1 b.2.2)}[Success
+        Pr{result ← run (s₂ b.1) (r₂ b.1) b.2.1 (counterpart₂ b.1 b.2.2)}[Success
           (PFunctor.FreeM.Path.append s₁ s₂ b.1 result.1) result.2.2] ≤ ε₂) :
-    Pr{let result ← (run (s₁.append s₂) (r₁.append r₂) prover
+    Pr{result ← (run (s₁.append s₂) (r₁.append r₂) prover
       (Counterpart.appendFlat counterpart₁ counterpart₂))}[Success result.1 result.2.2] ≤
       ε₁ + ε₂ := by
   apply run_appendFlat_soundness_ae prover counterpart₁ counterpart₂ Exceptional Success
@@ -239,13 +239,13 @@ theorem run_appendFlat_soundness
         Participant.focal s₁ r₁ (fun t =>
           StrategyOver (SyntaxOver.TwoParty.pairedTypeTree m) Participant.focal
             (s₂ t) (r₂ t) (fun p => OutputP (PFunctor.FreeM.Path.append s₁ s₂ t p))),
-      Pr{let result ← run s₁ r₁ strategy counterpart₁}[Good result.1 result.2.2] ≤ ε₁)
+      Pr{result ← run s₁ r₁ strategy counterpart₁}[Good result.1 result.2.2] ≤ ε₁)
     (hsuffix : ∀ (t : TypeTree.Path s₁) (out : MidC t), ¬ Good t out →
       ∀ strategy : StrategyOver (SyntaxOver.TwoParty.pairedTypeTree m) Participant.focal
           (s₂ t) (r₂ t) (fun p => OutputP (PFunctor.FreeM.Path.append s₁ s₂ t p)),
-        Pr{let result ← run (s₂ t) (r₂ t) strategy (counterpart₂ t out)}[
+        Pr{result ← run (s₂ t) (r₂ t) strategy (counterpart₂ t out)}[
           Success (PFunctor.FreeM.Path.append s₁ s₂ t result.1) result.2.2] ≤ ε₂) :
-    Pr{let result ← (run (s₁.append s₂) (r₁.append r₂) prover
+    Pr{result ← (run (s₁.append s₂) (r₁.append r₂) prover
       (Counterpart.appendFlat counterpart₁ counterpart₂))}[Success result.1 result.2.2] ≤
       ε₁ + ε₂ := by
   apply run_appendFlat_soundness_fixed prover counterpart₁ counterpart₂
@@ -272,18 +272,18 @@ theorem run_appendFlat_soundness_of_admissible
         Participant.focal s₁ r₁ (fun t =>
           StrategyOver (SyntaxOver.TwoParty.pairedTypeTree m) Participant.focal
             (s₂ t) (r₂ t) (fun p => OutputP (PFunctor.FreeM.Path.append s₁ s₂ t p))),
-      Pr{let result ← run s₁ r₁ strategy counterpart₁}[Good result.1 result.2.2] ≤ ε₁)
+      Pr{result ← run s₁ r₁ strategy counterpart₁}[Good result.1 result.2.2] ≤ ε₁)
     (hadmissible : ∀ strategy : StrategyOver (SyntaxOver.TwoParty.pairedTypeTree m)
         Participant.focal s₁ r₁ (fun t =>
           StrategyOver (SyntaxOver.TwoParty.pairedTypeTree m) Participant.focal
             (s₂ t) (r₂ t) (fun p => OutputP (PFunctor.FreeM.Path.append s₁ s₂ t p))),
-      Pr{let result ← run s₁ r₁ strategy counterpart₁}[¬ Admissible result.1 result.2.2] ≤ δ)
+      Pr{result ← run s₁ r₁ strategy counterpart₁}[¬ Admissible result.1 result.2.2] ≤ δ)
     (hsuffix : ∀ (t : TypeTree.Path s₁) (out : MidC t), ¬ Good t out → Admissible t out →
       ∀ strategy : StrategyOver (SyntaxOver.TwoParty.pairedTypeTree m) Participant.focal
           (s₂ t) (r₂ t) (fun p => OutputP (PFunctor.FreeM.Path.append s₁ s₂ t p)),
-        Pr{let result ← run (s₂ t) (r₂ t) strategy (counterpart₂ t out)}[
+        Pr{result ← run (s₂ t) (r₂ t) strategy (counterpart₂ t out)}[
           Success (PFunctor.FreeM.Path.append s₁ s₂ t result.1) result.2.2] ≤ ε₂) :
-    Pr{let result ← (run (s₁.append s₂) (r₁.append r₂) prover
+    Pr{result ← (run (s₁.append s₂) (r₁.append r₂) prover
       (Counterpart.appendFlat counterpart₁ counterpart₂))}[Success result.1 result.2.2] ≤
       ε₁ + δ + ε₂ := by
   classical

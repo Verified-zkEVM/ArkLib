@@ -34,7 +34,7 @@ example :
 
 /-- A real uniform challenge remains perfectly complete at the measure boundary. -/
 example :
-    Pr{let run ← executeSampled (ZMod 17) 1 ($ᵗ (ZMod 17)) polynomial [0, 1] 1}[
+    Pr{run ← executeSampled (ZMod 17) 1 ($ᵗ (ZMod 17)) polynomial [0, 1] 1}[
       run.closed.map (closedOutputRelation (ZMod 17) 1) = some True] = 1 := by
   apply executeSampled_perfectCompleteness
   simp [polynomial]

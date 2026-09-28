@@ -373,7 +373,7 @@ theorem nestedPowerAgreement_probability_le [Fintype F] [SampleableType F]
       (paddedPowerValues degree hdegree values) k L innerE)
     (houter : ∀ u, UniformExactPowerAgreement domain
       (fun g ↦ powerBatchedWord (values g) u) k L outerE) :
-    Pr{let p ← $ᵗ (F × F)}[∃ Q : F[X], Q.degree < k ∧
+    Pr{p ← $ᵗ (F × F)}[∃ Q : F[X], Q.degree < k ∧
         L ≤ (polynomialAgreementSet domain
           (powerBatchedWord (fun g ↦ powerBatchedWord (values g) p.1) p.2) Q).card ∧
         ¬ HasExactNestedPowerAgreement domain degree values k p.1 p.2 Q] ≤

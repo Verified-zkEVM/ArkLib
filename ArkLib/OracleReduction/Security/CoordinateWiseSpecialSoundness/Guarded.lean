@@ -262,7 +262,7 @@ theorem guarded_accepting_of_mem
     (hV₁ : V₁.IsGuardedWith check₁ out₁)
     (stmt : Stmt₁) (tr : pSpec₁.FullTranscript) (hc : check₁ stmt tr = true)
     (lang : Set Stmt₂) (hmem : out₁ stmt tr ∈ lang) :
-      Pr{let stmtOut ← OptionT.mk do
+      Pr{stmtOut ← OptionT.mk do
         (simulateQ impl (V₁.run stmt tr)).run' (← init)}[stmtOut ∈ lang] = 1 :=
   Verifier.pure_accepting_of_mem init impl V₁ stmt tr lang (out₁ stmt tr)
     (by rw [hV₁ stmt tr, ite_eq_left hc]) hmem

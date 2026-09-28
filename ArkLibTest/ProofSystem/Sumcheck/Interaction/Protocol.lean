@@ -140,7 +140,7 @@ def sampledAdaptive : Prover.Strategy unifSpec (protocol (ZMod 17) 1 2).tree
 
 /-- Two actual native rounds, with sampled private memory and response effects, satisfy the
 nonvacuous composition-derived bound on the original closed output relation. -/
-example : Pr{let result ← (execute (ZMod 17) 2 1 unifSpec ($ᵗ (ZMod 17)) [0]
+example : Pr{result ← (execute (ZMod 17) 2 1 unifSpec ($ᵗ (ZMod 17)) [0]
     2 0 (by decide) (polynomialFamily (ZMod 17) 2 1).spec.toPFunctor
     (VirtualOracle.id (polynomialFamily (ZMod 17) 2 1)) initial original sampledAdaptive)}[
       result.map (outputRelation (ZMod 17) 2 1) = some True] ≤ (2 : ENNReal) / 17 := by

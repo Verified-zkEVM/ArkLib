@@ -39,7 +39,7 @@ theorem execute_soundness {m : ℕ} (D : Fin m ↪ F)
       (polynomialFamily F n deg).behaviorOfRealizations (fun _ => p))
     (hfalse : ¬ closedRelation F n deg D ⟨start, by omega⟩
       ⟨stmt, originalOracle.eval impl⟩) :
-    Pr{let result ← (Computable.execute F n deg unifSpec ($ᵗ F) (Finset.univ.map D).toList
+    Pr{result ← (Computable.execute F n deg unifSpec ($ᵗ F) (Finset.univ.map D).toList
       count start finish A originalOracle stmt impl prover)}[
         result.map (Native.outputRelation F n deg) = some True] ≤
       (count : ENNReal) * deg / Fintype.card F := by

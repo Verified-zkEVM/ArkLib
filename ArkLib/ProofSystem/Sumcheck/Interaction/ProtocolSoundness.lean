@@ -43,7 +43,7 @@ theorem uniform_successor_soundness {m : ℕ} (D : Fin m ↪ F) (i : Fin n)
     (hfalse : ¬ closedRelation F n deg D i.castSucc
       ⟨stmt, (polynomialFamily F n deg).behaviorOfRealizations (fun _ => p)⟩)
     (hcheck : ((Finset.univ.map D).toList.map (fun x => q.val.eval x)).sum = stmt.target) :
-    Pr{let r ← ($ᵗ F)}[closedRelation F n deg D i.succ
+    Pr{r ← ($ᵗ F)}[closedRelation F n deg D i.succ
       ⟨⟨q.val.eval r, Fin.snoc stmt.challenges r⟩,
         (polynomialFamily F n deg).behaviorOfRealizations (fun _ => p)⟩] ≤
       (deg : ENNReal) / Fintype.card F := by
@@ -95,7 +95,7 @@ theorem exportedPrefixRun_soundness {m : ℕ} (D : Fin m ↪ F)
     (horiginal : originalOracle.eval impl =
       (polynomialFamily F n deg).behaviorOfRealizations (fun _ => p))
     (hfalse : ¬ closedRelation F n deg D ⟨start, by omega⟩ ⟨stmt, originalOracle.eval impl⟩) :
-    Pr{let b ← (exportedPrefixRun unifSpec (firstRoundProtocol F deg).tree
+    Pr{b ← (exportedPrefixRun unifSpec (firstRoundProtocol F deg).tree
       (fun path => (remainingProtocol F deg count path).tree) (firstRoundProtocol F deg).roles
       (fun path => (remainingProtocol F deg count path).roles) (firstRoundProtocol F deg).oracles
       A impl (midpointStatement F n deg count start finish)
@@ -113,7 +113,7 @@ theorem exportedPrefixRun_soundness {m : ℕ} (D : Fin m ↪ F)
   rintro ⟨q, respond⟩
   change SingleRound.Message F deg at q
   by_cases hcheck : ((Finset.univ.map D).toList.map (fun x => q.val.eval x)).sum = stmt.target
-  · simp only [hcheck, ↓reduceIte, bind_assoc, pure_bind]
+  · simp only [hcheck, ↓reduceIte, prEvent_norm]
     let i : Fin n := ⟨start, by omega⟩
     let good : F → Prop := fun r => closedRelation F n deg D i.succ
       ⟨⟨q.val.eval r, Fin.snoc stmt.challenges r⟩,
@@ -123,7 +123,7 @@ theorem exportedPrefixRun_soundness {m : ℕ} (D : Fin m ↪ F)
         ⟨stmt, (polynomialFamily F n deg).behaviorOfRealizations (fun _ => p)⟩
       rw [← horiginal]
       exact hfalse) hcheck
-    change Pr{let r ← ($ᵗ F); let _next ← respond (some r)}[
+    change Pr{r ← ($ᵗ F); _next ← respond (some r)}[
       closedRelation F n deg D i.succ
         ⟨⟨q.val.eval r, Fin.snoc stmt.challenges r⟩,
           (originalOracle.sumWeaken (polynomialInterface F deg).spec).eval
@@ -134,10 +134,10 @@ theorem exportedPrefixRun_soundness {m : ℕ} (D : Fin m ↪ F)
         let _next ← respond (some r)
         return good r) good (fun truth => truth) (by
           intro r hr
-          simp only [hr, bind_assoc, pure_bind, prEvent_false])
-    simpa only [bind_assoc, pure_bind] using hbound.trans hgood
-  · simp only [hcheck, ↓reduceIte, bind_assoc, pure_bind]
-    change Pr{let _next ← respond none}[False] ≤ _
+          simp only [hr, prEvent_norm, prEvent_false])
+    simpa only [bind_assoc, pure_bind, prEvent_norm] using hbound.trans hgood
+  · simp only [hcheck, ↓reduceIte, prEvent_norm]
+    change Pr{_next ← respond none}[False] ≤ _
     simp only [prEvent_false, zero_le]
 
 omit [Fintype F] in
@@ -150,7 +150,7 @@ theorem exportedPrefixRun_admissibility {m : ℕ} (D : Fin m ↪ F)
       (protocol F deg (count + 1)).roles (fun _ => Unit)) (p : Spec.OracleStatement F n deg ())
     (horiginal : originalOracle.eval impl =
       (polynomialFamily F n deg).behaviorOfRealizations (fun _ => p)) :
-    Pr{let b ← (exportedPrefixRun unifSpec (firstRoundProtocol F deg).tree
+    Pr{b ← (exportedPrefixRun unifSpec (firstRoundProtocol F deg).tree
       (fun path => (remainingProtocol F deg count path).tree) (firstRoundProtocol F deg).roles
       (fun path => (remainingProtocol F deg count path).roles) (firstRoundProtocol F deg).oracles
       A impl (midpointStatement F n deg count start finish)
@@ -168,8 +168,8 @@ theorem exportedPrefixRun_admissibility {m : ℕ} (D : Fin m ↪ F)
   rintro ⟨q, respond⟩
   change SingleRound.Message F deg at q
   by_cases hcheck : ((Finset.univ.map D).toList.map (fun x => q.val.eval x)).sum = stmt.target
-  · simp only [hcheck, ↓reduceIte, bind_assoc, pure_bind]
-    change Pr{let r ← ($ᵗ F); let _next ← respond (some r)}[
+  · simp only [hcheck, ↓reduceIte, prEvent_norm]
+    change Pr{r ← ($ᵗ F); _next ← respond (some r)}[
       ¬ (originalOracle.sumWeaken (polynomialInterface F deg).spec).eval
         (Access.extendImpl A (polynomialInterface F deg) impl q) =
           (polynomialFamily F n deg).behaviorOfRealizations (fun _ => p)] ≤ 0
@@ -179,9 +179,9 @@ theorem exportedPrefixRun_admissibility {m : ℕ} (D : Fin m ↪ F)
       let r ← ($ᵗ F)
       let _next ← respond (some r)
       return ())
-    simpa only [bind_assoc, pure_bind] using hzero.le
-  · simp only [hcheck, ↓reduceIte, bind_assoc, pure_bind]
-    change Pr{let _next ← respond none}[
+    simpa only [bind_assoc, pure_bind, prEvent_norm] using hzero.le
+  · simp only [hcheck, ↓reduceIte, prEvent_norm]
+    change Pr{_next ← respond none}[
       ¬ (originalOracle.sumWeaken (polynomialInterface F deg).spec).eval
         (Access.extendImpl A (polynomialInterface F deg) impl q) =
           (polynomialFamily F n deg).behaviorOfRealizations (fun _ => p)] ≤ 0
@@ -208,7 +208,7 @@ theorem execute_soundness {m : ℕ} (D : Fin m ↪ F)
     (horiginal : originalOracle.eval impl =
       (polynomialFamily F n deg).behaviorOfRealizations (fun _ => p))
     (hfalse : ¬ closedRelation F n deg D ⟨start, by omega⟩ ⟨stmt, originalOracle.eval impl⟩) :
-    Pr{let result ← (execute F n deg unifSpec ($ᵗ F) (Finset.univ.map D).toList
+    Pr{result ← (execute F n deg unifSpec ($ᵗ F) (Finset.univ.map D).toList
       count start finish A originalOracle stmt impl prover)}[
         result.map (outputRelation F n deg) = some True] ≤
       (count : ENNReal) * deg / Fintype.card F := by
@@ -243,11 +243,11 @@ theorem execute_soundness {m : ℕ} (D : Fin m ↪ F)
           (TypeTree.ExecutionPath.ofTypeTreePath b.1).toBranchPath
           (b.2.2.closeWith ((TypeTree.ExecutionPath.ofTypeTreePath b.1).closingImpl
             firstOracles A impl))
-    have htruth : Pr{let b ← prefixProgram}[trueMid b] ≤
+    have htruth : Pr{b ← prefixProgram}[trueMid b] ≤
         (deg : ENNReal) / Fintype.card F :=
       exportedPrefixRun_soundness n deg F D count start finish A originalOracle stmt impl
         prover p horiginal hfalse
-    have hinvalid : Pr{let b ← prefixProgram}[¬ trueMid b ∧ ¬ admissible b] ≤ 0 :=
+    have hinvalid : Pr{b ← prefixProgram}[¬ trueMid b ∧ ¬ admissible b] ≤ 0 :=
       (prEvent_and_le_right prefixProgram (fun b => ¬ trueMid b) (fun b => ¬ admissible b)).trans
         (exportedPrefixRun_admissibility n deg F D count start finish A originalOracle stmt impl
           prover p horiginal)
@@ -268,7 +268,7 @@ theorem execute_soundness {m : ℕ} (D : Fin m ↪ F)
         firstOracles A middle (fun _ => Spec.OracleStatement F n deg) exportFamily
           (fun _ => Unit)) := ⊤
         ∀ᵐ b ∂𝒟[prefixProgram], ¬ trueMid b → admissible b →
-        Pr{let result ← (exportedSuffixRun unifSpec tree suffix secondRoles firstOracles
+        Pr{result ← (exportedSuffixRun unifSpec tree suffix secondRoles firstOracles
           (fun path => (remainingProtocol F deg count path).oracles) A impl middle
           (fun _ => Spec.OracleStatement F n deg) exportFamily (fun _ => FinalStatement F n)
           (fun _ => Spec.OracleStatement F n deg) (fun _ => polynomialFamily F n deg)
@@ -283,7 +283,7 @@ theorem execute_soundness {m : ℕ} (D : Fin m ↪ F)
       | none =>
         have hrun := exportedSuffixRun_none F n deg unifSpec ($ᵗ F)
           (Finset.univ.map D).toList count start finish A impl q next mid
-        have hzero : Pr{let result ← (pure none : ProbComp
+        have hzero : Pr{result ← (pure none : ProbComp
             (Option (ClosedClaim (FinalStatement F n) (polynomialFamily F n deg))))}[
             result.map (outputRelation F n deg) = some True] = 0 := by simp
         rw [← hrun, prEvent_map] at hzero

@@ -89,7 +89,7 @@ theorem executeRoundsSampled_perfectCompleteness [DecidableEq R] {m : ℕ} (D : 
     (p : Spec.OracleStatement R n deg ())
     (challenges : (i : Fin n) → Spec.StatementRound R n i.castSucc → ProbComp R)
     (h : ((stmt, fun _ => p), ()) ∈ Spec.relationRound R n deg D _) :
-    Pr{let result ← executeRoundsSampled R n deg unifSpec start count bound
+    Pr{result ← executeRoundsSampled R n deg unifSpec start count bound
         (Finset.univ.map D).toList
         ⟨stmt, (polynomialFamily R n deg).behaviorOfRealizations (fun _ => p)⟩
         (honestMessages R n deg D p) challenges}[
@@ -119,7 +119,7 @@ theorem executeRounds_uniform_perfectCompleteness [DecidableEq R] [SampleableTyp
     (stmt : Spec.StatementRound R n ⟨start, by omega⟩)
     (p : Spec.OracleStatement R n deg ())
     (h : ((stmt, fun _ => p), ()) ∈ Spec.relationRound R n deg D _) :
-    Pr{let result ← executeRoundsSampled R n deg unifSpec start count bound
+    Pr{result ← executeRoundsSampled R n deg unifSpec start count bound
         (Finset.univ.map D).toList
         ⟨stmt, (polynomialFamily R n deg).behaviorOfRealizations (fun _ => p)⟩
         (honestMessages R n deg D p) (fun _ _ => $ᵗ R)}[

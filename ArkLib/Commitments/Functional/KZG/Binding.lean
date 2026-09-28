@@ -314,12 +314,12 @@ omit [DecidableEq G₁] in
 /-- Transition 1: extending the binding game output preserves the event. -/
 lemma binding_game_ext_eq_binding_game {n : ℕ} {AuxState : Type} [SampleableType G₁]
     (adversary : KzgBindingAdversary p G₁ G₂ n unifSpec AuxState) :
-    Pr{let result ← (Commitment.bindingGame (init := pure ∅)
+    Pr{result ← (Commitment.bindingGame (init := pure ∅)
       (impl := randomOracle) (AuxState := AuxState)
         (scheme := kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing))
         (adversary := adversary))}[
           (Commitment.bindingCondition (Data := Fin (n + 1) → ZMod p)) result]
-    = Pr{let result ← (bindingGameExt (g₁ := g₁) (g₂ := g₂)
+    = Pr{result ← (bindingGameExt (g₁ := g₁) (g₂ := g₂)
       AuxState adversary (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)))}[
         (bindingCondExt (p := p) (n := n)) result] := by
   let proj : BindingExtOutput (p := p) n G₁ G₂ → BindingOutput (p := p) n :=
@@ -333,7 +333,7 @@ lemma binding_game_ext_eq_binding_game {n : ℕ} {AuxState : Type} [SampleableTy
     rfl
   rw [hcond_eq, Function.comp_def, ← prEvent_map _ proj]
   refine congrArg (fun mx : OptionT ProbComp (BindingOutput (p := p) n) ↦
-    Pr{let y ← mx}[Commitment.bindingCondition y]) (OptionT.ext ?_)
+    Pr{y ← mx}[Commitment.bindingCondition y]) (OptionT.ext ?_)
   rw [OptionT.run_map]
   simp only [Commitment.bindingGame, bindingGameExt, kzg, OptionT.run, OptionT.mk, pure_bind]
   have hsample :
@@ -474,10 +474,10 @@ include g₁ g₂ pairing in
 lemma binding_cond_le_t_sdh_cond {n : ℕ} {AuxState : Type} [SampleableType G₁]
     (hg₁ : g₁ ≠ 1) (hpair : pairing g₁ g₂ ≠ 0)
     (adversary : KzgBindingAdversary p G₁ G₂ n unifSpec AuxState) :
-    Pr{let result ← (bindingGameExt (g₁ := g₁) (g₂ := g₂)
+    Pr{result ← (bindingGameExt (g₁ := g₁) (g₂ := g₂)
       AuxState adversary (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)))}[
         (bindingCondExt (p := p) (n := n)) result]
-    ≤ Pr{let result ← (bindingGameExt (g₁ := g₁) (g₂ := g₂) AuxState adversary
+    ≤ Pr{result ← (bindingGameExt (g₁ := g₁) (g₂ := g₂) AuxState adversary
         (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)))}[
           ((Groups.tSdhCondition (p := p) (g₁ := g₁)) ∘ mapBindingToTsdh (p := p)
         (n := n)) result] := by
@@ -532,10 +532,10 @@ lemma binding_cond_le_t_sdh_cond {n : ℕ} {AuxState : Type} [SampleableType G�
   let Q : BindingExtOutput (p := p) n G₁ G₂ → Prop :=
     (Groups.tSdhCondition (p := p) (g₁ := g₁)) ∘ mapBindingToTsdh (p := p) (n := n)
   have hmono :
-      Pr{let result ← (OptionT.mk (do
+      Pr{result ← (OptionT.mk (do
         let τ ← sample
         (simulateQ impl (gameComp τ)).run' (∅ : unifSpec.QueryCache)))}[(P) result]
-      ≤ Pr{let result ← (OptionT.mk (do
+      ≤ Pr{result ← (OptionT.mk (do
         let τ ← sample
         (simulateQ impl (gameComp τ)).run' (∅ : unifSpec.QueryCache)))}[(Q) result] := by
     apply _root_.prEvent_mono_of_support
@@ -640,10 +640,10 @@ lemma binding_cond_le_t_sdh_cond {n : ℕ} {AuxState : Type} [SampleableType G�
       (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ) rfl hresp hg₁ hpair
       hverify₁ hverify₂
   change
-    Pr{let result ← (OptionT.mk (do
+    Pr{result ← (OptionT.mk (do
       let τ ← sample
       (simulateQ impl (gameComp τ)).run' (∅ : unifSpec.QueryCache)))}[(P) result]
-    ≤ Pr{let result ← (OptionT.mk (do
+    ≤ Pr{result ← (OptionT.mk (do
       let τ ← sample
       (simulateQ impl (gameComp τ)).run' (∅ : unifSpec.QueryCache)))}[(Q) result]
   exact hmono
@@ -656,19 +656,19 @@ lemma map_binding_instance_drag {n : ℕ} {AuxState : Type} [SampleableType G₁
     (scheme : Commitment.Scheme unifSpec (Fin (n + 1) → ZMod p) G₁ Unit
       (Vector G₁ (n + 1) × Vector G₂ 2) (Vector G₁ (n + 1) × Vector G₂ 2)
       ⟨!v[.P_to_V], !v[G₁]⟩) :
-    Pr{let result ← (bindingGameExt (g₁ := g₁) (g₂ := g₂) AuxState adversary scheme)}[
+    Pr{result ← (bindingGameExt (g₁ := g₁) (g₂ := g₂) AuxState adversary scheme)}[
       ((Groups.tSdhCondition (p := p) (g₁ := g₁)) ∘ mapBindingToTsdh (p := p)
         (n := n)) result]
-    = Pr{let result ← (mapBindingToTsdh (p := p) (n := n) <$> bindingGameExt (g₁ := g₁) (g₂ := g₂)
+    = Pr{result ← (mapBindingToTsdh (p := p) (n := n) <$> bindingGameExt (g₁ := g₁) (g₂ := g₂)
         AuxState adversary scheme)}[(Groups.tSdhCondition (p := p) (g₁ := g₁)) result] := by
-  simp only [prEvent_map, Function.comp_apply]
+  simp only [prEvent_map, Function.comp_def]
 
 omit [DecidableEq G₁] in
 include g₁ g₂ pairing in
 /-- Transition 4: the mapped extended binding game is the t-SDH experiment. -/
 lemma t_sdh_game_eq {n : ℕ} {AuxState : Type} [SampleableType G₁]
     (adversary : KzgBindingAdversary p G₁ G₂ n unifSpec AuxState) :
-    Pr{let result ← (mapBindingToTsdh (p := p) (n := n) <$> bindingGameExt (g₁ := g₁) (g₂ := g₂)
+    Pr{result ← (mapBindingToTsdh (p := p) (n := n) <$> bindingGameExt (g₁ := g₁) (g₂ := g₂)
         AuxState adversary
         (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)))}[
           (Groups.tSdhCondition (p := p) (g₁ := g₁)) result]
@@ -759,13 +759,13 @@ theorem binding {g₁ : G₁} {g₂ : G₂} (hg₁ : g₁ ≠ 1)
   intro AuxState adversary
   let game_ext := bindingGameExt (g₁ := g₁) (g₂ := g₂) AuxState adversary scheme
   calc _
-    _ = Pr{let result ← (game_ext)}[(bindingCondExt (p := p) (n := n)) result] :=
+    _ = Pr{result ← (game_ext)}[(bindingCondExt (p := p) (n := n)) result] :=
       binding_game_ext_eq_binding_game (pairing := pairing) adversary
-    _ ≤ Pr{let result ← (game_ext)}[
+    _ ≤ Pr{result ← (game_ext)}[
       ((Groups.tSdhCondition (p := p) (g₁ := g₁)) ∘ mapBindingToTsdh (p := p)
         (n := n)) result] :=
       binding_cond_le_t_sdh_cond (pairing := pairing) hg₁ hpair adversary
-    _ = Pr{let result ← (mapBindingToTsdh (p := p) (n := n) <$> game_ext)}[
+    _ = Pr{result ← (mapBindingToTsdh (p := p) (n := n) <$> game_ext)}[
       (Groups.tSdhCondition (p := p) (g₁ := g₁)) result] :=
       map_binding_instance_drag adversary scheme
     _ = Groups.tSdhExperiment (g₁ := g₁) (g₂ := g₂) n

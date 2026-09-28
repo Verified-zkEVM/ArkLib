@@ -541,7 +541,7 @@ theorem exactGammaFailure_prob_le [SampleableType F] [Nonempty ι]
       (ReedSolomon.code domain (k / s) : Set (ι → F)) : ℝ≥0))
     (stmtIn : Spec.Statement (F := F) k ×
       (∀ i, Spec.OracleStatement ι (Fin s → F) i)) :
-    Pr{let γ ← $ᵗ F}[ExactGammaFailure k s hdvd domain δ stmtIn γ] ≤
+    Pr{γ ← $ᵗ F}[ExactGammaFailure k s hdvd domain δ stmtIn γ] ≤
       mcaError (AffineLineGenerator F)
           (ReedSolomon.Interleaved.irsCode domain k s) (δ : ℝ) +
         ((Code.Lambda
@@ -654,7 +654,7 @@ theorem exactGammaFailure_prob_le [SampleableType F] [Nonempty ι]
     (le_trans (prEvent_or_le ($ᵗ F) _ _) (add_le_add ?_ ?_))
   · exact le_iSup
       (fun U : Fin 2 → (ι → Fin s → F) ↦
-        Pr{let γ ← $ᵗ F}[IsMCA (AffineLineGenerator F) C γ U (δ : ℝ)])
+        Pr{γ ← $ᵗ F}[IsMCA (AffineLineGenerator F) C γ U (δ : ℝ)])
       ![stmtIn.2 0, stmtIn.2 1]
   · rw [SampleableType.prEvent_uniformSample]
     exact ENNReal.div_le_div_right (by exact_mod_cast hcards) _
@@ -697,7 +697,7 @@ theorem exactGammaFailure_sample_le [SampleableType F] [Nonempty ι]
       (ReedSolomon.code domain (k / s) : Set (ι → F)) : ℝ≥0))
     (stmtIn : Spec.Statement (F := F) k ×
       (∀ i, Spec.OracleStatement ι (Fin s → F) i)) :
-    Pr{let γ ← $ᵗ F}[ExactGammaFailure k s hdvd domain δ stmtIn γ] ≤
+    Pr{γ ← $ᵗ F}[ExactGammaFailure k s hdvd domain δ stmtIn γ] ≤
       (certifiedGammaError k s domain δ : ENNReal) := by
   rw [coe_certifiedGammaError]
   exact exactGammaFailure_prob_le k s hdvd domain hfull δ hδ stmtIn
@@ -806,7 +806,7 @@ theorem simplifiedOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_rbrExtractor
   intro stmtIn i transcript
   obtain ⟨⟨iv, hi⟩, _hdir⟩ := i
   rcases iv with _ | iv
-  · change Pr{let γ ← $ᵗ F}[ExactGammaFailure k s hdvd domain δ stmtIn γ] ≤
+  · change Pr{γ ← $ᵗ F}[ExactGammaFailure k s hdvd domain δ stmtIn γ] ≤
       (certifiedGammaError k s domain δ : ENNReal)
     exact exactGammaFailure_sample_le
       k s hdvd domain hfull δ hδ stmtIn
@@ -957,12 +957,12 @@ theorem oracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_rbrExtractor
   intro stmtIn i transcript
   obtain ⟨⟨iv, hi⟩, hdir⟩ := i
   rcases iv with _ | _ | _ | iv
-  · change Pr{let γ ← $ᵗ F}[ExactGammaFailure k s hdvd domain δ stmtIn γ] ≤
+  · change Pr{γ ← $ᵗ F}[ExactGammaFailure k s hdvd domain δ stmtIn γ] ≤
       (certifiedGammaError k s domain δ : ENNReal)
     exact exactGammaFailure_sample_le
       k s hdvd domain hfull δ hδ stmtIn
   · exact absurd hdir (fun h ↦ Direction.noConfusion h)
-  · change Pr{let xs ← $ᵗ (Fin t → ι)}[∃ _w : PUnit,
+  · change Pr{xs ← $ᵗ (Fin t → ι)}[∃ _w : PUnit,
         ¬ Spec.GammaState k (encoder k s hdvd domain) δ
           stmtIn.1.1 stmtIn.1.2.1 stmtIn.1.2.2
           (stmtIn.2 0) (stmtIn.2 1)

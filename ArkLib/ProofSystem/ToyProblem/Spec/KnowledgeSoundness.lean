@@ -157,7 +157,7 @@ theorem oracleVerifier_knowledgeSoundnessWith_of_transition_failure_prob_le
       (pSpec (ι := ι) (F := F) k t))
     (hextractor : extractor = transitionStraightlineExtractor transition)
     (hgamma : ∀ stmtIn,
-      Pr{let γ ← $ᵗ F}[∃ g : Fin k → F,
+      Pr{γ ← $ᵗ F}[∃ g : Fin k → F,
           (stmtIn, transition stmtIn γ g) ∉
               outputRelationFor k (encode : (Fin k → F) → (ι → A)) δ ∧
             GammaState k (encode : (Fin k → F) → (ι → A)) δ
@@ -312,7 +312,7 @@ theorem choiceTransition_failure_sample_le {k : ℕ}
     [SampleableType F]
     (encode : (Fin k → F) →ₗ[F] (ι → A)) (δ : ℝ≥0)
     (stmtIn : Statement (F := F) k × (∀ i, OracleStatement ι A i)) :
-    Pr{let γ ← $ᵗ F}[∃ g : Fin k → F,
+    Pr{γ ← $ᵗ F}[∃ g : Fin k → F,
         (stmtIn, choiceTransition
           (encode : (Fin k → F) → (ι → A)) δ stmtIn γ g) ∉
             outputRelationFor k (encode : (Fin k → F) → (ι → A)) δ ∧
@@ -376,7 +376,7 @@ theorem choiceTransition_failure_sample_le {k : ℕ}
         (stmtIn.2 0) (stmtIn.2 1))
       (fun γ h ↦ Eq.mp (congrFun hbad γ) h)) ?_
     calc
-      Pr{let γ ← $ᵗ F}[GammaEvent encode δ stmtIn.1.1
+      Pr{γ ← $ᵗ F}[GammaEvent encode δ stmtIn.1.1
           stmtIn.1.2.1 stmtIn.1.2.2 (stmtIn.2 0) (stmtIn.2 1) γ] =
           (winningSetRatio x : ENNReal) := by
         rw [SampleableType.prEvent_uniformSample, winningSetRatio, hWin,

@@ -56,16 +56,16 @@ theorem guess_soundness {m : Type → Type} [Monad m] [LawfulMonad m]
     [EvalDistSemantics m] [LawfulEvalDistSemantics m]
     {Out : PFunctor.FreeM.Path guessTree → Type}
     (challenge : m F) (ε : ENNReal)
-    (hsample : ∀ guess : F, Pr{let sample ← challenge}[guess = sample] ≤ ε)
+    (hsample : ∀ guess : F, Pr{sample ← challenge}[guess = sample] ≤ ε)
     (prior : Prop) (hprior : ¬ prior) (prover : Focal m guessTree guessRoles Out) :
-    Pr{let result ← run guessTree guessRoles prover (guessVerifier challenge prior)}[result.2.2] ≤
+    Pr{result ← run guessTree guessRoles prover (guessVerifier challenge prior)}[result.2.2] ≤
       ε := by
   simp only [guessTree, guessRoles]
   dsimp only [run, InteractionOver.runTypeTree, InteractionOver.TwoParty.pairedTypeTree,
     InteractionOver.TwoParty.paired, participantProfile, collectParticipantOutputs]
   simp only [guessVerifier, bind_assoc, pure_bind]
   have hlocal : ∀ chosen : (guess : F) × ((sample : F) → m (Out ⟨guess, ⟨sample, PUnit.unit⟩⟩)),
-      Pr{let truth ← (do
+      Pr{truth ← (do
         let sample ← challenge
         let _ ← chosen.2 sample
         return prior ∨ chosen.1 = sample : m Prop)}[truth] ≤ ε := by
@@ -76,10 +76,10 @@ theorem guess_soundness {m : Type → Type} [Monad m] [LawfulMonad m]
         return prior ∨ guess = sample)
       (fun sample => guess = sample) (fun truth => truth) (by
         intro sample hne
-        simpa only [bind_assoc, pure_bind] using
+        simpa only [bind_assoc, pure_bind, prEvent_norm, id_map'] using
           (prEvent_const_of_not (respond sample) (show ¬ (prior ∨ guess = sample) by
             simp [hprior, hne])))
-    simpa only [bind_pure] using hb.trans (hsample guess)
+    simpa only [prEvent_norm, id_map'] using hb.trans (hsample guess)
   have h := prEvent_bind_le_of_forall_le prover
     (fun chosen => do
       let sample ← challenge
@@ -87,15 +87,15 @@ theorem guess_soundness {m : Type → Type} [Monad m] [LawfulMonad m]
       return prior ∨ chosen.1 = sample) (fun truth => truth) (by
       intro chosen
       convert hlocal chosen using 1
-      simp only [bind_pure]
+      simp only [prEvent_norm, id_map']
       rfl)
   convert h using 1
-  simp only [bind_pure]
+  simp only [prEvent_norm, id_map']
   rfl
 
 /-- A fresh uniform field challenge matches every fixed guess with mass `1/17`. -/
 theorem uniform_guess (guess : F) :
-    Pr{let sample ← ($ᵗ F)}[guess = sample] ≤ (1 : ENNReal) / 17 := by
+    Pr{sample ← ($ᵗ F)}[guess = sample] ≤ (1 : ENNReal) / 17 := by
   rw [SampleableType.prEvent_uniformSample]
   have hset : Finset.univ.filter (Eq guess) = ({guess} : Finset F) := by
     ext x
@@ -110,7 +110,7 @@ theorem two_guesses
     (prover : Focal (OracleComp unifSpec)
       (guessTree.append (fun _ => guessTree))
       (guessRoles.append (fun _ => guessRoles)) (fun _ => Unit)) :
-    Pr{let result ← (run (guessTree.append (fun _ => guessTree))
+    Pr{result ← (run (guessTree.append (fun _ => guessTree))
       (guessRoles.append (fun _ => guessRoles)) prover
       (StrategyOver.TwoParty.Counterpart.appendFlat (Output₂ := fun _ => Prop)
         (guessVerifier ($ᵗ F) False)
@@ -147,11 +147,6 @@ open MeasureTheory
 noncomputable section
 
 @[reducible] def branchSpec : OracleSpec Unit := fun _ => Fin 3
-
-instance branchRangeMeasurable (t : branchSpec.Domain) : MeasurableSpace (branchSpec.Range t) := ⊤
-
-instance branchRangeDiscrete (t : branchSpec.Domain) :
-    DiscreteMeasurableSpace (branchSpec.Range t) := ⟨fun _ => trivial⟩
 
 def branchMeasure : Measure (Fin 3) :=
   (1 / 2 : ENNReal) • Measure.dirac 0 + (1 / 2 : ENNReal) • Measure.dirac 1
@@ -201,7 +196,8 @@ theorem prefix_measure : 𝒟[run tree roles (StrategyOver.TwoParty.Focal.splitP
     prefixVerifier] =
       (1 / 2 : ENNReal) • Measure.dirac (boundary 0) +
         (1 / 2 : ENNReal) • Measure.dirac (boundary 1) := by
-  rw [prefix_execution, evalDist_bind_of_discrete, OracleComp.evalDist_query]
+  rw [prefix_execution, evalDist_bind_of_discrete, OracleComp.evalDist_query (spec := branchSpec),
+    MeasureTheory.trim_eq_self]
   change Measure.bind branchMeasure _ = _
   simp only [evalDist_pure]
   rw [Measure.bind_dirac_eq_map _ Measurable.of_discrete]
@@ -211,7 +207,7 @@ theorem prefix_measure : 𝒟[run tree roles (StrategyOver.TwoParty.Focal.splitP
     Measure.map_dirac' Measurable.of_discrete, Measure.map_dirac' Measurable.of_discrete]
 
 theorem suffix_at_boundary (sample : Fin 3) :
-    Pr{let result ← (run TypeTree.done PUnit.unit (boundary sample).2.1
+    Pr{result ← (run TypeTree.done PUnit.unit (boundary sample).2.1
       (suffixVerifier (boundary sample).1 (boundary sample).2.2))}[result.2.2 = true] =
         if sample = 0 then 0 else 1 := by
   simp [boundary, suffixVerifier, run, InteractionOver.runTypeTree,
@@ -238,7 +234,7 @@ theorem null_boundary_mass : 𝒟[run tree roles (StrategyOver.TwoParty.Focal.sp
 
 /-- At that supported null boundary the proposed suffix error bound is false. -/
 theorem null_boundary_suffix_bound_fails : ¬
-    Pr{let result ← (run TypeTree.done PUnit.unit (boundary 2).2.1
+    Pr{result ← (run TypeTree.done PUnit.unit (boundary 2).2.1
       (suffixVerifier (boundary 2).1 (boundary 2).2.2))}[result.2.2 = true] ≤
         error (boundary 2) := by
   rw [suffix_at_boundary]
@@ -267,14 +263,14 @@ theorem average_error :
 /-- The exported AE composition theorem gives `1/2`, even though neither all-boundary nor
 support-restricted suffix hypotheses could justify the chosen error function. -/
 theorem weighted_success :
-    Pr{let result ← (run (tree.append (fun _ => TypeTree.done))
+    Pr{result ← (run (tree.append (fun _ => TypeTree.done))
       (roles.append (fun _ => PUnit.unit)) prover
       (StrategyOver.TwoParty.Counterpart.appendFlat (Output₂ := fun _ => Bool)
         prefixVerifier suffixVerifier))}[
         result.2.2 = true] ≤ (1 / 2 : ENNReal) := by
   have hsuffix : ∀ᵐ b ∂𝒟[run tree roles (StrategyOver.TwoParty.Focal.splitPrefix prover)
       prefixVerifier], ¬ False →
-        Pr{let result ← run .done PUnit.unit b.2.1 (suffixVerifier b.1 b.2.2)}[
+        Pr{result ← run .done PUnit.unit b.2.1 (suffixVerifier b.1 b.2.2)}[
           result.2.2 = true] ≤ error b := by
     rw [prefix_measure, ae_add_measure_iff]
     constructor <;> apply Measure.ae_smul_measure <;>
@@ -299,19 +295,20 @@ def finishWithQuery (_ : TypeTree.Path (tree.append (fun _ => TypeTree.done)))
 /-- The final query halves the success mass on an accepted branch. -/
 theorem finishWithQuery_mass (path : TypeTree.Path (tree.append (fun _ => TypeTree.done)))
     (accepted : Bool) :
-    Pr{let answer ← finishWithQuery path () accepted}[answer = true] =
+    Pr{answer ← finishWithQuery path () accepted}[answer = true] =
       if accepted then (1 / 2 : ENNReal) else 0 := by
   unfold finishWithQuery
-  rw [prEvent_bind_eq_lintegral_of_discrete, OracleComp.evalDist_query]
+  rw [prEvent_bind_eq_lintegral_of_discrete, OracleComp.evalDist_query (spec := branchSpec),
+    MeasureTheory.trim_eq_self]
   change (∫⁻ sample : Fin 3,
-    Pr{let answer ← (pure (accepted && sample == 1) : M Bool)}[answer = true]
+    Pr{answer ← (pure (accepted && sample == 1) : M Bool)}[answer = true]
       ∂branchMeasure) = _
   cases accepted <;>
     simp [branchMeasure, lintegral_add_measure, lintegral_smul_measure]
 
 /-- The composition bound includes the final query, giving `1/4` instead of `1/2`. -/
 theorem weighted_success_after_final_query :
-    Pr{let answer ← (do
+    Pr{answer ← (do
       let result ← run (tree.append (fun _ => TypeTree.done))
         (roles.append (fun _ => PUnit.unit)) prover
         (StrategyOver.TwoParty.Counterpart.appendFlat (Output₂ := fun _ => Bool)
@@ -320,7 +317,7 @@ theorem weighted_success_after_final_query :
         (1 / 4 : ENNReal) := by
   have hsuffix : ∀ᵐ b ∂𝒟[run tree roles (StrategyOver.TwoParty.Focal.splitPrefix prover)
       prefixVerifier], ¬ False →
-        Pr{let answer ← (do
+        Pr{answer ← (do
           let result ← run .done PUnit.unit b.2.1 (suffixVerifier b.1 b.2.2)
           finishWithQuery (PFunctor.FreeM.Path.append tree (fun _ => TypeTree.done) b.1 result.1)
             result.2.1 result.2.2)}[answer = true] ≤ error b / 2 := by

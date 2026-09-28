@@ -195,13 +195,13 @@ omit [DecidableEq G₁] in
 lemma function_binding_game_ext_eq_function_binding_game {n L : ℕ} {AuxState : Type}
     [SampleableType G₁]
     (adversary : KzgFunctionBindingAdversary p G₁ G₂ n unifSpec L AuxState) :
-    Pr{let result ← (Commitment.functionBindingGame (init := pure ∅)
+    Pr{result ← (Commitment.functionBindingGame (init := pure ∅)
       (impl := randomOracle) (hn := rfl)
         (AuxState := AuxState)
         (scheme := kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing))
         (adversary := adversary))}[
           (Commitment.functionBindingCondition (Data := Fin (n + 1) → ZMod p)) result]
-    = Pr{let result ← (functionBindingGameExt (g₁ := g₁) (g₂ := g₂) AuxState adversary
+    = Pr{result ← (functionBindingGameExt (g₁ := g₁) (g₂ := g₂) AuxState adversary
         (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)))}[
           (functionBindingCondExt n L) result] := by
   -- Define the projection from the extended output tuple to the basic output tuple.
@@ -520,10 +520,10 @@ include g₁ g₂ pairing in
 lemma function_binding_cond_le_arsdh_cond {n L : ℕ} {AuxState : Type} [SampleableType G₁]
     (hn : 1 ≤ n) (hp : p ≥ n + 2) (hg₁ : g₁ ≠ 1) (hpair : pairing g₁ g₂ ≠ 0)
     (adversary : KzgFunctionBindingAdversary p G₁ G₂ n unifSpec L AuxState) :
-    Pr{let result ← (functionBindingGameExt (g₁ := g₁) (g₂ := g₂) AuxState adversary
+    Pr{result ← (functionBindingGameExt (g₁ := g₁) (g₂ := g₂) AuxState adversary
       (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)))}[
         (functionBindingCondExt n L) result]
-    ≤ Pr{let result ← (functionBindingGameExt (g₁ := g₁) (g₂ := g₂) AuxState adversary
+    ≤ Pr{result ← (functionBindingGameExt (g₁ := g₁) (g₂ := g₂) AuxState adversary
         (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)))}[
           ((Groups.arsdhCondition n) ∘ mapFunctionBindingToArsdh hn) result] := by
   apply _root_.prEvent_mono_of_support
@@ -538,9 +538,9 @@ lemma map_instance_drag {n L : ℕ} {AuxState : Type} [SampleableType G₁]
     (scheme : Commitment.Scheme unifSpec (Fin (n + 1) → ZMod p) G₁ Unit
       (Vector G₁ (n + 1) × Vector G₂ 2) (Vector G₁ (n + 1) × Vector G₂ 2)
       ⟨!v[.P_to_V], !v[G₁]⟩) :
-    Pr{let result ← (functionBindingGameExt (g₁ := g₁) (g₂ := g₂) AuxState adversary scheme)}[
+    Pr{result ← (functionBindingGameExt (g₁ := g₁) (g₂ := g₂) AuxState adversary scheme)}[
       ((Groups.arsdhCondition n) ∘ mapFunctionBindingToArsdh hn) result]
-    = Pr{let result ← (mapFunctionBindingToArsdh hn <$>
+    = Pr{result ← (mapFunctionBindingToArsdh hn <$>
         functionBindingGameExt (g₁ := g₁) (g₂ := g₂) AuxState adversary scheme)}[
           ((Groups.arsdhCondition n)) result] := by
   simp only [prEvent_map, Function.comp_apply]
@@ -548,7 +548,7 @@ lemma map_instance_drag {n L : ℕ} {AuxState : Type} [SampleableType G₁]
 /-- Transition 4: the mapped game equals the ARSDH experiment -/
 lemma arsdh_game_eq {n L : ℕ} {AuxState : Type} [SampleableType G₁]
     (hn : 1 ≤ n) (adversary : KzgFunctionBindingAdversary p G₁ G₂ n unifSpec L AuxState) :
-  Pr{let result ← (mapFunctionBindingToArsdh hn <$> functionBindingGameExt (g₁ := g₁) (g₂ := g₂)
+  Pr{result ← (mapFunctionBindingToArsdh hn <$> functionBindingGameExt (g₁ := g₁) (g₂ := g₂)
         AuxState adversary (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)))}[
           ((Groups.arsdhCondition n)) result]
     = Groups.arsdhExperiment (g₁ := g₁) (g₂ := g₂) n
@@ -647,12 +647,12 @@ theorem function_binding {g₁ : G₁} {g₂ : G₂}
   intro AuxState adversary
   let game_ext := functionBindingGameExt (g₁ := g₁) (g₂ := g₂) AuxState adversary scheme
   calc _
-    _ = Pr{let result ← (game_ext)}[(functionBindingCondExt n L) result] :=
+    _ = Pr{result ← (game_ext)}[(functionBindingCondExt n L) result] :=
       function_binding_game_ext_eq_function_binding_game (pairing := pairing) adversary
-    _ ≤ Pr{let result ← (game_ext)}[
+    _ ≤ Pr{result ← (game_ext)}[
       ((Groups.arsdhCondition n) ∘ mapFunctionBindingToArsdh hn) result] :=
       function_binding_cond_le_arsdh_cond (pairing := pairing) hn hp hg₁ hpair adversary
-    _ = Pr{let result ← (mapFunctionBindingToArsdh hn <$> game_ext)}[
+    _ = Pr{result ← (mapFunctionBindingToArsdh hn <$> game_ext)}[
       ((Groups.arsdhCondition n)) result] :=
       map_instance_drag hn adversary scheme
     _ = Groups.arsdhExperiment (g₁ := g₁) (g₂ := g₂) n

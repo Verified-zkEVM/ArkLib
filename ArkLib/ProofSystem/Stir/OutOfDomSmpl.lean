@@ -48,7 +48,7 @@ def domainComplement (φ : ι ↪ F) : Finset F :=
 noncomputable def listDecodingCollisionProbability
   (φ : ι ↪ F) (f : ι → F) (δ : ℝ) (s degree : ℕ)
   (h_nonempty : Nonempty (domainComplement φ)) : ENNReal :=
-  Pr{let r ← $ᵗ (Fin s → domainComplement φ)}[∃ (u u' : code φ degree),
+  Pr{r ← $ᵗ (Fin s → domainComplement φ)}[∃ (u u' : code φ degree),
                                     u.val ≠ u'.val ∧
                                     u.val ∈ closeCodewordsRel (code φ degree) f δ ∧
                                     u'.val ∈ closeCodewordsRel (code φ degree) f δ ∧
@@ -65,7 +65,7 @@ probability at most `(degree - 1) / (|𝔽| - |ι|)`: the difference polynomial 
 `< degree`, so it has at most `degree - 1` roots among the `|𝔽| - |ι|` out-of-domain points. -/
 lemma single_coord_bound (φ : ι ↪ F) {degree : ℕ} (u u' : code φ degree)
     [Nonempty ↥(domainComplement φ)] (hne : u.val ≠ u'.val) :
-    Pr{let x ← $ᵗ ↥(domainComplement φ)}[
+    Pr{x ← $ᵗ ↥(domainComplement φ)}[
         (toPolynomial u).eval x.1 = (toPolynomial u').eval x.1 ]
       ≤ ((degree : ENNReal) - 1) / ((Fintype.card F : ENNReal) - Fintype.card ι) := by
   classical
@@ -126,7 +126,7 @@ samples: two distinct codewords agree on *all* `s` points with probability at mo
 `((degree - 1) / (|𝔽| - |ι|)) ^ s`. -/
 lemma pair_agree_bound (φ : ι ↪ F) {degree s : ℕ} (u u' : code φ degree)
     [Nonempty ↥(domainComplement φ)] (hne : u.val ≠ u'.val) :
-    Pr{let r ← $ᵗ (Fin s → ↥(domainComplement φ))}[
+    Pr{r ← $ᵗ (Fin s → ↥(domainComplement φ))}[
         ∀ i, (toPolynomial u).eval (r i).1 = (toPolynomial u').eval (r i).1 ]
       ≤ (((degree : ENNReal) - 1) / ((Fintype.card F : ENNReal) - Fintype.card ι)) ^ s := by
   classical
@@ -134,9 +134,9 @@ lemma pair_agree_bound (φ : ι ↪ F) {degree s : ℕ} (u u' : code φ degree)
   -- samples are handled by the generic uniform-product bound.
   have hsingle := single_coord_bound φ u u' hne
   rw [SampleableType.prEvent_uniformSample] at hsingle
-  calc Pr{let r ← $ᵗ (Fin s → ↥(domainComplement φ))}[
+  calc Pr{r ← $ᵗ (Fin s → ↥(domainComplement φ))}[
           ∀ i, (toPolynomial u).eval (r i).1 = (toPolynomial u').eval (r i).1 ]
-      = Pr{let r ← $ᵗ (Fin s → ↥(domainComplement φ))}[
+      = Pr{r ← $ᵗ (Fin s → ↥(domainComplement φ))}[
           ∀ i, r i ∈ Finset.univ.filter (fun x : ↥(domainComplement φ) =>
             (toPolynomial u).eval x.1 = (toPolynomial u').eval x.1) ] :=
         prEvent_congr _ _ _ (fun r => by simp)
@@ -188,7 +188,7 @@ lemma out_of_dom_smpl_1
   -- Union bound over the two-element subsets, then bound each term and count the subsets.
   refine le_trans (prEvent_exists_le _ (fun t : ↥T => PT t.1)) ?_
   have hterm : ∀ t : ↥T,
-      Pr{let r ← $ᵗ (Fin s → ↥(domainComplement φ))}[PT t.1 r] ≤ X ^ s := by
+      Pr{r ← $ᵗ (Fin s → ↥(domainComplement φ))}[PT t.1 r] ≤ X ^ s := by
     intro t
     obtain ⟨htsub, htcard⟩ := Finset.mem_powersetCard.mp t.2
     obtain ⟨a, b, hab, htab⟩ := Finset.card_eq_two.mp htcard

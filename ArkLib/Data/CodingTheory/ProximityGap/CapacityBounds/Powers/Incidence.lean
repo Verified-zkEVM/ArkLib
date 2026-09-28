@@ -306,7 +306,7 @@ private theorem powers_bad_seed_probability_le_card
     {S : Type} [Fintype S] [Nonempty S] [SampleableType S]
     (P : S → Prop) (B : ℝ)
     (hB : (Set.ncard {x : S | P x} : ℝ) ≤ B) :
-    Pr{let x ←$ᵗ S}[P x] ≤ ENNReal.ofReal (B / Fintype.card S) := by
+    Pr{x ←$ᵗ S}[P x] ≤ ENNReal.ofReal (B / Fintype.card S) := by
   classical
   rw [SampleableType.prEvent_uniformSample_eq_ofReal]
   apply ENNReal.ofReal_le_ofReal

@@ -125,7 +125,7 @@ example :
     zeroAnchorCandidate ∈ candidateSet anchorDomainThree anchorReceivedThree 2 1 ∧
       lineAnchorCandidate ∈ candidateSet anchorDomainThree anchorReceivedThree 2 1 ∧
       zeroAnchorCandidate ≠ lineAnchorCandidate ∧
-      Pr{let ω ← $ᵗ (Fin 4 → ZMod 3)}[
+      Pr{ω ← $ᵗ (Fin 4 → ZMod 3)}[
         ¬ Set.InjOn (evalTuple ω)
           (candidateSet anchorDomainThree anchorReceivedThree 2 1)] ≤
         ENNReal.ofReal (1 / 2 : ℝ) := by
@@ -159,11 +159,12 @@ example :
     rw [Fintype.card_fun]
     norm_num
   calc
-    Pr{let ω ← $ᵗ (Fin 4 → ZMod 3)}[
+    Pr{ω ← $ᵗ (Fin 4 → ZMod 3)}[
         ¬ Set.InjOn (evalTuple ω)
           (candidateSet anchorDomainThree anchorReceivedThree 2 1)] ≤
         ENNReal.ofReal (((9).choose 2 * (2 - 1) ^ Fintype.card (Fin 4) : ℕ) /
-          (Fintype.card (Fin 4 → ZMod 3) : ℝ)) := hprob
+          (Fintype.card (Fin 4 → ZMod 3) : ℝ)) := by
+      convert hprob using 4
     _ ≤ ENNReal.ofReal (1 / 2 : ℝ) := ENNReal.ofReal_le_ofReal (by
       norm_num [hchoose, hΩ, Fintype.card_fin])
 

@@ -19,7 +19,7 @@ fold is exceptional with probability at most `h * e / |F|`, and outside this eve
 with `a` agreements with the folded word is the fold of codeword leaves with the same common
 agreement set.
 
-Probabilities are native events `Pr{let r ← $ᵗ S}[…]` of a uniform sample and are bounded by
+Probabilities are native events `Pr{r ← $ᵗ S}[…]` of a uniform sample and are bounded by
 `ENNReal.ofReal (B / |S|)`, the form used by
 `CoreDefinitions.mcaError_le_of_exists_exceptional_set`.
 
@@ -51,7 +51,7 @@ This is `tensorFoldFamilyBad_card_le` divided by `|F| ^ h`. At height `0` both s
 since the bad set is empty; for `h ≥ 1` the factor `|F| ^ (h - 1) / |F| ^ h` is `1 / |F|`. -/
 theorem tensorFoldFamilyBad_probability_le (hlevel : FullSetLevelWitness C a e) {h : ℕ}
     {β : Type} [Fintype β] (u : β → (Fin h → Bool) → ι → A) :
-    Pr{let r ← $ᵗ (Fin h → F)}[r ∈ tensorFoldFamilyBad hlevel u] ≤
+    Pr{r ← $ᵗ (Fin h → F)}[r ∈ tensorFoldFamilyBad hlevel u] ≤
       ENNReal.ofReal ((h * e : ℕ) / (Fintype.card F : ℝ)) := by
   classical
   rw [SampleableType.prEvent_uniformSample_eq_ofReal]
@@ -82,7 +82,7 @@ probability at most `h * e / |F|`. Outside this event,
 `hasFullTensorDecomposition_of_not_mem_bad` applies. -/
 theorem tensorFoldBad_probability_le (hlevel : FullSetLevelWitness C a e) {h : ℕ}
     (u : (Fin h → Bool) → ι → A) :
-    Pr{let r ← $ᵗ (Fin h → F)}[r ∈ tensorFoldBad hlevel u] ≤
+    Pr{r ← $ᵗ (Fin h → F)}[r ∈ tensorFoldBad hlevel u] ≤
       ENNReal.ofReal ((h * e : ℕ) / (Fintype.card F : ℝ)) :=
   tensorFoldFamilyBad_probability_le hlevel _
 
@@ -91,7 +91,7 @@ challenges, the probability that some codeword with `a` agreements with the fold
 the fold of codeword leaves with the same common agreement set is at most `h * e / |F|`. -/
 theorem prob_not_hasFullTensorDecomposition_le (hlevel : FullSetLevelWitness C a e) {h : ℕ}
     (u : (Fin h → Bool) → ι → A) :
-    Pr{let r ← $ᵗ (Fin h → F)}[¬ HasFullTensorDecomposition C a r u] ≤
+    Pr{r ← $ᵗ (Fin h → F)}[¬ HasFullTensorDecomposition C a r u] ≤
       ENNReal.ofReal ((h * e : ℕ) / (Fintype.card F : ℝ)) :=
   (prEvent_mono _ _ (fun r ↦ r ∈ tensorFoldBad hlevel u)
     fun r hr ↦ by_contra fun hmem ↦ hr (hasFullTensorDecomposition_of_not_mem_bad hlevel r u hmem)
@@ -101,7 +101,7 @@ theorem prob_not_hasFullTensorDecomposition_le (hlevel : FullSetLevelWitness C a
 the fold is exceptional with probability at most `3 * e / |F|`. -/
 theorem tensorFoldBad_probability_height_three (hlevel : FullSetLevelWitness C a e)
     (u : (Fin 3 → Bool) → ι → A) :
-    Pr{let r ← $ᵗ (Fin 3 → F)}[r ∈ tensorFoldBad hlevel u] ≤
+    Pr{r ← $ᵗ (Fin 3 → F)}[r ∈ tensorFoldBad hlevel u] ≤
       ENNReal.ofReal ((3 * e : ℕ) / (Fintype.card F : ℝ)) :=
   tensorFoldBad_probability_le hlevel u
 

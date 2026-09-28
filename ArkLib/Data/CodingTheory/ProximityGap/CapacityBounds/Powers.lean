@@ -1138,7 +1138,7 @@ theorem linear_mcaError_powers_le
     _hk _hcard _h_δ_min _hη _hη_lt_δ_min
   change (Nat.card {x : F // P x} : ℝ) ≤ _ at hcard
   have hprob :
-      Pr{let x ←$ᵗ F}[P x] ≤
+      Pr{x ←$ᵗ F}[P x] ≤
         ENNReal.ofReal
           (((((Fintype.card ι : ℝ) *
                 (1 - (1 - (δ_min : ℝ) + (η : ℝ)) ^ ((1 : ℝ) / (k + 1))) /
@@ -1158,7 +1158,7 @@ theorem linear_mcaError_powers_le
       rw [Nat.card_eq_fintype_card, Fintype.card_subtype]
     rw [hcount]
     exact div_le_div_of_nonneg_right hcard (by positivity)
-  change Pr{let x ←$ᵗ F}[P x] ≤ _
+  change Pr{x ←$ᵗ F}[P x] ≤ _
   refine le_trans hprob ?_
   apply ENNReal.ofReal_le_ofReal
   apply le_of_eq

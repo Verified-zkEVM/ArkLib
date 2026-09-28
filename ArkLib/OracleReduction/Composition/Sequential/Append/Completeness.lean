@@ -59,7 +59,7 @@ theorem completeness_iff_of_pure_verifier
     (rel₁ : Set (Stmt₁ × Wit₁)) (rel₂ : Set (Stmt₂ × Wit₂)) (ε : ℝ≥0) :
     R.completeness init impl rel₁ rel₂ ε ↔
       ∀ stmt wit, (stmt, wit) ∈ rel₁ →
-        1 - (ε : ℝ≥0∞) ≤ Pr{let q ← do
+        1 - (ε : ℝ≥0∞) ≤ Pr{q ← do
           (simulateQ (QueryImpl.addLift impl challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
             (R.prover.run stmt wit)).run (← init)}[
           (V.verify stmt q.1.1, q.1.2.2) ∈ rel₂ ∧ q.1.2.1 = V.verify stmt q.1.1] := by
@@ -75,7 +75,7 @@ theorem completeness_iff_of_pure_verifier
           (R.prover.run stmt wit)).run (← init))) : OptionT ProbComp _) := by
     apply OptionT.ext
     simp [StateT.run'_eq]
-  simp only [hrun, OptionT.prEvent_lift, prEvent_map, bind_assoc]
+  simp only [hrun, OptionT.prEvent_lift, prEvent_map]
 
 /-- Completeness from every deterministic oracle state implies completeness from any initial
 state distribution. The verifier is pure, so initialization is the only outer mixture. -/
@@ -130,7 +130,7 @@ theorem append_completeness_of_prover_factorization
   have hnext := hsecond q₁.2 q₁.1.2.1 q₁.1.2.2 (by
     rw [hGood.2]
     exact hGood.1)
-  simpa only [bind_assoc, pure_bind, Function.comp_def, VA,
+  simpa only [bind_assoc, pure_bind, prEvent_norm, VA,
     FullTranscript.append_fst, FullTranscript.append_snd, ← hGood.2] using hnext
 
 /-- Sequential composition preserves completeness for pure verifiers when the prover execution

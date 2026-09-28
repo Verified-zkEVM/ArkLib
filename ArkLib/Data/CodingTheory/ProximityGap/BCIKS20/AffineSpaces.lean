@@ -1168,7 +1168,7 @@ theorem correlatedAgreement_affine_spaces {k : ℕ} [NeZero k]
   --    One D' for all words — no intersection, hence (1-δ) not (1-kδ).
   set V := ReedSolomon.code domain deg with hV_def
   set U := (Affine.affineSubspaceAtOrigin (F := F) (u 0) (Fin.tail u) : Set (ι → F))
-  have hPr_sub : Pr{let y ← $ᵗ (Affine.affineSubspaceAtOrigin (F := F) (u 0) (Fin.tail u))}[
+  have hPr_sub : Pr{y ← $ᵗ (Affine.affineSubspaceAtOrigin (F := F) (u 0) (Fin.tail u))}[
       δᵣ(↑y, (V : Set (ι → F))) ≤ δ] > errorBound δ deg domain := by
     convert hPr using 1
   have h_all_close : ∀ x ∈ U, δᵣ(x, (V : Set (ι → F))) ≤ δ :=
@@ -1224,7 +1224,7 @@ theorem correlatedAgreement_affine_spaces {k : ℕ} [NeZero k]
   -- For any direction, line through u* has Pr[δ_star-close] = 1.
   have h_line_pr1_star : ∀ (dir : ι → F),
       (∀ z : F, u_star + z • dir ∈ U) →
-      Pr{let z ← $ᵗ F}[δᵣ((finMapTwoWords u_star dir) 0
+      Pr{z ← $ᵗ F}[δᵣ((finMapTwoWords u_star dir) 0
         + z • (finMapTwoWords u_star dir) 1,
         (V : Set (ι → F))) ≤ δ_star] = 1 := by
     intro dir h_line_in_U

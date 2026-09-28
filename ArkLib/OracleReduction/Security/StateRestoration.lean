@@ -135,7 +135,7 @@ def soundness
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
     (srSoundnessError : ENNReal) : Prop :=
   ∀ srProver : Prover.StateRestoration.Soundness oSpec StmtIn pSpec,
-  Pr{let result ← do
+  Pr{result ← do
     (simulateQ (impl.addLift srChallengeQueryImpl' : QueryImpl _ (StateT _ ProbComp))
         <| (do
           let ⟨transcript, stmtIn⟩ ← srSoundnessGame srProver
@@ -159,7 +159,7 @@ def knowledgeSoundness
   (srKnowledgeSoundnessError : ENNReal) : Prop :=
   ∃ srExtractor : Extractor.StateRestoration oSpec StmtIn WitIn WitOut pSpec,
   ∀ srProver : Prover.StateRestoration.KnowledgeSoundness oSpec StmtIn WitOut pSpec,
-    Pr{let result ← do
+    Pr{result ← do
       (simulateQ (impl.addLift srChallengeQueryImpl' : QueryImpl _ (StateT _ ProbComp))
           <| (do
             let ⟨transcript, stmtIn, witOut⟩ ← srKnowledgeSoundnessGame srProver

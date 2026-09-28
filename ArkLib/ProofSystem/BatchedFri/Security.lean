@@ -335,18 +335,11 @@ lemma queryRoundMessage_domain_false {l : ℕ}
   have h := this ▸ i.1.2
   simp at h
 
-local instance {l : ℕ} : ∀ q,
-    MeasurableSpace (([(Spec.QueryRound.pSpec l (ω := ω)).Message]ₒ).Range q) := fun _ => ⊤
-
-local instance {l : ℕ} : ∀ q,
-    DiscreteMeasurableSpace (([(Spec.QueryRound.pSpec l (ω := ω)).Message]ₒ).Range q) :=
-  fun _ => inferInstance
-
 noncomputable instance {l : ℕ} :
     IsUniformMeasureSpec ([(Spec.QueryRound.pSpec l (ω := ω)).Message]ₒ) :=
   @IsUniformMeasureSpec.ofFiniteNonempty _ _
     (fun i => (queryRoundMessage_domain_false (i := i)).elim)
-    (fun i => (queryRoundMessage_domain_false (i := i)).elim) _ _
+    (fun i => (queryRoundMessage_domain_false (i := i)).elim)
 
 omit [Fintype 𝔽] in
 open ENNReal in
@@ -665,7 +658,7 @@ lemma fri_query_soundness
     let α0 : ℝ≥0∞ := ENNReal.ofReal (max α (ρ_sqrt * (1 + 1 / (2 * (m : ℝ≥0)))))
     let εQ  (x : Fin t → 𝔽)
             (z : Fin (k + 1) → 𝔽) :=
-      Pr{let samp ← $ᵗ (ω.subdomain 0)}[Pr{let _ ←
+      Pr{samp ← $ᵗ (ω.subdomain 0)}[Pr{_ ←
             (do
               simulateQ
                 (oracleImpl n (ω := ω) s 1 z (fun v ↦ f 0 v + ∑ i, x i * f i.succ v))
@@ -695,7 +688,7 @@ lemma fri_query_soundness
             )}[True]
         = 1
       ]
-    Pr{let x ← $ᵗ (Fin t → 𝔽); let z ← $ᵗ (Fin (k + 1) → 𝔽)}[εQ x z > α0] ≤
+    Pr{x ← $ᵗ (Fin t → 𝔽); z ← $ᵗ (Fin (k + 1) → 𝔽)}[εQ x z > α0] ≤
       εC 𝔽 n s m ρ_sqrt := by
   sorry
 
@@ -774,7 +767,7 @@ lemma fri_soundness
         (⟨fun x => x, by simp⟩ : ω ↪ 𝔽)
     let α : ℝ≥0 := (ρ_sqrt * (1 + 1 / (2 * (m : ℝ≥0))))
     (∃ prov : OracleProver (WitOut := Unit) ..,
-        Pr{let _ ← OracleReduction.run () f ()
+        Pr{_ ← OracleReduction.run () f ()
             ⟨
               prov,
               (BatchedFri.Spec.batchedFRIreduction

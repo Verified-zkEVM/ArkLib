@@ -92,7 +92,7 @@ def e_ε_correlatedAgreementAffineLinesNat
     {ι : Type*} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     (C : Set (ι → A)) (e ε : ℕ) : Prop :=
   ∀ (u₀ u₁ : Word A ι),
-    Pr{let r ← $ᵗ F}[Δ₀(affineLineEvaluation (F := F) u₀ u₁ r, C) ≤ e]
+    Pr{r ← $ᵗ F}[Δ₀(affineLineEvaluation (F := F) u₀ u₁ r, C) ≤ e]
       > ((ε: ℝ≥0) / (Fintype.card F : ℝ≥0)) →
       jointProximityNat₂ (A := A) (ι := ι) (u₀ := u₀) (u₁ := u₁) (e := e) (C := C)
 
@@ -135,7 +135,7 @@ def δ_ε_multilinearCorrelatedAgreement_Nat
     {ι : Type*} [Fintype ι] [Nonempty ι] [DecidableEq ι]
   (C : Set (ι → A)) (ϑ : ℕ) (e : ℕ) (ε : ℕ) : Prop :=
   ∀ (u : WordStack A (Fin (2^ϑ)) ι),
-    Pr{let r ← $ᵗ (Fin ϑ → F)}[ -- This syntax only works with (A : Type 0)
+    Pr{r ← $ᵗ (Fin ϑ → F)}[ -- This syntax only works with (A : Type 0)
       Δ₀(r |⨂| u, C) ≤ e
     ] > (ϑ : ℝ≥0) * ε / (Fintype.card F : ℝ≥0) →
     jointProximityNat (u := u) (e := e) (C := C)

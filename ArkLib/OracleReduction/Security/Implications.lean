@@ -131,21 +131,19 @@ theorem rbrKnowledgeSoundness_implies_rbrSoundness
         simp [logGame, plainGame, ← Prover.runWithLogToRound_discard_log_eq_runToRound, hrunlog]
         rfl
       have hk := hkSF stmtIn (Classical.choice hWin) prover' i
-      rw [← bind_assoc]
-      change Pr{let x ← plainGame}[
+      change Pr{x ← plainGame}[
         ¬ (∃ w, kSF i.1.castSucc stmtIn x.1 w) ∧
           ∃ w, kSF i.1.succ stmtIn (x.1.concat x.2) w] ≤ _
-      rw [← bind_assoc] at hk
-      change Pr{let x ← logGame}[∃ w,
+      change Pr{x ← logGame}[∃ w,
         ¬ kSF i.1.castSucc stmtIn x.1
             (extractor.extractMid i.1 stmtIn (x.1.concat x.2.1) w) ∧
           kSF i.1.succ stmtIn (x.1.concat x.2.1) w] ≤ _ at hk
       calc
-        _ = Pr{let x ← logGame}[
+        _ = Pr{x ← logGame}[
             ¬ (∃ w, kSF i.1.castSucc stmtIn x.1 w) ∧
               ∃ w, kSF i.1.succ stmtIn (x.1.concat x.2.1) w] := by
               rw [← hmap, prEvent_map]
-        _ ≤ Pr{let x ← logGame}[∃ w,
+        _ ≤ Pr{x ← logGame}[∃ w,
             ¬ kSF i.1.castSucc stmtIn x.1
                 (extractor.extractMid i.1 stmtIn (x.1.concat x.2.1) w) ∧
               kSF i.1.succ stmtIn (x.1.concat x.2.1) w] := by
@@ -159,7 +157,6 @@ theorem rbrKnowledgeSoundness_implies_rbrSoundness
           (fun tr w => cast extractor.eqIn w)
           (fun m ih tr w =>
             ih (Fin.init tr) (extractor.extractMid m stmtIn tr w))
-      rw [← bind_assoc]
       refine (prEvent_eq_zero_of_forall_not _ _ fun x hbad ↦ ?_).trans_le zero_le
       obtain ⟨-, w, hnext⟩ := hbad
       exact hWin ⟨extractToInput i.1.succ (x.1.concat x.2) w⟩
@@ -184,7 +181,6 @@ theorem rbrKnowledgeSoundness_implies_rbrSoundness
     unfold rbrSoundness
     refine ⟨sF, ?_⟩
     intro stmtIn hStmtIn WitIn' WitOut' witIn' prover i
-    rw [← bind_assoc]
     exact (prEvent_eq_zero_of_forall_not _ _ fun _ hbad ↦
       Fin.succ_ne_zero i.1 hbad.2.1).trans_le zero_le
 

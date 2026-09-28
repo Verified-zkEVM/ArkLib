@@ -63,10 +63,10 @@ separately. Probabilities are `ENNReal`-valued. -/
 def IsLineDecodable (C : Set (ι → A)) (δ : ℝ≥0) (a b : ℕ) : Prop :=
   ∀ f₁ f₂ : ι → A, ∀ U : F → ι → A, (∀ γ : F, U γ ∈ C) →
     (a : ENNReal) / (Fintype.card F : ENNReal)
-        ≤ Pr{let γ ← $ᵗ F}[δᵣ(f₁ + γ • f₂, U γ) ≤ δ] →
+        ≤ Pr{γ ← $ᵗ F}[δᵣ(f₁ + γ • f₂, U γ) ≤ δ] →
     ∃ u₁ ∈ C, ∃ u₂ ∈ C,
       (b : ENNReal) / (Fintype.card F : ENNReal)
-          ≤ Pr{let γ ← $ᵗ F}[
+          ≤ Pr{γ ← $ᵗ F}[
               δᵣ(f₁ + γ • f₂, U γ) ≤ δ ∧ U γ = u₁ + γ • u₂]
 
 open scoped NNReal in
@@ -529,7 +529,7 @@ private theorem line_decodable_cardinality_form
           (U γ).1 = c₀.1 + γ • c₁.1 := by
   classical
   have hprem : (a : ENNReal) / (Fintype.card F : ENNReal) ≤
-      Pr{let γ ← $ᵗ F}[δᵣ(f₀ + γ • f₁, (U γ).1) ≤ δ] := by
+      Pr{γ ← $ᵗ F}[δᵣ(f₀ + γ • f₁, (U γ).1) ≤ δ] := by
     rw [SampleableType.prEvent_uniformSample]
     apply ENNReal.div_le_div_right
     exact_mod_cast (haB.trans (Finset.card_le_card (fun γ hγ =>
