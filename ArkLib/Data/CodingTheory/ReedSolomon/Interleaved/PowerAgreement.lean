@@ -6,7 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.Data.CodingTheory.ReedSolomon.PowerAgreement
-public import VCVio.OracleComp.Constructions.SampleableType.NativeMeasure
+public import VCVio.OracleComp.Constructions.SampleableType.Measure
 
 /-!
 # Exact power agreement for interleaved Reed–Solomon codes

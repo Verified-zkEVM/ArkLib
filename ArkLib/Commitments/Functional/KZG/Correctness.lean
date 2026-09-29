@@ -8,7 +8,7 @@ module
 public import ArkLib.Commitments.Functional.KZG.Basic
 public import VCVio.OracleComp.QueryTracking.RandomOracle.Simulation
 public import VCVio.OracleComp.SimSemantics.OptionT.Basic
-public import VCVio.OracleComp.SimSemantics.StateT.Basic.Native
+public import VCVio.OracleComp.SimSemantics.StateT.Basic
 -- `simp [coeff]` and `Raw.coeff`/`Raw.mk` need CompPoly's unexposed bodies.
 import all CompPoly.Univariate.Basic
 import all CompPoly.Univariate.Raw.Core

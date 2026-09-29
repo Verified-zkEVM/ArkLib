@@ -8,7 +8,7 @@ module
 public import Mathlib.Algebra.Order.Chebyshev
 public import Mathlib.MeasureTheory.Integral.Lebesgue.Markov
 public import Mathlib.MeasureTheory.Measure.Typeclasses.Probability
-public import VCVio.OracleComp.Constructions.SampleableType.NativeMeasure
+public import VCVio.OracleComp.Constructions.SampleableType.Measure
 
 /-!
 # Probabilistic combinatorics

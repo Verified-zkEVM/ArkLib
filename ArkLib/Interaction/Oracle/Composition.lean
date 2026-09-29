@@ -7,7 +7,7 @@ module
 
 public import ArkLib.Interaction.Oracle.CoreRun
 public import VCVio.OracleComp.EvalDist
-public import VCVio.EvalDist.PFunctorMeasure
+public import VCVio.EvalDist.PFunctorMeasure.Core
 
 /-!
 # Ordered execution of oracle reductions

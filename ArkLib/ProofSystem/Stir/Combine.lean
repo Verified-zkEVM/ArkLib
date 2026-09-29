@@ -13,7 +13,7 @@ public import Mathlib.Tactic.LinearCombinationPrime
 public import ArkLib.Data.CodingTheory.ProximityGap.Basic
 public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.Curves
 public import ArkLib.Data.CodingTheory.ReedSolomon
-public import VCVio.OracleComp.Constructions.SampleableType.NativeMeasure
+public import VCVio.OracleComp.Constructions.SampleableType.Measure
 public import ArkLib.ProofSystem.Stir.ProximityBound
 public import ArkLib.ToMathlib.Polynomial.EvalExt
 

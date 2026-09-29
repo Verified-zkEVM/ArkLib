@@ -6,7 +6,7 @@ Authors: Quang Dao
 import ArkLib.Interaction.CompositionSoundness
 import VCVio.OracleComp.Constructions.SampleableType
 import VCVio.OracleComp.EvalDist.Measure
-import VCVio.OracleComp.Constructions.SampleableType.NativeMeasure
+import VCVio.OracleComp.Constructions.SampleableType.Measure
 import VCVio.EvalDist.ProbabilityBounds
 import Mathlib.Data.ZMod.Basic
 

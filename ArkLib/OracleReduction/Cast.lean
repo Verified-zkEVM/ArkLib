@@ -8,7 +8,7 @@ module
 public import ArkLib.OracleReduction.ProtocolSpec.Cast
 public import ArkLib.OracleReduction.Security.RoundByRound
 public import VCVio.OracleComp.SimSemantics.StateT.Measure
-public import VCVio.OracleComp.Constructions.SampleableType.NativeMeasure
+public import VCVio.OracleComp.Constructions.SampleableType.Measure
 
 /-!
   # Casting for structures of oracle reductions

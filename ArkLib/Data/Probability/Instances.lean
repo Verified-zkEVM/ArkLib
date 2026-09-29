@@ -15,7 +15,7 @@ public import CompPoly.Data.Fin.BigOperators
 
 ArkLib's specialized counting arguments are exposed here over VCVio's native `ProbComp`
 uniform sampler. Generic event algebra, counting formulas, transport along equivalences, and product
-sampling are provided by `SampleableType.NativeMeasure`.
+sampling are provided by `SampleableType.Measure`.
 -/
 
 @[expose] public section

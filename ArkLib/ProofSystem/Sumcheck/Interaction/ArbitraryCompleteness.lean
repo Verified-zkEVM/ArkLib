@@ -7,7 +7,7 @@ module
 
 public import ArkLib.ProofSystem.Sumcheck.Interaction.ArbitraryRounds
 public import VCVio.OracleComp.EvalDist.Measure
-public import VCVio.OracleComp.Constructions.SampleableType.NativeMeasure
+public import VCVio.OracleComp.Constructions.SampleableType.Measure
 
 /-!
 # Perfect completeness of arbitrary sampled Sumcheck rounds

@@ -6,7 +6,7 @@ Authors: Alexander Hicks
 module
 
 public import CompPoly.Fields.KoalaBear.Ext6
-public import VCVio.OracleComp.Constructions.SampleableType.NativeMeasure
+public import VCVio.OracleComp.Constructions.SampleableType.Measure
 
 /-!
 # Computable sampling for the KoalaBear sextic extension

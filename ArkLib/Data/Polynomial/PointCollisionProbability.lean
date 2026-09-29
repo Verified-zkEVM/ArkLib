@@ -6,7 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.Data.Polynomial.PointCollision
-public import VCVio.OracleComp.Constructions.SampleableType.NativeMeasure
+public import VCVio.OracleComp.Constructions.SampleableType.Measure
 
 /-!
 # Probability that sampled points fail to separate polynomial tuples
