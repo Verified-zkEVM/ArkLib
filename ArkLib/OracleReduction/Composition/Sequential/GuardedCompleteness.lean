@@ -23,10 +23,10 @@ open scoped NNReal ENNReal ProbabilityTheory
 
 private theorem prEvent_guarded_map {α β : Type} (oa : ProbComp α)
     (check : α → Bool) (f : α → β) (p : β → Prop) :
-    Pr{b ← (do
+    Pr{let b ← (do
       let a ← (liftM oa : OptionT ProbComp α)
       if check a then pure (f a) else failure)}[p b] =
-      Pr{a ← oa}[check a = true ∧ p (f a)] := by
+      Pr{let a ← oa}[check a = true ∧ p (f a)] := by
   rw [← OptionT.prEvent_bind_guard, map_bind]
   congr 1
   refine bind_congr fun a => ?_
@@ -67,9 +67,9 @@ theorem completeness_iff_of_guarded_verifier
     (rel₁ : Set (Stmt₁ × Wit₁)) (rel₂ : Set (Stmt₂ × Wit₂)) (ε : ℝ≥0) :
     R.completeness init impl rel₁ rel₂ ε ↔
       ∀ stmt wit, (stmt, wit) ∈ rel₁ →
-        1 - (ε : ℝ≥0∞) ≤ Pr{q ← do
+        1 - (ε : ℝ≥0∞) ≤ Pr{let q ← (do
           (simulateQ (QueryImpl.addLift impl challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
-            (R.prover.run stmt wit)).run (← init)}[G.check stmt q.1.1 = true ∧
+            (R.prover.run stmt wit)).run (← init))}[G.check stmt q.1.1 = true ∧
           (G.out stmt q.1.1, q.1.2.2) ∈ rel₂ ∧ q.1.2.1 = G.out stmt q.1.1] := by
   unfold completeness
   simp only [run_eq_of_guarded_verifier R G]

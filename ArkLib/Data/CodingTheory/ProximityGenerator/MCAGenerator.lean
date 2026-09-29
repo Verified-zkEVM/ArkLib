@@ -70,7 +70,7 @@ lemma mcaError_le_of_forall_isMCA_imp [Nonempty S] [SampleableType S]
     mcaError G' MC δ ≤ mcaError G MC δ := by
   unfold mcaError
   refine iSup_le fun U => le_trans (prEvent_mono ($ᵗ S) _ _ (fun x hx => h U x hx)) ?_
-  exact le_iSup (fun V => Pr{x ←$ᵗ S}[IsMCA G MC x V δ]) (Φ U)
+  exact le_iSup (fun V => Pr{let x ←$ᵗ S}[IsMCA G MC x V δ]) (Φ U)
 
 /-- Let `G : S → 𝔽^ℓ` be a generator and let `M` be an `ℓ × ℓ'` matrix. Then `G' : S → 𝔽^ℓ'` is a
 generator defined by `x ↦ G(x) · M`. This is the generator whose error is bounded by
@@ -211,10 +211,10 @@ lemma isMCAGenerator_reindex {S' : Type} [Fintype S'] [SampleableType S'] [Nonem
       exact ⟨T, hT, by rw [← hvec x']; exact hmem, eL.symm j', by simpa using hj'⟩
     · rintro ⟨T, hT, hmem, j, hj⟩
       exact ⟨T, hT, by rw [hvec x']; exact hmem, eL j, hj⟩
-  calc Pr{x' ←$ᵗ S'}[IsMCA (fun x' j' => G (eS x') (eL.symm j')) MC x' U (γ : ℝ)]
-      = Pr{x' ←$ᵗ S'}[IsMCA G MC (eS x') (fun j => U (eL j)) (γ : ℝ)] :=
+  calc Pr{let x' ←$ᵗ S'}[IsMCA (fun x' j' => G (eS x') (eL.symm j')) MC x' U (γ : ℝ)]
+      = Pr{let x' ←$ᵗ S'}[IsMCA G MC (eS x') (fun j => U (eL j)) (γ : ℝ)] :=
         prEvent_congr _ _ _ hiff
-    _ = Pr{x ←$ᵗ S}[IsMCA G MC x (fun j => U (eL j)) (γ : ℝ)] := by
+    _ = Pr{let x ←$ᵗ S}[IsMCA G MC x (fun j => U (eL j)) (γ : ℝ)] := by
         exact SampleableType.prEvent_uniformSample_equiv eS
           (fun x : S => IsMCA G MC x (fun j => U (eL j)) (γ : ℝ))
     _ ≤ (ε_mca γ : ENNReal) := hGMCA.prob_le _ γ

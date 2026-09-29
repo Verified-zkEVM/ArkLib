@@ -358,7 +358,7 @@ theorem gamma_transition_prob_le {k : ℕ} [SampleableType F] [Nonempty ι] [Fin
       (∀ i : Fin 2, ∑ j, M i j * v j = ![μ₁, μ₂] i) ∧
       ∃ S : Finset ι, (1 - (δ : ℝ)) * Fintype.card ι ≤ S.card ∧
         ∀ i : Fin 2, ∀ j ∈ S, ![f₁, f₂] i j = enc (M i) j) :
-    Pr{γ ← $ᵗ F}[GammaEvent enc δ v μ₁ μ₂ f₁ f₂ γ] ≤
+    Pr{let γ ← $ᵗ F}[GammaEvent enc δ v μ₁ μ₂ f₁ f₂ γ] ≤
       mcaError (AffineLineGenerator F) C (δ : ℝ) +
         ((Code.Lambda
           ((C ^⋈ (Fin 2) : ModuleCode ι F (Fin 2 → A)) : Set (ι → Fin 2 → A))
@@ -432,7 +432,7 @@ theorem gamma_transition_prob_le {k : ℕ} [SampleableType F] [Nonempty ι] [Fin
     (le_trans (prEvent_or_le ($ᵗ F) _ _) (add_le_add ?_ ?_))
   · exact le_iSup
       (fun U : Fin 2 → (ι → A) ↦
-        Pr{γ ← $ᵗ F}[IsMCA (AffineLineGenerator F) C γ U (δ : ℝ)])
+        Pr{let γ ← $ᵗ F}[IsMCA (AffineLineGenerator F) C γ U (δ : ℝ)])
       ![f₁, f₂]
   · rw [SampleableType.prEvent_uniformSample]
     exact ENNReal.div_le_div_right (by exact_mod_cast hcards) _
@@ -519,7 +519,7 @@ private lemma exists_dotProduct_image_card_le [SampleableType F]
     fun v s ↦ ((∑ j, (a s).1 j * v j), (∑ j, (a s).2 j * v j)) with hg
   set Φ : ProbComp (σ → F × F) := g <$> ($ᵗ (Fin k → F)) with hΦ
   have hcoll : ∀ x y : σ, x ≠ y →
-      Pr{φ ← Φ}[φ x = φ y] ≤ (Fintype.card F : ENNReal)⁻¹ := by
+      Pr{let φ ← Φ}[φ x = φ y] ≤ (Fintype.card F : ENNReal)⁻¹ := by
     intro x y hxy
     rw [hΦ, prEvent_map]
     have hne : a x ≠ a y := fun h ↦ hxy (ha h)
@@ -610,7 +610,7 @@ private lemma exists_affine_image_card_le [SampleableType F] (T : Finset (F × F
   set g' : F → (↥T → F) := fun μ₁ p ↦ (μ₁ - (p : F × F).1) / ((p : F × F).2 - μ₂) with hg'
   set Φ' : ProbComp (↥T → F) := g' <$> ($ᵗ F) with hΦ'
   have hcoll : ∀ x y : ↥T, x ≠ y →
-      Pr{φ ← Φ'}[φ x = φ y] ≤ (Fintype.card F : ENNReal)⁻¹ := by
+      Pr{let φ ← Φ'}[φ x = φ y] ≤ (Fintype.card F : ENNReal)⁻¹ := by
     intro x y hxy
     rw [hΦ', prEvent_map]
     have hpq : ((x : F × F).1, (x : F × F).2) ≠ ((y : F × F).1, (y : F × F).2) := by
@@ -1034,17 +1034,17 @@ theorem exists_winningSetFor_ncard_ge_of_epsCa_pos {k : ℕ} [SampleableType F]
   obtain ⟨u, hu_max⟩ := Finite.exists_max
     (fun u : WordStack A (Fin 2) ι ↦
       if jointProximity C u δ then (0 : ENNReal)
-      else Pr{γ ← $ᵗ F}[δᵣ(u 0 + γ • u 1, C) ≤ δ])
+      else Pr{let γ ← $ᵗ F}[δᵣ(u 0 + γ • u 1, C) ≤ δ])
   have h_eps : epsCa (F := F) (A := A) C δ δ =
       (if jointProximity C u δ then (0 : ENNReal)
-       else Pr{γ ← $ᵗ F}[δᵣ(u 0 + γ • u 1, C) ≤ δ]) := by
+       else Pr{let γ ← $ᵗ F}[δᵣ(u 0 + γ • u 1, C) ≤ δ]) := by
     refine le_antisymm ?_ ?_
     · rw [epsCa]
       exact iSup_le hu_max
     · rw [epsCa]
       exact le_iSup (fun w : WordStack A (Fin 2) ι ↦
         if jointProximity C w δ then (0 : ENNReal)
-        else Pr{γ ← $ᵗ F}[δᵣ(w 0 + γ • w 1, C) ≤ δ]) u
+        else Pr{let γ ← $ᵗ F}[δᵣ(w 0 + γ • w 1, C) ≤ δ]) u
   have hjp : ¬ jointProximity C u δ := by
     intro h
     rw [h_eps, ite_eq_left h] at hca
@@ -1077,7 +1077,7 @@ theorem exists_winningSetFor_ncard_ge_of_epsCa_pos {k : ℕ} [SampleableType F]
     have hF0 : (Fintype.card F : ℝ≥0) ≠ 0 := by
       simp [Fintype.card_ne_zero]
     have hprob :
-        Pr{γ ← $ᵗ F}[δᵣ(u 0 + γ • u 1, C) ≤ δ] *
+        Pr{let γ ← $ᵗ F}[δᵣ(u 0 + γ • u 1, C) ≤ δ] *
             (Fintype.card F : ENNReal) =
           ({γ : F | δᵣ(u 0 + γ • u 1, C) ≤ δ}.ncard : ENNReal) := by
       rw [SampleableType.prEvent_uniformSample,

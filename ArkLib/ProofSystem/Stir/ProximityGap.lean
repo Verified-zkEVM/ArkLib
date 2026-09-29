@@ -37,7 +37,7 @@ namespace STIR
 /-- Theorem 4.1[BCIKS20] from [ACFY24stir]
   Let `C = RS[F, ι, degree]` be a ReedSolomon code with rate `degree / |ι|`
   and let Bstar(ρ) = √ρ. For all `δ ∈ (0, 1 - Bstar(ρ))`, `f₁,...,fₘ : ι → F`, if
-  `Pr{r ← F}[δᵣ(rⱼ * fⱼ, C) ≤ δ] > err'(degree, ρ, δ, m)`
+  `Pr{let r ← F}[δᵣ(rⱼ * fⱼ, C) ≤ δ] > err'(degree, ρ, δ, m)`
   then ∃ S ⊆ ι, |S| ≥ (1 - δ) * |ι| and
   ∀ i : m, ∃ u : C, u(S) = fᵢ(S) -/
 lemma proximity_gap
@@ -47,7 +47,7 @@ lemma proximity_gap
   (hδPos : 0 < δ)
   (hδLt : δ < 1 - Bstar (LinearCode.rate (code φ degree)))
   (hProb :
-    Pr{r ← $ᵗ F}[δᵣ((fun x => ∑ j : Fin m, (GenFun r j) * f j x), code φ degree) ≤ δ] >
+    Pr{let r ← $ᵗ F}[δᵣ((fun x => ∑ j : Fin m, (GenFun r j) * f j x), code φ degree) ≤ δ] >
       ENNReal.ofReal (proximityError F degree (LinearCode.rate (code φ degree)) δ m)) :
   ∃ S : Finset ι,
     S.card ≥ (1 - δ) * (Fintype.card ι) ∧

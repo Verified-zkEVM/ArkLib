@@ -258,7 +258,7 @@ hypothesis on the challenge program is needed. -/
 theorem executeSampled_perfectCompleteness [DecidableEq R] (challenge : ProbComp R)
     (p : Message R deg) (domain : List R) (target : R)
     (h : (domain.map (fun x => p.val.eval x)).sum = target) :
-    Pr{run ← executeSampled R deg challenge p domain target}[
+    Pr{let run ← executeSampled R deg challenge p domain target}[
       run.closed.map (closedOutputRelation R deg) = some True] = 1 :=
   OracleComp.prEvent_eq_one_of_forall_mem_support _ _
     (executeSampled_support R deg challenge p domain target h)
@@ -266,7 +266,7 @@ theorem executeSampled_perfectCompleteness [DecidableEq R] (challenge : ProbComp
 /-- `prEvent_eq_evalDist_map` at `OracleComp unifSpec`, stated so that the `Pr{...}` side uses
 the same `Bind`/`Pure` instances as `do` notation elaborated at this monad. -/
 private theorem prEvent_eq_evalDist_map_unifSpec {α : Type} (mx : OracleComp unifSpec α)
-    (p : α → Prop) : Pr{x ← mx}[p x] = 𝒟[p <$> mx] {True} :=
+    (p : α → Prop) : Pr{let x ← mx}[p x] = 𝒟[p <$> mx] {True} :=
   prEvent_eq_evalDist_map mx p
 
 /-- Measure-valued perfect completeness for the actual randomized verifier. -/

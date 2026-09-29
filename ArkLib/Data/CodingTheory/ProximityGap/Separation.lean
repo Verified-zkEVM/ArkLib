@@ -114,7 +114,7 @@ theorem mcaError_repetitionCode_pos :
     0 < mcaError (AffineLineGenerator (ZMod 2)) repetitionCode (1/2 : ℝ) := by
   classical
   have hle := le_iSup
-    (fun U => Pr{x ←$ᵗ (ZMod 2)}[IsMCA (AffineLineGenerator (ZMod 2)) repetitionCode x U
+    (fun U => Pr{let x ←$ᵗ (ZMod 2)}[IsMCA (AffineLineGenerator (ZMod 2)) repetitionCode x U
       (1/2 : ℝ)]) separatingFamily
   refine lt_of_lt_of_le ?_ hle
   rw [SampleableType.prEvent_uniformSample_eq_ofReal, ENNReal.ofReal_pos]

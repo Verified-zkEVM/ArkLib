@@ -59,9 +59,9 @@ theorem completeness_iff_of_pure_verifier
     (rel₁ : Set (Stmt₁ × Wit₁)) (rel₂ : Set (Stmt₂ × Wit₂)) (ε : ℝ≥0) :
     R.completeness init impl rel₁ rel₂ ε ↔
       ∀ stmt wit, (stmt, wit) ∈ rel₁ →
-        1 - (ε : ℝ≥0∞) ≤ Pr{q ← do
+        1 - (ε : ℝ≥0∞) ≤ Pr{let q ← (do
           (simulateQ (QueryImpl.addLift impl challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
-            (R.prover.run stmt wit)).run (← init)}[
+            (R.prover.run stmt wit)).run (← init))}[
           (V.verify stmt q.1.1, q.1.2.2) ∈ rel₂ ∧ q.1.2.1 = V.verify stmt q.1.1] := by
   unfold completeness
   simp only [run_eq_of_pure_verifier R V]

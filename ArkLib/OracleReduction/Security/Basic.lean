@@ -398,9 +398,9 @@ class Extractor.Straightline.IsMonotone
     proveQueryLog₁.Sublist proveQueryLog₂ →
     verifyQueryLog₁.Sublist verifyQueryLog₂ →
     -- Placeholder probability for now, probably need to consider the whole game
-    Pr{witIn ← E stmtIn witOut transcript proveQueryLog₁ verifyQueryLog₁}[
+    Pr{let witIn ← E stmtIn witOut transcript proveQueryLog₁ verifyQueryLog₁}[
       (stmtIn, witIn) ∈ relIn] ≤
-    Pr{witIn ← E stmtIn witOut transcript proveQueryLog₂ verifyQueryLog₂}[
+    Pr{let witIn ← E stmtIn witOut transcript proveQueryLog₂ verifyQueryLog₂}[
       (stmtIn, witIn) ∈ relIn]
 
 end Verifier

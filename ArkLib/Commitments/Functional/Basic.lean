@@ -95,7 +95,7 @@ def correctness (correctnessError : ℝ≥0) : Prop :=
   ∀ query : O.Query,
   let pImpl : QueryImpl (oSpec + [pSpec.Challenge]ₒ) (StateT σ ProbComp) :=
     QueryImpl.addLift impl challengeQueryImpl
-  Pr{result ← (OptionT.mk do
+  Pr{let result ← (OptionT.mk do
       (simulateQ pImpl (do
         let (ck, vk) ← liftComp scheme.keygen _
         let (cm, decomm) ← liftComp (scheme.commit ck data) _
@@ -201,7 +201,7 @@ abbrev bindingGame (AuxState : Type)
 /-- The probability of breaking evaluation binding for a specific adversary. -/
 def bindingExperiment (AuxState : Type)
     (adversary : BindingAdversary oSpec Data Commitment AuxState pSpec ComKey) : ℝ≥0∞ :=
-  Pr{result ← bindingGame init impl scheme AuxState adversary}[
+  Pr{let result ← bindingGame init impl scheme AuxState adversary}[
     bindingCondition (Data := Data) result]
 
 /-- A commitment scheme satisfies **(evaluation) binding** with error `bindingError` if for all
@@ -326,7 +326,7 @@ def functionBindingExperiment {L : ℕ} (hn : n = 1)
     (adversary :
       FunctionBindingAdversary oSpec Data Commitment AuxState L (hn ▸ pSpec)
         ComKey) : ℝ≥0∞ :=
-    Pr{result ← functionBindingGame init impl hn AuxState scheme adversary}[
+    Pr{let result ← functionBindingGame init impl hn AuxState scheme adversary}[
       functionBindingCondition (Data := Data) result]
 
 /-- A commitment scheme satisfies **function binding** with error `functionBindingError` if for all

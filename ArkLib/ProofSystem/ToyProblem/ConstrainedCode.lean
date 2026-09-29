@@ -167,7 +167,7 @@ theorem gamma_transition_prob_le_constrained {k : ℕ}
       (∀ i : Fin 2, ∑ j, M i j * v j = ![μ₁, μ₂] i) ∧
       ∃ S : Finset ι, (1 - (δ : ℝ)) * Fintype.card ι ≤ S.card ∧
         ∀ i : Fin 2, ∀ j ∈ S, ![f₁, f₂] i j = enc (M i) j) :
-    Pr{γ ← $ᵗ F}[∃ m : Fin k → F, (∑ j, m j * v j = μ₁ + γ * μ₂) ∧
+    Pr{let γ ← $ᵗ F}[∃ m : Fin k → F, (∑ j, m j * v j = μ₁ + γ * μ₂) ∧
         ∃ S : Finset ι, (1 - (δ : ℝ)) * Fintype.card ι ≤ S.card ∧
           ∀ j ∈ S, f₁ j + γ • f₂ j = enc m j]
       ≤ mcaError (AffineLineGenerator F) (constrainedCode enc v) (δ : ℝ) := by
@@ -236,7 +236,7 @@ theorem gamma_transition_prob_le_constrained {k : ℕ}
           simpa [LinearCode.projectedWord, hU₁, constrainedEncoder] using h
   · exact le_iSup
       (fun U : Fin 2 → ((ι ⊕ Unit) → F) ↦
-        Pr{γ ← $ᵗ F}[IsMCA (AffineLineGenerator F)
+        Pr{let γ ← $ᵗ F}[IsMCA (AffineLineGenerator F)
           (constrainedCode enc v) γ U (δ : ℝ)]) ![U₀, U₁]
 
 /-! ## The per-instance equivalence (constraint-pinned event, proximity on data coordinates)
@@ -310,10 +310,10 @@ theorem gammaEvent_prob_eq_constrainedMCAEvent {k : ℕ}
       (∀ i : Fin 2, ∑ j, M i j * v j = ![μ₁, μ₂] i) ∧
       ∃ S : Finset ι, (1 - (δ : ℝ)) * Fintype.card ι ≤ S.card ∧
         ∀ i : Fin 2, ∀ j ∈ S, ![f₁, f₂] i j = enc (M i) j) :
-    Pr{γ ← $ᵗ F}[∃ m : Fin k → F, (∑ j, m j * v j = μ₁ + γ * μ₂) ∧
+    Pr{let γ ← $ᵗ F}[∃ m : Fin k → F, (∑ j, m j * v j = μ₁ + γ * μ₂) ∧
         ∃ S : Finset ι, (1 - (δ : ℝ)) * Fintype.card ι ≤ S.card ∧
           ∀ j ∈ S, f₁ j + γ • f₂ j = enc m j]
-      = Pr{γ ← $ᵗ F}[ConstrainedMCAEvent enc v δ μ₁ μ₂ f₁ f₂ γ] := by
+      = Pr{let γ ← $ᵗ F}[ConstrainedMCAEvent enc v δ μ₁ μ₂ f₁ f₂ γ] := by
   classical
   refine le_antisymm ?_ ?_
   · exact prEvent_mono ($ᵗ F) _ _

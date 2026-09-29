@@ -132,21 +132,21 @@ theorem isMCAGenerator_tensorGenerator_of_moduleInterleavedCode
           rfl
         rwa [hwrow] at h
   -- assemble: implication, union bound, and the two marginal bounds
-  have hA : Pr{p ← $ᵗ (S × S')}[IsMCA G MC p.1 (W p.2) δ]
+  have hA : Pr{let p ← $ᵗ (S × S')}[IsMCA G MC p.1 (W p.2) δ]
       ≤ (ε_mca δ : ENNReal) :=
     SampleableType.prEvent_uniformSample_prod_le_of_forall_snd _
       (fun x' => hG.prob_le (W x') δ)
-  have hB : Pr{p ← $ᵗ (S × S')}[
+  have hB : Pr{let p ← $ᵗ (S × S')}[
         IsMCA G' (ModuleCode.moduleInterleavedCode F A ℓ ι MC) p.2 w δ]
       ≤ (ε'_mca δ : ENNReal) :=
     SampleableType.prEvent_uniformSample_prod_le_of_forall_fst _
       (fun _ => hG'.prob_le w δ)
-  calc Pr{p ← $ᵗ (S × S')}[IsMCA (TensorGenerator_Explicit G G') MC p U δ]
-      ≤ Pr{p ← $ᵗ (S × S')}[IsMCA G MC p.1 (W p.2) δ ∨
+  calc Pr{let p ← $ᵗ (S × S')}[IsMCA (TensorGenerator_Explicit G G') MC p U δ]
+      ≤ Pr{let p ← $ᵗ (S × S')}[IsMCA G MC p.1 (W p.2) δ ∨
           IsMCA G' (ModuleCode.moduleInterleavedCode F A ℓ ι MC) p.2 w δ] :=
         prEvent_mono _ _ _ himp
-    _ ≤ Pr{p ← $ᵗ (S × S')}[IsMCA G MC p.1 (W p.2) δ]
-        + Pr{p ← $ᵗ (S × S')}[
+    _ ≤ Pr{let p ← $ᵗ (S × S')}[IsMCA G MC p.1 (W p.2) δ]
+        + Pr{let p ← $ᵗ (S × S')}[
             IsMCA G' (ModuleCode.moduleInterleavedCode F A ℓ ι MC) p.2 w δ] :=
         prEvent_or_le _ _ _
     _ ≤ (ε_mca δ : ENNReal) + (ε'_mca δ : ENNReal) := add_le_add hA hB
@@ -202,22 +202,22 @@ theorem isMCAGenerator_tensorGenerator (G : Generator S ℓ F) (G' : Generator S
     · exact Or.inl ⟨T, hT, hcomb, hcase⟩
     · push Not at hcase
       exact Or.inr ⟨i₀, T, hT, hcase i₀, j₀, hbad⟩
-  have hA : Pr{p ← $ᵗ (S × S')}[IsMCA G MC p.1 (W p.2) δ]
+  have hA : Pr{let p ← $ᵗ (S × S')}[IsMCA G MC p.1 (W p.2) δ]
       ≤ (ε_mca δ : ENNReal) :=
     SampleableType.prEvent_uniformSample_prod_le_of_forall_snd _
       (fun x' => hG.prob_le (W x') δ)
-  have hB : Pr{p ← $ᵗ (S × S')}[∃ i, IsMCA G' MC p.2 (fun j => U (i, j)) δ]
+  have hB : Pr{let p ← $ᵗ (S × S')}[∃ i, IsMCA G' MC p.2 (fun j => U (i, j)) δ]
       ≤ (Fintype.card ℓ : ENNReal) * (ε'_mca δ : ENNReal) :=
     SampleableType.prEvent_uniformSample_prod_le_of_forall_fst _ fun _ =>
       prEvent_exists_le_card_mul ($ᵗ S')
         (fun i x' => IsMCA G' MC x' (fun j => U (i, j)) δ)
         (fun i => hG'.prob_le (fun j => U (i, j)) δ)
-  calc Pr{p ← $ᵗ (S × S')}[IsMCA (TensorGenerator_Explicit G G') MC p U δ]
-      ≤ Pr{p ← $ᵗ (S × S')}[IsMCA G MC p.1 (W p.2) δ ∨
+  calc Pr{let p ← $ᵗ (S × S')}[IsMCA (TensorGenerator_Explicit G G') MC p U δ]
+      ≤ Pr{let p ← $ᵗ (S × S')}[IsMCA G MC p.1 (W p.2) δ ∨
           ∃ i, IsMCA G' MC p.2 (fun j => U (i, j)) δ] :=
         prEvent_mono _ _ _ himp
-    _ ≤ Pr{p ← $ᵗ (S × S')}[IsMCA G MC p.1 (W p.2) δ]
-        + Pr{p ← $ᵗ (S × S')}[∃ i, IsMCA G' MC p.2 (fun j => U (i, j)) δ] :=
+    _ ≤ Pr{let p ← $ᵗ (S × S')}[IsMCA G MC p.1 (W p.2) δ]
+        + Pr{let p ← $ᵗ (S × S')}[∃ i, IsMCA G' MC p.2 (fun j => U (i, j)) δ] :=
         prEvent_or_le _ _ _
     _ ≤ (ε_mca δ : ENNReal)
         + (Fintype.card ℓ : ENNReal) * (ε'_mca δ : ENNReal) := add_le_add hA hB

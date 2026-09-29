@@ -273,7 +273,7 @@ theorem fixed_native_resource_bounds (guess : Bool) (secret : Nat) :
       (fun hidden => ((hidden, 2),
         ([⟨false, false⟩, ⟨true, hidden⟩] : OracleSpec.QueryLog ambient), 4)) <$>
         (coinSpec.query () : OracleComp coinSpec Bool)) ∧
-    Pr{result ← (executeStrategiesWithRuntime runtime inputImpl
+    Pr{let result ← (executeStrategiesWithRuntime runtime inputImpl
       (prover guess secret) verifier)}[
       result.output.core.closed.map (TruthFinal result.output.core.path.toBranchPath) = some True] ≤
       (2 : ENNReal)⁻¹ := by
@@ -293,7 +293,7 @@ theorem informed_cost_does_not_give_half (secret : Nat) :
       (fun hidden => ((hidden, 3),
         ([⟨false, false⟩, ⟨true, hidden⟩, ⟨true, hidden⟩] : OracleSpec.QueryLog ambient), 7)) <$>
         (coinSpec.query () : OracleComp coinSpec Bool)) ∧
-    Pr{result ← (executeStrategiesWithRuntime runtime inputImpl
+    Pr{let result ← (executeStrategiesWithRuntime runtime inputImpl
       (informedProver secret) verifier)}[
       result.output.core.closed.map (TruthFinal result.output.core.path.toBranchPath) = some True] =
       1 :=

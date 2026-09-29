@@ -658,7 +658,7 @@ lemma fri_query_soundness
     let α0 : ℝ≥0∞ := ENNReal.ofReal (max α (ρ_sqrt * (1 + 1 / (2 * (m : ℝ≥0)))))
     let εQ  (x : Fin t → 𝔽)
             (z : Fin (k + 1) → 𝔽) :=
-      Pr{samp ← $ᵗ (ω.subdomain 0)}[Pr{_ ←
+      Pr{let samp ← $ᵗ (ω.subdomain 0)}[Pr{let _ ←
             (do
               simulateQ
                 (oracleImpl n (ω := ω) s 1 z (fun v ↦ f 0 v + ∑ i, x i * f i.succ v))
@@ -688,7 +688,7 @@ lemma fri_query_soundness
             )}[True]
         = 1
       ]
-    Pr{x ← $ᵗ (Fin t → 𝔽); z ← $ᵗ (Fin (k + 1) → 𝔽)}[εQ x z > α0] ≤
+    Pr{let x ← $ᵗ (Fin t → 𝔽); let z ← $ᵗ (Fin (k + 1) → 𝔽)}[εQ x z > α0] ≤
       εC 𝔽 n s m ρ_sqrt := by
   sorry
 
@@ -767,12 +767,12 @@ lemma fri_soundness
         (⟨fun x => x, by simp⟩ : ω ↪ 𝔽)
     let α : ℝ≥0 := (ρ_sqrt * (1 + 1 / (2 * (m : ℝ≥0))))
     (∃ prov : OracleProver (WitOut := Unit) ..,
-        Pr{_ ← OracleReduction.run () f ()
+        Pr{let _ ← (OracleReduction.run () f ()
             ⟨
               prov,
               (BatchedFri.Spec.batchedFRIreduction
                 (ω := ω) (n := n) k s d domain_size_cond l t).verifier
-            ⟩}[True] > εC 𝔽 n s m ρ_sqrt + α ^ l) →
+            ⟩)}[True] > εC 𝔽 n s m ρ_sqrt + α ^ l) →
       Code.jointAgreement
         (F := 𝔽)
         (κ := Fin t.succ)

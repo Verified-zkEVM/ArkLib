@@ -1052,10 +1052,10 @@ lemma accepts_of_probEvent_pos_verifier_run
     (tr : FullTranscript (pSpec (ι := ι) (F := F) k t))
     (witOut : OutputWitness)
     (relOut : Set ((OutputStatement × ∀ i, OutputOracleStatement i) × OutputWitness))
-    (h : Pr{stmtOut ← OptionT.mk do
+    (h : Pr{let stmtOut ← (OptionT.mk do
           (simulateQ impl
               (((oracleVerifier (k := k) (t := t) encode).toVerifier).run stmtIn tr)).run'
-            (← init)}[(stmtOut, witOut) ∈ relOut] > 0) :
+            (← init))}[(stmtOut, witOut) ∈ relOut] > 0) :
     Accepts (k := k) (t := t) encode stmtIn.1 stmtIn.2
       (tr ⟨0, by decide⟩) (tr ⟨1, by decide⟩) (tr ⟨2, by decide⟩) := by
   rw [gt_iff_lt, OracleComp.OptionT.prEvent_mk_pos_iff] at h
@@ -1264,7 +1264,7 @@ lemma gamma_round_game_bound [SampleableType F] [Nonempty ι] [Finite A]
     (hδ_pos : 0 < δ)
     (hδ_lt : δ < (minRelHammingDistCode (C : Set (ι → A)) : ℝ≥0))
     (stmtIn : Statement (F := F) k × (∀ i, OracleStatement ι A i)) :
-    Pr{γ ← $ᵗ F}[∃ w : Fin k → F,
+    Pr{let γ ← $ᵗ F}[∃ w : Fin k → F,
         (stmtIn, chooseRelaxedWitness k (encode : (Fin k → F) → (ι → A)) δ stmtIn) ∉
             outputRelationFor k (encode : (Fin k → F) → (ι → A)) δ ∧
           GammaState k (encode : (Fin k → F) → (ι → A)) δ
@@ -1316,7 +1316,7 @@ lemma spotcheck_round_game_bound [Nonempty ι]
     (encode : (Fin k → F) → (ι → A)) (δ : ℝ≥0)
     (stmtIn : Statement (F := F) k × (∀ i, OracleStatement ι A i))
     (γ : F) (g : Fin k → F) [SampleableType ι] :
-    Pr{xs ← $ᵗ (Fin t → ι)}[∃ _w : PUnit,
+    Pr{let xs ← $ᵗ (Fin t → ι)}[∃ _w : PUnit,
         ¬ GammaState k encode δ stmtIn.1.1 stmtIn.1.2.1 stmtIn.1.2.2
             (stmtIn.2 0) (stmtIn.2 1) γ g ∧
           Accepts (k := k) (t := t) encode stmtIn.1 stmtIn.2 γ g xs

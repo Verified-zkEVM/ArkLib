@@ -139,11 +139,11 @@ theorem mcaError_moduleInterleavedCode_le_of_card_le {S : Type} [Nonempty S] [Fi
       _ ≤ ENat.card F := hS
   obtain ⟨V, hV⟩ := exists_forall_isMCA_of_forall_isMCA_interleaved G C δ U s hs
     fun x hx ↦ (Finset.mem_filter.mp hx).2
-  calc Pr{x ← $ᵗ S}[IsMCA G (C^⋈κ) x U δ]
-      ≤ Pr{x ← $ᵗ S}[IsMCA G C x V δ] :=
+  calc Pr{let x ← $ᵗ S}[IsMCA G (C^⋈κ) x U δ]
+      ≤ Pr{let x ← $ᵗ S}[IsMCA G C x V δ] :=
         prEvent_mono _ _ _ fun x hx ↦
           hV x (Finset.mem_filter.mpr ⟨Finset.mem_univ x, hx⟩)
-    _ ≤ mcaError G C δ := le_iSup (fun V ↦ Pr{x ← $ᵗ S}[IsMCA G C x V δ]) V
+    _ ≤ mcaError G C δ := le_iSup (fun V ↦ Pr{let x ← $ᵗ S}[IsMCA G C x V δ]) V
 
 omit [Finite κ] in
 /-- **Interleaving does not decrease MCA error.** For every generator `G`, every module code `C`,
@@ -163,7 +163,7 @@ theorem mcaError_le_mcaError_moduleInterleavedCode [Nonempty κ] {S : Type} [Non
     mcaError G C δ ≤ mcaError G (C^⋈κ) δ := by
   refine iSup_le fun U ↦ ?_
   refine le_trans (prEvent_mono _ _ _ fun x hx ↦ ?_)
-    (le_iSup (fun W : ℓ → ι → κ → A ↦ Pr{x ← $ᵗ S}[IsMCA G (C^⋈κ) x W δ])
+    (le_iSup (fun W : ℓ → ι → κ → A ↦ Pr{let x ← $ᵗ S}[IsMCA G (C^⋈κ) x W δ])
       fun j i _ ↦ U j i)
   obtain ⟨T, hT, hcomb, j, hj⟩ := hx
   refine ⟨T, hT, ?_, j, fun hmem ↦ hj ?_⟩

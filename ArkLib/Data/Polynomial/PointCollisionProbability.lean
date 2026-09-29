@@ -43,7 +43,7 @@ colliding point tuple fails with probability `1`. -/
 theorem prob_not_injOn_evalTuple_le {Ω : Type} [Fintype Ω] [SampleableType Ω] {pt : Ω → ι → R}
     (hpt : Function.Injective pt) (S : Finset (κ → R[X])) {d : ℕ}
     (hdeg : ∀ f ∈ S, ∀ j, (f j).natDegree ≤ d) :
-    Pr{ω ← $ᵗ Ω}[¬ Set.InjOn (evalTuple (pt ω)) (S : Set (κ → R[X]))] ≤
+    Pr{let ω ← $ᵗ Ω}[¬ Set.InjOn (evalTuple (pt ω)) (S : Set (κ → R[X]))] ≤
       ENNReal.ofReal ((S.card.choose 2 * d ^ Fintype.card ι : ℕ) / (Fintype.card Ω : ℝ)) := by
   classical
   rw [SampleableType.prEvent_uniformSample_eq_ofReal]
@@ -61,7 +61,7 @@ such as `Code.Lambda`. The bound is `choose L 2 * d ^ |ι| / |Ω|`. -/
 theorem prob_not_injOn_evalTuple_le_of_encard_le {Ω : Type} [Fintype Ω] [SampleableType Ω]
     {pt : Ω → ι → R} (hpt : Function.Injective pt) {S : Set (κ → R[X])} {L d : ℕ}
     (hS : S.encard ≤ L) (hdeg : ∀ f ∈ S, ∀ j, (f j).natDegree ≤ d) :
-    Pr{ω ← $ᵗ Ω}[¬ Set.InjOn (evalTuple (pt ω)) S] ≤
+    Pr{let ω ← $ᵗ Ω}[¬ Set.InjOn (evalTuple (pt ω)) S] ≤
       ENNReal.ofReal ((L.choose 2 * d ^ Fintype.card ι : ℕ) / (Fintype.card Ω : ℝ)) := by
   have hfin : S.Finite := Set.finite_of_encard_le_coe hS
   have hcard : hfin.toFinset.card ≤ L := by

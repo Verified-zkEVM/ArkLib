@@ -135,9 +135,9 @@ abbrev Answer (result :
 lemma native_success_eq_split (native :
     Prover.Strategy ambient combined.tree combined.roles (fun _ => Nat))
     (world : OracleRuntime coinSpec ambient) :
-    Pr{result ← (executeStrategiesWithRuntime world inputImpl native verifier)}[
+    Pr{let result ← (executeStrategiesWithRuntime world inputImpl native verifier)}[
       result.output.core.closed.map (TruthFinal result.output.core.path.toBranchPath) = some True] =
-    Pr{result ← (world.run (prefixProgram native >>= nextProgram))}[Success result.output] := by
+    Pr{let result ← (world.run (prefixProgram native >>= nextProgram))}[Success result.output] := by
   have same := executeStrategiesWithRuntime_appendExported_prEvent ambient
     firstProtocol.tree (fun _ => secondProtocol.tree)
     firstProtocol.roles (fun _ => secondProtocol.roles)
@@ -181,13 +181,13 @@ lemma run_guess_answers (guess : Bool) (secret : Nat) :
   rfl
 
 lemma guess_success (guess : Bool) (secret : Nat) :
-    Pr{result ← (executeStrategiesWithRuntime runtime inputImpl
+    Pr{let result ← (executeStrategiesWithRuntime runtime inputImpl
       (prover guess secret) verifier)}[
       result.output.core.closed.map (TruthFinal result.output.core.path.toBranchPath) = some True] =
     (2 : ENNReal)⁻¹ := by
   rw [native_success_eq_split]
   have mass := congrArg (fun program : OracleComp coinSpec (Option (Bool × Bool)) =>
-    Pr{pair ← program}[pair.map (fun pair : Bool × Bool => pair.1 = pair.2) = some True])
+    Pr{let pair ← program}[pair.map (fun pair : Bool × Bool => pair.1 = pair.2) = some True])
     (run_guess_answers guess secret)
   simp only [prEvent_map, Answer, Option.map_map, Function.comp_def] at mass
   convert mass.trans ?_ using 1
@@ -205,9 +205,9 @@ local instance : MeasurableSpace (RunResult runtime Boundary) := ⊤
 
 lemma average_success (native :
     Prover.Strategy ambient combined.tree combined.roles (fun _ => Nat)) :
-    Pr{result ← (executeStrategiesWithRuntime runtime inputImpl native verifier)}[
+    Pr{let result ← (executeStrategiesWithRuntime runtime inputImpl native verifier)}[
       result.output.core.closed.map (TruthFinal result.output.core.path.toBranchPath) = some True] =
-    ∫⁻ b, Pr{result ← runtime.resume b nextProgram}[Success result.output]
+    ∫⁻ b, Pr{let result ← runtime.resume b nextProgram}[Success result.output]
       ∂𝒟[runtime.run (prefixProgram native)] := by
   rw [native_success_eq_split, runtime.run_bind, prEvent_bind_eq_lintegral_of_discrete]
 
@@ -215,7 +215,7 @@ lemma average_success (native :
 one. -/
 lemma guess_integrated (guess : Bool) (secret : Nat) :
     (∫⁻ b in {_b : RunResult runtime Boundary | ¬ False},
-      Pr{result ← runtime.resume b nextProgram}[Success result.output]
+      Pr{let result ← runtime.resume b nextProgram}[Success result.output]
         ∂𝒟[runtime.run (prefixProgram (prover guess secret))]) ≤
     ∫⁻ _b in {_b : RunResult runtime Boundary | ¬ False},
       (2 : ENNReal)⁻¹ ∂𝒟[runtime.run (prefixProgram (prover guess secret))] := by
@@ -225,7 +225,7 @@ lemma guess_integrated (guess : Bool) (secret : Nat) :
 
 /-- Apply the main native theorem to the actual exported continuation, with no exceptional event. -/
 lemma guess_bound (guess : Bool) (secret : Nat) :
-    Pr{result ← (executeStrategiesWithRuntime runtime inputImpl
+    Pr{let result ← (executeStrategiesWithRuntime runtime inputImpl
       (prover guess secret) verifier)}[
       result.output.core.closed.map (TruthFinal result.output.core.path.toBranchPath) = some True] ≤
     (2 : ENNReal)⁻¹ := by
@@ -279,13 +279,13 @@ lemma run_informed_answers (secret : Nat) :
 
 /-- A fixed whole native prover can learn through an oracle query before its commitment. -/
 lemma informed_success (secret : Nat) :
-    Pr{result ← (executeStrategiesWithRuntime runtime inputImpl
+    Pr{let result ← (executeStrategiesWithRuntime runtime inputImpl
       (informedProver secret) verifier)}[
       result.output.core.closed.map (TruthFinal result.output.core.path.toBranchPath) = some True] =
     1 := by
   rw [native_success_eq_split]
   have mass := congrArg (fun program : OracleComp coinSpec (Option (Bool × Bool)) =>
-    Pr{pair ← program}[pair.map (fun pair : Bool × Bool => pair.1 = pair.2) = some True])
+    Pr{let pair ← program}[pair.map (fun pair : Bool × Bool => pair.1 = pair.2) = some True])
     (run_informed_answers secret)
   simp only [prEvent_map, Answer, Option.map_map, Function.comp_def] at mass
   convert mass.trans ?_ using 1
@@ -297,7 +297,7 @@ lemma informed_success (secret : Nat) :
 can erase this correlation. -/
 lemma informed_half_premise_fails (secret : Nat) :
     ¬ ((∫⁻ b in {_b : RunResult runtime Boundary | ¬ False},
-      Pr{result ← runtime.resume b nextProgram}[Success result.output]
+      Pr{let result ← runtime.resume b nextProgram}[Success result.output]
         ∂𝒟[runtime.run (prefixProgram (informedProver secret))]) ≤
     ∫⁻ _b in {_b : RunResult runtime Boundary | ¬ False},
       (2 : ENNReal)⁻¹ ∂𝒟[runtime.run (prefixProgram (informedProver secret))]) := by
@@ -394,7 +394,7 @@ private abbrev fixedRuntime (hidden : Bool) : OracleRuntime coinSpec ambient :=
 /-- At a fixed hidden state, one of the two fixed guesses succeeds surely. All probabilities are
 under the base import semantics; this is not a lawful fixed-state `StateT` distribution. -/
 lemma fixed_guess_success (guess hidden : Bool) (secret : Nat) :
-    Pr{result ← (executeStrategiesWithRuntime (fixedRuntime hidden)
+    Pr{let result ← (executeStrategiesWithRuntime (fixedRuntime hidden)
       inputImpl (prover guess secret) verifier)}[
         result.output.core.closed.map
           (TruthFinal result.output.core.path.toBranchPath) = some True] =
@@ -404,7 +404,7 @@ lemma fixed_guess_success (guess hidden : Bool) (secret : Nat) :
   simp only [fixedRuntime, pure_bind]
   have observed := (fixedRuntime hidden).runFrom_observe (hidden, 0)
     (prefixProgram (prover guess secret) >>= nextProgram)
-  have sameState := congrArg (fun program => Pr{result ← program}[Success result.1]) observed
+  have sameState := congrArg (fun program => Pr{let result ← program}[Success result.1]) observed
   simp only [prEvent_map] at sameState
   rw [sameState]
   let answer := fun result :
@@ -420,11 +420,11 @@ lemma fixed_guess_success (guess hidden : Bool) (secret : Nat) :
     subst execution
     cases guess <;> cases hidden <;> rfl
   have mass := congrArg (fun program : OracleComp coinSpec (Option (Bool × Bool)) =>
-    Pr{pair ← program}[
+    Pr{let pair ← program}[
     pair.map (fun pair : Bool × Bool => pair.1 = pair.2) = some True]) computed
   simp only [prEvent_map] at mass
   calc
-    _ = Pr{pair ← (pure (some (guess, hidden)) : OracleComp coinSpec (Option (Bool × Bool)))}[
+    _ = Pr{let pair ← (pure (some (guess, hidden)) : OracleComp coinSpec (Option (Bool × Bool)))}[
         pair.map (fun pair : Bool × Bool => pair.1 = pair.2) = some True] := by
       simp only [answer, Option.map_map, Function.comp_def] at mass
       convert mass using 1
@@ -434,7 +434,7 @@ lemma fixed_guess_success (guess hidden : Bool) (secret : Nat) :
 
 /-- An analytic matching hidden state has success one, so a fixed-state half bound is invalid. -/
 lemma fixed_hidden_half_fails (guess : Bool) (secret : Nat) :
-    ¬ Pr{result ← (executeStrategiesWithRuntime (fixedRuntime guess)
+    ¬ Pr{let result ← (executeStrategiesWithRuntime (fixedRuntime guess)
       inputImpl (prover guess secret) verifier)}[
         result.output.core.closed.map
           (TruthFinal result.output.core.path.toBranchPath) = some True] ≤ (2 : ENNReal)⁻¹ := by

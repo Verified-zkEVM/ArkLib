@@ -131,19 +131,19 @@ theorem rbrKnowledgeSoundness_implies_rbrSoundness
         simp [logGame, plainGame, ← Prover.runWithLogToRound_discard_log_eq_runToRound, hrunlog]
         rfl
       have hk := hkSF stmtIn (Classical.choice hWin) prover' i
-      change Pr{x ← plainGame}[
+      change Pr{let x ← plainGame}[
         ¬ (∃ w, kSF i.1.castSucc stmtIn x.1 w) ∧
           ∃ w, kSF i.1.succ stmtIn (x.1.concat x.2) w] ≤ _
-      change Pr{x ← logGame}[∃ w,
+      change Pr{let x ← logGame}[∃ w,
         ¬ kSF i.1.castSucc stmtIn x.1
             (extractor.extractMid i.1 stmtIn (x.1.concat x.2.1) w) ∧
           kSF i.1.succ stmtIn (x.1.concat x.2.1) w] ≤ _ at hk
       calc
-        _ = Pr{x ← logGame}[
+        _ = Pr{let x ← logGame}[
             ¬ (∃ w, kSF i.1.castSucc stmtIn x.1 w) ∧
               ∃ w, kSF i.1.succ stmtIn (x.1.concat x.2.1) w] := by
               rw [← hmap, prEvent_map]
-        _ ≤ Pr{x ← logGame}[∃ w,
+        _ ≤ Pr{let x ← logGame}[∃ w,
             ¬ kSF i.1.castSucc stmtIn x.1
                 (extractor.extractMid i.1 stmtIn (x.1.concat x.2.1) w) ∧
               kSF i.1.succ stmtIn (x.1.concat x.2.1) w] := by

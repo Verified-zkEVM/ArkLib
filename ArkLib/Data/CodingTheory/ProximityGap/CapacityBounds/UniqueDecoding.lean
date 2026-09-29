@@ -49,7 +49,7 @@ private theorem rs_fold_probability_le_bound_of_not_joint_proximity
     (u : Fin 2 → ι → F)
     (hjoint : ¬ Code.jointProximity
       (C := (ReedSolomon.code domain k : Set (ι → F))) (u := u) δ_int) :
-    Pr{z ← $ᵗ F}[
+    Pr{let z ← $ᵗ F}[
       δᵣ(u 0 + z • u 1, ReedSolomon.code domain k) ≤ δ_fld] ≤
       ENNReal.ofReal
         (max

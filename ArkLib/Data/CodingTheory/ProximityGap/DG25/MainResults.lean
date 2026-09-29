@@ -145,7 +145,7 @@ def constructInterleavedCodewordsAndRowWiseCA
       -- which can be derived from hR_star_card
     -- For any row i, R_star_card implies the proximity gap property applies to that row
     have h_P_affineCombineRow:
-      (Pr{r ←$ᵗ F }[ -- Probability notation
+      (Pr{let r ←$ᵗ F }[ -- Probability notation
         (Δ₀(affineLineEvaluation (F := F) u₀ u₁ r, C) ≤ e: Prop)
       ] > ((ε: ℝ≥0) / (Fintype.card F : ℝ≥0))) := by
       -- Goal: Show probability > ε / q
@@ -824,7 +824,7 @@ omit [NoZeroDivisors F] [Module.Free F A] [Nonempty ι] [Fintype A] [DecidableEq
   [DecidableEq ι] [Nontrivial ↥MC] in
 lemma probShadedAffineCombInterleavedCodeword_gt_threshold_iff
     (U₀ U₁ : InterleavedWord A (Fin m) ι) :
-  Pr{r ←$ᵗ F }[
+  Pr{let r ←$ᵗ F }[
     Δ₀(affineLineEvaluation (F := F) U₀ U₁ r,
       MC ^⋈ (Fin m)) ≤ e ] > ((ε: ℝ≥0) / (Fintype.card F : ℝ≥0))
   ↔ (R_star (A := A) (F := F) (ι := ι) (C := MC) (m := m) (e := e) U₀ U₁).card > ε := by
@@ -998,7 +998,7 @@ We define `R* := {r_{ϑ-1} ∈ 𝔽_q | p(r_{ϑ-1}) > (ϑ-1) · ε/q}`. We note 
 matrix `(1-r_{ϑ-1}) · U₀ + r_{ϑ-1} · U₁` fulfills the inductive hypothesis (that is,
 the hypothesis of Definition 2.3, with respect to the smaller list size parameter) -/
 def R_star_tensor_filter (U₀ U₁ : (Fin (2 ^ m)) → Word A ι) (r_affine_combine : F) : Prop :=
-  (Pr{r ← $ᵗ (Fin m → F)}[ -- This syntax only works with (A : Type 0)
+  (Pr{let r ← $ᵗ (Fin m → F)}[ -- This syntax only works with (A : Type 0)
     Δ₀(multilinearCombine_affineLineEvaluation (U₀ := U₀) (U₁ := U₁)
       (r := r) (r_affine_combine := r_affine_combine), MC) ≤ e
   ] > (m * ε: ℝ≥0) / (Fintype.card F : ℝ≥0))
@@ -1026,7 +1026,8 @@ lemma correlatedAgreement_of_mem_R_star_tensor
   -- simp only [Nat.add_one_sub_one, Subtype.forall]
   intro r
   apply ih
-  -- ⊢ Pr{ r ← Fin (ϑ_pred) → F}[ Δ₀(multilinearCombine Uᵣ (r := r), MC) ≤ e ] > (ϑ_pred * ε) / |𝔽|
+  -- ⊢ Pr{ let r ← Fin (ϑ_pred) → F}[ Δ₀(multilinearCombine Uᵣ (r := r), MC) ≤ e ]
+  --     > (ϑ_pred * ε) / |𝔽|
   -- i.e. these r must satisfy (tensor-folding with the affine random combination)
     -- must be close to individual-row code MC
   set U₀ := (splitHalfRowWiseInterleavedWords (ϑ := ϑ_pred) u).1
@@ -1053,14 +1054,14 @@ lemma prob_R_star_gt_threshold
     {ϑ : ℕ}
   (u : WordStack A (Fin (2 ^ (ϑ + 1))) ι) (e : ℕ)
   (hP_multilinearCombine_affine_close_gt :
-    Pr{r_last ← $ᵗ F;
-         r_init ← $ᵗ (Fin (ϑ) → F)}[multilinearCombine_affineComb_split_last_close
+    Pr{let r_last ← $ᵗ F;
+         let r_init ← $ᵗ (Fin (ϑ) → F)}[multilinearCombine_affineComb_split_last_close
       (MC := MC) (u := u) (e := e) r_last r_init]
     > (((Nat.cast (R := ℝ≥0) (ϑ + 1)) * ε : ℝ≥0) / ((Fintype.card F : ℝ≥0) : ℝ≥0))) :
     let U₀ := (splitHalfRowWiseInterleavedWords (ϑ := ϑ) u).1
     let U₁ := (splitHalfRowWiseInterleavedWords (ϑ := ϑ) u).2
     let R_star_set := R_star_tensor MC (e := e) (ε := ε) U₀ U₁
-  Pr{r ← $ᵗ F }[ r ∈ R_star_set ] > (↑ε : ENNReal) / (Fintype.card F : ENNReal) := by
+  Pr{let r ← $ᵗ F }[ r ∈ R_star_set ] > (↑ε : ENNReal) / (Fintype.card F : ENNReal) := by
   -- 1. Setup abbreviations for clarity
   set U₀ := (splitHalfRowWiseInterleavedWords (ϑ := ϑ) u).1
   set U₁ := (splitHalfRowWiseInterleavedWords (ϑ := ϑ) u).2
@@ -1085,29 +1086,29 @@ lemma prob_R_star_gt_threshold
   set g := fun (r : F × (Fin ϑ → F)) => r.1 ∈ R_star_set
   -- 3. Rewrite the hypothesis `hP...` using the combined distribution `D`
   -- `hP_f_gt` is the hypothesis `Pr[f] > cur_false_witness_threshold`
-  have h_P_f_gt : Pr{r ← D}[f r] > cur_false_witness_threshold := by
+  have h_P_f_gt : Pr{let r ← D}[f r] > cur_false_witness_threshold := by
     rw [show D = $ᵗ (F × (Fin ϑ → F)) from rfl,
       SampleableType.prEvent_uniformSample_prod]
     exact hP_multilinearCombine_affine_close_gt
   -- 4. Apply the Law of Total Probability: Pr[f] = Pr[f ∧ g] + Pr[f ∧ ¬g]
-  have h_split : Pr{r ← D}[f r] =
-    Pr{r ← D}[g r ∧ f r] + Pr{r ← D}[¬(g r) ∧ f r] := by
+  have h_split : Pr{let r ← D}[f r] =
+    Pr{let r ← D}[g r ∧ f r] + Pr{let r ← D}[¬(g r) ∧ f r] := by
     simpa only [and_comm] using
       prEvent_eq_prEvent_and_add_prEvent_and_not D f g
   -- 5. Bound the two terms on the RHS
   -- 5a. Pr[f ∧ g] ≤ Pr[g]
-  have h_Pr_f_and_g_le_Pr_g : Pr{r ← D}[g r ∧ f r] ≤ Pr{r ← D}[g r] := by
+  have h_Pr_f_and_g_le_Pr_g : Pr{let r ← D}[g r ∧ f r] ≤ Pr{let r ← D}[g r] := by
     exact prEvent_mono D _ _ fun _ h => h.1
   -- 5b. Pr[f ∧ ¬g] ≤ prev_false_witness_threshold (i.e., ϑε/q) (This is the "false positive" bound)
-  -- Proof sketch: Pr{r ← D}[¬(g r) ∧ f r]
+  -- Proof sketch: Pr{let r ← D}[¬(g r) ∧ f r]
     -- = (1/q) * ∑' r_last, Pr{r_init}[ r_last ∉ R_star_set ∧ f (r_init||r_last)]
   -- (1/q) * ∑' r_last, (if r_last ∉ R* then Pr{r_init}[f(r_last, r_init)] else 0)
   -- ≤ (1/q) * ∑' r_last, (if r_last ∉ R* then (ϑ * ε/q) else 0)
   -- ≤ (1/q) * ∑' r_last, (ϑ * ε/q) = (1/q) * (ϑ * ε/q * q) = ϑ*ε/q (Q.E.D)
-  have h_bound_not_g : Pr{r ← D}[¬(g r) ∧ f r] ≤ prev_false_witness_threshold := by
+  have h_bound_not_g : Pr{let r ← D}[¬(g r) ∧ f r] ≤ prev_false_witness_threshold := by
     rw [show D = $ᵗ (F × (Fin ϑ → F)) from rfl,
       SampleableType.prEvent_uniformSample_prod]
-    suffices h : ∀ i, Pr{r ←$ᵗ (Fin ϑ → F)}[¬ g (i, r) ∧ f (i, r)] ≤
+    suffices h : ∀ i, Pr{let r ←$ᵗ (Fin ϑ → F)}[¬ g (i, r) ∧ f (i, r)] ≤
         prev_false_witness_threshold by
       simpa only [id_map, bind_pure_comp] using
         prEvent_bind_le_of_forall_le ($ᵗ F)
@@ -1118,7 +1119,7 @@ lemma prob_R_star_gt_threshold
     · simp [g, hi]
     · simp only [g, hi, not_false_eq_true, true_and]
       have h_inner_le : ∀ (i: F), (if i ∉ R_star_set then
-        Pr{r_init ← $ᵗ (Fin ϑ → F)}[f (i, r_init)] else 0)
+        Pr{let r_init ← $ᵗ (Fin ϑ → F)}[f (i, r_init)] else 0)
           ≤ prev_false_witness_threshold := fun i => by
         by_cases hi_mem: i ∈ R_star_set
         · simp only [hi_mem, not_true_eq_false, ↓reduceIte, zero_le]
@@ -1138,17 +1139,17 @@ lemma prob_R_star_gt_threshold
   -- sorry
   -- 6. Chain the inequalities: `(ϑ+1)ε/q < Pr[f] ≤ Pr[g] + Pr[f ∧ ¬g] ≤ Pr[g] + ϑε/q`
   have h_total_lt_Pr_g_add_term : cur_false_witness_threshold
-    < Pr{r ← D}[g r] + prev_false_witness_threshold := by
+    < Pr{let r ← D}[g r] + prev_false_witness_threshold := by
     calc cur_false_witness_threshold
-      < Pr{r ← D}[f r] := h_P_f_gt
-      _ = Pr{r ← D}[g r ∧ f r] + Pr{r ← D}[¬(g r) ∧ f r] := by rw [h_split]
-      _ ≤ Pr{r ← D}[g r] + Pr{r ← D}[¬(g r) ∧ f r] := by
+      < Pr{let r ← D}[f r] := h_P_f_gt
+      _ = Pr{let r ← D}[g r ∧ f r] + Pr{let r ← D}[¬(g r) ∧ f r] := by rw [h_split]
+      _ ≤ Pr{let r ← D}[g r] + Pr{let r ← D}[¬(g r) ∧ f r] := by
         gcongr
-      _ ≤ Pr{r ← D}[g r] + prev_false_witness_threshold := by
+      _ ≤ Pr{let r ← D}[g r] + prev_false_witness_threshold := by
         gcongr
       _ ≤ _ := le_rfl
   -- 7. Prove Pr[g] is equal to the goal probability (marginalization)
-  have h_Pr_g_eq : Pr{r ← D}[g r] = Pr{r ← $ᵗ F}[ r ∈ R_star_set ] := by
+  have h_Pr_g_eq : Pr{let r ← D}[g r] = Pr{let r ← $ᵗ F}[ r ∈ R_star_set ] := by
     exact SampleableType.prEvent_uniformSample_fst (α := F)
       (β := Fin ϑ → F) (fun r => r ∈ R_star_set)
   -- 8. Rearrange to get the final result
@@ -1157,7 +1158,7 @@ lemma prob_R_star_gt_threshold
   -- This is: cur_false_witness_threshold - prev_false_witness_threshold < Pr[g]
   rw [h_Pr_g_eq] at h_total_lt_Pr_g_add_term
   have h_lt_sub : cur_false_witness_threshold - prev_false_witness_threshold
-    < Pr{r ← $ᵗ F}[r ∈ R_star_set] := by
+    < Pr{let r ← $ᵗ F}[r ∈ R_star_set] := by
     rw [ENNReal.sub_lt_iff_lt_right]
     · omega
     · exact h_finite
@@ -1218,8 +1219,8 @@ theorem interleaved_affine_gaps_imply_tensor_gaps
         intro hprob_gt
         simp_rw [toAffineLineEval] at hprob_gt
         have prob_eq :
-            Pr{r ←$ᵗ (Fin 1 → F)}[Δ₀(affineLineEvaluation (u 0) (u 1) (r 0), MC) ≤ e] =
-            Pr{r ←$ᵗ F}[Δ₀(affineLineEvaluation (u 0) (u 1) r, MC) ≤ e] :=
+            Pr{let r ←$ᵗ (Fin 1 → F)}[Δ₀(affineLineEvaluation (u 0) (u 1) (r 0), MC) ≤ e] =
+            Pr{let r ←$ᵗ F}[Δ₀(affineLineEvaluation (u 0) (u 1) r, MC) ≤ e] :=
           SampleableType.prEvent_uniformSample_equiv (Equiv.funUnique (Fin 1) F)
             (fun r => Δ₀(affineLineEvaluation (u 0) (u 1) r, MC) ≤ e)
         rw [prob_eq] at hprob_gt
@@ -1305,12 +1306,12 @@ theorem interleaved_affine_gaps_imply_tensor_gaps
         simp_rw [multilinearCombine_snoc_eq_multilinearCombine_affine]
           at hP_multilinearCombine_close_gt
         -- hP_multilinearCombine_close_gt now looks like:
-        -- Pr{ r_last ← $ᵗ F; r_init ← $ᵗ (Fin ϑ_pred → F) }[ Δ₀(multilinearCombine
+        -- Pr{ let r_last ← $ᵗ F; let r_init ← $ᵗ (Fin ϑ_pred → F) }[ Δ₀(multilinearCombine
             -- (affineLineEvaluation U₀ U₁ r_last) r_init, ↑MC) ≤ ↑e ] > ↑(↑ϑ * ↑ε) / q
         -- Step 2 & 3: Define R* and apply Law of Total Probability
         let R_star_set := R_star_tensor MC (m:=ϑ_pred) (e:=e) (ε:=ε) U₀ U₁
         -- Step 5: Show Pr[R*] > ε / q
-        have h_prob_Rstar_gt_eps_div_q : Pr{r ← $ᵗ F }[ r ∈ R_star_set ]
+        have h_prob_Rstar_gt_eps_div_q : Pr{let r ← $ᵗ F }[ r ∈ R_star_set ]
           > (↑ε : ENNReal) / (Fintype.card F : ENNReal) := by
           let res := prob_R_star_gt_threshold (MC := MC) (ε := ε) (ϑ := ϑ_sub_2 + 1) (u := u)
             (e := e) (hP_multilinearCombine_close_gt)
@@ -1339,7 +1340,7 @@ theorem interleaved_affine_gaps_imply_tensor_gaps
         have h_C_m_gap := h_interleaved_gaps (2^(ϑ_sub_2 + 1)) (Nat.one_le_two_pow)
         -- Need the hypothesis Pr[...] > ε/q for h_C_m_gap
         have h_prob_line_gt_eps_div_q :
-          Pr{r ← $ᵗ F }[
+          Pr{let r ← $ᵗ F }[
             Δ₀(affineLineEvaluation (u₀ := ⋈|(show WordStack A (Fin (2 ^ (ϑ_sub_2 + 1))) ι from U₀))
               (u₁ := ⋈|(show WordStack A (Fin (2 ^ (ϑ_sub_2 + 1))) ι from U₁)) (r := r),
               ((MC ^⋈ (Fin (2 ^ (ϑ_sub_2 + 1)))))) ≤ e

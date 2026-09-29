@@ -382,10 +382,10 @@ theorem mem_outputRelationFor_of_probEvent_pos_oracleVerifier_run
     (stmtIn : Statement (F := F) k × (∀ i, OracleStatement ι A i))
     (tr : (pSpec (F := F)).FullTranscript)
     (witOut : OutputWitness (F := F) k)
-    (h : Pr{stmtOut ← OptionT.mk do
+    (h : Pr{let stmtOut ← (OptionT.mk do
           (simulateQ impl
             (((oracleVerifier (ι := ι) (F := F) (A := A) (k := k)).toVerifier).run
-              stmtIn tr)).run' (← init)}[(stmtOut, witOut) ∈
+              stmtIn tr)).run' (← init))}[(stmtOut, witOut) ∈
             outputRelationFor k encode δ] > 0) :
     (derivedOutput (ι := ι) (F := F) (A := A) k stmtIn
       (transcriptGamma (F := F) tr), witOut) ∈ outputRelationFor k encode δ := by
@@ -430,7 +430,7 @@ private lemma gamma_game_bound [SampleableType F] [Nonempty ι] [Finite A]
     (hδ_pos : 0 < δ)
     (hδ_lt : δ < (minRelHammingDistCode (C : Set (ι → A)) : ℝ≥0))
     (stmtIn : Statement (F := F) k × (∀ i, OracleStatement ι A i)) :
-    Pr{γ ← $ᵗ F}[
+    Pr{let γ ← $ᵗ F}[
         (stmtIn, Spec.chooseRelaxedWitness k (encode : (Fin k → F) → (ι → A)) δ stmtIn) ∉
             Spec.outputRelationFor k (encode : (Fin k → F) → (ι → A)) δ ∧
           ∃ m : Fin k → F,
@@ -490,7 +490,7 @@ theorem knowledgeSoundnessWith_of_transition_failure_prob_le
       (Statement (F := F) k × (∀ i, OracleStatement ι A i)) →
         F → (Fin k → F) → Witness (F := F) k)
     (hgamma : ∀ stmtIn,
-      Pr{γ ← $ᵗ F}[∃ g : Fin k → F,
+      Pr{let γ ← $ᵗ F}[∃ g : Fin k → F,
           (stmtIn, transition stmtIn γ g) ∉
               Spec.outputRelationFor k (encode : (Fin k → F) → (ι → A)) δ ∧
             Spec.GammaState k (encode : (Fin k → F) → (ι → A)) δ

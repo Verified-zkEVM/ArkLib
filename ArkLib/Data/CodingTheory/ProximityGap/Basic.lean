@@ -101,8 +101,8 @@ noncomputable def δ_ε_proximityGap {α : Type} [DecidableEq α] [Nonempty α]
   (P : Finset (ι → α)) (C : Set (Finset (ι → α))) (δ ε : ℝ≥0) : Prop :=
   ∀ S ∈ C, ∀ [Nonempty S],
   Xor
-  ( Pr{x ← $ᵗ S}[δᵣ(x.val, P) ≤ δ] = 1 )
-  ( Pr{x ← $ᵗ S}[δᵣ(x.val, P) ≤ δ] ≤ ε )
+  ( Pr{let x ← $ᵗ S}[δᵣ(x.val, P) ≤ δ] = 1 )
+  ( Pr{let x ← $ᵗ S}[δᵣ(x.val, P) ≤ δ] ≤ ε )
 
 /-- Definition: `(δ, ε)`-correlated agreement for affine lines.
 For every pair of words `u₀, u₁`, if the probability that a random affine line `u₀ + z • u₁` is
@@ -112,7 +112,7 @@ For every pair of words `u₀, u₁`, if the probability that a random affine li
 noncomputable def δ_ε_correlatedAgreementAffineLines [Module F A]
     (C : Set (ι → A)) (δ ε : ℝ≥0) : Prop :=
   ∀ (u : WordStack (A := A) (κ := Fin 2) (ι := ι)),
-    Pr{z ← $ᵗ F}[δᵣ(u 0 + z • u 1, C) ≤ δ] > ε →
+    Pr{let z ← $ᵗ F}[δᵣ(u 0 + z • u 1, C) ≤ δ] > ε →
     jointAgreement (F := A) (κ := Fin 2) (ι := ι) (C := C) (W := u) (δ := δ)
 
 section MultilinearCA
@@ -130,7 +130,7 @@ with respect to the proximity parameter `δ` and the error bound `ε`, folding d
 def δ_ε_multilinearCorrelatedAgreement [Module F A]
     (C : Set (ι → A)) (ϑ : ℕ) (δ ε : ℝ≥0) : Prop :=
   ∀ (u : WordStack A (Fin (2^ϑ)) ι),
-    Pr{r ← $ᵗ (Fin ϑ → F)}[ -- This syntax only works with (A : Type 0)
+    Pr{let r ← $ᵗ (Fin ϑ → F)}[ -- This syntax only works with (A : Type 0)
       δᵣ(r |⨂| u, C) ≤ δ
     ] > (ϑ : ℝ≥0) * ε →
     jointAgreement (F := A) (κ := Fin (2 ^ ϑ)) (ι := ι) (C := C) (W := u) (δ := δ)
@@ -143,7 +143,7 @@ For `k+1` words `u₀, u₁, ..., uₖ ∈ A^ι` let `curve(u) = {∑_{i ∈ {0,
 be a low-degree parameterised polynomial curve. If the probability that a random point in
 `curve(u)` is `δ`-close to `C` exceeds `k * ε` (not `(k+1) * ε`), then the words `u₀, ..., uₖ`
 have correlated agreement.
-**NOTE**: this definition could be converted into the form of Pr{r ← $ᵗ F}[...] if we want:
+**NOTE**: this definition could be converted into the form of Pr{let r ← $ᵗ F}[...] if we want:
   + consistency with `δ_ε_correlatedAgreementAffineLines`
   + making `A` be of arbitrary type universe (Type*)
   + to be able to support the `proximity generator` notation.
@@ -152,7 +152,7 @@ noncomputable def δ_ε_correlatedAgreementCurves {k : ℕ}
     {A : Type 0} [AddCommMonoid A] [Module F A] [Fintype A] [DecidableEq A]
     (C : Set (ι → A)) (δ ε : ℝ≥0) : Prop :=
     ∀ (u : WordStack (A := A) (κ := Fin (k + 1)) (ι := ι)),
-    Pr{r ← $ᵗ F}[ δᵣ(∑ i : Fin (k + 1), (r ^ (i : ℕ)) • u i, C) ≤ δ ] > k * ε
+    Pr{let r ← $ᵗ F}[ δᵣ(∑ i : Fin (k + 1), (r ^ (i : ℕ)) • u i, C) ≤ δ ] > k * ε
       → jointAgreement (F := A) (κ := Fin (k + 1)) (ι := ι) (C := C) (W := u) (δ := δ)
 
 /-- **`(δ, ε)`-CA for affine spaces**: Generalized statement of **Theorem 1.6, [BCIKS20]**
@@ -168,7 +168,7 @@ noncomputable def δ_ε_correlatedAgreementAffineSpaces
     {A : Type 0} [AddCommGroup A] [Module F A] [Fintype A] [DecidableEq A]
     (C : Set (ι → A)) (δ ε : ℝ≥0) : Prop :=
     ∀ (u : WordStack (A := A) (κ := Fin (k + 1)) (ι := ι)),
-    Pr{y ← $ᵗ ↥(Affine.affineSubspaceAtOrigin (F := F) (u 0) (Fin.tail u))}[
+    Pr{let y ← $ᵗ ↥(Affine.affineSubspaceAtOrigin (F := F) (u 0) (Fin.tail u))}[
       δᵣ(y.1, C) ≤ δ] > ε →
     jointAgreement (F := A) (κ := Fin (k + 1)) (ι := ι) (C := C) (W := u) (δ := δ)
 

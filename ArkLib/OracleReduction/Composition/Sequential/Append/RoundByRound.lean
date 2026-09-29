@@ -56,7 +56,7 @@ theorem append_rbrSoundnessWorstCase_of_pure_first
   obtain ⟨i, rfl⟩ := ChallengeIdx.sumEquiv.surjective i
   rcases i with i | i
   · change ∀ tr : (pSpec₁ ++ₚ pSpec₂).Transcript (ChallengeIdx.inl i).1.castSucc,
-      Pr{c ← $ᵗ ((pSpec₁ ++ₚ pSpec₂).Challenge (ChallengeIdx.inl i))}[
+      Pr{let c ← $ᵗ ((pSpec₁ ++ₚ pSpec₂).Challenge (ChallengeIdx.inl i))}[
         ¬ S _ stmt tr ∧ S _ stmt (tr.concat c)] ≤ _
     intro tr
     simp only [Function.comp_apply, Equiv.symm_apply_apply, Sum.elim_inl]
@@ -64,17 +64,17 @@ theorem append_rbrSoundnessWorstCase_of_pure_first
     · obtain ⟨tr₁, hnot₁, hnext⟩ := StateFunction.append_transition_left
         init impl S₁ S₂ V.verify hVerify i.1 stmt tr hnot
       calc
-        _ ≤ Pr{c ← $ᵗ ((pSpec₁ ++ₚ pSpec₂).Challenge (ChallengeIdx.inl i))}[
+        _ ≤ Pr{let c ← $ᵗ ((pSpec₁ ++ₚ pSpec₂).Challenge (ChallengeIdx.inl i))}[
               ¬ S₁ i.1.castSucc stmt tr₁ ∧
                 S₁ i.1.succ stmt (tr₁.concat (cast (challenge_append_inl i) c))] :=
           prEvent_mono _ _ _ fun c hc => ⟨hnot₁, hnext c hc.2⟩
-        _ = Pr{c ← $ᵗ (pSpec₁.Challenge i)}[
+        _ = Pr{let c ← $ᵗ (pSpec₁.Challenge i)}[
               ¬ S₁ i.1.castSucc stmt tr₁ ∧ S₁ i.1.succ stmt (tr₁.concat c)] := by
           rw [← uniformSample_challenge_append_inl (pSpec₂ := pSpec₂) i, prEvent_map]
         _ ≤ _ := h₁ stmt hstmt i tr₁
     · simp only [hnot, false_and, prEvent_false, zero_le]
   · change ∀ tr : (pSpec₁ ++ₚ pSpec₂).Transcript (ChallengeIdx.inr i).1.castSucc,
-      Pr{c ← $ᵗ ((pSpec₁ ++ₚ pSpec₂).Challenge (ChallengeIdx.inr i))}[
+      Pr{let c ← $ᵗ ((pSpec₁ ++ₚ pSpec₂).Challenge (ChallengeIdx.inr i))}[
         ¬ S _ stmt tr ∧ S _ stmt (tr.concat c)] ≤ _
     intro tr
     simp only [Function.comp_apply, Equiv.symm_apply_apply, Sum.elim_inr]
@@ -82,11 +82,11 @@ theorem append_rbrSoundnessWorstCase_of_pure_first
     · obtain ⟨stmt₂, hstmt₂, tr₂, hnot₂, hnext⟩ := StateFunction.append_transition_right
         init impl S₁ S₂ V.verify hVerify i.1 stmt tr hnot
       calc
-        _ ≤ Pr{c ← $ᵗ ((pSpec₁ ++ₚ pSpec₂).Challenge (ChallengeIdx.inr i))}[
+        _ ≤ Pr{let c ← $ᵗ ((pSpec₁ ++ₚ pSpec₂).Challenge (ChallengeIdx.inr i))}[
               ¬ S₂ i.1.castSucc stmt₂ tr₂ ∧
                 S₂ i.1.succ stmt₂ (tr₂.concat (cast (challenge_append_inr i) c))] :=
           prEvent_mono _ _ _ fun c hc => ⟨hnot₂, hnext c hc.2⟩
-        _ = Pr{c ← $ᵗ (pSpec₂.Challenge i)}[
+        _ = Pr{let c ← $ᵗ (pSpec₂.Challenge i)}[
               ¬ S₂ i.1.castSucc stmt₂ tr₂ ∧ S₂ i.1.succ stmt₂ (tr₂.concat c)] := by
           rw [← uniformSample_challenge_append_inr (pSpec₁ := pSpec₁) i, prEvent_map]
         _ ≤ _ := h₂ stmt₂ hstmt₂ i tr₂

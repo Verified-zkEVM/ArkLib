@@ -96,7 +96,7 @@ close. -/
 noncomputable def epsPg (C : Set (ι → A)) (δ : ℝ≥0) : ENNReal :=
   ⨆ u : WordStack A (Fin 2) ι,
     if (∀ γ : F, δᵣ(u 0 + γ • u 1, C) ≤ δ) then (0 : ENNReal)
-    else Pr{γ ← $ᵗ F}[δᵣ(u 0 + γ • u 1, C) ≤ δ]
+    else Pr{let γ ← $ᵗ F}[δᵣ(u 0 + γ • u 1, C) ≤ δ]
 
 open Classical in
 /-- The largest probability that an affine combination is `δ_fld`-close to `C` when its two
@@ -104,7 +104,7 @@ components are not jointly `δ_int`-close to `C`. -/
 noncomputable def epsCa (C : Set (ι → A)) (δ_fld δ_int : ℝ≥0) : ENNReal :=
   ⨆ u : WordStack A (Fin 2) ι,
     if jointProximity C (u := u) δ_int then (0 : ENNReal)
-    else Pr{γ ← $ᵗ F}[δᵣ(u 0 + γ • u 1, C) ≤ δ_fld]
+    else Pr{let γ ← $ᵗ F}[δᵣ(u 0 + γ • u 1, C) ≤ δ_fld]
 
 /-- The equal-radius specialization `epsCa C δ δ`. -/
 noncomputable def epsCa' (C : Set (ι → A)) (δ : ℝ≥0) : ENNReal :=
@@ -116,7 +116,7 @@ noncomputable def epsCaCurves
     (C : Set (ι → A)) (k : ℕ) (δ_fld δ_int : ℝ≥0) : ENNReal :=
   ⨆ u : WordStack A (Fin (k + 1)) ι,
     if jointProximity C (u := u) δ_int then (0 : ENNReal)
-    else Pr{r ← $ᵗ F}[δᵣ(∑ i : Fin (k + 1), (r ^ (i : ℕ)) • u i, C) ≤ δ_fld]
+    else Pr{let r ← $ᵗ F}[δᵣ(∑ i : Fin (k + 1), (r ^ (i : ℕ)) • u i, C) ≤ δ_fld]
 
 open Classical in
 /-- Correlated-agreement error for uniform samples from the affine span of a word stack. -/
@@ -124,7 +124,7 @@ noncomputable def epsCaAffineSpaces
     (C : Set (ι → A)) (k : ℕ) (δ_fld δ_int : ℝ≥0) : ENNReal :=
   ⨆ u : WordStack A (Fin (k + 1)) ι,
     if jointProximity C (u := u) δ_int then (0 : ENNReal)
-    else Pr{y ← $ᵗ ↥(Affine.affineSubspaceAtOrigin (F := F) (u 0) (Fin.tail u))}[
+    else Pr{let y ← $ᵗ ↥(Affine.affineSubspaceAtOrigin (F := F) (u 0) (Fin.tail u))}[
       δᵣ(y.1, C) ≤ δ_fld]
 
 /-! ## Monotonicity -/
@@ -263,15 +263,15 @@ theorem epsPg_singleton_zero_pos :
   have hguard : ¬ (∀ γ : F,
       δᵣ(u 0 + γ • u 1, ({0} : Set (ι → F))) ≤ (0 : ℝ≥0)) :=
     fun h => one_ne_zero ((hevent 1).mp (h 1))
-  have hterm : Pr{γ ← $ᵗ F}[
+  have hterm : Pr{let γ ← $ᵗ F}[
       δᵣ(u 0 + γ • u 1, ({0} : Set (ι → F))) ≤ (0 : ℝ≥0)] =
-      Pr{γ ← $ᵗ F}[γ = 0] := prEvent_congr _ _ _ (fun γ => hevent γ)
-  have hpos : (0 : ENNReal) < Pr{γ ← $ᵗ F}[(γ : F) = 0] := by
+      Pr{let γ ← $ᵗ F}[γ = 0] := prEvent_congr _ _ _ (fun γ => hevent γ)
+  have hpos : (0 : ENNReal) < Pr{let γ ← $ᵗ F}[(γ : F) = 0] := by
     rw [SampleableType.prEvent_uniformSample]
     simp [Finset.filter_eq']
   calc
-    (0 : ENNReal) < Pr{γ ← $ᵗ F}[(γ : F) = 0] := hpos
-    _ = Pr{γ ← $ᵗ F}[
+    (0 : ENNReal) < Pr{let γ ← $ᵗ F}[(γ : F) = 0] := hpos
+    _ = Pr{let γ ← $ᵗ F}[
         δᵣ(u 0 + γ • u 1, ({0} : Set (ι → F))) ≤ (0 : ℝ≥0)] := hterm.symm
     _ ≤ epsPg (F := F) ({0} : Set (ι → F)) 0 := by
       unfold epsPg
@@ -628,7 +628,7 @@ theorem mcaError_le_epsCa_of_pos_of_two_mul_lt_dist
   have fold_probability_le_epsCa_of_not_jointProximity
       (v : WordStack F (Fin 2) ι)
       (hv : ¬ jointProximity (C := (C : Set (ι → F))) (u := v) δ) :
-      Pr{x ← $ᵗ F}[δᵣ(v 0 + x • v 1, (C : Set (ι → F))) ≤ δ] ≤
+      Pr{let x ← $ᵗ F}[δᵣ(v 0 + x • v 1, (C : Set (ι → F))) ≤ δ] ≤
         epsCa (F := F) (C : Set (ι → F)) δ δ := by
     unfold epsCa
     exact le_iSup_of_le v (ite_eq_right hv).symm.le
@@ -861,8 +861,8 @@ theorem mcaError_le_epsCa_of_pos_of_two_mul_lt_dist
         rw [pairRelDist_le_iff_pairDist_le]
         exact hdist
       calc
-        Pr{γ ← $ᵗ F}[IsMCA (AffineLineGenerator F) C γ u (δ : ℝ)] ≤
-            Pr{x ← $ᵗ F}[δᵣ(v 0 + x • v 1, (C : Set (ι → F))) ≤ δ] := by
+        Pr{let γ ← $ᵗ F}[IsMCA (AffineLineGenerator F) C γ u (δ : ℝ)] ≤
+            Pr{let x ← $ᵗ F}[δᵣ(v 0 + x • v 1, (C : Set (ι → F))) ≤ δ] := by
           rw [SampleableType.prEvent_uniformSample, SampleableType.prEvent_uniformSample]
           apply ENNReal.div_le_div_right
           exact_mod_cast (calc
@@ -889,8 +889,8 @@ theorem mcaError_le_epsCa_of_pos_of_two_mul_lt_dist
       rw [hfilter, hBempty]
       simp
   · calc
-      Pr{γ ← $ᵗ F}[IsMCA (AffineLineGenerator F) C γ u (δ : ℝ)] ≤
-          Pr{γ ← $ᵗ F}[δᵣ(u 0 + γ • u 1, (C : Set (ι → F))) ≤ δ] := by
+      Pr{let γ ← $ᵗ F}[IsMCA (AffineLineGenerator F) C γ u (δ : ℝ)] ≤
+          Pr{let γ ← $ᵗ F}[δᵣ(u 0 + γ • u 1, (C : Set (ι → F))) ≤ δ] := by
         apply prEvent_mono
         intro γ h
         exact line_close_of_isMCA_affineLine C u δ γ h

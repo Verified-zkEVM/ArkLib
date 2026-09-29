@@ -102,7 +102,7 @@ theorem executeCore_sampled_soundness {m : ℕ} (D : Fin m ↪ F) (i : Fin n)
   · simp only [hcheck, ↓reduceIte, Option.map_none, reduceCtorEq, false_and]
 
 private theorem prEvent_eq_evalDist_map_unifSpec {α : Type} (mx : OracleComp unifSpec α)
-    (event : α → Prop) : Pr{x ← mx}[event x] = 𝒟[event <$> mx] {True} :=
+    (event : α → Prop) : Pr{let x ← mx}[event x] = 𝒟[event <$> mx] {True} :=
   prEvent_eq_evalDist_map mx event
 
 /-- Native measure form of the same actual closed-output soundness event. -/

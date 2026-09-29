@@ -119,7 +119,7 @@ lemma prob_eval_zero_le_div
   (f : MvPolynomial (Fin s) F) (hf : f ≠ 0)
   (d m : ℕ) (hd : f.totalDegree ≤ d) (hm_pos : 0 < m)
   (hm : ∀ i, m ≤ (S i).toFinset.card) :
-  Pr{x ← $ᵗ (∀ i, ↥(S i))}[MvPolynomial.eval (fun i => (↑(x i) : F)) f = 0] ≤
+  Pr{let x ← $ᵗ (∀ i, ↥(S i))}[MvPolynomial.eval (fun i => (↑(x i) : F)) f = 0] ≤
     (d : ℝ≥0∞) / m := by
   classical
   rw [@SampleableType.prEvent_uniformSample _ _ _
@@ -138,7 +138,7 @@ lemma prob_eval_zero_le_div
 lemma prob_eval_zero_univ_le_div
     {F : Type} [Field F] [Fintype F] [SampleableType F] {s d : ℕ}
     (f : MvPolynomial (Fin s) F) (hf : f ≠ 0) (hd : f.totalDegree ≤ d) :
-    Pr{x ← $ᵗ (Fin s → F)}[MvPolynomial.eval x f = 0] ≤
+    Pr{let x ← $ᵗ (Fin s → F)}[MvPolynomial.eval x f = 0] ≤
       (d : ℝ≥0∞) / Fintype.card F := by
   classical
   rw [@SampleableType.prEvent_uniformSample _ _ _

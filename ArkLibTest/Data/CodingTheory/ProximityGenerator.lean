@@ -100,9 +100,9 @@ private def shortFamilyLeaves : Fin 2 → (Fin 1 → Bool) → Fin 1 → ZMod 2 
 
 example :
     shortFamilyLeaves 0 ≠ shortFamilyLeaves 1 ∧
-    (Pr{r ← $ᵗ (Fin 1 → ZMod 2)}[r ∈ tensorFoldFamilyBad singletonLevelWitness
+    (Pr{let r ← $ᵗ (Fin 1 → ZMod 2)}[r ∈ tensorFoldFamilyBad singletonLevelWitness
       shortFamilyLeaves] ≤ ENNReal.ofReal 0) ∧
-    (Pr{r ← $ᵗ (Fin 1 → ZMod 2)}[¬ HasFullTensorDecomposition probabilityCode 1 r
+    (Pr{let r ← $ᵗ (Fin 1 → ZMod 2)}[¬ HasFullTensorDecomposition probabilityCode 1 r
       shortLeaves] ≤ ENNReal.ofReal 0) := by
   refine ⟨by decide, ?_, ?_⟩
   · simpa [shortFamilyLeaves] using
@@ -113,7 +113,7 @@ example :
 private def probabilityLeaves : (Fin 3 → Bool) → Fin 1 → ZMod 2 := fun _ _ ↦ 0
 
 example :
-    Pr{r ← $ᵗ (Fin 3 → ZMod 2)}[r ∈ tensorFoldBad singletonLevelWitness probabilityLeaves] ≤
+    Pr{let r ← $ᵗ (Fin 3 → ZMod 2)}[r ∈ tensorFoldBad singletonLevelWitness probabilityLeaves] ≤
       ENNReal.ofReal 0 := by
   simpa using tensorFoldBad_probability_height_three singletonLevelWitness probabilityLeaves
 

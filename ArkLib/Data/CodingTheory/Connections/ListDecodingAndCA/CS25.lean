@@ -69,14 +69,14 @@ omit [Nonempty ι] [DecidableEq ι] [Fintype F] in
 private theorem rs_fold_probability_le_eps_ca_of_not_joint
     (C : Set (ι → F)) (δ_fld δ_int : ℝ≥0) (v : Code.WordStack F (Fin 2) ι)
     (hnot : ¬ Code.jointProximity C (u := v) δ_int) :
-    Pr{γ ← $ᵗ F}[Code.relDistFromCode (v 0 + γ • v 1) C ≤ δ_fld] ≤
+    Pr{let γ ← $ᵗ F}[Code.relDistFromCode (v 0 + γ • v 1) C ≤ δ_fld] ≤
       ProximityGap.epsCa (F := F) (A := F) C δ_fld δ_int := by
   classical
   unfold ProximityGap.epsCa
   have hle := le_iSup
     (fun w : Code.WordStack F (Fin 2) ι =>
       if Code.jointProximity C (u := w) δ_int then (0 : ENNReal)
-      else Pr{γ ← $ᵗ F}[Code.relDistFromCode (w 0 + γ • w 1) C ≤ δ_fld]) v
+      else Pr{let γ ← $ᵗ F}[Code.relDistFromCode (w 0 + γ • w 1) C ≤ δ_fld]) v
   rw [ite_eq_right hnot] at hle
   exact hle
 

@@ -29,17 +29,17 @@ theorem run_bind_success_le (runtime : OracleRuntime imports surface)
     (error : RunResult runtime B → ENNReal)
     (hsuffix : letI : MeasurableSpace (RunResult runtime B) := ⊤
       (∫⁻ b in {b | ¬ Exceptional b},
-        Pr{result ← runtime.resume b next}[Success result.output] ∂𝒟[runtime.run first]) ≤
+        Pr{let result ← runtime.resume b next}[Success result.output] ∂𝒟[runtime.run first]) ≤
       ∫⁻ b in {b | ¬ Exceptional b}, error b ∂𝒟[runtime.run first]) :
     let : MeasurableSpace (RunResult runtime B) := ⊤
-    Pr{result ← runtime.run (first >>= next)}[Success result.output] ≤
-      Pr{b ← runtime.run first}[Exceptional b] +
+    Pr{let result ← runtime.run (first >>= next)}[Success result.output] ≤
+      Pr{let b ← runtime.run first}[Exceptional b] +
         ∫⁻ b in {b | ¬ Exceptional b}, error b ∂𝒟[runtime.run first] := by
   let : MeasurableSpace (RunResult runtime B) := ⊤
   rw [runtime.run_bind]
   exact (prEvent_bind_le_prEvent_add_lintegral_ae (runtime.run first)
     (fun b => runtime.resume b next) Exceptional (fun result => Success result.output)
-    (fun b => Pr{result ← runtime.resume b next}[Success result.output])
+    (fun b => Pr{let result ← runtime.resume b next}[Success result.output])
     (Filter.Eventually.of_forall (fun _ _ => le_rfl))).trans (add_le_add le_rfl hsuffix)
 /-- A stronger pointwise almost-everywhere premise implies the joint average bound. -/
 theorem run_bind_success_le_ae (runtime : OracleRuntime imports surface)
@@ -48,10 +48,10 @@ theorem run_bind_success_le_ae (runtime : OracleRuntime imports surface)
     (error : RunResult runtime B → ENNReal)
     (hsuffix : letI : MeasurableSpace (RunResult runtime B) := ⊤
       ∀ᵐ b ∂𝒟[runtime.run first], ¬ Exceptional b →
-        Pr{result ← runtime.resume b next}[Success result.output] ≤ error b) :
+        Pr{let result ← runtime.resume b next}[Success result.output] ≤ error b) :
     let : MeasurableSpace (RunResult runtime B) := ⊤
-    Pr{result ← runtime.run (first >>= next)}[Success result.output] ≤
-      Pr{b ← runtime.run first}[Exceptional b] +
+    Pr{let result ← runtime.run (first >>= next)}[Success result.output] ≤
+      Pr{let b ← runtime.run first}[Exceptional b] +
         ∫⁻ b in {b | ¬ Exceptional b}, error b ∂𝒟[runtime.run first] := by
   let : MeasurableSpace (RunResult runtime B) := ⊤
   rw [runtime.run_bind]
@@ -64,9 +64,9 @@ theorem run_bind_success_le_uniform (runtime : OracleRuntime imports surface)
     (Exceptional : RunResult runtime B → Prop) (Success : X → Prop) (error : ENNReal)
     (hsuffix : letI : MeasurableSpace (RunResult runtime B) := ⊤
       ∀ᵐ b ∂𝒟[runtime.run first], ¬ Exceptional b →
-        Pr{result ← runtime.resume b next}[Success result.output] ≤ error) :
-    Pr{result ← runtime.run (first >>= next)}[Success result.output] ≤
-      Pr{b ← runtime.run first}[Exceptional b] + error := by
+        Pr{let result ← runtime.resume b next}[Success result.output] ≤ error) :
+    Pr{let result ← runtime.run (first >>= next)}[Success result.output] ≤
+      Pr{let b ← runtime.run first}[Exceptional b] + error := by
   let : MeasurableSpace (RunResult runtime B) := ⊤
   apply (runtime.run_bind_success_le_ae first next Exceptional Success (fun _ => error)
     hsuffix).trans
@@ -273,15 +273,15 @@ theorem executeStrategiesWithRuntime_appendExported_prEvent
     [EvalDistSemantics (OracleComp imports)] (runtime : OracleRuntime imports ambient)
     (TruthFinal : (p : TypeTree.BranchPath (PFunctor.FreeM.append tree suffix)) →
       ClosedClaim (FinalStmt p) (Final p) → Prop) :
-    Pr{result ← executeStrategiesWithRuntime runtime
+    Pr{let result ← (executeStrategiesWithRuntime runtime
           (protocol := ⟨PFunctor.FreeM.append tree suffix,
             PFunctor.FreeM.Displayed.Decoration.append firstRoles secondRoles,
             PFunctor.FreeM.Displayed.Decoration.append firstOracles secondOracles⟩)
           (initial := initial) impl prover
           (appendExported ambient tree suffix firstRoles secondRoles firstOracles secondOracles
-            initial Stmt Data Export FinalStmt FinalData Final first second)}[
+            initial Stmt Data Export FinalStmt FinalData Final first second))}[
       result.output.core.closed.map (TruthFinal result.output.core.path.toBranchPath) = some True] =
-    Pr{result ← (runtime.run (do
+    Pr{let result ← (runtime.run (do
       let b ← exportedPrefixRun ambient tree suffix firstRoles secondRoles firstOracles initial
         impl Stmt Data Export OutP prover first
       let result ← exportedSuffixRun ambient tree suffix secondRoles firstOracles secondOracles
@@ -294,7 +294,7 @@ theorem executeStrategiesWithRuntime_appendExported_prEvent
   have observed := executeStrategiesWithRuntime_appendExported_closedResult ambient tree suffix
     firstRoles secondRoles firstOracles secondOracles initial impl Stmt Data Export FinalStmt
     FinalData Final OutP prover first second runtime
-  have same := congrArg (fun program => Pr{result ← program}[
+  have same := congrArg (fun program => Pr{let result ← program}[
     result.1.2.map (TruthFinal result.1.1) = some True]) observed
   simpa only [prEvent_map] using same
 
@@ -334,17 +334,17 @@ theorem executeStrategiesWithRuntime_appendExported_soundness
       (ExportedBoundary ambient tree suffix secondRoles firstOracles initial
         Stmt Data Export OutP)) := ⊤
     (∫⁻ b in {b | ¬ Exceptional b},
-      Pr{result ← runtime.resume b next}[Success result.output] ∂𝒟[runtime.run prefixProgram]) ≤
+      Pr{let result ← runtime.resume b next}[Success result.output] ∂𝒟[runtime.run prefixProgram]) ≤
         ∫⁻ b in {b | ¬ Exceptional b}, error b ∂𝒟[runtime.run prefixProgram] →
-    Pr{result ← executeStrategiesWithRuntime runtime
+    Pr{let result ← (executeStrategiesWithRuntime runtime
           (protocol := ⟨PFunctor.FreeM.append tree suffix,
             PFunctor.FreeM.Displayed.Decoration.append firstRoles secondRoles,
             PFunctor.FreeM.Displayed.Decoration.append firstOracles secondOracles⟩)
           (initial := initial) impl prover
           (appendExported ambient tree suffix firstRoles secondRoles firstOracles secondOracles
-            initial Stmt Data Export FinalStmt FinalData Final first second)}[
+            initial Stmt Data Export FinalStmt FinalData Final first second))}[
       result.output.core.closed.map (TruthFinal result.output.core.path.toBranchPath) = some True] ≤
-        Pr{b ← runtime.run prefixProgram}[Exceptional b] +
+        Pr{let b ← runtime.run prefixProgram}[Exceptional b] +
           ∫⁻ b in {b | ¬ Exceptional b}, error b ∂𝒟[runtime.run prefixProgram] := by
   dsimp only
   intro hsuffix
@@ -369,7 +369,7 @@ theorem executeStrategiesWithRuntime_appendExported_soundness
     firstRoles secondRoles firstOracles secondOracles initial impl Stmt Data Export FinalStmt
     FinalData Final OutP prover first second runtime
   have same := congrArg (fun program =>
-    Pr{result ← program}[Success result.1]) observed
+    Pr{let result ← program}[Success result.1]) observed
   simp only [prEvent_map] at same
   rw [same]
   simpa only [prefixProgram, next, map_eq_pure_bind, bind_assoc, pure_bind] using

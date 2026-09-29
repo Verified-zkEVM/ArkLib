@@ -73,7 +73,7 @@ theorem simulated_run (stmt : ℕ) (s : σ) :
 
 /-- Exactly three of the four challenges pass the guard. -/
 theorem nonzero_probability :
-    Pr{c ← $ᵗ (Fin 4)}[c ≠ 0] = (3 / 4 : ℝ≥0∞) := by
+    Pr{let c ← $ᵗ (Fin 4)}[c ≠ 0] = (3 / 4 : ℝ≥0∞) := by
   rw [SampleableType.prEvent_uniformSample]
   have hcard : (Finset.univ.filter fun c : Fin 4 => c ≠ 0).card = 3 := by decide
   simp only [hcard, Fintype.card_fin]
@@ -85,14 +85,14 @@ theorem verifier_rejects_zero (stmt : ℕ) :
 
 /-- Rejection occurs with probability one quarter under the actual simulated prover. -/
 theorem rejection_probability (stmt : ℕ) (s : σ) :
-    Pr{q ←
+    Pr{let q ← (
       (simulateQ (impl.addLift (challengeQueryImpl (pSpec := protocol)) :
-        QueryImpl _ (StateT σ ProbComp)) (stage.prover.run stmt ())).run s}[
+        QueryImpl _ (StateT σ ProbComp)) (stage.prover.run stmt ())).run s)}[
       guardedForm.check stmt q.1.1 = false] =
       (1 / 4 : ℝ≥0∞) := by
   rw [simulated_run]
   simp only [bind_pure_comp, guardedForm, bne_eq_false_iff_eq]
-  change Pr{c ← $ᵗ (Fin 4)}[c = 0] = _
+  change Pr{let c ← $ᵗ (Fin 4)}[c = 0] = _
   rw [SampleableType.prEvent_uniformSample]
   have hcard : (Finset.univ.filter fun c : Fin 4 => c = 0).card = 1 := by decide
   simp only [hcard, Fintype.card_fin]

@@ -32,10 +32,10 @@ theorem prEvent_bind_le_prEvent_add_lintegral_ae
     (mx : m α) (suffix : α → m β) (Exceptional : α → Prop) (Success : β → Prop)
     (error : α → ENNReal)
     (hsuffix : letI : MeasurableSpace α := ⊤
-      ∀ᵐ b ∂𝒟[mx], ¬ Exceptional b → Pr{value ← suffix b}[Success value] ≤ error b) :
+      ∀ᵐ b ∂𝒟[mx], ¬ Exceptional b → Pr{let value ← suffix b}[Success value] ≤ error b) :
     let : MeasurableSpace α := ⊤
-    Pr{value ← mx >>= suffix}[Success value] ≤
-      Pr{b ← mx}[Exceptional b] +
+    Pr{let value ← mx >>= suffix}[Success value] ≤
+      Pr{let b ← mx}[Exceptional b] +
         ∫⁻ b in {b | ¬ Exceptional b}, error b ∂𝒟[mx] := by
   classical
   let : MeasurableSpace α := ⊤

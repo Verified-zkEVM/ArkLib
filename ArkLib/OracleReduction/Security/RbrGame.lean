@@ -19,16 +19,16 @@ ArkLib's round-by-round soundness games (`Verifier.rbrSoundness`,
 compute, per challenge round `i`, a probability of the shape
 
 ```
-Pr{x ← do
+Pr{let x ← (do
   (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
     (do
       let tr ← proverRun                                -- adversarial, arbitrary
       let challenge ← liftComp (pSpec.getChallenge i) _
-      return (… tr … challenge …))).run' (← init)}[event x]
+      return (… tr … challenge …))).run' (← init))}[event x]
 ```
 
 This file provides the generic ArkLib-local glue to bound such probabilities from
-per-fixed-transcript bounds `∀ tr, Pr{c ← $ᵗ (pSpec.Challenge i)}[event tr c] ≤ ε`:
+per-fixed-transcript bounds `∀ tr, Pr{let c ← $ᵗ (pSpec.Challenge i)}[event tr c] ≤ ε`:
 
 * `ProtocolSpec.simulateQ_addLift_challengeQueryImpl_getChallenge` resolves the simulated
   challenge query into an explicit uniform draw `liftM ($ᵗ (pSpec.Challenge i))`;
@@ -106,13 +106,13 @@ theorem prEvent_simulateQ_addLift_getChallenge_bind_le
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (oa : OracleComp (oSpec + [pSpec.Challenge]ₒ) T) (i : pSpec.ChallengeIdx)
     (f : T → pSpec.Challenge i → β) (E : β → Prop) {ε : ℝ≥0∞}
-    (h : ∀ tr : T, Pr{c ← $ᵗ (pSpec.Challenge i)}[E (f tr c)] ≤ ε) :
-    Pr{x ← do
+    (h : ∀ tr : T, Pr{let c ← $ᵗ (pSpec.Challenge i)}[E (f tr c)] ≤ ε) :
+    Pr{let x ← (do
       (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
         (do
           let tr ← oa
           let challenge ← liftComp (pSpec.getChallenge i) (oSpec + [pSpec.Challenge]ₒ)
-          return f tr challenge)).run' (← init)}[E x] ≤ ε := by
+          return f tr challenge)).run' (← init))}[E x] ≤ ε := by
   refine prEvent_bind_le_of_forall_le init _ E fun s ↦ ?_
   rw [simulateQ_bind, StateT.run'_eq, StateT.run_bind, map_bind]
   refine prEvent_bind_le_of_forall_le _ _ E fun x ↦ ?_
@@ -138,13 +138,13 @@ example {T₁ T₂ L : Type}
     (oa : OracleComp (oSpec + [pSpec.Challenge]ₒ) ((T₁ × T₂) × L)) (i : pSpec.ChallengeIdx)
     (E : T₁ × pSpec.Challenge i × L → Prop) {ε : ℝ≥0∞}
     (h : ∀ (t₁ : T₁) (log : L),
-      Pr{c ← $ᵗ (pSpec.Challenge i)}[E (t₁, c, log)] ≤ ε) :
-    Pr{x ← do
+      Pr{let c ← $ᵗ (pSpec.Challenge i)}[E (t₁, c, log)] ≤ ε) :
+    Pr{let x ← (do
       (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
         (do
           let ⟨⟨t₁, _⟩, log⟩ ← oa
           let challenge ← liftComp (pSpec.getChallenge i) (oSpec + [pSpec.Challenge]ₒ)
-          return (t₁, challenge, log))).run' (← init)}[E x] ≤ ε :=
+          return (t₁, challenge, log))).run' (← init))}[E x] ≤ ε :=
   prEvent_simulateQ_addLift_getChallenge_bind_le init impl oa i
     (fun x c ↦ (x.1.1, c, x.2)) E (fun x ↦ h x.1.1 x.2)
 
@@ -170,7 +170,7 @@ glue built on top of them.
 
 The master bound for this shape is
 `ProtocolSpec.prEvent_optionT_simulateQ_addLift_getChallenge_bind_some_le`. It consumes a
-challenge-only probability bound `Pr{c ← $ᵗ _}[∃ t, E (f c t)] ≤ ε`, where the `∃ t`
+challenge-only probability bound `Pr{let c ← $ᵗ _}[∃ t, E (f c t)] ≤ ε`, where the `∃ t`
 ranges over *all* possible tail outputs — the worst-case form in which per-round soundness
 bounds are normally stated, so no reasoning about the tail's distribution is needed. -/
 namespace ProtocolSpec
@@ -198,10 +198,10 @@ theorem prEvent_optionT_simulateQ_addLift_getChallenge_bind_some_le
     (hoa : oa = do
       let c ← liftComp (pSpec.getChallenge i) (oSpec + [pSpec.Challenge]ₒ)
       (fun t ↦ some (f c t)) <$> tail c)
-    (h : Pr{c ← $ᵗ (pSpec.Challenge i)}[∃ t, E (f c t)] ≤ ε) :
-    Pr{x ← OptionT.mk (do
+    (h : Pr{let c ← $ᵗ (pSpec.Challenge i)}[∃ t, E (f c t)] ≤ ε) :
+    Pr{let x ← (OptionT.mk (do
       (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
-        oa).run' (← init))}[E x] ≤ ε := by
+        oa).run' (← init)))}[E x] ≤ ε := by
   subst hoa
   rw [OptionT.mk_bind]
   refine prEvent_bind_le_of_forall_le _ _ E fun s ↦ ?_
@@ -245,8 +245,8 @@ theorem prEvent_optionT_simulateQ_addLift_prefix_getChallenge_bind_le
       let c ← liftComp (pSpec.getChallenge i) (oSpec + [pSpec.Challenge]ₒ)
       (f pre c) <$> tail pre c)
     (h : ∀ pre : P,
-      Pr{c ← $ᵗ (pSpec.Challenge i)}[∃ t b, f pre c t = some b ∧ E b] ≤ ε) :
-    Pr{x ← (OptionT.mk
+      Pr{let c ← $ᵗ (pSpec.Challenge i)}[∃ t b, f pre c t = some b ∧ E b] ≤ ε) :
+    Pr{let x ← (OptionT.mk
       ((simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
         oa).run' s))}[E x] ≤ ε := by
   subst hoa
@@ -300,14 +300,14 @@ theorem prEvent_optionT_simulateQ_addLift_getChallenge_first_bind_le_convex
     (hoa : oa = do
       let c ← liftComp (pSpec.getChallenge i) (oSpec + [pSpec.Challenge]ₒ)
       tail c)
-    (h₁ : Pr{c ← $ᵗ (pSpec.Challenge i)}[p c] ≤ ε₁)
+    (h₁ : Pr{let c ← $ᵗ (pSpec.Challenge i)}[p c] ≤ ε₁)
     (h₂ : ∀ c, ¬ p c → ∀ s : σ,
-      Pr{x ← (OptionT.mk
+      Pr{let x ← (OptionT.mk
         ((simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
           (tail c)).run' s))}[E x] ≤ ε₂) :
-    Pr{x ← OptionT.mk (do
+    Pr{let x ← (OptionT.mk (do
       (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
-        oa).run' (← init))}[E x] ≤ ε₂ + ε₁ * (1 - ε₂) := by
+        oa).run' (← init)))}[E x] ≤ ε₂ + ε₁ * (1 - ε₂) := by
   subst hoa
   have hbody : ∀ s : σ,
       (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
@@ -325,11 +325,11 @@ theorem prEvent_optionT_simulateQ_addLift_getChallenge_first_bind_le_convex
   refine prEvent_bind_le_of_forall_le _ _ E fun s ↦ ?_
   rw [hbody s, OptionT.mk_bind]
   refine (prEvent_bind_le_prEvent_add_mul_prEvent_not _ _ p E fun c hc ↦ h₂ c hc s).trans ?_
-  change Pr{c ← OptionT.lift ($ᵗ (pSpec.Challenge i))}[p c] + ε₂ *
-      Pr{c ← OptionT.lift ($ᵗ (pSpec.Challenge i))}[¬ p c] ≤ ε₂ + ε₁ * (1 - ε₂)
+  change Pr{let c ← OptionT.lift ($ᵗ (pSpec.Challenge i))}[p c] + ε₂ *
+      Pr{let c ← OptionT.lift ($ᵗ (pSpec.Challenge i))}[¬ p c] ≤ ε₂ + ε₁ * (1 - ε₂)
   simp only [OptionT.prEvent_lift]
-  have hnot : Pr{c ← $ᵗ (pSpec.Challenge i)}[¬ p c] =
-      1 - Pr{c ← $ᵗ (pSpec.Challenge i)}[p c] := by
+  have hnot : Pr{let c ← $ᵗ (pSpec.Challenge i)}[¬ p c] =
+      1 - Pr{let c ← $ᵗ (pSpec.Challenge i)}[p c] := by
     let _ : MeasurableSpace (pSpec.Challenge i) := ⊤
     refine ENNReal.eq_sub_of_add_eq' ENNReal.one_ne_top ((add_comm _ _).trans ?_)
     rw [prEvent_add_prEvent_not, evalDist_map_apply_univ _ Measurable.of_discrete,

@@ -193,7 +193,7 @@ example :
 
 -- A uniform point of `ZMod 5` separates `X` and `0` except with probability `1 / 5`.
 open scoped ProbabilityTheory in
-example : Pr{ω ← $ᵗ (ZMod 5)}[¬ Set.InjOn (evalTuple fun _ : Unit ↦ ω)
+example : Pr{let ω ← $ᵗ (ZMod 5)}[¬ Set.InjOn (evalTuple fun _ : Unit ↦ ω)
     (↑pairX0 : Set (Fin 1 → (ZMod 5)[X]))] ≤ ENNReal.ofReal (1 / 5) := by
   have h := prob_not_injOn_evalTuple_le (Ω := ZMod 5) (pt := fun ω _ ↦ ω)
     (fun _ _ h ↦ congrFun h ()) pairX0 natDegree_pairX0

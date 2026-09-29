@@ -288,8 +288,7 @@ private theorem linear_bgks_good_scalars_card_gt
     (C : LinearCode ι F) (u : Code.WordStack F (Fin 2) ι)
     (δ_src η : ℝ≥0) (hη : 0 < η)
     (hprob : ENNReal.ofReal (2 / ((η : ℝ) ^ 2 * Fintype.card F)) <
-      Pr{x ←
-        $ᵗ F}[δᵣ(u 0 + x • u 1, (C : Set (ι → F))) < δ_src]) :
+      Pr{let x ← $ᵗ F}[δᵣ(u 0 + x • u 1, (C : Set (ι → F))) < δ_src]) :
     2 / (η : ℝ) ^ 2 < ((linear_bgks_good_scalars C u δ_src).card : ℝ) := by
   classical
   have he : 0 < (η : ℝ) := by exact_mod_cast hη
@@ -1263,8 +1262,8 @@ open scoped ProbabilityTheory in
 private theorem linear_close_probability_le_strict_of_radius_lt
     (C : LinearCode ι F) (u : Code.WordStack F (Fin 2) ι)
     (δ_fld δ_src : ℝ≥0) (hδ : δ_fld < δ_src) :
-    Pr{x ← $ᵗ F}[δᵣ(u 0 + x • u 1, (C : Set (ι → F))) ≤ δ_fld] ≤
-      Pr{x ← $ᵗ F}[δᵣ(u 0 + x • u 1, (C : Set (ι → F))) < δ_src] := by
+    Pr{let x ← $ᵗ F}[δᵣ(u 0 + x • u 1, (C : Set (ι → F))) ≤ δ_fld] ≤
+      Pr{let x ← $ᵗ F}[δᵣ(u 0 + x • u 1, (C : Set (ι → F))) < δ_src] := by
   apply prEvent_mono
   intro x hx
   exact lt_of_le_of_lt hx (by exact_mod_cast hδ)
@@ -1275,8 +1274,8 @@ open scoped ProbabilityTheory in
 private theorem linear_close_probability_mono_of_radius_lt
     (C : LinearCode ι F) (u : Code.WordStack F (Fin 2) ι)
     (δ_fld δ_src : ℝ≥0) (hδ : δ_fld < δ_src) :
-    Pr{x ← $ᵗ F}[δᵣ(u 0 + x • u 1, (C : Set (ι → F))) ≤ δ_fld] ≤
-      Pr{x ← $ᵗ F}[δᵣ(u 0 + x • u 1, (C : Set (ι → F))) ≤ δ_src] := by
+    Pr{let x ← $ᵗ F}[δᵣ(u 0 + x • u 1, (C : Set (ι → F))) ≤ δ_fld] ≤
+      Pr{let x ← $ᵗ F}[δᵣ(u 0 + x • u 1, (C : Set (ι → F))) ≤ δ_src] := by
   apply prEvent_mono
   intro x hx
   exact le_trans hx (by exact_mod_cast hδ.le)
@@ -1304,7 +1303,7 @@ private theorem linear_eps_ca_le_one_point_five_johnson_aux
     intro hgt
     have hstrict :
         ENNReal.ofReal (2 / ((η : ℝ) ^ 2 * Fintype.card F)) <
-          Pr{x ← $ᵗ F}[
+          Pr{let x ← $ᵗ F}[
             δᵣ(u 0 + x • u 1, (C : Set (ι → F))) < δ_src] :=
       lt_of_lt_of_le hgt
         (linear_close_probability_le_strict_of_radius_lt

@@ -462,11 +462,11 @@ theorem rs_Lambda_le_card_of_epsCa_lt
     rw [mul_comm]
     exact_mod_cast hspread'
   have hlowerprob :
-      ENNReal.ofReal (1 / (2 * Fintype.card ι : ℝ)) ≤ Pr{z ← $ᵗ F}[Pevent z] := by
+      ENNReal.ofReal (1 / (2 * Fintype.card ι : ℝ)) ≤ Pr{let z ← $ᵗ F}[Pevent z] := by
     rw [SampleableType.prEvent_uniformSample_eq_ofReal]
     exact ENNReal.ofReal_le_ofReal hratioR
   have hratio_le :
-      Pr{z ← $ᵗ F}[Pevent z] ≤
+      Pr{let z ← $ᵗ F}[Pevent z] ≤
         epsCa (F := F) (A := F)
           (ReedSolomon.code domain k : Set (ι → F))
           ((δ + 2 / Fintype.card ι).toNNReal) δ_int := by

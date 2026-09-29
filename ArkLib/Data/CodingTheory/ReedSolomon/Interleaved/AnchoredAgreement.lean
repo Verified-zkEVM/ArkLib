@@ -155,7 +155,7 @@ theorem prob_not_injOn_candidateSet_le {ι' : Type*} [Fintype ι'] {Ω : Type} [
     (received : ι → κ → F) {K a L : ℕ} (hK : K ≤ Fintype.card ι)
     (hΛ : Lambda (interleavedCodeSet (κ := κ) (code domain K : Set (ι → F)))
       (1 - (a : ℝ) / Fintype.card ι) ≤ L) :
-    Pr{ω ← $ᵗ Ω}[¬ Set.InjOn (evalTuple (pt ω)) (candidateSet domain received K a)] ≤
+    Pr{let ω ← $ᵗ Ω}[¬ Set.InjOn (evalTuple (pt ω)) (candidateSet domain received K a)] ≤
       ENNReal.ofReal ((L.choose 2 * (K - 1) ^ Fintype.card ι' : ℕ) / (Fintype.card Ω : ℝ)) := by
   refine prob_not_injOn_evalTuple_le_of_encard_le hpt
     ((encard_candidateSet_le_Lambda domain received hK a).trans hΛ) fun Q hQ j ↦ ?_
@@ -293,7 +293,7 @@ theorem prob_not_injOn_candidateSet_offDiag_le (domain : ι ↪ F) (received : �
     (hΛ : Lambda (interleavedCodeSet (κ := κ) (code domain K : Set (ι → F)))
       (1 - (a : ℝ) / Fintype.card ι) ≤ L)
     [Nonempty ((Finset.univ.map domain)ᶜ.offDiag)] :
-    Pr{p ← $ᵗ ((Finset.univ.map domain)ᶜ.offDiag)}[
+    Pr{let p ← $ᵗ ((Finset.univ.map domain)ᶜ.offDiag)}[
         ¬ Set.InjOn (evalTuple ![p.1.1, p.1.2]) (candidateSet domain received K a)] ≤
       ENNReal.ofReal ((L.choose 2 * (K - 1) ^ 2 : ℕ) /
         ((Fintype.card F - Fintype.card ι) * (Fintype.card F - Fintype.card ι - 1) : ℕ)) := by

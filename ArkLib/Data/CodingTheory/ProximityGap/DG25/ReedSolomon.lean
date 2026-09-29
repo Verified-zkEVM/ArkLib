@@ -73,8 +73,8 @@ theorem ReedSolomon_ProximityGapAffineLines_UniqueDecoding [Nontrivial (ReedSolo
     rw [div_mul]
     simp only [ne_eq, Nat.cast_eq_zero, Fintype.card_ne_zero, not_false_eq_true, div_self, div_one]
     exact he_le_NNReal
-  have h_rewrite_prob : Pr{z ← $ᵗ A}[Δ₀((1 - z) • u₀ + z • u₁, CRS) ≤ e]
-    = Pr{z ← $ᵗ A}[Δ₀(u₀ + z • (u₁ - u₀), CRS) ≤ e] := by
+  have h_rewrite_prob : Pr{let z ← $ᵗ A}[Δ₀((1 - z) • u₀ + z • u₁, CRS) ≤ e]
+    = Pr{let z ← $ᵗ A}[Δ₀(u₀ + z • (u₁ - u₀), CRS) ≤ e] := by
     congr  -- Peel away the Pr{...} wrapper
     funext z
     congr! 1 -- Focus on the term inside Δ₀

@@ -69,7 +69,7 @@ abbrev Generator (S ℓ F : Type) : Type := S → (ℓ → F)
 a zero output from a non-zero vector is bounded above by `ε_ze`. -/
 def IsZeroEvadingGenerator {S : Type} [Nonempty S] [Fintype S] [SampleableType S]
     (G : Generator S ℓ F) (ε_ze : I) : Prop :=
-  (sSup {y | ∃ v : ℓ → F, v ≠ 0 ∧ y = Pr{x ←$ᵗ S}[dotProduct (G x) v = 0]})
+  (sSup {y | ∃ v : ℓ → F, v ≠ 0 ∧ y = Pr{let x ←$ᵗ S}[dotProduct (G x) v = 0]})
     ≤ ENNReal.ofReal ε_ze
 
 /-- Let the set `S` be a product of `s` subsets of `F`. A polynomial generator is a generator if
@@ -191,7 +191,7 @@ The radius is `ℝ`, matching `Code.Lambda`; see `IsMCA`. -/
 noncomputable def mcaError {S : Type} [Nonempty S] [Fintype S] [SampleableType S]
     {A : Type} [AddCommMonoid A] [Module F A]
     (G : Generator S ℓ F) (MC : ModuleCode ι F A) : ℝ → ENNReal :=
-  fun δ => ⨆ U : ℓ → (ι → A), Pr{x ←$ᵗ S}[IsMCA G MC x U δ]
+  fun δ => ⨆ U : ℓ → (ι → A), Pr{let x ←$ᵗ S}[IsMCA G MC x U δ]
 
 /-- A generator has mutual correlated agreement (MCA) with error `ε_mca` if the probability that
 the generator satisfies the MCA condition is bounded above by `ε_mca`.
@@ -222,8 +222,8 @@ quantifying over `U` inside the definition costs nothing after it is stated at t
 lemma IsMCAGenerator.prob_le {S : Type} [Nonempty S] [Fintype S] [SampleableType S] {A : Type}
     [AddCommMonoid A] [Module F A] {G : Generator S ℓ F} {ε_mca : I → ℝ≥0}
     {MC : ModuleCode ι F A} (h : IsMCAGenerator G ε_mca MC) (U : ℓ → (ι → A)) (δ : I) :
-    Pr{x ←$ᵗ S}[IsMCA G MC x U (δ : ℝ)] ≤ (ε_mca δ : ENNReal) :=
-  le_trans (le_iSup (fun U => Pr{x ←$ᵗ S}[IsMCA G MC x U (δ : ℝ)]) U) (h δ)
+    Pr{let x ←$ᵗ S}[IsMCA G MC x U (δ : ℝ)] ≤ (ε_mca δ : ENNReal) :=
+  le_trans (le_iSup (fun U => Pr{let x ←$ᵗ S}[IsMCA G MC x U (δ : ℝ)]) U) (h δ)
 
 /-- The MCA error is a probability: it never exceeds `1`, and in particular is never `⊤`.
 

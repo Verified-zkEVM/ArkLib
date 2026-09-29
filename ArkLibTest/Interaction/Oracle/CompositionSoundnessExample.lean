@@ -137,7 +137,7 @@ theorem allowed_boundary (sample : Fin 3) : allowed (boundary sample) ↔ sample
   change 7 + sample.val ≠ 7 ↔ sample ≠ 0
   omega
 
-theorem prefix_truth : Pr{b ← prefixProgram}[trueMid b] = (1 / 2 : ENNReal) := by
+theorem prefix_truth : Pr{let b ← prefixProgram}[trueMid b] = (1 / 2 : ENNReal) := by
   classical
   rw [prEvent_eq_evalDist_of_discrete, prefix_measure]
   rw [Measure.add_apply, Measure.smul_apply, Measure.smul_apply]
@@ -155,7 +155,7 @@ theorem prefix_truth : Pr{b ← prefixProgram}[trueMid b] = (1 / 2 : ENNReal) :=
   rw [ite_eq_left h0, ite_eq_right h1, mul_one, mul_zero, add_zero]
 
 theorem prefix_false_invalid :
-    Pr{b ← prefixProgram}[¬ trueMid b ∧ ¬ allowed b] = 0 := by
+    Pr{let b ← prefixProgram}[¬ trueMid b ∧ ¬ allowed b] = 0 := by
   classical
   rw [prEvent_eq_evalDist_of_discrete, prefix_measure]
   rw [Measure.add_apply, Measure.smul_apply, Measure.smul_apply]
@@ -170,9 +170,9 @@ theorem prefix_false_invalid :
   simp
 
 /-- True midpoint claims may be inadmissible without being charged a second time. -/
-theorem prefix_inadmissible : Pr{b ← prefixProgram}[¬ allowed b] = (1 / 2 : ENNReal) := by
+theorem prefix_inadmissible : Pr{let b ← prefixProgram}[¬ allowed b] = (1 / 2 : ENNReal) := by
   calc
-    _ = Pr{b ← prefixProgram}[trueMid b] := prEvent_congr _ _ _ (fun b => by
+    _ = Pr{let b ← prefixProgram}[trueMid b] := prEvent_congr _ _ _ (fun b => by
       change ¬ (closedMid b).oracles ⟨(), ()⟩ ≠ (7 : Nat) ↔
         (closedMid b).oracles ⟨(), ()⟩ = (7 : Nat)
       exact not_not)
@@ -225,7 +225,7 @@ def suffixTrue (result : (_path : secondProtocol.tree.BranchPath) ×
   result.2.map (fun claim => claim.oracles ⟨(), ()⟩ = claim.stmt) = some True
 
 theorem suffix_mass (sample : Fin 3) :
-    Pr{result ← nextProgram (boundary sample)}[suffixTrue result] =
+    Pr{let result ← nextProgram (boundary sample)}[suffixTrue result] =
       if sample = 0 then (1 : ENNReal) else 1 / 2 := by
   classical
   rw [suffix_execution, prEvent_bind_eq_lintegral_of_discrete,
@@ -252,7 +252,7 @@ theorem null_boundary_supported : boundary 2 ∈ support prefixProgram := by
 
 /-- That null branch violates the local error bound, so a pointwise premise would be stronger. -/
 theorem null_boundary_suffix_bound_fails :
-    ¬ Pr{result ← nextProgram (boundary 2)}[suffixTrue result] ≤ error (boundary 2) := by
+    ¬ Pr{let result ← nextProgram (boundary 2)}[suffixTrue result] ≤ error (boundary 2) := by
   rw [suffix_mass]
   have he : error (boundary 2) = 0 := by
     unfold error
@@ -261,7 +261,7 @@ theorem null_boundary_suffix_bound_fails :
   norm_num
 
 theorem suffix_bound_ae : ∀ᵐ b ∂𝒟[prefixProgram], ¬ trueMid b → allowed b →
-    Pr{result ← nextProgram b}[suffixTrue result] ≤ error b := by
+    Pr{let result ← nextProgram b}[suffixTrue result] ≤ error b := by
   classical
   rw [prefix_measure, ae_add_measure_iff]
   constructor <;> apply Measure.ae_smul_measure <;>
@@ -303,7 +303,7 @@ theorem average_error :
 
 /-- The actual composed execution has at most three-quarters true final-claim probability. -/
 theorem weighted_success :
-    Pr{result ← (executeStrategies ambient combined.tree combined.roles combined.oracles
+    Pr{let result ← (executeStrategies ambient combined.tree combined.roles combined.oracles
       inputSpec.toPFunctor inputImpl prover
       (Verifier.appendExported ambient firstProtocol.tree (fun _ => secondProtocol.tree)
         firstProtocol.roles (fun _ => secondProtocol.roles) firstProtocol.oracles

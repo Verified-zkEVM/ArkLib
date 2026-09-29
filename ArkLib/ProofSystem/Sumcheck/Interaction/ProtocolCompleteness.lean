@@ -116,7 +116,7 @@ theorem execute_perfectCompleteness (challenge : ProbComp R)
       (polynomialFamily R n deg).behaviorOfRealizations (fun _ => p))
     (hcurrent : closedRelation R n deg D ⟨start, by omega⟩
       ⟨stmt, originalOracle.eval impl⟩) :
-    Pr{result ← (execute R n deg unifSpec challenge (Finset.univ.map D).toList
+    Pr{let result ← (execute R n deg unifSpec challenge (Finset.univ.map D).toList
       count start finish A originalOracle stmt impl
         (honestProver R n deg D unifSpec count start finish stmt p))}[
         result.map (outputRelation R n deg) = some True] = 1 :=

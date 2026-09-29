@@ -135,12 +135,12 @@ def soundness
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
     (srSoundnessError : ENNReal) : Prop :=
   ∀ srProver : Prover.StateRestoration.Soundness oSpec StmtIn pSpec,
-  Pr{result ← do
+  Pr{let result ← (do
     (simulateQ (impl.addLift srChallengeQueryImpl' : QueryImpl _ (StateT _ ProbComp))
         <| (do
           let ⟨transcript, stmtIn⟩ ← srSoundnessGame srProver
           let stmtOut ← liftComp (verifier.run stmtIn transcript) _
-          return (stmtIn, stmtOut))).run' (← init)}[
+          return (stmtIn, stmtOut))).run' (← init))}[
     match result with
     | ⟨stmtIn, some stmtOut⟩ => stmtOut ∈ langOut ∧ stmtIn ∉ langIn
     | _ => False] ≤ srSoundnessError
@@ -159,13 +159,13 @@ def knowledgeSoundness
   (srKnowledgeSoundnessError : ENNReal) : Prop :=
   ∃ srExtractor : Extractor.StateRestoration oSpec StmtIn WitIn WitOut pSpec,
   ∀ srProver : Prover.StateRestoration.KnowledgeSoundness oSpec StmtIn WitOut pSpec,
-    Pr{result ← do
+    Pr{let result ← (do
       (simulateQ (impl.addLift srChallengeQueryImpl' : QueryImpl _ (StateT _ ProbComp))
           <| (do
             let ⟨transcript, stmtIn, witOut⟩ ← srKnowledgeSoundnessGame srProver
             let stmtOut ← liftComp (verifier.run stmtIn transcript) _
             let extractedWitIn? ← liftM (srExtractor stmtIn witOut transcript default default).run
-            return (stmtIn, extractedWitIn?, stmtOut, witOut))).run' (← init)}[
+            return (stmtIn, extractedWitIn?, stmtOut, witOut))).run' (← init))}[
       match result with
       | ⟨stmtIn, extractedWitIn?, some stmtOut, witOut⟩ =>
           (∀ extractedWitIn ∈ extractedWitIn?, (stmtIn, extractedWitIn) ∉ relIn) ∧
