@@ -730,6 +730,7 @@ public import ArkLib.OracleReduction.LiftContext.Purity
 public import ArkLib.OracleReduction.LiftContext.Reduction
 public import ArkLib.OracleReduction.OracleInterface
 public import ArkLib.OracleReduction.Prelude
+public import ArkLib.OracleReduction.ProgramLogic
 public import ArkLib.OracleReduction.ProtocolSpec.Basic
 public import ArkLib.OracleReduction.ProtocolSpec.Cast
 public import ArkLib.OracleReduction.ProtocolSpec.SeqCompose

@@ -37,7 +37,7 @@ theorem run_bind_success_le (runtime : OracleRuntime imports surface)
         ∫⁻ b in {b | ¬ Exceptional b}, error b ∂𝒟[runtime.run first] := by
   let : MeasurableSpace (RunResult runtime B) := ⊤
   rw [runtime.run_bind]
-  exact (prEvent_bind_le_prEvent_add_lintegral_ae (runtime.run first)
+  simpa only [expect_norm] using (prEvent_bind_le_prEvent_add_lintegral_ae (runtime.run first)
     (fun b => runtime.resume b next) Exceptional (fun result => Success result.output)
     (fun b => Pr{let result ← runtime.resume b next}[Success result.output])
     (Filter.Eventually.of_forall (fun _ _ => le_rfl))).trans (add_le_add le_rfl hsuffix)
@@ -55,7 +55,7 @@ theorem run_bind_success_le_ae (runtime : OracleRuntime imports surface)
         ∫⁻ b in {b | ¬ Exceptional b}, error b ∂𝒟[runtime.run first] := by
   let : MeasurableSpace (RunResult runtime B) := ⊤
   rw [runtime.run_bind]
-  exact prEvent_bind_le_prEvent_add_lintegral_ae (runtime.run first)
+  simpa only [expect_norm] using prEvent_bind_le_prEvent_add_lintegral_ae (runtime.run first)
     (fun b => runtime.resume b next) Exceptional (fun result => Success result.output) error hsuffix
 
 /-- A uniform actual-resume bound yields a uniform error term, even with missing mass. -/
@@ -270,7 +270,8 @@ This projects the paired closed-output/state/history equality while preserving i
 -/
 theorem executeStrategiesWithRuntime_appendExported_prEvent
     {importIdx : Type} {imports : OracleSpec importIdx}
-    [EvalDistSemantics (OracleComp imports)] (runtime : OracleRuntime imports ambient)
+    [EvalDistSemantics (OracleComp imports)] [LawfulEvalDistSemantics (OracleComp imports)]
+    (runtime : OracleRuntime imports ambient)
     (TruthFinal : (p : TypeTree.BranchPath (PFunctor.FreeM.append tree suffix)) →
       ClosedClaim (FinalStmt p) (Final p) → Prop) :
     Pr{let result ← (executeStrategiesWithRuntime runtime

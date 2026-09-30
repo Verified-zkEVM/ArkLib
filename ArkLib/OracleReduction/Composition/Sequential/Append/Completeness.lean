@@ -75,7 +75,7 @@ theorem completeness_iff_of_pure_verifier
           (R.prover.run stmt wit)).run (← init))) : OptionT ProbComp _) := by
     apply OptionT.ext
     simp [StateT.run'_eq]
-  simp only [hrun, OptionT.prEvent_lift, prEvent_map]
+  simp only [hrun, OptionT.prEvent_lift, expect_norm]
 
 /-- Completeness from every deterministic oracle state implies completeness from any initial
 state distribution. The verifier is pure, so initialization is the only outer mixture. -/
@@ -87,8 +87,8 @@ theorem completeness_of_pure_states
     R.completeness init impl rel₁ rel₂ ε := by
   rw [completeness_iff_of_pure_verifier R V]
   intro stmt wit hRel
-  simpa only [one_mul, pure_bind, bind_assoc] using
-    mul_le_prEvent_bind_of_forall init _ (fun _ => True) _ (r := 1) (by simp) fun s _ =>
+  exact le_wp_of_forall_le init (by simp) fun s => by
+    simpa only [expect_norm] using
       (completeness_iff_of_pure_verifier R V rel₁ rel₂ ε).mp (h s) stmt wit hRel
 
 variable [∀ i, SampleableType (pSpec₂.Challenge i)]
@@ -125,12 +125,14 @@ theorem append_completeness_of_prover_factorization
     exact tsub_le_tsub_left (mul_le_of_le_one_left zero_le tsub_le_self) _
   refine herr.trans ?_
   dsimp only [Reduction.append]
-  simp only [hFactor stmt wit, StateT.run_bind, StateT.run_pure, ← bind_assoc] at hfirst ⊢
+  simp only [hFactor stmt wit, StateT.run_bind, StateT.run_pure]
+  rw [← prEvent_bind] at hfirst ⊢
+  rw [← bind_assoc, prEvent_bind]
   refine mul_le_prEvent_bind_of_forall _ _ _ _ hfirst fun q₁ hGood => ?_
   have hnext := hsecond q₁.2 q₁.1.2.1 q₁.1.2.2 (by
     rw [hGood.2]
     exact hGood.1)
-  simpa only [bind_assoc, pure_bind, prEvent_norm, VA,
+  simpa only [bind_assoc, pure_bind, expect_norm, VA,
     FullTranscript.append_fst, FullTranscript.append_snd, ← hGood.2] using hnext
 
 /-- Sequential composition preserves completeness for pure verifiers when the prover execution

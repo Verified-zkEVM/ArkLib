@@ -76,10 +76,10 @@ theorem guess_soundness {m : Type → Type} [Monad m] [LawfulMonad m]
         return prior ∨ guess = sample)
       (fun sample => guess = sample) (fun truth => truth) (by
         intro sample hne
-        simpa only [bind_assoc, pure_bind, prEvent_norm, id_map'] using
+        simpa only [bind_assoc, pure_bind, expect_norm, id_map'] using
           (prEvent_const_of_not (respond sample) (show ¬ (prior ∨ guess = sample) by
             simp [hprior, hne])))
-    simpa only [prEvent_norm, id_map'] using hb.trans (hsample guess)
+    simpa only [expect_norm, id_map'] using hb.trans (hsample guess)
   have h := prEvent_bind_le_of_forall_le prover
     (fun chosen => do
       let sample ← challenge
@@ -87,10 +87,10 @@ theorem guess_soundness {m : Type → Type} [Monad m] [LawfulMonad m]
       return prior ∨ chosen.1 = sample) (fun truth => truth) (by
       intro chosen
       convert hlocal chosen using 1
-      simp only [prEvent_norm, id_map']
+      simp only [expect_norm]
       rfl)
   convert h using 1
-  simp only [prEvent_norm, id_map']
+  simp only [expect_norm]
   rfl
 
 /-- A fresh uniform field challenge matches every fixed guess with mass `1/17`. -/
@@ -210,8 +210,8 @@ theorem suffix_at_boundary (sample : Fin 3) :
     Pr{let result ← (run TypeTree.done PUnit.unit (boundary sample).2.1
       (suffixVerifier (boundary sample).1 (boundary sample).2.2))}[result.2.2 = true] =
         if sample = 0 then 0 else 1 := by
-  simp [boundary, suffixVerifier, run, InteractionOver.runTypeTree,
-    participantProfile, collectParticipantOutputs]
+  simp [suffixVerifier, run, InteractionOver.runTypeTree,
+    participantProfile, collectParticipantOutputs, propInd_eq_ite]
 
 /-- The actual prefix has the supported zero-mass boundary `2`. -/
 theorem null_boundary_supported : boundary 2 ∈ support
@@ -298,8 +298,9 @@ theorem finishWithQuery_mass (path : TypeTree.Path (tree.append (fun _ => TypeTr
     Pr{let answer ← finishWithQuery path () accepted}[answer = true] =
       if accepted then (1 / 2 : ENNReal) else 0 := by
   unfold finishWithQuery
-  rw [prEvent_bind_eq_lintegral_of_discrete, OracleComp.evalDist_query (spec := branchSpec),
-    MeasureTheory.trim_eq_self]
+  rw [prEvent_bind, prEvent_bind_eq_lintegral_of_discrete,
+    OracleComp.evalDist_query (spec := branchSpec), MeasureTheory.trim_eq_self]
+  simp only [prEvent_pure]
   change (∫⁻ sample : Fin 3,
     Pr{let answer ← (pure (accepted && sample == 1) : M Bool)}[answer = true]
       ∂branchMeasure) = _
@@ -325,7 +326,7 @@ theorem weighted_success_after_final_query :
     constructor <;> apply Measure.ae_smul_measure <;>
       rw [ae_dirac_iff MeasurableSet.of_discrete] <;> intro _ <;>
       simp only [boundary, suffixVerifier, run, InteractionOver.runTypeTree,
-        participantProfile, collectParticipantOutputs, pure_bind]
+        participantProfile, collectParticipantOutputs, MeasureProgramLogic.wp_pure]
     all_goals rw [finishWithQuery_mass]
     all_goals norm_num [error, boundary]
   have h := run_appendFlat_soundness_weighted_ae_finish (OutputC := fun _ => Bool)

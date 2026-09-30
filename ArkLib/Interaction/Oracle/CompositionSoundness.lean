@@ -271,7 +271,7 @@ theorem executeStrategies_appendExported_soundness_weighted_ae
       Pr{let truth ← next b}[truth] ≤ error b := by
     apply hsuffix.mono
     intro b hb hg
-    simpa only [next, map_eq_pure_bind] using hb (fun ht => hg (Or.inl ht))
+    simpa only [next, expect_norm] using hb (fun ht => hg (Or.inl ht))
       (not_not.mp (fun ha => hg (Or.inr ha)))
   have bound := prEvent_bind_le_prEvent_add_lintegral_ae prefixProgram next
     (fun b => trueMid b ∨ ¬ admissible b) (fun truth => truth) error
@@ -294,7 +294,7 @@ theorem executeStrategies_appendExported_soundness_weighted_ae
     simp only [Set.mem_ofPred_eq, not_or, not_not]
   rw [hset] at bound
   rw [← prEvent_map _ _ (fun truth => truth), observe]
-  simpa only [next, map_eq_pure_bind, prefixProgram] using
+  simpa only [next, prefixProgram, expect_norm] using
     bound.trans (add_le_add hevent le_rfl)
 
 /-- A uniform suffix bound gives the sum of the truth, inadmissibility, and suffix errors.

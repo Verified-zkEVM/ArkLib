@@ -429,8 +429,8 @@ theorem cast_rbrKnowledgeSoundness (ε : pSpec₁.ChallengeIdx → ℝ≥0)
       ¬ kSF.toFun i.1.castSucc stmtIn transcript
         (extractor.extractMid i.1 stmtIn (transcript.concat challenge) witMid) ∧
       kSF.toFun i.1.succ stmtIn (transcript.concat challenge) witMid)
-  apply le_trans (le_of_eq (by simpa only [game, bind_assoc, prEvent_norm] using heq))
-  simpa only [game, bind_assoc, prEvent_norm] using hbound stmtIn witIn prover i
+  apply le_trans (le_of_eq (by simpa only [game, bind_assoc, expect_norm] using heq))
+  simpa only [game, bind_assoc, expect_norm] using hbound stmtIn witIn prover i
 
 end Verifier
 

@@ -118,8 +118,6 @@ theorem card_interleavedPolynomialAgreementSet (domain : ι ↪ F)
       agree (evalTuple domain Q) received := by
   unfold agree interleavedPolynomialAgreementSet
   congr 1
-  ext i
-  simp [funext_iff]
 
 /-- **The candidate set is bounded by `Lambda`.** For `K ≤ |ι|`, the candidate set at degree
 bound `K` and agreement `a` has at most `Lambda (code domain K ^⋈ κ) (1 - a / |ι|)` elements.

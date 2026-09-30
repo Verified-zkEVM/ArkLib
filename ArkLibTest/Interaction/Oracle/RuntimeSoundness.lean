@@ -209,7 +209,8 @@ lemma average_success (native :
       result.output.core.closed.map (TruthFinal result.output.core.path.toBranchPath) = some True] =
     ∫⁻ b, Pr{let result ← runtime.resume b nextProgram}[Success result.output]
       ∂𝒟[runtime.run (prefixProgram native)] := by
-  rw [native_success_eq_split, runtime.run_bind, prEvent_bind_eq_lintegral_of_discrete]
+  rw [native_success_eq_split, runtime.run_bind, prEvent_bind,
+    prEvent_bind_eq_lintegral_of_discrete]
 
 /-- The averaged premise holds although a matching fixed hidden bit gives conditional success
 one. -/
@@ -426,7 +427,7 @@ lemma fixed_guess_success (guess hidden : Bool) (secret : Nat) :
   calc
     _ = Pr{let pair ← (pure (some (guess, hidden)) : OracleComp coinSpec (Option (Bool × Bool)))}[
         pair.map (fun pair : Bool × Bool => pair.1 = pair.2) = some True] := by
-      simp only [answer, Option.map_map, Function.comp_def] at mass
+      simp only [answer, Option.map_map, Function.comp_def, prEvent_pure] at mass
       convert mass using 1
       rfl
     _ = _ := by

@@ -1110,10 +1110,9 @@ lemma prob_R_star_gt_threshold
       SampleableType.prEvent_uniformSample_prod]
     suffices h : ∀ i, Pr{let r ←$ᵗ (Fin ϑ → F)}[¬ g (i, r) ∧ f (i, r)] ≤
         prev_false_witness_threshold by
-      simpa only [id_map, bind_pure_comp] using
-        prEvent_bind_le_of_forall_le ($ᵗ F)
-          (fun i => do let r ← $ᵗ (Fin ϑ → F); return ¬ g (i, r) ∧ f (i, r)) id
-          (fun i => by simpa only [id_map, bind_pure_comp] using h i)
+      simpa only [expect_norm] using
+        prEvent_bind_le_of_forall_le ($ᵗ F) (fun i => (i, ·) <$> ($ᵗ (Fin ϑ → F)))
+          (fun ir => ¬ g ir ∧ f ir) (fun i => by simpa only [expect_norm] using h i)
     intro i
     by_cases hi : i ∈ R_star_set
     · simp [g, hi]

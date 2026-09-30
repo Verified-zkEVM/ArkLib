@@ -50,7 +50,9 @@ theorem uniform_successor_soundness {m : ℕ} (D : Fin m ↪ F) (i : Fin n)
   classical
   have h := executeCore_sampled_soundness n deg F D i stmt p
     ((polynomialFamily F n deg).behaviorOfRealizations (fun _ => p)) q rfl hfalse
-  rw [executeCore_sampled_closed_eq, prEvent_map] at h
+  rw [← prEvent_map (executeCore (sampledReduction ..) _ stmt q) CoreRun.closed
+    (·.map (closedRelation F n deg D i.succ) = some True), executeCore_sampled_closed_eq,
+    prEvent_map] at h
   simpa only [hcheck, ↓reduceIte, Option.map_some, Option.some.injEq, eq_iff_iff,
     iff_true] using h
 
@@ -109,11 +111,11 @@ theorem exportedPrefixRun_soundness {m : ℕ} (D : Fin m ↪ F)
           (firstRoundProtocol F deg).oracles A impl))] ≤
       (deg : ENNReal) / Fintype.card F := by
   rw [exportedPrefixRun_firstRound]
-  refine prEvent_bind_le_of_forall_le _ _ _ ?_
-  rintro ⟨q, respond⟩
+  refine (MeasureProgramLogic.wp_bind _ _ _).trans_le
+    (wp_le_of_forall_le _ fun ⟨q, respond⟩ => ?_)
   change SingleRound.Message F deg at q
   by_cases hcheck : ((Finset.univ.map D).toList.map (fun x => q.val.eval x)).sum = stmt.target
-  · simp only [hcheck, ↓reduceIte, prEvent_norm]
+  · simp only [hcheck, ↓reduceIte, expect_norm]
     let i : Fin n := ⟨start, by omega⟩
     let good : F → Prop := fun r => closedRelation F n deg D i.succ
       ⟨⟨q.val.eval r, Fin.snoc stmt.challenges r⟩,
@@ -134,9 +136,9 @@ theorem exportedPrefixRun_soundness {m : ℕ} (D : Fin m ↪ F)
         let _next ← respond (some r)
         return good r) good (fun truth => truth) (by
           intro r hr
-          simp only [hr, prEvent_norm, prEvent_false])
-    simpa only [bind_assoc, pure_bind, prEvent_norm] using hbound.trans hgood
-  · simp only [hcheck, ↓reduceIte, prEvent_norm]
+          simp only [hr, expect_norm, prEvent_false])
+    simpa only [bind_assoc, pure_bind, expect_norm] using hbound.trans hgood
+  · simp only [hcheck, ↓reduceIte, expect_norm]
     change Pr{let _next ← respond none}[False] ≤ _
     simp only [prEvent_false, zero_le]
 
@@ -164,29 +166,17 @@ theorem exportedPrefixRun_admissibility {m : ℕ} (D : Fin m ↪ F)
           (firstRoundProtocol F deg).oracles A impl))] ≤
       0 := by
   rw [exportedPrefixRun_firstRound]
-  refine prEvent_bind_le_of_forall_le _ _ _ ?_
-  rintro ⟨q, respond⟩
-  change SingleRound.Message F deg at q
-  by_cases hcheck : ((Finset.univ.map D).toList.map (fun x => q.val.eval x)).sum = stmt.target
-  · simp only [hcheck, ↓reduceIte, prEvent_norm]
-    change Pr{let r ← ($ᵗ F); let _next ← respond (some r)}[
-      ¬ (originalOracle.sumWeaken (polynomialInterface F deg).spec).eval
-        (Access.extendImpl A (polynomialInterface F deg) impl q) =
-          (polynomialFamily F n deg).behaviorOfRealizations (fun _ => p)] ≤ 0
-    rw [VirtualOracle.eval_sumWeaken_extendImpl, horiginal]
-    simp only [not_true_eq_false]
-    have hzero := prEvent_false (do
-      let r ← ($ᵗ F)
-      let _next ← respond (some r)
-      return ())
-    simpa only [bind_assoc, pure_bind, prEvent_norm] using hzero.le
-  · simp only [hcheck, ↓reduceIte, prEvent_norm]
-    change Pr{let _next ← respond none}[
-      ¬ (originalOracle.sumWeaken (polynomialInterface F deg).spec).eval
-        (Access.extendImpl A (polynomialInterface F deg) impl q) =
-          (polynomialFamily F n deg).behaviorOfRealizations (fun _ => p)] ≤ 0
-    rw [VirtualOracle.eval_sumWeaken_extendImpl, horiginal]
-    simp only [not_true_eq_false, prEvent_false, le_refl]
+  -- bound the continuation after every first message `⟨q, respond⟩` of the prover
+  refine (MeasureProgramLogic.wp_bind _ _ _).trans_le
+    (wp_le_of_forall_le _ fun ⟨q, respond⟩ => ?_)
+  -- upper-bound reading: split on the sum check, draw the challenge, and stop at the opaque
+  -- `respond`; on both branches the closed oracle is the original one, realized by `horiginal`
+  prvcgen (errorOnMissingSpec := false)
+  all_goals
+    simp only [expect_norm]
+    exact (prEvent_eq_zero_of_forall_mem_support _ _ fun _ _ h => h <|
+      (VirtualOracle.eval_sumWeaken_extendImpl A originalOracle (polynomialInterface F deg)
+        impl q).trans horiginal).le
 
 set_option backward.isDefEq.respectTransparency false in
 /-- Full native Sumcheck is sound against every ordinary prover strategy. From a false initial
@@ -216,7 +206,7 @@ theorem execute_soundness {m : ℕ} (D : Fin m ↪ F)
   | zero =>
     subst n
     rw [execute_zero]
-    simpa [outputRelation, Core.outputRelation] using
+    simpa [outputRelation, Core.outputRelation, propInd_eq_zero_iff] using
       (fun h => hfalse ((closedRelation_last_iff F start deg D
         ⟨stmt, originalOracle.eval impl⟩).mpr h))
   | succ count ih =>
@@ -281,12 +271,11 @@ theorem execute_soundness {m : ℕ} (D : Fin m ↪ F)
       cases last
       cases choice with
       | none =>
-        have hrun := exportedSuffixRun_none F n deg unifSpec ($ᵗ F)
-          (Finset.univ.map D).toList count start finish A impl q next mid
-        have hzero : Pr{let result ← (pure none : ProbComp
-            (Option (ClosedClaim (FinalStatement F n) (polynomialFamily F n deg))))}[
-            result.map (outputRelation F n deg) = some True] = 0 := by simp
-        rw [← hrun, prEvent_map] at hzero
+        have hzero := congrArg (fun mx => Pr{let result ← mx}[
+            result.map (outputRelation F n deg) = some True])
+          (exportedSuffixRun_none F n deg unifSpec ($ᵗ F)
+            (Finset.univ.map D).toList count start finish A impl q next mid)
+        simp only [expect_norm, Option.map_none, reduceCtorEq, propInd_false] at hzero
         exact hzero.le.trans zero_le
       | some r =>
         change ¬ closedRelation F n deg D ⟨start + 1, by omega⟩
@@ -302,7 +291,7 @@ theorem execute_soundness {m : ℕ} (D : Fin m ↪ F)
         have hrun := exportedSuffixRun_some F n deg unifSpec ($ᵗ F)
           (Finset.univ.map D).toList count start finish A impl q r next mid
         rw [← hrun, prEvent_map] at hnext
-        exact hnext
+        simpa only [expect_norm] using hnext
     have bound := assembled hsuffix
     rw [execute_eq_appendExported, prEvent_map]
     simp only [Option.map_map]

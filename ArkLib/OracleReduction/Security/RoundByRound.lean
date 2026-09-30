@@ -669,8 +669,10 @@ theorem rbrKnowledgeSoundnessOneShot_implies_rbrKnowledgeSoundness
     stF.toKnowledgeStateFunction init impl oneShotE, ?_⟩
   -- Both notions score the *same* game, so it suffices to compare the two bad events pointwise.
   refine fun stmtIn witIn prover i ↦ le_trans ?_ (h stmtIn witIn prover i)
-  refine prEvent_mono _ _ _ ?_
-  rintro ⟨transcript, challenge, proveQueryLog⟩ ⟨witMid, hcast, hsucc⟩
+  refine MeasureProgramLogic.wp_mono _ fun _ ↦ MeasureProgramLogic.wp_mono _ fun z ↦
+    propInd_mono ?_
+  rcases z with ⟨transcript, challenge, proveQueryLog⟩
+  rintro ⟨witMid, hcast, hsucc⟩
   simp only [Extractor.RoundByRoundOneShot.toRoundByRoundOfRel, ite_eq_right (Fin.succ_ne_zero _),
     KnowledgeStateFunctionOneShot.toKnowledgeStateFunction] at hcast hsucc
   -- The crux: the general bad event forces `relIn` to have *no* witness for `stmtIn` at all.

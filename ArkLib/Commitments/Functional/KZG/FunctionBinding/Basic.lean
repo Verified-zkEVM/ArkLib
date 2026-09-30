@@ -543,7 +543,7 @@ lemma map_instance_drag {n L : ℕ} {AuxState : Type} [SampleableType G₁]
     = Pr{let result ← (mapFunctionBindingToArsdh hn <$>
         functionBindingGameExt (g₁ := g₁) (g₂ := g₂) AuxState adversary scheme)}[
           ((Groups.arsdhCondition n)) result] := by
-  simp only [prEvent_map, Function.comp_apply]
+  simp only [Function.comp_def]
 
 /-- Transition 4: the mapped game equals the ARSDH experiment -/
 lemma arsdh_game_eq {n L : ℕ} {AuxState : Type} [SampleableType G₁]
@@ -555,7 +555,8 @@ lemma arsdh_game_eq {n L : ℕ} {AuxState : Type} [SampleableType G₁]
       (reduction (g₁ := g₁) (g₂ := g₂) (pairing := pairing) L hn AuxState adversary) := by
   let scheme := kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
   simp only [Groups.arsdhExperiment, Groups.arsdhGame]
-  congr 3
+  rw [← prEvent_map]
+  congr 1
   let pSpec' : ProtocolSpec 1 := ⟨!v[.P_to_V], !v[G₁]⟩
   let impl : QueryImpl _ (StateT unifSpec.QueryCache ProbComp) :=
     QueryImpl.addLift

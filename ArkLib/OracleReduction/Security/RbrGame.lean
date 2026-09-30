@@ -114,12 +114,10 @@ theorem prEvent_simulateQ_addLift_getChallenge_bind_le
           let challenge ← liftComp (pSpec.getChallenge i) (oSpec + [pSpec.Challenge]ₒ)
           return f tr challenge)).run' (← init))}[E x] ≤ ε := by
   refine prEvent_bind_le_of_forall_le init _ E fun s ↦ ?_
-  rw [simulateQ_bind, StateT.run'_eq, StateT.run_bind, map_bind]
-  refine prEvent_bind_le_of_forall_le _ _ E fun x ↦ ?_
-  rw [prEvent_map, simulateQ_bind, simulateQ_addLift_challengeQueryImpl_getChallenge,
-    StateT.run_bind]
-  simpa only [simulateQ_pure, StateT.run_monadLift, StateT.run_pure, bind_pure_comp,
-    Functor.map_map, monadLift_self] using h x.1
+  simp only [simulateQ_bind, simulateQ_addLift_challengeQueryImpl_getChallenge, simulateQ_pure,
+    StateT.run'_eq, StateT.run_bind, StateT.run_monadLift, StateT.run_pure, expect_norm]
+  refine wp_le_of_forall_le _ fun x ↦ ?_
+  simpa only [expect_norm, monadLift_self] using h x.1
 
 end ProtocolSpec
 
@@ -165,7 +163,7 @@ make the master lemma above inapplicable:
 The underlying probabilistic steps — the "zero off the challenge event" monotonicity step and
 its additive and convex prefix-split sharpenings (`prEvent_bind_le_prEvent_of_forall_eq_zero`,
 `prEvent_bind_le_prEvent_add`, `prEvent_bind_le_prEvent_add_mul_prEvent_not`) — live upstream in
-VCVio (`VCVio/EvalDist/Monad/Basic.lean`). What follows is the ArkLib-specific `ProtocolSpec`
+VCVio (`VCVio/EvalDist/ProbabilityBounds.lean`). What follows is the ArkLib-specific `ProtocolSpec`
 glue built on top of them.
 
 The master bound for this shape is
@@ -203,13 +201,12 @@ theorem prEvent_optionT_simulateQ_addLift_getChallenge_bind_some_le
       (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
         oa).run' (← init)))}[E x] ≤ ε := by
   subst hoa
-  rw [OptionT.mk_bind]
-  refine prEvent_bind_le_of_forall_le _ _ E fun s ↦ ?_
   simp only [simulateQ_bind, simulateQ_addLift_challengeQueryImpl_getChallenge, StateT.run'_bind',
-    StateT.run_liftM, bind_assoc, pure_bind, simulateQ_map, StateT.run'_map']
-  rw [OptionT.mk_bind]
-  refine (prEvent_bind_le_prEvent_of_support _ _ (fun c ↦ ∃ t, E (f c t)) E fun c _ hc ↦ ?_).trans
-    ((OptionT.prEvent_lift _ _).trans_le h)
+    StateT.run_liftM, bind_assoc, pure_bind, simulateQ_map, StateT.run'_map', OptionT.mk_bind,
+    expect_norm]
+  refine wp_le_of_forall_le _ fun s ↦
+    (prEvent_bind_le_prEvent_of_support _ _ (fun c ↦ ∃ t, E (f c t)) E fun c _ hc ↦ ?_).trans
+      ((OptionT.prEvent_liftM _ _).trans_le h)
   rw [OptionT.prEvent_mk_eq_zero_iff]
   simp only [support_map, Set.mem_image, Option.some_inj]
   rintro _ ⟨t, _, rfl⟩ hE
@@ -250,13 +247,12 @@ theorem prEvent_optionT_simulateQ_addLift_prefix_getChallenge_bind_le
       ((simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
         oa).run' s))}[E x] ≤ ε := by
   subst hoa
-  rw [simulateQ_bind, StateT.run'_bind', OptionT.mk_bind]
-  refine prEvent_bind_le_of_forall_le _ _ E fun ⟨pre, s'⟩ ↦ ?_
   simp only [simulateQ_bind, simulateQ_addLift_challengeQueryImpl_getChallenge, StateT.run'_bind',
-    StateT.run_liftM, bind_assoc, pure_bind, simulateQ_map, StateT.run'_map']
-  rw [OptionT.mk_bind]
+    StateT.run_liftM, bind_assoc, pure_bind, simulateQ_map, StateT.run'_map', OptionT.mk_bind,
+    expect_norm]
+  refine wp_le_of_forall_le _ fun ⟨pre, s'⟩ ↦ ?_
   refine (prEvent_bind_le_prEvent_of_support _ _ (fun c ↦ ∃ t b, f pre c t = some b ∧ E b) E
-    fun c _ hc ↦ ?_).trans ((OptionT.prEvent_lift _ _).trans_le (h pre))
+    fun c _ hc ↦ ?_).trans ((OptionT.prEvent_liftM _ _).trans_le (h pre))
   rw [OptionT.prEvent_mk_eq_zero_iff]
   simp only [support_map, Set.mem_image]
   rintro z ⟨t, _, htz⟩ hE
@@ -309,32 +305,16 @@ theorem prEvent_optionT_simulateQ_addLift_getChallenge_first_bind_le_convex
       (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
         oa).run' (← init)))}[E x] ≤ ε₂ + ε₁ * (1 - ε₂) := by
   subst hoa
-  have hbody : ∀ s : σ,
-      (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
-        (do
-          let c ← liftComp (pSpec.getChallenge i) (oSpec + [pSpec.Challenge]ₒ)
-          tail c)).run' s
-      = ($ᵗ (pSpec.Challenge i)) >>= fun c ↦
-          (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
-            (tail c)).run' s := by
-    intro s
-    rw [simulateQ_bind, simulateQ_addLift_challengeQueryImpl_getChallenge,
-      StateT.run'_bind']
-    simp only [StateT.run_liftM, bind_assoc, pure_bind]
-  rw [OptionT.mk_bind]
-  refine prEvent_bind_le_of_forall_le _ _ E fun s ↦ ?_
-  rw [hbody s, OptionT.mk_bind]
-  refine (prEvent_bind_le_prEvent_add_mul_prEvent_not _ _ p E fun c hc ↦ h₂ c hc s).trans ?_
-  change Pr{let c ← OptionT.lift ($ᵗ (pSpec.Challenge i))}[p c] + ε₂ *
-      Pr{let c ← OptionT.lift ($ᵗ (pSpec.Challenge i))}[¬ p c] ≤ ε₂ + ε₁ * (1 - ε₂)
-  simp only [OptionT.prEvent_lift]
+  simp only [simulateQ_bind, simulateQ_addLift_challengeQueryImpl_getChallenge, StateT.run'_bind',
+    StateT.run_liftM, bind_assoc, pure_bind, OptionT.mk_bind, expect_norm]
+  refine wp_le_of_forall_le _ fun s ↦
+    (prEvent_bind_le_prEvent_add_mul_prEvent_not _ _ p E fun c hc ↦ h₂ c hc s).trans ?_
   have hnot : Pr{let c ← $ᵗ (pSpec.Challenge i)}[¬ p c] =
-      1 - Pr{let c ← $ᵗ (pSpec.Challenge i)}[p c] := by
-    let _ : MeasurableSpace (pSpec.Challenge i) := ⊤
-    refine ENNReal.eq_sub_of_add_eq' ENNReal.one_ne_top ((add_comm _ _).trans ?_)
-    rw [prEvent_add_prEvent_not, evalDist_map_apply_univ _ Measurable.of_discrete,
-      SampleableType.evalDist_uniformSample, MeasureTheory.measure_univ]
-  rw [hnot, mul_comm ε₂, enn_convex_symm _ _ (prEvent_le_one _) hε₂]
+      1 - Pr{let c ← $ᵗ (pSpec.Challenge i)}[p c] :=
+    ENNReal.eq_sub_of_add_eq' ENNReal.one_ne_top ((add_comm _ _).trans
+      ((prEvent_add_prEvent_not_eq_prEvent_true _ p).trans (prEvent_true_eq_one _)))
+  rw [OptionT.prEvent_liftM, OptionT.prEvent_liftM, hnot, mul_comm ε₂,
+    enn_convex_symm _ _ (prEvent_le_one _) hε₂]
   exact add_le_add le_rfl (mul_le_mul' h₁ le_rfl)
 
 end ProtocolSpec

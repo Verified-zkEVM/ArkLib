@@ -170,11 +170,8 @@ theorem exists_basepoint_with_large_line_prob_aux {ι : Type} [Fintype ι] [None
   have hP2_integral : P2 = ∫⁻ a, lineProb a ∂𝒟[$ᵗ U] := by
     change Pr{let a ← $ᵗ U; let z ← $ᵗ F}[good (a.1 + z • dir)] =
       ∫⁻ a, Pr{let z ← $ᵗ F}[good (a.1 + z • dir)] ∂𝒟[$ᵗ U]
-    simpa only [id_map, bind_pure_comp] using
-      (prEvent_bind_eq_lintegral_of_discrete ($ᵗ U)
-        (fun a : U => do
-          let z ← $ᵗ F
-          return good (a.1 + z • dir)) id)
+    simpa only [expect_norm] using prEvent_bind_eq_lintegral_of_discrete ($ᵗ U)
+      (fun a : U => (fun z : F => a.1 + z • dir) <$> ($ᵗ F)) good
   have hswap :
       P2 = Pr{let z ← $ᵗ F; let a ← $ᵗ U}[good (a.1 + z • dir)] := by
     change Pr{let a ← $ᵗ U; let z ← $ᵗ F}[good (a.1 + z • dir)] = _
@@ -192,11 +189,8 @@ theorem exists_basepoint_with_large_line_prob_aux {ι : Type} [Fintype ι] [None
     have hsplit :
         Pr{let z ← $ᵗ F; let a ← $ᵗ U}[good (a.1 + z • dir)] =
           ∫⁻ z, Pr{let a ← $ᵗ U}[good (a.1 + z • dir)] ∂𝒟[$ᵗ F] := by
-      simpa only [id_map, bind_pure_comp] using
-        (prEvent_bind_eq_lintegral_of_discrete ($ᵗ F)
-          (fun z : F => do
-            let a ← $ᵗ U
-            return good (a.1 + z • dir)) id)
+      simpa only [expect_norm] using prEvent_bind_eq_lintegral_of_discrete ($ᵗ F)
+        (fun z : F => (fun a : U => a.1 + z • dir) <$> ($ᵗ U)) good
     rw [hsplit]
     have hconst : ∀ z : F,
         Pr{let a ← $ᵗ U}[good (a.1 + z • dir)] = Pr{let a ← $ᵗ U}[good a.1] := by

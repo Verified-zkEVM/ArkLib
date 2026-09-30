@@ -192,7 +192,8 @@ theorem executeRandomCommitment_measureSoundness (messages : ProbComp (Message F
         (messages >>= fun q => executeCommitted F deg ($ᵗ F) p q domain target)] {True} ≤
         (deg : ENNReal) / Fintype.card F := by
   rw [← prEvent_eq_evalDist_map_unifSpec]
-  exact executeRandomCommitment_soundness F deg messages p domain target hfalse
+  simpa only [expect_norm] using
+    executeRandomCommitment_soundness F deg messages p domain target hfalse
 
 end
 end Sumcheck.Interaction.SingleRound

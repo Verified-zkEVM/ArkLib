@@ -198,14 +198,14 @@ theorem pg_card_normalizedFactors_toFinset_le_natDegree (p : F[Z][X]) (hp : p.Se
 
 omit [DecidableEq F] [DecidableEq (RatFunc F)] [Finite F] in
 /-- Compatibility alias for the general trivariate evaluation bridge. -/
-@[deprecated Trivariate.evalAtX_eq_map_evalRingHom (since := "2026-08-21")]
+@[deprecated Trivariate.evalAtX_eq_map_evalRingHom +typeChanged (since := "2026-08-21")]
 theorem pg_evalX_eq_map_evalRingHom (x₀ : F) (R : F[Z][X][Y]) :
     Bivariate.evalX (Polynomial.C x₀) R =
       R.map (Polynomial.evalRingHom (Polynomial.C x₀)) := by
   simpa [Trivariate.evalAtX] using Trivariate.evalAtX_eq_map_evalRingHom x₀ R
 
 /-- Compatibility alias for `Trivariate.evalAtZ`. -/
-@[deprecated Trivariate.evalAtZ (since := "2026-08-21")]
+@[deprecated Trivariate.evalAtZ +typeChanged (since := "2026-08-21")]
 noncomputable abbrev pg_eval_on_Z (p : F[Z][X][Y]) (z : F) : Polynomial (Polynomial F) :=
   Trivariate.evalAtZ z p
 

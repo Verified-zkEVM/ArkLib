@@ -40,12 +40,11 @@ theorem prEvent_bind_le_prEvent_add_lintegral_ae
   classical
   let : MeasurableSpace α := ⊤
   have h := prEvent_bind_le_sum_add_lintegral_ae mx suffix Success
-    (fun _ : Unit => fun b => pure (Exceptional b)) Measurable.of_discrete
+    (fun _ : Unit => predInd Exceptional) Measurable.of_discrete
     (fun _ => Measurable.of_discrete) ({b | ¬ Exceptional b}.indicator error) (by
       apply hsuffix.mono
       intro b hb
       by_cases he : Exceptional b
       · simp [he]
       · simpa [he] using hb he)
-  simpa only [Fintype.sum_unique, bind_assoc, pure_bind, bind_pure_comp,
-    lintegral_indicator MeasurableSet.of_discrete] using h
+  simpa only [Fintype.sum_unique, lintegral_indicator MeasurableSet.of_discrete] using h

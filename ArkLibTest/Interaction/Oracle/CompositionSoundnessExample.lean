@@ -228,22 +228,21 @@ theorem suffix_mass (sample : Fin 3) :
     Pr{let result ← nextProgram (boundary sample)}[suffixTrue result] =
       if sample = 0 then (1 : ENNReal) else 1 / 2 := by
   classical
-  rw [suffix_execution, prEvent_bind_eq_lintegral_of_discrete,
+  have h := congrArg (fun mx => Pr{let result ← mx}[suffixTrue result]) (suffix_execution sample)
+  have hsome : suffixTrue ⟨PUnit.unit.{1}, some ⟨7 + sample.val, fun _ => 7 + sample.val⟩⟩ :=
+    congrArg some (eq_true rfl)
+  have hnone : ¬ suffixTrue ⟨PUnit.unit.{1}, none⟩ := nofun
+  simp only [expect_norm, propInd_eq_one_iff.mpr hsome, propInd_eq_zero_iff.mpr hnone] at h
+  rw [h, MeasureProgramLogic.wp_eq_lintegral _ _ Measurable.of_discrete,
     OracleComp.evalDist_query (spec := ambient), MeasureTheory.trim_eq_self,
     show OracleSpec.IsMeasureSpec.toMeasure (spec := ambient) () = branchMeasure from rfl]
   fin_cases sample <;>
     simp only [branchMeasure, lintegral_add_measure, lintegral_smul_measure, lintegral_dirac,
       smul_eq_mul, Fin.isValue]
   all_goals simp only [Nat.reduceAdd, Nat.reduceEqDiff, Fin.reduceEq, or_true, or_false,
-    or_self, ↓reduceIte]
-  all_goals repeat erw [prEvent_pure]
-  all_goals simp only [one_div, suffixTrue, Option.map_some, Option.map_none, Option.some.injEq,
-    eq_iff_iff, iff_true, mul_ite, mul_one, mul_zero, zero_add, reduceCtorEq, Fin.zero_eta,
-    Fin.mk_one, Fin.reduceFinMk, Fin.isValue, Fin.reduceEq, one_ne_zero, ite_eq_left_iff,
-    ↓reduceIte]
-  · rw [ite_eq_left rfl]
-    exact ENNReal.inv_two_add_inv_two
-  all_goals exact fun h => absurd rfl h
+    or_self, ↓reduceIte, one_div, mul_one, mul_zero, zero_add, Fin.zero_eta, Fin.mk_one,
+    Fin.reduceFinMk, Fin.isValue, one_ne_zero]
+  exact ENNReal.inv_two_add_inv_two
 
 /-- Structural support includes a sample of probability zero. -/
 theorem null_boundary_supported : boundary 2 ∈ support prefixProgram := by
