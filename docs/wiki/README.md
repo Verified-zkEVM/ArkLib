@@ -30,6 +30,8 @@ For reusable cross-cutting workflows that are not tied to one repo area, see
   execution, completeness, and round-by-round soundness.
 - [`probability-conventions.md`](probability-conventions.md) - namespace and export conventions
   for reusable helpers in `ArkLib/Data/Probability/`.
+- [`program-logic.md`](program-logic.md) - proving completeness, honest-run supports and
+  probability bounds with VCVio's `prvcgen`.
 - [`porting-conventions.md`](porting-conventions.md) - where port history lives, naming and
   layout rules, and the review checklist for code ported from another snapshot.
 - [`../design/README.md`](../design/README.md) - normative typed interaction and oracle-reduction
@@ -54,6 +56,7 @@ For reusable cross-cutting workflows that are not tied to one repo area, see
   - `interaction-naming.md` for typed interaction API meanings and name migrations.
   - `sequential-composition.md` for legacy composition APIs and their hypotheses.
   - `probability-conventions.md` for namespace/export conventions in `Data/Probability/`.
+  - `program-logic.md` for `prvcgen` proofs about the outputs of one computation.
   - `porting-conventions.md` for port history, naming, layout and the port review checklist.
 - Add new pages when a recurring topic no longer fits cleanly in an existing guide.
 - If a PR changes commands, repo structure, generated-file behavior, or the paper workflow,
