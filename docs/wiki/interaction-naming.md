@@ -188,6 +188,17 @@ the sent polynomial for the next target and retain the input polynomial as the o
 `legacy_honest_verifier_correspondence` specializes this result to honest messages. These execution
 results do not identify the legacy and native security games or transfer their soundness theorems.
 
+The legacy RBR knowledge-soundness statements in `Sumcheck/Spec/SingleRound.lean` and
+`Sumcheck/Spec/General.lean` additionally require `[IsDomain R]`, including the experimental
+component decomposition and every lifted or composed soundness statement. Together with the
+existing finiteness assumption, this supports the polynomial collision bound: a finite commutative
+semiring with `IsDomain` is either a field or a two-element semiring, where the bound follows
+from an evaluation disagreement (with unequal constants handled separately at degree zero).
+Over `ZMod 4`, `p = 0`, target `2`, domain `{0}`, and `q = 2X + 2` pass the sum guard and give
+true output claims at two of four challenges, exceeding the degree-one bound `1/4`. Verifier
+execution, completeness, and execution correspondence keep their commutative-semiring generality.
+The legacy soundness claims retain their existing admissions and admission dependencies.
+
 ## Consecutive multivariate rounds
 
 `MultivariateRound.polynomialFamily` declares the persistent multivariate evaluation interface.

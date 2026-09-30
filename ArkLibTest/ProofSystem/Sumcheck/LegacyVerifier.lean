@@ -18,6 +18,10 @@ so the output relation stays false at every challenge. Returning `p(r) = 0` woul
 A degree-one case uses `q = X + 1` with the same domain and claimed sum. Its next target must
 be `r + 1` at each challenge `r`, so evaluation at a different point is observable.
 
+Over `ZMod 4`, `p = 0`, target `2`, and `q = 2X + 2` demonstrate why the soundness API needs
+stronger algebraic assumptions: the actual output relation holds at two of four challenges.
+This is an operational regression, not a formal negation of the existential RBR security game.
+
 These tests reduce the actual legacy verifier programs, including oracle simulation. They do not
 use the admitted legacy soundness theorems or assert a full correspondence with native Sumcheck.
 -/
@@ -126,6 +130,88 @@ info: 'Sumcheck.LegacyVerifierTest.actual_execution_output_relation_false' depen
 -/
 #guard_msgs (whitespace := lax) in
 #print axioms actual_execution_output_relation_false
+
+namespace ZeroDivisors
+
+private abbrev R := ZMod 4
+
+private def domain : Fin 1 ↪ R :=
+  ⟨fun _ ↦ 0, fun _ _ _ ↦ Subsingleton.elim _ _⟩
+
+private def inputPoly : R⦃≤ 1⦄[X] := ⟨0, by simp⟩
+
+private def sentPoly : R⦃≤ 1⦄[X] :=
+  ⟨C 2 * X + C 2, Polynomial.mem_degreeLE.mpr
+    (Polynomial.degree_add_le_of_degree_le (Polynomial.degree_C_mul_X_le 2)
+      (Polynomial.degree_C_le.trans (by decide)))⟩
+
+/-- The fixed input polynomial does not have the claimed sum two. -/
+theorem input_relation_false :
+    ¬ ((2, fun _ : Unit ↦ inputPoly), ()) ∈ Simple.inputRelation R 1 domain := by
+  change ¬ (∑ x ∈ Finset.univ.map domain, (0 : R[X]).eval x) = (2 : R)
+  simpa using (show (0 : R) ≠ 2 by decide)
+
+/-- The degree-one message passes the sum guard over the ring with zero divisors. -/
+theorem message_sum_passes :
+    ∑ x ∈ Finset.univ.map domain, sentPoly.val.eval x = (2 : R) := by
+  have hdomain (i : Fin 1) : domain i = 0 := rfl
+  simp [sentPoly, hdomain]
+
+/-- Direct execution remains available over this commutative ring and retains the input oracle. -/
+theorem verifier_returns_sent_target (r : R) :
+    ((Simple.verifier R 1 domain []ₒ).verify
+      (2, fun _ ↦ inputPoly) (legacyTranscript R 1 sentPoly r)).run =
+      pure (some ((2 * r + 2, r), fun _ : Unit ↦ inputPoly)) := by
+  have hdomain (i : Fin 1) : domain i = 0 := rfl
+  simp [Simple.verifier, sentPoly, hdomain]
+
+/-- Oracle execution also preserves the zero input and evaluates the sent polynomial. -/
+theorem oracleVerifier_returns_sent_target (r : R) :
+    ((Simple.oracleVerifier R 1 domain []ₒ).toVerifier.verify
+      (2, fun _ ↦ inputPoly) (legacyTranscript R 1 sentPoly r)).run =
+      pure (some ((2 * r + 2, r), fun _ : Unit ↦ inputPoly)) := by
+  rw [Simple.oracleVerifier_eq_verifier]
+  exact verifier_returns_sent_target r
+
+/-- The actual verifier's output relation holds exactly at challenges one and three. -/
+theorem actual_execution_output_relation (r : R) :
+    (Option.map (fun out ↦ (out, ()) ∈ Simple.outputRelation R 1)) <$>
+      ((Simple.oracleVerifier R 1 domain []ₒ).toVerifier.verify
+        (2, fun _ ↦ inputPoly) (legacyTranscript R 1 sentPoly r)).run =
+      pure (some (r = 1 ∨ r = 3)) := by
+  rw [oracleVerifier_returns_sent_target]
+  have heq : ∀ r : R, (0 : R) = 2 * r + 2 ↔ r = 1 ∨ r = 3 := by decide
+  simp [Simple.outputRelation, inputPoly, heq]
+
+/-- Exactly two uniform challenges make the actual output relation true. -/
+theorem true_output_challenge_count :
+    (Finset.univ.filter (fun r : R ↦ r = 1 ∨ r = 3)).card = 2 := by
+  decide
+
+open scoped NNReal in
+/-- The true-output fraction is one half, strictly exceeding the degree-one bound one quarter. -/
+theorem true_output_fraction_exceeds_degree_bound :
+    ((Finset.univ.filter (fun r : R ↦ r = 1 ∨ r = 3)).card : ℝ≥0) / Fintype.card R = 1 / 2 ∧
+      (1 : ℝ≥0) / Fintype.card R <
+        (Finset.univ.filter (fun r : R ↦ r = 1 ∨ r = 3)).card / Fintype.card R := by
+  norm_num [true_output_challenge_count, R]
+
+/--
+info: 'Sumcheck.LegacyVerifierTest.ZeroDivisors.actual_execution_output_relation' depends on axioms:
+[propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms actual_execution_output_relation
+
+/--
+info: 'Sumcheck.LegacyVerifierTest.ZeroDivisors.true_output_fraction_exceeds_degree_bound'
+depends on axioms:
+[propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms true_output_fraction_exceeds_degree_bound
+
+end ZeroDivisors
 
 end
 

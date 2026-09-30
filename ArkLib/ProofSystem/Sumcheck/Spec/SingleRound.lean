@@ -21,14 +21,14 @@ import all Init.Data.Vector.FinRange
 /-!
 # Single round of the Sum-check Protocol
 
-We define a single round of the sum-check protocol as a two-message oracle reduction, and prove that
-it is perfect complete and round-by-round knowledge sound. Specification & security proofs of the
-full sum-check protocol are given in `Basic.lean`, following our sequential composition results.
+We define a single round of the sum-check protocol as a two-message oracle reduction. The simple
+round has proved perfect completeness; lifted completeness and legacy round-by-round knowledge
+soundness still depend on admissions. `General.lean` composes the rounds into the full protocol.
 
 ## Protocol Description
 
 The sum-check protocol is parameterized by the following:
-- `R`: the underlying ring (for soundness, required to be finite and a domain)
+- `R`: the underlying commutative semiring (for soundness, finite with `IsDomain R`)
 - `n + 1 : ℕ+`: the number of variables (also number of rounds)
 - `deg : ℕ`: the individual degree bound for the polynomial
 - `D : Fin m ↪ R`: the set of `m` evaluation points for each variable (for some `m`), represented as
@@ -318,7 +318,9 @@ variable [SampleableType R]
 -- Completeness of this experimental decomposition awaits implementations of its component
 -- reductions and their correctness certificates.
 
-theorem oracleVerifier_rbrKnowledgeSoundness [Fintype R] :
+/-- Intended knowledge-soundness bound for the experimental decomposition, still admitted.
+Finite domain assumptions exclude the zero-divisor obstruction to the claimed error. -/
+theorem oracleVerifier_rbrKnowledgeSoundness [Fintype R] [IsDomain R] :
     (oracleReduction R deg oSpec).verifier.rbrKnowledgeSoundness init impl
       (inputRelation R deg D) (outputRelation R deg)
         (fun _ => (deg : ℝ≥0) / (Fintype.card R)) := by
@@ -566,14 +568,16 @@ theorem oracleReduction_perfectCompleteness :
   rw [oracleReduction_eq_reduction]
   exact reduction_perfectCompleteness R deg D oSpec
 
-/-- Round-by-round knowledge soundness for the verifier -/
-theorem verifier_rbrKnowledgeSoundness [Fintype R] :
+/-- Round-by-round knowledge soundness for the verifier, still admitted.
+The finite-domain assumption is needed for the polynomial collision bound. -/
+theorem verifier_rbrKnowledgeSoundness [Fintype R] [IsDomain R] :
     (verifier R deg D oSpec).rbrKnowledgeSoundness init impl
     (inputRelation R deg D) (outputRelation R deg) (fun _ => (deg : ℝ≥0) / (Fintype.card R)) := by
   sorry
 
-/-- Round-by-round knowledge soundness for the oracle verifier -/
-theorem oracleVerifier_rbrKnowledgeSoundness [Fintype R] :
+/-- Round-by-round knowledge soundness for the oracle verifier, still admitted.
+As for the direct verifier, the claimed error needs the finite-domain collision bound. -/
+theorem oracleVerifier_rbrKnowledgeSoundness [Fintype R] [IsDomain R] :
     (oracleVerifier R deg D oSpec).rbrKnowledgeSoundness init impl
     (inputRelation R deg D) (outputRelation R deg) (fun _ => (deg : ℝ≥0) / (Fintype.card R)) := by
   sorry
@@ -929,7 +933,9 @@ theorem reduction_perfectCompleteness :
     (lensComplete := by simp; sorry)
     (Simple.reduction_perfectCompleteness R deg D oSpec)
 
-theorem verifier_rbrKnowledgeSoundness [Fintype R] :
+/-- Lifted round-by-round knowledge soundness over a finite semiring with `IsDomain R`,
+still admitted. -/
+theorem verifier_rbrKnowledgeSoundness [Fintype R] [IsDomain R] :
     (verifier R n deg D oSpec i).rbrKnowledgeSoundness init impl
     (relationRound R n deg D i.castSucc) (relationRound R n deg D i.succ)
     (fun _ => (deg : ℝ≥0) / Fintype.card R) := sorry
@@ -958,9 +964,9 @@ theorem oracleReduction_perfectCompleteness :
 
 local instance : Inhabited R := ⟨0⟩
 
-/-- Round-by-round knowledge soundness theorem for single-round of sum-check, obtained by
-  transporting the knowledge soundness proof for the simplified version -/
-theorem oracleVerifier_rbrKnowledgeSoundness [Fintype R] :
+/-- Round-by-round knowledge soundness for a single round over a finite semiring with `IsDomain R`.
+This transport still depends on the admitted simple-round and extractor-lens soundness claims. -/
+theorem oracleVerifier_rbrKnowledgeSoundness [Fintype R] [IsDomain R] :
     (oracleVerifier R n deg D oSpec i).rbrKnowledgeSoundness init impl
     (relationRound R n deg D i.castSucc) (relationRound R n deg D i.succ)
     (fun _ => (deg : ℝ≥0) / Fintype.card R) :=
