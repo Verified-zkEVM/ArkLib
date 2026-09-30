@@ -6,6 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.OracleReduction.Execution
+public import ArkLib.OracleReduction.ProgramLogic
 public import VCVio.OracleComp.SimSemantics.StateT.Measure
 
 /-!
@@ -626,28 +627,12 @@ theorem Verifier.id_soundness {lang : Set StmtIn} :
     (Verifier.id : Verifier oSpec _ _ _).soundness init impl lang lang 0 := by
   unfold soundness
   intro WitIn WitOut witIn prover stmtIn hstmtIn
-  simp only [ENNReal.coe_zero, nonpos_iff_eq_zero, Reduction.run_mk_verifier_id,
-    OptionT.prEvent_mk_eq_zero_iff]
-  intro x hx hev
-  apply hstmtIn
-  simp only [support_bind, Set.mem_iUnion] at hx
-  obtain ⟨s, _, hx⟩ := hx
-  simp only [StateT.run'_eq, support_map, Set.mem_image] at hx
-  obtain ⟨⟨a, s'⟩, ha, rfl⟩ := hx
-  have hliftM : (liftM ((fun pr => (pr, stmtIn)) <$> Prover.run stmtIn witIn prover) :
-      OptionT (OracleComp _) _).run =
-      (fun pr => some (pr, stmtIn)) <$> Prover.run stmtIn witIn prover := by
-    simp [Functor.map_map]
-  rw [hliftM, simulateQ_map, StateT.run_map] at ha
-  simp only [support_map, Set.mem_image, Prod.exists] at ha
-  obtain ⟨pr, s'', ⟨b, _, _, heq⟩⟩ := ha
-  -- `heq` identifies the sampled output with `(some (pr, stmtIn), _)`; peel it apart to read off
-  -- that the output statement is literally `stmtIn`, contradicting `stmtIn ∉ lang` via `hev`.
-  have hOption := (Prod.mk.inj heq).1
-  have hPair := Option.some.inj hOption
-  have hStmtOut := (Prod.mk.inj hPair).2
-  rw [← hStmtOut] at hev
-  exact hev
+  simp only [ENNReal.coe_zero, Reduction.run_mk_verifier_id, OptionT.prEvent_mk, liftM,
+    OptionT.run_monadLift, monadLift_self, Functor.map_map, simulateQ_map, StateT.run'_eq,
+    StateT.run_map]
+  -- upper-bound reading: the event is the constant `stmtIn ∈ lang` after the prover's run
+  prvcgen (errorOnMissingSpec := false) [Upper.Spec.ofSupport init]
+  simp [hstmtIn]
 
 /-- The straightline extractor for the identity / trivial reduction, which just returns the input
   witness. -/
@@ -659,48 +644,18 @@ def Extractor.Straightline.id : Extractor.Straightline oSpec StmtIn WitIn WitIn 
 @[simp]
 theorem Verifier.id_knowledgeSoundness {rel : Set (StmtIn × WitIn)} :
     (Verifier.id : Verifier oSpec _ _ _).knowledgeSoundness init impl rel rel 0 := by
-  -- `Extractor.Straightline.id` returns the (adversarial) output witness. On the support of the
-  -- game, the identity verifier outputs the input statement, so the bad event requires both
-  -- `(stmtIn, witOut) ∉ rel` (extracted witness invalid) and `(stmtIn, witOut) ∈ rel`
-  -- (output pair valid): a contradiction.
+  -- `Extractor.Straightline.id` returns the (adversarial) output witness and the identity verifier
+  -- outputs the input statement, so the bad event requires both `(stmtIn, witOut) ∉ rel` and
+  -- `(stmtIn, witOut) ∈ rel`: in the upper-bound reading, its indicator is `0` at every output.
   refine ⟨Extractor.Straightline.id, fun stmtIn witIn prover => ?_⟩
-  simp only [ENNReal.coe_zero, le_zero_iff]
-  rw [OptionT.prEvent_mk_eq_zero_iff]
-  intro x hx
-  simp only [support_bind, Set.mem_iUnion] at hx
-  obtain ⟨s, _, hx⟩ := hx
-  simp only [Reduction.runWithLog, Verifier.run, Verifier.id, Extractor.Straightline.id,
-    OptionT.run_bind, OptionT.run_pure, Option.getM, Option.elimM,
-    simulateQ_bind, StateT.run'_bind', support_bind, Set.mem_iUnion] at hx
-  obtain ⟨⟨o, s'⟩, hi, hx2⟩ := hx
-  cases o with
-  | none =>
-    simp only [Option.elim, simulateQ_pure, StateT.run'_pure', support_pure,
-      Set.mem_singleton_iff] at hx2
-    exact (Option.some_ne_none x hx2).elim
-  | some x' =>
-    -- From `hx2`: `x = (stmtIn, some witOut, x'.1.2, witOut)`
-    simp only [Option.elim, simulateQ_pure, OptionT.run_pure, liftM_pure, pure_bind,
-      StateT.run'_pure', support_pure, Set.mem_singleton_iff] at hx2
-    -- From `hi`: the verifier is the identity, so `x'.1.2 = stmtIn`
-    rw [show (pure stmtIn : OptionT (OracleComp oSpec) StmtIn) =
-      (pure (some stmtIn) : OracleComp oSpec (Option StmtIn)) from rfl] at hi
-    simp only [Option.elim, simulateQ_pure, OptionT.run_pure, WriterT.run_pure, liftM_pure,
-      pure_bind, support_bind, Set.mem_iUnion, StateT.run_bind] at hi
-    obtain ⟨⟨o2, s2⟩, _, hi2⟩ := hi
-    cases o2 with
-    | none =>
-      simp only [simulateQ_pure, StateT.run_pure, support_pure,
-        Set.mem_singleton_iff, Prod.mk.injEq] at hi2
-      exact (Option.some_ne_none x' hi2.1).elim
-    | some pr =>
-      simp only [simulateQ_pure, StateT.run_pure, support_pure,
-        Set.mem_singleton_iff, Prod.mk.injEq, Option.some.injEq] at hi2
-      obtain ⟨rfl, -⟩ := hi2
-      simp only [Option.some.injEq] at hx2
-      subst hx2
-      rintro ⟨h1, h2⟩
-      exact h1 _ rfl h2
+  simp only [ENNReal.coe_zero, OptionT.prEvent_mk, Reduction.runWithLog, Verifier.run,
+    Verifier.id, Extractor.Straightline.id, show (pure stmtIn : OptionT (OracleComp oSpec) _) =
+      (pure (some stmtIn) : OracleComp oSpec _) from rfl, simulateQ_pure, WriterT.run_pure,
+    liftM_pure, bind_pure_comp, pure_bind, Option.getM_some, map_pure, OptionT.run_pure,
+    Functor.map_map, OptionT.run_map, OptionT.run_monadLift, monadLift_self, simulateQ_map,
+    StateT.run'_eq, StateT.run_map]
+  prvcgen (errorOnMissingSpec := false) [Upper.Spec.ofSupport init]
+  simp
 
 /-- The identity / trivial reduction is perfectly complete. -/
 @[simp]

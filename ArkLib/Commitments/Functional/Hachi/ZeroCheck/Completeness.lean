@@ -6,6 +6,7 @@ Authors: Pablo Martín Vinuelas
 module
 
 public import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Reduction
+public import ArkLib.OracleReduction.ProgramLogic
 public import ArkLib.ToCompPoly.Multilinear.Basic
 
 /-!
@@ -210,29 +211,10 @@ lemma nestedZeroCheckReduction_run_support {TCom Wit : Type} [SampleableType F]
               (nestedZeroCheckTauZero tr) (nestedZeroCheckTauAlpha tr), w),
           nestedZcMapStmt Φ m₀ m₁ X
             (nestedZeroCheckTauZero tr) (nestedZeroCheckTauAlpha tr)) := by
-  intro x hx
-  unfold Reduction.run at hx
-  simp only [OptionT.run_bind, Option.elimM] at hx
-  rw [mem_support_bind_iff] at hx
-  obtain ⟨prOpt, hpr, hx⟩ := hx
-  -- The prover is lifted into `OptionT`, so it never contributes a failure.
-  rw [show ((liftM (Prover.run X w (nestedZeroCheckReduction (oSpec := oSpec) Φ m₀ m₁).prover) :
-      OptionT (OracleComp _) _)).run
-      = (Prover.run X w (nestedZeroCheckReduction (oSpec := oSpec) Φ m₀ m₁).prover) >>=
-        fun a => pure (some a) from rfl] at hpr
-  rw [mem_support_bind_iff] at hpr
-  obtain ⟨pr, hpr, hprOpt⟩ := hpr
-  rw [mem_support_pure_iff] at hprOpt
-  subst hprOpt
-  -- The verifier is `pure`, so neither does it.
-  simp only [Option.elim_some, nestedZeroCheckReduction, nestedZeroCheckVerifier,
-    Verifier.run] at hx
-  simp only [ChallengeIdx, Challenge, OptionT.run_pure, liftM_pure,
-    ProgrammingPolicy.empty_apply, pure_bind, Option.elim_some, Option.getM_some, support_pure,
-    Set.mem_singleton_iff] at hx
-  simp only [nestedZeroCheckReduction] at hpr
-  have hout := nestedZeroCheckProver_output_of_mem_support Φ m₀ m₁ X w pr hpr
-  exact ⟨pr.1, by rw [hx, ← hout]⟩
+  simp only [Reduction.run_run_eq, nestedZeroCheckReduction, nestedZeroCheckVerifier,
+    Verifier.run, OptionT.run_pure]
+  prvcgen [Qualitative.Spec.ofSupport (Prover.run _ _ _)]
+  exact ⟨pr.1, by rw [← nestedZeroCheckProver_output_of_mem_support Φ m₀ m₁ X w pr ‹_›]; rfl⟩
 
 omit [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
 /-- **Perfect completeness of the zero-check (Hachi Figure 5).** An honest prover holding a witness

@@ -6,6 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.OracleReduction.LiftContext.OracleReduction
+public import ArkLib.OracleReduction.ProgramLogic
 
 /-!
 # Simple Oracle Reduction: Random Query
@@ -142,24 +143,12 @@ theorem oracleReduction_completeness :
     (oracleReduction oSpec OStatement).perfectCompleteness
       init impl (relIn OStatement) (relOut OStatement) := by
   apply Reduction.perfectCompleteness_of_run_support
-  rintro ⟨stmt, oStmt⟩ wit hOStmt x hx
-  have hEq : oStmt 0 = oStmt 1 := hOStmt
-  simp only [OracleReduction.toReduction, oracleReduction, Reduction.run,
-    Prover.run_of_verifier_first, oracleProver, oracleVerifier,
-    OracleVerifier.toVerifier, Verifier.run] at hx
-  simp_rw [show (pure : _ → OptionT (OracleComp _) _) = fun y =>
-    (pure (some y) : OracleComp _ _) from rfl] at hx
-  simp only [OracleComp.liftComp_pure, ← OracleComp.liftComp_eq_liftM, pure_bind,
-    OptionT.run_mk] at hx
-  obtain ⟨qSupport, hqSupport, hx⟩ := hx
-  obtain ⟨q, rfl⟩ := hqSupport
-  simp only [Challenge, ChallengeIdx, FullTranscript.challenges, Option.getM,
-    Fin.isValue, Fin.vcons_of_one, StmtOut, OStmtOut, WitOut, MessageIdx, Message] at hx
-  subst x
-  refine ⟨_, rfl, ?_, rfl⟩
-  simp only [relOut, Set.mem_ofPred_eq]
-  change answer (oStmt 0) _ = answer (oStmt 1) _
-  rw [hEq]
+  rintro ⟨stmt, oStmt⟩ wit (hOStmt : oStmt 0 = oStmt 1)
+  simp only [Reduction.run_run_eq, OracleReduction.toReduction, oracleReduction,
+    Prover.run_of_verifier_first, oracleProver, oracleVerifier, OracleVerifier.toVerifier,
+    Verifier.run, OptionT.run_mk, OptionT.run_pure, simulateQ_pure]
+  prvcgen
+  exact ⟨_, rfl, congrArg (answer · _) hOStmt, rfl⟩
 
 -- def langIn : Set (Unit × (∀ _ : Fin 2, OStatement)) := setOf fun ⟨(), oracles⟩ =>
 --   oracles 0 = oracles 1

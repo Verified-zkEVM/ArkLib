@@ -8,6 +8,7 @@ module
 public import ArkLib.OracleReduction.Security.Basic
 public import ArkLib.Data.Fin.Fold
 public import VCVio.EvalDist.Monad.Option
+public import ArkLib.OracleReduction.ProgramLogic
 
 /-!
   # Functional Commitment Schemes (with Oracle Openings)
@@ -123,9 +124,10 @@ opening runs in whatever oracle state key generation and commitment left behind)
 scheme is perfectly correct.
 
 This is the generic bridge between the reduction-level completeness theory and the
-commitment-level correctness game: the game's setup prefix is peeled off support-element by
-support-element (`OptionT.prEvent_mk_bind_eq_one_of_support`), and each leaf is the completeness
-game of the opening at the honest input. -/
+commitment-level correctness game. Both games are stated as structural triples, every possible
+output satisfying the event; `prvcgen` steps through the setup prefix, taking any possible initial
+state, key pair and commitment (`Spec.ofSupport`), and ends at the opening's run from the
+post-setup state, which is the completeness game of the opening at the honest input. -/
 theorem perfectCorrectness_of_opening_perfectCompleteness
     (rel : ComKey → VerifKey →
       Set ((Commitment × (q : O.Query) × O.Response q) × (Data × Decommitment)))
@@ -136,29 +138,20 @@ theorem perfectCorrectness_of_opening_perfectCompleteness
       (scheme.opening (ck, vk)).perfectCompleteness (pure s) impl (rel ck vk)) :
     perfectCorrectness init impl scheme := by
   intro data query
-  simp only [ENNReal.coe_zero, tsub_zero]
   refine ge_of_eq ?_
-  -- Normalize the game into nested `ProbComp` binds.
-  simp only [simulateQ_bind, StateT.run'_eq, StateT.run_bind, QueryImpl.addLift_def,
-    QueryImpl.simulateQ_add_liftComp_left, QueryImpl.liftTarget_self, map_bind]
-  -- Peel off the setup prefix, support-element by support-element.
-  refine OptionT.prEvent_mk_bind_eq_one_of_support _ (prEvent_true_eq_one _) _ _ (fun s _ => ?_)
-  refine OptionT.prEvent_mk_bind_eq_one_of_support _ (prEvent_true_eq_one _) _ _ (fun p hp => ?_)
-  have hkg : p.1 ∈ support scheme.keygen :=
-    support_simulateQ_run'_subset impl _ s
-      (by rw [StateT.run'_eq, support_map]; exact ⟨p, hp, rfl⟩)
-  refine OptionT.prEvent_mk_bind_eq_one_of_support _ (prEvent_true_eq_one _) _ _ (fun p₁ hp₁ => ?_)
-  have hcm : p₁.1 ∈ support (scheme.commit p.1.1 data) :=
-    support_simulateQ_run'_subset impl _ p.2
-      (by rw [StateT.run'_eq, support_map]; exact ⟨p₁, hp₁, rfl⟩)
-  -- The leaf: the opening's perfect completeness at the honest input, from the post-setup state.
-  have hmem := hRel data query p.1.1 p.1.2 p₁.1.1 p₁.1.2 (by simpa using hkg) (by simpa using hcm)
-  have hcore := hComplete p.1.1 p.1.2 (by simpa using hkg) p₁.2
-  rw [Proof.perfectCompleteness, Reduction.perfectCompleteness_eq_prob_one] at hcore
-  have h := hcore (p₁.1.1, ⟨query, O.answer data query⟩) (data, p₁.1.2) hmem
-  simp only [pure_bind, StateT.run'_eq, QueryImpl.addLift_def,
-    QueryImpl.liftTarget_self] at h
-  exact h
+  simp only [Reduction.perfectCompleteness_eq_prob_one, pure_bind, ENNReal.coe_zero, tsub_zero,
+    simulateQ_bind, StateT.run'_eq, StateT.run_bind, map_bind, QueryImpl.addLift_def,
+    QueryImpl.simulateQ_add_liftComp_left, QueryImpl.liftTarget_self, OptionT.prEvent_mk,
+    OptionT.run, Qualitative.prEvent_eq_one_iff_triple] at hComplete ⊢
+  have hsim {α : Type} (oa : OracleComp oSpec α) (s : σ) (x : α × σ)
+      (hx : x ∈ support ((simulateQ impl oa).run s)) : x.1 ∈ support oa :=
+    support_simulateQ_run'_subset impl oa s <| by
+      rw [StateT.run'_eq, support_map]; exact ⟨x, hx, rfl⟩
+  prvcgen [Qualitative.Spec.ofSupport init,
+    Qualitative.Spec.ofSupport ((simulateQ impl scheme.keygen).run _),
+    Qualitative.Spec.ofSupport ((simulateQ impl (scheme.commit _ data)).run _), hComplete]
+  all_goals rename_i hp hp₁
+  exacts [hsim _ _ _ hp, hRel _ _ _ _ _ _ (hsim _ _ _ hp) (hsim _ _ _ hp₁)]
 
 /-- An adversary in the (evaluation) binding game returns a commitment `cm`, a query `q`, two
   purported responses `r₁, r₂` to the query, and an auxiliary private state (to be passed to the
