@@ -182,9 +182,11 @@ bounds accepted true outputs for a false input sum under a fresh uniform finite-
 before that challenge. Neither theorem states multi-round or knowledge soundness.
 
 `legacy_input_iff` and `legacy_output_iff` give both directions of relation correspondence for
-arbitrary concrete claims. `legacy_honest_verifier_correspondence` is narrower: it compares honest
-executions. The legacy verifier reads the input polynomial for its next target, while the typed
-verifier reads the sent polynomial. Their arbitrary-message executions are not identified.
+arbitrary concrete claims. `legacy_verifier_correspondence` identifies single-round scalar outputs
+for arbitrary sent polynomials and fixed challenges, including rejection. Both verifiers evaluate
+the sent polynomial for the next target and retain the input polynomial as the output oracle.
+`legacy_honest_verifier_correspondence` specializes this result to honest messages. These execution
+results do not identify the legacy and native security games or transfer their soundness theorems.
 
 ## Consecutive multivariate rounds
 
@@ -336,7 +338,6 @@ unchanged. For named contexts and their views, replace old `tensor` uses by `dis
 | `executeRoundsSampled_measure_complete` | `executeRoundsSampled_measureCompleteness` |
 | `executeRounds_uniform_measure_complete` | `executeRounds_uniform_measureCompleteness` |
 | Soundness `*_measure_soundness` | `*_measureSoundness` |
-| `legacy_verifier_correspondence` | `legacy_honest_verifier_correspondence` |
 | `TypeTree.FullPrefix` | `TypeTree.ExecutionPrefix` |
 | Prefix `resources`, `resourceInclusion` | `availableContext`, `contextInclusion` |
 | Prefix `no_future` | `available_length_le` |

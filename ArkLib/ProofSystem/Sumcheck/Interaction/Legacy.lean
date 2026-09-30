@@ -119,7 +119,7 @@ theorem legacy_verifier_correspondence [DecidableEq R]
     simp [Spec.SingleRound.Simple.verifier, Finset.sum_map_toList, h]
 
 /-- Honest legacy verifier execution agrees with the typed executor's scalar output. -/
-theorem legacy_honest_verifier_correspondence [DecidableEq R] [SampleableType R]
+theorem legacy_honest_verifier_correspondence [DecidableEq R]
     {ι : Type} (ambient : OracleSpec ι) {m : ℕ} (D : Fin m ↪ R)
     (p : Message R deg) (target r : R)
     (h : ((target, (fun _ : Unit => p)), ()) ∈
@@ -129,11 +129,9 @@ theorem legacy_honest_verifier_correspondence [DecidableEq R] [SampleableType R]
         (target, fun _ => p) (legacyTranscript R deg p r)).run =
       (fun result => result.2.2) <$>
         executeAt R deg ambient p p (Finset.univ.map D).toList target r := by
-  rw [executeAt_honest R deg ambient p _ target r (legacy_input_sum R deg D p target h)]
-  rw [Spec.SingleRound.Simple.oracleVerifier_eq_verifier]
-  have hs : (∑ x, p.val.eval (D x)) = target := by
-    simpa [Spec.SingleRound.Simple.inputRelation] using h
-  simp [Spec.SingleRound.Simple.verifier, hs]
+  simpa only [executeAt_honest R deg ambient p _ target r
+    (legacy_input_sum R deg D p target h)] using
+    legacy_verifier_correspondence R deg ambient D p p target r
 
 
 end

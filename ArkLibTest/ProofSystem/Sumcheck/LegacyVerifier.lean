@@ -15,6 +15,9 @@ Over F₅, with degree bound zero and domain `{0}`, take input polynomial `p = 0
 check. Executing either legacy verifier must return target `q(r) = 1` with output oracle `p = 0`,
 so the output relation stays false at every challenge. Returning `p(r) = 0` would make it true.
 
+A degree-one case uses `q = X + 1` with the same domain and claimed sum. Its next target must
+be `r + 1` at each challenge `r`, so evaluation at a different point is observable.
+
 These tests reduce the actual legacy verifier programs, including oracle simulation. They do not
 use the admitted legacy soundness theorems or assert a full correspondence with native Sumcheck.
 -/
@@ -85,6 +88,37 @@ theorem honest_zero_accepted (r : F) :
       pure (some ((0, r), fun _ : Unit ↦ inputPoly)) := by
   rw [Simple.oracleVerifier_eq_verifier]
   simp [Simple.verifier, inputPoly]
+
+private def linearInputPoly : F⦃≤ 1⦄[X] := ⟨0, by simp⟩
+
+private def linearSentPoly : F⦃≤ 1⦄[X] :=
+  ⟨X + 1, by
+    apply Polynomial.mem_degreeLE.mpr
+    exact Polynomial.degree_add_le_of_degree_le Polynomial.degree_X_le
+      (Polynomial.degree_one_le.trans (by decide))⟩
+
+/-- A nonconstant message must be evaluated at the supplied challenge. -/
+theorem verifier_returns_linear_sent_target (r : F) :
+    ((Simple.verifier F 1 domain []ₒ).verify
+      (1, fun _ ↦ linearInputPoly) (legacyTranscript F 1 linearSentPoly r)).run =
+      pure (some ((r + 1, r), fun _ : Unit ↦ linearInputPoly)) := by
+  have hdomain (i : Fin 1) : domain i = 0 := rfl
+  simp [Simple.verifier, linearSentPoly, hdomain]
+
+/-- Oracle routing preserves both the nonconstant message and its evaluation point. -/
+theorem oracleVerifier_returns_linear_sent_target (r : F) :
+    ((Simple.oracleVerifier F 1 domain []ₒ).toVerifier.verify
+      (1, fun _ ↦ linearInputPoly) (legacyTranscript F 1 linearSentPoly r)).run =
+      pure (some ((r + 1, r), fun _ : Unit ↦ linearInputPoly)) := by
+  rw [Simple.oracleVerifier_eq_verifier]
+  exact verifier_returns_linear_sent_target r
+
+/--
+info: 'Sumcheck.LegacyVerifierTest.oracleVerifier_returns_linear_sent_target' depends on axioms:
+[propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms oracleVerifier_returns_linear_sent_target
 
 /--
 info: 'Sumcheck.LegacyVerifierTest.actual_execution_output_relation_false' depends on axioms:
