@@ -198,7 +198,7 @@ lemma guess_success (guess : Bool) (secret : Nat) :
     have event : {hidden : Bool | (guess = hidden) = True} = {guess} := by
       ext hidden
       simp only [Set.mem_ofPred_eq, Set.mem_singleton_iff, eq_iff_iff, true_iff, eq_comm]
-    rw [event, OracleSpec.IsUniformMeasureSpec.toMeasure_singleton]
+    rw [event, OracleSpec.UniformAnswerMeasure.toMeasure_singleton]
     rfl
 
 local instance : MeasurableSpace (RunResult runtime Boundary) := ⊤
@@ -429,7 +429,7 @@ lemma fixed_guess_success (guess hidden : Bool) (secret : Nat) :
         pair.map (fun pair : Bool × Bool => pair.1 = pair.2) = some True] := by
       simp only [answer, Option.map_map, Function.comp_def, prEvent_pure] at mass
       convert mass using 1
-      rfl
+      all_goals first | rfl | simp only [prEvent_pure]
     _ = _ := by
       cases guess <;> cases hidden <;> simp
 

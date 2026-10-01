@@ -233,9 +233,10 @@ theorem suffix_mass (sample : Fin 3) :
     congrArg some (eq_true rfl)
   have hnone : ¬ suffixTrue ⟨PUnit.unit.{1}, none⟩ := nofun
   simp only [expect_norm, propInd_eq_one_iff.mpr hsome, propInd_eq_zero_iff.mpr hnone] at h
-  rw [h, MeasureProgramLogic.wp_eq_lintegral _ _ Measurable.of_discrete,
+  simp only [expect_norm]
+  rw [h, ExpectationWP.wp_eq_lintegral _ _ Measurable.of_discrete,
     OracleComp.evalDist_query (spec := ambient), MeasureTheory.trim_eq_self,
-    show OracleSpec.IsMeasureSpec.toMeasure (spec := ambient) () = branchMeasure from rfl]
+    show OracleSpec.AnswerMeasure.toMeasure (spec := ambient) () = branchMeasure from rfl]
   fin_cases sample <;>
     simp only [branchMeasure, lintegral_add_measure, lintegral_smul_measure, lintegral_dirac,
       smul_eq_mul, Fin.isValue]

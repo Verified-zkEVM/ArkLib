@@ -50,9 +50,7 @@ theorem uniform_successor_soundness {m : ℕ} (D : Fin m ↪ F) (i : Fin n)
   classical
   have h := executeCore_sampled_soundness n deg F D i stmt p
     ((polynomialFamily F n deg).behaviorOfRealizations (fun _ => p)) q rfl hfalse
-  rw [← prEvent_map (executeCore (sampledReduction ..) _ stmt q) CoreRun.closed
-    (·.map (closedRelation F n deg D i.succ) = some True), executeCore_sampled_closed_eq,
-    prEvent_map] at h
+  rw [executeCore_sampled_closed_eq, prEvent_map] at h
   simpa only [hcheck, ↓reduceIte, Option.map_some, Option.some.injEq, eq_iff_iff,
     iff_true] using h
 
@@ -111,7 +109,7 @@ theorem exportedPrefixRun_soundness {m : ℕ} (D : Fin m ↪ F)
           (firstRoundProtocol F deg).oracles A impl))] ≤
       (deg : ENNReal) / Fintype.card F := by
   rw [exportedPrefixRun_firstRound]
-  refine (MeasureProgramLogic.wp_bind _ _ _).trans_le
+  refine (ExpectationWP.wp_bind _ _ _).trans_le
     (wp_le_of_forall_le _ fun ⟨q, respond⟩ => ?_)
   change SingleRound.Message F deg at q
   by_cases hcheck : ((Finset.univ.map D).toList.map (fun x => q.val.eval x)).sum = stmt.target
@@ -167,13 +165,14 @@ theorem exportedPrefixRun_admissibility {m : ℕ} (D : Fin m ↪ F)
       0 := by
   rw [exportedPrefixRun_firstRound]
   -- bound the continuation after every first message `⟨q, respond⟩` of the prover
-  refine (MeasureProgramLogic.wp_bind _ _ _).trans_le
+  refine (ExpectationWP.wp_bind _ _ _).trans_le
     (wp_le_of_forall_le _ fun ⟨q, respond⟩ => ?_)
   -- upper-bound reading: split on the sum check, draw the challenge, and stop at the opaque
   -- `respond`; on both branches the closed oracle is the original one, realized by `horiginal`
   prvcgen (errorOnMissingSpec := false)
   all_goals
     simp only [expect_norm]
+    try refine wp_le_of_forall_le ($ᵗ F) fun _ => ?_
     exact (prEvent_eq_zero_of_forall_mem_support _ _ fun _ _ h => h <|
       (VirtualOracle.eval_sumWeaken_extendImpl A originalOracle (polynomialInterface F deg)
         impl q).trans horiginal).le
@@ -275,7 +274,7 @@ theorem execute_soundness {m : ℕ} (D : Fin m ↪ F)
             result.map (outputRelation F n deg) = some True])
           (exportedSuffixRun_none F n deg unifSpec ($ᵗ F)
             (Finset.univ.map D).toList count start finish A impl q next mid)
-        simp only [expect_norm, Option.map_none, reduceCtorEq, propInd_false] at hzero
+        simp only [expect_norm, Option.map_none, reduceCtorEq, propInd_false] at hzero ⊢
         exact hzero.le.trans zero_le
       | some r =>
         change ¬ closedRelation F n deg D ⟨start + 1, by omega⟩

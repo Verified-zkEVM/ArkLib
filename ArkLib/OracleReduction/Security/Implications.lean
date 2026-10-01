@@ -131,7 +131,6 @@ theorem rbrKnowledgeSoundness_implies_rbrSoundness
         simp [logGame, plainGame, ← Prover.runWithLogToRound_discard_log_eq_runToRound, hrunlog]
         rfl
       have hk := hkSF stmtIn (Classical.choice hWin) prover' i
-      rw [← prEvent_bind] at hk ⊢
       change Pr{let x ← plainGame}[
         ¬ (∃ w, kSF i.1.castSucc stmtIn x.1 w) ∧
           ∃ w, kSF i.1.succ stmtIn (x.1.concat x.2) w] ≤ _
@@ -158,6 +157,7 @@ theorem rbrKnowledgeSoundness_implies_rbrSoundness
           (fun tr w => cast extractor.eqIn w)
           (fun m ih tr w =>
             ih (Fin.init tr) (extractor.extractMid m stmtIn tr w))
+      simp only [expect_norm]
       refine wp_le_of_forall_le _ fun _ ↦ (prEvent_eq_zero_of_forall_not _ _ ?_).trans_le zero_le
       rintro x ⟨-, w, hnext⟩
       exact hWin ⟨extractToInput i.1.succ (x.1.concat x.2) w⟩
@@ -177,11 +177,12 @@ theorem rbrKnowledgeSoundness_implies_rbrSoundness
           exact Fin.succ_ne_zero m htrue.1
         toFun_full := by
           intro stmtIn tr hfalse
-          rw [hLangOut]
+          rw [hLangOut, ← OptionT.wp_ofMeasure_eq]
           exact prEvent_eq_zero_of_forall_not _ _ fun _ ↦ by simp }
     unfold rbrSoundness
     refine ⟨sF, ?_⟩
     intro stmtIn hStmtIn WitIn' WitOut' witIn' prover i
+    simp only [expect_norm]
     exact wp_le_of_forall_le _ fun _ ↦ (prEvent_eq_zero_of_forall_not _ _ fun _ hbad ↦
       Fin.succ_ne_zero i.1 hbad.2.1).trans_le zero_le
 

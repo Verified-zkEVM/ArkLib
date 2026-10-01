@@ -526,7 +526,7 @@ lemma function_binding_cond_le_arsdh_cond {n L : ℕ} {AuxState : Type} [Samplea
     ≤ Pr{let result ← (functionBindingGameExt (g₁ := g₁) (g₂ := g₂) AuxState adversary
         (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)))}[
           ((Groups.arsdhCondition n) ∘ mapFunctionBindingToArsdh hn) result] := by
-  apply _root_.prEvent_mono_of_support
+  apply OptionT.prEvent_mono_of_support
   intro (τ, srs, cm, queryOf, responseOf, accepts, proofs) hgame hFBcond
   exact function_binding_cond_ext_output_maps_to_arsdh (pairing := pairing) hn hp hg₁ hpair
     adversary hgame hFBcond
@@ -543,7 +543,7 @@ lemma map_instance_drag {n L : ℕ} {AuxState : Type} [SampleableType G₁]
     = Pr{let result ← (mapFunctionBindingToArsdh hn <$>
         functionBindingGameExt (g₁ := g₁) (g₂ := g₂) AuxState adversary scheme)}[
           ((Groups.arsdhCondition n)) result] := by
-  simp only [Function.comp_def]
+  simp only [Function.comp_def, expect_norm]
 
 /-- Transition 4: the mapped game equals the ARSDH experiment -/
 lemma arsdh_game_eq {n L : ℕ} {AuxState : Type} [SampleableType G₁]
@@ -555,7 +555,6 @@ lemma arsdh_game_eq {n L : ℕ} {AuxState : Type} [SampleableType G₁]
       (reduction (g₁ := g₁) (g₂ := g₂) (pairing := pairing) L hn AuxState adversary) := by
   let scheme := kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
   simp only [Groups.arsdhExperiment, Groups.arsdhGame]
-  rw [← prEvent_map]
   congr 1
   let pSpec' : ProtocolSpec 1 := ⟨!v[.P_to_V], !v[G₁]⟩
   let impl : QueryImpl _ (StateT unifSpec.QueryCache ProbComp) :=

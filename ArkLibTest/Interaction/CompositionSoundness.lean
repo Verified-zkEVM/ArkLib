@@ -151,7 +151,7 @@ noncomputable section
 def branchMeasure : Measure (Fin 3) :=
   (1 / 2 : ENNReal) • Measure.dirac 0 + (1 / 2 : ENNReal) • Measure.dirac 1
 
-instance : OracleSpec.IsMeasureSpec branchSpec where
+instance : OracleSpec.AnswerMeasure branchSpec where
   toMeasure _ := branchMeasure
   isProbabilityMeasure _ := by
     constructor
@@ -301,9 +301,7 @@ theorem finishWithQuery_mass (path : TypeTree.Path (tree.append (fun _ => TypeTr
   rw [prEvent_bind, prEvent_bind_eq_lintegral_of_discrete,
     OracleComp.evalDist_query (spec := branchSpec), MeasureTheory.trim_eq_self]
   simp only [prEvent_pure]
-  change (∫⁻ sample : Fin 3,
-    Pr{let answer ← (pure (accepted && sample == 1) : M Bool)}[answer = true]
-      ∂branchMeasure) = _
+  change (∫⁻ sample : Fin 3, propInd ((accepted && sample == 1) = true) ∂branchMeasure) = _
   cases accepted <;>
     simp [branchMeasure, lintegral_add_measure, lintegral_smul_measure]
 
@@ -326,7 +324,7 @@ theorem weighted_success_after_final_query :
     constructor <;> apply Measure.ae_smul_measure <;>
       rw [ae_dirac_iff MeasurableSet.of_discrete] <;> intro _ <;>
       simp only [boundary, suffixVerifier, run, InteractionOver.runTypeTree,
-        participantProfile, collectParticipantOutputs, MeasureProgramLogic.wp_pure]
+        participantProfile, collectParticipantOutputs, pure_bind]
     all_goals rw [finishWithQuery_mass]
     all_goals norm_num [error, boundary]
   have h := run_appendFlat_soundness_weighted_ae_finish (OutputC := fun _ => Bool)

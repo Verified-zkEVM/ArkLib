@@ -156,7 +156,7 @@ theorem completeness_relOut_mono {ε : ℝ≥0} {relOut' : Set (StmtOut × WitOu
       completeness init impl relIn relOut reduction ε →
         completeness init impl relIn relOut' reduction ε := by
   intro h stmtIn witIn hIn
-  exact ge_trans (prEvent_mono _ _ _ fun _ ⟨h1, h2⟩ ↦ ⟨hrelOut h1, h2⟩) (h _ _ hIn)
+  exact ge_trans (OptionT.prEvent_mono _ _ _ fun _ ⟨h1, h2⟩ ↦ ⟨hrelOut h1, h2⟩) (h _ _ hIn)
 
 /-- Perfect completeness means that the probability of the reduction outputting a valid
   statement-witness pair is _exactly_ 1 (instead of at least `1 - 0`). -/
@@ -171,7 +171,7 @@ theorem perfectCompleteness_eq_prob_one :
           (stmtOut, witOut) ∈ relOut ∧ prvStmtOut = stmtOut] = 1 := by
   simp only [perfectCompleteness, completeness, ENNReal.coe_zero, tsub_zero]
   exact forall_congr' fun _ => forall_congr' fun _ => imp_congr_right fun _ =>
-    ⟨fun h => le_antisymm (prEvent_le_one _) (ge_iff_le.mp h),
+    ⟨fun h => le_antisymm (OptionT.prEvent_le_one _ _) (ge_iff_le.mp h),
      fun h => ge_of_eq h⟩
 
 /-- **Support criterion for perfect completeness.** A reduction is perfectly complete as soon as
@@ -392,7 +392,7 @@ class IsKnowledgeSound (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut ×
 class Extractor.Straightline.IsMonotone
     (relIn : Set (StmtIn × WitIn))
     (E : Extractor.Straightline oSpec StmtIn WitIn WitOut pSpec)
-    [oSpec.IsUniformMeasureSpec]
+    [oSpec.UniformAnswerMeasure]
     where
   is_monotone : ∀ witOut stmtIn transcript, ∀ proveQueryLog₁ proveQueryLog₂ : oSpec.QueryLog,
     ∀ verifyQueryLog₁ verifyQueryLog₂ : oSpec.QueryLog,

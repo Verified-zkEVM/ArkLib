@@ -213,7 +213,7 @@ lemma nestedZeroCheckReduction_run_support {TCom Wit : Type} [SampleableType F]
             (nestedZeroCheckTauZero tr) (nestedZeroCheckTauAlpha tr)) := by
   simp only [Reduction.run_run_eq, nestedZeroCheckReduction, nestedZeroCheckVerifier,
     Verifier.run, OptionT.run_pure]
-  prvcgen [Qualitative.Spec.ofSupport (Prover.run _ _ _)]
+  prvcgen [Necessary.Spec.ofSupport (Prover.run _ _ _)]
   exact ⟨pr.1, by rw [← nestedZeroCheckProver_output_of_mem_support Φ m₀ m₁ X w pr ‹_›]; rfl⟩
 
 omit [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in

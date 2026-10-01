@@ -87,6 +87,7 @@ theorem completeness_of_pure_states
     R.completeness init impl rel₁ rel₂ ε := by
   rw [completeness_iff_of_pure_verifier R V]
   intro stmt wit hRel
+  simp only [expect_norm]
   exact le_wp_of_forall_le init (by simp) fun s => by
     simpa only [expect_norm] using
       (completeness_iff_of_pure_verifier R V rel₁ rel₂ ε).mp (h s) stmt wit hRel
@@ -126,7 +127,6 @@ theorem append_completeness_of_prover_factorization
   refine herr.trans ?_
   dsimp only [Reduction.append]
   simp only [hFactor stmt wit, StateT.run_bind, StateT.run_pure]
-  rw [← prEvent_bind] at hfirst ⊢
   rw [← bind_assoc, prEvent_bind]
   refine mul_le_prEvent_bind_of_forall _ _ _ _ hfirst fun q₁ hGood => ?_
   have hnext := hsecond q₁.2 q₁.1.2.1 q₁.1.2.2 (by

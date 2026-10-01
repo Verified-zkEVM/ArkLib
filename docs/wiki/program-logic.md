@@ -8,7 +8,7 @@ leaves the monadic bookkeeping to the tactic, so there is no chain of `mem_suppo
 
 Import `ArkLib.OracleReduction.ProgramLogic`. It re-exports `prvcgen` and adds two facts for
 reduction executions: `Reduction.run_run_eq`, which states `Reduction.run` as one oracle
-computation, and `ProtocolSpec.Qualitative.Spec.getChallenge`, a rule saying a verifier challenge
+computation, and `ProtocolSpec.Necessary.Spec.getChallenge`, a rule saying a verifier challenge
 may be any value.
 
 ## What `prvcgen` proves
@@ -51,7 +51,7 @@ same program in 27 lines. Variations:
 - **A prover-first, one-message protocol** has its run in closed form already:
   `Prover.run_of_prover_first` (with a `ProverOnly` instance) goes in the first `simp only`.
 - **A prover with no closed form**, such as one with many challenge rounds, enters through its
-  support: `prvcgen [OracleComp.Qualitative.Spec.ofSupport (Prover.run _ _ _)]`. The prover's own
+  support: `prvcgen [OracleComp.Necessary.Spec.ofSupport (Prover.run _ _ _)]`. The prover's own
   support lemma then closes the verification condition.
 - **A verifier that can reject**, `if c then pure a else failure`, is split into one verification
   condition per branch once `apply_ite OptionT.run`, `OptionT.run_pure` and
@@ -80,7 +80,7 @@ The earlier proof took 57 lines of support peeling.
 ## Opaque sub-programs and your own rules
 
 - A sub-program with no rule, such as an adversary, a key generator treated abstractly, or a
-  simulated handler, is passed as `prvcgen [OracleComp.Qualitative.Spec.ofSupport oa]`, or
+  simulated handler, is passed as `prvcgen [OracleComp.Necessary.Spec.ofSupport oa]`, or
   `OracleComp.Upper.Spec.ofSupport oa` in an upper bound. Its verification condition then
   carries `x ∈ support oa`.
 - `prvcgen (errorOnMissingSpec := false)` leaves a sub-program without a rule as a verification
@@ -89,7 +89,7 @@ The earlier proof took 57 lines of support peeling.
   is more robust: `vcgen` matches programs syntactically and does not reduce structure
   projections such as `(reduction K computeW).prover`.
 - A reusable fact about a protocol primitive becomes a rule with `@[spec]` on a core triple,
-  stated in the reading it belongs to. `ProtocolSpec.Qualitative.Spec.getChallenge` in
+  stated in the reading it belongs to. `ProtocolSpec.Necessary.Spec.getChallenge` in
   `ArkLib/OracleReduction/ProgramLogic.lean` is the pattern.
 
 ## What stays outside `prvcgen`

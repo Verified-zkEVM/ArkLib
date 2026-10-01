@@ -113,7 +113,8 @@ theorem prEvent_simulateQ_addLift_getChallenge_bind_le
           let tr ← oa
           let challenge ← liftComp (pSpec.getChallenge i) (oSpec + [pSpec.Challenge]ₒ)
           return f tr challenge)).run' (← init))}[E x] ≤ ε := by
-  refine prEvent_bind_le_of_forall_le init _ E fun s ↦ ?_
+  simp only [expect_norm]
+  refine wp_le_of_forall_le init fun s ↦ ?_
   simp only [simulateQ_bind, simulateQ_addLift_challengeQueryImpl_getChallenge, simulateQ_pure,
     StateT.run'_eq, StateT.run_bind, StateT.run_monadLift, StateT.run_pure, expect_norm]
   refine wp_le_of_forall_le _ fun x ↦ ?_
@@ -204,9 +205,10 @@ theorem prEvent_optionT_simulateQ_addLift_getChallenge_bind_some_le
   simp only [simulateQ_bind, simulateQ_addLift_challengeQueryImpl_getChallenge, StateT.run'_bind',
     StateT.run_liftM, bind_assoc, pure_bind, simulateQ_map, StateT.run'_map', OptionT.mk_bind,
     expect_norm]
-  refine wp_le_of_forall_le _ fun s ↦
-    (prEvent_bind_le_prEvent_of_support _ _ (fun c ↦ ∃ t, E (f c t)) E fun c _ hc ↦ ?_).trans
-      ((OptionT.prEvent_liftM _ _).trans_le h)
+  rw [OptionT.wp_liftM]
+  refine wp_le_of_forall_le _ fun s ↦ ?_
+  refine (OptionT.prEvent_bind_le_prEvent_of_support _ _ (fun c ↦ ∃ t, E (f c t)) E
+    fun c _ hc ↦ ?_).trans ((OptionT.prEvent_liftM _ _).trans_le h)
   rw [OptionT.prEvent_mk_eq_zero_iff]
   simp only [support_map, Set.mem_image, Option.some_inj]
   rintro _ ⟨t, _, rfl⟩ hE
@@ -250,9 +252,12 @@ theorem prEvent_optionT_simulateQ_addLift_prefix_getChallenge_bind_le
   simp only [simulateQ_bind, simulateQ_addLift_challengeQueryImpl_getChallenge, StateT.run'_bind',
     StateT.run_liftM, bind_assoc, pure_bind, simulateQ_map, StateT.run'_map', OptionT.mk_bind,
     expect_norm]
-  refine wp_le_of_forall_le _ fun ⟨pre, s'⟩ ↦ ?_
-  refine (prEvent_bind_le_prEvent_of_support _ _ (fun c ↦ ∃ t b, f pre c t = some b ∧ E b) E
-    fun c _ hc ↦ ?_).trans ((OptionT.prEvent_liftM _ _).trans_le (h pre))
+  rw [OptionT.wp_liftM]
+  refine wp_le_of_forall_le _ fun x ↦ ?_
+  obtain ⟨pre, s'⟩ := x
+  refine (OptionT.prEvent_bind_le_prEvent_of_support _ _
+    (fun c ↦ ∃ t b, f pre c t = some b ∧ E b) E fun c _ hc ↦ ?_).trans
+    ((OptionT.prEvent_liftM _ _).trans_le (h pre))
   rw [OptionT.prEvent_mk_eq_zero_iff]
   simp only [support_map, Set.mem_image]
   rintro z ⟨t, _, htz⟩ hE
@@ -307,8 +312,10 @@ theorem prEvent_optionT_simulateQ_addLift_getChallenge_first_bind_le_convex
   subst hoa
   simp only [simulateQ_bind, simulateQ_addLift_challengeQueryImpl_getChallenge, StateT.run'_bind',
     StateT.run_liftM, bind_assoc, pure_bind, OptionT.mk_bind, expect_norm]
-  refine wp_le_of_forall_le _ fun s ↦
-    (prEvent_bind_le_prEvent_add_mul_prEvent_not _ _ p E fun c hc ↦ h₂ c hc s).trans ?_
+  rw [OptionT.wp_liftM]
+  refine wp_le_of_forall_le _ fun s ↦ ?_
+  refine (OptionT.prEvent_bind_le_prEvent_add_mul_prEvent_not _ _ p E fun c hc ↦ h₂ c hc s).trans
+    ?_
   have hnot : Pr{let c ← $ᵗ (pSpec.Challenge i)}[¬ p c] =
       1 - Pr{let c ← $ᵗ (pSpec.Challenge i)}[p c] :=
     ENNReal.eq_sub_of_add_eq' ENNReal.one_ne_top ((add_comm _ _).trans

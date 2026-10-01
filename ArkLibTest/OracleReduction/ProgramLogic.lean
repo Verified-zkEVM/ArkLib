@@ -9,7 +9,7 @@ import ArkLib.OracleReduction.ProgramLogic
 /-!
 # `prvcgen` on reduction executions
 
-`prvcgen` walks a verifier challenge with `ProtocolSpec.Qualitative.Spec.getChallenge`, also when
+`prvcgen` walks a verifier challenge with `ProtocolSpec.Necessary.Spec.getChallenge`, also when
 the challenge is lifted into a reduction's oracle world `oSpec + [pSpec.Challenge]ₒ`. The
 completeness proofs converted to `prvcgen` (for example
 `CoordinateWise.CommittedScalar.reduction_run_support`) exercise `Reduction.run_run_eq`.

@@ -229,7 +229,7 @@ theoretic — each stage's event has full mass, so the continuation's event inte
 mass — and needs only the measure interpretation of the ambient oracles, not uniform sampling. -/
 theorem run_preserves_measure
     [∀ q, MeasurableSpace (ambient q)] [∀ q, DiscreteMeasurableSpace (ambient q)]
-    [ambient.IsMeasureSpec]
+    [ambient.AnswerMeasure]
     (n : Nat) (I : Fin (n + 1) → ExecutionInterface.{u})
     [∀ i, MeasurableSpace (I i).State] [∀ i, DiscreteMeasurableSpace (I i).State]
     (stages : (i : Fin n) → ClosedStage ambient (I i.castSucc) (I i.succ))

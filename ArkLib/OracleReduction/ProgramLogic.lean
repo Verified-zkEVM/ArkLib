@@ -16,7 +16,7 @@ VCVio's `prvcgen` proves a statement about the outcomes of one oracle computatio
 matching reading of `OracleComp` and running Lean's `vcgen` through the program. This module gives
 `vcgen` the two facts it needs for the executions defined in `ArkLib.OracleReduction.Execution`:
 
-* `ProtocolSpec.Qualitative.Spec.getChallenge`: a verifier challenge may be any value;
+* `ProtocolSpec.Necessary.Spec.getChallenge`: a verifier challenge may be any value;
 * `Reduction.run_run_eq`: `Reduction.run` as one oracle computation, the prover's run followed by
   the verifier's, with the `OptionT` layer of the reduction reduced to an `Option.map`.
 
@@ -34,7 +34,7 @@ leaving one verification condition per possible challenge. Two variations cover 
 executions:
 
 * a prover with no closed form (many challenge rounds) enters through its support,
-  `prvcgen [Qualitative.Spec.ofSupport (Prover.run _ _ _)]`, and its support lemma closes the
+  `prvcgen [Necessary.Spec.ofSupport (Prover.run _ _ _)]`, and its support lemma closes the
   verification condition;
 * a verifier that can reject, `if c then pure a else failure`, is split by `vcgen` once
   `apply_ite OptionT.run`, `OptionT.run_pure` and `OptionT.run_failure` bring the `if` to the top of
@@ -47,10 +47,9 @@ open OracleComp OracleSpec ProtocolSpec Std.WP
 
 namespace ProtocolSpec
 
-open scoped OracleComp.Qualitative in
 /-- A verifier challenge may be any value: the structural rule for `ProtocolSpec.getChallenge`. -/
 @[spec]
-theorem Qualitative.Spec.getChallenge {n : ℕ} (pSpec : ProtocolSpec n) (i : pSpec.ChallengeIdx)
+theorem Necessary.Spec.getChallenge {n : ℕ} (pSpec : ProtocolSpec n) (i : pSpec.ChallengeIdx)
     (post : pSpec.Challenge i → Prop) {epost : EStack⟨⟩} :
     Triple (pSpec.getChallenge i) (∀ c, post c) post epost :=
   ⟨fun h c _ => h c⟩

@@ -336,7 +336,7 @@ home_page/            site assets and assembled website root
     `hachiNonrecursive_perfectCorrectness` proves `Commitment.perfectCorrectness` via the generic
     bridge `Commitment.perfectCorrectness_of_opening_perfectCompleteness`
     (`Commitments/Functional/Basic.lean`, axiom-clean, using
-    `OptionT.probEvent_eq_one_bind`). The composed opening/correctness theorems use proved
+    `prvcgen` under the necessary reading). The composed opening/correctness theorems use proved
     guarded composition and have standard-only axiom dependencies, as do their individual links,
     adapter, terminal step, and correctness bridge. Recursion
     (`PartialEval`/`ZBatchBridge`/`TraceHandoff`) is deliberately not involved.
@@ -479,8 +479,8 @@ home_page/            site assets and assembled website root
   *unsimulated* `(Reduction.run …).run`: show every element of that support is a success whose
   output pair is in the output relation and whose two output statements agree, and the probability
   obligation is discharged (through VCVio's
-  `OptionT.probEvent_eq_one_of_simulateQ_support_bind`, which handles the sampled initial state and
-  the oracle implementation uniformly). It applies to any reduction, of any length, over any
+  `prvcgen` with `Necessary.Spec.ofSupport` facts for the sampled initial state and the
+  oracle implementation). It applies to any reduction, of any length, over any
   `oSpec` — no determinism or single-round hypotheses. The worked example is Hachi's zero-check
   (`Commitments/Functional/Hachi/ZeroCheck/Completeness.lean`), where the per-link work reduces to
   a prover-state induction, an output lemma, a run-support lemma, and the relation lemma. Before

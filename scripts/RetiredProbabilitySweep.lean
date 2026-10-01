@@ -10,7 +10,7 @@ import Lean
 
 Walks the compiled environment and reports every declaration in `ArkLib.*` modules whose
 statement or body *directly* references a retiring probability surface: VCVio's scalar
-evaluation functions and compatibility classes (`probOutput`, `probEvent`, `probFailure`,
+evaluation functions and compatibility classes (`probOutput`, `probEvent`, `prFail`,
 `evalSPMF`, `SPMF`, `NeverFail`, `EvalDistCompatible`, `DiscreteEvalDistCompatible`), the
 PMF-based oracle specifications (`OracleSpec.IsUniformSpec`, `OracleSpec.IsProbabilitySpec`,
 `PFunctor.IsProbabilitySpec`), and Mathlib's `PMF`. VCVio tracks the same family with its

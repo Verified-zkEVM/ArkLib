@@ -303,7 +303,7 @@ noncomputable def KnowledgeStateFunctionOneShot.toKnowledgeStateFunction
         0 < Pr{let stmtOut ← (OptionT.mk do
           (simulateQ impl (verifier.run stmtIn tr)).run' (← init))}[
             stmtOut ∈ relOut.language] :=
-      h.trans_le (prEvent_mono _ _ _ fun stmtOut hrel ↦
+      h.trans_le (OptionT.prEvent_mono _ _ _ fun stmtOut hrel ↦
         (Set.mem_language_iff relOut stmtOut).2 ⟨witOut, hrel⟩)
     have hstF : stF.toFun (.last n) stmtIn tr := by
       by_contra hfalse
@@ -669,7 +669,8 @@ theorem rbrKnowledgeSoundnessOneShot_implies_rbrKnowledgeSoundness
     stF.toKnowledgeStateFunction init impl oneShotE, ?_⟩
   -- Both notions score the *same* game, so it suffices to compare the two bad events pointwise.
   refine fun stmtIn witIn prover i ↦ le_trans ?_ (h stmtIn witIn prover i)
-  refine MeasureProgramLogic.wp_mono _ fun _ ↦ MeasureProgramLogic.wp_mono _ fun z ↦
+  simp only [expect_norm]
+  refine ExpectationWP.wp_mono _ fun _ ↦ ExpectationWP.wp_mono _ fun z ↦
     propInd_mono ?_
   rcases z with ⟨transcript, challenge, proveQueryLog⟩
   rintro ⟨witMid, hcast, hsucc⟩

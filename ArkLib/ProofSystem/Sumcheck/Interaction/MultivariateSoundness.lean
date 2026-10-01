@@ -91,9 +91,7 @@ theorem executeCore_sampled_soundness {m : ℕ} (D : Fin m ↪ F) (i : Fin n)
   have h := executeCommitted_soundness F deg projected q (Finset.univ.map D).toList
     stmt.target hsum
   rw [executeCommitted_eq, prEvent_map] at h
-  rw [← prEvent_map (executeCore (sampledReduction ..) _ stmt q) CoreRun.closed
-    (·.map (closedRelation F n deg D i.succ) = some True), executeCore_sampled_closed_eq,
-    prEvent_map]
+  rw [executeCore_sampled_closed_eq, prEvent_map]
   refine (prEvent_congr ($ᵗ F) _ _ ?_).trans_le h
   intro r
   rw [committedRun_true_iff]
@@ -118,7 +116,7 @@ theorem executeCore_sampled_measureSoundness {m : ℕ} (D : Fin m ↪ F) (i : Fi
       (CoreRun.closed <$>
         executeCore (sampledReduction F n deg unifSpec i (Finset.univ.map D).toList ($ᵗ F))
           impl stmt q)] {True} ≤ (deg : ENNReal) / Fintype.card F := by
-  rw [← prEvent_eq_evalDist_map_unifSpec, prEvent_map]
+  rw [← prEvent_eq_evalDist_map_unifSpec]
   exact executeCore_sampled_soundness n deg F D i stmt p impl q himpl hfalse
 
 end

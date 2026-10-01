@@ -142,14 +142,14 @@ theorem perfectCorrectness_of_opening_perfectCompleteness
   simp only [Reduction.perfectCompleteness_eq_prob_one, pure_bind, ENNReal.coe_zero, tsub_zero,
     simulateQ_bind, StateT.run'_eq, StateT.run_bind, map_bind, QueryImpl.addLift_def,
     QueryImpl.simulateQ_add_liftComp_left, QueryImpl.liftTarget_self, OptionT.prEvent_mk,
-    OptionT.run, Qualitative.prEvent_eq_one_iff_triple] at hComplete ⊢
+    OptionT.run, Necessary.prEvent_eq_one_iff_triple] at hComplete ⊢
   have hsim {α : Type} (oa : OracleComp oSpec α) (s : σ) (x : α × σ)
       (hx : x ∈ support ((simulateQ impl oa).run s)) : x.1 ∈ support oa :=
     support_simulateQ_run'_subset impl oa s <| by
       rw [StateT.run'_eq, support_map]; exact ⟨x, hx, rfl⟩
-  prvcgen [Qualitative.Spec.ofSupport init,
-    Qualitative.Spec.ofSupport ((simulateQ impl scheme.keygen).run _),
-    Qualitative.Spec.ofSupport ((simulateQ impl (scheme.commit _ data)).run _), hComplete]
+  prvcgen [Necessary.Spec.ofSupport init,
+    Necessary.Spec.ofSupport ((simulateQ impl scheme.keygen).run _),
+    Necessary.Spec.ofSupport ((simulateQ impl (scheme.commit _ data)).run _), hComplete]
   all_goals rename_i hp hp₁
   exacts [hsim _ _ _ hp, hRel _ _ _ _ _ _ (hsim _ _ _ hp) (hsim _ _ _ hp₁)]
 
