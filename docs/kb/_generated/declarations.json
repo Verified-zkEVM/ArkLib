@@ -66681,10 +66681,10 @@
           "doc": "Round-by-round-framework wrapper for `accepts_of_mem_support_verifier_run`, consuming the exact hypothesis shape that `KnowledgeStateFunction.toFun_full` (`ArkLib/OracleReduction/Security/RoundByRound.lean`) provides for the C6.2 oracle verifier: if the verifier's simulated run on a fixed transcript outputs, with positive probability, a statement that is `relOut`-related to some `witOut` (for **any** `relOut`, in particular `Set.univ`), then the decision predicate `Accepts` holds on that transcript. This is the entry point for the L6.8 round-by-round knowledge-soundness state function: at the ",
           "kind": "lemma",
           "line": 1044,
-          "name": "ToyProblem.Spec.accepts_of_prEvent_pos_verifier_run",
+          "name": "ToyProblem.Spec.accepts_of_probEvent_pos_verifier_run",
           "namespace": "ToyProblem.Spec",
-          "short_name": "accepts_of_prEvent_pos_verifier_run",
-          "signature": "lemma accepts_of_prEvent_pos_verifier_run"
+          "short_name": "accepts_of_probEvent_pos_verifier_run",
+          "signature": "lemma accepts_of_probEvent_pos_verifier_run"
         },
         {
           "doc": "`Pr_{x \u2190 D}[P x] = 0` for a never-satisfied predicate `P`.",
@@ -67175,10 +67175,10 @@
           "doc": "Positive probability of producing an output related to `witOut` forces the deterministic C6.9 derived output itself to be related to `witOut`.",
           "kind": "theorem",
           "line": 376,
-          "name": "ToyProblem.SimplifiedIOR.mem_outputRelationFor_of_prEvent_pos_oracleVerifier_run",
+          "name": "ToyProblem.SimplifiedIOR.mem_outputRelationFor_of_probEvent_pos_oracleVerifier_run",
           "namespace": "ToyProblem.SimplifiedIOR",
-          "short_name": "mem_outputRelationFor_of_prEvent_pos_oracleVerifier_run",
-          "signature": "theorem mem_outputRelationFor_of_prEvent_pos_oracleVerifier_run"
+          "short_name": "mem_outputRelationFor_of_probEvent_pos_oracleVerifier_run",
+          "signature": "theorem mem_outputRelationFor_of_probEvent_pos_oracleVerifier_run"
         },
         {
           "doc": "The \u03b3-round bound (via `ToyProblem.gamma_transition_prob_le`): if the choice extractor fails on `stmtIn` then no `R\u0303\u00b2` witness exists, and the probability over a uniform `\u03b3` that the folded instance has an `R\u0303\u00b9` witness is at most `\u03b5_mca + |\u039b(C^{\u22612}, \u03b4)| / |F|`. Stated in the reduced form of the L6.10 game event so the master lemma's challenge-only hypothesis can consume it.",

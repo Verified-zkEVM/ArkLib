@@ -156,7 +156,12 @@ jobs:
           use-mathlib-cache: false
 
       - name: Fetch dependency cache
-        run: lake exe cache get
+        run: |
+          for attempt in 1 2 3; do
+            lake exe cache get && break
+            if [ "$attempt" = 3 ]; then exit 1; fi
+            sleep 30
+          done
 
       # The module times recorded with the restored build are this run's per-module baseline.
       - name: Keep cached module times as the baseline
@@ -279,7 +284,7 @@ jobs:
           retention-days: 1
 
       - name: Prepare timing artifact
-        if: always()
+        if: always() && env.BUILD_TIMING_ARTIFACT_DIR != ''
         env:
           BUILD_TIMING_RUN_ID: ${{ github.run_id }}
           BUILD_TIMING_RUN_ATTEMPT: ${{ github.run_attempt }}
@@ -313,7 +318,7 @@ jobs:
           fi
 
       - name: Upload timing artifact
-        if: always()
+        if: always() && env.BUILD_TIMING_ARTIFACT_DIR != ''
         uses: actions/upload-artifact@v7
         with:
           name: ${{ env.BUILD_TIMING_ARTIFACT_NAME }}
@@ -322,7 +327,7 @@ jobs:
           retention-days: 30
 
       - name: Render build timing report
-        if: always()
+        if: always() && env.BUILD_TIMING_ARTIFACT_DIR != ''
         run: |
           BUILD_TIMING_LOG_DIR="$BUILD_TIMING_ARTIFACT_DIR" bash scripts/build_timing_report.sh \
             render "$BUILD_TIMING_ARTIFACT_DIR/results.jsonl" > "$BUILD_TIMING_REPORT"
