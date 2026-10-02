@@ -16,7 +16,10 @@ completeness proofs converted to `prvcgen` (for example
 `CoordinateWise.CommittedScalar.reduction_run_support`) exercise `Reduction.run_run_eq`. The
 bound examples pin the recipes of the security proofs: an opaque draw read through its support,
 a simulated opaque program with its state argument left to unification, and an average over a
-challenge drawn from a type with only a `SampleableType` instance.
+challenge drawn from a type with only a `SampleableType` instance. The expectation examples pin
+the recipes of the bounds stated as nested expectations: an event over any monad with lawful
+measure semantics, after a response that leaves it unchanged, and an outer draw on which the
+event does not depend.
 -/
 
 open OracleComp OracleSpec ProtocolSpec
@@ -75,5 +78,23 @@ example {β : Type} [SampleableType β] (tail : β → ProbComp ℕ) (E : ℕ �
   simp only [expect_norm]
   exact OracleComp.ProgramLogic.wp_le_const_of_support _ fun t ht =>
     propInd_mono fun hE => ⟨t, ht, hE⟩
+
+/-- An event of a program over any monad with lawful measure semantics, after a response that
+leaves it unchanged: in normal form the response's expectation is bounded pointwise, and the
+draw by its own bound. -/
+example {m : Type → Type} [Monad m] [LawfulMonad m] [EvalDistSemantics m]
+    [LawfulEvalDistSemantics m] (challenge : m ℕ) (respond : ℕ → m Unit) (g : ℕ) {ε : ℝ≥0∞}
+    (h : Pr{let s ← challenge}[g = s] ≤ ε) :
+    Pr{let s ← (do let s ← challenge; let _ ← respond s; pure s : m ℕ)}[g = s] ≤ ε := by
+  simp only [expect_norm]
+  refine (ExpectationWP.wp_mono _ fun s => wp_le_of_forall_le _ fun _ => ?_).trans h
+  simp
+
+/-- An event that does not depend on the first of two draws is the event of the second: the
+outer expectation is of a constant. -/
+example {β γ : Type} [SampleableType β] [SampleableType γ] (p : γ → Prop) :
+    Pr{let _ ← ($ᵗ β : ProbComp β); let c ← ($ᵗ γ : ProbComp γ)}[p c] =
+      Pr{let c ← ($ᵗ γ : ProbComp γ)}[p c] := by
+  simp only [expect_norm, ExpectationWP.wp_const_of_oracle]
 
 end ProgramLogicRegression
