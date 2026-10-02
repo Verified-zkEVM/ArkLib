@@ -53,7 +53,8 @@ identities.
 
 The implemented profile is `tensorProductProfile` ([DP24]): `A = L ⊗[B] L`, `φ₀ = · ⊗ 1`,
 `φ₁ = 1 ⊗ ·`, with rows and columns the coordinates for the right- and left-factor scalar
-actions. Its laws follow from `Basis.sum_repr` and `repr` of the two base-changed bases.
+actions. Its reconstruction and inverse laws follow from `Basis.sum_repr` and `Basis.repr` of the
+two base-changed bases, and `embeddings_agree` from moving scalars across the tensor product.
 
 A trace or automorphism switch with carrier `A = L`, such as Hachi's §3 head ([NOZ26]), is not
 an instance for a finite nontrivial `L` and `κ > 0`: the inverse laws force
@@ -141,10 +142,12 @@ theorem decomposeColumns_eq_iff (z : P.A) (c : (Fin κ → Fin 2) → L) :
   · rintro rfl
     exact P.decomposeColumns_recompose c
 
+/-- The zero carrier element has zero row coordinates. -/
 @[simp] theorem decomposeRows_zero : P.decomposeRows 0 = 0 := by
   apply (P.decomposeRows_eq_iff _ _).mpr
   simp
 
+/-- The zero carrier element has zero column coordinates. -/
 @[simp] theorem decomposeColumns_zero : P.decomposeColumns 0 = 0 := by
   apply (P.decomposeColumns_eq_iff _ _).mpr
   simp
@@ -187,16 +190,16 @@ theorem decomposeRows_φ₀_mul_φ₁ (x y : L) :
   refine Finset.sum_congr rfl fun u _ => ?_
   simp only [mul_comm, mul_assoc]
 
-/-- Columns of a pure tensor are its left factor times the base coordinates of its right
+/-- Columns of a pure tensor are the base coordinates of its right factor times its left
 factor. -/
 theorem decomposeColumns_φ₀_mul_φ₁ (x y : L) :
     P.decomposeColumns (P.φ₀ x * P.φ₁ y) =
-      fun v => x * algebraMap B L (P.basis.repr y v) := by
+      fun v => algebraMap B L (P.basis.repr y v) * x := by
   apply (P.decomposeColumns_eq_iff _ _).mpr
   conv_lhs => rw [← P.basis.sum_repr y]
   simp only [map_sum, Algebra.smul_def, map_mul, Finset.mul_sum, ← P.embeddings_agree]
   refine Finset.sum_congr rfl fun v _ => ?_
-  simp only [mul_assoc]
+  rw [← mul_assoc, mul_comm (P.φ₀ x)]
 
 end RingSwitchingProfile
 

@@ -10,7 +10,6 @@ public import ArkLib.ProofSystem.RingSwitching.Packing.ProfileLayout
 public import ArkLib.ProofSystem.RingSwitching.Packing.ProfileCoordinates
 public import ArkLib.ProofSystem.RingSwitching.Packing.CheckedObservation
 public import ArkLib.ProofSystem.RingSwitching.Packing.Relations
-public import ArkLib.ProofSystem.RingSwitching.Packing.Multiplier
 public import ArkLib.ProofSystem.RingSwitching.Packing.Batching
 
 /-!
@@ -36,12 +35,6 @@ open scoped NNReal ENNReal
 variable {K L : Type} [CommRing K] [CommRing L] [Algebra K L]
   {κ ℓ ℓ' : ℕ}
   (P : RingSwitchingProfile K L κ) (h_l : ℓ = ℓ' + κ)
-
-local instance : Algebra (Packing.PackingData.ofBasis P.basis).P L :=
-  inferInstanceAs (Algebra L L)
-
-local instance : IsScalarTower K (Packing.PackingData.ofBasis P.basis).P L :=
-  inferInstanceAs (IsScalarTower K L L)
 
 /-- The embedded evaluation is a finite tensor observation of the packed Boolean table. -/
 theorem embedded_MLP_eval_eq_observation (p : MultilinearPoly L ℓ') (r : Fin ℓ → L) :

@@ -77,7 +77,7 @@ theorem packMLE_eq_packedMLE (t : MultilinearPoly K ℓ) :
       _ = (fun i => ((Fin.append v w i : Fin 2) : K)) :=
         congrArg (fun q : Fin (κ + ℓ') → Fin 2 => (q : Fin (κ + ℓ') → K))
           (concat_eq_append (ℓ := κ + ℓ') v w)
-      _ = _ := Fin.apply_append (fun b : Fin 2 => (b : K)) v w
+      _ = _ := (Fin.append_comp fun b : Fin 2 => (b : K)).symm
   exact congrArg (fun q => algebraMap K L (eval q t.val) * β v) hpoint
 
 /-- Packing uses the packed-prefix layout with the source dimension cast. -/

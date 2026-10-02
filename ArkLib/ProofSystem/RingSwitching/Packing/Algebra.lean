@@ -276,6 +276,7 @@ def compute_A_MLE
   let A_MLE: MultilinearPoly L ℓ' := ⟨MvPolynomial.MLE A_func, MLE_mem_restrictDegree A_func⟩
   A_MLE
 
+/-- The last `ℓ'` coordinates of an evaluation point, the part not consumed by packing. -/
 def getEvaluationPointSuffix (r : Fin ℓ → L) : Fin ℓ' → L :=
   fun i => r ⟨i.val + κ, by { rw [h_l]; omega }⟩
 

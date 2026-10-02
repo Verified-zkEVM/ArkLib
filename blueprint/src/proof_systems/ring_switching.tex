@@ -54,8 +54,9 @@ Laws \eqref{eq:rs-rows}--\eqref{eq:rs-cols} fix the coordinate convention of
 statements. Protocol correctness additionally needs identities connecting these coordinates to
 packing, the honest folded element, and the batched multiplier. Together with the inverse laws,
 each coordinate map is a bijection $A \cong (\{0,1\}^\kappa \to L)$ (\texttt{rowEquiv},
-\texttt{columnEquiv}); additivity, compatibility with multiplication by $\varphi_0$ and
-$\varphi_1$, and the coordinates of pure tensors $\varphi_0(x)\varphi_1(y)$ follow from the laws.
+\texttt{columnEquiv}); additivity, compatibility of rows with multiplication by $\varphi_1$ and of
+columns with multiplication by $\varphi_0$, and the coordinates of pure tensors
+$\varphi_0(x)\varphi_1(y)$ follow from the laws.
 The laws do not by themselves establish a valid protocol instance or a security theorem.
 
 \begin{definition}[Tensor-product profile]
@@ -67,8 +68,9 @@ The laws do not by themselves establish a valid protocol instance or a security 
   $\varphi_1(\alpha) = 1 \otimes \alpha$, and the coordinate maps given by the $K$-basis coordinates
   for the left ($\beta.\mathrm{baseChange}\,L$) and right ($\mathrm{baseChangeRight}\,\beta$)
   $L$-module structures on $A$, giving columns and rows respectively. Thus
-  $z = \sum_v z_v \otimes \beta_v = \sum_u \beta_u \otimes z_u$. All laws hold by
-  \texttt{Basis.sum\_repr} and \texttt{Basis.repr} on these bases and are proven in ArkLib. Binius uses this constructor
+  $z = \sum_v z_v \otimes \beta_v = \sum_u \beta_u \otimes z_u$. The reconstruction and inverse
+  laws hold by \texttt{Basis.sum\_repr} and \texttt{Basis.repr} on these bases, base
+  compatibility holds by moving scalars across the tensor product, and all are proven in ArkLib. Binius uses this constructor
   with its binary-tower basis.
 \end{definition}
 

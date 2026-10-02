@@ -674,8 +674,8 @@ home_page/            site assets and assembled website root
   `Profile.lean` holds the shared packing data layer `RingSwitchingProfile` (packing data +
   reconstruction and inverse laws); `Algebra.lean` holds `packMLE`, the tensor carrier, the
   verifier subroutines and the tensor-product constructor `tensorProductProfile`;
-  `ProfileCoordinates`, `ProfileLayout`, `BatchingAlgebra` and `FinalAlgebra` connect the
-  profile to the finite-coordinate modules.
+  `ProfileCoordinates`, `ProfileLayout` and `BatchingAlgebra` connect the profile to the
+  finite-coordinate modules, and `FinalAlgebra` identifies the final verifier value.
   These modules do not import the legacy reduction framework.
   `Packing/` also contains the legacy DP24/Binius protocol construction (`Prelude` with the
   protocol vocabulary, `Spec`, `BatchingPhase`, `SumcheckPhase`, `General`; RBR
