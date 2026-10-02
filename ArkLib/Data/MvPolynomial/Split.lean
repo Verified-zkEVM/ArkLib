@@ -24,6 +24,12 @@ namespace MvPolynomial
 
 variable {R : Type*} [CommRing R] (k m : ℕ)
 
+/-- Casting an appended Boolean tuple casts each block. -/
+private theorem cast_append (v : Fin k → Fin 2) (y : Fin m → Fin 2) :
+    (fun i => ((Fin.append v y i : Fin 2) : R)) =
+      Fin.append (v : Fin k → R) (y : Fin m → R) :=
+  (Fin.append_comp fun b : Fin 2 => (b : R)).symm
+
 /-- The components obtained by fixing the first Boolean coordinate block. -/
 def splitFirst (p : R⦃≤ 1⦄[X Fin (k + m)]) (v : Fin k → Fin 2) : R⦃≤ 1⦄[X Fin m] :=
   ⟨MLE (fun y => eval ((Fin.append v y) : Fin (k + m) → R) p.val), MLE_mem_restrictDegree _⟩
@@ -52,7 +58,7 @@ theorem splitFirst_joinFirst (ps : (Fin k → Fin 2) → R⦃≤ 1⦄[X Fin m]) 
     ((mem_restrictDegree_iff_degreeOf_le _ _).mp (ps v).property)
   intro y
   rw [splitFirst_eval]
-  rw [← Fin.apply_append (fun b : Fin 2 => (b : R))]
+  rw [← cast_append]
   simp only [joinFirst, MLE_eval_zeroOne, Fin.append_left, Fin.append_right]
 
 /-- Assembling the components of a polynomial recovers the polynomial. -/
@@ -87,8 +93,7 @@ theorem aeval_append_splitFirst {E : Type*} [CommRing E] [Algebra R E]
   simp_rw [aeval_multilinear_eq_sum_eqTilde (splitFirst k m p _).property,
     splitFirst_eval, Finset.mul_sum]
   refine Finset.sum_congr rfl fun v _ => Finset.sum_congr rfl fun y _ => ?_
-  rw [Fin.apply_append (fun b : Fin 2 => (b : E)), eqTilde_append,
-    Fin.apply_append (fun b : Fin 2 => (b : R))]
+  rw [cast_append (R := E), eqTilde_append, cast_append (R := R)]
   exact mul_assoc _ _ _
 
 /-- The components obtained by fixing the final Boolean block. -/
@@ -119,7 +124,7 @@ theorem splitLast_joinLast (ps : (Fin k → Fin 2) → R⦃≤ 1⦄[X Fin m]) :
     ((mem_restrictDegree_iff_degreeOf_le _ _).mp (ps v).property)
   intro y
   rw [splitLast_eval]
-  rw [← Fin.apply_append (fun b : Fin 2 => (b : R))]
+  rw [← cast_append]
   simp only [joinLast, MLE_eval_zeroOne, Fin.append_left, Fin.append_right]
 
 /-- Assembling the components of a polynomial recovers the polynomial. -/
@@ -155,8 +160,7 @@ theorem aeval_append_splitLast {E : Type*} [CommRing E] [Algebra R E]
   simp_rw [aeval_multilinear_eq_sum_eqTilde (splitLast k m p _).property,
     splitLast_eval, Finset.mul_sum]
   refine Finset.sum_congr rfl fun v _ => Finset.sum_congr rfl fun y _ => ?_
-  rw [Fin.apply_append (fun b : Fin 2 => (b : E)), eqTilde_append,
-    Fin.apply_append (fun b : Fin 2 => (b : R))]
+  rw [cast_append (R := E), eqTilde_append, cast_append (R := R)]
   ring
 
 end MvPolynomial

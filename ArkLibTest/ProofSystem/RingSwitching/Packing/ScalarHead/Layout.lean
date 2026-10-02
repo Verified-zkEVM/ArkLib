@@ -47,8 +47,8 @@ theorem prefix_component :
   change eval (fun _ => (0 : ZMod 5)) (splitFirst 1 1 source (fun _ => 1)).val = 1
   have hs := splitFirst_eval 1 1 source (fun _ => 1) (fun _ => 0)
   have hp := congrArg (fun r => eval r source.val)
-    (Fin.apply_append (fun c : Fin 2 => (c : ZMod 5)) (fun _ : Fin 1 => (1 : Fin 2))
-      (fun _ : Fin 1 => (0 : Fin 2)))
+    ((Fin.append_comp (a := fun _ : Fin 1 => (1 : Fin 2)) (b := fun _ : Fin 1 => (0 : Fin 2))
+      (fun c : Fin 2 => (c : ZMod 5))).symm)
   have ht := MLE_eval_zeroOne (R := ZMod 5)
     (Fin.append (fun _ : Fin 1 => (1 : Fin 2)) (fun _ : Fin 1 => (0 : Fin 2)))
     (fun v : Fin 2 → Fin 2 => (v 0 : ZMod 5) + 2 * (v 1 : ZMod 5))
@@ -63,8 +63,8 @@ theorem suffix_component :
   change eval (fun _ => (0 : ZMod 5)) (splitLast 1 1 source (fun _ => 1)).val = 2
   have hs := splitLast_eval 1 1 source (fun _ => 1) (fun _ => 0)
   have hp := congrArg (fun r => eval r source.val)
-    (Fin.apply_append (fun c : Fin 2 => (c : ZMod 5)) (fun _ : Fin 1 => (0 : Fin 2))
-      (fun _ : Fin 1 => (1 : Fin 2)))
+    ((Fin.append_comp (a := fun _ : Fin 1 => (0 : Fin 2)) (b := fun _ : Fin 1 => (1 : Fin 2))
+      (fun c : Fin 2 => (c : ZMod 5))).symm)
   have ht := MLE_eval_zeroOne (R := ZMod 5)
     (Fin.append (fun _ : Fin 1 => (0 : Fin 2)) (fun _ : Fin 1 => (1 : Fin 2)))
     (fun v : Fin 2 → Fin 2 => (v 0 : ZMod 5) + 2 * (v 1 : ZMod 5))

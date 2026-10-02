@@ -51,7 +51,8 @@ The *opposite-direction* `Lift` construction—from a large quotient ring down i
 
 ## Folder structure
 
-The shared coordinate algebra imports no reduction framework and holds over commutative rings:
+The shared coordinate algebra imports no reduction framework. It holds over commutative rings,
+except the Schwartz–Zippel batching strategies (finite domains) and the quirky layout (a field):
 
 * `Coordinates.lean` — `PackingData`: independent finite bases of a packing algebra and an
   opening algebra over a common ring, the coordinate transpose, and the batching map `bridge`.
