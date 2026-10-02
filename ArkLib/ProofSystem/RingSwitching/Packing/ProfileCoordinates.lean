@@ -64,7 +64,7 @@ theorem decomposeColumns_sum {ι : Type*} (s : Finset ι) (f : ι → P.A) :
 
 /-- Transposing a carrier's column family gives exactly its row family, for every element. -/
 theorem transpose_columns (z : P.A) :
-    (Packing.sameAlgebra P.basis).transpose (P.decomposeColumns z) =
+    (Packing.PackingData.ofBasis P.basis).transpose (P.decomposeColumns z) =
       P.decomposeRows z := by
   conv_rhs => rw [P.decomposeColumns_spec z]
   rw [P.decomposeRows_sum]
@@ -72,21 +72,21 @@ theorem transpose_columns (z : P.A) :
   change Fin κ → Fin 2 at u
   calc
     _ = ∑ v, P.basis.repr (P.decomposeColumns z v) u • P.basis v :=
-      (Packing.sameAlgebra P.basis).transpose_apply _ u
+      (Packing.PackingData.ofBasis P.basis).transpose_apply _ u
     _ = _ := by simp only [P.decomposeRows_mul, Finset.sum_apply,
       Algebra.smul_def, mul_comm]
 
 /-- Reading the row family back recovers the original column family. -/
 theorem readback_rows (z : P.A) :
-    (Packing.sameAlgebra P.basis).transpose.symm (P.decomposeRows z) =
+    (Packing.PackingData.ofBasis P.basis).transpose.symm (P.decomposeRows z) =
       P.decomposeColumns z := by
   rw [← P.transpose_columns]
-  exact (Packing.sameAlgebra P.basis).transpose.symm_apply_apply _
+  exact (Packing.PackingData.ofBasis P.basis).transpose.symm_apply_apply _
 
 /-- Columns of a finite tensor observation are the shared weighted packing coordinates. -/
 theorem columns_observation {Y : Type*} [Fintype Y] (a v : Y → L) :
     P.decomposeColumns (∑ y, P.φ₀ (a y) * P.φ₁ (v y)) =
-      (Packing.sameAlgebra P.basis).observe a v := by
+      (Packing.PackingData.ofBasis P.basis).observe a v := by
   rw [P.decomposeColumns_sum]
   funext i
   change (∑ y, P.decomposeColumns (P.φ₀ (a y) * P.φ₁ (v y))) i =
@@ -96,9 +96,9 @@ theorem columns_observation {Y : Type*} [Fintype Y] (a v : Y → L) :
 /-- Rows of a finite tensor observation are the coordinate slices of its factor families. -/
 theorem rows_observation {Y : Type*} [Fintype Y] (a v : Y → L) :
     P.decomposeRows (∑ y, P.φ₀ (a y) * P.φ₁ (v y)) =
-      (Packing.sameAlgebra P.basis).coordinateSlices a v := by
+      (Packing.PackingData.ofBasis P.basis).coordinateSlices a v := by
   rw [← P.transpose_columns, P.columns_observation]
-  exact (Packing.sameAlgebra P.basis).transpose_observe a v
+  exact (Packing.PackingData.ofBasis P.basis).transpose_observe a v
 
 end
 

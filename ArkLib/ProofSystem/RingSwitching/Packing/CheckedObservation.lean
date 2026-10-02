@@ -11,9 +11,11 @@ public import Mathlib.Logic.Equiv.Defs
 # Deterministic checked observations
 
 A source evaluation is an observation of the honest message, after a lossless witness change.
-This unconditional identity gives honest checking and exact readback while preserving any
-given commitment or witness predicate. Concrete protocols prove their original relation and
-guard equivalences separately; no binding, domain, or security assumption is built into this data.
+This identity is the only law of the structure. It gives two consequences: the honest message
+passes the observation check, and an accepted message that is the honest message of some output
+witness reads back to a correct claim about the corresponding source witness. Read-back does not
+show that an arbitrary accepted message is honest; that is the job of a binding or soundness
+argument at the use site. No binding, domain, or security assumption is built into this data.
 -/
 
 @[expose] public section
@@ -45,21 +47,13 @@ theorem honest_check {q : Q} {claim : Value} {w : WIn}
     claim = D.observe q (D.honestMsg q (D.witnessEquiv w)) :=
   h.trans (D.eval_eq_observe q w)
 
-/-- A checked message with a valid output witness recovers the original evaluation claim. -/
+/-- If an accepted message is the honest message of some output witness, the checked claim is
+the original evaluation of the corresponding source witness. -/
 theorem readback {q : Q} {claim : Value} {msg : Message} {w : WOut}
     (hc : claim = D.observe q msg) (hm : msg = D.honestMsg q w) :
     claim = D.scalarEval q (D.witnessEquiv.symm w) := by
   rw [D.eval_eq_observe, D.witnessEquiv.apply_symm_apply]
   exact hc.trans (congrArg (D.observe q) hm)
-
-/-- Checked readback preserves the supplied predicate on the output witness. -/
-theorem readback_keep (Keep : Q → WOut → Prop)
-    {q : Q} {claim : Value} {msg : Message} {w : WOut}
-    (hc : claim = D.observe q msg) (ho : Keep q w ∧ msg = D.honestMsg q w) :
-    Keep q (D.witnessEquiv (D.witnessEquiv.symm w)) ∧
-      claim = D.scalarEval q (D.witnessEquiv.symm w) := by
-  exact ⟨by simpa only [D.witnessEquiv.apply_symm_apply] using ho.1,
-    D.readback hc ho.2⟩
 
 end CheckedObservation
 

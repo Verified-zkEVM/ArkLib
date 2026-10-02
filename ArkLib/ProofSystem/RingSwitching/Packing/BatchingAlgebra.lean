@@ -37,10 +37,10 @@ variable {K L : Type} [CommRing K] [CommRing L] [Algebra K L]
   {κ ℓ ℓ' : ℕ} [NeZero ℓ] [NeZero ℓ']
   (P : RingSwitchingProfile K L κ) (h_l : ℓ = ℓ' + κ)
 
-local instance : Algebra (Packing.sameAlgebra P.basis).P L :=
+local instance : Algebra (Packing.PackingData.ofBasis P.basis).P L :=
   inferInstanceAs (Algebra L L)
 
-local instance : IsScalarTower K (Packing.sameAlgebra P.basis).P L :=
+local instance : IsScalarTower K (Packing.PackingData.ofBasis P.basis).P L :=
   inferInstanceAs (IsScalarTower K L L)
 
 omit [NeZero ℓ] [NeZero ℓ'] in
@@ -74,7 +74,7 @@ set_option backward.isDefEq.respectTransparency false in
 /-- The embedded evaluation's rows satisfy the packed-slice relation. -/
 theorem embedded_MLP_eval_sliceRel (p : MultilinearPoly L ℓ') (r : Fin ℓ → L) :
     (P.decomposeRows (embedded_MLP_eval κ L K P ℓ ℓ' h_l p r), p) ∈
-      (Packing.sameAlgebra P.basis).sliceRel ℓ'
+      (Packing.PackingData.ofBasis P.basis).sliceRel ℓ'
         (getEvaluationPointSuffix κ L ℓ ℓ' h_l r) := by
   rw [embedded_MLP_eval_eq_observation]
   have h := P.rows_observation
@@ -89,7 +89,7 @@ set_option backward.isDefEq.respectTransparency false in
 theorem embedded_MLP_eval_eq_iff_sliceRel (p : MultilinearPoly L ℓ')
     (r : Fin ℓ → L) (z : P.A) :
     embedded_MLP_eval κ L K P ℓ ℓ' h_l p r = z ↔
-      (P.decomposeRows z, p) ∈ (Packing.sameAlgebra P.basis).sliceRel ℓ'
+      (P.decomposeRows z, p) ∈ (Packing.PackingData.ofBasis P.basis).sliceRel ℓ'
         (getEvaluationPointSuffix κ L ℓ ℓ' h_l r) := by
   constructor
   · rintro rfl
@@ -103,9 +103,9 @@ theorem embedded_MLP_eval_eq_iff_sliceRel (p : MultilinearPoly L ℓ')
 set_option backward.isDefEq.respectTransparency false in
 /-- Row and column coordinates of a carrier satisfy family consistency. -/
 theorem claimConsistent_decomposeColumns_decomposeRows (z : P.A) :
-    (Packing.sameAlgebra P.basis).claimConsistent (P.decomposeColumns z)
+    (Packing.PackingData.ofBasis P.basis).claimConsistent (P.decomposeColumns z)
       (P.decomposeRows z) :=
-  ((Packing.sameAlgebra P.basis).claimConsistent_iff_transpose _ _).mpr (P.transpose_columns z)
+  ((Packing.PackingData.ofBasis P.basis).claimConsistent_iff_transpose _ _).mpr (P.transpose_columns z)
 
 omit [NeZero ℓ] [NeZero ℓ'] in
 set_option backward.isDefEq.respectTransparency false in
@@ -117,8 +117,8 @@ theorem columns_embedded_MLP_eval (p : MultilinearPoly L ℓ') (r : Fin ℓ → 
     (i : Fin κ → Fin 2) :
     P.decomposeColumns (embedded_MLP_eval κ L K P ℓ ℓ' h_l p r) i =
       aeval (getEvaluationPointSuffix κ L ℓ ℓ' h_l r)
-        ((Packing.sameAlgebra P.basis).unpack p i).val :=
-  (Packing.sameAlgebra P.basis).openingClaimRel_of_claimConsistent
+        ((Packing.PackingData.ofBasis P.basis).unpack p i).val :=
+  (Packing.PackingData.ofBasis P.basis).openingClaimRel_of_claimConsistent
     (claimConsistent_decomposeColumns_decomposeRows P _)
     (embedded_MLP_eval_sliceRel P h_l p r) i
 
@@ -140,7 +140,7 @@ theorem original_claim_eq_readback (t : MultilinearPoly K ℓ) (r : Fin ℓ → 
       (fun i => r ⟨i.val, by omega⟩) := by
   rw [eqWeightedCoordSum_eq_sum]
   simp_rw [columns_embedded_MLP_eval]
-  rw [packMLE_eq_packedMLE, (Packing.sameAlgebra P.basis).unpack_packedMLE]
+  rw [packMLE_eq_packedMLE, (Packing.PackingData.ofBasis P.basis).unpack_packedMLE]
   exact aeval_eq_sum_splitFirst h_l t r
 
 /-- Checked observation from the polynomial pack/unpack equivalence and tensor evaluation. -/
@@ -185,7 +185,7 @@ omit [NeZero ℓ] [NeZero ℓ'] in
 /-- The batching polynomial equals the multilinear coordinate multiplier. -/
 theorem compute_A_MLE_eq_multiplier (r : Fin ℓ' → L) (c : Fin κ → L) :
     compute_A_MLE κ L K P ℓ' r c =
-      (Packing.sameAlgebra P.basis).multiplier r
+      (Packing.PackingData.ofBasis P.basis).multiplier r
         (fun u : Fin κ → Fin 2 => eqTilde (u : Fin κ → L) c) := by
   have hbit (z : Fin 2) : (if z == 1 then (1 : L) else 0) = (z : L) := by
     fin_cases z <;> simp
@@ -194,7 +194,7 @@ theorem compute_A_MLE_eq_multiplier (r : Fin ℓ' → L) (c : Fin κ → L) :
   congr 1
   funext y
   erw [Packing.PackingData.bridge_apply]
-  simp only [compute_A_func, hbit, Packing.sameAlgebra]
+  simp only [compute_A_func, hbit, Packing.PackingData.ofBasis]
   rfl
 
 omit [NeZero ℓ] [NeZero ℓ'] in
@@ -215,7 +215,7 @@ theorem compute_s0_embedded_MLP_eval (p : MultilinearPoly L ℓ') (r : Fin ℓ �
             (compute_A_MLE κ L K P ℓ' (getEvaluationPointSuffix κ L ℓ ℓ' h_l r) c).val *
           eval (y : Fin ℓ' → L) p.val := by
   rw [compute_s0_eq_sum, compute_A_MLE_eq_multiplier]
-  exact (Packing.sameAlgebra P.basis).sumcheckClaim_of_slices (C := L)
+  exact (Packing.PackingData.ofBasis P.basis).sumcheckClaim_of_slices (C := L)
     (embedded_MLP_eval_sliceRel P h_l p r) (fun u : Fin κ → Fin 2 => eqTilde (u : Fin κ → L) c)
 
 open Probability in

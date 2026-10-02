@@ -676,13 +676,12 @@ home_page/            site assets and assembled website root
   verifier subroutines and the tensor-product constructor `tensorProductProfile`;
   `ProfileCoordinates`, `ProfileLayout`, `BatchingAlgebra` and `FinalAlgebra` connect the
   profile to the finite-coordinate modules.
-  These modules do not import the legacy reduction framework. Their presence is algebraic
-  support, not a claim of completed Binius/Hachi/Flock protocol conformance.
+  These modules do not import the legacy reduction framework.
   `Packing/` also contains the legacy DP24/Binius protocol construction (`Prelude` with the
   protocol vocabulary, `Spec`, `BatchingPhase`, `SumcheckPhase`, `General`; RBR
   soundness, `[IsDomain L]`); Binius instantiates it in `ProofSystem/Binius/FRIBinius/`
-  (`biniusProfile`). Hachi's trace construction requires its own algebraic adapter; it is
-  not asserted to satisfy the tensor profile's laws.
+  (`biniusProfile`). Hachi's §3 trace head has carrier `L` itself, so it has its own algebraic
+  interface rather than a `Profile` instance.
   `Lift/` is the **generic HMZ25 lift** (large quotient ring →
   field, CWSS at `k = 2d`): `Presentation.lean` is its data layer (proof-free
   `Presentation R S` + `IsPresentation` laws over any monic modulus — not cyclotomic-specific

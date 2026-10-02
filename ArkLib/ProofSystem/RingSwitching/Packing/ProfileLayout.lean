@@ -51,7 +51,7 @@ set_option backward.isDefEq.respectTransparency false in
 /-- Boolean-table packing equals basis packing of the prefix component family. -/
 theorem packMLE_eq_packedMLE (t : MultilinearPoly K ℓ) :
     packMLE κ L K ℓ ℓ' h_l β t =
-      (Packing.sameAlgebra β).packedMLE
+      (Packing.PackingData.ofBasis β).packedMLE
         (splitFirst κ ℓ' (sourceDimensionEquiv h_l t)) := by
   have hdim : ℓ = κ + ℓ' := h_l.trans (Nat.add_comm ℓ' κ)
   cases hdim
@@ -59,16 +59,16 @@ theorem packMLE_eq_packedMLE (t : MultilinearPoly K ℓ) :
   apply eq_of_degreeOf_le_one_of_eval_zeroOne_eq _ _
     ((mem_restrictDegree_iff_degreeOf_le _ _).mp (packMLE κ L K _ ℓ' h_l β t).property)
     ((mem_restrictDegree_iff_degreeOf_le _ _).mp
-      ((Packing.sameAlgebra β).packedMLE (splitFirst κ ℓ' (sourceDimensionEquiv h_l t))).property)
+      ((Packing.PackingData.ofBasis β).packedMLE (splitFirst κ ℓ' (sourceDimensionEquiv h_l t))).property)
   intro w
   have hcast : (w : Fin ℓ' → L) = fun i => algebraMap K L ((w : Fin ℓ' → K) i) :=
     funext fun i => (map_natCast (algebraMap K L) _).symm
   rw [hcast]
-  refine Eq.trans ?_ ((Packing.sameAlgebra β).packedMLE_eval_embedded
+  refine Eq.trans ?_ ((Packing.PackingData.ofBasis β).packedMLE_eval_embedded
     (splitFirst κ ℓ' (sourceDimensionEquiv h_l t)) (w : Fin ℓ' → K)).symm
   simp only [packMLE, ← hcast, MLE_eval_zeroOne, Basis.equivFun_symm_apply,
     sourceDimensionEquiv, Equiv.cast_refl, Equiv.refl_apply,
-    splitFirst_eval, Packing.sameAlgebra, Algebra.smul_def]
+    splitFirst_eval, Packing.PackingData.ofBasis, Algebra.smul_def]
   apply Finset.sum_congr rfl
   intro v _
   have hpoint : (fun i : Fin (κ + ℓ') =>
@@ -84,9 +84,9 @@ theorem packMLE_eq_packedMLE (t : MultilinearPoly K ℓ) :
 /-- Packing uses the packed-prefix layout with the source dimension cast. -/
 theorem packMLE_eq_packedPrefixLayout (t : MultilinearPoly K ℓ) :
     packMLE κ L K ℓ ℓ' h_l β t =
-      (Packing.sameAlgebra β).packedMLE
+      (Packing.PackingData.ofBasis β).packedMLE
         ((Packing.ScalarHead.packedPrefixLayout
-          (Packing.sameAlgebra β) ℓ' κ (Equiv.refl _)).components
+          (Packing.PackingData.ofBasis β) ℓ' κ (Equiv.refl _)).components
           (sourceDimensionEquiv h_l t)) :=
   packMLE_eq_packedMLE h_l β t
 
@@ -94,7 +94,7 @@ set_option backward.isDefEq.respectTransparency false in
 /-- Unpacking equals coefficient-coordinate unpacking followed by the prefix-layout join. -/
 theorem unpackMLE_eq_joinFirst (p : MultilinearPoly L ℓ') :
     sourceDimensionEquiv h_l (unpackMLE κ L K ℓ ℓ' h_l β p) =
-      joinFirst κ ℓ' ((Packing.sameAlgebra β).unpack p) := by
+      joinFirst κ ℓ' ((Packing.PackingData.ofBasis β).unpack p) := by
   have hdim : ℓ = κ + ℓ' := h_l.trans (Nat.add_comm ℓ' κ)
   cases hdim
   apply Subtype.ext
@@ -102,11 +102,11 @@ theorem unpackMLE_eq_joinFirst (p : MultilinearPoly L ℓ') :
     ((mem_restrictDegree_iff_degreeOf_le _ _).mp
       (sourceDimensionEquiv h_l (unpackMLE κ L K _ ℓ' h_l β p)).property)
     ((mem_restrictDegree_iff_degreeOf_le _ _).mp
-      (joinFirst κ ℓ' ((Packing.sameAlgebra β).unpack p)).property)
+      (joinFirst κ ℓ' ((Packing.PackingData.ofBasis β).unpack p)).property)
   intro z
   simp only [sourceDimensionEquiv, Equiv.cast_refl, Equiv.refl_apply, unpackMLE,
     joinFirst, MLE_eval_zeroOne, Packing.PackingData.unpack_eval_zeroOne,
-    Packing.sameAlgebra]
+    Packing.PackingData.ofBasis]
   congr 2
   apply congrArg (fun r => eval r p.val)
   funext i
@@ -118,7 +118,7 @@ set_option backward.isDefEq.respectTransparency false in
 theorem packMLE_unpackMLE (p : MultilinearPoly L ℓ') :
     packMLE κ L K ℓ ℓ' h_l β (unpackMLE κ L K ℓ ℓ' h_l β p) = p := by
   rw [packMLE_eq_packedMLE, unpackMLE_eq_joinFirst, splitFirst_joinFirst]
-  exact (Packing.sameAlgebra β).packedMLE_unpack p
+  exact (Packing.PackingData.ofBasis β).packedMLE_unpack p
 
 set_option backward.isDefEq.respectTransparency false in
 /-- Unpacking after packing recovers the source polynomial. -/

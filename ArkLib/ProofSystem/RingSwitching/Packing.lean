@@ -5,6 +5,11 @@ Authors: Tobias Rothmann
 -/
 module
 
+public import ArkLib.ProofSystem.RingSwitching.Packing.Batching
+public import ArkLib.ProofSystem.RingSwitching.Packing.CheckedObservation
+public import ArkLib.ProofSystem.RingSwitching.Packing.Multiplier
+public import ArkLib.ProofSystem.RingSwitching.Packing.Relations
+public import ArkLib.ProofSystem.RingSwitching.Packing.ScalarHead.Quirky
 public import ArkLib.ProofSystem.RingSwitching.Packing.Profile
 public import ArkLib.ProofSystem.RingSwitching.Packing.General
 
@@ -45,6 +50,21 @@ The *opposite-direction* `Lift` construction—from a large quotient ring down i
 **not** a packing; it lives in the sibling folder `RingSwitching/Lift/`.
 
 ## Folder structure
+
+The shared coordinate algebra imports no reduction framework and holds over commutative rings:
+
+* `Coordinates.lean` — `PackingData`: independent finite bases of a packing algebra and an
+  opening algebra over a common ring, the coordinate transpose, and the batching map `bridge`.
+* `FiniteObservation.lean`, `CheckedObservation.lean` — weighted observations, their coordinate
+  slices, and read-back of a scalar claim from an accepted honest message.
+* `Polynomial.lean`, `Relations.lean` — packed multilinear polynomials with both round trips, and
+  the opening, slice and batched-sumcheck relations.
+* `Multiplier.lean` — the public multiplier evaluated by a read-once matrix program.
+* `Batching.lean` — `BatchingStrategy`: uniform challenges with a proved collision bound.
+* `ScalarHead/Layout.lean`, `ScalarHead/Quirky.lean` — prefix, suffix and quirky source
+  layouts, each with a proved reconstruction identity.
+
+The DP24 construction:
 
 * `Profile.lean` — `RingSwitchingProfile`, the shared packing data layer (basis, carrier,
   embeddings, coordinate maps, reconstruction and inverse laws) and their consequences.

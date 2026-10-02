@@ -70,7 +70,7 @@ theorem quirkySection_splitLast (t : QuirkyTable (B := B) m ks)
   dsimp only [splitLast, quirkyComponent]
   congr 1
   funext y
-  rw [← cast_append_bool, quirkySection, MLE_eval_zeroOne]
+  rw [← Fin.apply_append (fun c : Fin 2 => (c : B)), quirkySection, MLE_eval_zeroOne]
   simp only [Fin.append_right_eq_snoc, Fin.snoc_castSucc, Fin.snoc_last]
 
 variable [hField : Fact (IsField data.E)]
@@ -94,7 +94,7 @@ theorem quirkyPolynomial_degree (t : QuirkyTable (B := B) m ks)
       aeval (Fin.snoc r ρ) (quirkySection m ks t σ).val) nodes.injective.injOn)
 
 /-- At a skip node, the quirky extension is the original multilinear section. -/
-theorem quirkyPolynomial_at_node (t : QuirkyTable (B := B) m ks)
+theorem quirkyPolynomial_eval_node (t : QuirkyTable (B := B) m ks)
     (r : Fin m → data.E) (ρ : data.E) (σ : Fin ks → Fin 2) :
     (quirkyPolynomial data m ks nodes t r ρ).eval (nodes σ) =
       aeval (Fin.snoc r ρ) (quirkySection m ks t σ).val :=
@@ -113,7 +113,7 @@ def quirkyWeight (ρ ζ : data.E) (v : (Fin ks → Fin 2) × Fin 2) : data.E :=
 The quirky evaluation is the sum of its components weighted by Lagrange and equality
 polynomials.
 -/
-theorem quirky_reconstruct (t : QuirkyTable (B := B) m ks)
+theorem quirkyEval_eq_sum (t : QuirkyTable (B := B) m ks)
     (r : Fin m → data.E) (ρ ζ : data.E) :
     quirkyEval data m ks nodes t r ρ ζ =
       ∑ v : (Fin ks → Fin 2) × Fin 2,
@@ -146,7 +146,7 @@ def quirkyLayout
   weight q i := quirkyWeight data ks nodes q.2.1 q.2.2 (index i)
   eval q t := quirkyEval data m ks nodes t q.1 q.2.1 q.2.2
   reconstruct q t := by
-    rw [quirky_reconstruct]
+    rw [quirkyEval_eq_sum]
     exact (index.sum_comp _).symm
 
 end RingSwitching.Packing.ScalarHead

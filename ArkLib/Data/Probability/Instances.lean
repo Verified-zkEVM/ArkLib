@@ -54,16 +54,10 @@ lemma prob_schwartz_zippel_mv_polynomial
 /-- Scalar-challenge form of the polynomial root bound for one variable. -/
 lemma prob_schwartz_zippel_single_variable
     {R : Type} [CommRing R] [IsDomain R] [Fintype R] [SampleableType R]
-    (p : MvPolynomial (Fin 1) R) (d : ℕ) (hne : p ≠ 0) (hdeg : p.totalDegree ≤ d) :
+    (p : MvPolynomial (Fin 1) R) {d : ℕ} (hne : p ≠ 0) (hdeg : p.totalDegree ≤ d) :
     Pr{let γ ← $ᵗ R}[MvPolynomial.eval (fun _ : Fin 1 => γ) p = 0] ≤
-      (d : ℝ≥0∞) / Fintype.card R := by
-  have hbij : Function.Bijective (fun γ : R => fun _ : Fin 1 => γ) := by
-    constructor
-    · intro a b h
-      exact congrFun h 0
-    · intro r
-      exact ⟨r 0, funext fun i => congrArg r (Subsingleton.elim 0 i)⟩
-  exact (SampleableType.prEvent_uniformSample_comp_of_bijective hbij
+      (d : ℝ≥0∞) / Fintype.card R :=
+  (SampleableType.prEvent_uniformSample_equiv (Equiv.funUnique (Fin 1) R).symm
     (fun r => MvPolynomial.eval r p = 0)).trans_le
       (prob_schwartz_zippel_mv_polynomial_of_totalDegree_le p hne hdeg)
 

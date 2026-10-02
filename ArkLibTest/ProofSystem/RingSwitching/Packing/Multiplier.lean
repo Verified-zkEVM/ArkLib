@@ -1,19 +1,19 @@
 /-
 Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: ArkLib Contributors
+Authors: Alexander Hicks
 -/
 
 import ArkLib.ProofSystem.RingSwitching.Packing.Multiplier
-import ArkLibTest.ProofSystem.RingSwitching.Packing.Algebra
 import ArkLibTest.ProofSystem.RingSwitching.Packing.SeparateFields
 
 /-!
 # Public multiplier acceptance and regression cases
 
-These clients exercise three independent algebra ranks over a base with zero divisors, and an
-opening field with no embedding into the challenge field. A concrete nonmultiplicative coordinate
-observation rules out replacing the matrix computation by a product of observed factors.
+An opening field with no embedding into the challenge field still yields a concrete evaluator
+value. Over a diagonal rank-two opening algebra, the matrix program and the interpolated Boolean
+table are computed independently at a non-Boolean point and agree. A concrete nonmultiplicative
+coordinate observation rules out replacing the matrix computation by a product of observed factors.
 -/
 
 noncomputable section
@@ -21,13 +21,6 @@ noncomputable section
 namespace RingSwitching.Packing.MultiplierTests
 
 open Module MvPolynomial Matrix
-
-/-- The production evaluator accepts unrelated product algebras of ranks two, three, and four. -/
-theorem unequalRanks (r : Fin 3 → Tests.productData.E)
-    (weight : Fin 3 → Fin 4 → ZMod 6) (z : Fin 3 → Fin 4 → ZMod 6) :
-    Tests.productData.evaluateMultiplier r weight z =
-      (Tests.productData.multiplier r weight).val.eval z :=
-  Tests.productData.evaluateMultiplier_eq r weight z
 
 /-- The challenge field need not contain the opening field. -/
 theorem noOpeningToChallengeHom :
@@ -37,12 +30,15 @@ theorem noOpeningToChallengeHom :
     GaloisField.finrank (p := 2) (n := 4) (by decide)]
   decide
 
-/-- Incompatible opening and challenge fields instantiate the evaluator identity. -/
-theorem separateChallenge (r : Fin 2 → GaloisField 2 3)
-    (weight : Fin 3 → GaloisField 2 4) (z : Fin 2 → GaloisField 2 4) :
-    Tests.separateFields.evaluateMultiplier r weight z =
-      (Tests.separateFields.multiplier r weight).val.eval z :=
-  Tests.separateFields.evaluateMultiplier_eq r weight z
+/-- With incompatible opening and challenge fields and `r = 0`, the evaluator vanishes at the
+Boolean point `z = (1, 1)` for every weight, because the equality kernel `eq(0, 1)` is zero. -/
+theorem separateChallenge_vanishes (weight : Fin 3 → GaloisField 2 4) :
+    Tests.separateFields.evaluateMultiplier (fun _ : Fin 2 => 0) weight (fun _ => 1) = 0 := by
+  have h := Tests.separateFields.multiplier_eval_zeroOne (fun _ => 0) weight
+    (fun _ : Fin 2 => 1)
+  simp only [Fin.isValue, Fin.val_one, Nat.cast_one] at h
+  rw [PackingData.evaluateMultiplier_eq, h]
+  simp [PackingData.eqCoord, eqTilde_eq_prod]
 
 /-- A rank-one packed algebra and a rank-two opening algebra for explicit arithmetic. -/
 abbrev diagonalData : PackingData (ZMod 5) where
@@ -132,6 +128,15 @@ theorem evaluateMultiplier_eq_zero :
   rw [evaluateMultiplier_eq_sum]
   decide
 
+/-- Independently of the matrix program, the multiplier interpolated from its Boolean table also
+takes the value `3` at `z = (3, 3)`. -/
+theorem multiplier_eval_three :
+    (diagonalData.multiplier (![(![1, 0]), (![0, 1])]) (fun _ => (1 : ZMod 5))).val.eval
+      (fun _ => 3) = 3 := by
+  simp only [PackingData.multiplier, MLE_eval, eqTilde_eq_prod]
+  conv => enter [1, 2, y]; rw [bridge_sum]
+  decide
+
 /-- Multiplying the separately observed factors gives the wrong value at the same point. -/
 theorem evaluateMultiplier_ne_prod_bridge :
     diagonalData.evaluateMultiplier (![(![1, 0]), (![0, 1])]) (fun _ => (1 : ZMod 5))
@@ -150,14 +155,6 @@ theorem evaluateMultiplier_zero_variables (weight : Fin 2 → ZMod 5) :
   simp only [PackingData.evaluateMultiplier, challengeCoordinates_eq, ReadOnce.run_zero]
   change (∑ u : Fin 2, weight u * 1) = weight 0 + weight 1
   simp [Fin.sum_univ_two]
-
-/-- The instrumented evaluator also covers the zero-variable boundary. -/
-theorem runCounted_zero_variables :
-    (ReadOnce.runCounted
-      (fun i : Fin 0 => ReadOnce.interpolate
-        (diagonalData.multiplierLayers (C := ZMod 5) (fun j : Fin 0 => j.elim0) i) 0)
-      (diagonalData.challengeCoordinates 1)).2 = 0 :=
-  diagonalData.evaluateMultiplier_actions (fun i : Fin 0 => i.elim0) (fun _ => (0 : ZMod 5))
 
 end RingSwitching.Packing.MultiplierTests
 

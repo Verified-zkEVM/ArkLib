@@ -19,6 +19,8 @@ page under [`papers/`](papers/README.md); that directory, not this list, is the 
   `ReedSolomon`, `ListDecodability`, and `ProximityGap`.
 - [`papers/ACFY24stir.md`](papers/ACFY24stir.md) - STIR paper page for the active
   `ProofSystem/Stir` development.
+- [`papers/BRW26.md`](papers/BRW26.md) - Flock; the quirky layout and the multiplication-matrix
+  multiplier evaluator.
 - [`papers/BCFW25.md`](papers/BCFW25.md) - cited only for Lemma D.3 (extension-code list size);
   none of the accumulation machinery is used.
 - [`papers/BCIKS20.md`](papers/BCIKS20.md) - proximity gaps for Reed-Solomon codes and the main
@@ -90,6 +92,7 @@ page under [`papers/`](papers/README.md); that directory, not this list, is the 
   and its weak-binding reduction to Module-SIS.
 - [`papers/Poseidon2.md`](papers/Poseidon2.md) - the Poseidon2 hash, translated over `KoalaBear`.
 - [`papers/PS94.md`](papers/PS94.md) - historical provenance for the Polishchuk-Spielman lemma.
+- [`papers/RSG.md`](papers/RSG.md) - ring switching with independent packing and opening bases.
 - [`papers/Spi95.md`](papers/Spi95.md) - the second Polishchuk-Spielman source, and why ArkLib
   uses the corrected statement.
 
