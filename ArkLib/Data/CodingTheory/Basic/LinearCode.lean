@@ -346,6 +346,61 @@ lemma projectedCode_linearCombination [Semiring F] [Module F A] (MC : ModuleCode
     change (∑ j, c j • U j t.1) = w t.1
     exact Eq.symm (hw.2 t t.2)⟩
 
+omit [Fintype ι] in
+/-- A coordinate set `T` is a **maximal agreement domain** between a word `u` and a module code
+`MC` if it is maximal for inclusion among the sets on which `u` projects into the code.
+Definition 6.3 [BCGM25]. -/
+def IsMaxAgreementDomain [Semiring F] [Module F A] (MC : ModuleCode ι F A) (u : ι → A)
+    (T : Finset ι) : Prop :=
+  Maximal (fun T' => projectedWord u T' ∈ projectedCodeSubmod MC T') T
+
+omit [Fintype ι] in
+/-- A coordinate set `T` is a **maximal correlated agreement (CA) domain** between a family of
+words `U` and a module code `MC` if it is maximal for inclusion among the sets on which every
+member of the family projects into the code. The interleaved membership
+`Mat(u₁, …, u_ℓ)|_T ∈ C^ℓ|_T` of the paper is stated row-wise, which is the form the mutual
+correlated agreement layer consumes (cf. `CoreDefinitions.IsMCA`).
+Definition 6.3 [BCGM25]. -/
+def IsMaxCADomain [Semiring F] [Module F A] {α : Type*} (MC : ModuleCode ι F A)
+    (U : α → (ι → A)) (T : Finset ι) : Prop :=
+  Maximal (fun T' => ∀ j, projectedWord (U j) T' ∈ projectedCodeSubmod MC T') T
+
+omit [Fintype ι] in
+/-- Every agreement set extends to a maximal agreement domain. -/
+lemma exists_subset_isMaxAgreementDomain [Finite ι] [Semiring F] [Module F A]
+    (MC : ModuleCode ι F A) {u : ι → A} {T : Finset ι}
+    (hT : projectedWord u T ∈ projectedCodeSubmod MC T) :
+    ∃ T', T ⊆ T' ∧ IsMaxAgreementDomain MC u T' :=
+  Finite.exists_le_maximal hT
+
+omit [Fintype ι] in
+/-- Every correlated agreement set extends to a maximal CA domain. -/
+lemma exists_subset_isMaxCADomain [Finite ι] [Semiring F] [Module F A] {α : Type*}
+    (MC : ModuleCode ι F A) {U : α → (ι → A)} {T : Finset ι}
+    (hT : ∀ j, projectedWord (U j) T ∈ projectedCodeSubmod MC T) :
+    ∃ T', T ⊆ T' ∧ IsMaxCADomain MC U T' :=
+  Finite.exists_le_maximal hT
+
+omit [Fintype ι] in
+/-- A maximal agreement domain between `u` and `MC` is the exact agreement set of `u` with some
+codeword: a codeword agrees with `u` on `T`, and every coordinate where it agrees with `u` lies
+in `T`. -/
+lemma IsMaxAgreementDomain.exists_codeword [Finite ι] [Semiring F] [Module F A]
+    {MC : ModuleCode ι F A}
+    {u : ι → A} {T : Finset ι} (h : IsMaxAgreementDomain MC u T) :
+    ∃ c ∈ MC, (∀ i ∈ T, u i = c i) ∧ ∀ i, u i = c i → i ∈ T := by
+  classical
+  have := Fintype.ofFinite ι
+  obtain ⟨c, hc, hcT⟩ := (mem_projectedCodeSubmod_iff MC T _).mp h.prop
+  have hagree : ∀ i ∈ T, u i = c i := fun i hi => congrFun hcT ⟨i, hi⟩
+  set T' := Finset.univ.filter fun i => u i = c i with hT'
+  have hsub : T ⊆ T' := fun i hi => Finset.mem_filter.mpr ⟨Finset.mem_univ _, hagree i hi⟩
+  have hmem : projectedWord u T' ∈ projectedCodeSubmod MC T' :=
+    (mem_projectedCodeSubmod_iff MC T' _).mpr
+      ⟨c, hc, funext fun i => (Finset.mem_filter.mp i.2).2⟩
+  exact ⟨c, hc, hagree, fun i hic =>
+    Maximal.le_of_ge h hmem hsub (Finset.mem_filter.mpr ⟨Finset.mem_univ _, hic⟩)⟩
+
 /-- A linear code is maximum distance separable (MDS) if its parameters meet the singleton bound. -/
 def IsMDS {ι : Type*} [Fintype ι] [CommRing F] [DecidableEq F] (LC : LinearCode ι F) : Prop :=
   Code.dist LC.carrier = length LC - dim LC + 1
