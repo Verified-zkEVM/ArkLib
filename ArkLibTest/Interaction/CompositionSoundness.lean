@@ -63,35 +63,10 @@ theorem guess_soundness {m : Type → Type} [Monad m] [LawfulMonad m]
   simp only [guessTree, guessRoles]
   dsimp only [run, InteractionOver.runTypeTree, InteractionOver.TwoParty.pairedTypeTree,
     InteractionOver.TwoParty.paired, participantProfile, collectParticipantOutputs]
-  simp only [guessVerifier, bind_assoc, pure_bind]
-  have hlocal : ∀ chosen : (guess : F) × ((sample : F) → m (Out ⟨guess, ⟨sample, PUnit.unit⟩⟩)),
-      Pr{let truth ← (do
-        let sample ← challenge
-        let _ ← chosen.2 sample
-        return prior ∨ chosen.1 = sample : m Prop)}[truth] ≤ ε := by
-    rintro ⟨guess, respond⟩
-    have hb := prEvent_bind_le_prEvent_of_forall_eq_zero challenge
-      (fun sample => do
-        let _ ← respond sample
-        return prior ∨ guess = sample)
-      (fun sample => guess = sample) (fun truth => truth) (by
-        intro sample hne
-        simpa only [bind_assoc, pure_bind, expect_norm, id_map'] using
-          (prEvent_const_of_not (respond sample) (show ¬ (prior ∨ guess = sample) by
-            simp [hprior, hne])))
-    simpa only [expect_norm, id_map'] using hb.trans (hsample guess)
-  have h := prEvent_bind_le_of_forall_le prover
-    (fun chosen => do
-      let sample ← challenge
-      let _ ← chosen.2 sample
-      return prior ∨ chosen.1 = sample) (fun truth => truth) (by
-      intro chosen
-      convert hlocal chosen using 1
-      simp only [expect_norm]
-      rfl)
-  convert h using 1
-  simp only [expect_norm]
-  rfl
+  simp only [guessVerifier, expect_norm]
+  refine wp_le_of_forall_le _ fun chosen => (ExpectationWP.wp_mono _ fun sample =>
+    wp_le_of_forall_le _ fun _ => ?_).trans (hsample chosen.1)
+  simp [hprior]
 
 /-- A fresh uniform field challenge matches every fixed guess with mass `1/17`. -/
 theorem uniform_guess (guess : F) :
