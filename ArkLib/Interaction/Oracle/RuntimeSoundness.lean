@@ -7,7 +7,7 @@ module
 
 public import ArkLib.Interaction.Oracle.CompositionSoundness
 public import ArkLib.Interaction.Oracle.PhasedRun
-public import ArkLib.Data.Probability.Sequential
+public import VCVio.EvalDist.Monad.Disagreement.Measure
 
 /-! # Native composition soundness in a persistent runtime -/
 

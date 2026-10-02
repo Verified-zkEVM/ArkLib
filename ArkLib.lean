@@ -660,7 +660,6 @@ public import ArkLib.Data.Polynomial.UniversalHenselNumerator
 public import ArkLib.Data.Probability.Combinatorial
 public import ArkLib.Data.Probability.Instances
 public import ArkLib.Data.Probability.KoalaBear
-public import ArkLib.Data.Probability.Sequential
 public import ArkLib.Data.Probability.Uniform
 public import ArkLib.Interaction.CompositionSoundness
 public import ArkLib.Interaction.Oracle.Access
