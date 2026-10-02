@@ -177,10 +177,7 @@
   "OracleVerifier.seqCompose_rbrSoundness",
   "OracleVerifier.seqCompose_soundness",
   "Plonk.ConstraintSystem.perm",
-  "PolynomialGenIsMCA.isMCAGenerator_of_isPolynomialGeneratorOf",
   "PolynomialGenIsMCA.isMCAGenerator_tensorGeneratorPi",
-  "PolynomialGenIsMCA.isMCAGenerator_tensorGeneratorPiUnivariateOn",
-  "PolynomialGenIsMCA.isMCAGenerator_univariatePowersGeneratorOn",
   "ProximityGap.GrandChallenges.McaLowerWitness.ofJohnsonRangeBound",
   "ProximityGap.H",
   "ProximityGap.H_dvd_evalX_R",
@@ -282,6 +279,5 @@
   "Verifier.srSoundness_implies_soundness",
   "fiatShamir_completeness",
   "instUnitTranscriptFSProverState",
-  "instUnitTranscriptFSVerifierState",
-  "isMCAGenerator_of_isMDSGenerator"],
+  "instUnitTranscriptFSVerifierState"],
  "nonstandard": []}
