@@ -5,6 +5,7 @@ Authors: Devon Tuma
 -/
 
 import ArkLib.OracleReduction.ProgramLogic
+import VCVio.OracleComp.Constructions.SampleableType.Measure
 
 /-!
 # `prvcgen` on reduction executions
@@ -12,10 +13,14 @@ import ArkLib.OracleReduction.ProgramLogic
 `prvcgen` walks a verifier challenge with `ProtocolSpec.Necessary.Spec.getChallenge`, also when
 the challenge is lifted into a reduction's oracle world `oSpec + [pSpec.Challenge]ₒ`. The
 completeness proofs converted to `prvcgen` (for example
-`CoordinateWise.CommittedScalar.reduction_run_support`) exercise `Reduction.run_run_eq`.
+`CoordinateWise.CommittedScalar.reduction_run_support`) exercise `Reduction.run_run_eq`. The
+bound examples pin the recipes of the security proofs: an opaque draw read through its support,
+a simulated opaque program with its state argument left to unification, and an average over a
+challenge drawn from a type with only a `SampleableType` instance.
 -/
 
 open OracleComp OracleSpec ProtocolSpec
+open scoped ENNReal
 
 namespace ProgramLogicRegression
 
@@ -56,5 +61,19 @@ example {ι σ : Type} (oSpec : OracleSpec ι) (impl : QueryImpl oSpec (StateT �
   prvcgen [OracleComp.Upper.Spec.ofSupport init,
     OracleComp.Upper.Spec.ofSupport ((simulateQ impl oa).run _)]
   simp [h]
+
+/-- An averaged bound. The challenge type has only a `SampleableType` instance, so the averaging
+rule needs a `Fintype` instance built from its finiteness, and the per-challenge hypothesis is
+read as the same finite average; the opaque continuation is bounded through its support. -/
+example {β : Type} [SampleableType β] (tail : β → ProbComp ℕ) (E : ℕ → Prop) {ε : ℝ≥0∞}
+    (h : Pr{let c ← $ᵗ β}[∃ t ∈ support (tail c), E t] ≤ ε) :
+    Pr{let c ← $ᵗ β; let t ← tail c}[E t] ≤ ε := by
+  have := Fintype.ofFinite β
+  simp only [expect_norm, SampleableType.wp_uniformSample_eq_sum] at h
+  prvcgen [OracleComp.Upper.Spec.uniformSample_avg]
+  refine le_trans (ENNReal.div_le_div_right (Finset.sum_le_sum fun c _ => ?_) _) h
+  simp only [expect_norm]
+  exact OracleComp.ProgramLogic.wp_le_const_of_support _ fun t ht =>
+    propInd_mono fun hE => ⟨t, ht, hE⟩
 
 end ProgramLogicRegression

@@ -10,6 +10,7 @@ public import ArkLib.Data.Probability.Instances
 public import VCVio.OracleComp.QueryTracking.LoggingOracle.Core
 public import VCVio.EvalDist.Monad.Branch
 public import VCVio.OracleComp.Constructions.SampleableType.Measure
+import VCVio.ProgramLogic.Tactics.PrVCGen
 
 /-!
 # `ProtocolSpec` glue for the round-by-round (knowledge) soundness games
@@ -203,16 +204,17 @@ theorem prEvent_optionT_simulateQ_addLift_getChallenge_bind_some_le
         oa).run' (← init)))}[E x] ≤ ε := by
   subst hoa
   simp only [simulateQ_bind, simulateQ_addLift_challengeQueryImpl_getChallenge, StateT.run'_bind',
-    StateT.run_liftM, bind_assoc, pure_bind, simulateQ_map, StateT.run'_map', OptionT.mk_bind,
-    expect_norm]
-  rw [OptionT.wp_liftM]
-  refine wp_le_of_forall_le _ fun s ↦ ?_
-  refine (OptionT.prEvent_bind_le_prEvent_of_support _ _ (fun c ↦ ∃ t, E (f c t)) E
-    fun c _ hc ↦ ?_).trans ((OptionT.prEvent_liftM _ _).trans_le h)
-  rw [OptionT.prEvent_mk_eq_zero_iff]
-  simp only [support_map, Set.mem_image, Option.some_inj]
-  rintro _ ⟨t, _, rfl⟩ hE
-  exact hc ⟨t, hE⟩
+    StateT.run_liftM, bind_assoc, pure_bind, simulateQ_map, StateT.run'_map', OptionT.prEvent_mk]
+  -- average over the challenge: its type has only a `SampleableType` instance, so the averaging
+  -- rule needs a `Fintype` instance built from its finiteness, and the hypothesis is read as the
+  -- same finite average; each term is bounded through the support of the simulated tail
+  have := Fintype.ofFinite (pSpec.Challenge i)
+  simp only [expect_norm, SampleableType.wp_uniformSample_eq_sum] at h
+  prvcgen [Upper.Spec.ofSupport init, Upper.Spec.uniformSample_avg]
+  refine le_trans (ENNReal.div_le_div_right (Finset.sum_le_sum fun c _ => ?_) _) h
+  simp only [expect_norm]
+  exact OracleComp.ProgramLogic.wp_le_const_of_support _ fun _ _ =>
+    propInd_mono fun hE => ⟨_, hE⟩
 
 /-- **Prefix-extended, `Option`-valued master mixture bound for the knowledge-soundness game
 shape.** Generalizes `prEvent_optionT_simulateQ_addLift_getChallenge_bind_some_le` in two
