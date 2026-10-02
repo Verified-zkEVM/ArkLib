@@ -162,16 +162,8 @@ theorem exists_basepoint_with_large_line_prob_aux {ι : Type} [Fintype ι] [None
       ∃ a : U, Pr{let z ←$ᵗ F}[δᵣ(a.1 + z • dir, V) ≤ δ] > ε  := by
   intro hprob
   classical
-  let : MeasurableSpace U := ⊤
-  let : MeasurableSpace F := ⊤
   let good : (ι → F) → Prop := fun w => δᵣ(w, V) ≤ δ
-  let lineProb (a : U) : ENNReal := Pr{let z ← $ᵗ F}[good (a.1 + z • dir)]
   let P2 : ENNReal := Pr{let a ← $ᵗ U; let z ← $ᵗ F}[good (a.1 + z • dir)]
-  have hP2_integral : P2 = ∫⁻ a, lineProb a ∂𝒟[$ᵗ U] := by
-    change Pr{let a ← $ᵗ U; let z ← $ᵗ F}[good (a.1 + z • dir)] =
-      ∫⁻ a, Pr{let z ← $ᵗ F}[good (a.1 + z • dir)] ∂𝒟[$ᵗ U]
-    simpa only [expect_norm] using prEvent_bind_eq_lintegral_of_discrete ($ᵗ U)
-      (fun a : U => (fun z : F => a.1 + z • dir) <$> ($ᵗ F)) good
   have hswap :
       P2 = Pr{let z ← $ᵗ F; let a ← $ᵗ U}[good (a.1 + z • dir)] := by
     change Pr{let a ← $ᵗ U; let z ← $ᵗ F}[good (a.1 + z • dir)] = _
@@ -186,33 +178,20 @@ theorem exists_basepoint_with_large_line_prob_aux {ι : Type} [Fintype ι] [None
           (fun za : F × U => good (za.2.1 + za.1 • dir))
   have hP2_eq : P2 = Pr{let u ← $ᵗ U}[good u.1] := by
     rw [hswap]
-    have hsplit :
-        Pr{let z ← $ᵗ F; let a ← $ᵗ U}[good (a.1 + z • dir)] =
-          ∫⁻ z, Pr{let a ← $ᵗ U}[good (a.1 + z • dir)] ∂𝒟[$ᵗ F] := by
-      simpa only [expect_norm] using prEvent_bind_eq_lintegral_of_discrete ($ᵗ F)
-        (fun z : F => (fun a : U => a.1 + z • dir) <$> ($ᵗ U)) good
-    rw [hsplit]
     have hconst : ∀ z : F,
         Pr{let a ← $ᵗ U}[good (a.1 + z • dir)] = Pr{let a ← $ᵗ U}[good a.1] := by
       intro z
       simpa [good] using
         (prob_uniform_shift_invariant (U := U) (dir := dir) (hshift := hshift)
           (V := V) (δ := δ) (z := z))
-    simp_rw [hconst]
-    rw [lintegral_const, OracleComp.evalDist_apply_univ_eq_one, mul_one]
+    simp only [expect_norm, hconst, ExpectationWP.wp_const_of_oracle]
   have hP2_gt : P2 > ε := by
     simpa [hP2_eq] using hprob
-  have h_integral_gt : (∫⁻ a, lineProb a ∂𝒟[$ᵗ U]) > ε := by
-    simpa [hP2_integral] using hP2_gt
   by_contra hno
   push Not at hno
-  have h_integral_le : (∫⁻ a, lineProb a ∂𝒟[$ᵗ U]) ≤ ε := by
-    calc
-      (∫⁻ a, lineProb a ∂𝒟[$ᵗ U]) ≤ ∫⁻ _a : U, ε ∂𝒟[$ᵗ U] :=
-        lintegral_mono hno
-      _ = ε := by
-        rw [lintegral_const, OracleComp.evalDist_apply_univ_eq_one, mul_one]
-  exact (not_lt_of_ge h_integral_le) h_integral_gt
+  refine absurd hP2_gt (not_lt.mpr ?_)
+  simp only [P2, expect_norm]
+  exact wp_le_of_forall_le _ fun a => by simpa only [expect_norm] using hno a
 
 theorem exists_basepoint_with_large_line_prob {ι : Type} [Fintype ι] [Nonempty ι]
     {F : Type} [Field F] [SampleableType F] [DecidableEq F]
