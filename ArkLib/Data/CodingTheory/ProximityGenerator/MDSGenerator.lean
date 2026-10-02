@@ -161,6 +161,35 @@ lemma rpow_one_div_lt_rpow_one_div_succ (ρ η : ℝ) (L : ℕ) (hρ : 0 ≤ ρ)
   rw [div_lt_div_iff₀ (by positivity) hLR]
   linarith
 
+/-- `((x) ^ (1 / (L + 1))) ^ (L + 1) = x`: the radius `γ = 1 - (ρ + η) ^ (1 / (L + 1))` satisfies
+`(1 - γ) ^ (L + 1) = ρ + η`. This is the identity behind the expected `(L + 1)`-wise intersection
+`n · (1 - γ) ^ (L + 1) = n · (ρ + η)` in Claim 6.9. -/
+lemma rpow_one_div_succ_pow (x : ℝ) (L : ℕ) (hx : 0 ≤ x) :
+    (x ^ (1 / (L + 1) : ℝ)) ^ (L + 1) = x := by
+  have h := Real.rpow_inv_natCast_pow hx (Nat.succ_ne_zero L)
+  push_cast at h
+  rwa [one_div]
+
+/-- **The list-decoding branch has no degenerate cases.** If a radius `γ ≥ 0` lies in the
+list-decoding branch of `mdsMCAError`, that is `δ / (L + 1) ≤ γ ≤ 1 - (1 - δ + η) ^ (1 / (L + 1))`,
+then `ρ + η < 1` strictly, where `ρ = 1 - δ`.
+
+So the branch never meets `ρ + η = 1`, where the two radii coincide and the margin
+`(ρ + η) ^ (1 / (L + 1)) - (ρ + η) ^ (1 / L)` in `mdsMCAError` vanishes; nor `δ = 0`. If
+`ρ + η ≥ 1`, the upper limit is at most `0`, so `γ = 0`, so `δ ≤ 0`; then `ρ + η ≥ 1 + η > 1`
+puts the upper limit strictly below `0`, contradicting `γ ≥ 0`. -/
+lemma one_sub_add_lt_one_of_le_one_sub_rpow (δ η γ : ℝ) (L : ℕ) (hη : 0 < η) (hγ0 : 0 ≤ γ)
+    (hlow : δ / (L + 1) ≤ γ) (hup : γ ≤ 1 - (1 - δ + η) ^ (1 / (L + 1) : ℝ)) :
+    1 - δ + η < 1 := by
+  by_contra! h
+  have hexp : (0 : ℝ) < 1 / (L + 1) := by positivity
+  have hγ : γ = 0 := le_antisymm (by linarith [Real.one_le_rpow h hexp.le]) hγ0
+  have hδ : δ ≤ 0 := by
+    have hL : (0 : ℝ) < L + 1 := by positivity
+    have := hγ ▸ hlow
+    rwa [div_le_iff₀ hL, zero_mul] at this
+  linarith [Real.one_lt_rpow (show (1 : ℝ) < 1 - δ + η by linarith) hexp]
+
 end ListDecodingRadii
 
 /-- A nonzero `v : ℓ → F` is orthogonal to `G x` for at most `|ℓ| - 1` seeds `x`: the codeword
