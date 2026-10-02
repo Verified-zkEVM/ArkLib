@@ -175,9 +175,10 @@ example : compute_final_eq_value 1 L K p 2 1 rfl r (fun _ => Z 1) (fun _ => 0) =
       (fun _ => Z 1) :=
   compute_final_eq_value_eq_eval p rfl r _ _
 
--- The batching target is the equality-weighted row family of the honest folded element.
-example : compute_s0 1 L K p shat (fun _ => 0) =
-    ∑ u : Fin 1 → Fin 2, eqTilde (u : Fin 1 → L) (fun _ => 0) * p.decomposeRows shat u :=
-  compute_s0_eq_sum p shat _
+-- The batching target is the equality-weighted row family of the honest folded element; at the
+-- zero challenge it selects the hand-computed row zero.
+example : compute_s0 1 L K p shat (fun _ => 0) = Z 1 := by
+  rw [compute_s0_eq_sum, shat_eq]
+  simp [sum_one_bit, row_zero, row_one, eqTilde]
 
 end ArkLibTest.RingSwitchingOrientation

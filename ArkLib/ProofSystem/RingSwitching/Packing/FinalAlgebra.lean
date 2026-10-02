@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: ArkLib Contributors
+Authors: Alexander Hicks
 -/
 module
 
@@ -45,7 +45,7 @@ theorem final_tensor_expansion {n : ℕ} (r r' : Fin n → L) :
   ring
 
 /-- The final verifier computes the evaluation of the public sumcheck multiplier. -/
-theorem compute_final_eq_value_eq_eval [NeZero κ] {ℓ ℓ' : ℕ} [NeZero ℓ'] (h_l : ℓ = ℓ' + κ)
+theorem compute_final_eq_value_eq_eval {ℓ ℓ' : ℕ} (h_l : ℓ = ℓ' + κ)
     (r : Fin ℓ → L) (r' : Fin ℓ' → L) (b : Fin κ → L) :
     compute_final_eq_value κ L K P ℓ ℓ' h_l r r' b =
       MvPolynomial.eval r' (compute_A_MLE κ L K P ℓ'
@@ -57,7 +57,7 @@ theorem compute_final_eq_value_eq_eval [NeZero κ] {ℓ ℓ' : ℕ} [NeZero ℓ'
   rw [final_tensor_expansion]
   dsimp only
   rw [P.decomposeRows_sum]
-  simp only [eqWeightedCoordSum, Finset.sum_apply, P.decomposeRows_mul,
+  simp only [eqWeightedCoordSum, Finset.sum_apply, P.decomposeRows_φ₀_mul_φ₁,
     compute_A_MLE, MLE_eval, compute_A_func, hbit, Algebra.smul_def]
   simp only [Finset.mul_sum]
   rw [Finset.sum_comm]
@@ -65,7 +65,7 @@ theorem compute_final_eq_value_eq_eval [NeZero κ] {ℓ ℓ' : ℕ} [NeZero ℓ'
   intro w _
   apply Finset.sum_congr rfl
   intro u _
-  ring_nf
-  rfl
+  unfold getEvaluationPointSuffix
+  ring
 
 end RingSwitching

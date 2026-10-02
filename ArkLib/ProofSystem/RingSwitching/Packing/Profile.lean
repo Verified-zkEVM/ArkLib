@@ -21,8 +21,7 @@ spoken, and nothing more:
   become single `L`-elements, and back;
 * a **carrier** `A` — the commutative ring in which the relocation checks are computed;
 * **two ring homomorphisms** `φ₀, φ₁ : L →+* A` — one transports evaluation-point data,
-  the other polynomial coefficients. The structure records their reconstruction laws
-  below; injectivity or other compatibility properties must be proved for each instance;
+  the other polynomial coefficients, which agree on the image of `B`;
 * **coordinate maps** `decomposeRows`/`decomposeColumns : A → (Fin κ → Fin 2) → L` — the
   `2^κ` `L`-coordinates of a carrier element, one per basis index, with two
   **reconstruction laws** stating that every carrier element is recovered from its
@@ -43,10 +42,10 @@ identities.
 * It is stated over `CommRing` (not `Field`): carriers of interest include non-field rings.
   The `Field`-only steps (Schwartz–Zippel over `|L|`) stay at the soundness use-sites, not
   here.
-* This file holds only the abstract structure and the consequences of its laws, so the sibling
-  `Prelude.lean` can import it and parameterize the interactive protocol over it; the
-  tensor-product constructor `tensorProductProfile` lives in `Prelude.lean`, after the
-  tensor-algebra definitions it is built from.
+* This file holds only the abstract structure and the consequences of its laws, so the
+  protocol files can be parameterized over it; the tensor-product constructor
+  `tensorProductProfile` lives in `Algebra.lean`, after the tensor-algebra definitions it is
+  built from.
 * The `Algebra L A` instance is ambient structure only; the coordinate laws use the explicit
   `φ₀` and `φ₁` actions.
 
@@ -57,9 +56,10 @@ The implemented profile is `tensorProductProfile` ([DP24]): `A = L ⊗[B] L`, `�
 actions. Its laws follow from `Basis.sum_repr` and `repr` of the two base-changed bases.
 
 A trace or automorphism switch with carrier `A = L`, such as Hachi's §3 head ([NOZ26]), is not
-in general an instance: `L` cannot hold `2^κ` independent `L`-coordinates. Hachi's trace head
-and the `Lift` construction (`../Lift/`) have their own algebraic interfaces — see the family
-umbrella `ArkLib/ProofSystem/RingSwitching/Basic.lean` for the taxonomy.
+an instance for a finite nontrivial `L` and `κ > 0`: the inverse laws force
+`|A| = |L|^(2^κ)`. Hachi's trace head and the `Lift` construction (`../Lift/`) have their own
+algebraic interfaces — see the family umbrella `ArkLib/ProofSystem/RingSwitching/Basic.lean` for
+the taxonomy.
 
 See also: the KB concept page `docs/kb/concepts/ring-switching.md` and the blueprint section
 `blueprint/src/proof_systems/ring_switching.tex` for the protocol, phases, and security
@@ -164,23 +164,23 @@ theorem decomposeColumns_add (x y : P.A) :
     ← P.decomposeColumns_spec]
 
 /-- Row coordinates respect the explicit right embedding, independently of `algLA`. -/
-theorem decomposeRows_mul_right (a : L) (z : P.A) :
+theorem decomposeRows_φ₁_mul (a : L) (z : P.A) :
     P.decomposeRows (P.φ₁ a * z) = fun u => a * P.decomposeRows z u := by
   apply (P.decomposeRows_eq_iff _ _).mpr
   conv_lhs => rw [P.decomposeRows_spec z, Finset.mul_sum]
   simp only [map_mul, mul_left_comm]
 
 /-- Column coordinates respect the explicit left embedding. -/
-theorem decomposeColumns_mul_left (a : L) (z : P.A) :
+theorem decomposeColumns_φ₀_mul (a : L) (z : P.A) :
     P.decomposeColumns (P.φ₀ a * z) = fun v => a * P.decomposeColumns z v := by
   apply (P.decomposeColumns_eq_iff _ _).mpr
   conv_lhs => rw [P.decomposeColumns_spec z, Finset.mul_sum]
   simp only [map_mul, mul_assoc]
 
-/-- Rows of a pure tensor are its right factor times the base coordinates of its left factor. -/
-theorem decomposeRows_mul (x y : L) :
+/-- Rows of a pure tensor are the base coordinates of its left factor times its right factor. -/
+theorem decomposeRows_φ₀_mul_φ₁ (x y : L) :
     P.decomposeRows (P.φ₀ x * P.φ₁ y) =
-      fun u => y * algebraMap B L (P.basis.repr x u) := by
+      fun u => algebraMap B L (P.basis.repr x u) * y := by
   apply (P.decomposeRows_eq_iff _ _).mpr
   conv_lhs => rw [← P.basis.sum_repr x]
   simp only [map_sum, Algebra.smul_def, map_mul, Finset.sum_mul, P.embeddings_agree]
@@ -189,7 +189,7 @@ theorem decomposeRows_mul (x y : L) :
 
 /-- Columns of a pure tensor are its left factor times the base coordinates of its right
 factor. -/
-theorem decomposeColumns_mul (x y : L) :
+theorem decomposeColumns_φ₀_mul_φ₁ (x y : L) :
     P.decomposeColumns (P.φ₀ x * P.φ₁ y) =
       fun v => x * algebraMap B L (P.basis.repr y v) := by
   apply (P.decomposeColumns_eq_iff _ _).mpr

@@ -35,7 +35,7 @@ large-ring opening can handle. Two ingredients separate cleanly:
 
 * the **packing data** — the basis, a carrier ring `A` where the relocation checks run, a
   pair of embeddings into it, and faithful coordinate maps back out — is one abstraction,
-  `RingSwitchingProfile` (`Profile.lean`), shared by every instance;
+  `RingSwitchingProfile` (`Profile.lean`), shared by every interactive relocation;
 * the **relocation** is per-instance and depends on where the evaluation point lives. If the
   point is arbitrary in `L`, the claim is relocated *interactively*: the prover sends the
   folded carrier element `ŝ`, the verifier reconstructs the original claim from `ŝ`'s
@@ -43,8 +43,8 @@ large-ring opening can handle. Two ingredients separate cleanly:
   dedicated degree-2 sumcheck moves the batched claim to a fresh random point that the
   downstream opening consumes (the protocol files of this folder; round-by-round knowledge
   soundness, `[IsDomain L]`). If the point is engineered to lie in a subring, the relocation
-  degenerates to a *deterministic* one-message identity check — a planned second `Profile`
-  instance with none of the interaction.
+  degenerates to a *deterministic* one-message identity check. That trace head computes in
+  `L` itself, so it needs its own algebraic interface rather than a `Profile` instance.
 
 The *opposite-direction* `Lift` construction—from a large quotient ring down into a field—is
 **not** a packing; it lives in the sibling folder `RingSwitching/Lift/`.
@@ -75,9 +75,10 @@ The DP24 construction:
   of the family-shared coefficient transport (`../Transport/Coeffs.lean`).
 * `ProfileCoordinates.lean`, `ProfileLayout.lean`, `BatchingAlgebra.lean`,
   `FinalAlgebra.lean` — the profile's coordinate equivalences, the prefix layout of
-  `packMLE`, and the batching/final verifier identities, stated through the
+  `packMLE`, and the batching/final verifier identities. The first three are stated through the
   finite-coordinate modules (`Coordinates`, `FiniteObservation`, `CheckedObservation`,
-  `Relations`, `Multiplier`). None of these imports the reduction framework.
+  `Relations`, `Polynomial`, `ScalarHead/Layout`, `Batching`). None of these imports the
+  reduction framework.
 * `Prelude.lean` — the protocol vocabulary: statement/witness types, the `MLIOPCS`
   downstream-opening interface, and the sumcheck relations; re-exports `Algebra.lean`.
 * `Spec.lean` — the transcript shape: the batching round (message then scalar challenge),
@@ -98,8 +99,10 @@ The DP24 construction:
 
 * **Binius** ([DP24] Construction 3.1) — `B`/`L` binary-tower fields, carrier
   `A = L ⊗[B] L`; instantiated by `ProofSystem/Binius/FRIBinius/`.
-* **Hachi §3 head** ([NOZ26] Theorem 2, planned) — subfield-valued evaluation point,
-  `A = L = R_q`, `φ₁` an automorphism; deterministic one-message trace check.
+
+Hachi's §3 head ([NOZ26] Theorem 2) has carrier `A = L = R_q` and an automorphism `φ₁`. For
+`κ > 0` and finite `R_q` it is not a profile instance (`RingSwitchingProfile.card_A`); its
+deterministic trace check is planned against its own interface.
 
 ## References
 

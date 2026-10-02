@@ -27,14 +27,13 @@ namespace RingSwitching
 open Module MvPolynomial Sumcheck.Structured
 
 variable {K L : Type} [CommRing K] [CommRing L] [Algebra K L]
-  {κ ℓ ℓ' : ℕ} [NeZero ℓ]
+  {κ ℓ ℓ' : ℕ}
   (h_l : ℓ = ℓ' + κ) (β : Basis (Fin κ → Fin 2) K L)
 
 /-- Identify the source dimension with the packed prefix followed by the retained suffix. -/
 def sourceDimensionEquiv : MultilinearPoly K ℓ ≃ MultilinearPoly K (κ + ℓ') :=
   Equiv.cast (congrArg (fun n => ↥(MultilinearPoly K n)) (h_l.trans (Nat.add_comm ℓ' κ)))
 
-omit [NeZero ℓ] in
 /-- The conditional prefix/suffix concatenation equals `Fin.append`. -/
 theorem concat_eq_append (v : Fin κ → Fin 2) (w : Fin ℓ' → Fin 2) :
     (fun i : Fin (κ + ℓ') =>
@@ -47,7 +46,6 @@ theorem concat_eq_append (v : Fin κ → Fin 2) (w : Fin ℓ' → Fin 2) :
   · simp only [Fin.val_natAdd, Nat.not_lt_of_ge (Nat.le_add_right _ _), ↓reduceDIte,
       Nat.add_sub_cancel_left, Fin.append_right]
 
-set_option backward.isDefEq.respectTransparency false in
 /-- Boolean-table packing equals basis packing of the prefix component family. -/
 theorem packMLE_eq_packedMLE (t : MultilinearPoly K ℓ) :
     packMLE κ L K ℓ ℓ' h_l β t =
@@ -59,7 +57,8 @@ theorem packMLE_eq_packedMLE (t : MultilinearPoly K ℓ) :
   apply eq_of_degreeOf_le_one_of_eval_zeroOne_eq _ _
     ((mem_restrictDegree_iff_degreeOf_le _ _).mp (packMLE κ L K _ ℓ' h_l β t).property)
     ((mem_restrictDegree_iff_degreeOf_le _ _).mp
-      ((Packing.PackingData.ofBasis β).packedMLE (splitFirst κ ℓ' (sourceDimensionEquiv h_l t))).property)
+      ((Packing.PackingData.ofBasis β).packedMLE
+        (splitFirst κ ℓ' (sourceDimensionEquiv h_l t))).property)
   intro w
   have hcast : (w : Fin ℓ' → L) = fun i => algebraMap K L ((w : Fin ℓ' → K) i) :=
     funext fun i => (map_natCast (algebraMap K L) _).symm
@@ -78,7 +77,7 @@ theorem packMLE_eq_packedMLE (t : MultilinearPoly K ℓ) :
       _ = (fun i => ((Fin.append v w i : Fin 2) : K)) :=
         congrArg (fun q : Fin (κ + ℓ') → Fin 2 => (q : Fin (κ + ℓ') → K))
           (concat_eq_append (ℓ := κ + ℓ') v w)
-      _ = _ := cast_append_bool κ ℓ' v w
+      _ = _ := Fin.apply_append (fun b : Fin 2 => (b : K)) v w
   exact congrArg (fun q => algebraMap K L (eval q t.val) * β v) hpoint
 
 /-- Packing uses the packed-prefix layout with the source dimension cast. -/
@@ -90,7 +89,6 @@ theorem packMLE_eq_packedPrefixLayout (t : MultilinearPoly K ℓ) :
           (sourceDimensionEquiv h_l t)) :=
   packMLE_eq_packedMLE h_l β t
 
-set_option backward.isDefEq.respectTransparency false in
 /-- Unpacking equals coefficient-coordinate unpacking followed by the prefix-layout join. -/
 theorem unpackMLE_eq_joinFirst (p : MultilinearPoly L ℓ') :
     sourceDimensionEquiv h_l (unpackMLE κ L K ℓ ℓ' h_l β p) =
@@ -113,14 +111,12 @@ theorem unpackMLE_eq_joinFirst (p : MultilinearPoly L ℓ') :
   apply congrArg (fun j : Fin (κ + ℓ') => ((z j : Fin 2) : L))
   exact Fin.ext (Nat.add_comm _ _)
 
-set_option backward.isDefEq.respectTransparency false in
 /-- Packing after unpacking recovers the packed polynomial. -/
 theorem packMLE_unpackMLE (p : MultilinearPoly L ℓ') :
     packMLE κ L K ℓ ℓ' h_l β (unpackMLE κ L K ℓ ℓ' h_l β p) = p := by
   rw [packMLE_eq_packedMLE, unpackMLE_eq_joinFirst, splitFirst_joinFirst]
   exact (Packing.PackingData.ofBasis β).packedMLE_unpack p
 
-set_option backward.isDefEq.respectTransparency false in
 /-- Unpacking after packing recovers the source polynomial. -/
 theorem unpackMLE_packMLE (t : MultilinearPoly K ℓ) :
     unpackMLE κ L K ℓ ℓ' h_l β (packMLE κ L K ℓ ℓ' h_l β t) = t := by
@@ -128,7 +124,6 @@ theorem unpackMLE_packMLE (t : MultilinearPoly K ℓ) :
   rw [unpackMLE_eq_joinFirst, packMLE_eq_packedMLE,
     Packing.PackingData.unpack_packedMLE, joinFirst_splitFirst]
 
-omit [NeZero ℓ] in
 /--
 Polynomial evaluation equals the equality-weighted sum of the packed-prefix component
 evaluations.

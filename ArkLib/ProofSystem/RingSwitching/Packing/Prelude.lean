@@ -5,13 +5,9 @@ Authors: Chung Thai Nguyen, Quang Dao
 -/
 module
 
-public import ArkLib.Data.MvPolynomial.Multilinear
 public import ArkLib.OracleReduction.Basic
 public import ArkLib.OracleReduction.Security.RoundByRound
-public import CompPoly.LinearAlgebra.TensorProduct.Basis
 public import ArkLib.ProofSystem.RingSwitching.Packing.Algebra
-public import ArkLib.ProofSystem.RingSwitching.Transport.Coeffs
-public import ArkLib.ProofSystem.Sumcheck.Structured
 public import Mathlib.Data.Fintype.Basic
 public import Mathlib.Data.Matrix.Basic
 

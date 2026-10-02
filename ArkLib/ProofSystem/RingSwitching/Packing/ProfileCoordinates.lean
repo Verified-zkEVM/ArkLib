@@ -11,7 +11,8 @@ public import ArkLib.ProofSystem.RingSwitching.Packing.FiniteObservation
 /-!
 # Faithful profile carriers as coordinate families
 
-A profile carrier element is equivalent to each of its complete coordinate families. Its row
+A profile carrier is additively equivalent to each of its complete coordinate families, so a
+finite carrier has `|L| ^ (2 ^ κ)` elements. Its row
 family is the packing transposition of its column family, and the coordinates of a finite tensor
 observation are the shared weighted observation and its coordinate slices. These statements use
 the explicit embeddings `φ₀`, `φ₁` and the profile's inverse laws, without identifying the
@@ -32,38 +33,40 @@ noncomputable section
 variable {B L : Type} {κ : ℕ} [CommRing B] [CommRing L] [Algebra B L]
   (P : RingSwitchingProfile B L κ)
 
-/-- Equivalence between the carrier and its complete row-coordinate family. -/
-def rowEquiv : P.A ≃ ((Fin κ → Fin 2) → L) where
+/-- Additive equivalence between the carrier and its complete row-coordinate family. -/
+def rowEquiv : P.A ≃+ ((Fin κ → Fin 2) → L) where
   toFun := P.decomposeRows
   invFun c := ∑ u, P.φ₀ (P.basis u) * P.φ₁ (c u)
   left_inv z := (P.decomposeRows_spec z).symm
   right_inv := P.decomposeRows_recompose
+  map_add' := P.decomposeRows_add
 
-/-- Equivalence between the carrier and its complete column-coordinate family. -/
-def columnEquiv : P.A ≃ ((Fin κ → Fin 2) → L) where
+/-- Additive equivalence between the carrier and its complete column-coordinate family. -/
+def columnEquiv : P.A ≃+ ((Fin κ → Fin 2) → L) where
   toFun := P.decomposeColumns
   invFun c := ∑ v, P.φ₀ (c v) * P.φ₁ (P.basis v)
   left_inv z := (P.decomposeColumns_spec z).symm
   right_inv := P.decomposeColumns_recompose
+  map_add' := P.decomposeColumns_add
 
 /-- Row coordinates commute with finite sums of carrier elements. -/
 theorem decomposeRows_sum {ι : Type*} (s : Finset ι) (f : ι → P.A) :
-    P.decomposeRows (∑ i ∈ s, f i) = ∑ i ∈ s, P.decomposeRows (f i) := by
-  let rows : P.A →+ ((Fin κ → Fin 2) → L) :=
-    { toFun := P.decomposeRows, map_zero' := P.decomposeRows_zero,
-      map_add' := P.decomposeRows_add }
-  exact map_sum rows f s
+    P.decomposeRows (∑ i ∈ s, f i) = ∑ i ∈ s, P.decomposeRows (f i) :=
+  map_sum P.rowEquiv f s
 
 /-- Column coordinates commute with finite sums of carrier elements. -/
 theorem decomposeColumns_sum {ι : Type*} (s : Finset ι) (f : ι → P.A) :
-    P.decomposeColumns (∑ i ∈ s, f i) = ∑ i ∈ s, P.decomposeColumns (f i) := by
-  let columns : P.A →+ ((Fin κ → Fin 2) → L) :=
-    { toFun := P.decomposeColumns, map_zero' := P.decomposeColumns_zero,
-      map_add' := P.decomposeColumns_add }
-  exact map_sum columns f s
+    P.decomposeColumns (∑ i ∈ s, f i) = ∑ i ∈ s, P.decomposeColumns (f i) :=
+  map_sum P.columnEquiv f s
+
+/-- A finite carrier has exactly `|L| ^ (2 ^ κ)` elements. -/
+theorem card_A [Fintype L] [Fintype P.A] : Fintype.card P.A = Fintype.card L ^ 2 ^ κ := by
+  classical
+  rw [Fintype.card_congr P.rowEquiv.toEquiv, Fintype.card_fun, Fintype.card_fun,
+    Fintype.card_fin, Fintype.card_fin]
 
 /-- Transposing a carrier's column family gives exactly its row family, for every element. -/
-theorem transpose_columns (z : P.A) :
+theorem transpose_decomposeColumns (z : P.A) :
     (Packing.PackingData.ofBasis P.basis).transpose (P.decomposeColumns z) =
       P.decomposeRows z := by
   conv_rhs => rw [P.decomposeColumns_spec z]
@@ -73,31 +76,30 @@ theorem transpose_columns (z : P.A) :
   calc
     _ = ∑ v, P.basis.repr (P.decomposeColumns z v) u • P.basis v :=
       (Packing.PackingData.ofBasis P.basis).transpose_apply _ u
-    _ = _ := by simp only [P.decomposeRows_mul, Finset.sum_apply,
-      Algebra.smul_def, mul_comm]
+    _ = _ := by simp only [P.decomposeRows_φ₀_mul_φ₁, Finset.sum_apply, Algebra.smul_def]
 
 /-- Reading the row family back recovers the original column family. -/
-theorem readback_rows (z : P.A) :
+theorem transpose_symm_decomposeRows (z : P.A) :
     (Packing.PackingData.ofBasis P.basis).transpose.symm (P.decomposeRows z) =
       P.decomposeColumns z := by
-  rw [← P.transpose_columns]
+  rw [← P.transpose_decomposeColumns]
   exact (Packing.PackingData.ofBasis P.basis).transpose.symm_apply_apply _
 
 /-- Columns of a finite tensor observation are the shared weighted packing coordinates. -/
-theorem columns_observation {Y : Type*} [Fintype Y] (a v : Y → L) :
+theorem decomposeColumns_observation {Y : Type*} [Fintype Y] (a v : Y → L) :
     P.decomposeColumns (∑ y, P.φ₀ (a y) * P.φ₁ (v y)) =
       (Packing.PackingData.ofBasis P.basis).observe a v := by
   rw [P.decomposeColumns_sum]
   funext i
   change (∑ y, P.decomposeColumns (P.φ₀ (a y) * P.φ₁ (v y))) i =
     ∑ y, P.basis.repr (v y) i • a y
-  simp only [P.decomposeColumns_mul, Finset.sum_apply, Algebra.smul_def, mul_comm]
+  simp only [P.decomposeColumns_φ₀_mul_φ₁, Finset.sum_apply, Algebra.smul_def, mul_comm]
 
 /-- Rows of a finite tensor observation are the coordinate slices of its factor families. -/
-theorem rows_observation {Y : Type*} [Fintype Y] (a v : Y → L) :
+theorem decomposeRows_observation {Y : Type*} [Fintype Y] (a v : Y → L) :
     P.decomposeRows (∑ y, P.φ₀ (a y) * P.φ₁ (v y)) =
       (Packing.PackingData.ofBasis P.basis).coordinateSlices a v := by
-  rw [← P.transpose_columns, P.columns_observation]
+  rw [← P.transpose_decomposeColumns, P.decomposeColumns_observation]
   exact (Packing.PackingData.ofBasis P.basis).transpose_observe a v
 
 end

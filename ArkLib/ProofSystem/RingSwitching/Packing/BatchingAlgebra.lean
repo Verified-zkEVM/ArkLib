@@ -34,7 +34,7 @@ open Module MvPolynomial Sumcheck.Structured
 open scoped NNReal ENNReal
 
 variable {K L : Type} [CommRing K] [CommRing L] [Algebra K L]
-  {κ ℓ ℓ' : ℕ} [NeZero ℓ] [NeZero ℓ']
+  {κ ℓ ℓ' : ℕ}
   (P : RingSwitchingProfile K L κ) (h_l : ℓ = ℓ' + κ)
 
 local instance : Algebra (Packing.PackingData.ofBasis P.basis).P L :=
@@ -43,7 +43,6 @@ local instance : Algebra (Packing.PackingData.ofBasis P.basis).P L :=
 local instance : IsScalarTower K (Packing.PackingData.ofBasis P.basis).P L :=
   inferInstanceAs (IsScalarTower K L L)
 
-omit [NeZero ℓ] [NeZero ℓ'] in
 /-- The embedded evaluation is a finite tensor observation of the packed Boolean table. -/
 theorem embedded_MLP_eval_eq_observation (p : MultilinearPoly L ℓ') (r : Fin ℓ → L) :
     embedded_MLP_eval κ L K P ℓ ℓ' h_l p r =
@@ -69,22 +68,18 @@ theorem embedded_MLP_eval_eq_observation (p : MultilinearPoly L ℓ') (r : Fin �
   exact congrArg (fun x => x * P.φ₁ (eval (y : Fin ℓ' → L) p.val))
     (eqPolynomial_symm _ _)
 
-omit [NeZero ℓ] [NeZero ℓ'] in
-set_option backward.isDefEq.respectTransparency false in
 /-- The embedded evaluation's rows satisfy the packed-slice relation. -/
 theorem embedded_MLP_eval_sliceRel (p : MultilinearPoly L ℓ') (r : Fin ℓ → L) :
     (P.decomposeRows (embedded_MLP_eval κ L K P ℓ ℓ' h_l p r), p) ∈
       (Packing.PackingData.ofBasis P.basis).sliceRel ℓ'
         (getEvaluationPointSuffix κ L ℓ ℓ' h_l r) := by
   rw [embedded_MLP_eval_eq_observation]
-  have h := P.rows_observation
+  have h := P.decomposeRows_observation
     (fun y : Fin ℓ' → Fin 2 => eqTilde (getEvaluationPointSuffix κ L ℓ ℓ' h_l r)
       (y : Fin ℓ' → L)) (fun y => eval (y : Fin ℓ' → L) p.val)
   intro u
   exact congrFun h u
 
-omit [NeZero ℓ] [NeZero ℓ'] in
-set_option backward.isDefEq.respectTransparency false in
 /-- The packed-slice relation characterizes the rows of the embedded evaluation. -/
 theorem embedded_MLP_eval_eq_iff_sliceRel (p : MultilinearPoly L ℓ')
     (r : Fin ℓ → L) (z : P.A) :
@@ -100,15 +95,13 @@ theorem embedded_MLP_eval_eq_iff_sliceRel (p : MultilinearPoly L ℓ')
     funext u
     exact (embedded_MLP_eval_sliceRel P h_l p r u).trans (h u).symm
 
-set_option backward.isDefEq.respectTransparency false in
 /-- Row and column coordinates of a carrier satisfy family consistency. -/
 theorem claimConsistent_decomposeColumns_decomposeRows (z : P.A) :
     (Packing.PackingData.ofBasis P.basis).claimConsistent (P.decomposeColumns z)
       (P.decomposeRows z) :=
-  ((Packing.PackingData.ofBasis P.basis).claimConsistent_iff_transpose _ _).mpr (P.transpose_columns z)
+  ((Packing.PackingData.ofBasis P.basis).claimConsistent_iff_transpose _ _).mpr
+    (P.transpose_decomposeColumns z)
 
-omit [NeZero ℓ] [NeZero ℓ'] in
-set_option backward.isDefEq.respectTransparency false in
 /--
 The embedded evaluation's columns equal the unpacked family evaluation of the same packed
 polynomial.
@@ -122,7 +115,6 @@ theorem columns_embedded_MLP_eval (p : MultilinearPoly L ℓ') (r : Fin ℓ → 
     (claimConsistent_decomposeColumns_decomposeRows P _)
     (embedded_MLP_eval_sliceRel P h_l p r) i
 
-omit [NeZero ℓ] [NeZero ℓ'] in
 /-- The coordinate sum equals the sum weighted by Boolean equality polynomials. -/
 theorem eqWeightedCoordSum_eq_sum (s : (Fin κ → Fin 2) → L) (r : Fin κ → L) :
     eqWeightedCoordSum κ L s r = ∑ i : Fin κ → Fin 2, eqTilde (i : Fin κ → L) r * s i := by
@@ -130,8 +122,6 @@ theorem eqWeightedCoordSum_eq_sum (s : (Fin κ → Fin 2) → L) (r : Fin κ →
     fin_cases z <;> simp
   simp only [eqWeightedCoordSum, hbit]
 
-omit [NeZero ℓ'] in
-set_option backward.isDefEq.respectTransparency false in
 /-- The column-coordinate check reconstructs the original polynomial evaluation. -/
 theorem original_claim_eq_readback (t : MultilinearPoly K ℓ) (r : Fin ℓ → L) :
     aeval r t.val = eqWeightedCoordSum κ L
@@ -157,7 +147,6 @@ def packingObservation : Packing.CheckedObservation (Fin ℓ → L)
     (fun i => r ⟨i.val, by omega⟩)
   eval_eq_observe r t := original_claim_eq_readback P h_l t r
 
-omit [NeZero ℓ'] in
 /-- A related original claim passes the column-coordinate guard. -/
 theorem performCheckOriginalEvaluation_honest [DecidableEq L]
     (t : MultilinearPoly K ℓ) (r : Fin ℓ → L) :
@@ -166,7 +155,6 @@ theorem performCheckOriginalEvaluation_honest [DecidableEq L]
   unfold performCheckOriginalEvaluation
   exact decide_eq_true ((packingObservation P h_l).honest_check (q := r) (w := t) rfl)
 
-omit [NeZero ℓ'] in
 /-- A tensor evaluation and an accepted column-coordinate guard imply the original polynomial
 claim. -/
 theorem original_claim_of_check [DecidableEq L] (t : MultilinearPoly K ℓ)
@@ -181,7 +169,6 @@ theorem original_claim_of_check [DecidableEq L] (t : MultilinearPoly K ℓ)
   rw [unpackMLE_packMLE] at h
   exact h
 
-omit [NeZero ℓ] [NeZero ℓ'] in
 /-- The batching polynomial equals the multilinear coordinate multiplier. -/
 theorem compute_A_MLE_eq_multiplier (r : Fin ℓ' → L) (c : Fin κ → L) :
     compute_A_MLE κ L K P ℓ' r c =
@@ -193,18 +180,15 @@ theorem compute_A_MLE_eq_multiplier (r : Fin ℓ' → L) (c : Fin κ → L) :
   change MLE _ = MLE _
   congr 1
   funext y
-  erw [Packing.PackingData.bridge_apply]
+  rw [Packing.PackingData.bridge_apply]
   simp only [compute_A_func, hbit, Packing.PackingData.ofBasis]
-  rfl
 
-omit [NeZero ℓ] [NeZero ℓ'] in
 /-- The batching target is the weighted sum of the row family. -/
 theorem compute_s0_eq_sum (z : P.A) (c : Fin κ → L) :
     compute_s0 κ L K P z c =
       ∑ u : Fin κ → Fin 2, eqTilde (u : Fin κ → L) c * P.decomposeRows z u :=
   eqWeightedCoordSum_eq_sum (P.decomposeRows z) c
 
-omit [NeZero ℓ] [NeZero ℓ'] in
 /-- The batching target of the tensor evaluation is the Boolean-cube sum of the batching
 multiplier times the packed polynomial. -/
 theorem compute_s0_embedded_MLP_eval (p : MultilinearPoly L ℓ') (r : Fin ℓ → L)
@@ -219,7 +203,6 @@ theorem compute_s0_embedded_MLP_eval (p : MultilinearPoly L ℓ') (r : Fin ℓ �
     (embedded_MLP_eval_sliceRel P h_l p r) (fun u : Fin κ → Fin 2 => eqTilde (u : Fin κ → L) c)
 
 open Probability in
-omit [NeZero ℓ] [NeZero ℓ'] in
 /-- Distinct carriers have equal batching targets at a uniform batching point with probability
 at most `κ/|L|`. -/
 theorem compute_s0_collision_le [IsDomain L] [Fintype L] [SampleableType L] {z z' : P.A}
