@@ -47,12 +47,19 @@ The *opposite-direction* `Lift` construction—from a large quotient ring down i
 ## Folder structure
 
 * `Profile.lean` — `RingSwitchingProfile`, the shared packing data layer (basis, carrier,
-  embeddings, coordinate maps, reconstruction laws).
-* `Prelude.lean` — the packing algebra and protocol vocabulary: `packMLE`/`unpackMLE`, the
-  carrier operations, the verifier's coordinate subroutine `eqWeightedCoordSum`, statement/
-  witness types, the `MLIOPCS` downstream-opening interface, and the tensor-product constructor
-  `tensorProductProfile`. Its component-wise carrier embedding is the `d = 1` case of the
-  family-shared coefficient transport (`../Transport/Coeffs.lean`).
+  embeddings, coordinate maps, reconstruction and inverse laws) and their consequences.
+* `Algebra.lean` — the framework-independent packing algebra: `packMLE`/`unpackMLE`, the
+  carrier operations, the verifier subroutines (`eqWeightedCoordSum`, the multiplier
+  `compute_A_MLE`, the targets `compute_s0`/`compute_final_eq_value`) and the tensor-product
+  constructor `tensorProductProfile`. Its component-wise carrier embedding is the `d = 1` case
+  of the family-shared coefficient transport (`../Transport/Coeffs.lean`).
+* `ProfileCoordinates.lean`, `ProfileLayout.lean`, `BatchingAlgebra.lean`,
+  `FinalAlgebra.lean` — the profile's coordinate equivalences, the prefix layout of
+  `packMLE`, and the batching/final verifier identities, stated through the
+  finite-coordinate modules (`Coordinates`, `FiniteObservation`, `CheckedObservation`,
+  `Relations`, `Multiplier`). None of these imports the reduction framework.
+* `Prelude.lean` — the protocol vocabulary: statement/witness types, the `MLIOPCS`
+  downstream-opening interface, and the sumcheck relations; re-exports `Algebra.lean`.
 * `Spec.lean` — the transcript shape: the batching round (message then scalar challenge),
   the sumcheck loop, and the final one-message round (the family-shared wire
   `pSpecMessage`), with their `OracleInterface`/`SampleableType` instances.
