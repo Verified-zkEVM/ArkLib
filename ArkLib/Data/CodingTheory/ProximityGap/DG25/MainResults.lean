@@ -1026,7 +1026,8 @@ lemma correlatedAgreement_of_mem_R_star_tensor
   -- simp only [Nat.add_one_sub_one, Subtype.forall]
   intro r
   apply ih
-  -- ⊢ Pr{ r ← Fin (ϑ_pred) → F}[ Δ₀(multilinearCombine Uᵣ (r := r), MC) ≤ e ] > (ϑ_pred * ε) / |𝔽|
+  -- ⊢ Pr{ let r ← Fin (ϑ_pred) → F}[ Δ₀(multilinearCombine Uᵣ (r := r), MC) ≤ e ]
+  --     > (ϑ_pred * ε) / |𝔽|
   -- i.e. these r must satisfy (tensor-folding with the affine random combination)
     -- must be close to individual-row code MC
   set U₀ := (splitHalfRowWiseInterleavedWords (ϑ := ϑ_pred) u).1
@@ -1109,10 +1110,9 @@ lemma prob_R_star_gt_threshold
       SampleableType.prEvent_uniformSample_prod]
     suffices h : ∀ i, Pr{let r ←$ᵗ (Fin ϑ → F)}[¬ g (i, r) ∧ f (i, r)] ≤
         prev_false_witness_threshold by
-      simpa only [bind_assoc, bind_pure, pure_bind, id_eq] using
-        prEvent_bind_le_of_forall_le ($ᵗ F)
-          (fun i => do let r ← $ᵗ (Fin ϑ → F); return ¬ g (i, r) ∧ f (i, r)) id
-          (fun i => by simpa only [bind_pure, pure_bind, id_eq] using h i)
+      simpa only [expect_norm] using
+        prEvent_bind_le_of_forall_le ($ᵗ F) (fun i => (i, ·) <$> ($ᵗ (Fin ϑ → F)))
+          (fun ir => ¬ g ir ∧ f ir) (fun i => by simpa only [expect_norm] using h i)
     intro i
     by_cases hi : i ∈ R_star_set
     · simp [g, hi]
@@ -1146,7 +1146,7 @@ lemma prob_R_star_gt_threshold
         gcongr
       _ ≤ Pr{let r ← D}[g r] + prev_false_witness_threshold := by
         gcongr
-      _ ≤ _ := by simp only [bind_pure_comp, le_refl]
+      _ ≤ _ := le_rfl
   -- 7. Prove Pr[g] is equal to the goal probability (marginalization)
   have h_Pr_g_eq : Pr{let r ← D}[g r] = Pr{let r ← $ᵗ F}[ r ∈ R_star_set ] := by
     exact SampleableType.prEvent_uniformSample_fst (α := F)
@@ -1305,7 +1305,7 @@ theorem interleaved_affine_gaps_imply_tensor_gaps
         simp_rw [multilinearCombine_snoc_eq_multilinearCombine_affine]
           at hP_multilinearCombine_close_gt
         -- hP_multilinearCombine_close_gt now looks like:
-        -- Pr{ r_last ← $ᵗ F; r_init ← $ᵗ (Fin ϑ_pred → F) }[ Δ₀(multilinearCombine
+        -- Pr{ let r_last ← $ᵗ F; let r_init ← $ᵗ (Fin ϑ_pred → F) }[ Δ₀(multilinearCombine
             -- (affineLineEvaluation U₀ U₁ r_last) r_init, ↑MC) ≤ ↑e ] > ↑(↑ϑ * ↑ε) / q
         -- Step 2 & 3: Define R* and apply Law of Total Probability
         let R_star_set := R_star_tensor MC (m:=ϑ_pred) (e:=e) (ε:=ε) U₀ U₁

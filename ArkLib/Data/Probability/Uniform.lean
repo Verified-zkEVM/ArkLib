@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import VCVio.OracleComp.Constructions.SampleableType.NativeMeasure
+public import VCVio.OracleComp.Constructions.SampleableType.Measure
 
 /-!
 # Uniform sampling helpers

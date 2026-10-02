@@ -1045,17 +1045,17 @@ statement that is `relOut`-related to some `witOut` (for **any** `relOut`, in pa
 entry point for the L6.8 round-by-round knowledge-soundness state function: at the full
 transcript it converts the framework's positive event-probability hypothesis into the concrete
 accept equations that the soundness arguments consume. -/
-lemma accepts_of_probEvent_pos_verifier_run
+lemma accepts_of_prEvent_pos_verifier_run
     {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp))
     (encode : (Fin k → F) → (ι → A))
     (stmtIn : Statement (F := F) k × (∀ i, OracleStatement ι A i))
     (tr : FullTranscript (pSpec (ι := ι) (F := F) k t))
     (witOut : OutputWitness)
     (relOut : Set ((OutputStatement × ∀ i, OutputOracleStatement i) × OutputWitness))
-    (h : Pr{let stmtOut ← OptionT.mk do
+    (h : Pr{let stmtOut ← (OptionT.mk do
           (simulateQ impl
               (((oracleVerifier (k := k) (t := t) encode).toVerifier).run stmtIn tr)).run'
-            (← init)}[(stmtOut, witOut) ∈ relOut] > 0) :
+            (← init))}[(stmtOut, witOut) ∈ relOut] > 0) :
     Accepts (k := k) (t := t) encode stmtIn.1 stmtIn.2
       (tr ⟨0, by decide⟩) (tr ⟨1, by decide⟩) (tr ⟨2, by decide⟩) := by
   rw [gt_iff_lt, OracleComp.OptionT.prEvent_mk_pos_iff] at h
@@ -1249,7 +1249,7 @@ private noncomputable def rbrKnowledgeStateFunction
     | ⟨1, _⟩ => fun _ _ _ _ _ h ↦ h
     | ⟨2, _⟩ => fun hDir ↦ absurd hDir (fun h ↦ Direction.noConfusion h)
   toFun_full := fun stmtIn tr witOut h ↦
-    accepts_of_probEvent_pos_verifier_run (k := k) (t := t) init impl encode
+    accepts_of_prEvent_pos_verifier_run (k := k) (t := t) init impl encode
       stmtIn tr witOut _ h
 
 omit [DecidableEq ι] [DecidableEq F] [Fintype A] in

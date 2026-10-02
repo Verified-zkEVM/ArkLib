@@ -153,7 +153,7 @@ state, and computes the next private state from the actual execution path and ac
 
 The invariant theorems require preservation at every stage. Their probabilistic forms require
 almost-sure acceptance and invariant preservation; the measure bridge additionally assumes the
-stated discrete measurable spaces and `OracleSpec.IsMeasureSpec` probability measures for
+stated discrete measurable spaces and `OracleSpec.AnswerMeasure` answer measures for
 oracle answers. These interfaces and theorems do not by themselves assert execution provenance,
 noninterference of values captured when constructing a stage, or a security composition theorem.
 

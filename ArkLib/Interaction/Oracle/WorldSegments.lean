@@ -6,7 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.Interaction.Oracle.Prefix
-public import VCVio.OracleComp.QueryTracking.LoggingOracle
+public import VCVio.OracleComp.QueryTracking.LoggingOracle.Core
 public import VCVio.OracleComp.QueryTracking.ResourceProfile
 
 /-!

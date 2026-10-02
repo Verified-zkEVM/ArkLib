@@ -18,12 +18,12 @@ linter.style.header = false
 [[require]]
 name = "VCVio"
 git = "https://github.com/Verified-zkEVM/VCVio"
-rev = "d7089e46d69e07640fa23b5ae6b1b966f1d4b949"
+rev = "c3b4a3fb1d470b981beccc6c4cc898603581e2ce"
 
 [[require]]
 name = "«doc-gen4»"
 git = "https://github.com/leanprover/doc-gen4"
-rev = "v4.34.0"
+rev = "v4.35.0-rc3"
 
 [[require]]
 name = "checkdecls"
@@ -32,8 +32,8 @@ rev = "lean4.18.0"
 
 [[require]]
 name = "CompPoly"
-git = "https://github.com/Verified-zkEVM/CompPoly"
-rev = "v4.34.0-patch2"
+git = "https://github.com/dtumad/CompPoly"
+rev = "c5d292ab5e51b43b317de472f9b5fe05fc3556e3"
 
 [[lean_lib]]
 name = "ArkLibLintPlugin"
@@ -73,7 +73,7 @@ srcDir = "scripts"
 root = "AxiomSweep"
 supportInterpreter = true
 
-# Native-measure conversion ledger: declarations still using VCVio's retiring scalar
+# Native-measure conversion ledger: declarations still using VCVio's retired scalar
 # probability surface or Mathlib's `PMF`; see scripts/RetiredProbabilitySweep.lean.
 [[lean_exe]]
 name = "retiredsweep"

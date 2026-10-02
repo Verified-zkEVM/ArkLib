@@ -5,6 +5,7 @@ Authors: Tobias Rothmann
 -/
 module
 
+public import ArkLib.OracleReduction.ProgramLogic
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.ScalarRound
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Escape
 public import VCVio.OracleComp.QueryTracking.ProgrammingOracle
@@ -395,33 +396,10 @@ lemma reduction_run_support (stmt : Stmt) (wit : WitIn)
         x = some ((FullTranscript.mk2 (K.com (computeW stmt wit)) c,
               (stmt, K.com (computeW stmt wit), c), computeW stmt wit),
             (stmt, K.com (computeW stmt wit), c)) := by
-  intro x hx
-  unfold Reduction.run at hx
-  simp only [OptionT.run_bind, Option.elimM] at hx
-  rw [mem_support_bind_iff] at hx
-  obtain ⟨prOpt, hpr, hx⟩ := hx
-  rw [show ((liftM (Prover.run stmt wit
-        (reduction (oSpec := oSpec) (Challenge := Challenge) K computeW).prover) :
-        OptionT (OracleComp _) _)).run
-      = (Prover.run stmt wit
-          (reduction (oSpec := oSpec) (Challenge := Challenge) K computeW).prover)
-        >>= fun a => pure (some a) from rfl] at hpr
-  rw [mem_support_bind_iff] at hpr
-  obtain ⟨pr, hpr, hprOpt⟩ := hpr
-  rw [mem_support_pure_iff] at hprOpt
-  subst hprOpt
-  rw [show (reduction (oSpec := oSpec) (Challenge := Challenge) K computeW).prover
-      = prover (WitIn := WitIn) (Challenge := Challenge) K computeW from rfl,
-    prover_run_eq K computeW stmt wit hdir, mem_support_bind_iff] at hpr
-  obtain ⟨c, -, hpr⟩ := hpr
-  rw [mem_support_pure_iff] at hpr
-  subst hpr
-  refine ⟨c, ?_⟩
-  simp only [Option.elim_some, reduction, verifier, Verifier.run] at hx
-  simp only [ProtocolSpec.ChallengeIdx, ProtocolSpec.Challenge, OptionT.run_pure, liftM_pure,
-    ProgrammingPolicy.empty_apply, pure_bind, Option.elim_some, Option.getM_some, support_pure,
-    Set.mem_singleton_iff] at hx
-  exact hx
+  simp only [Reduction.run_run_eq, reduction, verifier, Verifier.run, OptionT.run_pure]
+  rw [prover_run_eq K computeW stmt wit hdir]
+  prvcgen
+  exact ⟨_, rfl⟩
 
 end Execution
 

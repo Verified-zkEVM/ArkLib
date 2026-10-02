@@ -109,15 +109,12 @@ theorem exportedPrefixRun_soundness {m : ℕ} (D : Fin m ↪ F)
           (firstRoundProtocol F deg).oracles A impl))] ≤
       (deg : ENNReal) / Fintype.card F := by
   rw [exportedPrefixRun_firstRound]
-  refine prEvent_bind_le_of_forall_le _ _ _ ?_
-  rintro ⟨q, respond⟩
+  refine (ExpectationWP.wp_bind _ _ _).trans_le
+    (wp_le_of_forall_le _ fun ⟨q, respond⟩ => ?_)
   change SingleRound.Message F deg at q
   by_cases hcheck : ((Finset.univ.map D).toList.map (fun x => q.val.eval x)).sum = stmt.target
-  · simp only [hcheck, ↓reduceIte, bind_assoc, pure_bind]
+  · simp only [hcheck, ↓reduceIte, expect_norm]
     let i : Fin n := ⟨start, by omega⟩
-    let good : F → Prop := fun r => closedRelation F n deg D i.succ
-      ⟨⟨q.val.eval r, Fin.snoc stmt.challenges r⟩,
-        (polynomialFamily F n deg).behaviorOfRealizations (fun _ => p)⟩
     have hgood := uniform_successor_soundness n deg F D i stmt p q (by
       change ¬ closedRelation F n deg D ⟨start, by omega⟩
         ⟨stmt, (polynomialFamily F n deg).behaviorOfRealizations (fun _ => p)⟩
@@ -129,14 +126,14 @@ theorem exportedPrefixRun_soundness {m : ℕ} (D : Fin m ↪ F)
           (originalOracle.sumWeaken (polynomialInterface F deg).spec).eval
             (Access.extendImpl A (polynomialInterface F deg) impl q)⟩] ≤ _
     rw [VirtualOracle.eval_sumWeaken_extendImpl, horiginal]
-    have hbound := prEvent_bind_le_prEvent_of_forall_eq_zero ($ᵗ F)
-      (fun r => do
-        let _next ← respond (some r)
-        return good r) good (fun truth => truth) (by
-          intro r hr
-          simp only [hr, bind_assoc, pure_bind, prEvent_false])
-    simpa only [bind_assoc, pure_bind] using hbound.trans hgood
-  · simp only [hcheck, ↓reduceIte, bind_assoc, pure_bind]
+    -- average over the challenge; the opaque `respond` has no rule, and the event does not
+    -- depend on its output, so each term of the average is the challenge's own indicator
+    simp only [expect_norm, SampleableType.wp_uniformSample_eq_sum] at hgood
+    prvcgen (errorOnMissingSpec := false) [Upper.Spec.uniformSample_avg]
+    refine le_trans (ENNReal.div_le_div_right (Finset.sum_le_sum fun x _ => ?_) _) hgood
+    simp only [expect_norm]
+    exact OracleComp.ProgramLogic.wp_le_const_of_support _ fun _ _ => le_rfl
+  · simp only [hcheck, ↓reduceIte, expect_norm]
     change Pr{let _next ← respond none}[False] ≤ _
     simp only [prEvent_false, zero_le]
 
@@ -164,29 +161,19 @@ theorem exportedPrefixRun_admissibility {m : ℕ} (D : Fin m ↪ F)
           (firstRoundProtocol F deg).oracles A impl))] ≤
       0 := by
   rw [exportedPrefixRun_firstRound]
-  refine prEvent_bind_le_of_forall_le _ _ _ ?_
-  rintro ⟨q, respond⟩
-  change SingleRound.Message F deg at q
-  by_cases hcheck : ((Finset.univ.map D).toList.map (fun x => q.val.eval x)).sum = stmt.target
-  · simp only [hcheck, ↓reduceIte, bind_assoc, pure_bind]
-    change Pr{let r ← ($ᵗ F); let _next ← respond (some r)}[
-      ¬ (originalOracle.sumWeaken (polynomialInterface F deg).spec).eval
-        (Access.extendImpl A (polynomialInterface F deg) impl q) =
-          (polynomialFamily F n deg).behaviorOfRealizations (fun _ => p)] ≤ 0
-    rw [VirtualOracle.eval_sumWeaken_extendImpl, horiginal]
-    simp only [not_true_eq_false]
-    have hzero := prEvent_false (do
-      let r ← ($ᵗ F)
-      let _next ← respond (some r)
-      return ())
-    simpa only [bind_assoc, pure_bind] using hzero.le
-  · simp only [hcheck, ↓reduceIte, bind_assoc, pure_bind]
-    change Pr{let _next ← respond none}[
-      ¬ (originalOracle.sumWeaken (polynomialInterface F deg).spec).eval
-        (Access.extendImpl A (polynomialInterface F deg) impl q) =
-          (polynomialFamily F n deg).behaviorOfRealizations (fun _ => p)] ≤ 0
-    rw [VirtualOracle.eval_sumWeaken_extendImpl, horiginal]
-    simp only [not_true_eq_false, prEvent_false, le_refl]
+  -- bound the continuation after every first message `⟨q, respond⟩` of the prover; `dsimp`
+  -- reduces the pattern's projections, which otherwise keep the generator from the binds
+  refine (ExpectationWP.wp_bind _ _ _).trans_le
+    (wp_le_of_forall_le _ fun ⟨q, respond⟩ => ?_)
+  dsimp only
+  -- upper-bound reading: split on the sum check, draw the challenge, and stop at the opaque
+  -- `respond`; on both branches the closed oracle is the original one, realized by `horiginal`
+  prvcgen (errorOnMissingSpec := false)
+  all_goals
+    simp only [expect_norm]
+    exact (prEvent_eq_zero_of_forall_mem_support _ _ fun _ _ h => h <|
+      (VirtualOracle.eval_sumWeaken_extendImpl A originalOracle (polynomialInterface F deg)
+        impl q).trans horiginal).le
 
 set_option backward.isDefEq.respectTransparency false in
 /-- Full native Sumcheck is sound against every ordinary prover strategy. From a false initial
@@ -216,7 +203,7 @@ theorem execute_soundness {m : ℕ} (D : Fin m ↪ F)
   | zero =>
     subst n
     rw [execute_zero]
-    simpa [outputRelation, Core.outputRelation] using
+    simpa [outputRelation, Core.outputRelation, propInd_eq_zero_iff] using
       (fun h => hfalse ((closedRelation_last_iff F start deg D
         ⟨stmt, originalOracle.eval impl⟩).mpr h))
   | succ count ih =>
@@ -281,12 +268,11 @@ theorem execute_soundness {m : ℕ} (D : Fin m ↪ F)
       cases last
       cases choice with
       | none =>
-        have hrun := exportedSuffixRun_none F n deg unifSpec ($ᵗ F)
-          (Finset.univ.map D).toList count start finish A impl q next mid
-        have hzero : Pr{let result ← (pure none : ProbComp
-            (Option (ClosedClaim (FinalStatement F n) (polynomialFamily F n deg))))}[
-            result.map (outputRelation F n deg) = some True] = 0 := by simp
-        rw [← hrun, prEvent_map] at hzero
+        have hzero := congrArg (fun mx => Pr{let result ← mx}[
+            result.map (outputRelation F n deg) = some True])
+          (exportedSuffixRun_none F n deg unifSpec ($ᵗ F)
+            (Finset.univ.map D).toList count start finish A impl q next mid)
+        simp only [expect_norm, Option.map_none, reduceCtorEq, propInd_false] at hzero ⊢
         exact hzero.le.trans zero_le
       | some r =>
         change ¬ closedRelation F n deg D ⟨start + 1, by omega⟩
@@ -302,7 +288,7 @@ theorem execute_soundness {m : ℕ} (D : Fin m ↪ F)
         have hrun := exportedSuffixRun_some F n deg unifSpec ($ᵗ F)
           (Finset.univ.map D).toList count start finish A impl q r next mid
         rw [← hrun, prEvent_map] at hnext
-        exact hnext
+        simpa only [expect_norm] using hnext
     have bound := assembled hsuffix
     rw [execute_eq_appendExported, prEvent_map]
     simp only [Option.map_map]

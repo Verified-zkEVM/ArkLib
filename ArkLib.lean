@@ -660,7 +660,6 @@ public import ArkLib.Data.Polynomial.UniversalHenselNumerator
 public import ArkLib.Data.Probability.Combinatorial
 public import ArkLib.Data.Probability.Instances
 public import ArkLib.Data.Probability.KoalaBear
-public import ArkLib.Data.Probability.Sequential
 public import ArkLib.Data.Probability.Uniform
 public import ArkLib.Interaction.CompositionSoundness
 public import ArkLib.Interaction.Oracle.Access
@@ -730,6 +729,7 @@ public import ArkLib.OracleReduction.LiftContext.Purity
 public import ArkLib.OracleReduction.LiftContext.Reduction
 public import ArkLib.OracleReduction.OracleInterface
 public import ArkLib.OracleReduction.Prelude
+public import ArkLib.OracleReduction.ProgramLogic
 public import ArkLib.OracleReduction.ProtocolSpec.Basic
 public import ArkLib.OracleReduction.ProtocolSpec.Cast
 public import ArkLib.OracleReduction.ProtocolSpec.SeqCompose

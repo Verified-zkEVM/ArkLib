@@ -168,7 +168,7 @@ theorem encStack_mem_closeCodewordsRel_iff [Nonempty ι] {k : ℕ}
 
 omit [Field F] [Fintype F] [Fintype A] [AddCommGroup A] in
 /-- Deprecated compatibility name for the general coding-theory bound. -/
-@[deprecated Code.minRelHammingDistCode_le_one (since := "2026-08-16")]
+@[deprecated Code.minRelHammingDistCode_le_one +typeChanged (since := "2026-08-16")]
 theorem minRelHammingDistCode_le_one [Nonempty ι] (C : Set (ι → A)) :
     minRelHammingDistCode C ≤ 1 :=
   Code.minRelHammingDistCode_le_one (C := C)

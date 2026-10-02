@@ -459,7 +459,7 @@ private theorem epsCa_le_one
   refine iSup_le fun u => ?_
   split_ifs
   · exact zero_le_one
-  · exact prEvent_le_one _ _
+  · exact prEvent_le_one _
 
 open scoped ProbabilityTheory in
 theorem epsCa_eq_one_of_all_folds_close_not_joint

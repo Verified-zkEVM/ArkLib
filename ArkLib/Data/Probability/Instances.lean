@@ -15,7 +15,7 @@ public import CompPoly.Data.Fin.BigOperators
 
 ArkLib's specialized counting arguments are exposed here over VCVio's native `ProbComp`
 uniform sampler. Generic event algebra, counting formulas, transport along equivalences, and product
-sampling are provided by `SampleableType.NativeMeasure`.
+sampling are provided by `SampleableType.Measure`.
 -/
 
 @[expose] public section
@@ -30,7 +30,7 @@ namespace Probability
 /-- **Schwartz-Zippel**, in probability form at an arbitrary degree bound: for a nonzero
 `n`-variate polynomial `P` of total degree at most `d` over a finite domain `R`,
 
-  `Pr{r ← $ᵗ R^n}[eval r P = 0] ≤ d / |R|`.
+  `Pr{let r ← $ᵗ R^n}[eval r P = 0] ≤ d / |R|`.
 -/
 lemma prob_schwartz_zippel_mv_polynomial_of_totalDegree_le
     {R : Type} [CommRing R] [IsDomain R] [Fintype R] [SampleableType R]

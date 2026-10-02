@@ -34,6 +34,22 @@ Schwartz–Zippel, dot products, and coordinate membership. `Combinatorial.lean`
 collision-to-image-size argument for probability measures on a countable full-mass carrier.
 These mathematical helpers live in `namespace Probability`.
 
+An event `Pr{let x ← mx; let y ← f x}[p y]` elaborates to nested expectations of its draws,
+`wp⟦mx⟧ (fun x => wp⟦f x⟧ (predInd p))`, and the `expect_norm` simp set keeps it in that form.
+Three habits follow:
+
+- A lemma stated for a variable program, such as `Pr{let y ← mx >>= f}[q y]`, becomes a nested
+  event when it is applied. Bridge it with `simpa only [expect_norm] using h`.
+- `rw` with an equation between whole computations does not find a `do` block inside an event.
+  Rewrite the inner program, or first fold the event back with `← prEvent_bind` or
+  `← prEvent_map`, then normalize.
+- Comparing events of several draws goes through `gcongr` or `wp_le_of_forall_le`, since
+  `prEvent_mono` is stated for one draw.
+
+Statements about the possible outputs of one computation, such as perfect completeness, an
+honest run's support, or an event of probability zero, are usually shortest with `prvcgen`. See
+[`program-logic.md`](program-logic.md).
+
 Losslessness is `IsProbabilityMeasure 𝒟[mx]`, or the equivalent successful-event statement
 `Pr{let _ ← mx}[True] = 1`. For computations that may fail, the complement probability is
 successful mass minus the event probability; replacing it with `1 - Pr{…}[…]` needs losslessness.

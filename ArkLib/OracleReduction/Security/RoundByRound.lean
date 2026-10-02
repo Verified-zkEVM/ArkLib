@@ -149,8 +149,8 @@ structure StateFunction
   /-- If the state function is false for a full transcript, the verifier will not output a statement
     in the output language -/
   toFun_full : ∀ stmt tr, ¬ toFun (.last n) stmt tr →
-    Pr{let stmtOut ← OptionT.mk do
-      (simulateQ impl (verifier.run stmt tr)).run' (← init)}[stmtOut ∈ langOut] = 0
+    Pr{let stmtOut ← (OptionT.mk do
+      (simulateQ impl (verifier.run stmt tr)).run' (← init))}[stmtOut ∈ langOut] = 0
 
 /-- A generalized extractor-aware knowledge state function for a verifier, with respect to input
 relation `relIn`, output relation `relOut`, and stage-dependent witness types `WitMid`. This is used
@@ -185,8 +185,8 @@ structure KnowledgeStateFunction
     output witness `witOut`, then the state function is true for the full transcript and the
     extracted last middle witness. -/
   toFun_full : ∀ stmtIn tr witOut,
-    Pr{let stmtOut ← OptionT.mk do
-      (simulateQ impl (verifier.run stmtIn tr)).run' (← init)}[
+    Pr{let stmtOut ← (OptionT.mk do
+      (simulateQ impl (verifier.run stmtIn tr)).run' (← init))}[
         (stmtOut, witOut) ∈ relOut] > 0 →
     toFun (.last n) stmtIn tr (extractor.extractOut stmtIn tr witOut)
 
@@ -218,8 +218,8 @@ def KnowledgeStateFunction.toStateFunction
       OptionT.prEvent_mk_eq_zero_iff, not_exists]
     intro stmtOut hStmtOut witOut hRelOut
     have hProb :
-        Pr{let stmtOut ← OptionT.mk do
-          (simulateQ impl (verifier.run stmtIn tr)).run' (← init)}[
+        Pr{let stmtOut ← (OptionT.mk do
+          (simulateQ impl (verifier.run stmtIn tr)).run' (← init))}[
             (stmtOut, witOut) ∈ relOut] > 0 := by
       simp only [Fin.val_last, gt_iff_lt, OptionT.prEvent_mk_pos_iff]
       exact ⟨stmtOut, hStmtOut, hRelOut⟩
@@ -246,8 +246,8 @@ structure KnowledgeStateFunctionOneShot
   /-- If the state function is false for a full transcript, the verifier will not output a statement
     in the output language -/
   toFun_full : ∀ stmt tr, ¬ toFun (.last n) stmt tr →
-    Pr{let stmtOut ← OptionT.mk do
-      (simulateQ impl (verifier.run stmt tr)).run' (← init)}[stmtOut ∈ langOut] = 0
+    Pr{let stmtOut ← (OptionT.mk do
+      (simulateQ impl (verifier.run stmt tr)).run' (← init))}[stmtOut ∈ langOut] = 0
 
 omit [∀ i, SampleableType (pSpec.Challenge i)] in
 /-- The one-shot state function is false at any round index that is `0`, for any transcript.
@@ -300,10 +300,10 @@ noncomputable def KnowledgeStateFunctionOneShot.toKnowledgeStateFunction
       exact fun hsucc => not_not.mp fun hcast => stF.toFun_next m hDir stmtIn tr msg hcast hsucc
   toFun_full := fun stmtIn tr witOut h => by
     have hLang :
-        0 < Pr{let stmtOut ← OptionT.mk do
-          (simulateQ impl (verifier.run stmtIn tr)).run' (← init)}[
+        0 < Pr{let stmtOut ← (OptionT.mk do
+          (simulateQ impl (verifier.run stmtIn tr)).run' (← init))}[
             stmtOut ∈ relOut.language] :=
-      h.trans_le (prEvent_mono _ _ _ fun stmtOut hrel ↦
+      h.trans_le (OptionT.prEvent_mono _ _ _ fun stmtOut hrel ↦
         (Set.mem_language_iff relOut stmtOut).2 ⟨witOut, hrel⟩)
     have hstF : stF.toFun (.last n) stmtIn tr := by
       by_contra hfalse
@@ -669,9 +669,11 @@ theorem rbrKnowledgeSoundnessOneShot_implies_rbrKnowledgeSoundness
     stF.toKnowledgeStateFunction init impl oneShotE, ?_⟩
   -- Both notions score the *same* game, so it suffices to compare the two bad events pointwise.
   refine fun stmtIn witIn prover i ↦ le_trans ?_ (h stmtIn witIn prover i)
-  rw [← bind_assoc, ← bind_assoc]
-  refine prEvent_mono _ _ _ ?_
-  rintro ⟨transcript, challenge, proveQueryLog⟩ ⟨witMid, hcast, hsucc⟩
+  simp only [expect_norm]
+  refine ExpectationWP.wp_mono _ fun _ ↦ ExpectationWP.wp_mono _ fun z ↦
+    propInd_mono ?_
+  rcases z with ⟨transcript, challenge, proveQueryLog⟩
+  rintro ⟨witMid, hcast, hsucc⟩
   simp only [Extractor.RoundByRoundOneShot.toRoundByRoundOfRel, ite_eq_right (Fin.succ_ne_zero _),
     KnowledgeStateFunctionOneShot.toKnowledgeStateFunction] at hcast hsucc
   -- The crux: the general bad event forces `relIn` to have *no* witness for `stmtIn` at all.
@@ -828,20 +830,11 @@ def Verifier.StateFunction.id {lang : Set Statement} :
   toFun_empty := fun _ => by simp
   toFun_next := fun i => Fin.elim0 i
   toFun_full := fun stmt tr h => by
-    simp only [Verifier.id, Verifier.run]
-    rw [OptionT.prEvent_mk_eq_zero_iff]
-    intro x hx
-    simp only [support_bind, Set.mem_iUnion] at hx
-    obtain ⟨s, _, hx⟩ := hx
-    have key : (simulateQ impl (pure stmt : OptionT (OracleComp oSpec) Statement)).run' s =
-        pure (some stmt) := by
-      change (simulateQ impl (pure (some stmt) : OracleComp oSpec (Option Statement))).run' s = _
-      rw [simulateQ_pure]
-      change Prod.fst <$> (pure (some stmt) : StateT σ ProbComp _).run s = _
-      rw [StateT.run_pure]; simp [map_pure]
-    rw [key] at hx
-    simp only [support_pure, Set.mem_singleton_iff] at hx
-    cases hx; exact h
+    simp only [Verifier.id, Verifier.run, show (pure stmt : OptionT (OracleComp oSpec) Statement) =
+      (pure (some stmt) : OracleComp oSpec (Option Statement)) from rfl, simulateQ_pure,
+      StateT.run'_eq, StateT.run_pure, map_pure, OptionT.prEvent_mk]
+    prvcgen [Upper.Spec.ofSupport init]
+    exact (propInd_eq_zero_iff.mpr h).le
 
 /-- The identity / trivial verifier is perfectly round-by-round sound. -/
 @[simp]

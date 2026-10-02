@@ -46,7 +46,7 @@ private theorem rs_eps_ca_ne_top (C : Set (ι → F)) (δ_fld δ_int : ℝ≥0) 
   refine iSup_le fun u => ?_
   split_ifs
   · exact zero_le_one
-  · exact prEvent_le_one _ _
+  · exact prEvent_le_one _
 
 private def rs_reciprocal_stack (domain : ι ↪ F) (u : ι → F) (a : F) :
     Code.WordStack F (Fin 2) ι :=

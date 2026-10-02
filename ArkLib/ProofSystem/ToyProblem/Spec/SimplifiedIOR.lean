@@ -375,17 +375,17 @@ theorem oracleVerifier_toVerifier_eq_verifier :
 omit [DecidableEq ι] [Fintype F] [DecidableEq F] [Fintype A] [DecidableEq A] in
 /-- Positive probability of producing an output related to `witOut` forces the
 deterministic C6.9 derived output itself to be related to `witOut`. -/
-theorem mem_outputRelationFor_of_probEvent_pos_oracleVerifier_run
+theorem mem_outputRelationFor_of_prEvent_pos_oracleVerifier_run
     {X : Type} (init : ProbComp X)
     (impl : QueryImpl []ₒ (StateT X ProbComp))
     (encode : (Fin k → F) → (ι → A)) (δ : ℝ≥0)
     (stmtIn : Statement (F := F) k × (∀ i, OracleStatement ι A i))
     (tr : (pSpec (F := F)).FullTranscript)
     (witOut : OutputWitness (F := F) k)
-    (h : Pr{let stmtOut ← OptionT.mk do
+    (h : Pr{let stmtOut ← (OptionT.mk do
           (simulateQ impl
             (((oracleVerifier (ι := ι) (F := F) (A := A) (k := k)).toVerifier).run
-              stmtIn tr)).run' (← init)}[(stmtOut, witOut) ∈
+              stmtIn tr)).run' (← init))}[(stmtOut, witOut) ∈
             outputRelationFor k encode δ] > 0) :
     (derivedOutput (ι := ι) (F := F) (A := A) k stmtIn
       (transcriptGamma (F := F) tr), witOut) ∈ outputRelationFor k encode δ := by
