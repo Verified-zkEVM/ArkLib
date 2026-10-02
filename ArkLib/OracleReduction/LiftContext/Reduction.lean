@@ -113,18 +113,139 @@ def Extractor.Straightline.liftContext
     let innerWitIn ← E innerStmtIn innerWitOut fullTranscript proveQueryLog verifyQueryLog
     return lens.wit.lift (outerStmtIn, outerWitOut) innerWitIn
 
-open Verifier in
+section LiftRoundByRoundExtractor
+
+namespace Extractor.RoundByRound
+
+/-! ### Lifting a round-by-round extractor along an extractor lens
+
+A round-by-round extractor carries a *ladder* of intermediate witness types `WitMid`, pinned at
+the bottom by `eqIn : WitMid 0 = WitIn`. When the extractor is transported along an
+`Extractor.Lens`, the bottom of the ladder must land in `OuterWitIn` rather than `InnerWitIn`,
+so the ladder itself has to be reindexed: keeping `WitMid` fixed is not merely hard, it is
+impossible (`no_liftContext_with_shared_witMid` below).
+
+The reindexing is forced, not chosen. The witness inverse-lens supplies
+`lift : OuterStmtIn × OuterWitOut → InnerWitIn → OuterWitIn`, so producing the bottom rung needs
+the outer *output* witness; but only `extractOut`, at the top of the ladder, ever receives one.
+Hence every positive rung must carry it, and `OuterWitOut × WitMid k` is the smallest carrier
+that does. -/
+
+/-- Any outer round-by-round extractor over the *same* mid-witness family as the inner one forces
+the two input-witness types to coincide, since both are pinned to `WitMid 0` by `eqIn`. -/
+theorem sharedWitMid_forces_witIn_eq {WitMid : Fin (n + 1) → Type}
+    (E  : Extractor.RoundByRound oSpec InnerStmtIn InnerWitIn InnerWitOut pSpec WitMid)
+    (E' : Extractor.RoundByRound oSpec OuterStmtIn OuterWitIn OuterWitOut pSpec WitMid) :
+    InnerWitIn = OuterWitIn :=
+  E.eqIn.symm.trans E'.eqIn
+
+private theorem punit_ne_bool (h : PUnit = Bool) : False := by
+  have h1 : (cast h.symm true : PUnit) = cast h.symm false := Subsingleton.elim _ _
+  have h2 : (true : Bool) = false := by have := congrArg (cast h) h1; simp at this
+  exact Bool.noConfusion h2
+
+/-- Separating data for the no-go: a lens whose inner input witness is `PUnit` and whose outer
+input witness is `Bool`. Named so that the refutation below and the inhabitation result
+`reindexed_inhabited_on_refuting_data` provably speak about the *same* data. -/
+def refutingLens : Extractor.Lens PUnit PUnit PUnit PUnit Bool PUnit PUnit PUnit :=
+  { stmt := ⟨fun _ => .unit, fun _ _ => .unit⟩
+    wit  := ⟨fun _ => .unit, fun _ _ => true⟩ }
+
+/-- The inner extractor of the separating data. -/
+def refutingInner :
+    Extractor.RoundByRound oSpec PUnit PUnit PUnit pSpec (fun _ : Fin (n + 1) => PUnit) :=
+  { eqIn := rfl, extractMid := fun _ _ _ _ => .unit, extractOut := fun _ _ _ => .unit }
+
+/-- **There is no context-lifting operation for round-by-round extractors that keeps the
+mid-witness family fixed.** On `refutingLens`/`refutingInner`, `sharedWitMid_forces_witIn_eq`
+becomes `PUnit = Bool`. This is why `liftContext` below reindexes the family. -/
+theorem no_liftContext_with_shared_witMid
+    (hLift : ∀ {OWI IWI : Type} {WitMid : Fin (n + 1) → Type},
+        Extractor.Lens PUnit PUnit PUnit PUnit OWI PUnit IWI PUnit →
+        Extractor.RoundByRound oSpec PUnit IWI PUnit pSpec WitMid →
+        Extractor.RoundByRound oSpec PUnit OWI PUnit pSpec WitMid) :
+    False :=
+  punit_ne_bool (hLift refutingLens (refutingInner (oSpec := oSpec) (pSpec := pSpec))).eqIn
+
+/-- The reindexed mid-witness family: the bottom rung becomes the outer input witness, and every
+positive rung additionally carries the outer output witness that the bottom rung consumes. -/
+def liftWitMid (OuterWitIn OuterWitOut : Type) {n : ℕ} (WitMid : Fin (n + 1) → Type)
+    (k : Fin (n + 1)) : Type :=
+  match k.val with
+  | 0     => OuterWitIn
+  | _ + 1 => OuterWitOut × WitMid k
+
+@[simp] theorem liftWitMid_zero (OuterWitIn OuterWitOut : Type) (WitMid : Fin (n + 1) → Type) :
+    liftWitMid OuterWitIn OuterWitOut WitMid 0 = OuterWitIn := rfl
+
+@[simp] theorem liftWitMid_succ (OuterWitIn OuterWitOut : Type) (WitMid : Fin (n + 1) → Type)
+    (i : Fin n) :
+    liftWitMid OuterWitIn OuterWitOut WitMid i.succ = (OuterWitOut × WitMid i.succ) := rfl
+
+variable {WitMid : Fin (n + 1) → Type}
+  (lens : Extractor.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
+                        OuterWitIn OuterWitOut InnerWitIn InnerWitOut)
+  (E : Extractor.RoundByRound oSpec InnerStmtIn InnerWitIn InnerWitOut pSpec WitMid)
+
+/-- Transport an inner mid-witness at rung `k` into the lifted family. At the bottom rung this is
+where the witness inverse-lens does its work; at every positive rung it threads through the outer
+output witness that the bottom rung will need. -/
+def rung (outerCtx : OuterStmtIn × OuterWitOut) :
+    (k : Fin (n + 1)) → WitMid k → liftWitMid OuterWitIn OuterWitOut WitMid k :=
+  Fin.cases
+    (motive := fun k => WitMid k → liftWitMid OuterWitIn OuterWitOut WitMid k)
+    (fun w => lens.wit.lift outerCtx (E.eqIn ▸ w))
+    (fun _ w => (outerCtx.2, w))
+
+@[simp] theorem rung_zero (outerCtx : OuterStmtIn × OuterWitOut) (w : WitMid 0) :
+    rung lens E outerCtx 0 w = lens.wit.lift outerCtx (E.eqIn ▸ w) := rfl
+
+@[simp] theorem rung_succ (outerCtx : OuterStmtIn × OuterWitOut) (i : Fin n)
+    (w : WitMid i.succ) :
+    rung lens E outerCtx i.succ w = (outerCtx.2, w) := rfl
+
 /-- The outer round-by-round extractor after lifting invokes the inner extractor on the projected
-  input, and lifts the output -/
-def Extractor.RoundByRound.liftContext
-    {WitMid : Fin (n + 1) → Type}
-    (lens : Extractor.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
-                          OuterWitIn OuterWitOut InnerWitIn InnerWitOut)
-    (E : Extractor.RoundByRound oSpec InnerStmtIn InnerWitIn InnerWitOut pSpec WitMid) :
-      Extractor.RoundByRound oSpec OuterStmtIn OuterWitIn OuterWitOut pSpec WitMid :=
-  sorry
-  -- fun roundIdx outerStmtIn fullTranscript proveQueryLog =>
-  --   rbrLensInv.liftWit (E roundIdx (lens.projStmt outerStmtIn) fullTranscript proveQueryLog)
+input, and lifts the output. The mid-witness family is reindexed by `liftWitMid`; see
+`no_liftContext_with_shared_witMid` for why it cannot be kept fixed. -/
+def liftContext :
+      Extractor.RoundByRound oSpec OuterStmtIn OuterWitIn OuterWitOut pSpec
+        (liftWitMid OuterWitIn OuterWitOut WitMid) where
+  eqIn := rfl
+  extractMid := fun m outerStmtIn tr w =>
+    rung lens E (outerStmtIn, (w : OuterWitOut × WitMid m.succ).1) m.castSucc
+      (E.extractMid m (lens.stmt.proj outerStmtIn) tr (w : OuterWitOut × WitMid m.succ).2)
+  extractOut := fun outerStmtIn tr outerWitOut =>
+    rung lens E (outerStmtIn, outerWitOut) (.last n)
+      (E.extractOut (lens.stmt.proj outerStmtIn) tr (lens.wit.proj (outerStmtIn, outerWitOut)))
+
+/-- The lifted `extractMid` really calls `E.extractMid` on the lens-projected statement, and
+really threads the carried outer output witness. -/
+theorem liftContext_extractMid (m : Fin n) (s : OuterStmtIn) (tr : Transcript m.succ pSpec)
+    (w : OuterWitOut × WitMid m.succ) :
+    (liftContext lens E).extractMid m s tr w
+      = rung lens E (s, w.1) m.castSucc (E.extractMid m (lens.stmt.proj s) tr w.2) := rfl
+
+/-- The lifted `extractOut` really calls `E.extractOut` on the lens-projected statement and the
+lens-projected output witness, and seeds the ladder with the outer output witness. -/
+theorem liftContext_extractOut (s : OuterStmtIn) (tr : FullTranscript pSpec) (wo : OuterWitOut) :
+    (liftContext lens E).extractOut s tr wo
+      = rung lens E (s, wo) (.last n)
+          (E.extractOut (lens.stmt.proj s) tr (lens.wit.proj (s, wo))) := rfl
+
+/-- **The no-go is sharp.** On exactly the data that refutes the shared-family signature, the
+reindexed signature is inhabited. So `no_liftContext_with_shared_witMid` records an obstruction
+in the *indexing*, not an accidental emptiness of the surrounding types.
+
+Since `rbrKnowledgeSoundness` quantifies existentially over the mid-witness family
+(`Security/RoundByRound.lean`), reindexing costs its consumers nothing. -/
+theorem reindexed_inhabited_on_refuting_data :
+    Nonempty (Extractor.RoundByRound oSpec PUnit Bool PUnit pSpec
+      (liftWitMid Bool PUnit (fun _ : Fin (n + 1) => PUnit))) :=
+  ⟨liftContext refutingLens (refutingInner (oSpec := oSpec) (pSpec := pSpec))⟩
+
+end Extractor.RoundByRound
+
+end LiftRoundByRoundExtractor
 
 /-- Compatibility relation between the outer input statement and the inner output statement,
 relative to a verifier.
@@ -170,6 +291,31 @@ def Extractor.Straightline.compatWit
     ∃ stmt tr logP logV, innerWitIn ∈
       support (E stmt (lens.wit.proj (outerStmtIn, outerWitOut)) tr logP logV)
 
+/-- **`Statement.Lens.IsComplete` is necessary for the lifted state function, not just
+sufficient.**
+
+The lifted `toFun` is `stF ∘ lens.proj`, so its `toFun_empty` obligation reads
+`stmt ∈ outerLangIn ↔ stF.toFun 0 (lens.proj stmt) default`.  Chaining with the *inner* state
+function's own `toFun_empty` forces `stmt ∈ outerLangIn ↔ lens.proj stmt ∈ innerLangIn`, whose
+forward half is exactly `proj_complete`.
+
+So any state function on `V.liftContext lens` whose `toFun` is the projected inner one *exhibits*
+the completeness datum: no hypothesis weaker than `Statement.Lens.IsComplete` can discharge it.
+With `Statement.Lens.isSound_not_implies_isComplete` (soundness does not supply it) this makes the
+instance argument on `Verifier.StateFunction.liftContext` the minimal faithful repair rather than a
+convenient over-assumption. -/
+theorem Verifier.StateFunction.isComplete_of_liftedToFunEmpty
+    {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
+    {lens : Statement.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut}
+    {V : Verifier oSpec InnerStmtIn InnerStmtOut pSpec}
+    {outerLangIn : Set OuterStmtIn} {innerLangIn : Set InnerStmtIn}
+    {innerLangOut : Set InnerStmtOut}
+    (stF : V.StateFunction init impl innerLangIn innerLangOut)
+    (hEmpty : ∀ stmt : OuterStmtIn,
+      stmt ∈ outerLangIn ↔ stF.toFun 0 (lens.proj stmt) default) :
+    lens.IsComplete outerLangIn innerLangIn :=
+  ⟨fun stmt hs => (stF.toFun_empty (lens.proj stmt)).mpr ((hEmpty stmt).mp hs)⟩
+
 /-- The outer state function after lifting invokes the inner state function on the projected
   input, and lifts the output -/
 def Verifier.StateFunction.liftContext
@@ -180,27 +326,42 @@ def Verifier.StateFunction.liftContext
     (innerLangIn : Set InnerStmtIn) (innerLangOut : Set InnerStmtOut)
     [lensSound : lens.IsSound outerLangIn outerLangOut innerLangIn innerLangOut
       (V.compatStatement lens)]
+    [lensComplete : lens.IsComplete outerLangIn innerLangIn]
     (stF : V.StateFunction init impl innerLangIn innerLangOut) :
       (V.liftContext lens).StateFunction init impl outerLangIn outerLangOut
 where
   toFun := fun m outerStmtIn transcript =>
     stF m (lens.proj outerStmtIn) transcript
-  toFun_empty := fun stmt => by
-    have := stF.toFun_empty (lens.proj stmt)
-    sorry
-    -- stF.toFun_empty (lens.proj stmt) (lensSound.proj_sound stmt hStmt)
+  toFun_empty := fun stmt =>
+    (Statement.Lens.mem_iff_proj_mem lensSound.proj_sound stmt).trans
+      (stF.toFun_empty (lens.proj stmt))
   toFun_next := fun m hDir outerStmtIn transcript hStmt msg =>
     stF.toFun_next m hDir (lens.proj outerStmtIn) transcript hStmt msg
   toFun_full := fun outerStmtIn transcript hStmt => by
     have h := stF.toFun_full (lens.proj outerStmtIn) transcript hStmt
-    simp [Verifier.run, Verifier.liftContext] at h ⊢
-    stop
-    intro outerStmtOut s hs innerStmtOut s' h' hLens
-    have := lensSound.lift_sound outerStmtIn innerStmtOut
-    sorry
-    -- apply lensSound.lift_sound
-    -- · simp [compatStatement]; exact ⟨transcript, hSupport⟩
-    -- · exact h innerStmtOut hSupport
+    have hbridge :
+        ((V.liftContext lens).verify outerStmtIn transcript :
+            OracleComp oSpec (Option OuterStmtOut))
+          = Option.map (lens.lift outerStmtIn) <$>
+              (V.verify (lens.proj outerStmtIn) transcript :
+                OracleComp oSpec (Option InnerStmtOut)) := by
+      show OptionT.run ((V.liftContext lens).verify outerStmtIn transcript) = _
+      rw [Verifier.liftContext]
+      exact OptionT.run_map ..
+    simp only [Verifier.run] at h ⊢
+    rw [hbridge]
+    simp at h ⊢
+    intro outerStmtOut s0 hs0 innerStmtOut s hMem hEq
+    subst hEq
+    have hRun' : some innerStmtOut ∈ support ((simulateQ impl
+        (V.verify (lens.proj outerStmtIn) transcript)).run' s0) := by
+      simp only [StateT.run'_eq, support_map, Set.mem_image]
+      exact ⟨(some innerStmtOut, s), hMem, rfl⟩
+    have hSupp := support_simulateQ_run'_subset impl
+      (V.verify (lens.proj outerStmtIn) transcript) s0 hRun'
+    refine lensSound.lift_sound outerStmtIn innerStmtOut ⟨transcript, ?_⟩
+      (h innerStmtOut s0 hs0 s hMem)
+    exact hSupp
 
 section Theorems
 
@@ -318,6 +479,59 @@ theorem liftContext_run
   simp?
   cases a_1 <;> simp [Option.getM, map_pure]
 
+/-- **A pure post-map passes straight through any simulation.**  `simulateQ impl` is the monad
+morphism induced by `impl`; the underlying natural transformation commutes with the functor
+action, so mapping a function over a computation and then simulating is the same as simulating
+and then mapping.
+
+Stated for `OptionT (OracleComp spec)` because that is the monad a `Verifier` — and a whole
+`Reduction` — runs in.  `OptionT`'s `<$>` is bind-based, so
+`(f <$> oa).run = Option.map f <$> oa.run` is a *theorem* (`OptionT.run_map`), not definitional,
+and the `Option.map` has to be exposed before the `@[simp]` lemma `simulateQ_map` can fire.  That
+defeq bridge is why this cannot be discharged by `simp` alone: under `instances` transparency
+`f <$> oa` does not present as an `OracleComp`.
+
+This is the shared root of the two transport facts below: lifting along a context lens is a pure
+post-map on the *output* of a reduction, hence it commutes with whatever the reduction was
+simulated through — it can change neither what was queried (`WriterT`, see
+`run_simulateQ_writerT_optionT_map` and `Reduction.liftContext_runWithLog`) nor what was reachable
+(`StateT`, see `Reduction.liftContext_completeness`, where the same commutation is done inline:
+there the `OptionT.run` is already exposed by unfolding `completeness`, so `simp only` fires on
+the primitives directly and a named `StateT` corollary would be pure API noise).
+Its proper long-term home is VCVio; it is kept here only so that this file's import graph is
+unchanged. -/
+theorem simulateQ_optionT_map
+    {m : Type → Type} [Monad m] [LawfulMonad m]
+    (impl : QueryImpl oSpec m)
+    {α β : Type} (f : α → β) (oa : OptionT (OracleComp oSpec) α) :
+    simulateQ impl (f <$> oa : OptionT (OracleComp oSpec) β)
+      = Option.map f <$> simulateQ impl (oa : OracleComp oSpec (Option α)) := by
+  have h : (f <$> oa : OptionT (OracleComp oSpec) β)
+      = (Option.map f <$> (oa : OracleComp oSpec (Option α)) : OracleComp oSpec (Option β)) := by
+    show OptionT.run (f <$> oa) = _
+    exact OptionT.run_map ..
+  rw [h, simulateQ_map]
+
+/-- **Logging is natural in the value: a pure post-map leaves the written log untouched.**
+The `WriterT` instance of `simulateQ_optionT_map`.  Note the writer is the
+`EmptyCollection`/`Append` one, not the `Monoid` one: VCVio deliberately declines a
+`Monoid (QueryLog spec)` instance so that the `Append`-based `Monad (WriterT _ _)` is the one that
+applies (`VCVio/OracleComp/QueryTracking/Structures.lean`).
+
+This is the fact that makes `Reduction.liftContext_runWithLog` provable: lifting a verifier along
+a context lens is a pure post-map on its *output*, hence cannot change what the verifier
+*queried*.  It is stated for an arbitrary `QueryImpl _ (WriterT ω m)` rather than for
+`loggingOracle`, because the proof never uses anything specific to logging. -/
+theorem run_simulateQ_writerT_optionT_map
+    {ω : Type} [EmptyCollection ω] [Append ω] {m : Type → Type} [Monad m]
+    [LawfulMonad (WriterT ω m)]
+    (impl : QueryImpl oSpec (WriterT ω m))
+    {α β : Type} (f : α → β) (oa : OptionT (OracleComp oSpec) α) :
+    (simulateQ impl (f <$> oa : OptionT (OracleComp oSpec) β)).run
+      = (fun p => (Option.map f p.1, p.2)) <$>
+          (simulateQ impl (oa : OracleComp oSpec (Option α))).run := by
+  rw [simulateQ_optionT_map, WriterT.run_map]
+
 theorem liftContext_runWithLog
     {lens : Context.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
                         OuterWitIn OuterWitOut InnerWitIn InnerWitOut}
@@ -330,7 +544,20 @@ theorem liftContext_runWithLog
                 lens.stmt.lift outerStmtIn verInnerStmtOut⟩, queryLog⟩ := by
   unfold runWithLog
   simp [liftContext, Prover.liftContext_runWithLog, Verifier.liftContext, Verifier.run]
-  sorry
+  -- The prover half is `Prover.liftContext_runWithLog`.  What remains is the *verifier* half,
+  -- which `liftContext_run` never had to face: `runWithLog` wraps the verifier in
+  -- `simulateQ loggingOracle`, so the lens lift is trapped *inside* the logging simulation while
+  -- the right-hand side applies it *after*.  Commuting the two is exactly naturality of the
+  -- monad morphism `simulateQ loggingOracle` in the value component — and it is what certifies
+  -- that lifting a context does not change what the verifier queried.
+  congr 1
+  funext a
+  rw [run_simulateQ_writerT_optionT_map loggingOracle, liftM_map]
+  rw [map_eq_bind_pure_comp, bind_assoc]
+  congr 1
+  funext p
+  simp only [Function.comp_apply, pure_bind]
+  cases p.1 <;> simp [Option.getM, map_pure]
 
 end Reduction
 
@@ -361,20 +588,26 @@ theorem liftContext_completeness
     (lensComplete.proj_complete _ _ hRelIn)
   rw [Reduction.liftContext_run]
   refine le_trans hR ?_
-  simp?
-  sorry
-  -- Refine by event monotonicity.
-  -- intro ⟨innerContextOut, a, b⟩ hSupport ⟨hRelOut, hRelOut'⟩
-  -- have : innerContextOut ∈
-  --     Prod.fst <$>
-  --       (R.run (lens.stmt.proj outerStmtIn)
-  -- (lens.wit.proj (outerStmtIn, outerWitIn))).support := by
-  --   simp
-  --   exact ⟨a, b, hSupport⟩
-  -- simp_all
-  -- rw [← hRelOut'] at hRelOut ⊢
-  -- refine lensComplete.lift_complete _ _ _ _ ?_ hRelIn hRelOut
-  -- simp [compatContext]; exact this
+  -- **Reachability is natural in the value.**  `liftContext_run` exhibits the lifted run as a
+  -- *pure post-map* of the inner run, but the completeness predicate is evaluated on
+  -- `(simulateQ impl _).run' s`, so that post-map starts out trapped *inside* the simulation.
+  -- `OptionT.run_map`/`simulateQ_map`/`StateT.run'_map'` commute it out -- the `StateT` analogue
+  -- of the `WriterT` naturality used by `liftContext_runWithLog`; both are instances of
+  -- `simulateQ_optionT_map`.  Only then do the two probability events share a base computation.
+  simp only [Function.uncurry, bind_pure_comp, OptionT.run_map, simulateQ_map, StateT.run'_map',
+    Statement.Lens.proj, Witness.Lens.proj, ← map_bind]
+  refine le_trans ?_ (le_of_eq (OptionT.probEvent_eq_of_run_map_eq _ _ _ _ rfl).symm)
+  refine probEvent_mono ?_
+  rintro ⟨⟨tr, innerStmtOut, innerWitOut⟩, verStmtOut⟩ hSupport ⟨hRelOut, hEq⟩
+  simp only at hRelOut hEq ⊢
+  subst hEq
+  obtain ⟨s, -, hSupport'⟩ := OptionT.mem_support_bind_mk _ _ hSupport
+  rw [OptionT.mem_support_iff] at hSupport'
+  have hMem := support_simulateQ_run'_subset _ _ s hSupport'
+  rw [← OptionT.mem_support_iff] at hMem
+  have hCompat : R.compatContext lens (outerStmtIn, outerWitIn) (innerStmtOut, innerWitOut) :=
+    ⟨((tr, innerStmtOut, innerWitOut), innerStmtOut), hMem, rfl⟩
+  exact ⟨lensComplete.lift_complete _ _ _ _ hCompat hRelIn hRelOut, rfl⟩
 
 theorem liftContext_perfectCompleteness
     (h : R.perfectCompleteness init impl innerRelIn innerRelOut) :
@@ -511,6 +744,10 @@ theorem liftContext_rbr_soundness [Inhabited InnerStmtOut]
     -- TODO: figure out the right compatibility relation for the IsSound condition
     [lensSound : lens.IsSound outerLangIn outerLangOut innerLangIn innerLangOut
       (V.compatStatement lens)]
+    -- Forced by `Verifier.StateFunction.liftContext`: constructing the lifted state function
+    -- needs `outerLangIn` to be *exactly* the preimage of `innerLangIn`, which soundness alone
+    -- does not give (see `Statement.Lens.eq_preimage_of_projSound_of_isComplete`).
+    [lensComplete : lens.IsComplete outerLangIn innerLangIn]
     (h : V.rbrSoundness init impl innerLangIn innerLangOut rbrSoundnessError) :
       (V.liftContext lens).rbrSoundness init impl outerLangIn outerLangOut rbrSoundnessError := by
   unfold rbrSoundness at h ⊢
