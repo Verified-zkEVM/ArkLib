@@ -53,8 +53,15 @@ ArkLib formalizes the packing *data layer* once, generic over a `RingSwitchingPr
 
 - `basis`, carrier `A`, ring homomorphisms `φ₀`/`φ₁ : L →+* A`, coordinate maps `decomposeRows`/`Columns`,
 - plus two **reconstruction laws** (`decomposeRows_spec`, `decomposeColumns_spec`) that tie the
-  coordinate maps to `φ₀`/`φ₁`/`basis`, making each map injective. For a nontrivial carrier,
-  this excludes identically zero coordinate maps.
+  coordinate maps to `φ₀`/`φ₁`/`basis`,
+- two **inverse laws** (`decomposeRows_recompose`, `decomposeColumns_recompose`) making each
+  coordinate map a two-sided inverse of its recomposition, and `embeddings_agree` (`φ₀`, `φ₁`
+  agree on `B`).
+
+With the inverse laws the carrier is equivalent to each full coordinate family
+(`ProfileCoordinates.rowEquiv`/`columnEquiv`), so a finite carrier has `|L|^(2^κ)` elements. A
+collapsed carrier such as `A = L` — enough for reconstruction alone — is excluded
+(`ArkLibTest/ProofSystem/RingSwitching/Packing/ProfileCoordinates.lean`).
 
 The row law is `z = ∑ u, φ₀(basis u) * φ₁(decomposeRows z u)`; the column law is
 `z = ∑ v, φ₀(decomposeColumns z v) * φ₁(basis v)`. In the tensor carrier these read
@@ -77,12 +84,14 @@ requires `[IsDomain L]` (Schwartz–Zippel).
 - **DP24 packing switch** (`ProofSystem/RingSwitching/Packing/`, tensor-product profile
   `tensorProductProfile`):
   small field → large field; `A = L ⊗_K L`, `φ₀ = ·⊗1`, `φ₁ = 1⊗·`, coordinates from the
-  left/right `L`-module bases; the two profile laws are **proven** in ArkLib. Because the
+  left/right `L`-module bases; all profile laws are **proven** in ArkLib. Because the
   evaluation point is an arbitrary big-field point, the claim is relocated *interactively*
   (batching challenge + dedicated packing sum-check).
 - **Hachi §3 packing head** ([`../papers/NOZ26.md`](../papers/NOZ26.md), planned): `L = R_q`,
-  `A = R_q`, `φ₀ = id`, `φ₁ = σ₋₁`, `β = ψ` (Theorem 2). Same packing algebra, but the
-  evaluation point is engineered to be subfield-valued, so the reduction is **deterministic**
+  `A = R_q`, `φ₀ = id`, `φ₁ = σ₋₁`, `β = ψ` (Theorem 2). The carrier collapses the two tensor
+  factors, so this is **not** a `RingSwitchingProfile` instance; it needs its own trace adapter
+  over the shared finite-coordinate modules. The evaluation point is engineered to be
+  subfield-valued, so the reduction is **deterministic**
   (one message + one trace check, no challenges, no sum-check). `R_q` is not a domain, so the
   Schwartz–Zippel soundness theorem does not apply — Hachi soundness is a separate (CWSS)
   argument.
@@ -110,7 +119,8 @@ requires `[IsDomain L]` (Schwartz–Zippel).
 - [`../../../ArkLib/ProofSystem/RingSwitching/RoundVerifiers.lean`](../../../ArkLib/ProofSystem/RingSwitching/RoundVerifiers.lean) — the shared check-then-update round verifiers.
 - [`../../../ArkLib/ProofSystem/RingSwitching/Transport.lean`](../../../ArkLib/ProofSystem/RingSwitching/Transport.lean) — the shared claim-transport algebra (umbrella for `Transport/`).
 - [`../../../ArkLib/ProofSystem/RingSwitching/Packing/Profile.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/Profile.lean) — the packing abstraction.
-- [`../../../ArkLib/ProofSystem/RingSwitching/Packing/Prelude.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/Prelude.lean) — `packMLE`, the tensor-product constructor `tensorProductProfile`, DP24 defs.
+- [`../../../ArkLib/ProofSystem/RingSwitching/Packing/Algebra.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/Algebra.lean) — `packMLE`, the tensor-product constructor `tensorProductProfile`, the DP24 verifier subroutines.
+- [`../../../ArkLib/ProofSystem/RingSwitching/Packing/Prelude.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/Prelude.lean) — DP24 protocol vocabulary and relations.
 - [`../../../ArkLib/ProofSystem/RingSwitching/Packing/General.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/General.lean) — the full DP24 reduction + security theorems.
 - [`../../../ArkLib/ProofSystem/RingSwitching/Lift/Presentation.lean`](../../../ArkLib/ProofSystem/RingSwitching/Lift/Presentation.lean) — the quotient-presentation abstraction + lift algebra.
 - [`../../../ArkLib/ProofSystem/RingSwitching/Lift/Reduction.lean`](../../../ArkLib/ProofSystem/RingSwitching/Lift/Reduction.lean) — the generic `Lift` construction + CWSS.

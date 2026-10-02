@@ -671,12 +671,15 @@ home_page/            site assets and assembled website root
   reconstruction and readback; `ScalarHead/{Layout,Quirky}` supply certified layouts.
   `Multiplier` uses `Data/Matrix/ReadOnce` to evaluate the interpolated weight. `Batching`
   supplies native uniform-challenge separation over an explicit `SampleableType`.
+  `Profile.lean` holds the shared packing data layer `RingSwitchingProfile` (packing data +
+  reconstruction and inverse laws); `Algebra.lean` holds `packMLE`, the tensor carrier, the
+  verifier subroutines and the tensor-product constructor `tensorProductProfile`;
+  `ProfileCoordinates`, `ProfileLayout`, `BatchingAlgebra` and `FinalAlgebra` connect the
+  profile to the finite-coordinate modules.
   These modules do not import the legacy reduction framework. Their presence is algebraic
   support, not a claim of completed Binius/Hachi/Flock protocol conformance.
-  `Packing/` also contains the legacy small→large packing family: `Profile.lean` holds the shared
-  packing data layer `RingSwitchingProfile` (packing data + reconstruction laws) and the
-  remaining files are the DP24/Binius construction (`Prelude` with `packMLE` + the tensor-product
-  constructor `tensorProductProfile`, `Spec`, `BatchingPhase`, `SumcheckPhase`, `General`; RBR
+  `Packing/` also contains the legacy DP24/Binius protocol construction (`Prelude` with the
+  protocol vocabulary, `Spec`, `BatchingPhase`, `SumcheckPhase`, `General`; RBR
   soundness, `[IsDomain L]`); Binius instantiates it in `ProofSystem/Binius/FRIBinius/`
   (`biniusProfile`). Hachi's trace construction requires its own algebraic adapter; it is
   not asserted to satisfy the tensor profile's laws.
