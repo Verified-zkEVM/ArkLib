@@ -11,6 +11,7 @@ public import ArkLib.ProofSystem.RingSwitching.Packing.ProfileCoordinates
 public import ArkLib.ProofSystem.RingSwitching.Packing.CheckedObservation
 public import ArkLib.ProofSystem.RingSwitching.Packing.Relations
 public import ArkLib.ProofSystem.RingSwitching.Packing.Multiplier
+public import ArkLib.ProofSystem.RingSwitching.Packing.Batching
 
 /-!
 # Tensor batching in finite packing coordinates
@@ -18,7 +19,9 @@ public import ArkLib.ProofSystem.RingSwitching.Packing.Multiplier
 The tensor message, column-coordinate scalar check, and row-coordinate batching target
 are instances of finite-coordinate packing. The message and packed witness are preserved,
 `CheckedObservation` gives reconstruction of the original claim, and the batching multiplier
-and target are the coordinate multiplier and weighted row family.
+and target are the coordinate multiplier and weighted row family. Distinct carriers have
+colliding batching targets with probability at most `κ/|L|`, by the equality-fold batching
+strategy applied to their row families.
 -/
 
 @[expose] public section
@@ -28,6 +31,7 @@ noncomputable section
 namespace RingSwitching
 
 open Module MvPolynomial Sumcheck.Structured
+open scoped NNReal ENNReal
 
 variable {K L : Type} [CommRing K] [CommRing L] [Algebra K L]
   {κ ℓ ℓ' : ℕ} [NeZero ℓ] [NeZero ℓ']
@@ -199,6 +203,31 @@ theorem compute_s0_eq_sum (z : P.A) (c : Fin κ → L) :
     compute_s0 κ L K P z c =
       ∑ u : Fin κ → Fin 2, eqTilde (u : Fin κ → L) c * P.decomposeRows z u :=
   eqWeightedCoordSum_eq_sum (P.decomposeRows z) c
+
+omit [NeZero ℓ] [NeZero ℓ'] in
+/-- The batching target of the tensor evaluation is the Boolean-cube sum of the batching
+multiplier times the packed polynomial. -/
+theorem compute_s0_embedded_MLP_eval (p : MultilinearPoly L ℓ') (r : Fin ℓ → L)
+    (c : Fin κ → L) :
+    compute_s0 κ L K P (embedded_MLP_eval κ L K P ℓ ℓ' h_l p r) c =
+      ∑ y : Fin ℓ' → Fin 2,
+        eval (y : Fin ℓ' → L)
+            (compute_A_MLE κ L K P ℓ' (getEvaluationPointSuffix κ L ℓ ℓ' h_l r) c).val *
+          eval (y : Fin ℓ' → L) p.val := by
+  rw [compute_s0_eq_sum, compute_A_MLE_eq_multiplier]
+  exact (Packing.sameAlgebra P.basis).sumcheckClaim_of_slices (C := L)
+    (embedded_MLP_eval_sliceRel P h_l p r) (fun u : Fin κ → Fin 2 => eqTilde (u : Fin κ → L) c)
+
+open Probability in
+omit [NeZero ℓ] [NeZero ℓ'] in
+/-- Distinct carriers have equal batching targets at a uniform batching point with probability
+at most `κ/|L|`. -/
+theorem compute_s0_collision_le [IsDomain L] [Fintype L] [SampleableType L] {z z' : P.A}
+    (hne : z ≠ z') :
+    Pr{let c ← $ᵗ (Fin κ → L)}[compute_s0 κ L K P z c = compute_s0 κ L K P z' c] ≤
+      (((κ : ℝ≥0) / (Fintype.card L : ℝ≥0) : ℝ≥0) : ℝ≥0∞) := by
+  simp_rw [compute_s0_eq_sum]
+  exact (Packing.BatchingStrategy.eqFold L κ).separates _ _ (P.rowEquiv.injective.ne hne)
 
 end RingSwitching
 
