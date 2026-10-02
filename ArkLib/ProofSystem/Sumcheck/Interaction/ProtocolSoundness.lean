@@ -115,9 +115,6 @@ theorem exportedPrefixRun_soundness {m : ℕ} (D : Fin m ↪ F)
   by_cases hcheck : ((Finset.univ.map D).toList.map (fun x => q.val.eval x)).sum = stmt.target
   · simp only [hcheck, ↓reduceIte, expect_norm]
     let i : Fin n := ⟨start, by omega⟩
-    let good : F → Prop := fun r => closedRelation F n deg D i.succ
-      ⟨⟨q.val.eval r, Fin.snoc stmt.challenges r⟩,
-        (polynomialFamily F n deg).behaviorOfRealizations (fun _ => p)⟩
     have hgood := uniform_successor_soundness n deg F D i stmt p q (by
       change ¬ closedRelation F n deg D ⟨start, by omega⟩
         ⟨stmt, (polynomialFamily F n deg).behaviorOfRealizations (fun _ => p)⟩
@@ -129,13 +126,13 @@ theorem exportedPrefixRun_soundness {m : ℕ} (D : Fin m ↪ F)
           (originalOracle.sumWeaken (polynomialInterface F deg).spec).eval
             (Access.extendImpl A (polynomialInterface F deg) impl q)⟩] ≤ _
     rw [VirtualOracle.eval_sumWeaken_extendImpl, horiginal]
-    have hbound := prEvent_bind_le_prEvent_of_forall_eq_zero ($ᵗ F)
-      (fun r => do
-        let _next ← respond (some r)
-        return good r) good (fun truth => truth) (by
-          intro r hr
-          simp only [hr, expect_norm, prEvent_false])
-    simpa only [bind_assoc, pure_bind, expect_norm] using hbound.trans hgood
+    -- average over the challenge; the opaque `respond` has no rule, and the event does not
+    -- depend on its output, so each term of the average is the challenge's own indicator
+    simp only [expect_norm, SampleableType.wp_uniformSample_eq_sum] at hgood
+    prvcgen (errorOnMissingSpec := false) [Upper.Spec.uniformSample_avg]
+    refine le_trans (ENNReal.div_le_div_right (Finset.sum_le_sum fun x _ => ?_) _) hgood
+    simp only [expect_norm]
+    exact OracleComp.ProgramLogic.wp_le_const_of_support _ fun _ _ => le_rfl
   · simp only [hcheck, ↓reduceIte, expect_norm]
     change Pr{let _next ← respond none}[False] ≤ _
     simp only [prEvent_false, zero_le]
@@ -164,15 +161,16 @@ theorem exportedPrefixRun_admissibility {m : ℕ} (D : Fin m ↪ F)
           (firstRoundProtocol F deg).oracles A impl))] ≤
       0 := by
   rw [exportedPrefixRun_firstRound]
-  -- bound the continuation after every first message `⟨q, respond⟩` of the prover
+  -- bound the continuation after every first message `⟨q, respond⟩` of the prover; `dsimp`
+  -- reduces the pattern's projections, which otherwise keep the generator from the binds
   refine (ExpectationWP.wp_bind _ _ _).trans_le
     (wp_le_of_forall_le _ fun ⟨q, respond⟩ => ?_)
+  dsimp only
   -- upper-bound reading: split on the sum check, draw the challenge, and stop at the opaque
   -- `respond`; on both branches the closed oracle is the original one, realized by `horiginal`
   prvcgen (errorOnMissingSpec := false)
   all_goals
     simp only [expect_norm]
-    try refine wp_le_of_forall_le ($ᵗ F) fun _ => ?_
     exact (prEvent_eq_zero_of_forall_mem_support _ _ fun _ _ h => h <|
       (VirtualOracle.eval_sumWeaken_extendImpl A originalOracle (polynomialInterface F deg)
         impl q).trans horiginal).le
