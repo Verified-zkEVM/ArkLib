@@ -245,16 +245,6 @@ private lemma mem_support_of_pure_run {σ : Type} {init : ProbComp σ}
   change some x ∈ support ((fun p => p.1) <$> (pure (some x, s) : ProbComp (Option Stmt₂ × σ)))
   simp
 
-/-- A probabilistic oracle computation has a possible outcome because every query has an answer. -/
-private lemma probComp_support_nonempty {σ : Type} (init : ProbComp σ) :
-    (support init).Nonempty := by
-  induction init using OracleComp.inductionOn with
-  | pure a => simp
-  | query_bind t oa ih =>
-    obtain ⟨u⟩ : Nonempty (unifSpec.Range t) := by infer_instance
-    obtain ⟨x, hx⟩ := ih u
-    exact ⟨x, by simp only [support_bind, support_query, Set.mem_iUnion]; exact ⟨u, trivial, hx⟩⟩
-
 /-- A deterministic verifier's run is a `pure` computation. -/
 private lemma run_of_deterministic
     {V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁}
@@ -273,7 +263,7 @@ private lemma verify_notMem_of_not_toFun {σ : Type} {init : ProbComp σ}
     (hVerify : V₁ = ⟨fun stmt tr => pure (verify stmt tr)⟩)
     (stmt : Stmt₁) (tr : pSpec₁.FullTranscript) (h : ¬ S₁.toFun (Fin.last m) stmt tr) :
     verify stmt tr ∉ lang₂ := by
-  obtain ⟨s, hs⟩ := probComp_support_nonempty init
+  obtain ⟨s, hs⟩ := OracleComp.support_nonempty init
   have h₁ := S₁.toFun_full stmt tr h
   rw [run_of_deterministic hVerify, OptionT.prEvent_mk_eq_zero_iff] at h₁
   exact h₁ _ (mem_support_of_pure_run hs)

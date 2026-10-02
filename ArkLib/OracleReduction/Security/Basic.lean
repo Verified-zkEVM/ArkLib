@@ -631,7 +631,9 @@ theorem Verifier.id_soundness {lang : Set StmtIn} :
     OptionT.run_monadLift, monadLift_self, Functor.map_map, simulateQ_map, StateT.run'_eq,
     StateT.run_map]
   -- upper-bound reading: the event is the constant `stmtIn ∈ lang` after the prover's run
-  prvcgen (errorOnMissingSpec := false) [Upper.Spec.ofSupport init]
+  prvcgen [Upper.Spec.ofSupport init, Upper.Spec.ofSupport
+    (simulateQ (QueryImpl.addLift impl challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
+      (prover.run stmtIn witIn) _)]
   simp [hstmtIn]
 
 /-- The straightline extractor for the identity / trivial reduction, which just returns the input
@@ -654,7 +656,9 @@ theorem Verifier.id_knowledgeSoundness {rel : Set (StmtIn × WitIn)} :
     liftM_pure, bind_pure_comp, pure_bind, Option.getM_some, map_pure, OptionT.run_pure,
     Functor.map_map, OptionT.run_map, OptionT.run_monadLift, monadLift_self, simulateQ_map,
     StateT.run'_eq, StateT.run_map]
-  prvcgen (errorOnMissingSpec := false) [Upper.Spec.ofSupport init]
+  prvcgen [Upper.Spec.ofSupport init, Upper.Spec.ofSupport
+    (simulateQ (QueryImpl.addLift impl challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
+      (prover.runWithLog stmtIn witIn) _)]
   simp
 
 /-- The identity / trivial reduction is perfectly complete. -/

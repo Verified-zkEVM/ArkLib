@@ -37,4 +37,24 @@ example {ι : Type} (oSpec : OracleSpec ι) :
   prvcgen
   exact decide_eq_true (Fin.isLt _)
 
+/-- An opaque initial draw is read through its support in the upper reading: once the
+`OptionT` event is stated on the underlying run, an output outside the language has
+probability zero. -/
+example {σ : Type} (init : ProbComp σ) (lang : Set ℕ) (h : 7 ∉ lang) :
+    Pr{let stmtOut ← (OptionT.mk (do
+      let _ ← init
+      pure (some 7)) : OptionT ProbComp ℕ)}[stmtOut ∈ lang] = 0 := by
+  simp only [OptionT.prEvent_mk]
+  prvcgen [OracleComp.Upper.Spec.ofSupport init]
+  exact (propInd_eq_zero_iff.mpr h).le
+
+/-- A simulated opaque program is read through its support, with the state it runs from left
+to unification. -/
+example {ι σ : Type} (oSpec : OracleSpec ι) (impl : QueryImpl oSpec (StateT σ ProbComp))
+    (init : ProbComp σ) (oa : OracleComp oSpec ℕ) (lang : Set ℕ) (h : ∀ n, n ∉ lang) :
+    Pr{let s ← init; let x ← (simulateQ impl oa).run s}[x.1 ∈ lang] = 0 := by
+  prvcgen [OracleComp.Upper.Spec.ofSupport init,
+    OracleComp.Upper.Spec.ofSupport ((simulateQ impl oa).run _)]
+  simp [h]
+
 end ProgramLogicRegression

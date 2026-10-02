@@ -830,20 +830,11 @@ def Verifier.StateFunction.id {lang : Set Statement} :
   toFun_empty := fun _ => by simp
   toFun_next := fun i => Fin.elim0 i
   toFun_full := fun stmt tr h => by
-    simp only [Verifier.id, Verifier.run]
-    rw [OptionT.prEvent_mk_eq_zero_iff]
-    intro x hx
-    simp only [support_bind, Set.mem_iUnion] at hx
-    obtain ⟨s, _, hx⟩ := hx
-    have key : (simulateQ impl (pure stmt : OptionT (OracleComp oSpec) Statement)).run' s =
-        pure (some stmt) := by
-      change (simulateQ impl (pure (some stmt) : OracleComp oSpec (Option Statement))).run' s = _
-      rw [simulateQ_pure]
-      change Prod.fst <$> (pure (some stmt) : StateT σ ProbComp _).run s = _
-      rw [StateT.run_pure]; simp [map_pure]
-    rw [key] at hx
-    simp only [support_pure, Set.mem_singleton_iff] at hx
-    cases hx; exact h
+    simp only [Verifier.id, Verifier.run, show (pure stmt : OptionT (OracleComp oSpec) Statement) =
+      (pure (some stmt) : OracleComp oSpec (Option Statement)) from rfl, simulateQ_pure,
+      StateT.run'_eq, StateT.run_pure, map_pure, OptionT.prEvent_mk]
+    prvcgen [Upper.Spec.ofSupport init]
+    exact (propInd_eq_zero_iff.mpr h).le
 
 /-- The identity / trivial verifier is perfectly round-by-round sound. -/
 @[simp]

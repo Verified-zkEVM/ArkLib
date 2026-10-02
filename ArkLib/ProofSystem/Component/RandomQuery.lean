@@ -166,32 +166,16 @@ def stateFunction [Inhabited OStatement] : (oracleVerifier oSpec OStatement).Sta
   toFun_empty := fun stmt => by simp
   toFun_next | 0 => fun hDir ⟨stmt, oStmt⟩ tr h => by simp_all
   toFun_full := fun ⟨stmt, oStmt⟩ tr h => by
-    -- The verifier deterministically returns `(tr 0, oStmt)`. The output is in `relOut.language`
-    -- iff `answer (oStmt 0) (tr 0) = answer (oStmt 1) (tr 0)`, but the hypothesis `h` says exactly
-    -- the opposite for the last-round state function `toFun 1`.
-    rw [OracleComp.OptionT.prEvent_mk_eq_zero_iff]
-    intro x hx
-    -- Unfold the verifier-run inside `hx`.
-    simp only [Verifier.run, OracleVerifier.toVerifier,
-      support_bind, Set.mem_iUnion] at hx
-    rw [oracleVerifier_materializeOutput] at hx
-    simp only [oracleVerifier] at hx
-    obtain ⟨s, _, hx⟩ := hx
-    -- The inner `simulateQ (simOracle2 ...) (pure ...)` reduces via `simulateQ_pure` and
-    -- absorbs the outer `pure (stmtOut, ...)`.
-    erw [simulateQ_pure] at hx
-    -- Now hx : some x ∈ support ((pure (some (tr.challenges ⟨0,_⟩, fun i => oStmt i))).run' s)
-    -- `pure` in `StateT σ ProbComp` unfolds via `StateT.run_pure`, then `map_pure` and
-    -- `support_pure`.
-    simp only [StateT.run'_eq, StateT.run_pure, map_pure, support_pure,
-      Set.mem_singleton_iff, Option.map_some, Option.some.injEq] at hx
-    subst x
-    -- Now goal: `(tr.challenges ⟨0, _⟩, oStmt) ∉ relOut.language`. The state function `h` at
-    -- last round denies `answer (oStmt 0) (tr 0) = answer (oStmt 1) (tr 0)`, which is what
-    -- being in `relOut.language` would require (witness is `Unit`).
-    simp only [Set.not_mem_language_iff]
-    intro wit hMem
-    simp only [relOut, Set.mem_ofPred_eq] at hMem
+    -- The verifier deterministically returns `(tr 0, oStmt)`, which lies in `relOut.language`
+    -- only if `answer (oStmt 0) (tr 0) = answer (oStmt 1) (tr 0)`, the opposite of `h`.
+    simp only [Verifier.run, OracleVerifier.toVerifier]
+    rw [oracleVerifier_materializeOutput]
+    simp only [oracleVerifier, OptionT.prEvent_mk]
+    erw [simulateQ_pure]
+    prvcgen [Upper.Spec.ofSupport init]
+    refine (propInd_eq_zero_iff.mpr ?_).le
+    rintro ⟨⟨⟨_, _⟩, _⟩, hMem, hEq⟩
+    obtain ⟨rfl, rfl⟩ := Prod.mk.inj hEq
     exact h hMem
 
 /-- The round-by-round extractor is trivial since the output witness is `Unit`. -/
