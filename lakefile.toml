@@ -73,7 +73,7 @@ srcDir = "scripts"
 root = "AxiomSweep"
 supportInterpreter = true
 
-# Native-measure conversion ledger: declarations still using VCVio's retiring scalar
+# Native-measure conversion ledger: declarations still using VCVio's retired scalar
 # probability surface or Mathlib's `PMF`; see scripts/RetiredProbabilitySweep.lean.
 [[lean_exe]]
 name = "retiredsweep"

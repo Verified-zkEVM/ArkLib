@@ -18,16 +18,20 @@ computation:
 
 | Goal | Reading |
 |------|---------|
-| `Pr{…}[p] = 1`, `∀ x ∈ support oa, p x` | every possible output (structural) |
-| `0 < Pr{…}[p]`, `∃ x ∈ support oa, p x` | some possible output (angelic) |
+| `Pr{…}[p] = 1`, `∀ x ∈ support oa, p x` | every possible output (necessary) |
+| `0 < Pr{…}[p]`, `∃ x ∈ support oa, p x` | some possible output (possible) |
 | `r ≤ Pr{…}[p]` | expectation lower bound |
 | `Pr{…}[p] ≤ ε`, `Pr{…}[p] = 0` | expectation upper bound |
 | `Pr{…}[p] = c` | both bounds |
 
-`vcgen` then steps through binds, `if` and `match`, uniform draws, oracle queries, lifts between
-oracle worlds, and verifier challenges. It leaves one verification condition per path, stated
-about the values the program produced. VCVio's guide, `docs/agents/program-logic.md` in the
-VCVio repository, lists the rules and the forms `prvcgen` accepts.
+`vcgen` then walks the program's own `do` blocks: binds, `if` and `match`, uniform draws, oracle
+queries, lifts between oracle worlds, and verifier challenges. It leaves one verification
+condition per path, stated about the values the program produced. A sub-program it cannot see
+into, such as a prover's run or a `simulateQ` of an unknown computation, stops it unless a rule
+for that sub-program is passed in brackets; `OracleComp.Necessary.Spec.ofSupport oa` and
+`OracleComp.Upper.Spec.ofSupport oa` read such a program through its support. VCVio's guide,
+`docs/agents/program-logic.md` in the VCVio repository, lists the rules and the forms `prvcgen`
+accepts.
 
 ## The recipe for an honest execution
 
