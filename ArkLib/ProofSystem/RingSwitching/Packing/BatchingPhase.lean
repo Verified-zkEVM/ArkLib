@@ -276,6 +276,7 @@ def batchingKStateProp {m : Fin (2 + 1)}
       ∧ embedded_MLP_eval κ L K P ℓ ℓ' h_l witMid.t' stmt.t_eval_point = s_hat
       ∧ performCheckOriginalEvaluation κ L K P ℓ ℓ' h_l stmt.original_claim
         stmt.t_eval_point s_hat -- local V check
+      ∧ aOStmtIn.initialCompatibility ⟨witMid.t', oStmt⟩
   | ⟨2, _⟩ => by -- implied by relOut
     simp only [batchingWitMid] at witMid
     let ⟨msgsUpTo, chalsUpTo⟩ := Transcript.equivMessagesChallenges (k := 2)
@@ -413,12 +414,9 @@ noncomputable def batchingKnowledgeStateFunction :
       rw [hSuccTrue.1]
       simp only [true_and]
       set s_hat := (Transcript.concat msg tr).toMessagesChallenges.1 ⟨(0 : Fin (0 + 1)), by rfl⟩
-      refine ⟨original_claim_of_check P h_l witMid.t stmtIn.1.t_eval_point _ s_hat
-        (hSuccTrue.1 ▸ hSuccTrue.2.1) hSuccTrue.2.2, ?_⟩
-      -- ⊢ aOStmtIn.initialCompatibility (packMLE … witMid.t, stmtIn.2)
-      -- Not derivable: KState 1 does not record `initialCompatibility` (with an unsatisfiable
-      -- compatibility, KState 1 holds while this goal is false). Needs that conjunct in KState 1.
-      sorry
+      obtain ⟨hpack, heval, hcheck, hcompat⟩ := hSuccTrue
+      exact ⟨original_claim_of_check P h_l witMid.t stmtIn.1.t_eval_point _ s_hat
+        (hpack ▸ heval) hcheck, hpack ▸ hcompat⟩
     | ⟨1, h⟩ => nomatch h
   -- Not derivable: on a failed check the verifier outputs `failureState`, which lies in `relOut`
   -- with the zero packed polynomial whenever `(0, oStmt)` is compatible, while KState 2 demands
