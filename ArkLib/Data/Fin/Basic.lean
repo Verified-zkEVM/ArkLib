@@ -266,12 +266,6 @@ theorem append_right_injective (a : Fin m → α) : Function.Injective (@Fin.app
   simp only [append_right] at this
   exact this
 
-/-- Applying a function pointwise commutes with appending tuples. -/
-theorem apply_append {β : Sort*} (f : α → β) (a : Fin m → α) (b : Fin n → α) :
-    (fun i => f (append a b i)) = append (fun i => f (a i)) (fun i => f (b i)) := by
-  funext i
-  exact addCases (fun j => by simp) (fun j => by simp) i
-
 end Append
 
 /-- Version of `Fin.addCases` that splits the motive into two dependent vectors `α` and `β`, and

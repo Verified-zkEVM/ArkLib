@@ -70,7 +70,10 @@ theorem quirkySection_splitLast (t : QuirkyTable (B := B) m ks)
   dsimp only [splitLast, quirkyComponent]
   congr 1
   funext y
-  rw [← Fin.apply_append (fun c : Fin 2 => (c : B)), quirkySection, MLE_eval_zeroOne]
+  rw [← show (fun i => ((Fin.append y (fun _ : Fin 1 => b) i : Fin 2) : B)) =
+      Fin.append (y : Fin m → B) (fun _ : Fin 1 => (b : B)) from
+      (Fin.append_comp fun c : Fin 2 => (c : B)).symm,
+    quirkySection, MLE_eval_zeroOne]
   simp only [Fin.append_right_eq_snoc, Fin.snoc_castSucc, Fin.snoc_last]
 
 variable [hField : Fact (IsField data.E)]
