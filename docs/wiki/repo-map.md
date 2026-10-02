@@ -671,15 +671,13 @@ home_page/            site assets and assembled website root
   reconstruction and readback; `ScalarHead/{Layout,Quirky}` supply certified layouts.
   `Multiplier` uses `Data/Matrix/ReadOnce` to evaluate the interpolated weight. `Batching`
   supplies native uniform-challenge separation over an explicit `SampleableType`.
-  These modules do not import the legacy reduction framework. Their presence is algebraic
-  support, not a claim of completed Binius/Hachi/Flock protocol conformance.
+  These modules do not import the legacy reduction framework.
   `Packing/` also contains the legacy small→large packing family: `Profile.lean` holds the shared
   packing data layer `RingSwitchingProfile` (packing data + reconstruction laws) and the
   remaining files are the DP24/Binius construction (`Prelude` with `packMLE` + the tensor-product
   constructor `tensorProductProfile`, `Spec`, `BatchingPhase`, `SumcheckPhase`, `General`; RBR
   soundness, `[IsDomain L]`); Binius instantiates it in `ProofSystem/Binius/FRIBinius/`
-  (`biniusProfile`). Hachi's trace construction requires its own algebraic adapter; it is
-  not asserted to satisfy the tensor profile's laws.
+  (`biniusProfile`), and Hachi's §3 packing head is the intended next `Profile` instance.
   `Lift/` is the **generic HMZ25 lift** (large quotient ring →
   field, CWSS at `k = 2d`): `Presentation.lean` is its data layer (proof-free
   `Presentation R S` + `IsPresentation` laws over any monic modulus — not cyclotomic-specific

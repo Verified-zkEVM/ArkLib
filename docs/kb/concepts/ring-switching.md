@@ -72,6 +72,27 @@ opening); see the blueprint section *Ring Switching*
 Its RBR knowledge error is `κ/|L| + Σ 2/|L| + 1/|L| + ε_IOPCS` (DP24 §3.1–3.2), and soundness
 requires `[IsDomain L]` (Schwartz–Zippel).
 
+## Shared coordinate algebra
+
+Below the profile, `Packing/` has a framework-independent coordinate layer that imports no
+reduction framework. `PackingData` (`Packing/Coordinates.lean`) takes independent finite bases of a
+packing algebra `P` and an opening algebra `E` over a common ring `B`, with no embedding between
+them; `PackingData.transpose` is the coordinate transpose `(ιP → E) ≃ₗ[B] (ιE → P)`. On top of it:
+
+- `FiniteObservation` and `CheckedObservation` — weighted observations, their coordinate slices,
+  and read-back of a scalar claim from an accepted, honest message;
+- `Polynomial` and `Relations` — packed multilinear polynomials with both round trips, and the
+  opening, slice and batched-sumcheck relations;
+- `Multiplier` — the public multiplier evaluated by a read-once matrix program
+  (`Data/Matrix/ReadOnce.lean`);
+- `Batching` — `BatchingStrategy`, a uniform challenge distribution with a proved collision bound
+  (`gammaPowers`, `eqFold`, `singleton`, `reindex`);
+- `ScalarHead/Layout` and `ScalarHead/Quirky` — prefix, suffix and quirky Lagrange layouts, each
+  with a proved reconstruction identity.
+
+Everything holds over commutative rings, including rings with zero divisors, except the two
+Schwartz–Zippel batching strategies, which need a finite domain.
+
 ## The three constructions
 
 - **DP24 packing switch** (`ProofSystem/RingSwitching/Packing/`, tensor-product profile
@@ -103,6 +124,8 @@ requires `[IsDomain L]` (Schwartz–Zippel).
 
 - [`../papers/DP24.md`](../papers/DP24.md) — origin of ring switching for binary towers.
 - [`../papers/NOZ26.md`](../papers/NOZ26.md) — Hachi; the extension-field→cyclotomic-ring reduction.
+- [`../papers/RSG.md`](../papers/RSG.md) — ring switching with independent packing and opening bases.
+- [`../papers/BRW26.md`](../papers/BRW26.md) — Flock; scalar-claim heads and the quirky layout.
 
 ## Main ArkLib Touchpoints
 
@@ -110,6 +133,9 @@ requires `[IsDomain L]` (Schwartz–Zippel).
 - [`../../../ArkLib/ProofSystem/RingSwitching/RoundVerifiers.lean`](../../../ArkLib/ProofSystem/RingSwitching/RoundVerifiers.lean) — the shared check-then-update round verifiers.
 - [`../../../ArkLib/ProofSystem/RingSwitching/Transport.lean`](../../../ArkLib/ProofSystem/RingSwitching/Transport.lean) — the shared claim-transport algebra (umbrella for `Transport/`).
 - [`../../../ArkLib/ProofSystem/RingSwitching/Packing/Profile.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/Profile.lean) — the packing abstraction.
+- [`../../../ArkLib/ProofSystem/RingSwitching/Packing/Coordinates.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/Coordinates.lean) — independent packing and opening bases, coordinate transpose.
+- [`../../../ArkLib/ProofSystem/RingSwitching/Packing/Relations.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/Relations.lean) — opening, slice and batched-sumcheck relations.
+- [`../../../ArkLib/ProofSystem/RingSwitching/Packing/Batching.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/Batching.lean) — batching strategies with proved collision bounds.
 - [`../../../ArkLib/ProofSystem/RingSwitching/Packing/Prelude.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/Prelude.lean) — `packMLE`, the tensor-product constructor `tensorProductProfile`, DP24 defs.
 - [`../../../ArkLib/ProofSystem/RingSwitching/Packing/General.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/General.lean) — the full DP24 reduction + security theorems.
 - [`../../../ArkLib/ProofSystem/RingSwitching/Lift/Presentation.lean`](../../../ArkLib/ProofSystem/RingSwitching/Lift/Presentation.lean) — the quotient-presentation abstraction + lift algebra.

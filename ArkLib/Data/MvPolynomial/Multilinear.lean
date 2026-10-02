@@ -120,6 +120,12 @@ theorem eqTilde_append {m n : ℕ} (x₁ y₁ : Fin m → R) (x₂ y₂ : Fin n 
   rw [Fin.prod_univ_add]
   congr 1 <;> exact Finset.prod_congr rfl fun i _ => by simp [Fin.append]
 
+/-- The equality polynomial factors off its first coordinate. -/
+theorem eqTilde_cons {n : ℕ} (x₀ y₀ : R) (x y : Fin n → R) :
+    eqTilde (Fin.cons x₀ x : Fin (n + 1) → R) (Fin.cons y₀ y) =
+      (x₀ * y₀ + (1 - x₀) * (1 - y₀)) * eqTilde x y := by
+  simp only [eqTilde_eq_prod, Fin.prod_univ_succ, Fin.cons_zero, Fin.cons_succ]
+
 -- @[simp]
 theorem eqPolynomial_zeroOne (r : σ → Fin 2) : (eqPolynomial r : MvPolynomial σ R) =
     ∏ i : σ, if r i = 0 then 1 - X i else X i := by

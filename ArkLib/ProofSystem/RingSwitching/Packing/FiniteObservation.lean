@@ -51,7 +51,7 @@ theorem transpose_observe (a : Y → data.E) (v : Y → data.P) :
   rw [smul_smul, mul_comm]
 
 /-- Reading observed slices back recovers every weighted packing coordinate. -/
-theorem readback_coordinateSlices (a : Y → data.E) (v : Y → data.P) :
+theorem transpose_symm_coordinateSlices (a : Y → data.E) (v : Y → data.P) :
     data.transpose.symm (data.coordinateSlices a v) = data.observe a v := by
   rw [← data.transpose_observe, LinearEquiv.symm_apply_apply]
 

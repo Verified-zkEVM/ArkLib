@@ -27,26 +27,16 @@ def observation : CheckedObservation Unit (Fin 3) (Fin 3) Nat Nat where
   observe _ msg := msg
   eval_eq_observe _ w := by fin_cases w <;> decide
 
-/-- The retained predicate allows output witnesses zero and one, and excludes two. -/
-def keep (_ : Unit) (w : Fin 3) : Prop := w ≠ 2
-
-/-- The interface permits multiple retained witnesses. -/
-theorem two_retained_witnesses : keep () 0 ∧ keep () 1 := by unfold keep; decide
-
-/-- Retaining this predicate is substantive: it excludes a third witness. -/
-theorem excluded_witness : ¬ keep () 2 := by unfold keep; decide
-
 /-- Honest checking uses the image of the original source witness zero. -/
 theorem honest_source :
     (8 : Nat) = observation.observe ()
       (observation.honestMsg () (observation.witnessEquiv 0)) :=
   observation.honest_check (q := ()) (w := 0) rfl
 
-/-- A valid output witness is pulled back through the inverse equivalence. -/
+/-- A message honest for output witness one is pulled back through the inverse equivalence. -/
 theorem readback_source :
-    keep () (observation.witnessEquiv (observation.witnessEquiv.symm 1)) ∧
-      (8 : Nat) = observation.scalarEval () (observation.witnessEquiv.symm 1) :=
-  observation.readback_keep keep (q := ()) (msg := 8) rfl ⟨by unfold keep; decide, rfl⟩
+    (8 : Nat) = observation.scalarEval () (observation.witnessEquiv.symm 1) :=
+  observation.readback (q := ()) (msg := 8) rfl rfl
 
 /-- The extracted source is zero, while the output witness was one. -/
 theorem extracted_source : observation.witnessEquiv.symm 1 = 0 := rfl
@@ -58,7 +48,11 @@ theorem wrong_witness_rejected : (8 : Nat) ≠ observation.scalarEval () 1 := by
 theorem wrong_forward_transport_rejected :
     (8 : Nat) ≠ observation.scalarEval () (observation.witnessEquiv 1) := by decide
 
-/-- A checked value does not license readback with an unrelated honest message. -/
-theorem wrong_message_rejected : (8 : Nat) ≠ observation.honestMsg () 0 := by decide
+/-- The check alone accepts a message that is honest for no witness; read-back needs the
+honest-message premise, since no source witness evaluates to the accepted claim. -/
+theorem accepted_dishonest_message_has_no_source :
+    (100 : Nat) = observation.observe () 100 ∧
+      (∀ w, observation.honestMsg () w ≠ 100) ∧ ∀ w, observation.scalarEval () w ≠ 100 := by
+  refine ⟨rfl, ?_, ?_⟩ <;> decide
 
 end RingSwitching.Packing.CheckedObservationTest

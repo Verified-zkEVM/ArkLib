@@ -31,7 +31,6 @@ def values : Fin 2 → data.P := ![![1, 2], ![3, 4]]
 theorem zero_divisors : (2 : ZMod 6) ≠ 0 ∧ (3 : ZMod 6) ≠ 0 ∧ (2 : ZMod 6) * 3 = 0 := by
   decide
 
-set_option backward.isDefEq.respectTransparency false in
 /-- Direct arithmetic gives an asymmetric nonzero observed family. -/
 theorem observed_values : data.observe weights values = ![![1, 5, 3], ![0, 0, 0]] := by
   ext i u
@@ -40,7 +39,6 @@ theorem observed_values : data.observe weights values = ![![1, 5, 3], ![0, 0, 0]
       Pi.basisFun_repr (R := ZMod 6), Fin.sum_univ_succ, Algebra.smul_def, Pi.mul_apply,
       Pi.add_apply, Pi.algebraMap_apply] <;> decide
 
-set_option backward.isDefEq.respectTransparency false in
 /-- The same table has three packed slices. -/
 theorem slice_values : data.coordinateSlices weights values = ![![1, 0], ![5, 0], ![3, 0]] := by
   ext u i
@@ -59,7 +57,7 @@ theorem transpose :
 theorem readback :
     data.transpose.symm ![![1, 0], ![5, 0], ![3, 0]] = ![![1, 5, 3], ![0, 0, 0]] := by
   rw [← observed_values, ← slice_values]
-  exact data.readback_coordinateSlices weights values
+  exact data.transpose_symm_coordinateSlices weights values
 
 /-- An empty observation set has zero family and slices. -/
 theorem empty_observation :
@@ -69,7 +67,7 @@ theorem empty_observation :
 
 /-- The inverse theorem also applies to the empty observation set. -/
 theorem empty_readback : data.transpose.symm (0 : data.ιE → data.P) = 0 := by
-  rw [← empty_observation.2, data.readback_coordinateSlices]
+  rw [← empty_observation.2, data.transpose_symm_coordinateSlices]
   exact empty_observation.1
 
 /-- The deterministic base-opening specialization still permits packing rank two. -/
@@ -81,11 +79,10 @@ abbrev baseData : PackingData (ZMod 6) where
   packBasis := Pi.basisFun _ _
   openBasis := Module.Basis.singleton Unit _
 
-set_option backward.isDefEq.respectTransparency false in
 /-- A singleton weighted observation evaluates each packing coordinate. -/
 theorem singleton_readback :
     baseData.transpose.symm (fun _ => ![0, 2]) = ![0, 2] := by
-  have h := baseData.readback_coordinateSlices (fun _ : Unit => (2 : ZMod 6))
+  have h := baseData.transpose_symm_coordinateSlices (fun _ : Unit => (2 : ZMod 6))
     (fun _ => ![3, 4])
   have hs : baseData.coordinateSlices (fun _ : Unit => (2 : ZMod 6))
       (fun _ => ![3, 4]) = fun _ => ![0, 2] := by

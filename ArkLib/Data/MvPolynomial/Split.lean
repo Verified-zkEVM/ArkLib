@@ -5,15 +5,15 @@ Authors: Alexander Hicks
 -/
 module
 
+public import ArkLib.Data.Fin.Basic
 public import ArkLib.Data.MvPolynomial.Multilinear
-public import Mathlib.Logic.Equiv.Fin.Basic
 
 /-!
 # Splitting a multilinear Boolean table into coordinate blocks
 
 The first block indexes the component family; each component retains the second block. The
 construction and evaluation identity hold over commutative rings, including rings with zero
-divisors. Exchanging the blocks is an explicit variable permutation.
+divisors. `splitLast` is the same construction with the component index in the last block.
 -/
 
 @[expose] public section
@@ -24,13 +24,6 @@ namespace MvPolynomial
 
 variable {R : Type*} [CommRing R] (k m : ℕ)
 
-/-- Casts of appended Boolean blocks agree with appended casts. -/
-theorem cast_append_bool (v : Fin k → Fin 2) (y : Fin m → Fin 2) :
-    (fun i => ((Fin.append v y i : Fin 2) : R)) =
-      Fin.append (v : Fin k → R) (y : Fin m → R) := by
-  funext i
-  exact Fin.addCases (fun j => by simp) (fun j => by simp) i
-
 /-- The components obtained by fixing the first Boolean coordinate block. -/
 def splitFirst (p : R⦃≤ 1⦄[X Fin (k + m)]) (v : Fin k → Fin 2) : R⦃≤ 1⦄[X Fin m] :=
   ⟨MLE (fun y => eval ((Fin.append v y) : Fin (k + m) → R) p.val), MLE_mem_restrictDegree _⟩
@@ -40,6 +33,7 @@ def joinFirst (ps : (Fin k → Fin 2) → R⦃≤ 1⦄[X Fin m]) : R⦃≤ 1⦄[
   ⟨MLE (fun z => eval ((fun i => z (Fin.natAdd k i)) : Fin m → R)
     (ps (fun i => z (Fin.castAdd m i))).val), MLE_mem_restrictDegree _⟩
 
+/-- Each component evaluates the original polynomial with the first block fixed. -/
 @[simp]
 theorem splitFirst_eval (p : R⦃≤ 1⦄[X Fin (k + m)]) (v : Fin k → Fin 2)
     (y : Fin m → Fin 2) :
@@ -47,6 +41,7 @@ theorem splitFirst_eval (p : R⦃≤ 1⦄[X Fin (k + m)]) (v : Fin k → Fin 2)
       eval ((Fin.append v y) : Fin (k + m) → R) p.val :=
   MLE_eval_zeroOne _ _
 
+/-- Splitting an assembled table recovers its components. -/
 @[simp]
 theorem splitFirst_joinFirst (ps : (Fin k → Fin 2) → R⦃≤ 1⦄[X Fin m]) :
     splitFirst k m (joinFirst k m ps) = ps := by
@@ -57,9 +52,10 @@ theorem splitFirst_joinFirst (ps : (Fin k → Fin 2) → R⦃≤ 1⦄[X Fin m]) 
     ((mem_restrictDegree_iff_degreeOf_le _ _).mp (ps v).property)
   intro y
   rw [splitFirst_eval]
-  rw [← cast_append_bool]
+  rw [← Fin.apply_append (fun b : Fin 2 => (b : R))]
   simp only [joinFirst, MLE_eval_zeroOne, Fin.append_left, Fin.append_right]
 
+/-- Assembling the components of a polynomial recovers the polynomial. -/
 @[simp]
 theorem joinFirst_splitFirst (p : R⦃≤ 1⦄[X Fin (k + m)]) :
     joinFirst k m (splitFirst k m p) = p := by
@@ -91,7 +87,8 @@ theorem aeval_append_splitFirst {E : Type*} [CommRing E] [Algebra R E]
   simp_rw [aeval_multilinear_eq_sum_eqTilde (splitFirst k m p _).property,
     splitFirst_eval, Finset.mul_sum]
   refine Finset.sum_congr rfl fun v _ => Finset.sum_congr rfl fun y _ => ?_
-  rw [cast_append_bool (R := E), eqTilde_append, cast_append_bool (R := R)]
+  rw [Fin.apply_append (fun b : Fin 2 => (b : E)), eqTilde_append,
+    Fin.apply_append (fun b : Fin 2 => (b : R))]
   exact mul_assoc _ _ _
 
 /-- The components obtained by fixing the final Boolean block. -/
@@ -103,6 +100,7 @@ def joinLast (ps : (Fin k → Fin 2) → R⦃≤ 1⦄[X Fin m]) : R⦃≤ 1⦄[X
   ⟨MLE (fun z => eval ((fun i => z (Fin.castAdd k i)) : Fin m → R)
     (ps (fun i => z (Fin.natAdd m i))).val), MLE_mem_restrictDegree _⟩
 
+/-- Each component evaluates the original polynomial with the last block fixed. -/
 @[simp]
 theorem splitLast_eval (p : R⦃≤ 1⦄[X Fin (m + k)]) (v : Fin k → Fin 2)
     (y : Fin m → Fin 2) :
@@ -110,6 +108,7 @@ theorem splitLast_eval (p : R⦃≤ 1⦄[X Fin (m + k)]) (v : Fin k → Fin 2)
       eval ((Fin.append y v) : Fin (m + k) → R) p.val :=
   MLE_eval_zeroOne _ _
 
+/-- Splitting an assembled table recovers its components. -/
 @[simp]
 theorem splitLast_joinLast (ps : (Fin k → Fin 2) → R⦃≤ 1⦄[X Fin m]) :
     splitLast k m (joinLast k m ps) = ps := by
@@ -120,9 +119,10 @@ theorem splitLast_joinLast (ps : (Fin k → Fin 2) → R⦃≤ 1⦄[X Fin m]) :
     ((mem_restrictDegree_iff_degreeOf_le _ _).mp (ps v).property)
   intro y
   rw [splitLast_eval]
-  rw [← cast_append_bool]
+  rw [← Fin.apply_append (fun b : Fin 2 => (b : R))]
   simp only [joinLast, MLE_eval_zeroOne, Fin.append_left, Fin.append_right]
 
+/-- Assembling the components of a polynomial recovers the polynomial. -/
 @[simp]
 theorem joinLast_splitLast (p : R⦃≤ 1⦄[X Fin (m + k)]) :
     joinLast k m (splitLast k m p) = p := by
@@ -155,7 +155,8 @@ theorem aeval_append_splitLast {E : Type*} [CommRing E] [Algebra R E]
   simp_rw [aeval_multilinear_eq_sum_eqTilde (splitLast k m p _).property,
     splitLast_eval, Finset.mul_sum]
   refine Finset.sum_congr rfl fun v _ => Finset.sum_congr rfl fun y _ => ?_
-  rw [cast_append_bool (R := E), eqTilde_append, cast_append_bool (R := R)]
+  rw [Fin.apply_append (fun b : Fin 2 => (b : E)), eqTilde_append,
+    Fin.apply_append (fun b : Fin 2 => (b : R))]
   ring
 
 end MvPolynomial

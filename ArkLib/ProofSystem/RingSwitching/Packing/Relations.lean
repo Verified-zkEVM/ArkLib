@@ -73,7 +73,7 @@ theorem aeval_unpack_of_slices {m : ℕ} {r : Fin m → data.E}
           (fun y : Fin m → Fin 2 => eqTilde r (y : Fin m → data.E))
           (fun y => p.val.eval (y : Fin m → data.P)) = s :=
         funext fun u => (hs u).symm
-      have h := congrFun (data.readback_coordinateSlices
+      have h := congrFun (data.transpose_symm_coordinateSlices
         (fun y : Fin m → Fin 2 => eqTilde r (y : Fin m → data.E))
         (fun y => p.val.eval (y : Fin m → data.P))) i
       rw [hs', data.transpose_symm_apply] at h

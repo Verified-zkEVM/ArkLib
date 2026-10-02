@@ -567,7 +567,6 @@ public import ArkLib.Data.Misc.Basic
 public import ArkLib.Data.MvPolynomial.Degrees
 public import ArkLib.Data.MvPolynomial.EvenAndOdd
 public import ArkLib.Data.MvPolynomial.FrobeniusContraction
-public import ArkLib.Data.MvPolynomial.Hypercube
 public import ArkLib.Data.MvPolynomial.Interpolation
 public import ArkLib.Data.MvPolynomial.JointDegree
 public import ArkLib.Data.MvPolynomial.LinearMvExtension

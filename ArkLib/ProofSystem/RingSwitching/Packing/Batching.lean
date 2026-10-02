@@ -29,8 +29,6 @@ open scoped NNReal ENNReal
 structure BatchingStrategy (P : Type) [CommRing P] (W : Type) [Fintype W] where
   /-- Verifier challenge type. -/
   Challenge : Type
-  [ftC : Fintype Challenge]
-  [neC : Nonempty Challenge]
   [sampleC : SampleableType Challenge]
   /-- Weight of each claim for a given challenge. -/
   weight : Challenge → W → P
@@ -41,7 +39,7 @@ structure BatchingStrategy (P : Type) [CommRing P] (W : Type) [Fintype W] where
     Pr{let c ← $ᵗ Challenge}[∑ u, weight c u * s u = ∑ u, weight c u * s' u] ≤
       (error : ℝ≥0∞)
 
-attribute [instance] BatchingStrategy.ftC BatchingStrategy.neC BatchingStrategy.sampleC
+attribute [instance] BatchingStrategy.sampleC
 
 namespace BatchingStrategy
 
@@ -88,9 +86,8 @@ def reindex {P : Type} [CommRing P] {W : Type} [Fintype W] (bat : BatchingStrate
 
 variable (P : Type) [CommRing P] [IsDomain P] [Fintype P] [SampleableType P]
 
-
-/-- Zero-based power batching with degree bound `e−1`. The generalized note instead starts
-at exponent one; its looser `e/|P|` bound describes a distinct challenge event at zero. -/
+/-- Power batching with exponents `0, …, e − 1`: distinct families collide at a uniform
+challenge with probability at most `(e − 1)/|P|`. -/
 def gammaPowers (e : ℕ) : BatchingStrategy P (Fin e) where
   Challenge := P
   weight γ u := γ ^ (u : ℕ)
@@ -134,9 +131,8 @@ def gammaPowers (e : ℕ) : BatchingStrategy P (Fin e) where
       have : (u : ℕ) ≤ e - 1 := Nat.le_sub_one_of_lt u.isLt
       omega
     exact (prEvent_congr _ _ _ hev).trans_le
-      ((prob_schwartz_zippel_single_variable f (e - 1) hf_ne hdeg).trans_eq
+      ((prob_schwartz_zippel_single_variable f hf_ne hdeg).trans_eq
         (ENNReal.coe_div (Nat.cast_ne_zero.mpr Fintype.card_ne_zero)).symm)
-
 
 /-- Boolean-coordinate batching with a fresh multilinear point and loss `κ/|P|`. -/
 def eqFold (κ : ℕ) : BatchingStrategy P (Fin κ → Fin 2) where
@@ -173,7 +169,6 @@ def eqFold (κ : ℕ) : BatchingStrategy P (Fin κ → Fin 2) where
     exact (prEvent_congr _ _ _ hev).trans_le
       ((prob_schwartz_zippel_mv_polynomial f hf_ne hdeg).trans_eq
         (ENNReal.coe_div (Nat.cast_ne_zero.mpr Fintype.card_ne_zero)).symm)
-
 
 end BatchingStrategy
 
