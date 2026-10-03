@@ -306,7 +306,7 @@ The user explicitly launched the revised general-theory goal at 00:56:52 America
 (04:56:52Z), with deadline 08:56:52 (12:56:52Z). The six-hour checkpoint is 06:56:52;
 expansion freezes at 07:26:52 to reserve final review and consolidation. The earlier premature
 launch was stopped without implementation changes and does not consume this window.
-See the [run record](../kb/audits/interaction-night-20261003.md) for exact work/check/PR evidence.
+See the [run record](interaction-security-night-results.md) for exact work/check/PR evidence.
 
 The [accepted mathematical contract](interaction-security-night-contract.md) states the actual
 definitions, theorem statements, MUST/SHOULD/HOPE boundaries and unresolved choices. It fixes the mathematical target; literal Lean interfaces still require statement review. That document governs the revised priorities. The earlier deferral of aggregate ordinary

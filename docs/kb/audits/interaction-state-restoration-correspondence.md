@@ -2,7 +2,7 @@
 
 This note records the October 3, 2026 implementation boundary. The normative scope remains the
 [overnight contract](../../design/interaction-security-night-contract.md); publication and exact
-validation revisions are recorded in the [run ledger](interaction-night-20261003.md). Principal
+validation revisions are recorded in the [run ledger](../../design/interaction-security-night-results.md). Principal
 native production proofs and the closed-oracle endpoint have compiled and passed independent
 review; final clients and combined canonical validation have passed. See the run ledger for exact heads, CI status and acceptance verdicts.
 
@@ -124,12 +124,12 @@ arbitrary interleaved private-randomness and oracle effects is not asserted.
 
 ## Nonuniform errors and invalid shortcuts
 
-The optional extension under development assigns error `epsilon_j` to each fixed round and
-targets `Q * max_j epsilon_j + sum_j epsilon_j` for the same actual restoration game. It uses
+The nonuniform extension assigns error `epsilon_j` to each fixed round and proves
+`Q * max_j epsilon_j + sum_j epsilon_j` for the same actual restoration game. It uses
 VCVio's existing worst-case additive query-cost semantics with probability charges as weights;
 these weights are not CPU extraction costs. The weighted fresh-query theorem is now proved and
 independently reviewed in VCVio; the exact revisions and downstream acceptance status are in the
-[run ledger](interaction-night-20261003.md). The
+[run ledger](../../design/interaction-security-night-results.md). The
 following hand-checked counterexamples explain why simpler-looking arguments do not suffice;
 they are research observations, not claims of additional Lean separation theorems.
 
@@ -153,8 +153,15 @@ they are research observations, not claims of additional Lean separation theorem
    `ExpectedCostBound` cannot replace an actual cached-runtime budget without a correspondence
    theorem. The existing all-path `WorstCaseCostBound` is safe here and gives 1.
 
-The proposed weighted proof retains the all-background-table resampling premise and charges
+The weighted proof retains the all-background-table resampling premise and charges
 fresh bad events without conditioning on previous absence. Completion's actual query charges
 sum to the round errors, while the adversary's all-branch query bound gives `Q * max`. Infinite
-and zero errors and zero-round protocols should remain covered. A runtime-expected or genuinely
+and zero errors and zero-round protocols remain covered. A runtime-expected or genuinely
 history-dependent sharpening is a separate future theorem.
+
+`complete_round_cost` bounds the actual completion program's query charges by the sum. It is not
+a separate probability bound for completion conditioned on the adversary's selected transcript.
+`restoredExecution_round_cost` adds that cost to the all-branch adversary budget before the
+weighted probability theorem is applied. `stateRestoration_oracle_knowledge_soundness_nonuniform`
+then uses the same closed-game equation and endpoint iff laws as the uniform theorem. Thus the
+sharpening changes neither the extractor's information nor the output relation's observation.
