@@ -53,10 +53,43 @@ checkpoint is recorded at that step. A proposed grouping of all roots into one p
 was rejected pending a stronger causal refinement proof; final transcript equality alone
 would not certify commitment-time extraction.
 
+## First-hour checked progress
+
+These are checked supporting results, not completion of the main security targets.
+
+- VCVio `97530943`: the joint cached interpreter returns output, ordered hash-query log,
+  and cache; private sampling uses the separate uncached summand.
+- VCVio `8fc8bae0`: public finite-query restriction APIs. Full
+  `./scripts/validate.sh --axioms --test` passed (340.4 seconds; 22,079 declarations,
+  781 modules, 14 existing sorry-tainted declarations, zero nonstandard axioms).
+  Independent ordinary review found no P1/P2 issue.
+- VCVio `0327fa34`: the finite-domain joint lazy/eager measure equality, including
+  interleaved private samples and arbitrary initial caches; also the deterministic finite
+  expected-charge theorem. Target module checked; configured lint cleanup remains in progress.
+- VCVio `8dd83a7d`: restriction to finitely many possible hash keys preserves the complete
+  mixed computation, with arbitrary initial cache and all outside cache entries retained.
+  Ordered logs preserve order and multiplicity; distinct-query charge is unchanged.
+  Target module checked without its own warnings; independent ordinary review found no P1/P2.
+- VCVio `41111c50`: expected actual distinct-query charge is invariant under that restriction.
+- VCVio `ef4ebfea`: every supported actual cached result is supported by some fixed-table run,
+  with identical output, ordered log, and final cache, even for an infinite key domain.
+  The latter two target modules checked; independent final review is still required.
+- ArkLib `b19906256`: randomized native scalar/closed execution structure and deterministic
+  charge decomposition. Full validation with axiom audit passed (934 modules, unchanged
+  286 sorry-tainted declarations, zero nonstandard axioms). The expected probability theorem
+  is not part of that checkpoint.
+
+The restoration worker has additionally checked same-cache phase handoff, equality of source
+and interpreted hash logs, and support-level bad-output and charge implications in scratch
+against the new VCVio modules. These are exploratory checks until committed against a clean
+pinned dependency and validated again. The Merkle worker has checked actual native/source
+execution and public/private verification correspondence; event and probability transfer
+remain in progress.
+
 ## Current proof frontier
 
-At this checkpoint, native scalar and closed-output randomized execution equations have
-passed a targeted source check. Root has checked the finite expected-charge union assembly
-in scratch. The main expected cached-query theorem, native expected knowledge bound, and
-Merkle security transfer remain in progress. Their eventual acceptance requires exact
-revision-specific validation, independent statement read-back, and contract comparison.
+The interleaved own-cell bad-query probability bound is the central remaining VCVio step.
+Its finite-domain expected bound then transfers through the checked finite-support bridge.
+Native expected knowledge security and the real-to-ideal Merkle bound remain unfinished.
+Final acceptance requires revision-specific validation, independent statement read-back,
+contract comparison, and coherent PR assembly. No headline theorem has been marked complete.
