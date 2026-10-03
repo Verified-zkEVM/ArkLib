@@ -346,3 +346,15 @@ ready for review. All core implementation PRs 1259, 1260, 1261, 1263 and VCVio 8
 with their triggered checks green. The accepted MUST mathematical, review, validation and
 publication gates are satisfied at the recorded exact heads. The optional nonuniform extension
 remains separate and must pass its own gates before it is included in the final handoff.
+
+
+A further fresh blind read-back of the final closed-output and private-coin interfaces was
+recorded before disclosing the intended contract. It reconstructed the actual executor equation,
+full output-behavior carrier, quantifier order, named extraction and failure-mass convention.
+Its independent public-import/axiom check passed in 8.8 seconds. Subsequent contract comparison
+approved exact G3 head `be65c8051aa36398069ab76853f063c4382a589c` with no blocking discrepancy.
+In particular, a `ClosedClaim` contains a statement and total declared answer behavior; being
+realizable by a particular concrete representation or satisfying application admissibility is
+not automatic. Applications can impose those requirements in `Rout` and must prove calibration.
+This is part of the explicit behavior-based relation contract, not a proved universal realization
+or compiler theorem.
