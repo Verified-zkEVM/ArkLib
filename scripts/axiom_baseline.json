@@ -216,7 +216,6 @@
   "ProximityGap.proximity_gap_RSCodes",
   "ProximityGap.solution_gamma_is_linear_in_Z",
   "ProximityGap.solution_gamma_matches_word_if_subset_large",
-  "Quotienting.quotienting",
   "RSCode.isMCAGenerator_of_isPolynomialGeneratorOfFull",
   "RSCode.isMCAGenerator_tensorGeneratorPiUnivariate",
   "RSCode.isMCAGenerator_univariatePowersGenerator",
