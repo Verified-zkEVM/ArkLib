@@ -113,6 +113,8 @@ render_report() {
   local results_file="$1"
 
   python3 - "$results_file" <<'PY'
+from __future__ import annotations
+
 import json
 import html
 import os
