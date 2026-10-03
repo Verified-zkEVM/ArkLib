@@ -202,6 +202,15 @@ lemma evalOnPoints_unquotient_mem_code (domain : ι ↪ F) {S : Finset F} {Ans :
     evalOnPoints domain (unquotient S Ans g) ∈ code domain d :=
   mem_code_iff_exists_polynomial.2 ⟨_, degree_unquotient_lt hS hg, rfl⟩
 
+omit [DecidableEq F] in
+/-- For `d ≤ |ι|`, the interpolant `toPolynomialLT` of the codeword of a polynomial of degree less
+than `d` is that polynomial. -/
+lemma coe_toPolynomialLT_evalOnPoints [Fintype ι] [DecidableEq ι] {domain : ι ↪ F} {p : F[X]}
+    {d : ℕ} (hp : p.degree < d) (hdeg : d ≤ Fintype.card ι)
+    (hmem : evalOnPoints domain p ∈ code domain d) :
+    ((toPolynomialLT (⟨evalOnPoints domain p, hmem⟩ : code domain d) : degreeLT F d) : F[X]) = p :=
+  toPolynomial_evalWord_of_degree_lt hp hdeg
+
 /-- Quotienting Lemma 4.4
   Let `f : ι → F` be a function, `degree` a degree parameter, `δ` a distance parameter
   `S` be a set with |S| < degree, `Ans, Fill : S → F`. Suppose for all `u ∈ Λ(code, f, δ)`,
