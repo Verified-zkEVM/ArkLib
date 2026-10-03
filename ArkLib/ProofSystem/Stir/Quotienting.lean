@@ -181,6 +181,20 @@ lemma hammingDist_le_card_disagreementSet_add [Fintype ι] (domain : ι ↪ F) (
       (by simpa [evalOnPoints] using (hcon.2).symm)
     simpa [evalOnPoints] using this.symm)
 
+/-- Some polynomial of degree less than `d` has a codeword at exactly the distance from `u` to the
+Reed-Solomon code. -/
+lemma exists_polynomial_hammingDist_eq_distFromCode [Fintype ι] (domain : ι ↪ F) (d : ℕ)
+    (u : ι → F) :
+    ∃ g : F[X], g.degree < d ∧
+      (hammingDist u (evalOnPoints domain g) : ℕ∞) =
+        Δ₀(u, (code domain d : Set (ι → F))) := by
+  have : Nonempty (↑(code domain d : Set (ι → F)) : Set (ι → F)) :=
+    ⟨⟨0, Submodule.zero_mem _⟩⟩
+  obtain ⟨M, hM, hdist⟩ := exists_closest_codeword_of_Nonempty_Code
+    (↑(code domain d) : Set (ι → F)) u
+  obtain ⟨g, hg, rfl⟩ := mem_code_iff_exists_polynomial.1 hM
+  exact ⟨g, hg, hdist⟩
+
 /-- Quotienting Lemma 4.4
   Let `f : ι → F` be a function, `degree` a degree parameter, `δ` a distance parameter
   `S` be a set with |S| < degree, `Ans, Fill : S → F`. Suppose for all `u ∈ Λ(code, f, δ)`,
