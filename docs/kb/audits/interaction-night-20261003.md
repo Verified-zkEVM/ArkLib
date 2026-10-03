@@ -46,9 +46,9 @@ not a source change. No dependency reset or upgrade is authorized merely to pass
 
 | Target | Status | Required next evidence |
 |---|---|---|
-| G1: generic ordinary soundness | Assigned, unproved | Literal public statement and actual native executor induction |
-| G2: knowledge composition | Assigned, unproved | Literal relation/witness seam and native composition statement |
-| G3: restoration security | Source/API investigation, unproved | Source-faithful query game and fresh-response/ancestor probability lemma |
+| G1: generic ordinary soundness | Generic native execution theorem checked; Sumcheck application in progress | Actual Sumcheck freshness and terminal-output correspondence, then full validation |
+| G2: knowledge composition | Native certificate composition, extraction, freshness and closed-output equations checked | Dependent ordinary-import client, final-head review and full validation |
+| G3: restoration security | Adaptive-query probability theorem and native salted-key reconstruction checked separately | Join completion, extraction and native verifier semantics in the final security game |
 
 No implementation theorem or code PR is claimed at launch. Public names must use clear
 cryptographic terminology; an abstraction's representation does not justify inscrutable names.
@@ -67,3 +67,153 @@ important coherent smaller results. No definitions-only micro-PRs and no merging
 Validation commands, exact revisions, reviewer verdicts, PR links and incomplete obligations
 will be added here as evidence becomes available. The final report distinguishes checked partial
 theory from completion of G1/G2/G3 and records any pending CI or validation.
+
+## First-hour checkpoint (approximately 06:00Z)
+
+These are checked working-tree results, not accepted final PR heads. All three MUST targets
+remain open until their complete statements, clients and validation meet the contract.
+
+- **G1:** `executeStrategies_state_bound`, `executeStrategies_soundness` and the uniform-error
+  corollary prove the sum bound over the actual native executor. The monad and ambient handler
+  permit failure and arbitrary prover private memory; a checked failing-query consumer has zero
+  successful mass. Covered verifier challenge actions must have the fresh model's lossless move
+  marginal. The independent read-back caught and caused repair of an earlier overly narrow
+  lossless-only interface. The Sumcheck all-authored state/rank/local-bound proofs are checked;
+  actual verifier freshness and the output relation bridge are still being developed.
+- **G2:** the package constructs dependent native appended extractors, endpoint equivalences,
+  concatenated schedules and local knowledge certificates. Suffix certificates cover every
+  concrete middle path, including false middle claims. Native freshness composition uses the
+  actual closed middle oracle and retains all receive/continuation effects. The blind read-back
+  found no mathematical defect in its frozen packet, but did not certify intended-contract
+  fidelity or final integration. Terminal-relation convenience statements added afterward
+  require final-head review. Exact attachment is an explicit hypothesis of freshness transport;
+  arbitrary persistent stateful handlers are not thereby covered.
+- **G3 probability:** a new VCVio theorem bounds adaptive bad queries by `n * error`, allowing
+  the bad event to inspect unqueried table cells. It is connected to the actual cached random
+  oracle, with dependent finite answer types and consistent repeated queries. The independent
+  read-back and selected axiom sweep found no extra trust assumption. This is a probability
+  theorem, not yet the complete state-restoration theorem.
+- **G3 native presentation:** checked definitions use exact round/input/message-prefix/salt-prefix
+  keys, without earlier challenges in the key. Reconstructing a key's strict ancestors uses the
+  same table. A checked theorem proves that replacing its own challenge cannot change that
+  reconstructed pre-challenge extractor. Native all-prefix local bounds therefore apply to
+  each fixed key. Completion returns the existing native path and has a checked `k` query bound.
+
+The probability slice currently requires a finite key domain. The contract does not explicitly
+restrict the input type to be finite; a finite reachable-key reduction is being investigated so
+that adaptive input selection is not silently weakened. The full quantitative game and its native
+verifier interpretation remain obligations, as does extraction cost.
+
+The generic probability work is in `VCVio-interaction-night`, branch
+`feat/restoration-fresh-query`, based on ArkLib's pinned VCVio revision. Advancing to current VCVio
+main would introduce unrelated API changes. Development currently tests new VCVio artifacts via
+an explicit scratch import overlay; this is not a final dependency pin or reproducibility claim.
+
+## Publication and current validation
+
+Research notes and the accepted contract are pushed in
+[ArkLib PR 1258](https://github.com/Verified-zkEVM/ArkLib/pull/1258), currently through commit
+`2a542f87e`. The superseded smaller night plan was removed so that the accepted contract is the
+single normative scope. Its required validation passed (91 seconds); existing bibliography
+warnings were unchanged. No implementation PR or merge is claimed at this checkpoint.
+
+Working evidence is retained under `/tmp/arklib-night-20261003/readback/` and
+`/tmp/arklib-night-20261003/restoration/`; final reviewed statements, hashes, commands and verdicts
+will be recorded durably before handoff. VCVio full validation with axioms is now running under
+the shared build lock. The root owns the final contract comparison and acceptance decisions.
+
+## Checked advances after the first-hour checkpoint
+
+- The general adaptive-query theorem now removes the finite key-domain assumption. A fixed
+  oracle program with finite answer types has finitely many syntactically reachable keys.
+  Restriction preserves the exact lazy `ProbComp` program from an empty cache, including repeats.
+  The universal background-table and trace hypotheses justify fixing outside coordinates in the
+  proof. This bounds the actual output event; it does not claim to sample an infinite random
+  table. A fresh blind read-back found no defect and independently checked the public theorem
+  and selected axiom closures. The infinite-`Nat`-key ordinary-import consumer also checks adaptive
+  key choice and repeated-query consistency.
+- `restored_extraction_bound` is checked in the native scratch development with arbitrary input
+  and salt types, adaptive selected input, actual cached adversary/completion program, native
+  completed paths and the `(Q + rounds.length) * error` coefficient. Its endpoint is currently
+  terminal knowledge and failed extracted input knowledge. The actual native verifier/output
+  relation realization is still being constructed, so this is not yet completion of G3.
+- The native Sumcheck theorem `Sumcheck.Interaction.Native.roundByRound_soundness` is checked.
+  It invokes the new generic native execution theorem and the one-round polynomial bound,
+  retains the realized original polynomial, and bounds the actual returned output relation.
+  It permits failing ambient effects and arbitrary native prover strategies, with exact attachment
+  and a uniform fresh challenge marginal as explicit hypotheses. The initial frozen proof's
+  SHA256 is `9fce96710cfeb2253aec20566d53ec7a506911e5e5223731cd977b26033bbe24`;
+  selected axioms are only `propext`, `Classical.choice`, and `Quot.sound`. Fresh independent
+  read-back, production promotion and final validation are still pending.
+- G2 passed canonical full validation with axioms: 18,081 declarations across 923 modules,
+  unchanged 286 sorry-tainted declarations and zero nonstandard-axiom taint; elapsed 151.1 seconds.
+  Root inspected the final endpoint additions and dependent native client, finding no mathematical
+  defect. A structural module split subsequently passed targeted checks and is undergoing the
+  canonical gate again. This splits the approximately 1,955-line work into two substantial PRs:
+  roughly 760 lines of backward extraction/native append theory, followed by roughly 1,220 lines
+  of actual closed-middle certificate/freshness composition and its dependent client. Both together
+  must satisfy G2; the split does not reduce the mathematical target.
+
+The root-authored generic VCVio probability slice passed its earlier complete validation
+(316.5 seconds) before the finite-domain removal; final full validation of the stronger head is
+running. Its public read-back pins the frozen statement separately from later docstring wrapping.
+No proof relies on sampling an infinite table or selecting a valid witness by classical choice.
+
+
+## Reviewed publication checkpoint (06:55Z)
+
+The following evidence supersedes the explicitly provisional statuses above.
+
+- **G2 is implemented and reviewed as a two-PR stack.**
+  [PR 1259](https://github.com/Verified-zkEVM/ArkLib/pull/1259), head
+  `388bb2486d7621d36e9b4edf993e6d23f76b703f`, contains 760 added lines of backward extraction
+  and dependent native append laws. [PR 1260](https://github.com/Verified-zkEVM/ArkLib/pull/1260),
+  head `372f071dd72ff9364eceb5d5361db987e120271e`, adds 1,221 lines of actual closed-middle
+  composition and its dependent client, based on PR 1259. The post-split canonical
+  `./scripts/validate.sh --axioms` passed in 115 seconds: 18,081 declarations, 924 modules,
+  unchanged 286 sorry-tainted declarations, zero nonstandard-axiom taint. Root semantic review
+  and independent final-head review both approve. The latter separately compiled an ordinary
+  import client and checked principal axiom closures. All triggered CI checks passed; the
+  stacked PR triggers interaction/summarize CI, while the main-based foundation also ran full
+  build, imports and docs checks. No merge was performed.
+- **The general probability component of G3 is published.**
+  [VCVio PR 823](https://github.com/Verified-zkEVM/VCVio/pull/823), head
+  `fc521031a00158648973bb06a68cac288cd5b71a`, targets current main
+  `f5119c64ebb055d69c143704e12eba6df7dc386c`. It proves the unrestricted-key
+  `prEvent_randomOracle_le_of_bad_queries` theorem, retaining finite nonempty answer types,
+  arbitrary query order and repeats, and bad events inspecting unqueried coordinates.
+  Full current-main validation with axioms passed in 288 seconds: 22,071 declarations,
+  781 modules, unchanged 14 sorry-tainted declarations, zero nonstandard taint. Independent
+  blind theorem review and final exact-head port review approve; the latter checked preservation
+  of current-main public APIs/imports and compiled its own ordinary-import axiom canary.
+  Current-main policy removes redundant `Finite`/`Nonempty` binders implied by `SampleableType`.
+  The probability theorem makes no extraction-cost or whole-protocol security claim.
+- **ArkLib's precise compatible dependency is reproducible.** Its restoration branch now pins
+  pushed VCVio commit `731851a844ee20bc71cf9fe82c25cdc90c78c8c2`, based on the original
+  ArkLib VCVio pin. That compatible version passed final full validation with axioms in
+  127.5 seconds (22,055 declarations, 777 modules, unchanged 33 sorry-tainted declarations,
+  zero nonstandard taint). Only the VCVio revision changes in the ArkLib manifest; no unrelated
+  dependency API migration is included. Production `StateRestoration.lean` built against this
+  exact pin in 36.3 seconds, without the scratch overlay. Its actual native verifier/output
+  endpoint remains in progress; this does not yet close G3.
+- **G1's actual native Sumcheck principal theorem passed fresh independent read-back**, including
+  a separately compiled frozen source and ordinary-import axiom check. No mathematical defect
+  was found; selected roots depend only on the standard Lean axioms. Production promotion also
+  compiled successfully. The explicit positive-round CY state specialization and the promised
+  deterministic-path/random-author supporting statements are being incorporated before the final
+  validation and publication of this slice.
+
+The G2 final reviewed source hashes are:
+
+| Module | SHA256 |
+|---|---|
+| Knowledge | `803dbe0bc24e46178b9384d9a0fc5ed87c90b6f4e24971f2bcc46fb5e39cd22b` |
+| KnowledgeAppend | `6a4d3e049e2d4ecea73c6ed1f27305633ce06964f10e6685dcbd8f95c56583f7` |
+| KnowledgeComposition | `fc8db56fd86d4fc9c75216edf2bf34233a938d99b25871b9cd27a6ccdc03aef2` |
+| Dependent composition client | `1b021dea855cb9f948131af2ad689487319f31c4add62c3efbb888f7d7f1ea88` |
+
+The restoration game under construction reads only its completed native path when replaying the
+actual verifier; a complete table is available only to the probability proof. The endpoint must
+still identify the actual source-query observation, the supplied output witness and named
+backward input extraction. This distinction is a tracked proof obligation, not an assumed game
+equation or permission to weaken G3.
