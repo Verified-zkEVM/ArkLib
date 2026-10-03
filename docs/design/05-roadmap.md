@@ -309,9 +309,8 @@ launch was stopped without implementation changes and does not consume this wind
 See the [run record](../kb/audits/interaction-night-20261003.md) for exact work/check/PR evidence.
 
 The [accepted mathematical contract](interaction-security-night-contract.md) states the actual
-definitions, theorem statements, MUST/SHOULD/HOPE boundaries and unresolved choices. It fixes the mathematical target; literal Lean interfaces still require statement review. That document governs the revised priorities. The longer decomposition below is historical
-supporting detail: its earlier deferral of aggregate ordinary soundness and full SR is superseded
-by the G1-G3 targets, and its small examples are validation aids rather than deliverables.
+definitions, theorem statements, MUST/SHOULD/HOPE boundaries and unresolved choices. It fixes the mathematical target; literal Lean interfaces still require statement review. That document governs the revised priorities. The earlier deferral of aggregate ordinary
+soundness and full SR is superseded by G1-G3; small examples are validation aids.
 
 The revised objective is general theory: round-by-round security implies full ordinary soundness;
 round-by-round knowledge certificates compose sequentially; and round-by-round knowledge soundness
@@ -331,200 +330,12 @@ Prepared worktrees are `ArkLib-interaction-night`, `ArkLib-local-rbr`,
 The pinned VCVio/PolyFun and Lean 4.34.0 remain unchanged. Shared dependency builds must be
 serialized; code branches stay separate from documentation history.
 
-### Questions this package should answer
-
-1. Can one ordinary prefix certificate recover the book's fixed-round local experiment and
-   also express native Sumcheck's actual guarded verifier step without changing its executor?
-2. Can a native witness-indexed certificate recover WARP/ABF's local bad-edge condition and
-   support offline backward extraction along actual protocol prefixes?
-3. Can small checked examples distinguish these contracts from weaker averages and exercise
-   actual non-`Unit` witness transport?
-
-The first two are the primary targets. The third supplies acceptance and optional separation
-examples within the same two workstreams.
-Full state restoration, universal knowledge composition and BCS security are later targets;
-this run must leave their requirements visible without inventing universal APIs for them.
-
-### Initial statement review and ownership
-
-Before implementation, the orchestrator records the exact baseline and proposed theorem
-statements, including the quantified adversary/prefix, sampling order, observation, event,
-error and any runtime restriction. Recheck overlapping upstream work, especially the legacy
-Sumcheck/RBR repairs and the toolchain/probability migration. Use the pins that already support
-the first package; do not make a toolchain or dependency migration a prerequisite without a
-specific missing declaration.
-
-Use at most four active agents: the orchestrator, two Sol High workers and one independent
-reviewer. The orchestrator owns integration, shared API decisions, this roadmap, validation
-and the final evidence record. Each worker owns a separate worktree and named files. The
-reviewer authors neither lane and first reads the target statements against the source
-experiment. No recursive delegation is needed. Use one build coordinator when dependency
-artifacts are physically shared; separate worktrees alone do not isolate `.lake/packages`.
-
-Working names below are provisional. Follow the repository naming guide; do not create a
-parallel namespace named after the textbook. A prototype must not silently become the public
-contract for all dependent/effectful protocols.
-
-### Lane A: ordinary local security and native Sumcheck
-
-**Owner and scope:** one worker, tentatively
-`ArkLib/Interaction/Oracle/Security/RoundByRound.lean`,
-`ArkLib/ProofSystem/Sumcheck/Interaction/RoundByRound.lean`, and their small acceptance clients.
-Inspect existing names before creating these modules. No edits to the runtime, protocol tree,
-shared oracle semantics or legacy security definitions unless integration review identifies
-an unavoidable, separately justified change.
-
-**A1. Scalar prefix contract and source specialization.** Reuse pinned VCVio's
-`RoundByRound.GameFamily` and `IsBounded`. Add the missing protocol interpretation and state
-laws. The proposed mathematical obligation is:
-
-```text
-For each false input and each concrete pre-challenge prefix b,
-  State(b) = false implies
-  Pr[a sampled by the interpreted local verifier move at b]
-    [State(extend(b, a)) = true] <= error(round(b)).
-```
-
-The state laws must state empty state false, preservation of falsity on every prover move,
-and terminal success implying state true. Prove how the fixed-round, stateless, independently
-uniform specialization recovers CY's ordinary definition, including randomized authors of
-prefixes. Give the null-conditioning convention explicitly, or state the positive-mass
-conditioning lemma. The security quantifier must not require earlier challenges to be honestly
-sampled or a prefix to have positive probability in an ordinary run.
-
-Keep general world-state security outside this first contract unless its exact state and
-freshness premises can be proved from the existing runtime. In particular, never use a fresh
-initialization to justify a statement about a prover-modified world. Fixed-round specialization
-and actual guarded native execution must be distinct theorems.
-
-**A2. Sumcheck local theorem and prefix correspondence.** Quantify over any authored challenge
-history/current statement, any degree-bounded sent polynomial `q`, and a retained original
-oracle realized by the specified bounded multivariate polynomial `p`. Under the false current
-closed relation, the local verifier returns `none` if the sum check fails and `some r` for a
-fresh uniform `r` otherwise. With abort post-state false and continuing post-state the next
-closed relation, prove error at most `deg / |F|`.
-
-Reuse `uniform_successor_soundness` and `execute_succ`. Prove that the current statement,
-sent polynomial and retained original view are observations of the native concrete prefix;
-merely wrapping an already proved inequality in `GameFamily` is insufficient. Preserve the
-effectful prover response on both continuation and abort. Do not replace the original retained
-oracle with the newly sent polynomial when stating the successor relation.
-
-For a full scalar certificate, address the all-input empty-state law explicitly: a positive-round
-candidate resets the state before the first challenge, then uses the current closed relation.
-Treat zero-round false-input security separately. Do not claim that native early-aborting
-Sumcheck literally has the book's fixed-round transcript syntax. Padding and all-transcript
-acceptance correspondence remain a separate possible bridge.
-
-**A3. Aggregate connection, after A1/A2 pass review.** Derive an execution-averaged consequence
-and a terminal-error theorem for the supported finite fragment, tied to the existing executor.
-For Sumcheck recover `count * deg / |F|` from the local certificate and compare the event with
-the existing ordinary theorem. Supply an explicit challenge-rank bound. This is an aggregate
-theorem, not the stronger SR `(B + r)` theorem.
-
-**Acceptance:** checked source-specialization, actual native-prefix/local-step correspondence,
-passing and rejecting Sumcheck cases, and the exact error bound. New principal theorems must
-have no admissions or hidden dependency on `sorryAx`. Build and axiom evidence identify exact
-declarations. Report A1, A2 and A3 separately if only part is complete.
-
-### Lane B: relational RBR and backward witness transport
-
-**Owner and scope:** second worker, a narrowly scoped native knowledge-certificate module
-and acceptance examples. Do not edit Lane A's definitions concurrently. The orchestrator owns
-any shared prefix observations. Inspect the legacy extractor-aware API before inventing a
-replacement; use the existing native concrete prefix/path carrier rather than a second executor.
-
-**B1. Source specialization.** State the local contract for every authored pre-challenge prefix:
-
-```text
-Pr[r fresh; exists w,
-    not K(tr, E(tr ++ r, w)) and K(tr ++ r, w)] <= error_i.
-```
-
-Define named backward extractors, endpoint relations and the prover-move transport law.
-Keep stage-dependent witness fibers available, but prove a restricted WARP/ABF specialization
-with a common witness carrier, identity transport on prover moves, a deterministic terminal
-verifier and the source's endpoint iff. Identify the legacy one-way terminal clause and
-noncomputable-function freedom as additional generalizations, not source equivalences.
-Executable extraction and a proof of its running time are separate acceptance levels.
-
-**B2. Deterministic backward-extraction lemma.** Given a complete native path and an output
-witness, compose the named local extractors backward. Prove:
-
-```text
-valid output witness and invalid extracted input witness
-  implies some challenge edge on this same path satisfies the local bad event.
-```
-
-The law on prover moves must rule out unexplained failures between challenges. Retain the
-existential later witness inside the event, so the proof supports a witness chosen after the
-suffix. Do not add an online witness supplier merely to force composition through an ordinary
-terminal-knowledge theorem. This is the deterministic core of WARP Appendix B's proof; the
-adaptive SR query game and its `(t+k)` bound remain separate obligations.
-
-**Acceptance:** source correspondence for the restricted certificate, a named computable
-backward algorithm, the bad-edge theorem on native paths, and a small non-`Unit` client in
-which extraction really uses a later witness. Demonstrate preservation under a two-stage
-composition or split/glue of that client. Choose a finite vector or explicit-response example
-if a full protocol migration would dominate the night. No witness may be manufactured by
-classical choice from relation membership. Require kernel checks and principal-declaration
-axiom reports. Report which source time/efficiency clauses remain unproved.
-
-**Optional quantitative separation after the primary lemmas.** Use two uniform bits and
-acceptance iff both are zero, on an always-false instance. Prove uniform averaged error `1/4`
-is attainable but every local scalar certificate has uniform error at least `1/2`. This is
-CY's two-round tightness example, compared additionally with ArkLib's averaged notion.
-Quantify over all candidate state certificates; if the security-API bridge is unfinished,
-report the result as a standalone finite lemma.
-
-**Retained later experiment:** the supplied committed-scalar fork and ring-switching `Lift`
-bridge from the [research notes](../kb/audits/chiesa-yogev-interaction.md) remains useful.
-It should read leaf witnesses from actual response messages and prove equality with the
-legacy named extractor. It does not prove WARP-to-tree extraction, which FICS/FACS leaves
-unresolved, and it does not establish efficient malicious-prover tree finding.
-
-### Integration gates and stopping rules
-
-| Approximate point in the run | Evidence to review | Action |
-|---|---|---|
-| First 30-60 minutes | Frozen statements, source correspondence, pin/build readiness and nonoverlapping ownership | Start bounded proof work; unresolved general architecture remains in the research ledger |
-| After roughly 2 hours | A1 and B1 statement/elaboration, including source-specific access | Reject any reachability weakening or changed event; reduce implementation breadth if a foundational mismatch appears |
-| Middle of run | A2 actual-prefix bridge and B2 named backward extraction | Review theorems independently; continue A3 and optional examples only with stable prerequisites |
-| Final 60-90 minutes | Exact integrated revision, compile/axiom results and reviewer findings | Stop expanding scope, fix correctness issues, run repository checks, commit checked work and a precise handoff |
-
-If a target proves false, preserve the counterexample and corrected candidate theorem separately.
-If a target is blocked by missing mathematics, preserve a checked partial lemma and the exact
-remaining goal. Do not fill the gap with `sorry`, classical witness choice disguised as an
-algorithm, an assumed bridge labeled as proved, or silently stronger hypotheses. A narrow
-true theorem can be useful, but its status must remain narrow.
-
-At most one optional next step should begin after the primary work is complete: either sketch
-the exact consistent-query SR game and its `B + r` completion lemma, or analyze challenge-erasure
-factorization on a small knowledge example. A sketch is not a security theorem. Do not also
-start the Merkle payload adapter, full hash-chain compiler or time semantics in this run.
-
-The integrator runs the required `./scripts/validate.sh --axioms` for new proofs, including
-the repository's test and warning gates, and inspects axiom results for the principal declarations.
-Use `LAKE_ARTIFACT_CACHE=false LAKE_NO_CACHE=true` in the shared workspace and coordinate
-physical dependency build writes. Keep validation logs and exact commands with the handoff;
-do not claim a passing suite if environmental failures prevent it. Update current status only
-for completed, integrated results. Local commits and pushes preserve work; opening PRs is intended for the later authorized run.
-Merging remains outside its scope. The proposed mathematical contract governs priorities when
-this earlier decomposition includes broader optional detail.
-
-### Questions intentionally still open after the run
-
-The dependent/effectful SR model; general extractor observation and challenge erasure; efficient
-tree finding and fork provenance; online versus offline knowledge composition; realization of
-ideal algebraic messages; salted encoded-payload Merkle extraction; hash-chain entropy and
-backtracking; exact failure/time substitution; zero knowledge; preprocessing; and the remainder
-of the book's theorem inventory all remain live targets. No worker should turn an overnight
-scope restriction into a permanent limitation of the framework.
-
-The morning handoff should contain the commit(s), exact theorem statements and assumptions,
-validation and independent-review results, the questions actually answered, and the smallest
-next experiment for each newly exposed obstruction. It should also preserve competing candidate
-designs where the evidence does not yet distinguish them.
+The accepted contract is the single source for the definitions, statements, MUST/SHOULD/HOPE
+priorities, PR boundaries and stopping rules. The earlier local-lemma and toy-example decomposition
+is preserved in research-branch history, not repeated here as a competing implementation plan.
+At handoff, update the run record with literal theorem statements, exact commits, validation and
+review evidence, and every unresolved target. No worker may turn a supported-fragment restriction
+into an unstated permanent limitation of the framework.
 
 ## Later protocol clients
 
