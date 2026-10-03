@@ -223,6 +223,20 @@ lemma exists_polynomial_relDistFromCode_eq [Fintype ι] [Nonempty ι] (domain : 
   rw [relDistFromCode_eq_distFromCode_div, ← hdist]
   rfl
 
+omit [Field F] in
+/-- A codeword whose Hamming distance to `f` is at most `δ * |ι|` is in the relative Hamming ball
+of radius `δ` around `f`. -/
+lemma mem_closeCodewordsRel_of_hammingDist_div_le [Fintype ι] [Nonempty ι] {C : Set (ι → F)}
+    {f u : ι → F} {δ : ℝ≥0} (hu : u ∈ C)
+    (h : (hammingDist f u : ℝ≥0) / (Fintype.card ι : ℝ≥0) ≤ δ) :
+    u ∈ closeCodewordsRel C f δ := by
+  rw [mem_closeCodewordsRel_iff]
+  refine ⟨hu, ?_⟩
+  rw [relHammingDist_coe]
+  have := NNReal.coe_le_coe.2 h
+  push_cast at this
+  exact this
+
 /-- Quotienting Lemma 4.4
   Let `f : ι → F` be a function, `degree` a degree parameter, `δ` a distance parameter
   `S` be a set with |S| < degree, `Ans, Fill : S → F`. Suppose for all `u ∈ Λ(code, f, δ)`,
