@@ -1,8 +1,29 @@
 # Interaction-security theory run, October 3, 2026
 
+## Current result (08:56Z)
+
+All three MUST theory targets passed their individual and combined core gates and are published
+as reviewed PRs. The additional nonuniform-error theorem also passed its individual gates and
+is published as [PR 1264](https://github.com/Verified-zkEVM/ArkLib/pull/1264). Final combined
+validation with this extension and its new dependency pin is still pending at this checkpoint.
+The entries below preserve the intermediate failures and evidence rather than overwriting them.
+
+| Outcome | Result | PR |
+|---|---|---|
+| MUST G1 | Generic native ordinary soundness from local bounds; native Sumcheck instantiation | [1261](https://github.com/Verified-zkEVM/ArkLib/pull/1261) |
+| MUST G2 | Named backward extraction and native append; sequential knowledge-certificate composition at actual closed middle claims | [1259](https://github.com/Verified-zkEVM/ArkLib/pull/1259), [1260](https://github.com/Verified-zkEVM/ArkLib/pull/1260) |
+| MUST G3 | Actual closed-game state-restoration knowledge soundness with `(Q+k) * error` | [1263](https://github.com/Verified-zkEVM/ArkLib/pull/1263) |
+| SHOULD, achieved | Per-round errors give `Q * max errors + sum errors`; uniform G3 also has independent pre-sampled, possibly failing private coins | [1264](https://github.com/Verified-zkEVM/ArkLib/pull/1264), [1263](https://github.com/Verified-zkEVM/ArkLib/pull/1263) |
+| Generic probability owner | Uniform and weighted adaptive cached-oracle bounds, including unqueried-coordinate bad events | [VCVio 823](https://github.com/Verified-zkEVM/VCVio/pull/823) |
+| SHOULD, open | Extraction runtime; genuinely history-dependent/expected cached costs; arbitrary interleaved randomness; exact legacy/textbook adapters | No completion claim |
+| HOPE, open | Additional genuine protocol application or formally proved separation beyond the required Sumcheck application | Diagnostic clients and hand-checked counterexamples do not count |
+
+This is a result record tied to specific revisions, kept beside the accepted design contract.
+The lasting source comparisons and mathematical distinctions remain in the knowledge base.
+
 ## Contract and clock
 
-The user authorized the [general-theory contract](../../design/interaction-security-night-contract.md)
+The user authorized the [general-theory contract](interaction-security-night-contract.md)
 after reviewing its definitions, scope, ambitious targets, review requirements and PR sizing.
 The mathematical targets are G1 (ordinary soundness), G2 (knowledge composition), and G3
 (state-restoration knowledge soundness). Supporting examples do not count as their completion.
@@ -244,7 +265,7 @@ G3's `verificationGame_eq` and relation-valued `stateRestoration_knowledge_sound
 in production against the exact compatible pin. Its ordinary-import principal axiom check passed
 in 12.6 seconds using only standard axioms. Independent blind endpoint review and the actual
 source-query/dependent-output consumer are in progress, so final G3 acceptance remains pending.
-The [source/legacy correspondence note](interaction-state-restoration-correspondence.md) records
+The [source/legacy correspondence note](../kb/audits/interaction-state-restoration-correspondence.md) records
 why the old challenge oracle is useful, what is not inherited, and the unproved runtime bridge.
 
 
@@ -400,3 +421,48 @@ entry. The first development-built artifact imported successfully, but the confi
 build caught missing explicit implicit parameters under `autoImplicit=false`. The source repair
 is required before acceptance; importing that earlier artifact alone is not fresh-source evidence.
 No optional ArkLib PR or combined-stack acceptance is claimed by this entry.
+
+## Nonuniform restoration theorem accepted locally (08:56Z)
+
+[ArkLib PR 1264](https://github.com/Verified-zkEVM/ArkLib/pull/1264) is pushed at
+`333df1745ed50c34dc87d1575e583c41a0a28b3b`, based on G3's `be65c8051`. Its complete diff is
+582 insertions and 4 deletions across six files. `StateRestorationBudget` proves the key-local
+resampling, adversary maximum, completion sum, joint query budget and actual closed-game bound.
+The only existing Replay edit exposes a support lemma with its type and proof unchanged. The
+dependency change is exactly VCVio `91386ad88ed72292d0f4e3153a444336920fc565`.
+
+The final two-round client proves its local errors 1/8 and 1/16 and all endpoint laws. It reads
+the actual second oracle message, closes its virtual output under the same path, and maps supplied
+witness 6 to extracted input witness 18 for payloads 5 and 7. Its actual game bound is 7/16,
+strictly below the uniform coefficient 1/2. It queries a later-round key twice before completion,
+and proves both a nonvacuous accepted bad witness and rejection. Its generic observation proof
+uses neither finite challenge enumeration nor an assumed execution equation.
+
+Fresh blind read-back followed by complete intended-contract/source/client review approved the
+frozen change. The explicit-main-binder repair preserved the original inferred public argument
+order; the helper's existing order was retained. The client normalization repair preserved every
+statement, reducing the native path/program before simplifying optional-output equality.
+
+| Frozen source | SHA256 |
+|---|---|
+| StateRestorationBudget | `3ed9356728b3a5915a40995e5fff7de10279ccca4364a9fc387f619dfd618d11` |
+| StateRestorationReplay | `ff7361e968a6d3b4d85a0b8013f9b8c53911d4538c15d9b71387e781112c1860` |
+| StateRestorationBudget client | `1d004dbdb5a4c8732642cf12b5d0d4a73dee37ccb669eaab222621e2e391e07e` |
+
+The configured source/client build passed in 12.8 seconds with zero owned warnings. Ten selected
+production declarations passed exact-pin axiom checks in 12.2 seconds. The client probability,
+output-law and local-bound declarations separately passed in 2.9 seconds; all these axiom cones
+contain only `propext`, `Classical.choice`, and `Quot.sound`.
+
+Canonical `./scripts/validate.sh --axioms` passed in 225.0 seconds: 18,204 declarations across
+930 modules, unchanged 286 baseline sorry-tainted declarations, zero nonstandard taint. The
+source audit includes tracked production and test sources and reports no new admission, explicit
+axiom or native-trust construct. All required warning, policy, runtime, imports, docs and axiom
+fixture checks passed. Root implementation verdict: **approve** at this exact scope and revision.
+The new PR remains draft pending CI; the combined extension gate remains separate.
+
+VCVio PR 823's updated head `0acfe9629426918e4747fe6450df53ebd8555661` now passes every
+triggered CI check, including the 20m19s full build/test pipeline. It is ready for review.
+The research PR's recent updates had reached the organization branch but not its actual fork
+branch; that publication mismatch was corrected by a fast-forward push to the fork, and the
+PR head was verified. Both copies retain the same notes. No PR has been merged into main.

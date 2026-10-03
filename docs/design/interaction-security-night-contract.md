@@ -4,7 +4,7 @@ Status: authorized by the user on October 3, 2026; run started at 00:56:52 Ameri
 (04:56:52Z), with an eight-hour deadline at 08:56:52 (12:56:52Z). These are the accepted mathematical
 obligations. Proposed names are not a claim that Lean declarations already exist; literal public
 types require the specified statement review. The [roadmap](05-roadmap.md#october-3-authorized-run)
-records sequencing, and the [run record](../kb/audits/interaction-night-20261003.md) records evidence.
+records sequencing, and the [run record](interaction-security-night-results.md) records evidence.
 
 ## 1. Common carrier and scope
 
