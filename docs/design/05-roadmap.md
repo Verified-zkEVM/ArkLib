@@ -423,3 +423,13 @@ representation. State who chooses the prover, what the verifier observes, which 
 and how the error depends on the assumptions. Have an independent reviewer explain the principal
 theorem in those terms and compare it with the intended game. Treat a failed proof as evidence about
 the theorem or its assumptions, not as a reason to hide a stronger claim behind a weaker name.
+
+## October 3 second authorized run
+
+The [second eight-hour contract](interaction-security-next-night-contract.md) fixes the
+mathematical statements, MUST/SHOULD/HOPE priorities, PR order, review gates, and open
+questions. The run starts at 17:34:15 UTC and ends on October 4 at 01:34:15 UTC.
+Its MUSTs are expected distinct-query security with interleaved randomness and its
+native state-restoration knowledge-security consequence. The principal SHOULD is an
+executable native terminal-batch Merkle verification bridge. These are in-progress
+obligations, not claims that their theorems already exist.

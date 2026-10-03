@@ -16,6 +16,7 @@ world state and query history continue across the boundary.
 |---|---|
 | What is implemented and proved on main? | [Current status](00-current-status.md) |
 | What should we implement next, and how will we check it? | [Roadmap](05-roadmap.md) |
+| What is authorized for the second interaction-security run? | [Eight-hour contract](interaction-security-next-night-contract.md) |
 | How does our framework differ from the Chiesa-Yogev textbook? | [Literature comparison and open research notes](../kb/audits/chiesa-yogev-interaction.md) |
 | Which other papers determine our knowledge and compiler targets? | [Broader interaction literature map](../kb/audits/interaction-literature-map.md) |
 | What does the full framework aim to cover? | [End state](00-end-state.md) |
