@@ -217,3 +217,32 @@ actual verifier; a complete table is available only to the probability proof. Th
 still identify the actual source-query observation, the supplied output witness and named
 backward input extraction. This distinction is a tracked proof obligation, not an assumed game
 equation or permission to weaken G3.
+
+
+## Ordinary soundness publication (07:10Z)
+
+[ArkLib PR 1261](https://github.com/Verified-zkEVM/ArkLib/pull/1261), head
+`8fa5d756fa7096e94c60f353f2732d6faaa22458`, contains G1, its native Sumcheck derivation,
+the deterministic actual-path escape theorem and failure-aware random-prefix averaging. It is
+based on unchanged current main `ace55c3e29da1fc55a321378ada55ea4f7ed8790`. The positive-count
+main proof consumes the CY state with all-input initial falsity; zero count uses the ordinary
+false-input initial law. The final reviewed Git tree is
+`be93ab71e41797a5a4df12dddcbc09bb05fd6f12`.
+
+Canonical full validation with axioms passed in 137.4 seconds: 18,099 declarations, 924 modules,
+unchanged 286 sorry-tainted declarations and zero nonstandard taint. Root reviewed the full
+supporting/execution/test diff and final CY proof. Independent final review approves and compiled
+its own failure-author/public-import canary in 12.9 seconds; selected roots use only standard
+Lean axioms. An initial source-policy failure identified missing generated umbrella imports;
+regenerating and staging those imports repaired it before the successful complete gate.
+
+This PR has 1,716 additions across eight files. The root accepted the modest size overage because
+the generic implication and required Sumcheck derivation form one coherent acceptance criterion;
+no definitions-only split was introduced. CI is pending at publication. No merge is authorized.
+
+G3's `verificationGame_eq` and relation-valued `stateRestoration_knowledge_soundness` now compile
+in production against the exact compatible pin. Its ordinary-import principal axiom check passed
+in 12.6 seconds using only standard axioms. Independent blind endpoint review and the actual
+source-query/dependent-output consumer are in progress, so final G3 acceptance remains pending.
+The [source/legacy correspondence note](interaction-state-restoration-correspondence.md) records
+why the old challenge oracle is useful, what is not inherited, and the unproved runtime bridge.
