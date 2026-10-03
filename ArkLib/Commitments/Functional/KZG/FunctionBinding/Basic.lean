@@ -120,7 +120,7 @@ def reduction (L : ℕ) (hn : 1 ≤ n) (AuxState : Type)
     Groups.arsdhAdversary n (G₁ := G₁) (G₂ := G₂) (p := p) :=
     fun srs =>
     letI kzgScheme := kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
-    -- designed such that ProbEvent_comp can be applied and thus the main task of reasoning
+    -- designed such that `prEvent_map` can be applied and thus the main task of reasoning
     -- is discharged to the predicate level.
     -- The auxiliary map (steps 3 and 4 of the reduction) is applied to the adversary result
     -- from steps 1 and 2.

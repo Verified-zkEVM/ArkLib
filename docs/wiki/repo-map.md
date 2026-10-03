@@ -478,14 +478,15 @@ home_page/            site assets and assembled website root
   a few lines below it. It reduces perfect completeness to a support statement about the
   *unsimulated* `(Reduction.run …).run`: show every element of that support is a success whose
   output pair is in the output relation and whose two output statements agree, and the probability
-  obligation is discharged (through VCVio's
-  `prvcgen` with `Necessary.Spec.ofSupport` facts for the sampled initial state and the
-  oracle implementation). It applies to any reduction, of any length, over any
-  `oSpec` — no determinism or single-round hypotheses. The worked example is Hachi's zero-check
-  (`Commitments/Functional/Hachi/ZeroCheck/Completeness.lean`), where the per-link work reduces to
-  a prover-state induction, an output lemma, a run-support lemma, and the relation lemma. Before
-  hand-peeling `OptionT`/`liftM`/`simulateQ` layers for a new protocol, check whether this covers
-  it. (`Commitments/Functional/KZG/Correctness.lean` predates the lemma and still peels by hand.)
+  obligation is discharged (through VCVio's `OptionT.prEvent_mk_simulateQ_run'_eq_one_of_support`,
+  which handles the sampled initial state and the oracle implementation uniformly). It applies to
+  any reduction, of any length, over any `oSpec` — no determinism or single-round hypotheses. The
+  worked example is Hachi's zero-check (`Commitments/Functional/Hachi/ZeroCheck/Completeness.lean`),
+  where the per-link work reduces to a prover-state induction, an output lemma, a run-support
+  lemma, and the relation lemma. `prvcgen` proves the run-support lemma; see
+  [`program-logic.md`](program-logic.md). Before hand-peeling `OptionT`/`liftM`/`simulateQ` layers
+  for a new protocol, check whether this covers it. (`Commitments/Functional/KZG/Correctness.lean`
+  applies the same VCVio lemma to its correctness game directly and walks the rest with `prvcgen`.)
   The second worked example is `QuadEval` (`.../Hachi/QuadEval/Completeness.lean`), which adds the
   message-round case: there the run-support half is a closed-form computation of `Prover.run`
   (`prover_runToRound_last` / `prover_run_eq`) rather than an induction.

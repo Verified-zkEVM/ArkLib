@@ -13,14 +13,19 @@ public import VCVio.ProgramLogic.Tactics.PrVCGen
 
 VCVio's `prvcgen` proves a statement about the outcomes of one oracle computation, such as
 `∀ x ∈ support oa, p x`, `Pr{…}[p] = 1` or an upper bound, by stating it as a core triple of the
-matching reading of `OracleComp` and running Lean's `vcgen` through the program. This module gives
-`vcgen` the two facts it needs for the executions defined in `ArkLib.OracleReduction.Execution`:
+matching reading of `OracleComp` and running Lean's `vcgen` through the program.
 
-* `ProtocolSpec.Necessary.Spec.getChallenge`: a verifier challenge may be any value;
+This module is the entry point to that program logic for ArkLib's completeness and security
+proofs. Its public import of `VCVio.ProgramLogic.Tactics.PrVCGen` makes `prvcgen` and VCVio's rules
+for every reading available to the modules that import it. It also adds two facts about the
+executions defined in `ArkLib.OracleReduction.Execution`:
+
+* `ProtocolSpec.Necessary.Spec.getChallenge`: the necessary-reading rule for a verifier challenge,
+  which may be any value;
 * `Reduction.run_run_eq`: `Reduction.run` as one oracle computation, the prover's run followed by
   the verifier's, with the `OptionT` layer of the reduction reduced to an `Option.map`.
 
-A completeness proof then states the honest prover's run in closed form (the protocol's own
+A completeness proof states the honest prover's run in closed form (the protocol's own
 round-unfolding lemma), rewrites the verifier, and lets `vcgen` walk the rest:
 
 ```
@@ -39,6 +44,12 @@ executions:
 * a verifier that can reject, `if c then pure a else failure`, is split by `vcgen` once
   `apply_ite OptionT.run`, `OptionT.run_pure` and `OptionT.run_failure` bring the `if` to the top of
   the lifted run, leaving one verification condition per branch.
+
+A soundness bound, `Pr{…}[p] ≤ ε` or `Pr{…}[p] = 0`, is read in the upper-bound reading. The
+opaque parts of the game, such as the sampled initial state or a simulated prover run, enter
+through `OracleComp.Upper.Spec.ofSupport`, as in `Verifier.id_soundness`. A bound that averages
+over a uniform challenge passes the averaging rule `OracleComp.Upper.Spec.uniformSample_avg`, as in
+`ProtocolSpec.prEvent_optionT_simulateQ_addLift_getChallenge_bind_some_le`.
 -/
 
 @[expose] public section
@@ -47,7 +58,8 @@ open OracleComp OracleSpec ProtocolSpec Std.WP
 
 namespace ProtocolSpec
 
-/-- A verifier challenge may be any value: the structural rule for `ProtocolSpec.getChallenge`. -/
+/-- The necessary-reading rule for a verifier challenge: `pSpec.getChallenge i` may return any
+value, so its precondition is that `post` holds at every challenge. -/
 @[spec]
 theorem Necessary.Spec.getChallenge {n : ℕ} (pSpec : ProtocolSpec n) (i : pSpec.ChallengeIdx)
     (post : pSpec.Challenge i → Prop) {epost : EStack⟨⟩} :

@@ -34,15 +34,19 @@ per-fixed-transcript bounds `∀ tr, Pr{let c ← $ᵗ (pSpec.Challenge i)}[even
 * `ProtocolSpec.simulateQ_addLift_challengeQueryImpl_getChallenge` resolves the simulated
   challenge query into an explicit uniform draw `liftM ($ᵗ (pSpec.Challenge i))`;
 * `ProtocolSpec.prEvent_simulateQ_addLift_getChallenge_bind_le` is the master mixture bound
-  for the full game shape (built on VCVio's `prEvent_bind_le_of_forall_le`);
+  for the full game shape. After `simp only [expect_norm]` the game is a nest of expectations,
+  and VCVio's `wp_le_of_forall_le` bounds the expectations over the initial state and over the
+  prover's output in turn.
 
 These statements are `ProtocolSpec`-specific and so live in ArkLib core, but their *content* is
 not: `challengeQueryImpl` is only `fun q => $ᵗ _`, i.e. "answer each query with a uniform sample of
-its answer type", and `QueryImpl.addLift` is already VCV-io's. No notion of protocol, transcript or
-round enters any proof below — they are `prEvent_bind_le_of_forall_le` plus a `simulateQ`
-normalisation. Generalising the challenge oracle to an arbitrary uniform-answer `QueryImpl` would
-let the mixture bounds move upstream, leaving thin specialisations here. The `loggingOracle` lemmas
-they build on live upstream in `VCVio/OracleComp/QueryTracking/LoggingOracle.lean`.
+its answer type", and `QueryImpl.addLift` is VCVio's. No notion of protocol, transcript or round
+enters any proof below. The proof of each bound normalises the `simulateQ` run, then bounds the
+game's nested expectations: by `wp_le_of_forall_le`, by VCVio's conditioning lemmas, or by
+`prvcgen` with the averaging rule `OracleComp.Upper.Spec.uniformSample_avg`. Generalising the
+challenge oracle to an arbitrary uniform-answer `QueryImpl` would let the mixture bounds move
+upstream, leaving thin specialisations here. The `loggingOracle` lemmas they build on live
+upstream in `VCVio/OracleComp/QueryTracking/LoggingOracle/Core.lean`.
 
 Cf. VCVio PR #475, which adds a protocol-agnostic round-by-round layer. Its generic
 `KnowledgeTransitionFamily.IsBounded` packages exactly the inner worst-case obligation of
@@ -58,7 +62,7 @@ bounds (`ProtocolSpec.prEvent_optionT_simulateQ_addLift_*`). Those serve the *pl
 knowledge-soundness game, whose computation is `Option`-valued and draws its challenge first;
 see the section header preceding them for why the rbr master bound does not apply there. The two
 generic `loggingOracle` lemmas used by later reductions live separately in
-`VCVio/OracleComp/QueryTracking/LoggingOracle.lean`, independently of ArkLib core.
+`VCVio/OracleComp/QueryTracking/LoggingOracle/Core.lean`, independently of ArkLib core.
 -/
 
 @[expose] public section
@@ -165,8 +169,10 @@ make the master lemma above inapplicable:
 The underlying probabilistic steps — the "zero off the challenge event" monotonicity step and
 its additive and convex prefix-split sharpenings (`prEvent_bind_le_prEvent_of_forall_eq_zero`,
 `prEvent_bind_le_prEvent_add`, `prEvent_bind_le_prEvent_add_mul_prEvent_not`) — live upstream in
-VCVio (`VCVio/EvalDist/ProbabilityBounds.lean`). What follows is the ArkLib-specific `ProtocolSpec`
-glue built on top of them.
+VCVio (`VCVio/EvalDist/ProbabilityBounds.lean`). The proofs below use their `OptionT` forms
+from `VCVio/EvalDist/Monad/Option.lean`: `OptionT.prEvent_bind_le_prEvent_of_support` and
+`OptionT.prEvent_bind_le_prEvent_add_mul_prEvent_not`. What follows is the ArkLib-specific
+`ProtocolSpec` glue built on top of them.
 
 The master bound for this shape is
 `ProtocolSpec.prEvent_optionT_simulateQ_addLift_getChallenge_bind_some_le`. It consumes a
@@ -230,7 +236,8 @@ rewriting without having to respell the game term. The conclusion fixes the orac
 (rather than sampling it from an `init`) because the intended use is *inside* an outer game
 bound (e.g. the tail hypothesis of
 `prEvent_optionT_simulateQ_addLift_getChallenge_first_bind_le_convex`), where the state has
-already been fixed; recover the `init`-sampled form with `prEvent_bind_le_of_forall_le`.
+already been fixed; recover the `init`-sampled form with `wp_le_of_forall_le`, as the proof of
+the convex bound does.
 
 (Intended outer bound: the tail hypothesis of
 `prEvent_optionT_simulateQ_addLift_getChallenge_first_bind_le_convex`.) -/

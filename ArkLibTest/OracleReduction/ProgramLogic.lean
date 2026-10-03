@@ -12,8 +12,8 @@ import VCVio.OracleComp.Constructions.SampleableType.Measure
 
 `prvcgen` walks a verifier challenge with `ProtocolSpec.Necessary.Spec.getChallenge`, also when
 the challenge is lifted into a reduction's oracle world `oSpec + [pSpec.Challenge]ₒ`. The
-completeness proofs converted to `prvcgen` (for example
-`CoordinateWise.CommittedScalar.reduction_run_support`) exercise `Reduction.run_run_eq`. The
+completeness proofs that use `prvcgen`, such as
+`CoordinateWise.CommittedScalar.reduction_run_support`, exercise `Reduction.run_run_eq`. The
 bound examples pin the recipes of the security proofs: an opaque draw read through its support,
 a simulated opaque program with its state argument left to unification, and an average over a
 challenge drawn from a type with only a `SampleableType` instance. The expectation examples pin

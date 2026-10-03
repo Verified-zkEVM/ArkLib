@@ -1,7 +1,7 @@
 # Native-measure conversion ledger
 
 The merged Lean 4.34 upgrade ([#903](https://github.com/Verified-zkEVM/ArkLib/pull/903))
-converted consumers of VCVio's retiring scalar probability API
+converted consumers of VCVio's retired scalar probability API
 (`Pr[… | …]`, `probEvent`, `probOutput`, `probFailure`, `evalSPMF`/`𝒮[…]`, `NeverFail`,
 and the PMF-based `IsUniformSpec`/`IsProbabilitySpec`) to the native measure API
 `𝒟[…]` and `Pr{…}[…]`. Both stages require `./scripts/validate.sh --axioms` with
@@ -45,7 +45,8 @@ regression-test, or axiom checks for this upgrade.
 
 Developed on VCVio branch `codex/arklib-native-prereqs` and landed on VCVio `main` through the
 integration PR [#771](https://github.com/Verified-zkEVM/VCVio/pull/771) (which also carries the
-content of #758/#763/#764); ArkLib pins `210d73fd85d4f1ab99e5a707a78238e3a0dfb8d6`.
+content of #758/#763/#764). ArkLib pinned `210d73fd85d4f1ab99e5a707a78238e3a0dfb8d6` for the
+conversion. `lakefile.toml` holds the current pin.
 
 | Family | Upstream home | Contents | Retires in ArkLib |
 |---|---|---|---|
@@ -54,19 +55,20 @@ content of #758/#763/#764); ArkLib pins `210d73fd85d4f1ab99e5a707a78238e3a0dfb8d
 | U3 conditioning | `VCVio/EvalDist/ProbabilityBounds.lean` | `prEvent_bind_le_of_forall_le`, `le_prEvent_bind_of_forall_le`, `prEvent_bind_le_prEvent_add_mul_prEvent_not`, `prEvent_bind_le_prEvent_of_forall_eq_zero`, `prEvent_bind_le_prEvent_add`, and `_of_support` forms through `MonadAttach` (`bind_eq_attach_bind`, `prEvent_true_attach`) | `probEvent_bind_le_of_forall_le`, `mul_le_probEvent_bind`, `probEvent_bind_le_probEvent(_add/_convex)`, `Pr_seq_le_of_forall_le`, `probEvent_bind_of_const` |
 | U4 OptionT sequencing | `VCVio/EvalDist/Monad/Option.lean`, `VCVio/OracleComp/SimSemantics/StateT/Measure.lean` | `OptionT.mem_support_of_mem_support_lift`, `OptionT.mk_bind_eq_lift_bind`, `OptionT.prEvent_mk_bind_eq_one_of_support`, `OptionT.prEvent_mk_bind_le_of_forall_le`, `OptionT.prEvent_mk_simulateQ_run'_eq_one_of_support` | `ArkLib/ToVCVio/EvalDist/Instances/OptionT.lean`, `OptionT.probEvent_eq_one_of_simulateQ_support(_bind)`, the `change none ∈ support (StateT.run' (simulateQ …))` idiom, the `erw` chains in `Sumcheck/Spec/SingleRound.lean` |
 | U5 normal forms | `VCVio/OracleComp/SimSemantics/OptionT/Basic.lean`, `VCVio/OracleComp/QueryTracking/LoggingOracle/Core.lean` | `simulateQ_optionT_pure`, `loggingOracle.map_fst_run_simulateQ`, `loggingOracle.run_simulateQ_optionT_pure` | `ArkLib/ToVCVio/OracleComp/{SimSemantics/SimulateQ,QueryTracking/LoggingOracle}.lean` |
-| U6 uniform counting | `VCVio/OracleComp/Constructions/SampleableType/NativeMeasure.lean` | `prEvent_uniformSample_eq_one_iff/_eq_zero_iff/_pos_iff/_eq_singleton`, `prEvent_uniformSample_lt_div_iff/_le_div_iff/_eq_div_iff`, `div_lt/le_prEvent_uniformSample_iff`, `prEvent_uniformSample_eq_ofReal`, `prEvent_uniformSample_comp_of_bijective/_equiv/_pair_of_bijective/_prod/_fst/_finSnoc`; `prEvent_congr_of_evalDist_eq`, `prEvent_const_of_lossless`, `prEvent_const_of_not` | `prob_uniform_eq_card_filter_div_card` and boilerplate B1–B4, `Pr_uniform_equiv`, `Pr_map_eq`, `prob_split_uniform_sampling_of_(equiv_)prod`, `prob_split_last_uniform_sampling_of_finFun`, `prob_fin_succ_split`, `prob_marginalization_first_of_prod`, `prob_uniform_eq_ofReal`, `prob_uniform_singleton_finFun_eq`, the RbrGame `$ᵗ`↔`$ᵖ` bridge |
-| U7 samplers | `VCVio/OracleComp/Constructions/SampleableType/Basic.lean`, `NativeMeasure.lean` | `SampleableType.subtype`, `SampleableType.finsetCoe` (noncomputable defs), `evalDist_uniformSample_inst_irrel`, `prEvent_uniformSample_inst_irrel` | `OracleReduction/Cast.lean` `𝒮[]` transport; enables `$ᵗ ↥U` for Finset/subtype sample spaces |
+| U6 uniform counting | `VCVio/OracleComp/Constructions/SampleableType/Measure.lean` | `prEvent_uniformSample_eq_one_iff/_eq_zero_iff/_pos_iff/_eq_singleton`, `prEvent_uniformSample_lt_div_iff/_le_div_iff/_eq_div_iff`, `div_lt/le_prEvent_uniformSample_iff`, `prEvent_uniformSample_eq_ofReal`, `prEvent_uniformSample_comp_of_bijective/_equiv/_pair_of_bijective/_prod/_fst/_finSnoc`; `EvalDistEq.prEvent_eq`, applied as `(EvalDistEq.of_evalDist_eq h).prEvent_eq p`, `prEvent_const_of_lossless`, `prEvent_const_of_not` | `prob_uniform_eq_card_filter_div_card` and boilerplate B1–B4, `Pr_uniform_equiv`, `Pr_map_eq`, `prob_split_uniform_sampling_of_(equiv_)prod`, `prob_split_last_uniform_sampling_of_finFun`, `prob_fin_succ_split`, `prob_marginalization_first_of_prod`, `prob_uniform_eq_ofReal`, `prob_uniform_singleton_finFun_eq`, the RbrGame `$ᵗ`↔`$ᵖ` bridge |
+| U7 samplers | `VCVio/OracleComp/Constructions/SampleableType/Basic.lean`, `Measure.lean` | `SampleableType.subtype`, `SampleableType.finsetCoe` (noncomputable defs), `evalDist_uniformSample_inst_irrel`, `prEvent_uniformSample_inst_irrel` | `OracleReduction/Cast.lean` `𝒮[]` transport; enables `$ᵗ ↥U` for Finset/subtype sample spaces |
 
-Regression test: `VCVioTest/EvalDist/EventBounds.lean` (native import guard, an `OptionT ProbComp`
-game simulated from a sampled state, uniform counting thresholds, union bounds, conditioning).
+Regression test: `VCVioTest/EvalDist/EventBounds.lean` (a guard against importing `PMF`, an
+`OptionT ProbComp` game simulated from a sampled state, uniform counting thresholds, union bounds,
+conditioning).
 
 The earlier plan listed structural uniform instances (U8) and transformer losslessness glue
 (U9). These are not unresolved blockers for the current conversion: ArkLib uses native
 `UniformAnswerMeasure` instances where needed, and the pinned dependency supplies
 `OptionT.isProbabilityMeasure_mk_iff` and the sequencing lemmas above.
 The final proof-length audit identified dependent-product sampling and conditional uniform-event
-conveniences. [VCVio #770](https://github.com/Verified-zkEVM/VCVio/pull/770) supplies them;
-ArkLib pins VCVio `main` at `210d73fd85d4f1ab99e5a707a78238e3a0dfb8d6`, the squash merge of
+conveniences. [VCVio #770](https://github.com/Verified-zkEVM/VCVio/pull/770) supplies them.
+ArkLib pinned VCVio `main` at `210d73fd85d4f1ab99e5a707a78238e3a0dfb8d6`, the squash merge of
 [VCVio #771](https://github.com/Verified-zkEVM/VCVio/pull/771). That merge consolidated the whole
 native-measure prerequisite stack onto `main`: #769 and #770, which had previously merged only into
 the prerequisites branch, together with the `OracleSpec.{u, v}` generalizations and the AE
@@ -329,7 +331,7 @@ migration; the axiom regression baseline must remain unchanged.
 
 Issue #904 covers both phases: #903's VCVio scalar conversion and the follow-up retirement of
 ArkLib's independent PMF surface. The prerequisite stack landed on VCVio `main` in
-[#771](https://github.com/Verified-zkEVM/VCVio/pull/771), and ArkLib pins that main commit,
+[#771](https://github.com/Verified-zkEVM/VCVio/pull/771), and ArkLib pinned that main commit,
 `210d73fd85d4f1ab99e5a707a78238e3a0dfb8d6`. Closure is judged by these gates, all checked on the
 final head: current `main` is integrated; the probability API used by `ArkLib` is native; the
 strict `retiredsweep` inventory is empty; `./scripts/validate.sh --axioms` passes with no new
@@ -359,6 +361,6 @@ claims; no one scanner is described as a complete transitive/source proof.
 Native Boolean implication and union bounds, event monotonicity on support, a conditional product
 lower bound, and the support-indexed additive bind bound are supplied by
 [VCVio #769](https://github.com/Verified-zkEVM/VCVio/pull/769) for the Ajtai/Hachi reductions and
-KZG event comparisons. Those lemmas reached `main` with #771, so the pin is an ordinary `main`
-commit rather than a prerequisite branch. The Lean 4.34 bump (#903) deferred independent PMF
+KZG event comparisons. Those lemmas reached `main` with #771, so the conversion pinned an ordinary
+`main` commit rather than a prerequisite branch. The Lean 4.34 bump (#903) deferred independent PMF
 retirement; the follow-up now enforces an empty retirement inventory.

@@ -124,10 +124,11 @@ opening runs in whatever oracle state key generation and commitment left behind)
 scheme is perfectly correct.
 
 This is the generic bridge between the reduction-level completeness theory and the
-commitment-level correctness game. Both games are stated as structural triples, every possible
-output satisfying the event; `prvcgen` steps through the setup prefix, taking any possible initial
-state, key pair and commitment (`Spec.ofSupport`), and ends at the opening's run from the
-post-setup state, which is the completeness game of the opening at the honest input. -/
+commitment-level correctness game. The proof states both games as triples of the necessary
+reading, in which every possible output satisfies the event. `prvcgen` steps through the setup
+prefix, taking any possible initial state, key pair and commitment (`Spec.ofSupport`), and ends at
+the opening's run from the post-setup state. That run is the completeness game of the opening at
+the honest input. -/
 theorem perfectCorrectness_of_opening_perfectCompleteness
     (rel : ComKey → VerifKey →
       Set ((Commitment × (q : O.Query) × O.Response q) × (Data × Decommitment)))
