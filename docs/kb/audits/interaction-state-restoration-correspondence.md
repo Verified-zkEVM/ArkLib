@@ -120,3 +120,39 @@ The private-coins corollaries average these actual games over independently pre-
 The coin author may fail, and every fixed-coin adversary retains adaptive oracle access and an
 all-branch query budget. This is an explicit random-tape-family specialization; equivalence with
 arbitrary interleaved private-randomness and oracle effects is not asserted.
+
+
+## Nonuniform errors: proof plan and invalid shortcuts
+
+The optional extension under development assigns error `epsilon_j` to each fixed round and
+targets `Q * max_j epsilon_j + sum_j epsilon_j` for the same actual restoration game. It uses
+VCVio's existing worst-case additive query-cost semantics with probability charges as weights;
+these weights are not CPU extraction costs. A new weighted fresh-query theorem is needed. The
+following hand-checked counterexamples explain why simpler-looking arguments do not suffice;
+they are research observations, not claims of additional Lean separation theorems.
+
+1. **Completion alone does not have error bounded by the sum after adaptive selection.**
+   In a one-round binary-challenge protocol, take the bad event to be the true reply, so each
+   fixed key has local error 1/2. Query two salted keys and select a true one whenever either
+   reply is true. Completion rereads that selected key and is bad with probability 3/4. The
+   cached bad reply must be charged to the adversary's earlier access; adding a separate
+   completion-only bound without accounting for the cache is invalid.
+2. **Conditioning on no earlier bad query can reveal an unqueried ancestor.**
+   Let first-round knowledge be the binary challenge `t`, and terminal knowledge be
+   `t or not u`; root knowledge is false and backward maps are identity. The round-two bad
+   event is `not t and not u`. Query the later key first and observe `u=false`. Conditioning
+   additionally on that queried key not being bad forces the still-unqueried ancestor `t`
+   to be true. The subsequent bad-event probability is 1 although its unconditional local
+   bound is 1/2. The proof must avoid this conditioning.
+3. **Expected cost under uncached replies differs from expected cost under the actual cache.**
+   Query a zero-weight binary control key twice, then query a weight-one always-bad Unit-answer
+   key exactly when the replies agree. Under a cached oracle, success and cost are 1. Under
+   independent free replies, their expectations are 1/2. Thus the library's canonical free
+   `ExpectedCostBound` cannot replace an actual cached-runtime budget without a correspondence
+   theorem. The existing all-path `WorstCaseCostBound` is safe here and gives 1.
+
+The proposed weighted proof retains the all-background-table resampling premise and charges
+fresh bad events without conditioning on previous absence. Completion's actual query charges
+sum to the round errors, while the adversary's all-branch query bound gives `Q * max`. Infinite
+and zero errors and zero-round protocols should remain covered. A runtime-expected or genuinely
+history-dependent sharpening is a separate future theorem.
