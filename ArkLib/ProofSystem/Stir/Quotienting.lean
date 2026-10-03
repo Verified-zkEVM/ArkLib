@@ -258,6 +258,27 @@ lemma quotienting [Fintype ι] {degree : ℕ} {domain : ι ↪ F} [Nonempty ι]
     ∃ x : S, ((toPolynomialLT u) : F[X]).eval x.val ≠ Ans x) :
     δᵣ((funcQuotient domain f S Ans Fill), (code domain (degree - S.card))) +
       ((disagreementSet domain f S Ans).card) / (Fintype.card ι) > δ := by
-  sorry
+  classical
+  by_contra hcon
+  rw [gt_iff_lt, not_lt] at hcon
+  obtain ⟨g, hgdeg, hrel⟩ := exists_polynomial_relDistFromCode_eq domain (degree - S.card)
+    (funcQuotient domain f S Ans Fill)
+  have hmem := evalOnPoints_unquotient_mem_code domain (Ans := Ans) hS_lt hgdeg
+  have hdist := hammingDist_le_card_disagreementSet_add domain f S Ans Fill g
+  rw [hrel] at hcon
+  set T := (disagreementSet domain f S Ans).card
+  set hd := hammingDist (funcQuotient domain f S Ans Fill) (evalOnPoints domain g)
+  -- the absolute form of the contradiction hypothesis
+  have habs : (((T + hd : ℕ) : ℝ≥0) / (Fintype.card ι : ℝ≥0) : ℝ≥0) ≤ δ := by
+    rw [← ENNReal.coe_le_coe, ENNReal.coe_div (by simp), ENNReal.coe_natCast,
+      ENNReal.coe_natCast, Nat.cast_add, ENNReal.add_div, add_comm]
+    exact hcon
+  have hclose := mem_closeCodewordsRel_of_hammingDist_div_le
+    (C := (code domain degree : Set (ι → F))) (f := f) (δ := δ) hmem
+    (le_trans (by gcongr) habs)
+  obtain ⟨x, hx⟩ := h ⟨evalOnPoints domain (unquotient S Ans g), hmem⟩ hclose
+  apply hx
+  rw [coe_toPolynomialLT_evalOnPoints (degree_unquotient_lt hS_lt hgdeg) hdeg hmem]
+  exact eval_unquotient_of_mem S Ans g x
 
 end Quotienting
