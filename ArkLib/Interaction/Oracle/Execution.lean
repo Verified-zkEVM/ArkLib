@@ -483,6 +483,34 @@ theorem executeStrategies_eq_run {ι : Type u} (ambient : OracleSpec.{u, u} ι)
       return ⟨TypeTree.ExecutionPath.ofTypeTreePath result.1, result.2.1, out⟩) :=
   rfl
 
+set_option backward.isDefEq.respectTransparency false in
+/-- A prover public move runs before the verifier's actual receive effect and the continuation. -/
+theorem executeStrategies_public_sender {ι : Type u} (ambient : OracleSpec.{u, u} ι)
+    {Moves : Type u} {rest : Moves → Oracle.TypeTree.{u}}
+    (roles : (move : Moves) → (rest move).RoleDecoration)
+    (oracles : (TypeTree.public Moves rest).OracleDecoration)
+    (initial : PFunctor.{u, u}) (impl : QueryImpl (OracleSpec.ofPFunctor initial) Id)
+    {OutP : (TypeTree.public Moves rest).ExecutionPath → Type u}
+    {OutV : (TypeTree.public Moves rest).BranchPath → Type u}
+    (prover : Prover.Strategy ambient (.public Moves rest) ⟨.sender, roles⟩ OutP)
+    (verifier : Verifier.Strategy ambient (.public Moves rest) ⟨.sender, roles⟩ oracles
+      initial OutV) :
+    executeStrategies ambient (.public Moves rest) ⟨.sender, roles⟩ oracles initial impl
+      prover verifier = (do
+        let chosen ← prover
+        let next ← simulateQ (Verifier.liftAccessImpl ambient initial impl) (verifier chosen.1)
+        let result ← executeStrategies ambient (rest chosen.1) (roles chosen.1)
+          (oracles.2 chosen.1) initial impl
+          (OutP := fun path => OutP ⟨chosen.1, path⟩)
+          (OutV := fun path => OutV ⟨chosen.1, path⟩) chosen.2 next
+        return ⟨⟨chosen.1, result.1⟩, result.2.1, result.2.2⟩) := by
+  simp only [executeStrategies, Verifier.toCounterpart, Verifier.toCounterpartWith,
+    TypeTree.toTypeTree_public, TypeTree.RoleDecoration.toTypeTreeRoles_public,
+    TwoParty.run, InteractionOver.runTypeTree, InteractionOver.TwoParty.pairedTypeTree,
+    InteractionOver.TwoParty.paired, TwoParty.participantProfile,
+    TwoParty.collectParticipantOutputs, bind_assoc, pure_bind]
+  rfl
+
 /-- Project only the public structural path and verifier result. This intentionally is not named a
 verifier local view: it does not contain the verifier's ordered query/answer observations. -/
 def publicResult {tree : Oracle.TypeTree.{u}}
