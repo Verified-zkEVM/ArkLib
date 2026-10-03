@@ -12,6 +12,8 @@ page under [`papers/`](papers/README.md); that directory, not this list, is the 
 
 ## Paper Pages
 
+- [`papers/ChiesaYogev2024.md`](papers/ChiesaYogev2024.md) - the hash-based proof textbook,
+  its required long-term coverage, and the native interaction/security comparison.
 - [`papers/ABF26.md`](papers/ABF26.md) - *Open Problems in List Decoding and Correlated Agreement*,
   the primary source for the coding-theory foundations: §2 preliminaries, the §2.4 code families,
   the §3.1 Johnson family, subspace designs, and extension codes.
@@ -104,6 +106,8 @@ page under [`papers/`](papers/README.md); that directory, not this list, is the 
 
 ## Audit Pages
 
+- [`audits/chiesa-yogev-interaction.md`](audits/chiesa-yogev-interaction.md) - textbook pipeline,
+  native and legacy security differences, reusable extraction theory, and open research questions.
 - [`audits/README.md`](audits/README.md) - audit conventions and migration notes for paper-to-code
   comparison pages.
 - [`audits/noz26-subfield-lemmas5-6.md`](audits/noz26-subfield-lemmas5-6.md)

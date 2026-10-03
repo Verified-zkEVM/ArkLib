@@ -281,6 +281,204 @@ following Sumcheck work before starting the FRI and Spartan migrations.
    Sumcheck claims with correspondence and axiom checks; do not treat the native result as silently
    proving those old declarations.
 
+## Bounded CY theory investigation (proposed)
+
+This is a proposed overnight work package within the native-security steps above, recorded on
+October 2, 2026. It has not been launched or adopted as a replacement architecture. The
+[Chiesa-Yogev comparison](../kb/audits/chiesa-yogev-interaction.md) records source versions,
+evidence, the larger pipeline and unresolved alternatives. The long-term requirement is to
+recover the textbook's results in our language and generality, ideally across the whole book.
+
+The purpose of this run is to resolve a few precise questions with checked mathematics, while
+leaving broader choices open. A useful morning result is a local-security bridge, a separating
+example and a small extraction correspondence, not an assertion that the entire compiler or
+knowledge hierarchy is settled. Plan around a six-to-eight-hour window if one is later chosen;
+the durations below are estimates, not an active timer or a promise of completion.
+
+### Questions this package should answer
+
+1. Can one ordinary prefix certificate recover the book's fixed-round local experiment and
+   also express native Sumcheck's actual guarded verifier step without changing its executor?
+2. Exactly how much weaker is security averaged over an ordinary run than security at every
+   authored prefix? Produce a finite separating example for existential state certificates.
+3. Can one legacy committed-scalar extraction algorithm be reused when its leaf witnesses are
+   read from native response messages, rather than supplied by an unimplemented extractor?
+
+The first two are the primary target. The third is an independent, bounded research lane.
+Full state restoration, universal knowledge composition and BCS security are later targets;
+this run must leave their requirements visible without inventing universal APIs for them.
+
+### Initial statement review and ownership
+
+Before implementation, the orchestrator records the exact baseline and proposed theorem
+statements, including the quantified adversary/prefix, sampling order, observation, event,
+error and any runtime restriction. Recheck overlapping upstream work, especially the legacy
+Sumcheck/RBR repairs and the toolchain/probability migration. Use the pins that already support
+the first package; do not make a toolchain or dependency migration a prerequisite without a
+specific missing declaration.
+
+Use at most four active agents: the orchestrator, two Sol High workers and one independent
+reviewer. The orchestrator owns integration, shared API decisions, this roadmap, validation
+and the final evidence record. Each worker owns a separate worktree and named files. The
+reviewer authors neither lane and first reads the target statements against the source
+experiment. No recursive delegation is needed. Use one build coordinator when dependency
+artifacts are physically shared; separate worktrees alone do not isolate `.lake/packages`.
+
+Working names below are provisional. Follow the repository naming guide; do not create a
+parallel namespace named after the textbook. A prototype must not silently become the public
+contract for all dependent/effectful protocols.
+
+### Lane A: ordinary local security and native Sumcheck
+
+**Owner and scope:** one worker, tentatively
+`ArkLib/Interaction/Oracle/Security/RoundByRound.lean`,
+`ArkLib/ProofSystem/Sumcheck/Interaction/RoundByRound.lean`, and their small acceptance clients.
+Inspect existing names before creating these modules. No edits to the runtime, protocol tree,
+shared oracle semantics or legacy security definitions unless integration review identifies
+an unavoidable, separately justified change.
+
+**A1. Scalar prefix contract and source specialization.** Reuse pinned VCVio's
+`RoundByRound.GameFamily` and `IsBounded`. Add the missing protocol interpretation and state
+laws. The proposed mathematical obligation is:
+
+```text
+For each false input and each concrete pre-challenge prefix b,
+  State(b) = false implies
+  Pr[a sampled by the interpreted local verifier move at b]
+    [State(extend(b, a)) = true] <= error(round(b)).
+```
+
+The state laws must state empty state false, preservation of falsity on every prover move,
+and terminal success implying state true. Prove how the fixed-round, stateless, independently
+uniform specialization recovers CY's ordinary definition, including randomized authors of
+prefixes. Give the null-conditioning convention explicitly, or state the positive-mass
+conditioning lemma. The security quantifier must not require earlier challenges to be honestly
+sampled or a prefix to have positive probability in an ordinary run.
+
+Keep general world-state security outside this first contract unless its exact state and
+freshness premises can be proved from the existing runtime. In particular, never use a fresh
+initialization to justify a statement about a prover-modified world. Fixed-round specialization
+and actual guarded native execution must be distinct theorems.
+
+**A2. Sumcheck local theorem and prefix correspondence.** Quantify over any authored challenge
+history/current statement, any degree-bounded sent polynomial `q`, and a retained original
+oracle realized by the specified bounded multivariate polynomial `p`. Under the false current
+closed relation, the local verifier returns `none` if the sum check fails and `some r` for a
+fresh uniform `r` otherwise. With abort post-state false and continuing post-state the next
+closed relation, prove error at most `deg / |F|`.
+
+Reuse `uniform_successor_soundness` and `execute_succ`. Prove that the current statement,
+sent polynomial and retained original view are observations of the native concrete prefix;
+merely wrapping an already proved inequality in `GameFamily` is insufficient. Preserve the
+effectful prover response on both continuation and abort. Do not replace the original retained
+oracle with the newly sent polynomial when stating the successor relation.
+
+For a full scalar certificate, address the all-input empty-state law explicitly: a positive-round
+candidate resets the state before the first challenge, then uses the current closed relation.
+Treat zero-round false-input security separately. Do not claim that native early-aborting
+Sumcheck literally has the book's fixed-round transcript syntax. Padding and all-transcript
+acceptance correspondence remain a separate possible bridge.
+
+**A3. Aggregate connection, after A1/A2 pass review.** Derive an execution-averaged consequence
+and a terminal-error theorem for the supported finite fragment, tied to the existing executor.
+For Sumcheck recover `count * deg / |F|` from the local certificate and compare the event with
+the existing ordinary theorem. Supply an explicit challenge-rank bound. This is an aggregate
+theorem, not the stronger SR `(B + r)` theorem.
+
+**Acceptance:** checked source-specialization, actual native-prefix/local-step correspondence,
+passing and rejecting Sumcheck cases, and the exact error bound. New principal theorems must
+have no admissions or hidden dependency on `sorryAx`. Build and axiom evidence identify exact
+declarations. Report A1, A2 and A3 separately if only part is complete.
+
+### Lane B: a separation result, then one extraction bridge
+
+**Owner and scope:** second worker, a finite security example under `ArkLibTest/` (or an
+appropriately named reusable example module if needed), followed by client-specific native
+extraction modules. Do not edit Lane A's definitions concurrently. Share the agreed minimal
+statement, and have the orchestrator integrate any adaptation to the final API.
+
+**B1. Separate averaged and local security.** Use two uniform bits, `Unit` prover messages,
+and acceptance iff both bits are zero on an always-false instance. Formalize both:
+
+- A state false at all proper prefixes gives uniform averaged error `1/4`.
+- Every fixed-prefix state certificate satisfying the empty/prover/terminal laws has uniform
+  error at least `1/2`; an all-zero-prefix state attains `1/2`.
+
+This is the two-round instance of the book's RBR tightness construction, additionally compared
+with ArkLib's averaged notion; preserve that attribution. It must quantify over all candidate
+local state certificates, not just refute one chosen state function. Connect the finite model
+to the two security definitions in use. If the
+connection is unfinished, label it a standalone finite lemma, not a native conformance result.
+The experiment also serves as a guard against replacing arbitrary-prefix security by a weaker
+average during implementation.
+
+**B2. Native committed-scalar fork, if B1 is complete.** Use one small public interaction:
+commitment `t`, challenge `c`, response/opening `w`. A supplied finite bundle has a shared
+commitment, `k >= 2` distinct challenges and concrete response messages. Encode its two-move
+prefixes as the existing legacy scalar tree; read legacy leaf witnesses from the third message.
+Define the native extractor independently by projecting response zero, then prove equality
+with `CommittedScalar.treeExtractor` under this encoding.
+
+Transport `CommittedScalar.mkWitness_mem`: accepted branch openings either exhibit an actual
+binding collision between branch responses or the named native algorithm returns a valid input
+witness. Instantiate the existing non-`Unit` ring-switching `Lift` relation with `k = 2d` and
+its polynomial-vector witness. Restrict this to the scalar phase with explicit response
+transmission; it is not a migration of all ring switching.
+
+The algorithm receives the whole supplied fork, including challenges and responses. It gets
+no hidden prover state or extra world log. It must not choose a leaf witness from mere relation
+membership. Its access is deliberately stronger than CY's prover-string-only RBR extractor;
+success does not settle challenge erasure or extraction from a malicious prover.
+
+**Acceptance:** branch-path/message correspondence, equality of independently defined
+algorithms, extraction-or-collision, and the `Lift` specialization, with axiom checks. Include
+a compiled finite example showing the extractor reads actual messages; distinguish that
+example from generic compilation of the `Lift` specialization. If the full client fails,
+retain the checked scalar result and report the exact additional assumption or obstruction.
+Do not introduce a universal native fork/tree framework to make this one experiment finish.
+
+### Integration gates and stopping rules
+
+| Approximate point in the run | Evidence to review | Action |
+|---|---|---|
+| First 30-60 minutes | Frozen statements, source correspondence, pin/build readiness and nonoverlapping ownership | Start bounded proof work; unresolved general architecture remains in the research ledger |
+| After roughly 2 hours | A1 statement/elaboration and B1 finite proof progress | Reject any reachability weakening or changed event; reduce implementation breadth if a foundational mismatch appears |
+| Middle of run | A2 actual-prefix bridge, B1 checked separation; B2 starts only if ready | Review theorems independently; continue A3/B2 only with stable prerequisites |
+| Final 60-90 minutes | Exact integrated revision, compile/axiom results and reviewer findings | Stop expanding scope, fix correctness issues, run repository checks, commit checked work and a precise handoff |
+
+If a target proves false, preserve the counterexample and corrected candidate theorem separately.
+If a target is blocked by missing mathematics, preserve a checked partial lemma and the exact
+remaining goal. Do not fill the gap with `sorry`, classical witness choice disguised as an
+algorithm, an assumed bridge labeled as proved, or silently stronger hypotheses. A narrow
+true theorem can be useful, but its status must remain narrow.
+
+At most one optional next step should begin after the primary work is complete: either sketch
+the exact consistent-query SR game and its `B + r` completion lemma, or analyze challenge-erasure
+factorization on a small knowledge example. A sketch is not a security theorem. Do not also
+start the Merkle payload adapter, full hash-chain compiler or time semantics in this run.
+
+The integrator runs the required `./scripts/validate.sh --axioms` for new proofs, including
+the repository's test and warning gates, and inspects axiom results for the principal declarations.
+Use `LAKE_ARTIFACT_CACHE=false LAKE_NO_CACHE=true` in the shared workspace and coordinate
+physical dependency build writes. Keep validation logs and exact commands with the handoff;
+do not claim a passing suite if environmental failures prevent it. Update current status only
+for completed, integrated results. Local commits preserve work; pushing, opening PRs and
+merging are separate from this proposal and follow the authorization active at launch.
+
+### Questions intentionally still open after the run
+
+The dependent/effectful SR model; general extractor observation and challenge erasure; efficient
+tree finding and fork provenance; online versus offline knowledge composition; realization of
+ideal algebraic messages; salted encoded-payload Merkle extraction; hash-chain entropy and
+backtracking; exact failure/time substitution; zero knowledge; preprocessing; and the remainder
+of the book's theorem inventory all remain live targets. No worker should turn an overnight
+scope restriction into a permanent limitation of the framework.
+
+The morning handoff should contain the commit(s), exact theorem statements and assumptions,
+validation and independent-review results, the questions actually answered, and the smallest
+next experiment for each newly exposed obstruction. It should also preserve competing candidate
+designs where the evidence does not yet distinguish them.
+
 ## Later protocol clients
 
 FRI and Spartan slices follow the Sumcheck work above. The composition infrastructure is ready;
@@ -305,10 +503,12 @@ extractors and state-restoration games. The generic PolyFun causal finite-trace 
 VCVio query-log specialization are current upstream gaps. A reusable conditioning and dynamic-
 programming interface may also be needed; add it when the first formalization requires it.
 
-Knowledge soundness needs an additional causal argument. An extractor for the completed protocol
-does not automatically provide a witness at the point where the suffix needs it. A composition
-theorem must establish prefix-available witness extraction or a suitable guarantee against the
-information passed to the suffix. The design and exact games belong in
+Knowledge soundness needs additional access and witness-transport arguments. An extractor for
+the completed protocol does not automatically provide a witness at an intermediate boundary.
+Prefix-available extraction is one sufficient route. A uniform local certificate can instead
+support offline backward extraction when its observation and effect hypotheses permit it;
+the legacy tree algebra supplies useful examples. Plain terminal knowledge soundness alone
+does not establish either route. The design and exact games belong in
 [03-adversarial-oracle-execution.md](03-adversarial-oracle-execution.md).
 
 ### Oracle-elimination compiler

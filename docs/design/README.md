@@ -16,6 +16,7 @@ world state and query history continue across the boundary.
 |---|---|
 | What is implemented and proved on main? | [Current status](00-current-status.md) |
 | What should we implement next, and how will we check it? | [Roadmap](05-roadmap.md) |
+| How does our framework differ from the Chiesa-Yogev textbook? | [Literature comparison and open research notes](../kb/audits/chiesa-yogev-interaction.md) |
 | What does the full framework aim to cover? | [End state](00-end-state.md) |
 | What does an oracle reduction return, and how do reductions compose? | [Claims, closing, and composition](02-oracle-reduction-core.md) |
 | How do private memory, oracle state, and probability enter security? | [Execution and security](03-adversarial-oracle-execution.md) |
