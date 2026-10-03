@@ -246,3 +246,70 @@ in 12.6 seconds using only standard axioms. Independent blind endpoint review an
 source-query/dependent-output consumer are in progress, so final G3 acceptance remains pending.
 The [source/legacy correspondence note](interaction-state-restoration-correspondence.md) records
 why the old challenge oracle is useful, what is not inherited, and the unproved runtime bridge.
+
+
+## State-restoration publication and final integration (07:45Z)
+
+[ArkLib PR 1263](https://github.com/Verified-zkEVM/ArkLib/pull/1263), head
+`be65c8051aa36398069ab76853f063c4382a589c`, contains the native G3 theorem, actual
+execution correspondence, closed oracle output endpoint, and private-coin averaging corollaries.
+It is stacked on PR 1260. The 1,583 changed lines keep these connected obligations and their
+public client together. The PR is draft while canonical validation and CI finish.
+
+Independent final semantic review approves the frozen production packet and client. Root's
+review found that the earlier scalar/source-observation endpoint alone did not establish the
+required oracle-output interpretation. Independent review confirmed this P1 gap. The new
+`stateRestoration_oracle_knowledge_soundness` closes the actual returned optional open claim
+under the same native path's accumulated handler. Its output relation sees the closed statement
+and behavior; `none` cannot win. The actual execution equation is proved, rather than assumed.
+This repair is essential to acceptance, not an optional example.
+
+The supported round list, message interfaces and challenge alphabets are fixed independently
+of the selected input and previous challenges. Inputs and salts may be infinite. The common
+supplied output-witness type is identified with each terminal witness type by an explicit named
+equivalence. No input-dependent/challenge-dependent restoration presentation or arbitrary
+varying-cardinality terminal witness interface is claimed. Private coins are independent,
+possibly failing pre-sampled tapes; equivalence with arbitrarily interleaved randomness remains
+unproved. Extraction runtime and ARC challenge-erased extraction remain open.
+
+The final independent ordinary-import canary passed in 3.4 seconds against the exact pin below.
+Principal and client axioms are only `propext`, `Classical.choice`, and `Quot.sound`. Besides the
+client's actual payload7 observations, the reviewer checked the same public branch with payload3:
+the closed virtual output returns `some (3,3)` and backward extraction returns 5. This distinguishes
+actual source interpretation from copying the first example's answer. The client also verifies
+rejection, nonidentity extraction, and missing mass from a failing private-coin author.
+
+### VCVio test initialization repair and validation scope correction
+
+The first CI run of [VCVio PR 823](https://github.com/Verified-zkEVM/VCVio/pull/823) found
+that a dependent finite test sampler introduced unwanted module-initialization enumeration.
+The production probability theorem was unchanged. Explicit finite/nonempty proof instances
+and a noncomputable test sampler through `Fintype.ofFinite` remove the generated enumeration.
+Independent review inspected the generated code and approved this test-only fix.
+
+The current-main PR head is now `48190ba81afd83fb3c7dc8a74695c9731d25e889`.
+Its complete `VCVioTest` build passed in 7.7 seconds and test-library initialization sweep in
+12.8 seconds. The byte-identical compatible fix is pushed at
+`fe608a46c3df4608ea774611662a255326b5d1ff`; its test build passed in 36.8 seconds and
+initialization sweep in 14.5 seconds. G3 now pins this exact compatible revision. All other
+manifest dependency revisions are unchanged. Current-main CI is rerunning.
+
+For precision, earlier VCVio “full validation with axioms” entries mean the full requested
+`./scripts/validate.sh --axioms` gate. That command does not include VCVio's optional `--test`
+checks. They did not establish that every test-library initialization check had passed. The
+changed test library and its initialization sweep are now separately checked as recorded above;
+CI remains the evidence for the broader pipeline. ArkLib's canonical gate does include its
+acceptance tests and compiled runtime checks.
+
+G1 PR 1261 and both G2 PRs 1259–1260 have passed their triggered CI and are ready for review.
+No PR has been merged. The combined integration branch includes their exact source changes and
+G3; only generated umbrella-import conflicts needed resolution. Final combined validation is
+still pending, so assembled-stack acceptance remains open.
+
+
+G3's canonical `./scripts/validate.sh --axioms` rerun passed in 198.2 seconds at the published
+head: 18,188 declarations across 929 modules, unchanged 286 baseline sorry-tainted declarations,
+zero nonstandard axiom taint. The first full attempt failed only on the new test file's missing
+copyright header; the standard header was added with its entire Lean body unchanged, independently
+verified, and all requested checks rerun successfully. Combined integration validation is running
+at `a43dc43b9` with the exact new compatible dependency pin.

@@ -3,8 +3,8 @@
 This note records the October 3, 2026 implementation boundary. The normative scope remains the
 [overnight contract](../../design/interaction-security-night-contract.md); publication and exact
 validation revisions are recorded in the [run ledger](interaction-night-20261003.md). Principal
-native production proofs have compiled, but final client validation and independent endpoint
-review are still in progress at this checkpoint. This note is not a completion verdict.
+native production proofs and the closed-oracle endpoint have compiled and passed independent
+review; final client and integration validation are still in progress at this checkpoint. This note is not a completion verdict.
 
 ## WARP's probability statement and the native statement
 
@@ -19,17 +19,26 @@ assert the challenge-erased ARC contract or an equivalence between those notions
 | Independent uniform function per round; repeated requests are consistent | VCVio's existing `randomOracle`, started with empty cache, samples on a miss and replays on a hit. Answer types may differ by round. |
 | Adaptive final input and full message/salt sequence | The adversary returns its input only after its queries. It may have queried other inputs, including inputs outside the permitted set. |
 | Final completion from the same functions | `complete` makes at most one call per selected round to the same oracle; its native-path and query-log equations are proved. |
-| Actual deterministic verifier applied to that transcript | `execute_pathReplay` proves the native runner equation; `verificationGame_eq` uses actual completion support to obtain it. Source queries use the concrete path's accumulated closing implementation. |
+| Actual deterministic verifier applied to that transcript | `execute_pathReplay` proves the native runner equation; `verificationGame_eq` uses actual completion support. `closedVerificationGame` closes the actual optional open output under that same path's handler. Rejection remains unsuccessful. |
 | Supplied output witness and backwards extraction | `extractInputWitness` uses a named terminal witness equivalence followed by the existing recursive extractor. It does not choose valid intermediate witnesses. |
 | Input/output proximity relations | The principal theorem takes arbitrary input/output relations and endpoint iff laws. A proximity parameter can index these data pointwise; no extension of its admissible range is implied. |
-| Theorem B.4 probability coefficient | `stateRestoration_knowledge_soundness` bounds permitted input, valid actual output witness, and invalid extracted input witness by `(Q + k) * error`. The error is uniform over permitted inputs and authored prefixes. |
+| Theorem B.4 probability coefficient | `stateRestoration_oracle_knowledge_soundness` bounds permitted input, valid actual closed-output witness, and invalid extracted input witness by `(Q + k) * error`. The error is uniform over permitted inputs and authored prefixes. |
 | Sum of local extraction times | Not proved. The implementation supplies a backwards function; no executable runtime realization for its arbitrary supplied maps is present. |
 
 The native witness carrier may depend on the concrete prefix. The endpoint equivalence identifies
 its terminal carrier with the adversary's common output-witness type. Its input witness type may
 depend on the selected input. These are explicit carrier identifications, not an existential
 choice of a witness. The output type may depend on the public transcript, while the verifier can
-inspect oracle messages only through the declared source-query interface.
+inspect oracle messages only through the declared source-query interface. The terminal program
+may return an open virtual oracle with arbitrarily many possible queries. Canonical post-run
+closing supplies its actual behavior to the relation; the verifier is not given the hidden handler.
+
+This endpoint distinction caused a material review correction. The first checked theorem observed
+only the source-program's returned value. It could not generically close a virtual output oracle
+from a public transcript alone, because that transcript erases concrete oracle messages. Treating
+that theorem as arbitrary IOR security would have overstated it. The separate optional
+closed-oracle game and its proved equation repair this boundary; they do not assume the missing
+correspondence or require enumerating every output query.
 
 The initial scope is a fixed finite round list with finite message alphabets and finite nonempty
 uniform challenge alphabets. Input and salt types need not be finite. A fixed salt length is an
@@ -104,3 +113,9 @@ must supply executable witness/transcript representations, realizers for those m
 transports, an actual traversal implementation, and correspondence with the named extraction
 function. Charging a `tell` once per map or counting recursive calls would establish a different
 resource claim. No runtime bound is inferred from Lean reduction or from the probability proof.
+
+
+The private-coins corollaries average these actual games over independently pre-sampled coins.
+The coin author may fail, and every fixed-coin adversary retains adaptive oracle access and an
+all-branch query budget. This is an explicit random-tape-family specialization; equivalence with
+arbitrary interleaved private-randomness and oracle effects is not asserted.
