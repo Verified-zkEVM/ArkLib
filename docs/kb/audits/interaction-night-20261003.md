@@ -339,3 +339,10 @@ bound using the existing query-cost model, yielding the nonuniform restoration e
 `Q * max_j epsilon_j + sum_j epsilon_j`. This is not yet proved or accepted, and does not change
 the reviewed core claims. It must preserve out-of-order queries and bad events depending on
 unqueried ancestors. Runtime accounting remains a distinct unresolved problem.
+
+
+G3 PR 1263 subsequently passed both triggered CI checks (interaction acceptance 9m2s) and is
+ready for review. All core implementation PRs 1259, 1260, 1261, 1263 and VCVio 823 are ready,
+with their triggered checks green. The accepted MUST mathematical, review, validation and
+publication gates are satisfied at the recorded exact heads. The optional nonuniform extension
+remains separate and must pass its own gates before it is included in the final handoff.
