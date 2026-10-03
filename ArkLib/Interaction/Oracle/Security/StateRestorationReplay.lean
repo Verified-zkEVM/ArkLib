@@ -109,7 +109,7 @@ def MatchesMessages {Salt : Type} : (rounds : List Round) → Messages Salt roun
       path.1 = message ∧ MatchesMessages rounds messages path.2.2
 
 /-- Oracle simulation cannot add terminal outputs outside the original structural support. -/
-private theorem simulateQ_support_subset {ι κ : Type}
+theorem simulateQ_support_subset {ι κ : Type}
     {ambient : OracleSpec ι} {source : OracleSpec κ}
     (impl : QueryImpl source (OracleComp ambient)) {α : Type} (program : OracleComp source α) :
     support (simulateQ impl program) ⊆ support program := by

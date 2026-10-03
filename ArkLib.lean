@@ -683,6 +683,7 @@ public import ArkLib.Interaction.Oracle.Security.Knowledge
 public import ArkLib.Interaction.Oracle.Security.KnowledgeAppend
 public import ArkLib.Interaction.Oracle.Security.KnowledgeComposition
 public import ArkLib.Interaction.Oracle.Security.StateRestoration
+public import ArkLib.Interaction.Oracle.Security.StateRestorationBudget
 public import ArkLib.Interaction.Oracle.Security.StateRestorationCoins
 public import ArkLib.Interaction.Oracle.Security.StateRestorationGame
 public import ArkLib.Interaction.Oracle.Security.StateRestorationOracle
