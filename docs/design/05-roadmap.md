@@ -281,6 +281,62 @@ following Sumcheck work before starting the FRI and Spartan migrations.
    Sumcheck claims with correspondence and axiom checks; do not treat the native result as silently
    proving those old declarations.
 
+## Bounded interaction theory investigation
+
+This overnight work package was recorded on October 2, 2026, broadened after the literature
+review. The user approved the revised general-theory contract and explicitly launched the run
+on October 3 at 00:56:52 America/New_York. It does not adopt a replacement architecture. The
+[Chiesa-Yogev comparison](../kb/audits/chiesa-yogev-interaction.md) records source versions,
+evidence, the larger pipeline and unresolved alternatives. The long-term requirement is to
+recover the textbook's results in our language and generality, ideally across the whole book.
+The [broader source map](../kb/audits/interaction-literature-map.md) additionally anchors
+knowledge transport in WARP/ABF26 and keeps Funky, duplex-sponge FS, FICS/FACS, compositional
+zero knowledge and post-quantum IORs in scope. The textbook is not the sole conformance target.
+
+The purpose of this run is to resolve a few precise questions with checked mathematics, while
+leaving broader choices open. The intended morning result is reusable local-to-global soundness, knowledge-composition and
+state-restoration security theorems, with exact scope and any incomplete targets stated honestly.
+The entire compiler and knowledge hierarchy remain longer-term goals. The run has an eight-hour limit ending at 08:56:52 America/New_York.
+Estimates do not promise that a mathematical target will be achieved.
+
+### October 3 authorized run
+
+The research commits through `c3e715d23` are pushed on `research/cy-interaction-theory`.
+The user explicitly launched the revised general-theory goal at 00:56:52 America/New_York
+(04:56:52Z), with deadline 08:56:52 (12:56:52Z). The six-hour checkpoint is 06:56:52;
+expansion freezes at 07:26:52 to reserve final review and consolidation. The earlier premature
+launch was stopped without implementation changes and does not consume this window.
+See the [run record](interaction-security-night-results.md) for exact work/check/PR evidence.
+
+The [accepted mathematical contract](interaction-security-night-contract.md) states the actual
+definitions, theorem statements, MUST/SHOULD/HOPE boundaries and unresolved choices. It fixes the mathematical target; literal Lean interfaces still require statement review. That document governs the revised priorities. The earlier deferral of aggregate ordinary
+soundness and full SR is superseded by G1-G3; small examples are validation aids.
+
+The revised objective is general theory: round-by-round security implies full ordinary soundness;
+round-by-round knowledge certificates compose sequentially; and round-by-round knowledge soundness
+implies state-restoration knowledge soundness with the source-faithful (Q+k) error bound.
+These replace the earlier example-centered minimum. Proposed PR order: research/contract notes,
+then the general ordinary theorem with Sumcheck, general knowledge composition, and the SR theorem.
+Examples support validation and do not count as the primary mathematical achievements. Aim for roughly
+500-1500 changed lines per substantial PR; a smaller important self-contained result is also fine.
+Keep internal worker checkpoints separate from publication boundaries. The main orchestrator owns
+strict review under review-lean-formalization, including clear terminology for a cryptographic
+audience. The contract gives the exact review gates and naming requirements. No empty scaffolding
+PR, no merge into main, and no claim that a deterministic lemma already proves SR security.
+
+Prepared worktrees are `ArkLib-interaction-night`, `ArkLib-local-rbr`,
+`ArkLib-witness-transport`, and `ArkLib-interaction-review`, all from
+`ace55c3e29da1fc55a321378ada55ea4f7ed8790`. They isolate the active implementation and review work.
+The pinned VCVio/PolyFun and Lean 4.34.0 remain unchanged. Shared dependency builds must be
+serialized; code branches stay separate from documentation history.
+
+The accepted contract is the single source for the definitions, statements, MUST/SHOULD/HOPE
+priorities, PR boundaries and stopping rules. The earlier local-lemma and toy-example decomposition
+is preserved in research-branch history, not repeated here as a competing implementation plan.
+At handoff, update the run record with literal theorem statements, exact commits, validation and
+review evidence, and every unresolved target. No worker may turn a supported-fragment restriction
+into an unstated permanent limitation of the framework.
+
 ## Later protocol clients
 
 FRI and Spartan slices follow the Sumcheck work above. The composition infrastructure is ready;
@@ -305,10 +361,12 @@ extractors and state-restoration games. The generic PolyFun causal finite-trace 
 VCVio query-log specialization are current upstream gaps. A reusable conditioning and dynamic-
 programming interface may also be needed; add it when the first formalization requires it.
 
-Knowledge soundness needs an additional causal argument. An extractor for the completed protocol
-does not automatically provide a witness at the point where the suffix needs it. A composition
-theorem must establish prefix-available witness extraction or a suitable guarantee against the
-information passed to the suffix. The design and exact games belong in
+Knowledge soundness needs additional access and witness-transport arguments. An extractor for
+the completed protocol does not automatically provide a witness at an intermediate boundary.
+Prefix-available extraction is one sufficient route. A uniform local certificate can instead
+support offline backward extraction when its observation and effect hypotheses permit it;
+the legacy tree algebra supplies useful examples. Plain terminal knowledge soundness alone
+does not establish either route. The design and exact games belong in
 [03-adversarial-oracle-execution.md](03-adversarial-oracle-execution.md).
 
 ### Oracle-elimination compiler

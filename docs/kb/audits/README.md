@@ -16,6 +16,11 @@ a review record: a verdict about one branch at one commit does not belong here.
 
 Current audit pages:
 
+- [`interaction-literature-map.md`](interaction-literature-map.md) - later and parallel sources
+  informing interaction security, with exact extraction/compilation distinctions and source versions.
+- [`chiesa-yogev-interaction.md`](chiesa-yogev-interaction.md) - the
+  [`ChiesaYogev2024`](../papers/ChiesaYogev2024.md) pipeline against native interactions and
+  legacy oracle reductions, including source-faithful security and extraction obligations.
 - [`open-problems-list-decoding-and-correlated-agreement.md`](open-problems-list-decoding-and-correlated-agreement.md)
   - per-statement status matrix for [`ABF26`](../papers/ABF26.md), covering the coding-theory
     code families, Johnson bounds, subspace designs, and extension codes.
