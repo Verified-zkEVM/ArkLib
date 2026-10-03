@@ -483,6 +483,17 @@ theorem executeStrategies_eq_run {ι : Type u} (ambient : OracleSpec.{u, u} ι)
       return ⟨TypeTree.ExecutionPath.ofTypeTreePath result.1, result.2.1, out⟩) :=
   rfl
 
+/-- At a terminal node the actual executor runs the final verifier action once. -/
+theorem executeStrategies_done {ι : Type u} (ambient : OracleSpec.{u, u} ι)
+    (initial : PFunctor.{u, u}) (impl : QueryImpl (OracleSpec.ofPFunctor initial) Id)
+    {OutP : TypeTree.done.ExecutionPath → Type u}
+    {OutV : TypeTree.done.BranchPath → Type u}
+    (prover : Prover.Strategy ambient .done PUnit.unit OutP)
+    (verifier : Verifier.Strategy ambient .done PUnit.unit PUnit.unit initial OutV) :
+    executeStrategies ambient .done PUnit.unit PUnit.unit initial impl prover verifier = (do
+      let out ← simulateQ (Verifier.liftAccessImpl ambient initial impl) verifier
+      return ⟨PUnit.unit, prover, out⟩) := rfl
+
 set_option backward.isDefEq.respectTransparency false in
 /-- A prover public move runs before the verifier's actual receive effect and the continuation. -/
 theorem executeStrategies_public_sender {ι : Type u} (ambient : OracleSpec.{u, u} ι)
