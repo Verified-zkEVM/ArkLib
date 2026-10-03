@@ -16,6 +16,8 @@ a review record: a verdict about one branch at one commit does not belong here.
 
 Current audit pages:
 
+- [`interaction-literature-map.md`](interaction-literature-map.md) - later and parallel sources
+  informing interaction security, with exact extraction/compilation distinctions and source versions.
 - [`chiesa-yogev-interaction.md`](chiesa-yogev-interaction.md) - the
   [`ChiesaYogev2024`](../papers/ChiesaYogev2024.md) pipeline against native interactions and
   legacy oracle reductions, including source-faithful security and extraction obligations.

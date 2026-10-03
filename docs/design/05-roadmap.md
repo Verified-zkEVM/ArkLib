@@ -281,17 +281,21 @@ following Sumcheck work before starting the FRI and Spartan migrations.
    Sumcheck claims with correspondence and axiom checks; do not treat the native result as silently
    proving those old declarations.
 
-## Bounded CY theory investigation (proposed)
+## Bounded interaction theory investigation (proposed)
 
 This is a proposed overnight work package within the native-security steps above, recorded on
-October 2, 2026. It has not been launched or adopted as a replacement architecture. The
+October 2, 2026 and broadened on October 3 after the literature review. It has not been launched
+or adopted as a replacement architecture. The
 [Chiesa-Yogev comparison](../kb/audits/chiesa-yogev-interaction.md) records source versions,
 evidence, the larger pipeline and unresolved alternatives. The long-term requirement is to
 recover the textbook's results in our language and generality, ideally across the whole book.
+The [broader source map](../kb/audits/interaction-literature-map.md) additionally anchors
+knowledge transport in WARP/ABF26 and keeps Funky, duplex-sponge FS, FICS/FACS, compositional
+zero knowledge and post-quantum IORs in scope. The textbook is not the sole conformance target.
 
 The purpose of this run is to resolve a few precise questions with checked mathematics, while
-leaving broader choices open. A useful morning result is a local-security bridge, a separating
-example and a small extraction correspondence, not an assertion that the entire compiler or
+leaving broader choices open. A useful morning result is an ordinary local-security bridge and
+a source-backed witness-transport theorem, not an assertion that the entire compiler or
 knowledge hierarchy is settled. Plan around a six-to-eight-hour window if one is later chosen;
 the durations below are estimates, not an active timer or a promise of completion.
 
@@ -299,12 +303,13 @@ the durations below are estimates, not an active timer or a promise of completio
 
 1. Can one ordinary prefix certificate recover the book's fixed-round local experiment and
    also express native Sumcheck's actual guarded verifier step without changing its executor?
-2. Exactly how much weaker is security averaged over an ordinary run than security at every
-   authored prefix? Produce a finite separating example for existential state certificates.
-3. Can one legacy committed-scalar extraction algorithm be reused when its leaf witnesses are
-   read from native response messages, rather than supplied by an unimplemented extractor?
+2. Can a native witness-indexed certificate recover WARP/ABF's local bad-edge condition and
+   support offline backward extraction along actual protocol prefixes?
+3. Can small checked examples distinguish these contracts from weaker averages and exercise
+   actual non-`Unit` witness transport?
 
-The first two are the primary target. The third is an independent, bounded research lane.
+The first two are the primary targets. The third supplies acceptance and optional separation
+examples within the same two workstreams.
 Full state restoration, universal knowledge composition and BCS security are later targets;
 this run must leave their requirements visible without inventing universal APIs for them.
 
@@ -390,60 +395,69 @@ passing and rejecting Sumcheck cases, and the exact error bound. New principal t
 have no admissions or hidden dependency on `sorryAx`. Build and axiom evidence identify exact
 declarations. Report A1, A2 and A3 separately if only part is complete.
 
-### Lane B: a separation result, then one extraction bridge
+### Lane B: relational RBR and backward witness transport
 
-**Owner and scope:** second worker, a finite security example under `ArkLibTest/` (or an
-appropriately named reusable example module if needed), followed by client-specific native
-extraction modules. Do not edit Lane A's definitions concurrently. Share the agreed minimal
-statement, and have the orchestrator integrate any adaptation to the final API.
+**Owner and scope:** second worker, a narrowly scoped native knowledge-certificate module
+and acceptance examples. Do not edit Lane A's definitions concurrently. The orchestrator owns
+any shared prefix observations. Inspect the legacy extractor-aware API before inventing a
+replacement; use the existing native concrete prefix/path carrier rather than a second executor.
 
-**B1. Separate averaged and local security.** Use two uniform bits, `Unit` prover messages,
-and acceptance iff both bits are zero on an always-false instance. Formalize both:
+**B1. Source specialization.** State the local contract for every authored pre-challenge prefix:
 
-- A state false at all proper prefixes gives uniform averaged error `1/4`.
-- Every fixed-prefix state certificate satisfying the empty/prover/terminal laws has uniform
-  error at least `1/2`; an all-zero-prefix state attains `1/2`.
+```text
+Pr[r fresh; exists w,
+    not K(tr, E(tr ++ r, w)) and K(tr ++ r, w)] <= error_i.
+```
 
-This is the two-round instance of the book's RBR tightness construction, additionally compared
-with ArkLib's averaged notion; preserve that attribution. It must quantify over all candidate
-local state certificates, not just refute one chosen state function. Connect the finite model
-to the two security definitions in use. If the
-connection is unfinished, label it a standalone finite lemma, not a native conformance result.
-The experiment also serves as a guard against replacing arbitrary-prefix security by a weaker
-average during implementation.
+Define named backward extractors, endpoint relations and the prover-move transport law.
+Keep stage-dependent witness fibers available, but prove a restricted WARP/ABF specialization
+with a common witness carrier, identity transport on prover moves, a deterministic terminal
+verifier and the source's endpoint iff. Identify the legacy one-way terminal clause and
+noncomputable-function freedom as additional generalizations, not source equivalences.
+Executable extraction and a proof of its running time are separate acceptance levels.
 
-**B2. Native committed-scalar fork, if B1 is complete.** Use one small public interaction:
-commitment `t`, challenge `c`, response/opening `w`. A supplied finite bundle has a shared
-commitment, `k >= 2` distinct challenges and concrete response messages. Encode its two-move
-prefixes as the existing legacy scalar tree; read legacy leaf witnesses from the third message.
-Define the native extractor independently by projecting response zero, then prove equality
-with `CommittedScalar.treeExtractor` under this encoding.
+**B2. Deterministic backward-extraction lemma.** Given a complete native path and an output
+witness, compose the named local extractors backward. Prove:
 
-Transport `CommittedScalar.mkWitness_mem`: accepted branch openings either exhibit an actual
-binding collision between branch responses or the named native algorithm returns a valid input
-witness. Instantiate the existing non-`Unit` ring-switching `Lift` relation with `k = 2d` and
-its polynomial-vector witness. Restrict this to the scalar phase with explicit response
-transmission; it is not a migration of all ring switching.
+```text
+valid output witness and invalid extracted input witness
+  implies some challenge edge on this same path satisfies the local bad event.
+```
 
-The algorithm receives the whole supplied fork, including challenges and responses. It gets
-no hidden prover state or extra world log. It must not choose a leaf witness from mere relation
-membership. Its access is deliberately stronger than CY's prover-string-only RBR extractor;
-success does not settle challenge erasure or extraction from a malicious prover.
+The law on prover moves must rule out unexplained failures between challenges. Retain the
+existential later witness inside the event, so the proof supports a witness chosen after the
+suffix. Do not add an online witness supplier merely to force composition through an ordinary
+terminal-knowledge theorem. This is the deterministic core of WARP Appendix B's proof; the
+adaptive SR query game and its `(t+k)` bound remain separate obligations.
 
-**Acceptance:** branch-path/message correspondence, equality of independently defined
-algorithms, extraction-or-collision, and the `Lift` specialization, with axiom checks. Include
-a compiled finite example showing the extractor reads actual messages; distinguish that
-example from generic compilation of the `Lift` specialization. If the full client fails,
-retain the checked scalar result and report the exact additional assumption or obstruction.
-Do not introduce a universal native fork/tree framework to make this one experiment finish.
+**Acceptance:** source correspondence for the restricted certificate, a named computable
+backward algorithm, the bad-edge theorem on native paths, and a small non-`Unit` client in
+which extraction really uses a later witness. Demonstrate preservation under a two-stage
+composition or split/glue of that client. Choose a finite vector or explicit-response example
+if a full protocol migration would dominate the night. No witness may be manufactured by
+classical choice from relation membership. Require kernel checks and principal-declaration
+axiom reports. Report which source time/efficiency clauses remain unproved.
+
+**Optional quantitative separation after the primary lemmas.** Use two uniform bits and
+acceptance iff both are zero, on an always-false instance. Prove uniform averaged error `1/4`
+is attainable but every local scalar certificate has uniform error at least `1/2`. This is
+CY's two-round tightness example, compared additionally with ArkLib's averaged notion.
+Quantify over all candidate state certificates; if the security-API bridge is unfinished,
+report the result as a standalone finite lemma.
+
+**Retained later experiment:** the supplied committed-scalar fork and ring-switching `Lift`
+bridge from the [research notes](../kb/audits/chiesa-yogev-interaction.md) remains useful.
+It should read leaf witnesses from actual response messages and prove equality with the
+legacy named extractor. It does not prove WARP-to-tree extraction, which FICS/FACS leaves
+unresolved, and it does not establish efficient malicious-prover tree finding.
 
 ### Integration gates and stopping rules
 
 | Approximate point in the run | Evidence to review | Action |
 |---|---|---|
 | First 30-60 minutes | Frozen statements, source correspondence, pin/build readiness and nonoverlapping ownership | Start bounded proof work; unresolved general architecture remains in the research ledger |
-| After roughly 2 hours | A1 statement/elaboration and B1 finite proof progress | Reject any reachability weakening or changed event; reduce implementation breadth if a foundational mismatch appears |
-| Middle of run | A2 actual-prefix bridge, B1 checked separation; B2 starts only if ready | Review theorems independently; continue A3/B2 only with stable prerequisites |
+| After roughly 2 hours | A1 and B1 statement/elaboration, including source-specific access | Reject any reachability weakening or changed event; reduce implementation breadth if a foundational mismatch appears |
+| Middle of run | A2 actual-prefix bridge and B2 named backward extraction | Review theorems independently; continue A3 and optional examples only with stable prerequisites |
 | Final 60-90 minutes | Exact integrated revision, compile/axiom results and reviewer findings | Stop expanding scope, fix correctness issues, run repository checks, commit checked work and a precise handoff |
 
 If a target proves false, preserve the counterexample and corrected candidate theorem separately.

@@ -7,8 +7,13 @@ if that recovery is explicit. A different experiment should be named and compare
 
 These are working research notes, not an adopted replacement architecture or a novelty claim.
 They preserve promising directions alongside objections and unresolved alternatives. The
-[roadmap investigation](../../design/05-roadmap.md#bounded-cy-theory-investigation-proposed)
+[roadmap investigation](../../design/05-roadmap.md#bounded-interaction-theory-investigation-proposed)
 owns the proposed execution plan; this page owns the literature comparison.
+
+The [broader literature map](interaction-literature-map.md) adds ARC, WARP, FICS/FACS,
+functional-query compilers, duplex-sponge FS, and later IOR work. In particular, the library's
+backward witness transport has WARP/ABF antecedents. Differences from CY below are comparisons
+to one source, not evidence that the native target should be reduced to CY's model.
 
 ## Evidence and scope
 
@@ -97,6 +102,10 @@ and query-agreement guarantees. Proximity alone does not supply exact codeword m
 Keep the adopted ideal model; make its realization obligation explicit. No concrete backend
 choice is settled here. See [compiler guarantees](../../design/04-oracle-elimination-compiler.md)
 and [CY's IOP definition][cy-iop].
+
+Ideal bounded-degree messages are also an established model, for example in Marlin's AHP.
+The issue is the exact compiler bridge to strings/commitments, not the legitimacy of that
+algebraic abstraction; see the broader map's functional-query discussion.
 
 ### 3. Dependent schedules, early rejection and public coins
 
@@ -191,6 +200,10 @@ The legacy edge-local extractor instead transports a later witness backward usin
 prefix that contains challenges. Its worst-case bad event existentially quantifies an
 intermediate witness inside the event. The one-shot variant has another timing contract. These
 are different notions, not automatically a hierarchy with CY at the bottom.
+WARP gives a closely matching local witness-transport notion and proves an offline SR
+extraction theorem; ArkLib's current code explicitly compares its laws to ABF26 A.5.
+The [source crosswalk](interaction-literature-map.md#arc-warp-and-the-librarys-actual-knowledge-notion)
+records the genuine lineage and remaining generalizations.
 
 Two important consequences:
 

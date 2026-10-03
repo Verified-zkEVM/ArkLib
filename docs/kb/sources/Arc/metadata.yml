@@ -1,0 +1,9 @@
+bibkey: Arc
+source_kind: official-pdf
+canonical_url: https://eprint.iacr.org/2024/1731
+cover_date: "2024-10-25"
+revision_date: "2025-06-05"
+pages: 57
+sha256: 954f495a2521817a68a0be378dd6cdfd719ecc74cd10f52cb338b923f8cf21bf
+committed_artifacts: []
+notes: "Definition-level IOR/security comparison on 2026-10-03; cover and revision dates differ."
