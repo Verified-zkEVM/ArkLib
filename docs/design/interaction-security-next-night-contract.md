@@ -4,6 +4,8 @@ Status: authorized by the user on October 3, 2026. Run started at 17:34:15 UTC
 (13:34:15 America/New_York), deadline October 4 at 01:34:15 UTC
 (October 3 at 21:34:15 America/New_York). Six-hour checkpoint: 23:34:15 UTC.
 
+The [run record](interaction-security-second-night-results.md) tracks validation and progress.
+
 ## Purpose and baseline
 
 Develop general reusable security theory and one executable oracle-elimination bridge.
