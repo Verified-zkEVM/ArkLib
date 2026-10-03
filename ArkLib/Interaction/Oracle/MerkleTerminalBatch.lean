@@ -535,6 +535,15 @@ structure CoupledTranscript (config : Configuration Cfg Address) (rounds : ℕ) 
   terminalSuffix : MerkleTreeExtractor.QueryLog Query Y
   attempts : List (AnyEvaluatedOpeningClaim Cfg Query Address Y config)
 
+/-- The complete malicious commitment and opening prefix, before honest proof verification.
+The terminal query segment is retained for the shared-cache coupling, but the ideal decision
+reads only the immutable checkpoint state, public roots, and submitted opening shapes. -/
+structure TerminalPrefix (config : Configuration Cfg Address) (rounds : ℕ) (Y : Type) where
+  roots : List (Cfg × Y)
+  openings : List (PublicOpening config rounds Y)
+  extractorState : ExtractorState Cfg Query Address Y config
+  terminalSuffix : MerkleTreeExtractor.QueryLog Query Y
+
 /-- The actual public predicate evaluated using the owning game's identical verification bits. -/
 def coupledAccept [DecidableEq Cfg] (config : Configuration Cfg Address) (rounds : ℕ)
     (plan : QueryPlan config rounds Y)
@@ -579,6 +588,30 @@ def coupledExperiment [DecidableEq Query] [DecidableEq Y]
     (config : Configuration Cfg Address) (rounds : ℕ) (fallback : Y)
     (adversary : Adversary (Query := Query) config rounds Y) :=
   (Query →ₒ Y).withCacheOverlay ∅ (coupledInner model config rounds fallback adversary)
+
+/-- The exact commitment/opening prefix of the coupled game, stopping before honest Merkle
+verification. Its calls run in the same order and will use the same cache overlay. -/
+def terminalPrefixInner (config : Configuration Cfg Address) (rounds : ℕ)
+    (adversary : Adversary (Query := Query) config rounds Y) :
+    OracleComp (Query →ₒ Y) (TerminalPrefix (Query := Query) config rounds Y) := do
+  let (privateState, extractorState) ← adversary.committer.runFromEmpty config rounds
+  let (openings, terminalSuffix) ← (adversary.opening privateState extractorState).withQueryLog
+  return ⟨rootsOfState extractorState, openings, extractorState, terminalSuffix⟩
+
+/-- Honest verification is precisely the continuation after the malicious prefix. -/
+theorem coupledInner_eq_terminalPrefix_verify [DecidableEq Y]
+    (model : MerkleTreeExtractability.NodeQueryModel Query Address Y)
+    (config : Configuration Cfg Address) (rounds : ℕ) (fallback : Y)
+    (adversary : Adversary (Query := Query) config rounds Y) :
+    coupledInner model config rounds fallback adversary =
+      terminalPrefixInner config rounds adversary >>= fun pre =>
+        (fun attempts : List (AnyEvaluatedOpeningClaim Cfg Query Address Y config) =>
+          (⟨pre.roots, pre.openings, pre.extractorState,
+            pre.terminalSuffix, attempts⟩ :
+              CoupledTranscript (Query := Query) config rounds Y)) <$>
+          verifyOpeningClaims model
+            (attachCheckpoints pre.extractorState fallback pre.openings) := by
+  simp [coupledInner, terminalPrefixInner, bind_assoc, map_eq_bind_pure_comp]
 
 /-- The owning game's actual probability space is a marginal of the coupled execution. -/
 theorem coupledInner_owner_eq [DecidableEq Y]
@@ -1101,6 +1134,101 @@ def idealAcceptanceExperiment [DecidableEq Cfg] [DecidableEq Query]
       transcript.roots transcript.openings) <$>
     coupledExperiment model config rounds fallback adversary
 
+/-- Verification-free ideal game. It runs the same adaptive commitment and terminal-opening
+prefix under one empty-cache random oracle, then decides solely from the prescribed
+commitment-time extracted values and public plan check. -/
+def idealCoreExperiment [DecidableEq Cfg] [DecidableEq Query]
+    [DecidableEq Address] [DecidableEq Y]
+    (model : MerkleTreeExtractability.NodeQueryModel Query Address Y)
+    (config : Configuration Cfg Address) (rounds : ℕ)
+    (plan : QueryPlan config rounds Y) (fallback : Y)
+    (adversary : Adversary (Query := Query) config rounds Y) :=
+  (fun pre : TerminalPrefix (Query := Query) config rounds Y =>
+    idealAccept model config rounds plan fallback pre.extractorState
+      pre.roots pre.openings) <$>
+    (Query →ₒ Y).withCacheOverlay ∅ (terminalPrefixInner config rounds adversary)
+
+/-- The coupled ideal differs from the clean ideal only by its honest verification suffix.
+Both begin with exactly the same adversarial prefix and empty cache. -/
+theorem idealAcceptanceExperiment_eq_terminalPrefix_verify
+    [DecidableEq Cfg] [DecidableEq Query] [DecidableEq Address] [DecidableEq Y]
+    (model : MerkleTreeExtractability.NodeQueryModel Query Address Y)
+    (config : Configuration Cfg Address) (rounds : ℕ)
+    (plan : QueryPlan config rounds Y) (fallback : Y)
+    (adversary : Adversary (Query := Query) config rounds Y) :
+    idealAcceptanceExperiment model config rounds plan fallback adversary =
+      (Query →ₒ Y).withCacheOverlay ∅ (
+        terminalPrefixInner config rounds adversary >>= fun pre =>
+          (fun _ => idealAccept model config rounds plan fallback
+            pre.extractorState pre.roots pre.openings) <$>
+            verifyOpeningClaims model
+              (attachCheckpoints pre.extractorState fallback pre.openings)) := by
+  rw [idealAcceptanceExperiment, coupledExperiment, ← withCacheOverlay_map,
+    coupledInner_eq_terminalPrefix_verify]
+  simp [map_bind, Functor.map_map]
+
+/-- A lossless oracle continuation cannot change an observation already determined by a
+shared-cache prefix. Only the output event is equal; the continuation may enlarge the cache. -/
+theorem prEvent_withCacheOverlay_skip_suffix [DecidableEq Query]
+    [MeasurableSpace Y] [DiscreteMeasurableSpace Y]
+    [IsUniformMeasureSpec (Query →ₒ Y)]
+    (pre : OracleComp (Query →ₒ Y) α)
+    (suffix : α → OracleComp (Query →ₒ Y) β)
+    (observe : α → Bool) (event : Bool → Prop) :
+    Pr{let result ← (Query →ₒ Y).withCacheOverlay ∅ (
+      pre >>= fun x => (fun _ => observe x) <$> suffix x)}[event result] =
+    Pr{let result ← (Query →ₒ Y).withCacheOverlay ∅ (observe <$> pre)}[
+      event result] := by
+  let mx := ((simulateQ (Query →ₒ Y).cachingOracle pre).run ∅)
+  calc
+    _ = Pr{let result ← (mx >>= fun pair =>
+      (Query →ₒ Y).withCacheOverlay pair.2
+        ((fun _ => observe pair.1) <$> suffix pair.1))}[event result] := by
+      rw [withCacheOverlay_bind]
+    _ = Pr{let result ← (mx >>= fun pair => pure (observe pair.1))}[
+      event result] := by
+      apply prEvent_bind_congr
+      intro pair
+      rw [withCacheOverlay_map, prEvent_map]
+      by_cases h : event (observe pair.1)
+      · rw [prEvent_const_of_lossless _ (prEvent_true_eq_one _) h]
+        simp [evalDist_pure, h]
+      · rw [prEvent_const_of_not _ h]
+        simp [evalDist_pure, h]
+    _ = _ := by
+      have hprogram :
+          (mx >>= fun pair => pure (observe pair.1)) =
+            (Query →ₒ Y).withCacheOverlay ∅ (observe <$> pre) := by
+        rw [withCacheOverlay_map]
+        change (mx >>= fun pair => pure (observe pair.1)) =
+          observe <$> (Prod.fst <$> mx)
+        simp only [map_eq_bind_pure_comp, Function.comp_def, bind_assoc, pure_bind]
+      rw [hprogram]
+
+/-- The honest Merkle-query suffix can change the final cache, but not the Boolean output
+distribution of the ideal verifier. This equality holds for every event on that output. -/
+theorem idealAcceptanceExperiment_prEvent_eq_idealCore
+    [DecidableEq Cfg] [DecidableEq Query] [DecidableEq Address] [DecidableEq Y]
+    [MeasurableSpace Y] [DiscreteMeasurableSpace Y]
+    [IsUniformMeasureSpec (Query →ₒ Y)]
+    (model : MerkleTreeExtractability.NodeQueryModel Query Address Y)
+    (config : Configuration Cfg Address) (rounds : ℕ)
+    (plan : QueryPlan config rounds Y) (fallback : Y)
+    (adversary : Adversary (Query := Query) config rounds Y)
+    (event : Bool → Prop) :
+    Pr{let accepted ← idealAcceptanceExperiment model config rounds plan fallback adversary}[
+      event accepted] =
+    Pr{let accepted ← idealCoreExperiment model config rounds plan fallback adversary}[
+      event accepted] := by
+  rw [idealAcceptanceExperiment_eq_terminalPrefix_verify]
+  simpa only [idealCoreExperiment, withCacheOverlay_map] using
+    (prEvent_withCacheOverlay_skip_suffix
+      (terminalPrefixInner config rounds adversary)
+      (fun pre => verifyOpeningClaims model
+        (attachCheckpoints pre.extractorState fallback pre.openings))
+      (fun pre => idealAccept model config rounds plan fallback
+        pre.extractorState pre.roots pre.openings) event)
+
 /-- Exact real-event equality induced by the native/coupled experiment marginal. -/
 theorem prob_realAcceptance_eq_coupled
     [DecidableEq Cfg] [DecidableEq Query] [DecidableEq Y]
@@ -1189,7 +1317,8 @@ theorem prob_realAcceptance_le_ideal_add_checkpointBad
 /-- Principal native terminal-batch Merkle ROM transfer. The resource premises are imposed on
 the exact checkpoint-attaching image of the native adversary, so they bound its real adaptive
 commitment and terminal opening program and every honest verification path. The uniform-measure
-premise matches the owning VCVio numerical theorem and fixes the oracle's native semantics. -/
+premise matches the owning VCVio numerical theorem and fixes the oracle's native semantics.
+The ideal probability is measured in the verification-free core game. -/
 theorem realAcceptance_rom_bound_of_prefixQueryBound
     [DecidableEq Cfg] [DecidableEq Query] [DecidableEq Address] [DecidableEq Y]
     [Finite Y] [Inhabited Y] [MeasurableSpace Y] [DiscreteMeasurableSpace Y]
@@ -1208,7 +1337,7 @@ theorem realAcceptance_rom_bound_of_prefixQueryBound
     (hcheckpoints : rounds ≤ checkpointCount) :
     Pr{let accepted ← realAcceptanceExperiment model config rounds plan fallback adversary}[
       accepted = true] ≤
-      Pr{let accepted ← idealAcceptanceExperiment model config rounds plan fallback adversary}[
+      Pr{let accepted ← idealCoreExperiment model config rounds plan fallback adversary}[
         accepted = true] +
       (multiCheckpointROMErrorNumerator nodeBudget checkpointCount verifierOverhead
         queryBound : ENNReal) * (Nat.card Y : ENNReal)⁻¹ := by
@@ -1221,11 +1350,14 @@ theorem realAcceptance_rom_bound_of_prefixQueryBound
       (toOwningAdversary config rounds fallback adversary) queryBound nodeBudget
       checkpointCount verifierOverhead perCheckpoint hquery hverifier hconfig hnodes
       hcheckpoints
-  exact (prob_realAcceptance_le_ideal_add_checkpointBad model config rounds plan fallback
-    adversary).trans (add_le_add_right howner _)
+  have hbridge := prob_realAcceptance_le_ideal_add_checkpointBad model config rounds plan
+    fallback adversary
+  rw [idealAcceptanceExperiment_prEvent_eq_idealCore model config rounds plan fallback
+    adversary (fun accepted => accepted = true)] at hbridge
+  exact hbridge.trans (add_le_add_right howner _)
 
-/-- If the ideal checkpoint-time experiment accepts with probability at most `η`, the native
-public verifier has the same quantitative upper bound plus the explicit ROM error. -/
+/-- If the verification-free ideal checkpoint-time experiment accepts with probability at most
+`η`, the native public verifier has the same bound plus the explicit ROM error. -/
 theorem realAcceptance_le_eta_add_romError
     [DecidableEq Cfg] [DecidableEq Query] [DecidableEq Address] [DecidableEq Y]
     [Finite Y] [Inhabited Y] [MeasurableSpace Y] [DiscreteMeasurableSpace Y]
@@ -1245,7 +1377,7 @@ theorem realAcceptance_le_eta_add_romError
     (hcheckpoints : rounds ≤ checkpointCount)
     (hideal :
       Pr{let accepted ←
-        idealAcceptanceExperiment model config rounds plan fallback adversary}[accepted = true] ≤
+        idealCoreExperiment model config rounds plan fallback adversary}[accepted = true] ≤
         η) :
     Pr{let accepted ← realAcceptanceExperiment model config rounds plan fallback adversary}[
       accepted = true] ≤
