@@ -67,14 +67,17 @@ noncomputable def disagreementSet (domain : ι ↪ F) (f : ι → F) (S : Finset
   Finset.univ.filter fun x => domain x ∈ S ∧ (ansPoly S Ans).eval (domain x) ≠ f x
 
 /-- Quotienting Lemma 4.4
-  Let `f : ι → F` be a function, `degree` a degree parameter, `δ ∈ (0,1)` be a distance parameter
+  Let `f : ι → F` be a function, `degree` a degree parameter, `δ` a distance parameter
   `S` be a set with |S| < degree, `Ans, Fill : S → F`. Suppose for all `u ∈ Λ(code, f, δ)`,
   there exists `x : S`, such that `uPoly(x) ≠ Ans(x)` then
   `δᵣ(funcQuotient(f, S, Ans, Fill), code[ι, F, degree - |S|]) + |T|/|ι| > δ`,
-  where T is the disagreementSet as defined above -/
+  where T is the disagreementSet as defined above.
+
+  The paper takes `δ ∈ (0, 1)`; the argument does not use this, so the lemma is stated for every
+  `δ`. -/
 lemma quotienting {degree : ℕ} {domain : ι ↪ F} [Nonempty ι] [DecidableEq ι]
-    (S : Finset F) (hS_lt : S.card < degree) (r : F)
-  (f : ι → F) (Ans Fill : S → F) (δ : ℝ≥0) (hδPos : δ > 0) (hδLt : δ < 1)
+    (S : Finset F) (hS_lt : S.card < degree)
+  (f : ι → F) (Ans Fill : S → F) (δ : ℝ≥0)
   (h : ∀ u : code domain degree, u.val ∈ closeCodewordsRel ↑(code domain degree) f δ →
     ∃ x : S, ((toPolynomialLT u) : F[X]).eval x.val ≠ Ans x) :
     δᵣ((funcQuotient domain f S Ans Fill), (code domain (degree - S.card))) +
