@@ -15,7 +15,6 @@ public import ArkLib.Data.Polynomial.RationalFunctions
 public import ArkLib.Data.CodingTheory.ReedSolomon
 public import ArkLib.Data.Polynomial.Trivariate
 public import ArkLib.Data.CodingTheory.Basic.DecodingRadius
-public import Mathlib.MeasureTheory.Integral.Lebesgue.Basic
 
 /-!
 # Foundations for affine-space proximity bounds
