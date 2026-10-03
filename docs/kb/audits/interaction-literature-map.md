@@ -14,7 +14,7 @@ paper idea is not evidence that the implemented game or theorem is equivalent to
 Checked on October 3, 2026 UTC, against ArkLib's code at
 `ace55c3e29da1fc55a321378ada55ea4f7ed8790`, the research notes at `9afef7477`, and the
 VCVio revisions recorded in the textbook comparison. This is source research, not a new proof
-or transitive axiom audit. The [roadmap](../../design/05-roadmap.md#bounded-interaction-theory-investigation-proposed)
+or transitive axiom audit. The [roadmap](../../design/05-roadmap.md#bounded-interaction-theory-investigation)
 owns implementation sequencing.
 
 ## Source map and chronology

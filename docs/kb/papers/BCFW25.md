@@ -52,7 +52,7 @@ scheme or its compiler theorem has been formalized.
   `extractMid`, `KnowledgeStateFunction`, and fixed-prefix versus averaged games.
 - [Native claims](../../../ArkLib/Interaction/Oracle/Claim.lean) and
   [prefixes](../../../ArkLib/Interaction/Oracle/Prefix.lean): target carriers for the
-  [proposed backward-extraction experiment](../../design/05-roadmap.md#bounded-interaction-theory-investigation-proposed).
+  [proposed backward-extraction experiment](../../design/05-roadmap.md#bounded-interaction-theory-investigation).
 - [`ArkLib/Data/CodingTheory/ExtensionCodes.lean`](../../../ArkLib/Data/CodingTheory/ExtensionCodes.lean)
   — `ExtensionFieldPresentation`, `IsSystematic`, `extensionEncode`, its `F`-linear-map packaging,
   systematic identity and range bridge, `extensionCode` / `extensionCodeSubmodule`, presentation

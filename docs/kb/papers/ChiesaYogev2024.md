@@ -51,7 +51,7 @@ source definitions, implemented results, proposed bridges and unanswered design 
 - [Legacy transcript-tree extraction](../../../ArkLib/OracleReduction/Security/TranscriptTree/Composition.lean)
   contains reusable mathematical composition results, distinct from an efficient tree-finding
   algorithm with black-box prover access.
-- The [roadmap](../../design/05-roadmap.md#bounded-interaction-theory-investigation-proposed)
+- The [roadmap](../../design/05-roadmap.md#bounded-interaction-theory-investigation)
   records the proposed first bounded investigation.
 
 ## Known Divergences From ArkLib

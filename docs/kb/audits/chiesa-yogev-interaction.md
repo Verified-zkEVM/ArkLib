@@ -7,7 +7,7 @@ if that recovery is explicit. A different experiment should be named and compare
 
 These are working research notes, not an adopted replacement architecture or a novelty claim.
 They preserve promising directions alongside objections and unresolved alternatives. The
-[roadmap investigation](../../design/05-roadmap.md#bounded-interaction-theory-investigation-proposed)
+[roadmap investigation](../../design/05-roadmap.md#bounded-interaction-theory-investigation)
 owns the proposed execution plan; this page owns the literature comparison.
 
 The [broader literature map](interaction-literature-map.md) adds ARC, WARP, FICS/FACS,

@@ -281,11 +281,11 @@ following Sumcheck work before starting the FRI and Spartan migrations.
    Sumcheck claims with correspondence and axiom checks; do not treat the native result as silently
    proving those old declarations.
 
-## Bounded interaction theory investigation (proposed)
+## Bounded interaction theory investigation
 
-This is a proposed overnight work package within the native-security steps above, recorded on
-October 2, 2026 and broadened on October 3 after the literature review. It has not been launched
-or adopted as a replacement architecture. The
+This overnight work package was recorded on October 2, 2026, broadened after the literature
+review. The user approved the revised general-theory contract and explicitly launched the run
+on October 3 at 00:56:52 America/New_York. It does not adopt a replacement architecture. The
 [Chiesa-Yogev comparison](../kb/audits/chiesa-yogev-interaction.md) records source versions,
 evidence, the larger pipeline and unresolved alternatives. The long-term requirement is to
 recover the textbook's results in our language and generality, ideally across the whole book.
@@ -294,10 +294,42 @@ knowledge transport in WARP/ABF26 and keeps Funky, duplex-sponge FS, FICS/FACS, 
 zero knowledge and post-quantum IORs in scope. The textbook is not the sole conformance target.
 
 The purpose of this run is to resolve a few precise questions with checked mathematics, while
-leaving broader choices open. A useful morning result is an ordinary local-security bridge and
-a source-backed witness-transport theorem, not an assertion that the entire compiler or
-knowledge hierarchy is settled. Plan around a six-to-eight-hour window if one is later chosen;
-the durations below are estimates, not an active timer or a promise of completion.
+leaving broader choices open. The intended morning result is reusable local-to-global soundness, knowledge-composition and
+state-restoration security theorems, with exact scope and any incomplete targets stated honestly.
+The entire compiler and knowledge hierarchy remain longer-term goals. The run has an eight-hour limit ending at 08:56:52 America/New_York.
+Estimates do not promise that a mathematical target will be achieved.
+
+### October 3 authorized run
+
+The research commits through `c3e715d23` are pushed on `research/cy-interaction-theory`.
+The user explicitly launched the revised general-theory goal at 00:56:52 America/New_York
+(04:56:52Z), with deadline 08:56:52 (12:56:52Z). The six-hour checkpoint is 06:56:52;
+expansion freezes at 07:26:52 to reserve final review and consolidation. The earlier premature
+launch was stopped without implementation changes and does not consume this window.
+See the [run record](../kb/audits/interaction-night-20261003.md) for exact work/check/PR evidence.
+
+The [accepted mathematical contract](interaction-security-night-contract.md) states the actual
+definitions, theorem statements, MUST/SHOULD/HOPE boundaries and unresolved choices. It fixes the mathematical target; literal Lean interfaces still require statement review. That document governs the revised priorities. The longer decomposition below is historical
+supporting detail: its earlier deferral of aggregate ordinary soundness and full SR is superseded
+by the G1-G3 targets, and its small examples are validation aids rather than deliverables.
+
+The revised objective is general theory: round-by-round security implies full ordinary soundness;
+round-by-round knowledge certificates compose sequentially; and round-by-round knowledge soundness
+implies state-restoration knowledge soundness with the source-faithful (Q+k) error bound.
+These replace the earlier example-centered minimum. Proposed PR order: research/contract notes,
+then the general ordinary theorem with Sumcheck, general knowledge composition, and the SR theorem.
+Examples support validation and do not count as the primary mathematical achievements. Aim for roughly
+500-1500 changed lines per substantial PR; a smaller important self-contained result is also fine.
+Keep internal worker checkpoints separate from publication boundaries. The main orchestrator owns
+strict review under review-lean-formalization, including clear terminology for a cryptographic
+audience. The contract gives the exact review gates and naming requirements. No empty scaffolding
+PR, no merge into main, and no claim that a deterministic lemma already proves SR security.
+
+Prepared worktrees are `ArkLib-interaction-night`, `ArkLib-local-rbr`,
+`ArkLib-witness-transport`, and `ArkLib-interaction-review`, all from
+`ace55c3e29da1fc55a321378ada55ea4f7ed8790`. They isolate the active implementation and review work.
+The pinned VCVio/PolyFun and Lean 4.34.0 remain unchanged. Shared dependency builds must be
+serialized; code branches stay separate from documentation history.
 
 ### Questions this package should answer
 
@@ -476,8 +508,9 @@ the repository's test and warning gates, and inspects axiom results for the prin
 Use `LAKE_ARTIFACT_CACHE=false LAKE_NO_CACHE=true` in the shared workspace and coordinate
 physical dependency build writes. Keep validation logs and exact commands with the handoff;
 do not claim a passing suite if environmental failures prevent it. Update current status only
-for completed, integrated results. Local commits preserve work; pushing, opening PRs and
-merging are separate from this proposal and follow the authorization active at launch.
+for completed, integrated results. Local commits and pushes preserve work; opening PRs is intended for the later authorized run.
+Merging remains outside its scope. The proposed mathematical contract governs priorities when
+this earlier decomposition includes broader optional detail.
 
 ### Questions intentionally still open after the run
 
