@@ -74,9 +74,13 @@ noncomputable def disagreementSet (domain : ι ↪ F) (f : ι → F) (S : Finset
   where T is the disagreementSet as defined above.
 
   The paper takes `δ ∈ (0, 1)`; the argument does not use this, so the lemma is stated for every
-  `δ`. -/
+  `δ`.
+
+  The hypothesis speaks about `toPolynomialLT u`, the interpolant of the codeword `u`. It is the
+  degree-`< degree` polynomial evaluating to `u` only when `degree ≤ |ι|`, i.e. for codes of rate at
+  most one as in the paper, so this is assumed. -/
 lemma quotienting {degree : ℕ} {domain : ι ↪ F} [Nonempty ι] [DecidableEq ι]
-    (S : Finset F) (hS_lt : S.card < degree)
+    (S : Finset F) (hS_lt : S.card < degree) (hdeg : degree ≤ Fintype.card ι)
   (f : ι → F) (Ans Fill : S → F) (δ : ℝ≥0)
   (h : ∀ u : code domain degree, u.val ∈ closeCodewordsRel ↑(code domain degree) f δ →
     ∃ x : S, ((toPolynomialLT u) : F[X]).eval x.val ≠ Ans x) :
