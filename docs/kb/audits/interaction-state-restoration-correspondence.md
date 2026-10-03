@@ -122,12 +122,14 @@ all-branch query budget. This is an explicit random-tape-family specialization; 
 arbitrary interleaved private-randomness and oracle effects is not asserted.
 
 
-## Nonuniform errors: proof plan and invalid shortcuts
+## Nonuniform errors and invalid shortcuts
 
 The optional extension under development assigns error `epsilon_j` to each fixed round and
 targets `Q * max_j epsilon_j + sum_j epsilon_j` for the same actual restoration game. It uses
 VCVio's existing worst-case additive query-cost semantics with probability charges as weights;
-these weights are not CPU extraction costs. A new weighted fresh-query theorem is needed. The
+these weights are not CPU extraction costs. The weighted fresh-query theorem is now proved and
+independently reviewed in VCVio; the exact revisions and downstream acceptance status are in the
+[run ledger](interaction-night-20261003.md). The
 following hand-checked counterexamples explain why simpler-looking arguments do not suffice;
 they are research observations, not claims of additional Lean separation theorems.
 

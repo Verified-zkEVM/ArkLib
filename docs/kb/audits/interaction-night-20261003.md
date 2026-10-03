@@ -42,7 +42,7 @@ cache. All run-owned Lean/Lake writes are serialized through
 were inspected; PolyFun has only the cache manager's untracked `.lean-deps-immutable` marker,
 not a source change. No dependency reset or upgrade is authorized merely to pass a check.
 
-## Live theorem status
+## Launch snapshot (superseded by the acceptance entries below)
 
 | Target | Status | Required next evidence |
 |---|---|---|
@@ -358,3 +358,45 @@ realizable by a particular concrete representation or satisfying application adm
 not automatic. Applications can impose those requirements in `Rout` and must prove calibration.
 This is part of the explicit behavior-based relation contract, not a proved universal realization
 or compiler theorem.
+
+## Weighted adaptive-query theorem accepted locally (08:26Z)
+
+The optional nonuniform extension now has its reusable probability foundation. The compatible
+VCVio revision is `91386ad88ed72292d0f4e3153a444336920fc565`; its current-main port is
+`0acfe9629426918e4747fe6450df53ebd8555661`. Both are pushed. The current-main addition is folded
+into existing [PR 823](https://github.com/Verified-zkEVM/VCVio/pull/823), bringing its full diff
+to 1,207 changed lines. This keeps the uniform and weighted adaptive cached-oracle theory in one
+coherent PR. That PR is temporarily draft while CI checks the new head.
+
+`prEvent_randomOracle_le_of_bad_queries_weighted` accepts arbitrary key domains, finite nonempty
+uniform response types, per-key errors, an all-path `WorstCaseCostBound` for the actual query
+instrumentation, and the same universal-background resampling and logged-bad-key implications
+as the uniform theorem. It concludes that the actual empty-cache output-event probability is at
+most the supplied budget. It charges every call, including repeats. The budget covers even
+abstract answer paths inconsistent with the cache; it is deliberately stronger than an expected
+cost premise. It does not condition on absence of earlier bad events or require those events
+to be observable from the query history.
+
+Fresh independent blind read-back and subsequent contract comparison approved the mathematical
+statement and all three changed files in both variants. The current-main policy delta only
+removes redundant `Finite`/`Nonempty` binders already implied by `SampleableType`. The public
+ordinary-import canary passed and the principal axioms are standard. The meaningful adaptive
+client has unequal errors 1/3 and 1/2, a proved all-path budget 5/6, and an actual cached-event
+bound of 5/6; the two-query uniform maximum would give only 1.
+
+Both exact revisions passed expanded `./scripts/validate.sh --axioms --test` validation:
+
+| Revision | Time | Production coverage | Existing sorry-tainted declarations | New/nonstandard taint |
+|---|---|---|---|---|
+| Compatible `91386ad8` | 305.2s | 22,064 declarations / 777 modules | 33 unchanged | None |
+| Current-main `0acfe962` | 297.9s | 22,080 declarations / 781 modules | 14 unchanged | None |
+
+These checks include test-library initialization and the executable test suite; unlike earlier
+axioms-only gates, the optional test flag was explicitly supplied. The root closed the independent
+review's pending current-main validation condition after inspecting the successful log.
+
+ArkLib's nonuniform theorem and client remain under final configured-source validation at this
+entry. The first development-built artifact imported successfully, but the configured source
+build caught missing explicit implicit parameters under `autoImplicit=false`. The source repair
+is required before acceptance; importing that earlier artifact alone is not fresh-source evidence.
+No optional ArkLib PR or combined-stack acceptance is claimed by this entry.
