@@ -195,6 +195,13 @@ lemma exists_polynomial_hammingDist_eq_distFromCode [Fintype ι] (domain : ι �
   obtain ⟨g, hg, rfl⟩ := mem_code_iff_exists_polynomial.1 hM
   exact ⟨g, hg, hdist⟩
 
+/-- The codeword of the unquotiented polynomial of a polynomial of degree less than `d - |S|` is a
+codeword of `RS[F, ι, d]`. -/
+lemma evalOnPoints_unquotient_mem_code (domain : ι ↪ F) {S : Finset F} {Ans : S → F} {g : F[X]}
+    {d : ℕ} (hS : S.card < d) (hg : g.degree < ((d - S.card : ℕ) : WithBot ℕ)) :
+    evalOnPoints domain (unquotient S Ans g) ∈ code domain d :=
+  mem_code_iff_exists_polynomial.2 ⟨_, degree_unquotient_lt hS hg, rfl⟩
+
 /-- Quotienting Lemma 4.4
   Let `f : ι → F` be a function, `degree` a degree parameter, `δ` a distance parameter
   `S` be a set with |S| < degree, `Ans, Fill : S → F`. Suppose for all `u ∈ Λ(code, f, δ)`,
