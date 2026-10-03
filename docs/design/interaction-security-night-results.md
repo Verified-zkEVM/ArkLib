@@ -1,11 +1,11 @@
 # Interaction-security theory run, October 3, 2026
 
-## Current result (08:56Z)
+## Accepted result (09:06Z)
 
 All three MUST theory targets passed their individual and combined core gates and are published
-as reviewed PRs. The additional nonuniform-error theorem also passed its individual gates and
-is published as [PR 1264](https://github.com/Verified-zkEVM/ArkLib/pull/1264). Final combined
-validation with this extension and its new dependency pin is still pending at this checkpoint.
+as reviewed PRs. The additional nonuniform-error theorem passed its individual and combined gates
+and is published as [PR 1264](https://github.com/Verified-zkEVM/ArkLib/pull/1264). All six code PRs
+have green triggered CI and are ready for human review. No PR has been merged into main.
 The entries below preserve the intermediate failures and evidence rather than overwriting them.
 
 | Outcome | Result | PR |
@@ -466,3 +466,59 @@ triggered CI check, including the 20m19s full build/test pipeline. It is ready f
 The research PR's recent updates had reached the organization branch but not its actual fork
 branch; that publication mismatch was corrected by a fast-forward push to the fork, and the
 PR head was verified. Both copies retain the same notes. No PR has been merged into main.
+
+## Final combined acceptance and handoff
+
+The complete source candidate is pushed on `integration/interaction-night-20261003` at
+`78ed49a8faad25c97439aebcbd2f12b61bca230b`. It combines G1, G2, G3, the optional nonuniform
+extension, the exact compatible weighted VCVio pin, and research notes. Its canonical
+`./scripts/validate.sh --axioms` passed in 138.5 seconds: 18,341 declarations across 933 modules,
+unchanged 286 baseline sorry-tainted declarations, zero nonstandard axiom taint. All library,
+acceptance, warning, source-policy, compiled-runtime, imports, docs and axiom-fixture checks passed.
+Later changes recording this result are documentation only; this is the exact compiled source
+revision rather than a claim that every later prose-only commit received a duplicate full build.
+
+The final independent integration audit accounted for every one of 41 changed paths. All 40
+non-generated paths have the exact blobs of their reviewed owning slices or research branch.
+The generated root contains exactly 932 unique imports for 932 production modules. Both notes
+merges preserve the other parent's files; the non-generated nonuniform transplant has identical
+patch identity. Actual dependency checkouts match VCVio `91386ad88ed72292d0f4e3153a444336920fc565`,
+PolyFun `3710d71b28404a151b8d1f0ce080ea448778dec0`, and Mathlib
+`5ed2965256430c3649e86755f9576b54eca72435`, with the expected origin URLs.
+
+This integration auditor performed source/identity checks and independently inspected the
+successful combined log, without duplicating the build. It reported no findings. The separate
+mathematical slice reviews included blind read-backs and compiled public-import canaries; the
+root performed and inspected the combined canonical validation and owns the overall decision.
+Root final assembled-source verdict: **approve** at the explicitly recorded mathematical scope.
+Human review and merge decisions remain outstanding.
+
+Fresh upstream fetches still give ArkLib `ace55c3e29da1fc55a321378ada55ea4f7ed8790` and VCVio
+`f5119c64ebb055d69c143704e12eba6df7dc386c`. Each is an ancestor of its corresponding final source
+branch. The ArkLib baseline has not moved during the run. The following branches and worktrees
+are retained under `/Users/quangdao/Documents/Lean`; no cleanup or deletion was performed.
+
+| Worktree | Retained branch / exact source head |
+|---|---|
+| ArkLib | `research/cy-interaction-theory`, research PR 1258; fork and organization copies pushed |
+| ArkLib-local-rbr | `feat/native-local-rbr`, `8fa5d756fa7096e94c60f353f2732d6faaa22458` |
+| ArkLib-witness-transport | `feat/native-witness-transport`, `372f071dd72ff9364eceb5d5361db987e120271e`; foundation branch at `388bb2486d7621d36e9b4edf993e6d23f76b703f` |
+| ArkLib-interaction-night | `feat/native-state-restoration`, `be65c8051aa36398069ab76853f063c4382a589c` |
+| ArkLib-weighted-restoration | `feat/nonuniform-state-restoration`, `333df1745ed50c34dc87d1575e583c41a0a28b3b` |
+| ArkLib-interaction-review | `integration/interaction-night-20261003`, compiled source candidate above plus final documentation record |
+| VCVio-interaction-night | `feat/restoration-fresh-query`, `fe608a46c3df4608ea774611662a255326b5d1ff` |
+| VCVio-weighted-query | `feat/weighted-adaptive-query`, `91386ad88ed72292d0f4e3153a444336920fc565` |
+| VCVio-adaptive-query / VCVio-weighted-upstream | `feat/adaptive-query-bound` / `feat/weighted-query-bound`, both `0acfe9629426918e4747fe6450df53ebd8555661` |
+
+Review order is VCVio 823 for generic probability; ArkLib 1259 → 1260 → 1263 → 1264 for the
+knowledge/restoration stack. ArkLib 1261's ordinary-soundness/Sumcheck theorem is independent.
+PR 1264's interaction CI passed in 8m58s and it is now ready. The research PR records the
+contract, source comparisons, unresolved decisions and this evidence; it changes no Lean source.
+
+The MUST objective was achieved within the eight-hour window. SHOULD is partial: the sharper
+fixed per-round bound and pre-sampled private-coin specialization are proved; runtime, general
+history-dependent/expected cached costs, arbitrary interleaved coins and exact old/new adapters
+remain open. HOPE is not claimed. The next contract should choose an executable extraction
+representation and its accounting model, or a precise legacy/textbook specialization, before
+implementing that bridge. The source distinction between WARP's completed-challenge extractor
+and ARC's challenge-erased interface remains a separate mathematical question.
