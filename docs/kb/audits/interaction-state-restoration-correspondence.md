@@ -4,7 +4,7 @@ This note records the October 3, 2026 implementation boundary. The normative sco
 [overnight contract](../../design/interaction-security-night-contract.md); publication and exact
 validation revisions are recorded in the [run ledger](interaction-night-20261003.md). Principal
 native production proofs and the closed-oracle endpoint have compiled and passed independent
-review; final client and integration validation are still in progress at this checkpoint. This note is not a completion verdict.
+review; final clients and combined canonical validation have passed. See the run ledger for exact heads, CI status and acceptance verdicts.
 
 ## WARP's probability statement and the native statement
 
@@ -43,7 +43,8 @@ correspondence or require enumerating every output query.
 The initial scope is a fixed finite round list with finite message alphabets and finite nonempty
 uniform challenge alphabets. Input and salt types need not be finite. A fixed salt length is an
 instance of the arbitrary salt type; no salt is secretly incorporated into the input statement.
-Challenge-dependent message alphabets and persistent hidden verifier worlds require different
+Round alphabets and interfaces are independent of the selected input as well as prior challenges.
+Input-dependent or challenge-dependent round presentations and persistent hidden verifier worlds require different
 presentation proofs and remain open.
 
 ## The unqueried-ancestor difficulty

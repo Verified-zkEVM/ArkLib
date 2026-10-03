@@ -313,3 +313,29 @@ zero nonstandard axiom taint. The first full attempt failed only on the new test
 copyright header; the standard header was added with its entire Lean body unchanged, independently
 verified, and all requested checks rerun successfully. Combined integration validation is running
 at `a43dc43b9` with the exact new compatible dependency pin.
+
+
+## Combined core accepted locally (07:52Z)
+
+The complete G1/G2/G3 integration is pushed on `integration/interaction-night-20261003` at
+`a43dc43b9b7c292d8ba8d6cbfebcf6d71fa2d5dd`. Freshly fetched main remains
+`ace55c3e29da1fc55a321378ada55ea4f7ed8790`, an ancestor of this branch. The combined canonical
+`./scripts/validate.sh --axioms` gate passed in 366.5 seconds: 18,325 declarations across 932
+modules, unchanged 286 baseline sorry-tainted declarations, zero nonstandard axiom taint.
+Library, acceptance clients, source policies, compiled runtime checks and axiom fixtures passed.
+
+The independent integration audit accounted for all 20 changed paths: all 19 non-umbrella paths
+are byte-identical to their owning reviewed slices. The generated root has 931 unique imports
+covering 931 production modules, exactly the union of the reviewed imports. Actual dependencies
+match the manifest, including VCVio `fe608a46c3df4608ea774611662a255326b5d1ff`. The audit's
+only pending condition was the combined gate, now satisfied. Root verdict: **approve** the
+assembled core at this exact revision and scope. G3 CI remains pending; no merge is authorized.
+
+VCVio PR 823's final head `48190ba81afd83fb3c7dc8a74695c9731d25e889` now passes every
+triggered CI check, including the 19m19s full build/test pipeline. It is ready for review.
+
+An optional SHOULD extension is now being investigated separately: a weighted adaptive-query
+bound using the existing query-cost model, yielding the nonuniform restoration estimate
+`Q * max_j epsilon_j + sum_j epsilon_j`. This is not yet proved or accepted, and does not change
+the reviewed core claims. It must preserve out-of-order queries and bad events depending on
+unqueried ancestors. Runtime accounting remains a distinct unresolved problem.
