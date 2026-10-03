@@ -211,6 +211,18 @@ lemma coe_toPolynomialLT_evalOnPoints [Fintype ι] [DecidableEq ι] {domain : ι
     ((toPolynomialLT (⟨evalOnPoints domain p, hmem⟩ : code domain d) : degreeLT F d) : F[X]) = p :=
   toPolynomial_evalWord_of_degree_lt hp hdeg
 
+/-- The relative distance to a Reed-Solomon code is realized by a polynomial of degree less than
+`d`. -/
+lemma exists_polynomial_relDistFromCode_eq [Fintype ι] [Nonempty ι] (domain : ι ↪ F) (d : ℕ)
+    (u : ι → F) :
+    ∃ g : F[X], g.degree < d ∧
+      δᵣ(u, (code domain d : Set (ι → F))) =
+        (hammingDist u (evalOnPoints domain g) : ENNReal) / (Fintype.card ι : ENNReal) := by
+  obtain ⟨g, hg, hdist⟩ := exists_polynomial_hammingDist_eq_distFromCode domain d u
+  refine ⟨g, hg, ?_⟩
+  rw [relDistFromCode_eq_distFromCode_div, ← hdist]
+  rfl
+
 /-- Quotienting Lemma 4.4
   Let `f : ι → F` be a function, `degree` a degree parameter, `δ` a distance parameter
   `S` be a set with |S| < degree, `Ans, Fill : S → F`. Suppose for all `u ∈ Λ(code, f, δ)`,
