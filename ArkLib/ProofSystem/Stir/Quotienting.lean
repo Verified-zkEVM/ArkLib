@@ -162,6 +162,25 @@ lemma eval_unquotient_eq_of_not_mem_disagreementSet [Fintype ι] {domain : ι �
   · rw [unquotient, eval_add, eval_mul, hg]
     exact eval_vanishingPoly_mul_funcQuotient_add_ansPoly hx
 
+/-- The unquotiented polynomial of `g` disagrees with `f` only on the disagreement set and on the
+points where `g` disagrees with the quotient. -/
+lemma hammingDist_le_card_disagreementSet_add [Fintype ι] (domain : ι ↪ F) (f : ι → F)
+    (S : Finset F) (Ans Fill : S → F) (g : F[X]) :
+    hammingDist f (evalOnPoints domain (unquotient S Ans g)) ≤
+      (disagreementSet domain f S Ans).card +
+        hammingDist (funcQuotient domain f S Ans Fill) (evalOnPoints domain g) := by
+  classical
+  unfold hammingDist
+  refine (Finset.card_le_card ?_).trans (Finset.card_union_le _ _)
+  intro x hx
+  simp only [Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_union] at hx ⊢
+  by_contra hcon
+  push Not at hcon
+  exact hx (by
+    have := eval_unquotient_eq_of_not_mem_disagreementSet (Fill := Fill) (g := g) hcon.1
+      (by simpa [evalOnPoints] using (hcon.2).symm)
+    simpa [evalOnPoints] using this.symm)
+
 /-- Quotienting Lemma 4.4
   Let `f : ι → F` be a function, `degree` a degree parameter, `δ` a distance parameter
   `S` be a set with |S| < degree, `Ans, Fill : S → F`. Suppose for all `u ∈ Λ(code, f, δ)`,
