@@ -582,6 +582,7 @@ public import ArkLib.Data.MvPolynomial.WeightedDegree.Products
 public import ArkLib.Data.MvPolynomial.WeightedHomogeneous
 public import ArkLib.Data.MvPolynomial.WeightedOrder
 public import ArkLib.Data.OracleComp.QueryBounds
+public import ArkLib.Data.OracleComp.RandomOracleQueryBounds
 public import ArkLib.Data.Polynomial.BinaryTrace
 public import ArkLib.Data.Polynomial.BinaryTraceQuotient
 public import ArkLib.Data.Polynomial.Bivariate
@@ -670,10 +671,13 @@ public import ArkLib.Interaction.Oracle.CompositionSoundness
 public import ArkLib.Interaction.Oracle.CoreRun
 public import ArkLib.Interaction.Oracle.Execution
 public import ArkLib.Interaction.Oracle.FiatShamir.InducedAdversary
+public import ArkLib.Interaction.Oracle.FiatShamir.LegacyCertificateSecurity
 public import ArkLib.Interaction.Oracle.FiatShamir.LegacyCompletionKeys
 public import ArkLib.Interaction.Oracle.FiatShamir.LegacyCorrespondence
+public import ArkLib.Interaction.Oracle.FiatShamir.LegacyExecution
 public import ArkLib.Interaction.Oracle.FiatShamir.LegacyFragment
 public import ArkLib.Interaction.Oracle.FiatShamir.LegacyKeys
+public import ArkLib.Interaction.Oracle.FiatShamir.LegacyQueryBound
 public import ArkLib.Interaction.Oracle.FiatShamir.PublicExecutionCorrespondence
 public import ArkLib.Interaction.Oracle.FiatShamir.PublicMessage
 public import ArkLib.Interaction.Oracle.FiatShamir.PublicStopped
@@ -697,8 +701,13 @@ public import ArkLib.Interaction.Oracle.Security.Soundness
 public import ArkLib.Interaction.Oracle.Security.StateRestoration
 public import ArkLib.Interaction.Oracle.Security.StateRestorationBudget
 public import ArkLib.Interaction.Oracle.Security.StateRestorationCoins
+public import ArkLib.Interaction.Oracle.Security.StateRestorationFixedTableProjection
 public import ArkLib.Interaction.Oracle.Security.StateRestorationGame
+public import ArkLib.Interaction.Oracle.Security.StateRestorationLegacyGameUnroll
+public import ArkLib.Interaction.Oracle.Security.StateRestorationLegacyPremise
+public import ArkLib.Interaction.Oracle.Security.StateRestorationLegacySecurity
 public import ArkLib.Interaction.Oracle.Security.StateRestorationOracle
+public import ArkLib.Interaction.Oracle.Security.StateRestorationQueryBound
 public import ArkLib.Interaction.Oracle.Security.StateRestorationRandomized
 public import ArkLib.Interaction.Oracle.Security.StateRestorationRandomizedKnowledge
 public import ArkLib.Interaction.Oracle.Security.StateRestorationReplay
