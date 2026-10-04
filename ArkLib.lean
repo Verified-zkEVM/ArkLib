@@ -729,6 +729,8 @@ public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.ProverTran
 public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Soundness
 public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.TraceTransform
 public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.State
+public import ArkLib.OracleReduction.FiatShamir.Legacy.Lifting
+public import ArkLib.OracleReduction.FiatShamir.Legacy.QueryLog
 public import ArkLib.OracleReduction.LiftContext.Lens
 public import ArkLib.OracleReduction.LiftContext.OracleReduction
 public import ArkLib.OracleReduction.LiftContext.Purity
@@ -737,6 +739,7 @@ public import ArkLib.OracleReduction.OracleInterface
 public import ArkLib.OracleReduction.Prelude
 public import ArkLib.OracleReduction.ProtocolSpec.Basic
 public import ArkLib.OracleReduction.ProtocolSpec.Cast
+public import ArkLib.OracleReduction.ProtocolSpec.DeriveTranscript
 public import ArkLib.OracleReduction.ProtocolSpec.SeqCompose
 public import ArkLib.OracleReduction.Salt
 public import ArkLib.OracleReduction.Security.Basic
