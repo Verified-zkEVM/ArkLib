@@ -671,6 +671,7 @@ public import ArkLib.Interaction.Oracle.CoreRun
 public import ArkLib.Interaction.Oracle.Execution
 public import ArkLib.Interaction.Oracle.LoggedExecution
 public import ArkLib.Interaction.Oracle.LoggedRun
+public import ArkLib.Interaction.Oracle.MerkleTerminalBatch
 public import ArkLib.Interaction.Oracle.PhasedExecution
 public import ArkLib.Interaction.Oracle.PhasedRun
 public import ArkLib.Interaction.Oracle.Prefix
