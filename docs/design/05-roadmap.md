@@ -1,25 +1,27 @@
 # Interaction framework roadmap
 
-**Status date: 2026-10-03.** This is the implementation roadmap for ArkLib's typed
-interaction framework. The [current-status page](00-current-status.md) records available results
-and dependency versions. The [project index](../../ROADMAP.md) covers other areas; the
-[migration gates](../../roadmap/interaction-migration.md) define readiness to replace legacy clients.
+**Status date: 2026-10-04.** This is the implementation roadmap for ArkLib's Interaction
+framework. The [current-status page](00-current-status.md) records what is on `main` and the
+supported dependency versions. The [project roadmap](../../ROADMAP.md) covers other areas, and
+[Moving protocols to the Interaction framework](../../roadmap/interaction-migration.md) lists the
+open PRs with their statements and says what a port of a legacy protocol must show.
 
-C1–C8 are merged. The two security runs have produced reviewed open PRs for native round-by-round
-security, knowledge composition, randomized state restoration, Sumcheck restoration, and terminal
-Merkle transfer. Their [first](https://github.com/quangvdao/ArkLib/blob/e52099a7e612d5fdffb5eb6ed892d40a60b15172/docs/design/interaction-security-night-results.md) and
-[second](https://github.com/quangvdao/ArkLib/blob/e52099a7e612d5fdffb5eb6ed892d40a60b15172/docs/design/interaction-security-second-night-results.md) run records own exact statements and heads.
-The completed contracts below are historical records, not instructions to repeat those runs.
+In this document, *native* means stated in the Interaction framework (`ArkLib/Interaction/`)
+rather than the legacy framework (`ArkLib/OracleReduction/`), and a *client* is a protocol or
+theorem that uses the framework.
 
-The next integration step is to land the reviewed dependency stack and preserve its proofs.
-Further implementation should target the remaining generality and client gaps: early rejection
-and variable-length restoration, substantive extraction, native FRI/Spartan correspondence, and
-general oracle elimination. The [open-questions note](https://github.com/quangvdao/ArkLib/blob/e52099a7e612d5fdffb5eb6ed892d40a60b15172/docs/design/guarded-restoration-open-questions.md)
-records alternatives without adopting an unproved interface.
+The composition milestones C1–C8 are merged. Open PRs prove round-by-round soundness, knowledge
+soundness under composition, state-restoration knowledge soundness, the sum-check instance of
+state restoration, and a real-to-ideal transfer for Merkle openings sent in one final batch.
+The contracts for C1–C8 below are kept as a record of what was required; that work is done.
 
-**Status terms:** *Merged* means on `main`; *proved in an open PR* means checked at the recorded
-head but not yet merged; *planned* means no completion claim. This page tracks merged main and reviewed open PRs separately. Follow the linked PRs for
-unmerged source; this documentation PR adds no implementation or dependency changes.
+The next step is to merge those PRs in dependency order. After that, implementation should
+address what they leave open: verifiers that reject early and protocols of variable length under
+state restoration, extraction of a non-trivial witness, ports of FRI and Spartan, and general
+oracle elimination.
+
+**Status terms:** *merged* means on `main`; *open PR* means proved on a branch whose pull request
+is not yet merged; *planned* means not yet proved.
 
 ## Scope and contracts
 
@@ -253,96 +255,37 @@ provers. The latter still succeeds surely. Certificates accompany the fixed-prov
 they do not turn a numerical budget into a soundness theorem for arbitrary adversaries.
 Arbitrary world-query classifiers still require a separate proof connecting labels to resources.
 
-## Native Sumcheck: delivered results and remaining migration
+## Native Sumcheck: results and remaining work
 
-The full native ordinary-soundness and honest-completeness theorems are proved. The computational and security work below has since advanced in the reviewed integration.
-Distinguish the delivered statements from efficiency, substantive extraction, and migration obligations.
+Soundness and completeness of native Sumcheck are proved on `main`. The list below separates
+what is merged, what is in open PRs, and what is planned.
 
-1. **Computable messages and verifier, merged in #1242.** Bounded CompPoly coefficient arrays
-   and Horner evaluation are used in the native protocol. Whole-execution correspondence and
+1. **Computable messages and verifier (merged, [#1242](https://github.com/Verified-zkEVM/ArkLib/pull/1242)).** The native protocol uses bounded
+   CompPoly coefficient arrays and Horner evaluation. Whole-execution correspondence and
    soundness transfer are proved in `Interaction/Computable` and `Interaction/ComputableSoundness`.
-2. **Computable honest prover, merged in #1243.** `Impl/Projection` constructs messages by general
-   finite enumeration. `Interaction/ComputableCompleteness` proves honest execution correspondence
-   and completeness. The compiled runtime client executes the computational oracle and strategy;
-   this does not establish an efficient multilinear implementation.
-3. **Native round-by-round security, proved in open PR #1261.** Actual execution prefixes and
-   Sumcheck's per-challenge bound are connected to the full error bound. The theorem retains the
-   distinction between an all-prefix certificate and an average over an actual run.
-4. **Knowledge and extraction, partially delivered.** General knowledge composition is proved
-   in open PR #1260, randomized restoration in #1268, and the Sumcheck restoration instance in
-   #1269. Current oracle Sumcheck has a `Unit` witness: its polynomial is already an input oracle.
-   Recovery of a hidden polynomial or committed witness needs a different explicit relation,
-   extractor and proof. The delivered results do not supply that stronger claim.
-5. **Efficient implementations and legacy migration.** Optimize the Boolean multilinear case using
-   CompPoly evaluation tables, with proved message/update algorithms and separately stated costs.
-   The computable general prover alone makes no efficiency claim. Repair or migrate legacy
-   Sumcheck claims with correspondence and axiom checks; do not treat the native result as silently
-   proving those old declarations.
-
-<a id="bounded-interaction-theory-investigation"></a>
-
-## Historical first security run
-
-This overnight work package was recorded on October 2, 2026, broadened after the literature
-review. The user approved the revised general-theory contract and explicitly launched the run
-on October 3 at 00:56:52 America/New_York. It does not adopt a replacement architecture. The
-[Chiesa-Yogev comparison](https://github.com/quangvdao/ArkLib/blob/e52099a7e612d5fdffb5eb6ed892d40a60b15172/docs/kb/audits/chiesa-yogev-interaction.md) records source versions,
-evidence, the larger pipeline and unresolved alternatives. The long-term requirement is to
-recover the textbook's results in our language and generality, ideally across the whole book.
-The [broader source map](https://github.com/quangvdao/ArkLib/blob/e52099a7e612d5fdffb5eb6ed892d40a60b15172/docs/kb/audits/interaction-literature-map.md) additionally anchors
-knowledge transport in WARP/ABF26 and keeps Funky, duplex-sponge FS, FICS/FACS, compositional
-zero knowledge and post-quantum IORs in scope. The textbook is not the sole conformance target.
-
-The purpose of this run is to resolve a few precise questions with checked mathematics, while
-leaving broader choices open. The intended morning result is reusable local-to-global soundness, knowledge-composition and
-state-restoration security theorems, with exact scope and any incomplete targets stated honestly.
-The entire compiler and knowledge hierarchy remain longer-term goals. The run has an eight-hour limit ending at 08:56:52 America/New_York.
-Estimates do not promise that a mathematical target will be achieved.
-
-### October 3 authorized run
-
-The research commits through `c3e715d23` are pushed on `research/cy-interaction-theory`.
-The user explicitly launched the revised general-theory goal at 00:56:52 America/New_York
-(04:56:52Z), with deadline 08:56:52 (12:56:52Z). The six-hour checkpoint is 06:56:52;
-expansion freezes at 07:26:52 to reserve final review and consolidation. The earlier premature
-launch was stopped without implementation changes and does not consume this window.
-See the [run record](https://github.com/quangvdao/ArkLib/blob/e52099a7e612d5fdffb5eb6ed892d40a60b15172/docs/design/interaction-security-night-results.md) for exact work/check/PR evidence.
-
-The [accepted mathematical contract](https://github.com/quangvdao/ArkLib/blob/e52099a7e612d5fdffb5eb6ed892d40a60b15172/docs/design/interaction-security-night-contract.md) states the actual
-definitions, theorem statements, MUST/SHOULD/HOPE boundaries and unresolved choices. It fixes the mathematical target; literal Lean interfaces still require statement review. That document governs the revised priorities. The earlier deferral of aggregate ordinary
-soundness and full SR is superseded by G1-G3; small examples are validation aids.
-
-The revised objective is general theory: round-by-round security implies full ordinary soundness;
-round-by-round knowledge certificates compose sequentially; and round-by-round knowledge soundness
-implies state-restoration knowledge soundness with the source-faithful (Q+k) error bound.
-These replace the earlier example-centered minimum. Proposed PR order: research/contract notes,
-then the general ordinary theorem with Sumcheck, general knowledge composition, and the SR theorem.
-Examples support validation and do not count as the primary mathematical achievements. Aim for roughly
-500-1500 changed lines per substantial PR; a smaller important self-contained result is also fine.
-Keep internal worker checkpoints separate from publication boundaries. The main orchestrator owns
-strict review under review-lean-formalization, including clear terminology for a cryptographic
-audience. The contract gives the exact review gates and naming requirements. No empty scaffolding
-PR, no merge into main, and no claim that a deterministic lemma already proves SR security.
-
-Prepared worktrees are `ArkLib-interaction-night`, `ArkLib-local-rbr`,
-`ArkLib-witness-transport`, and `ArkLib-interaction-review`, all from
-`ace55c3e29da1fc55a321378ada55ea4f7ed8790`. They isolate the active implementation and review work.
-The pinned VCVio/PolyFun and Lean 4.34.0 remain unchanged. Shared dependency builds must be
-serialized; code branches stay separate from documentation history.
-
-The accepted contract is the single source for the definitions, statements, MUST/SHOULD/HOPE
-priorities, PR boundaries and stopping rules. The earlier local-lemma and toy-example decomposition
-is preserved in research-branch history, not repeated here as a competing implementation plan.
-At handoff, update the run record with literal theorem statements, exact commits, validation and
-review evidence, and every unresolved target. No worker may turn a supported-fragment restriction
-into an unstated permanent limitation of the framework.
+2. **Computable honest prover (merged, [#1243](https://github.com/Verified-zkEVM/ArkLib/pull/1243)).** `Impl/Projection` constructs messages by
+   general finite enumeration. `Interaction/ComputableCompleteness` proves honest execution
+   correspondence and completeness. This prover can be executed, but it is not an efficient
+   multilinear implementation.
+3. **Round-by-round soundness (open PR [#1261](https://github.com/Verified-zkEVM/ArkLib/pull/1261)).** Round-by-round soundness on actual
+   execution prefixes implies soundness with the sum of the per-challenge errors, and
+   Sumcheck's per-challenge bound gives its full error bound. The theorem keeps the distinction
+   between a bound for every fixed prefix and an average over an actual run.
+4. **Knowledge soundness and extraction (open PRs, partial).** Knowledge soundness under
+   composition is proved in [#1260](https://github.com/Verified-zkEVM/ArkLib/pull/1260), state restoration for randomized provers in [#1268](https://github.com/Verified-zkEVM/ArkLib/pull/1268),
+   and the Sumcheck instance in [#1269](https://github.com/Verified-zkEVM/ArkLib/pull/1269). Current oracle Sumcheck has a `Unit` witness: its
+   polynomial is already an input oracle. Recovering a hidden polynomial or committed witness
+   needs a different explicit relation, extractor, and proof. These PRs do not provide that.
+5. **Efficient implementations and legacy Sumcheck (planned).** Optimize the Boolean multilinear
+   case using CompPoly evaluation tables, with proved message and update algorithms and
+   separately stated costs. Repair or port the legacy Sumcheck declarations with correspondence
+   proofs and axiom checks. The native theorems do not prove those declarations.
 
 ## Later protocol clients
 
-FRI and Spartan are the next protocol migration candidates. The general Sumcheck computational
-and fixed-round security results now provide a starting point. Each client still needs its own
-execution correspondence and explicit security obligations; the remaining research questions
-are not automatically prerequisites for every port.
+FRI and Spartan are the next protocols to port. The Sumcheck results above are a starting point.
+Each port still needs its own execution correspondence and security proofs. The open research
+questions are not prerequisites for every port.
 
 - **FRI slice:** use a derived virtual oracle view and prove a two-way bridge to the established
   presentation.
@@ -359,15 +302,17 @@ automatically prove every legacy equivalence.
 
 ### State restoration and knowledge composition
 
-Knowledge composition and fixed-round state restoration are now proved in the reviewed PRs
-listed above, including interleaved private randomness and expected fresh-query charges.
-The remaining question is how to extend them to the next client while preserving extractor
-access, timing, witness relations, rejection behavior, and actual query costs.
+Knowledge soundness under composition and state-restoration knowledge soundness for a fixed
+number of rounds are proved in the open PRs listed above, including provers with private
+randomness and a bound that charges each distinct query once in expectation. The remaining
+question is how to extend them to the next client while preserving extractor access, timing,
+witness relations, rejection behavior, and actual query costs.
 
-Do not require a generic causal transducer as a prerequisite for the already completed theorems.
-Add a new upstream abstraction only for a concrete unproved client obligation. General guarded
-restoration and substantive witness recovery remain open; plain terminal knowledge soundness
-does not by itself yield prefix-available extraction.
+Do not require a generic causal transducer as a prerequisite for theorems that are already
+proved. Add a new upstream abstraction only for a concrete unproved client obligation. State
+restoration for verifiers that reject early and extraction of a non-trivial witness remain open.
+Knowledge soundness of the completed protocol does not by itself give an extractor that works
+on a prefix.
 
 ### Oracle-elimination compiler
 
@@ -380,15 +325,16 @@ each pass. Do not fill unsupported backend capabilities with placeholder guarant
 
 ### AR-11 — Merkle adapter
 
-**Proved in open PRs #1270 and #1271.** Native terminal commitment/opening protocols now
-transfer acceptance to an ideal extracted-value verifier using VCVio's existing shared-ROM
-security theorem. The second result allows bounded answer-dependent query choices. Both receive
-openings in a terminal batch, and neither supplies the independent ideal soundness premise.
+**Open PRs [#1270](https://github.com/Verified-zkEVM/ArkLib/pull/1270) and [#1271](https://github.com/Verified-zkEVM/ArkLib/pull/1271).** Native protocols that commit with a Merkle root and open
+positions in one final batch now have a real-to-ideal transfer: the real verifier accepts with
+probability at most that of an ideal verifier reading the values extracted at commitment time,
+plus VCVio's shared-ROM error. The second PR allows each queried position to depend on earlier
+answers. Soundness of the ideal protocol is a separate premise in both.
 
-General online opening protocols and the full BCS, Fiat–Shamir, and oracle-elimination compiler
-remain planned. See [Merkle ownership](../../roadmap/interaction-migration.md#merkle-ownership)
-for the repository boundary and [second-run results](https://github.com/quangvdao/ArkLib/blob/e52099a7e612d5fdffb5eb6ed892d40a60b15172/docs/design/interaction-security-second-night-results.md)
-for the exact restrictions and resource bounds.
+Openings interleaved with later rounds and the full BCS, Fiat–Shamir, and oracle-elimination
+compiler remain planned. See
+[Merkle commitments](../../roadmap/interaction-migration.md#merkle-commitments) for the division
+between VCVio and ArkLib and for the exact restrictions.
 
 ## Conditional upstream work
 
@@ -420,41 +366,11 @@ either limitation.
   until each migrated protocol has a proved correspondence.
 - Keep dependency bumps separate from theorem changes. Add no new `sorry` and run the repository's
   required validation before commit.
-- Update [00-current-status.md](00-current-status.md) when a reviewed capability changes,
-  distinguishing merged results from exact open-PR heads.
+- Update [00-current-status.md](00-current-status.md) when a result is merged, and the
+  [area roadmap](../../roadmap/interaction-migration.md) when a PR is opened, changed, or merged.
 
 Use names and docstrings that a cryptographer can understand without knowing the internal Lean
 representation. State who chooses the prover, what the verifier observes, which event is bounded,
 and how the error depends on the assumptions. Have an independent reviewer explain the principal
 theorem in those terms and compare it with the intended game. Treat a failed proof as evidence about
 the theorem or its assumptions, not as a reason to hide a stronger claim behind a weaker name.
-
-## Completed second security run
-
-The [second eight-hour contract](https://github.com/quangvdao/ArkLib/blob/e52099a7e612d5fdffb5eb6ed892d40a60b15172/docs/design/interaction-security-next-night-contract.md) fixes the
-mathematical statements, MUST/SHOULD/HOPE priorities, PR order, review gates, and open
-questions. The run began at 17:34:15 UTC with an October 4, 01:34:15 UTC deadline,
-and completed its contracted work before that limit. Exact completion and consolidation
-evidence is in the run record.
-Both MUSTs are now proved and independently reviewed: VCVio's arbitrary-domain expected
-distinct-query bound and ArkLib's actual cached randomized restoration knowledge bounds.
-The native terminal-batch Merkle transfer and ordinary Sumcheck restoration application are
-also proved, reviewed, and fully validated. See the [run evidence](https://github.com/quangvdao/ArkLib/blob/e52099a7e612d5fdffb5eb6ed892d40a60b15172/docs/design/interaction-security-second-night-results.md)
-for exact revisions, dependency pins, source restrictions, and substantial PRs.
-
-The accepted restoration fragment retains fixed rounds, finite message/challenge alphabets,
-explicit endpoint relation laws, and the existing named extractor. The Merkle transfer uses
-raw-digest vectors, immutable commitment-time extraction, and terminal batch verification;
-it supplies a restricted AR-11 capability, not the general oracle-elimination compiler.
-Sumcheck proves ordinary soundness with the native aborting output correspondence.
-
-The [causal terminal query-program extension](https://github.com/quangvdao/ArkLib/blob/e52099a7e612d5fdffb5eb6ed892d40a60b15172/docs/design/adaptive-terminal-query-contract.md) has also
-passed its proofs, full validation, and independent review. It supplies recursive path
-agreement and a clean ideal program whose terminal-opening phase can be erased. The
-[fixed-initial-cache query extension](https://github.com/quangvdao/ArkLib/blob/e52099a7e612d5fdffb5eb6ed892d40a60b15172/docs/design/initial-cache-query-contract.md) has also passed full
-validation and independent review. Its arbitrary-domain bound charges only distinct keys
-absent from the fixed initial cache and retains the explicit same-run fresh bad-key witness.
-
-The [early-rejection research note](https://github.com/quangvdao/ArkLib/blob/e52099a7e612d5fdffb5eb6ed892d40a60b15172/docs/design/guarded-restoration-open-questions.md) records the next
-generic-adapter obligations without selecting unresolved interfaces. The other open questions
-in the eight-hour contract remain open.

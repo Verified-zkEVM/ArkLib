@@ -385,16 +385,15 @@ home_page/            site assets and assembled website root
     `sumcheckWidthAtProfile` at `M = 25`), and the composed scheme's type carries
     `Nat.clog params.b 4294967197` inside `Fin (2¹⁰)`-indexed matrices and a 26-deep
     `ProtocolSpec` append tower, which exhausts the elaborator's `isDefEq` budget.
-- Merkle constructions and security live upstream in VCVio under
-  `VCVio/CryptoFoundations/MerkleTree/`: `Inductive/` (including `Inductive/Batch/`), `Addressed/`, `Hashing/`,
-  `HashForest/`, and `MultiExtractability/`. The former `Vector/` directory is absent at the
-  reviewed integration pin recorded in the migration page. Open PRs
-  [#1270](https://github.com/Verified-zkEVM/ArkLib/pull/1270) and
+- Merkle trees and their security proofs live upstream in VCVio under
+  `VCVio/CryptoFoundations/MerkleTree/`: `Inductive/` (including `Inductive/Batch/`),
+  `Addressed/`, `Hashing/`, `HashForest/`, and `MultiExtractability/`. There is no `Vector/`
+  directory at the VCVio revision ArkLib pins. ArkLib has no Merkle tree implementation of its
+  own. Open PRs [#1270](https://github.com/Verified-zkEVM/ArkLib/pull/1270) and
   [#1271](https://github.com/Verified-zkEVM/ArkLib/pull/1271) add
-  `Interaction/Oracle/MerkleTerminalBatch.lean` and `MerkleAdaptiveTerminal.lean` to connect
-  native protocols to VCVio's shared-ROM bound.
-  They support fixed or bounded adaptive query choices in a terminal opening batch, not a full
-  BCS compiler or online opening exchange. See [ownership and migration gates](../../roadmap/interaction-migration.md).
+  `Interaction/Oracle/MerkleTerminalBatch.lean` and `MerkleAdaptiveTerminal.lean`, which connect
+  protocols in the Interaction framework to VCVio's security theorem. See
+  [Merkle commitments](../../roadmap/commitments/merkle-trees.md).
 - Reed-Solomon code definitions live under the `ReedSolomon` namespace: the base RS code in
   `ArkLib/Data/CodingTheory/ReedSolomon.lean`, and the folded/interleaved/multiplicity/multilinear
   variants under `ArkLib/Data/CodingTheory/ReedSolomon/` (see

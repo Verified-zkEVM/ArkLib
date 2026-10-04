@@ -1,40 +1,62 @@
-# Sumcheck and Spartan
+# Sum-check and Spartan
 
-**Status:** active. **Last checked:** October 3, 2026.
-**Merged source:** ArkLib `ace55c3e29da1fc55a321378ada55ea4f7ed8790`.
-**Contact:** unassigned in this roadmap; use the linked PR authors for specific changes.
-**Blueprint:** see [proof-system chapters](../../blueprint/src/proof_systems).
+**Page status:** active.
+**Last checked:** 2026-10-04, against `main` at `ace55c3e29da1fc55a321378ada55ea4f7ed8790`.
+**Contact:** [@quangvdao](https://github.com/quangvdao).
+**Blueprint:** [sum-check](../../blueprint/src/proof_systems/sumcheck.tex) and
+[Spartan](../../blueprint/src/proof_systems/spartan.tex).
+
+The [folder README](../README.md) defines the terms used on this page.
 
 ## Where things stand
 
-[Native Sumcheck](../../ArkLib/ProofSystem/Sumcheck/Interaction) has full ordinary soundness and
-honest completeness. The computable verifier and honest prover are merged in
-[#1242](https://github.com/Verified-zkEVM/ArkLib/pull/1242) and
-[#1243](https://github.com/Verified-zkEVM/ArkLib/pull/1243). The general finite-enumeration prover
-is computable; this alone does not prove efficient multilinear performance.
-[Spartan](../../ArkLib/ProofSystem/Spartan) still needs a native interaction migration.
+**Sum-check.** The version in the Interaction framework is in
+[`ArkLib/ProofSystem/Sumcheck/Interaction`](../../ArkLib/ProofSystem/Sumcheck/Interaction), with
+no `sorry`. For a polynomial in $$k$$ variables of individual degree at most $$d$$ over a field
+$$F$$, the following are merged:
 
-## Active branches and PRs
+- Completeness: the honest prover always convinces the verifier of a true claim.
+- Soundness: no prover convinces the verifier of a false claim with probability more than
+  $$k \cdot d / \lvert F \rvert$$.
+- A verifier and an honest prover that can be executed
+  ([#1242](https://github.com/Verified-zkEVM/ArkLib/pull/1242),
+  [#1243](https://github.com/Verified-zkEVM/ArkLib/pull/1243)). The prover computes each round
+  message by summing over all remaining points. It is correct but not efficient.
 
-- [#1261](https://github.com/Verified-zkEVM/ArkLib/pull/1261) adds native local-to-global soundness
-  and its Sumcheck instance.
-- [#1269](https://github.com/Verified-zkEVM/ArkLib/pull/1269) adds Sumcheck restoration soundness;
-  it depends on the randomized game and knowledge theory in
-  [#1267](https://github.com/Verified-zkEVM/ArkLib/pull/1267) and
-  [#1268](https://github.com/Verified-zkEVM/ArkLib/pull/1268).
+The older version in
+[`ArkLib/ProofSystem/Sumcheck/Spec`](../../ArkLib/ProofSystem/Sumcheck/Spec) uses the legacy
+framework and has incomplete proofs.
 
-These are open-PR results, not merged capabilities. PR authors and review discussion are linked
-on the PR pages. The [interaction roadmap](../../docs/design/05-roadmap.md) owns implementation order.
+**Spartan.** [`ArkLib/ProofSystem/Spartan`](../../ArkLib/ProofSystem/Spartan) defines the
+protocol in the legacy framework. Its proofs are incomplete, and it has not been ported.
+
+## Open PRs
+
+Both are by [@quangvdao](https://github.com/quangvdao).
+
+- [#1261](https://github.com/Verified-zkEVM/ArkLib/pull/1261) proves that round-by-round
+  soundness implies soundness, and derives the $$k \cdot d / \lvert F \rvert$$ bound for
+  sum-check from a per-round error of $$d / \lvert F \rvert$$.
+- [#1269](https://github.com/Verified-zkEVM/ArkLib/pull/1269) proves that sum-check has
+  state-restoration soundness error at most $$(Q + k) \cdot d / \lvert F \rvert$$ against a
+  prover with query budget $$Q$$. It depends on the chain of PRs ending in
+  [#1268](https://github.com/Verified-zkEVM/ArkLib/pull/1268), listed on the
+  [Interaction framework page](../interaction-migration.md#open-prs).
 
 ## Open gaps
 
-The native oracle Sumcheck relation has a `Unit` witness. Recovery of a hidden polynomial or
-committed witness needs a substantive witness relation and a new extraction proof. Optimized
-message/update algorithms need correspondence and cost proofs. Legacy security claims need
-explicit correspondence and axiom checks before replacement.
+- **No witness is extracted.** The polynomial is an input oracle that the verifier queries, so
+  the sum-check relation has a trivial witness, and the results above are soundness results. A
+  protocol in which the polynomial is hidden or committed needs a knowledge soundness proof.
+- **No efficient prover.** The standard linear-time prover for multilinear polynomials is not
+  yet proved to produce the same messages as the merged prover.
+- **Spartan is not ported.**
+- **Legacy sum-check.** The incomplete proofs in `Sumcheck/Spec` remain until its users move to
+  the Interaction version.
 
 ## Next step
 
-Integrate the reviewed security stack, then select a concrete Spartan or further Sumcheck client.
-Specify its statement, oracle interface, witness, execution correspondence and quantitative
-security target before porting it. Apply the [migration gates](../interaction-migration.md).
+Merge the open PRs. Then choose the next protocol to port, either Spartan or a protocol that
+uses sum-check as a step, and write down its statement, witness, oracle interface, and target
+security bound before porting it. [What a port must show](../interaction-migration.md#what-a-port-must-show)
+lists the requirements.

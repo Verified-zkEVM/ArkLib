@@ -1,40 +1,56 @@
 # Merkle commitments
 
-**Status:** active. **Last checked:** October 3, 2026.
-**Source:** ArkLib main `ace55c3e`; reviewed integration VCVio `6bf6c91b`.
-**Contact:** unassigned in this roadmap; use the linked PR authors for specific changes.
-**Blueprint:** no dedicated chapter identified here; see the
+**Page status:** active.
+**Last checked:** 2026-10-04, against `main` at `ace55c3e29da1fc55a321378ada55ea4f7ed8790`.
+**Contact:** [@quangvdao](https://github.com/quangvdao).
+**Blueprint:** [Merkle chapter](../../blueprint/src/commitments/merkle.tex), currently a
+placeholder. See also the
 [oracle-elimination design](../../docs/design/04-oracle-elimination-compiler.md).
+
+The [folder README](../README.md) defines the terms used on this page.
 
 ## Where things stand
 
-VCVio owns Merkle constructions, openings, extraction, and shared-random-oracle security.
-ArkLib's new interaction adapters connect native protocol execution to that security theorem.
-The [ownership and migration page](../interaction-migration.md#merkle-ownership) records the
-precise division and source evidence. There is no separate ArkLib Merkle-tree implementation
-in these adapters.
+ArkLib has no Merkle tree implementation of its own. Merkle trees, opening proofs, batch
+verification, and their security in the random oracle model are in
+[VCVio](https://github.com/Verified-zkEVM/VCVio), under `VCVio/CryptoFoundations/MerkleTree/`.
 
-## Active branches and PRs
+Nothing on ArkLib's `main` yet connects a protocol in the Interaction framework to VCVio's
+security theorem. The open PRs below do this.
 
-- [VCVio #825](https://github.com/Verified-zkEVM/VCVio/pull/825) expresses the owning checkpoint
-  disagreement bound using native measure probability.
-- [ArkLib #1270](https://github.com/Verified-zkEVM/ArkLib/pull/1270) transfers native terminal-batch
-  acceptance to an ideal verifier using extracted commitment-time values.
-- [ArkLib #1271](https://github.com/Verified-zkEVM/ArkLib/pull/1271), on #1270, allows bounded
-  answer-dependent query choices.
+## Open PRs
 
-These are reviewed open PRs. Follow the PR pages for authors and merge status.
+All three are by [@quangvdao](https://github.com/quangvdao).
+
+- [VCVio #825](https://github.com/Verified-zkEVM/VCVio/pull/825) restates VCVio's bound in the
+  form ArkLib needs: the probability that some verified opening disagrees with the values
+  extracted when the prover committed.
+- [ArkLib #1270](https://github.com/Verified-zkEVM/ArkLib/pull/1270) defines a protocol in
+  which the prover sends a Merkle root and later opens positions chosen by the verifier. It
+  proves the real-to-ideal transfer
+  Pr[the real verifier accepts] ≤ Pr[the ideal verifier accepts] + $$E / \lvert Y \rvert$$,
+  where the ideal verifier reads the extracted values directly, $$Y$$ is the set of digests, and
+  $$E$$ is an explicit function of the bounds on tree nodes, commitments, and hash queries.
+- [ArkLib #1271](https://github.com/Verified-zkEVM/ArkLib/pull/1271) builds on #1270 and lets
+  the verifier choose each position after seeing earlier answers.
+
+The [Interaction framework page](../interaction-migration.md#merkle-commitments) describes the
+division between VCVio and ArkLib in more detail.
 
 ## Open gaps
 
-The current adapters use raw digest leaves and one terminal opening batch. They require explicit
-adversarial-query, honest-verification, node and checkpoint bounds, and a separate ideal soundness
-premise. They do not provide online query/opening exchanges, general encoded-payload or forest
-security, or a complete BCS/Fiat–Shamir compiler.
+- **All openings arrive in one batch at the end.** A protocol that opens a commitment and then
+  continues is not covered.
+- **Leaves are raw digests.** VCVio's encoded leaves and hash forests are not yet connected.
+- **The ideal protocol's soundness is assumed.** The transfer theorem bounds the gap between
+  the real and ideal verifiers. Soundness of the ideal protocol is proved separately, per
+  protocol.
+- **Not the full BCS transform.** Replacing every oracle of a reduction with a commitment, and
+  then applying Fiat–Shamir, is planned.
 
 ## Next step
 
-Integrate the owning bound and native adapters, then choose a concrete oracle-elimination client.
-State its required opening schedule and extracted-value guarantee before generalizing the adapter.
-Keep cryptographic construction/security results in VCVio and native interaction correspondence
-in ArkLib.
+Merge the three PRs. Then choose a protocol that needs Merkle openings, FRI being the natural
+candidate, and write down when it opens commitments and what it needs from the extracted values
+before generalizing the current theorems. Results about Merkle trees themselves belong in
+VCVio. Results about protocols that use them belong in ArkLib.

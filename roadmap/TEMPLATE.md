@@ -1,29 +1,30 @@
 # Area name
 
-Copy this template for a checked area page, then replace the instructions below.
+Copy this file, then replace the text under each heading. The
+[folder README](README.md) defines the status words and common terms.
 
-**Status:** not started / active / stalled / done (choose one).
-**Last checked:** YYYY-MM-DD.
-**Source revision:** repository and commit.
-**Maintainer or contact:** verified contributor, or explicitly unassigned.
-**Blueprint:** link to the relevant chapter, or state that none is identified.
+**Page status:** not started / active / stalled / done (choose one; this describes the area as a
+whole, not an individual result).
+**Last checked:** YYYY-MM-DD, against `main` at commit.
+**Contact:** a contributor's handle, or "unassigned".
+**Blueprint:** link to the relevant chapter, or "none yet".
 
 ## Where things stand
 
-Name source modules and proved results. Distinguish merged code from open PRs and plans.
-State important assumptions or scope limits; a definition alone is not a security proof.
+Say what is on `main`: the source directories and the results that are proved. State each
+result as a claim, with its error bound if it has one. Say which results have incomplete proofs.
 
-## Active branches and PRs
+## Open PRs
 
-Link the current branches or PRs, their authors, dependency order, and the concrete result each adds.
-If there is no active PR, say so. Avoid copying a transient CI snapshot without its date and head.
+List each open pull request, its author, the result it adds, its limits, and which other PRs it
+depends on. If there are none, say so.
 
 ## Open gaps
 
-Identify missing theorems, admissions, correspondence obligations, or unresolved design choices.
-Use declaration names or commit-pinned links when ordinary line numbers would become stale.
+List what is missing: theorems, incomplete proofs, or design questions that are not yet settled.
+Refer to declarations by name or by a link to a specific commit, since line numbers go stale.
 
 ## Next step
 
-Give the next useful task and its acceptance condition. Link an existing implementation sequence
-rather than creating a competing plan. Preserve alternatives that remain research questions.
+Give the most useful next task and how to tell that it is done. If a detailed plan exists
+elsewhere, link it.

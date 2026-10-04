@@ -1,38 +1,56 @@
 # Roadmap
 
-**Updated October 3, 2026.** The current general-theory effort is the
-[interaction framework](docs/design/05-roadmap.md). Its
-[current-status page](docs/design/00-current-status.md) separates the supported source revision
-from merged main, and the [migration page](roadmap/interaction-migration.md) states what remains
-before replacing the legacy layer.
+**Last checked: 2026-10-04**, against `main` at `ace55c3e`.
 
-This page is the project-wide index. The [area roadmap folder](roadmap/README.md) provides
-maintenance rules, a template, and populated interaction, Sumcheck/Spartan and Merkle pages. Detailed area plans belong in their owning pages rather than
-in duplicated root checklists. The blueprint records mathematical exposition; roadmap pages record
-implementation priorities and evidence. Update the affected area page in the same PR as a material
-capability change, and distinguish **merged**, **proved in an open PR**, and **planned**.
+This page is the project-wide index. Areas with a link in the first column have their own page
+in the [`roadmap/`](roadmap/README.md) folder, with the details, the open pull requests, and the
+next step. The other areas are summarized here until someone writes their page.
 
-| Area | Where things stand and next direction |
-|---|---|
-| Interaction theory and migration | Current focus. Native composition and Sumcheck foundations are merged; reviewed security extensions are in open PRs. See [migration gates](roadmap/interaction-migration.md) and the [implementation sequence](docs/design/05-roadmap.md). |
-| [Merkle commitments](roadmap/commitments/merkle-trees.md) | Construction, extraction and random-oracle bounds belong to VCVio. ArkLib's open PRs connect them to native terminal protocols. General oracle elimination remains open. See [ownership and limits](roadmap/interaction-migration.md#merkle-ownership). |
-| [Sumcheck and Spartan](roadmap/proof-systems/sumcheck-spartan.md) | [Sumcheck](ArkLib/ProofSystem/Sumcheck) has a native interaction client; [Spartan](ArkLib/ProofSystem/Spartan) still needs a native migration and corresponding security results. Efficient implementations need separate correspondence and cost proofs. |
-| FRI, STIR, WHIR and coding theory | Existing developments under [ProofSystem](ArkLib/ProofSystem) and [CodingTheory](ArkLib/Data/CodingTheory). Native migration needs explicit oracle-view and execution correspondence. Existing codeword-folding results are not IVC folding schemes. |
-| Binius and ring switching | Existing [Binius](ArkLib/ProofSystem/Binius) and [ring-switching](ArkLib/ProofSystem/RingSwitching) developments. Preserve the distinction between packing and quotient-ring lifting; see the [repository map](docs/wiki/repo-map.md). |
-| KZG and functional commitments | [KZG](ArkLib/Commitments/Functional/KZG) contains correctness and binding developments with no local `sorry` at this snapshot. This does not assert unconditional security or certify every transitive dependency. Native interface integration remains a separate task. |
-| Lattices and Hachi | Substantial developments in [lattices](ArkLib/Data/Lattices) and [commitments](ArkLib/Commitments), including Ajtai and Hachi. Consult the [repository map](docs/wiki/repo-map.md) and blueprint for construction-specific proof boundaries. |
-| Computable polynomials and fields | Owned upstream by [CompPoly](https://github.com/Verified-zkEVM/CompPoly); ArkLib extensions live in [ToCompPoly](ArkLib/ToCompPoly). Do not recreate the obsolete local polynomial/field checklists. |
+Each result is described as **merged** (on `main`), in an **open PR** (proved on a branch, not
+yet merged), or **planned**. The [`roadmap/` README](roadmap/README.md) defines the terms used
+below, such as *Interaction framework*, *legacy framework*, and *port*.
 
-## Longer-term research targets
+## Current focus
 
-The Chiesa–Yogev pipeline is a required coverage direction, expressed in our interaction language
-and with explicit correspondence to the literature. The
-[textbook comparison](https://github.com/quangvdao/ArkLib/blob/e52099a7e612d5fdffb5eb6ed892d40a60b15172/docs/kb/audits/chiesa-yogev-interaction.md) and
-[broader literature map](https://github.com/quangvdao/ArkLib/blob/e52099a7e612d5fdffb5eb6ed892d40a60b15172/docs/kb/audits/interaction-literature-map.md) record scope and unresolved
-choices, including round-by-round knowledge, accumulation, Funky, and duplex-sponge Fiat–Shamir.
+The main effort is the Interaction framework in [`ArkLib/Interaction/`](ArkLib/Interaction): the
+general theory of interactive oracle reductions that protocols are built on. Existing protocols
+still use the legacy framework in [`ArkLib/OracleReduction/`](ArkLib/OracleReduction) and will be
+ported one at a time. See [Moving protocols to the Interaction framework](roadmap/interaction-migration.md)
+for what is proved and what a port must show, and the
+[implementation plan](docs/design/05-roadmap.md) for the order of work.
 
-Further targets include general BCS/oracle elimination, zero knowledge, rewinding extraction,
-the algebraic group model, mechanized adversary runtime, Plonk, Twist and Shout, IVC folding,
-and foundational PCP results. This list does not claim these targets are implemented or scheduled.
-Protocol definitions, security proofs, efficient algorithms, and legacy migration are separate
-milestones, each requiring evidence.
+## Areas
+
+| Area | On `main` | In open PRs | Next |
+|---|---|---|---|
+| [Interaction framework](roadmap/interaction-migration.md) | Sequential composition of oracle reductions with additive soundness error. Execution against a shared stateful oracle, with query-cost bounds. | Round-by-round soundness implies soundness. Knowledge soundness under composition. State-restoration knowledge soundness. | Merge the open PRs. Port FRI and Spartan. |
+| [Sum-check and Spartan](roadmap/proof-systems/sumcheck-spartan.md) | [Sum-check](ArkLib/ProofSystem/Sumcheck) in the Interaction framework: completeness, soundness error $$k \cdot d / \lvert F \rvert$$, executable verifier and honest prover. [Spartan](ArkLib/ProofSystem/Spartan) in the legacy framework, with incomplete proofs. | Sum-check soundness derived round by round, and under state restoration. | Port Spartan. Prove an efficient multilinear sum-check prover correct. |
+| [Merkle commitments](roadmap/commitments/merkle-trees.md) | Merkle trees and their random-oracle security are in VCVio. | ArkLib protocols that open Merkle commitments, with security reduced to VCVio's theorem. | Openings interleaved with the protocol. The general BCS transform. |
+| FRI, STIR, WHIR, and coding theory | Reed–Solomon codes and proximity gaps in [CodingTheory](ArkLib/Data/CodingTheory). [FRI](ArkLib/ProofSystem/Fri), [batched FRI](ArkLib/ProofSystem/BatchedFri), and [STIR](ArkLib/ProofSystem/Stir) in the legacy framework, with incomplete proofs. | | Port FRI to the Interaction framework. |
+| Binius and ring switching | [Binius](ArkLib/ProofSystem/Binius) and [ring switching](ArkLib/ProofSystem/RingSwitching) in the legacy framework, with incomplete proofs. See the [repository map](docs/wiki/repo-map.md). | | |
+| KZG and polynomial commitments | [KZG](ArkLib/Commitments/Functional/KZG): correctness and binding, with no `sorry` in that directory. Check each theorem for its assumptions. | | Connect KZG to the Interaction framework's oracle interfaces. |
+| Lattices and Hachi | [Lattice theory](ArkLib/Data/Lattices), and the Ajtai and Hachi schemes in [Commitments](ArkLib/Commitments). See the blueprint's lattice chapter and the [repository map](docs/wiki/repo-map.md). | | |
+| Computable polynomials and fields | Developed in [CompPoly](https://github.com/Verified-zkEVM/CompPoly). ArkLib's additions are in [ToCompPoly](ArkLib/ToCompPoly). | | Track this work in CompPoly. |
+
+"Folding" in the FRI and STIR code means folding a codeword. Folding schemes for incrementally
+verifiable computation, as in Nova, are a separate topic listed below.
+
+## Longer-term targets
+
+None of the following is scheduled. For each one, the protocol definition, the security proof,
+and any efficient implementation are separate pieces of work.
+
+- **The BCS transform in general.** Replace every oracle in a reduction with a commitment and
+  opening proofs, and carry the security bounds through.
+- **Fiat–Shamir**, including the duplex-sponge variant used in practice.
+- **Zero knowledge.**
+- **Knowledge soundness by rewinding**, and extraction in the algebraic group model.
+- **Adversary running time**, stated and tracked through reductions.
+- **More protocols:** Plonk and its variants, Twist and Shout, and folding schemes for
+  incrementally verifiable computation.
+- **Textbook coverage.** We aim to recover the results of the Chiesa–Yogev textbook
+  [Building Cryptographic Proofs from Hash Functions](https://snargsbook.org/) in the
+  Interaction framework, with an explicit correspondence to the book's definitions.
+- **The PCP theorem.** It would be nice to use ArkLib to prove foundational results such as the
+  PCP theorem, starting from the original proofs (sum-check, low-degree tests, and proof
+  composition).

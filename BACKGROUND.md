@@ -7,10 +7,8 @@ ArkLib's development is informed by the following references:
 - Reductions of Knowledge (introduces interactive reductions of knowledge)
 - Arc paper (re-introduces IOR)
 - WHIR paper (introduces $$\mathcal{F}$$-IOP; though the notion has appeared in prior talks & conversations with Dan Boneh)
-- Chiesa-Yogev textbook [Building Cryptographic Proofs from Hash Functions](https://snargsbook.org/)
+- Chiesa–Yogev textbook [Building Cryptographic Proofs from Hash Functions](https://snargsbook.org/)
 
-The [textbook comparison](https://github.com/quangvdao/ArkLib/blob/e52099a7e612d5fdffb5eb6ed892d40a60b15172/docs/kb/audits/chiesa-yogev-interaction.md) and
-[broader literature map](https://github.com/quangvdao/ArkLib/blob/e52099a7e612d5fdffb5eb6ed892d40a60b15172/docs/kb/audits/interaction-literature-map.md) compare these definitions
-with ArkLib's interaction framework and record later work, source versions, and unresolved choices.
-They are research notes, not a claim that every referenced result is formalized. For implemented
-coverage and migration requirements, see the [roadmap](ROADMAP.md).
+A written comparison between these definitions and ArkLib's Interaction framework is in progress.
+This list gives the sources we follow. It does not mean that every result in them is formalized;
+see the [roadmap](ROADMAP.md) for what is.
