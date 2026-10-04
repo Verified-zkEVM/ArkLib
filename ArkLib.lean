@@ -670,6 +670,10 @@ public import ArkLib.Interaction.Oracle.CompositionSoundness
 public import ArkLib.Interaction.Oracle.CoreRun
 public import ArkLib.Interaction.Oracle.Execution
 public import ArkLib.Interaction.Oracle.FiatShamir.InducedAdversary
+public import ArkLib.Interaction.Oracle.FiatShamir.LegacyCompletionKeys
+public import ArkLib.Interaction.Oracle.FiatShamir.LegacyCorrespondence
+public import ArkLib.Interaction.Oracle.FiatShamir.LegacyFragment
+public import ArkLib.Interaction.Oracle.FiatShamir.LegacyKeys
 public import ArkLib.Interaction.Oracle.FiatShamir.PublicExecutionCorrespondence
 public import ArkLib.Interaction.Oracle.FiatShamir.PublicMessage
 public import ArkLib.Interaction.Oracle.FiatShamir.PublicStopped
