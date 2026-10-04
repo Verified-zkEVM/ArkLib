@@ -704,6 +704,7 @@ public import ArkLib.Interaction.Oracle.Security.StateRestorationRandomizedKnowl
 public import ArkLib.Interaction.Oracle.Security.StateRestorationReplay
 public import ArkLib.Interaction.Oracle.Security.StateRestorationStopped
 public import ArkLib.Interaction.Oracle.Security.StateRestorationStoppedBudget
+public import ArkLib.Interaction.Oracle.Security.StateRestorationStoppedFinite
 public import ArkLib.Interaction.Oracle.Sequential
 public import ArkLib.Interaction.Oracle.Source
 public import ArkLib.Interaction.Oracle.SourceRouting
