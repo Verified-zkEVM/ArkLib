@@ -26,7 +26,8 @@ This directory contains various utility scripts for the ArkLib project.
   for KoalaBear sextic arithmetic, executable interleaved-RS extraction, and the C6.9 virtual
   output-oracle and exact-extractor paths
 - **`SumcheckRuntime.lean`** (`lake exe sumcheck-runtime`) - Compiled checks of CompPoly-backed
-  round messages in the shared native Sumcheck executor, including continuation effects and abort.
+  round messages and the honest multivariate prover in the shared native Sumcheck executor,
+  including continuation effects, abort, original-oracle evaluation and zero remaining rounds.
 - **`HachiRuntime.lean`** (`lake exe hachi-runtime`) - Compiled small-parameter checks that the
   nonrecursive Hachi honest-prover path executes: the balanced committer, the computable honest
   lift quotient, the concrete Ajtai lift commitment, and the terminal reveal-and-check. `--full`

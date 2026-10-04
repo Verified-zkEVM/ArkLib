@@ -14,17 +14,37 @@ public import Mathlib.Combinatorics.Enumerative.DoubleCounting
 
 Every MDS generator whose code has full dimension `ℓ ≥ 2` has mutual correlated agreement for
 every module code, with error `mdsMCAError`. The unique-decoding regime is proved
-(`mcaError_le_mdsMCAError_of_lt`); the list-decoding regime is open.
+(`mcaError_le_mdsMCAError_of_lt`); of the list-decoding regime, the maximal-domain lemmas
+(Lemmas 6.4–6.6 [BCGM25]) are proved and the final count is open.
 
 ## Main statements
 
 * `mdsMCAError` — the MCA error function of an MDS generator, with `mdsMCAError_congr` showing it
   depends on the code only through its block length and relative distance.
+* `exists_codewordSpan_of_isMDSGenerator` — codewords agreeing with `ℓ` generated words on a
+  common set are recovered as a codeword span, which captures every other codeword that agrees
+  with a generated word on a large enough set (Lemma 5.2 [BCGM25]).
+* `hammingDist_lt_of_isMDSGenerator` — if many seeds bring the generated words of two families
+  close, the families themselves are close (Lemma 5.3 [BCGM25]).
 * `card_filter_isMCA_le_of_isMDSGenerator` — the seed count behind the unique-decoding regime: at
   most `(⌊n·γ⌋ + 1)·(ℓ - 1)` seeds witness the MCA event for a fixed word family.
 * `mcaError_le_mdsMCAError_of_lt` — MCA for MDS generators in the unique-decoding regime
   (Lemma 6.2 [BCGM25], with the corrected bound below): the `mdsMCAError` bound at every radius
   below `δ_C / (ℓ + 1)`.
+* `subset_isMaxAgreementDomain_of_isMDSGenerator` — at any seed, a set on which the generated
+  word lies in the projected code and which overlaps the intersection of `ℓ` maximal agreement
+  domains in all but fewer than `d_C` positions lies in every such-overlapping maximal agreement
+  domain of that word (the step of [BCGM25] cited as "from the proof of Lemma 6.4").
+* `isMaxCADomain_inf_of_isMDSGenerator` — `ℓ` maximal agreement domains
+  (`LinearCode.IsMaxAgreementDomain`, Definition 6.3 [BCGM25]) at distinct seeds, intersecting
+  in all but fewer than `d_C` positions, intersect in a maximal CA domain (Lemma 6.4 [BCGM25]).
+* `inf_isMaxAgreementDomain_eq_of_isMDSGenerator` — any `ℓ` maximal agreement domains containing
+  a large maximal CA domain intersect exactly in it (Lemma 6.5 [BCGM25]).
+* `sum_card_sdiff_le_pred_mul_card_compl_of_isMDSGenerator` — maximal agreement domains at
+  distinct seeds containing a large maximal CA domain `A₀` have total size at most
+  `(ℓ - 1)·|A₀ᶜ|` outside `A₀`.
+* `card_le_pred_mul_card_compl_of_isMDSGenerator` — at most `(ℓ - 1)·|A₀ᶜ|` seeds have a maximal
+  agreement domain strictly containing the maximal CA domain `A₀` (Lemma 6.6 [BCGM25]).
 * `isMCAGenerator_of_isMDSGenerator` — MCA for MDS generators at every radius (Theorem 6.1
   [BCGM25]).
 
@@ -164,8 +184,7 @@ lemma card_filter_sum_smul_eq_le_of_isMDSGenerator {S : Type} [Nonempty S] [Fint
     (Finset.univ.filter fun x => ∑ j, G x j • v j = ∑ j, G x j • w j).card
       ≤ Fintype.card ℓ - 1 := by
   classical
-  by_contra hlt
-  push Not at hlt
+  by_contra! hlt
   obtain ⟨f⟩ := Function.Embedding.nonempty_of_card_le (α := ℓ)
     (β := (Finset.univ.filter fun x => ∑ j, G x j • v j = ∑ j, G x j • w j))
     (by rw [Fintype.card_coe]; omega)
@@ -180,6 +199,88 @@ lemma card_filter_sum_smul_eq_le_of_isMDSGenerator {S : Type} [Nonempty S] [Fint
   simp only [hM, Matrix.of_apply]
   rw [hk]
 
+/-- **Lemma 5.2 [BCGM25]** (codeword span). Let `G` be an MDS generator whose code has full
+dimension `|ℓ|`, let `xs` be `|ℓ|` distinct seeds, and let each codeword `c k` agree with the
+generated word `∑ j, G (xs k) j • U j` on a common set `A₀`. Inverting the seed matrix gives
+codewords `cs` such that:
+* each `U j` agrees with `cs j` on `A₀`;
+* any codeword `c'` agreeing with a generated word `∑ j, G x j • U j` on a set `T'`, where
+  `A₀ ∩ T'` misses fewer than `d_C` positions, is the span codeword `∑ j, G x j • cs j`.
+
+The paper's hypothesis `|A₁ ∩ ⋯ ∩ A_{ℓ+1}| > n - Δ_C` is stated as
+`|(A₀ ∩ T')ᶜ| < d_C`, with `A₀` any set inside the first `ℓ` agreement sets. -/
+lemma exists_codewordSpan_of_isMDSGenerator {S : Type} [Nonempty S] [Fintype S] [DecidableEq F]
+    [DecidableEq ι] [DecidableEq A] (G : Generator S ℓ F) (hG : IsMDSGenerator G)
+    (hdim : LinearCode.dim (LinearCode.fromColGenMat (M_G G)) = Fintype.card ℓ)
+    (MC : ModuleCode ι F A) (U : ℓ → (ι → A)) {xs : ℓ → S} (hxs : Function.Injective xs)
+    {c : ℓ → ι → A} (hc : ∀ k, c k ∈ MC) {A₀ : Finset ι}
+    (hA₀ : ∀ k, ∀ i ∈ A₀, ∑ j, G (xs k) j • U j i = c k i) :
+    ∃ cs : ℓ → ι → A, (∀ j, cs j ∈ MC) ∧ (∀ j, ∀ i ∈ A₀, U j i = cs j i) ∧
+      ∀ x, ∀ c' ∈ MC, ∀ T' : Finset ι, (∀ i ∈ T', ∑ j, G x j • U j i = c' i) →
+        ((A₀ ∩ T')ᶜ).card < Code.minDist MC.carrier → c' = ∑ j, G x j • cs j := by
+  classical
+  set M : Matrix ℓ ℓ F := Matrix.of fun k j => G (xs k) j with hM
+  have hNM : M⁻¹ * M = 1 := Matrix.nonsing_inv_mul M
+    ((Matrix.isUnit_iff_isUnit_det M).mp (isUnit_of_isMDSGenerator G hG hdim hxs))
+  set cs : ℓ → ι → A := fun j => ∑ k, M⁻¹ j k • c k with hcs
+  have hcs_mem : ∀ j, cs j ∈ MC := fun j =>
+    Submodule.sum_mem _ fun k _ => Submodule.smul_mem _ _ (hc k)
+  have hU_cs : ∀ j, ∀ i ∈ A₀, U j i = cs j i := fun j i hi => by
+    rw [← sum_smul_sum_smul_eq_of_mul_eq_one hNM (fun j' => U j' i) j]
+    simp only [hcs, Finset.sum_apply, Pi.smul_apply]
+    refine Finset.sum_congr rfl fun k _ => ?_
+    simp only [hM, Matrix.of_apply]
+    rw [hA₀ k i hi]
+  refine ⟨cs, hcs_mem, hU_cs, fun x c' hc' T' hT' hcard => ?_⟩
+  refine Code.eq_of_disagreementCols_subset_of_card_lt_minDist hc'
+    (Submodule.sum_mem _ fun j _ => Submodule.smul_mem _ _ (hcs_mem j)) _
+    (fun i hi => Finset.mem_compl.mpr fun hiA => Code.mem_disagreementCols.mp hi ?_) hcard
+  rw [← hT' i (Finset.mem_inter.mp hiA).2, Finset.sum_apply]
+  exact Finset.sum_congr rfl fun j _ => by rw [Pi.smul_apply, hU_cs j i (Finset.mem_inter.mp hiA).1]
+
+/-- **Lemma 5.3 [BCGM25]**, for MDS generators. Let `1 ≤ t ≤ e`. If, at more than
+`(e / t)·(|ℓ| - 1)` seeds `x`, the generated words `∑ j, G x j • U j` and `∑ j, G x j • c j`
+are within distance `e - t`, then the families `U` and `c` disagree in fewer than `e` coordinates.
+
+The paper states this for a zero-evading generator with error `ε`; for an MDS generator the
+seed count `ε·|S| = |ℓ| - 1` of Lemma 3.13 (`card_filter_sum_smul_eq_le_of_isMDSGenerator`) is used
+directly. The interleaved distance `Δ_{Σ^ℓ}(U, c)` is the Hamming distance of the transposed
+families. The words `c` need not be codewords.
+
+Double counting: every disagreement coordinate is cancelled by at most `|ℓ| - 1` seeds, and every
+seed in `X` leaves at most `e - t` coordinates uncancelled. -/
+lemma hammingDist_lt_of_isMDSGenerator {S : Type} [Nonempty S] [Fintype S] [DecidableEq F]
+    [DecidableEq A] (G : Generator S ℓ F) (hG : IsMDSGenerator G)
+    (hdim : LinearCode.dim (LinearCode.fromColGenMat (M_G G)) = Fintype.card ℓ)
+    (U c : ℓ → (ι → A)) (X : Finset S) {e t : ℕ} (ht : t ≤ e)
+    (hX : ∀ x ∈ X,
+      hammingDist (fun i => ∑ j, G x j • U j i) (fun i => ∑ j, G x j • c j i) ≤ e - t)
+    (hcard : e * (Fintype.card ℓ - 1) < t * X.card) :
+    hammingDist (fun i j => U j i) (fun i j => c j i) < e := by
+  classical
+  set r := Fintype.card ℓ - 1
+  set E := Code.disagreementCols (fun i j => U j i) (fun i j => c j i)
+  set Y : ι → Finset S :=
+    fun i => Finset.univ.filter fun x => ∑ j, G x j • U j i = ∑ j, G x j • c j i
+  have hY_card : ∀ i ∈ E, (Y i).card ≤ r := fun i hi =>
+    card_filter_sum_smul_eq_le_of_isMDSGenerator G hG hdim (Code.mem_disagreementCols.mp hi)
+  have hm : ∀ i ∈ E, X.card - r ≤ (X.bipartiteAbove (fun i x => x ∉ Y i) i).card := fun i hi =>
+    (Nat.sub_le_sub_left (hY_card i hi) _).trans ((Finset.le_card_sdiff _ _).trans_eq
+      (congrArg Finset.card Finset.filter_notMem_eq_sdiff.symm))
+  have hn : ∀ x ∈ X, (E.bipartiteBelow (fun i x => x ∉ Y i) x).card ≤ e - t := fun x hx =>
+    (Finset.card_le_card fun i hi => Code.mem_disagreementCols.mpr fun h =>
+      ((Finset.mem_bipartiteBelow fun i x => x ∉ Y i).mp hi).2
+        (Finset.mem_filter.mpr ⟨Finset.mem_univ _, h⟩)).trans
+      ((Code.hammingDist_eq_disagreementCols_card _ _).symm.trans_le (hX x hx))
+  have hβ := Finset.card_mul_le_card_mul _ hm hn
+  rw [Code.hammingDist_eq_disagreementCols_card]
+  by_contra! hE
+  rcases le_total X.card r with hXr | hrX
+  · nlinarith [Nat.mul_le_mul_left t hXr, Nat.mul_le_mul_right r ht]
+  · zify [hrX, ht] at hβ hcard hE
+    nlinarith [mul_le_mul_of_nonneg_right hE (sub_nonneg.mpr (by exact_mod_cast hrX) :
+      (0 : ℤ) ≤ X.card - r)]
+
 open Classical in
 /-- For `γ < δ_C / (|ℓ| + 1)` and any family `U`, at most `(⌊n·γ⌋ + 1)·(|ℓ| - 1)` seeds `x` satisfy
 the MCA event `IsMCA G MC x U γ`.
@@ -191,22 +292,20 @@ lemma card_filter_isMCA_le_of_isMDSGenerator {S : Type} [Nonempty S] [Fintype S]
     (hγ : γ < (Code.minRelHammingDistCode MC.carrier : ℝ) / (Fintype.card ℓ + 1)) :
     (Finset.univ.filter fun x => IsMCA G MC x U γ).card
       ≤ (⌊γ * Fintype.card ι⌋₊ + 1) * (Fintype.card ℓ - 1) := by
-  classical
   have hδ := congrArg (Rat.cast (K := ℝ))
     (Code.minDist_div_card_eq_minRelHammingDistCode MC.carrier)
   push_cast at hδ
-  set n := Fintype.card ι with hn
-  set L := Fintype.card ℓ with hL
-  set r := L - 1 with hr
-  set e := ⌊γ * n⌋₊ with he
-  set B := Finset.univ.filter fun x => IsMCA G MC x U γ with hB
+  set n := Fintype.card ι
+  set L := Fintype.card ℓ
+  set r := L - 1
+  set e := ⌊γ * n⌋₊
+  set B := Finset.univ.filter fun x => IsMCA G MC x U γ
   have hn_pos : (0 : ℝ) < n := by exact_mod_cast Fintype.card_pos
   have he_le : (e : ℝ) ≤ γ * n := Nat.floor_le (by positivity)
   rw [← hδ, div_div, lt_div_iff₀ (by positivity)] at hγ
   have hd : e + L * e < Code.minDist MC.carrier := by
     exact_mod_cast (by nlinarith : (e : ℝ) + L * e < Code.minDist MC.carrier)
-  by_contra hlt
-  push Not at hlt
+  by_contra! hlt
   have hrB : r < B.card := lt_of_le_of_lt (Nat.le_mul_of_pos_left r (Nat.succ_pos e)) hlt
   have hbad : ∀ x ∈ B, ∃ T : Finset ι, ∃ c ∈ MC, Tᶜ.card ≤ e ∧
       (∀ i ∈ T, ∑ j, G x j • U j i = c i) ∧
@@ -219,80 +318,45 @@ lemma card_filter_isMCA_le_of_isMDSGenerator {S : Type} [Nonempty S] [Fintype S]
   choose! T c hc hTc hcT hTbad using hbad
   obtain ⟨f⟩ := Function.Embedding.nonempty_of_card_le (α := ℓ) (β := B)
     (by rw [Fintype.card_coe]; omega)
-  set xs : ℓ → S := fun k => (f k).1 with hxs
+  set xs : ℓ → S := fun k => (f k).1
   have hxsB : ∀ k, xs k ∈ B := fun k => (f k).2
-  set M : Matrix ℓ ℓ F := Matrix.of fun k j => G (xs k) j with hM
-  have hNM : M⁻¹ * M = 1 := Matrix.nonsing_inv_mul M ((Matrix.isUnit_iff_isUnit_det M).mp
-    (isUnit_of_isMDSGenerator G hG hdim (Subtype.val_injective.comp f.injective)))
-  set cs : ℓ → ι → A := fun j => ∑ k, M⁻¹ j k • c (xs k) with hcs
-  have hcs_mem : ∀ j, cs j ∈ MC := fun j =>
-    Submodule.sum_mem _ fun k _ => Submodule.smul_mem _ _ (hc _ (hxsB k))
-  have hcs_apply : ∀ j i, cs j i = ∑ k, M⁻¹ j k • c (xs k) i := fun j i => by
-    simp [hcs, Finset.sum_apply]
-  have hU_eq : ∀ j i, U j i = ∑ k, M⁻¹ j k • ∑ j', G (xs k) j' • U j' i := fun j i =>
-    (sum_smul_sum_smul_eq_of_mul_eq_one hNM (fun j => U j i) j).symm
-  set Tc : Finset ι := Finset.univ.biUnion fun k => (T (xs k))ᶜ with hTc_def
+  set Tc : Finset ι := Finset.univ.biUnion fun k => (T (xs k))ᶜ
   have hTc_card : Tc.card ≤ L * e :=
     (Finset.card_biUnion_le_card_mul _ _ _ fun k _ => hTc _ (hxsB k)).trans_eq
       (by rw [Finset.card_univ])
-  have hTc_mem : ∀ i, i ∉ Tc → ∀ k, i ∈ T (xs k) := fun i hi k => by_contra fun h =>
-    hi (Finset.mem_biUnion.mpr ⟨k, Finset.mem_univ _, Finset.mem_compl.mpr h⟩)
-  have hU_cs : ∀ i, i ∉ Tc → ∀ j, U j i = cs j i := fun i hi j => by
-    rw [hU_eq, hcs_apply]
-    exact Finset.sum_congr rfl fun k _ => by rw [hcT _ (hxsB k) i (hTc_mem i hi k)]
-  set w : S → ι → A := fun x => ∑ j, G x j • cs j with hw
-  have hw_mem : ∀ x, w x ∈ MC := fun x =>
-    Submodule.sum_mem _ fun j _ => Submodule.smul_mem _ _ (hcs_mem j)
-  have hw_apply : ∀ x i, w x i = ∑ j, G x j • cs j i := fun x i => by
-    simp [hw, Finset.sum_apply]
-  have hcw_off : ∀ x ∈ B, ∀ i ∈ T x, i ∉ Tc → c x i = w x i := fun x hx i hiT hiTc => by
-    rw [← hcT x hx i hiT, hw_apply]
-    exact Finset.sum_congr rfl fun j _ => by rw [hU_cs i hiTc j]
-  have hcw : ∀ x ∈ B, c x = w x := fun x hx =>
-    Code.eq_of_disagreementCols_subset_of_card_lt_minDist (hc x hx) (hw_mem x) ((T x)ᶜ ∪ Tc)
-      (fun i hi => by
-        by_contra h
-        rw [Finset.mem_union, not_or, Finset.mem_compl, not_not] at h
-        exact Code.mem_disagreementCols.mp hi (hcw_off x hx i h.1 h.2))
-      (lt_of_le_of_lt ((Finset.card_union_le _ _).trans (Nat.add_le_add (hTc x hx) hTc_card)) hd)
+  obtain ⟨cs, hcs_mem, -, hspan⟩ := exists_codewordSpan_of_isMDSGenerator G hG hdim MC U
+    (Subtype.val_injective.comp f.injective) (fun k => hc _ (hxsB k)) (A₀ := Tcᶜ)
+    fun k i hi => hcT _ (hxsB k) i ((by simpa [Tc] using hi : ∀ k, i ∈ T (xs k)) k)
+  have hcw : ∀ x ∈ B, c x = ∑ j, G x j • cs j := fun x hx =>
+    hspan x (c x) (hc x hx) (T x) (hcT x hx) <| by
+      rw [Finset.compl_inter, compl_compl]
+      exact ((Finset.card_union_le _ _).trans (Nat.add_le_add hTc_card (hTc x hx))).trans_lt
+        (by omega)
   have hagree : ∀ x ∈ B, ∀ i ∈ T x, ∑ j, G x j • U j i = ∑ j, G x j • cs j i :=
-    fun x hx i hi => by rw [hcT x hx i hi, hcw x hx, hw_apply]
-  set E := Finset.univ.filter fun i => ∃ j, U j i ≠ cs j i with hE
+    fun x hx i hi => by simp [hcT x hx i hi, hcw x hx, Finset.sum_apply]
+  set E := Code.disagreementCols (fun i j => U j i) (fun i j => cs j i)
   set X : ι → Finset S :=
-    fun i => Finset.univ.filter fun x => ∑ j, G x j • U j i = ∑ j, G x j • cs j i with hX
-  have hE_mem : ∀ i, i ∉ E → ∀ j, U j i = cs j i := fun i hi j => by_contra fun h =>
-    hi (Finset.mem_filter.mpr ⟨Finset.mem_univ _, j, h⟩)
+    fun i => Finset.univ.filter fun x => ∑ j, G x j • U j i = ∑ j, G x j • cs j i
+  have hE_card : E.card < e + 1 :=
+    (Code.hammingDist_eq_disagreementCols_card _ _).symm.trans_lt <|
+      hammingDist_lt_of_isMDSGenerator G hG hdim U cs B (t := 1) (by omega)
+        (fun x hx => (Code.closeToWord_iff_exists_possibleDisagreeCols _ _ _).mpr
+          ⟨(T x)ᶜ, hTc x hx, fun i hi => hagree x hx i (Finset.notMem_compl.mp hi)⟩)
+        (by rwa [one_mul])
   have hX_card : ∀ i ∈ E, (X i).card ≤ r := fun i hi =>
-    card_filter_sum_smul_eq_le_of_isMDSGenerator G hG hdim (v := fun j => U j i)
-      (w := fun j => cs j i) (Function.ne_iff.mpr (Finset.mem_filter.mp hi).2)
+    card_filter_sum_smul_eq_le_of_isMDSGenerator G hG hdim (Code.mem_disagreementCols.mp hi)
   have hE_of_bad : ∀ x ∈ B, ∃ i ∈ T x, i ∈ E := fun x hx => by
-    by_contra hnone
-    push Not at hnone
+    by_contra! hnone
     obtain ⟨j, hj⟩ := hTbad x hx
-    exact hj ((mem_projectedCodeSubmod_iff MC (T x) _).mpr
-      ⟨cs j, hcs_mem j, funext fun i => hE_mem i.1 (hnone i.1 i.2) j⟩)
+    exact hj ((mem_projectedCodeSubmod_iff MC (T x) _).mpr ⟨cs j, hcs_mem j, funext fun i =>
+      congrFun (not_not.mp (mt Code.mem_disagreementCols.mpr (hnone i.1 i.2))) j⟩)
   have hα : B.card ≤ E.card * r :=
     (Finset.card_le_card fun x hx => by
       obtain ⟨i, hiT, hiE⟩ := hE_of_bad x hx
       exact Finset.mem_biUnion.mpr
         ⟨i, hiE, Finset.mem_filter.mpr ⟨Finset.mem_univ _, hagree x hx i hiT⟩⟩).trans
       (Finset.card_biUnion_le_card_mul E X r hX_card)
-  have hm : ∀ i ∈ E, B.card - r ≤ (B.bipartiteAbove (fun i x => x ∉ X i) i).card := fun i hi =>
-    (Nat.sub_le_sub_left (hX_card i hi) _).trans ((Finset.le_card_sdiff _ _).trans_eq
-      (congrArg Finset.card Finset.filter_notMem_eq_sdiff.symm))
-  have hn : ∀ x ∈ B, (E.bipartiteBelow (fun i x => x ∉ X i) x).card ≤ e := fun x hx =>
-    (Finset.card_le_card fun i hi => Finset.mem_compl.mpr fun hiT =>
-      ((Finset.mem_bipartiteBelow fun i x => x ∉ X i).mp hi).2
-        (Finset.mem_filter.mpr ⟨Finset.mem_univ _, hagree x hx i hiT⟩)).trans (hTc x hx)
-  have hβ : E.card * (B.card - r) ≤ B.card * e := Finset.card_mul_le_card_mul _ hm hn
-  have hfin : B.card * (B.card - r) ≤ B.card * (e * r) :=
-    calc B.card * (B.card - r) ≤ E.card * r * (B.card - r) := Nat.mul_le_mul_right _ hα
-      _ = r * (E.card * (B.card - r)) := by ring
-      _ ≤ r * (B.card * e) := Nat.mul_le_mul_left _ hβ
-      _ = B.card * (e * r) := by ring
-  have hsub : B.card - r ≤ e * r := Nat.le_of_mul_le_mul_left hfin (by omega)
-  rw [Nat.add_mul, Nat.one_mul] at hlt
-  omega
+  linarith [Nat.mul_le_mul_right r (Nat.lt_succ_iff.mp hE_card)]
 
 /-- **Lemma 6.2 [BCGM25]** (with the corrected bound; see the module docstring). Every MDS
 generator whose code has full dimension `ℓ ≥ 2` has mutual correlated agreement for every module
@@ -312,17 +376,164 @@ lemma mcaError_le_mdsMCAError_of_lt {S : Type} [Nonempty S] [Fintype S] [Samplea
     (hγ : (γ : ℝ) < (Code.minRelHammingDistCode MC.carrier : ℝ) / (Fintype.card ℓ + 1)) :
     mcaError G MC γ ≤ (mdsMCAError MC (Fintype.card ℓ) (Fintype.card S) η γ : ENNReal) := by
   classical
-  have hbound := mcaError_le_of_exists_exceptional_set G MC γ
-    (((⌊(γ : ℝ) * Fintype.card ι⌋₊ + 1) * (Fintype.card ℓ - 1) : ℕ) : ℝ) fun U =>
-      ⟨Finset.univ.filter fun x => IsMCA G MC x U γ,
-        by exact_mod_cast card_filter_isMCA_le_of_isMDSGenerator G hG hdim hℓ MC U γ.2.1 hγ,
-        fun x hx h => hx (Finset.mem_filter.mpr ⟨Finset.mem_univ _, h⟩)⟩
-  refine hbound.trans (le_of_eq ?_)
-  simp only [mdsMCAError, ite_eq_left hγ]
-  unfold ENNReal.ofReal
-  congr 2
-  rw [Nat.cast_mul, Nat.cast_add, Nat.cast_one, Nat.cast_pred (by omega), mul_div_assoc,
-    mul_comm (γ : ℝ)]
+  refine (mcaError_le_of_exists_exceptional_set G MC γ
+    ((⌊(Fintype.card ι : ℝ) * γ⌋₊ + 1) * (Fintype.card ℓ - 1)) fun U =>
+      ⟨Finset.univ.filter fun x => IsMCA G MC x U γ, ?_,
+        fun x hx h => hx (Finset.mem_filter.mpr ⟨Finset.mem_univ _, h⟩)⟩).trans_eq ?_
+  · rw [mul_comm (Fintype.card ι : ℝ), ← Nat.cast_pred (by omega)]
+    exact_mod_cast card_filter_isMCA_le_of_isMDSGenerator G hG hdim hℓ MC U γ.2.1 hγ
+  · simp only [mdsMCAError, ite_eq_left hγ, mul_div_assoc]
+    rfl
+
+open Classical in
+/-- Fix maximal agreement domains `T k` between the generated words `∑ j, G (xs k) j • U j` and
+the code at `|ℓ|` distinct seeds `xs k`, with intersection `A₀`. At any seed `x`, a set `B` on
+which the generated word lies in the projected code is contained in every maximal agreement
+domain `Tx` of that word, provided both `A₀ ∩ B` and `A₀ ∩ Tx` miss fewer than `d_C` positions.
+
+By `exists_codewordSpan_of_isMDSGenerator`, both large overlaps pin the respective codewords to
+the same span codeword `∑ j, G x j • cs j`, and `Tx` is the exact agreement set of its codeword
+(`LinearCode.IsMaxAgreementDomain.exists_codeword`). This is the step of [BCGM25] cited as "from
+the proof of Lemma 6.4": with `x := xs k` and `Tx := T k` it is the maximality half of
+`isMaxCADomain_inf_of_isMDSGenerator`, and with `B := A₀` it gives `A₀ ⊆ Tx`. -/
+lemma subset_isMaxAgreementDomain_of_isMDSGenerator {S : Type} [Nonempty S] [Fintype S]
+    [DecidableEq F] (G : Generator S ℓ F) (hG : IsMDSGenerator G)
+    (hdim : LinearCode.dim (LinearCode.fromColGenMat (M_G G)) = Fintype.card ℓ)
+    (MC : ModuleCode ι F A) (U : ℓ → (ι → A)) {xs : ℓ → S} (hxs : Function.Injective xs)
+    {T : ℓ → Finset ι}
+    (hT : ∀ k, IsMaxAgreementDomain MC (fun i => ∑ j, G (xs k) j • U j i) (T k))
+    {x : S} {Tx B : Finset ι}
+    (hTx : IsMaxAgreementDomain MC (fun i => ∑ j, G x j • U j i) Tx)
+    (hTxc : ((Finset.univ.inf T ∩ Tx)ᶜ).card < Code.minDist MC.carrier)
+    (hB : projectedWord (fun i => ∑ j, G x j • U j i) B ∈ projectedCodeSubmod MC B)
+    (hBc : ((Finset.univ.inf T ∩ B)ᶜ).card < Code.minDist MC.carrier) :
+    B ⊆ Tx := by
+  have hA₀sub : ∀ k, Finset.univ.inf T ⊆ T k := fun k => Finset.inf_le (Finset.mem_univ k)
+  choose c hc hcT using fun k => (hT k).exists_codeword
+  obtain ⟨cs, -, -, hspan⟩ := exists_codewordSpan_of_isMDSGenerator G hG hdim MC U hxs
+    hc fun k i hi => (hcT k).1 i (hA₀sub k hi)
+  obtain ⟨cx, hcx, hcxT, hcxmax⟩ := hTx.exists_codeword
+  obtain ⟨c', hc', hc'B⟩ := (mem_projectedCodeSubmod_iff MC B _).mp hB
+  have hagree : ∀ i ∈ B, ∑ j, G x j • U j i = c' i := fun i hi => congrFun hc'B ⟨i, hi⟩
+  intro i hi
+  exact hcxmax i <| (hagree i hi).trans <| congrFun
+    ((hspan x c' hc' B hagree hBc).trans (hspan x cx hcx Tx hcxT hTxc).symm) i
+
+open Classical in
+/-- **Lemma 6.4 [BCGM25].** Let `G` be an MDS generator whose code has full dimension `|ℓ|`, and
+fix maximal agreement domains `T k` between the generated words `∑ j, G (xs k) j • U j` and the
+code, at `|ℓ|` distinct seeds `xs k`. If the domains intersect in all but fewer than `d_C`
+positions, their intersection is a maximal CA domain between the family `U` and the code.
+
+The intersection is a CA agreement set by `exists_codewordSpan_of_isMDSGenerator`
+(Lemma 5.2 [BCGM25]): on it, each `U j` agrees with the span codeword `cs j`, and each domain's
+codeword is `∑ j, G (xs k) j • cs j`. Maximality: on any larger CA agreement set `B`, each
+generated word agrees with some codeword (`projectedCode_linearCombination`), so `B` lies in each
+domain by `subset_isMaxAgreementDomain_of_isMDSGenerator`. -/
+lemma isMaxCADomain_inf_of_isMDSGenerator {S : Type} [Nonempty S] [Fintype S] [DecidableEq F]
+    (G : Generator S ℓ F) (hG : IsMDSGenerator G)
+    (hdim : LinearCode.dim (LinearCode.fromColGenMat (M_G G)) = Fintype.card ℓ)
+    (MC : ModuleCode ι F A) (U : ℓ → (ι → A)) {xs : ℓ → S} (hxs : Function.Injective xs)
+    {T : ℓ → Finset ι}
+    (hT : ∀ k, IsMaxAgreementDomain MC (fun i => ∑ j, G (xs k) j • U j i) (T k))
+    (hcard : ((Finset.univ.inf T)ᶜ).card < Code.minDist MC.carrier) :
+    IsMaxCADomain MC U (Finset.univ.inf T) := by
+  set A₀ := Finset.univ.inf T
+  have hA₀sub : ∀ k, A₀ ⊆ T k := fun k => Finset.inf_le (Finset.mem_univ k)
+  choose c hc hcT using fun k => (hT k).exists_codeword
+  obtain ⟨cs, hcs_mem, hU_cs, -⟩ := exists_codewordSpan_of_isMDSGenerator G hG hdim MC U hxs
+    hc fun k i hi => (hcT k).1 i (hA₀sub k hi)
+  refine ⟨fun j => (mem_projectedCodeSubmod_iff MC A₀ _).mpr
+      ⟨cs j, hcs_mem j, funext fun i => hU_cs j i.1 i.2⟩,
+    fun B hB hA₀B => Finset.le_inf fun k _ => ?_⟩
+  obtain ⟨c', hc', hc'B⟩ := projectedCode_linearCombination MC B U (G (xs k)) fun j =>
+    (mem_projectedCodeSubmod_iff MC B _).mp (hB j)
+  exact subset_isMaxAgreementDomain_of_isMDSGenerator G hG hdim MC U hxs hT (hT k)
+    (by rwa [Finset.inter_eq_left.mpr (hA₀sub k)])
+    ((mem_projectedCodeSubmod_iff MC B _).mpr ⟨c', hc', hc'B⟩)
+    (by rwa [Finset.inter_eq_left.mpr hA₀B])
+
+open Classical in
+/-- **Lemma 6.5 [BCGM25].** Let `A₀` be a maximal CA domain between `U` and the code, missing
+fewer than `d_C` positions, and let each `B t` be a maximal agreement domain of the generated
+word at seed `xs t` containing `A₀`. Then any `|ℓ|` of the `B t` intersect exactly in `A₀`: the
+intersection contains `A₀`, is a maximal CA domain by `isMaxCADomain_inf_of_isMDSGenerator`, and
+`A₀`'s own maximality forces equality. -/
+lemma inf_isMaxAgreementDomain_eq_of_isMDSGenerator {S : Type} [Nonempty S] [Fintype S]
+    [DecidableEq F] (G : Generator S ℓ F) (hG : IsMDSGenerator G)
+    (hdim : LinearCode.dim (LinearCode.fromColGenMat (M_G G)) = Fintype.card ℓ)
+    (MC : ModuleCode ι F A) (U : ℓ → (ι → A)) {τ : Type} {xs : τ → S}
+    (hxs : Function.Injective xs) {A₀ : Finset ι} (hA₀ : IsMaxCADomain MC U A₀)
+    (hcard : (A₀ᶜ).card < Code.minDist MC.carrier) {B : τ → Finset ι}
+    (hB : ∀ t, IsMaxAgreementDomain MC (fun i => ∑ j, G (xs t) j • U j i) (B t))
+    (hA₀B : ∀ t, A₀ ⊆ B t) {ks : ℓ → τ} (hks : Function.Injective ks) :
+    Finset.univ.inf (fun k => B (ks k)) = A₀ := by
+  have hsub : A₀ ⊆ Finset.univ.inf fun k => B (ks k) :=
+    Finset.le_inf fun k _ => hA₀B (ks k)
+  have hcard' : ((Finset.univ.inf fun k => B (ks k))ᶜ).card < Code.minDist MC.carrier :=
+    lt_of_le_of_lt (Finset.card_le_card (Finset.compl_subset_compl.mpr hsub)) hcard
+  have hmax := isMaxCADomain_inf_of_isMDSGenerator G hG hdim MC U (hxs.comp hks)
+    (fun k => hB (ks k)) hcard'
+  exact (Maximal.eq_of_le hA₀ hmax.1 hsub).symm
+
+open Classical in
+/-- In the situation of `inf_isMaxAgreementDomain_eq_of_isMDSGenerator`, the parts of the maximal
+agreement domains `B t` outside `A₀` have total size at most `(|ℓ| - 1)·|A₀ᶜ|`. No position
+outside `A₀` lies in `|ℓ|` of the `B t`, since those domains would intersect exactly in `A₀`;
+double counting the incidences finishes.
+
+This is the inequality `∑ᵢ |Bᵢ \ A| ≤ (ℓ - 1)·|⋃ᵢ Bᵢ \ A|` inside the proof of Lemma 6.6
+[BCGM25]. A lower bound `m ≤ |B t \ A₀|` turns it into the seed count `m·|τ| ≤ (ℓ - 1)·|A₀ᶜ|`:
+`m = 1` is Lemma 6.6 (`card_le_pred_mul_card_compl_of_isMDSGenerator`), and a larger `m` is the
+modification of it used in the list-decoding count of Theorem 6.1. -/
+lemma sum_card_sdiff_le_pred_mul_card_compl_of_isMDSGenerator {S : Type} [Nonempty S]
+    [Fintype S] [DecidableEq F] (G : Generator S ℓ F) (hG : IsMDSGenerator G)
+    (hdim : LinearCode.dim (LinearCode.fromColGenMat (M_G G)) = Fintype.card ℓ)
+    (MC : ModuleCode ι F A) (U : ℓ → (ι → A)) {τ : Type} [Fintype τ] {xs : τ → S}
+    (hxs : Function.Injective xs) {A₀ : Finset ι} (hA₀ : IsMaxCADomain MC U A₀)
+    (hcard : (A₀ᶜ).card < Code.minDist MC.carrier) {B : τ → Finset ι}
+    (hB : ∀ t, IsMaxAgreementDomain MC (fun i => ∑ j, G (xs t) j • U j i) (B t))
+    (hA₀B : ∀ t, A₀ ⊆ B t) :
+    ∑ t, (B t \ A₀).card ≤ (Fintype.card ℓ - 1) * (A₀ᶜ).card := by
+  have hd : ∀ p ∈ A₀ᶜ,
+      ((Finset.univ : Finset τ).bipartiteBelow (fun t q => q ∈ B t) p).card
+        ≤ Fintype.card ℓ - 1 := by
+    intro p hp
+    by_contra! hlt
+    obtain ⟨f⟩ := Function.Embedding.nonempty_of_card_le (α := ℓ)
+      (β := (Finset.univ : Finset τ).bipartiteBelow (fun t q => q ∈ B t) p)
+      (by rw [Fintype.card_coe]; omega)
+    have heq := inf_isMaxAgreementDomain_eq_of_isMDSGenerator G hG hdim MC U hxs hA₀ hcard hB
+      hA₀B (Subtype.val_injective.comp f.injective)
+    have hpinf : p ∈ Finset.univ.inf fun k => B ((f k).1) :=
+      Finset.mem_inf.mpr fun k _ => ((Finset.mem_bipartiteBelow (fun t q => q ∈ B t)).mp (f k).2).2
+    exact Finset.mem_compl.mp hp (heq ▸ hpinf)
+  have hsdiff : ∀ t, B t \ A₀ = (A₀ᶜ).bipartiteAbove (fun t q => q ∈ B t) t := fun t => by
+    ext p
+    simp [Finset.mem_bipartiteAbove, and_comm]
+  simp_rw [hsdiff]
+  rw [Finset.sum_card_bipartiteAbove_eq_sum_card_bipartiteBelow, mul_comm]
+  exact Finset.sum_le_card_nsmul _ _ _ hd
+
+open Classical in
+/-- **Lemma 6.6 [BCGM25].** In the situation of
+`inf_isMaxAgreementDomain_eq_of_isMDSGenerator`, if every maximal agreement domain `B t`
+strictly contains `A₀`, then there are at most `(|ℓ| - 1)·|A₀ᶜ|` seeds: each `B t` reaches
+outside `A₀` somewhere, so this is `sum_card_sdiff_le_pred_mul_card_compl_of_isMDSGenerator`
+with every summand at least `1`. -/
+lemma card_le_pred_mul_card_compl_of_isMDSGenerator {S : Type} [Nonempty S] [Fintype S]
+    [DecidableEq F] (G : Generator S ℓ F) (hG : IsMDSGenerator G)
+    (hdim : LinearCode.dim (LinearCode.fromColGenMat (M_G G)) = Fintype.card ℓ)
+    (MC : ModuleCode ι F A) (U : ℓ → (ι → A)) {τ : Type} [Fintype τ] {xs : τ → S}
+    (hxs : Function.Injective xs) {A₀ : Finset ι} (hA₀ : IsMaxCADomain MC U A₀)
+    (hcard : (A₀ᶜ).card < Code.minDist MC.carrier) {B : τ → Finset ι}
+    (hB : ∀ t, IsMaxAgreementDomain MC (fun i => ∑ j, G (xs t) j • U j i) (B t))
+    (hA₀B : ∀ t, A₀ ⊂ B t) :
+    Fintype.card τ ≤ (Fintype.card ℓ - 1) * (A₀ᶜ).card := by
+  refine le_trans ?_ (sum_card_sdiff_le_pred_mul_card_compl_of_isMDSGenerator G hG hdim MC U
+    hxs hA₀ hcard hB fun t => (hA₀B t).subset)
+  simpa using Finset.card_nsmul_le_sum Finset.univ (fun t => (B t \ A₀).card) 1
+    fun t _ => Finset.card_pos.mpr (Finset.sdiff_nonempty.mpr (hA₀B t).not_subset)
 
 /-- Every MDS generator whose code has full dimension `ℓ ≥ 2` has MCA for every module code `MC`,
 with error `mdsMCAError MC ℓ |S| η`, for every slack `0 < η < 1`. The generator-matrix hypotheses
