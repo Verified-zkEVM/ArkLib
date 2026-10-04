@@ -848,6 +848,7 @@ public import ArkLib.ProofSystem.Sumcheck.Interaction.Soundness
 public import ArkLib.ProofSystem.Sumcheck.Interaction.StateRestorationCertificate
 public import ArkLib.ProofSystem.Sumcheck.Interaction.StateRestorationEvaluation
 public import ArkLib.ProofSystem.Sumcheck.Interaction.StateRestorationSoundness
+public import ArkLib.ProofSystem.Sumcheck.Interaction.StoppedSoundness
 public import ArkLib.ProofSystem.Sumcheck.Spec.General
 public import ArkLib.ProofSystem.Sumcheck.Spec.SingleRound
 public import ArkLib.ProofSystem.Sumcheck.Structured

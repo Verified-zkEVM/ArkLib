@@ -508,14 +508,14 @@ def badStoppedRelation
     (Rin : (z : Input) → (state z).Witness → Prop)
     (Rout : (z : Input) → (path : (protocol rounds).tree.ExecutionPath) → W → Prop)
     (terminalWitness : (z : Input) → (path : (protocol rounds).tree.ExecutionPath) →
-      W ≃ ((extractor z).terminalState path).Witness)
+      W → ((extractor z).terminalState path).Witness)
     (Z : Set Input)
     (result : Option (Input × (protocol rounds).tree.ExecutionPath × W)) : Prop :=
   match result with
   | none => False
   | some (z, path, witness) =>
       z ∈ Z ∧ Rout z path witness ∧
-        ¬ Rin z (extractInputWitness state extractor terminalWitness z path witness)
+        ¬ Rin z ((extractor z).extractWitness path (terminalWitness z path witness))
 
 /-- The accepted failure relation entails the certificate's terminal-validity failure event. -/
 theorem badStoppedRelation_implies_badExtractOnPath
@@ -524,12 +524,12 @@ theorem badStoppedRelation_implies_badExtractOnPath
     (Rin : (z : Input) → (state z).Witness → Prop)
     (Rout : (z : Input) → (path : (protocol rounds).tree.ExecutionPath) → W → Prop)
     (terminalWitness : (z : Input) → (path : (protocol rounds).tree.ExecutionPath) →
-      W ≃ ((extractor z).terminalState path).Witness)
+      W → ((extractor z).terminalState path).Witness)
     (Z : Set Input)
     (inputLaw : ∀ z witness, (state z).holds witness ↔ Rin z witness)
     (outputLaw : ∀ z path witness,
-      ((extractor z).terminalState path).holds (terminalWitness z path witness) ↔
-        Rout z path witness)
+      Rout z path witness →
+        ((extractor z).terminalState path).holds (terminalWitness z path witness))
     (result : Option (Input × (protocol rounds).tree.ExecutionPath × W))
     (bad : badStoppedRelation state extractor Rin Rout terminalWitness Z result) :
     badExtractOnPath state extractor Z (fun z path => terminalWitness z path) result := by
@@ -538,12 +538,12 @@ theorem badStoppedRelation_implies_badExtractOnPath
   | some selected =>
       rcases selected with ⟨z, path, witness⟩
       change z ∈ Z ∧ Rout z path witness ∧
-        ¬ Rin z (extractInputWitness state extractor terminalWitness z path witness) at bad
+        ¬ Rin z ((extractor z).extractWitness path (terminalWitness z path witness)) at bad
       change z ∈ Z ∧
         ((extractor z).terminalState path).holds (terminalWitness z path witness) ∧
         ¬ (state z).holds ((extractor z).extractWitness path
           (terminalWitness z path witness))
-      exact ⟨bad.1, (outputLaw z path witness).mpr bad.2.1,
+      exact ⟨bad.1, outputLaw z path witness bad.2.1,
         fun h => bad.2.2 ((inputLaw z _).mp h)⟩
 
 /-- All-prefix local certificates charge an accepted invalid named extraction to a distinct
@@ -563,11 +563,11 @@ theorem randomizedStopped_badRelation_le_expectedFreshCharge
     (Rin : (z : Input) → (state z).Witness → Prop)
     (Rout : (z : Input) → (path : (protocol rounds).tree.ExecutionPath) → W → Prop)
     (terminalWitness : (z : Input) → (path : (protocol rounds).tree.ExecutionPath) →
-      W ≃ ((extractor z).terminalState path).Witness)
+      W → ((extractor z).terminalState path).Witness)
     (inputLaw : ∀ z witness, (state z).holds witness ↔ Rin z witness)
     (outputLaw : ∀ z path witness,
-      ((extractor z).terminalState path).holds (terminalWitness z path witness) ↔
-        Rout z path witness) :
+      Rout z path witness →
+        ((extractor z).terminalState path).holds (terminalWitness z path witness)) :
     Pr{let joint ← (randomOracleLoggedRun
       (randomizedStoppedRestoredExecutionWithAdversaryLog rounds guards adversary) ∅)}[
       badStoppedRelation state extractor Rin Rout terminalWitness Z joint.1.1.1] ≤

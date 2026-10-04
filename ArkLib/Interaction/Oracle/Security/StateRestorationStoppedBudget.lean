@@ -203,11 +203,11 @@ theorem randomizedStopped_knowledge_soundness_actualRounds
     (Rin : (z : Input) → (state z).Witness → Prop)
     (Rout : (z : Input) → (path : (protocol rounds).tree.ExecutionPath) → W → Prop)
     (terminalWitness : (z : Input) → (path : (protocol rounds).tree.ExecutionPath) →
-      W ≃ ((extractor z).terminalState path).Witness)
+      W → ((extractor z).terminalState path).Witness)
     (inputLaw : ∀ z witness, (state z).holds witness ↔ Rin z witness)
     (outputLaw : ∀ z path witness,
-      ((extractor z).terminalState path).holds (terminalWitness z path witness) ↔
-        Rout z path witness) :
+      Rout z path witness →
+        ((extractor z).terminalState path).holds (terminalWitness z path witness)) :
     Pr{let joint ← (randomOracleLoggedRun
       (randomizedStoppedRestoredExecutionWithAdversaryLog rounds guards adversary) ∅)}[
       badStoppedRelation state extractor Rin Rout terminalWitness Z joint.1.1.1] ≤
@@ -359,11 +359,11 @@ theorem randomizedStopped_knowledge_soundness_actualAdversary
     (Rin : (z : Input) → (state z).Witness → Prop)
     (Rout : (z : Input) → (path : (protocol rounds).tree.ExecutionPath) → W → Prop)
     (terminalWitness : (z : Input) → (path : (protocol rounds).tree.ExecutionPath) →
-      W ≃ ((extractor z).terminalState path).Witness)
+      W → ((extractor z).terminalState path).Witness)
     (inputLaw : ∀ z witness, (state z).holds witness ↔ Rin z witness)
     (outputLaw : ∀ z path witness,
-      ((extractor z).terminalState path).holds (terminalWitness z path witness) ↔
-        Rout z path witness) :
+      Rout z path witness →
+        ((extractor z).terminalState path).holds (terminalWitness z path witness)) :
     Pr{let joint ← (randomOracleLoggedRun
       (randomizedStoppedRestoredExecutionWithAdversaryLog rounds guards adversary) ∅)}[
       badStoppedRelation state extractor Rin Rout terminalWitness Z joint.1.1.1] ≤
@@ -377,5 +377,52 @@ theorem randomizedStopped_knowledge_soundness_actualAdversary
     using randomizedStopped_knowledge_soundness_actualRounds rounds guards errors
       adversary state extractor Z preserving bounded Rin Rout terminalWitness
       inputLaw outputLaw
+
+/-- An almost-sure cap on the actual cached adversary phase gives the usual `Q * max + sum`
+bound. The cap counts distinct hash keys even on failed selections; private uniform draws are
+not hash queries. -/
+theorem randomizedStopped_knowledge_soundness_queryBound
+    [DecidableEq Input] [DecidableEq Salt]
+    (rounds : List Round) (guards : GuardSchedule Input Salt rounds)
+    (errors : RoundErrors rounds)
+    (adversary : RandomizedRestorationAdversary Input Salt W rounds)
+    (state : Input → KnowledgeState.{w})
+    (extractor : (z : Input) → RoundExtractor (protocol rounds).tree (state z))
+    (Z : Set Input)
+    (preserving : ∀ z ∈ Z, (extractor z).IsProverPreserving (protocol rounds).roles)
+    (bounded : ∀ z ∈ Z, RoundExtractor.IsLocallyBounded (extractor z)
+      (protocol rounds).roles (roundErrorSchedule rounds errors))
+    (Rin : (z : Input) → (state z).Witness → Prop)
+    (Rout : (z : Input) → (path : (protocol rounds).tree.ExecutionPath) → W → Prop)
+    (terminalWitness : (z : Input) → (path : (protocol rounds).tree.ExecutionPath) →
+      W → ((extractor z).terminalState path).Witness)
+    (inputLaw : ∀ z witness, (state z).holds witness ↔ Rin z witness)
+    (outputLaw : ∀ z path witness,
+      Rout z path witness →
+        ((extractor z).terminalState path).holds (terminalWitness z path witness))
+    (Q : ℕ)
+    (actualQueryBound : ∀ phase ∈ support (randomOracleLoggedRun adversary.withQueryLog ∅),
+      (freshKeysOfLog phase.1.2).card ≤ Q) :
+    Pr{let joint ← (randomOracleLoggedRun
+      (randomizedStoppedRestoredExecutionWithAdversaryLog rounds guards adversary) ∅)}[
+      badStoppedRelation state extractor Rin Rout terminalWitness Z joint.1.1.1] ≤
+      Q * Finset.univ.sup errors + ∑ j, errors j := by
+  have h := randomizedStopped_knowledge_soundness_actualAdversary
+    rounds guards errors adversary state extractor Z preserving bounded
+    Rin Rout terminalWitness inputLaw outputLaw
+  calc
+    _ ≤ Finset.univ.sup errors * expectedAdversaryFreshKeys rounds adversary +
+          expectedStoppedVerifierRoundCost rounds guards errors adversary := h.1
+    _ ≤ Finset.univ.sup errors * expectedAdversaryFreshKeys rounds adversary +
+          ∑ j, errors j := h.2
+    _ ≤ Q * Finset.univ.sup errors + ∑ j, errors j := by
+      calc
+        Finset.univ.sup errors * expectedAdversaryFreshKeys rounds adversary +
+            ∑ j, errors j ≤
+          Finset.univ.sup errors * Q + ∑ j, errors j := by
+            gcongr
+            exact expectedAdversaryFreshKeys_le_queryBound
+              rounds adversary Q actualQueryBound
+        _ = _ := by rw [mul_comm]
 
 end Interaction.Oracle.Security.StateRestoration
