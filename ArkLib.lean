@@ -582,6 +582,7 @@ public import ArkLib.Data.MvPolynomial.WeightedDegree.Products
 public import ArkLib.Data.MvPolynomial.WeightedHomogeneous
 public import ArkLib.Data.MvPolynomial.WeightedOrder
 public import ArkLib.Data.OracleComp.QueryBounds
+public import ArkLib.Data.OracleComp.RandomOracleCost
 public import ArkLib.Data.Polynomial.BinaryTrace
 public import ArkLib.Data.Polynomial.BinaryTraceQuotient
 public import ArkLib.Data.Polynomial.Bivariate
@@ -679,9 +680,16 @@ public import ArkLib.Interaction.Oracle.Resource
 public import ArkLib.Interaction.Oracle.RunSources
 public import ArkLib.Interaction.Oracle.Runtime
 public import ArkLib.Interaction.Oracle.RuntimeSoundness
+public import ArkLib.Interaction.Oracle.Security.EncodedChallengeCost
+public import ArkLib.Interaction.Oracle.Security.EncodedChallengeCoupling
+public import ArkLib.Interaction.Oracle.Security.EncodedChallenges
+public import ArkLib.Interaction.Oracle.Security.EncodedCharge
 public import ArkLib.Interaction.Oracle.Security.EncodedCodec
+public import ArkLib.Interaction.Oracle.Security.EncodedCompletion
 public import ArkLib.Interaction.Oracle.Security.EncodedLog
 public import ArkLib.Interaction.Oracle.Security.EncodedReduction
+public import ArkLib.Interaction.Oracle.Security.EncodedSecurity
+public import ArkLib.Interaction.Oracle.Security.EncodedSecurityEvent
 public import ArkLib.Interaction.Oracle.Security.EncodedWeighted
 public import ArkLib.Interaction.Oracle.Security.Knowledge
 public import ArkLib.Interaction.Oracle.Security.KnowledgeAppend
