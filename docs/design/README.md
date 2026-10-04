@@ -2,7 +2,7 @@
 
 This suite explains how ArkLib represents interactive protocols, states their security, and plans
 the remaining formalization. It is written for readers familiar with provers, verifiers, oracles,
-and soundness. **Status updated: 2026-09-26.**
+and soundness. **Status updated: 2026-10-04.**
 
 A protocol is an interaction tree with prover and verifier strategies. The prover's continuation
 keeps its private memory. An oracle reduction returns a statement and an oracle interface: the
@@ -14,8 +14,10 @@ world state and query history continue across the boundary.
 
 | Your question | Read |
 |---|---|
-| What is implemented and proved on main? | [Current status](00-current-status.md) |
+| What is implemented and proved on `main`? | [Current status](00-current-status.md) |
 | What should we implement next, and how will we check it? | [Roadmap](05-roadmap.md) |
+| What is proved in open PRs, and with what limits? | [Area roadmap](../../roadmap/interaction-migration.md#open-prs) |
+| What must a port of a legacy protocol show? | [What a port must show](../../roadmap/interaction-migration.md#what-a-port-must-show) |
 | What does the full framework aim to cover? | [End state](00-end-state.md) |
 | What does an oracle reduction return, and how do reductions compose? | [Claims, closing, and composition](02-oracle-reduction-core.md) |
 | How do private memory, oracle state, and probability enter security? | [Execution and security](03-adversarial-oracle-execution.md) |
@@ -47,7 +49,8 @@ Use familiar cryptographic terms, and explain additional terms where they first 
 
 Record a design decision in its owning architecture chapter. Record a proposed PR and its
 acceptance check in the roadmap. Update current status only when the corresponding API or theorem
-lands. [Issue #1](https://github.com/Verified-zkEVM/ArkLib/issues/1) links the work items; their issues
+is merged; open PRs are tracked in the [area roadmap](../../roadmap/interaction-migration.md).
+[Issue #1](https://github.com/Verified-zkEVM/ArkLib/issues/1) links the work items; their issues
 record progress and implementation PRs. Do not add another parallel plan or repeat an issue's
 progress log across chapters.
 

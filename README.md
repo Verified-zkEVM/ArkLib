@@ -1,49 +1,94 @@
 # Formally Verified Arguments of Knowledge
 
-This library aims to provide a modular and composable framework for formally verifying **succinct non-interactive arguments of knowledge** (SNARKs). This is done as part of the [verified-zkevm effort](https://verified-zkevm.org/).
+ArkLib is a Lean 4 library for specifying succinct non-interactive arguments of knowledge (SNARKs)
+and proving them secure. It is developed as part of the
+[verified-zkevm effort](https://verified-zkevm.org/), for researchers and engineers who want
+machine-checked security proofs of cryptographic proof systems.
 
-In the first stage of this library's development, we plan to formalize interactive (oracle) reductions (the information-theoretic core of almost all SNARKs today), and prove completeness and soundness for a select list of protocols (see the list of active formalizations below).
+The library is under active development. Some results are fully proved. Others are stated with
+part of the proof still missing. [What to trust](#what-to-trust) explains how to tell them apart.
 
-For each protocol, we aim to provide:
+## How a SNARK is built
 
-- An executable specification of the protocol, constructed modularly using our composition and lifting interfaces,
-- Proofs of completeness & round-by-round knowledge soundness via generic theorems about composition and lifting.
+Most modern SNARKs are built in three steps. ArkLib aims to formalize each step once, in general
+form, so that individual protocols can reuse it.
 
-In the future, we plan to verify functional equivalence of the executable spec (or modifications thereof) for certain protocols (e.g., sum-check, FRI, or WHIR), with the extracted code from Rust implementations of the same protocols (via [hax](https://github.com/cryspen/hax)).
+1. **Interactive oracle reductions.** A prover and a verifier exchange messages to reduce a claim
+   about a statement and witness in a relation $$R_1$$ to a simpler claim in a relation $$R_2$$.
+   The verifier does not read the prover's messages in full. It queries them through an oracle
+   interface: for example, it reads one entry of a vector, or evaluates a polynomial at one point.
+   A reduction should be *complete* (an honest prover turns a true claim into a true claim),
+   *sound* (no prover turns a false claim into a true one, except with small probability), and
+   often *knowledge sound* (a witness for the input claim can be extracted from a witness for
+   the output claim, except with small probability).
+2. **Composition.** Reductions whose relations match are run one after another, and their error
+   bounds add. This lets us build a large protocol from small ones, such as sum-check or a zero
+   check, and derive its security from theirs.
+3. **Compilation to a non-interactive argument.** The *BCS transform* replaces each oracle
+   message with a commitment (for example a Merkle root or a polynomial commitment) and answers
+   each verifier query with an opening proof. The *Fiat–Shamir transform* then removes
+   interaction: the prover derives the verifier's random challenges from a hash function, which
+   the security proof models as a random oracle.
 
-## Library Structure
+## Two frameworks
 
-The core of our library is a mechanized theory of **Interactive Oracle Reductions** (see [OracleReduction](ArkLib/OracleReduction)):
-1. An **IOR** (called `OracleReduction` in our formalization) is an interactive protocol between a prover and a verifier to reduce a relation $$R_1$$ on some public statement & private witness to another relation $$R_2$$.
-2. The verifier may _not_ see the messages sent by the prover in the clear, but can make oracle queries to these messages using a specified oracle interface;
-  - For example, one can view the message as a vector, and query entries of that vector. Alternatively, one can view the message as a polynomial, and query for its evaluation at some given points.
-3. We can **(sequentially) compose** multiple IORs with _compatible_ relations together (e.g. $$R_1 \implies R_2$$ and $$R_2 \implies R_3$$), preserving the security properties in most cases. We can also **lift** an IOR from a simple context (i.e., the input & output pairs of statement & witness) into a larger, more complex context, creating a **virtual** oracle reduction.
-  - These two operations, sequential composition and lifting, allow us to build existing protocols (e.g. Plonk) from common sub-routines (e.g. zero check, permutation check, quotienting), and derive security of the constructed protocol from that of the components.
-4. Once we have specified the desired IOR, the next step is to turn it into a **non-interactive** arguments of knowledge. This is often achieved in two steps:
-  - We first apply the **(interactive) BCS transform**, which materializes the message oracles in an IOR using appropriate **(functional) commitment schemes**. Roughly speaking, a functional commitment scheme consists of a commitment algorithm, along with an associated opening argument for the correctness of the specified oracle interface.
-  - The interactive BCS transform then replaces every oracle message from the prover with a commitment to that message, and runs an opening argument for each oracle query the verifier makes to the prover's messages. These opening arguments may be batched.
-  - We then apply the **Fiat-Shamir transform**, which collapses interaction via letting the prover derive the verifier's random challenges through querying a hash function (modeled as a random oracle). We will formalize the **duplex-sponge** version of Fiat-Shamir, which utilizes cryptographic sponges for efficiency in practice.
-5. Our formalization follows the emerging view of IORs as the central information-theoretic object underlying modern SNARKs. We also follow the latest understanding & abstraction for the interactive BCS and Fiat-Shamir transformation. See [BACKGROUND](./BACKGROUND.md) for an (in-progress) summary of the relevant history.
+ArkLib currently contains two formalizations of steps 1 and 2.
 
-Using the theory of interactive oracle reductions, we then formalize various proof systems in [ProofSystem](ArkLib/ProofSystem).
+New general theory is developed in [`ArkLib/Interaction/`](ArkLib/Interaction), the *Interaction
+framework*. A protocol is a tree of prover and verifier moves. The prover keeps private state
+between rounds, and the verifier sees prover messages only through oracle queries. Each reduction
+outputs a statement together with oracles that the next reduction may query. On `main`, this
+framework has sequential composition with additive soundness error, and the sum-check protocol
+with completeness, soundness, and an executable verifier and honest prover. These files contain
+no `sorry`.
 
-## Active Formalizations (last updated: 7 August 2025)
+[`ArkLib/OracleReduction/`](ArkLib/OracleReduction) is the older *legacy framework*. Most
+protocols in [`ArkLib/ProofSystem/`](ArkLib/ProofSystem) are still written against it, and so are
+the existing definitions of the BCS and Fiat–Shamir transforms. Several of its general theorems
+have incomplete proofs. We plan to port protocols to the Interaction framework one at a time,
+each with a proof that the port matches the original. Until a protocol is ported, any `sorry` in
+its legacy proofs remains: a theorem in the Interaction framework does not remove it.
 
-The library is currently in development. Alongside general development of the library's underlying theory, the following cryptographic components are actively being worked on:
-- The Sum-Check Protocol
-- Spartan
-- Merkle Trees
-- FRI and coding theory pre-requisites
-- STIR and WHIR
-- Binius
+Step 3 is not yet available in the Interaction framework. The [roadmap](ROADMAP.md) lists what
+is merged, what is in open pull requests, and what is planned.
 
-[VCV-io](https://github.com/dtumad/VCV-io), ArkLib's main dependency alongside [mathlib](https://github.com/leanprover-community/mathlib4) is also being developed in parallel. We are also starting work on the [Bluebell](https://arxiv.org/pdf/2402.18708) probabilistic program logic in (our fork of) [iris-lean](https://github.com/Verified-zkEVM/iris-lean).
+## Library structure
 
-## Roadmap & Contributing
+| Area | Contents |
+|---|---|
+| [Interaction](ArkLib/Interaction) | The Interaction framework: protocols, oracle reductions, composition, execution, and security definitions |
+| [OracleReduction](ArkLib/OracleReduction) | The legacy framework, including the BCS and Fiat–Shamir transforms |
+| [ProofSystem](ArkLib/ProofSystem) | Protocols: sum-check, Spartan, FRI, STIR, Binius, ring switching, and small building blocks |
+| [Commitments](ArkLib/Commitments) | Commitment scheme interfaces, KZG, and the lattice-based Ajtai and Hachi schemes |
+| [Data](ArkLib/Data) | Supporting mathematics: coding theory, polynomials, lattices, and probability |
+| [VCVio](https://github.com/Verified-zkEVM/VCVio) (dependency) | Probabilistic computations with oracle access, random-oracle query bounds, and Merkle trees with their security proofs |
+| [CompPoly](https://github.com/Verified-zkEVM/CompPoly) (dependency) | Computable polynomials and finite fields |
+| [PolyFun](https://github.com/Verified-zkEVM/PolyFun) (dependency) | The generic interaction trees that the Interaction framework is built on |
 
-We welcome outside contributions to the library! Please see [CONTRIBUTING](./CONTRIBUTING.md) and, the list of issues for immediate tasks, and the [ROADMAP](./ROADMAP.md) for a list of desired contributions.
+ArkLib does not implement its own Merkle trees. It uses VCVio's construction and security theorem.
 
-If you're interested in working on any of the items mentioned in the list of issues or the roadmap, please see [verified-zkevm.org](https://verified-zkevm.org/), contact [the authors](mailto:qvd@andrew.cmu.edu), or open a new issue.
+## What to trust
 
-## Release Schedule
-New releases are planned in line with the Lean and mathlib stable release cycles. 
+A protocol definition is not a security proof, and a theorem whose proof contains `sorry` is not
+yet proved. Before relying on a result:
+
+- Read the hypotheses of the theorem. They state the assumptions and the exact event whose
+  probability is bounded.
+- Run `#print axioms` on the theorem. A complete proof depends only on Lean's standard axioms
+  (`propext`, `Classical.choice`, `Quot.sound`). If `sorryAx` appears, some step is unproved.
+
+Proving that an optimized implementation, for example Rust code extracted through
+[hax](https://github.com/cryspen/hax), matches a specification in ArkLib is planned work. It is a
+separate obligation from the security proofs above.
+
+## Getting started and contributing
+
+Start with the [quickstart](docs/wiki/quickstart.md) for setup and validation, then use the
+[repository map](docs/wiki/repo-map.md) to find the relevant source. See
+[CONTRIBUTING.md](CONTRIBUTING.md) for contribution conventions and the [roadmap](ROADMAP.md)
+for current priorities.
+
+For background, the [design documents](docs/design/README.md) explain the Interaction framework,
+[BACKGROUND.md](BACKGROUND.md) lists the literature we follow, and the
+[blueprint sources](blueprint/src) and [research knowledge base](docs/kb/README.md) record the
+mathematics behind individual formalizations.

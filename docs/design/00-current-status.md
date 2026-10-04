@@ -10,6 +10,14 @@ native interaction now has additive composition soundness, including an explicit
 error. No declaration under `ArkLib/Interaction/` or
 `ArkLib/ProofSystem/Sumcheck/Interaction/` uses `sorry`. The [roadmap](05-roadmap.md) defines the next implementation steps and links their tracking issues.
 
+## Results in open PRs
+
+As of 2026-10-04, open PRs add round-by-round soundness, knowledge soundness under composition,
+state-restoration knowledge soundness, and a real-to-ideal transfer for Merkle openings. None of
+them is merged, so this page does not count them. The
+[area roadmap](../../roadmap/interaction-migration.md) lists each PR with its statement and
+limits. The missing-capability statements below describe `main`.
+
 ## Supported baseline
 
 | Repository | Revision | Role |

@@ -1,20 +1,27 @@
 # Interaction framework roadmap
 
-**Status date: 2026-09-26.** This is the single active roadmap for implementation of ArkLib's typed
-interaction framework. The [current-status page](00-current-status.md) records what has landed and
-the supported dependency versions. The design documents define the model: see the
-[oracle-reduction core](02-oracle-reduction-core.md),
-[oracle execution and security games](03-adversarial-oracle-execution.md), and
-[oracle-elimination compiler](04-oracle-elimination-compiler.md).
+**Status date: 2026-10-04.** This is the implementation roadmap for ArkLib's Interaction
+framework. The [current-status page](00-current-status.md) records what is on `main` and the
+supported dependency versions. The [project roadmap](../../ROADMAP.md) covers other areas, and
+[Moving protocols to the Interaction framework](../../roadmap/interaction-migration.md) lists the
+open PRs with their statements and says what a port of a legacy protocol must show.
 
-The composition milestones C1–C8 are merged. The immediate goal is to complete native Sumcheck:
-computable messages and honest execution, round-by-round security, and precisely stated extraction
-guarantees. Preserve the ordinary interaction runner, private prover memory and actual oracle
-resources throughout this work.
+In this document, *native* means stated in the Interaction framework (`ArkLib/Interaction/`)
+rather than the legacy framework (`ArkLib/OracleReduction/`), and a *client* is a protocol or
+theorem that uses the framework.
 
-**Status terms:** *Landed* means on `main`; *active* means one of the next implementation steps below;
-*later* means a follow-up client or project that uses the composition work; *conditional* means do
-the work only when a real client demonstrates the need.
+The composition milestones C1–C8 are merged. Open PRs prove round-by-round soundness, knowledge
+soundness under composition, state-restoration knowledge soundness, the sum-check instance of
+state restoration, and a real-to-ideal transfer for Merkle openings sent in one final batch.
+The contracts for C1–C8 below are kept as a record of what was required; that work is done.
+
+The next step is to merge those PRs in dependency order. After that, implementation should
+address what they leave open: verifiers that reject early and protocols of variable length under
+state restoration, extraction of a non-trivial witness, ports of FRI and Spartan, and general
+oracle elimination.
+
+**Status terms:** *merged* means on `main`; *open PR* means proved on a branch whose pull request
+is not yet merged; *planned* means not yet proved.
 
 ## Scope and contracts
 
@@ -248,48 +255,43 @@ provers. The latter still succeeds surely. Certificates accompany the fixed-prov
 they do not turn a numerical budget into a soundness theorem for arbitrary adversaries.
 Arbitrary world-query classifiers still require a separate proof connecting labels to resources.
 
-## Complete native Sumcheck first
+## Native Sumcheck: results and remaining work
 
-The full native ordinary-soundness and honest-completeness theorems are proved. They do not finish
-the computational implementation or the round-by-round and knowledge-security work. Complete the
-following Sumcheck work before starting the FRI and Spartan migrations.
+Soundness and completeness of native Sumcheck are proved on `main`. The list below separates
+what is merged, what is in open PRs, and what is planned.
 
-1. **Computable messages and verifier.** Use bounded CompPoly coefficient arrays and Horner
-   evaluation in the existing native protocol. Keep one verifier definition, prove whole-execution
-   correspondence for arbitrary native provers, and transfer the existing soundness bound. Compile
-   and run a client that checks private continuation effects, public abort and the output relation.
-   This source revision implements this step in `Impl/Representation`, `Interaction/Protocol`,
-   `Interaction/Computable` and `Interaction/ComputableSoundness`.
-2. **Computable honest prover.** Construct each round polynomial directly from CompPoly multivariate
-   data, for the existing general degree and summation-domain parameters. Prove projection and
-   whole-prover correspondence, transfer completeness, and execute the actual honest interaction.
-   Mathematical conversions belong in proofs, not in the running algorithm. This source revision
-   implements the general finite-enumeration construction in `Impl/Projection`, and proves actual
-   honest execution correspondence and completeness in `Interaction/ComputableCompleteness`.
-   The compiled runtime client uses the computational input oracle and honest strategy.
-3. **Native round-by-round security.** Define the security condition on actual execution prefixes,
-   instantiate it with Sumcheck's proved per-challenge bound, and prove the connection to the full
-   error bound. Distinguish a bound for every fixed prefix from an average over an actual run.
-4. **Knowledge and extraction.** Define native knowledge and round-by-round knowledge games with
-   explicit extractor access and timing. Current oracle Sumcheck has a `Unit` witness: its
-   polynomial is already an input oracle. A theorem recovering a hidden polynomial or committed
-   witness needs a different, explicit witness relation. Prove the required implication and
-   composition results without inheriting the legacy admissions.
-5. **Efficient implementations and legacy migration.** Optimize the Boolean multilinear case using
-   CompPoly evaluation tables, with proved message/update algorithms and separately stated costs.
-   The computable general prover alone makes no efficiency claim. Repair or migrate legacy
-   Sumcheck claims with correspondence and axiom checks; do not treat the native result as silently
-   proving those old declarations.
+1. **Computable messages and verifier (merged, [#1242](https://github.com/Verified-zkEVM/ArkLib/pull/1242)).** The native protocol uses bounded
+   CompPoly coefficient arrays and Horner evaluation. Whole-execution correspondence and
+   soundness transfer are proved in `Interaction/Computable` and `Interaction/ComputableSoundness`.
+2. **Computable honest prover (merged, [#1243](https://github.com/Verified-zkEVM/ArkLib/pull/1243)).** `Impl/Projection` constructs messages by
+   general finite enumeration. `Interaction/ComputableCompleteness` proves honest execution
+   correspondence and completeness. This prover can be executed, but it is not an efficient
+   multilinear implementation.
+3. **Round-by-round soundness (open PR [#1261](https://github.com/Verified-zkEVM/ArkLib/pull/1261)).** Round-by-round soundness on actual
+   execution prefixes implies soundness with the sum of the per-challenge errors, and
+   Sumcheck's per-challenge bound gives its full error bound. The theorem keeps the distinction
+   between a bound for every fixed prefix and an average over an actual run.
+4. **Knowledge soundness and extraction (open PRs, partial).** Knowledge soundness under
+   composition is proved in [#1260](https://github.com/Verified-zkEVM/ArkLib/pull/1260), state restoration for randomized provers in [#1268](https://github.com/Verified-zkEVM/ArkLib/pull/1268),
+   and the Sumcheck instance in [#1269](https://github.com/Verified-zkEVM/ArkLib/pull/1269). Current oracle Sumcheck has a `Unit` witness: its
+   polynomial is already an input oracle. Recovering a hidden polynomial or committed witness
+   needs a different explicit relation, extractor, and proof. These PRs do not provide that.
+5. **Efficient implementations and legacy Sumcheck (planned).** Optimize the Boolean multilinear
+   case using CompPoly evaluation tables, with proved message and update algorithms and
+   separately stated costs. Repair or port the legacy Sumcheck declarations with correspondence
+   proofs and axiom checks. The native theorems do not prove those declarations.
 
 ## Later protocol clients
 
-FRI and Spartan slices follow the Sumcheck work above. The composition infrastructure is ready;
-protocol migration is deferred while the computational and security contracts are completed.
+FRI and Spartan are the next protocols to port. The Sumcheck results above are a starting point.
+Each port still needs its own execution correspondence and security proofs. The open research
+questions are not prerequisites for every port.
 
 - **FRI slice:** use a derived virtual oracle view and prove a two-way bridge to the established
   presentation.
 - **Spartan-like slice:** use a fresh prover message and prove the corresponding two-way bridge.
-- **Broader migration:** port further FRI, Spartan, BCS, and Nova protocols one at a time. Keep the
+- **Broader migration:** port existing FRI and Spartan clients one at a time; develop BCS and
+  IVC protocols as separate constructions where no legacy implementation exists. Keep the
   legacy security namespace until each migrated protocol has its own proved correspondence.
 
 For each slice, record the exact statement, oracle interface, prover information, success event,
@@ -300,16 +302,17 @@ automatically prove every legacy equivalence.
 
 ### State restoration and knowledge composition
 
-After runtime and log composition are available, prove the causal trace and witness facts needed by
-extractors and state-restoration games. The generic PolyFun causal finite-trace transducer and a
-VCVio query-log specialization are current upstream gaps. A reusable conditioning and dynamic-
-programming interface may also be needed; add it when the first formalization requires it.
+Knowledge soundness under composition and state-restoration knowledge soundness for a fixed
+number of rounds are proved in the open PRs listed above, including provers with private
+randomness and a bound that charges each distinct query once in expectation. The remaining
+question is how to extend them to the next client while preserving extractor access, timing,
+witness relations, rejection behavior, and actual query costs.
 
-Knowledge soundness needs an additional causal argument. An extractor for the completed protocol
-does not automatically provide a witness at the point where the suffix needs it. A composition
-theorem must establish prefix-available witness extraction or a suitable guarantee against the
-information passed to the suffix. The design and exact games belong in
-[03-adversarial-oracle-execution.md](03-adversarial-oracle-execution.md).
+Do not require a generic causal transducer as a prerequisite for theorems that are already
+proved. Add a new upstream abstraction only for a concrete unproved client obligation. State
+restoration for verifiers that reject early and extraction of a non-trivial witness remain open.
+Knowledge soundness of the completed protocol does not by itself give an extractor that works
+on a prefix.
 
 ### Oracle-elimination compiler
 
@@ -322,11 +325,16 @@ each pass. Do not fill unsupported backend capabilities with placeholder guarant
 
 ### AR-11 — Merkle adapter
 
-The first Merkle backend adapter depends on the named-context and source-routing API (#864), the
-persistent runtime (#884), terminal outcomes (#886), and the access/resource evidence from C8. It
-must adapt VCVio's existing shared-ROM execution and extractability theorem to ArkLib's declared
-oracle interface. Do not restate the VCVio security game in ArkLib. This adapter supplies one
-backend capability; it does not by itself prove the full Fiat–Shamir, BCS, or compiler theorem.
+**Open PRs [#1270](https://github.com/Verified-zkEVM/ArkLib/pull/1270) and [#1271](https://github.com/Verified-zkEVM/ArkLib/pull/1271).** Native protocols that commit with a Merkle root and open
+positions in one final batch now have a real-to-ideal transfer: the real verifier accepts with
+probability at most that of an ideal verifier reading the values extracted at commitment time,
+plus VCVio's shared-ROM error. The second PR allows each queried position to depend on earlier
+answers. Soundness of the ideal protocol is a separate premise in both.
+
+Openings interleaved with later rounds and the full BCS, Fiat–Shamir, and oracle-elimination
+compiler remain planned. See
+[Merkle commitments](../../roadmap/interaction-migration.md#merkle-commitments) for the division
+between VCVio and ArkLib and for the exact restrictions.
 
 ## Conditional upstream work
 
@@ -358,7 +366,8 @@ either limitation.
   until each migrated protocol has a proved correspondence.
 - Keep dependency bumps separate from theorem changes. Add no new `sorry` and run the repository's
   required validation before commit.
-- Update [00-current-status.md](00-current-status.md) when a result lands.
+- Update [00-current-status.md](00-current-status.md) when a result is merged, and the
+  [area roadmap](../../roadmap/interaction-migration.md) when a PR is opened, changed, or merged.
 
 Use names and docstrings that a cryptographer can understand without knowing the internal Lean
 representation. State who chooses the prover, what the verifier observes, which event is bounded,
