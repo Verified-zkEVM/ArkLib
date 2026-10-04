@@ -480,8 +480,9 @@ private lemma fsKSExecution_failure_eq {Salt : Type} [VCVCompatible Salt]
   cases witness <;> cases output <;> rfl
 
 omit [VCVCompatible StmtIn] in
-/-- Shared-oracle NARG extraction has exactly the SR failure probability. -/
-private lemma fsKSShared_failure_eq {Salt : Type} [VCVCompatible Salt]
+/-- The shared-oracle single-salt NARG game has exactly the induced state-restoration
+failure probability, with the same prover, uniform draws, and canonical verifier transcript. -/
+theorem fsKSShared_failure_eq {Salt : Type} [VCVCompatible Salt]
     {κ κE : Type} {auxSpec : OracleSpec κ} (auxImpl : QueryImpl auxSpec ProbComp)
     {auxSpecE : OracleSpec κE} (auxImplE : QueryImpl auxSpecE ProbComp)
     (V : Verifier oSpec StmtIn StmtOut pSpec)
