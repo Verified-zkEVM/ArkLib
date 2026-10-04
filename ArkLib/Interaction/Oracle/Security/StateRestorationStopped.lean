@@ -90,6 +90,62 @@ def guardsPass {Input Salt : Type} : (rounds : List Round) →
           (guards.2 message salt (table (Key.here z message salt))) z messages
           (fun q => table (Key.later message salt q))
 
+/-- At an authored key, record whether its strict-prefix guards passed and its own guard's
+decision. Earlier challenge responses select the guard continuation. This reconstruction does
+not query the key's own challenge response. -/
+def guardPrefixAtKey {Input Salt : Type} : {rounds : List Round} →
+    GuardSchedule Input Salt rounds → (key : Key Input Salt rounds) →
+      Table Input Salt rounds → Bool × Bool
+  | [], _, key, _ => nomatch key
+  | _ :: _, guards, .inl (z, message, salt), _ =>
+      (true, guards.1 z message salt)
+  | _ :: _, guards, .inr (message, salt, key), table =>
+      let challenge := table (Key.here key.input message salt)
+      let suffix := guardPrefixAtKey (guards.2 message salt challenge) key
+        (fun q => table (Key.later message salt q))
+      (guards.1 key.input message salt && suffix.1, suffix.2)
+
+/-- Resampling a target key leaves both its strict-prefix reachability and its own pure guard
+decision unchanged. This is the guard counterpart of `keyExtractor_update`. -/
+theorem guardPrefixAtKey_update {Input Salt : Type} {rounds : List Round}
+    [DecidableEq Input] [DecidableEq Salt]
+    (guards : GuardSchedule Input Salt rounds)
+    (key : Key Input Salt rounds) (table : Table Input Salt rounds)
+    (value : key.Challenge) :
+    guardPrefixAtKey guards key (Function.update table key value) =
+      guardPrefixAtKey guards key table := by
+  classical
+  induction rounds with
+  | nil => exact key.elim
+  | cons round rounds ih =>
+      cases key with
+      | inl data => rfl
+      | inr data =>
+          rcases data with ⟨message, salt, key⟩
+          simp only [guardPrefixAtKey]
+          have hhere : Function.update table (Key.later message salt key) value
+              (Key.here key.input message salt) =
+              table (Key.here key.input message salt) := by
+            apply Function.update_of_ne
+            simp [Key.here, Key.later]
+          rw [hhere]
+          have htable :
+              (fun q => Function.update table (Key.later message salt key) value
+                (Key.later message salt q)) =
+              Function.update (fun q => table (Key.later message salt q)) key value := by
+            funext q
+            by_cases hq : q = key
+            · subst q
+              simp
+            · simp [Function.update_of_ne hq, Function.update_of_ne
+                (show Key.later message salt q ≠ Key.later message salt key by
+                  simpa [Key.later] using hq)]
+          rw [htable]
+          exact congrArg
+            (fun p => (guards.1 key.input message salt && p.1, p.2))
+            (ih (guards.2 message salt (table (Key.here key.input message salt)))
+              key (fun q => table (Key.later message salt q)) value)
+
 /-- On a fully accepted guard path, stopped reconstruction is the existing full native path. -/
 theorem stoppedPath_eq_some_completedPath {Input Salt : Type}
     (rounds : List Round) (guards : GuardSchedule Input Salt rounds)
