@@ -1,78 +1,38 @@
 # Roadmap
 
-We provide here a list of projects and extensions to ArkLib. Please note that this list is extensive and covers more than our immediate priorities. This list will be updated as items are taken off into immediate issues to be worked on.
+**Updated October 3, 2026.** The current general-theory effort is the
+[interaction framework](docs/design/05-roadmap.md). Its
+[current-status page](docs/design/00-current-status.md) separates the supported source revision
+from merged main, and the [migration page](roadmap/interaction-migration.md) states what remains
+before replacing the legacy layer.
 
-For the interaction framework, use the [maintained design roadmap](docs/design/05-roadmap.md)
-and [framework tracker #1](https://github.com/Verified-zkEVM/ArkLib/issues/1). They record the
-composition and Sumcheck milestones that precede the broader directions below.
+This page is the project-wide index. The [area roadmap folder](roadmap/README.md) provides
+maintenance rules, a template, and populated interaction, Sumcheck/Spartan and Merkle pages. Detailed area plans belong in their owning pages rather than
+in duplicated root checklists. The blueprint records mathematical exposition; roadmap pages record
+implementation priorities and evidence. Update the affected area page in the same PR as a material
+capability change, and distinguish **merged**, **proved in an open PR**, and **planned**.
 
-## General Theory
+| Area | Where things stand and next direction |
+|---|---|
+| Interaction theory and migration | Current focus. Native composition and Sumcheck foundations are merged; reviewed security extensions are in open PRs. See [migration gates](roadmap/interaction-migration.md) and the [implementation sequence](docs/design/05-roadmap.md). |
+| [Merkle commitments](roadmap/commitments/merkle-trees.md) | Construction, extraction and random-oracle bounds belong to VCVio. ArkLib's open PRs connect them to native terminal protocols. General oracle elimination remains open. See [ownership and limits](roadmap/interaction-migration.md#merkle-ownership). |
+| [Sumcheck and Spartan](roadmap/proof-systems/sumcheck-spartan.md) | [Sumcheck](ArkLib/ProofSystem/Sumcheck) has a native interaction client; [Spartan](ArkLib/ProofSystem/Spartan) still needs a native migration and corresponding security results. Efficient implementations need separate correspondence and cost proofs. |
+| FRI, STIR, WHIR and coding theory | Existing developments under [ProofSystem](ArkLib/ProofSystem) and [CodingTheory](ArkLib/Data/CodingTheory). Native migration needs explicit oracle-view and execution correspondence. Existing codeword-folding results are not IVC folding schemes. |
+| Binius and ring switching | Existing [Binius](ArkLib/ProofSystem/Binius) and [ring-switching](ArkLib/ProofSystem/RingSwitching) developments. Preserve the distinction between packing and quotient-ring lifting; see the [repository map](docs/wiki/repo-map.md). |
+| KZG and functional commitments | [KZG](ArkLib/Commitments/Functional/KZG) contains correctness and binding developments with no local `sorry` at this snapshot. This does not assert unconditional security or certify every transitive dependency. Native interface integration remains a separate task. |
+| Lattices and Hachi | Substantial developments in [lattices](ArkLib/Data/Lattices) and [commitments](ArkLib/Commitments), including Ajtai and Hachi. Consult the [repository map](docs/wiki/repo-map.md) and blueprint for construction-specific proof boundaries. |
+| Computable polynomials and fields | Owned upstream by [CompPoly](https://github.com/Verified-zkEVM/CompPoly); ArkLib extensions live in [ToCompPoly](ArkLib/ToCompPoly). Do not recreate the obsolete local polynomial/field checklists. |
 
-### 1. The BCS & Fiat-Shamir Transform
+## Longer-term research targets
 
-### 2. Zero-Knowledge
+The Chiesa–Yogev pipeline is a required coverage direction, expressed in our interaction language
+and with explicit correspondence to the literature. The
+[textbook comparison](https://github.com/quangvdao/ArkLib/blob/e52099a7e612d5fdffb5eb6ed892d40a60b15172/docs/kb/audits/chiesa-yogev-interaction.md) and
+[broader literature map](https://github.com/quangvdao/ArkLib/blob/e52099a7e612d5fdffb5eb6ed892d40a60b15172/docs/kb/audits/interaction-literature-map.md) record scope and unresolved
+choices, including round-by-round knowledge, accumulation, Funky, and duplex-sponge Fiat–Shamir.
 
-### 3. Rewinding Knowledge Soundness
-
-### 4. The Algebraic Group Model
-
-### 5. Mechanized Adversary Runtime
-
-
-## Proof Systems
-
-### 1. FRI, STIR, WHIR
-
-Note that this item is under active development.
-
-### 2. Binary Tower Fields and Binius.
-
-Note that this item is under active development.
-
-### 3. Twist & Shout
-
-### 4. Pairing DLog based commitment schemes
-
-### 5. Plonk and its variants
-
-### 6. Folding Schemes
-
-## Miscellaneous
-
-### 1. The PCP Theorem
-
-It would be nice to use the theories in ArkLib to prove foundational results such as the PCP theorem. We imagine that it is within reach to formalize the original proofs (using sum-check, multivariate low-degree tests, and proof composition), and also the quasilinear-length PCP by Ben-Sasson & Sudan.
-
-## Supporting Operations
-
-The below are lower-priority supporting items. Some of these are being actively worked on (especially computable polynomials).
-
-  - [ ] Computable Univariate Polynomials — now developed upstream in the `CompPoly` project; local
-    additions live in [`ArkLib/ToCompPoly/Univariate/`](ArkLib/ToCompPoly/Univariate)
-    - [x] Define `UniPoly` as the type of univariate polynomials with computable representations (interally as an `Array` of coefficients). Define operations on `UniPoly` as operations on the underlying `Array` of coefficients.
-    - [x] Define an equivalence relation on `UniPoly` that says two `UniPoly`s are equivalent iff they are equal up to zero-padding. Show that this is an equivalence relation.
-    - [ ] Show that operations on `UniPoly` descends to the quotient (i.e. are the same up to zero-padding). Show that the quotient is isomorphic as semirings to `Polynomial` in `Mathlib`. Show that the same functions (e.g. `eval`) on `UniPoly` are the same as those of `Polynomial`.
-    - [ ] For more efficient evaluation, and use in univariate-based SNARKs, define the coefficient representation of `UniPoly` (on `2`-adic roots of unity), and show conversions between the coefficient and evaluation representations.
-  - [ ] Computable Multilinear Polynomials — now developed upstream in the `CompPoly` project
-    - [ ] Define `MlPoly` as the type of multilinear polynomials with computable representations (internally as an `Array` of coefficients). Define operations on `MlPoly` as operations on the underlying `Array` of coefficients.
-    - [ ] Define alternative definition of `MlPoly` where the evaluations on the hypercube are stored instead of the coefficients. Define conversions between the two definitions, and show that they commute with basic operations.
-      - [ ] Will need to expand `Mathlib`'s support for indexing by bits (i.e. further develop `BitVec`).
-    - [ ] Define an equivalence relation on `MlPoly` that says two `MlPoly`s are equivalent iff they are equal up to zero-padding. Show that this is an equivalence relation. Show that operations on `MlPoly` descends to the quotient.
-    - [ ] Define & prove a module isomorphism between the quotient of `MlPoly` by the equivalence relation and `MvPolynomial` whose individual degrees are restricted to be at most 1.
-  - [ ] [Extensions to Multivariate Polynomials in `Mathlib`](ArkLib/Data/MvPolynomial)
-    - [ ] [`Interpolation.lean`](ArkLib/Data/MvPolynomial/Interpolation.lean)
-      - [ ] Develop the theory of interpolating multivariate polynomials given their values on a `n`-dimensional grid of points.
-      - [ ] Specialize this theory to the case of multilinear polynomials (then merge with [`Multilinear.lean`](ArkLib/Data/MvPolynomial/Multilinear.lean)).
-        - There is some subtlety here in the sense that general interpolation requires a field (for inverses of Lagrange coefficients), but multilinear interpolation/extension only requires a ring (since the coefficients are just `1`). We may need to develop multilinear theory for non-fields (for Binius).
-  - [ ] [Coding Theory](ArkLib/Data/CodingTheory)
-    - [ ] Define and develop basic results on linear codes.
-    - [ ] Define basic codes such as Reed-Solomon.
-    - [ ] Prove proximity gap and interleaved distance results (up to one-third of the unique decoding distance).
-  - [ ] Binary Tower Fields — now developed upstream in the `CompPoly` project
-    (`CompPoly/Fields/Binary/Tower/`)
-    - [ ] Define iterated quadratic extensions of the binary field (Wiedermann construction), and prove that the resulting ring is a field.
-    - [ ] Define efficient representation of elements in a binary tower field (using `BitVec`), efficient operations on them (see Binius paper), and prove that the resulting structure is a field isomorphic to the definition above.
-  - [ ] Large Scalar Fields used in Curves — prime fields now developed upstream in the `CompPoly`
-    project (`CompPoly/Fields/`)
-    - [ ] Low-priority for now.
-    - [ ] Development on this should be done over at [`FFaCiL`](https://github.com/argumentcomputer/FFaCiL.lean/tree/main).
+Further targets include general BCS/oracle elimination, zero knowledge, rewinding extraction,
+the algebraic group model, mechanized adversary runtime, Plonk, Twist and Shout, IVC folding,
+and foundational PCP results. This list does not claim these targets are implemented or scheduled.
+Protocol definitions, security proofs, efficient algorithms, and legacy migration are separate
+milestones, each requiring evidence.
