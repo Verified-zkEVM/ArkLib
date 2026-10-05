@@ -141,12 +141,6 @@ private theorem observer_root_claim (count start : ℕ) (finish : start + count 
       some ⟨⟨start, by omega⟩, stmt⟩ := by
   cases count <;> rfl
 
-/-- Number of verifier public moves crossed by the concrete prefix. -/
-private def challengeRank (count start : ℕ) (finish : start + count = n)
-    (stmt : Spec.StatementRound F n ⟨start, by omega⟩)
-    (pfx : ExecutionPrefix (protocol F deg count).tree) : ℕ :=
-  (prefixData F n deg (transcriptObserver F n deg count start finish stmt 0) pfx).rank
-
 variable [Fintype F] [DecidableEq F] [SampleableType F]
 
 /-- Sample a challenge after the sum check, or produce public abort. -/
@@ -168,13 +162,6 @@ private def modelOf {m : ℕ} (D : Fin m ↪ F) (source : Protocol)
   sample := fun pfx => samplePending F n deg D (prefixData F n deg observer pfx).pending
   extend := fun pfx challenge => pfx.comp ((prefixData F n deg observer pfx).step challenge)
 
-/-- Native Sumcheck fresh local games at every authored verifier prefix. -/
-private def challengeModel {m : ℕ} (D : Fin m ↪ F) (count start : ℕ) (finish : start + count = n)
-    (stmt : Spec.StatementRound F n ⟨start, by omega⟩) :
-    Interaction.Oracle.Security.ChallengeModel (protocol F deg count) :=
-  modelOf F n deg D (protocol F deg count)
-    (transcriptObserver F n deg count start finish stmt 0)
-
 private def stateOf {m : ℕ} (D : Fin m ↪ F) {tree : TypeTree}
     (observer : TranscriptObserver F n deg tree) (p : Spec.OracleStatement F n deg ())
     (pfx : ExecutionPrefix tree) : Prop :=
@@ -185,12 +172,6 @@ private def stateOf {m : ℕ} (D : Fin m ↪ F) {tree : TypeTree}
 
 private def rankOf {tree : TypeTree} (observer : TranscriptObserver F n deg tree)
     (pfx : ExecutionPrefix tree) : ℕ := (prefixData F n deg observer pfx).rank
-
-/-- Truth of the reconstructed claim for the retained original realized polynomial. -/
-private def ordinaryState {m : ℕ} (D : Fin m ↪ F) (count start : ℕ) (finish : start + count = n)
-    (stmt : Spec.StatementRound F n ⟨start, by omega⟩) (p : Spec.OracleStatement F n deg ())
-    (pfx : ExecutionPrefix (protocol F deg count).tree) : Prop :=
-  stateOf F n deg D (transcriptObserver F n deg count start finish stmt 0) p pfx
 
 /-- A fixed sent polynomial has false-to-true escape probability at most `deg / card F`. -/
 theorem nextChallenge_local_soundness {m : ℕ} (D : Fin m ↪ F) (i : Fin n)
@@ -676,174 +657,6 @@ private theorem execute_eq_closeExecution {ι : Type} (ambient : OracleSpec ι)
     bind_assoc]
   rfl
 
-omit [Fintype F] [DecidableEq F] [SampleableType F] in
-private def HoldsAtRoots (predicate : ℕ → Option (CurrentClaim F n) → Prop) :
-    (tree : TypeTree) → TranscriptObserver F n deg tree → Prop
-  | .done, observer => predicate observer.rank observer.claim
-  | .public _ rest, observer => predicate observer.1.rank observer.1.claim ∧
-      ∀ move, HoldsAtRoots predicate (rest move) (observer.2 move)
-  | .oracle _ rest, observer => predicate observer.1.rank observer.1.claim ∧
-      ∀ message, HoldsAtRoots predicate (rest PUnit.unit) (observer.2 message)
-
-omit [Fintype F] [DecidableEq F] [SampleableType F] in
-private theorem holdsAtRoots_restrict (predicate : ℕ → Option (CurrentClaim F n) → Prop)
-    {tree residual : TypeTree} (observer : TranscriptObserver F n deg tree)
-    (cert : HoldsAtRoots F n deg predicate tree observer)
-    (spine : Cursor.Spine tree residual) (messages : PrefixMessages.Along spine) :
-    HoldsAtRoots F n deg predicate residual
-      (restrictObserver F n deg observer spine messages) := by
-  induction spine with
-  | root => exact cert
-  | @down position next residual answer tail ih =>
-    cases position with
-    | «public» Moves => exact ih (observer.2 answer) (cert.2 answer) messages
-    | «oracle» Messages =>
-      cases answer
-      exact ih (observer.2 messages.1) (cert.2 messages.1) messages.2
-
-omit [Fintype F] [DecidableEq F] [SampleableType F] in
-private theorem holdsAtRoots_root (predicate : ℕ → Option (CurrentClaim F n) → Prop)
-    {tree : TypeTree} (observer : TranscriptObserver F n deg tree)
-    (cert : HoldsAtRoots F n deg predicate tree observer) :
-    predicate (rootData F n deg observer).rank (rootData F n deg observer).claim := by
-  cases tree with
-  | done => exact cert
-  | «public» Moves rest => exact cert.1
-  | «oracle» Messages rest => exact cert.1
-
-omit [Fintype F] [DecidableEq F] [SampleableType F] in
-private theorem holdsAtRoots_prefix (predicate : ℕ → Option (CurrentClaim F n) → Prop)
-    {tree : TypeTree} (observer : TranscriptObserver F n deg tree)
-    (cert : HoldsAtRoots F n deg predicate tree observer) (pfx : ExecutionPrefix tree) :
-    predicate (prefixData F n deg observer pfx).rank (prefixData F n deg observer pfx).claim := by
-  have hc := holdsAtRoots_restrict F n deg predicate observer cert pfx.cursor.spine pfx.messages
-  exact holdsAtRoots_root F n deg predicate _ hc
-
-set_option backward.isDefEq.respectTransparency false in
-omit [Fintype F] [DecidableEq F] [SampleableType F] in
-private theorem observer_initialClaim (count start : ℕ) (finish : start + count = n)
-    (stmt : Spec.StatementRound F n ⟨start, by omega⟩) (rank : ℕ)
-    (initialClaim : Option (CurrentClaim F n))
-    (hinitial : rank = 0 → some ⟨⟨start, by omega⟩, stmt⟩ = initialClaim) :
-    HoldsAtRoots F n deg (fun rank claim => rank = 0 → claim = initialClaim)
-      (protocol F deg count).tree (transcriptObserver F n deg count start finish stmt rank) := by
-  induction count generalizing start rank with
-  | zero => exact hinitial
-  | succ count ih =>
-    constructor
-    · exact hinitial
-    · intro q
-      constructor
-      · exact hinitial
-      · intro challenge
-        cases challenge with
-        | none =>
-          intro h
-          change rank + 1 = 0 at h
-          omega
-        | some r =>
-          exact ih (start + 1) (by omega) ⟨q.val.eval r, Fin.snoc stmt.challenges r⟩ (rank + 1)
-            (fun h => False.elim (by omega))
-
-set_option backward.isDefEq.respectTransparency false in
-omit [Fintype F] [DecidableEq F] [SampleableType F] in
-private theorem observer_terminal_rank {m₀ : ℕ} (D : Fin m₀ ↪ F)
-    (count start : ℕ) (finish : start + count = n)
-    (stmt : Spec.StatementRound F n ⟨start, by omega⟩) (rank : ℕ)
-    (p : Spec.OracleStatement F n deg ()) (path : (protocol F deg count).tree.ExecutionPath)
-    (hstate : stateOf F n deg D (transcriptObserver F n deg count start finish stmt rank) p
-      (.ofExecutionPath path)) :
-    rankOf F n deg (transcriptObserver F n deg count start finish stmt rank)
-      (.ofExecutionPath path) = rank + count := by
-  induction count generalizing start rank with
-  | zero => cases path; rfl
-  | succ count ih =>
-    rcases path with ⟨q, challenge, path⟩
-    cases challenge with
-    | none => cases hstate
-    | some r =>
-      have h := ih (start + 1) (by omega) ⟨q.val.eval r, Fin.snoc stmt.challenges r⟩
-        (rank + 1) path hstate
-      change rankOf F n deg (transcriptObserver F n deg count (start + 1) (by omega)
-        ⟨q.val.eval r, Fin.snoc stmt.challenges r⟩ (rank + 1)) (.ofExecutionPath path) =
-          rank + (count + 1)
-      simpa only [Nat.add_assoc, Nat.add_comm 1 count] using h
-
-/-- False through the first challenge phase, then truth of the reconstructed claim. -/
-private def cyState {m₀ : ℕ} (D : Fin m₀ ↪ F) (count start : ℕ) (finish : start + count = n)
-    (stmt : Spec.StatementRound F n ⟨start, by omega⟩) (p : Spec.OracleStatement F n deg ())
-    (pfx : ExecutionPrefix (protocol F deg count).tree) : Prop :=
-  0 < challengeRank F n deg count start finish stmt pfx ∧
-    ordinaryState F n deg D count start finish stmt p pfx
-
-omit [Fintype F] [DecidableEq F] [SampleableType F] in
-/-- The CY state is initially false for every input, including true input claims. -/
-private theorem cyState_initial_false {m₀ : ℕ} (D : Fin m₀ ↪ F)
-    (count start : ℕ) (finish : start + count = n)
-    (stmt : Spec.StatementRound F n ⟨start, by omega⟩) (p : Spec.OracleStatement F n deg ()) :
-    ¬ cyState F n deg D count start finish stmt p (.root _) := by
-  intro h
-  have hr := h.1
-  change 0 < (rootData F n deg (transcriptObserver F n deg count start finish stmt 0)).rank at hr
-  rw [observer_root_rank] at hr
-  exact Nat.lt_irrefl 0 hr
-
-set_option backward.isDefEq.respectTransparency false in
-omit [Fintype F] [DecidableEq F] [SampleableType F] in
-/-- The CY certificate has a terminal law when at least one challenge is present. -/
-private def cyOrdinaryState {m₀ : ℕ} (D : Fin m₀ ↪ F)
-    (count start : ℕ) (finish : start + count = n) (hcount : 0 < count)
-    (stmt : Spec.StatementRound F n ⟨start, by omega⟩) (p : Spec.OracleStatement F n deg ()) :
-    OrdinaryState (protocol F deg count)
-      (MultivariateRound.closedRelation F n deg D ⟨start, by omega⟩
-        ⟨stmt, (MultivariateRound.polynomialFamily F n deg).behaviorOfRealizations (fun _ => p)⟩)
-      (fun path => ordinaryState F n deg D count start finish stmt p (.ofExecutionPath path)) where
-  state := cyState F n deg D count start finish stmt p
-  initial := fun _ => cyState_initial_false F n deg D count start finish stmt p
-  prover := ProverPreserves.and_positive_rank _ _ _ _ count
-    (transcriptObserver_prover F n deg D count start finish stmt 0 p)
-    (transcriptObserver_schedule F n deg count start finish stmt 0 count (by omega))
-  terminal := by
-    intro path hstate
-    refine ⟨?_, hstate⟩
-    have hr := observer_terminal_rank F n deg D count start finish stmt 0 p path hstate
-    change 0 < rankOf F n deg (transcriptObserver F n deg count start finish stmt 0)
-      (.ofExecutionPath path)
-    rw [hr]
-    simpa only [Nat.zero_add] using hcount
-
-set_option backward.isDefEq.respectTransparency false in
-private theorem cyState_local_soundness {m₀ : ℕ} (D : Fin m₀ ↪ F)
-    (count start : ℕ) (finish : start + count = n)
-    (stmt : Spec.StatementRound F n ⟨start, by omega⟩) (p : Spec.OracleStatement F n deg ())
-    (hfalse : ¬ MultivariateRound.closedRelation F n deg D ⟨start, by omega⟩
-      ⟨stmt, (MultivariateRound.polynomialFamily F n deg).behaviorOfRealizations (fun _ => p)⟩) :
-    LocalSoundness (challengeModel F n deg D count start finish stmt)
-      (cyState F n deg D count start finish stmt p)
-      (challengeRank F n deg count start finish stmt)
-      (fun _ => (deg : ENNReal) / Fintype.card F) := by
-  apply (RoundByRound.GameFamily.isBounded_iff _ _).mpr
-  intro pfx _
-  let observer := transcriptObserver F n deg count start finish stmt 0
-  have hc := localCertificate_bound F n deg D p (protocol F deg count) observer
-    (transcriptObserver_local F n deg D count start finish stmt 0 p)
-    (challengeRank F n deg count start finish stmt)
-  have hb := (RoundByRound.GameFamily.isBounded_iff _ _).mp hc pfx ()
-  apply le_trans _ hb
-  apply prEvent_mono
-  intro challenge hescape
-  refine ⟨?_, hescape.2.2⟩
-  intro hstate
-  by_cases hz : challengeRank F n deg count start finish stmt pfx.val = 0
-  · have hclaim := holdsAtRoots_prefix F n deg
-      (fun rank claim => rank = 0 → claim = some ⟨⟨start, by omega⟩, stmt⟩) observer
-      (observer_initialClaim F n deg count start finish stmt 0 _ (fun _ => rfl)) pfx.val hz
-    change stateOf F n deg D observer p pfx.val at hstate
-    unfold stateOf at hstate
-    rw [hclaim] at hstate
-    exact hfalse hstate
-  · exact hescape.1 ⟨Nat.pos_of_ne_zero hz, hstate⟩
-
 set_option backward.isDefEq.respectTransparency false in
 /-- The actual optional native Sumcheck output is valid with probability at most
 `count * deg / Fintype.card F` for a false input, by generic round-by-round soundness.
@@ -851,8 +664,8 @@ set_option backward.isDefEq.respectTransparency false in
 The ambient interpreter may lose probability mass. The original polynomial remains fixed,
 and each interpreted challenge has uniform event marginals. The arbitrary native prover's
 private effects and its responses to both continuing and aborting public moves are preserved.
-For positive count, the proof uses a CY state that is false initially for every input.
-The zero-round false-input case instead uses the weaker ordinary initial law. -/
+The proof uses the ordinary scalar state, whose initial law only needs the false input claim;
+this covers the zero-round case as well. -/
 theorem roundByRound_soundness {m₀ : ℕ} (D : Fin m₀ ↪ F)
     {ι : Type} (ambient : OracleSpec ι) {m : Type → Type v}
     [Monad m] [LawfulMonad m] [EvalDistSemantics m] [LawfulEvalDistSemantics m]
@@ -878,35 +691,22 @@ theorem roundByRound_soundness {m₀ : ℕ} (D : Fin m₀ ↪ F)
   let observer := transcriptObserver F n deg count start finish stmt 0
   let state := stateOf F n deg D observer p
   let rank := rankOf F n deg observer
-  have certificates : ∃ certificate : OrdinaryState (protocol F deg count)
+  let certificate : OrdinaryState (protocol F deg count)
       (MultivariateRound.closedRelation F n deg D ⟨start, by omega⟩
-        ⟨stmt, originalOracle.eval impl⟩) (fun path => state (.ofExecutionPath path)),
-      LocalSoundness (modelOf F n deg D (protocol F deg count) observer) certificate.state rank
-        (fun _ => (deg : ENNReal) / Fintype.card F) := by
-    by_cases hcount : 0 < count
-    · let cy := cyOrdinaryState F n deg D count start finish hcount stmt p
-      refine ⟨{ state := cy.state
-                initial := fun _ => cyState_initial_false F n deg D count start finish stmt p
-                prover := cy.prover
-                terminal := cy.terminal }, ?_⟩
-      exact cyState_local_soundness F n deg D count start finish stmt p
-        (by simpa only [horiginal] using hfalse)
-    · let certificate : OrdinaryState (protocol F deg count)
-          (MultivariateRound.closedRelation F n deg D ⟨start, by omega⟩
-            ⟨stmt, originalOracle.eval impl⟩) (fun path => state (.ofExecutionPath path)) :=
-        { state := state
-          initial := by
-            intro hfalse hstate
-            apply hfalse
-            change stateOf F n deg D observer p (.root _) at hstate
-            dsimp only [observer] at hstate
-            simpa only [stateOf, prefixData_root, observer_root_claim, ← horiginal] using hstate
-          prover := transcriptObserver_prover F n deg D count start finish stmt 0 p
-          terminal := fun _ h => h }
-      refine ⟨certificate, ?_⟩
-      exact localCertificate_bound F n deg D p (protocol F deg count) observer
-        (transcriptObserver_local F n deg D count start finish stmt 0 p) rank
-  obtain ⟨certificate, hlocal⟩ := certificates
+        ⟨stmt, originalOracle.eval impl⟩) (fun path => state (.ofExecutionPath path)) :=
+    { state := state
+      initial := by
+        intro hfalse hstate
+        apply hfalse
+        change stateOf F n deg D observer p (.root _) at hstate
+        dsimp only [observer] at hstate
+        simpa only [stateOf, prefixData_root, observer_root_claim, ← horiginal] using hstate
+      prover := transcriptObserver_prover F n deg D count start finish stmt 0 p
+      terminal := fun _ h => h }
+  have hlocal : LocalSoundness (modelOf F n deg D (protocol F deg count) observer)
+      certificate.state rank (fun _ => (deg : ENNReal) / Fintype.card F) :=
+    localCertificate_bound F n deg D p (protocol F deg count) observer
+      (transcriptObserver_local F n deg D count start finish stmt 0 p) rank
   have bound := executeStrategies_soundness_uniform ambient handler certificate
     (modelOf F n deg D (protocol F deg count) observer) rank
     ((deg : ENNReal) / Fintype.card F) count

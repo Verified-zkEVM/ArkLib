@@ -263,30 +263,4 @@ theorem FreshVerifier.mapPrefixes {source target : Protocol}
       (fun path => OutV ⟨PUnit.unit, path⟩) next
       (fun pfx => embed (.prependOracle message pfx)) (fresh message next hnext)
 
-set_option backward.isDefEq.respectTransparency false in
-/-- Gating a preserved state by positive challenge rank preserves prover soundness. -/
-theorem ProverPreserves.and_positive_rank (tree : TypeTree) (roles : tree.RoleDecoration)
-    (state : ExecutionPrefix tree → Prop) (rank : ExecutionPrefix tree → ℕ) (count : ℕ)
-    (prover : ProverPreserves tree roles state)
-    (schedule : ChallengeSchedule tree roles rank count) :
-    ProverPreserves tree roles (fun pfx => 0 < rank pfx ∧ state pfx) := by
-  induction tree with
-  | done => trivial
-  | «public» Moves rest ih =>
-    constructor
-    · intro hrole move hstate
-      refine ⟨?_, prover.1 hrole move hstate.2⟩
-      have hs := schedule.1
-      rw [hrole] at hs
-      exact (hs move) ▸ hstate.1
-    · intro move
-      exact ih move (roles.2 move) _ _ (prover.2 move) (schedule.2 move)
-  | «oracle» Messages rest ih =>
-    constructor
-    · intro message hstate
-      refine ⟨(schedule.1 message) ▸ hstate.1, prover.1 message hstate.2⟩
-    · intro message
-      exact ih (roles.2 PUnit.unit) _ _ (prover.2 message) (schedule.2 message)
-
-
 end Interaction.Oracle.Security
