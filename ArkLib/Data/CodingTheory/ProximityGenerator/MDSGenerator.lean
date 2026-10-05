@@ -570,22 +570,13 @@ lemma card_le_pred_mul_card_compl_of_isMDSGenerator {S : Type} [Nonempty S] [Fin
 
 omit [Fintype ℓ] in
 open Classical in
-/-- **Claim 6.7 [BCGM25].** Few maximal CA domains are large. Let `0 ≤ α ≤ 1` and `η > 0` with
-`ρ + η ≤ α²`, and suppose the code's distance `d_C` satisfies `n - d_C ≤ n · ρ`. Then at most
-`1 / η` maximal CA domains between `U` and the code have at least `n · α` positions; stated
-division-free as `m · η ≤ 1`.
-
-At the call site `α = (ρ_C + η) ^ (1 / ℓ)`, so that `n · α = n · (1 - γ_ℓ)`, and `ρ = ρ_C`.
-
-Distinct maximal CA domains intersect in at most `n - d_C` positions
-(`IsMaxCADomain.eq_of_card_compl_inter_lt_minDist`), so the Corrádi bound (Lemma 3.23 [BCGM25],
-`Finset.card_mul_sq_sub_card_mul_le_of_inter_card_le`) applies at the integer threshold
-`a = ⌈n · α⌉`. The conversion to `m · η ≤ 1` uses only `n · α ≤ a ≤ n`, never an upper bound on
-`a` in terms of `n · α`, so the rounding costs nothing. -/
+/-- **Claim 6.7 [BCGM25].** Let `0 ≤ α ≤ 1` and `η > 0` with `ρ + η ≤ α²`, and suppose the code's
+distance `d_C` satisfies `n - d_C ≤ n · ρ`. Then at most `1 / η` maximal CA domains between `U` and
+the code have at least `n · α` positions; stated division-free as `m · η ≤ 1`. -/
 lemma card_filter_isMaxCADomain_mul_le_one [Nonempty ι] (MC : ModuleCode ι F A)
     (U : ℓ → (ι → A)) {α ρ η : ℝ} (hα0 : 0 ≤ α) (hα1 : α ≤ 1) (hη : 0 < η)
     (hgap : ρ + η ≤ α * α)
-    (hd : ((Fintype.card ι - Code.minDist MC.carrier : ℕ) : ℝ) ≤ Fintype.card ι * ρ) :
+    (hd : ((Fintype.card ι - Code.minDist MC.carrier) : ℝ) ≤ Fintype.card ι * ρ) :
     ((Finset.univ.filter fun A₀ : Finset ι =>
         IsMaxCADomain MC U A₀ ∧ (Fintype.card ι : ℝ) * α ≤ A₀.card).card : ℝ) * η ≤ 1 := by
   set n := Fintype.card ι
@@ -601,7 +592,11 @@ lemma card_filter_isMaxCADomain_mul_le_one [Nonempty ι] (MC : ModuleCode ι F A
     mul_le_mul hαa hαa (by positivity) (Nat.cast_nonneg a)
   have hgapn : (n : ℝ) * n * (ρ + η) ≤ n * n * (α * α) :=
     mul_le_mul_of_nonneg_left hgap (by positivity)
-  have hdn : (n : ℝ) * D ≤ n * (n * ρ) := mul_le_mul_of_nonneg_left hd hnR.le
+  have hdle : Code.minDist MC.carrier ≤ n := by
+    rw [← Code.dist_eq_minDist]
+    exact Code.dist_le_card _
+  have hdn : (n : ℝ) * D ≤ n * (n * ρ) :=
+    mul_le_mul_of_nonneg_left (by rw [Nat.cast_sub hdle]; exact hd) hnR.le
   have hDa : D ≤ a := by exact_mod_cast (by nlinarith : (D : ℝ) ≤ a)
   have hpos : n * D < a * a := by
     exact_mod_cast (by nlinarith [mul_pos (mul_pos hnR hnR) hη] : (n : ℝ) * D < a * a)
@@ -625,14 +620,9 @@ lemma card_filter_isMaxCADomain_mul_le_one [Nonempty ι] (MC : ModuleCode ι F A
   nlinarith [key, pow_pos hnR 2]
 
 open Classical in
-/-- **Claim 6.8 [BCGM25].** Few seeds strictly extend a large maximal CA domain. Fix a maximal CA
-domain `A₀` with at least `n · α` positions and fewer than `d_C` missing, and a set `Bad` of seeds
-whose maximal agreement domains `T x` strictly contain `A₀`. Then
-`|Bad| ≤ n · (1 - α) · (|ℓ| - 1)`.
-
-At the call site `α = (ρ_C + η) ^ (1 / ℓ)`, so `n · (1 - α) = n · γ_ℓ`. The paper's "without loss of
-generality `T` is a maximal agreement domain" is the hypothesis `hT`; the bound is Lemma 6.6
-(`card_le_pred_mul_card_compl_of_isMDSGenerator`), with `|A₀ᶜ| ≤ n · (1 - α)`. -/
+/-- **Claim 6.8 [BCGM25].**  Fix a maximal CA domain `A₀` with at least `n · α` positions and fewer
+than `d_C` missing, and a set `Bad` of seeds whose maximal agreement domains `T x` strictly contain `A₀`. Then
+`|Bad| ≤ n · (1 - α) · (|ℓ| - 1)`. -/
 lemma card_le_of_ssubset_isMaxAgreementDomain_of_isMDSGenerator {S : Type} [Nonempty S]
     [Fintype S] [DecidableEq F] (G : Generator S ℓ F) (hG : IsMDSGenerator G)
     (hdim : LinearCode.dim (LinearCode.fromColGenMat (M_G G)) = Fintype.card ℓ)
@@ -656,25 +646,10 @@ lemma card_le_of_ssubset_isMaxAgreementDomain_of_isMDSGenerator {S : Type} [None
     _ = Fintype.card ι * (1 - α) * (Fintype.card ℓ - 1) := by ring
 
 open Classical in
-/-- **Claim 6.9 [BCGM25].** Few seeds avoid every large maximal CA domain. Let `Bad` be seeds whose
-maximal agreement domains `T x` have at least `n · β` positions but contain no maximal CA domain
-with `n · α` positions. Then
-`|Bad| ≤ max (2 · (|ℓ| - 1) / (η · (β - α))) (|ℓ| · (|ℓ| + 1) / η)`,
-stated division-free as the disjunction of the two cleared bounds.
-
-At the call site `β = (ρ_C + η) ^ (1 / (ℓ + 1))` and `α = (ρ_C + η) ^ (1 / ℓ)`, so that
-`β ^ (ℓ + 1) = ρ_C + η` and `α < β` (the latter as `ρ_C + η < 1`); `ρ = ρ_C`, with
-`n · (1 - ρ) ≤ d_C`.
-
-Suppose both bounds fail. Since the average `(ℓ + 1)`-wise intersection of the `T x` exceeds
-`n · ρ + n · η`, some `ℓ` distinct seeds `xs` have `A = ⋂ T (xs i)` meeting at least `η · |Bad| / 2`
-of the `T x` in more than `n · ρ` positions
-(`Finset.exists_injective_two_mul_card_filter_lt_card_inf_inter`). Then `A` misses fewer than `d_C`
-positions, so it is a maximal CA domain (Lemma 6.4); it is contained in each of those `T x`
-(`subset_isMaxAgreementDomain_of_isMDSGenerator`); and it has fewer than `n · α` positions,
-since it lies in `T (xs i)`. So each such `T x` exceeds `A` by more than `n · (β - α)` positions,
-and the Lemma 6.6 inequality `sum_card_sdiff_le_pred_mul_card_compl_of_isMDSGenerator` allows fewer
-than `(ℓ - 1) / (β - α)` of them: a contradiction. -/
+/-- **Claim 6.9 [BCGM25].**  Let `Bad` be seeds whose maximal agreement domains `T x` have at least
+`n · β` positions but contain no maximal CA domain with `n · α` positions. Then
+`|Bad| ≤ max (2 · (|ℓ| - 1) / (η · (β - α))) (|ℓ| · (|ℓ| + 1) / η)`, stated division-free as the
+disjunction of the two cleared bounds. -/
 lemma card_mul_le_of_forall_not_subset_of_isMDSGenerator {S : Type} [Nonempty S] [Fintype S]
     [DecidableEq F] [Nonempty ι] (G : Generator S ℓ F) (hG : IsMDSGenerator G)
     (hdim : LinearCode.dim (LinearCode.fromColGenMat (M_G G)) = Fintype.card ℓ)
@@ -771,16 +746,7 @@ lemma card_mul_le_of_forall_not_subset_of_isMDSGenerator {S : Type} [Nonempty S]
 open Classical in
 /-- **The list-decoding seed count of Theorem 6.1 [BCGM25].** At a radius `γ ≤ 1 - β`, at most
 `n · (1 - α) · (|ℓ| - 1) / η + max (2 · (|ℓ| - 1) / (η · (β - α))) (|ℓ| · (|ℓ| + 1) / η)`
-seeds witness the MCA event for a fixed family `U`.
-
-This is the body of the paper's proof of Theorem 6.1, at abstract thresholds; the theorem
-instantiates `α = (ρ_C + η) ^ (1 / ℓ)` and `β = (ρ_C + η) ^ (1 / (ℓ + 1))`. Each bad seed's witness
-set extends to a maximal agreement domain `T x` with at least `n · β` positions that is not a CA
-agreement set. The bad seeds split by whether `T x` contains a maximal CA domain with `n · α`
-positions:
-* those that do (`B⁽¹⁾`) are covered by the at most `1 / η` such domains (Claim 6.7), each
-  strictly contained in at most `n · (1 - α) · (|ℓ| - 1)` of the `T x` (Claim 6.8);
-* those that do not (`B⁽²⁾`) are bounded by Claim 6.9. -/
+seeds witness the MCA event for a fixed family `U`. -/
 lemma card_filter_isMCA_le_of_isMDSGenerator_of_le_one_sub {S : Type} [Nonempty S] [Fintype S]
     [DecidableEq F] [Nonempty ι] (G : Generator S ℓ F) (hG : IsMDSGenerator G)
     (hdim : LinearCode.dim (LinearCode.fromColGenMat (M_G G)) = Fintype.card ℓ)
@@ -819,12 +785,8 @@ lemma card_filter_isMCA_le_of_isMDSGenerator_of_le_one_sub {S : Type} [Nonempty 
   have hsplit : (Bad.card : ℝ) = B1.card + B2.card := by
     exact_mod_cast (Finset.card_filter_add_card_filter_not (s := Bad) fun x =>
       ∃ A₀ ∈ Large, A₀ ⊆ Tx x).symm
-  have hd' : ((n - Code.minDist MC.carrier : ℕ) : ℝ) ≤ n * ρ := by
-    rcases le_total (Code.minDist MC.carrier) n with h | h
-    · rw [Nat.cast_sub h]; linarith
-    · rw [Nat.sub_eq_zero_of_le h, Nat.cast_zero]; positivity
   have hLarge : (Large.card : ℝ) * η ≤ 1 :=
-    card_filter_isMaxCADomain_mul_le_one MC U hα0 hα1 hη hgap hd'
+    card_filter_isMaxCADomain_mul_le_one MC U hα0 hα1 hη hgap (by linarith)
   have hK : (0 : ℝ) ≤ n * (1 - α) * (L - 1) :=
     mul_nonneg (mul_nonneg hnR.le (by linarith)) (by linarith)
   have hper : ∀ A₀ ∈ Large,
