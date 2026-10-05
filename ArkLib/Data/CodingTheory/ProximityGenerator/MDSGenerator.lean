@@ -113,6 +113,56 @@ lemma mdsMCAError_congr [DecidableEq F] [Nonempty ι] {A' : Type} [DecidableEq A
   unfold mdsMCAError
   rw [hδ]
 
+section ListDecodingRadii
+
+/-! ### Arithmetic of the list-decoding radii
+
+The list-decoding regime of `mdsMCAError` is phrased through the radii
+`γ_ℓ = 1 - (ρ_C + η) ^ (1 / ℓ)` and `γ = 1 - (ρ_C + η) ^ (1 / (ℓ + 1))`. The three facts below are
+every `Real.rpow` property the regime needs; collecting them here keeps `rpow` out of the
+combinatorial lemmas, which are stated at abstract thresholds instead.
+
+Throughout, `ρ` stands for `ρ_C = 1 - δ_C`, which is the pairwise-intersection density the
+Corrádi step reads, and `η` for the slack. -/
+
+/-- `ρ < (ρ + η) ^ (1 / L)` for `L ≥ 1`: the radius `γ_L = 1 - (ρ + η) ^ (1 / L)` stays below the
+relative distance `δ_C = 1 - ρ`. Consumed wherever a maximal CA domain of size at least
+`n · (1 - γ_L)` must miss fewer than `d_C` positions. -/
+lemma lt_rpow_one_div (ρ η : ℝ) (L : ℕ) (hρ : 0 ≤ ρ) (hη : 0 < η) (h1 : ρ + η ≤ 1)
+    (hL : 1 ≤ L) :
+    ρ < (ρ + η) ^ (1 / L : ℝ) := by
+  have hb : 0 < ρ + η := by linarith
+  calc ρ < ρ + η := by linarith
+    _ = (ρ + η) ^ (1 : ℝ) := (Real.rpow_one _).symm
+    _ ≤ (ρ + η) ^ (1 / L : ℝ) :=
+        Real.rpow_le_rpow_of_exponent_ge hb h1
+          (by rw [div_le_one (by positivity)]; exact_mod_cast hL)
+
+/-- `ρ + η ≤ (ρ + η) ^ (2 / L)` for `L ≥ 2`: the Corrádi gap `α² - ρ` at `α = (ρ + η) ^ (1 / L)`
+is at least `η`, which is what turns the incidence bound into the paper's `m · η ≤ 1`. -/
+lemma le_rpow_two_div (ρ η : ℝ) (L : ℕ) (hρ : 0 ≤ ρ) (hη : 0 < η) (h1 : ρ + η ≤ 1)
+    (hL : 2 ≤ L) :
+    ρ + η ≤ (ρ + η) ^ (2 / L : ℝ) := by
+  have hb : 0 < ρ + η := by linarith
+  calc ρ + η = (ρ + η) ^ (1 : ℝ) := (Real.rpow_one _).symm
+    _ ≤ (ρ + η) ^ (2 / L : ℝ) :=
+        Real.rpow_le_rpow_of_exponent_ge hb h1
+          (by rw [div_le_one (by positivity)]; exact_mod_cast hL)
+
+/-- `(ρ + η) ^ (1 / L) < (ρ + η) ^ (1 / (L + 1))` when `ρ + η < 1`: the two list-decoding radii are
+distinct, so the margin `(ρ + η) ^ (1 / (L + 1)) - (ρ + η) ^ (1 / L)` appearing in `mdsMCAError`
+is positive. Strictness fails at `ρ + η = 1`, where both radii are `0`. -/
+lemma rpow_one_div_lt_rpow_one_div_succ (ρ η : ℝ) (L : ℕ) (hρ : 0 ≤ ρ) (hη : 0 < η)
+    (h1 : ρ + η < 1) (hL : 1 ≤ L) :
+    (ρ + η) ^ (1 / L : ℝ) < (ρ + η) ^ (1 / (L + 1) : ℝ) := by
+  have hb : 0 < ρ + η := by linarith
+  refine Real.rpow_lt_rpow_of_exponent_gt hb h1 ?_
+  have hLR : (0 : ℝ) < L := by exact_mod_cast hL
+  rw [div_lt_div_iff₀ (by positivity) hLR]
+  linarith
+
+end ListDecodingRadii
+
 /-- A nonzero `v : ℓ → F` is orthogonal to `G x` for at most `|ℓ| - 1` seeds `x`: the codeword
 `x ↦ G x ⬝ᵥ v` of `C_G` is nonzero, since `C_G` has dimension `|ℓ|`, so its weight is at least the
 MDS distance `|S| - |ℓ| + 1`.
