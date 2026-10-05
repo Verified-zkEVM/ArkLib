@@ -125,68 +125,12 @@ lemma mdsMCAError_congr [DecidableEq F] [Nonempty ι] {A' : Type} [DecidableEq A
   unfold mdsMCAError
   rw [hδ]
 
-section ListDecodingRadii
-
-/-! ### Arithmetic of the list-decoding radii
-
-The list-decoding regime of `mdsMCAError` is phrased through the radii
-`γ_ℓ = 1 - (ρ_C + η) ^ (1 / ℓ)` and `γ = 1 - (ρ_C + η) ^ (1 / (ℓ + 1))`. The three facts below are
-every `Real.rpow` property the regime needs; collecting them here keeps `rpow` out of the
-combinatorial lemmas, which are stated at abstract thresholds instead.
-
-Throughout, `ρ` stands for `ρ_C = 1 - δ_C`, which is the pairwise-intersection density the
-Corrádi step reads, and `η` for the slack. -/
-
-/-- `ρ < (ρ + η) ^ (1 / L)` for `L ≥ 1`: the radius `γ_L = 1 - (ρ + η) ^ (1 / L)` stays below the
-relative distance `δ_C = 1 - ρ`. Consumed wherever a maximal CA domain of size at least
-`n · (1 - γ_L)` must miss fewer than `d_C` positions. -/
-lemma lt_rpow_one_div (ρ η : ℝ) (L : ℕ) (hρ : 0 ≤ ρ) (hη : 0 < η) (h1 : ρ + η ≤ 1)
-    (hL : 1 ≤ L) :
-    ρ < (ρ + η) ^ (1 / L : ℝ) := by
-  have hb : 0 < ρ + η := by linarith
-  calc ρ < ρ + η := by linarith
-    _ = (ρ + η) ^ (1 : ℝ) := (Real.rpow_one _).symm
-    _ ≤ (ρ + η) ^ (1 / L : ℝ) :=
-        Real.rpow_le_rpow_of_exponent_ge hb h1
-          (by rw [div_le_one (by positivity)]; exact_mod_cast hL)
-
-/-- `ρ + η ≤ (ρ + η) ^ (2 / L)` for `L ≥ 2`: the Corrádi gap `α² - ρ` at `α = (ρ + η) ^ (1 / L)`
-is at least `η`, which is what turns the incidence bound into the paper's `m · η ≤ 1`. -/
-lemma le_rpow_two_div (ρ η : ℝ) (L : ℕ) (hρ : 0 ≤ ρ) (hη : 0 < η) (h1 : ρ + η ≤ 1)
-    (hL : 2 ≤ L) :
-    ρ + η ≤ (ρ + η) ^ (2 / L : ℝ) := by
-  have hb : 0 < ρ + η := by linarith
-  calc ρ + η = (ρ + η) ^ (1 : ℝ) := (Real.rpow_one _).symm
-    _ ≤ (ρ + η) ^ (2 / L : ℝ) :=
-        Real.rpow_le_rpow_of_exponent_ge hb h1
-          (by rw [div_le_one (by positivity)]; exact_mod_cast hL)
-
-/-- `(ρ + η) ^ (1 / L) < (ρ + η) ^ (1 / (L + 1))` when `ρ + η < 1`: the two list-decoding radii are
-distinct, so the margin `(ρ + η) ^ (1 / (L + 1)) - (ρ + η) ^ (1 / L)` appearing in `mdsMCAError`
-is positive. Strictness fails at `ρ + η = 1`, where both radii are `0`. -/
-lemma rpow_one_div_lt_rpow_one_div_succ (ρ η : ℝ) (L : ℕ) (hρ : 0 ≤ ρ) (hη : 0 < η)
-    (h1 : ρ + η < 1) (hL : 1 ≤ L) :
-    (ρ + η) ^ (1 / L : ℝ) < (ρ + η) ^ (1 / (L + 1) : ℝ) := by
-  have hb : 0 < ρ + η := by linarith
-  refine Real.rpow_lt_rpow_of_exponent_gt hb h1 ?_
-  have hLR : (0 : ℝ) < L := by exact_mod_cast hL
-  rw [div_lt_div_iff₀ (by positivity) hLR]
-  linarith
-
-/-- `((x) ^ (1 / (L + 1))) ^ (L + 1) = x`: the radius `γ = 1 - (ρ + η) ^ (1 / (L + 1))` satisfies
-`(1 - γ) ^ (L + 1) = ρ + η`. This is the identity behind the expected `(L + 1)`-wise intersection
-`n · (1 - γ) ^ (L + 1) = n · (ρ + η)` in Claim 6.9. -/
-lemma rpow_one_div_succ_pow (x : ℝ) (L : ℕ) (hx : 0 ≤ x) :
-    (x ^ (1 / (L + 1) : ℝ)) ^ (L + 1) = x := by
-  have h := Real.rpow_inv_natCast_pow hx (Nat.succ_ne_zero L)
-  push_cast at h
-  rwa [one_div]
-
 /-- **The list-decoding branch has no degenerate cases.** If a radius `γ ≥ 0` lies in the
 list-decoding branch of `mdsMCAError`, that is `δ / (L + 1) ≤ γ ≤ 1 - (1 - δ + η) ^ (1 / (L + 1))`,
 then `ρ + η < 1` strictly, where `ρ = 1 - δ`.
 
-So the branch never meets `ρ + η = 1`, where the two radii coincide and the margin
+So the branch never meets `ρ + η = 1`, where the radii `1 - (ρ + η) ^ (1 / L)` and
+`1 - (ρ + η) ^ (1 / (L + 1))` coincide and the margin
 `(ρ + η) ^ (1 / (L + 1)) - (ρ + η) ^ (1 / L)` in `mdsMCAError` vanishes; nor `δ = 0`. If
 `ρ + η ≥ 1`, the upper limit is at most `0`, so `γ = 0`, so `δ ≤ 0`; then `ρ + η ≥ 1 + η > 1`
 puts the upper limit strictly below `0`, contradicting `γ ≥ 0`. -/
@@ -201,8 +145,6 @@ lemma one_sub_add_lt_one_of_le_one_sub_rpow (δ η γ : ℝ) (L : ℕ) (hη : 0 
     have := hγ ▸ hlow
     rwa [div_le_iff₀ hL, zero_mul] at this
   linarith [Real.one_lt_rpow (show (1 : ℝ) < 1 - δ + η by linarith) hexp]
-
-end ListDecodingRadii
 
 /-- A nonzero `v : ℓ → F` is orthogonal to `G x` for at most `|ℓ| - 1` seeds `x`: the codeword
 `x ↦ G x ⬝ᵥ v` of `C_G` is nonzero, since `C_G` has dimension `|ℓ|`, so its weight is at least the
@@ -737,8 +679,8 @@ with `n · α` positions. Then
 stated division-free as the disjunction of the two cleared bounds.
 
 At the call site `β = (ρ_C + η) ^ (1 / (ℓ + 1))` and `α = (ρ_C + η) ^ (1 / ℓ)`, so that
-`β ^ (ℓ + 1) = ρ_C + η` (`rpow_one_div_succ_pow`) and `α < β`
-(`rpow_one_div_lt_rpow_one_div_succ`); `ρ = ρ_C`, with `n · (1 - ρ) ≤ d_C`.
+`β ^ (ℓ + 1) = ρ_C + η` and `α < β` (the latter as `ρ_C + η < 1`); `ρ = ρ_C`, with
+`n · (1 - ρ) ≤ d_C`.
 
 Suppose both bounds fail. Since the average `(ℓ + 1)`-wise intersection of the `T x` exceeds
 `n · ρ + n · η`, some `ℓ` distinct seeds `xs` have `A = ⋂ T (xs i)` meeting at least `η · |Bad| / 2`
@@ -984,7 +926,12 @@ The proof splits on the three branches of `mdsMCAError`. Below `δ_C / (ℓ + 1)
 `card_filter_isMCA_le_of_isMDSGenerator_of_le_one_sub`, at the thresholds
 `α = (ρ_C + η) ^ (1 / ℓ)` and `β = (ρ_C + η) ^ (1 / (ℓ + 1))`; that branch forces `ρ_C + η < 1`
 (`one_sub_add_lt_one_of_le_one_sub_rpow`), so the margin `β - α` is positive there. Beyond it the
-bound is `1`. -/
+bound is `1`.
+
+Claims 6.7–6.9 and the seed count are stated at abstract thresholds, so `Real.rpow` appears only
+here: `α < β`, `ρ_C + η ≤ α ^ 2` and `β ^ (ℓ + 1) = ρ_C + η` are read off Mathlib's
+`Real.rpow_lt_rpow_of_exponent_gt`, `Real.self_le_rpow_of_le_one` and
+`Real.rpow_inv_natCast_pow`. -/
 theorem isMCAGenerator_of_isMDSGenerator {S : Type} [Nonempty S] [Fintype S]
     [SampleableType S] [DecidableEq F] [DecidableEq A] [Nonempty ι]
     (G : Generator S ℓ F)
@@ -1017,13 +964,20 @@ theorem isMCAGenerator_of_isMDSGenerator {S : Type} [Nonempty S] [Fintype S]
     have hb : 0 < ρ + η := by linarith [hη.1]
     have hα0 : 0 ≤ α := Real.rpow_nonneg hb.le _
     have hα1 : α ≤ 1 := Real.rpow_le_one hb.le hlt1.le (by positivity)
-    have hαβ : α < β := rpow_one_div_lt_rpow_one_div_succ ρ η L hρ hη.1 hlt1 (by omega)
+    have hLR : (0 : ℝ) < L := by exact_mod_cast (by omega : 0 < L)
+    have hαβ : α < β := Real.rpow_lt_rpow_of_exponent_gt hb hlt1 <| by
+      rw [div_lt_div_iff₀ (by positivity) hLR]; linarith
     have hβ0 : 0 ≤ β := Real.rpow_nonneg hb.le _
     have hgap : ρ + η ≤ α * α := by
       have hαα : α * α = (ρ + η) ^ (2 / L : ℝ) := by
         rw [hα_def, ← Real.rpow_add hb]; congr 1; ring
-      rw [hαα]; exact le_rpow_two_div ρ η L hρ hη.1 hlt1.le hℓ
-    have hpow : ρ + η ≤ β ^ (L + 1) := (rpow_one_div_succ_pow (ρ + η) L hb.le).symm.le
+      rw [hαα]
+      exact Real.self_le_rpow_of_le_one hb.le hlt1.le
+        (by rw [div_le_one hLR]; exact_mod_cast hℓ)
+    have hpow : ρ + η ≤ β ^ (L + 1) := by
+      have h := Real.rpow_inv_natCast_pow hb.le (Nat.succ_ne_zero L)
+      push_cast at h
+      rw [hβ_def, one_div, h]
     have hd : (n : ℝ) * (1 - ρ) ≤ Code.minDist MC.carrier := by
       rw [hρ_def, sub_sub_cancel, ← hδq, mul_div_cancel₀ _ hnR.ne']
     refine (mcaError_le_of_exists_exceptional_set G MC γ
@@ -1037,5 +991,4 @@ theorem isMCAGenerator_of_isMDSGenerator {S : Type} [Nonempty S] [Fintype S]
     simp only [div_div]
     congr 1
     ring
-  · -- beyond the list-decoding radius the bound is trivial
-    simpa using mcaError_le_one G MC γ
+  · simpa using mcaError_le_one G MC γ
