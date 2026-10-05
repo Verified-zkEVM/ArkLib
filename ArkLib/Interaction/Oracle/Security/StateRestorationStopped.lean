@@ -90,62 +90,6 @@ def guardsPass {Input Salt : Type} : (rounds : List Round) →
           (guards.2 message salt (table (Key.here z message salt))) z messages
           (fun q => table (Key.later message salt q))
 
-/-- At an authored key, record whether its strict-prefix guards passed and its own guard's
-decision. Earlier challenge responses select the guard continuation. This reconstruction does
-not query the key's own challenge response. -/
-def guardPrefixAtKey {Input Salt : Type} : {rounds : List Round} →
-    GuardSchedule Input Salt rounds → (key : Key Input Salt rounds) →
-      Table Input Salt rounds → Bool × Bool
-  | [], _, key, _ => nomatch key
-  | _ :: _, guards, .inl (z, message, salt), _ =>
-      (true, guards.1 z message salt)
-  | _ :: _, guards, .inr (message, salt, key), table =>
-      let challenge := table (Key.here key.input message salt)
-      let suffix := guardPrefixAtKey (guards.2 message salt challenge) key
-        (fun q => table (Key.later message salt q))
-      (guards.1 key.input message salt && suffix.1, suffix.2)
-
-/-- Resampling a target key leaves both its strict-prefix reachability and its own pure guard
-decision unchanged. This is the guard counterpart of `keyExtractor_update`. -/
-theorem guardPrefixAtKey_update {Input Salt : Type} {rounds : List Round}
-    [DecidableEq Input] [DecidableEq Salt]
-    (guards : GuardSchedule Input Salt rounds)
-    (key : Key Input Salt rounds) (table : Table Input Salt rounds)
-    (value : key.Challenge) :
-    guardPrefixAtKey guards key (Function.update table key value) =
-      guardPrefixAtKey guards key table := by
-  classical
-  induction rounds with
-  | nil => exact key.elim
-  | cons round rounds ih =>
-      cases key with
-      | inl data => rfl
-      | inr data =>
-          rcases data with ⟨message, salt, key⟩
-          simp only [guardPrefixAtKey]
-          have hhere : Function.update table (Key.later message salt key) value
-              (Key.here key.input message salt) =
-              table (Key.here key.input message salt) := by
-            apply Function.update_of_ne
-            simp [Key.here, Key.later]
-          rw [hhere]
-          have htable :
-              (fun q => Function.update table (Key.later message salt key) value
-                (Key.later message salt q)) =
-              Function.update (fun q => table (Key.later message salt q)) key value := by
-            funext q
-            by_cases hq : q = key
-            · subst q
-              simp
-            · simp [Function.update_of_ne hq, Function.update_of_ne
-                (show Key.later message salt q ≠ Key.later message salt key by
-                  simpa [Key.later] using hq)]
-          rw [htable]
-          exact congrArg
-            (fun p => (guards.1 key.input message salt && p.1, p.2))
-            (ih (guards.2 message salt (table (Key.here key.input message salt)))
-              key (fun q => table (Key.later message salt q)) value)
-
 /-- On a fully accepted guard path, stopped reconstruction is the existing full native path. -/
 theorem stoppedPath_eq_some_completedPath {Input Salt : Type}
     (rounds : List Round) (guards : GuardSchedule Input Salt rounds)
@@ -611,20 +555,6 @@ theorem stoppedKeys_error_sum_le (rounds : List Round) (errors : RoundErrors rou
         simp only [stoppedKeys, hg']
         exact zero_le
 
-/-- Nonnegative distinct-key charge never exceeds the cost of the ordered call list. -/
-private theorem stopped_sum_toFinset_le_list_sum {A : Type} [DecidableEq A]
-    (f : A → ENNReal) (items : List A) :
-    (∑ a ∈ items.toFinset, f a) ≤ (items.map f).sum := by
-  induction items with
-  | nil => simp
-  | cons a tail ih =>
-      simp only [List.toFinset_cons, List.map_cons, List.sum_cons]
-      by_cases ha : a ∈ tail.toFinset
-      · rw [Finset.insert_eq_of_mem ha]
-        exact le_trans ih (le_add_left le_rfl)
-      · rw [Finset.sum_insert ha]
-        simpa only [add_comm] using add_le_add_left ih (f a)
-
 /-- A joint stopped log charges the adversary's distinct keys and only verifier calls that
 actually executed. Repeated or previously cached verifier keys can make the bound strict. -/
 theorem roundFreshCharge_append_le_stopped [DecidableEq Input] [DecidableEq Salt]
@@ -644,7 +574,7 @@ theorem roundFreshCharge_append_le_stopped [DecidableEq Input] [DecidableEq Salt
         simp only [Finset.sum_const, nsmul_eq_mul]
   have hC : (∑ key ∈ C, keyError errors key) ≤
       ((suffixLog.map Sigma.fst).map (keyError errors)).sum :=
-    stopped_sum_toFinset_le_list_sum (keyError errors) (suffixLog.map Sigma.fst)
+    sum_toFinset_le_list_sum (keyError errors) (suffixLog.map Sigma.fst)
   have hUnion :
       (∑ key ∈ A ∪ C, keyError errors key) ≤
         (∑ key ∈ A, keyError errors key) + (∑ key ∈ C, keyError errors key) := by
