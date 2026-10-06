@@ -28,7 +28,8 @@ Use this page when a question is about:
 
 - what ring switching is and why a polynomial commitment scheme uses it;
 - the `RingSwitchingProfile` abstraction and how a protocol family instantiates it;
-- where Binius plugs in, and why Hachi's §3 head needs its own interface;
+- where Binius plugs in, and how Hachi's §3 head, which is not a profile instance, uses the
+  coordinate layer;
 - which security statements are generic vs. instance-specific.
 
 ## The idea
@@ -116,28 +117,33 @@ Lagrange interpolation needs the opening algebra to be a field.
 - **Hachi §3.1 trace head** ([`../papers/NOZ26.md`](../papers/NOZ26.md),
   `Commitments/Functional/Hachi/TraceHead/`): `L = R_q`,
   `A = R_q`, `φ₀ = id`, `φ₁ = σ₋₁`, `β = ψ` (Theorem 2). The carrier is `L` itself, so for
-  `κ > 0` this is **not** a `RingSwitchingProfile` instance; it needs its own trace interface
-  over the shared checked-observation interface. The evaluation point is engineered to be
+  `κ > 0` this is **not** a `RingSwitchingProfile` instance; it uses the coordinate layer
+  directly (`PackingData.ofBaseOpening`, `packedMLE`, its own `ClaimLayout`, and
+  `CheckedObservation`). The evaluation point is engineered to be
   subfield-valued, so the reduction is **deterministic**
   (one message + one trace check, no challenges, no sum-check). `R_q` is not a domain, so the
   Schwartz–Zippel soundness theorem does not apply — Hachi soundness is a separate (CWSS)
-  argument. The formalized head computes over CompPoly's `CMlPolynomial` and reaches the
-  `MvPolynomial`-based coordinate layer through `CMlPolynomial.equivMvPolynomialDeg1`
-  (`TraceHead/Coefficients.lean`). What it shares:
-  - its packed polynomial is the shared `packedMLE` of the components of `traceHeadLayout`, at
-    `PackingData.ofBaseOpening` of `ψ` (`toMvPolynomialDeg1_packCoefficients`);
-  - its read-back commutes evaluation with packing by the shared `packedMLE_eval_embedded`, the
-    lemma Binius's profile layout uses;
+  argument. The formalized head computes over CompPoly's `CMlPolynomial`; its read-back
+  `unpackCoefficients_eval` is proved directly, and its `observation` is a `CheckedObservation`
+  written by hand. The packing is also stated in the `MvPolynomial`-based coordinate layer,
+  through `CMlPolynomial.equivMvPolynomialDeg1` (`TraceHead/Coefficients.lean`):
+  - the packing data is `PackingData.ofBaseOpening` of `ψ`: the fixed subring is the opening
+    algebra, with one opening coordinate (`ιE = Unit`), and the shared transpose is `ψ` itself;
   - `traceHeadLayout` instantiates the `ScalarHead.ClaimLayout` contract, splitting the
     **monomial coefficients** of the packed variables (not the Boolean-restriction
     `packedSuffixLayout`); its `reconstruct` is Hachi's own proof (`evalSplit_eq_eval` and the
     evaluation bridge);
-  - its observation is a `CheckedObservation`, written by hand.
-  The fixed subring is the opening algebra, so there is one opening coordinate (`ιE = Unit`) and
-  the transpose is trivial. The protocol relations `relScalarEval`/`relPolyEval` and the
-  conformance theorem (`ArkLibTest/ProofSystem/RingSwitching/Conformance/Hachi.lean`), which
-  states the exact scalar-to-ring relation correspondence, do not mention the packing layer; they
-  depend on it only through the read-back identity `unpackCoefficients_eval`.
+  - the packed polynomial is the shared `packedMLE` of the layout's components
+    (`toMvPolynomialDeg1_packCoefficients`).
+
+  The conformance theorem `traceHead_conforms`
+  (`ArkLibTest/ProofSystem/RingSwitching/Conformance/Hachi.lean`) states the accepting condition
+  through that layer: a passing check whose forwarded claim opens validly is exactly a valid weak
+  opening for which the sent value is the single shared slice (`sliceRel`) of the `packedMLE` of
+  the decoded committed polynomial's components, and the claimed scalar is the layout-weighted sum
+  of its `ψ`-coordinates. Hachi §3.1 exercises only the packing, evaluation and opening part of the
+  shared layer (one opening coordinate, no batching, multiplier or sumcheck), as in the paper, so
+  its reuse is small at the proof level and real at the statement level.
 - **HMZ25 `Lift` construction** ([`../papers/HMZ25.md`](../papers/HMZ25.md)): the
   *opposite* direction, `S ≅ R[X]/(φ)` → a field `F` — lift `M z = y` to `R[X]` and evaluate
   at a random `α`. **Formalized generically** in `ProofSystem/RingSwitching/Lift/`

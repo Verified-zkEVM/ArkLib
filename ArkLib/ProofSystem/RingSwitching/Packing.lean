@@ -105,8 +105,10 @@ Hachi's §3 head ([NOZ26] Theorem 2) has carrier `A = L = R_q` and an automorphi
 `κ > 0` and finite `R_q` it is not a profile instance (`RingSwitchingProfile.card_A`); its
 deterministic trace head is `Commitments/Functional/Hachi/TraceHead/`. It uses the coordinate
 layer directly: its packed polynomial is `packedMLE` at `PackingData.ofBaseOpening` of `ψ` (one
-opening coordinate) of its own monomial-coefficient `ScalarHead.ClaimLayout`, its read-back uses
-`packedMLE_eval_embedded`, and its observation is a `CheckedObservation`.
+opening coordinate) of its own monomial-coefficient `ScalarHead.ClaimLayout`, its conformance
+theorem states its accepting condition through `sliceRel`, and its observation is a
+`CheckedObservation`. It exercises only the packing, evaluation and opening part of this layer (no
+batching, multiplier or sumcheck), as in [NOZ26] §3.1.
 
 ## References
 

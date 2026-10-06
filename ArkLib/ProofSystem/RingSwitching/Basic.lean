@@ -38,7 +38,10 @@ each:
      Its carrier is `L` itself, so it is not a `Profile` instance: the Hachi trace head
      (`Commitments/Functional/Hachi/TraceHead/`) uses the coordinate layer of `Packing/`
      directly, with one opening coordinate: its `ψ` packing is `packedMLE` of a
-     monomial-coefficient `ClaimLayout`, and its read-back is a `CheckedObservation`.
+     monomial-coefficient `ClaimLayout`, its conformance theorem states its accepting condition
+     through the shared `sliceRel`, and its read-back is a `CheckedObservation`. It exercises
+     only the packing, evaluation and opening part of that layer (no batching, multiplier or
+     sumcheck), as in [NOZ26] §3.1.
 
 2. **Lift** (`Lift/`) — the *opposite* direction, a quotient ring
    `S ≅ R[X]/(φ)` → a field `F ⊇ R`. Each row of a linear claim `M z = y` over `S` lifts to

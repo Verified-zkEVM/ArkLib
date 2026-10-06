@@ -9,8 +9,10 @@ import ArkLibTest.Commitments.Functional.Hachi.TraceHead.Protocol
 # The trace head's soundness depends on its check
 
 A verifier with the same output map but no trace check is not coordinate-wise special sound for
-the trace head's relations. This pins that `traceHeadVerifier_coordinateWiseSpecialSoundWith` is
-not vacuous: its content is the check.
+the trace head's relations with the head's own extractor `traceHeadExtractor`. This pins that
+`traceHeadVerifier_coordinateWiseSpecialSoundWith` is not vacuous: with that extractor, its content
+is the check. It does not refute the existential form (some extractor), since another weak opening
+of the same commitment could satisfy the scalar relation.
 -/
 
 open CompPoly ArkLib.Lattices.CyclotomicModulus
@@ -34,9 +36,10 @@ def rubber {ι : Type} {oSpec : OracleSpec ι} : Verifier oSpec
     (PolyEvalStatement Φ 1 (Nat.clog 2 5) 1 (Nat.clog 2 5) 1 0 1) (pSpecTraceHead (q := 5) 1) where
   verify := fun s tr => pure (output 1 0 s (tr 0))
 
-/-- Deleting the trace check makes the coordinate-wise special soundness statement false, so the
-head's certificate genuinely depends on the check: a false claim with the honest committer's
-opening is accepted, and its only leaf witness does not satisfy the scalar relation. -/
+/-- Deleting the trace check makes coordinate-wise special soundness with `traceHeadExtractor`
+false, so the head's certificate at that extractor depends on the check: a false claim with the
+honest committer's opening is accepted, and the extractor's witness, the leaf's weak opening, does
+not satisfy the scalar relation. -/
 theorem rubber_not_cwss {ι : Type} (oSpec : OracleSpec ι)
     (impl : QueryImpl oSpec (StateT Unit ProbComp)) :
     ¬ Verifier.coordinateWiseSpecialSoundWith (pure ()) impl CWSSStructure.ofIsEmpty

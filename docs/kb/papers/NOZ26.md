@@ -53,7 +53,9 @@ Ring-switching layer:
   `CheckedObservation`. Its coefficient packing is the shared `PackingData.packedMLE` (at
   `PackingData.ofBaseOpening` of `ψ`, one opening coordinate) of a monomial-coefficient
   `ScalarHead.ClaimLayout`, transported from CompPoly's `CMlPolynomial` to `MvPolynomial`, and its
-  read-back uses the shared `packedMLE_eval_embedded`.
+  conformance theorem states the accepting condition through the shared `sliceRel`. §3.1 exercises
+  only the packing, evaluation and opening part of the shared layer (no batching, multiplier or
+  sumcheck), so the reuse is small at the proof level and real at the statement level.
 - The **cyclotomic-ring → extension-field lift** (§4.3, Figure 4 / **Lemma 9**, following
   [`HMZ25`](HMZ25.md)): the *simplified* Figure 4 extraction kernel is **formalized and proven** as
   `liftPackage` in Hachi's

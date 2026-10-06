@@ -62,7 +62,7 @@ theorem source_valid : (s, w) ∈ relScalarEvalMsgShort 3 1 hk h2 pp 2 24 1 1 1 
 /-- The honest message passes the check and its forwarded value opens validly. -/
 example : check 3 1 hk s (honestMessage 3 1 2 s w) = true ∧
     (output 3 1 s (honestMessage 3 1 2 s w), w) ∈ relPolyEval Φ pp 2 24 1 1 :=
-  (ArkLibTest.RingSwitchingConformance.Hachi.traceHead_conforms 3 1 hk h2 pp 2 24 1 1 s _ w).2
+  (ArkLibTest.RingSwitchingConformance.Hachi.traceHead_accepts_iff 3 1 hk h2 pp 2 24 1 1 s _ w).2
     ⟨source_valid.1, rfl⟩
 
 /-- Shifting the claim by one keeps every key, commitment, point and opening fixed. -/
@@ -73,7 +73,7 @@ example (Y : Rq Φ) :
     ¬ (check 3 1 hk bad Y = true ∧ (output 3 1 bad Y, w) ∈ relPolyEval Φ pp 2 24 1 1) := by
   intro h
   have hbad :=
-    ((ArkLibTest.RingSwitchingConformance.Hachi.traceHead_conforms 3 1 hk h2 pp 2 24 1 1
+    ((ArkLibTest.RingSwitchingConformance.Hachi.traceHead_accepts_iff 3 1 hk h2 pp 2 24 1 1
       bad Y w).1 h).1
   have hsum : s.value + 1 = s.value := hbad.2.symm.trans source_valid.1.2
   have : Nontrivial (Rq Φ) := (Fintype.one_lt_card_iff_nontrivial).mp (by

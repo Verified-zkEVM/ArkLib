@@ -55,7 +55,7 @@ re-export, and this file is the umbrella for the whole development.
   deterministic bound `‖z‖∞ ≤ 2ʳ·ω·⌊b/2⌋` rather than by `q` (`τ = 5` at the `ℓ = 30`
   parameters — see `Params.lean`).
 * `TraceHead/` (§3.1) — the one-message scalar trace head, coefficient packing, and
-  honest-committer coverage into the ring-level `relPolyEval` relation.
+  honest-committer coverage into the message-bounded scalar relation `relScalarEvalMsgShort`.
 * `EvalSplit.lean` (§4, Eq. (12)) — multilinear evaluation as the vector–matrix–vector product
   `mb(xl) ⬝ᵥ (toMatrix p *ᵥ mb(xh))`.
 * `InnerOuter/` (§4.1) — the inner-outer Ajtai commitment: the scheme with its weak openings

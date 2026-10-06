@@ -6,7 +6,6 @@ Authors: Alexander Hicks
 module
 
 public import ArkLib.Commitments.Functional.Hachi.EvalSplit
-public import ArkLib.ProofSystem.RingSwitching.Packing.Relations
 public import ArkLib.ProofSystem.RingSwitching.Packing.ScalarHead.Layout
 public import ArkLib.ToCompPoly.Multilinear.Basic
 
@@ -16,20 +15,23 @@ public import ArkLib.ToCompPoly.Multilinear.Basic
 The retained variables come first and the packed variables last. Indices use the existing
 little-endian `Hachi.splitEquiv`; this is coefficient packing, not Boolean-table packing.
 
-The packing is an instance of the shared packed-polynomial layer of `RingSwitching.Packing`.
-`traceHeadData e` is `PackingData.ofBaseOpening` at the basis given by `e`: the base ring is also
-the opening algebra, so there is one opening coordinate (`ιE = Unit`) and the coordinate
-transpose is trivial. `traceHeadLayout e` is a `ScalarHead.ClaimLayout` whose components are the
-monomial-coefficient rows of the packed variables (`coefficientRows`), transported to
-`MvPolynomial` by `CMlPolynomial.equivMvPolynomialDeg1`; it is not the Boolean-restriction
-`ScalarHead.packedSuffixLayout`. Its `reconstruct` is proved here, from `evalSplit_eq_eval` and
-`CMlPolynomial.eval_eq_eval_toMvPolynomial`.
+The read-back identity `unpackCoefficients_eval` is proved directly: evaluating the packed
+polynomial at an embedded retained point packs the coefficient contractions
+(`packCoefficients_eval`), and `evalSplit_eq_eval` reassembles the scalar evaluation.
 
-Under the transport `packCoefficients e` is the shared `packedMLE` of the layout's components
-(`toMvPolynomialDeg1_packCoefficients`). Evaluating at an embedded retained point commutes with
-packing by the shared `PackingData.packedMLE_eval_embedded`; this gives the opening relation of
-the components (`openingClaimRel_unpackCoefficients_iff`), and with the layout's reconstruction
-the read-back identity `unpackCoefficients_eval`.
+The final section states the packing in the shared packed-polynomial layer of
+`RingSwitching.Packing`. `traceHeadData e` is `PackingData.ofBaseOpening` at the basis given by
+`e`: the base ring is the opening algebra, so there is one opening coordinate (`ιE = Unit`).
+`traceHeadLayout e` is a `ScalarHead.ClaimLayout` whose components are the monomial-coefficient
+rows of the packed variables (`coefficientRows`), transported to `MvPolynomial` by
+`CMlPolynomial.equivMvPolynomialDeg1`; it is not the Boolean-restriction
+`ScalarHead.packedSuffixLayout`. Under the transport `packCoefficients e` is the shared
+`packedMLE` of the layout's components (`toMvPolynomialDeg1_packCoefficients`). The statements
+connecting the protocol relations to this layer are in the conformance test
+`ArkLibTest/ProofSystem/RingSwitching/Conformance/Hachi.lean`.
+Hachi §3.1 exercises only the packing, evaluation and opening part of the shared layer (one
+opening coordinate, no batching, multiplier or sumcheck), as in the paper, so its reuse is small
+at the proof level and real at the statement level.
 
 ## References
 
@@ -73,6 +75,47 @@ def unpackCoefficients (F : CMlPolynomial A n) : CMlPolynomial B (n + t) :=
   simp [unpackCoefficients, packCoefficients]
   rfl
 
+/-- Coordinates of the packed polynomial evaluated at an embedded retained point. -/
+theorem packCoefficients_eval (f : CMlPolynomial B (n + t)) (x : Vector B n) :
+    (packCoefficients e f).eval (x.map (algebraMap B A)) =
+      e (fun j => ∑ i : Fin (2 ^ n),
+        (CMlPolynomial.monomialBasis x).get i * f.get (splitEquiv n t (j, i))) := by
+  rw [CMlPolynomial.eval, Vector.dotProduct_eq_root_dotProduct]
+  change (∑ i, (packCoefficients e f).get i *
+    (CMlPolynomial.monomialBasis (x.map (algebraMap B A))).get i) = _
+  have hfun : (fun j => ∑ i : Fin (2 ^ n),
+        (CMlPolynomial.monomialBasis x).get i * f.get (splitEquiv n t (j, i))) =
+      ∑ i : Fin (2 ^ n), (CMlPolynomial.monomialBasis x).get i •
+        (fun j => f.get (splitEquiv n t (j, i))) := by
+    funext j
+    simp only [Finset.sum_apply, Pi.smul_apply, smul_eq_mul]
+  rw [hfun, map_sum]
+  apply Finset.sum_congr rfl
+  intro i _
+  rw [map_smul, Algebra.smul_def, ← CMlPolynomial.map_monomialBasis, Vector.get_map]
+  simp only [packCoefficients, Vector.get_ofFn]
+  exact mul_comm _ _
+
+/-- The scalar polynomial evaluation is the inner product of the decoded ring evaluation
+and the monomial basis at the packed suffix. -/
+theorem unpackCoefficients_eval (F : CMlPolynomial A n) (x : Vector B n)
+    (xp : Vector B t) :
+    (unpackCoefficients e F).eval (x ++ xp) =
+      ∑ j, e.symm (F.eval (x.map (algebraMap B A))) j *
+        (CMlPolynomial.monomialBasis xp).get j := by
+  have hcoords := congrArg e.symm (packCoefficients_eval e (unpackCoefficients e F) x)
+  rw [packCoefficients_unpackCoefficients, LinearEquiv.symm_apply_apply] at hcoords
+  rw [hcoords, ← evalSplit_eq_eval]
+  simp only [evalSplit, splitForm, dot_eq_sum, matVecMul_apply, Finset.mul_sum,
+    Finset.sum_mul]
+  rw [Finset.sum_comm]
+  apply Finset.sum_congr rfl
+  intro i _
+  apply Finset.sum_congr rfl
+  intro j _
+  simp only [toMatrix]
+  ring
+
 /-- The monomial-coefficient rows along the final `t` variables: row `j` holds the
 coefficients of the monomials whose packed-variable exponents are the bits of `j`, that is,
 column `j` of `toMatrix`. This splits coefficients, not Boolean restrictions. -/
@@ -91,7 +134,7 @@ def coefficientRows : CMlPolynomial B (n + t) ≃ (Fin (2 ^ t) → CMlPolynomial
 
 end Coefficients
 
-/-! ## The trace head as a shared packing layout -/
+/-! ## The packing in the shared packing layer -/
 
 section Layout
 
@@ -147,51 +190,6 @@ theorem toMvPolynomialDeg1_packCoefficients (f : CMlPolynomial B (n + t)) :
   split_ifs
   · simp [packCoefficients, coefficientRows, toMatrix]
   · simp
-
-/-- The opening claims of the layout's components of a decoded polynomial hold exactly when `e`
-maps the claimed values to the ring evaluation at the embedded retained point. The ring
-evaluation is the evaluation of the shared `packedMLE` of the components, which
-`PackingData.packedMLE_eval_embedded` writes as the packing of the component evaluations. -/
-theorem openingClaimRel_unpackCoefficients_iff (F : CMlPolynomial A n) (x : Vector B n)
-    (v : Fin (2 ^ t) → B) :
-    ((v, x.get), (traceHeadLayout e).components (unpackCoefficients e F)) ∈
-        (traceHeadData e).openingClaimRel n ↔
-      e v = F.eval (x.map (algebraMap B A)) := by
-  set ps := (traceHeadLayout e).components (unpackCoefficients e F)
-  have h := (traceHeadData e).packedMLE_eval_embedded ps x.get
-  rw [← toMvPolynomialDeg1_packCoefficients, packCoefficients_unpackCoefficients] at h
-  have hx : (x.map (algebraMap B A)).get = fun j => algebraMap B A (x.get j) :=
-    funext fun j => by simp [Vector.get_map]
-  have hb : ∀ w : Fin (2 ^ t) → B,
-      ∑ i, algebraMap B A (w i) * (Basis.ofEquivFun e.symm) i = e w := fun w => by
-    simp only [← Algebra.smul_def, ← Basis.equivFun_symm_apply, Basis.equivFun_ofEquivFun,
-      LinearEquiv.symm_symm]
-  rw [CMlPolynomial.eval_eq_eval_toMvPolynomial, hx]
-  change _ ↔ e v = MvPolynomial.eval _ (CMlPolynomial.toMvPolynomialDeg1 F).val
-  rw [h, show (∑ i, algebraMap B A (MvPolynomial.eval x.get (ps i).val) *
-      (Basis.ofEquivFun e.symm) i) = e (fun i => MvPolynomial.eval x.get (ps i).val) from hb _,
-    e.injective.eq_iff, funext_iff]
-  rfl
-
-/-- The scalar polynomial evaluation is the inner product of the decoded ring evaluation and the
-monomial basis at the packed suffix.
-
-The decoded ring evaluation is the family of component evaluations, by the opening relation at
-the honest values (`openingClaimRel_unpackCoefficients_iff`, hence
-`PackingData.packedMLE_eval_embedded`), and the layout's `reconstruct` assembles the scalar
-evaluation from them. It is stated for `B A : Type` because `PackingData` lives in `Type`. -/
-theorem unpackCoefficients_eval (F : CMlPolynomial A n) (x : Vector B n) (xp : Vector B t) :
-    (unpackCoefficients e F).eval (x ++ xp) =
-      ∑ j, e.symm (F.eval (x.map (algebraMap B A))) j *
-        (CMlPolynomial.monomialBasis xp).get j := by
-  set ps := (traceHeadLayout e).components (unpackCoefficients e F)
-  have hcoord : e.symm (F.eval (x.map (algebraMap B A))) =
-      fun j => MvPolynomial.aeval x.get (ps j).val :=
-    e.symm_apply_eq.mpr ((openingClaimRel_unpackCoefficients_iff e F x _).mp fun _ => rfl).symm
-  refine ((traceHeadLayout e).reconstruct (x, xp) (unpackCoefficients e F)).trans
-    (Finset.sum_congr rfl fun j _ => ?_)
-  rw [hcoord, mul_comm]
-  rfl
 
 end Layout
 

@@ -112,16 +112,17 @@ home_page/            site assets and assembled website root
     yet `τ = 5` is perfectly correct. `gadgetDecomposeFun` (a bare per-coefficient digit map) is
     the shared computational core of both, so the layout and norm bookkeeping is proved once.
   - `TraceHead/` (§3.1) — the one-message, zero-challenge scalar-to-ring trace head. `Coefficients`
-    packs monomial coefficients over the fixed subring and identifies the packing, through
-    `CMlPolynomial.equivMvPolynomialDeg1`, with the shared `PackingData.packedMLE` of a
-    monomial-coefficient `ScalarHead.ClaimLayout` (`traceHeadLayout`, one opening coordinate);
-    `Coordinates` indexes `psi` by the monomials
+    packs monomial coefficients over the fixed subring, proves the read-back directly, and
+    identifies the packing, through `CMlPolynomial.equivMvPolynomialDeg1`, with the shared
+    `PackingData.packedMLE` of a monomial-coefficient `ScalarHead.ClaimLayout`
+    (`traceHeadLayout`, one opening coordinate); `Coordinates` indexes `psi` by the monomials
     and turns the trace check into a coefficient inner product, `Protocol` is the aborting verifier
     with its `CheckedObservation` read-back and coordinate-wise special soundness into
     `relPolyEval`, `Completeness` proves perfect completeness (also at the message-bounded
     relations), and `Commitment` covers the honest committer. The fixed subring is used as a ring;
-    nothing here depends on its field identification. Its conformance test is
-    `ArkLibTest/ProofSystem/RingSwitching/Conformance/Hachi.lean`.
+    nothing here depends on its field identification. Its conformance test
+    `ArkLibTest/ProofSystem/RingSwitching/Conformance/Hachi.lean` states the accepting condition
+    through the shared `sliceRel` (`traceHead_conforms`).
   - `EvalSplit.lean` (§4, Eq. (12)) — the matrix split underlying the evaluation argument:
     multilinear evaluation `eval p (xl ++ xh)` factors as the vector–matrix–vector product
     `mb(xl) ⬝ᵥ (toMatrix p *ᵥ mb(xh))` (`evalSplit_eq_eval`), with the inverse reshape
@@ -141,7 +142,7 @@ home_page/            site assets and assembled website root
     folding protocol. `QuadEval/Gadgets` holds the gadget algebra (`PublicParamsD`, the
     honest-prover carrier/short commitment `v = D ŵ`, the `J`-decomposition of `z`, and the
     `tensorG`/`tensorG1` challenge combinations). `QuadEval/Reduction` is the 2-round protocol with
-    its types, plain `relOut` (Eq. (20) + range balls), plain `relScalarEval` (eval-consistent weak
+    its types, plain `relOut` (Eq. (20) + range balls), plain `relIn` (eval-consistent weak
     opening), and the `QuadEvalSISBreak`/`quadEvalSISSet` **break vocabulary** for MSIS(B/D)
     outcomes — key-tied: breaks are validated against the fixed key parameter `pp`, which (like
     the relations' key) is never statement data.
@@ -161,7 +162,7 @@ home_page/            site assets and assembled website root
     `bridge_coordinateWiseSpecialSoundWith`. That link is proved in **both** directions too: the
     computable protocol object `bridgeReduction` (verifier `= bridgeVerifier` by
     `bridgeReduction_verifier`), the converse relation step `mem_relIn_of_relPolyEval` — which makes
-    `relPolyEval` exactly the pull-back of `relScalarEval` — and `bridgeReduction_perfectCompleteness`
+    `relPolyEval` exactly the pull-back of `relIn` — and `bridgeReduction_perfectCompleteness`
     (error `0`, straight from the generic `ReduceClaim.reduction_completeness`: a zero-round
     `ReduceClaim` head draws no challenge and performs no check, so all of its content is that
     relation equivalence). `QuadEval/Completeness` is the **honest direction**, in
@@ -303,7 +304,7 @@ home_page/            site assets and assembled website root
     `keygen`/`commit` (the paper's **balanced** base-`b` gadget decomposition at width
     `δ = ⌈log_b q⌉`, digits in Eq. (20)'s box `S_b` — `[-8, 7]` at `b = 16`), and the `hachi`
     scheme value, whose `opening` field is the §4.5 *recursive* opening and is `sorry` (the
-    recursion boundary; the declared `pSpecTraceHead` covers only the bridge ▷ QuadEval prefix). `hachi` and
+    recursion boundary; the declared `pSpec` covers only the bridge ▷ QuadEval prefix). `hachi` and
     `hachiNonrecursive` share this committer; the unsigned `zmodDigitDecomposition` survives only
     as the building block the balanced digits are shifted from (`Gadget/Core`), and
     `InnerOuter.perfectlyCorrect` is likewise stated at the balanced digits. The file also carries
@@ -391,7 +392,7 @@ home_page/            site assets and assembled website root
     theorems' (a statement that cannot be written at two different `zDigits` — the
     `QuadEvalResponse` types would differ), and
     `relInMsgShort_atProfile_subset_packageAtProfile_relIn` lands the correctness input relation in
-    the package's `relScalarEval` at `βSq = betaSq`. The *scheme*-level substitution is not written out:
+    the package's `relIn` at `βSq = betaSq`. The *scheme*-level substitution is not written out:
     every profile hypothesis it would need is already discharged here (`hμn` by
     `sumcheckWidthAtProfile` at `M = 25`), and the composed scheme's type carries
     `Nat.clog params.b 4294967197` inside `Fin (2¹⁰)`-indexed matrices and a 26-deep
@@ -484,7 +485,7 @@ home_page/            site assets and assembled website root
   `ProximityGap/BCIKS20/ListDecoding/Guruswami.lean`. See
   [`polynomial-conventions.md`](polynomial-conventions.md) before applying generic bivariate
   operations to a trivariate value.
-- **The reusable way into `traceHeadReduction_perfectCompleteness` is `Reduction.perfectCompleteness_of_run_support`
+- **The reusable way into `perfectCompleteness` is `Reduction.perfectCompleteness_of_run_support`
   in `Security/Basic.lean`**, not the commented-out `perfectCompleteness_forall_challenge` sketch
   a few lines below it. It reduces perfect completeness to a support statement about the
   *unsimulated* `(Reduction.run …).run`: show every element of that support is a success whose
@@ -588,7 +589,7 @@ home_page/            site assets and assembled website root
   binary only** — there is no n-ary CWSS `seqCompose`; chains are built by recursion over the binary
   append (`▷`), which keeps the composed extractor a nameable function. All CWSS packages
   (`CWSSPackage` and its guarded / escape-aware variants) carry their extraction algorithm as an
-  explicit `traceHeadExtractor` field, with the `isCWSS` certificate stated at it — so a composed chain
+  explicit `extractor` field, with the `isCWSS` certificate stated at it — so a composed chain
   exposes an actual end-to-end extractor (`chain.extractor`). `NoChallenge` also provides
   `CWSSStructure.ofIsEmpty`, the concrete
   challenge-free structure used as the left factor when appending a zero-round `ReduceClaim` head
@@ -693,7 +694,9 @@ home_page/            site assets and assembled website root
   soundness, `[IsDomain L]`); Binius instantiates it in `ProofSystem/Binius/FRIBinius/`
   (`biniusProfile`). Hachi's §3 trace head has carrier `L` itself, so it is not a `Profile`
   instance; it uses the coordinate layer directly, through `PackingData.ofBaseOpening`,
-  `packedMLE`/`packedMLE_eval_embedded`, its own `ClaimLayout` and `CheckedObservation`.
+  `packedMLE`, its own `ClaimLayout` and `CheckedObservation`, exercising only the packing,
+  evaluation and opening part (no batching, multiplier or sumcheck); its conformance test states
+  the protocol relations through `sliceRel`.
   `Lift/` is the **generic HMZ25 lift** (large quotient ring →
   field, CWSS at `k = 2d`): `Presentation.lean` is its data layer (proof-free
   `Presentation R S` + `IsPresentation` laws over any monic modulus — not cyclotomic-specific
