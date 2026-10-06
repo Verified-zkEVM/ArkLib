@@ -366,7 +366,9 @@ open Probability in
 /-- If compatibility with the oracle statement determines the packed polynomial, then for a
 fixed carrier `ŝ` a uniform batching point admits a compatible packed polynomial whose tensor
 evaluation differs from `ŝ` but whose round-zero sumcheck claim is consistent with the batching
-target of `ŝ` with probability at most `κ/|L|`. -/
+target of `ŝ` with probability at most `κ/|L|`. This is the exact-functional, one-candidate case
+of the candidate-list bound (`prEvent_exists_and_and_le_of_subsingleton`), with
+per-candidate error `compute_s0_collision_le`. -/
 theorem prob_exists_consistent_ne_le [NoZeroDivisors L] (stmt : BatchingStmtIn L ℓ)
     (oStmt : ∀ j, aOStmtIn.OStmtIn j) (s_hat : P.A)
     (hbind : ∀ t₁ t₂, aOStmtIn.initialCompatibility ⟨t₁, oStmt⟩ →
@@ -382,17 +384,13 @@ theorem prob_exists_consistent_ne_le [NoZeroDivisors L] (stmt : BatchingStmtIn L
             (t := t') (i := 0) (challenges := Fin.elim0))] ≤
       (((κ : ℝ≥0) / (Fintype.card L : ℝ≥0) : ℝ≥0) : ℝ≥0∞) := by
   have : IsDomain L := NoZeroDivisors.to_isDomain L
-  by_cases h : ∃ t₀ : MultilinearPoly L ℓ', aOStmtIn.initialCompatibility ⟨t₀, oStmt⟩ ∧
-      embedded_MLP_eval κ L K P ℓ ℓ' h_l t₀ stmt.t_eval_point ≠ s_hat
-  · obtain ⟨t₀, ht₀, hne⟩ := h
-    -- binding pins the packed polynomial, so the event is a collision of batching targets
-    refine (prEvent_mono _ _ _ fun c ⟨t', ht', _, hcons⟩ => ?_).trans
-      (compute_s0_collision_le P hne)
-    rw [hbind t₀ t' ht₀ ht']
-    unfold sumcheckConsistencyProp at hcons
-    rw [hcons, sum_cube_batchingPoly_eq_compute_s0]
-  · rw [prEvent_eq_zero_of_forall_not _ _ fun c ⟨t', ht', hne, _⟩ => h ⟨t', ht', hne⟩]
-    exact _root_.zero_le
+  -- binding makes the compatible packed polynomial unique: the one-candidate list bound applies
+  refine prEvent_exists_and_and_le_of_subsingleton _ _ _ _ (fun t' _ hne => ?_)
+    fun _ h₁ _ h₂ => hbind _ _ h₁ h₂
+  -- each incorrect candidate is consistent only on a collision of batching targets
+  refine (prEvent_mono _ _ _ fun c hcons => ?_).trans (compute_s0_collision_le P hne)
+  unfold sumcheckConsistencyProp at hcons
+  rw [hcons, sum_cube_batchingPoly_eq_compute_s0]
 
 /-- Knowledge state function for the batching phase. -/
 noncomputable def batchingKnowledgeStateFunction :

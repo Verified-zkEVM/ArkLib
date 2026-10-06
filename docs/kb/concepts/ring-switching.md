@@ -93,7 +93,13 @@ them; `PackingData.transpose` is the coordinate transpose `(ιP → E) ≃ₗ[B]
 - `Multiplier` — the public multiplier evaluated by a read-once matrix program
   (`Data/Matrix/ReadOnce.lean`);
 - `Batching` — `BatchingStrategy`, a uniform challenge distribution with a proved collision bound
-  (`gammaPowers`, `eqFold`, `singleton`, `reindex`);
+  (`gammaPowers`, `eqFold`, `singleton`, `reindex`), and `BatchingStrategy.separates_finset`: a
+  list of at most `L` families fixed before the challenge has an incorrect collision with
+  probability at most `L` times the strategy error. The generic union bounds it instantiates are
+  in `ToVCVio/EvalDist/ProbabilityBounds.lean` (`prEvent_exists_mem_and_le_mul` and the
+  exact-functional `L = 1` case `prEvent_exists_and_and_le_of_subsingleton`, which
+  `BatchingPhase.prob_exists_consistent_ne_le` applies). The bound does not cover
+  challenge-dependent lists, adaptive joint-list invariants or extraction;
 - `ScalarHead/Layout` and `ScalarHead/Quirky` — prefix, suffix and quirky Lagrange layouts, each
   with a proved reconstruction identity.
 

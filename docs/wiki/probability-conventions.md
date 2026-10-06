@@ -27,12 +27,21 @@ native distribution need not be equal as programs.
 Use VCVio's `prEvent_mono`, `prEvent_congr`, `prEvent_or_le`, `prEvent_exists_le`, and
 `prEvent_bind_le_of_forall_le` for generic probability reasoning. Import their public owner
 modules instead of creating ArkLib aliases or compatibility wrappers. Generic missing lemmas
-belong upstream in VCVio before their ArkLib consumers are integrated.
+belong upstream in VCVio before their ArkLib consumers are integrated. The only exception is
+time-boxed staging in `ArkLib/ToVCVio/`: a new generic lemma whose VCVio PR is open may live there,
+at the path it has in that PR and with an identical statement and name, until the VCVio repin that
+brings it. Keep the staged copy in sync if the upstream PR changes in review, so the repin's name
+clash forces its removal; that repin deletes the staged file and its test. If the VCVio PR closes
+or misses the next repin, move the lemma to its ArkLib owner or reopen it upstream; do not leave it
+staged. Staging holds new lemmas only, never aliases or compatibility wrappers.
 
 `ArkLib/Data/Probability/Instances.lean` retains specialized mathematical facts about
 Schwartz–Zippel, dot products, and coordinate membership. `Combinatorial.lean` contains the
 collision-to-image-size argument for probability measures on a countable full-mass carrier.
-These mathematical helpers live in `namespace Probability`.
+These mathematical helpers live in `namespace Probability`. The union bounds for candidates fixed
+before sampling (`prEvent_exists_mem_and_le_mul` and its one-candidate case) are staged in
+`ArkLib/ToVCVio/EvalDist/ProbabilityBounds.lean` while VCVio PR #828 is open; see the staging rule
+above.
 
 Losslessness is `IsProbabilityMeasure 𝒟[mx]`, or the equivalent successful-event statement
 `Pr{let _ ← mx}[True] = 1`. For computations that may fail, the complement probability is
@@ -45,7 +54,8 @@ that an execution is impossible.
 Replace `Pr_{…}[…]` and `$ᵖ` with native event notation and sampling. Replace PMF-specific
 applications, sums, and support arguments with native event or measure lemmas; changing only
 the notation is insufficient. Import VCVio modules directly: the former `ArkLib.ToVCVio`
-compatibility tree and `ArkLib.Data.Probability.Notation` have been removed.
+compatibility tree and `ArkLib.Data.Probability.Notation` have been removed. `ArkLib/ToVCVio/` now
+holds only new lemmas staged under the rule above.
 
 Run `./scripts/validate.sh --axioms` before committing. Validation runs
 `lake exe retiredsweep --require-empty`: every ArkLib declaration's type and body must avoid

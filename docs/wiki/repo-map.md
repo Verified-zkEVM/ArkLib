@@ -13,6 +13,7 @@ ArkLib/
   Commitments/        commitments and opening arguments
   ProofSystem/        protocol families and higher-level proofs
   ToMathlib/          local additions not upstreamed to Mathlib
+  ToVCVio/            new generic lemmas staged while their VCVio PR is open
   ToCompPoly/         local additions not upstreamed to CompPoly
 blueprint/src/        blueprint sources and references.bib
 docs/kb/             persistent paper, concept, audit, and query knowledge base
@@ -46,7 +47,8 @@ home_page/            site assets and assembled website root
 - `ArkLib/OracleReduction/` remains the conceptual center of the legacy reduction and security
   layer while protocol clients migrate.
 - `ArkLib/Data/`, `ArkLib/ToMathlib/`, and `ArkLib/ToCompPoly/` support the
-  core with reusable definitions and lemmas.
+  core with reusable definitions and lemmas; `ArkLib/ToVCVio/` holds only lemmas staged while their
+  VCVio PR is open.
 - `ArkLib/Commitments/` and `ArkLib/ProofSystem/` build on top of those foundations.
 - When changing a protocol subtree, read the local subtree plus one layer of imports toward
   `Data/` or `OracleReduction/` before making architectural edits.
@@ -63,7 +65,8 @@ home_page/            site assets and assembled website root
   ArkLib's own `Commitment.Scheme` in `ArkLib/Commitments/Functional/Basic.lean`).
 - Moving reusable helper lemmas that ideally belong upstream: start in `ArkLib/ToMathlib/`,
   or `ArkLib/ToCompPoly/`, depending on the upstream project. Generic VCVio additions go upstream
-  directly; ArkLib imports their public owner modules.
+  directly and ArkLib imports their public owner modules; while the VCVio PR is open they may be
+  staged in `ArkLib/ToVCVio/` under the rule in `docs/wiki/probability-conventions.md`.
 - Updating theory docs, references, or long-form exposition: start in `blueprint/src/`.
 - Updating repository-local paper summaries, audits, or reference context: start in `docs/kb/`.
 
@@ -463,7 +466,9 @@ home_page/            site assets and assembled website root
 - Finite-probability helpers live under the `Probability` namespace in
   `ArkLib/Data/Probability/Instances.lean` (see
   [probability-conventions.md](probability-conventions.md)); the collision bound for random
-  functions is `ArkLib/Data/Probability/Combinatorial.lean`.
+  functions is `ArkLib/Data/Probability/Combinatorial.lean`. Union bounds for candidate lists
+  fixed before sampling are in `ArkLib/ToVCVio/EvalDist/ProbabilityBounds.lean`, pending upstreaming
+  to VCVio.
 - Vandermonde matrix utilities shared across Reed-Solomon and proximity-gap developments live in
   `ArkLib/Data/Matrix/Vandermonde.lean`, not in the Reed-Solomon file.
 - Trivariate polynomial utilities used by the BCIKS20 proximity-gap proofs
@@ -670,7 +675,9 @@ home_page/            site assets and assembled website root
   `CheckedObservation`, `Polynomial` and `Relations` provide framework-independent
   reconstruction and readback; `ScalarHead/{Layout,Quirky}` supply certified layouts.
   `Multiplier` uses `Data/Matrix/ReadOnce` to evaluate the interpolated weight. `Batching`
-  supplies native uniform-challenge separation over an explicit `SampleableType`.
+  supplies native uniform-challenge separation over an explicit `SampleableType`;
+  `BatchingStrategy.separates_finset` applies the candidate-list union bound of
+  `ToVCVio/EvalDist/ProbabilityBounds` to lists fixed before the challenge.
   `Profile.lean` holds the shared packing data layer `RingSwitchingProfile` (packing data +
   reconstruction and inverse laws); `Algebra.lean` holds `packMLE`, the tensor carrier, the
   verifier subroutines and the tensor-product constructor `tensorProductProfile`;
