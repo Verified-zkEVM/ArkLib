@@ -199,8 +199,8 @@ Ring-switching layer:
 
 ## Open Formalization Gaps
 
-- Formalize the §3 trace head against its own algebraic interface, built on the proved `ψ`
-  packing bijection and trace inner-product identity (Theorem 2, `2^κ_pack = d/k`).
+- Formalize §3.2 (base-field coefficients and partial evaluations); the §3.1 trace head is
+  formalized in `Hachi/TraceHead/`.
 - Complete the still-sorried Hachi-specific links: what remains is the §4.5 recursion tail —
   partial evaluation (Eq. (24)), the `Z`-packing bridge (Eqs. (25)–(26), which carries the flagged
   soundness gap below), and the trace handoff (Eqs. (27)–(28)). Everything through the sumcheck is

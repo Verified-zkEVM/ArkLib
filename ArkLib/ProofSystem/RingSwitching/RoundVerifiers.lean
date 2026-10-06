@@ -41,8 +41,9 @@ check-then-update shape is what the ring-switching constructions share on the wi
 * the `Packing` final step (`Packing/SumcheckPhase.lean`): `check` is the closing
   consistency equation of the relocation sumcheck;
 * deterministic one-message switch heads — a single carrier element plus a single algebraic
-  identity — are `messageRoundOracleVerifier` with that identity as `check` (the [NOZ26] §3
-  packing head is of this shape).
+  identity — fit `messageRoundOracleVerifier` with that identity as `check`. The [NOZ26] §3.1
+  trace head (`Commitments/Functional/Hachi/TraceHead/`) has this shape but is a plain
+  `Verifier` that aborts on a failed check instead of returning a `reject` statement.
 
 ## References
 

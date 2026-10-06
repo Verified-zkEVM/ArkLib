@@ -114,8 +114,9 @@ home_page/            site assets and assembled website root
   - `TraceHead/` (§3.1) — the one-message, zero-challenge scalar-to-ring trace head. `Coefficients`
     packs monomial coefficients over the fixed subring, `Coordinates` instantiates the shared
     packing modules (`PackingData`, finite observation), `Protocol` is the guarded verifier with its
-    `CheckedObservation`, completeness and coordinate-wise special soundness into `relPolyEval`, and
-    `Commitment` covers the honest committer. The fixed subring is used as a ring; nothing here
+    `CheckedObservation` and coordinate-wise special soundness into `relPolyEval`, `Completeness`
+    proves perfect completeness (also at the message-bounded relations), and `Commitment` covers the
+    honest committer. The fixed subring is used as a ring; nothing here
     depends on its field identification. Conformance to the shared algebra is
     `ArkLibTest/ProofSystem/RingSwitching/Conformance/Hachi.lean`.
   - `EvalSplit.lean` (§4, Eq. (12)) — the matrix split underlying the evaluation argument:

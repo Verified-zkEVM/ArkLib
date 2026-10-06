@@ -177,7 +177,7 @@ theorem check_iff_observation (base : ZMod q)
     (s : Statement q α κ innerRows messageDigits outerRows innerDigits dRows m r)
     (Y : Rq (powTwoCyclotomic (R := ZMod q) α)) :
     check α κ hk s Y = true ↔ s.value = (observation α κ hk h2 base).observe s Y := by
-  have h := trace_coefficientEquiv_eq_iff q α κ h2 hk
+  have h := traceH_coefficientEquiv_eq_iff q α κ h2 hk
     ((coefficientEquiv q α κ h2 hk).symm Y) (CMlPolynomial.monomialBasis s.xp).get s.value
   rw [LinearEquiv.apply_symm_apply] at h
   rw [check, beq_iff_eq]
@@ -194,7 +194,7 @@ theorem check_iff_observation (base : ZMod q)
   exact eq_comm
 
 /-- The existing output relation fixes the honest ring value and keeps the original opening. -/
-theorem relOut_iff_observation
+theorem output_mem_relPolyEval_iff
     (pp : PublicParamsD (powTwoCyclotomic (R := ZMod q) α)
       innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits dRows)
     (base : ZMod q) (βSq γ bound : ℕ)
@@ -226,7 +226,7 @@ theorem mem_relIn_of_output
       relPolyEval (powTwoCyclotomic (R := ZMod q) α) pp base βSq γ bound) :
     (s, w) ∈ relIn α κ hk h2 pp base βSq γ bound := by
   apply (relIn_iff_observation α κ hk h2 pp base βSq γ bound s w).2
-  have ho := (relOut_iff_observation α κ hk h2 pp base βSq γ bound s Y w).1 hout
+  have ho := (output_mem_relPolyEval_iff α κ hk h2 pp base βSq γ bound s Y w).1 hout
   have hr := (observation α κ hk h2 base).readback
     ((check_iff_observation α κ hk h2 base s Y).1 hc) ho.2
   exact ⟨by simpa only [Equiv.apply_symm_apply] using ho.1, hr⟩

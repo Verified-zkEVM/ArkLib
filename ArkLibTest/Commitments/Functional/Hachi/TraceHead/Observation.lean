@@ -9,8 +9,9 @@ import ArkLibTest.Commitments.Functional.Hachi.TraceHead.Protocol
 /-!
 # Finite observation in the Hachi trace head
 
-Asymmetric coefficients and non-Boolean points distinguish the monomial representation and
-index order. The production committer, weak opening and rejecting verifier remain the consumer.
+A polynomial with distinct coefficients, evaluated at non-Boolean points, through the production
+committer, weak opening and rejecting verifier. The general theorems guard the pack/unpack index
+order; the concrete computation here is the scalar evaluation.
 -/
 
 open CompPoly ArkLib.Lattices.CyclotomicModulus
@@ -64,7 +65,7 @@ theorem shared_observation :
   apply (unpack_eval_eq_observation 5 1 0 h2 hk F #v[2] #v[3]).symm.trans
   change (unpackCoefficients (coefficientEquiv 5 1 0 h2 hk)
     (packCoefficients (coefficientEquiv 5 1 0 h2 hk) f)).eval (#v[2] ++ #v[3]) = 3
-  rw [unpack_packCoefficients]
+  rw [unpackCoefficients_packCoefficients]
   exact scalar_value
 
 /-- The concrete verifier's trace remains scaled by two. -/
@@ -72,7 +73,7 @@ theorem scaled_trace :
     traceH 1 1 (F.eval ((#v[(2 : B)]).map (algebraMap B A)) *
       conjAut 1 (coefficientEquiv 5 1 0 h2 hk (CMlPolynomial.monomialBasis #v[(3 : B)]).get)) =
         2 • (3 : A) := by
-  apply (trace_eval_eq_iff 5 1 0 h2 hk F #v[2] #v[3] 3).2
+  apply (traceH_eval_eq_iff 5 1 0 h2 hk F #v[2] #v[3] 3).2
   rw [unpack_eval_eq_observation]
   exact shared_observation
 
@@ -83,7 +84,7 @@ def w := committedOpening 2 hb pp F
 
 /-- The balanced-gadget committer gives the original, norm-conditioned weak opening. -/
 theorem source_valid : (s, w) ∈ relInMsgShort 1 0 hk h2 pp 2 6 1 1 1 :=
-  committed_source_valid 2 hb pp hk h2 (by decide) hdeg hclog
+  committedStatement_mem_relInMsgShort 2 hb pp hk h2 (by decide) hdeg hclog
     (by decide) (by rw [powTwoCyclotomic_natDegree]; decide) (by decide) f #v[2] #v[] #v[3]
 
 /-- The protocol checks the asymmetric source, forwarding the same weak opening. -/

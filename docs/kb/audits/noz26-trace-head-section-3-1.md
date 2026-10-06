@@ -21,7 +21,7 @@ Notation: `d = 2^α`, `k = 2^κ`, `H = ⟨σ₋₁, σ_{4k+1}⟩`, `B = R_q^H` (
 | Message `Y := Σ_i x^i · F_i` | `honestMessage` | The ring evaluation of `F` at the retained point |
 | Check `Tr_H(Y·σ₋₁(v)) = (d/k)·y` | `check` | Exactly the unnormalized equation; `isUnit_traceScale` cancels `d/k` |
 | Remaining claim: `F(x_retained) = Y` over `R_q` | `output`, into `relPolyEval` | Same commitment and weak opening |
-| Theorem 2 (`ψ` bijective, trace pairing) | `psi_bijective`, `traceH_psi_mul_conj`, `psiLinearEquiv` | `trace_eval_eq_iff` is Theorem 2 applied to Eq. (10) |
+| Theorem 2 (`ψ` bijective, trace pairing) | `psi_bijective`, `traceH_psi_mul_conj`, `psiLinearEquiv` | `traceH_eval_eq_iff` is Theorem 2 applied to Eq. (10) |
 
 ## Departures
 
@@ -32,8 +32,8 @@ Notation: `d = 2^α`, `k = 2^κ`, `H = ⟨σ₋₁, σ_{4k+1}⟩`, `B = R_q^H` (
   bound on both sides; `relInMsgShort` adds the honest committer's message norm bound and
   completeness holds for it as well.
 - **Not covered.** §3.2 (base-field coefficients and partial evaluations) and §4.5's recursion
-  handoff, whose trace guard (`Recursion/TraceHandoff.lean`) states the same check over the next
-  ring and remains `sorry`.
+  handoff. `Recursion/TraceHandoff.lean` describes the same kind of trace guard over the next ring,
+  but its `traceCheck` is still `sorry`.
 
 ## Security shape
 
@@ -46,11 +46,16 @@ Notation: `d = 2^α`, `k = 2^κ`, `H = ⟨σ₋₁, σ_{4k+1}⟩`, `B = R_q^H` (
   `coefficientEquiv`.
 - **Escape:** the certificate is stated at the plain relations, with no `withEscape` widening, so the
   escape-vacuity pattern of the composed opening chain does not apply to it. The verifier aborts on a
-  failed check (`failure`), so rejection is absorbing. A composition of `package` with an
-  escape-carrying downstream package inherits that package's escape event.
+  failed check (`failure`), so rejection is absorbing. `package` composes in front of
+  `bridgePackage ▷ quadEvalPackage` with no adapter
+  (`ArkLibTest/Commitments/Functional/Hachi/TraceHead/Composition.lean`); such a composition
+  carries the downstream package's escape event.
 - **Non-vacuity:** `ArkLibTest/ProofSystem/RingSwitching/Conformance/Hachi.lean` proves the exact
   correspondence `check ∧ relPolyEval(output) ↔ relIn ∧ Y = honestMessage` from the shared
-  checked-observation laws. Over `q = 5`, `α = 1`, `κ = 0` it exhibits a nonconstant polynomial on
-  the honest side and shows a false claim is rejected for every sent ring value.
+  checked-observation laws. At concrete parameters (`q = 5` with `d = 2`, `k = 1`, and with
+  `d = 8`, `k = 2`, where `σ_{4k+1} = σ₉` is not the identity) it exhibits a nonconstant polynomial
+  on the honest side and shows that, for a false claim, no sent ring value both passes the check and is the
+  evaluation of the same weak opening. The check alone does not reject a false claim: for the claim
+  `0`, the message `0` passes it. Rejection needs the ring-level opening as well.
 - **Axioms:** completeness, soundness, the committer coverage and the packing data depend only on
   `propext`, `Classical.choice` and `Quot.sound`.

@@ -39,7 +39,7 @@ def unpackCoefficients (F : CMlPolynomial A n) : CMlPolynomial B (n + t) :=
     ((splitEquiv n t).symm k).1
 
 /-- Packing and then decoding recovers every monomial coefficient. -/
-@[simp] theorem unpack_packCoefficients (f : CMlPolynomial B (n + t)) :
+@[simp] theorem unpackCoefficients_packCoefficients (f : CMlPolynomial B (n + t)) :
     unpackCoefficients e (packCoefficients e f) = f := by
   apply Vector.ext
   intro i hi
@@ -47,22 +47,12 @@ def unpackCoefficients (F : CMlPolynomial A n) : CMlPolynomial B (n + t) :=
   rfl
 
 /-- Decoding and then packing recovers the ring polynomial. -/
-@[simp] theorem pack_unpackCoefficients (F : CMlPolynomial A n) :
+@[simp] theorem packCoefficients_unpackCoefficients (F : CMlPolynomial A n) :
     packCoefficients e (unpackCoefficients e F) = F := by
   apply Vector.ext
   intro i hi
   simp [unpackCoefficients, packCoefficients]
   rfl
-
-/-- A ring homomorphism transports the monomial basis coefficient by coefficient. -/
-theorem monomialBasis_map {C : Type*} [CommSemiring C] (g : B →+* C)
-    (x : Vector B n) (i : Fin (2 ^ n)) :
-    (CMlPolynomial.monomialBasis (x.map g)).get i =
-      g ((CMlPolynomial.monomialBasis x).get i) := by
-  simp only [monomialBasis_get, map_prod, Vector.get_map]
-  apply Finset.prod_congr rfl
-  intro j _
-  split <;> simp_all
 
 /-- Coordinates of the packed polynomial evaluated at an embedded retained point. -/
 theorem packCoefficients_eval (f : CMlPolynomial B (n + t)) (x : Vector B n) :
@@ -81,7 +71,7 @@ theorem packCoefficients_eval (f : CMlPolynomial B (n + t)) (x : Vector B n) :
   rw [hfun, map_sum]
   apply Finset.sum_congr rfl
   intro i _
-  rw [map_smul, Algebra.smul_def, monomialBasis_map]
+  rw [map_smul, Algebra.smul_def, ← CMlPolynomial.map_monomialBasis, Vector.get_map]
   simp only [packCoefficients, Vector.get_ofFn]
   exact mul_comm _ _
 
@@ -93,7 +83,7 @@ theorem unpackCoefficients_eval (F : CMlPolynomial A n) (x : Vector B n)
       ∑ j, e.symm (F.eval (x.map (algebraMap B A))) j *
         (CMlPolynomial.monomialBasis xp).get j := by
   have hcoords := congrArg e.symm (packCoefficients_eval e (unpackCoefficients e F) x)
-  rw [pack_unpackCoefficients, LinearEquiv.symm_apply_apply] at hcoords
+  rw [packCoefficients_unpackCoefficients, LinearEquiv.symm_apply_apply] at hcoords
   rw [hcoords, ← evalSplit_eq_eval]
   simp only [evalSplit, splitForm, dot_eq_sum, matVecMul_apply, Finset.mul_sum,
     Finset.sum_mul]

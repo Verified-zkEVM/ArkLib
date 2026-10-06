@@ -32,7 +32,7 @@ noncomputable def F : CMlPolynomial A 1 := packCoefficients (n := 1) (t := 1) co
 
 /-- The concrete source polynomial is recovered coefficient by coefficient. -/
 theorem coefficient_roundtrip : unpackCoefficients (n := 1) (t := 1) coordinates F = f :=
-  unpack_packCoefficients (B := B) (A := A) (n := 1) (t := 1) coordinates f
+  unpackCoefficients_packCoefficients (B := B) (A := A) (n := 1) (t := 1) coordinates f
 
 /-- The scalar evaluation at retained coordinate `0`, packed coordinate `1` is `2`. -/
 theorem scalar_evaluation : f.eval (#v[(0 : B)] ++ #v[(1 : B)]) = (2 : B) := by
@@ -52,7 +52,7 @@ theorem trace_check :
     traceH 1 1 (F.eval ((#v[(0 : B)]).map (algebraMap B A)) *
       conjAut 1 (coordinates (CMlPolynomial.monomialBasis #v[(1 : B)]).get)) =
       2 • (2 : A) := by
-  apply (trace_eval_eq_iff 5 1 0 valid_parameters.1 valid_parameters.2
+  apply (traceH_eval_eq_iff 5 1 0 valid_parameters.1 valid_parameters.2
     F #v[0] #v[1] 2).2
   change (unpackCoefficients (n := 1) (t := 1) coordinates F).eval (#v[(0 : B)] ++ #v[(1 : B)]) = 2
   rw [coefficient_roundtrip, scalar_evaluation]

@@ -44,16 +44,6 @@ def psiLinearMap (α k : ℕ) :
   map_add' := psi_add α k
   map_smul' := psi_smul α k
 
-omit [DecidableEq R] in
-/-- The trace scale is a unit in the ambient quotient ring: it is a power of the unit `2`.
-This uses the coefficient field, without asserting that the fixed subring is a field. -/
-theorem isUnit_traceScale (α κ : ℕ) (h2 : (2 : R) ≠ 0)
-    (hk : 2 * 2 ^ κ ∣ 2 ^ α) :
-    IsUnit ((2 ^ α / 2 ^ κ : ℕ) : Rq (powTwoCyclotomic (R := R) α)) := by
-  have hκ : κ ≤ α := Nat.le_of_succ_le (succ_le_of_two_mul_two_pow_dvd hk)
-  rw [Nat.pow_div hκ (by norm_num), Nat.cast_pow, Nat.cast_ofNat]
-  exact (isUnit_two (powTwoCyclotomic α) h2).pow _
-
 /-- Cancelling the genuine (unnormalized) trace scale recovers the scalar inner product. -/
 theorem traceH_psi_mul_conj_eq_iff (α κ : ℕ) (h2 : (2 : R) ≠ 0)
     (hk : 2 * 2 ^ κ ∣ 2 ^ α)

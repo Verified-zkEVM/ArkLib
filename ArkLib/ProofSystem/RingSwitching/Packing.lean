@@ -103,7 +103,8 @@ The DP24 construction:
 
 Hachi's §3 head ([NOZ26] Theorem 2) has carrier `A = L = R_q` and an automorphism `φ₁`. For
 `κ > 0` and finite `R_q` it is not a profile instance (`RingSwitchingProfile.card_A`); its
-deterministic trace check is planned against its own interface.
+deterministic trace head is `Commitments/Functional/Hachi/TraceHead/`, built on the shared
+finite-coordinate modules.
 
 ## References
 

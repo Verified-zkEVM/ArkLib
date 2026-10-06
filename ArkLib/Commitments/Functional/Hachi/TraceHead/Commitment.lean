@@ -84,7 +84,7 @@ def committedStatement
 Every scalar coefficient polynomial and query has an honest source witness under the
 balanced-digit norm bounds, including the stronger message bound.
 -/
-theorem committed_source_valid
+theorem committedStatement_mem_relInMsgShort
     (hbq : b ≤ q / 2) (hdeg : 1 ≤ (powTwoCyclotomic (R := ZMod q) α).φ.natDegree)
     (hclog : 0 < Nat.clog b q) {βSq γ bound : ℕ} (hbound : 1 ≤ bound)
     (hβSq : (2 ^ m) * Nat.clog b q *
@@ -108,7 +108,7 @@ theorem committed_source_valid
   rw [extractedPoly_committedOpening b hb pp hdeg hclog]
   change (unpackCoefficients (coefficientEquiv q α κ h2 hk)
     (packCoefficients (coefficientEquiv q α κ h2 hk) f)).eval _ = _
-  rw [unpack_packCoefficients]
+  rw [unpackCoefficients_packCoefficients]
   rfl
 
 end

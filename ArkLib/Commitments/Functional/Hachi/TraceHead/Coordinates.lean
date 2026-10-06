@@ -104,7 +104,7 @@ theorem coordinateSlices_monomial {n : ℕ}
   rw [eval_eq_sum (nl := n) (nh := 0) F (x.map (algebraMap _ _))]
   apply Finset.sum_congr rfl
   intro i _
-  rw [monomialBasis_map, Algebra.smul_def, mul_comm]
+  rw [← CMlPolynomial.map_monomialBasis, Vector.get_map, Algebra.smul_def, mul_comm]
 
 set_option backward.isDefEq.respectTransparency false in
 /-- Finite observation recovers the `psi` coordinates of the ring evaluation. -/
@@ -141,7 +141,7 @@ theorem unpack_eval_eq_observation {n : ℕ}
   rw [packingData_repr, smul_eq_mul, mul_comm]
 
 /-- The trace equality is exactly an inner product in the binary-indexed coordinates. -/
-theorem trace_coefficientEquiv_eq_iff
+theorem traceH_coefficientEquiv_eq_iff
     (a b : Fin (2 ^ (α - κ)) → fixedSubring (R := ZMod q) α (2 ^ κ))
     (z : fixedSubring (R := ZMod q) α (2 ^ κ)) :
     traceH α (2 ^ κ) (coefficientEquiv q α κ h2 hk a *
@@ -156,7 +156,7 @@ set_option backward.isDefEq.respectTransparency false in
 The scaled trace check equals evaluation of the decoded polynomial. Retained point coordinates
 lie in the fixed subring and are embedded into `Rq`.
 -/
-theorem trace_eval_eq_iff {n : ℕ}
+theorem traceH_eval_eq_iff {n : ℕ}
     (F : CMlPolynomial (Rq (powTwoCyclotomic (R := ZMod q) α)) n)
     (x : Vector (fixedSubring (R := ZMod q) α (2 ^ κ)) n)
     (xp : Vector (fixedSubring (R := ZMod q) α (2 ^ κ)) (α - κ))
@@ -177,6 +177,6 @@ theorem trace_eval_eq_iff {n : ℕ}
     arg 1
     rw [← (coefficientEquiv q α κ h2 hk).apply_symm_apply
       (F.eval (x.map (algebraMap _ _)))]
-  exact trace_coefficientEquiv_eq_iff q α κ h2 hk _ _ z
+  exact traceH_coefficientEquiv_eq_iff q α κ h2 hk _ _ z
 
 end ArkLib.Lattices.Hachi.TraceHead

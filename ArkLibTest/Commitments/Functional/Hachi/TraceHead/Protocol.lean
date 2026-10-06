@@ -46,7 +46,7 @@ def w := committedOpening 2 hb pp (packCoefficients (n := 1) (t := 1)
 /-- The nonconstant scalar polynomial has a weak opening from the committer,
 with the concrete balanced-digit norm bounds and nonzero evaluation claim. -/
 theorem source_valid : (s, w) ∈ relInMsgShort 1 0 hk h2 pp 2 6 1 1 1 := by
-  exact committed_source_valid 2 hb pp hk h2 (by decide) hdeg hclog
+  exact committedStatement_mem_relInMsgShort 2 hb pp hk h2 (by decide) hdeg hclog
     (by decide) (by rw [powTwoCyclotomic_natDegree]; decide) (by decide) f #v[0] #v[] #v[1]
 
 /-- The source claim is the nonzero scalar value two. -/

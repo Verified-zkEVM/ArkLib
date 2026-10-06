@@ -12,13 +12,15 @@ import ArkLibTest.Commitments.Functional.Hachi.TraceHead.Protocol
 
 Hachi's one-message trace head instantiates the shared ring-switching algebra: `packingData` is
 a `PackingData` whose packing algebra is `Rq` and whose opening algebra is its fixed subring, and
-`observation` is a `CheckedObservation` whose observation equation is the scaled trace check.
+`observation` is a `CheckedObservation` whose observation is the `ψ`-coordinate inner product,
+equivalent to the scaled trace check (`check_iff_observation`).
 
 The conformance theorem derives the head's exact relation correspondence from the shared
 `CheckedObservation.honest_check` and `CheckedObservation.readback`: a passing check with a
 valid ring-level opening holds iff the scalar relation holds and the sent value is honest. The
-concrete instance over `q = 5` shows both sides inhabited by a nonconstant polynomial and rejects
-a false claim for every sent ring value, not only the honest one.
+concrete instances show the honest side inhabited by a nonconstant polynomial, and that for a
+false claim no sent ring value both passes the check and opens validly. The check alone is not
+enough: for the false claim `0` the message `0` passes it.
 -/
 
 open CompPoly ArkLib.Lattices.CyclotomicModulus
@@ -50,7 +52,7 @@ theorem traceHead_conforms
     (outerRows := outerRows) (innerDigits := innerDigits) (dRows := dRows) (m := m) (r := r)
   constructor
   · rintro ⟨hc, hout⟩
-    obtain ⟨hopen, hY⟩ := (relOut_iff_observation α κ hk h2 pp base βSq γ bound s Y w).1 hout
+    obtain ⟨hopen, hY⟩ := (output_mem_relPolyEval_iff α κ hk h2 pp base βSq γ bound s Y w).1 hout
     have hval : s.value = D.scalarEval s (D.witnessEquiv.symm w) :=
       D.readback ((check_iff_observation α κ hk h2 base s Y).1 hc) hY
     exact ⟨(relIn_iff_observation α κ hk h2 pp base βSq γ bound s w).2 ⟨hopen, hval⟩, hY⟩
@@ -74,8 +76,8 @@ example : check 1 0 hk s (honestMessage 1 0 2 s w) = true ∧
     (output 1 0 s (honestMessage 1 0 2 s w), w) ∈ relPolyEval Φ pp 2 6 1 1 :=
   (traceHead_conforms 1 0 hk h2 pp 2 6 1 1 s _ w).2 ⟨source_valid.1, rfl⟩
 
-/-- A false scalar claim is rejected for every sent ring value: no message both passes the check
-and opens validly against the same commitment and weak opening. -/
+/-- For a false scalar claim, no sent ring value both passes the check and opens validly against
+the same commitment and weak opening. -/
 example (Y : Rq Φ) :
     ¬ (check 1 0 hk bad Y = true ∧ (output 1 0 bad Y, w) ∈ relPolyEval Φ pp 2 6 1 1) := by
   intro h
