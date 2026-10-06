@@ -200,4 +200,206 @@ expect_status 1 reject-native-trust-growth \
     --update-baseline --baseline "$FIXTURE_TMP/growth.json"
 cmp "$FIXTURE_TMP/growth-before.json" "$FIXTURE_TMP/growth.json"
 
+# --- --must-depend-on: required proof dependencies ---------------------------------------
+#
+# Fixtures live in `AxiomSweepTestFixtures.MustDependOn`; each requirement file below holds
+# one requirement on one fixture theorem. `1` is an unmet-requirement verdict, `2` a
+# configuration or infrastructure error, exactly as for the baseline gate.
+
+MDO="AxiomSweepTestFixtures.MustDependOn"
+
+# requirement FILE THEOREM MODULE DEP... — write a one-requirement file.
+requirement() {
+  local out="$1" theorem="$2" module="$3"
+  shift 3
+  local deps
+  deps="$(printf '"%s", ' "$@")"
+  printf '{"requirements": [{"theorem": "%s", "module": "%s", "mustDependOn": [%s]}]}\n' \
+    "$theorem" "$module" "${deps%, }" >"$out"
+}
+
+# must_depend_on STATUS LABEL THEOREM DEP... — check one requirement on a fixture theorem.
+must_depend_on() {
+  local status="$1" label="$2" theorem="$3"
+  shift 3
+  requirement "$FIXTURE_TMP/$label.json" "$MDO.$theorem" "$MDO" "$@"
+  expect_status "$status" "$label" \
+    lake exe axiomsweep --must-depend-on --requirements "$FIXTURE_TMP/$label.json"
+}
+
+# Used in the proof: directly, through an intermediate lemma, through a private lemma (named
+# as in source), and through a generated `_proof_` auxiliary of a definition.
+must_depend_on 0 mdo-direct usesDirectly "$MDO.sharedLaw"
+must_depend_on 0 mdo-transitive usesTransitively "$MDO.sharedLaw" "$MDO.intermediate"
+grep -q "usesTransitively -> $MDO.intermediate -> $MDO.sharedLaw" \
+  "$FIXTURE_TMP/mdo-transitive.log"
+must_depend_on 0 mdo-private usesThroughPrivate "$MDO.sharedLaw" "$MDO.privateStep"
+grep -q "_private\..*privateStep -> $MDO.sharedLaw" "$FIXTURE_TMP/mdo-private.log"
+must_depend_on 0 mdo-aux-proof usesThroughAuxProof "$MDO.sharedLaw"
+grep -q "usesThroughAuxProof\._proof_1 -> $MDO.sharedLaw" "$FIXTURE_TMP/mdo-aux-proof.log"
+
+# Not used: absent altogether, named only by the statement (a definition, and a theorem),
+# and named only by the statement of a lemma the proof applies.
+must_depend_on 1 mdo-absent independent "$MDO.sharedLaw"
+grep -q "UNMET.*sharedLaw: not used by the proof" "$FIXTURE_TMP/mdo-absent.log"
+must_depend_on 1 mdo-const-type-only constOnlyInType "$MDO.sharedConst"
+grep -q "UNMET.*sharedConst: named by the statement" "$FIXTURE_TMP/mdo-const-type-only.log"
+must_depend_on 1 mdo-law-type-only lawOnlyInType "$MDO.sharedLaw"
+grep -q "UNMET.*sharedLaw: named by the statement" "$FIXTURE_TMP/mdo-law-type-only.log"
+must_depend_on 1 mdo-wrapper-type-only constOnlyInWrapperType "$MDO.sharedConst"
+
+# stmt_depends_on STATUS LABEL THEOREM DEP... — the same, for a theorem of the separate
+# consumer module `$MDO.Statement`.
+MDS="$MDO.Statement"
+stmt_depends_on() {
+  local status="$1" label="$2" theorem="$3"
+  shift 3
+  requirement "$FIXTURE_TMP/$label.json" "$MDS.$theorem" "$MDS" "$@"
+  expect_status "$status" "$label" \
+    lake exe axiomsweep --must-depend-on --requirements "$FIXTURE_TMP/$label.json"
+}
+THROUGH_STATEMENT="reachable only through constants named by the statement"
+
+# Statement blocking: a proof term repeats its statement's constants (binder types, `rfl`
+# arguments), and those constants' bodies must not count as use.
+stmt_depends_on 1 mdo-stmt-relation stmtRelIdentity "$MDO.sharedLaw"
+grep -q "$THROUGH_STATEMENT" "$FIXTURE_TMP/mdo-stmt-relation.log"
+stmt_depends_on 1 mdo-stmt-instance stmtInstance "$MDO.sharedLaw"
+grep -q "$THROUGH_STATEMENT" "$FIXTURE_TMP/mdo-stmt-instance.log"
+stmt_depends_on 1 mdo-stmt-def-binder stmtDefInBinder "$MDO.sharedLaw"
+grep -q "$THROUGH_STATEMENT" "$FIXTURE_TMP/mdo-stmt-def-binder.log"
+stmt_depends_on 1 mdo-stmt-structure-binder stmtStructureInBinder "$MDO.sharedLaw"
+grep -q "$THROUGH_STATEMENT" "$FIXTURE_TMP/mdo-stmt-structure-binder.log"
+
+# Dead code is not use: a `have` the proof never consults, by value or by type.
+stmt_depends_on 1 mdo-dead-have deadHave "$MDO.sharedLaw"
+grep -q "UNMET.*sharedLaw: not used by the proof" "$FIXTURE_TMP/mdo-dead-have.log"
+stmt_depends_on 1 mdo-dead-have-type deadHaveType "$MDO.sharedLaw"
+grep -q "UNMET.*sharedLaw: not used by the proof" "$FIXTURE_TMP/mdo-dead-have-type.log"
+# Dead code is removed to a fixpoint: a chain of unused `have`s, a `have` consumed only by a
+# discarding redex, nested discarding redexes, and an `obtain`ed proof whose fields are unused.
+stmt_depends_on 1 mdo-dead-have-chain deadHaveChain "$MDO.sharedLaw"
+stmt_depends_on 1 mdo-dead-have-then-redex deadHaveThenRedex "$MDO.sharedLaw"
+stmt_depends_on 1 mdo-dead-nested-redex deadNestedRedex "$MDO.sharedLaw"
+stmt_depends_on 1 mdo-dead-obtain deadObtain "$MDO.sharedLaw"
+for label in mdo-dead-have-chain mdo-dead-have-then-redex mdo-dead-nested-redex \
+  mdo-dead-obtain; do
+  grep -q "UNMET.*sharedLaw: not used by the proof" "$FIXTURE_TMP/$label.log"
+done
+# ...but an `obtain`ed proof whose fields are used still counts, and so does eliminating an
+# empty proposition, whose proof is the only one there is.
+stmt_depends_on 0 mdo-use-obtain useObtain "$MDO.sharedLaw"
+stmt_depends_on 0 mdo-use-obtain-false useObtainFalse "$MDO.sharedLaw"
+stmt_depends_on 0 mdo-use-cases-false useCasesFalse "$MDO.sharedLaw"
+
+# A gap the proof relies on fails the requirement even when the dependency is used: directly,
+# and in a helper.
+stmt_depends_on 1 mdo-sorry useWithSorry "$MDO.sharedLaw"
+grep -q "depends on sorryAx" "$FIXTURE_TMP/mdo-sorry.log"
+stmt_depends_on 1 mdo-sorry-helper useThroughSorriedHelper "$MDO.sharedLaw"
+grep -q "via $MDS.useThroughSorriedHelper -> $MDO.sorriedHelper -> sorryAx" \
+  "$FIXTURE_TMP/mdo-sorry-helper.log"
+# Only gaps the proof relies on count: admitted debt inside an object the statement names
+# does not block a sorry-free proof.
+stmt_depends_on 0 mdo-sorry-in-statement useWithAdmittedStatement "$MDO.sharedLaw"
+grep -q "note .*reachable only through constants the statement names.*admittedObject" \
+  "$FIXTURE_TMP/mdo-sorry-in-statement.log"
+# The same when the proof projects the admitted law field out of the statement's object.
+stmt_depends_on 0 mdo-sorry-projected useAdmittedField "$MDO.sharedLaw"
+grep -q "note .*reachable only through constants the statement names.*admittedLaw" \
+  "$FIXTURE_TMP/mdo-sorry-projected.log"
+
+# Documented false negative: `simp only` with an `rfl` lemma leaves no trace.
+stmt_depends_on 1 mdo-simp-rfl simpRflUse "$MDO.myId_eq"
+
+# Genuine use from the consumer module keeps passing: through an instance or a projection
+# the statement does not name, by rewriting, in a match arm, in an induction step, and as a
+# direct occurrence of a name the statement also mentions (reported as such).
+stmt_depends_on 0 mdo-use-instance useInstance "$MDO.sharedLaw"
+grep -q "useInstance -> $MDO.idLaw -> $MDO.sharedLaw" "$FIXTURE_TMP/mdo-use-instance.log"
+stmt_depends_on 0 mdo-use-projection useProjection "$MDO.sharedLaw"
+stmt_depends_on 0 mdo-use-rewrite useRewrite "$MDO.myId_eq"
+stmt_depends_on 0 mdo-use-match useMatch "$MDO.sharedLaw"
+stmt_depends_on 0 mdo-use-induction useInduction "$MDO.sharedLaw"
+stmt_depends_on 0 mdo-use-named-by-statement useNamedByStatement "$MDO.sharedLaw"
+grep -q "also named by the statement" "$FIXTURE_TMP/mdo-use-named-by-statement.log"
+
+# One unmet dependency fails the requirement even when the others are met, and one unmet
+# requirement fails the file even when the others pass.
+must_depend_on 1 mdo-partial usesTransitively "$MDO.sharedLaw" "$MDO.sharedConst"
+grep -q "ok .*sharedLaw" "$FIXTURE_TMP/mdo-partial.log"
+grep -q "UNMET.*sharedConst" "$FIXTURE_TMP/mdo-partial.log"
+printf '{"requirements": [
+  {"theorem": "%s.usesDirectly", "module": "%s", "mustDependOn": ["%s.sharedLaw"]},
+  {"theorem": "%s.independent", "module": "%s", "mustDependOn": ["%s.sharedLaw"],
+   "note": "free text"}]}\n' \
+  "$MDO" "$MDO" "$MDO" "$MDO" "$MDO" "$MDO" >"$FIXTURE_TMP/mdo-mixed.json"
+expect_status 1 mdo-mixed \
+  lake exe axiomsweep --must-depend-on --requirements "$FIXTURE_TMP/mdo-mixed.json"
+
+# Configuration errors are never a pass and never a verdict.
+must_depend_on 2 mdo-unknown-dependency usesDirectly "$MDO.noSuchLemma"
+grep -q "unknown declaration $MDO.noSuchLemma" "$FIXTURE_TMP/mdo-unknown-dependency.log"
+must_depend_on 2 mdo-unknown-theorem noSuchTheorem "$MDO.sharedLaw"
+grep -q "unknown declaration $MDO.noSuchTheorem" "$FIXTURE_TMP/mdo-unknown-theorem.log"
+must_depend_on 2 mdo-no-proof-term noProof "$MDO.sharedLaw"
+grep -q "has no proof term" "$FIXTURE_TMP/mdo-no-proof-term.log"
+# The configured module imports the subject's module, so the subject is in the environment
+# but declared elsewhere.
+requirement "$FIXTURE_TMP/mdo-wrong-module.json" "$MDO.usesDirectly" "$MDS" "$MDO.sharedLaw"
+expect_status 2 mdo-wrong-module \
+  lake exe axiomsweep --must-depend-on --requirements "$FIXTURE_TMP/mdo-wrong-module.json"
+grep -q "is declared in $MDO, not in the configured module $MDS" \
+  "$FIXTURE_TMP/mdo-wrong-module.log"
+requirement "$FIXTURE_TMP/mdo-bad-module.json" "$MDO.usesDirectly" NoSuchModule \
+  "$MDO.sharedLaw"
+expect_status 2 mdo-bad-module \
+  lake exe axiomsweep --must-depend-on --requirements "$FIXTURE_TMP/mdo-bad-module.json"
+printf '{"requirements": [{"theorem": "%s.usesDirectly", "module": "%s", "mustDependOn": []}]}\n' \
+  "$MDO" "$MDO" >"$FIXTURE_TMP/mdo-no-dependencies.json"
+expect_status 2 mdo-no-dependencies \
+  lake exe axiomsweep --must-depend-on --requirements "$FIXTURE_TMP/mdo-no-dependencies.json"
+printf '{"requirements": [
+  {"theorem": "%s.usesDirectly", "module": "%s", "mustDependOn": ["%s.sharedLaw"]},
+  {"theorem": "%s.usesDirectly", "module": "%s", "mustDependOn": ["%s.sharedConst"]}]}\n' \
+  "$MDO" "$MDO" "$MDO" "$MDO" "$MDO" "$MDO" >"$FIXTURE_TMP/mdo-duplicate.json"
+expect_status 2 mdo-duplicate \
+  lake exe axiomsweep --must-depend-on --requirements "$FIXTURE_TMP/mdo-duplicate.json"
+must_depend_on 2 mdo-self-reference usesDirectly "$MDO.usesDirectly"
+# Two spellings of one private declaration (as in source, and fully mangled) are one name.
+must_depend_on 2 mdo-duplicate-spelling usesThroughPrivate "$MDO.privateStep" \
+  "_private.$MDO.0.$MDO.privateStep"
+grep -q "more than once" "$FIXTURE_TMP/mdo-duplicate-spelling.log"
+printf '{"requirements": [{"theorem": "%s.usesDirectly", "module": "%s"}]}\n' \
+  "$MDO" "$MDO" >"$FIXTURE_TMP/mdo-misspelt-field.json"
+expect_status 2 mdo-misspelt-field \
+  lake exe axiomsweep --must-depend-on --requirements "$FIXTURE_TMP/mdo-misspelt-field.json"
+printf '{"requirements": [{"theorem": "%s.usesDirectly", "module": "%s",
+  "mustDependOn": ["%s.sharedLaw"], "mustAlsoDependOn": ["%s.sharedConst"]}]}\n' \
+  "$MDO" "$MDO" "$MDO" "$MDO" >"$FIXTURE_TMP/mdo-unknown-key.json"
+expect_status 2 mdo-unknown-key \
+  lake exe axiomsweep --must-depend-on --requirements "$FIXTURE_TMP/mdo-unknown-key.json"
+grep -q 'unknown key "mustAlsoDependOn"' "$FIXTURE_TMP/mdo-unknown-key.log"
+printf '{"requirements": [], "extra": 1}\n' >"$FIXTURE_TMP/mdo-unknown-top-key.json"
+expect_status 2 mdo-unknown-top-key \
+  lake exe axiomsweep --must-depend-on --requirements "$FIXTURE_TMP/mdo-unknown-top-key.json"
+expect_status 2 mdo-invalid-file \
+  lake exe axiomsweep --must-depend-on --requirements "$INVALID_BASELINE"
+expect_status 2 mdo-missing-file \
+  lake exe axiomsweep --must-depend-on --requirements "$MISSING_BASELINE"
+expect_status 2 mdo-conflicting-flags \
+  lake exe axiomsweep --must-depend-on --check
+expect_status 2 mdo-conflicting-baseline \
+  lake exe axiomsweep --must-depend-on --baseline "$EMPTY_BASELINE"
+expect_status 2 mdo-requirements-without-mode \
+  lake exe axiomsweep --requirements "$FIXTURE_TMP/mdo-direct.json"
+
+# An empty requirement list imports nothing and passes. (The committed
+# `scripts/must_depend_on.json` is checked by `validate.sh --axioms`, after `lake test`
+# has built the conformance modules it names; this harness does not depend on them.)
+printf '{"requirements": []}\n' >"$FIXTURE_TMP/mdo-empty.json"
+expect_status 0 mdo-empty \
+  lake exe axiomsweep --must-depend-on --requirements "$FIXTURE_TMP/mdo-empty.json"
+grep -q "no must-depend-on requirements" "$FIXTURE_TMP/mdo-empty.log"
+
 echo "✓ Axiom sweep executable fixture matrix passed."

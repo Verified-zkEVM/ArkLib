@@ -17,8 +17,10 @@ This directory contains various utility scripts for the ArkLib project.
 - **`AxiomSweep.lean`** (`lake exe axiomsweep`) - Kernel-level axiom/`sorry` accounting with a
   committed regression baseline (`axiom_baseline.json`); see "Axiom Sweep" below
 - **`test-axiomsweep.sh`** - Executable fixture matrix certifying the axiomsweep tool itself
-  (gate directions, native-trust floor, exit-code contract), against the synthetic-taint
-  fixtures in `AxiomSweepTestFixtures/`
+  (gate directions, native-trust floor, exit-code contract, `--must-depend-on` verdicts),
+  against the fixtures in `AxiomSweepTestFixtures/`
+- **`must_depend_on.json`** - Shared declarations each conformance proof must use, checked by
+  `lake exe axiomsweep --must-depend-on`; see "Required proof dependencies" below
 - **`source-trust-audit.py`** - Deterministic source-token inventory for constructs outside
   the environment sweep's visibility, with optional Git-ref comparison
 - **`test-source-trust-audit.py`** - Focused lexer/diff fixtures for the source inventory
@@ -195,6 +197,98 @@ report determinism, every gate direction, and the exit-code contract (`1` = tain
 lake build AxiomSweepTestFixtures
 ./scripts/test-axiomsweep.sh
 ```
+
+#### Required proof dependencies (`--must-depend-on`)
+
+A conformance theorem is only evidence of reuse if its proof actually invokes the shared
+declarations. Importing their module, or naming them in the statement, shows nothing.
+`lake exe axiomsweep --must-depend-on` checks the requirements committed in
+`must_depend_on.json`:
+
+```json
+{
+  "requirements": [
+    {
+      "theorem": "ArkLibTest.Conformance.Example.conforms",
+      "module": "ArkLibTest.Conformance.Example",
+      "mustDependOn": ["ArkLib.Shared.lawA", "ArkLib.Shared.lawB"],
+      "note": "optional free text for reviewers"
+    }
+  ]
+}
+```
+
+The check walks the same compiled-environment dependency graph as the axiom census, with
+the same solver, and asks what the **proof term** of `theorem` uses:
+
+- **Proof edges.** Every constant is entered through its body (a proof or a definition
+  body), never its statement. Wrapping the claim in a lemma and applying that lemma
+  therefore fails. A constant with no body (an inductive, constructor, recursor or axiom)
+  contributes everything `getUsedConstantsAsSet` reports for it: its type, plus the
+  constructors, the inductives, or the recursor's generating declarations. Dead code is
+  removed first, repeatedly until nothing changes, so chains are caught too. That covers a
+  `have` or `let` whose variable is unused, a β-redex that discards its argument, and the
+  major premise of a `casesOn` on a proposition with at least one constructor, whose minor
+  premises ignore every field:
+  the shape `obtain`, `rcases` and `cases` produce for an unused proof. A
+  `have _ := lawA x` that the proof never consults is therefore not use.
+- **The statement is blocked.** Let `S` be everything reachable from the theorem's
+  statement through proof edges. A proof term repeats its statement's constants (binder
+  types, implicit and `rfl` arguments, casts), so members of `S` are leaves of the walk and
+  are never entered. A name holds iff it occurs directly in the proof term, or is an edge
+  of some constant outside `S` that the walk reaches. Without this rule, whatever the body
+  of a statement-named definition, instance or structure uses would count as use. A name
+  reachable only through `S` fails with "reachable only through constants named by the
+  statement; requirement cannot distinguish use". That is exit `1`, an unmet claim rather
+  than a broken file, because only the author can fix it.
+- **No gaps the proof relies on.** `sorryAx` is found by the same walk as the required
+  names: from the live proof term, through proof edges, with `S` blocked. If it is
+  reachable, the requirement fails (exit `1`) with a witness path, whether the gap is in
+  the proof itself or in a lemma or definition the proof enters. A gap inside an object the
+  statement names does not count, for example production debt in a field unrelated to the
+  claim. Conformance statements can therefore name objects that still carry `sorry`, and
+  the axiom baseline accounts for that debt. Admitted facts inside statement-named objects,
+  even a law field the proof projects out, are reported in a `note` naming those constants;
+  they do not fail the requirement, and the axiom baseline tracks them.
+- Generated and private constants (`_proof_n`, `match_n`, equation lemmas, `_private`
+  helpers) are walked through like any other, so use routed through them counts.
+
+The check has trade-offs and limits:
+
+- **Statement blocking costs real uses.** Use that happens only inside the body of
+  something the statement names fails. Require a theorem the proof invokes directly
+  instead. A name the statement mentions itself still passes when the proof term repeats
+  it, and the report then adds "(also named by the statement)". So prefer names the
+  statement does not mention.
+- **`rfl` lemmas leave no trace.** A lemma that `simp only` or `dsimp` applies by `rfl`
+  leaves no constant in the proof term, so a requirement on it fails even though the proof
+  relied on it.
+- **It counts mentions, not use.** It guards against *accidental* non-reuse, not against an
+  adversarial author. A mention that survives elaboration still counts even if it does no
+  work: for example, an argument passed to a function that ignores it, or a discriminant of a
+  `match` whose arms ignore it (matcher applications are not simplified). Reviewers must
+  still read the proof of each registered conformance theorem for uses like that.
+
+Each satisfied dependency is printed with a shortest witness path. All of the following
+exit `2`: unknown or ambiguous names, unknown JSON keys, a subject with no proof term (an
+axiom, say), a subject declared outside its `module`, an empty or duplicated requirement,
+an unparsable file, and combining the mode with `--check`, `--update-baseline`,
+`--baseline`, `--out` or `--root`. Private declarations can be named as they are written in
+source. Only the modules named by `module` are imported, and the default file has no
+requirements, so with nothing configured the check imports nothing. The check reads built
+`.olean` files and does not rebuild the modules it imports, so after a standalone edit run
+`lake build` and `lake test` first. `./scripts/validate.sh --axioms` and CI run it as an
+enforcing step after `lake test`. On a real ArkLib theorem, one requirement takes a few
+seconds (more under load).
+
+The fixture matrix covers every outcome. `AxiomSweepTestFixtures/MustDependOn.lean` holds
+the shared declarations and the direct, transitive, private and generated-auxiliary uses,
+plus the absent, statement-only and wrapper-statement-only names.
+`AxiomSweepTestFixtures/MustDependOn/Statement.lean` is a separate consumer module holding
+the statement-blocking cases and the dead-code cases (`have`, chained `have`s, discarding
+redexes, `obtain`). It also holds the `sorry` cases (in the proof, in a helper, and in a
+statement-named object, which passes), the `simp only` case, and the uses that must keep
+passing. The matrix also exercises each configuration error.
 
 ### Source Trust Inventory
 

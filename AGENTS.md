@@ -20,7 +20,9 @@ Start with [`README.md`](README.md) for project overview.
    fixture matrix (`./scripts/test-axiomsweep.sh`), then runs the regression gate.
    Refresh `scripts/axiom_baseline.json` with `lake exe axiomsweep --update-baseline`
    and commit the diff if the change is intentional. The baseline covers `sorryAx`
-   debt only — native-compiler trust is never allowlistable.
+   debt only — native-compiler trust is never allowlistable. It also checks that each
+   conformance theorem in `scripts/must_depend_on.json` uses its listed shared lemmas in
+   its proof (`lake exe axiomsweep --must-depend-on`; see `docs/wiki/quickstart.md`).
 
 ## Where To Work
 

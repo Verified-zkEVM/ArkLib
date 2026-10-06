@@ -208,6 +208,12 @@ jobs:
           bash scripts/build_timing_report.sh run test_path "$BUILD_TIMING_RESULTS" -- \
             bash -eo pipefail -c './scripts/validate.sh'
 
+      # Enforcing: each conformance theorem in scripts/must_depend_on.json must use the shared
+      # declarations listed for it in its proof, not merely state or import them. Placed after
+      # the validation wrapper, whose `lake test` builds the ArkLibTest modules it may name.
+      - name: Check required proof dependencies
+        run: lake exe axiomsweep --must-depend-on
+
       - name: Record module times
         run: |
           python3 scripts/module_times.py update .lake/build/arklib-module-times.json \

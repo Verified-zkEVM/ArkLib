@@ -99,8 +99,8 @@ If the task is specifically Lean warning cleanup, follow
 
 This first runs `./scripts/test-axiomsweep.sh` — the executable fixture matrix under
 `scripts/AxiomSweepTestFixtures/` that certifies the sweep tool itself (gate directions,
-the native-trust floor, and the exit-code contract) — and then
-`lake exe axiomsweep --check`: a kernel-level sweep of every `ArkLib.*`
+the native-trust floor, the exit-code contract, and the `--must-depend-on` verdicts) — and
+then `lake exe axiomsweep --check`: a kernel-level sweep of every `ArkLib.*`
 declaration's axiom dependencies (the `#print axioms` information, library-wide) diffed
 against the committed baseline `scripts/axiom_baseline.json`. It fails on *new* `sorryAx`
 or non-standard-axiom taint, while reporting closed gaps without blocking cleanup. If you
@@ -117,7 +117,45 @@ The baseline is an allowlist for `sorryAx` debt only. Native-compiler trust
 a zero-debt rule: no baseline edit can green it, and `--update-baseline` refuses to write
 while such taint is present — remove the dependency instead.
 
-CI enforces both the fixture matrix and the library regression check (see `ci.yml`).
+Last, it runs `lake exe axiomsweep --must-depend-on`. This checks that every conformance
+theorem listed in `scripts/must_depend_on.json` uses the listed shared declarations **in its
+proof**. None of the following counts as use:
+
+- a name in the theorem's statement;
+- anything reachable only through constants the statement names, such as the body of a
+  statement-named definition, instance or structure;
+- a name in the statement of a lemma the proof applies;
+- dead code, such as unused `have`s and unused `obtain`ed proofs;
+- an import.
+
+A proof that relies on `sorryAx` fails, whether the gap is in the proof itself or in a
+lemma it uses. A `sorry` inside an object the statement merely names does not count. When a slice adds a conformance theorem
+meant to show reuse, add an entry in the same PR:
+
+```json
+{"theorem": "ArkLibTest.Conformance.Hachi.traceHead_conforms",
+ "module": "ArkLibTest.Conformance.Hachi",
+ "mustDependOn": ["ArkLib.Shared.someLaw"],
+ "note": "why these are the reuse obligations"}
+```
+
+Use full declaration names; a private declaration can be named as written in source. List
+shared *theorems* that the proof invokes itself and that the statement does not name. If the
+lemma is used only inside the body of something the statement names, the check reports it
+as "reachable only through constants named by the statement" and fails. A lemma that
+`simp only`/`dsimp` applies by `rfl` leaves no trace and also fails. Build first (`lake
+build`, `lake test`), since the check reads the built modules and does not rebuild them. Then
+run `lake exe axiomsweep --must-depend-on`. It prints a witness path for each satisfied
+dependency, exits `1` when a requirement is unmet, and exits `2` on any unknown name or key,
+a wrong `module`, or a malformed entry.
+
+The check guards against accidental non-reuse, not against an adversarial author. It counts
+mentions that survive elaboration, so reviewers must still read each registered proof for
+uses that do no work. The full semantics are in
+[`../../scripts/README.md`](../../scripts/README.md#required-proof-dependencies---must-depend-on).
+
+CI enforces the fixture matrix, the library regression check, and the required proof
+dependencies (see `ci.yml`).
 It also runs `scripts/source-trust-audit.py` over every tracked Lean file under `ArkLib/` and `ArkLibTest/`.
 That deterministic, comment/string-aware inventory reports source-only constructs that an
 environment sweep cannot see reliably: admissions in examples or defaults/autoparams and
@@ -223,6 +261,7 @@ python3 ./scripts/check-docs-integrity.py
 python3 ./scripts/kb/lint.py
 ./scripts/test-axiomsweep.sh
 lake exe axiomsweep --check
+lake exe axiomsweep --must-depend-on
 ```
 
 If you specifically need to regenerate `ArkLib.lean`, use:

@@ -34,7 +34,8 @@ Optional checks:
   --lint    Deprecated compatibility flag; style linting is always enforced
   --docs    Run DISABLE_EQUATIONS=1 lake build ArkLib:docs
   --site    Run ./scripts/build-web.sh (implies --docs)
-  --axioms  Test the axiomsweep tool, then run the axiom/sorry regression gate
+  --axioms  Test the axiomsweep tool, then run the axiom/sorry regression gate and the
+            required proof dependencies of scripts/must_depend_on.json
 EOF
 }
 
@@ -150,6 +151,10 @@ if (( run_axioms )); then
     git -C .lake/packages/VCVio submodule update --init --recursive --quiet
   fi
   lake exe axiomsweep --check
+  echo ""
+  echo "# Checking required proof dependencies (scripts/must_depend_on.json)"
+  # Runs after `lake test`, which builds the ArkLibTest conformance modules it may name.
+  lake exe axiomsweep --must-depend-on
 fi
 
 if (( run_docs )); then
