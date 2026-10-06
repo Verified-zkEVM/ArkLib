@@ -47,7 +47,7 @@ def degreeModel : OracleModel Unit (fun _ => R) (fun _ => Message R deg)
   satisfies_promises := by
     intro _ bound h p
     subst bound
-    exact Polynomial.mem_degreeLE.mp p.property
+    exact CompPoly.CPolynomial.mem_degreeLE.mp p.property
 
 /-- The selected degree guarantee is the protocol's actual bound. -/
 def degreeGuarantee : (degreeModel R deg).Guarantee () := ⟨deg, rfl⟩

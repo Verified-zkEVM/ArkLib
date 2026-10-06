@@ -26,10 +26,10 @@ open _root_.Interaction.Oracle
 
 noncomputable section
 
-variable (R : Type) [CommSemiring R] (deg : ℕ)
+variable (R : Type) [CommSemiring R] [BEq R] [LawfulBEq R] (deg : ℕ)
 
 /-- A degree-bounded polynomial message. -/
-abbrev Message := R⦃≤ deg⦄[X]
+abbrev Message := CompPoly.CPolynomial.degreeLE (R := R) (deg : WithBot ℕ)
 
 /-- Evaluation is the entire observable interface of the refined polynomial. -/
 @[reducible]
@@ -92,6 +92,7 @@ def prover (p : Message R deg) : Prover.Strategy ambient (protocol R deg).tree
 /-- Honest input behavior induced by a degree-bounded polynomial. -/
 def inputImpl (p : Message R deg) : QueryImpl (inputSpec R) Id := fun x => (p.val.eval x : R)
 
+omit [BEq R] [LawfulBEq R] in
 /-- Reading a list of sent evaluations computes exactly their mathematical sum. -/
 theorem simulate_sumQueries (p q : Message R deg) (domain : List R) :
     simulateQ (Verifier.liftAccessImpl ambient (access R deg)
@@ -110,6 +111,7 @@ theorem simulate_sumQueries (p q : Message R deg) (domain : List R) :
       rw [ih]
       simp
 
+omit [BEq R] [LawfulBEq R] in
 /-- The terminal program checks and evaluates the sent polynomial. -/
 theorem simulate_terminal [DecidableEq R] (p q : Message R deg)
     (domain : List R) (target r : R) :
@@ -130,6 +132,7 @@ def executeAt [DecidableEq R] (p q : Message R deg) (domain : List R) (target r 
     (protocol R deg).oracles (inputSpec R).toPFunctor (inputImpl R deg p)
     (prover R deg ambient q) (verifier R deg ambient domain target (pure r))
 
+omit [BEq R] [LawfulBEq R] in
 /-- The exported paired runner returns the checked sum and the sent evaluation. -/
 theorem executeAt_eq [DecidableEq R] (p q : Message R deg)
     (domain : List R) (target r : R) :
@@ -145,6 +148,7 @@ theorem executeAt_eq [DecidableEq R] (p q : Message R deg)
   rw [simulate_terminal]
   rfl
 
+omit [BEq R] [LawfulBEq R] in
 /-- Honest execution succeeds at every challenge whenever the input sum claim holds. -/
 theorem executeAt_honest [DecidableEq R] (p : Message R deg)
     (domain : List R) (target r : R)
@@ -153,11 +157,13 @@ theorem executeAt_honest [DecidableEq R] (p : Message R deg)
       pure ⟨⟨p, r, PUnit.unit⟩, (p.val.eval r, r), some (p.val.eval r, r)⟩ := by
   rw [executeAt_eq, ite_eq_left h]
 
+omit [BEq R] [LawfulBEq R] in
 /-- The typed honest terminal statement satisfies the existing single-round output relation. -/
 theorem honest_outputRelation (p : Message R deg) (r : R) :
     (((p.val.eval r, r), (fun _ : Unit => p)), ()) ∈
       Spec.SingleRound.Simple.outputRelation R deg := rfl
 
+omit [BEq R] [LawfulBEq R] in
 /-- The legacy input relation supplies exactly the sum condition used by this verifier. -/
 theorem legacy_input_sum {m : ℕ} (D : Fin m ↪ R)
     (p : Message R deg) (target : R)

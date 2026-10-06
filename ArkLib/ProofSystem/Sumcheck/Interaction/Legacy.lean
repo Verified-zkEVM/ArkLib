@@ -25,11 +25,12 @@ open _root_.Interaction.Oracle
 
 noncomputable section
 
-variable (R : Type) [CommSemiring R] (deg : ℕ)
+variable (R : Type) [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R] (deg : ℕ)
 
 local instance : ∀ i, OracleInterface ((Spec.SingleRound.pSpec R deg).Challenge i) :=
   ProtocolSpec.challengeOracleInterface
 
+omit [BEq R] [LawfulBEq R] [Nontrivial R] in
 /-- Both directions of the concrete legacy output relation agree with the behavior boundary. -/
 theorem legacy_output_iff (p : Message R deg) (stmt : R × R) :
     ((stmt, (fun _ : Unit => p)), ()) ∈ Spec.SingleRound.Simple.outputRelation R deg ↔
@@ -38,6 +39,7 @@ theorem legacy_output_iff (p : Message R deg) (stmt : R × R) :
           (⟨stmt, fun _ => p⟩ : ConcreteClaim (R × R) (outputFamily R deg))) :=
   Iff.rfl
 
+omit [BEq R] [LawfulBEq R] [Nontrivial R] in
 /-- Both directions of the legacy input relation agree, using the same finite domain. -/
 theorem legacy_input_iff {m : ℕ} (D : Fin m ↪ R) (p : Message R deg) (target : R) :
     ((target, (fun _ : Unit => p)), ()) ∈ Spec.SingleRound.Simple.inputRelation R deg D ↔
@@ -53,14 +55,17 @@ def legacyTranscript (p : Message R deg) (r : R) :
     (Spec.SingleRound.pSpec R deg).FullTranscript :=
   fun i => Fin.cases p (fun j => Fin.cases r (fun k => Fin.elim0 k) j) i
 
+omit [BEq R] [LawfulBEq R] [Nontrivial R] in
 @[simp]
 theorem legacyTranscript_message (p : Message R deg) (r : R) :
     legacyTranscript R deg p r 0 = p := rfl
 
+omit [BEq R] [LawfulBEq R] [Nontrivial R] in
 @[simp]
 theorem legacyTranscript_challenge (p : Message R deg) (r : R) :
     legacyTranscript R deg p r 1 = r := rfl
 
+omit [BEq R] [LawfulBEq R] [Nontrivial R] in
 /-- Run the actual legacy prover with its challenge query answered by the chosen challenge. -/
 theorem legacy_prover_run {ι : Type} (ambient : OracleSpec ι)
     (p : Message R deg) (target r : R) :

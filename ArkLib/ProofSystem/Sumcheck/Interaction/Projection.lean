@@ -19,7 +19,8 @@ open Spec.SingleRound
 
 noncomputable section
 
-variable (R : Type) [CommSemiring R] (n deg : ℕ) {m : ℕ} (D : Fin m ↪ R)
+variable (R : Type) [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R] (n deg : ℕ) {m : ℕ}
+  (D : Fin m ↪ R)
 
 /-- The existing executable round projection, packaged as a derived oracle program. -/
 def projectionOracle (i : Fin n) (stmt : Spec.StatementRound R n i.castSucc) :

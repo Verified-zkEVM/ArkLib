@@ -114,7 +114,8 @@ noncomputable section
 
 namespace Spec
 
-variable (R : Type) [CommSemiring R] (deg : ℕ) {m : ℕ} (D : Fin m ↪ R) (n : ℕ)
+variable (R : Type) [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R] (deg : ℕ) {m : ℕ}
+  (D : Fin m ↪ R) (n : ℕ)
 
 variable {ι : Type} (oSpec : OracleSpec ι)
 

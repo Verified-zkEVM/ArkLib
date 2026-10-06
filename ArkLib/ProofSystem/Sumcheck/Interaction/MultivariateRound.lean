@@ -25,7 +25,7 @@ open SingleRound
 
 noncomputable section
 
-variable (R : Type) [CommSemiring R] (n deg : ℕ)
+variable (R : Type) [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R] (n deg : ℕ)
 
 /-- The original multivariate polynomial remains available at every round boundary. -/
 def polynomialFamily : OracleFamily Unit (Spec.OracleStatement R n deg) :=
@@ -95,6 +95,7 @@ def acceptedRun (i : Fin n) (stmt : Spec.StatementRound R n i.castSucc)
   proverOut := (q.val.eval r, r)
   outcome := some ⟨⟨q.val.eval r, Fin.snoc stmt.challenges r⟩, outputOracle R n deg⟩
 
+omit [Nontrivial R] in
 /-- Sum queries evaluate exactly the sent message, independently of the input behavior. -/
 theorem simulate_sumQueries (impl : (polynomialFamily R n deg).Behavior) (q : Message R deg)
     (domain : List R) :
@@ -115,6 +116,7 @@ theorem simulate_sumQueries (impl : (polynomialFamily R n deg).Behavior) (q : Me
       rw [ih]
       simp
 
+omit [Nontrivial R] in
 /-- The actual terminal computation reads its next target from the sent message. -/
 theorem simulate_terminal [DecidableEq R] (i : Fin n)
     (stmt : Spec.StatementRound R n i.castSucc) (impl : (polynomialFamily R n deg).Behavior)
@@ -131,6 +133,7 @@ theorem simulate_terminal [DecidableEq R] (i : Fin n)
   · rfl
   · rfl
 
+omit [Nontrivial R] in
 /-- The executor pairs its actual resources in both accepting and rejecting cases. -/
 theorem executeCore_eq [DecidableEq R] (i : Fin n)
     (stmt : Spec.StatementRound R n i.castSucc) (impl : (polynomialFamily R n deg).Behavior)
@@ -156,6 +159,7 @@ theorem executeCore_eq [DecidableEq R] (i : Fin n)
   rw [simulate_terminal]
   split <;> rfl
 
+omit [Nontrivial R] in
 /-- The executor's own resources give the accepting run whenever the sent sum matches. -/
 theorem executeCore_accepted [DecidableEq R] (i : Fin n)
     (stmt : Spec.StatementRound R n i.castSucc) (impl : (polynomialFamily R n deg).Behavior)
@@ -165,6 +169,7 @@ theorem executeCore_accepted [DecidableEq R] (i : Fin n)
       pure (acceptedRun R n deg i stmt impl q r) := by
   rw [executeCore_eq, ite_eq_left h]
 
+omit [Nontrivial R] in
 /-- Closing exports exactly the supplied input behavior and the new verifier statement. -/
 theorem acceptedRun_closed (i : Fin n) (stmt : Spec.StatementRound R n i.castSucc)
     (impl : (polynomialFamily R n deg).Behavior) (q : Message R deg) (r : R) :
@@ -172,6 +177,7 @@ theorem acceptedRun_closed (i : Fin n) (stmt : Spec.StatementRound R n i.castSuc
       some (⟨⟨q.val.eval r, Fin.snoc stmt.challenges r⟩, impl⟩ :
         ClosedClaim (Spec.StatementRound R n i.succ) (polynomialFamily R n deg)) := rfl
 
+omit [Nontrivial R] in
 /-- The run-derived closed result of an accepting stage preserves its entire input interface. -/
 theorem executeCore_closed [DecidableEq R] (i : Fin n)
     (stmt : Spec.StatementRound R n i.castSucc) (impl : (polynomialFamily R n deg).Behavior)
@@ -206,6 +212,7 @@ def sampledReduction [DecidableEq R] (i : Fin n) (domain : List R)
   prover := fun _ q => pure (prover R deg ambient q)
   verifier := fun stmt => sampledVerifier R n deg ambient i stmt domain challenge
 
+omit [Nontrivial R] in
 /-- Interpreting resource reads leaves the ambient challenge effect unchanged. -/
 theorem simulate_challenge (impl : (polynomialFamily R n deg).Behavior) (q : Message R deg)
     (challenge : OracleComp ambient R) :
@@ -218,6 +225,7 @@ theorem simulate_challenge (impl : (polynomialFamily R n deg).Behavior) (q : Mes
     (fun _ => rfl), simulateQ_id']
 
 set_option backward.isDefEq.respectTransparency false in
+omit [Nontrivial R] in
 /-- Actual sampled execution preserves challenge effects before the corresponding fixed run. -/
 theorem executeCore_sampled_eq [DecidableEq R] (i : Fin n)
     (stmt : Spec.StatementRound R n i.castSucc) (impl : (polynomialFamily R n deg).Behavior)
@@ -280,7 +288,9 @@ theorem honestNext_related {m : ℕ} (D : Fin m ↪ R) (i : Fin n)
     closedRelation R n deg D i.succ
       ⟨honestNext R n deg D i stmt p r,
         (polynomialFamily R n deg).behaviorOfRealizations (fun _ => p)⟩ := by
-  exact relationRound_projected_output R n deg D i stmt p r
+  have h := relationRound_projected_output R n deg D i stmt p r
+  simp only [Spec.relationRound, Set.mem_ofPred_eq, Fin.vappend_eq_append] at h
+  exact h
 
 end
 end Sumcheck.Interaction.MultivariateRound

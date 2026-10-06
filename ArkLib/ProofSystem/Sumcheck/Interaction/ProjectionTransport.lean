@@ -19,8 +19,9 @@ open Spec.SingleRound
 
 noncomputable section
 
-variable (R : Type) [CommSemiring R]
+variable (R : Type) [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
 
+omit [BEq R] [LawfulBEq R] [Nontrivial R] in
 /-- Separate the first coordinate of a finite Cartesian-power sum. -/
 theorem sum_cube_cons (S : Finset R) (k : ℕ) (f : (Fin (k + 1) → R) → R) :
     ∑ z ∈ S ^ᶠ (k + 1), f z = ∑ a ∈ S, ∑ y ∈ S ^ᶠ k, f (Fin.cons a y) := by
@@ -39,7 +40,7 @@ theorem sum_cube_cons (S : Finset R) (k : ℕ) (f : (Fin (k + 1) → R) → R) :
   · intro z hz
     simp
 
-omit [CommSemiring R] in
+omit [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R] in
 /-- Inserting the round challenge extends the fixed prefix by one coordinate. -/
 theorem insertNth_roundSuffix (n : ℕ) (i : Fin (n + 1))
     (c : Fin i.castSucc → R) (x : Fin (n - i) → R) (r : R) :
@@ -70,14 +71,12 @@ theorem projectedRoundPolynomial_eval (i : Fin (n + 1))
     (projectedRoundPolynomial R (n + 1) deg D i c p).val.eval r =
       ∑ x ∈ (univ.map D) ^ᶠ (n - i),
         p.val.eval (Fin.append (Fin.snoc c r) x ∘ Fin.cast (by simp; omega)) := by
-  change Polynomial.eval r (∑ x ∈ (univ.map D) ^ᶠ (n - i),
-    Polynomial.map (MvPolynomial.eval (roundSuffix R n i c x))
-      (MvPolynomial.finSuccEquivNth R i p.val)) = _
-  rw [Polynomial.eval_finsetSum]
+  rw [projectedRoundPolynomial_eval_succ]
   apply Finset.sum_congr rfl
   intro x hx
-  rw [← MvPolynomial.eval_eq_eval_mv_eval_finSuccEquivNth, insertNth_roundSuffix]
+  rw [insertNth_roundSuffix, ← CPoly.eval_equiv]
 
+omit [BEq R] [LawfulBEq R] [Nontrivial R] in
 /-- Reindexing a Cartesian-power sum along equality of its dimensions. -/
 theorem sum_cube_cast (S : Finset R) {k l : ℕ} (h : k = l)
     (f : (Fin k → R) → R) :
@@ -100,8 +99,8 @@ theorem projected_sum_of_relationRound (i : Fin n)
     change _ = ∑ a ∈ univ.map D, _ at hlist
     apply hlist.trans
     simp_rw [projectedRoundPolynomial_eval]
-    change (∑ z ∈ (univ.map D) ^ᶠ (n + 1 - i.val),
-      p.val.eval (Fin.append stmt.challenges z ∘ Fin.cast (by simp))) = _ at h
+    simp only [Spec.relationRound, Set.mem_ofPred_eq, Fin.val_castSucc,
+      Fin.vappend_eq_append] at h
     rw [sum_cube_cast R _ (show n + 1 - i.val = (n - i.val) + 1 by omega),
       sum_cube_cons] at h
     rw [← h]
@@ -123,8 +122,7 @@ theorem relationRound_projected_output (i : Fin n)
   cases n with
   | zero => exact Fin.elim0 i
   | succ n =>
-    change (∑ x ∈ (univ.map D) ^ᶠ (n + 1 - (i.val + 1)),
-      p.val.eval (Fin.append (Fin.snoc stmt.challenges r) x ∘ Fin.cast (by simp; omega))) = _
+    simp only [Spec.relationRound, Set.mem_ofPred_eq, Fin.val_succ, Fin.vappend_eq_append]
     rw [sum_cube_cast R _ (show n + 1 - (i.val + 1) = n - i.val by omega)]
     refine Eq.trans ?_ (projectedRoundPolynomial_eval R n deg D i stmt.challenges p r).symm
     apply Finset.sum_congr rfl

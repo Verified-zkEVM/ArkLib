@@ -29,7 +29,7 @@ open SingleRound
 
 noncomputable section
 
-variable (R : Type) [CommSemiring R] (n deg : ℕ)
+variable (R : Type) [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R] (n deg : ℕ)
 
 /-- Every possible output of the honest sampled execution is an accepted closed claim. -/
 theorem executeRoundsSampled_support_completeness [DecidableEq R] {m : ℕ} (D : Fin m ↪ R)
@@ -79,6 +79,7 @@ theorem executeRoundsSampled_support_completeness [DecidableEq R] {m : ℕ} (D :
     rcases output with ⟨⟨last, impl⟩, payload⟩
     change impl = (polynomialFamily R n deg).behaviorOfRealizations (fun _ => p) at horacles
     subst impl
+    simp only [Spec.relationRound, Fin.vappend_eq_append] at hrelation
     exact hrelation
 
 /-- Perfect completeness of the honest sampled execution: the accepted closed claim is returned

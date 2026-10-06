@@ -27,7 +27,7 @@ open SingleRound
 
 noncomputable section
 
-variable (R : Type) [CommSemiring R] (n deg : ℕ)
+variable (R : Type) [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R] (n deg : ℕ)
 
 /-- Interfaces for a consecutive interval of valid round indices. -/
 abbrev roundInterfaces (start count : ℕ) (bound : start + count ≤ n)
@@ -56,6 +56,7 @@ def roundStages [DecidableEq R] (start count : ℕ) (bound : start + count ≤ n
   witness := fun stmt _ => messages ⟨start + j, by omega⟩ stmt
   nextPrivate := fun _ _ _ _ => ()
 
+omit [Nontrivial R] in
 /-- A stage keeps the challenge program at the receiver phase of its actual execution. -/
 theorem roundStages_run [DecidableEq R] (start count : ℕ) (bound : start + count ≤ n)
     (domain : List R)
@@ -103,6 +104,7 @@ def executeRounds [DecidableEq R] (start count : ℕ) (bound : start + count ≤
   executeRoundsSampled R n deg ambient start count bound domain input messages
     (fun i stmt => pure (challenges i stmt))
 
+omit [Nontrivial R] in
 /-- An empty interval retains the actual input closed claim, including arbitrary behavior. -/
 @[simp]
 theorem executeRoundsSampled_zero [DecidableEq R] (start : ℕ) (bound : start + 0 ≤ n)
@@ -114,6 +116,7 @@ theorem executeRoundsSampled_zero [DecidableEq R] (start : ℕ) (bound : start +
       pure (some input) := by
   rfl
 
+omit [Nontrivial R] in
 /-- A one-round interval is exactly the existing actual sampled single-round execution. -/
 theorem executeRoundsSampled_one [DecidableEq R] (i : Fin n) (domain : List R)
     (input : ClosedClaim (Spec.StatementRound R n i.castSucc) (polynomialFamily R n deg))
@@ -130,6 +133,7 @@ theorem executeRoundsSampled_one [DecidableEq R] (i : Fin n) (domain : List R)
   simp only [Function.comp_apply]
   cases result.closed <;> rfl
 
+omit [Nontrivial R] in
 /-- The common arbitrary-round executor agrees with the existing two-stage sampled client. -/
 theorem executeRoundsSampled_two [DecidableEq R] (i : Fin (n + 1)) (domain : List R)
     (input : ClosedClaim (Spec.StatementRound R (n + 2) i.castSucc.castSucc)
@@ -154,6 +158,7 @@ theorem executeRoundsSampled_two [DecidableEq R] (i : Fin (n + 1)) (domain : Lis
     simp only [Function.comp_apply]
     cases second.closed <;> rfl
 
+omit [Nontrivial R] in
 /-- Pure challenge programs recover the existing fixed two-round executor exactly. -/
 theorem executeRounds_two [DecidableEq R] (i : Fin (n + 1)) (domain : List R)
     (input : ClosedClaim (Spec.StatementRound R (n + 2) i.castSucc.castSucc)
@@ -255,8 +260,10 @@ theorem executeRounds_honest [DecidableEq R] {m : ℕ} (D : Fin m ↪ R)
   · rcases output with ⟨⟨last, impl⟩, payload⟩
     change impl = (polynomialFamily R n deg).behaviorOfRealizations (fun _ => p) at horacles
     subst impl
+    simp only [Spec.relationRound, Fin.vappend_eq_append] at hrelation
     exact hrelation
 
+omit [Nontrivial R] in
 /-- The final closed round is precisely evaluation at the full challenge vector. -/
 theorem closedRelation_last_iff {m : ℕ} (D : Fin m ↪ R)
     (claim : ClosedClaim (Spec.StatementRound R n (Fin.last n)) (polynomialFamily R n deg)) :

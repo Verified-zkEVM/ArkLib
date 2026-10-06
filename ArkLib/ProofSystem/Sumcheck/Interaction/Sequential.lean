@@ -25,7 +25,8 @@ open SingleRound
 
 noncomputable section
 
-variable (R : Type) [CommSemiring R] (n deg : ℕ) {ι : Type} (ambient : OracleSpec ι)
+variable (R : Type) [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R] (n deg : ℕ) {ι : Type}
+  (ambient : OracleSpec ι)
 
 /-- Execute consecutive rounds, passing the actual closed middle claim to the suffix. -/
 def executeTwo [DecidableEq R] (i : Fin (n + 1)) (domain : List R)
@@ -43,6 +44,7 @@ def executeTwo [DecidableEq R] (i : Fin (n + 1)) (domain : List R)
         executeCore (reduction R (n + 2) deg ambient i.succ domain r₂)
           middle.oracles middle.stmt (second middle.stmt)
 
+omit [Nontrivial R] in
 /-- Accepting rounds preserve the full input behavior while extending the challenges in order. -/
 theorem executeTwo_accepted [DecidableEq R] (i : Fin (n + 1)) (domain : List R)
     (stmt : Spec.StatementRound R (n + 2) i.castSucc.castSucc)
@@ -63,6 +65,7 @@ theorem executeTwo_accepted [DecidableEq R] (i : Fin (n + 1)) (domain : List R)
   simp only [pure_bind, acceptedRun_closed]
   exact executeCore_closed R (n + 2) deg ambient i.succ _ impl _ domain r₂ h₂
 
+omit [Nontrivial R] in
 /-- An incorrect first sum rejects without executing a suffix round. -/
 theorem executeTwo_rejected [DecidableEq R] (i : Fin (n + 1)) (domain : List R)
     (stmt : Spec.StatementRound R (n + 2) i.castSucc.castSucc)
@@ -74,6 +77,7 @@ theorem executeTwo_rejected [DecidableEq R] (i : Fin (n + 1)) (domain : List R)
   rw [executeTwo, executeCore_eq, ite_eq_right h]
   rfl
 
+omit [Nontrivial R] in
 /-- A successful prefix cannot turn a rejecting suffix into an accepted final claim. -/
 theorem executeTwo_second_rejected [DecidableEq R] (i : Fin (n + 1)) (domain : List R)
     (stmt : Spec.StatementRound R (n + 2) i.castSucc.castSucc)
@@ -109,6 +113,7 @@ def executeTwoSampled [DecidableEq R] (i : Fin (n + 1)) (domain : List R)
         executeCore (sampledReduction R (n + 2) deg ambient i.succ domain
           (challenge₂ middle.stmt)) middle.oracles middle.stmt (second middle.stmt)
 
+omit [Nontrivial R] in
 /-- Accepted sampled stages execute prefix and suffix challenge programs in that order. -/
 theorem executeTwoSampled_accepted [DecidableEq R] (i : Fin (n + 1)) (domain : List R)
     (stmt : Spec.StatementRound R (n + 2) i.castSucc.castSucc)
@@ -139,6 +144,7 @@ theorem executeTwoSampled_accepted [DecidableEq R] (i : Fin (n + 1)) (domain : L
   funext r₂
   exact executeCore_closed R (n + 2) deg ambient i.succ _ impl _ domain r₂ (h₂ r₁)
 
+omit [Nontrivial R] in
 /-- Prefix rejection retains its challenge effect and never executes the suffix challenge. -/
 theorem executeTwoSampled_rejected [DecidableEq R] (i : Fin (n + 1)) (domain : List R)
     (stmt : Spec.StatementRound R (n + 2) i.castSucc.castSucc)

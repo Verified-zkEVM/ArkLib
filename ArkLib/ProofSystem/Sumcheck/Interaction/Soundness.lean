@@ -28,7 +28,7 @@ open _root_.Interaction.Oracle
 
 noncomputable section
 
-variable (F : Type) [Field F] (deg : ℕ)
+variable (F : Type) [Field F] [BEq F] [LawfulBEq F] (deg : ℕ)
 
 /-- Normal-form result for a committed message, including explicit sum-check rejection.
 This value alone does not establish execution provenance. -/
@@ -48,6 +48,7 @@ def executeCommitted [DecidableEq F] (challenge : ProbComp F) (p q : Message F d
     (inputImpl F deg p) target q
 
 set_option backward.isDefEq.respectTransparency false in
+omit [BEq F] [LawfulBEq F] in
 /-- The executor retains the original input oracle while its terminal target comes from `q`. -/
 theorem executeCommitted_eq [DecidableEq F] (challenge : ProbComp F)
     (p q : Message F deg) (domain : List F) (target : F) :
@@ -86,6 +87,7 @@ theorem executeCommitted_eq [DecidableEq F] (challenge : ProbComp F)
   unfold committedRun
   split <;> rfl
 
+omit [BEq F] [LawfulBEq F] in
 /-- A true closed output requires acceptance and equality with the input evaluation. -/
 theorem committedRun_true_iff [DecidableEq F] (p q : Message F deg)
     (domain : List F) (target r : F) :
@@ -98,6 +100,7 @@ theorem committedRun_true_iff [DecidableEq F] (p q : Message F deg)
     simp
   · simp [committedRun, h, CoreRun.closed]
 
+omit [BEq F] [LawfulBEq F] in
 /-- Ambient failure is preserved; rejection is instead an explicit completed run. -/
 theorem executeCommitted_failure [DecidableEq F] (challenge : ProbComp F)
     (p q : Message F deg) (domain : List F) (target : F) :
@@ -105,6 +108,7 @@ theorem executeCommitted_failure [DecidableEq F] (challenge : ProbComp F)
       Pr{let _ ← challenge}[True] := by
   rw [executeCommitted_eq, prEvent_map]
 
+omit [BEq F] [LawfulBEq F] in
 /-- A failed sum check cannot produce any closed output claim. -/
 theorem committedRun_rejects [DecidableEq F] (p q : Message F deg)
     (domain : List F) (target r : F)
@@ -138,13 +142,20 @@ theorem executeCommitted_soundness (p q : Message F deg) (domain : List F) (targ
       intro h
       have hpq := sub_eq_zero.mp h
       exact hfalse (hpq ▸ hsum)
+    have hne' : (p.val - q.val).toPoly ≠ 0 := by
+      rw [← CompPoly.CPolynomial.toPoly_zero]
+      exact fun h => hne (CompPoly.CPolynomial.toPoly_injective h)
     have hcard : (Finset.univ.filter (fun r => p.val.eval r = q.val.eval r)).card ≤ deg := by
-      apply (Polynomial.card_le_degree_of_subset_roots (p := p.val - q.val) ?_).trans
-      · exact natDegree_le_of_degree_le
-          ((degree_sub_le _ _).trans (max_le (message_degree F deg p) (message_degree F deg q)))
+      apply (Polynomial.card_le_degree_of_subset_roots (p := (p.val - q.val).toPoly) ?_).trans
+      · refine natDegree_le_of_degree_le ?_
+        rw [CompPoly.CPolynomial.toPoly_sub]
+        exact (degree_sub_le _ _).trans (max_le
+          (CompPoly.CPolynomial.degree_toPoly p.val ▸ message_degree F deg p)
+          (CompPoly.CPolynomial.degree_toPoly q.val ▸ message_degree F deg q))
       · intro r hr
-        apply (mem_roots hne).mpr
-        simpa only [IsRoot, eval_sub, sub_eq_zero] using (Finset.mem_filter.mp hr).2
+        apply (mem_roots hne').mpr
+        simpa only [IsRoot, CompPoly.CPolynomial.toPoly_sub, eval_sub,
+          CompPoly.CPolynomial.eval_toPoly, sub_eq_zero] using (Finset.mem_filter.mp hr).2
     have hevent : (fun r => (committedRun F deg p q domain target r).closed.map
         (closedOutputRelation F deg) = some True) = (fun r => p.val.eval r = q.val.eval r) := by
       funext r
