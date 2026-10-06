@@ -111,6 +111,13 @@ home_page/            site assets and assembled website root
     (see `Params.lean`), one has `16⁵ < q`, so five balanced digits cannot cover every residue,
     yet `τ = 5` is perfectly correct. `gadgetDecomposeFun` (a bare per-coefficient digit map) is
     the shared computational core of both, so the layout and norm bookkeeping is proved once.
+  - `TraceHead/` (§3.1) — the one-message, zero-challenge scalar-to-ring trace head. `Coefficients`
+    packs monomial coefficients over the fixed subring, `Coordinates` instantiates the shared
+    packing modules (`PackingData`, finite observation), `Protocol` is the guarded verifier with its
+    `CheckedObservation`, completeness and coordinate-wise special soundness into `relPolyEval`, and
+    `Commitment` covers the honest committer. The fixed subring is used as a ring; nothing here
+    depends on its field identification. Conformance to the shared algebra is
+    `ArkLibTest/ProofSystem/RingSwitching/Conformance/Hachi.lean`.
   - `EvalSplit.lean` (§4, Eq. (12)) — the matrix split underlying the evaluation argument:
     multilinear evaluation `eval p (xl ++ xh)` factors as the vector–matrix–vector product
     `mb(xl) ⬝ᵥ (toMatrix p *ᵥ mb(xh))` (`evalSplit_eq_eval`), with the inverse reshape

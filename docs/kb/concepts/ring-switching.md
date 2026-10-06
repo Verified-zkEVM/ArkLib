@@ -109,14 +109,18 @@ Lagrange interpolation needs the opening algebra to be a field.
   left/right `L`-module bases; all profile laws are **proven** in ArkLib. Because the
   evaluation point is an arbitrary big-field point, the claim is relocated *interactively*
   (batching challenge + dedicated packing sum-check).
-- **Hachi §3 packing head** ([`../papers/NOZ26.md`](../papers/NOZ26.md), planned): `L = R_q`,
+- **Hachi §3.1 trace head** ([`../papers/NOZ26.md`](../papers/NOZ26.md),
+  `Commitments/Functional/Hachi/TraceHead/`): `L = R_q`,
   `A = R_q`, `φ₀ = id`, `φ₁ = σ₋₁`, `β = ψ` (Theorem 2). The carrier is `L` itself, so for
   `κ > 0` this is **not** a `RingSwitchingProfile` instance; it needs its own trace interface
   over the shared finite-coordinate modules. The evaluation point is engineered to be
   subfield-valued, so the reduction is **deterministic**
   (one message + one trace check, no challenges, no sum-check). `R_q` is not a domain, so the
   Schwartz–Zippel soundness theorem does not apply — Hachi soundness is a separate (CWSS)
-  argument.
+  argument. The formalized head instantiates `PackingData` (packing algebra `R_q`, opening
+  algebra its fixed subring) and `CheckedObservation`; its conformance theorem
+  (`ArkLibTest/ProofSystem/RingSwitching/Conformance/Hachi.lean`) derives the exact
+  scalar-to-ring relation correspondence from the shared checked-observation laws.
 - **HMZ25 `Lift` construction** ([`../papers/HMZ25.md`](../papers/HMZ25.md)): the
   *opposite* direction, `S ≅ R[X]/(φ)` → a field `F` — lift `M z = y` to `R[X]` and evaluate
   at a random `α`. **Formalized generically** in `ProofSystem/RingSwitching/Lift/`

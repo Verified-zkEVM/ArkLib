@@ -11,6 +11,7 @@ public import ArkLib.Commitments.Functional.Hachi.HonestChain
 public import ArkLib.Commitments.Functional.Hachi.Correctness
 public import ArkLib.Commitments.Functional.Hachi.Concrete
 public import ArkLib.Commitments.Functional.Hachi.Params
+public import ArkLib.Commitments.Functional.Hachi.TraceHead.Basic
 public import ArkLib.Commitments.Functional.Hachi.Gadget.Basic
 public import ArkLib.Commitments.Functional.Hachi.InnerOuter.Basic
 public import ArkLib.Commitments.Functional.Hachi.QuadEval.Basic
@@ -62,6 +63,8 @@ re-export, and this file is the umbrella for the whole development.
   (`Gadgets`), protocol data and relations (`Reduction`), Lemma 8 special soundness
   (`Soundness`), completeness (`Completeness`), and the zero-round polynomial-level bridge
   (`Bridge`).
+* `TraceHead/` (§3.1) — the one-message scalar trace head, coefficient packing, and
+  honest-committer coverage into the ring-level `relPolyEval` relation.
 * `RingSwitch/`, `ZeroCheck/`, `Sumcheck/` (§4.3) — the HMZ25 lift, the zero-check, and the
   sumcheck loop, each with its own `Completeness.lean`.
 * `EndPiece/` (§4.3, closing) — the terminal link: the prover reveals the reduced witness and the

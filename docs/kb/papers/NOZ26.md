@@ -15,6 +15,7 @@ related_modules:
   - ArkLib/Commitments/Functional/Hachi/InnerOuter/Scheme.lean
   - ArkLib/Commitments/Functional/Hachi/InnerOuter/Security.lean
   - ArkLib/Commitments/Functional/Hachi/ZeroCheck/Reduction.lean
+  - ArkLib/Commitments/Functional/Hachi/TraceHead/Protocol.lean
 ---
 
 # NOZ26
@@ -45,7 +46,9 @@ Ring-switching layer:
 - The **extension-field → cyclotomic-ring reduction** (§3): Hachi reduces evaluation proofs over
   `F_{q^k}` to equivalent statements over a power-of-two cyclotomic ring `R_q` with a trace check
   in `R_q` itself. Its carrier is `L = R_q`, so it is not a `RingSwitchingProfile`: for finite
-  nontrivial `L` and `κ > 0` the profile's inverse laws force `|A| = |L|^(2^κ)`.
+  nontrivial `L` and `κ > 0` the profile's inverse laws force `|A| = |L|^(2^κ)`. The §3.1
+  one-message trace head is formalized in `Hachi/TraceHead/` over the shared finite-coordinate
+  packing modules, with completeness and coordinate-wise special soundness into `relPolyEval`.
 - The **cyclotomic-ring → extension-field lift** (§4.3, Figure 4 / **Lemma 9**, following
   [`HMZ25`](HMZ25.md)): the *simplified* Figure 4 extraction kernel is **formalized and proven** as
   `liftPackage` in Hachi's
@@ -114,8 +117,9 @@ Ring-switching layer:
 
 ## Known Divergences From ArkLib
 
-- ArkLib has not yet built the Hachi ring-switching instance; the abstraction is designed to admit
-  it but only the Binius instance is implemented.
+- The §3.1 trace head uses the fixed subring as a ring and does not depend on Lemma 5's field
+  identification. It covers the one-message scalar-to-ring step only; §4.5's same-field batching
+  pullback and the recursion are separate.
 - Hachi Lemma 5 is fully proved: `fixedSubring_isField` and `fixedSubringEquivGaloisField` rest
   on the factor-swap lemma `no_selfReciprocal_factor`, which is proved by a root-orbit argument
   in `AdjoinRoot p₁` (`not_associated_reverse_self`). Lemma 6 is fully proved, under the weaker
