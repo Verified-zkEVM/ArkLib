@@ -120,6 +120,11 @@ theorem eqTilde_append {m n : ℕ} (x₁ y₁ : Fin m → R) (x₂ y₂ : Fin n 
   rw [Fin.prod_univ_add]
   congr 1 <;> exact Finset.prod_congr rfl fun i _ => by simp [Fin.append]
 
+/-- Ring homomorphisms commute with the equality kernel. -/
+theorem map_eqTilde {S : Type*} [CommRing S] (f : R →+* S) (x y : σ → R) :
+    f (eqTilde x y) = eqTilde (fun i => f (x i)) (fun i => f (y i)) := by
+  simp [eqTilde_eq_prod, map_prod]
+
 /-- The equality polynomial factors off its first coordinate. -/
 theorem eqTilde_cons {n : ℕ} (x₀ y₀ : R) (x y : Fin n → R) :
     eqTilde (Fin.cons x₀ x : Fin (n + 1) → R) (Fin.cons y₀ y) =

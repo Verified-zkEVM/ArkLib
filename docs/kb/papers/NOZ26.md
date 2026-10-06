@@ -25,8 +25,8 @@ related_modules:
 multilinear polynomial commitment scheme over extension fields, built on power-of-two cyclotomic
 rings, with a "square-root" verifier-time complexity under Module-SIS. ArkLib touches it from two
 directions: it formalizes the paper's **commitment-layer building blocks** (cyclotomic modulus,
-gadget decomposition, inner-outer commitment), and it treats Hachi as the **second intended
-instance** of the generic ring-switching abstraction (the first being Binius / [`DP24`](DP24.md)).
+gadget decomposition, inner-outer commitment), and it formalizes Hachi's ring-switching layers,
+which are distinct from the packing profile that Binius / [`DP24`](DP24.md) instantiates.
 
 ## What ArkLib Uses From This Paper
 
@@ -42,12 +42,10 @@ Ring-switching layer:
 - The §3 subfield layer: `R_q^H`, its cardinality `q^k`, the packing bijection `ψ`, the trace
   inner-product identity, Lemma 5's field/isomorphism conclusion, and Lemma 6's norm bound, all
   fully proved; see the dedicated audit below.
-- The **extension-field → cyclotomic-ring reduction**: Hachi reduces evaluation proofs over `F_{q^k}`
-  to equivalent statements over a power-of-two cyclotomic ring `R_q`. This is the ring-switching
-  shape ArkLib factors out as `RingSwitchingProfile`.
 - The **extension-field → cyclotomic-ring reduction** (§3): Hachi reduces evaluation proofs over
-  `F_{q^k}` to equivalent statements over a power-of-two cyclotomic ring `R_q`. This is the
-  ring-switching shape ArkLib factors out as `RingSwitchingProfile`.
+  `F_{q^k}` to equivalent statements over a power-of-two cyclotomic ring `R_q` with a trace check
+  in `R_q` itself. Its carrier is `L = R_q`, so it is not a `RingSwitchingProfile`: for finite
+  nontrivial `L` and `κ > 0` the profile's inverse laws force `|A| = |L|^(2^κ)`.
 - The **cyclotomic-ring → extension-field lift** (§4.3, Figure 4 / **Lemma 9**, following
   [`HMZ25`](HMZ25.md)): the *simplified* Figure 4 extraction kernel is **formalized and proven** as
   `liftPackage` in Hachi's
@@ -197,8 +195,8 @@ Ring-switching layer:
 
 ## Open Formalization Gaps
 
-- Construct `hachiProfile : RingSwitchingProfile R_qH R_q κ_pack` and discharge
-  `decomposeRows_spec` / `decomposeColumns_spec` via Theorem 2, with `2^κ_pack = d/k`.
+- Formalize the §3 trace head against its own algebraic interface, built on the proved `ψ`
+  packing bijection and trace inner-product identity (Theorem 2, `2^κ_pack = d/k`).
 - Complete the still-sorried Hachi-specific links: what remains is the §4.5 recursion tail —
   partial evaluation (Eq. (24)), the `Z`-packing bridge (Eqs. (25)–(26), which carries the flagged
   soundness gap below), and the trace handoff (Eqs. (27)–(28)). Everything through the sumcheck is

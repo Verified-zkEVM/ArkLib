@@ -115,7 +115,7 @@ theorem bridge_apply {C : Type*} [AddCommMonoid C] [Module B C]
 end PackingData
 
 /-- The specialization with one algebra and one basis in both roles. -/
-def PackingData.ofBasis {B L : Type} [CommRing B] [CommRing L] [Algebra B L]
+abbrev PackingData.ofBasis {B L : Type} [CommRing B] [CommRing L] [Algebra B L]
     {ι : Type} [Fintype ι] (basis : Basis ι B L) : PackingData B where
   P := L
   E := L

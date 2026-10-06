@@ -7,6 +7,7 @@ module
 
 public import ArkLib.ProofSystem.RingSwitching.Packing.Prelude
 public import ArkLib.ProofSystem.RingSwitching.Packing.Spec
+public import ArkLib.ProofSystem.RingSwitching.Packing.BatchingAlgebra
 public import ArkLib.OracleReduction.Basic
 
 /-!
@@ -19,7 +20,7 @@ Definitions and results for this component of ArkLib.
 
 open OracleSpec OracleComp ProtocolSpec Finset Polynomial MvPolynomial
   Module TensorProduct Nat Matrix
-open scoped NNReal
+open scoped NNReal ENNReal
 open Sumcheck.Structured
 
 /-!
@@ -70,7 +71,11 @@ Common input `[f]`, `s ∈ L`, `(r_0, ..., r_{ℓ-1}) ∈ L^ℓ`; the prover add
 
 The round-by-round extractor (`batchingRbrExtractor`, which unpacks `t` from `t'`), the
 knowledge-state function, the per-challenge knowledge error (`κ/|L|` at the batching
-challenge), and the completeness/soundness statements. Leaf proofs are open (`sorry`).
+challenge), and the completeness/soundness statements. The batching algebra is proved:
+`sum_cube_batchingPoly_eq_compute_s0` identifies the round-zero sumcheck sum with the batching
+target, and `prob_exists_consistent_ne_le` bounds the batching-challenge bad event by `κ/|L|`
+when compatibility with the oracle statement determines the packed polynomial. The remaining
+leaf proofs are open (`sorry`).
 
 ## References
 
@@ -271,6 +276,7 @@ def batchingKStateProp {m : Fin (2 + 1)}
       ∧ embedded_MLP_eval κ L K P ℓ ℓ' h_l witMid.t' stmt.t_eval_point = s_hat
       ∧ performCheckOriginalEvaluation κ L K P ℓ ℓ' h_l stmt.original_claim
         stmt.t_eval_point s_hat -- local V check
+      ∧ aOStmtIn.initialCompatibility ⟨witMid.t', oStmt⟩
   | ⟨2, _⟩ => by -- implied by relOut
     simp only [batchingWitMid] at witMid
     let ⟨msgsUpTo, chalsUpTo⟩ := Transcript.equivMessagesChallenges (k := 2)
@@ -304,6 +310,90 @@ def batchingKStateProp {m : Fin (2 + 1)}
         stmt.t_eval_point s_hat -- local V check
       ∧ aOStmtIn.initialCompatibility ⟨witMid.t', oStmt⟩
 
+/-! ## Batching algebra in sumcheck form -/
+
+omit [Fintype L] [DecidableEq L] [SampleableType L] in
+/-- A sum over the Boolean sumcheck cube is the sum over Boolean vectors cast into `L`. -/
+private theorem sum_cube_boolDomain {M : Type} [AddCommMonoid M] {k : ℕ}
+    (f : (Fin k → L) → M) :
+    ∑ x ∈ (boolDomain L k).cube, f x = ∑ y : Fin k → Fin 2, f (y : Fin k → L) := by
+  classical
+  -- a cube point is the cast of the Boolean vector recording which coordinates are nonzero
+  have hcube : ∀ x ∈ (boolDomain L k).cube,
+      (((fun i => if x i = 0 then 0 else 1 : Fin k → Fin 2)) : Fin k → L) = x := by
+    intro x hx
+    funext i
+    have hi := SumcheckDomain.mem_cube.mp hx i
+    rw [points_boolDomain] at hi
+    obtain ⟨b, -, hb⟩ := Finset.mem_map.mp hi
+    beta_reduce
+    rw [← hb]
+    fin_cases b <;> simp
+  refine Finset.sum_nbij' (fun x i => if x i = 0 then 0 else 1) (fun y => (y : Fin k → L))
+    (fun _ _ => Finset.mem_univ _) (fun y _ => ?_) hcube (fun y _ => ?_)
+    (fun x hx => by rw [hcube x hx])
+  · refine SumcheckDomain.mem_cube.mpr fun i => ?_
+    rw [points_boolDomain]
+    refine Finset.mem_map.mpr ⟨y i, Finset.mem_univ _, ?_⟩
+    generalize y i = b
+    fin_cases b <;> simp
+  · funext i
+    beta_reduce
+    generalize y i = b
+    fin_cases b <;> simp
+
+omit [NeZero κ] [Fintype L] [DecidableEq L] [SampleableType L] [Fintype K] [DecidableEq K]
+  [NeZero ℓ] [NeZero ℓ'] in
+/-- The round-zero batching sumcheck polynomial sums over the Boolean cube to the batching
+target of the tensor evaluation of the packed polynomial. -/
+theorem sum_cube_batchingPoly_eq_compute_s0 (ctx : RingSwitchingBaseContext κ L K ℓ P)
+    (t' : MultilinearPoly L ℓ') :
+    ∑ x ∈ (boolDomain L ℓ').cube,
+        (projectToMidSumcheckPolyWithParam (L := L) (ℓ := ℓ')
+          (param := RingSwitching_SumcheckMultParam κ L K P ℓ ℓ' h_l)
+          (ctx := ctx) (t := t') (i := 0) (challenges := Fin.elim0)).val.eval x =
+      compute_s0 κ L K P (embedded_MLP_eval κ L K P ℓ ℓ' h_l t' ctx.t_eval_point)
+        ctx.r_batching := by
+  rw [compute_s0_embedded_MLP_eval, sum_cube_boolDomain]
+  refine Finset.sum_congr rfl fun y _ => ?_
+  simp only [projectToMidSumcheckPolyWithParam]
+  -- `erw`: the fixed-prefix length is `↑(0 : Fin (ℓ' + 1))`, only definitionally `0`
+  erw [fixFirstVariablesOfMQP_zero]
+  simp [computeRoundPoly, RingSwitching_SumcheckMultParam]
+
+omit [NeZero κ] [DecidableEq L] [Fintype K] [DecidableEq K] [NeZero ℓ] [NeZero ℓ'] in
+open Probability in
+/-- If compatibility with the oracle statement determines the packed polynomial, then for a
+fixed carrier `ŝ` a uniform batching point admits a compatible packed polynomial whose tensor
+evaluation differs from `ŝ` but whose round-zero sumcheck claim is consistent with the batching
+target of `ŝ` with probability at most `κ/|L|`. -/
+theorem prob_exists_consistent_ne_le [NoZeroDivisors L] (stmt : BatchingStmtIn L ℓ)
+    (oStmt : ∀ j, aOStmtIn.OStmtIn j) (s_hat : P.A)
+    (hbind : ∀ t₁ t₂, aOStmtIn.initialCompatibility ⟨t₁, oStmt⟩ →
+      aOStmtIn.initialCompatibility ⟨t₂, oStmt⟩ → t₁ = t₂) :
+    Pr{let c ← $ᵗ (Fin κ → L)}[∃ t' : MultilinearPoly L ℓ',
+        aOStmtIn.initialCompatibility ⟨t', oStmt⟩ ∧
+        embedded_MLP_eval κ L K P ℓ ℓ' h_l t' stmt.t_eval_point ≠ s_hat ∧
+        sumcheckConsistencyProp (boolDomain L ℓ') (compute_s0 κ L K P s_hat c)
+          (projectToMidSumcheckPolyWithParam (L := L) (ℓ := ℓ')
+            (param := RingSwitching_SumcheckMultParam κ L K P ℓ ℓ' h_l)
+            (ctx := { t_eval_point := stmt.t_eval_point, original_claim := stmt.original_claim,
+                      s_hat := s_hat, r_batching := c })
+            (t := t') (i := 0) (challenges := Fin.elim0))] ≤
+      (((κ : ℝ≥0) / (Fintype.card L : ℝ≥0) : ℝ≥0) : ℝ≥0∞) := by
+  have : IsDomain L := NoZeroDivisors.to_isDomain L
+  by_cases h : ∃ t₀ : MultilinearPoly L ℓ', aOStmtIn.initialCompatibility ⟨t₀, oStmt⟩ ∧
+      embedded_MLP_eval κ L K P ℓ ℓ' h_l t₀ stmt.t_eval_point ≠ s_hat
+  · obtain ⟨t₀, ht₀, hne⟩ := h
+    -- binding pins the packed polynomial, so the event is a collision of batching targets
+    refine (prEvent_mono _ _ _ fun c ⟨t', ht', _, hcons⟩ => ?_).trans
+      (compute_s0_collision_le P hne)
+    rw [hbind t₀ t' ht₀ ht']
+    unfold sumcheckConsistencyProp at hcons
+    rw [hcons, sum_cube_batchingPoly_eq_compute_s0]
+  · rw [prEvent_eq_zero_of_forall_not _ _ fun c ⟨t', ht', hne, _⟩ => h ⟨t', ht', hne⟩]
+    exact _root_.zero_le
+
 /-- Knowledge state function for the batching phase. -/
 noncomputable def batchingKnowledgeStateFunction :
   (oracleVerifier κ L K P ℓ ℓ' h_l (aOStmtIn:=aOStmtIn)).KnowledgeStateFunction init impl
@@ -324,9 +414,13 @@ noncomputable def batchingKnowledgeStateFunction :
       rw [hSuccTrue.1]
       simp only [true_and]
       set s_hat := (Transcript.concat msg tr).toMessagesChallenges.1 ⟨(0 : Fin (0 + 1)), by rfl⟩
-      -- ⊢ stmtIn.1.original_claim = (MvPolynomial.aeval stmtIn.1.t_eval_point) ↑witMid.t
-      sorry
+      obtain ⟨hpack, heval, hcheck, hcompat⟩ := hSuccTrue
+      exact ⟨original_claim_of_check P h_l witMid.t stmtIn.1.t_eval_point _ s_hat
+        (hpack ▸ heval) hcheck, hpack ▸ hcompat⟩
     | ⟨1, h⟩ => nomatch h
+  -- Not derivable: on a failed check the verifier outputs `failureState`, which lies in `relOut`
+  -- with the zero packed polynomial whenever `(0, oStmt)` is compatible, while KState 2 demands
+  -- the check. Needs the verifier to abort (`failure`) on a failed check.
   toFun_full := fun ⟨stmtLast, oStmtLast⟩ tr witOut => by sorry
 
 /-! ## Security Properties -/
@@ -366,6 +460,9 @@ theorem batchingOracleVerifier_rbrKnowledgeSoundness [NoZeroDivisors L] :
   -- `KState 2 = (s ?= Σ_{v ∈ {0,1}^κ} eqTilde(v, r_{0..κ-1}) ⋅ ŝ_v) ∧`
     -- `h = projectSumcheckPoly t' 0 r r' ∧ s_0 = Σ_{w ∈ {0,1}^{ℓ'}} h(w)`
   -- ⊢ `Pr[KState(2, witMidSucc) ∧ ¬KState(1, extractMid(iChal, witMidSucc))] ≤ (κ/|L|)`
+  -- Per fixed `ŝ` this event is bounded by `prob_exists_consistent_ne_le`, but only under
+  -- binding compatibility; the statement also inherits the `toFun_full` defect (a rejected
+  -- `ŝ` yields a `relOut`-satisfiable `failureState`), so it needs both repairs.
   sorry
 
 end BatchingPhase

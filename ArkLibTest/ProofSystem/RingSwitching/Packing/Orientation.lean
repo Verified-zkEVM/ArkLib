@@ -5,6 +5,8 @@ Authors: ArkLib Contributors
 -/
 
 import ArkLib.ProofSystem.RingSwitching.Packing.Prelude
+import ArkLib.ProofSystem.RingSwitching.Packing.BatchingAlgebra
+import ArkLib.ProofSystem.RingSwitching.Packing.FinalAlgebra
 import CompPoly.Fields.Binary.Tower.Concrete.Basis
 /-!
 # Ring-switching coordinate orientation
@@ -158,5 +160,25 @@ example : compute_final_eq_value 1 L K p 2 1 rfl r (fun _ => Z 1) (fun _ => 0) =
   unfold compute_final_eq_value
   rw [final_tensor, multiplier_polynomial]
   simp [eqWeightedCoordSum, sum_one_bit, row_zero, row_one, eqTilde]
+
+-- The general theorems specialize to the hand-computed checks above: the honest guard, its
+-- readback, and the final value as the multiplier evaluation.
+example : performCheckOriginalEvaluation 1 L K p 2 1 rfl (t.val.aeval r) r shat = true :=
+  performCheckOriginalEvaluation_honest p rfl t r
+
+example (s : L) (h : performCheckOriginalEvaluation 1 L K p 2 1 rfl s r shat = true) :
+    s = t.val.aeval r :=
+  original_claim_of_check p rfl t r s shat rfl h
+
+example : compute_final_eq_value 1 L K p 2 1 rfl r (fun _ => Z 1) (fun _ => 0) =
+    (compute_A_MLE 1 L K p 1 (getEvaluationPointSuffix 1 L 2 1 rfl r) (fun _ => 0)).val.eval
+      (fun _ => Z 1) :=
+  compute_final_eq_value_eq_eval p rfl r _ _
+
+-- The batching target is the equality-weighted row family of the honest folded element; at the
+-- zero challenge it selects the hand-computed row zero.
+example : compute_s0 1 L K p shat (fun _ => 0) = Z 1 := by
+  rw [compute_s0_eq_sum, shat_eq]
+  simp [sum_one_bit, row_zero, row_one, eqTilde]
 
 end ArkLibTest.RingSwitchingOrientation
