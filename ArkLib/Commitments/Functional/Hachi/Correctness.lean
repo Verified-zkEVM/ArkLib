@@ -458,16 +458,11 @@ theorem mem_relPolyEvalMsgShort_of_relCommitInput {βSq γ κ : ℕ} (hb : 1 < b
       (gadgetDecompose_lawful 𝓜(q, α) hclog hdeg dd) hκle pp.toPublicParams
       (Hachi.toMatrix w.1) hβ hγ'
   · -- Evaluation consistency: reconstruction, then the query split round-trip.
-    have hM : derivedMsgMatrix 𝓜(q, α) (b : ZMod q)
-        (honestOpening 𝓜(q, α) (Decomposition.ofDigits 𝓜(q, α) dd dd)
-          pp.toPublicParams (Hachi.toMatrix w.1)) = Hachi.toMatrix w.1 := by
-      funext i k
-      exact congrFun (generateDecomps_derivedMessage 𝓜(q, α) (b : ZMod q)
-        (Decomposition.ofDigits 𝓜(q, α) dd dd)
-        (gadgetDecompose_lawful 𝓜(q, α) hclog hdeg dd) pp.toPublicParams
-        (Hachi.toMatrix w.1) i) k
-    change CMlPolynomial.eval (extractedPoly 𝓜(q, α) (b : ZMod q) _) _ = _
-    rw [extractedPoly, hM, Hachi.toPolynomial_toMatrix]
+    change CMlPolynomial.eval (extractedPoly 𝓜(q, α) (b : ZMod q)
+      (honestOpening 𝓜(q, α) (Decomposition.ofDigits 𝓜(q, α) dd dd)
+        pp.toPublicParams (Hachi.toMatrix w.1))) _ = _
+    rw [extractedPoly_honestOpening 𝓜(q, α) (b : ZMod q) _
+      (gadgetDecompose_lawful 𝓜(q, α) hclog hdeg dd)]
     change CMlPolynomial.eval w.1
       ((s.2.1.take r).cast (by omega) ++ (s.2.1.drop r).cast (by omega)) = s.2.2
     rw [Vector.cast_take_append_cast_drop]

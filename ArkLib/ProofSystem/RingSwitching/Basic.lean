@@ -33,10 +33,15 @@ each:
      large-ring evaluation point: carrier message, batching challenge, dedicated packing
      sumcheck; RBR knowledge soundness (`[IsDomain L]`). Consumed by
      `ProofSystem/Binius/FRIBinius/` (this is [DP24]'s construction).
-   * **deterministic relocation** (planned) — for a subring-valued evaluation point the
-     interaction collapses to one message and one identity check, with zero soundness error
-     ([NOZ26] §3). Its carrier is `L` itself, so it needs its own algebraic interface rather
-     than a `Profile` instance.
+   * **deterministic relocation** — for a subring-valued evaluation point the interaction
+     collapses to one message and one identity check, with zero soundness error ([NOZ26] §3.1).
+     Its carrier is `L` itself, so it is not a `Profile` instance: the Hachi trace head
+     (`Commitments/Functional/Hachi/TraceHead/`) uses the coordinate layer of `Packing/`
+     directly, with one opening coordinate: its `ψ` packing is `packedMLE` of a
+     monomial-coefficient `ClaimLayout`, its conformance theorem states its accepting condition
+     through the shared `sliceRel`, and its read-back is a `CheckedObservation`. It exercises
+     only the packing, evaluation and opening part of that layer (no batching, multiplier or
+     sumcheck), as in [NOZ26] §3.1.
 
 2. **Lift** (`Lift/`) — the *opposite* direction, a quotient ring
    `S ≅ R[X]/(φ)` → a field `F ⊇ R`. Each row of a linear claim `M z = y` over `S` lifts to
@@ -53,8 +58,9 @@ each:
 
 * The **round-shape verifiers** (this folder's top level): every verifier round of the family
   is "one prover message, a deterministic local check, an accept/reject statement update" —
-  message-only (`pSpecMessage` + `messageRoundOracleVerifier`: DP24's final step today,
-  Hachi §3's trace-check head tomorrow) or with a trailing scalar challenge
+  message-only (`pSpecMessage` + `messageRoundOracleVerifier`: DP24's final step; Hachi's
+  §3.1 trace head has the same one-message shape as a plain aborting `Verifier`) or with a
+  trailing scalar challenge
   (`pSpecScalar` + `scalarRoundOracleVerifier`: DP24's batching round; the check-free limit
   of this shape is the committed-scalar verifier `Lift` builds on). See
   `RoundVerifiers.lean`.

@@ -76,8 +76,19 @@ The laws do not by themselves establish a valid protocol instance or a security 
 
 A trace or automorphism switch whose carrier is $L$ itself, such as Hachi's \S3 head
 \cite{NOZ26} with $A = R_q$, is not an instance when $\kappa > 0$: for a finite nontrivial $L$ the
-inverse laws force $\lvert A\rvert = \lvert L\rvert^{2^\kappa}$. Hachi's head has its own algebraic
-interface, and because $R_q$ is not an integral domain its soundness is a separate argument.
+inverse laws force $\lvert A\rvert = \lvert L\rvert^{2^\kappa}$. Hachi's head uses the finite-coordinate
+packing layer directly instead: its packing data has the fixed subring as opening algebra, with one
+opening coordinate and $\psi$ as packing basis, its scalar source is a claim layout over the
+monomial coefficients of the packed variables, and its packed polynomial is the shared packed
+multilinear of the layout's components. Its conformance theorem states the head's accepting
+condition through that layer: the sent ring value is the single slice of the shared packed
+multilinear at the retained point, and the claimed scalar is the layout-weighted sum of its
+$\psi$-coordinates. The head's read-back is a checked observation (the $\psi$-coordinate inner
+product, equivalent to the trace check). Hachi \S3.1 exercises only the packing, evaluation and
+opening part of the shared layer (one opening coordinate, no batching, multiplier or sumcheck), as
+in the paper, so its reuse is small at the proof level and real at the statement level.
+Because $R_q$ is not an integral domain its soundness is a separate argument (coordinate-wise
+special soundness into the ring-level evaluation relation).
 
 \subsection{Packing the witness}
 

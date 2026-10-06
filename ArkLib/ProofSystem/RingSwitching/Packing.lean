@@ -44,7 +44,7 @@ large-ring opening can handle. Two ingredients separate cleanly:
   downstream opening consumes (the protocol files of this folder; round-by-round knowledge
   soundness, `[IsDomain L]`). If the point is engineered to lie in a subring, the relocation
   degenerates to a *deterministic* one-message identity check. That trace head computes in
-  `L` itself, so it needs its own algebraic interface rather than a `Profile` instance.
+  `L` itself, so it is not a `Profile` instance; it uses the coordinate layer directly.
 
 The *opposite-direction* `Lift` construction—from a large quotient ring down into a field—is
 **not** a packing; it lives in the sibling folder `RingSwitching/Lift/`.
@@ -103,7 +103,12 @@ The DP24 construction:
 
 Hachi's §3 head ([NOZ26] Theorem 2) has carrier `A = L = R_q` and an automorphism `φ₁`. For
 `κ > 0` and finite `R_q` it is not a profile instance (`RingSwitchingProfile.card_A`); its
-deterministic trace check is planned against its own interface.
+deterministic trace head is `Commitments/Functional/Hachi/TraceHead/`. It uses the coordinate
+layer directly: its packed polynomial is `packedMLE` at `PackingData.ofBaseOpening` of `ψ` (one
+opening coordinate) of its own monomial-coefficient `ScalarHead.ClaimLayout`, its conformance
+theorem states its accepting condition through `sliceRel`, and its observation is a
+`CheckedObservation`. It exercises only the packing, evaluation and opening part of this layer (no
+batching, multiplier or sumcheck), as in [NOZ26] §3.1.
 
 ## References
 

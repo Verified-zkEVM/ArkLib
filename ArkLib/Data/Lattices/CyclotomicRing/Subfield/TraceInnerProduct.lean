@@ -266,6 +266,16 @@ theorem traceH_psi_mul_conj (α k : ℕ) (h2 : (2 : R) ≠ 0) (hk2pow : ∃ κ, 
 
 /-! ## `ψ` is injective (from the non-degenerate trace pairing) -/
 
+omit [DecidableEq R] in
+/-- The trace scale is a unit in the ambient quotient ring: it is a power of the unit `2`.
+This uses the coefficient field, without asserting that the fixed subring is a field. -/
+theorem isUnit_traceScale (α κ : ℕ) (h2 : (2 : R) ≠ 0)
+    (hk : 2 * 2 ^ κ ∣ 2 ^ α) :
+    IsUnit ((2 ^ α / 2 ^ κ : ℕ) : Rq (powTwoCyclotomic (R := R) α)) := by
+  have hκ : κ ≤ α := Nat.le_of_succ_le (succ_le_of_two_mul_two_pow_dvd hk)
+  rw [Nat.pow_div hκ (by norm_num), Nat.cast_pow, Nat.cast_ofNat]
+  exact (isUnit_two (powTwoCyclotomic α) h2).pow _
+
 /-- **`ψ` is injective** (Hachi [NOZ26, §3, Theorem 2]). The trace form `(a,b) ↦ ⟨a,b⟩` is
 non-degenerate (testing against `b = eⱼ` recovers `aⱼ`), and `d/k` is a unit in `R_q` (it is a
 power of `2`, invertible since `q` is odd). So `ψ(a) = ψ(b)` forces `⟨a,eⱼ⟩ = ⟨b,eⱼ⟩`, i.e.
@@ -273,10 +283,7 @@ power of `2`, invertible since `q` is odd). So `ψ(a) = ψ(b)` forces `⟨a,eⱼ
 theorem psi_injective (α k : ℕ) (h2 : (2 : R) ≠ 0) (hk2pow : ∃ κ, k = 2 ^ κ)
     (hk : 2 * k ∣ 2 ^ α) : Function.Injective (psi (R := R) α k) := by
   obtain ⟨κ, rfl⟩ := hk2pow
-  have hκ : κ ≤ α := Nat.le_of_succ_le (succ_le_of_two_mul_two_pow_dvd hk)
-  have hunit : IsUnit ((2 ^ α / 2 ^ κ : ℕ) : Rq (powTwoCyclotomic (R := R) α)) := by
-    rw [Nat.pow_div hκ (by norm_num), Nat.cast_pow, Nat.cast_ofNat]
-    exact (isUnit_two (powTwoCyclotomic α) h2).pow _
+  have hunit := isUnit_traceScale (R := R) α κ h2 hk
   intro a b hab
   funext j
   have ha := traceH_psi_mul_conj α (2 ^ κ) h2 ⟨κ, rfl⟩ hk a (Pi.single j 1)
@@ -288,5 +295,20 @@ theorem psi_injective (α k : ℕ) (h2 : (2 : R) ≠ 0) (hk2pow : ∃ κ, k = 2 
   simp only [Pi.single_apply, mul_ite, mul_one, mul_zero, Finset.sum_ite_eq', Finset.mem_univ,
     ite_true] at hcancel
   exact Subtype.coe_injective hcancel
+
+/-- Cancelling the genuine (unnormalized) trace scale recovers the scalar inner product. -/
+theorem traceH_psi_mul_conj_eq_iff (α κ : ℕ) (h2 : (2 : R) ≠ 0)
+    (hk : 2 * 2 ^ κ ∣ 2 ^ α)
+    (a b : Fin (2 ^ α / 2 ^ κ) → fixedSubring (R := R) α (2 ^ κ))
+    (z : fixedSubring (R := R) α (2 ^ κ)) :
+    traceH α (2 ^ κ) (psi α (2 ^ κ) a * conjAut α (psi α (2 ^ κ) b)) =
+        (2 ^ α / 2 ^ κ) • (z : Rq (powTwoCyclotomic α)) ↔
+      ∑ i, a i * b i = z := by
+  rw [traceH_psi_mul_conj α (2 ^ κ) h2 ⟨κ, rfl⟩ hk, nsmul_eq_mul, nsmul_eq_mul]
+  constructor
+  · intro h
+    exact Subtype.coe_injective ((isUnit_traceScale α κ h2 hk).mul_left_cancel h)
+  · intro h
+    rw [h]
 
 end ArkLib.Lattices.CyclotomicModulus

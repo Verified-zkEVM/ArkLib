@@ -111,6 +111,18 @@ home_page/            site assets and assembled website root
     (see `Params.lean`), one has `16⁵ < q`, so five balanced digits cannot cover every residue,
     yet `τ = 5` is perfectly correct. `gadgetDecomposeFun` (a bare per-coefficient digit map) is
     the shared computational core of both, so the layout and norm bookkeeping is proved once.
+  - `TraceHead/` (§3.1) — the one-message, zero-challenge scalar-to-ring trace head. `Coefficients`
+    packs monomial coefficients over the fixed subring, proves the read-back directly, and
+    identifies the packing, through `CMlPolynomial.equivMvPolynomialDeg1`, with the shared
+    `PackingData.packedMLE` of a monomial-coefficient `ScalarHead.ClaimLayout`
+    (`traceHeadLayout`, one opening coordinate); `Coordinates` indexes `psi` by the monomials
+    and turns the trace check into a coefficient inner product, `Protocol` is the aborting verifier
+    with its `CheckedObservation` read-back and coordinate-wise special soundness into
+    `relPolyEval`, `Completeness` proves perfect completeness (also at the message-bounded
+    relations), and `Commitment` covers the honest committer. The fixed subring is used as a ring;
+    nothing here depends on its field identification. Its conformance test
+    `ArkLibTest/ProofSystem/RingSwitching/Conformance/Hachi.lean` states the accepting condition
+    through the shared `sliceRel` (`traceHead_conforms`).
   - `EvalSplit.lean` (§4, Eq. (12)) — the matrix split underlying the evaluation argument:
     multilinear evaluation `eval p (xl ++ xh)` factors as the vector–matrix–vector product
     `mb(xl) ⬝ᵥ (toMatrix p *ᵥ mb(xh))` (`evalSplit_eq_eval`), with the inverse reshape
@@ -680,8 +692,11 @@ home_page/            site assets and assembled website root
   `Packing/` also contains the legacy DP24/Binius protocol construction (`Prelude` with the
   protocol vocabulary, `Spec`, `BatchingPhase`, `SumcheckPhase`, `General`; RBR
   soundness, `[IsDomain L]`); Binius instantiates it in `ProofSystem/Binius/FRIBinius/`
-  (`biniusProfile`). Hachi's §3 trace head has carrier `L` itself, so it has its own algebraic
-  interface rather than a `Profile` instance.
+  (`biniusProfile`). Hachi's §3 trace head has carrier `L` itself, so it is not a `Profile`
+  instance; it uses the coordinate layer directly, through `PackingData.ofBaseOpening`,
+  `packedMLE`, its own `ClaimLayout` and `CheckedObservation`, exercising only the packing,
+  evaluation and opening part (no batching, multiplier or sumcheck); its conformance test states
+  the protocol relations through `sliceRel`.
   `Lift/` is the **generic HMZ25 lift** (large quotient ring →
   field, CWSS at `k = 2d`): `Presentation.lean` is its data layer (proof-free
   `Presentation R S` + `IsPresentation` laws over any monic modulus — not cyclotomic-specific

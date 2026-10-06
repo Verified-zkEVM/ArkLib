@@ -31,6 +31,10 @@ abbrev oneMessage (Msg : Type) : ProtocolSpec 1 := ⟨!v[.P_to_V], !v[Msg]⟩
 instance {Msg : Type} : ∀ i, SampleableType ((oneMessage Msg).Challenge i) :=
   fun ⟨0, h⟩ => nomatch h
 
+instance {Msg : Type} : IsEmpty (oneMessage Msg).ChallengeIdx := ⟨fun ⟨0, h⟩ => nomatch h⟩
+
+instance {Msg : Type} : ProverOnly (oneMessage Msg) where prover_first' := rfl
+
 instance {Msg₁ Msg₂ : Type} :
     ∀ i, SampleableType (((oneMessage Msg₁) ++ₚ (oneMessage Msg₂)).Challenge i) :=
   instSampleableTypeChallengeAppend (pSpec₁ := oneMessage Msg₁) (pSpec₂ := oneMessage Msg₂)

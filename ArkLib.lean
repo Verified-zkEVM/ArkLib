@@ -43,6 +43,12 @@ public import ArkLib.Commitments.Functional.Hachi.Sumcheck.Completeness
 public import ArkLib.Commitments.Functional.Hachi.Sumcheck.FinalEval
 public import ArkLib.Commitments.Functional.Hachi.Sumcheck.RoundPoly
 public import ArkLib.Commitments.Functional.Hachi.Sumcheck.Rounds
+public import ArkLib.Commitments.Functional.Hachi.TraceHead.Basic
+public import ArkLib.Commitments.Functional.Hachi.TraceHead.Coefficients
+public import ArkLib.Commitments.Functional.Hachi.TraceHead.Commitment
+public import ArkLib.Commitments.Functional.Hachi.TraceHead.Completeness
+public import ArkLib.Commitments.Functional.Hachi.TraceHead.Coordinates
+public import ArkLib.Commitments.Functional.Hachi.TraceHead.Protocol
 public import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Basic
 public import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Batch
 public import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Completeness
