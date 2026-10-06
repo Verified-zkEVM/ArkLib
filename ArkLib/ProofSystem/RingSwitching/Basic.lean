@@ -55,7 +55,8 @@ each:
 * The **round-shape verifiers** (this folder's top level): every verifier round of the family
   is "one prover message, a deterministic local check, an accept/reject statement update" —
   message-only (`pSpecMessage` + `messageRoundOracleVerifier`: DP24's final step; Hachi's
-  §3.1 trace head has the same one-message shape as a plain aborting `Verifier`) or with a trailing scalar challenge
+  §3.1 trace head has the same one-message shape as a plain aborting `Verifier`) or with a
+  trailing scalar challenge
   (`pSpecScalar` + `scalarRoundOracleVerifier`: DP24's batching round; the check-free limit
   of this shape is the committed-scalar verifier `Lift` builds on). See
   `RoundVerifiers.lean`.
