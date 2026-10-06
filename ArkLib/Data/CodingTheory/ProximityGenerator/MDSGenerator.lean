@@ -621,8 +621,8 @@ lemma card_filter_isMaxCADomain_mul_le_one [Nonempty ι] (MC : ModuleCode ι F A
 
 open Classical in
 /-- **Claim 6.8 [BCGM25].**  Fix a maximal CA domain `A₀` with at least `n · α` positions and fewer
-than `d_C` missing, and a set `Bad` of seeds whose maximal agreement domains `T x` strictly contain `A₀`. Then
-`|Bad| ≤ n · (1 - α) · (|ℓ| - 1)`. -/
+than `d_C` missing, and a set `Bad` of seeds whose maximal agreement domains `T x` strictly contain
+`A₀`. Then `|Bad| ≤ n · (1 - α) · (|ℓ| - 1)`. -/
 lemma card_le_of_ssubset_isMaxAgreementDomain_of_isMDSGenerator {S : Type} [Nonempty S]
     [Fintype S] [DecidableEq F] (G : Generator S ℓ F) (hG : IsMDSGenerator G)
     (hdim : LinearCode.dim (LinearCode.fromColGenMat (M_G G)) = Fintype.card ℓ)
