@@ -57,13 +57,6 @@ theorem trace_check :
   change (unpackCoefficients (n := 1) (t := 1) coordinates F).eval (#v[(0 : B)] ++ #v[(1 : B)]) = 2
   rw [coefficient_roundtrip, scalar_evaluation]
 
-/-- The generic algebra adapter has rank two in `Rq` and rank one in the fixed subring. -/
-theorem ranks :
-    Fintype.card (packingData 5 1 0 valid_parameters.1 valid_parameters.2).ιP = 2 ∧
-    Fintype.card (packingData 5 1 0 valid_parameters.1 valid_parameters.2).ιE = 1 := by
-  change Fintype.card (Fin (2 ^ 1 / 2 ^ 0)) = 2 ∧ Fintype.card Unit = 1
-  decide
-
 end
 
 end HachiTraceHeadAlgebraTest

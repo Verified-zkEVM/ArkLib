@@ -8,19 +8,21 @@ import ArkLib.Commitments.Functional.Hachi.TraceHead.Basic
 import ArkLibTest.Commitments.Functional.Hachi.TraceHead.Protocol
 
 /-!
-# Hachi §3.1 conformance to the shared packing algebra
+# Hachi §3.1 conformance to the shared checked-observation interface
 
-Hachi's one-message trace head instantiates the shared ring-switching algebra: `packingData` is
-a `PackingData` whose packing algebra is `Rq` and whose opening algebra is its fixed subring, and
-`observation` is a `CheckedObservation` whose observation is the `ψ`-coordinate inner product,
-equivalent to the scaled trace check (`check_iff_observation`).
+Hachi's one-message trace head shares the `CheckedObservation` interface with the other packing
+heads: `observation` is a `CheckedObservation` whose observation is the `ψ`-coordinate inner
+product, equivalent to the scaled trace check (`check_iff_observation`). Its packing itself is
+Hachi-specific: `ψ` over CompPoly's `CMlPolynomial`, rather than the shared `PackingData`
+polynomial layer, which is built on `MvPolynomial`.
 
-The conformance theorem derives the head's exact relation correspondence from the shared
-`CheckedObservation.honest_check` and `CheckedObservation.readback`: a passing check with a
-valid ring-level opening holds iff the scalar relation holds and the sent value is honest. The
+The conformance theorem states the head's exact relation correspondence: a passing check with a
+valid ring-level opening holds iff the scalar relation holds and the sent value is honest. It
+applies the head's read-back and honest-check lemmas, which are the shared
+`CheckedObservation.readback` and `CheckedObservation.honest_check` at Hachi's observation. The
 concrete instances show the honest side inhabited by a nonconstant polynomial, and that for a
-false claim no sent ring value both passes the check and opens validly. The check alone is not
-enough: for the false claim `0` the message `0` passes it.
+false claim no sent ring value both passes the check and opens validly against the same weak
+opening. The check alone is not enough: for the false claim `0` the message `0` passes it.
 -/
 
 open CompPoly ArkLib.Lattices.CyclotomicModulus
@@ -36,7 +38,7 @@ variable {q : ℕ} [Fact (Nat.Prime q)] [NeZero q] [BEq (ZMod q)] [LawfulBEq (ZM
   (hk : 2 * 2 ^ κ ∣ 2 ^ α) (h2 : (2 : ZMod q) ≠ 0)
 
 /-- **Hachi §3.1 conformance.** The trace head's check-and-forward step corresponds exactly to
-the scalar relation, by the shared checked-observation laws. -/
+the scalar relation. -/
 theorem traceHead_conforms
     (pp : PublicParamsD (powTwoCyclotomic (R := ZMod q) α)
       innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits dRows)
@@ -47,19 +49,14 @@ theorem traceHead_conforms
       innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits) :
     (check α κ hk s Y = true ∧ (output α κ s Y, w) ∈
         relPolyEval (powTwoCyclotomic (R := ZMod q) α) pp base βSq γ bound) ↔
-      ((s, w) ∈ relIn α κ hk h2 pp base βSq γ bound ∧ Y = honestMessage α κ base s w) := by
-  let D := observation α κ hk h2 base (innerRows := innerRows) (messageDigits := messageDigits)
-    (outerRows := outerRows) (innerDigits := innerDigits) (dRows := dRows) (m := m) (r := r)
+      ((s, w) ∈ relScalarEval α κ hk h2 pp base βSq γ bound ∧ Y = honestMessage α κ base s w) := by
   constructor
   · rintro ⟨hc, hout⟩
-    obtain ⟨hopen, hY⟩ := (output_mem_relPolyEval_iff α κ hk h2 pp base βSq γ bound s Y w).1 hout
-    have hval : s.value = D.scalarEval s (D.witnessEquiv.symm w) :=
-      D.readback ((check_iff_observation α κ hk h2 base s Y).1 hc) hY
-    exact ⟨(relIn_iff_observation α κ hk h2 pp base βSq γ bound s w).2 ⟨hopen, hval⟩, hY⟩
+    exact ⟨mem_relScalarEval_of_output α κ hk h2 pp base βSq γ bound s Y w hc hout,
+      ((output_mem_relPolyEval_iff α κ hk h2 pp base βSq γ bound s Y w).1 hout).2⟩
   · rintro ⟨hin, rfl⟩
-    obtain ⟨-, hval⟩ := (relIn_iff_observation α κ hk h2 pp base βSq γ bound s w).1 hin
-    exact ⟨(check_iff_observation α κ hk h2 base s _).2 (D.honest_check hval),
-      mem_output_of_relIn α κ hk h2 pp base βSq γ bound s w hin⟩
+    exact ⟨check_honestMessage α κ hk h2 pp base βSq γ bound s w hin,
+      output_mem_relPolyEval_of_mem_relScalarEval α κ hk h2 pp base βSq γ bound s w hin⟩
 
 end Universal
 

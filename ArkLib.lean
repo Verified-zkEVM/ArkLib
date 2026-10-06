@@ -559,7 +559,6 @@ public import ArkLib.Data.Lattices.CyclotomicRing.Subfield.Bijectivity
 public import ArkLib.Data.Lattices.CyclotomicRing.Subfield.Cardinality
 public import ArkLib.Data.Lattices.CyclotomicRing.Subfield.Factorization
 public import ArkLib.Data.Lattices.CyclotomicRing.Subfield.Field
-public import ArkLib.Data.Lattices.CyclotomicRing.Subfield.LinearEquiv
 public import ArkLib.Data.Lattices.CyclotomicRing.Subfield.NormBound
 public import ArkLib.Data.Lattices.CyclotomicRing.Subfield.Packing
 public import ArkLib.Data.Lattices.CyclotomicRing.Subfield.TraceInnerProduct

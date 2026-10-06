@@ -42,10 +42,18 @@ def committedOpening (F : CMlPolynomial (Rq (powTwoCyclotomic (R := ZMod q) α))
       innerRows (2 ^ m) (Nat.clog b q) (2 ^ r) (Nat.clog b q) :=
   commitInputWitMap b (F, (commit b hb pp F).2)
 
+omit [NeZero q] [BEq (ZMod q)] [LawfulBEq (ZMod q)] in
+private theorem clog_pos_of_prime (b : ℕ) (hb : 1 < b) : 0 < Nat.clog b q :=
+  Nat.clog_pos hb (Fact.out : Nat.Prime q).one_lt
+
+omit [NeZero q] in
+private theorem one_le_natDegree_powTwo (α : ℕ) :
+    1 ≤ (powTwoCyclotomic (R := ZMod q) α).φ.natDegree := by
+  rw [powTwoCyclotomic_natDegree]
+  exact Nat.one_le_two_pow
+
 /-- The honest decommitment decodes to the committed ring polynomial. -/
 theorem extractedPoly_committedOpening
-    (hdeg : 1 ≤ (powTwoCyclotomic (R := ZMod q) α).φ.natDegree)
-    (hclog : 0 < Nat.clog b q)
     (F : CMlPolynomial (Rq (powTwoCyclotomic (R := ZMod q) α)) (r + m)) :
     extractedPoly (powTwoCyclotomic (R := ZMod q) α) (b : ZMod q)
       (committedOpening b hb pp F) = F := by
@@ -55,15 +63,10 @@ theorem extractedPoly_committedOpening
       (Decomposition.ofDigits Φ dd dd) pp.toPublicParams (Hachi.toMatrix F) := by
     unfold committedOpening commitInputWitMap honestOpening
     rw [commit_snd]
-  rw [hw, extractedPoly]
-  have hM : derivedMsgMatrix Φ (b : ZMod q) (honestOpening Φ
-      (Decomposition.ofDigits Φ dd dd) pp.toPublicParams (Hachi.toMatrix F)) =
-        Hachi.toMatrix F := by
-    funext i k
-    exact congrFun (generateDecomps_derivedMessage Φ (b : ZMod q)
-      (Decomposition.ofDigits Φ dd dd) (gadgetDecompose_lawful Φ hclog hdeg dd)
-      pp.toPublicParams (Hachi.toMatrix F) i) k
-  rw [hM, Hachi.toPolynomial_toMatrix]
+  rw [hw]
+  exact extractedPoly_honestOpening Φ (b : ZMod q) _
+    (gadgetDecompose_lawful Φ (clog_pos_of_prime b hb) (one_le_natDegree_powTwo α) dd)
+    pp.toPublicParams F
 
 variable (hk : 2 * 2 ^ κ ∣ 2 ^ α) (h2 : (2 : ZMod q) ≠ 0)
 
@@ -84,9 +87,8 @@ def committedStatement
 Every scalar coefficient polynomial and query has an honest source witness under the
 balanced-digit norm bounds, including the stronger message bound.
 -/
-theorem committedStatement_mem_relInMsgShort
-    (hbq : b ≤ q / 2) (hdeg : 1 ≤ (powTwoCyclotomic (R := ZMod q) α).φ.natDegree)
-    (hclog : 0 < Nat.clog b q) {βSq γ bound : ℕ} (hbound : 1 ≤ bound)
+theorem committedStatement_mem_relScalarEvalMsgShort
+    (hbq : b ≤ q / 2) {βSq γ bound : ℕ} (hbound : 1 ≤ bound)
     (hβSq : (2 ^ m) * Nat.clog b q *
       ((powTwoCyclotomic (R := ZMod q) α).φ.natDegree * (b / 2) ^ 2) ≤ βSq)
     (hγ : b / 2 ≤ γ)
@@ -96,16 +98,17 @@ theorem committedStatement_mem_relInMsgShort
     (xp : Vector (fixedSubring (R := ZMod q) α (2 ^ κ)) (α - κ)) :
     (committedStatement b hb pp hk h2 f xl xh xp,
       committedOpening b hb pp (packCoefficients (coefficientEquiv q α κ h2 hk) f)) ∈
-      relInMsgShort α κ hk h2 pp (b : ZMod q) βSq γ bound (b / 2) := by
+      relScalarEvalMsgShort α κ hk h2 pp (b : ZMod q) βSq γ bound (b / 2) := by
   let F := packCoefficients (coefficientEquiv q α κ h2 hk) f
   let x := (xl ++ xh).map (algebraMap _ (Rq (powTwoCyclotomic (R := ZMod q) α)))
-  have hh := mem_relPolyEvalMsgShort_of_relCommitInput b hb hbq hdeg hclog hbound hβSq hγ pp
+  have hh := mem_relPolyEvalMsgShort_of_relCommitInput b hb hbq (one_le_natDegree_powTwo α)
+    (clog_pos_of_prime b hb) hbound hβSq hγ pp
     ⟨(commit b hb pp F).1, ⟨x, F.eval x⟩⟩ (F, (commit b hb pp F).2) ⟨rfl, rfl⟩
   refine ⟨⟨hh.1.1, ?_⟩, hh.2⟩
   change (unpackCoefficients (coefficientEquiv q α κ h2 hk)
     (extractedPoly (powTwoCyclotomic (R := ZMod q) α) (b : ZMod q)
       (committedOpening b hb pp F))).eval ((xl ++ xh) ++ xp) = _
-  rw [extractedPoly_committedOpening b hb pp hdeg hclog]
+  rw [extractedPoly_committedOpening b hb pp]
   change (unpackCoefficients (coefficientEquiv q α κ h2 hk)
     (packCoefficients (coefficientEquiv q α κ h2 hk) f)).eval _ = _
   rw [unpackCoefficients_packCoefficients]

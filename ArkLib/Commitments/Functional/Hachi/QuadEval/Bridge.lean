@@ -207,6 +207,22 @@ def extractedPoly (base : ZMod q)
     CMlPolynomial (Rq Φ) (r + m) :=
   Hachi.toPolynomial (derivedMsgMatrix Φ base o)
 
+omit [NeZero q] in
+/-- The polynomial extracted from an honest opening of a reshaped polynomial is that polynomial,
+for a lawful message decomposition. -/
+theorem extractedPoly_honestOpening (base : ZMod q)
+    (decomp : Decomposition Φ (2 ^ m) messageDigits innerRows innerDigits)
+    (hMessageDecomp : IsLawfulGadgetDecomposition Φ base decomp.message)
+    (pp : PublicParams Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits)
+    (F : CMlPolynomial (Rq Φ) (r + m)) :
+    extractedPoly Φ base (honestOpening Φ decomp pp (Hachi.toMatrix F)) = F := by
+  have hM : derivedMsgMatrix Φ base (honestOpening Φ decomp pp (Hachi.toMatrix F)) =
+      Hachi.toMatrix F := by
+    funext i k
+    exact congrFun (generateDecomps_derivedMessage Φ base decomp hMessageDecomp pp
+      (Hachi.toMatrix F) i) k
+  rw [extractedPoly, hM, Hachi.toPolynomial_toMatrix]
+
 /-- **`relPolyEval` — the polynomial-level input relation** of the composed Hachi evaluation
 protocol: a weak `VerifiedOpening` for `u` under the fixed key `pp` whose *extracted polynomial*
 evaluates to `y` at `xl ++ xh`. It pulls back `QuadEval`'s ordinary `relIn` (whose second

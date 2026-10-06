@@ -33,8 +33,6 @@ abbrev pp := HachiTraceHeadTest.pp
 private theorem hb : 1 < 2 := by decide
 private theorem h2 : (2 : ZMod 5) ≠ 0 := by decide
 private theorem hk : 2 * 2 ^ 0 ∣ 2 ^ 1 := by decide
-private theorem hdeg : 1 ≤ Φ.φ.natDegree := by rw [powTwoCyclotomic_natDegree]; decide
-private theorem hclog : 0 < Nat.clog 2 5 := by decide
 
 /-- The coefficients are ordered as `1 + 2X + 3Y + 4XY`. -/
 def f : CMlPolynomial B (1 + 1) := #v[1, 2, 3, 4]
@@ -55,17 +53,12 @@ theorem scalar_value : f.eval (#v[(2 : B)] ++ #v[(3 : B)]) = (3 : B) := by
   simpa only [map_ofNat] using congrArg (algebraMap (ZMod 5) Φ.CyclotomicRing)
     (by decide : (38 : ZMod 5) = 3)
 
-set_option backward.isDefEq.respectTransparency false in
-/-- The shared observation reconstructs the original asymmetric coefficient claim. -/
-theorem shared_observation :
-    ∑ j, (packingData 5 1 0 h2 hk).packBasis.repr
-      (F.eval ((#v[(2 : B)]).map (algebraMap B A))) j *
-        (CMlPolynomial.monomialBasis #v[(3 : B)]).get (finCongr (packingRank_eq 1 0 hk) j) =
-      (3 : B) := by
-  apply (unpack_eval_eq_observation 5 1 0 h2 hk F #v[2] #v[3]).symm.trans
-  change (unpackCoefficients (coefficientEquiv 5 1 0 h2 hk)
-    (packCoefficients (coefficientEquiv 5 1 0 h2 hk) f)).eval (#v[2] ++ #v[3]) = 3
-  rw [unpackCoefficients_packCoefficients]
+/-- The observation reconstructs the original coefficient claim from the packed evaluation. -/
+theorem observation_value :
+    ∑ j, (coefficientEquiv 5 1 0 h2 hk).symm (F.eval ((#v[(2 : B)]).map (algebraMap B A))) j *
+        (CMlPolynomial.monomialBasis #v[(3 : B)]).get j = (3 : B) := by
+  refine (unpackCoefficients_eval (coefficientEquiv 5 1 0 h2 hk) F #v[2] #v[3]).symm.trans ?_
+  rw [F, unpackCoefficients_packCoefficients]
   exact scalar_value
 
 /-- The concrete verifier's trace remains scaled by two. -/
@@ -74,8 +67,8 @@ theorem scaled_trace :
       conjAut 1 (coefficientEquiv 5 1 0 h2 hk (CMlPolynomial.monomialBasis #v[(3 : B)]).get)) =
         2 • (3 : A) := by
   apply (traceH_eval_eq_iff 5 1 0 h2 hk F #v[2] #v[3] 3).2
-  rw [unpack_eval_eq_observation]
-  exact shared_observation
+  rw [unpackCoefficients_eval]
+  exact observation_value
 
 def s : Statement 5 1 0 1 (Nat.clog 2 5) 1 (Nat.clog 2 5) 1 0 1 :=
   committedStatement 2 hb pp hk h2 f #v[2] #v[] #v[3]
@@ -83,16 +76,16 @@ def s : Statement 5 1 0 1 (Nat.clog 2 5) 1 (Nat.clog 2 5) 1 0 1 :=
 def w := committedOpening 2 hb pp F
 
 /-- The balanced-gadget committer gives the original, norm-conditioned weak opening. -/
-theorem source_valid : (s, w) ∈ relInMsgShort 1 0 hk h2 pp 2 6 1 1 1 :=
-  committedStatement_mem_relInMsgShort 2 hb pp hk h2 (by decide) hdeg hclog
+theorem source_valid : (s, w) ∈ relScalarEvalMsgShort 1 0 hk h2 pp 2 6 1 1 1 :=
+  committedStatement_mem_relScalarEvalMsgShort 2 hb pp hk h2 (by decide)
     (by decide) (by rw [powTwoCyclotomic_natDegree]; decide) (by decide) f #v[2] #v[] #v[3]
 
 /-- The protocol checks the asymmetric source, forwarding the same weak opening. -/
 theorem run {ι : Type} (oSpec : OracleSpec ι) :
-    (reduction (oSpec := oSpec) 1 0 hk 2).run s w =
+    (traceHeadReduction (oSpec := oSpec) 1 0 hk 2).run s w =
       pure ((honestTranscript 1 0 2 s w, output 1 0 s (honestMessage 1 0 2 s w), w),
         output 1 0 s (honestMessage 1 0 2 s w)) :=
-  reduction_run 1 0 hk h2 pp 2 6 1 1 s w source_valid.1
+  traceHeadReduction_run 1 0 hk h2 pp 2 6 1 1 s w source_valid.1
 
 /-- Only the scalar value changes; all commitment, query and witness data are retained. -/
 def bad : Statement 5 1 0 1 (Nat.clog 2 5) 1 (Nat.clog 2 5) 1 0 1 := {s with value := 0}
@@ -101,10 +94,10 @@ def bad : Statement 5 1 0 1 (Nat.clog 2 5) 1 (Nat.clog 2 5) 1 0 1 := {s with val
 theorem false_claim_check : check 1 0 hk bad (honestMessage 1 0 2 s w) = false := by
   apply Bool.eq_false_iff.mpr
   intro hc
-  have hout := mem_output_of_relIn 1 0 hk h2 pp 2 6 1 1 s w source_valid.1
+  have hout := output_mem_relPolyEval_of_mem_relScalarEval 1 0 hk h2 pp 2 6 1 1 s w source_valid.1
   have hbout : (output 1 0 bad (honestMessage 1 0 2 s w), w) ∈
       relPolyEval Φ pp 2 6 1 1 := hout
-  have hbad := mem_relIn_of_output 1 0 hk h2 pp 2 6 1 1 bad _ w hc hbout
+  have hbad := mem_relScalarEval_of_output 1 0 hk h2 pp 2 6 1 1 bad _ w hc hbout
   have hz : s.value = 0 := source_valid.1.2.symm.trans hbad.2
   change f.eval (#v[2] ++ #v[3]) = 0 at hz
   rw [scalar_value] at hz
@@ -122,29 +115,30 @@ theorem false_claim_check : check 1 0 hk bad (honestMessage 1 0 2 s w) = false :
 
 /-- Rejection is failure at the existing one-message production wire format. -/
 theorem verifier_failure {ι : Type} (oSpec : OracleSpec ι) :
-    (verifier (q := 5) (oSpec := oSpec) 1 0 hk).run bad (honestTranscript 1 0 2 s w) =
+    (traceHeadVerifier (q := 5) (oSpec := oSpec) 1 0 hk).run bad (honestTranscript 1 0 2 s w) =
       failure := by
-  simp only [Verifier.run, TraceHead.verifier, honestTranscript, false_claim_check,
+  simp only [Verifier.run, TraceHead.traceHeadVerifier, honestTranscript, false_claim_check,
     Bool.false_eq_true, ite_false]
 
 /-- The complete production reduction also aborts for the same false scalar claim. -/
 theorem reduction_failure {ι : Type} (oSpec : OracleSpec ι) :
-    (reduction (oSpec := oSpec) 1 0 hk 2).run bad w = failure := by
+    (traceHeadReduction (oSpec := oSpec) 1 0 hk 2).run bad w = failure := by
   unfold Reduction.run
-  rw [show (reduction (oSpec := oSpec) 1 0 hk 2).prover = TraceHead.prover 1 0 2 from rfl,
-    prover_run]
+  rw [show (traceHeadReduction (oSpec := oSpec) 1 0 hk 2).prover =
+      TraceHead.traceHeadProver 1 0 2 from rfl,
+    traceHeadProver_run]
   simp only [liftM_pure, pure_bind]
-  rw [show (reduction (oSpec := oSpec) 1 0 hk 2).verifier =
-      TraceHead.verifier 1 0 hk from rfl,
+  rw [show (traceHeadReduction (oSpec := oSpec) 1 0 hk 2).verifier =
+      TraceHead.traceHeadVerifier 1 0 hk from rfl,
     show honestTranscript 1 0 2 bad w = honestTranscript 1 0 2 s w from rfl, verifier_failure]
   simp
 
-/-- No retained variables still uses a singleton monomial observation set. -/
+/-- With no retained variables the observation pairs the packed constant with the monomials. -/
 theorem no_retained_variables (G : CMlPolynomial A 0) (xp : Vector B 1) :
     (unpackCoefficients (coefficientEquiv 5 1 0 h2 hk) G).eval ((#v[] : Vector B 0) ++ xp) =
-      ∑ j, (packingData 5 1 0 h2 hk).packBasis.repr (G.eval (#v[] : Vector A 0)) j *
-        (CMlPolynomial.monomialBasis xp).get (finCongr (packingRank_eq 1 0 hk) j) :=
-  unpack_eval_eq_observation 5 1 0 h2 hk G #v[] xp
+      ∑ j, (coefficientEquiv 5 1 0 h2 hk).symm (G.eval (#v[] : Vector A 0)) j *
+        (CMlPolynomial.monomialBasis xp).get j :=
+  unpackCoefficients_eval _ G #v[] xp
 
 end
 

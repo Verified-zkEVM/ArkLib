@@ -9,11 +9,15 @@ import ArkLibTest.ProofSystem.RingSwitching.Conformance.Hachi
 /-!
 # The Hachi trace head with a nontrivial second generator
 
-At `q = 5`, `d = 2^3 = 8` and `k = 2^1 = 2`, the generator `σ_{4k+1} = σ₉` is not the identity
-modulo `2d = 16`, so `H = ⟨σ₋₁, σ₉⟩` is a proper subgroup with a nontrivial second generator. The
-trace head packs the final two variables into four `ψ`-coordinates. The committer's opening
-satisfies the scalar relation, the honest message passes, and a false claim cannot both pass the
-check and open validly, for any sent ring value.
+At `q = 5`, `d = 2^3 = 8` and `k = 2^1 = 2`, the exponent of `σ_{4k+1} = σ₉` is not `1` modulo
+`2d = 16`, so these are parameters at which the second generator of `H = ⟨σ₋₁, σ₉⟩` is not the
+identity. The trace head packs the final two variables into four `ψ`-coordinates. Through the
+general theorems, the committer's opening satisfies the scalar relation, the honest message passes,
+and a false claim cannot both pass the check and open validly against the same weak opening.
+
+The data here are base-field numerals, so no step computes `σ₉` on an element outside `ZMod 5`.
+Evaluating `galoisAut` or the trace concretely needs `Rq` arithmetic, which does not reduce in the
+kernel (`modByMonic` is defined by well-founded recursion), so `decide` cannot be used.
 -/
 
 open CompPoly ArkLib.Lattices.CyclotomicModulus
@@ -41,8 +45,6 @@ def pp : PublicParamsD Φ 1 (2 ^ 0) (Nat.clog 2 5) 1 (2 ^ 1) (Nat.clog 2 5) 1 wh
 private theorem hb : 1 < 2 := by decide
 private theorem h2 : (2 : ZMod 5) ≠ 0 := by decide
 private theorem hk : 2 * 2 ^ 1 ∣ 2 ^ 3 := by decide
-private theorem hdeg : 1 ≤ Φ.φ.natDegree := by rw [powTwoCyclotomic_natDegree]; decide
-private theorem hclog : 0 < Nat.clog 2 5 := by decide
 
 /-- A polynomial in one retained and two packed variables with distinct coefficients. -/
 def f : CMlPolynomial B ((1 + 0) + (3 - 1)) := #v[1, 2, 3, 4, 0, 1, 2, 3]
@@ -53,8 +55,8 @@ def s : Statement 5 3 1 1 (Nat.clog 2 5) 1 (Nat.clog 2 5) 1 0 1 :=
 def w := committedOpening 2 hb pp (packCoefficients (coefficientEquiv 5 3 1 h2 hk) f)
 
 /-- The honest committer's opening satisfies the scalar relation with its norm bounds. -/
-theorem source_valid : (s, w) ∈ relInMsgShort 3 1 hk h2 pp 2 24 1 1 1 :=
-  committedStatement_mem_relInMsgShort 2 hb pp hk h2 (by decide) hdeg hclog (by decide)
+theorem source_valid : (s, w) ∈ relScalarEvalMsgShort 3 1 hk h2 pp 2 24 1 1 1 :=
+  committedStatement_mem_relScalarEvalMsgShort 2 hb pp hk h2 (by decide) (by decide)
     (by rw [powTwoCyclotomic_natDegree]; decide) (by decide) f #v[2] #v[] #v[3, 4]
 
 /-- The honest message passes the check and its forwarded value opens validly. -/

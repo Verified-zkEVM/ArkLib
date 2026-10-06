@@ -6,7 +6,6 @@ Authors: Alexander Hicks
 module
 
 public import ArkLib.Commitments.Functional.Hachi.EvalSplit
-public import Mathlib.LinearAlgebra.Pi
 
 /-!
 # Packing monomial coefficients along the final variables

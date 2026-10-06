@@ -47,8 +47,9 @@ Ring-switching layer:
   `F_{q^k}` to equivalent statements over a power-of-two cyclotomic ring `R_q` with a trace check
   in `R_q` itself. Its carrier is `L = R_q`, so it is not a `RingSwitchingProfile`: for finite
   nontrivial `L` and `κ > 0` the profile's inverse laws force `|A| = |L|^(2^κ)`. The §3.1
-  one-message trace head is formalized in `Hachi/TraceHead/` over the shared finite-coordinate
-  packing modules, with completeness and coordinate-wise special soundness into `relPolyEval`.
+  one-message trace head is formalized in `Hachi/TraceHead/`, with completeness and
+  coordinate-wise special soundness into `relPolyEval`; its read-back is the shared
+  `CheckedObservation`.
 - The **cyclotomic-ring → extension-field lift** (§4.3, Figure 4 / **Lemma 9**, following
   [`HMZ25`](HMZ25.md)): the *simplified* Figure 4 extraction kernel is **formalized and proven** as
   `liftPackage` in Hachi's

@@ -11,7 +11,6 @@ public import ArkLib.Data.Lattices.CyclotomicRing.Subfield.TraceVanishing
 public import ArkLib.Data.Lattices.CyclotomicRing.Subfield.TraceInnerProduct
 public import ArkLib.Data.Lattices.CyclotomicRing.Subfield.Cardinality
 public import ArkLib.Data.Lattices.CyclotomicRing.Subfield.Bijectivity
-public import ArkLib.Data.Lattices.CyclotomicRing.Subfield.LinearEquiv
 public import ArkLib.Data.Lattices.CyclotomicRing.Subfield.Factorization
 public import ArkLib.Data.Lattices.CyclotomicRing.Subfield.Field
 public import ArkLib.Data.Lattices.CyclotomicRing.Subfield.NormBound
@@ -116,12 +115,15 @@ The subfield layer has no `sorry`: Lemma 5, Theorem 2, and Lemma 6 are fully pro
 * `Subfield/Basis.lean` — monomials `X^i`, the `X^d = -1` folding toolkit, the `Fintype`
   instance and `|R_q| = q^{2^α}`, and the symmetric basis `vElt` with its triangular
   coefficient formula (Eq. 7).
-* `Subfield/Packing.lean` — the packing map `ψ` (Eq. 8) and its additivity.
+* `Subfield/Packing.lean` — the packing map `ψ` (Eq. 8), its additivity and fixed-subring
+  linearity (`psiLinearMap`).
 * `Subfield/TraceVanishing.lean` — the trace-of-monomial vanishing identities (Claims 2, 3).
 * `Subfield/TraceInnerProduct.lean` — the trace formula
-  `Tr_H(ψ(a)·σ_{-1}(ψ(b))) = (d/k)·⟨a,b⟩` and the injectivity of `ψ`.
+  `Tr_H(ψ(a)·σ_{-1}(ψ(b))) = (d/k)·⟨a,b⟩`, the injectivity of `ψ`, and the cancellation of the
+  unit `d/k` (`isUnit_traceScale`, `traceH_psi_mul_conj_eq_iff`).
 * `Subfield/Cardinality.lean` — `|R_q^H| = q^k` (Eq. 7) from the symmetric basis.
-* `Subfield/Bijectivity.lean` — `ψ` is a bijection (Theorem 2).
+* `Subfield/Bijectivity.lean` — `ψ` is a bijection (Theorem 2) and a fixed-subring linear
+  equivalence (`psiLinearEquiv`).
 * `Subfield/Factorization.lean` — `X^{2^α}+1 = Φ_{2^{α+1}}` has exactly two irreducible
   factors over `Z_q` for `q ≡ 5 (mod 8)`; `orderOf q = 2^{α-1}` and `−1 ∉ ⟨q⟩`.
 * `Subfield/Field.lean` — `R_q^H` is a field isomorphic to `F_{q^k}` (Lemma 5).

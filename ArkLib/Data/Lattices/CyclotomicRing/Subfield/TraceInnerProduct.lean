@@ -296,4 +296,19 @@ theorem psi_injective (α k : ℕ) (h2 : (2 : R) ≠ 0) (hk2pow : ∃ κ, k = 2 
     ite_true] at hcancel
   exact Subtype.coe_injective hcancel
 
+/-- Cancelling the genuine (unnormalized) trace scale recovers the scalar inner product. -/
+theorem traceH_psi_mul_conj_eq_iff (α κ : ℕ) (h2 : (2 : R) ≠ 0)
+    (hk : 2 * 2 ^ κ ∣ 2 ^ α)
+    (a b : Fin (2 ^ α / 2 ^ κ) → fixedSubring (R := R) α (2 ^ κ))
+    (z : fixedSubring (R := R) α (2 ^ κ)) :
+    traceH α (2 ^ κ) (psi α (2 ^ κ) a * conjAut α (psi α (2 ^ κ) b)) =
+        (2 ^ α / 2 ^ κ) • (z : Rq (powTwoCyclotomic α)) ↔
+      ∑ i, a i * b i = z := by
+  rw [traceH_psi_mul_conj α (2 ^ κ) h2 ⟨κ, rfl⟩ hk, nsmul_eq_mul, nsmul_eq_mul]
+  constructor
+  · intro h
+    exact Subtype.coe_injective ((isUnit_traceScale α κ h2 hk).mul_left_cancel h)
+  · intro h
+    rw [h]
+
 end ArkLib.Lattices.CyclotomicModulus

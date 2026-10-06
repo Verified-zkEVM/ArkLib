@@ -54,6 +54,8 @@ re-export, and this file is the umbrella for the whole development.
   `BoundedDigitDecomposition` for the folded witness `z`, whose digit count `τ` is set by the
   deterministic bound `‖z‖∞ ≤ 2ʳ·ω·⌊b/2⌋` rather than by `q` (`τ = 5` at the `ℓ = 30`
   parameters — see `Params.lean`).
+* `TraceHead/` (§3.1) — the one-message scalar trace head, coefficient packing, and
+  honest-committer coverage into the ring-level `relPolyEval` relation.
 * `EvalSplit.lean` (§4, Eq. (12)) — multilinear evaluation as the vector–matrix–vector product
   `mb(xl) ⬝ᵥ (toMatrix p *ᵥ mb(xh))`.
 * `InnerOuter/` (§4.1) — the inner-outer Ajtai commitment: the scheme with its weak openings
@@ -63,8 +65,6 @@ re-export, and this file is the umbrella for the whole development.
   (`Gadgets`), protocol data and relations (`Reduction`), Lemma 8 special soundness
   (`Soundness`), completeness (`Completeness`), and the zero-round polynomial-level bridge
   (`Bridge`).
-* `TraceHead/` (§3.1) — the one-message scalar trace head, coefficient packing, and
-  honest-committer coverage into the ring-level `relPolyEval` relation.
 * `RingSwitch/`, `ZeroCheck/`, `Sumcheck/` (§4.3) — the HMZ25 lift, the zero-check, and the
   sumcheck loop, each with its own `Completeness.lean`.
 * `EndPiece/` (§4.3, closing) — the terminal link: the prover reveals the reduced witness and the
