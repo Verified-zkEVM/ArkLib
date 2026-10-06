@@ -23,6 +23,40 @@ Notation: `d = 2^α`, `k = 2^κ`, `H = ⟨σ₋₁, σ_{4k+1}⟩`, `B = R_q^H` (
 | Theorem 2 (`ψ` bijective, trace pairing) | `psi_bijective`, `traceH_psi_mul_conj`, `psiLinearEquiv` | `traceH_eval_eq_iff` is Theorem 2 applied to Eq. (10) |
 | Lemma 6 (`‖ψ(a)‖∞ ≤ 2β`) | `cInfNorm_psi_le` | Not used by the trace head, whose relations bound the ring opening directly |
 
+## Shared packing layer
+
+The trace head's packing is an instance of the `MvPolynomial`-based coordinate layer of
+`ProofSystem/RingSwitching/Packing/`, reached through CompPoly's
+`CMlPolynomial.equivMvPolynomialDeg1` and the monomial-side evaluation bridge
+`CMlPolynomial.eval_eq_eval_toMvPolynomial` (`ToCompPoly/Multilinear/Basic.lean`).
+
+- **Packing data.** `traceHeadData e = PackingData.ofBaseOpening (Basis.ofEquivFun e.symm)`:
+  the packing basis is `ψ` (at `e = coefficientEquiv …`) and the opening algebra is the fixed
+  subring `B` with its one-element basis. The retained point is `B`-valued, so there is one
+  opening coordinate (`ιE = Unit`) and the coordinate transpose is trivial. The multi-coordinate
+  transpose content that Binius uses does not arise here.
+- **Packed polynomial.** `toMvPolynomialDeg1_packCoefficients`: under the equivalence,
+  `packCoefficients e f` is the shared `(traceHeadData e).packedMLE ((traceHeadLayout e).components
+  f)`, proved from `unpack_coeff` and `packedMLE_unpack`.
+- **Packing/evaluation commutation.** Evaluating the packed polynomial at the embedded retained
+  point is the packing of the component evaluations: the shared `packedMLE_eval_embedded`, the lemma
+  Binius's `ProfileLayout` uses. `openingClaimRel_unpackCoefficients_iff` applies it: the shared
+  `openingClaimRel` of the layout's components holds iff `e` maps the claimed values to the ring
+  evaluation `Y`.
+- **Layout.** `traceHeadLayout e` instantiates the `ScalarHead.ClaimLayout` contract. Its
+  components are the monomial-coefficient rows of the final `α − κ` variables (`coefficientRows`,
+  column `j` of `toMatrix`), transported to `MvPolynomial`, and its weights are the monomial basis
+  at `xp`. Its `reconstruct` is Hachi's own proof, from `evalSplit_eq_eval` and the evaluation
+  bridge. This is the faithful split: NOZ26 applies `ψ` to monomial coefficients. The
+  Boolean-restriction `packedSuffixLayout` is a different split and is not used.
+- **Read-back identity.** `unpackCoefficients_eval` is the opening relation at the honest component
+  values followed by `traceHeadLayout.reconstruct`. `traceH_eval_eq_iff` and the protocol's
+  `observation.eval_eq_observe` consume it.
+- **Not shared.** The protocol relations `relScalarEval` and `relPolyEval` and the conformance
+  theorem do not mention the packing layer; they depend on it only through the read-back identity.
+  The protocol's `CheckedObservation` is written by hand, not derived from the layout. The
+  `RingSwitchingProfile` layer does not apply (carrier `L` itself).
+
 ## Departures
 
 - **No field hypothesis.** The paper works over `R_q^H ≅ F_{q^k}` (Lemma 5, `q ≡ 5 mod 8`). The
@@ -62,12 +96,15 @@ proof derives the check from Theorem 2 (`traceH_psi_mul_conj`) and does not use 
   (`ArkLibTest/Commitments/Functional/Hachi/TraceHead/Composition.lean`). The composite carries the
   evaluation step's own escape event.
 - **Non-vacuity:** `ArkLibTest/ProofSystem/RingSwitching/Conformance/Hachi.lean` states the exact
-  correspondence `check ∧ relPolyEval(output) ↔ relScalarEval ∧ Y = honestMessage`. At `q = 5`, `d =
-  2`, `k = 1` it exhibits a nonconstant polynomial on the honest side and shows that, for a false
-  claim, no sent ring value both passes the check and opens validly against the same weak opening.
-  `ArkLibTest/Commitments/Functional/Hachi/TraceHead/ProperSubring.lean` repeats this at `d = 8`, `k
-  = 2`, where the exponent of `σ₉` is not `1` modulo `2d`; its data are base-field numerals, so it
-  does not compute `σ₉` on an element outside `ZMod q`. The check alone does not reject a false
-  claim: for the claim `0`, the message `0` passes it (`zero_message_passes_check`).
+  correspondence `check ∧ relPolyEval(output) ↔ relScalarEval ∧ Y = honestMessage`. At the real
+  `coefficientEquiv` it also states that the packed polynomial is the shared `packedMLE` of
+  `traceHeadLayout`'s components and that the components' opening relation holds iff `ψ` of the
+  claimed values is the ring evaluation; at `q = 5` a wrong claimed value is rejected. At `q = 5`,
+  `d = 2`, `k = 1` it exhibits a nonconstant polynomial on the honest side and shows that, for a
+  false claim, no sent ring value both passes the check and opens validly against the same weak
+  opening. `ArkLibTest/Commitments/Functional/Hachi/TraceHead/ProperSubring.lean` repeats this at `d
+  = 8`, `k = 2`, where the exponent of `σ₉` is not `1` modulo `2d`; its data are base-field
+  numerals, so it does not compute `σ₉` on an element outside `ZMod q`. The check alone does not
+  reject a false claim: for the claim `0`, the message `0` passes it (`zero_message_passes_check`).
 - **Axioms:** completeness, soundness and the committer coverage depend only on `propext`,
   `Classical.choice` and `Quot.sound`.

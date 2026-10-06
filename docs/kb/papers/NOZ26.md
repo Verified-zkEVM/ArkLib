@@ -15,6 +15,7 @@ related_modules:
   - ArkLib/Commitments/Functional/Hachi/InnerOuter/Scheme.lean
   - ArkLib/Commitments/Functional/Hachi/InnerOuter/Security.lean
   - ArkLib/Commitments/Functional/Hachi/ZeroCheck/Reduction.lean
+  - ArkLib/Commitments/Functional/Hachi/TraceHead/Coefficients.lean
   - ArkLib/Commitments/Functional/Hachi/TraceHead/Protocol.lean
 ---
 
@@ -49,7 +50,10 @@ Ring-switching layer:
   nontrivial `L` and `κ > 0` the profile's inverse laws force `|A| = |L|^(2^κ)`. The §3.1
   one-message trace head is formalized in `Hachi/TraceHead/`, with completeness and
   coordinate-wise special soundness into `relPolyEval`; its read-back is the shared
-  `CheckedObservation`.
+  `CheckedObservation`. Its coefficient packing is the shared `PackingData.packedMLE` (at
+  `PackingData.ofBaseOpening` of `ψ`, one opening coordinate) of a monomial-coefficient
+  `ScalarHead.ClaimLayout`, transported from CompPoly's `CMlPolynomial` to `MvPolynomial`, and its
+  read-back uses the shared `packedMLE_eval_embedded`.
 - The **cyclotomic-ring → extension-field lift** (§4.3, Figure 4 / **Lemma 9**, following
   [`HMZ25`](HMZ25.md)): the *simplified* Figure 4 extraction kernel is **formalized and proven** as
   `liftPackage` in Hachi's

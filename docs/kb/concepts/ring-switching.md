@@ -95,7 +95,11 @@ them; `PackingData.transpose` is the coordinate transpose `(ιP → E) ≃ₗ[B]
 - `Batching` — `BatchingStrategy`, a uniform challenge distribution with a proved collision bound
   (`gammaPowers`, `eqFold`, `singleton`, `reindex`);
 - `ScalarHead/Layout` and `ScalarHead/Quirky` — prefix, suffix and quirky Lagrange layouts, each
-  with a proved reconstruction identity.
+  with a proved reconstruction identity. A consumer may supply its own `ClaimLayout`: Hachi's
+  monomial-coefficient layout lives in `Commitments/Functional/Hachi/TraceHead/Coefficients.lean`.
+
+`PackingData.ofBasis` uses one algebra and one basis in both roles; `PackingData.ofBaseOpening`
+uses the base ring as opening algebra, so there is a single opening coordinate.
 
 Everything holds over commutative rings, including rings with zero divisors, except the two
 Schwartz–Zippel batching strategies, which need a finite domain, and the quirky layout, whose
@@ -117,11 +121,23 @@ Lagrange interpolation needs the opening algebra to be a field.
   subfield-valued, so the reduction is **deterministic**
   (one message + one trace check, no challenges, no sum-check). `R_q` is not a domain, so the
   Schwartz–Zippel soundness theorem does not apply — Hachi soundness is a separate (CWSS)
-  argument. The formalized head has its own `ψ` packing over CompPoly's `CMlPolynomial` and
-  reads back through the shared `CheckedObservation`; it does not use `PackingData`, whose
-  polynomial layer is `MvPolynomial`-based. Its conformance theorem
-  (`ArkLibTest/ProofSystem/RingSwitching/Conformance/Hachi.lean`) states the exact
-  scalar-to-ring relation correspondence.
+  argument. The formalized head computes over CompPoly's `CMlPolynomial` and reaches the
+  `MvPolynomial`-based coordinate layer through `CMlPolynomial.equivMvPolynomialDeg1`
+  (`TraceHead/Coefficients.lean`). What it shares:
+  - its packed polynomial is the shared `packedMLE` of the components of `traceHeadLayout`, at
+    `PackingData.ofBaseOpening` of `ψ` (`toMvPolynomialDeg1_packCoefficients`);
+  - its read-back commutes evaluation with packing by the shared `packedMLE_eval_embedded`, the
+    lemma Binius's profile layout uses;
+  - `traceHeadLayout` instantiates the `ScalarHead.ClaimLayout` contract, splitting the
+    **monomial coefficients** of the packed variables (not the Boolean-restriction
+    `packedSuffixLayout`); its `reconstruct` is Hachi's own proof (`evalSplit_eq_eval` and the
+    evaluation bridge);
+  - its observation is a `CheckedObservation`, written by hand.
+  The fixed subring is the opening algebra, so there is one opening coordinate (`ιE = Unit`) and
+  the transpose is trivial. The protocol relations `relScalarEval`/`relPolyEval` and the
+  conformance theorem (`ArkLibTest/ProofSystem/RingSwitching/Conformance/Hachi.lean`), which
+  states the exact scalar-to-ring relation correspondence, do not mention the packing layer; they
+  depend on it only through the read-back identity `unpackCoefficients_eval`.
 - **HMZ25 `Lift` construction** ([`../papers/HMZ25.md`](../papers/HMZ25.md)): the
   *opposite* direction, `S ≅ R[X]/(φ)` → a field `F` — lift `M z = y` to `R[X]` and evaluate
   at a random `α`. **Formalized generically** in `ProofSystem/RingSwitching/Lift/`

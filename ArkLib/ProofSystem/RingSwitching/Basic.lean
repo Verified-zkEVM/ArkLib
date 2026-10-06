@@ -36,8 +36,9 @@ each:
    * **deterministic relocation** — for a subring-valued evaluation point the interaction
      collapses to one message and one identity check, with zero soundness error ([NOZ26] §3.1).
      Its carrier is `L` itself, so it is not a `Profile` instance: the Hachi trace head
-     (`Commitments/Functional/Hachi/TraceHead/`) has its own `ψ` packing and shares the
-     `CheckedObservation` interface.
+     (`Commitments/Functional/Hachi/TraceHead/`) uses the coordinate layer of `Packing/`
+     directly, with one opening coordinate: its `ψ` packing is `packedMLE` of a
+     monomial-coefficient `ClaimLayout`, and its read-back is a `CheckedObservation`.
 
 2. **Lift** (`Lift/`) — the *opposite* direction, a quotient ring
    `S ≅ R[X]/(φ)` → a field `F ⊇ R`. Each row of a linear claim `M z = y` over `S` lifts to
