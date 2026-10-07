@@ -31,6 +31,8 @@ Start with [`README.md`](README.md) for project overview.
 - `ArkLib/ProofSystem/` - protocol formalizations built on the core.
 - `ArkLib/Commitments/` - commitments and opening arguments.
 - `ArkLib/ToMathlib/` - local extensions intended for upstreaming.
+- `ArkLib/ToVCVio/` - time-boxed staging for new generic lemmas with an open VCVio PR; deleted at
+  the repin that brings them.
 - `blueprint/src/` - deep design docs and bibliography.
 - `scripts/` - repo utilities.
 

@@ -7,6 +7,7 @@ module
 
 public import ArkLib.Data.MvPolynomial.Multilinear
 public import ArkLib.Data.Probability.Instances
+public import ArkLib.ToVCVio.EvalDist.ProbabilityBounds
 
 /-!
 # Separation laws for batching a family of claims
@@ -14,6 +15,13 @@ public import ArkLib.Data.Probability.Instances
 A strategy supplies uniform challenges, weights, and a proved collision bound. The interface
 is open to further strategies; the field/domain assumptions belong to the power and equality
 instances, not to the record. Singleton batching is deterministic over any commutative ring.
+
+`BatchingStrategy.separates_finset` separates a bounded candidate list. A list of at most `L`
+families, fixed before the challenge, contains a family that differs from the true one yet has the
+same batched value with probability at most `L` times the strategy error. It instantiates the
+union bound `prEvent_exists_finset_le_card_mul` of `ArkLib.ToVCVio.EvalDist.ProbabilityBounds`;
+the true family itself contributes probability zero. This does not cover lists chosen after the
+challenge, nor adaptive joint-list invariants or extraction.
 -/
 
 @[expose] public section
@@ -51,6 +59,20 @@ theorem separates_map {P C W : Type} [CommRing P] [CommRing C] [Fintype W]
       ∑ u, bat.weight c u * f (s u) = ∑ u, bat.weight c u * f (s' u)] ≤
       (bat.error : ℝ≥0∞) :=
   bat.separates (f ∘ s) (f ∘ s') fun h => hne (funext fun u => hf (congrFun h u))
+
+/-- **Bounded candidate-list separation for a batching strategy.** Against the true family `s`,
+some family of a list `S` of at most `L` candidates, fixed before the challenge, differs from `s`
+but has the same batched value with probability at most `L` times the strategy error. -/
+theorem separates_finset {P W : Type} [CommRing P] [Fintype W] (bat : BatchingStrategy P W)
+    (s : W → P) (S : Finset (W → P)) {L : ℕ} (hS : S.card ≤ L) :
+    Pr{let c ← $ᵗ bat.Challenge}[∃ s' ∈ S, s' ≠ s ∧
+      ∑ u, bat.weight c u * s' u = ∑ u, bat.weight c u * s u] ≤ L * (bat.error : ℝ≥0∞) :=
+  (prEvent_exists_finset_le_card_mul S ($ᵗ bat.Challenge) _ (ε := bat.error) fun s' _ => by
+    by_cases hne : s' = s
+    · rw [prEvent_eq_zero_of_forall_not _ _ fun _ h => h.1 hne]
+      exact bot_le
+    · exact (prEvent_mono _ _ _ fun _ h => h.2).trans (bat.separates s' s hne)).trans
+    (by gcongr)
 
 /-- A single claim needs no randomness or algebraic root bound. -/
 def singleton (P W : Type) [CommRing P] [Fintype W] [Unique W] :

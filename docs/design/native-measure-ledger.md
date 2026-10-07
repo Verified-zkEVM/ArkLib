@@ -27,7 +27,10 @@ and bodies; it cannot be weakened by a baseline.
   discrete spaces are used where the existing discrete sampler semantics require them, including
   sampler transport in `OracleReduction/Cast.lean`.
 - Import generic VCVio laws directly from their upstream owners. The former `ArkLib/ToVCVio/`
-  compatibility tree is removed; do not recreate it or add replacement aliases.
+  compatibility tree is removed; do not recreate it as a compatibility layer or add replacement
+  aliases. `ArkLib/ToVCVio/` exists only as time-boxed staging for new generic lemmas with an open
+  VCVio PR, mirroring the VCVio path and names, deleted at the repin that brings them
+  (`docs/wiki/probability-conventions.md`).
 
 ## Admissible regression reasons
 
