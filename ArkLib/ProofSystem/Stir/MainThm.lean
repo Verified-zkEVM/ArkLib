@@ -126,44 +126,47 @@ def stirOpenRelation
     (degree : ℕ) (φ : ι ↪ F) (err : ℝ≥0) : Set ((Unit × ∀ i, (OracleStatement ι F i)) × Unit) :=
   fun ⟨⟨_, oracle⟩, _⟩ => δᵣ(oracle (), ReedSolomon.code φ degree) < err
 
-/-- Theorem 5.1 : STIR main theorem
-  Consider the following ingrediants,
-  a security parameter `secpar`
-  a ReedSolomon code `RS[F, ι, degree]` with rate `ρ = degree/ |ι|`, where ι is a smooth domain
-  a proximity parameter `δ ∈ (0, 1 - 1.05 * √ρ)`
-  a folding parameter `k ≥ 4`, being a power of 2
-  if `|F| ≤ secpar * 2^{secpar * degree² * |ι|^3.5 / log(1/ρ)}`, then
-  there exists a `vector IOPP π` for `RS` with
-  - `round by round soundness error ≤ 2 ^ (- secpar)`,
-  - `M = O(logₖdegree)`
-  - `proof length = |ι| + Oₖ(log degree)`
-  - `query complexity to input = secpar / (- log(1-δ))`
-  - `query complexity to proof strings = Oₖ(log degree + secpar * log(log degree / log(1/ρ)))`
--/
-theorem stir_main
-    (secpar : ℕ) [SampleableType F]
-  {ι : Type} [Fintype ι] [Nonempty ι]
-  {φ : ι ↪ F} {degree : ℕ} [hsmooth : Smooth φ]
-  {k proofLen qNumtoInput qNumtoProofstr : ℕ}
-  (hk : ∃ p, k = 2 ^ p) (hkGe : k ≥ 4)
-  (δ : ℝ≥0) (hδub : δ < 1 - 1.05 * Real.sqrt (degree / Fintype.card ι))
-  (hF : Fintype.card F ≤
-        secpar * 2 ^ secpar * degree ^ 2 * (Fintype.card ι) ^ (7 / 2) /
-          Real.log (1 / rate (code φ degree))) :
-  ∃ n : ℕ,
-  ∃ vPSpec : ProtocolSpec.VectorSpec n,
-  ∃ ε_rbr : vPSpec.ChallengeIdx → ℝ≥0,
-  ∃ π : VectorIOP Unit (OracleStatement ι F) Unit vPSpec F,
-  IsSecureWithGap (stirRelation degree φ 0)
-                  (stirRelation degree φ δ)
-                  ε_rbr π
-  ∧ ∀ i, ε_rbr i ≤ (1 : ℚ≥0) / (2 ^ secpar)
-  ∧ ∃ c > 0, M ≤ c * (Real.log degree / Real.log k)
-  ∧ ∃ cₖ : ℕ → ℝ, proofLen ≤ (Fintype.card ι) + (cₖ k) * (Real.log degree)
-  ∧ qNumtoInput = secpar / (- Real.log (1 - δ))
-  ∧ ∃ cₖ : ℕ → ℝ, qNumtoProofstr ≤
-    (cₖ k) * ((Real.log degree) +
-      secpar * (Real.log ((Real.log degree) / Real.log (1/rate (code φ degree))))) := by sorry
+/-- **Theorem 5.1 of [ACFY24stir]: STIR.**
+
+  There are constants `c_F`, `c_M > 0` and `c_len : ℕ → ℝ` such that the following holds for every
+  security parameter `secpar`, Reed-Solomon code `RS[F, ι, degree]` of rate `ρ = degree / |ι|`
+  (`degree` a power of 2, `φ` embedding a smooth domain), proximity parameter
+  `δ ∈ (0, 1 - 1.05 * √ρ)` and folding parameter `k ≥ 4` that is a power of 2.
+  If `|F| ≥ c_F * secpar * 2^secpar * degree² * |ι|^{7/2} / log(1/ρ)`, there is a vector IOPP `π`
+  for the code, with `2M + 2` challenges from the verifier, that is complete and round-by-round
+  sound against the oracles that are at least `δ`-far from the code (`stirOpenRelation`), with
+  - round-by-round soundness error `≤ 2^(-secpar)`,
+  - `M ≤ c_M * log_k degree`,
+  - proof length `≤ |ι| + c_len k * log degree`.
+
+  The constants are chosen before the parameters, so these are the paper's `Ω` and `O` bounds
+  (`Oₖ` for the proof length, whose constant may depend on `k`). The exponent `7/2` of the field
+  size is the one of the January 2025 revision of ePrint 2024/390.
+
+  Not stated: the two query-complexity items of the theorem, `secpar / (- log(1-δ))` queries to the
+  input and `Oₖ(log degree + secpar * log(log degree / log(1/ρ)))` queries to the proof strings.
+  `VectorIOP` has no notion of the number of queries a verifier makes
+  (`OracleVerifier.numQueries` is a stub), and the paper counts the `k` points read together as one
+  symbol. Without them this is an existence statement that does not force `π` to be STIR: a
+  verifier that reads its whole oracle is not excluded. -/
+theorem stir_main :
+    ∃ c_F : ℝ, 0 < c_F ∧ ∃ c_M : ℝ, 0 < c_M ∧ ∃ c_len : ℕ → ℝ,
+    ∀ (F : Type) [Field F] [Fintype F] [DecidableEq F] [SampleableType F]
+      (secpar : ℕ) (ι : Type) [Fintype ι] [Nonempty ι] (φ : ι ↪ F) [Smooth φ]
+      (degree : ℕ) (hdeg : ∃ p : ℕ, degree = 2 ^ p)
+      (k : ℕ) (hk : ∃ p : ℕ, k = 2 ^ p) (hkGe : 4 ≤ k)
+      (δ : ℝ≥0) (hδPos : 0 < δ) (hδub : δ < 1 - 1.05 * Real.sqrt (degree / Fintype.card ι))
+      (hF : c_F * (secpar * 2 ^ secpar * degree ^ 2 * (Fintype.card ι : ℝ) ^ ((7 : ℝ) / 2) /
+            Real.log (1 / rate (code φ degree))) ≤ Fintype.card F),
+    ∃ (M n : ℕ) (vPSpec : ProtocolSpec.VectorSpec n),
+      Fintype.card vPSpec.ChallengeIdx = 2 * M + 2 ∧
+      ∃ (ε_rbr : vPSpec.ChallengeIdx → ℝ≥0)
+        (π : VectorIOP Unit (OracleStatement ι F) Unit vPSpec F),
+        IsSecureWithGap (stirRelation degree φ 0) (stirOpenRelation degree φ δ) ε_rbr π ∧
+        (∀ i, ε_rbr i ≤ 1 / 2 ^ secpar) ∧
+        (M : ℝ) ≤ c_M * (Real.log degree / Real.log k) ∧
+        (vPSpec.totalMessageLength : ℝ) ≤ Fintype.card ι + c_len k * Real.log degree := by
+  sorry
 
 end MainTheorem
 
