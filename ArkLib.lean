@@ -700,6 +700,7 @@ public import ArkLib.OracleReduction.Composition.Sequential.Append
 public import ArkLib.OracleReduction.Composition.Sequential.Append.Basic
 public import ArkLib.OracleReduction.Composition.Sequential.Append.Completeness
 public import ArkLib.OracleReduction.Composition.Sequential.Append.Execution
+public import ArkLib.OracleReduction.Composition.Sequential.Append.GuardedRoundByRound
 public import ArkLib.OracleReduction.Composition.Sequential.Append.OneMessage
 public import ArkLib.OracleReduction.Composition.Sequential.Append.RoundByRound
 public import ArkLib.OracleReduction.Composition.Sequential.Append.Security
@@ -709,6 +710,7 @@ public import ArkLib.OracleReduction.Composition.Sequential.Completeness
 public import ArkLib.OracleReduction.Composition.Sequential.General
 public import ArkLib.OracleReduction.Composition.Sequential.GuardedCompleteness
 public import ArkLib.OracleReduction.Composition.Sequential.GuardedNary
+public import ArkLib.OracleReduction.Composition.Sequential.GuardedRoundByRound
 public import ArkLib.OracleReduction.Composition.Sequential.IsPure
 public import ArkLib.OracleReduction.Composition.Sequential.NoAmbient
 public import ArkLib.OracleReduction.Composition.Sequential.OracleCompleteness

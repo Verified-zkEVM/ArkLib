@@ -12,6 +12,7 @@ public import ArkLib.OracleReduction.Composition.Sequential.Append.Simulation
 public import ArkLib.OracleReduction.Composition.Sequential.Append.Completeness
 public import ArkLib.OracleReduction.Composition.Sequential.Append.OneMessage
 public import ArkLib.OracleReduction.Composition.Sequential.Append.RoundByRound
+public import ArkLib.OracleReduction.Composition.Sequential.Append.GuardedRoundByRound
 public import ArkLib.OracleReduction.Composition.Sequential.Append.Security
 
 /-!
@@ -31,6 +32,8 @@ public import ArkLib.OracleReduction.Composition.Sequential.Append.Security
   * `Append.Completeness` — completeness from simulated factorization and state-uniform suffixes.
   * `Append.OneMessage` — the effectful-prover, one-message completeness specialization.
   * `Append.RoundByRound` — soundness from fixed-prefix bounds under a pure first verifier.
+  * `Append.GuardedRoundByRound` — worst-case round-by-round knowledge soundness under a guarded
+    first verifier, with the composed extractor and knowledge state function named.
   * `Append.Security` — legacy admitted soundness claims and their inherited wrappers.
 -/
 

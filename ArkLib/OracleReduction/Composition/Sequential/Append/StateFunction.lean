@@ -148,14 +148,6 @@ These are index-bookkeeping lemmas for partial transcripts of an appended protoc
 stated with `HEq` because the round indices involved (`min k m`, `k - m`, ...) are only
 *propositionally* equal to the ones appearing in the goals. -/
 
-/-- Extensionality for partial transcripts sitting at propositionally equal round indices. -/
-private lemma transcript_heq_ext {N : ℕ} {pSpec : ProtocolSpec N} {k k' : Fin (N + 1)}
-    {T : pSpec.Transcript k} {T' : pSpec.Transcript k'} (hk : k.val = k'.val)
-    (h : ∀ (i : ℕ) (hi : i < k.val) (hi' : i < k'.val), HEq (T ⟨i, hi⟩) (T' ⟨i, hi'⟩)) :
-    HEq T T' := by
-  obtain rfl : k = k' := Fin.ext hk
-  exact heq_of_eq (funext fun i => eq_of_heq (h i.val i.isLt i.isLt))
-
 /-- Pointwise computation rule for `Transcript.fst`. -/
 private lemma transcript_fst_apply {k : Fin (m + n + 1)}
     (T : (pSpec₁ ++ₚ pSpec₂).Transcript k) (i : ℕ) (hi : i < min k.val m) (hi' : i < k.val) :
@@ -205,7 +197,7 @@ private lemma transcript_fst_eq_full (T : (pSpec₁ ++ₚ pSpec₂).FullTranscri
 /-- Heterogeneous form of `transcript_fst_eq_full`. -/
 private lemma transcript_fst_heq_full (T : (pSpec₁ ++ₚ pSpec₂).FullTranscript) :
     HEq (Transcript.fst (k := Fin.last (m + n)) T) (FullTranscript.fst T) := by
-  refine transcript_heq_ext (k := ⟨min (m + n) m, by omega⟩) (k' := Fin.last m)
+  refine Transcript.heq_ext (k := ⟨min (m + n) m, by omega⟩) (k' := Fin.last m)
     (show min (m + n) m = m by omega) ?_
   intro i hi hi'
   exact (transcript_fst_apply (k := Fin.last (m + n)) T i hi (show i < m + n by omega)).trans
@@ -215,7 +207,7 @@ private lemma transcript_fst_heq_full (T : (pSpec₁ ++ₚ pSpec₂).FullTranscr
 `FullTranscript.snd`, up to the index rewriting `(m + n) - m = n`. -/
 private lemma transcript_snd_heq_full (T : (pSpec₁ ++ₚ pSpec₂).FullTranscript) :
     HEq (Transcript.snd (k := Fin.last (m + n)) T) (FullTranscript.snd T) := by
-  refine transcript_heq_ext (k := ⟨(m + n) - m, by omega⟩) (k' := Fin.last n)
+  refine Transcript.heq_ext (k := ⟨(m + n) - m, by omega⟩) (k' := Fin.last n)
     (show (m + n) - m = n by omega) ?_
   intro i hi hi'
   exact (transcript_snd_apply (k := Fin.last (m + n)) T i (show i < (m + n) - m by omega)
@@ -353,7 +345,7 @@ def StateFunction.append
         refine stateFunction_toFun_heq S₁
           (Fin.ext (show j.val = ((j.castSucc : Fin (m + n + 1)) : ℕ) by omega)) rfl ?_ hc
         refine HEq.trans ?_ (cast_heq _ _).symm
-        exact transcript_heq_ext (k := ⟨j.val, by omega⟩)
+        exact Transcript.heq_ext (k := ⟨j.val, by omega⟩)
           (k' := ⟨min ((j.castSucc : Fin (m + n + 1)) : ℕ) m, by omega⟩)
           (show j.val = min ((j.castSucc : Fin (m + n + 1)) : ℕ) m by omega)
           (fun i hi hi' => HEq.rfl)
@@ -363,7 +355,7 @@ def StateFunction.append
       refine key ?_
       convert hgoal using 2
       · rfl
-      refine eq_of_heq (HEq.symm ((cast_heq _ _).trans (transcript_heq_ext
+      refine eq_of_heq (HEq.symm ((cast_heq _ _).trans (Transcript.heq_ext
         (show min ((j.succ : Fin (m + n + 1)) : ℕ) m = j.val + 1 by omega) ?_)))
       intro i hi hi'
       have hi'' : i < j.val + 1 := hi'
@@ -410,7 +402,7 @@ def StateFunction.append
         refine hnot (stateFunction_toFun_heq S₁
           (Fin.ext (show m = ((j.castSucc : Fin (m + n + 1)) : ℕ) by omega)) rfl ?_ hc₁)
         refine HEq.trans ?_ (cast_heq _ _).symm
-        exact transcript_heq_ext (k := ⟨m, by omega⟩)
+        exact Transcript.heq_ext (k := ⟨m, by omega⟩)
           (k' := ⟨min ((j.castSucc : Fin (m + n + 1)) : ℕ) m, by omega⟩)
           (show m = min ((j.castSucc : Fin (m + n + 1)) : ℕ) m by omega)
           (fun i hi hi' => HEq.rfl)
@@ -432,7 +424,7 @@ def StateFunction.append
       -- The second protocol's half of the new transcript is exactly its single new message.
       have hSnd : HEq ((Transcript.concat msg tr).snd)
           (Transcript.concat (cast htype₂ msg) (fun i => Fin.elim0 i)) := by
-        refine transcript_heq_ext (k := ⟨((j.succ : Fin (m + n + 1)) : ℕ) - m, by omega⟩)
+        refine Transcript.heq_ext (k := ⟨((j.succ : Fin (m + n + 1)) : ℕ) - m, by omega⟩)
           (k' := (⟨0, hn⟩ : Fin n).succ)
           (show ((j.succ : Fin (m + n + 1)) : ℕ) - m = 0 + 1 by omega) ?_
         intro i hi hi'
@@ -475,7 +467,7 @@ def StateFunction.append
       -- The second protocol's half gains exactly the new message at its last position.
       have hSnd : HEq ((Transcript.concat msg tr).snd)
           (Transcript.concat (cast htype₂ msg) tr.snd) := by
-        refine transcript_heq_ext (k := ⟨((j.succ : Fin (m + n + 1)) : ℕ) - m, by omega⟩)
+        refine Transcript.heq_ext (k := ⟨((j.succ : Fin (m + n + 1)) : ℕ) - m, by omega⟩)
           (k' := (⟨j.val - m, hkn⟩ : Fin n).succ) ?_ ?_
         · change ((j.succ : Fin (m + n + 1)) : ℕ) - m = j.val - m + 1
           omega
@@ -569,7 +561,7 @@ theorem StateFunction.append_transition_left
     refine stateFunction_toFun_heq S₁
       (Fin.ext (show idx.val = ((idx.castSucc : Fin (m + n + 1)) : ℕ) by omega)) rfl ?_ hc
     refine HEq.trans ?_ (cast_heq _ _).symm
-    exact transcript_heq_ext (k := ⟨idx.val, by omega⟩)
+    exact Transcript.heq_ext (k := ⟨idx.val, by omega⟩)
       (k' := ⟨min ((idx.castSucc : Fin (m + n + 1)) : ℕ) m, by omega⟩)
       (show idx.val = min ((idx.castSucc : Fin (m + n + 1)) : ℕ) m by omega)
       (fun i hi hi' => HEq.rfl)
@@ -581,7 +573,7 @@ theorem StateFunction.append_transition_left
   rw [dite_eq_left (show ((idx.succ : Fin (m + n + 1)) : ℕ) ≤ m by omega)] at hgoal
   convert hgoal using 2
   · rfl
-  refine eq_of_heq (HEq.symm ((cast_heq _ _).trans (transcript_heq_ext
+  refine eq_of_heq (HEq.symm ((cast_heq _ _).trans (Transcript.heq_ext
     (show min ((idx.succ : Fin (m + n + 1)) : ℕ) m = idx.val + 1 by omega) ?_)))
   intro i hi hi'
   have hi'' : i < idx.val + 1 := hi'
@@ -636,7 +628,7 @@ theorem StateFunction.append_transition_right
     · rw [dite_eq_left (show idx.castSucc.val ≤ m by omega)] at hnot
       refine hnot (stateFunction_toFun_heq S₁ (Fin.ext (by simp; omega)) rfl ?_ hc)
       refine HEq.trans ?_ (cast_heq _ _).symm
-      exact transcript_heq_ext (k := Fin.last m)
+      exact Transcript.heq_ext (k := Fin.last m)
         (k' := ⟨min idx.castSucc.val m, by omega⟩) (by simp; omega)
         (fun i hi hi' => HEq.rfl)
     · rw [dite_eq_right (show ¬ idx.castSucc.val ≤ m by omega)] at hnot
@@ -647,12 +639,12 @@ theorem StateFunction.append_transition_right
     by_cases heq : j.val = 0
     · exact hmem ((S₂.toFun_empty _).mpr (stateFunction_toFun_heq S₂
         (Fin.ext (by simp; omega)) rfl
-        (transcript_heq_ext (k := j.castSucc) (k' := 0) (by simp; omega)
+        (Transcript.heq_ext (k := j.castSucc) (k' := 0) (by simp; omega)
           (fun i hi _ => by have : i < j.val := hi; omega)) hc))
     · rw [dite_eq_right (show ¬ idx.castSucc.val ≤ m by omega)] at hnot
       refine hnot (Or.inr (stateFunction_toFun_heq S₂
         (Fin.ext (show j.val = idx.castSucc.val - m by omega)) rfl ?_ hc))
-      exact transcript_heq_ext (k := j.castSucc)
+      exact Transcript.heq_ext (k := j.castSucc)
         (k' := ⟨idx.castSucc.val - m, by omega⟩) (show j.val = idx.castSucc.val - m by omega)
         (fun i hi hi' => HEq.rfl)
   refine ⟨verify stmt T₁, hmem, T₂, hnot₂, ?_⟩
@@ -672,7 +664,7 @@ theorem StateFunction.append_transition_right
     (heq_of_eq (funext fun i => eq_of_heq (hTr i _ _))) hc))
   have hSnd : HEq ((Transcript.concat msg tr).snd)
       (Transcript.concat (cast (append_Type_natAdd j) msg) T₂) := by
-    refine transcript_heq_ext (k := ⟨idx.succ.val - m, by omega⟩)
+    refine Transcript.heq_ext (k := ⟨idx.succ.val - m, by omega⟩)
       (k' := j.succ) (show idx.succ.val - m = j.val + 1 by omega) ?_
     intro i hi hi'
     have hi2 : i < j.val + 1 := hi'

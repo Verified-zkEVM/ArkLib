@@ -29,6 +29,8 @@ completeness, round-by-round and coordinate-wise special soundness arguments can
   composite check `check₁ s tr.fst && check₂ (out₁ s tr.fst) tr.snd`; `Verifier.IsGuarded.append`
   is the forgetful corollary.
 * `Verifier.append_run_guardedLeft`: running an appended verifier whose left factor is guarded.
+* `Verifier.GuardedForm.prEvent_pos_of_check`: a guarded verifier whose guard passes outputs its
+  verdict with positive probability.
 * `Verifier.GuardedForm.ofQueryGuard`: the guarded form of an oracle verifier that makes one
   query to the prover's messages, guards on the answer and the challenges, and returns a
   statement built from them.
@@ -144,6 +146,27 @@ theorem append_run_guardedLeft
   by_cases hc : check₁ stmt tr₁ <;> simp [hc]
 
 end GuardedFormAppend
+
+/-- A guarded verifier whose guard passes outputs its verdict with positive probability, because
+`init` has a possible outcome. The converse direction is
+`Verifier.GuardedForm.check_and_of_prEvent_pos`. -/
+theorem GuardedForm.prEvent_pos_of_check {σ : Type} {init : ProbComp σ}
+    {impl : QueryImpl oSpec (StateT σ ProbComp)} {V : Verifier oSpec StmtIn StmtOut pSpec}
+    (G : V.GuardedForm)
+    {stmt : StmtIn} {tr : FullTranscript pSpec} {p : StmtOut → Prop}
+    (hc : G.check stmt tr = true) (hp : p (G.out stmt tr)) :
+    Pr{let s ← OptionT.mk do
+      (simulateQ impl (V.run stmt tr)).run' (← init)}[p s] > 0 := by
+  have hrun : (V.run stmt tr : OracleComp oSpec (Option StmtOut)) =
+      pure (some (G.out stmt tr)) := by
+    simp only [Verifier.run, G.verify_eq stmt tr, hc, ite_true]
+    rfl
+  rw [gt_iff_lt, OptionT.prEvent_mk_pos_iff]
+  obtain ⟨s, hs⟩ := OracleComp.support_nonempty init
+  refine ⟨G.out stmt tr, ?_, hp⟩
+  rw [hrun]
+  simp only [simulateQ_pure, support_bind, Set.mem_iUnion, exists_prop]
+  exact ⟨s, hs, by simp [StateT.run'_eq, StateT.run_pure]⟩
 
 end Verifier
 

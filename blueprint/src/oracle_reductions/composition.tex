@@ -259,8 +259,25 @@ execution factorization alone does not establish them.
     \uses{def:round_by_round_knowledge_soundness, def:verifier_append}
 \end{theorem}
 
+\begin{theorem}[Worst-Case Round-by-Round Knowledge Soundness under a Guarded First Verifier]
+    \label{thm:rbr_knowledge_soundness_append_guarded}
+    Suppose $V_1$ is guarded: it returns a deterministic verdict when its check passes and aborts
+    otherwise. Suppose $V_1$ and $V_2$ are round-by-round knowledge sound for every fixed
+    transcript prefix, with intermediate relation $R_2$ shared between them. Then
+    $V_1.\append\ V_2$ is round-by-round knowledge sound for every fixed transcript prefix, and
+    each challenge keeps its component's error. The composed extractor runs the second extractor
+    from the first verdict and then the first extractor. The composed knowledge state is the first
+    one up to the seam, and after it is the first check together with the second knowledge state at
+    the first verdict. At the seam, the second knowledge state at round $0$ places the verdict in
+    $R_2$, and a passing check makes that verdict a positive-probability output of $V_1$.
+    \lean{Verifier.append_rbrKnowledgeSoundnessWorstCaseWith_of_guarded_first,
+      Verifier.append_rbrKnowledgeSoundnessWorstCase_of_guarded_first}
+    \uses{def:round_by_round_knowledge_soundness, def:verifier_append}
+\end{theorem}
+
 Finite-chain completeness likewise requires guarantees from every shared state.
-The generic finite-chain soundness and knowledge-soundness contracts below remain admitted.
+The generic finite-chain soundness and knowledge-soundness contracts below remain admitted;
+worst-case round-by-round knowledge soundness of a guarded chain is proved.
 
 \begin{theorem}[General Completeness Preservation]
     \label{thm:completeness_compose}
@@ -283,6 +300,17 @@ The generic finite-chain soundness and knowledge-soundness contracts below remai
     \label{thm:knowledge_soundness_compose}
     \lean{Verifier.seqCompose_knowledgeSoundness}
     \uses{def:knowledge_soundness, def:verifier_compose}
+\end{theorem}
+
+\begin{theorem}[Worst-Case Round-by-Round Knowledge Soundness of a Guarded Chain]
+    \label{thm:rbr_knowledge_soundness_compose_guarded}
+    If every verifier of a finite chain is guarded and round-by-round knowledge sound for every
+    fixed transcript prefix between consecutive relations, so is the chain. Each combined
+    challenge keeps the error of the component challenge it corresponds to. The proof iterates
+    Theorem~\ref{thm:rbr_knowledge_soundness_append_guarded}.
+    \lean{Verifier.seqCompose_rbrKnowledgeSoundnessWorstCase_of_guarded}
+    \uses{def:round_by_round_knowledge_soundness, def:verifier_compose,
+      thm:rbr_knowledge_soundness_append_guarded}
 \end{theorem}
 
 \subsection{Lifting Contexts}\label{sec:lifting_contexts}
