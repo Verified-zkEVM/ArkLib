@@ -198,10 +198,10 @@ example {P W : Type} [CommRing P] [Fintype W] (bat : BatchingStrategy P W) (s s'
 /-- Exact-functional separation on a concrete instance: when the valid candidate is unique, the
 bound is the strategy loss `1/5`, and it is attained by the candidate `(-1, 1)`. -/
 theorem exact_functional_tight :
-    Pr{let γ ← $ᵗ (ZMod 5)}[∃ s' : Fin 2 → ZMod 5, s' = ![-1, 1] ∧ s' ≠ 0 ∧
+    Pr{let γ ← $ᵗ (ZMod 5)}[∃ s' : Fin 2 → ZMod 5, (s' = ![-1, 1] ∧ s' ≠ 0) ∧
       ∑ u, linear.weight γ u * s' u = ∑ u, linear.weight γ u * 0] = linear.error := by
-  refine le_antisymm (prEvent_exists_and_and_le_of_subsingleton _ (· = ![-1, 1]) (· ≠ 0) _
-    (fun s' _ hne => linear.separates s' 0 hne) fun _ ha _ hb => ha.trans hb.symm) ?_
+  refine le_antisymm (prEvent_exists_and_le_of_subsingleton _ (fun s' => s' = ![-1, 1] ∧ s' ≠ 0)
+    _ (fun s' h => linear.separates s' 0 h.2) fun _ ha _ hb => ha.1.trans hb.1.symm) ?_
   have hcard : (Finset.univ.filter fun γ : ZMod 5 =>
       ∑ u, linear.weight γ u * ![-1, 1] u = ∑ u, linear.weight γ u * 0).card = 1 := by
     decide
@@ -210,7 +210,7 @@ theorem exact_functional_tight :
           ∑ u, linear.weight γ u * ![-1, 1] u = ∑ u, linear.weight γ u * 0] := by
         rw [SampleableType.prEvent_uniformSample, hcard, linear_error]
         simp
-    _ ≤ _ := prEvent_mono _ _ _ fun _ h => ⟨_, rfl, by decide, h⟩
+    _ ≤ _ := prEvent_mono _ _ _ fun _ h => ⟨_, ⟨rfl, by decide⟩, h⟩
 
 end RingSwitching.Packing.Tests.Batching
 

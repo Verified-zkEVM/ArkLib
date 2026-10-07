@@ -39,7 +39,8 @@ staged. Staging holds new lemmas only, never aliases or compatibility wrappers.
 Schwartz–Zippel, dot products, and coordinate membership. `Combinatorial.lean` contains the
 collision-to-image-size argument for probability measures on a countable full-mass carrier.
 These mathematical helpers live in `namespace Probability`. The union bounds for candidates fixed
-before sampling (`prEvent_exists_mem_and_le_mul` and its one-candidate case) are staged in
+before sampling (`prEvent_exists_finset_le_card_mul` and its one-index case
+`prEvent_exists_and_le_of_subsingleton`) are staged in
 `ArkLib/ToVCVio/EvalDist/ProbabilityBounds.lean` while VCVio PR #828 is open; see the staging rule
 above.
 

@@ -367,7 +367,7 @@ open Probability in
 fixed carrier `ŝ` a uniform batching point admits a compatible packed polynomial whose tensor
 evaluation differs from `ŝ` but whose round-zero sumcheck claim is consistent with the batching
 target of `ŝ` with probability at most `κ/|L|`. This is the exact-functional, one-candidate case
-of the candidate-list bound (`prEvent_exists_and_and_le_of_subsingleton`), with
+of the candidate-list bound (`prEvent_exists_and_le_of_subsingleton`), with
 per-candidate error `compute_s0_collision_le`. -/
 theorem prob_exists_consistent_ne_le [NoZeroDivisors L] (stmt : BatchingStmtIn L ℓ)
     (oStmt : ∀ j, aOStmtIn.OStmtIn j) (s_hat : P.A)
@@ -385,8 +385,9 @@ theorem prob_exists_consistent_ne_le [NoZeroDivisors L] (stmt : BatchingStmtIn L
       (((κ : ℝ≥0) / (Fintype.card L : ℝ≥0) : ℝ≥0) : ℝ≥0∞) := by
   have : IsDomain L := NoZeroDivisors.to_isDomain L
   -- binding makes the compatible packed polynomial unique: the one-candidate list bound applies
-  refine prEvent_exists_and_and_le_of_subsingleton _ _ _ _ (fun t' _ hne => ?_)
-    fun _ h₁ _ h₂ => hbind _ _ h₁ h₂
+  simp only [← and_assoc]
+  refine prEvent_exists_and_le_of_subsingleton _ _ _ (fun t' ⟨_, hne⟩ => ?_)
+    fun _ h₁ _ h₂ => hbind _ _ h₁.1 h₂.1
   -- each incorrect candidate is consistent only on a collision of batching targets
   refine (prEvent_mono _ _ _ fun c hcons => ?_).trans (compute_s0_collision_le P hne)
   unfold sumcheckConsistencyProp at hcons

@@ -19,8 +19,9 @@ instances, not to the record. Singleton batching is deterministic over any commu
 `BatchingStrategy.separates_finset` separates a bounded candidate list. A list of at most `L`
 families, fixed before the challenge, contains a family that differs from the true one yet has the
 same batched value with probability at most `L` times the strategy error. It instantiates the
-union bound `prEvent_exists_mem_and_le_mul` of `ArkLib.ToVCVio.EvalDist.ProbabilityBounds`. This
-does not cover lists chosen after the challenge, nor adaptive joint-list invariants or extraction.
+union bound `prEvent_exists_finset_le_card_mul` of `ArkLib.ToVCVio.EvalDist.ProbabilityBounds`;
+the true family itself contributes probability zero. This does not cover lists chosen after the
+challenge, nor adaptive joint-list invariants or extraction.
 -/
 
 @[expose] public section
@@ -66,8 +67,12 @@ theorem separates_finset {P W : Type} [CommRing P] [Fintype W] (bat : BatchingSt
     (s : W → P) (S : Finset (W → P)) {L : ℕ} (hS : S.card ≤ L) :
     Pr{let c ← $ᵗ bat.Challenge}[∃ s' ∈ S, s' ≠ s ∧
       ∑ u, bat.weight c u * s' u = ∑ u, bat.weight c u * s u] ≤ L * (bat.error : ℝ≥0∞) :=
-  prEvent_exists_mem_and_le_mul ($ᵗ bat.Challenge) (· ≠ s) _ S
-    (fun s' _ hne => bat.separates s' s hne) hS
+  (prEvent_exists_finset_le_card_mul S ($ᵗ bat.Challenge) _ (ε := bat.error) fun s' _ => by
+    by_cases hne : s' = s
+    · rw [prEvent_eq_zero_of_forall_not _ _ fun _ h => h.1 hne]
+      exact bot_le
+    · exact (prEvent_mono _ _ _ fun _ h => h.2).trans (bat.separates s' s hne)).trans
+    (by gcongr)
 
 /-- A single claim needs no randomness or algebraic root bound. -/
 def singleton (P W : Type) [CommRing P] [Fintype W] [Unique W] :
