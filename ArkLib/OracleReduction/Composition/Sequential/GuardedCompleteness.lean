@@ -5,7 +5,7 @@ Authors: Richard Goodman, ArkLib Contributors
 -/
 module
 
-public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Guarded
+public import ArkLib.OracleReduction.Security.Guarded
 public import ArkLib.OracleReduction.Composition.Sequential.Append.Completeness
 
 /-!

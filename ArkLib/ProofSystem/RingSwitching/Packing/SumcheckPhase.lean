@@ -119,7 +119,7 @@ The per-round protocol code lives in `ArkLib.ProofSystem.Sumcheck.Structured.Sin
 as `round{PrvState, OracleProver, OracleVerifier, OracleReduction}`,
 `getRoundProverFinalOutput`, and `roundKnowledgeError`, parameterized over a generic
 `Context : Type` and `OStmtIn : ιₛᵢ → Type`. The round verifier aborts on a failed round check
-(`Sumcheck.Structured.roundOracleVerifier_verify`).
+(`Sumcheck.Structured.roundOracleVerifierGuardedForm`).
 
 The wrappers below specialize `Context := RingSwitchingBaseContext κ L K ℓ` and
 `OStmtIn := aOStmtIn.OStmtIn`. They keep the `iteratedSumcheck*` names (these are what the
@@ -185,16 +185,9 @@ variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ Pro
 
 /-- The round verifier's guard and verdict as data. -/
 def iteratedSumcheckGuardedForm (i : Fin ℓ') :
-    (iteratedSumcheckOracleVerifier κ L K P ℓ ℓ' aOStmtIn i).toVerifier.GuardedForm where
-  check := fun s tr => decide ((∑ b ∈ (boolDomain L ℓ').points i,
-    (tr.messages ⟨0, rfl⟩).val.eval b) = s.1.sumcheck_target)
-  out := fun s tr => ({
-      ctx := s.1.ctx
-      sumcheck_target := (tr.messages ⟨0, rfl⟩).val.eval (tr.challenges ⟨1, rfl⟩)
-      challenges := Fin.snoc s.1.challenges (tr.challenges ⟨1, rfl⟩) }, s.2)
-  verify_eq := fun s tr => by
-    rw [Sumcheck.Structured.roundOracleVerifier_verify]
-    simp only [decide_eq_true_eq]
+    (iteratedSumcheckOracleVerifier κ L K P ℓ ℓ' aOStmtIn i).toVerifier.GuardedForm :=
+  Sumcheck.Structured.roundOracleVerifierGuardedForm (L := L) ℓ' (boolDomain L ℓ')
+    (RingSwitchingBaseContext κ L K ℓ P) (OStmtIn := aOStmtIn.OStmtIn) (d := 2) i
 
 omit [Fintype L] [DecidableEq L] [SampleableType L] [NeZero ℓ'] in
 /-- The honest round polynomial sums over the Boolean values to the running target. -/
@@ -287,8 +280,8 @@ theorem iteratedSumcheckOracleReduction_perfectCompleteness (i : Fin ℓ') :
   rw [hp, bind_assoc] at hx
   simp only [pure_bind] at hx
   obtain ⟨c, _, hx⟩ := (mem_support_bind_iff _ _ _).mp hx
-  simp only [G, iteratedSumcheckGuardedForm, FullTranscript.mk2, FullTranscript.messages,
-    FullTranscript.challenges, hc, decide_true, ite_true, mem_support_pure_iff] at hx
+  rw [show G.check (stmt, oStmt) (FullTranscript.mk2 h c) = true from decide_eq_true hc] at hx
+  simp only [↓reduceIte, mem_support_pure_iff] at hx
   subst x
   exact ⟨_, rfl, hrel c, rfl⟩
 
@@ -397,9 +390,9 @@ def iteratedSumcheckKnowledgeStateFunction (i : Fin ℓ') :
       simp at hDir
   toFun_full := fun ⟨stmt, oStmt⟩ tr witOut h => by
     change (pSpecSumcheckRound L).FullTranscript at tr
-    obtain ⟨hcheck, hrel⟩ := Verifier.guard_and_of_prEvent_pos
-      (Sumcheck.Structured.roundOracleVerifier_verify ℓ' (boolDomain L ℓ') _ 2 i stmt oStmt tr) h
-    exact ⟨hcheck, hrel.2⟩
+    obtain ⟨hcheck, hrel⟩ :=
+      (iteratedSumcheckGuardedForm κ L K P ℓ ℓ' aOStmtIn i).check_and_of_prEvent_pos h
+    exact ⟨of_decide_eq_true hcheck, hrel.2⟩
 
 section
 local instance : DecidableEq K := Classical.decEq K
@@ -710,9 +703,9 @@ theorem finalSumcheckOracleReduction_perfectCompleteness {σ : Type}
   change x ∈ MonadAttach.support ((finalSumcheckProver κ L K P ℓ ℓ' aOStmtIn).run
     (stmt, oStmt) wit >>= fun r => pure
       (if G.check (stmt, oStmt) r.1 then some (r, G.out (stmt, oStmt) r.1) else none)) at hx
-  rw [hp] at hx
-  simp only [pure_bind, G, messageRoundOracleVerifierGuardedForm, FullTranscript.mk1,
-    FullTranscript.messages, hc, decide_true, ite_true, mem_support_pure_iff] at hx
+  rw [hp, pure_bind, show G.check (stmt, oStmt)
+    (FullTranscript.mk1 (wit.t'.val.eval stmt.challenges)) = true from decide_eq_true hc] at hx
+  simp only [↓reduceIte, mem_support_pure_iff] at hx
   subst x
   exact ⟨_, rfl, ⟨rfl, hIn.2.2.2⟩, rfl⟩
 
@@ -793,9 +786,8 @@ noncomputable def finalSumcheckKnowledgeStateFunction {σ : Type} (init : ProbCo
     exact hc.trans (congrArg (_ * ·) he.symm)
   toFun_full := fun (stmt, oStmt) tr witOut h => by
     change (pSpecFinalSumcheck L).FullTranscript at tr
-    obtain ⟨hc, hrel⟩ := Verifier.guard_and_of_prEvent_pos
-      (messageRoundOracleVerifier_verify _ _ stmt oStmt tr) h
-    exact ⟨hc, hrel.1.symm, hrel.2, rfl⟩
+    obtain ⟨hc, hrel⟩ := (messageRoundOracleVerifierGuardedForm _ _).check_and_of_prEvent_pos h
+    exact ⟨of_decide_eq_true hc, hrel.1.symm, hrel.2, rfl⟩
 
 section
 local instance : DecidableEq K := Classical.decEq K

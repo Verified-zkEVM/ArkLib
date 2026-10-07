@@ -363,10 +363,9 @@ noncomputable def batchingKnowledgeStateFunction :
         (hpack ▸ heval) hcheck, hpack ▸ hcompat⟩
     | ⟨1, h⟩ => nomatch h
   toFun_full := fun ⟨stmt, oStmt⟩ tr witOut h => by
-    obtain ⟨hcheck, hrel⟩ := Verifier.guard_and_of_prEvent_pos
-      (scalarRoundOracleVerifier_verify _ _ stmt oStmt tr) h
+    obtain ⟨hcheck, hrel⟩ := (scalarRoundOracleVerifierGuardedForm _ _).check_and_of_prEvent_pos h
     obtain ⟨-, hH, hcons, hcompat⟩ := hrel
-    refine ⟨⟨trivial, rfl, ?_, hcompat⟩, hcheck, hcompat⟩
+    refine ⟨⟨trivial, rfl, ?_, hcompat⟩, of_decide_eq_true hcheck, hcompat⟩
     rw [Subtype.ext hH] at hcons
     exact hcons
 
@@ -453,9 +452,9 @@ theorem batchingReduction_perfectCompleteness :
   rw [hp, bind_assoc] at hx
   simp only [pure_bind] at hx
   obtain ⟨c, _, hx⟩ := (mem_support_bind_iff _ _ _).mp hx
-  simp only [G, scalarRoundOracleVerifierGuardedForm, FullTranscript.mk2,
-    FullTranscript.messages, FullTranscript.challenges, s_hat, hcheck, decide_true, ite_true,
-    mem_support_pure_iff] at hx
+  rw [show G.check (stmt, oStmt) (FullTranscript.mk2 s_hat c) = true from
+    decide_eq_true hcheck] at hx
+  simp only [↓reduceIte, mem_support_pure_iff] at hx
   subst x
   exact ⟨_, rfl, (hhon c).2, rfl⟩
 
