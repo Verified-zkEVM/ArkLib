@@ -97,13 +97,25 @@ def OracleStatement (ι F : Type) : Unit → Type :=
 instance {ι : Type} : OracleInterface (OracleStatement ι F ()) := OracleInterface.instFunction
 
 /-- STIR relation: the oracle's output is δᵣ-close to a Reed-Solomon codeword
-  of degree at most `degree` over domain `φ`, within error `err`.
+  of degree less than `degree` over domain `φ`, within error `err`.
 -/
 def stirRelation
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     {ι : Type} [Fintype ι] [Nonempty ι]
     (degree : ℕ) (φ : ι ↪ F) (err : ℝ≥0) : Set ((Unit × ∀ i, (OracleStatement ι F i)) × Unit) :=
   fun ⟨⟨_, oracle⟩, _⟩ => δᵣ(oracle (), ReedSolomon.code φ degree) ≤ err
+
+/-- Strict version of `stirRelation`: the oracle's output is *strictly* closer than `err` to a
+  Reed-Solomon codeword of degree less than `degree` over domain `φ`.
+
+  This is the soundness relation of an IOPP of proximity: its complement is "at least `err`-far",
+  which is the case the soundness statements of [ACFY24stir] cover (`δ₀ ≤ Δ(f, RS)` in Lemma 5.4).
+  Completeness is stated with `stirRelation degree φ 0`, the codewords. -/
+def stirOpenRelation
+    {F : Type} [Field F] [Fintype F] [DecidableEq F]
+    {ι : Type} [Fintype ι] [Nonempty ι]
+    (degree : ℕ) (φ : ι ↪ F) (err : ℝ≥0) : Set ((Unit × ∀ i, (OracleStatement ι F i)) × Unit) :=
+  fun ⟨⟨_, oracle⟩, _⟩ => δᵣ(oracle (), ReedSolomon.code φ degree) < err
 
 /-- Theorem 5.1 : STIR main theorem
   Consider the following ingrediants,
