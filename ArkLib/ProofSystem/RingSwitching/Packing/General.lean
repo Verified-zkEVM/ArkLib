@@ -48,11 +48,20 @@ worst-case form with the extractor and knowledge-state function named
 (`BatchingPhase.batchingOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_rbrExtractor`,
 `SumcheckPhase.iteratedSumcheckOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_rbrExtractor`,
 `SumcheckPhase.finalSumcheckOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_rbrExtractor`).
-The composite is **conditional**: it applies the admitted framework contracts
-`OracleVerifier.append_rbrKnowledgeSoundness` and `OracleVerifier.seqCompose_rbrKnowledgeSoundness`.
-The append contracts' statements are flagged as not derivable from their hypotheses, and the
-`seqCompose` contract is admitted separately and built on them, so the composite inherits their
-`sorryAx` and is unverified statement debt.
+They compose by the guarded worst-case composition theorems
+(`OracleVerifier.seqCompose_rbrKnowledgeSoundnessWorstCase_of_guarded`,
+`OracleVerifier.append_rbrKnowledgeSoundnessWorstCase_of_guarded_first`) into **unconditional**
+worst-case theorems for the core interaction
+(`SumcheckPhase.coreInteraction_rbrKnowledgeSoundnessWorstCase`) and for batching followed by the
+core interaction (`batchingCore_rbrKnowledgeSoundnessWorstCase`), each sorry-free and axiom-clean
+under the same hypotheses, with averaged corollaries.
+
+The full composite is still **conditional**. Its last step appends the downstream opening, whose
+`MLIOPCS.rbrKnowledgeSoundness` contract is averaged, so it applies the admitted framework contract
+`OracleVerifier.append_rbrKnowledgeSoundness`. That contract's statement is flagged as not derivable
+from its hypotheses, so the full composite inherits its `sorryAx`. It becomes unconditional once a
+worst-case extension of `MLIOPCS` supplies a worst-case round-by-round knowledge soundness contract
+for the downstream opening, which then composes by the guarded theorem.
 
 This is one construction of the ring-switching family, not the family itself — see the
 folder umbrella `ArkLib/ProofSystem/RingSwitching/Basic.lean` for the taxonomy. It is
@@ -200,24 +209,58 @@ def fullRbrKnowledgeError (i : (fullPspec κ L K P ℓ' mlIOPCS).ChallengeIdx) :
   (ChallengeIdx.sumEquiv.symm i)
 
 omit [NeZero κ] [Fintype K] [DecidableEq K] [NeZero ℓ] [NeZero ℓ'] in
+/-- Worst-case round-by-round knowledge soundness for the batching phase followed by the core
+interaction, with error `κ/|L|` at the batching challenge and `2/|L|` per sumcheck challenge.
+
+Composed from `BatchingPhase.batchingOracleVerifier_rbrKnowledgeSoundnessWorstCase` and
+`SumcheckPhase.coreInteraction_rbrKnowledgeSoundnessWorstCase` by
+`OracleVerifier.append_rbrKnowledgeSoundnessWorstCase_of_guarded_first`; the batching verifier is
+guarded by `Verifier.GuardedForm.ofEmpty`. Sorry-free and axiom-clean under `hUnique` and
+`[NoZeroDivisors L]`. -/
+theorem batchingCore_rbrKnowledgeSoundnessWorstCase [NoZeroDivisors L]
+    (hUnique : mlIOPCS.toAbstractOStmtIn.Functional) :
+    Verifier.rbrKnowledgeSoundnessWorstCase init impl
+      (verifier := (batchingCoreVerifier κ L K P ℓ ℓ' h_l mlIOPCS).toVerifier)
+      (relIn := fullInputRelation κ L K P ℓ ℓ' h_l mlIOPCS)
+      (relOut := mlIOPCS.toAbstractOStmtIn.toRelInput)
+      (batchingCoreRbrKnowledgeError κ L K P ℓ') :=
+  OracleVerifier.append_rbrKnowledgeSoundnessWorstCase_of_guarded_first _ _
+    (Verifier.GuardedForm.ofEmpty _ (fun stmt =>
+      (⟨0, Fin.elim0, ⟨⟨stmt.1.t_eval_point, stmt.1.original_claim⟩, 0, fun _ => 0⟩⟩, stmt.2)))
+    (BatchingPhase.batchingOracleVerifier_rbrKnowledgeSoundnessWorstCase κ L K P ℓ ℓ' h_l
+      mlIOPCS.toAbstractOStmtIn (init := init) (impl := impl) hUnique)
+    (SumcheckPhase.coreInteraction_rbrKnowledgeSoundnessWorstCase κ L K P ℓ ℓ' h_l
+      mlIOPCS.toAbstractOStmtIn (init := init) (impl := impl) hUnique)
+
+omit [NeZero κ] [Fintype K] [DecidableEq K] [NeZero ℓ] [NeZero ℓ'] in
+/-- Round-by-round knowledge soundness for the batching phase followed by the core interaction:
+the averaged form of `batchingCore_rbrKnowledgeSoundnessWorstCase`. Sorry-free and axiom-clean
+under `hUnique` and `[NoZeroDivisors L]`. -/
+theorem batchingCore_rbrKnowledgeSoundness [NoZeroDivisors L]
+    (hUnique : mlIOPCS.toAbstractOStmtIn.Functional) :
+    (batchingCoreVerifier κ L K P ℓ ℓ' h_l mlIOPCS).rbrKnowledgeSoundness init impl
+      (relIn := fullInputRelation κ L K P ℓ ℓ' h_l mlIOPCS)
+      (relOut := mlIOPCS.toAbstractOStmtIn.toRelInput)
+      (batchingCoreRbrKnowledgeError κ L K P ℓ') :=
+  Verifier.rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness init impl
+    (batchingCore_rbrKnowledgeSoundnessWorstCase κ L K P ℓ ℓ' h_l mlIOPCS init hUnique)
+
+omit [NeZero κ] [Fintype K] [DecidableEq K] [NeZero ℓ] [NeZero ℓ'] in
 /-- Round-by-round knowledge soundness for the full ring-switching oracle verifier.
 
-**Conditional on admitted composition contracts.** This composite applies
-`OracleVerifier.append_rbrKnowledgeSoundness`, and through
-`SumcheckPhase.coreInteraction_rbrKnowledgeSoundness` also
-`OracleVerifier.seqCompose_rbrKnowledgeSoundness`. Both are admitted, and both are stated for
-arbitrary verifiers at the averaged notion. The section note of
-`Composition/Sequential/Append/Security.lean` flags the append contracts' statements as not
-derivable from their hypotheses; the `seqCompose` contract is admitted separately and built on
-them. So this theorem is unverified statement debt, not only a missing proof, and it carries
+**Conditional on an admitted composition contract.** The batching-and-core part is unconditional
+(`batchingCore_rbrKnowledgeSoundness`, sorry-free and axiom-clean). The last step appends the
+downstream opening, whose `MLIOPCS.rbrKnowledgeSoundness` contract is averaged, so this composite
+applies the admitted `OracleVerifier.append_rbrKnowledgeSoundness`. That contract is stated for
+arbitrary verifiers at the averaged notion, and the section note of
+`Composition/Sequential/Append/Security.lean` flags its statement as not derivable from its
+hypotheses. So this theorem is unverified statement debt, not only a missing proof, and it carries
 `sorryAx`.
 
-By contrast, the per-phase worst-case theorems are sorry-free and axiom-clean under the same
-hypotheses (`hUnique` and `[NoZeroDivisors L]`):
-`BatchingPhase.batchingOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_rbrExtractor`,
-`SumcheckPhase.iteratedSumcheckOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_rbrExtractor`
-and `SumcheckPhase.finalSumcheckOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_rbrExtractor`.
--/
+It becomes unconditional once a worst-case extension of `MLIOPCS` supplies a worst-case
+round-by-round knowledge soundness contract for the downstream opening: the composite then follows
+from `batchingCore_rbrKnowledgeSoundnessWorstCase` by
+`OracleVerifier.append_rbrKnowledgeSoundnessWorstCase_of_guarded_first`. -/
 theorem fullOracleVerifier_rbrKnowledgeSoundness [Finite K] [NoZeroDivisors L]
     (hUnique : mlIOPCS.toAbstractOStmtIn.Functional) :
     OracleProof.rbrKnowledgeSoundness
@@ -230,18 +273,7 @@ theorem fullOracleVerifier_rbrKnowledgeSoundness [Finite K] [NoZeroDivisors L]
   classical
   unfold fullOracleVerifier fullRbrKnowledgeError
   have batchInteractionRBRKS :=
-    OracleVerifier.append_rbrKnowledgeSoundness (init:=init) (impl:=impl)
-    (rel₁:=fullInputRelation κ L K P ℓ ℓ' h_l mlIOPCS)
-    (rel₂:=sumcheckRoundRelation κ L K P ℓ ℓ' h_l mlIOPCS.toAbstractOStmtIn 0)
-    (rel₃:=mlIOPCS.toRelInput)
-    (V₁:=BatchingPhase.oracleVerifier κ L K P ℓ ℓ' h_l mlIOPCS.toAbstractOStmtIn)
-    (V₂:=SumcheckPhase.coreInteractionOracleVerifier κ L K P ℓ ℓ' h_l mlIOPCS.toAbstractOStmtIn)
-    (rbrKnowledgeError₁:=BatchingPhase.batchingRBRKnowledgeError κ L K P)
-    (rbrKnowledgeError₂:=SumcheckPhase.coreInteractionRbrKnowledgeError L ℓ')
-    (h₁:=BatchingPhase.batchingOracleVerifier_rbrKnowledgeSoundness κ L K P ℓ
-      ℓ' h_l mlIOPCS.toAbstractOStmtIn hUnique)
-    (h₂:=SumcheckPhase.coreInteraction_rbrKnowledgeSoundness κ L K P ℓ ℓ' h_l
-      mlIOPCS.toAbstractOStmtIn hUnique)
+    batchingCore_rbrKnowledgeSoundness κ L K P ℓ ℓ' h_l mlIOPCS init (impl := impl) hUnique
   have res :=
     OracleVerifier.append_rbrKnowledgeSoundness (init:=init) (impl:=impl)
     (rel₁:=fullInputRelation κ L K P ℓ ℓ' h_l mlIOPCS)
