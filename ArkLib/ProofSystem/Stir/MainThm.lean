@@ -13,18 +13,21 @@ public import ArkLib.ProofSystem.Stir.ProximityBound
 /-!
 # ArkLib.ProofSystem.Stir.MainThm
 
-Definitions and results for this component of ArkLib.
--/
+Section 5 of [ACFY24stir]: the parameters of Construction 5.2 (`Params`, `ParamConditions`), the
+round-by-round soundness of STIR (Lemma 5.4, `stir_rbr_soundness`) and the main theorem
+(Theorem 5.1, `stir_main`).
 
-@[expose] public section
-
-/-!Section 5 ACFY24stir, Theorem 5.1 and Lemma 5.4
+Both results are stated as the existence of a vector IOPP with the bounds of the paper. ArkLib does
+not yet formalize Construction 5.2 or the number of queries a verifier makes, so they do not force
+the protocol to be STIR; the docstrings say what is and is not stated.
 
 ## References
 
 * [Arnon, G., Chiesa, A., Fenzi, G., and Yogev, E., *STIR: Reed-Solomon proximity testing
     with fewer queries*][ACFY24stir]
 -/
+
+@[expose] public section
 
 open BigOperators Finset Code NNReal ReedSolomon VectorIOP OracleComp LinearCode STIR
 
