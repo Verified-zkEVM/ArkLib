@@ -109,6 +109,30 @@ Lagrange interpolation needs the opening algebra to be a field.
   left/right `L`-module bases; all profile laws are **proven** in ArkLib. Because the
   evaluation point is an arbitrary big-field point, the claim is relocated *interactively*
   (batching challenge + dedicated packing sum-check).
+
+  Binius instantiates it with `biniusProfile`. The conformance theorem `batching_conforms`
+  (`ArkLibTest/ProofSystem/RingSwitching/Conformance/Binius.lean`) states the batching phase's
+  accepting round through the coordinate layer, at `PackingData.ofBasis` of the profile basis
+  and the prefix layout `packedPrefixLayout`. The column check passes and the accepted output is
+  in the round-zero sumcheck relation exactly when:
+  - the packed polynomial is compatible with the oracle statement;
+  - the round polynomial is the shared `multiplier` times the packed polynomial;
+  - the batched rows of the sent carrier are in the shared `sumcheckClaimRel`;
+  - the claim is the layout-weighted sum of the carrier's columns.
+
+  Companion statements put the input relation through the `packedMLE` of the prefix-layout
+  components, and characterize the honest carrier by `sliceRel` on its rows or, equivalently,
+  `openingClaimRel` on its columns. `biniusBatching_conforms` instantiates the theorem at
+  `biniusProfile` and the first-codeword relation. `compute_final_eq_value_eq_multiplier`
+  states the final sum-check check's equality value as the same shared `multiplier`, evaluated
+  at the sum-check challenges. The intermediate sum-check rounds and the FRI phases are out of
+  scope.
+
+  These statements identify the relations only. Acceptance fixes only the batched target, not
+  the carrier; that collision event is bounded by `compute_s0_collision_le`. The batching
+  phase's security statements (`batchingReduction_perfectCompleteness`,
+  `batchingOracleVerifier_rbrKnowledgeSoundness`) remain open: they are `sorry`, and on a failed
+  check the verifier returns `failureState` instead of aborting.
 - **Hachi §3 packing head** ([`../papers/NOZ26.md`](../papers/NOZ26.md), planned): `L = R_q`,
   `A = R_q`, `φ₀ = id`, `φ₁ = σ₋₁`, `β = ψ` (Theorem 2). The carrier is `L` itself, so for
   `κ > 0` this is **not** a `RingSwitchingProfile` instance; it needs its own trace interface

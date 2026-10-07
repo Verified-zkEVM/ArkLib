@@ -14,7 +14,8 @@ import CompPoly.Fields.Binary.Tower.Concrete.Basis
 Over `GF(4)/GF(2)`, packing `t(X₀, X₁) = X₀` gives the constant generator.
 The honest folded element is `1 ⊗ Z₁`. Its columns recover the original evaluation,
 while its rows give the target for batching against the packed polynomial. The final
-equality scalar must agree with evaluation of the actual batched multiplier.
+equality scalar must agree with evaluation of the actual batched multiplier. The fixture objects
+are public so the Binius conformance test `Conformance/Binius.lean` reuses them.
 -/
 
 open Module RingSwitching MvPolynomial
@@ -24,29 +25,41 @@ open scoped TensorProduct
 noncomputable section
 
 namespace ArkLibTest.RingSwitchingOrientation
-private abbrev K := ConcreteBTField 0
-private abbrev L := ConcreteBTField 1
-local instance : Algebra K L := ConcreteBTFieldAlgebra (h_le := by decide)
-private def beta : Basis (Fin 1 → Fin 2) K L :=
+/-- The base field `GF(2)`. -/
+abbrev K := ConcreteBTField 0
+/-- The extension field `GF(4)`. -/
+abbrev L := ConcreteBTField 1
+/-- The tower embedding of `GF(2)` into `GF(4)`, named so that importers can enable it locally. -/
+local instance algebraKL : Algebra K L := ConcreteBTFieldAlgebra (h_le := by decide)
+/-- The basis `(1, Z 1)` of `GF(4)` over `GF(2)`. -/
+def beta : Basis (Fin 1 → Fin 2) K L :=
   (basisSucc 0).reindex (Equiv.funUnique (Fin 1) (Fin 2)).symm
-private def p : RingSwitchingProfile K L 1 := tensorProductProfile 1 K L beta
-private def t : MultilinearPoly K 2 :=
+/-- The tensor-product profile of `beta`. -/
+def p : RingSwitchingProfile K L 1 := tensorProductProfile 1 K L beta
+/-- The source polynomial `X₀`. -/
+def t : MultilinearPoly K 2 :=
   ⟨X 0, by
     rw [mem_restrictDegree_iff_degreeOf_le]
     intro i
     simp only [degreeOf_X]
     split <;> omega
   ⟩
-private def tp : MultilinearPoly L 1 := packMLE 1 L K 2 1 rfl beta t
-private def r : Fin 2 → L := fun _ => 0
-private def shat : p.A := embedded_MLP_eval 1 L K p 2 1 rfl tp r
-private theorem beta_zero : beta (fun _ => 0) = 1 := by
+/-- The packed source. -/
+def tp : MultilinearPoly L 1 := packMLE 1 L K 2 1 rfl beta t
+/-- The zero evaluation point. -/
+def r : Fin 2 → L := fun _ => 0
+/-- The honest folded element. -/
+def shat : p.A := embedded_MLP_eval 1 L K p 2 1 rfl tp r
+/-- The first basis vector is `1`. -/
+theorem beta_zero : beta (fun _ => 0) = 1 := by
   simp [beta, Basis.reindex_apply, basisSucc]
-private theorem beta_one : beta (fun _ => 1) = Z 1 := by
+/-- The second basis vector is `Z 1`. -/
+theorem beta_one : beta (fun _ => 1) = Z 1 := by
   simp [beta, Basis.reindex_apply, basisSucc]
 private theorem honest_input_claim : (0 : L) = t.val.aeval r := by simp [t, r]
 
-private theorem sum_one_bit {M : Type*} [AddCommMonoid M] (f : (Fin 1 → Fin 2) → M) :
+/-- A sum over one Boolean bit. -/
+theorem sum_one_bit {M : Type*} [AddCommMonoid M] (f : (Fin 1 → Fin 2) → M) :
     ∑ x, f x = f (fun _ => 0) + f (fun _ => 1) := by
   rw [← (Equiv.funUnique (Fin 1) (Fin 2)).symm.sum_comp f]
   simp only [Fin.sum_univ_two]
@@ -61,15 +74,18 @@ private theorem tp_constant : tp.val = C (Z 1) := by
   · intro i; simp
   · intro x; simp
 
-private theorem shat_eq : shat = (1 : L) ⊗ₜ[K] Z 1 := by
+/-- The honest folded element is `1 ⊗ Z 1`. -/
+theorem shat_eq : shat = (1 : L) ⊗ₜ[K] Z 1 := by
   change (eval _) (MvPolynomial.map _ tp.val) = _
   rw [tp_constant, map_C, eval_C]
   rfl
 
-private theorem bit_zero_ne_one :
+/-- The two Boolean points of `Fin 1 → Fin 2` differ. -/
+theorem bit_zero_ne_one :
     (fun _ : Fin 1 => (0 : Fin 2)) ≠ (fun _ : Fin 1 => (1 : Fin 2)) := by decide
 
-private theorem column_zero : p.decomposeColumns shat (fun _ => 0) = 0 := by
+/-- Column zero of the honest folded element. -/
+theorem column_zero : p.decomposeColumns shat (fun _ => 0) = 0 := by
   rw [shat_eq]
   change decompose_tensor_algebra_columns (L := L) (K := K) beta
     ((1 : L) ⊗ₜ[K] Z 1) (fun _ => 0) = _
@@ -83,12 +99,14 @@ private theorem column_one : p.decomposeColumns shat (fun _ => 1) = 1 := by
   rw [decompose_tensor_algebra_columns_tmul, ← beta_one, Basis.repr_self]
   simp
 
-private theorem row_zero (y : L) : p.decomposeRows ((1 : L) ⊗ₜ[K] y) (fun _ => 0) = y := by
+/-- Row zero of a tensor `1 ⊗ y`. -/
+theorem row_zero (y : L) : p.decomposeRows ((1 : L) ⊗ₜ[K] y) (fun _ => 0) = y := by
   change decompose_tensor_algebra_rows (L := L) (K := K) beta _ _ = _
   rw [decompose_tensor_algebra_rows_tmul, ← beta_zero, Basis.repr_self]
   simp
 
-private theorem row_one (y : L) : p.decomposeRows ((1 : L) ⊗ₜ[K] y) (fun _ => 1) = 0 := by
+/-- Row one of a tensor `1 ⊗ y`. -/
+theorem row_one (y : L) : p.decomposeRows ((1 : L) ⊗ₜ[K] y) (fun _ => 1) = 0 := by
   change decompose_tensor_algebra_rows (L := L) (K := K) beta _ _ = _
   rw [decompose_tensor_algebra_rows_tmul, ← beta_zero, Basis.repr_self]
   simp [Ne.symm bit_zero_ne_one]
