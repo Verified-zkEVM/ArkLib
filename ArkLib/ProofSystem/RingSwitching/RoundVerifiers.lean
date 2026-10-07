@@ -12,26 +12,34 @@ public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Sca
 # Check-then-update round verifiers
 
 Many verifier rounds have one skeleton: **receive a single prover message, run a
-deterministic local check on it, and update the statement — one way on acceptance, another on
-rejection.** This file provides that verifier once, generic over the statement, message, and
-challenge types, for the two wires the shape occurs on:
+deterministic local check on it, and either abort or update the statement.** This file provides
+that verifier once, generic over the statement, message, and challenge types, for the two wires
+the shape occurs on:
 
 * `pSpecMessage Msg` — the one-message wire: the prover speaks once, the verifier sends no
-  challenge. `messageRoundOracleVerifier check accept reject` is its check-then-update
+  challenge. `messageRoundOracleVerifier check accept` is its check-then-update
   verifier — the whole round is one message and one algebraic equation, so a reduction of
   this shape is deterministic (zero challenges, zero soundness error at this round).
 * `CoordinateWise.ScalarRound.pSpecScalar Msg C` — the message-then-scalar-challenge wire
-  (defined next to the CWSS machinery built on it). `scalarRoundOracleVerifier check accept
-  reject` additionally feeds the challenge into the statement update, so the round can bind
+  (defined next to the CWSS machinery built on it). `scalarRoundOracleVerifier check accept`
+  additionally feeds the challenge into the statement update, so the round can bind
   later work to fresh randomness. Its **check-free limit** — accept always, extend the
   statement by `(msg, challenge)`, defer every check to the output relation — is the
   statement-extending committed-scalar verifier `CoordinateWise.CommittedScalar.verifier`,
   which stays with the CWSS seam because its extractor machinery lives there.
 
 Both verifiers read the message through the default oracle interface (it is an IOP message
-sent in the clear) and pass the input oracle statements through unchanged. They mention no
-rings; they live in this folder rather than under `OracleReduction/` because the
-check-then-update shape is what the ring-switching constructions share on the wire.
+sent in the clear) and pass the input oracle statements through unchanged. A failed check
+**aborts** (`failure`): no output statement is produced, so no output relation can be met by a
+rejected transcript. This is what makes the terminal knowledge-state obligation provable. The
+run equations `messageRoundOracleVerifier_verify` and `scalarRoundOracleVerifier_verify` state
+the induced plain verifiers as guarded verifiers. Both are instances of the generic
+query-guard-return run equation `OracleVerifier.toVerifier_verify_of_query_guard`, and are
+packaged as `Verifier.GuardedForm`s (`messageRoundOracleVerifierGuardedForm`,
+`scalarRoundOracleVerifierGuardedForm`).
+
+The verifiers mention no rings; they live in this folder rather than under `OracleReduction/`
+because the check-then-update shape is what the ring-switching constructions share on the wire.
 
 ## Instances in this folder
 
@@ -60,7 +68,7 @@ namespace RingSwitching
 
 /-- One-round wire format: the prover sends a single message `Msg`, the verifier sends no
 challenge. The one-message sibling of `CoordinateWise.ScalarRound.pSpecScalar`. -/
-@[reducible] def pSpecMessage (Msg : Type) : ProtocolSpec 1 := ⟨![.P_to_V], ![Msg]⟩
+@[reducible] def pSpecMessage (Msg : Type) : ProtocolSpec 1 := ⟨!v[.P_to_V], !v[Msg]⟩
 
 /-- The canonical oracle interface of the one-message wire: the message is sent in the clear,
 so it is read through the default interface. -/
@@ -81,16 +89,15 @@ variable {ι : Type} {oSpec : OracleSpec ι} {StmtIn StmtOut : Type}
   {Msg C : Type}
 
 /-- Check-then-update verifier for the one-message round: query the message, run the
-deterministic local `check`, and return the `accept` statement update on success or the
-`reject` statement on failure. Input oracle statements pass through unchanged. -/
+deterministic local `check`, and return the `accept` statement update on success. A failed check
+aborts. Input oracle statements pass through unchanged. -/
 def messageRoundOracleVerifier
     (check : StmtIn → Msg → Prop) [∀ s m, Decidable (check s m)]
-    (accept : StmtIn → Msg → StmtOut) (reject : StmtIn → Msg → StmtOut) :
+    (accept : StmtIn → Msg → StmtOut) :
     OracleVerifier oSpec StmtIn OStmt StmtOut OStmt (pSpecMessage Msg) where
   verify := fun stmt _ => do
     let msg : Msg ← query (spec := [(pSpecMessage Msg).Message]ₒ) ⟨⟨0, rfl⟩, ()⟩
-    unless check stmt msg do
-      return reject stmt msg
+    guard (check stmt msg)
     return accept stmt msg
   outputOracle := .inl {
     embed := ⟨fun j => Sum.inl j, fun a b h => by cases h; rfl⟩
@@ -100,20 +107,19 @@ def messageRoundOracleVerifier
       rfl }
 
 /-- Check-then-update verifier for the message-then-scalar-challenge round: query the message,
-run the deterministic local `check` (reject on failure), then update the statement from the
+run the deterministic local `check` (abort on failure), then update the statement from the
 message and the scalar challenge. The check-free case `check := fun _ _ => True`,
 `accept := fun s m c => (s, m, c)` is the statement-extending committed-scalar verifier shape
 (`CoordinateWise.CommittedScalar.verifier`). -/
 def scalarRoundOracleVerifier
     (check : StmtIn → Msg → Prop) [∀ s m, Decidable (check s m)]
-    (accept : StmtIn → Msg → C → StmtOut) (reject : StmtIn → Msg → StmtOut) :
+    (accept : StmtIn → Msg → C → StmtOut) :
     letI : OracleInterface Msg := OracleInterface.instDefault
     OracleVerifier oSpec StmtIn OStmt StmtOut OStmt (pSpecScalar Msg C) :=
   letI : OracleInterface Msg := OracleInterface.instDefault
   { verify := fun stmt chals => do
       let msg : Msg ← query (spec := [(pSpecScalar Msg C).Message]ₒ) ⟨⟨0, rfl⟩, ()⟩
-      unless check stmt msg do
-        return reject stmt msg
+      guard (check stmt msg)
       return accept stmt msg (chals ⟨1, rfl⟩)
     outputOracle := .inl {
       embed := ⟨fun j => Sum.inl j, fun a b h => by cases h; rfl⟩
@@ -121,6 +127,63 @@ def scalarRoundOracleVerifier
       outputInterface_heq := by
         intro i
         rfl } }
+
+/-! ## Run equations: the combinators are guarded -/
+
+variable (check : StmtIn → Msg → Prop) [hcheck : ∀ s m, Decidable (check s m)]
+
+/-- The one-message verifier runs as a guarded verifier: it returns the accepted statement with the
+input oracle statements when the check passes on the sent message, and aborts otherwise. -/
+theorem messageRoundOracleVerifier_verify (accept : StmtIn → Msg → StmtOut)
+    (stmt : StmtIn) (oStmt : ∀ i, OStmt i) (tr : (pSpecMessage Msg).FullTranscript) :
+    (messageRoundOracleVerifier (oSpec := oSpec) (OStmt := OStmt) check
+      accept).toVerifier.verify (stmt, oStmt) tr =
+      if check stmt (tr.messages ⟨0, rfl⟩) then
+        pure (accept stmt (tr.messages ⟨0, rfl⟩), oStmt)
+      else failure :=
+  OracleVerifier.toVerifier_verify_of_query_guard
+    (messageRoundOracleVerifier (oSpec := oSpec) (OStmt := OStmt) check accept)
+    ⟨⟨0, rfl⟩, ()⟩ check (hcheck := hcheck) (fun s m _ => accept s m) (fun _ _ => rfl)
+    stmt oStmt tr
+
+/-- The scalar-round verifier runs as a guarded verifier: it returns the accepted statement at the
+sent message and challenge, with the input oracle statements, when the check passes on the message,
+and aborts otherwise. -/
+theorem scalarRoundOracleVerifier_verify (accept : StmtIn → Msg → C → StmtOut)
+    (stmt : StmtIn) (oStmt : ∀ i, OStmt i) (tr : (pSpecScalar Msg C).FullTranscript) :
+    letI : OracleInterface Msg := OracleInterface.instDefault
+    (scalarRoundOracleVerifier (oSpec := oSpec) (OStmt := OStmt) check
+      accept).toVerifier.verify (stmt, oStmt) tr =
+      if check stmt (tr.messages ⟨0, rfl⟩) then
+        pure (accept stmt (tr.messages ⟨0, rfl⟩) (tr.challenges ⟨1, rfl⟩), oStmt)
+      else failure :=
+  letI : OracleInterface Msg := OracleInterface.instDefault
+  OracleVerifier.toVerifier_verify_of_query_guard
+    (scalarRoundOracleVerifier (oSpec := oSpec) (OStmt := OStmt) check accept)
+    ⟨⟨0, rfl⟩, ()⟩ check (hcheck := hcheck) (fun s m chals => accept s m (chals ⟨1, rfl⟩))
+    (fun _ _ => rfl) stmt oStmt tr
+
+/-- The one-message verifier's guard and verdict as data. -/
+def messageRoundOracleVerifierGuardedForm (accept : StmtIn → Msg → StmtOut) :
+    (messageRoundOracleVerifier (oSpec := oSpec) (OStmt := OStmt) check
+      accept).toVerifier.GuardedForm where
+  check := fun s tr => decide (check s.1 (tr.messages ⟨0, rfl⟩))
+  out := fun s tr => (accept s.1 (tr.messages ⟨0, rfl⟩), s.2)
+  verify_eq := fun s tr => by
+    rw [messageRoundOracleVerifier_verify]
+    simp only [decide_eq_true_eq]
+
+/-- The scalar-round verifier's guard and verdict as data. -/
+def scalarRoundOracleVerifierGuardedForm (accept : StmtIn → Msg → C → StmtOut) :
+    letI : OracleInterface Msg := OracleInterface.instDefault
+    (scalarRoundOracleVerifier (oSpec := oSpec) (OStmt := OStmt) check
+      accept).toVerifier.GuardedForm :=
+  letI : OracleInterface Msg := OracleInterface.instDefault
+  { check := fun s tr => decide (check s.1 (tr.messages ⟨0, rfl⟩))
+    out := fun s tr => (accept s.1 (tr.messages ⟨0, rfl⟩) (tr.challenges ⟨1, rfl⟩), s.2)
+    verify_eq := fun s tr => by
+      rw [scalarRoundOracleVerifier_verify]
+      simp only [decide_eq_true_eq] }
 
 end Combinators
 

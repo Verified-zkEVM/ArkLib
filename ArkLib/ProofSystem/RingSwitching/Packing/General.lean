@@ -6,6 +6,7 @@ Authors: Chung Thai Nguyen, Quang Dao
 module
 
 public import ArkLib.ProofSystem.RingSwitching.Packing.Spec
+public import ArkLib.ProofSystem.RingSwitching.Packing.Compatibility
 public import ArkLib.ProofSystem.RingSwitching.Packing.BatchingPhase
 public import ArkLib.ProofSystem.RingSwitching.Packing.SumcheckPhase
 public import ArkLib.OracleReduction.Security.RoundByRound
@@ -28,10 +29,30 @@ multilinear. Output: accept/reject. The composition is
    `MLIOPCS` parameter, an arbitrary multilinear opening protocol bundled with its own
    completeness and round-by-round soundness.
 
-Perfect completeness composes from the phases. Round-by-round knowledge soundness composes
-with total error `κ/|L|` (batching) `+ 2/|L|` per sumcheck round `+ 1/|L|` (final step)
-`+` the downstream protocol's error; the Schwartz–Zippel steps require `[IsDomain L]`. Leaf
-proofs are open (`sorry`).
+**Perfect completeness** (`fullOracleReduction_perfectCompleteness`) composes from the phases
+through the guarded-verifier composition theorems, at the *strict* relations: the input relation
+`BatchingPhase.strictBatchingInputRelation` and the downstream opening's
+`AbstractOStmtIn.toStrictRelInput` use honest oracle compatibility
+(`AbstractOStmtIn.strictView`). It is proved from the phase theorems and the downstream
+`MLIOPCS.perfectCompleteness` field.
+
+**Round-by-round knowledge soundness** (`fullOracleVerifier_rbrKnowledgeSoundness`) has total
+error `κ/|L|` (batching) `+ 2/|L|` per sumcheck round `+` the downstream protocol's error, at the
+relaxed relations; the final step sends no challenge and adds no error. It assumes
+`[NoZeroDivisors L]` for the Schwartz–Zippel steps and
+`hUnique : mlIOPCS.toAbstractOStmtIn.Functional`, which says the oracle statement determines the
+packed polynomial before any challenge.
+
+The phase theorems are sorry-free and axiom-clean under these hypotheses, and are proved in the
+worst-case form with the extractor and knowledge-state function named
+(`BatchingPhase.batchingOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_rbrExtractor`,
+`SumcheckPhase.iteratedSumcheckOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_rbrExtractor`,
+`SumcheckPhase.finalSumcheckOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_rbrExtractor`).
+The composite is **conditional**: it applies the admitted framework contracts
+`OracleVerifier.append_rbrKnowledgeSoundness` and `OracleVerifier.seqCompose_rbrKnowledgeSoundness`.
+The append contracts' statements are flagged as not derivable from their hypotheses, and the
+`seqCompose` contract is admitted separately and built on them, so the composite inherits their
+`sorryAx` and is unverified statement debt.
 
 This is one construction of the ring-switching family, not the family itself — see the
 folder umbrella `ArkLib/ProofSystem/RingSwitching/Basic.lean` for the taxonomy. It is
@@ -111,8 +132,6 @@ def fullOracleProof :
 ## Security Properties
 -/
 
-variable [∀ i, SampleableType (mlIOPCS.pSpec.Challenge i)]
-
 /-- Input relation for the full ring-switching protocol -/
 abbrev fullInputRelation := BatchingPhase.batchingInputRelation κ L K P ℓ ℓ'
   h_l mlIOPCS.toAbstractOStmtIn
@@ -124,36 +143,36 @@ open Sumcheck.Structured
 section SecurityProperties
 variable {σ : Type} (init : ProbComp σ) {impl : QueryImpl []ₒ (StateT σ ProbComp)}
 
-omit [Fintype L] [Fintype K] [DecidableEq K]
-  [(i : mlIOPCS.pSpec.ChallengeIdx) → SampleableType (mlIOPCS.pSpec.Challenge i)] in
+omit [NeZero κ] [Fintype L] [Fintype K] [DecidableEq K] [NeZero ℓ] [NeZero ℓ'] in
 lemma batchingCore_perfectCompleteness [Finite L] [Finite K] :
     (batchingCoreReduction κ L K P ℓ ℓ' h_l mlIOPCS).perfectCompleteness
   (pSpec := pSpecLargeFieldReduction κ L K P ℓ')
-  (relIn := BatchingPhase.batchingInputRelation κ L K P ℓ ℓ' h_l mlIOPCS.toAbstractOStmtIn)
-  (relOut := mlIOPCS.toRelInput)
+  (relIn := BatchingPhase.strictBatchingInputRelation κ L K P ℓ ℓ' h_l mlIOPCS.toAbstractOStmtIn)
+  (relOut := mlIOPCS.toStrictRelInput)
   (init:=init) (impl:=impl) := by
   let _ := Fintype.ofFinite L
   let _ := Fintype.ofFinite K
   classical
   refine OracleReduction.append_perfectCompleteness_of_guarded_verifiers
-    (rel₂ := sumcheckRoundRelation κ L K P ℓ ℓ' h_l mlIOPCS.toAbstractOStmtIn 0) _ _
+    (rel₂ := strictSumcheckRoundRelation κ L K P ℓ ℓ' h_l mlIOPCS.toAbstractOStmtIn 0) _ _
     (Verifier.GuardedForm.ofEmpty _ (fun stmt =>
       (⟨0, Fin.elim0, ⟨⟨stmt.1.t_eval_point, stmt.1.original_claim⟩, 0, fun _ => 0⟩⟩,
         stmt.2)))
     (Verifier.GuardedForm.ofEmpty _ (fun stmt => (⟨fun _ => 0, 0⟩, stmt.2)))
     (fun _ => Or.inl inferInstance) ?_ ?_
   · exact BatchingPhase.batchingReduction_perfectCompleteness κ L K P ℓ ℓ' h_l
-       mlIOPCS.toAbstractOStmtIn
+       mlIOPCS.toAbstractOStmtIn.strictView
   · intro s
     exact SumcheckPhase.coreInteraction_perfectCompleteness
-      κ L K P ℓ ℓ' h_l mlIOPCS.toAbstractOStmtIn (init := pure s) (impl := impl)
+      κ L K P ℓ ℓ' h_l mlIOPCS.toAbstractOStmtIn.strictView (init := pure s) (impl := impl)
 
-omit [Fintype L] [Fintype K] [DecidableEq K]
-  [(i : mlIOPCS.pSpec.ChallengeIdx) → SampleableType (mlIOPCS.pSpec.Challenge i)] in
+omit [NeZero κ] [Fintype L] [Fintype K] [DecidableEq K] [NeZero ℓ] [NeZero ℓ'] in
+/-- Perfect completeness of the full ring-switching oracle proof, at the strict input relation
+with honest oracle compatibility. -/
 theorem fullOracleReduction_perfectCompleteness [Finite L] [Finite K] :
     OracleProof.perfectCompleteness
       (oracleProof := fullOracleReduction κ L K P ℓ ℓ' (h_l := h_l) mlIOPCS)
-      (relation := BatchingPhase.batchingInputRelation κ L K P ℓ ℓ' h_l
+      (relation := BatchingPhase.strictBatchingInputRelation κ L K P ℓ ℓ' h_l
         mlIOPCS.toAbstractOStmtIn)
       (init := init)
       (impl := impl) := by
@@ -180,16 +199,33 @@ def fullRbrKnowledgeError (i : (fullPspec κ L K P ℓ' mlIOPCS).ChallengeIdx) :
   (g:=mlIOPCS.rbrKnowledgeError)
   (ChallengeIdx.sumEquiv.symm i)
 
-omit [Fintype K] [DecidableEq K] in
-/-- Round-by-round knowledge soundness for the full ring-switching oracle verifier -/
-theorem fullOracleVerifier_rbrKnowledgeSoundness [Finite K] [NoZeroDivisors L] :
+omit [NeZero κ] [Fintype K] [DecidableEq K] [NeZero ℓ] [NeZero ℓ'] in
+/-- Round-by-round knowledge soundness for the full ring-switching oracle verifier.
+
+**Conditional on admitted composition contracts.** This composite applies
+`OracleVerifier.append_rbrKnowledgeSoundness`, and through
+`SumcheckPhase.coreInteraction_rbrKnowledgeSoundness` also
+`OracleVerifier.seqCompose_rbrKnowledgeSoundness`. Both are admitted, and both are stated for
+arbitrary verifiers at the averaged notion. The section note of
+`Composition/Sequential/Append/Security.lean` flags the append contracts' statements as not
+derivable from their hypotheses; the `seqCompose` contract is admitted separately and built on
+them. So this theorem is unverified statement debt, not only a missing proof, and it carries
+`sorryAx`.
+
+By contrast, the per-phase worst-case theorems are sorry-free and axiom-clean under the same
+hypotheses (`hUnique` and `[NoZeroDivisors L]`):
+`BatchingPhase.batchingOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_rbrExtractor`,
+`SumcheckPhase.iteratedSumcheckOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_rbrExtractor`
+and `SumcheckPhase.finalSumcheckOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_rbrExtractor`.
+-/
+theorem fullOracleVerifier_rbrKnowledgeSoundness [Finite K] [NoZeroDivisors L]
+    (hUnique : mlIOPCS.toAbstractOStmtIn.Functional) :
     OracleProof.rbrKnowledgeSoundness
       (verifier := fullOracleVerifier κ L K P ℓ ℓ' (h_l := h_l) mlIOPCS)
       (init := init)
       (impl := impl)
       (relIn := fullInputRelation κ L K P ℓ ℓ' h_l mlIOPCS)
       (rbrKnowledgeError := fun i => fullRbrKnowledgeError κ L K P ℓ' mlIOPCS i) := by
-  let _ : IsDomain L := NoZeroDivisors.to_isDomain L
   let _ := Fintype.ofFinite K
   classical
   unfold fullOracleVerifier fullRbrKnowledgeError
@@ -203,10 +239,9 @@ theorem fullOracleVerifier_rbrKnowledgeSoundness [Finite K] [NoZeroDivisors L] :
     (rbrKnowledgeError₁:=BatchingPhase.batchingRBRKnowledgeError κ L K P)
     (rbrKnowledgeError₂:=SumcheckPhase.coreInteractionRbrKnowledgeError L ℓ')
     (h₁:=BatchingPhase.batchingOracleVerifier_rbrKnowledgeSoundness κ L K P ℓ
-      ℓ' h_l mlIOPCS.toAbstractOStmtIn)
+      ℓ' h_l mlIOPCS.toAbstractOStmtIn hUnique)
     (h₂:=SumcheckPhase.coreInteraction_rbrKnowledgeSoundness κ L K P ℓ ℓ' h_l
-      mlIOPCS.toAbstractOStmtIn)
-
+      mlIOPCS.toAbstractOStmtIn hUnique)
   have res :=
     OracleVerifier.append_rbrKnowledgeSoundness (init:=init) (impl:=impl)
     (rel₁:=fullInputRelation κ L K P ℓ ℓ' h_l mlIOPCS)
@@ -217,13 +252,11 @@ theorem fullOracleVerifier_rbrKnowledgeSoundness [Finite K] [NoZeroDivisors L] :
     (Oₛ₃:=fun i : Empty => nomatch i)
     (rbrKnowledgeError₁:=batchingCoreRbrKnowledgeError κ L K P ℓ')
     (rbrKnowledgeError₂:=mlIOPCS.rbrKnowledgeError)
-    (h₁:=batchInteractionRBRKS) (h₂:=by
-      convert mlIOPCS.rbrKnowledgeSoundness (L:=L) (ℓ' := ℓ') (init:=init) (impl:=impl)
-      · sorry
-    )
-  convert res
-  · simp only [ChallengeIdx]
-    sorry
+    (h₁:=batchInteractionRBRKS)
+    (h₂:=by
+      simpa only [OracleProof.rbrKnowledgeSoundness, fullOutputRelation] using
+        mlIOPCS.rbrKnowledgeSoundness (init:=init) (impl:=impl))
+  simpa only [OracleProof.rbrKnowledgeSoundness, fullOutputRelation, Function.comp_def] using res
 
 end SecurityProperties
 end

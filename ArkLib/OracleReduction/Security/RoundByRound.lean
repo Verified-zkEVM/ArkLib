@@ -126,6 +126,22 @@ end RoundByRoundOneShot
 
 end Extractor
 
+omit [∀ i, SampleableType (pSpec.Challenge i)] in
+/-- The round-by-round extraction-failure event at challenge `i`: some intermediate witness
+satisfies the knowledge state after the challenge, while its extraction fails it before. This is
+the event `Verifier.rbrKnowledgeSoundnessWorstCase` bounds, named so that per-protocol bounds can
+state it. -/
+@[reducible]
+def rbrExtractionFailureEvent {WitMid : Fin (n + 1) → Type}
+    (kSF : (m : Fin (n + 1)) → StmtIn → Transcript m pSpec → WitMid m → Prop)
+    (extractor : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid)
+    (i : pSpec.ChallengeIdx) (stmtIn : StmtIn)
+    (transcript : Transcript i.1.castSucc pSpec) (challenge : pSpec.Challenge i) : Prop :=
+  ∃ witMid : WitMid i.1.succ,
+    ¬ kSF i.1.castSucc stmtIn transcript
+      (extractor.extractMid i.1 stmtIn (transcript.concat challenge) witMid) ∧
+    kSF i.1.succ stmtIn (transcript.concat challenge) witMid
+
 namespace Verifier
 
 section RoundByRound

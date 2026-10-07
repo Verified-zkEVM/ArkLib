@@ -23,7 +23,10 @@ subroutines and `tensorProductProfile` — lives in `Algebra.lean`, which this f
 * **Protocol types** — statement/witness types at the phase boundaries and the `MLIOPCS`
   interface for the downstream opening (any protocol that opens a large-ring multilinear
   evaluation claim, bundled with its completeness and round-by-round knowledge-soundness
-  obligations).
+  obligations). An `AbstractOStmtIn` carries two compatibility relations between the packed
+  polynomial and the oracle statements: the relaxed `initialCompatibility` used for knowledge
+  soundness, and the honest `strictInitialCompatibility` (by default the same) used for perfect
+  completeness through `AbstractOStmtIn.strictView`.
 * **Relations** — the sumcheck multiplier parameter `RingSwitching_SumcheckMultParam` and the
   relations/knowledge-state predicates the security analysis threads through the phases.
 
@@ -113,12 +116,37 @@ structure AbstractOStmtIn where
   -- The abstract initial compatibility relation, which along with
   -- MLPEvalRelation, forms the initial input relation for the MLIOPCS.
   initialCompatibility : (MultilinearPoly L ℓ') × (∀ j, OStmtIn j) → Prop
+  /-- Honest inputs may require exact compatibility, rather than decoding proximity.
+
+  Perfect completeness is stated at this relation, so it is only as strong as this relation is
+  inhabited: a client choosing an empty relation (e.g. `fun _ => False`) makes every completeness
+  statement at `toStrictRelInput` vacuous. Instances should show that every packed polynomial has
+  a strictly compatible oracle statement. -/
+  strictInitialCompatibility : (MultilinearPoly L ℓ') × (∀ j, OStmtIn j) → Prop :=
+    initialCompatibility
+  /-- Honest compatibility also satisfies the relation used for knowledge soundness. -/
+  strictInitialCompatibility_implies_initialCompatibility :
+    ∀ oStmt t, strictInitialCompatibility ⟨t, oStmt⟩ → initialCompatibility ⟨t, oStmt⟩ := by
+      intros
+      assumption
+
+/-- The same oracle interface, with honest compatibility as its input relation. -/
+def AbstractOStmtIn.strictView (aOStmtIn : AbstractOStmtIn L ℓ') : AbstractOStmtIn L ℓ' where
+  ιₛᵢ := aOStmtIn.ιₛᵢ
+  OStmtIn := aOStmtIn.OStmtIn
+  Oₛᵢ := aOStmtIn.Oₛᵢ
+  initialCompatibility := aOStmtIn.strictInitialCompatibility
 
 def AbstractOStmtIn.toRelInput (aOStmtIn : AbstractOStmtIn L ℓ') :
     Set (((MLPEvalStatement L ℓ') × (∀ j, aOStmtIn.OStmtIn j)) × (WitMLP L ℓ')) :=
   {input |
     MLPEvalRelation L ℓ' aOStmtIn.ιₛᵢ aOStmtIn.OStmtIn input
     ∧ aOStmtIn.initialCompatibility ⟨input.2.t, input.1.2⟩}
+
+/-- Evaluation and honest oracle compatibility, used for perfect completeness. Completeness at this
+relation is vacuous when `strictInitialCompatibility` is empty; see its docstring. -/
+def AbstractOStmtIn.toStrictRelInput (aOStmtIn : AbstractOStmtIn L ℓ') :=
+  aOStmtIn.strictView.toRelInput
 
 structure MLIOPCS extends (AbstractOStmtIn L ℓ') where
   /-- Protocol specification -/
@@ -136,7 +164,7 @@ structure MLIOPCS extends (AbstractOStmtIn L ℓ') where
     OracleProof.perfectCompleteness (oSpec := []ₒ)
       (Statement := MLPEvalStatement L ℓ') (OStatement := OStmtIn)
       (Witness := WitMLP L ℓ') (pSpec := pSpec) (init := init) (impl := impl)
-      (relation := toAbstractOStmtIn.toRelInput)
+      (relation := toAbstractOStmtIn.toStrictRelInput)
       (oracleProof := oracleReduction)
   -- RBR knowledge error function for the MLIOPCS
   rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0
@@ -224,6 +252,10 @@ def sumcheckRoundRelation (aOStmtIn : AbstractOStmtIn L ℓ') (i : Fin (ℓ' + 1
     (∀ j, aOStmtIn.OStmtIn j)) × SumcheckWitness L ℓ' i) :=
   { ((stmt, oStmt), wit) | sumcheckRoundRelationProp κ L K P ℓ ℓ' h_l
     aOStmtIn i stmt oStmt wit }
+
+/-- Sumcheck relation with honest initial oracle compatibility. -/
+def strictSumcheckRoundRelation (aOStmtIn : AbstractOStmtIn L ℓ') (i : Fin (ℓ' + 1)) :=
+  sumcheckRoundRelation κ L K P ℓ ℓ' h_l aOStmtIn.strictView i
 
 end Relations
 
