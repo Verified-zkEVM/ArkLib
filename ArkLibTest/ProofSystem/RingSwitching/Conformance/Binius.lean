@@ -643,7 +643,8 @@ theorem failedCheck_aborts (tr : (pSpecBatching 1 GF4 GF2 P₄).FullTranscript)
     rw [sum_weight_zero, column_zero] at hs
     exact one_ne_zero hs
   refine ⟨hcheck, ?_⟩
-  rw [BatchingPhase.oracleVerifier, scalarRoundOracleVerifier_verify, htr, hcheck]
+  rw [BatchingPhase.oracleVerifier, (scalarRoundOracleVerifierGuardedForm _ _).verify_eq,
+    scalarRoundOracleVerifierGuardedForm_check, htr, hcheck]
   rfl
 
 /-- The claim of the `failedCheck_aborts` fixture is in the batching input relation for no

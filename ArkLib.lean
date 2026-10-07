@@ -747,6 +747,7 @@ public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoC
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Package
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.ScalarRound
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.SingleRound
+public import ArkLib.OracleReduction.Security.Guarded
 public import ArkLib.OracleReduction.Security.GuardedRoundByRound
 public import ArkLib.OracleReduction.Security.Implications
 public import ArkLib.OracleReduction.Security.RbrGame

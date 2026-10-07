@@ -560,9 +560,13 @@ home_page/            site assets and assembled website root
   master bounds over `simulateQ`/`OptionT` that discharge those implications). This is a **separate
   axis** from the transcript-tree notions below: its extractor type is `Extractor.RoundByRound` on
   transcripts, not `Extractor.TreeBased`, and it carries no escape-event layer.
-  `Security/GuardedRoundByRound.lean` adds what a round-by-round proof needs about a verifier that
-  aborts on a failed check: the positive-probability lemma `Verifier.guard_and_of_prEvent_pos`
-  and the message-then-challenge reducer
+  `Security/Guarded.lean` defines guarded verifiers, independent of any security notion:
+  `Verifier.IsGuardedWith`/`IsGuarded`, their data form `Verifier.GuardedForm` (check and verdict
+  map as fields), `GuardedForm.append`, the seam run lemma `Verifier.append_run_guardedLeft`, and
+  `Verifier.GuardedForm.ofQueryGuard`, the guarded form of a query-guard-return oracle
+  verifier. `Security/GuardedRoundByRound.lean` adds what a round-by-round proof needs about a
+  verifier that aborts on a failed check: the positive-probability lemma
+  `Verifier.GuardedForm.check_and_of_prEvent_pos` and the message-then-challenge reducer
   `Verifier.rbrKnowledgeSoundnessWorstCaseWith_of_two_message`, which bounds the extraction-failure
   event `rbrExtractionFailureEvent` (defined in `RoundByRound.lean`) per fixed prefix. The run
   equation of a query-guard-return oracle verifier (one message query, then a guard and a
@@ -608,9 +612,8 @@ home_page/            site assets and assembled website root
   **event** field), the lossless kind lifts `toEscape`/`toGuarded`, all mixed appends, and the
   universal `▷` elaborator dispatching over the 2×2 grid escape? × guarded?. Since escapes are
   events on `(statement, tree)`, composition matches only relation seams. `Guarded` is the
-  **proven** runtime-rejection layer: `Verifier.IsGuardedWith`/`IsGuarded` and their data form
-  `Verifier.GuardedForm` (check and verdict map as fields, which keeps composed extractors
-  computable), the guarded package `GCWSSPackage` with its append `▷ᵍ`, the guarded seam
+  **proven** runtime-rejection layer over the guarded verifiers of `Security/Guarded.lean`: the
+  guarded package `GCWSSPackage` with its append `▷ᵍ`, the `Verifier.Outputs`-level guarded seam
   lemmas, and both guarded binary CWSS append theorems (plain and escape-threaded). The umbrella
   `CoordinateWiseSpecialSoundness.lean` re-exports the core files.
 - Active areas are often grouped by paper or protocol family, for example
