@@ -747,6 +747,7 @@ public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoC
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Package
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.ScalarRound
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.SingleRound
+public import ArkLib.OracleReduction.Security.GuardedRoundByRound
 public import ArkLib.OracleReduction.Security.Implications
 public import ArkLib.OracleReduction.Security.RbrGame
 public import ArkLib.OracleReduction.Security.Rewinding
@@ -797,6 +798,7 @@ public import ArkLib.ProofSystem.RingSwitching.Packing.Batching
 public import ArkLib.ProofSystem.RingSwitching.Packing.BatchingAlgebra
 public import ArkLib.ProofSystem.RingSwitching.Packing.BatchingPhase
 public import ArkLib.ProofSystem.RingSwitching.Packing.CheckedObservation
+public import ArkLib.ProofSystem.RingSwitching.Packing.Compatibility
 public import ArkLib.ProofSystem.RingSwitching.Packing.Coordinates
 public import ArkLib.ProofSystem.RingSwitching.Packing.FinalAlgebra
 public import ArkLib.ProofSystem.RingSwitching.Packing.FiniteObservation
@@ -849,6 +851,7 @@ public import ArkLib.ProofSystem.Sumcheck.Spec.General
 public import ArkLib.ProofSystem.Sumcheck.Spec.SingleRound
 public import ArkLib.ProofSystem.Sumcheck.Structured
 public import ArkLib.ProofSystem.Sumcheck.Structured.Prismalinear
+public import ArkLib.ProofSystem.Sumcheck.Structured.RoundLemmas
 public import ArkLib.ProofSystem.Sumcheck.Structured.SingleRound
 public import ArkLib.ProofSystem.ToyProblem.Codegen
 public import ArkLib.ProofSystem.ToyProblem.ConstrainedCode

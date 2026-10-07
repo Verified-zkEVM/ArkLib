@@ -81,20 +81,31 @@ The DP24 construction:
   `Relations`, `Polynomial`, `ScalarHead/Layout`, `Batching`). None of these imports the
   reduction framework.
 * `Prelude.lean` — the protocol vocabulary: statement/witness types, the `MLIOPCS`
-  downstream-opening interface, and the sumcheck relations; re-exports `Algebra.lean`.
+  downstream-opening interface, the relaxed and strict (honest) oracle compatibility of
+  `AbstractOStmtIn`, and the sumcheck relations; re-exports `Algebra.lean`.
+* `Compatibility.lean` — `AbstractOStmtIn.Functional`: an oracle statement is compatible with at
+  most one packed polynomial. This is the binding hypothesis of the knowledge-soundness theorems.
 * `Spec.lean` — the transcript shape: the batching round (message then scalar challenge),
   the sumcheck loop, and the final one-message round (the family-shared wire
   `pSpecMessage`), with their `OracleInterface`/`SampleableType` instances.
 * `BatchingPhase.lean` — the relocation's first phase: send `ŝ`, check the original claim
-  against its column decomposition, batch the coordinate claims into one sumcheck target.
-  The verifier is an instance of the family-shared `scalarRoundOracleVerifier`
-  (`../RoundVerifiers.lean`).
-* `SumcheckPhase.lean` — the relocation sumcheck (`ℓ'` rounds) and the final consistency
-  step handing the residual evaluation claim to the downstream opening; its verifier is an
-  instance of the family-shared `messageRoundOracleVerifier` (`../RoundVerifiers.lean`).
-* `General.lean` — the composed reduction (batching ++ sumcheck ++ downstream opening),
-  perfect completeness, and the round-by-round knowledge-soundness statement
-  (`[IsDomain L]`; leaf proofs still open).
+  against its column decomposition (aborting on failure), batch the coordinate claims into one
+  sumcheck target. The verifier is an instance of the family-shared `scalarRoundOracleVerifier`
+  (`../RoundVerifiers.lean`). Perfect completeness and worst-case round-by-round knowledge
+  soundness at error `κ/|L|` are proved; soundness assumes `AbstractOStmtIn.Functional`.
+* `SumcheckPhase.lean` — the relocation sumcheck (`ℓ'` rounds, each aborting on a failed round
+  check) and the final consistency step handing the residual evaluation claim `t'(r') = s'` to
+  the downstream opening; the final verifier is an instance of the family-shared
+  `messageRoundOracleVerifier` (`../RoundVerifiers.lean`). Per-round and final-step completeness
+  and worst-case round-by-round knowledge soundness (`2/|L|` per round) are proved, and so is the
+  composed completeness. The composed knowledge soundness is conditional on the admitted
+  framework contracts `OracleVerifier.seqCompose_rbrKnowledgeSoundness` and
+  `OracleVerifier.append_rbrKnowledgeSoundness`. The append contracts' statements are flagged as
+  not derivable from their hypotheses, and the `seqCompose` contract is built on them.
+* `General.lean` — the composed reduction (batching ++ sumcheck ++ downstream opening). Perfect
+  completeness at the strict relations is proved from the phases and the downstream opening's
+  completeness. Round-by-round knowledge soundness (`[NoZeroDivisors L]`,
+  `AbstractOStmtIn.Functional`) is conditional on the same framework composition theorems.
 
 ## Instantiations
 

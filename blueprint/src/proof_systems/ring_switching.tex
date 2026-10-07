@@ -109,7 +109,7 @@ large-field multilinear IOPCS over $L$.
   \item \textbf{Sum-check} (\lean{RingSwitching.SumcheckPhase.coreInteractionOracleReduction}). A
     degree-$2$ multilinear sum-check over $L$ on $H = A_{\mathrm{MLE}} \cdot t'$, over $\ell'$ rounds
     plus a final round, reducing the sum claim to a single evaluation of $t'$ at a random point.
-    (Loss $2/\lvert L\rvert$ per round, $1/\lvert L\rvert$ final.)
+    (Loss $2/\lvert L\rvert$ per round; the final round sends no challenge and adds none.)
   \item \textbf{Opening}. The residual evaluation claim about $t'$ over $L$ is discharged by the
     underlying large-field multilinear IOPCS.
 \end{enumerate}
@@ -124,33 +124,43 @@ large-field multilinear IOPCS over $L$.
 
 \subsection{Security}
 
-\begin{theorem}[Perfect completeness target]
+\begin{theorem}[Perfect completeness]
   \lean{RingSwitching.FullRingSwitching.fullOracleReduction_perfectCompleteness}
   \uses{def:full_ring_switching}
   \label{thm:ring_switching_completeness}
-  The full ring-switching oracle reduction is perfectly complete: an honest prover holding a witness
-  in the input relation always produces a transcript accepted into the output relation. The honest
-  prover's folded $\hat s$ must satisfy the verifier's column check through the packing and
-  folded-evaluation identities, in addition to reconstruction law \eqref{eq:rs-cols}. These
-  instance-specific identities remain proof obligations in the generic development.
+  The full ring-switching oracle reduction is perfectly complete for the input relation with honest
+  oracle compatibility: an honest prover holding a witness in that relation always produces a
+  transcript accepted into the output relation. The honest folded $\hat s$ passes the column check
+  by the packing and folded-evaluation identities, its batched target is the round-zero sum-check
+  sum, and the final check holds by the final-multiplier identity. The phases compose through the
+  guarded-verifier composition theorems, and the opening contributes its own completeness.
 \end{theorem}
 
-\begin{theorem}[Round-by-round knowledge soundness target]
+\begin{theorem}[Round-by-round knowledge soundness (conditional on composition)]
   \lean{RingSwitching.FullRingSwitching.fullOracleVerifier_rbrKnowledgeSoundness}
   \uses{def:full_ring_switching}
   \label{thm:ring_switching_soundness}
-  When $L$ is an integral domain, the full reduction is round-by-round knowledge sound, with the
-  additive error
+  Suppose $L$ is an integral domain and every oracle statement is compatible with at most one packed
+  polynomial. Then the full reduction is round-by-round knowledge sound, with the additive error
   \[
-    \frac{\kappa}{\lvert L\rvert} \;+\; \sum_{\text{rounds}} \frac{2}{\lvert L\rvert} \;+\;
-    \frac{1}{\lvert L\rvert} \;+\; \varepsilon_{\mathrm{IOPCS}},
+    \frac{\kappa}{\lvert L\rvert} \;+\; \sum_{\text{rounds}} \frac{2}{\lvert L\rvert}
+    \;+\; \varepsilon_{\mathrm{IOPCS}},
   \]
-  matching \cite[\S3.1--3.2]{DP24}. The integral-domain hypothesis is exactly the Schwartz--Zippel
-  ingredient (a nonzero degree-$d$ univariate over $L$ has at most $d$ roots).
+  matching \cite[\S3.1--3.2]{DP24}. The final consistency step sends no challenge, so it adds no
+  error. The integral-domain hypothesis is the Schwartz--Zippel ingredient (a nonzero degree-$d$
+  polynomial over $L$ has at most $d$ roots). The uniqueness
+  hypothesis fixes the packed polynomial before the batching challenge; without it a prover may
+  choose the packed polynomial after the challenge.
 \end{theorem}
 
-\noindent The leaf completeness and soundness proofs are in progress. The displayed security
-statements describe targets, not established end-to-end Binius guarantees. A correct instance
-requires the packing, folded-evaluation, batching, and final-multiplier identities as well as the
-data-layer reconstruction laws. The concrete tensor instance and its coordinate regressions do
-not discharge those full protocol obligations.
+\noindent Every verifier aborts on a failed check. The batching, sum-check-round and final-step
+completeness theorems are proved, and so is the composed completeness. The phases'
+round-by-round knowledge soundness is proved in the worst-case form, which bounds the
+extraction-failure probability for every fixed transcript prefix over the fresh challenge alone;
+these per-phase bounds are sorry-free and axiom-clean under their stated hypotheses (uniqueness
+of the packed polynomial and $L$ having no zero divisors). The composed knowledge-soundness
+theorem above is conditional: it applies the framework's append and sequential-composition
+contracts for averaged round-by-round knowledge soundness. Those contracts are admitted; the
+append contracts' statements are flagged as not derivable from their hypotheses, and the
+sequential-composition contract is built on them. So the composite is unverified statement debt
+rather than only a missing proof.
