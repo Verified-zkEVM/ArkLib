@@ -295,9 +295,8 @@ theorem roundOracleVerifier_verify (i : Fin ℓ)
   OracleVerifier.toVerifier_verify_of_query_guard
     (roundOracleVerifier (L := L) (ℓ := ℓ) (D := D) (Context := Context) (OStmtIn := OStmtIn)
       (d := d) i) ⟨⟨0, rfl⟩, ()⟩
-    (fun s (h : L⦃≤ d⦄[X]) => (∑ b ∈ D.points i, h.val.eval b) = s.sumcheck_target)
-    (hcheck := fun _ _ => inferInstance)
-    (fun s (h : L⦃≤ d⦄[X]) chals =>
+    (fun s h _ => (∑ b ∈ D.points i, h.val.eval b) = s.sumcheck_target)
+    (fun s h chals =>
       { ctx := s.ctx
         sumcheck_target := h.val.eval (chals ⟨1, rfl⟩)
         challenges := Fin.snoc s.challenges (chals ⟨1, rfl⟩) })

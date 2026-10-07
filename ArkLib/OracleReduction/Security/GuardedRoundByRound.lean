@@ -24,7 +24,8 @@ facts a round-by-round proof needs about such a verifier.
   `Verifier.rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness`.
 
 The run equation that puts a query-guard-return oracle verifier in guarded form is
-`OracleVerifier.toVerifier_verify_of_query_guard`.
+`OracleVerifier.toVerifier_verify_of_query_guard`; its guard may read the challenges as well as
+the queried message.
 -/
 
 @[expose] public section

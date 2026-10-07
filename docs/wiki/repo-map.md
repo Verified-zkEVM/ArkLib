@@ -565,7 +565,8 @@ home_page/            site assets and assembled website root
   and the message-then-challenge reducer
   `Verifier.rbrKnowledgeSoundnessWorstCaseWith_of_two_message`, which bounds the extraction-failure
   event `rbrExtractionFailureEvent` (defined in `RoundByRound.lean`) per fixed prefix. The run
-  equation of a query-guard-return oracle verifier,
+  equation of a query-guard-return oracle verifier (one message query, then a guard and a
+  verdict that may read the answer and the challenges),
   `OracleVerifier.toVerifier_verify_of_query_guard`, is in `OracleReduction/Basic.lean`.
 - Coordinate-wise special soundness ([FMN24]/[NOZ26]) lives in
   `Security/CoordinateWiseSpecialSoundness/`: `Basic` defines the `SS(S, ℓ, k)` combinatorics

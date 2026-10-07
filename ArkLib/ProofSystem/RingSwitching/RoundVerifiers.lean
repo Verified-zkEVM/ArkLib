@@ -143,8 +143,8 @@ theorem messageRoundOracleVerifier_verify (accept : StmtIn → Msg → StmtOut)
       else failure :=
   OracleVerifier.toVerifier_verify_of_query_guard
     (messageRoundOracleVerifier (oSpec := oSpec) (OStmt := OStmt) check accept)
-    ⟨⟨0, rfl⟩, ()⟩ check (hcheck := hcheck) (fun s m _ => accept s m) (fun _ _ => rfl)
-    stmt oStmt tr
+    ⟨⟨0, rfl⟩, ()⟩ (fun s m _ => check s m) (hcheck := fun s m _ => hcheck s m)
+    (fun s m _ => accept s m) (fun _ _ => rfl) stmt oStmt tr
 
 /-- The scalar-round verifier runs as a guarded verifier: it returns the accepted statement at the
 sent message and challenge, with the input oracle statements, when the check passes on the message,
@@ -160,7 +160,8 @@ theorem scalarRoundOracleVerifier_verify (accept : StmtIn → Msg → C → Stmt
   letI : OracleInterface Msg := OracleInterface.instDefault
   OracleVerifier.toVerifier_verify_of_query_guard
     (scalarRoundOracleVerifier (oSpec := oSpec) (OStmt := OStmt) check accept)
-    ⟨⟨0, rfl⟩, ()⟩ check (hcheck := hcheck) (fun s m chals => accept s m (chals ⟨1, rfl⟩))
+    ⟨⟨0, rfl⟩, ()⟩ (fun s m _ => check s m) (hcheck := fun s m _ => hcheck s m)
+    (fun s m chals => accept s m (chals ⟨1, rfl⟩))
     (fun _ _ => rfl) stmt oStmt tr
 
 /-- The one-message verifier's guard and verdict as data. -/

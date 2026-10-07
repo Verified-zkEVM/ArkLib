@@ -496,20 +496,22 @@ def toVerifier : Verifier oSpec (StmtIn × ∀ i, OStmtIn i) (StmtOut × (∀ i,
         (verifier.verify stmt transcript.challenges).run
 
 /-- **Run equation of a query-guard-return oracle verifier.** If the verifier makes one query `q`
-to the prover's messages, guards on the answer, and returns a statement built from the answer and
-the challenges, then the induced verifier returns that statement, with the materialized output
-oracles, when the guard holds on the transcript's answer, and aborts otherwise. -/
+to the prover's messages, guards on the answer and the challenges, and returns a statement built
+from the answer and the challenges, then the induced verifier returns that statement, with the
+materialized output oracles, when the guard holds on the transcript's answer and challenges, and
+aborts otherwise. A guard that ignores the challenges is the case `check := fun s a _ => …`. -/
 theorem toVerifier_verify_of_query_guard (q : [pSpec.Message]ₒ.Domain)
-    (check : StmtIn → [pSpec.Message]ₒ.Range q → Prop) [hcheck : ∀ s a, Decidable (check s a)]
+    (check : StmtIn → [pSpec.Message]ₒ.Range q → pSpec.Challenges → Prop)
+    [hcheck : ∀ s a c, Decidable (check s a c)]
     (accept : StmtIn → [pSpec.Message]ₒ.Range q → pSpec.Challenges → StmtOut)
     (hV : ∀ stmt chals, verifier.verify stmt chals = do
       let a ← query (spec := [pSpec.Message]ₒ) q
-      guard (check stmt a)
+      guard (check stmt a chals)
       return accept stmt a chals)
     (stmt : StmtIn) (oStmt : ∀ i, OStmtIn i) (tr : pSpec.FullTranscript) :
     verifier.toVerifier.verify (stmt, oStmt) tr =
       letI a : [pSpec.Message]ₒ.Range q := OracleInterface.answer (tr.messages q.1) q.2
-      if check stmt a then
+      if check stmt a tr.challenges then
         pure (accept stmt a tr.challenges,
           verifier.materializeOutput tr.challenges oStmt tr.messages)
       else failure := by
