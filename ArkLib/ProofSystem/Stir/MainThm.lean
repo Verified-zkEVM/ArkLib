@@ -51,20 +51,29 @@ structure Params (F : Type*) where
 def degree (P : Params ι F) : Fin (M + 1) → ℕ :=
   fun i => P.deg / ∏ j < i, (P.foldingParam j)
 
+omit [Field F] [Fintype F] [DecidableEq F] [∀ i : Fin (M + 1), Fintype (ι i)] in
+/-- Before any fold the degree is the initial degree. -/
+lemma degree_zero (P : Params ι F) : degree ι P 0 = P.deg := by
+  have hIio : Finset.Iio (0 : Fin (M + 1)) = ∅ := by
+    ext j
+    simp
+  simp [degree, hIio]
+
 /-- **Conditions that protocol parameters must satisfy.**
   - `h_deg` : initial degree `deg` is a power of 2
-  - `h_foldingParams` : `∑ i : Fin (M + 1), foldingParamᵢ` is a power of 2
+  - `h_foldingParams` : each folding parameter `foldingParamᵢ` is a power of 2
   - `h_deg_ge` : `deg ≥ ∏ i foldingParamᵢ`
   - `h_smooth` : each `φᵢ` must embed a smooth evaluation domain
-  - `h_smooth_le` : `|ιᵢ| ≤ degreeᵢ`
-  - `h_repeatP_le` : `∀ i : Fin (M + 1), repeatParamᵢ + 1 ≤ degreeᵢ` -/
+  - `h_smooth_lt` : `degreeᵢ < |ιᵢ|`
+  - `h_repeatP_le` : `repeatParamᵢ + 1 ≤ degreeᵢ₊₁` for `i < M`, the paper's
+    `tᵢ + 1 ≤ d / ∏_{j ≤ i} kⱼ`; `repeatParam_M` is not constrained -/
 structure ParamConditions (P : Params ι F) where
   h_deg : ∃ k : ℕ, P.deg = 2^k
   h_foldingParams : ∀ i : Fin (M + 1), ∃ k : ℕ, (P.foldingParam i) = 2^k
   h_deg_ge : P.deg ≥ ∏ i : Fin (M + 1), (P.foldingParam i)
   h_smooth : ∀ i : Fin (M + 1), Smooth (P.φ i)
-  h_smooth_le : ∀ i : Fin (M + 1), Fintype.card (ι i) ≤ (degree ι P i)
-  h_repeatP_le : ∀ i : Fin (M + 1), P.repeatParam i + 1 ≤ (degree ι P i)
+  h_smooth_lt : ∀ i : Fin (M + 1), degree ι P i < Fintype.card (ι i)
+  h_repeatP_le : ∀ i : Fin M, P.repeatParam i.castSucc + 1 ≤ degree ι P i.succ
 
 /-- Distance and list‑size targets per round. -/
 structure Distances (M : ℕ) where
@@ -162,80 +171,96 @@ section RBRSoundness
 
 open LinearCode
 
-/-- Lemma 5.4: Round-by-round soundness of the STIR IOPP
-  Consider parameters:
-  `ι = {ιᵢ}_{i = 0, ..., M}` be smooth evaluation domains
-  `P : Params ι F` containing required protocol parameters -
-    initial degree, folding parameters `foldingParamᵢ`, embedding `φᵢ`,
-    repetition parameters `repeatParamᵢ`
-  `hParams : ParamConditions ι P`, stating conditions that parameters of P must satisfy
-  `degreeᵢ = deg / ∏ j<i foldingParamⱼ`, where `deg = degree₀`
-  `rateᵢ = degreeᵢ / |ιᵢ|`
-  `Codes : CodeParams ι degree P Dist`, containing smooth ReedSolomon codes `RS[F, ιᵢ, degreeᵢ]`
-    where `RS[F, ιᵢ, degreeᵢ]` is `(δᵢ,lᵢ)`-list decodable for all `i ∈ {1, ..., M}`
-  `δ₀ < (1 - BStar(ρ₀))`
-  `∀ i ∈ {1, ..., M}, δᵢ < (1 - ρᵢ - 1/|ιᵢ|)` and `δᵢ < (1 - BStar(ρᵢ))`
-  then there exists a `vector IOPP π` with parameters as above such that
-  `ε_fold ≤ errStar(degree₀/foldingParam₀, ρ₀, δ₀, repeatParam₀)`
-  `ε_outᵢ ≤ lᵢ²/2 * (degreeᵢ/ |F| - |ιᵢ|)^s`
-  `ε_shiftᵢ ≤ (1 - δ_{i-1})^repeatParam_{i-1} + errStar(degreeᵢ, ρᵢ, δᵢ, t_{i-1} + s)`
-    `+ errStar(degreeᵢ/foldingParamᵢ, ρᵢ, δᵢ, repeatParamᵢ)`
-  `ε_fin ≤ (1 - δ_M)^repeatParam_M`
--/
+/-- **Lemma 5.4 of [ACFY24stir]: round-by-round soundness of STIR.**
+
+  Indices start at `0`. Consider:
+  - `ι = {ιᵢ}_{i = 0, …, M}`, the smooth evaluation domains `Lᵢ`;
+  - `P : Params ι F`, the parameters of Construction 5.2: the initial degree `deg`, the folding
+    parameters `kᵢ = foldingParamᵢ`, the embeddings `φᵢ` and the repetition parameters
+    `tᵢ = repeatParamᵢ`; and `s`, the out-of-domain repetition;
+  - `hParams : ParamConditions ι P`, the conditions that these parameters must satisfy.
+
+  Write `dᵢ = degree ι P i = deg / ∏_{j<i} kⱼ` and `ρᵢ = rate (code φᵢ dᵢ)`, the rate of
+  `RS[F, Lᵢ, dᵢ]`. Then there is a vector IOP `π` with `2M + 2` challenges from the verifier, which
+  depends on these parameters only, such that for all
+  - `Dist` and `Codes : CodeParams ι P Dist`, the distances `δᵢ` and list sizes `ℓᵢ = lᵢ`, with
+    `RS[F, Lᵢ, dᵢ]` being `(δᵢ, ℓᵢ)`-list decodable for `0 < i ≤ M`;
+  - `0 < δ₀ < 1 - B⋆(ρ₀)` and, for `0 < i ≤ M`, `0 < δᵢ < 1 - ρᵢ - 1/|Lᵢ|` and
+    `δᵢ < 1 - B⋆(ρᵢ)`,
+
+  `π` is complete for `RS[F, L₀, d₀]` and round-by-round sound against the oracles that are at least
+  `δ₀`-far from it (`stirOpenRelation`), with errors `ε_fold`, `ε_outᵢ`, `ε_shiftᵢ` and `ε_fin`
+  such that
+  - `ε_fold ≤ err⋆(d₀/k₀, ρ₀, δ₀, k₀)`
+  - `ε_outᵢ ≤ ℓᵢ²/2 * (dᵢ / (|F| - |Lᵢ|))^s`
+  - `ε_shiftᵢ ≤ (1 - δᵢ₋₁)^{tᵢ₋₁} + err⋆(dᵢ, ρᵢ, δᵢ, tᵢ₋₁ + s) + err⋆(dᵢ/kᵢ, ρᵢ, δᵢ, kᵢ)`
+  - `ε_fin ≤ (1 - δ_M)^{t_M}`.
+
+  The paper's round `i ∈ {1, …, M}` is `j + 1` for `j : Fin M`, so `ε_out j` and `ε_shift j` are
+  the errors of round `j + 1`. Every challenge is given the maximum of the four families as its
+  error, which is weaker than the paper's vector of per-round errors.
+
+  **Limitation.** This is an existence statement. ArkLib has neither Construction 5.2 nor a count
+  of the queries of a verifier, so the statement does not force `π` to be STIR: it records the
+  error bounds that Construction 5.2 achieves. -/
 theorem stir_rbr_soundness
     [SampleableType F] {s : ℕ}
     {P : Params ι F}
     [h_nonempty : ∀ i : Fin (M + 1), Nonempty (ι i)]
-    {hParams : ParamConditions ι P} {Dist : Distances M}
-    {Codes : CodeParams ι P Dist}
-    (hδ₀ : Dist.δ 0 < (1 - Bstar (rate (code (P.φ 0) P.deg))))
-    (hδᵢ : ∀ {j : Fin (M + 1)}, j ≠ 0 →
-        Dist.δ j < (1 - rate (code (P.φ j) (degree ι P j))
-          - 1 / Fintype.card (ι j) : ℝ) ∧
-        Dist.δ j < (1 - Bstar (rate (code (P.φ j) (degree ι P j)))))
-    (ε_fold : ℝ≥0) (ε_out : Fin M → ℝ≥0) (ε_shift : Fin M → ℝ≥0) (ε_fin : ℝ≥0) :
+    (hParams : ParamConditions ι P) :
     ∃ n : ℕ,
     -- There exists an `n`-message vector IOPP,
     ∃ vPSpec : ProtocolSpec.VectorSpec n,
     -- such that there are `2 * M + 2` challenges from the verifier to the prover,
     Fintype.card (vPSpec.ChallengeIdx) = 2 * M + 2 ∧
     -- ∃ vector IOPP π with the aforementioned `vPSpec`, and for
-    -- `Statement = Unit, Witness = Unit, OracleStatement(ι₀, F)` such that
+    -- `Statement = Unit, Witness = Unit, OracleStatement(ι₀, F)` such that, for all distances and
+    -- list sizes `Dist` of the lemma,
     ∃ π : VectorIOP Unit (OracleStatement (ι 0) F) Unit vPSpec F,
-    let ε_rbr : vPSpec.ChallengeIdx → ℝ≥0 :=
-      fun _ => ({ε_fold} ∪ {ε_fin} ∪ univ.image ε_out ∪ univ.image ε_shift).max' (by simp)
+    ∀ {Dist : Distances M} (Codes : CodeParams ι P Dist)
+      (hδ₀Pos : 0 < Dist.δ 0)
+      (hδ₀ : Dist.δ 0 < (1 - Bstar (rate (code (P.φ 0) (degree ι P 0)))))
+      (hδᵢ : ∀ {j : Fin (M + 1)}, j ≠ 0 →
+        0 < Dist.δ j ∧
+        Dist.δ j < (1 - rate (code (P.φ j) (degree ι P j))
+          - 1 / Fintype.card (ι j) : ℝ) ∧
+        Dist.δ j < (1 - Bstar (rate (code (P.φ j) (degree ι P j))))),
+    -- there are round-by-round errors `ε_fold`, `ε_out`, `ε_shift`, `ε_fin` of `π`, whose maximum
+    -- is the error of every challenge, such that
+    ∃ (ε_fold : ℝ≥0) (ε_out ε_shift : Fin M → ℝ≥0) (ε_fin : ℝ≥0),
     (IsSecureWithGap (stirRelation (degree ι P 0) (P.φ 0) 0)
-                    (stirRelation (degree ι P 0) (P.φ 0) (Dist.δ 0))
-                    ε_rbr π) ∧
-    -- `ε_fold ≤ errStar(degree₀/foldingParam₀, ρ₀, δ₀, repeatParam₀)`
-      ε_fold ≤ proximityError F (P.deg / P.foldingParam 0) (rate (code (P.φ 0) P.deg))
-                 (Dist.δ 0) (P.repeatParam 0)
+                    (stirOpenRelation (degree ι P 0) (P.φ 0) (Dist.δ 0))
+                    (fun _ => ε_fold ⊔ ε_fin ⊔ univ.sup ε_out ⊔ univ.sup ε_shift) π) ∧
+    -- `ε_fold ≤ errStar(degree₀/foldingParam₀, ρ₀, δ₀, foldingParam₀)`
+      ε_fold ≤ proximityError F (degree ι P 0 / P.foldingParam 0)
+                 (rate (code (P.φ 0) (degree ι P 0))) (Dist.δ 0) (P.foldingParam 0)
       ∧
       -- Note here that `j : Fin M`, so we need to cast into `Fin (M + 1)` for indexing of
       -- `Dist.δ` and `P.repeatParam`. To get `j`, we use `.castSucc`, whereas to get `j + 1`,
       -- we use `.succ`.
       -- Because of the difference in indexing between the paper and the code, we essentially have
       -- `j = i - 1` compared to the paper.
-      -- `ε_out_{j+1} ≤ l_{j+1}²/2 * (degree_{j+1}/ |F| - |ι_{j+1}|)^s`
-      ∀ {j : Fin M} (hⱼ : j.val ≠ 0),
+      -- `ε_out_{j+1} ≤ l_{j+1}²/2 * (degree_{j+1} / (|F| - |ι_{j+1}|))^s`
+      (∀ j : Fin M,
         ε_out j ≤ ((Dist.l j.succ : ℝ) ^ 2 / 2) *
           ((degree ι P j.succ : ℝ) / (Fintype.card F - Fintype.card (ι j.succ))) ^ s
         ∧
         -- `ε_shift_{j+1} ≤ (1 - δ_j)^repeatParam_j`
         -- `+ errStar(degree_{j+1}, ρ_{j+1}, δ_{j+1}, repeatParam_j + s)`
-        -- `+ errStar(degree_{j+1}/foldingParam_{j+1}, ρ_{j+1}, δ_{j+1}, repeatParam_{j+1})`
+        -- `+ errStar(degree_{j+1}/foldingParam_{j+1}, ρ_{j+1}, δ_{j+1}, foldingParam_{j+1})`
         ε_shift j ≤
           (1 - Dist.δ j.castSucc) ^ (P.repeatParam j.castSucc)  +
-          -- proximityError(degreeⱼ, ρ(codeⱼ), δⱼ, repeatParam_j + s), where codeⱼ = code φⱼ degreeⱼ
+          -- proximityError(degree_{j+1}, ρ(code_{j+1}), δ_{j+1}, repeatParam_j + s),
+          -- where code_{j+1} = code φ_{j+1} degree_{j+1}
            proximityError F (degree ι P j.succ) (rate (code (P.φ j.succ) (degree ι P j.succ)))
-            (Dist.δ j.succ) (P.repeatParam j.castSucc) + s +
-          -- proximityError(degreeⱼ / foldingParamⱼ, ρ(codeⱼ), δⱼ, repeatParamⱼ)
+            (Dist.δ j.succ) (P.repeatParam j.castSucc + s) +
+          -- proximityError(degree_{j+1} / foldingParam_{j+1}, ρ(code_{j+1}), δ_{j+1},
+          -- foldingParam_{j+1})
            proximityError F ((degree ι P j.succ) / P.foldingParam j.succ)
             (rate (code (P.φ j.succ) (degree ι P j.succ)))
-            (Dist.δ j.succ) (P.repeatParam j.succ)
-        ∧
-        -- `ε_fin ≤ (1 - δ_M)^repeatParam_M`
-        ε_fin ≤ (1 - Dist.δ (Fin.last M)) ^ (P.repeatParam (Fin.last M)) := by
+            (Dist.δ j.succ) (P.foldingParam j.succ)) ∧
+      -- `ε_fin ≤ (1 - δ_M)^repeatParam_M`
+      ε_fin ≤ (1 - Dist.δ (Fin.last M)) ^ (P.repeatParam (Fin.last M)) := by
   sorry
 
 end RBRSoundness
