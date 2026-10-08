@@ -682,6 +682,8 @@ public import ArkLib.Interaction.Oracle.RuntimeSoundness
 public import ArkLib.Interaction.Oracle.Security.Knowledge
 public import ArkLib.Interaction.Oracle.Security.KnowledgeAppend
 public import ArkLib.Interaction.Oracle.Security.KnowledgeComposition
+public import ArkLib.Interaction.Oracle.Security.RoundByRound
+public import ArkLib.Interaction.Oracle.Security.Soundness
 public import ArkLib.Interaction.Oracle.Sequential
 public import ArkLib.Interaction.Oracle.Source
 public import ArkLib.Interaction.Oracle.SourceRouting
@@ -829,6 +831,7 @@ public import ArkLib.ProofSystem.Sumcheck.Interaction.ProjectionTransport
 public import ArkLib.ProofSystem.Sumcheck.Interaction.Protocol
 public import ArkLib.ProofSystem.Sumcheck.Interaction.ProtocolCompleteness
 public import ArkLib.ProofSystem.Sumcheck.Interaction.ProtocolSoundness
+public import ArkLib.ProofSystem.Sumcheck.Interaction.RoundByRound
 public import ArkLib.ProofSystem.Sumcheck.Interaction.Sequential
 public import ArkLib.ProofSystem.Sumcheck.Interaction.SingleRound
 public import ArkLib.ProofSystem.Sumcheck.Interaction.Soundness
