@@ -10,20 +10,40 @@ public import ArkLib.Data.CodingTheory.InterleavedCode
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.Code
 
 /-!
-## Binary Basefold Soundness Lift
+# Binary Basefold: the tensor-combine word stack and its lift
 
-Tensor-expansion and lifting lemmas used by the Binary Basefold soundness development.
-This file packages:
-1. indicator-style identities for tensor expansions at binary challenges
-2. the `preTensorCombine` and lift constructions connecting oracle words and interleaved words
-3. disagreement isomorphisms and `preTensorCombine` proximity bridges that feed the
-   Proposition 4.21 case analyses
-4. the interleaved-distance lower bound of Lemma 4.22
+For a block of `steps` folding rounds starting at index `i`, `preTensorCombine` arranges an
+oracle `f : S⁽ⁱ⁾ → L` as a word stack of `2 ^ steps` rows over `S⁽ⁱ⁺ˢᵗᵉᵖˢ⁾`: its column at `y` is
+`M_y` applied to the values of `f` on the fiber of `y`, where `M_y` is the fold matrix
+(`foldMatrix`, the matrix of [DP24] Lemma 4.9). This is the interleaved word of [DP24]
+equation (41); a fold of `f` is the tensor combination of its rows (equation (42)).
+
+## Main definitions
+
+* `preTensorCombine`: the word stack above.
+* `liftInterleavedCodeword`: the lift of an interleaved codeword of the destination code to a
+  codeword of the source code, assembled from the novel-basis coefficients of its rows (the lift
+  `g⁽ⁱ⁾` in the proof of [DP24] Lemma 4.22).
+* `fiberDiff`: two oracles differ somewhere on the fiber of `y`.
+
+## Main statements
+
+* `preTensorCombine_apply_eq_iterated_fold`: row `j` of the stack is the fold at the binary
+  challenges `bitsOfIndex j`.
+* `preTensorCombine_mem_interleavedCode`, `preTensorCombine_liftInterleavedCodeword`: the stack of
+  a codeword is an interleaved codeword, and the stack of a lift is the lifted interleaved
+  codeword.
+* `fiberDiff_iff_getSymbol_preTensorCombine_ne`: two oracles differ on the fiber of `y` exactly
+  when their stacks differ at column `y` (`M_y` is invertible).
+* `preTensorCombine_jointProximityNat_of_fiberwiseClose` and
+  `preTensorCombine_not_jointProximityNat_of_not_fiberwiseClose`: an oracle is fiberwise close to
+  the source code exactly when its stack is within the unique-decoding radius of the interleaved
+  destination code. The far direction is [DP24] Lemma 4.22.
 
 ## References
 
 * [Diamond, B.E. and Posen, J., *Polylogarithmic proofs for multilinears over binary towers*][DP24]
-  Statement numbering below follows the archived revision of [DP24].
+  Numbering follows the archived revision of [DP24].
 -/
 
 @[expose] public section
@@ -59,7 +79,9 @@ open scoped NNReal ProbabilityTheory
 
 omit [Fintype L] [DecidableEq L] [CharP L 2] in
 omit [SampleableType L] in
-lemma multilinearWeight_bitsOfIndex_eq_indicator {n : ℕ} (j k : Fin (2 ^ n)) :
+/-- At the binary point `bitsOfIndex k`, the multilinear weight of index `j` is the indicator of
+`j = k`. -/
+lemma multilinearWeight_bitsOfIndex {n : ℕ} (j k : Fin (2 ^ n)) :
     multilinearWeight (F := L) (r := bitsOfIndex k) (i := j) = if j = k then 1 else 0 := by
   set r_k := bitsOfIndex (L := L) k with h_r_k
   unfold multilinearWeight
@@ -109,11 +131,9 @@ lemma multilinearWeight_bitsOfIndex_eq_indicator {n : ℕ} (j k : Fin (2 ^ n)) :
 
 omit [Fintype L] [DecidableEq L] [CharP L 2] in
 omit [SampleableType L] in
-/-- **Key Property of Tensor Expansion with Binary Challenges**:
-When `r = bitsOfIndex k`, the tensor expansion `challengeTensorExpansion n r`
-is the indicator vector for index `k` (i.e., 1 at position `k`, 0 elsewhere).
-This is a fundamental property used in both Proposition 4.21 and Lemma 4.22. -/
-lemma challengeTensorExpansion_bitsOfIndex_is_eq_indicator {n : ℕ} (k : Fin (2 ^ n)) :
+/-- At the binary point `bitsOfIndex k`, the tensor expansion `challengeTensorExpansion n r` is the
+indicator vector of `k`. -/
+lemma challengeTensorExpansion_bitsOfIndex {n : ℕ} (k : Fin (2 ^ n)) :
     -- Key Property: Tensor(r_k) is the indicator vector for k.
     -- Tensor(r_k)[j] = 1 if j=k, 0 if j≠k.
     challengeTensorExpansion n (r := bitsOfIndex (L := L) k) = fun j => if j = k then 1 else 0 := by
@@ -121,18 +141,16 @@ lemma challengeTensorExpansion_bitsOfIndex_is_eq_indicator {n : ℕ} (k : Fin (2
   funext j
   unfold challengeTensorExpansion
   -- ⊢ multilinearWeight r_k j = if j = k then 1 else 0
-  apply multilinearWeight_bitsOfIndex_eq_indicator
+  apply multilinearWeight_bitsOfIndex
 
 section Lift_PreTensorCombine
 
-/-! **Interleaved Word Construction (Supporting definition for Lemma 4.22)**
-Constructs the rows `f_j^{(i+steps)}` of the interleaved word.
-For a fixed row index `j` and a domain point `y ∈ S^{i+steps}`,
-the value is the `j`-th entry of the vector `M_y * fiber_vals`.
--- NOTE: the way we define `ι` as `sDomain 𝔽q β h_ℓ_add_R_rate ⟨i + steps, by omega⟩` instead of
-`Fin` requires using the generic versions of code/proximity gap lemmas.
-We don't have a unified mat-mul formula for this, because the `M_y` matrix varies over `y` -/
-def preTensorCombine_WordStack (i : Fin ℓ) (steps : ℕ) {destIdx : Fin r}
+/-- The tensor-combine word stack of `f_i` over a block of `steps` folds: the entry at row `j`
+and column `y ∈ S⁽ⁱ⁺ˢᵗᵉᵖˢ⁾` is the `j`-th entry of `M_y` applied to the values of `f_i` on the
+fiber of `y`, with `M_y` the fold matrix `foldMatrix`. The columns are indexed by the evaluation
+domain itself (not by `Fin`), so the generic code and proximity-gap lemmas apply; since `M_y`
+varies with `y`, the stack is not a single matrix product. -/
+def preTensorCombine (i : Fin ℓ) (steps : ℕ) {destIdx : Fin r}
     (h_destIdx : destIdx.val = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
     (f_i : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ⟨i, by omega⟩) :
     WordStack (A := L) (κ := Fin (2 ^ steps))
@@ -150,26 +168,22 @@ def preTensorCombine_WordStack (i : Fin ℓ) (steps : ℕ) {destIdx : Fin r}
 
 omit [CharP L 2] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero ℓ] in
 omit [SampleableType L] in
-/-- **Folding with Binary Challenges selects a Matrix Row**
-This lemma establishes the geometric link:
-The `j`-th row of the `preTensorCombine` matrix product is exactly equal to
-folding the function `f` using the bits of `j` as challenges.
-This holds for ANY function `f`, not just codewords.
--/
-lemma preTensorCombine_row_eq_fold_with_binary_row_challenges
+/-- Row `rowIdx` of the tensor-combine stack of any oracle `f` is the fold of `f` at the binary
+challenges `bitsOfIndex rowIdx`. -/
+lemma preTensorCombine_apply_eq_iterated_fold
     (i : Fin ℓ) (steps : ℕ) {destIdx : Fin r}
     (h_destIdx : destIdx.val = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
     (f : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ⟨i, by omega⟩)
     (rowIdx : Fin (2 ^ steps)) :
     ∀ y : sDomain 𝔽q β h_ℓ_add_R_rate destIdx,
-      (preTensorCombine_WordStack 𝔽q β i steps h_destIdx h_destIdx_le f) rowIdx y =
+      (preTensorCombine 𝔽q β i steps h_destIdx h_destIdx_le f) rowIdx y =
       iterated_fold 𝔽q β ⟨i, by omega⟩ steps
         (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) (f := f)
           (r_challenges := bitsOfIndex (L := L) (n := steps) rowIdx) (y := y) := by
   intro y
   -- 1. Expand the definition of preTensorCombine (The LHS)
   -- LHS = (M_y * f_vals)[rowIdx]
-  dsimp [preTensorCombine_WordStack]
+  dsimp [preTensorCombine]
   -- 2. Expand the matrix form of iterated_fold (The RHS)
   -- RHS = Tensor(r) • (M_y * f_vals)
   rw [iterated_fold_eq_matrix_form 𝔽q β (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le)]
@@ -178,7 +192,7 @@ lemma preTensorCombine_row_eq_fold_with_binary_row_challenges
   -- Tensor(bits(rowIdx)) is the indicator vector for rowIdx
   let tensor := challengeTensorExpansion (L := L) steps (bitsOfIndex rowIdx)
   have h_indicator : tensor = fun k => if k = rowIdx then 1 else 0 :=
-    challengeTensorExpansion_bitsOfIndex_is_eq_indicator (L := L) rowIdx
+    challengeTensorExpansion_bitsOfIndex (L := L) rowIdx
   simp only
   -- 4. Simplify the Dot Product
   -- (Indicator • Vector) is exactly Vector[rowIdx]
@@ -199,15 +213,17 @@ lemma preTensorCombine_row_eq_fold_with_binary_row_challenges
 omit [CharP L 2] in
 omit [DecidableEq 𝔽q] [NeZero ℓ] in
 omit [SampleableType L] in
-lemma preTensorCombine_is_interleavedCodeword_of_codeword (i : Fin ℓ) (steps : ℕ) {destIdx : Fin r}
+/-- The tensor-combine stack of a codeword is an interleaved codeword of the destination code:
+each row is a fold of the codeword. -/
+lemma preTensorCombine_mem_interleavedCode (i : Fin ℓ) (steps : ℕ) {destIdx : Fin r}
     (h_destIdx : destIdx.val = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
     (f : BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ⟨i, by omega⟩) :
-    (⋈|(preTensorCombine_WordStack 𝔽q β i steps h_destIdx h_destIdx_le f)) ∈
+    (⋈|(preTensorCombine 𝔽q β i steps h_destIdx h_destIdx_le f)) ∈
       (BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) destIdx ^⋈ (Fin (2 ^ steps))) := by
   -- 1. Interleaved Code Definition: "A word is in the interleaved code iff every row is in the base
   -- code"
   set S_next := sDomain 𝔽q β h_ℓ_add_R_rate destIdx with h_S_next
-  set u := (⋈|(preTensorCombine_WordStack 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i steps
+  set u := (⋈|(preTensorCombine 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i steps
     h_destIdx h_destIdx_le f)) with h_u
   set C_next := BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := destIdx)
   simp only [InterleavedWord, InterleavedSymbol, ModuleCode]
@@ -218,8 +234,8 @@ lemma preTensorCombine_is_interleavedCodeword_of_codeword (i : Fin ℓ) (steps :
   -- 3. Geometric Equivalence:
   -- Show that the `rowIdx`-th row of preTensorCombine is exactly `iterated_fold` of u with
   -- challenge r
-  -- We rely on Lemma 4.9 (Matrix Form) which states: M_y * vals = iterated_fold(u, r, y)
-  let preTensorCombine_Row: S_next → L := preTensorCombine_WordStack 𝔽q β (h_ℓ_add_R_rate :=
+  -- By the matrix form of folding: M_y * vals = iterated_fold(u, r, y)
+  let preTensorCombine_Row: S_next → L := preTensorCombine 𝔽q β (h_ℓ_add_R_rate :=
     h_ℓ_add_R_rate) i steps
     h_destIdx h_destIdx_le (f_i := f) rowIdx
   let rowIdx_binary_folded_Row: S_next → L := iterated_fold 𝔽q β (h_ℓ_add_R_rate :=
@@ -227,7 +243,7 @@ lemma preTensorCombine_is_interleavedCodeword_of_codeword (i : Fin ℓ) (steps :
       (f := f) (r_challenges := r_binary)
   have h_row_eq_fold : preTensorCombine_Row = rowIdx_binary_folded_Row := by
     funext y
-    exact preTensorCombine_row_eq_fold_with_binary_row_challenges 𝔽q β i
+    exact preTensorCombine_apply_eq_iterated_fold 𝔽q β i
       steps h_destIdx h_destIdx_le f rowIdx y
   have h_row_of_u_eq: (uᵀ rowIdx) = preTensorCombine_Row := by rfl
   rw [←h_row_of_u_eq] at h_row_eq_fold
@@ -237,15 +253,11 @@ lemma preTensorCombine_is_interleavedCodeword_of_codeword (i : Fin ℓ) (steps :
   exact iterated_fold_preserves_BBF_Code_membership 𝔽q β (i := ⟨i, by omega⟩) (steps := steps)
     (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) (f := f) (r_challenges := r_binary)
 
-/-!
---------------------------------------------------------------------------------
-   SECTION: THE LIFT INFRASTRUCTURE
-   Constructing the inverse map from Interleaved Codewords back to Domain CodeWords
---------------------------------------------------------------------------------
--/
-
+/-! ### The lift from interleaved codewords of the destination code to the source code -/
 
 open Code.InterleavedCode in
+/-- The message polynomials (in the novel basis of the destination index) of the rows of an
+interleaved codeword of the destination code. -/
 def getRowPoly (i : Fin ℓ) (steps : ℕ) {destIdx : Fin r}
     (_h_destIdx : destIdx.val = i.val + steps) (_h_destIdx_le : destIdx ≤ ℓ)
     (V_codeword : ((BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) destIdx)^⋈(Fin (2 ^
@@ -264,12 +276,14 @@ def getRowPoly (i : Fin ℓ) (steps : ℕ) {destIdx : Fin r}
   -- For each j, there exists a polynomial P_j of degree < 2^(ℓ - (i+steps))
   exact getBBF_Codeword_poly 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := destIdx) curRow
 
+/-- The novel-basis coefficients of the lift: coefficient `colIdx * 2 ^ steps + rowIdx` is
+coefficient `colIdx` of row polynomial `rowIdx`. -/
 def getLiftCoeffs (i : Fin ℓ) (steps : ℕ) {destIdx : Fin r}
     (h_destIdx : destIdx.val = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
     (V_codeword : ((BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) destIdx)^⋈(Fin (2 ^
       steps)))) : Fin (2^(ℓ - i)) → L := fun coeff_idx =>
     -- intertwining novel coeffs of the rows of V_codeword
-    -- decompose `coeff_idx = colIdx * 2 ^ steps + rowIdx` as in paper,
+    -- decompose `coeff_idx = colIdx * 2 ^ steps + rowIdx`,
       -- i.e. traverse column by column
     let colIdx : Fin (2 ^ (ℓ - destIdx.val)) := ⟨coeff_idx.val / (2 ^ steps), by
       apply Nat.div_lt_of_lt_mul;
@@ -289,13 +303,11 @@ def getLiftCoeffs (i : Fin ℓ) (steps : ℕ) {destIdx : Fin r}
         i steps h_destIdx h_destIdx_le V_codeword) rowIdx) colIdx
     coeff
 
-/-- Given an interleaved codeword `V ∈ C ⋈^ (2^steps)`, this method converts `2^steps` row polys
-of `V` into a poly `P ∈ L[X]_(2^(ℓ-i))` that generates the fiber evaluator `g : S⁽ⁱ⁾ → L`
-(this `g` produces the RHS vector in equality of **Lemma 4.9**). If we fold this function `g` using
-**binary challenges** corresponding to each of the `2^steps` rows of `V`, let's say `j`,
-we also folds `P` into the corresponding row polynomial `P_j` of the `j`-th row of `V`
-(via **Lemma 4.14, aka iterated_fold_advances_evaluation_poly**). This works as a core engine for
-proof of **Lemma 4.22**. -/
+/-- The lift polynomial of an interleaved codeword `V` of the destination code: the polynomial of
+degree `< 2 ^ (ℓ - i)` with novel-basis coefficients `getLiftCoeffs`. Folding its evaluation at
+the binary challenges of row `j` gives the row polynomial `P_j` of `V`
+(`iterated_fold_liftInterleavedCodeword_bitsOfIndex`, via
+`iterated_fold_advances_evaluation_poly`). -/
 def getLiftPoly (i : Fin ℓ) (steps : ℕ) {destIdx : Fin r}
     (h_destIdx : destIdx.val = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
     (V_codeword : ((BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) destIdx)^⋈(Fin (2 ^
@@ -317,12 +329,10 @@ def getLiftPoly (i : Fin ℓ) (steps : ℕ) {destIdx : Fin r}
     (coeffs := getLiftCoeffs 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       i steps h_destIdx h_destIdx_le V_codeword)
 
-/-- **Lift Function (Inverse Folding)**
-Constructs a function `f` on the domain `S^{(i)}` from an interleaved word `W` on `S^{(i+steps)}`.
-For any point `x` in the larger domain, we identify its quotient `y` and its index in the fiber.
-We recover the fiber values by applying `M_y⁻¹` to the column `W(y)`.
--/
-noncomputable def lift_interleavedCodeword (i : Fin ℓ) (steps : ℕ) {destIdx : Fin r}
+/-- The lift of an interleaved codeword `V` of the destination code: the source codeword that
+encodes `getLiftPoly V`. Its tensor-combine stack is `V`
+(`preTensorCombine_liftInterleavedCodeword`), so it inverts `preTensorCombine` on codewords. -/
+noncomputable def liftInterleavedCodeword (i : Fin ℓ) (steps : ℕ) {destIdx : Fin r}
     (h_destIdx : destIdx.val = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
     (V_codeword : ((BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) destIdx)^⋈(Fin (2 ^
       steps)))) :
@@ -338,17 +348,14 @@ noncomputable def lift_interleavedCodeword (i : Fin ℓ) (steps : ℕ) {destIdx 
 omit [CharP L 2] in
 omit [DecidableEq 𝔽q] [NeZero ℓ] in
 omit [SampleableType L] in
-/-- **Lemma 4.22 Helper**: Folding the "Lifted" polynomial `g` with binary challenges corresponding
-to row index `j ∈ Fin(2^steps)`, results exactly in the `j`-th row polynomial `P_j`.
-**Key insight**: **Binary folding** is a **(Row) Selector**
-Proof strategy: applying `iterated_fold_advances_evaluation_poly` and
-`intermediateEvaluationPoly_from_inovel_coeffs_eq_self`, then arithemetic equality for novel coeffs
-computations in both sides. -/
-lemma folded_lifted_IC_eq_IC_row_polyToOracleFunc (i : Fin ℓ) (steps : ℕ) {destIdx : Fin r}
+/-- Folding the lift of `V` at the binary challenges of row `j` gives the evaluation of the
+`j`-th row polynomial of `V`: at binary challenges, folding selects a row. The proof applies
+`iterated_fold_advances_evaluation_poly` and compares novel-basis coefficients. -/
+lemma iterated_fold_liftInterleavedCodeword_bitsOfIndex (i : Fin ℓ) (steps : ℕ) {destIdx : Fin r}
     (h_destIdx : destIdx.val = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
     (V_codeword : ((BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) destIdx)^⋈(Fin (2 ^ steps))))
     (j : Fin (2 ^ steps)) :
-    let g := lift_interleavedCodeword 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    let g := liftInterleavedCodeword 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       i steps h_destIdx h_destIdx_le V_codeword
     let P_j := (getRowPoly 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i steps h_destIdx h_destIdx_le
       V_codeword) j
@@ -356,9 +363,9 @@ lemma folded_lifted_IC_eq_IC_row_polyToOracleFunc (i : Fin ℓ) (steps : ℕ) {d
       (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) g (bitsOfIndex j) =
     polyToOracleFunc 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (domainIdx := destIdx) P_j := by
   -- 1. Unfold definitions to expose the underlying polynomials
-  -- dsimp only [lift_interleavedCodeword, getLiftPoly]
+  -- dsimp only [liftInterleavedCodeword, getLiftPoly]
   simp only
-  set g := lift_interleavedCodeword 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i steps
+  set g := liftInterleavedCodeword 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i steps
     h_destIdx h_destIdx_le V_codeword with h_g
   set P_j := (getRowPoly 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i steps h_destIdx h_destIdx_le
     V_codeword) j
@@ -390,7 +397,8 @@ lemma folded_lifted_IC_eq_IC_row_polyToOracleFunc (i : Fin ℓ) (steps : ℕ) {d
         rw [Polynomial.mem_degreeLT] at h_mem
         exact h_mem )
   conv_rhs => rw [←h_P_j_novel_form]
-  -- polyToOracleFunc(intermediateEvaluationPoly(FOLDED novelCoeffs of P))) (via Lemma 4.14)
+  -- polyToOracleFunc(intermediateEvaluationPoly(FOLDED novelCoeffs of P)))
+  -- (via `iterated_fold_advances_evaluation_poly`)
     -- = polyToOracleFunc(intermediateEvaluationPoly(inovelCoeffs of P_j))
   unfold polyToOracleFunc intermediateEvaluationPoly novelCoeffs
   simp only [map_sum, map_mul]
@@ -413,7 +421,7 @@ lemma folded_lifted_IC_eq_IC_row_polyToOracleFunc (i : Fin ℓ) (steps : ℕ) {d
   --    This logic should ideally be its own lemma: `weight_bits_eq_indicator`
   have h_indicator : ∀ m : Fin (2^steps), multilinearWeight (F := L) (r := bitsOfIndex j)
     (i := m) = if m = j then 1 else 0 := fun m => by
-    apply multilinearWeight_bitsOfIndex_eq_indicator (j := m) (k := j)
+    apply multilinearWeight_bitsOfIndex (j := m) (k := j)
   simp_rw [h_indicator]
   -- 3. Collapse the Sum using Finset.sum_eq_single
   rw [Finset.sum_eq_single j]
@@ -445,17 +453,18 @@ open Code.InterleavedCode in
 omit [DecidableEq 𝔽q] in
 omit [NeZero ℓ] in
 omit [SampleableType L] in
-lemma preTensorCombine_of_lift_interleavedCodeword_eq_self (i : Fin ℓ) (steps : ℕ) {destIdx : Fin r}
+/-- The tensor-combine stack of the lift of `V` is `V`. -/
+lemma preTensorCombine_liftInterleavedCodeword (i : Fin ℓ) (steps : ℕ) {destIdx : Fin r}
     (h_destIdx : destIdx.val = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
     (V_codeword : ((BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) destIdx)^⋈(Fin (2 ^
       steps)))) :
-    let g := lift_interleavedCodeword 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    let g := liftInterleavedCodeword 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       i steps h_destIdx h_destIdx_le V_codeword
-    (⋈|(preTensorCombine_WordStack 𝔽q β i steps h_destIdx h_destIdx_le g)) = V_codeword.val := by
+    (⋈|(preTensorCombine 𝔽q β i steps h_destIdx h_destIdx_le g)) = V_codeword.val := by
   classical
   let S_next := sDomain 𝔽q β h_ℓ_add_R_rate destIdx
   let C_next := BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) destIdx
-  set g := lift_interleavedCodeword 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i)
+  set g := liftInterleavedCodeword 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i)
     (steps := steps) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) (V_codeword :=
       V_codeword)
   -- **FIRST**,
@@ -463,10 +472,10 @@ lemma preTensorCombine_of_lift_interleavedCodeword_eq_self (i : Fin ℓ) (steps 
         -- over `S^{(i+ϑ)}`
     -- the dotproduct between `M_y's j'th ROW` and `G = g's restriction to the fiber of y`
         -- is actually the result of `fold(G, bitsOfIndex j)`
-  have h_agree_with_fold := preTensorCombine_row_eq_fold_with_binary_row_challenges 𝔽q β
+  have h_agree_with_fold := preTensorCombine_apply_eq_iterated_fold 𝔽q β
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i steps h_destIdx h_destIdx_le g
   let eq_iff_all_rows_eq := (instInterleavedStructureInterleavedWord (A := L) (κ := Fin (2 ^ steps))
-    (ι := S_next)).eq_iff_all_rows_eq (u := ⋈|preTensorCombine_WordStack 𝔽q β (i := i)
+    (ι := S_next)).eq_iff_all_rows_eq (u := ⋈|preTensorCombine 𝔽q β (i := i)
       (steps := steps) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) (↑g)) (v :=
         V_codeword.val)
   simp only
@@ -477,8 +486,8 @@ lemma preTensorCombine_of_lift_interleavedCodeword_eq_self (i : Fin ℓ) (steps 
     (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) (f := g) (y := y)
   simp only [InterleavedWord, Word, InterleavedSymbol, WordStack,
     interleave_wordStack_eq, ModuleCode]
-  -- ⊢ preTensorCombine_WordStack 𝔽q β i steps h_destIdx h_destIdx_le (↑g) j = (↑V_codeword)ᵀ j
-  unfold preTensorCombine_WordStack
+  -- ⊢ preTensorCombine 𝔽q β i steps h_destIdx h_destIdx_le (↑g) j = (↑V_codeword)ᵀ j
+  unfold preTensorCombine
   simp only
   set M_y := foldMatrix 𝔽q β (i := ⟨i, by omega⟩) (steps := steps)
     (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) y
@@ -486,7 +495,7 @@ lemma preTensorCombine_of_lift_interleavedCodeword_eq_self (i : Fin ℓ) (steps 
     -- = ↑V_codeword y j
   change (M_y *ᵥ G) j = V_codeword.val y j
   let lhs_eq_fold := h_agree_with_fold j y
-  unfold preTensorCombine_WordStack at lhs_eq_fold
+  unfold preTensorCombine at lhs_eq_fold
   simp only at lhs_eq_fold
   rw [lhs_eq_fold]
   -- ⊢ iterated_fold 𝔽q β ⟨↑i, ⋯⟩ steps ⋯ (↑g) (bitsOfIndex j) y = ↑V_codeword y j
@@ -505,7 +514,7 @@ lemma preTensorCombine_of_lift_interleavedCodeword_eq_self (i : Fin ℓ) (steps 
   have h_left_eq_P_j_gen: lhs = generatedRow := by
     unfold lhs generatedRow -- ⊢ iterated_fold 𝔽q β ⟨↑i, ⋯⟩ steps ⋯ (↑g) (bitsOfIndex j)
       -- = polyToOracleFunc 𝔽q β ⟨↑i + steps, ⋯⟩ ↑P_j
-    apply folded_lifted_IC_eq_IC_row_polyToOracleFunc
+    apply iterated_fold_liftInterleavedCodeword_bitsOfIndex
   have h_right_eq_P_j_eval: rhs = generatedRow := by
     unfold rhs generatedRow
     rw [getBBF_Codeword_poly_spec 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
@@ -525,18 +534,15 @@ def fiberDiff (i : Fin ℓ) (steps : ℕ) {destIdx : Fin r}
     f x ≠ g x
 
 omit [CharP L 2] [NeZero ℓ] [SampleableType L] [DecidableEq 𝔽q] in
-/-- **Distance Isomorphism Lemma**
-The crucial logic for Lemma 4.22:
-Two functions `f, g` differ on a specific fiber `y` IF AND ONLY IF
-their tensor-combinations `U, V` differ at the column `y`.
-This holds because `M_y` is a bijection. -/
-lemma fiberwise_disagreement_isomorphism (i : Fin ℓ) (steps : ℕ) {destIdx : Fin r}
+/-- Two oracles differ somewhere on the fiber of `y` exactly when their tensor-combine stacks
+differ at column `y`, since the fold matrix `M_y` is invertible. -/
+lemma fiberDiff_iff_getSymbol_preTensorCombine_ne (i : Fin ℓ) (steps : ℕ) {destIdx : Fin r}
     (h_destIdx : destIdx.val = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
     (f g : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ⟨i, by omega⟩)
     (y : sDomain 𝔽q β h_ℓ_add_R_rate destIdx) :
     fiberDiff 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i steps h_destIdx h_destIdx_le f g y ↔
-    WordStack.getSymbol (preTensorCombine_WordStack 𝔽q β i steps h_destIdx h_destIdx_le f) y ≠
-    WordStack.getSymbol (preTensorCombine_WordStack 𝔽q β i steps h_destIdx h_destIdx_le g) y := by
+    WordStack.getSymbol (preTensorCombine 𝔽q β i steps h_destIdx h_destIdx_le f) y ≠
+    WordStack.getSymbol (preTensorCombine 𝔽q β i steps h_destIdx h_destIdx_le g) y := by
   classical
   -- U_y = M_y * f_vals, V_y = M_y * g_vals
   let M_y := foldMatrix 𝔽q β (i := ⟨i, by omega⟩) (steps := steps)
@@ -574,20 +580,20 @@ lemma fiberwise_disagreement_isomorphism (i : Fin ℓ) (steps : ℕ) {destIdx : 
     intro h_col_eq
     apply h_vec_diff
     -- ⊢ f_vals = g_vals
-    -- h_col_eq: WordStack.getSymbol (preTensorCombine_WordStack ... f) y = WordStack.getSymbol
-    -- (preTensorCombine_WordStack ... g) y
+    -- h_col_eq: WordStack.getSymbol (preTensorCombine ... f) y = WordStack.getSymbol
+    -- (preTensorCombine ... g) y
     -- This means: M_y *ᵥ f_vals = M_y *ᵥ g_vals
     -- Rewrite as: M_y *ᵥ (f_vals - g_vals) = 0
     have h_mulVec_sub_eq_zero : M_y *ᵥ (f_vals - g_vals) = 0 := by
-      -- From h_col_eq and the definition of preTensorCombine_WordStack:
-      -- WordStack.getSymbol (preTensorCombine_WordStack ... f) y = M_y *ᵥ f_vals
-      -- WordStack.getSymbol (preTensorCombine_WordStack ... g) y = M_y *ᵥ g_vals
-      have h_f_col : WordStack.getSymbol (preTensorCombine_WordStack 𝔽q β i steps h_destIdx
+      -- From h_col_eq and the definition of preTensorCombine:
+      -- WordStack.getSymbol (preTensorCombine ... f) y = M_y *ᵥ f_vals
+      -- WordStack.getSymbol (preTensorCombine ... g) y = M_y *ᵥ g_vals
+      have h_f_col : WordStack.getSymbol (preTensorCombine 𝔽q β i steps h_destIdx
         h_destIdx_le f) y = M_y *ᵥ f_vals := by
         ext j
         simp only [WordStack.getSymbol, Matrix.transpose_apply]
         rfl
-      have h_g_col : WordStack.getSymbol (preTensorCombine_WordStack 𝔽q β i steps h_destIdx
+      have h_g_col : WordStack.getSymbol (preTensorCombine 𝔽q β i steps h_destIdx
         h_destIdx_le g) y = M_y *ᵥ g_vals := by
         ext j
         simp only [WordStack.getSymbol, Matrix.transpose_apply]
@@ -645,19 +651,19 @@ lemma fiberwise_disagreement_isomorphism (i : Fin ℓ) (steps : ℕ) {destIdx : 
       -- Now f_vals idx = f x = g x = g_vals idx
       exact h_fx_eq_gx
     -- If f_vals = g_vals, then M_y *ᵥ f_vals = M_y *ᵥ g_vals
-    have h_col_eq : WordStack.getSymbol (preTensorCombine_WordStack 𝔽q β i steps h_destIdx
+    have h_col_eq : WordStack.getSymbol (preTensorCombine 𝔽q β i steps h_destIdx
       h_destIdx_le f) y =
-                    WordStack.getSymbol (preTensorCombine_WordStack 𝔽q β i steps h_destIdx
+                    WordStack.getSymbol (preTensorCombine 𝔽q β i steps h_destIdx
                       h_destIdx_le g) y := by
       -- From the forward direction, we know:
-      -- WordStack.getSymbol (preTensorCombine_WordStack ... f) y = M_y *ᵥ f_vals
-      -- WordStack.getSymbol (preTensorCombine_WordStack ... g) y = M_y *ᵥ g_vals
-      have h_f_col : WordStack.getSymbol (preTensorCombine_WordStack 𝔽q β i steps h_destIdx
+      -- WordStack.getSymbol (preTensorCombine ... f) y = M_y *ᵥ f_vals
+      -- WordStack.getSymbol (preTensorCombine ... g) y = M_y *ᵥ g_vals
+      have h_f_col : WordStack.getSymbol (preTensorCombine 𝔽q β i steps h_destIdx
         h_destIdx_le f) y = M_y *ᵥ f_vals := by
         ext j
         simp only [WordStack.getSymbol, Matrix.transpose_apply]
         rfl
-      have h_g_col : WordStack.getSymbol (preTensorCombine_WordStack 𝔽q β i steps h_destIdx
+      have h_g_col : WordStack.getSymbol (preTensorCombine 𝔽q β i steps h_destIdx
         h_destIdx_le g) y = M_y *ᵥ g_vals := by
         ext j
         simp only [WordStack.getSymbol, Matrix.transpose_apply]
@@ -674,14 +680,14 @@ open Code.InterleavedCode in
 omit [DecidableEq 𝔽q] in
 omit [CharP L 2] [NeZero ℓ] in
 omit [SampleableType L] in
-/-- If `f_i` is fiberwise close to the destination code, then its
-`preTensorCombine` word stack is jointly close to the corresponding interleaved code. -/
+/-- If `f_i` is fiberwise close to the source code, then its tensor-combine stack is within the
+unique-decoding radius of the interleaved destination code. -/
 lemma preTensorCombine_jointProximityNat_of_fiberwiseClose (i : Fin ℓ) (steps : ℕ)
     {destIdx : Fin r} (h_destIdx : destIdx.val = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
     (f_i : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ⟨i, by omega⟩)
     (h_close : fiberwiseClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := ⟨i, by omega⟩)
       (steps := steps) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) (f := f_i)) :
-    let U := preTensorCombine_WordStack 𝔽q β i steps h_destIdx h_destIdx_le f_i
+    let U := preTensorCombine 𝔽q β i steps h_destIdx h_destIdx_le f_i
     let C_next : Set (sDomain 𝔽q β h_ℓ_add_R_rate destIdx → L) :=
       BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) destIdx
     jointProximityNat (C := C_next) (u := U) (e := Code.uniqueDecodingRadius (C := C_next)) := by
@@ -713,9 +719,9 @@ lemma preTensorCombine_jointProximityNat_of_fiberwiseClose (i : Fin ℓ) (steps 
       rw [← h_dist_eq_norm]; exact h_2pfd_lt_d
     have : NeZero ‖(C_next : Set _)‖₀ := ⟨by omega⟩
     exact (Code.UDRClose_iff_two_mul_proximity_lt_d_UDR (C := C_next)).mpr h_2pfd_lt_norm
-  let V := preTensorCombine_WordStack 𝔽q β i steps h_destIdx h_destIdx_le g.val
+  let V := preTensorCombine 𝔽q β i steps h_destIdx h_destIdx_le g.val
   have h_V_codeword : (⋈|V) ∈ (C_next ^⋈ (Fin (2^steps))) :=
-    preTensorCombine_is_interleavedCodeword_of_codeword 𝔽q β
+    preTensorCombine_mem_interleavedCode 𝔽q β
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i steps h_destIdx h_destIdx_le
       ⟨g.val, g.property⟩
   have h_dist_eq : Δ₀(⋈|U, ⋈|V) =
@@ -723,7 +729,8 @@ lemma preTensorCombine_jointProximityNat_of_fiberwiseClose (i : Fin ℓ) (steps 
     simp only [hammingDist]; unfold pair_fiberwiseDistance fiberwiseDisagreementSet
     congr 1; ext y
     simp only [Finset.mem_filter, Finset.mem_univ, true_and]
-    have h_iso := fiberwise_disagreement_isomorphism 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    have h_iso := fiberDiff_iff_getSymbol_preTensorCombine_ne 𝔽q β
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (i := i) (steps := steps) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le)
       (f := f_i) (g := g.val) (y := y)
     unfold fiberDiff at h_iso
@@ -742,22 +749,21 @@ omit [DecidableEq 𝔽q] in
 omit [CharP L 2] in
 omit [NeZero ℓ] in
 omit [SampleableType L] in
-/-- **Lemma 4.22** (Interleaved Distance Preservation):
-If `d⁽ⁱ⁾(f⁽ⁱ⁾, C⁽ⁱ⁾) ≥ d_{i+ϑ} / 2` (`f` is fiber-wise far wrt UDR),
-then `d^{2^ϑ}( (f_j⁽ⁱ⁺ϑ⁾)_{j=0}^{2^ϑ - 1}, C^{(i+ϑ)^{2^ϑ}} ) ≥ d_{i+ϑ} / 2`
-  (i.e. interleaved distance ≥ UDR distance).
-* **Main Idea of Proof:** For an ARBITRARY interleaved codeword `(g_j⁽ⁱ⁺ϑ⁾)`,
-a "lift" `g⁽ⁱ⁾ ∈ C⁽ⁱ⁾` is constructed. It's shown that `g⁽ⁱ⁾` relates to `(g_j⁽ⁱ⁺ϑ⁾)` (via
-folding with basis vectors as challenges) similarly to how `f⁽ⁱ⁾` relates to `(f_j⁽ⁱ⁺ϑ⁾)` (via
-Lemma 4.9 and matrix `M_y`). Since `f⁽ⁱ⁾` is far from `g⁽ⁱ⁾` on many fibers (by hypothesis), and
-`M_y` is invertible, the columns `(f_j⁽ⁱ⁺ϑ⁾(y))` and `(g_j⁽ⁱ⁺ϑ⁾(y))` must differ for these `y`,
-establishing the distance for the interleaved words. -/
-lemma lemma_4_22_interleaved_word_UDR_far (i : Fin ℓ) (steps : ℕ) [NeZero steps]
+/-- If `f_i` is not fiberwise close to the source code (its fiberwise distance is at least half
+the destination distance), then its tensor-combine stack is not within the unique-decoding
+radius of the interleaved destination code.
+
+For an arbitrary interleaved codeword `V`, its lift `g` (`liftInterleavedCodeword`) has `V` as
+its stack. Since `f_i` and `g` differ on at least half the destination distance of fibers, and
+the fold matrices are invertible (`fiberDiff_iff_getSymbol_preTensorCombine_ne`), the stack of
+`f_i` differs from `V` in at least that many columns. -/
+lemma preTensorCombine_not_jointProximityNat_of_not_fiberwiseClose (i : Fin ℓ) (steps : ℕ)
+    [NeZero steps]
     {destIdx : Fin r} (h_destIdx : destIdx.val = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
     (f_i : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ⟨i, by omega⟩)
     (h_far : ¬fiberwiseClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := ⟨i, by omega⟩)
       (steps := steps) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) (f := f_i)) :
-    let U := preTensorCombine_WordStack 𝔽q β i steps h_destIdx h_destIdx_le f_i
+    let U := preTensorCombine 𝔽q β i steps h_destIdx h_destIdx_le f_i
     let C_next : Set (sDomain 𝔽q β h_ℓ_add_R_rate destIdx → L) :=
       BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) destIdx
     ¬(jointProximityNat (C := C_next) (u := U) (e := Code.uniqueDecodingRadius (C := C_next))) := by
@@ -768,7 +774,7 @@ lemma lemma_4_22_interleaved_word_UDR_far (i : Fin ℓ) (steps : ℕ) [NeZero st
       (BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ⟨i, by omega⟩)
   let C_next := BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) destIdx
   let C_int := C_next ^⋈ (Fin m)
-  let U_wordStack := preTensorCombine_WordStack 𝔽q β i steps h_destIdx h_destIdx_le f_i
+  let U_wordStack := preTensorCombine 𝔽q β i steps h_destIdx h_destIdx_le f_i
   let U_interleaved : InterleavedWord L (Fin m) S_next := ⋈|U_wordStack
   let d_next := BBF_CodeDistance 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
     (i := destIdx)
@@ -804,11 +810,11 @@ lemma lemma_4_22_interleaved_word_UDR_far (i : Fin ℓ) (steps : ℕ) [NeZero st
   intro h_U_close
   obtain ⟨V_codeword, h_dist_U_V⟩ := jointProximityNat_iff_closeToInterleavedCodeword
     (u := U_wordStack) (e := e_udr) (C := C_next) |>.mp h_U_close
-  let g := lift_interleavedCodeword 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i steps h_destIdx
+  let g := liftInterleavedCodeword 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i steps h_destIdx
     h_destIdx_le V_codeword
-  have h_g_is_lift_of_V : (⋈|preTensorCombine_WordStack 𝔽q β i steps h_destIdx h_destIdx_le ↑g)
+  have h_g_is_lift_of_V : (⋈|preTensorCombine 𝔽q β i steps h_destIdx h_destIdx_le ↑g)
     = V_codeword.val := by
-    apply preTensorCombine_of_lift_interleavedCodeword_eq_self 𝔽q β
+    apply preTensorCombine_liftInterleavedCodeword 𝔽q β
   have h_disagreement_equiv : ∀ y : S_next,
       (∃ x,
         iteratedQuotientMap 𝔽q β h_ℓ_add_R_rate (i := ⟨i, by omega⟩) (destIdx := destIdx)
@@ -816,20 +822,20 @@ lemma lemma_4_22_interleaved_word_UDR_far (i : Fin ℓ) (steps : ℕ) [NeZero st
         f_i x ≠ g.val x) ↔
       getSymbol U_interleaved y ≠ getSymbol V_codeword y := by
     intro y
-    let res := fiberwise_disagreement_isomorphism 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    let res := fiberDiff_iff_getSymbol_preTensorCombine_ne 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (i := i) (steps := steps) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le)
       (f := f_i) (g := g.val) (y := y)
     unfold fiberDiff at res
     rw [res]
-    have h_col_U_y_eq : (preTensorCombine_WordStack 𝔽q β i steps h_destIdx h_destIdx_le
+    have h_col_U_y_eq : (preTensorCombine 𝔽q β i steps h_destIdx h_destIdx_le
       f_i).getSymbol y
       = getSymbol U_interleaved y := by rfl
     have h_col_V_y_eq :
-        (preTensorCombine_WordStack 𝔽q β i steps h_destIdx h_destIdx_le g.val).getSymbol y
+        (preTensorCombine 𝔽q β i steps h_destIdx h_destIdx_le g.val).getSymbol y
           = getSymbol V_codeword y := by
       have h_get_symbol_eq :
-          (preTensorCombine_WordStack 𝔽q β i steps h_destIdx h_destIdx_le g.val).getSymbol y
-            = getSymbol (⋈|preTensorCombine_WordStack 𝔽q β i steps h_destIdx h_destIdx_le
+          (preTensorCombine 𝔽q β i steps h_destIdx h_destIdx_le g.val).getSymbol y
+            = getSymbol (⋈|preTensorCombine 𝔽q β i steps h_destIdx h_destIdx_le
               ↑g) y := by
         rfl
       rw [h_get_symbol_eq]

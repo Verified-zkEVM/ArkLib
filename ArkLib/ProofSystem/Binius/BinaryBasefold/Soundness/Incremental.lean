@@ -11,17 +11,50 @@ public import ArkLib.ProofSystem.Binius.BinaryBasefold.Compliance
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.Soundness.Lift
 
 /-!
-## Binary Basefold Soundness Incremental Argument
+# Binary Basefold: the per-challenge bound on the incremental folding bad event
 
-Incremental quotient-map and proximity lemmas for the refined Binary Basefold soundness proof.
-The incremental bad-event, even/odd reduction, doom-preservation arguments, and the full
-incremental Proposition 4.21.2 development in this file are formalization-specific
-contributions of this development.
-This file packages:
-1. preliminary split and affine-line proximity lemmas used in the incremental far case
-2. the full incremental Proposition 4.21.2 argument, including the even/odd reduction and both
-   close/far branches
-3. fold-to-affine-line bridges used by the incremental bad-event analysis
+`incrementalFoldingBadEvent` (`Compliance`) is the folding bad event of a block of `ϑ` folds,
+restricted to the first `k` challenges of the block. The main statement,
+`prob_incrementalFoldingBadEvent_fresh_le`, bounds, for a fixed block start, a fixed oracle and a
+fixed prefix of `k < ϑ` challenges, the probability over one fresh uniform challenge that the
+event holds at `k + 1` but not at `k`, by `|S⁽ⁱ⁺ᶿ⁾| / |L|`. The fold step's round-by-round
+knowledge soundness consumes it one challenge at a time.
+
+## Main statements
+
+* `prob_incrementalFoldingBadEvent_fresh_le_of_fiberwiseClose`: the case where the block's oracle
+  is fiberwise close. A fold step can drop a point of the fiberwise disagreement set only at a
+  root of a nonzero polynomial of degree at most one in the fresh challenge; a union bound over
+  the destination domain finishes.
+* `prob_incrementalFoldingBadEvent_fresh_le_of_not_fiberwiseClose`: the far case. The
+  tensor-combine stack of the current fold is far from the interleaved code
+  (`preTensorCombine_not_jointProximityNat_of_not_fiberwiseClose`), hence so is the pair of its
+  even and odd rows (`jointProximityNat_of_jointProximityNat₂_splitEvenOdd`); one fold step is
+  the affine line through that pair
+  (`preTensorCombine_fold_eq_affineLineEvaluation_splitEvenOdd`), and the affine-line
+  proximity gap of Reed–Solomon codes, lifted to interleaved codes, bounds the probability
+  (`prob_affineLineEvaluation_close_le_of_not_jointProximityNat₂`).
+* `prob_incrementalFoldingBadEvent_fresh_le`: the two cases together.
+
+## Relation to [DP24]
+
+[DP24] Proposition 4.21 bounds the probability mass of the whole bad set `Eᵢ ⊂ Lᶿ`
+(Definition 4.20) by `ϑ · |S⁽ⁱ⁺ᶿ⁾| / |L|`. The incremental event is `False` at `k = 0` and is the
+folding bad event at `k = ϑ` (`Compliance`), so summing the per-challenge bound over the `ϑ`
+challenges of a block recovers that bound, for `ℓ + 𝓡 < r` as everywhere in Binius ([DP24] §4.1
+also allows `ℓ + R = r`; the strict bound comes from CompPoly's `Fin r`-indexed subspaces `U`
+behind `sDomain`). The per-challenge statement itself is not in [DP24]; it is specific to this
+development. Its two cases follow the
+two cases of the paper's proof, one challenge at a time: the paper applies the Schwartz–Zippel
+lemma to all `ϑ` challenges in the close case, and the tensor proximity gap ([DP24] Theorem 2.4)
+after Lemma 4.22 in the far case; here the far case uses the affine-line gap ([DP24] Theorem 2.3)
+lifted to interleaved codes ([DG25], `affine_gaps_lifted_to_interleaved_codes`).
+
+## References
+
+* [Diamond, B.E. and Posen, J., *Polylogarithmic proofs for multilinears over binary towers*][DP24]
+  Numbering follows the archived revision of [DP24].
+* [Diamond, B.E. and Gruen, A., *Proximity Gaps in Interleaved Codes*][DG25]
 -/
 
 @[expose] public section
@@ -59,15 +92,14 @@ section Prelims
 
 open Classical in
 omit [CharP L 2] [DecidableEq 𝔽q] h_β₀_eq_1 [NeZero ℓ] in
-/-- **Affine proximity gap bound for RS interleaved codes (contrapositive form).**
-If the pair `(u₀, u₁)` is NOT `e`-close to the interleaved code, then the
-affine line `(1-r)·u₀ + r·u₁` is `e`-close to `C` for at most `|S|` values
-of `r ∈ L`, giving `Pr_r[close] ≤ |S|/|L|`.
-
-This follows from the contrapositive of:
-- DG25 Thm 2.2 (RS codes exhibit affine line proximity gaps with `ε = |S|`), and
-- DG25 Thm 3.1 (affine line proximity gaps lift to interleaved codes). -/
-lemma affineProximityGap_RS_interleaved_contrapositive
+/-- If the pair `(u₀, u₁)` is not `e`-close to the interleaved destination code, with `e` within
+the unique-decoding radius, then the affine line `(1 - r) • u₀ + r • u₁` is `e`-close to that
+code with probability at most `|S| / |L|` over a uniform `r`. This is the contrapositive of the
+affine-line proximity gap of Reed–Solomon codes
+(`ReedSolomon_ProximityGapAffineLines_UniqueDecoding`, with false-witness bound `|S|`) lifted
+to interleaved codes
+(`affine_gaps_lifted_to_interleaved_codes`). -/
+lemma prob_affineLineEvaluation_close_le_of_not_jointProximityNat₂
     {m : ℕ} (_hm : m ≥ 1) {destIdx : Fin r} (h_destIdx_le : destIdx ≤ ℓ)
     (u₀ u₁ : Word (InterleavedSymbol L (Fin m))
       (sDomain 𝔽q β h_ℓ_add_R_rate destIdx))
@@ -129,69 +161,18 @@ end Prelims
 open Classical in
 omit [NeZero ℓ] hdiv in
 omit [DecidableEq 𝔽q] in
-/-- **Proposition 4.21.2 (Case 1: FiberwiseClose)**.
-Incremental bad-event bound for a fixed block start and fixed consumed prefix, under the
-block-level close branch.
+/-- The per-challenge bound on the incremental folding bad event when the block's oracle
+`f⁽ⁱ⁾` is fiberwise close, with decoded codeword `f̄⁽ⁱ⁾`. Write `fₖ`, `f̄ₖ` for their folds at
+the fixed prefix of `k` challenges.
 
-The fresh event at step `k` is
-`ℰ_{i+k} = ¬ E(i, k) ∧ E(i, k+1)` where `E := incrementalFoldingBadEvent`.
-
-#### **Case 1: FiberwiseClose**
-
-**Hypothesis:** `d^{(i)}(f^{(i)}, C^{(i)}) < d_{i+ϑ} / 2`.
-**Condition:** We assume the bad event has *not* happened up to step `k` (i.e., `¬ E(i, k)`
-holds). This implies:
-`Δ^{(i)}(f^{(i)}, f_bar^{(i)}) ⊆ Δ^{(i+k)}(fold_k(f^{(i)}), fold_k(f_bar^{(i)}))`
-where `Δ^{(i+k)}` is the disagreement set projected to the destination domain `S^{i+ϑ}`.
-
-We must bound the probability that a quotient point `y ∈ Δ^{(i+k)}` "vanishes" from the
-disagreement set in the next step `k+1`, i.e. `y ∉ Δ^{(i+k+1)}(fold(fold_k(f^{(i)}), r),
-fold(fold_k(f_bar^{(i)}), r))`. Let `f_k := fold_k(f^{(i)})` and `f_bar_k := fold_k(f_bar^{(i)})`.
-
-Fix any `y ∈ Δ^{(i+k)}`.
-
-* By definition, there exists at least one point `z` in the fiber of `y` (within the current
-domain `S^{i+k}`) such that `f_k(z) ≠ f_bar_k(z)` (by definition of `Δ^{(i+k)}`).
-
-Consider the folding step `S^{i+k} → S^{i+k+1}`. The map `q` pairs points in `S^{i+k}` (say `x₀,
-x₁`) to a single point `w` in `S^{i+k+1}`.
-The folded value at `w` is defined as (Definition 4.6):
-`fold(f_k, r)(w) = [1-r, r] · M · [f_k(x₀), f_k(x₁)]ᵀ`
-where `M = [[x₁, -x₀], [-1, 1]]` is an invertible matrix.
-
-Let `E_y(r)(w)` (where `y ∈ Δ^{(i+k)}(fold_k(f^{(i)}), fold_k(f_bar^{(i)}))`) be the difference
-between the folded values of `f_k` and `f_bar_k` in `S^{i+k+1}` at `w`:
-`E_y(r)(w) := fold(f_k, r)(w) - fold(f_bar_k, r)(w)`
-
-Linearity allows us to rewrite this as:
-`E_y(r)(w) = [1-r, r] · M · [f_k(x₀) - f_bar_k(x₀), f_k(x₁) - f_bar_k(x₁)]ᵀ`
-
-Since `y ∈ Δ^{(i+k)} ⊂ S^{i+ϑ}`, the difference vector `v_vec = [f_k(x₀) - f_bar_k(x₀), f_k(x₁) -
-f_bar_k(x₁)]ᵀ` is non-zero for at least one pair `(x₀, x₁)` in the fiber of `y` (otherwise `f_k`
-is equal to `f_bar_k` at all points in `S^{i+k}`, contradicting the definition of `Δ^{(i+k)}`).
-
-Because `M` is invertible, the vector `v_vec' = M · v_vec` is also **non-zero**. Let `v_vec' = [a,
-b]ᵀ`. Then:
-`E_y(r)(w) = a(1-r) + br = a + (b-a)r`
-
-This is a polynomial in `r` of degree at most 1. Since `v_vec' ≠ 0`, the **coefficients `a` and
-`b` cannot both be zero**.
-
-* If `b ≠ a`, `E_y(r)(w)` has exactly one root.
-* If `b = a ≠ 0`, `E_y(r)(w) = a ≠ 0`, so it has no roots.
-
-Thus, `E_y(r)(w) = 0` (i.e. **the case where the point `y` disappears from `Δ^{i+k+1}`, though it
-was assumed to be in `Δ^{i+k}**`) with probability at most `1 / |L|` (**Schwartz-Zippel Lemma**).
-
-If `E_y(r)(w) ≠ 0`, then `w ∈ Δ^{(i+k+1)}`, meaning `y` is preserved in the projected disagreement
-set, so it's not the case we care.
-
-Applying the Union Bound over all `y ∈ Δ^{(i)} ⊆ S^{i+ϑ}` (noting that `|Δ^{(i)}| ≤ |S^{i+ϑ}|`):
-`Pr[∃ y ∈ Δ^{(i)}, y ∉ Δ^{(i+k+1)}] ≤ ∑_{y ∈ Δ^{(i)}} 1 / |L| ≤ |S^{i+ϑ}| / |L|`
-
-This completes the proof for Case 1.
--/
-lemma prop_4_21_2_case_1_fiberwise_close_incremental
+The event at `k` fails when the fiberwise disagreement set `Δ` of `f⁽ⁱ⁾` and `f̄⁽ⁱ⁾` is contained
+in that of `fₖ` and `f̄ₖ`; it holds at `k + 1` when some `y ∈ Δ` leaves the disagreement set after
+one more fold with the fresh challenge `r`. For such `y`, the difference `fₖ - f̄ₖ` is nonzero
+somewhere on the fiber of `y`, and on each pair of points of the next fiber the difference of
+the folds is `a + (b - a) · r`, where `(a, b)` is the image of the nonzero difference vector under
+the invertible fold matrix. This vanishes for at most one `r`, so `y` drops out with probability
+at most `1 / |L|`, and a union bound over `Δ ⊆ S⁽ⁱ⁺ᶿ⁾` gives `|S⁽ⁱ⁺ᶿ⁾| / |L|`. -/
+lemma prob_incrementalFoldingBadEvent_fresh_le_of_fiberwiseClose
     (block_start_idx : Fin r) {midIdx_i midIdx_i_succ destIdx : Fin r} (k : ℕ) (h_k_lt : k < ϑ)
     (h_midIdx_i : midIdx_i = block_start_idx + k)
     (h_midIdx_i_succ : midIdx_i_succ = block_start_idx + k + 1)
@@ -268,7 +249,7 @@ lemma prop_4_21_2_case_1_fiberwise_close_incremental
     -- E(k+1) = ¬(Δ_fiber ⊆ fiberwiseDisagreementSet(midIdx_i_succ, ϑ-(k+1),
     --            fold_{k+1}(f, snoc r_prefix r_new), fold_{k+1}(f̄, snoc r_prefix r_new)))
     --
-    -- Strategy: Union Bound + single-step Schwartz-Zippel (degree ≤ 1 in r_new).
+    -- Strategy: union bound, and a nonzero polynomial of degree ≤ 1 in r_new has ≤ 1 root.
     --
     -- (3a) E(k+1) = ∃ y ∈ Δ_fiber, y ∉ disagreement set at step k+1.
     -- (3b) By union bound: Pr[∃ y dropped] ≤ ∑_{y ∈ Δ_fiber} Pr[y dropped].
@@ -595,15 +576,12 @@ lemma prop_4_21_2_case_1_fiberwise_close_incremental
 
 omit [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [CharP L 2] [NeZero ℓ] in
 omit [SampleableType L] in
-/-- **One fold step on preTensorCombine = affine line evaluation on even/odd split.**
-Given `f_i : S^i → L` and its preTensorCombine WordStack `U` of height `2^(steps+1)`,
-using the **even/odd split** (LSB-first, see `splitEvenOddRowWiseInterleavedWords`):
-`U_even[j] = U[2j]`, `U_odd[j] = U[2j+1]`. Folding dimension `i` first gives:
-```
-⋈|preTensorCombine(i+1, steps, destIdx, fold(f_i, r_new))
-  = affineLineEvaluation(⋈|U_even, ⋈|U_odd, r_new)
-``` -/
-lemma fold_preTensorCombine_eq_affineLineEvaluation_split
+/-- One fold step on a tensor-combine stack is the affine line through its even and odd rows.
+If `U` is the stack of `f_i` over `steps + 1` folds, with even rows `U_even` and odd rows
+`U_odd` (`splitEvenOddRowWiseInterleavedWords`), then the stack over the remaining `steps` folds
+of `fold f_i r_new` is `affineLineEvaluation (⋈|U_even) (⋈|U_odd) r_new`: folding
+consumes the first challenge, which pairs rows `2j` and `2j + 1`. -/
+lemma preTensorCombine_fold_eq_affineLineEvaluation_splitEvenOdd
     (i : Fin ℓ) (steps : ℕ) [NeZero steps] {midIdx destIdx : Fin r}
     (h_midIdx : midIdx.val = i.val + 1)
     (h_destIdx : destIdx.val = i.val + (steps + 1))
@@ -613,7 +591,7 @@ lemma fold_preTensorCombine_eq_affineLineEvaluation_split
     (r_new : L) :
     let h_midIdx_lt_ℓ : midIdx.val < ℓ := by
       have := NeZero.pos steps; omega
-    let U := preTensorCombine_WordStack 𝔽q β i (steps + 1)
+    let U := preTensorCombine 𝔽q β i (steps + 1)
       (destIdx := destIdx) (h_destIdx := h_destIdx)
       (h_destIdx_le := h_destIdx_le) f_i
     let U_even := (splitEvenOddRowWiseInterleavedWords (ϑ := steps) U).1
@@ -622,7 +600,7 @@ lemma fold_preTensorCombine_eq_affineLineEvaluation_split
       ⟨i, by omega⟩ (destIdx := midIdx) (h_destIdx := h_midIdx)
       (h_destIdx_le := by omega) f_i r_new
     let midIdx_fin_ℓ : Fin ℓ := ⟨midIdx.val, h_midIdx_lt_ℓ⟩
-    let V := preTensorCombine_WordStack 𝔽q β midIdx_fin_ℓ steps
+    let V := preTensorCombine 𝔽q β midIdx_fin_ℓ steps
       (destIdx := destIdx)
       (h_destIdx := by simp [midIdx_fin_ℓ]; omega)
       (h_destIdx_le := h_destIdx_le) (by exact fold_1_f)
@@ -659,7 +637,7 @@ lemma fold_preTensorCombine_eq_affineLineEvaluation_split
         apply Finset.sum_congr rfl; intro k _
         congr 1
         have := congr_fun
-          (challengeTensorExpansion_bitsOfIndex_is_eq_indicator (L := L) j') k
+          (challengeTensorExpansion_bitsOfIndex (L := L) j') k
         simp only [challengeTensorExpansion, multilinearWeight] at this
         exact this]
     simp only [boole_mul, Finset.sum_ite_eq', Finset.mem_univ, ↓reduceIte]
@@ -707,13 +685,14 @@ lemma fold_preTensorCombine_eq_affineLineEvaluation_split
   rw [h_indicator (affineLineEvaluation (F := L) U_even U_odd r_new) j y]
 
 omit [CharP L 2] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero ℓ] [SampleableType L] in
-/-- Single-step fold equals multilinearCombine on the corresponding preTensorCombine stack. -/
-lemma fold_eq_multilinearCombine_preTensorCombine_step1
+/-- A single fold of `f_i` is the multilinear combination, at the fold challenge, of the
+two-row tensor-combine stack of `f_i`. -/
+lemma fold_eq_multilinearCombine_preTensorCombine
     (i : Fin ℓ) {destIdx : Fin r}
     (h_destIdx : destIdx.val = i.val + 1) (h_destIdx_le : destIdx ≤ ℓ)
     (f_i : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ⟨i, by omega⟩)
     (r_new : L) :
-    let U := preTensorCombine_WordStack 𝔽q β i 1
+    let U := preTensorCombine 𝔽q β i 1
       (destIdx := destIdx) (h_destIdx := h_destIdx)
       (h_destIdx_le := h_destIdx_le) f_i
     fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := ⟨i, by omega⟩)
@@ -735,7 +714,7 @@ lemma fold_eq_multilinearCombine_preTensorCombine_step1
       simp [blockDiagMatrix, reindexSquareMatrix, from4Blocks]
   simp only [challengeTensorExpansion, Fin.isValue, butterflyMatrix_zero_apply, cons_mulVec,
     cons_dotProduct, neg_mul, dotProduct_of_isEmpty, add_zero, one_mul, empty_mulVec,
-    Matrix.dotProduct_cons, preTensorCombine_WordStack, reducePow, foldMatrix, reduceAdd,
+    Matrix.dotProduct_cons, preTensorCombine, reducePow, foldMatrix, reduceAdd,
     Nat.add_zero, h_blk, mul_one, Fin.sum_univ_two, cons_val_zero, cons_val_one, cons_val_fin_one]
   have h_w0 :
       vecHead (multilinearWeight (F := L) (r := fun _ : Fin 1 => r_new)) =
@@ -750,21 +729,10 @@ lemma fold_eq_multilinearCombine_preTensorCombine_step1
 omit [DecidableEq 𝔽q] in
 omit [CharP L 2] [NeZero ℓ] in
 omit [SampleableType L] in
-/-- **Connecting fiberwiseClose of a folded function to affine line evaluation proximity.**
-Given `f_i : S^i → L` with preTensorCombine `U := preTensorCombine(i, s+1, destIdx, f_i)` of
-height `2^{s+1}`, and `r_new : L`, if
-`fiberwiseClose(iterated_fold(i, s+1, destIdx, f_i, snoc r r_new), ...)` holds, then
-`Δ₀(affineLineEval(⋈|U_even, ⋈|U_odd, r_new), C^⋈(2^s)) ≤ UDR(C)`.
-
-**Proof sketch:**
-1. By `iterated_fold_last`: the folded function is `fold(f_i, r_new)`.
-2. `fiberwiseClose(fold(f_i,r_new), s) → jointProximityNat(V)` where
-   `V = preTensorCombine(midIdx, s, destIdx, fold(f_i,r_new))`
-   (by `preTensorCombine_jointProximityNat_of_fiberwiseClose`).
-3. `⋈|V = affineLineEval(⋈|U_even, ⋈|U_odd, r_new)`
-   (by `fold_preTensorCombine_eq_affineLineEvaluation_split`).
-4. Combine 2 and 3 to get the distance bound. -/
-lemma fiberwiseClose_fold_implies_affineLineEval_close
+/-- If the single fold `fold f_i r_new` is fiberwise close over the remaining `s` folds, then the
+affine line at `r_new` through the even and odd rows of the stack of `f_i` over `s + 1` folds is
+within the unique-decoding radius of the interleaved destination code. -/
+lemma distFromCode_affineLineEvaluation_le_of_fiberwiseClose_fold
     (i : Fin r) (h_i_lt_ℓ : i.val < ℓ) (s : ℕ)
     {midIdx destIdx : Fin r}
     (h_midIdx : midIdx.val = i.val + 1)
@@ -778,7 +746,7 @@ lemma fiberwiseClose_fold_implies_affineLineEval_close
         i (destIdx := midIdx) (h_destIdx := h_midIdx)
         (h_destIdx_le := by omega) f_i r_new)) :
     let i_ℓ : Fin ℓ := ⟨i.val, h_i_lt_ℓ⟩
-    let U := preTensorCombine_WordStack 𝔽q β i_ℓ (s + 1)
+    let U := preTensorCombine 𝔽q β i_ℓ (s + 1)
       (destIdx := destIdx) (h_destIdx := by simp [i_ℓ]; omega)
       (h_destIdx_le := h_destIdx_le) f_i
     let U_even := (splitEvenOddRowWiseInterleavedWords (ϑ := s) U).1
@@ -815,7 +783,7 @@ lemma fiberwiseClose_fold_implies_affineLineEval_close
         fold_1_f by
       rw [h_eq]; exact h_udr_close
     have h_rhs : fold_1_f = multilinearCombine (F := L) U (fun (_ : Fin 1) => r_new) := by
-      have h_rhs := fold_eq_multilinearCombine_preTensorCombine_step1 𝔽q β
+      have h_rhs := fold_eq_multilinearCombine_preTensorCombine 𝔽q β
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i_ℓ)
         (destIdx := midIdx) (h_destIdx := by simp [i_ℓ]; omega)
         (h_destIdx_le := h_midIdx_le_ℓ) (f_i := f_i) (r_new := r_new)
@@ -844,7 +812,7 @@ lemma fiberwiseClose_fold_implies_affineLineEval_close
       (h_destIdx_le := h_destIdx_le)
       (f_i := fold_1_f)
       (h_close := h_fw_close)
-    have h_eq := fold_preTensorCombine_eq_affineLineEvaluation_split 𝔽q β
+    have h_eq := preTensorCombine_fold_eq_affineLineEvaluation_splitEvenOdd 𝔽q β
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (i := i_ℓ) (steps := s)
       (midIdx := midIdx) (destIdx := destIdx)
@@ -854,7 +822,7 @@ lemma fiberwiseClose_fold_implies_affineLineEval_close
       (f_i := f_i) (r_new := r_new)
     have h_eq' :
         interleaveWordStack
-            (preTensorCombine_WordStack 𝔽q β
+            (preTensorCombine 𝔽q β
               (i := ⟨midIdx.val, h_midIdx_lt_ℓ⟩) (steps := s)
               (destIdx := destIdx)
               (h_destIdx := by simp; omega)
@@ -871,26 +839,20 @@ lemma fiberwiseClose_fold_implies_affineLineEval_close
 omit hdiv in
 omit [DecidableEq 𝔽q] in
 omit [CharP L 2] [NeZero ℓ] in
-/--
-#### **Case 2: FiberwiseFar (Incremental)**
+/-- The per-challenge bound on the incremental folding bad event when the block's oracle is not
+fiberwise close. Write `fₖ` for its fold at the fixed prefix of `k` challenges and `U` for the
+tensor-combine stack of `fₖ` over the remaining `ϑ - k` folds.
 
-**Proof outline (see infrastructure lemmas above for details):**
-1. Build `U := preTensorCombine(midIdx_i, ϑ-k, destIdx, fold_k_f)` of height `2^{ϑ-k}`.
-2. By Lemma 4.22: `¬fiberwiseClose(fold_k_f) → ¬jointProximityNat(U, e)`.
-3. Split `U` into even/odd stacks `(U_even, U_odd) = splitEvenOdd(U)`,
-   each of height `2^{ϑ-k-1}`.
-   By `not_jointProximityNat_of_not_jointProximityNat_evenOdd_split`:
-   `¬jointProximityNat₂(U_even, U_odd, e)` for `C_dest^{2^{ϑ-k-1}}`.
-4. Fold step gives affine combination:
-   `preTensorCombine(fold_{k+1}_f) = affineLineEval(U_even, U_odd, r_new)`
-   (by `fold_preTensorCombine_eq_affineLineEvaluation_split`).
-5. `fiberwiseClose(fold_{k+1}_f) → jointProximityNat(preTensorCombine(fold_{k+1}_f), e)`
-   (by `preTensorCombine_jointProximityNat_of_fiberwiseClose`).
-6. Contrapositive of DG25 affine proximity gap
-   (by `affineProximityGap_RS_interleaved_contrapositive`):
-   `Pr_r[close] ≤ |S|/|L|`.
--/
-lemma prop_4_21_2_case_2_fiberwise_far_incremental
+If `fₖ` is already fiberwise close, the event holds at `k` and there is nothing to bound.
+Otherwise `U` is far from the interleaved destination code
+(`preTensorCombine_not_jointProximityNat_of_not_fiberwiseClose`), so the pair of its even and
+odd rows is far as well (`jointProximityNat_of_jointProximityNat₂_splitEvenOdd`). The stack of
+the next fold is the affine line through that pair at the fresh challenge
+(`preTensorCombine_fold_eq_affineLineEvaluation_splitEvenOdd`), and it is close whenever the
+next fold is fiberwise close (`preTensorCombine_jointProximityNat_of_fiberwiseClose`); the
+affine-line proximity gap (`prob_affineLineEvaluation_close_le_of_not_jointProximityNat₂`)
+bounds that probability by `|S⁽ⁱ⁺ᶿ⁾| / |L|`. -/
+lemma prob_incrementalFoldingBadEvent_fresh_le_of_not_fiberwiseClose
     (block_start_idx : Fin r) {midIdx_i midIdx_i_succ destIdx : Fin r} (k : ℕ) (h_k_lt : k < ϑ)
     (h_midIdx_i : midIdx_i = block_start_idx + k)
     (h_midIdx_i_succ : midIdx_i_succ = block_start_idx + k + 1)
@@ -943,14 +905,14 @@ lemma prop_4_21_2_case_2_fiberwise_far_incremental
       BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) destIdx
     let e_prox := Code.uniqueDecodingRadius (C := C_dest)
     let i_ℓ : Fin ℓ := ⟨midIdx_i.val, h_midIdx_i_lt_ℓ⟩
-    let U := preTensorCombine_WordStack 𝔽q β i_ℓ (s + 1)
+    let U := preTensorCombine 𝔽q β i_ℓ (s + 1)
       (destIdx := destIdx)
       (h_destIdx := by simp [i_ℓ]; omega)
       (h_destIdx_le := h_destIdx_le)
       fold_k_f
     have h_U_far : ¬jointProximityNat (C := C_dest) (u := U)
         (e := e_prox) := by
-      apply lemma_4_22_interleaved_word_UDR_far 𝔽q β
+      apply preTensorCombine_not_jointProximityNat_of_not_fiberwiseClose 𝔽q β
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (i := i_ℓ) (steps := s + 1)
         (h_destIdx := by simp [i_ℓ]; omega)
@@ -972,13 +934,13 @@ lemma prop_4_21_2_case_2_fiberwise_far_incremental
           Δ₀(affineLineEvaluation (F := L) u_even u_odd r,
             (C_dest ^⋈ (Fin (2^s)))) ≤ e_prox]
         ≤ (Fintype.card S_dest : ℝ≥0) / (Fintype.card L) :=
-      affineProximityGap_RS_interleaved_contrapositive
+      prob_affineLineEvaluation_close_le_of_not_jointProximityNat₂
         𝔽q β Nat.one_le_two_pow h_destIdx_le
         (e := e_prox) (he := le_refl _) (h_far := h_pair_far)
     apply le_trans _ h_affine_bound
     apply prEvent_mono ($ᵗ L) _ _
     intro r_new h_fw_close
-    exact fiberwiseClose_fold_implies_affineLineEval_close 𝔽q β
+    exact distFromCode_affineLineEvaluation_le_of_fiberwiseClose_fold 𝔽q β
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (i := midIdx_i) (h_i_lt_ℓ := h_midIdx_i_lt_ℓ) (s := s)
       (midIdx := midIdx_i_succ) (destIdx := destIdx)
@@ -998,10 +960,11 @@ lemma prop_4_21_2_case_2_fiberwise_far_incremental
 
 omit [DecidableEq 𝔽q] hdiv in
 omit [NeZero ℓ] in
-/-- **Proposition 4.21.2** (Incremental bad-event probability bound).
-This is the formalization-specific refinement of Proposition 4.21 for prefix-by-prefix folding
-analysis. -/
-lemma prop_4_21_2_incremental_bad_event_probability
+/-- For a block starting at `block_start_idx`, an oracle `f_block_start` and a fixed prefix of
+`k < ϑ` challenges, the probability over a fresh uniform challenge `r_new` that the incremental
+folding bad event holds after `k + 1` challenges but not after `k` is at most
+`|S⁽ⁱ⁺ᶿ⁾| / |L|`. -/
+lemma prob_incrementalFoldingBadEvent_fresh_le
     (block_start_idx : Fin r) {midIdx_i midIdx_i_succ destIdx : Fin r} (k : ℕ) (h_k_lt : k < ϑ)
     (h_midIdx_i : midIdx_i = block_start_idx + k)
     (h_midIdx_i_succ : midIdx_i_succ = block_start_idx + k + 1)
@@ -1029,14 +992,14 @@ lemma prop_4_21_2_incremental_bad_event_probability
   by_cases h_block_close : fiberwiseClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
     (i := block_start_idx) (steps := ϑ) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le)
     (f := f_block_start)
-  · exact prop_4_21_2_case_1_fiberwise_close_incremental 𝔽q β
+  · exact prob_incrementalFoldingBadEvent_fresh_le_of_fiberwiseClose 𝔽q β
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (block_start_idx := block_start_idx)
       (midIdx_i := midIdx_i) (midIdx_i_succ := midIdx_i_succ) (destIdx := destIdx)
       (k := k) (h_k_lt := h_k_lt) (h_midIdx_i := h_midIdx_i)
       (h_midIdx_i_succ := h_midIdx_i_succ) (h_destIdx := h_destIdx)
       (h_destIdx_le := h_destIdx_le) (f_block_start := f_block_start)
       (r_prefix := r_prefix) (h_block_close := h_block_close)
-  · exact prop_4_21_2_case_2_fiberwise_far_incremental 𝔽q β
+  · exact prob_incrementalFoldingBadEvent_fresh_le_of_not_fiberwiseClose 𝔽q β
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (block_start_idx := block_start_idx)
       (midIdx_i := midIdx_i) (midIdx_i_succ := midIdx_i_succ) (destIdx := destIdx)
       (k := k) (h_k_lt := h_k_lt) (h_midIdx_i := h_midIdx_i)
