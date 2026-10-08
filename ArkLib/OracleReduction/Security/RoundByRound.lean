@@ -849,6 +849,29 @@ def rbrKnowledgeSoundness
   exact OracleVerifier.rbrKnowledgeSoundness (Oₛₒ := fun i => nomatch i) init impl
     relIn acceptRejectOracleRel verifier rbrKnowledgeError
 
+/-- Worst-case-per-prefix round-by-round knowledge soundness of an oracle proof: that of its
+verifier (`Verifier.rbrKnowledgeSoundnessWorstCase`), with the empty output-oracle family
+discharged explicitly. It implies `OracleProof.rbrKnowledgeSoundness` with the same error
+(`OracleProof.rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness`). The implication runs
+in one direction only; see the note on the worst-case-per-prefix variants above. -/
+def rbrKnowledgeSoundnessWorstCase
+    (relIn : Set ((Statement × ∀ i, OStatement i) × Witness))
+    (verifier : OracleProofVerifier oSpec Statement OStatement pSpec)
+    (rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0) : Prop :=
+  (OracleVerifier.toVerifier (Oₛₒ := fun i => nomatch i) verifier).rbrKnowledgeSoundnessWorstCase
+    init impl relIn acceptRejectOracleRel rbrKnowledgeError
+
+variable {init impl} in
+/-- Worst-case-per-prefix round-by-round knowledge soundness of an oracle proof implies the
+prover-averaged `OracleProof.rbrKnowledgeSoundness`, with the same error. -/
+theorem rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness
+    {relIn : Set ((Statement × ∀ i, OStatement i) × Witness)}
+    {verifier : OracleProofVerifier oSpec Statement OStatement pSpec}
+    {rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0}
+    (h : rbrKnowledgeSoundnessWorstCase init impl relIn verifier rbrKnowledgeError) :
+    rbrKnowledgeSoundness init impl relIn verifier rbrKnowledgeError :=
+  Verifier.rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness init impl h
+
 end OracleProof
 
 section Trivial

@@ -24,7 +24,8 @@ completeness, round-by-round and coordinate-wise special soundness arguments can
   check; `IsGuarded.of_isPure` is the pure case.
 * `Verifier.GuardedForm`: guardedness with its check and verdict map as **data**, the guarded
   mirror of `Verifier.PureForm`. `GuardedForm.isGuarded` forgets back to the class, and
-  `PureForm.toGuardedForm` is the data form of `IsGuarded.of_isPure`.
+  `PureForm.toGuardedForm` is the data form of `IsGuarded.of_isPure`, and `GuardedForm.ofEq`
+  transports guardedness data along an equality of verifiers.
 * `Verifier.GuardedForm.append`: closure of guardedness data under `Verifier.append`, with
   composite check `check₁ s tr.fst && check₂ (out₁ s tr.fst) tr.snd`; `Verifier.IsGuarded.append`
   is the forgetful corollary.
@@ -95,6 +96,16 @@ def PureForm.toGuardedForm {V : Verifier oSpec StmtIn StmtOut pSpec} (P : V.Pure
   check := fun _ _ => true
   out := P.verify
   verify_eq := fun stmt tr => by rw [P.verify_eq stmt tr]; simp
+
+/-- Transport a guarded form along an equality of verifiers. The check and verdict map are kept
+as they are; only the run equation is rewritten. This is how a guarded form built for one
+presentation of a verifier serves another, such as the `Verifier.append` of two converted oracle
+verifiers serving the converted `OracleVerifier.append` (`OracleVerifier.append_toVerifier`). -/
+def GuardedForm.ofEq {V V' : Verifier oSpec StmtIn StmtOut pSpec} (h : V = V')
+    (G : V.GuardedForm) : V'.GuardedForm where
+  check := G.check
+  out := G.out
+  verify_eq := h ▸ G.verify_eq
 
 section GuardedFormAppend
 

@@ -159,22 +159,39 @@ Lagrange interpolation needs the opening algebra to be a field.
     `FullRingSwitching.fullOracleReduction_perfectCompleteness` are proved through the
     guarded-verifier composition theorems. The full reduction's completeness is stated at the
     strict relations (`AbstractOStmtIn.strictView`, honest compatibility).
-  - Composed knowledge soundness, **unconditional**: the core interaction
-    (`SumcheckPhase.coreInteraction_rbrKnowledgeSoundnessWorstCase`) and batching followed by it
-    (`FullRingSwitching.batchingCore_rbrKnowledgeSoundnessWorstCase`) compose the phase theorems
-    through the guarded worst-case composition theorems
+  - Composed knowledge soundness, sorry-free and axiom-clean under the stated hypotheses: the core
+    interaction (`SumcheckPhase.coreInteraction_rbrKnowledgeSoundnessWorstCase`) and batching
+    followed by it (`FullRingSwitching.batchingCore_rbrKnowledgeSoundnessWorstCase`) compose the
+    phase theorems through the guarded worst-case composition theorems
     (`Verifier.append_rbrKnowledgeSoundnessWorstCaseWith_of_guarded_first`,
     `Verifier.seqCompose_rbrKnowledgeSoundnessWorstCase_of_guarded`, and their `OracleVerifier`
-    wrappers). They are sorry-free and axiom-clean under the same hypotheses; the averaged
+    wrappers). Each verifier is guarded by its own checks (`SumcheckPhase.sumcheckLoopGuardedForm`,
+    `SumcheckPhase.coreInteractionGuardedForm`, `FullRingSwitching.batchingCoreGuardedForm`,
+    transported to the converted oracle verifiers by `Verifier.GuardedForm.ofEq`). The averaged
     `coreInteraction_rbrKnowledgeSoundness` and `batchingCore_rbrKnowledgeSoundness` are
     corollaries.
-  - Composed knowledge soundness, **conditional on the opening**:
-    `FullRingSwitching.fullOracleVerifier_rbrKnowledgeSoundness` appends the downstream opening,
-    whose `MLIOPCS.rbrKnowledgeSoundness` contract is averaged, so it applies the admitted
+  - The full composite, sorry-free and axiom-clean **given a worst-case opening**:
+    `FullRingSwitching.fullOracleVerifier_rbrKnowledgeSoundnessWorstCase` additionally takes
+    `hPCS : mlIOPCS.RbrKnowledgeSoundWorstCase`, which says the downstream opening's verifier is
+    worst-case round-by-round knowledge sound (`OracleProof.rbrKnowledgeSoundnessWorstCase`) at the
+    relation and error of its averaged field. Its averaged form is
+    `FullRingSwitching.fullOracleVerifier_rbrKnowledgeSoundness_of_worst_case`. The hypotheses
+    hold together: `ArkLibTest/ProofSystem/RingSwitching/Conformance/BiniusComposition.lean`
+    (`full_concrete`) closes the composite at the GF(4)/GF(2) fixture with the zero-round opening
+    of `Conformance/DirectOpening.lean`, which reads the polynomial from its oracle.
+    `MLIOPCS.RbrKnowledgeSoundWorstCase` is a hypothesis on an `MLIOPCS`, not a replacement of its
+    averaged `rbrKnowledgeSoundness` field: worst-case implies averaged
+    (`OracleProof.rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness`, which also fills
+    the averaged field of an instance that proves the worst-case form). The implication runs in
+    one direction only (the note on the worst-case-per-prefix variants in
+    `OracleReduction/Security/RoundByRound.lean`), so an opening whose knowledge soundness depends
+    on averaging is still an `MLIOPCS`.
+  - The full composite **under a plain `MLIOPCS`** stays conditional:
+    `FullRingSwitching.fullOracleVerifier_rbrKnowledgeSoundness` uses only the averaged
+    `MLIOPCS.rbrKnowledgeSoundness` contract, so it applies the admitted
     `OracleVerifier.append_rbrKnowledgeSoundness`. That contract's statement is flagged as not
     derivable from its hypotheses (`Composition/Sequential/Append/Security.lean`), so this is
-    unverified statement debt. It becomes unconditional once a worst-case extension of `MLIOPCS`
-    supplies a worst-case contract for the opening.
+    unverified statement debt.
   - Still conditional elsewhere, on other admitted lemmas: scalar (non-round-by-round) knowledge
     soundness of any composite would go through the admitted
     `Verifier.rbrKnowledgeSoundness_implies_knowledgeSoundness` (`Security/Implications.lean`).
