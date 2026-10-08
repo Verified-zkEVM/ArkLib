@@ -373,28 +373,6 @@ lemma iterated_fold_congr_steps_index
   subst h_steps_eq_steps'; rfl
 
 omit [CharP L 2] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero ℓ] in
-private lemma fold_congr_source_dest_index
-    {i i' destIdx destIdx' : Fin r}
-    (hi : i = i')
-    (hd : destIdx = destIdx')
-    (h_destIdx : destIdx = i.val + 1)
-    (h_destIdx' : destIdx' = i'.val + 1)
-    (h_destIdx_le : destIdx ≤ ℓ)
-    (h_destIdx_le' : destIdx' ≤ ℓ)
-    (f : sDomain 𝔽q β h_ℓ_add_R_rate (i := i) → L)
-    (r_chal : L) :
-    fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (i := i) (destIdx := destIdx) h_destIdx h_destIdx_le f r_chal =
-    cast (congrArg (fun idx => sDomain 𝔽q β h_ℓ_add_R_rate (i := idx) → L) hd).symm
-      (fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-        (i := i') (destIdx := destIdx') h_destIdx' h_destIdx_le'
-        (cast (congrArg (fun idx => sDomain 𝔽q β h_ℓ_add_R_rate (i := idx) → L) hi) f)
-        r_chal) := by
-  subst hi
-  subst hd
-  simp only [cast_eq]
-
-omit [CharP L 2] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero ℓ] in
 /-- Transitivity of iterated_fold : folding for `steps₁` and then for `steps₂`
 equals folding for `steps₁ + steps₂` with concatenated challenges.
 -/
@@ -742,22 +720,6 @@ def single_point_localized_fold_matrix_form (i : Fin r) {destIdx : Fin r} (steps
     -- Matrix-vector multiplication : challenge_vec^T • (fold_mat • fiber_eval_mapping)
     let intermediate_fn := Matrix.mulVec fold_mat fiber_eval_mapping -- rhs Mat-Vec mul
     exact dotProduct challenge_vec intermediate_fn -- vec-vec dot product
-
-omit [CharP L 2] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero ℓ] in
-lemma single_point_localized_fold_matrix_form_congr_source_index
-    {i i' : Fin r} (h : i = i')
-    (steps : ℕ) {destIdx : Fin r}
-    (h_destIdx : destIdx = i.val + steps)
-    (h_destIdx' : destIdx = i'.val + steps)
-    (h_destIdx_le : destIdx ≤ ℓ)
-    (r_challenges : Fin steps → L)
-    (y : sDomain 𝔽q β h_ℓ_add_R_rate (i := destIdx))
-    (fiber_eval_mapping : Fin (2 ^ steps) → L) :
-  single_point_localized_fold_matrix_form 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-    i steps h_destIdx h_destIdx_le r_challenges y fiber_eval_mapping =
-  single_point_localized_fold_matrix_form 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-    i' steps h_destIdx' h_destIdx_le r_challenges y fiber_eval_mapping := by
-  subst h; rfl
 
 omit [CharP L 2] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero ℓ] in
 lemma single_point_localized_fold_matrix_form_congr_dest_index

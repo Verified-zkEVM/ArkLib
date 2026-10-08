@@ -490,19 +490,6 @@ lemma qMap_total_fiber_congr_steps
   subst h_steps_eq; rfl
 
 omit [CharP L 2] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero ℓ] in
-lemma qMap_total_fiber_congr_source
-    {sourceIdx₁ sourceIdx₂ : Fin r} (steps : ℕ) {destIdx : Fin r}
-    (h_sourceIdx_eq : sourceIdx₁ = sourceIdx₂)
-    (h_destIdx : destIdx = sourceIdx₁.val + steps)
-    (h_destIdx_le : destIdx ≤ ℓ)
-    (y : sDomain 𝔽q β h_ℓ_add_R_rate (i := destIdx)) :
-    qMap_total_fiber 𝔽q β (i := sourceIdx₁) (steps := steps) (h_destIdx := h_destIdx)
-      (h_destIdx_le := h_destIdx_le) (y := y) =
-    cast (by subst h_sourceIdx_eq; rfl) (qMap_total_fiber 𝔽q β (i := sourceIdx₂)
-      (steps := steps) (h_destIdx := by omega) (h_destIdx_le := h_destIdx_le) (y := y)) := by
-  subst h_sourceIdx_eq; rfl
-
-omit [CharP L 2] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero ℓ] in
 lemma qMap_total_fiber_congr_source_apply
     {sourceIdx₁ sourceIdx₂ : Fin r} (steps : ℕ) {destIdx : Fin r}
     (h_sourceIdx_eq : sourceIdx₁ = sourceIdx₂)
@@ -514,20 +501,6 @@ lemma qMap_total_fiber_congr_source_apply
     cast (by subst h_sourceIdx_eq; rfl) (qMap_total_fiber 𝔽q β (i := sourceIdx₂)
       (steps := steps) (h_destIdx := by omega) (h_destIdx_le := h_destIdx_le) (y := y) x) := by
   subst h_sourceIdx_eq; rfl
-
-omit [CharP L 2] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero ℓ] in
-lemma qMap_total_fiber_congr_dest
-    {sourceIdx : Fin r} (steps : ℕ) {destIdx₁ destIdx₂ : Fin r}
-    (h_destIdx_congr : destIdx₁ = destIdx₂)
-    (h_destIdx : destIdx₁ = sourceIdx.val + steps)
-    (h_destIdx_le : destIdx₁ ≤ ℓ)
-    (y : sDomain 𝔽q β h_ℓ_add_R_rate (i := destIdx₁)) :
-    qMap_total_fiber 𝔽q β (i := sourceIdx) (steps := steps) (destIdx := destIdx₁)
-      (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) (y := y) =
-    qMap_total_fiber 𝔽q β (i := sourceIdx)
-      (steps := steps) (destIdx := destIdx₂) (h_destIdx := by omega) (h_destIdx_le := by omega)
-      (y := cast (by subst h_destIdx_congr; rfl) y) := by
-  subst h_destIdx_congr; rfl
 
 /- TODO : state that the fiber of y is the set of all 2 ^ steps points in the
 larger domain S⁽ⁱ⁾ that get mapped to y by the series of quotient maps q⁽ⁱ⁾, ..., q⁽ⁱ⁺steps⁻¹⁾. -/

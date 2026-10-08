@@ -747,12 +747,6 @@ def dummyLastWitness :
   f := fun _ => 0
 }
 
-/-- The initial statement for the commitment phase contains the evaluation claim s = t(r) -/
-structure MLPEvalStatement (L : Type) (ℓ : ℕ) where
-  -- Original evaluation claim: s = t(r)
-  t_eval_point : Fin ℓ → L         -- r = (r_0, ..., r_{ℓ-1}) => shared input
-  original_claim : L               -- s = t(r) => the original claim to verify
-
 section SnocOracleHelpers
 /-- Helper lemma: If it is not a commitment round, the oracle count does not increase,
     so an index `j` cannot exist in the range `[old_count, new_count)`. -/

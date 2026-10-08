@@ -299,9 +299,6 @@ instance instOracleInterfaceMessagePSpecFold :
   ∀ j, OracleInterface ((pSpecFold (L:=L)).Message j) :=
   fun _ => OracleInterface.instDefault
 
-instance : ∀ j, OracleInterface ((pSpecFold (L := L)).Challenge j) :=
-  ProtocolSpec.challengeOracleInterface
-
 instance : ∀ j, OracleInterface ((pSpecRelay).Message j)
   | ⟨x, h⟩ => by exact x.elim0
 
@@ -327,10 +324,6 @@ example (i : Fin ℓ)
     @OracleInterface.answer _
       (instOracleInterfaceMessagePSpecCommit 𝔽q β
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) ⟨0, rfl⟩) f x = f x := rfl
-
-instance {i : Fin ℓ} : ∀ j, OracleInterface
-  ((pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).Challenge j) :=
-  ProtocolSpec.challengeOracleInterface
 
 instance : ∀ j, OracleInterface ((pSpecRelay).Message j)
   | ⟨x, hj⟩ => by exact x.elim0
@@ -381,23 +374,6 @@ instance : ∀ i, OracleInterface ((pSpecCoreInteraction 𝔽q β (ϑ:=ϑ)
 instance : ∀ i, OracleInterface ((pSpecQuery 𝔽q β γ_repetitions
   (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Message i) := fun _ => OracleInterface.instDefault
 
-instance : ∀ i, OracleInterface ((pSpecQuery 𝔽q β γ_repetitions
-  (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenge i) :=
-  ProtocolSpec.challengeOracleInterface
-
-instance : ∀ i, Fintype ((pSpecQuery 𝔽q β γ_repetitions
-  (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenge i)
-  -- Direct term (not a tactic proof) so `instance ⟨0, rfl⟩` is *definitionally* the `Fin γ → …`
-  -- instance — lets the round-reducer's `$ᵗ (Challenge ⟨0,_⟩)` unify cheaply with a doom bound's
-  -- `$ᵗ (Fin γ_repetitions → sDomain …)`; a tactic proof introduces casts that obstruct defeq.
-  | ⟨0, _⟩ => inferInstanceAs (Fintype (Fin γ_repetitions → sDomain 𝔽q β h_ℓ_add_R_rate 0))
-
-instance : ∀ i, Inhabited ((pSpecQuery 𝔽q β γ_repetitions
-  (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenge i)
-  | ⟨0, _⟩ => by
-      change Inhabited (Fin γ_repetitions → sDomain 𝔽q β h_ℓ_add_R_rate 0)
-      exact ⟨fun _ => 0⟩
-
 instance : ∀ j, OracleInterface ((fullPSpec 𝔽q β γ_repetitions (ϑ:=ϑ)
   (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Message j) := instOracleInterfaceMessageAppend
 
@@ -411,13 +387,6 @@ instance instOracleStatementBinaryBasefold {i : Fin (ℓ + 1)} :
     toOC.spec := fun _ => L
     toOC.impl := fun queryPoint => do return (← read) queryPoint
   }
-
-omit [CharP L 2] [SampleableType L] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero 𝓡] hdiv in
-@[simp]
-lemma instOracleStatementBinaryBasefold_heq_of_fin_eq {i₁ i₂ : Fin (ℓ + 1)} (h : i₁ = i₂) :
-    HEq (instOracleStatementBinaryBasefold 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i₁))
-      (instOracleStatementBinaryBasefold 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-        (i := i₂)) := by subst h; rfl
 
 /-! ## SampleableType instances -/
 

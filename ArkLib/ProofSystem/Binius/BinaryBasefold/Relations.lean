@@ -245,24 +245,6 @@ def witnessStructuralInvariant {i : Fin (ℓ + 1)} (stmt : Statement (L := L) Co
 -- Basefold sums over the uniform domain `SumcheckDomain.uniform 𝓑`.
 export Sumcheck.Structured (sumcheckConsistencyProp)
 
-omit [CharP L 2] [DecidableEq 𝔽q] in
-lemma firstOracleWitnessConsistencyProp_unique (t₁ t₂ : MultilinearPoly L ℓ)
-    (f₀ : sDomain 𝔽q β h_ℓ_add_R_rate 0 → L)
-    (h₁ : firstOracleWitnessConsistencyProp 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) t₁ f₀)
-    (h₂ : firstOracleWitnessConsistencyProp 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) t₂ f₀) :
-    t₁ = t₂ := by
-  classical
-  have h₁_some :
-      extractMLP 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) 0 f₀ = some t₁ :=
-    (extractMLP_eq_some_iff_pair_UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (f := f₀) (tpoly := t₁)).2 h₁
-  have h₂_some :
-      extractMLP 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) 0 f₀ = some t₂ :=
-    (extractMLP_eq_some_iff_pair_UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (f := f₀) (tpoly := t₂)).2 h₂
-  rw [h₁_some] at h₂_some
-  injection h₂_some
-
 noncomputable def foldingBadEventAtBlock
     (stmtIdx : Fin (ℓ + 1)) (oracleIdx : OracleFrontierIndex stmtIdx)
     (oStmt : ∀ j, (OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ)
@@ -286,44 +268,6 @@ noncomputable def foldingBadEventAtBlock
         exact hj
       ))
   else False
-
-omit [CharP L 2] [DecidableEq 𝔽q] in
-lemma foldingBadEventAtBlock_snoc_castSucc_eq (i : Fin ℓ)
-    (oStmt : ∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (ϑ := ϑ) (i := i.castSucc) j)
-    (challenges : Fin i.castSucc → L) (r_new : L)
-    (j : Fin (toOutCodewordsCount ℓ ϑ i.castSucc))
-    (hj_le : j.val * ϑ + ϑ ≤ i.castSucc.val) :
-    foldingBadEventAtBlock 𝔽q β (stmtIdx := i.succ)
-      (oracleIdx := OracleFrontierIndex.mkFromStmtIdxCastSuccOfSucc i)
-      (oStmt := oStmt)
-      (challenges := Fin.snoc challenges r_new) j =
-    foldingBadEventAtBlock 𝔽q β (stmtIdx := i.castSucc)
-      (oracleIdx := OracleFrontierIndex.mkFromStmtIdx i.castSucc)
-      (oStmt := oStmt)
-      (challenges := challenges) j := by
-  unfold foldingBadEventAtBlock
-  simp only [OracleFrontierIndex.val_mkFromStmtIdxCastSuccOfSucc,
-    Fin.val_castSucc, OracleFrontierIndex.val_mkFromStmtIdx,
-    Fin.val_succ]
-  have h_guard_succ : oraclePositionToDomainIndex (positionIdx := j) + ϑ ≤ i.val + 1 := by
-    simp only [Fin.val_castSucc] at ⊢ hj_le
-    omega
-  have h_guard_cast : oraclePositionToDomainIndex (positionIdx := j) + ϑ ≤ i.val := by
-    simp only [Fin.val_castSucc] at ⊢ hj_le
-    omega
-  simp only [h_guard_succ, h_guard_cast, ↓reduceDIte]
-  congr 1
-  unfold getFoldingChallenges
-  ext cId
-  simp only [Fin.snoc]
-  split
-  · rfl
-  · exfalso
-    rename_i h_lt
-    simp only [not_lt] at h_lt
-    simp only at h_guard_cast
-    omega
 
 attribute [irreducible] foldingBadEventAtBlock
 
