@@ -618,6 +618,11 @@ home_page/            site assets and assembled website root
   `CoordinateWiseSpecialSoundness.lean` re-exports the core files.
 - Active areas are often grouped by paper or protocol family, for example
   `Data/CodingTheory/ProximityGap/BCIKS20/...` or `ProofSystem/Binius/...`.
+- `ProofSystem/Binius/` currently holds the Binary Basefold foundations (`BinaryBasefold/`:
+  `Prelude`, `SoundnessTools`, `Basic`, `Spec`) and the FRI-Binius prelude
+  (`FRIBinius/Prelude.lean`: `biniusProfile`, `BinaryBasefoldAbstractOStmtIn`). The Binary
+  Basefold steps, core interaction, query phase and full protocol, and the FRI-Binius core
+  interaction and full protocol, are retired pending the port of #383 (tracking issue #1286).
 - The ABF26 Section 6 toy IOP lives under `ProofSystem/ToyProblem/`. `Spec/` contains the
   domain-generic protocol and extraction theorems, `Impl/IRS.lean` supplies the computable
   interleaved Reed--Solomon extractor, `Impl/FRS.lean` contains neutral KoalaBear folded-RS
@@ -713,7 +718,7 @@ home_page/            site assets and assembled website root
   (`fullOracleVerifier_rbrKnowledgeSoundness`) is conditional on the admitted
   `OracleVerifier.append_rbrKnowledgeSoundness`, whose statement is flagged as not derivable from
   its hypotheses. Binius
-  instantiates the construction in `ProofSystem/Binius/FRIBinius/` (`biniusProfile`). Hachi's §3
+  instantiates the profile in `ProofSystem/Binius/FRIBinius/Prelude.lean` (`biniusProfile`). Hachi's §3
   trace head has carrier `L` itself, so it has its own algebraic interface rather than a
   `Profile` instance.
   `Lift/` is the **generic HMZ25 lift** (large quotient ring →

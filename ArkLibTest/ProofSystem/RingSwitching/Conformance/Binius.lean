@@ -4,7 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
 
-import ArkLib.ProofSystem.Binius.FRIBinius.General
+import ArkLib.ProofSystem.Binius.FRIBinius.Prelude
+import ArkLib.ProofSystem.RingSwitching.Packing.BatchingPhase
 import ArkLibTest.ProofSystem.RingSwitching.Packing.Orientation
 
 /-!
@@ -288,7 +289,7 @@ end SharedLayer
 
 section Binius
 
-open Binius.FRIBinius Binius.FRIBinius.FullFRIBinius
+open Binius.FRIBinius
 
 variable (κ : ℕ) [NeZero κ]
   (L : Type) [Field L] [Fintype L] [DecidableEq L]
