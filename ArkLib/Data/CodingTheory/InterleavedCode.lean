@@ -554,6 +554,29 @@ lemma minRelHammingDistCode_moduleInterleavedCode
     rw [← h1, ← h2, hmd]
   exact_mod_cast hq
 
+/-- With a single row (`κ = Fin 1`), the Hamming distance of two interleaved words is the
+Hamming distance of their rows. -/
+lemma hammingDist_fin_one {A ι : Type*} [Fintype ι] [DecidableEq A] [DecidableEq (Fin 1 → A)]
+    {u v : ι → Fin 1 → A} :
+    hammingDist u v = hammingDist (fun y => u y 0) (fun y => v y 0) := by
+  convert (hammingDist_comp (fun _ (w : Fin 1 → A) => w 0)
+    (fun _ => (Equiv.funUnique (Fin 1) A).injective)).symm
+
+/-- With a single row (`κ = Fin 1`), the distance from an interleaved word to the interleaved
+code of `C` is the distance from its row to `C`. -/
+lemma distFromCode_interleavedCodeSet_fin_one {A ι : Type*} [Fintype ι] [DecidableEq A]
+    [DecidableEq (Fin 1 → A)] (u : ι → Fin 1 → A) (C : Set (ι → A)) :
+    Δ₀(u, interleavedCodeSet (κ := Fin 1) C) = Δ₀((fun y => u y 0), C) := by
+  classical
+  simp only [distFromCode]
+  congr 1; ext d; simp only [Set.mem_ofPred_eq]; constructor
+  · rintro ⟨v, hv_mem, hv_dist⟩
+    refine ⟨fun y => v y 0, hv_mem 0, ?_⟩
+    rwa [← hammingDist_fin_one (u := u) (v := v)]
+  · rintro ⟨w, hw_mem, hw_dist⟩
+    refine ⟨fun y _ => w y, fun k => by rwa [show k = 0 from Subsingleton.elim k 0], ?_⟩
+    rwa [hammingDist_fin_one (A := A) (u := u) (v := fun y _ => w y)]
+
 section Finrank
 
 /-! ### Structure and dimension of an interleaved module code -/

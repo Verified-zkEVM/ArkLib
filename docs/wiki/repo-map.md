@@ -627,9 +627,14 @@ home_page/            site assets and assembled website root
   index arithmetic and protocol data, `Relations` the round relations (incremental bad events;
   strict relations for completeness) and `Spec` the protocol specifications. The sum-check
   parameter, projections, statements and consistency predicate are the shared
-  `Sumcheck.Structured` ones, re-exported. The Binary Basefold steps, core interaction, query
-  phase and full protocol, and the FRI-Binius core interaction and full protocol, are retired
-  pending the rest of the port (tracking issue #1286).
+  `Sumcheck.Structured` ones, re-exported. `Soundness/` holds the fold-step soundness
+  mathematics: `Lift` the tensor-combine word stack of a block and its lift ([DP24] Lemma 4.22)
+  and `Incremental` the per-challenge bound on the incremental folding bad event
+  (`prob_incrementalFoldingBadEvent_fresh_le`, the one-challenge refinement of [DP24]
+  Proposition 4.21). The generic even/odd split lemmas it uses live in
+  `Data/CodingTheory/ProximityGap/DG25/Basic.lean`. The Binary Basefold steps, core interaction,
+  query phase and full protocol, and the FRI-Binius core interaction and full protocol, are
+  retired pending the rest of the port (tracking issue #1286).
 - The ABF26 Section 6 toy IOP lives under `ProofSystem/ToyProblem/`. `Spec/` contains the
   domain-generic protocol and extraction theorems, `Impl/IRS.lean` supplies the computable
   interleaved Reed--Solomon extractor, `Impl/FRS.lean` contains neutral KoalaBear folded-RS

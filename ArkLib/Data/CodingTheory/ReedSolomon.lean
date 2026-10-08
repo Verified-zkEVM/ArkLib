@@ -440,6 +440,12 @@ theorem code_Nontrivial [Field F] [nz : NeZero n] [Inhabited ι] {α : ι ↪ F}
     evalOnPoints_mem_code_of_natDegree_lt (natDegree_one.trans_lt (Nat.pos_of_ne_zero nz.out)),
     fun contra ↦ zero_ne_one ((congrFun contra default).trans (eval_one (x := α default)))⟩
 
+/-- A Reed–Solomon code of positive dimension over a nonempty domain has a nonzero codeword. -/
+instance instNontrivial [Field F] [NeZero n] [Nonempty ι] {α : ι ↪ F} :
+    Nontrivial (ReedSolomon.code α n) := by
+  inhabit ι
+  exact Set.nontrivial_coe_sort.2 code_Nontrivial
+
 @[simp]
 theorem minDist_n_0 [Fintype ι] [Field F] [DecidableEq F] {α : ι ↪ F} :
     minDist (ReedSolomon.code α 0 : Set (ι → F)) = 0 := by simp [minDist]
