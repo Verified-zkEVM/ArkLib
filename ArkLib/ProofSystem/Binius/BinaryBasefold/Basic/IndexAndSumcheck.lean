@@ -11,9 +11,8 @@ public import ArkLib.ProofSystem.Sumcheck.Structured
 /-!
 # Binary Basefold index arithmetic
 
-Oracle-frontier indices and the index bounds of the block structure. The sum-check multiplier
-parameter and the round-polynomial projections are the structured sum-check's
-(`Sumcheck.Structured`), re-exported here.
+Oracle-frontier indices and the index bounds of the block structure. The round-polynomial
+projections are the structured sum-check's (`Sumcheck.Structured`), re-exported here.
 -/
 
 @[expose] public section
@@ -649,12 +648,12 @@ lemma val_mkFromStmtIdxCastSuccOfSucc_eq_mkFromStmtIdx {ℓ : ℕ} (i : Fin ℓ)
 
 end OracleFrontierIndex
 
--- The sum-check multiplier parameter and the round-polynomial projections are the structured
--- sum-check's (`ArkLib.ProofSystem.Sumcheck.Structured`). Binary Basefold uses the identity
--- combinator: its round polynomial is `multpoly ctx · t` (`projectToMidSumcheckPoly`), so only the
--- `multpoly` field of a `SumcheckMultiplierParam` enters its relations.
-export Sumcheck.Structured (SumcheckMultiplierParam computeInitialSumcheckPoly
-  projectToMidSumcheckPoly projectToNextSumcheckPoly)
+-- The round-polynomial projections are the structured sum-check's
+-- (`ArkLib.ProofSystem.Sumcheck.Structured`). Binary Basefold is the `P · t` sum-check: its
+-- relations take the multiplier `P` as a function `Context → MultilinearPoly L ℓ` (the type of
+-- `SumcheckMultiplierParam.multpoly`) and use the identity-combinator projections.
+export Sumcheck.Structured (computeInitialSumcheckPoly projectToMidSumcheckPoly
+  projectToNextSumcheckPoly)
 
 
 end Binius.BinaryBasefold

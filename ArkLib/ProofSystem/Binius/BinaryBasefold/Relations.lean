@@ -107,13 +107,10 @@ def oracleFoldingConsistencyProp (i : Fin (ℓ + 1)) (challenges : Fin i → L)
 def BBF_eq_multiplier (r : Fin ℓ → L) : MultilinearPoly L ℓ :=
   ⟨MvPolynomial.eqPolynomial r, by simp only [eqPolynomial_mem_restrictDegree]⟩
 
-/-- The Binary Basefold multiplier parameter: the multiplier is `eq(r, X)` at the evaluation point
-`r` of the context, with the identity combinator `X`, so the round polynomial is `eq(r, X) · t`. -/
-def BBF_SumcheckMultiplierParam : SumcheckMultiplierParam L ℓ (SumcheckBaseContext L ℓ) where
-  multpoly ctx := BBF_eq_multiplier ctx.t_eval_point
-  combinator _ := Polynomial.X
-  degCombinator := 1
-  combinator_natDegree_le _ := Polynomial.natDegree_X_le
+/-- The Binary Basefold multiplier: `eq(r, X)` at the evaluation point `r` of the context, so that
+the sum-check round polynomial is `eq(r, X) · t`. -/
+def BBF_multiplier (ctx : SumcheckBaseContext L ℓ) : MultilinearPoly L ℓ :=
+  BBF_eq_multiplier ctx.t_eval_point
 
 /-- This condition ensures that the folding witness `f` is properly generated from `t` -/
 def getMidCodewords {i : Fin (ℓ + 1)} (t : L⦃≤ 1⦄[X Fin ℓ])
@@ -155,7 +152,7 @@ lemma getMidCodewords_succ (t : L⦃≤ 1⦄[X Fin ℓ]) (i : Fin ℓ)
   exact h_trans
 
 section FoldStepLogic
-variable {Context : Type} {mp : SumcheckMultiplierParam L ℓ Context}
+variable {Context : Type} {multpoly : Context → MultilinearPoly L ℓ}
 
 def foldPrvState (i : Fin ℓ) : Fin (2 + 1) → Type := fun
   | ⟨0, _⟩ => (Statement (L := L) Context i.castSucc ×
@@ -230,14 +227,14 @@ def foldVerifierStmtOut (i : Fin ℓ)
 end FoldStepLogic
 
 section SumcheckContextIncluded_Relations
-variable {Context : Type} {mp : SumcheckMultiplierParam L ℓ Context}
+variable {Context : Type} {multpoly : Context → MultilinearPoly L ℓ}
 
-/-- This condition ensures that the witness polynomial `H` has the
-correct structure `eq(...) * t(...)`. At the commitment steps (in commitment rounds),
-wit.f is exactly the same as the last oracle being sent. -/
+/-- The witness is structured: its round polynomial `H` is `multpoly ctx · t` with the statement's
+challenges substituted for the first variables (the `P · t` sum-check, `projectToMidSumcheckPoly`),
+and its folded word `f` is the honest fold of `t`'s codeword by those challenges. -/
 def witnessStructuralInvariant {i : Fin (ℓ + 1)} (stmt : Statement (L := L) Context i)
     (wit : Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) : Prop :=
-  wit.H = projectToMidSumcheckPoly ℓ wit.t (m:=mp.multpoly stmt.ctx) i stmt.challenges ∧
+  wit.H = projectToMidSumcheckPoly ℓ wit.t (m := multpoly stmt.ctx) i stmt.challenges ∧
   wit.f = getMidCodewords 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) wit.t
     stmt.challenges
 
@@ -488,7 +485,7 @@ def badSumcheckEventProp (r_i' : L) (h_i h_star : L⦃≤ 2⦄[X]) :=
 section SingleStepRelationPreservationLemmas
 
 section FoldStepPreservationLemmas
-variable {Context : Type} {mp : SumcheckMultiplierParam L ℓ Context}
+variable {Context : Type} {multpoly : Context → MultilinearPoly L ℓ}
 
 end FoldStepPreservationLemmas
 
@@ -645,7 +642,7 @@ def masterKStateProp (stmtIdx : Fin (ℓ + 1))
     (oStmt : ∀ j, (OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ
       (i := oracleIdx.val) j))
     (localChecks : Prop := True) : Prop :=
-  let structural := witnessStructuralInvariant 𝔽q β (mp := mp)
+  let structural := witnessStructuralInvariant 𝔽q β (multpoly := multpoly)
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate) stmt wit
   let initial := firstOracleWitnessConsistencyProp 𝔽q β wit.t (getFirstOracle 𝔽q β oStmt)
   let oracleFoldingConsistency: Prop := oracleFoldingConsistencyProp 𝔽q β (i := oracleIdx.val)
@@ -666,7 +663,7 @@ def roundRelationProp (i : Fin (ℓ + 1))
   let wit := input.2
   let sumCheckConsistency: Prop :=
     sumcheckConsistencyProp (SumcheckDomain.uniform 𝓑 _) stmt.sumcheck_target wit.H
-  masterKStateProp (mp := mp) 𝔽q β
+  masterKStateProp (multpoly := multpoly) 𝔽q β
     (stmtIdx := i) (oracleIdx := OracleFrontierIndex.mkFromStmtIdx i) stmt wit oStmt
     (localChecks := sumCheckConsistency)
 
@@ -680,7 +677,7 @@ def foldStepRelOutProp (i : Fin ℓ)
   let wit := input.2
   let sumCheckConsistency: Prop :=
     sumcheckConsistencyProp (SumcheckDomain.uniform 𝓑 _) stmt.sumcheck_target wit.H
-  masterKStateProp (mp := mp) 𝔽q β
+  masterKStateProp (multpoly := multpoly) 𝔽q β
     (stmtIdx := i.succ) (oracleIdx := OracleFrontierIndex.mkFromStmtIdxCastSuccOfSucc i)
     stmt wit oStmt
       (localChecks := sumCheckConsistency)
@@ -746,13 +743,13 @@ def foldStepRelOut (i : Fin ℓ) :
     Set ((Statement (L := L) Context i.succ ×
       (∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i.castSucc j)) ×
       Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ) :=
-  { input | foldStepRelOutProp (mp := mp) (𝓑 := 𝓑) 𝔽q β i input}
+  { input | foldStepRelOutProp (multpoly := multpoly) (𝓑 := 𝓑) 𝔽q β i input}
 
 def roundRelation (i : Fin (ℓ + 1)) :
     Set ((Statement (L := L) Context i ×
       (∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i j)) ×
       Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) :=
-  { input | roundRelationProp (mp := mp) (𝓑 := 𝓑) 𝔽q β i input}
+  { input | roundRelationProp (multpoly := multpoly) (𝓑 := 𝓑) 𝔽q β i input}
 
 /-- Relation for final sumcheck step -/
 def finalSumcheckRelOutProp
@@ -795,8 +792,9 @@ def strictOracleWitnessConsistency
     (wit : Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) stmtIdx)
     (oStmt : ∀ j, (OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       ϑ (i := oracleIdx.val) j)) : Prop :=
-  let witnessStructuralInvariant: Prop := witnessStructuralInvariant (i:=stmtIdx) 𝔽q β (mp := mp)
-    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) stmt wit
+  let witnessStructuralInvariant: Prop :=
+    witnessStructuralInvariant (i:=stmtIdx) 𝔽q β (multpoly := multpoly)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) stmt wit
   let strictOracleFoldingConsistency: Prop := strictOracleFoldingConsistencyProp 𝔽q β
     (t := wit.t) (i := oracleIdx.val)
     (challenges := Fin.take (m := oracleIdx.val) (v := stmt.challenges)
@@ -813,8 +811,9 @@ def strictRoundRelationProp (i : Fin (ℓ + 1))
   let wit := input.2
   let sumCheckConsistency: Prop :=
     sumcheckConsistencyProp (SumcheckDomain.uniform 𝓑 _) stmt.sumcheck_target wit.H
-  let strictOracleWitnessConsistency: Prop := strictOracleWitnessConsistency 𝔽q β (mp := mp)
-    (stmtIdx := i) (oracleIdx := OracleFrontierIndex.mkFromStmtIdx i) stmt wit oStmt
+  let strictOracleWitnessConsistency: Prop :=
+    strictOracleWitnessConsistency 𝔽q β (multpoly := multpoly)
+      (stmtIdx := i) (oracleIdx := OracleFrontierIndex.mkFromStmtIdx i) stmt wit oStmt
   sumCheckConsistency ∧ strictOracleWitnessConsistency
 
 def strictFoldStepRelOutProp (i : Fin ℓ)
@@ -826,9 +825,10 @@ def strictFoldStepRelOutProp (i : Fin ℓ)
   let wit := input.2
   let sumCheckConsistency: Prop :=
     sumcheckConsistencyProp (SumcheckDomain.uniform 𝓑 _) stmt.sumcheck_target wit.H
-  let strictOracleWitnessConsistency: Prop := strictOracleWitnessConsistency 𝔽q β (mp := mp)
-    (stmtIdx := i.succ) (oracleIdx := OracleFrontierIndex.mkFromStmtIdxCastSuccOfSucc i)
-    stmt wit oStmt
+  let strictOracleWitnessConsistency: Prop :=
+    strictOracleWitnessConsistency 𝔽q β (multpoly := multpoly)
+      (stmtIdx := i.succ) (oracleIdx := OracleFrontierIndex.mkFromStmtIdxCastSuccOfSucc i)
+      stmt wit oStmt
   sumCheckConsistency ∧ strictOracleWitnessConsistency
 
 def strictfinalSumcheckStepFoldingStateProp (t : MultilinearPoly L ℓ) {h_le : ϑ ≤ ℓ}
@@ -870,13 +870,13 @@ def strictRoundRelation (i : Fin (ℓ + 1)) :
     Set ((Statement (L := L) Context i ×
       (∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i j)) ×
       Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) :=
-  { input | strictRoundRelationProp (mp := mp) (𝓑 := 𝓑) 𝔽q β i input}
+  { input | strictRoundRelationProp (multpoly := multpoly) (𝓑 := 𝓑) 𝔽q β i input}
 
 def strictFoldStepRelOut (i : Fin ℓ) :
     Set ((Statement (L := L) Context i.succ ×
         (∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i.castSucc j)) ×
       Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ) :=
-  { input | strictFoldStepRelOutProp (mp := mp) (𝓑 := 𝓑) 𝔽q β i input}
+  { input | strictFoldStepRelOutProp (multpoly := multpoly) (𝓑 := 𝓑) 𝔽q β i input}
 
 def strictFinalSumcheckRelOutProp
     (input : ((FinalSumcheckStatementOut (L := L) (ℓ := ℓ) ×
