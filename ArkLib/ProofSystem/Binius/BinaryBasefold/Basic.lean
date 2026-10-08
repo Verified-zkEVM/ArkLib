@@ -48,20 +48,9 @@ section OracleReductionComponents
 Basic structures and definitions used throughout the Binary Basefold protocol.
 -/
 
-/-- Input context for the sumcheck protocol, used mainly in BinaryBasefold.
-For other protocols, there might be other context data.
-NOTE: might add a flag `rejected` to indicate if prover has been rejected before. But that seems
-like a fundamental feature of OracleReduction instead, so no action taken for now. -/
-structure SumcheckBaseContext (L : Type) (ℓ : ℕ) where
-  t_eval_point : Fin ℓ → L         -- r = (r_0, ..., r_{ℓ-1}) => shared input
-  original_claim : L               -- s = t(r) => the original claim to verify
-
-/-- Statement per iterated sumcheck round -/
-structure Statement (Context : Type) (i : Fin (ℓ + 1)) where
-  -- Current round state
-  sumcheck_target : L              -- s_i (current sumcheck target for round i)
-  challenges : Fin i → L           -- R'_i = (r'_0, ..., r'_{i-1}) from previous rounds
-  ctx : Context -- external context for composition from the outer protocol
+-- `SumcheckBaseContext` and `Statement` are the structured sum-check's
+-- (`ArkLib.ProofSystem.Sumcheck.Structured`), re-exported under `Binius.BinaryBasefold`.
+export Sumcheck.Structured (SumcheckBaseContext Statement)
 
 /-- Statement for the final sumcheck step - includes the final constant c -/
 structure FinalSumcheckStatementOut extends

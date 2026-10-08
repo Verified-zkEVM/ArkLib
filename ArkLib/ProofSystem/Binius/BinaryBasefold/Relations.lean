@@ -107,8 +107,13 @@ def oracleFoldingConsistencyProp (i : Fin (ℓ + 1)) (challenges : Fin i → L)
 def BBF_eq_multiplier (r : Fin ℓ → L) : MultilinearPoly L ℓ :=
   ⟨MvPolynomial.eqPolynomial r, by simp only [eqPolynomial_mem_restrictDegree]⟩
 
-def BBF_SumcheckMultiplierParam : SumcheckMultiplierParam L ℓ (SumcheckBaseContext L ℓ) :=
-  { multpoly := fun ctx => BBF_eq_multiplier ctx.t_eval_point }
+/-- The Binary Basefold multiplier parameter: the multiplier is `eq(r, X)` at the evaluation point
+`r` of the context, with the identity combinator `X`, so the round polynomial is `eq(r, X) · t`. -/
+def BBF_SumcheckMultiplierParam : SumcheckMultiplierParam L ℓ (SumcheckBaseContext L ℓ) where
+  multpoly ctx := BBF_eq_multiplier ctx.t_eval_point
+  combinator _ := Polynomial.X
+  degCombinator := 1
+  combinator_natDegree_le _ := Polynomial.natDegree_X_le
 
 /-- This condition ensures that the folding witness `f` is properly generated from `t` -/
 def getMidCodewords {i : Fin (ℓ + 1)} (t : L⦃≤ 1⦄[X Fin ℓ])
@@ -202,7 +207,7 @@ noncomputable def getFoldProverFinalOutput (i : Fin ℓ)
 def foldProverComputeMsg (i : Fin ℓ)
     (witIn : Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc) :
     L⦃≤ 2⦄[X] :=
-  getSumcheckRoundPoly ℓ 𝓑 (i := i) witIn.H
+  getSumcheckRoundPoly ℓ (SumcheckDomain.uniform 𝓑 ℓ) (i := i) witIn.H
 
 @[reducible]
 def foldVerifierCheck (i : Fin ℓ)
@@ -236,9 +241,9 @@ def witnessStructuralInvariant {i : Fin (ℓ + 1)} (stmt : Statement (L := L) Co
   wit.f = getMidCodewords 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) wit.t
     stmt.challenges
 
-/-- Sumcheck consistency: the claimed sum equals the actual polynomial evaluation sum -/
-def sumcheckConsistencyProp {k : ℕ} (sumcheckTarget : L) (H : L⦃≤ 2⦄[X Fin (k)]) : Prop :=
-  sumcheckTarget = ∑ x ∈ (univ.map 𝓑) ^ᶠ (k), H.val.eval x
+-- `sumcheckConsistencyProp` is the structured sum-check's, over a `SumcheckDomain`; Binary
+-- Basefold sums over the uniform domain `SumcheckDomain.uniform 𝓑`.
+export Sumcheck.Structured (sumcheckConsistencyProp)
 
 omit [CharP L 2] [DecidableEq 𝔽q] in
 lemma firstOracleWitnessConsistencyProp_unique (t₁ t₂ : MultilinearPoly L ℓ)
@@ -715,7 +720,8 @@ def roundRelationProp (i : Fin (ℓ + 1))
   let stmt := input.1.1
   let oStmt := input.1.2
   let wit := input.2
-  let sumCheckConsistency: Prop := sumcheckConsistencyProp (𝓑 := 𝓑) stmt.sumcheck_target wit.H
+  let sumCheckConsistency: Prop :=
+    sumcheckConsistencyProp (SumcheckDomain.uniform 𝓑 _) stmt.sumcheck_target wit.H
   masterKStateProp (mp := mp) 𝔽q β
     (stmtIdx := i) (oracleIdx := OracleFrontierIndex.mkFromStmtIdx i) stmt wit oStmt
     (localChecks := sumCheckConsistency)
@@ -728,7 +734,8 @@ def foldStepRelOutProp (i : Fin ℓ)
   let stmt := input.1.1
   let oStmt := input.1.2
   let wit := input.2
-  let sumCheckConsistency: Prop := sumcheckConsistencyProp (𝓑 := 𝓑) stmt.sumcheck_target wit.H
+  let sumCheckConsistency: Prop :=
+    sumcheckConsistencyProp (SumcheckDomain.uniform 𝓑 _) stmt.sumcheck_target wit.H
   masterKStateProp (mp := mp) 𝔽q β
     (stmtIdx := i.succ) (oracleIdx := OracleFrontierIndex.mkFromStmtIdxCastSuccOfSucc i)
     stmt wit oStmt
@@ -860,7 +867,8 @@ def strictRoundRelationProp (i : Fin (ℓ + 1))
   let stmt := input.1.1
   let oStmt := input.1.2
   let wit := input.2
-  let sumCheckConsistency: Prop := sumcheckConsistencyProp (𝓑 := 𝓑) stmt.sumcheck_target wit.H
+  let sumCheckConsistency: Prop :=
+    sumcheckConsistencyProp (SumcheckDomain.uniform 𝓑 _) stmt.sumcheck_target wit.H
   let strictOracleWitnessConsistency: Prop := strictOracleWitnessConsistency 𝔽q β (mp := mp)
     (stmtIdx := i) (oracleIdx := OracleFrontierIndex.mkFromStmtIdx i) stmt wit oStmt
   sumCheckConsistency ∧ strictOracleWitnessConsistency
@@ -872,7 +880,8 @@ def strictFoldStepRelOutProp (i : Fin ℓ)
   let stmt := input.1.1
   let oStmt := input.1.2
   let wit := input.2
-  let sumCheckConsistency: Prop := sumcheckConsistencyProp (𝓑 := 𝓑) stmt.sumcheck_target wit.H
+  let sumCheckConsistency: Prop :=
+    sumcheckConsistencyProp (SumcheckDomain.uniform 𝓑 _) stmt.sumcheck_target wit.H
   let strictOracleWitnessConsistency: Prop := strictOracleWitnessConsistency 𝔽q β (mp := mp)
     (stmtIdx := i.succ) (oracleIdx := OracleFrontierIndex.mkFromStmtIdxCastSuccOfSucc i)
     stmt wit oStmt
