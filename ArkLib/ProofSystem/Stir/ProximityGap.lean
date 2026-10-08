@@ -34,20 +34,29 @@ namespace STIR
     with fewer queries*][ACFY24stir]
 -/
 
-/-- Theorem 4.1[BCIKS20] from [ACFY24stir]
-  Let `C = RS[F, ι, degree]` be a ReedSolomon code with rate `degree / |ι|`
-  and let Bstar(ρ) = √ρ. For all `δ ∈ (0, 1 - Bstar(ρ))`, `f₁,...,fₘ : ι → F`, if
-  `Pr{r ← F}[δᵣ(rⱼ * fⱼ, C) ≤ δ] > err'(degree, ρ, δ, m)`
-  then ∃ S ⊆ ι, |S| ≥ (1 - δ) * |ι| and
-  ∀ i : m, ∃ u : C, u(S) = fᵢ(S) -/
+/-- Theorem 4.1 of [ACFY24stir] (due to [BCIKS20]): taking the powers of a uniform `r ∈ F` as
+  coefficients, the random linear combination is a proximity generator for `RS[F, ι, degree]`.
+
+  Let `C = RS[F, ι, degree]`, with `0 < degree`, have rate `ρ = degree / |ι|` and let
+  `B⋆(ρ) = √ρ`. For every
+  `δ ∈ (0, 1 - B⋆(ρ))` and `f₀, …, f_{m-1} : ι → F`, if
+  `Pr_{r ← F}[δᵣ(∑ⱼ rʲ * fⱼ, C) ≤ δ] > err⋆(degree, ρ, δ, m)`,
+  then there is `S ⊆ ι` with `|S| ≥ (1 - δ) * |ι|` such that every `fᵢ` agrees on `S` with some
+  codeword `u ∈ C`.
+
+  The paper numbers the functions from `1` and weights `fⱼ` by `r^{j-1}`; here they are numbered
+  from `0`, so the weight of `fⱼ` is `rʲ`.
+
+  The hypothesis `0 < degree` is implicit in the paper: `err⋆` divides by `ρ`. For `degree = 0`
+  the convention `x / 0 = 0` makes `err⋆` zero and the statement false. -/
 lemma proximity_gap
     {F : Type} [Field F] [Fintype F] [DecidableEq F] [SampleableType F]
   {ι : Type} [Fintype ι] [Nonempty ι] {φ : ι ↪ F}
-  {degree m : ℕ} {δ : ℝ≥0} {f : Fin m → ι → F} {GenFun : F → Fin m → F}
-  (hδPos : 0 < δ)
+  {degree m : ℕ} {δ : ℝ≥0} {f : Fin m → ι → F}
+  (hdegPos : 0 < degree) (hδPos : 0 < δ)
   (hδLt : δ < 1 - Bstar (LinearCode.rate (code φ degree)))
   (hProb :
-    Pr{let r ← $ᵗ F}[δᵣ((fun x => ∑ j : Fin m, (GenFun r j) * f j x), code φ degree) ≤ δ] >
+    Pr{let r ← $ᵗ F}[δᵣ((fun x => ∑ j : Fin m, r ^ (j : ℕ) * f j x), code φ degree) ≤ δ] >
       ENNReal.ofReal (proximityError F degree (LinearCode.rate (code φ degree)) δ m)) :
   ∃ S : Finset ι,
     S.card ≥ (1 - δ) * (Fintype.card ι) ∧
