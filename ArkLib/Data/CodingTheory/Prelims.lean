@@ -28,6 +28,30 @@ def multilinearWeight {ϑ : ℕ} (r : Fin ϑ → F) (i : Fin (2 ^ ϑ)) : F :=
   ∏ j : Fin ϑ,
     if i.val.testBit j.val then (r j) else (1 - r j)
 
+omit [Fintype F] [DecidableEq F] in
+/-- For an index `i < 2 ^ n` in the lower half, the weight of `r : Fin (n + 1) → F` is the weight
+of `i` at `Fin.init r` times `1 - r (Fin.last n)`, since bit `n` of `i` is `0`. -/
+lemma multilinearWeight_succ_lower_half {n : ℕ} (r : Fin (n + 1) → F) (i : Fin (2 ^ (n + 1)))
+    (h_lt : i.val < 2 ^ n) :
+    multilinearWeight r i =
+      multilinearWeight (Fin.init r) ⟨i.val, h_lt⟩ * (1 - r (Fin.last n)) := by
+  simp only [multilinearWeight, Fin.prod_univ_castSucc, Fin.val_castSucc, Fin.val_last,
+    Nat.testBit_lt_two_pow h_lt, Bool.false_eq_true, ↓reduceIte, Fin.init]
+
+omit [Fintype F] [DecidableEq F] in
+/-- For an index `i = j + 2 ^ n` in the upper half, the weight of `r : Fin (n + 1) → F` is the
+weight of `j` at `Fin.init r` times `r (Fin.last n)`, since bit `n` of `i` is `1`. -/
+lemma multilinearWeight_succ_upper_half {n : ℕ} (r : Fin (n + 1) → F) (i : Fin (2 ^ (n + 1)))
+    (j : Fin (2 ^ n)) (h_eq : i.val = j.val + 2 ^ n) :
+    multilinearWeight r i = multilinearWeight (Fin.init r) j * r (Fin.last n) := by
+  have h_top : i.val.testBit n = true := by
+    rw [h_eq, Nat.add_comm, Nat.testBit_two_pow_add_eq, Nat.testBit_lt_two_pow j.isLt,
+      Bool.not_false]
+  have h_low : ∀ k : Fin n, i.val.testBit k.val = j.val.testBit k.val := fun k => by
+    rw [h_eq, Nat.add_comm, Nat.testBit_two_pow_add_gt k.isLt]
+  simp only [multilinearWeight, Fin.prod_univ_castSucc, Fin.val_castSucc, Fin.val_last, h_top,
+    ↓reduceIte, h_low, Fin.init]
+
 /-- Linear combination of the rows of `u` according to the tensor product of `r`:
 `[tensor_product r i] ·|u₀|`
                       `|u₁|`

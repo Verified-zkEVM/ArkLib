@@ -904,6 +904,7 @@ public import ArkLib.ToMathlib.LinearAlgebra.Matrix.InvertibleCombination
 public import ArkLib.ToMathlib.LinearAlgebra.Matrix.PrimitiveKernel
 public import ArkLib.ToMathlib.LinearAlgebra.Matrix.Rank
 public import ArkLib.ToMathlib.LinearAlgebra.Matrix.RowBasis
+public import ArkLib.ToMathlib.LinearAlgebra.Matrix.SchurComplement
 public import ArkLib.ToMathlib.LinearAlgebra.Matrix.SupportedRows
 public import ArkLib.ToMathlib.LinearAlgebra.PolynomialKernelHeight
 public import ArkLib.ToMathlib.LinearAlgebra.ShiftedPolynomialKernelHeight
