@@ -678,6 +678,7 @@ public import ArkLib.Interaction.Oracle.FiatShamir.LegacyExecution
 public import ArkLib.Interaction.Oracle.FiatShamir.LegacyFragment
 public import ArkLib.Interaction.Oracle.FiatShamir.LegacyKeys
 public import ArkLib.Interaction.Oracle.FiatShamir.LegacyQueryBound
+public import ArkLib.Interaction.Oracle.FiatShamir.LegacyStoppedConnection
 public import ArkLib.Interaction.Oracle.FiatShamir.PublicExecutionCorrespondence
 public import ArkLib.Interaction.Oracle.FiatShamir.PublicMessage
 public import ArkLib.Interaction.Oracle.FiatShamir.PublicStopped
