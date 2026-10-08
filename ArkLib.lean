@@ -692,6 +692,8 @@ public import ArkLib.Interaction.Oracle.Security.StateRestorationOracle
 public import ArkLib.Interaction.Oracle.Security.StateRestorationRandomized
 public import ArkLib.Interaction.Oracle.Security.StateRestorationRandomizedKnowledge
 public import ArkLib.Interaction.Oracle.Security.StateRestorationReplay
+public import ArkLib.Interaction.Oracle.Security.StateRestorationStopped
+public import ArkLib.Interaction.Oracle.Security.StateRestorationStoppedBudget
 public import ArkLib.Interaction.Oracle.Sequential
 public import ArkLib.Interaction.Oracle.Source
 public import ArkLib.Interaction.Oracle.SourceRouting
@@ -846,6 +848,7 @@ public import ArkLib.ProofSystem.Sumcheck.Interaction.Soundness
 public import ArkLib.ProofSystem.Sumcheck.Interaction.StateRestorationCertificate
 public import ArkLib.ProofSystem.Sumcheck.Interaction.StateRestorationEvaluation
 public import ArkLib.ProofSystem.Sumcheck.Interaction.StateRestorationSoundness
+public import ArkLib.ProofSystem.Sumcheck.Interaction.StoppedSoundness
 public import ArkLib.ProofSystem.Sumcheck.Spec.General
 public import ArkLib.ProofSystem.Sumcheck.Spec.SingleRound
 public import ArkLib.ProofSystem.Sumcheck.Structured
