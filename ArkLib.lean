@@ -679,6 +679,10 @@ public import ArkLib.Interaction.Oracle.Resource
 public import ArkLib.Interaction.Oracle.RunSources
 public import ArkLib.Interaction.Oracle.Runtime
 public import ArkLib.Interaction.Oracle.RuntimeSoundness
+public import ArkLib.Interaction.Oracle.Security.EncodedCodec
+public import ArkLib.Interaction.Oracle.Security.EncodedLog
+public import ArkLib.Interaction.Oracle.Security.EncodedReduction
+public import ArkLib.Interaction.Oracle.Security.EncodedWeighted
 public import ArkLib.Interaction.Oracle.Security.Knowledge
 public import ArkLib.Interaction.Oracle.Security.KnowledgeAppend
 public import ArkLib.Interaction.Oracle.Security.KnowledgeComposition
