@@ -17,6 +17,7 @@ public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.UniqueDe
 public import Mathlib.LinearAlgebra.AffineSpace.AffineSubspace.Defs
 public import ArkLib.Data.Probability.Instances
 public import ArkLib.Data.CodingTheory.Prelims
+public import ArkLib.ToMathlib.BigOperators.Fin
 public import Mathlib.Algebra.Lie.OfAssociative
 public import Mathlib.Data.Finset.BooleanAlgebra
 public import Mathlib.Basic.Real.Basic
@@ -202,6 +203,14 @@ lemma eq_splitHalf_iff_merge_eq {ϑ : ℕ}
         Fin.eta] at res
       exact res
 
+/-- Split a stack of `2 ^ (ϑ + 1)` rows into its even-indexed rows `u (2 * j)` and its
+odd-indexed rows `u (2 * j + 1)`. Folding a multilinear combination along its first challenge
+pairs exactly these two halves (`multilinearCombine_recursive_form_first`), whereas
+`splitHalfRowWiseInterleavedWords` pairs the halves of the last challenge. -/
+def splitEvenOddRowWiseInterleavedWords {ϑ : ℕ} (u : Fin (2 ^ (ϑ + 1)) → ι → A) :
+    (Fin (2 ^ ϑ) → ι → A) × (Fin (2 ^ ϑ) → ι → A) :=
+  (fun j => u ⟨2 * j.val, by omega⟩, fun j => u ⟨2 * j.val + 1, by omega⟩)
+
 -- Preserve the public `Matrix` aliases for interleaved words. Lean v4.33 otherwise refuses
 -- to unfold them while matching the proof's implicit word types.
 set_option backward.isDefEq.respectTransparency false in
@@ -276,6 +285,107 @@ theorem CA_split_rowwise_implies_CA
           finMapTwoWords]
         rw! [Nat.sub_add_cancel (h := by omega)]
         rfl
+
+omit [Nonempty ι] [DecidableEq ι] [Fintype A] [AddCommMonoid A] [Fintype F] [SampleableType F] in
+/-- The even/odd analogue of `CA_split_rowwise_implies_CA`: if the interleaved pair formed by
+the even-indexed and the odd-indexed rows of `u` is `e`-close to `C ^⋈ Fin (2 ^ ϑ)`, then `u`
+is `e`-close to `C ^⋈ Fin (2 ^ (ϑ + 1))`. -/
+theorem jointProximityNat_of_jointProximityNat₂_splitEvenOdd
+    {ϑ : ℕ} (u : WordStack A (Fin (2 ^ (ϑ + 1))) ι) (e : ℕ) :
+    let U₀ : WordStack A (Fin (2 ^ ϑ)) ι := (splitEvenOddRowWiseInterleavedWords (ϑ := ϑ) u).1
+    let U₁ : WordStack A (Fin (2 ^ ϑ)) ι := (splitEvenOddRowWiseInterleavedWords (ϑ := ϑ) u).2
+    jointProximityNat₂ (u₀ := ⋈|U₀) (u₁ := ⋈|U₁) (e := e) (C := C ^⋈ (Fin (2 ^ ϑ)))
+      → jointProximityNat (u := u) (e := e) (C := C) := by
+  classical
+  intro U₀ U₁ h_close
+  unfold jointProximityNat₂ jointProximityNat at h_close
+  simp only at h_close
+  replace h_close := (Code.closeToCode_iff_closeToCodeword_of_minDist ..).1 h_close
+  rcases h_close with ⟨vSplit, hvSplit_mem, hvSplit_dist_le_e⟩
+  replace hvSplit_dist_le_e :=
+    (closeToWord_iff_exists_possibleDisagreeCols ..).1 hvSplit_dist_le_e
+  rcases hvSplit_dist_le_e with ⟨D, hD_card_le_e, h_agree_outside_D⟩
+  unfold jointProximityNat
+  rw [Code.closeToCode_iff_closeToCodeword_of_minDist
+    (u := ⋈|u) (e := e) (C := interleavedCodeSet (κ := Fin (2 ^ (ϑ + 1))) C)]
+  let VSplit_rowwise := Matrix.transpose vSplit
+  let VSplit_even_rowwise := Matrix.transpose (VSplit_rowwise 0)
+  let VSplit_odd_rowwise := Matrix.transpose (VSplit_rowwise 1)
+  let v_rowwise_finmap : WordStack A (Fin (2 ^ (ϑ + 1))) ι := fun rowIdx =>
+    if h_even : rowIdx.val % 2 = 0 then
+      VSplit_even_rowwise ⟨rowIdx.val / 2, by omega⟩
+    else
+      VSplit_odd_rowwise ⟨rowIdx.val / 2, by omega⟩
+  let v_IC := ⋈|v_rowwise_finmap
+  use v_IC
+  constructor
+  · intro rowIdx
+    have h_vSplit_rows_mem : ∀ (i : Fin 2) (j : Fin (2 ^ ϑ)), (fun col ↦ vSplit col i j) ∈ C := by
+      intro i j
+      exact hvSplit_mem i j
+    dsimp only [v_IC]
+    by_cases h_even : rowIdx.val % 2 = 0
+    · let j : Fin (2 ^ ϑ) := ⟨rowIdx.val / 2, by omega⟩
+      have hRes := h_vSplit_rows_mem 0 j
+      change (fun col => v_rowwise_finmap rowIdx col) ∈ C
+      have h_fun : (fun col => v_rowwise_finmap rowIdx col) = fun col => vSplit col 0 j := by
+        funext col
+        dsimp [v_rowwise_finmap, VSplit_even_rowwise, VSplit_rowwise, j]
+        rw [dite_eq_left h_even]
+        rfl
+      rw [h_fun]
+      exact hRes
+    · let j : Fin (2 ^ ϑ) := ⟨rowIdx.val / 2, by omega⟩
+      have hRes := h_vSplit_rows_mem 1 j
+      change (fun col => v_rowwise_finmap rowIdx col) ∈ C
+      have h_fun : (fun col => v_rowwise_finmap rowIdx col) = fun col => vSplit col 1 j := by
+        funext col
+        dsimp [v_rowwise_finmap, VSplit_odd_rowwise, VSplit_rowwise, j]
+        rw [dite_eq_right h_even]
+        rfl
+      rw [h_fun]
+      exact hRes
+  · refine (closeToWord_iff_exists_possibleDisagreeCols _ _ _).2 ⟨D, hD_card_le_e, ?_⟩
+    intro colIdx h_colIdx_notin_D
+    funext rowIdx
+    dsimp only [v_IC]
+    have hRes0 :
+        interleaveWordStack
+            ((splitEvenOddRowWiseInterleavedWords (ϑ := ϑ) u).1)
+            colIdx
+          = vSplit colIdx 0 := by
+      exact congrFun (h_agree_outside_D colIdx h_colIdx_notin_D) 0
+    have hRes1 :
+        interleaveWordStack
+            ((splitEvenOddRowWiseInterleavedWords (ϑ := ϑ) u).2)
+            colIdx
+          = vSplit colIdx 1 := by
+      exact congrFun (h_agree_outside_D colIdx h_colIdx_notin_D) 1
+    by_cases h_even : rowIdx.val % 2 = 0
+    · have h_row_val : rowIdx.val = 2 * (rowIdx.val / 2) := by
+        have h_divmod := Nat.mod_add_div rowIdx.val 2
+        omega
+      have h_row_eq :
+          (⟨2 * (rowIdx.val / 2), by omega⟩ : Fin (2 ^ (ϑ + 1))) = rowIdx := by
+        apply Fin.eq_of_val_eq
+        exact h_row_val.symm
+      have hRes₀ := congrFun hRes0 ⟨rowIdx.val / 2, by omega⟩
+      dsimp [splitEvenOddRowWiseInterleavedWords] at hRes₀
+      change u rowIdx colIdx = v_rowwise_finmap rowIdx colIdx
+      simpa [v_rowwise_finmap, h_even, VSplit_even_rowwise, VSplit_rowwise,
+        Matrix.transpose, h_row_eq] using hRes₀
+    · have h_row_val : rowIdx.val = 2 * (rowIdx.val / 2) + 1 := by
+        have h_divmod := Nat.mod_add_div rowIdx.val 2
+        omega
+      have h_row_eq :
+          (⟨2 * (rowIdx.val / 2) + 1, by omega⟩ : Fin (2 ^ (ϑ + 1))) = rowIdx := by
+        apply Fin.eq_of_val_eq
+        exact h_row_val.symm
+      have hRes₁ := congrFun hRes1 ⟨rowIdx.val / 2, by omega⟩
+      dsimp [splitEvenOddRowWiseInterleavedWords] at hRes₁
+      change u rowIdx colIdx = v_rowwise_finmap rowIdx colIdx
+      simpa [v_rowwise_finmap, h_even, VSplit_odd_rowwise, VSplit_rowwise,
+        Matrix.transpose, h_row_eq] using hRes₁
 
 omit [Fintype ι] [DecidableEq ι] [Nonempty ι] [Fintype A] [DecidableEq A] [Fintype F] in
 omit [SampleableType F] in
@@ -358,6 +468,132 @@ lemma multilinearCombine_recursive_form
     simp only [h_x_ne_ϑ, ↓reduceIte, Nat.xor_zero]
     rfl
   rw [h_tensor_split_0, h_tensor_split_1]
+
+omit [Fintype ι] [DecidableEq ι] [Nonempty ι] [Fintype A] [DecidableEq A] [Fintype F] in
+omit [SampleableType F] in
+/-- The first-challenge analogue of `multilinearCombine_recursive_form`: a multilinear
+combination over `2 ^ (ϑ + 1)` rows is the multilinear combination, over the remaining
+challenges, of the affine line through the even- and the odd-indexed rows at the first
+challenge. -/
+lemma multilinearCombine_recursive_form_first {ϑ : ℕ}
+    (u : WordStack A (Fin (2 ^ (ϑ + 1))) ι) (r_challenges : Fin (ϑ + 1) → F) :
+    let U_even := (splitEvenOddRowWiseInterleavedWords (ϑ := ϑ) u).1
+    let U_odd := (splitEvenOddRowWiseInterleavedWords (ϑ := ϑ) u).2
+    let r_tail : Fin ϑ → F := fun j => r_challenges (Fin.succ j)
+    multilinearCombine (F := F) u r_challenges =
+    multilinearCombine (F := F)
+      (affineLineEvaluation (F := F) U_even U_odd (r_challenges 0)) r_tail := by
+  intro U_even U_odd r_tail
+  funext colIdx
+  unfold multilinearCombine
+  let f : ℕ → A := fun j =>
+    if hj : j < 2 ^ (ϑ + 1) then
+      multilinearWeight r_challenges ⟨j, hj⟩ • u ⟨j, hj⟩ colIdx
+    else 0
+  have h_lhs_as_f :
+      (∑ rowIdx : Fin (2 ^ (ϑ + 1)),
+        multilinearWeight r_challenges rowIdx • u rowIdx colIdx)
+      = ∑ rowIdx : Fin (2 ^ (ϑ + 1)), f rowIdx := by
+    apply Finset.sum_congr rfl
+    intro rowIdx _
+    simp [f]
+  rw [h_lhs_as_f]
+  rw [show ∑ x : Fin (2 ^ (ϑ + 1)), f x =
+      ∑ x : Fin (2 ^ ϑ), f (2 * x) + ∑ x : Fin (2 ^ ϑ), f (2 * x + 1) by
+    rw [pow_succ]; exact (Fin.sum_even_add_odd _ f).symm]
+  simp only [f]
+  simp only [U_even, U_odd, splitEvenOddRowWiseInterleavedWords]
+  have h_tensor_even : ∀ i : Fin (2 ^ ϑ),
+      multilinearWeight r_challenges ⟨2 * i, by omega⟩ =
+      multilinearWeight r_tail i * (1 - r_challenges 0) := by
+    intro i
+    unfold multilinearWeight
+    rw [Fin.prod_univ_succ]
+    have h_bit0 : (2 * i.val).testBit 0 = false := by
+      rw [Nat.testBit_false_eq_getBit_eq_0]
+      exact Nat.getBit_zero_of_two_mul (n := i.val)
+    have h_bit0' : (2 * i.val).testBit (↑(0 : Fin (ϑ + 1))) = false := by
+      change (2 * i.val).testBit 0 = false
+      exact h_bit0
+    have h_prod :
+        (∏ x : Fin ϑ,
+          if (2 * i.val).testBit x.succ = true then r_challenges x.succ
+          else 1 - r_challenges x.succ)
+        = ∏ j : Fin ϑ, if i.val.testBit j.val = true then r_tail j else 1 - r_tail j := by
+      apply Finset.prod_congr rfl
+      intro j _
+      have h_test :
+          ((2 * i.val).testBit (↑j.succ) = true) = (i.val.testBit j.val = true) := by
+        rw [Nat.testBit_true_eq_getBit_eq_1, Nat.testBit_true_eq_getBit_eq_1]
+        have h_getBit :
+            Nat.getBit (j.val + 1) (2 * i.val) = Nat.getBit j.val i.val := by
+          exact Nat.getBit_eq_succ_getBit_of_mul_two (n := i.val) (k := j.val)
+        change (Nat.getBit (j.val + 1) (2 * i.val) = 1) = (Nat.getBit j.val i.val = 1)
+        exact congrArg (fun t : ℕ => t = 1) h_getBit
+      have h_succ : (↑j.succ : ℕ) = ↑j + 1 := by simp [Fin.succ]
+      have h_test' :
+          ((2 * i.val).testBit (↑j + 1) = true) = (i.val.testBit j.val = true) := by
+        rw [← h_succ]
+        exact h_test
+      by_cases hcond : (2 * i.val).testBit (↑j + 1) = true
+      · have hcond' : i.val.testBit j.val = true := h_test'.mp hcond
+        simp [hcond, hcond', r_tail]
+      · have hcond' : ¬ i.val.testBit j.val = true := by
+          intro hbit
+          exact hcond (h_test'.mpr hbit)
+        simp [hcond, hcond', r_tail]
+    rw [h_prod]
+    simp
+    ring
+  have h_tensor_odd : ∀ i : Fin (2 ^ ϑ),
+      multilinearWeight r_challenges ⟨2 * i + 1, by omega⟩ =
+      multilinearWeight r_tail i * (r_challenges 0) := by
+    intro i
+    unfold multilinearWeight
+    rw [Fin.prod_univ_succ]
+    have h_bit0 : (2 * i.val + 1).testBit 0 = true := by
+      rw [Nat.testBit_true_eq_getBit_eq_1]
+      unfold Nat.getBit
+      simp [Nat.and_one_is_mod]
+    have h_bit0' : (2 * i.val + 1).testBit (↑(0 : Fin (ϑ + 1))) = true := by
+      change (2 * i.val + 1).testBit 0 = true
+      exact h_bit0
+    have h_prod :
+        (∏ x : Fin ϑ,
+          if (2 * i.val + 1).testBit x.succ = true then r_challenges x.succ
+          else 1 - r_challenges x.succ)
+        = ∏ j : Fin ϑ, if i.val.testBit j.val = true then r_tail j else 1 - r_tail j := by
+      apply Finset.prod_congr rfl
+      intro j _
+      have h_test :
+          ((2 * i.val + 1).testBit (↑j.succ) = true) = (i.val.testBit j.val = true) := by
+        rw [Nat.testBit_true_eq_getBit_eq_1, Nat.testBit_true_eq_getBit_eq_1]
+        have h_test := congrArg (fun t : ℕ => t = 1)
+          (Nat.getBit_eq_succ_getBit_of_mul_two_add_one (n := i.val) (k := j.val))
+        simp only [Fin.succ, Nat.add_comm] at h_test ⊢
+        exact h_test
+      have h_succ : (↑j.succ : ℕ) = ↑j + 1 := by simp [Fin.succ]
+      have h_test' :
+          ((2 * i.val + 1).testBit (↑j + 1) = true) = (i.val.testBit j.val = true) := by
+        rw [← h_succ]
+        exact h_test
+      simp only [Fin.val_succ, h_test', r_tail]
+    rw [h_prod]
+    simp
+    ring
+  simp_rw [h_tensor_even, h_tensor_odd]
+  have h_even_lt : ∀ x : Fin (2 ^ ϑ), 2 * x.val < 2 ^ (ϑ + 1) := by
+    intro x; omega
+  have h_odd_lt : ∀ x : Fin (2 ^ ϑ), 2 * x.val + 1 < 2 ^ (ϑ + 1) := by
+    intro x; omega
+  simp only [h_even_lt, ↓reduceDIte, h_odd_lt]
+  rw [← Finset.sum_add_distrib]
+  apply Finset.sum_congr rfl
+  intro x _
+  rw [affineLineEvaluation, Pi.add_apply, Pi.smul_apply]
+  simp only [Word, Pi.smul_apply, Pi.add_apply, smul_add]
+  rw [←smul_assoc, ←smul_assoc]
+  rw [smul_eq_mul, smul_eq_mul]
 
 omit [Fintype ι] [DecidableEq ι] [Nonempty ι] [Fintype A] [DecidableEq A] [Fintype F] in
 omit [SampleableType F] in
