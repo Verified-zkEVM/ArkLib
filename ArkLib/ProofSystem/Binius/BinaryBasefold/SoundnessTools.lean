@@ -5,7 +5,7 @@ Authors: Chung Thai Nguyen, Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Binius.BinaryBasefold.Prelude
+public import ArkLib.ProofSystem.Binius.BinaryBasefold.Code
 
 /-!
 # Binary Basefold soundness events
