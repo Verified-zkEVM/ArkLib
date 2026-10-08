@@ -206,7 +206,8 @@ Of 464 files, all but a few needed nothing but the header rewrite. The exception
   `ArkLib/ProofSystem/Component/RandomQuery.lean`), a hoisted arity lemma
   (`Prover.append_state_arity` in
   `ArkLib/OracleReduction/Composition/Sequential/Append/Basic.lean`), and hoisted `have`s in
-  `ArkLib/ProofSystem/Binius/BinaryBasefold/Prelude.lean`.
+  `ArkLib/ProofSystem/Binius/BinaryBasefold/Prelude.lean` (since split into `Prelude/` and ported
+  from #383).
 
 ## Where the remaining win is
 
