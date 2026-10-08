@@ -765,11 +765,13 @@ public import ArkLib.ProofSystem.BatchedFri.Security
 public import ArkLib.ProofSystem.BatchedFri.Spec.General
 public import ArkLib.ProofSystem.BatchedFri.Spec.SingleRound
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.Basic
+public import ArkLib.ProofSystem.Binius.BinaryBasefold.Basic.IndexAndSumcheck
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.Code
+public import ArkLib.ProofSystem.Binius.BinaryBasefold.Compliance
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.Prelude
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.Prelude.Fibers
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.Prelude.Folding
-public import ArkLib.ProofSystem.Binius.BinaryBasefold.SoundnessTools
+public import ArkLib.ProofSystem.Binius.BinaryBasefold.Relations
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.Spec
 public import ArkLib.ProofSystem.Binius.FRIBinius.Prelude
 public import ArkLib.ProofSystem.Component.CheckClaim
