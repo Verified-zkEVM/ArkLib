@@ -6,6 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.OracleReduction.Security.RoundByRound
+public import ArkLib.OracleReduction.Security.RbrToSoundness
 public import ArkLib.OracleReduction.Security.StateRestoration
 public import ArkLib.OracleReduction.Salt
 public import ArkLib.OracleReduction.Security.SpecialSoundness
@@ -75,12 +76,20 @@ theorem knowledgeSoundness_implies_soundness
   --     zero_add, ℝ≥0.coe_lt_one_iff, hLt]
 
 /-- Round-by-round soundness with error `rbrSoundnessError` implies soundness with error
-`∑ i, rbrSoundnessError i`, where the sum is over all rounds `i`. -/
-theorem rbrSoundness_implies_soundness (langIn : Set StmtIn) (langOut : Set StmtOut)
+`∑ i, rbrSoundnessError i`, where the sum is over all rounds `i`, WHEN the oracle simulation
+carries no state (`[Subsingleton σ]`). Without that hypothesis the statement is false:
+`StateFunction.toFun_full` is stated from a fresh `init` while the soundness game runs the
+verifier from the state the prover leaves
+(`ArkLib.RbrToSoundness.Counterexample.pin_statement_false`); the general form, under the
+full-transcript clause from every state, is `rbrSoundnessWith_implies_soundness_of_full`
+(`Security/RbrToSoundness.lean`). -/
+theorem rbrSoundness_implies_soundness [Subsingleton σ]
+    (langIn : Set StmtIn) (langOut : Set StmtOut)
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
     (rbrSoundnessError : pSpec.ChallengeIdx → ℝ≥0) :
       rbrSoundness init impl langIn langOut verifier rbrSoundnessError →
-        soundness init impl langIn langOut verifier (∑ i, rbrSoundnessError i) := by sorry
+        soundness init impl langIn langOut verifier (∑ i, rbrSoundnessError i) :=
+  rbrSoundness_implies_soundness_proved init impl langIn langOut verifier rbrSoundnessError
 
 /-- Round-by-round knowledge soundness with error `rbrKnowledgeError` implies round-by-round
 soundness with the same error `rbrKnowledgeError`. -/
