@@ -20,7 +20,6 @@ open Interaction.Oracle Interaction.Oracle.Security Interaction.Oracle.TypeTree
 open Interaction.TwoParty OracleComp OracleSpec PFunctor.FreeM
 
 namespace Interaction.Oracle.Security.KnowledgeCompositionTest
-set_option backward.isDefEq.respectTransparency false
 
 @[instance_reducible] def natInterface : OracleInterface Nat where
   Query := Unit
@@ -220,12 +219,14 @@ def handler : QueryImpl emptySpec ProbComp := fun q => nomatch q
 theorem first_fresh : SamplesChallenges emptySpec handler tree roles oracles initial inputImpl
     _ firstFragment firstCertificate.challenges := by
   intro message after supported
-  simp only [firstFragment, simulateQ_pure, MonadAttach.support_pure,
-    Set.mem_singleton_iff] at supported
+  change after ∈ support (pure (pure ⟨true, ()⟩ :
+    OracleComp (emptySpec + ofPFunctor (Access.extend initial natInterface))
+      ((_ : Bool) × Unit)) : ProbComp _) at supported
+  simp only [MonadAttach.support_pure] at supported
   subst after
   constructor
   · intro event
-    simp only [simulateQ_pure]
+    change Pr{let chosen ← (pure ⟨true, ()⟩ : ProbComp ((_ : Bool) × Unit))}[event chosen.1] = _
     rfl
   · intro chosen supported
     trivial

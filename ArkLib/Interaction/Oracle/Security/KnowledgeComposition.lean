@@ -563,7 +563,6 @@ theorem native_badChallenge_bound {ι : Type} (ambient : OracleSpec ι)
   rw [fresh.1 certificate.extractor.badChallenge]
   exact ((_root_.RoundByRound.GameFamily.isBounded_iff _ _).mp certificate.local_bound.1) () ()
 
-set_option backward.isDefEq.respectTransparency false in
 /-- Replacing a fragment's deterministic leaf preserves all actual challenge marginals. -/
 theorem samplesChallenges_mapOutput {ι : Type} (ambient : OracleSpec ι)
     {m : Type → Type v} [Monad m] [LawfulMonad m] [EvalDistSemantics m]
@@ -591,6 +590,7 @@ theorem samplesChallenges_mapOutput {ι : Type} (ambient : OracleSpec ι)
         (fun p => f ⟨move, p⟩) original (schedule.2 move) (fresh move original horiginal)
   | .public _ next, ⟨.receiver, roles⟩, oracles, initial, impl, A, B, f,
       verifier, schedule, fresh => by
+      change OracleComp (ambient + ofPFunctor initial) _ at verifier
       constructor
       · intro event
         simp only [Verifier.Fragment.mapOutput, ShapeOver.mapOutput,
@@ -607,6 +607,7 @@ theorem samplesChallenges_mapOutput {ι : Type} (ambient : OracleSpec ι)
           (schedule.2 original.1) (fresh.2 original horiginal)
   | .oracle _ next, roles, oracles, initial, impl, A, B, f,
       verifier, schedule, fresh => by
+      change OracleComp (ambient + ofPFunctor (Access.extend initial oracles.1)) _ at verifier
       intro message after supported
       simp only [Verifier.Fragment.mapOutput, ShapeOver.mapOutput,
         Verifier.localShape, Verifier.decorate, simulateQ_map] at supported
@@ -619,7 +620,6 @@ theorem samplesChallenges_mapOutput {ι : Type} (ambient : OracleSpec ι)
         (fun p => f ⟨PUnit.unit, p⟩) original (schedule message)
         (fresh message original horiginal)
 
-set_option backward.isDefEq.respectTransparency false in
 /-- Routing a fragment's declared source preserves its actual fresh challenge laws under the
 composed input handler, including the same concrete messages received after routing. -/
 theorem samplesChallenges_routeFragment {ι : Type} (ambient : OracleSpec ι)
@@ -649,6 +649,7 @@ theorem samplesChallenges_routeFragment {ι : Type} (ambient : OracleSpec ι)
         (schedule.2 move) (fresh move original horiginal)
   | .public _ next, ⟨.receiver, roles⟩, oracles, source, target, route, impl, Leaf,
       verifier, schedule, fresh => by
+      change OracleComp (ambient + ofPFunctor source) _ at verifier
       constructor
       · intro event
         simp only [Verifier.routeFragment, ← map_eq_pure_bind, simulateQ_map,
@@ -664,6 +665,7 @@ theorem samplesChallenges_routeFragment {ι : Type} (ambient : OracleSpec ι)
           original.2 (schedule.2 original.1) (fresh.2 original horiginal)
   | .oracle _ next, roles, oracles, source, target, route, impl, Leaf,
       verifier, schedule, fresh => by
+      change OracleComp (ambient + ofPFunctor (Access.extend source oracles.1)) _ at verifier
       intro message after supported
       simp only [Verifier.routeFragment, ← map_eq_pure_bind, simulateQ_map,
         Verifier.simulateQ_routeProgram, Access.compose_extendRoute] at supported
@@ -738,7 +740,6 @@ theorem samplesChallenges_withLeaf {ι : Type} (ambient : OracleSpec ι)
   samplesChallenges_mapOutput ambient handler tree roles oracles initial impl A B
     (fun path _ => leaf path) verifier schedule fresh
 
-set_option backward.isDefEq.respectTransparency false in
 /-- Native dependent append preserves the components' actual fresh challenge laws. The suffix
 law is required at every authored concrete middle path and its same-path closing handler. -/
 theorem samplesChallenges_append_withLeaf {ι : Type} (ambient : OracleSpec ι)
@@ -797,6 +798,7 @@ theorem samplesChallenges_append_withLeaf {ι : Type} (ambient : OracleSpec ι)
   | .public _ next, suffix, ⟨.receiver, roles⟩, secondRoles, firstOracles, secondOracles,
       initial, impl, A, Mid, Out, leaf, first, second, firstSchedule, secondSchedule,
       fresh, freshSuffix => by
+      change OracleComp (ambient + ofPFunctor initial) _ at first
       constructor
       · intro event
         simp only [Verifier.appendFragment, withLeaf, Verifier.Fragment.mapOutput,
@@ -821,6 +823,7 @@ theorem samplesChallenges_append_withLeaf {ι : Type} (ambient : OracleSpec ι)
   | .oracle _ next, suffix, firstRoles, secondRoles, firstOracles, secondOracles,
       initial, impl, A, Mid, Out, leaf, first, second, firstSchedule, secondSchedule,
       fresh, freshSuffix => by
+      change OracleComp (ambient + ofPFunctor (Access.extend initial firstOracles.1)) _ at first
       intro message after supported
       simp only [Verifier.appendFragment, withLeaf, Verifier.Fragment.mapOutput,
         ShapeOver.mapOutput, Verifier.localShape, Verifier.decorate, simulateQ_map,
