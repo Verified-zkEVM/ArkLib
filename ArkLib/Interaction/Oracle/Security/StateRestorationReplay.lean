@@ -126,7 +126,6 @@ private theorem simulateQ_support_subset {ι κ : Type}
       obtain ⟨response, _, hs⟩ := OracleComp.mem_support_bind_peel _ _ supported
       exact MonadAttach.mem_support_bind.mpr ⟨response, by simp, ih response hs⟩
 
-set_option backward.isDefEq.respectTransparency false in
 /-- Every path in the actual open completion program has exactly the authored oracle messages. -/
 theorem complete_support_matches {Input Salt : Type} (rounds : List Round) (z : Input)
     (messages : Messages Salt rounds) (path : (protocol rounds).tree.ExecutionPath)
@@ -220,7 +219,6 @@ private theorem execute_sourceTerminal {ι : Type} (ambient : OracleSpec ι)
   intro result
   rfl
 
-set_option backward.isDefEq.respectTransparency false in
 /-- The existing paired native runner replays the supplied path when concrete messages match. -/
 private theorem pathReplay_run {ι Salt : Type} (ambient : OracleSpec ι)
     (rounds : List Round) (initial : PFunctor)
@@ -244,8 +242,7 @@ private theorem pathReplay_run {ι Salt : Type} (ambient : OracleSpec ι)
       subst actualMessage
       simp only [messageProver, pathPrograms, challengeFragment,
         protocol, Protocol.oracleWith, Protocol.public,
-        Verifier.toCounterpartValue, Verifier.toCounterpartWith,
-        simulateQ_pure, pure_bind]
+        Verifier.toCounterpartValue, Verifier.toCounterpartWith]
       change TwoParty.run
         (.node round.Message (fun _ => .node round.Challenge
           (fun _ => (protocol rounds).tree.toTypeTree)))

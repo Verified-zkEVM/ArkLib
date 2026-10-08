@@ -236,7 +236,6 @@ def complete {Input Salt : Type} : (rounds : List Round) → Input → Messages 
       let path ← simulateQ (prependQuery message salt) (complete rounds z messages)
       pure ⟨message, ⟨challenge, path⟩⟩
 
-set_option backward.isDefEq.respectTransparency false in
 /-- Completion makes at most one access per protocol round, including repeated cached keys. -/
 theorem complete_queryBound {Input Salt : Type} (rounds : List Round) (z : Input)
     (messages : Messages Salt rounds) :
@@ -257,7 +256,8 @@ theorem complete_queryBound {Input Salt : Type} (rounds : List Round) (z : Input
       have hb := isTotalQueryBound_bind h (fun path => show IsTotalQueryBound
         (pure (⟨message, ⟨challenge, path⟩⟩ : (protocol (round :: rounds)).tree.ExecutionPath) :
           OracleComp (oracleSpec Input Salt (round :: rounds)) _) 0 from trivial)
-      simpa only [Nat.mul_one, Nat.add_zero] using hb
+      simpa only [Nat.mul_one, Nat.add_zero, protocol, Protocol.oracleWith, Protocol.public]
+        using hb
 
 
 /-- The existing native execution path reconstructed from a deterministic challenge table. -/
@@ -276,7 +276,6 @@ def completionKeys {Input Salt : Type} : (rounds : List Round) → Input →
       Key.here z message salt ::
         (completionKeys rounds z messages).map (Key.later message salt)
 
-set_option backward.isDefEq.respectTransparency false in
 /-- Deterministic execution of completion returns exactly the reconstructed native path. -/
 theorem complete_eval {Input Salt : Type} (rounds : List Round) (z : Input)
     (messages : Messages Salt rounds) (table : Table Input Salt rounds) :
@@ -288,22 +287,21 @@ theorem complete_eval {Input Salt : Type} (rounds : List Round) (z : Input)
       rcases messages with ⟨message, salt, messages⟩
       simp only [complete, evalWithAnswerFn_bind, evalWithAnswerFn_liftM_query,
         QueryImpl.ofFn_apply, evalWithAnswerFn_simulateQ, prependQuery,
-        evalWithAnswerFn_pure, completedPath]
+        completedPath]
       exact congrArg (fun path => (⟨message, ⟨table (Key.here z message salt), path⟩⟩ :
           (protocol (round :: rounds)).tree.ExecutionPath))
         (ih messages (fun q => table (Key.later message salt q)))
 
-set_option backward.isDefEq.respectTransparency false in
 /-- The completion-key list is the projection of the actual native oracle query log. -/
 theorem complete_log_keys {Input Salt : Type} (rounds : List Round) (z : Input)
     (messages : Messages Salt rounds) (table : Table Input Salt rounds) :
     (tableQueryLog (complete rounds z messages) table).map Sigma.fst =
       completionKeys rounds z messages := by
   induction rounds with
-  | nil => simp [complete, completionKeys]
+  | nil => simp [complete, completionKeys, protocol, Protocol.done]
   | cons round rounds ih =>
       rcases messages with ⟨message, salt, messages⟩
-      simp only [complete, tableQueryLog_bind,
+      simp only [complete, protocol, Protocol.oracleWith, Protocol.public, tableQueryLog_bind,
         tableQueryLog_pure, List.append_nil, tableQueryLog_simulateQ, prependQuery,
         evalWithAnswerFn_liftM_query, QueryImpl.ofFn_apply, tableQueryLog_query,
         List.singleton_append, List.map_cons, ← List.map_eq_flatMap, List.map_map,
@@ -326,7 +324,6 @@ theorem completionKeys_input {Input Salt : Type} (rounds : List Round) (z : Inpu
       · obtain ⟨q, hq, rfl⟩ := List.mem_map.mp h
         exact ih messages q hq
 
-set_option backward.isDefEq.respectTransparency false in
 /-- A bad challenge on the completed native path is a bad key in its actual completion log. -/
 theorem badChallengeOnPath_completion {Input Salt : Type} {rounds : List Round}
     {state : KnowledgeState.{w}} (extractor : RoundExtractor (protocol rounds).tree state)
@@ -462,7 +459,6 @@ theorem restored_bad_trace {Input Salt W : Type} {rounds : List Round}
     rw [heq, hz]
     exact ⟨bad.1, hb⟩
 
-set_option backward.isDefEq.respectTransparency false in
 /-- All-prefix round-by-round knowledge bounds imply the `(Q + k) * error` extraction bound in
 the actual cached restoration/completion experiment. The input is selected adaptively, the
 terminal witness is supplied by the adversary, and its named carrier map is explicit data. -/

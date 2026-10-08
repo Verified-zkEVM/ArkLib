@@ -17,8 +17,6 @@ open Interaction.Oracle.Security.StateRestoration
 
 namespace Interaction.Oracle.Security.StateRestorationTest
 
-set_option backward.isDefEq.respectTransparency false
-
 @[instance_reducible] def messageInterface : OracleInterface (Fin 8) where
   Query := Unit
   toOC := { spec := fun _ => Fin 8, impl := fun _ message => message }
@@ -230,10 +228,10 @@ theorem oracleOutputLaw (z : Nat) (path : tree.ExecutionPath) (witness : Nat) :
   rcases path with ⟨message, challenge, done⟩
   cases done
   cases challenge
-  · rw [oracleObservation_false]
+  · rw [oracleObservation_false z message]
     change (false = true ∧ witness ≤ message.val) ↔ ∃ claim, none = some claim ∧ _
     simp
-  · rw [oracleObservation_true]
+  · rw [oracleObservation_true z message]
     change (true = true ∧ witness ≤ message.val) ↔
       ∃ claim, some (returnedClaim z message) = some claim ∧
         witness ≤ (claim.oracles ⟨(), ()⟩).val
