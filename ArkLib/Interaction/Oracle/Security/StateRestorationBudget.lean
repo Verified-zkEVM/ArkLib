@@ -158,14 +158,13 @@ theorem roundCost_prependQuery {Input Salt A : Type} {round : Round} {rounds : L
   rw [costDist_prependQuery] at supported
   exact bounded result (simulateQ_support_subset _ _ supported)
 
-set_option backward.isDefEq.respectTransparency false in
 /-- Completion pays one round error per actual access, hence the sum of the round-error vector. -/
 theorem complete_round_cost {Input Salt : Type} (rounds : List Round) (errors : RoundErrors rounds)
     (z : Input) (messages : Messages Salt rounds) :
     WorstCaseCostBound (complete rounds z messages)
       (⟨keyError errors⟩ : CostModel (oracleSpec Input Salt rounds) ENNReal) (∑ j, errors j) := by
   induction rounds with
-  | nil => simp [complete, worstCaseCostBound_pure]
+  | nil => simp [complete, protocol, Protocol.done]
   | cons round rounds ih =>
       rcases messages with ⟨message, salt, messages⟩
       simp only [complete, List.length_cons]
