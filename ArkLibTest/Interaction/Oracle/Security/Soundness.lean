@@ -35,11 +35,11 @@ def verifier : Verifier.Strategy ambient protocol.tree protocol.roles protocol.o
 
 def inputImpl : QueryImpl (ofPFunctor (0 : PFunctor)) Id := fun q => nomatch q
 
-set_option backward.isDefEq.respectTransparency false in
 example : simulateQ handler prover =
     (failure : OptionT ProbComp ((_move : Unit) ×
       Prover.Strategy ambient TypeTree.done PUnit.unit (fun _ => Unit))) := by
   simp [prover, handler, simulateQ_bind, QueryImpl.add]
+  rfl
 
 set_option backward.isDefEq.respectTransparency false in
 example : Pr{let _ ← (simulateQ handler (executeStrategies ambient protocol.tree protocol.roles

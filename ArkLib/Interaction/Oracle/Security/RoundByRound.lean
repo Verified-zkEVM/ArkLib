@@ -205,7 +205,6 @@ def FreshVerifier {protocol : Protocol} (model : ChallengeModel protocol)
           (fun path => OutV ⟨PUnit.unit, path⟩) next
           (fun pfx => embed (ExecutionPrefix.prependOracle message pfx))
 
-set_option backward.isDefEq.respectTransparency false in
 /-- Transport the same actual native verifier through an all-authored prefix map.
 
 The map preserves verifier roles, fresh event marginals, and concrete challenge extensions.

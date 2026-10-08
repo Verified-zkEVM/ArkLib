@@ -114,7 +114,6 @@ private theorem prefixData_comp {tree : TypeTree} (observer : TranscriptObserver
   unfold prefixData ExecutionPrefix.comp Cursor.comp
   rw [restrictObserver_comp]
 
-set_option backward.isDefEq.respectTransparency false in
 private def transcriptObserver : (count start : ℕ) → (finish : start + count = n) →
     Spec.StatementRound F n ⟨start, by omega⟩ → ℕ →
     TranscriptObserver F n deg (protocol F deg count).tree
@@ -195,7 +194,6 @@ theorem nextChallenge_local_soundness {m : ℕ} (D : Fin m ↪ F) (i : Fin n)
 
 open Interaction.Oracle.Security
 
-set_option backward.isDefEq.respectTransparency false in
 omit [Fintype F] [DecidableEq F] [SampleableType F] in
 private theorem transcriptObserver_prover {m : ℕ} (D : Fin m ↪ F)
     (count start : ℕ) (finish : start + count = n)
@@ -222,7 +220,6 @@ private theorem transcriptObserver_prover {m : ℕ} (D : Fin m ↪ F)
           exact ih (start + 1) (by omega)
             ⟨q.val.eval r, Fin.snoc stmt.challenges r⟩ (rank + 1)
 
-set_option backward.isDefEq.respectTransparency false in
 omit [Fintype F] [DecidableEq F] [SampleableType F] in
 private theorem transcriptObserver_schedule
     (count start : ℕ) (finish : start + count = n)
@@ -319,7 +316,6 @@ private theorem localCertificate_bound {m : ℕ} (D : Fin m ↪ F)
   simp only [stateOf, prefixData_comp, prefixData_root] at hb ⊢
   exact hb
 
-set_option backward.isDefEq.respectTransparency false in
 private theorem transcriptObserver_local {m : ℕ} (D : Fin m ↪ F)
     (count start : ℕ) (finish : start + count = n)
     (stmt : Spec.StatementRound F n ⟨start, by omega⟩) (rank : ℕ)
@@ -348,7 +344,8 @@ private theorem transcriptObserver_local {m : ℕ} (D : Fin m ↪ F)
           simpa only [stateOf, prefixData_root, observer_root_claim, Fin.succ,
             Nat.succ_eq_add_one] using hs
       · have htrue := Classical.not_not.mp hfalse
-        simp only [stateOf, prefixData_root, transcriptObserver, rootData, htrue,
+        simp only [stateOf, prefixData, ExecutionPrefix.root, Cursor.root,
+          restrictObserver, transcriptObserver, rootData, htrue,
           not_true_eq_false, false_and, prEvent_false, zero_le]
     · intro challenge
       cases challenge with
@@ -359,7 +356,6 @@ private theorem transcriptObserver_local {m : ℕ} (D : Fin m ↪ F)
 
 universe v
 
-set_option backward.isDefEq.respectTransparency false in
 omit [Fintype F] in
 private theorem fresh_prependPublic {m₀ : ℕ} (D : Fin m₀ ↪ F)
     {Moves : Type} {rest : Moves → TypeTree}
@@ -392,7 +388,6 @@ private theorem fresh_prependPublic {m₀ : ℕ} (D : Fin m₀ ↪ F)
   · intro pfx _ result
     simp only [modelOf, prefixData_public, ExecutionPrefix.prependPublic_comp]
 
-set_option backward.isDefEq.respectTransparency false in
 omit [Fintype F] in
 private theorem fresh_prependOracle {m₀ : ℕ} (D : Fin m₀ ↪ F)
     {Messages : Type} {rest : PUnit → TypeTree}
@@ -639,7 +634,6 @@ private theorem executeStrategies_terminal {m₀ : ℕ} (D : Fin m₀ ↪ F)
       simp only [closeExecution, Option.map_none] at hvalid
       cases hvalid
 
-set_option backward.isDefEq.respectTransparency false in
 omit [Fintype F] [SampleableType F] in
 private theorem execute_eq_closeExecution {ι : Type} (ambient : OracleSpec ι)
     (challenge : OracleComp ambient F) (domain : List F)
@@ -657,7 +651,6 @@ private theorem execute_eq_closeExecution {ι : Type} (ambient : OracleSpec ι)
     bind_assoc]
   rfl
 
-set_option backward.isDefEq.respectTransparency false in
 /-- The actual optional native Sumcheck output is valid with probability at most
 `count * deg / Fintype.card F` for a false input, by generic round-by-round soundness.
 
