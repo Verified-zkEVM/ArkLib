@@ -401,6 +401,35 @@ lemma IsMaxAgreementDomain.exists_codeword [Finite ι] [Semiring F] [Module F A]
   exact ⟨c, hc, hagree, fun i hic =>
     Maximal.le_of_ge h hmem hsub (Finset.mem_filter.mpr ⟨Finset.mem_univ _, hic⟩)⟩
 
+/-- **Distinct maximal CA domains overlap sparsely.** Two maximal CA domains of the same family
+whose intersection misses fewer than `d_C` positions are equal. Equivalently, distinct maximal CA
+domains `A₁ ≠ A₂` satisfy `|A₁ ∩ A₂| ≤ n - d_C`.
+
+The codewords extending the family on `A₁` and on `A₂` agree on the dense intersection, so they are
+equal; then the family extends to codewords on `A₁ ∪ A₂`, and the maximality of each domain forces
+it to be the whole union. This is the pairwise-intersection hypothesis of the Corrádi bound in
+Claim 6.7 [BCGM25]. -/
+lemma IsMaxCADomain.eq_of_card_compl_inter_lt_minDist [Semiring F] [Module F A] [DecidableEq A]
+    [DecidableEq ι] {α : Type*} {MC : ModuleCode ι F A} {U : α → (ι → A)} {A₁ A₂ : Finset ι}
+    (h₁ : IsMaxCADomain MC U A₁) (h₂ : IsMaxCADomain MC U A₂)
+    (hcard : ((A₁ ∩ A₂)ᶜ).card < Code.minDist MC.carrier) : A₁ = A₂ := by
+  choose c₁ hc₁ hc₁A using fun j => (mem_projectedCodeSubmod_iff MC A₁ _).mp (h₁.prop j)
+  choose c₂ hc₂ hc₂A using fun j => (mem_projectedCodeSubmod_iff MC A₂ _).mp (h₂.prop j)
+  have hU₁ : ∀ j, ∀ i ∈ A₁, U j i = c₁ j i := fun j i hi => congrFun (hc₁A j) ⟨i, hi⟩
+  have hU₂ : ∀ j, ∀ i ∈ A₂, U j i = c₂ j i := fun j i hi => congrFun (hc₂A j) ⟨i, hi⟩
+  have hc : ∀ j, c₁ j = c₂ j := fun j =>
+    Code.eq_of_disagreementCols_subset_of_card_lt_minDist (hc₁ j) (hc₂ j) _
+      (fun i hi => Finset.mem_compl.mpr fun hi' => Code.mem_disagreementCols.mp hi
+        ((hU₁ j i (Finset.mem_inter.mp hi').1).symm.trans (hU₂ j i (Finset.mem_inter.mp hi').2)))
+      hcard
+  have hunion : ∀ j, projectedWord (U j) (A₁ ∪ A₂) ∈ projectedCodeSubmod MC (A₁ ∪ A₂) := fun j =>
+    (mem_projectedCodeSubmod_iff MC _ _).mpr ⟨c₁ j, hc₁ j, funext fun i => by
+      rcases Finset.mem_union.mp i.2 with h | h
+      · exact hU₁ j i.1 h
+      · exact (hU₂ j i.1 h).trans (congrFun (hc j) i.1).symm⟩
+  exact (Maximal.eq_of_le h₁ hunion Finset.subset_union_left).trans
+    (Maximal.eq_of_le h₂ hunion Finset.subset_union_right).symm
+
 /-- A linear code is maximum distance separable (MDS) if its parameters meet the singleton bound. -/
 def IsMDS {ι : Type*} [Fintype ι] [CommRing F] [DecidableEq F] (LC : LinearCode ι F) : Prop :=
   Code.dist LC.carrier = length LC - dim LC + 1

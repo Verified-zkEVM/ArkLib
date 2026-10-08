@@ -519,6 +519,7 @@ public import ArkLib.Data.Finset.PairwiseIntersection
 public import ArkLib.Data.Finset.PickSubset
 public import ArkLib.Data.Finset.SampleIncidence
 public import ArkLib.Data.Finset.Staircase
+public import ArkLib.Data.Finset.TupleIntersection
 public import ArkLib.Data.Finset.WeightedSimplex
 public import ArkLib.Data.Finset.WeightedSimplex.FloorTransfer
 public import ArkLib.Data.Finset.WeightedSimplex.Moments
