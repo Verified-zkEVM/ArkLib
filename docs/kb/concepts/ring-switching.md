@@ -195,13 +195,9 @@ Lagrange interpolation needs the opening algebra to be a field.
   - Still conditional elsewhere, on other admitted lemmas: scalar (non-round-by-round) knowledge
     soundness of any composite would go through the admitted
     `Verifier.rbrKnowledgeSoundness_implies_knowledgeSoundness` (`Security/Implications.lean`).
-    On this branch the FRI-Binius and Binary Basefold composites
-    (`Binius.FRIBinius.CoreInteractionPhase.coreInteractionOracleVerifier_rbrKnowledgeSoundness`,
-    the `Binius.BinaryBasefold.CoreInteraction.*OracleVerifier_rbrKnowledgeSoundness` composites,
-    `Binius.BinaryBasefold.FullBinaryBasefold.fullOracleVerifier_rbrKnowledgeSoundness`) apply
-    the admitted averaged `OracleVerifier.append_rbrKnowledgeSoundness`. FRI-Binius `SumcheckFold`'s phase theorem is
-    itself admitted, with `OracleVerifier.liftContext_rbr_knowledgeSoundness` (admitted) as its
-    intended route. In the generic sum-check (`Sumcheck/Spec/`), the full protocol's
+    The FRI-Binius and Binary Basefold composites are retired pending the port of #383
+    (tracking issue #1286), so no Binius composite is currently stated. In the generic
+    sum-check (`Sumcheck/Spec/`), the full protocol's
     `Sumcheck.Spec.oracleVerifier_rbrKnowledgeSoundness` applies the admitted
     `OracleVerifier.seqCompose_rbrKnowledgeSoundness`, and the single round's
     `Sumcheck.Spec.SingleRound.oracleVerifier_rbrKnowledgeSoundness` applies the admitted
@@ -250,7 +246,7 @@ Lagrange interpolation needs the opening algebra to be a field.
 - [`../../../ArkLib/ProofSystem/RingSwitching/Lift/Presentation.lean`](../../../ArkLib/ProofSystem/RingSwitching/Lift/Presentation.lean) — the quotient-presentation abstraction + lift algebra.
 - [`../../../ArkLib/ProofSystem/RingSwitching/Lift/Reduction.lean`](../../../ArkLib/ProofSystem/RingSwitching/Lift/Reduction.lean) — the generic `Lift` construction + CWSS.
 - [`../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/CommittedScalar.lean`](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/CommittedScalar.lean) — the committed-scalar protocol seam.
-- [`../../../ArkLib/ProofSystem/Binius/FRIBinius/General.lean`](../../../ArkLib/ProofSystem/Binius/FRIBinius/General.lean) — `biniusProfile`, the concrete instantiation.
+- [`../../../ArkLib/ProofSystem/Binius/FRIBinius/Prelude.lean`](../../../ArkLib/ProofSystem/Binius/FRIBinius/Prelude.lean) — `biniusProfile`, the concrete instantiation.
 
 ## Notes
 

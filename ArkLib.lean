@@ -765,15 +765,9 @@ public import ArkLib.ProofSystem.BatchedFri.Security
 public import ArkLib.ProofSystem.BatchedFri.Spec.General
 public import ArkLib.ProofSystem.BatchedFri.Spec.SingleRound
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.Basic
-public import ArkLib.ProofSystem.Binius.BinaryBasefold.CoreInteractionPhase
-public import ArkLib.ProofSystem.Binius.BinaryBasefold.General
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.Prelude
-public import ArkLib.ProofSystem.Binius.BinaryBasefold.QueryPhase
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.SoundnessTools
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.Spec
-public import ArkLib.ProofSystem.Binius.BinaryBasefold.Steps
-public import ArkLib.ProofSystem.Binius.FRIBinius.CoreInteractionPhase
-public import ArkLib.ProofSystem.Binius.FRIBinius.General
 public import ArkLib.ProofSystem.Binius.FRIBinius.Prelude
 public import ArkLib.ProofSystem.Component.CheckClaim
 public import ArkLib.ProofSystem.Component.DoNothing

@@ -50,6 +50,11 @@ instance linearIndependentBooleanHypercubeBasis : Fact (LinearIndependent K ⇑�
   constructor
   exact β.linearIndependent
 
+/-- The Binius ring-switching profile: the tensor-product profile at the Boolean-hypercube
+reindexing `booleanHypercubeBasis` of `β`. -/
+def biniusProfile : RingSwitching.RingSwitchingProfile K L κ :=
+  RingSwitching.tensorProductProfile κ K L (booleanHypercubeBasis κ L K β)
+
 def BinaryBasefoldAbstractOStmtIn : (RingSwitching.AbstractOStmtIn L ℓ') where
   ιₛᵢ := Fin (BinaryBasefold.toOutCodewordsCount ℓ' ϑ (i:=0))
   OStmtIn := BinaryBasefold.OracleStatement K β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0

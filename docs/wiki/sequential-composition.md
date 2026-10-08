@@ -90,7 +90,7 @@ existential form. `Sequential/GuardedRoundByRound.lean` gives the finite-chain f
 the guarded form of any verifier.
 
 Generic soundness composition and the implication from round-by-round to ordinary soundness
-remain admitted. Sumcheck, Packing, and Binius use the proved completeness interfaces above;
+remain admitted. Sumcheck and Packing use the proved completeness interfaces above;
 their completeness theorems still depend on separate component and context-lifting admissions.
 
 ## Clients and validation
