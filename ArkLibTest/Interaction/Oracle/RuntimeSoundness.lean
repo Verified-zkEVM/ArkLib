@@ -193,11 +193,12 @@ lemma guess_success (guess : Bool) (secret : Nat) :
   convert mass.trans ?_ using 1
   · rfl
   · simp only [Option.map_some, Option.some.injEq]
-    rw [prEvent_eq_evalDist_of_discrete, OracleComp.evalDist_liftM_query]
+    rw [prEvent_eq_evalDist_of_discrete,
+      OracleComp.evalDist_liftM_query_apply (spec := coinSpec) () MeasurableSet.of_discrete]
     have event : {hidden : Bool | (guess = hidden) = True} = {guess} := by
       ext hidden
       simp only [Set.mem_ofPred_eq, Set.mem_singleton_iff, eq_iff_iff, true_iff, eq_comm]
-    rw [event, OracleSpec.IsUniformMeasureSpec.toMeasure_singleton]
+    rw [event, OracleSpec.UniformAnswerMeasure.toMeasure_singleton]
     rfl
 
 local instance : MeasurableSpace (RunResult runtime Boundary) := ⊤
@@ -208,7 +209,8 @@ lemma average_success (native :
       result.output.core.closed.map (TruthFinal result.output.core.path.toBranchPath) = some True] =
     ∫⁻ b, Pr{let result ← runtime.resume b nextProgram}[Success result.output]
       ∂𝒟[runtime.run (prefixProgram native)] := by
-  rw [native_success_eq_split, runtime.run_bind, prEvent_bind_eq_lintegral_of_discrete]
+  rw [native_success_eq_split, runtime.run_bind, prEvent_bind,
+    prEvent_bind_eq_lintegral_of_discrete]
 
 /-- The averaged premise holds although a matching fixed hidden bit gives conditional success
 one. -/
@@ -425,11 +427,11 @@ lemma fixed_guess_success (guess hidden : Bool) (secret : Nat) :
   calc
     _ = Pr{let pair ← (pure (some (guess, hidden)) : OracleComp coinSpec (Option (Bool × Bool)))}[
         pair.map (fun pair : Bool × Bool => pair.1 = pair.2) = some True] := by
-      simp only [answer, Option.map_map, Function.comp_def] at mass
+      simp only [answer, Option.map_map, Function.comp_def, prEvent_pure] at mass
       convert mass using 1
-      rfl
+      all_goals first | rfl | simp only [prEvent_pure]
     _ = _ := by
-      cases guess <;> cases hidden <;> simp [evalDist_pure]
+      cases guess <;> cases hidden <;> simp
 
 /-- An analytic matching hidden state has success one, so a fixed-state half bound is invalid. -/
 lemma fixed_hidden_half_fails (guess : Bool) (secret : Nat) :

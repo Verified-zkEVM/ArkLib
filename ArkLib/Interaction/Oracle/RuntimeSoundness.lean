@@ -7,7 +7,7 @@ module
 
 public import ArkLib.Interaction.Oracle.CompositionSoundness
 public import ArkLib.Interaction.Oracle.PhasedRun
-public import ArkLib.Data.Probability.Sequential
+public import VCVio.EvalDist.Monad.Disagreement.Measure
 
 /-! # Native composition soundness in a persistent runtime -/
 
@@ -37,7 +37,7 @@ theorem run_bind_success_le (runtime : OracleRuntime imports surface)
         ∫⁻ b in {b | ¬ Exceptional b}, error b ∂𝒟[runtime.run first] := by
   let : MeasurableSpace (RunResult runtime B) := ⊤
   rw [runtime.run_bind]
-  exact (prEvent_bind_le_prEvent_add_lintegral_ae (runtime.run first)
+  simpa only [expect_norm] using (prEvent_bind_le_prEvent_add_lintegral_ae (runtime.run first)
     (fun b => runtime.resume b next) Exceptional (fun result => Success result.output)
     (fun b => Pr{let result ← runtime.resume b next}[Success result.output])
     (Filter.Eventually.of_forall (fun _ _ => le_rfl))).trans (add_le_add le_rfl hsuffix)
@@ -55,7 +55,7 @@ theorem run_bind_success_le_ae (runtime : OracleRuntime imports surface)
         ∫⁻ b in {b | ¬ Exceptional b}, error b ∂𝒟[runtime.run first] := by
   let : MeasurableSpace (RunResult runtime B) := ⊤
   rw [runtime.run_bind]
-  exact prEvent_bind_le_prEvent_add_lintegral_ae (runtime.run first)
+  simpa only [expect_norm] using prEvent_bind_le_prEvent_add_lintegral_ae (runtime.run first)
     (fun b => runtime.resume b next) Exceptional (fun result => Success result.output) error hsuffix
 
 /-- A uniform actual-resume bound yields a uniform error term, even with missing mass. -/
@@ -270,16 +270,17 @@ This projects the paired closed-output/state/history equality while preserving i
 -/
 theorem executeStrategiesWithRuntime_appendExported_prEvent
     {importIdx : Type} {imports : OracleSpec importIdx}
-    [EvalDistSemantics (OracleComp imports)] (runtime : OracleRuntime imports ambient)
+    [EvalDistSemantics (OracleComp imports)] [LawfulEvalDistSemantics (OracleComp imports)]
+    (runtime : OracleRuntime imports ambient)
     (TruthFinal : (p : TypeTree.BranchPath (PFunctor.FreeM.append tree suffix)) →
       ClosedClaim (FinalStmt p) (Final p) → Prop) :
-    Pr{let result ← executeStrategiesWithRuntime runtime
+    Pr{let result ← (executeStrategiesWithRuntime runtime
           (protocol := ⟨PFunctor.FreeM.append tree suffix,
             PFunctor.FreeM.Displayed.Decoration.append firstRoles secondRoles,
             PFunctor.FreeM.Displayed.Decoration.append firstOracles secondOracles⟩)
           (initial := initial) impl prover
           (appendExported ambient tree suffix firstRoles secondRoles firstOracles secondOracles
-            initial Stmt Data Export FinalStmt FinalData Final first second)}[
+            initial Stmt Data Export FinalStmt FinalData Final first second))}[
       result.output.core.closed.map (TruthFinal result.output.core.path.toBranchPath) = some True] =
     Pr{let result ← (runtime.run (do
       let b ← exportedPrefixRun ambient tree suffix firstRoles secondRoles firstOracles initial
@@ -336,13 +337,13 @@ theorem executeStrategiesWithRuntime_appendExported_soundness
     (∫⁻ b in {b | ¬ Exceptional b},
       Pr{let result ← runtime.resume b next}[Success result.output] ∂𝒟[runtime.run prefixProgram]) ≤
         ∫⁻ b in {b | ¬ Exceptional b}, error b ∂𝒟[runtime.run prefixProgram] →
-    Pr{let result ← executeStrategiesWithRuntime runtime
+    Pr{let result ← (executeStrategiesWithRuntime runtime
           (protocol := ⟨PFunctor.FreeM.append tree suffix,
             PFunctor.FreeM.Displayed.Decoration.append firstRoles secondRoles,
             PFunctor.FreeM.Displayed.Decoration.append firstOracles secondOracles⟩)
           (initial := initial) impl prover
           (appendExported ambient tree suffix firstRoles secondRoles firstOracles secondOracles
-            initial Stmt Data Export FinalStmt FinalData Final first second)}[
+            initial Stmt Data Export FinalStmt FinalData Final first second))}[
       result.output.core.closed.map (TruthFinal result.output.core.path.toBranchPath) = some True] ≤
         Pr{let b ← runtime.run prefixProgram}[Exceptional b] +
           ∫⁻ b in {b | ¬ Exceptional b}, error b ∂𝒟[runtime.run prefixProgram] := by

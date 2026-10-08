@@ -89,7 +89,7 @@ Most friction in this subtree comes from picking the wrong numeric type, so chec
 | Real-valued bounds | `ℝ`, then wrapped | right-hand sides of capacity bounds, `JohnsonBound.Jqℓ`, `Jcap` |
 | ε-errors (`ε_pg`, `ε_ca`, `ε_mca`) — value | `ENNReal` | it is a supremum of probabilities |
 | ε-errors — *bound*, compared with `↑` not `ENNReal.ofReal` | `I → ℝ≥0` | `IsMCAGenerator`'s `ε_mca` |
-| Probabilities | `ENNReal` | the `Pr_{...}[...]` notation |
+| Probabilities | `ENNReal` | VCVio's event notation, `Pr{let x ← $ᵗ S}[p x]` |
 | List sizes | `ℕ∞`, cast to `ENNReal` for real-valued bounds | `Lambda`, built from `closeCodewordsRel`'s `.encard` |
 | List-size *bounds* in a predicate | `ℝ≥0` | `Code.IsListDecodable`'s `ℓ` — see below for why, and why it is not `ℕ∞` |
 | Polynomial degree bound | `Polynomial.degreeLT F k : Submodule F F[X]` | `ReedSolomon.code`, `Folded.frsCode` |

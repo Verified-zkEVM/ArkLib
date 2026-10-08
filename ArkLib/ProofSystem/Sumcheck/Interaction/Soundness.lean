@@ -122,8 +122,8 @@ private theorem prEvent_eq_evalDist_map_unifSpec {α : Type} (mx : OracleComp un
 /-- `prEvent_bind_le_of_forall_le` at `OracleComp unifSpec`, with `do`-notation instances. -/
 private theorem prEvent_bind_le_of_forall_le_unifSpec {α β : Type}
     (mx : OracleComp unifSpec α) (f : α → OracleComp unifSpec β) (q : β → Prop) {ε : ENNReal}
-    (h : ∀ a, Pr{let y ← f a}[q y] ≤ ε) : Pr{let y ← mx >>= f}[q y] ≤ ε :=
-  prEvent_bind_le_of_forall_le mx f q h
+    (h : ∀ a, Pr{let y ← f a}[q y] ≤ ε) : Pr{let y ← mx >>= f}[q y] ≤ ε := by
+  simpa only [expect_norm] using prEvent_bind_le_of_forall_le mx f q h
 
 variable [Fintype F] [DecidableEq F] [SampleableType F]
 
@@ -192,7 +192,8 @@ theorem executeRandomCommitment_measureSoundness (messages : ProbComp (Message F
         (messages >>= fun q => executeCommitted F deg ($ᵗ F) p q domain target)] {True} ≤
         (deg : ENNReal) / Fintype.card F := by
   rw [← prEvent_eq_evalDist_map_unifSpec]
-  exact executeRandomCommitment_soundness F deg messages p domain target hfalse
+  simpa only [expect_norm] using
+    executeRandomCommitment_soundness F deg messages p domain target hfalse
 
 end
 end Sumcheck.Interaction.SingleRound

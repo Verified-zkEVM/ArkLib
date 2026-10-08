@@ -70,7 +70,7 @@ Choose `f ∈ J \ P`. Its class in `R ⧸ P` is nonzero and hence a non-zero-div
 prime, while the quotient map to `R ⧸ J` kills it. No Noetherian hypothesis is needed. -/
 theorem ringKrullDim_quotient_succ_le_of_lt {P J : Ideal R} [P.IsPrime] (hPJ : P < J) :
     ringKrullDim (R ⧸ J) + 1 ≤ ringKrullDim (R ⧸ P) := by
-  obtain ⟨f, hfJ, hfP⟩ := SetLike.exists_of_lt hPJ
+  obtain ⟨f, hfJ, hfP⟩ := IsConcreteLE.exists_of_lt hPJ
   apply ringKrullDim_succ_le_of_surjective (Ideal.Quotient.factor hPJ.le)
     (Ideal.Quotient.factor_surjective hPJ.le) (r := Ideal.Quotient.mk P f)
   · rw [mem_nonZeroDivisors_iff_ne_zero]

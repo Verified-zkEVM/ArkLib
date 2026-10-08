@@ -6,7 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.Interaction.Reduction
-public import ArkLib.Data.Probability.Sequential
+public import VCVio.EvalDist.Monad.Disagreement.Measure
 public import VCVio.EvalDist.Monad.Measure
 
 /-!
@@ -102,17 +102,13 @@ theorem run_appendFlat_soundness_weighted_ae_finish
   classical
   let : MeasurableSpace (AppendBoundary (m := m) (s₂ := s₂) (r₂ := r₂)
     (OutputP := OutputP) (MidC := MidC)) := ⊤
-  have execution : (do
-      let result ← run (s₁.append s₂) (r₁.append r₂) prover
-        (Counterpart.appendFlat counterpart₁ counterpart₂)
-      finish result.1 result.2.1 result.2.2) = (do
-      let b ← run s₁ r₁ (Focal.splitPrefix prover) counterpart₁
+  rw [run_appendFlat_splitPrefix]
+  simpa only [expect_norm] using prEvent_bind_le_prEvent_add_lintegral_ae
+    (run s₁ r₁ (Focal.splitPrefix prover) counterpart₁)
+    (fun b => do
       let result ← run (s₂ b.1) (r₂ b.1) b.2.1 (counterpart₂ b.1 b.2.2)
-      finish (PFunctor.FreeM.Path.append s₁ s₂ b.1 result.1) result.2.1 result.2.2) := by
-    rw [run_appendFlat_splitPrefix]
-    simp only [bind_assoc, pure_bind]
-  rw [execution]
-  exact prEvent_bind_le_prEvent_add_lintegral_ae _ _ Exceptional FinalSuccess error hsuffix
+      finish (PFunctor.FreeM.Path.append s₁ s₂ b.1 result.1) result.2.1 result.2.2)
+    Exceptional FinalSuccess error (by simpa only [expect_norm] using hsuffix)
 
 /-- For one whole prover, average the branch-dependent suffix errors over its actual prefix
 outputs outside `Exceptional`, and charge the probability of `Exceptional`. The suffix premise
@@ -140,8 +136,8 @@ theorem run_appendFlat_soundness_weighted_ae
   have h := run_appendFlat_soundness_weighted_ae_finish prover counterpart₁ counterpart₂ Exceptional
     (fun path _ out => pure (⟨path, out⟩ : (t : TypeTree.Path (s₁.append s₂)) × OutputC t))
     (fun result => Success result.1 result.2) error
-    (by simpa only [bind_assoc, pure_bind] using hsuffix)
-  simpa only [bind_assoc, pure_bind] using h
+    (by simpa only [bind_assoc, pure_bind, expect_norm] using hsuffix)
+  simpa only [bind_assoc, pure_bind, expect_norm] using h
 
 /-- The weighted bound only needs suffix security at structurally reachable outputs of this
 whole prover's prefix. Reachability includes the actual returned continuation. Unlike the

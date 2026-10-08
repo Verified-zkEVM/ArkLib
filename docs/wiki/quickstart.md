@@ -5,19 +5,19 @@ Use it as the main guide for routine local checks.
 
 ## Dependency versions
 
-The Lean 4.34 upgrade uses Lean, Mathlib, cslib, and doc-gen4 `v4.34.0`.
-`lakefile.toml` pins CompPoly to its `v4.34.0` release and VCVio to an exact commit; `lake-manifest.json` records
-the complete resolved dependency set, including the PolyFun revision selected by VCVio.
+ArkLib builds with Lean `v4.35.0-rc3` (`lean-toolchain`), and Mathlib, cslib and doc-gen4 use the
+matching `v4.35.0-rc3` tags. `lakefile.toml` pins VCVio and CompPoly to exact commits, and
+`lake-manifest.json` records the complete resolved dependency set, including the PolyFun revision
+selected by VCVio.
 Keep that PolyFun pin when updating this stack: a newer PolyFun revision must also be
 validated against VCVio before ArkLib can adopt it.
-The VCVio pin includes the native probability prerequisites and
-[the supporting bound lemmas](https://github.com/Verified-zkEVM/VCVio/pull/769); it is an exact
-reviewable revision rather than a moving branch. ArkLib uses native measures throughout its
-probability statements; the [migration ledger](../design/native-measure-ledger.md) records the
-conversion and upstream API map.
+The VCVio pin is an exact, reviewable revision rather than a moving branch. ArkLib states its
+probabilities with VCVio's measure semantics (see
+[probability conventions](probability-conventions.md)), and the
+[conversion ledger](../design/native-measure-ledger.md) records ArkLib's conversion to them.
 Validate the combined dependency set with `./scripts/validate.sh --axioms` before merging.
-The September 4 baseline in `docs/design/00-current-status.md` records the original typed
-interaction implementation train, not the current package versions.
+`docs/design/00-current-status.md` records the same dependency baseline together with the status
+of the typed interaction layer.
 
 ## Recommended Validation
 
@@ -34,7 +34,7 @@ lake exe cache get
 ./scripts/validate.sh
 ```
 
-Validation also runs the native-probability retirement fixtures and
+Validation also runs the retired-probability fixtures (`./scripts/test-retiredsweep.sh`) and
 `lake exe retiredsweep --require-empty`. This gate rejects direct retired API references in
 ArkLib declaration types and bodies, without a baseline exception. See
 [probability conventions](probability-conventions.md) when porting an older branch.

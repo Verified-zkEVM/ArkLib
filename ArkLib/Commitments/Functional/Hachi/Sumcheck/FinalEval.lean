@@ -6,6 +6,7 @@ Authors: Pablo Martín Vinuelas, Tobias Rothmann
 module
 
 public import ArkLib.Commitments.Functional.Hachi.Sumcheck.Rounds
+public import ArkLib.OracleReduction.ProgramLogic
 
 /-!
   # Final evaluation
@@ -356,36 +357,12 @@ lemma finalEvalReduction_run_support
           (⟨stmt.zc.t, stmt.challenges, honestComputeY Φ m₀ m₁ b φF stmt w⟩ :
             WEvalStatement K.TCom F m₀)) := by
   have hg := finalCheck_honestComputeY Φ m₀ m₁ bound bDig b K φF stmt w h
-  intro x hx
-  unfold Reduction.run at hx
-  simp only [OptionT.run_bind, Option.elimM] at hx
-  rw [mem_support_bind_iff] at hx
-  obtain ⟨prOpt, hpr, hx⟩ := hx
-  rw [show ((liftM (Prover.run stmt w
-        (finalEvalReduction (oSpec := oSpec) Φ m₀ m₁ bound b (TCom := K.TCom) φF).prover) :
-        OptionT (OracleComp _) _)).run
-      = (Prover.run stmt w
-          (finalEvalReduction (oSpec := oSpec) Φ m₀ m₁ bound b (TCom := K.TCom) φF).prover)
-        >>= fun a => pure (some a) from rfl] at hpr
-  rw [mem_support_bind_iff] at hpr
-  obtain ⟨pr, hpr, hprOpt⟩ := hpr
-  rw [mem_support_pure_iff] at hprOpt
-  subst hprOpt
-  rw [show (finalEvalReduction (oSpec := oSpec) Φ m₀ m₁ bound b (TCom := K.TCom) φF).prover
-      = finalEvalProver Φ m₀ m₁ (honestComputeY Φ m₀ m₁ b φF) from rfl] at hpr
-  obtain ⟨hmsg, hout⟩ :=
-    finalEvalProver_run_support (oSpec := oSpec) Φ m₀ m₁ (honestComputeY Φ m₀ m₁ b φF)
-      stmt w pr hpr
-  refine ⟨pr.1, ?_⟩
-  simp only [Option.elim_some, finalEvalReduction, finalEvalVerifier, Verifier.run, hmsg, hg,
-    ite_true] at hx
-  simp only [OptionT.run_pure, liftM_pure, ProgrammingPolicy.empty_apply, pure_bind,
-    Option.elim_some, Option.getM_some, support_pure, Set.mem_singleton_iff] at hx
-  -- the prover result's own components, re-assembled from `hout`
-  have hpr : pr = (pr.1,
-      (⟨stmt.zc.t, stmt.challenges, honestComputeY Φ m₀ m₁ b φF stmt w⟩ :
-        WEvalStatement K.TCom F m₀), w) := Prod.ext rfl hout
-  rw [hx, hpr]
+  simp only [Reduction.run_run_eq, finalEvalReduction, finalEvalVerifier, Verifier.run,
+    Prover.run_of_prover_first, finalEvalProver, apply_ite OptionT.run, OptionT.run_pure,
+    OptionT.run_failure]
+  prvcgen
+  · exact ⟨_, rfl⟩
+  · exact absurd hg ‹_›
 
 omit [NeZero q] [IsCyclotomic Φ] in
 /-- **Perfect completeness of the final-evaluation step**, error exactly `0`.

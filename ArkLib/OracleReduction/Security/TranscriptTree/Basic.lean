@@ -323,8 +323,8 @@ def IsAccepting (verifier : Verifier oSpec StmtIn StmtOut pSpec)
     (stmtIn : StmtIn) (langOut : Set StmtOut)
     (tree : ChallengeTree pSpec arity 0) : Prop :=
   ∀ tr ∈ tree.fullTranscripts,
-    Pr{let stmtOut ← OptionT.mk do
-      (simulateQ impl (verifier.run stmtIn tr)).run' (← init)}[stmtOut ∈ langOut] = 1
+    Pr{let stmtOut ← (OptionT.mk do
+      (simulateQ impl (verifier.run stmtIn tr)).run' (← init))}[stmtOut ∈ langOut] = 1
 
 end IsAccepting
 
@@ -501,8 +501,8 @@ independently of the verifier's acceptance. -/
 theorem support_init_nonempty_of_prob_one {init : ProbComp σ}
     {impl : QueryImpl oSpec (StateT σ ProbComp)} {V : Verifier oSpec StmtIn StmtOut pSpec}
     {stmt : StmtIn} {tr : pSpec.FullTranscript} {lang : Set StmtOut}
-    (_h : Pr{let out ← OptionT.mk do
-      (simulateQ impl (V.run stmt tr)).run' (← init)}[out ∈ lang] = 1) :
+    (_h : Pr{let out ← (OptionT.mk do
+      (simulateQ impl (V.run stmt tr)).run' (← init))}[out ∈ lang] = 1) :
     (support init).Nonempty := by
   exact OracleComp.support_nonempty (spec := unifSpec) init
 
@@ -515,8 +515,8 @@ theorem not_accepting_of_failure {init : ProbComp σ}
     {impl : QueryImpl oSpec (StateT σ ProbComp)} {V : Verifier oSpec StmtIn StmtOut pSpec}
     {stmt : StmtIn} {tr : pSpec.FullTranscript} (hV : V.verify stmt tr = failure)
     {lang : Set StmtOut}
-    (h : Pr{let out ← OptionT.mk do
-      (simulateQ impl (V.run stmt tr)).run' (← init)}[out ∈ lang] = 1) : False := by
+    (h : Pr{let out ← (OptionT.mk do
+      (simulateQ impl (V.run stmt tr)).run' (← init))}[out ∈ lang] = 1) : False := by
   rw [OracleComp.OptionT.prEvent_mk_eq_one_iff] at h
   simp only [Verifier.run, hV] at h
   have hc : (do (simulateQ impl (failure : OptionT (OracleComp oSpec) StmtOut)).run' (← init) :

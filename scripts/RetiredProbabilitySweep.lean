@@ -9,7 +9,7 @@ import Lean
 # Retired-probability sweep: the native-measure conversion ledger
 
 Walks the compiled environment and reports every declaration in `ArkLib.*` modules whose
-statement or body *directly* references a retiring probability surface: VCVio's scalar
+statement or body *directly* references a retired probability surface: VCVio's removed scalar
 evaluation functions and compatibility classes (`probOutput`, `probEvent`, `probFailure`,
 `evalSPMF`, `SPMF`, `NeverFail`, `EvalDistCompatible`, `DiscreteEvalDistCompatible`), the
 PMF-based oracle specifications (`OracleSpec.IsUniformSpec`, `OracleSpec.IsProbabilitySpec`,
@@ -53,7 +53,7 @@ def retiredNames : List Name :=
     `OracleSpec.IsProbabilitySpec, `PFunctor.IsProbabilitySpec, `IsUniformSpec,
     `IsProbabilitySpec, `PMF.uniformOfFintype]
 
-/-- Whether a constant name belongs to the retiring surface: some component of the name is a
+/-- Whether a constant name belongs to the retired surface: some component of the name is a
 retired head name, or a retired qualified name is a prefix. -/
 def isRetired (n : Name) : Bool :=
   retiredNames.any fun r =>

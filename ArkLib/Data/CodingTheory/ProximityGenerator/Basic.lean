@@ -234,7 +234,7 @@ lemma mcaError_le_one {S : Type} [Nonempty S] [Fintype S] [SampleableType S]
     {A : Type} [AddCommMonoid A] [Module F A]
     (G : Generator S ℓ F) (MC : ModuleCode ι F A) (δ : ℝ) :
     mcaError G MC δ ≤ 1 :=
-  iSup_le fun _ => prEvent_le_one _ _
+  iSup_le fun _ => prEvent_le_one _
 
 lemma mcaError_ne_top {S : Type} [Nonempty S] [Fintype S] [SampleableType S]
     {A : Type} [AddCommMonoid A] [Module F A]

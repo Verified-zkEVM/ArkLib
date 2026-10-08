@@ -6,7 +6,7 @@ Authors: Quang Dao
 import ArkLib.Interaction.CompositionSoundness
 import VCVio.OracleComp.Constructions.SampleableType
 import VCVio.OracleComp.EvalDist.Measure
-import VCVio.OracleComp.Constructions.SampleableType.NativeMeasure
+import VCVio.OracleComp.Constructions.SampleableType.Measure
 import VCVio.EvalDist.ProbabilityBounds
 import Mathlib.Data.ZMod.Basic
 
@@ -63,35 +63,10 @@ theorem guess_soundness {m : Type → Type} [Monad m] [LawfulMonad m]
   simp only [guessTree, guessRoles]
   dsimp only [run, InteractionOver.runTypeTree, InteractionOver.TwoParty.pairedTypeTree,
     InteractionOver.TwoParty.paired, participantProfile, collectParticipantOutputs]
-  simp only [guessVerifier, bind_assoc, pure_bind]
-  have hlocal : ∀ chosen : (guess : F) × ((sample : F) → m (Out ⟨guess, ⟨sample, PUnit.unit⟩⟩)),
-      Pr{let truth ← (do
-        let sample ← challenge
-        let _ ← chosen.2 sample
-        return prior ∨ chosen.1 = sample : m Prop)}[truth] ≤ ε := by
-    rintro ⟨guess, respond⟩
-    have hb := prEvent_bind_le_prEvent_of_forall_eq_zero challenge
-      (fun sample => do
-        let _ ← respond sample
-        return prior ∨ guess = sample)
-      (fun sample => guess = sample) (fun truth => truth) (by
-        intro sample hne
-        simpa only [bind_assoc, pure_bind] using
-          (prEvent_const_of_not (respond sample) (show ¬ (prior ∨ guess = sample) by
-            simp [hprior, hne])))
-    simpa only [bind_pure] using hb.trans (hsample guess)
-  have h := prEvent_bind_le_of_forall_le prover
-    (fun chosen => do
-      let sample ← challenge
-      let _ ← chosen.2 sample
-      return prior ∨ chosen.1 = sample) (fun truth => truth) (by
-      intro chosen
-      convert hlocal chosen using 1
-      simp only [bind_pure]
-      rfl)
-  convert h using 1
-  simp only [bind_pure]
-  rfl
+  simp only [guessVerifier, expect_norm]
+  refine wp_le_of_forall_le _ fun chosen => (ExpectationWP.wp_mono _ fun sample =>
+    wp_le_of_forall_le _ fun _ => ?_).trans (hsample chosen.1)
+  simp [hprior]
 
 /-- A fresh uniform field challenge matches every fixed guess with mass `1/17`. -/
 theorem uniform_guess (guess : F) :
@@ -148,15 +123,10 @@ noncomputable section
 
 @[reducible] def branchSpec : OracleSpec Unit := fun _ => Fin 3
 
-instance branchRangeMeasurable (t : branchSpec.Domain) : MeasurableSpace (branchSpec.Range t) := ⊤
-
-instance branchRangeDiscrete (t : branchSpec.Domain) :
-    DiscreteMeasurableSpace (branchSpec.Range t) := ⟨fun _ => trivial⟩
-
 def branchMeasure : Measure (Fin 3) :=
   (1 / 2 : ENNReal) • Measure.dirac 0 + (1 / 2 : ENNReal) • Measure.dirac 1
 
-instance : OracleSpec.IsMeasureSpec branchSpec where
+instance : OracleSpec.AnswerMeasure branchSpec where
   toMeasure _ := branchMeasure
   isProbabilityMeasure _ := by
     constructor
@@ -201,7 +171,8 @@ theorem prefix_measure : 𝒟[run tree roles (StrategyOver.TwoParty.Focal.splitP
     prefixVerifier] =
       (1 / 2 : ENNReal) • Measure.dirac (boundary 0) +
         (1 / 2 : ENNReal) • Measure.dirac (boundary 1) := by
-  rw [prefix_execution, evalDist_bind_of_discrete, OracleComp.evalDist_query]
+  rw [prefix_execution, evalDist_bind_of_discrete, OracleComp.evalDist_query (spec := branchSpec),
+    MeasureTheory.trim_eq_self]
   change Measure.bind branchMeasure _ = _
   simp only [evalDist_pure]
   rw [Measure.bind_dirac_eq_map _ Measurable.of_discrete]
@@ -214,8 +185,8 @@ theorem suffix_at_boundary (sample : Fin 3) :
     Pr{let result ← (run TypeTree.done PUnit.unit (boundary sample).2.1
       (suffixVerifier (boundary sample).1 (boundary sample).2.2))}[result.2.2 = true] =
         if sample = 0 then 0 else 1 := by
-  simp [boundary, suffixVerifier, run, InteractionOver.runTypeTree,
-    participantProfile, collectParticipantOutputs]
+  simp [suffixVerifier, run, InteractionOver.runTypeTree,
+    participantProfile, collectParticipantOutputs, propInd_eq_ite]
 
 /-- The actual prefix has the supported zero-mass boundary `2`. -/
 theorem null_boundary_supported : boundary 2 ∈ support
@@ -302,10 +273,10 @@ theorem finishWithQuery_mass (path : TypeTree.Path (tree.append (fun _ => TypeTr
     Pr{let answer ← finishWithQuery path () accepted}[answer = true] =
       if accepted then (1 / 2 : ENNReal) else 0 := by
   unfold finishWithQuery
-  rw [prEvent_bind_eq_lintegral_of_discrete, OracleComp.evalDist_query]
-  change (∫⁻ sample : Fin 3,
-    Pr{let answer ← (pure (accepted && sample == 1) : M Bool)}[answer = true]
-      ∂branchMeasure) = _
+  rw [prEvent_bind, prEvent_bind_eq_lintegral_of_discrete,
+    OracleComp.evalDist_query (spec := branchSpec), MeasureTheory.trim_eq_self]
+  simp only [prEvent_pure]
+  change (∫⁻ sample : Fin 3, propInd ((accepted && sample == 1) = true) ∂branchMeasure) = _
   cases accepted <;>
     simp [branchMeasure, lintegral_add_measure, lintegral_smul_measure]
 

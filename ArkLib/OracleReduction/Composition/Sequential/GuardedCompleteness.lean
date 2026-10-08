@@ -27,8 +27,9 @@ private theorem prEvent_guarded_map {α β : Type} (oa : ProbComp α)
       let a ← (liftM oa : OptionT ProbComp α)
       if check a then pure (f a) else failure)}[p b] =
       Pr{let a ← oa}[check a = true ∧ p (f a)] := by
-  rw [← OptionT.prEvent_bind_guard, bind_assoc]
-  refine congrArg (𝒟[·] {True}) (bind_congr fun a => ?_)
+  simp only [expect_norm]
+  rw [OptionT.wp_liftM]
+  refine ExpectationWP.wp_congr oa fun a => ?_
   by_cases h : check a = true <;> simp [h]
 
 namespace Reduction
@@ -66,9 +67,9 @@ theorem completeness_iff_of_guarded_verifier
     (rel₁ : Set (Stmt₁ × Wit₁)) (rel₂ : Set (Stmt₂ × Wit₂)) (ε : ℝ≥0) :
     R.completeness init impl rel₁ rel₂ ε ↔
       ∀ stmt wit, (stmt, wit) ∈ rel₁ →
-        1 - (ε : ℝ≥0∞) ≤ Pr{let q ← do
+        1 - (ε : ℝ≥0∞) ≤ Pr{let q ← (do
           (simulateQ (QueryImpl.addLift impl challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
-            (R.prover.run stmt wit)).run (← init)}[G.check stmt q.1.1 = true ∧
+            (R.prover.run stmt wit)).run (← init))}[G.check stmt q.1.1 = true ∧
           (G.out stmt q.1.1, q.1.2.2) ∈ rel₂ ∧ q.1.2.1 = G.out stmt q.1.1] := by
   unfold completeness
   simp only [run_eq_of_guarded_verifier R G]
@@ -92,7 +93,10 @@ theorem completeness_iff_of_guarded_verifier
     refine bind_congr fun s => ?_
     refine bind_congr fun q => ?_
     by_cases hc : G.check stmt q.1.1 = true <;> simp [hc]
-  simp only [hrun, prEvent_guarded_map, ← bind_assoc]
+  refine forall₂_congr fun stmt wit => imp_congr_right fun _ => ?_
+  simp only [hrun, expect_norm, prEvent_guarded_map _ _
+    (fun q : (_ × Stmt₂ × Wit₂) × σ => (q.1, G.out stmt q.1.1))
+    fun z => (z.2, z.1.2.2) ∈ rel₂ ∧ z.1.2.1 = z.2]
 
 /-- Completeness from every deterministic oracle state implies completeness from any initial
 state distribution. The verifier is guarded, so initialization is the only outer mixture. -/
@@ -104,8 +108,9 @@ theorem completeness_of_guarded_states
     R.completeness init impl rel₁ rel₂ ε := by
   rw [completeness_iff_of_guarded_verifier R V]
   intro stmt wit hRel
-  simpa only [one_mul, pure_bind, bind_assoc] using
-    mul_le_prEvent_bind_of_forall init _ (fun _ => True) _ (r := 1) (by simp) fun s _ =>
+  simp only [expect_norm]
+  exact le_wp_of_forall_le init (by simp) fun s => by
+    simpa only [expect_norm] using
       (completeness_iff_of_guarded_verifier R V rel₁ rel₂ ε).mp (h s) stmt wit hRel
 
 variable [∀ i, SampleableType (pSpec₂.Challenge i)]
@@ -136,12 +141,13 @@ theorem append_completeness_of_guarded_prover_factorization
     exact tsub_le_tsub_left (mul_le_of_le_one_left zero_le tsub_le_self) _
   refine herr.trans ?_
   dsimp only [Reduction.append]
-  simp only [hFactor stmt wit, StateT.run_bind, StateT.run_pure, ← bind_assoc] at hfirst ⊢
+  simp only [hFactor stmt wit, StateT.run_bind, StateT.run_pure]
+  rw [← bind_assoc, prEvent_bind]
   refine mul_le_prEvent_bind_of_forall _ _ _ _ hfirst fun q₁ hGood => ?_
   have hnext := hsecond q₁.2 q₁.1.2.1 q₁.1.2.2 (by
     rw [hGood.2.2]
     exact hGood.2.1)
-  simpa only [bind_assoc, pure_bind, Function.comp_def, VA,
+  simpa only [bind_assoc, pure_bind, expect_norm, VA,
     Verifier.GuardedForm.append, FullTranscript.append_fst, FullTranscript.append_snd,
     hGood.1, Bool.true_and, ← hGood.2.2] using hnext
 

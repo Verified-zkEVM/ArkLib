@@ -5671,10 +5671,10 @@ The source uniform-sample event calculation corresponds to
 `SampleableType.prEvent_uniformSample_equiv`. The acceptance cases check the finite native-measure
 event sum and the uniform-sampling statements. No public ArkLib declaration is added.
 
-`Pr_eq_tsum_indicator` is retired with the PMF-valued `Pr_{…}[…]` notation. Its scalar
-compatibility calculation is covered by VCVio's `probOutput_true_eq_probEvent` followed by
-`probEvent_eq_tsum_indicator` or its finite variants, so ArkLib adds no wrapper. The three-sample
-PMF computation is not added, and `$ᵖ` plus `Pr_{…}[…]` remain retired syntax.
+`Pr_eq_tsum_indicator` is retired with the PMF-valued `Pr_{…}[…]` notation. Its sum over point
+masses is VCVio's `wp_eq_tsum_of_countable`, or `wp_eq_sum_fintype` for a finite type, applied to
+the event's indicator, so ArkLib adds no wrapper. The three-sample PMF computation is not added,
+and `$ᵖ` plus `Pr_{…}[…]` remain retired syntax.
 
 ## `ArkLibTest/ToMathlib/Analysis/SpecificLimits.lean`
 
