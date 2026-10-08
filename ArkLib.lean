@@ -669,6 +669,12 @@ public import ArkLib.Interaction.Oracle.Composition
 public import ArkLib.Interaction.Oracle.CompositionSoundness
 public import ArkLib.Interaction.Oracle.CoreRun
 public import ArkLib.Interaction.Oracle.Execution
+public import ArkLib.Interaction.Oracle.FiatShamir.InducedAdversary
+public import ArkLib.Interaction.Oracle.FiatShamir.PublicExecutionCorrespondence
+public import ArkLib.Interaction.Oracle.FiatShamir.PublicMessage
+public import ArkLib.Interaction.Oracle.FiatShamir.PublicStopped
+public import ArkLib.Interaction.Oracle.FiatShamir.SingleSaltSecurity
+public import ArkLib.Interaction.Oracle.FiatShamir.StoppedCompletionTransport
 public import ArkLib.Interaction.Oracle.LoggedExecution
 public import ArkLib.Interaction.Oracle.LoggedRun
 public import ArkLib.Interaction.Oracle.PhasedExecution
@@ -833,6 +839,7 @@ public import ArkLib.ProofSystem.Sumcheck.Interaction.Composition
 public import ArkLib.ProofSystem.Sumcheck.Interaction.Computable
 public import ArkLib.ProofSystem.Sumcheck.Interaction.ComputableCompleteness
 public import ArkLib.ProofSystem.Sumcheck.Interaction.ComputableSoundness
+public import ArkLib.ProofSystem.Sumcheck.Interaction.FiatShamir
 public import ArkLib.ProofSystem.Sumcheck.Interaction.Legacy
 public import ArkLib.ProofSystem.Sumcheck.Interaction.MultivariateRound
 public import ArkLib.ProofSystem.Sumcheck.Interaction.MultivariateSoundness
