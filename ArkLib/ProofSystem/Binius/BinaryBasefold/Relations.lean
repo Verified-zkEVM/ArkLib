@@ -711,10 +711,10 @@ def finalSumcheckStepOracleConsistencyProp {h_le : ϑ ≤ ℓ}
         (challenges := stmtOut.challenges) (oStmt := oStmtOut)
       ∧ finalOracleFoldingConsistency
 
-/-- This is a special case of nonDoomedFoldingProp for `i = ℓ`, where we support
-the consistency between the last oracle `ℓ - ϑ` and the final constant `c`.
-This definition has form similar to masterKState where there is no localChecks.
--/
+/-- The folding state after the final sum-check step: either the oracles are fold-consistent up
+to level `ℓ`, including the consistency of the last oracle `ℓ - ϑ` with the final constant `c`,
+or a block bad event has occurred. It has the shape of `masterKStateProp` without the local
+checks. -/
 def finalSumcheckStepFoldingStateProp {h_le : ϑ ≤ ℓ}
     (input : (FinalSumcheckStatementOut (L := L) (ℓ := ℓ) ×
       (∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ (Fin.last ℓ) j))) : Prop :=

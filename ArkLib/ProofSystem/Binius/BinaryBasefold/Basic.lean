@@ -8,9 +8,11 @@ module
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.Basic.IndexAndSumcheck
 
 /-!
-# ArkLib.ProofSystem.Binius.BinaryBasefold.Basic
+# Binary Basefold protocol data
 
-Protocol contexts, witnesses, and oracle-reduction helpers for Binary Basefold.
+Statements, oracle statements and witnesses of the Binary Basefold rounds, the extraction
+`extractMLP` of a multilinear polynomial from a first oracle close to the code
+(`extractMLP_eq_some_iff_pair_UDRClose`), and the oracle snoc/take helpers.
 -/
 
 @[expose] public section

@@ -9,13 +9,21 @@ module
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.Code
 
 /-!
-## Binary Basefold Compliance
+# Binary Basefold compliance and folding bad events
 
-Protocol-level proximity, compliance, and bad-event definitions for Binary Basefold.
-This file packages:
-1. the compliance predicate relating adjacent folded codewords
-2. fold-error containment and its UDR-close consequence
-3. the full and incremental bad-event predicates used by the soundness development
+## Main definitions
+
+* `isCompliant`: the compliance of an oracle with the next one ([DP24] Definition 4.18).
+* `fold_error_containment`: folding two words creates no disagreement outside their fiberwise
+  disagreement set.
+* `foldingBadEvent`: the folding bad event ([DP24] Definition 4.20), and
+  `incrementalFoldingBadEvent`, its refinement to the first `k` challenges of a block, which is
+  `False` at `k = 0` and equals `foldingBadEvent` at `k = ϑ`.
+
+## References
+
+* [Diamond, B.E. and Posen, J., *Polylogarithmic proofs for multilinears over binary towers*][DP24]
+  Numbering follows the archived revision of [DP24].
 -/
 
 @[expose] public section
@@ -46,7 +54,7 @@ variable {h_ℓ_add_R_rate : ℓ + 𝓡 < r}
 variable {𝓑 : Fin 2 ↪ L}
 
 /--
-Compliance condition (Definition 4.18) : For an index `i` that is a multiple of `steps`,
+Compliance: for an index `i` that is a multiple of `steps`,
 the oracle `f_i` is compliant if it's close to the code fiber-wise, the next oracle
 `f_i_plus_steps` is close to its code, and their unique closest codewords are consistent
 with folding.
@@ -117,7 +125,7 @@ def fold_error_containment (i : Fin r) {destIdx : Fin r} (steps : ℕ)
     folded_Δ_set ⊆ fiberwise_Δ_set
 
 open Classical in
-/-- **Definition 4.20** Bad event for folding : This event captures two scenarios where the
+/-- The folding bad event. It captures two scenarios where the
 random folding challenges undermine the protocol's soundness checks.
 For `i ∈ {0, ..., ℓ - steps}`,
 - In case `d⁽ⁱ⁾(f⁽ⁱ⁾, C⁽ⁱ⁾) < dᵢ₊steps / 2` (fiberwise close):
@@ -149,7 +157,7 @@ def foldingBadEvent (i : Fin r) {destIdx : Fin r} (steps : ℕ)
       (_h_i := by omega) (f := folded_f_i)
 
 open Classical in
-/-- **Definition 4.20.2** (Incremental Bad Events extending Definition 4.20).
+/-- The incremental folding bad event, the partial-block refinement of `foldingBadEvent`.
 For block start index `block_start_idx`, block size `ϑ`, and **partial step count**
 `k ≤ ϑ`, with `destIdx = block_start_idx + ϑ` (the block destination),
 `E(block_start_idx, k)` is defined as follows:

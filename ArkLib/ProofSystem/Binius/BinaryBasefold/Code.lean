@@ -11,7 +11,28 @@ public import ArkLib.Data.CodingTheory.ReedSolomon
 public import ArkLib.Data.CodingTheory.BerlekampWelch.BerlekampWelch
 
 /-!
-# Binary Basefold Code and Decoding
+# Binary Basefold codes and decoding
+
+## Main definitions
+
+* `BBF_Code`, `BBF_CodeDistance`: the Reed–Solomon code on `S⁽ⁱ⁾` used at round `i`, and its
+  minimum distance.
+* `fiberwiseDisagreementSet`, `fiberwiseDistance`, `fiberwiseClose`: distance counted over the
+  fibers of `S⁽ⁱ⁾ → S⁽ⁱ⁺ˢᵗᵉᵖˢ⁾`.
+* `UDRClose`, `UDRCodeword`: closeness within the unique-decoding radius and the unique close
+  codeword.
+
+## Main statements
+
+* `UDRClose_of_fiberwiseClose`: fiberwise closeness implies closeness within the unique-decoding
+  radius.
+* `fold_preserves_BBF_Code_membership`, `iterated_fold_preserves_BBF_Code_membership`: folding
+  maps codewords to codewords.
+
+## References
+
+* [Diamond, B.E. and Posen, J., *Polylogarithmic proofs for multilinears over binary towers*][DP24]
+  Numbering follows the archived revision of [DP24].
 -/
 
 @[expose] public section
@@ -844,9 +865,8 @@ lemma exists_unique_fiberwiseClosestCodeword_within_UDR (i : Fin r) {destIdx : F
     rw [hy_mem_C_i.2.2]
 
 omit [CharP L 2] [DecidableEq 𝔽q] [NeZero ℓ] in
-/-- **Lemma: Single Step BBF_Code membership preservation**
-It establishes that folding a codeword from the i-th code produces a codeword in the (i+1)-th code.
-This relies on **Lemma 4.14** that 1-step folding advances the evaluation polynomial. -/
+/-- One folding step maps a codeword of the `i`-th code to a codeword of the `(i+1)`-th code,
+because a fold advances the evaluation polynomial (`fold_advances_evaluation_poly`). -/
 lemma fold_preserves_BBF_Code_membership (i : Fin r) {destIdx : Fin r}
     (h_destIdx : destIdx = i.val + 1) (h_destIdx_le : destIdx ≤ ℓ)
     (f : (BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)) (r_chal : L) :

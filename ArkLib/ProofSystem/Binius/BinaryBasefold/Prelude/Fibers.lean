@@ -25,14 +25,27 @@ public import Mathlib.Tactic.NormNum
 public import Mathlib.Tactic.Ring
 
 /-!
-# Binary Basefold Prelude
+# Binary Basefold fibers
 
-Core folding definitions and evaluation lemmas for Binary Basefold.
+The fibers of the iterated quotient maps `S⁽ⁱ⁾ → S⁽ʲ⁾` of the additive-NTT domains, and the
+block-matrix and tensor-expansion helpers that the folding identities use.
+
+## Main definitions
+
+* `OracleFunction`: a function on the domain `S⁽ⁱ⁾`.
+* `qMap_total_fiber`: the `2 ^ steps` points of `S⁽ⁱ⁾` above a point of `S⁽ⁱ⁺ˢᵗᵉᵖˢ⁾`, with its
+  coordinate (`qMap_total_fiber_repr_coeff`, `qMap_total_fiber_basis_sum_repr`), injectivity,
+  cardinality and disjointness lemmas.
+* `fiberEvaluations`: the vector of values of a function on a fiber.
+* `challengeTensorExpansion`, `challengeTensorExpansionMatrix`: the tensor `⨂ⱼ (1 - rⱼ, rⱼ)` and
+  its block-diagonal form.
+* `from4Blocks`, `det_from4Blocks_of_commute`: `Fin`-indexed `2 × 2` block matrices and their
+  determinant when the lower blocks commute.
 
 ## References
 
 * [Diamond, B.E. and Posen, J., *Polylogarithmic proofs for multilinears over binary towers*][DP24]
-  Lemma numbering in this file follows the archived revision of [DP24].
+  Numbering follows the archived revision of [DP24].
 -/
 
 @[expose] public section
@@ -43,13 +56,6 @@ open OracleSpec ProtocolSpec Polynomial MvPolynomial Binius.BinaryBasefold
 open scoped NNReal Polynomial
 open Finset AdditiveNTT Nat Matrix
 
-/-
-## Main definitions
-- `qMap_total_fiber_repr_coeff` : the coefficients of the `k`-th `ϑ`-step fiber point of a
-  point `y` in the `(i+ϑ)`-th domain.
-- `qMap_total_fiber_basis_sum_repr` : sum reprensetation of the `k`-th `ϑ`-step fiber point of a
-  point `y` in the `(i+ϑ)`-th domain, relies on `qMap_total_fiber_repr_coeff` for proof.
--/
 section Preliminaries
 
 /-- Hamming distance is non-increasing under inner composition with an injective function.
@@ -904,8 +910,8 @@ theorem qMap_total_fiber_disjoint
     exact iteratedQuotientMap_of_qMap_total_fiber_eq_self y₂ kQuotientIndex
   exact hy_ne (h_map_x_eq_y₁.symm.trans h_map_x_eq_y₂)
 
-/-- Evaluation vector `[f^(i)(x_0) ... f^(i)(x_{2 ^ steps-1})]^T`. This is the rhs
-vector in the identity in **Lemma 4.9** -/
+/-- Evaluation vector `[f^(i)(x_0) ... f^(i)(x_{2 ^ steps-1})]^T` of `f` on the fiber of `y`,
+the right-hand vector of the matrix form of the iterated fold (`iterated_fold_eq_matrix_form`). -/
 def fiberEvaluations (i : Fin r) {destIdx : Fin r} (steps : ℕ)
     (h_destIdx : destIdx = i + steps)
   (h_destIdx_le : destIdx ≤ ℓ)

@@ -8,9 +8,11 @@ module
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.Relations
 
 /-!
-# ArkLib.ProofSystem.Binius.BinaryBasefold.Spec
+# Binary Basefold protocol specifications
 
-Definitions and results for this component of ArkLib.
+The protocol specifications of the fold, commit, relay and final sum-check steps, of the
+blocks, the core interaction and the query phase, with their oracle-interface and sampling
+instances.
 -/
 
 @[expose] public section

@@ -9,9 +9,11 @@ public import ArkLib.ProofSystem.Binius.BinaryBasefold.Compliance
 public import ArkLib.ProofSystem.Sumcheck.Structured
 
 /-!
-# Binary Basefold index arithmetic and sumcheck operations
+# Binary Basefold index arithmetic
 
-Oracle-frontier indices, index bounds, and sumcheck polynomial projections.
+Oracle-frontier indices and the index bounds of the block structure. The sum-check multiplier
+parameter and the round-polynomial projections are the structured sum-check's
+(`Sumcheck.Structured`), re-exported here.
 -/
 
 @[expose] public section

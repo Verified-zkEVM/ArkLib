@@ -618,11 +618,18 @@ home_page/            site assets and assembled website root
   `CoordinateWiseSpecialSoundness.lean` re-exports the core files.
 - Active areas are often grouped by paper or protocol family, for example
   `Data/CodingTheory/ProximityGap/BCIKS20/...` or `ProofSystem/Binius/...`.
-- `ProofSystem/Binius/` currently holds the Binary Basefold foundations (`BinaryBasefold/`:
-  `Prelude`, `SoundnessTools`, `Basic`, `Spec`) and the FRI-Binius prelude
-  (`FRIBinius/Prelude.lean`: `biniusProfile`, `BinaryBasefoldAbstractOStmtIn`). The Binary
-  Basefold steps, core interaction, query phase and full protocol, and the FRI-Binius core
-  interaction and full protocol, are retired pending the port of #383 (tracking issue #1286).
+- `ProofSystem/Binius/` currently holds the Binary Basefold foundations ported from #383 and the
+  FRI-Binius prelude (`FRIBinius/Prelude.lean`: `biniusProfile`, `BinaryBasefoldAbstractOStmtIn`).
+  In `BinaryBasefold/`, `Prelude/Fibers` has the quotient-map fibers and block-matrix helpers,
+  `Prelude/Folding` the fold operators and their proved matrix form, `Prelude` the
+  fold-advances-evaluation lemmas, `Code` the round codes and (fiberwise) unique decoding,
+  `Compliance` compliance and the folding bad events, `Basic/IndexAndSumcheck` and `Basic` the
+  index arithmetic and protocol data, `Relations` the round relations (incremental bad events;
+  strict relations for completeness) and `Spec` the protocol specifications. The sum-check
+  parameter, projections, statements and consistency predicate are the shared
+  `Sumcheck.Structured` ones, re-exported. The Binary Basefold steps, core interaction, query
+  phase and full protocol, and the FRI-Binius core interaction and full protocol, are retired
+  pending the rest of the port (tracking issue #1286).
 - The ABF26 Section 6 toy IOP lives under `ProofSystem/ToyProblem/`. `Spec/` contains the
   domain-generic protocol and extraction theorems, `Impl/IRS.lean` supplies the computable
   interleaved Reed--Solomon extractor, `Impl/FRS.lean` contains neutral KoalaBear folded-RS

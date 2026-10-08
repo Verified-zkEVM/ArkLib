@@ -9,6 +9,18 @@ public import ArkLib.ProofSystem.Binius.BinaryBasefold.Prelude.Folding
 
 /-!
 # Binary Basefold folding preserves polynomial evaluations
+
+## Main statements
+
+* `fold_advances_evaluation_poly`: folding the evaluation of `P⁽ⁱ⁾` over `S⁽ⁱ⁾` gives the
+  evaluation of the folded polynomial `P⁽ⁱ⁺¹⁾` over `S⁽ⁱ⁺¹⁾` ([DP24] Lemma 4.14).
+* `iterated_fold_advances_evaluation_poly`: the same for `steps` folds, and at level `ℓ` the fold
+  of an honest codeword is constant (`iterated_fold_to_level_ℓ_is_constant`).
+
+## References
+
+* [Diamond, B.E. and Posen, J., *Polylogarithmic proofs for multilinears over binary towers*][DP24]
+  Numbering follows the archived revision of [DP24].
 -/
 
 @[expose] public section
@@ -43,9 +55,9 @@ def polyToOracleFunc {domainIdx : Fin r} (P : L[X]) :
   fun y => P.eval y.val
 
 omit [CharP L 2] [DecidableEq 𝔽q] [NeZero ℓ] in
-/-- **Lemma 4.14** : if f⁽ⁱ⁾ is evaluation of P⁽ⁱ⁾(X) over S⁽ⁱ⁾, then fold(f⁽ⁱ⁾, r_chal)
-  is evaluation of P⁽ⁱ⁺¹⁾(X) over S⁽ⁱ⁺¹⁾. At level `i = ℓ`, we have P⁽ˡ⁾ = c
--/
+/-- If `f⁽ⁱ⁾` is the evaluation of `P⁽ⁱ⁾(X)` over `S⁽ⁱ⁾`, then `fold(f⁽ⁱ⁾, r_chal)` is the
+evaluation over `S⁽ⁱ⁺¹⁾` of `P⁽ⁱ⁺¹⁾(X)`, whose novel coefficients are the `r_chal`-combinations
+`(1 - r_chal) · a₂ⱼ + r_chal · a₂ⱼ₊₁` of those of `P⁽ⁱ⁾`. -/
 theorem fold_advances_evaluation_poly
     (i : Fin r) {destIdx : Fin r} (h_destIdx : destIdx = i.val + 1) (h_destIdx_le : destIdx ≤ ℓ)
   (coeffs : Fin (2 ^ (ℓ - ↑i)) → L) (r_chal : L) : -- novel coeffs
@@ -116,10 +128,9 @@ theorem fold_advances_evaluation_poly
       ring
 
 omit [CharP L 2] [DecidableEq 𝔽q] [NeZero ℓ] in
-/-- **Lemma 4.14 Generalization** : if f⁽ⁱ⁾ is evaluation of P⁽ⁱ⁾(X) over S⁽ⁱ⁾,
-then fold(f⁽ⁱ⁾, r_chal) is evaluation of P⁽ⁱ⁺¹⁾(X) over S⁽ⁱ⁺¹⁾.
-At level `i = ℓ`, we have P⁽ˡ⁾ = c (constant polynomial).
--/
+/-- The iterated form of `fold_advances_evaluation_poly`: if `f⁽ⁱ⁾` is the evaluation of
+`P⁽ⁱ⁾(X)` over `S⁽ⁱ⁾`, then the `steps`-fold of `f⁽ⁱ⁾` is the evaluation of the folded
+polynomial over `S⁽ⁱ⁺ˢᵗᵉᵖˢ⁾`. At level `ℓ` the folded polynomial is a constant. -/
 theorem iterated_fold_advances_evaluation_poly
     (i : Fin r) {destIdx : Fin r} (steps : ℕ) (h_destIdx : destIdx = i + steps)
   (h_destIdx_le : destIdx ≤ ℓ)

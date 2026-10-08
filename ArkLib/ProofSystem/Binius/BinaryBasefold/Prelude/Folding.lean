@@ -9,6 +9,26 @@ public import ArkLib.ProofSystem.Binius.BinaryBasefold.Prelude.Fibers
 
 /-!
 # Binary Basefold folding operators and matrix identities
+
+## Main definitions
+
+* `fold`: one round of folding a function on `S⁽ⁱ⁾` by a verifier challenge ([DP24]
+  Definition 4.6); `iterated_fold`: `steps` rounds ([DP24] Definition 4.8).
+* `foldMatrix`: the recursive butterfly matrix of a point; it is the inverse additive NTT on the
+  point's fiber ([DP24] Remark 4.10), and it is invertible (`foldMatrix_det_ne_zero`).
+* `fold_single_matrix_mul_form`: Definition 4.6's vector-matrix-vector form of one fold, restated
+  (`fold_eval_single_matrix_mul_form` proves it equals `fold`);
+  `localized_fold_matrix_form`: the matrix form of an iterated fold in [DP24] Lemma 4.9.
+
+## Main statements
+
+* `iterated_fold_transitivity`: folding `s₁` then `s₂` steps is folding `s₁ + s₂` steps.
+* `iterated_fold_eq_matrix_form`: the iterated fold equals its matrix form ([DP24] Lemma 4.9).
+
+## References
+
+* [Diamond, B.E. and Posen, J., *Polylogarithmic proofs for multilinears over binary towers*][DP24]
+  Numbering follows the archived revision of [DP24].
 -/
 
 @[expose] public section
@@ -113,7 +133,7 @@ lemma butterflyMatrix_det_ne_zero (n : ℕ) (z₀ z₁ : L) (h_ne : z₀ ≠ z�
 
 /-- `BlkDiagMat(n, Mz₀, Mz₁) = [Mz₀, 0;`
                                    `0, Mz₁]`
-where `Mz₀` and `Mz₁` are set as the `n-step` `foldMatrix` of `z₀` and `z₁` in **Lemma 4.9**. -/
+where `Mz₀` and `Mz₁` are the `n`-step `foldMatrix` of the fiber points `z₀` and `z₁`. -/
 def blockDiagMatrix (n : ℕ)
     (Mz₀ Mz₁ : Matrix (Fin (2 ^ n)) (Fin (2 ^ n)) L) :
     Matrix (Fin (2 ^ (n + 1))) (Fin (2 ^ (n + 1))) L :=
@@ -151,7 +171,7 @@ lemma blockDiagMatrix_mulVec_F₂_eq_Fin_merge_PO2 (n : ℕ)
 /-- The recursive definition of the `k-step` fold matrix of point `y`: `M_{k, y}`.
 `M_{k, y} = butterflyMatrix(k, z₀, z₁) * [M_{k-1, z₀}, 0; 0, M_{k-1, z₁}]`
 where `z₀` and `z₁` are the 1-step fiber of `y`. `M_{k, y}` is actually the
-`inverse additive NTT (LCH14)` on the coset `(x₀, ..., x_{2^k-1})` **(Remark 4.10)**. -/
+inverse additive NTT on the coset `(x₀, ..., x_{2^k-1})`. -/
 def foldMatrix (i : Fin r) {destIdx : Fin r} (steps : ℕ)
     (h_destIdx : destIdx.val = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
     (y : sDomain 𝔽q β h_ℓ_add_R_rate destIdx) :
@@ -249,7 +269,7 @@ lemma foldMatrix_det_ne_zero (i : Fin r) {destIdx : Fin r} (steps : ℕ)
         · exact h_det_M_z₁_ne_zero
       · simp only [Fin.isValue, Commute.zero_left]
 
-/-- **Definition 4.8**: Iterated fold over `steps` steps starting at domain index `i`. -/
+/-- The iterated fold over `steps` steps starting at domain index `i`. -/
 def iterated_fold (i : Fin r) (steps : ℕ) {destIdx : Fin r}
     (h_destIdx : destIdx.val = i.val + steps)
   (h_destIdx_le : destIdx ≤ ℓ)
@@ -637,7 +657,7 @@ lemma iterated_fold_first (i : Fin r) {midIdx destIdx : Fin r} (steps : ℕ)
   rw [h_challenges] at h_trans
   exact h_full_steps.trans h_trans.symm
 
-/-- **Definition 4.6** : the single-step vector-matrix-vector multiplication form of `fold` -/
+/-- The single-step vector-matrix-vector multiplication form of `fold`. -/
 def fold_single_matrix_mul_form (i : Fin r) {destIdx : Fin r}
     (h_destIdx : destIdx = i.val + 1) (h_destIdx_le : destIdx ≤ ℓ)
   (f : (sDomain 𝔽q β h_ℓ_add_R_rate) i → L)
@@ -658,8 +678,8 @@ def fold_single_matrix_mul_form (i : Fin r) {destIdx : Fin r}
     exact dotProduct challenge_vec intermediate_fn -- vec-vec dot product
 
 omit [CharP L 2] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero ℓ] in
-/-- The equality between the 1-step point-wise fold() operation vs the vec-mat-vec
-multiplication form from **Definition 4.6** -/
+/-- The pointwise single-step `fold` equals its vector-matrix-vector form
+`fold_single_matrix_mul_form`. -/
 lemma fold_eval_single_matrix_mul_form (i : Fin r) {destIdx : Fin r}
     (h_destIdx : destIdx = i.val + 1) (h_destIdx_le : destIdx ≤ ℓ)
   (f : (sDomain 𝔽q β h_ℓ_add_R_rate) i → L) (r_challenge : L) :
@@ -705,7 +725,7 @@ lemma fold_eval_single_matrix_mul_form (i : Fin r) {destIdx : Fin r}
   unfold z₀ z₁ fiberMap -- this helps Lean understand the goal better
   ring_nf
 
-/-- The single point vec-mat-vec form of `fold(...)` in **Lemma 4.9** -/
+/-- The single-point vector-matrix-vector form of the iterated fold. -/
 def single_point_localized_fold_matrix_form (i : Fin r) {destIdx : Fin r} (steps : ℕ)
     (h_destIdx : destIdx = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
   (r_challenges : Fin steps → L)
@@ -753,7 +773,7 @@ lemma single_point_localized_fold_matrix_form_congr_steps_index
     (fun k ↦ fiber_eval_mapping ⟨k, by subst h_steps_eq_steps'; exact k.is_lt⟩) := by
   subst h_steps_eq_steps'; rfl
 
-/-- **From Lemma 4.9**: Matrix-vector multiplication form of iterated fold :
+/-- Matrix-vector multiplication form of the iterated fold:
 For a local `steps > 0`, `∀ i ∈ {0, ..., l-steps}`, `y ∈ S^(i+steps)`,
 `fold(f^(i), r_0, ..., r_{steps-1})(y) = [⨂_{j=0}^{steps-1}(1-r_j, r_j)] • M_{steps, y}`
 `• [f^(i)(x_0) ... f^(i)(x_{2 ^ steps-1})]^T`,
@@ -774,8 +794,8 @@ def localized_fold_matrix_form (i : Fin r) {destIdx : Fin r} (steps : ℕ)
       (r_challenges := r_challenges) (y := y) (fiber_eval_mapping := fiber_eval_mapping)
 
 /-- The (2 x 1) vector `F₂(steps, r, z₀, z₁) = [fold(steps, r, z₀), fold(steps, r, z₁)]`.
-This is the right-most vector when decomposing the outer single-step fold of **Lemma 4.9**.
-NOTE: `h_F₂_y_eq` in lemma `iterated_fold_eq_matrix_form` below shows it OG form in Lemma 4.9. -/
+This is the right-most vector when the outer single-step fold of the matrix form is decomposed
+(`h_F₂_y_eq` in the proof of `iterated_fold_eq_matrix_form`). -/
 def fold_eval_fiber₂_vec (i : Fin r) {midIdx destIdx : Fin r} (steps : ℕ)
     (h_midIdx : midIdx = i + steps) (h_destIdx : destIdx = i + steps + 1)
     (h_destIdx_le : destIdx ≤ ℓ)
@@ -792,7 +812,7 @@ def fold_eval_fiber₂_vec (i : Fin r) {midIdx destIdx : Fin r} (steps : ℕ)
         (f := f) (r_challenges := r_challenges) zᵢ
 
 omit [CharP L 2] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero ℓ] in
-/-- **Helper #1 for Lemma 4.9**: The vector `F₂(steps, r, y) = `
+/-- Helper for `iterated_fold_eq_matrix_form`: the vector `F₂(steps, r, y) = `
 `MatrixCTensor(steps, r) * blockDiagMatrix(steps, M_z₀, M_z₁) * fiberEvaluations(steps+1, r, y)`.
 where `z₀, z₁` are the fiber of `y`, `y` is in `S^(i+steps+1)`). -/
 lemma fold_eval_fiber₂_eq_mat_mat_vec_mul (i : Fin r) {midIdx destIdx : Fin r} (steps : ℕ)
@@ -867,9 +887,9 @@ lemma fold_eval_fiber₂_eq_mat_mat_vec_mul (i : Fin r) {midIdx destIdx : Fin r}
     rfl
 
 omit [NeZero r] [Fintype L] [DecidableEq L] [CharP L 2] [NeZero ℓ] [NeZero 𝓡] in
-/-- **Helper #2 for Lemma 4.9**: the (middle) interchangibility transformation in the Lemma 4.9
-`butterflyMstrix(0, z₀, z₁) * MatrixCTensor(n, r)`
-`= MatrixCTensor(n, r) * butterflyMatrix(n, z₀, z₁)`. Both have size `2 x (2^(n + 1))` -/
+/-- Helper for `iterated_fold_eq_matrix_form`: the butterfly matrix commutes past the challenge
+tensor matrix, `butterflyMatrix(0, z₀, z₁) * MatrixCTensor(n, r)`
+`= MatrixCTensor(n, r) * butterflyMatrix(n, z₀, z₁)`, both of size `2 × 2^(n + 1)`. -/
 lemma butterflyMatrix0_mul_matrixCTensor_eq_matrixCTensor_mul_butterflyMatrix (n : ℕ)
     (z₀ z₁ : L) (r_challenges : Fin n → L) :
     (butterflyMatrix (𝓡 := 𝓡) (ℓ := ℓ) (r := r) (n := 0) z₀ z₁) *
@@ -891,7 +911,7 @@ lemma butterflyMatrix0_mul_matrixCTensor_eq_matrixCTensor_mul_butterflyMatrix (n
     Matrix.mul_neg, neg_zero, smul_zero]
 
 omit [CharP L 2] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero ℓ] in
-/-- **Lemma 4.9.** The iterated fold equals the localized fold evaluation via matmul form -/
+/-- The iterated fold equals its localized matrix form `localized_fold_matrix_form`. -/
 theorem iterated_fold_eq_matrix_form (i : Fin r) {destIdx : Fin r} (steps : ℕ)
     (h_destIdx : destIdx = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
     (f : (sDomain 𝔽q β h_ℓ_add_R_rate) i → L)
@@ -992,7 +1012,7 @@ theorem iterated_fold_eq_matrix_form (i : Fin r) {destIdx : Fin r} (steps : ℕ)
     rfl
 
 omit [CharP L 2] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero ℓ] in
-/-- **Corollary of Lemma 4.9**: Direct connection between single-point
+/-- Direct connection between the single-point
 matrix form and iterated fold. This is a point-wise version of
 `iterated_fold_eq_matrix_form` that directly connects
 `single_point_localized_fold_matrix_form` with `fiberEvaluations` to `iterated_fold`.
