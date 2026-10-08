@@ -17,7 +17,6 @@ open Interaction.Oracle.Security.StateRestoration
 
 namespace Interaction.Oracle.Security.StateRestorationBudgetTest
 
-set_option backward.isDefEq.respectTransparency false
 
 @[instance_reducible] def messageInterface : OracleInterface (Fin 8) where
   Query := Unit
@@ -181,8 +180,8 @@ theorem observation (z : Nat) (firstMessage secondMessage : Fin 8)
     tree, rounds, protocol, Protocol.oracleWith, Protocol.public, Protocol.done,
     TypeTree.oracle, TypeTree.public, TypeTree.done, runtimeLens, oracleTerminal]
   by_cases accepted : first = 0 ∨ second = 0
-  all_goals simp only [accepted, ↓reduceIte, evalWithAnswerFn_pure, Option.map_none]
-  rfl
+  all_goals simp only [accepted, ↓reduceIte]
+  all_goals rfl
 
 theorem outputLaw (z : Nat) (path : tree.ExecutionPath) (w : Nat) :
     ((extractor z).terminalState path).holds (terminalWitness z path w) ↔
@@ -193,7 +192,7 @@ theorem outputLaw (z : Nat) (path : tree.ExecutionPath) (w : Nat) :
   change Fin 8 at first
   change Fin 16 at second
   change Fin 8 at secondMessage
-  rw [observation]
+  rw [observation z firstMessage secondMessage first second]
   change ((first = 0 ∨ second = 0) ∧ w ≤ secondMessage.val) ↔
     ∃ claim, (if first = 0 ∨ second = 0 then
       some (returnedClaim z ⟨PUnit.unit, first, PUnit.unit, second, PUnit.unit⟩ secondMessage)
