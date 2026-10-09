@@ -771,6 +771,7 @@ public import ArkLib.ProofSystem.Binius.BinaryBasefold.Compliance
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.Prelude
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.Prelude.Fibers
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.Prelude.Folding
+public import ArkLib.ProofSystem.Binius.BinaryBasefold.ReductionLogic
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.Relations
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.Soundness.Incremental
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.Soundness.Lift
