@@ -301,8 +301,9 @@ theorem addCases'_right {m n : ℕ} {α : Fin m → Sort u} {β : Fin n → Sort
 
 section Sum
 
--- Append multiple `Fin` tuples?
-
+/-- Embed into the first summand whose size is `n`. Membership by value does not
+distinguish repeated occurrences, so these embeddings do not in general cover
+`Fin l.sum` and cannot provide unrestricted dependent case analysis. -/
 def castSum (l : List ℕ) {n : ℕ} (h : n ∈ l) : Fin n → Fin l.sum := fun i =>
   match l with
   | [] => by contradiction
@@ -319,23 +320,6 @@ theorem castSum_castLT {l' : List ℕ} {i : ℕ} (j : Fin i) :
 
 theorem castSum_castAdd {n m : ℕ} (i : Fin n) : castSum [n, m] (by simp) i = castAdd m i := by
   simp [castSum]
-
-/-- Case analysis on `Fin l.sum` by the list summand containing `i`.
-
-The recursive `natAdd` branch is still admitted (see the commented recursion sketch below),
-so anything elaborating through `sumCases` inherits `sorryAx`. -/
-def sumCases {l : List ℕ} {motive : Fin l.sum → Sort*}
-    (cases : ∀ (n : ℕ) (h : n ∈ l) (i : Fin n), motive (castSum l h i))
-    (i : Fin l.sum) : motive i := match l with
-  | [] => by simp only [List.sum_nil] at i; exact elim0 i
-  | n' :: l' => by
-    simp only [List.sum_cons] at i
-    by_cases hi : i < n'
-    · convert cases n' (by simp) ⟨i.val, hi⟩
-      simp [castSum]
-    · have hj' : i.val - n' < l'.sum := by omega
-      sorry
-      -- refine sumCases (l := l') (motive := motive ∘ natAdd i') ?_ ⟨j.val - i', hj'⟩
 
 end Sum
 

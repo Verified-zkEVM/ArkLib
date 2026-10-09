@@ -31083,7 +31083,7 @@
           "signature": "theorem addCases'_right {m n : \u2115} {\u03b1 : Fin m \u2192 Sort u} {\u03b2 : Fin n \u2192 Sort u}"
         },
         {
-          "doc": "",
+          "doc": "Embed into the first summand whose size is `n`. Membership by value does not distinguish repeated occurrences, so these embeddings do not in general cover `Fin l.sum` and cannot provide unrestricted dependent case analysis.",
           "kind": "def",
           "line": 302,
           "name": "Fin.castSum",
@@ -31108,15 +31108,6 @@
           "namespace": "Fin",
           "short_name": "castSum_castAdd",
           "signature": "theorem castSum_castAdd {n m : \u2115} (i : Fin n) : castSum [n, m] (by simp) i = castAdd m i := by"
-        },
-        {
-          "doc": "Case analysis on `Fin l.sum` by the list summand containing `i`. The recursive `natAdd` branch is still admitted (see the commented recursion sketch below), so anything elaborating through `sumCases` inherits `sorryAx`.",
-          "kind": "def",
-          "line": 323,
-          "name": "Fin.sumCases",
-          "namespace": "Fin",
-          "short_name": "sumCases",
-          "signature": "def sumCases {l : List \u2115} {motive : Fin l.sum \u2192 Sort*}"
         },
         {
           "doc": "",
@@ -39279,15 +39270,6 @@
           "namespace": "MvPolynomial",
           "short_name": "eq_of_degreeOf_lt_card_of_eval_eq",
           "signature": "theorem eq_of_degreeOf_lt_card_of_eval_eq {p q : R[X \u03c3]} (S : \u03c3 \u2192 Finset R)"
-        },
-        {
-          "doc": "Define basis polynomials for interpolation",
-          "kind": "def",
-          "line": 247,
-          "name": "MvPolynomial.basis",
-          "namespace": "MvPolynomial",
-          "short_name": "basis",
-          "signature": "def basis : F := sorry"
         }
       ]
     },
@@ -68369,7 +68351,7 @@
   },
   "stats": {
     "ArkLib": {
-      "declarations": 7414,
+      "declarations": 7412,
       "files": 417
     }
   }
