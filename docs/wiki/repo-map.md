@@ -632,9 +632,17 @@ home_page/            site assets and assembled website root
   and `Incremental` the per-challenge bound on the incremental folding bad event
   (`prob_incrementalFoldingBadEvent_fresh_le`, the one-challenge refinement of [DP24]
   Proposition 4.21). The generic even/odd split lemmas it uses live in
-  `Data/CodingTheory/ProximityGap/DG25/Basic.lean`. The Binary Basefold steps, core interaction,
-  query phase and full protocol, and the FRI-Binius core interaction and full protocol, are
-  retired pending the rest of the port (tracking issue #1286).
+  `Data/CodingTheory/ProximityGap/DG25/Basic.lean`. `ReductionLogic` holds the deterministic logic
+  of the single steps (`ReductionLogicStep`: check, output, honest transcript, strong
+  completeness, and the guarded form `ReductionLogicStep.queryGuardedForm` of a verifier built
+  from a step), and `Steps/` the steps as oracle reductions: `Fold/Protocol` and `Fold` the fold
+  step, `Commit` the commit step, `Relay` the zero-round relay step and `FinalSumcheck` (with
+  `FinalSumcheck/Extraction`, decoding the first oracle) the final sum-check step. Each step has a
+  named guarded form, perfect completeness through the guarded completeness route, and worst-case
+  round-by-round knowledge soundness at its own extractor and knowledge-state function, with
+  existential and averaged forms. The core interaction, query phase and full protocol, and the
+  FRI-Binius core interaction and full protocol, are retired pending the rest of the port
+  (tracking issue #1286).
 - The ABF26 Section 6 toy IOP lives under `ProofSystem/ToyProblem/`. `Spec/` contains the
   domain-generic protocol and extraction theorems, `Impl/IRS.lean` supplies the computable
   interleaved Reed--Solomon extractor, `Impl/FRS.lean` contains neutral KoalaBear folded-RS
