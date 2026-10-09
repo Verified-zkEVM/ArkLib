@@ -396,6 +396,15 @@ instance {i : Fin ℓ} : ∀ j, SampleableType ((pSpecCommit 𝔽q β
   (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).Challenge j)
   | ⟨0, hj⟩ => by nomatch hj
 
+/-- The commit step sends no challenge. -/
+instance {i : Fin ℓ} :
+    IsEmpty (pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).ChallengeIdx :=
+  ⟨fun ⟨0, h⟩ => nomatch h⟩
+
+/-- The final sum-check step sends no challenge. -/
+instance : IsEmpty (pSpecFinalSumcheckStep (L := L)).ChallengeIdx :=
+  ⟨fun ⟨0, h⟩ => nomatch h⟩
+
 instance : ∀ j, SampleableType ((pSpecFold (L:=L)).Challenge j)
   | ⟨0, h0⟩ => by nomatch h0
   | ⟨1, _⟩ => by

@@ -776,6 +776,13 @@ public import ArkLib.ProofSystem.Binius.BinaryBasefold.Relations
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.Soundness.Incremental
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.Soundness.Lift
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.Spec
+public import ArkLib.ProofSystem.Binius.BinaryBasefold.Steps
+public import ArkLib.ProofSystem.Binius.BinaryBasefold.Steps.Commit
+public import ArkLib.ProofSystem.Binius.BinaryBasefold.Steps.FinalSumcheck
+public import ArkLib.ProofSystem.Binius.BinaryBasefold.Steps.FinalSumcheck.Extraction
+public import ArkLib.ProofSystem.Binius.BinaryBasefold.Steps.Fold
+public import ArkLib.ProofSystem.Binius.BinaryBasefold.Steps.Fold.Protocol
+public import ArkLib.ProofSystem.Binius.BinaryBasefold.Steps.Relay
 public import ArkLib.ProofSystem.Binius.FRIBinius.Prelude
 public import ArkLib.ProofSystem.Component.CheckClaim
 public import ArkLib.ProofSystem.Component.DoNothing
