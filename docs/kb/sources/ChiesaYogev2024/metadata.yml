@@ -1,0 +1,11 @@
+bibkey: ChiesaYogev2024
+source_kind: official-tex
+source_url: https://snargsbook.org/
+repository_url: https://github.com/hash-based-snargs-book/hash-based-snargs-book
+source_revision: 305fa3d9d19ee6dba135de64b3156d1760df8426
+canonical_source: https://github.com/hash-based-snargs-book/hash-based-snargs-book/blob/305fa3d9d19ee6dba135de64b3156d1760df8426/snargs-book.tex
+version: "1.2, March 25, 2026"
+checked_on: "2026-10-02 America/New_York"
+license: "CC BY-SA 4.0, as stated by the source repository"
+committed_artifacts: []
+notes: "Analysis uses the official TeX and its definition labels. The 2024 bibliography key is retained; no claim of exhaustive whole-book coverage."

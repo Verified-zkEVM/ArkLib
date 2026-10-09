@@ -1,10 +1,18 @@
 # 04 — Oracle Elimination: Compiler Passes, Backends, and Guarantee Transport
 
 **Normative interfaces, fluid internals.** How ideal oracle reductions become real argument systems.
-Validated against Chiesa–Yogev's BCS chapters (whose modular proof factors exactly as this pipeline:
-`BCS = HashChainFS(iBCS)`); the preserved
-[CY coverage audit](https://github.com/Verified-zkEVM/ArkLib/blob/archive/oracle-reduction-v2-pre-split/docs/design/archive/gpt-cy-coverage.md)
-is this document's conformance suite.
+Chiesa-Yogev's modular BCS proof, `BCS = HashChainFS(iBCS)`, is one required specialization.
+The [current CY comparison](../kb/audits/chiesa-yogev-interaction.md) and
+[broader literature map](../kb/audits/interaction-literature-map.md) record the source contracts
+and gaps. The archived pre-split audit is historical, not a current conformance certificate.
+
+Compiler scope also includes Funky's functional-commitment route and Chiesa-Orru's
+duplex-sponge route through basic Fiat-Shamir. They consume different backend and trace
+guarantees. Functional binding with query solving/tail control must not be silently replaced
+by mandatory full-message extraction. Extending these accept/reject compiler theorems to
+general relation-to-relation outputs requires a separate theorem. Duplex statement repairs,
+relaxed-relation monotonicity, and the later zero-knowledge/post-quantum interfaces remain
+explicit obligations rather than implicit consequences of this pass decomposition.
 
 ## 1. The pipeline
 
@@ -13,7 +21,7 @@ ideal oracle reduction (Δ oracles, Γ = ∅ or small)
   ├─ RepresentOracles   oracle resources/messages ↦ commitment handles (in Γ-worlds)
   ├─ LowerAccesses      ideal reads ↦ responses + verified opening arguments
   ├─ TransportBoundary  inline | seal-and-link | derive (CommitAction)
-  └─ FiatShamir         public coins ↦ challenges from the world (hash-chain or basic)
+  └─ FiatShamir         public coins ↦ challenges from the world (hash-chain, basic, or duplex)
 → NARG = the Δ = ∅, one-message case of the same Reduction type, in world Γ
 ```
 
@@ -97,7 +105,7 @@ The pass × property matrix (normative; reproduced from round 3 so this document
 | Pass | Functional correctness | Ordinary soundness | Knowledge/extraction | Zero knowledge |
 |---|---|---|---|---|
 | `RepresentOracles` | honest commitment correctness; public-view projection | none by itself | none by itself | commitment leakage only |
-| `LowerAccesses` | opening correctness + plan/trace erasure | trace coherence; stronger binding only when the ideal relation needs it | multi-extraction/WEE or backend tree extraction, with fork coherence | bounded-query ideal simulator + selective/adaptive hiding + opening simulation |
+| `LowerAccesses` | opening correctness + plan/trace erasure | trace coherence; stronger binding only when the ideal relation needs it | backend-specific: multi-extraction/WEE, tree extraction with fork coherence, or SR function binding with query solving/tail control | bounded-query ideal simulator + selective/adaptive hiding + opening simulation |
 | fixed-consumer inline | composed evaluator equals lowered consumer | inherited after access lowering | inherited only with the preceding extraction theorem | leakage of the concrete consumer trace is charged |
 | seal-and-link boundary | materialization + link correctness | sound link argument + target-handle coherence | extractable link or RBRTE-compatible witness relation | simulatable link argument |
 | `CommitAction` boundary | representation commuting square | action correctness + required binding across forks | leaf openings/witnesses + relational tree bridge | action leakage + simulator compatibility |
