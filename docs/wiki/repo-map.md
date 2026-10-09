@@ -666,7 +666,13 @@ home_page/            site assets and assembled website root
   hypotheses.
 - Ring switching is a **family of constructions, not one protocol** — the umbrella
   `ProofSystem/RingSwitching/Basic.lean` carries the taxonomy over two construction folders.
-  `Packing/` is the small→large packing family: `Profile.lean` holds the shared
+  `Packing/Coordinates.lean` holds independent packing/opening bases. `FiniteObservation`,
+  `CheckedObservation`, `Polynomial` and `Relations` provide framework-independent
+  reconstruction and readback; `ScalarHead/{Layout,Quirky}` supply certified layouts.
+  `Multiplier` uses `Data/Matrix/ReadOnce` to evaluate the interpolated weight. `Batching`
+  supplies native uniform-challenge separation over an explicit `SampleableType`.
+  These modules do not import the legacy reduction framework.
+  `Packing/` also contains the legacy small→large packing family: `Profile.lean` holds the shared
   packing data layer `RingSwitchingProfile` (packing data + reconstruction laws) and the
   remaining files are the DP24/Binius construction (`Prelude` with `packMLE` + the tensor-product
   constructor `tensorProductProfile`, `Spec`, `BatchingPhase`, `SumcheckPhase`, `General`; RBR
