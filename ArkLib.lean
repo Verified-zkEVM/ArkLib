@@ -769,6 +769,7 @@ public import ArkLib.ProofSystem.Binius.BinaryBasefold.Basic
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.Basic.IndexAndSumcheck
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.Code
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.Compliance
+public import ArkLib.ProofSystem.Binius.BinaryBasefold.CoreInteractionPhase
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.CoreInteractionPhase.Protocol
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.CoreInteractionPhase.Security
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.Prelude
