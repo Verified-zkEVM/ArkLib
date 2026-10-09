@@ -640,9 +640,16 @@ home_page/            site assets and assembled website root
   `FinalSumcheck/Extraction`, decoding the first oracle) the final sum-check step. Each step has a
   named guarded form, perfect completeness through the guarded completeness route, and worst-case
   round-by-round knowledge soundness at its own extractor and knowledge-state function, with
-  existential and averaged forms. The core interaction, query phase and full protocol, and the
-  FRI-Binius core interaction and full protocol, are retired pending the rest of the port
-  (tracking issue #1286).
+  existential and averaged forms. `CoreInteractionPhase/Protocol` composes the steps into the
+  fold-relay and fold-commit rounds, the non-last and last blocks of `ϑ` rounds and the whole
+  sequence of sum-check-and-fold rounds (`sumcheckFoldOracleVerifier`), each with a guarded form
+  built from its steps' and moved along index casts by `castIdx`; `CoreInteractionPhase/Security`
+  proves their perfect completeness and worst-case round-by-round knowledge soundness through the
+  guarded composition theorems, with averaged forms; `CoreInteractionPhase` appends the final
+  sum-check step (the core interaction) and bounds the total error of the sum-check-and-fold rounds
+  (`sumcheckFoldKnowledgeError_le`). The query phase and full protocol, and the FRI-Binius core
+  interaction and full protocol, are retired pending the rest of the port (tracking issue
+  #1286).
 - The ABF26 Section 6 toy IOP lives under `ProofSystem/ToyProblem/`. `Spec/` contains the
   domain-generic protocol and extraction theorems, `Impl/IRS.lean` supplies the computable
   interleaved Reed--Solomon extractor, `Impl/FRS.lean` contains neutral KoalaBear folded-RS
@@ -688,6 +695,12 @@ home_page/            site assets and assembled website root
   `Sequential/GuardedRoundByRound.lean` extends guarded worst-case round-by-round knowledge
   soundness to finite chains, with the `seqCompose` error reindexing proved;
   `Sequential/OracleCompleteness.lean` supplies binary and finite-chain oracle-reduction wrappers.
+  `Sequential/GuardedNary.lean` also gives the guarded form of an appended or sequentially
+  composed oracle verifier from its components' (`OracleVerifier.appendGuardedForm`,
+  `OracleVerifier.seqComposeGuardedForm`). `OracleReduction/CastIdx.lean` moves an oracle verifier
+  or reduction along equalities of the indices of its statement, oracle-statement and witness
+  families (`OracleVerifier.castIdx`, `OracleReduction.castIdx`), with the worst-case
+  round-by-round knowledge soundness, perfect completeness and guarded form moving along.
   `Sequential/NoAmbient.lean` proves output purity for empty ambient oracles and constructs guarded
   forms from explicit fallback maps. `LiftContext/Purity.lean` transports output purity and guarded
   forms through context lifting.

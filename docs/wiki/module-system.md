@@ -159,9 +159,11 @@ Every row below is an error seen while porting real ArkLib files.
 ### `backward.proofsInPublic`
 
 No file currently sets `set_option backward.proofsInPublic true`. The three Binius files that did
-(Binary Basefold's `CoreInteractionPhase` and `QueryPhase`, FRI-Binius's `CoreInteractionPhase`)
-are retired pending the port of #383 (tracking issue #1286), and that port's files may bring the
-option back.
+were Binary Basefold's `CoreInteractionPhase` and `QueryPhase` and FRI-Binius's
+`CoreInteractionPhase`. The first is ported from #383 without the option: its composed bundles
+have explicit result types, and their index equalities are named lemmas or term proofs, so no
+`by` block is left to elaborate against an unknown type. The other two are retired pending the
+rest of the port (tracking issue #1286).
 
 Those files held composed verifier and reduction bundles written as `def foo := <let-chain>` with
 no type ascription, whose *inferred* type embeds the inline `Fin` bounds proofs from their bodies. That
@@ -174,8 +176,8 @@ This is a compatibility flag, not a suppression — it silences no diagnostic an
 budget still applies to any file that sets it. Do not reach for it before trying the hoist above,
 and never reach for `backward.privateInPublic`, which logs a warning at every access site.
 
-Writing these definitions with explicit result types would retire the option; that is a
-Binius-authors change, not a mechanical one.
+Writing these definitions with explicit result types retires the option, as the Binary Basefold
+core interaction shows.
 
 ### Why `ArkLibTest/` stays classic
 
