@@ -23,6 +23,9 @@ facts a round-by-round proof needs about such a verifier.
   event `rbrExtractionFailureEvent` for every input statement and every length-one transcript
   prefix, that is, every prover message. The averaged notion follows through
   `Verifier.rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness`.
+* `Verifier.rbrKnowledgeSoundnessWorstCaseWith_of_isEmpty_challengeIdx`: a protocol with no
+  verifier challenge is worst-case round-by-round knowledge sound at any extractor, knowledge-state
+  function and error, since there is no extraction-failure event to bound.
 
 The guarded form of a query-guard-return oracle verifier, which
 `Verifier.GuardedForm.check_and_of_prEvent_pos` consumes, is `Verifier.GuardedForm.ofQueryGuard`
@@ -91,5 +94,20 @@ theorem rbrKnowledgeSoundnessWorstCaseWith_of_two_message {pSpec : ProtocolSpec 
   fin_cases j
   · exact absurd (hDir0.symm.trans hj) (by decide)
   · exact hbound stmtIn transcript
+
+/-- **Worst-case round-by-round knowledge soundness without challenges.** A protocol with no
+verifier challenge has no extraction-failure event to bound, so every extractor and
+knowledge-state function give worst-case round-by-round knowledge soundness, at any error. The
+substance of such a step lies in its knowledge-state function's obligations. -/
+theorem rbrKnowledgeSoundnessWorstCaseWith_of_isEmpty_challengeIdx {n : ℕ}
+    {pSpec : ProtocolSpec n} [∀ i, SampleableType (pSpec.Challenge i)]
+    [IsEmpty pSpec.ChallengeIdx] {V : Verifier oSpec StmtIn StmtOut pSpec}
+    {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
+    {rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0} {WitMid : Fin (n + 1) → Type}
+    (extractor : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid)
+    (kSF : V.KnowledgeStateFunction init impl relIn relOut extractor) :
+    V.rbrKnowledgeSoundnessWorstCaseWith init impl relIn relOut WitMid extractor kSF
+      rbrKnowledgeError :=
+  fun _ i _ => (IsEmpty.false i).elim
 
 end Verifier
