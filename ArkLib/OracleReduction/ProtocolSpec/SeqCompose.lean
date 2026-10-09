@@ -345,6 +345,13 @@ theorem ChallengeIdx.sumEquiv_symm_inr (i₂ : ChallengeIdx pSpec₂) :
       = Sum.inr i₂ := by
   rw [Equiv.symm_apply_eq]; simp
 
+/-- A sum over the challenge indices of an appended protocol of a function given on each part,
+read back through `ChallengeIdx.sumEquiv`, is the sum of the two parts' sums. -/
+theorem ChallengeIdx.sum_sumElim_comp_sumEquiv_symm {M : Type*} [AddCommMonoid M]
+    (f : ChallengeIdx pSpec₁ → M) (g : ChallengeIdx pSpec₂ → M) :
+    ∑ k, (Sum.elim f g ∘ ChallengeIdx.sumEquiv.symm) k = ∑ k, f k + ∑ k, g k :=
+  (Equiv.sum_comp ChallengeIdx.sumEquiv.symm (Sum.elim f g)).trans (Fintype.sum_sum_type _)
+
 /-- Sequential composition of a family of `ProtocolSpec`s, indexed by `i : Fin m`.
 
 Defined for definitional equality, so that:
@@ -666,6 +673,17 @@ def seqComposeChallengeEquiv {m : ℕ} {n : Fin m → ℕ} (pSpec : ∀ i, Proto
     rw! (castMode := .all) [Fin.splitSum_embedSum i j.1]
     rfl
   right_inv := by intro; simp [seqComposeChallengeIdxToSigma, sigmaChallengeIdxToSeqCompose]
+
+/-- A sum over the challenge indices of a sequential composition of a function given component
+by component, read back through `seqComposeChallengeIdxToSigma`, is the sum over the components
+of their sums. -/
+theorem sum_seqComposeChallengeIdxToSigma {m : ℕ} {n : Fin m → ℕ}
+    {pSpec : ∀ i, ProtocolSpec (n i)} {M : Type*} [AddCommMonoid M]
+    (f : ∀ i, (pSpec i).ChallengeIdx → M) :
+    ∑ k : (seqCompose pSpec).ChallengeIdx,
+      (let ij := seqComposeChallengeIdxToSigma k; f ij.1 ij.2) = ∑ i, ∑ k, f i k :=
+  (Equiv.sum_comp (seqComposeChallengeEquiv pSpec).symm (fun ij => f ij.1 ij.2)).trans
+    (Fintype.sum_sigma _)
 
 def sigmaMessageIdxToSeqCompose {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
     (i : Fin m) (j : (pSpec i).MessageIdx) : (seqCompose pSpec).MessageIdx :=

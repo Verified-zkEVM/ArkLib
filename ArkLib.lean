@@ -695,6 +695,7 @@ public import ArkLib.Interaction.Reduction
 public import ArkLib.OracleReduction.BCS.Basic
 public import ArkLib.OracleReduction.Basic
 public import ArkLib.OracleReduction.Cast
+public import ArkLib.OracleReduction.CastIdx
 public import ArkLib.OracleReduction.Composition.Parallel.Basic
 public import ArkLib.OracleReduction.Composition.Sequential.Append
 public import ArkLib.OracleReduction.Composition.Sequential.Append.Basic
