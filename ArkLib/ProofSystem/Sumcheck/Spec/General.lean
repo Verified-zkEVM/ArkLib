@@ -22,7 +22,7 @@ that those implementations derive security from that of the abstract protocol.
 ## Protocol Specification
 
 The sum-check protocol is parameterized by the following:
-- `R`: the underlying ring (for soundness, required to be finite and a domain)
+- `R`: the underlying commutative semiring (for soundness, finite with `IsDomain R`)
 - `n : ℕ+`: the number of variables (also number of rounds)
 - `deg : ℕ`: the individual degree bound for the polynomial
 - `D : Fin m ↪ R`: the set of `m` evaluation points for each variable (for some `m`), represented as
@@ -218,9 +218,10 @@ theorem reduction_perfectCompleteness :
     (fun _ => inferInstance) (SingleRound.verifierGuardedForm R n deg D oSpec)
     (fun i s => SingleRound.reduction_perfectCompleteness (init := pure s) i)
 
-/-- Round-by-round knowledge soundness with error `deg / |R|` per challenge for the (full)
-  sum-check protocol -/
-theorem oracleVerifier_rbrKnowledgeSoundness [Fintype R] :
+/-- Round-by-round knowledge soundness with error `deg / |R|` per challenge over a finite
+commutative semiring with `IsDomain R`. This composition still depends on admitted legacy
+soundness results. -/
+theorem oracleVerifier_rbrKnowledgeSoundness [Fintype R] [IsDomain R] :
     (oracleVerifier R deg D n oSpec).rbrKnowledgeSoundness init impl
       (relationRound R n deg D 0) (relationRound R n deg D (.last n))
       (fun _ => (deg : ℝ≥0) / (Fintype.card R)) :=
