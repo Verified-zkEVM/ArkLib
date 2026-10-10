@@ -695,6 +695,7 @@ public import ArkLib.Interaction.Reduction
 public import ArkLib.OracleReduction.BCS.Basic
 public import ArkLib.OracleReduction.Basic
 public import ArkLib.OracleReduction.Cast
+public import ArkLib.OracleReduction.CastIdx
 public import ArkLib.OracleReduction.Composition.Parallel.Basic
 public import ArkLib.OracleReduction.Composition.Sequential.Append
 public import ArkLib.OracleReduction.Composition.Sequential.Append.Basic
@@ -768,6 +769,9 @@ public import ArkLib.ProofSystem.Binius.BinaryBasefold.Basic
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.Basic.IndexAndSumcheck
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.Code
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.Compliance
+public import ArkLib.ProofSystem.Binius.BinaryBasefold.CoreInteractionPhase
+public import ArkLib.ProofSystem.Binius.BinaryBasefold.CoreInteractionPhase.Protocol
+public import ArkLib.ProofSystem.Binius.BinaryBasefold.CoreInteractionPhase.Security
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.Prelude
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.Prelude.Fibers
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.Prelude.Folding
