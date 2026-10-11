@@ -519,6 +519,7 @@ public import ArkLib.Data.Finset.PairwiseIntersection
 public import ArkLib.Data.Finset.PickSubset
 public import ArkLib.Data.Finset.SampleIncidence
 public import ArkLib.Data.Finset.Staircase
+public import ArkLib.Data.Finset.TupleIntersection
 public import ArkLib.Data.Finset.WeightedSimplex
 public import ArkLib.Data.Finset.WeightedSimplex.FloorTransfer
 public import ArkLib.Data.Finset.WeightedSimplex.Moments
@@ -679,6 +680,17 @@ public import ArkLib.Interaction.Oracle.Resource
 public import ArkLib.Interaction.Oracle.RunSources
 public import ArkLib.Interaction.Oracle.Runtime
 public import ArkLib.Interaction.Oracle.RuntimeSoundness
+public import ArkLib.Interaction.Oracle.Security.Knowledge
+public import ArkLib.Interaction.Oracle.Security.KnowledgeAppend
+public import ArkLib.Interaction.Oracle.Security.KnowledgeComposition
+public import ArkLib.Interaction.Oracle.Security.RoundByRound
+public import ArkLib.Interaction.Oracle.Security.Soundness
+public import ArkLib.Interaction.Oracle.Security.StateRestoration
+public import ArkLib.Interaction.Oracle.Security.StateRestorationBudget
+public import ArkLib.Interaction.Oracle.Security.StateRestorationCoins
+public import ArkLib.Interaction.Oracle.Security.StateRestorationGame
+public import ArkLib.Interaction.Oracle.Security.StateRestorationOracle
+public import ArkLib.Interaction.Oracle.Security.StateRestorationReplay
 public import ArkLib.Interaction.Oracle.Sequential
 public import ArkLib.Interaction.Oracle.Source
 public import ArkLib.Interaction.Oracle.SourceRouting
@@ -826,6 +838,7 @@ public import ArkLib.ProofSystem.Sumcheck.Interaction.ProjectionTransport
 public import ArkLib.ProofSystem.Sumcheck.Interaction.Protocol
 public import ArkLib.ProofSystem.Sumcheck.Interaction.ProtocolCompleteness
 public import ArkLib.ProofSystem.Sumcheck.Interaction.ProtocolSoundness
+public import ArkLib.ProofSystem.Sumcheck.Interaction.RoundByRound
 public import ArkLib.ProofSystem.Sumcheck.Interaction.Sequential
 public import ArkLib.ProofSystem.Sumcheck.Interaction.SingleRound
 public import ArkLib.ProofSystem.Sumcheck.Interaction.Soundness

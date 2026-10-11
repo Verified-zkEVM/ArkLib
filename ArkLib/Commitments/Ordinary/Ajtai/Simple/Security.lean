@@ -42,8 +42,8 @@ def bindingAdvToModuleSIS {rows cols : Nat}
     [SampleableType (PublicParams Φ rows cols)]
     [DecidableEq (PolyVec (Rq Φ) cols)] [DecidableEq (PolyVec (Rq Φ) rows)]
     (isShortSIS : ModuleSIS.Solution Φ cols → Bool)
-    (adv : BindingAdversary (PublicParams Φ rows cols) (Message Φ cols) (Commitment Φ rows)
-      Opening) :
+    (adv : BindingAdversary
+      (PublicParams Φ rows cols) (Message Φ cols) (Commitment Φ rows) Opening) :
     ModuleSIS.Adversary Φ rows cols isShortSIS :=
   fun A => do
     let (_c, s₁, _o₁, s₂, _o₂) ← adv A
@@ -57,8 +57,8 @@ theorem bindingAdvantage_le_moduleSIS_of_shortClosure {rows cols : Nat}
     (isShort : Message Φ cols → Bool) (isShortSIS : ModuleSIS.Solution Φ cols → Bool)
     (hsub : ∀ s₁ s₂ : Message Φ cols, isShort s₁ = true → isShort s₂ = true →
       isShortSIS (s₁ - s₂) = true)
-    (adv : BindingAdversary (PublicParams Φ rows cols) (Message Φ cols) (Commitment Φ rows)
-      Opening) :
+    (adv : BindingAdversary
+      (PublicParams Φ rows cols) (Message Φ cols) (Commitment Φ rows) Opening) :
     bindingAdvantage (commitmentScheme Φ rows cols isShort) adv ≤
       ModuleSIS.advantage Φ rows cols isShortSIS (bindingAdvToModuleSIS Φ isShortSIS adv) := by
   unfold bindingAdvantage CommitmentScheme.bindingExperiment ModuleSIS.advantage
@@ -96,8 +96,8 @@ subtraction closure is discharged by `sub_l2NormSq_le`. -/
 theorem bindingAdvantage_le_moduleSIS {rows cols : Nat}
     [SampleableType (PublicParams Φ rows cols)]
     [DecidableEq (Message Φ cols)] [DecidableEq (Commitment Φ rows)] (boundSq : ℕ)
-    (adv : BindingAdversary (PublicParams Φ rows cols) (Message Φ cols) (Commitment Φ rows)
-      Opening) :
+    (adv : BindingAdversary
+      (PublicParams Φ rows cols) (Message Φ cols) (Commitment Φ rows) Opening) :
     bindingAdvantage
         (commitmentScheme Φ rows cols (fun s => decide (‖s‖₂² ≤ boundSq))) adv ≤
       ModuleSIS.advantage Φ rows cols
