@@ -567,6 +567,7 @@ public import ArkLib.Data.Matrix.Basic
 public import ArkLib.Data.Matrix.Sparse
 public import ArkLib.Data.Matrix.Vandermonde
 public import ArkLib.Data.Misc.Basic
+public import ArkLib.Data.MvPolynomial.CoeffBound
 public import ArkLib.Data.MvPolynomial.Degrees
 public import ArkLib.Data.MvPolynomial.EvenAndOdd
 public import ArkLib.Data.MvPolynomial.FrobeniusContraction
