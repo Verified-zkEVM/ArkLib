@@ -336,8 +336,8 @@ lemma queryRoundMessage_domain_false {l : ℕ}
   simp at h
 
 noncomputable instance {l : ℕ} :
-    IsUniformMeasureSpec ([(Spec.QueryRound.pSpec l (ω := ω)).Message]ₒ) :=
-  @IsUniformMeasureSpec.ofFiniteNonempty _ _
+    UniformAnswerMeasure ([(Spec.QueryRound.pSpec l (ω := ω)).Message]ₒ) :=
+  @UniformAnswerMeasure.ofFiniteNonempty _ _
     (fun i => (queryRoundMessage_domain_false (i := i)).elim)
     (fun i => (queryRoundMessage_domain_false (i := i)).elim)
 
@@ -629,13 +629,13 @@ noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain n 𝔽} :
                       Spec.QueryRound.pSpec (ω := ω) l)).Challenge]ₒ).Range q))
 
 noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain n 𝔽} :
-    IsUniformMeasureSpec
+    UniformAnswerMeasure
       ([]ₒ +
         [((BatchedFri.Spec.BatchingRound.batchSpec 𝔽 t) ++ₚ
             (Spec.pSpecFold (ω := ω) k s ++ₚ
               Spec.FinalFoldPhase.pSpec 𝔽 ++ₚ
                 Spec.QueryRound.pSpec (ω := ω) l)).Challenge]ₒ) :=
-  IsUniformMeasureSpec.ofFiniteNonempty _
+  UniformAnswerMeasure.ofFiniteNonempty _
 
 open ENNReal in
 /-- Corresponds to Claim 8.2 of [BCIKS20] -/

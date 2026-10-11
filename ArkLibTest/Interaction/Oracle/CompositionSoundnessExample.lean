@@ -230,7 +230,7 @@ theorem suffix_mass (sample : Fin 3) :
   classical
   rw [suffix_execution, prEvent_bind_eq_lintegral_of_discrete,
     OracleComp.evalDist_query (spec := ambient), MeasureTheory.trim_eq_self,
-    show OracleSpec.IsMeasureSpec.toMeasure (spec := ambient) () = branchMeasure from rfl]
+    show OracleSpec.AnswerMeasure.toMeasure (spec := ambient) () = branchMeasure from rfl]
   fin_cases sample <;>
     simp only [branchMeasure, lintegral_add_measure, lintegral_smul_measure, lintegral_dirac,
       smul_eq_mul, Fin.isValue]

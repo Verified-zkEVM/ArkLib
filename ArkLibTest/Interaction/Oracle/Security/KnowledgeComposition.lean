@@ -81,7 +81,7 @@ def firstCertificate : KnowledgeCertificate tree roles inputState where
     refine ⟨?_, fun _ => trivial⟩
     apply (_root_.RoundByRound.GameFamily.isBounded_iff _ _).mpr
     intro round context
-    exact prEvent_le_one _ _
+    exact prEvent_le_one _
 
 def middleEndpoint : TerminalRelation firstCertificate.extractor middleProblem
     (fun path => path.toBranchPath) closedMid where

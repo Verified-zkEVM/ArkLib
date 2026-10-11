@@ -151,7 +151,7 @@ noncomputable section
 def branchMeasure : Measure (Fin 3) :=
   (1 / 2 : ENNReal) • Measure.dirac 0 + (1 / 2 : ENNReal) • Measure.dirac 1
 
-instance : OracleSpec.IsMeasureSpec branchSpec where
+instance : OracleSpec.AnswerMeasure branchSpec where
   toMeasure _ := branchMeasure
   isProbabilityMeasure _ := by
     constructor

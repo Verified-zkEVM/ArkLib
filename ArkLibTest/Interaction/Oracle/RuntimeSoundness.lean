@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 import ArkLib.Interaction.Oracle.RuntimeSoundness
-import VCVio.OracleComp.EvalDist.MeasureSpec
+import VCVio.OracleComp.EvalDist.AnswerMeasure
 
 /-!
 # Guessing a hidden runtime bit
@@ -198,7 +198,7 @@ lemma guess_success (guess : Bool) (secret : Nat) :
     have event : {hidden : Bool | (guess = hidden) = True} = {guess} := by
       ext hidden
       simp only [Set.mem_ofPred_eq, Set.mem_singleton_iff, eq_iff_iff, true_iff, eq_comm]
-    rw [event, OracleSpec.IsUniformMeasureSpec.toMeasure_singleton]
+    rw [event, OracleSpec.UniformAnswerMeasure.toMeasure_singleton]
     rfl
 
 local instance : MeasurableSpace (RunResult runtime Boundary) := ⊤
