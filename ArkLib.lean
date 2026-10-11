@@ -1054,6 +1054,7 @@ public import ArkLib.ToMathlib.Logic.HEq
 public import ArkLib.ToMathlib.MeasureTheory.Integral.NatFloorCells
 public import ArkLib.ToMathlib.MeasureTheory.Integral.PositivePart
 public import ArkLib.ToMathlib.MvPolynomial.ClearedSubstitution
+public import ArkLib.ToMathlib.MvPolynomial.CoeffBound
 public import ArkLib.ToMathlib.MvPolynomial.CompleteHomogeneous
 public import ArkLib.ToMathlib.MvPolynomial.FirstOrderTaylor
 public import ArkLib.ToMathlib.MvPolynomial.FrobeniusPullback
