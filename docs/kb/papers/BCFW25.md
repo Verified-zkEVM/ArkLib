@@ -6,11 +6,13 @@ year: "2025"
 bib_source: blueprint/src/references.bib
 canonical_url: https://eprint.iacr.org/2025/753
 source_metadata: ../sources/BCFW25/metadata.yml
-status: seeded
+status: investigated
 related_concepts:
   - reed-solomon-proximity
 related_modules:
   - ArkLib/Data/CodingTheory/ExtensionCodes.lean
+  - ArkLib/OracleReduction/Security/RoundByRound.lean
+  - ArkLib/Interaction/Oracle/Claim.lean
 ---
 
 # BCFW25
@@ -20,12 +22,20 @@ related_modules:
 `BCFW25` is Bünz–Chiesa–Fenzi–Wang, *Linear-Time Accumulation Schemes*, ePrint 2025/753.
 Its subject is accumulation (proof-carrying data) with a linear-time accumulation prover.
 
-ArkLib uses **none of the accumulation machinery**. What it uses is a single coding-theory
-ingredient from the appendix: `BCFW25` **Lemma D.3**, the statement that an extension code has the
-same list size as the interleaved base code, which `ABF26` restates as its Lemma 2.21.
+The directly formalized result is `BCFW25` **Lemma D.3**, the statement that an extension code
+has the same list size as the interleaved base code, which `ABF26` restates as Lemma 2.21.
+The paper's WARP knowledge framework also provides a close structural precedent for ArkLib's
+witness-indexed states and backward extraction. This does not mean that the accumulation
+scheme or its compiler theorem has been formalized.
 
 ## What ArkLib Uses From This Paper
 
+- **Definitions 4.1-4.2 and Appendix B.** These guide the proposed native relational RBR
+  package. The [source crosswalk](../audits/interaction-literature-map.md#arc-warp-and-the-librarys-actual-knowledge-notion)
+  records the fixed-prefix bad event, endpoint laws, extractor observations and computational
+  requirements. The code explicitly cites ABF26 A.5; a structural match to WARP does not by
+  itself establish historical authorship of a code change. Appendix C's comparison carries
+  an extractor-consistency premise and is not an unconditional equivalence.
 - **Lemma D.3 (extension-code list size).** Formalized as
   `CodingTheory.lambda_extensionCode_eq_lambda_interleaved`:
   `Λ(C_F, δ) = Λ(C_B^{⋈e}, δ)`, both sides being `ListDecodability.Lambda` (the sup over centers),
@@ -38,6 +48,11 @@ same list size as the interleaved base code, which `ABF26` restates as its Lemma
 
 ## Main ArkLib Touchpoints
 
+- [Legacy security](../../../ArkLib/OracleReduction/Security/RoundByRound.lean): `WitMid`,
+  `extractMid`, `KnowledgeStateFunction`, and fixed-prefix versus averaged games.
+- [Native claims](../../../ArkLib/Interaction/Oracle/Claim.lean) and
+  [prefixes](../../../ArkLib/Interaction/Oracle/Prefix.lean): target carriers for the
+  [proposed backward-extraction experiment](../../design/05-roadmap.md#bounded-interaction-theory-investigation).
 - [`ArkLib/Data/CodingTheory/ExtensionCodes.lean`](../../../ArkLib/Data/CodingTheory/ExtensionCodes.lean)
   — `ExtensionFieldPresentation`, `IsSystematic`, `extensionEncode`, its `F`-linear-map packaging,
   systematic identity and range bridge, `extensionCode` / `extensionCodeSubmodule`, presentation
@@ -45,7 +60,9 @@ same list size as the interleaved base code, which `ABF26` restates as its Lemma
 
 ## Version Notes
 
-- **Key normalization.** The key is `BCFW25`; do not spell it `BuenzCFW25`. A citation key with
+- **Key normalization.** The coding-theory key is `BCFW25`; `WARP` is an existing bibliography
+  alias for the same paper, with this page as its shared landing page. Do not use `BuenzCFW25`.
+  A citation key with
   no `references.bib` entry makes `scripts/kb/extract_lean_citations.py` drop the entire citing
   file from the citation map, so a single bad spelling silently loses a file's whole citation
   record. The same applies to the Diamond–Posen result cited alongside it, which is `DP25`.
@@ -53,6 +70,8 @@ same list size as the interleaved base code, which `ABF26` restates as its Lemma
   `~/abf26-refs/bcfw25.pdf` (build date 2025-05-28) and `~/abf26-refs/BuenzCFW25.pdf` (build date
   2026-06-18). Appendix numbering (`D.2`, `D.3`) was checked against the later copy. Note the
   PDF title is *Linear-Time Accumulation Schemes*; the BibTeX `title` field is unhyphenated.
+- The October 3, 2026 interaction audit inspected the 76-page revision with a June 17, 2026
+  cover date and June 18, 2026 ePrint metadata. Its exact PDF hash is in the source metadata.
 
 ## Known Divergences From ArkLib
 
@@ -90,10 +109,13 @@ same list size as the interleaved base code, which `ABF26` restates as its Lemma
 
 ## Open Formalization Gaps
 
-- **The accumulation scheme itself is entirely unformalized.** BCFW25's actual results — the
-  linear-time accumulation prover, its security — have no ArkLib counterpart. Only the Appendix D
-  coding-theory lemma is used, and adding accumulation would be a new development at the
-  `ProofSystem`/`Commitments` layer, not an extension of this module.
+- **The accumulation scheme itself remains unformalized.** The linear-time accumulation
+  prover and its security have no completed ArkLib counterpart. The Appendix D coding result
+  and the structural knowledge-state precedent should be distinguished from such a theorem.
+  Accumulation would require development at the `ProofSystem`/`Commitments` layer.
+- **A native WARP specialization remains proposed.** ArkLib permits witness transformations
+  and has a weaker one-way terminal clause; its legacy API also omits the source's extraction
+  time accounting. These differences require explicit bridge theorems.
 
 ## Source Access
 
