@@ -105,7 +105,7 @@ theorem ReedSolomon_ProximityGapAffineLines_UniqueDecoding [Nontrivial (ReedSolo
   simp_rw [relDistFromCode_le_iff_distFromCode_le] at h_correlated_agreement
   let h_u₀_and_u₁_sub_u₀_CA := h_correlated_agreement uShifted (by
     rw [h_δ_mul_n_eq_e]
-    simp only [Fin.isValue, bind_pure_comp, ne_eq, Nat.cast_eq_zero, Fintype.card_ne_zero,
+    simp only [Fin.isValue, ne_eq, Nat.cast_eq_zero, Fintype.card_ne_zero,
       not_false_eq_true, ENNReal.coe_div, ENNReal.coe_natCast, gt_iff_lt]
     simp only [ENNReal.coe_natCast] at h_prob_affine_line_close_gt
     simpa only [bind_pure_comp, n, uShifted, CRS, finMapTwoWords, Fin.isValue,

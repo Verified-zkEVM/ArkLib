@@ -100,7 +100,6 @@ theorem bounded (z : Nat) : RoundExtractor.IsLocallyBounded (extractor z) roles
       funext first
       apply propext
       simp
-    simp only [← map_eq_pure_bind]
     rw [event]
     have oneEighth : Pr{let first ← $ᵗ Fin 8}[first = 0] = (1 / 8 : ENNReal) := by
       rw [SampleableType.prEvent_uniformSample_eq_singleton]

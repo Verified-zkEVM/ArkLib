@@ -1052,10 +1052,10 @@ lemma accepts_of_probEvent_pos_verifier_run
     (tr : FullTranscript (pSpec (ι := ι) (F := F) k t))
     (witOut : OutputWitness)
     (relOut : Set ((OutputStatement × ∀ i, OutputOracleStatement i) × OutputWitness))
-    (h : Pr{let stmtOut ← OptionT.mk do
+    (h : Pr{let stmtOut ← (OptionT.mk do
           (simulateQ impl
               (((oracleVerifier (k := k) (t := t) encode).toVerifier).run stmtIn tr)).run'
-            (← init)}[(stmtOut, witOut) ∈ relOut] > 0) :
+            (← init))}[(stmtOut, witOut) ∈ relOut] > 0) :
     Accepts (k := k) (t := t) encode stmtIn.1 stmtIn.2
       (tr ⟨0, by decide⟩) (tr ⟨1, by decide⟩) (tr ⟨2, by decide⟩) := by
   rw [gt_iff_lt, OracleComp.OptionT.prEvent_mk_pos_iff] at h

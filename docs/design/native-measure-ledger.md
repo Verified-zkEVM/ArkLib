@@ -62,7 +62,7 @@ game simulated from a sampled state, uniform counting thresholds, union bounds, 
 
 The earlier plan listed structural uniform instances (U8) and transformer losslessness glue
 (U9). These are not unresolved blockers for the current conversion: ArkLib uses native
-`IsUniformMeasureSpec` instances where needed, and the pinned dependency supplies
+`UniformAnswerMeasure` instances where needed, and the pinned dependency supplies
 `OptionT.isProbabilityMeasure_mk_iff` and the sequencing lemmas above.
 The final proof-length audit identified dependent-product sampling and conditional uniform-event
 conveniences. [VCVio #770](https://github.com/Verified-zkEVM/VCVio/pull/770) supplies them;
@@ -264,11 +264,13 @@ multi-let files, and every one fails with a 20000-heartbeat typeclass timeout. T
 `intro …; exact Fin.elim0 i.1` rather than `simp [Verifier.id]`, and the four
 `OracleComp.support_nonempty` applications (`TranscriptTree/Basic.not_isAccepting_of_no_outputs`,
 `support_init_nonempty_of_prob_one`, `not_accepting_of_failure`, and
-`CoordinateWiseSpecialSoundness/Composition.mem_of_pure_accepting`) pass
-`OracleSpec.IsUniformMeasureSpec.inhabited` explicitly. The shorter forms elaborate, but the
-default instance paths go through the retired `OracleSpec.IsUniformSpec.inhabited`,
-`IsUniformSpec.toIsProbabilitySpec`, `PMF`/`SPMF` and `probOutput`, and `retiredsweep` rejects
-them (verified). These rows go away when VCVio removes those instances under #532.
+`CoordinateWiseSpecialSoundness/Composition.mem_of_pure_accepting`) passed
+`OracleSpec.IsUniformMeasureSpec.inhabited` explicitly. The shorter forms elaborated, but the
+default instance paths went through the retired `OracleSpec.IsUniformSpec.inhabited`,
+`IsUniformSpec.toIsProbabilitySpec`, `PMF`/`SPMF` and `probOutput`, and `retiredsweep` rejected
+them (verified). VCVio has since removed those instances with its discrete layer
+([VCVio #836](https://github.com/Verified-zkEVM/VCVio/pull/836)); the four applications now pass
+the specification, `OracleComp.support_nonempty (spec := unifSpec)`.
 
 D1 has a single upstream fix, tracked as [VCVio #772](https://github.com/Verified-zkEVM/VCVio/issues/772)
 and implemented in [VCVio #773](https://github.com/Verified-zkEVM/VCVio/pull/773): the domain
@@ -297,7 +299,7 @@ per-range binders such as `[∀ t, Fintype (spec.Range t)]`, and
   Inhabited` in `OracleInterface`, the `srChallengeOracle`/`fsChallengeOracle` instances in
   `ProtocolSpec/Basic`, and the bundled QueryRound instances in `BatchedFri/Security`, which now
   provide per-range `Inhabited`/`Fintype` and build the empty message spec's
-  `IsUniformMeasureSpec` from `queryRoundMessage_domain_false`.
+  `UniformAnswerMeasure` from `queryRoundMessage_domain_false`.
 - Because `SampleableType F` now provides `Finite F` and `Nonempty F`, several theorems no longer
   use their `[SampleableType F]` section variable; they carry `omit [SampleableType F] in`.
 

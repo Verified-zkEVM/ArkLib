@@ -13,7 +13,7 @@ public import VCVio.EvalDist.List
 public import ToMathlib.Data.Vector
 -- Owns `OracleComp.support_ofFn_mapM_index`, used in `Verifier.run_all_eq_bind` below.
 public import VCVio.OracleComp.Constructions.Replicate
-public import VCVio.OracleComp.QueryTracking.LoggingOracle
+public import VCVio.OracleComp.QueryTracking.LoggingOracle.Core
 
 /-!
   # Execution Semantics of Interactive Oracle Reductions
