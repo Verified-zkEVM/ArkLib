@@ -2,6 +2,10 @@ module
 
 public import ArkLib.AGM.Basic
 public import ArkLib.Commitments.Functional.Basic
+public import ArkLib.Commitments.Functional.BitZ.Bitification
+public import ArkLib.Commitments.Functional.BitZ.ExponentLift
+public import ArkLib.Commitments.Functional.BitZ.Round1
+public import ArkLib.Commitments.Functional.BitZ.Round2
 public import ArkLib.Commitments.Functional.Hachi.Basic
 public import ArkLib.Commitments.Functional.Hachi.Commitment
 public import ArkLib.Commitments.Functional.Hachi.Composition
@@ -564,6 +568,7 @@ public import ArkLib.Data.Matrix.Basic
 public import ArkLib.Data.Matrix.Sparse
 public import ArkLib.Data.Matrix.Vandermonde
 public import ArkLib.Data.Misc.Basic
+public import ArkLib.Data.MvPolynomial.CoeffBound
 public import ArkLib.Data.MvPolynomial.Degrees
 public import ArkLib.Data.MvPolynomial.EvenAndOdd
 public import ArkLib.Data.MvPolynomial.FrobeniusContraction
@@ -573,6 +578,7 @@ public import ArkLib.Data.MvPolynomial.LinearMvExtension
 public import ArkLib.Data.MvPolynomial.MapExponents
 public import ArkLib.Data.MvPolynomial.Multilinear
 public import ArkLib.Data.MvPolynomial.NestedEvaluationTree
+public import ArkLib.Data.MvPolynomial.PrimeFingerprint
 public import ArkLib.Data.MvPolynomial.RadicalSplit.Separable
 public import ArkLib.Data.MvPolynomial.RestrictDegree
 public import ArkLib.Data.MvPolynomial.RestrictDegreeVar
