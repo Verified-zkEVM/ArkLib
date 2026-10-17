@@ -1,0 +1,132 @@
+% Copyright (c) 2026 ArkLib Contributors. All rights reserved.
+% Released under Apache 2.0 license as described in the file LICENSE.
+
+\section{FRI soundness}
+
+We follow the March 27, 2026 revision of~\cite{GMW25}. The earlier
+\href{https://github.com/zksecurity/simple-rbr-fri}{zkSecurity formalization}, by
+Yoichi Hirai and Harmonic's Aristotle, with subsequent work by Pietro Monticone,
+also informed the argument. ArkLib reuses its existing Reed--Solomon codes,
+word-folding operations, mutual correlated agreement (MCA), and probability theory.
+
+Let $D$ be a multiplicative coset of size $2^n$, let $m=2^k$ be a folding factor,
+and let $D'=D^m$. Write $C=\mathrm{RS}(D,md)$ and
+$C'=\mathrm{RS}(D',d)$, with $d>0$. For a word $f$ on $D$, write $f_j$ for the
+coefficient words of its block interpolants, so that
+$\operatorname{Fold}_\alpha(f)=\sum_{j<m}\alpha^j f_j$.
+
+\begin{lemma}\label{lem:fri-coefficient-lift}
+\lean{Fri.exists_codeword_agree_of_coefficients}
+\leanok
+If every $f_j$ agrees with a codeword in $C'$ on $T\subseteq D'$, then a single
+codeword in $C$ agrees with $f$ on the whole preimage of $T$ under $x\mapsto x^m$.
+\end{lemma}
+\begin{proof}
+\leanok
+Choose degree-$<d$ polynomials $p_j$ witnessing agreement on $T$ and recombine them
+as $p(X)=\sum_{j<m}X^j p_j(X^m)$. This polynomial has degree less than $md$.
+Evaluation on every block above $T$ recovers its interpolant and hence the word.
+\end{proof}
+
+\begin{definition}\label{def:fri-folding-failure}
+\lean{Fri.FoldingAgreementFailure}
+\leanok
+For a tradeoff parameter $\theta$, a challenge $\alpha$ is bad if there exists
+$T\subseteq D'$ of size at least $(1-\theta)|D'|$ such that the folded word agrees
+with $C'$ on $T$, but no codeword in $C$ agrees with $f$ on the whole preimage of $T$.
+The parameter $\theta$ is independent of the input distance.
+\end{definition}
+
+\begin{theorem}\label{thm:fri-folding-error}
+\lean{Fri.foldingAgreementFailure_prob_le_powers}
+\leanok
+\uses{def:fri-folding-failure,lem:fri-coefficient-lift}
+For every fixed word $f$, the probability of a bad uniform challenge is at most
+the MCA error of the powers generator $(1,\alpha,\ldots,\alpha^{m-1})$ for $C'$
+at radius $\theta$.
+\end{theorem}
+\begin{proof}
+\leanok
+A bad challenge is an MCA failure for the coefficient words: if every coefficient
+word agreed on the same $T$, Lemma~\ref{lem:fri-coefficient-lift} would lift the
+agreement. No union bound over subsets is needed. The existing powers-MCA bound
+from~\cite{BCGM25} is instantiated by
+\texttt{Fri.foldingAgreementFailure\_prob\_le\_generalizedJohnson}, with all its
+field-size, slack, and radius assumptions retained.
+\end{proof}
+
+\begin{theorem}\label{thm:fri-query-error}
+\lean{Fri.FoldTrace.query_soundness_distance}
+\leanok
+\uses{def:fri-folding-failure}
+Fix a commitment trace with no bad folding challenge and let $\delta$ be the
+initial word's relative distance from its Reed--Solomon code. The probability of
+acceptance on $t$ independent uniform initial-domain queries is at most
+$(1-\min\{\theta,\delta\})^t$.
+\end{theorem}
+\begin{proof}
+\leanok
+If the final word is not in its code, acceptance is impossible. Otherwise any
+set of accepting initial positions of density at least $1-\theta$ agrees with
+one original codeword: project the positions through each fold, observe that
+density cannot decrease, and lift agreement backwards. Thus the accepting
+density is at most $1-\min\{\theta,\delta\}$. Independent repetitions raise this
+density to the $t$th power.
+\end{proof}
+
+\begin{theorem}\label{thm:fri-binding}
+\lean{Fri.FoldTrace.exists_codeword_of_query_probability,
+Fri.FoldTrace.exists_unique_codeword_agree_of_query_probability,
+Fri.FoldTrace.interpolate_accepting_agrees,Fri.FoldTrace.not_accepts_of_disagreement}
+\leanok
+\uses{thm:fri-query-error}
+For a safe trace with positive degree bound $d$ and $t>0$, suppose
+$\delta\leq\theta$ and $\delta\leq 1-d/|D|$.
+Acceptance probability at least $(1-\delta)^t$ implies that the initial word is
+within relative distance $\delta$ of its code. A unique codeword agrees with it
+on every accepting position. Interpolation on any $d$ accepting positions
+recovers this codeword, and a query at a disagreement position forces rejection.
+\end{theorem}
+\begin{proof}
+\leanok
+The rate condition and $d>0$ give $\delta<1$, so positive acceptance implies a
+valid final word. Positive $t$ gives accepting density at least $1-\delta$.
+Since $\delta\leq\theta$, agreement lifts to an initial codeword within distance
+$\delta$. Since $\delta\leq 1-d/|D|$, the accepting set has at least $d$ positions,
+giving uniqueness. Lagrange interpolation supplies algebraic recovery on any
+$d$ accepting positions. No extraction running-time bound is asserted.
+\end{proof}
+
+\begin{theorem}\label{thm:fri-soundness}
+\lean{Fri.Spec.soundness,Fri.Spec.soundness_proximity,Fri.Spec.rbrSoundness}
+\leanok
+\uses{thm:fri-folding-error,thm:fri-query-error}
+The specified FRI oracle reduction has round-by-round error equal to the
+powers-MCA error at each folding challenge and $(1-\min\{\theta,\delta\})^t$
+at its final query-vector challenge. Its ordinary soundness error is the sum of
+these errors, against every adaptive prover. More strongly, this bounds any
+acceptance when the input has distance at least $\delta$ from its initial code.
+\end{theorem}
+\begin{proof}
+\leanok
+Use the actual protocol transcript, including the retained committed words and
+the terminal polynomial. A persistent state records that the input is valid or
+a bad challenge has occurred. Prover messages cannot create this state.
+The conditional probability of each fresh bad event is bounded by the appropriate
+folding or query theorem. The executable verifier accepts exactly the final
+query event, including the terminal degree guard, so it rejects whenever the
+persistent state is false. This supplies round-by-round soundness through ArkLib's
+worst-case-prefix interface. Separately, induction over the actual stateful prover
+execution accumulates the conditional errors and proves ordinary soundness,
+without invoking unfinished general composition or implication theorems.
+\end{proof}
+
+\paragraph{Executable specification and scope.}
+The executable local consistency check is related to ArkLib's word fold by
+\texttt{RoundConsistency.roundConsistencyCheck\_eq\_foldValue}, for arbitrary
+oracle words. The specification retains all prior words, and checks the final
+polynomial's degree before the query phase.
+\texttt{Fri.Spec.reduction\_run} identifies the exact acceptance event of
+\texttt{Fri.Spec.reduction}; the input-language bridge uses its original
+computational-polynomial witness relation. The result concerns the interactive
+oracle protocol, not Fiat--Shamir compilation or a concrete commitment scheme.
