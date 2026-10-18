@@ -311,14 +311,18 @@ structure MLIOPCS extends (AbstractOStmtIn L ℓ') where
       (oracleProof := oracleReduction)
   -- RBR knowledge error function for the MLIOPCS
   rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0
-  -- RBR knowledge soundness property
-  rbrKnowledgeSoundness : ∀ {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)
+  /-- Averaged security of the opening protocol. Empty-ambient guarded-first composition
+  uses this field directly; stronger fixed-prefix results require separate certificates. -/
+  rbrKnowledgeSoundness : ∀ {σ : Type} {init : ProbComp σ}
+    {impl : QueryImpl []ₒ (StateT σ ProbComp)
   },
-    OracleProof.rbrKnowledgeSoundness
-      (verifier := oracleReduction.toOracleVerifier)
+    Verifier.rbrKnowledgeSoundnessAveraged
+      (verifier := oracleReduction.toOracleVerifier.toVerifier
+        (Oₛₒ := fun i : Empty => nomatch i))
       (init := init)
       (impl := impl)
       (relIn := toAbstractOStmtIn.toRelInput)
+      (relOut := acceptRejectOracleRel)
       (rbrKnowledgeError := rbrKnowledgeError)
 
 end MLIOPCS

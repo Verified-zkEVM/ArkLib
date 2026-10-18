@@ -6,6 +6,8 @@ Authors: Quang Dao
 module
 
 public import ArkLib.ProofSystem.Sumcheck.Spec.SingleRound
+public import ArkLib.ProofSystem.Sumcheck.Spec.Knowledge
+public import ArkLib.OracleReduction.Composition.Sequential.GuardedKnowledge
 public import ArkLib.OracleReduction.Composition.Sequential.GuardedNary
 
 /-!
@@ -218,16 +220,25 @@ theorem reduction_perfectCompleteness :
     (fun _ => inferInstance) (SingleRound.verifierGuardedForm R n deg D oSpec)
     (fun i s => SingleRound.reduction_perfectCompleteness (init := pure s) i)
 
-/-- Round-by-round knowledge soundness with error `deg / |R|` per challenge for the (full)
-  sum-check protocol -/
-theorem oracleVerifier_rbrKnowledgeSoundness [Fintype R] :
-    (oracleVerifier R deg D n oSpec).rbrKnowledgeSoundness init impl
+/-- Round-by-round knowledge soundness with error `deg / |R|` per challenge.
+The root bound requires an integral domain; execution remains defined over semirings. -/
+theorem oracleVerifier_rbrKnowledgeSoundnessAveraged (R : Type) [CommRing R] [IsDomain R]
+    [Fintype R] [DecidableEq R] [SampleableType R] (deg : ℕ) {m : ℕ}
+    (D : Fin m ↪ R) (n : ℕ) {ι : Type} (oSpec : OracleSpec ι)
+    {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)} :
+    (oracleVerifier R deg D n oSpec).rbrKnowledgeSoundnessAveraged init impl
       (relationRound R n deg D 0) (relationRound R n deg D (.last n))
-      (fun _ => (deg : ℝ≥0) / (Fintype.card R)) :=
-  OracleVerifier.seqCompose_rbrKnowledgeSoundness
+      (fun _ => (deg : ℝ≥0) / (Fintype.card R)) := by
+  exact OracleVerifier.seqCompose_rbrKnowledgeSoundnessAveraged_of_guarded init impl
+    (StatementRound R n) (fun _ => Unit) (fun _ => OracleStatement R n deg)
     (rel := relationRound R n deg D)
     (V := SingleRound.oracleVerifier R n deg D oSpec)
-    (h := fun i => SingleRound.oracleVerifier_rbrKnowledgeSoundness i)
+    (G := fun i => by
+      unfold SingleRound.oracleVerifier
+      rw [OracleVerifier.liftContext_toVerifier_comm, SingleRound.Simple.oracleVerifier_eq_verifier]
+      exact SingleRound.verifierGuardedForm R n deg D oSpec i)
+    (ε := fun _ _ => (deg : ℝ≥0) / Fintype.card R)
+    (h := fun i => SingleRound.oracleVerifier_fixedPrefix D oSpec i init impl)
 
 end Spec
 

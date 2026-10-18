@@ -31,7 +31,7 @@ in contrast to `FRIBinius/CoreInteractionPhase.lean` which fuses the sumcheck-fo
 
 - `bbfMLIOPCS`: Binary Basefold instantiated as an `MLIOPCS L ℓ'`
 - `bbf_fullOracleReduction_perfectCompleteness`: Perfect completeness of the composed protocol
-- `bbf_fullOracleVerifier_rbrKnowledgeSoundness`: RBR knowledge soundness of the composed protocol
+- `bbf_fullOracleVerifier_rbrKnowledgeSoundness`: composed averaged RBR knowledge soundness
 - `bbfSmallFieldConcreteKnowledgeError`: closed-form scalar error
   (ring-switching front + BBF (43)-style tail)
 - `bbf_fullOracleVerifier_knowledgeSoundness`: Scalar KS for the composed verifier via
@@ -794,6 +794,82 @@ instance largeFieldInvocationExtractorLens_rbr_knowledge_soundness
 /-! ### MLIOPCS Instance -/
 
 set_option backward.isDefEq.respectTransparency false in
+/-- Fixed-prefix certificate for the concrete large-field opening protocol. -/
+theorem largeFieldInvocation_rbrKnowledgeSoundness_fixedPrefix
+    {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
+    Verifier.rbrKnowledgeSoundness init impl
+      (bbfAbstractOStmtIn 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ)).toRelInput
+      acceptRejectOracleRel
+      ((OracleProof.toOracleVerifier (largeFieldInvocationOracleReduction 𝔽q β γ_repetitions
+        (𝓑 := 𝓑))).toVerifier (Oₛₒ := fun i : Empty => nomatch i))
+      (fullRbrKnowledgeError 𝔽q β γ_repetitions (ϑ := ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) := by
+  have h_bbf := FullBinaryBasefold.fullOracleVerifier_rbrKnowledgeSoundness_fixedPrefix
+    𝔽q β γ_repetitions (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
+    (init := init) (impl := impl)
+  let :
+      Inhabited (Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ')
+        (0 : Fin (ℓ' + 1))) := ⟨{
+      t := 0
+      H := 0
+      f := fun _ => 0
+    }⟩
+  let : ∀ i : Empty, Inhabited (invocationEmptyOutput i) := by
+    intro i
+    exact (i.elim)
+  have h_lifted := OracleVerifier.liftContext_rbr_knowledgeSoundness
+      (V := FullBinaryBasefold.fullOracleVerifier 𝔽q β γ_repetitions (ϑ := ϑ)
+        (𝓑 := 𝓑) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
+      (stmtLens := largeFieldInvocationExecutableStmtLens 𝔽q β)
+      (output := largeFieldInvocationLiftContextOutput 𝔽q β γ_repetitions)
+      (witLens := (largeFieldInvocationExtractorLens 𝔽q β).wit)
+      (lensKS := largeFieldInvocationExtractorLens_rbr_knowledge_soundness
+        (𝔽q := 𝔽q) (β := β)
+        (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
+        (compatStmt := (FullBinaryBasefold.fullOracleVerifier 𝔽q β γ_repetitions (ϑ := ϑ)
+          (𝓑 := 𝓑) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).toVerifier
+            (Oₛₒ := fun i : Empty => nomatch i).compatStatement
+          (largeFieldInvocationStmtLens 𝔽q β)))
+      (h := by exact h_bbf)
+  dsimp [largeFieldInvocationOracleReduction] at h_lifted ⊢
+  unfold OracleProof.toOracleVerifier
+  dsimp only [OracleReduction.liftContext]
+  have h_verifier :
+      (FullBinaryBasefold.fullOracleReduction 𝔽q β γ_repetitions (ϑ := ϑ)
+        (𝓑 := 𝓑) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).toOracleVerifier =
+      FullBinaryBasefold.fullOracleVerifier 𝔽q β γ_repetitions (ϑ := ϑ)
+        (𝓑 := 𝓑) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) := by
+    unfold FullBinaryBasefold.fullOracleReduction FullBinaryBasefold.fullOracleVerifier
+      OracleProof.toOracleVerifier
+    dsimp only [OracleReduction.append]
+    congr 1
+    · unfold CoreInteraction.coreInteractionOracleReduction
+        CoreInteraction.coreInteractionOracleVerifier
+      dsimp only [OracleReduction.append]
+      congr 1
+      unfold CoreInteraction.sumcheckFoldOracleReduction
+        CoreInteraction.sumcheckFoldOracleVerifier
+      rw [castInOut_verifier]
+      dsimp only [OracleReduction.append]
+      congr 1
+      congr 1
+      · simp only [CoreInteraction.nonLastBlocksOracleReduction,
+          CoreInteraction.nonLastBlocksOracleVerifier, OracleReduction.seqCompose]
+        congr 1
+        funext i
+        simp only [CoreInteraction.nonLastSingleBlockOracleReduction,
+          CoreInteraction.nonLastSingleBlockOracleVerifier, castInOut_verifier,
+          OracleReduction.append, OracleReduction.seqCompose]
+        rfl
+      · simp only [CoreInteraction.lastBlockOracleReduction,
+          CoreInteraction.lastBlockOracleVerifier, castInOut_verifier,
+          OracleReduction.append, OracleReduction.seqCompose]
+        rfl
+  dsimp only [OracleProof.toOracleVerifier] at h_verifier
+  rw [h_verifier]
+  exact h_lifted
+
+set_option backward.isDefEq.respectTransparency false in
 /-- Binary Basefold as an `MLIOPCS L ℓ'`.
 
 This wraps the full Binary Basefold protocol (core interaction + query phase)
@@ -813,70 +889,8 @@ def bbfMLIOPCS : MLIOPCS L ℓ' where
     fullRbrKnowledgeError 𝔽q β γ_repetitions (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
   rbrKnowledgeSoundness := by
     intro σ init impl
-    have h_bbf := FullBinaryBasefold.fullOracleVerifier_rbrKnowledgeSoundness
-      𝔽q β γ_repetitions (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
-      (init := init) (impl := impl)
-    let :
-        Inhabited (Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ')
-          (0 : Fin (ℓ' + 1))) := ⟨{
-        t := 0
-        H := 0
-        f := fun _ => 0
-      }⟩
-    let : ∀ i : Empty, Inhabited (invocationEmptyOutput i) := by
-      intro i
-      exact (i.elim)
-    have h_lifted := OracleVerifier.liftContext_rbr_knowledgeSoundness
-        (V := FullBinaryBasefold.fullOracleVerifier 𝔽q β γ_repetitions (ϑ := ϑ)
-          (𝓑 := 𝓑) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
-        (stmtLens := largeFieldInvocationExecutableStmtLens 𝔽q β)
-        (output := largeFieldInvocationLiftContextOutput 𝔽q β γ_repetitions)
-        (witLens := (largeFieldInvocationExtractorLens 𝔽q β).wit)
-        (lensKS := largeFieldInvocationExtractorLens_rbr_knowledge_soundness
-          (𝔽q := 𝔽q) (β := β)
-          (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
-          (compatStmt := (FullBinaryBasefold.fullOracleVerifier 𝔽q β γ_repetitions (ϑ := ϑ)
-            (𝓑 := 𝓑) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).toVerifier
-              (Oₛₒ := fun i : Empty => nomatch i).compatStatement
-            (largeFieldInvocationStmtLens 𝔽q β)))
-        (h := by exact h_bbf)
-    dsimp [largeFieldInvocationOracleReduction] at h_lifted ⊢
-    unfold OracleProof.rbrKnowledgeSoundness OracleProof.toOracleVerifier
-    dsimp only [OracleReduction.liftContext]
-    have h_verifier :
-        (FullBinaryBasefold.fullOracleReduction 𝔽q β γ_repetitions (ϑ := ϑ)
-          (𝓑 := 𝓑) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).toOracleVerifier =
-        FullBinaryBasefold.fullOracleVerifier 𝔽q β γ_repetitions (ϑ := ϑ)
-          (𝓑 := 𝓑) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) := by
-      unfold FullBinaryBasefold.fullOracleReduction FullBinaryBasefold.fullOracleVerifier
-        OracleProof.toOracleVerifier
-      dsimp only [OracleReduction.append]
-      congr 1
-      · unfold CoreInteraction.coreInteractionOracleReduction
-          CoreInteraction.coreInteractionOracleVerifier
-        dsimp only [OracleReduction.append]
-        congr 1
-        unfold CoreInteraction.sumcheckFoldOracleReduction
-          CoreInteraction.sumcheckFoldOracleVerifier
-        rw [castInOut_verifier]
-        dsimp only [OracleReduction.append]
-        congr 1
-        congr 1
-        · simp only [CoreInteraction.nonLastBlocksOracleReduction,
-            CoreInteraction.nonLastBlocksOracleVerifier, OracleReduction.seqCompose]
-          congr 1
-          funext i
-          simp only [CoreInteraction.nonLastSingleBlockOracleReduction,
-            CoreInteraction.nonLastSingleBlockOracleVerifier, castInOut_verifier,
-            OracleReduction.append, OracleReduction.seqCompose]
-          rfl
-        · simp only [CoreInteraction.lastBlockOracleReduction,
-            CoreInteraction.lastBlockOracleVerifier, castInOut_verifier,
-            OracleReduction.append, OracleReduction.seqCompose]
-          rfl
-    dsimp only [OracleProof.toOracleVerifier] at h_verifier
-    rw [h_verifier]
-    exact h_lifted
+    exact Verifier.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged init impl
+      (largeFieldInvocation_rbrKnowledgeSoundness_fixedPrefix 𝔽q β γ_repetitions init impl)
 
 end BinaryBasefoldMLIOPCS
 
@@ -965,7 +979,7 @@ Ring-switching + Binary Basefold as MLIOPCS.
 This is a direct instantiation of `fullOracleVerifier_rbrKnowledgeSoundness` from
 `RingSwitching/General.lean` with the Binary Basefold MLIOPCS. -/
 theorem bbf_fullOracleVerifier_rbrKnowledgeSoundness :
-    OracleVerifier.rbrKnowledgeSoundness (Oₛₒ := fun i : Empty => nomatch i)
+    OracleVerifier.rbrKnowledgeSoundnessAveraged (Oₛₒ := fun i : Empty => nomatch i)
       (verifier := FullRingSwitching.fullOracleVerifier κ L K
         (bbfProfile κ K β_rs) ℓ ℓ' h_l
         (bbfMLIOPCS 𝔽q β γ_repetitions
@@ -1001,8 +1015,8 @@ omit [DecidableEq K] [Fintype K] in
 /-- Scalar knowledge soundness for ring-switching composed with Binary Basefold as `MLIOPCS`.
 
 Proof: the composed verifier is round-by-round knowledge sound with per-round errors
-`fullRbrKnowledgeError` (`bbf_fullOracleVerifier_rbrKnowledgeSoundness`); the generic implication
-`Verifier.rbrKnowledgeSoundness_implies_knowledgeSoundness` upgrades this to scalar knowledge
+`fullRbrKnowledgeError` (`bbf_fullOracleVerifier_rbrKnowledgeSoundness`).
+The proved guarded RBR-to-plain theorem upgrades this to scalar knowledge
 soundness with error `∑ i, fullRbrKnowledgeError … = bbfSmallFieldConcreteKnowledgeError …`. -/
 theorem bbf_fullOracleVerifier_knowledgeSoundness :
     (FullRingSwitching.fullOracleVerifier κ L K (bbfProfile κ K β_rs) ℓ ℓ' h_l
@@ -1026,14 +1040,15 @@ theorem bbf_fullOracleVerifier_knowledgeSoundness :
   let ε := fun i => FullRingSwitching.fullRbrKnowledgeError κ L K (bbfProfile κ K β_rs)
     ℓ' mlio i
   have h_rbr :
-      (fullV.toVerifier (Oₛₒ := fun i : Empty => nomatch i)).rbrKnowledgeSoundness
+      (fullV.toVerifier (Oₛₒ := fun i : Empty => nomatch i)).rbrKnowledgeSoundnessAveraged
         init impl relIn0 acceptRejectOracleRel ε := by
-    change OracleVerifier.rbrKnowledgeSoundness (Oₛₒ := fun i : Empty => nomatch i)
+    change OracleVerifier.rbrKnowledgeSoundnessAveraged (Oₛₒ := fun i : Empty => nomatch i)
       init impl relIn0 acceptRejectOracleRel fullV ε
     exact bbf_fullOracleVerifier_rbrKnowledgeSoundness 𝔽q β γ_repetitions
       (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) κ K β_rs ℓ h_l init
-  exact (Verifier.rbrKnowledgeSoundness_implies_knowledgeSoundness (init := init) (impl := impl)
-    relIn0 acceptRejectOracleRel (fullV.toVerifier (Oₛₒ := fun i : Empty => nomatch i)) ε) h_rbr
+  exact Verifier.rbrKnowledgeSoundnessAveraged_implies_knowledgeSoundness_of_guarded init impl
+    (Verifier.GuardedForm.ofEmpty (fullV.toVerifier (Oₛₒ := fun i : Empty => nomatch i))
+      (fun _ => (false, fun i => nomatch i))) ε h_rbr
 
 end Composition
 

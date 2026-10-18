@@ -16,6 +16,7 @@ public import ArkLib.OracleReduction.Composition.Sequential.General
 public import ArkLib.OracleReduction.Composition.Sequential.Append
 public import ArkLib.OracleReduction.Composition.Sequential.OracleCompleteness
 public import ArkLib.OracleReduction.Composition.Sequential.NoAmbient
+public import ArkLib.OracleReduction.Composition.Sequential.GuardedKnowledge
 public import ArkLib.OracleReduction.Security.RoundByRound
 public import ArkLib.OracleReduction.Completeness
 
@@ -107,7 +108,7 @@ For backwards compatibility, the wrappers below preserve the original autobound 
 `Context := RingSwitchingBaseContext κ L K ℓ` and `OStmtIn := aOStmtIn.OStmtIn`. They keep
 the `iteratedSumcheck*` names (these are what the sumcheck loop iterates over) and are
 `@[reducible]` so that subsequent soundness proofs and the seqCompose loop can still
-access fields like `.KnowledgeStateFunction` / `.rbrKnowledgeSoundness` through them. -/
+access fields like `.KnowledgeStateFunction` / `.rbrKnowledgeSoundnessAveraged` through them. -/
 
 -- Ring-switching uses the plain degree-2 round polynomial (`H = P · t`), so the wrappers pin
 -- `d := 2` when specializing the degree-generic `Sumcheck.Structured.round*` definitions.
@@ -622,9 +623,11 @@ lemma iteratedSumcheck_doom_escape_probability_bound [NoZeroDivisors L]
 
 omit [NeZero κ] [Fintype K] [DecidableEq K] [NeZero ℓ] [NeZero ℓ'] in
 /-- RBR knowledge soundness for a single round oracle verifier -/
-theorem iteratedSumcheckOracleVerifier_rbrKnowledgeSoundness [NoZeroDivisors L]
+theorem iteratedSumcheckOracleVerifier_rbrKnowledgeSoundness_fixedPrefix [NoZeroDivisors L]
     (hUnique : aOStmtIn.Functional) (i : Fin ℓ') :
-    (iteratedSumcheckOracleVerifier κ L K P ℓ ℓ' aOStmtIn i).rbrKnowledgeSoundness init impl
+    Verifier.rbrKnowledgeSoundness
+      (verifier := (iteratedSumcheckOracleVerifier κ L K P ℓ ℓ' aOStmtIn i).toVerifier)
+      init impl
       (relIn := sumcheckRoundRelation κ L K P ℓ ℓ' h_l aOStmtIn i.castSucc)
       (relOut := sumcheckRoundRelation κ L K P ℓ ℓ' h_l aOStmtIn i.succ)
       (fun _ => roundKnowledgeError L ℓ' i) := by
@@ -651,6 +654,18 @@ theorem iteratedSumcheckOracleVerifier_rbrKnowledgeSoundness [NoZeroDivisors L]
       (stmtOStmtIn := stmtOStmtIn) (h_i := msg₀))
 
 end
+
+omit [NeZero κ] [Fintype K] [DecidableEq K] [NeZero ℓ] [NeZero ℓ'] in
+/-- Averaged sumcheck security is a corollary of the fixed-prefix round bound. -/
+theorem iteratedSumcheckOracleVerifier_rbrKnowledgeSoundness [NoZeroDivisors L]
+    (hUnique : aOStmtIn.Functional) (i : Fin ℓ') :
+    (iteratedSumcheckOracleVerifier κ L K P ℓ ℓ' aOStmtIn i).rbrKnowledgeSoundnessAveraged init impl
+      (relIn := sumcheckRoundRelation κ L K P ℓ ℓ' h_l aOStmtIn i.castSucc)
+      (relOut := sumcheckRoundRelation κ L K P ℓ ℓ' h_l aOStmtIn i.succ)
+      (fun _ => roundKnowledgeError L ℓ' i) :=
+  Verifier.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged init impl
+    (iteratedSumcheckOracleVerifier_rbrKnowledgeSoundness_fixedPrefix κ L K P ℓ ℓ' h_l aOStmtIn
+      (init := init) (impl := impl) hUnique i)
 
 end IteratedSumcheckStep
 
@@ -957,11 +972,11 @@ local instance : DecidableEq K := Classical.decEq K
 
 omit [Fintype K] [DecidableEq K] [SampleableType L] in
 /-- Round-by-round knowledge soundness for the final sumcheck step -/
-theorem finalSumcheckOracleVerifier_rbrKnowledgeSoundness [NoZeroDivisors L] {σ : Type}
+theorem finalSumcheckOracleVerifier_rbrKnowledgeSoundness_fixedPrefix [NoZeroDivisors L] {σ : Type}
     (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp))
     (hCoord : CoordinateLaws P) :
     (finalSumcheckVerifier (κ := κ) (L := L) (K := K) (P := P) (ℓ := ℓ) (ℓ' := ℓ')
-      (h_l := h_l) (aOStmtIn := aOStmtIn)).rbrKnowledgeSoundness init impl
+      (h_l := h_l) (aOStmtIn := aOStmtIn)).toVerifier.rbrKnowledgeSoundness init impl
       (relIn := sumcheckRoundRelation κ L K P ℓ ℓ' h_l aOStmtIn (Fin.last ℓ'))
       (relOut := aOStmtIn.toRelInput)
       (rbrKnowledgeError := fun _ => finalSumcheckRbrKnowledgeError (L := L)) := by
@@ -970,10 +985,24 @@ theorem finalSumcheckOracleVerifier_rbrKnowledgeSoundness [NoZeroDivisors L] {σ
   use (fun _ => SumcheckWitness L ℓ' (Fin.last ℓ'))
   use finalSumcheckRbrExtractor κ L K P ℓ ℓ' h_l aOStmtIn
   use finalSumcheckKnowledgeStateFunction κ L K P ℓ ℓ' h_l aOStmtIn init impl hCoord
-  intro stmtIn witIn prover ⟨j, hj⟩
+  intro stmtIn ⟨j, hj⟩
   cases j using Fin.cases with
   | zero => simp at hj
   | succ j => exact Fin.elim0 j
+
+omit [Fintype K] [DecidableEq K] [SampleableType L] in
+/-- The final sumcheck fixed-prefix certificate also supplies the averaged contract. -/
+theorem finalSumcheckOracleVerifier_rbrKnowledgeSoundness [NoZeroDivisors L] {σ : Type}
+    (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp))
+    (hCoord : CoordinateLaws P) :
+    (finalSumcheckVerifier (κ := κ) (L := L) (K := K) (P := P) (ℓ := ℓ) (ℓ' := ℓ')
+      (h_l := h_l) (aOStmtIn := aOStmtIn)).rbrKnowledgeSoundnessAveraged init impl
+      (relIn := sumcheckRoundRelation κ L K P ℓ ℓ' h_l aOStmtIn (Fin.last ℓ'))
+      (relOut := aOStmtIn.toRelInput)
+      (rbrKnowledgeError := fun _ => finalSumcheckRbrKnowledgeError (L := L)) :=
+  Verifier.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged init impl
+    (finalSumcheckOracleVerifier_rbrKnowledgeSoundness_fixedPrefix
+      κ L K P ℓ ℓ' h_l aOStmtIn init impl hCoord)
 
 end
 
@@ -1093,21 +1122,17 @@ def coreInteractionRbrKnowledgeErrorWithDegree (d : ℕ)
 def coreInteractionRbrKnowledgeError (j : (pSpecCoreInteraction L ℓ').ChallengeIdx) : ℝ≥0 :=
   coreInteractionRbrKnowledgeErrorWithDegree L ℓ' 2 j
 
--- TODO: iteratedSumcheckLoop_rbrKnowledgeSoundness
+-- TODO: iteratedSumcheckLoop_rbrKnowledgeSoundnessAveraged
 
 section
 local instance : DecidableEq K := Classical.decEq K
 
 omit [Fintype K] [DecidableEq K] in
 /-- RBR knowledge soundness for large-field reduction (Sumcheck ++ FinalSum) -/
-theorem coreInteraction_rbrKnowledgeSoundness [NoZeroDivisors L]
+theorem coreInteraction_rbrKnowledgeSoundness_fixedPrefix [NoZeroDivisors L]
     (hCoord : CoordinateLaws P) (hUnique : aOStmtIn.Functional) :
-    OracleVerifier.rbrKnowledgeSoundness
-    (verifier := coreInteractionOracleVerifier κ L K P ℓ ℓ' h_l aOStmtIn)
-    (StmtIn := Statement (L := L) (ℓ := ℓ') (RingSwitchingBaseContext κ L K ℓ P) 0)
-    (OStmtIn := aOStmtIn.OStmtIn)
-    (StmtOut := MLPEvalStatement L ℓ')
-    (OStmtOut := aOStmtIn.OStmtIn)
+    Verifier.rbrKnowledgeSoundness
+    (verifier := (coreInteractionOracleVerifier κ L K P ℓ ℓ' h_l aOStmtIn).toVerifier)
     (WitIn := SumcheckWitness L ℓ' 0)
     (WitOut := WitMLP L ℓ')
     (init := init)
@@ -1117,19 +1142,35 @@ theorem coreInteraction_rbrKnowledgeSoundness [NoZeroDivisors L]
     (rbrKnowledgeError := coreInteractionRbrKnowledgeError (L:=L) (ℓ':=ℓ')) := by
   let _ : IsDomain L := NoZeroDivisors.to_isDomain L
   classical
-  apply OracleVerifier.append_rbrKnowledgeSoundness
+  apply OracleVerifier.append_rbrKnowledgeSoundness_of_guarded_first init impl
     (rel₂ := sumcheckRoundRelation κ L K P ℓ ℓ' h_l aOStmtIn (Fin.last ℓ'))
-    (rbrKnowledgeError₁ := sumcheckLoopRbrKnowledgeError L ℓ')
-    (rbrKnowledgeError₂ := fun _ => finalSumcheckRbrKnowledgeError (L := L))
-  · exact OracleVerifier.seqCompose_rbrKnowledgeSoundness
-      (init := init) (impl := impl)
+    (ε₁ := sumcheckLoopRbrKnowledgeError L ℓ')
+    (ε₂ := fun _ => finalSumcheckRbrKnowledgeError (L := L))
+    (Verifier.GuardedForm.ofEmpty _ (fun stmt =>
+      (⟨0, fun _ => 0, stmt.1.ctx⟩, stmt.2)))
+  · exact OracleVerifier.seqCompose_rbrKnowledgeSoundness_of_guarded init impl
+      _ (fun i => SumcheckWitness L ℓ' i) _
       (rel := fun i => sumcheckRoundRelation κ L K P ℓ ℓ' h_l aOStmtIn i)
       (V := fun i => iteratedSumcheckOracleVerifier κ L K P ℓ ℓ' aOStmtIn i)
-      (rbrKnowledgeError := fun i _ => roundKnowledgeError L ℓ' i)
-      (h := fun i => iteratedSumcheckOracleVerifier_rbrKnowledgeSoundness
+      (G := fun _ => Verifier.GuardedForm.ofEmpty _ (fun stmt =>
+        (⟨0, fun _ => 0, stmt.1.ctx⟩, stmt.2)))
+      (ε := fun i _ => roundKnowledgeError L ℓ' i)
+      (h := fun i => iteratedSumcheckOracleVerifier_rbrKnowledgeSoundness_fixedPrefix
         κ L K P ℓ ℓ' h_l aOStmtIn hUnique i)
-  · exact finalSumcheckOracleVerifier_rbrKnowledgeSoundness
+  · exact finalSumcheckOracleVerifier_rbrKnowledgeSoundness_fixedPrefix
       κ L K P ℓ ℓ' h_l aOStmtIn init impl hCoord
+
+omit [Fintype K] [DecidableEq K] in
+/-- Averaged RBR knowledge soundness follows from the core's fixed-prefix bound. -/
+theorem coreInteraction_rbrKnowledgeSoundness [NoZeroDivisors L]
+    (hCoord : CoordinateLaws P) (hUnique : aOStmtIn.Functional) :
+    (coreInteractionOracleVerifier κ L K P ℓ ℓ' h_l aOStmtIn).rbrKnowledgeSoundnessAveraged
+      init impl
+      (relIn := sumcheckRoundRelation κ L K P ℓ ℓ' h_l aOStmtIn 0)
+      (relOut := aOStmtIn.toRelInput)
+      (rbrKnowledgeError := coreInteractionRbrKnowledgeError (L := L) (ℓ' := ℓ')) :=
+  Verifier.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged init impl
+    (coreInteraction_rbrKnowledgeSoundness_fixedPrefix κ L K P ℓ ℓ' h_l aOStmtIn hCoord hUnique)
 
 
 end

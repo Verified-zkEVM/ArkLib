@@ -460,14 +460,15 @@ def lastBlockRbrKnowledgeError (k : (pSpecLastBlock (L := L) (ϑ := ϑ)).Challen
 
 /-! RBR KS for last block verifier (seqCompose of foldRelay then castInOut). -/
 omit [DecidableEq 𝔽q] in
-theorem lastBlockOracleVerifier_rbrKnowledgeSoundness :
-    OracleVerifier.rbrKnowledgeSoundness init impl
+theorem lastBlockOracleVerifier_rbrKnowledgeSoundness_fixedPrefix :
+    Verifier.rbrKnowledgeSoundness init impl
       (roundRelation (mp := mp) 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (𝓑:=𝓑) ⟨(ℓ / ϑ - 1) * ϑ, by
           apply lastBlockIdx_mul_ϑ_add_x_lt_ℓ_succ (x:=0) (hx:=by omega)⟩)
       (roundRelation (mp := mp) 𝔽q β (ϑ:=ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) (Fin.last ℓ))
-      (lastBlockOracleVerifier 𝔽q β (mp := mp) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑))
+      (lastBlockOracleVerifier 𝔽q β (mp := mp)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)).toVerifier
       (rbrKnowledgeError := lastBlockRbrKnowledgeError (L := L) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) := by
   classical
@@ -539,9 +540,12 @@ theorem lastBlockOracleVerifier_rbrKnowledgeSoundness :
   let oStmt := fun i: Fin (ϑ + 1) => OracleStatement 𝔽q β ϑ
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
     ⟨bIdx * ϑ + i, by  apply lastBlockIdx_mul_ϑ_add_x_lt_ℓ_succ (hx:=by omega)⟩
-  let foldRelayRoundsRbrKnowledgeSoundness := OracleVerifier.seqCompose_rbrKnowledgeSoundness
+  let foldRelayRoundsRbrKnowledgeSoundness :=
+    OracleVerifier.seqCompose_rbrKnowledgeSoundness_of_guarded
     (oSpec := []ₒ) (m := ϑ)
     (Stmt := stmt)
+    (Wit := fun i => Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      ⟨bIdx * ϑ + i, by apply lastBlockIdx_mul_ϑ_add_x_lt_ℓ_succ (hx := by omega)⟩)
     (OStmt := oStmt)
     (pSpec := fun i => pSpecFoldRelay (L:=L))
     (V := fun i => by
@@ -555,38 +559,36 @@ theorem lastBlockOracleVerifier_rbrKnowledgeSoundness :
       roundRelation (mp := mp) 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑)
         (⟨↑bIdx * ϑ + ↑i, by
           apply lastBlockIdx_mul_ϑ_add_x_lt_ℓ_succ (hx:=by omega)⟩ : Fin (ℓ + 1)))
-    (rbrKnowledgeError := fun i =>
+    (G := fun _ => Verifier.GuardedForm.ofEmpty _ (fun input =>
+      (⟨0, fun _ => 0, input.1.ctx⟩, fun _ _ => 0)))
+    (ε := fun i =>
       foldRelayKnowledgeError 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         ⟨bIdx * ϑ + i, lastBlockIdx_mul_ϑ_add_fin_lt_ℓ i⟩)
     (init := init) (impl := impl)
-  have hCur :
-      OracleVerifier.rbrKnowledgeSoundness init impl
-        (roundRelation (mp := mp) 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑)
-          ⟨bIdx * ϑ + (0 : Fin (ϑ + 1)), by
-            apply lastBlockIdx_mul_ϑ_add_x_lt_ℓ_succ (x:=0) (hx:=by omega)⟩)
-        (roundRelation (mp := mp) 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑)
-          ⟨bIdx * ϑ + (Fin.last ϑ : Fin (ϑ + 1)), by
-            apply lastBlockIdx_mul_ϑ_add_x_lt_ℓ_succ (x:=ϑ) (hx:=by omega)⟩)
-        (OracleVerifier.seqCompose stmt oStmt (fun i => by
-          have hNCR : ¬ isCommitmentRound ℓ ϑ ⟨bIdx * ϑ + i, lastBlockIdx_mul_ϑ_add_fin_lt_ℓ i⟩ :=
-            lastBlockIdx_isNeCommitmentRound i
-          exact foldRelayOracleVerifier (L:=L) 𝔽q β (mp := mp)
-            (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑)
-            ⟨bIdx * ϑ + i, lastBlockIdx_mul_ϑ_add_fin_lt_ℓ i⟩ hNCR))
-        (fun combinedIdx =>
-          let ij := seqComposeChallengeIdxToSigma combinedIdx
-          foldRelayKnowledgeError 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-            ⟨bIdx * ϑ + ij.1, lastBlockIdx_mul_ϑ_add_fin_lt_ℓ ij.1⟩ ij.2) := by
-    apply foldRelayRoundsRbrKnowledgeSoundness
+  have hCur := foldRelayRoundsRbrKnowledgeSoundness (by
     intro (i : Fin ϑ)
     have hNCR : ¬ isCommitmentRound ℓ ϑ ⟨bIdx * ϑ + i, lastBlockIdx_mul_ϑ_add_fin_lt_ℓ i⟩ :=
       lastBlockIdx_isNeCommitmentRound i
-    exact foldRelayOracleVerifier_rbrKnowledgeSoundness (L := L) 𝔽q β (ϑ := ϑ) (mp := mp)
+    exact foldRelayOracleVerifier_rbrKnowledgeSoundness_fixedPrefix
+      (L := L) 𝔽q β (ϑ := ϑ) (mp := mp)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (init := init) (impl := impl)
-      (i := ⟨bIdx * ϑ + i, lastBlockIdx_mul_ϑ_add_fin_lt_ℓ i⟩) hNCR
-  exact OracleVerifier.rbrKnowledgeSoundness_of_eq_error (h := hCur) (h_ε := by
-    intro k
-    simp only [lastBlockRbrKnowledgeError, ChallengeIdx, Fin.vappend_zero, bIdx])
+      (i := ⟨bIdx * ϑ + i, lastBlockIdx_mul_ϑ_add_fin_lt_ℓ i⟩) hNCR)
+  exact hCur
+
+omit [DecidableEq 𝔽q] in
+/-- The fixed-prefix last-block guarantee also gives the averaged error bound. -/
+theorem lastBlockOracleVerifier_rbrKnowledgeSoundness :
+    OracleVerifier.rbrKnowledgeSoundnessAveraged init impl
+      (roundRelation (mp := mp) 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (𝓑:=𝓑) ⟨(ℓ / ϑ - 1) * ϑ, by
+          apply lastBlockIdx_mul_ϑ_add_x_lt_ℓ_succ (x:=0) (hx:=by omega)⟩)
+      (roundRelation (mp := mp) 𝔽q β (ϑ:=ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) (Fin.last ℓ))
+      (lastBlockOracleVerifier 𝔽q β (mp := mp) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑))
+      (rbrKnowledgeError := lastBlockRbrKnowledgeError (L := L) 𝔽q β (ϑ := ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
+  Verifier.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged init impl
+    (lastBlockOracleVerifier_rbrKnowledgeSoundness_fixedPrefix 𝔽q β)
 
 /-! The commitment-round index inside a non-last block. -/
 def nonLastSingleBlockCommitIdx (bIdx : Fin (ℓ / ϑ - 1)) : Fin ℓ :=
@@ -619,10 +621,11 @@ def nonLastSingleBlockRbrKnowledgeError (bIdx : Fin (ℓ / ϑ - 1))
 
 /-! RBR KS for one non-last block verifier. -/
 omit [DecidableEq 𝔽q] in
-theorem nonLastSingleBlockOracleVerifier_rbrKnowledgeSoundness
+theorem nonLastSingleBlockOracleVerifier_rbrKnowledgeSoundness_fixedPrefix
     (bIdx : Fin (ℓ / ϑ - 1)) :
     (nonLastSingleBlockOracleVerifier 𝔽q β (mp := mp) (ϑ := ϑ)
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) bIdx).rbrKnowledgeSoundness init impl
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) bIdx).toVerifier.rbrKnowledgeSoundness
+      init impl
       (relIn := roundRelation (mp := mp) 𝔽q β (ϑ:=ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑)
         ⟨bIdx * ϑ, by
@@ -637,7 +640,7 @@ theorem nonLastSingleBlockOracleVerifier_rbrKnowledgeSoundness
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) bIdx) := by
   classical
   unfold nonLastSingleBlockOracleVerifier nonLastSingleBlockRbrKnowledgeError
-  apply OracleVerifier.append_rbrKnowledgeSoundness
+  apply OracleVerifier.append_rbrKnowledgeSoundness_of_guarded_first
     (init := init) (impl := impl)
     (rel₁ := roundRelation (mp := mp) 𝔽q β (ϑ:=ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑)
@@ -659,19 +662,25 @@ theorem nonLastSingleBlockOracleVerifier_rbrKnowledgeSoundness
       ⟩)
     (rel₃ := roundRelation (mp := mp) 𝔽q β (ϑ:=ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) ⟨(bIdx + 1) * ϑ, bIdx_succ_mul_ϑ_lt_ℓ_succ bIdx⟩)
-    (rbrKnowledgeError₁ := nonLastSingleBlockFoldRelayRbrKnowledgeError (L := L) 𝔽q β
+    (ε₁ := nonLastSingleBlockFoldRelayRbrKnowledgeError (L := L) 𝔽q β
       (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) bIdx)
-    (rbrKnowledgeError₂ := foldCommitKnowledgeError 𝔽q β (ϑ := ϑ)
+    (ε₂ := foldCommitKnowledgeError 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := nonLastSingleBlockCommitIdx (ℓ := ℓ) (ϑ := ϑ) bIdx))
+    (G := Verifier.GuardedForm.ofEmpty _ (fun input =>
+      (⟨0, fun _ => 0, input.1.ctx⟩, fun _ _ => 0)))
   · let stmt : Fin (ϑ - 1 + 1) → Type :=
       fun i => Statement (L := L) (ℓ := ℓ) Context
         ⟨bIdx * ϑ + i, bIdx_mul_ϑ_add_i_cast_lt_ℓ_succ bIdx i⟩
     let oStmt := fun i: Fin (ϑ - 1 + 1) =>
       OracleStatement 𝔽q β ϑ (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         ⟨bIdx * ϑ + i, bIdx_mul_ϑ_add_i_cast_lt_ℓ_succ bIdx i⟩
-    let hSeq := OracleVerifier.seqCompose_rbrKnowledgeSoundness
+    let hSeq := OracleVerifier.seqCompose_rbrKnowledgeSoundness_of_guarded
       (oSpec := []ₒ) (m := ϑ - 1)
       (Stmt := stmt)
+      (Wit := fun i => Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        ⟨bIdx * ϑ + i, bIdx_mul_ϑ_add_i_cast_lt_ℓ_succ bIdx i⟩)
+      (G := fun _ => Verifier.GuardedForm.ofEmpty _ (fun input =>
+        (⟨0, fun _ => 0, input.1.ctx⟩, fun _ _ => 0)))
       (OStmt := oStmt)
       (pSpec := fun _ => pSpecFoldRelay (L:=L))
       (V := fun i => by
@@ -684,7 +693,7 @@ theorem nonLastSingleBlockOracleVerifier_rbrKnowledgeSoundness
       (rel := fun i ↦
         roundRelation (mp := mp) 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑)
           (⟨↑bIdx * ϑ + ↑i, bIdx_mul_ϑ_add_i_cast_lt_ℓ_succ bIdx i⟩ : Fin (ℓ + 1)))
-      (rbrKnowledgeError := fun i =>
+      (ε := fun i =>
         foldRelayKnowledgeError 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
           ⟨bIdx * ϑ + i, bIdx_mul_ϑ_add_i_fin_ℓ_pred_lt_ℓ bIdx i⟩)
       (init := init) (impl := impl)
@@ -693,16 +702,12 @@ theorem nonLastSingleBlockOracleVerifier_rbrKnowledgeSoundness
       have hNCR : ¬ isCommitmentRound ℓ ϑ
             ⟨bIdx * ϑ + i, bIdx_mul_ϑ_add_i_fin_ℓ_pred_lt_ℓ bIdx i⟩ :=
         isNeCommitmentRound (r:=r) (ℓ:=ℓ) (𝓡:=𝓡) (ϑ:=ϑ) bIdx (x:=i.val) (hx:=by omega)
-      exact foldRelayOracleVerifier_rbrKnowledgeSoundness (L := L) 𝔽q β (ϑ := ϑ) (mp := mp)
+      exact foldRelayOracleVerifier_rbrKnowledgeSoundness_fixedPrefix
+        (L := L) 𝔽q β (ϑ := ϑ) (mp := mp)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (init := init) (impl := impl)
         (i := ⟨bIdx * ϑ + i, bIdx_mul_ϑ_add_i_fin_ℓ_pred_lt_ℓ bIdx i⟩) hNCR
     )
-    exact OracleVerifier.rbrKnowledgeSoundness_of_eq_error (h := by
-      dsimp [OracleVerifier.castOutSimple]
-      exact hSeq') (h_ε := by
-      intro k
-      unfold nonLastSingleBlockFoldRelayRbrKnowledgeError
-      rfl)
+    exact hSeq'
   · have h_ϑ_gt_zero : ϑ > 0 := Nat.pos_of_neZero ϑ
     have h_idxOut_eq :
         (nonLastSingleBlockCommitIdx (ℓ := ℓ) (ϑ := ϑ) bIdx).succ =
@@ -746,10 +751,32 @@ theorem nonLastSingleBlockOracleVerifier_rbrKnowledgeSoundness
         exact h_idxOut_eq)
       (ε := foldCommitKnowledgeError 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (i := nonLastSingleBlockCommitIdx (ℓ := ℓ) (ϑ := ϑ) bIdx))
-    exact foldCommitOracleVerifier_rbrKnowledgeSoundness (L := L) 𝔽q β (ϑ := ϑ) (mp := mp)
+    exact foldCommitOracleVerifier_rbrKnowledgeSoundness_fixedPrefix
+      (L := L) 𝔽q β (ϑ := ϑ) (mp := mp)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (init := init) (impl := impl)
       (i := nonLastSingleBlockCommitIdx (ℓ := ℓ) (ϑ := ϑ) bIdx)
       (hCR := isCommitmentRoundOfNonLastBlock (r:=r) (𝓡:=𝓡) bIdx)
+
+omit [DecidableEq 𝔽q] in
+/-- The non-last block's fixed-prefix guarantee implies its averaged bound. -/
+theorem nonLastSingleBlockOracleVerifier_rbrKnowledgeSoundness
+    (bIdx : Fin (ℓ / ϑ - 1)) :
+    (nonLastSingleBlockOracleVerifier 𝔽q β (mp := mp) (ϑ := ϑ)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) bIdx).rbrKnowledgeSoundnessAveraged init impl
+      (relIn := roundRelation (mp := mp) 𝔽q β (ϑ:=ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑)
+        ⟨bIdx * ϑ, by
+          apply Nat.lt_trans (m:=ℓ) (h₁:=by
+            change bIdx.val * ϑ + (⟨0, by exact Nat.pos_of_neZero ϑ⟩ : Fin ϑ).val < ℓ + 0
+            apply bIdx_mul_ϑ_add_i_lt_ℓ_succ
+          ) (by omega)
+        ⟩)
+      (relOut := roundRelation (mp := mp) 𝔽q β (ϑ:=ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) ⟨(bIdx + 1) * ϑ, bIdx_succ_mul_ϑ_lt_ℓ_succ bIdx⟩)
+      (rbrKnowledgeError := nonLastSingleBlockRbrKnowledgeError (L := L) 𝔽q β (ϑ := ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) bIdx) :=
+  Verifier.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged init impl
+    (nonLastSingleBlockOracleVerifier_rbrKnowledgeSoundness_fixedPrefix 𝔽q β bIdx)
 
 /-! RBR knowledge error for non-last blocks: seqCompose over non-last blocks. -/
 def nonLastBlocksRbrKnowledgeError
@@ -761,9 +788,10 @@ def nonLastBlocksRbrKnowledgeError
 
 /-! RBR KS for non-last blocks verifier (seqCompose of nonLastSingleBlock). -/
 omit [DecidableEq 𝔽q] in
-theorem nonLastBlocksOracleVerifier_rbrKnowledgeSoundness :
+theorem nonLastBlocksOracleVerifier_rbrKnowledgeSoundness_fixedPrefix :
     (nonLastBlocksOracleVerifier 𝔽q β (mp := mp) (ϑ := ϑ)
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)).rbrKnowledgeSoundness init impl
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)).toVerifier.rbrKnowledgeSoundness
+      init impl
       (relIn := roundRelation (mp := mp) 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (𝓑:=𝓑) ⟨0 * ϑ, by omega⟩)
       (relOut := roundRelation (mp := mp) 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑)
@@ -773,8 +801,12 @@ theorem nonLastBlocksOracleVerifier_rbrKnowledgeSoundness :
   classical
   unfold nonLastBlocksOracleVerifier nonLastBlocksRbrKnowledgeError
   simp only
-  refine OracleVerifier.seqCompose_rbrKnowledgeSoundness
+  refine OracleVerifier.seqCompose_rbrKnowledgeSoundness_of_guarded
     (oSpec := []ₒ)
+    (Wit := fun i => Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      ⟨i * ϑ, blockIdx_mul_ϑ_lt_ℓ_succ i⟩)
+    (G := fun _ => Verifier.GuardedForm.ofEmpty _ (fun input =>
+      (⟨0, fun _ => 0, input.1.ctx⟩, fun _ _ => 0)))
     (Stmt := fun i => Statement (L := L) (ℓ := ℓ) Context ⟨i * ϑ, blockIdx_mul_ϑ_lt_ℓ_succ i⟩)
     (OStmt := fun i =>
       OracleStatement 𝔽q β ϑ (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ⟨i * ϑ, blockIdx_mul_ϑ_lt_ℓ_succ i⟩)
@@ -784,13 +816,28 @@ theorem nonLastBlocksOracleVerifier_rbrKnowledgeSoundness :
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) bIdx)
     (rel := fun i => roundRelation (mp := mp) 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) ⟨i * ϑ, blockIdx_mul_ϑ_lt_ℓ_succ i⟩)
-    (rbrKnowledgeError := fun bIdx =>
+    (ε := fun bIdx =>
       nonLastSingleBlockRbrKnowledgeError (L := L) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) bIdx)
     (init := init) (impl := impl) ?_
   intro bIdx
-  exact nonLastSingleBlockOracleVerifier_rbrKnowledgeSoundness (L := L) 𝔽q β (ϑ := ϑ)
+  exact nonLastSingleBlockOracleVerifier_rbrKnowledgeSoundness_fixedPrefix (L := L) 𝔽q β (ϑ := ϑ)
     (mp := mp) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (init := init) (impl := impl) bIdx
+
+omit [DecidableEq 𝔽q] in
+/-- Averaging the fixed-prefix non-last-block certificate preserves its error. -/
+theorem nonLastBlocksOracleVerifier_rbrKnowledgeSoundness :
+    (nonLastBlocksOracleVerifier 𝔽q β (mp := mp) (ϑ := ϑ)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)).rbrKnowledgeSoundnessAveraged init impl
+      (relIn := roundRelation (mp := mp) 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (𝓑:=𝓑) ⟨0 * ϑ, by omega⟩)
+      (relOut := roundRelation (mp := mp) 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑)
+        ⟨(ℓ / ϑ - 1) * ϑ, by apply lastBlockIdx_mul_ϑ_add_x_lt_ℓ_succ (x:=0) (hx:=by omega)⟩)
+      (rbrKnowledgeError := nonLastBlocksRbrKnowledgeError (L := L) 𝔽q β (ϑ := ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
+  Verifier.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged init impl
+    (nonLastBlocksOracleVerifier_rbrKnowledgeSoundness_fixedPrefix 𝔽q β)
+
 
 /-! RBR knowledge error for sumcheck-fold: append of non-last blocks and last block. -/
 def sumcheckFoldKnowledgeError (j : (pSpecSumcheckFold 𝔽q β (ϑ := ϑ)
@@ -803,12 +850,13 @@ def sumcheckFoldKnowledgeError (j : (pSpecSumcheckFold 𝔽q β (ϑ := ϑ)
     (ChallengeIdx.sumEquiv.symm j)
 
 /-! Round-by-round knowledge soundness for the sumcheck fold oracle verifier.
-    Proof: append (nonLastBlocks, lastBlock) has RBR KS by append_rbrKnowledgeSoundness;
-    then castInOut preserves it; finally rbrKnowledgeSoundness_of_eq_error gives the flat
+    Proof: guarded-first append gives fixed-prefix RBR KS for (nonLastBlocks, lastBlock);
+    then castInOut preserves it; finally equality of errors gives the flat
     sumcheckFoldKnowledgeError. The error equality (flat = Sum.elim form) remains. -/
 omit [DecidableEq 𝔽q] in
-theorem sumcheckFoldOracleVerifier_rbrKnowledgeSoundness :
-    (sumcheckFoldOracleVerifier 𝔽q β (mp := mp) (𝓑 := 𝓑)).rbrKnowledgeSoundness init impl
+theorem sumcheckFoldOracleVerifier_rbrKnowledgeSoundness_fixedPrefix :
+    (sumcheckFoldOracleVerifier 𝔽q β (mp := mp) (𝓑 := 𝓑)).toVerifier.rbrKnowledgeSoundness
+      init impl
       (pSpec := pSpecSumcheckFold 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
       (relIn := roundRelation (mp := mp) 𝔽q β (ϑ:=ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) 0 )
@@ -818,7 +866,7 @@ theorem sumcheckFoldOracleVerifier_rbrKnowledgeSoundness :
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) := by
   classical
   unfold sumcheckFoldOracleVerifier pSpecSumcheckFold
-  have hAppend := OracleVerifier.append_rbrKnowledgeSoundness
+  have hAppend := OracleVerifier.append_rbrKnowledgeSoundness_of_guarded_first
     (init := init) (impl := impl)
     (rel₁ := roundRelation (mp := mp) 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑)
       ⟨0 * ϑ, by omega⟩)
@@ -829,16 +877,18 @@ theorem sumcheckFoldOracleVerifier_rbrKnowledgeSoundness :
     (V₁ := nonLastBlocksOracleVerifier 𝔽q β (mp := mp) (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑))
     (V₂ := lastBlockOracleVerifier 𝔽q β (mp := mp) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑))
-    (rbrKnowledgeError₁ := nonLastBlocksRbrKnowledgeError (L := L) 𝔽q β (ϑ:=ϑ)
+    (ε₁ := nonLastBlocksRbrKnowledgeError (L := L) 𝔽q β (ϑ:=ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
-    (rbrKnowledgeError₂ := lastBlockRbrKnowledgeError (L := L) 𝔽q β (ϑ:=ϑ)
+    (ε₂ := lastBlockRbrKnowledgeError (L := L) 𝔽q β (ϑ:=ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
+    (G := Verifier.GuardedForm.ofEmpty _ (fun input =>
+      (⟨0, fun _ => 0, input.1.ctx⟩, fun _ _ => 0)))
     (h₁ := by
-      exact nonLastBlocksOracleVerifier_rbrKnowledgeSoundness (L := L) 𝔽q β
+      exact nonLastBlocksOracleVerifier_rbrKnowledgeSoundness_fixedPrefix (L := L) 𝔽q β
         (ϑ := ϑ) (mp := mp) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
         (init := init) (impl := impl))
     (h₂ := by
-      exact lastBlockOracleVerifier_rbrKnowledgeSoundness (L := L) 𝔽q β
+      exact lastBlockOracleVerifier_rbrKnowledgeSoundness_fixedPrefix (L := L) 𝔽q β
         (ϑ := ϑ) (mp := mp) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
         (init := init) (impl := impl))
   apply OracleVerifier.castInOut_rbrKnowledgeSoundness
@@ -869,6 +919,20 @@ theorem sumcheckFoldOracleVerifier_rbrKnowledgeSoundness :
     (ε := sumcheckFoldKnowledgeError (L := L) 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
     (hRbrKs := hAppend)
+
+omit [DecidableEq 𝔽q] in
+/-- The fixed-prefix sumcheck-fold certificate implies the averaged guarantee. -/
+theorem sumcheckFoldOracleVerifier_rbrKnowledgeSoundness :
+    (sumcheckFoldOracleVerifier 𝔽q β (mp := mp) (𝓑 := 𝓑)).rbrKnowledgeSoundnessAveraged init impl
+      (pSpec := pSpecSumcheckFold 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
+      (relIn := roundRelation (mp := mp) 𝔽q β (ϑ:=ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) 0 )
+      (relOut := roundRelation (mp := mp) 𝔽q β (ϑ:=ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) (Fin.last ℓ) )
+      (rbrKnowledgeError := sumcheckFoldKnowledgeError (L := L) 𝔽q β (ϑ:=ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
+  Verifier.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged init impl
+    (sumcheckFoldOracleVerifier_rbrKnowledgeSoundness_fixedPrefix 𝔽q β)
 
 end SecurityProps
 

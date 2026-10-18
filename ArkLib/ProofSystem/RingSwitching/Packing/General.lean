@@ -14,6 +14,7 @@ public import ArkLib.OracleReduction.Security.RoundByRound
 public import ArkLib.OracleReduction.Composition.Sequential.Append
 public import ArkLib.OracleReduction.Composition.Sequential.OracleCompleteness
 public import ArkLib.OracleReduction.Composition.Sequential.NoAmbient
+public import ArkLib.OracleReduction.Composition.Sequential.Append.AveragedEmpty
 
 /-!
 # The composed DP24 tensor-packing reduction
@@ -189,47 +190,69 @@ def fullRbrKnowledgeError (i : (fullPspec κ L K P ℓ' mlIOPCS).ChallengeIdx) :
   (ChallengeIdx.sumEquiv.symm i)
 
 omit [Fintype K] [DecidableEq K] in
+/-- The batching and sumcheck core has fixed-prefix security independently of the downstream
+opening protocol's security certificate. -/
+theorem batchingCore_rbrKnowledgeSoundness_fixedPrefix
+    [Finite K] [IsDomain K] [NoZeroDivisors L]
+    (hCoord : CoordinateLaws P) (hUnique : mlIOPCS.toAbstractOStmtIn.Functional) :
+    (batchingCoreVerifier κ L K P ℓ ℓ' h_l mlIOPCS).toVerifier
+      |>.rbrKnowledgeSoundness init impl
+        (fullInputRelation κ L K P ℓ ℓ' h_l mlIOPCS) mlIOPCS.toRelInput
+        (batchingCoreRbrKnowledgeError κ L K P ℓ') := by
+  let _ : IsDomain L := NoZeroDivisors.to_isDomain L
+  let _ := Fintype.ofFinite K
+  classical
+  exact OracleVerifier.append_rbrKnowledgeSoundness_of_guarded_first init impl
+    (rel₂ := sumcheckRoundRelation κ L K P ℓ ℓ' h_l mlIOPCS.toAbstractOStmtIn 0)
+    (Verifier.GuardedForm.ofEmpty _ (fun stmt =>
+      (⟨0, Fin.elim0, ⟨⟨stmt.1.t_eval_point, stmt.1.original_claim⟩, 0, fun _ => 0⟩⟩,
+        stmt.2)))
+    (BatchingPhase.batchingOracleVerifier_rbrKnowledgeSoundness_fixedPrefix κ L K P ℓ
+      ℓ' h_l mlIOPCS.toAbstractOStmtIn hCoord hUnique)
+    (SumcheckPhase.coreInteraction_rbrKnowledgeSoundness_fixedPrefix κ L K P ℓ ℓ' h_l
+      mlIOPCS.toAbstractOStmtIn hCoord hUnique)
+
+omit [Fintype K] [DecidableEq K] in
+/-- Full composition with an explicit fixed-prefix certificate for the downstream opening
+protocol. The averaged field of `MLIOPCS` alone is not used as a fixed-prefix bound. -/
+theorem fullOracleVerifier_rbrKnowledgeSoundness_fixedPrefix
+    [Finite K] [IsDomain K] [NoZeroDivisors L]
+    (hCoord : CoordinateLaws P) (hUnique : mlIOPCS.toAbstractOStmtIn.Functional)
+    (hTail : (mlIOPCS.oracleReduction.toOracleVerifier.toVerifier
+      (Oₛₒ := fun i : Empty => nomatch i)).rbrKnowledgeSoundness init impl
+        mlIOPCS.toRelInput fullOutputRelation mlIOPCS.rbrKnowledgeError) :
+    ((fullOracleVerifier κ L K P ℓ ℓ' h_l mlIOPCS).toVerifier
+      (Oₛₒ := fun i : Empty => nomatch i)).rbrKnowledgeSoundness init impl
+        (fullInputRelation κ L K P ℓ ℓ' h_l mlIOPCS) fullOutputRelation
+        (fullRbrKnowledgeError κ L K P ℓ' mlIOPCS) := by
+  classical
+  exact OracleVerifier.append_rbrKnowledgeSoundness_of_guarded_first init impl
+    (Oₛ₃ := fun i : Empty => nomatch i)
+    (Verifier.GuardedForm.ofEmpty _ (fun stmt => (⟨fun _ => 0, 0⟩, stmt.2)))
+    (batchingCore_rbrKnowledgeSoundness_fixedPrefix κ L K P ℓ ℓ' h_l mlIOPCS init
+      hCoord hUnique) hTail
+
+omit [Fintype K] [DecidableEq K] in
 /-- Round-by-round knowledge soundness for the full ring-switching oracle verifier -/
 theorem fullOracleVerifier_rbrKnowledgeSoundness [Finite K] [IsDomain K] [NoZeroDivisors L]
     (hCoord : CoordinateLaws P) (hUnique : mlIOPCS.toAbstractOStmtIn.Functional) :
-    OracleProof.rbrKnowledgeSoundness
+    OracleProof.rbrKnowledgeSoundnessAveraged
       (verifier := fullOracleVerifier κ L K P ℓ ℓ' (h_l := h_l) mlIOPCS)
       (init := init)
       (impl := impl)
       (relIn := fullInputRelation κ L K P ℓ ℓ' h_l mlIOPCS)
       (rbrKnowledgeError := fun i => fullRbrKnowledgeError κ L K P ℓ' mlIOPCS i) := by
-  let _ : IsDomain L := NoZeroDivisors.to_isDomain L
-  let _ := Fintype.ofFinite K
   classical
-  unfold fullOracleVerifier fullRbrKnowledgeError
-  have batchInteractionRBRKS :=
-    OracleVerifier.append_rbrKnowledgeSoundness (init:=init) (impl:=impl)
-    (rel₁:=fullInputRelation κ L K P ℓ ℓ' h_l mlIOPCS)
-    (rel₂:=sumcheckRoundRelation κ L K P ℓ ℓ' h_l mlIOPCS.toAbstractOStmtIn 0)
-    (rel₃:=mlIOPCS.toRelInput)
-    (V₁:=BatchingPhase.oracleVerifier κ L K P ℓ ℓ' h_l mlIOPCS.toAbstractOStmtIn)
-    (V₂:=SumcheckPhase.coreInteractionOracleVerifier κ L K P ℓ ℓ' h_l mlIOPCS.toAbstractOStmtIn)
-    (rbrKnowledgeError₁:=BatchingPhase.batchingRBRKnowledgeError κ L K P)
-    (rbrKnowledgeError₂:=SumcheckPhase.coreInteractionRbrKnowledgeError L ℓ')
-    (h₁:=BatchingPhase.batchingOracleVerifier_rbrKnowledgeSoundness κ L K P ℓ
-      ℓ' h_l mlIOPCS.toAbstractOStmtIn (hCoord := hCoord) (hUnique := hUnique))
-    (h₂:=SumcheckPhase.coreInteraction_rbrKnowledgeSoundness κ L K P ℓ ℓ' h_l
-      mlIOPCS.toAbstractOStmtIn (hCoord := hCoord) (hUnique := hUnique))
-  have res :=
-    OracleVerifier.append_rbrKnowledgeSoundness (init:=init) (impl:=impl)
-    (rel₁:=fullInputRelation κ L K P ℓ ℓ' h_l mlIOPCS)
-    (rel₂:=mlIOPCS.toRelInput)
-    (rel₃:=fullOutputRelation)
-    (V₁:=batchingCoreVerifier κ L K P ℓ ℓ' h_l mlIOPCS)
-    (V₂:=mlIOPCS.oracleReduction.toOracleVerifier)
-    (Oₛ₃:=fun i : Empty => nomatch i)
-    (rbrKnowledgeError₁:=batchingCoreRbrKnowledgeError κ L K P ℓ')
-    (rbrKnowledgeError₂:=mlIOPCS.rbrKnowledgeError)
-    (h₁:=batchInteractionRBRKS)
-    (h₂:=by
-      simpa only [OracleProof.rbrKnowledgeSoundness, fullOutputRelation] using
-        mlIOPCS.rbrKnowledgeSoundness (init:=init) (impl:=impl))
-  simpa only [OracleProof.rbrKnowledgeSoundness, fullOutputRelation, Function.comp_def] using res
+  let : Inhabited (WitMLP L ℓ') := ⟨⟨0⟩⟩
+  have h := Verifier.append_rbrKnowledgeSoundnessAveraged_empty init impl
+    (Verifier.GuardedForm.ofEmpty _ (fun stmt => (⟨fun _ => 0, 0⟩, stmt.2)))
+    (batchingCore_rbrKnowledgeSoundness_fixedPrefix κ L K P ℓ ℓ' h_l mlIOPCS init
+      hCoord hUnique) (mlIOPCS.rbrKnowledgeSoundness (init := init) (impl := impl))
+  simp only [OracleProof.rbrKnowledgeSoundnessAveraged,
+    OracleVerifier.rbrKnowledgeSoundnessAveraged, fullOracleVerifier,
+    OracleVerifier.append_toVerifier, fullRbrKnowledgeError]
+  convert h using 1
+  rfl
 
 end SecurityProperties
 end

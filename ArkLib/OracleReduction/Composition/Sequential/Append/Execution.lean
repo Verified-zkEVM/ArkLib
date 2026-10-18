@@ -31,8 +31,8 @@ section Execution
 The appended prover `P₁.append P₂` is defined by a three-way `dif` on the round index (below the
 seam / at the seam / above the seam), and each branch transports its state along a type equality.
 Reasoning about `runToRound` therefore forces us to work up to `HEq`.  The lemmas below build the
-transport ladder that `Prover.append_run` needs; they are all `private`, since they exist only to
-serve that proof and the security proofs later in this file.
+transport ladder that `Prover.append_run` needs. Most are private; the right-hand lift laws
+are also used to analyze continuations of arbitrary adversarial provers.
 -/
 
 section AppendRunHelpers
@@ -143,9 +143,18 @@ private theorem processRound_eq_bind {N : ℕ} {pSpec : ProtocolSpec N} (j : Fin
 
 /-! ### Lift coherence: the two-step lift agrees with the direct lift -/
 
+/-- The pinned left challenge inclusion preserves bind. -/
+theorem ProtocolSpec.liftAppendLeft_bind {α β : Type}
+    (oa : OracleComp (oSpec + [pSpec₁.Challenge]ₒ) α)
+    (f : α → OracleComp (oSpec + [pSpec₁.Challenge]ₒ) β) :
+    liftAppendLeft pSpec₂ (oa >>= f) =
+      (liftAppendLeft pSpec₂ oa >>= fun a => liftAppendLeft pSpec₂ (f a)) := by
+  unfold liftAppendLeft
+  exact liftM_bind oa f
+
 /-- Lifting an `oSpec` computation into the first component and then into the appended protocol
 is the same as lifting it into the appended protocol directly. -/
-private theorem liftAppendLeft_liftM {α : Type} (oa : OracleComp oSpec α) :
+theorem ProtocolSpec.liftAppendLeft_liftM {α : Type} (oa : OracleComp oSpec α) :
     (liftAppendLeft pSpec₂ (liftM oa : OracleComp (oSpec + [pSpec₁.Challenge]ₒ) α))
       = (liftM oa : OracleComp (oSpec + [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ) α) := by
   unfold liftAppendLeft
@@ -157,7 +166,7 @@ private theorem liftAppendLeft_liftM {α : Type} (oa : OracleComp oSpec α) :
 
 /-- Lifting a left-component challenge query into the appended protocol queries the
 left-injected index and transports the response back. -/
-private theorem liftAppendLeft_getChallenge (i : ChallengeIdx pSpec₁) :
+theorem ProtocolSpec.liftAppendLeft_getChallenge (i : ChallengeIdx pSpec₁) :
     liftAppendLeft pSpec₂
         ((liftM (pSpec₁.getChallenge i)) :
           OracleComp (oSpec + [pSpec₁.Challenge]ₒ) (pSpec₁.Challenge i))
@@ -534,8 +543,17 @@ private theorem concatLR_step (j : Fin (m + n)) (l : Fin n) (hjl : j.val = m + l
 
 /-! ### Right-hand lifts -/
 
+/-- The pinned right challenge inclusion preserves bind, including on the diagonal. -/
+theorem ProtocolSpec.liftAppendRight_bind {α β : Type}
+    (oa : OracleComp (oSpec + [pSpec₂.Challenge]ₒ) α)
+    (f : α → OracleComp (oSpec + [pSpec₂.Challenge]ₒ) β) :
+    liftAppendRight pSpec₁ (oa >>= f) =
+      (liftAppendRight pSpec₁ oa >>= fun a => liftAppendRight pSpec₁ (f a)) := by
+  unfold liftAppendRight
+  exact liftM_bind oa f
+
 /-- The `liftAppendRight` analogue of `liftAppendLeft_liftM`. -/
-private theorem liftAppendRight_liftM {α : Type} (oa : OracleComp oSpec α) :
+theorem ProtocolSpec.liftAppendRight_liftM {α : Type} (oa : OracleComp oSpec α) :
     (liftAppendRight pSpec₁ (liftM oa : OracleComp (oSpec + [pSpec₂.Challenge]ₒ) α))
       = (liftM oa : OracleComp (oSpec + [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ) α) := by
   unfold liftAppendRight
@@ -547,7 +565,7 @@ private theorem liftAppendRight_liftM {α : Type} (oa : OracleComp oSpec α) :
 
 /-- Lifting a right-component challenge query into the appended protocol queries the
 right-injected index and transports the response back. -/
-private theorem liftAppendRight_getChallenge (i : ChallengeIdx pSpec₂) :
+theorem ProtocolSpec.liftAppendRight_getChallenge (i : ChallengeIdx pSpec₂) :
     liftAppendRight pSpec₁
         ((liftM (pSpec₂.getChallenge i)) :
           OracleComp (oSpec + [pSpec₂.Challenge]ₒ) (pSpec₂.Challenge i))

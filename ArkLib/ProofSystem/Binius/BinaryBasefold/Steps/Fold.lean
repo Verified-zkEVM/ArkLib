@@ -1363,9 +1363,9 @@ lemma foldStep_doom_escape_probability_bound (i : Fin ℓ)
 /-! RBR knowledge soundness for a single round oracle verifier -/
 open Classical in
 omit [DecidableEq 𝔽q] in
-theorem foldOracleVerifier_rbrKnowledgeSoundness (i : Fin ℓ) :
+theorem foldOracleVerifier_rbrKnowledgeSoundness_fixedPrefix (i : Fin ℓ) :
     (foldOracleVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
-      (mp := mp) i).rbrKnowledgeSoundness init impl
+      (mp := mp) i).toVerifier.rbrKnowledgeSoundness init impl
       (relIn := roundRelation (mp := mp) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (𝓑 := 𝓑)  i.castSucc)
       (relOut := foldStepRelOut (mp := mp) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
@@ -1396,6 +1396,21 @@ theorem foldOracleVerifier_rbrKnowledgeSoundness (i : Fin ℓ) :
     (hbound := fun stmtOStmtIn msg₀ => foldStep_doom_escape_probability_bound 𝔽q β (i := i)
       (stmtOStmtIn := stmtOStmtIn) (h_i := msg₀) (init := init) (impl := impl) (mp := mp)
       (𝓑 := 𝓑) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
+
+omit [DecidableEq 𝔽q] in
+/-- The averaged folding bound follows from its fixed-prefix certificate. -/
+theorem foldOracleVerifier_rbrKnowledgeSoundness (i : Fin ℓ) :
+    (foldOracleVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
+      (mp := mp) i).rbrKnowledgeSoundnessAveraged init impl
+      (relIn := roundRelation (mp := mp) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (𝓑 := 𝓑) i.castSucc)
+      (relOut := foldStepRelOut (mp := mp) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (𝓑 := 𝓑) i)
+      (foldKnowledgeError 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) :=
+  Verifier.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged init impl
+    (foldOracleVerifier_rbrKnowledgeSoundness_fixedPrefix 𝔽q β
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (mp := mp) (ϑ := ϑ)
+      (init := init) (impl := impl) i)
 
 end FoldStep
 end SingleIteratedSteps

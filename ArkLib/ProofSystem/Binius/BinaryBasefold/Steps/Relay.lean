@@ -339,10 +339,10 @@ def relayKnowledgeStateFunction (i : Fin ℓ) (hNCR : ¬ isCommitmentRound ℓ �
 
 /-! RBR knowledge soundness for a single round oracle verifier -/
 omit [SampleableType L] [CharP L 2] [DecidableEq 𝔽q] in
-theorem relayOracleVerifier_rbrKnowledgeSoundness (i : Fin ℓ)
+theorem relayOracleVerifier_rbrKnowledgeSoundness_fixedPrefix (i : Fin ℓ)
     (hNCR : ¬ isCommitmentRound ℓ ϑ i) :
     (relayOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-        i hNCR).rbrKnowledgeSoundness init impl
+        i hNCR).toVerifier.rbrKnowledgeSoundness init impl
       (relIn := foldStepRelOut (mp := mp) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)  i)
       (relOut := roundRelation (mp := mp) 𝔽q β (ϑ := ϑ)
@@ -352,8 +352,22 @@ theorem relayOracleVerifier_rbrKnowledgeSoundness (i : Fin ℓ)
   use relayRbrExtractor 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i
   use relayKnowledgeStateFunction (mp:=mp) 𝔽q β (ϑ := ϑ)
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i hNCR
-  intro stmtIn witIn prover j
+  intro stmtIn j
   exact Fin.elim0 j
+
+omit [SampleableType L] [CharP L 2] [DecidableEq 𝔽q] in
+/-- The fixed-prefix certificate implies the averaged RBR guarantee. -/
+theorem relayOracleVerifier_rbrKnowledgeSoundness (i : Fin ℓ)
+    (hNCR : ¬ isCommitmentRound ℓ ϑ i) :
+    (relayOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      i hNCR).rbrKnowledgeSoundnessAveraged init impl
+      (relIn := foldStepRelOut (mp := mp) 𝔽q β (ϑ := ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i)
+      (relOut := roundRelation (mp := mp) 𝔽q β (ϑ := ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i.succ)
+      (relayKnowledgeError) :=
+  Verifier.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged init impl
+    (relayOracleVerifier_rbrKnowledgeSoundness_fixedPrefix 𝔽q β i hNCR)
 
 end RelayStep
 end SingleIteratedSteps

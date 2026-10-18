@@ -615,6 +615,7 @@ open scoped ProbabilityTheory NNReal
 variable {ι : Type} {oSpec : OracleSpec ι}
   {StmtIn WitIn StmtOut WitOut : Type} {σ : Type}
 
+/-- Retain the fixed-prefix certificate supplied by a two-message protocol's challenge bound. -/
 theorem rbrKnowledgeSoundness_of_2msg_PtoV_uniformChallenge
     {pSpec : ProtocolSpec 2}
     [∀ i, SampleableType (pSpec.Challenge i)]
@@ -632,7 +633,6 @@ theorem rbrKnowledgeSoundness_of_2msg_PtoV_uniformChallenge
           (FullTranscript.mk1 msg₀) y] ≤ rbrKnowledgeError ⟨1, hDir1⟩) :
     verifier.rbrKnowledgeSoundness init impl relIn relOut rbrKnowledgeError := by
   classical
-  apply Verifier.rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness
   refine ⟨WitMid, extractor, kSF, ?_⟩
   intro stmtIn j transcript
   have h_j_eq_1 : j = ⟨1, hDir1⟩ := by
@@ -648,6 +648,28 @@ theorem rbrKnowledgeSoundness_of_2msg_PtoV_uniformChallenge
   rw [htr]
   exact hbound stmtIn _
 
+/-- Averaged compatibility corollary of the fixed-prefix two-message certificate. -/
+theorem rbrKnowledgeSoundnessAveraged_of_2msg_PtoV_uniformChallenge
+    {pSpec : ProtocolSpec 2}
+    [∀ i, SampleableType (pSpec.Challenge i)]
+    {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
+    (hDir0 : pSpec.dir 0 = .P_to_V) (hDir1 : pSpec.dir 1 = .V_to_P)
+    (verifier : Verifier oSpec StmtIn StmtOut pSpec)
+    (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
+    (rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0)
+    (WitMid : Fin 3 → Type)
+    (extractor : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid)
+    (kSF : verifier.KnowledgeStateFunction init impl relIn relOut extractor)
+    (hbound : ∀ (stmtIn : StmtIn) (msg₀ : pSpec.Message ⟨0, hDir0⟩),
+      Pr{let y ← $ᵗ (pSpec.Challenge (⟨1, hDir1⟩ : pSpec.ChallengeIdx))}[rbrExtractionFailureEvent
+        kSF extractor (⟨1, hDir1⟩ : pSpec.ChallengeIdx) stmtIn
+          (FullTranscript.mk1 msg₀) y] ≤ rbrKnowledgeError ⟨1, hDir1⟩) :
+    verifier.rbrKnowledgeSoundnessAveraged init impl relIn relOut rbrKnowledgeError :=
+  Verifier.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged init impl
+    (rbrKnowledgeSoundness_of_2msg_PtoV_uniformChallenge hDir0 hDir1 verifier
+      relIn relOut rbrKnowledgeError WitMid extractor kSF hbound)
+
+/-- A single verifier challenge satisfies the fixed-prefix contract from its local bound. -/
 theorem rbrKnowledgeSoundness_of_1msg_VtoP_uniformChallenge
     {pSpec : ProtocolSpec 1}
     [∀ i, SampleableType (pSpec.Challenge i)]
@@ -666,7 +688,6 @@ theorem rbrKnowledgeSoundness_of_1msg_VtoP_uniformChallenge
           transcript y] ≤ rbrKnowledgeError ⟨0, hDir0⟩) :
     verifier.rbrKnowledgeSoundness init impl relIn relOut rbrKnowledgeError := by
   classical
-  apply Verifier.rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness
   refine ⟨WitMid, extractor, kSF, ?_⟩
   intro stmtIn j transcript
   have h_j_eq_0 : j = ⟨0, hDir0⟩ := by
@@ -675,6 +696,28 @@ theorem rbrKnowledgeSoundness_of_1msg_VtoP_uniformChallenge
     rfl
   subst j
   exact hbound stmtIn transcript
+
+/-- The single-challenge fixed-prefix bound also gives the averaged RBR contract. -/
+theorem rbrKnowledgeSoundnessAveraged_of_1msg_VtoP_uniformChallenge
+    {pSpec : ProtocolSpec 1}
+    [∀ i, SampleableType (pSpec.Challenge i)]
+    {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
+    (hDir0 : pSpec.dir 0 = .V_to_P)
+    (verifier : Verifier oSpec StmtIn StmtOut pSpec)
+    (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
+    (rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0)
+    (WitMid : Fin 2 → Type)
+    (extractor : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid)
+    (kSF : verifier.KnowledgeStateFunction init impl relIn relOut extractor)
+    (hbound : ∀ (stmtIn : StmtIn)
+        (transcript : pSpec.Transcript (⟨0, hDir0⟩ : pSpec.ChallengeIdx).1.castSucc),
+      Pr{let y ← $ᵗ (pSpec.Challenge (⟨0, hDir0⟩ : pSpec.ChallengeIdx))}[rbrExtractionFailureEvent
+        kSF extractor (⟨0, hDir0⟩ : pSpec.ChallengeIdx) stmtIn
+          transcript y] ≤ rbrKnowledgeError ⟨0, hDir0⟩) :
+    verifier.rbrKnowledgeSoundnessAveraged init impl relIn relOut rbrKnowledgeError :=
+  Verifier.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged init impl
+    (rbrKnowledgeSoundness_of_1msg_VtoP_uniformChallenge hDir0 verifier
+      relIn relOut rbrKnowledgeError WitMid extractor kSF hbound)
 
 end RbrKSReducers
 

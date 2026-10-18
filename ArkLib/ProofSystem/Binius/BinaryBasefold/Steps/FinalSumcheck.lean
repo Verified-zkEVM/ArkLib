@@ -491,9 +491,10 @@ noncomputable def finalSumcheckKnowledgeStateFunction {σ : Type} (init : ProbCo
 
 omit [DecidableEq 𝔽q] [CharP L 2] in
 /-- Round-by-round knowledge soundness for the final sumcheck step. -/
-theorem finalSumcheckOracleVerifier_rbrKnowledgeSoundness {σ : Type}
+theorem finalSumcheckOracleVerifier_rbrKnowledgeSoundness_fixedPrefix {σ : Type}
     (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-    (finalSumcheckVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)).rbrKnowledgeSoundness
+    (finalSumcheckVerifier 𝔽q β
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)).toVerifier.rbrKnowledgeSoundness
       init impl
       (relIn := roundRelation 𝔽q β (ϑ := ϑ) (𝓑 := 𝓑)
         (mp := BBF_SumcheckMultiplierParam) (Fin.last ℓ) )
@@ -504,13 +505,27 @@ theorem finalSumcheckOracleVerifier_rbrKnowledgeSoundness {σ : Type}
   use finalSumcheckRbrExtractor 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
   use finalSumcheckKnowledgeStateFunction 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
     (𝓑 := 𝓑) init impl
-  intro stmtIn witIn prover ⟨j, hj⟩
+  intro stmtIn ⟨j, hj⟩
   -- pSpecFinalSumcheckStep has 1 message (ChallengeIdx = Fin 1); same pattern as commit
   cases j using Fin.cases with
   | zero => simp only [pSpecFinalSumcheckStep, ne_eq, reduceCtorEq, not_false_eq_true, Fin.isValue,
     Matrix.cons_val_fin_one, Direction.not_P_to_V_eq_V_to_P] at hj
     -- bound for challenge index 0 (P→V only, no V challenge)
   | succ j' => exact Fin.elim0 j'
+
+omit [DecidableEq 𝔽q] [CharP L 2] in
+/-- The final sumcheck fixed-prefix certificate implies the averaged guarantee. -/
+theorem finalSumcheckOracleVerifier_rbrKnowledgeSoundness {σ : Type}
+    (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
+    (finalSumcheckVerifier 𝔽q β
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)).rbrKnowledgeSoundnessAveraged
+      init impl
+      (relIn := roundRelation 𝔽q β (ϑ := ϑ) (𝓑 := 𝓑)
+        (mp := BBF_SumcheckMultiplierParam) (Fin.last ℓ) )
+      (relOut := finalSumcheckRelOut 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) )
+      (rbrKnowledgeError := finalSumcheckKnowledgeError) :=
+  Verifier.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged init impl
+    (finalSumcheckOracleVerifier_rbrKnowledgeSoundness_fixedPrefix 𝔽q β init impl)
 
 end FinalSumcheckStep
 end SingleIteratedSteps

@@ -7,6 +7,7 @@ module
 
 public import ArkLib.OracleReduction.Composition.Sequential.NoAmbient
 public import ArkLib.OracleReduction.Composition.Sequential.OracleCompleteness
+public import ArkLib.OracleReduction.Security.ActualExtraction
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.QueryPhase
 public import ArkLib.ProofSystem.Binius.FRIBinius.CoreInteractionPhase
 public import ArkLib.ProofSystem.RingSwitching.Packing.BatchingPhase
@@ -271,16 +272,17 @@ def fullRbrKnowledgeError
 
 open FRIBinius.CoreInteractionPhase in
 /-- RBR-KS for the batching + core-interaction sub-reduction (batching ++ core), composed via
-`OracleVerifier.append_rbrKnowledgeSoundness` along the seam
+the proved guarded fixed-prefix append theorem along the seam
 `batchingInputRelation → sumcheckRoundRelation 0 → finalSumcheckRelOut`. -/
-theorem batchingCoreVerifier_rbrKnowledgeSoundness :
-    (batchingCoreVerifier κ L K β ℓ ℓ' 𝓡 ϑ h_ℓ_add_R_rate h_l).rbrKnowledgeSoundness init impl
+theorem batchingCoreVerifier_rbrKnowledgeSoundness_fixedPrefix :
+    (batchingCoreVerifier κ L K β ℓ ℓ' 𝓡 ϑ h_ℓ_add_R_rate h_l).toVerifier.rbrKnowledgeSoundness
+      init impl
     (relIn := BatchingPhase.batchingInputRelation κ L K (biniusProfile κ L K β)
       ℓ ℓ' h_l (BinaryBasefoldAbstractOStmtIn κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate))
     (relOut := BinaryBasefold.finalSumcheckRelOut K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
     (rbrKnowledgeError := batchingCoreRbrKnowledgeError κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate) := by
   unfold batchingCoreVerifier batchingCoreRbrKnowledgeError
-  exact OracleVerifier.append_rbrKnowledgeSoundness
+  exact OracleVerifier.append_rbrKnowledgeSoundness_of_guarded_first
     (oSpec := []ₒ) (init := init) (impl := impl)
     (OStmt₁ := (BinaryBasefoldAbstractOStmtIn κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate).OStmtIn)
     (OStmt₂ := BinaryBasefold.OracleStatement K β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0)
@@ -299,39 +301,52 @@ theorem batchingCoreVerifier_rbrKnowledgeSoundness :
     (V₂ := coreInteractionOracleVerifier κ L K β ℓ ℓ' 𝓡 ϑ h_ℓ_add_R_rate h_l)
     (Oₛ₃ := Binius.BinaryBasefold.instOracleStatementBinaryBasefold K β
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ) (i := Fin.last ℓ'))
-    (rbrKnowledgeError₁ := RingSwitching.BatchingPhase.batchingRBRKnowledgeError
+    (ε₁ := RingSwitching.BatchingPhase.batchingRBRKnowledgeError
       (κ := κ) (L := L) (K := K) (P := biniusProfile κ L K β))
-    (rbrKnowledgeError₂ := coreInteractionOracleRbrKnowledgeError
+    (ε₂ := coreInteractionOracleRbrKnowledgeError
       κ L K β ℓ' 𝓡 ϑ (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
-    (h₁ := RingSwitching.BatchingPhase.batchingOracleVerifier_rbrKnowledgeSoundness
+    (G := Verifier.GuardedForm.ofEmpty _ (fun input =>
+      (⟨0, fun _ => 0,
+        ⟨⟨input.1.t_eval_point, input.1.original_claim⟩, 0, 0⟩⟩, input.2)))
+    (h₁ := RingSwitching.BatchingPhase.batchingOracleVerifier_rbrKnowledgeSoundness_fixedPrefix
       (κ := κ) (L := L) (K := K) (P := biniusProfile κ L K β)
       (ℓ := ℓ) (ℓ' := ℓ') (h_l := h_l)
       (aOStmtIn := BinaryBasefoldAbstractOStmtIn κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate)
       (hCoord := bbfSumcheckProfile_coordinateLaws κ L K (booleanHypercubeBasis κ L K β))
       (hUnique := Binius.RingSwitching.BBFSmallFieldIOPCS.bbfAbstractOStmtIn_functional K β))
-    (h₂ := coreInteractionOracleVerifier_rbrKnowledgeSoundness
+    (h₂ := coreInteractionOracleVerifier_rbrKnowledgeSoundness_fixedPrefix
       (κ := κ) (L := L) (K := K) (β := β) (ℓ := ℓ) (ℓ' := ℓ') (h_l := h_l)
       (𝓡 := 𝓡) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
+
+/-- Averaged consequence of the fixed-prefix bound, with unchanged relations and errors. -/
+theorem batchingCoreVerifier_rbrKnowledgeSoundness :
+    (batchingCoreVerifier κ L K β ℓ ℓ' 𝓡 ϑ h_ℓ_add_R_rate h_l).rbrKnowledgeSoundnessAveraged
+      init impl
+    (relIn := BatchingPhase.batchingInputRelation κ L K (biniusProfile κ L K β)
+      ℓ ℓ' h_l (BinaryBasefoldAbstractOStmtIn κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate))
+    (relOut := BinaryBasefold.finalSumcheckRelOut K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
+    (rbrKnowledgeError := batchingCoreRbrKnowledgeError κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate) := by
+  exact Verifier.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged init impl
+    (batchingCoreVerifier_rbrKnowledgeSoundness_fixedPrefix κ L K β ℓ ℓ' 𝓡 ϑ h_ℓ_add_R_rate h_l)
 
 /-- Round-by-round knowledge soundness for the full FRI-Binius oracle verifier.
 
 Composes the three phase RBR-KS theorems along the (non-strict) seam relations
 `batchingInputRelation → sumcheckRoundRelation 0 → finalSumcheckRelOut → acceptRejectOracleRel`
-via `OracleVerifier.append_rbrKnowledgeSoundness` (nested: batching ++ core, then ++ query):
-`BatchingPhase.batchingOracleVerifier_rbrKnowledgeSoundness`,
-`CoreInteractionPhase.coreInteractionOracleVerifier_rbrKnowledgeSoundness`, and
-`QueryPhase.queryOracleVerifier_rbrKnowledgeSoundness`. -/
-theorem fullOracleVerifier_rbrKnowledgeSoundness :
-    (fullOracleVerifier κ L K β ℓ ℓ' 𝓡 ϑ γ_repetitions
-    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) h_l).rbrKnowledgeSoundness
-    (Oₛₒ := fun i : Empty => nomatch i) init impl
+via `OracleVerifier.append_rbrKnowledgeSoundness_of_guarded_first`
+(nested: batching ++ core, then ++ query), using the fixed-prefix guarantees of
+batching, core interaction, and query verification. -/
+theorem fullOracleVerifier_rbrKnowledgeSoundness_fixedPrefix :
+    ((fullOracleVerifier κ L K β ℓ ℓ' 𝓡 ϑ γ_repetitions
+    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) h_l).toVerifier
+      (Oₛₒ := fun i : Empty => nomatch i)).rbrKnowledgeSoundness init impl
     (relIn := BatchingPhase.batchingInputRelation κ L K (biniusProfile κ L K β)
       ℓ ℓ' h_l (BinaryBasefoldAbstractOStmtIn κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate))
     (relOut := acceptRejectOracleRel)
     (rbrKnowledgeError := fullRbrKnowledgeError κ L K β ℓ' 𝓡 ϑ γ_repetitions
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) := by
   unfold fullOracleVerifier fullRbrKnowledgeError
-  exact OracleVerifier.append_rbrKnowledgeSoundness
+  exact OracleVerifier.append_rbrKnowledgeSoundness_of_guarded_first
     (oSpec := []ₒ) (init := init) (impl := impl)
     (OStmt₁ := (BinaryBasefoldAbstractOStmtIn κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate).OStmtIn)
     (OStmt₂ := BinaryBasefold.OracleStatement K β
@@ -348,12 +363,29 @@ theorem fullOracleVerifier_rbrKnowledgeSoundness :
     (V₂ := QueryPhase.queryOracleVerifier K β γ_repetitions
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ))
     (Oₛ₃ := fun i : Empty => nomatch i)
-    (rbrKnowledgeError₁ := batchingCoreRbrKnowledgeError κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate)
-    (rbrKnowledgeError₂ := QueryPhase.queryRbrKnowledgeError K β γ_repetitions
+    (ε₁ := batchingCoreRbrKnowledgeError κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate)
+    (ε₂ := QueryPhase.queryRbrKnowledgeError K β γ_repetitions
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
-    (h₁ := batchingCoreVerifier_rbrKnowledgeSoundness κ L K β ℓ ℓ' 𝓡 ϑ h_ℓ_add_R_rate h_l)
-    (h₂ := QueryPhase.queryOracleVerifier_rbrKnowledgeSoundness K β γ_repetitions
+    (G := Verifier.GuardedForm.ofEmpty _ (fun _ =>
+      (⟨⟨0, fun _ => 0, ⟨0, 0⟩⟩, 0⟩, fun _ _ => 0)))
+    (h₁ := batchingCoreVerifier_rbrKnowledgeSoundness_fixedPrefix
+      κ L K β ℓ ℓ' 𝓡 ϑ h_ℓ_add_R_rate h_l)
+    (h₂ := QueryPhase.queryOracleVerifier_rbrKnowledgeSoundness_fixedPrefix K β γ_repetitions
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ) init impl)
+
+/-- Averaged consequence of the fixed-prefix bound, with unchanged relations and errors. -/
+theorem fullOracleVerifier_rbrKnowledgeSoundness :
+    (fullOracleVerifier κ L K β ℓ ℓ' 𝓡 ϑ γ_repetitions
+    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) h_l).rbrKnowledgeSoundnessAveraged
+    (Oₛₒ := fun i : Empty => nomatch i) init impl
+    (relIn := BatchingPhase.batchingInputRelation κ L K (biniusProfile κ L K β)
+      ℓ ℓ' h_l (BinaryBasefoldAbstractOStmtIn κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate))
+    (relOut := acceptRejectOracleRel)
+    (rbrKnowledgeError := fullRbrKnowledgeError κ L K β ℓ' 𝓡 ϑ γ_repetitions
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) := by
+  exact Verifier.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged init impl
+    (fullOracleVerifier_rbrKnowledgeSoundness_fixedPrefix κ L K β ℓ ℓ' 𝓡 ϑ γ_repetitions
+      h_ℓ_add_R_rate h_l)
 
 /-!
 ## Concrete Knowledge Soundness Error (DP24 §5.2 eq. (43) / Construction 5.1)
@@ -491,8 +523,9 @@ theorem fullRbrKnowledgeError_sum_le_concrete :
         rw [concreteFRIBiniusKnowledgeError, add_div]; ring
 
 /-- Scalar knowledge soundness for the full FRI-Binius stack with the concrete DP24 §5.2 eq. (43)
-error `concreteFRIBiniusKnowledgeError`.  Lifts `fullOracleVerifier_rbrKnowledgeSoundness` to plain
-KS (`rbrKnowledgeSoundness_implies_knowledgeSoundness`) and inflates `∑ᵢ εᵢ` to the concrete bound
+error `concreteFRIBiniusKnowledgeError`.
+Lifts `fullOracleVerifier_rbrKnowledgeSoundness` to plain
+KS using the proved guarded RBR-to-plain theorem and inflates `∑ᵢ εᵢ` to the concrete bound
 via `knowledgeSoundness_error_mono` and `fullRbrKnowledgeError_sum_le_concrete`. -/
 theorem fullOracleVerifier_knowledgeSoundness :
     (OracleVerifier.toVerifier (Oₛₒ := fun i : Empty => nomatch i)
@@ -509,9 +542,9 @@ theorem fullOracleVerifier_knowledgeSoundness :
   let plainV := OracleVerifier.toVerifier (Oₛₒ := fun i : Empty => nomatch i) fullV
   let εFull := fullRbrKnowledgeError κ L K β ℓ' 𝓡 ϑ γ_repetitions
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-  have h_rbr : plainV.rbrKnowledgeSoundness init impl relInFull
+  have h_rbr : plainV.rbrKnowledgeSoundnessAveraged init impl relInFull
       acceptRejectOracleRel εFull := by
-    change OracleVerifier.rbrKnowledgeSoundness (Oₛₒ := fun i : Empty => nomatch i)
+    change OracleVerifier.rbrKnowledgeSoundnessAveraged (Oₛₒ := fun i : Empty => nomatch i)
       init impl relInFull acceptRejectOracleRel
       fullV εFull
     exact fullOracleVerifier_rbrKnowledgeSoundness
@@ -520,8 +553,8 @@ theorem fullOracleVerifier_knowledgeSoundness :
       (init := init) (impl := impl)
   have h_ks : plainV.knowledgeSoundness init impl relInFull acceptRejectOracleRel
       (∑ i, εFull i) :=
-    (Verifier.rbrKnowledgeSoundness_implies_knowledgeSoundness (init := init) (impl := impl)
-      relInFull acceptRejectOracleRel plainV εFull) h_rbr
+    Verifier.rbrKnowledgeSoundnessAveraged_implies_knowledgeSoundness_of_guarded init impl
+      (Verifier.GuardedForm.ofEmpty plainV (fun _ => (false, fun i => nomatch i))) εFull h_rbr
   exact Verifier.knowledgeSoundness_error_mono
     (init := init) (impl := impl)
     (hε := fullRbrKnowledgeError_sum_le_concrete (κ := κ) (L := L) (K := K) (β := β)

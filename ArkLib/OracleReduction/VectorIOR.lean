@@ -144,7 +144,7 @@ class IsSecure
   /-- The reduction is round-by-round knowledge sound with respect to `relIn`, `relOut`,
     `ε_rbr`, and the state function. -/
   is_rbr_knowledge_sound :
-    vectorIOR.verifier.rbrKnowledgeSoundness (pure ()) isEmptyElim relIn relOut ε_rbr
+    vectorIOR.verifier.rbrKnowledgeSoundnessAveraged (pure ()) isEmptyElim relIn relOut ε_rbr
 
 -- TODO: define V-IOR of proximity
 
@@ -169,7 +169,7 @@ class IsSecure
   /-- The reduction is round-by-round knowledge sound with respect to `relIn`, `relOut`,
     `ε_rbr`, and the state function. -/
   is_rbr_knowledge_sound :
-    OracleProof.rbrKnowledgeSoundness
+    OracleProof.rbrKnowledgeSoundnessAveraged
       (pure ()) isEmptyElim relation vectorIOP.toOracleVerifier ε_rbr
 
 /-- A vector IOP **of proximity** is **secure** with respect to completeness relation
@@ -189,7 +189,7 @@ class IsSecureWithGap
   /-- The reduction is round-by-round knowledge sound with respect to `relIn`, `relOut`,
     `ε_rbr`, and the state function. -/
   is_rbr_knowledge_sound :
-    OracleProof.rbrKnowledgeSoundness
+    OracleProof.rbrKnowledgeSoundnessAveraged
       (pure ()) isEmptyElim soundRelation vectorIOP.toOracleVerifier ε_rbr
 
 end VectorIOP

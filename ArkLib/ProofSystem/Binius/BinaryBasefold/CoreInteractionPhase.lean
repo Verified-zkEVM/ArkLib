@@ -148,8 +148,9 @@ def coreInteractionOracleRbrKnowledgeError (j : (pSpecCoreInteraction 𝔽q β (
 
 /-! Round-by-round knowledge soundness for the core interaction oracle verifier -/
 omit [DecidableEq 𝔽q] in
-theorem coreInteractionOracleVerifier_rbrKnowledgeSoundness :
-    (coreInteractionOracleVerifier 𝔽q β (𝓑 := 𝓑)).rbrKnowledgeSoundness init impl
+theorem coreInteractionOracleVerifier_rbrKnowledgeSoundness_fixedPrefix :
+    (coreInteractionOracleVerifier 𝔽q β (𝓑 := 𝓑)).toVerifier.rbrKnowledgeSoundness
+      init impl
       (pSpec := pSpecCoreInteraction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
       (relIn := roundRelation (mp := BBF_SumcheckMultiplierParam) 𝔽q β (ϑ:=ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) 0 )
@@ -157,7 +158,7 @@ theorem coreInteractionOracleVerifier_rbrKnowledgeSoundness :
       (rbrKnowledgeError := coreInteractionOracleRbrKnowledgeError 𝔽q β (ϑ:=ϑ)) := by
   classical
   unfold coreInteractionOracleVerifier pSpecCoreInteraction coreInteractionOracleRbrKnowledgeError
-  apply OracleVerifier.append_rbrKnowledgeSoundness
+  apply OracleVerifier.append_rbrKnowledgeSoundness_of_guarded_first
     (init:=init) (impl:=impl)
     (rel₁ := roundRelation 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) 0 )
     (rel₂ := roundRelation 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) (Fin.last ℓ) )
@@ -166,10 +167,24 @@ theorem coreInteractionOracleVerifier_rbrKnowledgeSoundness :
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ:=ϑ))
     (V₂ := finalSumcheckVerifier 𝔽q β
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ:=ϑ))
-    (rbrKnowledgeError₁ := sumcheckFoldKnowledgeError 𝔽q β (ϑ:=ϑ))
-    (rbrKnowledgeError₂ := finalSumcheckKnowledgeError (L := L))
-    (h₁ := by apply sumcheckFoldOracleVerifier_rbrKnowledgeSoundness)
-    (h₂ := by apply finalSumcheckOracleVerifier_rbrKnowledgeSoundness)
+    (ε₁ := sumcheckFoldKnowledgeError 𝔽q β (ϑ:=ϑ))
+    (ε₂ := finalSumcheckKnowledgeError (L := L))
+    (G := Verifier.GuardedForm.ofEmpty _ (fun input =>
+      (⟨0, fun _ => 0, input.1.ctx⟩, fun _ _ => 0)))
+    (h₁ := by apply sumcheckFoldOracleVerifier_rbrKnowledgeSoundness_fixedPrefix)
+    (h₂ := by apply finalSumcheckOracleVerifier_rbrKnowledgeSoundness_fixedPrefix)
+
+omit [DecidableEq 𝔽q] in
+/-- Averaging the fixed-prefix core certificate preserves the original error. -/
+theorem coreInteractionOracleVerifier_rbrKnowledgeSoundness :
+    (coreInteractionOracleVerifier 𝔽q β (𝓑 := 𝓑)).rbrKnowledgeSoundnessAveraged init impl
+      (pSpec := pSpecCoreInteraction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
+      (relIn := roundRelation (mp := BBF_SumcheckMultiplierParam) 𝔽q β (ϑ:=ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) 0 )
+      (relOut := finalSumcheckRelOut 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) )
+      (rbrKnowledgeError := coreInteractionOracleRbrKnowledgeError 𝔽q β (ϑ:=ϑ)) :=
+  Verifier.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged init impl
+    (coreInteractionOracleVerifier_rbrKnowledgeSoundness_fixedPrefix 𝔽q β)
 
 /-! The final-sumcheck step has only a `P_to_V` round, so there are no verifier challenges
 (`ChallengeIdx` is empty). -/

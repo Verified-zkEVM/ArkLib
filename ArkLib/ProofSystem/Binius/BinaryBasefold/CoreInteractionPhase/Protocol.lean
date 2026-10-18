@@ -5,6 +5,7 @@ Authors: Chung Thai Nguyen, Quang Dao
 -/
 module
 
+public import ArkLib.OracleReduction.Composition.Sequential.GuardedKnowledge
 public import ArkLib.OracleReduction.Composition.Sequential.NoAmbient
 public import ArkLib.OracleReduction.Composition.Sequential.OracleCompleteness
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.Steps
@@ -219,10 +220,10 @@ lemma foldRelayKnowledgeError_eq (i : Fin ℓ)
 
 /-! RBR KS for Fold+Relay block: append then convert to flat error. -/
 omit [DecidableEq 𝔽q] in
-theorem foldRelayOracleVerifier_rbrKnowledgeSoundness
+theorem foldRelayOracleVerifier_rbrKnowledgeSoundness_fixedPrefix
     (i : Fin ℓ) (hNCR : ¬ isCommitmentRound ℓ ϑ i) :
     (foldRelayOracleVerifier 𝔽q β (mp := mp) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (𝓑:=𝓑) i hNCR).rbrKnowledgeSoundness (init := init) (impl := impl)
+      (𝓑:=𝓑) i hNCR).toVerifier.rbrKnowledgeSoundness (init := init) (impl := impl)
       (relIn := roundRelation 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (𝓑:=𝓑) i.castSucc  (mp := mp))
       (relOut := roundRelation 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
@@ -230,7 +231,7 @@ theorem foldRelayOracleVerifier_rbrKnowledgeSoundness
       (rbrKnowledgeError := foldRelayKnowledgeError 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) := by
   classical
-  have hAppend := OracleVerifier.append_rbrKnowledgeSoundness
+  have hAppend := OracleVerifier.append_rbrKnowledgeSoundness_of_guarded_first
     (init := init) (impl := impl)
     (rel₁ := roundRelation (mp := mp) 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i.castSucc)
@@ -242,16 +243,34 @@ theorem foldRelayOracleVerifier_rbrKnowledgeSoundness
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i)
     (V₂ := relayOracleVerifier 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hNCR)
-    (rbrKnowledgeError₁ := foldKnowledgeError 𝔽q β (ϑ := ϑ)
+    (ε₁ := foldKnowledgeError 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)
-    (rbrKnowledgeError₂ := relayKnowledgeError)
-    (h₁ := foldOracleVerifier_rbrKnowledgeSoundness (L := L) 𝔽q β (ϑ := ϑ)
+    (ε₂ := relayKnowledgeError)
+    (G := Verifier.GuardedForm.ofEmpty _ (fun input =>
+      (⟨0, fun _ => 0, input.1.ctx⟩, input.2)))
+    (h₁ := foldOracleVerifier_rbrKnowledgeSoundness_fixedPrefix (L := L) 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (mp := mp) (init := init) (impl := impl) i)
-    (h₂ := relayOracleVerifier_rbrKnowledgeSoundness (L := L) 𝔽q β (ϑ := ϑ)
+    (h₂ := relayOracleVerifier_rbrKnowledgeSoundness_fixedPrefix (L := L) 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (mp := mp) (init := init) (impl := impl) i hNCR)
-  exact OracleVerifier.rbrKnowledgeSoundness_of_eq_error
-    (h_ε := fun j => foldRelayKnowledgeError_eq 𝔽q β (ϑ := ϑ)
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i j) (h := hAppend)
+  have hε := funext (fun j => foldRelayKnowledgeError_eq 𝔽q β (ϑ := ϑ)
+    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i j)
+  rw [hε]
+  exact hAppend
+
+omit [DecidableEq 𝔽q] in
+/-- The fixed-prefix block bound implies the averaged RBR bound. -/
+theorem foldRelayOracleVerifier_rbrKnowledgeSoundness
+    (i : Fin ℓ) (hNCR : ¬ isCommitmentRound ℓ ϑ i) :
+    (foldRelayOracleVerifier 𝔽q β (mp := mp) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (𝓑:=𝓑) i hNCR).rbrKnowledgeSoundnessAveraged (init := init) (impl := impl)
+      (relIn := roundRelation 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (𝓑:=𝓑) i.castSucc  (mp := mp))
+      (relOut := roundRelation 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (𝓑:=𝓑) i.succ  (mp := mp))
+      (rbrKnowledgeError := foldRelayKnowledgeError 𝔽q β (ϑ := ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) :=
+  Verifier.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged init impl
+    (foldRelayOracleVerifier_rbrKnowledgeSoundness_fixedPrefix 𝔽q β i hNCR)
 
 end FoldRelayRound -- foldRound + relay
 
@@ -342,10 +361,10 @@ lemma foldCommitKnowledgeError_eq (i : Fin ℓ)
 
 /-! RBR KS for Fold+Commitment block: append then convert to flat error. -/
 omit [DecidableEq 𝔽q] in
-theorem foldCommitOracleVerifier_rbrKnowledgeSoundness
+theorem foldCommitOracleVerifier_rbrKnowledgeSoundness_fixedPrefix
     (i : Fin ℓ) (hCR : isCommitmentRound ℓ ϑ i) :
     (foldCommitOracleVerifier 𝔽q β (mp := mp) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (𝓑:=𝓑) i hCR).rbrKnowledgeSoundness (init := init) (impl := impl)
+      (𝓑:=𝓑) i hCR).toVerifier.rbrKnowledgeSoundness (init := init) (impl := impl)
       (relIn := roundRelation (mp := mp) 𝔽q β (ϑ:=ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) i.castSucc )
       (relOut := roundRelation (mp := mp) 𝔽q β (ϑ:=ϑ)
@@ -353,7 +372,7 @@ theorem foldCommitOracleVerifier_rbrKnowledgeSoundness
       (rbrKnowledgeError := foldCommitKnowledgeError 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) := by
   classical
-  have hAppend := OracleVerifier.append_rbrKnowledgeSoundness
+  have hAppend := OracleVerifier.append_rbrKnowledgeSoundness_of_guarded_first
     (init := init) (impl := impl)
     (rel₁ := roundRelation (mp := mp) 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i.castSucc)
@@ -364,15 +383,34 @@ theorem foldCommitOracleVerifier_rbrKnowledgeSoundness
     (V₁ := foldOracleVerifier 𝔽q β (mp := mp)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i)
     (V₂ := commitOracleVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hCR)
-    (rbrKnowledgeError₁ := foldKnowledgeError 𝔽q β (ϑ := ϑ)
+    (ε₁ := foldKnowledgeError 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)
-    (rbrKnowledgeError₂ := commitKnowledgeError 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
-    (h₁ := foldOracleVerifier_rbrKnowledgeSoundness (L := L) 𝔽q β (ϑ := ϑ)
+    (ε₂ := commitKnowledgeError 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
+    (G := Verifier.GuardedForm.ofEmpty _ (fun input =>
+      (⟨0, fun _ => 0, input.1.ctx⟩, input.2)))
+    (h₁ := foldOracleVerifier_rbrKnowledgeSoundness_fixedPrefix (L := L) 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (mp := mp) (init := init) (impl := impl) i)
-    (h₂ := commitOracleVerifier_rbrKnowledgeSoundness (L := L) 𝔽q β (ϑ := ϑ)
+    (h₂ := commitOracleVerifier_rbrKnowledgeSoundness_fixedPrefix (L := L) 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (mp := mp) (init := init) (impl := impl) i hCR)
-  exact OracleVerifier.rbrKnowledgeSoundness_of_eq_error
-    (h_ε := fun j => foldCommitKnowledgeError_eq (i := i) (j := j)) (h := hAppend)
+  have hε := funext (fun j => foldCommitKnowledgeError_eq 𝔽q β (ϑ := ϑ)
+    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i j)
+  rw [hε]
+  exact hAppend
+
+omit [DecidableEq 𝔽q] in
+/-- The fixed-prefix block bound implies the averaged RBR bound. -/
+theorem foldCommitOracleVerifier_rbrKnowledgeSoundness
+    (i : Fin ℓ) (hCR : isCommitmentRound ℓ ϑ i) :
+    (foldCommitOracleVerifier 𝔽q β (mp := mp) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (𝓑:=𝓑) i hCR).rbrKnowledgeSoundnessAveraged (init := init) (impl := impl)
+      (relIn := roundRelation (mp := mp) 𝔽q β (ϑ:=ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) i.castSucc )
+      (relOut := roundRelation (mp := mp) 𝔽q β (ϑ:=ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) i.succ )
+      (rbrKnowledgeError := foldCommitKnowledgeError 𝔽q β (ϑ := ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) :=
+  Verifier.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged init impl
+    (foldCommitOracleVerifier_rbrKnowledgeSoundness_fixedPrefix 𝔽q β i hCR)
 
 end FoldCommitRound
 

@@ -437,39 +437,8 @@ theorem seqCompose_rbrSoundness
       (h 0) this;
     sorry
 
-/-- If all verifiers in a sequence satisfy round-by-round knowledge soundness with respective RBR
-    knowledge errors, then their sequential composition also satisfies round-by-round knowledge
-    soundness. -/
-theorem seqCompose_rbrKnowledgeSoundness
-    (rel : ∀ i, Set (Stmt i × Wit i))
-    (V : ∀ i, Verifier oSpec (Stmt i.castSucc) (Stmt i.succ) (pSpec i))
-    (rbrKnowledgeError : ∀ i, (pSpec i).ChallengeIdx → ℝ≥0)
-    (h : ∀ i, (V i).rbrKnowledgeSoundness init impl
-      (rel i.castSucc) (rel i.succ) (rbrKnowledgeError i)) :
-      (Verifier.seqCompose Stmt V).rbrKnowledgeSoundness init impl (rel 0) (rel (Fin.last m))
-        (fun combinedIdx =>
-          letI ij := seqComposeChallengeIdxToSigma combinedIdx
-          rbrKnowledgeError ij.1 ij.2) := by
-  induction m with
-  | zero =>
-    have herr : (fun combinedIdx =>
-        letI ij := seqComposeChallengeIdxToSigma combinedIdx
-        rbrKnowledgeError ij.1 ij.2) = 0 := by
-      funext i
-      exact Fin.elim0 i.val
-    rw [herr]
-    rw [Verifier.seqCompose_zero]
-    exact Verifier.id_rbrKnowledgeSoundness init impl
-  | succ m ih =>
-    simp only [Fin.vsum_succ, seqCompose_succ, Fin.castSucc_zero, Fin.succ_zero_eq_one,
-      Function.comp_apply, Fin.succ_last, Nat.succ_eq_add_one, ChallengeIdx]
-    have := ih (fun i => rel i.succ) (fun i => V i.succ)
-      (fun i => rbrKnowledgeError i.succ) (fun i => h i.succ)
-    simp only [Fin.succ_zero_eq_one, Fin.succ_last, Nat.succ_eq_add_one, ChallengeIdx] at this
-    convert append_rbrKnowledgeSoundness (V 0) (seqCompose (Stmt ∘ Fin.succ) (fun i => V i.succ))
-      (h 0) this;
-    sorry
-
+/- The unrestricted fresh-initialization RBR knowledge composition contract was false.
+Use the proved fixed-prefix guarded composition results in `GuardedKnowledge`. -/
 end Verifier
 
 namespace OracleVerifier
@@ -527,26 +496,8 @@ theorem seqCompose_rbrSoundness
     rbrSoundnessError h
   simp only [seqCompose_toVerifier]
 
-/-- If all verifiers in a sequence satisfy round-by-round knowledge soundness with respective RBR
-    knowledge errors, then their sequential composition also satisfies round-by-round knowledge
-    soundness. -/
-theorem seqCompose_rbrKnowledgeSoundness
-    (rel : ∀ i, Set ((Stmt i × ∀ j, OStmt i j) × Wit i))
-    (V : (i : Fin m) → OracleVerifier oSpec (Stmt i.castSucc) (OStmt i.castSucc)
-      (Stmt i.succ) (OStmt i.succ) (pSpec i))
-    (rbrKnowledgeError : ∀ i, (pSpec i).ChallengeIdx → ℝ≥0)
-    (h : ∀ i, (V i).rbrKnowledgeSoundness init impl
-      (rel i.castSucc) (rel i.succ) (rbrKnowledgeError i)) :
-    (OracleVerifier.seqCompose Stmt OStmt V).rbrKnowledgeSoundness
-        init impl (rel 0) (rel (Fin.last m))
-        (fun combinedIdx =>
-          letI ij := seqComposeChallengeIdxToSigma combinedIdx
-          rbrKnowledgeError ij.1 ij.2) := by
-  unfold OracleVerifier.rbrKnowledgeSoundness
-  convert Verifier.seqCompose_rbrKnowledgeSoundness rel (fun i => (V i).toVerifier)
-    rbrKnowledgeError h
-  simp only [seqCompose_toVerifier]
-
+/- The unrestricted fresh-initialization RBR knowledge composition contract was false.
+Use the proved fixed-prefix guarded composition results in `GuardedKnowledge`. -/
 end OracleVerifier
 
 end Security

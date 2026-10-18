@@ -26,7 +26,7 @@ public import VCVio.OracleComp.Constructions.SampleableType.NativeMeasure
 
   **Verified vs. admitted.** The *execution* lemmas (including the oracle-side
   `OracleVerifier.cast_toVerifier`) and the round-by-round knowledge-soundness transfer
-  (`Verifier.cast_rbrKnowledgeSoundness` and its oracle-side corollary) are proven. The
+  (`Verifier.cast_rbrKnowledgeSoundnessAveraged` and its oracle-side corollary) are proven. The
   completeness transfer lemmas are commented out entirely and remain future work.
 -/
 
@@ -550,6 +550,56 @@ def castInOut
   subst h_out_inst
   exact V
 
+theorem castInOut_rbrKnowledgeSoundnessAveraged
+    {ι : Type} {oSpec : OracleSpec ι} {n : ℕ} {pSpec : ProtocolSpec n}
+    [Oₘ : ∀ i, OracleInterface (pSpec.Message i)]
+    -- 1. Generalized Inputs
+    {StmtIn₁ StmtIn₂ : Type}
+    {ιₛᵢ₁ ιₛᵢ₂ : Type} {OStmtIn₁ : ιₛᵢ₁ → Type} {OStmtIn₂ : ιₛᵢ₂ → Type}
+    [Oₛᵢ₁ : ∀ i, OracleInterface (OStmtIn₁ i)]
+    [Oₛᵢ₂ : ∀ i, OracleInterface (OStmtIn₂ i)]
+    {WitIn₁ WitIn₂ : Type}
+    -- 2. Generalized Outputs
+    {StmtOut₁ StmtOut₂ : Type}
+    {ιₛₒ₁ ιₛₒ₂ : Type} {OStmtOut₁ : ιₛₒ₁ → Type} {OStmtOut₂ : ιₛₒ₂ → Type}
+    [Oₛₒ₁ : ∀ i, OracleInterface (OStmtOut₁ i)]
+    [Oₛₒ₂ : ∀ i, OracleInterface (OStmtOut₂ i)]
+    {WitOut₁ WitOut₂ : Type}
+    -- 3. Context
+    [∀ i, SampleableType (pSpec.Challenge i)]
+    {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
+    {relIn₁ : Set ((StmtIn₁ × ∀ i, OStmtIn₁ i) × WitIn₁)}
+    {relIn₂ : Set ((StmtIn₂ × ∀ i, OStmtIn₂ i) × WitIn₂)}
+    {relOut₁ : Set ((StmtOut₁ × ∀ i, OStmtOut₁ i) × WitOut₁)}
+    {relOut₂ : Set ((StmtOut₂ × ∀ i, OStmtOut₂ i) × WitOut₂)}
+    (V : OracleVerifier oSpec StmtIn₁ OStmtIn₁ StmtOut₁ OStmtOut₁ pSpec)
+    -- 4. Equalities
+    (h_stmtIn : StmtIn₁ = StmtIn₂)
+    (h_stmtOut : StmtOut₁ = StmtOut₂)
+    (h_idxIn : ιₛᵢ₁ = ιₛᵢ₂)
+    (h_idxOut : ιₛₒ₁ = ιₛₒ₂)
+    (h_ostmtIn : HEq OStmtIn₁ OStmtIn₂)
+    (h_ostmtOut : HEq OStmtOut₁ OStmtOut₂)
+    (h_witIn : WitIn₁ = WitIn₂)
+    (h_witOut : WitOut₁ = WitOut₂)
+    (h_Oₛᵢ : HEq Oₛᵢ₁ Oₛᵢ₂)
+    (h_Oₛₒ : HEq Oₛₒ₁ Oₛₒ₂)
+    (ε : pSpec.ChallengeIdx → ℝ≥0)
+    -- 5. Relation HEqs (Must be HEq because OStmt types change)
+    (h_relIn : HEq relIn₁ relIn₂)
+    (h_relOut : HEq relOut₁ relOut₂)
+    (hRbrKs : V.rbrKnowledgeSoundnessAveraged init impl relIn₁ relOut₁ ε) :
+    -- 6. Result using destination instance Oₛᵢ₂
+    OracleVerifier.rbrKnowledgeSoundnessAveraged (ι := ι) (oSpec := oSpec) (StmtIn := StmtIn₂)
+      (ιₛᵢ := ιₛᵢ₂) (OStmtIn := OStmtIn₂) (StmtOut := StmtOut₂) (ιₛₒ := ιₛₒ₂)
+      (OStmtOut := OStmtOut₂) (n := n) (pSpec := pSpec) (WitIn := WitIn₂) (WitOut := WitOut₂)
+      (Oₛᵢ := Oₛᵢ₂) (init := init) (impl := impl) (relIn := relIn₂) (relOut := relOut₂)
+      (rbrKnowledgeError := ε)
+      (V.castInOut h_stmtIn h_stmtOut h_idxIn h_idxOut h_ostmtIn h_ostmtOut h_Oₛᵢ h_Oₛₒ) := by
+  subst_vars
+  exact hRbrKs
+
+/-- Fixed-prefix security is preserved by boundary type and relation equalities. -/
 theorem castInOut_rbrKnowledgeSoundness
     {ι : Type} {oSpec : OracleSpec ι} {n : ℕ} {pSpec : ProtocolSpec n}
     [Oₘ : ∀ i, OracleInterface (pSpec.Message i)]
@@ -588,14 +638,10 @@ theorem castInOut_rbrKnowledgeSoundness
     -- 5. Relation HEqs (Must be HEq because OStmt types change)
     (h_relIn : HEq relIn₁ relIn₂)
     (h_relOut : HEq relOut₁ relOut₂)
-    (hRbrKs : V.rbrKnowledgeSoundness init impl relIn₁ relOut₁ ε) :
-    -- 6. Result using destination instance Oₛᵢ₂
-    OracleVerifier.rbrKnowledgeSoundness (ι := ι) (oSpec := oSpec) (StmtIn := StmtIn₂)
-      (ιₛᵢ := ιₛᵢ₂) (OStmtIn := OStmtIn₂) (StmtOut := StmtOut₂) (ιₛₒ := ιₛₒ₂)
-      (OStmtOut := OStmtOut₂) (n := n) (pSpec := pSpec) (WitIn := WitIn₂) (WitOut := WitOut₂)
-      (Oₛᵢ := Oₛᵢ₂) (init := init) (impl := impl) (relIn := relIn₂) (relOut := relOut₂)
-      (rbrKnowledgeError := ε)
-      (V.castInOut h_stmtIn h_stmtOut h_idxIn h_idxOut h_ostmtIn h_ostmtOut h_Oₛᵢ h_Oₛₒ) := by
+    (hRbrKs : V.toVerifier.rbrKnowledgeSoundness init impl relIn₁ relOut₁ ε) :
+    Verifier.rbrKnowledgeSoundness init impl relIn₂ relOut₂
+      (V.castInOut h_stmtIn h_stmtOut h_idxIn h_idxOut h_ostmtIn h_ostmtOut h_Oₛᵢ h_Oₛₒ).toVerifier
+      ε := by
   subst_vars
   exact hRbrKs
 
@@ -626,7 +672,7 @@ theorem castOutSimple_id
     (V : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec) :
     V.castOutSimple rfl rfl HEq.rfl = V := rfl
 
-theorem castOutSimple_rbrKnowledgeSoundness
+theorem castOutSimple_rbrKnowledgeSoundnessAveraged
     {oSpec : OracleSpec ι} {n : ℕ} {pSpec : ProtocolSpec n}
     {StmtIn : Type} {ιₛᵢ : Type} {OStmtIn : ιₛᵢ → Type} [∀ i, OracleInterface (OStmtIn i)]
     {WitIn : Type}
@@ -648,8 +694,9 @@ theorem castOutSimple_rbrKnowledgeSoundness
     (h_Oₛₒ : HEq Oₛₒ₁ Oₛₒ₂)
     (ε : pSpec.ChallengeIdx → ℝ≥0)
     (h_rel : relOut₁ = cast (by subst_vars; rfl) relOut₂)
-    (hRbrKs : V.rbrKnowledgeSoundness init impl relIn relOut₁ ε) :
-    (V.castOutSimple h_stmt h_ostmt h_Oₛₒ).rbrKnowledgeSoundness init impl relIn relOut₂ ε := by
+    (hRbrKs : V.rbrKnowledgeSoundnessAveraged init impl relIn relOut₁ ε) :
+    (V.castOutSimple h_stmt h_ostmt h_Oₛₒ).rbrKnowledgeSoundnessAveraged
+      init impl relIn relOut₂ ε := by
   subst_vars
   exact hRbrKs
 
@@ -771,17 +818,17 @@ namespace Verifier
 variable (V : Verifier oSpec StmtIn StmtOut pSpec₁)
 
 /-- Round-by-round knowledge soundness transfers across a `ProtocolSpec` cast.
-This is the base case that `OracleVerifier.cast_rbrKnowledgeSoundness` reduces to. -/
+This is the base case that `OracleVerifier.cast_rbrKnowledgeSoundnessAveraged` reduces to. -/
 @[simp]
-theorem cast_rbrKnowledgeSoundness (ε : pSpec₁.ChallengeIdx → ℝ≥0)
-    (hRbrKs : V.rbrKnowledgeSoundness init impl relIn relOut ε) :
-    (V.cast hn hSpec).rbrKnowledgeSoundness init impl relIn relOut
+theorem cast_rbrKnowledgeSoundnessAveraged (ε : pSpec₁.ChallengeIdx → ℝ≥0)
+    (hRbrKs : V.rbrKnowledgeSoundnessAveraged init impl relIn relOut ε) :
+    (V.cast hn hSpec).rbrKnowledgeSoundnessAveraged init impl relIn relOut
       (ε ∘ (ChallengeIdx.cast hn.symm (cast_symm hSpec))) := by
   -- Sampler implementations may differ after the cast, but their native measures agree.
   subst hn
   simp only [ProtocolSpec.cast_id, id_eq] at hSpec
   subst hSpec
-  change @rbrKnowledgeSoundness ι oSpec StmtIn WitIn StmtOut WitOut n₁ pSpec₁ inst₂ σ
+  change @rbrKnowledgeSoundnessAveraged ι oSpec StmtIn WitIn StmtOut WitOut n₁ pSpec₁ inst₂ σ
     init impl relIn relOut V ε
   let : MeasurableSpace σ := ⊤
   have hhandler : ∀ (t : (oSpec + [pSpec₁.Challenge]ₒ).Domain) (s : σ),
@@ -837,7 +884,7 @@ theorem cast_rbrKnowledgeSoundness (ε : pSpec₁.ChallengeIdx → ℝ≥0)
     rw [evalDist_bind_of_discrete, evalDist_bind_of_discrete]
     exact MeasureTheory.Measure.bind_congr_right
       (Filter.Eventually.of_forall fun s => (hrun oa s).symm)
-  unfold rbrKnowledgeSoundness at hRbrKs ⊢
+  unfold rbrKnowledgeSoundnessAveraged at hRbrKs ⊢
   obtain ⟨WitMid, extractor, kSF, hbound⟩ := hRbrKs
   refine ⟨WitMid, extractor, kSF, ?_⟩
   intro stmtIn witIn prover i
@@ -854,6 +901,23 @@ theorem cast_rbrKnowledgeSoundness (ε : pSpec₁.ChallengeIdx → ℝ≥0)
       kSF.toFun i.1.succ stmtIn (transcript.concat challenge) witMid)
   apply le_trans (le_of_eq (by simpa only [game, bind_assoc] using heq))
   simpa only [game, bind_assoc] using hbound stmtIn witIn prover i
+
+/-- Fixed-prefix security survives a protocol cast, including a change of sampler instance:
+uniform samplers of the same challenge type induce the same event probabilities. -/
+theorem cast_rbrKnowledgeSoundness (ε : pSpec₁.ChallengeIdx → ℝ≥0)
+    (hRbrKs : V.rbrKnowledgeSoundness init impl relIn relOut ε) :
+    (V.cast hn hSpec).rbrKnowledgeSoundness init impl relIn relOut
+      (ε ∘ (ChallengeIdx.cast hn.symm (cast_symm hSpec))) := by
+  subst hn
+  simp only [ProtocolSpec.cast_id, id_eq] at hSpec
+  subst hSpec
+  change @rbrKnowledgeSoundness ι oSpec StmtIn WitIn StmtOut WitOut n₁ pSpec₁
+    inst₂ σ init impl relIn relOut V ε
+  obtain ⟨WitMid, extractor, kSF, hbound⟩ := hRbrKs
+  refine ⟨WitMid, extractor, kSF, ?_⟩
+  intro stmtIn i transcript
+  exact (SampleableType.prEvent_uniformSample_inst_irrel (inst₂ i) (inst₁ i) _).le.trans
+    (hbound stmtIn i transcript)
 
 end Verifier
 
@@ -890,13 +954,21 @@ namespace OracleVerifier
 variable (V : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec₁)
 
 /-- Round-by-round knowledge soundness transfers across a `ProtocolSpec` cast, on the oracle
-side; reduces to `Verifier.cast_rbrKnowledgeSoundness`. -/
+side; reduces to `Verifier.cast_rbrKnowledgeSoundnessAveraged`. -/
 @[simp]
-theorem cast_rbrKnowledgeSoundness (ε : pSpec₁.ChallengeIdx → ℝ≥0)
-    (hRbrKs : V.rbrKnowledgeSoundness init impl relIn relOut ε) :
-    (V.cast hn hSpec hOₘ).rbrKnowledgeSoundness init impl relIn relOut
+theorem cast_rbrKnowledgeSoundnessAveraged (ε : pSpec₁.ChallengeIdx → ℝ≥0)
+    (hRbrKs : V.rbrKnowledgeSoundnessAveraged init impl relIn relOut ε) :
+    (V.cast hn hSpec hOₘ).rbrKnowledgeSoundnessAveraged init impl relIn relOut
       (ε ∘ (ChallengeIdx.cast hn.symm (cast_symm hSpec))) := by
-  unfold rbrKnowledgeSoundness
+  unfold rbrKnowledgeSoundnessAveraged
+  rw [cast_toVerifier]
+  exact Verifier.cast_rbrKnowledgeSoundnessAveraged hn hSpec V.toVerifier ε hRbrKs
+
+/-- Oracle-side transport of the fixed-prefix bound across a protocol specification cast. -/
+theorem cast_rbrKnowledgeSoundness (ε : pSpec₁.ChallengeIdx → ℝ≥0)
+    (hRbrKs : V.toVerifier.rbrKnowledgeSoundness init impl relIn relOut ε) :
+    (V.cast hn hSpec hOₘ).toVerifier.rbrKnowledgeSoundness init impl relIn relOut
+      (ε ∘ (ChallengeIdx.cast hn.symm (cast_symm hSpec))) := by
   rw [cast_toVerifier]
   exact Verifier.cast_rbrKnowledgeSoundness hn hSpec V.toVerifier ε hRbrKs
 

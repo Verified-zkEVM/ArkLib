@@ -318,8 +318,8 @@ variable [SampleableType R]
 -- Completeness of this experimental decomposition awaits implementations of its component
 -- reductions and their correctness certificates.
 
-theorem oracleVerifier_rbrKnowledgeSoundness [Fintype R] :
-    (oracleReduction R deg oSpec).verifier.rbrKnowledgeSoundness init impl
+theorem oracleVerifier_rbrKnowledgeSoundnessAveraged [Fintype R] :
+    (oracleReduction R deg oSpec).verifier.rbrKnowledgeSoundnessAveraged init impl
       (inputRelation R deg D) (outputRelation R deg)
         (fun _ => (deg : ℝ≥0) / (Fintype.card R)) := by
   sorry
@@ -394,13 +394,13 @@ def verifier : Verifier oSpec (StmtIn R × (∀ i, OStmtIn R deg i))
     letI polyLE := transcript 0
     guard (∑ x ∈ (univ.map D), polyLE.val.eval x = target)
     letI chal := transcript 1
-    pure ⟨⟨(oStmt ()).val.eval chal, chal⟩, fun _ => oStmt ()⟩
+    pure ⟨⟨(transcript 0).val.eval chal, chal⟩, fun _ => oStmt ()⟩
 
 /-- The simple verifier rejects an inconsistent round sum, then computes its next statement. -/
 def verifierGuardedForm : (verifier R deg D oSpec).GuardedForm where
   check := fun input tr => decide (∑ x ∈ (univ.map D), (tr 0).val.eval x = input.1)
   out := fun input tr =>
-    (((input.2 ()).val.eval (tr 1), tr 1), fun _ => input.2 ())
+    (((tr 0).val.eval (tr 1), tr 1), fun _ => input.2 ())
   verify_eq := by
     intro input tr
     simp only [verifier, OracleComp.guard_eq]
@@ -431,7 +431,8 @@ def oracleVerifier : OracleVerifier oSpec (StmtIn R) (OStmtIn R deg) (StmtOut R)
     guard (evals.sum = target)
     let newTarget ← OptionT.lift <| OracleComp.liftComp
       (OracleComp.lift <|
-        OracleSpec.query (show [OStmtIn R deg]ₒ.Domain from ⟨(), chal default⟩))
+        OracleSpec.query
+          (show [(pSpec R deg).Message]ₒ.Domain from ⟨default, chal default⟩))
       _
     pure (newTarget, chal default)
   outputOracle := .inl {
@@ -566,17 +567,7 @@ theorem oracleReduction_perfectCompleteness :
   rw [oracleReduction_eq_reduction]
   exact reduction_perfectCompleteness R deg D oSpec
 
-/-- Round-by-round knowledge soundness for the verifier -/
-theorem verifier_rbrKnowledgeSoundness [Fintype R] :
-    (verifier R deg D oSpec).rbrKnowledgeSoundness init impl
-    (inputRelation R deg D) (outputRelation R deg) (fun _ => (deg : ℝ≥0) / (Fintype.card R)) := by
-  sorry
-
-/-- Round-by-round knowledge soundness for the oracle verifier -/
-theorem oracleVerifier_rbrKnowledgeSoundness [Fintype R] :
-    (oracleVerifier R deg D oSpec).rbrKnowledgeSoundness init impl
-    (inputRelation R deg D) (outputRelation R deg) (fun _ => (deg : ℝ≥0) / (Fintype.card R)) := by
-  sorry
+-- Knowledge soundness is proved over finite domains in `Spec/Knowledge.lean`.
 
 -- TODO: break down the oracle reduction into a series of oracle reductions as stated above
 
@@ -893,32 +884,6 @@ where
     --   simp
     sorry
 
-instance extractorLens_rbr_knowledge_soundness :
-    Extractor.Lens.IsKnowledgeSound
-      (relationRound R n deg D i.castSucc) (Simple.inputRelation R deg D)
-      (relationRound R n deg D i.succ) (Simple.outputRelation R deg)
-      ((Simple.oracleVerifier R deg D oSpec).toVerifier.compatStatement (oStmtLens R n deg D i))
-      (fun _ _ => True)
-      ⟨oStmtLens R n deg D i, Witness.InvLens.trivial⟩ where
-  proj_knowledgeSound := by
-    -- simp [relationRound, Simple.outputRelation, Verifier.compatStatement,
-    --   Simple.oracleVerifier_eq_verifier, Simple.verifier, Verifier.run]
-    sorry
-  lift_knowledgeSound := by
-    simp only [Simple.StmtIn, Simple.OStmtIn, Simple.inputRelation, sum_map,
-      Statement.Lens.proj, Simple.StmtOut, Simple.OStmtOut, Set.mem_ofPred_eq,
-      relationRound, Fin.val_castSucc, forall_const, Prod.forall]
-    unfold oStmtLens
-    unfold projectedRoundPolynomial
-    induction n with
-    | zero => exact Fin.elim0 i
-    | succ n ih =>
-      intro stmt oStmt hRelIn
-      simp at hRelIn ⊢
-      -- Now it's a statement about polynomials
-      sorry
-
-
 variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
 
 theorem reduction_perfectCompleteness :
@@ -928,14 +893,6 @@ theorem reduction_perfectCompleteness :
     (lens := (oCtxLens R n deg D i).toContext)
     (lensComplete := by simp; sorry)
     (Simple.reduction_perfectCompleteness R deg D oSpec)
-
-theorem verifier_rbrKnowledgeSoundness [Fintype R] :
-    (verifier R n deg D oSpec i).rbrKnowledgeSoundness init impl
-    (relationRound R n deg D i.castSucc) (relationRound R n deg D i.succ)
-    (fun _ => (deg : ℝ≥0) / Fintype.card R) := sorry
-  -- Verifier.liftContext_rbrKnowledgeSoundness (lens := (oCtxLens R n deg D i).toContext)
-  --   (lensKS := extractorLens_rbr_knowledge_soundness i)
-  --   (Simple.verifier_rbrKnowledgeSoundness R deg D oSpec i)
 
 /-- Completeness theorem for single-round of sum-check, obtained by transporting the completeness
 proof for the simplified version -/
@@ -956,21 +913,7 @@ theorem oracleReduction_perfectCompleteness :
     (Simple.oracleReduction_perfectCompleteness R deg D oSpec)
 
 
-local instance : Inhabited R := ⟨0⟩
-
-/-- Round-by-round knowledge soundness theorem for single-round of sum-check, obtained by
-  transporting the knowledge soundness proof for the simplified version -/
-theorem oracleVerifier_rbrKnowledgeSoundness [Fintype R] :
-    (oracleVerifier R n deg D oSpec i).rbrKnowledgeSoundness init impl
-    (relationRound R n deg D i.castSucc) (relationRound R n deg D i.succ)
-    (fun _ => (deg : ℝ≥0) / Fintype.card R) :=
-  OracleVerifier.liftContext_rbr_knowledgeSoundness
-    (stmtLens := oStmtExecutableLens R n deg D i)
-    (witLens := Witness.InvLens.trivial)
-    (Simple.oracleVerifier R deg D oSpec)
-    (liftContextOutput R n deg D oSpec i)
-    (lensKS := by simpa using extractorLens_rbr_knowledge_soundness i)
-    (Simple.oracleVerifier_rbrKnowledgeSoundness R deg D oSpec)
+-- The proved projection lens and knowledge-soundness theorems live in `Spec/Knowledge.lean`.
 
 -- /-- State function for round-by-round soundness. No need for this manual definition -/
 -- def stateFunction (i : Fin (n + 1)) : Verifier.StateFunction pSpec oSpec

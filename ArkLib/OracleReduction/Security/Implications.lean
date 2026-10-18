@@ -6,6 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.OracleReduction.Security.RoundByRound
+public import ArkLib.OracleReduction.Security.ActualExtraction
 public import ArkLib.OracleReduction.Security.StateRestoration
 public import ArkLib.OracleReduction.Salt
 public import ArkLib.OracleReduction.Security.SpecialSoundness
@@ -16,8 +17,8 @@ public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness
 
 This file collects the implications between the various security notions.
 
-For now, we only state the theorems. It's likely that we will split this file into multiple files in
-a single `Implication` folder in the future, each file for the proof of a single implication.
+Some implications remain admitted. The guarded RBR knowledge-soundness implication is proved
+via actual-execution extraction in `Security.ActualExtraction`; its state condition is essential.
 -/
 
 @[expose] public section
@@ -34,14 +35,10 @@ namespace Verifier
 
 section Implications
 
-/- TODO: add the following results
-- `knowledgeSoundness` implies `soundness`
-- `rbrSoundness` implies `soundness`
-- `rbrKnowledgeSoundness` implies `rbrSoundness`
-- `rbrKnowledgeSoundness` implies `knowledgeSoundness`
-
-In other words, we have a lattice of security notions, with `knowledge` and `roundByRound` being
-two strengthenings of soundness.
+/- The implications below have different hypotheses. In particular, averaged RBR knowledge
+soundness alone does not imply plain knowledge soundness for arbitrary shared-state oracles.
+That implication requires terminal knowledge at actual verifier-start states; guardedness is
+one sufficient condition. Do not interpret this list as an unconditional lattice.
 -/
 
 /-- Knowledge soundness with knowledge error `knowledgeError < 1` implies soundness with the same
@@ -84,14 +81,14 @@ theorem rbrSoundness_implies_soundness (langIn : Set StmtIn) (langOut : Set Stmt
 
 /-- Round-by-round knowledge soundness with error `rbrKnowledgeError` implies round-by-round
 soundness with the same error `rbrKnowledgeError`. -/
-theorem rbrKnowledgeSoundness_implies_rbrSoundness
+theorem rbrKnowledgeSoundnessAveraged_implies_rbrSoundness
     {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
     {verifier : Verifier oSpec StmtIn StmtOut pSpec}
     {rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0}
-    (h : verifier.rbrKnowledgeSoundness init impl relIn relOut rbrKnowledgeError) :
+    (h : verifier.rbrKnowledgeSoundnessAveraged init impl relIn relOut rbrKnowledgeError) :
     verifier.rbrSoundness init impl relIn.language relOut.language rbrKnowledgeError := by
   classical
-  unfold rbrKnowledgeSoundness at h
+  unfold rbrKnowledgeSoundnessAveraged at h
   obtain ⟨WitMid, extractor, kSF, hkSF⟩ := h
   by_cases hWout : Nonempty WitOut
   · unfold rbrSoundness
@@ -188,14 +185,20 @@ theorem rbrKnowledgeSoundness_implies_rbrSoundness
     exact (prEvent_eq_zero_of_forall_not _ _ fun _ hbad ↦
       Fin.succ_ne_zero i.1 hbad.2.1).trans_le zero_le
 
-/-- Round-by-round knowledge soundness with error `rbrKnowledgeError` implies knowledge soundness
-with error `∑ i, rbrKnowledgeError i`, where the sum is over all rounds `i`. -/
-theorem rbrKnowledgeSoundness_implies_knowledgeSoundness
+/-- For a guarded verifier, averaged round-by-round knowledge soundness implies knowledge
+soundness with the sum of the round errors. Guardedness ensures terminal knowledge in the
+actual post-prover state; fresh-initialization terminal knowledge alone is insufficient.
+For stateful verifiers, use the extractor-specific theorem with an actual-state terminal
+certificate in `Security.ActualExtraction`. -/
+theorem rbrKnowledgeSoundnessAveraged_implies_knowledgeSoundness
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
-    (rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0) :
-      rbrKnowledgeSoundness init impl relIn relOut verifier rbrKnowledgeError →
-        knowledgeSoundness init impl relIn relOut verifier (∑ i, rbrKnowledgeError i) := by sorry
+    (rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0)
+    (guarded : verifier.GuardedForm) :
+      rbrKnowledgeSoundnessAveraged init impl relIn relOut verifier rbrKnowledgeError →
+        knowledgeSoundness init impl relIn relOut verifier (∑ i, rbrKnowledgeError i) :=
+  rbrKnowledgeSoundnessAveraged_implies_knowledgeSoundness_of_guarded
+    init impl guarded rbrKnowledgeError
 
 -- /-- Round-by-round soundness for a protocol implies state-restoration soundness for the same
 -- protocol with arbitrary added non-empty salts. -/
@@ -212,14 +215,14 @@ theorem rbrKnowledgeSoundness_implies_knowledgeSoundness
 
 -- /-- Round-by-round knowledge soundness for a protocol implies state-restoration
 -- knowledge soundness for the same protocol with arbitrary added non-empty salts. -/
--- theorem rbrKnowledgeSoundness_implies_srKnowledgeSoundness_addSalt
+-- theorem rbrKnowledgeSoundnessAveraged_implies_srKnowledgeSoundness_addSalt
 --     {init : ProbComp (QueryImpl (srChallengeOracle StmtIn pSpec) Id)}
 --     {impl : QueryImpl oSpec (StateT (QueryImpl (srChallengeOracle StmtIn pSpec) Id) ProbComp)}
 --     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
 --     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
 --     (rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0)
 --     (Salt : pSpec.MessageIdx → Type) [∀ i, Nonempty (Salt i)] [∀ i, Fintype (Salt i)] :
---       rbrKnowledgeSoundness init impl relIn relOut verifier rbrKnowledgeError →
+--       rbrKnowledgeSoundnessAveraged init impl relIn relOut verifier rbrKnowledgeError →
 --         Verifier.StateRestoration.knowledgeSoundness init impl relIn relOut
 --           (verifier.addSalt Salt) (∑ i, rbrKnowledgeError i) := by sorry
 

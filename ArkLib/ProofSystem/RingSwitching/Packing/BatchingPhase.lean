@@ -975,11 +975,11 @@ lemma batching_doom_escape_probability_bound (hCoord : CoordinateLaws P)
 
 omit [Fintype K] [DecidableEq K] in
 omit [NeZero κ] [NeZero ℓ'] in
-/-- RBR knowledge soundness for the batching phase oracle verifier. -/
-theorem batchingOracleVerifier_rbrKnowledgeSoundness (hCoord : CoordinateLaws P)
+/-- Fixed-prefix RBR knowledge soundness for the batching phase oracle verifier. -/
+theorem batchingOracleVerifier_rbrKnowledgeSoundness_fixedPrefix (hCoord : CoordinateLaws P)
     (hUnique : aOStmtIn.Functional) [IsDomain K] [NoZeroDivisors L] :
-    OracleVerifier.rbrKnowledgeSoundness
-    (verifier := oracleVerifier κ L K P ℓ ℓ' h_l (aOStmtIn:=aOStmtIn))
+    Verifier.rbrKnowledgeSoundness
+    (verifier := (oracleVerifier κ L K P ℓ ℓ' h_l (aOStmtIn:=aOStmtIn)).toVerifier)
     (init := init) (impl := impl)
     (relIn := batchingInputRelation κ L K P ℓ ℓ' h_l aOStmtIn)
     (relOut := sumcheckRoundRelation κ L K P ℓ ℓ' h_l aOStmtIn 0)
@@ -994,7 +994,7 @@ theorem batchingOracleVerifier_rbrKnowledgeSoundness (hCoord : CoordinateLaws P)
     | ⟨1, _⟩ => (⟨fun _ => (0 : L)⟩ : Inhabited (Fin κ → L))
   let : ∀ j, OracleInterface ((pSpecBatching κ L K P).Challenge j) :=
     ProtocolSpec.challengeOracleInterface
-  -- Reduce global RBR soundness to the fixed-transcript batching bound.
+  -- Retain the fixed-transcript batching bound for composition.
   refine OracleReduction.rbrKnowledgeSoundness_of_2msg_PtoV_uniformChallenge
     (pSpec := pSpecBatching κ L K P)
     (verifier := (oracleVerifier κ L K P ℓ ℓ' h_l aOStmtIn).toVerifier)
@@ -1012,6 +1012,21 @@ theorem batchingOracleVerifier_rbrKnowledgeSoundness (hCoord : CoordinateLaws P)
       (hUnique := hUnique) (κ := κ) (L := L)
       (K := K) (P := P) (ℓ := ℓ) (ℓ' := ℓ') (h_l := h_l) (aOStmtIn := aOStmtIn) (init := init)
       (impl := impl) (stmtOStmtIn := stmtOStmtIn) (msg0 := msg₀)
+
+omit [Fintype K] [DecidableEq K] in
+omit [NeZero κ] [NeZero ℓ'] in
+/-- Averaged RBR knowledge soundness follows from the batching fixed-prefix certificate. -/
+theorem batchingOracleVerifier_rbrKnowledgeSoundness (hCoord : CoordinateLaws P)
+    (hUnique : aOStmtIn.Functional) [IsDomain K] [NoZeroDivisors L] :
+    OracleVerifier.rbrKnowledgeSoundnessAveraged
+    (verifier := oracleVerifier κ L K P ℓ ℓ' h_l (aOStmtIn:=aOStmtIn))
+    (init := init) (impl := impl)
+    (relIn := batchingInputRelation κ L K P ℓ ℓ' h_l aOStmtIn)
+    (relOut := sumcheckRoundRelation κ L K P ℓ ℓ' h_l aOStmtIn 0)
+    (rbrKnowledgeError := batchingRBRKnowledgeError (κ:=κ) (L:=L) (K:=K) (P:=P)) :=
+  Verifier.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged init impl
+    (batchingOracleVerifier_rbrKnowledgeSoundness_fixedPrefix κ L K P ℓ ℓ' h_l aOStmtIn
+      (init := init) (impl := impl) hCoord hUnique)
 
 end BatchingPhase
 end RingSwitching

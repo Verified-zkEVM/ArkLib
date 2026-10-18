@@ -368,10 +368,10 @@ def commitKState (i : Fin ℓ) (hCR : isCommitmentRound ℓ ϑ i) :
 
 /-! RBR knowledge soundness for a single round oracle verifier -/
 omit [SampleableType L] [CharP L 2] [DecidableEq 𝔽q] in
-theorem commitOracleVerifier_rbrKnowledgeSoundness (i : Fin ℓ)
+theorem commitOracleVerifier_rbrKnowledgeSoundness_fixedPrefix (i : Fin ℓ)
     (hCR : isCommitmentRound ℓ ϑ i) :
     (commitOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      i hCR).rbrKnowledgeSoundness init impl
+      i hCR).toVerifier.rbrKnowledgeSoundness init impl
       (relIn := foldStepRelOut (mp := mp) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)  i)
       (relOut := roundRelation (mp := mp) 𝔽q β (ϑ := ϑ)
@@ -380,11 +380,25 @@ theorem commitOracleVerifier_rbrKnowledgeSoundness (i : Fin ℓ)
   use fun _ => Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ
   use commitRbrExtractor 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i
   use commitKState (mp:=mp) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i hCR
-  intro stmtIn witIn prover ⟨j, hj⟩
+  intro stmtIn ⟨j, hj⟩
   cases j using Fin.cases with
   | zero => simp only [ne_eq, reduceCtorEq, not_false_eq_true, Fin.isValue, Matrix.cons_val_fin_one,
     Direction.not_P_to_V_eq_V_to_P] at hj
   | succ j' => exact Fin.elim0 j'
+
+omit [SampleableType L] [CharP L 2] [DecidableEq 𝔽q] in
+/-- The fixed-prefix certificate implies the averaged RBR guarantee. -/
+theorem commitOracleVerifier_rbrKnowledgeSoundness (i : Fin ℓ)
+    (hCR : isCommitmentRound ℓ ϑ i) :
+    (commitOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      i hCR).rbrKnowledgeSoundnessAveraged init impl
+      (relIn := foldStepRelOut (mp := mp) 𝔽q β (ϑ := ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i)
+      (relOut := roundRelation (mp := mp) 𝔽q β (ϑ := ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i.succ)
+      (commitKnowledgeError 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
+  Verifier.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged init impl
+    (commitOracleVerifier_rbrKnowledgeSoundness_fixedPrefix 𝔽q β i hCR)
 
 end CommitStep
 end SingleIteratedSteps

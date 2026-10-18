@@ -113,18 +113,44 @@ def Extractor.Straightline.liftContext
     let innerWitIn ← E innerStmtIn innerWitOut fullTranscript proveQueryLog verifyQueryLog
     return lens.wit.lift (outerStmtIn, outerWitOut) innerWitIn
 
-open Verifier in
-/-- The outer round-by-round extractor after lifting invokes the inner extractor on the projected
-  input, and lifts the output -/
+/-- Lifted extraction retains the outer output witness at positive rounds, so it can reconstruct
+the outer input witness when it reaches round zero. -/
+def Extractor.RoundByRound.LiftContextWitness
+    (OuterWitIn OuterWitOut : Type) (WitMid : Fin (n + 1) → Type)
+    (m : Fin (n + 1)) : Type :=
+  if m = 0 then OuterWitIn else WitMid m × OuterWitOut
+
+/-- Package an inner intermediate witness, applying the inverse witness lens at round zero. -/
+def Extractor.RoundByRound.liftContextWitness
+    {WitMid : Fin (n + 1) → Type}
+    (lens : Extractor.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
+      OuterWitIn OuterWitOut InnerWitIn InnerWitOut)
+    (E : Extractor.RoundByRound oSpec InnerStmtIn InnerWitIn InnerWitOut pSpec WitMid)
+    (m : Fin (n + 1)) (stmt : OuterStmtIn) (wit : WitMid m) (out : OuterWitOut) :
+    LiftContextWitness OuterWitIn OuterWitOut WitMid m :=
+  if h : m = 0 then
+    cast (by simp [LiftContextWitness, h])
+      (lens.wit.lift (stmt, out) (cast ((congrArg WitMid h).trans E.eqIn) wit))
+  else
+    cast (by simp [LiftContextWitness, h]) (wit, out)
+
+/-- Lift a round-by-round extractor using a new witness family with the correct input type. -/
 def Extractor.RoundByRound.liftContext
     {WitMid : Fin (n + 1) → Type}
     (lens : Extractor.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
                           OuterWitIn OuterWitOut InnerWitIn InnerWitOut)
     (E : Extractor.RoundByRound oSpec InnerStmtIn InnerWitIn InnerWitOut pSpec WitMid) :
-      Extractor.RoundByRound oSpec OuterStmtIn OuterWitIn OuterWitOut pSpec WitMid :=
-  sorry
-  -- fun roundIdx outerStmtIn fullTranscript proveQueryLog =>
-  --   rbrLensInv.liftWit (E roundIdx (lens.projStmt outerStmtIn) fullTranscript proveQueryLog)
+      Extractor.RoundByRound oSpec OuterStmtIn OuterWitIn OuterWitOut pSpec
+        (LiftContextWitness OuterWitIn OuterWitOut WitMid) where
+  eqIn := by simp [LiftContextWitness]
+  extractMid := fun m stmt tr wit => by
+    let pair : WitMid m.succ × OuterWitOut :=
+      cast (by simp [LiftContextWitness]) wit
+    exact E.liftContextWitness lens m.castSucc stmt
+      (E.extractMid m (lens.stmt.proj stmt) tr pair.1) pair.2
+  extractOut := fun stmt tr out =>
+    E.liftContextWitness lens (.last n) stmt
+      (E.extractOut (lens.stmt.proj stmt) tr (lens.wit.proj (stmt, out))) out
 
 /-- Compatibility relation between the outer input statement and the inner output statement,
 relative to a verifier.
@@ -361,20 +387,34 @@ theorem liftContext_completeness
     (lensComplete.proj_complete _ _ hRelIn)
   rw [Reduction.liftContext_run]
   refine le_trans hR ?_
-  simp?
-  sorry
-  -- Refine by event monotonicity.
-  -- intro ⟨innerContextOut, a, b⟩ hSupport ⟨hRelOut, hRelOut'⟩
-  -- have : innerContextOut ∈
-  --     Prod.fst <$>
-  --       (R.run (lens.stmt.proj outerStmtIn)
-  -- (lens.wit.proj (outerStmtIn, outerWitIn))).support := by
-  --   simp
-  --   exact ⟨a, b, hSupport⟩
-  -- simp_all
-  -- rw [← hRelOut'] at hRelOut ⊢
-  -- refine lensComplete.lift_complete _ _ _ _ ?_ hRelIn hRelOut
-  -- simp [compatContext]; exact this
+  rw [OptionT.prEvent_eq_run, OptionT.prEvent_eq_run]
+  simp only [OptionT.run_mk, bind_pure_comp,
+    OptionT.run_map, simulateQ_map, StateT.run'_eq, StateT.run_map, Functor.map_map,
+    Function.uncurry]
+  simp only [← bind_pure_comp, bind_assoc, pure_bind]
+  rw [← bind_assoc, ← bind_assoc]
+  apply _root_.prEvent_mono_of_support
+  intro result hSupport hGood
+  rw [mem_support_bind_iff] at hSupport
+  obtain ⟨s, _, hs⟩ := hSupport
+  have hRaw : result.1 ∈ support
+      (R.run (lens.stmt.proj outerStmtIn) (lens.wit.proj (outerStmtIn, outerWitIn))).run :=
+    support_simulateQ_run'_subset (n := ProbComp) (impl.addLift challengeQueryImpl)
+    (R.run (lens.stmt.proj outerStmtIn) (lens.wit.proj (outerStmtIn, outerWitIn))).run s
+    (by
+      rw [StateT.run'_eq, MonadAttach.support_map]
+      exact Set.mem_image_of_mem Prod.fst hs)
+  rcases result with ⟨result, finalState⟩
+  cases result with
+  | none => exact hGood.elim
+  | some result =>
+    rcases result with ⟨⟨tr, stmt, wit⟩, verStmt⟩
+    change (verStmt, wit) ∈ innerRelOut ∧ stmt = verStmt at hGood
+    rcases hGood with ⟨hOut, rfl⟩
+    refine ⟨lensComplete.lift_complete _ _ _ _ ?_ hRelIn hOut, rfl⟩
+    refine ⟨((tr, stmt, wit), stmt), ?_, rfl⟩
+    rw [OptionT.mem_support_iff]
+    exact hRaw
 
 theorem liftContext_perfectCompleteness
     (h : R.perfectCompleteness init impl innerRelIn innerRelOut) :
@@ -535,11 +575,146 @@ theorem liftContext_rbr_soundness [Inhabited InnerStmtOut]
   refine le_trans ?_ h'
   sorry
 
+omit [∀ i, SampleableType (pSpec.Challenge i)] in
+/-- A related output of a lifted verifier yields a related inner output with positive probability.
+The compatibility premise follows from actual execution support, not an extra assumption. -/
+theorem liftContext_related_output_pos
+    {lens : Extractor.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
+      OuterWitIn OuterWitOut InnerWitIn InnerWitOut}
+    (V : Verifier oSpec InnerStmtIn InnerStmtOut pSpec)
+    [lensKS : lens.IsKnowledgeSound outerRelIn innerRelIn outerRelOut innerRelOut
+      (V.compatStatement lens.stmt) (fun _ _ => True)]
+    (stmt : OuterStmtIn) (tr : pSpec.FullTranscript) (out : OuterWitOut)
+    (h : Pr{let s ← OptionT.mk do
+      (simulateQ impl
+        ((V.liftContext lens.stmt).run stmt tr)).run' (← init)}[(s, out) ∈ outerRelOut] > 0) :
+    Pr{let s ← OptionT.mk do
+      (simulateQ impl (V.run (lens.stmt.proj stmt) tr)).run' (← init)}[
+        (s, lens.wit.proj (stmt, out)) ∈ innerRelOut] > 0 := by
+  change Pr{let s ← OptionT.mk do
+    (simulateQ impl ((V.liftContext lens.stmt).run stmt tr).run).run'
+      (← init)}[(s, out) ∈ outerRelOut] > 0 at h
+  simp only [run, liftContext, bind_pure_comp, OptionT.run_map] at h
+  rw [← bind_pure_comp] at h
+  simp only [OptionT.prEvent_mk_pos_iff, simulateQ_map, StateT.run'_eq,
+    StateT.run_map, Functor.map_map, mem_support_bind_iff,
+    MonadAttach.support_map, Set.mem_image] at h ⊢
+  obtain ⟨outer, ⟨s, hs, ⟨value, state⟩, hv, heq⟩, hrel⟩ := h
+  cases value with
+  | none => cases heq
+  | some inner =>
+    simp only [Option.map_some, Option.some.injEq] at heq
+    subst outer
+    refine ⟨inner, ⟨s, hs, (some inner, state), hv, rfl⟩,
+      lensKS.proj_knowledgeSound stmt inner out ?_ hrel⟩
+    refine ⟨tr, ?_⟩
+    rw [OptionT.mem_support_iff]
+    apply support_simulateQ_run'_subset (n := ProbComp) impl (V.run _ tr).run s
+    rw [StateT.run'_eq, MonadAttach.support_map]
+    exact Set.mem_image_of_mem Prod.fst hv
+
+namespace KnowledgeStateFunction
+
+/-- The lifted knowledge predicate uses the outer relation at zero and the inner predicate later. -/
+def liftContextPredicate
+    {WitMid : Fin (n + 1) → Type}
+    (lens : Extractor.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
+      OuterWitIn OuterWitOut InnerWitIn InnerWitOut)
+    (rel : Set (OuterStmtIn × OuterWitIn))
+    (K : (m : Fin (n + 1)) → InnerStmtIn → Transcript m pSpec → WitMid m → Prop)
+    (m : Fin (n + 1)) (stmt : OuterStmtIn) (tr : Transcript m pSpec)
+    (wit : Extractor.RoundByRound.LiftContextWitness OuterWitIn OuterWitOut WitMid m) : Prop :=
+  if h : m = 0 then
+    (stmt, cast (by simp [Extractor.RoundByRound.LiftContextWitness, h]) wit) ∈ rel
+  else
+    K m (lens.stmt.proj stmt) tr
+      (cast (by simp [Extractor.RoundByRound.LiftContextWitness, h]) wit : WitMid m × OuterWitOut).1
+
+variable {WitMid : Fin (n + 1) → Type}
+  {lens : Extractor.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
+    OuterWitIn OuterWitOut InnerWitIn InnerWitOut}
+  {V : Verifier oSpec InnerStmtIn InnerStmtOut pSpec}
+  {E : Extractor.RoundByRound oSpec InnerStmtIn InnerWitIn InnerWitOut pSpec WitMid}
+  [lensKS : lens.IsKnowledgeSound outerRelIn innerRelIn outerRelOut innerRelOut
+    (V.compatStatement lens.stmt) (fun _ _ => True)]
+
+include lensKS in
+omit [∀ i, SampleableType (pSpec.Challenge i)] in
+/-- A valid inner intermediate witness packages to a valid lifted intermediate witness. -/
+theorem liftContextPredicate_pack
+    (K : V.KnowledgeStateFunction init impl innerRelIn innerRelOut E)
+    (m : Fin (n + 1)) (stmt : OuterStmtIn) (tr : Transcript m pSpec)
+    (wit : WitMid m) (out : OuterWitOut)
+    (hK : K m (lens.stmt.proj stmt) tr wit) :
+    liftContextPredicate lens outerRelIn K m stmt tr
+      (E.liftContextWitness lens m stmt wit out) := by
+  by_cases h : m = 0
+  · subst m
+    have htr : tr = default := Subsingleton.elim _ _
+    subst tr
+    simpa [liftContextPredicate, Extractor.RoundByRound.liftContextWitness, cast_cast] using
+      lensKS.lift_knowledgeSound stmt out (cast E.eqIn wit) True.intro
+        ((K.toFun_empty _ _).mpr hK)
+  · simpa [liftContextPredicate, Extractor.RoundByRound.liftContextWitness, h, cast_cast] using hK
+
+/-- Transport a knowledge-state certificate using the repaired intermediate witness family. -/
+def liftContext
+    (K : V.KnowledgeStateFunction init impl innerRelIn innerRelOut E) :
+    (V.liftContext lens.stmt).KnowledgeStateFunction init impl outerRelIn outerRelOut
+      (E.liftContext lens) where
+  toFun := liftContextPredicate lens outerRelIn K
+  toFun_empty := by
+    intro stmt wit
+    simp [liftContextPredicate]
+  toFun_next := by
+    intro m hdir stmt tr msg wit hK
+    let pair : WitMid m.succ × OuterWitOut :=
+      cast (by simp [Extractor.RoundByRound.LiftContextWitness]) wit
+    have hInner : K m.succ (lens.stmt.proj stmt) (tr.concat msg) pair.1 := by
+      simpa [liftContextPredicate, pair, _root_.id] using hK
+    simpa [Extractor.RoundByRound.liftContext, pair] using
+      liftContextPredicate_pack (outerRelIn := outerRelIn) (outerRelOut := outerRelOut)
+        K m.castSucc stmt tr
+        (E.extractMid m (lens.stmt.proj stmt) (tr.concat msg) pair.1) pair.2
+        (K.toFun_next m hdir _ tr msg pair.1 hInner)
+  toFun_full := by
+    intro stmt tr out h
+    exact liftContextPredicate_pack (outerRelIn := outerRelIn) (outerRelOut := outerRelOut)
+      K (.last n) stmt tr _ out
+      (K.toFun_full _ tr _ (liftContext_related_output_pos (outerRelIn := outerRelIn)
+        (innerRelIn := innerRelIn) V stmt tr out h))
+
+include lensKS in
+omit [∀ i, SampleableType (pSpec.Challenge i)] in
+/-- Any bad challenge transition after lifting was already a bad inner transition. -/
+theorem liftContext_badEvent
+    (K : V.KnowledgeStateFunction init impl innerRelIn innerRelOut E)
+    (i : pSpec.ChallengeIdx) (stmt : OuterStmtIn)
+    (tr : Transcript i.1.castSucc pSpec) (challenge : pSpec.Challenge i) :
+    rbrExtractionFailureEvent
+        (K.liftContext (lens := lens) (outerRelIn := outerRelIn) (outerRelOut := outerRelOut))
+        (E.liftContext lens) i stmt tr challenge →
+      rbrExtractionFailureEvent K E i (lens.stmt.proj stmt) tr challenge := by
+  rintro ⟨wit, hBad, hGood⟩
+  let pair : WitMid i.1.succ × OuterWitOut :=
+    cast (by simp [Extractor.RoundByRound.LiftContextWitness]) wit
+  refine ⟨pair.1, ?_, ?_⟩
+  · intro h
+    apply hBad
+    simpa [liftContext, Extractor.RoundByRound.liftContext, pair] using
+      liftContextPredicate_pack (outerRelIn := outerRelIn) (outerRelOut := outerRelOut)
+        K i.1.castSucc stmt tr _ pair.2 h
+  · simpa [liftContext, liftContextPredicate, pair] using hGood
+
+end KnowledgeStateFunction
+
 /-
   Lifting the reduction preserves round-by-round knowledge soundness, assuming the lens
   satisfies its knowledge soundness conditions
 -/
-theorem liftContext_rbr_knowledgeSoundness [Inhabited InnerStmtOut] [Inhabited InnerWitIn]
+/-- Context lifting preserves each fixed-prefix bad-challenge bound. Unlike the averaged
+proof, no simulated inner prover or inhabited inner input witness is needed. -/
+theorem liftContext_rbr_knowledgeSoundness
     {outerRelIn : Set (OuterStmtIn × OuterWitIn)} {outerRelOut : Set (OuterStmtOut × OuterWitOut)}
     {innerRelIn : Set (InnerStmtIn × InnerWitIn)} {innerRelOut : Set (InnerStmtOut × InnerWitOut)}
     {rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0}
@@ -551,7 +726,50 @@ theorem liftContext_rbr_knowledgeSoundness [Inhabited InnerStmtOut] [Inhabited I
     (h : V.rbrKnowledgeSoundness init impl innerRelIn innerRelOut rbrKnowledgeError) :
       (V.liftContext stmtLens).rbrKnowledgeSoundness init impl outerRelIn outerRelOut
         rbrKnowledgeError := by
-  sorry
+  obtain ⟨W, E, K, hK⟩ := h
+  refine ⟨_, E.liftContext ⟨stmtLens, witLens⟩,
+    K.liftContext (lens := ⟨stmtLens, witLens⟩), ?_⟩
+  intro stmt i transcript
+  refine le_trans ?_ (hK (stmtLens.proj stmt) i transcript)
+  apply _root_.prEvent_mono
+  intro challenge hBad
+  exact KnowledgeStateFunction.liftContext_badEvent
+    (lens := ⟨stmtLens, witLens⟩) K i stmt transcript challenge hBad
+
+theorem liftContext_rbr_knowledgeSoundnessAveraged [Inhabited InnerStmtOut] [Inhabited InnerWitIn]
+    {outerRelIn : Set (OuterStmtIn × OuterWitIn)} {outerRelOut : Set (OuterStmtOut × OuterWitOut)}
+    {innerRelIn : Set (InnerStmtIn × InnerWitIn)} {innerRelOut : Set (InnerStmtOut × InnerWitOut)}
+    {rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0}
+    {stmtLens : Statement.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut}
+    {witLens : Witness.InvLens OuterStmtIn OuterWitIn OuterWitOut InnerWitIn InnerWitOut}
+    (V : Verifier oSpec InnerStmtIn InnerStmtOut pSpec)
+    [lensKS : Extractor.Lens.IsKnowledgeSound outerRelIn innerRelIn outerRelOut innerRelOut
+      (V.compatStatement stmtLens) (fun _ _ => True) ⟨stmtLens, witLens⟩]
+    (h : V.rbrKnowledgeSoundnessAveraged init impl innerRelIn innerRelOut rbrKnowledgeError) :
+      (V.liftContext stmtLens).rbrKnowledgeSoundnessAveraged init impl outerRelIn outerRelOut
+        rbrKnowledgeError := by
+  obtain ⟨W, E, K, hK⟩ := h
+  refine ⟨_, E.liftContext ⟨stmtLens, witLens⟩,
+    K.liftContext (lens := ⟨stmtLens, witLens⟩), ?_⟩
+  intro stmt wit P i
+  let innerP : Prover oSpec InnerStmtIn InnerWitIn InnerStmtOut InnerWitOut pSpec := {
+    PrvState := P.PrvState
+    input := fun _ => P.input (stmt, wit)
+    sendMessage := P.sendMessage
+    receiveChallenge := P.receiveChallenge
+    output := fun state => do
+      let (_, out) ← P.output state
+      pure (default, witLens.proj (stmt, out)) }
+  have hRun : innerP.runWithLogToRound i.1.castSucc (stmtLens.proj stmt) default =
+      P.runWithLogToRound i.1.castSucc stmt wit := rfl
+  have hBound := hK (stmtLens.proj stmt) default innerP i
+  rw [hRun] at hBound
+  refine le_trans ?_ hBound
+  rw [← bind_assoc, ← bind_assoc]
+  apply _root_.prEvent_mono
+  intro result hBad
+  exact KnowledgeStateFunction.liftContext_badEvent
+    (lens := ⟨stmtLens, witLens⟩) K i stmt result.1 result.2.1 hBad
 
 end Verifier
 

@@ -87,21 +87,8 @@ theorem append_rbrSoundness {lang₁ : Set Stmt₁} {lang₂ : Set Stmt₂} {lan
         (Sum.elim rbrSoundnessError₁ rbrSoundnessError₂ ∘ ChallengeIdx.sumEquiv.symm) := by
   sorry
 
-/-- If two verifiers satisfy round-by-round knowledge soundness with compatible relations and
-    respective RBR knowledge errors, then their sequential composition also satisfies
-    round-by-round knowledge soundness.
-    The RBR knowledge error of the appended verifier extends the individual errors appropriately. -/
-theorem append_rbrKnowledgeSoundness
-    (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁)
-    (V₂ : Verifier oSpec Stmt₂ Stmt₃ pSpec₂)
-    {rbrKnowledgeError₁ : pSpec₁.ChallengeIdx → ℝ≥0}
-    {rbrKnowledgeError₂ : pSpec₂.ChallengeIdx → ℝ≥0}
-    (h₁ : V₁.rbrKnowledgeSoundness init impl rel₁ rel₂ rbrKnowledgeError₁)
-    (h₂ : V₂.rbrKnowledgeSoundness init impl rel₂ rel₃ rbrKnowledgeError₂) :
-      (V₁.append V₂).rbrKnowledgeSoundness init impl rel₁ rel₃
-        (Sum.elim rbrKnowledgeError₁ rbrKnowledgeError₂ ∘ ChallengeIdx.sumEquiv.symm) := by
-  sorry
-
+/- The unrestricted fresh-initialization RBR knowledge composition contract was false.
+Use the proved fixed-prefix guarded composition results in `GuardedKnowledge`. -/
 end Verifier
 
 end Protocol
@@ -173,22 +160,8 @@ theorem append_rbrSoundness (V₁ : OracleVerifier oSpec Stmt₁ OStmt₁ Stmt�
   convert Verifier.append_rbrSoundness V₁.toVerifier V₂.toVerifier h₁ h₂
   simp only [append_toVerifier]
 
-/-- If two oracle verifiers satisfy round-by-round knowledge soundness with compatible relations
-    and respective RBR knowledge errors, then their sequential composition also satisfies
-    round-by-round knowledge soundness.
-    The RBR knowledge error of the appended verifier extends the individual errors appropriately. -/
-theorem append_rbrKnowledgeSoundness (V₁ : OracleVerifier oSpec Stmt₁ OStmt₁ Stmt₂ OStmt₂ pSpec₁)
-    (V₂ : OracleVerifier oSpec Stmt₂ OStmt₂ Stmt₃ OStmt₃ pSpec₂)
-    {rbrKnowledgeError₁ : pSpec₁.ChallengeIdx → ℝ≥0}
-    {rbrKnowledgeError₂ : pSpec₂.ChallengeIdx → ℝ≥0}
-    (h₁ : V₁.rbrKnowledgeSoundness init impl rel₁ rel₂ rbrKnowledgeError₁)
-    (h₂ : V₂.rbrKnowledgeSoundness init impl rel₂ rel₃ rbrKnowledgeError₂) :
-      (V₁.append V₂).rbrKnowledgeSoundness init impl rel₁ rel₃
-        (Sum.elim rbrKnowledgeError₁ rbrKnowledgeError₂ ∘ ChallengeIdx.sumEquiv.symm) := by
-  unfold rbrKnowledgeSoundness
-  convert Verifier.append_rbrKnowledgeSoundness V₁.toVerifier V₂.toVerifier h₁ h₂
-  simp only [append_toVerifier]
-
+/- The unrestricted fresh-initialization RBR knowledge composition contract was false.
+Use the proved fixed-prefix guarded composition results in `GuardedKnowledge`. -/
 end OracleVerifier
 
 end OracleProtocol

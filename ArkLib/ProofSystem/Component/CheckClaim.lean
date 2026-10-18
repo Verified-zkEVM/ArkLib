@@ -145,7 +145,7 @@ def knowledgeStateFunction :
 
 /-- The `CheckClaim` reduction satisfies perfect round-by-round knowledge soundness. -/
 theorem verifier_rbr_knowledge_soundness :
-    (verifier oSpec Statement pred).rbrKnowledgeSoundness init impl
+    (verifier oSpec Statement pred).rbrKnowledgeSoundnessAveraged init impl
       (relIn Statement pred) (relOut Statement) 0 := by
   refine ⟨_, _, knowledgeStateFunction oSpec Statement pred (init := init) (impl := impl), ?_⟩
   intro stmtIn witIn prover i

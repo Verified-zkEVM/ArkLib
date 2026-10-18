@@ -656,8 +656,61 @@ instance sumcheckFoldExtractorLens_rbr_knowledge_soundness
         exact h_first
 
 -- Round-by-round knowledge soundness for the lifted oracle verifier
+theorem sumcheckFoldOracleVerifier_rbrKnowledgeSoundness_fixedPrefix :
+    Verifier.rbrKnowledgeSoundness
+      (relIn := RingSwitching.sumcheckRoundRelation κ L K (biniusProfile κ L K β)
+        ℓ ℓ' h_l (aOStmtIn := BinaryBasefoldAbstractOStmtIn
+          (κ := κ) (L := L) (K := K) (β := β)
+          (ℓ' := ℓ') (𝓡 := 𝓡) (ϑ := ϑ)
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) 0)
+      (relOut :=
+        BinaryBasefold.roundRelation (mp := RingSwitching_BBFSumcheckMultParam κ L K
+          (β := booleanHypercubeBasis κ L K β) ℓ ℓ' h_l) K β (ϑ:=ϑ)
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := boolEmbedding L)  (Fin.last ℓ')
+      )
+      (verifier := (sumcheckFoldOracleVerifier κ L K β ℓ ℓ' (h_l := h_l) 𝓡 ϑ
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).toVerifier)
+      (init := init)
+      (impl := impl)
+      (rbrKnowledgeError := BinaryBasefold.CoreInteraction.sumcheckFoldKnowledgeError
+        K β (ϑ := ϑ)) := by
+  have h_lifted := OracleVerifier.liftContext_rbr_knowledgeSoundness
+      (V := BinaryBasefold.CoreInteraction.sumcheckFoldOracleVerifier K β
+        (ϑ := ϑ)
+        (mp := RingSwitching_BBFSumcheckMultParam κ L K
+          (β := booleanHypercubeBasis κ L K β) ℓ ℓ' h_l)
+        (𝓑 := boolEmbedding L)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
+      (stmtLens := sumcheckFoldExecutableStmtLens κ L K β ℓ ℓ' 𝓡 ϑ
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
+      (output := sumcheckFoldLiftContextOutput κ L K β ℓ ℓ' 𝓡 ϑ
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
+      (witLens := (sumcheckFoldExtractorLens κ L K β ℓ ℓ' 𝓡 ϑ
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).wit)
+      (lensKS := sumcheckFoldExtractorLens_rbr_knowledge_soundness
+        (κ := κ) (L := L) (K := K) (β := β) (ℓ := ℓ) (ℓ' := ℓ') (𝓡 := 𝓡) (ϑ := ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (h_l := h_l)
+        (compatStmt := (BinaryBasefold.CoreInteraction.sumcheckFoldOracleVerifier K β
+          (ϑ := ϑ)
+          (mp := RingSwitching_BBFSumcheckMultParam κ L K (β := booleanHypercubeBasis κ L K β)
+            ℓ ℓ' h_l)
+          (𝓑 := boolEmbedding L) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).toVerifier.compatStatement
+          (sumcheckFoldStmtLens κ L K β ℓ ℓ' 𝓡 ϑ (h_ℓ_add_R_rate := h_ℓ_add_R_rate))))
+      (h :=
+        BinaryBasefold.CoreInteraction.sumcheckFoldOracleVerifier_rbrKnowledgeSoundness_fixedPrefix
+            (L := L) K β
+            (ϑ := ϑ)
+            (mp := RingSwitching_BBFSumcheckMultParam κ L K
+              (β := booleanHypercubeBasis κ L K β) ℓ ℓ' h_l)
+            (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+            (𝓑 := boolEmbedding L)
+            (init := init) (impl := impl))
+  dsimp [sumcheckFoldOracleVerifier] at h_lifted ⊢
+  exact h_lifted
+
+/-- The fixed-prefix lifted certificate also yields the averaged guarantee. -/
 theorem sumcheckFoldOracleVerifier_rbrKnowledgeSoundness :
-    OracleVerifier.rbrKnowledgeSoundness
+    OracleVerifier.rbrKnowledgeSoundnessAveraged
       (oSpec := []ₒ)
       (StmtIn := Sumcheck.Structured.Statement (L := L) (ℓ := ℓ')
         (RingSwitchingBaseContext κ L K ℓ (biniusProfile κ L K β)) 0)
@@ -685,64 +738,10 @@ theorem sumcheckFoldOracleVerifier_rbrKnowledgeSoundness :
       (init := init)
       (impl := impl)
       (rbrKnowledgeError := BinaryBasefold.CoreInteraction.sumcheckFoldKnowledgeError
-        K β (ϑ := ϑ)) := by
-  let : Inhabited (Statement (L := L) (ℓ := ℓ')
-      (RingSwitchingBaseContext κ L K ℓ (biniusProfile κ L K β)) (Fin.last ℓ')) := ⟨{
-      ctx := {
-        t_eval_point := 0
-        original_claim := 0
-        s_hat := 0
-        r_batching := 0
-      }
-      sumcheck_target := 0
-      challenges := 0
-    }⟩
-  let :
-      ∀ i : Fin (toOutCodewordsCount ℓ' ϑ (i := Fin.last ℓ')),
-        Inhabited (BinaryBasefold.OracleStatement K β
-          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ (Fin.last ℓ') i) := by
-    intro i
-    exact ⟨fun _ => 0⟩
-  let : Inhabited (BinaryBasefold.Witness K β
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ') 0) := ⟨{
-      t := 0
-      H := 0
-      f := fun _ => 0
-    }⟩
-  have h_lifted := OracleVerifier.liftContext_rbr_knowledgeSoundness
-      (V := BinaryBasefold.CoreInteraction.sumcheckFoldOracleVerifier K β
-        (ϑ := ϑ)
-        (mp := RingSwitching_BBFSumcheckMultParam κ L K
-          (β := booleanHypercubeBasis κ L K β) ℓ ℓ' h_l)
-        (𝓑 := boolEmbedding L)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
-      (stmtLens := sumcheckFoldExecutableStmtLens κ L K β ℓ ℓ' 𝓡 ϑ
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
-      (output := sumcheckFoldLiftContextOutput κ L K β ℓ ℓ' 𝓡 ϑ
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
-      (witLens := (sumcheckFoldExtractorLens κ L K β ℓ ℓ' 𝓡 ϑ
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).wit)
-      (lensKS := sumcheckFoldExtractorLens_rbr_knowledge_soundness
-        (κ := κ) (L := L) (K := K) (β := β) (ℓ := ℓ) (ℓ' := ℓ') (𝓡 := 𝓡) (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (h_l := h_l)
-        (compatStmt := (BinaryBasefold.CoreInteraction.sumcheckFoldOracleVerifier K β
-          (ϑ := ϑ)
-          (mp := RingSwitching_BBFSumcheckMultParam κ L K (β := booleanHypercubeBasis κ L K β)
-            ℓ ℓ' h_l)
-          (𝓑 := boolEmbedding L) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).toVerifier.compatStatement
-          (sumcheckFoldStmtLens κ L K β ℓ ℓ' 𝓡 ϑ (h_ℓ_add_R_rate := h_ℓ_add_R_rate))))
-      (h := by
-        exact
-          BinaryBasefold.CoreInteraction.sumcheckFoldOracleVerifier_rbrKnowledgeSoundness
-            (L := L) K β
-            (ϑ := ϑ)
-            (mp := RingSwitching_BBFSumcheckMultParam κ L K
-              (β := booleanHypercubeBasis κ L K β) ℓ ℓ' h_l)
-            (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-            (𝓑 := boolEmbedding L)
-            (init := init) (impl := impl))
-  dsimp [sumcheckFoldOracleVerifier] at h_lifted ⊢
-  exact h_lifted
+        K β (ϑ := ϑ)) :=
+  Verifier.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged init impl
+    (sumcheckFoldOracleVerifier_rbrKnowledgeSoundness_fixedPrefix κ L K β ℓ ℓ' 𝓡 ϑ
+      h_ℓ_add_R_rate h_l)
 
 end Security
 end SumcheckFold

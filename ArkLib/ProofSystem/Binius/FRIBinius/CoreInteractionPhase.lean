@@ -1066,10 +1066,10 @@ noncomputable def finalSumcheckKnowledgeStateFunction {σ : Type} (init : ProbCo
     exact ⟨h_check, h_relOut⟩
 
 /-- Round-by-round knowledge soundness for the final sumcheck step -/
-theorem finalSumcheckOracleVerifier_rbrKnowledgeSoundness {σ : Type}
+theorem finalSumcheckOracleVerifier_rbrKnowledgeSoundness_fixedPrefix {σ : Type}
     (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (finalSumcheckVerifier κ L K β ℓ ℓ' 𝓡 ϑ
-      h_ℓ_add_R_rate h_l).rbrKnowledgeSoundness init impl
+      h_ℓ_add_R_rate h_l).toVerifier.rbrKnowledgeSoundness init impl
       (relIn := roundRelation K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
          (𝓑 := boolEmbedding L)
          (mp := RingSwitching_BBFSumcheckMultParam κ L K
@@ -1079,7 +1079,7 @@ theorem finalSumcheckOracleVerifier_rbrKnowledgeSoundness {σ : Type}
   use FinalSumcheckWit κ (L := L) K β ℓ' 𝓡 (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
   use finalSumcheckRbrExtractor κ L K β ℓ ℓ' 𝓡 ϑ h_ℓ_add_R_rate
   use finalSumcheckKnowledgeStateFunction κ L K β ℓ ℓ' 𝓡 ϑ h_ℓ_add_R_rate h_l init impl
-  intro stmtIn witIn prover j
+  intro stmtIn j
   rcases j with ⟨j, hj⟩
   cases j using Fin.cases with
   | zero =>
@@ -1087,6 +1087,21 @@ theorem finalSumcheckOracleVerifier_rbrKnowledgeSoundness {σ : Type}
       Matrix.cons_val_fin_one, Direction.not_P_to_V_eq_V_to_P] at hj
   | succ j' =>
     exact Fin.elim0 j'
+
+/-- The fixed-prefix final-step certificate implies the averaged guarantee. -/
+theorem finalSumcheckOracleVerifier_rbrKnowledgeSoundness {σ : Type}
+    (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
+    (finalSumcheckVerifier κ L K β ℓ ℓ' 𝓡 ϑ
+      h_ℓ_add_R_rate h_l).rbrKnowledgeSoundnessAveraged init impl
+      (relIn := roundRelation K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+         (𝓑 := boolEmbedding L)
+         (mp := RingSwitching_BBFSumcheckMultParam κ L K
+          (booleanHypercubeBasis κ L K β) ℓ ℓ' h_l) (Fin.last ℓ'))
+      (relOut := BinaryBasefold.finalSumcheckRelOut K β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
+      (rbrKnowledgeError := finalSumcheckKnowledgeError L) :=
+  Verifier.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged init impl
+    (finalSumcheckOracleVerifier_rbrKnowledgeSoundness_fixedPrefix κ L K β ℓ ℓ' 𝓡 ϑ
+      h_ℓ_add_R_rate h_l init impl)
 
 end FinalSumcheckStep
 
@@ -1181,13 +1196,10 @@ def coreInteractionOracleRbrKnowledgeError (j : (BinaryBasefold.pSpecCoreInterac
       (ChallengeIdx.sumEquiv.symm j)
 
 /-- Round-by-round knowledge soundness for the core interaction oracle verifier -/
-theorem coreInteractionOracleVerifier_rbrKnowledgeSoundness :
+theorem coreInteractionOracleVerifier_rbrKnowledgeSoundness_fixedPrefix :
     (coreInteractionOracleVerifier κ (L := L) (K := K) (β := β) (ℓ := ℓ) (ℓ' := ℓ')
       (h_l := h_l) (𝓡 := 𝓡) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-        ).rbrKnowledgeSoundness init impl
-      (OStmtIn := BinaryBasefold.OracleStatement K β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0)
-      (OStmtOut := BinaryBasefold.OracleStatement K β
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ (Fin.last ℓ'))
+        ).toVerifier.rbrKnowledgeSoundness init impl
       (pSpec := BinaryBasefold.pSpecCoreInteraction K β (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
       (relIn := RingSwitching.sumcheckRoundRelation κ L K (biniusProfile κ L K β)
         ℓ ℓ' h_l (aOStmtIn := BinaryBasefoldAbstractOStmtIn
@@ -1197,7 +1209,7 @@ theorem coreInteractionOracleVerifier_rbrKnowledgeSoundness :
       (relOut := BinaryBasefold.finalSumcheckRelOut K β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
       (rbrKnowledgeError := coreInteractionOracleRbrKnowledgeError κ L K β ℓ' 𝓡 ϑ
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) := by
-  let res := OracleVerifier.append_rbrKnowledgeSoundness
+  let res := OracleVerifier.append_rbrKnowledgeSoundness_of_guarded_first
     (oSpec := []ₒ)
     (OStmt₁ := BinaryBasefold.OracleStatement K β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0)
     (OStmt₂ := BinaryBasefold.OracleStatement K β
@@ -1220,12 +1232,35 @@ theorem coreInteractionOracleVerifier_rbrKnowledgeSoundness :
     (V₁ := sumcheckFoldOracleVerifier κ L K β ℓ ℓ' 𝓡 ϑ
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) h_l)
       (V₂ := finalSumcheckVerifier κ L K β ℓ ℓ' 𝓡 ϑ h_ℓ_add_R_rate h_l)
-      (rbrKnowledgeError₁ := BinaryBasefold.CoreInteraction.sumcheckFoldKnowledgeError
+      (ε₁ := BinaryBasefold.CoreInteraction.sumcheckFoldKnowledgeError
         K β (ϑ := ϑ))
-    (rbrKnowledgeError₂ := finalSumcheckKnowledgeError (L := L))
-    (h₁ := by apply sumcheckFoldOracleVerifier_rbrKnowledgeSoundness)
-    (h₂ := by apply finalSumcheckOracleVerifier_rbrKnowledgeSoundness)
+    (ε₂ := finalSumcheckKnowledgeError (L := L))
+    (G := Verifier.GuardedForm.ofEmpty _ (fun input =>
+      (⟨0, fun _ => 0, input.1.ctx⟩, fun _ _ => 0)))
+    (h₁ := by apply sumcheckFoldOracleVerifier_rbrKnowledgeSoundness_fixedPrefix)
+    (h₂ := by apply finalSumcheckOracleVerifier_rbrKnowledgeSoundness_fixedPrefix)
   exact res
+
+/-- The fixed-prefix core certificate implies the averaged guarantee with the same error. -/
+theorem coreInteractionOracleVerifier_rbrKnowledgeSoundness :
+    (coreInteractionOracleVerifier κ (L := L) (K := K) (β := β) (ℓ := ℓ) (ℓ' := ℓ')
+      (h_l := h_l) (𝓡 := 𝓡) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        ).rbrKnowledgeSoundnessAveraged init impl
+      (OStmtIn := BinaryBasefold.OracleStatement K β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0)
+      (OStmtOut := BinaryBasefold.OracleStatement K β
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ (Fin.last ℓ'))
+      (pSpec := BinaryBasefold.pSpecCoreInteraction K β (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
+      (relIn := RingSwitching.sumcheckRoundRelation κ L K (biniusProfile κ L K β)
+        ℓ ℓ' h_l (aOStmtIn := BinaryBasefoldAbstractOStmtIn
+          (κ := κ) (L := L) (K := K) (β := β)
+          (ℓ' := ℓ') (𝓡 := 𝓡) (ϑ := ϑ)
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) 0)
+      (relOut := BinaryBasefold.finalSumcheckRelOut K β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
+      (rbrKnowledgeError := coreInteractionOracleRbrKnowledgeError κ L K β ℓ' 𝓡 ϑ
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
+  Verifier.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged init impl
+    (coreInteractionOracleVerifier_rbrKnowledgeSoundness_fixedPrefix κ L K β ℓ ℓ' 𝓡 ϑ
+      h_ℓ_add_R_rate h_l)
 
 end CoreInteractionPhaseReduction
 

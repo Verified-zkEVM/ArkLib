@@ -11,6 +11,7 @@ public import ArkLib.ProofSystem.Binius.BinaryBasefold.CoreInteractionPhase
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.QueryPhase
 public import ArkLib.OracleReduction.Security.Basic
 public import ArkLib.OracleReduction.Security.Implications
+public import ArkLib.OracleReduction.Security.ActualExtraction
 
 /-!
 ## Full Binary Basefold Protocol
@@ -216,16 +217,17 @@ noncomputable def fullRbrKnowledgeError (i : (fullPSpec 𝔽q β γ_repetitions 
 variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)}
 
 /-- Round-by-round knowledge soundness for the full Binary Basefold oracle verifier -/
-theorem fullOracleVerifier_rbrKnowledgeSoundness :
-    OracleProof.rbrKnowledgeSoundness init impl
-      (verifier := fullOracleVerifier 𝔽q β γ_repetitions (ϑ:=ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑))
+theorem fullOracleVerifier_rbrKnowledgeSoundness_fixedPrefix :
+    Verifier.rbrKnowledgeSoundness init impl
+      (verifier := (fullOracleVerifier 𝔽q β γ_repetitions (ϑ:=ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)).toVerifier (Oₛₒ := fun i : Empty => nomatch i))
+      (relOut := acceptRejectOracleRel)
       (relIn := roundRelation (mp := BBF_SumcheckMultiplierParam) 𝔽q β (ϑ:=ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) 0)
       (rbrKnowledgeError := fullRbrKnowledgeError 𝔽q β γ_repetitions (ϑ:=ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) := by
   unfold fullOracleVerifier fullRbrKnowledgeError fullPSpec
-  convert (OracleVerifier.append_rbrKnowledgeSoundness
+  convert (OracleVerifier.append_rbrKnowledgeSoundness_of_guarded_first
     (init:=init) (impl:=impl)
       (rel₁ := roundRelation (mp := BBF_SumcheckMultiplierParam) 𝔽q β (ϑ:=ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) 0)
@@ -236,12 +238,26 @@ theorem fullOracleVerifier_rbrKnowledgeSoundness :
     (V₂ := QueryPhase.queryOracleVerifier 𝔽q β γ_repetitions
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ:=ϑ))
     (Oₛ₃ := fun i : Empty => nomatch i)
-    (rbrKnowledgeError₁ := CoreInteraction.coreInteractionOracleRbrKnowledgeError 𝔽q β (ϑ:=ϑ))
-    (rbrKnowledgeError₂ := QueryPhase.queryRbrKnowledgeError 𝔽q β γ_repetitions
+    (ε₁ := CoreInteraction.coreInteractionOracleRbrKnowledgeError 𝔽q β (ϑ:=ϑ))
+    (ε₂ := QueryPhase.queryRbrKnowledgeError 𝔽q β γ_repetitions
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
-    (h₁ := by apply CoreInteraction.coreInteractionOracleVerifier_rbrKnowledgeSoundness)
-    (h₂ := by apply QueryPhase.queryOracleVerifier_rbrKnowledgeSoundness)) using 1
+    (G := Verifier.GuardedForm.ofEmpty _ (fun input =>
+      (⟨⟨0, fun _ => 0, input.1.ctx⟩, 0⟩, fun _ _ => 0)))
+    (h₁ := by apply CoreInteraction.coreInteractionOracleVerifier_rbrKnowledgeSoundness_fixedPrefix)
+    (h₂ := by apply QueryPhase.queryOracleVerifier_rbrKnowledgeSoundness_fixedPrefix)) using 1
   all_goals rfl
+
+/-- The full fixed-prefix certificate yields the averaged RBR guarantee with the same error. -/
+theorem fullOracleVerifier_rbrKnowledgeSoundness :
+    OracleProof.rbrKnowledgeSoundnessAveraged init impl
+      (verifier := fullOracleVerifier 𝔽q β γ_repetitions (ϑ:=ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑))
+      (relIn := roundRelation (mp := BBF_SumcheckMultiplierParam) 𝔽q β (ϑ:=ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) 0)
+      (rbrKnowledgeError := fullRbrKnowledgeError 𝔽q β γ_repetitions (ϑ:=ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
+  Verifier.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged init impl
+    (fullOracleVerifier_rbrKnowledgeSoundness_fixedPrefix 𝔽q β γ_repetitions)
 
 /-!
 ### Scalar knowledge soundness (DP24-style concrete bound)
@@ -262,7 +278,7 @@ only for the numerical bound.
 
 Proof obligations: decompose `∑ fullRbrKnowledgeError` using `sumcheckFoldKnowledgeError_le`
 in `CoreInteractionPhase` and the query-phase sum, then
-`Verifier.rbrKnowledgeSoundness_implies_knowledgeSoundness` and
+`Verifier.rbrKnowledgeSoundnessAveraged_implies_knowledgeSoundness_of_guarded` and
 `Verifier.knowledgeSoundness_error_mono`.
 -/
 
@@ -379,7 +395,8 @@ theorem fullRbrKnowledgeError_sum_le_concrete :
 
 Depends on: `fullRbrKnowledgeError_sum_le_concrete` for
 `Verifier.knowledgeSoundness_error_mono` and
-`Verifier.rbrKnowledgeSoundness_implies_knowledgeSoundness`. -/
+`Verifier.rbrKnowledgeSoundnessAveraged_implies_knowledgeSoundness_of_guarded`.
+Guardedness follows from the empty ambient oracle; no protocol assumption is added. -/
 theorem fullOracleVerifier_knowledgeSoundness :
     (OracleVerifier.toVerifier (Oₛₒ := fun i : Empty => nomatch i)
       (fullOracleVerifier 𝔽q β γ_repetitions (ϑ := ϑ) (𝓑 := 𝓑)
@@ -395,15 +412,15 @@ theorem fullOracleVerifier_knowledgeSoundness :
   let ε := fullRbrKnowledgeError 𝔽q β γ_repetitions (ϑ := ϑ)
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
   let V := OracleVerifier.toVerifier (Oₛₒ := fun i : Empty => nomatch i) fullV
-  have h_rbr : V.rbrKnowledgeSoundness init impl relIn0 acceptRejectOracleRel ε := by
-    change OracleVerifier.rbrKnowledgeSoundness (Oₛₒ := fun i : Empty => nomatch i)
+  have h_rbr : V.rbrKnowledgeSoundnessAveraged init impl relIn0 acceptRejectOracleRel ε := by
+    change OracleVerifier.rbrKnowledgeSoundnessAveraged (Oₛₒ := fun i : Empty => nomatch i)
       init impl relIn0 acceptRejectOracleRel fullV ε
     exact fullOracleVerifier_rbrKnowledgeSoundness (L := L) (𝔽q := 𝔽q) (β := β)
       (ϑ := ϑ) (γ_repetitions := γ_repetitions) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (𝓑 := 𝓑) (init := init) (impl := impl)
   have h_ks : V.knowledgeSoundness init impl relIn0 acceptRejectOracleRel (∑ i, ε i) :=
-    (Verifier.rbrKnowledgeSoundness_implies_knowledgeSoundness (init := init) (impl := impl)
-      relIn0 acceptRejectOracleRel V ε) h_rbr
+    Verifier.rbrKnowledgeSoundnessAveraged_implies_knowledgeSoundness_of_guarded init impl
+      (Verifier.GuardedForm.ofEmpty V (fun _ => (false, fun i => nomatch i))) ε h_rbr
   exact Verifier.knowledgeSoundness_error_mono (init := init) (impl := impl)
     (hε := fullRbrKnowledgeError_sum_le_concrete (L := L) (𝔽q := 𝔽q) (β := β)
       (ϑ := ϑ) (γ_repetitions := γ_repetitions) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))

@@ -1102,10 +1102,10 @@ lemma query_doom_escape_probability_bound {σ : Type} (init : ProbComp σ)
       _ = ↑(queryRbrKnowledgeError_singleRepetition (𝓡 := 𝓡) ^ γ_repetitions) := by
           rw [ENNReal.coe_pow]
 omit [CharP L 2] [SampleableType L] in
-theorem queryOracleVerifier_rbrKnowledgeSoundness {σ : Type} (init : ProbComp σ)
+theorem queryOracleVerifier_rbrKnowledgeSoundness_fixedPrefix {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-    (queryOracleVerifier 𝔽q β (ϑ:=ϑ) γ_repetitions).rbrKnowledgeSoundness init impl
-    (Oₛₒ := fun i : Empty => nomatch i)
+    ((queryOracleVerifier 𝔽q β (ϑ:=ϑ) γ_repetitions).toVerifier
+      (Oₛₒ := fun i : Empty => nomatch i)).rbrKnowledgeSoundness init impl
     (relIn := finalSumcheckRelOut 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) )
     (relOut := acceptRejectOracleRel)
     (rbrKnowledgeError := queryRbrKnowledgeError 𝔽q β γ_repetitions
@@ -1126,6 +1126,19 @@ theorem queryOracleVerifier_rbrKnowledgeSoundness {σ : Type} (init : ProbComp �
         have h := query_doom_escape_probability_bound (init := init) (impl := impl)
           (stmtIn_oStmtIn := stmtIn_oStmtIn) (transcript := transcript)
         exact (SampleableType.prEvent_uniformSample_inst_irrel _ _ _).le.trans h)
+
+omit [CharP L 2] [SampleableType L] in
+/-- The fixed-prefix query bound implies the averaged RBR bound with the same error. -/
+theorem queryOracleVerifier_rbrKnowledgeSoundness {σ : Type} (init : ProbComp σ)
+    (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
+    (queryOracleVerifier 𝔽q β (ϑ:=ϑ) γ_repetitions).rbrKnowledgeSoundnessAveraged init impl
+    (Oₛₒ := fun i : Empty => nomatch i)
+    (relIn := finalSumcheckRelOut 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
+    (relOut := acceptRejectOracleRel)
+    (rbrKnowledgeError := queryRbrKnowledgeError 𝔽q β γ_repetitions
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
+  Verifier.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged init impl
+    (queryOracleVerifier_rbrKnowledgeSoundness_fixedPrefix 𝔽q β γ_repetitions init impl)
 
 end FinalQueryRoundIOR
 end
