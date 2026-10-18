@@ -265,6 +265,7 @@ public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.Main
 public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.UniqueDecoding
 public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineSpaces
 public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineSpaces.Basic
+public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.CurveBWMatrix
 public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.Curves
 public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.EpsCa
 public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ErrorBound
