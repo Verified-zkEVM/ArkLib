@@ -7,6 +7,7 @@ module
 
 public import ArkLib.ToMathlib.Analysis.Simplex.WeightedVolume
 public import ArkLib.ToMathlib.MvPolynomial.CompleteHomogeneous
+public import Mathlib.Data.Nat.Choose.Cast
 public import Mathlib.Data.Nat.Choose.Multinomial
 public import Mathlib.MeasureTheory.Integral.Average
 public import Mathlib.NumberTheory.Harmonic.Defs

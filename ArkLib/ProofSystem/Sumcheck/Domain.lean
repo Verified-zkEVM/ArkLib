@@ -11,6 +11,7 @@ public import Mathlib.Data.Fin.VecNotation
 public import Mathlib.Data.Fin.Tuple.Basic
 public import Mathlib.Data.Fin.Tuple.Finset
 public import Mathlib.Logic.Embedding.Basic
+public import Mathlib.Algebra.GroupWithZero.NeZero
 public import Mathlib.Algebra.Ring.Basic
 public import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 public import Mathlib.Algebra.BigOperators.Group.Finset.Sigma

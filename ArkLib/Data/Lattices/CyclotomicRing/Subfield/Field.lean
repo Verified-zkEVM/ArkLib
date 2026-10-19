@@ -9,6 +9,7 @@ public import ArkLib.Data.Lattices.CyclotomicRing.Subfield.Factorization
 public import ArkLib.Data.Lattices.CyclotomicRing.Subfield.Cardinality
 public import Mathlib.RingTheory.IntegralDomain
 public import Mathlib.Algebra.Polynomial.Reverse
+public import Mathlib.FieldTheory.Finite.GaloisField
 
 /-!
 # `R_q^H` is a Field Isomorphic to `F_{q^k}` (Hachi §3, Lemma 5)
