@@ -69,7 +69,7 @@ theorem prob_state_runToRound_le {σ : Type}
   | zero =>
     simp [runToRound_zero_of_prover_first, simulateQ_pure, StateT.run_pure, hzero]
   | succ j ih =>
-    rw [runToRound_succ, processRound_bind, simulateQ_bind, StateT.run_bind]
+    rw [runToRound_succ, processRound_bind, simulateQ_bind, StateT.run_bind, prEvent_bind]
     refine (prEvent_bind_le_prEvent_add_of_support _ _ _ (p := fun x ↦ S j.castSucc x.1.1)
       (ε := ε j) ?_).trans ?_
     · intro x _ hx
@@ -87,7 +87,7 @@ theorem prob_state_processRound_prover_le {σ : Type}
     (hS : ∀ msg, ¬ S (tr.concat msg)) :
     Pr{let x ← (simulateQ impl (prover.processRound j (pure (tr, st)))).run os}[S x.1.1] ≤ 0 := by
   rw [processRound_of_dir_eq_P_to_V j hj]
-  simp only [pure_bind, simulateQ_bind, StateT.run_bind]
+  simp only [pure_bind, simulateQ_bind, StateT.run_bind, prEvent_bind]
   apply prEvent_bind_le_of_forall_le_of_support _ _ _
   intro x _
   simp [simulateQ_pure, StateT.run_pure, hS]
@@ -111,7 +111,7 @@ theorem prob_state_processRound_challenge_le {σ : Type}
   simp only [pure_bind, simulateQ_bind]
   rw [hget]
   simp only [StateT.run_bind, StateT.run_monadLift, monadLift_self, bind_assoc, pure_bind]
-  simp only [← bind_assoc]
+  rw [prEvent_bind]
   apply prEvent_bind_le_prEvent_of_support _ _ _ (p := fun c ↦ S (tr.concat c))
   intro c _ hc
   apply (prEvent_eq_zero_iff _ _).mpr
@@ -202,12 +202,12 @@ theorem prob_terminal_event_le_of_badEvents {σ : Type}
     (os : σ) :
     Pr{let x ← (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
         (prover.run stmt wit)).run os}[E x.1.1] ≤ ∑ i, ε i := by
-  rw [Prover.run, simulateQ_bind, StateT.run_bind]
+  rw [Prover.run, simulateQ_bind, StateT.run_bind, prEvent_bind]
   refine (prEvent_bind_le_prEvent_of_support _ _ _
     (p := fun x ↦ badEventState langIn bad (Fin.last n) stmt x.1.1) ?_).trans ?_
   · intro x _ hx
     have he : ¬ E x.1.1 := fun h ↦ hx (hterminal x.1.1 h)
-    simp only [simulateQ_bind, StateT.run_bind]
+    simp only [simulateQ_bind, StateT.run_bind, prEvent_bind]
     apply le_antisymm _ zero_le
     apply prEvent_bind_le_of_forall_le_of_support _ _ _
     intro y _

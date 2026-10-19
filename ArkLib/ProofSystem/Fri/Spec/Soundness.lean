@@ -78,7 +78,7 @@ theorem soundness (hdom : 2 ^ (∑ j, (s j).val) * d.val ≤ 2 ^ n)
   have h := soundness_proximity s d l hdom θ δ init impl
     WitIn WitOut wit prover stmt hnot
   refine le_trans ?_ h
-  apply prEvent_mono _ _ _
+  apply OptionT.prEvent_mono _ _ _
   intro _ _
   exact Set.mem_univ _
 

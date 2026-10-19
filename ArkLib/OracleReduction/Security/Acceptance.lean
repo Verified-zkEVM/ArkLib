@@ -65,10 +65,11 @@ theorem soundness_of_rejection_event {σ : Type}
   classical
   intro WitIn WitOut wit prover stmt hstmt
   dsimp only
-  rw [OptionT.prEvent_eq_run]
+  rw [OptionT.prEvent_eq_run, OptionT.run_mk, prEvent_bind]
   apply prEvent_bind_le_of_forall_le_of_support _ _ _
   intro os _
-  rw [StateT.run'_eq, prEvent_map, Reduction.run_run_eq_bind, simulateQ_bind, StateT.run_bind]
+  rw [StateT.run'_eq, prEvent_map, Reduction.run_run_eq_bind, simulateQ_bind, StateT.run_bind,
+    prEvent_bind]
   refine (prEvent_bind_le_prEvent_of_support _ _ _ (p := fun x ↦ E stmt x.1.1) ?_).trans
     (hbound WitIn WitOut wit prover stmt hstmt os)
   intro x _ hx

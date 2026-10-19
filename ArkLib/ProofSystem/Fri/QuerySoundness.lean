@@ -146,7 +146,7 @@ theorem query_acceptance_probability (tr : FoldTrace domain d) (t : ℕ)
     Pr{let xs ←$ᵗ (Fin t → Fin (2 ^ n))}[tr.Accepts xs] =
       ((tr.accepting.card : ENNReal) / (2 ^ n : ENNReal)) ^ t := by
   classical
-  simp only [Accepts, hfinal, true_and]
+  simp only [Accepts.eq_unfold, hfinal, true_and]
   simpa using Probability.prob_uniform_pi_mem_finset_eq tr.accepting t
 
 /-- A lower bound on repeated-query acceptance implies the corresponding density bound.
@@ -230,7 +230,7 @@ theorem query_soundness (tr : FoldTrace domain d) (θ δ : ℝ) (t : ℕ)
     apply pow_le_pow_left' _ t
     have h := ENNReal.ofReal_le_ofReal (tr.accepting_density_le θ δ hsafe hfinal hdist)
     simpa [ENNReal.ofReal_div_of_pos, show (0 : ℝ) < 2 ^ n by positivity] using h
-  · simp only [Accepts, hfinal, false_and]
+  · simp only [Accepts.eq_unfold, hfinal, false_and]
     rw [prEvent_const_of_not _ not_false]
     exact zero_le
 
@@ -344,7 +344,7 @@ theorem exists_codeword_of_query_probability (tr : FoldTrace domain d)
   have hfinal : tr.FinalInCode := by
     by_contra h
     have hzero : Pr{let xs ← $ᵗ (Fin t → Fin (2 ^ n))}[tr.Accepts xs] = 0 := by
-      simp only [Accepts, h, false_and]
+      simp only [Accepts.eq_unfold, h, false_and]
       exact prEvent_const_of_not _ not_false
     have hpos : 0 < ENNReal.ofReal (1 - δ) ^ t :=
       pos_iff_ne_zero.mpr (pow_ne_zero _ (ne_of_gt (ENNReal.ofReal_pos.mpr (by linarith))))
