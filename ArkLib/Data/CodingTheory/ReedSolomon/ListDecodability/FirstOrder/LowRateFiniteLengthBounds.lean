@@ -249,7 +249,7 @@ theorem lowRateFiniteLengthChallengeHeight_le_inv_slack_sq
   have hcB : 0 ≤ cB := by
     dsimp only [cB, lowRateJetBoundConstant, lowRateMultiplicityBoundConstant,
       lowRateFiniteLengthRankRoundingConstant]
-    positivity
+    positivity [firstOrderLowRateBeta_pos hrho, lowRateFiniteLengthSlope_pos hrho hlow]
   have hdelta := lowRateFiniteLengthSlope_mul_slack_le_margin
     hrho hlow heta haOne hn
   have hgap := lowRateFiniteLength_count_gap hrho hlow heta haOne hn
