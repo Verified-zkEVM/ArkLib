@@ -334,7 +334,7 @@ theorem truncateLocalT_exhibitedKernelMultiplier_mem_localIntermediateSpace {m r
       (mem_restrictWeightAtMost.mpr fun e he => (?_ : _ ≤ (W : ℤ) + r))))
   all_goals first
     | (intro j; simp [balanceWeight, firstWeight, localFirstJetWeight, higherBalanceWeight,
-        localT, localY] <;> split_ifs <;> omega)
+        localT, localY]; all_goals omega)
     | (simp [balanceWeight, firstWeight, localFirstJetWeight, higherBalanceWeight,
         localT, localU, localAux])
     | (obtain ⟨h1, h2, h3, h4⟩ := hsrc e he
