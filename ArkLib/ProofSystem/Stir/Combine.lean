@@ -8,7 +8,7 @@ module
 
 public import Mathlib.Tactic.FieldSimp
 public import Mathlib.Tactic.Cases
-public import Mathlib.Tactic.LinearCombinationPrime
+public import Mathlib.Tactic.LinearCombination
 
 public import ArkLib.Data.CodingTheory.ProximityGap.Basic
 public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.Curves

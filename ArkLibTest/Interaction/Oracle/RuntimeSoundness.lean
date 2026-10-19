@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 import ArkLib.Interaction.Oracle.RuntimeSoundness
-import VCVio.OracleComp.EvalDist.MeasureSpec
+import VCVio.OracleComp.EvalDist.AnswerMeasure
 
 /-!
 # Guessing a hidden runtime bit
