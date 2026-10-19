@@ -16,7 +16,7 @@ error. No declaration under `ArkLib/Interaction/` or
 |---|---|---|
 | VCVio | exact commit pinned in `lakefile.toml` | direct ArkLib dependency |
 | PolyFun | recorded in `lake-manifest.json` | revision selected and tested by VCVio |
-| Lean | `v4.35.0-rc3` | common toolchain |
+| Lean | `v4.35.0` | common toolchain |
 
 ArkLib does not override PolyFun independently. VCVio owns the tested PolyFun revision. A later
 PolyFun update reaches ArkLib only after VCVio advances and validates its pin.
@@ -24,7 +24,7 @@ PolyFun update reaches ArkLib only after VCVio advances and validates its pin.
 The train moved from the alignment baseline (Lean 4.33.1, VCVio `f9dc47d9`, PolyFun `c0c92369`)
 through the VCVio `Runtime`/`WithFailure` additions used by #884, the Lean 4.34 native-measure
 upgrade (#903, #913), and the Lean `v4.35.0-rc3` repin to VCVio's measure-based probability API
-and core `Std.WP` program logic (#1251). ArkLib states its probabilities and observation boundaries
+and core `Std.WP` program logic (#1251), followed by the move to the final Lean `v4.35.0`. ArkLib states its probabilities and observation boundaries
 with VCVio's measure semantics.
 
 ## Capability status

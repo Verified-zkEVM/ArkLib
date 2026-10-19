@@ -12,8 +12,9 @@ Review intervening API additions before writing replacement infrastructure. If t
 checkout contains unrelated work, use a separate worktree for the forward-port and
 leave that work intact.
 
-ArkLib builds with Lean `v4.35.0-rc3` (`lean-toolchain`), and Mathlib, cslib and doc-gen4 use the
-matching `v4.35.0-rc3` tags. `lakefile.toml` pins VCVio and CompPoly to exact commits, and
+ArkLib builds with Lean `v4.35.0` (`lean-toolchain`), and Mathlib, cslib and doc-gen4 use the
+matching `v4.35.0` tags. `lakefile.toml` pins VCVio to an exact commit and CompPoly to its `v4.35.0`
+release, and
 `lake-manifest.json` records the complete resolved dependency set, including the PolyFun revision
 selected by VCVio.
 Keep that PolyFun pin when updating this stack: a newer PolyFun revision must also be
