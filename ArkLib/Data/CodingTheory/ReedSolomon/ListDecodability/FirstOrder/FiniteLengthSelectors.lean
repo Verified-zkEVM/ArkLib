@@ -394,7 +394,7 @@ theorem finiteLengthMultiplicity_le_inv_slack
     dsimp only [crank, finiteLengthRankRoundingConstant]
     linarith
   have hcrank0 : 0 ≤ crank := by
-    dsimp only [crank, finiteLengthRankRoundingConstant]
+    dsimp only [crank, finiteLengthRankRoundingConstant, finiteLengthDerivativeRatio]
     have := automaticDerivativeRatio_pos hrhoOne haOne
     positivity
   have hx : 4 * crank / delta ≤ 16 / (c * s) := by
