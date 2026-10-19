@@ -37,7 +37,10 @@ The library is currently in development. Alongside general development of the li
 - STIR and WHIR
 - Binius
 
-[VCV-io](https://github.com/dtumad/VCV-io), ArkLib's main dependency alongside [mathlib](https://github.com/leanprover-community/mathlib4) is also being developed in parallel. We are also starting work on the [Bluebell](https://arxiv.org/pdf/2402.18708) probabilistic program logic in (our fork of) [iris-lean](https://github.com/Verified-zkEVM/iris-lean).
+[VCVio](https://github.com/Verified-zkEVM/VCVio), ArkLib's main dependency alongside
+[mathlib](https://github.com/leanprover-community/mathlib4), is also being developed in parallel.
+We are also starting work on the [Bluebell](https://arxiv.org/pdf/2402.18708) probabilistic
+program logic in (our fork of) [iris-lean](https://github.com/Verified-zkEVM/iris-lean).
 
 ## Roadmap & Contributing
 

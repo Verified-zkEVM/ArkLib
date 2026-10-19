@@ -2,6 +2,10 @@
 
 We provide here a list of projects and extensions to ArkLib. Please note that this list is extensive and covers more than our immediate priorities. This list will be updated as items are taken off into immediate issues to be worked on.
 
+For the interaction framework, use the [maintained design roadmap](docs/design/05-roadmap.md)
+and [framework tracker #1](https://github.com/Verified-zkEVM/ArkLib/issues/1). They record the
+composition and Sumcheck milestones that precede the broader directions below.
+
 ## General Theory
 
 ### 1. The BCS & Fiat-Shamir Transform

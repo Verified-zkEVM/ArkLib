@@ -36,6 +36,10 @@ Nothing here depends on the shape of `G`. Univariate power batching `z ↦ (1, z
 is the instance used by Reed–Solomon proximity arguments, and its exceptional counts come from
 root counting in the scalar provider; the transfer itself does not use any degree bound. The
 scalar guarantee is a hypothesis, so no list-decoding or proximity-gap result is imported.
+One proof covers every field, every batching map, every module code, and every finite row type,
+including an empty one. The Reed–Solomon specialization
+`ReedSolomon.uniformExactInterleavedPowerAgreement_of_scalar` is in
+`ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.PowerAgreement`.
 
 ## Main definitions
 
@@ -60,41 +64,7 @@ scalar guarantee is a hypothesis, so no list-decoding or proximity-gap result is
 ## References
 
 * [Jo, S., *Interleaving Stability for Mutual Correlated Agreement and Curve
-  Decodability*][Jo26], Corollary 4.5, for the row-functional argument.
-* ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`, under
-  `ArkLib/Data/CodingTheory/ReedSolomon/Interleaved/`:
-  - `PowerAgreement.lean`: the private predicate `powerProjectionBad` becomes
-    `IsProjectionBad` for an arbitrary batching map and module code. The private
-    `scalar_powerProjectionBad_card_le` becomes
-    `not_isProjectionBad_of_forall_hasExactAgreement` and
-    `encard_setOf_isProjectionBad_le_of_uniformExactAgreement`, with Reed–Solomon polynomials
-    replaced by codewords. The private `interleaved_powerProjectionBad_card_le` (finite field)
-    becomes `encard_setOf_isProjectionBad_moduleInterleavedCode_le`. The exactness half of
-    `uniformExactInterleavedPowerAgreement_of_scalar` becomes
-    `hasExactAgreement_of_not_isProjectionBad`, with the Reed–Solomon hypothesis `k ≤ agreement`
-    replaced by `DeterminedByAgreement`. The public `interleavedCodeword_eq_of_agree_on` is
-    `DeterminedByAgreement.moduleInterleavedCode` applied to
-    `ReedSolomon.determinedByAgreement_code`.
-  - `PowerAgreementArbitrary.lean`: `powerProjectionBadArbitrary` is the same predicate as
-    `powerProjectionBad`. The private `scalar_powerProjectionBadArbitrary_mem_exceptional` is
-    `not_isProjectionBad_of_forall_hasExactAgreement`; the private
-    `interleaved_powerProjectionBadArbitrary_finset_card_le` is
-    `exists_forall_isProjectionBad_of_interleaved`; the private
-    `interleaved_powerProjectionBadArbitrary_exceptional` is the infinite-field case of
-    `encard_setOf_isProjectionBad_moduleInterleavedCode_le`; and the private
-    `exactInterleavedPowerAgreement_of_not_projectionBad` is
-    `hasExactAgreement_of_not_isProjectionBad`.
-
-  The source split the argument into a finite-field and an infinite-field proof, both for
-  `z ↦ (1, z, …, z^ℓ)` over Reed–Solomon codes, and assumed a positive row width. Here one proof
-  covers every field, every batching map, every module code, and every finite row type,
-  including an empty one. The Reed–Solomon statements
-  `uniformExactInterleavedPowerAgreement_of_scalar(_arbitrary)` are derived in
-  `ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.PowerAgreement`.
-
-Deferred: the shared-level fold and tensor-tight transfer of `TensorFoldAgreement.lean`, the
-anchored statements of `AnchoredAgreement.lean` and `AnchoredReconstruction.lean`, and the
-field-size-weighted transfer of [Jo26] for seed spaces larger than the field when `e ≥ |F|`.
+  Decodability*][Jo26], Corollary 4.5
 -/
 
 @[expose] public section

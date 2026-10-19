@@ -50,7 +50,8 @@ example (r : ZMod 17) :
         path := ⟨oneMessage, r, PUnit.unit⟩
         proverOut := (1, r)
         outcome := some (outputClaim (ZMod 17) 0 (1, r)) } := by
-    simp only [executeCore, _root_.Interaction.Oracle.Reduction.execute, claimReduction,
+    simp only [executeCore_eq_execute, _root_.Interaction.Oracle.Reduction.execute,
+      claimReduction,
       pure_bind]
     change ((simulateQ (Verifier.liftAccessImpl ambient (access (ZMod 17) 0)
         (Access.extendImpl (inputSpec (ZMod 17)).toPFunctor (polynomialInterface (ZMod 17) 0)

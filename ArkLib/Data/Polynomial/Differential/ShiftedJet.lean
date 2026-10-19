@@ -30,22 +30,6 @@ differential specialization of `Q` at `P`. Every statement holds over a commutat
 * `taylor_differentialSpecialization`: the same identity applied to one polynomial.
 * `coeff_zero_shiftedJetSubstitution`: the constant coefficient is the jet evaluation at the
   center.
-
-## References
-
-Ported from
-`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Local/Identity.lean` at
-ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d: `shiftedJetSubstitution`,
-`shiftedJetSubstitution_X`, `shiftedJetSubstitution_Y_zero`, `shiftedJetSubstitution_Y_succ`,
-`taylorAlgHom_comp_differentialSpecializationHom`, and `taylor_differentialSpecialization`. The
-source stated them over a commutative ring in the namespace `ReedSolomon.HiddenDerivative`; they
-mention no Reed–Solomon object, so they are stated here over a commutative semiring, next to the
-differential specialization they translate. Nothing is deferred.
-
-`coeff_zero_shiftedJetSubstitution` generalizes the source's
-`eval_zero_shiftedJetSubstitution_separant` in
-`.../HiddenDerivative/RootFinding/Regular/Lifting.lean` from the separant over a field to any
-differential polynomial over a commutative semiring.
 -/
 
 @[expose] public section
@@ -66,11 +50,14 @@ def shiftedJetSubstitution (center : R) (P : R[X]) :
     | none => C center + X
     | some j => taylor center (hasseDeriv j.val P)
 
+/-- The shifted-jet substitution sends `X` to `C center + X`. -/
 @[simp]
 theorem shiftedJetSubstitution_X (center : R) (P : R[X]) :
     shiftedJetSubstitution (d := d) center P (MvPolynomial.X none) = C center + X := by
   simp [shiftedJetSubstitution]
 
+/-- The shifted-jet substitution sends `Y_j` to the Taylor translate at `center` of
+`hasseDeriv j P`. -/
 @[simp]
 theorem shiftedJetSubstitution_Y (center : R) (P : R[X]) (j : Fin (d + 1)) :
     shiftedJetSubstitution center P (MvPolynomial.X (some j)) =

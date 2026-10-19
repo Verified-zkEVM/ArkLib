@@ -39,6 +39,10 @@ integrability on a set to integrability under the conditional measure, so a func
 on the weighted simplex is integrable for that measure by
 `ContinuousOn.integrableOn_weightedSimplex`.
 
+The specializations to the weights `1, …, n` and coefficients `1` are in
+`ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.Moments` and
+`ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.RankIntegral`.
+
 ## Main statements
 
 * `MeasureTheory.IntegrableOn.integrable_cond`: integrability on `s` gives integrability under
@@ -48,26 +52,6 @@ on the weighted simplex is integrable for that measure by
 * `MeasureTheory.setAverage_weightedSimplex_linearForm_sub_mean_sq_le`: the variance is at most
   `W ^ 2 * p 2 / ((n + 1) * (n + 2))`, for every real `W`.
 * `MeasureTheory.setAverage_weightedSimplex_linearForm_sub_mean_cube`: the third central moment.
-
-## References
-
-Generalizes the centered moments of `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/`
-`Interpolation/WeightedSupport/Moments.lean` at ArkLib revision
-`a5aa2677fee4e3a79d6bb05136631cce4a08587d`. The source's `integral_normalizedRadius`,
-`integral_normalizedRadius_sq` and `integral_normalizedRadius_cube` state these moments for the
-weights `1, …, n` and coefficients `1`, scaled by `1 / t`; here the weights and coefficients are
-arbitrary, the index type is any `Fintype`, and the budget hypothesis is weakened from `0 < W`.
-The source's `integrable_weighted_probability` is `IntegrableOn.integrable_cond` composed with
-`ContinuousOn.integrableOn_weightedSimplex`. The hidden-derivative specializations are in
-`ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.Moments`.
-
-`setAverage_weightedSimplex_linearForm_sub_mean_sq_le` generalizes
-`ReedSolomon.HiddenDerivative.weightedSimplex_centeredRadius_sq_le_harmonic` from
-`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/WeightedSupport/`
-`RankIntegral.lean` at the same revision. The source states the case of weights `i + 1` on
-`Fin n` and coefficients `1`; here the weights are arbitrary positive reals, the coefficients are
-arbitrary, and there is no budget hypothesis. The specialization keeps the source name in
-`ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.RankIntegral`.
 -/
 
 @[expose] public section

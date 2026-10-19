@@ -6,7 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.Interaction.Oracle.CoreRun
-public import VCVio.OracleComp.QueryTracking.LoggingOracle
+public import VCVio.OracleComp.QueryTracking.LoggingOracle.Core
 
 /-!
 # Ordered source logging
@@ -76,6 +76,18 @@ theorem loggedLiftAccessImpl_erase {ι : Type u} (ambient : OracleSpec.{u, u} ι
   QueryImpl.fst_map_run_withTraceAppend ..
 
 end Verifier
+
+/-- Logging after substitution records the target queries actually made by each handler program.
+One source query may make zero, one, or many target queries, in the handler's execution order.
+The right side interprets source queries with these logged programs rather than mapping entries
+of a source-level log. -/
+theorem withQueryLog_simulateQ {ι κ : Type} {source : OracleSpec ι}
+    {target : OracleSpec κ} {A : Type}
+    (route : QueryImpl source (OracleComp target)) (program : OracleComp source A) :
+    (simulateQ route program).withQueryLog =
+      (simulateQ (QueryImpl.compose target.loggingOracle route) program).run := by
+  unfold OracleComp.withQueryLog OracleSpec.loggingOracle
+  rw [QueryImpl.simulateQ_compose]
 
 /-- One generic execution's outputs and ordered source observations. The executor owns pairing. -/
 structure LoggedResult (tree : Oracle.TypeTree.{u}) (oracles : tree.OracleDecoration)
@@ -160,7 +172,8 @@ theorem executeStrategiesLogged_erase {ι : Type u} (ambient : OracleSpec.{u, u}
       executeStrategies ambient tree roles oracles initial impl prover verifier := by
   induction tree generalizing initial with
   | done =>
-      simp only [executeStrategiesLogged, executeStrategies, Verifier.toCounterpart,
+      simp only [executeStrategiesLogged, executeStrategies,
+        Verifier.toCounterpart, Verifier.toCounterpartWith,
         TypeTree.toTypeTree_done, TypeTree.RoleDecoration.toTypeTreeRoles_done, TwoParty.run_done,
         pure_bind, map_bind, map_pure, LoggedResult.erase]
       simp only [bind_pure_comp]
@@ -174,7 +187,8 @@ theorem executeStrategiesLogged_erase {ι : Type u} (ambient : OracleSpec.{u, u}
   | «public» Moves rest ih =>
       rcases roles with ⟨role, roles⟩
       cases role <;>
-        simp only [executeStrategiesLogged, executeStrategies, Verifier.toCounterpart,
+        simp only [executeStrategiesLogged, executeStrategies,
+          Verifier.toCounterpart, Verifier.toCounterpartWith,
           TypeTree.toTypeTree_public, TypeTree.RoleDecoration.toTypeTreeRoles_public,
           map_bind, map_pure, LoggedResult.erase]
       · erw [TwoParty.run_sender]
@@ -220,7 +234,8 @@ theorem executeStrategiesLogged_erase {ι : Type u} (ambient : OracleSpec.{u, u}
             at lifted ⊢
         exact lifted
   | «oracle» Messages rest ih =>
-      simp only [executeStrategiesLogged, executeStrategies, Verifier.toCounterpart,
+      simp only [executeStrategiesLogged, executeStrategies,
+        Verifier.toCounterpart, Verifier.toCounterpartWith,
         TypeTree.toTypeTree_oracle, TypeTree.RoleDecoration.toTypeTreeRoles_oracle,
         map_bind, map_pure, LoggedResult.erase]
       erw [TwoParty.run_sender]

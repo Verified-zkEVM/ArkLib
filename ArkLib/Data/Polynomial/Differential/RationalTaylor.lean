@@ -33,7 +33,7 @@ suffice for the residual coefficient.
 ## Main statements
 
 * `PolynomialDifferential.initialJetSeparant` and `aeval_initialJetSeparant`: the separant as a
-  polynomial in the initial jet.
+  polynomial in the initial jet; `map_initialJetSeparant`: it commutes with coefficient maps.
 * `PolynomialDifferential.rationalTaylorNumerator` and
   `totalDegree_rationalTaylorNumerator_le`: the numerator has total degree at most
   `(2(l - r) - 1) * (jetTotalDegree Q - 1) + 1`.
@@ -53,36 +53,9 @@ suffice for the residual coefficient.
 
 ## References
 
-[DKTZ26], Appendix A.3, Lemma A.5. The declarations are ported from
-`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Taylor/Numerator.lean` at ArkLib
-revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
-
-* `TaylorExponentSufficient`, `TaylorExponentSufficient.mono`,
-  `taylorExponentSufficient_two_mul`, `taylorExponentSufficient_two_mul_sub_three`, and
-  `taylorExponentSufficient_firstOrder_tight` are unchanged, except that the source hypothesis
-  `2 ≤ K` of `taylorExponentSufficient_two_mul_sub_three` is removed. The source's
-  `firstOrder_tight_exponent_le_legacy` (`2 * D - 3 ≤ 2 * D - 1`) is not ported; it is `omega`.
-* `initialJetSeparant`, `aeval_initialJetSeparant`, `rationalTaylorNumerator`,
-  `rationalTaylorCoefficient`, `rationalTaylorCoefficient_initial`, and
-  `rationalTaylorCoefficient_residual` are unchanged in content. `initialJetSeparant` is defined
-  over any commutative semiring.
-* `totalDegree_initialJetSeparant_le` and `totalDegree_rationalTaylorNumerator_le` are stated with
-  the core `jetTotalDegree`. The source hypothesis `0 < jetTotalDegree Q` of the numerator bound is
-  removed: when it fails the residual coefficients are constants and the bound still holds.
-* `eq_rationalTaylorCoefficient_of_residual` is the induction inside the source's
-  `rationalTaylorCoefficient_eq_solution`, separated from the fact that an actual polynomial
-  solution satisfies the affine equations.
-* `rationalTaylorCoefficient_residual_prefix` is new; it combines
-  `rationalTaylorCoefficient_residual` with `aeval_universalTaylorResidual_coeff`.
-
-* `solution_taylorCoefficient_residual` keeps the source statement over a commutative ring
-  instead of a field. It is the case `Q(X, P, ...) = 0` of the new
-  `taylorCoefficient_residual_eq`, which holds for every polynomial `P`.
-* `rationalTaylorCoefficient_eq_solution` keeps the source statement; its proof is
-  `eq_rationalTaylorCoefficient_of_residual` applied to the Taylor coefficients of `P`.
-
-* [Dao, Q., Kominers, S. D., Thaler, J., Zheng, K. Z., *Reed--Solomon List Decoding and Mutual
-  Correlated Agreement up to Capacity*][DKTZ26]
+* [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient
+  Decoding and Smaller Cryptographic Proofs*][DKT26], Appendix A.6, Lemma A.4 (Regular Taylor
+  chart).
 -/
 
 @[expose] public section
@@ -179,6 +152,17 @@ theorem aeval_initialJetSeparant (center : F) (Q : DifferentialPolynomial F r)
     cases i <;> rfl
   rw [hfun] at ht
   exact ht
+
+/-- A coefficient map sends the initial separant of `Q` at `center` to the initial separant of
+the mapped polynomial at the mapped center. -/
+theorem map_initialJetSeparant {B : Type*} [CommSemiring B] (f : F →+* B) (center : F)
+    (Q : DifferentialPolynomial F r) :
+    map f (initialJetSeparant center Q) = initialJetSeparant (f center) (map f Q) := by
+  simp only [initialJetSeparant, aeval_def, algebraMap_eq, map_eval₂]
+  simp only [separant, ← pderiv_map]
+  congr 1
+  funext i
+  cases i <;> simp
 
 end CommSemiring
 
@@ -362,10 +346,7 @@ theorem rationalTaylorCoefficient_residual_prefix (center : F) (Q : Differential
 /-- Uniqueness of the rational parametrization. Let `c : ℕ → F` start with the initial jet and,
 for every `r < l ≤ L`, solve the affine equation of `rationalTaylorCoefficient_residual`. If the
 separant at the jet and the binomial pivots `(l choose r)` for `r < l ≤ L` are nonzero, then
-`c l` is the rational coefficient for every `l ≤ L`.
-
-The source applied this argument only to the Taylor coefficients of an actual solution; the
-statement here isolates the algebra from the solution property. -/
+`c l` is the rational coefficient for every `l ≤ L`. -/
 theorem eq_rationalTaylorCoefficient_of_residual (center : F) (Q : DifferentialPolynomial F r)
     (jet : Fin (r + 1) → F) (c : ℕ → F) (L : ℕ)
     (hinit : ∀ i : Fin (r + 1), c i.val = jet i)

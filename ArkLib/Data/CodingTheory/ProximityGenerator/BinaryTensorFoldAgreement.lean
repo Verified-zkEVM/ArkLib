@@ -39,6 +39,10 @@ This file proves three things.
   the full agreement set of the root (`hasFullTensorDecomposition_of_not_mem_bad`). Each level is
   charged once, although the number of words at a level doubles with each level.
 
+The Reed–Solomon statements are in
+`ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.TensorFoldAgreement`, and the probability form
+of the count is in `ArkLib.Data.CodingTheory.ProximityGenerator.BinaryTensorFoldProbability`.
+
 ## Main definitions
 
 * `TensorMCA.binaryEqualityGenerator`, `TensorMCA.binaryLineFold`, `TensorMCA.binaryTensorFold`.
@@ -55,38 +59,6 @@ This file proves three things.
 * `TensorMCA.binaryTensorFold_eq_tensorGeneratorPi`: the fold is the iterated tensor generator
   `PolynomialGenIsMCA.tensorGeneratorPi` of the equality weights.
 * `TensorMCA.tensorFoldBad_card_le` and `TensorMCA.hasFullTensorDecomposition_of_not_mem_bad`.
-
-## References
-
-ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
-
-* `ArkLib/Data/CodingTheory/ProximityGenerator/BinaryTensorFoldAgreement.lean`: the definitions
-  `fullAgreementSet`, `binaryLineFold`, `binaryEqualityGenerator`, `binaryTensorFold`,
-  `familyAgreementSet`, `FullSetLevelWitness`, `HasFullTensorDecomposition`, `levelExceptional`,
-  `TensorFoldFamilyGood`, `TensorFoldGood`, `tensorFoldFamilyBad`, `tensorFoldBad`, and the
-  theorems `binaryTensorFold_eq_tensorGeneratorPi`, `levelExceptional_card_le`,
-  `levelExceptional_good`, `hasFullTensorDecomposition_of_good`, `tensorFoldBad_card_le`,
-  `tensorFoldBad_eq_empty_height_zero`, `hasFullTensorDecomposition_of_not_mem_bad`, are ported
-  with the coordinate, field and alphabet types in arbitrary universes and the field weakened to
-  a ring outside the transfer section. `FullSetLevelWitness` no longer requires the family type
-  to be nonempty; the empty family is covered by every proof here. The private
-  `HasFullTensorFamilyDecomposition`, `hasFullTensorFamilyDecomposition_of_good` and
-  `tensorFoldFamilyBad_card_le` are public intermediate results here.
-* `ArkLib/Data/CodingTheory/ReedSolomon/Interleaved/TensorFoldAgreement.lean`: the private
-  `lineProjectionBad` is `Code.IsProjectionBad binaryEqualityGenerator`. The private
-  `interleaved_lineProjectionBad_card_le` is
-  `Code.encard_setOf_isProjectionBad_moduleInterleavedCode_le`. The private
-  `exists_exceptional_fullSetLine_interleaved_of_exactAgreement` and the packing argument of
-  `fullSetLevelWitness_interleaved_of_exactAgreement` become
-  `fullSetLevelWitness_of_uniformExactAgreement` and `FullSetLevelWitness.moduleInterleavedCode`
-  for an arbitrary module code, with the Reed–Solomon hypothesis `k ≤ agreement` replaced by
-  `Code.DeterminedByAgreement` and the width hypothesis dropped. The private
-  `scalar_lineProjectionBad_card_le` changes the line parametrization; its code-level form is
-  `isProjectionBad_binaryEqualityGenerator_iff`. The Reed–Solomon statements are in
-  `ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.TensorFoldAgreement`.
-
-The probability form of the count (`BinaryTensorFoldProbability.lean` at the same revision) is in
-`ArkLib.Data.CodingTheory.ProximityGenerator.BinaryTensorFoldProbability`.
 -/
 
 @[expose] public section
@@ -108,10 +80,13 @@ of `u`. -/
 def familyAgreementSet {β : Type*} [Fintype β] (c u : β → ι → A) : Finset ι :=
   Finset.univ.filter fun i ↦ ∀ b, c b i = u b i
 
+/-- Membership in `fullAgreementSet c u` is agreement of `c` and `u` at that coordinate. -/
 @[simp] theorem mem_fullAgreementSet (c u : ι → A) (i : ι) :
     i ∈ fullAgreementSet c u ↔ c i = u i := by
   simp [fullAgreementSet]
 
+/-- Membership in `familyAgreementSet c u` is agreement of `c b` and `u b` at that coordinate for
+every `b`. -/
 @[simp] theorem mem_familyAgreementSet {β : Type*} [Fintype β] (c u : β → ι → A) (i : ι) :
     i ∈ familyAgreementSet c u ↔ ∀ b, c b i = u b i := by
   simp [familyAgreementSet]

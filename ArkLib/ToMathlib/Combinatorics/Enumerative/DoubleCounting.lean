@@ -31,6 +31,9 @@ positions that must be discarded (for example cuts that vanish identically).
 * `Finset.card_mul_sub_card_le_sum_compl_card_bipartiteBelow` and
   `Finset.card_mul_sub_add_one_le_sum_compl_card_bipartiteBelow` — the same two bounds with
   `t = univ` in a finite type, summing over `uᶜ`.
+* `Finset.card_mul_sub_le_card_mul_of_card_bad_le` — the deleted set may depend on the element of
+  `s`: if each `a ∈ s` is related to all of `t` outside a set `bad a` with `#(bad a) ≤ H`, and each
+  `b ∈ t` is related to at most `n` elements of `s`, then `#s * (#t - H) ≤ #t * n`.
 
 ## Proof outline
 
@@ -39,26 +42,6 @@ bounds the left side below by `#{b ∈ t | r a b} - #u`. Summing over `a ∈ s` 
 `Finset.sum_card_bipartiteAbove_eq_sum_card_bipartiteBelow` converts the sum over `s` into a sum of
 fibre sizes over `t \ u`. The `A - k + 1` form follows from the sharp form by monotonicity of
 truncated subtraction.
-
-## References
-
-Ported from ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
-
-* `AffineHilbert.finiteAgreementIncidence_lower_sharp`
-  (`ArkLib/ToMathlib/AlgebraicGeometry/Incidence/SharpRatio.lean`) is
-  `Finset.card_mul_sub_card_le_sum_compl_card_bipartiteBelow` with the index type `Fin n`
-  generalized to an arbitrary finite type; its sum over `univ.filter (· ∉ Bad)` is written here as
-  a sum over `Badᶜ`. `Finset.card_mul_sub_card_le_sum_card_bipartiteBelow_sdiff` further replaces
-  `univ` by an arbitrary `t : Finset β`.
-* `AffineHilbert.finiteAgreementIncidence_lower`
-  (`ArkLib/ToMathlib/Combinatorics/FiniteAgreementIncidence.lean`) is
-  `Finset.card_mul_sub_add_one_le_sum_compl_card_bipartiteBelow`, with the same generalization.
-  The source proved it by repeating the sharp argument; here it is a corollary of the sharp form.
-
-Deferred: `AffineHilbert.goodCuts_div_agreements_le` and the rest of the sharp-ratio layer, and
-all consumers of these bounds (for example
-`AffineHilbert.affineAgreementIncidence_bound_aux` in `Incidence/Agreement.lean`), which stay in
-the source.
 -/
 
 @[expose] public section
@@ -143,5 +126,30 @@ theorem card_mul_sub_add_one_le_sum_compl_card_bipartiteBelow [Fintype β] [Deci
     #s * (A - k + 1) ≤ ∑ b ∈ uᶜ, #(s.bipartiteBelow r b) := by
   simpa only [compl_eq_univ_sdiff] using
     card_mul_sub_add_one_le_sum_card_bipartiteBelow_sdiff r u hkA hu hA
+
+/-- **Double counting with element-dependent deletions.** Suppose that for each `a ∈ s` at most
+`H` elements of `t` are exceptional, collected in `bad a`, and that `a` is related to every other
+element of `t`. If every `b ∈ t` is related to at most `n` elements of `s`, then
+
+  `#s * (#t - H) ≤ #t * n`.
+
+The exceptional sets may differ from one `a` to another and may contain elements outside `t`; only
+their cardinalities enter. No hypothesis relates `H` to `#t`: when `H ≥ #t` the left side is `0`
+because subtraction on `ℕ` is truncated. The proof bounds `#(t.bipartiteAbove r a)` below by
+`#(t \ bad a) ≥ #t - H` and applies Mathlib's `Finset.card_mul_le_card_mul`. -/
+theorem card_mul_sub_le_card_mul_of_card_bad_le [∀ a b, Decidable (r a b)]
+    {s : Finset α} {t : Finset β} (bad : α → Finset β) {H n : ℕ}
+    (hbad : ∀ a ∈ s, #(bad a) ≤ H) (hcover : ∀ a ∈ s, ∀ b ∈ t, b ∉ bad a → r a b)
+    (hn : ∀ b ∈ t, #(s.bipartiteBelow r b) ≤ n) :
+    #s * (#t - H) ≤ #t * n := by
+  classical
+  refine card_mul_le_card_mul r (fun a ha ↦ ?_) hn
+  calc
+    #t - H ≤ #t - #(bad a) := Nat.sub_le_sub_left (hbad a ha) _
+    _ ≤ #(t \ bad a) := le_card_sdiff _ _
+    _ ≤ #(t.bipartiteAbove r a) := by
+      refine card_le_card fun b hb ↦ ?_
+      rw [mem_sdiff] at hb
+      exact mem_filter.mpr ⟨hb.1, hcover a ha b hb.1 hb.2⟩
 
 end Finset

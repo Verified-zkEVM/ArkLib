@@ -95,7 +95,6 @@ jobs:
             core.setOutput('head-sha', run.head_sha);
             // workflow_run preserves the base that produced GitHub's measured merge checkout;
             // the live PR base may already have advanced by the time this reporter starts.
-            core.setOutput('base-ref', runPullRequest?.base?.ref || pullRequest.base.ref);
             core.setOutput('base-sha', runPullRequest?.base?.sha || pullRequest.base.sha);
             core.setOutput('source-subject', run.display_title || '');
 
@@ -103,7 +102,7 @@ jobs:
         if: steps.timing-context.outputs.should-report == 'true'
         uses: actions/checkout@v7
         with:
-          # Execute only the reporter committed at the exact trusted base measured below.
+          # Execute only the reporter committed at the trusted base the PR run merged onto.
           ref: ${{ steps.timing-context.outputs.base-sha }}
 
       - name: Download current timing artifact
@@ -113,81 +112,6 @@ jobs:
           name: ${{ steps.timing-context.outputs.artifact-name }}
           path: ${{ runner.temp }}/build-timing-current
           run-id: ${{ github.event.workflow_run.id }}
-          github-token: ${{ github.token }}
-
-      - name: Determine comparison baseline artifact
-        if: steps.timing-context.outputs.should-report == 'true'
-        id: timing-baseline
-        uses: actions/github-script@v9
-        with:
-          script: |
-            const { owner, repo } = context.repo;
-            const artifactName = '${{ steps.timing-context.outputs.artifact-name }}';
-            const workflowName = 'CI';
-            const currentRunId = Number('${{ github.event.workflow_run.id }}');
-            const baseRef = '${{ steps.timing-context.outputs.base-ref }}';
-            const baseSha = '${{ steps.timing-context.outputs.base-sha }}';
-
-            async function firstRunWithArtifact(runs) {
-              for (const candidateRun of runs) {
-                if (candidateRun.id === currentRunId) {
-                  continue;
-                }
-                if (candidateRun.name !== workflowName || candidateRun.conclusion !== 'success') {
-                  continue;
-                }
-                const artifactsResponse = await github.rest.actions.listWorkflowRunArtifacts({
-                  owner,
-                  repo,
-                  run_id: candidateRun.id,
-                  per_page: 100,
-                });
-                const artifact = artifactsResponse.data.artifacts.find(candidate =>
-                  candidate.name === artifactName && !candidate.expired
-                );
-                if (artifact) {
-                  return candidateRun;
-                }
-              }
-              return null;
-            }
-
-            const baseRunsResponse = await github.rest.actions.listWorkflowRunsForRepo({
-              owner,
-              repo,
-              event: 'push',
-              branch: baseRef,
-              status: 'completed',
-              per_page: 100,
-            });
-            const baseCandidates = baseRunsResponse.data.workflow_runs.filter(candidateRun =>
-              candidateRun.name === workflowName && candidateRun.conclusion === 'success'
-            );
-            const exactBaseRun = await firstRunWithArtifact(
-              baseCandidates.filter(candidateRun => candidateRun.head_sha === baseSha)
-            );
-            if (exactBaseRun) {
-              core.setOutput('run-id', String(exactBaseRun.id));
-              core.setOutput('sha', exactBaseRun.head_sha);
-              core.setOutput('label', `exact PR base on \`${baseRef}\``);
-              return;
-            }
-
-            core.info(
-              `No successful CI timing artifact exists for exact base ${baseSha}; ` +
-              'the report will not substitute another commit.'
-            );
-            core.setOutput('run-id', '');
-            core.setOutput('sha', '');
-            core.setOutput('label', '');
-
-      - name: Download comparison baseline artifact
-        if: steps.timing-context.outputs.should-report == 'true' && steps.timing-baseline.outputs.run-id != ''
-        uses: actions/download-artifact@v8
-        with:
-          name: ${{ steps.timing-context.outputs.artifact-name }}
-          path: ${{ runner.temp }}/build-timing-baseline
-          run-id: ${{ steps.timing-baseline.outputs.run-id }}
           github-token: ${{ github.token }}
 
       - name: Render build timing report
@@ -200,19 +124,14 @@ jobs:
           BUILD_TIMING_SOURCE_SHA: ${{ steps.timing-context.outputs.head-sha }}
           BUILD_TIMING_SOURCE_SUBJECT: ${{ steps.timing-context.outputs.source-subject }}
           BUILD_TIMING_SOURCE_BRANCH: ${{ steps.timing-context.outputs.head-ref }}
-          BUILD_TIMING_BASELINE_LABEL: ${{ steps.timing-baseline.outputs.label }}
-          BUILD_TIMING_BASELINE_SHA: ${{ steps.timing-baseline.outputs.sha }}
           BUILD_TIMING_TEST_NAME: Validation wrapper
           BUILD_TIMING_TEST_COMMAND: ./scripts/validate.sh
           BUILD_TIMING_NATIVE_NAME: Native build
           BUILD_TIMING_NATIVE_COMMAND: lake build toyproblem-runtime hachi-runtime lint-style
+        # The per-module baseline travels inside the current artifact (`module-times-base.json`,
+        # recorded with the build cache the run restored), so no other run's artifact is needed.
         run: |
-          baseline_dir="${{ runner.temp }}/build-timing-baseline"
-          if [ -f "$baseline_dir/results.jsonl" ]; then
-            bash scripts/build_timing_report.sh render "$BUILD_TIMING_RESULTS" "$baseline_dir" > "$BUILD_TIMING_REPORT"
-          else
-            bash scripts/build_timing_report.sh render "$BUILD_TIMING_RESULTS" > "$BUILD_TIMING_REPORT"
-          fi
+          bash scripts/build_timing_report.sh render "$BUILD_TIMING_RESULTS" > "$BUILD_TIMING_REPORT"
           cat "$BUILD_TIMING_REPORT" >> "$GITHUB_STEP_SUMMARY"
           {
             echo '<!-- arklib-build-timing-report -->'

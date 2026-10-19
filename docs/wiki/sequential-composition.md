@@ -1,4 +1,9 @@
-# Sequential composition
+# Legacy sequential composition
+
+This page covers `ArkLib/OracleReduction/`, the legacy framework. For native interaction
+composition, read the [current results](../design/00-current-status.md) and
+[composition design](../design/02-oracle-reduction-core.md#5-composition). The
+[roadmap](../design/05-roadmap.md) tracks the remaining native oracle and runtime theorems.
 
 Sequential composition uses `Prover.append`, `Verifier.append`, and `Reduction.append` in
 `ArkLib/OracleReduction/Composition/Sequential/Append/`. Oracle reductions have corresponding

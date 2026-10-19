@@ -538,7 +538,7 @@ lemma binding_cond_le_t_sdh_cond {n : ℕ} {AuxState : Type} [SampleableType G�
       ≤ Pr{let result ← (OptionT.mk (do
         let τ ← sample
         (simulateQ impl (gameComp τ)).run' (∅ : unifSpec.QueryCache)))}[(Q) result] := by
-    apply _root_.prEvent_mono_of_support
+    apply OptionT.prEvent_mono_of_support
     intro y hy hP
     obtain ⟨τ, _, hy⟩ := OptionT.mem_support_bind_mk _ _ hy
     refine OptionT.aux_mem_support_simulateQ_run' impl (gameComp τ)
@@ -661,7 +661,7 @@ lemma map_binding_instance_drag {n : ℕ} {AuxState : Type} [SampleableType G₁
         (n := n)) result]
     = Pr{let result ← (mapBindingToTsdh (p := p) (n := n) <$> bindingGameExt (g₁ := g₁) (g₂ := g₂)
         AuxState adversary scheme)}[(Groups.tSdhCondition (p := p) (g₁ := g₁)) result] := by
-  simp only [prEvent_map, Function.comp_apply]
+  simp only [Function.comp_def, expect_norm]
 
 omit [DecidableEq G₁] in
 include g₁ g₂ pairing in
@@ -677,7 +677,7 @@ lemma t_sdh_game_eq {n : ℕ} {AuxState : Type} [SampleableType G₁]
         adversary) := by
   let scheme := kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
   simp only [Groups.tSdhExperiment, Groups.tSdhGame]
-  congr 3
+  congr 1
   let pSpec' : ProtocolSpec 1 := ⟨!v[.P_to_V], !v[G₁]⟩
   let impl : QueryImpl _ (StateT unifSpec.QueryCache ProbComp) :=
     QueryImpl.addLift

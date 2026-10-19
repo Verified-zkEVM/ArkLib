@@ -29,22 +29,8 @@ multiplication by this factor is injective.
 
 ## References
 
-Ported from
-`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Local/ConstraintKernel.lean`
-at ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d: `hiddenErrorFactor`, the
-`rewriteUToE` evaluation lemmas, `exhibitedKernelFactor`, `rewriteUToE_exhibitedKernelFactor`,
-`exhibitedKernelMultiplier`, `exhibitedKernelMultiplier_mem_ker`,
-`canonicalExhibitedKernelMultiplier_mem_ker` (here
-`exhibitedKernelMultiplier_mem_ker_contactThreshold`, without the source's hypothesis `r < m`),
-and `exhibitedKernelMultiplier_injective` (here over a domain instead of a field). The source's
-monomial computation `projectLowContact_T_pow_mul_E_pow_mul_eq_zero`, `contactKernelExponent`,
-and its private contact-order monotonicity lemma are replaced by
-`MvPolynomial.mul_mem_restrictWeightedOrder` and `MvPolynomial.weightedTruncation_eq_zero_iff`;
-for the same reason `contactKernelExponent`, its two lemmas, and `T_pow_mul_E_pow_eq_monomial`
-are not ported. Nothing else in the source file is deferred.
-
-* Brakensiek, Chen, Putterman, Zhang, and Zheng, *Algorithmic List Decoding of Reed--Solomon
-  Codes up to Capacity in the Low-Rate Regime*, ECCC TR26-164, Section 3.
+* [Brakensiek, J., Chen, Y., Putterman, A., Zhang, Z., and Zheng, K. Z., *Algorithmic List
+  Decoding of Reed–Solomon Codes up to Capacity in the Low-Rate Regime*][BCPZZ26], Section 3.
 -/
 
 @[expose] public section
@@ -61,16 +47,19 @@ variable {R : Type*} [CommRing R] {d : ℕ}
 def hiddenErrorFactor (d : ℕ) : LocalPolynomial R d :=
   X (localU d) - localJetSum d
 
+/-- The rewrite fixes `T`. -/
 @[simp]
 theorem rewriteUToE_X_localT (d : ℕ) :
     rewriteUToE (R := R) d (X (localT d)) = X (localT d) := by
   simp [rewriteUToE, rewriteUToEImage, localT]
 
+/-- The rewrite sends `U` to `E + localJetSum d`. -/
 @[simp]
 theorem rewriteUToE_X_localU (d : ℕ) :
     rewriteUToE (R := R) d (X (localU d)) = X (localE d) + localJetSum d := by
   simp [rewriteUToE, rewriteUToEImage, localU, localE, localAux]
 
+/-- The rewrite fixes every visible jet variable `Y_j`. -/
 @[simp]
 theorem rewriteUToE_X_localY (j : Fin d) :
     rewriteUToE (R := R) d (X (localY j)) = X (localY j) := by
@@ -103,6 +92,7 @@ theorem rewriteUToE_exhibitedKernelFactor (d r h : ℕ) :
 def exhibitedKernelMultiplier (d r h : ℕ) : LocalPolynomial R d →ₗ[R] LocalPolynomial R d :=
   LinearMap.mulLeft R (exhibitedKernelFactor d r h)
 
+/-- `exhibitedKernelMultiplier d r h` multiplies by `exhibitedKernelFactor d r h`. -/
 @[simp]
 theorem exhibitedKernelMultiplier_apply (d r h : ℕ) (G : LocalPolynomial R d) :
     exhibitedKernelMultiplier (R := R) d r h G = exhibitedKernelFactor d r h * G :=

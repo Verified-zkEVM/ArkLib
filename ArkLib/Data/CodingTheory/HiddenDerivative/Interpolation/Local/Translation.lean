@@ -38,24 +38,8 @@ ring.
 
 ## References
 
-Ported from
-`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Local/Translation.lean` at
-ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d: `globalPointTranslation` with its
-three generator lemmas, `globalPointTranslation_support_weight_le` (here the submodule form
-`globalPointTranslation_mem_restrictWeightAtMost`, proved by
-`MvPolynomial.bind₁_mem_restrictWeightAtMost` instead of the source's private support-weight
-lemmas), `globalPointTranslation_neg_comp`,
-`unscaledLocalSubstitution_zero_comp_globalPointTranslation`, and
-`localConstraintAt_eq_zero_comp_globalPointTranslation` (here
-`localConstraintAt_eq_zero_globalPointTranslation`). The source's statements at the zero point
-are the special cases of the new composition laws `globalPointTranslation_comp`,
-`unscaledLocalSubstitution_comp_globalPointTranslation`, and
-`localConstraintAt_globalPointTranslation`; the normalized analogue is new. Deferred: the
-source's `Matrix.rank_map_algebraMap_le`, a base-change bound on matrix rank that does not
-concern translation; its only source consumer is `Interpolation/Symbolic/LocalRank.lean`.
-
-* Brakensiek, Chen, Putterman, Zhang, and Zheng, *Algorithmic List Decoding of Reed--Solomon
-  Codes up to Capacity in the Low-Rate Regime*, ECCC TR26-164, Section 3.
+* [Brakensiek, J., Chen, Y., Putterman, A., Zhang, Z., and Zheng, K. Z., *Algorithmic List
+  Decoding of Reed–Solomon Codes up to Capacity in the Low-Rate Regime*][BCPZZ26], Section 3.
 -/
 
 @[expose] public section
@@ -83,16 +67,19 @@ def globalPointTranslation (center received : R) :
     DifferentialPolynomial R d →ₐ[R] DifferentialPolynomial R d :=
   bind₁ (globalPointTranslationImage d center received)
 
+/-- `globalPointTranslation center received` sends `X` to `center + X`. -/
 @[simp]
 theorem globalPointTranslation_X (center received : R) :
     globalPointTranslation (d := d) center received (X none) = C center + X none := by
   simp [globalPointTranslation, globalPointTranslationImage]
 
+/-- `globalPointTranslation center received` sends `Y₀` to `received + Y₀`. -/
 @[simp]
 theorem globalPointTranslation_Y_zero (center received : R) :
     globalPointTranslation (d := d) center received (X (some 0)) = C received + X (some 0) := by
   simp [globalPointTranslation, globalPointTranslationImage]
 
+/-- `globalPointTranslation center received` fixes `Y_(j+1)`. -/
 @[simp]
 theorem globalPointTranslation_Y_succ (center received : R) (j : Fin d) :
     globalPointTranslation (d := d) center received (X (some j.succ)) = X (some j.succ) := by

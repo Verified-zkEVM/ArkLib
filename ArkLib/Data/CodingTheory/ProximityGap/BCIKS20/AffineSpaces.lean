@@ -46,6 +46,14 @@ private theorem exists_large_of_finset_cover' {α : Type}
       _ = L * B := by simp [Finset.sum_const]
   exact absurd hle (not_le.mpr hLB)
 
+private lemma real_card_ge_of_nnreal {s n : ℕ} {δ : ℝ≥0}
+    (h : (s : ℝ≥0) ≥ (1 - δ) * n) : (s : ℝ) ≥ ((1 : ℝ) - (δ : ℝ)) * (n : ℝ) := by
+  by_cases hδ_le : δ ≤ 1
+  · have h' : (((1 - δ) * (n : ℝ≥0) : ℝ≥0) : ℝ) ≤ (s : ℝ) := by exact_mod_cast h.le
+    rwa [NNReal.coe_mul, NNReal.coe_sub hδ_le, NNReal.coe_one, NNReal.coe_natCast] at h'
+  · have hδ_real : (1 : ℝ) ≤ (δ : ℝ) := by exact_mod_cast (not_le.1 hδ_le).le
+    exact (mul_nonpos_of_nonpos_of_nonneg (sub_nonpos.2 hδ_real) (Nat.cast_nonneg n)).trans
+      (Nat.cast_nonneg s)
 
 section Bucketing
 
@@ -139,22 +147,7 @@ theorem bucket_exists_common_codeword
     calc (hammingDist u₀ (pickCW x hx) : ℝ)
         ≤ (Fintype.card ι : ℝ) - ((S_x x hx).card : ℝ) := by exact_mod_cast h_ham
       _ ≤ (δ : ℝ) * (Fintype.card ι : ℝ) := by
-          have h1 := h_agree_size
-          -- h1 : (|S_x| : ℝ≥0) ≥ (1 - δ) * |ι|
-          -- Lift to ℝ
-          have h2 : ((S_x x hx).card : ℝ) ≥ ((1 : ℝ) - (δ : ℝ)) * (Fintype.card ι : ℝ) := by
-            by_cases hδ_le : δ ≤ 1
-            · have h1' : ((1 - δ) * (Fintype.card ι : ℝ≥0) : ℝ≥0) ≤ ((S_x x hx).card : ℝ≥0) := h1.le
-              calc ((S_x x hx).card : ℝ)
-                  ≥ ((((1 - δ) * (Fintype.card ι : ℝ≥0) : ℝ≥0) : ℝ)) := by exact_mod_cast h1'
-                _ = ((1 : ℝ) - (δ : ℝ)) * (Fintype.card ι : ℝ) := by
-                    rw [NNReal.coe_mul, NNReal.coe_sub hδ_le, NNReal.coe_one, NNReal.coe_natCast]
-            · push Not at hδ_le
-              have hδ_real : (1 : ℝ) < (δ : ℝ) := by exact_mod_cast hδ_le
-              linarith only [Nat.cast_nonneg' (α := ℝ) (S_x x hx).card,
-                mul_nonpos_of_nonpos_of_nonneg
-                  (by linarith only [hδ_real] : (1 : ℝ) - ↑δ ≤ 0)
-                  (Nat.cast_nonneg' (α := ℝ) (Fintype.card ι))]
+          have h2 := real_card_ge_of_nnreal h_agree_size
           linarith only [h2]
   have h_cw_bound : closeWords.card < Fintype.card F := by
     apply h_list_bound u₀
@@ -285,39 +278,20 @@ theorem bucket_exists_common_codeword
             exact_mod_cast h_real
           -- Step 1: Extract ham = δ * |ι| in ℝ from hv₀_eq
           have hn_pos : (0 : ℝ) < Fintype.card ι := by exact_mod_cast Fintype.card_pos
-          have h_ham_real : (hammingDist u₀ v₀ : ℝ) = (δ : ℝ) * (Fintype.card ι : ℝ) := by
+          have h_ham_real : (δ : ℝ) * (Fintype.card ι : ℝ) ≤ (hammingDist u₀ v₀ : ℝ) := by
             -- hv₀_eq : (δᵣ(u₀, v₀) : ℝ≥0) = δ, i.e. (ham/|ι| : ℚ≥0) cast to ℝ≥0 = δ
             -- Cast both sides to ℝ: (ham/|ι|) = δ in ℝ, multiply by |ι|.
-            have h_le : (hammingDist u₀ v₀ : ℝ) / (Fintype.card ι : ℝ) ≤ (δ : ℝ) := by
-              calc (hammingDist u₀ v₀ : ℝ) / (Fintype.card ι : ℝ)
-                  = ((hammingDist u₀ v₀ / Fintype.card ι : ℚ≥0) : ℝ) := by
-                    push_cast; norm_cast
-                _ ≤ (δ : ℝ) := by exact_mod_cast hv₀_close
             have h_ge : (δ : ℝ) ≤ (hammingDist u₀ v₀ : ℝ) / (Fintype.card ι : ℝ) := by
               calc (δ : ℝ)
                   ≤ ((δᵣ(u₀, v₀) : ℝ≥0) : ℝ) := by exact_mod_cast hv₀_far.le
                 _ = ((hammingDist u₀ v₀ / Fintype.card ι : ℚ≥0) : ℝ) := by rfl
                 _ = (hammingDist u₀ v₀ : ℝ) / (Fintype.card ι : ℝ) := by
                     push_cast; norm_cast
-            have h_eq : (hammingDist u₀ v₀ : ℝ) / (Fintype.card ι : ℝ) = (δ : ℝ) :=
-              le_antisymm h_le h_ge
-            rwa [div_eq_iff (ne_of_gt hn_pos)] at h_eq
+            exact (le_div_iff₀ hn_pos).1 h_ge
           -- Step 2: Extract |S_x| ≥ (1-δ)*|ι| in ℝ
-          have h_sx_real : ((S_x x hx).card : ℝ) ≥ ((1 : ℝ) - (δ : ℝ)) * (Fintype.card ι : ℝ) := by
-            have h1 := hS_x x hx  -- (|S_x| : ℝ≥0) ≥ (1 - δ) * |ι|
-            by_cases hδ_le : δ ≤ 1
-            · have h1' : ((1 - δ) * (Fintype.card ι : ℝ≥0) : ℝ≥0) ≤ ((S_x x hx).card : ℝ≥0) := h1.le
-              calc ((S_x x hx).card : ℝ)
-                  ≥ ((((1 - δ) * (Fintype.card ι : ℝ≥0) : ℝ≥0) : ℝ)) := by exact_mod_cast h1'
-                _ = ((1 : ℝ) - (δ : ℝ)) * (Fintype.card ι : ℝ) := by
-                    rw [NNReal.coe_mul, NNReal.coe_sub hδ_le, NNReal.coe_one, NNReal.coe_natCast]
-            · push Not at hδ_le
-              have hδ_real : (1 : ℝ) < (δ : ℝ) := by exact_mod_cast hδ_le
-              linarith [Nat.cast_nonneg' (α := ℝ) (S_x x hx).card,
-                        mul_nonpos_of_nonpos_of_nonneg (by linarith : (1 : ℝ) - ↑δ ≤ 0)
-                          (Nat.cast_nonneg' (α := ℝ) (Fintype.card ι))]
+          have h_sx_real := real_card_ge_of_nnreal (hS_x x hx)
           -- Step 3: Combine
-          linarith)
+          linarith only [h_sx_real, h_ham_real])
       -- D' ⊆ {c | v₀ c = u₀ c} = S_x, so D' ⊆ S_x
       have hD'_sub_Sx : D' ⊆ S_x x hx := hSx_eq_filter ▸ hD'_sub_filter
       intro c hc
@@ -572,6 +546,16 @@ private lemma gs_degree_bound_le_inv_mu
     _ ≤ 1 / μ + 1 / (4 * μ) := add_le_add h5 h6
     _ = 5 / (4 * μ) := by ring
 
+private lemma div_two_mul_ceil_succ_lt {s η : ℝ} (hη : 0 < η) :
+    s / (2 * ((Nat.ceil (s / (2 * η)) + 1 : ℕ) : ℝ)) < η := by
+  have hm_pos : (0 : ℝ) < ((Nat.ceil (s / (2 * η)) + 1 : ℕ) : ℝ) :=
+    Nat.cast_pos.2 (Nat.succ_pos _)
+  have hm_gt : s / (2 * η) < ((Nat.ceil (s / (2 * η)) + 1 : ℕ) : ℝ) := by
+    rw [Nat.cast_add, Nat.cast_one]
+    exact (Nat.le_ceil _).trans_lt (lt_add_one _)
+  rw [div_lt_iff₀ (mul_pos two_pos hm_pos)]
+  exact ((div_lt_iff₀ (mul_pos two_pos hη)).mp hm_gt).trans_eq (by ring)
+
 omit [DecidableEq ι] [DecidableEq F] [SampleableType F] in
 /-- Construct a GS multiplicity `m` satisfying both the Johnson radius bound and the degree
 bound. Witness: `m = ⌈√ρ/(2η)⌉ + 1` where `η = 1 - √ρ - δ`. -/
@@ -602,8 +586,6 @@ lemma exists_gs_multiplicity {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
     set m := Nat.ceil (s / (2 * η)) + 1
     refine ⟨m, by omega, ?_, ?_⟩
     · -- Johnson bound: δ < gs_johnson deg n m
-      have hn_pos : (0 : ℝ) < Fintype.card ι := by positivity
-      have hm_pos : (0 : ℝ) < m := by positivity
       have hs_eq : s = Real.sqrt ((deg : ℝ) / Fintype.card ι) := by
         simp only [s, hs_def, ReedSolomon.sqrtRate]
         rw [Real.coe_sqrt]
@@ -620,20 +602,7 @@ lemma exists_gs_multiplicity {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
           push_cast; ring
         rw [this]
       rw [hgs_eq]
-      have hm_gt : s / (2 * η) < m := by
-        have h1 : s / (2 * η) ≤ ↑(Nat.ceil (s / (2 * η))) := Nat.le_ceil _
-        have h2 : (↑(Nat.ceil (s / (2 * η))) : ℝ) + 1 = (m : ℝ) := by
-          simp only [m, Nat.cast_add, Nat.cast_one]
-        linarith only [h1, h2]
-      have hs_nn : (0 : ℝ) ≤ s := by positivity
-      have hs_div_lt : s / (2 * ↑m) < η := by
-        rcases eq_or_lt_of_le hs_nn with hs0 | hs_pos
-        · rw [← hs0]; simp only [zero_div]; exact hη_pos
-        · have h2m_pos : (0 : ℝ) < 2 * ↑m := by positivity
-          rw [div_lt_iff₀ h2m_pos]
-          have h2η_pos : (0 : ℝ) < 2 * η := by positivity
-          have := (div_lt_iff₀ h2η_pos).mp hm_gt
-          linarith only [this]
+      have hs_div_lt : s / (2 * ↑m) < η := div_two_mul_ceil_succ_lt hη_pos
       linarith only [hs_div_lt]
     · -- Degree bound: gs_degree_bound deg n m / (deg - 1) < |F|
       have hn_pos : (0 : ℝ) < Fintype.card ι := by
@@ -666,7 +635,9 @@ lemma exists_gs_multiplicity {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
           (↑m + 1/2) * s * (Fintype.card ι : ℝ) := by
         unfold gs_degree_bound; dsimp only
         have hnn : (0 : ℝ) ≤ (↑m + 1 / 2) * √↑(↑deg / ↑(Fintype.card ι) : ℚ) *
-          ↑(Fintype.card ι) := by positivity
+          ↑(Fintype.card ι) :=
+          mul_nonneg (mul_nonneg (add_nonneg (Nat.cast_nonneg _) (by norm_num))
+            (Real.sqrt_nonneg _)) (Nat.cast_nonneg _)
         have hcast : (↑(↑deg / ↑(Fintype.card ι) : ℚ) : ℝ) =
             (deg : ℝ) / Fintype.card ι := by push_cast; ring
         calc (↑⌊(↑m + 1 / 2) * √↑(↑deg / ↑(Fintype.card ι) : ℚ) *
@@ -681,15 +652,16 @@ lemma exists_gs_multiplicity {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
         rw [hdeg1_cast_eq]
         linarith only [show (2 : ℝ) ≤ deg from by exact_mod_cast hdeg]
       set μ : ℝ := min η (s / 20) with hμ_def
-      have hμ_pos : 0 < μ := lt_min hη_pos (by positivity)
+      have hμ_pos : 0 < μ := lt_min hη_pos (div_pos hs_pos (by norm_num))
       have hμ_le_η : μ ≤ η := min_le_left _ _
       have hμ_le_s20 : μ ≤ s / 20 := min_le_right _ _
-      have hμ_lt_one20 : μ < 1 / 20 := lt_of_le_of_lt hμ_le_s20 (by linarith)
+      have hμ_lt_one20 : μ < 1 / 20 :=
+        lt_of_le_of_lt hμ_le_s20 (div_lt_div_of_pos_right hs_lt_one (by norm_num))
       have hm_bound : (m : ℝ) + 1/2 ≤ s / (2 * η) + 5/2 := by
         have hm_eq : (m : ℝ) = ↑(Nat.ceil (s / (2 * η))) + 1 := by
           simp only [m, Nat.cast_add, Nat.cast_one]
         have hceil_le : (↑(Nat.ceil (s / (2 * η))) : ℝ) ≤ s / (2 * η) + 1 :=
-          le_of_lt (Nat.ceil_lt_add_one (by positivity : (0 : ℝ) ≤ s / (2 * η)))
+          le_of_lt (Nat.ceil_lt_add_one (div_nonneg hs_pos.le (mul_pos two_pos hη_pos).le))
         linarith only [hm_eq, hceil_le]
       have h_le_54μ : (↑m + 1/2) * s * (Fintype.card ι : ℝ) /
           (↑(deg - 1 : ℕ) : ℝ) ≤ 5 / (4 * μ) :=
@@ -707,8 +679,8 @@ lemma exists_gs_multiplicity {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
           _ < 4 := by norm_num
           _ ≤ (deg : ℝ) ^ 2 := h4
       have h_54_lt_deg2 : 5 / (4 * μ) < (deg : ℝ) ^ 2 / (128 * μ ^ 7) := by
-        rw [div_lt_div_iff₀ (by positivity) (by positivity)]
-        convert mul_lt_mul_of_pos_right h_160 (show (0 : ℝ) < 4 * μ by positivity) using 1
+        rw [div_lt_div_iff₀ (mul_pos four_pos hμ_pos) (mul_pos (by norm_num) (pow_pos hμ_pos 7))]
+        convert mul_lt_mul_of_pos_right h_160 (mul_pos four_pos hμ_pos) using 1
         all_goals ring
       -- Extract |F| bound from hε
       have h_field : (deg : ℝ) ^ 2 / (128 * μ ^ 7) < Fintype.card F := by
@@ -737,12 +709,13 @@ lemma exists_gs_multiplicity {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
             ((2 * min (1 - sqr_nn - δ) (sqr_nn / 20)) ^ 7 * ↑(Fintype.card F)) < 1 at hε
           exact_mod_cast hε
         rw [hmin_eq] at hε_real
-        have hd : (0 : ℝ) < (2 * μ) ^ 7 * ↑(Fintype.card F) := by positivity
+        have hd : (0 : ℝ) < (2 * μ) ^ 7 * ↑(Fintype.card F) :=
+          mul_pos (pow_pos (mul_pos two_pos hμ_pos) 7) (Nat.cast_pos.2 Fintype.card_pos)
         have hlt := (div_lt_one hd).mp hε_real
         rw [show (2 * μ) ^ 7 = 128 * μ ^ 7 from by ring] at hlt
         have hcast : (↑(↑deg ^ 2 : ℝ≥0) : ℝ) = (↑deg : ℝ) ^ 2 := by push_cast; ring
         rw [hcast] at hlt
-        rw [div_lt_iff₀ (by positivity : (0 : ℝ) < 128 * μ ^ 7)]
+        rw [div_lt_iff₀ (mul_pos (by norm_num) (pow_pos hμ_pos 7) : (0 : ℝ) < 128 * μ ^ 7)]
         linarith only [hlt]
       calc (gs_degree_bound deg (Fintype.card ι) m : ℝ) / ↑(deg - 1 : ℕ)
           ≤ (↑m + 1/2) * s * ↑(Fintype.card ι) / ↑(deg - 1 : ℕ) :=
@@ -777,19 +750,7 @@ lemma exists_gs_multiplicity {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
         congr 1 <;> [congr 1; congr 2] <;>
           rw [hs_eq, Real.sqrt_div (by positivity : (0:ℝ) ≤ 1), Real.sqrt_one, one_div]
       rw [hgs_eq]
-      have hm_gt : s / (2 * η) < m := by
-        have h1 : s / (2 * η) ≤ ↑(Nat.ceil (s / (2 * η))) := Nat.le_ceil _
-        linarith [show (↑(Nat.ceil (s / (2 * η))) : ℝ) + 1 = (m : ℝ) from by
-          simp only [m, Nat.cast_add, Nat.cast_one]]
-      have hs_nn : (0 : ℝ) ≤ s := by positivity
-      have hs_div_lt : s / (2 * ↑m) < η := by
-        rcases eq_or_lt_of_le hs_nn with hs0 | hs_pos
-        · rw [← hs0]; simp only [zero_div]; exact hη_pos
-        · have h2m_pos : (0 : ℝ) < 2 * ↑m := by positivity
-          rw [div_lt_iff₀ h2m_pos]
-          have h2η_pos : (0 : ℝ) < 2 * η := by positivity
-          have := (div_lt_iff₀ h2η_pos).mp hm_gt
-          linarith only [this]
+      have hs_div_lt : s / (2 * ↑m) < η := div_two_mul_ceil_succ_lt hη_pos
       linarith only [hs_div_lt]
     · -- deg = 0: gs_johnson 0 n m = 1 trivially > δ
       have hdeg0 : deg = 0 := by omega
@@ -1021,54 +982,25 @@ theorem rs_listDecoding_card_lt_field {deg : ℕ} {domain : ι ↪ F} {δ : ℝ�
             have hsqrt_le_inv : (ReedSolomon.sqrtRate 1 domain : ℝ) ≤
                 1 / Fintype.card ι := by
               have h : (Fintype.card ι - 1 : ℝ) / Fintype.card ι =
-                  1 - 1 / Fintype.card ι := by field_simp
+                  1 - 1 / Fintype.card ι := by rw [_root_.sub_div, div_self (ne_of_gt hn_pos)]
               linarith only [hrel_val, hrel_le_delta, h_add_real, h]
-            -- sqrtRate > 1/n: √rate > rate ≥ 1/n
-            have hrate_pos : (0 : ℝ≥0) <
-                (LinearCode.rate (ReedSolomon.code domain 1) : ℝ≥0) := by
-              exact_mod_cast @DivergenceOfSets.reedSolomon_rate_pos ι _ _ F _ _ _ Nat.one_pos
-            have hrate_lt_one :
-                (LinearCode.rate (ReedSolomon.code domain 1) : ℝ≥0) < 1 := by
-              have hdim_le := @DivergenceOfSets.reedSolomon_dim_le_deg ι _ F _ 1 domain
-              have hdlt : LinearCode.dim (ReedSolomon.code domain 1) <
-                  LinearCode.length (ReedSolomon.code domain 1) := by
-                simp only [LinearCode.length]; omega
-              exact_mod_cast show (LinearCode.rate (ReedSolomon.code domain 1) : ℚ≥0) < 1 from by
-                rw [LinearCode.rate]
-                exact (div_lt_one (by positivity : (0 : ℚ≥0) < _)).mpr (by exact_mod_cast hdlt)
-            have hrate_ge_inv : (1 : ℝ≥0) / (Fintype.card ι : ℝ≥0) ≤
-                (LinearCode.rate (ReedSolomon.code domain 1) : ℝ≥0) := by
-              have hdim_ge : 1 ≤ LinearCode.dim (ReedSolomon.code domain 1) := by
-                have hmul := @DivergenceOfSets.reedSolomon_rate_mul_card_eq_dim ι _ _ F _ 1 domain
-                have h0 : (0 : ℝ≥0) < (LinearCode.dim (ReedSolomon.code domain 1) : ℝ≥0) :=
-                  hmul ▸ mul_pos (by positivity) hrate_pos
-                have : 0 < LinearCode.dim (ReedSolomon.code domain 1) := by exact_mod_cast h0
-                omega
-              have hge : (1 : ℚ≥0) / (Fintype.card ι : ℚ≥0) ≤
-                  (LinearCode.rate (ReedSolomon.code domain 1) : ℚ≥0) := by
-                rw [LinearCode.rate]; simp only [LinearCode.length]
-                exact (div_le_div_iff_of_pos_right (by positivity : (0 : ℚ≥0) < _)).mpr
-                  (by exact_mod_cast hdim_ge)
-              calc (1 : ℝ≥0) / (Fintype.card ι : ℝ≥0)
-                  = ((1 : ℚ≥0) / (Fintype.card ι : ℚ≥0) : ℝ≥0) := by push_cast; ring
-                _ ≤ _ := by exact_mod_cast hge
-            have h_sqrt_gt : (LinearCode.rate (ReedSolomon.code domain 1) : ℝ≥0) <
-                NNReal.sqrt (LinearCode.rate (ReedSolomon.code domain 1) : ℝ≥0) := by
-              have h1 : (_ : ℝ≥0) * _ < _ * 1 :=
-                mul_lt_mul_of_pos_left hrate_lt_one hrate_pos
-              rw [mul_one] at h1
-              calc _ = NNReal.sqrt (_ * _) := (NNReal.sqrt_mul_self _).symm
-                _ < NNReal.sqrt _ := NNReal.sqrt_lt_sqrt.2 h1
+            -- sqrtRate = √(1/n) > 1/n since 0 < 1/n < 1.
+            have hs_eq : (ReedSolomon.sqrtRate 1 domain : ℝ) =
+                Real.sqrt ((1 : ℝ) / Fintype.card ι) := by
+              simp only [ReedSolomon.sqrtRate]; rw [Real.coe_sqrt]; congr 1
+              have : NeZero (1 : ℕ) := ⟨by omega⟩
+              have hdim := ReedSolomon.dim_eq_deg_of_le (α := domain) (n := 1)
+                (by omega : 1 ≤ Fintype.card ι)
+              rw [LinearCode.rate, hdim]; simp [LinearCode.length]
+            have hinv_pos : (0 : ℝ) < 1 / Fintype.card ι := one_div_pos.2 hn_pos
+            have hinv_lt_one : (1 : ℝ) / Fintype.card ι < 1 :=
+              (div_lt_one hn_pos).2 (by exact_mod_cast (show 1 < Fintype.card ι by omega))
             have hsqrt_gt_inv : 1 / (Fintype.card ι : ℝ) <
                 (ReedSolomon.sqrtRate 1 domain : ℝ) := by
-              have h1 : ((1 : ℝ≥0) / (Fintype.card ι : ℝ≥0) : ℝ) =
-                  1 / (Fintype.card ι : ℝ) := by push_cast; ring
-              rw [← h1]
-              exact_mod_cast show ((1 : ℝ≥0) / (Fintype.card ι : ℝ≥0)) <
-                  ReedSolomon.sqrtRate 1 domain from
-                calc (1 : ℝ≥0) / _ ≤ _ := hrate_ge_inv
-                  _ < NNReal.sqrt _ := h_sqrt_gt
-                  _ = ReedSolomon.sqrtRate 1 domain := by simp [ReedSolomon.sqrtRate]
+              rw [hs_eq]
+              refine (Real.lt_sqrt hinv_pos.le).2 ?_
+              rw [sq]
+              exact mul_lt_of_lt_one_left hinv_pos hinv_lt_one
             linarith only [hsqrt_le_inv, hsqrt_gt_inv]
         · -- range(w).card < |F|
           calc closeWords.card ≤ (Finset.image w Finset.univ).card := hcard_le_range

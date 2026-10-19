@@ -775,7 +775,7 @@ noncomputable def simplifiedRbrKnowledgeStateFunction (k s : ℕ) (hdvd : s ∣ 
   toFun_next := fun m ↦ match m with
     | ⟨0, _⟩ => fun hDir ↦ absurd hDir (fun h ↦ Direction.noConfusion h)
   toFun_full := fun stmtIn tr witOut h ↦
-    SimplifiedIOR.mem_outputRelationFor_of_probEvent_pos_oracleVerifier_run
+    SimplifiedIOR.mem_outputRelationFor_of_prEvent_pos_oracleVerifier_run
       (k := k) init impl (encoder k s hdvd domain) δ stmtIn tr witOut h
 
 /-- Worst-case round-by-round knowledge soundness for C6.9, naming the exact
@@ -926,7 +926,7 @@ noncomputable def rbrKnowledgeStateFunction (k s t : ℕ) (hdvd : s ∣ k)
     | ⟨1, _⟩ => fun _ _ _ _ _ h ↦ h
     | ⟨2, _⟩ => fun hDir ↦ absurd hDir (fun h ↦ Direction.noConfusion h)
   toFun_full := fun stmtIn tr witOut h ↦
-    Spec.accepts_of_probEvent_pos_verifier_run (k := k) (t := t)
+    Spec.accepts_of_prEvent_pos_verifier_run (k := k) (t := t)
       init impl (encoder k s hdvd domain) stmtIn tr witOut _ h
 
 /-- Worst-case-per-fixed-prefix round-by-round knowledge soundness for the

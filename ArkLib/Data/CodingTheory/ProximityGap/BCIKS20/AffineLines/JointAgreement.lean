@@ -266,27 +266,19 @@ theorem RS_jointAgreement_of_goodCoeffs_card_gt {deg : ℕ} {domain : ι ↪ F} 
         ∀ z ∈ good,
           n - e ≤ (Finset.univ.filter (fun i : ι => u 0 i + z * u 1 i = 0)).card := by
       intro z hz
-      have hz_rel : δᵣ(u 0 + z • u 1, ReedSolomon.code domain 0) ≤ δ := by
-        have hz' : z ∈ Finset.filter
-            (fun z : F => δᵣ(u 0 + z • u 1, ReedSolomon.code domain 0) ≤ δ)
-            Finset.univ := by
-          simpa [good, RS_goodCoeffs] using hz
-        exact (Finset.mem_filter.mp hz').2
+      have hz_rel : δᵣ(u 0 + z • u 1, ReedSolomon.code domain 0) ≤ δ :=
+        (Finset.mem_filter.mp hz).2
       have hz_zero : δᵣ(u 0 + z • u 1, (0 : ι → F)) ≤ δ := by
         rw [Code.relCloseToCode_iff_relCloseToCodeword_of_minDist] at hz_rel
         rcases hz_rel with ⟨w, hwmem, hwdist⟩
-        simpa [hcode0_zero w hwmem] using hwdist
+        rwa [hcode0_zero w hwmem] at hwdist
       obtain ⟨Tz, hTz_card, hTz_agree⟩ :=
         (Code.relCloseToWord_iff_exists_agreementCols
           (u := u 0 + z • u 1) (v := (0 : ι → F)) (δ := δ)).1 hz_zero
       have hTz_sub :
           Tz ⊆ Finset.univ.filter (fun i : ι => u 0 i + z * u 1 i = 0) := by
         intro i hi
-        have hi_eq : (u 0 + z • u 1) i = 0 := by
-          simpa [Pi.add_apply, Pi.smul_apply, smul_eq_mul] using (hTz_agree i).1 hi
-        have hi_eq' : u 0 i + z * u 1 i = 0 := by
-          simpa [Pi.add_apply, Pi.smul_apply, smul_eq_mul] using hi_eq
-        simp [hi_eq']
+        exact Finset.mem_filter.2 ⟨Finset.mem_univ i, (hTz_agree i).1 hi⟩
       exact le_trans hTz_card (Finset.card_le_card hTz_sub)
     have hsum_lower :
         good.card * (n - e) ≤
@@ -298,25 +290,17 @@ theorem RS_jointAgreement_of_goodCoeffs_card_gt {deg : ℕ} {domain : ι ↪ F} 
           =
         Finset.univ.sum (fun i : ι =>
             (good.filter (fun z : F => u 0 i + z * u 1 i = 0)).card) := by
-      calc
-        good.sum (fun z => (Finset.univ.filter (fun i : ι => u 0 i + z * u 1 i = 0)).card)
-            = good.sum (fun z => ∑ i : ι, if u 0 i + z * u 1 i = 0 then 1 else 0) := by
-                simp
-        _ = ∑ i : ι, good.sum (fun z => if u 0 i + z * u 1 i = 0 then 1 else 0) := by
-              rw [Finset.sum_comm]
-        _ = ∑ i : ι, (good.filter (fun z : F => u 0 i + z * u 1 i = 0)).card := by
-              simp
+      simp only [Finset.card_filter]
+      exact Finset.sum_comm
     have hcount_bound :
         ∀ i : ι,
           (good.filter (fun z : F => u 0 i + z * u 1 i = 0)).card
             ≤ if i ∈ S0 then good.card else 1 := by
       intro i
       by_cases hcommon : u 0 i = 0 ∧ u 1 i = 0
-      · have hiS0 : i ∈ S0 := by
-          simp [S0, hcommon]
-        simp [hiS0, hcommon]
-      · have hiS0 : i ∉ S0 := by
-          simp [S0, hcommon]
+      · rw [ite_eq_left (Finset.mem_filter.2 ⟨Finset.mem_univ i, hcommon⟩)]
+        exact Finset.card_filter_le _ _
+      · have hiS0 : i ∉ S0 := fun h => hcommon (Finset.mem_filter.1 h).2
         have hcard_le_one :
             (good.filter (fun z : F => u 0 i + z * u 1 i = 0)).card ≤ 1 := by
           by_cases hu1 : u 1 i = 0
@@ -324,10 +308,10 @@ theorem RS_jointAgreement_of_goodCoeffs_card_gt {deg : ℕ} {domain : ι ↪ F} 
               intro hu0
               exact hcommon ⟨hu0, hu1⟩
             have hfilter :
-                good.filter (fun z : F => u 0 i + z * u 1 i = 0) = ∅ := by
-              ext z
-              simp [hu1, hu0]
-            simp [hfilter]
+                good.filter (fun z : F => u 0 i + z * u 1 i = 0) = ∅ :=
+              Finset.filter_eq_empty_iff.2 fun z _ => by rw [hu1, mul_zero, add_zero]; exact hu0
+            rw [hfilter, Finset.card_empty]
+            exact zero_le_one
           · exact Finset.card_le_one.mpr fun z1 hz1 z2 hz2 => by
               have hz1_eq : u 0 i + z1 * u 1 i = 0 := (Finset.mem_filter.mp hz1).2
               have hz2_eq : u 0 i + z2 * u 1 i = 0 := (Finset.mem_filter.mp hz2).2
@@ -338,7 +322,8 @@ theorem RS_jointAgreement_of_goodCoeffs_card_gt {deg : ℕ} {domain : ι ↪ F} 
               rcases mul_eq_zero.mp hmul with hzero | hzero
               · exact sub_eq_zero.mp hzero
               · exact (hu1 hzero).elim
-        exact by simpa [hiS0] using hcard_le_one
+        rw [ite_eq_right hiS0]
+        exact hcard_le_one
     have hsum_upper :
         Finset.univ.sum (fun i : ι => (good.filter (fun z : F => u 0 i + z * u 1 i = 0)).card)
           ≤ S0.card * good.card + (n - S0.card) := by
@@ -350,49 +335,13 @@ theorem RS_jointAgreement_of_goodCoeffs_card_gt {deg : ℕ} {domain : ι ↪ F} 
       have hsum_bound :
           Finset.univ.sum (fun i : ι => if i ∈ S0 then good.card else 1)
             = S0.card * good.card + (n - S0.card) := by
-        have hsum_S0 :
-            (Finset.univ.filter fun x : ι => x ∈ S0).sum
-                (fun x : ι => if x ∈ S0 then good.card else 1)
-              = S0.card * good.card := by
-          calc
-            (Finset.univ.filter fun x : ι => x ∈ S0).sum
-                (fun x : ι => if x ∈ S0 then good.card else 1)
-              = (Finset.univ.filter fun x : ι => x ∈ S0).sum (fun _ : ι => good.card) := by
-                  refine Finset.sum_congr rfl ?_
-                  intro x hx
-                  have hxS0 : x ∈ S0 := (Finset.mem_filter.mp hx).2
-                  simp [hxS0]
-            _ = (Finset.univ.filter fun x : ι => x ∈ S0).card * good.card := by
-              simp [Nat.mul_comm]
-            _ = S0.card * good.card := by
-              simp
-        have hsum_not :
-            (Finset.univ.filter fun x : ι => x ∉ S0).sum
-                (fun x : ι => if x ∈ S0 then good.card else 1)
-              = (Finset.univ.filter fun x : ι => x ∉ S0).card := by
-          calc
-            (Finset.univ.filter fun x : ι => x ∉ S0).sum
-                (fun x : ι => if x ∈ S0 then good.card else 1)
-              = (Finset.univ.filter fun x : ι => x ∉ S0).sum (fun _ : ι => 1) := by
-                  refine Finset.sum_congr rfl ?_
-                  intro x hx
-                  have hxS0 : x ∉ S0 := (Finset.mem_filter.mp hx).2
-                  simp [hxS0]
-            _ = (Finset.univ.filter fun x : ι => x ∉ S0).card := by
-              simp
-        rw [← Finset.sum_filter_add_sum_filter_not (s := Finset.univ)
-          (p := fun i : ι => i ∈ S0)
-          (f := fun i : ι => if i ∈ S0 then good.card else 1)]
-        rw [hsum_S0, hsum_not]
-        have hcard_split :
-            S0.card + (Finset.univ.filter fun x : ι => x ∉ S0).card = n := by
-          simpa [n, S0] using
-            (Finset.card_filter_add_card_filter_not
-              (s := (Finset.univ : Finset ι)) (p := fun i : ι => i ∈ S0))
-        have hcard_compl :
-            (Finset.univ.filter fun x : ι => x ∉ S0).card = n - S0.card := by
-          omega
-        rw [hcard_compl]
+        change _ = S0.card * good.card + (Fintype.card ι - S0.card)
+        have hsplit := Finset.card_filter_add_card_filter_not
+          (s := (Finset.univ : Finset ι)) (p := fun i : ι => i ∈ S0)
+        rw [Finset.filter_mem_eq_inter, Finset.univ_inter, Finset.card_univ] at hsplit
+        rw [Finset.sum_ite, Finset.sum_const, Finset.sum_const, smul_eq_mul, smul_eq_mul, mul_one,
+          Finset.filter_mem_eq_inter, Finset.univ_inter]
+        omega
       exact le_trans hbound (le_of_eq hsum_bound)
     have hS0_card_nat : n - e ≤ S0.card := by
       have hmain :
@@ -524,17 +473,17 @@ theorem RS_jointAgreement_of_goodCoeffs_card_gt {deg : ℕ} {domain : ι ↪ F} 
             (domain := domain) (δ := δ) u (z := z) hz_good)
         have hPz :
             Pz.natDegree < deg ∧
-              Δ₀(u 0 + z • u 1, Pz.eval ∘ domain) ≤ e := by
-          simpa [Pz, e] using
-            (Classical.choose_spec
-              (RS_exists_Pz_of_mem_goodCoeffs
-                (deg := deg) (domain := domain) (δ := δ) u (z := z) hz_good))
+              Δ₀(u 0 + z • u 1, Pz.eval ∘ domain) ≤ e :=
+          Classical.choose_spec
+            (RS_exists_Pz_of_mem_goodCoeffs
+              (deg := deg) (domain := domain) (δ := δ) u (z := z) hz_good)
         have hquot_def : quot_x z = Pz := by
           simp [quot_x, hz_good, Pz]
         refine ⟨?_, ?_⟩
         · have hPz_le : Pz.natDegree ≤ deg - 1 := Nat.le_pred_of_lt hPz.1
           have harith : deg - 1 ≤ (e + deg - 1) - e := by omega
-          exact le_trans (by simpa [hquot_def] using hPz_le) harith
+          rw [hquot_def]
+          exact le_trans hPz_le harith
         · let Dz : F[X] := Polynomial.Bivariate.evalY z B - Pz * Polynomial.Bivariate.evalY z A
           obtain ⟨Tz, hTz_card, hTz_agree⟩ :=
             (Code.closeToWord_iff_exists_agreementCols
@@ -550,31 +499,19 @@ theorem RS_jointAgreement_of_goodCoeffs_card_gt {deg : ℕ} {domain : ι ↪ F} 
                   (Pz * Polynomial.Bivariate.evalY z A).eval (domain i) := by
               calc
                 (Polynomial.Bivariate.evalY z B).eval (domain i)
-                    = (Polynomial.Bivariate.evalX (domain i) B).eval z := by
-                        symm
-                        exact evalX_eval_eq_evalY_eval (domain i) z B
+                    = (Polynomial.Bivariate.evalX (domain i) B).eval z :=
+                      (evalX_eval_eq_evalY_eval (domain i) z B).symm
                 _ = (((Polynomial.C (u 0 i) + Polynomial.X * Polynomial.C (u 1 i)) *
                       Polynomial.Bivariate.evalX (domain i) A)).eval z := by
-                      simpa using congrArg (fun p : F[X] => p.eval z) (hAB i)
-                _ = (Polynomial.C (u 0 i) + Polynomial.X * Polynomial.C (u 1 i)).eval z *
-                      (Polynomial.Bivariate.evalX (domain i) A).eval z := by
-                        rw [Polynomial.eval_mul]
-                _ = ((Polynomial.C (u 0 i)).eval z + (Polynomial.X * Polynomial.C (u 1 i)).eval z) *
-                      (Polynomial.Bivariate.evalX (domain i) A).eval z := by
-                        rw [Polynomial.eval_add]
-                _ = (u 0 i + (Polynomial.X * Polynomial.C (u 1 i)).eval z) *
-                      (Polynomial.Bivariate.evalX (domain i) A).eval z := by
-                        simp
+                      rw [hAB i]
                 _ = (u 0 i + z * u 1 i) * (Polynomial.Bivariate.evalX (domain i) A).eval z := by
-                      rw [Polynomial.eval_mul]
-                      simp
-                _ = Pz.eval (domain i) * (Polynomial.Bivariate.evalX (domain i) A).eval z := by
-                      rw [hi_eq]
+                      simp only [Polynomial.eval_mul, Polynomial.eval_add, Polynomial.eval_C,
+                        Polynomial.eval_X]
                 _ = Pz.eval (domain i) * (Polynomial.Bivariate.evalY z A).eval (domain i) := by
-                      rw [evalX_eval_eq_evalY_eval]
-                _ = (Pz * Polynomial.Bivariate.evalY z A).eval (domain i) := by
-                      simp [Polynomial.eval_mul, mul_comm]
-            simpa [Dz, sub_eq_zero] using hEq_eval
+                      rw [hi_eq, evalX_eval_eq_evalY_eval]
+                _ = (Pz * Polynomial.Bivariate.evalY z A).eval (domain i) :=
+                      (Polynomial.eval_mul).symm
+            exact (Polynomial.eval_sub _ _ _).trans (sub_eq_zero.2 hEq_eval)
           have hDz_deg :
               Dz.natDegree ≤ e + deg - 1 := by
             have hB_eval_deg : (Polynomial.Bivariate.evalY z B).natDegree ≤ e + deg - 1 :=
@@ -604,75 +541,46 @@ theorem RS_jointAgreement_of_goodCoeffs_card_gt {deg : ℕ} {domain : ι ↪ F} 
             have himg :
                 (Tz.image domain).card = Tz.card :=
               Finset.card_image_of_injective _ domain.injective
-            exact lt_of_le_of_lt hDz_deg (by simpa [himg] using hcard_lt)
+            exact lt_of_le_of_lt hDz_deg (himg ▸ hcard_lt)
           have hDz_zero : Dz = 0 := by
             exact
               Polynomial.eq_zero_of_natDegree_lt_card_of_eval_eq_zero'
                 (p := Dz) (s := Tz.image domain) hDz_eval hdeg_lt
-          simpa [Dz, hquot_def, sub_eq_zero] using hDz_zero
+          rw [hquot_def]
+          exact sub_eq_zero.1 hDz_zero
       have h_quot_y :
           ∀ x ∈ P_x,
             (quot_y x).natDegree ≤ (e + 1) - e ∧
               Polynomial.Bivariate.evalX x B = (quot_y x) * (Polynomial.Bivariate.evalX x A) := by
         intro x hx
         rcases Finset.mem_map.mp hx with ⟨i, -, rfl⟩
-        refine ⟨?_, ?_⟩
-        · have hconst : (Polynomial.C (u 0 i) : F[X]).natDegree ≤ 1 := by
-            simp
-          have hlin' : (Polynomial.X * Polynomial.C (u 1 i) : F[X]).natDegree ≤
-              (Polynomial.X : F[X]).natDegree := by
-            simpa using
-              (Polynomial.natDegree_mul_C_le (f := (Polynomial.X : F[X])) (a := u 1 i))
-          have hlin : (Polynomial.X * Polynomial.C (u 1 i) : F[X]).natDegree ≤ 1 := by
-            simpa using hlin'
-          simpa [quot_y, Function.leftInverse_invFun domain.injective i] using
-            (le_trans (Polynomial.natDegree_add_le _ _) (max_le hconst hlin))
-        · simpa [quot_y, Function.leftInverse_invFun domain.injective i] using hAB i
+        have hinv : Function.invFun domain (domain i) = i :=
+          Function.leftInverse_invFun domain.injective i
+        change (Polynomial.C (u 0 (Function.invFun domain (domain i))) +
+            Polynomial.X * Polynomial.C (u 1 (Function.invFun domain (domain i)))).natDegree ≤
+              (e + 1) - e ∧ _ = (Polynomial.C (u 0 (Function.invFun domain (domain i))) +
+            Polynomial.X * Polynomial.C (u 1 (Function.invFun domain (domain i)))) * _
+        rw [hinv, Nat.add_sub_cancel_left]
+        exact ⟨(Polynomial.natDegree_add_le _ _).trans (max_le
+          ((Polynomial.natDegree_C _).trans_le zero_le_one)
+          ((Polynomial.natDegree_mul_C_le _ _).trans Polynomial.natDegree_X_le)), hAB i⟩
       have h_le_1 :
           1 >
             ((((e + deg - 1 : ℕ) : ℚ) / ((⟨n, hn_pos⟩ : ℕ+) : ℚ)) +
               (((e + 1 : ℕ) : ℚ) / ((⟨good.card, hgood_pos⟩ : ℕ+) : ℚ))) := by
+        change ((e + deg - 1 : ℕ) : ℚ) / n + ((e + 1 : ℕ) : ℚ) / good.card < 1
         have h2e_deg_le_n : 2 * e + deg ≤ n := by
           omega
-        have hnq_pos : (0 : ℚ) < ((⟨n, hn_pos⟩ : ℕ+) : ℚ) := by positivity
-        have hfrac_lt :
-            (((e + 1 : ℕ) : ℚ) / ((⟨good.card, hgood_pos⟩ : ℕ+) : ℚ)) <
-              (((e + 1 : ℕ) : ℚ) / ((⟨n, hn_pos⟩ : ℕ+) : ℚ)) := by
-          have hnum_pos : (0 : ℚ) < (((e + 1 : ℕ) : ℚ)) := by positivity
-          have hng :
-              (((⟨n, hn_pos⟩ : ℕ+) : ℚ)) <
-                (((⟨good.card, hgood_pos⟩ : ℕ+) : ℚ)) := by
-            change (n : ℚ) < (good.card : ℚ)
-            exact_mod_cast hgood_card
-          exact div_lt_div_of_pos_left hnum_pos hnq_pos hng
-        have hsum_lt :
-            ((((e + deg - 1 : ℕ) : ℚ) / ((⟨n, hn_pos⟩ : ℕ+) : ℚ)) +
-              (((e + 1 : ℕ) : ℚ) / ((⟨good.card, hgood_pos⟩ : ℕ+) : ℚ)))
-              <
-            (((2 * e + deg : ℕ) : ℚ) / ((⟨n, hn_pos⟩ : ℕ+) : ℚ)) := by
-          have hsum_lt' :
-              ((((e + deg - 1 : ℕ) : ℚ) / ((⟨n, hn_pos⟩ : ℕ+) : ℚ)) +
-                (((e + 1 : ℕ) : ℚ) / ((⟨good.card, hgood_pos⟩ : ℕ+) : ℚ)))
-                <
-              ((((e + deg - 1 : ℕ) : ℚ) / ((⟨n, hn_pos⟩ : ℕ+) : ℚ)) +
-                (((e + 1 : ℕ) : ℚ) / ((⟨n, hn_pos⟩ : ℕ+) : ℚ))) := by
-            simpa [add_comm, add_left_comm, add_assoc] using
-              add_lt_add_left hfrac_lt
-                ((((e + deg - 1 : ℕ) : ℚ) / ((⟨n, hn_pos⟩ : ℕ+) : ℚ)))
-          have hsum_eq :
-              ((((e + deg - 1 : ℕ) : ℚ) / ((⟨n, hn_pos⟩ : ℕ+) : ℚ)) +
-                (((e + 1 : ℕ) : ℚ) / ((⟨n, hn_pos⟩ : ℕ+) : ℚ))) =
-              (((2 * e + deg : ℕ) : ℚ) / ((⟨n, hn_pos⟩ : ℕ+) : ℚ)) := by
-            rw [← add_div]
-            congr 1
-            exact_mod_cast (by omega : (e + deg - 1) + (e + 1) = 2 * e + deg)
-          exact hsum_lt'.trans_eq hsum_eq
-        have hle_one : (((2 * e + deg : ℕ) : ℚ) / ((⟨n, hn_pos⟩ : ℕ+) : ℚ)) ≤ 1 := by
-          rw [div_le_iff₀ hnq_pos]
-          simpa using
-            (show (((2 * e + deg : ℕ) : ℚ)) ≤ ((⟨n, hn_pos⟩ : ℕ+) : ℚ) by
-              exact_mod_cast h2e_deg_le_n)
-        exact lt_of_lt_of_le hsum_lt hle_one
+        have hnq_pos : (0 : ℚ) < n := Nat.cast_pos.2 hn_pos
+        have hfrac_lt : ((e + 1 : ℕ) : ℚ) / good.card < ((e + 1 : ℕ) : ℚ) / n :=
+          div_lt_div_of_pos_left (Nat.cast_pos.2 (Nat.succ_pos e)) hnq_pos
+            (Nat.cast_lt.2 hgood_card)
+        have hsum_eq : ((e + deg - 1 : ℕ) : ℚ) / n + ((e + 1 : ℕ) : ℚ) / n =
+            ((2 * e + deg : ℕ) : ℚ) / n := by
+          rw [← add_div, ← Nat.cast_add, show e + deg - 1 + (e + 1) = 2 * e + deg by omega]
+        have hle_one : ((2 * e + deg : ℕ) : ℚ) / n ≤ 1 :=
+          (div_le_one hnq_pos).2 (Nat.cast_le.2 h2e_deg_le_n)
+        exact ((add_lt_add_of_le_of_lt le_rfl hfrac_lt).trans_eq hsum_eq).trans_le hle_one
       obtain ⟨P, hBA, hP_degX, hP_degY, ⟨Q_x, hQx_card, hQx_sub, hQx_eval⟩, _⟩ :=
         polishchuk_spielman
           (a_x := e) (a_y := e) (b_x := e + deg - 1) (b_y := e + 1)
@@ -720,23 +628,27 @@ theorem RS_jointAgreement_of_goodCoeffs_card_gt {deg : ℕ} {domain : ι ↪ F} 
       intro k
       fin_cases k
       · constructor
-        · simpa [v0] using hv_mem 0
+        · exact hv_mem 0
         · intro i hi
           have hiQ : domain i ∈ Q_x := Finset.mem_preimage.mp hi
           have hEval : Polynomial.Bivariate.evalX (domain i) P = quot_y (domain i) := hQx_eval _ hiQ
           have hcoeff := congrArg (fun p : F[X] => p.coeff 0) hEval
-          exact Finset.mem_filter.mpr ⟨Finset.mem_univ i, by
-            simpa [quot_y, Polynomial.Bivariate.evalX, Polynomial.coeff,
-              Function.leftInverse_invFun domain.injective i, Code.finMapTwoWords, v0] using hcoeff⟩
+          simp only [Polynomial.Bivariate.evalX_eq_map, Polynomial.coeff_map,
+            Polynomial.coe_evalRingHom, quot_y, Function.leftInverse_invFun domain.injective i,
+            Polynomial.coeff_add, Polynomial.coeff_C_zero, Polynomial.coeff_X_mul_zero,
+            add_zero] at hcoeff
+          exact Finset.mem_filter.mpr ⟨Finset.mem_univ i, hcoeff⟩
       · constructor
-        · simpa [v1] using hv_mem 1
+        · exact hv_mem 1
         · intro i hi
           have hiQ : domain i ∈ Q_x := Finset.mem_preimage.mp hi
           have hEval : Polynomial.Bivariate.evalX (domain i) P = quot_y (domain i) := hQx_eval _ hiQ
           have hcoeff := congrArg (fun p : F[X] => p.coeff 1) hEval
-          exact Finset.mem_filter.mpr ⟨Finset.mem_univ i, by
-            simpa [quot_y, Polynomial.Bivariate.evalX, Polynomial.coeff,
-              Function.leftInverse_invFun domain.injective i, Code.finMapTwoWords, v1] using hcoeff⟩
+          simp only [Polynomial.Bivariate.evalX_eq_map, Polynomial.coeff_map,
+            Polynomial.coe_evalRingHom, quot_y, Function.leftInverse_invFun domain.injective i,
+            Polynomial.coeff_add, Polynomial.coeff_C_zero, Polynomial.coeff_C_succ,
+            Polynomial.coeff_X_mul, zero_add] at hcoeff
+          exact Finset.mem_filter.mpr ⟨Finset.mem_univ i, hcoeff⟩
     · have hdeg_gt : n < deg := Nat.lt_of_not_ge hdeg_le
       let p0 : F[X] := Lagrange.interpolate Finset.univ domain (u 0)
       let p1 : F[X] := Lagrange.interpolate Finset.univ domain (u 1)

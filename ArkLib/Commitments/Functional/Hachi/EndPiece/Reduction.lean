@@ -6,6 +6,7 @@ Authors: Tobias Rothmann, Pablo Martin
 module
 
 public import ArkLib.Commitments.Functional.Hachi.Sumcheck.FinalEval
+public import ArkLib.OracleReduction.ProgramLogic
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Guarded
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChallenge
 
@@ -308,32 +309,13 @@ lemma endPieceReduction_run_support
       ∃ tr, x = some ((tr, (), ()), ()) := by
   have hg : endPieceCheck Φ m₀ bound bDig b K φF stmt w = true :=
     (endPieceCheck_eq_true_iff Φ m₀ bound bDig b K φF stmt w).mpr h
-  intro x hx
-  unfold Reduction.run at hx
-  simp only [OptionT.run_bind, Option.elimM] at hx
-  rw [mem_support_bind_iff] at hx
-  obtain ⟨prOpt, hpr, hx⟩ := hx
-  rw [show ((liftM (Prover.run stmt w
-        (endPieceReduction (oSpec := oSpec) Φ m₀ bound bDig b K φF).prover) :
-        OptionT (OracleComp _) _)).run
-      = (Prover.run stmt w
-          (endPieceReduction (oSpec := oSpec) Φ m₀ bound bDig b K φF).prover)
-        >>= fun a => pure (some a) from rfl] at hpr
-  rw [mem_support_bind_iff] at hpr
-  obtain ⟨pr, hpr, hprOpt⟩ := hpr
-  rw [mem_support_pure_iff] at hprOpt
-  subst hprOpt
-  rw [show (endPieceReduction (oSpec := oSpec) Φ m₀ bound bDig b K φF).prover
-      = endPieceProver (TCom := K.TCom) Φ m₀ from rfl] at hpr
-  obtain ⟨hmsg, hout⟩ :=
-    endPieceProver_run_support (oSpec := oSpec) (TCom := K.TCom) Φ m₀ stmt w pr hpr
-  refine ⟨pr.1, ?_⟩
-  simp only [Option.elim_some, endPieceReduction, endPieceVerifier, Verifier.run, hmsg, hg,
-    ite_true] at hx
-  simp only [OptionT.run_pure, liftM_pure, ProgrammingPolicy.empty_apply, pure_bind,
-    Option.elim_some, Option.getM_some, support_pure, Set.mem_singleton_iff] at hx
-  have hpr : pr = (pr.1, (), ()) := Prod.ext rfl hout
-  rw [hx, hpr]
+  have : ProverOnly (pSpecEndPiece (LiftedWitness Φ μ n)) := { prover_first' := rfl }
+  simp only [Reduction.run_run_eq, endPieceReduction, endPieceVerifier, Verifier.run,
+    Prover.run_of_prover_first, endPieceProver, apply_ite OptionT.run, OptionT.run_pure,
+    OptionT.run_failure]
+  prvcgen
+  · exact ⟨_, rfl⟩
+  · exact absurd hg ‹_›
 
 omit [NeZero q] [IsCyclotomic Φ] in
 /-- **Perfect completeness of the end-piece**, error exactly `0`: a witness in `relWEvalClaim`

@@ -22,18 +22,6 @@ and that each diagonal composite `π i ∘ f i` is injective. Then the sum map
 
 * `LinearMap.injective_sum_comp_proj_of_triangular`: the sum of a block-lower-triangular family
   with injective diagonal is injective.
-
-## References
-
-This generalizes the `T`-adic induction in
-`ReedSolomon.HiddenDerivative.truncateLocalT_sum_exhibitedKernelFactor_mul_eq_zero_iff`, in
-`Interpolation/Local/KernelSliceIndependence.lean` under
-`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/` at ArkLib revision
-a5aa2677fee4e3a79d6bb05136631cce4a08587d. The source proved it for the coefficients of powers
-of one variable over a field, indexed by `Fin m`; here the index is any finite linear order,
-the test maps are arbitrary, and the scalars form a ring.
-
-Nothing is deferred.
 -/
 
 @[expose] public section

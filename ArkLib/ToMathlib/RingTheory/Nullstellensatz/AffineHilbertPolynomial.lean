@@ -31,21 +31,6 @@ bound reads `ncard ≤ affineDegree I`.
 * `MvPolynomial.ncard_zeroLocus_le_affineDegree`,
   `MvPolynomial.finite_zeroLocus_and_ncard_le_affineDegree`: the same bound by the affine degree,
   for a finite-dimensional quotient and for a Hilbert polynomial of natural degree zero.
-
-## References
-
-Ported from ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
-`AffineHilbert.finite_zeroLocus_and_ncard_le_hilbertPolynomial` in
-`ArkLib/ToMathlib/AlgebraicGeometry/Hilbert/Polynomial.lean`, stated here for
-`MvPolynomial.affineHilbertPolynomial`. The source assumed Krull dimension zero; the bound is
-also stated under the `Module.Finite` hypothesis that its proof uses, with the source statement
-as `finite_zeroLocus_and_ncard_le_affineHilbertPolynomial`.
-
-From `ArkLib/ToMathlib/AlgebraicGeometry/Hilbert/Degree.lean` at the same revision:
-`AffineHilbert.finite_zeroLocus_and_ncard_le_affineDegree`, which assumed that the Hilbert
-polynomial has natural degree zero. That statement is kept, and the bound is also stated under
-the equivalent `Module.Finite` hypothesis as `ncard_zeroLocus_le_affineDegree`. Both are derived
-from `ncard_zeroLocus_le_coeff_zero_affineHilbertPolynomial`.
 -/
 
 @[expose] public section
@@ -93,8 +78,7 @@ theorem ncard_zeroLocus_le_affineDegree (I : Ideal (MvPolynomial σ k))
 
 /-- If the affine Hilbert polynomial of `I` has natural degree zero, the zero locus of `I` over any
 field extension `K` is finite with at most `affineDegree I` points. Natural degree zero makes the
-quotient finite-dimensional (`natDegree_affineHilbertPolynomial_eq_zero_iff`). This is the source
-statement. -/
+quotient finite-dimensional (`natDegree_affineHilbertPolynomial_eq_zero_iff`). -/
 theorem finite_zeroLocus_and_ncard_le_affineDegree (I : Ideal (MvPolynomial σ k))
     (hdeg : (affineHilbertPolynomial I).natDegree = 0) :
     (zeroLocus K I).Finite ∧ ((zeroLocus K I).ncard : ℚ) ≤ affineDegree I :=

@@ -5,9 +5,9 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.Data.Classes.HasSize
+public import CompPoly.Data.Classes.HasSize
 public import ArkLib.Data.Classes.Initialize
-public import ArkLib.Data.Classes.Serde
+public import CompPoly.Data.Classes.Serialize
 public import VCVio.OracleComp.SimSemantics.Append
 
 /-!

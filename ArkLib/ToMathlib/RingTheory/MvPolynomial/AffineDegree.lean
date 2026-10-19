@@ -35,26 +35,15 @@ The bound on the number of points of a zero-dimensional zero locus by the affine
 * `MvPolynomial.affineDegree_eq_finrank`: finite-dimensional quotients.
 * `MvPolynomial.affineDegree_span_singleton`: hypersurfaces.
 * `MvPolynomial.affineDegree_le_of_le`: comparison along inclusions of the same dimension.
-
-## References
-
-Ported from ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`, file
-`ArkLib/ToMathlib/AlgebraicGeometry/Hilbert/Degree.lean`, namespace `AffineHilbert`:
-`affineDegree`, `affineDegree_nonneg`, `affineDegree_pos`, `affineDegree_bot`,
-`affineDegree_eq_finrank` and `affineDegree_span_singleton`. The definition is unchanged except
-that it is stated for `MvPolynomial.affineHilbertPolynomial`. `affineDegree_span_singleton` no
-longer assumes that `span {f}` is proper: for a nonzero constant `f` both sides are `0`. The
-characterization `affineDegree_pos_iff`, the value `affineDegree_top`, the constant-polynomial
-form `affineDegree_of_natDegree_eq_zero` and the comparison `affineDegree_le_of_le` are new.
-The source's `finite_zeroLocus_and_ncard_le_affineDegree` is in
-`ArkLib.ToMathlib.RingTheory.Nullstellensatz.AffineHilbertPolynomial`.
+* `MvPolynomial.affineDegree_le_of_eventually_affineHilbertFunction_le`: an upper bound from an
+  eventual polynomial bound on the affine Hilbert function.
 -/
 
 @[expose] public section
 
 noncomputable section
 
-open Polynomial
+open Filter Polynomial
 
 namespace MvPolynomial
 
@@ -156,5 +145,25 @@ theorem affineDegree_le_of_le {I J : Ideal (MvPolynomial σ k)} (hIJ : I ≤ J)
   rw [affineDegree, affineDegree, hdeg]
   exact mul_le_mul_of_nonneg_left (leadingCoeff_affineHilbertPolynomial_le_of_le hIJ hdeg)
     (Nat.cast_nonneg _)
+
+/-- An eventual polynomial bound on the affine Hilbert function bounds the affine degree. If the
+affine Hilbert polynomial of `I` has natural degree `d`, a polynomial `R` of natural degree at most
+`d` satisfies `H(I, N) ≤ R(N)` for all large `N`, then `affineDegree I ≤ d! * R.coeff d`.
+
+Both polynomials have natural degree at most `d`, so the eventual inequality compares their
+coefficients in degree `d` (`Polynomial.coeff_le_of_natDegree_le_of_eventually_eval_natCast_le`).
+The equality `hdim` cannot be weakened to an upper bound: for `I = ⊥` in one variable, `d = 2` and
+`R = X + 1`, the bound `H(⊥, N) = N + 1 ≤ R(N)` holds, but `affineDegree ⊥ = 1` exceeds
+`2! * R.coeff 2 = 0`. -/
+theorem affineDegree_le_of_eventually_affineHilbertFunction_le {I : Ideal (MvPolynomial σ k)}
+    {d : ℕ} {R : ℚ[X]} (hdim : (affineHilbertPolynomial I).natDegree = d) (hR : R.natDegree ≤ d)
+    (hbound : ∀ᶠ N : ℕ in atTop, (affineHilbertFunction I N : ℚ) ≤ R.eval (N : ℚ)) :
+    affineDegree I ≤ (d.factorial : ℚ) * R.coeff d := by
+  have hc := coeff_le_of_natDegree_le_of_eventually_eval_natCast_le hdim.le hR
+    (by
+      filter_upwards [eventually_eval_affineHilbertPolynomial I, hbound] with N hN hRN
+      rwa [hN])
+  rw [affineDegree, hdim, leadingCoeff, hdim]
+  exact mul_le_mul_of_nonneg_left hc (Nat.cast_nonneg _)
 
 end MvPolynomial

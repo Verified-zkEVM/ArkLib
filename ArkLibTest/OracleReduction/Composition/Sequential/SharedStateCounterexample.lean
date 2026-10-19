@@ -128,9 +128,7 @@ theorem not_append_perfectCompleteness :
     Fin.castAdd_zero, Fin.cast_eq_self, id_eq, liftM_map, simulateQ_map, simulate_query, impl,
     Bool.false_eq_true, ↓reduceIte, LawfulMonadStateOf.set_bind_get, bind_pure_comp,
     Functor.map_map, StateT.run_map, StateT.run_set, StateT.run_get, map_pure] at hbad
-  rw [map_eq_bind_pure_comp] at hbad
-  simp only [Function.comp_def] at hbad
-  have hone := le_antisymm (prEvent_le_one _ _) hbad
+  have hone := le_antisymm (OptionT.prEvent_le_one _ _) hbad
   rw [OracleComp.OptionT.prEvent_mk_eq_one_iff] at hone
   simp only [support_pure, Set.mem_singleton_iff, forall_eq, Option.some.injEq] at hone
   obtain ⟨x, rfl, hfalse⟩ := hone

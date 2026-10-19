@@ -26,16 +26,6 @@ ring `R` that embeds into a field `K` by an injective ring homomorphism `φ`. It
 maps a vector `v` to `φ ∘ v`, which reduces both kernel conditions to kernel conditions over `K`.
 Over `K`, the vectors orthogonal to `φ ∘ v` form a subspace, so if they contain the selected rows
 they contain their span, which is the full row space.
-
-## References
-
-The row selector is extracted and generalized from
-`ArkLib.ToMathlib.LinearAlgebra.PolynomialKernelHeight` at immutable source revision
-`a5aa2677fee4e3a79d6bb05136631cce4a08587d`, where it was named
-`Matrix.exists_rows_fin_rank` and specialized both index types to `Fin`. The kernel transfer
-replaces the span-induction argument inside
-`Matrix.exists_ne_zero_mulVec_eq_zero_natDegree_le_of_rank_eq` at the same revision, which was
-specialized to polynomial matrices, `Fin` indices, and the rational function field.
 -/
 
 @[expose] public section

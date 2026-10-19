@@ -33,6 +33,9 @@ non-standard exponents the union of finitely many cones, and the count in
 `ArkLib.ToMathlib.Combinatorics.Enumerative.MonomialCount` shows that the affine Hilbert function
 agrees, for all large `N`, with a polynomial of degree at most the number of variables.
 
+The polynomial itself, `MvPolynomial.affineHilbertPolynomial`, is defined in
+`ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertPolynomial`.
+
 ## Main statements
 
 * `MonomialOrder.standardExponents`, `MonomialOrder.standardSpace`: the standard exponents and the
@@ -48,28 +51,6 @@ agrees, for all large `N`, with a polynomial of degree at most the number of var
   the standard exponents.
 * `MvPolynomial.exists_eval_eq_affineHilbertFunction`: the affine Hilbert function is eventually a
   polynomial of degree at most `Nat.card σ`.
-
-## References
-
-Ported from ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`, file
-`ArkLib/ToMathlib/AlgebraicGeometry/Hilbert/StandardMonomials.lean`, namespace `AffineHilbert`:
-`standardExponents`, `standardSpace`, `eq_zero_of_mem_standardSpace_of_mem_ideal`,
-`exists_standard_representative`, `standard_representative_unique`, `standardQuotientMap` with
-`standardQuotientMap_bijective` (now the equivalence `standardQuotientEquiv`),
-`standardDegreeLE` with `standardFilteredMap_bijective` (now `standardDegreeLEEquiv`),
-`hilbertFunction_eq_standard_count`, `standardExponents_lower` and
-`exists_finset_forbidden_standardExponents`. The source fixed the order `degLex`, which required
-`LinearOrder σ` and `WellFoundedGT σ` in every statement. Here the definitions and the
-unfiltered statements hold for every monomial order, and the filtered statements for every graded
-one; the source statements are the `degLex` specializations. `standardExponents_span_singleton` is
-from `PrincipalCut/Polynomial.lean`, and `exists_eval_eq_affineHilbertFunction` is the existence
-half of `exists_hilbertPolynomial` in `Hilbert/Polynomial.lean`, at the same revision, with
-coefficients in any field of characteristic zero instead of `ℚ`.
-
-Deferred to the Hilbert-polynomial slice (`Hilbert/Polynomial.lean` at the same revision): the
-chosen `hilbertPolynomial` and its uniqueness, its value for finite-dimensional quotients and for
-`⊥`, its nonvanishing for proper ideals, the converse from degree zero to finite dimension, and the
-principal-cut statement on its degree and leading coefficient.
 -/
 
 @[expose] public section
@@ -171,6 +152,7 @@ def standardQuotientEquiv (I : Ideal (MvPolynomial σ k)) :
         obtain ⟨q, hq, hpq, _⟩ := m.exists_mem_standardSpace_sub_mem I p
         exact ⟨⟨q, hq⟩, (Ideal.Quotient.eq.mpr hpq).symm⟩⟩
 
+/-- `standardQuotientEquiv` sends a standard polynomial to its class modulo `I`. -/
 @[simp]
 theorem standardQuotientEquiv_apply (I : Ideal (MvPolynomial σ k)) (p : m.standardSpace I) :
     m.standardQuotientEquiv I p = Ideal.Quotient.mk I (p : MvPolynomial σ k) :=
@@ -273,8 +255,7 @@ theorem degree_le_degree_of_degLex_le [LinearOrder σ] [WellFoundedGT σ] {a b :
     (h : a ≼[MonomialOrder.degLex] b) : a.degree ≤ b.degree :=
   Finsupp.DegLex.monotone_degree h
 
-/-- The affine Hilbert function counts the `degLex`-standard exponents of degree at most `N`.
-This is the source statement. -/
+/-- The affine Hilbert function counts the `degLex`-standard exponents of degree at most `N`. -/
 theorem affineHilbertFunction_eq_standard_count [LinearOrder σ] [WellFoundedGT σ] [Finite σ]
     (I : Ideal (MvPolynomial σ k)) (N : ℕ) :
     affineHilbertFunction I N =

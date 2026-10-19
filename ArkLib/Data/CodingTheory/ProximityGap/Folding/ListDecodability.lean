@@ -147,21 +147,18 @@ lemma card_foldingBlockAgreementAux_eq'
       (ω.subdomain k).toFinset :=
         complDisagreementSet_sub_subdomain.trans <| fun x hx ↦ by
           aesop (add safe (by grind))
-  aesop
-    (add simp foldingBlockAgreementAux)
-    (add safe [(by rw [card_pullback_eq_mul_card_pullback₂,
-                       card_pullback₂_eq, mul_comm]),
-               (by grind)])
+  rw [foldingBlockAgreementAux,
+    card_pullback_eq_mul_card_pullback₂ FoldingContextMiddle.k_ge_1 FoldingContextMiddle.k_le_n,
+    card_pullback₂_eq FoldingContextMiddle.k_ge_1 FoldingContextMiddle.k_le_n this, mul_comm]
 
 lemma card_foldingBlockAgreementAux_eq''
     [FoldingContextMiddle k n]
   {α : F} {u0 u1 v : Word F (Fin (2 ^ (n - 1)))} :
   Finset.card (foldingBlockAgreementAux k ω α u0 u1 v) =
     (2 ^ (n - k) - Δ𞁒(k - 1, ω.subdomain 1, u0 + α • u1, v)) * 2 ^ (k - 1) := by
-  aesop
-    (add simp [card_foldingBlockAgreementAux_eq',
-               card_complDisagreementSet,
-               FoldingContext.n_sub_1_sub_k_sub_1_eq_n_sub_k])
+  rw [card_foldingBlockAgreementAux_eq', card_complDisagreementSet]
+  simp only [card_toFinset, Fintype.card_fin, FoldingContext.n_sub_1_sub_k_sub_1_eq_n_sub_k]
+  rfl
 
 def foldingBlockAgreement
     (k : ℕ) (ω : SmoothCosetFftDomain n F)
@@ -183,14 +180,18 @@ lemma card_foldingBlockAgreement_ge [FoldingContextMiddle k n]
   (Finset.card (foldingBlockAgreement k ω α u0 u1 v) : ℝ≥0) ≥
     2 ^ (n - 1) * (1 - δ𞁒(k - 1, ω.subdomain 1, u0 + α • u1, v)) := by
   rw [card_foldingBlockAgreement, card_foldingBlockAgreementAux_eq'']
-  have : Δ𞁒(k - 1, CosetFftDomain.subdomain ω 1, u0 + α • u1, v) ≤ (2 : ℝ≥0) ^ (n - k) := by
-    norm_cast
-    grind [blockDistance_le]
-  have : k - 1 + (n - k) = n - 1 := by grind
-  simp [←NNReal.coe_le_coe]
-  aesop
-    (add simp [blockRelDistance])
-    (add safe [(by grind), (by field_simp), le_of_eq])
+  have hN : (2 : ℝ≥0) ^ (n - k) ≠ 0 := pow_ne_zero _ two_ne_zero
+  have hrel : ((δ𞁒(k - 1, CosetFftDomain.subdomain ω 1, u0 + α • u1, v) : ℚ≥0) : ℝ≥0) =
+      (Δ𞁒(k - 1, CosetFftDomain.subdomain ω 1, u0 + α • u1, v) : ℝ≥0) / 2 ^ (n - k) := by
+    simp only [blockRelDistance, card_toFinset, Fintype.card_fin,
+      FoldingContext.n_sub_1_sub_k_sub_1_eq_n_sub_k, NNRat.cast_div, NNRat.cast_natCast,
+      Nat.cast_pow, Nat.cast_ofNat, NNRat.cast_pow, NNRat.cast_ofNat]
+  have hpow : (2 : ℝ≥0) ^ (n - 1) = 2 ^ (k - 1) * 2 ^ (n - k) := by
+    rw [← pow_add, FoldingContext.k_sub_1_add_n_sub_k_eq_n_sub_1]
+  refine le_of_eq ?_
+  rw [hrel, hpow, mul_assoc, mul_tsub, mul_one, mul_div_cancel₀ _ hN, Nat.cast_mul,
+    Nat.cast_tsub, mul_comm]
+  norm_cast
 
 open FoldingContext in
 lemma foldingBlockAgreement_is_agreement [FoldingContextMiddle k n]
@@ -316,6 +317,14 @@ lemma distance_of_u0_u1_polynomials [NeZero n]
       aesop (add simp [complDisagreementSet_def', mem_blockIdx_iff_mem_block, evalOnPoints]))
     (fun _ _ _ _ hab ↦ CosetFftDomainClass.injective _ hab)
 
+omit [DecidableEq F] in
+private lemma natDegree_lt_two_pow_of_degree_lt {u : Polynomial F} {m : ℕ}
+    (h : u.degree < 2 ^ m) : u.natDegree < 2 ^ m := by
+  by_cases hu : u = 0
+  · rw [hu, Polynomial.natDegree_zero]
+    exact Nat.two_pow_pos m
+  · exact (Polynomial.natDegree_lt_iff_degree_lt hu).2 (by exact_mod_cast h)
+
 open FoldingContext in
 lemma mem_ball_of_u0_u1_polynomials [FoldingContext k d n]
     {δ : ℝ≥0} (hδ1 : δ < 1)
@@ -335,23 +344,17 @@ lemma mem_ball_of_u0_u1_polynomials [FoldingContext k d n]
       evalOnPoints_mem_code_of_natDegree_lt <| lt_of_le_of_lt (natDegree_add_le _ _) <| by
         simp only [natDegree_comp, natDegree_pow, natDegree_X, mul_one, sup_lt_iff]
         have hpow : 2 ^ d = 2 ^ (d - 1) * 2 := by
-          conv_rhs =>
-            rhs
-            rw [show 2 = 2 ^ 1 by simp]
-          rw [←pow_add]
-          grind
+          rw [← pow_succ, Nat.sub_add_cancel
+            (le_trans FoldingContextLeft.k_ge_1 FoldingContextLeft.k_le_d)]
+        have h₀ := natDegree_lt_two_pow_of_degree_lt hu₀_deg
+        have h₁ := natDegree_lt_two_pow_of_degree_lt hu₁_deg
         constructor
-        · rw [hpow, Nat.mul_lt_mul_right (by simp)]
-          by_cases hu₀ : u₀ = 0 <;>
-            aesop (add simp [Polynomial.natDegree_lt_iff_degree_lt])
+        · rw [hpow]
+          omega
         · exact lt_of_le_of_lt Polynomial.natDegree_mul_le <| by
             simp only [natDegree_X, natDegree_comp, natDegree_pow, mul_one]
-            have : 1 + u₁.natDegree * 2 ≠ 2 ^ d := by aesop (add safe (by grind))
-            apply swap lt_of_le_of_ne this
-            rw [Nat.le_iff_lt_add_one, add_comm, Nat.add_lt_add_iff_right,
-                hpow, Nat.mul_lt_mul_right (by simp)]
-            by_cases hu₁ : u₁ = 0 <;>
-              aesop (add simp [Polynomial.natDegree_lt_iff_degree_lt])
+            rw [hpow]
+            omega
   · apply le_trans (b := ((2 ^ (n - k) : ℝ≥0) - Finset.card z) / (2 ^ (n - k)))
     · simp only [blockRelDistance, _root_.map_add, evalOnPoints_mul, evalOnPoints_X,
       card_toFinset, Fintype.card_fin, Nat.cast_pow, Nat.cast_ofNat,

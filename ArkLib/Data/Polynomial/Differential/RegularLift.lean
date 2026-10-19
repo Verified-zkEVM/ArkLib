@@ -54,46 +54,6 @@ of the residual of any `P` (with `r < l`) is the residual of its degree-`< l` Ta
 
 ## References
 
-Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Regular/` at ArkLib
-revision a5aa2677fee4e3a79d6bb05136631cce4a08587d, where everything was stated over a field in
-the namespace `ReedSolomon.HiddenDerivative`. None of it mentions a Reed–Solomon object, so it is
-stated here over a commutative ring in the namespace `PolynomialDifferential`, next to
-`shiftedJetSubstitution`.
-
-From `Lifting.lean`:
-
-* `shiftedJetValues`, `regularLiftIncrement`, `shiftedJetSubstitution_eq_eval₂Hom`,
-  `X_pow_succ_dvd_regularLiftIncrement_of_ne_top` (here `_of_ne_last`) and
-  `regularLiftIncrement_top` (here `_last`) keep their statements.
-* The source's `regularLiftCandidate center γ k r P` is not defined; statements use
-  `P + hassePerturbation center γ (k + r)` directly. Accordingly
-  `shiftedJetValues_regularLiftCandidate`,
-  `X_pow_succ_dvd_shiftedJetSubstitution_regularLiftCandidate_sub`,
-  `coeff_shiftedJetSubstitution_regularLiftCandidate` and
-  `X_pow_dvd_shiftedJetSubstitution_regularLiftCandidate` become the `_add_hassePerturbation`
-  statements. The last one no longer assumes `0 < k`.
-* `existsUnique_regularLiftCoefficient` replaces the two field hypotheses
-  `(k + r choose r) ≠ 0` and `S ≠ 0` by the single hypothesis that their product is a unit.
-  `existsUnique_regularLiftCoefficient_centered` is the source's `_centered` form.
-* `eval_zero_shiftedJetSubstitution_separant` is `coeff_zero_shiftedJetSubstitution` in
-  `ArkLib.Data.Polynomial.Differential.ShiftedJet`; `X_pow_dvd_regularLiftIncrement_top` is
-  inlined; `X_pow_succ_dvd_iff_coeff_eq_zero_of_X_pow_dvd` and
-  `X_pow_dvd_taylor_iff_X_sub_C_pow_dvd` are in `ArkLib.ToMathlib.Polynomial.HasseTaylor.Lifting`.
-* The `ringChar` wrappers `existsUnique_regularLiftCoefficient_of_le_of_lt_ringChar`,
-  `existsUnique_regularLiftCoefficient_centered_of_le_of_lt_ringChar` and the wrappers taking
-  `IsRegularJet` are not ported. `Polynomial.natCast_choose_ne_zero_of_lt_charP` gives the
-  binomial hypothesis below a prime characteristic.
-
-From `Iteration.lean`: `X_pow_dvd_shiftedJetSubstitution_sub_of_X_pow_add_dvd` and
-`X_sub_C_pow_dvd_differentialSpecialization_sub_of_X_sub_C_pow_add_dvd` keep their statements;
-its private evaluation lemma is `MvPolynomial.dvd_eval₂Hom_sub_eval₂Hom`. The uniqueness theorems
-of `Iteration.lean` are deferred; they need `IsRegularJet`, `IsHighestActiveJet` and
-`BoundedSolution` from `RootFinding/Regular/JetPrefix.lean` and the root-finding core.
-
-`coeff_shiftedJetSubstitution_eq_centeredCoefficientPrefix_add` is the argument of the source's
-`solution_taylorCoefficient_residual` (`RootFinding/Taylor/Numerator.lean`) without the
-assumption that `P` is a solution.
-
 * [Kopparty, S., *List-Decoding Multiplicity Codes*][Kop15], Theorem 4.4.
 -/
 
@@ -217,7 +177,7 @@ theorem X_pow_dvd_shiftedJetSubstitution_add_hassePerturbation
 
 /-! ### Unique one-step lifting -/
 
-/-- The regular one-step lift of [Kop15, Theorem 4.4]. Let `0 < k`, suppose `X ^ k` divides the
+/-- The unique regular one-step lift. Let `0 < k`, suppose `X ^ k` divides the
 residual of `P`, and suppose the slope `(k + r choose r) S` is a unit, where `S` is the separant
 evaluated at `center` and the Hasse jet of `P`. Then exactly one `γ` makes `X ^ (k + 1)` divide
 the residual of `P + γ (X - center) ^ (k + r)`.

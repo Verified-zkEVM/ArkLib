@@ -15,10 +15,13 @@ public import PolyFun.PFunctor.Free.Cursor.Append
 An `ExecutionPrefix` pairs a structural cursor with exactly the concrete oracle realizations along
 that prefix. Crossing a send supplies its realization, without assuming future send types are
 inhabited. This is structural traversal, not strategy reachability or runtime support. Residual
-decorations are inherited from the tree. Available oracle names are crossed structural occurrences
-scoped to
-the original tree and disjoint from user-supplied input names. Runtime trace alignment belongs to
-the logged-execution layer.
+decorations are inherited from the tree. Available oracle names are crossed send occurrences in
+the original tree, disjoint from input names.
+
+`queryIndex` maps the actual accumulated query signature into this available context. `queryName`
+identifies a raw input query or a received oracle's send occurrence. Continuing execution preserves
+earlier names; appending a later protocol transports names and the same concrete messages.
+Runtime trace alignment belongs to the logged and phased execution layers.
 -/
 
 @[expose] public section
@@ -342,6 +345,306 @@ def contextInclusion {earlier later : ExecutionPrefix tree}
     NamedContext.Inclusion (earlier.availableContext InputId) (later.availableContext InputId) where
   map := Sum.map id (fun occurrence => ⟨occurrence.1, available_mono extension _ occurrence.2⟩)
   name_eq := by intro x; cases x <;> rfl
+
+private theorem occurrence_down {position : Position} {next : basePFunctor.B position → TypeTree}
+    (answer : basePFunctor.B position) (occurrence : Cursor (next answer))
+    (h : IsOracleOccurrence occurrence) : IsOracleOccurrence (Cursor.down answer occurrence) := by
+  rcases h with ⟨before, Messages, rest, shape, h⟩
+  refine ⟨Cursor.down answer before, Messages, rest, shape, ?_⟩
+  exact congrArg (Cursor.down answer) h
+
+private theorem available_down {position : Position}
+    {next : basePFunctor.B position → TypeTree} (answer : basePFunctor.B position)
+    (tail : Cursor (next answer)) (occurrence : Cursor (next answer))
+    (h : IsOracleOccurrence occurrence ∧ Nonempty (Cursor.Extends occurrence tail)) :
+    IsOracleOccurrence (Cursor.down answer occurrence) ∧
+      Nonempty (Cursor.Extends (Cursor.down answer occurrence) (Cursor.down answer tail)) := by
+  refine ⟨occurrence_down answer occurrence h.1, ?_⟩
+  rcases h.2 with ⟨extension⟩
+  exact ⟨⟨extension.continuation, by
+    simpa only [Cursor.down_comp] using congrArg (Cursor.down answer) extension.comp_eq⟩⟩
+
+private def latestCursor {Messages : Type u} {rest : PUnit.{u + 1} → Oracle.TypeTree.{u}} :
+    Cursor (TypeTree.oracle Messages rest) :=
+  Cursor.down (P := basePFunctor.{u}) (α := PUnit.{u + 1}) (a := Position.oracle Messages)
+      (next := rest) PUnit.unit (Cursor.root _)
+
+private theorem available_latest {Messages : Type u} {rest : PUnit.{u + 1} → Oracle.TypeTree.{u}}
+    (tail : Cursor (rest PUnit.unit)) :
+    IsOracleOccurrence (latestCursor (Messages := Messages) (rest := rest)) ∧
+      Nonempty (Cursor.Extends (latestCursor (Messages := Messages) (rest := rest))
+        (Cursor.down (P := basePFunctor.{u}) (α := PUnit.{u + 1}) (a := Position.oracle Messages)
+      (next := rest) PUnit.unit tail)) := by
+  refine ⟨?_, ⟨⟨tail, rfl⟩⟩⟩
+  exact ⟨Cursor.root (TypeTree.oracle Messages rest), Messages, rest, rfl, rfl⟩
+
+/-- Compute the available-resource index along a concrete prefix spine. -/
+def queryIndexAlong : {tree residual : TypeTree} →
+    (spine : Cursor.Spine tree residual) → (messages : PrefixMessages.Along spine) →
+    (oracles : tree.OracleDecoration) → (initial : PFunctor) →
+    (accessAlong spine oracles initial).A →
+    ((ExecutionPrefix.mk ⟨residual, spine⟩ messages).availableContext initial.A).Index
+  | _, _, .root _, _, _, _, q => .inl q
+  | _, _, .down (a := Position.public _) answer tail, messages, oracles, initial, q =>
+      match queryIndexAlong tail messages (oracles.2 answer) initial q with
+      | .inl q => .inl q
+      | .inr occurrence => .inr ⟨Cursor.down answer occurrence.1,
+          by exact available_down answer ⟨_, tail⟩ occurrence.1 occurrence.2⟩
+  | _, _, .down (a := Position.oracle _) answer tail, messages, oracles, initial, q =>
+      match queryIndexAlong tail messages.2 (oracles.2 answer)
+          (Access.extend initial oracles.1) q with
+      | .inl (.inl q) => .inl q
+      | .inl (.inr _) => .inr ⟨Cursor.down answer (Cursor.root _), by
+          cases answer
+          exact available_latest ⟨_, tail⟩⟩
+      | .inr occurrence => .inr ⟨Cursor.down answer occurrence.1,
+          by exact available_down answer ⟨_, tail⟩ occurrence.1 occurrence.2⟩
+
+/-- Each actual access query names an initial query or an oracle edge already crossed. -/
+def queryIndex {tree : TypeTree} (pfx : ExecutionPrefix tree) (oracles : tree.OracleDecoration)
+    (initial : PFunctor) : (pfx.access oracles initial).A →
+      (pfx.availableContext initial.A).Index :=
+  queryIndexAlong pfx.cursor.spine pfx.messages oracles initial
+
+/-- The stable name is derived from its canonical available-context index.
+Initial names identify raw input queries. Names for sent oracles identify the crossed send edge,
+so different query arguments to the same received oracle intentionally share its name. -/
+def queryName {tree : TypeTree} (pfx : ExecutionPrefix tree) (oracles : tree.OracleDecoration)
+    (initial : PFunctor) : (pfx.access oracles initial).A → initial.A ⊕ Cursor tree :=
+  fun q => (pfx.availableContext initial.A).name (pfx.queryIndex oracles initial q)
+
+theorem queryName_available {tree : TypeTree} (pfx : ExecutionPrefix tree)
+    (oracles : tree.OracleDecoration) (initial : PFunctor)
+    (q : (pfx.access oracles initial).A) :
+    ∃ index : (pfx.availableContext initial.A).Index,
+      (pfx.availableContext initial.A).name index = pfx.queryName oracles initial q :=
+  ⟨pfx.queryIndex oracles initial q, rfl⟩
+
+/-- No actual query at this prefix names an oracle occurrence that is unavailable here. -/
+theorem queryName_ne_of_not_available {tree : TypeTree} (pfx : ExecutionPrefix tree)
+    (oracles : tree.OracleDecoration) (initial : PFunctor)
+    (q : (pfx.access oracles initial).A) (occurrence : Cursor tree)
+    (unavailable : ¬ pfx.Available occurrence) :
+    pfx.queryName oracles initial q ≠ .inr occurrence := by
+  intro equal
+  obtain ⟨index, named⟩ := queryName_available pfx oracles initial q
+  rw [equal] at named
+  cases index with
+  | inl input =>
+    change Sum.inl input = Sum.inr occurrence at named
+    cases named
+  | inr available =>
+    change Sum.inr available.1 = Sum.inr occurrence at named
+    exact unavailable (Sum.inr.inj named ▸ available.2)
+
+/-- An oracle send beyond the current prefix cannot be named by any currently available query. -/
+theorem queryName_ne_future {tree : TypeTree} (pfx : ExecutionPrefix tree)
+    (oracles : tree.OracleDecoration) (initial : PFunctor)
+    (q : (pfx.access oracles initial).A) (occurrence : Cursor tree)
+    (future : pfx.cursor.length < occurrence.length) :
+    pfx.queryName oracles initial q ≠ .inr occurrence :=
+  queryName_ne_of_not_available pfx oracles initial q occurrence
+    (fun h => (Nat.not_le_of_gt future) (available_length_le pfx occurrence h))
+
+/-- Embed an earlier query through precisely the crossed old-slot injections. -/
+def includeQueryAlong : {tree residual : TypeTree} →
+    (spine : Cursor.Spine tree residual) → (oracles : tree.OracleDecoration) →
+    (initial : PFunctor) → initial.A → (accessAlong spine oracles initial).A
+  | _, _, .root _, _, _, q => q
+  | _, _, .down (a := Position.public _) answer tail, oracles, initial, q =>
+      includeQueryAlong tail (oracles.2 answer) initial q
+  | _, _, .down (a := Position.oracle _) answer tail, oracles, initial, q =>
+      includeQueryAlong tail (oracles.2 answer) (Access.extend initial oracles.1) (.inl q)
+
+/-- Canonical old-slot routing preserves an initial raw query's identity. -/
+private theorem queryIndexAlong_include {tree residual : TypeTree}
+    (spine : Cursor.Spine tree residual) (messages : PrefixMessages.Along spine)
+    (oracles : tree.OracleDecoration) (initial : PFunctor) (q : initial.A) :
+    queryIndexAlong spine messages oracles initial (includeQueryAlong spine oracles initial q) =
+      .inl q := by
+  induction spine generalizing initial with
+  | root => rfl
+  | @down position next residual answer tail ih =>
+    cases position with
+    | «public» Moves =>
+      change PrefixMessages.Along tail at messages
+      simp only [includeQueryAlong, queryIndexAlong]
+      rw [ih messages (oracles.2 answer) initial q]
+    | «oracle» Messages =>
+      simp only [includeQueryAlong, queryIndexAlong]
+      rw [ih messages.2 (oracles.2 answer) (Access.extend initial oracles.1) (.inl q)]
+
+/-- The earlier resource name is unchanged after old-slot inclusion. -/
+theorem queryName_include {tree : TypeTree} (pfx : ExecutionPrefix tree)
+    (oracles : tree.OracleDecoration) (initial : PFunctor) (q : initial.A) :
+    pfx.queryName oracles initial
+      (includeQueryAlong pfx.cursor.spine oracles initial q) = .inl q := by
+  unfold queryName queryIndex
+  rw [queryIndexAlong_include]
+  rfl
+
+private def nameAlong : {tree residual : TypeTree} →
+    (spine : Cursor.Spine tree residual) → (oracles : tree.OracleDecoration) →
+    (initial : PFunctor) → (accessAlong spine oracles initial).A → initial.A ⊕ Cursor tree
+  | _, _, .root _, _, _, q => .inl q
+  | _, _, .down (a := Position.public _) answer tail, oracles, initial, q =>
+      Sum.map id (Cursor.down answer) (nameAlong tail (oracles.2 answer) initial q)
+  | _, _, .down (a := Position.oracle _) answer tail, oracles, initial, q =>
+      match nameAlong tail (oracles.2 answer) (Access.extend initial oracles.1) q with
+      | .inl (.inl q) => .inl q
+      | .inl (.inr _) => .inr (Cursor.down answer (Cursor.root _))
+      | .inr occurrence => .inr (Cursor.down answer occurrence)
+
+private theorem queryName_eq_nameAlong {tree residual : TypeTree}
+    (spine : Cursor.Spine tree residual) (messages : PrefixMessages.Along spine)
+    (oracles : tree.OracleDecoration) (initial : PFunctor)
+    (q : (accessAlong spine oracles initial).A) :
+    (ExecutionPrefix.mk ⟨residual, spine⟩ messages).queryName oracles initial q =
+      nameAlong spine oracles initial q := by
+  induction spine generalizing initial with
+  | root => rfl
+  | @down position next residual answer tail ih =>
+    cases position with
+    | «public» Moves =>
+      change PrefixMessages.Along tail at messages
+      have h := ih messages (oracles.2 answer) initial q
+      simp only [queryName, queryIndex, availableContext] at h ⊢
+      simp only [queryIndexAlong, nameAlong]
+      rw [← h]
+      cases queryIndexAlong tail messages (oracles.2 answer) initial q <;> rfl
+    | «oracle» Messages =>
+      have h := ih messages.2 (oracles.2 answer) (Access.extend initial oracles.1) q
+      simp only [queryName, queryIndex, availableContext] at h ⊢
+      simp only [queryIndexAlong, nameAlong]
+      rw [← h]
+      cases hq : queryIndexAlong tail messages.2 (oracles.2 answer)
+          (Access.extend initial oracles.1) q with
+      | inl tag => cases tag <;> rfl
+      | inr occurrence => rfl
+
+private theorem nameAlong_include {tree residual : TypeTree}
+    (spine : Cursor.Spine tree residual) (oracles : tree.OracleDecoration)
+    (initial : PFunctor) (q : initial.A) :
+    nameAlong spine oracles initial (includeQueryAlong spine oracles initial q) = .inl q := by
+  induction spine generalizing initial with
+  | root => rfl
+  | @down position next residual answer tail ih =>
+    cases position with
+    | «public» Moves =>
+      simp only [includeQueryAlong, nameAlong, ih, Sum.map_inl, id_eq]
+    | «oracle» Messages =>
+      simp only [includeQueryAlong, nameAlong, ih]
+
+private theorem nameAlong_comp_include {tree middle residual : TypeTree}
+    (first : Cursor.Spine tree middle) (second : Cursor.Spine middle residual)
+    (oracles : tree.OracleDecoration) (initial : PFunctor)
+    (q : (accessAlong first oracles initial).A) :
+    nameAlong (first.comp second) oracles initial
+      (cast (congrArg PFunctor.A (accessAlong_comp first second oracles initial)).symm
+        (includeQueryAlong second (OracleDecoration.restrict ⟨middle, first⟩ oracles)
+          (accessAlong first oracles initial) q)) = nameAlong first oracles initial q := by
+  induction first generalizing initial with
+  | root => exact nameAlong_include second oracles initial q
+  | @down position next middle answer tail ih =>
+    cases position with
+    | «public» Moves =>
+      exact congrArg (Sum.map id (Cursor.down answer))
+        (ih second (oracles.2 answer) initial q)
+    | «oracle» Messages =>
+      have h := ih second (oracles.2 answer) (Access.extend initial oracles.1) q
+      simp only [OracleDecoration.restrict, Displayed.Decoration.restrict, Displayed.restrict,
+        Displayed.Decoration.childProjection] at h
+      simp only [Cursor.Spine.comp, nameAlong, accessAlong, OracleDecoration.restrict,
+        Displayed.Decoration.restrict, Displayed.restrict, Displayed.restrictSpine,
+        Displayed.Decoration.childProjection]
+      rw [h]
+
+/-- Continuing execution retains the canonical name of every earlier query, including queries
+into previously sent oracles. The inclusion follows the actual accumulated access signature. -/
+theorem queryName_comp {tree : TypeTree}
+    (first : ExecutionPrefix tree) (second : ExecutionPrefix first.cursor.residual)
+    (oracles : tree.OracleDecoration) (initial : PFunctor)
+    (q : (first.access oracles initial).A) :
+    (first.comp second).queryName oracles initial
+      (cast (congrArg PFunctor.A (first.access_comp second oracles initial)).symm
+        (includeQueryAlong second.cursor.spine (first.oracles oracles)
+          (first.access oracles initial) q)) = first.queryName oracles initial q := by
+  rcases first with ⟨⟨middle, left⟩, leftMessages⟩
+  rcases second with ⟨⟨residual, right⟩, rightMessages⟩
+  exact (queryName_eq_nameAlong (left.comp right)
+    (PrefixMessages.comp left right leftMessages rightMessages) oracles initial _).trans
+    ((nameAlong_comp_include left right oracles initial q).trans
+      (queryName_eq_nameAlong left leftMessages oracles initial q).symm)
+
+private theorem nameAlong_liftAppend {tree residual : TypeTree}
+    (spine : Cursor.Spine tree residual) (suffix : tree.BranchPath → TypeTree)
+    (first : tree.OracleDecoration)
+    (second : (p : tree.BranchPath) → (suffix p).OracleDecoration) (initial : PFunctor)
+    (q : (accessAlong spine first initial).A) :
+    nameAlong (spine.liftAppend suffix) (Displayed.Decoration.append first second) initial
+      (cast (congrArg PFunctor.A
+        (accessAlong_liftAppend spine suffix first second initial)).symm q) =
+      Sum.map id (fun cursor => cursor.liftAppend suffix) (nameAlong spine first initial q) := by
+  induction spine generalizing initial with
+  | root => rfl
+  | @down position next residual answer tail ih =>
+    cases position with
+    | «public» Moves =>
+      have h := ih (fun p => suffix ⟨answer, p⟩) (first.2 answer)
+        (fun p => second ⟨answer, p⟩) initial q
+      simp only [Cursor.Spine.liftAppend, Cursor.Spine.plug, nameAlong, accessAlong,
+        Displayed.Decoration.append_liftBind]
+      rw [h]
+      cases nameAlong tail (first.2 answer) initial q <;> rfl
+    | «oracle» Messages =>
+      have h := ih (fun p => suffix ⟨answer, p⟩) (first.2 answer)
+        (fun p => second ⟨answer, p⟩) (Access.extend initial first.1) q
+      simp only [Cursor.Spine.liftAppend, Cursor.Spine.plug, nameAlong, accessAlong,
+        Displayed.Decoration.append_liftBind]
+      rw [h]
+      cases nameAlong tail (first.2 answer) (Access.extend initial first.1) q with
+      | inl tag => cases tag <;> rfl
+      | inr cursor => rfl
+
+end ExecutionPrefix
+
+namespace PrefixMessages
+
+/-- Transport the same concrete messages when a continuation is appended after the protocol. -/
+def liftAppend : {tree residual : TypeTree} → (spine : Cursor.Spine tree residual) →
+    (suffix : tree.BranchPath → TypeTree) → Along spine → Along (spine.liftAppend suffix)
+  | _, _, .root _, _, _ => PUnit.unit
+  | _, _, .down (a := Position.public _) answer tail, suffix, messages =>
+      liftAppend tail (fun p => suffix ⟨answer, p⟩) messages
+  | _, _, .down (a := Position.oracle _) answer tail, suffix, messages =>
+      ⟨messages.1, liftAppend tail (fun p => suffix ⟨answer, p⟩) messages.2⟩
+
+end PrefixMessages
+
+namespace ExecutionPrefix
+
+/-- The same concrete prefix inside an appended protocol. No later message is added. -/
+def liftAppend {tree : TypeTree} (pfx : ExecutionPrefix tree)
+    (suffix : tree.BranchPath → TypeTree) : ExecutionPrefix (PFunctor.FreeM.append tree suffix) :=
+  ⟨pfx.cursor.liftAppend suffix, PrefixMessages.liftAppend pfx.cursor.spine suffix pfx.messages⟩
+
+/-- Appending a later protocol transports earlier resource names by the canonical cursor map.
+The query itself uses the equality of accumulated signatures, with the same concrete messages. -/
+theorem queryName_liftAppend {tree : TypeTree} (pfx : ExecutionPrefix tree)
+    (suffix : tree.BranchPath → TypeTree) (first : tree.OracleDecoration)
+    (second : (p : tree.BranchPath) → (suffix p).OracleDecoration) (initial : PFunctor)
+    (q : (pfx.access first initial).A) :
+    (pfx.liftAppend suffix).queryName (Displayed.Decoration.append first second) initial
+      (cast (congrArg PFunctor.A
+        (accessAlong_liftAppend pfx.cursor.spine suffix first second initial)).symm q) =
+      Sum.map id (fun cursor => cursor.liftAppend suffix) (pfx.queryName first initial q) := by
+  rcases pfx with ⟨⟨residual, spine⟩, messages⟩
+  exact (queryName_eq_nameAlong (spine.liftAppend suffix)
+    (PrefixMessages.liftAppend spine suffix messages)
+    (Displayed.Decoration.append first second) initial _).trans
+      ((nameAlong_liftAppend spine suffix first second initial q).trans
+        (congrArg (Sum.map id (fun cursor => cursor.liftAppend suffix))
+          (queryName_eq_nameAlong spine messages first initial q).symm))
 
 end ExecutionPrefix
 end Interaction.Oracle.TypeTree

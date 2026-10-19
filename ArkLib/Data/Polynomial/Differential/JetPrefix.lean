@@ -21,6 +21,10 @@ separants and regularity commute with this renaming. Theorems proved for the lit
 
 Every statement holds over a commutative semiring.
 
+`IsRegularJet` asks that the separant value be nonzero. Over a field this is what the lifting
+theorems need; over a general commutative ring they instead assume that the slope, a binomial
+coefficient times that value, is a unit or left-regular.
+
 ## Main statements
 
 * `DependsOnJet`, `activeJets`, `highestActiveJet` and `IsHighestActiveJet`: the jet variables `Q`
@@ -38,37 +42,6 @@ Every statement holds over a commutative semiring.
   `jetEvaluation_separant_rename_jetPrefixEmbedding` and
   `isRegularJet_rename_jetPrefixEmbedding_iff`: the renaming commutes with the constructions
   above.
-
-## References
-
-Ported from ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d.
-
-From `ArkLib/Data/Polynomial/Differential/Basic.lean`: `DependsOnJet`, `activeJets`,
-`mem_activeJets`, `highestActiveJet`, `IsHighestActiveJet`, `highestActiveJet_eq_some_max`,
-`isHighestActiveJet_of_highestActiveJet_eq_some`, `highestActiveJet_eq_none_iff`,
-`IsRegularJet`, `RegularJet`, `BoundedSolution`, `BoundedSolution.polynomial`,
-`BoundedSolution.equation` and `BoundedSolution.degree_le` keep their statements. The rest of
-that source file is in `ArkLib.Data.Polynomial.Differential.Basic` and
-`ArkLib.Data.Polynomial.Differential.JetDegree`.
-
-From `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Regular/JetPrefix.lean`:
-`jetPrefixEmbedding` (now built from `Fin.castLEEmb`), `jetPrefixEmbedding_none`,
-`jetPrefixEmbedding_top` (here `jetPrefixEmbedding_some_last`), `restrictJet`,
-`restrictJet_polynomialJet`, `vars_subset_range_jetPrefixEmbedding`,
-`exists_prefixDifferentialPolynomial`, `differentialSpecialization_rename_jetPrefixEmbedding`,
-`jetEvaluation_rename_jetPrefixEmbedding`, `separant_rename_jetPrefixEmbedding` and
-`isRegularJet_rename_jetPrefixEmbedding_iff`. The source stated them over a field in the
-namespace `ReedSolomon.HiddenDerivative`; none mentions a Reed–Solomon object, so they are stated
-here over a commutative semiring in `PolynomialDifferential`. The source's
-`existsUnique_regularLiftCoefficient_centered_of_isHighestActiveJet` is
-`existsUnique_regularLiftCoefficient_centered_of_isHighestActiveJet` in
-`ArkLib.Data.Polynomial.Differential.RegularIteration`, with a unit hypothesis instead of a
-`ringChar` bound. `jetPrefixEmbedding_some` and `jetEvaluation_separant_rename_jetPrefixEmbedding`
-are new.
-
-`IsRegularJet` keeps the source's condition that the separant value is nonzero. Over a field this
-is what the lifting theorems need; over a general commutative ring they instead assume that the
-slope, a binomial coefficient times that value, is a unit or left-regular.
 -/
 
 @[expose] public section
@@ -92,6 +65,7 @@ def activeJets [CommSemiring F] (Q : DifferentialPolynomial F d) : Finset (Fin (
   classical
   exact Finset.univ.filter (DependsOnJet Q)
 
+/-- `Y_j` is an active jet of `Q` exactly when `Q` depends on `Y_j`. -/
 @[simp]
 theorem mem_activeJets [CommSemiring F] {Q : DifferentialPolynomial F d} {j : Fin (d + 1)} :
     j ∈ activeJets Q ↔ DependsOnJet Q j := by
@@ -190,11 +164,13 @@ ambient depth `d`. -/
 def jetPrefixEmbedding (s : Fin (d + 1)) : JetVariable s.val ↪ JetVariable d :=
   (Fin.castLEEmb s.isLt).optionMap
 
+/-- The prefix embedding sends `X` to `X`. -/
 @[simp]
 theorem jetPrefixEmbedding_none (s : Fin (d + 1)) :
     jetPrefixEmbedding s none = none :=
   rfl
 
+/-- The prefix embedding sends `Y_j` of depth `s` to `Y_j` of depth `d`. -/
 @[simp]
 theorem jetPrefixEmbedding_some (s : Fin (d + 1)) (j : Fin (s.val + 1)) :
     jetPrefixEmbedding s (some j) = some (Fin.castLE s.isLt j) :=
@@ -210,6 +186,7 @@ theorem jetPrefixEmbedding_some_last (s : Fin (d + 1)) :
 def restrictJet (s : Fin (d + 1)) (jet : Fin (d + 1) → F) : Fin (s.val + 1) → F :=
   fun j ↦ jet (Fin.castLE s.isLt j)
 
+/-- Restricting the Hasse jet of `P` through order `d` gives its Hasse jet through order `s`. -/
 @[simp]
 theorem restrictJet_polynomialJet [Semiring F] (s : Fin (d + 1)) (center : F) (P : F[X]) :
     restrictJet s (polynomialJet (d := d) center P) = polynomialJet (d := s.val) center P :=

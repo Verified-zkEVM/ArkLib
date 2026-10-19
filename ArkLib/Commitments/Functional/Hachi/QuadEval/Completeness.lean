@@ -7,6 +7,7 @@ module
 
 public import ArkLib.Commitments.Functional.Hachi.QuadEval.Reduction
 public import ArkLib.Commitments.Functional.Hachi.Gadget.Norms
+public import ArkLib.OracleReduction.ProgramLogic
 public import VCVio.OracleComp.QueryTracking.ProgrammingOracle
 
 /-!
@@ -429,35 +430,11 @@ lemma quadEvalReduction_run_support
               (X, honestComputeV Φ pp ddCarrier X w, ch),
               honestComputeResp Φ ddCarrier ddZ X w ch),
             (X, honestComputeV Φ pp ddCarrier X w, ch)) := by
-  intro x hx
-  unfold Reduction.run at hx
-  simp only [OptionT.run_bind, Option.elimM] at hx
-  rw [mem_support_bind_iff] at hx
-  obtain ⟨prOpt, hpr, hx⟩ := hx
-  rw [show ((liftM (Prover.run X w
-        (quadEvalReduction (oSpec := oSpec) (zDigits := zDigits) Φ pp ddCarrier ddZ).prover) :
-        OptionT (OracleComp _) _)).run
-      = (Prover.run X w
-          (quadEvalReduction (oSpec := oSpec) (zDigits := zDigits) Φ pp ddCarrier ddZ).prover)
-        >>= fun a => pure (some a) from rfl] at hpr
-  rw [mem_support_bind_iff] at hpr
-  obtain ⟨pr, hpr, hprOpt⟩ := hpr
-  rw [mem_support_pure_iff] at hprOpt
-  subst hprOpt
-  rw [show (quadEvalReduction (oSpec := oSpec) (zDigits := zDigits) Φ pp ddCarrier ddZ).prover
-      = InnerOuter.prover Φ
-          (QuadEvalWitness Φ innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits)
-          (honestComputeV Φ pp ddCarrier) (honestComputeResp Φ ddCarrier ddZ) from rfl,
-    prover_run_eq Φ _ _ X w hdir, mem_support_bind_iff] at hpr
-  obtain ⟨ch, -, hpr⟩ := hpr
-  rw [mem_support_pure_iff] at hpr
-  subst hpr
-  refine ⟨ch, ?_⟩
-  simp only [Option.elim_some, quadEvalReduction, InnerOuter.verifier, Verifier.run] at hx
-  simp only [ChallengeIdx, Challenge, OptionT.run_pure, liftM_pure,
-    ProgrammingPolicy.empty_apply, pure_bind, Option.elim_some, Option.getM_some, support_pure,
-    Set.mem_singleton_iff] at hx
-  exact hx
+  simp only [Reduction.run_run_eq, quadEvalReduction, InnerOuter.verifier, Verifier.run,
+    OptionT.run_pure]
+  rw [prover_run_eq Φ _ _ X w hdir]
+  prvcgen
+  exact ⟨_, rfl⟩
 
 omit [NeZero q] in
 /-- **Perfect completeness of the polynomial-evaluation reduction (Hachi §4.2, Figure 3) at

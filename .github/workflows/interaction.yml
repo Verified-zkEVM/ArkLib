@@ -38,13 +38,26 @@ jobs:
         with:
           persist-credentials: false
 
-      # Restore only: untrusted PR code must not publish a shared dependency cache.
+      # Restore only: untrusted PR code must not publish a shared cache. Paths and keys must match
+      # the saves in ci.yml exactly, or the restore misses.
       - uses: actions/cache/restore@v6
         with:
-          path: ./.lake
-          key: ${{ runner.os }}-lean-ci-${{ hashFiles('lake-manifest.json') }}
+          path: |
+            .lake/packages
+            !.lake/packages/**/*.setup.json
+          key: ${{ runner.os }}-lean-deps-${{ hashFiles('lake-manifest.json', 'lean-toolchain') }}
           restore-keys: |
-            ${{ runner.os }}-lean-ci-
+            ${{ runner.os }}-lean-deps-
+
+      - uses: actions/cache/restore@v6
+        with:
+          path: |
+            .lake/build
+            !.lake/build/**/*.setup.json
+          key: ${{ runner.os }}-arklib-build-${{ hashFiles('lake-manifest.json', 'lean-toolchain') }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-arklib-build-${{ hashFiles('lake-manifest.json', 'lean-toolchain') }}-
+            ${{ runner.os }}-arklib-build-
 
       - uses: leanprover/lean-action@v1.6.0
         with:

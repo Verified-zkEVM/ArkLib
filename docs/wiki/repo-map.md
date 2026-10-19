@@ -22,11 +22,27 @@ home_page/            site assets and assembled website root
 
 ## Conceptual Layering
 
-- `ArkLib/Interaction/` is the new typed-interaction foundation. Its plain reduction layer is
-  intentionally independent of oracle, probability, and legacy protocol semantics.
+- `ArkLib/Interaction/` is the new typed-interaction foundation. Its `Reduction.lean` module
+  is independent of oracle, probability, and legacy protocol semantics.
+  `CompositionSoundness.lean` adds an exact native append execution law and quantitative
+  soundness under lawful distribution semantics, with an explicit admissibility-error variant.
+  It quantifies over ordinary whole-tree prover strategies and uses the existing paired runner.
 - `ArkLib/Interaction/Oracle/` refines generic type trees with public/oracle positions, keeps
   structural `BranchPath` separate from concrete `ExecutionPath` messages, and adds position-typed
   role/interface decorations plus the minimal decorated `Oracle.Protocol` bundle.
+- `ProofSystem/Sumcheck/Interaction/Protocol.lean` defines the full native sum-check tree,
+  restricted verifier, and direct execution through `executeStrategiesCore`. Prover memory lives
+  in ordinary strategy continuations. `ProtocolSoundness.lean` proves the final output oracle relation bound;
+  `MultivariateSoundness.lean` supplies the one-round polynomial projection bound.
+  `ProtocolCompleteness.lean` defines the honest native strategy and proves support-level and
+  probability-one completeness.
+- `Interaction/Oracle/CoreRun.lean` offers `executeStrategiesCore` for ready native strategies.
+  `executeCore` runs reduction setup and delegates to that entry point. Both retain the actual
+  input behavior, path and outputs for closing; `executeCore_eq_execute` preserves the existing
+  execution law for reduction clients. `Access.lean` supplies the common virtual-view preservation
+  law when a new message extends the available oracle signature.
+- `Interaction/Oracle/Composition.lean` supplies a separate sequential execution combinator.
+  Its explicit interface handoffs are not a substitute for a native strategy execution theorem.
 - `ArkLib/OracleReduction/` remains the conceptual center of the legacy reduction and security
   layer while protocol clients migrate.
 - `ArkLib/Data/`, `ArkLib/ToMathlib/`, and `ArkLib/ToCompPoly/` support the
@@ -331,7 +347,7 @@ home_page/            site assets and assembled website root
     `hachiNonrecursive_perfectCorrectness` proves `Commitment.perfectCorrectness` via the generic
     bridge `Commitment.perfectCorrectness_of_opening_perfectCompleteness`
     (`Commitments/Functional/Basic.lean`, axiom-clean, using
-    `OptionT.probEvent_eq_one_bind`). The composed opening/correctness theorems use proved
+    `prvcgen` under the necessary reading). The composed opening/correctness theorems use proved
     guarded composition and have standard-only axiom dependencies, as do their individual links,
     adapter, terminal step, and correctness bridge. Recursion
     (`PartialEval`/`ZBatchBridge`/`TraceHandoff`) is deliberately not involved.
@@ -473,14 +489,15 @@ home_page/            site assets and assembled website root
   a few lines below it. It reduces perfect completeness to a support statement about the
   *unsimulated* `(Reduction.run …).run`: show every element of that support is a success whose
   output pair is in the output relation and whose two output statements agree, and the probability
-  obligation is discharged (through VCVio's
-  `OptionT.probEvent_eq_one_of_simulateQ_support_bind`, which handles the sampled initial state and
-  the oracle implementation uniformly). It applies to any reduction, of any length, over any
-  `oSpec` — no determinism or single-round hypotheses. The worked example is Hachi's zero-check
-  (`Commitments/Functional/Hachi/ZeroCheck/Completeness.lean`), where the per-link work reduces to
-  a prover-state induction, an output lemma, a run-support lemma, and the relation lemma. Before
-  hand-peeling `OptionT`/`liftM`/`simulateQ` layers for a new protocol, check whether this covers
-  it. (`Commitments/Functional/KZG/Correctness.lean` predates the lemma and still peels by hand.)
+  obligation is discharged (through VCVio's `OptionT.prEvent_mk_simulateQ_run'_eq_one_of_support`,
+  which handles the sampled initial state and the oracle implementation uniformly). It applies to
+  any reduction, of any length, over any `oSpec` — no determinism or single-round hypotheses. The
+  worked example is Hachi's zero-check (`Commitments/Functional/Hachi/ZeroCheck/Completeness.lean`),
+  where the per-link work reduces to a prover-state induction, an output lemma, a run-support
+  lemma, and the relation lemma. `prvcgen` proves the run-support lemma; see
+  [`program-logic.md`](program-logic.md). Before hand-peeling `OptionT`/`liftM`/`simulateQ` layers
+  for a new protocol, check whether this covers it. (`Commitments/Functional/KZG/Correctness.lean`
+  applies the same VCVio lemma to its correctness game directly and walks the rest with `prvcgen`.)
   The second worked example is `QuadEval` (`.../Hachi/QuadEval/Completeness.lean`), which adds the
   message-round case: there the run-support half is a closed-form computation of `Prover.run`
   (`prover_runToRound_last` / `prover_run_eq`) rather than an induction.

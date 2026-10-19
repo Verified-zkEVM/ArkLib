@@ -257,28 +257,6 @@ theorem executeRounds_honest [DecidableEq R] {m : ℕ} (D : Fin m ↪ R)
     subst impl
     exact hrelation
 
-/-- The final closed round is precisely evaluation at the full challenge vector. -/
-theorem closedRelation_last_iff {m : ℕ} (D : Fin m ↪ R)
-    (claim : ClosedClaim (Spec.StatementRound R n (Fin.last n)) (polynomialFamily R n deg)) :
-    closedRelation R n deg D (Fin.last n) claim ↔
-      claim.oracles ⟨(), claim.stmt.challenges⟩ = claim.stmt.target := by
-  unfold closedRelation
-  have : IsEmpty (Fin (n - (Fin.last n).val)) := ⟨fun j => by
-    have hj := j.isLt
-    simp only [Fin.val_last, Nat.sub_self] at hj
-    omega⟩
-  erw [Fintype.piFinset_of_isEmpty]
-  erw [Finset.univ_unique, Finset.sum_singleton]
-  have heq : Fin.append claim.stmt.challenges
-      (default : Fin (n - (Fin.last n).val) → R) ∘ Fin.cast (by simp) =
-        claim.stmt.challenges := by
-    funext j
-    simp only [Fin.append, Function.comp_apply, Fin.addCases, Fin.val_cast,
-      show j.val < (Fin.last n).val from j.isLt, dite_true]
-    congr 1
-  erw [heq]
-  rfl
-
 /-- Completing all remaining rounds yields the original polynomial's full evaluation claim. -/
 theorem executeRounds_evaluation [DecidableEq R] {m : ℕ} (D : Fin m ↪ R)
     (start count : ℕ) (finish : start + count = n)

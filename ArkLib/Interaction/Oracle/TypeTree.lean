@@ -220,6 +220,111 @@ theorem toBranchPath_oracle (Messages : Type u) (rest : PUnit.{u + 1} → TypeTr
     path.toBranchPath = ⟨PUnit.unit, ExecutionPath.toBranchPath path.2⟩ :=
   rfl
 
+/-- Public projection respects dependent append. The suffix is selected by the prefix's public
+structural path, while both execution paths retain their concrete oracle messages. -/
+@[simp]
+theorem toBranchPath_append (tree : TypeTree.{u})
+    (suffix : BranchPath tree → TypeTree.{u}) (path : ExecutionPath tree)
+    (rest : ExecutionPath (suffix path.toBranchPath)) :
+    ExecutionPath.toBranchPath
+      (PFunctor.FreeM.PathAlong.append runtimeLens tree suffix path rest) =
+      PFunctor.FreeM.Path.append tree suffix path.toBranchPath rest.toBranchPath :=
+  PFunctor.FreeM.PathAlong.projectPathAlong_append runtimeLens tree suffix path rest
+
+/-- Splitting a concrete append path and then projecting each piece agrees with splitting its
+public projection. The suffix stays indexed by the recovered prefix's public choices. -/
+theorem toBranchPath_split (tree : TypeTree.{u})
+    (suffix : BranchPath tree → TypeTree.{u})
+    (path : ExecutionPath (PFunctor.FreeM.append tree suffix)) :
+    let pieces := PFunctor.FreeM.PathAlong.split runtimeLens tree suffix path
+    PFunctor.FreeM.Path.split tree suffix path.toBranchPath =
+      ⟨ExecutionPath.toBranchPath pieces.1, ExecutionPath.toBranchPath pieces.2⟩ := by
+  let pieces := PFunctor.FreeM.PathAlong.split runtimeLens tree suffix path
+  have h := (PFunctor.FreeM.PathAlong.projectPathAlong_append runtimeLens tree suffix
+    pieces.1 pieces.2).symm.trans (congrArg
+      (PFunctor.FreeM.projectPathAlong runtimeLens (PFunctor.FreeM.append tree suffix))
+      (PFunctor.FreeM.PathAlong.append_split runtimeLens tree suffix path))
+  exact (PFunctor.FreeM.Path.split_append tree suffix _ _).symm.trans
+    (congrArg (PFunctor.FreeM.Path.split tree suffix) h) |>.symm
+
+end ExecutionPath
+
+/-- Erasing the oracle/public distinction commutes with append. Runtime suffix selection forgets
+oracle payloads and uses the prefix's public structural choices. -/
+theorem toTypeTree_append : (tree : TypeTree.{u}) →
+    (suffix : BranchPath tree → TypeTree.{u}) →
+    toTypeTree (PFunctor.FreeM.append tree suffix) =
+      PFunctor.FreeM.append tree.toTypeTree (fun path =>
+        (suffix (ExecutionPath.ofTypeTreePath path).toBranchPath).toTypeTree)
+  | .done, _ => rfl
+  | .public Moves rest, suffix => by
+      apply congrArg (_root_.Interaction.TypeTree.node Moves)
+      funext move
+      exact toTypeTree_append (rest move) (fun path => suffix ⟨move, path⟩)
+  | .oracle Messages rest, suffix => by
+      apply congrArg (_root_.Interaction.TypeTree.node Messages)
+      funext message
+      exact toTypeTree_append (rest PUnit.unit) (fun path => suffix ⟨PUnit.unit, path⟩)
+
+namespace ExecutionPath
+
+private theorem runtimePath_node_heq {Moves : Type u}
+    {left right : Moves → _root_.Interaction.TypeTree}
+    (h : ∀ move, left move = right move) (move : Moves)
+    {first : _root_.Interaction.TypeTree.Path (left move)}
+    {second : _root_.Interaction.TypeTree.Path (right move)} (hpath : HEq first second) :
+    HEq (⟨move, first⟩ : _root_.Interaction.TypeTree.Path
+      (_root_.Interaction.TypeTree.node Moves left))
+      (⟨move, second⟩ : _root_.Interaction.TypeTree.Path
+        (_root_.Interaction.TypeTree.node Moves right)) := by
+  have same := funext h
+  cases same
+  cases hpath
+  rfl
+
+private theorem toTypeTreePath_append_heq : (tree : TypeTree.{u}) →
+    (suffix : BranchPath tree → TypeTree.{u}) →
+    (path : _root_.Interaction.TypeTree.Path tree.toTypeTree) →
+    (rest : _root_.Interaction.TypeTree.Path
+      (suffix (ofTypeTreePath path).toBranchPath).toTypeTree) →
+    HEq (ExecutionPath.toTypeTreePath (PFunctor.FreeM.PathAlong.append runtimeLens tree suffix
+      (ofTypeTreePath path) (ofTypeTreePath rest)))
+      (PFunctor.FreeM.Path.append tree.toTypeTree
+        (fun p => (suffix (ofTypeTreePath p).toBranchPath).toTypeTree) path rest)
+  | .done, _, path, rest => by
+      cases path
+      exact heq_of_eq (toTypeTreePath_ofTypeTreePath rest)
+  | .public _ branches, suffix, path, rest => by
+      apply runtimePath_node_heq
+        (fun move => toTypeTree_append (branches move) (fun p => suffix ⟨move, p⟩))
+        path.1
+      exact toTypeTreePath_append_heq (branches path.1)
+        (fun p => suffix ⟨path.1, p⟩) path.2 rest
+  | .oracle _ branches, suffix, path, rest => by
+      apply runtimePath_node_heq
+        (fun _ => toTypeTree_append (branches PUnit.unit) (fun p => suffix ⟨PUnit.unit, p⟩))
+        path.1
+      exact toTypeTreePath_append_heq (branches PUnit.unit)
+        (fun p => suffix ⟨PUnit.unit, p⟩) path.2 rest
+
+/-- Joining runtime paths and then recovering their concrete oracle messages agrees with joining
+those messages directly. The cast identifies only the runtime trees proved equal by append. -/
+theorem ofTypeTreePath_append (tree : TypeTree.{u})
+    (suffix : BranchPath tree → TypeTree.{u})
+    (path : _root_.Interaction.TypeTree.Path tree.toTypeTree)
+    (rest : _root_.Interaction.TypeTree.Path
+      (suffix (ofTypeTreePath path).toBranchPath).toTypeTree) :
+    ofTypeTreePath (cast (congrArg _root_.Interaction.TypeTree.Path
+      (toTypeTree_append tree suffix).symm)
+      (PFunctor.FreeM.Path.append tree.toTypeTree
+        (fun p => (suffix (ofTypeTreePath p).toBranchPath).toTypeTree) path rest)) =
+      PFunctor.FreeM.PathAlong.append runtimeLens tree suffix
+        (ofTypeTreePath path) (ofTypeTreePath rest) := by
+  have same := eq_of_heq ((cast_heq (congrArg _root_.Interaction.TypeTree.Path
+    (toTypeTree_append tree suffix).symm) _).trans
+      (toTypeTreePath_append_heq tree suffix path rest).symm)
+  rw [same, ofTypeTreePath_toTypeTreePath]
+
 end ExecutionPath
 
 end TypeTree

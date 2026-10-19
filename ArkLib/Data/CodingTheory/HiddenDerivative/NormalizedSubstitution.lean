@@ -31,19 +31,8 @@ that fixes `T` and every visible jet. Both hold over every commutative ring.
 
 ## References
 
-Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Substitution.lean` at ArkLib
-revision a5aa2677fee4e3a79d6bb05136631cce4a08587d: `normalizeError`, `normalizeError_T`,
-`normalizeError_E`, `normalizeError_Y`, `normalizeError_localCorrection`,
-`normalizedLocalImage`, `normalizedLocalSubstitution`, its three generator lemmas, and
-`normalizedLocalSubstitution_eq_normalize_comp_unscaled`, unchanged in content. The generator
-images of `normalizeError` are named (`normalizeErrorImage`), as for the other substitutions of
-`ArkLib.Data.CodingTheory.HiddenDerivative.Substitution`. Deferred: the weighted-degree
-preservation lemmas `normalizedLocalSubstitution_mem` and
-`normalizedLocalSubstitution_mem_differentialFormula`, which belong with their local-rank
-consumers.
-
-* Brakensiek, Chen, Putterman, Zhang, and Zheng, *Algorithmic List Decoding of Reed--Solomon
-  Codes up to Capacity in the Low-Rate Regime*, ECCC TR26-164, Equation (16).
+* [Brakensiek, J., Chen, Y., Putterman, A., Zhang, Z., and Zheng, K. Z., *Algorithmic List
+  Decoding of Reed–Solomon Codes up to Capacity in the Low-Rate Regime*][BCPZZ26], Equation (16).
 -/
 
 @[expose] public section
@@ -68,16 +57,19 @@ def normalizeErrorImage (d : ℕ) : LocalVariable d → LocalPolynomial R d
 def normalizeError (d : ℕ) : LocalPolynomial R d →ₐ[R] LocalPolynomial R d :=
   bind₁ (normalizeErrorImage d)
 
+/-- `normalizeError` fixes `T`. -/
 @[simp]
 theorem normalizeError_T (d : ℕ) :
     normalizeError (R := R) d (X (localT d)) = X (localT d) := by
   simp [normalizeError, normalizeErrorImage, localT]
 
+/-- `normalizeError` sends `E` to `T^d E`. -/
 @[simp]
 theorem normalizeError_E (d : ℕ) :
     normalizeError (R := R) d (X (localE d)) = X (localT d) ^ d * X (localE d) := by
   simp [normalizeError, normalizeErrorImage, localE, localAux]
 
+/-- `normalizeError` fixes every visible jet `Y_(j+1)`. -/
 @[simp]
 theorem normalizeError_Y (j : Fin d) :
     normalizeError (R := R) d (X (localY j)) = X (localY j) := by
@@ -101,17 +93,20 @@ def normalizedLocalSubstitution (d : ℕ) (center received : R) :
     DifferentialPolynomial R d →ₐ[R] LocalPolynomial R d :=
   bind₁ (normalizedLocalImage d center received)
 
+/-- The normalized substitution sends `X` to `center + T`. -/
 @[simp]
 theorem normalizedLocalSubstitution_X (d : ℕ) (center received : R) :
     normalizedLocalSubstitution d center received (X none) = C center + X (localT d) := by
   simp [normalizedLocalSubstitution, normalizedLocalImage]
 
+/-- The normalized substitution sends `Y₀` to `received + localCorrection d + T^(d+1) E`. -/
 @[simp]
 theorem normalizedLocalSubstitution_Y_zero (d : ℕ) (center received : R) :
     normalizedLocalSubstitution d center received (X (some 0)) =
       C received + localCorrection d + X (localT d) ^ (d + 1) * X (localE d) := by
   simp [normalizedLocalSubstitution, normalizedLocalImage]
 
+/-- The normalized substitution sends `Y_(j+1)` to the local variable `Y_(j+1)`. -/
 @[simp]
 theorem normalizedLocalSubstitution_Y_succ (d : ℕ) (center received : R) (j : Fin d) :
     normalizedLocalSubstitution d center received (X (some j.succ)) = X (localY j) := by

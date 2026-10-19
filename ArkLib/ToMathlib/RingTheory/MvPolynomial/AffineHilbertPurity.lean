@@ -36,6 +36,11 @@ bound: if `totalDegree f ≤ b`, the affine degrees of the minimal primes of `P 
 most `b * affineDegree P`. Retaining only the components that avoid a fixed `s`, the potential
 `affineDegree Q * b ^ natDegree H(Q)` does not increase under the cut.
 
+Primality of `P` is used throughout: it makes the quotient a domain, which Noether normalization
+and the height-one contraction need. Without it purity fails: for `P = (xy, xz)` in three
+variables, the union of a plane and a line, and `f = x - 1`, which is regular modulo `P`, the only
+component of the cut is the point `(1, 0, 0)`, of dimension `0` rather than `1`.
+
 ## Main statements
 
 * `MvPolynomial.natDegree_affineHilbertPolynomial_eq_card_of_finite_of_injective`: a finite
@@ -43,55 +48,16 @@ most `b * affineDegree P`. Retaining only the components that avoid a fixed `s`,
   `natDegree H(I) = Nat.card τ`.
 * `MvPolynomial.natDegree_affineHilbertPolynomial_add_one_of_height_eq_one`: a prime of height one
   above an affine prime has Hilbert polynomial of natural degree one less.
-* `MvPolynomial.principalCut_natDegree_affineHilbertPolynomial_add_one`: purity of principal cuts.
+* `MvPolynomial.principalCut_natDegree_affineHilbertPolynomial_add_one`: purity of principal cuts,
+  and its hypersurface case
+  `MvPolynomial.natDegree_affineHilbertPolynomial_add_one_of_mem_minimalPrimes_span_singleton`.
 * `MvPolynomial.principalCut_sum_affineDegree_minimalPrimes_le`: the Bézout bound.
+* `MvPolynomial.principalCut_sum_affineDegree_retainedMinimalPrimes_le`: the Bézout bound for the
+  components retained by `s`.
 * `MvPolynomial.sum_affineDegree_mul_pow_retainedMinimalPrimes_le`: the degree potential of the
   retained components of a cut.
-
-## References
-
-Ported from ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`, namespace
-`AffineHilbert`.
-
-From `ArkLib/ToMathlib/AlgebraicGeometry/PrincipalCut/NoetherNormalizationHeightOne.lean`: the
-commutative algebra of `normalization_contraction_height_one` is `Ideal.height_under_eq_one` and
-`Ideal.exists_prime_under_eq_span_singleton` in `ArkLib.ToMathlib.RingTheory.Ideal.HeightUnder`.
-The structure `NormalizationHeightOneData`, the maps `normalizationBotMap`,
-`normalizationPrincipalQuotientMap`, `normalizationChildMap`, `parentComponentQuotientEquiv`
-(Mathlib's `DoubleQuot.quotQuotEquivQuotOfLEₐ`) and their finiteness and injectivity lemmas, and
-the existence statements `exists_normalization_contraction_height_one`,
-`principalCut_component_exists_normalization_contraction` and
-`principalCut_component_exists_coordinate_normalization` were packaging for the purity proof;
-they are not ported, and the maps are built inside the proof of
-`natDegree_affineHilbertPolynomial_add_one_of_height_eq_one`.
-
-From `ArkLib/ToMathlib/AlgebraicGeometry/PrincipalCut/Purity.lean`:
-`principalCut_component_hilbertPolynomial_natDegree_add_one` is
-`principalCut_natDegree_affineHilbertPolynomial_add_one`, a corollary of the height-one statement
-`natDegree_affineHilbertPolynomial_add_one_of_height_eq_one`, which is new and applies to every
-prime of height one above `P`, not only to minimal primes of a principal cut. The parent
-computation `natDegree_affineHilbertPolynomial_eq_card_of_finite_of_injective` is also new.
-
-From `ArkLib/ToMathlib/AlgebraicGeometry/PrincipalCut/Bezout.lean`:
-`principalCut_sum_affineDegree_le` is `principalCut_sum_affineDegree_minimalPrimes_le`, with the
-same hypotheses.
-
-From `ArkLib/ToMathlib/AlgebraicGeometry/CutFamily/Finite.lean`:
-`sum_retainedCutChildren_affineDegree_mul_pow_le` is
-`sum_affineDegree_mul_pow_retainedMinimalPrimes_le`. The source summed over
-`retainedCutChildren P s f`, defined as `{P}` when `f ∈ P` and as
-`(P ⊔ span {f}).retainedMinimalPrimes s` otherwise. For a prime `P` with `s ∉ P` the two agree
-(`Ideal.retainedMinimalPrimes_sup_span_of_mem`), so the retained minimal primes are used directly
-and no new definition is introduced. The hypotheses `s ∉ P` and `1 ≤ b` of the source are dropped:
-the bound holds without them. The source's `mem_retainedCutChildren` is
-`Ideal.of_mem_retainedMinimalPrimes_sup_span`, and its
-`exists_mem_retainedCutChildren_of_mem_zeroLocus` is the forward direction of
-`MvPolynomial.mem_zeroLocus_and_cut_iff_retained`.
-
-Primality of `P` is used throughout: it makes the quotient a domain, which Noether normalization
-and the height-one contraction need. Without it purity fails: for `P = (xy, xz)` in three
-variables, the union of a plane and a line, and `f = x - 1`, which is regular modulo `P`, the only
-component of the cut is the point `(1, 0, 0)`, of dimension `0` rather than `1`.
+* `MvPolynomial.sum_affineDegree_minimalPrimes_le`: the affine degrees of the minimal primes of an
+  equidimensional ideal sum to at most its affine degree.
 -/
 
 @[expose] public section
@@ -159,8 +125,9 @@ theorem natDegree_affineHilbertPolynomial_add_one_of_height_eq_one [Finite σ]
       ext x
       rfl
     rw [hcomp]
-    exact RingHom.Finite.comp e.toRingEquiv.finite
+    have h := RingHom.Finite.comp e.toRingEquiv.finite
       (RingHom.Finite.comp (RingHom.Finite.of_surjective _ Ideal.Quotient.mk_surjective) hg_fin)
+    exact h
   have hparent := natDegree_affineHilbertPolynomial_eq_card_of_finite_of_injective g hg_fin hg_inj
   have hproper : Ideal.span {a} ≠ ⊤ := by
     rw [Ne, Ideal.span_singleton_eq_top]
@@ -183,6 +150,19 @@ theorem principalCut_natDegree_affineHilbertPolynomial_add_one [Finite σ]
   have : J.IsPrime := hJ.isPrime
   natDegree_affineHilbertPolynomial_add_one_of_height_eq_one (le_sup_left.trans hJ.le)
     (Ideal.map_quotient_height_eq_one_of_mem_minimalPrimes_sup_span hf hJ)
+
+/-- Every minimal prime `Q` over a nonzero principal ideal `span {g}` of `MvPolynomial σ k` has
+`natDegree H(Q) + 1 = Nat.card σ`: the components of a hypersurface have codimension one.
+
+This is `principalCut_natDegree_affineHilbertPolynomial_add_one` for `P = ⊥`. The hypothesis
+`g ≠ 0` is needed: `span {0} = ⊥` is its own minimal prime, of natural degree `Nat.card σ`. -/
+theorem natDegree_affineHilbertPolynomial_add_one_of_mem_minimalPrimes_span_singleton [Finite σ]
+    {g : MvPolynomial σ k} (hg : g ≠ 0) {Q : Ideal (MvPolynomial σ k)}
+    (hQ : Q ∈ (Ideal.span {g}).minimalPrimes) :
+    (affineHilbertPolynomial Q).natDegree + 1 = Nat.card σ := by
+  rw [← natDegree_affineHilbertPolynomial_bot (σ := σ) (k := k)]
+  exact principalCut_natDegree_affineHilbertPolynomial_add_one (P := ⊥)
+    (by rwa [Ideal.mem_bot]) (by rwa [bot_sup_eq])
 
 /-- The Bézout bound for a principal cut of an affine prime: if `P` is prime, `f ∉ P` and
 `totalDegree f ≤ b`, then the affine degrees of the minimal primes of `P ⊔ span {f}` sum to at
@@ -215,6 +195,21 @@ theorem principalCut_sum_affineDegree_minimalPrimes_le [Finite σ]
         principalCut_sum_factorial_mul_leadingCoeff_minimalPrimes_le hreg hfdeg hpure
     _ = b * affineDegree P := by rw [affineDegree, mul_assoc]
 
+/-- The Bézout bound for the retained components of a principal cut: if `P` is prime, `f ∉ P` and
+`totalDegree f ≤ b`, the affine degrees of the minimal primes of `P ⊔ span {f}` that do not contain
+`s` sum to at most `b * affineDegree P`.
+
+Dropping components only decreases the sum, since affine degrees are nonnegative, so this follows
+from `principalCut_sum_affineDegree_minimalPrimes_le`. No hypothesis on `s` is needed. The
+hypothesis `f ∉ P` is needed for the reason given there. -/
+theorem principalCut_sum_affineDegree_retainedMinimalPrimes_le [Finite σ]
+    {P : Ideal (MvPolynomial σ k)} [P.IsPrime] (s : MvPolynomial σ k) {f : MvPolynomial σ k}
+    (hf : f ∉ P) {b : ℕ} (hfdeg : f.totalDegree ≤ b) :
+    ∑ Q ∈ (P ⊔ Ideal.span {f}).retainedMinimalPrimes s, affineDegree Q ≤ b * affineDegree P :=
+  (Finset.sum_le_sum_of_subset_of_nonneg (Ideal.retainedMinimalPrimes_subset _ s)
+      fun Q _ _ ↦ affineDegree_nonneg Q).trans
+    (principalCut_sum_affineDegree_minimalPrimes_le hf hfdeg)
+
 /-- The degree potential does not increase under a retained principal cut. Let `P` be prime and
 `totalDegree f ≤ b`. Summing `affineDegree Q * b ^ natDegree H(Q)` over the minimal primes `Q` of
 `P ⊔ span {f}` that do not contain `s` gives at most `affineDegree P * b ^ natDegree H(P)`.
@@ -243,11 +238,7 @@ theorem sum_affineDegree_mul_pow_retainedMinimalPrimes_le [Finite σ]
       (affineHilbertPolynomial Q).natDegree + 1 = d := fun Q hQ ↦
     principalCut_natDegree_affineHilbertPolynomial_add_one hf
       (Ideal.mem_retainedMinimalPrimes.mp hQ).1
-  have hsum : ∑ Q ∈ (P ⊔ Ideal.span {f}).retainedMinimalPrimes s, affineDegree Q ≤
-      b * affineDegree P :=
-    (Finset.sum_le_sum_of_subset_of_nonneg (Ideal.retainedMinimalPrimes_subset _ s)
-      fun Q _ _ ↦ affineDegree_nonneg Q).trans
-      (principalCut_sum_affineDegree_minimalPrimes_le hf hfdeg)
+  have hsum := principalCut_sum_affineDegree_retainedMinimalPrimes_le s hf hfdeg
   rcases Nat.eq_zero_or_pos d with hd | hd
   · rw [Finset.sum_eq_zero fun Q hQ ↦ by have := hchild Q hQ; omega]
     exact mul_nonneg (affineDegree_nonneg P) (by positivity)
@@ -262,5 +253,52 @@ theorem sum_affineDegree_mul_pow_retainedMinimalPrimes_le [Finite σ]
         mul_le_mul_of_nonneg_right hsum (by positivity)
     _ = affineDegree P * (b : ℚ) ^ d := by
         rw [mul_comm (b : ℚ), mul_assoc, ← pow_succ', Nat.sub_add_cancel hd]
+
+/-- The affine degrees of the minimal primes `Q` over `I` whose affine Hilbert polynomial has the
+same natural degree `d` as that of `I` sum to at most `affineDegree I`.
+
+Each such `Q` has affine degree `d! * coeff d H(Q)`. The coefficient in degree `d` is nonnegative
+for every minimal prime, since `natDegree H(Q) ≤ d`, so adding the remaining minimal primes does
+not decrease the sum, and `sum_coeff_affineHilbertPolynomial_minimalPrimes_le` bounds the sum over
+all minimal primes by `coeff d H(I)`. -/
+theorem sum_affineDegree_minimalPrimes_filter_le [Finite σ] (I : Ideal (MvPolynomial σ k)) :
+    ∑ Q ∈ I.minimalPrimesFinset with
+        (affineHilbertPolynomial Q).natDegree = (affineHilbertPolynomial I).natDegree,
+      affineDegree Q ≤ affineDegree I := by
+  set d := (affineHilbertPolynomial I).natDegree with hd
+  have hdeg : ∀ Q ∈ I.minimalPrimesFinset, (affineHilbertPolynomial Q).natDegree ≤ d :=
+    fun Q hQ ↦ natDegree_affineHilbertPolynomial_le_of_le (Ideal.mem_minimalPrimesFinset.mp hQ).1.2
+  calc ∑ Q ∈ I.minimalPrimesFinset with (affineHilbertPolynomial Q).natDegree = d,
+        affineDegree Q
+      = (d.factorial : ℚ) * ∑ Q ∈ I.minimalPrimesFinset with
+          (affineHilbertPolynomial Q).natDegree = d, (affineHilbertPolynomial Q).coeff d := by
+        rw [Finset.mul_sum]
+        refine Finset.sum_congr rfl fun Q hQ ↦ ?_
+        have hQd := (Finset.mem_filter.mp hQ).2
+        rw [affineDegree, hQd, Polynomial.leadingCoeff, hQd]
+    _ ≤ (d.factorial : ℚ) * ∑ Q ∈ I.minimalPrimesFinset, (affineHilbertPolynomial Q).coeff d :=
+        mul_le_mul_of_nonneg_left (Finset.sum_le_sum_of_subset_of_nonneg
+          (Finset.filter_subset _ _) fun Q hQ _ ↦
+            Polynomial.coeff_nonneg_of_natDegree_le_of_eventually_eval_natCast_nonneg (hdeg Q hQ)
+              (eventually_eval_affineHilbertPolynomial_nonneg Q)) (Nat.cast_nonneg _)
+    _ ≤ (d.factorial : ℚ) * (affineHilbertPolynomial I).coeff d :=
+        mul_le_mul_of_nonneg_left (sum_coeff_affineHilbertPolynomial_minimalPrimes_le I le_rfl)
+          (Nat.cast_nonneg _)
+    _ = affineDegree I := by rw [affineDegree, Polynomial.leadingCoeff]
+
+/-- For an equidimensional ideal `I`, whose minimal primes all have affine Hilbert polynomials of
+the same natural degree as that of `I`, the affine degrees of the minimal primes sum to at most
+`affineDegree I`.
+
+This is `sum_affineDegree_minimalPrimes_filter_le`, whose filter keeps every minimal prime. The
+hypothesis is needed: for `I = span {X₀ * X₁, X₀ * X₂}` in three variables, the union of the plane
+`X₀ = 0` and the line `X₁ = X₂ = 0`, the line has affine degree `1` and does not count towards the
+leading coefficient of the Hilbert polynomial of `I`, which is that of the plane. -/
+theorem sum_affineDegree_minimalPrimes_le [Finite σ] {I : Ideal (MvPolynomial σ k)}
+    (hpure : ∀ Q ∈ I.minimalPrimesFinset,
+      (affineHilbertPolynomial Q).natDegree = (affineHilbertPolynomial I).natDegree) :
+    ∑ Q ∈ I.minimalPrimesFinset, affineDegree Q ≤ affineDegree I := by
+  have h := sum_affineDegree_minimalPrimes_filter_le I
+  rwa [Finset.filter_true_of_mem hpure] at h
 
 end MvPolynomial

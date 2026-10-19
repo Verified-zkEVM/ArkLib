@@ -29,19 +29,8 @@ their difference is the certified bound by
 
 ## References
 
-Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Local/Rank.lean`
-at ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d:
-`finrank_intermediateConstraintMap_le_certifiedEnlargedRankBound` and
-`finrank_exactLocalConstraintAt_le_certifiedEnlargedRankBound`, with the same hypotheses
-(`0 < d` and `d < D`) and the same conclusion. The second is proved as an instance of
-`finrank_range_exactLocalConstraintAt_le_sub` rather than by the source's direct factorization.
-
-Deferred: the consumers of the bound (the free-order dimension count and rate rounding), and any
-treatment of `d = 0`, where the intermediate space is still finite-dimensional but its dimension
-formula and the contact threshold both change.
-
-* Brakensiek, Chen, Putterman, Zhang, and Zheng, *Algorithmic List Decoding of Reed--Solomon
-  Codes up to Capacity in the Low-Rate Regime*, ECCC TR26-164, Section 3.
+* [Brakensiek, J., Chen, Y., Putterman, A., Zhang, Z., and Zheng, K. Z., *Algorithmic List
+  Decoding of Reed–Solomon Codes up to Capacity in the Low-Rate Regime*][BCPZZ26], Section 3.
 -/
 
 @[expose] public section
