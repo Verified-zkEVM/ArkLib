@@ -12,6 +12,10 @@ page under [`papers/`](papers/README.md); that directory, not this list, is the 
 
 ## Paper Pages
 
+- [`papers/Arc.md`](papers/Arc.md) and [`papers/BCFW25.md`](papers/BCFW25.md) (WARP) - accumulation,
+  relation-to-relation IORs, and the witness-transport knowledge-security lineage.
+- [`papers/ChiesaYogev2024.md`](papers/ChiesaYogev2024.md) - the hash-based proof textbook,
+  its required long-term coverage, and the native interaction/security comparison.
 - [`papers/ABF26.md`](papers/ABF26.md) - *Open Problems in List Decoding and Correlated Agreement*,
   the primary source for the coding-theory foundations: §2 preliminaries, the §2.4 code families,
   the §3.1 Johnson family, subspace designs, and extension codes.
@@ -19,8 +23,6 @@ page under [`papers/`](papers/README.md); that directory, not this list, is the 
   `ReedSolomon`, `ListDecodability`, and `ProximityGap`.
 - [`papers/ACFY24stir.md`](papers/ACFY24stir.md) - STIR paper page for the active
   `ProofSystem/Stir` development.
-- [`papers/BCFW25.md`](papers/BCFW25.md) - cited only for Lemma D.3 (extension-code list size);
-  none of the accumulation machinery is used.
 - [`papers/BCIKS20.md`](papers/BCIKS20.md) - proximity gaps for Reed-Solomon codes and the main
   coding-theory formalization it drives in ArkLib.
 - [`papers/BCGM25.md`](papers/BCGM25.md) - polynomial-generator MCA and related ArkLib
@@ -58,8 +60,8 @@ page under [`papers/`](papers/README.md); that directory, not this list, is the 
   Ajtai commitments.
 - [`papers/BSS08.md`](papers/BSS08.md) - the Reed-Solomon PCP-of-proximity paper; its bivariate
   division property backed the old STIR folding route, and is currently uncited.
-- [`papers/CGKY25.md`](papers/CGKY25.md) - the ARSDH-style extraction argument behind the KZG
-  function-binding reduction.
+- [`papers/CGKY25.md`](papers/CGKY25.md) - Funky's functional-IOP compiler and the ARSDH-style
+  argument behind the KZG function-binding reduction.
 - [`papers/codingtheory.md`](papers/codingtheory.md) - *Essential Coding Theory*; classical
   background for the Johnson-bound layer, and the authority for the list-`ℓ` Johnson radius.
 - [`papers/FMN24.md`](papers/FMN24.md) - the origin of coordinate-wise special soundness, the
@@ -104,6 +106,10 @@ page under [`papers/`](papers/README.md); that directory, not this list, is the 
 
 ## Audit Pages
 
+- [`audits/interaction-literature-map.md`](audits/interaction-literature-map.md) - ARC/WARP/ABF
+  knowledge lineage, FIOPs and Funky, duplex-sponge FS, and later IOR compiler/privacy targets.
+- [`audits/chiesa-yogev-interaction.md`](audits/chiesa-yogev-interaction.md) - textbook pipeline,
+  native and legacy security differences, reusable extraction theory, and open research questions.
 - [`audits/README.md`](audits/README.md) - audit conventions and migration notes for paper-to-code
   comparison pages.
 - [`audits/noz26-subfield-lemmas5-6.md`](audits/noz26-subfield-lemmas5-6.md)
