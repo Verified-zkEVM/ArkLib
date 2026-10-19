@@ -207,7 +207,7 @@ theorem automaticSurplusSlope_pos {rho : ℝ} (hrho : 0 < rho) (hrhoOne : rho < 
 theorem automaticMultiplicityBoundConstant_pos {rho : ℝ}
     (hrho : 0 < rho) (hrhoOne : rho < 1) :
     0 < automaticMultiplicityBoundConstant rho := by
-  unfold automaticMultiplicityBoundConstant automaticRateGap
+  unfold automaticMultiplicityBoundConstant
   positivity [automaticRateGap_pos hrho hrhoOne]
 
 /-- The jet-degree coefficient is positive for rates in `(0, 1)`. -/
