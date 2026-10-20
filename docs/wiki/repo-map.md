@@ -675,6 +675,12 @@ home_page/            site assets and assembled website root
   the challenge, and correct candidates are excluded from the bad event. The generic union
   bounds are imported directly from `VCVio.EvalDist.ProbabilityBounds`;
   `BatchingPhase.prob_exists_consistent_ne_le` consumes its one-candidate specialization.
+  `Relations` also names the actual slices and the arbitrary-weight target derived from fixed
+  component claims. `DerivedBatching` bounds incorrect packed candidates from a list fixed before
+  one challenge, using an injective packing-to-challenge coefficient map. The transpose is public
+  and adds no slice message; the same packed source is retained. Reference Flock's early residual
+  claim is the intended consumer, with its native head and commitment/extraction contracts still
+  separate obligations.
   `Profile.lean` holds the shared packing data layer `RingSwitchingProfile` (packing data +
   reconstruction and inverse laws); `Algebra.lean` holds `packMLE`, the tensor carrier, the
   verifier subroutines and the tensor-product constructor `tensorProductProfile`;

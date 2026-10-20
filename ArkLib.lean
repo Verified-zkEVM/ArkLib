@@ -810,6 +810,7 @@ public import ArkLib.ProofSystem.RingSwitching.Packing.BatchingAlgebra
 public import ArkLib.ProofSystem.RingSwitching.Packing.BatchingPhase
 public import ArkLib.ProofSystem.RingSwitching.Packing.CheckedObservation
 public import ArkLib.ProofSystem.RingSwitching.Packing.Coordinates
+public import ArkLib.ProofSystem.RingSwitching.Packing.DerivedBatching
 public import ArkLib.ProofSystem.RingSwitching.Packing.FinalAlgebra
 public import ArkLib.ProofSystem.RingSwitching.Packing.FiniteObservation
 public import ArkLib.ProofSystem.RingSwitching.Packing.General
