@@ -2,7 +2,7 @@
 Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Chung Thai Nguyen, Katerina Hristova,
-         Ilia Vlasov, Aristotle (Harmonic)
+         Ilia Vlasov, Aristotle (Harmonic), Alexander Hicks
 -/
 module
 
@@ -60,6 +60,21 @@ lemma prob_schwartz_zippel_single_variable
   (SampleableType.prEvent_uniformSample_equiv (Equiv.funUnique (Fin 1) R).symm
     (fun r => MvPolynomial.eval r p = 0)).trans_le
       (prob_schwartz_zippel_mv_polynomial_of_totalDegree_le p hne hdeg)
+
+/-- Two distinct univariate polynomials of degree at most `d` agree at a uniform point with
+probability at most `d / |R|`: their difference has at most `d` roots. -/
+lemma prob_polynomial_eval_eq_le
+    {R : Type} [CommRing R] [IsDomain R] [Fintype R] [SampleableType R]
+    {d : ℕ} {p q : Polynomial R} (hne : p ≠ q) (hp : p.natDegree ≤ d) (hq : q.natDegree ≤ d) :
+    Pr{let γ ← $ᵗ R}[p.eval γ = q.eval γ] ≤ (d : ℝ≥0∞) / Fintype.card R := by
+  classical
+  rw [SampleableType.prEvent_uniformSample]
+  gcongr
+  have hr : p - q ≠ 0 := sub_ne_zero.mpr hne
+  refine (Polynomial.card_le_degree_of_subset_roots (p := p - q) fun γ hγ => ?_).trans
+    ((Polynomial.natDegree_sub_le _ _).trans (max_le hp hq))
+  exact (Polynomial.mem_roots hr).mpr (by
+    simpa [sub_eq_zero] using (Finset.mem_filter.mp hγ).2)
 
 /-- The polynomial identity lemma in individual-degree form. -/
 lemma prob_polynomial_identity_le

@@ -52,7 +52,7 @@ each:
 ## What is genuinely shared between the two families
 
 * The **round-shape verifiers** (this folder's top level): every verifier round of the family
-  is "one prover message, a deterministic local check, an accept/reject statement update" —
+  is "one prover message, a deterministic local check, a statement update or an abort" —
   message-only (`pSpecMessage` + `messageRoundOracleVerifier`: DP24's final step today,
   Hachi §3's trace-check head tomorrow) or with a trailing scalar challenge
   (`pSpecScalar` + `scalarRoundOracleVerifier`: DP24's batching round; the check-free limit

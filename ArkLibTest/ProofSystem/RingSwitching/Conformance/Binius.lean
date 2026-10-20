@@ -34,8 +34,8 @@ The statements it is built from are:
   (`sum_cube_boolDomain`).
 
 `oracleVerifier_eq_scalarRoundOracleVerifier` pins `acceptedStatement` to production: the
-production verifier is, by `rfl`, the shared `scalarRoundOracleVerifier` with the column check,
-`acceptedStatement` as its accept branch and `failureState` as its reject branch.
+production verifier is, by `rfl`, the shared `scalarRoundOracleVerifier` with the column check
+and `acceptedStatement` as its accept branch. A failed check aborts.
 
 Two further statements cover the rest of the phase:
 
@@ -58,11 +58,12 @@ query phases to Binary Basefold; both are out of scope here.
 `biniusBatching_conforms` is `batching_conforms` at Binius's `biniusProfile` and oracle statement
 `BinaryBasefoldAbstractOStmtIn`, where compatibility is the first-oracle codeword consistency.
 
-Scope: the statements cover the accepting branch. On a failed check the production verifier
-returns `failureState` rather than aborting, which is the known defect of the batching phase's
-security statements. The output relation fixes only the batched target, so acceptance does not
-make the carrier honest: the gap is the batching collision event bounded by
-`compute_s0_collision_le` and `prob_exists_consistent_ne_le`. No security theorem is claimed here.
+Scope: the statements cover the accepting branch; the rejecting branch aborts. The output
+relation fixes only the batched target, so acceptance does not make the carrier honest: the gap is
+the batching collision event bounded by `compute_s0_collision_le` and
+`prob_exists_consistent_ne_le`. The phase's security theorems are in `BatchingPhase`
+(`batchingReduction_perfectCompleteness`, `batchingOracleVerifier_rbrKnowledgeSoundness`); no
+security theorem is claimed here.
 
 The concrete instances, at the `GF(4)/GF(2)` orientation fixture with a binding oracle statement,
 show the honest round accepted through `batching_conforms`; the zero carrier passing the check but
@@ -73,10 +74,13 @@ accepts the true claim `Z 1` while the rows read back `0`, so a row/column swap 
 too. At `X₀` and the point `(Z 1, 0)`, weighting the columns by the retained coordinate instead of
 the packed one reads back `0`, so a packed/retained swap is caught.
 
-Two regression fixtures pin the disclosed limits. `zero_carrier_collides` realises the batching
-collision: at the challenge `1` the zero carrier is accepted with the honest witness.
-`failureState_mem_sumcheckRoundRelation` realises the `failureState` defect: a rejected claim whose
-reject output lies in the round-zero relation; it must flip when #383 repairs the verifier.
+Two regression fixtures pin the behaviour at the limits. `zero_carrier_collides` realises the
+batching collision: at the challenge `1` the zero carrier is accepted with the honest witness.
+`failedCheck_aborts` pins the abort on rejection: for the claim `1`, which no witness satisfies
+(`claimAt_one_not_mem_batchingInputRelation`), the check rejects the honest carrier and the
+production verifier aborts, so no output can meet the round-zero relation. Before the repair the
+verifier returned a dummy `failureState`, which lay in that relation with the zero polynomial
+committed.
 
 The fixture objects come from `ArkLibTest.RingSwitchingOrientation`; its single-letter names are
 opened here only under the renamings `GF2`, `GF4`, `P₄`, `r₀` and `tX₀`.
@@ -181,15 +185,14 @@ abbrev acceptedStatement (stmt : BatchingStmtIn L ℓ) (z : P.A) (c : Fin κ →
     challenges := Fin.elim0 }
 
 /-- The production batching verifier is the shared check-then-update scalar-round verifier with
-the column check, the accepted statement `acceptedStatement` and the reject statement
-`failureState`. -/
+the column check and the accepted statement `acceptedStatement`. -/
 theorem oracleVerifier_eq_scalarRoundOracleVerifier [DecidableEq L]
     (aOStmtIn : AbstractOStmtIn L ℓ') :
     BatchingPhase.oracleVerifier κ L K P ℓ ℓ' h_l (aOStmtIn := aOStmtIn) =
       scalarRoundOracleVerifier (Msg := P.A) (C := Fin κ → L)
         (fun stmt z => performCheckOriginalEvaluation κ L K P ℓ ℓ' h_l stmt.original_claim
           stmt.t_eval_point z)
-        (acceptedStatement P) (BatchingPhase.failureState κ L K P ℓ ℓ') :=
+        (acceptedStatement P) :=
   rfl
 
 /-- At the accepted statement, the round-zero structural invariant says that the round polynomial
@@ -622,40 +625,29 @@ theorem zero_carrier_collides :
 /-- The oracle statement committing to the zero polynomial. -/
 def oStmtZero : ∀ j, exactOStmtIn.OStmtIn j := fun _ => (0 : MultilinearPoly GF4 1)
 
-/-- The witness with `t' = 0` and its production round polynomial at the reject statement. -/
-def witZero : RingSwitching.SumcheckWitness GF4 1 0 where
-  t' := 0
-  H := projectToMidSumcheckPolyWithParam (L := GF4) (ℓ := 1)
-    (param := RingSwitching_SumcheckMultParam 1 GF4 GF2 P₄ 2 1 rfl)
-    (ctx := (BatchingPhase.failureState 1 GF4 GF2 P₄ 2 1 (claimAt 1) shat).ctx) (t := 0)
-    (i := 0) (challenges := Fin.elim0)
-
-/-- The `failureState` defect, pinned: the check rejects the claim `1`, yet the verifier's reject
-output `failureState` is in the round-zero relation, with the zero polynomial committed. This
-fixture must flip when #383 makes the batching verifier abort on a failed check. -/
-theorem failureState_mem_sumcheckRoundRelation :
+/-- The abort on rejection, pinned: the check rejects the claim `1` at the honest carrier, and the
+production verifier then aborts on every transcript sending that carrier. Before the repair it
+returned a dummy statement that lay in the round-zero relation. -/
+theorem failedCheck_aborts (tr : (pSpecBatching 1 GF4 GF2 P₄).FullTranscript)
+    (htr : tr.messages ⟨0, rfl⟩ = shat) :
     performCheckOriginalEvaluation 1 GF4 GF2 P₄ 2 1 rfl (claimAt 1).original_claim
       (claimAt 1).t_eval_point shat = false ∧
-    ((BatchingPhase.failureState 1 GF4 GF2 P₄ 2 1 (claimAt 1) shat, oStmtZero), witZero) ∈
-      sumcheckRoundRelation 1 GF4 GF2 P₄ 2 1 rfl exactOStmtIn 0 := by
-  refine ⟨?_, trivial, rfl, ?_, rfl⟩
-  · rw [Bool.eq_false_iff]
+    (BatchingPhase.oracleVerifier 1 GF4 GF2 P₄ 2 1 rfl exactOStmtIn).toVerifier.verify
+      (claimAt 1, oStmtZero) tr = failure := by
+  have hcheck : performCheckOriginalEvaluation 1 GF4 GF2 P₄ 2 1 rfl (claimAt 1).original_claim
+      (claimAt 1).t_eval_point shat = false := by
+    rw [Bool.eq_false_iff]
     intro h
     have hs := (check_iff_layout_weight P₄ rfl _ _ _).1 h
     change (1 : GF4) = ∑ v, (prefixLayout P₄ 1).weight (prefixQuery P₄ rfl r₀) v * _ at hs
     rw [sum_weight_zero, column_zero] at hs
     exact one_ne_zero hs
-  · have hH := (witnessStructuralInvariant_iff P₄ rfl (claimAt 1) shat 0 witZero).1 rfl
-    have hzero : witZero.H.val = 0 := by
-      rw [hH]
-      exact mul_zero _
-    unfold sumcheckConsistencyProp
-    change (0 : GF4) = _
-    rw [hzero]
-    simp
+  refine ⟨hcheck, ?_⟩
+  rw [BatchingPhase.oracleVerifier, scalarRoundOracleVerifier_verify, htr, hcheck]
+  rfl
 
-/-- The input of the `failureState` fixture is in the batching input relation for no witness, so
-the reject branch maps a false input into the output relation. -/
+/-- The claim of the `failedCheck_aborts` fixture is in the batching input relation for no
+witness. -/
 theorem claimAt_one_not_mem_batchingInputRelation (wit : BatchingWitIn GF4 GF2 2 1) :
     ((claimAt 1, oStmtZero), wit) ∉
       BatchingPhase.batchingInputRelation 1 GF4 GF2 P₄ 2 1 rfl exactOStmtIn := by
