@@ -115,6 +115,8 @@ page under [`papers/`](papers/README.md); that directory, not this list, is the 
 - [`audits/noz26-zero-check-lemma10.md`](audits/noz26-zero-check-lemma10.md)
   - Hachi Figure 5 / Lemma 10 paper-to-Lean audit; the nested-tree repair and the weak-binding
     seam as integrated into the escape-threaded opening chain.
+- [`audits/noz26-trace-head-section-3-1.md`](audits/noz26-trace-head-section-3-1.md)
+  - NOZ26 §3.1 trace head: correspondence, departures and security shape.
 - [`audits/bciks20-appendix-a-rational-functions.md`](audits/bciks20-appendix-a-rational-functions.md)
   - status matrix for the rational-function and Hensel-lifting layer used by `BCIKS20`.
 - [`audits/bcgm25-mca-generators.md`](audits/bcgm25-mca-generators.md)
