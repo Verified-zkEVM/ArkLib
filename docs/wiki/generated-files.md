@@ -44,3 +44,27 @@ Edit the source of truth, not the output.
   content.
 - Generated site and blueprint output are for review and deployment, not authoring.
 - If a path looks derived, confirm its source of truth before editing it.
+
+## Reusing local documentation caches
+
+The pinned local doc-gen4 backend stores collected module data in
+`.lake/build/api-docs.db`; its `.lake/build/doc-data/` files include completion markers and
+build traces. A bibliography change can invalidate dependency `docInfo` facets as well as
+ArkLib's own docs, so a warm Lean build can still need substantial documentation regeneration.
+When reusing a completed documentation cache between matching dependency/bibliography snapshots,
+wait for all documentation writers in both the source and destination to finish. Take a
+consistent SQLite backup, including committed WAL pages, together with its matching module/core
+`doc-data/` artifacts and bibliography data.
+HTML generation has separate `*.docs_built` and
+`*.docsHeader_built` completion files, with matching `.hash` and `.trace` files. For an identical
+source snapshot, copy their HTML, static assets and `doc-manifest.json` too, or omit/quarantine
+those exact HTML-marker families so doc-gen4 regenerates local outputs. Invalidate those HTML
+markers when source content or the root-module set changes, even if old HTML exists, to ensure
+a fresh rendering and index from the updated database. Preserve the module/core `*.doc` markers
+and bibliography data; broad `*.doc*` invalidation discards the reusable module-data cache.
+Completion markers alone supply neither database rows nor HTML/static files.
+
+Use isolated writable caches for concurrent builds. A copied Lean cache can still rebuild root
+modules when their trace inputs contain the former worktree path; this does not justify rewriting
+generated trace metadata. For a stack of related slices, retaining one worktree path allows later
+validation runs to reuse completed artifacts without concurrent writers.
