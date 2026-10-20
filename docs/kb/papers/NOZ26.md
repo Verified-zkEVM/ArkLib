@@ -15,6 +15,8 @@ related_modules:
   - ArkLib/Commitments/Functional/Hachi/InnerOuter/Scheme.lean
   - ArkLib/Commitments/Functional/Hachi/InnerOuter/Security.lean
   - ArkLib/Commitments/Functional/Hachi/ZeroCheck/Reduction.lean
+  - ArkLib/Commitments/Functional/Hachi/TraceHead/Coefficients.lean
+  - ArkLib/Commitments/Functional/Hachi/TraceHead/Protocol.lean
 ---
 
 # NOZ26
@@ -45,7 +47,15 @@ Ring-switching layer:
 - The **extension-field → cyclotomic-ring reduction** (§3): Hachi reduces evaluation proofs over
   `F_{q^k}` to equivalent statements over a power-of-two cyclotomic ring `R_q` with a trace check
   in `R_q` itself. Its carrier is `L = R_q`, so it is not a `RingSwitchingProfile`: for finite
-  nontrivial `L` and `κ > 0` the profile's inverse laws force `|A| = |L|^(2^κ)`.
+  nontrivial `L` and `κ > 0` the profile's inverse laws force `|A| = |L|^(2^κ)`. The §3.1
+  one-message trace head is formalized in `Hachi/TraceHead/`, with completeness and
+  coordinate-wise special soundness into `relPolyEval`; its read-back is the shared
+  `CheckedObservation`. Its coefficient packing is the shared `PackingData.packedMLE` (at
+  `PackingData.ofBaseOpening` of `ψ`, one opening coordinate) of a monomial-coefficient
+  `ScalarHead.ClaimLayout`, transported from CompPoly's `CMlPolynomial` to `MvPolynomial`, and its
+  conformance theorem states the accepting condition through the shared `sliceRel`. §3.1 exercises
+  only the packing, evaluation and opening part of the shared layer (no batching, multiplier or
+  sumcheck), so the reuse is small at the proof level and real at the statement level.
 - The **cyclotomic-ring → extension-field lift** (§4.3, Figure 4 / **Lemma 9**, following
   [`HMZ25`](HMZ25.md)): the *simplified* Figure 4 extraction kernel is **formalized and proven** as
   `liftPackage` in Hachi's
@@ -114,8 +124,9 @@ Ring-switching layer:
 
 ## Known Divergences From ArkLib
 
-- ArkLib has not yet built the Hachi ring-switching instance; the abstraction is designed to admit
-  it but only the Binius instance is implemented.
+- The §3.1 trace head uses the fixed subring as a ring and does not depend on Lemma 5's field
+  identification. It covers the one-message scalar-to-ring step only; §4.5's same-field batching
+  pullback and the recursion are separate.
 - Hachi Lemma 5 is fully proved: `fixedSubring_isField` and `fixedSubringEquivGaloisField` rest
   on the factor-swap lemma `no_selfReciprocal_factor`, which is proved by a root-orbit argument
   in `AdjoinRoot p₁` (`not_associated_reverse_self`). Lemma 6 is fully proved, under the weaker
@@ -195,8 +206,8 @@ Ring-switching layer:
 
 ## Open Formalization Gaps
 
-- Formalize the §3 trace head against its own algebraic interface, built on the proved `ψ`
-  packing bijection and trace inner-product identity (Theorem 2, `2^κ_pack = d/k`).
+- Formalize §3.2 (base-field coefficients and partial evaluations); the §3.1 trace head is
+  formalized in `Hachi/TraceHead/`.
 - Complete the still-sorried Hachi-specific links: what remains is the §4.5 recursion tail —
   partial evaluation (Eq. (24)), the `Z`-packing bridge (Eqs. (25)–(26), which carries the flagged
   soundness gap below), and the trace handoff (Eqs. (27)–(28)). Everything through the sumcheck is

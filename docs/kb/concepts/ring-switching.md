@@ -28,7 +28,8 @@ Use this page when a question is about:
 
 - what ring switching is and why a polynomial commitment scheme uses it;
 - the `RingSwitchingProfile` abstraction and how a protocol family instantiates it;
-- where Binius plugs in, and why Hachi's §3 head needs its own interface;
+- where Binius plugs in, and how Hachi's §3 head, which is not a profile instance, uses the
+  coordinate layer;
 - which security statements are generic vs. instance-specific.
 
 ## The idea
@@ -94,9 +95,32 @@ them; `PackingData.transpose` is the coordinate transpose `(ιP → E) ≃ₗ[B]
 - `Multiplier` — the public multiplier evaluated by a read-once matrix program
   (`Data/Matrix/ReadOnce.lean`);
 - `Batching` — `BatchingStrategy`, a uniform challenge distribution with a proved collision bound
-  (`gammaPowers`, `eqFold`, `singleton`, `reindex`);
+  (`gammaPowers`, `eqFold`, `singleton`, `reindex`), and `BatchingStrategy.separates_finset`: a
+  list of at most `L` families fixed before the challenge has an incorrect collision with
+  probability at most `L` times the strategy error. The generic union bounds it instantiates are
+  upstream in `VCVio.EvalDist.ProbabilityBounds`: `prEvent_exists_finset_le_card_mul` and
+  the exact-functional one-index case `prEvent_exists_and_le_of_subsingleton`, which
+  `BatchingPhase.prob_exists_consistent_ne_le` applies. The bound does not cover
+  challenge-dependent lists, adaptive joint-list invariants or extraction;
 - `ScalarHead/Layout` and `ScalarHead/Quirky` — prefix, suffix and quirky Lagrange layouts, each
-  with a proved reconstruction identity.
+  with a proved reconstruction identity. A consumer may supply its own `ClaimLayout`: Hachi's
+  monomial-coefficient layout lives in `Commitments/Functional/Hachi/TraceHead/Coefficients.lean`.
+- `DerivedBatching` — the fixed-list bound for packed candidates against the publicly derived
+  transpose of fixed component claims. `Relations` supplies `actualSlices` and `derivedTarget`
+  for the pure reconstruction and target laws; injectivity of the packing-to-challenge coefficient map
+  is needed only for separation.
+
+Reference Flock's early residual scalar claim, using `quirkyLayout` and `quirkyComponent`, is the
+intended derived-batching consumer. The retained point and bases are public; a preceding prover
+message supplies component claims `α`.
+The verifier derives `transpose α` without another slice message. The candidate packed source
+and list must be anchored to the original commitment by the consumer and fixed before the fresh
+batching challenge; the weights, target and public multiplier depend on the new challenge. The laws
+retain the same packed polynomial and exclude correct candidates from the bad event. The concrete residual
+relation, native head conformance, same-source `pc.evalRel` adapter and extraction remain separate work.
+
+`PackingData.ofBasis` uses one algebra and one basis in both roles; `PackingData.ofBaseOpening`
+uses the base ring as opening algebra, so there is a single opening coordinate.
 
 Everything holds over commutative rings, including rings with zero divisors, except the two
 Schwartz–Zippel batching strategies, which need a finite domain, and the quirky layout, whose
@@ -206,14 +230,36 @@ Lagrange interpolation needs the opening algebra to be a field.
     `OracleVerifier.seqCompose_rbrKnowledgeSoundness`, and the single round's
     `Sumcheck.Spec.SingleRound.oracleVerifier_rbrKnowledgeSoundness` applies the admitted
     `OracleVerifier.liftContext_rbr_knowledgeSoundness`.
-- **Hachi §3 packing head** ([`../papers/NOZ26.md`](../papers/NOZ26.md), planned): `L = R_q`,
+- **Hachi §3.1 trace head** ([`../papers/NOZ26.md`](../papers/NOZ26.md),
+  `Commitments/Functional/Hachi/TraceHead/`): `L = R_q`,
   `A = R_q`, `φ₀ = id`, `φ₁ = σ₋₁`, `β = ψ` (Theorem 2). The carrier is `L` itself, so for
-  `κ > 0` this is **not** a `RingSwitchingProfile` instance; it needs its own trace interface
-  over the shared finite-coordinate modules. The evaluation point is engineered to be
+  `κ > 0` this is **not** a `RingSwitchingProfile` instance; it uses the coordinate layer
+  directly (`PackingData.ofBaseOpening`, `packedMLE`, its own `ClaimLayout`, and
+  `CheckedObservation`). The evaluation point is engineered to be
   subfield-valued, so the reduction is **deterministic**
   (one message + one trace check, no challenges, no sum-check). `R_q` is not a domain, so the
   Schwartz–Zippel soundness theorem does not apply — Hachi soundness is a separate (CWSS)
-  argument.
+  argument. The formalized head computes over CompPoly's `CMlPolynomial`; its read-back
+  `unpackCoefficients_eval` is proved directly, and its `observation` is a `CheckedObservation`
+  written by hand. The packing is also stated in the `MvPolynomial`-based coordinate layer,
+  through `CMlPolynomial.equivMvPolynomialDeg1` (`TraceHead/Coefficients.lean`):
+  - the packing data is `PackingData.ofBaseOpening` of `ψ`: the fixed subring is the opening
+    algebra, with one opening coordinate (`ιE = Unit`), and the shared transpose is `ψ` itself;
+  - `traceHeadLayout` instantiates the `ScalarHead.ClaimLayout` contract, splitting the
+    **monomial coefficients** of the packed variables (not the Boolean-restriction
+    `packedSuffixLayout`); its `reconstruct` is Hachi's own proof (`evalSplit_eq_eval` and the
+    evaluation bridge);
+  - the packed polynomial is the shared `packedMLE` of the layout's components
+    (`toMvPolynomialDeg1_packCoefficients`).
+
+  The conformance theorem `traceHead_conforms`
+  (`ArkLibTest/ProofSystem/RingSwitching/Conformance/Hachi.lean`) states the accepting condition
+  through that layer: a passing check whose forwarded claim opens validly is exactly a valid weak
+  opening for which the sent value is the single shared slice (`sliceRel`) of the `packedMLE` of
+  the decoded committed polynomial's components, and the claimed scalar is the layout-weighted sum
+  of its `ψ`-coordinates. Hachi §3.1 exercises only the packing, evaluation and opening part of the
+  shared layer (one opening coordinate, no batching, multiplier or sumcheck), as in the paper, so
+  its reuse is small at the proof level and real at the statement level.
 - **HMZ25 `Lift` construction** ([`../papers/HMZ25.md`](../papers/HMZ25.md)): the
   *opposite* direction, `S ≅ R[X]/(φ)` → a field `F` — lift `M z = y` to `R[X]` and evaluate
   at a random `α`. **Formalized generically** in `ProofSystem/RingSwitching/Lift/`
@@ -243,6 +289,7 @@ Lagrange interpolation needs the opening algebra to be a field.
 - [`../../../ArkLib/ProofSystem/RingSwitching/Packing/Coordinates.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/Coordinates.lean) — independent packing and opening bases, coordinate transpose.
 - [`../../../ArkLib/ProofSystem/RingSwitching/Packing/Relations.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/Relations.lean) — opening, slice and batched-sumcheck relations.
 - [`../../../ArkLib/ProofSystem/RingSwitching/Packing/Batching.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/Batching.lean) — batching strategies with proved collision bounds.
+- [`../../../ArkLib/ProofSystem/RingSwitching/Packing/DerivedBatching.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/DerivedBatching.lean) — conditional fixed-list separation for publicly derived slices of the same packed source.
 - [`../../../ArkLib/ProofSystem/RingSwitching/Packing/Algebra.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/Algebra.lean) — `packMLE`, the tensor-product constructor `tensorProductProfile`, the DP24 verifier subroutines.
 - [`../../../ArkLib/ProofSystem/RingSwitching/Packing/Prelude.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/Prelude.lean) — DP24 protocol vocabulary and relations.
 - [`../../../ArkLib/ProofSystem/RingSwitching/Packing/Compatibility.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/Compatibility.lean) — the binding hypothesis `AbstractOStmtIn.Functional`.

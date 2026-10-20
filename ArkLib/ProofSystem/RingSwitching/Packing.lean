@@ -7,6 +7,7 @@ module
 
 public import ArkLib.ProofSystem.RingSwitching.Packing.Batching
 public import ArkLib.ProofSystem.RingSwitching.Packing.CheckedObservation
+public import ArkLib.ProofSystem.RingSwitching.Packing.DerivedBatching
 public import ArkLib.ProofSystem.RingSwitching.Packing.Multiplier
 public import ArkLib.ProofSystem.RingSwitching.Packing.Relations
 public import ArkLib.ProofSystem.RingSwitching.Packing.ScalarHead.Quirky
@@ -31,11 +32,12 @@ describes one useful realization of the carrier algebra, but is not the essentia
 
 The equivalence is not free: the original claim constrains `t'` through the basis
 coordinates, so the reduction must *relocate* the claim onto `t'` at some point the
-large-ring opening can handle. Two ingredients separate cleanly:
+large-ring opening can handle. In the DP24/profile-based construction, two ingredients separate
+cleanly:
 
 * the **packing data** — the basis, a carrier ring `A` where the relocation checks run, a
   pair of embeddings into it, and faithful coordinate maps back out — is one abstraction,
-  `RingSwitchingProfile` (`Profile.lean`), shared by every interactive relocation;
+  `RingSwitchingProfile` (`Profile.lean`);
 * the **relocation** is per-instance and depends on where the evaluation point lives. If the
   point is arbitrary in `L`, the claim is relocated *interactively*: the prover sends the
   folded carrier element `ŝ`, the verifier reconstructs the original claim from `ŝ`'s
@@ -44,7 +46,11 @@ large-ring opening can handle. Two ingredients separate cleanly:
   downstream opening consumes (the protocol files of this folder; round-by-round knowledge
   soundness, `[IsDomain L]`). If the point is engineered to lie in a subring, the relocation
   degenerates to a *deterministic* one-message identity check. That trace head computes in
-  `L` itself, so it needs its own algebraic interface rather than a `Profile` instance.
+  `L` itself, so it is not a `Profile` instance; it uses the coordinate layer directly.
+
+The independent `PackingData` coordinate layer also supplies algebra for a future reference-Flock
+head. Its native conformance remains separate work; that head need not instantiate
+`RingSwitchingProfile`.
 
 The *opposite-direction* `Lift` construction—from a large quotient ring down into a field—is
 **not** a packing; it lives in the sibling folder `RingSwitching/Lift/`.
@@ -59,9 +65,15 @@ except the Schwartz–Zippel batching strategies (finite domains) and the quirky
 * `FiniteObservation.lean`, `CheckedObservation.lean` — weighted observations, their coordinate
   slices, and read-back of a scalar claim from an accepted honest message.
 * `Polynomial.lean`, `Relations.lean` — packed multilinear polynomials with both round trips, and
-  the opening, slice and batched-sumcheck relations.
+  the opening, slice and batched-sumcheck relations; actual source slices and the target derived
+  from a public transpose with arbitrary weights.
 * `Multiplier.lean` — the public multiplier evaluated by a read-once matrix program.
-* `Batching.lean` — `BatchingStrategy`: uniform challenges with a proved collision bound.
+* `Batching.lean` — `BatchingStrategy`: uniform challenges with a proved collision bound, and
+  `separates_finset` for candidate lists fixed before the challenge (the generic union bound is in
+  `VCVio.EvalDist.ProbabilityBounds`).
+* `DerivedBatching.lean` — fixed-list separation for packed candidates against publicly derived
+  slices, preserving the same source without an additional slice message. Reference Flock's early
+  residual scalar claim is the intended consumer; its head conformance remains separate.
 * `ScalarHead/Layout.lean`, `ScalarHead/Quirky.lean` — prefix, suffix and quirky source
   layouts, each with a proved reconstruction identity.
 
@@ -119,7 +131,12 @@ The DP24 construction:
 
 Hachi's §3 head ([NOZ26] Theorem 2) has carrier `A = L = R_q` and an automorphism `φ₁`. For
 `κ > 0` and finite `R_q` it is not a profile instance (`RingSwitchingProfile.card_A`); its
-deterministic trace check is planned against its own interface.
+deterministic trace head is `Commitments/Functional/Hachi/TraceHead/`. It uses the coordinate
+layer directly: its packed polynomial is `packedMLE` at `PackingData.ofBaseOpening` of `ψ` (one
+opening coordinate) of its own monomial-coefficient `ScalarHead.ClaimLayout`, its conformance
+theorem states its accepting condition through `sliceRel`, and its observation is a
+`CheckedObservation`. It exercises only the packing, evaluation and opening part of this layer (no
+batching, multiplier or sumcheck), as in [NOZ26] §3.1.
 
 ## References
 
