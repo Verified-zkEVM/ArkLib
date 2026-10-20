@@ -13,7 +13,11 @@ public import ArkLib.OracleReduction.Composition.Sequential.Append
   This file defines the sequential composition of an arbitrary `m + 1` number of oracle reductions.
   This is defined by iterating the composition of two reductions, as defined in `Append.lean`.
 
-  The soundness and knowledge-soundness claims inherit the admitted binary security contracts.
+  The soundness and knowledge-soundness claims inherit the admitted binary security contracts;
+  their per-step error reindexing is proved
+  (`ProtocolSpec.apply_seqComposeChallengeIdxToSigma_eq_sumElim`). The proved worst-case
+  round-by-round knowledge-soundness interface for guarded chains is
+  `Sequential/GuardedRoundByRound.lean`.
   The false fixed-init completeness contracts have been removed. Proved completeness interfaces
   live in `Sequential/Completeness.lean`, `Sequential/GuardedNary.lean`, and
   `Sequential/OracleCompleteness.lean`, with explicit shared-state hypotheses.
@@ -350,6 +354,47 @@ variable {m : ℕ}
 
 -- end Execution
 
+namespace ProtocolSpec
+
+/-- A function of a component challenge index, evaluated at the decoding of a combined challenge
+index, is its value at any component index the combined index's round splits into. -/
+theorem apply_seqComposeChallengeIdxToSigma {m : ℕ} {n : Fin m → ℕ}
+    {pSpec : ∀ i, ProtocolSpec (n i)} {α : Sort*}
+    (f : (i : Fin m) → (pSpec i).ChallengeIdx → α) (k : (seqCompose pSpec).ChallengeIdx)
+    (a : Fin m) (b : (pSpec a).ChallengeIdx) (h : Fin.splitSum k.1 = ⟨a, b.1⟩) :
+    f (seqComposeChallengeIdxToSigma k).1 (seqComposeChallengeIdxToSigma k).2 = f a b := by
+  have key : ∀ (s : (i : Fin m) × Fin (n i)) (hs : (pSpec s.1).dir s.2 = .V_to_P),
+      s = ⟨a, b.1⟩ → f s.1 ⟨s.2, hs⟩ = f a b := by
+    rintro s hs rfl
+    rfl
+  exact key _ _ h
+
+/-- **Error reindexing for one step of `seqCompose`.** A per-component function of challenge
+indices, read through `seqComposeChallengeIdxToSigma` on `pSpec 0 ++ₚ seqCompose (pSpec ∘ succ)`,
+is the first component's function on the left and the reindexed tail's on the right. This is the
+error bookkeeping of an induction that composes the head with the tail by `append`. -/
+theorem apply_seqComposeChallengeIdxToSigma_eq_sumElim {m : ℕ} {n : Fin (m + 1) → ℕ}
+    {pSpec : ∀ i, ProtocolSpec (n i)} {α : Type*}
+    (f : (i : Fin (m + 1)) → (pSpec i).ChallengeIdx → α) :
+    (fun k => f (seqComposeChallengeIdxToSigma k).1 (seqComposeChallengeIdxToSigma k).2) =
+      Sum.elim (f 0) (fun k => f (seqComposeChallengeIdxToSigma k).1.succ
+        (seqComposeChallengeIdxToSigma k).2) ∘
+        (ChallengeIdx.sumEquiv (pSpec₁ := pSpec 0)
+          (pSpec₂ := seqCompose fun i => pSpec i.succ)).symm := by
+  funext k
+  obtain ⟨k, rfl⟩ := (ChallengeIdx.sumEquiv (pSpec₁ := pSpec 0)
+    (pSpec₂ := seqCompose fun i => pSpec i.succ)).surjective k
+  rcases k with i | k
+  · simp only [Function.comp_apply, Equiv.symm_apply_apply, Sum.elim_inl]
+    exact apply_seqComposeChallengeIdxToSigma f _ 0 i (Fin.splitSum_embedSum (n := n) 0 i.1)
+  · simp only [Function.comp_apply, Equiv.symm_apply_apply, Sum.elim_inr]
+    refine apply_seqComposeChallengeIdxToSigma f _ _ _ ?_
+    have h := Fin.splitSum_embedSum (n := n) (Fin.splitSum k.1).1.succ (Fin.splitSum k.1).2
+    rw [Fin.embedSum_succ_succ, Fin.embedSum_splitSum] at h
+    exact h
+
+end ProtocolSpec
+
 section Security
 
 open scoped NNReal
@@ -428,14 +473,10 @@ theorem seqCompose_rbrSoundness
     rw [Verifier.seqCompose_zero]
     exact Verifier.id_rbrSoundness init impl
   | succ m ih =>
-    simp only [Fin.vsum_succ, seqCompose_succ, Fin.castSucc_zero, Fin.succ_zero_eq_one,
-      Function.comp_apply, Fin.succ_last, Nat.succ_eq_add_one, ChallengeIdx]
-    have := ih (fun i => lang i.succ) (fun i => V i.succ)
-      (fun i => rbrSoundnessError i.succ) (fun i => h i.succ)
-    simp only [Fin.succ_zero_eq_one, Fin.succ_last, Nat.succ_eq_add_one, ChallengeIdx] at this
-    convert append_rbrSoundness (V 0) (seqCompose (Stmt ∘ Fin.succ) (fun i => V i.succ))
-      (h 0) this;
-    sorry
+    rw [ProtocolSpec.apply_seqComposeChallengeIdxToSigma_eq_sumElim]
+    exact append_rbrSoundness (V 0) (seqCompose (Stmt ∘ Fin.succ) (fun i => V i.succ)) (h 0)
+      (ih (fun i => lang i.succ) (fun i => V i.succ) (fun i => rbrSoundnessError i.succ)
+        (fun i => h i.succ))
 
 /-- If all verifiers in a sequence satisfy round-by-round knowledge soundness with respective RBR
     knowledge errors, then their sequential composition also satisfies round-by-round knowledge
@@ -461,14 +502,10 @@ theorem seqCompose_rbrKnowledgeSoundness
     rw [Verifier.seqCompose_zero]
     exact Verifier.id_rbrKnowledgeSoundness init impl
   | succ m ih =>
-    simp only [Fin.vsum_succ, seqCompose_succ, Fin.castSucc_zero, Fin.succ_zero_eq_one,
-      Function.comp_apply, Fin.succ_last, Nat.succ_eq_add_one, ChallengeIdx]
-    have := ih (fun i => rel i.succ) (fun i => V i.succ)
-      (fun i => rbrKnowledgeError i.succ) (fun i => h i.succ)
-    simp only [Fin.succ_zero_eq_one, Fin.succ_last, Nat.succ_eq_add_one, ChallengeIdx] at this
-    convert append_rbrKnowledgeSoundness (V 0) (seqCompose (Stmt ∘ Fin.succ) (fun i => V i.succ))
-      (h 0) this;
-    sorry
+    rw [ProtocolSpec.apply_seqComposeChallengeIdxToSigma_eq_sumElim]
+    exact append_rbrKnowledgeSoundness (V 0) (seqCompose (Stmt ∘ Fin.succ) (fun i => V i.succ))
+      (h 0) (ih (fun i => rel i.succ) (fun i => V i.succ) (fun i => rbrKnowledgeError i.succ)
+        (fun i => h i.succ))
 
 end Verifier
 
