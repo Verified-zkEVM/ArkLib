@@ -263,6 +263,23 @@ python3 -m pip install leanblueprint
 - [`../../.github/workflows/kb-generated.yml`](../../.github/workflows/kb-generated.yml)
   opens generated-files PRs for KB indexes and missing cited-paper stubs after pushes to `main`.
 
+To validate a stacked PR while it targets a feature branch, dispatch the existing CI, import,
+and docs-integrity workflows on its published head branch:
+
+```bash
+review_branch=your-published-head-branch
+gh workflow run ci.yml --ref "$review_branch"
+gh workflow run check-imports.yml --ref "$review_branch"
+gh workflow run docs-integrity.yml --ref "$review_branch"
+gh run list --branch "$review_branch" --event workflow_dispatch \
+  --json workflowName,headSha,status,conclusion,url
+```
+
+Check that each run's `headSha` equals the reviewed commit, and retain the run URLs with the
+validation evidence. A later push needs checks for its new head. Dispatch uses the existing
+read-only CI build job; the Pages publisher runs only on push events. Local validation, required
+GitHub reviews, and the eventual main-target and merge-queue checks still apply.
+
 Pull requests enter GitHub's merge queue after their normal review and required checks pass. The
 queue creates a temporary integration ref containing the queued changes on current `main`; the CI,
 import, and docs-integrity workflows run again on that `merge_group` ref before GitHub may merge it.
