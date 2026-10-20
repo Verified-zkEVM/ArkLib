@@ -702,6 +702,20 @@ instance {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
     (A := Direction) (B := Type) (F := fun dir type => (h : dir = .V_to_P) → SampleableType type)
     (fun i' j' h' => inst i' ⟨j', h'⟩) k h
 
+/-- **Instance pin.** At `m + 1` components, the `SampleableType` instance of a sequential
+composition's challenges is the `++ₚ` instance of its head and tail. It holds by `rfl`, since
+`Fin.fflatten₂` unfolds to `Fin.fappend₂` one component at a time. Inductive proofs that peel the
+head with `append` rewrite with it, so a change to either instance fails here rather than inside
+those proofs. -/
+theorem instSampleableTypeChallengeSeqCompose_succ {m : ℕ} {n : Fin (m + 1) → ℕ}
+    {pSpec : ∀ i, ProtocolSpec (n i)} [inst : ∀ i, ∀ j, SampleableType ((pSpec i).Challenge j)] :
+    (instSampleableTypeChallengeSeqCompose :
+        ∀ k, SampleableType ((seqCompose pSpec).Challenge k)) =
+      (instSampleableTypeChallengeAppend (pSpec₁ := pSpec 0)
+        (pSpec₂ := seqCompose fun i => pSpec i.succ) :
+        ∀ k, SampleableType ((seqCompose pSpec).Challenge k)) :=
+  rfl
+
 instance {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
     [inst : ∀ i, ∀ j, Inhabited ((pSpec i).Challenge j)] :
     ∀ k, Inhabited ((seqCompose pSpec).Challenge k) :=

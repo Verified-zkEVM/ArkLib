@@ -97,15 +97,19 @@ The DP24 construction:
   check) and the final consistency step handing the residual evaluation claim `t'(r') = s'` to
   the downstream opening; the final verifier is an instance of the family-shared
   `messageRoundOracleVerifier` (`../RoundVerifiers.lean`). Per-round and final-step completeness
-  and worst-case round-by-round knowledge soundness (`2/|L|` per round) are proved, and so is the
-  composed completeness. The composed knowledge soundness is conditional on the admitted
-  framework contracts `OracleVerifier.seqCompose_rbrKnowledgeSoundness` and
-  `OracleVerifier.append_rbrKnowledgeSoundness`. The append contracts' statements are flagged as
-  not derivable from their hypotheses, and the `seqCompose` contract is built on them.
+  and worst-case round-by-round knowledge soundness (`2/|L|` per round) are proved, and so are
+  the composed completeness and the composed worst-case round-by-round knowledge soundness
+  (`coreInteraction_rbrKnowledgeSoundnessWorstCase`, sorry-free and axiom-clean under its stated
+  hypotheses), through the guarded worst-case composition theorems.
 * `General.lean` — the composed reduction (batching ++ sumcheck ++ downstream opening). Perfect
   completeness at the strict relations is proved from the phases and the downstream opening's
-  completeness. Round-by-round knowledge soundness (`[NoZeroDivisors L]`,
-  `AbstractOStmtIn.Functional`) is conditional on the same framework composition theorems.
+  completeness. Worst-case round-by-round knowledge soundness of batching ++ sumcheck
+  (`batchingCore_rbrKnowledgeSoundnessWorstCase`) is sorry-free and axiom-clean under its stated
+  hypotheses (`[NoZeroDivisors L]`, `AbstractOStmtIn.Functional`). The full composite's
+  round-by-round knowledge soundness depends on the admitted
+  `OracleVerifier.append_rbrKnowledgeSoundness`, because the downstream opening's
+  `MLIOPCS.rbrKnowledgeSoundness` contract is averaged; it loses that dependency once a worst-case
+  extension of `MLIOPCS` supplies a worst-case contract.
 
 ## Instantiations
 

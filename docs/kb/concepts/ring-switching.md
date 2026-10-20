@@ -159,13 +159,36 @@ Lagrange interpolation needs the opening algebra to be a field.
     `FullRingSwitching.fullOracleReduction_perfectCompleteness` are proved through the
     guarded-verifier composition theorems. The full reduction's completeness is stated at the
     strict relations (`AbstractOStmtIn.strictView`, honest compatibility).
-  - Composed knowledge soundness: `coreInteraction_rbrKnowledgeSoundness` and
-    `FullRingSwitching.fullOracleVerifier_rbrKnowledgeSoundness` are **conditional**. They apply
-    the admitted contracts `OracleVerifier.append_rbrKnowledgeSoundness` and
-    `OracleVerifier.seqCompose_rbrKnowledgeSoundness`. The append contracts' statements are
-    flagged as not derivable from their hypotheses
-    (`Composition/Sequential/Append/Security.lean`), and the `seqCompose` contract is admitted
-    separately and built on them. This is unverified statement debt, not only a missing proof.
+  - Composed knowledge soundness, **unconditional**: the core interaction
+    (`SumcheckPhase.coreInteraction_rbrKnowledgeSoundnessWorstCase`) and batching followed by it
+    (`FullRingSwitching.batchingCore_rbrKnowledgeSoundnessWorstCase`) compose the phase theorems
+    through the guarded worst-case composition theorems
+    (`Verifier.append_rbrKnowledgeSoundnessWorstCaseWith_of_guarded_first`,
+    `Verifier.seqCompose_rbrKnowledgeSoundnessWorstCase_of_guarded`, and their `OracleVerifier`
+    wrappers). They are sorry-free and axiom-clean under the same hypotheses; the averaged
+    `coreInteraction_rbrKnowledgeSoundness` and `batchingCore_rbrKnowledgeSoundness` are
+    corollaries.
+  - Composed knowledge soundness, **conditional on the opening**:
+    `FullRingSwitching.fullOracleVerifier_rbrKnowledgeSoundness` appends the downstream opening,
+    whose `MLIOPCS.rbrKnowledgeSoundness` contract is averaged, so it applies the admitted
+    `OracleVerifier.append_rbrKnowledgeSoundness`. That contract's statement is flagged as not
+    derivable from its hypotheses (`Composition/Sequential/Append/Security.lean`), so this is
+    unverified statement debt. It becomes unconditional once a worst-case extension of `MLIOPCS`
+    supplies a worst-case contract for the opening.
+  - Still conditional elsewhere, on other admitted lemmas: scalar (non-round-by-round) knowledge
+    soundness of any composite would go through the admitted
+    `Verifier.rbrKnowledgeSoundness_implies_knowledgeSoundness` (`Security/Implications.lean`).
+    On this branch the FRI-Binius and Binary Basefold composites
+    (`Binius.FRIBinius.CoreInteractionPhase.coreInteractionOracleVerifier_rbrKnowledgeSoundness`,
+    the `Binius.BinaryBasefold.CoreInteraction.*OracleVerifier_rbrKnowledgeSoundness` composites,
+    `Binius.BinaryBasefold.FullBinaryBasefold.fullOracleVerifier_rbrKnowledgeSoundness`) apply
+    the admitted averaged `OracleVerifier.append_rbrKnowledgeSoundness`. FRI-Binius `SumcheckFold`'s phase theorem is
+    itself admitted, with `OracleVerifier.liftContext_rbr_knowledgeSoundness` (admitted) as its
+    intended route. In the generic sum-check (`Sumcheck/Spec/`), the full protocol's
+    `Sumcheck.Spec.oracleVerifier_rbrKnowledgeSoundness` applies the admitted
+    `OracleVerifier.seqCompose_rbrKnowledgeSoundness`, and the single round's
+    `Sumcheck.Spec.SingleRound.oracleVerifier_rbrKnowledgeSoundness` applies the admitted
+    `OracleVerifier.liftContext_rbr_knowledgeSoundness`.
 - **Hachi §3 packing head** ([`../papers/NOZ26.md`](../papers/NOZ26.md), planned): `L = R_q`,
   `A = R_q`, `φ₀ = id`, `φ₁ = σ₋₁`, `β = ψ` (Theorem 2). The carrier is `L` itself, so for
   `κ > 0` this is **not** a `RingSwitchingProfile` instance; it needs its own trace interface

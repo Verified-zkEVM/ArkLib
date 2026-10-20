@@ -136,9 +136,25 @@ large-field multilinear IOPCS over $L$.
   guarded-verifier composition theorems, and the opening contributes its own completeness.
 \end{theorem}
 
-\begin{theorem}[Round-by-round knowledge soundness (conditional on composition)]
+\begin{theorem}[Round-by-round knowledge soundness of batching and the core interaction]
+  \lean{RingSwitching.SumcheckPhase.coreInteraction_rbrKnowledgeSoundnessWorstCase,
+    RingSwitching.FullRingSwitching.batchingCore_rbrKnowledgeSoundnessWorstCase}
+  \uses{def:full_ring_switching, thm:rbr_knowledge_soundness_append_guarded,
+    thm:rbr_knowledge_soundness_compose_guarded}
+  \label{thm:ring_switching_core_soundness}
+  Suppose $L$ is an integral domain and every oracle statement is compatible with at most one packed
+  polynomial. Then the core sum-check interaction, and the batching phase followed by it, are
+  round-by-round knowledge sound for every fixed transcript prefix, with error
+  $\kappa/\lvert L\rvert$ at the batching challenge and $2/\lvert L\rvert$ per sum-check round.
+  Every phase verifier is guarded, so the phases compose by
+  Theorems~\ref{thm:rbr_knowledge_soundness_append_guarded}
+  and~\ref{thm:rbr_knowledge_soundness_compose_guarded}.
+\end{theorem}
+
+\begin{theorem}[Round-by-round knowledge soundness (conditional on the opening)]
   \lean{RingSwitching.FullRingSwitching.fullOracleVerifier_rbrKnowledgeSoundness}
-  \uses{def:full_ring_switching}
+  \uses{def:full_ring_switching, thm:ring_switching_core_soundness,
+    thm:rbr_knowledge_soundness_append}
   \label{thm:ring_switching_soundness}
   Suppose $L$ is an integral domain and every oracle statement is compatible with at most one packed
   polynomial. Then the full reduction is round-by-round knowledge sound, with the additive error
@@ -158,9 +174,10 @@ completeness theorems are proved, and so is the composed completeness. The phase
 round-by-round knowledge soundness is proved in the worst-case form, which bounds the
 extraction-failure probability for every fixed transcript prefix over the fresh challenge alone;
 these per-phase bounds are sorry-free and axiom-clean under their stated hypotheses (uniqueness
-of the packed polynomial and $L$ having no zero divisors). The composed knowledge-soundness
-theorem above is conditional: it applies the framework's append and sequential-composition
-contracts for averaged round-by-round knowledge soundness. Those contracts are admitted; the
-append contracts' statements are flagged as not derivable from their hypotheses, and the
-sequential-composition contract is built on them. So the composite is unverified statement debt
-rather than only a missing proof.
+of the packed polynomial and $L$ having no zero divisors). They compose without further assumption
+into Theorem~\ref{thm:ring_switching_core_soundness}, which is sorry-free and axiom-clean. The
+full knowledge-soundness theorem above is still conditional: the opening's round-by-round knowledge
+soundness contract is averaged over provers, so the last append applies the framework's admitted
+averaged append contract, whose statement is flagged as not derivable from its hypotheses. It
+becomes unconditional once the opening supplies a worst-case contract, which then composes by
+Theorem~\ref{thm:rbr_knowledge_soundness_append_guarded}.

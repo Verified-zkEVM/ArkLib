@@ -206,6 +206,23 @@ structure KnowledgeStateFunction
         (stmtOut, witOut) ∈ relOut] > 0 →
     toFun (.last n) stmtIn tr (extractor.extractOut stmtIn tr witOut)
 
+omit [∀ i, SampleableType (pSpec.Challenge i)] in
+variable {init impl} in
+/-- A knowledge state function's value depends on its round, transcript and witness only up to
+(heterogeneous) equality. -/
+theorem KnowledgeStateFunction.toFun_congr {V : Verifier oSpec StmtIn StmtOut pSpec}
+    {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
+    {WitMid : Fin (n + 1) → Type}
+    {E : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid}
+    (K : V.KnowledgeStateFunction init impl relIn relOut E) {k k' : Fin (n + 1)} (hk : k = k')
+    (stmt : StmtIn) {T : pSpec.Transcript k} {T' : pSpec.Transcript k'} (hT : HEq T T')
+    {w : WitMid k} {w' : WitMid k'} (hw : HEq w w') :
+    K.toFun k stmt T w ↔ K.toFun k' stmt T' w' := by
+  subst hk
+  cases hT
+  cases hw
+  rfl
+
 /-- A knowledge state function gives rise to a state function via quantifying over the witness -/
 def KnowledgeStateFunction.toStateFunction
     {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}

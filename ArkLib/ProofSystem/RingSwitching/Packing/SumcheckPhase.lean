@@ -12,6 +12,7 @@ public import ArkLib.ProofSystem.RingSwitching.Packing.FinalAlgebra
 public import ArkLib.ProofSystem.Sumcheck.Structured.RoundLemmas
 public import ArkLib.OracleReduction.Composition.Sequential.GuardedCompleteness
 public import ArkLib.OracleReduction.Composition.Sequential.General
+public import ArkLib.OracleReduction.Composition.Sequential.GuardedRoundByRound
 public import ArkLib.OracleReduction.Composition.Sequential.Append
 public import ArkLib.OracleReduction.Composition.Sequential.OracleCompleteness
 public import ArkLib.OracleReduction.Composition.Sequential.NoAmbient
@@ -85,12 +86,13 @@ challenges, which is what the downstream opening can consume.
 * These per-round and final-step results are sorry-free and axiom-clean under their stated
   hypotheses (`hUnique` and `[NoZeroDivisors L]`). Each is primarily stated with the extractor
   and knowledge-state function named (`…_rbrKnowledgeSoundnessWorstCaseWith_rbrExtractor`), with
-  the existential and averaged forms as corollaries. The composite
-  `coreInteraction_rbrKnowledgeSoundness` is conditional: it applies the admitted framework
-  contracts `OracleVerifier.seqCompose_rbrKnowledgeSoundness` and
-  `OracleVerifier.append_rbrKnowledgeSoundness`. The append contracts' statements are flagged as
-  not derivable from their hypotheses, and the `seqCompose` contract is admitted separately and
-  built on them.
+  the existential and averaged forms as corollaries.
+* The composite `coreInteraction_rbrKnowledgeSoundnessWorstCase` (sumcheck loop, then final step)
+  is **unconditional**: it is composed from these by the guarded worst-case composition theorems
+  `OracleVerifier.seqCompose_rbrKnowledgeSoundnessWorstCase_of_guarded` and
+  `OracleVerifier.append_rbrKnowledgeSoundnessWorstCase_of_guarded_first`, and is sorry-free and
+  axiom-clean under the same hypotheses. `coreInteraction_rbrKnowledgeSoundness` is its averaged
+  form.
 
 ## References
 
@@ -961,21 +963,36 @@ section
 local instance : DecidableEq K := Classical.decEq K
 
 omit [NeZero κ] [Fintype K] [DecidableEq K] [NeZero ℓ] [NeZero ℓ'] in
-/-- RBR knowledge soundness for large-field reduction (Sumcheck ++ FinalSum).
+/-- Worst-case round-by-round knowledge soundness for the core interaction (sumcheck loop, then
+final step), at error `2/|L|` per sumcheck challenge.
 
-**Conditional on admitted composition contracts.** This composite applies
-`OracleVerifier.seqCompose_rbrKnowledgeSoundness` and `OracleVerifier.append_rbrKnowledgeSoundness`.
-Both are admitted, and both are stated for arbitrary verifiers at the averaged notion. The section
-note of `Composition/Sequential/Append/Security.lean` flags the append contracts' statements as
-not derivable from their hypotheses, since composing needs bounds conditioned on the first
-transcript; the `seqCompose` contract is admitted separately and built on them. So this theorem
-is unverified statement debt, not only a missing proof, and it carries `sorryAx`.
+Composed from the per-round and final-step worst-case theorems by the guarded worst-case
+composition theorems `OracleVerifier.seqCompose_rbrKnowledgeSoundnessWorstCase_of_guarded` and
+`OracleVerifier.append_rbrKnowledgeSoundnessWorstCase_of_guarded_first`. Each round verifier is
+guarded by its own check (`iteratedSumcheckGuardedForm`), and the composed sumcheck loop by
+`Verifier.GuardedForm.ofEmpty`, available because the ambient oracle specification is empty.
+Sorry-free and axiom-clean under `hUnique` and `[NoZeroDivisors L]`. -/
+theorem coreInteraction_rbrKnowledgeSoundnessWorstCase [NoZeroDivisors L]
+    (hUnique : aOStmtIn.Functional) :
+    Verifier.rbrKnowledgeSoundnessWorstCase init impl
+      (verifier := (coreInteractionOracleVerifier κ L K P ℓ ℓ' h_l aOStmtIn).toVerifier)
+      (relIn := sumcheckRoundRelation κ L K P ℓ ℓ' h_l aOStmtIn 0)
+      (relOut := aOStmtIn.toRelInput) (coreInteractionRbrKnowledgeError L ℓ') :=
+  OracleVerifier.append_rbrKnowledgeSoundnessWorstCase_of_guarded_first _ _
+    (Verifier.GuardedForm.ofEmpty _ (fun stmt => (⟨0, fun _ => 0, stmt.1.ctx⟩, stmt.2)))
+    (rel₂ := sumcheckRoundRelation κ L K P ℓ ℓ' h_l aOStmtIn (Fin.last ℓ'))
+    (OracleVerifier.seqCompose_rbrKnowledgeSoundnessWorstCase_of_guarded _ _ _
+      (fun i => sumcheckRoundRelation κ L K P ℓ ℓ' h_l aOStmtIn i) _
+      (fun i => iteratedSumcheckGuardedForm κ L K P ℓ ℓ' aOStmtIn i) _
+      (fun i => iteratedSumcheckOracleVerifier_rbrKnowledgeSoundnessWorstCase κ L K P ℓ ℓ' h_l
+        aOStmtIn hUnique i))
+    (finalSumcheckOracleVerifier_rbrKnowledgeSoundnessWorstCase κ L K P ℓ ℓ' h_l aOStmtIn
+      init impl)
 
-By contrast, the per-phase worst-case theorems
-`iteratedSumcheckOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_rbrExtractor` and
-`finalSumcheckOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_rbrExtractor` are sorry-free and
-axiom-clean under their stated hypotheses. They are the intended input to a worst-case
-composition theorem for guarded verifiers. -/
+omit [NeZero κ] [Fintype K] [DecidableEq K] [NeZero ℓ] [NeZero ℓ'] in
+/-- Round-by-round knowledge soundness for the core interaction (sumcheck loop, then final
+step): the averaged form of `coreInteraction_rbrKnowledgeSoundnessWorstCase`. Sorry-free and
+axiom-clean under `hUnique` and `[NoZeroDivisors L]`. -/
 theorem coreInteraction_rbrKnowledgeSoundness [NoZeroDivisors L]
     (hUnique : aOStmtIn.Functional) :
     OracleVerifier.rbrKnowledgeSoundness
@@ -990,20 +1007,9 @@ theorem coreInteraction_rbrKnowledgeSoundness [NoZeroDivisors L]
     (impl := impl)
     (relIn := sumcheckRoundRelation κ L K P ℓ ℓ' h_l aOStmtIn 0)
     (relOut := aOStmtIn.toRelInput)
-    (rbrKnowledgeError := coreInteractionRbrKnowledgeError (L:=L) (ℓ':=ℓ')) := by
-  apply OracleVerifier.append_rbrKnowledgeSoundness
-    (rel₂ := sumcheckRoundRelation κ L K P ℓ ℓ' h_l aOStmtIn (Fin.last ℓ'))
-    (rbrKnowledgeError₁ := sumcheckLoopRbrKnowledgeError L ℓ')
-    (rbrKnowledgeError₂ := fun _ => finalSumcheckRbrKnowledgeError (L := L))
-  · exact OracleVerifier.seqCompose_rbrKnowledgeSoundness
-      (init := init) (impl := impl)
-      (rel := fun i => sumcheckRoundRelation κ L K P ℓ ℓ' h_l aOStmtIn i)
-      (V := fun i => iteratedSumcheckOracleVerifier κ L K P ℓ ℓ' aOStmtIn i)
-      (rbrKnowledgeError := fun i _ => roundKnowledgeError L ℓ' i)
-      (h := fun i => iteratedSumcheckOracleVerifier_rbrKnowledgeSoundness
-        κ L K P ℓ ℓ' h_l aOStmtIn hUnique i)
-  · exact finalSumcheckOracleVerifier_rbrKnowledgeSoundness
-      κ L K P ℓ ℓ' h_l aOStmtIn init impl
+    (rbrKnowledgeError := coreInteractionRbrKnowledgeError (L:=L) (ℓ':=ℓ')) :=
+  Verifier.rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness init impl
+    (coreInteraction_rbrKnowledgeSoundnessWorstCase κ L K P ℓ ℓ' h_l aOStmtIn hUnique)
 
 end
 
