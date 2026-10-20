@@ -34,8 +34,9 @@ each:
      sumcheck; RBR knowledge soundness (`[IsDomain L]`). Consumed by
      `ProofSystem/Binius/FRIBinius/` (this is [DP24]'s construction).
    * **deterministic relocation** (planned) — for a subring-valued evaluation point the
-     interaction collapses to one message and one identity check, with zero soundness error;
-     a second `Profile` instance ([NOZ26] §3).
+     interaction collapses to one message and one identity check, with zero soundness error
+     ([NOZ26] §3). Its carrier is `L` itself, so it needs its own algebraic interface rather
+     than a `Profile` instance.
 
 2. **Lift** (`Lift/`) — the *opposite* direction, a quotient ring
    `S ≅ R[X]/(φ)` → a field `F ⊇ R`. Each row of a linear claim `M z = y` over `S` lifts to
@@ -76,9 +77,9 @@ each:
 
 Anything else — the tensor-algebra batching check, the relocation sumcheck, the
 quotient-witness correspondence, the trace identity — belongs to exactly one construction and
-lives with it. In particular the two *data layers* do not unify: above a spanning-and-faithful
-core their law sets are incomparable (coordinate additivity is not derivable from
-`decomposeRows_spec` alone, and `rep` is not multiplicative on the nose), so no common parent
+lives with it. In particular the two *data layers* do not unify: their laws govern different
+maps (a profile's coordinate bijections onto `2^κ` coordinates over `L`, a presentation's
+representative map `rep`, which is not multiplicative on the nose), so no common parent
 structure would carry a lemma either side's proofs consume.
 
 ## Folder structure
