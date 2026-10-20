@@ -79,5 +79,8 @@ structure fields. Use a matching clean snapshot or regenerate the database with 
 If using its module-deletion API to prune an isolated, backed-up copy, first prove each module is
 absent from both source and registered files and that no retained module imports it. Verify database
 integrity, foreign keys and unchanged retained rows before installing the consistent snapshot.
-Quarantine stale generated pages as well as HTML completion markers before rerendering; site
-assembly by overlay can otherwise retain removed pages. Do not patch rendered HTML or trace data.
+Before rerendering, quarantine each retired module's `declaration-data-{module}.bmp`,
+`backrefs-{module}.json` and stale pages, along with the exact HTML completion markers. The backend
+merges those per-module index and backreference files independently of its current import/database
+closure. Preserve current module/core data. Overlay site assembly can retain removed pages, so
+check its copy too. Do not patch rendered HTML or trace data.
