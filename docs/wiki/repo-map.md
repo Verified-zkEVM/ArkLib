@@ -670,7 +670,11 @@ home_page/            site assets and assembled website root
   `CheckedObservation`, `Polynomial` and `Relations` provide framework-independent
   reconstruction and readback; `ScalarHead/{Layout,Quirky}` supply certified layouts.
   `Multiplier` uses `Data/Matrix/ReadOnce` to evaluate the interpolated weight. `Batching`
-  supplies native uniform-challenge separation over an explicit `SampleableType`.
+  supplies native uniform-challenge separation over an explicit `SampleableType`, including
+  fixed candidate lists through `BatchingStrategy.separates_finset`. The list is fixed before
+  the challenge, and correct candidates are excluded from the bad event. The generic union
+  bounds are imported directly from `VCVio.EvalDist.ProbabilityBounds`;
+  `BatchingPhase.prob_exists_consistent_ne_le` consumes its one-candidate specialization.
   `Profile.lean` holds the shared packing data layer `RingSwitchingProfile` (packing data +
   reconstruction and inverse laws); `Algebra.lean` holds `packMLE`, the tensor carrier, the
   verifier subroutines and the tensor-product constructor `tensorProductProfile`;
