@@ -41,15 +41,11 @@ open ArkLibTest.RingSwitchingOrientation (beta tp shat beta_zero beta_one column
 
 namespace ArkLibTest.RingSwitchingConformance.BiniusComposition
 
-open ArkLibTest.RingSwitchingConformance.Binius
+open ArkLibTest.RingSwitchingConformance.Binius RingSwitching.Packing.Conformance
 
 attribute [local instance] ArkLibTest.RingSwitchingOrientation.algebraKL
 
 noncomputable local instance : SampleableType GF4 := SampleableType.ofFintype GF4
-
-/-- The binding oracle statement determines its packed polynomial. -/
-theorem exactOStmtIn_functional : exactOStmtIn.Functional :=
-  fun _ _ _ h₁ h₂ => h₁.trans h₂.symm
 
 /-! ## The core interaction -/
 

@@ -711,8 +711,8 @@ theorem finalSumcheckOracleReduction_perfectCompleteness {σ : Type}
   subst x
   exact ⟨_, rfl, ⟨rfl, hIn.2.2.2⟩, rfl⟩
 
-/-- RBR knowledge error for the final sumcheck step -/
-def finalSumcheckRbrKnowledgeError : ℝ≥0 := (1 : ℝ≥0) / (Fintype.card L)
+/-- The final step sends no challenge and introduces no knowledge error. -/
+def finalSumcheckRbrKnowledgeError : ℝ≥0 := 0
 
 /-- The round-by-round extractor for the final sumcheck step -/
 noncomputable def finalSumcheckRbrExtractor :
@@ -794,12 +794,13 @@ noncomputable def finalSumcheckKnowledgeStateFunction {σ : Type} (init : ProbCo
 section
 local instance : DecidableEq K := Classical.decEq K
 
-omit [NeZero κ] [Fintype K] [DecidableEq K] [SampleableType L] [NeZero ℓ] [NeZero ℓ'] in
+omit [NeZero κ] [Fintype L] [Fintype K] [DecidableEq K] [SampleableType L]
+  [NeZero ℓ] [NeZero ℓ'] in
 /-- Worst-case round-by-round knowledge soundness for the final sumcheck step, naming the extractor
 `finalSumcheckRbrExtractor` and the knowledge-state function `finalSumcheckKnowledgeStateFunction`.
 The step sends no challenge, so the round-by-round error is vacuous. -/
 theorem finalSumcheckOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_rbrExtractor
-    [NoZeroDivisors L] {σ : Type}
+    {σ : Type}
     (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     Verifier.rbrKnowledgeSoundnessWorstCaseWith init impl
       (verifier := (finalSumcheckVerifier κ L K P ℓ ℓ' h_l aOStmtIn).toVerifier)
@@ -808,35 +809,37 @@ theorem finalSumcheckOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_rbrExtrac
       (WitMid := fun _ => SumcheckWitness L ℓ' (Fin.last ℓ'))
       (extractor := finalSumcheckRbrExtractor κ L K P ℓ ℓ' h_l aOStmtIn)
       (kSF := finalSumcheckKnowledgeStateFunction κ L K P ℓ ℓ' h_l aOStmtIn init impl)
-      (rbrKnowledgeError := fun _ => finalSumcheckRbrKnowledgeError (L := L)) := by
+      (rbrKnowledgeError := fun _ => finalSumcheckRbrKnowledgeError) := by
   intro stmtIn ⟨j, hj⟩
   cases j using Fin.cases with
   | zero => simp at hj
   | succ j => exact Fin.elim0 j
 
-omit [NeZero κ] [Fintype K] [DecidableEq K] [SampleableType L] [NeZero ℓ] [NeZero ℓ'] in
+omit [NeZero κ] [Fintype L] [Fintype K] [DecidableEq K] [SampleableType L]
+  [NeZero ℓ] [NeZero ℓ'] in
 /-- Existential worst-case round-by-round knowledge soundness for the final sumcheck step: a
 corollary of `finalSumcheckOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_rbrExtractor`. -/
-theorem finalSumcheckOracleVerifier_rbrKnowledgeSoundnessWorstCase [NoZeroDivisors L] {σ : Type}
+theorem finalSumcheckOracleVerifier_rbrKnowledgeSoundnessWorstCase {σ : Type}
     (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (finalSumcheckVerifier κ L K P ℓ ℓ' h_l aOStmtIn).toVerifier.rbrKnowledgeSoundnessWorstCase
       init impl
       (relIn := sumcheckRoundRelation κ L K P ℓ ℓ' h_l aOStmtIn (Fin.last ℓ'))
       (relOut := aOStmtIn.toRelInput)
-      (rbrKnowledgeError := fun _ => finalSumcheckRbrKnowledgeError (L := L)) :=
+      (rbrKnowledgeError := fun _ => finalSumcheckRbrKnowledgeError) :=
   (Verifier.rbrKnowledgeSoundnessWorstCase_iff_exists_with init impl _ _ _ _).mpr ⟨_, _, _,
     finalSumcheckOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_rbrExtractor κ L K P ℓ ℓ' h_l
       aOStmtIn init impl⟩
 
-omit [NeZero κ] [Fintype K] [DecidableEq K] [SampleableType L] [NeZero ℓ] [NeZero ℓ'] in
+omit [NeZero κ] [Fintype L] [Fintype K] [DecidableEq K] [SampleableType L]
+  [NeZero ℓ] [NeZero ℓ'] in
 /-- Round-by-round knowledge soundness for the final sumcheck step: the averaged form of
 `finalSumcheckOracleVerifier_rbrKnowledgeSoundnessWorstCase`. -/
-theorem finalSumcheckOracleVerifier_rbrKnowledgeSoundness [NoZeroDivisors L] {σ : Type}
+theorem finalSumcheckOracleVerifier_rbrKnowledgeSoundness {σ : Type}
     (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (finalSumcheckVerifier κ L K P ℓ ℓ' h_l aOStmtIn).rbrKnowledgeSoundness init impl
       (relIn := sumcheckRoundRelation κ L K P ℓ ℓ' h_l aOStmtIn (Fin.last ℓ'))
       (relOut := aOStmtIn.toRelInput)
-      (rbrKnowledgeError := fun _ => finalSumcheckRbrKnowledgeError (L := L)) :=
+      (rbrKnowledgeError := fun _ => finalSumcheckRbrKnowledgeError) :=
   Verifier.rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness init impl
     (finalSumcheckOracleVerifier_rbrKnowledgeSoundnessWorstCase κ L K P ℓ ℓ' h_l aOStmtIn
       init impl)
@@ -965,7 +968,7 @@ def coreInteractionRbrKnowledgeErrorWithDegree (d : ℕ)
     (j : (pSpecCoreInteractionWithDegree L ℓ' d).ChallengeIdx) : ℝ≥0 :=
   Sum.elim
     (f := sumcheckLoopRbrKnowledgeErrorWithDegree L ℓ' d)
-    (g := fun _ => finalSumcheckRbrKnowledgeError (L := L))
+    (g := fun _ => finalSumcheckRbrKnowledgeError)
     (ChallengeIdx.sumEquiv.symm j)
 
 /-- Standard Binius ring-switching RBR knowledge error (`d = 2`) with exact final-step splitting. -/

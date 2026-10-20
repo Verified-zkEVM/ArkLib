@@ -311,13 +311,15 @@ theorem sum_cube_batchingPoly_eq_compute_s0 (ctx : RingSwitchingBaseContext κ L
 omit [NeZero κ] [DecidableEq L] [Fintype K] [DecidableEq K] [NeZero ℓ] [NeZero ℓ'] in
 open Probability in
 /-- If compatibility with the oracle statement determines the packed polynomial
-(`hUnique : aOStmtIn.Functional`), then for a fixed carrier `ŝ` a uniform batching point admits a
-compatible packed polynomial whose tensor evaluation differs from `ŝ` but whose round-zero
+at the fixed oracle statement (`hbind`), then for a fixed carrier `ŝ` a uniform batching point
+admits a compatible packed polynomial whose tensor evaluation differs from `ŝ` but whose round-zero
 sumcheck claim is consistent with the batching target of `ŝ` with probability at most `κ/|L|`.
 This is the exact-functional, one-candidate specialization of the upstream
 `prEvent_exists_and_le_of_subsingleton` bound. -/
-theorem prob_exists_consistent_ne_le [NoZeroDivisors L] (hUnique : aOStmtIn.Functional)
-    (stmt : BatchingStmtIn L ℓ) (oStmt : ∀ j, aOStmtIn.OStmtIn j) (s_hat : P.A) :
+theorem prob_exists_consistent_ne_le [NoZeroDivisors L]
+    (stmt : BatchingStmtIn L ℓ) (oStmt : ∀ j, aOStmtIn.OStmtIn j)
+    (hbind : ∀ t₁ t₂, aOStmtIn.initialCompatibility ⟨t₁, oStmt⟩ →
+      aOStmtIn.initialCompatibility ⟨t₂, oStmt⟩ → t₁ = t₂) (s_hat : P.A) :
     Pr{let c ← $ᵗ (Fin κ → L)}[∃ t' : MultilinearPoly L ℓ',
         aOStmtIn.initialCompatibility ⟨t', oStmt⟩ ∧
         embedded_MLP_eval κ L K P ℓ ℓ' h_l t' stmt.t_eval_point ≠ s_hat ∧
@@ -332,7 +334,7 @@ theorem prob_exists_consistent_ne_le [NoZeroDivisors L] (hUnique : aOStmtIn.Func
   -- Functional compatibility fixes the candidate before the batching challenge.
   simp only [← and_assoc]
   refine prEvent_exists_and_le_of_subsingleton _ _ _ (fun t' ⟨_, hne⟩ => ?_)
-    fun _ h₁ _ h₂ => hUnique oStmt _ _ h₁.1 h₂.1
+    fun _ h₁ _ h₂ => hbind _ _ h₁.1 h₂.1
   refine (prEvent_mono _ _ _ fun c hcons => ?_).trans (compute_s0_collision_le P hne)
   unfold sumcheckConsistencyProp at hcons
   rw [hcons, sum_cube_batchingPoly_eq_compute_s0]
@@ -480,7 +482,7 @@ theorem batchingOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_rbrExtractor [
   -- An extraction failure is a compatible packed polynomial whose tensor evaluation differs from
   -- the sent carrier, while its round-zero claim matches the batched target of the carrier.
   refine (prEvent_mono _ _ _ (fun c hfail => ?_)).trans
-    (prob_exists_consistent_ne_le κ L K P ℓ ℓ' h_l aOStmtIn hUnique stmt oStmt
+    (prob_exists_consistent_ne_le κ L K P ℓ ℓ' h_l aOStmtIn stmt oStmt (hUnique oStmt)
       (tr ⟨0, Nat.zero_lt_one⟩))
   obtain ⟨witMid, hbefore, hafter⟩ := hfail
   obtain ⟨⟨-, -, hcons, hcompat⟩, hcheck, -⟩ := hafter

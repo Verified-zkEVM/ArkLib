@@ -120,9 +120,10 @@ home_page/            site assets and assembled website root
     with its `CheckedObservation` read-back and coordinate-wise special soundness into
     `relPolyEval`, `Completeness` proves perfect completeness (also at the message-bounded
     relations), and `Commitment` covers the honest committer. The fixed subring is used as a ring;
-    nothing here depends on its field identification. Its conformance test
-    `ArkLibTest/ProofSystem/RingSwitching/Conformance/Hachi.lean` states the accepting condition
-    through the shared `sliceRel` (`traceHead_conforms`).
+    nothing here depends on its field identification. The importable library module
+    `TraceHead/Conformance.lean` states the accepting condition through the shared `sliceRel`
+    (`traceHead_conforms`); concrete fixtures remain in
+    `ArkLibTest/ProofSystem/RingSwitching/Conformance/Hachi.lean`.
   - `EvalSplit.lean` (§4, Eq. (12)) — the matrix split underlying the evaluation argument:
     multilinear evaluation `eval p (xl ++ xh)` factors as the vector–matrix–vector product
     `mb(xl) ⬝ᵥ (toMatrix p *ᵥ mb(xh))` (`evalSplit_eq_eval`), with the inverse reshape
@@ -717,11 +718,13 @@ home_page/            site assets and assembled website root
   `ProfileCoordinates`, `ProfileLayout` and `BatchingAlgebra` connect the profile to the
   finite-coordinate modules, and `FinalAlgebra` identifies the final verifier value.
   These modules do not import the legacy reduction framework.
-  The conformance test `ArkLibTest/ProofSystem/RingSwitching/Conformance/Binius.lean` states the
-  legacy batching phase's check and round-zero sumcheck relation (`batching_conforms`) and its
+  The importable library module `Packing/Conformance.lean` states the legacy DP24 batching
+  phase's check and round-zero sumcheck relation (`batching_conforms`) and its
   input relation (`mem_batchingInputRelation_iff_layout`) through them, at `PackingData.ofBasis`
   and the prefix layout `packedPrefixLayout`, and the final sum-check check's equality value
   through the same multiplier (`compute_final_eq_value_eq_multiplier`).
+  `Binius/FRIBinius/Conformance.lean` specializes it to Binius's profile and first oracle;
+  concrete fixtures remain in `ArkLibTest/ProofSystem/RingSwitching/Conformance/Binius.lean`.
   `Packing/` also contains the legacy DP24/Binius protocol construction (`Prelude` with the
   protocol vocabulary, `Compatibility` with the binding hypothesis `AbstractOStmtIn.Functional`,
   `Spec`, `BatchingPhase`, `SumcheckPhase`, `General`). The phase completeness theorems and the
@@ -739,8 +742,8 @@ home_page/            site assets and assembled website root
   §3.1 trace head has carrier `L` itself, so it is not a `Profile`
   instance; it uses the coordinate layer directly, through `PackingData.ofBaseOpening`,
   `packedMLE`, its own `ClaimLayout` and `CheckedObservation`, exercising only the packing,
-  evaluation and opening part (no batching, multiplier or sumcheck); its conformance test states
-  the protocol relations through `sliceRel`.
+  evaluation and opening part (no batching, multiplier or sumcheck); `TraceHead/Conformance.lean`
+  proves the protocol relations equivalent to the shared `sliceRel`.
   `Lift/` is the **generic HMZ25 lift** (large quotient ring →
   field, CWSS at `k = 2d`): `Presentation.lean` is its data layer (proof-free
   `Presentation R S` + `IsPresentation` laws over any monic modulus — not cyclotomic-specific

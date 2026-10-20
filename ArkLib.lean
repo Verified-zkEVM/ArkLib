@@ -47,6 +47,7 @@ public import ArkLib.Commitments.Functional.Hachi.TraceHead.Basic
 public import ArkLib.Commitments.Functional.Hachi.TraceHead.Coefficients
 public import ArkLib.Commitments.Functional.Hachi.TraceHead.Commitment
 public import ArkLib.Commitments.Functional.Hachi.TraceHead.Completeness
+public import ArkLib.Commitments.Functional.Hachi.TraceHead.Conformance
 public import ArkLib.Commitments.Functional.Hachi.TraceHead.Coordinates
 public import ArkLib.Commitments.Functional.Hachi.TraceHead.Protocol
 public import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Basic
@@ -790,6 +791,7 @@ public import ArkLib.ProofSystem.Binius.BinaryBasefold.QueryPhase
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.SoundnessTools
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.Spec
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.Steps
+public import ArkLib.ProofSystem.Binius.FRIBinius.Conformance
 public import ArkLib.ProofSystem.Binius.FRIBinius.CoreInteractionPhase
 public import ArkLib.ProofSystem.Binius.FRIBinius.General
 public import ArkLib.ProofSystem.Binius.FRIBinius.Prelude
@@ -820,6 +822,7 @@ public import ArkLib.ProofSystem.RingSwitching.Packing.BatchingAlgebra
 public import ArkLib.ProofSystem.RingSwitching.Packing.BatchingPhase
 public import ArkLib.ProofSystem.RingSwitching.Packing.CheckedObservation
 public import ArkLib.ProofSystem.RingSwitching.Packing.Compatibility
+public import ArkLib.ProofSystem.RingSwitching.Packing.Conformance
 public import ArkLib.ProofSystem.RingSwitching.Packing.Coordinates
 public import ArkLib.ProofSystem.RingSwitching.Packing.DerivedBatching
 public import ArkLib.ProofSystem.RingSwitching.Packing.FinalAlgebra

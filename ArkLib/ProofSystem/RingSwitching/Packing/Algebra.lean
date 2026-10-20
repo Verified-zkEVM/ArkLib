@@ -308,13 +308,12 @@ open Module in
 
 The two ring homomorphisms send `x` to `x ⊗ 1` and `1 ⊗ x`. Row coordinates use the
 right-factor scalar action, and column coordinates use the left-factor scalar action. -/
-@[reducible] def tensorProductProfile (κ : ℕ) [NeZero κ] (K L : Type)
-    [Field K] [Field L] [Algebra K L] (β : Module.Basis (Fin κ → Fin 2) K L) :
+@[reducible] def tensorProductProfile (κ : ℕ) (K L : Type)
+    [CommRing K] [CommRing L] [Algebra K L] (β : Module.Basis (Fin κ → Fin 2) K L) :
     RingSwitchingProfile K L κ where
   basis := β
   A := TensorAlgebra K L
   commRingA := inferInstanceAs (CommRing (L ⊗[K] L))
-  algLA := Algebra.TensorProduct.leftAlgebra
   φ₀ := φ₀ L K
   φ₁ := φ₁ L K
   decomposeRows := fun s => decompose_tensor_algebra_rows (L := L) (K := K) (β := β) s

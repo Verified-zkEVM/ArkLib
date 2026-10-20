@@ -37,7 +37,8 @@ cleanly:
 
 * the **packing data** — the basis, a carrier ring `A` where the relocation checks run, a
   pair of embeddings into it, and faithful coordinate maps back out — is one abstraction,
-  `RingSwitchingProfile` (`Profile.lean`);
+  `RingSwitchingProfile` (`Profile.lean`), a coordinatized tensor-algebra presentation
+  used by the DP24 interactive relocation;
 * the **relocation** is per-instance and depends on where the evaluation point lives. If the
   point is arbitrary in `L`, the claim is relocated *interactively*: the prover sends the
   folded carrier element `ŝ`, the verifier reconstructs the original claim from `ŝ`'s
@@ -79,7 +80,7 @@ except the Schwartz–Zippel batching strategies (finite domains) and the quirky
 
 The DP24 construction:
 
-* `Profile.lean` — `RingSwitchingProfile`, the shared packing data layer (basis, carrier,
+* `Profile.lean` — `RingSwitchingProfile`, the DP24 tensor presentation (basis, carrier,
   embeddings, coordinate maps, reconstruction and inverse laws) and their consequences.
 * `Algebra.lean` — the framework-independent packing algebra: `packMLE`/`unpackMLE`, the
   carrier operations, the verifier subroutines (`eqWeightedCoordSum`, the multiplier

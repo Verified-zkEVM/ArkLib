@@ -6,6 +6,7 @@ Authors: Alexander Hicks
 module
 
 public import ArkLib.Commitments.Functional.Hachi.TraceHead.Commitment
+public import ArkLib.Commitments.Functional.Hachi.TraceHead.Conformance
 
 /-!
 # Scalar trace head
@@ -18,7 +19,7 @@ monomial-coefficient `ScalarHead.ClaimLayout` with one opening coordinate. `Coor
 to `relPolyEval`; its read-back is a `CheckedObservation`. The head exercises only the packing,
 evaluation and opening part of the shared layer (no batching, multiplier or sumcheck); its
 conformance theorem, stated through the shared `sliceRel`, is in
-`ArkLibTest/ProofSystem/RingSwitching/Conformance/Hachi.lean`.
+`TraceHead/Conformance.lean`, so library consumers can import the identification.
 `Completeness` and `Commitment` supply honest execution and balanced-gadget commitment
 coverage, including the additional message bound for the nonrecursive opening chain.
 

@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
 
-import ArkLib.ProofSystem.Binius.FRIBinius.General
+import ArkLib.ProofSystem.Binius.FRIBinius.Conformance
 import ArkLibTest.ProofSystem.RingSwitching.Packing.Orientation
 
 /-!
@@ -48,17 +48,18 @@ Two further statements cover the rest of the phase:
   equivalently when its columns are the component opening values (`openingClaimRel`). The second
   form goes through the shared `openingClaimRel_iff_sliceRel` and `transpose_decomposeColumns`.
 
-The ring-switching layer enters Binius's verifier a second time, in the final sum-check step
-(`SumcheckPhase.finalSumcheckVerifier`). `compute_final_eq_value_eq_multiplier` states its
-equality value as the evaluation of the same shared `multiplier`, at the same retained point and
-batching weights, and `finalCheck_iff_multiplier` states the final check through it. The
-intermediate sum-check rounds belong to the generic structured sum-check, and the FRI folding and
-query phases to Binary Basefold; both are out of scope here.
+Binius's separate final step, `Binius.FRIBinius.CoreInteractionPhase.finalSumcheckVerifier`,
+calls the shared equality-value function. It still returns a dummy statement on rejection; the
+shared DP24 `SumcheckPhase.finalSumcheckVerifier` aborts.
+`compute_final_eq_value_eq_multiplier` states its equality value as the evaluation of the same
+shared `multiplier`, at the same retained point and
+batching weights, and `finalCheck_iff_multiplier` states the final check through it. Binius's
+separate sum-check rounds and Binary Basefold folding and query phases are out of scope here.
 
 `biniusBatching_conforms` is `batching_conforms` at Binius's `biniusProfile` and oracle statement
 `BinaryBasefoldAbstractOStmtIn`, where compatibility is the first-oracle codeword consistency.
 
-Scope: the statements cover the accepting branch; the rejecting branch aborts. The output
+Scope: the statements cover the shared batching phase, whose rejecting branch aborts. The output
 relation fixes only the batched target, so acceptance does not make the carrier honest: the gap is
 the batching collision event bounded by `compute_s0_collision_le` and
 `prob_exists_consistent_ne_le`. The phase's security theorems are in `BatchingPhase`
@@ -87,270 +88,36 @@ opened here only under the renamings `GF2`, `GF4`, `P₄`, `r₀` and `tX₀`.
 -/
 
 open Module MvPolynomial RingSwitching Sumcheck.Structured
+open RingSwitching.Packing.Conformance Binius.FRIBinius.Conformance
 
 noncomputable section
 
 namespace ArkLibTest.RingSwitchingConformance.Binius
 
-section SharedLayer
-
-variable {K L : Type} [CommRing K] [CommRing L] [Algebra K L] {κ ℓ ℓ' : ℕ}
-  (P : RingSwitchingProfile K L κ) (h_l : ℓ = ℓ' + κ)
-
-/-- DP24's claim layout at a profile: the `κ` prefix variables are packed along the profile
-basis and the `ℓ'` suffix variables are retained. -/
-abbrev prefixLayout (ℓ' : ℕ) :
-    Packing.ScalarHead.ClaimLayout (Packing.PackingData.ofBasis P.basis) ℓ' :=
-  Packing.ScalarHead.packedPrefixLayout (Packing.PackingData.ofBasis P.basis) ℓ' κ (Equiv.refl _)
-
-/-- The layout query of an evaluation point: its packed prefix and its retained suffix. -/
-abbrev prefixQuery (r : Fin ℓ → L) : (prefixLayout P ℓ').Query :=
-  (fun i => r ⟨i.val, by omega⟩, getEvaluationPointSuffix κ L ℓ ℓ' h_l r)
-
-/-- The batching weights of a batching challenge: the equality weights of the Boolean cube. -/
-abbrev batchingWeight (c : Fin κ → L) : (Fin κ → Fin 2) → L :=
-  fun u => eqTilde (u : Fin κ → L) c
-
-/-- The rows of a carrier are the shared slices of a packed polynomial exactly when its columns
-are the opening values of the components: the row family is the shared transpose of the column
-family. -/
-theorem sliceRel_iff_openingClaimRel {m : ℕ} (z : P.A)
-    (ps : (Fin κ → Fin 2) → K⦃≤ 1⦄[X Fin m]) (x : Fin m → L) :
-    (P.decomposeRows z, (Packing.PackingData.ofBasis P.basis).packedMLE ps) ∈
-        (Packing.PackingData.ofBasis P.basis).sliceRel m x ↔
-      ((P.decomposeColumns z, x), ps) ∈
-        (Packing.PackingData.ofBasis P.basis).openingClaimRel m := by
-  rw [← P.transpose_decomposeColumns, ← Packing.PackingData.openingClaimRel_iff_sliceRel]
-
-/-- A carrier is the honest tensor evaluation of the packed source exactly when its rows are the
-shared slices of the `packedMLE` of the source's prefix-layout components. -/
-theorem embedded_MLP_eval_packMLE_eq_iff_sliceRel (t : MultilinearPoly K ℓ) (r : Fin ℓ → L)
-    (z : P.A) :
-    embedded_MLP_eval κ L K P ℓ ℓ' h_l (packMLE κ L K ℓ ℓ' h_l P.basis t) r = z ↔
-      (P.decomposeRows z, (Packing.PackingData.ofBasis P.basis).packedMLE
-          ((prefixLayout P ℓ').components (sourceDimensionEquiv h_l t))) ∈
-        (Packing.PackingData.ofBasis P.basis).sliceRel ℓ'
-          ((prefixLayout P ℓ').point (prefixQuery P h_l r)) := by
-  rw [packMLE_eq_packedPrefixLayout]
-  exact embedded_MLP_eval_eq_iff_sliceRel P h_l _ r z
-
-/-- A carrier is the honest tensor evaluation of the packed source exactly when its columns are
-the opening values of the source's prefix-layout components at the retained point. -/
-theorem embedded_MLP_eval_packMLE_eq_iff_openingClaimRel (t : MultilinearPoly K ℓ)
-    (r : Fin ℓ → L) (z : P.A) :
-    embedded_MLP_eval κ L K P ℓ ℓ' h_l (packMLE κ L K ℓ ℓ' h_l P.basis t) r = z ↔
-      ((P.decomposeColumns z, (prefixLayout P ℓ').point (prefixQuery P h_l r)),
-          (prefixLayout P ℓ').components (sourceDimensionEquiv h_l t)) ∈
-        (Packing.PackingData.ofBasis P.basis).openingClaimRel ℓ' := by
-  rw [embedded_MLP_eval_packMLE_eq_iff_sliceRel, sliceRel_iff_openingClaimRel]
-
-/-- The column check says that the claim is the layout-weighted sum of the carrier's column
-family. -/
-theorem check_iff_layout_weight [DecidableEq L] (s : L) (r : Fin ℓ → L) (z : P.A) :
-    performCheckOriginalEvaluation κ L K P ℓ ℓ' h_l s r z = true ↔
-      s = ∑ v, (prefixLayout P ℓ').weight (prefixQuery P h_l r) v * P.decomposeColumns z v := by
-  unfold performCheckOriginalEvaluation
-  rw [decide_eq_true_iff, eqWeightedCoordSum_eq_sum]
-  rfl
-
-/-- The input relation through the shared layout: the packed polynomial is the shared
-`packedMLE` of the source's prefix-layout components, the claim is the layout's weighted
-reconstruction from the component evaluations at the retained point, and the packed polynomial
-is compatible with the oracle statement. -/
-theorem mem_batchingInputRelation_iff_layout (aOStmtIn : AbstractOStmtIn L ℓ')
-    (stmt : BatchingStmtIn L ℓ) (oStmt : ∀ j, aOStmtIn.OStmtIn j) (wit : BatchingWitIn L K ℓ ℓ') :
-    ((stmt, oStmt), wit) ∈ BatchingPhase.batchingInputRelation κ L K P ℓ ℓ' h_l aOStmtIn ↔
-      wit.t' = (Packing.PackingData.ofBasis P.basis).packedMLE
-          ((prefixLayout P ℓ').components (sourceDimensionEquiv h_l wit.t)) ∧
-        stmt.original_claim = ∑ v,
-          (prefixLayout P ℓ').weight (prefixQuery P h_l stmt.t_eval_point) v *
-            aeval ((prefixLayout P ℓ').point (prefixQuery P h_l stmt.t_eval_point))
-              ((prefixLayout P ℓ').components (sourceDimensionEquiv h_l wit.t) v).val ∧
-        aOStmtIn.initialCompatibility ⟨wit.t', oStmt⟩ := by
-  change wit.t' = _ ∧ stmt.original_claim = _ ∧ _ ↔ _
-  rw [packMLE_eq_packedPrefixLayout, aeval_eq_sum_splitFirst h_l]
-  rfl
-
-/-- The statement the batching verifier outputs when its check accepts the carrier `z` and the
-batching challenge is `c`: the accept branch of `BatchingPhase.oracleVerifier`, as
-`oracleVerifier_eq_scalarRoundOracleVerifier` states. -/
-abbrev acceptedStatement (stmt : BatchingStmtIn L ℓ) (z : P.A) (c : Fin κ → L) :
-    Statement (L := L) (ℓ := ℓ') (RingSwitchingBaseContext κ L K ℓ P) 0 :=
-  { ctx :=
-      { t_eval_point := stmt.t_eval_point
-        original_claim := stmt.original_claim
-        s_hat := z
-        r_batching := c }
-    sumcheck_target := compute_s0 κ L K P z c
-    challenges := Fin.elim0 }
-
-/-- The production batching verifier is the shared check-then-update scalar-round verifier with
-the column check and the accepted statement `acceptedStatement`. -/
-theorem oracleVerifier_eq_scalarRoundOracleVerifier [DecidableEq L]
-    (aOStmtIn : AbstractOStmtIn L ℓ') :
-    BatchingPhase.oracleVerifier κ L K P ℓ ℓ' h_l (aOStmtIn := aOStmtIn) =
-      scalarRoundOracleVerifier (Msg := P.A) (C := Fin κ → L)
-        (fun stmt z => performCheckOriginalEvaluation κ L K P ℓ ℓ' h_l stmt.original_claim
-          stmt.t_eval_point z)
-        (acceptedStatement P) :=
-  rfl
-
-/-- At the accepted statement, the round-zero structural invariant says that the round polynomial
-is the shared multiplier at the retained point and the batching weights, times the packed
-polynomial. -/
-theorem witnessStructuralInvariant_iff (stmt : BatchingStmtIn L ℓ) (z : P.A) (c : Fin κ → L)
-    (wit : RingSwitching.SumcheckWitness L ℓ' 0) :
-    witnessStructuralInvariant κ L K P ℓ ℓ' h_l (acceptedStatement P stmt z c) wit ↔
-      wit.H.val = ((Packing.PackingData.ofBasis P.basis).multiplier
-        ((prefixLayout P ℓ').point (prefixQuery P h_l stmt.t_eval_point))
-          (batchingWeight c)).val * wit.t'.val := by
-  unfold witnessStructuralInvariant
-  simp only [projectToMidSumcheckPolyWithParam]
-  -- `erw`: the fixed-prefix length is `↑(0 : Fin (ℓ' + 1))`, only definitionally `0`
-  erw [fixFirstVariablesOfMQP_zero]
-  simp only [computeRoundPoly, RingSwitching_SumcheckMultParam, compute_A_MLE_eq_multiplier,
-    Polynomial.aeval_X]
-  exact Iff.rfl
-
-/-- For a structured round polynomial, round-zero sumcheck consistency of the accepted target says
-that the batched rows of the carrier and the packed polynomial are in the shared
-`sumcheckClaimRel` of the shared multiplier. -/
-theorem sumcheckConsistencyProp_iff_sumcheckClaimRel [Nontrivial L] (stmt : BatchingStmtIn L ℓ)
-    (z : P.A) (c : Fin κ → L) (wit : RingSwitching.SumcheckWitness L ℓ' 0)
-    (hH : witnessStructuralInvariant κ L K P ℓ ℓ' h_l (acceptedStatement P stmt z c) wit) :
-    sumcheckConsistencyProp (boolDomain L _) (compute_s0 κ L K P z c) wit.H ↔
-      (∑ u, batchingWeight c u * P.decomposeRows z u, wit.t') ∈
-        (Packing.PackingData.ofBasis P.basis).sumcheckClaimRel ℓ'
-          ((prefixLayout P ℓ').point (prefixQuery P h_l stmt.t_eval_point)) (batchingWeight c) := by
-  rw [witnessStructuralInvariant_iff] at hH
-  unfold sumcheckConsistencyProp
-  rw [hH, sum_cube_boolDomain, compute_s0_eq_sum]
-  change _ = _ ↔ _ = _
-  exact Iff.of_eq (congrArg₂ (· = ·) rfl (Finset.sum_congr rfl fun y _ => MvPolynomial.eval_mul))
-
-/-- **Binius batching conformance.** The batching verifier's column check accepts a sent carrier
-and its accepted output is in the round-zero sumcheck relation exactly when the packed polynomial
-is compatible with the oracle statement, the round polynomial is the shared multiplier times the
-packed polynomial, the batched rows of the carrier are the shared sumcheck claim of that
-multiplier, and the claim is the layout-weighted sum of the carrier's column family. -/
-theorem batching_conforms [Nontrivial L] [DecidableEq L] (aOStmtIn : AbstractOStmtIn L ℓ')
-    (stmt : BatchingStmtIn L ℓ) (oStmt : ∀ j, aOStmtIn.OStmtIn j)
-    (z : P.A) (c : Fin κ → L) (wit : RingSwitching.SumcheckWitness L ℓ' 0) :
-    (performCheckOriginalEvaluation κ L K P ℓ ℓ' h_l stmt.original_claim stmt.t_eval_point z =
-          true ∧
-        ((acceptedStatement P stmt z c, oStmt), wit) ∈
-          sumcheckRoundRelation κ L K P ℓ ℓ' h_l aOStmtIn 0) ↔
-      aOStmtIn.initialCompatibility ⟨wit.t', oStmt⟩ ∧
-        wit.H.val = ((Packing.PackingData.ofBasis P.basis).multiplier
-          ((prefixLayout P ℓ').point (prefixQuery P h_l stmt.t_eval_point))
-            (batchingWeight c)).val * wit.t'.val ∧
-        (∑ u, batchingWeight c u * P.decomposeRows z u, wit.t') ∈
-          (Packing.PackingData.ofBasis P.basis).sumcheckClaimRel ℓ'
-            ((prefixLayout P ℓ').point (prefixQuery P h_l stmt.t_eval_point)) (batchingWeight c) ∧
-        stmt.original_claim = ∑ v,
-          (prefixLayout P ℓ').weight (prefixQuery P h_l stmt.t_eval_point) v *
-            P.decomposeColumns z v := by
-  rw [check_iff_layout_weight]
-  change _ ∧ (True ∧ witnessStructuralInvariant κ L K P ℓ ℓ' h_l _ wit ∧
-    sumcheckConsistencyProp _ _ wit.H ∧ aOStmtIn.initialCompatibility ⟨wit.t', oStmt⟩) ↔ _
-  rw [← witnessStructuralInvariant_iff]
-  constructor
-  · rintro ⟨hs, -, hH, hcons, hcomp⟩
-    exact ⟨hcomp, hH,
-      (sumcheckConsistencyProp_iff_sumcheckClaimRel P h_l stmt z c wit hH).1 hcons, hs⟩
-  · rintro ⟨hcomp, hH, hclaim, hs⟩
-    exact ⟨hs, trivial, hH,
-      (sumcheckConsistencyProp_iff_sumcheckClaimRel P h_l stmt z c wit hH).2 hclaim, hcomp⟩
-
-/-- The final sum-check step's equality value is the shared multiplier, at the same retained
-point and batching weights as the batching phase, evaluated at the sum-check challenges. -/
-theorem compute_final_eq_value_eq_multiplier (r : Fin ℓ → L) (r' : Fin ℓ' → L)
-    (c : Fin κ → L) :
-    compute_final_eq_value κ L K P ℓ ℓ' h_l r r' c =
-      eval r' ((Packing.PackingData.ofBasis P.basis).multiplier
-        ((prefixLayout P ℓ').point (prefixQuery P h_l r)) (batchingWeight c)).val := by
-  rw [compute_final_eq_value_eq_eval, compute_A_MLE_eq_multiplier]
-  rfl
-
-/-- The final sum-check check of `SumcheckPhase.finalSumcheckVerifier`, through the shared
-multiplier: the target is the multiplier at the challenges times the prover's final constant. -/
-theorem finalCheck_iff_multiplier
-    (stmt : Statement (L := L) (ℓ := ℓ') (RingSwitchingBaseContext κ L K ℓ P) (Fin.last ℓ'))
-    (s' : L) :
-    stmt.sumcheck_target = compute_final_eq_value κ L K P ℓ ℓ' h_l stmt.ctx.t_eval_point
-        stmt.challenges stmt.ctx.r_batching * s' ↔
-      stmt.sumcheck_target = eval stmt.challenges ((Packing.PackingData.ofBasis P.basis).multiplier
-        ((prefixLayout P ℓ').point (prefixQuery P h_l stmt.ctx.t_eval_point))
-          (batchingWeight stmt.ctx.r_batching)).val * s' := by
-  rw [compute_final_eq_value_eq_multiplier]
-
-end SharedLayer
-
-section Binius
-
-open Binius.FRIBinius Binius.FRIBinius.FullFRIBinius
-
-variable (κ : ℕ) [NeZero κ]
-  (L : Type) [Field L] [Fintype L] [DecidableEq L]
-  (K : Type) [Field K] [Fintype K]
-  [Fact (Nat.Prime (ringChar K))] [Fact (Fintype.card K = 2)] [Algebra K L]
-  (β : Basis (Fin (2 ^ κ)) K L) {ℓ ℓ' 𝓡 ϑ : ℕ} [NeZero ℓ'] [NeZero ϑ]
-  (h_ℓ_add_R_rate : ℓ' + 𝓡 < 2 ^ κ) (h_l : ℓ = ℓ' + κ) [Fact (ϑ ∣ ℓ')]
-
-/-- `batching_conforms` at Binius's tensor profile and committed first oracle: compatibility is
-the consistency of the packed polynomial with the first committed codeword. -/
-theorem biniusBatching_conforms (stmt : BatchingStmtIn L ℓ)
-    (oStmt : ∀ j, (BinaryBasefoldAbstractOStmtIn κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate).OStmtIn j)
-    (z : (biniusProfile κ L K β).A) (c : Fin κ → L) (wit : RingSwitching.SumcheckWitness L ℓ' 0) :
-    (performCheckOriginalEvaluation κ L K (biniusProfile κ L K β) ℓ ℓ' h_l stmt.original_claim
-          stmt.t_eval_point z = true ∧
-        ((acceptedStatement (biniusProfile κ L K β) stmt z c, oStmt), wit) ∈
-          sumcheckRoundRelation κ L K (biniusProfile κ L K β) ℓ ℓ' h_l
-            (BinaryBasefoldAbstractOStmtIn κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate) 0) ↔
-      Binius.BinaryBasefold.firstOracleWitnessConsistencyProp K β
-          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) wit.t'
-          (Binius.BinaryBasefold.getFirstOracle K β oStmt) ∧
-        wit.H.val = ((Packing.PackingData.ofBasis (biniusProfile κ L K β).basis).multiplier
-          ((prefixLayout (biniusProfile κ L K β) ℓ').point
-            (prefixQuery (biniusProfile κ L K β) h_l stmt.t_eval_point))
-            (batchingWeight c)).val * wit.t'.val ∧
-        (∑ u, batchingWeight c u * (biniusProfile κ L K β).decomposeRows z u, wit.t') ∈
-          (Packing.PackingData.ofBasis (biniusProfile κ L K β).basis).sumcheckClaimRel ℓ'
-            ((prefixLayout (biniusProfile κ L K β) ℓ').point
-              (prefixQuery (biniusProfile κ L K β) h_l stmt.t_eval_point)) (batchingWeight c) ∧
-        stmt.original_claim = ∑ v,
-          (prefixLayout (biniusProfile κ L K β) ℓ').weight
-            (prefixQuery (biniusProfile κ L K β) h_l stmt.t_eval_point) v *
-            (biniusProfile κ L K β).decomposeColumns z v :=
-  batching_conforms (biniusProfile κ L K β) h_l
-    (BinaryBasefoldAbstractOStmtIn κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate) stmt oStmt z c wit
-
-end Binius
-
 /-! The conformance theorems depend only on the standard axioms. -/
 
 /--
-info: 'ArkLibTest.RingSwitchingConformance.Binius.batching_conforms' depends on axioms: [propext,
+info: 'RingSwitching.Packing.Conformance.batching_conforms' depends on axioms: [propext,
  Classical.choice,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms ArkLibTest.RingSwitchingConformance.Binius.batching_conforms
+#print axioms RingSwitching.Packing.Conformance.batching_conforms
 
 /--
-info: 'ArkLibTest.RingSwitchingConformance.Binius.mem_batchingInputRelation_iff_layout' depends on
+info: 'RingSwitching.Packing.Conformance.mem_batchingInputRelation_iff_layout' depends on
 axioms: [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms ArkLibTest.RingSwitchingConformance.Binius.mem_batchingInputRelation_iff_layout
+#print axioms RingSwitching.Packing.Conformance.mem_batchingInputRelation_iff_layout
 
 /--
-info: 'ArkLibTest.RingSwitchingConformance.Binius.embedded_MLP_eval_packMLE_eq_iff_openingClaimRel'
+info: 'RingSwitching.Packing.Conformance.embedded_MLP_eval_packMLE_eq_iff_openingClaimRel'
 depends on axioms: [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
 #print axioms
-  ArkLibTest.RingSwitchingConformance.Binius.embedded_MLP_eval_packMLE_eq_iff_openingClaimRel
+  RingSwitching.Packing.Conformance.embedded_MLP_eval_packMLE_eq_iff_openingClaimRel
 
 section Concrete
 
@@ -371,11 +138,29 @@ def exactOStmtIn : AbstractOStmtIn GF4 1 where
   Oₛᵢ := fun _ => OracleInterface.instDefault
   initialCompatibility := fun x => x.1 = x.2 ()
 
+/-- Exact commitments determine the packed polynomial at every oracle statement. -/
+theorem exactOStmtIn_functional : exactOStmtIn.Functional := by
+  intro o t₁ t₂ h₁ h₂
+  exact h₁.trans h₂.symm
+
 /-- The oracle statement committing to the honest packed polynomial `tp`. -/
 def oStmt₀ : ∀ j, exactOStmtIn.OStmtIn j := fun _ => tp
 
 /-- An evaluation claim at the zero point. -/
 def claimAt (s : GF4) : BatchingStmtIn GF4 2 := ⟨r₀, s⟩
+
+/-- The soundness fixture has an honest input with the nonconstant source `X₀`. -/
+theorem honest_mem_batchingInputRelation :
+    ((claimAt 0, oStmt₀), ({ t := tX₀, t' := tp } : BatchingWitIn GF4 GF2 2 1)) ∈
+      BatchingPhase.batchingInputRelation 1 GF4 GF2 P₄ 2 1 rfl exactOStmtIn := by
+  refine ⟨rfl, ?_, rfl⟩
+  change (0 : GF4) = tX₀.val.aeval r₀
+  simp [tX₀, r₀]
+
+/-- The worst-case headline applies with its binding hypothesis discharged at this honest input. -/
+example {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :=
+  BatchingPhase.batchingOracleVerifier_rbrKnowledgeSoundnessWorstCase (init := init) (impl := impl)
+    1 GF4 GF2 P₄ 2 1 rfl exactOStmtIn exactOStmtIn_functional
 
 /-- The honest round-zero witness at the accepted statement for `shat` and the zero challenge. -/
 def wit₀ : RingSwitching.SumcheckWitness GF4 1 0 where
@@ -667,6 +452,44 @@ theorem claimAt_one_not_mem_batchingInputRelation (wit : BatchingWitIn GF4 GF2 2
     rw [Packing.PackingData.unpack_coeff]
     simp
   simp [hu] at hs
+
+
+local instance : ∀ j, OracleInterface ((RingSwitching.pSpecSumcheckRound GF4).Message j) :=
+  Sumcheck.Structured.instOracleInterfaceMessagePSpecSumcheckRound GF4
+
+/-- A failed sumcheck-round check aborts the production DP24 round verifier, rather than
+returning a dummy statement: the zero round polynomial cannot sum to target `1`. -/
+theorem failedRoundCheck_aborts (tr : (RingSwitching.pSpecSumcheckRound GF4).FullTranscript)
+    (htr : tr.messages ⟨0, rfl⟩ = (0 : Polynomial.degreeLE GF4 2)) :
+    (SumcheckPhase.iteratedSumcheckOracleVerifier 1 GF4 GF2 P₄ 2 1 exactOStmtIn 0).toVerifier.verify
+      ({ (acceptedStatement P₄ (ℓ' := 1) (claimAt 0) shat 0) with sumcheck_target := 1 },
+        oStmt₀) tr =
+        failure := by
+  rw [(SumcheckPhase.iteratedSumcheckGuardedForm 1 GF4 GF2 P₄ 2 1 exactOStmtIn 0).verify_eq]
+  change (if decide ((∑ b ∈ (boolDomain GF4 1).points 0,
+    (tr.messages ⟨0, rfl⟩).val.eval b) = (1 : GF4)) then _ else _) = _
+  rw [htr]
+  simp
+
+/-- A failed final check aborts the production DP24 final verifier: a sent zero cannot support
+target `1`, whatever multiplier the retained point and batching challenge determine. -/
+theorem failedFinalCheck_aborts (tr : (RingSwitching.pSpecFinalSumcheck GF4).FullTranscript)
+    (htr : tr.messages ⟨0, rfl⟩ = (0 : GF4)) :
+    (SumcheckPhase.finalSumcheckVerifier 1 GF4 GF2 P₄ 2 1 rfl exactOStmtIn).toVerifier.verify
+      ({ ctx := (acceptedStatement P₄ (ℓ' := 1) (claimAt 0) shat 0).ctx
+         sumcheck_target := 1
+         challenges := 0 }, oStmt₀) tr = failure := by
+  rw [SumcheckPhase.finalSumcheckVerifier, (messageRoundOracleVerifierGuardedForm _ _).verify_eq,
+    messageRoundOracleVerifierGuardedForm_check, htr]
+  simp
+
+/--
+info: 'ArkLibTest.RingSwitchingConformance.Binius.exactOStmtIn_functional' depends on
+axioms: [propext,
+ Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms exactOStmtIn_functional
 
 end Concrete
 
