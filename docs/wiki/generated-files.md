@@ -64,7 +64,10 @@ a fresh rendering and index from the updated database. Preserve the module/core 
 and bibliography data; broad `*.doc*` invalidation discards the reusable module-data cache.
 Completion markers alone supply neither database rows nor HTML/static files.
 
-Use isolated writable caches for concurrent builds. A copied Lean cache can still rebuild root
-modules when their trace inputs contain the former worktree path; this does not justify rewriting
-generated trace metadata. For a stack of related slices, retaining one worktree path allows later
-validation runs to reuse completed artifacts without concurrent writers.
+Use isolated writable caches for concurrent builds. Copied Lean traces can retain absolute source
+paths from the former worktree. When changing source after relocation, check that affected module
+traces refer to the current source path; stale foreign inputs can leave an incompatible compiled
+module in use. With all writers stopped, quarantine those affected module traces and rebuild them
+from the current source. Do not rewrite generated trace metadata. For a stack of related slices,
+retaining one worktree path allows later validation runs to reuse completed artifacts without
+concurrent writers.
