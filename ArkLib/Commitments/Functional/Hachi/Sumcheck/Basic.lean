@@ -21,18 +21,18 @@ the batched-constraint encoding of `ZeroCheck/Constraints.lean` (the sumcheck po
 ## Relation to `ArkLib/ProofSystem/Sumcheck`
 
 This folder is a self-contained round layer, deliberately not built on either generic
-sumcheck in `ProofSystem/Sumcheck/`:
+sumcheck in `ProofSystem/Sumcheck/`. The abort convention is shared: Hachi's `roundVerifier`
+(see `Sumcheck/Rounds.lean`) and the structured (witness-mode) round
+(`Structured/SingleRound.lean`'s `roundOracleVerifier`) both return `failure` on a failed round
+check. The layers differ elsewhere:
 
-* the structured (witness-mode) round rejects by returning a dummy statement
-  (`Structured/SingleRound.lean`'s `roundOracleVerifier`), a convention the extraction
-  argument here cannot use — all `k` siblings of a tree node share the message pair, so a
-  dummy output collapses every branch onto the same statement and destroys extractability.
-  Hence the `failure`-guarded `roundVerifier` (see `Sumcheck/Rounds.lean`);
 * the wire object differs (`CPolynomial.degreeLE` here, the Mathlib subtype `L⦃≤ d⦄[X]`
   there), as does the shape: Hachi sends the *pair* `(gᵢ⁽⁰⁾, gᵢ⁽ᵅ⁾)` under one shared
   challenge, and its verifier is a plain `Verifier` (the round polynomials go in the clear),
   not an `OracleVerifier`;
-* neither generic mode carries a soundness proof to inherit.
+* neither generic mode carries a coordinate-wise special-soundness proof to inherit (the
+  structured round's knowledge soundness is round-by-round, proved for the ring-switching
+  instance in `RingSwitching/Packing/SumcheckPhase.lean`).
 
 ## Folder structure
 
