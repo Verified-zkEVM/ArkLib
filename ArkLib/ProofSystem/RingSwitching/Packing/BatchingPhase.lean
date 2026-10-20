@@ -312,36 +312,6 @@ def batchingKStateProp {m : Fin (2 + 1)}
 
 /-! ## Batching algebra in sumcheck form -/
 
-omit [Fintype L] [DecidableEq L] [SampleableType L] in
-/-- A sum over the Boolean sumcheck cube is the sum over Boolean vectors cast into `L`. -/
-private theorem sum_cube_boolDomain {M : Type} [AddCommMonoid M] {k : ℕ}
-    (f : (Fin k → L) → M) :
-    ∑ x ∈ (boolDomain L k).cube, f x = ∑ y : Fin k → Fin 2, f (y : Fin k → L) := by
-  classical
-  -- a cube point is the cast of the Boolean vector recording which coordinates are nonzero
-  have hcube : ∀ x ∈ (boolDomain L k).cube,
-      (((fun i => if x i = 0 then 0 else 1 : Fin k → Fin 2)) : Fin k → L) = x := by
-    intro x hx
-    funext i
-    have hi := SumcheckDomain.mem_cube.mp hx i
-    rw [points_boolDomain] at hi
-    obtain ⟨b, -, hb⟩ := Finset.mem_map.mp hi
-    beta_reduce
-    rw [← hb]
-    fin_cases b <;> simp
-  refine Finset.sum_nbij' (fun x i => if x i = 0 then 0 else 1) (fun y => (y : Fin k → L))
-    (fun _ _ => Finset.mem_univ _) (fun y _ => ?_) hcube (fun y _ => ?_)
-    (fun x hx => by rw [hcube x hx])
-  · refine SumcheckDomain.mem_cube.mpr fun i => ?_
-    rw [points_boolDomain]
-    refine Finset.mem_map.mpr ⟨y i, Finset.mem_univ _, ?_⟩
-    generalize y i = b
-    fin_cases b <;> simp
-  · funext i
-    beta_reduce
-    generalize y i = b
-    fin_cases b <;> simp
-
 omit [NeZero κ] [Fintype L] [DecidableEq L] [SampleableType L] [Fintype K] [DecidableEq K]
   [NeZero ℓ] [NeZero ℓ'] in
 /-- The round-zero batching sumcheck polynomial sums over the Boolean cube to the batching

@@ -677,6 +677,11 @@ home_page/            site assets and assembled website root
   `ProfileCoordinates`, `ProfileLayout` and `BatchingAlgebra` connect the profile to the
   finite-coordinate modules, and `FinalAlgebra` identifies the final verifier value.
   These modules do not import the legacy reduction framework.
+  The conformance test `ArkLibTest/ProofSystem/RingSwitching/Conformance/Binius.lean` states the
+  legacy batching phase's check and round-zero sumcheck relation (`batching_conforms`) and its
+  input relation (`mem_batchingInputRelation_iff_layout`) through them, at `PackingData.ofBasis`
+  and the prefix layout `packedPrefixLayout`, and the final sum-check check's equality value
+  through the same multiplier (`compute_final_eq_value_eq_multiplier`).
   `Packing/` also contains the legacy DP24/Binius protocol construction (`Prelude` with the
   protocol vocabulary, `Spec`, `BatchingPhase`, `SumcheckPhase`, `General`; RBR
   soundness, `[IsDomain L]`); Binius instantiates it in `ProofSystem/Binius/FRIBinius/`
