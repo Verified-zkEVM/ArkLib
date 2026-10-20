@@ -7,6 +7,7 @@ module
 
 public import ArkLib.ProofSystem.Sumcheck.Structured
 public import ArkLib.ProofSystem.Sumcheck.Spec.SingleRound
+public import ArkLib.OracleReduction.Security.Guarded
 
 /-!
 # Structured (Witness-Mode) Sumcheck — Single-Round Primitives
@@ -37,7 +38,8 @@ Note on rejection: `roundOracleVerifier` below **aborts** (`failure`) on a faile
 rather than emitting a dummy statement. A dummy output on rejection lies in the next round's
 relation for suitable witnesses, which makes the terminal knowledge-state obligation of a
 round-by-round argument false; it also collapses the branches of a tree-based extraction onto one
-statement. `roundOracleVerifier_verify` states the induced plain verifier as a guarded verifier.
+statement. `roundOracleVerifierGuardedForm` gives its guard and verdict as data, stated by
+`roundOracleVerifierGuardedForm_check` and `roundOracleVerifierGuardedForm_out`.
 -/
 
 @[expose] public section
@@ -280,27 +282,42 @@ def roundOracleVerifier (i : Fin ℓ) :
       rfl }
 
 omit [NeZero ℓ] in
-/-- The round verifier runs as a guarded verifier: it outputs the folded statement when the round
+/-- The round verifier's guard and verdict as data: it outputs the folded statement when the round
 polynomial sums to the running target over coordinate `i`'s domain, and aborts otherwise. -/
-theorem roundOracleVerifier_verify (i : Fin ℓ)
-    (stmt : Statement (L := L) (ℓ := ℓ) Context i.castSucc) (oStmt : ∀ j, OStmtIn j)
-    (tr : (pSpecSumcheckRound L d).FullTranscript) :
+def roundOracleVerifierGuardedForm (i : Fin ℓ) :
     (roundOracleVerifier (L := L) (ℓ := ℓ) (D := D) (Context := Context) (OStmtIn := OStmtIn)
-      (d := d) i).toVerifier.verify (stmt, oStmt) tr =
-      if (∑ b ∈ D.points i, (tr.messages ⟨0, rfl⟩).val.eval b) = stmt.sumcheck_target then
-        pure ({ ctx := stmt.ctx
-                sumcheck_target := (tr.messages ⟨0, rfl⟩).val.eval (tr.challenges ⟨1, rfl⟩)
-                challenges := Fin.snoc stmt.challenges (tr.challenges ⟨1, rfl⟩) }, oStmt)
-      else failure :=
-  OracleVerifier.toVerifier_verify_of_query_guard
-    (roundOracleVerifier (L := L) (ℓ := ℓ) (D := D) (Context := Context) (OStmtIn := OStmtIn)
-      (d := d) i) ⟨⟨0, rfl⟩, ()⟩
+      (d := d) i).toVerifier.GuardedForm :=
+  Verifier.GuardedForm.ofQueryGuard _ ⟨⟨0, rfl⟩, ()⟩
     (fun s h _ => (∑ b ∈ D.points i, h.val.eval b) = s.sumcheck_target)
     (fun s h chals =>
       { ctx := s.ctx
         sumcheck_target := h.val.eval (chals ⟨1, rfl⟩)
         challenges := Fin.snoc s.challenges (chals ⟨1, rfl⟩) })
-    (fun _ _ => rfl) stmt oStmt tr
+    (fun _ _ => rfl)
+
+omit [NeZero ℓ] in
+/-- The round verifier's guard: the round polynomial sums to the running target over coordinate
+`i`'s domain. -/
+@[simp]
+theorem roundOracleVerifierGuardedForm_check (i : Fin ℓ)
+    (s : Statement (L := L) (ℓ := ℓ) Context i.castSucc × ∀ j, OStmtIn j)
+    (tr : (pSpecSumcheckRound L d).FullTranscript) :
+    (roundOracleVerifierGuardedForm ℓ D Context (OStmtIn := OStmtIn) d i).check s tr =
+      decide ((∑ b ∈ D.points i, (tr.messages ⟨0, rfl⟩).val.eval b) = s.1.sumcheck_target) :=
+  rfl
+
+omit [NeZero ℓ] in
+/-- The round verifier's verdict: the statement folded at the round polynomial and the challenge,
+with the input oracle statements. -/
+@[simp]
+theorem roundOracleVerifierGuardedForm_out (i : Fin ℓ)
+    (s : Statement (L := L) (ℓ := ℓ) Context i.castSucc × ∀ j, OStmtIn j)
+    (tr : (pSpecSumcheckRound L d).FullTranscript) :
+    (roundOracleVerifierGuardedForm ℓ D Context (OStmtIn := OStmtIn) d i).out s tr =
+      ({ ctx := s.1.ctx
+         sumcheck_target := (tr.messages ⟨0, rfl⟩).val.eval (tr.challenges ⟨1, rfl⟩)
+         challenges := Fin.snoc s.1.challenges (tr.challenges ⟨1, rfl⟩) }, s.2) :=
+  rfl
 
 /-- The oracle reduction bundling the per-round prover and verifier. -/
 def roundOracleReduction (i : Fin ℓ) :

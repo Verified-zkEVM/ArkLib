@@ -6,6 +6,7 @@ Authors: Chung Thai Nguyen, Alexander Hicks
 module
 
 public import ArkLib.OracleReduction.Security.RoundByRound
+public import ArkLib.OracleReduction.Security.Guarded
 
 /-!
 # Guarded verifiers in round-by-round arguments
@@ -13,9 +14,9 @@ public import ArkLib.OracleReduction.Security.RoundByRound
 A guarded verifier either returns a deterministic verdict or aborts. This file collects the
 facts a round-by-round proof needs about such a verifier.
 
-* `Verifier.guard_and_of_prEvent_pos`: a positive-probability output event of a guarded
-  verifier forces its guard to pass and the event to hold at its verdict. This discharges the
-  terminal obligation `KnowledgeStateFunction.toFun_full`.
+* `Verifier.GuardedForm.check_and_of_prEvent_pos`: a positive-probability output event of a
+  guarded verifier forces its guard to pass and the event to hold at its verdict. This discharges
+  the terminal obligation `KnowledgeStateFunction.toFun_full`.
 * `Verifier.rbrKnowledgeSoundnessWorstCaseWith_of_two_message`: for a prover-message,
   verifier-challenge protocol, worst-case round-by-round knowledge soundness
   (`Verifier.rbrKnowledgeSoundnessWorstCaseWith`) follows from a bound on the extraction-failure
@@ -23,9 +24,9 @@ facts a round-by-round proof needs about such a verifier.
   prefix, that is, every prover message. The averaged notion follows through
   `Verifier.rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness`.
 
-The run equation that puts a query-guard-return oracle verifier in guarded form is
-`OracleVerifier.toVerifier_verify_of_query_guard`; its guard may read the challenges as well as
-the queried message.
+The guarded form of a query-guard-return oracle verifier, which
+`Verifier.GuardedForm.check_and_of_prEvent_pos` consumes, is `Verifier.GuardedForm.ofQueryGuard`
+(in `Security/Guarded.lean`); its guard may read the challenges as well as the queried message.
 -/
 
 @[expose] public section
@@ -42,27 +43,27 @@ namespace Verifier
 
 /-- A positive-probability output event of a guarded verifier forces the guard to pass and the
 event to hold at the verdict: a failed guard aborts, and an aborted run outputs nothing. -/
-theorem guard_and_of_prEvent_pos {n : ℕ} {pSpec : ProtocolSpec n}
-    {V : Verifier oSpec StmtIn StmtOut pSpec} {stmt : StmtIn} {tr : FullTranscript pSpec}
-    {check : Prop} [Decidable check] {out : StmtOut}
-    (hV : V.verify stmt tr = if check then pure out else failure) {p : StmtOut → Prop}
+theorem GuardedForm.check_and_of_prEvent_pos {n : ℕ} {pSpec : ProtocolSpec n}
+    {V : Verifier oSpec StmtIn StmtOut pSpec} (G : V.GuardedForm) {stmt : StmtIn}
+    {tr : FullTranscript pSpec} {p : StmtOut → Prop}
     (h : Pr{let s ← OptionT.mk do
       (simulateQ impl (V.run stmt tr)).run' (← init)}[p s] > 0) :
-    check ∧ p out := by
+    G.check stmt tr = true ∧ p (G.out stmt tr) := by
   have hrun : (V.run stmt tr : OracleComp oSpec (Option StmtOut)) =
-      if check then pure (some out) else pure none := by
-    simp only [Verifier.run, hV]
+      if G.check stmt tr then pure (some (G.out stmt tr)) else pure none := by
+    simp only [Verifier.run, G.verify_eq stmt tr]
     split <;> rfl
   rw [gt_iff_lt, OptionT.prEvent_mk_pos_iff] at h
   obtain ⟨x, hx, hp⟩ := h
   rw [hrun] at hx
-  by_cases hc : check
+  by_cases hc : G.check stmt tr = true
   · simp only [hc, ite_true, simulateQ_pure, support_bind, Set.mem_iUnion, exists_prop] at hx
     obtain ⟨s, -, hs⟩ := hx
-    have hxo : x = out := by
+    have hxo : x = G.out stmt tr := by
       simpa [StateT.run'_eq, StateT.run_pure] using hs
     exact ⟨hc, hxo ▸ hp⟩
-  · simp only [hc, ite_false, simulateQ_pure, support_bind, Set.mem_iUnion, exists_prop] at hx
+  · simp only [hc, Bool.false_eq_true, ite_false, simulateQ_pure, support_bind, Set.mem_iUnion,
+      exists_prop] at hx
     obtain ⟨s, -, hs⟩ := hx
     simp [StateT.run'_eq] at hs
 
