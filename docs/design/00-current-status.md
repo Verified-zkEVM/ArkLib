@@ -14,9 +14,9 @@ error. No declaration under `ArkLib/Interaction/` or
 
 | Repository | Revision | Role |
 |---|---|---|
-| VCVio | `d7089e46d69e07640fa23b5ae6b1b966f1d4b949` | direct ArkLib dependency |
-| PolyFun | `3710d71b28404a151b8d1f0ce080ea448778dec0` | revision selected and tested by VCVio |
-| Lean | `v4.34.0` | common toolchain |
+| VCVio | `1bc4ad92d2a72466988451510fa2e4bbe7405b28` | direct ArkLib dependency |
+| PolyFun | `bf635d02d7070022c986f8646992e5dba176a96e` (`v4.35.0-patch1`) | revision selected and tested by VCVio |
+| Lean | `v4.35.0` | common toolchain |
 
 ArkLib does not override PolyFun independently. VCVio owns the tested PolyFun revision. A later
 PolyFun update reaches ArkLib only after VCVio advances and validates its pin.

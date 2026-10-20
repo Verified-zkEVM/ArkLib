@@ -5,8 +5,8 @@ Use it as the main guide for routine local checks.
 
 ## Dependency versions
 
-The Lean 4.34 upgrade uses Lean, Mathlib, cslib, and doc-gen4 `v4.34.0`.
-`lakefile.toml` pins CompPoly to its `v4.34.0` release and VCVio to an exact commit; `lake-manifest.json` records
+The Lean 4.35 upgrade uses Lean, Mathlib, cslib, and doc-gen4 `v4.35.0`.
+`lakefile.toml` pins CompPoly to its `v4.35.0` release and VCVio to an exact commit; `lake-manifest.json` records
 the complete resolved dependency set, including the PolyFun revision selected by VCVio.
 Keep that PolyFun pin when updating this stack: a newer PolyFun revision must also be
 validated against VCVio before ArkLib can adopt it.

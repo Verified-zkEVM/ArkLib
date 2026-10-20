@@ -169,7 +169,7 @@ theorem foldRelayOracleVerifier_rbrKnowledgeSoundness
           (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)
         relayKnowledgeError ∘ ChallengeIdx.sumEquiv.symm) by
       convert h using 1
-      all_goals first | rfl | (funext m; fin_cases m; rfl)
+      all_goals (funext m; fin_cases m; rfl)
   exact OracleVerifier.append_rbrKnowledgeSoundness _ _
       (foldOracleVerifier_rbrKnowledgeSoundness (mp := mp) 𝔽q β i)
       (relayOracleVerifier_rbrKnowledgeSoundness 𝔽q β i hNCR)
