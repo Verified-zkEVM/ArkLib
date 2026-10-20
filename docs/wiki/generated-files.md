@@ -71,3 +71,13 @@ module in use. With all writers stopped, quarantine those affected module traces
 from the current source. Do not rewrite generated trace metadata. For a stack of related slices,
 retaining one worktree path allows later validation runs to reuse completed artifacts without
 concurrent writers.
+
+A copied documentation database can also retain retired module rows. Its global name lookup can
+then mix obsolete and current declaration documentation even when the generated module manifest
+matches the current imports. Check affected declaration pages against their source, including
+structure fields. Use a matching clean snapshot or regenerate the database with the pinned backend.
+If using its module-deletion API to prune an isolated, backed-up copy, first prove each module is
+absent from both source and registered files and that no retained module imports it. Verify database
+integrity, foreign keys and unchanged retained rows before installing the consistent snapshot.
+Quarantine stale generated pages as well as HTML completion markers before rerendering; site
+assembly by overlay can otherwise retain removed pages. Do not patch rendered HTML or trace data.
