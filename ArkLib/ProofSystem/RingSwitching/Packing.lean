@@ -105,11 +105,12 @@ The DP24 construction:
   completeness at the strict relations is proved from the phases and the downstream opening's
   completeness. Worst-case round-by-round knowledge soundness of batching ++ sumcheck
   (`batchingCore_rbrKnowledgeSoundnessWorstCase`) is sorry-free and axiom-clean under its stated
-  hypotheses (`[NoZeroDivisors L]`, `AbstractOStmtIn.Functional`). The full composite's
-  round-by-round knowledge soundness depends on the admitted
-  `OracleVerifier.append_rbrKnowledgeSoundness`, because the downstream opening's
-  `MLIOPCS.rbrKnowledgeSoundness` contract is averaged; it loses that dependency once a worst-case
-  extension of `MLIOPCS` supplies a worst-case contract.
+  hypotheses (`[NoZeroDivisors L]`, `AbstractOStmtIn.Functional`). So is the full composite's
+  (`fullOracleVerifier_rbrKnowledgeSoundnessWorstCase`), given in addition that the downstream
+  opening is worst-case round-by-round knowledge sound (`MLIOPCS.RbrKnowledgeSoundWorstCase`).
+  Under a plain `MLIOPCS`, whose `MLIOPCS.rbrKnowledgeSoundness` contract is averaged, the full
+  composite (`fullOracleVerifier_rbrKnowledgeSoundness`) still depends on the admitted
+  `OracleVerifier.append_rbrKnowledgeSoundness`.
 
 ## Instantiations
 

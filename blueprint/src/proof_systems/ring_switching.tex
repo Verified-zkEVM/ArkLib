@@ -151,13 +151,17 @@ large-field multilinear IOPCS over $L$.
   and~\ref{thm:rbr_knowledge_soundness_compose_guarded}.
 \end{theorem}
 
-\begin{theorem}[Round-by-round knowledge soundness (conditional on the opening)]
-  \lean{RingSwitching.FullRingSwitching.fullOracleVerifier_rbrKnowledgeSoundness}
+\begin{theorem}[Round-by-round knowledge soundness]
+  \lean{RingSwitching.FullRingSwitching.fullOracleVerifier_rbrKnowledgeSoundnessWorstCase,
+    RingSwitching.FullRingSwitching.fullOracleVerifier_rbrKnowledgeSoundness_of_worst_case,
+    RingSwitching.MLIOPCS.RbrKnowledgeSoundWorstCase}
   \uses{def:full_ring_switching, thm:ring_switching_core_soundness,
-    thm:rbr_knowledge_soundness_append}
+    thm:rbr_knowledge_soundness_append_guarded}
   \label{thm:ring_switching_soundness}
-  Suppose $L$ is an integral domain and every oracle statement is compatible with at most one packed
-  polynomial. Then the full reduction is round-by-round knowledge sound, with the additive error
+  Suppose $L$ is an integral domain, every oracle statement is compatible with at most one packed
+  polynomial, and the large-field IOPCS is round-by-round knowledge sound for every fixed
+  transcript prefix, with error $\varepsilon_{\mathrm{IOPCS}}$. Then the full reduction is
+  round-by-round knowledge sound for every fixed transcript prefix, with the additive error
   \[
     \frac{\kappa}{\lvert L\rvert} \;+\; \sum_{\text{rounds}} \frac{2}{\lvert L\rvert}
     \;+\; \varepsilon_{\mathrm{IOPCS}},
@@ -166,7 +170,19 @@ large-field multilinear IOPCS over $L$.
   error. The integral-domain hypothesis is the Schwartz--Zippel ingredient (a nonzero degree-$d$
   polynomial over $L$ has at most $d$ roots). The uniqueness
   hypothesis fixes the packed polynomial before the batching challenge; without it a prover may
-  choose the packed polynomial after the challenge.
+  choose the packed polynomial after the challenge. Batching followed by the core interaction is
+  guarded, so it composes with the IOPCS by
+  Theorem~\ref{thm:rbr_knowledge_soundness_append_guarded}; the IOPCS itself need not be guarded.
+\end{theorem}
+
+\begin{theorem}[Round-by-round knowledge soundness under an averaged IOPCS contract (conditional)]
+  \lean{RingSwitching.FullRingSwitching.fullOracleVerifier_rbrKnowledgeSoundness}
+  \uses{def:full_ring_switching, thm:ring_switching_core_soundness,
+    thm:rbr_knowledge_soundness_append}
+  \label{thm:ring_switching_soundness_averaged}
+  Under the hypotheses of Theorem~\ref{thm:ring_switching_soundness}, except that the IOPCS is only
+  round-by-round knowledge sound on average over provers, the full reduction is round-by-round
+  knowledge sound on average over provers, with the same error.
 \end{theorem}
 
 \noindent Every verifier aborts on a failed check. The batching, sum-check-round and final-step
@@ -175,9 +191,13 @@ round-by-round knowledge soundness is proved in the worst-case form, which bound
 extraction-failure probability for every fixed transcript prefix over the fresh challenge alone;
 these per-phase bounds are sorry-free and axiom-clean under their stated hypotheses (uniqueness
 of the packed polynomial and $L$ having no zero divisors). They compose without further assumption
-into Theorem~\ref{thm:ring_switching_core_soundness}, which is sorry-free and axiom-clean. The
-full knowledge-soundness theorem above is still conditional: the opening's round-by-round knowledge
-soundness contract is averaged over provers, so the last append applies the framework's admitted
-averaged append contract, whose statement is flagged as not derivable from its hypotheses. It
-becomes unconditional once the opening supplies a worst-case contract, which then composes by
-Theorem~\ref{thm:rbr_knowledge_soundness_append_guarded}.
+into Theorem~\ref{thm:ring_switching_core_soundness}, which is sorry-free and axiom-clean. With
+an IOPCS that is round-by-round knowledge sound for every fixed transcript prefix, the full
+Theorem~\ref{thm:ring_switching_soundness} is sorry-free and axiom-clean under its stated
+hypotheses; its averaged form follows. Theorem~\ref{thm:ring_switching_soundness_averaged}, whose
+IOPCS contract is only averaged over provers, is still conditional: the last append applies the
+framework's admitted averaged append contract, whose statement is flagged as not derivable from its
+hypotheses. The worst-case IOPCS contract is a separate hypothesis on the IOPCS interface, not a
+replacement of its averaged contract: the implication between the two notions runs from
+worst-case to averaged only, as the framework's note on the worst-case-per-prefix variants
+(\texttt{OracleReduction/Security/RoundByRound.lean}) explains.
