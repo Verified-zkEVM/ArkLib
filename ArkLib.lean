@@ -561,6 +561,7 @@ public import ArkLib.Data.Lattices.CyclotomicRing.Subfield.TraceVanishing
 public import ArkLib.Data.Lattices.ModuleSIS
 public import ArkLib.Data.Lattices.Vectors
 public import ArkLib.Data.Matrix.Basic
+public import ArkLib.Data.Matrix.ReadOnce
 public import ArkLib.Data.Matrix.Sparse
 public import ArkLib.Data.Matrix.Vandermonde
 public import ArkLib.Data.Misc.Basic
@@ -577,6 +578,7 @@ public import ArkLib.Data.MvPolynomial.RadicalSplit.Separable
 public import ArkLib.Data.MvPolynomial.RestrictDegree
 public import ArkLib.Data.MvPolynomial.RestrictDegreeVar
 public import ArkLib.Data.MvPolynomial.SchwartzZippelCounting
+public import ArkLib.Data.MvPolynomial.Split
 public import ArkLib.Data.MvPolynomial.WeightAtMost
 public import ArkLib.Data.MvPolynomial.WeightedDegree
 public import ArkLib.Data.MvPolynomial.WeightedDegree.Products
@@ -802,10 +804,19 @@ public import ArkLib.ProofSystem.RingSwitching.Lift
 public import ArkLib.ProofSystem.RingSwitching.Lift.Presentation
 public import ArkLib.ProofSystem.RingSwitching.Lift.Reduction
 public import ArkLib.ProofSystem.RingSwitching.Packing
+public import ArkLib.ProofSystem.RingSwitching.Packing.Batching
 public import ArkLib.ProofSystem.RingSwitching.Packing.BatchingPhase
+public import ArkLib.ProofSystem.RingSwitching.Packing.CheckedObservation
+public import ArkLib.ProofSystem.RingSwitching.Packing.Coordinates
+public import ArkLib.ProofSystem.RingSwitching.Packing.FiniteObservation
 public import ArkLib.ProofSystem.RingSwitching.Packing.General
+public import ArkLib.ProofSystem.RingSwitching.Packing.Multiplier
+public import ArkLib.ProofSystem.RingSwitching.Packing.Polynomial
 public import ArkLib.ProofSystem.RingSwitching.Packing.Prelude
 public import ArkLib.ProofSystem.RingSwitching.Packing.Profile
+public import ArkLib.ProofSystem.RingSwitching.Packing.Relations
+public import ArkLib.ProofSystem.RingSwitching.Packing.ScalarHead.Layout
+public import ArkLib.ProofSystem.RingSwitching.Packing.ScalarHead.Quirky
 public import ArkLib.ProofSystem.RingSwitching.Packing.Spec
 public import ArkLib.ProofSystem.RingSwitching.Packing.SumcheckPhase
 public import ArkLib.ProofSystem.RingSwitching.RoundVerifiers
