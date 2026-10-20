@@ -7,6 +7,8 @@ module
 
 public import ArkLib.Data.CodingTheory.ListDecodability.SampleIncidence
 public import ArkLib.Data.CodingTheory.ReedSolomon.Agreement
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListSpecification
+public import ArkLib.Data.Polynomial.Differential.TaylorChartBaseChange
 
 /-!
 # Finiteness and sample incidence for Reed–Solomon agreement lists
@@ -20,6 +22,26 @@ cannot share `k` evaluation points, so the generic theorem gives
 
 No finiteness assumption on the field is used, and no Lagrange enumeration is needed: finiteness
 is a consequence of the uniform bound on every finite subfamily.
+
+For `k = 1` the candidates are constants, whose agreement sets are disjoint, and the bound reads
+`list.ncard ≤ n / A` (`closePolynomialSet_one_ncard_le_div`).
+
+The last section defines `agreeingPolynomials`, the same list as a set of degree-bounded message
+polynomials (`ListDecoding.MessagePolynomial`) over any semiring and any finite index type.
+
+## Main statements
+
+* `closePolynomialSet_finite_and_ncard_mul_choose_le` and
+  `closePolynomialSet_card_le_of_differential_equation`: incidence and equation bounds for
+  agreement lists.
+* `closePolynomialSet_finite_and_ncard_le_of_differential_equation_and_gap`: finiteness and the
+  geometric cardinality bound from a differential equation and agreement gap.
+
+## References
+
+* [DKT26]
+* [Kop15]
+
 -/
 
 @[expose] public section
@@ -96,6 +118,108 @@ theorem closePolynomialSet_finite
     (closePolynomialSet domain received k A).Finite :=
   (closePolynomialSet_finite_and_ncard_mul_choose_le domain received hAk).1
 
+/-- For message dimension `1`, the complete agreement list with threshold `A > 0` has at most
+`n / A` elements: its members are constants, and distinct constants agree with the received word
+on disjoint sets of coordinates. -/
+theorem exists_closePolynomial_finset_one_card_le_div
+    {F : Type*} [Field F] [DecidableEq F] {n A : ℕ}
+    (domain : Fin n ↪ F) (received : Fin n → F) (hA : 0 < A) :
+    ∃ list : Finset F[X],
+      (∀ P, P ∈ list ↔ P ∈ closePolynomialSet domain received 1 A) ∧ list.card ≤ n / A := by
+  obtain ⟨list, hlist, hincidence⟩ :=
+    exists_closePolynomial_finset_with_incidence_bound domain received hA
+  exact ⟨list, hlist, (Nat.le_div_iff_mul_le hA).2 (by simpa using hincidence)⟩
+
+/-- For message dimension `1` and threshold `A > 0`, the complete agreement list has at most
+`n / A` elements. -/
+theorem closePolynomialSet_one_ncard_le_div
+    {F : Type*} [Field F] [DecidableEq F] {n A : ℕ}
+    (domain : Fin n ↪ F) (received : Fin n → F) (hA : 0 < A) :
+    (closePolynomialSet domain received 1 A).ncard ≤ n / A :=
+  (Nat.le_div_iff_mul_le hA).2 (by
+    simpa using closePolynomialSet_ncard_mul_choose_le domain received hA)
+
 end
+
+/-! ## Degree-bounded message lists over general index types -/
+
+open ListDecoding
+
+/-- The degree-`< messageDim` message polynomials whose evaluations on `domain` agree with
+`received` in at least `minAgreement` coordinates. This is the set of messages accepted by
+`ListDecoding.Accepts`; an exact decoder enumerates it. -/
+def agreeingPolynomials {F index : Type*} [Semiring F] [DecidableEq F] [Fintype index]
+    (domain : index ↪ F) (messageDim minAgreement : ℕ) (received : index → F) :
+    Set (MessagePolynomial F messageDim) :=
+  {p | minAgreement ≤ Code.agree (ReedSolomon.evalOnPoints domain p) received}
+
+/-- Membership in `agreeingPolynomials` is the agreement count of `polynomialAgreementSet`. -/
+theorem mem_agreeingPolynomials_iff {F index : Type*} [Semiring F] [DecidableEq F]
+    [Fintype index] {domain : index ↪ F} {messageDim minAgreement : ℕ} {received : index → F}
+    {p : MessagePolynomial F messageDim} :
+    p ∈ agreeingPolynomials domain messageDim minAgreement received ↔
+      minAgreement ≤ (polynomialAgreementSet domain received p).card :=
+  Iff.rfl
+
+/-! ## Differential constraints -/
+
+open PolynomialDifferential
+open Polynomial
+
+/-- A finite set of degree-bounded polynomial solutions with at least `A` agreements on distinct
+evaluation points has a cardinality bounded by the square of the differential equation's total
+jet degree, times the agreement factor to the depth. -/
+theorem closePolynomialSet_card_le_of_differential_equation
+    {F : Type*} [Field F] [DecidableEq F] {d : ℕ} (Q : DifferentialPolynomial F d)
+    (K k ν : ℕ) (hK : d < K) (hkK : k ≤ K) (hQ : Q ≠ 0)
+    (hcast : ∀ j, JetDegreeCastsNeZero Q j) (hdegree : jetTotalDegree Q ≤ ν)
+    {n A : ℕ} (domain : Fin n ↪ F) (received : Fin n → F)
+    (hk : 0 < k) (hkA : k ≤ A) (hAn : A ≤ n)
+    (hbin : ∀ r, r ≤ d → ∀ i, r < i → i < K → (i.choose r : F) ≠ 0)
+    (S : Finset F[X]) (hsol : ∀ P ∈ S, differentialSpecialization Q P = 0)
+    (hS : ∀ P ∈ S, P ∈ closePolynomialSet domain received k A) :
+    (S.card : ℚ) ≤ (ν : ℚ) ^ 2 *
+      ((((n * (1 + 2 * K * (ν - 1)) : ℕ) : ℚ) /
+        ((A - k + 1 : ℕ) : ℚ)) ^ d) := by
+  let accepts : F[X] → Prop := fun P ↦ P ∈ closePolynomialSet domain received k A
+  have hagreement : ∀ P, accepts P ↔
+      P.degree < k ∧
+        A ≤ (Finset.univ.filter fun i ↦ P.eval (domain i) = received i).card := by
+    intro P
+    simp [accepts, closePolynomialSet, polynomialAgreementSet]
+  exact finite_solutions_card_le_sq_totalJetDegree_of_agreement Q K k ν hK hkK hQ hcast
+    hdegree domain received hk hkA hAn hbin accepts hagreement S hsol hS
+
+open Classical in
+/-- A differential equation and positive agreement gap make the complete close-polynomial set
+finite and bound its cardinality by `ν² (2ν / δ)^d n^d`. -/
+theorem closePolynomialSet_finite_and_ncard_le_of_differential_equation_and_gap
+    {F : Type*} [Field F] [DecidableEq F] {d : ℕ} {δ : ℝ}
+    (Q : DifferentialPolynomial F d) (K k ν : ℕ) (hK : d < K) (hkK : k ≤ K)
+    (hQ : Q ≠ 0) (hdegree : jetTotalDegree Q ≤ ν) {n A : ℕ}
+    (domain : Fin n ↪ F) (received : Fin n → F) (hk : 0 < k) (hkA : k ≤ A)
+    (hAn : A ≤ n) (hKn : K ≤ n) (hν : 0 < ν) (hδ : 0 < δ)
+    (hgap : (k : ℝ) + δ * n ≤ A)
+    (hchar : ringChar F = 0 ∨ max (K - 1) ν < ringChar F)
+    (hsound : ∀ P, P ∈ closePolynomialSet domain received k A →
+      differentialSpecialization Q P = 0) :
+    (closePolynomialSet domain received k A).Finite ∧
+      ((closePolynomialSet domain received k A).ncard : ℝ) ≤
+        (ν : ℝ) ^ 2 * (2 * ν / δ) ^ d * n ^ d := by
+  have hfinite := closePolynomialSet_finite domain received hkA
+  let accepts : F[X] → Prop := fun P ↦ P ∈ closePolynomialSet domain received k A
+  have hagreement : ∀ P, accepts P ↔
+      P.degree < k ∧ A ≤ (Finset.univ.filter fun i ↦
+        P.eval (domain i) = received i).card := by
+    intro P
+    simp [accepts, closePolynomialSet, polynomialAgreementSet]
+  have hbound := finite_solutions_card_le_sq_totalJetDegree_of_agreementGap
+    Q K k ν hK hkK hQ hdegree domain received hk hkA hAn hKn hν hgap hδ hchar
+    accepts hagreement hfinite.toFinset
+    (fun P hP ↦ hsound P (hfinite.mem_toFinset.mp hP))
+    (fun P hP ↦ hfinite.mem_toFinset.mp hP)
+  refine ⟨hfinite, ?_⟩
+  rw [Set.ncard_eq_toFinset_card _ hfinite]
+  exact hbound
 
 end ReedSolomon

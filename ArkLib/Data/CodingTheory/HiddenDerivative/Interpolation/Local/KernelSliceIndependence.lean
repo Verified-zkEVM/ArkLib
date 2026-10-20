@@ -20,6 +20,9 @@ visible jets. The `T^n` coefficient of `T^r (U - localJetSum d)^h G` vanishes fo
 block-lower-triangular with respect to the `T`-coefficients, with injective diagonal over a domain,
 and `LinearMap.injective_sum_comp_proj_of_triangular` shows it is injective.
 
+Only the exhibited part of the kernel is counted: no reverse inclusion or rank equality is
+proved.
+
 ## Main statements
 
 * `localTCoefficient_exhibitedKernelFactor_mul_of_lt`: the `T^n` coefficient of an exhibited
@@ -33,31 +36,8 @@ and `LinearMap.injective_sum_comp_proj_of_triangular` shows it is injective.
 
 ## References
 
-Ported from `Interpolation/Local/KernelSliceIndependence.lean` under
-`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/` at ArkLib revision
-a5aa2677fee4e3a79d6bb05136631cce4a08587d: `localTCoefficient` (here a linear map over a
-commutative ring), `localTCoefficient_truncateLocalT`,
-`localTCoefficient_zero_injective_on_tFree` (here `eq_zero_of_localTCoefficient_zero_eq_zero`),
-`localTCoefficient_zero_localJetSum`, `localTCoefficient_zero_hiddenErrorFactor`,
-`localTCoefficient_zero_hiddenErrorFactor_ne_zero`,
-`localTCoefficient_exhibitedKernelFactor_mul_eq_zero_of_lt` (here
-`localTCoefficient_exhibitedKernelFactor_mul_of_lt`), `ExhibitedKernelFamilySource`,
-`finrank_exhibitedKernelFamilySource`, `exhibitedKernelFamilyMap`,
-`exhibitedKernelFamilyKernelMap`, and their injectivity theorems. The source's
-`localTCoefficient_exhibitedKernelFactor_mul_eq_zero_iff` is replaced by the exact formula
-`localTCoefficient_exhibitedKernelFactor_mul_self`, and its strong induction
-`truncateLocalT_sum_exhibitedKernelFactor_mul_eq_zero_iff` by
-`LinearMap.injective_sum_comp_proj_of_triangular`. The source's predicate `IsLocalTFree` is
-written out as a hypothesis on the support. Injectivity of the family map is proved over a domain
-instead of a field and without the source's hypothesis `0 < d`; the constant coefficient of the
-hidden error is nonzero for every `d`. The source's `localTCoefficient_zero`, `_add`, and `_sum`
-are `map_zero`, `map_add`, and `map_sum` for the linear map.
-
-Nothing in the source file is deferred. Only the exhibited part of the kernel is counted; no
-reverse inclusion or rank equality is claimed, here or in the source.
-
-* Brakensiek, Chen, Putterman, Zhang, and Zheng, *Algorithmic List Decoding of Reed--Solomon
-  Codes up to Capacity in the Low-Rate Regime*, ECCC TR26-164, Section 3.
+* [Brakensiek, J., Chen, Y., Putterman, A., Zhang, Z., and Zheng, K. Z., *Algorithmic List
+  Decoding of Reed–Solomon Codes up to Capacity in the Low-Rate Regime*][BCPZZ26], Section 3.
 -/
 
 @[expose] public section
@@ -81,6 +61,8 @@ def localTCoefficient (d n : ℕ) : LocalPolynomial R d →ₗ[R] MvPolynomial (
   map_add' P Q := by simp
   map_smul' c P := by simp [smul_eq_C_mul, Polynomial.coeff_C_mul]
 
+/-- The coefficient of `localTCoefficient d n P` at `e` is the coefficient of `P` at the exponent
+with `T`-degree `n` and the other degrees given by `e`. -/
 theorem coeff_localTCoefficient (n : ℕ) (P : LocalPolynomial R d) (e : Option (Fin d) →₀ ℕ) :
     (localTCoefficient d n P).coeff e = P.coeff (e.optionElim n) :=
   optionEquivLeft_coeff_coeff R P n e
@@ -105,6 +87,8 @@ theorem eq_zero_of_localTCoefficient_zero_eq_zero {P : LocalPolynomial R d}
     simpa using hc
   · simpa using notMem_support_iff.mp he
 
+/-- The `T^n` coefficient of `T^r P` is the `T^(n - r)` coefficient of `P` if `r ≤ n`, and zero
+otherwise. -/
 @[simp]
 theorem localTCoefficient_X_localT_pow_mul (r n : ℕ) (P : LocalPolynomial R d) :
     localTCoefficient d n (X (localT d) ^ r * P) =
@@ -186,6 +170,8 @@ def exhibitedKernelFamilyMap (m M W : ℕ) :
     ExhibitedKernelFamilySource R d m M W →ₗ[R] localIntermediateSpace R d m M W :=
   ∑ r : Fin m, (boundedExhibitedKernelMap m r M W _).comp (LinearMap.proj r)
 
+/-- `exhibitedKernelFamilyMap m M W G` is the reduction modulo `T^m` of
+`∑_r T^r (U - localJetSum d)^(h_r) G_r`, with `h_r = contactThreshold d m r`. -/
 @[simp]
 theorem exhibitedKernelFamilyMap_apply (m M W : ℕ) (G : ExhibitedKernelFamilySource R d m M W) :
     (exhibitedKernelFamilyMap m M W G : LocalPolynomial R d) =
@@ -196,7 +182,7 @@ theorem exhibitedKernelFamilyMap_apply (m M W : ℕ) (G : ExhibitedKernelFamilyS
 /-- Over a domain the family map is injective, for every `d`. The slice of index `r` contributes
 nothing below `T^r`, and its `T^r` coefficient is a nonzero power (`(U - Y₁)^h`, or `U^h` when
 `d = 0`) times the `T^0` coefficient of the slice element, which determines it because it is
-`T`-free. The source assumed `0 < d` and a field. -/
+`T`-free. -/
 theorem exhibitedKernelFamilyMap_injective [IsDomain R] (m M W : ℕ) :
     Function.Injective (exhibitedKernelFamilyMap (R := R) (d := d) m M W) := by
   refine LinearMap.injective_sum_comp_proj_of_triangular _
@@ -225,6 +211,8 @@ def exhibitedKernelFamilyKernelMap (hd : 0 < d) (m M W : ℕ) :
     exact Finset.sum_eq_zero fun r _ =>
       intermediateConstraintMap_boundedExhibitedKernelMap_eq_zero hd m r M W (G r)
 
+/-- `exhibitedKernelFamilyKernelMap` agrees with `exhibitedKernelFamilyMap` after forgetting the
+kernel membership. -/
 @[simp]
 theorem exhibitedKernelFamilyKernelMap_apply (hd : 0 < d) (m M W : ℕ)
     (G : ExhibitedKernelFamilySource R d m M W) :

@@ -8,7 +8,7 @@ import ArkLib.Data.Polynomial.FractionFieldResultant
 import ArkLib.Data.Polynomial.ResultantSpecialization
 import Mathlib.Algebra.Field.ZMod
 
-/-! Declared-degree resultants under specialization: the nonmonic linear canary from the source,
+/-! Declared-degree resultants under specialization: the nonmonic linear polynomial `X * Y + 1`,
 a derivative whose degree drops in characteristic two, a Bezout divisibility certificate over `ℤ`,
 and the `m = n = 0` boundary. -/
 
@@ -20,7 +20,7 @@ section Canary
 
 variable {F : Type*} [Field F]
 
-/-- The source's nonmonic linear canary `A = X * Y + 1`, with `Y` the outer variable. -/
+/-- The nonmonic linear polynomial `A = X * Y + 1`, with `Y` the outer variable. -/
 noncomputable def canary : F[X][X] := C X * X + C 1
 
 theorem canary_natDegree : (canary : F[X][X]).natDegree = 1 :=
@@ -33,9 +33,9 @@ example : ¬(canary : F[X][X]).Monic := by
   rw [Monic, canary, leadingCoeff_linear X_ne_zero]
   exact fun h ↦ X_ne_C (1 : F) (by simpa using h)
 
--- With declared degree 1, the padded derivative resultant is exactly `X` in main's argument
--- order `resultant A A.derivative 1 0`. The source's order `resultant A.derivative A 0 1` gives
--- the same value, with no sign, because `1 * 0` is even.
+-- With declared degree 1, the padded derivative resultant `resultant A A.derivative 1 0` is
+-- exactly `X`. The reversed order `resultant A.derivative A 0 1` gives the same value, with no
+-- sign, because `1 * 0` is even.
 theorem canary_resultant : resultant (canary : F[X][X]) canary.derivative 1 0 = X := by
   simp [canary_derivative]
 

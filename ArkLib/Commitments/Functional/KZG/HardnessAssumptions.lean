@@ -8,7 +8,7 @@ module
 public import ArkLib.Commitments.Functional.KZG.Algebra
 public import ArkLib.Commitments.Functional.KZG.Sampling
 public import ArkLib.Data.GroupTheory.PrimeOrder
-public import ArkLib.Data.Classes.Serde
+public import CompPoly.Data.Classes.Serialize
 public import CompPoly.Univariate.Basic
 public import CompPoly.Univariate.ToPoly
 public import Mathlib.Algebra.Field.ZMod

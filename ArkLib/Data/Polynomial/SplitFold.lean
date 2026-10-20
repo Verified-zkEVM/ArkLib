@@ -257,4 +257,36 @@ lemma splitNth_eval_comp_pow {n : ℕ} [NeZero n] (f : 𝔽[X]) (x : 𝔽) (i : 
   rw [Polynomial.eval₂_sum, eval₂_eq_sum]
   simp_all
 
+/-- Even/odd evaluation split for `n = 2`: `f(y) = f₀(y²) + y · f₁(y²)`. -/
+lemma splitNth_two_eval (f : 𝔽[X]) (y : 𝔽) :
+    f.eval y = (splitNth f 2 0).eval (y ^ 2) + y * (splitNth f 2 1).eval (y ^ 2) := by
+  conv_lhs => rw [eq_sum_splitNth 2 f]
+  rw [eval_finsetSum, Fin.sum_univ_two]
+  simp only [Fin.val_zero, Fin.val_one, pow_zero, pow_one, eval_mul, eval_X, one_mul,
+    splitNth_eval_comp_pow]
+
+/-- `f(x) + f(-x) = 2 · f₀(x²)`, isolating the even part. -/
+lemma splitNth_two_eval_add {𝔽 : Type} [CommRing 𝔽] (f : 𝔽[X]) (x : 𝔽) :
+    f.eval x + f.eval (-x) = 2 * (splitNth f 2 0).eval (x ^ 2) := by
+  rw [splitNth_two_eval f x, splitNth_two_eval f (-x), neg_sq]
+  ring
+
+/-- `f(x) - f(-x) = 2x · f₁(x²)`, isolating the odd part. -/
+lemma splitNth_two_eval_sub {𝔽 : Type} [CommRing 𝔽] (f : 𝔽[X]) (x : 𝔽) :
+    f.eval x - f.eval (-x) = 2 * x * (splitNth f 2 1).eval (x ^ 2) := by
+  rw [splitNth_two_eval f x, splitNth_two_eval f (-x), neg_sq]
+  ring
+
+/-- Arity-2 folding in evaluation form: the fold of `f` with challenge `β`, evaluated at `x²`, is
+  computed from the two evaluations `f(x)` and `f(-x)`. This is the formula FRI verifiers and
+  provers implement. -/
+lemma polyFold_two_eval {𝔽 : Type} [Field 𝔽] (f : 𝔽[X]) (x β : 𝔽) (hx : x ≠ 0)
+    (h2 : (2 : 𝔽) ≠ 0) :
+    (FoldingPolynomial.polyFold f 2 β).eval (x ^ 2) =
+      (f.eval x + f.eval (-x) + β * (f.eval x - f.eval (-x)) * x⁻¹) * (2 : 𝔽)⁻¹ := by
+  rw [polyFold_eq_sum_of_splitNth, eval_finsetSum, Fin.sum_univ_two]
+  simp only [Fin.val_zero, Fin.val_one, pow_zero, pow_one, eval_mul, eval_C, one_mul]
+  rw [splitNth_two_eval_add f x, splitNth_two_eval_sub f x]
+  field_simp
+
 end Polynomial

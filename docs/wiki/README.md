@@ -26,10 +26,12 @@ For reusable cross-cutting workflows that are not tied to one repo area, see
   correlated-agreement, and mutual-correlated-agreement APIs and their numeric types.
 - [`interaction-naming.md`](interaction-naming.md) - intrinsic meanings and migration of typed
   interaction sources, named oracle contexts, and sequential composition.
-- [`sequential-composition.md`](sequential-composition.md) - theorem selection for shared-state
+- [`sequential-composition.md`](sequential-composition.md) - legacy theorem selection for shared-state
   execution, completeness, and round-by-round soundness.
 - [`probability-conventions.md`](probability-conventions.md) - namespace and export conventions
   for reusable helpers in `ArkLib/Data/Probability/`.
+- [`porting-conventions.md`](porting-conventions.md) - where port history lives, naming and
+  layout rules, and the review checklist for code ported from another snapshot.
 - [`../design/README.md`](../design/README.md) - normative typed interaction and oracle-reduction
   architecture, current implementation status, and staged migration plan.
 - [`../kb/audits/open-problems-list-decoding-and-correlated-agreement.md`](../kb/audits/open-problems-list-decoding-and-correlated-agreement.md)
@@ -50,8 +52,9 @@ For reusable cross-cutting workflows that are not tied to one repo area, see
   - `proximity-error-conventions.md` for the public APIs and numeric types of the proximity-error
     notions in `CodingTheory/ProximityGap/`.
   - `interaction-naming.md` for typed interaction API meanings and name migrations.
-  - `sequential-composition.md` for composition APIs and their hypotheses.
+  - `sequential-composition.md` for legacy composition APIs and their hypotheses.
   - `probability-conventions.md` for namespace/export conventions in `Data/Probability/`.
+  - `porting-conventions.md` for port history, naming, layout and the port review checklist.
 - Add new pages when a recurring topic no longer fits cleanly in an existing guide.
 - If a PR changes commands, repo structure, generated-file behavior, or the paper workflow,
   update the matching page in the same PR, or add a new page when that is the cleaner split.

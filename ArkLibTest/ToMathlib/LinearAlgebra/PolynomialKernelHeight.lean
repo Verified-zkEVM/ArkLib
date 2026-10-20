@@ -15,8 +15,8 @@ generalized index interface and the strict `degreeLT` contract of the principal 
 
 The remaining examples use the rank over `RatFunc F`, as the Reed–Solomon interpolation consumers
 do. They start from `rank ≤ r` and `r < N` with `Fin N` columns and obtain the natural-degree
-bound `r * b / (N - r)` with no separate monotonicity argument. They also recover the primitive
-statements of the source revision, including the clause that the coordinates have no common root
+bound `r * b / (N - r)` with no separate monotonicity argument. They also derive the primitive
+statements with `Fin` indices, including the clause that the coordinates have no common root
 `z` in any field extension `ι : F →+* E`, from the gcd normalization and
 `Ideal.comp_ne_zero_of_span_range_eq_top`.
 -/
@@ -47,8 +47,7 @@ example {F : Type*} [Field F] (M : Matrix Empty Unit F[X]) :
   simpa using
     exists_ne_zero_mulVec_eq_zero_degreeLT (b := 0) M hdegree (by decide)
 
-/-- Specializing the generalized index types to `Fin` recovers the immutable source statement
-without changing its hypotheses, degree formula, or quantifier order. -/
+/-- The special case of `Fin` indices, with the natural-degree bound `n * b / (N - n)`. -/
 example {F : Type*} [Field F] {n N b : ℕ}
     (M : Matrix (Fin n) (Fin N) F[X]) (hdeg : ∀ i j, (M i j).natDegree ≤ b)
     (hN : n < N) :
@@ -73,7 +72,7 @@ example {F : Type*} [Field F] {m N b r : ℕ} (M : Matrix (Fin m) (Fin N) F[X])
   · exact natDegree_le_of_mem_degreeLT_succ (by simpa using hvdegree j)
   · exact Ideal.comp_ne_zero_of_span_range_eq_top hspan (eval₂RingHom ι z)
 
-/-- The source statement with the exact rank `s` follows by weakening `hrank` to `≤`. -/
+/-- The form with the exact rank `s` follows by weakening `hrank` to `≤`. -/
 example {F : Type*} [Field F] {m N b s : ℕ} (M : Matrix (Fin m) (Fin N) F[X])
     (hdeg : ∀ i j, (M i j).natDegree ≤ b)
     (hrank : (M.map (algebraMap F[X] (RatFunc F))).rank = s) (hs : s < N) :
@@ -81,7 +80,7 @@ example {F : Type*} [Field F] {m N b s : ℕ} (M : Matrix (Fin m) (Fin N) F[X])
   simpa using exists_ne_zero_mulVec_eq_zero_natDegree_le_of_rank_le M hdeg _
     (IsFractionRing.injective F[X] (RatFunc F)) hrank.le (by simpa using hs)
 
-/-- The source row-count primitive statement is the rank form with `s := n`, where
+/-- The row-count primitive statement is the rank form with `s := n`, where
 `Matrix.rank_le_card_height` bounds the rank by the number of rows. -/
 example {F : Type*} [Field F] {n N b : ℕ} (M : Matrix (Fin n) (Fin N) F[X])
     (hdeg : ∀ i j, (M i j).natDegree ≤ b) (hN : n < N) :
@@ -98,7 +97,7 @@ example {F : Type*} [Field F] {n N b : ℕ} (M : Matrix (Fin n) (Fin N) F[X])
   · exact natDegree_le_of_mem_degreeLT_succ (by simpa using hvdegree j)
   · exact Ideal.comp_ne_zero_of_span_range_eq_top hspan (eval₂RingHom ι z)
 
-/-- The source's zero-preserving normalization follows from `v = g • u`: a zero coordinate of `v`
+/-- The zero-preserving normalization follows from `v = g • u`: a zero coordinate of `v`
 is a zero coordinate of `u`, and a nonzero coordinate of `v` is a multiple of the coordinate of
 `u`, so its natural degree does not drop below that of `u`. -/
 example {F : Type*} [Field F] {m N : ℕ} (M : Matrix (Fin m) (Fin N) F[X])
@@ -118,8 +117,8 @@ example {F : Type*} [Field F] {m N : ℕ} (M : Matrix (Fin m) (Fin N) F[X])
   · exact natDegree_le_of_dvd (dvd_mul_left _ _) hj
 
 /-- Normalization keeps a separate strict degree budget for each coordinate
-(`Matrix.exists_primitive_kernel_vector_degreeLT`), which recovers the source's shifted-degree
-primitive statement. -/
+(`Matrix.exists_primitive_kernel_vector_degreeLT`), with `Fin` indices and the specialization
+clause derived from the unit-ideal conclusion. -/
 example {F : Type*} [Field F] {rows cols : ℕ} (M : Matrix (Fin rows) (Fin cols) F[X])
     (slots : Fin cols → ℕ) (v : Fin cols → F[X]) (hv : v ≠ 0) (hMv : M *ᵥ v = 0)
     (hvdegree : ∀ j, v j ∈ degreeLT F (slots j)) :

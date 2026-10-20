@@ -33,6 +33,10 @@ There are two distinct execution laws in PolyFun:
 ArkLib's prover setup is effectful in general, so `Reduction.execute_then` deliberately exposes
 the second boundary. Stateful clients without commutative effects must thread state explicitly
 rather than use this factorization theorem.
+
+`TwoParty.run_appendFlat_splitPrefix` instead splits an arbitrary whole prover at an append
+boundary and uses its actual remaining strategy. It preserves all effects under `LawfulMonad`
+when the suffix verifier is selected by a pure function of the prefix result.
 -/
 
 @[expose] public section
@@ -42,6 +46,42 @@ universe u v w x
 namespace Interaction
 
 open TwoParty
+
+namespace TwoParty
+
+open StrategyOver.TwoParty
+
+section execution
+
+variable {m : Type u → Type u} [Monad m] [LawfulMonad m]
+  {s₁ : TypeTree} {s₂ : TypeTree.Path s₁ → TypeTree}
+  {r₁ : RoleDecoration s₁} {r₂ : (t : TypeTree.Path s₁) → RoleDecoration (s₂ t)}
+  {MidC : TypeTree.Path s₁ → Type u}
+  {OutputP OutputC : TypeTree.Path (s₁.append s₂) → Type u}
+
+/-- Split an arbitrary native adversary at the append boundary without changing execution order.
+The prefix returns the adversary's actual suffix strategy, including all its private memory and
+effectful continuations. No commutativity of the ambient effects is assumed. -/
+theorem run_appendFlat_splitPrefix
+    (prover : StrategyOver (SyntaxOver.TwoParty.pairedTypeTree m) Participant.focal
+      (s₁.append s₂) (r₁.append r₂) OutputP)
+    (counterpart₁ : StrategyOver (SyntaxOver.TwoParty.pairedTypeTree m) Participant.counterpart
+      s₁ r₁ MidC)
+    (counterpart₂ : (t : TypeTree.Path s₁) → MidC t →
+      StrategyOver (SyntaxOver.TwoParty.pairedTypeTree m) Participant.counterpart
+        (s₂ t) (r₂ t) (fun p => OutputC (PFunctor.FreeM.Path.append s₁ s₂ t p))) :
+    run (s₁.append s₂) (r₁.append r₂) prover
+      (Counterpart.appendFlat counterpart₁ counterpart₂) = (do
+      let ⟨t, next, out⟩ ← run s₁ r₁ (Focal.splitPrefix prover) counterpart₁
+      let ⟨p, outP, outC⟩ ← run (s₂ t) (r₂ t) next (counterpart₂ t out)
+      pure ⟨PFunctor.FreeM.Path.append s₁ s₂ t p, outP, outC⟩) := by
+  have h := run_compFlat_appendFlat_pure (Focal.splitPrefix prover)
+    (fun _ next => next) counterpart₁ counterpart₂
+  simpa only [Focal.compFlat_splitPrefix, pure_bind] using h
+
+end execution
+
+end TwoParty
 
 /-! ## Participants -/
 

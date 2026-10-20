@@ -37,6 +37,8 @@ sum of the row indices. For the derivative, `dQ = dP - 1`, which gives the bound
 ## Main statements
 
 * `natDegree_resultant_le_of_coeff_natDegree_le`: the column-budget bound `n * A + m * B`.
+* `Bivariate.degreeX_derivative_le`: differentiation in the outer variable does not increase
+  `degreeX`.
 * `natDegree_resultant_derivative_le` and `natDegree_resultant_derivative_padded_le`: the
   `(2 * d - 1) * degreeX P` bound for the derivative resultant.
 * `natDegree_resultant_add_mul_le_of_coeff_add_le` and
@@ -128,6 +130,13 @@ theorem coeff_derivative_natDegree_le (P : Polynomial (Polynomial R)) (j : ℕ) 
   rw [coeff_derivative]
   rw [show (j : Polynomial R) + 1 = C ((j : R) + 1) by simp]
   exact natDegree_mul_C_le _ _
+
+/-- Differentiating in the outer variable does not increase the coefficient-variable degree:
+`degreeX P.derivative ≤ degreeX P`. -/
+theorem Bivariate.degreeX_derivative_le (P : Polynomial (Polynomial R)) :
+    Bivariate.degreeX P.derivative ≤ Bivariate.degreeX P :=
+  Finset.sup_le fun j _ ↦
+    (coeff_derivative_natDegree_le P j).trans (Bivariate.coeff_natDegree_le_degreeX P (j + 1))
 
 /-- The actual-degree derivative resultant obeys the usual `(2d-1)D` coefficient-variable
 bound, also in small characteristic where the derivative degree may drop. -/

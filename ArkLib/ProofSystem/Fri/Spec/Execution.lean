@@ -24,6 +24,8 @@ open OracleComp OracleSpec ProtocolSpec Domain Finset
 variable {F : Type} [NonBinaryField F] [Fintype F] [DecidableEq F]
 variable {n k : ℕ} {ω : SmoothCosetFftDomain n F} (s : Fin (k + 1) → ℕ+)
 
+/-! ## Retained oracle history -/
+
 /-- A non-final word in the heterogeneous final oracle history. -/
 def committedWord (o : ∀ j, FinalOracleStatement s ω j) (i : Fin (k + 1)) :
     (ω.subdomain (∑ j ∈ finRangeTo (k + 1) i.val, (s j).val)).toFinset → F :=
@@ -66,6 +68,8 @@ theorem committedFunction_last (o : ∀ j, FinalOracleStatement s ω j) (x : F) 
   simp [committedFunction]
 
 namespace QueryRound
+
+/-! ## Folding block enumeration -/
 
 omit [Fintype F] in
 @[simp]
@@ -111,6 +115,8 @@ theorem queryBlock_nodup (hs : (∑ j, (s j).val) ≤ n) (i : Fin (k + 1))
   apply FftDomain.injective (ω := ω.toFftDomain.subdomain (n - (s i).val))
   apply mul_right_cancel₀ (CosetFftDomainClass.ne_zero_dep (queryPoint s hs i x))
   exact congrArg Subtype.val hab
+
+/-! ## Evaluating local checks -/
 
 private theorem cast_query {ι : Type} {spec : OracleSpec ι} {A B : Type}
     (h : A = B) (h' : OracleQuery spec A = OracleQuery spec B) (q : OracleQuery spec A) :

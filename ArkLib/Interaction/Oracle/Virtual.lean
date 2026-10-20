@@ -80,7 +80,9 @@ variable {I : Type u} {J : Type u'} {K : Type u''}
 def ofQuery (query : QueryImpl A.spec (OracleComp srcSpec)) : VirtualOracle srcSpec A :=
   ⟨query⟩
 
-/-- Evaluate each query using a deterministic source handler. -/
+/-- Evaluate each query using a deterministic source handler. Compiler inlining erases the
+realization interface: interpreting an abstract query program needs only its source handler. -/
+@[macro_inline]
 def eval (a : VirtualOracle srcSpec A) (impl : QueryImpl srcSpec Id) : A.Behavior :=
   QueryImpl.compose impl a.query
 
@@ -88,6 +90,7 @@ def eval (a : VirtualOracle srcSpec A) (impl : QueryImpl srcSpec Id) : A.Behavio
 def SemEquiv (a b : VirtualOracle srcSpec A) : Prop := ∀ impl, a.eval impl = b.eval impl
 
 /-- Identity view exports the source interface unchanged. -/
+@[macro_inline]
 def id (A : OracleFamily.{a, v, w} AI AO) : VirtualOracle A.spec A :=
   ⟨QueryImpl.id' A.spec⟩
 
@@ -97,6 +100,7 @@ theorem eval_id (impl : A.Behavior) : (id A).eval impl = impl := by
   simp [eval, id, QueryImpl.compose, QueryImpl.id']
 
 /-- Substitute query programs for every source query. -/
+@[macro_inline]
 def substSource (a : VirtualOracle srcSpec A)
     {L : Type t} {targetSpec : OracleSpec.{t, v} L}
     (route : QueryImpl srcSpec (OracleComp targetSpec)) : VirtualOracle targetSpec A :=
@@ -135,6 +139,7 @@ theorem eval_mapSource {E : Type w'} {F : Type w''}
 
 
 /-- Add unused sources on the right. -/
+@[macro_inline]
 def sumWeaken (a : VirtualOracle srcSpec A) {L : Type t} (extra : OracleSpec.{t, v} L) :
     VirtualOracle (srcSpec + extra) A :=
   a.substSource (fun q => liftM ((srcSpec + extra).query (.inl q)))

@@ -28,7 +28,8 @@ vanish on some variables.
 For `d < D < K` every eligible exponent is eligible for the exact interpolation space of
 `Interpolation/Index.lean` with `M = m`, since the specialization weight `a + ∑_j (D - j) b_j`
 is at most `a + (K - 1) ∑_j b_j`. The rectangular space is used for lower bounds
-on the dimension, and this comparison transfers them to the exact space.
+on the dimension (`Interpolation/Dimension.lean`), and this comparison transfers them to the
+exact space.
 
 The file also adds the derivative-order weight `fullDerivativeJetWeight`, which charges `Y_j`
 weight `j` and so also counts `Y₁`, and the ordinary higher-jet degree `fullHigherJetDegree`.
@@ -46,39 +47,13 @@ weight `j` and so also counts `Y₁`, and the ordinary higher-jet degree `fullHi
   for every `K > D`.
 * `fullHigherJetWeight_le_fullDerivativeJetWeight` and `firstJetExponent_le_totalJetDegree`.
 
+Parts of this file are adapted, with permission, from Kai Zhe Zheng's `kz99/rs-ld-mca`
+formalization.
+
 ## References
 
-Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Space.lean` at
-ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d (adapted there from Kai Zhe Zheng's
-`rs-ld-mca` formalization): `HigherJetExponent`, `higherJetWeight`, `higherJetDegree`,
-`GoodHigherExponent`, `goodHigherExponentSet`, `goodHigherExponentSet_finite`,
-`goodHigherExponents`, `mem_goodHigherExponents`, `firstJetExponent_le_totalJetDegree`,
-`fullDerivativeJetWeight`, `fullHigherJetWeight_le_fullDerivativeJetWeight`,
-`fullHigherJetDegree`, `GlobalEligibleExponent`, `globalEligibleExponentSet`,
-`globalEligibleExponentSet_finite`, `globalEligibleExponents`, `mem_globalEligibleExponents`,
-`interpolationSpace`, `mem_interpolationSpace_iff`, `monomial_mem_interpolationSpace`, and
-`interpolationSpaceBasis`. `firstJetExponent`, `totalJetDegree`, `fullHigherJetWeight`, and
-`exponentDegree_eq_x_add_totalJetDegree` (here `degree_eq_add_totalJetDegree`) are already in
-`Interpolation/Index.lean` and `PolynomialDifferential`. As there, `fullDerivativeJetWeight` and
-`fullHigherJetDegree` are `Finsupp.weight` of the pointwise weights `jetDerivativeWeight` and
-`jetHigherDegreeWeight`.
-
-From the source's `Interpolation/Index.lean`:
-`GlobalEligibleExponent.toExactInterpolationEligibleExponent`,
-`interpolationSpace_le_exactInterpolationSpace`, and
-`finrank_interpolationSpace_le_exactInterpolationSpace`. The source fixed `K = D + 1`; here any
-`K` with `D < K` is allowed. The finrank comparison is proved from the inclusion of the exponent
-sets, which also gives `globalEligibleExponents_subset_exactInterpolationExponents`.
-
-From the source's `Interpolation/Counting.lean`: `goodHigherExponents_self_eq_weighted_count`,
-here `card_goodHigherExponents_of_le` for every `C ≥ W`, with the source statement at `C = W`
-recovered in the tests.
-
-The source's lower bound `finrank_interpolationSpace_lowerBound` is in
-`Interpolation/Dimension.lean`. Deferred: the shell counts.
-
-* Brakensiek, Chen, Putterman, Zhang, and Zheng, *Algorithmic List Decoding of Reed--Solomon
-  Codes up to Capacity in the Low-Rate Regime*, ECCC TR26-164, Section 3.
+* [Brakensiek, J., Chen, Y., Putterman, A., Zhang, Z., and Zheng, K. Z., *Algorithmic List
+  Decoding of Reed–Solomon Codes up to Capacity in the Low-Rate Regime*][BCPZZ26], Section 3.
 -/
 
 @[expose] public section

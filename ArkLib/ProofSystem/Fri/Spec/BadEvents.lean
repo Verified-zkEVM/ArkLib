@@ -7,6 +7,7 @@ Authors: Alexander Hicks
 module
 
 public import ArkLib.ProofSystem.Fri.Spec.RoundSoundness
+public import ArkLib.ProofSystem.Fri.Spec.InputRelation
 
 /-!
 # The last bad event in FRI
@@ -25,6 +26,8 @@ open scoped ProbabilityTheory NNReal
 variable {F : Type} [NonBinaryField F] [Fintype F] [DecidableEq F]
 variable {n k : ℕ} {ω : SmoothCosetFftDomain n F}
 variable (s : Fin (k + 1) → ℕ+) (d : ℕ+) (l : ℕ)
+
+/-! ## Query acceptance event -/
 
 /-- Acceptance after the final query challenge, including the final degree check. -/
 def queryBad (hs : (∑ j, (s j).val) ≤ n) (f : (ω.subdomain 0).toFinset → F)
@@ -84,6 +87,8 @@ theorem queryBad_prob_le (hs : (∑ j, (s j).val) ≤ n)
       funext (initialWord_queryHistory s l f tr)] using hdist
   · simp only [hd, false_and]
     simp
+
+/-! ## Challenge indexing and error accounting -/
 
 /-- Bad events indexed by challenges of the existing composed protocol. The equalities
 only transport prefixes; no alternative protocol or extra randomness is introduced. -/
@@ -164,10 +169,7 @@ theorem sum_challengeError [SampleableType F] (θ δ : ℝ) :
   · exact Fintype.sum_ite_eq' (queryChallenge (ω := ω) s l)
       (fun _ ↦ Real.toNNReal (1 - min θ δ) ^ l)
 
-/-- Proximity language using the existing Reed–Solomon code and relative distance. -/
-def proximityLanguage (δ : ℝ) : Set ((ω.subdomain 0).toFinset → F) :=
-  {f | ∃ u ∈ code ω (2 ^ (∑ j, (s j).val) * d.val),
-    (Code.relHammingDist (fun z ↦ f (initialQuery z)) u : ℝ) < δ}
+/-! ## Conditional challenge bound -/
 
 /-- Every fresh bad event obeys its bound, conditional on no earlier bad event. -/
 theorem badEvent_prob_le [SampleableType F] (hs : (∑ j, (s j).val) ≤ n) (θ δ : ℝ)

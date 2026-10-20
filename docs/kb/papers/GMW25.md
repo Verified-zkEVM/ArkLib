@@ -37,7 +37,7 @@ query positions. ArkLib follows the March 27, 2026 revision of ePrint 2025/1993.
 `univariatePowersGenerator`. `Fri.FoldTrace.query_soundness_distance` states the conditional
 query error at `Code.relDistFromCode`. The trace is an algebraic view of a commitment
 transcript; the executable protocol remains in `Fri/Spec`. `Fri.Spec.soundness` and
-`Fri.Spec.rbrSoundness` establish its end-to-end adaptive security with the existing
+`Fri.Spec.rbr_soundness` establish its end-to-end adaptive security with the existing
 input/output relations. `Fri.Spec.soundness_proximity` gives the stronger rejection bound
 for every input at distance at least `δ`.
 
@@ -64,7 +64,7 @@ the generalized-Johnson specialization using ArkLib's existing powers-MCA theore
 ArkLib's existing domains support folding factors that are powers of two. The paper allows
 more general multiplicative subgroups. Algebraic interpolation is formalized without claiming
 the polynomial-time extraction claim of Corollary 5.6. Zero query repetitions are allowed,
-yielding the vacuous error bound one; the paper's probability-to-binding deduction assumes
+making the query-error term one and the total bound vacuous; the paper's probability-to-binding deduction assumes
 a positive repetition count.
 
 ## Open Formalization Gaps

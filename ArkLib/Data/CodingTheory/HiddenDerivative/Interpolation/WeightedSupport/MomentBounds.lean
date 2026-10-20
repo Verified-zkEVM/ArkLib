@@ -20,7 +20,11 @@ and harmonic-type sums `H`, `H₂`, `H₃`: the variance factor is `d / (d + 1) 
 and the third-moment factor is
 `2 * (d ^ 2 * H₃ - 3 * d * H * H₂ + 2 * H ^ 3) / ((d + 1) * (d + 2))`. This file proves the real
 inequalities that turn bounds on the harmonic sums into the constants `3 / 2` and `2.41` used by
-the estimate. It does not prove the moment identities themselves.
+the estimate. It does not prove the moment identities themselves: `normalizedRadius` and its
+first three moments are in
+`ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.Moments`, which also
+combines them with these bounds in `normalizedRadius_contribution_lower`. The harmonic-sum bounds
+that supply `H`, `H₂` and `H₃` are in `ArkLib.ToMathlib.NumberTheory.Harmonic.Bounds`.
 
 ## Main statements
 
@@ -30,20 +34,6 @@ the estimate. It does not prove the moment identities themselves.
   bounds the third-moment factor by `2 * (H₃ + 2 * H ^ 3 / d ^ 2)`.
 * `ReedSolomon.HiddenDerivative.weightedSupport_third_factor_numeric`: that bound is at most
   `241 / 100` when `1 ≤ d`, `H ^ 2 ≤ d / 100` and `H₃ ≤ 12021 / 10000`.
-
-## References
-
-Ports `weightedSupport_variance_factor_gt`, `weightedSupport_third_factor_le` and
-`weightedSupport_third_factor_numeric` from
-`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/WeightedSupport/`
-`MomentBounds.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`. The dimension
-hypotheses are weakened to what the arithmetic needs: `10000 ≤ d` becomes `150 < d`, which is sharp,
-and `48000 ≤ d` becomes `1 ≤ d`. The acceptance tests derive the source statements.
-
-The moment identities that produce these factors (`normalizedRadius` and its first three moments)
-are in `ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.Moments`, which
-also combines them with these bounds in `normalizedRadius_contribution_lower`. Deferred: the
-harmonic-sum bounds that supply `H`, `H₂` and `H₃`.
 -/
 
 @[expose] public section
@@ -80,8 +70,22 @@ theorem weightedSupport_third_factor_le {d H H₂ H₃ : ℝ}
   have he : 2 * (d ^ 2 * H₃ + 2 * H ^ 3) = (2 * (H₃ + 2 * H ^ 3 / d ^ 2)) * d ^ 2 := by
     field_simp
   rw [div_le_iff₀ hden]
-  have hp := mul_le_mul_of_nonneg_left (show d ^ 2 ≤ (d + 1) * (d + 2) by nlinarith) hright
-  nlinarith
+  have hdrop : 2 * (d ^ 2 * H₃ - 3 * d * H * H₂ + 2 * H ^ 3) ≤
+      2 * (d ^ 2 * H₃ + 2 * H ^ 3) := by
+    have := mul_le_mul_of_nonneg_left (show d ^ 2 * H₃ - 3 * d * H * H₂ + 2 * H ^ 3 ≤
+      d ^ 2 * H₃ + 2 * H ^ 3 by linarith [hneg]) (by norm_num : (0 : ℝ) ≤ 2)
+    exact this
+  have hsq : d ^ 2 ≤ (d + 1) * (d + 2) := by
+    calc
+      d ^ 2 = d * d := by ring
+      _ ≤ (d + 1) * (d + 2) :=
+        mul_le_mul (by linarith) (by linarith) hd.le (by positivity)
+  have hp := mul_le_mul_of_nonneg_left hsq hright
+  calc
+    2 * (d ^ 2 * H₃ - 3 * d * H * H₂ + 2 * H ^ 3) ≤
+        2 * (d ^ 2 * H₃ + 2 * H ^ 3) := hdrop
+    _ = (2 * (H₃ + 2 * H ^ 3 / d ^ 2)) * d ^ 2 := he
+    _ ≤ (2 * (H₃ + 2 * H ^ 3 / d ^ 2)) * ((d + 1) * (d + 2)) := hp
 
 /-- The bound `2 * (H₃ + 2 * H ^ 3 / d ^ 2)` is at most `241 / 100` when `1 ≤ d`, `0 ≤ H`,
 `H ^ 2 ≤ d / 100` and `H₃ ≤ 12021 / 10000`. For `1 ≤ d` the second hypothesis gives
@@ -92,12 +96,24 @@ theorem weightedSupport_third_factor_numeric {d H H₃ : ℝ}
     (hd : 1 ≤ d) (hH : 0 ≤ H) (hHsq : H ^ 2 ≤ d / 100) (h₃ : H₃ ≤ 12021 / 10000) :
     2 * (H₃ + 2 * H ^ 3 / d ^ 2) ≤ (241 / 100 : ℝ) := by
   have hd0 : 0 < d := by linarith
+  have hdSq : d ≤ d ^ 2 := by
+    calc
+      d = d * 1 := by ring
+      _ ≤ d * d := mul_le_mul_of_nonneg_left hd hd0.le
+      _ = d ^ 2 := by ring
   have hHlin : H ≤ d / 10 := by
-    nlinarith [sq_nonneg (H - d / 10)]
+    apply le_of_sq_le_sq _ (by positivity)
+    calc
+      H ^ 2 ≤ d / 100 := hHsq
+      _ ≤ d ^ 2 / 100 := div_le_div_of_nonneg_right hdSq (by norm_num)
+      _ = (d / 10) ^ 2 := by ring
   have hprod := mul_le_mul hHsq hHlin hH (by positivity : (0 : ℝ) ≤ d / 100)
   have hcube : H ^ 3 / d ^ 2 ≤ (1 / 1000 : ℝ) := by
     rw [div_le_iff₀ (pow_pos hd0 2)]
-    nlinarith
+    calc
+      H ^ 3 = H ^ 2 * H := by ring
+      _ ≤ (d / 100) * (d / 10) := hprod
+      _ = (1 / 1000 : ℝ) * d ^ 2 := by ring
   rw [mul_div_assoc]
   linarith
 

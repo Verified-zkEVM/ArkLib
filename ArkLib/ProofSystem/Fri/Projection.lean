@@ -6,7 +6,8 @@ Authors: Alexander Hicks
 
 module
 
-public import ArkLib.ProofSystem.Fri.QuerySoundness
+public import ArkLib.ProofSystem.Fri.FoldingSoundness
+public import ArkLib.Data.CodingTheory.ListDecodability.AgreementRadius
 
 /-!
 # Agreement lifting along the executable FRI query projections
@@ -24,6 +25,50 @@ open Domain ProximityGap ReedSolomon LinearCode Polynomial
 open CosetFftDomainClass (sqFoldMapGen)
 
 variable {F : Type} [Field F] [DecidableEq F] {n a k d : ℕ}
+
+/-! ## Density under projection -/
+
+omit [DecidableEq F] in
+/-- Taking the image under a folding map cannot decrease the density of a set. -/
+theorem card_le_mul_card_sqFoldMapGen_image {n : ℕ} (domain : SmoothCosetFftDomain n F)
+    (k : ℕ) (S : Finset (Fin (2 ^ n))) :
+    S.card ≤ 2 ^ k * (S.image (sqFoldMapGen (i := k))).card := by
+  classical
+  apply Finset.card_le_mul_card_image
+  intro x _
+  apply le_trans (Finset.card_le_card (t :=
+    CosetFftDomainClass.blockIdx domain k (domain.subdomain k x)) ?_)
+    (by simp)
+  intro i hi
+  obtain ⟨_, hix⟩ := Finset.mem_filter.mp hi
+  rw [CosetFftDomainClass.mem_blockIdx,
+    ← CosetFftDomainClass.pow_eq_subdomain_sqFoldMapGen (ω := domain) (i := k) i, hix]
+
+/-- Convert agreement on a large accepting set into a density bound. The lifting premise
+is independent of the representation of a commitment transcript. -/
+theorem accepting_density_le_of_agreement {n d : ℕ} (domain : SmoothCosetFftDomain n F)
+    (f : Fin (2 ^ n) → F) (S : Finset (Fin (2 ^ n))) (θ δ : ℝ)
+    (hlift : (2 ^ n : ℝ) * (1 - θ) ≤ S.card →
+      ∃ u ∈ code domain d, ∀ i ∈ S, u i = f i)
+    (hdist : ∀ u ∈ code domain d, δ ≤ (Code.relHammingDist f u : ℝ)) :
+    (S.card : ℝ) / 2 ^ n ≤ 1 - min θ δ := by
+  classical
+  have hn : (0 : ℝ) < 2 ^ n := by positivity
+  by_cases hlarge : (2 ^ n : ℝ) * (1 - θ) ≤ S.card
+  · obtain ⟨u, hu, hagree⟩ := hlift hlarge
+    have hc : S.card ≤ Code.agree u f := by
+      apply Finset.card_le_card
+      intro i hi
+      exact Finset.mem_filter.mpr ⟨Finset.mem_univ _, hagree i hi⟩
+    have hdensity : δ ≤ 1 - (S.card : ℝ) / 2 ^ n := by
+      have h := (hdist u hu).trans (Code.relHammingDist_le_one_sub_div_of_le_agree hc)
+      simpa only [Fintype.card_fin, Nat.cast_pow, Nat.cast_ofNat] using h
+    exact (le_sub_comm.mp hdensity).trans (sub_le_sub_left (min_le_right θ δ) 1)
+  · have hdensity : (S.card : ℝ) / 2 ^ n ≤ 1 - θ := by
+      exact (div_le_iff₀ hn).mpr (by simpa [mul_comm] using (not_le.mp hlarge).le)
+    exact hdensity.trans (sub_le_sub_left (min_le_left θ δ) 1)
+
+/-! ## Lifting through a projected fold -/
 
 /-- Lift a polynomial agreement certificate through a safe fold, on the projected positions
 of a large set of original queries. This reconciles absolute and nested domain indexing. -/

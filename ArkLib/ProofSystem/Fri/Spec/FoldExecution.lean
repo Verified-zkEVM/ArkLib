@@ -204,7 +204,7 @@ theorem toVerifier_run (d : ℕ+) (α : Fin k → F)
   simp only [finalFoldVerifier, OptionT.run_bind, hlift,
     Option.elimM, simulateQ_bind, simulateQ_map, simulate_getConst, map_pure,
     pure_bind, Option.elim_some]
-  split_ifs <;> simp [guard, *]
+  split_ifs with hdegree <;> simp [guard, hdegree]
 
 end FinalFoldPhase
 

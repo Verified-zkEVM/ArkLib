@@ -68,46 +68,6 @@ Hilbert polynomials of several components at a common degree.
   degree at least the natural degree.
 * `Polynomial.coeff_taylor_of_natDegree_le`: a Taylor shift preserves the coefficients in degrees
   at least the natural degree.
-
-## References
-
-Ported from ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`, namespace
-`AffineHilbert`: `polynomial_eq_of_eval_nat_ge` from
-`ArkLib/ToMathlib/AlgebraicGeometry/Hilbert/Polynomial.lean`, and `backwardDifference`,
-`natDegree_backwardDifference_le`, `coeff_backwardDifference_pred_natDegree`,
-`backwardDifference_natDegree_eq_and_leadingCoeff`, the private
-`leadingCoeff_nonneg_of_eventually_eval_nat_nonneg` and
-`natDegree_le_of_eventually_eval_nat_le` from
-`ArkLib/ToMathlib/AlgebraicGeometry/PrincipalCut/Degree.lean`. The source worked over `ℚ` with a
-natural shift `b`. Here equality on a tail holds over any commutative domain of characteristic
-zero; the backward-difference algebra holds over any commutative ring with a shift in the ring,
-and the coefficient identity needs no positivity of the degree; the order statements hold over
-any Archimedean ordered normed field with the order topology. The comparison lemma
-`natDegree_le_of_eventually_eval_natCast_le` no longer assumes `Q ≠ 0`. The final lemma is the
-polynomial half of the source's `principalCut_eventualPolynomial_degree_and_coeff`, separated from
-the Hilbert-function inequality. It needs neither a sign condition on `b` nor the eventual
-positivity of `P`, which the source took from the Hilbert function, and its conclusion also holds
-for `Q = 0`, so the source's disjunction with `Q = 0` is not needed.
-
-From `ArkLib/ToMathlib/AlgebraicGeometry/Hilbert/PolynomialGrowthRescaling.lean`:
-`natDegree_comp_C_mul_X`, `natDegree_le_of_eventually_eval_nat_le_rescaled` and
-`natDegree_eq_of_eventually_eval_nat_sandwich`; from
-`ArkLib/ToMathlib/AlgebraicGeometry/Hilbert/PolynomialGrowthAffine.lean`:
-`natDegree_le_of_eventually_eval_nat_le_mul_affine`. The source stated these over `ℚ` with natural
-constants `m, c > 0` and `d`, and assumed the compared polynomials nonzero. Here the constants are
-arbitrary elements of the field and no nonzero or positivity hypothesis is needed, since
-`C m * P.comp (C c * X + C d)` has natural degree at most that of `P` in every case; the
-rescaling-only form is `d = 0`, `m = 1`. The sandwich needs only the eventual nonnegativity of the
-lower polynomial, and `natDegree_comp_C_mul_X` becomes `natDegree_comp_C_mul_X_add_C` over any
-semiring without zero divisors.
-
-From `ArkLib/ToMathlib/AlgebraicGeometry/Hilbert/PrimeFamilyCoefficient.lean`:
-`coeff_nonneg_of_natDegree_le_of_eventually_eval_nat_nonneg`,
-`coeff_le_of_natDegree_le_of_eventually_eval_nat_le` and `coeff_taylor_eq_of_natDegree_le`. The
-source stated them over `ℚ`; the first two hold over any Archimedean ordered normed field with the
-order topology, as the other order statements here, and the Taylor lemma over any commutative
-semiring. Mathlib has `Polynomial.coeff_taylor_natDegree` for the degree `natDegree P` itself;
-`coeff_taylor_of_natDegree_le` extends it to every larger degree.
 -/
 
 @[expose] public section
@@ -149,6 +109,7 @@ variable {R : Type*} [CommRing R]
 def backwardDifference (b : R) (P : R[X]) : R[X] :=
   P - taylor (-b) P
 
+/-- The backward difference with step `b` evaluates at `x` to `P x - P (x - b)`. -/
 @[simp]
 theorem eval_backwardDifference (b x : R) (P : R[X]) :
     (backwardDifference b P).eval x = P.eval x - P.eval (x - b) := by

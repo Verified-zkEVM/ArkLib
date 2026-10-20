@@ -27,15 +27,6 @@ variable {F : Type} [NonBinaryField F] [Fintype F] [SampleableType F] [Decidable
 variable {n k : ℕ} {ω : SmoothCosetFftDomain n F}
 variable (s : Fin (k + 1) → ℕ+) (d : ℕ+) (l : ℕ)
 
-/-- The input word, expressed on the initial domain rather than the singleton history. -/
-def initialOracle
-    (stmt : Statement F (0 : Fin (k + 1)) × ∀ j, OracleStatement s ω 0 j) :
-    (ω.subdomain 0).toFinset → F :=
-  cast (by
-    simp only [OracleStatement, finRangeTo, Fin.val_zero, List.take_zero,
-      List.toFinset_nil, Finset.sum_empty]
-    rfl) (stmt.2 0)
-
 /-- For an input outside the proximity language, any terminal event implying query acceptance
 has probability at most the sum of the folding MCA errors and `(1 - min θ δ)^l`. -/
 theorem terminalEvent_prob_le (hs : (∑ j, (s j).val) ≤ n) (θ δ : ℝ)

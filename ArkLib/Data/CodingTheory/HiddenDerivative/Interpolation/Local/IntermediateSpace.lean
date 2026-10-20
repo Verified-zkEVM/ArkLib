@@ -31,6 +31,9 @@ generators and the factors of the exhibited product have bounded weight, and
 `MvPolynomial.bind₁_mem_restrictWeightAtMost` and `MvPolynomial.mul_mem_restrictWeightAtMost`
 carry the bounds through.
 
+Both spaces are defined by their support conditions for every `d`; only the dimension formulas
+assume `d > 0`.
+
 ## Main statements
 
 * `finrank_localIntermediateSpace`: for `d > 0`, the intermediate space has dimension
@@ -44,33 +47,8 @@ carry the bounds through.
 
 ## References
 
-Ported from
-`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Local/IntermediateSpace.lean`
-at ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d:
-`LocalIntermediateEligibleExponent`, `localIntermediateSpace`,
-`finrank_localIntermediateSpace`, `KernelSliceSourceEligibleExponent`, `kernelSliceSourceSpace`,
-`tDegree_eq_zero_of_mem_kernelSliceSourceSpace`, `finrank_kernelSliceSourceSpace`,
-`translatedLocalTruncation_mem_localIntermediateSpace`,
-`truncate_exhibitedKernelMultiplier_mem_localIntermediateSpace` (here
-`truncateLocalT_exhibitedKernelMultiplier_mem_localIntermediateSpace`), `boundedExhibitedKernelMap`,
-`intermediateConstraintMap`, and `intermediateConstraintMap_boundedExhibitedKernelMap_eq_zero`.
-The weights `localFirstJetWeight` and `localHigherJetWeight` and the coordinate equivalence
-`localExponentCoordinatesEquiv` are in `HiddenDerivative/Variables.lean`. The source
-defined both spaces by explicit finite exponent sets built from coordinate equivalences, and so
-required `0 < d` in the definitions; here the spaces are defined by their support predicates for
-every `d`, and `0 < d` is assumed only in the dimension formulas. The source's hypothesis `r < m`
-on the exhibited map is dropped, since the truncation alone keeps the product in the space. The
-source's private signed support-weight lemmas are replaced by
-`ArkLib.Data.MvPolynomial.WeightAtMost`. The source's `translatedExactLocalTruncation` and
-`exactLocalConstraintAt_eq_intermediate_comp_translated` are already in
-`Interpolation/Local/Rank.lean`, stated there for an arbitrary space `S`.
-
-Not ported: the source's `LocalIntermediateIndex`, `localIntermediateExponents`,
-`localIntermediateSpaceBasis`, and the kernel-slice analogues. The dimension formulas here do not
-need them, and no consumer in the source uses them.
-
-* Brakensiek, Chen, Putterman, Zhang, and Zheng, *Algorithmic List Decoding of Reed--Solomon
-  Codes up to Capacity in the Low-Rate Regime*, ECCC TR26-164, Section 3.
+* [Brakensiek, J., Chen, Y., Putterman, A., Zhang, Z., and Zheng, K. Z., *Algorithmic List
+  Decoding of Reed–Solomon Codes up to Capacity in the Low-Rate Regime*][BCPZZ26], Section 3.
 -/
 
 @[expose] public section
@@ -99,6 +77,8 @@ def localIntermediateSpace (F : Type*) [CommSemiring F] (d m M W : ℕ) :
     Submodule F (LocalPolynomial F d) :=
   restrictSupport F {e | LocalIntermediateExponent d m M W e}
 
+/-- `P` lies in `localIntermediateSpace F d m M W` iff every exponent in its support satisfies
+`LocalIntermediateExponent d m M W`. -/
 theorem mem_localIntermediateSpace_iff {F : Type*} [CommSemiring F] {m M W : ℕ}
     {P : LocalPolynomial F d} :
     P ∈ localIntermediateSpace F d m M W ↔
@@ -116,6 +96,8 @@ def kernelSliceSourceSpace (F : Type*) [CommSemiring F] (d r M W h : ℕ) :
     Submodule F (LocalPolynomial F d) :=
   restrictSupport F {e | KernelSliceSourceExponent d r M W h e}
 
+/-- `G` lies in `kernelSliceSourceSpace F d r M W h` iff every exponent in its support satisfies
+`KernelSliceSourceExponent d r M W h`. -/
 theorem mem_kernelSliceSourceSpace_iff {F : Type*} [CommSemiring F] {r M W h : ℕ}
     {G : LocalPolynomial F d} :
     G ∈ kernelSliceSourceSpace F d r M W h ↔
@@ -369,6 +351,8 @@ def boundedExhibitedKernelMap (m r M W h : ℕ) :
     (kernelSliceSourceSpace R d r M W h))).codRestrict (localIntermediateSpace R d m M W)
       fun G => truncateLocalT_exhibitedKernelMultiplier_mem_localIntermediateSpace G.2
 
+/-- `boundedExhibitedKernelMap m r M W h G` is the reduction modulo `T^m` of
+`exhibitedKernelFactor d r h * G`. -/
 @[simp]
 theorem boundedExhibitedKernelMap_apply (m r M W h : ℕ) (G : kernelSliceSourceSpace R d r M W h) :
     (boundedExhibitedKernelMap m r M W h G : LocalPolynomial R d) =

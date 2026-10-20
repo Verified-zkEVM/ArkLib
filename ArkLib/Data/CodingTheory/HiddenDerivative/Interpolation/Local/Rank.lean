@@ -24,7 +24,10 @@ injectively into the kernel of the enlarged map on `S`, the rank is at most
 `finrank S - finrank K`. The bound depends on `S` and `K` but not on the received point, which is
 what makes it uniform over all points at once.
 
-Neither bound claims equality with the true rank: `K` need not span the kernel.
+Neither bound claims equality with the true rank: `K` need not span the kernel. The certified
+bound `finrank_exactLocalConstraintAt_le_certifiedEnlargedRankBound` of
+`Interpolation/Local/CertifiedRankBound.lean` is the instance of
+`finrank_range_exactLocalConstraintAt_le_sub` with `S = localIntermediateSpace`.
 
 ## Main statements
 
@@ -35,28 +38,11 @@ Neither bound claims equality with the true rank: `K` need not span the kernel.
 
 ## References
 
-Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Local/Rank.lean`
-at ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d. The source's two linear-algebra
-lemmas `finrank_range_le_sub_finrank_of_injective_to_ker` and `finrank_range_comp_le_outer` are
-now `LinearMap.finrank_range_le_sub_of_injective_ker` and `LinearMap.finrank_range_comp_le_left`
-in `ArkLib.ToMathlib.LinearAlgebra.FiniteDimensional`. The source's
-`finrank_intermediateConstraintMap_le_certifiedEnlargedRankBound` and
-`finrank_exactLocalConstraintAt_le_certifiedEnlargedRankBound` are stated for one specific space
-(`localIntermediateSpace`), one specific kernel family, and the explicit count
-`certifiedEnlargedRankBound d m M W`; `finrank_range_exactLocalConstraintAt_le_sub` is their
-common form for an arbitrary finite-dimensional `S` and an arbitrary injection into the kernel.
-
-Deferred to the next slice: the intermediate space `localIntermediateSpace` and the proof that it
-contains the translated truncations (`Interpolation/Local/IntermediateSpace.lean`), the exhibited
-kernel family and its injectivity (`ConstraintKernel.lean`, `KernelSliceIndependence.lean`), the
-dimension counts (`Counting.lean`), and
-`ambient_sub_exhibitedKernel_eq_certifiedEnlargedRankBound`. With those, the source theorems are
-instances of `finrank_range_exactLocalConstraintAt_le_sub`.
-
-* [Brakensiek, Chen, Putterman, Zhang, and Zheng, *Algorithmic List Decoding of Reed--Solomon
-  Codes up to Capacity in the Low-Rate Regime*][BCPZZ26], ECCC TR26-164, Section 3.
-* [Dao, Kominers, Thaler, and Zheng, *Reed--Solomon List Decoding and Mutual Correlated Agreement
-  up to Capacity*][DKTZ26], exact finite interpolation analysis.
+* [Brakensiek, J., Chen, Y., Putterman, A., Zhang, Z., and Zheng, K. Z., *Algorithmic List
+  Decoding of Reed–Solomon Codes up to Capacity in the Low-Rate Regime*][BCPZZ26], Section 3.
+* [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient
+  Decoding and Smaller Cryptographic Proofs*][DKT26], Section 3.5, the rows (17)–(18), and
+  Section 6.1, the local-rank bound (72).
 -/
 
 @[expose] public section

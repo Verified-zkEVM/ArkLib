@@ -6,6 +6,7 @@ Authors: Alexander Hicks
 
 import ArkLib.ProofSystem.Fri.Spec.Soundness
 import ArkLib.ProofSystem.Fri.ErrorBounds
+import ArkLib.ProofSystem.Fri.QuerySoundness
 
 /-!
 # Computable FRI soundness trust checks
@@ -36,11 +37,11 @@ info: 'Fri.Spec.soundness' depends on axioms:
 #print axioms Fri.Spec.soundness
 
 /--
-info: 'Fri.Spec.rbrSoundness' depends on axioms:
+info: 'Fri.Spec.rbr_soundness' depends on axioms:
 [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Fri.Spec.rbrSoundness
+#print axioms Fri.Spec.rbr_soundness
 
 /--
 info: 'Fri.foldingAgreementFailure_prob_le_generalizedJohnson' depends on axioms:

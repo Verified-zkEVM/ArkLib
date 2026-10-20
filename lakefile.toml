@@ -18,7 +18,7 @@ linter.style.header = false
 [[require]]
 name = "VCVio"
 git = "https://github.com/Verified-zkEVM/VCVio"
-rev = "d7089e46d69e07640fa23b5ae6b1b966f1d4b949"
+rev = "afa6593f15e1e79ecb3cf22fc56191cecb452bb0"
 
 [[require]]
 name = "«doc-gen4»"
@@ -33,7 +33,7 @@ rev = "lean4.18.0"
 [[require]]
 name = "CompPoly"
 git = "https://github.com/Verified-zkEVM/CompPoly"
-rev = "v4.34.0"
+rev = "v4.34.0-patch2"
 
 [[lean_lib]]
 name = "ArkLibLintPlugin"
@@ -95,6 +95,13 @@ allowNonModules = true
 name = "hachi-runtime"
 srcDir = "scripts"
 root = "HachiRuntime"
+allowNonModules = true
+
+# Compiled checks for CompPoly-backed messages through the shared native Sumcheck executor.
+[[lean_exe]]
+name = "sumcheck-runtime"
+srcDir = "scripts"
+root = "SumcheckRuntime"
 allowNonModules = true
 
 # Lean-native, exception-free source-policy gate. Since the executable imports Lake, it must link

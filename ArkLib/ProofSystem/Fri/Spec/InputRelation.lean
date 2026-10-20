@@ -6,14 +6,15 @@ Authors: Alexander Hicks
 
 module
 
-public import ArkLib.ProofSystem.Fri.Spec.AdaptiveSoundness
+public import ArkLib.ProofSystem.Fri.Spec.General
 public import ArkLib.ToMathlib.InformationTheory.Hamming
 
 /-!
 # The FRI input relation and Reed–Solomon proximity
 
-This connects the computational polynomial witness in the existing specification with
-the existing Reed–Solomon code. Coordinate reindexing uses the domain's canonical equivalence.
+The input word and strict Reed–Solomon proximity language are defined here, independently
+of the probabilistic soundness argument. A word in that language supplies a computational
+polynomial witness for the specification's closed-ball input relation.
 -/
 
 @[expose] public section
@@ -26,6 +27,20 @@ open scoped NNReal
 variable {F : Type} [NonBinaryField F] [Fintype F] [DecidableEq F]
 variable {n k : ℕ} {ω : SmoothCosetFftDomain n F}
 variable (s : Fin (k + 1) → ℕ+) (d : ℕ+)
+
+/-- The input word, extracted from the initial singleton oracle history. -/
+def initialOracle
+    (stmt : Statement F (0 : Fin (k + 1)) × ∀ j, OracleStatement s ω 0 j) :
+    (ω.subdomain 0).toFinset → F :=
+  cast (by
+    simp only [OracleStatement, finRangeTo, Fin.val_zero, List.take_zero,
+      List.toFinset_nil, Finset.sum_empty]
+    rfl) (stmt.2 0)
+
+/-- Words at relative distance strictly less than `δ` from the initial Reed–Solomon code. -/
+def proximityLanguage (δ : ℝ) : Set ((ω.subdomain 0).toFinset → F) :=
+  {f | ∃ u ∈ code ω (2 ^ (∑ j, (s j).val) * d.val),
+    (Code.relHammingDist (fun z ↦ f (initialQuery z)) u : ℝ) < δ}
 
 /-- A word strictly within radius `δ` of the initial code has a witness in the existing
 FRI input relation, which uses a closed proximity ball. -/

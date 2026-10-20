@@ -9,9 +9,16 @@ public import ArkLib.OracleReduction.Composition.Sequential.General
 public import ArkLib.ProofSystem.Fri.Spec.SingleRound
 
 /-!
-# ArkLib.ProofSystem.Fri.Spec.General
+# Composition of the FRI oracle reduction
 
-Definitions and results for this component of ArkLib.
+`pSpec` appends `k` non-final folding rounds, one final folding round, and a query round.
+`reductionFold` retains the committed words and checks the final polynomial's degree;
+`reduction` then checks folding consistency along the sampled query paths.
+
+The input relation is the closed relative-Hamming ball of radius `δ` around evaluations
+of the initial degree-bounded witness. The output relation compares the final polynomial
+with the final witness. The corresponding soundness theorems are in
+`ArkLib.ProofSystem.Fri.Spec.Soundness`.
 -/
 
 @[expose] public section
@@ -22,18 +29,6 @@ open OracleSpec OracleComp ProtocolSpec NNReal Domain
 
 namespace Spec
 
-/- FRI parameters:
-   - `F` a non-binary finite field.
-   - `D` the cyclic subgroup of order `2 ^ n` we will to construct the evaluation domains.
-   - `x` the element of `Fˣ` we will use to construct our evaluation domain.
-   - `k` the number of, non final, folding rounds the protocol will run.
-   - `s` the "folding degree" of each round,
-         a folding degree of `1` this corresponds to the standard "even-odd" folding.
-   - `d` the degree bound on the final polynomial returned in the final folding round.
-   - `domain_size_cond`, a proof that the initial evaluation domain is large enough to test
-      for proximity of a polynomial of appropriate degree.
-  - `l`, the number of round consistency checks to be run by the query round.
--/
 variable {F : Type} [NonBinaryField F] [Fintype F] [DecidableEq F]
 variable {n : ℕ}
 variable (k : ℕ) (s : Fin (k + 1) → ℕ+) (d : ℕ+)
@@ -41,25 +36,21 @@ variable (dom_size_cond : (2 ^ (∑ i, (s i).1)) * d ≤ 2 ^ n)
 variable (l : ℕ)
 variable {ω : SmoothCosetFftDomain n F}
 
-/- Input/Output relations for the FRI protocol. -/
+/-- The initial word is within relative Hamming distance `δ` of its polynomial witness. -/
 def inputRelation (δ : ℝ≥0) :
-    Set
-      (
-        (Statement (k := k) F 0 × (∀ j, OracleStatement (k := k) s ω 0 j)) ×
-        Witness F s d (0 : Fin (k + 2))
-      ) :=
+    Set ((Statement (k := k) F 0 × (∀ j, OracleStatement (k := k) s ω 0 j)) ×
+      Witness F s d (0 : Fin (k + 2))) :=
   match k with
   | 0 => FinalFoldPhase.inputRelation s (ω := ω) d (round_bound dom_size_cond) δ
   | .succ _ => FoldPhase.inputRelation s (ω := ω) d 0 (round_bound dom_size_cond) δ
 
+/-- The final polynomial's evaluations are within distance `δ` of the final witness. -/
 def outputRelation (δ : ℝ≥0) :
-    Set
-      (
-        (FinalStatement F k × ∀ j, FinalOracleStatement s ω j) ×
-        Witness F s d (Fin.last (k + 1))
-      ) := QueryRound.outputRelation s (ω := ω) d (round_bound dom_size_cond) δ
+    Set ((FinalStatement F k × ∀ j, FinalOracleStatement s ω j) ×
+      Witness F s d (Fin.last (k + 1))) :=
+  QueryRound.outputRelation s (ω := ω) d (round_bound dom_size_cond) δ
 
-/- Protocol spec for the combined non-final folding rounds of the FRI protocol. -/
+/-- The sequence of non-final folding rounds. -/
 @[reducible]
 def pSpecFold : ProtocolSpec (Fin.vsum fun (_ : Fin k) ↦ 2) :=
   ProtocolSpec.seqCompose (fun (i : Fin k) => FoldPhase.pSpec (ω := ω) s i)
@@ -94,7 +85,7 @@ instance :
           QueryRound.pSpec (ω := ω) l)).Challenge j) :=
   ProtocolSpec.challengeOracleInterface
 
-/- Oracle reduction for all folding rounds of the FRI protocol -/
+/-- Commit all folded words and the final polynomial, checking the final degree bound. -/
 @[reducible]
 def reductionFold :
     OracleReduction []ₒ
@@ -107,7 +98,7 @@ def reductionFold :
         (FoldPhase.foldOracleReduction s (ω := ω) d))
       (FinalFoldPhase.finalFoldOracleReduction (k := k) s d)
 
-/- Oracle reduction of the FRI protocol. -/
+/-- The complete FRI reduction, including the final query checks. -/
 @[reducible]
 def reduction :
     OracleReduction []ₒ

@@ -6,7 +6,7 @@ Authors: Yoichi Hirai, Pietro Monticone, Aristotle (Harmonic), Alexander Hicks
 
 module
 
-public import ArkLib.ProofSystem.Fri.FoldingSoundness
+public import ArkLib.ProofSystem.Fri.Projection
 public import ArkLib.Data.CodingTheory.ListDecodability.AgreementRadius
 
 /-!
@@ -46,53 +46,7 @@ open scoped BigOperators ProbabilityTheory
 
 variable {F : Type} [Field F] [DecidableEq F]
 
-omit [DecidableEq F] in
-/-- Taking the image under a folding map cannot decrease the density of a set. -/
-theorem card_le_mul_card_sqFoldMapGen_image {n : ℕ} (domain : SmoothCosetFftDomain n F)
-    (k : ℕ) (S : Finset (Fin (2 ^ n))) :
-    S.card ≤ 2 ^ k * (S.image (sqFoldMapGen (i := k))).card := by
-  classical
-  apply Finset.card_le_mul_card_image
-  intro x _
-  apply le_trans (Finset.card_le_card (t :=
-    CosetFftDomainClass.blockIdx domain k (domain.subdomain k x)) ?_)
-    (by simp)
-  intro i hi
-  obtain ⟨_, hix⟩ := Finset.mem_filter.mp hi
-  rw [CosetFftDomainClass.mem_blockIdx,
-    ← CosetFftDomainClass.pow_eq_subdomain_sqFoldMapGen (ω := domain) (i := k) i, hix]
-
-/-- Convert agreement on a large accepting set into a density bound. The lifting premise
-is independent of the representation of a commitment transcript. -/
-theorem accepting_density_le_of_agreement {n d : ℕ} (domain : SmoothCosetFftDomain n F)
-    (f : Fin (2 ^ n) → F) (S : Finset (Fin (2 ^ n))) (θ δ : ℝ)
-    (hlift : (2 ^ n : ℝ) * (1 - θ) ≤ S.card →
-      ∃ u ∈ code domain d, ∀ i ∈ S, u i = f i)
-    (hdist : ∀ u ∈ code domain d, δ ≤ (Code.relHammingDist f u : ℝ)) :
-    (S.card : ℝ) / 2 ^ n ≤ 1 - min θ δ := by
-  classical
-  have hn : (0 : ℝ) < 2 ^ n := by positivity
-  by_cases hlarge : (2 ^ n : ℝ) * (1 - θ) ≤ S.card
-  · obtain ⟨u, hu, hagree⟩ := hlift hlarge
-    have hc : S.card ≤ Code.agree f u := by
-      apply Finset.card_le_card
-      intro i hi
-      exact Finset.mem_filter.mpr ⟨Finset.mem_univ _, (hagree i hi).symm⟩
-    have hsum' : (Code.agree f u : ℝ) + (hammingDist f u : ℝ) = 2 ^ n := by
-      exact_mod_cast (show Code.agree f u + hammingDist f u = 2 ^ n by
-        simpa only [Fintype.card_fin] using Code.agree_add_hammingDist (u := f) (v := u))
-    have hd := hdist u hu
-    rw [Code.relHammingDist_coe] at hd
-    simp only [Fintype.card_fin, Nat.cast_pow, Nat.cast_ofNat] at hd
-    have hd' := (le_div_iff₀ hn).mp hd
-    apply (div_le_iff₀ hn).mpr
-    have hmin := min_le_right θ δ
-    have hc' : (S.card : ℝ) ≤ Code.agree f u := by exact_mod_cast hc
-    nlinarith
-  · apply (div_le_iff₀ hn).mpr
-    have hmin := min_le_left θ δ
-    push Not at hlarge
-    nlinarith
+/-! ## Fixed commitment traces -/
 
 /-- The algebraic data read by FRI's query phase. At each step the degree bound and domain
 shrink by the folding factor; the last word is checked for membership in its RS code. -/
@@ -139,6 +93,8 @@ noncomputable def accepting : {n d : ℕ} → {domain : SmoothCosetFftDomain n F
 def Accepts (tr : FoldTrace domain d) {t : ℕ} (xs : Fin t → Fin (2 ^ n)) : Prop :=
   tr.FinalInCode ∧ ∀ j, xs j ∈ tr.accepting
 
+/-! ## Query probability and agreement lifting -/
+
 /-- For a valid final word, independent uniform repetitions accept with probability equal
 to the accepting density raised to the number of repetitions. -/
 theorem query_acceptance_probability (tr : FoldTrace domain d) (t : ℕ)
@@ -146,7 +102,8 @@ theorem query_acceptance_probability (tr : FoldTrace domain d) (t : ℕ)
     Pr{let xs ←$ᵗ (Fin t → Fin (2 ^ n))}[tr.Accepts xs] =
       ((tr.accepting.card : ENNReal) / (2 ^ n : ENNReal)) ^ t := by
   classical
-  simp only [Accepts, hfinal, true_and]
+  rw [prEvent_congr _ _ (fun xs ↦ ∀ j, xs j ∈ tr.accepting)
+    (fun xs ↦ by simp only [Accepts, hfinal, true_and])]
   simpa using Probability.prob_uniform_pi_mem_finset_eq tr.accepting t
 
 /-- A lower bound on repeated-query acceptance implies the corresponding density bound.
@@ -230,7 +187,8 @@ theorem query_soundness (tr : FoldTrace domain d) (θ δ : ℝ) (t : ℕ)
     apply pow_le_pow_left' _ t
     have h := ENNReal.ofReal_le_ofReal (tr.accepting_density_le θ δ hsafe hfinal hdist)
     simpa [ENNReal.ofReal_div_of_pos, show (0 : ℝ) < 2 ^ n by positivity] using h
-  · simp only [Accepts, hfinal, false_and]
+  · rw [prEvent_congr _ _ (fun _ ↦ False)
+      (fun xs ↦ by simp only [Accepts, hfinal, false_and])]
     rw [prEvent_const_of_not _ not_false]
     exact zero_le
 
@@ -249,6 +207,8 @@ theorem query_soundness_distance (tr : FoldTrace domain d) (θ : ℝ) (t : ℕ)
     exact ENNReal.coe_ne_top
   simpa [Code.relHammingDist, ENNReal.coe_NNRat_coe_NNReal] using
     ENNReal.toReal_mono hfinite h
+
+/-! ## Binding and interpolation -/
 
 /-- On a safe trace with a valid final word, an accepting set meeting the agreement-lifting
 threshold and containing at least `d` positions determines a unique original codeword. -/
@@ -344,7 +304,8 @@ theorem exists_codeword_of_query_probability (tr : FoldTrace domain d)
   have hfinal : tr.FinalInCode := by
     by_contra h
     have hzero : Pr{let xs ← $ᵗ (Fin t → Fin (2 ^ n))}[tr.Accepts xs] = 0 := by
-      simp only [Accepts, h, false_and]
+      rw [prEvent_congr _ _ (fun _ ↦ False)
+        (fun xs ↦ by simp only [Accepts, h, false_and])]
       exact prEvent_const_of_not _ not_false
     have hpos : 0 < ENNReal.ofReal (1 - δ) ^ t :=
       pos_iff_ne_zero.mpr (pow_ne_zero _ (ne_of_gt (ENNReal.ofReal_pos.mpr (by linarith))))

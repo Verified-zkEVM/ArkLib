@@ -2,11 +2,6 @@
 Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: František Silváši, Julian Sutherland, Ilia Vlasov
-
-[BCIKS20] refers to the paper "Proximity Gaps for Reed-Solomon Codes" by Eli Ben-Sasson,
-Dan Carmon, Yuval Ishai, Swastik Kopparty, and Shubhangi Saraf.
-
-Using {https://eprint.iacr.org/2020/654}, version 20210703:203025.
 -/
 module
 
@@ -32,9 +27,17 @@ public import ArkLib.ToMathlib.Finset.Basic
 public import Mathlib.Algebra.Ring.NonZeroDivisors
 
 /-!
-# ArkLib.ProofSystem.BatchedFri.Security
+# FRI and batched FRI completeness and security statements
 
-Definitions and results for this component of ArkLib.
+The legacy analysis follows Claims 8.1–8.3 of [BCIKS20], version July 3, 2021:
+`fri_round_consistency_completeness`, `fri_query_soundness`, and `fri_soundness`.
+These statements retain admitted proofs. The separate end-to-end proof for the computable
+FRI reduction is in `ArkLib.ProofSystem.Fri.Spec.Soundness`.
+
+## References
+
+* [Ben-Sasson, E., Carmon, D., Ishai, Y., Kopparty, S., Saraf, S.,
+  *Proximity Gaps for Reed–Solomon Codes*][BCIKS20]
 -/
 
 @[expose] public section
@@ -249,11 +252,7 @@ noncomputable def f_succ'
   (pows z _ *ᵥ VDMInv n s s₀ k_le_n *ᵥ Finset.restrict (cosetG n s s₀) f) ()
 
 omit [Fintype 𝔽] in
-/-- This theorem asserts that given an appropriate codeword,
-  `f` of an appropriate Reed-Solomon code, the result of honestly folding the corresponding
-  polynomial is then itself a member of the next Reed-Solomon code.
-
-  Corresponds to Claim 8.1 of [BCIKS20] -/
+/-- Honest folding sends a Reed–Solomon codeword to the next Reed–Solomon code. -/
 lemma fri_round_consistency_completeness
     {f : ReedSolomon.code
     (⟨fun x => x, by simp⟩ : evalDomainSigma s ω i ↪ 𝔽)
@@ -336,18 +335,11 @@ lemma queryRoundMessage_domain_false {l : ℕ}
   have h := this ▸ i.1.2
   simp at h
 
-local instance {l : ℕ} : ∀ q,
-    MeasurableSpace (([(Spec.QueryRound.pSpec l (ω := ω)).Message]ₒ).Range q) := fun _ => ⊤
-
-local instance {l : ℕ} : ∀ q,
-    DiscreteMeasurableSpace (([(Spec.QueryRound.pSpec l (ω := ω)).Message]ₒ).Range q) :=
-  fun _ => inferInstance
-
 noncomputable instance {l : ℕ} :
-    IsUniformMeasureSpec ([(Spec.QueryRound.pSpec l (ω := ω)).Message]ₒ) :=
-  @IsUniformMeasureSpec.ofFiniteNonempty _ _
+    UniformAnswerMeasure ([(Spec.QueryRound.pSpec l (ω := ω)).Message]ₒ) :=
+  @UniformAnswerMeasure.ofFiniteNonempty _ _
     (fun i => (queryRoundMessage_domain_false (i := i)).elim)
-    (fun i => (queryRoundMessage_domain_false (i := i)).elim) _ _
+    (fun i => (queryRoundMessage_domain_false (i := i)).elim)
 
 omit [Fintype 𝔽] in
 open ENNReal in
@@ -637,16 +629,16 @@ noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain n 𝔽} :
                       Spec.QueryRound.pSpec (ω := ω) l)).Challenge]ₒ).Range q))
 
 noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain n 𝔽} :
-    IsUniformMeasureSpec
+    UniformAnswerMeasure
       ([]ₒ +
         [((BatchedFri.Spec.BatchingRound.batchSpec 𝔽 t) ++ₚ
             (Spec.pSpecFold (ω := ω) k s ++ₚ
               Spec.FinalFoldPhase.pSpec 𝔽 ++ₚ
                 Spec.QueryRound.pSpec (ω := ω) l)).Challenge]ₒ) :=
-  IsUniformMeasureSpec.ofFiniteNonempty _
+  UniformAnswerMeasure.ofFiniteNonempty _
 
 open ENNReal in
-/-- Corresponds to Claim 8.2 of [BCIKS20] -/
+/-- A bound on joint agreement bounds the acceptance probability of batched query checks. -/
 lemma fri_query_soundness
     [SampleableType 𝔽]
     {t : ℕ}
@@ -764,7 +756,7 @@ lemma fri_query_soundness
   -- ·
 
 open ENNReal in
-/-- Corresponds to Claim 8.3 of [BCIKS20] -/
+/-- Acceptance above the commitment and query error implies joint agreement with the code. -/
 lemma fri_soundness
     {t l m : ℕ}
   (f : Fin t.succ → (ω → 𝔽))
@@ -775,12 +767,12 @@ lemma fri_soundness
         (⟨fun x => x, by simp⟩ : ω ↪ 𝔽)
     let α : ℝ≥0 := (ρ_sqrt * (1 + 1 / (2 * (m : ℝ≥0))))
     (∃ prov : OracleProver (WitOut := Unit) ..,
-        Pr{let _ ← OracleReduction.run () f ()
+        Pr{let _ ← (OracleReduction.run () f ()
             ⟨
               prov,
               (BatchedFri.Spec.batchedFRIreduction
                 (ω := ω) (n := n) k s d domain_size_cond l t).verifier
-            ⟩}[True] > εC 𝔽 n s m ρ_sqrt + α ^ l) →
+            ⟩)}[True] > εC 𝔽 n s m ρ_sqrt + α ^ l) →
       Code.jointAgreement
         (F := 𝔽)
         (κ := Fin t.succ)

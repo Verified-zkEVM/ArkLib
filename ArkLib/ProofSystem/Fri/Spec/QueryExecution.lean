@@ -185,6 +185,6 @@ theorem verifyQueries_soundness (d : ℕ+) (hs : (∑ j, (s j).val) ≤ n)
     rw [eval_verifyQueries]
     simp [acceptingQueries, he]
     rfl
-  simpa only [hpoint] using queryChecks_soundness s d hs o α θ δ l hsafe hdegree hdist
+  simpa only [hpoint] using query_checks_soundness s d hs o α θ δ l hsafe hdegree hdist
 
 end Fri.Spec.QueryRound

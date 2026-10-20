@@ -10,7 +10,7 @@ public import ArkLib.Data.CodingTheory.Basic.Distance
 public import ArkLib.Data.CodingTheory.Basic.LinearCode
 public import ArkLib.Data.CodingTheory.Basic.RelativeDistance
 public import ArkLib.Data.CodingTheory.ReedSolomon
-public import VCVio.OracleComp.Constructions.SampleableType.NativeMeasure
+public import VCVio.OracleComp.Constructions.SampleableType.Measure
 public import ArkLib.ProofSystem.Stir.ProximityBound
 
 /-!
@@ -37,7 +37,7 @@ namespace STIR
 /-- Theorem 4.1[BCIKS20] from [ACFY24stir]
   Let `C = RS[F, ι, degree]` be a ReedSolomon code with rate `degree / |ι|`
   and let Bstar(ρ) = √ρ. For all `δ ∈ (0, 1 - Bstar(ρ))`, `f₁,...,fₘ : ι → F`, if
-  `Pr{r ← F}[δᵣ(rⱼ * fⱼ, C) ≤ δ] > err'(degree, ρ, δ, m)`
+  `Pr{let r ← F}[δᵣ(rⱼ * fⱼ, C) ≤ δ] > err'(degree, ρ, δ, m)`
   then ∃ S ⊆ ι, |S| ≥ (1 - δ) * |ι| and
   ∀ i : m, ∃ u : C, u(S) = fᵢ(S) -/
 lemma proximity_gap

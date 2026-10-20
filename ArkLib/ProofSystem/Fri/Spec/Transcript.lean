@@ -27,6 +27,8 @@ variable {F : Type} [NonBinaryField F] [DecidableEq F]
 variable {n k : ℕ} {ω : SmoothCosetFftDomain n F}
 variable (s : Fin (k + 1) → ℕ+) (l : ℕ)
 
+/-! ## Protocol positions -/
+
 /-- Challenge of a non-final folding round in the complete protocol. -/
 def nonfinalChallenge (i : Fin k) : (pSpec k (ω := ω) s l).ChallengeIdx :=
   ChallengeIdx.inl (ChallengeIdx.inl (sigmaChallengeIdxToSeqCompose
@@ -180,6 +182,8 @@ theorem foldChallenge_ne_query (i : Fin (k + 1)) :
   simp only [foldChallenge_val, queryChallenge_val] at hval
   omega
 
+/-! ## Reading and restricting prefixes -/
+
 /-- Read an already sampled folding challenge from a partial transcript. -/
 def readFoldChallenge {m : Fin (((Fin.vsum fun (_ : Fin k) ↦ 2) + 2 + 1) + 1)}
     (tr : (pSpec k (ω := ω) s l).Transcript m) (i : Fin (k + 1))
@@ -268,6 +272,8 @@ def readFinalPolynomial
     (tr.read (finalMessage s l).val (by simpa only [finalMessage_val] using hi))
 
 variable [Fintype F]
+
+/-! ## History before query sampling -/
 
 /-- The retained commitment history at the start of the query phase. -/
 def queryHistory (f : (ω.subdomain 0).toFinset → F)

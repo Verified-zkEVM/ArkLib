@@ -154,8 +154,7 @@ theorem sum_cube_succ {M : Type*} [AddCommMonoid M] (D : SumcheckDomain R (k + 1
     (f : (Fin (k + 1) → R) → M) :
     ∑ x ∈ D.cube, f x = ∑ b ∈ D.points 0, ∑ y ∈ D.tail.cube, f (Fin.cons b y) := by
   rw [← Finset.sum_product']
-  have htail : D.tail.cube = Fintype.piFinset (Fin.tail D.points) := by
-    congr 1
+  have htail : D.tail.cube = Fintype.piFinset (Fin.tail D.points) := rfl
   have hcube : D.cube
       = (D.points 0 ×ˢ D.tail.cube).map (Fin.consEquiv (fun _ : Fin (k + 1) => R)).toEmbedding := by
     rw [htail]

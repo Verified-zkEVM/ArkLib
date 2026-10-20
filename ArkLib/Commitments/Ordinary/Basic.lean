@@ -21,8 +21,8 @@ public import VCVio.CryptoFoundations.CommitmentScheme
 
   - `CommitmentScheme PP M C D` — the scheme bundle (`setup`, `commit`, `verify`).
   - `CommitmentScheme.PerfectlyCorrect` / `PerfectlyHiding` — perfect security notions.
-  - `CommitmentScheme.hidingExp` / `bindingExp` — game-based hiding and binding experiments.
-  - `TrapdoorExtractor` / `CommitmentScheme.extractExp` — trapdoor-based extraction.
+  - `CommitmentScheme.hidingGame` / `bindingExperiment` — game-based hiding and binding experiments.
+  - `TrapdoorExtractor` / `CommitmentScheme.extractExperiment` — trapdoor-based extraction.
 
   Concrete ordinary schemes (e.g. the simple Ajtai commitment under `Ajtai/`) instantiate
   `CommitmentScheme` directly. Importing this module re-exports those definitions, so

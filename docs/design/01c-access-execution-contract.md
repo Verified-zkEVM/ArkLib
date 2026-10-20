@@ -1,6 +1,8 @@
 # AR-3A / AR-3B semantic acceptance contract
 
-This refines the corresponding slices in [the landing plan](01a-foundation-pr-plan.md).
+This specifies the access and execution contract established by the
+[foundation slices](01a-foundation-pr-plan.md). Remaining implementation work is tracked in the
+[roadmap](05-roadmap.md).
 The [naming contract](01b-type-tree-rename-cutover.md) and
 [core claim design](02-oracle-reduction-core.md) remain in force. These are acceptance
 requirements, not a statement that validation has already passed.
@@ -85,6 +87,20 @@ Do not invent a dummy public round to run a terminal query, and do not model the
 statement as a function of the environment alone. Monadic continuation construction must not
 silently move effects across any of the boundaries above. A richer authoring language with
 arbitrary local binds would require its own order-preserving execution law.
+
+`Verifier.Fragment` generalizes the same restricted strategy to return ordinary leaf values.
+`Verifier.Strategy` retains the completed-protocol convention above. Both use one recursive
+interpreter. Appending a value fragment selects its suffix through a pure function of the public
+prefix path and returned value; it does not execute a terminal query at the join. The suffix
+continues with the actual remaining prover strategy and the input resources and messages from that
+same prefix run. See [the composition contract](02-oracle-reduction-core.md#5-composition) for the
+execution theorem's exact boundary and effect-order constraints.
+
+For composition through an exported interface, `Verifier.appendExported` restricts the suffix's
+initial source signature to the prefix's declared export. It expands those queries using the
+prefix's own programs, extends the route with each new oracle message, and closes the final claim
+using the resources of the actual composed run. The suffix constructor receives the public path
+and statement, not the raw prefix handler.
 
 A single-run erasure law must hold at the `OracleComp` level before an ambient handler is
 chosen. Test a stateful ambient handler so that reordered or duplicated queries are observable.

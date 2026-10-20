@@ -111,7 +111,6 @@ theorem prob_state_processRound_challenge_le {σ : Type}
   simp only [pure_bind, simulateQ_bind]
   rw [hget]
   simp only [StateT.run_bind, StateT.run_monadLift, monadLift_self, bind_assoc, pure_bind]
-  simp only [← bind_assoc]
   apply prEvent_bind_le_prEvent_of_support _ _ _ (p := fun c ↦ S (tr.concat c))
   intro c _ hc
   apply (prEvent_eq_zero_iff _ _).mpr

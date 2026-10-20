@@ -18,7 +18,8 @@ element `s`: those that do not contain `s`.
 For a polynomial ideal `I`, the retained minimal primes index the algebraic components on which
 `s` is not identically zero. This does not assert that each component has a point over a given
 field extension. The point-cover statements for `MvPolynomial.zeroLocus` are in
-`ArkLib.ToMathlib.RingTheory.Nullstellensatz`.
+`ArkLib.ToMathlib.RingTheory.Nullstellensatz`. The principal-cut Krull-dimension consequences of
+this finite family are in `ArkLib.ToMathlib.RingTheory.Ideal.PrincipalCut`.
 
 ## Main definitions
 
@@ -41,24 +42,6 @@ Membership reduces to `Set.Finite.mem_toFinset` and `Finset.mem_filter`. The exi
 applies `Ideal.exists_minimalPrimes_le` to `Q` and observes that a prime below `Q` cannot contain
 `s`. The emptiness criterion uses `Ideal.sInf_minimalPrimes`: the radical is the intersection of
 the minimal primes.
-
-## References
-
-This file is extracted from ArkLib at source revision
-`a5aa2677fee4e3a79d6bb05136631cce4a08587d`. `Ideal.minimalPrimesFinset` and
-`Ideal.mem_minimalPrimesFinset` replace `AffineHilbert.minimalPrimesFinset` and
-`AffineHilbert.mem_minimalPrimesFinset` in
-`ArkLib/ToMathlib/AlgebraicGeometry/PrincipalCut/ComponentCoefficient.lean`, which were stated
-only for `MvPolynomial σ F` over a field with `Finite σ`; here the ring is any Noetherian
-commutative semiring. `Ideal.retainedMinimalPrimes` and `Ideal.mem_retainedMinimalPrimes` replace
-the declarations of the same names in `ArkLib/ToMathlib/AlgebraicGeometry/PrincipalOpen/Cuts.lean`,
-which built the retained family as a second, independent `toFinset` of the same finite set. Here
-the retained family is a filter of `Ideal.minimalPrimesFinset`, so a single representation serves
-both, and `Ideal.retainedMinimalPrimes_subset` relates them. The source membership law took
-`I P s` as explicit arguments; here they are implicit and the law is a `simp` lemma.
-
-The principal-cut Krull-dimension consequences of this finite family are in
-`ArkLib.ToMathlib.RingTheory.Ideal.PrincipalCut`.
 -/
 
 @[expose] public section

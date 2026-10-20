@@ -14,10 +14,7 @@ This file defines the variables and polynomial type for relations in an independ
 and a finite Hasse jet. The representation is shared by polynomial interpolation and differential
 root-finding arguments.
 
-The definitions are adapted, with permission, from `kz99/rs-ld-mca` at revision
-`9699ee7a6143f6efe1d8cfed84998a4f8c79c40f` and were developed in the Reed--Solomon
-beyond-Johnson source snapshot at ArkLib revision
-`a5aa2677fee4e3a79d6bb05136631cce4a08587d`.
+The definitions are adapted, with permission, from `kz99/rs-ld-mca`.
 -/
 
 @[expose] public section

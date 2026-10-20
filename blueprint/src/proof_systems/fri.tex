@@ -38,7 +38,8 @@ The parameter $\theta$ is independent of the input distance.
 \end{definition}
 
 \begin{theorem}\label{thm:fri-folding-error}
-\lean{Fri.foldingAgreementFailure_prob_le_powers}
+\lean{Fri.foldingAgreementFailure_prob_le_powers,
+Fri.foldingAgreementFailure_prob_le_generalizedJohnson}
 \leanok
 \uses{def:fri-folding-failure,lem:fri-coefficient-lift}
 For every fixed word $f$, the probability of a bad uniform challenge is at most
@@ -49,10 +50,9 @@ at radius $\theta$.
 \leanok
 A bad challenge is an MCA failure for the coefficient words: if every coefficient
 word agreed on the same $T$, Lemma~\ref{lem:fri-coefficient-lift} would lift the
-agreement. No union bound over subsets is needed. The existing powers-MCA bound
-from~\cite{BCGM25} is instantiated by
-\texttt{Fri.foldingAgreementFailure\_prob\_le\_generalizedJohnson}, with all its
-field-size, slack, and radius assumptions retained.
+agreement. No union bound over subsets is needed. The generalized-Johnson
+specialization instantiates the existing powers-MCA bound from~\cite{BCGM25},
+retaining all its field-size, slack, and radius assumptions.
 \end{proof}
 
 \begin{theorem}\label{thm:fri-query-error}
@@ -98,7 +98,7 @@ $d$ accepting positions. No extraction running-time bound is asserted.
 \end{proof}
 
 \begin{theorem}\label{thm:fri-soundness}
-\lean{Fri.Spec.soundness,Fri.Spec.soundness_proximity,Fri.Spec.rbrSoundness}
+\lean{Fri.Spec.soundness,Fri.Spec.soundness_proximity,Fri.Spec.rbr_soundness}
 \leanok
 \uses{thm:fri-folding-error,thm:fri-query-error}
 The specified FRI oracle reduction has round-by-round error equal to the

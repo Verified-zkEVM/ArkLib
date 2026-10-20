@@ -40,60 +40,20 @@ exponents of `Y₂, ..., Y_d`. This needs `d > 0`, so that `Y₁` exists.
   space has dimension `exactInterpolationDimensionCount D A d m M W`.
 * `card_mul_le_card_globalEligibleExponents` and `le_finrank_interpolationSpace`: the
   rectangular lower bound with independent side lengths `N`, `H₀`, `H₁`.
-* `finrank_interpolationSpace_lowerBound`: the source's form, with `N = (K - 1) H` and
-  `H₀ = H₁ = H`.
+* `finrank_interpolationSpace_lowerBound`: the case `N = (K - 1) H` and `H₀ = H₁ = H`.
 * `card_goodHigherExponents_mul_le_finrank_exactInterpolationSpace`: the same lower bound for the
   exact space with `M = m`, for every `D` with `d < D < K`.
 
+Parts of this file are adapted, with permission, from Kai Zhe Zheng's `kz99/rs-ld-mca`
+formalization.
+
 ## References
 
-Ported from `DimensionBridge.lean` and `Global/Dimension.lean` in
-`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/` at ArkLib revision
-a5aa2677fee4e3a79d6bb05136631cce4a08587d. The source of `Global/Dimension.lean` adapts Kai Zhe
-Zheng's `rs-ld-mca` formalization at commit `9699ee7a6143f6efe1d8cfed84998a4f8c79c40f` with
-permission.
-
-From `DimensionBridge.lean`: the source's `exactExponentCoordinatesEquiv` into
-`ℕ × ((ℕ × ℕ) × HigherJetTuple d)`, built from `Finsupp.optionEquiv` and a split of `Fin (d + 1)`,
-is `jetExponentCoordinatesEquiv` into `ℕ × ℕ × ℕ × (Fin (d - 1) → ℕ)`, written out directly like
-`localExponentCoordinatesEquiv`; its `_x`, `_y₀`, `_y₁`, and `_higher` lemmas are
-`jetExponentCoordinatesEquiv_apply`. The source's `sum_jet_eq_y₀_add_y₁_add_higher` is private
-here and feeds the new `weight_eq_coordinates` for any weight, from which
-`firstJetExponent_eq_coordinate`, `fullHigherJetWeight_eq_coordinate`,
-`exactInterpolationMonomialWeight_eq_coordinates` (here
-`weight_differentialWeight_eq_coordinates`), `totalJetDegree_eq_coordinates`, and
-`fullHigherJetDegree_eq_coordinates` follow. The source's predicate
-`ExactDimensionCoordinatesEligible` is unfolded in
-`exactInterpolationEligibleExponent_iff_coordinates`. The chain of equivalences
-`exactEligibleExponentCoordinateEquiv`, `exactCoordinateDimensionIndexEquiv`,
-`exactInterpolationIndexEligibleEquiv`, and `exactInterpolationIndexEquivExactDimensionIndex` is
-replaced by one `Finset.card_equiv` onto `exactDimensionCoordinates`, which gives
-`card_exactInterpolationExponents_eq_exactInterpolationDimensionCount` (here
-`card_exactInterpolationExponents`) and
-`finrank_exactInterpolationSpace_eq_exactInterpolationDimensionCount`.
-
-From `Global/Dimension.lean`: `card_globalEligibleExponents_lowerBound` and
-`finrank_interpolationSpace_lowerBound`. The source split the `X` exponent as `r + (K - 1) s`
-with `r < K - 1` and `s < H`, and used one side length `H` for `s`, `b₀`, and `b₁`. Here the `X`
-exponent ranges over `x < N` directly and the side lengths `N`, `H₀`, `H₁` are independent; the
-source's hypotheses are the case `N = (K - 1) H`, `H₀ = H₁ = H`, where
-`N + (K - 1)(C + 2H) = (K - 1)(C + 3H)`. The source's index embeddings `jetZeroIndex`,
-`jetOneIndex`, `higherJetIndexEmbedding`, the exponents `rectangleJetExponent` and
-`globalRectangleExponent` with their evaluation lemmas, `GlobalRectangleIndex`,
-`globalRectangleEmbedding`, and `card_globalRectangleIndex` are replaced by the inverse of
-`jetExponentCoordinatesEquiv` on a product `Finset`. The source's
-`finrank_interpolationSpace_eq_card` is `finrank_interpolationSpace_eq_card` of
-`Interpolation/Space.lean`.
-
-`card_goodHigherExponents_mul_le_finrank_exactInterpolationSpace` is the dimension step of the
-source's `n_mul_certifiedEnlargedRankBound_lt_finrank_exactInterpolationSpace` in
-`Interpolation/FreeOrderDimension.lean`, which fixed `D = K - 1` and `m = d³` and assumed a
-jet-degree budget `B` with `C + 2H ≤ B`; neither assumption is needed.
-
-* Brakensiek, Chen, Putterman, Zhang, and Zheng, *Algorithmic List Decoding of Reed--Solomon
-  Codes up to Capacity in the Low-Rate Regime*, ECCC TR26-164, Section 3.
-* [Dao, Kominers, Thaler, and Zheng, *Reed--Solomon List Decoding and Mutual Correlated Agreement
-  up to Capacity*][DKTZ26], Section 3.
+* [Brakensiek, J., Chen, Y., Putterman, A., Zhang, Z., and Zheng, K. Z., *Algorithmic List
+  Decoding of Reed–Solomon Codes up to Capacity in the Low-Rate Regime*][BCPZZ26], Section 3.
+* [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient
+  Decoding and Smaller Cryptographic Proofs*][DKT26], Section 6.1, the support (70) and its
+  coefficient count (71).
 -/
 
 @[expose] public section
@@ -325,10 +285,10 @@ theorem le_finrank_interpolationSpace (R : Type*) [Field R] (hd : 0 < d)
   rw [finrank_interpolationSpace_eq_card]
   exact card_mul_le_card_globalEligibleExponents hd hH₁ hB hA
 
-/-- The source's rectangular lower bound: `#(goodHigherExponents d W C) (K - 1) H³` is at most
-the dimension of the rectangular space when `H ≤ m`, `C + 2H ≤ B`, and
-`(K - 1)(C + 3H) ≤ m A`. This is `le_finrank_interpolationSpace` with `N = (K - 1) H` and
-`H₀ = H₁ = H`; the three hypotheses expose all rounding loss. -/
+/-- The rectangular lower bound with one side length `H`:
+`#(goodHigherExponents d W C) (K - 1) H³` is at most the dimension of the rectangular space when
+`H ≤ m`, `C + 2H ≤ B`, and `(K - 1)(C + 3H) ≤ m A`. This is `le_finrank_interpolationSpace` with
+`N = (K - 1) H` and `H₀ = H₁ = H`; the three hypotheses expose all rounding loss. -/
 theorem finrank_interpolationSpace_lowerBound (R : Type*) [Field R] (hd : 0 < d)
     {m A K B W C H : ℕ} (hH : H ≤ m) (hdegree : C + 2 * H ≤ B)
     (hweighted : (K - 1) * (C + 3 * H) ≤ m * A) :

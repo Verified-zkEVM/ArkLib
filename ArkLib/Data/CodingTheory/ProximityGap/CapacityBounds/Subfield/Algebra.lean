@@ -134,9 +134,7 @@ private theorem fold_density_le_eps_ca_of_not_joint_proximity
     exact_mod_cast Fintype.card_ne_zero
   rw [ENNReal.coe_div hcardF_ne]
   unfold _root_.ProximityGap.epsCa
-  refine le_trans ?_ (le_iSup (fun w : Fin 2 → ι → F =>
-    if Code.jointProximity (C := C) (u := w) δ_int then (0 : ENNReal)
-    else Pr{let γ ←$ᵗ F}[Code.relDistFromCode (w 0 + γ • w 1) C ≤ δ_fld]) u)
+  refine le_iSup_of_le u ?_
   rw [ite_eq_right hnot]
   rw [SampleableType.prEvent_uniformSample]
   exact le_rfl

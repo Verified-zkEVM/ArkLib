@@ -98,7 +98,7 @@ theorem rs_Lambda_le_card_of_epsCa_lt
       rw [le_div_iff₀ hnR]
       norm_num only [one_mul]
       exact_mod_cast (show n ≤ k by omega)
-    nlinarith [_hδ_pos, _hδ_lt]
+    linarith only [_hδ_pos, _hδ_lt, hdiv]
   let w : ReedSolomon.code domain k → F → F := fun H a =>
     (ReedSolomon.toPolynomial H).eval a
   have hwmem : ∀ H, w H ∈ ReedSolomon.code (Function.Embedding.refl F) k := by
@@ -196,7 +196,7 @@ theorem rs_Lambda_le_card_of_epsCa_lt
       have hbadR : (2 * n * (imageAt a).card : ℝ) < q := by exact_mod_cast hbad
       have hNpos : (0 : ℝ) < N a := by
         have hMpos : (0 : ℝ) < L0.card := by rw [hL0card]; positivity
-        nlinarith only [hCS a, hMpos]
+        exact pos_of_mul_pos_right ((pow_pos hMpos 2).trans_le (hCS a)) (Nat.cast_nonneg _)
       have hmul := mul_lt_mul_of_pos_right hbadR hNpos
       have hscale := mul_le_mul_of_nonneg_left (hCS a)
         (show (0 : ℝ) ≤ 2 * n by positivity)
@@ -319,10 +319,9 @@ theorem rs_Lambda_le_card_of_epsCa_lt
       rw [Code.relHammingDist_coe] at hrel
       have hdiv := div_le_div_of_nonneg_right hdistR hnR.le
       rw [add_div] at hdiv
-      have hone : (1 : ℝ) / Fintype.card ι ≤ 2 / Fintype.card ι := by
-        gcongr
-        norm_num
-      linarith
+      have hone : (1 : ℝ) / Fintype.card ι ≤ 2 / Fintype.card ι :=
+        div_le_div_of_nonneg_right (by norm_num) hnR.le
+      linarith only [hdiv, hrel, hone]
     exact_mod_cast hreal
   let u : WordStack F (Fin 2) ι := fun j => if j = 0 then f else g
   have hu0 : u 0 = f := by simp [u]
@@ -429,7 +428,7 @@ theorem rs_Lambda_le_card_of_epsCa_lt
       push_cast
       have hk0 : (0 : ℝ) ≤ (k : ℝ) / Fintype.card ι := by positivity
       have h10 : (0 : ℝ) ≤ 1 / Fintype.card ι := by positivity
-      linarith
+      linarith only [_hδ_int, hk0, h10]
     have hlower : (1 - (δ_int : ℝ)) * Fintype.card ι ≤ T.card := by
       have hco := NNReal.coe_le_coe.mpr hTcard
       rw [NNReal.coe_mul, NNReal.coe_sub hδle] at hco
@@ -439,7 +438,7 @@ theorem rs_Lambda_le_card_of_epsCa_lt
     rw [sub_mul, sub_mul, one_mul, div_mul_cancel₀ _ hnR.ne',
       div_mul_cancel₀ _ hnR.ne'] at hmargin
     have hupperR : (T.card : ℝ) ≤ k + 1 := by exact_mod_cast hupper
-    nlinarith
+    linarith only [hlower, hmargin, hupperR]
   let Pevent : F → Prop := fun z =>
     δᵣ(u 0 + z • u 1, (ReedSolomon.code domain k : Set (ι → F))) ≤
       (((δ + 2 / Fintype.card ι).toNNReal : NNReal) : ENNReal)

@@ -73,7 +73,7 @@ private lemma epsCa_ne_top (C : Set (ι → F)) (δ_fld δ_int : ℝ≥0) :
   refine iSup_le fun u => ?_
   split_ifs
   · exact zero_le_one
-  · exact prEvent_le_one _ _
+  · exact prEvent_le_one _
 
 /-- `Nat.floor` commutes with the `ℝ≥0 → ℝ` coercion. Derivation infrastructure for
 `rs_Lambda_extended_le_of_epsCa`. -/

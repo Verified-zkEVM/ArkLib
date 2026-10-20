@@ -41,40 +41,6 @@ degree zero; a nonzero center does not, since `X` and `T` both have weight zero.
 * `coeff_localConstraintAt_eq_zero_of_weight_ne` and its source-monomial case
   `coeff_localConstraintAt_zero_sourceMonomial_eq_zero`.
 * `totalJetDegree_le_of_mem_globalPointTranslation_support`.
-
-## References
-
-Ported from
-`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Local/GradedRank.lean` at
-ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d.
-
-* `sourceJetDegreeWeight` is P1's `jetDegreeWeight`, so `sourceJetDegreeWeight_eq_totalJetDegree`
-  is the definition of `totalJetDegree`. `localJetDegreeWeight` is already in
-  `ArkLib.Data.CodingTheory.HiddenDerivative.Variables`, and the source's `localJetDegree e` is
-  written `e.weight (localJetDegreeWeight d)`.
-* `localCorrection_isWeightedHomogeneous` is unchanged. The source's
-  `unscaledLocalSubstitution_zero_Y_zero_isWeightedHomogeneous`,
-  `unscaledLocalSubstitution_zero_X_isWeightedHomogeneous`,
-  `unscaledLocalSubstitution_zero_monomial_isWeightedHomogeneous`,
-  `unscaledLocalSubstitution_zero_sourceMonomial_isWeightedHomogeneous`,
-  `localConstraintAt_zero_sourceMonomial_isWeightedHomogeneous` and
-  `localConstraintAt_zero_isWeightedHomogeneous` fixed the center to zero; here the center is
-  arbitrary, the generator statement is `unscaledLocalImage_isWeightedHomogeneous`, and the
-  monomial and polynomial statements are `unscaledLocalSubstitution_isWeightedHomogeneous` and
-  `localConstraintAt_isWeightedHomogeneous`, instances of the generic
-  `MvPolynomial.IsWeightedHomogeneous.bind₁` and
-  `MvPolynomial.IsWeightedHomogeneous.weightedTruncation`. The source-monomial forms are derived
-  in the acceptance tests.
-* `sourceJetGrade` and `localJetGrade` are unchanged; `gradedLocalConstraintAtZero` is
-  `gradedLocalConstraintAt m 0`.
-* `gradedImageCoordinateEquiv`, `gradedImageCoordinateMap` and
-  `gradedImageCoordinateMap_eq_zero_iff` are generic linear algebra and are
-  `LinearMap.rangeCoordinates` and `LinearMap.rangeCoordinates_eq_zero_iff` in
-  `ArkLib.ToMathlib.LinearAlgebra.FiniteDimensional`, over a division ring.
-* `coeff_localConstraintAt_zero_sourceMonomial_eq_zero` is kept as the source-shaped instance of
-  the new `coeff_localConstraintAt_eq_zero_of_weight_ne`.
-* `totalJetDegree_le_of_mem_globalPointTranslation_support` is unchanged in statement and is an
-  instance of `globalPointTranslation_mem_restrictWeightAtMost`.
 -/
 
 @[expose] public section
@@ -145,13 +111,14 @@ def localJetGrade (R : Type*) [CommRing R] (d t : ℕ) :
   weightedHomogeneousSubmodule R (localJetDegreeWeight d) t
 
 /-- The local constraint map at `(center, 0)` restricted to the source block and the local block
-of degree `t`. The source's `gradedLocalConstraintAtZero m t` is `gradedLocalConstraintAt m 0 t`.
--/
+of degree `t`. -/
 def gradedLocalConstraintAt (m : ℕ) (center : R) (t : ℕ) :
     sourceJetGrade R d t →ₗ[R] localJetGrade R d t :=
   (localConstraintAt m center 0).restrict fun _ hQ =>
     localConstraintAt_isWeightedHomogeneous center hQ
 
+/-- `gradedLocalConstraintAt m center t` acts as `localConstraintAt m center 0` on underlying
+polynomials. -/
 @[simp]
 theorem coe_gradedLocalConstraintAt_apply (m : ℕ) (center : R) (t : ℕ)
     (Q : sourceJetGrade R d t) :
@@ -167,7 +134,7 @@ theorem coeff_localConstraintAt_eq_zero_of_weight_ne (center : R)
     (localConstraintAt m center 0 Q).coeff e = 0 :=
   (localConstraintAt_isWeightedHomogeneous center hQ).coeff_eq_zero e he
 
-/-- Source shape: at the origin, the constraint coefficient of `X^x Y₀^b ∏ Y_(j+1)^(higher j)`
+/-- At the origin, the constraint coefficient of `X^x Y₀^b ∏ Y_(j+1)^(higher j)`
 vanishes unless the local jet degree of the row is `b + ∑_j higher j`. -/
 theorem coeff_localConstraintAt_zero_sourceMonomial_eq_zero
     (x b : ℕ) (higher : Fin d → ℕ) (e : LocalVariable d →₀ ℕ)

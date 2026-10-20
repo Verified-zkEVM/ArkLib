@@ -7,7 +7,8 @@ This directory contains various utility scripts for the ArkLib project.
 ### Build and Validation
 - **`validate.sh`** - Recommended convenience wrapper for routine local validation
 - **`build-project.sh`** - Compile-only helper (`lake build`)
-- **`build_timing_report.sh`** - CI timing/report helper for clean builds, warm rebuilds, the native build, and the validation wrapper
+- **`build_timing_report.sh`** - CI timing/report helper for the library build, the native build, and the validation wrapper
+- **`module_times.py`** - Per-module compile-time table that travels with the CI build cache
 - **`build_timing_metadata.py`** - Versioned attribution metadata writer/validator for timing artifacts
 - **`test-build-timing-report.sh`** - Deterministic report, metadata, and workflow-policy fixtures
 - **`update-lib.sh`** - Update ArkLib.lean with all imports from source files
@@ -24,6 +25,9 @@ This directory contains various utility scripts for the ArkLib project.
 - **`ToyProblemRuntime.lean`** (`lake exe toyproblem-runtime`) - Compiled small-parameter checks
   for KoalaBear sextic arithmetic, executable interleaved-RS extraction, and the C6.9 virtual
   output-oracle and exact-extractor paths
+- **`SumcheckRuntime.lean`** (`lake exe sumcheck-runtime`) - Compiled checks of CompPoly-backed
+  round messages and the honest multivariate prover in the shared native Sumcheck executor,
+  including continuation effects, abort, original-oracle evaluation and zero remaining rounds.
 - **`HachiRuntime.lean`** (`lake exe hachi-runtime`) - Compiled small-parameter checks that the
   nonrecursive Hachi honest-prover path executes: the balanced committer, the computable honest
   lift quotient, the concrete Ajtai lift commitment, and the terminal reveal-and-check. `--full`
@@ -35,7 +39,9 @@ This directory contains various utility scripts for the ArkLib project.
   exception-free source policy, including import discipline, whitespace, headers, line/file size,
   and hazardous-Unicode checks. It verifies that every tracked Lean file under `ArkLib/` and `ArkLibTest/` file is in the
   `ArkLib.lean` closure, and independently rejects forbidden option and `nolint`-attribute syntax
-  even if module code captures diagnostics or mutates Lean's in-process linter registry. This
+  even if module code captures diagnostics or mutates Lean's in-process linter registry. The same
+  lexical pass rejects raised elaboration budgets (`set_option maxHeartbeats`, `maxRecDepth`, and
+  `synthInstance.*`, code `ERR_BUDGET`): make the proof cheaper instead. This
   lexical backstop is deliberately conservative across literal bodies (and across comments for
   forbidden options), and reserves policy-like quoted identifiers and syntax quotations;
   suppression examples belong in the out-of-scope fixtures
@@ -208,24 +214,39 @@ python3 scripts/source-trust-audit.py --base-ref origin/main --json /tmp/source-
 
 ### `build_timing_report.sh`
 
-Helper used by CI to measure and render build timings for clean builds, warm
-rebuilds, the native build, and the `./scripts/validate.sh` path. The CI workflow uploads
-timing-data artifacts so PR runs can compare against the successful push run for the PR's exact
-base SHA without rerunning that base in the same job. It never silently substitutes a previous PR
-update or a different `main` commit when the exact artifact is unavailable. Each artifact also
-records the measured checkout, PR head/base, dependency-manifest hash, cache provenance, and runner
-image; the report shows wall time beside `user + sys` CPU work. This supports
+Helper used by CI to measure and render build timings for the library build, the native build,
+and the `./scripts/validate.sh` path. The library build starts from the cached `main` build, so
+its wall time covers only what the change invalidated. The report therefore also lists the
+modules Lake rebuilt against their times in the module table restored with the cache (see
+`module_times.py` below). Each timing artifact records the measured checkout, PR head/base,
+dependency-manifest hash, cache provenance, and runner image, and carries the module tables
+before and after the run; the report shows wall time beside `user + sys` CPU work. This supports
 [`../.github/workflows/ci.yml`](../.github/workflows/ci.yml).
 
-The four measurements share one tree and run in order, so each leaves it warmer than the last.
+The three measurements share one tree and run in order, so each leaves it warmer than the last.
 `native_build` exists to hold the `.c.o` chain that the compiled executables link
 (`toyproblem-runtime` and `hachi-runtime`): that is the cost which swings on `.lake` cache state,
 and billing it separately keeps the validation wrapper's row comparable across dependency bumps.
 Any new compiled executable run by `validate.sh` has to be added to that command as well. See
 [`../docs/wiki/quickstart.md`](../docs/wiki/quickstart.md) for how to read the rows.
 
-`./scripts/test-build-timing-report.sh` exercises metadata validation, exact-base/missing-base
-rendering, CPU deltas, native-command ownership, and the stale-run guard in the trusted reporter.
+`./scripts/test-build-timing-report.sh` exercises metadata validation, module-table updates,
+rendering with and without a restored build, native-command ownership, and the stale-run guard in
+the trusted reporter.
+
+### `module_times.py`
+
+Keeps `.lake/build/arklib-module-times.json`, the latest compile time of every ArkLib module.
+After each CI build, `update` overlays the `Built <module> (<time>)` lines from the build logs
+and drops modules whose source file is gone. Lake rebuilds a module whenever its source or an
+import changes, so each entry was measured against the inputs the module still has, and the
+table's sum estimates clean-build compile time. The table is saved with the build cache on
+`main`.
+
+```bash
+python3 scripts/module_times.py update .lake/build/arklib-module-times.json \
+  --commit "$(git rev-parse HEAD)" /tmp/build-timing/library_build.log
+```
 
 ## Requirements
 

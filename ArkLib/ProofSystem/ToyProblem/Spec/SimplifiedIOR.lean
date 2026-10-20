@@ -382,10 +382,10 @@ theorem mem_outputRelationFor_of_probEvent_pos_oracleVerifier_run
     (stmtIn : Statement (F := F) k × (∀ i, OracleStatement ι A i))
     (tr : (pSpec (F := F)).FullTranscript)
     (witOut : OutputWitness (F := F) k)
-    (h : Pr{let stmtOut ← OptionT.mk do
+    (h : Pr{let stmtOut ← (OptionT.mk do
           (simulateQ impl
             (((oracleVerifier (ι := ι) (F := F) (A := A) (k := k)).toVerifier).run
-              stmtIn tr)).run' (← init)}[(stmtOut, witOut) ∈
+              stmtIn tr)).run' (← init))}[(stmtOut, witOut) ∈
             outputRelationFor k encode δ] > 0) :
     (derivedOutput (ι := ι) (F := F) (A := A) k stmtIn
       (transcriptGamma (F := F) tr), witOut) ∈ outputRelationFor k encode δ := by

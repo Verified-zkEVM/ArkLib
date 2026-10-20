@@ -15,8 +15,8 @@ These examples use the public API through an ordinary import, with `K` the algeb
 `ℚ`. The ideal `(x ^ 2)` of `ℚ[x]` shows that evaluation on the zero locus is not injective
 without radicality. Over `K`, the non-radical ideal `(x ^ 2)` has a finite zero locus, so its
 Hilbert polynomial has natural degree zero, while the zero locus of `⊥` is infinite because its
-Hilbert polynomial has natural degree one. The last examples derive the source statements, which
-assumed radicality and took the points in the coefficient field.
+Hilbert polynomial has natural degree one. The last examples derive the forms with an extra
+radicality hypothesis and with the points in the coefficient field.
 -/
 
 open MvPolynomial
@@ -71,21 +71,21 @@ example : (zeroLocus K (⊥ : Ideal (MvPolynomial (Fin 1) K))).Infinite := by
     natDegree_affineHilbertPolynomial_bot, Nat.card_eq_fintype_card, Fintype.card_fin]
   norm_num
 
-/-- The source's `zeroLocusEvaluation_injective`, with the points in the coefficient field. -/
+/-- Evaluation injectivity with the points in the coefficient field. -/
 example {F σ : Type*} [Field F] [IsAlgClosed F] [Finite σ] (I : Ideal (MvPolynomial σ F))
     (hI : I.IsRadical) :
     Function.Injective (LinearMap.pi fun x : zeroLocus F I ↦
       (zeroLocusPointHom I x).toLinearMap) :=
   zeroLocusEvaluation_injective I hI
 
-/-- The source's `moduleFinite_of_finite_zeroLocus`, with its radical hypothesis unused. -/
+/-- Finite-dimensionality from a finite zero locus, with an unused radicality hypothesis. -/
 example {F σ : Type*} [Field F] [IsAlgClosed F] [Finite σ] (I : Ideal (MvPolynomial σ F))
     (_hI : I.IsRadical) (hV : (zeroLocus F I).Finite) :
     Module.Finite F (MvPolynomial σ F ⧸ I) :=
   moduleFinite_of_finite_zeroLocus I hV
 
-/-- The source's `finite_zeroLocus_iff_hilbertPolynomial_natDegree_zero`, with its radical
-hypothesis unused. -/
+/-- The natural-degree characterization of a finite zero locus, with an unused radicality
+hypothesis. -/
 example {F σ : Type*} [Field F] [IsAlgClosed F] [Finite σ] (I : Ideal (MvPolynomial σ F))
     (_hI : I.IsRadical) :
     (zeroLocus F I).Finite ↔ (affineHilbertPolynomial I).natDegree = 0 :=

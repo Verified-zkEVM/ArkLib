@@ -31,10 +31,6 @@ variable {F : Type} [NonBinaryField F] [Fintype F] [DecidableEq F]
 variable {n k : ℕ} {ω : SmoothCosetFftDomain n F}
 variable (s : Fin (k + 1) → ℕ+) (d : ℕ+)
 
-/-- A finite domain index as the subtype-valued initial query used by the verifier. -/
-def initialQuery (z : Fin (2 ^ n)) : (ω.subdomain 0).toFinset :=
-  ⟨ω z, by rw [CosetFftDomain.subdomain_zero_eq_self]; exact CosetFftDomain.mem_toFinset_self⟩
-
 /-- No folding challenge in the retained commitment history is bad. -/
 def SafeHistory (o : ∀ j, FinalOracleStatement s ω j) (α : FinalStatement F k)
     (θ : ℝ) : Prop :=
@@ -97,7 +93,7 @@ theorem acceptingQueries_density_le
 
 /-- For a safe history with a valid final polynomial and input distance at least `δ`,
 independent uniform query checks accept with probability at most `(1 - min θ δ)^t`. -/
-theorem queryChecks_soundness
+theorem query_checks_soundness
     (hs : (∑ j, (s j).val) ≤ n) (o : ∀ j, FinalOracleStatement s ω j)
     (α : FinalStatement F k) (θ δ : ℝ) (t : ℕ) (hsafe : SafeHistory s d o α θ)
     (hdegree : (finalPolynomial s o).natDegree < d.val)

@@ -29,6 +29,12 @@ The principal-cut inequality compares `I` with `I ⊔ span {f}`: if `f` has tota
 `H(I ⊔ span {f}, N) + H(I, N - b) ≤ H(I, N)`. Multiplication by `f` embeds the `(N - b)`-th piece
 into the kernel of the surjection between the `N`-th pieces.
 
+The prefix `affine` in `affineHilbertFunction` separates this function from Mathlib's graded
+`Polynomial.hilbertPoly`. The multiplicativity lemmas for the filtration are used for comparisons
+along algebra maps in `ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertAlgHom`. The Hilbert
+polynomial of `I` and the principal-cut statement on its degree are in
+`ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertPolynomial`.
+
 ## Main statements
 
 * `MvPolynomial.quotientDegreeLE`: the image of `restrictTotalDegree σ k N` in the quotient.
@@ -47,30 +53,6 @@ into the kernel of the surjection between the `N`-th pieces.
 * `MvPolynomial.principalCut_affineHilbertFunction_add_le`: the principal-cut inequality for a
   regular cutting element, and `MvPolynomial.principalCut_affineHilbertFunction_add_le_of_isPrime`
   for a prime ideal and a cutting element outside it.
-
-## References
-
-The definitions and the principal-cut inequality are ported from ArkLib revision
-`a5aa2677fee4e3a79d6bb05136631cce4a08587d`, file
-`ArkLib/ToMathlib/AlgebraicGeometry/Hilbert/Function.lean`: `AffineHilbert.quotientDegreeLE`,
-`AffineHilbert.hilbertFunction` (renamed `affineHilbertFunction`),
-`AffineHilbert.exists_finset_generators_totalDegree_le` and
-`AffineHilbert.principalCut_hilbertFunction_add_le`. The source assumed that `I` is prime and
-`f ∉ I`; the general form assumes only that multiplication by the class of `f` is injective on the
-quotient, which is what the proof uses, and the source statement is the corollary
-`principalCut_affineHilbertFunction_add_le_of_isPrime`. The monotonicity statements,
-`quotientDegreeLE_eventually_top` and `one_le_hilbertFunction` of the source files
-`Hilbert/Polynomial.lean` and `PrincipalCut/Degree.lean` at the same revision are included here,
-since they concern only the Hilbert function. The field is named `k` and the declarations live in
-the `MvPolynomial` namespace, as in `ArkLib.ToMathlib.RingTheory.Nullstellensatz.FiniteQuotient`.
-The source namespace `AffineHilbert` is not kept: the objects are attached to an ideal of
-`MvPolynomial σ k`, and the prefix `affine` in `affineHilbertFunction` separates this function from
-Mathlib's graded `Polynomial.hilbertPoly`.
-
-The multiplicativity lemmas for the filtration are used for comparisons along algebra maps in
-`ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertAlgHom`. The Hilbert polynomial of `I` and
-the principal-cut statement on its degree are in
-`ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertPolynomial`.
 -/
 
 @[expose] public section
@@ -310,8 +292,7 @@ theorem principalCut_affineHilbertFunction_add_le [Finite σ] {I : Ideal (MvPoly
   omega
 
 /-- The principal-cut inequality for a prime ideal `I` and a cutting element `f ∉ I`, in which
-case the class of `f` is a non-zero-divisor on the domain `MvPolynomial σ k ⧸ I`. This is the
-source statement. -/
+case the class of `f` is a non-zero-divisor on the domain `MvPolynomial σ k ⧸ I`. -/
 theorem principalCut_affineHilbertFunction_add_le_of_isPrime [Finite σ]
     {I : Ideal (MvPolynomial σ k)} (hI : I.IsPrime) {f : MvPolynomial σ k} (hfI : f ∉ I)
     {b N : ℕ} (hfdeg : f.totalDegree ≤ b) (hbN : b ≤ N) :

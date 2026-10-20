@@ -22,11 +22,27 @@ home_page/            site assets and assembled website root
 
 ## Conceptual Layering
 
-- `ArkLib/Interaction/` is the new typed-interaction foundation. Its plain reduction layer is
-  intentionally independent of oracle, probability, and legacy protocol semantics.
+- `ArkLib/Interaction/` is the new typed-interaction foundation. Its `Reduction.lean` module
+  is independent of oracle, probability, and legacy protocol semantics.
+  `CompositionSoundness.lean` adds an exact native append execution law and quantitative
+  soundness under lawful distribution semantics, with an explicit admissibility-error variant.
+  It quantifies over ordinary whole-tree prover strategies and uses the existing paired runner.
 - `ArkLib/Interaction/Oracle/` refines generic type trees with public/oracle positions, keeps
   structural `BranchPath` separate from concrete `ExecutionPath` messages, and adds position-typed
   role/interface decorations plus the minimal decorated `Oracle.Protocol` bundle.
+- `ProofSystem/Sumcheck/Interaction/Protocol.lean` defines the full native sum-check tree,
+  restricted verifier, and direct execution through `executeStrategiesCore`. Prover memory lives
+  in ordinary strategy continuations. `ProtocolSoundness.lean` proves the final output oracle relation bound;
+  `MultivariateSoundness.lean` supplies the one-round polynomial projection bound.
+  `ProtocolCompleteness.lean` defines the honest native strategy and proves support-level and
+  probability-one completeness.
+- `Interaction/Oracle/CoreRun.lean` offers `executeStrategiesCore` for ready native strategies.
+  `executeCore` runs reduction setup and delegates to that entry point. Both retain the actual
+  input behavior, path and outputs for closing; `executeCore_eq_execute` preserves the existing
+  execution law for reduction clients. `Access.lean` supplies the common virtual-view preservation
+  law when a new message extends the available oracle signature.
+- `Interaction/Oracle/Composition.lean` supplies a separate sequential execution combinator.
+  Its explicit interface handoffs are not a substitute for a native strategy execution theorem.
 - `ArkLib/OracleReduction/` remains the conceptual center of the legacy reduction and security
   layer while protocol clients migrate.
 - `ArkLib/Data/`, `ArkLib/ToMathlib/`, and `ArkLib/ToCompPoly/` support the
@@ -57,7 +73,9 @@ home_page/            site assets and assembled website root
   soundness arguments; `ErrorBounds.lean` instantiates existing numerical MCA bounds.
   `Fri/Spec/Soundness.lean` proves ordinary and round-by-round soundness of the executable
   oracle reduction; `VerifierExecution.lean` identifies its exact acceptance event and
-  `InputRelation.lean` connects the original relation to Reed–Solomon proximity.
+  `InputRelation.lean` owns the input word and strict proximity language and connects them
+  to the closed-ball input relation. It is independent of adaptive soundness; the
+  bad-event and adaptive bounds import these input definitions.
   `RoundConsistency.lean` connects local checks to word folding. Generic persistent-event
   state functions, adaptive accumulation, and the acceptance-to-soundness bridge live in
   `OracleReduction/Security/{BadEvents,Accumulation,Acceptance}.lean`. These proofs avoid

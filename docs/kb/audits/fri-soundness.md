@@ -26,16 +26,21 @@ author credit are recorded on the paper page.
 | Adaptive transcript bound | `Fri.Spec.terminalEvent_prob_le` | Actual `Prover.run`, arbitrary private witness/state types |
 | End-to-end rejection bound | `Fri.Spec.soundness_proximity` | Any acceptance for inputs at distance at least `δ` |
 | End-to-end ordinary soundness | `Fri.Spec.soundness` | Existing `OracleVerifier.soundness` and original input/output relations |
-| End-to-end round-by-round soundness | `Fri.Spec.rbrSoundness` | Existing `OracleVerifier.rbrSoundness` and original input/output relations |
+| End-to-end round-by-round soundness | `Fri.Spec.rbr_soundness` | Existing `OracleVerifier.rbrSoundness` and original input/output relations |
 
 ## Parameters and conclusions
 
 The end-to-end theorems concern the computable `Fri.Spec.reduction`. For folding exponents
 `s i`, final degree bound `d`, and `l` queries, `Fri.Spec.soundnessError` is the sum of the
 powers-MCA errors over all folds, plus `Real.toNNReal (1 - min θ δ) ^ l`. The tradeoff
-parameter `θ` is independent of `δ`. Ordinary soundness uses the original closed-ball input
-relation. The stronger rejection theorem uses the strict proximity language and applies
-even at distance exactly `δ`.
+parameter `θ` is independent of `δ`. Ordinary and round-by-round soundness use the original
+closed-ball input relation. The stronger ordinary rejection theorem uses the strict proximity
+language and applies even at distance exactly `δ`.
+
+The total bound is parametric in the worst-case MCA error value; it does not assert that
+this value is small for every parameter choice. Each value is finite because it is at most
+one, so conversion to `NNReal` loses no mass. Useful numerical bounds require the explicit
+field-size, distance, slack, and radius hypotheses in `Fri/ErrorBounds.lean`.
 
 The algebraic consequences of Corollary 5.6 assume a safe trace, positive initial degree
 bound `d`, positive query count `t`, `δ ≤ θ`, `δ ≤ 1 - d / 2^n`, and acceptance probability
@@ -91,8 +96,9 @@ knowledge soundness, or an extraction runtime bound. Corollary 5.6's algebraic r
 formalized; its deterministic polynomial-time complexity claim is not. These consequences
 are statements about safe traces, not end-to-end knowledge extraction.
 
-Zero query repetitions give the vacuous soundness bound one. The probability-to-binding
-and proximity consequences require a positive query count, as in the paper's proof.
+With zero query repetitions, the query-error term is one, so the total soundness bound is
+vacuous. The probability-to-binding and proximity consequences require a positive query count,
+as in the paper's proof.
 
 `ArkLibTest/ProofSystem/Fri/Soundness.lean` contains guarded kernel-axiom checks for the
 executable bridge, end-to-end soundness, numerical specialization, and algebraic consequences.

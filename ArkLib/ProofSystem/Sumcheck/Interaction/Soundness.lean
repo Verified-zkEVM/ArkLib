@@ -53,13 +53,13 @@ theorem executeCommitted_eq [DecidableEq F] (challenge : ProbComp F)
     (p q : Message F deg) (domain : List F) (target : F) :
     executeCommitted F deg challenge p q domain target =
       committedRun F deg p q domain target <$> challenge := by
-  simp only [executeCommitted, executeCore, _root_.Interaction.Oracle.Reduction.execute,
+  simp only [executeCommitted, executeCore_eq_execute, _root_.Interaction.Oracle.Reduction.execute,
     sampledClaimReduction, pure_bind]
   simp only [executeStrategies, prover, sampledClaimVerifier, protocol,
     Protocol.oracleWith_tree, Protocol.oracleWith_roles, Protocol.oracleWith_oracles,
     Protocol.public_tree, Protocol.public_roles, Protocol.public_oracles,
     Protocol.done_tree, Protocol.done_roles, Protocol.done_oracles,
-    Verifier.toCounterpart,
+    Verifier.toCounterpart, Verifier.toCounterpartWith,
     TypeTree.toTypeTree_oracle, TypeTree.toTypeTree_public, TypeTree.toTypeTree_done,
     TypeTree.RoleDecoration.toTypeTreeRoles_oracle,
     TypeTree.RoleDecoration.toTypeTreeRoles_public,
@@ -79,7 +79,8 @@ theorem executeCommitted_eq [DecidableEq F] (challenge : ProbComp F)
     rw [QueryImpl.simulateQ_liftComp_left_eq_of_apply _ (QueryImpl.id' unifSpec)
       (fun _ => rfl), simulateQ_id']
   simp only [id_eq, simulateQ_bind, simulateQ_pure, hc, bind_assoc, pure_bind,
-    simulateQ_map, simulate_terminal, map_pure]
+    simulateQ_map, TypeTree.accessAfter_oracle, TypeTree.accessAfter_public,
+    TypeTree.accessAfter_done, simulate_terminal, map_pure]
   simp only [bind_pure_comp]
   congr 1
   funext r
@@ -111,6 +112,18 @@ theorem committedRun_rejects [DecidableEq F] (p q : Message F deg)
     (h : (domain.map (fun x => q.val.eval x)).sum ≠ target) :
     (committedRun F deg p q domain target r).closed = none := by
   simp [committedRun, h, CoreRun.closed]
+
+/-- `prEvent_eq_evalDist_map` at `OracleComp unifSpec`, stated so that the `Pr{...}` side uses
+the same `Bind`/`Pure` instances as `do` notation elaborated at this monad. -/
+private theorem prEvent_eq_evalDist_map_unifSpec {α : Type} (mx : OracleComp unifSpec α)
+    (p : α → Prop) : Pr{let x ← mx}[p x] = 𝒟[p <$> mx] {True} :=
+  prEvent_eq_evalDist_map mx p
+
+/-- `prEvent_bind_le_of_forall_le` at `OracleComp unifSpec`, with `do`-notation instances. -/
+private theorem prEvent_bind_le_of_forall_le_unifSpec {α β : Type}
+    (mx : OracleComp unifSpec α) (f : α → OracleComp unifSpec β) (q : β → Prop) {ε : ENNReal}
+    (h : ∀ a, Pr{let y ← f a}[q y] ≤ ε) : Pr{let y ← mx >>= f}[q y] ≤ ε :=
+  prEvent_bind_le_of_forall_le mx f q h
 
 variable [Fintype F] [DecidableEq F] [SampleableType F]
 
@@ -157,7 +170,7 @@ theorem executeRandomCommitment_soundness (messages : ProbComp (Message F deg))
     Pr{let run ← messages >>= fun q => executeCommitted F deg ($ᵗ F) p q domain target}[
       run.closed.map (closedOutputRelation F deg) = some True] ≤
         (deg : ENNReal) / Fintype.card F := by
-  exact prEvent_bind_le_of_forall_le _ _ _
+  exact prEvent_bind_le_of_forall_le_unifSpec _ _ _
     (fun q => executeCommitted_soundness F deg p q domain target hfalse)
 
 /-- Primary measure-valued soundness on the actual executor's closed output.
@@ -168,7 +181,7 @@ theorem executeCommitted_measureSoundness (p q : Message F deg)
     𝒟[(fun run => run.closed.map (closedOutputRelation F deg) = some True) <$>
         executeCommitted F deg ($ᵗ F) p q domain target] {True} ≤
         (deg : ENNReal) / Fintype.card F := by
-  rw [← prEvent_eq_evalDist_map]
+  rw [← prEvent_eq_evalDist_map_unifSpec]
   exact executeCommitted_soundness F deg p q domain target hfalse
 
 /-- Primary measure bound for any possibly failing randomized commitment made first. -/
@@ -178,7 +191,7 @@ theorem executeRandomCommitment_measureSoundness (messages : ProbComp (Message F
     𝒟[(fun run => run.closed.map (closedOutputRelation F deg) = some True) <$>
         (messages >>= fun q => executeCommitted F deg ($ᵗ F) p q domain target)] {True} ≤
         (deg : ENNReal) / Fintype.card F := by
-  rw [← prEvent_eq_evalDist_map]
+  rw [← prEvent_eq_evalDist_map_unifSpec]
   exact executeRandomCommitment_soundness F deg messages p domain target hfalse
 
 end

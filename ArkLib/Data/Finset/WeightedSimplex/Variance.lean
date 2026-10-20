@@ -40,24 +40,6 @@ whose statistic deviates from the mean by at least `t`.
 * `natSimplexWeightedVariance_nonneg`: nonnegativity over an ordered field.
 * `sq_mul_card_filter_le_abs_sub_le_card_mul_variance`: Chebyshev's inequality in counting form.
 * `sq_mul_card_filter_mean_add_le_le_card_mul_variance`: its upper-tail form.
-
-## References
-
-Generalizes, at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`, the declarations of
-`ToMathlib/Combinatorics/DiscreteSimplex/Variance.lean` from `OrdinarySimplex r S` over `Fin r`
-and real weights to `natWeightedSimplex (fun _ ↦ 1) S` over any finite index type, with weights in
-any field of characteristic zero for the identities and any ordered field for the inequalities.
-`simplexAverage` is replaced by Mathlib's `Finset.expect`, and `simplexWeightedStatistic` by the
-explicit sum `∑ i, w i * c i`. `card_ordinarySimplex_pos` becomes `natWeightedSimplex_nonempty` in
-`ArkLib.Data.Finset.WeightedSimplex.Moments`. `simplexWeightedMean` and `simplexWeightedVariance`
-become `natSimplexWeightedMean` and `natSimplexWeightedVariance`; `simplex_average_weighted`,
-`simplex_average_weighted_square`, `simplex_average_centered_square`, and
-`simplexWeightedVariance_nonneg` become the theorems above. `simplex_upper_tail_count`, stated for
-an arbitrary subset of the upper tail, becomes
-`sq_mul_card_filter_mean_add_le_le_card_mul_variance` for the full upper tail, and is derived from
-the two-sided `sq_mul_card_filter_le_abs_sub_le_card_mul_variance`. The source's unnamed example
-with variance `5 / 12` is an acceptance case. The sharper one-sided Cantelli bound, continuous
-simplex moments, and a comparison between the finite and continuous variances are not treated.
 -/
 
 @[expose] public section

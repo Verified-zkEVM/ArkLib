@@ -31,29 +31,6 @@ inputs are `ReedSolomon.determinedByAgreement_code`, which needs `k ≤ L`, and 
 * `ReedSolomon.fullSetLevelWitness_code` and
   `ReedSolomon.fullSetLevelWitness_interleaved_of_exactAgreement`: the level witnesses.
 * `ReedSolomon.interleavedRS_tensorFoldBad_card_le_heightThree`: the height-three count.
-
-## References
-
-ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`,
-`ArkLib/Data/CodingTheory/ReedSolomon/Interleaved/TensorFoldAgreement.lean`:
-
-* `fullSetLevelWitness_interleaved_of_exactAgreement` assumed `LineExactAgreementBound domain k
-  agreement exceptionalCount`, `0 < width` and `k ≤ agreement`, for `Fin n` columns and
-  `Fin width` rows. Here the scalar hypothesis is `UniformExactPowerAgreement` at `ℓ = 1`, which
-  states the same line guarantee with the challenge set counted in `ℕ` (the source's
-  `LineExactAgreementBound` is not ported); columns are any finite type, rows any finite type
-  including an empty one, and there is no width hypothesis. The proof is
-  `TensorMCA.fullSetLevelWitness_of_uniformExactAgreement` followed by
-  `TensorMCA.FullSetLevelWitness.moduleInterleavedCode`.
-* `interleavedRS_tensorFoldBad_card_le_heightThree`: the same statement over the new witness.
-* The private `lineProjectionBad`, `scalar_lineProjectionBad_card_le`,
-  `interleaved_lineProjectionBad_card_le` and
-  `exists_exceptional_fullSetLine_interleaved_of_exactAgreement` are covered by the generic
-  results listed in `ArkLib.Data.CodingTheory.ProximityGenerator.BinaryTensorFoldAgreement`, and
-  `scalar_lineProjectionBad_card_le` by `uniformExactAgreement_binaryEqualityGenerator_of_line`.
-
-Deferred: scalar providers of the line guarantee (list-decoding and curve-counting results) and
-the probability form of the count.
 -/
 
 @[expose] public section

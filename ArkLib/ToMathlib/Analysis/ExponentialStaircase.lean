@@ -27,12 +27,6 @@ is at most `F (s + 1) - F s` by `1 + t ≤ exp t`, and the sum telescopes to `F 
 ## Main statements
 
 * `Real.sum_staircase_mul_exp_le` — the displayed bound.
-
-## References
-
-Ported from ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`,
-`ArkLib/ToMathlib/Analysis/ExponentialStaircase.lean`: `Real.sum_staircase_mul_exp_le`, with the
-same statement. Its source consumer (`RatePartition/RankEstimate.lean`) is not yet ported.
 -/
 
 @[expose] public section

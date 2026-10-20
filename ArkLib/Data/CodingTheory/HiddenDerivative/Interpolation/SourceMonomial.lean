@@ -20,16 +20,6 @@ is `b + ∑_j h_j`.
 
 * `sourceMonomial_isWeightedHomogeneous`: homogeneity for an arbitrary weight.
 * `sourceMonomial_isWeightedHomogeneous_jetDegreeWeight`: the jet-degree case.
-
-## References
-
-Ported from
-`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/SourceMonomial.lean` at ArkLib
-revision a5aa2677fee4e3a79d6bb05136631cce4a08587d: `sourceMonomial`, over a
-commutative semiring instead of a commutative ring. The homogeneity lemmas are new; the source
-proved the jet-degree case only after the local substitution, inside
-`unscaledLocalSubstitution_zero_sourceMonomial_isWeightedHomogeneous` of
-`Interpolation/Local/GradedRank.lean`.
 -/
 
 @[expose] public section

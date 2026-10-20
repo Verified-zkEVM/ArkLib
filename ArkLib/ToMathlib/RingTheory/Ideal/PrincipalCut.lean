@@ -55,33 +55,6 @@ prime, so the hypotheses cannot supply `J`. Accordingly membership of `J` in the
 minimal-prime family is the properness witness of each theorem about a given `J`; only the
 existence statement `exists_principalCut_component_relative_codimension_one` assumes properness
 of the cut directly.
-
-## References
-
-These declarations are ported from ArkLib revision
-`a5aa2677fee4e3a79d6bb05136631cce4a08587d`, file
-`ArkLib/ToMathlib/AlgebraicGeometry/PrincipalOpen/Cuts.lean`. The first two declarations preserve
-the source's effective generality: the source placed them in a Noetherian section but explicitly
-omitted that instance from both statements.
-
-The height statements are ported from
-`ArkLib/ToMathlib/AlgebraicGeometry/PrincipalCut/Dimension.lean` at the same revision.
-`map_quotient_ne_bot_of_lt` no longer assumes that `P` is prime, since
-`J.map (Ideal.Quotient.mk P) = ⊥` exactly when `J ≤ P`.
-`map_quotient_height_eq_one_of_mem_minimalPrimes_sup_span` and
-`exists_principalCut_component_relative_codimension_one` keep the source hypotheses, with the
-primality of `P` as an instance argument as elsewhere in this file; the existence statement drops
-the conjunct `J.IsPrime`, which follows from minimal-prime membership. The source's
-`principalCut_minimalPrime_relative_codimension_one` was the conjunction of `Ideal.IsPrime`,
-`lt_of_mem_minimalPrimes_sup_span` and the height statement, and is not repeated.
-
-From `ArkLib/ToMathlib/AlgebraicGeometry/CutFamily/Finite.lean` at the same revision:
-`AffineHilbert.mem_retainedCutChildren` is `of_mem_retainedMinimalPrimes_sup_span`. The source
-stated it for `retainedCutChildren P s f`, which is `{P}` when `f ∈ P` and the retained minimal
-primes of `P ⊔ span {f}` otherwise, over `MvPolynomial σ F` with `P` prime and `s ∉ P`. Here it is
-stated for the retained minimal primes of the cut of any ideal of a Noetherian ring, and
-`retainedMinimalPrimes_sup_span_of_mem` shows that the two families agree when `P` is prime and
-`s ∉ P`, so `retainedCutChildren` is not introduced.
 -/
 
 @[expose] public section

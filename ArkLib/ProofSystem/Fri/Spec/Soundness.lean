@@ -13,10 +13,22 @@ public import ArkLib.OracleReduction.Security.Acceptance
 /-!
 # End-to-end soundness of the FRI oracle reduction
 
-The bound applies to the existing composed verifier and every adaptive prover in ArkLib's
-ordinary soundness game. Folding errors reuse ArkLib's powers-generator MCA error; the query
-term follows the March 27, 2026 revision of [GMW25]. See `docs/kb/audits/fri-soundness.md`
-for the source correspondence and credit to the earlier `zksecurity/simple-rbr-fri` development.
+The computable `reduction` performs `k + 1` folds and samples `l` independent queries with
+replacement. Its initial degree bound is `2 ^ (∑ i, (s i).val) * d.val`. The total error is
+the sum of the powers-generator MCA errors, plus `Real.toNNReal (1 - min θ δ) ^ l`.
+
+`soundness_proximity` bounds any acceptance for inputs at relative distance at least `δ`.
+`soundness` uses the specification's closed-ball input relation, and `rbr_soundness` gives
+the per-challenge guarantee. All bounds concern arbitrary adaptive provers in the actual
+execution, including private prover state and shared oracle state.
+
+The real parameters are unrestricted; useful numerical bounds require the hypotheses of
+the chosen MCA estimate. At `l = 0`, the query term is one and the total bound is vacuous.
+These results assert ordinary and round-by-round soundness, without a knowledge extractor
+or an extraction-time bound.
+
+The analysis follows the March 27, 2026 revision of [GMW25]. The correspondence and credit
+to the earlier `zksecurity/simple-rbr-fri` development are in `docs/kb/audits/fri-soundness.md`.
 
 ## References
 
@@ -35,7 +47,7 @@ variable {F : Type} [NonBinaryField F] [Fintype F] [SampleableType F] [Decidable
 variable {n k : ℕ} {ω : SmoothCosetFftDomain n F}
 variable (s : Fin (k + 1) → ℕ+) (d : ℕ+) (l : ℕ)
 
-/-- The total FRI error: one existing MCA error per fold and one independent-query term. -/
+/-- Sum of the per-fold MCA errors and the repeated-query error. -/
 noncomputable def soundnessError (θ δ : ℝ) : ℝ≥0 :=
   (∑ i, foldingError (ω := ω) s d θ i) + Real.toNNReal (1 - min θ δ) ^ l
 
@@ -82,10 +94,9 @@ theorem soundness (hdom : 2 ^ (∑ j, (s j).val) * d.val ≤ 2 ^ n)
   intro _ _
   exact Set.mem_univ _
 
-/-- Round-by-round soundness for the actual composed FRI verifier. Prover moves preserve
-the persistent bad-event state; each folding challenge incurs its MCA error and the final
-query vector incurs the independent-query error. -/
-theorem rbrSoundness (hdom : 2 ^ (∑ j, (s j).val) * d.val ≤ 2 ^ n)
+/-- Round-by-round soundness outside the closed-ball input language. Each folding challenge
+incurs its MCA error; the final query vector incurs the repeated-query error. -/
+theorem rbr_soundness (hdom : 2 ^ (∑ j, (s j).val) * d.val ≤ 2 ^ n)
     (θ : ℝ) (δ : ℝ≥0) [∀ j, SampleableType ((pSpec k (ω := ω) s l).Challenge j)]
     {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl (emptySpec.{0, 0}) (StateT σ ProbComp)) :

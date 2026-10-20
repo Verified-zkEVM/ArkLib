@@ -37,23 +37,6 @@ standard monomials of a polynomial ideal are the monomials outside finitely many
   `degree (B.sup id)`.
 * `Finsupp.exists_eval_eq_ncard_forall_not_le`: an instance-free form, with the count written
   as the `Set.ncard` of a set.
-
-## References
-
-Ported from ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`, file
-`ArkLib/ToMathlib/AlgebraicGeometry/Hilbert/MonomialCounting.lean`, namespace
-`MonomialHilbertCounting`: `degreeBall` becomes `Finsupp.degreeLEFinset`, `card_degreeBall` becomes
-`Finsupp.card_degreeLEFinset`, `upperConeInBall` and `card_upperConeInBall` become
-`Finsupp.card_filter_le_degreeLEFinset`, `standardExponentFinset` and its private
-inclusion–exclusion lemma become `Finsupp.card_filter_forall_not_le_degreeLEFinset`,
-`countingPolynomial` becomes `Finsupp.coneAvoidancePoly`, `countingPolynomial_eval_eq_card`
-becomes `Finsupp.eval_coneAvoidancePoly`, and `exists_eventual_standardExponent_countingPolynomial`
-becomes `Finsupp.exists_eval_eq_ncard_forall_not_le`. The source worked over `ℚ` with the
-threshold `forbiddenThreshold B`, the largest degree of `T.sup id` over `T ⊆ B`; here the
-coefficient field is any field of characteristic zero and the threshold is the single value
-`degree (B.sup id)`, which bounds all of those degrees. The source's `forbiddenSup`,
-`standardExponentSet` and the finset-level existence statement are not kept as separate
-declarations.
 -/
 
 @[expose] public section
@@ -88,6 +71,7 @@ def degreeLEFinset (N : ℕ) : Finset (σ →₀ ℕ) :=
 
 variable {σ}
 
+/-- An exponent vector lies in `degreeLEFinset σ N` exactly when its degree is at most `N`. -/
 @[simp]
 theorem mem_degreeLEFinset {N : ℕ} {e : σ →₀ ℕ} :
     e ∈ degreeLEFinset σ N ↔ e.degree ≤ N := by
@@ -95,6 +79,7 @@ theorem mem_degreeLEFinset {N : ℕ} {e : σ →₀ ℕ} :
   change (∃ t < N + 1, e.degree = t) ↔ e.degree ≤ N
   exact ⟨fun ⟨t, ht, he⟩ ↦ by omega, fun he ↦ ⟨e.degree, by omega, rfl⟩⟩
 
+/-- As a set, `degreeLEFinset σ N` is the set of exponent vectors of degree at most `N`. -/
 @[simp]
 theorem coe_degreeLEFinset (N : ℕ) :
     (degreeLEFinset σ N : Set (σ →₀ ℕ)) = {e | e.degree ≤ N} := by
