@@ -13,8 +13,8 @@ public import Mathlib.Data.Fintype.Pi
 /-!
 # The packing profile — data layer of `Packing`
 
-`RingSwitchingProfile` is the data a `Packing` ring switch needs before any protocol is
-spoken, and nothing more:
+`RingSwitchingProfile` is a coordinatized presentation of the tensor algebra `L ⊗[B] L`
+used by the DP24 packing protocol. Its data consist of:
 
 * a **basis** exhibiting the large ring `L` as free of rank `2^κ` over the small ring `B` —
   what makes packing possible in the first place: blocks of `2^κ` small-ring coefficients
@@ -42,12 +42,15 @@ identities.
 * It is stated over `CommRing` (not `Field`): carriers of interest include non-field rings.
   The `Field`-only steps (Schwartz–Zippel over `|L|`) stay at the soundness use-sites, not
   here.
-* This file holds only the abstract structure and the consequences of its laws, so the
+* The inverse laws characterize the carrier up to ring isomorphism with `L ⊗[B] L`; see
+  `RingSwitchingProfile.tensorEquiv` in `ProfileCoordinates.lean`. Profiles allow different
+  representations and bases, rather than mathematically different carrier algebras.
+* This file holds only the presentation structure and the consequences of its laws, so the
   protocol files can be parameterized over it; the tensor-product constructor
   `tensorProductProfile` lives in `Algebra.lean`, after the tensor-algebra definitions it is
   built from.
-* The `Algebra L A` instance is ambient structure only; the coordinate laws use the explicit
-  `φ₀` and `φ₁` actions.
+* Scalar actions on the carrier are expressed through the explicit `φ₀` and `φ₁` maps.
+  There is no ambient `Algebra L A` instance that could silently choose a third action.
 
 ## Instantiations
 
@@ -56,8 +59,9 @@ The implemented profile is `tensorProductProfile` ([DP24]): `A = L ⊗[B] L`, `�
 actions. Its reconstruction and inverse laws follow from `Basis.sum_repr` and `Basis.repr` of the
 two base-changed bases, and `embeddings_agree` from moving scalars across the tensor product.
 
-A trace or automorphism switch with carrier `A = L`, such as Hachi's §3 head ([NOZ26]), is not
-an instance for a finite nontrivial `L` and `κ > 0`: the inverse laws force
+Every profile carrier is isomorphic to `L ⊗[B] L`, without finiteness or field hypotheses.
+In particular, a trace or automorphism switch with carrier `A = L`, such as Hachi's §3 head
+([NOZ26]), is not an instance for a finite nontrivial `L` and `κ > 0`: the inverse laws force
 `|A| = |L|^(2^κ)`. Hachi's trace head and the `Lift` construction (`../Lift/`) have their own
 algebraic interfaces — see the family umbrella `ArkLib/ProofSystem/RingSwitching/Basic.lean` for
 the taxonomy.
@@ -80,9 +84,10 @@ namespace RingSwitching
 
 open Module
 
-/-- The packing-layer data a ring-switching reduction abstracts over. `L` is free of rank `2^κ`
-over the small ring `B` (via `basis`); `A` is the carrier of the folded element `ŝ` sent by
-batching. The two coordinate maps reconstruct with the basis in opposite embedded factors. -/
+/-- A coordinatized tensor-algebra presentation for the DP24 packing reduction.
+`L` is free of rank `2^κ` over the small ring `B` (via `basis`); `A` is the carrier of the
+folded element `ŝ` sent by batching. The two coordinate maps reconstruct with the basis in
+opposite embedded factors. -/
 structure RingSwitchingProfile (B L : Type*) (κ : ℕ)
     [CommRing B] [CommRing L] [Algebra B L] where
   /-- rank-`2^κ` `B`-basis of `L`. -/
@@ -90,14 +95,13 @@ structure RingSwitchingProfile (B L : Type*) (κ : ℕ)
   /-- Carrier of the folded element sent in the batching phase. -/
   A : Type*
   [commRingA : CommRing A]
-  [algLA : Algebra L A]
   /-- Ring homomorphism for evaluation-point data; `α ↦ α ⊗ 1` in the tensor carrier. -/
   φ₀ : L →+* A
   /-- Ring homomorphism for polynomial coefficients; `α ↦ 1 ⊗ α` in the tensor carrier. -/
   φ₁ : L →+* A
   /-- Row coordinates, used to batch the honest folded element and the final equality tensor.
   For the tensor carrier these are `baseChangeRight` coordinates: the right-factor scalar
-  action, distinct from `algLA`, combines them with basis vectors in the left factor. -/
+  action combines them with basis vectors in the left factor. -/
   decomposeRows : A → (Fin κ → Fin 2) → L
   /-- Column coordinates, used to reconstruct the original evaluation claim. For the tensor
   carrier these are `basis.baseChange L` coordinates, using the left-factor scalar action. -/
@@ -117,7 +121,7 @@ structure RingSwitchingProfile (B L : Type*) (κ : ℕ)
   /-- The two copies of `L` agree on the common base ring. -/
   embeddings_agree : ∀ b : B, φ₀ (algebraMap B L b) = φ₁ (algebraMap B L b)
 
-attribute [instance] RingSwitchingProfile.commRingA RingSwitchingProfile.algLA
+attribute [instance] RingSwitchingProfile.commRingA
 
 namespace RingSwitchingProfile
 
@@ -166,7 +170,7 @@ theorem decomposeColumns_add (x y : P.A) :
   simp only [Pi.add_apply, map_add, add_mul, Finset.sum_add_distrib,
     ← P.decomposeColumns_spec]
 
-/-- Row coordinates respect the explicit right embedding, independently of `algLA`. -/
+/-- Row coordinates respect the explicit right embedding. -/
 theorem decomposeRows_φ₁_mul (a : L) (z : P.A) :
     P.decomposeRows (P.φ₁ a * z) = fun u => a * P.decomposeRows z u := by
   apply (P.decomposeRows_eq_iff _ _).mpr

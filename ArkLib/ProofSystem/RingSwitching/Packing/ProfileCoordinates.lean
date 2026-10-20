@@ -7,6 +7,7 @@ module
 
 public import ArkLib.ProofSystem.RingSwitching.Packing.Profile
 public import ArkLib.ProofSystem.RingSwitching.Packing.FiniteObservation
+public import CompPoly.LinearAlgebra.TensorProduct.Basis
 
 /-!
 # Faithful profile carriers as coordinate families
@@ -15,8 +16,10 @@ A profile carrier is additively equivalent to each of its complete coordinate fa
 finite carrier has `|L| ^ (2 ^ κ)` elements. Its row
 family is the packing transposition of its column family, and the coordinates of a finite tensor
 observation are the shared weighted observation and its coordinate slices. These statements use
-the explicit embeddings `φ₀`, `φ₁` and the profile's inverse laws, without identifying the
-ambient algebra action on the carrier with either embedding.
+the explicit embeddings `φ₀`, `φ₁` and the profile's inverse laws. The canonical ring
+isomorphism `tensorEquiv` identifies every profile carrier with `L ⊗[B] L`, without
+finiteness or field hypotheses. Thus the profile permits a choice of representation and
+coordinates for this tensor algebra.
 
 Orientation follows `RingSwitchingProfile`: rows carry the basis in the `φ₀` factor, columns
 carry it in the `φ₁` factor.
@@ -26,12 +29,66 @@ carry it in the `φ₁` factor.
 
 namespace RingSwitching.RingSwitchingProfile
 
-open Module
+open Module TensorProduct
 
 noncomputable section
 
 variable {B L : Type} {κ : ℕ} [CommRing B] [CommRing L] [Algebra B L]
   (P : RingSwitchingProfile B L κ)
+
+/-- The canonical map from the tensor algebra to the profile carrier. Its base-ring action
+is induced by `φ₀`; agreement of the embeddings makes `φ₁` linear for the same action. -/
+def tensorToCarrier : L ⊗[B] L →+* P.A :=
+  letI : Algebra B P.A := (P.φ₀.comp (algebraMap B L)).toAlgebra
+  (Algebra.TensorProduct.productMap
+    ({ P.φ₀ with commutes' := fun _ => rfl } : L →ₐ[B] P.A)
+    ({ P.φ₁ with commutes' := fun b => (P.embeddings_agree b).symm } :
+      L →ₐ[B] P.A)).toRingHom
+
+/-- The canonical map multiplies the two explicitly embedded tensor factors. -/
+@[simp] theorem tensorToCarrier_tmul (x y : L) :
+    P.tensorToCarrier (x ⊗ₜ[B] y) = P.φ₀ x * P.φ₁ y := rfl
+
+/-- The row inverse laws make the canonical tensor map bijective. -/
+theorem tensorToCarrier_bijective : Function.Bijective P.tensorToCarrier := by
+  classical
+  let rightAlgebra : Algebra L (L ⊗[B] L) := Algebra.TensorProduct.rightAlgebra
+  let rightModule : Module L (L ⊗[B] L) := rightAlgebra.toModule
+  have rows (z : L ⊗[B] L) :
+      ∃ c : (Fin κ → Fin 2) → L, z = ∑ u, P.basis u ⊗ₜ[B] c u := by
+    refine ⟨fun u => (P.basis.baseChangeRight (Right := L)).repr z u, ?_⟩
+    conv_lhs => rw [← (P.basis.baseChangeRight (Right := L)).sum_repr z]
+    refine Finset.sum_congr rfl fun u _ => ?_
+    rw [Basis.baseChangeRight_apply, Algebra.smul_def]
+    change (1 ⊗ₜ[B] _) * _ = _
+    simp [Algebra.TensorProduct.tmul_mul_tmul]
+  constructor
+  · intro x y hxy
+    obtain ⟨c, rfl⟩ := rows x
+    obtain ⟨d, rfl⟩ := rows y
+    simp only [map_sum, tensorToCarrier_tmul] at hxy
+    have hcoords := congrArg P.decomposeRows hxy
+    rw [P.decomposeRows_recompose, P.decomposeRows_recompose] at hcoords
+    rw [hcoords]
+  · intro z
+    refine ⟨∑ u, P.basis u ⊗ₜ[B] P.decomposeRows z u, ?_⟩
+    simp only [map_sum, tensorToCarrier_tmul]
+    exact (P.decomposeRows_spec z).symm
+
+/-- Every profile carrier is a presentation of the tensor algebra `L ⊗[B] L`. -/
+def tensorEquiv : L ⊗[B] L ≃+* P.A :=
+  RingEquiv.ofBijective P.tensorToCarrier P.tensorToCarrier_bijective
+
+/-- The presentation isomorphism preserves the two embedded tensor factors. -/
+@[simp] theorem tensorEquiv_tmul (x y : L) :
+    P.tensorEquiv (x ⊗ₜ[B] y) = P.φ₀ x * P.φ₁ y := rfl
+
+/-- The inverse presentation map reconstructs a tensor from the profile's row coordinates. -/
+theorem tensorEquiv_symm_apply (z : P.A) :
+    P.tensorEquiv.symm z = ∑ u, P.basis u ⊗ₜ[B] P.decomposeRows z u := by
+  apply P.tensorEquiv.injective
+  simp only [RingEquiv.apply_symm_apply, map_sum, tensorEquiv_tmul]
+  exact P.decomposeRows_spec z
 
 /-- Additive equivalence between the carrier and its complete row-coordinate family. -/
 def rowEquiv : P.A ≃+ ((Fin κ → Fin 2) → L) where
