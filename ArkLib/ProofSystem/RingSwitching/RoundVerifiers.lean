@@ -6,6 +6,7 @@ Authors: Tobias Rothmann
 module
 
 public import ArkLib.OracleReduction.Basic
+public import ArkLib.OracleReduction.Security.Guarded
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.ScalarRound
 
 /-!
@@ -32,11 +33,10 @@ Both verifiers read the message through the default oracle interface (it is an I
 sent in the clear) and pass the input oracle statements through unchanged. A failed check
 **aborts** (`failure`): no output statement is produced, so no output relation can be met by a
 rejected transcript. This is what makes the terminal knowledge-state obligation provable. The
-run equations `messageRoundOracleVerifier_verify` and `scalarRoundOracleVerifier_verify` state
-the induced plain verifiers as guarded verifiers. Both are instances of the generic
-query-guard-return run equation `OracleVerifier.toVerifier_verify_of_query_guard`, and are
-packaged as `Verifier.GuardedForm`s (`messageRoundOracleVerifierGuardedForm`,
-`scalarRoundOracleVerifierGuardedForm`).
+induced plain verifiers are guarded, with guard and verdict as data in
+`messageRoundOracleVerifierGuardedForm` and `scalarRoundOracleVerifierGuardedForm`. Both are
+instances of the generic query-guard-return form `Verifier.GuardedForm.ofQueryGuard`; the
+`…_check` and `…_out` lemmas state their guard and verdict in terms of the sent message.
 
 The verifiers mention no rings; they live in this folder rather than under `OracleReduction/`
 because the check-then-update shape is what the ring-switching constructions share on the wire.
@@ -128,63 +128,61 @@ def scalarRoundOracleVerifier
         intro i
         rfl } }
 
-/-! ## Run equations: the combinators are guarded -/
+/-! ## Guarded forms: the combinators abort on a failed check -/
 
 variable (check : StmtIn → Msg → Prop) [hcheck : ∀ s m, Decidable (check s m)]
 
-/-- The one-message verifier runs as a guarded verifier: it returns the accepted statement with the
-input oracle statements when the check passes on the sent message, and aborts otherwise. -/
-theorem messageRoundOracleVerifier_verify (accept : StmtIn → Msg → StmtOut)
-    (stmt : StmtIn) (oStmt : ∀ i, OStmt i) (tr : (pSpecMessage Msg).FullTranscript) :
-    (messageRoundOracleVerifier (oSpec := oSpec) (OStmt := OStmt) check
-      accept).toVerifier.verify (stmt, oStmt) tr =
-      if check stmt (tr.messages ⟨0, rfl⟩) then
-        pure (accept stmt (tr.messages ⟨0, rfl⟩), oStmt)
-      else failure :=
-  OracleVerifier.toVerifier_verify_of_query_guard
-    (messageRoundOracleVerifier (oSpec := oSpec) (OStmt := OStmt) check accept)
-    ⟨⟨0, rfl⟩, ()⟩ (fun s m _ => check s m) (hcheck := fun s m _ => hcheck s m)
-    (fun s m _ => accept s m) (fun _ _ => rfl) stmt oStmt tr
-
-/-- The scalar-round verifier runs as a guarded verifier: it returns the accepted statement at the
-sent message and challenge, with the input oracle statements, when the check passes on the message,
-and aborts otherwise. -/
-theorem scalarRoundOracleVerifier_verify (accept : StmtIn → Msg → C → StmtOut)
-    (stmt : StmtIn) (oStmt : ∀ i, OStmt i) (tr : (pSpecScalar Msg C).FullTranscript) :
-    letI : OracleInterface Msg := OracleInterface.instDefault
-    (scalarRoundOracleVerifier (oSpec := oSpec) (OStmt := OStmt) check
-      accept).toVerifier.verify (stmt, oStmt) tr =
-      if check stmt (tr.messages ⟨0, rfl⟩) then
-        pure (accept stmt (tr.messages ⟨0, rfl⟩) (tr.challenges ⟨1, rfl⟩), oStmt)
-      else failure :=
-  letI : OracleInterface Msg := OracleInterface.instDefault
-  OracleVerifier.toVerifier_verify_of_query_guard
-    (scalarRoundOracleVerifier (oSpec := oSpec) (OStmt := OStmt) check accept)
-    ⟨⟨0, rfl⟩, ()⟩ (fun s m _ => check s m) (hcheck := fun s m _ => hcheck s m)
-    (fun s m chals => accept s m (chals ⟨1, rfl⟩))
-    (fun _ _ => rfl) stmt oStmt tr
-
-/-- The one-message verifier's guard and verdict as data. -/
+/-- The one-message verifier's guard and verdict as data: it returns the accepted statement with
+the input oracle statements when the check passes on the sent message, and aborts otherwise. -/
 def messageRoundOracleVerifierGuardedForm (accept : StmtIn → Msg → StmtOut) :
     (messageRoundOracleVerifier (oSpec := oSpec) (OStmt := OStmt) check
-      accept).toVerifier.GuardedForm where
-  check := fun s tr => decide (check s.1 (tr.messages ⟨0, rfl⟩))
-  out := fun s tr => (accept s.1 (tr.messages ⟨0, rfl⟩), s.2)
-  verify_eq := fun s tr => by
-    rw [messageRoundOracleVerifier_verify]
-    simp only [decide_eq_true_eq]
+      accept).toVerifier.GuardedForm :=
+  Verifier.GuardedForm.ofQueryGuard _ ⟨⟨0, rfl⟩, ()⟩ (fun s m _ => check s m)
+    (hcheck := fun s m _ => hcheck s m) (fun s m _ => accept s m) (fun _ _ => rfl)
 
-/-- The scalar-round verifier's guard and verdict as data. -/
+/-- The one-message verifier's guard is the check on the sent message. -/
+@[simp]
+theorem messageRoundOracleVerifierGuardedForm_check (accept : StmtIn → Msg → StmtOut)
+    (s : StmtIn × ∀ i, OStmt i) (tr : (pSpecMessage Msg).FullTranscript) :
+    (messageRoundOracleVerifierGuardedForm (oSpec := oSpec) check accept).check s tr =
+      decide (check s.1 (tr.messages ⟨0, rfl⟩)) := rfl
+
+/-- The one-message verifier's verdict is the accepted statement at the sent message, with the
+input oracle statements. -/
+@[simp]
+theorem messageRoundOracleVerifierGuardedForm_out (accept : StmtIn → Msg → StmtOut)
+    (s : StmtIn × ∀ i, OStmt i) (tr : (pSpecMessage Msg).FullTranscript) :
+    (messageRoundOracleVerifierGuardedForm (oSpec := oSpec) check accept).out s tr =
+      (accept s.1 (tr.messages ⟨0, rfl⟩), s.2) := rfl
+
+/-- The scalar-round verifier's guard and verdict as data: it returns the accepted statement at the
+sent message and challenge, with the input oracle statements, when the check passes on the message,
+and aborts otherwise. -/
 def scalarRoundOracleVerifierGuardedForm (accept : StmtIn → Msg → C → StmtOut) :
     letI : OracleInterface Msg := OracleInterface.instDefault
     (scalarRoundOracleVerifier (oSpec := oSpec) (OStmt := OStmt) check
       accept).toVerifier.GuardedForm :=
   letI : OracleInterface Msg := OracleInterface.instDefault
-  { check := fun s tr => decide (check s.1 (tr.messages ⟨0, rfl⟩))
-    out := fun s tr => (accept s.1 (tr.messages ⟨0, rfl⟩) (tr.challenges ⟨1, rfl⟩), s.2)
-    verify_eq := fun s tr => by
-      rw [scalarRoundOracleVerifier_verify]
-      simp only [decide_eq_true_eq] }
+  Verifier.GuardedForm.ofQueryGuard _ ⟨⟨0, rfl⟩, ()⟩ (fun s m _ => check s m)
+    (hcheck := fun s m _ => hcheck s m) (fun s m chals => accept s m (chals ⟨1, rfl⟩))
+    (fun _ _ => rfl)
+
+/-- The scalar-round verifier's guard is the check on the sent message. -/
+@[simp]
+theorem scalarRoundOracleVerifierGuardedForm_check (accept : StmtIn → Msg → C → StmtOut)
+    (s : StmtIn × ∀ i, OStmt i) (tr : (pSpecScalar Msg C).FullTranscript) :
+    letI : OracleInterface Msg := OracleInterface.instDefault
+    (scalarRoundOracleVerifierGuardedForm (oSpec := oSpec) check accept).check s tr =
+      decide (check s.1 (tr.messages ⟨0, rfl⟩)) := rfl
+
+/-- The scalar-round verifier's verdict is the accepted statement at the sent message and
+challenge, with the input oracle statements. -/
+@[simp]
+theorem scalarRoundOracleVerifierGuardedForm_out (accept : StmtIn → Msg → C → StmtOut)
+    (s : StmtIn × ∀ i, OStmt i) (tr : (pSpecScalar Msg C).FullTranscript) :
+    letI : OracleInterface Msg := OracleInterface.instDefault
+    (scalarRoundOracleVerifierGuardedForm (oSpec := oSpec) check accept).out s tr =
+      (accept s.1 (tr.messages ⟨0, rfl⟩) (tr.challenges ⟨1, rfl⟩), s.2) := rfl
 
 end Combinators
 
