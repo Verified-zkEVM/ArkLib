@@ -126,6 +126,22 @@ end RoundByRoundOneShot
 
 end Extractor
 
+omit [∀ i, SampleableType (pSpec.Challenge i)] in
+/-- The round-by-round extraction-failure event at challenge `i`: some intermediate witness
+satisfies the knowledge state after the challenge, while its extraction fails it before. This is
+the event `Verifier.rbrKnowledgeSoundnessWorstCase` bounds, named so that per-protocol bounds can
+state it. -/
+@[reducible]
+def rbrExtractionFailureEvent {WitMid : Fin (n + 1) → Type}
+    (kSF : (m : Fin (n + 1)) → StmtIn → Transcript m pSpec → WitMid m → Prop)
+    (extractor : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid)
+    (i : pSpec.ChallengeIdx) (stmtIn : StmtIn)
+    (transcript : Transcript i.1.castSucc pSpec) (challenge : pSpec.Challenge i) : Prop :=
+  ∃ witMid : WitMid i.1.succ,
+    ¬ kSF i.1.castSucc stmtIn transcript
+      (extractor.extractMid i.1 stmtIn (transcript.concat challenge) witMid) ∧
+    kSF i.1.succ stmtIn (transcript.concat challenge) witMid
+
 namespace Verifier
 
 section RoundByRound
@@ -189,6 +205,23 @@ structure KnowledgeStateFunction
       (simulateQ impl (verifier.run stmtIn tr)).run' (← init))}[
         (stmtOut, witOut) ∈ relOut] > 0 →
     toFun (.last n) stmtIn tr (extractor.extractOut stmtIn tr witOut)
+
+omit [∀ i, SampleableType (pSpec.Challenge i)] in
+variable {init impl} in
+/-- A knowledge state function's value depends on its round, transcript and witness only up to
+(heterogeneous) equality. -/
+theorem KnowledgeStateFunction.toFun_congr {V : Verifier oSpec StmtIn StmtOut pSpec}
+    {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
+    {WitMid : Fin (n + 1) → Type}
+    {E : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid}
+    (K : V.KnowledgeStateFunction init impl relIn relOut E) {k k' : Fin (n + 1)} (hk : k = k')
+    (stmt : StmtIn) {T : pSpec.Transcript k} {T' : pSpec.Transcript k'} (hT : HEq T T')
+    {w : WitMid k} {w' : WitMid k'} (hw : HEq w w') :
+    K.toFun k stmt T w ↔ K.toFun k' stmt T' w' := by
+  subst hk
+  cases hT
+  cases hw
+  rfl
 
 /-- A knowledge state function gives rise to a state function via quantifying over the witness -/
 def KnowledgeStateFunction.toStateFunction
