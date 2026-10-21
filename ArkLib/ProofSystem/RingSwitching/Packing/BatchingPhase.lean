@@ -363,10 +363,41 @@ theorem sum_cube_batchingPoly_eq_compute_s0 (ctx : RingSwitchingBaseContext κ L
 
 omit [NeZero κ] [DecidableEq L] [Fintype K] [DecidableEq K] [NeZero ℓ] [NeZero ℓ'] in
 open Probability in
-/-- If compatibility with the oracle statement determines the packed polynomial, then for a
-fixed carrier `ŝ` a uniform batching point admits a compatible packed polynomial whose tensor
-evaluation differs from `ŝ` but whose round-zero sumcheck claim is consistent with the batching
-target of `ŝ` with probability at most `κ/|L|`. -/
+/-- If compatible polynomials have the same embedded evaluation at the fixed input point,
+the batching event for an incorrect carrier has probability at most `κ/|L|`. -/
+theorem prob_exists_consistent_ne_le_of_embedded_eval_eq [NoZeroDivisors L]
+    (stmt : BatchingStmtIn L ℓ)
+    (oStmt : ∀ j, aOStmtIn.OStmtIn j) (s_hat : P.A)
+    (hbind : ∀ t₁ t₂, aOStmtIn.initialCompatibility ⟨t₁, oStmt⟩ →
+      aOStmtIn.initialCompatibility ⟨t₂, oStmt⟩ →
+      embedded_MLP_eval κ L K P ℓ ℓ' h_l t₁ stmt.t_eval_point =
+        embedded_MLP_eval κ L K P ℓ ℓ' h_l t₂ stmt.t_eval_point) :
+    Pr{let c ← $ᵗ (Fin κ → L)}[∃ t' : MultilinearPoly L ℓ',
+        aOStmtIn.initialCompatibility ⟨t', oStmt⟩ ∧
+        embedded_MLP_eval κ L K P ℓ ℓ' h_l t' stmt.t_eval_point ≠ s_hat ∧
+        sumcheckConsistencyProp (boolDomain L ℓ') (compute_s0 κ L K P s_hat c)
+          (projectToMidSumcheckPolyWithParam (L := L) (ℓ := ℓ')
+            (param := RingSwitching_SumcheckMultParam κ L K P ℓ ℓ' h_l)
+            (ctx := { t_eval_point := stmt.t_eval_point, original_claim := stmt.original_claim,
+                      s_hat := s_hat, r_batching := c })
+            (t := t') (i := 0) (challenges := Fin.elim0))] ≤
+      (((κ : ℝ≥0) / (Fintype.card L : ℝ≥0) : ℝ≥0) : ℝ≥0∞) := by
+  by_cases h : ∃ t₀ : MultilinearPoly L ℓ', aOStmtIn.initialCompatibility ⟨t₀, oStmt⟩ ∧
+      embedded_MLP_eval κ L K P ℓ ℓ' h_l t₀ stmt.t_eval_point ≠ s_hat
+  · obtain ⟨t₀, ht₀, hne⟩ := h
+    -- Point-local binding fixes the carrier before the batching challenge.
+    refine (prEvent_mono _ _ _ fun c ⟨t', ht', _, hcons⟩ => ?_).trans
+      (compute_s0_collision_le P hne)
+    rw [hbind t₀ t' ht₀ ht']
+    unfold sumcheckConsistencyProp at hcons
+    rw [hcons, sum_cube_batchingPoly_eq_compute_s0]
+  · rw [prEvent_eq_zero_of_forall_not _ _ fun c ⟨t', ht', hne, _⟩ => h ⟨t', ht', hne⟩]
+    exact _root_.zero_le
+
+omit [NeZero κ] [DecidableEq L] [Fintype K] [DecidableEq K] [NeZero ℓ] [NeZero ℓ'] in
+open Probability in
+/-- Uniqueness of the compatible polynomial bounds the incorrect-carrier batching event
+by `κ/|L|`. -/
 theorem prob_exists_consistent_ne_le [NoZeroDivisors L] (stmt : BatchingStmtIn L ℓ)
     (oStmt : ∀ j, aOStmtIn.OStmtIn j) (s_hat : P.A)
     (hbind : ∀ t₁ t₂, aOStmtIn.initialCompatibility ⟨t₁, oStmt⟩ →
@@ -381,18 +412,11 @@ theorem prob_exists_consistent_ne_le [NoZeroDivisors L] (stmt : BatchingStmtIn L
                       s_hat := s_hat, r_batching := c })
             (t := t') (i := 0) (challenges := Fin.elim0))] ≤
       (((κ : ℝ≥0) / (Fintype.card L : ℝ≥0) : ℝ≥0) : ℝ≥0∞) := by
-  have : IsDomain L := NoZeroDivisors.to_isDomain L
-  by_cases h : ∃ t₀ : MultilinearPoly L ℓ', aOStmtIn.initialCompatibility ⟨t₀, oStmt⟩ ∧
-      embedded_MLP_eval κ L K P ℓ ℓ' h_l t₀ stmt.t_eval_point ≠ s_hat
-  · obtain ⟨t₀, ht₀, hne⟩ := h
-    -- binding pins the packed polynomial, so the event is a collision of batching targets
-    refine (prEvent_mono _ _ _ fun c ⟨t', ht', _, hcons⟩ => ?_).trans
-      (compute_s0_collision_le P hne)
-    rw [hbind t₀ t' ht₀ ht']
-    unfold sumcheckConsistencyProp at hcons
-    rw [hcons, sum_cube_batchingPoly_eq_compute_s0]
-  · rw [prEvent_eq_zero_of_forall_not _ _ fun c ⟨t', ht', hne, _⟩ => h ⟨t', ht', hne⟩]
-    exact _root_.zero_le
+  apply prob_exists_consistent_ne_le_of_embedded_eval_eq κ L K P ℓ ℓ' h_l aOStmtIn
+    stmt oStmt s_hat
+  intro t₁ t₂ h₁ h₂
+  exact congrArg (fun t => embedded_MLP_eval κ L K P ℓ ℓ' h_l t stmt.t_eval_point)
+    (hbind t₁ t₂ h₁ h₂)
 
 /-- Knowledge state function for the batching phase. -/
 noncomputable def batchingKnowledgeStateFunction :

@@ -98,8 +98,9 @@ them; `PackingData.transpose` is the coordinate transpose `(ιP → E) ≃ₗ[B]
   with a proved reconstruction identity.
 
 Everything holds over commutative rings, including rings with zero divisors, except the two
-Schwartz–Zippel batching strategies, which need a finite domain, and the quirky layout, whose
-Lagrange interpolation needs the opening algebra to be a field.
+Schwartz–Zippel batching strategies, which need a finite commutative ring with no zero
+divisors, and the quirky layout, whose Lagrange interpolation needs the opening algebra to
+be a field.
 
 ## The three constructions
 
