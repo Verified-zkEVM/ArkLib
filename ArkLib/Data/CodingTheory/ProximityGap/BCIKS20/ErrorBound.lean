@@ -4,9 +4,18 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland,
          Ilia Vlasov, Chung Thai Nguyen
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.Prelude
-import ArkLib.Data.CodingTheory.ReedSolomon
+public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.Prelude
+public import ArkLib.Data.CodingTheory.ReedSolomon
+
+/-!
+# ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ErrorBound
+
+Definitions and results for this component of ArkLib.
+-/
+
+@[expose] public section
 
 namespace ProximityGap
 
@@ -33,6 +42,24 @@ noncomputable def errorBound (δ : ℝ≥0) (deg : ℕ) (domain : ι ↪ F) : �
     ⟨(deg ^ 2 : ℝ≥0) / ((2 * m) ^ 7 * (Fintype.card F : ℝ)), by positivity⟩
   else
     0
+
+-- After `unfold errorBound`, rewriting the `ite` has to match its `Decidable` instance.
+-- Respecting transparency prevents the two instances from unifying here.
+set_option backward.isDefEq.respectTransparency false in
+omit [Nonempty ι] [DecidableEq ι] [DecidableEq F] in
+/-- In the open Johnson regime, `errorBound` is its Guruswami--Sudan expression. -/
+theorem errorBound_eq_johnson {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
+    (hδ : δ ∈ Set.Ioo
+      ((1 - (LinearCode.rate (ReedSolomon.code domain deg) : ℝ≥0)) / 2)
+      (1 - NNReal.sqrt (LinearCode.rate (ReedSolomon.code domain deg) : ℝ≥0))) :
+    errorBound δ deg domain =
+      ⟨(deg ^ 2 : ℝ≥0) /
+        ((2 * min
+          (1 - NNReal.sqrt (LinearCode.rate (ReedSolomon.code domain deg) : ℝ≥0) - δ)
+          (NNReal.sqrt (LinearCode.rate (ReedSolomon.code domain deg) : ℝ≥0) / 20)) ^ 7 *
+          (Fintype.card F : ℝ)), by positivity⟩ := by
+  unfold errorBound
+  rw [ite_eq_right (fun h ↦ (not_le_of_gt hδ.1) h.2), ite_eq_left hδ]
 
 omit [DecidableEq ι] in
 theorem errorBound_eq_n_div_q_of_le_relUDR {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}

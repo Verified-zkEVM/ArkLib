@@ -3,10 +3,12 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.ProofSystem.RingSwitching.Transport
-import ArkLib.ProofSystem.RingSwitching.RoundVerifiers
-import ArkLib.ProofSystem.RingSwitching.Packing
-import ArkLib.ProofSystem.RingSwitching.Lift
+module
+
+public import ArkLib.ProofSystem.RingSwitching.Transport
+public import ArkLib.ProofSystem.RingSwitching.RoundVerifiers
+public import ArkLib.ProofSystem.RingSwitching.Packing
+public import ArkLib.ProofSystem.RingSwitching.Lift
 
 /-!
 # Ring Switching — a family of constructions, not one protocol
@@ -29,11 +31,17 @@ each:
    `Packing/Profile.lean`); the relocation is per-instance:
    * **interactive relocation** (the protocol files of `Packing/`) — for an arbitrary
      large-ring evaluation point: carrier message, batching challenge, dedicated packing
-     sumcheck; RBR knowledge soundness (`[IsDomain L]`). Consumed by
+     sumcheck; RBR knowledge soundness (`[NoZeroDivisors L]`). Consumed by
      `ProofSystem/Binius/FRIBinius/` (this is [DP24]'s construction).
-   * **deterministic relocation** (planned) — for a subring-valued evaluation point the
-     interaction collapses to one message and one identity check, with zero soundness error;
-     a second `Profile` instance ([NOZ26] §3).
+   * **deterministic relocation** — for a subring-valued evaluation point the interaction
+     collapses to one message and one identity check, with zero soundness error ([NOZ26] §3.1).
+     Its carrier is `L` itself, so it is not a `Profile` instance: the Hachi trace head
+     (`Commitments/Functional/Hachi/TraceHead/`) uses the coordinate layer of `Packing/`
+     directly, with one opening coordinate: its `ψ` packing is `packedMLE` of a
+     monomial-coefficient `ClaimLayout`, its conformance theorem states its accepting condition
+     through the shared `sliceRel`, and its read-back is a `CheckedObservation`. It exercises
+     only the packing, evaluation and opening part of that layer (no batching, multiplier or
+     sumcheck), as in [NOZ26] §3.1.
 
 2. **Lift** (`Lift/`) — the *opposite* direction, a quotient ring
    `S ≅ R[X]/(φ)` → a field `F ⊇ R`. Each row of a linear claim `M z = y` over `S` lifts to
@@ -49,9 +57,10 @@ each:
 ## What is genuinely shared between the two families
 
 * The **round-shape verifiers** (this folder's top level): every verifier round of the family
-  is "one prover message, a deterministic local check, an accept/reject statement update" —
-  message-only (`pSpecMessage` + `messageRoundOracleVerifier`: DP24's final step today,
-  Hachi §3's trace-check head tomorrow) or with a trailing scalar challenge
+  is "one prover message, a deterministic local check, a statement update or an abort" —
+  message-only (`pSpecMessage` + `messageRoundOracleVerifier`: DP24's final step; Hachi's
+  §3.1 trace head has the same one-message shape as a plain aborting `Verifier`) or with a
+  trailing scalar challenge
   (`pSpecScalar` + `scalarRoundOracleVerifier`: DP24's batching round; the check-free limit
   of this shape is the committed-scalar verifier `Lift` builds on). See
   `RoundVerifiers.lean`.
@@ -74,9 +83,9 @@ each:
 
 Anything else — the tensor-algebra batching check, the relocation sumcheck, the
 quotient-witness correspondence, the trace identity — belongs to exactly one construction and
-lives with it. In particular the two *data layers* do not unify: above a spanning-and-faithful
-core their law sets are incomparable (coordinate additivity is not derivable from
-`decomposeRows_spec` alone, and `rep` is not multiplicative on the nose), so no common parent
+lives with it. In particular the two *data layers* do not unify: their laws govern different
+maps (a profile's coordinate bijections onto `2^κ` coordinates over `L`, a presentation's
+representative map `rep`, which is not multiplicative on the nose), so no common parent
 structure would carry a lemma either side's proofs consume.
 
 ## Folder structure
@@ -102,3 +111,5 @@ structure would carry a lemma either side's proofs consume.
 
 See also the KB concept page `docs/kb/concepts/ring-switching.md`.
 -/
+
+@[expose] public section

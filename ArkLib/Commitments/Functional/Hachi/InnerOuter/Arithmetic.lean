@@ -3,8 +3,10 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Data.Lattices.CyclotomicRing.PowTwo
-import ArkLib.Data.Lattices.CyclotomicRing.NormBounds
+module
+
+public import ArkLib.Data.Lattices.CyclotomicRing.PowTwo
+public import ArkLib.Data.Lattices.CyclotomicRing.NormBounds
 
 /-!
 # The Inner-Outer Commitment/Hachi Ring `Z_q[X] / (X^{2^α} + 1)`
@@ -49,6 +51,8 @@ Micciancio/Young product norm bound (`scalarVecMul_mul_l2NormSq_le`) — hold on
 * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
     Polynomial Commitments over Extension Fields*][NOZ26]
 -/
+
+@[expose] public section
 
 open ArkLib.Lattices ArkLib.Lattices.CyclotomicModulus CompPoly CompPoly.CPolynomial
 

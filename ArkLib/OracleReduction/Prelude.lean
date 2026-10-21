@@ -3,15 +3,18 @@ Copyright (c) 2024 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Batteries.Data.Vector.Lemmas
-import VCVio.OracleComp.Constructions.SampleableType
+public import Batteries.Data.Vector.Lemmas
+public import VCVio.OracleComp.Constructions.SampleableType
 
 /-!
   # Prelude for Interactive (Oracle) Reductions
 
   This file contains preliminary definitions and instances that is used in defining I(O)Rs.
 -/
+
+@[expose] public section
 
 open OracleComp
 
@@ -88,11 +91,9 @@ instance : Coe (Fin 2) Direction := ⟨equivFin2.invFun⟩
 
 instance : Coe Bool Direction := ⟨equivBool.invFun⟩
 
-@[simp]
 lemma not_P_to_V_eq_V_to_P {x : Direction} (h : x ≠ .V_to_P) : x = .P_to_V := by
   cases x <;> simp_all
 
-@[simp]
 lemma not_V_to_P_eq_P_to_V {x : Direction} (h : x ≠ .P_to_V) : x = .V_to_P := by
   cases x <;> simp_all
 

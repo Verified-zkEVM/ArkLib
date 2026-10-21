@@ -3,17 +3,18 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import ArkLib.ToMathlib.LinearAlgebra.Matrix.Determinant
-import ArkLib.ToMathlib.FieldTheory.Kummer
-import ArkLib.ToMathlib.Polynomial.CompositionDegree
-import Mathlib.LinearAlgebra.Matrix.ToLinearEquiv
-import Mathlib.Algebra.Polynomial.Eval.Degree
-import Mathlib.Algebra.Polynomial.Roots
-import Mathlib.RingTheory.Polynomial.Basic
-import Mathlib.RingTheory.AdjoinRoot
-import Mathlib.FieldTheory.Finite.Basic
-import Mathlib.FieldTheory.Finiteness
+public import ArkLib.ToMathlib.LinearAlgebra.Matrix.Determinant
+public import ArkLib.ToMathlib.FieldTheory.Kummer
+public import ArkLib.ToMathlib.Polynomial.CompositionDegree
+public import Mathlib.LinearAlgebra.Matrix.ToLinearEquiv
+public import Mathlib.Algebra.Polynomial.Eval.Degree
+public import Mathlib.Algebra.Polynomial.Roots
+public import Mathlib.RingTheory.Polynomial.Basic
+public import Mathlib.RingTheory.AdjoinRoot
+public import Mathlib.FieldTheory.Finite.Basic
+public import Mathlib.FieldTheory.Finiteness
 
 /-!
 # The folded Wronskian
@@ -42,6 +43,8 @@ substitutions `X ↦ ω ^ i * X` in place of successive derivatives.
 
 * [Guruswami, V., and Kopparty, S., *Explicit subspace designs*][GK16]
 -/
+
+@[expose] public section
 namespace Polynomial
 
 open Matrix
@@ -219,7 +222,7 @@ theorem foldedWronskian_ne_zero_of_linearIndependent [Fintype F]
   -- the arena: the field `K = F[X]/(E)` for the irreducible `E = X ^ (q − 1) − ω`
   set E : F[X] := X ^ (Fintype.card F - 1) - C ω with hE
   have hEirr : Irreducible E := by rw [hE]; exact X_pow_card_sub_one_sub_C_irreducible hω
-  haveI : Fact (Irreducible E) := ⟨hEirr⟩
+  have : Fact (Irreducible E) := ⟨hEirr⟩
   -- the root of `E` satisfies `x ^ (q − 1) = ω`
   have h0 : aeval (AdjoinRoot.root E) ((X : F[X]) ^ (Fintype.card F - 1) - C ω) = 0 := by
     rw [← hE, AdjoinRoot.aeval_eq]; exact AdjoinRoot.mk_self

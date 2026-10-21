@@ -3,9 +3,10 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
+module
 
-import ArkLib.Data.MvPolynomial.RestrictDegree
-import ArkLib.ProofSystem.Sumcheck.Domain
+public import ArkLib.Data.MvPolynomial.RestrictDegree
+public import ArkLib.ProofSystem.Sumcheck.Domain
 
 /-!
 # Structured (Witness-Mode) Sumcheck — Types and Helpers
@@ -44,6 +45,8 @@ modes carry independent proofs.
 - `SumcheckWitness` — per-round witness `(t', H)` (the committed multilinear + projected
   round polynomial).
 -/
+
+@[expose] public section
 
 noncomputable section
 
@@ -160,8 +163,8 @@ def computeRoundPoly {Context : Type} (param : SumcheckMultiplierParam L ℓ Con
 for `H₀ = P · Q(t)`. -/
 def projectToMidSumcheckPolyWithParam {Context : Type}
     (param : SumcheckMultiplierParam L ℓ Context) (ctx : Context)
-    (t : MultilinearPoly L ℓ) (i : Fin (ℓ + 1)) (challenges : Fin i → L)
-    : L⦃≤ param.degCombinator + 1⦄[X Fin (ℓ-i)] :=
+    (t : MultilinearPoly L ℓ) (i : Fin (ℓ + 1)) (challenges : Fin i → L) :
+    L⦃≤ param.degCombinator + 1⦄[X Fin (ℓ-i)] :=
   let H₀ := computeRoundPoly (L := L) (ℓ := ℓ) param ctx t
   let Hᵢ := fixFirstVariablesOfMQP (ℓ := ℓ) (v := ⟨i, by omega⟩)
     (H := H₀) (challenges := challenges)
@@ -178,8 +181,7 @@ for `H₀ = m · t`. For non-identity combinators, use
 `projectToMidSumcheckPolyWithParam`. -/
 def projectToMidSumcheckPoly (t : MultilinearPoly L ℓ)
     (m : MultilinearPoly L ℓ) (i : Fin (ℓ + 1))
-    (challenges : Fin i → L)
-    : MultiquadraticPoly L (ℓ-i) :=
+    (challenges : Fin i → L) : MultiquadraticPoly L (ℓ-i) :=
   let H₀: MultiquadraticPoly L ℓ := computeInitialSumcheckPoly (ℓ:=ℓ) t m
   let Hᵢ := fixFirstVariablesOfMQP (ℓ := ℓ) (v := ⟨i, by omega⟩)
     (H := H₀) (challenges := challenges)

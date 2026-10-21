@@ -3,15 +3,18 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Katerina Hristova, František Silváši, Julian Sutherland, Chung Thai Nguyen
 -/
+module
 
-import Mathlib.Algebra.Lie.OfAssociative
-import Mathlib.LinearAlgebra.Matrix.Rank
-import Mathlib.LinearAlgebra.AffineSpace.Pointwise
-import Mathlib.LinearAlgebra.AffineSpace.Combination
-import Mathlib.RingTheory.Henselian
+public import Mathlib.Algebra.Lie.OfAssociative
+public import Mathlib.LinearAlgebra.Matrix.Rank
+public import Mathlib.LinearAlgebra.AffineSpace.Pointwise
+public import Mathlib.LinearAlgebra.AffineSpace.Combination
+public import Mathlib.RingTheory.Henselian
 
 
 /-! # Coding-Theory Preliminaries -/
+
+@[expose] public section
 
 section TensorCombination
 variable {F : Type*} [CommRing F] [Fintype F] [DecidableEq F]
@@ -276,7 +279,7 @@ omit [Fintype F] in
 /-- The affine span of a finite set of vectors is finite over a finite field. -/
 lemma AffSpanSet.instFinite [Finite F] [NeZero k] (u : Fin k → ι → F) :
     (AffSpanSet u).Finite := by
-  letI : Fintype F := Fintype.ofFinite F
+  let : Fintype F := Fintype.ofFinite F
   unfold AffSpanSet
   exact Set.toFinite _
 
@@ -388,9 +391,10 @@ namespace sInf
 lemma sInf_UB_of_le_UB {S : Set ℕ} {i : ℕ} : (∀ s ∈ S, s ≤ i) → sInf S ≤ i := fun h ↦ by
   by_cases S_empty : S.Nonempty
   · classical
-    rw [Nat.sInf_def S_empty, Nat.find_le_iff]
-    choose s hs using S_empty
-    aesop
+    rcases S_empty with ⟨s, hs⟩
+    have hne : ∃ n, n ∈ S := ⟨s, hs⟩
+    rw [Nat.sInf_def hne]
+    exact (Nat.find_le_iff hne i).2 ⟨s, h s hs, hs⟩
   · aesop (add simp (show S = ∅ by aesop (add simp Set.Nonempty)))
 
 /-- If `i` is a lower bound for all elements in a nonempty set, then `i` is at most the infimum. -/

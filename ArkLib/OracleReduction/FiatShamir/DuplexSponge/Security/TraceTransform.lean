@@ -3,9 +3,10 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Backtrack
-import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Lookahead
+public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Backtrack
+public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Lookahead
 
 /-!
 # Trace Transformations
@@ -13,6 +14,8 @@ import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Lookahead
 This file contains the trace transformations for duplex sponge Fiat-Shamir, following Section 5.5 in
 the paper.
 -/
+
+@[expose] public section
 
 open OracleComp OracleSpec ProtocolSpec
 

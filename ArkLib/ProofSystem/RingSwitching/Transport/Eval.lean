@@ -3,7 +3,9 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import Mathlib.Algebra.Polynomial.Roots
+module
+
+public import Mathlib.Algebra.Polynomial.Roots
 
 /-!
 # Evaluation through a ring embedding, and the interpolation kernel
@@ -31,6 +33,8 @@ sibling file `Coeffs.lean`. In this folder, `Lift`
 challenge-local checks, `eq_of_evalAt_eq` to extract from sufficiently many accepted
 challenges.
 -/
+
+@[expose] public section
 
 open Polynomial
 

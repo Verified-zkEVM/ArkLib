@@ -58,7 +58,21 @@ The description should include:
 
 ## Style and Naming Guidelines
 We aim to adhere to the [Lean community's contribution guidelines](https://github.com/leanprover-community/leanprover-community.github.io/tree/lean4/templates/contribute).
-Our [linting script](`./scripts/lint-style.sh`) helps enforce some aspects of these guidelines.
+The default validation command runs ArkLib's Lean-native source-policy gate. You can run its
+text-and-import checks directly with `lake exe lint-style`. The normal `lake build` also loads a
+Lean syntax-tree plugin that rejects linter suppressions; neither gate supports exceptions. The
+text gate is an independent, fail-closed backstop: forbidden `set_option` spellings are reserved
+across the entire production source, while `nolint` attribute heads are also reserved in active code
+and literal bodies. Put policy examples in `scripts/LintStyleFixtures`, which is outside the
+library-source closure; policy-like quoted identifiers and syntax quotations are reserved for the
+same reason.
+
+### Acceptance Tests
+
+Keep compile-time examples and regression tests in `ArkLibTest/`, mirroring production paths.
+`lake test` builds them, and `./scripts/validate.sh` runs the test target with a zero-warning budget.
+Stage new tests before validation. Production modules must not import tests; both trees share the
+source-style policy and build-time lint plugin. See [ArkLibTest/README.md](ArkLibTest/README.md).
 
 ### Naming Conventions
 
@@ -159,6 +173,16 @@ When translating theorem statements into names, we use standard mappings for sym
   -/
   ```
 * **Imports**: Group imports at the top of the file.
+* **Module system**: every file under `ArkLib/` uses Lean's module system (issue #795), so a new
+  one must too. The shape is `module` after the copyright block, `public import` for every import,
+  then the module docstring, then `@[expose] public section`. Mark metaprograms — delaborators,
+  unexpanders, elaborator helpers — `meta`, and use `public meta import` for their `Lean.*` and
+  `Qq` dependencies. When a proof needs to unfold a definition a dependency did not expose, add
+  `import all M` naming the module that *declares* it. Do not write a per-declaration `@[expose]`
+  while the blanket section is present, and do not reach for `backward.privateInPublic`. Files
+  under `ArkLibTest/` stay classic on purpose. The error-to-fix table in
+  [`docs/wiki/module-system.md`](docs/wiki/module-system.md) covers every failure the port
+  produced.
 * **Operators**: Put spaces on both sides of `:`, `:=`, and infix operators. Place them before a line break rather than at the start of the next line.
 * **Hypotheses**: Prefer placing hypotheses to the left of the colon (e.g., `(h : P) : Q`) rather than using arrows (`: P → Q`) when the proof introduces them.
 * **Functions**: Prefer `fun x ↦ ...` over `λ x, ...`.
@@ -181,7 +205,26 @@ We aim for consistent representations of equivalent statements:
 
 ### Tactic Mode & Performance
 
-* **Squeezing Simp**: Do not "squeeze" terminal `simp` calls (replacing `simp` with `simp only [...]`) unless necessary for performance or stability. Un-squeezed `simp` is often more readable and robust to minor library changes.
+* **Expose the mathematical structure**: Prefer proofs whose intermediate statements and named
+  helper lemmas make the argument visible. If the same induction, extensionality argument, cast,
+  or normalization step recurs, look for a missing lemma in the module that owns the underlying
+  definition.
+* **Use automation on well-scoped goals**: `simp`, `aesop`, `grind`, `omega`, `linarith`, and
+  `nlinarith` are all acceptable. They are best used as terminal steps, or after an explicit
+  transformation that leaves a clear goal. Avoid using broad automation as an intermediate step
+  before a tactic that depends on a particular goal shape.
+* **Profile before rewriting for speed**: For a slow proof, use Lean's profiler to locate the
+  expensive declaration and tactic. Then consider narrower imports, fewer local hypotheses,
+  `simp only`, `grind only`, `linarith only`, or `nlinarith only`, or replace repeated search with
+  a reusable structural lemma. Do not perform repository-wide mechanical tactic substitutions
+  without measured evidence.
+* **Do not squeeze stable terminal `simp` calls by default**: Replacing a short terminal `simp`
+  with a long `simp only [...]` list can obscure the important lemmas and make renames more
+  disruptive. Squeeze when it improves stability or produces a measured performance benefit.
+  This follows Mathlib's guidance on
+  [squeezing simp calls](https://leanprover-community.github.io/contribute/style.html#squeezing-simp-calls),
+  [nonterminal simplification](https://leanprover-community.github.io/extras/simp.html#non-terminal-simps),
+  and [profiling slow proofs](https://leanprover-community.github.io/extras/speedup.html).
 * **Comments**: Use `--` for inline comments and `/- ... -/` for block comments.
 
 ### Transparency and API Design

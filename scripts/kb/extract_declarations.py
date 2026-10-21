@@ -53,7 +53,8 @@ DECL_RE = re.compile(
     r"""^
         (?P<indent>\s*)
         (?:@\[[^\]]*\]\s*)*
-        (?:private\s+|protected\s+|noncomputable\s+|partial\s+|mutual\s+)*
+        (?:private\s+|public\s+|protected\s+|noncomputable\s+|meta\s+
+         |partial\s+|mutual\s+)*
         (?P<kind>theorem|lemma|def|abbrev|alias|structure|inductive
                  |instance|class|opaque|axiom)
         (?![A-Za-z0-9_'])
@@ -64,7 +65,12 @@ DECL_RE = re.compile(
 )
 
 NAMESPACE_RE = re.compile(r"^\s*namespace\s+([A-Za-z_][\w.]*)\s*$")
-SECTION_RE = re.compile(r"^\s*section(?:\s+([A-Za-z_][\w.]*))?\s*$")
+# A section opener may carry attributes and module-system modifiers, as in
+# `@[expose] public section`.
+SECTION_RE = re.compile(
+    r"^\s*(?:@\[[^\]]*\]\s*)*(?:public\s+|meta\s+|noncomputable\s+)*"
+    r"section(?:\s+([A-Za-z_][\w.]*))?\s*$"
+)
 END_RE = re.compile(r"^\s*end(?:\s+([A-Za-z_][\w.]*))?\s*$")
 DOCSTRING_OPEN_RE = re.compile(r"^\s*/--")
 DOCSTRING_CLOSE_RE = re.compile(r"-/\s*$")

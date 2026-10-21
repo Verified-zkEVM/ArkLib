@@ -3,8 +3,12 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Data.Lattices.CyclotomicRing.Subfield.Cardinality
-import ArkLib.Data.Lattices.CyclotomicRing.Norms
+module
+
+public import ArkLib.Data.Lattices.CyclotomicRing.Subfield.Cardinality
+public import ArkLib.Data.Lattices.CyclotomicRing.Norms
+-- Coercions below reduce CompPoly definitions whose bodies are not exposed.
+import all CompPoly.Univariate.Basic
 
 /-!
 # The Norm Bound `‖ψ(a)‖∞ ≤ 2β` (Hachi §3, Lemma 6)
@@ -35,6 +39,8 @@ entrywise maximum `vecCInfNorm`, matching the vector norm of [NOZ26, §2.1].
 * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
     Polynomial Commitments over Extension Fields*][NOZ26]
 -/
+
+@[expose] public section
 
 open CompPoly Finset
 

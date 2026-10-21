@@ -3,21 +3,22 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import ArkLib.Data.CodingTheory.ListDecodability.Bounds.Basic
-import ArkLib.Data.CodingTheory.SubspaceDesign
-import Mathlib.InformationTheory.Hamming
-import Mathlib.LinearAlgebra.Basis.Flag
-import Mathlib.Data.Fin.SuccPred
-import Mathlib.LinearAlgebra.AffineSpace.FiniteDimensional
-import Mathlib.LinearAlgebra.Dimension.StrongRankCondition
-import Mathlib.LinearAlgebra.Span.Basic
-import Mathlib.LinearAlgebra.AffineSpace.AffineSubspace.Basic
-import Mathlib.Algebra.Group.Pointwise.Set.Scalar
-import Mathlib.LinearAlgebra.LinearIndependent.Lemmas
-import Mathlib.LinearAlgebra.AffineSpace.Independent
-import Mathlib.Logic.Equiv.Fin.Basic
-import Mathlib.LinearAlgebra.AffineSpace.AffineMap
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.Basic
+public import ArkLib.Data.CodingTheory.SubspaceDesign
+public import Mathlib.InformationTheory.Hamming
+public import Mathlib.LinearAlgebra.Basis.Flag
+public import Mathlib.Data.Fin.SuccPred
+public import Mathlib.LinearAlgebra.AffineSpace.FiniteDimensional
+public import Mathlib.LinearAlgebra.Dimension.StrongRankCondition
+public import Mathlib.LinearAlgebra.Span.Basic
+public import Mathlib.LinearAlgebra.AffineSpace.AffineSubspace.Basic
+public import Mathlib.Algebra.Group.Pointwise.Set.Scalar
+public import Mathlib.LinearAlgebra.LinearIndependent.Lemmas
+public import Mathlib.LinearAlgebra.AffineSpace.Independent
+public import Mathlib.Logic.Equiv.Fin.Basic
+public import Mathlib.LinearAlgebra.AffineSpace.AffineMap
 
 /-!
 # The geometric agreement hypergraph behind [CZ25]'s subspace-design bound
@@ -47,12 +48,7 @@ The keys cited here — [CZ25] — are resolved in the reference list of
 `ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean`, which every file in this directory shares.
 -/
 
--- All three are load-bearing, verified by removing them and rebuilding: the statements below carry
--- `[Fintype ι]` / `[DecidableEq F]` and section variables that their *proofs* do not use, which the
--- corresponding linters each report.
-set_option linter.unusedFintypeInType false
-set_option linter.unusedDecidableInType false
-set_option linter.unusedSectionVars false
+@[expose] public section
 
 namespace CodingTheory
 
@@ -218,7 +214,7 @@ theorem basisFlagLevel_mem_iff_le
     exact b.flag_mono hle (basisFlagLevel_mem_flag b x)
 
 theorem exists_minimal_subset_property
-    {V : Type*} [DecidableEq V] (P : Finset V → Prop)
+    {V : Type*} (P : Finset V → Prop)
     (S : Finset V) (hPS : P S) :
     ∃ T : Finset V, T ⊆ S ∧ P T ∧
       ∀ U : Finset V, U ⊂ T → ¬ P U := by
@@ -248,13 +244,14 @@ theorem exists_minimal_subset_property
 proper subset of size `≥ 2` heavy. Minimality is what supplies the lower bound the design premise
 then contradicts. -/
 theorem exists_minimal_linear_heavy_subset
-    {V : Type*} [DecidableEq V] (weight : Finset V → ℝ)
+    {V : Type*} (weight : Finset V → ℝ)
     (κ : ℝ) (S : Finset V) (hScard : 2 ≤ S.card)
     (hSheavy : (((S.card - 1 : ℕ) : ℝ)) * κ ≤ weight S) :
     ∃ T : Finset V, T ⊆ S ∧ 2 ≤ T.card ∧
       (((T.card - 1 : ℕ) : ℝ)) * κ ≤ weight T ∧
       ∀ U : Finset V, U ⊂ T → 2 ≤ U.card →
         weight U < (((U.card - 1 : ℕ) : ℝ)) * κ := by
+  classical
   let P : Finset V → Prop := fun T =>
     2 ≤ T.card ∧ (((T.card - 1 : ℕ) : ℝ)) * κ ≤ weight T
   have hPS : P S := ⟨hScard, hSheavy⟩
@@ -316,7 +313,7 @@ theorem exists_selectedGeometricFlagBasis
   have hAD : A = Submodule.span F (D : Set V) := by
     dsimp [A, D]
     exact vectorSpan_eq_span_vsub_finset_right_ne F ha
-  letI : FiniteDimensional F (Submodule.span F (D : Set V)) :=
+  let : FiniteDimensional F (Submodule.span F (D : Set V)) :=
     FiniteDimensional.span_of_finite F D.finite_toSet
   have hex := Submodule.exists_fun_fin_finrank_span_eq F (D : Set V)
   rw [← hAD] at hex
@@ -360,10 +357,10 @@ theorem exists_selectedGeometricFlagBasis
 
 theorem geometricAffineRank_pos_of_two_le_card
     {F : Type*} {V : Type*} [Field F] [AddCommGroup V] [Module F V]
-    [DecidableEq V] (S : Finset V) (hS : 2 ≤ S.card) :
+    (S : Finset V) (hS : 2 ≤ S.card) :
     1 ≤ geometricAffineRank (F := F) S := by
   classical
-  letI : FiniteDimensional F (vectorSpan F (S : Set V)) :=
+  let : FiniteDimensional F (vectorSpan F (S : Set V)) :=
     finiteDimensional_vectorSpan_of_finite F S.finite_toSet
   unfold geometricAffineRank
   rw [Submodule.one_le_finrank_iff]
@@ -383,7 +380,7 @@ def geometricEdgeWeight {V : Type*} (S : Finset V) : ℕ :=
 
 theorem geometricAffineRank_le_edgeWeight
     {F : Type*} {V : Type*} [Field F] [AddCommGroup V] [Module F V]
-    [DecidableEq V] (S : Finset V) :
+    (S : Finset V) :
     geometricAffineRank (F := F) S ≤ geometricEdgeWeight S := by
   classical
   by_cases hS : S = ∅
@@ -452,10 +449,10 @@ theorem geometricEdgeWeight_partition_decomposition
     intro a
     unfold geometricEdgeWeight
     by_cases hne : (e ∩ P.blocks a).Nonempty
-    · rw [if_pos hne]
+    · rw [ite_eq_left hne]
       have hpos := Finset.card_pos.mpr hne
       omega
-    · rw [if_neg hne]
+    · rw [ite_eq_right hne]
       have hz : (e ∩ P.blocks a).card = 0 :=
         Finset.card_eq_zero.mpr (Finset.not_nonempty_iff_eq_empty.mp hne)
       omega
@@ -808,7 +805,7 @@ theorem affineIndependent_of_selectedGeometricFlagPart_transversal
     intro i
     have h := hpPart i
     unfold selectedGeometricFlagPart at h
-    rw [dif_pos (hpS i)] at h
+    rw [dite_eq_left (hpS i)] at h
     exact h
   have hqAI : AffineIndependent F q :=
     affineIndependent_of_basisFlagLevels B.basis q hqLevel
@@ -831,7 +828,7 @@ theorem selectedGeometricFlagPart_base
     (B : SelectedGeometricFlagBasis (F := F) S) :
     selectedGeometricFlagPart B B.base = 0 := by
   unfold selectedGeometricFlagPart
-  rw [dif_pos B.base_mem]
+  rw [dite_eq_left B.base_mem]
   rw [basisFlagLevel_eq_zero_iff]
   apply Subtype.ext
   simp only [sub_self, Submodule.coe_zero]
@@ -843,7 +840,7 @@ theorem selectedGeometricFlagPart_witness
     (i : Fin (geometricAffineRank (F := F) S)) :
     selectedGeometricFlagPart B (B.witness i) = i.succ := by
   unfold selectedGeometricFlagPart
-  rw [dif_pos (B.witness_mem i)]
+  rw [dite_eq_left (B.witness_mem i)]
   have heq :
       (⟨B.witness i - B.base,
         vsub_mem_vectorSpan F (B.witness_mem i) B.base_mem⟩ :
@@ -902,16 +899,16 @@ theorem selectedGeometricFlagPart_image_card_le
   have hpS : ∀ j, p j ∈ S := by
     intro j
     by_cases hj : j ∈ J
-    · rw [show p j = pick ⟨j, hj⟩ by simp only [p, dif_pos hj]]
+    · rw [show p j = pick ⟨j, hj⟩ by simp only [p, dite_eq_left hj]]
       exact hES (hpickE ⟨j, hj⟩)
-    · rw [show p j = selectedGeometricFlagRep B j by simp only [p, dif_neg hj]]
+    · rw [show p j = selectedGeometricFlagRep B j by simp only [p, dite_eq_right hj]]
       exact selectedGeometricFlagRep_mem B j
   have hpPart : ∀ j, selectedGeometricFlagPart B (p j) = j := by
     intro j
     by_cases hj : j ∈ J
-    · rw [show p j = pick ⟨j, hj⟩ by simp only [p, dif_pos hj]]
+    · rw [show p j = pick ⟨j, hj⟩ by simp only [p, dite_eq_left hj]]
       exact hpickPart ⟨j, hj⟩
-    · rw [show p j = selectedGeometricFlagRep B j by simp only [p, dif_neg hj]]
+    · rw [show p j = selectedGeometricFlagRep B j by simp only [p, dite_eq_right hj]]
       exact selectedGeometricFlagPart_rep B j
   have hpAI : AffineIndependent F p :=
     affineIndependent_of_selectedGeometricFlagPart_transversal B p hpS hpPart
@@ -922,7 +919,7 @@ theorem selectedGeometricFlagPart_image_card_le
     have hj : j.1 ∈ J := j.2
     have hval : p j.1 = pick j := by
       dsimp [p]
-      rw [if_pos hj]
+      rw [ite_eq_left hj]
     exact hval.symm
   have hcard := hpickAI.card_le_finrank_succ
   have hrange : Set.range pick ⊆ (E : Set V) := by
@@ -931,7 +928,7 @@ theorem selectedGeometricFlagPart_image_card_le
     exact hpickE j
   have hspan : vectorSpan F (Set.range pick) ≤ vectorSpan F (E : Set V) :=
     vectorSpan_mono F hrange
-  letI : FiniteDimensional F (vectorSpan F (E : Set V)) :=
+  let : FiniteDimensional F (vectorSpan F (E : Set V)) :=
     finiteDimensional_vectorSpan_of_finite F E.finite_toSet
   have hfin := Submodule.finrank_mono hspan
   calc
@@ -1030,7 +1027,7 @@ theorem subspaceDesign_kernelSum_le_profile
 
 open scoped Pointwise in
 theorem vectorSpan_agreementEdges_le_inf_ker
-    {ι : Type*} [Fintype ι] [DecidableEq ι]
+    {ι : Type*}
     {F : Type*} [Field F] [DecidableEq F]
     (s : ℕ) (T : Finset (ι → Fin s → F)) (f : ι → Fin s → F) (i : ι) :
     vectorSpan F (agreementEdges T f i : Set (ι → Fin s → F)) ≤
@@ -1054,7 +1051,7 @@ theorem vectorSpan_agreementEdges_le_inf_ker
 
 theorem vectorSpan_finset_le_submodule_of_subset
     {F : Type*} {V : Type*} [Field F] [AddCommGroup V] [Module F V]
-    [DecidableEq V] (S : Finset V) (C : Submodule F V)
+    (S : Finset V) (C : Submodule F V)
     (hSC : ∀ x ∈ S, x ∈ C) :
     vectorSpan F (S : Set V) ≤ C := by
   classical
@@ -1128,7 +1125,7 @@ theorem agreementWeight_lt_of_subspaceDesign
     apply vectorSpan_finset_le_submodule_of_subset
     intro c hc
     exact hTC c (hUT hc)
-  letI : FiniteDimensional F A :=
+  let : FiniteDimensional F A :=
     finiteDimensional_vectorSpan_of_finite F U.finite_toSet
   have hsum :
       (∑ i : ι, (geometricAffineRank (F := F) (agreementEdges U y i) : ℝ)) ≤
@@ -1208,7 +1205,7 @@ theorem agreementWeight_lt_of_subspaceDesign_rate
         s * R / ((s : ℝ) - d + 1) := by
     intro r hrpos hrle
     have hrs : r ≤ s := hrle.trans hds
-    rw [if_pos (Finset.mem_Icc.mpr ⟨hrpos, hrs⟩)]
+    rw [ite_eq_left (Finset.mem_Icc.mpr ⟨hrpos, hrs⟩)]
     have hdenr : (0 : ℝ) < (s : ℝ) - r + 1 := by
       exact_mod_cast (show 0 < s - r + 1 by omega)
     have hdend : (0 : ℝ) < (s : ℝ) - d + 1 := by

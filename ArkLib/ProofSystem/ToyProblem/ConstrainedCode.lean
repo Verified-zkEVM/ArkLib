@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import ArkLib.ProofSystem.ToyProblem.SoundnessBounds
+public import ArkLib.ProofSystem.ToyProblem.SoundnessBounds
 
 /-!
 # The toy-protocol soundness experiment is the MCA experiment of the constrained code
@@ -95,14 +96,14 @@ generalization of the current `mcaError` ambient — left as future work.
   Correlated Agreement*][ABF26]
 -/
 
+@[expose] public section
+
 namespace ToyProblem
 
 open Code InterleavedCode ProximityGap CoreDefinitions
 open scoped NNReal ENNReal ProbabilityTheory
 open Probability
 
-set_option linter.unusedDecidableInType false
-set_option linter.unusedSectionVars false
 
 variable {ι F : Type} [Fintype ι] [Field F] [Fintype F] [DecidableEq F]
 
@@ -138,6 +139,7 @@ def constrainedCode {k : ℕ} (enc : (Fin k → F) →ₗ[F] (ι → F)) (v : Fi
     ModuleCode (ι ⊕ Unit) F F :=
   LinearMap.range (constrainedEncoder enc v)
 
+omit [DecidableEq F] in
 /-- **The toy-protocol γ-round soundness experiment is bounded by the MCA error of
 the constrained code.** For an instance `(v, μ₁, μ₂, f₁, f₂)` of the toy reduction
 admitting **no** relaxed-relation witness (`hNoWit`), the probability over a
@@ -157,21 +159,22 @@ MCA events), and it is *not* shown to be `≤` the paper's split bound `ε_mca(C
 Directly, the toy bad event implies
 `IsMCA (AffineLineGenerator F) (constrainedCode enc v) γ U δ`, witnessed by the agreement set
 `S' = S ∪ {extra coordinate}`. -/
-theorem gamma_transition_prob_le_constrained {k : ℕ} [DecidableEq ι]
+theorem gamma_transition_prob_le_constrained {k : ℕ}
+    [SampleableType F]
     (enc : (Fin k → F) →ₗ[F] (ι → F)) (δ : ℝ≥0)
     (v : Fin k → F) (μ₁ μ₂ : F) (f₁ f₂ : ι → F)
     (hNoWit : ¬ ∃ M : Fin 2 → (Fin k → F),
       (∀ i : Fin 2, ∑ j, M i j * v j = ![μ₁, μ₂] i) ∧
       ∃ S : Finset ι, (1 - (δ : ℝ)) * Fintype.card ι ≤ S.card ∧
         ∀ i : Fin 2, ∀ j ∈ S, ![f₁, f₂] i j = enc (M i) j) :
-    Pr_{let γ ← $ᵖ F}[∃ m : Fin k → F, (∑ j, m j * v j = μ₁ + γ * μ₂) ∧
+    Pr{let γ ← $ᵗ F}[∃ m : Fin k → F, (∑ j, m j * v j = μ₁ + γ * μ₂) ∧
         ∃ S : Finset ι, (1 - (δ : ℝ)) * Fintype.card ι ≤ S.card ∧
           ∀ j ∈ S, f₁ j + γ • f₂ j = enc m j]
       ≤ mcaError (AffineLineGenerator F) (constrainedCode enc v) (δ : ℝ) := by
   classical
   set U₀ : (ι ⊕ Unit) → F := Sum.elim f₁ (fun _ ↦ μ₁) with hU₀
   set U₁ : (ι ⊕ Unit) → F := Sum.elim f₂ (fun _ ↦ μ₂) with hU₁
-  refine le_trans (Pr_le_Pr_of_implies ($ᵖ F) _
+  refine le_trans (prEvent_mono ($ᵗ F) _
       (fun γ ↦ IsMCA (AffineLineGenerator F) (constrainedCode enc v)
         γ ![U₀, U₁] (δ : ℝ)) (fun γ hγ ↦ ?_)) ?_
   · -- The toy bad event implies the constrained code's MCA bad event.
@@ -194,7 +197,7 @@ theorem gamma_transition_prob_le_constrained {k : ℕ} [DecidableEq ι]
       refine ⟨constrainedEncoder enc v m, ⟨m, rfl⟩, ?_⟩
       funext x
       rcases x with ⟨x, hx⟩
-      simp only [LinearCode.projectedWord, Set.restrict_apply]
+      simp only [LinearCode.projectedWord, Set.domRestrict_apply]
       cases x with
       | inl j =>
           have hj : j ∈ S := by
@@ -233,7 +236,7 @@ theorem gamma_transition_prob_le_constrained {k : ℕ} [DecidableEq ι]
           simpa [LinearCode.projectedWord, hU₁, constrainedEncoder] using h
   · exact le_iSup
       (fun U : Fin 2 → ((ι ⊕ Unit) → F) ↦
-        Pr_{let γ ← $ᵖ F}[IsMCA (AffineLineGenerator F)
+        Pr{let γ ← $ᵗ F}[IsMCA (AffineLineGenerator F)
           (constrainedCode enc v) γ U (δ : ℝ)]) ![U₀, U₁]
 
 /-! ## The per-instance equivalence (constraint-pinned event, proximity on data coordinates)
@@ -248,7 +251,6 @@ equality. The resulting `ConstrainedMCAEvent` is a bespoke event (not the librar
 restatement, not a reduction to the library MCA experiment.
 -/
 
-set_option linter.unusedFintypeInType false in
 /-- **Constraint-pinned MCA event of the constrained code** (proximity measured on
 the data coordinates `ι`; the constraint coordinate is mandatory but outside the
 size budget). The folded constrained codeword (target `μ₁ + γ·μ₂`) agrees with the
@@ -262,7 +264,7 @@ def ConstrainedMCAEvent {k : ℕ} (enc : (Fin k → F) →ₗ[F] (ι → F)) (v 
       (∀ i : Fin 2, ∑ j, M i j * v j = ![μ₁, μ₂] i) ∧
       (∀ i : Fin 2, ∀ j ∈ S, ![f₁, f₂] i j = enc (M i) j)
 
-set_option linter.unusedFintypeInType false in
+omit [Fintype F] [DecidableEq F] in
 /-- **Per-instance equivalence (constraint-pinned).** Under `hNoWit` (the instance
 admits no relaxed-relation witness), the toy γ-event is equivalent, for every `γ`,
 to `ConstrainedMCAEvent` — the toy event augmented with the (under `hNoWit`
@@ -297,24 +299,26 @@ theorem gammaEvent_iff_constrainedMCAEvent {k : ℕ}
   · rintro ⟨S, hScard, ⟨m, hconstr, hagree⟩, _⟩
     exact ⟨m, hconstr, S, hScard, hagree⟩
 
-set_option linter.unusedFintypeInType false in
+omit [Fintype F] [DecidableEq F] in
 /-- **Probability form of the equality**: the toy γ-round transition probability
 equals the probability of the constraint-pinned MCA event of the constrained code. -/
 theorem gammaEvent_prob_eq_constrainedMCAEvent {k : ℕ}
+    [SampleableType F]
     (enc : (Fin k → F) →ₗ[F] (ι → F)) (δ : ℝ≥0)
     (v : Fin k → F) (μ₁ μ₂ : F) (f₁ f₂ : ι → F)
     (hNoWit : ¬ ∃ M : Fin 2 → (Fin k → F),
       (∀ i : Fin 2, ∑ j, M i j * v j = ![μ₁, μ₂] i) ∧
       ∃ S : Finset ι, (1 - (δ : ℝ)) * Fintype.card ι ≤ S.card ∧
         ∀ i : Fin 2, ∀ j ∈ S, ![f₁, f₂] i j = enc (M i) j) :
-    Pr_{let γ ← $ᵖ F}[∃ m : Fin k → F, (∑ j, m j * v j = μ₁ + γ * μ₂) ∧
+    Pr{let γ ← $ᵗ F}[∃ m : Fin k → F, (∑ j, m j * v j = μ₁ + γ * μ₂) ∧
         ∃ S : Finset ι, (1 - (δ : ℝ)) * Fintype.card ι ≤ S.card ∧
           ∀ j ∈ S, f₁ j + γ • f₂ j = enc m j]
-      = Pr_{let γ ← $ᵖ F}[ConstrainedMCAEvent enc v δ μ₁ μ₂ f₁ f₂ γ] := by
+      = Pr{let γ ← $ᵗ F}[ConstrainedMCAEvent enc v δ μ₁ μ₂ f₁ f₂ γ] := by
+  classical
   refine le_antisymm ?_ ?_
-  · exact Pr_le_Pr_of_implies ($ᵖ F) _ _
+  · exact prEvent_mono ($ᵗ F) _ _
       (fun γ h ↦ (gammaEvent_iff_constrainedMCAEvent enc δ v μ₁ μ₂ f₁ f₂ hNoWit γ).mp h)
-  · exact Pr_le_Pr_of_implies ($ᵖ F) _ _
+  · exact prEvent_mono ($ᵗ F) _ _
       (fun γ h ↦ (gammaEvent_iff_constrainedMCAEvent enc δ v μ₁ μ₂ f₁ f₂ hNoWit γ).mpr h)
 
 end ToyProblem

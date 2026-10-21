@@ -3,14 +3,15 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import ArkLib.Data.CodingTheory.ListDecodability.Bounds.Basic
-import ArkLib.Data.CodingTheory.ReedSolomon
-import ArkLib.Data.Probability.Notation
-import Mathlib.Analysis.SpecialFunctions.Pow.Real
-import Mathlib.Analysis.SpecialFunctions.Log.Base
-import Mathlib.FieldTheory.Finite.Basic
-import Mathlib.FieldTheory.Finiteness
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.Basic
+public import ArkLib.Data.CodingTheory.ReedSolomon
+public import ArkLib.Data.Probability.Uniform
+public import Mathlib.Analysis.SpecialFunctions.Pow.Real
+public import Mathlib.Analysis.SpecialFunctions.Log.Base
+public import Mathlib.FieldTheory.Finite.Basic
+public import Mathlib.FieldTheory.Finiteness
 
 /-!
 # List-size bounds specific to Reed-Solomon codes
@@ -31,12 +32,7 @@ resolved in the reference list of `ArkLib/Data/CodingTheory/ListDecodability/Bou
 every file in this directory shares.
 -/
 
--- All three are load-bearing, verified by removing them and rebuilding: the statements below carry
--- `[Fintype ι]` / `[DecidableEq F]` and section variables that their *proofs* do not use, which the
--- corresponding linters each report.
-set_option linter.unusedFintypeInType false
-set_option linter.unusedDecidableInType false
-set_option linter.unusedSectionVars false
+@[expose] public section
 
 namespace CodingTheory
 
@@ -227,7 +223,7 @@ theorem rs_lambda_large_prime
     have hceil : (⌈A * (p : ℝ) ^ α⌉₊ : ℝ) < A * (p : ℝ) ^ α + 1 :=
       Nat.ceil_lt_add_one (mul_nonneg hA.le hxpos.le)
     have haAx : (⌈A * (p : ℝ) ^ α⌉₊ : ℝ) ≤ (A + 1) * (p : ℝ) ^ α := by
-      nlinarith [hx.1]
+      nlinarith only [hceil, hx.1]
     have hpowprod : (p : ℝ) ^ s * (p : ℝ) ^ α = (p : ℝ) ^ (α + s) := by
       rw [mul_comm, ← Real.rpow_add hpR]
     have haPow : (2 * ⌈A * (p : ℝ) ^ α⌉₊ : ℝ) ≤ (p : ℝ) ^ (α + s) := by
@@ -244,9 +240,11 @@ theorem rs_lambda_large_prime
       have hx2 := hx.2
       have hscale : α + s + 1 ≤ β * (p : ℝ) ^ α / 4 := by
         have hh := (div_le_iff₀ _hβ_pos).mp hx2
-        nlinarith
+        linarith only [hh]
       have hmul := mul_lt_mul_of_pos_left hceil (add_pos _hα_pos hs)
-      nlinarith [hsA]
+      have hsAx := mul_le_mul_of_nonneg_right hsA hxpos.le
+      have hAeqx := congrArg (fun z : ℝ => z * (p : ℝ) ^ α) hAeq
+      nlinarith only [hk, hscale, hmul, hsAx, hAeqx]
     have hpowhalf : (p : ℝ) ^ α * (p : ℝ) ^ (1 - α) = (p : ℝ) := by
       rw [← Real.rpow_add hpR]
       convert Real.rpow_one (p : ℝ) using 2
@@ -298,7 +296,7 @@ theorem rs_lambda_large_prime
         push_cast
         have ha2 : 2 * a ≤ p := by omega
         have ha2R : (2 : ℝ) * a ≤ p := by exact_mod_cast ha2
-        nlinarith
+        linarith only [ha2R]
       have hnum : ((p : ℝ) / 2) ^ a ≤ ((p + 1 - a : ℕ) : ℝ) ^ a :=
         pow_le_pow_left₀ (by positivity) hbase a
       have hfac : ((a.factorial : ℕ) : ℝ) ≤ (a : ℝ) ^ a := by
@@ -328,7 +326,7 @@ theorem rs_lambda_large_prime
       have hlog0 := Real.one_sub_inv_le_log_of_pos hrpos
       have hcalc : -2 ≤ (p : ℝ) * (1 - (1 - 1 / (p : ℝ))⁻¹) := by
         field_simp
-        nlinarith
+        nlinarith only [hp2R]
       have hlog : -2 ≤ (p : ℝ) * Real.log (1 - 1 / (p : ℝ)) :=
         hcalc.trans (mul_le_mul_of_nonneg_left hlog0 hpR.le)
       have hratio : Real.exp (-2) ≤ (1 - 1 / (p : ℝ)) ^ p := by
@@ -445,6 +443,7 @@ theorem rs_lambda_large_prime
     (Real.exp (-2) / 2) * (p : ℝ) ^ ((p : ℝ) ^ α * β / 2)
   simpa only [cnt, x] using hw
 
+open Classical in
 /-- **A codimension-one Reed-Solomon code has `j + 1` nearby interpolants.** Let the block length be
 `j + 1` and the message dimension be `j`. Over any field large enough to contain an evaluation
 domain of that length, there is a received word whose radius-`1/(j+1)` list has more than `j`
@@ -463,8 +462,8 @@ access and was not available for primary-source verification, so JH01 coverage r
 open rather than being attributed to this different result. -/
 theorem rs_codimension_one_list_size
     (j : ℕ)
-    {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
+    {ι : Type} [Fintype ι] [Nonempty ι]
+    {F : Type} [Field F] [Fintype F]
     (hcard_le : Fintype.card ι ≤ Fintype.card F)
     (hι : Fintype.card ι = j + 1) :
     ∃ (domain : ι ↪ F) (w : ι → F),
@@ -532,7 +531,7 @@ theorem rs_codimension_one_list_size
         (1 / (j + 1 : ℝ)) := by
     intro a
     rw [CodingTheory.closeCodewordsRel_eq_setOf C _ (by positivity) w]
-    simp only [Set.mem_setOf_eq]
+    simp only [Set.mem_ofPred_eq]
     refine ⟨hc a, ?_⟩
     rw [hfloor]
     unfold hammingDist
@@ -567,6 +566,7 @@ section RandomReedSolomon
 
 open scoped ProbabilityTheory
 
+open Classical in
 /-- **Reed-Solomon codes on a random evaluation domain are list-decodable near capacity**
 ([ABF26] Theorem 3.6, after [AGL24, Theorem 1.1]).
 
@@ -579,13 +579,13 @@ where the evaluation domain `L` is drawn uniformly from the size-`n` subsets of 
 `C := RS[F, L, k]`, and `ρ := k/n`.
 
 **The random domain is the source's, not a reformulation.** The sample space is literally
-`\binom{F}{n}` — the subtype of `Finset F` of cardinality `n`, sampled with `$ᵖ`, and the code is
+`\binom{F}{n}` — the subtype of `Finset F` of cardinality `n`, sampled with `$ᵗ`, and the code is
 indexed by that subset itself (`↥S → F`), so no ordering is chosen and no push-forward argument is
 needed. An earlier assessment recorded this row as blocked on missing infrastructure for a uniform
 distribution over size-`n` subsets; that gap is closed — `Finset F` is a `Fintype`, so the subtype
-is one too, and `PMF.uniformOfFintype` applies directly.
+is one too, and native uniform sampling applies directly.
 
-`[Nonempty {S : Finset F // S.card = n}]` is what `$ᵖ` needs, and it is implied by the field-size
+`[Nonempty {S : Finset F // S.card = n}]` is what `$ᵗ` needs, and it is implied by the field-size
 hypothesis (which forces `n ≤ |F|`, whence `Finset.exists_subset_card_eq` supplies a witness); it is
 taken as an instance argument only because a statement cannot discharge an instance from one of its
 own hypotheses.
@@ -599,13 +599,13 @@ issue [ABF26] Theorem 3.4 raises in its `η`-form. Derive it at a call site with
 [AGGLZ25] combines them; [ABF26] cites all three as context for this theorem, and none is
 formalised. -/
 theorem rs_random_domain_lambda_le
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
+    {F : Type} [Field F] [Fintype F]
     (ℓ : ℕ) (_hℓ_ge : 2 ≤ ℓ) (η : ℝ) (_hη_pos : 0 < η) (_hη_lt : η < 1)
     (k n : ℕ) (_hn_pos : 0 < n)
     (_hF : (n : ℝ) + (k : ℝ) * 2 ^ ((10 * ℓ : ℝ) / η) ≤ Fintype.card F)
     [Nonempty {S : Finset F // S.card = n}] :
     ENNReal.ofReal (1 - 2 ^ (-(ℓ * n : ℝ))) ≤
-      Pr_{ let S ← $ᵖ {S : Finset F // S.card = n} }[
+      Pr{ let S ← $ᵗ {S : Finset F // S.card = n} }[
         Lambda ((ReedSolomon.code
               (Function.Embedding.subtype (fun x : F => x ∈ (S : Finset F))) k :
             Set (↥(S : Finset F) → F)))

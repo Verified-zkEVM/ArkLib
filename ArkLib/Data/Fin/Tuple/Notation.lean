@@ -3,11 +3,12 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Classes.Slice
-import ArkLib.Data.Fin.Tuple.Defs
-import ArkLib.Data.Fin.Basic
-import Mathlib.Tactic.FinCases
+public import ArkLib.Data.Classes.Slice
+public import ArkLib.Data.Fin.Tuple.Defs
+public import ArkLib.Data.Fin.Basic
+public import Mathlib.Tactic.FinCases
 
 /-!
 # Slice notation instances for Fin tuples
@@ -36,6 +37,8 @@ variable (v : Fin 10 → ℕ)
 #check v⟦2:8⟧  -- Elements 2 through 7: Fin 6 → ℕ
 ```
 -/
+
+@[expose] public section
 
 universe u v v' w
 
@@ -253,7 +256,7 @@ macro_rules
 
 /-- Unexpander for the `!v[x, y, ...]` notation. -/
 @[app_unexpander Fin.vcons]
-def vconsUnexpander : Lean.PrettyPrinter.Unexpander
+meta def vconsUnexpander : Lean.PrettyPrinter.Unexpander
   | `($_ $term !v[$term2, $terms,*]) => `(!v[$term, $term2, $terms,*])
   | `($_ $term !v[$term2]) => `(!v[$term, $term2])
   | `($_ $term !v[]) => `(!v[$term])
@@ -261,7 +264,7 @@ def vconsUnexpander : Lean.PrettyPrinter.Unexpander
 
 /-- Unexpander for the `!v[]` notation. -/
 @[app_unexpander Fin.vempty]
-def vemptyUnexpander : Lean.PrettyPrinter.Unexpander
+meta def vemptyUnexpander : Lean.PrettyPrinter.Unexpander
   | `($_:ident) => `(!v[])
   | _ => throw ()
 
@@ -362,14 +365,14 @@ macro_rules
     `((Fin.dempty : (i : Fin 0) → $F ($α₁ i) ($α₂ i)))
 
 @[app_unexpander Fin.fcons]
-def fconsUnexpander : Lean.PrettyPrinter.Unexpander
+meta def fconsUnexpander : Lean.PrettyPrinter.Unexpander
   | `($_ $a !h⦃$F⦄⟨$α⟩[$b, $bs,*]) => `(!h⦃$F⦄⟨$α⟩[$a, $b, $bs,*])
   | `($_ $a !h⦃$F⦄⟨$α⟩[$b]) => `(!h⦃$F⦄⟨$α⟩[$a, $b])
   | `($_ $a !h⦃$F⦄⟨$α⟩[]) => `(!h⦃$F⦄⟨$α⟩[$a])
   | _ => throw ()
 
 @[app_unexpander Fin.fcons₂]
-def fcons₂Unexpander : Lean.PrettyPrinter.Unexpander
+meta def fcons₂Unexpander : Lean.PrettyPrinter.Unexpander
   | `($_ $a !h⦃$F⦄⟨$α₁⟩⟨$α₂⟩[$b, $bs,*]) => `(!h⦃$F⦄⟨$α₁⟩⟨$α₂⟩[$a, $b, $bs,*])
   | `($_ $a !h⦃$F⦄⟨$α₁⟩⟨$α₂⟩[$b]) => `(!h⦃$F⦄⟨$α₁⟩⟨$α₂⟩[$a, $b])
   | `($_ $a !h⦃$F⦄⟨$α₁⟩⟨$α₂⟩[]) => `(!h⦃$F⦄⟨$α₁⟩⟨$α₂⟩[$a])
@@ -424,7 +427,7 @@ macro_rules
 
 /-- Unexpander for the `!h[x, y, ...]` notation using hcons. -/
 @[app_unexpander Fin.hcons]
-def hconsUnexpander : Lean.PrettyPrinter.Unexpander
+meta def hconsUnexpander : Lean.PrettyPrinter.Unexpander
   | `($_ $term !h[$term2, $terms,*]) => `(!h[$term, $term2, $terms,*])
   | `($_ $term !h[$term2]) => `(!h[$term, $term2])
   | `($_ $term !h[]) => `(!h[$term])
@@ -432,13 +435,13 @@ def hconsUnexpander : Lean.PrettyPrinter.Unexpander
 
 /-- Unexpander for the `!h[]` and `!d[]` notation. -/
 @[app_unexpander Fin.dempty]
-def demptyUnexpander : Lean.PrettyPrinter.Unexpander
+meta def demptyUnexpander : Lean.PrettyPrinter.Unexpander
   | `($_:ident) => `(!h[])
   | _ => throw ()
 
 /-- Unexpander for the `!d[x, y, ...]` notation using dcons with explicit motive. -/
 @[app_unexpander Fin.dcons]
-def dconsUnexpander : Lean.PrettyPrinter.Unexpander
+meta def dconsUnexpander : Lean.PrettyPrinter.Unexpander
   | `($_ $term !d[$term2, $terms,*]) => `(!d[$term, $term2, $terms,*])
   | `($_ $term !d[$term2]) => `(!d[$term, $term2])
   | `($_ $term !d[]) => `(!d[$term])

@@ -1,13 +1,22 @@
 /-
 Copyright (c) 2025 ArkLib Contributors. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
+Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Poulami Das (Least Authority)
 -/
+module
 
-import ArkLib.Data.CodingTheory.ListDecodability
-import ArkLib.Data.CodingTheory.ReedSolomon
-import ArkLib.OracleReduction.VectorIOR
-import ArkLib.ProofSystem.Stir.ProximityBound
+public import ArkLib.Data.CodingTheory.ListDecodability
+public import ArkLib.Data.CodingTheory.ReedSolomon
+public import ArkLib.OracleReduction.VectorIOR
+public import ArkLib.ProofSystem.Stir.ProximityBound
+
+/-!
+# ArkLib.ProofSystem.Stir.MainThm
+
+Definitions and results for this component of ArkLib.
+-/
+
+@[expose] public section
 
 /-!Section 5 ACFY24stir, Theorem 5.1 and Lemma 5.4
 
@@ -93,8 +102,7 @@ instance {ι : Type} : OracleInterface (OracleStatement ι F ()) := OracleInterf
 def stirRelation
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     {ι : Type} [Fintype ι] [Nonempty ι]
-    (degree : ℕ) (φ : ι ↪ F) (err : ℝ≥0)
-    : Set ((Unit × ∀ i, (OracleStatement ι F i)) × Unit) :=
+    (degree : ℕ) (φ : ι ↪ F) (err : ℝ≥0) : Set ((Unit × ∀ i, (OracleStatement ι F i)) × Unit) :=
   fun ⟨⟨_, oracle⟩, _⟩ => δᵣ(oracle (), ReedSolomon.code φ degree) ≤ err
 
 /-- Theorem 5.1 : STIR main theorem
@@ -112,7 +120,7 @@ def stirRelation
   - `query complexity to proof strings = Oₖ(log degree + secpar * log(log degree / log(1/ρ)))`
 -/
 theorem stir_main
-  (secpar : ℕ) [SampleableType F]
+    (secpar : ℕ) [SampleableType F]
   {ι : Type} [Fintype ι] [Nonempty ι]
   {φ : ι ↪ F} {degree : ℕ} [hsmooth : Smooth φ]
   {k proofLen qNumtoInput qNumtoProofstr : ℕ}
@@ -134,8 +142,7 @@ theorem stir_main
   ∧ qNumtoInput = secpar / (- Real.log (1 - δ))
   ∧ ∃ cₖ : ℕ → ℝ, qNumtoProofstr ≤
     (cₖ k) * ((Real.log degree) +
-      secpar * (Real.log ((Real.log degree) / Real.log (1/rate (code φ degree)))))
-:= by sorry
+      secpar * (Real.log ((Real.log degree) / Real.log (1/rate (code φ degree))))) := by sorry
 
 end MainTheorem
 
@@ -216,8 +223,7 @@ theorem stir_rbr_soundness
             (Dist.δ j.succ) (P.repeatParam j.succ)
         ∧
         -- `ε_fin ≤ (1 - δ_M)^repeatParam_M`
-        ε_fin ≤ (1 - Dist.δ (Fin.last M)) ^ (P.repeatParam (Fin.last M))  :=
-by
+        ε_fin ≤ (1 - Dist.δ (Fin.last M)) ^ (P.repeatParam (Fin.last M)) := by
   sorry
 
 end RBRSoundness

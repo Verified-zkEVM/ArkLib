@@ -1,0 +1,175 @@
+/-
+Copyright (c) 2026 ArkLib Contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Quang Dao
+-/
+module
+
+public import ArkLib.ToMathlib.Combinatorics.Enumerative.IncidenceProduct
+public import Mathlib.Analysis.SpecialFunctions.Exp
+public import Mathlib.Analysis.Complex.ExponentialBounds
+public import Mathlib.Tactic.FieldSimp
+public import Mathlib.Tactic.Linarith
+public import Mathlib.Tactic.Positivity
+public import Mathlib.Tactic.Ring
+
+/-!
+# Product bounds for correlated agreement
+
+An intermediate cutoff lies between the code dimension and agreement threshold. At the original
+threshold each factor is at most `1 / δ`; at the intermediate cutoff, the product through
+dimension `r ≤ d` is less than `3 * (1 / δ) ^ r`.
+
+## Main statements
+
+* `ReedSolomon.correlatedProductCutoff` and `ReedSolomon.correlatedProductCutoff_bounds`: the
+  intermediate threshold and its range.
+* `ReedSolomon.evaluation_incidence_factor_le` and
+  `ReedSolomon.evaluation_incidence_product_le`: factor and product bounds at the original
+  threshold.
+* `ReedSolomon.correlatedProductCutoff_jointRatio_le` and
+  `ReedSolomon.correlatedProductCutoff_fiberFactor_le`: bounds on the joint factor and each
+  intermediate-cutoff factor.
+* `ReedSolomon.correlatedProductCutoff_fiberProduct_le` and
+  `ReedSolomon.correlatedProductCutoff_fiberProduct_lt_three`: bounds on the full product.
+
+## References
+
+* [DKT26]
+-/
+
+@[expose] public section
+
+namespace ReedSolomon
+
+/-- The threshold `k + ⌊d * (A - k) / (d + 1)⌋` for derivative order `d`, dimension `k`, and
+agreement threshold `A`. -/
+noncomputable def correlatedProductCutoff (d k A : ℕ) : ℕ :=
+  k + Nat.floor ((d : ℝ) * ((A - k : ℕ) : ℝ) / (d + 1))
+
+/-- One evaluation incidence factor at the original agreement threshold is at most `1 / δ`. -/
+theorem evaluation_incidence_factor_le (δ : ℝ) (n k A j : ℕ)
+    (hδ : 0 < δ) (hδone : δ ≤ 1) (hkA : k ≤ A) (hAn : A ≤ n)
+    (hgap : (k : ℝ) + δ * n ≤ A) :
+    ((n - k + j + 1 : ℕ) : ℝ) / (A - k + j + 1 : ℕ) ≤ 1 / δ := by
+  have hkn : k ≤ n := hkA.trans hAn
+  have hgap' : δ * ((n - k : ℕ) : ℝ) ≤ ((A - k : ℕ) : ℝ) := by
+    rw [Nat.cast_sub hkn, Nat.cast_sub hkA]
+    nlinarith [mul_nonneg hδ.le (show (0 : ℝ) ≤ k by positivity)]
+  exact natCast_shiftedRatio_le_one_div δ hδ hδone (n - k) (A - k) j hgap'
+
+/-- The dimension-sensitive incidence product at the original agreement threshold is at most
+`(1 / δ) ^ r`. -/
+theorem evaluation_incidence_product_le (δ : ℝ) (n k A r : ℕ)
+    (hδ : 0 < δ) (hδone : δ ≤ 1) (hkA : k ≤ A) (hAn : A ≤ n)
+    (hgap : (k : ℝ) + δ * n ≤ A) :
+    (dimensionSensitiveIncidenceProduct n A k 1 r : ℝ) ≤ (1 / δ) ^ r :=
+  dimensionSensitiveIncidenceProduct_le_one_div_pow_of_gap δ n k A r hδ hδone hkA hAn hgap
+
+/-- The intermediate cutoff lies between the code dimension and agreement threshold. -/
+theorem correlatedProductCutoff_bounds (d k A : ℕ) (hkA : k ≤ A) :
+    k ≤ correlatedProductCutoff d k A ∧ correlatedProductCutoff d k A ≤ A := by
+  have hraw : 0 ≤ (d : ℝ) * ((A - k : ℕ) : ℝ) / (d + 1) := by positivity
+  have hf := Nat.floor_le hraw
+  have hle : (d : ℝ) * ((A - k : ℕ) : ℝ) / (d + 1) ≤ (A - k : ℕ) := by
+    rw [div_le_iff₀ (by positivity : (0 : ℝ) < d + 1)]
+    push_cast [Nat.cast_sub hkA]
+    have hh : (0 : ℝ) ≤ A - k := by exact_mod_cast Nat.zero_le (A - k)
+    nlinarith
+  have hfloor : Nat.floor ((d : ℝ) * ((A - k : ℕ) : ℝ) / (d + 1)) ≤ A - k := by
+    exact_mod_cast hf.trans hle
+  unfold correlatedProductCutoff
+  omega
+
+/-- The joint incidence factor at the cutoff is at most `(d + 1) / δ`. -/
+theorem correlatedProductCutoff_jointRatio_le (δ : ℝ) (n k A d : ℕ)
+    (hδ : 0 < δ) (hk : 0 < k) (hkA : k ≤ A) (hAn : A ≤ n)
+    (hgap : (k : ℝ) + δ * n ≤ A) :
+    let L := correlatedProductCutoff d k A
+    ((n - L + 1 : ℕ) : ℝ) / (A - L + 1 : ℕ) ≤ (d + 1) / δ := by
+  let L := correlatedProductCutoff d k A
+  have hb := correlatedProductCutoff_bounds d k A hkA
+  have hLA : L ≤ A := hb.2
+  have hLn : L ≤ n := hLA.trans hAn
+  have hL : 0 < L := hk.trans_le hb.1
+  have hnum : (n - L + 1 : ℕ) ≤ n := by omega
+  have hraw : 0 ≤ (d : ℝ) * ((A - k : ℕ) : ℝ) / (d + 1) := by positivity
+  have hf := Nat.floor_le hraw
+  have hfloor : (L : ℝ) - k ≤ (d : ℝ) * ((A - k : ℕ) : ℝ) / (d + 1) := by
+    simpa [L, correlatedProductCutoff] using hf
+  have hscaled := (le_div_iff₀ (show (0 : ℝ) < d + 1 by positivity)).mp hfloor
+  have hden : (0 : ℝ) < (A - L + 1 : ℕ) := by positivity
+  apply (div_le_div_iff₀ hden hδ).mpr
+  have hnumR : ((n - L + 1 : ℕ) : ℝ) ≤ n := by exact_mod_cast hnum
+  have hh := mul_le_mul_of_nonneg_left hnumR hδ.le
+  push_cast [Nat.cast_sub hkA] at hscaled
+  have hbound : (A : ℝ) - k ≤ (d + 1) * ((A - L + 1 : ℕ) : ℝ) := by
+    push_cast [Nat.cast_sub hLA]
+    nlinarith
+  calc
+    _ ≤ δ * n := by simpa only [mul_comm] using hh
+    _ ≤ (A : ℝ) - k := by linarith
+    _ ≤ _ := hbound
+
+/-- A factor in the intermediate-cutoff product is at most `(1 + 1 / d) / δ`. -/
+theorem correlatedProductCutoff_fiberFactor_le (δ : ℝ) (n k A d j : ℕ)
+    (hδ : 0 < δ) (hδone : δ ≤ 1) (hd : 0 < d) (hk : 0 < k)
+    (hkA : k ≤ A) (hAn : A ≤ n) (hgap : (k : ℝ) + δ * n ≤ A) :
+    let L := correlatedProductCutoff d k A
+    ((n - k + j + 1 : ℕ) : ℝ) / (L - k + j + 1 : ℕ) ≤ (1 + 1 / d) / δ := by
+  let L := correlatedProductCutoff d k A
+  have hb := correlatedProductCutoff_bounds d k A hkA
+  have hkl : k ≤ L := hb.1
+  have hdR : (0 : ℝ) < d := Nat.cast_pos.mpr hd
+  have hden : (0 : ℝ) < (L - k + j + 1 : ℕ) := by positivity
+  have hf := Nat.lt_floor_add_one ((d : ℝ) * ((A - k : ℕ) : ℝ) / (d + 1))
+  have hfloor : (d : ℝ) * ((A - k : ℕ) : ℝ) / (d + 1) < (L : ℝ) - k + 1 := by
+    simpa [L, correlatedProductCutoff] using hf
+  have hscaled := (div_lt_iff₀ (show (0 : ℝ) < d + 1 by positivity)).mp hfloor
+  have hgap' := mul_le_mul_of_nonneg_left hgap hdR.le
+  have hnum : n - k + j + 1 ≤ n + j := by omega
+  have hnumR : ((n - k + j + 1 : ℕ) : ℝ) ≤ n + j := by exact_mod_cast hnum
+  have hscale := mul_le_mul_of_nonneg_left hnumR (show 0 ≤ (d : ℝ) * δ by positivity)
+  have hj := mul_le_mul_of_nonneg_right hδone (show 0 ≤ (d : ℝ) * j by positivity)
+  have hcoeff : (1 + 1 / (d : ℝ)) / δ = (d + 1) / (d * δ) := by field_simp
+  rw [hcoeff]
+  apply (div_le_div_iff₀ hden (mul_pos hdR hδ)).mpr
+  push_cast [Nat.cast_sub hkA] at hscaled
+  push_cast [Nat.cast_sub hkl, Nat.cast_sub (hkA.trans hAn)] at hscale ⊢
+  nlinarith
+
+/-- The intermediate-cutoff incidence product is at most `((1 + 1 / d) / δ) ^ r`. -/
+theorem correlatedProductCutoff_fiberProduct_le (δ : ℝ) (n k A d r : ℕ)
+    (hδ : 0 < δ) (hδone : δ ≤ 1) (hd : 0 < d) (hk : 0 < k)
+    (hkA : k ≤ A) (hAn : A ≤ n) (hgap : (k : ℝ) + δ * n ≤ A) :
+    (dimensionSensitiveIncidenceProduct n (correlatedProductCutoff d k A) k 1 r : ℝ) ≤
+      ((1 + 1 / d) / δ) ^ r := by
+  induction r with
+  | zero => simp [dimensionSensitiveIncidenceProduct]
+  | succ r ih =>
+    rw [dimensionSensitiveIncidenceProduct_succ, Rat.cast_mul, pow_succ]
+    apply mul_le_mul ih
+    · simpa using correlatedProductCutoff_fiberFactor_le δ n k A d r
+        hδ hδone hd hk hkA hAn hgap
+    · positivity
+    · positivity
+
+/-- If `r ≤ d`, the complete intermediate-cutoff product is less than `3 * (1 / δ) ^ r`. -/
+theorem correlatedProductCutoff_fiberProduct_lt_three (δ : ℝ) (n k A d r : ℕ)
+    (hδ : 0 < δ) (hδone : δ ≤ 1) (hd : 0 < d) (hk : 0 < k)
+    (hkA : k ≤ A) (hAn : A ≤ n) (hgap : (k : ℝ) + δ * n ≤ A) (hr : r ≤ d) :
+    (dimensionSensitiveIncidenceProduct n (correlatedProductCutoff d k A) k 1 r : ℝ) <
+      3 * (1 / δ) ^ r := by
+  have hbase : (1 : ℝ) ≤ 1 + 1 / d := le_add_of_nonneg_right (by positivity)
+  have hpow := pow_le_pow_right₀ hbase hr
+  have he : (1 + 1 / (d : ℝ)) ^ d ≤ Real.exp 1 := by
+    simpa only [one_div] using Real.one_add_inv_pow_le_exp (n := d)
+  have hthree : (1 + 1 / (d : ℝ)) ^ r < 3 :=
+    (hpow.trans he).trans_lt Real.exp_one_lt_three
+  calc
+    _ ≤ ((1 + 1 / d) / δ) ^ r :=
+      correlatedProductCutoff_fiberProduct_le δ n k A d r hδ hδone hd hk hkA hAn hgap
+    _ = (1 + 1 / (d : ℝ)) ^ r * (1 / δ) ^ r := by rw [div_pow, one_div_pow]; ring
+    _ < _ := mul_lt_mul_of_pos_right hthree (pow_pos (div_pos zero_lt_one hδ) _)
+
+end ReedSolomon

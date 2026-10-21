@@ -3,8 +3,9 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.BadEvents
+public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.BadEvents
 
 /-!
 # Definition and analysis of aborts
@@ -12,6 +13,8 @@ import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.BadEvents
 This file contains the definition and analysis of aborts for the analysis of duplex sponge
 Fiat-Shamir, following Section 5.7 in the paper.
 -/
+
+@[expose] public section
 
 /- Lemma 5.17: If `E(tr) = 0`, then `StdTrace(tr)` does not abort. -/
 

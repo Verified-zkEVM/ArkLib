@@ -3,7 +3,9 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Data.Lattices.CyclotomicRing.Subfield.Basis
+module
+
+public import ArkLib.Data.Lattices.CyclotomicRing.Subfield.Basis
 
 /-!
 # The Packing Map `ψ : (R_q^H)^{d/k} → R_q` (Hachi §3, Theorem 2, Eq. 8)
@@ -41,6 +43,8 @@ These combine in `Subfield/Bijectivity.lean` (`psi_bijective`, over `R = ZMod q`
 
 * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi …*][NOZ26]
 -/
+
+@[expose] public section
 
 open Polynomial CompPoly CompPoly.CPolynomial Finset
 
@@ -148,5 +152,21 @@ theorem psi_add (α k : ℕ) (a b : Fin (2 ^ α / k) → fixedSubring (R := R) �
 `ψ` is injective (from the non-degenerate trace pairing of Theorem 2) and bijective (injectivity
 plus the cardinality match `|(R_q^H)^{d/k}| = q^d = |R_q|`). These are proven in
 `Subfield/TraceInnerProduct.lean`, after the trace formula `traceH_psi_mul_conj`. -/
+
+/-- The packing map respects multiplication by fixed-subring scalars. -/
+theorem psi_smul (α k : ℕ) (c : fixedSubring (R := R) α k)
+    (a : Fin (2 ^ α / k) → fixedSubring (R := R) α k) :
+    psi α k (c • a) = c • psi α k a := by
+  simp only [psi, Pi.smul_apply, smul_eq_mul, MulMemClass.coe_mul, Subring.smul_def,
+    Finset.mul_sum]
+  exact Finset.sum_congr rfl (fun _ _ => mul_assoc _ _ _)
+
+/-- The fixed-subring linear map underlying `psi`. -/
+def psiLinearMap (α k : ℕ) :
+    (Fin (2 ^ α / k) → fixedSubring (R := R) α k) →ₗ[fixedSubring (R := R) α k]
+      Rq (powTwoCyclotomic (R := R) α) where
+  toFun := psi α k
+  map_add' := psi_add α k
+  map_smul' := psi_smul α k
 
 end ArkLib.Lattices.CyclotomicModulus

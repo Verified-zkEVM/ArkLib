@@ -3,19 +3,20 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Katerina Hristova, František Silváši, Julian Sutherland, Ilia Vlasov
 -/
+module
 
-import ArkLib.Data.Polynomial.Bivariate
-import ArkLib.Data.Polynomial.Prelims
-import Mathlib.FieldTheory.RatFunc.Defs
-import Mathlib.RingTheory.Ideal.Quotient.Defs
-import Mathlib.RingTheory.Ideal.Span
-import Mathlib.RingTheory.Polynomial.GaussLemma
-import Mathlib.RingTheory.PowerSeries.Substitution
+public import ArkLib.Data.Polynomial.Bivariate
+public import ArkLib.Data.Polynomial.Prelims
+public import Mathlib.FieldTheory.RatFunc.Defs
+public import Mathlib.RingTheory.Ideal.Quotient.Defs
+public import Mathlib.RingTheory.Ideal.Span
+public import Mathlib.RingTheory.Polynomial.GaussLemma
+public import Mathlib.RingTheory.PowerSeries.Substitution
 
-import Mathlib.RingTheory.PrincipalIdealDomain
-import Mathlib.Algebra.Polynomial.BigOperators
-import Mathlib.Algebra.Polynomial.Roots
-import ArkLib.Data.Polynomial.RationalFunctions.HenselNumerators.Weight
+public import Mathlib.RingTheory.PrincipalIdealDomain
+public import Mathlib.Algebra.Polynomial.BigOperators
+public import Mathlib.Algebra.Polynomial.Roots
+public import ArkLib.Data.Polynomial.RationalFunctions.HenselNumerators.Weight
 /-!
 # The Hensel Numerator Sequence
 
@@ -35,6 +36,8 @@ and hence the list-decoding consumers — do not depend on the one open quantita
   version 20210703:203025.
 
 -/
+
+@[expose] public section
 
 
 open Polynomial Polynomial.Bivariate ToRatFunc Ideal
@@ -162,12 +165,12 @@ theorem exists_regular_numerator_shape (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
         refine ⟨fun i => if hlt : i.val < n + 1 then βpref ⟨i.val, hlt⟩ else βnext, ?_⟩
         intro i
         by_cases hlt : i.val < n + 1
-        · simp only [dif_pos hlt]
+        · simp only [dite_eq_left hlt]
           exact hβpref ⟨i.val, hlt⟩
         · have hval : i.val = n + 1 := by
             have hi_lt : i.val < n + 1 + 1 := i.isLt
             omega
-          simp only [dif_neg hlt]
+          simp only [dite_eq_right hlt]
           rw [hval]
           exact hβnext
   let βseq : ℕ → 𝒪 H := fun t => (Classical.choose (hprefix t)) ⟨t, Nat.lt_succ_self t⟩

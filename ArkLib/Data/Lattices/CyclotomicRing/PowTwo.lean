@@ -3,8 +3,10 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Data.Lattices.CyclotomicRing.Rq
-import Mathlib.Algebra.Field.ZMod
+module
+
+public import ArkLib.Data.Lattices.CyclotomicRing.Rq
+public import Mathlib.Algebra.Field.ZMod
 
 /-!
 # The Prime Power-of-Two Cyclotomic Ring `Z_q[X] / (X^{2^α} + 1)`
@@ -45,6 +47,8 @@ Because `primePowTwoModulus` is *reducibly* equal to `powTwoCyclotomic α`, the
 * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
     Polynomial Commitments over Extension Fields*][NOZ26]
 -/
+
+@[expose] public section
 
 open Polynomial CompPoly CompPoly.CPolynomial ArkLib.Lattices.CyclotomicModulus
 

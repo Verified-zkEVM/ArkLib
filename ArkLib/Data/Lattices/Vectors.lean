@@ -3,9 +3,12 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import Mathlib.LinearAlgebra.Matrix.Defs
-import Mathlib.Algebra.BigOperators.Fin
-import Mathlib.Tactic.Ring
+module
+
+public import Mathlib.LinearAlgebra.Matrix.Defs
+public import Mathlib.Algebra.BigOperators.Fin
+public import Mathlib.Algebra.BigOperators.Pi
+public import Mathlib.Tactic.Ring
 
 /-!
 # Vectors And Matrices For The Lattice Layer
@@ -27,7 +30,14 @@ relate `dot` to `Finset.sum`.
 * `PolyVec` / `PolyMatrix` — `Fin`-indexed function-vector / matrix.
 * `dot` / `matVecMul` / `scalarVecMul` — computable `⟨u,v⟩`, `M *ᵥ v`, `c • v`.
 * `PolyVec.flattenBlocks` — flatten `blocks` equal-width blocks into one vector.
+
+## References
+
+* [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
+    Polynomial Commitments over Extension Fields*][NOZ26]
 -/
+
+@[expose] public section
 
 open scoped BigOperators
 
@@ -130,6 +140,13 @@ theorem dot_scalarVecMul {k : ℕ} (c : P) (u v : PolyVec P k) :
   simp only [dot_eq_sum, Finset.mul_sum, scalarVecMul_apply]
   exact Finset.sum_congr rfl (fun i _ => mul_left_comm _ _ _)
 
+/-- `dot` commutes with a finite sum in the second argument (the `Finset` form of
+`dot_add_right`, used to fold a challenge-weighted family of witness blocks into one vector). -/
+theorem dot_sum_right {k : ℕ} {ι : Type*} (s : Finset ι) (u : PolyVec P k) (v : ι → PolyVec P k) :
+    u ⬝ᵥ (∑ i ∈ s, v i) = ∑ i ∈ s, u ⬝ᵥ v i := by
+  simp only [dot_eq_sum, Finset.sum_apply, Finset.mul_sum]
+  exact Finset.sum_comm
+
 /-- Matrix–vector multiplication distributes over addition of vectors. -/
 theorem matVecMul_add {rows cols : ℕ} (A : PolyMatrix P rows cols) (v w : PolyVec P cols) :
     A *ᵥ (v + w) = A *ᵥ v + A *ᵥ w := by
@@ -153,6 +170,12 @@ theorem matVecMul_matrix_smul {rows cols : ℕ} (c : P) (A : PolyMatrix P rows c
 theorem matVecMul_scalarVecMul {rows cols : ℕ} (A : PolyMatrix P rows cols) (c : P)
     (v : PolyVec P cols) : A *ᵥ (c •ᵥ v) = c •ᵥ (A *ᵥ v) := by
   funext i; simp only [matVecMul_apply, scalarVecMul_apply, dot_scalarVecMul]
+
+/-- Matrix–vector multiplication commutes with a finite sum of vectors. -/
+theorem matVecMul_sum {rows cols : ℕ} {ι : Type*} (s : Finset ι) (A : PolyMatrix P rows cols)
+    (v : ι → PolyVec P cols) : A *ᵥ (∑ i ∈ s, v i) = ∑ i ∈ s, A *ᵥ v i := by
+  funext j
+  simp only [matVecMul_apply, Finset.sum_apply, dot_sum_right]
 
 /-- `matMul` entrywise: `(matMul M N) i k = ∑ⱼ Mᵢⱼ Nⱼₖ`. -/
 theorem matMul_apply {a b c : ℕ} (M : PolyMatrix P a b) (N : PolyMatrix P b c)
@@ -187,6 +210,13 @@ theorem splitForm_add_right {a b : ℕ} (M : PolyMatrix P a b) (u : PolyVec P a)
 theorem splitForm_smul_right {a b : ℕ} (M : PolyMatrix P a b) (u : PolyVec P a) (c : P)
     (v : PolyVec P b) : splitForm M u (scalarVecMul c v) = c * splitForm M u v := by
   simp only [splitForm, matVecMul_scalarVecMul, dot_scalarVecMul]
+
+/-- `splitForm` commutes with a finite sum in the inner (right) basis vector: the bilinear form
+of a challenge-weighted family is the weighted sum of the forms. -/
+theorem splitForm_sum_right {a b : ℕ} {ι : Type*} (s : Finset ι) (M : PolyMatrix P a b)
+    (u : PolyVec P a) (v : ι → PolyVec P b) :
+    splitForm M u (∑ i ∈ s, v i) = ∑ i ∈ s, splitForm M u (v i) := by
+  simp only [splitForm, matVecMul_sum, dot_sum_right]
 
 /-- `splitForm` is additive in the outer (left) basis vector. -/
 theorem splitForm_add_left {a b : ℕ} (M : PolyMatrix P a b) (u u' : PolyVec P a)
@@ -264,5 +294,67 @@ theorem matVecMul_scalarVecMul_mul_eq_of_eq {rows cols : ℕ} (A : PolyMatrix P 
   rw [matVecMul_scalarVecMul A (c * d) v, matVecMul_scalarVecMul A (d * c) w, mul_comm d c, h]
 
 end AlgebraRing
+
+/-! ## Splitting along `Fin.append`
+
+Block decompositions of vectors and matrices: how `dot` and `matVecMul` interact with an appended
+index. Used to split a block matrix along its rows and columns. -/
+
+section Append
+
+/-- Two functions on `Fin (m + n)` agree iff their `castAdd`/`natAdd` restrictions agree. -/
+theorem funext_fin_add_iff {α : Type*} {m n : ℕ} {f g : Fin (m + n) → α} :
+    f = g ↔
+      (fun i : Fin m => f (Fin.castAdd n i)) = (fun i => g (Fin.castAdd n i)) ∧
+      (fun i : Fin n => f (Fin.natAdd m i)) = (fun i => g (Fin.natAdd m i)) := by
+  rw [funext_iff, Fin.forall_fin_add]
+  simp only [funext_iff]
+
+variable {P : Type u} [CommRing P]
+
+/-- `dot` splits along an append in its first argument. -/
+theorem dot_append {m n : ℕ} (u : PolyVec P m) (v : PolyVec P n) (w : PolyVec P (m + n)) :
+    dot (Fin.append u v) w
+      = dot u (fun k => w (Fin.castAdd n k)) + dot v (fun k => w (Fin.natAdd m k)) := by
+  simp only [dot_eq_sum]
+  rw [Fin.sum_univ_add]
+  congr 1 <;> refine Finset.sum_congr rfl (fun i _ => ?_)
+  · rw [Fin.append_left]
+  · rw [Fin.append_right]
+
+/-- `dot` with a zero first argument is zero. -/
+theorem dot_zero_left {k : ℕ} (w : PolyVec P k) : dot (0 : PolyVec P k) w = 0 := by
+  simp only [dot_eq_sum, Pi.zero_apply, zero_mul, Finset.sum_const_zero]
+
+/-- `dot` negates in its first argument. -/
+theorem dot_neg_left {k : ℕ} (u w : PolyVec P k) : dot (-u) w = -(dot u w) := by
+  simp only [dot_eq_sum, Pi.neg_apply, neg_mul, Finset.sum_neg_distrib]
+
+/-- **Transpose adjunction for `dot`**: `⟨u, A v⟩ = ⟨Aᵀ u, v⟩`, which moves a public matrix off
+the vector side onto the coefficient side. -/
+theorem dot_matVecMul_transpose {a b : ℕ} (A : PolyMatrix P a b) (u : PolyVec P a)
+    (v : PolyVec P b) : dot u (A *ᵥ v) = dot (A.transpose *ᵥ u) v := by
+  have h := splitForm_transpose A u v
+  simp only [splitForm] at h
+  rw [h]; exact dot_comm _ _
+
+-- Lean 4.33 respects transparency when matching implicit arguments, so the
+-- `Fin.append_left`/`_right` rewrites below no longer unify through the semireducible
+-- `PolyMatrix`/`PolyVec`.
+set_option backward.isDefEq.respectTransparency false in
+/-- `matVecMul` splits along a row-append: block rows act independently. -/
+theorem matVecMul_append_rows {a b c : ℕ} (M₁ : PolyMatrix P a c) (M₂ : PolyMatrix P b c)
+    (ζ : PolyVec P c) :
+    (Fin.append M₁ M₂ : PolyMatrix P (a + b) c) *ᵥ ζ = Fin.append (M₁ *ᵥ ζ) (M₂ *ᵥ ζ) := by
+  funext i
+  refine Fin.addCases (fun i => ?_) (fun i => ?_) i
+  · rw [Fin.append_left]
+    change dot (Fin.append M₁ M₂ (Fin.castAdd b i)) ζ = dot (M₁ i) ζ
+    rw [Fin.append_left]
+  · rw [Fin.append_right]
+    change dot (Fin.append M₁ M₂ (Fin.natAdd a i)) ζ = dot (M₂ i) ζ
+    rw [Fin.append_right]
+
+end Append
 
 end ArkLib.Lattices

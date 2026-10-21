@@ -4,11 +4,20 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland,
          Ilia Vlasov, Chung Thai Nguyen
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGap.Basic
-import ArkLib.Data.CodingTheory.GuruswamiSudan.Basic
-import ArkLib.Data.CodingTheory.GuruswamiSudan.GuruswamiSudan
-import ArkLib.Data.Polynomial.Trivariate
+public import ArkLib.Data.CodingTheory.ProximityGap.Basic
+public import ArkLib.Data.CodingTheory.GuruswamiSudan.Basic
+public import ArkLib.Data.CodingTheory.GuruswamiSudan.GuruswamiSudan
+public import ArkLib.Data.Polynomial.Trivariate
+
+/-!
+# ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ListDecoding.Guruswami
+
+Definitions and results for this component of ArkLib.
+-/
+
+@[expose] public section
 
 namespace ProximityGap
 
@@ -53,8 +62,7 @@ lemma guruswami_sudan_for_proximity_gap_property {k m : ℕ} {ωs : Fin n ↪ F}
     (cond : Conditions (k + 1) m (_root_.proximity_gap_degree_bound (k + 1) n m) ωs w Q)
     {p : ReedSolomon.code ωs (k + 1)}
     (h : (↑Δ₀(w, fun i ↦ Polynomial.eval (ωs i) (ReedSolomon.toPolynomial p)) : ℝ) / ↑n <
-         _root_.proximity_gap_johnson (k + 1) n m)
-    :
+         _root_.proximity_gap_johnson (k + 1) n m) :
     (Polynomial.X - Polynomial.C (ReedSolomon.toPolynomial p)) ∣ Q :=
   GuruswamiSudan.proximity_gap_divisibility hk hm p cond h
 
@@ -75,7 +83,7 @@ structure ModifiedGuruswami
             ≥ m
   /-- The X-degree bound. -/
   Q_deg_X :
-    degreeX Q < D_X ((k + 1) / (n : ℚ)) n m
+    Trivariate.degreeInX Q < D_X ((k + 1) / (n : ℚ)) n m
   /-- The Y-degree bound. -/
   Q_D_Y :
     D_Y Q < D_X ((k + 1 : ℚ) / n) n m / k
@@ -149,8 +157,8 @@ private theorem symbolicModifiedGSCap_pos {n k m : ℕ}
     rw [hysq]
     have hk' : (1 : ℝ) ≤ k := by exact_mod_cast hk
     have hn' : (1 : ℝ) ≤ n := by exact_mod_cast hn
-    nlinarith [mul_le_mul (show (2 : ℝ) ≤ k + 1 by linarith) hn' (by positivity) (by positivity)]
-  have hy1 : 1 ≤ y := by nlinarith
+    linarith [mul_le_mul (show (2 : ℝ) ≤ k + 1 by linarith) hn' (by positivity) (by positivity)]
+  have hy1 : 1 ≤ y := (one_le_pow_iff_of_nonneg hy0 two_ne_zero).mp (by linarith)
   have hy1' : 1 ≤ Real.sqrt (↑((k + 1 : ℚ) / n)) * n := by exact hy1
   have hm' : (1 : ℝ) ≤ m := by exact_mod_cast hm
   rw [mul_assoc]
@@ -513,7 +521,7 @@ private theorem symbolicGSPoly_coeff_ne_zero_mem {F : Type} [Field F]
   apply hcoeff
   apply Finset.sum_eq_zero
   intro q hq
-  rw [if_neg]
+  rw [ite_eq_right]
   intro heq
   apply hp
   rw [← heq]
@@ -676,7 +684,7 @@ private theorem symbolicModifiedGSCap_strict_k_one_n_one {m : ℕ} (_hm : 1 ≤ 
   have hdoubleR : (((2 * (symbolicModifiedGSCap 1 1 m) ^ 2 : ℕ) : ℝ)) =
       (((4 * m * (m + 1) + 1 : ℕ) : ℝ)) := by
     push_cast
-    nlinarith
+    linarith
   have hdouble : 2 * (symbolicModifiedGSCap 1 1 m) ^ 2 =
       4 * m * (m + 1) + 1 := by exact_mod_cast hdoubleR
   have hmod := congrArg (fun x : ℕ => x % 2) hdouble
@@ -703,15 +711,19 @@ private theorem symbolic_numVars_lower_bound_boundary (a D : ℕ) (ha : 0 < a) :
       ((D / a) + 1) * (2 * D + 2 - a * (D / a)) / 2 := by
     simpa only [Nat.add_sub_cancel] using
       (GuruswamiSudan.numVars_eq_of_gt_one (D := D) (k := a + 1) (by omega : 1 < a + 1))
-  rw [h_numVars_def, ← Nat.mul_div_assoc]
-  · rw [Nat.le_div_iff_mul_le] <;> ring_nf
-    · zify
-      rw [Nat.cast_sub] <;> push_cast <;>
-        nlinarith [D.div_mul_le_self a, D.div_add_mod a, D.mod_lt ha]
-    · norm_num
-  · cases le_total (2 * D + 2) (a * (D / a)) <;>
-      simp_all [← even_iff_two_dvd, parity_simps]
-    by_cases h : Even (D / a) <;> simp_all [parity_simps]
+  rw [h_numVars_def]
+  obtain ⟨r, hr, hD⟩ : ∃ r, r < a ∧ D = a * (D / a) + r :=
+    ⟨D % a, D.mod_lt ha, (D.div_add_mod a).symm⟩
+  generalize D / a = q at hD ⊢
+  subst hD
+  have hsub : 2 * (a * q + r) + 2 - a * q = a * q + 2 * (r + 1) := by omega
+  have hdvd : 2 ∣ (q + 1) * (a * q + 2 * (r + 1)) := by
+    rcases Nat.even_or_odd q with hq | hq
+    · exact (dvd_add (hq.two_dvd.mul_left a) (Dvd.intro _ rfl)).mul_left _
+    · exact hq.add_one.two_dvd.mul_right _
+  rw [hsub, mul_comm 2 a, mul_assoc, Nat.mul_div_cancel' hdvd]
+  obtain ⟨t, rfl⟩ : ∃ t, a = (r + 1) + t := ⟨a - (r + 1), by omega⟩
+  exact Nat.le.intro (k := (r + 1) * t) (by ring)
 
 private theorem symbolicUpperTriangleBase_card_ge_k_one_n_one {m : ℕ} (hm : 1 ≤ m) :
     GuruswamiSudan.numConstraints 1 m ≤
@@ -735,7 +747,7 @@ private theorem symbolicUpperTriangleBase_card_ge_k_one_n_one {m : ℕ} (hm : 1 
     have hplusR : (((T ^ 2 + 2 * T + 1 : ℕ) : ℝ)) ≤
         (((2 * m * (m + 1) : ℕ) : ℝ)) := by exact_mod_cast hplus
     push_cast at hplusR
-    nlinarith
+    linarith
   have hscaled' : 2 * (1 + 1) * GuruswamiSudan.numConstraints 1 m ≤
       T ^ 2 + (1 + 1) * T := by
     rw [symbolic_numConstraints_scaled]
@@ -765,7 +777,7 @@ private theorem symbolicUpperTriangleBase_card_gt_k_one_of_two_le_n {n m : ℕ}
   have hscaledR : ((2 * n * m * (m + 1) : ℕ) : ℝ) <
       ((T ^ 2 + 2 * T : ℕ) : ℝ) := by
     push_cast
-    nlinarith
+    linarith
   have hscaled : 2 * n * m * (m + 1) < T ^ 2 + 2 * T := by
     exact_mod_cast hscaledR
   have hscaled' : 2 * (1 + 1) * GuruswamiSudan.numConstraints n m <
@@ -797,7 +809,8 @@ private theorem symbolicUpperTriangleBase_card_gt_of_two_le_k {n k m : ℕ}
   have hscaledR : (((k + 1) * n * m * (m + 1) : ℕ) : ℝ) <
       ((T ^ 2 + (k + 1) * T : ℕ) : ℝ) := by
     push_cast
-    nlinarith [mul_pos (show (0 : ℝ) < k + 1 by positivity)
+    have hkT : 2 * (T : ℝ) ≤ k * T := mul_le_mul_of_nonneg_right hkcast (by positivity)
+    linarith [mul_pos (show (0 : ℝ) < k + 1 by positivity)
       (show (0 : ℝ) < n by exact_mod_cast hn)]
   have hscaled : (k + 1) * n * m * (m + 1) <
       T ^ 2 + (k + 1) * T := by exact_mod_cast hscaledR
@@ -833,7 +846,7 @@ private theorem symbolicUpperTriangleCandidates_card_gt {n k m : ℕ}
       have hstrict := symbolicModifiedGSCap_strict_k_one_n_one hm
       have hbase := symbolicUpperTriangleBase_card_ge_k_one_n_one hm
       unfold symbolicUpperTriangleCandidates
-      rw [if_pos]
+      rw [ite_eq_left]
       · rw [Finset.card_insert_of_notMem
           (symbolicCapPoint_not_mem_base (by omega) (by omega) hm)]
         omega
@@ -928,12 +941,12 @@ private theorem symbolicGSPoly_coeff_natDegree_add_le_of_mem {F : Type} [Field F
     apply Polynomial.natDegree_sum_le_of_forall_le
     intro q hq
     by_cases heq : q.1.1 = (i, j)
-    · rw [if_pos heq]
+    · rw [ite_eq_left heq]
       have hbudget := symbolicGSIndex_z_add_y_le A q
       have hj : q.1.1.2 = j := congrArg Prod.snd heq
       have hmono := Polynomial.natDegree_monomial_le (m := q.2.1) (c q)
       omega
-    · rw [if_neg heq]
+    · rw [ite_eq_right heq]
       simp only [Polynomial.natDegree_zero]
       omega
   omega
@@ -952,7 +965,7 @@ private theorem symbolicGSPoly_DYZ_term_le {F : Type} [Field F]
 private theorem symbolicGSPoly_DYZ_le {F : Type} [Field F]
     (A : Finset (ℕ × ℕ)) (c : SymbolicGSIndex A → F) :
     Trivariate.D_YZ (symbolicGSPoly (F := F) A c) ≤ symbolicYSum A := by
-  unfold Trivariate.D_YZ
+  unfold Trivariate.D_YZ Trivariate.degreeYZ
   apply finsetMaxGetD_le
   intro outer houter
   rw [Finset.mem_image] at houter
@@ -1060,9 +1073,9 @@ private theorem modified_guruswami_has_a_solution_core
   · apply symbolicGSPolyMultiplicityBridge hQ
     exact symbolicGSKernelWitness_shift_vanish A ωs u₀ u₁ w
   · have hx := Polynomial.Bivariate.degreeX_le_natWeightedDegree Q k
-    exact lt_of_le_of_lt (by exact_mod_cast hx) hdeg
+    exact lt_of_le_of_lt (by simpa [Trivariate.degreeInX] using hx) hdeg
   · have hy := symbolicDY_lt_of_weighted (Q := Q) hk hdeg
-    simpa only [Trivariate.D_Y] using hy
+    simpa only [Trivariate.D_Y, Trivariate.degreeInY] using hy
   · have hyz := symbolicGSPoly_DYZ_le A w.c
     have hyzR : (Trivariate.D_YZ Q : ℝ) ≤ symbolicYSum A := by
       exact_mod_cast hyz
@@ -1092,8 +1105,9 @@ variable {m : ℕ} (k : ℕ) {δ : ℚ} {x₀ : F} {u₀ u₁ : Fin n → F} {Q 
 noncomputable instance {α : Type} (s : Set α) [inst : Finite s] : Fintype s := Fintype.ofFinite _
 
 /-- The set `S` (equation 5.2 of [BCIKS20]). -/
-noncomputable def coeffs_of_close_proximity (ωs : Fin n ↪ F) (δ : ℚ) (u₀ u₁ : Fin n → F)
-    : Finset F := Set.toFinset { z | ∃ v : ReedSolomon.code ωs (k + 1), δᵣ(u₀ + z • u₁, v) ≤ δ}
+noncomputable def coeffs_of_close_proximity (ωs : Fin n ↪ F) (δ : ℚ)
+    (u₀ u₁ : Fin n → F) : Finset F :=
+  Set.toFinset { z | ∃ v : ReedSolomon.code ωs (k + 1), δᵣ(u₀ + z • u₁, v) ≤ δ }
 
 open Polynomial
 
@@ -1102,8 +1116,7 @@ omit [DecidableEq (RatFunc F)] in
 lemma exists_Pz_of_coeffs_of_close_proximity
     {k : ℕ}
   {z : F}
-  (hS : z ∈ coeffs_of_close_proximity (k := k) ωs δ u₀ u₁)
-    :
+  (hS : z ∈ coeffs_of_close_proximity (k := k) ωs δ u₀ u₁) :
   ∃ Pz : F[X], Pz.natDegree ≤ k ∧ δᵣ(u₀ + z • u₁, Pz.eval ∘ ωs) ≤ δ := by
     unfold coeffs_of_close_proximity at hS
     obtain ⟨w, hS, dist⟩ : ∃ a ∈ ReedSolomon.code ωs (k + 1), ↑δᵣ(u₀ + z • u₁, a) ≤ δ := by

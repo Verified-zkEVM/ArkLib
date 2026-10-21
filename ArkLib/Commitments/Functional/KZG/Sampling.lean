@@ -3,10 +3,12 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
+module
 
-import VCVio
-import ArkLib.ToVCVio.OracleComp.SimSemantics.SimulateQ
-import Mathlib.Algebra.Field.ZMod
+public import VCVio.OracleComp.QueryTracking.RandomOracle.Simulation
+public import VCVio.OracleComp.SimSemantics.OptionT.Basic
+public import VCVio.OracleComp.SimSemantics.StateT.Basic
+public import Mathlib.Algebra.Field.ZMod
 
 /-!
 # Sampling Support for KZG-Style Setup
@@ -17,6 +19,8 @@ This file contains small shared probabilistic helpers used by KZG setup and its 
 
 * `Groups.sampleNonzeroZMod` samples the SRS trapdoor from `ZMod p \ {0}`.
 -/
+
+@[expose] public section
 
 open OracleSpec OracleComp
 
@@ -31,7 +35,7 @@ variable {p : outParam ℕ} [Fact (Nat.Prime p)]
 The implementation samples an index in `{0, ..., p - 2}` and shifts it by one, so the support is
 exactly the canonical representatives `1, ..., p - 1` modulo `p`. -/
 def sampleNonzeroZMod : ProbComp (ZMod p) :=
-  haveI : NeZero (p - 1) :=
+  have : NeZero (p - 1) :=
     ⟨Nat.pos_iff_ne_zero.mp (Nat.sub_pos_of_lt (Nat.Prime.one_lt Fact.out))⟩
   (fun i : Fin (p - 1) => ((i : ℕ) + 1 : ZMod p)) <$> ($ᵗ (Fin (p - 1)))
 
@@ -42,7 +46,7 @@ lemma simulateQ_randomOracle_sampleNonzeroZMod :
       (sampleNonzeroZMod (p := p) : ProbComp (ZMod p)) :
         StateT unifSpec.QueryCache ProbComp (ZMod p))).run' ∅ =
       sampleNonzeroZMod (p := p) := by
-  haveI : NeZero (p - 1) :=
+  have : NeZero (p - 1) :=
     ⟨Nat.pos_iff_ne_zero.mp (Nat.sub_pos_of_lt (Nat.Prime.one_lt Fact.out))⟩
   unfold sampleNonzeroZMod
   cases p with

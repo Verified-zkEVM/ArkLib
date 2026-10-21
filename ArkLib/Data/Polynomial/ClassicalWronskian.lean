@@ -3,16 +3,17 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import ArkLib.ToMathlib.LinearAlgebra.Matrix.Determinant
-import Mathlib.Algebra.CharP.Basic
-import Mathlib.Algebra.CharP.Lemmas
-import Mathlib.Algebra.Polynomial.Derivative
-import Mathlib.Data.Nat.Factorial.NatCast
-import Mathlib.LinearAlgebra.Basis.Fin
-import Mathlib.LinearAlgebra.Dual.Lemmas
-import Mathlib.LinearAlgebra.Matrix.Basis
-import Mathlib.LinearAlgebra.Vandermonde
+public import ArkLib.ToMathlib.LinearAlgebra.Matrix.Determinant
+public import Mathlib.Algebra.CharP.Basic
+public import Mathlib.Algebra.CharP.Lemmas
+public import Mathlib.Algebra.Polynomial.Derivative
+public import Mathlib.Data.Nat.Factorial.NatCast
+public import Mathlib.LinearAlgebra.Basis.Fin
+public import Mathlib.LinearAlgebra.Dual.Lemmas
+public import Mathlib.LinearAlgebra.Matrix.Basis
+public import Mathlib.LinearAlgebra.Vandermonde
 
 /-!
 # The classical Wronskian
@@ -45,6 +46,8 @@ The characteristic guard is essential: in characteristic `p`, the nonconstant po
 
 * [Guruswami, V., and Kopparty, S., *Explicit subspace designs*][GK16]
 -/
+
+@[expose] public section
 
 namespace Polynomial
 
@@ -85,11 +88,11 @@ private lemma isUnit_natCast_descFactorial {F : Type*} [Field F]
     IsUnit (d.descFactorial i : F) := by
   have hfac : IsUnit (d.factorial : F) := by
     rcases hk with hk0 | hkpos
-    · letI : CharZero F := (CharP.ringChar_zero_iff_CharZero F).mp hk0
+    · let : CharZero F := (CharP.ringChar_zero_iff_CharZero F).mp hk0
       exact IsUnit.natCast_factorial_of_algebra F d
-    · letI : NeZero (ringChar F) :=
+    · let : NeZero (ringChar F) :=
         ⟨Nat.ne_zero_of_lt ((Nat.zero_le d).trans_lt (hd.trans_le hkpos))⟩
-      letI : Fact (ringChar F).Prime := CharP.char_is_prime_of_pos F _
+      let : Fact (ringChar F).Prime := CharP.char_is_prime_of_pos F _
       exact (IsUnit.natCast_factorial_iff_of_charP (ringChar F)).2 (hd.trans_le hkpos)
   have hmul : IsUnit (((d - i).factorial : F) * (d.descFactorial i : F)) := by
     rw [← Nat.cast_mul, Nat.factorial_mul_descFactorial hi]
@@ -137,7 +140,7 @@ theorem classicalWronskian_ne_zero_of_natDegree_injective
     intro i j hij
     apply hPinj
     rcases hk with hk0 | hkpos
-    · letI : CharZero F := (CharP.ringChar_zero_iff_CharZero F).mp hk0
+    · let : CharZero F := (CharP.ringChar_zero_iff_CharZero F).mp hk0
       exact Nat.cast_injective hij
     · exact CharP.natCast_injOn_Iio F (ringChar F)
         ((hPdeg i).trans_le hkpos) ((hPdeg j).trans_le hkpos) hij
@@ -344,7 +347,7 @@ theorem classicalWronskian_ne_zero_of_basis {F : Type*} [Field F] {sigma k : ℕ
     (hk : ringChar F = 0 ∨ k ≤ ringChar F) :
     classicalWronskian sigma (fun j => ((bas j : B) : F[X])) ≠ 0 := by
   classical
-  letI : Module.Finite F B := Module.Finite.of_basis bas
+  let : Module.Finite F B := Module.Finite.of_basis bas
   have hrank : finrank F B = sigma := by
     rw [Module.finrank_eq_card_basis bas, Fintype.card_fin]
   have hbound : ∀ x : B, x ≠ 0 → (B.subtype x).natDegree < k := by

@@ -3,8 +3,10 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Ilia Vlasov, Alexander Hicks
 -/
-import Mathlib.Data.Set.Finite.Basic
-import Mathlib.Algebra.Order.Floor.Semiring
+module
+
+public import Mathlib.Data.Set.Finite.Basic
+public import Mathlib.Algebra.Order.Floor.Semiring
 
 /-!
 # Finiteness of a set from a uniform bound on its finite subsets
@@ -13,6 +15,8 @@ Mathlib has `Set.Infinite.exists_subset_card_eq`, that an infinite set has finit
 cardinality. This file records the consequence in the direction a counting argument uses it, where
 finiteness is the conclusion rather than a hypothesis.
 -/
+
+@[expose] public section
 
 /-- A set whose finite subsets are uniformly bounded is finite.
 

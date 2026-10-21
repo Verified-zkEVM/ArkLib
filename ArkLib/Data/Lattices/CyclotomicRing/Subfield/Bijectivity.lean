@@ -3,7 +3,9 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Data.Lattices.CyclotomicRing.Subfield.Cardinality
+module
+
+public import ArkLib.Data.Lattices.CyclotomicRing.Subfield.Cardinality
 
 /-!
 # `ψ` is a Bijection (Hachi §3, Theorem 2)
@@ -23,6 +25,8 @@ An injective endo-map of finite sets of equal cardinality is bijective
 * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi …*][NOZ26]
 -/
 
+@[expose] public section
+
 open CompPoly Finset
 
 namespace ArkLib.Lattices.CyclotomicModulus
@@ -40,5 +44,19 @@ theorem psi_bijective (α κ : ℕ) (h2 : (2 : ZMod q) ≠ 0) (hk : 2 * 2 ^ κ �
     Nat.pow_div (by omega) (by norm_num), ← pow_mul]
   congr 1
   rw [← pow_add]; congr 1; omega
+
+/-- Fixed-subring linear coordinates of the packing map. -/
+noncomputable def psiLinearEquiv (α κ : ℕ) (h2 : (2 : ZMod q) ≠ 0)
+    (hk : 2 * 2 ^ κ ∣ 2 ^ α) :
+    (Fin (2 ^ α / 2 ^ κ) → fixedSubring (R := ZMod q) α (2 ^ κ)) ≃ₗ[
+        fixedSubring (R := ZMod q) α (2 ^ κ)]
+      Rq (powTwoCyclotomic (R := ZMod q) α) :=
+  LinearEquiv.ofBijective (psiLinearMap α (2 ^ κ)) (psi_bijective q α κ h2 hk)
+
+/-- The linear equivalence computes `psi`. -/
+@[simp] theorem psiLinearEquiv_apply (α κ : ℕ) (h2 : (2 : ZMod q) ≠ 0)
+    (hk : 2 * 2 ^ κ ∣ 2 ^ α)
+    (a : Fin (2 ^ α / 2 ^ κ) → fixedSubring (R := ZMod q) α (2 ^ κ)) :
+    psiLinearEquiv q α κ h2 hk a = psi α (2 ^ κ) a := rfl
 
 end ArkLib.Lattices.CyclotomicModulus

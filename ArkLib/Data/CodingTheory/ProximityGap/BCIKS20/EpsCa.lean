@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Nishimwe Prince
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.UniqueDecoding
-import ArkLib.Data.CodingTheory.ProximityGap.Errors
+public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.UniqueDecoding
+public import ArkLib.Data.CodingTheory.ProximityGap.Errors
 
 /-!
 # [BCIKS20] correlated agreement on the `epsCa` carrier
@@ -45,6 +46,8 @@ sharper and still admitted.
   Codes*. Cryptology ePrint Archive, Paper 2025/2055. Theorem 1.3 and Table 1.
 -/
 
+@[expose] public section
+
 namespace ProximityGap
 
 open NNReal Code CoreDefinitions
@@ -53,7 +56,7 @@ open scoped BigOperators ProbabilityTheory
 section UniqueDecodingRegime
 
 variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
+variable {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
 
 omit [DecidableEq ι] in
 /-- **[BCIKS20] correlated agreement, stated on `epsCa`.** For a Reed-Solomon code and a fold
@@ -101,7 +104,7 @@ theorem rs_epsCa_le_of_le_relUDR {deg : ℕ} {domain : ι ↪ F} {δ_fld δ_int 
       ((ReedSolomon.code domain deg : Set (ι → F))) δ_fld hle)
     hEq
 
-omit [Field F] [Fintype F] [DecidableEq ι] in
+omit [Field F] [Fintype F] [SampleableType F] [DecidableEq ι] in
 /-- A positive radius at most the relative unique-decoding radius satisfies the strict form
 `2·δ·n < d` that the MCA/CA comparison lemmas take as their hypothesis.
 

@@ -3,10 +3,11 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Katerina Hristova, František Silváši, Julian Sutherland, Ilia Vlasov
 -/
+module
 
-import ArkLib.Data.Polynomial.Bivariate
-import ArkLib.Data.Polynomial.Prelims
-import Mathlib.RingTheory.Polynomial.GaussLemma
+public import ArkLib.Data.Polynomial.Bivariate
+public import ArkLib.Data.Polynomial.Prelims
+public import Mathlib.RingTheory.Polynomial.GaussLemma
 
 /-!
 # The Algebraic Extension and its Regular Elements
@@ -24,6 +25,8 @@ field `𝕃 H = F(Z)[T]/(H̃)`, its ring of regular elements `𝒪 H = F[Z][T]/(
   version 20210703:203025.
 
 -/
+
+@[expose] public section
 
 
 open Polynomial Polynomial.Bivariate ToRatFunc Ideal
@@ -46,6 +49,15 @@ noncomputable def monicizeRatFunc (H : F[X][Y]) : Polynomial (RatFunc F) :=
   let H' := Polynomial.eval₂ (RingHom.comp Polynomial.C univPolyHom) S H
   W ^ (d - 1) * H'
 
+/-- The defining formula for `monicizeRatFunc`, stated as a rewrite lemma so clients need not
+unfold its implementation-local `let` bindings. -/
+lemma monicizeRatFunc_eq (H : F[X][Y]) :
+    monicizeRatFunc H =
+      Polynomial.C (univPolyHom (F := F) H.leadingCoeff) ^ (H.natDegree - 1) *
+        Polynomial.eval₂ (RingHom.comp Polynomial.C (univPolyHom (F := F)))
+          (Polynomial.X / Polynomial.C (univPolyHom (F := F) H.leadingCoeff)) H := by
+  rfl
+
 section FieldIrreducibility
 
 variable {F : Type} [Field F]
@@ -58,7 +70,7 @@ lemma univPolyHom_injective :
 private lemma irreducible_comp_C_mul_X_iff {K : Type} [Field K] (a : K) (ha : a ≠ 0)
     (p : K[X]) :
     Irreducible (p.comp (Polynomial.C a * Polynomial.X)) ↔ Irreducible p := by
-  letI : Invertible a := invertibleOfNonzero ha
+  let : Invertible a := invertibleOfNonzero ha
   let e : K[X] ≃ₐ[K] K[X] := Polynomial.algEquivCMulXAddC a 0
   have hp : e p = p.comp (Polynomial.C a * Polynomial.X) := by
     simp [e, ← Polynomial.comp_eq_aeval]
@@ -180,7 +192,7 @@ lemma monicize_monic (H : F[X][Y]) (hH : 0 < H.natDegree) :
     (monicize H).Monic := by
   classical
   have hdeg : H.natDegree ≠ 0 := Nat.ne_of_gt hH
-  rw [monicize, if_neg hdeg]
+  rw [monicize, ite_eq_right hdeg]
   exact Polynomial.monic_X_pow_add <| (Polynomial.degree_sum_le _ _).trans_lt <| by
     exact (Finset.sup_lt_iff (WithBot.bot_lt_coe H.natDegree)).2 <| by
       intro i hi

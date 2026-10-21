@@ -3,14 +3,17 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
+module
 
-import ArkLib.ProofSystem.RingSwitching.Packing.Prelude
-import ArkLib.ProofSystem.Binius.BinaryBasefold.Spec
+public import ArkLib.ProofSystem.RingSwitching.Packing.Prelude
+public import ArkLib.ProofSystem.Binius.BinaryBasefold.Spec
 
 /-!
 # FRI-Binius IOPCS Prelude
 This module contains the preliminary definitions for the FRI-Binius IOPCS.
 -/
+
+@[expose] public section
 
 noncomputable section
 
@@ -34,7 +37,7 @@ variable [hdiv : Fact (ϑ ∣ ℓ')]
 
 omit [NeZero κ] in
 lemma card_bool_hypercube_eq :
-  Fintype.card (Fin κ → Fin 2) = 2 ^ κ := by
+    Fintype.card (Fin κ → Fin 2) = 2 ^ κ := by
   simp only [Fintype.card_pi, Fintype.card_fin, prod_const, card_univ]
 
 def hypercubeEquivFin : (Fin κ → Fin 2) ≃ Fin (2 ^ κ) :=

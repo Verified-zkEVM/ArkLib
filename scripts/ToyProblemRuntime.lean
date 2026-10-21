@@ -401,7 +401,7 @@ def downstreamVirtualVerifier : OracleVerifier []ₒ
                 (Fin 4) (Fin 2 → TestField)) oStmt)
             (([ToyProblem.SimplifiedIOR.OutputOracleStatement
               (Fin 4) (Fin 2 → TestField)]ₒ).query ⟨i, j⟩)) := by
-          exact OracleVerifier.simulateQ_addLift_add_liftM_left
+          exact QueryImpl.simulateQ_addLift_add_liftM_left
             (QueryImpl.id []ₒ)
             (OracleInterface.simOracle0
               (ToyProblem.SimplifiedIOR.OutputOracleStatement

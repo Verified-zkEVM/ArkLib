@@ -3,9 +3,10 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import Mathlib.RingTheory.MvPolynomial.Basic
-import ArkLib.Data.MvPolynomial.Degrees
+public import Mathlib.RingTheory.MvPolynomial.Basic
+public import ArkLib.Data.MvPolynomial.Degrees
 
 /-!
 # Per-variable degree restriction ("prismalinear" polynomials)
@@ -21,10 +22,10 @@ plain multilinear case is `b = fun _ => 1`. The degree machinery (`degreeOf`) is
 per-coordinate, so the characterisation `mem_restrictDegreeVar_iff_degreeOf_le` is immediate.
 -/
 
--- The `sumAlgEquiv_monomial_aux` lemma below + the two helper lemmas mirror the (private) uniform
--- proofs in `RestrictDegree.lean`. The `multiGoal` linter fires on a `congr! 2` split inside
--- `sumAlgEquiv_monomial_aux`; scope-suppress it file-wide.
-set_option linter.style.multiGoal false
+@[expose] public section
+
+-- The `sumAlgEquiv_monomial_aux` lemma below and its two helpers mirror the private uniform
+-- proofs in `RestrictDegree.lean`.
 
 namespace MvPolynomial
 
@@ -39,7 +40,7 @@ noncomputable def restrictDegreeVar (σ : Type*) (R : Type*) [CommSemiring R] (b
 theorem mem_restrictDegreeVar {b : σ → ℕ} (p : MvPolynomial σ R) :
     p ∈ restrictDegreeVar σ R b ↔ ∀ s ∈ p.support, ∀ i, (s : σ →₀ ℕ) i ≤ b i := by
   simp only [restrictDegreeVar, mem_restrictSupport_iff, Set.subset_def, Finset.mem_coe,
-    Set.mem_setOf_eq]
+    Set.mem_ofPred_eq]
 
 /-- The uniform bound `b = fun _ => m` recovers `restrictDegree σ R m` definitionally. So
 `restrictDegreeVar` is a drop-in generalisation: existing `restrictDegree`/`R⦃≤ m⦄[X σ]` users are
@@ -90,8 +91,7 @@ lemma sumAlgEquiv_monomial_aux {R : Type*} [CommSemiring R]
       MvPolynomial.monomial (m.comapDomain Sum.inl Sum.inl_injective.injOn)
         (MvPolynomial.monomial (m.comapDomain Sum.inr Sum.inr_injective.injOn) c) := by
   ext s
-  simp [MvPolynomial.sumAlgEquiv, MvPolynomial.monomial, MvPolynomial.coeff,
-    Finsupp.comapDomain]
+  simp [MvPolynomial.sumAlgEquiv, MvPolynomial.monomial, Finsupp.comapDomain]
 
 @[deprecated sumAlgEquiv_monomial_aux (since := "2026-08-15")]
 alias sumToIter_monomial_aux := sumAlgEquiv_monomial_aux

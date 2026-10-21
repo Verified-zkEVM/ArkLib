@@ -3,6 +3,37 @@
 This page is the recommended agent playbook for commands and validation.
 Use it as the main guide for routine local checks.
 
+## Dependency versions
+
+Before a large contribution or a forward-port, fetch the intended upstream remote and
+compare your branch with its merge target (`git log HEAD..origin/main --oneline`,
+`git diff HEAD origin/main -- lean-toolchain lakefile.toml lake-manifest.json`).
+Review intervening API additions before writing replacement infrastructure. If the
+checkout contains unrelated work, use a separate worktree for the forward-port and
+leave that work intact.
+
+The Lean 4.34 upgrade uses Lean, Mathlib, cslib, and doc-gen4 `v4.34.0`.
+`lakefile.toml` pins CompPoly to its `v4.34.0` release and VCVio to an exact commit; `lake-manifest.json` records
+the complete resolved dependency set, including the PolyFun revision selected by VCVio.
+Keep that PolyFun pin when updating this stack: a newer PolyFun revision must also be
+validated against VCVio before ArkLib can adopt it.
+The VCVio pin includes the native probability prerequisites and
+[the supporting bound lemmas](https://github.com/Verified-zkEVM/VCVio/pull/769); it is an exact
+reviewable revision rather than a moving branch. ArkLib uses native measures throughout its
+probability statements; the [migration ledger](../design/native-measure-ledger.md) records the
+conversion and upstream API map.
+Validate the combined dependency set with `./scripts/validate.sh --axioms` before merging.
+
+Keep each check on a coherent source and artifact graph with the same toolchain and dependency
+manifest. With parallel worktrees or artifact overlays, verify that every imported module resolves
+to its intended source revision, including transitive dependencies. Freeze those artifacts while a
+check runs; replacing imported output during elaboration invalidates its evidence. After changing
+a dependency revision, rebuild its dependents before checking clients. Use the normal isolated
+`lake build` and full validation as the final authority for scratch or overlay checks.
+
+The September 4 baseline in `docs/design/00-current-status.md` records the original typed
+interaction implementation train, not the current package versions.
+
 ## Recommended Validation
 
 For a convenient routine check, run:
@@ -17,6 +48,11 @@ On a cold clone, fetch precompiled dependencies first:
 lake exe cache get
 ./scripts/validate.sh
 ```
+
+Validation also runs the native-probability retirement fixtures and
+`lake exe retiredsweep --require-empty`. This gate rejects direct retired API references in
+ArkLib declaration types and bodies, without a baseline exception. See
+[probability conventions](probability-conventions.md) when porting an older branch.
 
 ## Validation By Change Type
 
@@ -36,14 +72,37 @@ git add path/to/newfile.lean
 `./scripts/update-lib.sh` only considers tracked files, and fails fast if untracked
 `ArkLib/**/*.lean` files are present.
 
-### Lean-heavy refactors or cleanup
+### Compile-time acceptance tests
+
+Place examples and regression tests under `ArkLibTest/`, mirroring the production module path.
+Run `lake test` to build them; `./scripts/validate.sh` runs this target by default and rejects all
+test warnings, including admissions. Stage new tests so source linting and the trust inventory
+include them. Production modules must not import tests.
+
+Typed Interaction PRs also have a focused hosted check, including when stacked on a feature
+branch. It compiles all tracked `ArkLib/Interaction/` and `ArkLibTest/Interaction/` modules with
+the existing build-time source-policy plugin and rejects every warning in those modules,
+including admissions. This is early feedback, not a replacement for `lake test` or the full
+validation/axiom gate before merging to `main`. The semantic acceptance requirements live in
+[`../design/01c-access-execution-contract.md`](../design/01c-access-execution-contract.md).
+
+### Lean source-policy checks
 
 ```bash
-./scripts/validate.sh --lint
+lake exe lint-style
 ```
 
-This adds `./scripts/lint-style.sh` to the convenience wrapper. The main CI build runs with
-`lint: false`, so this is opt-in.
+`./scripts/validate.sh` runs this gate by default. The Lean executable scans every module imported
+by `ArkLib.lean` and every tracked `ArkLibTest` module, parses import headers with Lean itself, and has no exception file. It allows
+project-specific mathematical Unicode notation, while rejecting invisible controls, bidirectional
+controls, and nonstandard space characters that can conceal source changes. It also rejects
+blanket package-root imports. The normal `lake build` loads ArkLib's Lean syntax-tree plugin, which
+rejects source-level linter suppressions in their actual parsed context.
+
+The header policy understands the Lean module system, so `module`, `public import`, `meta import`
+and `import all` all parse, and it pins the canonical header order every file under `ArkLib/`
+follows. See [`module-system.md`](module-system.md).
+
 If the task is specifically Lean warning cleanup, follow
 [`../skills/fix-lean-warnings.md`](../skills/fix-lean-warnings.md).
 
@@ -58,9 +117,10 @@ This first runs `./scripts/test-axiomsweep.sh` — the executable fixture matrix
 the native-trust floor, and the exit-code contract) — and then
 `lake exe axiomsweep --check`: a kernel-level sweep of every `ArkLib.*`
 declaration's axiom dependencies (the `#print axioms` information, library-wide) diffed
-against the committed baseline `scripts/axiom_baseline.json`. It fails only on *new*
-`sorryAx` or non-standard-axiom taint, so pre-existing gaps stay allowed. If you
-intentionally add a tagged `sorry` (or close one), refresh and commit the baseline:
+against the committed baseline `scripts/axiom_baseline.json`. It fails on *new* `sorryAx`
+or non-standard-axiom taint, while reporting closed gaps without blocking cleanup. If you
+intentionally add a tagged `sorry` (or close one), refresh and commit the reviewed baseline
+diff:
 
 ```bash
 lake exe axiomsweep --update-baseline
@@ -72,8 +132,12 @@ The baseline is an allowlist for `sorryAx` debt only. Native-compiler trust
 a zero-debt rule: no baseline edit can green it, and `--update-baseline` refuses to write
 while such taint is present — remove the dependency instead.
 
-CI runs the fixture matrix as an enforcing step and the library check report-only while
-the baseline soaks (see `ci.yml`).
+CI enforces both the fixture matrix and the library regression check (see `ci.yml`).
+It also runs `scripts/source-trust-audit.py` over every tracked Lean file under `ArkLib/` and `ArkLibTest/`.
+That deterministic, comment/string-aware inventory reports source-only constructs that an
+environment sweep cannot see reliably: admissions in examples or defaults/autoparams and
+constructs in files outside the imported roots. Source inventory changes are review evidence,
+not a global `sorry` ban; the kernel sweep remains the taint verdict.
 
 ### Docstrings, blueprint, or website changes
 
@@ -97,9 +161,10 @@ python3 -m pip install leanblueprint
 ## Important Notes
 
 - `./scripts/validate.sh` is the recommended convenience wrapper for routine local validation.
-- By default it runs `lake build`, the compiled `toyproblem-runtime` checks,
-  `./scripts/check-imports.sh`, and `python3 ./scripts/check-docs-integrity.py`, plus
-  knowledge-base linting from source inputs.
+- By default it runs `lake build`, rejects non-`sorry` warnings anywhere under `ArkLib/`, runs the
+  Lean-native source-policy gate, runs the compiled `toyproblem-runtime`, `hachi-runtime`,
+  `sumcheck-runtime`, and `fri-extractor-runtime` checks, checks generated imports and documentation
+  integrity, and lints knowledge-base inputs.
 - The lower-level scripts remain valid when you only want one specific check.
 - `docs/kb/_generated/**` freshness is handled by generated-files PRs from the main-branch KB
   workflow, not by ordinary PR validation.
@@ -107,11 +172,7 @@ python3 -m pip install leanblueprint
 - `scripts/README.md` is the inventory of helper scripts.
 - Only run docs and site builds when those surfaces are relevant; they are slower and more
   tool-dependent than normal Lean builds.
-- `--lint` fails on `main` as well as on feature branches: `scripts/lint-style.sh` reports a
-  large pre-existing style backlog, and `validate.sh` runs under `set -euo pipefail`, so `--lint`
-  **aborts the script before `--docs`**. To exercise the docgen gate, run
-  `./scripts/validate.sh --docs` on its own. When checking that a branch adds no new style lint,
-  compare the `(file, error-kind)` multiset against the merge-base rather than the total count.
+- `--lint` remains a deprecated compatibility flag; style linting is always enforced.
 
 ## Checking axiom hygiene correctly
 
@@ -135,6 +196,36 @@ When reporting results, prefer "axiom-clean against the baseline" over "axiom-fr
 counting basis (public / source-level / all-non-internal) — declaration totals are not comparable
 across differently-written probes, whereas the set of `sorryAx` carriers is.
 
+## Compiled execution checks
+
+Some things a theorem cannot state — that a definition compiles to code at all, and that running
+it gives the expected answer — are checked by compiled executables under `scripts/`, declared as
+`lean_exe` targets in `lakefile.toml` and run by `validate.sh`:
+
+| target | file | what it certifies |
+| --- | --- | --- |
+| `toyproblem-runtime` | `scripts/ToyProblemRuntime.lean` | the toy-problem launch cone |
+| `hachi-runtime` | `scripts/HachiRuntime.lean` | the nonrecursive Hachi honest-prover path |
+| `sumcheck-runtime` | `scripts/SumcheckRuntime.lean` | CompPoly messages and honest multivariate execution, including private effects, public abort and the retained original oracle |
+| `fri-extractor-runtime` | `scripts/FriExtractorRuntime.lean` | measured FRI extraction, input guards, raw interpolation corner cases, and exact small instruction counts |
+
+**Put them here, not under `ArkLib/`.** A file under `ArkLib/` is picked up by the generated
+library root, so a `#eval` in one is paid on every build by everyone; and `#eval` runs in the
+interpreter, which is far slower than compiled code. The pattern each file follows is a
+`check : String → Bool → IO Unit` that throws on failure, a `run : IO Unit` listing the checks,
+and `def main := run`.
+
+Two things to get right when adding one:
+
+- **Make each check lazy** — `def myCheck : Unit → Bool := fun _ => …`, not `def myCheck : Bool`.
+  Top-level values of non-function type are evaluated at *module initialization*, so an eager
+  check runs before `main` does. A slow one then hangs the executable before it can print
+  anything, and per-check timings all read zero because the work already happened.
+- **Keep the gated checks fast, and put slow ones behind a flag.** `hachi-runtime` gates on its
+  millisecond checks and hides its composed protocol run behind `--full` (that run passes, but
+  takes about six minutes — the honest sumcheck prover dominates), with `--timing` for per-check
+  costs.
+
 ## Optional Direct Commands
 
 You can still run the underlying pieces directly when debugging a specific issue:
@@ -142,6 +233,9 @@ You can still run the underlying pieces directly when debugging a specific issue
 ```bash
 lake build
 lake exe toyproblem-runtime
+lake exe hachi-runtime
+lake exe sumcheck-runtime
+lake exe fri-extractor-runtime
 ./scripts/check-imports.sh
 python3 ./scripts/check-docs-integrity.py
 python3 ./scripts/kb/lint.py
@@ -164,12 +258,22 @@ python3 -m pip install leanblueprint
 ## CI Mapping
 
 - [`../../.github/workflows/ci.yml`](../../.github/workflows/ci.yml)
-  runs the timing-enabled main build on PRs and pushes to `main`, measures a
-  clean build, a warm rebuild, and the `./scripts/validate.sh` path, runs the
-  axiom-sweep fixture matrix (enforcing) and the library sweep report-only,
-  reuses that build for blueprint and declaration validation, and builds and
-  deploys API documentation on pushes to `main`. It then uploads timing artifacts
-  and posts a comparison report on same-repo PRs.
+  runs the timing-enabled main build on PRs, merge groups, pushes to `main`, and a nightly
+  schedule. It builds incrementally from the latest `main` build (see
+  [Build Cache](#build-cache)), times the library build, the native build, and the
+  `./scripts/validate.sh` path, runs the
+  source trust inventory plus axiom-sweep fixture matrix and library regression baseline
+  (all axiom verdicts enforcing), and reuses that build for blueprint/declaration
+  validation and API-documentation generation. The PR-head job has read-only contents
+  permission; on pushes, a separate job deploys its generated static-site artifact with
+  Pages/OIDC permission. It uploads timing artifacts consumed by the trusted
+  [`../../.github/workflows/build-timing-report.yml`](../../.github/workflows/build-timing-report.yml)
+  workflow, which renders the report and posts it on the PR.
+- [`../../.github/workflows/interaction.yml`](../../.github/workflows/interaction.yml)
+  provides focused compilation and zero-warning checks for typed Interaction production and
+  acceptance modules. It also runs on feature-base stacked PRs. Its read-only job restores,
+  but never saves, the dependency and build caches and does not retain checkout credentials. Passing
+  this check does not waive the full validation/axiom gate for the eventual `main` target.
 - [`../../.github/workflows/check-imports.yml`](../../.github/workflows/check-imports.yml)
   checks that `ArkLib.lean` matches the tracked source tree.
 - [`../../.github/workflows/docs-integrity.yml`](../../.github/workflows/docs-integrity.yml)
@@ -177,32 +281,74 @@ python3 -m pip install leanblueprint
 - [`../../.github/workflows/kb-generated.yml`](../../.github/workflows/kb-generated.yml)
   opens generated-files PRs for KB indexes and missing cited-paper stubs after pushes to `main`.
 
+Pull requests enter GitHub's merge queue after their normal review and required checks pass. The
+queue creates a temporary integration ref containing the queued changes on current `main`; the CI,
+import, and docs-integrity workflows run again on that `merge_group` ref before GitHub may merge it.
+The CI validation path includes the Lean-native source-policy gate. PR-only timing comparisons and
+comments remain attached to the ordinary PR run and are intentionally skipped for merge groups,
+which do not carry a pull-request payload.
+
+## Build Cache
+
+CI keeps two caches. The dependency cache holds `.lake/packages` and is keyed by
+`lake-manifest.json` and `lean-toolchain`. The build cache holds ArkLib's own `.lake/build`; every
+`main` run saves one, and every run restores the newest. Lake decides what to rebuild from content
+hashes of each module's source and imports, so a restored build is only a starting point: a PR
+rebuilds the modules it changed and everything that imports them, and nothing else. Lake stores
+each module's messages in its trace, so warnings from modules it does not rebuild are replayed and
+the warning budgets still see them.
+
+Only `main` saves caches. Pull request and merge-queue runs restore them and discard their own
+build, so untrusted code never publishes an artifact another run loads, and the repository's 10 GB
+cache budget holds `main` builds only. For the same reason a push to `main` waits for the running
+`main` build instead of cancelling it.
+
+The nightly scheduled run, and a manual run with `clean_build` set, skips the build cache and
+builds from scratch. That keeps an absolute build-time trend and checks that nothing passes only
+because of stale cached output.
+
 ## Manual Timing Helper
 
 If you need to reproduce the timing workflow locally, the same helper script can
 capture a measurement and render a report:
 
 ```bash
-bash scripts/build_timing_report.sh run clean_build /tmp/build-timing.jsonl -- \
-  bash -eo pipefail -c 'rm -rf .lake/build && lake build'
-bash scripts/build_timing_report.sh run warm_rebuild /tmp/build-timing.jsonl -- \
+export BUILD_TIMING_LOG_DIR=/tmp/build-timing
+bash scripts/build_timing_report.sh run library_build /tmp/build-timing/results.jsonl -- \
   bash -eo pipefail -c 'lake build'
-bash scripts/build_timing_report.sh run native_build /tmp/build-timing.jsonl -- \
-  bash -eo pipefail -c 'lake build toyproblem-runtime'
-bash scripts/build_timing_report.sh run test_path /tmp/build-timing.jsonl -- \
+bash scripts/build_timing_report.sh run native_build /tmp/build-timing/results.jsonl -- \
+  bash -eo pipefail -c 'lake build toyproblem-runtime hachi-runtime sumcheck-runtime fri-extractor-runtime lint-style'
+bash scripts/build_timing_report.sh run test_path /tmp/build-timing/results.jsonl -- \
   bash -eo pipefail -c './scripts/validate.sh'
-bash scripts/build_timing_report.sh render /tmp/build-timing.jsonl
+bash scripts/build_timing_report.sh render /tmp/build-timing/results.jsonl
 ```
 
 Read the rows in that order, because they share one tree and each leaves it warmer:
 
-- `clean_build` and `warm_rebuild` bracket the incremental-build signal.
-- `native_build` carries the `.c.o` chain that `lake exe toyproblem-runtime` links. It is the row
-  that swings on `.lake` cache state, so a dependency bump shows its cost here.
+- `library_build` is `lake build` on whatever the build cache left: the changed modules and their
+  importers, or everything when no cache was restored.
+- `native_build` carries the `.c.o` chain that the compiled executables link — currently
+  `toyproblem-runtime`, `hachi-runtime`, `sumcheck-runtime`, `fri-extractor-runtime`, and `lint-style`.
+  It is the row that swings on `.lake` cache state, so a dependency bump shows its cost here. **Adding a compiled executable to
+  `validate.sh` means
+  adding it to this command too**, or its link cost lands in `test_path` instead.
 - `test_path` is therefore the cost of the validation gate itself on an already-built project,
-  not of a cold `./scripts/validate.sh`. CI passes no flags, so `--lint`, `--docs`, `--site` and
+  not of a cold `./scripts/validate.sh`. CI passes no flags, so `--docs`, `--site` and
   `--axioms` never appear in it.
 
 A row whose measurement could not be taken renders as `measurement failed`, not as a missing row.
-Per-target times are printed with the precision Lake reported (`22`, `3.5`, `0.770`); Lake emits
-whole seconds above 10s, so those figures are not accurate to two decimals.
+
+Wall time of an incremental build depends on how much the change invalidated, so it is not
+comparable across PRs. The per-module comparison is. Lake prints `Built <module> (<time>)` exactly
+for the modules it rebuilt, and `scripts/module_times.py` keeps a table of the latest such time
+for every module in `.lake/build/arklib-module-times.json`, which travels with the build cache.
+The report compares each rebuilt module against that table, and the table's sum before and after
+the run estimates clean-build compile time without running a clean build. Module times are printed
+with the precision Lake reported (`22`, `3.5`, `0.770`); Lake emits whole seconds above 10s.
+
+Timing artifacts include the PR head, actual measured checkout (normally GitHub's synthetic PR
+merge commit), exact base, dependency-manifest hash, exact/fallback cache state, and runner
+image/version. Reports show both wall time and CPU work (`user + sys`). Movement in both suggests
+changed compilation work or runner speed; wall-only movement more often indicates scheduling or I/O
+contention. These diagnostics improve attribution, but one hosted-runner sample is still not a
+performance verdict. Per-file rows are leads to remeasure, not blocking regression claims.

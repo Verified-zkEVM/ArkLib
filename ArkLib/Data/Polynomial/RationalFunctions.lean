@@ -3,15 +3,16 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Katerina Hristova, František Silváši, Julian Sutherland, Ilia Vlasov
 -/
+module
 
-import ArkLib.Data.Polynomial.RationalFunctions.FunctionField
-import ArkLib.Data.Polynomial.RationalFunctions.Weight
-import ArkLib.Data.Polynomial.RationalFunctions.RationalRootVanishing
-import ArkLib.Data.Polynomial.RationalFunctions.Lifts
-import ArkLib.Data.Polynomial.RationalFunctions.HenselNumerators.Setup
-import ArkLib.Data.Polynomial.RationalFunctions.HenselNumerators.Hensel
-import ArkLib.Data.Polynomial.RationalFunctions.HenselNumerators.Weight
-import ArkLib.Data.Polynomial.RationalFunctions.HenselNumerators.Sequence
+public import ArkLib.Data.Polynomial.RationalFunctions.FunctionField
+public import ArkLib.Data.Polynomial.RationalFunctions.Weight
+public import ArkLib.Data.Polynomial.RationalFunctions.RationalRootVanishing
+public import ArkLib.Data.Polynomial.RationalFunctions.Lifts
+public import ArkLib.Data.Polynomial.RationalFunctions.HenselNumerators.Setup
+public import ArkLib.Data.Polynomial.RationalFunctions.HenselNumerators.Hensel
+public import ArkLib.Data.Polynomial.RationalFunctions.HenselNumerators.Weight
+public import ArkLib.Data.Polynomial.RationalFunctions.HenselNumerators.Sequence
 
 /-!
 # Appendix A of [BCIKS20]: Function Fields, Weights, and Hensel Lifts
@@ -24,8 +25,10 @@ Import this file for all of it, or an individual module for a narrower dependenc
 
 `H : F[X][Y]` plays the role of the paper's `H(Y, Z)`: the outer variable is `Y` and the
 coefficient variable is the paper's `Z`. For the trivariate `R : F[X][X][Y]` the outer variable is
-`Y`, the middle one is the paper's `X` and the innermost is `Z`, so `Bivariate.evalX (C x₀) R` is
-the specialization `R(x₀, Y, Z)`.
+`Y`, the middle one is the paper's `X` and the innermost is `Z`, so `Trivariate.evalAtX x₀ R`
+(definitionally the existing `Bivariate.evalX (C x₀) R` expressions in this package) is the
+specialization `R(x₀, Y, Z)`. Generic bivariate operations on `R.coeff i` are intentional: that
+coefficient is genuinely bivariate in `(Z, X)`.
 
 ## Layout
 
@@ -82,3 +85,5 @@ Everything in this package is proved: no `sorry`, and no axioms beyond `propext`
   Computer Science (FOCS), 2020. Full paper: https://eprint.iacr.org/2020/654,
   version 20210703:203025.
 -/
+
+@[expose] public section

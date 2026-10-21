@@ -4,8 +4,9 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland,
          Ilia Vlasov, Chung Thai Nguyen
 -/
+module
 
-import ArkLib.Data.CodingTheory.Basic.RelativeDistance
+public import ArkLib.Data.CodingTheory.Basic.RelativeDistance
 
 /-!
 # Decoding Radius for Codes
@@ -13,6 +14,8 @@ import ArkLib.Data.CodingTheory.Basic.RelativeDistance
 This module contains absolute and relative unique decoding radius definitions and the
 standard lemmas relating decoding-radius bounds to code distance.
 -/
+
+@[expose] public section
 
 namespace Code
 

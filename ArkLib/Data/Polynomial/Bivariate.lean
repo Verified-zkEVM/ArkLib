@@ -3,12 +3,13 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Katerina Hristova, František Silváši, Julian Sutherland, Ilia Vlasov
 -/
+module
 
-import CompPoly.ToMathlib.Polynomial.BivariateWeightedDegree
-import CompPoly.ToMathlib.Polynomial.BivariateMultiplicity
+public import CompPoly.ToMathlib.Polynomial.BivariateWeightedDegree
+public import CompPoly.ToMathlib.Polynomial.BivariateMultiplicity
 
-import Mathlib.Algebra.Polynomial.BigOperators
-import Mathlib.Algebra.BigOperators.Group.Finset.Basic
+public import Mathlib.Algebra.Polynomial.BigOperators
+public import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 /-!
 # ArkLib-Specific Bivariate Polynomial Extensions
 
@@ -20,6 +21,8 @@ by CompPoly (`CompPoly.ToMathlib.Polynomial.BivariateDegree`, `BivariateWeighted
 - Quotient (divisibility) predicates and degree bounds
 - Linear-map monomial constructors (`monomialY`, `monomialXY`) and their algebra
 -/
+
+@[expose] public section
 
 open Polynomial
 open Polynomial.Bivariate
@@ -68,7 +71,7 @@ theorem natDegree_sum_lt_of_forall_lt {F : Type} [Semiring F]
 
 
 theorem natDeg_sum_eq_of_unique {α : Type} {s : Finset α} {f : α → F[X]} {deg : ℕ}
-  (mx : α) (h : mx ∈ s) :
+    (mx : α) (h : mx ∈ s) :
     (f mx).natDegree = deg →
     (∀ y ∈ s, y ≠ mx → (f y).natDegree < deg ∨ f y = 0) →
     (∑ x ∈ s, f x).natDegree = deg := by
@@ -117,7 +120,7 @@ theorem natDeg_sum_eq_of_unique {α : Type} {s : Finset α} {f : α → F[X]} {d
 /-- If some element `x ∈ s` maps to `y` under `f`, and every element of `s` maps to a value
 less than or equal to `y`, then the supremum of `f` over `s` is exactly `y`. -/
 lemma sup_eq_of_le_of_reach {α β : Type} [SemilatticeSup β] [OrderBot β] {s : Finset α} {f : α → β}
-      (x : α) {y : β} (h : x ∈ s) :
+    (x : α) {y : β} (h : x ∈ s) :
     f x = y →
     (∀ x ∈ s, f x ≤ y) →
     s.sup f = y := by
@@ -152,7 +155,7 @@ If `q * f ≠ 0`, then the `X`-degree of `q` is bounded above by the difference 
 -/
 @[grind .]
 lemma degreeX_le_degreeX_sub_degreeX [IsDomain F] {f q : F[X][Y]} (hf : f ≠ 0) (hg : q * f ≠ 0) :
-  degreeX q ≤ degreeX (q * f) - degreeX f := by
+    degreeX q ≤ degreeX (q * f) - degreeX f := by
   have hq : q ≠ 0 := quotient_nezero (f := f) (q := q) hg
   have hmul : degreeX (q * f) = degreeX q + degreeX f := degreeX_mul q f hq hf
   have hsum : degreeX q + degreeX f ≤ degreeX (q * f) := by
@@ -167,7 +170,8 @@ If `q * f ≠ 0`, then the `Y`-degree of `q` is bounded above by the difference 
 -/
 @[grind .]
 lemma degreeY_le_degreeY_sub_degreeY [IsDomain F] {f q : F[X][Y]} (hf : f ≠ 0) (hg : q * f ≠ 0) :
-  natDegreeY q ≤ natDegreeY (q * f) - natDegreeY f := by grind
+    natDegreeY q ≤ natDegreeY (q * f) - natDegreeY f := by
+  simp [natDegreeY, Polynomial.natDegree_mul (quotient_nezero hg) hf]
 
 /-- Each coefficient's total-degree contribution is bounded by `totalDegree` when in support. -/
 theorem coeff_totalDegree_le (f : F[X][Y]) {n : ℕ} (hn : n ∈ f.support) :
@@ -389,7 +393,7 @@ theorem monomialXY_def {n m : ℕ} {a : F} :
 In particular, `(a + b) * X^n * Y^m = a * X^n * Y^m + b * X^n * Y^m`. -/
 @[simp, grind =]
 theorem monomialXY_add {n m : ℕ} {a b : F} :
-  monomialXY n m (a + b) = monomialXY n m a + monomialXY n m b :=
+    monomialXY n m (a + b) = monomialXY n m a + monomialXY n m b :=
   (monomialXY n m).map_add _ _
 
 /-- Multiplying bivariate monomials works as expected.
@@ -403,14 +407,14 @@ theorem monomialXY_mul_monomialXY {n m p q : ℕ} {a b : F} :
 In particular, ` (a * X^n * Y^m)^k = (a^k) * X^(n * k) * Y^(m * k)`. -/
 @[simp, grind _=_]
 theorem monomialXY_pow {n m k : ℕ} {a : F} :
-  monomialXY n m a ^ k = monomialXY (n * k) (m * k) (a ^ k) := by
+    monomialXY n m a ^ k = monomialXY (n * k) (m * k) (a ^ k) := by
   simp [monomialXY]
 
 /-- Multiplying a bivariate monomial by a scalar works as expected.
 In particular, ` b * a * X^n * Y^m = b * (a * X^n * Y^m)`. -/
 @[simp, grind _=_]
 theorem smul_monomialXY {n m : ℕ} {a : F} {S} [SMulZeroClass S F] {b : S} :
-  monomialXY n m (b • a) = b • monomialXY n m a := by
+    monomialXY n m (b • a) = b • monomialXY n m a := by
   grind [monomialXY]
 
 /-- A bivariate monimial `a * X^n * Y^m` is equal to zero if and only if `a = 0`. -/
@@ -422,13 +426,13 @@ theorem monomialXY_eq_zero_iff {n m : ℕ} {a : F} : monomialXY n m a = 0 ↔ a 
 `n = p` and `m = q` or if both are zero, i.e., `a = b = 0`. -/
 @[grind =]
 theorem monomialXY_eq_monomialXY_iff {n m p q : ℕ} {a b : F} :
-  monomialXY n m a = monomialXY p q b ↔ n = p ∧ m = q ∧ a = b ∨ a = 0 ∧ b = 0 := by
+    monomialXY n m a = monomialXY p q b ↔ n = p ∧ m = q ∧ a = b ∨ a = 0 ∧ b = 0 := by
   aesop (add simp [monomialXY, Polynomial.monomial_eq_monomial_iff])
 
 /-- The total degree of the monomial `a * X^n * Y^m` is `n + m`. -/
 @[simp, grind =]
 lemma totalDegree_monomialXY {n m : ℕ} {a : F} (ha : a ≠ 0) :
-  totalDegree (monomialXY n m a) = n + m := by
+    totalDegree (monomialXY n m a) = n + m := by
   classical
   have hma : Polynomial.monomial n a ≠ 0 := by simp [ha]
   unfold totalDegree
@@ -448,7 +452,7 @@ lemma degreeX_monomialXY {n m : ℕ} {a : F} (ha : a ≠ 0) :
 /-- The `Y`-degree of the monomial `a * X^n * Y^m` is `m`. -/
 @[simp]
 lemma degreeY_monomialXY {n m : ℕ} {a : F} (ha : a ≠ 0) :
-  natDegreeY (monomialXY n m a) = m := by
+    natDegreeY (monomialXY n m a) = m := by
   classical
   have hma : Polynomial.monomial n a ≠ 0 := by simp [ha]
   unfold natDegreeY
@@ -517,7 +521,7 @@ theorem rootMultiplicity₀_ne_none {R : Type} [CommSemiring R] [DecidableEq R]
     rw [List.mem_filterMap]
     refine ⟨(s,t), ?_, ?_⟩
     · exact List.mem_product.mpr ⟨List.mem_range.mpr hslt, List.mem_range.mpr htlt⟩
-    · simp only [Polynomial.Bivariate.coeff, hs, if_false]
+    · simp only [Polynomial.Bivariate.coeff, hs, ite_false]
   rw [hempty] at hmem
   simp at hmem
 

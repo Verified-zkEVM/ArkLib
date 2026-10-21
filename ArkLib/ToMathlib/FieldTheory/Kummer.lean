@@ -3,11 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import Mathlib.Algebra.Polynomial.Eval.Degree
-import Mathlib.RingTheory.AdjoinRoot
-import Mathlib.FieldTheory.Finite.Basic
-import Mathlib.FieldTheory.Finiteness
+public import Mathlib.Algebra.Polynomial.Eval.Degree
+public import Mathlib.RingTheory.AdjoinRoot
+public import Mathlib.FieldTheory.Finite.Basic
+public import Mathlib.FieldTheory.Finiteness
 
 /-!
 # A Kummer irreducibility criterion over a finite field
@@ -25,6 +26,8 @@ whenever `ω` generates `Fˣ`, together with the Frobenius identities used to pr
 Generic facts intended as candidates for upstreaming to Mathlib.
 -/
 
+@[expose] public section
+
 namespace Polynomial
 
 variable {F : Type*} [Field F] [Fintype F]
@@ -34,7 +37,7 @@ private lemma expand_card_pow (i : ℕ) (f : F[X]) :
   induction i with
   | zero => simp
   | succ i ih =>
-    rw [pow_succ, expand_mul, FiniteField.expand_card, map_pow, ih, ← pow_mul]
+    rw [pow_succ, expand_mul, FiniteField.Polynomial.expand_card, map_pow, ih, ← pow_mul]
 
 /-- Frobenius transport for evaluation of a polynomial over a finite field. -/
 lemma aeval_pow_card_pow {K : Type*} [CommSemiring K] [Algebra F K]
@@ -88,12 +91,12 @@ theorem X_pow_card_sub_one_sub_C_irreducible {ω : F}
   have hEnu : ¬ IsUnit ((X : F[X]) ^ (Fintype.card F - 1) - C ω) :=
     not_isUnit_of_natDegree_pos _ (by omega)
   obtain ⟨g, hg, hgd⟩ := WfDvdMonoid.exists_irreducible_factor hEnu hE0
-  haveI : Fact (Irreducible g) := ⟨hg⟩
+  have : Fact (Irreducible g) := ⟨hg⟩
   have hd0 : 0 < g.natDegree := hg.natDegree_pos
   have hdle : g.natDegree ≤ Fintype.card F - 1 := hEdeg ▸ natDegree_le_of_dvd hgd hE0
-  haveI : Module.Finite F (AdjoinRoot g) := PowerBasis.finite (AdjoinRoot.powerBasis hg.ne_zero)
-  haveI : Finite (AdjoinRoot g) := Module.finite_of_finite F
-  haveI : Fintype (AdjoinRoot g) := Fintype.ofFinite _
+  have : Module.Finite F (AdjoinRoot g) := PowerBasis.finite (AdjoinRoot.powerBasis hg.ne_zero)
+  have : Finite (AdjoinRoot g) := Module.finite_of_finite F
+  have : Fintype (AdjoinRoot g) := Fintype.ofFinite _
   have hcardK : Fintype.card (AdjoinRoot g) = Fintype.card F ^ g.natDegree := by
     rw [Module.card_eq_pow_finrank (K := F)]
     congr 1

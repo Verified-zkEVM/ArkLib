@@ -1,4 +1,11 @@
-import Mathlib.LinearAlgebra.Lagrange
+/-
+Copyright (c) 2026 ArkLib Contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Attila Vajda, Ilia Vlasov
+-/
+module
+
+public import Mathlib.LinearAlgebra.Lagrange
 
 /-!
 # Polynomial determination from evaluations on a large enough finite set
@@ -7,6 +14,8 @@ Mathlib's `Polynomial.eq_of_degrees_lt_of_eval_finset_eq` compares the degrees a
 itself. The two lemmas here are the `n ≤ #s` restatements used throughout ArkLib, phrased with
 `degree` and with `natDegree`.
 -/
+
+@[expose] public section
 
 namespace Polynomial
 

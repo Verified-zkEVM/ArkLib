@@ -3,13 +3,17 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import CompPoly.Data.MvPolynomial.Notation
+module
+
+public import CompPoly.Data.MvPolynomial.Notation
 
 /-! # The Plonk relation
 
 We first define the initial relation of Plonk. The paper first defines a constraint system, then
 define what it means for the constraint system to be satisfied. This forms the core relation of
 Plonk. -/
+
+@[expose] public section
 
 namespace Plonk
 

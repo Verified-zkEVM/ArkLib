@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Nishimwe Prince
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.EpsCa
-import ArkLib.Data.CodingTheory.ProximityGap.GrandChallenges
+public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.EpsCa
+public import ArkLib.Data.CodingTheory.ProximityGap.GrandChallenges
 
 /-!
 # Unique-decoding witnesses for the Grand MCA Challenge
@@ -38,12 +39,14 @@ challenge API can currently certify with no admit anywhere beneath it.
 - [BCIKS20] Ben-Sasson, Carmon, Ishai, Kopparty, Saraf. *Proximity Gaps for Reed-Solomon Codes*.
 -/
 
+@[expose] public section
+
 namespace ProximityGap.GrandChallenges
 
 open scoped NNReal
 open Code CoreDefinitions
 
-variable {F ι : Type} [Field F] [Fintype F] [DecidableEq F]
+variable {F ι : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
     [Fintype ι] [Nonempty ι] [DecidableEq ι]
 
 /-- Builds a one-sided MCA witness from [BCIKS20]'s unique-decoding-regime bound: at any positive

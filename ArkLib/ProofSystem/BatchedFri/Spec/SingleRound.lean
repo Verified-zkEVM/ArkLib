@@ -1,9 +1,16 @@
-import ArkLib.OracleReduction.Basic
-import ArkLib.ProofSystem.Fri.RoundConsistency
-import ArkLib.ProofSystem.Fri.Spec.SingleRound
-import CompPoly.Univariate.Basic
-import CompPoly.Univariate.Linear
-import CompPoly.Univariate.ToPoly.Impl
+/-
+Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Julian Sutherland, Quang Dao, Alexander Hicks, Devon Tuma, Ilia Vlasov
+-/
+module
+
+public import ArkLib.OracleReduction.Basic
+public import ArkLib.ProofSystem.Fri.RoundConsistency
+public import ArkLib.ProofSystem.Fri.Spec.SingleRound
+public import CompPoly.Univariate.Basic
+public import CompPoly.Univariate.Linear
+public import CompPoly.Univariate.ToPoly.Impl
 
 /-!
 # The Batched FRI protocol
@@ -12,6 +19,8 @@ import CompPoly.Univariate.ToPoly.Impl
   and the FRI oracle reduction.
 
  -/
+
+@[expose] public section
 
 namespace BatchedFri
 
@@ -143,15 +152,13 @@ theorem simulateQ_queryInput
     simulateQ (OracleInterface.simOracle2 []ₒ oStmt messages)
         (queryInput (F := F) m i x) = pure (oStmt i x) := by
   simp only [MessageIdx, Message, OracleInterface.simOracle2, QueryImpl.addLift,
-    queryInput, Lean.Elab.WF.paramLet, simulateQ_query, OracleQuery.input_query,
-    add_apply_inr, add_apply_inl, OracleQuery.cont_query, QueryImpl.add_apply_inr,
-    QueryImpl.liftTarget_apply]
+    queryInput, Lean.Elab.WF.paramLet]
   change id <$> (pure (oStmt i x) : OracleComp []ₒ F) = pure (oStmt i x)
   simp only [map_pure, id_eq]
 
 /-- The batching round oracle prover. -/
 def batchProver :
-  OracleProver []ₒ
+    OracleProver []ₒ
     Unit (OracleStatement m ω) (Witness F s d m)
     (Fri.Spec.Statement F (0 : Fin (k + 1)))
       (Fri.Spec.OracleStatement s ω (0 : Fin (k + 1)))
@@ -173,13 +180,12 @@ def batchProver :
         (ps 0).1 + ∑ i, CompPoly.CPolynomial.C (cs i) * (ps i.succ).1
       ⟨cs, os,
         ⟨
-          q,
-          by
+          q, by
             unfold Fri.Spec.Witness
             simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod]
             rw [CompPoly.CPolynomial.degreeLT_toPoly]
-            change (((ps 0).1 + ∑ i, CompPoly.CPolynomial.C (cs i) * (ps i.succ).1)
-              : CompPoly.CPolynomial F).toPoly ∈ _
+            change (((ps 0).1 + ∑ i, CompPoly.CPolynomial.C (cs i) * (ps i.succ).1) :
+              CompPoly.CPolynomial F).toPoly ∈ _
             rw [CompPoly.CPolynomial.toPoly_add, CompPoly.CPolynomial.toPoly_sum]
             simp only [CompPoly.CPolynomial.toPoly_mul, CompPoly.CPolynomial.C_toPoly]
             set q : F[X] :=
@@ -256,7 +262,7 @@ def outputSimulation :
 
 /-- The batching round oracle verifier. -/
 def batchVerifier :
-  OracleVerifier []ₒ
+    OracleVerifier []ₒ
     Unit (OracleStatement m ω)
     (Fri.Spec.Statement F (0 : Fin (k + 1)))
     (Fri.Spec.OracleStatement s ω (0 : Fin (k + 1)))
@@ -266,7 +272,7 @@ def batchVerifier :
 
 /-- The batching round oracle reduction. -/
 def batchOracleReduction :
-  OracleReduction []ₒ
+    OracleReduction []ₒ
     Unit (OracleStatement m ω) (Witness F s d m)
     (Fri.Spec.Statement F (0 : Fin (k + 1)))
     (Fri.Spec.OracleStatement s ω (0 : Fin (k + 1)))
