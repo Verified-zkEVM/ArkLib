@@ -94,10 +94,12 @@ manuscript, not to the original sources it cites — those get their own keys (`
 - **§1 one-sided list witnesses.** `GrandChallenges/ListDecoding.lean` holds the two
   `ListLowerWitness` constructors, both axiom-clean, as is the whole of `GrandChallenges.lean`.
   `ofUniqueDecodingRange` is the floor: interleaving preserves minimum distance, hence the
-  unique-decoding radius (`relUDR_interleavedCode_eq`), and inside that radius the interleaved
-  point lists are subsingletons, so `Λ(C^⋈m, δ) ≤ 1`. `ofJohnsonBound` reaches the Johnson
-  radius, via `CodingTheory.johnson_bound_lambda_le_ell` applied to the interleaved code at
-  alphabet `Fin m → F`. The radius is computed at `q = |F|^m`, the alphabet of the interleaved
+  unique-decoding radius (`Code.relativeUniqueDecodingRadius_interleavedCodeSet`), and inside
+  that radius the interleaved point lists are subsingletons, so `Λ(C^⋈m, δ) ≤ 1`
+  (`InterleavedCode.lambda_interleavedCode_le_one_of_le_relUDR`). `ofJohnsonBound` reaches the
+  Johnson radius via `CodingTheory.lambda_interleavedCode_le_of_le_johnson`, which is
+  `CodingTheory.johnson_bound_lambda_le_ell` applied to the interleaved code at alphabet
+  `Fin m → F`. The radius is computed at `q = |F|^m`, the alphabet of the interleaved
   code (Definition 2.9; Theorem 3.2 is stated for `|Σ| = q`), while the relative minimum distance
   is unchanged. Writing `c = q/(q-1)`, the Johnson function is `J_q(δ) = δ · h(c·δ)` with
   `h(u) = (1 - √(1 - u))/u` increasing, so where the radicand is non-negative `J_q(δ)` decreases
