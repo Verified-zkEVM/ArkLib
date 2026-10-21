@@ -69,6 +69,19 @@ home_page/            site assets and assembled website root
 
 ## Navigation Notes
 
+- `ProofSystem/Fri/FoldingSoundness.lean` and `QuerySoundness.lean` contain the algebraic
+  soundness arguments; `ErrorBounds.lean` instantiates existing numerical MCA bounds.
+  `Fri/Spec/Soundness.lean` proves ordinary and round-by-round soundness of the executable
+  oracle reduction; `VerifierExecution.lean` identifies its exact acceptance event and
+  `InputRelation.lean` owns the input word and strict proximity language and connects them
+  to the closed-ball input relation. It is independent of adaptive soundness; the
+  bad-event and adaptive bounds import these input definitions.
+  `RoundConsistency.lean` connects local checks to word folding. Generic persistent-event
+  state functions, adaptive accumulation, and the acceptance-to-soundness bridge live in
+  `OracleReduction/Security/{BadEvents,Accumulation,Acceptance}.lean`. These proofs avoid
+  the unfinished general soundness-implication/composition theorems; see the
+  [FRI audit](../kb/audits/fri-soundness.md).
+
 - `ArkLib.lean` is a generated umbrella import file, not a hand-maintained module index.
 - Across the PolyFun/VCVio boundary, import generic polynomial-functor and handler structure from
   PolyFun and oracle/probability specializations from VCVio. Dependency internals are not an ArkLib
@@ -673,8 +686,9 @@ home_page/            site assets and assembled website root
   supplies native uniform-challenge separation over an explicit `SampleableType`, including
   fixed candidate lists through `BatchingStrategy.separates_finset`. The list is fixed before
   the challenge, and correct candidates are excluded from the bad event. The generic union
-  bounds are imported directly from `VCVio.EvalDist.ProbabilityBounds`;
-  `BatchingPhase.prob_exists_consistent_ne_le` consumes its one-candidate specialization.
+  bounds are imported directly from `VCVio.EvalDist.ProbabilityBounds`. The phase's
+  `prob_exists_consistent_ne_le_of_embedded_eval_eq` requires only uniqueness of the embedded
+  evaluation; `prob_exists_consistent_ne_le` is its polynomial-binding corollary.
   `Relations` also names the actual slices and the arbitrary-weight target derived from fixed
   component claims. `DerivedBatching` bounds incorrect packed candidates from a list fixed before
   one challenge, using an injective packing-to-challenge coefficient map. The transpose is public

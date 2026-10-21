@@ -95,10 +95,11 @@ them; `PackingData.transpose` is the coordinate transpose `(ιP → E) ≃ₗ[B]
 - `Batching` — `BatchingStrategy`, a uniform challenge distribution with a proved collision bound
   (`gammaPowers`, `eqFold`, `singleton`, `reindex`), and `BatchingStrategy.separates_finset`: a
   list of at most `L` families fixed before the challenge has an incorrect collision with
-  probability at most `L` times the strategy error. The generic union bounds it instantiates are
-  upstream in `VCVio.EvalDist.ProbabilityBounds`: `prEvent_exists_finset_le_card_mul` and
-  the exact-functional one-index case `prEvent_exists_and_le_of_subsingleton`, which
-  `BatchingPhase.prob_exists_consistent_ne_le` applies. The bound does not cover
+  probability at most `L` times the strategy error. The finite-list union bound
+  `prEvent_exists_finset_le_card_mul` is imported from `VCVio.EvalDist.ProbabilityBounds`,
+  which also supplies `prEvent_exists_and_le_of_subsingleton`. The phase retains its
+  point-local carrier-binding bound `κ/|L|` and its polynomial-binding corollary
+  `BatchingPhase.prob_exists_consistent_ne_le`. The list bound does not cover
   challenge-dependent lists, adaptive joint-list invariants or extraction;
 - `ScalarHead/Layout` and `ScalarHead/Quirky` — prefix, suffix and quirky Lagrange layouts, each
   with a proved reconstruction identity.
@@ -117,8 +118,9 @@ retain the same packed polynomial and exclude correct candidates from the bad ev
 relation, native head conformance, same-source `pc.evalRel` adapter and extraction remain separate work.
 
 Everything holds over commutative rings, including rings with zero divisors, except the two
-Schwartz–Zippel batching strategies, which need a finite domain, and the quirky layout, whose
-Lagrange interpolation needs the opening algebra to be a field.
+Schwartz–Zippel batching strategies, which need a finite commutative ring with no zero
+divisors, and the quirky layout, whose Lagrange interpolation needs the opening algebra to
+be a field.
 
 ## The three constructions
 

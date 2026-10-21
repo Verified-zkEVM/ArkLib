@@ -27,12 +27,13 @@ opened by a protocol that runs entirely over `L`.
 
 The family is called **Packing** because one basis-sized block of `2^κ` small-ring
 coefficients is encoded as one large-ring coefficient. Thus `κ` Boolean variables worth of
-coefficient positions are packed into the coordinates of a single element of `L`; “tensor”
-describes one useful realization of the carrier algebra, but is not the essential operation.
+coefficient positions are packed into the coordinates of a single element of `L`. The shared
+`PackingData` layer describes independent packing and opening bases. The DP24
+`RingSwitchingProfile` presents the tensor algebra `L ⊗[B] L` in chosen coordinates.
 
 The equivalence is not free: the original claim constrains `t'` through the basis
 coordinates, so the reduction must *relocate* the claim onto `t'` at some point the
-large-ring opening can handle. Two ingredients separate cleanly:
+large-ring opening can handle. The DP24 construction has two ingredients:
 
 * the **packing data** — the basis, a carrier ring `A` where the relocation checks run, a
   pair of embeddings into it, and faithful coordinate maps back out — is one abstraction,
@@ -48,13 +49,17 @@ large-ring opening can handle. Two ingredients separate cleanly:
   degenerates to a *deterministic* one-message identity check. That trace head computes in
   `L` itself, so it needs its own algebraic interface rather than a `Profile` instance.
 
+The independent `PackingData` coordinate layer also supplies algebra for a reference-Flock head.
+Its source, messages and residual opening relation require their own conformance proofs.
+
 The *opposite-direction* `Lift` construction—from a large quotient ring down into a field—is
 **not** a packing; it lives in the sibling folder `RingSwitching/Lift/`.
 
 ## Folder structure
 
 The shared coordinate algebra imports no reduction framework. It holds over commutative rings,
-except the Schwartz–Zippel batching strategies (finite domains) and the quirky layout (a field):
+except the Schwartz–Zippel batching strategies (finite rings with no zero divisors) and the
+quirky layout (a field):
 
 * `Coordinates.lean` — `PackingData`: independent finite bases of a packing algebra and an
   opening algebra over a common ring, the coordinate transpose, and the batching map `bridge`.

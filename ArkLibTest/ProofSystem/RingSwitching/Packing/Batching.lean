@@ -212,6 +212,19 @@ theorem exact_functional_tight :
         simp
     _ ≤ _ := prEvent_mono _ _ _ fun _ h => ⟨_, ⟨rfl, by decide⟩, h⟩
 
+namespace TrivialRing
+
+local instance : NoZeroDivisors (ZMod 1) := Subsingleton.to_noZeroDivisors (ZMod 1)
+local instance : SampleableType (ZMod 1) := SampleableType.ofFintype (ZMod 1)
+
+/-- Power batching is defined even when the challenge ring has one element. -/
+example : BatchingStrategy (ZMod 1) (Fin 3) := BatchingStrategy.gammaPowers (ZMod 1) 3
+
+/-- Equality batching also needs no public nontriviality premise. -/
+example : BatchingStrategy (ZMod 1) (Fin 2 → Fin 2) := BatchingStrategy.eqFold (ZMod 1) 2
+
+end TrivialRing
+
 end RingSwitching.Packing.Tests.Batching
 
 end

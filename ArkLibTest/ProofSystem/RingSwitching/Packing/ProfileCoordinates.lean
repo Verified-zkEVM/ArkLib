@@ -66,3 +66,10 @@ example {B L : Type} {κ : ℕ} [CommRing B] [CommRing L] [Algebra B L]
 end
 
 end ArkLibTest.RingSwitchingProfileCoordinates
+
+/--
+info: 'RingSwitching.RingSwitchingProfile.decomposeColumns_recompose'
+depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms RingSwitching.RingSwitchingProfile.decomposeColumns_recompose

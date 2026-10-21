@@ -30,7 +30,7 @@ read "The idea comes from Lev Soukhanov, `[[alloc]init]`."
   sumcheck. `Relations.lean` states the opening, slice and batched-sumcheck relations and proves
   that correct slices give a correct batched claim.
 - **Batching loss.** The note batches with exponents `1, …, e` and loss `e/|C|`. ArkLib's
-  `gammaPowers` uses exponents `0, …, e − 1` and proves the bound `(e − 1)/|P|`.
+  `gammaPowers` uses exponents `0, …, e − 1` and proves the bound `(e − 1)/|C|`.
 
 ## Main ArkLib Touchpoints
 

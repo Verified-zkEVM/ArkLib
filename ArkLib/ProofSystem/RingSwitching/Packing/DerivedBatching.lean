@@ -64,9 +64,30 @@ theorem pr_derivedTarget_of_not_openingClaimRel_le {m : ℕ}
   simp_rw [data.sumcheckClaimRel_iff_actualSlices, derivedTarget]
   exact bat.separates_map (algebraMap data.P C) hinj _ _ hne
 
-/-- The point, component-value message and finite candidate set are fixed outside the draw.
-Correct candidates are excluded from the bad event. The wire derives the transpose publicly;
-it sends no extra family of slices. This pure law makes no commitment/extraction claim. -/
+open Classical in
+/-- Only incorrect packed candidates contribute to the collision bound. The retained point,
+component claims and candidate list are fixed before the fresh batching challenge. -/
+theorem pr_exists_derivedTarget_not_openingClaimRel_le_card_filter_mul {m : ℕ}
+    (bat : BatchingStrategy C data.ιE)
+    (hinj : Function.Injective (algebraMap data.P C)) (r : Fin m → data.E)
+    (α : data.ιP → data.E) (S : Finset data.P⦃≤ 1⦄[X Fin m]) :
+    Pr{let c ← $ᵗ bat.Challenge}[∃ p ∈ S,
+      ((α, r), data.unpack p) ∉ data.openingClaimRel m ∧
+      (data.derivedTarget α (bat.weight c), p) ∈ data.sumcheckClaimRel m r (bat.weight c)] ≤
+      (S.filter fun p => ((α, r), data.unpack p) ∉ data.openingClaimRel m).card *
+        (bat.error : ℝ≥0∞) := by
+  calc
+    _ = Pr{let c ← $ᵗ bat.Challenge}[∃ p ∈
+        S.filter (fun p => ((α, r), data.unpack p) ∉ data.openingClaimRel m),
+        (data.derivedTarget α (bat.weight c), p) ∈ data.sumcheckClaimRel m r (bat.weight c)] := by
+      apply prEvent_congr
+      intro c
+      simp only [Finset.mem_filter, and_assoc]
+    _ ≤ _ := prEvent_exists_finset_le_card_mul _ _ _ (ε := bat.error) fun p hp =>
+      data.pr_derivedTarget_of_not_openingClaimRel_le bat hinj r α p (Finset.mem_filter.mp hp).2
+
+/-- For a fixed point, component family and at most `L` fixed candidates, the probability
+that an incorrect candidate satisfies the derived target is at most `L * bat.error`. -/
 theorem pr_exists_derivedTarget_not_openingClaimRel_le {m : ℕ}
     (bat : BatchingStrategy C data.ιE)
     (hinj : Function.Injective (algebraMap data.P C)) (r : Fin m → data.E)
@@ -76,13 +97,12 @@ theorem pr_exists_derivedTarget_not_openingClaimRel_le {m : ℕ}
       ((α, r), data.unpack p) ∉ data.openingClaimRel m ∧
       (data.derivedTarget α (bat.weight c), p) ∈ data.sumcheckClaimRel m r (bat.weight c)] ≤
       L * (bat.error : ℝ≥0∞) := by
-  refine (prEvent_exists_finset_le_card_mul S ($ᵗ bat.Challenge) _
-    (ε := bat.error) fun p _ => ?_).trans (by gcongr)
-  by_cases h : ((α, r), data.unpack p) ∈ data.openingClaimRel m
-  · rw [prEvent_eq_zero_of_forall_not _ _ fun _ he => he.1 h]
-    exact bot_le
-  · exact (prEvent_mono _ _ _ fun _ he => he.2).trans
-      (data.pr_derivedTarget_of_not_openingClaimRel_le bat hinj r α p h)
+  classical
+  refine (data.pr_exists_derivedTarget_not_openingClaimRel_le_card_filter_mul
+    bat hinj r α S).trans ?_
+  have hcard : (S.filter fun p => ((α, r), data.unpack p) ∉ data.openingClaimRel m).card ≤ L :=
+    (Finset.card_filter_le _ _).trans hS
+  gcongr
 
 end RingSwitching.Packing.PackingData
 
