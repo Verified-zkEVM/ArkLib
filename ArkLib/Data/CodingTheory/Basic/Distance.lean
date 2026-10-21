@@ -4,19 +4,20 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland,
          Ilia Vlasov, Chung Thai Nguyen, Aristotle (Harmonic)
 -/
+module
 
-import ArkLib.Data.Fin.Basic
-import ArkLib.Data.CodingTheory.Prelims
-import Mathlib.Algebra.Polynomial.Roots
-import Mathlib.Algebra.Order.Floor.Semifield
-import Mathlib.Analysis.InnerProductSpace.PiL2
-import Mathlib.Data.ENat.Lattice
-import Mathlib.InformationTheory.Hamming
-import Mathlib.Tactic.Qify
-import Mathlib.Topology.MetricSpace.Infsep
-import Mathlib.Data.Real.ENatENNReal
-import Mathlib.Algebra.Order.Chebyshev
-import CompPoly.Data.Nat.Bitwise
+public import ArkLib.Data.Fin.Basic
+public import ArkLib.Data.CodingTheory.Prelims
+public import Mathlib.Algebra.Polynomial.Roots
+public import Mathlib.Algebra.Order.Floor.Semifield
+public import Mathlib.Analysis.InnerProductSpace.PiL2
+public import Mathlib.Data.ENat.Lattice
+public import Mathlib.InformationTheory.Hamming
+public import Mathlib.Tactic.Qify
+public import Mathlib.Topology.MetricSpace.Infsep
+public import Mathlib.Basic.Real.ENatENNReal
+public import Mathlib.Algebra.Order.Chebyshev
+public import CompPoly.Data.Nat.Bitwise
 
 /-!
   # Basics of Coding Theory
@@ -118,6 +119,8 @@ import CompPoly.Data.Nat.Bitwise
 - Implement `ENNRat (ℚ≥0∞)`, for usage in `relDistFromCode` and `relDistFromCode'`,
   as counterpart of `ENat (ℕ∞)` in `distFromCode` and `distFromCode'`.
 -/
+
+@[expose] public section
 
 
 variable {n : Type*} [Fintype n] {R : Type*} [DecidableEq R]
@@ -348,17 +351,10 @@ theorem dist_empty : ‖ (∅ : Set (n → R) ) ‖₀ = 0 := by simp [dist]
 @[simp]
 theorem dist_subsingleton {C : Set (n → R)} [Subsingleton C] : ‖C‖₀ = 0 := by
   simp only [Code.dist]
-  have {d : ℕ} : (∃ u ∈ C, ∃ v ∈ C, u ≠ v ∧ hammingDist u v ≤ d) = False := by
-    have h := @Subsingleton.allEq C _
-    simp_all only [Set.subsingleton_coe, Subtype.forall, Subtype.mk.injEq, ne_eq, eq_iff_iff,
-      iff_false, not_exists, not_and, not_le]
-    intro a ha b hb hab
-    have hEq : a = b := h a ha b hb
-    simp_all
-  have : {d | ∃ u ∈ C, ∃ v ∈ C, u ≠ v ∧ hammingDist u v ≤ d} = (∅ : Set ℕ) := by
-    apply Set.eq_empty_iff_forall_notMem.mpr
-    simp [this]
-  simp [this]
+  have : {d | ∃ u ∈ C, ∃ v ∈ C, u ≠ v ∧ hammingDist u v ≤ d} = (∅ : Set ℕ) :=
+    Set.eq_empty_of_forall_notMem fun _ ⟨u, hu, v, hv, hne, _⟩ =>
+      hne (congrArg Subtype.val (Subsingleton.elim (⟨u, hu⟩ : C) ⟨v, hv⟩))
+  rw [this, Nat.sInf_empty]
 
 @[simp]
 theorem dist_le_card (C : Set (n → R)) : dist C ≤ Fintype.card n := by
@@ -839,8 +835,8 @@ theorem dist'_eq_dist : ‖C‖₀'.toNat = ‖C‖₀ := by
     -- The filtered pair set is nonempty
     have hPairs_nonempty :
         (((@Finset.univ (C × C) _).filter (fun p => p.1 ≠ p.2))).Nonempty := by
-      refine ⟨(⟨u, hu⟩, ⟨v, hv⟩), ?_⟩
-      simp [huv]
+      exact ⟨(⟨u, hu⟩, ⟨v, hv⟩), Finset.mem_filter.mpr
+        ⟨Finset.mem_univ _, fun h => huv (congrArg Subtype.val h)⟩⟩
     set pairs : Finset (C × C) :=
       ((@Finset.univ (C × C) _).filter (fun p => p.1 ≠ p.2)) with hpairs
     set vals : Finset ℕ :=
@@ -868,7 +864,7 @@ theorem dist'_eq_dist : ‖C‖₀'.toNat = ‖C‖₀ := by
       -- `dStar ≤ a` for all `a ∈ vals`, hence `dStar ≤ vals.min`.
       have h_ge : (dStar : ℕ∞) ≤ vals.min := by
         -- Use the universal lower-bound property of `min'`.
-        refine Finset.le_min (s := vals) (m := (dStar : ℕ∞)) ?_;
+        refine Finset.le_min ?_
         intro a ha; exact
           (show (dStar : ℕ∞) ≤ (a : ℕ∞) from by
               -- `dStar ≤ a` in `ℕ`, then coerce.
@@ -906,8 +902,7 @@ theorem dist'_eq_dist : ‖C‖₀'.toNat = ‖C‖₀ := by
         change ∃ u ∈ C, ∃ v ∈ C, u ≠ v ∧ hammingDist u v ≤ dStar
         exact ⟨u'.1, u'.2, v'.1, v'.2, hneq, hdist_le_dstar⟩
       -- Therefore sInf S ≤ dStar
-      have := Nat.sInf_le (s := S) hmemS
-      simpa [Code.dist, S] using this
+      exact Nat.sInf_le (s := S) hmemS
     -- Second inequality: dStar ≤ dist C using lower-bound argument
     have h_dStar_le : dStar ≤ dist C := by
       -- Show dStar is a lower bound of S
@@ -917,8 +912,8 @@ theorem dist'_eq_dist : ‖C‖₀'.toNat = ‖C‖₀ := by
         -- The realized distance appears in vals, hence ≥ dStar
         have hmem : hammingDist u v ∈ vals := by
           -- show (⟨u,hu⟩,⟨v,hv⟩) ∈ pairs
-          have hp : (⟨⟨u, hu⟩, ⟨v, hv⟩⟩ : C × C) ∈ pairs := by
-            simp [hpairs, hne]
+          have hp : (⟨⟨u, hu⟩, ⟨v, hv⟩⟩ : C × C) ∈ pairs :=
+            Finset.mem_filter.mpr ⟨Finset.mem_univ _, fun h => hne (congrArg Subtype.val h)⟩
           -- then its image is in vals
           exact Finset.mem_image.mpr ⟨⟨⟨u, hu⟩, ⟨v, hv⟩⟩, hp, rfl⟩
         -- min' ≤ any member of vals
@@ -934,8 +929,7 @@ theorem dist'_eq_dist : ‖C‖₀'.toNat = ‖C‖₀ := by
         refine ⟨hammingDist u v, ?_⟩
         exact ⟨u, hu, v, hv, huv, le_rfl⟩
       -- Greatest lower bound property on ℕ
-      have := sInf.le_sInf_of_LB (S := S) hS_nonempty hLB
-      simpa [Code.dist, S] using this
+      exact sInf.le_sInf_of_LB (S := S) hS_nonempty hLB
     -- Assemble inequalities and replace toNat of ‖C‖₀' by dStar
     have : ‖C‖₀ = dStar := le_antisymm h_le_dStar h_dStar_le
     simp [this, h_toNat_eq_min']

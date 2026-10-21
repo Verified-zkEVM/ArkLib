@@ -3,10 +3,11 @@ Copyright (c) 2024 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Fin.Tuple.Lemmas
-import ArkLib.OracleReduction.Prelude
-import ArkLib.OracleReduction.OracleInterface
+public import ArkLib.Data.Fin.Tuple.Lemmas
+public import ArkLib.OracleReduction.Prelude
+public import ArkLib.OracleReduction.OracleInterface
 
 /-!
 # Protocol Specifications for (Oracle) Reductions
@@ -14,6 +15,8 @@ import ArkLib.OracleReduction.OracleInterface
 This file defines the `ProtocolSpec` type, which is used to specify the protocol between the prover
 and the verifier.
 -/
+
+@[expose] public section
 
 universe u v
 
@@ -539,6 +542,42 @@ lemma concat_zero {pSpec : ProtocolSpec 1} (msg : pSpec.«Type» (0 : Fin 1))
     (T : Transcript (Fin.castSucc (0 : Fin 1)) pSpec) : T.concat msg (0 : Fin 1) = msg := by
   exact concat_last msg T
 
+/-! `concat_castSucc` and `concat_last` above index the transcript by `Fin`, which forces the caller
+to already hold the index in the right `Fin` type. Composition proofs instead carry their index
+arithmetic in `ℕ` and discharge it with `omega`, so they need the same two computation rules stated
+at a raw `ℕ` index with its bound supplied separately. Those forms conclude in `HEq`, since the two
+sides then sit at indices that are only propositionally equal. -/
+
+/-- Below the last round, `Transcript.concat` agrees with the transcript it extends.
+`ℕ`-indexed, `HEq`-valued form of `concat_castSucc`. -/
+lemma concat_apply_lt {m : Fin n} (T : Transcript m.castSucc pSpec) (msg : pSpec.«Type» m)
+    (i : ℕ) (hi : i < m.val) (hi' : i < (m.succ : Fin (n + 1)).val) :
+    HEq (T.concat msg ⟨i, hi'⟩) (T ⟨i, hi⟩) := by
+  unfold concat Fin.snoc
+  rw [dite_eq_left hi]
+  exact cast_heq _ _
+
+/-- At the last round, `Transcript.concat` returns the newly appended message.
+`ℕ`-indexed, `HEq`-valued form of `concat_last`. -/
+lemma concat_apply_last {m : Fin n} (T : Transcript m.castSucc pSpec) (msg : pSpec.«Type» m)
+    (i : ℕ) (him : i = m.val) (hi' : i < (m.succ : Fin (n + 1)).val) :
+    HEq (T.concat msg ⟨i, hi'⟩) msg := by
+  subst him
+  unfold concat Fin.snoc
+  rw [dite_eq_right (Nat.lt_irrefl m.val)]
+  exact cast_heq _ _
+
+/-- **Extensionality for partial transcripts at propositionally equal rounds.** Two partial
+transcripts whose rounds have equal values are heterogeneously equal when they agree entrywise at
+every raw `ℕ` index. Companion of `concat_apply_lt` / `concat_apply_last`: composition proofs
+compare transcripts at rounds such as `min k m` or `k - m` that are only propositionally equal. -/
+theorem heq_ext {k k' : Fin (n + 1)} {T : Transcript k pSpec} {T' : Transcript k' pSpec}
+    (hk : k.val = k'.val)
+    (h : ∀ (i : ℕ) (hi : i < k.val) (hi' : i < k'.val), HEq (T ⟨i, hi⟩) (T' ⟨i, hi'⟩)) :
+    HEq T T' := by
+  obtain rfl : k = k' := Fin.ext hk
+  exact heq_of_eq (funext fun i => eq_of_heq (h i.val i.isLt i.isLt))
+
 -- Define conversions to and from `Transcript` with `MessagesUpTo` and `ChallengesUpTo`
 
 variable {k : Fin (n + 1)}
@@ -769,7 +808,7 @@ query reduces during `simp` / `rw` matching; see the `OracleSpec.SubSpec` docstr
 
 /-- The induced inclusion is lawful: `onResponse` is bijective on every fibre, which is exactly
 what VCV-io needs to preserve the uniform distribution on challenges under the lift
-(`evalDist_liftComp`, `probEvent_liftComp`, `support_liftComp`). -/
+(`evalDist_liftComp` and `support_liftComp`). -/
 theorem lawfulSubSpecOfChallengeReindex :
     letI := subSpecOfChallengeReindex f hf
     [p.Challenge]ₒ ˡ⊂ₒ [q.Challenge]ₒ := by
@@ -824,37 +863,6 @@ def srChallengeOracle (Statement : Type) {n : ℕ} (pSpec : ProtocolSpec n) :
   [pSpec.Challenge]ₒ'(challengeOracleInterfaceSR Statement pSpec)
 
 alias fsChallengeOracle := srChallengeOracle
-
--- dtumad: If we keep these they should just move to VCV about `OracleContext`.
-/-- Decidable equality for the state-restoration / (slow) Fiat-Shamir oracle -/
-instance {pSpec : ProtocolSpec n} {Statement : Type}
-    [DecidableEq Statement]
-    [∀ i, DecidableEq (pSpec.Message i)]
-    [∀ i, DecidableEq (pSpec.Challenge i)] :
-    OracleSpec.DecidableEq (srChallengeOracle Statement pSpec) := by
-  refine { decidableEqA := ?_, decidableEqB := fun q => ?_ }
-  · dsimp only [srChallengeOracle, OracleInterface.toOracleSpec,
-      challengeOracleInterfaceSR, OracleSpec.toPFunctor,
-      OracleInterface.Query]
-    infer_instance
-  · dsimp only [srChallengeOracle, OracleInterface.toOracleSpec,
-      challengeOracleInterfaceSR, OracleSpec.toPFunctor,
-      OracleInterface.Response]
-    infer_instance
-
-instance {pSpec : ProtocolSpec n} {Statement : Type} [∀ i, VCVCompatible (pSpec.Challenge i)] :
-    OracleSpec.Fintype (srChallengeOracle Statement pSpec) := by
-  refine { fintypeB := fun q => ?_ }
-  dsimp only [srChallengeOracle, OracleInterface.toOracleSpec,
-    challengeOracleInterfaceSR, OracleSpec.toPFunctor, OracleInterface.Response]
-  infer_instance
-
-instance {pSpec : ProtocolSpec n} {Statement : Type} [∀ i, VCVCompatible (pSpec.Challenge i)] :
-    OracleSpec.Fintype (fsChallengeOracle Statement pSpec) := by
-  refine { fintypeB := fun q => ?_ }
-  dsimp only [fsChallengeOracle, srChallengeOracle, OracleInterface.toOracleSpec,
-    challengeOracleInterfaceSR, OracleSpec.toPFunctor, OracleInterface.Response]
-  infer_instance
 
 /-- Define the query implementation for the state-restoration / (slow) Fiat-Shamir oracle (returns a
     challenge given messages up to that point) in terms of `ProbComp`.

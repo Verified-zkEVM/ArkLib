@@ -3,9 +3,10 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Fin.Tuple.Notation
-import Mathlib.Data.List.DropRight
+public import ArkLib.Data.Fin.Tuple.Notation
+public import Mathlib.Data.List.DropRight
 
 /-!
 # Lemmas for Take and Drop for `Fin` tuples
@@ -13,6 +14,8 @@ import Mathlib.Data.List.DropRight
 This file contains some properties of `Fin.{r}take` and `Fin.{r}drop`, which are already defined in
 `ArkLib.Data.Fin.Tuple.Defs` (except `Fin.take` which is already in mathlib).
 -/
+
+@[expose] public section
 
 universe u v
 

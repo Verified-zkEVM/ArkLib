@@ -3,13 +3,14 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import ArkLib.Data.CodingTheory.ListDecodability.Bounds.Basic
-import ArkLib.Data.CodingTheory.ListDecodability.Bounds.AgreementHypergraph
-import ArkLib.Data.CodingTheory.SubspaceDesign
-import ArkLib.Data.CodingTheory.ReedSolomon
-import Mathlib.Analysis.SpecialFunctions.Pow.Real
-import Mathlib.FieldTheory.Finiteness
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.Basic
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.AgreementHypergraph
+public import ArkLib.Data.CodingTheory.SubspaceDesign
+public import ArkLib.Data.CodingTheory.ReedSolomon
+public import Mathlib.Analysis.SpecialFunctions.Pow.Real
+public import Mathlib.FieldTheory.Finiteness
 
 /-!
 # The subspace-design upper bound, and the code families that satisfy it
@@ -27,6 +28,8 @@ quantification conventions, and the references.
 The keys cited here — [ABF26], [CZ25] — are resolved in the reference list of
 `ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean`, which every file in this directory shares.
 -/
+
+@[expose] public section
 
 namespace CodingTheory
 

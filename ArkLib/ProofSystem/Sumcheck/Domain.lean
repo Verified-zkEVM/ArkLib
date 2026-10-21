@@ -3,17 +3,18 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import Mathlib.Data.Fintype.Pi
-import Mathlib.Data.Fintype.BigOperators
-import Mathlib.Data.Fin.VecNotation
-import Mathlib.Data.Fin.Tuple.Basic
-import Mathlib.Data.Fin.Tuple.Finset
-import Mathlib.Logic.Embedding.Basic
-import Mathlib.Algebra.Ring.Basic
-import Mathlib.Algebra.BigOperators.Group.Finset.Basic
-import Mathlib.Algebra.BigOperators.Group.Finset.Sigma
-import Mathlib.Tactic.FinCases
+public import Mathlib.Data.Fintype.Pi
+public import Mathlib.Data.Fintype.BigOperators
+public import Mathlib.Data.Fin.VecNotation
+public import Mathlib.Data.Fin.Tuple.Basic
+public import Mathlib.Data.Fin.Tuple.Finset
+public import Mathlib.Logic.Embedding.Basic
+public import Mathlib.Algebra.Ring.Basic
+public import Mathlib.Algebra.BigOperators.Group.Finset.Basic
+public import Mathlib.Algebra.BigOperators.Group.Finset.Sigma
+public import Mathlib.Tactic.FinCases
 
 /-!
 # Sum-check evaluation domains
@@ -43,6 +44,8 @@ case-by-case basis (Boolean hypercube, SWIRL-style hyperprism, …).
 The summation-domain abstraction is intentionally **degree-free**: the per-round polynomial degree
 (`d`, or a per-variable / prismalinear bound) is a separate parameter, kept out of this module.
 -/
+
+@[expose] public section
 
 universe u
 
@@ -151,8 +154,7 @@ theorem sum_cube_succ {M : Type*} [AddCommMonoid M] (D : SumcheckDomain R (k + 1
     (f : (Fin (k + 1) → R) → M) :
     ∑ x ∈ D.cube, f x = ∑ b ∈ D.points 0, ∑ y ∈ D.tail.cube, f (Fin.cons b y) := by
   rw [← Finset.sum_product']
-  have htail : D.tail.cube = Fintype.piFinset (Fin.tail D.points) := by
-    congr 1
+  have htail : D.tail.cube = Fintype.piFinset (Fin.tail D.points) := rfl
   have hcube : D.cube
       = (D.points 0 ×ˢ D.tail.cube).map (Fin.consEquiv (fun _ : Fin (k + 1) => R)).toEmbedding := by
     rw [htail]
@@ -185,6 +187,35 @@ def boolDomain (R : Type u) [CommSemiring R] [Nontrivial R] (k : ℕ) : Sumcheck
 
 @[simp] lemma points_boolDomain (R : Type u) [CommSemiring R] [Nontrivial R] {k : ℕ}
     (i : Fin k) : (boolDomain R k).points i = Finset.univ.map (boolEmbedding R) := rfl
+
+/-- A sum over the Boolean sum-check cube is the sum over Boolean vectors cast into `R`. -/
+theorem sum_cube_boolDomain {R : Type u} [CommSemiring R] [Nontrivial R] {M : Type*}
+    [AddCommMonoid M] {k : ℕ} (f : (Fin k → R) → M) :
+    ∑ x ∈ (boolDomain R k).cube, f x = ∑ y : Fin k → Fin 2, f (fun i => ((y i : ℕ) : R)) := by
+  classical
+  -- a cube point is the cast of the Boolean vector recording which coordinates are nonzero
+  have hcube : ∀ x ∈ (boolDomain R k).cube,
+      (fun i => (((if x i = 0 then 0 else 1 : Fin 2) : ℕ) : R)) = x := by
+    intro x hx
+    funext i
+    have hi := SumcheckDomain.mem_cube.mp hx i
+    rw [points_boolDomain] at hi
+    obtain ⟨b, -, hb⟩ := Finset.mem_map.mp hi
+    rw [← hb]
+    fin_cases b <;> simp
+  refine Finset.sum_nbij' (fun x i => if x i = 0 then 0 else 1)
+    (fun y i => ((y i : ℕ) : R))
+    (fun _ _ => Finset.mem_univ _) (fun y _ => ?_) hcube (fun y _ => ?_)
+    (fun x hx => by rw [hcube x hx])
+  · refine SumcheckDomain.mem_cube.mpr fun i => ?_
+    rw [points_boolDomain]
+    refine Finset.mem_map.mpr ⟨y i, Finset.mem_univ _, ?_⟩
+    generalize y i = b
+    fin_cases b <;> simp
+  · funext i
+    beta_reduce
+    generalize y i = b
+    fin_cases b <;> simp
 
 /-- A *hyperprism* domain `𝔻 = D × {0,1}^k` (SWIRL): coordinate `0` ranges over a given `2^ℓ`-point
 univariate "skip" domain `Dskip`, and the remaining `k` coordinates are Boolean.

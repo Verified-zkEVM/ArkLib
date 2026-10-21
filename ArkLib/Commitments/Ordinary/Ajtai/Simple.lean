@@ -3,7 +3,9 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Commitments.Ordinary.Ajtai.Simple.Correctness
+module
+
+public import ArkLib.Commitments.Ordinary.Ajtai.Simple.Correctness
 
 /-!
 # Simple Ajtai Commitment
@@ -15,3 +17,5 @@ computable cyclotomic ring `Rq Φ`. (Binding security lives in `Simple/Security.
 
 * [Ajtai, M., *Generating Hard Instances of Lattice Problems*][Ajt96]
 -/
+
+@[expose] public section

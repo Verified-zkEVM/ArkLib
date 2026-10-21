@@ -3,13 +3,14 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon
-import ArkLib.ToMathlib.Polynomial.RootMultiplicity
-import Mathlib.Algebra.CharP.Lemmas
-import Mathlib.Algebra.Polynomial.Derivative
-import Mathlib.Algebra.Polynomial.Taylor
-import Mathlib.Data.Nat.Factorial.NatCast
+public import ArkLib.Data.CodingTheory.ReedSolomon
+public import ArkLib.ToMathlib.Polynomial.RootMultiplicity
+public import Mathlib.Algebra.CharP.Lemmas
+public import Mathlib.Algebra.Polynomial.Derivative
+public import Mathlib.Algebra.Polynomial.Taylor
+public import Mathlib.Data.Nat.Factorial.NatCast
 
 /-!
 # Univariate multiplicity codes
@@ -58,6 +59,8 @@ here.
 * [Arnon, G., Boneh, D., and Fenzi, G., *Open Problems in List Decoding and Correlated
     Agreement*][ABF26]
 -/
+
+@[expose] public section
 namespace ReedSolomon
 
 namespace Multiplicity

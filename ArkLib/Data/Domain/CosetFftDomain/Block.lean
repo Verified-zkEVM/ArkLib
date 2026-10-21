@@ -3,11 +3,12 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Ilia Vlasov
 -/
+module
 
-import Mathlib.Algebra.Polynomial.Roots
+public import Mathlib.Algebra.Polynomial.Roots
 
-import ArkLib.Data.Domain.CosetFftDomain.Ops
-import ArkLib.Data.Domain.FftDomain.Ops
+public import ArkLib.Data.Domain.CosetFftDomain.Ops
+public import ArkLib.Data.Domain.FftDomain.Ops
 
 /-! This module provides a definition of a block of a
   coset FFT domain (definition 4.16 from [ACFY24]).
@@ -28,6 +29,8 @@ import ArkLib.Data.Domain.FftDomain.Ops
   * [Arnon, G., Chiesa, A., Fenzi, G., and Yogev, E., *WHIR: Reed–Solomon Proximity Testing
       with Super-Fast Verification*][ACFY24]
 -/
+
+@[expose] public section
 
 namespace Domain
 

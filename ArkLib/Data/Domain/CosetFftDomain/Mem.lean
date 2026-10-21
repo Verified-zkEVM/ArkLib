@@ -3,17 +3,18 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Julian Sutherland, Ilia Vlasov, Aristotle (Harmonic)
 -/
+module
 
-import Mathlib.GroupTheory.SpecificGroups.Cyclic
-import Mathlib.Algebra.Group.TypeTags.Basic
-import Mathlib.Algebra.Group.Defs
-import Mathlib.Tactic.Cases
-import Mathlib.Tactic.Linarith
-import Mathlib.Tactic.LinearCombination
-import Mathlib.Tactic.Field
+public import Mathlib.GroupTheory.SpecificGroups.Cyclic
+public import Mathlib.Algebra.Group.TypeTags.Basic
+public import Mathlib.Algebra.Group.Defs
+public import Mathlib.Tactic.Cases
+public import Mathlib.Tactic.Linarith
+public import Mathlib.Tactic.LinearCombination
+public import Mathlib.Tactic.Field
 
-import ArkLib.Data.Domain.CosetFftDomain.Defs
-import ArkLib.ToMathlib.Finset.ToListWithProof
+public import ArkLib.Data.Domain.CosetFftDomain.Defs
+public import ArkLib.ToMathlib.Finset.ToListWithProof
 
 /-!
 # Membership in coset FFT domains
@@ -35,6 +36,8 @@ domains.
 - `CosetFftDomainClass.card_toFinset`: Cardinality of the image finset.
 
 -/
+
+@[expose] public section
 
 namespace Domain
 
@@ -148,6 +151,25 @@ lemma mem_toFinset_iff_mem [Fintype ι] [DecidableEq F] :
 @[simp high]
 lemma mem_toFinset_self [Fintype ι] [DecidableEq F] {i : ι} :
     ω i ∈ ω.toFinset := CosetFftDomainClass.mem_toFinset_self
+
+/-- The indexing type and the subtype of domain elements describe the same finite domain. -/
+noncomputable def equivToFinset [Fintype ι] [DecidableEq F] (ω : CosetFftDomain ι F) :
+    ι ≃ ω.toFinset :=
+  Equiv.ofBijective (fun i ↦ ⟨ω i, mem_toFinset_self⟩) ⟨
+    fun _ _ h ↦ injective (congrArg Subtype.val h),
+    fun ⟨x, hx⟩ ↦ by
+      obtain ⟨i, rfl⟩ := mem_toFinset_iff_mem.mp hx
+      exact ⟨i, rfl⟩⟩
+
+@[simp]
+theorem equivToFinset_apply [Fintype ι] [DecidableEq F] (ω : CosetFftDomain ι F) (i : ι) :
+    ω.equivToFinset i = ⟨ω i, mem_toFinset_self⟩ := rfl
+
+@[simp]
+theorem equivToFinset_symm_apply [Fintype ι] [DecidableEq F]
+    (ω : CosetFftDomain ι F) (x : ω.toFinset) :
+    ω (ω.equivToFinset.symm x) = x.val :=
+  congrArg Subtype.val (ω.equivToFinset.apply_symm_apply x)
 
 end CosetFftDomain
 

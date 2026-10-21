@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks, Aleph
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Entropy.Counting
+public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Entropy.Counting
 
 /-!
 # Entropy-regime CA breakdown for Reed--Solomon codes
@@ -16,6 +17,8 @@ correlated-agreement breakdown for Reed--Solomon codes in the entropy-defined ra
 
 - `rs_epsCa_eq_one_of_entropy_rate` — ABF26 Theorem 4.17 [CS25 Cor 1].
 -/
+
+@[expose] public section
 
 namespace CodingTheory
 
@@ -910,7 +913,7 @@ open scoped ProbabilityTheory in
 open scoped BigOperators in
 private theorem rs_epsCa_eq_one_of_entropy_rate_impl
     {ι : Type} [Fintype ι] [Nonempty ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
+    {F : Type} [Field F] [Fintype F] [DecidableEq F] [SampleableType F]
     (domain : ι ↪ F) (k f : ℕ)
     (_hq_ge : 10 ≤ Fintype.card F)
     (_hn_le_q : Fintype.card ι ≤ Fintype.card F)
@@ -977,6 +980,7 @@ omit [DecidableEq ι] in
 The radius is the integer grid point `f/n`; the entropy hypothesis is not extended to arbitrary
 real radii. -/
 theorem rs_epsCa_eq_one_of_entropy_rate
+    [SampleableType F]
     (domain : ι ↪ F) (k f : ℕ)
     (_hq_ge : 10 ≤ Fintype.card F)
     (_hn_le_q : Fintype.card ι ≤ Fintype.card F)

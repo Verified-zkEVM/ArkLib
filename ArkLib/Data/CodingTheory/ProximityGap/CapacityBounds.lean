@@ -3,22 +3,23 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGap.Errors
-import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Entropy
-import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Frs
-import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.JohnsonCa
-import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.JohnsonLower
-import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.JohnsonMca
-import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Powers
-import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Sampling
-import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Subfield
-import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.UniqueDecoding
-import ArkLib.Data.CodingTheory.ReedSolomon
-import ArkLib.Data.CodingTheory.Basic.Entropy
-import ArkLib.Data.CodingTheory.HammingBallVolume
-import ArkLib.Data.CodingTheory.SubspaceDesign
-import Mathlib.Analysis.SpecialFunctions.Pow.Real
+public import ArkLib.Data.CodingTheory.ProximityGap.Errors
+public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Entropy
+public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Frs
+public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.JohnsonCa
+public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.JohnsonLower
+public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.JohnsonMca
+public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Powers
+public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Sampling
+public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Subfield
+public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.UniqueDecoding
+public import ArkLib.Data.CodingTheory.ReedSolomon
+public import ArkLib.Data.CodingTheory.Basic.Entropy
+public import ArkLib.Data.CodingTheory.HammingBallVolume
+public import ArkLib.Data.CodingTheory.SubspaceDesign
+public import Mathlib.Analysis.SpecialFunctions.Pow.Real
 
 /-!
 # Capacity-regime bounds for CA and MCA
@@ -69,7 +70,7 @@ Real-valued bounds are embedded into `ENNReal` with `ENNReal.ofReal`.
 - `exists_rs_epsCa_large_at_johnson_radius` — ABF26 Theorem 4.18 [BCHKS25 Cor 1.7]: jump in
   `ε_ca` exactly at the Johnson bound, witnessed by characteristic-2 RS codes.
 - `linear_close_probability_le_epsCa` — ABF26 Lemma 4.19 [DG25dist Thm 2.5]: `ε_ca(C, δ)`
-  is bounded below by `((q-1)/q) · Pr_{u}[Δ(u, C) ≤ δ]`.
+  is bounded below by `((q-1)/q) · Pr{u}[Δ(u, C) ≤ δ]`.
 
 ### Subspace-design / FRS MCA up to capacity (§4.2.2)
 
@@ -94,6 +95,8 @@ Real-valued bounds are embedded into `ENNReal` with `ENNReal.ofReal`.
 - [DG25dist] Theorem 2.5, source of Lemma 4.19.
 -/
 
+@[expose] public section
+
 -- Pre-existing external admits below (not touched by this diff) have statements carrying
 -- unused `Fintype`/`DecidableEq` hypotheses; scoped narrowly once those admits are resolved.
 
@@ -105,7 +108,7 @@ open CoreDefinitions ProximityGap
 section ReedSolomon
 
 variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
+variable {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
 
 omit [DecidableEq ι] in
 /-- A small-proximity-loss corollary of `rs_epsCa_le_in_unique_decoding_range`. If shifting the
@@ -245,6 +248,7 @@ theorem exists_rs_epsCa_large_near_capacity
       -- slack pinned to `Θ(1/log₂ n)`:
       K₁ / Real.logb 2 (Fintype.card ιC) ≤ (slack : ℝ) ∧
       (slack : ℝ) ≤ K₂ / Real.logb 2 (Fintype.card ιC) ∧
+      let _ : SampleableType FC := SampleableType.ofFintype FC
       epsCa (F := FC) (A := FC) ((ReedSolomon.code domain k : Set (ιC → FC)))
           (1 - ρ - slack) (1 - ρ - slack) ≥
         ((Fintype.card ιC : ENNReal) ^ (c : ℝ)) / (Fintype.card FC : ENNReal) := by
@@ -262,7 +266,7 @@ section SubspaceDesignFRS
 The cubic term is the affine specialization of the source's general generator bound. -/
 theorem subspace_design_mcaError_le
     {ι : Type} [Fintype ι] [Nonempty ι]
-    {F : Type} [Field F] [Fintype F]
+    {F : Type} [Field F] [Fintype F] [SampleableType F]
     (s : ℕ) (τ : ℕ → ℝ) (C : Submodule F (ι → Fin s → F))
     (_h : IsSubspaceDesign s τ C)
     (t : ℕ) (_ht : 0 < t) :

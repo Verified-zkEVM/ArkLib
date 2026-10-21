@@ -3,10 +3,15 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Data.Lattices.CyclotomicRing.NormBounds.Basic
-import ArkLib.Data.Lattices.CyclotomicRing.NormBounds.LsCore
-import Mathlib.Data.Nat.Prime.Basic
-import Mathlib.NumberTheory.LegendreSymbol.Basic
+module
+
+public import ArkLib.Data.Lattices.CyclotomicRing.NormBounds.Basic
+public import ArkLib.Data.Lattices.CyclotomicRing.NormBounds.LsCore
+public import Mathlib.Data.Nat.Prime.Basic
+public import Mathlib.NumberTheory.LegendreSymbol.Basic
+-- `change` reduces through `toPoly`, whose body CompPoly does not expose.
+import all CompPoly.Univariate.ToPoly.Core
+import all Mathlib.Algebra.Polynomial.Basic
 
 /-!
 # Lyubashevsky–Seiler: Short Elements Are Invertible
@@ -61,6 +66,8 @@ coefficient kernel `dvd_sq_add_sq`); the splitting and `√-1` existence are
 * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
     Polynomial Commitments over Extension Fields*][NOZ26]
 -/
+
+@[expose] public section
 
 open scoped BigOperators
 
@@ -198,10 +205,10 @@ theorem q_dvd_l2NormSq_of_not_isUnit (hq5 : q % 8 = 5) {c : Rq Φ} (hc : ¬ IsUn
         (Ideal.span {(powTwoCyclotomic (R := ZMod q) α).φ.toPoly}) ct) := by
       have hh := Rq.not_isUnit_toQuotientHom_of_not_isUnit
         (powTwoCyclotomic (R := ZMod q) α) hc
-      rw [Rq.toQuotientHom] at hh
-      change ¬ IsUnit (Ideal.Quotient.mk
-        (Ideal.span {(powTwoCyclotomic (R := ZMod q) α).φ.toPoly}) c.1.toPoly) at hh
-      simpa only [hct] using hh
+      simp only [Rq.toQuotientHom, RingHom.coe_mk, MonoidHom.coe_mk, OneHom.coe_mk,
+        Rq.toQuotient, quotientHom_apply, CyclotomicModulus.modIdeal] at hh
+      rw [hct]
+      exact hh
     have hdvd : g1 ∣ ct ∨ g2 ∣ ct := by
       by_contra hcon
       rw [not_or] at hcon

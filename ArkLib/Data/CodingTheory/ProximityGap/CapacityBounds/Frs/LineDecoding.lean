@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks, Aleph
 -/
+module
 
-import ArkLib.Data.CodingTheory.ListDecodability.Bounds.SubspaceDesign
-import ArkLib.Data.CodingTheory.ProximityGap.LineDecoding
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.SubspaceDesign
+public import ArkLib.Data.CodingTheory.ProximityGap.LineDecoding
 
 /-!
 # Affine-line decoding infrastructure for the FRS capacity bound
@@ -19,6 +20,8 @@ capacity theorem live in downstream modules.
 - [GG25] Goyal and Guruswami, *Optimal Proximity Gaps for Subspace-Design Codes and (Random)
   Reed-Solomon Codes*, ePrint 2025/2054. Corollary 4.10.
 -/
+
+@[expose] public section
 
 namespace CodingTheory.FrsInternal
 
@@ -82,17 +85,20 @@ theorem boosted_frs_radius_le_list_radius
   have hsub : 1 ≤ 2 * t := by omega
   simp only [Nat.cast_mul, Nat.cast_ofNat, Nat.cast_sub hsub, Nat.cast_one]
   have htR3 : (3 : ℝ) ≤ t := by exact_mod_cast ht
-  have htR : (0 : ℝ) < t := by nlinarith
+  have htR : (0 : ℝ) < t := by linarith only [htR3]
   have hsR : (4 : ℝ) * (t : ℝ) ^ 2 < s := by exact_mod_cast hs
-  have ha : (0 : ℝ) < 2 * t - 1 := by nlinarith only [htR3]
+  have ha : (0 : ℝ) < 2 * t - 1 := by linarith only [htR3]
   have hb : (0 : ℝ) < t + 1 := by positivity
-  have hd : (0 : ℝ) < (s : ℝ) - t + 1 := by nlinarith only [hsR, htR3]
+  have hts : (t : ℝ) < s := by
+    have h : t < s := (Nat.le_mul_self t).trans_lt (by rw [sq] at hs; omega)
+    exact_mod_cast h
+  have hd : (0 : ℝ) < (s : ℝ) - t + 1 := by linarith only [hts]
   rw [div_le_iff₀ ha]
   rw [div_mul_eq_mul_div]
   rw [div_mul_eq_mul_div]
   rw [le_div_iff₀ hb]
   field_simp
-  have hgap : (0 : ℝ) ≤ s - 4 * (t : ℝ) ^ 2 := by linarith
+  have hgap : (0 : ℝ) ≤ s - 4 * (t : ℝ) ^ 2 := by linarith only [hsR]
   have hgap_t : (0 : ℝ) ≤ (s - 4 * (t : ℝ) ^ 2) * t :=
     mul_nonneg hgap htR.le
   have ht2 : (0 : ℝ) ≤ (t : ℝ) ^ 2 := sq_nonneg (t : ℝ)
@@ -601,7 +607,7 @@ private theorem aligned_affineLine_global_close
           ((b : ℝ) - 1) * (if i ∈ D then 1 else 0) ≤ (b : ℝ) := by
     intro i
     by_cases hi : i ∈ D
-    · rw [if_pos hi]
+    · rw [ite_eq_left hi]
       have hne : f₀ i + γ • f₁ i ≠ u₀ i + γ • u₁ i := by
         simpa only [D, Code.mem_disagreementCols, Pi.add_apply, Pi.smul_apply] using hi
       have hone := lineAgreementSeeds_card_le_one_of_ne_at
@@ -610,15 +616,14 @@ private theorem aligned_affineLine_global_close
         simpa only [U] using (show
           (((lineAgreementSeeds f₀ f₁ (fun α => u₀ + α • u₁) T i).card : ℕ) : ℝ) ≤ 1 by
             exact_mod_cast hone)
-      have hbR : (1 : ℝ) ≤ b := by exact_mod_cast (le_of_lt hb)
-      nlinarith
-    · rw [if_neg hi]
+      linarith only [honeR]
+    · rw [ite_eq_right hi]
       have hcardNat : (lineAgreementSeeds f₀ f₁ U T i).card ≤ T.card :=
         Finset.card_filter_le _ _
       have hcardR : ((lineAgreementSeeds f₀ f₁ U T i).card : ℝ) ≤ b := by
         rw [hTcard] at hcardNat
         exact_mod_cast hcardNat
-      norm_num at hcardR ⊢
+      rw [mul_zero, add_zero]
       exact hcardR
   have hindicator :
       (∑ i : ι, if i ∈ D then (1 : ℝ) else 0) = (D.card : ℝ) := by
@@ -642,7 +647,7 @@ private theorem aligned_affineLine_global_close
         ring
   have hcount : ((b : ℝ) - 1) * (D.card : ℝ) ≤
       (b : ℝ) * δ * Fintype.card ι := by
-    nlinarith
+    linarith only [hlower, hupper]
   have hDcard : D.card =
       hammingDist (f₀ + γ • f₁) (u₀ + γ • u₁) := by
     simpa only [D] using
@@ -650,11 +655,11 @@ private theorem aligned_affineLine_global_close
         (f₀ + γ • f₁) (u₀ + γ • u₁)).symm
   have hn : (0 : ℝ) < Fintype.card ι := by exact_mod_cast Fintype.card_pos
   have hbR : (1 : ℝ) < b := by exact_mod_cast hb
-  have hb1 : (0 : ℝ) < (b : ℝ) - 1 := by linarith
+  have hb1 : (0 : ℝ) < (b : ℝ) - 1 := by linarith only [hbR]
   rw [Code.relHammingDist_coe, div_le_iff₀ hn]
   rw [div_mul_eq_mul_div, le_div_iff₀ hb1]
   rw [← hDcard]
-  nlinarith
+  linarith only [hcount]
 
 noncomputable def linePinnedSeedsOn
     {ι : Type} [Fintype ι] [DecidableEq ι]
@@ -720,7 +725,7 @@ open _root_.CoreDefinitions in
 open _root_.ProximityGap in
 theorem mcaError_affineLine_zero_le_inv_card
     {ι : Type} [Fintype ι] [Nonempty ι]
-    {F : Type} [Field F] [Fintype F]
+    {F : Type} [Field F] [Fintype F] [SampleableType F]
     {A : Type} [Finite A] [AddCommGroup A] [Module F A]
     (C : ModuleCode ι F A) :
     mcaError (AffineLineGenerator F) C 0 ≤
@@ -740,7 +745,7 @@ theorem mcaError_affineLine_zero_le_inv_card
     exact hc
   unfold mcaError
   refine iSup_le fun U => ?_
-  rw [Probability.prob_uniform_eq_ofReal]
+  rw [SampleableType.prEvent_uniformSample_eq_ofReal]
   apply ENNReal.ofReal_le_ofReal
   apply div_le_div_of_nonneg_right
   · exact_mod_cast (show (Finset.univ.filter (fun x : F =>
@@ -801,7 +806,7 @@ theorem mcaError_eq_zero_of_neg_radius
     {ι : Type} [Fintype ι] [Nonempty ι]
     {F : Type} [Field F]
     {ℓ : Type} [Fintype ℓ]
-    {S : Type} [Fintype S] [Nonempty S]
+    {S : Type} [Fintype S] [Nonempty S] [SampleableType S]
     {A : Type} [AddCommMonoid A] [Module F A]
     (G : Generator S ℓ F) (C : ModuleCode ι F A)
     {δ : ℝ} (hδ : δ < 0) :
@@ -810,7 +815,7 @@ theorem mcaError_eq_zero_of_neg_radius
   unfold mcaError
   apply le_antisymm
   · refine iSup_le fun U => ?_
-    rw [Probability.prob_uniform_eq_ofReal]
+    rw [SampleableType.prEvent_uniformSample_eq_ofReal]
     have hempty : Finset.univ.filter (fun x : S => IsMCA G C x U δ) = ∅ := by
       rw [Finset.filter_eq_empty_iff]
       intro x _ hx
@@ -881,30 +886,30 @@ theorem sharpSubspaceProfile_two_mul_le_rate_add
     (_hR0 : 0 ≤ R) (hR1 : R ≤ 1) :
     sharpSubspaceProfile (ι := ι) s R (2 * t) ≤
       R + 1 / (2 * (t : ℝ)) := by
-  classical
   have htR : (0 : ℝ) < t := by exact_mod_cast ht
   have ht1R : (1 : ℝ) ≤ t := by exact_mod_cast ht
   have hsR : (4 : ℝ) * (t : ℝ) ^ 2 < s := by exact_mod_cast hs
-  have h2ts : 2 * t ≤ s := by nlinarith
+  have h2ts : 2 * t ≤ s :=
+    calc 2 * t = 2 * t * 1 := (mul_one _).symm
+      _ ≤ 2 * t * (2 * t) := Nat.mul_le_mul_left _ (by omega)
+      _ = 4 * t ^ 2 := by ring
+      _ ≤ s := hs.le
+  have h2tsR : (2 : ℝ) * t ≤ s := by exact_mod_cast h2ts
   have hmem : 2 * t ∈ Finset.Icc 1 s := Finset.mem_Icc.mpr ⟨by omega, h2ts⟩
   have hval : sharpSubspaceProfile (ι := ι) s R (2 * t) =
       ((s : ℝ) * R - 1 / Fintype.card ι) /
         ((s : ℝ) - 2 * t + 1) := by
-    simp only [sharpSubspaceProfile, hmem, if_true]
-    congr 1
-    push_cast
-    ring
-  have hden_pos : (0 : ℝ) < (s : ℝ) - 2 * t + 1 := by nlinarith
-  have hfac_nonneg : (0 : ℝ) ≤ 2 * t - 1 := by nlinarith
+    rw [sharpSubspaceProfile, ite_eq_left hmem, Nat.cast_mul, Nat.cast_ofNat]
+  have hden_pos : (0 : ℝ) < (s : ℝ) - 2 * t + 1 := by linarith only [h2tsR]
+  have hfac_nonneg : (0 : ℝ) ≤ 2 * t - 1 := by linarith only [ht1R]
   have haux : (2 : ℝ) * t - 1 ≤
       (1 / (2 * t)) * ((s : ℝ) - 2 * t + 1) := by
-    rw [one_div_mul_eq_div, le_div_iff₀ (by positivity)]
-    nlinarith
-  have hRt : R * (2 * (t : ℝ) - 1) ≤ 2 * t - 1 := by
-    nlinarith [mul_nonneg (sub_nonneg.mpr hR1) hfac_nonneg]
+    rw [one_div_mul_eq_div, le_div_iff₀ (mul_pos two_pos htR)]
+    linarith only [hsR]
+  have hRt : R * (2 * (t : ℝ) - 1) ≤ 2 * t - 1 := mul_le_of_le_one_left hfac_nonneg hR1
   have hinv_nonneg : (0 : ℝ) ≤ 1 / Fintype.card ι := by positivity
   rw [hval, div_le_iff₀ hden_pos]
-  nlinarith
+  linarith only [haux, hRt, hinv_nonneg]
 
 open scoped NNReal in
 open scoped BigOperators in
@@ -1011,7 +1016,7 @@ open scoped NNReal in
 open scoped ProbabilityTheory in
 theorem strongLineDecodable_to_isLineDecodable
     {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
+    {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
     {s a b : ℕ} (C : Set (ι → Fin s → F)) (δ : NNReal)
     (hstrong : StrongLineDecodable C δ a b) :
     IsLineDecodable (F := F) C δ a b := by
@@ -1027,7 +1032,7 @@ theorem strongLineDecodable_to_isLineDecodable
     ext γ
     simp only [T, lineCloseSeeds, Finset.mem_filter, Finset.mem_univ, true_and,
       hclose_iff]
-  rw [Probability.prob_uniform_eq_card_filter_div_card, hfilter] at hprob
+  rw [SampleableType.prEvent_uniformSample, hfilter] at hprob
   have hq0 : (Fintype.card F : ENNReal) ≠ 0 := by
     exact_mod_cast Fintype.card_ne_zero
   have hqtop : (Fintype.card F : ENNReal) ≠ ⊤ := by simp
@@ -1042,7 +1047,7 @@ theorem strongLineDecodable_to_isLineDecodable
       intro γ hγ
       simpa only [T] using hγ) haT
   refine ⟨u₀, hu₀, u₁, hu₁, ?_⟩
-  rw [Probability.prob_uniform_eq_card_filter_div_card]
+  rw [SampleableType.prEvent_uniformSample]
   apply ENNReal.div_le_div_right
   have hevent :
       (Finset.univ.filter fun γ : F =>

@@ -31,8 +31,8 @@ Some examples of oracle specifications (and their intended behavior) are as foll
 \end{itemize}
     \lean{OracleSpec.emptySpec, coinSpec, unifSpec}
 
-We often require extra properties on the domains and ranges of oracles. For example, we may require that the domains and ranges come equipped with decidable equality \lean{OracleSpec.DecidableEq}
-or finiteness properties \lean{OracleSpec.Fintype}.
+We often require extra properties on the domains and ranges of oracles. For example, we may require that the domains and ranges come equipped with decidable equality or finiteness properties.
+These are stated as ordinary instance hypotheses quantified over the oracle index, on \verb|spec.Domain t| and \verb|spec.Range t|, rather than as bundled classes on the specification.
 
 \begin{definition}[Oracle Computation]
     \label{def:oracle_computation}

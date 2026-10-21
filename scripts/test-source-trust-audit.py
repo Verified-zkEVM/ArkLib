@@ -4,8 +4,11 @@
 from __future__ import annotations
 
 import importlib.util
+import os
 from pathlib import Path
+import subprocess
 import sys
+import tempfile
 import unittest
 
 
@@ -18,6 +21,26 @@ SPEC.loader.exec_module(AUDIT)
 
 
 class SourceTrustAuditTests(unittest.TestCase):
+    def test_production_and_acceptance_sources_are_inventoried(self) -> None:
+        previous = Path.cwd()
+        with tempfile.TemporaryDirectory() as directory:
+            try:
+                os.chdir(directory)
+                subprocess.run(["git", "init", "-q"], check=True)
+                for path in ["ArkLib/Production.lean", "ArkLibTest/Acceptance.lean",
+                             "scripts/DeliberatelyInvalid.lean"]:
+                    source = Path(path)
+                    source.parent.mkdir(parents=True, exist_ok=True)
+                    source.write_text("example : True := by sorry\n", encoding="utf-8")
+                subprocess.run(["git", "add", "."], check=True)
+                tree = subprocess.check_output(["git", "write-tree"], text=True).strip()
+                expected = {"ArkLib/Production.lean", "ArkLibTest/Acceptance.lean"}
+                for ref in [None, tree]:
+                    self.assertEqual({path for path, _ in AUDIT.tracked_sources(ref)}, expected)
+                    self.assertEqual(AUDIT.counts(AUDIT.scan_tree(ref))["admission"], 2)
+            finally:
+                os.chdir(previous)
+
     def tokens(self, source: str) -> list[tuple[str, str]]:
         return [(item.kind, item.token) for item in AUDIT.scan_source("Fixture.lean", source)]
 

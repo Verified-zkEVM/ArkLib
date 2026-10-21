@@ -3,16 +3,20 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
-import ArkLib.ProofSystem.RingSwitching.Packing.Prelude
-import ArkLib.ProofSystem.RingSwitching.RoundVerifiers
-import ArkLib.ProofSystem.Sumcheck.Structured.SingleRound
-import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.ScalarRound
+module
+
+public import ArkLib.ProofSystem.RingSwitching.Packing.Prelude
+public import ArkLib.ProofSystem.RingSwitching.RoundVerifiers
+public import ArkLib.ProofSystem.Sumcheck.Structured.SingleRound
+public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.ScalarRound
 
 /-!
 # ArkLib.ProofSystem.RingSwitching.Packing.Spec
 
 Definitions and results for this component of ArkLib.
 -/
+
+@[expose] public section
 
 namespace RingSwitching
 

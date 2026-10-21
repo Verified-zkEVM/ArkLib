@@ -3,12 +3,14 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import CompPoly.Univariate.Basic
-import CompPoly.Univariate.ToPoly
-import Mathlib.Algebra.Polynomial.Div
-import Mathlib.Tactic.LinearCombination
-import ArkLib.Data.Lattices.Vectors
-import ArkLib.ProofSystem.RingSwitching.Transport.Eval
+module
+
+public import CompPoly.Univariate.Basic
+public import CompPoly.Univariate.ToPoly
+public import Mathlib.Algebra.Polynomial.Div
+public import Mathlib.Tactic.LinearCombination
+public import ArkLib.Data.Lattices.Vectors
+public import ArkLib.ProofSystem.RingSwitching.Transport.Eval
 
 /-!
   # Quotient presentations — the data layer of `Lift`
@@ -73,6 +75,8 @@ import ArkLib.ProofSystem.RingSwitching.Transport.Eval
   * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
       Polynomial Commitments over Extension Fields*][NOZ26]
 -/
+
+@[expose] public section
 
 open Polynomial ArkLib.Lattices CompPoly
 

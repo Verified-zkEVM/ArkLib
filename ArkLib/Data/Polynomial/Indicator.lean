@@ -3,12 +3,14 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Ilia Vlasov, Aristotle (Harmonic)
 -/
-import ArkLib.Data.Polynomial.Bivariate
+module
 
-import Mathlib.Algebra.Polynomial.Basic
-import Mathlib.LinearAlgebra.Lagrange
-import Mathlib.Tactic.Cases
-import Mathlib.Tactic.LinearCombinationPrime
+public import ArkLib.Data.Polynomial.Bivariate
+
+public import Mathlib.Algebra.Polynomial.Basic
+public import Mathlib.LinearAlgebra.Lagrange
+public import Mathlib.Tactic.Cases
+public import Mathlib.Tactic.LinearCombinationPrime
 
 /-! This module is mostly needed from proving lemma 4.9
   from [ACFY24] but we thought it might be useful for
@@ -19,6 +21,8 @@ import Mathlib.Tactic.LinearCombinationPrime
 * [Arnon, G., Chiesa, A., Fenzi, G., Yogev, E.,
   *STIR: Reed–Solomon Proximity Testing with Fewer Queries*][ACFY24]
 -/
+
+@[expose] public section
 
 namespace Polynomial
 
@@ -78,7 +82,7 @@ lemma indicator_ne_zero_of_pos_nonempty {pos neg : Finset F}
   intro hzero
   obtain ⟨x, hx⟩ := h
   have heval := indicator_eval_of_mem_union (neg := neg) (Finset.mem_union_left neg hx)
-  rw [if_pos hx, hzero, eval_zero] at heval
+  rw [ite_eq_left hx, hzero, eval_zero] at heval
   exact zero_ne_one heval
 
 /-- Indicator evaluated on an element of `pos` is equal to 1. -/

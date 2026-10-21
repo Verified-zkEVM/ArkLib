@@ -5,7 +5,8 @@ which library owns each abstraction, which supported APIs ArkLib must reuse, and
 boundaries are genuinely absent.
 
 The exact supported revisions live in [`00-current-status.md`](00-current-status.md). The live PR
-sequence lives in [`01a-foundation-pr-plan.md`](01a-foundation-pr-plan.md). Historical July
+sequence lives in [the roadmap](05-roadmap.md); completed foundation slices are recorded in
+[the implementation record](01a-foundation-pr-plan.md). Historical July
 proposals remain in the archive and are not repeated here as future work.
 
 ## 1. Ownership follows parametricity
@@ -77,8 +78,9 @@ Four nearby path-like objects serve different purposes:
 3. `DynSystem.Prefix sys st n` is a finite operational orbit of fixed length.
 4. `Interaction.Concurrent.Front S` is a currently enabled concurrent event and residual.
 
-ArkLib's later `FullPrefixAt` combines a cursor with protocol decorations, concrete message data,
-and reachability. It does not replace any of these generic objects.
+ArkLib's `ExecutionPrefix` combines a cursor with concrete oracle-message values and restricts
+protocol decorations to the selected residual. It witnesses structural traversal, not strategy or
+runtime reachability. It does not replace any of these generic objects.
 
 ### 2.3 Remaining PolyFun gaps
 
@@ -234,6 +236,7 @@ profile, or causal transducer.
 - Legacy ArkLib consumers remain until a concrete protocol has a proved two-way bridge.
 - Interface names freeze only after a real downstream client exercises all observable components.
 
-We have enough foundation to begin. The remaining work is no longer “build an interaction theory
-somewhere upstream”; it is to land the smallest ArkLib semantics that make virtual claims,
-run-derived closing, and honest composition unavoidable in the types.
+The core claim and execution interfaces now have Sumcheck clients. The next work connects native
+composition to restricted oracle access and then to persistent-world security. The
+[roadmap](05-roadmap.md) gives the implementation sequence; current dependency gaps are inventoried
+in [current status](00-current-status.md).

@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks, Aleph
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Powers
+public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Powers
 
 /-!
 # Gao--Kopparty--Lovett affine-line MCA bound
@@ -21,6 +22,8 @@ MCA theorem.
 - [GaoKL24] Theorem 3.
 -/
 
+@[expose] public section
+
 namespace CodingTheory
 
 open scoped NNReal
@@ -29,7 +32,7 @@ open CoreDefinitions ProximityGap
 section General
 
 variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
+variable {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
 
 omit [DecidableEq ι] in
 /-- Bounds affine-line MCA error below the 1.5-Johnson radius of a linear code. -/

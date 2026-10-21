@@ -3,12 +3,13 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Ilia Vlasov, Aristotle (Harmonic)
 -/
+module
 
-import Mathlib.Logic.Embedding.Basic
-import Mathlib.Data.Fintype.Defs
+public import Mathlib.Logic.Embedding.Basic
+public import Mathlib.Data.Fintype.Defs
 
-import ArkLib.Data.Domain.CosetFftDomain.Mem
-import ArkLib.Data.Domain.FftDomain.Mem
+public import ArkLib.Data.Domain.CosetFftDomain.Mem
+public import ArkLib.Data.Domain.FftDomain.Mem
 
 /-!
 # Discrete logarithms in smooth FFT domains
@@ -33,6 +34,8 @@ maps to it.
 
 -/
 
+@[expose] public section
+
 namespace Domain
 
 variable {n : ℕ}
@@ -45,8 +48,8 @@ variable [CosetFftDomainClass D (Fin (2 ^ n)) F]
 
 /-- Auxiliary bounded search for the index of `x` in a smooth coset FFT domain.
   The `fuel` parameter bounds the search through `Fin (2 ^ n)`. -/
-private def logAux (ω : D)
-  (x : ω) (fuel : ℕ) : Fin (2 ^ n) :=
+def logAux (ω : D)
+    (x : ω) (fuel : ℕ) : Fin (2 ^ n) :=
   match fuel with
   | 0 => default
   | fuel + 1 =>

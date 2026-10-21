@@ -3,9 +3,11 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Tobias Rothmann
 -/
-import ArkLib.OracleReduction.Security.RoundByRound
-import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Composition
-import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChallenge
+module
+
+public import ArkLib.OracleReduction.Security.RoundByRound
+public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Composition
+public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChallenge
 
 /-!
   # Simple Oracle Reduction - SendClaim
@@ -45,6 +47,8 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChalleng
       Polynomial Commitments over Extension Fields*][NOZ26]
 -/
 
+@[expose] public section
+
 open OracleSpec OracleComp OracleQuery OracleInterface ProtocolSpec Function Equiv
 
 namespace SendClaim
@@ -80,6 +84,11 @@ def oracleProver : OracleProver oSpec
   sendMessage | ⟨0, _⟩ => fun ⟨stmt, oStmt⟩ => pure (f stmt oStmt, ⟨stmt, oStmt⟩)
   receiveChallenge | ⟨0, h⟩ => nomatch h
   output := fun ⟨stmt, oStmt⟩ => pure (⟨stmt, Sum.rec oStmt (fun _ => f stmt oStmt)⟩, ())
+
+/-- The `SendClaim` oracle prover has pure output: it exposes the claim it already computed
+alongside the input oracles, with no oracle query. -/
+instance instOutputIsPure :
+    (oracleProver oSpec Statement OStatement Message f).OutputIsPure := ⟨_, fun _ => rfl⟩
 
 /-- The oracle verifier for `SendClaim` is a **pure pass-through**: it returns the statement and
 exposes the input oracle statements together with the prover's message as the output oracles. The

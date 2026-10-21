@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import ArkLib.Data.CodingTheory.ListDecodability.Bounds.LargeAlphabet.Centers
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.LargeAlphabet.Centers
 
 /-!
 # Large-alphabet barrier: the local neighbourhood bound and the pigeonhole barrier
@@ -19,6 +20,8 @@ upper/lower family densities.
 See `ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean` for the family overview and the
 references, and `Bounds/LargeAlphabet.lean` for the two theorems this development serves.
 -/
+
+@[expose] public section
 
 namespace CodingTheory
 
@@ -466,7 +469,7 @@ theorem good_base_word
       alt S ∈ code ∧ alt S ≠ c₀ ∧ ∀ i ∈ S, alt S i = c₀ i := by
     intro S hS
     dsimp only [alt]
-    rw [dif_pos hS]
+    rw [dite_eq_left hS]
     exact Classical.choose_spec (haltExists S hS)
   refine ⟨c₀, ?_, good, hgoodsub, hgoodcard, alt, ?_⟩
   · rw [← hC.coe_toFinset]
@@ -840,9 +843,8 @@ theorem barrier_density_real_gaps
   have hxiLe : ξ ≤ p / (8 * (ℓ : ℝ)) := by
     dsimp only [ξ, p₀, barrierXiDensity]
     exact div_le_div_of_nonneg_right hpowLeP (by positivity)
-  have hpDivStrict : p / (8 * (ℓ : ℝ)) < p / (ℓ : ℝ) := by
-    field_simp [ne_of_gt hℓR]
-    nlinarith
+  have hpDivStrict : p / (8 * (ℓ : ℝ)) < p / (ℓ : ℝ) :=
+    div_lt_div_of_pos_left hp hℓR (by linarith only [hℓR])
   have hxiLt : ξ < p / (ℓ : ℝ) := hxiLe.trans_lt hpDivStrict
   have hxiMul : ξ * (1 - p) ≤ ξ := by
     rw [mul_sub, mul_one]
@@ -866,7 +868,7 @@ theorem barrier_density_real_gaps
   have hxiFour : ξ * (4 - p) ≤ p ^ ℓ / (2 * (ℓ : ℝ)) := by
     calc
       ξ * (4 - p) ≤ ξ * 4 :=
-        mul_le_mul_of_nonneg_left (by linarith) hXi.le
+        mul_le_mul_of_nonneg_left (sub_le_self 4 hp.le) hXi.le
       _ = 4 * ξ := by ring
       _ ≤ p ^ ℓ / (2 * (ℓ : ℝ)) := hfourXi
   have hgapTwo :
@@ -877,7 +879,7 @@ theorem barrier_density_real_gaps
   constructor
   · apply sub_pos.mp
     rw [hgapOne]
-    linarith
+    linarith only [hηpos, hxiMulLt]
   · apply sub_nonneg.mp
     rw [hgapTwo]
     exact sub_nonneg.mpr hxiFour
@@ -1207,8 +1209,8 @@ theorem rounded_barrier_quotient_bounds
   have hnLowerReal : (n : ℝ) ≤ ((ℓ + 1 : ℕ) : ℝ) *
       (n - Nat.floor (relRadius ℓ R η * n) : ℕ) := by
     rw [Nat.cast_sub hradius]
-    norm_num only [Nat.cast_add, Nat.cast_one]
-    nlinarith
+    push_cast at hscaledReal ⊢
+    linarith only [hscaledReal]
   have hnLower : n ≤ (ℓ + 1) *
       (n - Nat.floor (relRadius ℓ R η * n)) := by
     exact_mod_cast hnLowerReal

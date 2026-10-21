@@ -3,9 +3,10 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import Mathlib.RingTheory.MvPolynomial.Basic
-import ArkLib.Data.MvPolynomial.Degrees
+public import Mathlib.RingTheory.MvPolynomial.Basic
+public import ArkLib.Data.MvPolynomial.Degrees
 
 /-!
 # Per-variable degree restriction ("prismalinear" polynomials)
@@ -20,6 +21,8 @@ common generalisation: `restrictDegree σ R m` is the constant case `b = fun _ =
 plain multilinear case is `b = fun _ => 1`. The degree machinery (`degreeOf`) is already
 per-coordinate, so the characterisation `mem_restrictDegreeVar_iff_degreeOf_le` is immediate.
 -/
+
+@[expose] public section
 
 -- The `sumAlgEquiv_monomial_aux` lemma below and its two helpers mirror the private uniform
 -- proofs in `RestrictDegree.lean`.
@@ -88,8 +91,7 @@ lemma sumAlgEquiv_monomial_aux {R : Type*} [CommSemiring R]
       MvPolynomial.monomial (m.comapDomain Sum.inl Sum.inl_injective.injOn)
         (MvPolynomial.monomial (m.comapDomain Sum.inr Sum.inr_injective.injOn) c) := by
   ext s
-  simp [MvPolynomial.sumAlgEquiv, MvPolynomial.monomial, MvPolynomial.coeff,
-    Finsupp.comapDomain]
+  simp [MvPolynomial.sumAlgEquiv, MvPolynomial.monomial, Finsupp.comapDomain]
 
 @[deprecated sumAlgEquiv_monomial_aux (since := "2026-08-15")]
 alias sumToIter_monomial_aux := sumAlgEquiv_monomial_aux

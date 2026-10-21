@@ -3,9 +3,10 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.OracleReduction.ProtocolSpec.SeqCompose
-import VCVio.OracleComp.SimSemantics.Append
+public import ArkLib.OracleReduction.ProtocolSpec.SeqCompose
+public import VCVio.OracleComp.SimSemantics.Append
 
 /-!
 # Interactive (Oracle) Reductions
@@ -76,6 +77,8 @@ earlier types (i.e. `WitIn`, `StmtOut`, or `pSpec` may depend on `StmtIn`; thoug
 say, `StmtOut` or `pSpec` to depend on the witness types, as that is not available to the (oracle)
 verifier).
 -/
+
+@[expose] public section
 
 open OracleComp OracleSpec SubSpec ProtocolSpec
 
@@ -491,6 +494,36 @@ def toVerifier : Verifier oSpec (StmtIn × ∀ i, OStmtIn i) (StmtOut × (∀ i,
         transcript.challenges oStmt transcript.messages)) <$>
       simulateQ (OracleInterface.simOracle2 oSpec oStmt transcript.messages)
         (verifier.verify stmt transcript.challenges).run
+
+/-- **Run equation of a query-guard-return oracle verifier.** If the verifier makes one query `q`
+to the prover's messages, guards on the answer and the challenges, and returns a statement built
+from the answer and the challenges, then the induced verifier returns that statement, with the
+materialized output oracles, when the guard holds on the transcript's answer and challenges, and
+aborts otherwise. A guard that ignores the challenges is the case `check := fun s a _ => …`. -/
+theorem toVerifier_verify_of_query_guard (q : [pSpec.Message]ₒ.Domain)
+    (check : StmtIn → [pSpec.Message]ₒ.Range q → pSpec.Challenges → Prop)
+    [hcheck : ∀ s a c, Decidable (check s a c)]
+    (accept : StmtIn → [pSpec.Message]ₒ.Range q → pSpec.Challenges → StmtOut)
+    (hV : ∀ stmt chals, verifier.verify stmt chals = do
+      let a ← query (spec := [pSpec.Message]ₒ) q
+      guard (check stmt a chals)
+      return accept stmt a chals)
+    (stmt : StmtIn) (oStmt : ∀ i, OStmtIn i) (tr : pSpec.FullTranscript) :
+    verifier.toVerifier.verify (stmt, oStmt) tr =
+      letI a : [pSpec.Message]ₒ.Range q := OracleInterface.answer (tr.messages q.1) q.2
+      if check stmt a tr.challenges then
+        pure (accept stmt a tr.challenges,
+          verifier.materializeOutput tr.challenges oStmt tr.messages)
+      else failure := by
+  simp only [toVerifier, hV, guard]
+  -- `erw`: `query` reaches `OptionT` through VCVio's `HasQuery`/`MonadLiftT` chain, and its
+  -- answer type `[pSpec.Message]ₒ.Range q` is the message interface's `Response` only through the
+  -- semireducible `OracleInterface.toOracleSpec`; both match only up to that unfolding.
+  erw [OptionT.run_bind, simulateQ_bind, OptionT.run_monadLift]
+  simp only [simulateQ_map]
+  erw [OracleInterface.simulateQ_simOracle2_liftM_query_snd, map_pure, pure_bind,
+    Option.elim_some]
+  split_ifs <;> rfl
 
 /-- The number of queries made to the oracle statements and the prover's messages, for a given input
     statement and challenges.
@@ -956,6 +989,23 @@ instance [IsSingleRound pSpec] [h : VCVCompatible (pSpec.Challenge default)] :
 
 end IsSingleRound
 
+/-- The full transcript of a one-message protocol. -/
+@[inline, reducible]
+def FullTranscript.mk1 {pSpec : ProtocolSpec 1} (msg0 : pSpec.«Type» 0) :
+    FullTranscript pSpec := fun | ⟨0, _⟩ => msg0
+
+/-- A one-message transcript is the empty transcript extended by its message. -/
+@[simp]
+theorem FullTranscript.mk1_eq_snoc {pSpec : ProtocolSpec 1} (msg0 : pSpec.«Type» 0) :
+    FullTranscript.mk1 msg0 = (default : pSpec.Transcript 0).concat msg0 := by
+  unfold FullTranscript.mk1 Transcript.concat
+  simp only [default, Fin.isValue]
+  funext i
+  have hi : i = 0 := by omega
+  subst hi
+  simp only [Fin.isValue, Fin.coe_ofNat_eq_mod, Nat.zero_mod, Nat.reduceAdd,
+    Fin.succ_zero_eq_one, Nat.reduceMod, take_Type, Transcript.concat_zero]
+
 @[inline, reducible]
 def FullTranscript.mk2 {pSpec : ProtocolSpec 2} (msg0 : pSpec.«Type» 0) (msg1 : pSpec.«Type» 1) :
     FullTranscript pSpec := fun | ⟨0, _⟩ => msg0 | ⟨1, _⟩ => msg1
@@ -982,6 +1032,11 @@ variable {ι : Type} {oSpec : OracleSpec ι}
 class Prover.IsPure (P : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec) where
     is_pure : ∃ sendMessage : ∀ _, _ → _, ∀ i st,
       P.sendMessage i st = pure (sendMessage i st)
+
+/-- The prover's output is a deterministic function of its final private state, with no
+oracle queries. This condition does not constrain the message-sending steps. -/
+class Prover.OutputIsPure (P : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec) where
+    output_is_pure : ∃ output : _ → _, ∀ st, P.output st = pure (output st)
 
 class Verifier.IsPure (V : Verifier oSpec StmtIn StmtOut pSpec) where
     is_pure : ∃ verify : _ → _ → _, ∀ stmtIn transcript,

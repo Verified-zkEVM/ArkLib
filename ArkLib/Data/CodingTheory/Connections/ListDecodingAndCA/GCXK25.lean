@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks, Aleph
 -/
+module
 
-import ArkLib.Data.CodingTheory.ListDecodability
-import ArkLib.Data.CodingTheory.ProximityGap.Errors
+public import ArkLib.Data.CodingTheory.ListDecodability
+public import ArkLib.Data.CodingTheory.ProximityGap.Errors
 
 /-!
 # GCXK25 list-decoding-to-MCA bound
@@ -23,6 +24,8 @@ finite-family incidence estimate.
 - [GCXK25] Theorem 3.
 -/
 
+@[expose] public section
+
 namespace CodingTheory
 
 open scoped NNReal
@@ -31,7 +34,7 @@ open Code CoreDefinitions ProximityGap
 section ListImpliesMCA
 
 variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
+variable {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
 
 private noncomputable def large_family_low {κ ι π : Type} [Fintype κ] [Fintype ι]
     [Fintype π] [DecidableEq ι] (A : κ → Finset ι) (D : π → Finset ι) : Finset κ := by
@@ -121,7 +124,7 @@ private theorem large_family_sum_sq_incidence_eq_sum_inter
 private def linear_mca_affine_agreement (u : Fin 2 → ι → F) (x : F) (c : ι → F) : Finset ι :=
   Finset.univ.filter fun i => u 0 i + x * u 1 i = c i
 
-omit [Nonempty ι] [DecidableEq ι] [Fintype F] [DecidableEq F] in
+omit [Nonempty ι] [DecidableEq ι] [Fintype F] [SampleableType F] [DecidableEq F] in
 private theorem linear_mca_affine_two_agreements (C : LinearCode ι F)
     (u : Fin 2 → ι → F) (x y : F) (hxy : x ≠ y)
     (cx cy : ι → F) (hcx : cx ∈ C) (hcy : cy ∈ C) (S : Finset ι)
@@ -187,30 +190,28 @@ private theorem large_family_sparse_card_lt
     rw [hm0R]
     positivity
   have hmNat : 0 < Fintype.card κ := Nat.pos_of_ne_zero hm0
-  have hm : 0 < m := by
-    simpa [m] using (Nat.cast_pos.mpr hmNat : (0 : ℝ) < (Fintype.card κ : ℝ))
-  have hn0 : 0 < n := by simpa [n] using hn
+  have hm : 0 < m := Nat.cast_pos.mpr hmNat
+  have hn0 : 0 < n := hn
   let Z : ℝ := ∑ x : κ, ((A x).card : ℝ)
   let Q : ℝ := ∑ x : κ, ∑ y : κ, (((A x) ∩ (A y)).card : ℝ)
-  have hZnonneg : 0 ≤ Z := by
-    dsimp [Z]
-    positivity
   have hZlower : m * n * s ≤ Z := by
     have hsum := Finset.sum_le_sum (fun x (_hx : x ∈ (Finset.univ : Finset κ)) => hA x)
-    simpa [m, n, Z, mul_assoc] using hsum
+    rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul, ← mul_assoc] at hsum
+    exact hsum
   have hZupper : Z ≤ m * n := by
     have hsum : (∑ x : κ, ((A x).card : ℝ)) ≤
         ∑ _x : κ, (Fintype.card ι : ℝ) := by
       exact Finset.sum_le_sum fun x _ => by exact_mod_cast Finset.card_le_univ (A x)
-    simpa [m, n, Z] using hsum
+    rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul] at hsum
+    exact hsum
   have hCauchy : Z ^ 2 ≤ n * Q := by
     have hc := sq_sum_le_card_mul_sum_sq
       (s := (Finset.univ : Finset ι))
       (f := fun i =>
         (((Finset.univ : Finset κ).filter fun x => i ∈ A x).card : ℝ))
     rw [← large_family_sum_card_eq_sum_incidence A,
-      large_family_sum_sq_incidence_eq_sum_inter A] at hc
-    simpa [Z, Q, n] using hc
+      large_family_sum_sq_incidence_eq_sum_inter A, Finset.card_univ] at hc
+    exact hc
   let f : κ × κ → ℝ := fun z => (((A z.1) ∩ (A z.2)).card : ℝ)
   have hQsplit : Q = Z + ∑ z ∈ (Finset.univ : Finset κ).offDiag, f z := by
     calc
@@ -230,8 +231,7 @@ private theorem large_family_sparse_card_lt
   have hoffCard : (((Finset.univ : Finset κ).offDiag.card : ℕ) : ℝ) = m * (m - 1) := by
     rw [Finset.offDiag_card]
     simp only [Finset.card_univ]
-    have hle : Fintype.card κ ≤ Fintype.card κ * Fintype.card κ := by
-      nlinarith
+    have hle : Fintype.card κ ≤ Fintype.card κ * Fintype.card κ := Nat.le_mul_self _
     rw [Nat.cast_sub hle]
     push_cast
     simp [m]
@@ -245,23 +245,27 @@ private theorem large_family_sparse_card_lt
             intro z hz
             exact hinter z.1 z.2 (Finset.mem_offDiag.mp hz).2.2
       _ = (((Finset.univ : Finset κ).offDiag.card : ℕ) : ℝ) *
-          (n * (1 - p)) := by simp
+          (n * (1 - p)) := by rw [Finset.sum_const, nsmul_eq_mul]
       _ = m * (m - 1) * n * (1 - p) := by rw [hoffCard]; ring
   have hQupper : Q ≤ Z + m * (m - 1) * n * (1 - p) := by
     rw [hQsplit]
-    gcongr
-  have hsqLower : (m * n * s) ^ 2 ≤ Z ^ 2 := by
-    nlinarith [mul_nonneg (mul_nonneg hm.le hn0.le) hs_nonneg]
+    exact add_le_add le_rfl hoff
+  have hsqLower : (m * n * s) ^ 2 ≤ Z ^ 2 :=
+    pow_le_pow_left₀ (mul_nonneg (mul_nonneg hm.le hn0.le) hs_nonneg) hZlower 2
   have hmain : (m * n * s) ^ 2 ≤
       n * (m * n + m * (m - 1) * n * (1 - p)) := by
     calc
       (m * n * s) ^ 2 ≤ Z ^ 2 := hsqLower
       _ ≤ n * Q := hCauchy
-      _ ≤ n * (Z + m * (m - 1) * n * (1 - p)) := by gcongr
-      _ ≤ n * (m * n + m * (m - 1) * n * (1 - p)) := by gcongr
+      _ ≤ n * (Z + m * (m - 1) * n * (1 - p)) := mul_le_mul_of_nonneg_left hQupper hn0.le
+      _ ≤ n * (m * n + m * (m - 1) * n * (1 - p)) :=
+        mul_le_mul_of_nonneg_left (add_le_add hZupper le_rfl) hn0.le
   have hineq : m * s ^ 2 ≤ 1 + (m - 1) * (1 - p) := by
     have hpos : 0 < m * n ^ 2 := mul_pos hm (sq_pos_of_pos hn0)
-    nlinarith
+    refine le_of_mul_le_mul_right ?_ hpos
+    calc m * s ^ 2 * (m * n ^ 2) = (m * n * s) ^ 2 := by ring
+      _ ≤ n * (m * n + m * (m - 1) * n * (1 - p)) := hmain
+      _ = (1 + (m - 1) * (1 - p)) * (m * n ^ 2) := by ring
   exact linear_mca_high_algebra m p η s hp_lt hη_pos hs_sq hineq
 
 private theorem large_family_high_card_le_of_domains
@@ -532,10 +536,12 @@ private noncomputable def linear_mca_relevant_pairs (C : LinearCode ι F)
     (Fintype.card ι : ℝ) * (1 - p) ≤
       (linear_mca_pair_agreement u ![d.1, d.2]).card
 
-omit [Nonempty ι] [DecidableEq ι] in
-private theorem linear_mca_relevant_pairs_card_le (C : LinearCode ι F) (L : ℕ) (p : ℝ)
-    (hΛ : Lambda ((C : Set (ι → F))) p ≤ (L : ℕ∞))
-    (u : Fin 2 → ι → F) :
+private theorem linear_mca_relevant_pairs_card_le
+    {ι' : Type} [Fintype ι']
+    {F' : Type} [Field F'] [Fintype F'] [SampleableType F'] [DecidableEq F']
+    (C : LinearCode ι' F') (L : ℕ) (p : ℝ)
+    (hΛ : Lambda ((C : Set (ι' → F'))) p ≤ (L : ℕ∞))
+    (u : Fin 2 → ι' → F') :
     (linear_mca_relevant_pairs C u p).card ≤ L ^ 2 := by
   classical
   have hlist0 := (Code.Lambda_le_iff_forall_ncard_le.mp hΛ) (u 0)
@@ -548,7 +554,7 @@ private theorem linear_mca_relevant_pairs_card_le (C : LinearCode ι F) (L : ℕ
   calc
     (((linear_mca_row_list C u p 0).product
       (linear_mca_row_list C u p 1)).filter fun d =>
-        (Fintype.card ι : ℝ) * (1 - p) ≤
+        (Fintype.card ι' : ℝ) * (1 - p) ≤
           (linear_mca_pair_agreement u ![d.1, d.2]).card).card
         ≤ ((linear_mca_row_list C u p 0).product
           (linear_mca_row_list C u p 1)).card := Finset.card_filter_le _ _
@@ -557,7 +563,7 @@ private theorem linear_mca_relevant_pairs_card_le (C : LinearCode ι F) (L : ℕ
     _ ≤ L * L := Nat.mul_le_mul hrow0 hrow1
     _ = L ^ 2 := by ring
 
-omit [DecidableEq ι] [Fintype F] in
+omit [DecidableEq ι] [Fintype F] [SampleableType F] in
 private theorem linear_codeword_eq_of_large_agreement (C : LinearCode ι F) (p : ℝ)
     (hp_dist : p < (Code.minDist ((C : Set (ι → F))) : ℝ) / Fintype.card ι)
     (c d : ι → F) (hc : c ∈ C) (hd : d ∈ C) (S : Finset ι)
@@ -605,7 +611,7 @@ private theorem linear_mca_error_le_of_lambda_le_aux
     exact_mod_cast Fintype.card_pos (α := F)
   unfold mcaError
   refine iSup_le fun U => ?_
-  rw [Probability.prob_uniform_eq_card_filter_div_card]
+  rw [SampleableType.prEvent_uniformSample]
   let r : ℝ := 1 - (1 - δ + η) ^ ((1 : ℝ) / 2)
   let B := Finset.univ.filter fun γ : F =>
     IsMCA (AffineLineGenerator F) C γ U r
@@ -665,7 +671,7 @@ private theorem linear_mca_error_le_of_lambda_le_aux
         δ * (Fintype.card ι : ℝ) := by
       simp only [Finset.card_sdiff, Finset.inter_univ, Finset.card_univ]
       rw [Nat.cast_sub hDn]
-      nlinarith
+      linarith
     exact le_trans (by exact_mod_cast hnat) hcomp
   have hcard : (B.card : ℝ) ≤ R := by
     by_cases hr : 0 ≤ r
@@ -688,10 +694,8 @@ private theorem linear_mca_error_le_of_lambda_le_aux
         have hlist1 := (Code.Lambda_le_iff_forall_ncard_le.mp _hΛ) (w 1)
         let S0 : Finset (ι → F) := hlist0.1.toFinset
         let S1 : Finset (ι → F) := hlist1.1.toFinset
-        have hS0card : S0.card ≤ L := by
-          simpa [S0, Set.ncard_eq_toFinset_card _ hlist0.1] using hlist0.2
-        have hS1card : S1.card ≤ L := by
-          simpa [S1, Set.ncard_eq_toFinset_card _ hlist1.1] using hlist1.2
+        have hS0card : S0.card ≤ L := (Set.ncard_eq_toFinset_card _ hlist0.1).ge.trans hlist0.2
+        have hS1card : S1.card ≤ L := (Set.ncard_eq_toFinset_card _ hlist1.1).ge.trans hlist1.2
         have hp0close (p : P) : (p.1.1 : ι → F) ∈
             Code.closeCodewordsRel (C : Set (ι → F)) (w 0) δ := by
           rw [Code.mem_closeCodewordsRel_iff]
@@ -732,7 +736,8 @@ private theorem linear_mca_error_le_of_lambda_le_aux
             exact add_left_cancel hsumC
         have hinjcard : Fintype.card P ≤ Fintype.card (S0 × S1) :=
           Fintype.card_le_of_injective φ hφinj
-        have hprod : P.card ≤ S0.card * S1.card := by simpa using hinjcard
+        have hprod : P.card ≤ S0.card * S1.card := by
+          rwa [Fintype.card_prod, Fintype.card_coe, Fintype.card_coe, Fintype.card_coe] at hinjcard
         calc
           P.card ≤ S0.card * S1.card := hprod
           _ ≤ L * L := Nat.mul_le_mul hS0card hS1card
@@ -815,7 +820,7 @@ private theorem linear_mca_error_le_of_lambda_le_aux
         hDlarge hstrict hpairP
       calc
         (B.card : ℝ) ≤ (P.card : ℝ) * δ * (Fintype.card ι : ℝ) + 1 / η := by
-          simpa using hfamily
+          simpa only [Fintype.card_coe] using hfamily
         _ ≤ ((L ^ 2 : ℕ) : ℝ) * δ * (Fintype.card ι : ℝ) + 1 / η := by
           gcongr
         _ = R := by simp [R, Nat.cast_pow]
@@ -826,7 +831,7 @@ private theorem linear_mca_error_le_of_lambda_le_aux
         have hAle : ((A γB).card : ℝ) ≤ Fintype.card ι := by
           exact_mod_cast Finset.card_le_univ (A γB)
         have hlarge := hAcard γB
-        nlinarith
+        linarith [mul_pos hnR (neg_pos.2 (not_le.1 hr))]
       rw [hBempty]
       simpa using hR_nonneg
   rw [ENNReal.ofReal_div_of_pos hq_pos]

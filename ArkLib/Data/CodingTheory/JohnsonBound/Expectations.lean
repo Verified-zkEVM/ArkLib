@@ -3,15 +3,19 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Ilia Vlasov, František Silváši
 -/
-import Mathlib.Analysis.Convex.Jensen
-import Mathlib.RingTheory.Binomial
+module
 
-import ArkLib.Data.CodingTheory.Basic.DecodingRadius
-import ArkLib.Data.CodingTheory.Basic.Distance
-import ArkLib.Data.CodingTheory.Basic.LinearCode
-import ArkLib.Data.CodingTheory.Basic.RelativeDistance
-import ArkLib.Data.CodingTheory.JohnsonBound.Choose2
+public import Mathlib.Analysis.Convex.Jensen
+public import Mathlib.RingTheory.Binomial
+
+public import ArkLib.Data.CodingTheory.Basic.DecodingRadius
+public import ArkLib.Data.CodingTheory.Basic.Distance
+public import ArkLib.Data.CodingTheory.Basic.LinearCode
+public import ArkLib.Data.CodingTheory.Basic.RelativeDistance
+public import ArkLib.Data.CodingTheory.JohnsonBound.Choose2
 /-! # Johnson Bound Expectations -/
+
+@[expose] public section
 
 
 namespace JohnsonBound
@@ -179,8 +183,8 @@ lemma d_image_piCongrRight {G : Type*} [DecidableEq G] (σ : Fin n → (F ≃ G)
   simp only [Prod.map_fst, Prod.map_snd]
   by_cases h : x.1 = x.2
   · simp [h]
-  · rw [if_pos (show ¬ (Equiv.piCongrRight σ) x.1 = (Equiv.piCongrRight σ) x.2 from
-        fun hc => h ((Equiv.piCongrRight σ).injective hc)), if_pos h]
+  · rw [ite_eq_left (show ¬ (Equiv.piCongrRight σ) x.1 = (Equiv.piCongrRight σ) x.2 from
+        fun hc => h ((Equiv.piCongrRight σ).injective hc)), ite_eq_left h]
     exact hammingDist_comp (fun i => (σ i : F → G)) (fun i => (σ i).injective)
 
 end JohnsonBound

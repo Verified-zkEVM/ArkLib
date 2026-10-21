@@ -3,7 +3,9 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Commitments.Functional.Hachi.Recursion.ZBatchBridge
+module
+
+public import ArkLib.Commitments.Functional.Hachi.Recursion.ZBatchBridge
 
 /-!
   # Trace handoff — Hachi §4.5, Eqs. (27)–(28) — skeleton
@@ -56,6 +58,8 @@ import ArkLib.Commitments.Functional.Hachi.Recursion.ZBatchBridge
   * [Lyubashevsky, V., Nguyen, N. K., and Plançon, M., *Lattice-Based Zero-Knowledge Proofs and
       Applications: Shorter, Simpler, and More General*][LNP22]
 -/
+
+@[expose] public section
 
 namespace ArkLib.Lattices.Ajtai.InnerOuter
 

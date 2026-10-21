@@ -3,13 +3,24 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
-import ArkLib.ProofSystem.Binius.BinaryBasefold.Spec
+module
+
+public import ArkLib.ProofSystem.Binius.BinaryBasefold.Spec
 
 /-!
 # ArkLib.ProofSystem.Binius.BinaryBasefold.QueryPhase
 
 Definitions and results for this component of ArkLib.
 -/
+
+@[expose] public section
+
+/- These composed protocol bundles are `def`s whose *inferred* type embeds the inline `Fin` bounds
+proofs written in their bodies, so the module system's default elaboration either delays every `by`
+until the still-unknown result type is solved, or abstracts the proof into a private auxiliary
+theorem a public signature may not mention. `backward.proofsInPublic` restores the classic
+elaboration these definitions were written against. See docs/wiki/module-system.md. -/
+set_option backward.proofsInPublic true
 
 namespace Binius.BinaryBasefold.QueryPhase
 

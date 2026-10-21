@@ -3,12 +3,13 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Katerina Hristova, František Silváši, Julian Sutherland, Ilia Vlasov
 -/
+module
 
-import CompPoly.ToMathlib.Polynomial.BivariateWeightedDegree
-import CompPoly.ToMathlib.Polynomial.BivariateMultiplicity
+public import CompPoly.ToMathlib.Polynomial.BivariateWeightedDegree
+public import CompPoly.ToMathlib.Polynomial.BivariateMultiplicity
 
-import Mathlib.Algebra.Polynomial.BigOperators
-import Mathlib.Algebra.BigOperators.Group.Finset.Basic
+public import Mathlib.Algebra.Polynomial.BigOperators
+public import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 /-!
 # ArkLib-Specific Bivariate Polynomial Extensions
 
@@ -20,6 +21,8 @@ by CompPoly (`CompPoly.ToMathlib.Polynomial.BivariateDegree`, `BivariateWeighted
 - Quotient (divisibility) predicates and degree bounds
 - Linear-map monomial constructors (`monomialY`, `monomialXY`) and their algebra
 -/
+
+@[expose] public section
 
 open Polynomial
 open Polynomial.Bivariate
@@ -167,7 +170,8 @@ If `q * f ≠ 0`, then the `Y`-degree of `q` is bounded above by the difference 
 -/
 @[grind .]
 lemma degreeY_le_degreeY_sub_degreeY [IsDomain F] {f q : F[X][Y]} (hf : f ≠ 0) (hg : q * f ≠ 0) :
-    natDegreeY q ≤ natDegreeY (q * f) - natDegreeY f := by grind
+    natDegreeY q ≤ natDegreeY (q * f) - natDegreeY f := by
+  simp [natDegreeY, Polynomial.natDegree_mul (quotient_nezero hg) hf]
 
 /-- Each coefficient's total-degree contribution is bounded by `totalDegree` when in support. -/
 theorem coeff_totalDegree_le (f : F[X][Y]) {n : ℕ} (hn : n ∈ f.support) :
@@ -517,7 +521,7 @@ theorem rootMultiplicity₀_ne_none {R : Type} [CommSemiring R] [DecidableEq R]
     rw [List.mem_filterMap]
     refine ⟨(s,t), ?_, ?_⟩
     · exact List.mem_product.mpr ⟨List.mem_range.mpr hslt, List.mem_range.mpr htlt⟩
-    · simp only [Polynomial.Bivariate.coeff, hs, if_false]
+    · simp only [Polynomial.Bivariate.coeff, hs, ite_false]
   rw [hempty] at hmem
   simp at hmem
 

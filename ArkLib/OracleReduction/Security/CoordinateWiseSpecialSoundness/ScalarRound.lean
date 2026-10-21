@@ -3,8 +3,10 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.SingleRound
-import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Guarded
+module
+
+public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.SingleRound
+public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Guarded
 
 /-!
   # Scalar single-challenge-round CWSS assembly (generic building block)
@@ -49,6 +51,8 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Guarded
   * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
       Polynomial Commitments over Extension Fields*][NOZ26]
 -/
+
+@[expose] public section
 
 open OracleComp OracleSpec ProtocolSpec ProtocolSpec.ChallengeTree CoordinateWise
 
@@ -641,9 +645,9 @@ theorem branch_guarded_relOut_language
   have hc : check stmtIn v (challenges j) = true := by
     by_contra hc
     exact Verifier.not_accepting_of_failure (V := V) (stmt := stmtIn)
-      (tr := branchTr v challenges j) (by rw [hverify, if_neg hc]) hacc
+      (tr := branchTr v challenges j) (by rw [hverify, ite_eq_right hc]) hacc
   exact ⟨hc, Verifier.mem_of_pure_accepting init impl V stmtIn (branchTr v challenges j)
-    relOut.language _ (by rw [hverify, if_pos hc]) hacc⟩
+    relOut.language _ (by rw [hverify, ite_eq_left hc]) hacc⟩
 
 /-- The guarded counterpart of `collect_branch_data`: valid leaf witnessing pins every selected
 response to the target-replaced statement of its branch, without a choice operation. -/

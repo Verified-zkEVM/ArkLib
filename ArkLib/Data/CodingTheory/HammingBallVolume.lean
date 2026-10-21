@@ -3,11 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import Mathlib.Data.Nat.Choose.Basic
-import Mathlib.Algebra.Order.Floor.Defs
-import Mathlib.Algebra.Order.Floor.Semiring
-import ArkLib.Data.CodingTheory.ListDecodability
+public import Mathlib.Data.Nat.Choose.Basic
+public import Mathlib.Algebra.Order.Floor.Defs
+public import Mathlib.Algebra.Order.Floor.Semiring
+public import ArkLib.Data.CodingTheory.ListDecodability
 
 /-!
 # Hamming ball volume
@@ -34,6 +35,8 @@ fixed centre:
 * [Arnon, G., Boneh, D., and Fenzi, G., *Open Problems in List Decoding and Correlated
     Agreement*][ABF26]
 -/
+
+@[expose] public section
 
 namespace CodingTheory
 
@@ -104,11 +107,11 @@ lemma card_filter_hammingDist_eq
         refine ⟨fun j _ ↦ x j, ?_, rfl⟩
         intro j _
         by_cases hj : j ∈ S
-        · simp only [if_pos hj, Finset.mem_compl, Finset.mem_singleton]
+        · simp only [ite_eq_left hj, Finset.mem_compl, Finset.mem_singleton]
           have : j ∈ dis x := by rw [h_dis_eq]; exact hj
           simp only [dis, Finset.mem_filter, Finset.mem_univ, true_and] at this
           exact fun heq ↦ this heq.symm
-        · simp only [if_neg hj, Finset.mem_singleton]
+        · simp only [ite_eq_right hj, Finset.mem_singleton]
           have : j ∉ dis x := by rw [h_dis_eq]; exact hj
           simp only [dis, Finset.mem_filter, Finset.mem_univ, true_and, not_not] at this
           exact this.symm
@@ -117,11 +120,11 @@ lemma card_filter_hammingDist_eq
         simp only [dis, Finset.mem_filter, Finset.mem_univ, true_and]
         have hfj := hf_mem j trivial
         by_cases hj : j ∈ S
-        · rw [if_pos hj] at hfj
+        · rw [ite_eq_left hj] at hfj
           simp only [Finset.mem_compl, Finset.mem_singleton] at hfj
           simp only [hj, iff_true]
           exact fun heq ↦ hfj heq.symm
-        · rw [if_neg hj] at hfj
+        · rw [ite_eq_right hj] at hfj
           simp only [Finset.mem_singleton] at hfj
           simp only [hj, iff_false, not_not]
           exact hfj.symm
@@ -137,8 +140,8 @@ lemma card_filter_hammingDist_eq
       apply Finset.prod_congr rfl
       intro j _
       by_cases hj : j ∈ S
-      · rw [if_pos hj, if_pos hj, Finset.card_compl, Finset.card_singleton]
-      · rw [if_neg hj, if_neg hj, Finset.card_singleton]
+      · rw [ite_eq_left hj, ite_eq_left hj, Finset.card_compl, Finset.card_singleton]
+      · rw [ite_eq_right hj, ite_eq_right hj, Finset.card_singleton]
     rw [h_prod_eq, Finset.prod_ite, Finset.prod_const, Finset.prod_const_one, mul_one]
     -- `(univ.filter (· ∈ S)).card = S.card = i`.
     rw [Finset.filter_univ_mem]; exact congrArg _ hS.2

@@ -35,11 +35,23 @@ cleanup() {
 }
 trap cleanup EXIT
 
-git ls-files -- 'ArkLib/*.lean' \
-  | LC_ALL=C sort \
-  | sed 's/\.lean//;s,/,.,g;s/^/import /' > "$tmp_file"
+# `ArkLib.lean` is itself a module, so it re-exports its contents with `public import`.
+# See docs/wiki/module-system.md.
+printf 'module\n\n' > "$tmp_file"
+
+while IFS= read -r lean_path; do
+  module_path="${lean_path%.lean}"
+  module_path="${module_path//\//.}"
+  if (( ${#module_path} + 14 > 100 )); then
+    printf 'public import\n  %s\n' "$module_path" >> "$tmp_file"
+  else
+    printf 'public import %s\n' "$module_path" >> "$tmp_file"
+  fi
+done < <(git ls-files -- 'ArkLib/*.lean' | LC_ALL=C sort)
+
+import_count="$(grep -c '^public import' "$tmp_file")"
 
 mv "$tmp_file" ArkLib.lean
 trap - EXIT
 
-echo "✓ ArkLib.lean updated with $(wc -l < ArkLib.lean) imports"
+echo "✓ ArkLib.lean updated with ${import_count} imports"

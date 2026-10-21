@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks, Aleph
 -/
+module
 
-import ArkLib.Data.CodingTheory.ListDecodability.Bounds.KKH26
-import Mathlib.Algebra.Algebra.ZMod
-import Mathlib.FieldTheory.Finite.Basic
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.KKH26
+public import Mathlib.Algebra.Algebra.ZMod
+public import Mathlib.FieldTheory.Finite.Basic
 
 /-!
 # Binary foundations for the Reed--Solomon Johnson lower bound
@@ -18,6 +19,8 @@ used by `CapacityBounds.JohnsonLower`.
 
 - [BCHKS25] Corollary 1.7.
 -/
+
+@[expose] public section
 
 namespace CodingTheory
 
@@ -172,7 +175,7 @@ theorem binary_functional_lambda_zero (b : ℕ) (hb : 0 < b) :
   rw [Polynomial.coeff_X_pow]
   have hsub : b - 1 < b := by omega
   have hpow : 2 ^ (b - 1) < 2 ^ b := pow_right_strictMono₀ (by omega) hsub
-  rw [if_neg (ne_of_lt hpow)]
+  rw [ite_eq_right (ne_of_lt hpow)]
 
 def binary_graph_embedding_prod {b : ℕ}
     (φ : (Fin b → ZMod 2) →ₗ[ZMod 2] (Fin 2 → ZMod 2)) :

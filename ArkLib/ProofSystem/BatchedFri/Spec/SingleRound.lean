@@ -3,13 +3,14 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Julian Sutherland, Quang Dao, Alexander Hicks, Devon Tuma, Ilia Vlasov
 -/
+module
 
-import ArkLib.OracleReduction.Basic
-import ArkLib.ProofSystem.Fri.RoundConsistency
-import ArkLib.ProofSystem.Fri.Spec.SingleRound
-import CompPoly.Univariate.Basic
-import CompPoly.Univariate.Linear
-import CompPoly.Univariate.ToPoly.Impl
+public import ArkLib.OracleReduction.Basic
+public import ArkLib.ProofSystem.Fri.RoundConsistency
+public import ArkLib.ProofSystem.Fri.Spec.SingleRound
+public import CompPoly.Univariate.Basic
+public import CompPoly.Univariate.Linear
+public import CompPoly.Univariate.ToPoly.Impl
 
 /-!
 # The Batched FRI protocol
@@ -18,6 +19,8 @@ import CompPoly.Univariate.ToPoly.Impl
   and the FRI oracle reduction.
 
  -/
+
+@[expose] public section
 
 namespace BatchedFri
 

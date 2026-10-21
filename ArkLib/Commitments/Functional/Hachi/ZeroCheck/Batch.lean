@@ -3,7 +3,9 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann, Pablo Martín Vinuelas
 -/
-import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Constraints
+module
+
+public import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Constraints
 
 /-!
   # Batching bridge — Hachi Eqs. (22)–(23)
@@ -50,6 +52,8 @@ import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Constraints
   * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
       Polynomial Commitments over Extension Fields*][NOZ26]
 -/
+
+@[expose] public section
 
 namespace ArkLib.Lattices.Ajtai.InnerOuter
 
@@ -154,9 +158,9 @@ theorem rangeProduct_eq_zero_of_valMinAbs_natAbs_le (φF : ZMod q →+* F) {b : 
   rw [hj] at h
   refine ⟨j, h, ?_⟩
   by_cases hval : c.val ≤ q / 2
-  · rw [if_pos hval] at hc
+  · rw [ite_eq_left hval] at hc
     exact Or.inl (by rw [← hc, map_natCast])
-  · rw [if_neg hval] at hc
+  · rw [ite_eq_right hval] at hc
     refine Or.inr ?_
     have hc' : c = -((j : ℕ) : ZMod q) := by rw [hc]; ring
     rw [hc', _root_.map_neg, map_natCast]

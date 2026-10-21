@@ -3,8 +3,10 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Data.Lattices.ModuleSIS
-import VCVio.CryptoFoundations.CommitmentScheme
+module
+
+public import ArkLib.Data.Lattices.ModuleSIS
+public import VCVio.CryptoFoundations.CommitmentScheme
 
 /-!
 # Simple Ajtai Commitment Scheme
@@ -18,6 +20,8 @@ product and, in the bundled `CommitmentScheme`, checks the short-vector predicat
 
 * [Ajtai, M., *Generating Hard Instances of Lattice Problems*][Ajt96]
 -/
+
+@[expose] public section
 
 open OracleComp CommitmentScheme CompPoly ArkLib.Lattices ArkLib.Lattices.CyclotomicModulus
 

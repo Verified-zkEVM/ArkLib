@@ -3,10 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import ArkLib.ProofSystem.ToyProblem.Spec.General
-import ArkLib.Data.CodingTheory.ReedSolomon
-import ArkLib.ToCompPoly.Univariate.Lagrange
+public import ArkLib.ProofSystem.ToyProblem.Spec.General
+public import ArkLib.Data.CodingTheory.ReedSolomon
+public import ArkLib.ToCompPoly.Univariate.Lagrange
+-- `rw [toPoly]` unfolds a CompPoly definition whose body is not exposed.
+import all CompPoly.Univariate.ToPoly.Core
 
 /-!
 # Executable scalar Reed--Solomon erasure decoding for the toy problem
@@ -34,6 +37,8 @@ bound, and in particular no generic `O((s n)^3)` claim, is made here.
 * [Arnon, G., Boneh, D., Fenzi, G., *Open Problems in List Decoding and Correlated
   Agreement*][ABF26] (§6, App A.1).
 -/
+
+@[expose] public section
 
 namespace ToyProblem.Spec
 
@@ -243,7 +248,7 @@ theorem rsErasureDecoder_eq_some [Fintype ι] {k : ℕ} {domain : ι ↪ F}
       ((rsPolynomial_degree_lt k m).trans_le (WithBot.coe_le_coe.mpr hcard))
       (fun i hi ↦ by simpa using hval i hi) j]
     exact rsPolynomial_coeff k m j
-  rw [rsErasureDecoder, if_pos hcard, hdecode, if_pos hval]
+  rw [rsErasureDecoder, ite_eq_left hcard, hdecode, ite_eq_left hval]
 
 theorem rsErasureDecodeOrZero_eq [Fintype ι] {k : ℕ} {domain : ι ↪ F}
     {nodes : Finset ι} {w : ι → F} {m : Fin k → F}

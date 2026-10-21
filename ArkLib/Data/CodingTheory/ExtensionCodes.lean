@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import ArkLib.Data.CodingTheory.ListDecodability
-import ArkLib.Data.CodingTheory.InterleavedCode
-import Mathlib.LinearAlgebra.Basis.Defs
+public import ArkLib.Data.CodingTheory.ListDecodability
+public import ArkLib.Data.CodingTheory.InterleavedCode
+public import Mathlib.LinearAlgebra.Basis.Defs
 
 /-!
 # Extension codes
@@ -57,6 +58,8 @@ of `C_B` in `F^ι`.
 * [Diamond, B. E., and Posen, J., *Succinct Arguments over Towers of Binary
     Fields*][DP25]
 -/
+
+@[expose] public section
 
 namespace CodingTheory
 
@@ -152,7 +155,7 @@ private lemma extensionEncode_zero {κ ι : Type*}
   rw [map_zero]
   rfl
 
-private lemma extensionEncode_add {κ ι : Type*}
+lemma extensionEncode_add {κ ι : Type*}
     {B F : Type*} [Field B] [Field F] [Algebra B F]
     (P : ExtensionFieldPresentation B F)
     (encode : (κ → B) →ₗ[B] (ι → B)) (v w : κ → F) :

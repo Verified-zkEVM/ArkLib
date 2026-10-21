@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Aristotle (Harmonic)
 -/
+module
 
-import ArkLib.Data.CodingTheory.ListDecodability
+public import ArkLib.Data.CodingTheory.ListDecodability
 
 /-!
 # A Johnson-type counting bound from pairwise agreement
@@ -16,6 +17,8 @@ This is the alphabet-agnostic core of `ReedSolomon.card_le_of_subset_closeCodewo
 lets the Reed–Solomon list-decoding bound be transported to interleaved Reed–Solomon codes, whose
 alphabet is `Fin s → F`.
 -/
+
+@[expose] public section
 
 namespace Code
 

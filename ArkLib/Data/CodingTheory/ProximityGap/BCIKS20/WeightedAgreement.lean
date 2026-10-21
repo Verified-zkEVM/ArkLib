@@ -4,8 +4,9 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland,
          Ilia Vlasov, Chung Thai Nguyen
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ErrorBound
+public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ErrorBound
 
 /-! # Weighted correlated agreement over curves and affine spaces
 
@@ -20,6 +21,8 @@ parameter via `δ = 1 - α`.
   (ePrint 2020/654): Theorems 7.1, 7.3, and 7.4.
 -/
 
+@[expose] public section
+
 namespace ProximityGap
 
 namespace WeightedAgreement
@@ -30,7 +33,7 @@ open scoped BigOperators Pointwise ProbabilityTheory
 section ProbabilityTheorems
 
 variable {ι : Type} [Fintype ι] [Nonempty ι]
-variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
+variable {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
 
 instance {domain : ι ↪ F} {deg : ℕ} : Nonempty (finCarrier domain deg) := by
   rcases Submodule.nonempty (ReedSolomon.code domain deg) with ⟨v, hv⟩
@@ -62,7 +65,7 @@ theorem weighted_correlated_agreement_for_parameterized_curves [DecidableEq ι]
     letI ε := ProximityGap.errorBound (1 - α) deg domain
     letI pr :=
       let curvePts := Curve.polynomialCurveFinite (F := F) (A := F) u
-      Pr_{let y ←$ᵖ curvePts}[agree_set μ y (finCarrier domain deg) ≥ α]
+      Pr{let y ←$ᵗ curvePts}[agree_set μ y (finCarrier domain deg) ≥ α]
     (hproximity : pr > (l + 1 : NNReal) * ε) →
     (h_additionally : pr ≥
       ENNReal.ofReal (
@@ -137,7 +140,7 @@ theorem weighted_correlated_agreement_over_affine_spaces [DecidableEq ι]
     (hμ : ∀ i, ∃ n : ℤ, (μ i).1 = (n : ℚ) / (M : ℚ)) →
     letI ε := ProximityGap.errorBound (1 - α) deg domain
     letI pr :=
-      Pr_{let y ←$ᵖ ↥(Affine.affineSubspaceAtOrigin (F := F) (u 0) (Fin.tail u))}[
+      Pr{let y ←$ᵗ ↥(Affine.affineSubspaceAtOrigin (F := F) (u 0) (Fin.tail u))}[
         agree_set μ y.1 (finCarrier domain deg) ≥ α]
     pr > ε →
     pr ≥ ENNReal.ofReal (
@@ -168,7 +171,7 @@ theorem weighted_correlated_agreement_over_affine_spaces' [DecidableEq ι]
     (hμ : ∀ i, ∃ n : ℤ, (μ i).1 = (n : ℚ) / (M : ℚ)) :
     letI sqrtRate := ReedSolomon.sqrtRate deg domain
     letI pr :=
-      Pr_{let y ←$ᵖ ↥(Affine.affineSubspaceAtOrigin (F := F) (u 0) (Fin.tail u))}[
+      Pr{let y ←$ᵗ ↥(Affine.affineSubspaceAtOrigin (F := F) (u 0) (Fin.tail u))}[
         agree_set μ y.1 (finCarrier domain deg) ≥ α]
     (hα : sqrtRate * (1 + 1 / (2 * m : ℝ)) ≤ α) →
     letI numeratorl : ℝ := (1 + 1 / (2 * m : ℝ)) ^ 7 * m ^ 7 * (Fintype.card ι) ^ 2
@@ -250,7 +253,7 @@ lemma list_agreement_on_curve_implies_correlated_agreement_bound
       rw [Finset.sum_eq_single i] at hcoeff
       · simpa using hcoeff
       · intro j _ hji
-        simp only [if_neg (fun hval => hji (Fin.ext hval))]
+        simp only [ite_eq_right (fun hval => hji (Fin.ext hval))]
       · simp
     exact sub_eq_zero.mp this
   have agreementPoints_card {x : ι} (hx : x ∉ common) :

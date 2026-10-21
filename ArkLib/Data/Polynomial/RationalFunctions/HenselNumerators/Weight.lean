@@ -3,20 +3,21 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Katerina Hristova, František Silváši, Julian Sutherland, Ilia Vlasov
 -/
+module
 
-import ArkLib.Data.Polynomial.Bivariate
-import ArkLib.Data.Polynomial.Prelims
-import Mathlib.FieldTheory.RatFunc.Defs
-import Mathlib.RingTheory.Ideal.Quotient.Defs
-import Mathlib.RingTheory.Ideal.Span
-import Mathlib.RingTheory.Polynomial.GaussLemma
-import Mathlib.RingTheory.PowerSeries.Substitution
+public import ArkLib.Data.Polynomial.Bivariate
+public import ArkLib.Data.Polynomial.Prelims
+public import Mathlib.FieldTheory.RatFunc.Defs
+public import Mathlib.RingTheory.Ideal.Quotient.Defs
+public import Mathlib.RingTheory.Ideal.Span
+public import Mathlib.RingTheory.Polynomial.GaussLemma
+public import Mathlib.RingTheory.PowerSeries.Substitution
 
-import Mathlib.RingTheory.PrincipalIdealDomain
-import Mathlib.Algebra.Polynomial.BigOperators
-import Mathlib.Algebra.Polynomial.Roots
-import ArkLib.Data.Polynomial.RationalFunctions.Weight
-import ArkLib.Data.Polynomial.RationalFunctions.HenselNumerators.Hensel
+public import Mathlib.RingTheory.PrincipalIdealDomain
+public import Mathlib.Algebra.Polynomial.BigOperators
+public import Mathlib.Algebra.Polynomial.Roots
+public import ArkLib.Data.Polynomial.RationalFunctions.Weight
+public import ArkLib.Data.Polynomial.RationalFunctions.HenselNumerators.Hensel
 /-!
 # Weight Bounds for the Hensel Numerators
 
@@ -38,6 +39,8 @@ docstring of `numeratorShapeSharp`.
   version 20210703:203025.
 
 -/
+
+@[expose] public section
 
 
 open Polynomial Polynomial.Bivariate ToRatFunc Ideal
@@ -452,6 +455,63 @@ lemma betaSucc_eq_neg_clearedResidual (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     ring
   rw [hres, hDfull_eq]; ring
 
+/-- The step-`(t+1)` sharp weight, with the exponent `e_{t+1} = 2t+1` evaluated. -/
+private lemma numeratorShapeSharp_succ (R : F[X][X][Y]) (H : F[X][Y]) (D t : ℕ) :
+    numeratorShapeSharp R H D (t + 1) =
+      1 + (t + 2) * (D - Bivariate.natDegreeY H) +
+        (2 * t + 1) * ((Bivariate.natDegreeY R - 1) * (D - Bivariate.natDegreeY H + 1)) +
+        t * (D - Bivariate.natDegreeY R) := by
+  rw [numeratorShapeSharp, henselDenominatorExponent_succ,
+    show 2 * (t + 1) - 1 = 2 * t + 1 by omega, Nat.add_sub_cancel]
+
+private lemma henselDenominatorExponent_succ_sub_one (t : ℕ) :
+    henselDenominatorExponent (t + 1) - 1 = 2 * t := by
+  rw [henselDenominatorExponent_succ]; omega
+
+/-- Weight arithmetic of the boundary summand of `henselClearedTerm_weight`: the `W`- and
+`ξ`-charges match exactly, and the parts consume at most `t - 1` of the correction. -/
+private lemma boundary_weight_arith {t dY j Pw Pe Pc E1 ΛW Λξ G : ℕ}
+    (hj : j = dY) (hPw : Pw = t + 1 + dY) (hE1 : E1 = 2 * t) (hPe : Pe ≤ E1)
+    (hPc : Pc + 1 ≤ t) (hd : 2 ≤ dY) (hΛξ : Λξ = (dY - 1) * (ΛW + 1)) :
+    G + (j + Pw * ΛW + Pe * Λξ + Pc * G) + (E1 - Pe) * Λξ ≤
+      1 + (t + 2) * ΛW + (2 * t + 1) * Λξ + t * G := by
+  obtain ⟨dm, rfl⟩ : ∃ dm, dY = dm + 2 := ⟨dY - 2, by omega⟩
+  have hΛξexp : Λξ = dm * ΛW + dm + ΛW + 1 := by
+    rw [hΛξ, show dm + 2 - 1 = dm + 1 by omega]; ring
+  have hPcG : G + Pc * G ≤ t * G := by
+    calc G + Pc * G = (Pc + 1) * G := by ring
+      _ ≤ t * G := Nat.mul_le_mul_right _ hPc
+  calc G + (j + Pw * ΛW + Pe * Λξ + Pc * G) + (E1 - Pe) * Λξ
+      = (j + Pw * ΛW + (Pe * Λξ + (E1 - Pe) * Λξ)) + (G + Pc * G) := by ring
+    _ = (j + Pw * ΛW + E1 * Λξ) + (G + Pc * G) := by
+          rw [← Nat.add_mul, Nat.add_sub_cancel' hPe]
+    _ ≤ (j + Pw * ΛW + E1 * Λξ) + t * G := Nat.add_le_add_left hPcG _
+    _ = 1 + (t + 2) * ΛW + (2 * t + 1) * Λξ + t * G := by
+          rw [hj, hPw, hE1, hΛξexp]; ring
+
+/-- Weight arithmetic of a non-boundary summand of `henselClearedTerm_weight`: the coefficient,
+parts and leftover `W`/`ξ` powers fit the sharp budget, and so does the consumed correction. -/
+private lemma interior_weight_arith {t dY D j Pw Pe Pc E1 wb ΛW Λξ G : ℕ}
+    (hjD : j ≤ D) (hkey : D ≤ dY + ΛW) (hd : 2 ≤ dY) (hwb : wb = t + 1 + 1 + (dY - 2))
+    (hPw : Pw ≤ wb) (hE1 : E1 = 2 * t) (hPe : Pe ≤ E1) (hPc : Pc ≤ t)
+    (hΛξ : Λξ = (dY - 1) * (ΛW + 1)) :
+    (D - j) + (j + Pw * ΛW + Pe * Λξ + Pc * G) + ((wb - Pw) * ΛW + (E1 - Pe) * Λξ) ≤
+      1 + (t + 2) * ΛW + (2 * t + 1) * Λξ + t * G := by
+  obtain ⟨dm, rfl⟩ : ∃ dm, dY = dm + 1 := ⟨dY - 1, by omega⟩
+  have hwb_le : wb ≤ t + (dm + 1) := by omega
+  rw [Nat.add_sub_cancel] at hΛξ
+  calc (D - j) + (j + Pw * ΛW + Pe * Λξ + Pc * G) + ((wb - Pw) * ΛW + (E1 - Pe) * Λξ)
+      = (D - j + j) + (Pw * ΛW + (wb - Pw) * ΛW) + (Pe * Λξ + (E1 - Pe) * Λξ) + Pc * G := by
+          ring
+    _ = D + wb * ΛW + E1 * Λξ + Pc * G := by
+          rw [Nat.sub_add_cancel hjD, ← Nat.add_mul, ← Nat.add_mul, Nat.add_sub_cancel' hPw,
+            Nat.add_sub_cancel' hPe]
+    _ ≤ (dm + 1 + ΛW) + (t + (dm + 1)) * ΛW + E1 * Λξ + t * G :=
+          Nat.add_le_add (Nat.add_le_add_right
+            (Nat.add_le_add hkey (Nat.mul_le_mul_right ΛW hwb_le)) _) (Nat.mul_le_mul_right _ hPc)
+    _ = 1 + (t + 2) * ΛW + (2 * t + 1) * Λξ + t * G := by
+          rw [hE1, hΛξ]; ring
+
 -- The `Finset.finsuppAntidiag` case split below expands one `PowerSeries.coeff` of a
 -- `d`-fold product into a sum over compositions, and each summand carries a `RegularWeightLe`
 -- certificate assembled from seven `.mul`/`.pow`/`.sum` steps. The arithmetic is split into
@@ -508,7 +568,6 @@ lemma henselClearedTerm_weight (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
   have hdH_le_R : Bivariate.natDegreeY H ≤ Bivariate.natDegreeY R :=
     natDegree_H_le_natDegree_R_of_hypotheses hHyp
   have hdY : Bivariate.natDegreeY R = R.natDegree := rfl
-  have hdH : Bivariate.natDegreeY H = H.natDegree := rfl
   -- distribute coeff_mul and coeff_pow into a sum over (p, l)
   rw [PowerSeries.coeff_mul, Finset.sum_mul]
   apply RegularWeightLe.sum _ _ hD_H
@@ -581,17 +640,16 @@ lemma henselClearedTerm_weight (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
       have hi0 := Finset.sum_eq_zero_iff.mp hsum0 i hi
       by_cases hli : l i = 0
       · omega
-      · rw [if_neg hli] at hi0; omega
+      · rw [ite_eq_right hli] at hi0; omega
     -- so the parts never consume more correction than the `t` available at `t+1`
     have hPc_le : Pc ≤ t := by
       rcases Nat.eq_zero_or_pos S1 with hS0 | hS1pos
       · have := hS1zero hS0; omega
       · omega
     -- the eta exponent bound Pe ≤ E1 = 2t
+    have hE1val : E1 = 2 * t := henselDenominatorExponent_succ_sub_one t
     have hPe_le : Pe ≤ E1 := by
-      have hE1' : E1 = 2 * t := by
-        rw [hE1def, henselDenominatorExponent_succ]; omega
-      rw [hE1']
+      rw [hE1val]
       rcases Nat.lt_or_ge p.2 (t + 1) with hbt | hbt
       · omega
       · have hS1ge : 2 ≤ S1 := by
@@ -621,11 +679,7 @@ lemma henselClearedTerm_weight (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
           by_contra hne; exact hjs (Polynomial.mem_support_iff.mpr hne)
         rw [hz]; simp [Bivariate.totalDegree]
     -- key arithmetic facts
-    have hkey : D ≤ R.natDegree + ΛW := by
-      rw [hΛWdef]
-      have : Bivariate.natDegreeY H ≤ R.natDegree := by rw [← hdY]; exact hdH_le_R
-      rw [hdH] at this
-      omega
+    have hkey : D ≤ R.natDegree + ΛW := le_add_tsub.trans (Nat.add_le_add_right hdH_le_R _)
     have hjd : j ≤ R.natDegree := hjle
     have hdD : R.natDegree ≤ D := by
       by_cases hRz : R = 0
@@ -722,46 +776,16 @@ lemma henselClearedTerm_weight (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
         (RegularWeightLe.mul hD_H
           ((regularWeightLe_liftToFunctionField hD_H hH c).mono hc_deg) hprodW)
         (hRWLeta.pow hD_H _)).mono ?_
-      rw [hsharpSum]
-      have hsharpSucc : numeratorShapeSharp R H D (t + 1) =
-          1 + (t + 2) * ΛW + (2 * t + 1) * Λξ + t * G := by
-        rw [numeratorShapeSharp, ← hΛWdef, ← hΛξdef, ← hGdef, henselDenominatorExponent_succ]
-        rw [show 2 * (t + 1) - 1 = 2 * t + 1 by omega, show t + 1 + 1 = t + 2 by omega,
-          show t + 1 - 1 = t by omega]
-      rw [hsharpSucc]
-      -- `Λξ = (dY-1)·(ΛW+1)` and `G = D - dY`, so the whole thing is linear arithmetic
-      have hΛξval : Λξ = (R.natDegree - 1) * (ΛW + 1) := by rw [hΛξdef, hΛWdef, hdY]
-      have hGval : G = D - R.natDegree := by rw [hGdef, hdY]
-      have hE1val : E1 = 2 * t := by rw [hE1def, henselDenominatorExponent_succ]; omega
-      -- expand the two products so that only `ΛW`-linear atoms remain
-      obtain ⟨dm, hdmeq⟩ : ∃ dm, R.natDegree = dm + 2 := ⟨R.natDegree - 2, by omega⟩
-      have hΛξexp : Λξ = dm * ΛW + dm + ΛW + 1 := by
-        rw [hΛξval, hdmeq, show dm + 2 - 1 = dm + 1 by omega]; ring
-      have hPwexp : Pw * ΛW = (t + 1) * ΛW + dm * ΛW + 2 * ΛW := by
-        rw [hPweq', hdmeq]; ring
-      have hPeval : Pe * Λξ + (E1 - Pe) * Λξ = 2 * t * Λξ := by
-        rw [← Nat.add_mul, hE1val]; congr 1; omega
-      have hPcG : G + Pc * G ≤ t * G := by
-        calc G + Pc * G = (Pc + 1) * G := by ring
-          _ ≤ t * G := Nat.mul_le_mul_right _ hPc_lt
-      -- everything but `G + Pc·G ≤ t·G` is a ring identity: the `W`- and `ξ`-charges match exactly
-      calc G + (j + Pw * ΛW + Pe * Λξ + Pc * G) + (E1 - Pe) * Λξ
-          = (j + Pw * ΛW + (Pe * Λξ + (E1 - Pe) * Λξ)) + (G + Pc * G) := by ring
-        _ = (j + Pw * ΛW + E1 * Λξ) + (G + Pc * G) := by
-              rw [← Nat.add_mul, Nat.add_sub_cancel' hPe_le]
-        _ ≤ (j + Pw * ΛW + E1 * Λξ) + t * G := Nat.add_le_add_left hPcG _
-        _ = 1 + (t + 2) * ΛW + (2 * t + 1) * Λξ + t * G := by
-              rw [hjd', hPweq', hE1val, hΛξexp, hdmeq]; ring
+      rw [hsharpSum, numeratorShapeSharp_succ]
+      exact boundary_weight_arith hjd' hPweq' hE1val hPe_le hPc_lt hd2 rfl
     · -- NON-BOUNDARY: budget Pw ≤ (t+2)+(d-2) covers everything.
       have hbudget : Pw ≤ (t + 1 + 1) + (R.natDegree - 2) := by
-        rw [hPweq, Finset.mem_range] at *
-        rcases Nat.lt_or_ge R.natDegree 2 with hd | hd
+        rw [hPweq]
+        rcases not_and_or.mp hbdry with h1 | h2
         · omega
-        · rcases not_and_or.mp hbdry with h1 | h2
+        · rcases not_and_or.mp h2 with h3 | h4
           · omega
-          · rcases not_and_or.mp h2 with h3 | h4
-            · omega
-            · exact absurd hd h4
+          · exact absurd hRdeg h4
       -- reassociate to isolate W^(wb-Pw) and eta^(E1-Pe)
       have hreassoc :
           PowerSeries.coeff p.1 (liftCoeffToPowerSeries x₀ H (R.coeff j)) *
@@ -786,64 +810,8 @@ lemma henselClearedTerm_weight (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
         (RegularWeightLe.mul hD_H (hcoeffW.mono htd_le) hprodW)
         (RegularWeightLe.mul hD_H (hRWLW.pow hD_H _) (hRWLeta.pow hD_H _))).mono ?_
       -- weight: (D-j) + (j + Pw*ΛW + Pe*Λξ) + ((wb-Pw)*ΛW + (E1-Pe)*Λξ) ≤ sharp(t+1)
-      rw [hsharpSum]
-      -- sharp(t+1) expansion
-      have hsharpSucc : numeratorShapeSharp R H D (t + 1) =
-          1 + (t + 2) * ΛW + (2 * t + 1) * Λξ + t * G := by
-        rw [numeratorShapeSharp, ← hΛWdef, ← hΛξdef, ← hGdef, henselDenominatorExponent_succ]
-        rw [show 2 * (t + 1) - 1 = 2 * t + 1 by omega, show t + 1 + 1 = t + 2 by omega,
-          show t + 1 - 1 = t by omega]
-      rw [hsharpSucc]
-      -- now pure arithmetic (verified separately)
-      set wb := (t + 1 + 1) + (R.natDegree - 2) with hwbdef
-      have hE1val : E1 = 2 * t := by rw [hE1def, henselDenominatorExponent_succ]; omega
-      have hwb_le : wb ≤ t + R.natDegree := by
-        rcases Nat.lt_or_ge R.natDegree 2 with hd | hd
-        · -- d < 2: then not boundary forces nothing, but budget? wb = (t+2)+0 = t+2
-          rw [hwbdef]; omega
-        · rw [hwbdef]; omega
-      -- reduce via cancellations
-      have hAcancel : Pw * ΛW + (wb - Pw) * ΛW = wb * ΛW := by
-        rw [← Nat.add_mul]; congr 1; omega
-      have hBcancel : Pe * Λξ + (E1 - Pe) * Λξ = E1 * Λξ := by
-        rw [← Nat.add_mul]; congr 1; omega
-      have hjDj : D - j + j = D := Nat.sub_add_cancel hjD
-      -- Final: (D-j) + (j + Pw ΛW + Pe Λξ) + ((wb-Pw)ΛW + (E1-Pe)Λξ) = D + wb*ΛW + E1*Λξ
-      have hΛξval : Λξ = (R.natDegree - 1) * (ΛW + 1) := by
-        rw [hΛξdef, hΛWdef, hdY]
-      -- prove ≤
-      have hfin0 : (D - j) + (j + Pw * ΛW + Pe * Λξ) +
-          ((wb - Pw) * ΛW + (E1 - Pe) * Λξ) ≤ 1 + (t + 2) * ΛW + (2 * t + 1) * Λξ := by
-        have e1 : (D - j) + (j + Pw * ΛW + Pe * Λξ) + ((wb - Pw) * ΛW + (E1 - Pe) * Λξ)
-            = D + wb * ΛW + E1 * Λξ := by
-          rw [← hjDj] at *
-          -- use cancellations
-          have := hAcancel; have := hBcancel
-          omega
-        rw [e1, hE1val, hΛξval]
-        -- D + wb*ΛW + 2t*((d-1)(ΛW+1)) ≤ 1 + (t+2)ΛW + (2t+1)((d-1)(ΛW+1))
-        obtain ⟨dm, hdmeq⟩ : ∃ dm, R.natDegree = dm + 1 := ⟨R.natDegree - 1, by
-          rcases Nat.lt_or_ge R.natDegree 2 with h | h
-          · -- d < 2 ⇒ d ≤ 1; need d ≥ 1: R.natDegree ≥ natDegreeY H ≥ 1
-            have : 1 ≤ R.natDegree := by rw [← hdY]; rw [← hdH] at *; omega
-            omega
-          · omega⟩
-        calc D + wb * ΛW + 2 * t * ((R.natDegree - 1) * (ΛW + 1))
-            ≤ (R.natDegree + ΛW) + (t + R.natDegree) * ΛW +
-                2 * t * ((R.natDegree - 1) * (ΛW + 1)) :=
-              Nat.add_le_add (Nat.add_le_add hkey (Nat.mul_le_mul_right ΛW hwb_le)) le_rfl
-          _ = 1 + (t + 2) * ΛW +
-                (2 * t + 1) * ((R.natDegree - 1) * (ΛW + 1)) := by
-              rw [hdmeq, show dm + 1 - 1 = dm by omega]
-              ring
-      -- the correction the parts consume is at most the `t·G` the target provides
-      calc (D - j) + (j + Pw * ΛW + Pe * Λξ + Pc * G) +
-            ((wb - Pw) * ΛW + (E1 - Pe) * Λξ)
-          = ((D - j) + (j + Pw * ΛW + Pe * Λξ) + ((wb - Pw) * ΛW + (E1 - Pe) * Λξ)) + Pc * G := by
-            ring
-        _ ≤ (1 + (t + 2) * ΛW + (2 * t + 1) * Λξ) + t * G :=
-            Nat.add_le_add hfin0 (Nat.mul_le_mul_right _ hPc_le)
-        _ = 1 + (t + 2) * ΛW + (2 * t + 1) * Λξ + t * G := by ring
+      rw [hsharpSum, numeratorShapeSharp_succ]
+      exact interior_weight_arith hjD hkey hRdeg rfl hbudget hE1val hPe_le hPc_le rfl
 
 
 
@@ -888,13 +856,13 @@ lemma henselClearedResidual_weight (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
       else 0 := by
     intro i
     by_cases h : i ≤ t
-    · have hval : αtrunc i = αseq i := by rw [hαtrunc]; simp only [if_pos h]
-      rw [hval, dif_pos h]
+    · have hval : αtrunc i = αseq i := by rw [hαtrunc]; simp only [ite_eq_left h]
+      rw [hval, dite_eq_left h]
       have := hshape i
       unfold alphaOfNumerators at this
       rw [← this]
-    · have hval : αtrunc i = 0 := by rw [hαtrunc]; simp only [if_neg h]
-      rw [hval, dif_neg h]
+    · have hval : αtrunc i = 0 := by rw [hαtrunc]; simp only [ite_eq_right h]
+      rw [hval, dite_eq_right h]
   -- ihNum: clearing each αtrunc
   have ihNum : ∀ i, i ≤ t →
       RegularWeightLe hH
@@ -907,11 +875,11 @@ lemma henselClearedResidual_weight (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     have hetane : embeddingOf𝒪Into𝕃 H (xi x₀ R H hHyp) ≠ 0 := by
       rw [embeddingOf𝒪Into𝕃_xi]
       exact mul_ne_zero (pow_ne_zero _ hW) (zeta_ne_zero_of_hypotheses x₀ R H hHyp)
-    rw [hshapeT i, dif_pos hi,
+    rw [hshapeT i, dite_eq_left hi,
       div_mul_cancel₀ _ (mul_ne_zero (pow_ne_zero _ hW) (pow_ne_zero _ hetane))]
     exact ihAll i hi
   have hαzero : ∀ i, t < i → αtrunc i = 0 := by
-    intro i hi; simp only [hαtrunc, if_neg (show ¬ i ≤ t by omega)]
+    intro i hi; simp only [hαtrunc, ite_eq_right (show ¬ i ≤ t by omega)]
   -- expand evalRAtPowerSeries
   unfold evalRAtPowerSeries
   rw [Polynomial.eval₂_eq_sum_range, map_sum, Finset.sum_mul]

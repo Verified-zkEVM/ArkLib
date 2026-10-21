@@ -3,17 +3,20 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Poulami Das (Least Authority)
 -/
+module
 
-import ArkLib.Data.CodingTheory.ListDecodability
-import ArkLib.Data.CodingTheory.ReedSolomon
-import ArkLib.OracleReduction.VectorIOR
-import ArkLib.ProofSystem.Stir.ProximityBound
+public import ArkLib.Data.CodingTheory.ListDecodability
+public import ArkLib.Data.CodingTheory.ReedSolomon
+public import ArkLib.OracleReduction.VectorIOR
+public import ArkLib.ProofSystem.Stir.ProximityBound
 
 /-!
 # ArkLib.ProofSystem.Stir.MainThm
 
 Definitions and results for this component of ArkLib.
 -/
+
+@[expose] public section
 
 /-!Section 5 ACFY24stir, Theorem 5.1 and Lemma 5.4
 

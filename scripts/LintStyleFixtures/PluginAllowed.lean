@@ -17,3 +17,6 @@ macro_rules
 def inertString : String := "{set_option pp.universes true in (1 : Nat)}"
 def ordinaryStringMacro : String := values!"{set_option pp.universes true in (1 : Nat)}"
 @[inherit_doc nolint] def ordinaryAttributeArgument := 1
+
+-- Retired spellings in documentation or ordinary strings are inert.
+def inertProbabilityString : String := "Pr_{old} $ᵖ Pr[old] 𝒮[old]"

@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import ArkLib.Data.CodingTheory.ListDecodability
-import ArkLib.Data.CodingTheory.HammingBallVolume
-import Mathlib.Analysis.SpecialFunctions.Pow.Real
+public import ArkLib.Data.CodingTheory.ListDecodability
+public import ArkLib.Data.CodingTheory.HammingBallVolume
+public import Mathlib.Analysis.SpecialFunctions.Pow.Real
 
 /-!
 # Counting identities shared by the list-size bounds
@@ -21,6 +22,8 @@ bound family, which is why they live here rather than in any one of the sibling 
 See `ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean` for the family overview, the
 quantification conventions, and the references.
 -/
+
+@[expose] public section
 
 namespace CodingTheory
 
@@ -119,7 +122,7 @@ theorem sum_ncard_closeCodewordsRel_eq_of_set {A : Type} [Fintype A]
         = if c ∈ C then hammingBallVolume (Fintype.card A) δ (Fintype.card ι) else 0 := by
     intro c
     by_cases hc : c ∈ C
-    · simp only [hc, true_and, if_true]
+    · simp only [hc, true_and, ite_true]
       rw [← Finset.card_filter]
       exact card_filter_hammingDist_le_eq_hammingBallVolume c δ
     · simp [hc]

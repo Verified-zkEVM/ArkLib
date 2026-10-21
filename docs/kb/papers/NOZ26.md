@@ -15,6 +15,8 @@ related_modules:
   - ArkLib/Commitments/Functional/Hachi/InnerOuter/Scheme.lean
   - ArkLib/Commitments/Functional/Hachi/InnerOuter/Security.lean
   - ArkLib/Commitments/Functional/Hachi/ZeroCheck/Reduction.lean
+  - ArkLib/Commitments/Functional/Hachi/TraceHead/Coefficients.lean
+  - ArkLib/Commitments/Functional/Hachi/TraceHead/Protocol.lean
 ---
 
 # NOZ26
@@ -25,8 +27,8 @@ related_modules:
 multilinear polynomial commitment scheme over extension fields, built on power-of-two cyclotomic
 rings, with a "square-root" verifier-time complexity under Module-SIS. ArkLib touches it from two
 directions: it formalizes the paper's **commitment-layer building blocks** (cyclotomic modulus,
-gadget decomposition, inner-outer commitment), and it treats Hachi as the **second intended
-instance** of the generic ring-switching abstraction (the first being Binius / [`DP24`](DP24.md)).
+gadget decomposition, inner-outer commitment), and it formalizes Hachi's ring-switching layers,
+which are distinct from the packing profile that Binius / [`DP24`](DP24.md) instantiates.
 
 ## What ArkLib Uses From This Paper
 
@@ -40,14 +42,20 @@ Commitment layer:
 Ring-switching layer:
 
 - The §3 subfield layer: `R_q^H`, its cardinality `q^k`, the packing bijection `ψ`, the trace
-  inner-product identity, and Lemma 6's norm bound. The final Lemma 5 field/isomorphism
-  declarations retain one explicit proof gap; see the dedicated audit below.
-- The **extension-field → cyclotomic-ring reduction**: Hachi reduces evaluation proofs over `F_{q^k}`
-  to equivalent statements over a power-of-two cyclotomic ring `R_q`. This is the ring-switching
-  shape ArkLib factors out as `RingSwitchingProfile`.
+  inner-product identity, Lemma 5's field/isomorphism conclusion, and Lemma 6's norm bound, all
+  fully proved; see the dedicated audit below.
 - The **extension-field → cyclotomic-ring reduction** (§3): Hachi reduces evaluation proofs over
-  `F_{q^k}` to equivalent statements over a power-of-two cyclotomic ring `R_q`. This is the
-  ring-switching shape ArkLib factors out as `RingSwitchingProfile`.
+  `F_{q^k}` to equivalent statements over a power-of-two cyclotomic ring `R_q` with a trace check
+  in `R_q` itself. Its carrier is `L = R_q`, so it is not a `RingSwitchingProfile`: for finite
+  nontrivial `L` and `κ > 0` the profile's inverse laws force `|A| = |L|^(2^κ)`. The §3.1
+  one-message trace head is formalized in `Hachi/TraceHead/`, with completeness and
+  coordinate-wise special soundness into `relPolyEval`; its read-back is the shared
+  `CheckedObservation`. Its coefficient packing is the shared `PackingData.packedMLE` (at
+  `PackingData.ofBaseOpening` of `ψ`, one opening coordinate) of a monomial-coefficient
+  `ScalarHead.ClaimLayout`, transported from CompPoly's `CMlPolynomial` to `MvPolynomial`, and its
+  conformance theorem states the accepting condition through the shared `sliceRel`. §3.1 exercises
+  only the packing, evaluation and opening part of the shared layer (no batching, multiplier or
+  sumcheck), so the reuse is small at the proof level and real at the statement level.
 - The **cyclotomic-ring → extension-field lift** (§4.3, Figure 4 / **Lemma 9**, following
   [`HMZ25`](HMZ25.md)): the *simplified* Figure 4 extraction kernel is **formalized and proven** as
   `liftPackage` in Hachi's
@@ -83,16 +91,10 @@ Ring-switching layer:
   Committing the raw quotient instead admits only the unconditional bound `q/2`
   (`rhoShort_half`) — sharp, since the `R^lin` matrix carries the Ajtai key — forcing a zero-check
   range base of at least `q/2 + 1` and, with the batching bridge's pull-back orientations, the
-  collapse `γ = q/2 = bZero − 1`. Two witnesses separate the regimes, and they are **not**
-  interchangeable:
-
-  * `HonestRangeParams.ofDigitBase b` — `bZero = b`, `γ = ⌊b/2⌋`. The *honest-direction* witness;
-    `γ` is as small as completeness allows, and for `b > 2` it does **not** satisfy the pull-back
-    orientation `bZero − 1 ≤ γ`.
-  * `HonestRangeParams.ofPinnedDigitBase b` — `bZero = b`, `γ = b − 1`. The *two-sided* witness,
-    which does satisfy it; `pinned_of_soundness_orientations` applied to it gives
-    `γ = bZero − 1 ∧ γ < q/2`, checked as an `example` in `HonestChain.lean`. This — not
-    `ofDigitBase` — is what carries the conclusion that the pinned regime is realizable at `O(b)`.
+  collapse `γ = q/2 = bZero − 1`. `HonestRangeParams.ofPinnedDigitBase b` — `bZero = b`,
+  `γ = b − 1` — is the witness for the two-sided regime: it satisfies the pull-back orientation
+  `bZero − 1 ≤ γ`, and `pinned_of_soundness_orientations` applied to it gives
+  `γ = bZero − 1 ∧ γ < q/2`, so the pinned regime is realizable at `O(b)`.
 
   `moduleSIS_relation_of_mem_Collision` states the payoff: `LiftCom.Collision` satisfies
   `ModuleSIS.relation` for the lift's Ajtai key at radius `2·bound` (nonzero via
@@ -100,9 +102,9 @@ Ring-switching layer:
   `hachiLiftCom`, not yet sampled by `keygen` alongside the inner-outer commitment's own — so the
   collision-to-Module-SIS reduction is complete locally, while the end-to-end security integration
   ([NOZ26] §4.5, `outputToModuleSIS_valid_of_verified`) is not.
-- The packing-layer instantiation: `L = R_q`, carrier `A = R_q`, `φ₀ = id`, `φ₁ = σ₋₁` (order-two
-  automorphism), basis `ψ` from its **Theorem 2** — which discharges the profile's reconstruction
-  laws for the Hachi instance.
+- Hachi's trace head uses `R_q` itself and the order-two automorphism `σ₋₁`. Its packing
+  bijection `ψ` comes from **Theorem 2**; these trace identities require a separate algebraic
+  interface from the DP24 tensor profile.
 - Parameter translation: Hachi's Theorem 2 packs `d/k` subfield elements. ArkLib's
   `RingSwitchingProfile ... κ` uses `2^κ` for this packing rank, so this `κ` is
   `log₂(d/k)` in Hachi notation, not Hachi's extension-degree parameter `k`/`κ`.
@@ -122,13 +124,13 @@ Ring-switching layer:
 
 ## Known Divergences From ArkLib
 
-- ArkLib has not yet built the Hachi ring-switching instance; the abstraction is designed to admit
-  it but only the Binius instance is implemented.
-- Hachi Lemma 5 is only **conditionally complete**: `fixedSubring_isField` and
-  `fixedSubringEquivGaloisField` depend on the sorried factor-swap lemma
-  `no_selfReciprocal_factor`. Eq. (7), the fixed-subring cardinality, Theorem 2, and Lemma 6 do
-  not depend on that gap. Lemma 6 is fully proved, under the weaker odd-characteristic
-  assumption actually used by its coefficient argument.
+- The §3.1 trace head uses the fixed subring as a ring and does not depend on Lemma 5's field
+  identification. It covers the one-message scalar-to-ring step only; §4.5's same-field batching
+  pullback and the recursion are separate.
+- Hachi Lemma 5 is fully proved: `fixedSubring_isField` and `fixedSubringEquivGaloisField` rest
+  on the factor-swap lemma `no_selfReciprocal_factor`, which is proved by a root-orbit argument
+  in `AdjoinRoot p₁` (`not_associated_reverse_self`). Lemma 6 is fully proved, under the weaker
+  odd-characteristic assumption actually used by its coefficient argument.
 - `R_q` is **not an integral domain**, so the generic `[IsDomain L]` Schwartz–Zippel soundness
   theorem does not instantiate Hachi. Hachi soundness (a CWSS-style argument) is a separate theorem
   with a different error and is out of scope for the current ring-switching module.
@@ -179,26 +181,43 @@ Ring-switching layer:
   and `τ₀`'s stated domain `F^{log μ + log d}` on p. 20 disagrees with `w̃`'s domain
   `[μ + n·δ] × [d]`; ArkLib takes `ℓ = 2` and pins `m₀` to `log(μ + n·δ) + log d`.
 
+- **Figure 9's `τ = 4` does not follow the paper's own rule for `τ`, and ArkLib uses `τ = 5`.**
+  §4.4 fixes the folded-witness digit count as *the smallest integer `τ` with `b^τ > β`*, for the
+  deterministic bound `β := 2ʳ·ω·b`. At Figure 9's own parameters (`b = 16`, `r = 10`, `ω = 16`)
+  that is `β = 262144`, and `16⁴ = 65536 < β`, so §4.4's rule yields `τ = 5`. The same holds under
+  the sharper `β = 2ʳ·ω·⌊b/2⌋ = 131072` that ArkLib proves (`vecLInftyNorm_honestZ_le`, using
+  `‖sᵢ‖∞ ≤ ⌊b/2⌋` from the balanced digits of §2.1 together with [Mic07]): `16⁴` is still short.
+  Figure 9 nonetheless tabulates `τ = 4`, alongside `z = 30583` for the maximum `L∞` norm of `z`.
+  That `30583` is *exactly* `(16−1−8)·(1+16+16²+16³)` — the largest value four balanced base-`16`
+  digits represent (`HachiParams.balancedDigitCapacity_four_eq`). This numerical agreement does
+  not establish how the table's norm bound was obtained. The paper does not derive `30583` as a
+  deterministic bound or reconcile it with §4.4's figure. Section 4.2 defines `τ := ⌈log_b β⌉`
+  using the maximum norm, and asserts completeness without analyzing Figure 3's abort when
+  `‖z‖∞ > β`. A `τ = 4` profile needs a justified completeness bound for that abort. Statistical
+  analysis of the implementation's independently signed sparse challenges is a possible route;
+  the paper does not supply that analysis.
+  ArkLib formalizes the deterministic reading, where `τ = 5` is minimal
+  (`HachiParams.tau_minimal`); everything else in Figure 9 is used verbatim. The τ = 4 statistical
+  track is separate and not part of the profile in `Params.lean`.
+
 - ArkLib phrases the definition over its own IOR machinery (`ProtocolSpec`, `Verifier`,
   `ChallengeTree`) rather than the paper's interactive-argument syntax. The transcript tree is made
   arity-indexed and challenge-branching only, abstracting away the commitment scheme of the paper.
 
 ## Open Formalization Gaps
 
-- Construct `hachiProfile : RingSwitchingProfile R_qH R_q κ_pack` and discharge
-  `decomposeRows_spec` / `decomposeColumns_spec` via Theorem 2, with `2^κ_pack = d/k`.
-- Close `no_selfReciprocal_factor`, the sole local gap preventing an unconditional proof of
-  Lemma 5's field/isomorphism conclusion.
+- Formalize §3.2 (base-field coefficients and partial evaluations); the §3.1 trace head is
+  formalized in `Hachi/TraceHead/`.
 - Complete the still-sorried Hachi-specific links: what remains is the §4.5 recursion tail —
   partial evaluation (Eq. (24)), the `Z`-packing bridge (Eqs. (25)–(26), which carries the flagged
   soundness gap below), and the trace handoff (Eqs. (27)–(28)). Everything through the sumcheck is
   proved in **both** directions: Lemma 8, the corrected Lemma 10 and its batching bridge, Lemma 9
   (the lift), the sumcheck bridge and summands, Lemma 11, and the final evaluation, each with
   coordinate-wise special soundness and perfect completeness, and the one-iteration soundness
-  certificate (`hachi_iteration_coordinateWiseSpecialSoundWithEscape`) is `sorry`-free. Composing
-  the completeness side is blocked on the generic `Reduction.append_completeness`, still `sorry`,
-  which every composed statement inherits as a `sorryAx` dependency; the nonrecursive opening
-  (`Hachi/Correctness.lean`) is complete and perfectly correct modulo exactly that.
+  certificate (`hachi_iteration_coordinateWiseSpecialSoundWithEscape`) is `sorry`-free. The
+  nonrecursive completeness chain uses proved pure/guarded composition with state-uniform suffix
+  correctness. Its composed completeness and perfect-correctness theorems
+  (`Hachi/Correctness.lean`) have only standard axiom dependencies.
 - Lemma 6's packing norm growth is complete. The separate Micciancio product-norm and
   Lyubashevsky–Seiler short-invertibility inputs used by the commitment security layer are also
   proved in their respective modules.

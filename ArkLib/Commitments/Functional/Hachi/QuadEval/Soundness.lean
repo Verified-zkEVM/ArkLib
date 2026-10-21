@@ -3,11 +3,13 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Commitments.Functional.Hachi.QuadEval.Reduction
-import ArkLib.Commitments.Functional.Hachi.Gadget.Norms
-import ArkLib.Data.Lattices.CyclotomicRing.Inverse
-import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Escape
-import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.SingleRound
+module
+
+public import ArkLib.Commitments.Functional.Hachi.QuadEval.Reduction
+public import ArkLib.Commitments.Functional.Hachi.Gadget.Norms
+public import ArkLib.Data.Lattices.CyclotomicRing.Inverse
+public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Escape
+public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.SingleRound
 
 /-!
   # Hachi polynomial-evaluation reduction (`QuadEval`) — coordinate-wise special soundness
@@ -78,6 +80,8 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.SingleRoun
   * [Lyubashevsky, V., and Seiler, G., *Short, Invertible Elements in Partially Splitting
       Cyclotomic Rings and Applications to Lattice-Based Zero-Knowledge Proofs*][LS18]
 -/
+
+@[expose] public section
 
 namespace ArkLib.Lattices.Ajtai.InnerOuter
 
@@ -498,7 +502,7 @@ theorem buildWitness_break_or_mem_relIn (hq5 : q % 8 = 5) {b ω γ : ℕ}
       obtain ⟨-, hu₂, -, -, -, -, hγ₂, -⟩ := hrel (central fam)
       exact msis_of_commit_eq 𝓜(q, α) pp.outerMatrix hu₁ hu₂ hγ₁ hγ₂ (Fin.find_spec hB)
     · unfold buildWitness
-      rw [dif_pos hB]
+      rw [dite_eq_left hB]
   · by_cases hD : ∃ j, (resp j).carrierDec ≠ (resp (central fam)).carrierDec
     · -- Case (B): shared `t̂` but some carrier decomposition differs → `D`-kernel MSIS solution
       -- (the shared round-0 message `v` is what makes both branches commit to the same `v`).
@@ -508,11 +512,11 @@ theorem buildWitness_break_or_mem_relIn (hq5 : q % 8 = 5) {b ω γ : ℕ}
         obtain ⟨hv₂, -, -, -, -, hγ₂, -, -⟩ := hrel (central fam)
         exact msis_of_commit_eq 𝓜(q, α) pp.dMatrix hv₁ hv₂ hγ₁ hγ₂ (Fin.find_spec hD)
       · unfold buildWitness
-        rw [dif_neg hB, dif_pos hD]
+        rw [dite_eq_right hB, dite_eq_left hD]
     · -- Case (C): shared `t̂` and `ŵ` → the subtract-and-divide weak opening.
       refine Or.inr ⟨extractedOpening 𝓜(q, α) (b : ZMod q) fam resp, ?_, ?_⟩
       · unfold buildWitness
-        rw [dif_neg hB, dif_neg hD]
+        rw [dite_eq_right hB, dite_eq_right hD]
       · push Not at hB hD
         have ht : ∀ j, (resp j).innerDec = (resp (central fam)).innerDec :=
           fun j => funext fun i => PolyVec.block_eq_of_flattenBlocks_eq (hB j) i
@@ -649,8 +653,8 @@ theorem quadEvalPackage_verifier_eq_quadEvalReduction_verifier
     (hq5 : q % 8 = 5) {b ω γ : ℕ} (hκ : (2 * ω) ^ 2 < q) (hτ : 0 < zDigits)
     (pp : Hachi.PublicParamsD 𝓜(q, α) innerRows (2 ^ m) messageDigits outerRows (2 ^ r)
       innerDigits dRows)
-    {base : ZMod q} (ddCarrier : DigitDecomposition base messageDigits)
-    (ddZ : DigitDecomposition base zDigits) :
+    {base : ZMod q} {zBound : ℕ} (ddCarrier : DigitDecomposition base messageDigits)
+    (ddZ : BoundedDigitDecomposition base zDigits zBound) :
     (quadEvalPackage (zDigits := zDigits) (b := b) (γ := γ) init impl hq5 hκ hτ pp).verifier
       = (quadEvalReduction (oSpec := oSpec) (zDigits := zDigits) (ω := ω)
           𝓜(q, α) pp ddCarrier ddZ).verifier :=

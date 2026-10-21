@@ -17,11 +17,15 @@ Usage: ./scripts/validate.sh [--lint] [--docs] [--site] [--axioms]
 
 Default checks:
   - lake build
+  - lake test (ArkLibTest compile-time acceptance clients)
   - lake exe lint-style
   - ./scripts/test-lint-plugin.sh
   - lake exe toyproblem-runtime
   - lake exe hachi-runtime
+  - lake exe sumcheck-runtime
+  - lake exe fri-extractor-runtime
   - fail on non-`sorry` warnings under ArkLib/
+  - ./scripts/test-retiredsweep.sh and lake exe retiredsweep --require-empty
   - ./scripts/check-imports.sh
   - ./scripts/test-build-timing-report.sh
   - python3 ./scripts/check-docs-integrity.py
@@ -72,11 +76,26 @@ echo "# Building project"
 lake build 2>&1 | tee "$build_log"
 
 echo ""
+echo "# Building compile-time acceptance clients"
+lake test 2>&1 | tee -a "$build_log"
+
+echo ""
+echo "# Checking ArkLibTest warning budget"
+python3 ./scripts/check-warning-log.py "$build_log" \
+  --path-prefix ArkLibTest/ \
+  --label "ArkLibTest warnings (including admissions)"
+
+echo ""
 echo "# Checking ArkLib warning budget"
 python3 ./scripts/check-warning-log.py "$build_log" \
   --path-prefix ArkLib/ \
   --exclude-substring 'declaration uses `sorry`' \
   --label 'ArkLib non-sorry warnings'
+
+echo ""
+echo "# Checking native probability retirement"
+./scripts/test-retiredsweep.sh
+lake exe retiredsweep --require-empty
 
 echo ""
 echo "# Running Lean-native source-policy gate"
@@ -99,6 +118,14 @@ echo "# Running nonrecursive-Hachi compiled runtime checks"
 # Default target only: the composed opening run (`--full`) is dominated by the honest sumcheck
 # prover and is far too slow to gate on. See scripts/HachiRuntime.lean.
 lake exe hachi-runtime
+
+echo ""
+echo "# Running computable Sumcheck runtime checks"
+lake exe sumcheck-runtime
+
+echo ""
+echo "# Running measured FRI extractor runtime checks"
+lake exe fri-extractor-runtime
 
 echo ""
 echo "# Checking umbrella imports"

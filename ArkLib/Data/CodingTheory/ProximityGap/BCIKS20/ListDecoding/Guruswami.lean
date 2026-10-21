@@ -4,17 +4,20 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland,
          Ilia Vlasov, Chung Thai Nguyen
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGap.Basic
-import ArkLib.Data.CodingTheory.GuruswamiSudan.Basic
-import ArkLib.Data.CodingTheory.GuruswamiSudan.GuruswamiSudan
-import ArkLib.Data.Polynomial.Trivariate
+public import ArkLib.Data.CodingTheory.ProximityGap.Basic
+public import ArkLib.Data.CodingTheory.GuruswamiSudan.Basic
+public import ArkLib.Data.CodingTheory.GuruswamiSudan.GuruswamiSudan
+public import ArkLib.Data.Polynomial.Trivariate
 
 /-!
 # ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ListDecoding.Guruswami
 
 Definitions and results for this component of ArkLib.
 -/
+
+@[expose] public section
 
 namespace ProximityGap
 
@@ -154,8 +157,8 @@ private theorem symbolicModifiedGSCap_pos {n k m : ℕ}
     rw [hysq]
     have hk' : (1 : ℝ) ≤ k := by exact_mod_cast hk
     have hn' : (1 : ℝ) ≤ n := by exact_mod_cast hn
-    nlinarith [mul_le_mul (show (2 : ℝ) ≤ k + 1 by linarith) hn' (by positivity) (by positivity)]
-  have hy1 : 1 ≤ y := by nlinarith
+    linarith [mul_le_mul (show (2 : ℝ) ≤ k + 1 by linarith) hn' (by positivity) (by positivity)]
+  have hy1 : 1 ≤ y := (one_le_pow_iff_of_nonneg hy0 two_ne_zero).mp (by linarith)
   have hy1' : 1 ≤ Real.sqrt (↑((k + 1 : ℚ) / n)) * n := by exact hy1
   have hm' : (1 : ℝ) ≤ m := by exact_mod_cast hm
   rw [mul_assoc]
@@ -518,7 +521,7 @@ private theorem symbolicGSPoly_coeff_ne_zero_mem {F : Type} [Field F]
   apply hcoeff
   apply Finset.sum_eq_zero
   intro q hq
-  rw [if_neg]
+  rw [ite_eq_right]
   intro heq
   apply hp
   rw [← heq]
@@ -681,7 +684,7 @@ private theorem symbolicModifiedGSCap_strict_k_one_n_one {m : ℕ} (_hm : 1 ≤ 
   have hdoubleR : (((2 * (symbolicModifiedGSCap 1 1 m) ^ 2 : ℕ) : ℝ)) =
       (((4 * m * (m + 1) + 1 : ℕ) : ℝ)) := by
     push_cast
-    nlinarith
+    linarith
   have hdouble : 2 * (symbolicModifiedGSCap 1 1 m) ^ 2 =
       4 * m * (m + 1) + 1 := by exact_mod_cast hdoubleR
   have hmod := congrArg (fun x : ℕ => x % 2) hdouble
@@ -708,15 +711,19 @@ private theorem symbolic_numVars_lower_bound_boundary (a D : ℕ) (ha : 0 < a) :
       ((D / a) + 1) * (2 * D + 2 - a * (D / a)) / 2 := by
     simpa only [Nat.add_sub_cancel] using
       (GuruswamiSudan.numVars_eq_of_gt_one (D := D) (k := a + 1) (by omega : 1 < a + 1))
-  rw [h_numVars_def, ← Nat.mul_div_assoc]
-  · rw [Nat.le_div_iff_mul_le] <;> ring_nf
-    · zify
-      rw [Nat.cast_sub] <;> push_cast <;>
-        nlinarith [D.div_mul_le_self a, D.div_add_mod a, D.mod_lt ha]
-    · norm_num
-  · cases le_total (2 * D + 2) (a * (D / a)) <;>
-      simp_all [← even_iff_two_dvd, parity_simps]
-    by_cases h : Even (D / a) <;> simp_all [parity_simps]
+  rw [h_numVars_def]
+  obtain ⟨r, hr, hD⟩ : ∃ r, r < a ∧ D = a * (D / a) + r :=
+    ⟨D % a, D.mod_lt ha, (D.div_add_mod a).symm⟩
+  generalize D / a = q at hD ⊢
+  subst hD
+  have hsub : 2 * (a * q + r) + 2 - a * q = a * q + 2 * (r + 1) := by omega
+  have hdvd : 2 ∣ (q + 1) * (a * q + 2 * (r + 1)) := by
+    rcases Nat.even_or_odd q with hq | hq
+    · exact (dvd_add (hq.two_dvd.mul_left a) (Dvd.intro _ rfl)).mul_left _
+    · exact hq.add_one.two_dvd.mul_right _
+  rw [hsub, mul_comm 2 a, mul_assoc, Nat.mul_div_cancel' hdvd]
+  obtain ⟨t, rfl⟩ : ∃ t, a = (r + 1) + t := ⟨a - (r + 1), by omega⟩
+  exact Nat.le.intro (k := (r + 1) * t) (by ring)
 
 private theorem symbolicUpperTriangleBase_card_ge_k_one_n_one {m : ℕ} (hm : 1 ≤ m) :
     GuruswamiSudan.numConstraints 1 m ≤
@@ -740,7 +747,7 @@ private theorem symbolicUpperTriangleBase_card_ge_k_one_n_one {m : ℕ} (hm : 1 
     have hplusR : (((T ^ 2 + 2 * T + 1 : ℕ) : ℝ)) ≤
         (((2 * m * (m + 1) : ℕ) : ℝ)) := by exact_mod_cast hplus
     push_cast at hplusR
-    nlinarith
+    linarith
   have hscaled' : 2 * (1 + 1) * GuruswamiSudan.numConstraints 1 m ≤
       T ^ 2 + (1 + 1) * T := by
     rw [symbolic_numConstraints_scaled]
@@ -770,7 +777,7 @@ private theorem symbolicUpperTriangleBase_card_gt_k_one_of_two_le_n {n m : ℕ}
   have hscaledR : ((2 * n * m * (m + 1) : ℕ) : ℝ) <
       ((T ^ 2 + 2 * T : ℕ) : ℝ) := by
     push_cast
-    nlinarith
+    linarith
   have hscaled : 2 * n * m * (m + 1) < T ^ 2 + 2 * T := by
     exact_mod_cast hscaledR
   have hscaled' : 2 * (1 + 1) * GuruswamiSudan.numConstraints n m <
@@ -802,7 +809,8 @@ private theorem symbolicUpperTriangleBase_card_gt_of_two_le_k {n k m : ℕ}
   have hscaledR : (((k + 1) * n * m * (m + 1) : ℕ) : ℝ) <
       ((T ^ 2 + (k + 1) * T : ℕ) : ℝ) := by
     push_cast
-    nlinarith [mul_pos (show (0 : ℝ) < k + 1 by positivity)
+    have hkT : 2 * (T : ℝ) ≤ k * T := mul_le_mul_of_nonneg_right hkcast (by positivity)
+    linarith [mul_pos (show (0 : ℝ) < k + 1 by positivity)
       (show (0 : ℝ) < n by exact_mod_cast hn)]
   have hscaled : (k + 1) * n * m * (m + 1) <
       T ^ 2 + (k + 1) * T := by exact_mod_cast hscaledR
@@ -838,7 +846,7 @@ private theorem symbolicUpperTriangleCandidates_card_gt {n k m : ℕ}
       have hstrict := symbolicModifiedGSCap_strict_k_one_n_one hm
       have hbase := symbolicUpperTriangleBase_card_ge_k_one_n_one hm
       unfold symbolicUpperTriangleCandidates
-      rw [if_pos]
+      rw [ite_eq_left]
       · rw [Finset.card_insert_of_notMem
           (symbolicCapPoint_not_mem_base (by omega) (by omega) hm)]
         omega
@@ -933,12 +941,12 @@ private theorem symbolicGSPoly_coeff_natDegree_add_le_of_mem {F : Type} [Field F
     apply Polynomial.natDegree_sum_le_of_forall_le
     intro q hq
     by_cases heq : q.1.1 = (i, j)
-    · rw [if_pos heq]
+    · rw [ite_eq_left heq]
       have hbudget := symbolicGSIndex_z_add_y_le A q
       have hj : q.1.1.2 = j := congrArg Prod.snd heq
       have hmono := Polynomial.natDegree_monomial_le (m := q.2.1) (c q)
       omega
-    · rw [if_neg heq]
+    · rw [ite_eq_right heq]
       simp only [Polynomial.natDegree_zero]
       omega
   omega

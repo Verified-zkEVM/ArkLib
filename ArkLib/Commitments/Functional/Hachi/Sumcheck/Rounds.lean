@@ -3,10 +3,12 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Pablo Martín Vinuelas, Tobias Rothmann
 -/
-import ArkLib.Commitments.Functional.Hachi.Sumcheck.Bridge
-import ArkLib.Commitments.Functional.Hachi.Sumcheck.RoundPoly
-import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Guarded
-import CompPoly.Univariate.Linear
+module
+
+public import ArkLib.Commitments.Functional.Hachi.Sumcheck.Bridge
+public import ArkLib.Commitments.Functional.Hachi.Sumcheck.RoundPoly
+public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Guarded
+public import CompPoly.Univariate.Linear
 
 /-!
   # Paired sumcheck rounds
@@ -38,8 +40,8 @@ import CompPoly.Univariate.Linear
   The loop `roundsChain` composes the rounds by recursion over the binary guarded append, and
   **re-pins the relation seams definitionally** — `roundsChain_relIn` / `roundsChain_relOut`
   hold by `rfl`, so the loop composes with the universal `▷`.
-  The honest prover `roundProver` is a skeleton parameterized by the round-message function
-  `computeG`; `Sumcheck/Completeness.lean` instantiates it at `honestComputeG` (the computable
+  The honest prover `roundProver` is parameterized by the round-message function `computeG`;
+  `Sumcheck/Completeness.lean` instantiates it at `honestComputeG` (the computable
   partial hypercube sums of `Sumcheck/RoundPoly.lean`) and proves one round's perfect
   completeness.
 
@@ -48,6 +50,8 @@ import CompPoly.Univariate.Linear
   * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
       Polynomial Commitments over Extension Fields*][NOZ26]
 -/
+
+@[expose] public section
 
 namespace ArkLib.Lattices.Ajtai.InnerOuter
 
@@ -139,7 +143,7 @@ def roundVerifierGuardedForm {TCom : Type} (i : ℕ) :
     (tr.challenges ⟨1, rfl⟩)
   verify_eq := fun _ _ => rfl
 
-omit [NeZero q] [IsCyclotomic Φ] [DecidableEq F] [LawfulBEq F] in
+omit [NeZero q] [IsCyclotomic Φ] [LawfulBEq F] [DecidableEq F] in
 /-- The round verifier is guarded **with** the round check and `roundOut` — definitionally. This is
 the form the guarded scalar-round engine consumes. -/
 theorem roundVerifier_isGuardedWith {TCom : Type} (i : ℕ) :
@@ -150,15 +154,8 @@ theorem roundVerifier_isGuardedWith {TCom : Type} (i : ℕ) :
         (tr.challenges ⟨1, rfl⟩)) :=
   fun _ _ => rfl
 
-omit [NeZero q] [IsCyclotomic Φ] [DecidableEq F] [LawfulBEq F] in
-/-- The round verifier is guarded — definitionally, by `roundCheck`. -/
-theorem roundVerifier_isGuarded {TCom : Type} (i : ℕ) :
-    (roundVerifier (oSpec := oSpec) Φ m₀ m₁ b (n := n) (μ := μ) (TCom := TCom)
-      (F := F) i).IsGuarded :=
-  ⟨_, _, roundVerifier_isGuardedWith Φ m₀ m₁ b i⟩
-
-/-- The `i`-th round's honest prover skeleton: the round-polynomial pair is computed by the
-parameter `computeG` (honestly `honestComputeG`, `Sumcheck/Completeness.lean`: the computable
+/-- The `i`-th round's honest prover: the round-polynomial pair is computed by the parameter
+`computeG` (honestly `honestComputeG`, `Sumcheck/Completeness.lean`: the computable
 partial hypercube sums of the two sumcheck polynomials in the free variable), and the witness is
 carried through unchanged. -/
 def roundProver {TCom Wit : Type} (i : ℕ)
@@ -213,8 +210,7 @@ leaf witnessing at `roundOut`. On an accepting tree the `k` branch openings eith
 then `roundEsc` fires — or all agree, so that branch's opening satisfies the round-`i` claim;
 the work is in `round_coordinateWiseSpecialSoundWithEscape`, not here. -/
 def roundExtractor
-    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
-    (_φF : ZMod q →+* F) (i : ℕ) :
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig)) (i : ℕ) :
     Extractor.TreeBased (NestedRoundStatement Φ K.TCom F n μ m₀ m₁ i) (LiftedWitness Φ μ n)
       (LiftedWitness Φ μ n) (pSpecScalar (RoundMsg F b) F)
       (CWSSStructure.toShape
@@ -258,7 +254,7 @@ theorem round_coordinateWiseSpecialSoundWithEscape
       (nestedRoundRel Φ m₀ m₁ bound bDig K φF b i)
       (nestedRoundRel Φ m₀ m₁ bound bDig K φF b (i + 1))
       (roundVerifier (oSpec := oSpec) Φ m₀ m₁ b (TCom := K.TCom) i)
-      (roundExtractor Φ m₀ m₁ bound bDig b K φF i) := by
+      (roundExtractor Φ m₀ m₁ bound bDig b K i) := by
   classical
   obtain ⟨M, rfl⟩ : ∃ M, m₀ = M + 1 := ⟨m₀ - 1, by omega⟩
   refine ScalarRound.coordinateWiseSpecialSoundWithEscape_of_mkWitness_scalar_guarded
@@ -338,7 +334,7 @@ def roundPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbCom
   relOut := nestedRoundRel Φ m₀ m₁ bound bDig K φF b (i + 1)
   esc := roundEsc Φ m₀ m₁ bound bDig b K φF i
   isGuarded := roundVerifierGuardedForm Φ m₀ m₁ b i
-  extractor := roundExtractor Φ m₀ m₁ bound bDig b K φF i
+  extractor := roundExtractor Φ m₀ m₁ bound bDig b K i
   isCWSS :=
     round_coordinateWiseSpecialSoundWithEscape Φ m₀ m₁ bound bDig b init impl K φF hb i hi
 

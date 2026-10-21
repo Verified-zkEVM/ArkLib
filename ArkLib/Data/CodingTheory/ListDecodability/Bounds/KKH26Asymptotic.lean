@@ -3,11 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import ArkLib.Data.CodingTheory.ListDecodability.Bounds.KKH26
-import Mathlib.Analysis.SpecialFunctions.Log.Basic
-import Mathlib.Analysis.SpecialFunctions.Log.Base
-import Mathlib.Analysis.SpecificLimits.Normed
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.KKH26
+public import Mathlib.Analysis.SpecialFunctions.Log.Basic
+public import Mathlib.Analysis.SpecialFunctions.Log.Base
+public import Mathlib.Analysis.SpecificLimits.Normed
 
 /-!
 # Asymptotic Reed--Solomon list-size lower bound
@@ -47,6 +48,8 @@ Its main components are:
 - [KKH26] Krachun, Kazanin, Haböck. *Failure of proximity gaps close to capacity*. ePrint 2026/782.
 -/
 
+@[expose] public section
+
 
 open Polynomial Finset Code ProximityGap Real Filter Topology
 open scoped NNReal BigOperators
@@ -74,7 +77,7 @@ theorem choose_ge_div_pow (s t : ℕ) (ht : 1 ≤ t) (hts : t ≤ s) :
     rw [hchoose, hdesc, hfact, ← Finset.prod_div_distrib]
   rw [hprod, show ((s : ℝ) / t) ^ t = ∏ _i ∈ range t, ((s : ℝ) / t) from by
     rw [Finset.prod_const, card_range]]
-  apply Finset.prod_le_prod
+  apply Finset.prod_le_prod₀
   · intro i _; positivity
   · intro i hi
     rw [mem_range] at hi

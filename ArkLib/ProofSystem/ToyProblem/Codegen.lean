@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import ArkLib.Data.Probability.KoalaBear
-import ArkLib.ProofSystem.ToyProblem.Impl.IRS
-import Lean.Compiler.IR
+public import ArkLib.Data.Probability.KoalaBear
+public import ArkLib.ProofSystem.ToyProblem.Impl.IRS
+public import Lean.Compiler.IR
 
 /-!
 # Code-generation gates for the toy problem
@@ -15,6 +16,8 @@ This module makes the executable launch cone a checked API. Each probe is outsid
 `noncomputable section`, and each source declaration must have a compiler IR declaration.
 The companion `toyproblem-runtime` executable exercises the concrete algorithms.
 -/
+
+@[expose] public section
 
 namespace ToyProblem.Codegen
 

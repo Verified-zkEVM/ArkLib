@@ -3,9 +3,10 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.OracleReduction.Security.Basic
-import PolyFun.PFunctor.Lens.Basic
+public import ArkLib.OracleReduction.Security.Basic
+public import PolyFun.PFunctor.Lens.Basic
 
 /-!
   ## Lens between Input and Output Contexts of (Oracle) Reductions
@@ -19,6 +20,8 @@ import PolyFun.PFunctor.Lens.Basic
   lenses where we have (only) an equivalence between the statements / witnesses, or lenses where the
   witnesses are trivial.
 -/
+
+@[expose] public section
 
 open OracleSpec OracleComp PFunctor
 

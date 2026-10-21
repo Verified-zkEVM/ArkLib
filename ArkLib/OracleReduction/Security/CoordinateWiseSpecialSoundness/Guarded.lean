@@ -3,7 +3,10 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Package
+module
+
+public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Package
+public import ArkLib.OracleReduction.Security.Guarded
 
 /-!
   # Guarded verifiers and guarded CWSS composition (`GCWSSPackage`)
@@ -35,22 +38,16 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Package
 
   ## Contents
 
-  * `Verifier.IsGuardedWith` / `Verifier.IsGuarded` — the guard predicate (`Bool`-valued check);
-    purity is the `check := fun _ _ => true` special case
-    (`IsGuarded.of_isPure`).
-  * `Verifier.GuardedForm` — guardedness with its check and verdict map as **data** (the guarded
-    mirror of `Verifier.PureForm`), with `GuardedForm.isGuarded` forgetting back to the class and
-    `PureForm.toGuardedForm` the data form of `IsGuarded.of_isPure`. A guarded package carries this,
-    since its composed escape event must *name* the left verdict map.
-  * `Verifier.GuardedForm.append` — closure of guardedness **data** under `Verifier.append`:
-    composite check `check₁ s tr.fst && check₂ (out₁ s tr.fst) tr.snd`, mirroring
-    `Verifier.PureForm.append`; `Verifier.IsGuarded.append` is the forgetful corollary.
+  The guard notion itself — `Verifier.IsGuardedWith`, `Verifier.IsGuarded`, the data form
+  `Verifier.GuardedForm` with `GuardedForm.append`, and the seam run lemma
+  `Verifier.append_run_guardedLeft` — lives in `ArkLib/OracleReduction/Security/Guarded.lean`,
+  independent of CWSS. This file adds:
+
   * `Verifier.append_treeSpecialSoundWith_guardedLeft` / `…WithEscape_guardedLeft` and their CWSS
     wrappers `Verifier.append_coordinateWiseSpecialSoundWith_of_guardedLeft` / `…WithEscape…` — the
-    guarded binary appends at the witness-only extractor, **proved**. The guarded seam lemmas they
-    run on (`append_run_guardedLeft`, `append_run_outputs_guardedLeft`,
-    `outputs_guarded_subsingleton`, `guarded_accepting_of_mem`, `guarded_verdict_mem_outputs`) live
-    here too, since they mention `IsGuardedWith`.
+    guarded binary appends at the witness-only extractor, **proved**. The `Verifier.Outputs`-level
+    seam lemmas they run on (`append_run_outputs_guardedLeft`, `outputs_guarded_subsingleton`,
+    `guarded_accepting_of_mem`, `guarded_verdict_mem_outputs`) live here too.
   * `GCWSSPackage` — the guarded analogue of `CWSSPackage` (`isPure` ↝ `isGuarded`, at the data
     form), with `CWSSPackage.toGuarded`, the composition `GCWSSPackage.append` = infix `▷` (explicit
     synonym `▷ᵍ`), and the two mixed appends `CWSSPackage.appendGuarded` /
@@ -67,104 +64,14 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Package
       Polynomial Commitments over Extension Fields*][NOZ26]
 -/
 
+@[expose] public section
+
 
 open OracleComp OracleSpec ProtocolSpec
 
 namespace Verifier
 
-variable {ι : Type} {oSpec : OracleSpec ι} {StmtIn StmtOut : Type}
-  {n : ℕ} {pSpec : ProtocolSpec n}
-
-/-- A verifier is **guarded with** a `Bool`-valued `check` and a deterministic output map `out` if
-its verdict is `pure (out stmt tr)` when the check passes and `failure` otherwise. This is the
-faithful model of a verifier that rejects at runtime (the check is `Bool`-valued; decidable-`Prop`
-consumers use `decide`). -/
-def IsGuardedWith (V : Verifier oSpec StmtIn StmtOut pSpec)
-    (check : StmtIn → FullTranscript pSpec → Bool)
-    (out : StmtIn → FullTranscript pSpec → StmtOut) : Prop :=
-  ∀ stmt tr, V.verify stmt tr = if check stmt tr then pure (out stmt tr) else failure
-
-/-- A verifier is **guarded** if it is guarded with *some* check and output map. Purity is the
-special case `check := fun _ _ => true` (`IsGuarded.of_isPure`). -/
-class IsGuarded (V : Verifier oSpec StmtIn StmtOut pSpec) : Prop where
-  is_guarded : ∃ check out, V.IsGuardedWith check out
-
-/-- Every pure verifier is guarded, with the trivially-true check. -/
-theorem IsGuarded.of_isPure (V : Verifier oSpec StmtIn StmtOut pSpec) (h : V.IsPure) :
-    V.IsGuarded := by
-  obtain ⟨f, hf⟩ := h.is_pure
-  exact ⟨fun _ _ => true, f, fun stmt tr => by simp [hf stmt tr]⟩
-
-/-- Every pure verifier is guarded automatically: the instance form of `IsGuarded.of_isPure`. -/
-instance (V : Verifier oSpec StmtIn StmtOut pSpec) [h : V.IsPure] : V.IsGuarded :=
-  IsGuarded.of_isPure V h
-
-/-- A **guardedness witness carrying check and output map as data**: the bundled form of
-`Verifier.IsGuardedWith`, and the guarded mirror of `Verifier.PureForm`.
-
-As for purity, the `IsGuarded` *class* only asserts that some `(check, out)` pair exists, so
-reading `out` off it costs `Classical.choice`. A guarded package carries this data instead, since
-its composed escape event and extractor must *name* the left verdict map `out`. -/
-structure GuardedForm (V : Verifier oSpec StmtIn StmtOut pSpec) where
-  /-- The runtime guard. -/
-  check : StmtIn → FullTranscript pSpec → Bool
-  /-- The verdict where the guard passes. -/
-  out : StmtIn → FullTranscript pSpec → StmtOut
-  /-- The verifier is guarded with exactly these. -/
-  verify_eq : V.IsGuardedWith check out
-
-/-- Forget the data: a `Verifier.GuardedForm` yields the `Verifier.IsGuarded` class. -/
-theorem GuardedForm.isGuarded {V : Verifier oSpec StmtIn StmtOut pSpec} (G : V.GuardedForm) :
-    V.IsGuarded :=
-  ⟨G.check, G.out, G.verify_eq⟩
-
-/-- Every pure form is a guarded form, at the trivially-true check: the data form of
-`Verifier.IsGuarded.of_isPure`. Lossless, and computable — the verdict function carries over. -/
-def PureForm.toGuardedForm {V : Verifier oSpec StmtIn StmtOut pSpec} (P : V.PureForm) :
-    V.GuardedForm where
-  check := fun _ _ => true
-  out := P.verify
-  verify_eq := fun stmt tr => by rw [P.verify_eq stmt tr]; simp
-
-section GuardedFormAppend
-
-variable {Stmt₁ Stmt₂ Stmt₃ : Type} {m k : ℕ}
-  {pSpec₁ : ProtocolSpec m} {pSpec₂ : ProtocolSpec k}
-
-/-- **Guardedness data composes computably**: the composed guard runs the left check on the
-transcript prefix and, if it passes, the right check on the suffix from the statement the left
-verifier outputs at the seam; the composed verdict is the right verdict there. The guarded mirror of
-`Verifier.PureForm.append`, and transcript-level in the same way — the seam is `tr.fst`/`tr.snd`,
-with no challenge-tree path machinery.
-
-The data half is what a guarded package needs: its composed escape event and extractor must *name*
-the left verdict map, and reading one off the `IsGuarded` class would cost `Classical.choice`.
-
-`verify_eq` normalizes `Verifier.append`'s bind under the two `if`-splits, mirroring
-`Verifier.PureForm.append`; `Verifier.IsGuarded.append` is proved from it by forgetting the
-data. -/
-def GuardedForm.append {V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁}
-    {V₂ : Verifier oSpec Stmt₂ Stmt₃ pSpec₂} (G₁ : V₁.GuardedForm) (G₂ : V₂.GuardedForm) :
-    (V₁.append V₂).GuardedForm where
-  check := fun stmt tr => G₁.check stmt tr.fst && G₂.check (G₁.out stmt tr.fst) tr.snd
-  out := fun stmt tr => G₂.out (G₁.out stmt tr.fst) tr.snd
-  verify_eq := fun stmt tr => by
-    simp only [Verifier.append]
-    rw [G₁.verify_eq stmt tr.fst]
-    by_cases hc₁ : G₁.check stmt tr.fst = true
-    · rw [if_pos hc₁, pure_bind, G₂.verify_eq (G₁.out stmt tr.fst) tr.snd]
-      by_cases hc₂ : G₂.check (G₁.out stmt tr.fst) tr.snd = true <;> simp [hc₁, hc₂]
-    · rw [if_neg hc₁]
-      simp [hc₁]
-
-/-- Guardedness is closed under `Verifier.append`: forget the data of `GuardedForm.append`. -/
-theorem IsGuarded.append (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁)
-    (V₂ : Verifier oSpec Stmt₂ Stmt₃ pSpec₂) (h₁ : V₁.IsGuarded) (h₂ : V₂.IsGuarded) :
-    (V₁.append V₂).IsGuarded :=
-  (GuardedForm.append ⟨_, _, h₁.is_guarded.choose_spec.choose_spec⟩
-    ⟨_, _, h₂.is_guarded.choose_spec.choose_spec⟩).isGuarded
-
-end GuardedFormAppend
+variable {ι : Type} {oSpec : OracleSpec ι}
 
 section Append
 
@@ -177,31 +84,16 @@ variable {Stmt₁ Wit₁ Stmt₂ Wit₂ Stmt₃ Wit₃ : Type}
 /-! ### The guarded seam at the witness-only extractor
 
 Five lemmas replay the pure seam of `Composition.lean` for a guarded left factor, each conditioned
-on the guard passing: `append_run_guardedLeft` is `append_run_pure_left` behind an `if`,
-`append_run_outputs_guardedLeft` and `guarded_verdict_mem_outputs` are its `Verifier.Outputs`-level
-consequences, `outputs_guarded_subsingleton` pins the output set (the rejecting branch reaches no
-statement at all), and `guarded_accepting_of_mem` is `pure_accepting_of_mem` where the check passes.
+on the guard passing: `append_run_guardedLeft` (in `Security/Guarded.lean`) is
+`append_run_pure_left` behind an `if`, `append_run_outputs_guardedLeft` and
+`guarded_verdict_mem_outputs` are its `Verifier.Outputs`-level consequences,
+`outputs_guarded_subsingleton` pins the output set (the rejecting branch reaches no statement at
+all), and `guarded_accepting_of_mem` is `pure_accepting_of_mem` where the check passes.
 
 With those, the guarded composition theorems are the pure skeleton with **one move in front**: on an
 accepting composed tree every prefix guard must already pass (`hcheck`), learned by exhibiting one
 suffix leaf — which is what `ChallengeTree.somePath` supplies and what the `harity₂` hypothesis
 buys. `Verifier.not_accepting_of_failure` then refutes the rejecting branch. -/
-
-omit [∀ i, SampleableType (pSpec₁.Challenge i)] in
-/-- Running an appended verifier whose left factor is **guarded**: the composed run is the right
-verifier's at the left verdict where the left check passes, and `failure` where it does not. The
-guarded analogue of `append_run_pure_left`. -/
-theorem append_run_guardedLeft
-    (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁) (V₂ : Verifier oSpec Stmt₂ Stmt₃ pSpec₂)
-    (check₁ : Stmt₁ → pSpec₁.FullTranscript → Bool)
-    (out₁ : Stmt₁ → pSpec₁.FullTranscript → Stmt₂)
-    (hV₁ : V₁.IsGuardedWith check₁ out₁)
-    (stmt : Stmt₁) (tr₁ : pSpec₁.FullTranscript) (tr₂ : pSpec₂.FullTranscript) :
-      (V₁.append V₂).run stmt (tr₁ ++ₜ tr₂) =
-        if check₁ stmt tr₁ then V₂.run (out₁ stmt tr₁) tr₂ else failure := by
-  rw [Verifier.append_run]
-  simp only [Verifier.run, FullTranscript.append_fst, FullTranscript.append_snd, hV₁ stmt tr₁]
-  by_cases hc : check₁ stmt tr₁ <;> simp [hc]
 
 omit [∀ i, SampleableType (pSpec₁.Challenge i)] in
 /-- On a guarded left factor with a **passing** guard, the appended verifier's reachable outputs at
@@ -218,7 +110,7 @@ theorem append_run_outputs_guardedLeft
       Outputs init impl (V₁.append V₂) stmt (tr₁ ++ₜ tr₂)
         = Outputs init impl V₂ (out₁ stmt tr₁) tr₂ := by
   unfold Outputs
-  rw [append_run_guardedLeft V₁ V₂ check₁ out₁ hV₁ stmt tr₁ tr₂, if_pos hc]
+  rw [append_run_guardedLeft V₁ V₂ check₁ out₁ hV₁ stmt tr₁ tr₂, ite_eq_left hc]
 
 omit [∀ i, SampleableType (pSpec₁.Challenge i)] in
 /-- A guarded verifier's reachable outputs pin **both** the guard and the verdict: any reachable
@@ -233,7 +125,7 @@ theorem outputs_guarded_subsingleton
     (hout : out ∈ Outputs init impl V₁ stmt tr) : out = out₁ stmt tr := by
   simp only [Outputs, Set.mem_ofPred_eq, Verifier.run, hV₁ stmt tr] at hout
   by_cases hc : check₁ stmt tr
-  · rw [if_pos hc] at hout
+  · rw [ite_eq_left hc] at hout
     have : (do (simulateQ impl
         (pure (out₁ stmt tr) : OptionT (OracleComp oSpec) Stmt₂)).run' (← init) :
         ProbComp (Option Stmt₂)) = (init >>= fun _ => pure (some (out₁ stmt tr))) := by
@@ -241,7 +133,7 @@ theorem outputs_guarded_subsingleton
     rw [this] at hout
     simp only [support_bind_const, support_pure, Set.mem_ofPred_eq] at hout
     exact Option.some.inj hout.1
-  · rw [if_neg (by simpa using hc)] at hout
+  · rw [ite_eq_right (by simpa using hc)] at hout
     have : (do (simulateQ impl (failure : OptionT (OracleComp oSpec) Stmt₂)).run' (← init) :
         ProbComp (Option Stmt₂)) = (init >>= fun _ => pure none) := by
       congr 1
@@ -258,10 +150,10 @@ theorem guarded_accepting_of_mem
     (hV₁ : V₁.IsGuardedWith check₁ out₁)
     (stmt : Stmt₁) (tr : pSpec₁.FullTranscript) (hc : check₁ stmt tr = true)
     (lang : Set Stmt₂) (hmem : out₁ stmt tr ∈ lang) :
-      Pr[ (· ∈ lang) |
-        OptionT.mk do (simulateQ impl (V₁.run stmt tr)).run' (← init)] = 1 :=
+      Pr{let stmtOut ← (OptionT.mk do
+        (simulateQ impl (V₁.run stmt tr)).run' (← init))}[stmtOut ∈ lang] = 1 :=
   Verifier.pure_accepting_of_mem init impl V₁ stmt tr lang (out₁ stmt tr)
-    (by rw [hV₁ stmt tr, if_pos hc]) hmem
+    (by rw [hV₁ stmt tr, ite_eq_left hc]) hmem
 
 omit [∀ i, SampleableType (pSpec₁.Challenge i)] in
 /-- A guarded verifier's verdict **is** reachable where its check passes, as soon as the sampling
@@ -277,7 +169,7 @@ theorem guarded_verdict_mem_outputs
       out₁ stmt tr ∈ Outputs init impl V₁ stmt tr := by
   obtain ⟨s, hs⟩ := hinit
   simp only [Outputs, Set.mem_ofPred_eq, Verifier.run, hV₁ stmt tr]
-  rw [if_pos hc]
+  rw [ite_eq_left hc]
   have heq : (do (simulateQ impl
       (pure (out₁ stmt tr) : OptionT (OracleComp oSpec) Stmt₂)).run' (← init) :
       ProbComp (Option Stmt₂)) = (init >>= fun _ => pure (some (out₁ stmt tr))) := by
@@ -327,7 +219,7 @@ theorem append_treeSpecialSoundWith_guardedLeft
       (by
         have h := append_run_guardedLeft V₁ V₂ check₁ out₁ hV₁ stmt p₁.fullTranscript
           hpath₂.fullTranscript
-        rw [if_neg hc] at h
+        rw [ite_eq_right hc] at h
         exact h)
       (hAccept _ hmem)
   have hsuffAcc : ∀ p₁ : LeafPath tree.appendSplit.fst,
@@ -339,7 +231,7 @@ theorem append_treeSpecialSoundWith_guardedLeft
     have hfull := hAccept (p₁.fullTranscript ++ₜ tr₂) hmem
     rw [show (V₁.append V₂).run stmt (p₁.fullTranscript ++ₜ tr₂)
         = V₂.run (out₁ stmt p₁.fullTranscript) tr₂ from by
-      rw [append_run_guardedLeft V₁ V₂ check₁ out₁ hV₁, if_pos (hcheck p₁)]] at hfull
+      rw [append_run_guardedLeft V₁ V₂ check₁ out₁ hV₁, ite_eq_left (hcheck p₁)]] at hfull
     exact hfull
   have h₂' := fun p₁ : LeafPath tree.appendSplit.fst =>
     h₂ (out₁ stmt p₁.fullTranscript) (tree.appendSplit.sndAt p₁)
@@ -425,7 +317,7 @@ theorem append_treeSpecialSoundWithEscape_guardedLeft
       (by
         have h := append_run_guardedLeft V₁ V₂ check₁ out₁ hV₁ stmt p₁.fullTranscript
           hpath₂.fullTranscript
-        rw [if_neg hc] at h
+        rw [ite_eq_right hc] at h
         exact h)
       (hAccept _ hmem)
   have hsuffAcc : ∀ p₁ : LeafPath tree.appendSplit.fst,
@@ -437,7 +329,7 @@ theorem append_treeSpecialSoundWithEscape_guardedLeft
     have hfull := hAccept (p₁.fullTranscript ++ₜ tr₂) hmem
     rw [show (V₁.append V₂).run stmt (p₁.fullTranscript ++ₜ tr₂)
         = V₂.run (out₁ stmt p₁.fullTranscript) tr₂ from by
-      rw [append_run_guardedLeft V₁ V₂ check₁ out₁ hV₁, if_pos (hcheck p₁)]] at hfull
+      rw [append_run_guardedLeft V₁ V₂ check₁ out₁ hV₁, ite_eq_left (hcheck p₁)]] at hfull
     exact hfull
   have h₂' := fun p₁ : LeafPath tree.appendSplit.fst =>
     h₂ (out₁ stmt p₁.fullTranscript) (tree.appendSplit.sndAt p₁)

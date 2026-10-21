@@ -3,8 +3,10 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import Mathlib.NumberTheory.Multiplicity
-import Mathlib.RingTheory.Coprime.Lemmas
+module
+
+public import Mathlib.NumberTheory.Multiplicity
+public import Mathlib.RingTheory.Coprime.Lemmas
 
 /-!
 # The order of `4k+1` modulo `2^{α+1}` (2-adic lifting-the-exponent)
@@ -27,6 +29,8 @@ from Mathlib's 2-adic lifting-the-exponent `Int.two_pow_sub_pow'`:
 * [Lyubashevsky, V., and Seiler, G., *Short, Invertible Elements …*][LS18]
 * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi …*][NOZ26]
 -/
+
+@[expose] public section
 
 namespace ArkLib.Lattices.CyclotomicModulus
 

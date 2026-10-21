@@ -3,18 +3,19 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Ilia Vlasov, Aristotle (Harmonic)
 -/
+module
 
-import Mathlib.Algebra.Polynomial.Roots
-import Mathlib.LinearAlgebra.Lagrange
+public import Mathlib.Algebra.Polynomial.Roots
+public import Mathlib.LinearAlgebra.Lagrange
 
-import ArkLib.Data.CodingTheory.ProximityGap.Basic
-import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.Curves
-import ArkLib.Data.CodingTheory.ProximityGap.Folding
-import ArkLib.Data.CodingTheory.ProximityGap.Folding.FoldingContext
-import ArkLib.Data.Domain.CosetFftDomain.Subdomain
-import ArkLib.Data.Domain.CosetFftDomain.Log
-import ArkLib.Data.MvPolynomial.EvenAndOdd
-import CompPoly.Data.MvPolynomial.Notation
+public import ArkLib.Data.CodingTheory.ProximityGap.Basic
+public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.Curves
+public import ArkLib.Data.CodingTheory.ProximityGap.Folding
+public import ArkLib.Data.CodingTheory.ProximityGap.Folding.FoldingContext
+public import ArkLib.Data.Domain.CosetFftDomain.Subdomain
+public import ArkLib.Data.Domain.CosetFftDomain.Log
+public import ArkLib.Data.MvPolynomial.EvenAndOdd
+public import CompPoly.Data.MvPolynomial.Notation
 
 /-! This module provides an equivalent statement
   of folding completeness of RS-codes in terms of multilinear polynomials
@@ -25,6 +26,8 @@ import CompPoly.Data.MvPolynomial.Notation
   * [Arnon, G., Chiesa, A., Fenzi, G., and Yogev, E., *WHIR: Reed–Solomon Proximity Testing
       with Super-Fast Verification*][ACFY24]
 -/
+
+@[expose] public section
 
 namespace ProximityGap
 
@@ -85,9 +88,9 @@ private lemma aeval_substFun_comp {k : ℕ} [NeZero (n - k)] (γ : Fin (k + 1) �
   funext i
   unfold substFun
   by_cases h1 : i.val < k
-  · rw [dif_pos h1, dif_pos (show i.val < k + 1 by omega)]
+  · rw [dite_eq_left h1, dite_eq_left (show i.val < k + 1 by omega)]
     simp
-  · rw [dif_neg h1]
+  · rw [dite_eq_right h1]
     by_cases h2 : i.val = k
       <;> aesop (add safe (by grind))
 

@@ -3,8 +3,9 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Katerina Hristova, František Silváši, Julian Sutherland, Alexander Hicks, Aleph
 -/
+module
 
-import ArkLib.Data.CodingTheory.PolishchukSpielman.Existence
+public import ArkLib.Data.CodingTheory.PolishchukSpielman.Existence
 
 /-!
 # Polishchuk-Spielman lemma
@@ -38,6 +39,8 @@ the difference of the global degrees.
     for Reed-Solomon Codes*][BCIKS20]
 
 -/
+
+@[expose] public section
 
 open Polynomial.Bivariate Polynomial Matrix
 open scoped BigOperators

@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks, Aleph
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGap.Errors
-import Mathlib.Combinatorics.Enumerative.DoubleCounting
-import Mathlib.LinearAlgebra.Matrix.Module
+public import ArkLib.Data.CodingTheory.ReedSolomon
+public import ArkLib.Data.CodingTheory.ProximityGap.Errors
+public import Mathlib.Combinatorics.Enumerative.DoubleCounting
+public import Mathlib.LinearAlgebra.Matrix.Module
 
 /-!
 # Incidence estimates for the univariate-powers MCA bound
@@ -18,6 +20,8 @@ interpolation, and initial incidence estimates consumed by `CapacityBounds.Power
 
 - [BCGM25] Bafna, Choudhary, Guruswami, and Mardia. Theorem 8.2 and Definition 8.1.
 -/
+
+@[expose] public section
 
 namespace CodingTheory
 
@@ -93,7 +97,7 @@ def powers_bad_seed_embedding
   ⟨Subtype.val, Subtype.val_injective⟩
 
 open scoped BigOperators in
-private noncomputable def powers_bad_witness_of_is_mca
+noncomputable def powers_bad_witness_of_is_mca
     {ι : Type} [Fintype ι]
     {F : Type} [Field F] [Fintype F]
     {A : Type} [AddCommMonoid A] [Module F A]
@@ -299,13 +303,12 @@ theorem powers_bad_seed_final_arithmetic
 
 open scoped ProbabilityTheory in
 private theorem powers_bad_seed_probability_le_card
-    {S : Type} [Fintype S] [Nonempty S]
+    {S : Type} [Fintype S] [Nonempty S] [SampleableType S]
     (P : S → Prop) (B : ℝ)
     (hB : (Set.ncard {x : S | P x} : ℝ) ≤ B) :
-    (PMF.uniformOfFintype S).map P True ≤ ENNReal.ofReal (B / Fintype.card S) := by
+    Pr{let x ←$ᵗ S}[P x] ≤ ENNReal.ofReal (B / Fintype.card S) := by
   classical
-  change Pr_{let x ← $ᵖ S}[P x] ≤ ENNReal.ofReal (B / Fintype.card S)
-  rw [Probability.prob_uniform_eq_ofReal]
+  rw [SampleableType.prEvent_uniformSample_eq_ofReal]
   apply ENNReal.ofReal_le_ofReal
   have hset : {x : S | P x} = (Finset.filter P Finset.univ : Set S) := by
     ext x
@@ -500,12 +503,12 @@ private theorem powers_module_zero_set_card_le
       Polynomial.C (φ (v b)) * Polynomial.X ^ (b : ℕ)).coeff (j0 : ℕ) = _
     rw [Polynomial.finsetSum_coeff]
     rw [Finset.sum_eq_single j0]
-    · rw [Polynomial.coeff_C_mul_X_pow, if_pos rfl]
+    · rw [Polynomial.coeff_C_mul_X_pow, ite_eq_left rfl]
     · intro b _ hb
       have hne : (j0 : ℕ) ≠ (b : ℕ) := by
         intro h
         exact hb (Fin.ext h.symm)
-      rw [Polynomial.coeff_C_mul_X_pow, if_neg hne]
+      rw [Polynomial.coeff_C_mul_X_pow, ite_eq_right hne]
     · simp
   have hp : p ≠ 0 := by
     intro hp0

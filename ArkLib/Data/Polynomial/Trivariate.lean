@@ -3,9 +3,10 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Katerina Hristova, František Silváši, Julian Sutherland, Ilia Vlasov
 -/
+module
 
-import ArkLib.Data.Polynomial.Bivariate
-import Mathlib.FieldTheory.RatFunc.AsPolynomial
+public import ArkLib.Data.Polynomial.Bivariate
+public import Mathlib.FieldTheory.RatFunc.AsPolynomial
 
 /-!
 # Trivariate Polynomials
@@ -38,6 +39,8 @@ while its `totalDegree` measures only `(X, Y)` and ignores `Z`.
   version 20210703:203025.
 
 -/
+
+@[expose] public section
 
 namespace Trivariate
 

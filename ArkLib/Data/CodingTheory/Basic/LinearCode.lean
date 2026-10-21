@@ -4,16 +4,17 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland,
          Ilia Vlasov, Chung Thai Nguyen
 -/
+module
 
-import ArkLib.Data.CodingTheory.Basic.DecodingRadius
-import ArkLib.Data.CodingTheory.Prelims
-import ArkLib.Data.CodingTheory.Basic.Distance
-import Mathlib.FieldTheory.Finiteness
-import Mathlib.LinearAlgebra.FreeModule.PID
-import Mathlib.RingTheory.PicardGroup
-import Mathlib.RingTheory.RegularLocalRing.Defs
-import Mathlib.RingTheory.SimpleRing.Principal
-import CompPoly.Data.Nat.Bitwise
+public import ArkLib.Data.CodingTheory.Basic.DecodingRadius
+public import ArkLib.Data.CodingTheory.Prelims
+public import ArkLib.Data.CodingTheory.Basic.Distance
+public import Mathlib.FieldTheory.Finiteness
+public import Mathlib.LinearAlgebra.FreeModule.PID
+public import Mathlib.RingTheory.PicardGroup
+public import Mathlib.RingTheory.RegularLocalRing.Defs
+public import Mathlib.RingTheory.SimpleRing.Principal
+public import CompPoly.Data.Nat.Bitwise
 
 /-!
 # Linear-Code Constructions and Bounds
@@ -30,6 +31,8 @@ Agreement*][ABF26]
 with Mutual Correlated Agreement*][BCGM25]
 
 -/
+
+@[expose] public section
 
 variable {n : Type*} [Fintype n] {R : Type*} [DecidableEq R]
 
@@ -342,6 +345,90 @@ lemma projectedCode_linearCombination [Semiring F] [Module F A] (MC : ModuleCode
   exact ⟨w, hw.1, funext fun t => by
     change (∑ j, c j • U j t.1) = w t.1
     exact Eq.symm (hw.2 t t.2)⟩
+
+omit [Fintype ι] in
+/-- A coordinate set `T` is a **maximal agreement domain** between a word `u` and a module code
+`MC` if it is maximal for inclusion among the sets on which `u` projects into the code.
+Definition 6.3 [BCGM25]. -/
+def IsMaxAgreementDomain [Semiring F] [Module F A] (MC : ModuleCode ι F A) (u : ι → A)
+    (T : Finset ι) : Prop :=
+  Maximal (fun T' => projectedWord u T' ∈ projectedCodeSubmod MC T') T
+
+omit [Fintype ι] in
+/-- A coordinate set `T` is a **maximal correlated agreement (CA) domain** between a family of
+words `U` and a module code `MC` if it is maximal for inclusion among the sets on which every
+member of the family projects into the code. The interleaved membership
+`Mat(u₁, …, u_ℓ)|_T ∈ C^ℓ|_T` of the paper is stated row-wise, which is the form the mutual
+correlated agreement layer consumes (cf. `CoreDefinitions.IsMCA`).
+Definition 6.3 [BCGM25]. -/
+def IsMaxCADomain [Semiring F] [Module F A] {α : Type*} (MC : ModuleCode ι F A)
+    (U : α → (ι → A)) (T : Finset ι) : Prop :=
+  Maximal (fun T' => ∀ j, projectedWord (U j) T' ∈ projectedCodeSubmod MC T') T
+
+omit [Fintype ι] in
+/-- Every agreement set extends to a maximal agreement domain. -/
+lemma exists_subset_isMaxAgreementDomain [Finite ι] [Semiring F] [Module F A]
+    (MC : ModuleCode ι F A) {u : ι → A} {T : Finset ι}
+    (hT : projectedWord u T ∈ projectedCodeSubmod MC T) :
+    ∃ T', T ⊆ T' ∧ IsMaxAgreementDomain MC u T' :=
+  Finite.exists_le_maximal hT
+
+omit [Fintype ι] in
+/-- Every correlated agreement set extends to a maximal CA domain. -/
+lemma exists_subset_isMaxCADomain [Finite ι] [Semiring F] [Module F A] {α : Type*}
+    (MC : ModuleCode ι F A) {U : α → (ι → A)} {T : Finset ι}
+    (hT : ∀ j, projectedWord (U j) T ∈ projectedCodeSubmod MC T) :
+    ∃ T', T ⊆ T' ∧ IsMaxCADomain MC U T' :=
+  Finite.exists_le_maximal hT
+
+omit [Fintype ι] in
+/-- A maximal agreement domain between `u` and `MC` is the exact agreement set of `u` with some
+codeword: a codeword agrees with `u` on `T`, and every coordinate where it agrees with `u` lies
+in `T`. -/
+lemma IsMaxAgreementDomain.exists_codeword [Finite ι] [Semiring F] [Module F A]
+    {MC : ModuleCode ι F A}
+    {u : ι → A} {T : Finset ι} (h : IsMaxAgreementDomain MC u T) :
+    ∃ c ∈ MC, (∀ i ∈ T, u i = c i) ∧ ∀ i, u i = c i → i ∈ T := by
+  classical
+  have := Fintype.ofFinite ι
+  obtain ⟨c, hc, hcT⟩ := (mem_projectedCodeSubmod_iff MC T _).mp h.prop
+  have hagree : ∀ i ∈ T, u i = c i := fun i hi => congrFun hcT ⟨i, hi⟩
+  set T' := Finset.univ.filter fun i => u i = c i with hT'
+  have hsub : T ⊆ T' := fun i hi => Finset.mem_filter.mpr ⟨Finset.mem_univ _, hagree i hi⟩
+  have hmem : projectedWord u T' ∈ projectedCodeSubmod MC T' :=
+    (mem_projectedCodeSubmod_iff MC T' _).mpr
+      ⟨c, hc, funext fun i => (Finset.mem_filter.mp i.2).2⟩
+  exact ⟨c, hc, hagree, fun i hic =>
+    Maximal.le_of_ge h hmem hsub (Finset.mem_filter.mpr ⟨Finset.mem_univ _, hic⟩)⟩
+
+/-- **Distinct maximal CA domains overlap sparsely.** Two maximal CA domains of the same family
+whose intersection misses fewer than `d_C` positions are equal. Equivalently, distinct maximal CA
+domains `A₁ ≠ A₂` satisfy `|A₁ ∩ A₂| ≤ n - d_C`.
+
+The codewords extending the family on `A₁` and on `A₂` agree on the dense intersection, so they are
+equal; then the family extends to codewords on `A₁ ∪ A₂`, and the maximality of each domain forces
+it to be the whole union. This is the pairwise-intersection hypothesis of the Corrádi bound in
+Claim 6.7 [BCGM25]. -/
+lemma IsMaxCADomain.eq_of_card_compl_inter_lt_minDist [Semiring F] [Module F A] [DecidableEq A]
+    [DecidableEq ι] {α : Type*} {MC : ModuleCode ι F A} {U : α → (ι → A)} {A₁ A₂ : Finset ι}
+    (h₁ : IsMaxCADomain MC U A₁) (h₂ : IsMaxCADomain MC U A₂)
+    (hcard : ((A₁ ∩ A₂)ᶜ).card < Code.minDist MC.carrier) : A₁ = A₂ := by
+  choose c₁ hc₁ hc₁A using fun j => (mem_projectedCodeSubmod_iff MC A₁ _).mp (h₁.prop j)
+  choose c₂ hc₂ hc₂A using fun j => (mem_projectedCodeSubmod_iff MC A₂ _).mp (h₂.prop j)
+  have hU₁ : ∀ j, ∀ i ∈ A₁, U j i = c₁ j i := fun j i hi => congrFun (hc₁A j) ⟨i, hi⟩
+  have hU₂ : ∀ j, ∀ i ∈ A₂, U j i = c₂ j i := fun j i hi => congrFun (hc₂A j) ⟨i, hi⟩
+  have hc : ∀ j, c₁ j = c₂ j := fun j =>
+    Code.eq_of_disagreementCols_subset_of_card_lt_minDist (hc₁ j) (hc₂ j) _
+      (fun i hi => Finset.mem_compl.mpr fun hi' => Code.mem_disagreementCols.mp hi
+        ((hU₁ j i (Finset.mem_inter.mp hi').1).symm.trans (hU₂ j i (Finset.mem_inter.mp hi').2)))
+      hcard
+  have hunion : ∀ j, projectedWord (U j) (A₁ ∪ A₂) ∈ projectedCodeSubmod MC (A₁ ∪ A₂) := fun j =>
+    (mem_projectedCodeSubmod_iff MC _ _).mpr ⟨c₁ j, hc₁ j, funext fun i => by
+      rcases Finset.mem_union.mp i.2 with h | h
+      · exact hU₁ j i.1 h
+      · exact (hU₂ j i.1 h).trans (congrFun (hc j) i.1).symm⟩
+  exact (Maximal.eq_of_le h₁ hunion Finset.subset_union_left).trans
+    (Maximal.eq_of_le h₂ hunion Finset.subset_union_right).symm
 
 /-- A linear code is maximum distance separable (MDS) if its parameters meet the singleton bound. -/
 def IsMDS {ι : Type*} [Fintype ι] [CommRing F] [DecidableEq F] (LC : LinearCode ι F) : Prop :=

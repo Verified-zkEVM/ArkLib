@@ -3,16 +3,19 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Ilia Vlasov, Aristotle (Harmonic)
 -/
+module
 
-import Mathlib.Data.Finset.Defs
-import Mathlib.Data.Finset.Empty
-import Mathlib.Data.Finset.Dedup
+public import Mathlib.Data.Finset.Defs
+public import Mathlib.Data.Finset.Empty
+public import Mathlib.Data.Finset.Dedup
 
 /-!
 # ArkLib.ToMathlib.Finset.ToListWithProof
 
 Definitions and results for this component of ArkLib.
 -/
+
+@[expose] public section
 
 namespace Finset
 

@@ -3,10 +3,13 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ArkLib Contributors
 -/
+module
 
-import ArkLib.Data.Fin.Lift
-import Mathlib.RingTheory.Polynomial.Basic
+public import ArkLib.Data.Fin.Lift
+public import Mathlib.RingTheory.Polynomial.Basic
 /-! # Polynomial Coefficient Interfaces -/
+
+@[expose] public section
 
 
 section PolynomialInterface

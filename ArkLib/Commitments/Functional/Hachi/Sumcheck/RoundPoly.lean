@@ -3,7 +3,10 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Pablo Martín Vinuelas
 -/
-import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Constraints
+module
+
+public import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Constraints
+public import ArkLib.ToCompPoly.Univariate.Basic
 
 /-!
   # The round-polynomial layer of the Hachi sumcheck
@@ -56,46 +59,7 @@ import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Constraints
       Polynomial Commitments over Extension Fields*][NOZ26]
 -/
 
-/-! ## Two `CPolynomial` bundlings
-
-`C` and `toPoly` as ring homomorphisms. Both are needed by `computableRoundPoly` and its
-transfer lemma and neither exists in CompPoly; they are generic and belong upstream (CompPoly's
-`Univariate/ToPoly`), not to Hachi. `CHom` must stay computable — it is what the prover
-evaluates through — while `toPolyRingHom` is a proof-side bundling of the (noncomputable)
-`CPolynomial.ringEquiv`, used only to bring `MvPolynomial.eval₂_comp_left` to bear. -/
-
-namespace CompPoly.CPolynomial
-
-variable {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
-
-/-- `toPoly` is injective: it is the forward map of the ring equivalence
-`CPolynomial.ringEquiv`. This is what reduces an equation between computable polynomials to
-one between Mathlib polynomials. -/
-theorem toPoly_injective : Function.Injective (CPolynomial.toPoly (R := R)) :=
-  fun _ _ h => CPolynomial.ringEquiv.injective h
-
-/-- `CPolynomial.C` bundled as a ring homomorphism — the coefficient map that
-`CMvPolynomial.eval₂` takes as its first argument. Computable: only the four structure fields
-are proved through `toPoly`, and proofs carry no computational content. -/
-def CHom : R →+* CPolynomial R where
-  toFun := CPolynomial.C
-  map_one' := toPoly_injective (by rw [C_toPoly, toPoly_one, Polynomial.C_1])
-  map_mul' _ _ := toPoly_injective (by
-    rw [C_toPoly, toPoly_mul, C_toPoly, C_toPoly, Polynomial.C_mul])
-  map_zero' := toPoly_injective (by rw [C_toPoly, toPoly_zero, Polynomial.C_0])
-  map_add' _ _ := toPoly_injective (by
-    rw [C_toPoly, toPoly_add, C_toPoly, C_toPoly, Polynomial.C_add])
-
-@[simp] theorem CHom_apply (r : R) : CHom r = CPolynomial.C r := rfl
-
-/-- `toPoly` bundled as a ring homomorphism, so that `MvPolynomial.eval₂_comp_left` applies to
-it. Noncomputable (it is `CPolynomial.ringEquiv`), and used in proofs only. -/
-noncomputable def toPolyRingHom : CPolynomial R →+* Polynomial R :=
-  (CPolynomial.ringEquiv (R := R)).toRingHom
-
-@[simp] theorem toPolyRingHom_apply (p : CPolynomial R) : toPolyRingHom p = p.toPoly := rfl
-
-end CompPoly.CPolynomial
+@[expose] public section
 
 namespace ArkLib.Lattices.Ajtai.InnerOuter
 
@@ -129,19 +93,19 @@ theorem hypercubePoint_cons (i : Fin (M + 1)) (cs : Fin i → F) (b : Fin 2)
   funext j
   simp only [hypercubePoint, Function.comp_apply]
   by_cases h1 : (j : ℕ) < (i : ℕ)
-  · rw [dif_pos h1, dif_pos (show (j : ℕ) < (i : ℕ) + 1 by omega),
+  · rw [dite_eq_left h1, dite_eq_left (show (j : ℕ) < (i : ℕ) + 1 by omega),
       show (⟨(j : ℕ), by omega⟩ : Fin ((i : ℕ) + 1)) = Fin.castSucc ⟨(j : ℕ), h1⟩ from rfl,
       Fin.snoc_castSucc]
-  · rw [dif_neg h1]
+  · rw [dite_eq_right h1]
     by_cases h2 : (j : ℕ) = (i : ℕ)
-    · rw [dif_pos (show (j : ℕ) < (i : ℕ) + 1 by omega),
+    · rw [dite_eq_left (show (j : ℕ) < (i : ℕ) + 1 by omega),
         show (finCongr (by omega) ⟨(j : ℕ) - (i : ℕ), by omega⟩ :
             Fin ((M + 1 - ((i : ℕ) + 1)) + 1)) = 0 from Fin.ext (by simp; omega),
         Fin.cons_zero,
         show (⟨(j : ℕ), by omega⟩ : Fin ((i : ℕ) + 1)) = Fin.last (i : ℕ) from
           Fin.ext (by simp; omega),
         Fin.snoc_last]
-    · rw [dif_neg (show ¬ (j : ℕ) < (i : ℕ) + 1 by omega),
+    · rw [dite_eq_right (show ¬ (j : ℕ) < (i : ℕ) + 1 by omega),
         show (finCongr (by omega) ⟨(j : ℕ) - (i : ℕ), by omega⟩ :
             Fin ((M + 1 - ((i : ℕ) + 1)) + 1))
           = Fin.succ ⟨(j : ℕ) - ((i : ℕ) + 1), by omega⟩ from Fin.ext (by simp; omega),
@@ -197,7 +161,7 @@ theorem insertNth_eq_hypercubePoint (i : Fin (M + 1)) (cs : Fin i → F) (T : F)
   refine Fin.succAboveCases i ?_ ?_ j
   · rw [Fin.insertNth_apply_same]
     simp only [hypercubePoint]
-    rw [dif_pos (by omega : (i : ℕ) < (i : ℕ) + 1),
+    rw [dite_eq_left (by omega : (i : ℕ) < (i : ℕ) + 1),
       show (⟨(i : ℕ), by omega⟩ : Fin ((i : ℕ) + 1)) = Fin.last (i : ℕ) from Fin.ext rfl,
       Fin.snoc_last]
   · intro k
@@ -208,7 +172,7 @@ theorem insertNth_eq_hypercubePoint (i : Fin (M + 1)) (cs : Fin i → F) (T : F)
         rw [Fin.succAbove_of_castSucc_lt _ _ (by exact Fin.lt_def.mpr (by simpa using hk))]
         rfl
       have hlt : ((i.succAbove k : Fin (M + 1)) : ℕ) < (i : ℕ) + 1 := by omega
-      rw [dif_pos hlt,
+      rw [dite_eq_left hlt,
         show (⟨((i.succAbove k : Fin (M + 1)) : ℕ), hlt⟩ : Fin ((i : ℕ) + 1))
           = Fin.castSucc ⟨(k : ℕ), hk⟩ from Fin.ext hsa,
         Fin.snoc_castSucc]
@@ -218,7 +182,7 @@ theorem insertNth_eq_hypercubePoint (i : Fin (M + 1)) (cs : Fin i → F) (T : F)
     · have hsa : ((i.succAbove k : Fin (M + 1)) : ℕ) = (k : ℕ) + 1 := by
         rw [Fin.succAbove_of_le_castSucc _ _ (by exact Fin.le_def.mpr (by simpa using hk))]
         rfl
-      rw [dif_neg (by omega : ¬ ((i.succAbove k : Fin (M + 1)) : ℕ) < (i : ℕ) + 1)]
+      rw [dite_eq_right (by omega : ¬ ((i.succAbove k : Fin (M + 1)) : ℕ) < (i : ℕ) + 1)]
       refine (congrArg (Fin.append cs (fun j => ((y j : ℕ) : F)))
         (Fin.ext (by simp; omega) :
           (Fin.cast (by omega) k : Fin ((i : ℕ) + (M + 1 - ((i : ℕ) + 1))))

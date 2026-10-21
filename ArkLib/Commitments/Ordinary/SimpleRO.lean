@@ -3,8 +3,9 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Tobias Rothmann
 -/
+module
 
-import ArkLib.Commitments.Ordinary.Basic
+public import ArkLib.Commitments.Ordinary.Basic
 
 /-!
   # Simple Random-Oracle Commitment Scheme
@@ -33,6 +34,8 @@ import ArkLib.Commitments.Ordinary.Basic
   commitment (weird, since it's then not really functional), or (2) extend VCV-io's
   `CommitmentScheme` to support a general `OracleComp`, not just `ProbComp`.
 -/
+
+@[expose] public section
 
 open OracleComp CommitmentScheme
 

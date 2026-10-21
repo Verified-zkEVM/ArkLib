@@ -3,8 +3,9 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.Data.Fin.Tuple.Take
+public import Mathlib.Data.Fin.Tuple.Take
 
 /-!
 # Custom Fin tuple operations with better definitional equality
@@ -46,6 +47,8 @@ functor, allowing different types at each position without requiring an explicit
 
 - `Fin.dempty`/`Fin.vempty`: Empty tuples for dependent and homogeneous cases
 -/
+
+@[expose] public section
 
 universe u v w
 

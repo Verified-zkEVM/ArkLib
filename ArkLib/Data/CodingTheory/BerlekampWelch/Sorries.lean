@@ -3,14 +3,18 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: František Silváši, Ilia Vlasov
 -/
-import Mathlib.Algebra.Field.Basic
-import Mathlib.Data.Matrix.Mul
+module
+
+public import Mathlib.Algebra.Field.Basic
+public import Mathlib.Data.Matrix.Mul
 
 /-!
   # All the sorries Berlekamp-Welch decoder relies upon.
 
   The sorries are related to solving linear systems of equations.
 -/
+
+@[expose] public section
 
 variable {α : Type} {F : Type} [Field F]
 variable {n m : ℕ}
@@ -64,11 +68,11 @@ theorem linsolve_some {A : Matrix (Fin n) (Fin m) F} {b : Fin n → F} {x : Fin 
     (h : linsolve A b = some x) : A.mulVec x = b := by
   unfold linsolve at h
   by_cases hex : ∃ x, A.mulVec x = b
-  · rw [dif_pos hex] at h
+  · rw [dite_eq_left hex] at h
     injection h with h'
     rw [← h']
     exact Classical.choose_spec hex
-  · rw [dif_neg hex] at h
+  · rw [dite_eq_right hex] at h
     cases h
 
 /--
@@ -86,6 +90,6 @@ theorem linsolve_none {A : Matrix (Fin n) (Fin m) F} {b : Fin n → F}
     (h : linsolve A b = none) : ¬∃ x, A.mulVec x = b := by
   unfold linsolve at h
   by_cases hex : ∃ x, A.mulVec x = b
-  · rw [dif_pos hex] at h
+  · rw [dite_eq_left hex] at h
     cases h
   · exact hex

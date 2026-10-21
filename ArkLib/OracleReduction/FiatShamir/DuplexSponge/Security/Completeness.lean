@@ -3,8 +3,9 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Defs
+public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Defs
 
 /-!
 # Theorem about completeness
@@ -15,3 +16,5 @@ interactive protocol is complete.
 (do we even have to go through basic Fiat-Shamir? any complication with handling completeness
 error?)
 -/
+
+@[expose] public section

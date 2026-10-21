@@ -3,9 +3,10 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import CompPoly.Fields.KoalaBear
-import CompPoly.Data.Vector.Basic
+public import CompPoly.Fields.KoalaBear
+public import CompPoly.Data.Vector.Basic
 
 /-!
   # Poseidon2 Reference Implementation
@@ -23,6 +24,8 @@ import CompPoly.Data.Vector.Basic
     <https://github.com/leanEthereum/leanSpec/blob/main/src/lean_spec/subspecs/poseidon2/>
 -/
 
+@[expose] public section
+
 open Vector
 
 namespace Poseidon2
@@ -32,6 +35,7 @@ namespace Poseidon2
 /-- The constants for Poseidon2 with 16 rounds
 (total of 8 * 16 + 20 = 148 constants) -/
 def rawConstants16 : Vector KoalaBear.Field 148 := #v[
+    -- External initial rounds (4 × 16 constants)
     2128964168,
     288780357,
     316938561,
@@ -96,6 +100,28 @@ def rawConstants16 : Vector KoalaBear.Field 148 := #v[
     64412292,
     1936878279,
     1980661727,
+    -- Internal rounds (20 constants)
+    2102596038,
+    1533193853,
+    1436311464,
+    2012303432,
+    839997195,
+    1225781098,
+    2011967775,
+    575084315,
+    1309329169,
+    786393545,
+    995788880,
+    1702925345,
+    1444525226,
+    908073383,
+    1811535085,
+    1531002367,
+    1635653662,
+    1585100155,
+    867006515,
+    879151050,
+    -- External final rounds (4 × 16 constants)
     1423960925,
     2101391318,
     1915532054,
@@ -160,31 +186,12 @@ def rawConstants16 : Vector KoalaBear.Field 148 := #v[
     582892981,
     1337064375,
     1199354861,
-    2102596038,
-    1533193853,
-    1436311464,
-    2012303432,
-    839997195,
-    1225781098,
-    2011967775,
-    575084315,
-    1309329169,
-    786393545,
-    995788880,
-    1702925345,
-    1444525226,
-    908073383,
-    1811535085,
-    1531002367,
-    1635653662,
-    1585100155,
-    867006515,
-    879151050,
 ]
 
 /-- The constants for Poseidon2 with width 24
 (total of 8 * 24 + 23 = 215 constants) -/
 def RAW_CONSTANTS_24 : Vector KoalaBear.Field 215 := #v[
+    -- External initial rounds (4 × 24 constants)
     487143900,
     1829048205,
     1652578477,
@@ -281,6 +288,31 @@ def RAW_CONSTANTS_24 : Vector KoalaBear.Field 215 := #v[
     1608418116,
     1083269213,
     691256798,
+    -- Internal rounds (23 constants)
+    893435011,
+    403879071,
+    1363789863,
+    1662900517,
+    2043370,
+    2109755796,
+    931751726,
+    2091644718,
+    606977583,
+    185050397,
+    946157136,
+    1350065230,
+    1625860064,
+    122045240,
+    880989921,
+    145137438,
+    1059782436,
+    1477755661,
+    335465138,
+    1640704282,
+    1757946479,
+    1551204074,
+    681266718,
+    -- External final rounds (4 × 24 constants)
     328586442,
     1572520009,
     1375479591,
@@ -377,29 +409,6 @@ def RAW_CONSTANTS_24 : Vector KoalaBear.Field 215 := #v[
     1613277964,
     793223662,
     648443918,
-    893435011,
-    403879071,
-    1363789863,
-    1662900517,
-    2043370,
-    2109755796,
-    931751726,
-    2091644718,
-    606977583,
-    185050397,
-    946157136,
-    1350065230,
-    1625860064,
-    122045240,
-    880989921,
-    145137438,
-    1059782436,
-    1477755661,
-    335465138,
-    1640704282,
-    1757946479,
-    1551204074,
-    681266718,
 ]
 
 /-- The degree of the S-Box for Poseidon2 over the KoalaBear field -/
@@ -611,52 +620,40 @@ def partialRound (state : Vector KoalaBear.Field params.width) (roundConstant : 
   -- 3. Apply internal linear layer
   internalLinearLayer params stateAfterSbox
 
-private lemma firstHalfRoundConstants_extract_length (params : Params)
+/-- The round constants are `params.numFullRounds * params.width` words for the full rounds and
+one per partial round: twice half the full rounds. -/
+lemma numFullRounds_mul_width (params : Params) :
+    params.numFullRounds * params.width = 2 * (params.halfNumFullRounds * params.width) := by
+  rw [← params.halfNumFullRounds_mul_2_eq_numFullRounds, Nat.mul_comm _ 2, Nat.mul_assoc]
+
+lemma firstHalfRoundConstants_extract_length (params : Params)
     (rc_idx : Fin params.halfNumFullRounds) :
-    min (↑rc_idx + params.width) (params.numFullRounds * params.width + params.numPartialRounds) -
-      ↑rc_idx = params.width := by
-  simp only [Params.halfNumFullRounds] at rc_idx
-  have hw := params.width_pos
-  have hrc := rc_idx.isLt
-  have h1 : ↑rc_idx + params.width ≤ (↑rc_idx + 1) * params.width := by
-    nlinarith
-  have h2 : (↑rc_idx + 1) * params.width ≤ (params.numFullRounds / 2) * params.width := by
-    nlinarith
-  have h3 := Nat.mul_le_mul_right params.width (Nat.div_le_self params.numFullRounds 2)
-  rw [Nat.min_eq_left (by omega)]
+    min (↑rc_idx * params.width + params.width)
+        (params.numFullRounds * params.width + params.numPartialRounds) -
+      ↑rc_idx * params.width = params.width := by
+  have h1 : (↑rc_idx + 1) * params.width ≤ params.halfNumFullRounds * params.width :=
+    Nat.mul_le_mul_right _ rc_idx.isLt
+  have h2 := numFullRounds_mul_width params
+  rw [Nat.succ_mul] at h1
   omega
 
-private lemma partialRoundConstant_index_lt (params : Params)
+lemma partialRoundConstant_index_lt (params : Params)
     (rc_idx : Fin params.numPartialRounds) :
     ↑rc_idx < params.numFullRounds * params.width + params.numPartialRounds -
       params.halfNumFullRounds * params.width := by
-  simp only [Params.halfNumFullRounds]
-  have := Nat.mul_le_mul_right params.width (Nat.div_le_self params.numFullRounds 2)
+  have := numFullRounds_mul_width params
   omega
 
-private lemma secondHalfRoundConstants_extract_length (params : Params)
+lemma secondHalfRoundConstants_extract_length (params : Params)
     (rc_idx : Fin params.halfNumFullRounds) :
-    min (↑rc_idx + params.width)
+    min (↑rc_idx * params.width + params.width)
         (params.numFullRounds * params.width + params.numPartialRounds -
           params.halfNumFullRounds * params.width - params.numPartialRounds) -
-      ↑rc_idx = params.width := by
-  simp only [Params.halfNumFullRounds] at rc_idx ⊢
-  have hw := params.width_pos
-  have hrc := rc_idx.isLt
-  have h0 := Nat.mul_le_mul_right params.width (Nat.div_le_self params.numFullRounds 2)
-  have hsub : params.numFullRounds * params.width + params.numPartialRounds -
-      params.numFullRounds / 2 * params.width - params.numPartialRounds =
-      (params.numFullRounds - params.numFullRounds / 2) * params.width := by
-    rw [Nat.sub_mul]
-    omega
-  rw [hsub]
-  have h1 : ↑rc_idx + params.width ≤ (↑rc_idx + 1) * params.width := by
-    nlinarith
-  have h2 : (↑rc_idx + 1) * params.width ≤ (params.numFullRounds / 2) * params.width := by
-    nlinarith
-  have hd : params.numFullRounds / 2 ≤ params.numFullRounds - params.numFullRounds / 2 := by
-    omega
-  rw [Nat.min_eq_left (by nlinarith [Nat.mul_le_mul_right params.width hd])]
+      ↑rc_idx * params.width = params.width := by
+  have h1 : (↑rc_idx + 1) * params.width ≤ params.halfNumFullRounds * params.width :=
+    Nat.mul_le_mul_right _ rc_idx.isLt
+  have h2 := numFullRounds_mul_width params
+  rw [Nat.succ_mul] at h1
   omega
 
 /-- Full Poseidon2 permutation on a state vector. -/
@@ -669,7 +666,8 @@ def permute (params : Params) (state : Vector KoalaBear.Field params.width) :
   -- First half of full rounds
   let st1 : Vector KoalaBear.Field params.width :=
     Fin.foldl params.halfNumFullRounds (fun st_acc rc_idx =>
-      let rc_chunk := (rcs.extract rc_idx (rc_idx + params.width)).cast
+      let rc_chunk :=
+        (rcs.extract (rc_idx * params.width) (rc_idx * params.width + params.width)).cast
         (firstHalfRoundConstants_extract_length params rc_idx)
       let st_new := fullRound params st_acc rc_chunk
       st_new) st0
@@ -684,7 +682,8 @@ def permute (params : Params) (state : Vector KoalaBear.Field params.width) :
   let rcs := rcs.drop params.numPartialRounds
   -- Second half of full rounds
   let st3 := Fin.foldl params.halfNumFullRounds (fun st_acc rc_idx =>
-    let rc_chunk := (rcs.extract rc_idx (rc_idx + params.width)).cast
+    let rc_chunk :=
+      (rcs.extract (rc_idx * params.width) (rc_idx * params.width + params.width)).cast
       (secondHalfRoundConstants_extract_length params rc_idx)
     let st_new := fullRound params st_acc rc_chunk
     st_new) st2

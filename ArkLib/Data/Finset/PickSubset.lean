@@ -3,19 +3,23 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Ilia Vlasov, Aristotle (Harmonic)
 -/
-import Mathlib.Data.Finset.Defs
-import Mathlib.Data.Finset.Insert
-import Mathlib.Data.Finset.Lattice.Basic
-import Mathlib.Data.Finset.SDiff
-import Mathlib.Data.Finset.Card
-import Mathlib.Tactic.Cases
-import Mathlib.Tactic.LinearCombinationPrime
+module
+
+public import Mathlib.Data.Finset.Defs
+public import Mathlib.Data.Finset.Insert
+public import Mathlib.Data.Finset.Lattice.Basic
+public import Mathlib.Data.Finset.SDiff
+public import Mathlib.Data.Finset.Card
+public import Mathlib.Tactic.Cases
+public import Mathlib.Tactic.LinearCombinationPrime
 
 /-!
   This module provides tools for picking a
   subset from a finset. I.e., obtain a subset
   of a given finite set of a certain cardinality.
 -/
+
+@[expose] public section
 
 namespace Finset
 

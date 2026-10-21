@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGap.Errors
-import ArkLib.Data.CodingTheory.Basic.LinearCode
+public import ArkLib.Data.CodingTheory.ProximityGap.Errors
+public import ArkLib.Data.CodingTheory.Basic.LinearCode
 
 /-!
 # Mutual correlated agreement information-set lower bound
@@ -18,6 +19,8 @@ This file proves a lower bound on affine-line mutual correlated agreement for li
   Agreement*][ABF26]
 -/
 
+@[expose] public section
+
 namespace ProximityGap
 
 open NNReal Code Finset CoreDefinitions
@@ -28,7 +31,7 @@ open Probability
 correlated agreement is at least `min(⌊δ n⌋ / |F|, 1)`. -/
 theorem linear_mcaError_ge_information_set
     {ι : Type} [Fintype ι] [Nonempty ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
+    {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
     (C : LinearCode ι F) (δ : ℝ≥0)
     (hδ : (δ : ℝ) * Fintype.card ι < (Code.dist (C : Set (ι → F)) : ℝ)) :
     (↑(min ((⌊δ * (Fintype.card ι : ℝ≥0)⌋₊ : ℝ≥0) /
@@ -90,7 +93,7 @@ theorem linear_mcaError_ge_information_set
   have hchal_mem : ∀ {j : ι} (hj : j ∈ D), chal j = φ ⟨j, hj⟩ := by
     intro j hj
     simp only [hchal]
-    rw [dif_pos hj]
+    rw [dite_eq_left hj]
   have hchal_injOn : Set.InjOn chal (D : Set ι) := by
     intro a ha b hb hab
     rw [Finset.mem_coe] at ha hb
@@ -101,19 +104,19 @@ theorem linear_mcaError_ge_information_set
   have hf₂_mem : ∀ {j : ι}, j ∈ D → f₂ j = 1 := by
     intro j hj
     simp only [hf₂]
-    rw [if_pos hj]
+    rw [ite_eq_left hj]
   have hf₂_not : ∀ {j : ι}, j ∉ D → f₂ j = 0 := by
     intro j hj
     simp only [hf₂]
-    rw [if_neg hj]
+    rw [ite_eq_right hj]
   have hf₁_mem : ∀ {j : ι}, j ∈ D → f₁ j = -(chal j) := by
     intro j hj
     simp only [hf₁]
-    rw [if_pos hj]
+    rw [ite_eq_left hj]
   have hf₁_not : ∀ {j : ι}, j ∉ D → f₁ j = 0 := by
     intro j hj
     simp only [hf₁]
-    rw [if_neg hj]
+    rw [ite_eq_right hj]
   set G : Finset F := D.image chal with hG
   have hGcard : G.card = r := by
     rw [hG, Finset.card_image_of_injOn hchal_injOn, hDcard]
@@ -198,13 +201,14 @@ theorem linear_mcaError_ge_information_set
       rw [hrc, div_self hcardF_ne]
       exact min_eq_right ((one_le_div hcardF_pos).mpr (by exact_mod_cast h))
   have hPr : (↑(min ((m : ℝ≥0) / (Fintype.card F : ℝ≥0)) 1) : ℝ≥0∞) ≤
-      Pr_{let γ ←$ᵖ F}[IsMCA (AffineLineGenerator F) C γ U (δ : ℝ)] := by
-    rw [prob_uniform_eq_card_filter_div_card, ← ENNReal.coe_div hcardF_ne,
-      ENNReal.coe_le_coe, hmin_eq]
+      Pr{let γ ←$ᵗ F}[IsMCA (AffineLineGenerator F) C γ U (δ : ℝ)] := by
+    rw [SampleableType.prEvent_uniformSample]
+    simp only [← ENNReal.coe_natCast]
+    rw [← ENNReal.coe_div hcardF_ne, ENNReal.coe_le_coe, hmin_eq]
     gcongr
   refine le_trans hPr ?_
   unfold mcaError
   exact le_iSup (fun V : Fin 2 → (ι → F) =>
-    Pr_{let γ ←$ᵖ F}[IsMCA (AffineLineGenerator F) C γ V (δ : ℝ)]) U
+    Pr{let γ ←$ᵗ F}[IsMCA (AffineLineGenerator F) C γ V (δ : ℝ)]) U
 
 end ProximityGap
