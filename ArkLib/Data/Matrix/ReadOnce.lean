@@ -23,7 +23,11 @@ namespace Matrix.ReadOnce
 
 open MvPolynomial
 
-variable {C : Type*} [CommRing C] {ι : Type*} [Fintype ι]
+variable {C : Type*} {ι : Type*} [Fintype ι]
+
+section Run
+
+variable [CommSemiring C]
 
 /-- Apply each matrix to the state, reading the layers from first to last. -/
 def run : {m : ℕ} → (Fin m → Matrix ι ι C) → (ι → C) →ₗ[C] (ι → C)
@@ -38,6 +42,10 @@ theorem run_zero (layers : Fin 0 → Matrix ι ι C) (s : ι → C) : run layers
 @[simp]
 theorem run_succ {m : ℕ} (layers : Fin (m + 1) → Matrix ι ι C) (s : ι → C) :
     run layers s = run (fun i => layers i.succ) (layers 0 *ᵥ s) := rfl
+
+end Run
+
+variable [CommRing C]
 
 /-- The affine interpolation of a two-branch matrix layer. -/
 def interpolate (a : Fin 2 → Matrix ι ι C) (z : C) : Matrix ι ι C :=
