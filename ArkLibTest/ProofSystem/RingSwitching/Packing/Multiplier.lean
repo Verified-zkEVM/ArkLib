@@ -23,7 +23,7 @@ namespace RingSwitching.Packing.MultiplierTests
 open Module MvPolynomial Matrix
 
 /-- The challenge field need not contain the opening field. -/
-theorem noOpeningToChallengeHom :
+theorem no_opening_to_challenge_hom :
     ¬ Nonempty (GaloisField 2 3 →ₐ[ZMod 2] GaloisField 2 4) := by
   rw [FiniteField.nonempty_algHom_iff_finrank_dvd]
   simp only [GaloisField.finrank (p := 2) (n := 3) (by decide),

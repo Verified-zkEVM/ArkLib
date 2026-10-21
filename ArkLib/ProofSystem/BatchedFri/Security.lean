@@ -2,11 +2,6 @@
 Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: František Silváši, Julian Sutherland, Ilia Vlasov
-
-[BCIKS20] refers to the paper "Proximity Gaps for Reed-Solomon Codes" by Eli Ben-Sasson,
-Dan Carmon, Yuval Ishai, Swastik Kopparty, and Shubhangi Saraf.
-
-Using {https://eprint.iacr.org/2020/654}, version 20210703:203025.
 -/
 module
 
@@ -32,9 +27,17 @@ public import ArkLib.ToMathlib.Finset.Basic
 public import Mathlib.Algebra.Ring.NonZeroDivisors
 
 /-!
-# ArkLib.ProofSystem.BatchedFri.Security
+# FRI and batched FRI completeness and security statements
 
-Definitions and results for this component of ArkLib.
+The legacy analysis follows Claims 8.1–8.3 of [BCIKS20], version July 3, 2021:
+`fri_round_consistency_completeness`, `fri_query_soundness`, and `fri_soundness`.
+These statements retain admitted proofs. The separate end-to-end proof for the computable
+FRI reduction is in `ArkLib.ProofSystem.Fri.Spec.Soundness`.
+
+## References
+
+* [Ben-Sasson, E., Carmon, D., Ishai, Y., Kopparty, S., Saraf, S.,
+  *Proximity Gaps for Reed–Solomon Codes*][BCIKS20]
 -/
 
 @[expose] public section
@@ -249,11 +252,7 @@ noncomputable def f_succ'
   (pows z _ *ᵥ VDMInv n s s₀ k_le_n *ᵥ Finset.restrict (cosetG n s s₀) f) ()
 
 omit [Fintype 𝔽] in
-/-- This theorem asserts that given an appropriate codeword,
-  `f` of an appropriate Reed-Solomon code, the result of honestly folding the corresponding
-  polynomial is then itself a member of the next Reed-Solomon code.
-
-  Corresponds to Claim 8.1 of [BCIKS20] -/
+/-- Honest folding sends a Reed–Solomon codeword to the next Reed–Solomon code. -/
 lemma fri_round_consistency_completeness
     {f : ReedSolomon.code
     (⟨fun x => x, by simp⟩ : evalDomainSigma s ω i ↪ 𝔽)
@@ -300,7 +299,8 @@ noncomputable def oracleImpl
       let f0 := Lagrange.interpolate Finset.univ (fun v => v.1) f
       let chals : List (Fin (k + 1) × 𝔽) :=
         ((List.finRange (k + 1)).map fun i => (i, z i)).take i.1
-      let fi : 𝔽[X] := List.foldl (fun f (i, α) => FoldingPolynomial.polyFold f (s i) α) f0 chals
+      let fi : 𝔽[X] :=
+        List.foldl (fun f (i, α) => FoldingPolynomial.polyFold f (2 ^ (s i).1) α) f0 chals
       let st : Spec.FinalOracleStatement (F := 𝔽) s ω i :=
         if h : i.1 = k + 1 then
           cast (by simp [Spec.FinalOracleStatement, h]; rfl)
@@ -638,7 +638,7 @@ noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain n 𝔽} :
   UniformAnswerMeasure.ofFiniteNonempty _
 
 open ENNReal in
-/-- Corresponds to Claim 8.2 of [BCIKS20] -/
+/-- A bound on joint agreement bounds the acceptance probability of batched query checks. -/
 lemma fri_query_soundness
     [SampleableType 𝔽]
     {t : ℕ}
@@ -756,7 +756,7 @@ lemma fri_query_soundness
   -- ·
 
 open ENNReal in
-/-- Corresponds to Claim 8.3 of [BCIKS20] -/
+/-- Acceptance above the commitment and query error implies joint agreement with the code. -/
 lemma fri_soundness
     {t l m : ℕ}
   (f : Fin t.succ → (ω → 𝔽))

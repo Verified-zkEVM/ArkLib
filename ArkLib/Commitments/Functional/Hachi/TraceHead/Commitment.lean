@@ -30,7 +30,7 @@ namespace ArkLib.Lattices.Hachi.TraceHead
 
 noncomputable section
 
-variable {q : ℕ} [Fact (Nat.Prime q)] [NeZero q] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
+variable {q : ℕ} [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
 variable {α κ innerRows outerRows dRows m r : ℕ}
 variable (b : ℕ) (hb : 1 < b)
 variable (pp : PublicParamsD (powTwoCyclotomic (R := ZMod q) α)
@@ -42,11 +42,10 @@ def committedOpening (F : CMlPolynomial (Rq (powTwoCyclotomic (R := ZMod q) α))
       innerRows (2 ^ m) (Nat.clog b q) (2 ^ r) (Nat.clog b q) :=
   commitInputWitMap b (F, (commit b hb pp F).2)
 
-omit [NeZero q] [BEq (ZMod q)] [LawfulBEq (ZMod q)] in
+omit [BEq (ZMod q)] [LawfulBEq (ZMod q)] in
 private theorem clog_pos_of_prime (b : ℕ) (hb : 1 < b) : 0 < Nat.clog b q :=
   Nat.clog_pos hb (Fact.out : Nat.Prime q).one_lt
 
-omit [NeZero q] in
 private theorem one_le_natDegree_powTwo (α : ℕ) :
     1 ≤ (powTwoCyclotomic (R := ZMod q) α).φ.natDegree := by
   rw [powTwoCyclotomic_natDegree]

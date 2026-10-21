@@ -37,7 +37,7 @@ namespace ArkLib.Lattices.Hachi.TraceHead
 
 noncomputable section
 
-variable {q : ℕ} [Fact (Nat.Prime q)] [NeZero q] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
+variable {q : ℕ} [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
 variable (α κ : ℕ)
 variable {innerRows messageDigits outerRows innerDigits dRows m r : ℕ}
 variable {ι : Type} {oSpec : OracleSpec ι}
@@ -86,7 +86,8 @@ variable (hk : 2 * 2 ^ κ ∣ 2 ^ α)
 def packedMonomial (xp : Vector (fixedSubring (R := ZMod q) α (2 ^ κ)) (α - κ)) :
     Rq (powTwoCyclotomic (R := ZMod q) α) :=
   psi α (2 ^ κ) (fun j => (CMlPolynomial.monomialBasis xp).get
-    (finCongr (packingRank_eq α κ hk) j))
+    (finCongr (two_pow_div_two_pow α κ
+      (Nat.le_of_succ_le (succ_le_of_two_mul_two_pow_dvd hk))) j))
 
 /-- The scaled trace equality checked in the quotient ring. -/
 def check (s : Statement q α κ innerRows messageDigits outerRows innerDigits dRows m r)
@@ -303,7 +304,6 @@ def traceHeadExtractor : Extractor.TreeBased
     (CWSSStructure.ofIsEmpty (pSpec := pSpecTraceHead (q := q) α)).toShape.arity :=
   fun _ tree leaves => leaves tree.onlyPath
 
-omit [NeZero q] in
 /--
 Zero-challenge coordinate-wise special soundness of the guarded trace head between any relations
 for which a passing check and a valid output leaf certify the input, extracting the weak opening

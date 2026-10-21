@@ -16,6 +16,11 @@ These are the algebraic relations used by a coordinate-packing reduction. The in
 the full family of opening values. A scalar evaluation protocol must separately prove its
 head's reconstruction check. No commitment or security assumptions are hidden in these
 relations; commitment anchoring is an additional boundary of a protocol integration.
+
+`actualSlices` names the slice family of the same packed polynomial; `derivedTarget` batches the
+public transpose of already fixed component claims with arbitrary weights. Correct full component
+claims imply the derived sumcheck relation without an injective coefficient transport. Probability
+and separation hypotheses belong to `DerivedBatching.lean`, outside this algebraic module.
 -/
 
 @[expose] public section
@@ -114,6 +119,27 @@ theorem openingClaimRel_iff_sliceRel {m : ℕ} (r : Fin m → data.E)
   rw [← funext_iff, ← funext_iff, ← data.transpose_evaluations]
   exact data.transpose.injective.eq_iff.symm
 
+/-- The actual slice family of a fixed packed source, derived from the fixed retained point. -/
+def actualSlices {m : ℕ} (r : Fin m → data.E) (p : data.P⦃≤ 1⦄[X Fin m]) :
+    data.ιE → data.P :=
+  data.coordinateSlices (fun y : Fin m → Fin 2 => eqTilde r (y : Fin m → data.E))
+    (fun y => p.val.eval (y : Fin m → data.P))
+
+/-- The actual slices satisfy the packed-slice relation by construction. -/
+theorem actualSlices_mem_sliceRel {m : ℕ} (r : Fin m → data.E)
+    (p : data.P⦃≤ 1⦄[X Fin m]) :
+    (data.actualSlices r p, p) ∈ data.sliceRel m r := fun _ => rfl
+
+/-- Full component correctness is exactly equality of the public transpose and actual slices.
+The endpoint is the original packed polynomial, without introducing another source witness. -/
+theorem openingClaimRel_iff_transpose_actualSlices {m : ℕ} (r : Fin m → data.E)
+    (α : data.ιP → data.E) (p : data.P⦃≤ 1⦄[X Fin m]) :
+    ((α, r), data.unpack p) ∈ data.openingClaimRel m ↔
+      data.transpose α = data.actualSlices r p := by
+  rw [data.openingClaimRel_iff_sliceRel, data.packedMLE_unpack]
+  change (∀ u, data.transpose α u = data.actualSlices r p u) ↔ _
+  exact funext_iff.symm
+
 section ChallengeAlgebra
 
 variable {C : Type*} [CommRing C] [Algebra B C] [Algebra data.P C]
@@ -144,6 +170,30 @@ theorem sumcheckClaim_of_slices {m : ℕ} {r : Fin m → data.E}
   refine Finset.sum_congr rfl fun u _ => ?_
   rw [Algebra.smul_def]
   ring
+
+/-- The target derived from an already fixed component-value message. No slice message is sent. -/
+def derivedTarget (α : data.ιP → data.E) (weight : data.ιE → C) : C :=
+  ∑ u, weight u * algebraMap data.P C (data.transpose α u)
+
+/-- Success of a packed sumcheck claim is equality with the weighted actual slices. -/
+theorem sumcheckClaimRel_iff_actualSlices {m : ℕ} (r : Fin m → data.E)
+    (weight : data.ιE → C) (target : C) (p : data.P⦃≤ 1⦄[X Fin m]) :
+    (target, p) ∈ data.sumcheckClaimRel m r weight ↔
+      target = ∑ u, weight u * algebraMap data.P C (data.actualSlices r p u) := by
+  have h := data.sumcheckClaim_of_slices (data.actualSlices_mem_sliceRel r p) weight
+  change target = _ ↔ _
+  change (∑ u, weight u * algebraMap data.P C (data.actualSlices r p u)) = _ at h
+  rw [← h]
+
+/-- Correct component claims give every derived batched sumcheck claim.
+No injectivity of the coefficient transport is needed for this direction. -/
+theorem sumcheckClaimRel_derivedTarget_of_openingClaimRel {m : ℕ}
+    (weight : data.ιE → C) (r : Fin m → data.E)
+    (α : data.ιP → data.E) (p : data.P⦃≤ 1⦄[X Fin m])
+    (h : ((α, r), data.unpack p) ∈ data.openingClaimRel m) :
+    (data.derivedTarget α weight, p) ∈ data.sumcheckClaimRel m r weight := by
+  rw [data.sumcheckClaimRel_iff_actualSlices, derivedTarget,
+    (data.openingClaimRel_iff_transpose_actualSlices r α p).mp h]
 
 end ChallengeAlgebra
 

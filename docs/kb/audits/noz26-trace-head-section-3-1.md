@@ -48,7 +48,7 @@ bridge `CMlPolynomial.eval_eq_eval_toMvPolynomial` (`ToCompPoly/Multilinear/Basi
   e).components f)`, proved from `unpack_coeff` and `packedMLE_unpack`. The library lemma
   `toMvPolynomialDeg1_eq_packedMLE` in `TraceHead/Conformance.lean` states the same for the decoding
   of any ring polynomial, in particular the committed one.
-- **Conformance theorem.** `traceHead_conforms`
+- **Conformance theorem.** `trace_head_conforms`
   (`ArkLib/Commitments/Functional/Hachi/TraceHead/Conformance.lean`) states the head's accepting
   condition through the shared layer: `check ∧ relPolyEval(output)` holds iff the weak opening is
   valid, the sent value `Y` is the single slice of the shared `packedMLE` of the layout's
@@ -101,10 +101,10 @@ proof derives the check from Theorem 2 (`traceH_psi_mul_conj`) and does not use 
   (`ArkLibTest/Commitments/Functional/Hachi/TraceHead/Composition.lean`). The composite carries the
   evaluation step's own escape event.
 - **Non-vacuity:** the library module `TraceHead/Conformance.lean` states the accepting condition
-  through the shared layer (`traceHead_conforms`) and the exact correspondence
-  `check ∧ relPolyEval(output) ↔ relScalarEval ∧ Y = honestMessage` (`traceHead_accepts_iff`).
+  through the shared layer (`trace_head_conforms`) and the exact correspondence
+  `check ∧ relPolyEval(output) ↔ relScalarEval ∧ Y = honestMessage` (`trace_head_accepts_iff`).
   The fixture `ArkLibTest/ProofSystem/RingSwitching/Conformance/Hachi.lean` at
-  `q = 5`, `d = 2`, `k = 1`, through `traceHead_conforms`, exhibits a nonconstant polynomial
+  `q = 5`, `d = 2`, `k = 1`, through `trace_head_conforms`, exhibits a nonconstant polynomial
   on the honest side and shows that, for a false claim, no sent ring value satisfies the
   shared-layer condition against the same weak opening. Its opening-relation fixtures accept
   exactly `ψ⁻¹` of the ring evaluation (`openingClaimRel_iff_honest`), reject the claimed values

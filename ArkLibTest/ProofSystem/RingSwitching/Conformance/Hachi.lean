@@ -11,7 +11,7 @@ import ArkLibTest.Commitments.Functional.Hachi.TraceHead.Protocol
 /-!
 # Hachi §3.1 conformance to the shared packing layer
 
-The conformance theorem `traceHead_conforms` states the trace head's accepting condition through
+The conformance theorem `trace_head_conforms` states the trace head's accepting condition through
 the shared packing layer of `RingSwitching.Packing`, at the packing data
 `traceHeadData ψ = PackingData.ofBaseOpening ψ` and the claim layout `traceHeadLayout ψ`:
 a passing check whose forwarded claim opens validly is exactly a valid weak opening such that
@@ -32,12 +32,10 @@ The statements it is built from are:
 * `output_mem_relPolyEval_iff_sliceRel` and `check_iff_layout_weight`: the forwarded ring relation
   and the trace check in that vocabulary.
 
-Hachi §3.1 exercises only the packing, evaluation and opening part of the shared layer (one
-opening coordinate, no batching, multiplier or sumcheck), as in the paper, so its reuse is small
-at the proof level and real at the statement level. The head's read-back `observation` is a
-`CheckedObservation` written by hand.
+The layout has one opening coordinate and introduces no batching challenge or sumcheck.
+The head's read-back `observation` is a `CheckedObservation`.
 
-The concrete instances, stated through `traceHead_conforms`, show the honest side inhabited by a
+The concrete instances, stated through `trace_head_conforms`, show the honest side inhabited by a
 nonconstant polynomial and that, for a false claim, no sent ring value satisfies the shared-layer
 condition. The opening-relation fixtures accept exactly the honest component values, reject a
 wrong one, and accept the distinct rows of a polynomial with distinct coefficients, so a row swap
@@ -55,12 +53,12 @@ namespace ArkLibTest.RingSwitchingConformance.Hachi
 the standard axioms. -/
 
 /--
-info: 'ArkLib.Lattices.Hachi.TraceHead.traceHead_conforms' depends on axioms: [propext,
+info: 'ArkLib.Lattices.Hachi.TraceHead.trace_head_conforms' depends on axioms: [propext,
  Classical.choice,
  Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms ArkLib.Lattices.Hachi.TraceHead.traceHead_conforms
+#print axioms ArkLib.Lattices.Hachi.TraceHead.trace_head_conforms
 
 /--
 info: 'ArkLib.Lattices.Hachi.TraceHead.toMvPolynomialDeg1_packCoefficients' depends on axioms:
@@ -92,8 +90,8 @@ example : VerifiedOpening Φ 2 6 1 1 pp.toPublicParams s.u w ∧
       (traceHeadData (coefficientEquiv 5 1 0 h2 hk)).sliceRel (1 + 0) (s.xl ++ s.xh).get ∧
     s.value = ∑ j, (traceHeadLayout (n := 1 + 0) (coefficientEquiv 5 1 0 h2 hk)).weight
       (s.xl ++ s.xh, s.xp) j * (coefficientEquiv 5 1 0 h2 hk).symm (honestMessage 1 0 2 s w) j :=
-  (traceHead_conforms 1 0 hk h2 pp 2 6 1 1 s _ w).1
-    ((traceHead_accepts_iff 1 0 hk h2 pp 2 6 1 1 s _ w).2 ⟨source_valid.1, rfl⟩)
+  (trace_head_conforms 1 0 hk h2 pp 2 6 1 1 s _ w).1
+    ((trace_head_accepts_iff 1 0 hk h2 pp 2 6 1 1 s _ w).2 ⟨source_valid.1, rfl⟩)
 
 /-- For a false scalar claim, no sent ring value satisfies the shared-layer accepting condition
 against the same commitment and weak opening. -/
@@ -105,8 +103,8 @@ example (Y : Rq Φ) : ¬ (VerifiedOpening Φ 2 6 1 1 pp.toPublicParams bad.u w �
     bad.value = ∑ j, (traceHeadLayout (n := 1 + 0) (coefficientEquiv 5 1 0 h2 hk)).weight
       (bad.xl ++ bad.xh, bad.xp) j * (coefficientEquiv 5 1 0 h2 hk).symm Y j) := by
   intro h
-  have hbad := ((traceHead_accepts_iff 1 0 hk h2 pp 2 6 1 1 bad Y w).1
-    ((traceHead_conforms 1 0 hk h2 pp 2 6 1 1 bad Y w).2 h)).1
+  have hbad := ((trace_head_accepts_iff 1 0 hk h2 pp 2 6 1 1 bad Y w).1
+    ((trace_head_conforms 1 0 hk h2 pp 2 6 1 1 bad Y w).2 h)).1
   have hz : s.value = 0 := source_valid.1.2.symm.trans hbad.2
   rw [claim_two] at hz
   exact HachiTraceHeadAlgebraTest.value_ne_zero (congrArg Subtype.val hz)

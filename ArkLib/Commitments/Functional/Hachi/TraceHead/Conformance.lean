@@ -85,7 +85,7 @@ end SharedLayer
 
 section Protocol
 
-variable {q : ℕ} [Fact (Nat.Prime q)] [NeZero q] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
+variable {q : ℕ} [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
   (α κ : ℕ) {innerRows messageDigits outerRows innerDigits dRows m r : ℕ}
   (hk : 2 * 2 ^ κ ∣ 2 ^ α) (h2 : (2 : ZMod q) ≠ 0)
 
@@ -113,22 +113,22 @@ theorem output_mem_relPolyEval_iff_sliceRel
 
 /-- The trace check says that the claimed scalar is the layout-weighted sum of the `ψ`-coordinates
 of the sent value. -/
-theorem check_iff_layout_weight (base : ZMod q)
+theorem check_iff_layout_weight
     (s : Statement q α κ innerRows messageDigits outerRows innerDigits dRows m r)
     (Y : Rq (powTwoCyclotomic (R := ZMod q) α)) :
     check α κ hk s Y = true ↔ s.value = ∑ j,
       (traceHeadLayout (n := r + m) (coefficientEquiv q α κ h2 hk)).weight (s.xl ++ s.xh, s.xp) j *
         (coefficientEquiv q α κ h2 hk).symm Y j := by
-  rw [check_iff_observation α κ hk h2 base]
+  rw [check_iff_observation α κ hk h2 (0 : ZMod q)]
   change s.value = ∑ j, (coefficientEquiv q α κ h2 hk).symm Y j *
     (CMlPolynomial.monomialBasis s.xp).get j ↔ _
   exact Iff.of_eq (congrArg (s.value = ·) (Finset.sum_congr rfl fun j _ => mul_comm _ _))
 
-/-- **Hachi §3.1 conformance.** The trace head accepts a sent ring value with a validly opening
+/-- The trace head accepts a sent ring value with a validly opening
 forwarded claim exactly when the weak opening is valid, the sent value is the single shared slice
 of the `packedMLE` of the decoded committed polynomial's layout components, and the claimed scalar
 is the layout-weighted sum of its `ψ`-coordinates. -/
-theorem traceHead_conforms
+theorem trace_head_conforms
     (pp : PublicParamsD (powTwoCyclotomic (R := ZMod q) α)
       innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits dRows)
     (base : ZMod q) (βSq γ bound : ℕ)
@@ -147,13 +147,13 @@ theorem traceHead_conforms
           (traceHeadData (coefficientEquiv q α κ h2 hk)).sliceRel (r + m) (s.xl ++ s.xh).get ∧
         s.value = ∑ j, (traceHeadLayout (n := r + m) (coefficientEquiv q α κ h2 hk)).weight
           (s.xl ++ s.xh, s.xp) j * (coefficientEquiv q α κ h2 hk).symm Y j := by
-  rw [check_iff_layout_weight α κ hk h2 base,
+  rw [check_iff_layout_weight α κ hk h2,
     output_mem_relPolyEval_iff_sliceRel α κ hk h2 pp base βSq γ bound]
   tauto
 
-/-- The accepting condition of `traceHead_conforms` holds exactly for a claim in the scalar
+/-- The accepting condition of `trace_head_conforms` holds exactly for a claim in the scalar
 relation and the honest sent value. -/
-theorem traceHead_accepts_iff
+theorem trace_head_accepts_iff
     (pp : PublicParamsD (powTwoCyclotomic (R := ZMod q) α)
       innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits dRows)
     (base : ZMod q) (βSq γ bound : ℕ)

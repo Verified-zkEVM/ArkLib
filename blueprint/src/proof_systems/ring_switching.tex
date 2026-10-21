@@ -8,13 +8,14 @@ field, $\mathbb{F}_2$, or a cyclotomic ring $R_q$) while running sum-check and t
 a field large enough for soundness. It was introduced for binary towers in \cite{DP24}. Hachi's
 extension-field-to-cyclotomic-ring reduction \cite{NOZ26} uses a related trace-based head.
 
-ArkLib formalizes ring switching \emph{once}, as a generic oracle reduction parameterized by a
-\emph{packing profile}, with the binary-tower (Binius) construction as one instance.
+ArkLib formalizes the DP24 packing construction as an oracle reduction parameterized by a
+\emph{packing profile}, with the binary-tower (Binius) construction as one instance. The shared
+coordinate layer also supports Hachi's trace head and reference-Flock packing algebra; each
+consumer supplies its own protocol and conformance proof.
 
 \subsection{The packing profile}
 
-The data and algebraic laws that every ring-switching reduction abstracts over are collected into a
-single structure.
+The data and algebraic laws of the DP24 tensor presentation are collected into a single structure.
 
 \begin{definition}[Ring-switching profile]
   \lean{RingSwitching.RingSwitchingProfile}
@@ -23,10 +24,10 @@ single structure.
   \mathbb{N}$. A \emph{ring-switching profile} consists of:
   \begin{itemize}
     \item a rank-$2^\kappa$ $B$-basis $\beta = (\beta_u)_{u \in \{0,1\}^\kappa}$ of $L$;
-    \item a commutative \emph{pack/trace carrier} $A$ that is an $L$-algebra (the type sent on the
-      wire);
+    \item a commutative carrier ring $A$ (the type sent on the wire);
     \item two ring homomorphisms $\varphi_0, \varphi_1 : L \to A$ for evaluation-point data and
-      polynomial coefficients, respectively;
+      polynomial coefficients, respectively, giving the scalar actions
+      $x \cdot_0 z := \varphi_0(x)z$ and $x \cdot_1 z := \varphi_1(x)z$;
     \item coordinate maps $\mathrm{decomposeColumns}, \mathrm{decomposeRows} : A \to (\{0,1\}^\kappa
       \to L)$;
     \item subject to the two \emph{reconstruction laws}
@@ -39,15 +40,19 @@ single structure.
         \label{eq:rs-cols}
       \end{equation}
       for all $z \in A$;
-    \item the two \emph{inverse laws}: for every $c : \{0,1\}^\kappa \to L$,
+    \item the \emph{row inverse law}: for every $c : \{0,1\}^\kappa \to L$,
       \[
-        \mathrm{decomposeRows}\Bigl(\sum_{u} \varphi_0(\beta_u)\cdot \varphi_1(c_u)\Bigr) = c,
-        \qquad
-        \mathrm{decomposeColumns}\Bigl(\sum_{v} \varphi_0(c_v)\cdot \varphi_1(\beta_v)\Bigr) = c;
+        \mathrm{decomposeRows}\Bigl(\sum_{u} \varphi_0(\beta_u)\cdot \varphi_1(c_u)\Bigr) = c;
       \]
     \item and the \emph{base compatibility} $\varphi_0(b) = \varphi_1(b)$ for $b \in B$.
   \end{itemize}
 \end{definition}
+
+The column inverse
+\[
+  \mathrm{decomposeColumns}\Bigl(\sum_v \varphi_0(c_v)\varphi_1(\beta_v)\Bigr) = c
+\]
+is derived from the row inverse and the reconstruction laws.
 
 Laws \eqref{eq:rs-rows}--\eqref{eq:rs-cols} fix the coordinate convention of
 \cite[\S2.5]{DP24}. They are data-layer reconstruction laws, not completeness or soundness
@@ -63,15 +68,15 @@ The laws do not by themselves establish a valid protocol instance or a security 
   \lean{RingSwitching.tensorProductProfile}
   \uses{def:ring_switching_profile}
   \label{def:tensor_product_profile}
-  For any fields $B = K$ and $L$ with a chosen degree-$2^\kappa$ extension basis, the profile takes the
-  \emph{tensor carrier} $A := L \otimes_K L$, with $\varphi_0(\alpha) = \alpha \otimes 1$,
-  $\varphi_1(\alpha) = 1 \otimes \alpha$, and the coordinate maps given by the $K$-basis coordinates
-  for the left ($\beta.\mathrm{baseChange}\,L$) and right ($\mathrm{baseChangeRight}\,\beta$)
-  $L$-module structures on $A$, giving columns and rows respectively. Thus
-  $z = \sum_v z_v \otimes \beta_v = \sum_u \beta_u \otimes z_u$. The reconstruction and inverse
-  laws hold by \texttt{Basis.sum\_repr} and \texttt{Basis.repr} on these bases, base
-  compatibility holds by moving scalars across the tensor product, and all are proven in ArkLib. Binius uses this constructor
-  with its binary-tower basis.
+  For commutative rings $B$ and $L$, with $L$ a $B$-algebra and a chosen rank-$2^\kappa$
+  $B$-basis, the profile takes $A := L \otimes_B L$, with
+  $\varphi_0(\alpha) = \alpha \otimes 1$ and $\varphi_1(\alpha) = 1 \otimes \alpha$.
+  The coordinate maps use this basis in the left and right $L$-module structures on $A$,
+  giving columns and rows respectively. Thus
+  $z = \sum_v z_v \otimes \beta_v = \sum_u \beta_u \otimes z_u$.
+  Basis reconstruction gives the two reconstruction laws and the row inverse; the column
+  inverse follows from the profile laws. Base compatibility follows by moving scalars
+  across the tensor product. Binius uses this constructor with its binary-tower basis.
 \end{definition}
 
 A trace or automorphism switch whose carrier is $L$ itself, such as Hachi's \S3 head

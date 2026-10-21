@@ -94,17 +94,38 @@ them; `PackingData.transpose` is the coordinate transpose `(ιP → E) ≃ₗ[B]
 - `Multiplier` — the public multiplier evaluated by a read-once matrix program
   (`Data/Matrix/ReadOnce.lean`);
 - `Batching` — `BatchingStrategy`, a uniform challenge distribution with a proved collision bound
-  (`gammaPowers`, `eqFold`, `singleton`, `reindex`);
+  (`gammaPowers`, `eqFold`, `singleton`, `reindex`), and `BatchingStrategy.separates_finset`: a
+  list of at most `L` families fixed before the challenge has an incorrect collision with
+  probability at most `L` times the strategy error. The finite-list union bound
+  `prEvent_exists_finset_le_card_mul` is imported from `VCVio.EvalDist.ProbabilityBounds`,
+  which also supplies `prEvent_exists_and_le_of_subsingleton`. The phase retains its
+  point-local carrier-binding bound `κ/|L|` and its polynomial-binding corollary
+  `BatchingPhase.prob_exists_consistent_ne_le`. The list bound does not cover
+  challenge-dependent lists, adaptive joint-list invariants or extraction;
 - `ScalarHead/Layout` and `ScalarHead/Quirky` — prefix, suffix and quirky Lagrange layouts, each
   with a proved reconstruction identity. A consumer may supply its own `ClaimLayout`: Hachi's
   monomial-coefficient layout lives in `Commitments/Functional/Hachi/TraceHead/Coefficients.lean`.
+- `DerivedBatching` — the fixed-list bound for packed candidates against the publicly derived
+  transpose of fixed component claims. `Relations` supplies `actualSlices` and `derivedTarget`
+  for the pure reconstruction and target laws; injectivity of the packing-to-challenge coefficient map
+  is needed only for separation.
+
+Reference Flock's early residual scalar claim, using `quirkyLayout` and `quirkyComponent`, is the
+intended derived-batching consumer. The retained point and bases are public; a preceding prover
+message supplies component claims `α`.
+The verifier derives `transpose α` without another slice message. The candidate packed source
+and list must be anchored to the original commitment by the consumer and fixed before the fresh
+batching challenge; the weights, target and public multiplier depend on the new challenge. The laws
+retain the same packed polynomial and exclude correct candidates from the bad event. The concrete residual
+relation, native head conformance, same-source `pc.evalRel` adapter and extraction remain separate work.
 
 `PackingData.ofBasis` uses one algebra and one basis in both roles; `PackingData.ofBaseOpening`
 uses the base ring as opening algebra, so there is a single opening coordinate.
 
 Everything holds over commutative rings, including rings with zero divisors, except the two
-Schwartz–Zippel batching strategies, which need a finite domain, and the quirky layout, whose
-Lagrange interpolation needs the opening algebra to be a field.
+Schwartz–Zippel batching strategies, which need a finite commutative ring with no zero
+divisors, and the quirky layout, whose Lagrange interpolation needs the opening algebra to
+be a field.
 
 ## The three constructions
 
@@ -136,14 +157,14 @@ Lagrange interpolation needs the opening algebra to be a field.
   - the packed polynomial is the shared `packedMLE` of the layout's components
     (`toMvPolynomialDeg1_packCoefficients`).
 
-  The conformance theorem `traceHead_conforms`
-  (`ArkLibTest/ProofSystem/RingSwitching/Conformance/Hachi.lean`) states the accepting condition
+  The conformance theorem `trace_head_conforms`
+  (`ArkLib/Commitments/Functional/Hachi/TraceHead/Conformance.lean`) states the accepting condition
   through that layer: a passing check whose forwarded claim opens validly is exactly a valid weak
   opening for which the sent value is the single shared slice (`sliceRel`) of the `packedMLE` of
   the decoded committed polynomial's components, and the claimed scalar is the layout-weighted sum
-  of its `ψ`-coordinates. Hachi §3.1 exercises only the packing, evaluation and opening part of the
-  shared layer (one opening coordinate, no batching, multiplier or sumcheck), as in the paper, so
-  its reuse is small at the proof level and real at the statement level.
+  of its `ψ`-coordinates. This layout has one opening coordinate and introduces no batching
+  challenge or sumcheck. Concrete acceptance and rejection fixtures remain in
+  `ArkLibTest/ProofSystem/RingSwitching/Conformance/Hachi.lean`.
 - **HMZ25 `Lift` construction** ([`../papers/HMZ25.md`](../papers/HMZ25.md)): the
   *opposite* direction, `S ≅ R[X]/(φ)` → a field `F` — lift `M z = y` to `R[X]` and evaluate
   at a random `α`. **Formalized generically** in `ProofSystem/RingSwitching/Lift/`
@@ -173,6 +194,7 @@ Lagrange interpolation needs the opening algebra to be a field.
 - [`../../../ArkLib/ProofSystem/RingSwitching/Packing/Coordinates.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/Coordinates.lean) — independent packing and opening bases, coordinate transpose.
 - [`../../../ArkLib/ProofSystem/RingSwitching/Packing/Relations.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/Relations.lean) — opening, slice and batched-sumcheck relations.
 - [`../../../ArkLib/ProofSystem/RingSwitching/Packing/Batching.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/Batching.lean) — batching strategies with proved collision bounds.
+- [`../../../ArkLib/ProofSystem/RingSwitching/Packing/DerivedBatching.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/DerivedBatching.lean) — conditional fixed-list separation for publicly derived slices of the same packed source.
 - [`../../../ArkLib/ProofSystem/RingSwitching/Packing/Algebra.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/Algebra.lean) — `packMLE`, the tensor-product constructor `tensorProductProfile`, the DP24 verifier subroutines.
 - [`../../../ArkLib/ProofSystem/RingSwitching/Packing/Prelude.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/Prelude.lean) — DP24 protocol vocabulary and relations.
 - [`../../../ArkLib/ProofSystem/RingSwitching/Packing/General.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/General.lean) — the full DP24 reduction + security theorems.

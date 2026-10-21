@@ -29,9 +29,7 @@ rows of the packed variables (`coefficientRows`), transported to `MvPolynomial` 
 `packedMLE` of the layout's components (`toMvPolynomialDeg1_packCoefficients`). The statements
 connecting the protocol relations to this layer are in the library module
 `TraceHead/Conformance.lean`.
-Hachi §3.1 exercises only the packing, evaluation and opening part of the shared layer (one
-opening coordinate, no batching, multiplier or sumcheck), as in the paper, so its reuse is small
-at the proof level and real at the statement level.
+The layout has one opening coordinate and introduces no batching challenge or sumcheck.
 
 ## References
 

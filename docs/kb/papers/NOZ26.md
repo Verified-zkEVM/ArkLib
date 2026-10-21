@@ -102,9 +102,9 @@ Ring-switching layer:
   `hachiLiftCom`, not yet sampled by `keygen` alongside the inner-outer commitment's own — so the
   collision-to-Module-SIS reduction is complete locally, while the end-to-end security integration
   ([NOZ26] §4.5, `outputToModuleSIS_valid_of_verified`) is not.
-- The packing-layer instantiation: `L = R_q`, carrier `A = R_q`, `φ₀ = id`, `φ₁ = σ₋₁` (order-two
-  automorphism), basis `ψ` from its **Theorem 2** — which discharges the profile's reconstruction
-  laws for the Hachi instance.
+- Hachi's trace head uses `R_q` itself and the order-two automorphism `σ₋₁`. Its packing
+  bijection `ψ` comes from **Theorem 2**; these trace identities require a separate algebraic
+  interface from the DP24 tensor profile.
 - Parameter translation: Hachi's Theorem 2 packs `d/k` subfield elements. ArkLib's
   `RingSwitchingProfile ... κ` uses `2^κ` for this packing rank, so this `κ` is
   `log₂(d/k)` in Hachi notation, not Hachi's extension-degree parameter `k`/`κ`.

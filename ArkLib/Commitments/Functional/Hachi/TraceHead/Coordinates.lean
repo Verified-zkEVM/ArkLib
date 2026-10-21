@@ -29,26 +29,29 @@ open ArkLib.Lattices.CyclotomicModulus
 
 namespace ArkLib.Lattices.Hachi.TraceHead
 
-variable (q : ℕ) [Fact (Nat.Prime q)] [NeZero q] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
+variable (q : ℕ) [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
 variable (α κ : ℕ) (h2 : (2 : ZMod q) ≠ 0) (hk : 2 * 2 ^ κ ∣ 2 ^ α)
 
-include hk in
-/-- Binary monomial indices have exactly the cardinality of the packing vector. -/
-theorem packingRank_eq : 2 ^ α / 2 ^ κ = 2 ^ (α - κ) :=
-  Nat.pow_div (Nat.le_of_succ_le (succ_le_of_two_mul_two_pow_dvd hk)) (by norm_num)
+/-- Dividing powers of two subtracts their exponents. -/
+theorem two_pow_div_two_pow (hκ : κ ≤ α) : 2 ^ α / 2 ^ κ = 2 ^ (α - κ) :=
+  Nat.pow_div hκ (by norm_num)
 
 /-- The `psi` map indexed by `Fin (2^(α-κ))`. -/
 noncomputable def coefficientEquiv :
     (Fin (2 ^ (α - κ)) → fixedSubring (R := ZMod q) α (2 ^ κ)) ≃ₗ[
       fixedSubring (R := ZMod q) α (2 ^ κ)] Rq (powTwoCyclotomic (R := ZMod q) α) :=
-  (LinearEquiv.funCongrLeft _ _ (finCongr (packingRank_eq α κ hk))).trans
+  (LinearEquiv.funCongrLeft _ _
+    (finCongr (two_pow_div_two_pow α κ
+      (Nat.le_of_succ_le (succ_le_of_two_mul_two_pow_dvd hk))))).trans
     (psiLinearEquiv q α κ h2 hk)
 
 /-- The index transport preserves each numeric monomial index. -/
 @[simp] theorem coefficientEquiv_apply
     (a : Fin (2 ^ (α - κ)) → fixedSubring (R := ZMod q) α (2 ^ κ)) :
     coefficientEquiv q α κ h2 hk a =
-      psi α (2 ^ κ) (fun j => a (finCongr (packingRank_eq α κ hk) j)) := rfl
+      psi α (2 ^ κ) (fun j => a
+        (finCongr (two_pow_div_two_pow α κ
+          (Nat.le_of_succ_le (succ_le_of_two_mul_two_pow_dvd hk))) j)) := rfl
 
 /-- The trace equality is exactly an inner product in the binary-indexed coordinates. -/
 theorem traceH_coefficientEquiv_eq_iff
@@ -59,7 +62,9 @@ theorem traceH_coefficientEquiv_eq_iff
       (2 ^ α / 2 ^ κ) • (z : Rq (powTwoCyclotomic α)) ↔ ∑ i, a i * b i = z := by
   rw [coefficientEquiv_apply, coefficientEquiv_apply,
     traceH_psi_mul_conj_eq_iff α κ h2 hk]
-  rw [Equiv.sum_comp (finCongr (packingRank_eq α κ hk)) (fun i => a i * b i)]
+  rw [Equiv.sum_comp
+    (finCongr (two_pow_div_two_pow α κ
+      (Nat.le_of_succ_le (succ_le_of_two_mul_two_pow_dvd hk)))) (fun i => a i * b i)]
 
 /--
 The scaled trace check equals evaluation of the decoded polynomial. Retained point coordinates

@@ -26,7 +26,7 @@ namespace ArkLib.Lattices.Hachi.TraceHead
 
 noncomputable section
 
-variable {q : ℕ} [Fact (Nat.Prime q)] [NeZero q] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
+variable {q : ℕ} [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
 variable (α κ : ℕ)
 variable {innerRows messageDigits outerRows innerDigits dRows m r : ℕ}
 variable {ι : Type} {oSpec : OracleSpec ι}
@@ -39,7 +39,6 @@ def honestTranscript (base : ZMod q)
     (pSpecTraceHead (q := q) α).FullTranscript
   | ⟨0, _⟩ => honestMessage α κ base s w
 
-omit [NeZero q] in
 /-- The prover run has no effects and emits the trace message while preserving the opening. -/
 theorem traceHeadProver_run (base : ZMod q)
     (s : Statement q α κ innerRows messageDigits outerRows innerDigits dRows m r)
