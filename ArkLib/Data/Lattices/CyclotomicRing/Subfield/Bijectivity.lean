@@ -45,4 +45,18 @@ theorem psi_bijective (α κ : ℕ) (h2 : (2 : ZMod q) ≠ 0) (hk : 2 * 2 ^ κ �
   congr 1
   rw [← pow_add]; congr 1; omega
 
+/-- Fixed-subring linear coordinates of the packing map. -/
+noncomputable def psiLinearEquiv (α κ : ℕ) (h2 : (2 : ZMod q) ≠ 0)
+    (hk : 2 * 2 ^ κ ∣ 2 ^ α) :
+    (Fin (2 ^ α / 2 ^ κ) → fixedSubring (R := ZMod q) α (2 ^ κ)) ≃ₗ[
+        fixedSubring (R := ZMod q) α (2 ^ κ)]
+      Rq (powTwoCyclotomic (R := ZMod q) α) :=
+  LinearEquiv.ofBijective (psiLinearMap α (2 ^ κ)) (psi_bijective q α κ h2 hk)
+
+/-- The linear equivalence computes `psi`. -/
+@[simp] theorem psiLinearEquiv_apply (α κ : ℕ) (h2 : (2 : ZMod q) ≠ 0)
+    (hk : 2 * 2 ^ κ ∣ 2 ^ α)
+    (a : Fin (2 ^ α / 2 ^ κ) → fixedSubring (R := ZMod q) α (2 ^ κ)) :
+    psiLinearEquiv q α κ h2 hk a = psi α (2 ^ κ) a := rfl
+
 end ArkLib.Lattices.CyclotomicModulus

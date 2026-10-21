@@ -27,8 +27,9 @@ used by the DP24 packing protocol. Its data consist of:
   **reconstruction laws** stating that every carrier element is recovered from its
   coordinates as a `φ₀`/`φ₁`-weighted sum over the embedded basis.
 
-Each coordinate map is moreover a **two-sided inverse** of its recomposition map, and the two
-embeddings agree on `B`. Reconstruction alone is insufficient: a carrier obtained by collapsing
+Faithful row coordinates and reconstruction make both coordinate maps **two-sided inverses**
+of their recomposition maps; the column inverse is derived. The two embeddings agree on `B`.
+Reconstruction alone is insufficient: a carrier obtained by collapsing
 the two tensor factors can reconstruct every element while losing the coordinates the honest
 prover needs. These are data-layer laws, not a soundness theorem: protocol proofs must still
 connect the coordinates to `packMLE`, the honest folded element, and the instance's own algebraic
@@ -40,8 +41,8 @@ identities.
   same carriers `(B, L, κ)` (e.g. with different bases), so instance resolution would be
   ambiguous.
 * It is stated over `CommRing` (not `Field`): carriers of interest include non-field rings.
-  The `Field`-only steps (Schwartz–Zippel over `|L|`) stay at the soundness use-sites, not
-  here.
+  Probability bounds carry their additional ring and sampling hypotheses at the soundness
+  use-sites.
 * The inverse laws characterize the carrier up to ring isomorphism with `L ⊗[B] L`; see
   `RingSwitchingProfile.tensorEquiv` in `ProfileCoordinates.lean`. Profiles allow different
   representations and bases, rather than mathematically different carrier algebras.
@@ -84,7 +85,7 @@ namespace RingSwitching
 
 open Module
 
-/-- A coordinatized tensor-algebra presentation for the DP24 packing reduction.
+/-- A coordinatized tensor-algebra presentation.
 `L` is free of rank `2^κ` over the small ring `B` (via `basis`); `A` is the carrier of the
 folded element `ŝ` sent by batching. The two coordinate maps reconstruct with the basis in
 opposite embedded factors. -/
@@ -115,9 +116,6 @@ structure RingSwitchingProfile (B L : Type*) (κ : ℕ)
   /-- Recomposition preserves every row coordinate tuple, ruling out collapsed factors. -/
   decomposeRows_recompose : ∀ c : (Fin κ → Fin 2) → L,
     decomposeRows (∑ u, φ₀ (basis u) * φ₁ (c u)) = c
-  /-- Recomposition preserves every column coordinate tuple. -/
-  decomposeColumns_recompose : ∀ c : (Fin κ → Fin 2) → L,
-    decomposeColumns (∑ v, φ₀ (c v) * φ₁ (basis v)) = c
   /-- The two copies of `L` agree on the common base ring. -/
   embeddings_agree : ∀ b : B, φ₀ (algebraMap B L b) = φ₁ (algebraMap B L b)
 
@@ -137,23 +135,9 @@ theorem decomposeRows_eq_iff (z : P.A) (c : (Fin κ → Fin 2) → L) :
   · rintro rfl
     exact P.decomposeRows_recompose c
 
-/-- A column tuple is determined by its recomposition. -/
-theorem decomposeColumns_eq_iff (z : P.A) (c : (Fin κ → Fin 2) → L) :
-    P.decomposeColumns z = c ↔ z = ∑ v, P.φ₀ (c v) * P.φ₁ (P.basis v) := by
-  constructor
-  · intro h
-    simpa only [h] using P.decomposeColumns_spec z
-  · rintro rfl
-    exact P.decomposeColumns_recompose c
-
 /-- The zero carrier element has zero row coordinates. -/
 @[simp] theorem decomposeRows_zero : P.decomposeRows 0 = 0 := by
   apply (P.decomposeRows_eq_iff _ _).mpr
-  simp
-
-/-- The zero carrier element has zero column coordinates. -/
-@[simp] theorem decomposeColumns_zero : P.decomposeColumns 0 = 0 := by
-  apply (P.decomposeColumns_eq_iff _ _).mpr
   simp
 
 /-- Row coordinates are additive; this is derived from the inverse laws. -/
@@ -163,26 +147,12 @@ theorem decomposeRows_add (x y : P.A) :
   simp only [Pi.add_apply, map_add, mul_add, Finset.sum_add_distrib,
     ← P.decomposeRows_spec]
 
-/-- Column coordinates are additive. -/
-theorem decomposeColumns_add (x y : P.A) :
-    P.decomposeColumns (x + y) = P.decomposeColumns x + P.decomposeColumns y := by
-  apply (P.decomposeColumns_eq_iff _ _).mpr
-  simp only [Pi.add_apply, map_add, add_mul, Finset.sum_add_distrib,
-    ← P.decomposeColumns_spec]
-
 /-- Row coordinates respect the explicit right embedding. -/
 theorem decomposeRows_φ₁_mul (a : L) (z : P.A) :
     P.decomposeRows (P.φ₁ a * z) = fun u => a * P.decomposeRows z u := by
   apply (P.decomposeRows_eq_iff _ _).mpr
   conv_lhs => rw [P.decomposeRows_spec z, Finset.mul_sum]
   simp only [map_mul, mul_left_comm]
-
-/-- Column coordinates respect the explicit left embedding. -/
-theorem decomposeColumns_φ₀_mul (a : L) (z : P.A) :
-    P.decomposeColumns (P.φ₀ a * z) = fun v => a * P.decomposeColumns z v := by
-  apply (P.decomposeColumns_eq_iff _ _).mpr
-  conv_lhs => rw [P.decomposeColumns_spec z, Finset.mul_sum]
-  simp only [map_mul, mul_assoc]
 
 /-- Rows of a pure tensor are the base coordinates of its left factor times its right factor. -/
 theorem decomposeRows_φ₀_mul_φ₁ (x y : L) :
@@ -193,6 +163,59 @@ theorem decomposeRows_φ₀_mul_φ₁ (x y : L) :
   simp only [map_sum, Algebra.smul_def, map_mul, Finset.sum_mul, P.embeddings_agree]
   refine Finset.sum_congr rfl fun u _ => ?_
   simp only [mul_comm, mul_assoc]
+
+/-- Column reconstruction and faithful row coordinates force the column inverse law. -/
+theorem decomposeColumns_recompose (c : (Fin κ → Fin 2) → L) :
+    P.decomposeColumns (∑ v, P.φ₀ (c v) * P.φ₁ (P.basis v)) = c := by
+  classical
+  let rows : P.A →+ ((Fin κ → Fin 2) → L) :=
+    { toFun := P.decomposeRows
+      map_zero' := P.decomposeRows_zero
+      map_add' := P.decomposeRows_add }
+  have hrows (d : (Fin κ → Fin 2) → L) (u : Fin κ → Fin 2) :
+      rows (∑ v, P.φ₀ (d v) * P.φ₁ (P.basis v)) u =
+        ∑ v, P.basis.repr (d v) u • P.basis v := by
+    rw [map_sum]
+    simp [rows, P.decomposeRows_φ₀_mul_φ₁, Algebra.smul_def]
+  have hinj : Function.Injective (fun d : (Fin κ → Fin 2) → L =>
+      ∑ v, P.φ₀ (d v) * P.φ₁ (P.basis v)) := by
+    intro d e h
+    funext v
+    apply P.basis.repr.injective
+    ext u
+    have hh := congrArg (fun z => P.basis.repr (rows z u) v) h
+    rw [hrows, hrows] at hh
+    simpa [Finsupp.single_apply] using hh
+  apply hinj
+  exact (P.decomposeColumns_spec _).symm
+
+/-- A column tuple is determined by its recomposition. -/
+theorem decomposeColumns_eq_iff (z : P.A) (c : (Fin κ → Fin 2) → L) :
+    P.decomposeColumns z = c ↔ z = ∑ v, P.φ₀ (c v) * P.φ₁ (P.basis v) := by
+  constructor
+  · intro h
+    simpa only [h] using P.decomposeColumns_spec z
+  · rintro rfl
+    exact P.decomposeColumns_recompose c
+
+/-- The zero carrier element has zero column coordinates. -/
+@[simp] theorem decomposeColumns_zero : P.decomposeColumns 0 = 0 := by
+  apply (P.decomposeColumns_eq_iff _ _).mpr
+  simp
+
+/-- Column coordinates are additive. -/
+theorem decomposeColumns_add (x y : P.A) :
+    P.decomposeColumns (x + y) = P.decomposeColumns x + P.decomposeColumns y := by
+  apply (P.decomposeColumns_eq_iff _ _).mpr
+  simp only [Pi.add_apply, map_add, add_mul, Finset.sum_add_distrib,
+    ← P.decomposeColumns_spec]
+
+/-- Column coordinates respect the explicit left embedding. -/
+theorem decomposeColumns_φ₀_mul (a : L) (z : P.A) :
+    P.decomposeColumns (P.φ₀ a * z) = fun v => a * P.decomposeColumns z v := by
+  apply (P.decomposeColumns_eq_iff _ _).mpr
+  conv_lhs => rw [P.decomposeColumns_spec z, Finset.mul_sum]
+  simp only [map_mul, mul_assoc]
 
 /-- Columns of a pure tensor are the base coordinates of its right factor times its left
 factor. -/

@@ -63,7 +63,9 @@ results, each sorry-free and axiom-clean under its stated hypotheses, with avera
 Under a plain `MLIOPCS`, whose `MLIOPCS.rbrKnowledgeSoundness` contract is averaged, the full
 composite `fullOracleVerifier_rbrKnowledgeSoundness` remains **conditional**. It applies the
 admitted framework contract `OracleVerifier.append_rbrKnowledgeSoundness`, whose statement is
-flagged as not derivable from its hypotheses, and inherits its `sorryAx`.
+flagged as not derivable from its hypotheses, and inherits its `sorryAx`. Ordinary knowledge
+soundness additionally requires the admitted RBR-to-KS bridge; the proved exports here concern
+round-by-round knowledge soundness.
 
 This is one construction of the ring-switching family, not the family itself — see the
 folder umbrella `ArkLib/ProofSystem/RingSwitching/Basic.lean` for the taxonomy. It is
@@ -71,8 +73,8 @@ instantiated by `ProofSystem/Binius/FRIBinius/`.
 
 ## References
 
-- [DP24] Diamond, Benjamin E., and Jim Posen. "Polylogarithmic Proofs for Multilinears over
-  Binary Towers." Cryptology ePrint Archive (2024).
+* [Diamond, B. E., and Posen, J., *Polylogarithmic Proofs for Multilinears over
+  Binary Towers*][DP24]
 -/
 
 @[expose] public section
@@ -107,7 +109,7 @@ def batchingCoreGuardedForm :
     ((scalarRoundOracleVerifierGuardedForm _ _).append
       (SumcheckPhase.coreInteractionGuardedForm κ L K P ℓ ℓ' h_l mlIOPCS.toAbstractOStmtIn))
 
-/-- The oracle verifier for the full DP24 ring-switching protocol -/
+/-- The verifier for batching, relocation sum-check, and downstream opening. -/
 @[reducible]
 def fullOracleVerifier :=
   OracleVerifier.append (oSpec := []ₒ)
@@ -125,7 +127,7 @@ def batchingCoreReduction :=
        mlIOPCS.toAbstractOStmtIn)
     (pSpec₂:=pSpecCoreInteraction L ℓ')
 
-/-- The reduction for the full DP24 ring-switching protocol -/
+/-- Batching, relocation sum-check, and downstream opening as an oracle reduction. -/
 @[reducible]
 def fullOracleReduction :
     OracleProof (oSpec:=[]ₒ)
@@ -138,7 +140,7 @@ def fullOracleReduction :
     (batchingCoreReduction κ L K P ℓ ℓ' h_l mlIOPCS)
     mlIOPCS.oracleReduction
 
-/-- The full DP24 ring-switching protocol as a Proof -/
+/-- The composed ring-switching oracle proof. -/
 @[reducible]
 def fullOracleProof :
     OracleProof []ₒ
@@ -219,14 +221,8 @@ def fullRbrKnowledgeError (i : (fullPspec κ L K P ℓ' mlIOPCS).ChallengeIdx) :
   (ChallengeIdx.sumEquiv.symm i)
 
 omit [NeZero κ] [Fintype K] [DecidableEq K] [NeZero ℓ] [NeZero ℓ'] in
-/-- Worst-case round-by-round knowledge soundness for the batching phase followed by the core
-interaction, with error `κ/|L|` at the batching challenge and `2/|L|` per sumcheck challenge.
-
-Composed from `BatchingPhase.batchingOracleVerifier_rbrKnowledgeSoundnessWorstCase` and
-`SumcheckPhase.coreInteraction_rbrKnowledgeSoundnessWorstCase` by
-`OracleVerifier.append_rbrKnowledgeSoundnessWorstCase_of_guarded_first`; the batching verifier is
-guarded by its own check (`scalarRoundOracleVerifierGuardedForm`). Sorry-free and axiom-clean
-under `hUnique` and `[NoZeroDivisors L]`. -/
+/-- Worst-case round-by-round knowledge soundness for batching and relocation, with error
+`κ/|L|` at the batching challenge and `2/|L|` at each sum-check challenge. -/
 theorem batchingCore_rbrKnowledgeSoundnessWorstCase [NoZeroDivisors L]
     (hUnique : mlIOPCS.toAbstractOStmtIn.Functional) :
     Verifier.rbrKnowledgeSoundnessWorstCase init impl
@@ -242,9 +238,8 @@ theorem batchingCore_rbrKnowledgeSoundnessWorstCase [NoZeroDivisors L]
       mlIOPCS.toAbstractOStmtIn (init := init) (impl := impl) hUnique)
 
 omit [NeZero κ] [Fintype K] [DecidableEq K] [NeZero ℓ] [NeZero ℓ'] in
-/-- Round-by-round knowledge soundness for the batching phase followed by the core interaction:
-the averaged form of `batchingCore_rbrKnowledgeSoundnessWorstCase`. Sorry-free and axiom-clean
-under `hUnique` and `[NoZeroDivisors L]`. -/
+/-- Averaged round-by-round knowledge soundness for batching and relocation, with error
+`κ/|L|` at the batching challenge and `2/|L|` at each sum-check challenge. -/
 theorem batchingCore_rbrKnowledgeSoundness [NoZeroDivisors L]
     (hUnique : mlIOPCS.toAbstractOStmtIn.Functional) :
     (batchingCoreVerifier κ L K P ℓ ℓ' h_l mlIOPCS).rbrKnowledgeSoundness init impl
@@ -255,20 +250,10 @@ theorem batchingCore_rbrKnowledgeSoundness [NoZeroDivisors L]
     (batchingCore_rbrKnowledgeSoundnessWorstCase κ L K P ℓ ℓ' h_l mlIOPCS init hUnique)
 
 omit [NeZero κ] [Fintype K] [DecidableEq K] [NeZero ℓ] [NeZero ℓ'] in
-/-- Round-by-round knowledge soundness for the full ring-switching oracle verifier.
-
-**Conditional on an admitted composition contract.** The batching-and-core part,
-`batchingCore_rbrKnowledgeSoundness`, is sorry-free and axiom-clean. The last step appends the
-downstream opening, whose `MLIOPCS.rbrKnowledgeSoundness` contract is averaged, so this composite
-applies the admitted `OracleVerifier.append_rbrKnowledgeSoundness`. That contract is stated for
-arbitrary verifiers at the averaged notion, and the section note of
-`Composition/Sequential/Append/Security.lean` flags its statement as not derivable from its
-hypotheses. So this theorem is unverified statement debt, not only a missing proof, and it carries
-`sorryAx`.
-
-Under the worst-case hypothesis `MLIOPCS.RbrKnowledgeSoundWorstCase` on the downstream opening,
-the same conclusion is sorry-free and axiom-clean:
-`fullOracleVerifier_rbrKnowledgeSoundness_of_worst_case`. -/
+/-- Averaged round-by-round knowledge soundness at the relaxed input relation.
+This theorem depends on the admitted averaged composition rule. Use
+`fullOracleVerifier_rbrKnowledgeSoundness_of_worst_case` when the downstream opening has a
+worst-case guarantee. -/
 theorem fullOracleVerifier_rbrKnowledgeSoundness [Finite K] [NoZeroDivisors L]
     (hUnique : mlIOPCS.toAbstractOStmtIn.Functional) :
     OracleProof.rbrKnowledgeSoundness
@@ -299,16 +284,9 @@ theorem fullOracleVerifier_rbrKnowledgeSoundness [Finite K] [NoZeroDivisors L]
   simpa only [OracleProof.rbrKnowledgeSoundness, fullOutputRelation, Function.comp_def] using res
 
 omit [NeZero κ] [Fintype K] [DecidableEq K] [NeZero ℓ] [NeZero ℓ'] in
-/-- Worst-case round-by-round knowledge soundness for the full ring-switching oracle verifier, at
-error `κ/|L|` (batching) `+ 2/|L|` per sumcheck round `+` the downstream opening's error, given a
-downstream opening that is itself worst-case round-by-round knowledge sound
-(`MLIOPCS.RbrKnowledgeSoundWorstCase`).
-
-Composed from `batchingCore_rbrKnowledgeSoundnessWorstCase` and that hypothesis by
-`OracleVerifier.append_rbrKnowledgeSoundnessWorstCase_of_guarded_first`; batching followed by the
-core interaction is guarded by its own checks (`batchingCoreGuardedForm`), and the downstream
-opening needs no guard. Sorry-free and axiom-clean under `hUnique`, `hPCS` and
-`[NoZeroDivisors L]`. -/
+/-- Worst-case round-by-round knowledge soundness with error `κ/|L|` for batching,
+`2/|L|` per sum-check challenge, and the downstream opening's error. Compatibility must determine
+one packed polynomial, and the opening must satisfy the worst-case guarantee. -/
 theorem fullOracleVerifier_rbrKnowledgeSoundnessWorstCase [NoZeroDivisors L]
     (hUnique : mlIOPCS.toAbstractOStmtIn.Functional)
     (hPCS : mlIOPCS.RbrKnowledgeSoundWorstCase) :
@@ -322,11 +300,8 @@ theorem fullOracleVerifier_rbrKnowledgeSoundnessWorstCase [NoZeroDivisors L]
     (batchingCore_rbrKnowledgeSoundnessWorstCase κ L K P ℓ ℓ' h_l mlIOPCS init hUnique) hPCS
 
 omit [NeZero κ] [Fintype K] [DecidableEq K] [NeZero ℓ] [NeZero ℓ'] in
-/-- Round-by-round knowledge soundness for the full ring-switching oracle verifier, given a
-worst-case round-by-round knowledge sound downstream opening: the averaged form of
-`fullOracleVerifier_rbrKnowledgeSoundnessWorstCase`, with the same statement as
-`fullOracleVerifier_rbrKnowledgeSoundness`. Sorry-free and axiom-clean under `hUnique`, `hPCS` and
-`[NoZeroDivisors L]`. -/
+/-- Averaged round-by-round knowledge soundness with error `κ/|L|` for batching, `2/|L|` per
+sum-check challenge, and the downstream opening's error. -/
 theorem fullOracleVerifier_rbrKnowledgeSoundness_of_worst_case [NoZeroDivisors L]
     (hUnique : mlIOPCS.toAbstractOStmtIn.Functional)
     (hPCS : mlIOPCS.RbrKnowledgeSoundWorstCase) :

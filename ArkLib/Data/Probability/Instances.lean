@@ -1,8 +1,8 @@
 /-
-Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
+Copyright (c) 2024 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Chung Thai Nguyen, Katerina Hristova,
-         Ilia Vlasov, Aristotle (Harmonic), Alexander Hicks
+  Ilia Vlasov, Aristotle (Harmonic), Alexander Hicks
 -/
 module
 
@@ -53,21 +53,31 @@ lemma prob_schwartz_zippel_mv_polynomial
 
 /-- Scalar-challenge form of the polynomial root bound for one variable. -/
 lemma prob_schwartz_zippel_single_variable
-    {R : Type} [CommRing R] [IsDomain R] [Fintype R] [SampleableType R]
+    {R : Type} [CommRing R] [NoZeroDivisors R] [Fintype R] [SampleableType R]
     (p : MvPolynomial (Fin 1) R) {d : ℕ} (hne : p ≠ 0) (hdeg : p.totalDegree ≤ d) :
     Pr{let γ ← $ᵗ R}[MvPolynomial.eval (fun _ : Fin 1 => γ) p = 0] ≤
-      (d : ℝ≥0∞) / Fintype.card R :=
-  (SampleableType.prEvent_uniformSample_equiv (Equiv.funUnique (Fin 1) R).symm
+      (d : ℝ≥0∞) / Fintype.card R := by
+  have : Nontrivial R := by
+    by_contra h
+    have : Subsingleton R := not_nontrivial_iff_subsingleton.mp h
+    exact hne (Subsingleton.elim _ _)
+  have : IsDomain R := NoZeroDivisors.to_isDomain R
+  exact (SampleableType.prEvent_uniformSample_equiv (Equiv.funUnique (Fin 1) R).symm
     (fun r => MvPolynomial.eval r p = 0)).trans_le
       (prob_schwartz_zippel_mv_polynomial_of_totalDegree_le p hne hdeg)
 
 /-- Two distinct univariate polynomials of degree at most `d` agree at a uniform point with
 probability at most `d / |R|`: their difference has at most `d` roots. -/
 lemma prob_polynomial_eval_eq_le
-    {R : Type} [CommRing R] [IsDomain R] [Fintype R] [SampleableType R]
+    {R : Type} [CommRing R] [NoZeroDivisors R] [Fintype R] [SampleableType R]
     {d : ℕ} {p q : Polynomial R} (hne : p ≠ q) (hp : p.natDegree ≤ d) (hq : q.natDegree ≤ d) :
     Pr{let γ ← $ᵗ R}[p.eval γ = q.eval γ] ≤ (d : ℝ≥0∞) / Fintype.card R := by
   classical
+  have : Nontrivial R := by
+    by_contra h
+    have : Subsingleton R := not_nontrivial_iff_subsingleton.mp h
+    exact hne (Subsingleton.elim _ _)
+  have : IsDomain R := NoZeroDivisors.to_isDomain R
   rw [SampleableType.prEvent_uniformSample]
   gcongr
   have hr : p - q ≠ 0 := sub_ne_zero.mpr hne

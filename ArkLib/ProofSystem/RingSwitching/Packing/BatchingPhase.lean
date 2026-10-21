@@ -15,19 +15,6 @@ public import ArkLib.OracleReduction.Composition.Sequential.GuardedCompleteness
 public import VCVio.EvalDist.ProbabilityBounds
 
 /-!
-# ArkLib.ProofSystem.RingSwitching.Packing.BatchingPhase
-
-Definitions and results for this component of ArkLib.
--/
-
-@[expose] public section
-
-open OracleSpec OracleComp ProtocolSpec Finset Polynomial MvPolynomial
-  Module TensorProduct Nat Matrix
-open scoped NNReal ENNReal
-open Sumcheck.Structured
-
-/-!
 # Batching phase — relocating the claim into the carrier
 
 First phase of the interactive packing reduction. Input: an evaluation claim `t(r) = s` over
@@ -88,9 +75,16 @@ Common input `[f]`, `s ∈ L`, `(r_0, ..., r_{ℓ-1}) ∈ L^ℓ`; the prover add
 
 ## References
 
-* [DP24] Diamond, Benjamin E., and Jim Posen. "Polylogarithmic Proofs for Multilinears over
-  Binary Towers." Cryptology ePrint Archive (2024).
+* [Diamond, B. E., and Posen, J., *Polylogarithmic Proofs for Multilinears over
+  Binary Towers*][DP24]
 -/
+
+@[expose] public section
+
+open OracleSpec OracleComp ProtocolSpec Finset Polynomial MvPolynomial
+  Module TensorProduct Nat Matrix
+open scoped NNReal ENNReal
+open Sumcheck.Structured
 
 noncomputable section
 namespace RingSwitching.BatchingPhase
@@ -163,11 +157,8 @@ noncomputable def oracleProver :
     }
     return (⟨stmtOut, oStmt⟩, witOut)
 
-/-- The batching-phase verifier as an instance of the family-shared check-then-update
-scalar-round verifier (`RingSwitching.scalarRoundOracleVerifier`, `RoundVerifiers.lean`):
-query ŝ (step 1), run Check 1 against the column decomposition (step 2, **abort** on failure),
-then output the round-zero sumcheck statement with the batched target `s₀` from the batching
-scalars `r''` (steps 3 and 5). -/
+/-- Check the sent carrier's column reconstruction against the claim, abort on mismatch, and
+output its batched row target `s₀ = compute_s0 ŝ r''`. The input oracle family is preserved. -/
 noncomputable def oracleVerifier :
   OracleVerifier (oSpec:=[]ₒ)
     (StmtIn := BatchingStmtIn L ℓ) (OStmtIn := aOStmtIn.OStmtIn)
@@ -235,7 +226,7 @@ noncomputable def batchingRbrExtractor :
   extractOut _ _ witOut := witOut
 
 /-- RBR knowledge soundness error for the batching phase.
-The only verifier randomness is `r''`; DP24's batching check is a nonzero `κ`-variate multilinear
+The only verifier randomness is `r''`; a false claim gives a nonzero `κ`-variate multilinear
 identity test, giving the Schwartz-Zippel bound `κ/|L|`. -/
 def batchingRBRKnowledgeError
     (i : (pSpecBatching (κ := κ) (L := L) (K := K) (P := P)).ChallengeIdx) : ℝ≥0 :=
@@ -310,12 +301,41 @@ theorem sum_cube_batchingPoly_eq_compute_s0 (ctx : RingSwitchingBaseContext κ L
 
 omit [NeZero κ] [DecidableEq L] [Fintype K] [DecidableEq K] [NeZero ℓ] [NeZero ℓ'] in
 open Probability in
-/-- If compatibility with the oracle statement determines the packed polynomial
-at the fixed oracle statement (`hbind`), then for a fixed carrier `ŝ` a uniform batching point
-admits a compatible packed polynomial whose tensor evaluation differs from `ŝ` but whose round-zero
-sumcheck claim is consistent with the batching target of `ŝ` with probability at most `κ/|L|`.
-This is the exact-functional, one-candidate specialization of the upstream
-`prEvent_exists_and_le_of_subsingleton` bound. -/
+/-- If compatible polynomials have the same embedded evaluation at the fixed input point,
+the batching event for an incorrect carrier has probability at most `κ/|L|`. -/
+theorem prob_exists_consistent_ne_le_of_embedded_eval_eq [NoZeroDivisors L]
+    (stmt : BatchingStmtIn L ℓ)
+    (oStmt : ∀ j, aOStmtIn.OStmtIn j) (s_hat : P.A)
+    (hbind : ∀ t₁ t₂, aOStmtIn.initialCompatibility ⟨t₁, oStmt⟩ →
+      aOStmtIn.initialCompatibility ⟨t₂, oStmt⟩ →
+      embedded_MLP_eval κ L K P ℓ ℓ' h_l t₁ stmt.t_eval_point =
+        embedded_MLP_eval κ L K P ℓ ℓ' h_l t₂ stmt.t_eval_point) :
+    Pr{let c ← $ᵗ (Fin κ → L)}[∃ t' : MultilinearPoly L ℓ',
+        aOStmtIn.initialCompatibility ⟨t', oStmt⟩ ∧
+        embedded_MLP_eval κ L K P ℓ ℓ' h_l t' stmt.t_eval_point ≠ s_hat ∧
+        sumcheckConsistencyProp (boolDomain L ℓ') (compute_s0 κ L K P s_hat c)
+          (projectToMidSumcheckPolyWithParam (L := L) (ℓ := ℓ')
+            (param := RingSwitching_SumcheckMultParam κ L K P ℓ ℓ' h_l)
+            (ctx := { t_eval_point := stmt.t_eval_point, original_claim := stmt.original_claim,
+                      s_hat := s_hat, r_batching := c })
+            (t := t') (i := 0) (challenges := Fin.elim0))] ≤
+      (((κ : ℝ≥0) / (Fintype.card L : ℝ≥0) : ℝ≥0) : ℝ≥0∞) := by
+  by_cases h : ∃ t₀ : MultilinearPoly L ℓ', aOStmtIn.initialCompatibility ⟨t₀, oStmt⟩ ∧
+      embedded_MLP_eval κ L K P ℓ ℓ' h_l t₀ stmt.t_eval_point ≠ s_hat
+  · obtain ⟨t₀, ht₀, hne⟩ := h
+    -- Point-local binding fixes the carrier before the batching challenge.
+    refine (prEvent_mono _ _ _ fun c ⟨t', ht', _, hcons⟩ => ?_).trans
+      (compute_s0_collision_le P hne)
+    rw [hbind t₀ t' ht₀ ht']
+    unfold sumcheckConsistencyProp at hcons
+    rw [hcons, sum_cube_batchingPoly_eq_compute_s0]
+  · rw [prEvent_eq_zero_of_forall_not _ _ fun c ⟨t', ht', hne, _⟩ => h ⟨t', ht', hne⟩]
+    exact _root_.zero_le
+
+omit [NeZero κ] [DecidableEq L] [Fintype K] [DecidableEq K] [NeZero ℓ] [NeZero ℓ'] in
+open Probability in
+/-- Uniqueness of the compatible polynomial bounds the incorrect-carrier batching event
+by `κ/|L|`. -/
 theorem prob_exists_consistent_ne_le [NoZeroDivisors L]
     (stmt : BatchingStmtIn L ℓ) (oStmt : ∀ j, aOStmtIn.OStmtIn j)
     (hbind : ∀ t₁ t₂, aOStmtIn.initialCompatibility ⟨t₁, oStmt⟩ →
@@ -330,14 +350,11 @@ theorem prob_exists_consistent_ne_le [NoZeroDivisors L]
                       s_hat := s_hat, r_batching := c })
             (t := t') (i := 0) (challenges := Fin.elim0))] ≤
       (((κ : ℝ≥0) / (Fintype.card L : ℝ≥0) : ℝ≥0) : ℝ≥0∞) := by
-  have : IsDomain L := NoZeroDivisors.to_isDomain L
-  -- Functional compatibility fixes the candidate before the batching challenge.
-  simp only [← and_assoc]
-  refine prEvent_exists_and_le_of_subsingleton _ _ _ (fun t' ⟨_, hne⟩ => ?_)
-    fun _ h₁ _ h₂ => hbind _ _ h₁.1 h₂.1
-  refine (prEvent_mono _ _ _ fun c hcons => ?_).trans (compute_s0_collision_le P hne)
-  unfold sumcheckConsistencyProp at hcons
-  rw [hcons, sum_cube_batchingPoly_eq_compute_s0]
+  apply prob_exists_consistent_ne_le_of_embedded_eval_eq κ L K P ℓ ℓ' h_l aOStmtIn
+    stmt oStmt s_hat
+  intro t₁ t₂ h₁ h₂
+  exact congrArg (fun t => embedded_MLP_eval κ L K P ℓ ℓ' h_l t stmt.t_eval_point)
+    (hbind t₁ t₂ h₁ h₂)
 
 /-- Knowledge state function for the batching phase. -/
 noncomputable def batchingKnowledgeStateFunction :
@@ -460,11 +477,8 @@ theorem batchingReduction_perfectCompleteness :
   exact ⟨_, rfl, (hhon c).2, rfl⟩
 
 omit [NeZero κ] [Fintype K] [DecidableEq K] [NeZero ℓ] [NeZero ℓ'] in
-/-- Worst-case RBR knowledge soundness for the batching phase oracle verifier, naming the
-extractor `batchingRbrExtractor` and the knowledge-state function `batchingKnowledgeStateFunction`,
-with error `κ/|L|` at the batching challenge: the bound holds for every input statement and every
-sent carrier, over the batching challenge alone. `hUnique` says the oracle statement determines
-the packed polynomial. -/
+/-- For every fixed input and sent carrier, the fresh batching challenge causes an extraction
+failure with probability at most `κ/|L|` when compatibility determines one packed polynomial. -/
 theorem batchingOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_rbrExtractor [NoZeroDivisors L]
     (hUnique : aOStmtIn.Functional) :
     Verifier.rbrKnowledgeSoundnessWorstCaseWith init impl
@@ -490,9 +504,8 @@ theorem batchingOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_rbrExtractor [
   exact (packMLE_unpackMLE (β := P.basis) h_l witMid.t').symm
 
 omit [NeZero κ] [Fintype K] [DecidableEq K] [NeZero ℓ] [NeZero ℓ'] in
-/-- Existential worst-case RBR knowledge soundness for the batching phase oracle verifier, with
-error `κ/|L|`: a corollary of
-`batchingOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_rbrExtractor`. -/
+/-- Worst-case round-by-round knowledge soundness for batching, with error `κ/|L|` at its
+only challenge. -/
 theorem batchingOracleVerifier_rbrKnowledgeSoundnessWorstCase [NoZeroDivisors L]
     (hUnique : aOStmtIn.Functional) :
     (oracleVerifier κ L K P ℓ ℓ' h_l (aOStmtIn:=aOStmtIn)).toVerifier.rbrKnowledgeSoundnessWorstCase
@@ -505,9 +518,8 @@ theorem batchingOracleVerifier_rbrKnowledgeSoundnessWorstCase [NoZeroDivisors L]
       aOStmtIn hUnique⟩
 
 omit [NeZero κ] [Fintype K] [DecidableEq K] [NeZero ℓ] [NeZero ℓ'] in
-/-- RBR knowledge soundness for the batching phase oracle verifier, with error `κ/|L|` at the
-batching challenge: the averaged form of
-`batchingOracleVerifier_rbrKnowledgeSoundnessWorstCase`. -/
+/-- Averaged round-by-round knowledge soundness for batching, with error `κ/|L|` at its
+only challenge. -/
 theorem batchingOracleVerifier_rbrKnowledgeSoundness [NoZeroDivisors L]
     (hUnique : aOStmtIn.Functional) :
     OracleVerifier.rbrKnowledgeSoundness

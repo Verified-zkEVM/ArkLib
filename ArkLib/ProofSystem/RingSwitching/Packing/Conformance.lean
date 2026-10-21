@@ -31,7 +31,7 @@ section SharedLayer
 variable {K L : Type} [CommRing K] [CommRing L] [Algebra K L] {κ ℓ ℓ' : ℕ}
   (P : RingSwitchingProfile K L κ) (h_l : ℓ = ℓ' + κ)
 
-/-- DP24's claim layout at a profile: the `κ` prefix variables are packed along the profile
+/-- Prefix claim layout: the `κ` prefix variables are packed along the profile
 basis and the `ℓ'` suffix variables are retained. -/
 abbrev prefixLayout (ℓ' : ℕ) :
     Packing.ScalarHead.ClaimLayout (Packing.PackingData.ofBasis P.basis) ℓ' :=
@@ -156,11 +156,9 @@ theorem sumcheckConsistencyProp_iff_sumcheckClaimRel [Nontrivial L] (stmt : Batc
   change _ = _ ↔ _ = _
   exact Iff.of_eq (congrArg₂ (· = ·) rfl (Finset.sum_congr rfl fun y _ => MvPolynomial.eval_mul))
 
-/-- **Binius batching conformance.** The batching verifier's column check accepts a sent carrier
-and its accepted output is in the round-zero sumcheck relation exactly when the packed polynomial
-is compatible with the oracle statement, the round polynomial is the shared multiplier times the
-packed polynomial, the batched rows of the carrier are the shared sumcheck claim of that
-multiplier, and the claim is the layout-weighted sum of the carrier's column family. -/
+/-- The column reconstruction check and round-zero sum-check relation hold exactly when the
+packed witness is compatible, its round polynomial is `multiplier * t'`, its batched row value is
+the sum-check claim, and its weighted columns reconstruct the original claim. -/
 theorem batching_conforms [Nontrivial L] [DecidableEq L] (aOStmtIn : AbstractOStmtIn L ℓ')
     (stmt : BatchingStmtIn L ℓ) (oStmt : ∀ j, aOStmtIn.OStmtIn j)
     (z : P.A) (c : Fin κ → L) (wit : RingSwitching.SumcheckWitness L ℓ' 0) :
@@ -202,7 +200,7 @@ theorem compute_final_eq_value_eq_multiplier (r : Fin ℓ → L) (r' : Fin ℓ' 
 
 /-- The final sum-check check of `SumcheckPhase.finalSumcheckVerifier`, through the shared
 multiplier: the target is the multiplier at the challenges times the prover's final constant. -/
-theorem finalCheck_iff_multiplier
+theorem final_check_iff_multiplier
     (stmt : Statement (L := L) (ℓ := ℓ') (RingSwitchingBaseContext κ L K ℓ P) (Fin.last ℓ'))
     (s' : L) :
     stmt.sumcheck_target = compute_final_eq_value κ L K P ℓ ℓ' h_l stmt.ctx.t_eval_point
