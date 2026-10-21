@@ -689,6 +689,12 @@ home_page/            site assets and assembled website root
   bounds are imported directly from `VCVio.EvalDist.ProbabilityBounds`. The phase's
   `prob_exists_consistent_ne_le_of_embedded_eval_eq` requires only uniqueness of the embedded
   evaluation; `prob_exists_consistent_ne_le` is its polynomial-binding corollary.
+  `Relations` also names the actual slices and the arbitrary-weight target derived from fixed
+  component claims. `DerivedBatching` bounds incorrect packed candidates from a list fixed before
+  one challenge, using an injective packing-to-challenge coefficient map. The transpose is public
+  and adds no slice message; the same packed source is retained. Reference Flock's early residual
+  claim is the intended consumer, with its native head and commitment/extraction contracts still
+  separate obligations.
   `Profile.lean` holds the shared packing data layer `RingSwitchingProfile` (packing data +
   reconstruction and inverse laws); `Algebra.lean` holds `packMLE`, the tensor carrier, the
   verifier subroutines and the tensor-product constructor `tensorProductProfile`;

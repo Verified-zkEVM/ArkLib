@@ -103,6 +103,19 @@ them; `PackingData.transpose` is the coordinate transpose `(ιP → E) ≃ₗ[B]
   challenge-dependent lists, adaptive joint-list invariants or extraction;
 - `ScalarHead/Layout` and `ScalarHead/Quirky` — prefix, suffix and quirky Lagrange layouts, each
   with a proved reconstruction identity.
+- `DerivedBatching` — the fixed-list bound for packed candidates against the publicly derived
+  transpose of fixed component claims. `Relations` supplies `actualSlices` and `derivedTarget`
+  for the pure reconstruction and target laws; injectivity of the packing-to-challenge coefficient map
+  is needed only for separation.
+
+Reference Flock's early residual scalar claim, using `quirkyLayout` and `quirkyComponent`, is the
+intended derived-batching consumer. The retained point and bases are public; a preceding prover
+message supplies component claims `α`.
+The verifier derives `transpose α` without another slice message. The candidate packed source
+and list must be anchored to the original commitment by the consumer and fixed before the fresh
+batching challenge; the weights, target and public multiplier depend on the new challenge. The laws
+retain the same packed polynomial and exclude correct candidates from the bad event. The concrete residual
+relation, native head conformance, same-source `pc.evalRel` adapter and extraction remain separate work.
 
 Everything holds over commutative rings, including rings with zero divisors, except the two
 Schwartz–Zippel batching strategies, which need a finite commutative ring with no zero
@@ -154,6 +167,7 @@ be a field.
 - [`../../../ArkLib/ProofSystem/RingSwitching/Packing/Coordinates.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/Coordinates.lean) — independent packing and opening bases, coordinate transpose.
 - [`../../../ArkLib/ProofSystem/RingSwitching/Packing/Relations.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/Relations.lean) — opening, slice and batched-sumcheck relations.
 - [`../../../ArkLib/ProofSystem/RingSwitching/Packing/Batching.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/Batching.lean) — batching strategies with proved collision bounds.
+- [`../../../ArkLib/ProofSystem/RingSwitching/Packing/DerivedBatching.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/DerivedBatching.lean) — conditional fixed-list separation for publicly derived slices of the same packed source.
 - [`../../../ArkLib/ProofSystem/RingSwitching/Packing/Algebra.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/Algebra.lean) — `packMLE`, the tensor-product constructor `tensorProductProfile`, the DP24 verifier subroutines.
 - [`../../../ArkLib/ProofSystem/RingSwitching/Packing/Prelude.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/Prelude.lean) — DP24 protocol vocabulary and relations.
 - [`../../../ArkLib/ProofSystem/RingSwitching/Packing/General.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/General.lean) — the full DP24 reduction + security theorems.

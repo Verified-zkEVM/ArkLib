@@ -7,6 +7,7 @@ module
 
 public import ArkLib.ProofSystem.RingSwitching.Packing.Batching
 public import ArkLib.ProofSystem.RingSwitching.Packing.CheckedObservation
+public import ArkLib.ProofSystem.RingSwitching.Packing.DerivedBatching
 public import ArkLib.ProofSystem.RingSwitching.Packing.Multiplier
 public import ArkLib.ProofSystem.RingSwitching.Packing.Relations
 public import ArkLib.ProofSystem.RingSwitching.Packing.ScalarHead.Quirky
@@ -65,11 +66,15 @@ quirky layout (a field):
 * `FiniteObservation.lean`, `CheckedObservation.lean` — weighted observations, their coordinate
   slices, and read-back of a scalar claim from an accepted honest message.
 * `Polynomial.lean`, `Relations.lean` — packed multilinear polynomials with both round trips, and
-  the opening, slice and batched-sumcheck relations.
+  the opening, slice and batched-sumcheck relations; actual source slices and the target derived
+  from a public transpose with arbitrary weights.
 * `Multiplier.lean` — the public multiplier evaluated by a read-once matrix program.
 * `Batching.lean` — `BatchingStrategy`: uniform challenges with a proved collision bound, and
   `separates_finset` for candidate lists fixed before the challenge (the generic union bound is in
-  upstream `VCVio.EvalDist.ProbabilityBounds`).
+  `VCVio.EvalDist.ProbabilityBounds`).
+* `DerivedBatching.lean` — fixed-list separation for packed candidates against publicly derived
+  slices, preserving the same source without an additional slice message. Reference Flock's early
+  residual scalar claim is the intended consumer; its head conformance remains separate.
 * `ScalarHead/Layout.lean`, `ScalarHead/Quirky.lean` — prefix, suffix and quirky source
   layouts, each with a proved reconstruction identity.
 
