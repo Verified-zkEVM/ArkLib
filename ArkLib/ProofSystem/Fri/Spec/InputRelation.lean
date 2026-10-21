@@ -42,6 +42,38 @@ def proximityLanguage (δ : ℝ) : Set ((ω.subdomain 0).toFinset → F) :=
   {f | ∃ u ∈ code ω (2 ^ (∑ j, (s j).val) * d.val),
     (Code.relHammingDist (fun z ↦ f (initialQuery z)) u : ℝ) < δ}
 
+/-- A witness close to the indexed initial word satisfies the input relation. -/
+theorem mem_inputRelation_of_relHammingDist_le
+    (hdom : 2 ^ (∑ j, (s j).val) * d.val ≤ 2 ^ n) (δ : ℝ≥0)
+    (stmt : Statement F (0 : Fin (k + 1)) × ∀ j, OracleStatement s ω 0 j)
+    (p : Witness F s d (0 : Fin (k + 2)))
+    (hclose : (Code.relHammingDist (fun z ↦ initialOracle s stmt (initialQuery z))
+      (fun z ↦ p.1.eval (ω z)) : ℝ) ≤ δ) :
+    (stmt, p) ∈ inputRelation k s d hdom δ := by
+  let e := (ω.subdomain 0).equivToFinset
+  have he (z : Fin (2 ^ n)) : e z = initialQuery z := by
+    apply Subtype.ext
+    simp [e, initialQuery, CosetFftDomain.subdomain_zero_eq_self]
+  have hdist : Code.relHammingDist ((initialOracle s stmt) ∘ e)
+      ((fun x : (ω.subdomain 0).toFinset ↦ p.1.eval x.val) ∘ e) =
+      Code.relHammingDist (initialOracle s stmt) (fun x ↦ p.1.eval x.val) := by
+    unfold Code.relHammingDist
+    rw [hammingDist_comp_equiv, Fintype.card_congr e]
+  have hf : initialOracle s stmt ∘ e = (fun z ↦ initialOracle s stmt (initialQuery z)) :=
+    funext (fun z ↦ congrArg (initialOracle s stmt) (he z))
+  have hp : (fun x : (ω.subdomain 0).toFinset ↦ p.1.eval x.val) ∘ e =
+      (fun z ↦ p.1.eval (ω z)) := by
+    funext z
+    rw [Function.comp_apply, he]
+    rfl
+  have hprox : Code.relHammingDist (initialOracle s stmt) (fun x ↦ p.1.eval x.val) ≤ δ := by
+    have h : (Code.relHammingDist (initialOracle s stmt) (fun x ↦ p.1.eval x.val) : ℝ) ≤ δ := by
+      rw [← hdist, hf, hp]
+      exact hclose
+    exact_mod_cast h
+  cases k <;> exact hprox
+
+
 /-- A word strictly within radius `δ` of the initial code has a witness in the existing
 FRI input relation, which uses a closed proximity ball. -/
 theorem mem_inputLanguage_of_proximity
@@ -59,30 +91,9 @@ theorem mem_inputLanguage_of_proximity
     simp only [finRangeTo, Fin.val_zero, List.take_zero, List.toFinset_nil,
       Finset.sum_empty, Nat.sub_zero]
     exact hp
-  let e := (ω.subdomain 0).equivToFinset
-  have he (z : Fin (2 ^ n)) : e z = initialQuery z := by
-    apply Subtype.ext
-    simp [e, initialQuery, CosetFftDomain.subdomain_zero_eq_self]
-  have heval : (fun x : (ω.subdomain 0).toFinset ↦ pc.eval x.val) ∘ e =
-      evalOnPoints ω p := by
-    funext z
-    rw [Function.comp_apply, CompPoly.CPolynomial.eval_toPoly, hpc, he]
-    rfl
-  have hdist : Code.relHammingDist ((initialOracle s stmt) ∘ e)
-      ((fun x : (ω.subdomain 0).toFinset ↦ pc.eval x.val) ∘ e) =
-      Code.relHammingDist (initialOracle s stmt) (fun x ↦ pc.eval x.val) := by
-    unfold Code.relHammingDist
-    rw [hammingDist_comp_equiv, Fintype.card_congr e]
-  have hprox : (Code.relHammingDist (initialOracle s stmt) (fun x ↦ pc.eval x.val) : ℝ) < δ := by
-    rw [← hdist, heval]
-    have hf : initialOracle s stmt ∘ e = (fun z ↦ initialOracle s stmt (initialQuery z)) :=
-      funext (fun z ↦ congrArg (initialOracle s stmt) (he z))
-    rw [hf]
-    exact hclose
-  have hprox' : Code.relHammingDist (initialOracle s stmt) (fun x ↦ pc.eval x.val) ≤ δ := by
-    exact_mod_cast hprox.le
   rw [Set.mem_language_iff]
   refine ⟨⟨pc, hdegree⟩, ?_⟩
-  cases k <;> exact hprox'
+  apply mem_inputRelation_of_relHammingDist_le s d hdom δ stmt ⟨pc, hdegree⟩
+  simpa [CompPoly.CPolynomial.eval_toPoly, hpc, ReedSolomon.evalOnPoints] using hclose.le
 
 end Fri.Spec

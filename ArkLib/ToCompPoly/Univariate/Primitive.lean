@@ -130,12 +130,12 @@ def coefficientRead (a : Array F) (i : ℕ) :
     OracleComp (ArithmeticSpec F) {c : F // c = a[i]?.getD 0} :=
   liftM (OracleSpec.query (spec := ArithmeticSpec F) (.coefficientRead a i))
 
-/-- Read one cached interpolation node, returning zero outside the array bounds. -/
+/-- Read one cached field node, returning zero outside the array bounds. -/
 def nodeRead (a : Array F) (i : ℕ) :
     OracleComp (ArithmeticSpec F) {c : F // c = a[i]?.getD 0} :=
   liftM (OracleSpec.query (spec := ArithmeticSpec F) (.nodeRead a i))
 
-/-- Read one cached interpolation value, returning zero outside the array bounds. -/
+/-- Read one cached field value, returning zero outside the array bounds. -/
 def valueRead (a : Array F) (i : ℕ) :
     OracleComp (ArithmeticSpec F) {c : F // c = a[i]?.getD 0} :=
   liftM (OracleSpec.query (spec := ArithmeticSpec F) (.valueRead a i))

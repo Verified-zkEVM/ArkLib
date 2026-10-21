@@ -76,6 +76,15 @@ home_page/            site assets and assembled website root
   `InputRelation.lean` owns the input word and strict proximity language and connects them
   to the closed-ball input relation. It is independent of adaptive soundness; the
   bad-event and adaptive bounds import these input definitions.
+  `Spec/Extraction/Program.lean` owns the named straightline extractor: it scans retained arbitrary
+  words and interpolates a bounded prefix of accepting positions. Its public result erases the
+  same instruction program whose word and field operations are counted. `Spec/ExtractionCorrectness`
+  proves exact returned-witness recovery; `Spec/KnowledgeSoundness` proves all-input knowledge
+  soundness with this extractor and the existing error. `Spec/Extraction/` owns the immutable
+  access backend, generated domain points, driver, and resource proofs; reusable measured
+  polynomial operations live in `ToCompPoly/Univariate/Arithmetic*.lean`. Compiled small cases run
+  with `lake exe fri-extractor-runtime`; classic trust checks live in
+  `ArkLibTest/ProofSystem/Fri/Extraction.lean`.
   `RoundConsistency.lean` connects local checks to word folding. Generic persistent-event
   state functions, adaptive accumulation, and the acceptance-to-soundness bridge live in
   `OracleReduction/Security/{BadEvents,Accumulation,Acceptance}.lean`. These proofs avoid
