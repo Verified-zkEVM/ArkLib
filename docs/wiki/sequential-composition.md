@@ -39,7 +39,8 @@ corollaries set those errors to zero.
 
 Pure verifier forms describe deterministic verifiers that do not reject. A
 `Verifier.GuardedForm` describes a deterministic verifier with an explicit acceptance check;
-rejection contributes to the completeness error. Guarded theorems live in
+rejection contributes to the completeness error. The form itself is defined in
+`Security/Guarded.lean`; the guarded completeness theorems live in
 `Sequential/GuardedCompleteness.lean`, imported separately from the binary umbrella.
 
 `Prover.SimulatedAppendFactorization` equates the simulated prover programs for every input
@@ -77,6 +78,16 @@ through ordinary context lifting.
 transcript prefix, under a pure first verifier. Each round retains its component error.
 `append_rbrSoundness_of_worst_case_of_pure_first` derives the prover-averaged conclusion from
 these hypotheses. Prover-averaged component bounds alone do not supply this contract.
+
+For knowledge soundness, `Verifier.append_rbrKnowledgeSoundnessWorstCaseWith_of_guarded_first`
+(`Append/GuardedRoundByRound.lean`) composes worst-case component bounds under a *guarded* first
+verifier (`Verifier.GuardedForm`), at the composed extractor `Extractor.RoundByRound.append` and
+the knowledge state function `KnowledgeStateFunction.appendGuarded`. The components share only
+the intermediate relation. `append_rbrKnowledgeSoundnessWorstCase_of_guarded_first` is the
+existential form. `Sequential/GuardedRoundByRound.lean` gives the finite-chain form
+`seqCompose_rbrKnowledgeSoundnessWorstCase_of_guarded`. Each has an averaged corollary and an
+`OracleVerifier` wrapper. Over an empty ambient oracle `Verifier.GuardedForm.ofEmpty` supplies
+the guarded form of any verifier.
 
 Generic soundness composition and the implication from round-by-round to ordinary soundness
 remain admitted. Sumcheck, Packing, and Binius use the proved completeness interfaces above;

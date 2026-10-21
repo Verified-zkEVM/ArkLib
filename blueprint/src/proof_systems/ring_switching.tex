@@ -5,16 +5,17 @@ coefficient ring $B$ into an evaluation claim over a \emph{large} extension $L$,
 additive $O(1/\lvert L\rvert)$ soundness cost and \emph{without re-committing} over $L$. It is the
 technique that lets a polynomial commitment scheme commit cheaply over a tiny ring (a binary-tower
 field, $\mathbb{F}_2$, or a cyclotomic ring $R_q$) while running sum-check and the final opening over
-a field large enough for soundness. It was introduced for binary towers in \cite{DP24}; the same
-shape underlies Hachi's extension-field-to-cyclotomic-ring reduction \cite{NOZ26}.
+a field large enough for soundness. It was introduced for binary towers in \cite{DP24}. Hachi's
+extension-field-to-cyclotomic-ring reduction \cite{NOZ26} uses a related trace-based head.
 
-ArkLib formalizes ring switching \emph{once}, as a generic oracle reduction parameterized by a
-\emph{packing profile}, with the binary-tower (Binius) construction as one instance.
+ArkLib formalizes the DP24 packing construction as an oracle reduction parameterized by a
+\emph{packing profile}, with the binary-tower (Binius) construction as one instance. The shared
+coordinate layer also supports Hachi's trace head and reference-Flock packing algebra; each
+consumer supplies its own protocol and conformance proof.
 
 \subsection{The packing profile}
 
-The data and algebraic laws that every ring-switching reduction abstracts over are collected into a
-single structure.
+The data and algebraic laws of the DP24 tensor presentation are collected into a single structure.
 
 \begin{definition}[Ring-switching profile]
   \lean{RingSwitching.RingSwitchingProfile}
@@ -23,10 +24,10 @@ single structure.
   \mathbb{N}$. A \emph{ring-switching profile} consists of:
   \begin{itemize}
     \item a rank-$2^\kappa$ $B$-basis $\beta = (\beta_u)_{u \in \{0,1\}^\kappa}$ of $L$;
-    \item a commutative \emph{pack/trace carrier} $A$ that is an $L$-algebra (the type sent on the
-      wire);
+    \item a commutative carrier ring $A$ (the type sent on the wire);
     \item two ring homomorphisms $\varphi_0, \varphi_1 : L \to A$ for evaluation-point data and
-      polynomial coefficients, respectively;
+      polynomial coefficients, respectively, giving the scalar actions
+      $x \cdot_0 z := \varphi_0(x)z$ and $x \cdot_1 z := \varphi_1(x)z$;
     \item coordinate maps $\mathrm{decomposeColumns}, \mathrm{decomposeRows} : A \to (\{0,1\}^\kappa
       \to L)$;
     \item subject to the two \emph{reconstruction laws}
@@ -38,35 +39,61 @@ single structure.
         z = \sum_{v} \varphi_0(\mathrm{decomposeColumns}(z)_v)\cdot \varphi_1(\beta_v).
         \label{eq:rs-cols}
       \end{equation}
-      for all $z \in A$.
+      for all $z \in A$;
+    \item the \emph{row inverse law}: for every $c : \{0,1\}^\kappa \to L$,
+      \[
+        \mathrm{decomposeRows}\Bigl(\sum_{u} \varphi_0(\beta_u)\cdot \varphi_1(c_u)\Bigr) = c;
+      \]
+    \item and the \emph{base compatibility} $\varphi_0(b) = \varphi_1(b)$ for $b \in B$.
   \end{itemize}
 \end{definition}
+
+The column inverse
+\[
+  \mathrm{decomposeColumns}\Bigl(\sum_v \varphi_0(c_v)\varphi_1(\beta_v)\Bigr) = c
+\]
+is derived from the row inverse and the reconstruction laws.
 
 Laws \eqref{eq:rs-rows}--\eqref{eq:rs-cols} fix the coordinate convention of
 \cite[\S2.5]{DP24}. They are data-layer reconstruction laws, not completeness or soundness
 statements. Protocol correctness additionally needs identities connecting these coordinates to
-packing, the honest folded element, and the batched multiplier. In a nontrivial carrier the laws
-exclude an identically zero coordinate map; they do not by themselves establish a valid protocol
-instance or non-vacuous security theorem.
+packing, the honest folded element, and the batched multiplier. Together with the inverse laws,
+each coordinate map is a bijection $A \cong (\{0,1\}^\kappa \to L)$ (\texttt{rowEquiv},
+\texttt{columnEquiv}); additivity, compatibility of rows with multiplication by $\varphi_1$ and of
+columns with multiplication by $\varphi_0$, and the coordinates of pure tensors
+$\varphi_0(x)\varphi_1(y)$ follow from the laws.
+The laws do not by themselves establish a valid protocol instance or a security theorem.
 
 \begin{definition}[Tensor-product profile]
   \lean{RingSwitching.tensorProductProfile}
   \uses{def:ring_switching_profile}
   \label{def:tensor_product_profile}
-  For any fields $B = K$ and $L$ with a chosen degree-$2^\kappa$ extension basis, the profile takes the
-  \emph{tensor carrier} $A := L \otimes_K L$, with $\varphi_0(\alpha) = \alpha \otimes 1$,
-  $\varphi_1(\alpha) = 1 \otimes \alpha$, and the coordinate maps given by the $K$-basis coordinates
-  for the left ($\beta.\mathrm{baseChange}\,L$) and right ($\mathrm{baseChangeRight}\,\beta$)
-  $L$-module structures on $A$, giving columns and rows respectively. Thus
-  $z = \sum_v z_v \otimes \beta_v = \sum_u \beta_u \otimes z_u$. Laws \eqref{eq:rs-rows}--\eqref{eq:rs-cols} hold by
-  \texttt{Basis.sum\_repr} on these bases and are proven in ArkLib. Binius uses this constructor
-  with its binary-tower basis.
+  For commutative rings $B$ and $L$, with $L$ a $B$-algebra and a chosen rank-$2^\kappa$
+  $B$-basis, the profile takes $A := L \otimes_B L$, with
+  $\varphi_0(\alpha) = \alpha \otimes 1$ and $\varphi_1(\alpha) = 1 \otimes \alpha$.
+  The coordinate maps use this basis in the left and right $L$-module structures on $A$,
+  giving columns and rows respectively. Thus
+  $z = \sum_v z_v \otimes \beta_v = \sum_u \beta_u \otimes z_u$.
+  Basis reconstruction gives the two reconstruction laws and the row inverse; the column
+  inverse follows from the profile laws. Base compatibility follows by moving scalars
+  across the tensor product. Binius uses this constructor with its binary-tower basis.
 \end{definition}
 
-The Hachi construction \cite{NOZ26} is the intended second instance: $L = R_q$ a cyclotomic ring,
-$A = R_q$ itself, $\varphi_0 = \mathrm{id}$, $\varphi_1 = \sigma_{-1}$ (the order-two automorphism),
-and $\beta = \psi$ from its Theorem~2. Because $R_q$ is not an integral domain, the Schwartz--Zippel
-soundness statement below does not apply to it; Hachi soundness is a separate argument.
+A trace or automorphism switch whose carrier is $L$ itself, such as Hachi's \S3 head
+\cite{NOZ26} with $A = R_q$, is not an instance when $\kappa > 0$: for a finite nontrivial $L$ the
+inverse laws force $\lvert A\rvert = \lvert L\rvert^{2^\kappa}$. Hachi's head uses the finite-coordinate
+packing layer directly instead: its packing data has the fixed subring as opening algebra, with one
+opening coordinate and $\psi$ as packing basis, its scalar source is a claim layout over the
+monomial coefficients of the packed variables, and its packed polynomial is the shared packed
+multilinear of the layout's components. Its conformance theorem states the head's accepting
+condition through that layer: the sent ring value is the single slice of the shared packed
+multilinear at the retained point, and the claimed scalar is the layout-weighted sum of its
+$\psi$-coordinates. The head's read-back is a checked observation (the $\psi$-coordinate inner
+product, equivalent to the trace check). Hachi \S3.1 exercises only the packing, evaluation and
+opening part of the shared layer (one opening coordinate, no batching, multiplier or sumcheck), as
+in the paper, so its reuse is small at the proof level and real at the statement level.
+Because $R_q$ is not an integral domain its soundness is a separate argument (coordinate-wise
+special soundness into the ring-level evaluation relation).
 
 \subsection{Packing the witness}
 
@@ -98,7 +125,7 @@ large-field multilinear IOPCS over $L$.
   \item \textbf{Sum-check} (\lean{RingSwitching.SumcheckPhase.coreInteractionOracleReduction}). A
     degree-$2$ multilinear sum-check over $L$ on $H = A_{\mathrm{MLE}} \cdot t'$, over $\ell'$ rounds
     plus a final round, reducing the sum claim to a single evaluation of $t'$ at a random point.
-    (Loss $2/\lvert L\rvert$ per round, $1/\lvert L\rvert$ final.)
+    (Loss $2/\lvert L\rvert$ per round; the final round sends no challenge and adds none.)
   \item \textbf{Opening}. The residual evaluation claim about $t'$ over $L$ is discharged by the
     underlying large-field multilinear IOPCS.
 \end{enumerate}
@@ -113,33 +140,83 @@ large-field multilinear IOPCS over $L$.
 
 \subsection{Security}
 
-\begin{theorem}[Perfect completeness target]
+\begin{theorem}[Perfect completeness]
   \lean{RingSwitching.FullRingSwitching.fullOracleReduction_perfectCompleteness}
   \uses{def:full_ring_switching}
   \label{thm:ring_switching_completeness}
-  The full ring-switching oracle reduction is perfectly complete: an honest prover holding a witness
-  in the input relation always produces a transcript accepted into the output relation. The honest
-  prover's folded $\hat s$ must satisfy the verifier's column check through the packing and
-  folded-evaluation identities, in addition to reconstruction law \eqref{eq:rs-cols}. These
-  instance-specific identities remain proof obligations in the generic development.
+  The full ring-switching oracle reduction is perfectly complete for the input relation with honest
+  oracle compatibility: an honest prover holding a witness in that relation always produces a
+  transcript accepted into the output relation. The honest folded $\hat s$ passes the column check
+  by the packing and folded-evaluation identities, its batched target is the round-zero sum-check
+  sum, and the final check holds by the final-multiplier identity. The phases compose through the
+  guarded-verifier composition theorems, and the opening contributes its own completeness.
 \end{theorem}
 
-\begin{theorem}[Round-by-round knowledge soundness target]
-  \lean{RingSwitching.FullRingSwitching.fullOracleVerifier_rbrKnowledgeSoundness}
-  \uses{def:full_ring_switching}
+\begin{theorem}[Round-by-round knowledge soundness of batching and the core interaction]
+  \lean{RingSwitching.SumcheckPhase.coreInteraction_rbrKnowledgeSoundnessWorstCase,
+    RingSwitching.FullRingSwitching.batchingCore_rbrKnowledgeSoundnessWorstCase}
+  \uses{def:full_ring_switching, thm:rbr_knowledge_soundness_append_guarded,
+    thm:rbr_knowledge_soundness_compose_guarded}
+  \label{thm:ring_switching_core_soundness}
+  Suppose $L$ is a finite nontrivial commutative ring with no zero divisors and every oracle
+  statement is compatible with at most one packed polynomial. Then the core sum-check
+  interaction, and the batching phase followed by it, are
+  round-by-round knowledge sound for every fixed transcript prefix, with error
+  $\kappa/\lvert L\rvert$ at the batching challenge and $2/\lvert L\rvert$ per sum-check round.
+  Every phase verifier is guarded, so the phases compose by
+  Theorems~\ref{thm:rbr_knowledge_soundness_append_guarded}
+  and~\ref{thm:rbr_knowledge_soundness_compose_guarded}.
+\end{theorem}
+
+\begin{theorem}[Round-by-round knowledge soundness]
+  \lean{RingSwitching.FullRingSwitching.fullOracleVerifier_rbrKnowledgeSoundnessWorstCase,
+    RingSwitching.FullRingSwitching.fullOracleVerifier_rbrKnowledgeSoundness_of_worst_case,
+    RingSwitching.MLIOPCS.RbrKnowledgeSoundWorstCase}
+  \uses{def:full_ring_switching, thm:ring_switching_core_soundness,
+    thm:rbr_knowledge_soundness_append_guarded}
   \label{thm:ring_switching_soundness}
-  When $L$ is an integral domain, the full reduction is round-by-round knowledge sound, with the
-  additive error
+  Suppose $L$ is a finite nontrivial commutative ring with no zero divisors, every oracle
+  statement is compatible with at most one packed polynomial, and the large-field IOPCS is
+  round-by-round knowledge sound for every fixed transcript prefix, with error
+  $\varepsilon_{\mathrm{IOPCS}}$. Then the full reduction is
+  round-by-round knowledge sound for every fixed transcript prefix, with the additive error
   \[
-    \frac{\kappa}{\lvert L\rvert} \;+\; \sum_{\text{rounds}} \frac{2}{\lvert L\rvert} \;+\;
-    \frac{1}{\lvert L\rvert} \;+\; \varepsilon_{\mathrm{IOPCS}},
+    \frac{\kappa}{\lvert L\rvert} \;+\; \sum_{\text{rounds}} \frac{2}{\lvert L\rvert}
+    \;+\; \varepsilon_{\mathrm{IOPCS}},
   \]
-  matching \cite[\S3.1--3.2]{DP24}. The integral-domain hypothesis is exactly the Schwartz--Zippel
-  ingredient (a nonzero degree-$d$ univariate over $L$ has at most $d$ roots).
+  matching \cite[\S3.1--3.2]{DP24}. The final consistency step sends no challenge, so it adds no
+  error. The no-zero-divisors hypothesis supplies the Schwartz--Zippel bound for distinct
+  polynomial claims. The uniqueness
+  hypothesis fixes the packed polynomial before the batching challenge; without it a prover may
+  choose the packed polynomial after the challenge. Batching followed by the core interaction is
+  guarded, so it composes with the IOPCS by
+  Theorem~\ref{thm:rbr_knowledge_soundness_append_guarded}; the IOPCS itself need not be guarded.
 \end{theorem}
 
-\noindent The leaf completeness and soundness proofs are in progress. The displayed security
-statements describe targets, not established end-to-end Binius guarantees. A correct instance
-requires the packing, folded-evaluation, batching, and final-multiplier identities as well as the
-data-layer reconstruction laws. The concrete tensor instance and its coordinate regressions do
-not discharge those full protocol obligations.
+\begin{theorem}[Round-by-round knowledge soundness under an averaged IOPCS contract (conditional)]
+  \lean{RingSwitching.FullRingSwitching.fullOracleVerifier_rbrKnowledgeSoundness}
+  \uses{def:full_ring_switching, thm:ring_switching_core_soundness,
+    thm:rbr_knowledge_soundness_append}
+  \label{thm:ring_switching_soundness_averaged}
+  Under the hypotheses of Theorem~\ref{thm:ring_switching_soundness}, except that the IOPCS is only
+  round-by-round knowledge sound on average over provers, the full reduction is round-by-round
+  knowledge sound on average over provers, with the same error.
+\end{theorem}
+
+\noindent Every verifier aborts on a failed check. The batching, sum-check-round and final-step
+completeness theorems are proved, and so is the composed completeness. The phases'
+round-by-round knowledge soundness is proved in the worst-case form, which bounds the
+extraction-failure probability for every fixed transcript prefix over the fresh challenge alone;
+these per-phase bounds are sorry-free and axiom-clean under their stated hypotheses (uniqueness
+of the packed polynomial and $L$ having no zero divisors). They compose without further assumption
+into Theorem~\ref{thm:ring_switching_core_soundness}, which is sorry-free and axiom-clean. With
+an IOPCS that is round-by-round knowledge sound for every fixed transcript prefix, the full
+Theorem~\ref{thm:ring_switching_soundness} is sorry-free and axiom-clean under its stated
+hypotheses; its averaged form follows. Theorem~\ref{thm:ring_switching_soundness_averaged}, whose
+IOPCS contract is only averaged over provers, is still conditional: the last append applies the
+framework's admitted averaged append contract, whose statement is flagged as not derivable from its
+hypotheses. The worst-case IOPCS contract is a separate hypothesis on the IOPCS interface, not a
+replacement of its averaged contract: the implication between the two notions runs from
+worst-case to averaged only, as the framework's note on the worst-case-per-prefix variants
+(\texttt{OracleReduction/Security/RoundByRound.lean}) explains. Ordinary knowledge soundness
+still uses the admitted framework implication from round-by-round knowledge soundness.

@@ -18,6 +18,15 @@ knowledge game is bounded by the folding errors and the existing repeated-query 
 Writing `D = 2 ^ (∑ i, (s i).val) * d.val` and `N = 2 ^ n`, the threshold
 `min θ δ ≤ 1-D/N` is inclusive. All query counts are allowed; zero queries and negative
 thresholds give a vacuous error of at least one.
+
+The deterministic recovery step follows Corollary 5.6 of the March 27, 2026 revision of
+[GMW25]. Here it is combined with round-by-round bad-event bounds to establish the logged
+knowledge game for arbitrary inputs and malicious provers.
+
+## References
+
+* [Garreta, A., Mohnblatt, N., Wagner, B., *A Simplified Round-by-round Soundness Proof
+  of FRI*][GMW25]
 -/
 
 @[expose] public section

@@ -17,6 +17,15 @@ The extractor rejects an oversized final polynomial, scans the actual retained h
 order, and interpolates the first sufficiently many accepting positions. Its named executable
 result is the erasure of its measured instruction program. The full-transcript wrapper reads only
 the prefix preceding query sampling.
+
+The selection and interpolation construction follows Corollary 5.6 of the March 27, 2026
+revision of [GMW25]. Resource bounds for this program are proved in `Extraction/FullCost.lean`
+and `Extraction/ClosedCost.lean`.
+
+## References
+
+* [Garreta, A., Mohnblatt, N., Wagner, B., *A Simplified Round-by-round Soundness Proof
+  of FRI*][GMW25]
 -/
 
 @[expose] public section

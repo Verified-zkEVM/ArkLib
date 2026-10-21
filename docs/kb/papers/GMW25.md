@@ -13,6 +13,10 @@ related_modules:
   - ArkLib/ProofSystem/Fri/QuerySoundness.lean
   - ArkLib/ProofSystem/Fri/RoundConsistency.lean
   - ArkLib/ProofSystem/Fri/Spec/Soundness.lean
+  - ArkLib/ProofSystem/Fri/Spec/KnowledgeSoundness.lean
+  - ArkLib/ProofSystem/Fri/Spec/Extraction/Program.lean
+  - ArkLib/ProofSystem/Fri/Spec/Extraction/FullCost.lean
+  - ArkLib/ProofSystem/Fri/Spec/Extraction/ClosedCost.lean
 ---
 
 # GMW25
@@ -27,8 +31,8 @@ query positions. ArkLib follows the March 27, 2026 revision of ePrint 2025/1993.
 - The reduction of a folding agreement failure to mutual correlated agreement (Lemma 5.1).
 - The query bound `(1 - min θ δ)^t`, with the tradeoff parameter `θ` independent of input
   distance `δ` (Theorem 5.2).
-- Proximity, unique agreement on accepting positions, interpolation on any `d` accepting
-  positions, and detection of disagreement queries: the algebraic conclusions of
+- Proximity, unique agreement on accepting positions, deterministic extraction by
+  interpolating any `d` accepting positions, and detection of disagreement queries:
   Corollary 5.6, with separate `δ ≤ θ` and `δ ≤ 1 - ρ` hypotheses.
 
 ## Main ArkLib Touchpoints
@@ -46,6 +50,21 @@ interpolation, and erasure detection for a safe trace with positive degree bound
 count. The rate constraint is on `δ`, not `θ`. Positive acceptance supplies the final
 code-membership premise; it need not be assumed separately.
 
+`Fri.Spec.Extractor.extract` implements the corollary's interpolation construction on the
+actual retained history before query sampling. It scans the accepting positions and
+interpolates the first `D` samples, where `D` is ArkLib's initial degree dimension (the
+paper's `d`). `Fri.Spec.knowledge_soundness_with` lifts deterministic recovery to the
+logged knowledge game for every input and malicious prover, using the existing relations
+and `soundnessError`. This game-level result also handles extraction failure explicitly.
+
+The named extractor is the result projection of its measured instruction program.
+`Extraction/FullCost.lean` bounds all thirteen instruction coordinates, including retained-word
+reads and inversions; `Extraction/ClosedCost.lean` gives closed field-operation bounds.
+These bounds cover arbitrary histories and early rejection. They count unit-cost field
+operations and immutable accesses, not machine runtime, field bit complexity, or total
+workspace. See the [proof and specification audit](../audits/fri-soundness.md) for the
+formulas and exact cost model.
+
 ## Version Notes
 
 The earlier [simple-rbr-fri](https://github.com/zksecurity/simple-rbr-fri) formalization was
@@ -62,16 +81,17 @@ the generalized-Johnson specialization using ArkLib's existing powers-MCA theore
 ## Known Divergences From ArkLib
 
 ArkLib's existing domains support folding factors that are powers of two. The paper allows
-more general multiplicative subgroups. Algebraic interpolation is formalized without claiming
-the polynomial-time extraction claim of Corollary 5.6. Zero query repetitions are allowed,
-making the query-error term one and the total bound vacuous; the paper's probability-to-binding deduction assumes
-a positive repetition count.
+more general multiplicative subgroups. ArkLib certifies the extractor's query and algebraic
+instruction bounds without a machine-level polynomial-time adequacy theorem. Zero query
+repetitions are allowed, making the query-error term one and the total bound vacuous; the
+paper's probability-to-binding deduction assumes a positive repetition count.
 
 ## Open Formalization Gaps
 
-Ordinary and round-by-round soundness of the specified interactive oracle reduction are
-proved. Fiat–Shamir compilation, concrete oracle commitments, and efficient extraction are
-outside this result. See the [proof and specification audit](../audits/fri-soundness.md).
+Ordinary, round-by-round, and straightline knowledge soundness of the specified interactive
+oracle reduction are proved, together with deterministic extraction and explicit query and
+field-operation bounds. Fiat–Shamir compilation, concrete commitment security, and a
+machine/bit-runtime or total-workspace theorem remain separate obligations.
 
 ## Source Access
 

@@ -14,6 +14,14 @@ public import ArkLib.ProofSystem.Fri.Spec.InputRelation
 The measured history extractor recovers a bounded-degree witness from sufficiently many
 accepting positions. Its witness agrees with the initial word at every accepting position.
 The recovery statement is independent of the number of random verifier queries.
+
+This instantiates the accepting-position interpolation argument in Corollary 5.6 of the
+March 27, 2026 revision of [GMW25] for the named executable extractor.
+
+## References
+
+* [Garreta, A., Mohnblatt, N., Wagner, B., *A Simplified Round-by-round Soundness Proof
+  of FRI*][GMW25]
 -/
 
 @[expose] public section

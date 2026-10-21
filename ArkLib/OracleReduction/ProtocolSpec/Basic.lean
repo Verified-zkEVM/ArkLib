@@ -567,6 +567,17 @@ lemma concat_apply_last {m : Fin n} (T : Transcript m.castSucc pSpec) (msg : pSp
   rw [dite_eq_right (Nat.lt_irrefl m.val)]
   exact cast_heq _ _
 
+/-- **Extensionality for partial transcripts at propositionally equal rounds.** Two partial
+transcripts whose rounds have equal values are heterogeneously equal when they agree entrywise at
+every raw `ℕ` index. Companion of `concat_apply_lt` / `concat_apply_last`: composition proofs
+compare transcripts at rounds such as `min k m` or `k - m` that are only propositionally equal. -/
+theorem heq_ext {k k' : Fin (n + 1)} {T : Transcript k pSpec} {T' : Transcript k' pSpec}
+    (hk : k.val = k'.val)
+    (h : ∀ (i : ℕ) (hi : i < k.val) (hi' : i < k'.val), HEq (T ⟨i, hi⟩) (T' ⟨i, hi'⟩)) :
+    HEq T T' := by
+  obtain rfl : k = k' := Fin.ext hk
+  exact heq_of_eq (funext fun i => eq_of_heq (h i.val i.isLt i.isLt))
+
 -- Define conversions to and from `Transcript` with `MessagesUpTo` and `ChallengesUpTo`
 
 variable {k : Fin (n + 1)}
