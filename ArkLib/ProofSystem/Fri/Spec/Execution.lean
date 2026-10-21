@@ -116,6 +116,41 @@ theorem queryBlock_nodup (hs : (∑ j, (s j).val) ≤ n) (i : Fin (k + 1))
   apply mul_right_cancel₀ (CosetFftDomainClass.ne_zero_dep (queryPoint s hs i x))
   exact congrArg Subtype.val hab
 
+omit [Fintype F] in
+/-- The executable query block enumerates exactly the complete folding fiber. -/
+theorem mem_queryBlock_iff_pow_eq (hs : (∑ j, (s j).val) ≤ n) (i : Fin (k + 1))
+    (x : (ω.subdomain 0).toFinset)
+    (y : (ω.subdomain (foldingPrefix s i.castSucc)).toFinset) :
+    y ∈ queryBlock s hs i x ↔
+      y.val ^ (2 ^ (s i).val) = (queryPoint s hs i x).val ^ (2 ^ (s i).val) := by
+  constructor
+  · exact queryBlock_pow s hs i x y
+  · intro hy
+    let e : (ω.subdomain (foldingPrefix s i.castSucc)).toFinset ↪ F :=
+      ⟨Subtype.val, Subtype.val_injective⟩
+    let queried := (queryBlock s hs i x).toFinset.map e
+    let fiber := CosetFftDomainClass.block (ω.subdomain (foldingPrefix s i.castSucc))
+      (s i).val ((queryPoint s hs i x).val ^ (2 ^ (s i).val))
+    have hsub : queried ⊆ fiber := by
+      intro z hz
+      obtain ⟨q, hq, rfl⟩ := mem_map.mp hz
+      exact CosetFftDomainClass.mem_block.mpr
+        ⟨CosetFftDomain.mem_toFinset_iff_mem.mp q.property,
+          queryBlock_pow s hs i x q (List.mem_toFinset.mp hq)⟩
+    have hcard : queried.card = 2 ^ (s i).val := by
+      dsimp only [queried]
+      erw [card_map, List.toFinset_card_of_nodup (queryBlock_nodup s hs i x)]
+      exact queryBlock_length s hs i x
+    have heq : queried = fiber := eq_of_subset_of_card_le hsub
+      (CosetFftDomainClass.card_block_le.trans_eq hcard.symm)
+    have hymem : y.val ∈ fiber := CosetFftDomainClass.mem_block.mpr
+      ⟨CosetFftDomain.mem_toFinset_iff_mem.mp y.property, hy⟩
+    rw [← heq] at hymem
+    obtain ⟨q, hq, hqy⟩ := mem_map.mp hymem
+    have hqy' : q = y := Subtype.ext hqy
+    subst q
+    exact List.mem_toFinset.mp hq
+
 /-! ## Evaluating local checks -/
 
 private theorem cast_query {ι : Type} {spec : OracleSpec ι} {A B : Type}

@@ -810,6 +810,7 @@ public import ArkLib.ProofSystem.Fri.Spec.Execution
 public import ArkLib.ProofSystem.Fri.Spec.FoldExecution
 public import ArkLib.ProofSystem.Fri.Spec.General
 public import ArkLib.ProofSystem.Fri.Spec.InputRelation
+public import ArkLib.ProofSystem.Fri.Spec.QueryCompleteness
 public import ArkLib.ProofSystem.Fri.Spec.QueryExecution
 public import ArkLib.ProofSystem.Fri.Spec.QuerySoundness
 public import ArkLib.ProofSystem.Fri.Spec.RoundSoundness
