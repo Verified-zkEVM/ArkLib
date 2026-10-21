@@ -198,7 +198,7 @@ theorem compute_s0_embedded_MLP_eval (p : MultilinearPoly L ℓ') (r : Fin ℓ �
 open Probability in
 /-- Distinct carriers have equal batching targets at a uniform batching point with probability
 at most `κ/|L|`. -/
-theorem compute_s0_collision_le [IsDomain L] [Fintype L] [SampleableType L] {z z' : P.A}
+theorem compute_s0_collision_le [NoZeroDivisors L] [Fintype L] [SampleableType L] {z z' : P.A}
     (hne : z ≠ z') :
     Pr{let c ← $ᵗ (Fin κ → L)}[compute_s0 κ L K P z c = compute_s0 κ L K P z' c] ≤
       (((κ : ℝ≥0) / (Fintype.card L : ℝ≥0) : ℝ≥0) : ℝ≥0∞) := by

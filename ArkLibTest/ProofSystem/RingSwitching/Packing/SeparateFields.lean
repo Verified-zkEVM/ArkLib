@@ -33,7 +33,7 @@ abbrev separateFields : PackingData (ZMod 2) where
   openBasis := Module.finBasisOfFinrankEq _ _ (GaloisField.finrank (p := 2) (by decide))
 
 /-- No base-compatible field transport exists from the packing field to the opening field. -/
-theorem noPackingToOpeningHom :
+theorem no_packing_to_opening_hom :
     ¬ Nonempty (GaloisField 2 2 →ₐ[ZMod 2] GaloisField 2 3) := by
   rw [FiniteField.nonempty_algHom_iff_finrank_dvd]
   simp only [GaloisField.finrank (p := 2) (n := 2) (by decide),

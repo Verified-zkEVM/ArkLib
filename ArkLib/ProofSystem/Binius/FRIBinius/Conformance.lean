@@ -37,9 +37,9 @@ variable (κ : ℕ) [NeZero κ]
   (h_ℓ_add_R_rate : ℓ' + 𝓡 < 2 ^ κ) (h_l : ℓ = ℓ' + κ) [Fact (ϑ ∣ ℓ')]
 
 omit [NeZero κ] in
-/-- `batching_conforms` at Binius's tensor profile and committed first oracle: compatibility is
-the consistency of the packed polynomial with the first committed codeword. -/
-theorem biniusBatching_conforms (stmt : BatchingStmtIn L ℓ)
+/-- Batching acceptance at the tensor profile is equivalent to first-codeword compatibility,
+the multiplier identity, the batched sum-check claim, and column reconstruction. -/
+theorem binius_batching_conforms (stmt : BatchingStmtIn L ℓ)
     (oStmt : ∀ j, (BinaryBasefoldAbstractOStmtIn κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate).OStmtIn j)
     (z : (biniusProfile κ L K β).A) (c : Fin κ → L) (wit : RingSwitching.SumcheckWitness L ℓ' 0) :
     (performCheckOriginalEvaluation κ L K (biniusProfile κ L K β) ℓ ℓ' h_l stmt.original_claim

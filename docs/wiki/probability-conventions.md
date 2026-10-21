@@ -34,6 +34,13 @@ Schwartz–Zippel, dot products, and coordinate membership. `Combinatorial.lean`
 collision-to-image-size argument for probability measures on a countable full-mass carrier.
 These mathematical helpers live in `namespace Probability`.
 
+`VCVio.EvalDist.ProbabilityBounds` also supplies
+`prEvent_exists_finset_le_card_mul` for a fixed finite candidate set and
+`prEvent_exists_and_le_of_subsingleton` for an exact-functional candidate predicate.
+Fix the set or predicate before the sampled challenge. Batching collision events
+exclude candidates whose full claim is already correct; adaptive candidate lists
+need a separate argument.
+
 Losslessness is `IsProbabilityMeasure 𝒟[mx]`, or the equivalent successful-event statement
 `Pr{let _ ← mx}[True] = 1`. For computations that may fail, the complement probability is
 successful mass minus the event probability; replacing it with `1 - Pr{…}[…]` needs losslessness.

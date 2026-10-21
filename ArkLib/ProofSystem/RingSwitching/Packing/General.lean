@@ -209,14 +209,8 @@ def fullRbrKnowledgeError (i : (fullPspec κ L K P ℓ' mlIOPCS).ChallengeIdx) :
   (ChallengeIdx.sumEquiv.symm i)
 
 omit [NeZero κ] [Fintype K] [DecidableEq K] [NeZero ℓ] [NeZero ℓ'] in
-/-- Worst-case round-by-round knowledge soundness for the batching phase followed by the core
-interaction, with error `κ/|L|` at the batching challenge and `2/|L|` per sumcheck challenge.
-
-Composed from `BatchingPhase.batchingOracleVerifier_rbrKnowledgeSoundnessWorstCase` and
-`SumcheckPhase.coreInteraction_rbrKnowledgeSoundnessWorstCase` by
-`OracleVerifier.append_rbrKnowledgeSoundnessWorstCase_of_guarded_first`; the batching verifier is
-guarded by `Verifier.GuardedForm.ofEmpty`. Sorry-free and axiom-clean under `hUnique` and
-`[NoZeroDivisors L]`. -/
+/-- Worst-case round-by-round knowledge soundness for batching and relocation, with error
+`κ/|L|` at the batching challenge and `2/|L|` at each sum-check challenge. -/
 theorem batchingCore_rbrKnowledgeSoundnessWorstCase [NoZeroDivisors L]
     (hUnique : mlIOPCS.toAbstractOStmtIn.Functional) :
     Verifier.rbrKnowledgeSoundnessWorstCase init impl
@@ -233,9 +227,8 @@ theorem batchingCore_rbrKnowledgeSoundnessWorstCase [NoZeroDivisors L]
       mlIOPCS.toAbstractOStmtIn (init := init) (impl := impl) hUnique)
 
 omit [NeZero κ] [Fintype K] [DecidableEq K] [NeZero ℓ] [NeZero ℓ'] in
-/-- Round-by-round knowledge soundness for the batching phase followed by the core interaction:
-the averaged form of `batchingCore_rbrKnowledgeSoundnessWorstCase`. Sorry-free and axiom-clean
-under `hUnique` and `[NoZeroDivisors L]`. -/
+/-- Averaged round-by-round knowledge soundness for batching and relocation, with error
+`κ/|L|` at the batching challenge and `2/|L|` at each sum-check challenge. -/
 theorem batchingCore_rbrKnowledgeSoundness [NoZeroDivisors L]
     (hUnique : mlIOPCS.toAbstractOStmtIn.Functional) :
     (batchingCoreVerifier κ L K P ℓ ℓ' h_l mlIOPCS).rbrKnowledgeSoundness init impl

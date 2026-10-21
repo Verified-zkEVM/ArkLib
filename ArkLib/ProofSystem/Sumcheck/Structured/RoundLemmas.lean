@@ -193,7 +193,7 @@ end Uniform
 /-- Two distinct univariate polynomials of degree at most `d` agree at a uniform point with
 probability at most `d / |L|`, the round error `roundKnowledgeError`. The degree-bounded form of
 `Probability.prob_polynomial_eval_eq_le`. -/
-theorem prob_eval_eq_le [IsDomain L] [Fintype L] [SampleableType L] {p q : L⦃≤ d⦄[X]}
+theorem prob_eval_eq_le [NoZeroDivisors L] [Fintype L] [SampleableType L] {p q : L⦃≤ d⦄[X]}
     (hne : p ≠ q) :
     Pr{let c ← $ᵗ L}[p.val.eval c = q.val.eval c] ≤ ((d : ℝ≥0) / Fintype.card L : ℝ≥0) := by
   rw [ENNReal.coe_div (by simp), ENNReal.coe_natCast, ENNReal.coe_natCast]

@@ -19,8 +19,8 @@ switching at the GF(4)/GF(2) orientation fixture, with the binding oracle statem
   composite from the guarded composition lemma itself, rather than from its packaged corollary.
 * `core_relIn_inhabited` and `batching_relIn_inhabited` show that the composites' input relations
   contain the honest inputs, so the theorems are not vacuous.
-* `core_error` and `batchingCore_error` compute the errors: `κ/|L|` at the batching challenge (here
-  `κ = 1`) and `2/|L|` at every sum-check challenge.
+* `core_error`, `batching_core_error_batching`, and `batching_core_error_sumcheck` pin the errors:
+  `κ/|L|` at the batching challenge (here `κ = 1`) and `2/|L|` at each sum-check challenge.
 -/
 
 open OracleComp OracleSpec ProtocolSpec
@@ -122,23 +122,24 @@ theorem batching_relIn_inhabited :
   · simp [claimAt, tX₀, r₀]
   · rfl
 
-/-- The batching challenge costs `κ/|L| = 1/|L|`, and every core challenge costs `2/|L|`. -/
-theorem batchingCore_error
-    (j : (pSpecBatching 1 GF4 GF2 P₄ ++ₚ pSpecCoreInteraction GF4 1).ChallengeIdx) :
-    FullRingSwitching.batchingCoreRbrKnowledgeError 1 GF4 GF2 P₄ 1 j =
-      (if j.1.val = 1 then 1 / (Fintype.card GF4 : ℝ≥0) else 0) ∨
-    FullRingSwitching.batchingCoreRbrKnowledgeError 1 GF4 GF2 P₄ 1 j =
-      2 / (Fintype.card GF4 : ℝ≥0) := by
-  obtain ⟨j, rfl⟩ := ChallengeIdx.sumEquiv.surjective j
-  rcases j with j | j
-  · left
-    rcases j with ⟨⟨k, hk⟩, hd⟩
-    interval_cases k <;>
-      simp_all [FullRingSwitching.batchingCoreRbrKnowledgeError,
-        BatchingPhase.batchingRBRKnowledgeError, ChallengeIdx.sumEquiv, ChallengeIdx.inl]
-  · right
-    simp only [FullRingSwitching.batchingCoreRbrKnowledgeError, Equiv.symm_apply_apply,
-      Sum.elim_inr]
-    exact core_error j
+/-- The batching challenge contributes exactly `κ/|L| = 1/|L|`. -/
+theorem batching_core_error_batching (j : (pSpecBatching 1 GF4 GF2 P₄).ChallengeIdx) :
+    FullRingSwitching.batchingCoreRbrKnowledgeError 1 GF4 GF2 P₄ 1
+      (ChallengeIdx.sumEquiv (.inl j)) = 1 / (Fintype.card GF4 : ℝ≥0) := by
+  rcases j with ⟨⟨k, hk⟩, hd⟩
+  interval_cases k
+  · change Direction.P_to_V = Direction.V_to_P at hd
+    cases hd
+  · simp [FullRingSwitching.batchingCoreRbrKnowledgeError,
+      BatchingPhase.batchingRBRKnowledgeError, ChallengeIdx.sumEquiv, ChallengeIdx.inl]
+
+/-- Every sum-check challenge contributes exactly `2/|L|`. -/
+theorem batching_core_error_sumcheck (j : (pSpecCoreInteraction GF4 1).ChallengeIdx) :
+    FullRingSwitching.batchingCoreRbrKnowledgeError 1 GF4 GF2 P₄ 1
+      (ChallengeIdx.sumEquiv (.inr j)) = 2 / (Fintype.card GF4 : ℝ≥0) := by
+  simp only [FullRingSwitching.batchingCoreRbrKnowledgeError, Equiv.symm_apply_apply,
+    Sum.elim_inr]
+  exact core_error j
+
 
 end ArkLibTest.RingSwitchingConformance.BiniusComposition
