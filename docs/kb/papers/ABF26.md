@@ -97,12 +97,12 @@ manuscript, not to the original sources it cites — those get their own keys (`
   unique-decoding radius (`relUDR_interleavedCode_eq`), and inside that radius the interleaved
   point lists are subsingletons, so `Λ(C^⋈m, δ) ≤ 1`. `ofJohnsonBound` reaches the Johnson
   radius, via `CodingTheory.johnson_bound_lambda_le_ell` applied to the interleaved code at
-  alphabet `Fin m → F`; the radius is computed at `q = |F|^m` rather than `|F|`, which *narrows*
-  it, while the relative minimum distance is unchanged. Writing `c = q/(q-1)`, the Johnson
-  function is `J_q(δ) = δ · h(c·δ)` with `h(u) = (1 - √(1 - u))/u` increasing, so `J_q(δ)`
-  decreases in `q` down to `1 - √(1 - δ)` — e.g. `Jqℓ 4 2 1 ≈ 0.317 < Jqℓ 2 2 1 = 0.5`. The
-  bound is stated at the interleaved code's own alphabet and is correct as such; the alphabet
-  simply costs radius rather than buying it.
+  alphabet `Fin m → F`. The radius is computed at `q = |F|^m`, the alphabet of the interleaved
+  code (Definition 2.9; Theorem 3.2 is stated for `|Σ| = q`), while the relative minimum distance
+  is unchanged. Writing `c = q/(q-1)`, the Johnson function is `J_q(δ) = δ · h(c·δ)` with
+  `h(u) = (1 - √(1 - u))/u` increasing, so where the radicand is non-negative `J_q(δ)` decreases
+  in `q` down to the alphabet-free `J(δ) = 1 - √(1 - δ)` that the challenge is phrased in, and
+  stays at or above it.
   Note the asymmetry with the MCA side: `McaLowerWitness.ofJohnsonRangeBound` is sorry-tainted
   through the external [BCHKS25] admit `rs_mcaError_le_in_johnson_range`, whereas the list-side
   Johnson witness rests on an in-tree axiom-clean bound and needs no admit.
@@ -296,7 +296,7 @@ guard `k ≤ ringChar F` for degree-`< k` messages.
   rates `1/4`, `1/8`, `1/16` are untouched. The nearer gap is ordinary formalization work: no
   `McaUpperWitness` or `ListUpperWitness` is built for a concrete code (`McaUpperWitness.ofGt`,
   `.ofEpsCaGt`, and `ListUpperWitness.ofGt`, `.ofEncardGt` are generic shapes awaiting a real
-  large-list or CA-failure construction). On the safe side both list constructors now exist, at
+  large-list or CA-failure construction). On the safe side both list constructors exist, at
   the unique-decoding and Johnson radii. The remaining shortfall there is the radius, not the
   list budget: `ℓ` is a parameter of `ofJohnsonBound` and the constructor already accepts a
   proof of `ℓ ≤ ε* · |F|`, so the prize's bound shape is expressible, but `Jqℓ q ℓ δ_min` stays

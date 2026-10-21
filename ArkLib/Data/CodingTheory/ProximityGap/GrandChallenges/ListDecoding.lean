@@ -43,62 +43,31 @@ every point list is a subsingleton (`Code.isUniquelyDecodable_relativeUniqueDeco
 Both are proved in-tree, so nothing beneath it is admitted. But the radius is only half the
 minimum distance, far short of what the challenge cares about.
 
-The Johnson constructor reaches much further, and — unlike its MCA counterpart
+The Johnson constructor is the Johnson bound ([Joh62]; Theorem 3.2 of [ABF26]) applied to the
+interleaved code. It reaches much further, and — unlike its MCA counterpart
 `McaLowerWitness.ofJohnsonRangeBound`, which rests on the external `[BCHKS25]` admit
 `rs_mcaError_le_in_johnson_range` — it is *also* admit-free:
 `CodingTheory.johnson_bound_lambda_le_ell` is stated over an arbitrary finite alphabet and is
 itself axiom-clean, so it applies to the interleaved code at alphabet `Fin m → F` directly.
 
-Note the alphabet the Johnson radius is computed at. For the interleaved code that is
-`q = |F|^m`, not `|F|`. The relative minimum distance is unchanged, so the whole effect of `m`
-on the bound enters through `q` — and it enters against us. Writing `c = q/(q-1)`,
-
-`J_q(δ) = (1/c) · (1 - √(1 - c·δ)) = δ · h(c·δ)`  where  `h(u) = (1 - √(1 - u))/u`,
-
-and `h` is increasing on `(0, 1]`, so `J_q(δ)` is increasing in `c` and therefore *decreasing*
-in `q`, tending to `1 - √(1 - δ)` from above. So the larger alphabet of the interleaved code
-narrows this Johnson radius rather than widening it: `Jqℓ 4 2 1 ≈ 0.317` against
-`Jqℓ 2 2 1 = 0.5`. (The comparison lives in the regime where the radicand `1 - c·δ` is
-non-negative; outside it `Real.sqrt` is clamped to `0` and `J_q` collapses to `1 - 1/q`.)
-`lambda_interleavedCode_le_of_le_johnson` states its hypothesis at `q = |F|^m` either way — the
-interleaved code's own alphabet is what the Johnson bound is applied at, so the theorem is
-correct as stated; what shrinks with `m` is only the room a caller has to work in.
-
-Neither constructor resolves the challenge, but the gap is narrower than a list budget. `ℓ` is
-a parameter of `ofJohnsonBound`, which accepts any proof of `ℓ ≤ ε* · |F|`, so the prize's
-`Λ ≤ ε* · |F|` shape is already expressible here rather than being cut off at a fixed constant.
-The binding constraint is the radius: `Jqℓ q ℓ δ_min` is capped by `J_q(δ_min)` however large
-`ℓ` grows, and a resolution needs a full per-rate `GrandListResolution` — safety at every grid
-point, or an exact adjacent-grid crossing — plus a concrete `ListUpperWitness`, none of which
-this module supplies. What it does supply are the two admit-free footholds the challenge API
-previously lacked entirely.
+The Johnson radius is computed at the interleaved alphabet `q = |F|^m`, the alphabet of
+`C^⋈(Fin m)`. Where the radicand is non-negative, `J_q` decreases to `J(δ) = 1 - √(1 - δ)` as
+`q` grows, so this is at least the alphabet-free Johnson radius.
 
 ## Implementation note
 
-`relativeUniqueDecodingRadius` is defined in terms of `‖·‖₀`, which is notation for `Code.dist`
-— *not* `Code.minDist`, which is a separate `sInf` with `≤` relaxed to `=` in its defining set.
-The interleaving lemma available here, `Code.minDist_interleavedCodeSet`, is stated on
-`Code.minDist`, so it does not apply to the radius directly; `Code.dist_eq_minDist` is the
-bridge, and `relUDR_interleavedCode_eq` below composes the three equalities by hand.
-
-This is worth spelling out because the failure mode is badly disguised. Feeding a `minDist`
-equation to a `dist` goal makes `rw` report that it "did not find an occurrence" of a pattern
-that appears verbatim in the goal — the two print almost identically — and Lean additionally
-emits a note about the target not being type-correct at `instances` transparency, which invites
-the wrong diagnosis entirely (a `Matrix ι (Fin m) F` versus `ι → Fin m → F` mismatch). That
-note is a red herring here. The fix is to get `dist` and `minDist` straight, not to chase
-transparency.
-
-The proofs then use `Eq.trans` and `congrArg` rather than `rw`, which keeps every step checked
-by `exact` at default transparency and avoids re-entering that thicket.
+`C ^⋈ κ` on a set code is carried at `Set (Matrix ι κ A)`, while `relativeUniqueDecodingRadius`
+expects `Set (ι → κ → A)`. The two agree only after unfolding `Matrix`, so `rw` cannot see
+inside `relativeUniqueDecodingRadius (C ^⋈ κ)`; `relUDR_interleavedCode_eq` transports
+`Code.minDist_interleavedCodeSet` with `Eq.trans` and `congrArg` instead.
 
 ## References
 
 * [Arnon, G., Boneh, D., Fenzi, G., *Open Problems in List Decoding and Correlated
   Agreement*][ABF26]
 * [Ben-Sasson, E., Carmon, D., Haböck, U., Kopparty, S., Saraf, S., *On Proximity Gaps for
-  Reed-Solomon Codes*][BCHKS25] — cited above only for the admit underlying the MCA-side
-  Johnson-range witness, which this module's counterpart does not need.
+  Reed-Solomon Codes*][BCHKS25]
+* [Johnson, S. M., *A new upper bound for error-correcting codes*][Joh62]
 -/
 
 @[expose] public section
