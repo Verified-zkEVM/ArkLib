@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: AryaETHn
 -/
+module
 
-import ArkLib.Data.CodingTheory.InterleavedCode
-import ArkLib.Data.CodingTheory.JohnsonBound.Family
-import ArkLib.Data.CodingTheory.ProximityGap.GrandChallenges
+public import ArkLib.Data.CodingTheory.InterleavedCode
+public import ArkLib.Data.CodingTheory.JohnsonBound.Family
+public import ArkLib.Data.CodingTheory.ProximityGap.GrandChallenges
 
 /-!
 # List-decoding witnesses for the Grand List-Decoding Challenge
@@ -99,6 +100,8 @@ by `exact` at default transparency and avoids re-entering that thicket.
   Reed-Solomon Codes*][BCHKS25] — cited above only for the admit underlying the MCA-side
   Johnson-range witness, which this module's counterpart does not need.
 -/
+
+@[expose] public section
 
 namespace ProximityGap.GrandChallenges
 
