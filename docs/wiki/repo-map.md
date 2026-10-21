@@ -677,11 +677,17 @@ home_page/            site assets and assembled website root
     with seam and purity corollaries and state-uniform suffix correctness.
   - `Append/OneMessage.lean` — the one-message specialization with effectful prover outputs.
   - `Append/RoundByRound.lean` — composition from fixed-prefix bounds under a pure first verifier.
+  - `Append/GuardedRoundByRound.lean` — worst-case round-by-round knowledge soundness composes
+    under a guarded first verifier, with the composed extractor and knowledge state function
+    (`KnowledgeStateFunction.appendGuarded`) named; the components share only the intermediate
+    relation.
   - `Append/Security.lean` — admitted soundness and knowledge-soundness composition claims.
 
   `Sequential/Completeness.lean` adds finite-chain completeness for pure outputs/verdicts;
   `Sequential/GuardedCompleteness.lean` handles deterministic rejecting verifiers.
   `Sequential/GuardedNary.lean` extends guarded completeness to finite chains;
+  `Sequential/GuardedRoundByRound.lean` extends guarded worst-case round-by-round knowledge
+  soundness to finite chains, with the `seqCompose` error reindexing proved;
   `Sequential/OracleCompleteness.lean` supplies binary and finite-chain oracle-reduction wrappers.
   `Sequential/NoAmbient.lean` proves output purity for empty ambient oracles and constructs guarded
   forms from explicit fallback maps. `LiftContext/Purity.lean` transports output purity and guarded
@@ -693,8 +699,9 @@ home_page/            site assets and assembled website root
   These proofs run on `HEq` transport, since transcripts and prover states are families indexed by
   the round number. The generic congruence lemmas for that (`heq_apply`, `heq_funext`, `heq_pi`,
   `heq_bind`, …) live in `ToMathlib/Logic/HEq.lean`, and the `ℕ`-indexed `HEq` computation rules for
-  `Transcript.concat` next to `concat` itself in `ProtocolSpec/Basic.lean` — put new ones there
-  rather than re-deriving them privately per module.
+  `Transcript.concat`, with the extensionality lemma `Transcript.heq_ext`, next to `concat` itself
+  in `ProtocolSpec/Basic.lean` — put new ones there rather than re-deriving them privately per
+  module.
 - Virtual-output execution commutes through append, salt, cast, and executable lifting. This does
   not close the inherited generic append-security boundary: the unrestricted `StateT`
   soundness and knowledge-soundness composition theorems in
@@ -736,10 +743,11 @@ home_page/            site assets and assembled website root
   protocol vocabulary, `Compatibility` with the binding hypothesis `AbstractOStmtIn.Functional`,
   `Spec`, `BatchingPhase`, `SumcheckPhase`, `General`). The phase completeness theorems and the
   phase worst-case round-by-round knowledge-soundness theorems are proved (`κ/|L|` for batching,
-  `2/|L|` per sum-check round), as is composed completeness. Composed knowledge soundness is
-  conditional on the admitted framework contracts `OracleVerifier.append_rbrKnowledgeSoundness`
-  and `OracleVerifier.seqCompose_rbrKnowledgeSoundness`; the append contracts' statements are
-  flagged as not derivable from their hypotheses, and `seqCompose` is built on them. Binius
+  `2/|L|` per sum-check round), as is composed completeness. Worst-case round-by-round knowledge
+  soundness for the core and for batching followed by it is proved through guarded composition
+  under the stated binding and ring hypotheses. The full composite still applies the admitted
+  averaged `OracleVerifier.append_rbrKnowledgeSoundness` contract for the downstream opening.
+  Ordinary knowledge soundness also uses the admitted RBR-to-KS implication. Binius
   instantiates the construction in `ProofSystem/Binius/FRIBinius/` (`biniusProfile`).
   Hachi's §3.1 trace head has carrier `L` itself, so it is not a `Profile`
   instance; it uses the coordinate layer directly, through `PackingData.ofBaseOpening`,
