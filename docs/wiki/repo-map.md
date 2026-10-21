@@ -76,6 +76,14 @@ home_page/            site assets and assembled website root
   `InputRelation.lean` owns the input word and strict proximity language and connects them
   to the closed-ball input relation. It is independent of adaptive soundness; the
   bad-event and adaptive bounds import these input definitions.
+  `Fri/Spec/Completeness.lean` proves perfect completeness and clipped noisy-input completeness
+  of the complete reduction, with an exact final witness and radius-zero output relation.
+  `HonestExecution.lean` describes the retained original word and exact subsequent polynomial
+  folds. `HonestFolding.lean` and `HonestFinalFolding.lean` prove the actual honest prover runs
+  and full output-history agreement. `LocalCompleteness.lean` connects those histories to the
+  executable query checks, where only the first block can contain input errors.
+  `QueryCompleteness.lean` counts corrupted first-fold blocks and bounds independent uniform
+  queries, including the sharper bound for the supplied word and polynomial witness.
   `Spec/Extraction/Program.lean` owns the named straightline extractor: it scans retained arbitrary
   words and interpolates a bounded prefix of accepting positions. Its public result erases the
   same instruction program whose word and field operations are counted. `Spec/ExtractionCorrectness`

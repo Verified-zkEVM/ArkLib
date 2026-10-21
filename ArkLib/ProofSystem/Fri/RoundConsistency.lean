@@ -31,14 +31,7 @@ namespace RoundConsistency
 
 variable {𝔽 : Type} [Field 𝔽] [DecidableEq 𝔽]
 
-/--
-The generalized round consistency check: checks that the Lagrange-interpolating polynomial through
-`pts` evaluates to `β` at the challenge `γ`. Used in FRI to verify that the next-round value equals
-the fold evaluated at the challenge.
-
-Implemented via `CompPoly.CPolynomial`'s computable Lagrange interpolation, so the check itself is
-computable.
--/
+/-- Check whether the Lagrange interpolant through `pts` evaluates to `β` at `γ`. -/
 def roundConsistencyCheck
     {n : ℕ} (γ : 𝔽) (pts : Fin n → 𝔽 × 𝔽) (β : 𝔽) : Bool :=
   let p := CompPoly.CPolynomial.CLagrange.interpolate
@@ -206,5 +199,44 @@ lemma generalised_round_consistency_completeness
       ext i
       rw [eval_mul]
       simp
+
+/-- Polynomial evaluations at distinct points with a common folding image pass the check. -/
+theorem roundConsistencyCheck_eq_true_of_pow_eq {m : ℕ} [NeZero m]
+    (points : Fin m ↪ 𝔽) (q : CompPoly.CPolynomial 𝔽) (a γ : 𝔽)
+    (hpow : ∀ j, points j ^ m = a ^ m) :
+    roundConsistencyCheck γ (fun j ↦ (points j, q.eval (points j)))
+      ((CompPoly.CPolynomial.FoldingPolynomial.cpolyFold q m γ).eval (a ^ m)) = true := by
+  by_cases ha : a = 0
+  · subst a
+    have hz (j : Fin m) : points j = 0 :=
+      eq_zero_of_pow_eq_zero (n := m) (by
+        simpa only [zero_pow (NeZero.ne m)] using hpow j)
+    have hsub : Subsingleton (Fin m) := ⟨fun i j ↦
+      points.injective ((hz i).trans (hz j).symm)⟩
+    have hmle : m ≤ 1 := by
+      simpa only [Fintype.card_fin] using Fintype.card_le_one_iff_subsingleton.mpr hsub
+    have hm : m = 1 := Nat.le_antisymm hmle (Nat.one_le_iff_ne_zero.mpr (NeZero.ne m))
+    subst m
+    have hfold : FoldingPolynomial.polyFold q.toPoly 1 γ = q.toPoly := by
+      rw [polyFold_eq_sum_of_splitNth]
+      ext i
+      simp
+    have huniv : (Finset.univ : Finset (Fin 1)) = {0} := by
+      ext j
+      simp [Fin.eq_zero j]
+    rw [roundConsistencyCheck_eq_true_iff, huniv, Lagrange.interpolate_singleton]
+    simp only [Polynomial.eval_C, hz, pow_one, CompPoly.CPolynomial.eval_toPoly,
+      CompPoly.CPolynomial.FoldingPolynomial.cpolyFold_toPoly, hfold]
+  · let roots : Fin m ↪ 𝔽 := ⟨fun j ↦ points j / a, fun _ _ h ↦
+      points.injective ((div_left_inj' ha).mp h)⟩
+    have hroots (j : Fin m) : roots j ^ m = 1 := by
+      change (points j / a) ^ m = 1
+      rw [div_pow, hpow]
+      exact div_self (pow_ne_zero _ ha)
+    have h := generalised_round_consistency_completeness
+      (f := q.toPoly) (γ := γ) (s₀ := a) (ω := roots) hroots ha
+    have hpts (j : Fin m) : roots j * a = points j := div_mul_cancel₀ _ ha
+    simpa only [hpts, CompPoly.CPolynomial.eval_toPoly,
+      CompPoly.CPolynomial.FoldingPolynomial.cpolyFold_toPoly] using h
 
 end RoundConsistency

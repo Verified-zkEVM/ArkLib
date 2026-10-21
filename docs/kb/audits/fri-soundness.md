@@ -174,10 +174,11 @@ accesses, and a total rejecting execution with `D > N`.
 
 ## Scope and trust boundary
 
-The development establishes information-theoretic ordinary, round-by-round, and straightline
-knowledge soundness for powers-of-two folding domains, together with deterministic extraction
-correctness and instruction profiles for the same named program. Fiat–Shamir and commitment
-security remain separate obligations. Numerical MCA estimates retain their own hypotheses.
+The development establishes information-theoretic ordinary soundness, round-by-round soundness,
+and straightline knowledge soundness for powers-of-two folding domains, together with
+deterministic extraction correctness and instruction profiles for the same named program.
+Fiat–Shamir and commitment security remain separate obligations. Numerical MCA estimates
+retain their own hypotheses.
 
 With zero query repetitions, the query-error term is one, so the total soundness bound is
 vacuous. The earlier probability-to-binding and proximity consequences require a positive query

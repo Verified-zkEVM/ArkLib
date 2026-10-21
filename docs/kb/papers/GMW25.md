@@ -88,10 +88,10 @@ paper's probability-to-binding deduction assumes a positive repetition count.
 
 ## Open Formalization Gaps
 
-Ordinary, round-by-round, and straightline knowledge soundness of the specified interactive
-oracle reduction are proved, together with deterministic extraction and explicit query and
-field-operation bounds. Fiat–Shamir compilation, concrete commitment security, and a
-machine/bit-runtime or total-workspace theorem remain separate obligations.
+Ordinary soundness, round-by-round soundness, and straightline knowledge soundness of the
+specified interactive oracle reduction are proved, together with deterministic extraction
+and explicit query and field-operation bounds. Fiat–Shamir compilation, concrete commitment
+security, and a machine/bit-runtime or total-workspace theorem remain separate obligations.
 
 ## Source Access
 
