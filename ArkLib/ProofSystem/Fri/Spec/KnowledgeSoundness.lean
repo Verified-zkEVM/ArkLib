@@ -326,28 +326,17 @@ theorem knowledge_soundness_with
       (inputRelation k s d hdom δ) (outputRelation k s d hdom δ)
       (Extractor.extract s d (round_bound hdom) l)
       (soundnessError (ω := ω) s d l θ δ) := by
-  by_cases hτ : 0 ≤ min θ (δ : ℝ)
-  · apply knowledge_soundness_with_of_history_extractor s d l hdom θ δ
-      (fun f tr ↦ Extractor.extractHistory s d (round_bound hdom)
-        (queryHistory s l f tr) (queryFoldChallenges s l tr))
-    intro f tr hsafe hdegree hlarge
-    obtain ⟨p, hp, hdist⟩ := Extractor.extractHistory_eq_some_of_density s d
-      (round_bound hdom) (queryHistory s l f tr) (queryFoldChallenges s l tr)
-      θ (min θ δ) hsafe hdegree (min_le_left _ _) hrate hlarge
-    refine ⟨p, hp, ?_⟩
-    have hf : initialWord s (queryHistory s l f tr) = (fun z ↦ f (initialQuery z)) :=
-      funext (initialWord_queryHistory s l f tr)
-    simpa only [hf] using hdist.trans (min_le_right θ (δ : ℝ))
-  · have hτ' : min θ (δ : ℝ) ≤ 0 := le_of_not_ge hτ
-    have hquery : (1 : ℝ≥0) ≤ Real.toNNReal (1 - min θ (δ : ℝ)) ^ l := by
-      apply one_le_pow₀
-      apply (Real.le_toNNReal_iff_coe_le (by linarith : 0 ≤ 1 - min θ (δ : ℝ))).mpr
-      change (1 : ℝ) ≤ 1 - min θ (δ : ℝ)
-      linarith
-    have herror : 1 ≤ soundnessError (ω := ω) s d l θ δ :=
-      hquery.trans (le_add_of_nonneg_left (by positivity))
-    intro stmt wit prover
-    exact (prEvent_le_one _).trans (by exact_mod_cast herror)
+  apply knowledge_soundness_with_of_history_extractor s d l hdom θ δ
+    (fun f tr ↦ Extractor.extractHistory s d (round_bound hdom)
+      (queryHistory s l f tr) (queryFoldChallenges s l tr))
+  intro f tr hsafe hdegree hlarge
+  obtain ⟨p, hp, hdist⟩ := Extractor.extractHistory_eq_some_of_density s d
+    (round_bound hdom) (queryHistory s l f tr) (queryFoldChallenges s l tr)
+    θ (min θ δ) hsafe hdegree (min_le_left _ _) hrate hlarge
+  refine ⟨p, hp, ?_⟩
+  have hf : initialWord s (queryHistory s l f tr) = (fun z ↦ f (initialQuery z)) :=
+    funext (initialWord_queryHistory s l f tr)
+  simpa only [hf] using hdist.trans (min_le_right θ (δ : ℝ))
 
 /-- The measured prefix extractor witnesses straightline knowledge soundness. -/
 theorem knowledge_soundness
