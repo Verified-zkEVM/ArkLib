@@ -22,6 +22,13 @@ Use `prEvent_uniformSample_equiv`, `prEvent_uniformSample_prod`, or
 `prEvent_uniformSample_finSnoc` to transport uniform events. Two samplers with the same
 native distribution need not be equal as programs.
 
+Use `ProtocolSpec.instSampleableTypeChallengeSeqCompose` and
+`ProtocolSpec.instSampleableTypeChallengeAppend` when exposing challenge samplers for composed
+protocol families. This keeps the sampler family definitionally equal to the one expected by
+composition theorems and retains the chosen component samplers through dependent index transport.
+Rebuilding the entire family's samplers with `SampleableType.ofFintype` can preserve the
+probabilities while changing the sampler programs.
+
 ## Event proofs
 
 Use VCVio's `prEvent_mono`, `prEvent_congr`, `prEvent_or_le`, `prEvent_exists_le`, and

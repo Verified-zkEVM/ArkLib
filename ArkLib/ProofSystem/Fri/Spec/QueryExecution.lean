@@ -124,6 +124,19 @@ theorem eval_verifyQueries (hs : (∑ j, (s j).val) ≤ n)
   rw [ho]
   split_ifs <;> rfl
 
+/-- The query verifier accepts exactly when every queried local check succeeds. -/
+theorem eval_verifyQueries_ne_none_iff {l : ℕ} (hs : (∑ j, (s j).val) ≤ n)
+    (o : ∀ j, FinalOracleStatement s ω j) (α : FinalStatement F k)
+    (xs : Fin l → (ω.subdomain 0).toFinset) :
+    (simulateQ (OracleInterface.simOracle0 (FinalOracleStatement s ω) o)
+      (verifyQueries s hs l α xs).run).run ≠ none ↔
+      ∀ j i, (simulateQ (OracleInterface.simOracle0 (FinalOracleStatement s ω) o)
+        (checkRound s hs (finalPolynomial s o) (α i) i (xs j))).run = true := by
+  rw [eval_verifyQueries]
+  split_ifs with h
+  · exact iff_of_true (by simp) h
+  · exact iff_of_false (by simp) h
+
 /-- The oracle-verifier wrapper has exactly the same acceptance semantics as its core. -/
 theorem simulate_queryVerifier (hs : (∑ j, (s j).val) ≤ n)
     (o : ∀ j, FinalOracleStatement s ω j) (α : FinalStatement F k)

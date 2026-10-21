@@ -818,10 +818,16 @@ public import ArkLib.ProofSystem.Fri.RoundConsistency
 public import ArkLib.ProofSystem.Fri.Spec.AdaptiveSoundness
 public import ArkLib.ProofSystem.Fri.Spec.Agreement
 public import ArkLib.ProofSystem.Fri.Spec.BadEvents
+public import ArkLib.ProofSystem.Fri.Spec.Completeness
 public import ArkLib.ProofSystem.Fri.Spec.Execution
 public import ArkLib.ProofSystem.Fri.Spec.FoldExecution
 public import ArkLib.ProofSystem.Fri.Spec.General
+public import ArkLib.ProofSystem.Fri.Spec.HonestExecution
+public import ArkLib.ProofSystem.Fri.Spec.HonestFinalFolding
+public import ArkLib.ProofSystem.Fri.Spec.HonestFolding
 public import ArkLib.ProofSystem.Fri.Spec.InputRelation
+public import ArkLib.ProofSystem.Fri.Spec.LocalCompleteness
+public import ArkLib.ProofSystem.Fri.Spec.QueryCompleteness
 public import ArkLib.ProofSystem.Fri.Spec.QueryExecution
 public import ArkLib.ProofSystem.Fri.Spec.QuerySoundness
 public import ArkLib.ProofSystem.Fri.Spec.RoundSoundness
