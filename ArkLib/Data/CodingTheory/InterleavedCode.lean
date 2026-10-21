@@ -556,11 +556,7 @@ lemma minRelHammingDistCode_moduleInterleavedCode
 
 /-- Interleaving over a nonempty row index preserves the relative unique-decoding radius:
 `relUDR (interleavedCodeSet C) = relUDR C`. Both codes have block length `ι` and, by
-`minDist_interleavedCodeSet`, the same minimum distance.
-
-`interleavedCodeSet C` is carried at `Set (Matrix ι κ A)`, while `relativeUniqueDecodingRadius`
-expects `Set (ι → κ → A)`. The two agree only after unfolding `Matrix`, so `rw` cannot see inside
-the left-hand side; the proof transports the distance equation with `congrArg` instead. -/
+`minDist_interleavedCodeSet`, the same minimum distance. -/
 theorem relativeUniqueDecodingRadius_interleavedCodeSet
     {κ ι A : Type*} [Fintype κ] [Nonempty κ] [Fintype ι] [DecidableEq A]
     (C : Set (ι → A)) :
@@ -568,6 +564,8 @@ theorem relativeUniqueDecodingRadius_interleavedCodeSet
       relativeUniqueDecodingRadius C := by
   have h : Code.dist (interleavedCodeSet (κ := κ) C) = Code.dist C :=
     (dist_eq_minDist _).trans ((minDist_interleavedCodeSet C).trans (dist_eq_minDist C).symm)
+  -- `interleavedCodeSet C` lives in `Set (Matrix ι κ A)`, so `rw [h]` cannot see the distance
+  -- inside the left-hand side; transport `h` through the radius formula instead.
   exact congrArg (fun d : ℕ => (((d : ℝ≥0) - 1) / 2) / (Fintype.card ι : ℝ≥0)) h
 
 section Finrank

@@ -29,8 +29,8 @@ Johnson radius.
 
 The underlying list-size bounds live with their subjects:
 `Code.relativeUniqueDecodingRadius_interleavedCodeSet`,
-`InterleavedCode.lambda_interleavedCode_le_one_of_le_relUDR`, and
-`CodingTheory.lambda_interleavedCode_le_of_le_johnson`.
+`InterleavedCode.lambda_interleaved_le_one_of_le_relUDR`, and
+`CodingTheory.lambda_interleaved_le_of_le_johnson`.
 
 ## The two regimes
 
@@ -87,7 +87,7 @@ noncomputable def ListLowerWitness.ofUniqueDecodingRange
     ListLowerWitness C m ε_star :=
   ListLowerWitness.ofLe hδ_le_one
     (le_trans
-      (by exact_mod_cast InterleavedCode.lambda_interleavedCode_le_one_of_le_relUDR C hm hδ) hle)
+      (by exact_mod_cast InterleavedCode.lambda_interleaved_le_one_of_le_relUDR C hm hδ) hle)
 
 /-! ## The Johnson regime -/
 
@@ -109,6 +109,6 @@ noncomputable def ListLowerWitness.ofJohnsonBound
     ListLowerWitness C m ε_star :=
   ListLowerWitness.ofLe hδ_le_one
     (le_trans
-      (by exact_mod_cast CodingTheory.lambda_interleavedCode_le_of_le_johnson C hm hℓ hδ) hle)
+      (by exact_mod_cast CodingTheory.lambda_interleaved_le_of_le_johnson C hm hℓ hδ) hle)
 
 end ProximityGap.GrandChallenges

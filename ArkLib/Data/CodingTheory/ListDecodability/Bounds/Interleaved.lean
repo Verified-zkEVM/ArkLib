@@ -808,7 +808,7 @@ open scoped NNReal in
 interleaving is a subsingleton, so `Λ ≤ 1`. Interleaving preserves that radius
 (`Code.relativeUniqueDecodingRadius_interleavedCodeSet`), and every code is uniquely decodable at
 its own radius (`Code.isUniquelyDecodable_relativeUniqueDecodingRadius`). -/
-theorem lambda_interleavedCode_le_one_of_le_relUDR {ι A : Type*} [Fintype ι] [DecidableEq A]
+theorem lambda_interleaved_le_one_of_le_relUDR {ι A : Type*} [Fintype ι] [DecidableEq A]
     (C : Set (ι → A)) {m : ℕ} (hm : 0 < m)
     {δ : ℝ≥0} (hδ : δ ≤ relativeUniqueDecodingRadius C) :
     Lambda (C^⋈(Fin m)) (δ : ℝ) ≤ 1 := by
