@@ -40,6 +40,8 @@ page under [`papers/`](papers/README.md); that directory, not this list, is the 
   for subspace-design codes.
 - [`papers/GK16.md`](papers/GK16.md) - explicit subspace designs; Definition 11 and Lemma 12 supply
   the folded-Wronskian criterion behind `ABF26` Theorem 2.18.
+- [`papers/GMW25.md`](papers/GMW25.md) - FRI agreement preservation, query bounds, and
+  ordinary and round-by-round soundness of the computable IOP.
 - [`papers/GR08.md`](papers/GR08.md) - Definition 2.1, the definitional source for folded
   Reed-Solomon codes.
 - [`papers/GW13.md`](papers/GW13.md) - linear-algebraic list decoding; origin of the univariate
@@ -107,6 +109,8 @@ page under [`papers/`](papers/README.md); that directory, not this list, is the 
 
 ## Audit Pages
 
+- [`audits/fri-soundness.md`](audits/fri-soundness.md) - revised FRI analysis, algebraic
+  binding and proximity consequences, and the executable-protocol soundness correspondence.
 - [`audits/README.md`](audits/README.md) - audit conventions and migration notes for paper-to-code
   comparison pages.
 - [`audits/noz26-subfield-lemmas5-6.md`](audits/noz26-subfield-lemmas5-6.md)
@@ -115,6 +119,8 @@ page under [`papers/`](papers/README.md); that directory, not this list, is the 
 - [`audits/noz26-zero-check-lemma10.md`](audits/noz26-zero-check-lemma10.md)
   - Hachi Figure 5 / Lemma 10 paper-to-Lean audit; the nested-tree repair and the weak-binding
     seam as integrated into the escape-threaded opening chain.
+- [`audits/noz26-trace-head-section-3-1.md`](audits/noz26-trace-head-section-3-1.md)
+  - NOZ26 §3.1 trace head: correspondence, departures and security shape.
 - [`audits/bciks20-appendix-a-rational-functions.md`](audits/bciks20-appendix-a-rational-functions.md)
   - status matrix for the rational-function and Hensel-lifting layer used by `BCIKS20`.
 - [`audits/bcgm25-mca-generators.md`](audits/bcgm25-mca-generators.md)

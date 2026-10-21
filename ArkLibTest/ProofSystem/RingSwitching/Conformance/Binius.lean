@@ -53,10 +53,10 @@ calls the shared equality-value function. It still returns a dummy statement on 
 shared DP24 `SumcheckPhase.finalSumcheckVerifier` aborts.
 `compute_final_eq_value_eq_multiplier` states its equality value as the evaluation of the same
 shared `multiplier`, at the same retained point and
-batching weights, and `finalCheck_iff_multiplier` states the final check through it. Binius's
+batching weights, and `final_check_iff_multiplier` states the final check through it. Binius's
 separate sum-check rounds and Binary Basefold folding and query phases are out of scope here.
 
-`biniusBatching_conforms` is `batching_conforms` at Binius's `biniusProfile` and oracle statement
+`binius_batching_conforms` is `batching_conforms` at Binius's `biniusProfile` and oracle statement
 `BinaryBasefoldAbstractOStmtIn`, where compatibility is the first-oracle codeword consistency.
 
 Scope: the statements cover the shared batching phase, whose rejecting branch aborts. The output

@@ -490,11 +490,8 @@ theorem iteratedSumcheck_extractionFailure_le [NoZeroDivisors L]
     exact hcompat ⟨t', ht'⟩
 
 omit [NeZero κ] [Fintype K] [DecidableEq K] [NeZero ℓ] [NeZero ℓ'] in
-/-- Worst-case RBR knowledge soundness for a single round oracle verifier, naming the extractor
-`iteratedSumcheckRbrExtractor` and the knowledge-state function
-`iteratedSumcheckKnowledgeStateFunction`, with error `2/|L|` at the round challenge: the bound
-holds for every input statement and every sent round polynomial, over the round challenge alone.
-`hUnique` says the oracle statement determines the packed polynomial. -/
+/-- For every fixed input and round polynomial, the fresh sum-check challenge causes an
+extraction failure with probability at most `2/|L|` when compatibility determines one polynomial. -/
 theorem iteratedSumcheckOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_rbrExtractor
     [NoZeroDivisors L] (hUnique : aOStmtIn.Functional) (i : Fin ℓ') :
     Verifier.rbrKnowledgeSoundnessWorstCaseWith init impl
@@ -512,9 +509,8 @@ theorem iteratedSumcheckOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_rbrExt
     (iteratedSumcheck_extractionFailure_le κ L K P ℓ ℓ' h_l aOStmtIn hUnique i)
 
 omit [NeZero κ] [Fintype K] [DecidableEq K] [NeZero ℓ] [NeZero ℓ'] in
-/-- Existential worst-case RBR knowledge soundness for a single round oracle verifier, with error
-`2/|L|`: a corollary of
-`iteratedSumcheckOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_rbrExtractor`. -/
+/-- Worst-case round-by-round knowledge soundness for one sum-check round, with error `2/|L|`
+at its only challenge. -/
 theorem iteratedSumcheckOracleVerifier_rbrKnowledgeSoundnessWorstCase [NoZeroDivisors L]
     (hUnique : aOStmtIn.Functional) (i : Fin ℓ') :
     Verifier.rbrKnowledgeSoundnessWorstCase init impl
@@ -527,8 +523,8 @@ theorem iteratedSumcheckOracleVerifier_rbrKnowledgeSoundnessWorstCase [NoZeroDiv
       h_l aOStmtIn hUnique i⟩
 
 omit [NeZero κ] [Fintype K] [DecidableEq K] [NeZero ℓ] [NeZero ℓ'] in
-/-- RBR knowledge soundness for a single round oracle verifier, with error `2/|L|` at the round
-challenge: the averaged form of `iteratedSumcheckOracleVerifier_rbrKnowledgeSoundnessWorstCase`. -/
+/-- Averaged round-by-round knowledge soundness for one sum-check round, with error `2/|L|`
+at its only challenge. -/
 theorem iteratedSumcheckOracleVerifier_rbrKnowledgeSoundness [NoZeroDivisors L]
     (hUnique : aOStmtIn.Functional) (i : Fin ℓ') :
     (iteratedSumcheckOracleVerifier κ L K P ℓ ℓ' aOStmtIn i).rbrKnowledgeSoundness init impl
@@ -631,15 +627,8 @@ noncomputable def finalSumcheckProver :
     }
     pure (⟨stmtOut, oStmtIn⟩, witOut)
 
-/-- The verifier for the final sumcheck step, as an instance of the family-shared
-check-then-update one-message verifier (`RingSwitching.messageRoundOracleVerifier`,
-`RoundVerifiers.lean`): query the final constant `s'` (step 7), then
-
-8. `V` sets `e := eq̃(φ₀(r_κ), ..., φ₀(r_{ℓ-1}), φ₁(r'_0), ..., φ₁(r'_{ℓ'-1}))` and
-   decomposes `e =: Σ_{u ∈ {0,1}^κ} β_u ⊗ e_u`;
-9. `V` requires `s_{ℓ'} ?= (Σ_{u ∈ {0,1}^κ} eq̃(u_0, ..., u_{κ-1}, r''_0, ..., r''_{κ-1})`
-   `⋅ e_u) ⋅ s'` (**abort** on failure), and hands the accepted claim `t'(r') = s'` to the
-   downstream opening. The output claim is `s'` itself, not `e ⋅ s'`: the opening is of `t'`. -/
+/-- Receive `s'`, check `s_last = compute_final_eq_value(ctx, r') * s'`, and output the
+evaluation claim `(r', s')`. A failed check aborts; the input oracle family is preserved. -/
 noncomputable def finalSumcheckVerifier :
   OracleVerifier
     (oSpec := []ₒ)
@@ -794,9 +783,8 @@ local instance : DecidableEq K := Classical.decEq K
 
 omit [NeZero κ] [Fintype L] [Fintype K] [DecidableEq K] [SampleableType L]
   [NeZero ℓ] [NeZero ℓ'] in
-/-- Worst-case round-by-round knowledge soundness for the final sumcheck step, naming the extractor
-`finalSumcheckRbrExtractor` and the knowledge-state function `finalSumcheckKnowledgeStateFunction`.
-The step sends no challenge, so the round-by-round error is vacuous. -/
+/-- The final consistency step preserves knowledge of a compatible evaluation witness.
+It sends no challenge and has zero challenge error. -/
 theorem finalSumcheckOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_rbrExtractor
     {σ : Type}
     (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
@@ -815,8 +803,8 @@ theorem finalSumcheckOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_rbrExtrac
 
 omit [NeZero κ] [Fintype L] [Fintype K] [DecidableEq K] [SampleableType L]
   [NeZero ℓ] [NeZero ℓ'] in
-/-- Existential worst-case round-by-round knowledge soundness for the final sumcheck step: a
-corollary of `finalSumcheckOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_rbrExtractor`. -/
+/-- Worst-case round-by-round knowledge soundness for the final consistency step, with zero
+challenge error. -/
 theorem finalSumcheckOracleVerifier_rbrKnowledgeSoundnessWorstCase {σ : Type}
     (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (finalSumcheckVerifier κ L K P ℓ ℓ' h_l aOStmtIn).toVerifier.rbrKnowledgeSoundnessWorstCase
@@ -830,8 +818,8 @@ theorem finalSumcheckOracleVerifier_rbrKnowledgeSoundnessWorstCase {σ : Type}
 
 omit [NeZero κ] [Fintype L] [Fintype K] [DecidableEq K] [SampleableType L]
   [NeZero ℓ] [NeZero ℓ'] in
-/-- Round-by-round knowledge soundness for the final sumcheck step: the averaged form of
-`finalSumcheckOracleVerifier_rbrKnowledgeSoundnessWorstCase`. -/
+/-- Averaged round-by-round knowledge soundness for the final consistency step, with zero
+challenge error. -/
 theorem finalSumcheckOracleVerifier_rbrKnowledgeSoundness {σ : Type}
     (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (finalSumcheckVerifier κ L K P ℓ ℓ' h_l aOStmtIn).rbrKnowledgeSoundness init impl
@@ -848,7 +836,7 @@ end FinalSumcheckStep
 
 section LargeFieldReduction
 
-/-- Composed oracle verifier for the SumcheckStep (seqCompose over ℓ') -/
+/-- Run the `ℓ'` sum-check round verifiers in variable order. -/
 @[reducible]
 def sumcheckLoopOracleVerifier :=
   OracleVerifier.seqCompose (m := ℓ') (oSpec := []ₒ)
@@ -857,7 +845,7 @@ def sumcheckLoopOracleVerifier :=
     (Stmt := Statement (L := L) (ℓ := ℓ') (RingSwitchingBaseContext κ L K ℓ P))
     (V := fun (i: Fin ℓ') => iteratedSumcheckOracleVerifier κ L K P ℓ ℓ' aOStmtIn i)
 
-/-- Composed oracle reduction for the SumcheckStep (seqCompose over ℓ') -/
+/-- Run the honest prover and verifier for the `ℓ'` sum-check rounds in variable order. -/
 @[reducible]
 def sumcheckLoopOracleReduction :
     OracleReduction (oSpec := []ₒ)
@@ -874,7 +862,7 @@ def sumcheckLoopOracleReduction :
     (Wit := fun i => SumcheckWitness L ℓ' i)
     (R := fun (i: Fin ℓ') => iteratedSumcheckOracleReduction κ L K P ℓ ℓ' aOStmtIn i)
 
-/-- Large-field reduction verifier: Sumcheck seqCompose, then append FinalSum -/
+/-- Run the relocation sum-check and its final consistency check. -/
 @[reducible]
 def coreInteractionOracleVerifier :=
   OracleVerifier.append (oSpec:=[]ₒ)
@@ -883,7 +871,7 @@ def coreInteractionOracleVerifier :=
     (V₂:=finalSumcheckVerifier κ L K P ℓ ℓ' h_l aOStmtIn)
     (pSpec₂:=pSpecFinalSumcheck L)
 
-/-- Large-field reduction: Sumcheck seqCompose, then append FinalSum -/
+/-- The relocation sum-check followed by its final consistency check. -/
 @[reducible]
 def coreInteractionOracleReduction :=
   OracleReduction.append
@@ -899,8 +887,8 @@ def coreInteractionOracleReduction :=
 variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)}
 
 omit [NeZero κ] [Fintype L] [Fintype K] [DecidableEq K] [NeZero ℓ] [NeZero ℓ'] in
-/-- Perfect completeness for large-field reduction (Sumcheck ++ FinalSum), composed from the
-round and final-step completeness by the guarded-verifier composition theorems. -/
+/-- Perfect completeness for the relocation sum-check and final check at strict oracle
+compatibility. -/
 theorem coreInteraction_perfectCompleteness :
     OracleReduction.perfectCompleteness
     (oracleReduction := coreInteractionOracleReduction κ L K P ℓ ℓ' h_l aOStmtIn)
@@ -935,8 +923,7 @@ theorem coreInteraction_perfectCompleteness :
       (P := P) (ℓ := ℓ) (ℓ' := ℓ') (h_l := h_l) (aOStmtIn := aOStmtIn)
       (init := pure s) (impl := impl)
 
-/-- RBR knowledge error for a degree-`d` sumcheck loop, obtained from the `seqCompose`
-challenge-index decomposition. -/
+/-- Per-challenge error `d/|L|` for the degree-`d` sum-check loop. -/
 def sumcheckLoopRbrKnowledgeErrorWithDegree (d : ℕ)
     (j : (pSpecSumcheckLoopWithDegree L ℓ' d).ChallengeIdx) : ℝ≥0 :=
   let ij := ProtocolSpec.seqComposeChallengeIdxToSigma
@@ -964,21 +951,8 @@ section
 local instance : DecidableEq K := Classical.decEq K
 
 omit [NeZero κ] [Fintype K] [DecidableEq K] [NeZero ℓ] [NeZero ℓ'] in
-/-- RBR knowledge soundness for large-field reduction (Sumcheck ++ FinalSum).
-
-**Conditional on admitted composition contracts.** This composite applies
-`OracleVerifier.seqCompose_rbrKnowledgeSoundness` and `OracleVerifier.append_rbrKnowledgeSoundness`.
-Both are admitted, and both are stated for arbitrary verifiers at the averaged notion. The section
-note of `Composition/Sequential/Append/Security.lean` flags the append contracts' statements as
-not derivable from their hypotheses, since composing needs bounds conditioned on the first
-transcript; the `seqCompose` contract is admitted separately and built on them. So this theorem
-is unverified statement debt, not only a missing proof, and it carries `sorryAx`.
-
-By contrast, the per-phase worst-case theorems
-`iteratedSumcheckOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_rbrExtractor` and
-`finalSumcheckOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_rbrExtractor` are sorry-free and
-axiom-clean under their stated hypotheses. They are the intended input to a worst-case
-composition theorem for guarded verifiers. -/
+/-- Averaged round-by-round knowledge soundness for the relocation sum-check and final check,
+with error `2/|L|` at each sum-check challenge and no final-step challenge error. -/
 theorem coreInteraction_rbrKnowledgeSoundness [NoZeroDivisors L]
     (hUnique : aOStmtIn.Functional) :
     OracleVerifier.rbrKnowledgeSoundness

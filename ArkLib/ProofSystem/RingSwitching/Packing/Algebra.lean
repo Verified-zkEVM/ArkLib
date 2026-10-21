@@ -34,6 +34,12 @@ computes, stated without any interactive-protocol vocabulary.
    multiplier that turns the batched claim into a sumcheck about the packed polynomial; and
    the batched target `compute_s0` and final equality value `compute_final_eq_value`.
 
+In [DP24] Construction 3.1, `performCheckOriginalEvaluation` is step 2, Check 1;
+`compute_A_func` and `compute_A_MLE` are steps 4a and 4b, and `compute_s0` is step 5.
+
+`eqWeightedCoordSum` is used in [DP24] Construction 3.1 at step 2 for the column check,
+step 5 for row batching, and step 8 for the final tensor observation.
+
 Statement/witness types, the downstream-opening interface and the protocol relations live in
 `Prelude.lean`, which re-exports this file.
 
@@ -152,15 +158,8 @@ def packMLE (β : Basis (Fin κ → Fin 2) K L) (t : MultilinearPoly K ℓ) :
   -- 2. The packed polynomial `t'` is the multilinear extension of this function.
   ⟨MvPolynomial.MLE packing_func, MLE_mem_restrictDegree packing_func⟩
 
-/--
-**Unpacking a Packed Multilinear Polynomial**.
-Reverses the packing defined in `packMLE`. It reconstructs the small-field
-multilinear `t` from the large-field multilinear `t'`.
-
-The evaluation of `t` at a point `(v, w)` is recovered by taking the evaluation
-of `t'` at `w`, which is an element of `L`, and finding its `v`-th coordinate
-with respect to the basis `β`.
--/
+/-- Recover the base-ring multilinear polynomial by taking the basis coordinate indexed
+by the packed Boolean prefix at each retained Boolean point, then interpolating. -/
 def unpackMLE (β : Basis (Fin κ → Fin 2) K L) (t' : MultilinearPoly L ℓ') :
     MultilinearPoly K ℓ :=
   -- 1. Define the function that gives the evaluations of the original small-field polynomial `t`.
@@ -179,18 +178,12 @@ def unpackMLE (β : Basis (Fin κ → Fin 2) K L) (t' : MultilinearPoly L ℓ') 
   -- 2. The unpacked polynomial `t` is the multilinear extension of this evaluation function.
   ⟨MvPolynomial.MLE unpacked_evals, MLE_mem_restrictDegree unpacked_evals⟩
 
-/--
-**Component-wise `φ₁` embedding**.
-Takes a polynomial `t'` with coefficients in `L` and embeds it into a polynomial
-with coefficients in the tensor algebra `A` by applying `φ₁` to each coefficient.
-The multilinear (`d = 1`) case of the family-shared degree-generic coefficient transport
-`RingSwitching.embedCoeffs` (`ArkLib/ProofSystem/RingSwitching/Transport/Coeffs.lean`).
--/
+/-- Transport a multilinear polynomial over `L` along `φ` to one over `A'`. -/
 def componentWise_embed_MLE {A' : Type} [CommRing A'] (φ : L →+* A')
     (t' : MultilinearPoly L ℓ') : MultilinearPoly A' ℓ' :=
   embedCoeffs φ t'
 
-/-- Binius-named alias: component-wise `φ₁` embedding into the tensor algebra `L ⊗[K] L`. -/
+/-- Map the coefficients of a multilinear polynomial into the right tensor factor. -/
 def componentWise_φ₁_embed_MLE (t' : MultilinearPoly L ℓ') :
     MultilinearPoly (TensorAlgebra K L) ℓ' :=
   componentWise_embed_MLE L ℓ' (A' := TensorAlgebra K L) (φ₁ L K) t'
@@ -210,13 +203,8 @@ variable (P : RingSwitchingProfile K L κ)
 variable (ℓ ℓ' : ℕ) [NeZero ℓ] [NeZero ℓ']
 variable (h_l : ℓ = ℓ' + κ)
 
-/-- **The verifier's coordinate-reconstruction subroutine**: the eq̃-weighted sum
-`∑_{u ∈ {0,1}^κ} eq̃(u, r) ⋅ c u` of a `2^κ`-indexed coordinate family `c` at the round
-randomness `r` — equivalently, the evaluation at `r` of the multilinear extension of `c`
-(Boolean points cast into `L`). Every DP24 verifier check below is this sum at a different
-coordinate family and randomness: step 2 checks the original claim against the column
-coordinates of `ŝ`, step 5 batches the row coordinates of `ŝ` into the sumcheck target `s₀`,
-and step 8 weighs the row coordinates of the final eq̃-tensor. -/
+/-- Sum a Boolean-indexed coordinate family against equality-kernel weights at `r`,
+casting the Boolean indices into `L`. -/
 def eqWeightedCoordSum (c : (Fin κ → Fin 2) → L) (r : Fin κ → L) : L :=
   Finset.sum Finset.univ fun (u : Fin κ → Fin 2) =>
     let u_as_L : Fin κ → L := fun i => if (u i == 1) then 1 else 0
@@ -239,7 +227,7 @@ def embedded_MLP_eval (t' : MultilinearPoly L ℓ') (r : Fin ℓ → L) :
 /-- The verifier's claim-consistency check: the claimed evaluation `s` must equal the
 eq̃-weighted reconstruction from `ŝ`'s column coordinates at the point prefix,
 `s ?= Σ_{v ∈ {0,1}^κ} eqTilde(v, r_{0..κ-1}) ⋅ ŝ_v` — `eqWeightedCoordSum` at
-`P.decomposeColumns` ([DP24] step 2, Check 1). -/
+`P.decomposeColumns`. -/
 def performCheckOriginalEvaluation (s : L) (r : Fin ℓ → L) (s_hat : P.A) : Bool :=
   let r_prefix : Fin κ → L := fun i => r ⟨i.val, by omega⟩
   decide (s = eqWeightedCoordSum κ L (P.decomposeColumns s_hat) r_prefix)
@@ -247,8 +235,7 @@ def performCheckOriginalEvaluation (s : L) (r : Fin ℓ → L) (s_hat : P.A) : B
 /-- The batched-multiplier function on the cube: for each `w ∈ {0,1}^{ℓ'}`, decompose
 `eq̃(r_κ, ..., r_{ℓ-1}, w_0, ..., w_{ℓ'-1}) =: Σ_{u ∈ {0,1}^κ} A_{w, u} ⋅ β_u` into basis
 coordinates and batch those with the eq̃-weights of the batching scalars,
-`A : w ↦ Σ_{u ∈ {0,1}^κ} eq̃(u_0, ..., u_{κ-1}, r''_0, ..., r''_{κ-1}) ⋅ A_{w, u}`
-([DP24] step 4a).
+`A : w ↦ Σ_{u ∈ {0,1}^κ} eq̃(u_0, ..., u_{κ-1}, r''_0, ..., r''_{κ-1}) ⋅ A_{w, u}`.
 -/
 def compute_A_func (original_r_eval_suffix : Fin ℓ' → L)
     (r''_batching : Fin κ → L) : ((Fin (ℓ') → (Fin 2)) → L) :=
@@ -267,8 +254,7 @@ def compute_A_func (original_r_eval_suffix : Fin ℓ' → L)
       A_w_u • eq_u_r_batching
 
 /-- The batched multiplier `A(X_0, ..., X_{ℓ'-1})` — the multilinear extension of
-`compute_A_func`, the public factor of the relocation sumcheck's polynomial `h = A · t'`
-([DP24] step 4b). -/
+`compute_A_func`, the public factor of the relocation sumcheck's polynomial `h = A · t'`. -/
 def compute_A_MLE
     (original_r_eval_suffix : Fin ℓ' → L) (r''_batching : Fin κ → L) :
   MultilinearPoly L ℓ' :=
@@ -282,7 +268,7 @@ def getEvaluationPointSuffix (r : Fin ℓ → L) : Fin ℓ' → L :=
 
 /-- The batched sumcheck target: `s₀ := Σ_{u ∈ {0,1}^κ} eqTilde(u, r'') ⋅ ŝ_u`, where `ŝ_u`
 are the row components of `ŝ` — `eqWeightedCoordSum` at `P.decomposeRows` and the batching
-scalars ([DP24] step 5). -/
+scalars. -/
 def compute_s0 (s_hat : P.A) (r''_batching : Fin κ → L) : L :=
   eqWeightedCoordSum κ L (P.decomposeRows s_hat) r''_batching
 
@@ -343,11 +329,6 @@ right-factor scalar action, and column coordinates use the left-factor scalar ac
     funext u
     simp [decompose_tensor_algebra_rows, φ₀, φ₁,
       Algebra.TensorProduct.tmul_mul_tmul, map_sum, Basis.baseChangeRight_repr_tmul]
-  decomposeColumns_recompose := fun c => by
-    classical
-    funext v
-    simp [decompose_tensor_algebra_columns, φ₀, φ₁,
-      Algebra.TensorProduct.tmul_mul_tmul, map_sum, Basis.baseChange_repr_tmul]
   embeddings_agree := fun b => by
     change (algebraMap K L b) ⊗ₜ[K] (1 : L) = (1 : L) ⊗ₜ[K] (algebraMap K L b)
     simpa only [Algebra.smul_def, mul_one] using
