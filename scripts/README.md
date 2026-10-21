@@ -25,6 +25,8 @@ This directory contains various utility scripts for the ArkLib project.
 - **`ToyProblemRuntime.lean`** (`lake exe toyproblem-runtime`) - Compiled small-parameter checks
   for KoalaBear sextic arithmetic, executable interleaved-RS extraction, and the C6.9 virtual
   output-oracle and exact-extractor paths
+- **`FriExtractorRuntime.lean`** (`lake exe fri-extractor-runtime`) - Compiled checks of the
+  measured FRI extractor, immutable-input guards, and exact arithmetic and word-read counts.
 - **`SumcheckRuntime.lean`** (`lake exe sumcheck-runtime`) - Compiled checks of CompPoly-backed
   round messages and the honest multivariate prover in the shared native Sumcheck executor,
   including continuation effects, abort, original-oracle evaluation and zero remaining rounds.
@@ -225,7 +227,8 @@ before and after the run; the report shows wall time beside `user + sys` CPU wor
 
 The three measurements share one tree and run in order, so each leaves it warmer than the last.
 `native_build` exists to hold the `.c.o` chain that the compiled executables link
-(`toyproblem-runtime` and `hachi-runtime`): that is the cost which swings on `.lake` cache state,
+(`toyproblem-runtime`, `hachi-runtime`, `sumcheck-runtime`, and `fri-extractor-runtime`): that is the
+cost which swings on `.lake` cache state,
 and billing it separately keeps the validation wrapper's row comparable across dependency bumps.
 Any new compiled executable run by `validate.sh` has to be added to that command as well. See
 [`../docs/wiki/quickstart.md`](../docs/wiki/quickstart.md) for how to read the rows.
