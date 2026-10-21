@@ -26,16 +26,18 @@ opened by a protocol that runs entirely over `L`.
 
 The family is called **Packing** because one basis-sized block of `2^κ` small-ring
 coefficients is encoded as one large-ring coefficient. Thus `κ` Boolean variables worth of
-coefficient positions are packed into the coordinates of a single element of `L`; “tensor”
-describes one useful realization of the carrier algebra, but is not the essential operation.
+coefficient positions are packed into the coordinates of a single element of `L`. The shared
+`PackingData` layer describes independent packing and opening bases. The DP24
+`RingSwitchingProfile` presents the tensor algebra `L ⊗[B] L` in chosen coordinates.
 
 The equivalence is not free: the original claim constrains `t'` through the basis
 coordinates, so the reduction must *relocate* the claim onto `t'` at some point the
-large-ring opening can handle. Two ingredients separate cleanly:
+large-ring opening can handle. The DP24 construction has two ingredients:
 
 * the **packing data** — the basis, a carrier ring `A` where the relocation checks run, a
   pair of embeddings into it, and faithful coordinate maps back out — is one abstraction,
-  `RingSwitchingProfile` (`Profile.lean`), shared by every instance;
+  `RingSwitchingProfile` (`Profile.lean`), a coordinatized tensor-algebra presentation
+  used by the DP24 interactive relocation;
 * the **relocation** is per-instance and depends on where the evaluation point lives. If the
   point is arbitrary in `L`, the claim is relocated *interactively*: the prover sends the
   folded carrier element `ŝ`, the verifier reconstructs the original claim from `ŝ`'s
@@ -43,8 +45,11 @@ large-ring opening can handle. Two ingredients separate cleanly:
   dedicated degree-2 sumcheck moves the batched claim to a fresh random point that the
   downstream opening consumes (the protocol files of this folder; round-by-round knowledge
   soundness, `[IsDomain L]`). If the point is engineered to lie in a subring, the relocation
-  degenerates to a *deterministic* one-message identity check — a planned second `Profile`
-  instance with none of the interaction.
+  degenerates to a *deterministic* one-message identity check. That trace head computes in
+  `L` itself, so it needs its own algebraic interface rather than a `Profile` instance.
+
+The independent `PackingData` coordinate layer also supplies algebra for a reference-Flock head.
+Its source, messages and residual opening relation require their own conformance proofs.
 
 The *opposite-direction* `Lift` construction—from a large quotient ring down into a field—is
 **not** a packing; it lives in the sibling folder `RingSwitching/Lift/`.
@@ -68,13 +73,21 @@ quirky layout (a field):
 
 The DP24 construction:
 
-* `Profile.lean` — `RingSwitchingProfile`, the shared packing data layer (basis, carrier,
-  embeddings, coordinate maps, reconstruction laws).
-* `Prelude.lean` — the packing algebra and protocol vocabulary: `packMLE`/`unpackMLE`, the
-  carrier operations, the verifier's coordinate subroutine `eqWeightedCoordSum`, statement/
-  witness types, the `MLIOPCS` downstream-opening interface, and the tensor-product constructor
-  `tensorProductProfile`. Its component-wise carrier embedding is the `d = 1` case of the
-  family-shared coefficient transport (`../Transport/Coeffs.lean`).
+* `Profile.lean` — `RingSwitchingProfile`, the DP24 tensor presentation (basis, carrier,
+  embeddings, coordinate maps, reconstruction and inverse laws) and their consequences.
+* `Algebra.lean` — the framework-independent packing algebra: `packMLE`/`unpackMLE`, the
+  carrier operations, the verifier subroutines (`eqWeightedCoordSum`, the multiplier
+  `compute_A_MLE`, the targets `compute_s0`/`compute_final_eq_value`) and the tensor-product
+  constructor `tensorProductProfile`. Its component-wise carrier embedding is the `d = 1` case
+  of the family-shared coefficient transport (`../Transport/Coeffs.lean`).
+* `ProfileCoordinates.lean`, `ProfileLayout.lean`, `BatchingAlgebra.lean`,
+  `FinalAlgebra.lean` — the profile's coordinate equivalences, the prefix layout of
+  `packMLE`, and the batching/final verifier identities. The first three are stated through the
+  finite-coordinate modules (`Coordinates`, `FiniteObservation`, `CheckedObservation`,
+  `Relations`, `Polynomial`, `ScalarHead/Layout`, `Batching`). None of these imports the
+  reduction framework.
+* `Prelude.lean` — the protocol vocabulary: statement/witness types, the `MLIOPCS`
+  downstream-opening interface, and the sumcheck relations; re-exports `Algebra.lean`.
 * `Spec.lean` — the transcript shape: the batching round (message then scalar challenge),
   the sumcheck loop, and the final one-message round (the family-shared wire
   `pSpecMessage`), with their `OracleInterface`/`SampleableType` instances.
@@ -93,8 +106,10 @@ The DP24 construction:
 
 * **Binius** ([DP24] Construction 3.1) — `B`/`L` binary-tower fields, carrier
   `A = L ⊗[B] L`; instantiated by `ProofSystem/Binius/FRIBinius/`.
-* **Hachi §3 head** ([NOZ26] Theorem 2, planned) — subfield-valued evaluation point,
-  `A = L = R_q`, `φ₁` an automorphism; deterministic one-message trace check.
+
+Hachi's §3 head ([NOZ26] Theorem 2) has carrier `A = L = R_q` and an automorphism `φ₁`. For
+`κ > 0` and finite `R_q` it is not a profile instance (`RingSwitchingProfile.card_A`); its
+deterministic trace check is planned against its own interface.
 
 ## References
 
