@@ -7,6 +7,7 @@ module
 
 public import ArkLib.Data.MvPolynomial.Multilinear
 public import ArkLib.Data.Probability.Instances
+public import VCVio.EvalDist.ProbabilityBounds
 
 /-!
 # Separation laws for batching a family of claims
@@ -14,6 +15,14 @@ public import ArkLib.Data.Probability.Instances
 A strategy specifies uniform challenges, weights and a collision bound. Power and equality
 batching assume `NoZeroDivisors` for the challenge ring. Singleton batching works over any
 commutative ring.
+
+`BatchingStrategy.separates_finset_le_card_filter_mul` charges only incorrect candidates.
+`BatchingStrategy.separates_finset` separates a bounded candidate list. A list of at most `L`
+families, fixed before the challenge, contains a family that differs from the true one yet has the
+same batched value with probability at most `L` times the strategy error. It instantiates the
+union bound `prEvent_exists_finset_le_card_mul` of `VCVio.EvalDist.ProbabilityBounds`;
+the true family itself contributes probability zero. This does not cover lists chosen after the
+challenge, nor adaptive joint-list invariants or extraction.
 -/
 
 @[expose] public section
@@ -51,6 +60,35 @@ theorem separates_map {P C W : Type} [CommRing P] [CommRing C] [Fintype W]
       ∑ u, bat.weight c u * f (s u) = ∑ u, bat.weight c u * f (s' u)] ≤
       (bat.error : ℝ≥0∞) :=
   bat.separates (f ∘ s) (f ∘ s') fun h => hne (funext fun u => hf (congrFun h u))
+
+open Classical in
+/-- A fixed candidate list is charged only for families different from `s`.
+The true family contributes no collision event. -/
+theorem separates_finset_le_card_filter_mul {C W : Type} [CommRing C] [Fintype W]
+    (bat : BatchingStrategy C W) (s : W → C) (S : Finset (W → C)) :
+    Pr{let c ← $ᵗ bat.Challenge}[∃ s' ∈ S, s' ≠ s ∧
+      ∑ u, bat.weight c u * s' u = ∑ u, bat.weight c u * s u] ≤
+      (S.filter (· ≠ s)).card * (bat.error : ℝ≥0∞) := by
+  calc
+    _ = Pr{let c ← $ᵗ bat.Challenge}[∃ s' ∈ S.filter (· ≠ s),
+        ∑ u, bat.weight c u * s' u = ∑ u, bat.weight c u * s u] := by
+      apply prEvent_congr
+      intro c
+      simp only [Finset.mem_filter, and_assoc]
+    _ ≤ _ := prEvent_exists_finset_le_card_mul _ _ _ (ε := bat.error)
+      fun s' hs' => bat.separates s' s (Finset.mem_filter.mp hs').2
+
+/-- **Bounded candidate-list separation for a batching strategy.** Against the true family `s`,
+some family of a list `S` of at most `L` candidates, fixed before the challenge, differs from `s`
+but has the same batched value with probability at most `L` times the strategy error. -/
+theorem separates_finset {C W : Type} [CommRing C] [Fintype W] (bat : BatchingStrategy C W)
+    (s : W → C) (S : Finset (W → C)) {L : ℕ} (hS : S.card ≤ L) :
+    Pr{let c ← $ᵗ bat.Challenge}[∃ s' ∈ S, s' ≠ s ∧
+      ∑ u, bat.weight c u * s' u = ∑ u, bat.weight c u * s u] ≤ L * (bat.error : ℝ≥0∞) := by
+  classical
+  refine (bat.separates_finset_le_card_filter_mul s S).trans ?_
+  have hcard : (S.filter (· ≠ s)).card ≤ L := (Finset.card_filter_le _ _).trans hS
+  gcongr
 
 /-- A single claim needs no randomness or algebraic root bound. -/
 def singleton (C W : Type) [CommRing C] [Fintype W] [Unique W] :

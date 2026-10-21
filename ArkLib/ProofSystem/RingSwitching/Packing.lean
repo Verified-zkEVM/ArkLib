@@ -67,7 +67,9 @@ quirky layout (a field):
 * `Polynomial.lean`, `Relations.lean` — packed multilinear polynomials with both round trips, and
   the opening, slice and batched-sumcheck relations.
 * `Multiplier.lean` — the public multiplier evaluated by a read-once matrix program.
-* `Batching.lean` — `BatchingStrategy`: uniform challenges with a proved collision bound.
+* `Batching.lean` — `BatchingStrategy`: uniform challenges with a proved collision bound, and
+  `separates_finset` for candidate lists fixed before the challenge (the generic union bound is in
+  upstream `VCVio.EvalDist.ProbabilityBounds`).
 * `ScalarHead/Layout.lean`, `ScalarHead/Quirky.lean` — prefix, suffix and quirky source
   layouts, each with a proved reconstruction identity.
 
