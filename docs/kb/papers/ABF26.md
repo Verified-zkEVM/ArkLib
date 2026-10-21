@@ -94,7 +94,7 @@ manuscript, not to the original sources it cites — those get their own keys (`
   `Connections/ListDecodingAndCA.lean` state the externally sourced upper/lower bounds and
   connections on the canonical error and list-size carriers. `LineDecoding.lean` uses the
   close-and-aligned formulation from GG25 Definition 3.1 and its MCA consequence; this corrects
-  the missing close-set intersection in ABF26 Definition 4.20. The prize witness consuming the
+  the missing close-set intersection in ABF26 Definition 4.21. The prize witness consuming the
   BCHKS25 upper bound is isolated in `GrandChallenges/CapacityBounds.lean`.
 - **§3.15 and the KKH appendix.** `ListDecodability/Bounds/KKH26.lean` contains the concrete
   useful-family and sum-set templates; `KKH26Asymptotic.lean` derives the asymptotic list lower
@@ -157,19 +157,40 @@ manuscript, not to the original sources it cites — those get their own keys (`
 
 - `ABF26` is a manuscript accompanying the Proximity Prize; there is no ePrint number, so cite
   it by key and by section/statement number only.
-- **The PDF and the authors' current source diverge.** The reference PDF used for ArkLib's
-  transcriptions (`~/abf26-refs/ABF26.pdf`, PDF creation date **2026-04-08**) is a build that
-  predates several upstream corrections. The concrete instance that matters for ArkLib:
+- **Two builds are in play.** The ledger follows the **2026-07-06** source; ArkLib's earliest
+  transcriptions were made against a **2026-04-08** PDF (`~/abf26-refs/ABF26.pdf`, not committed,
+  not redistributable) that predates several upstream corrections. The concrete instance that
+  matters for ArkLib:
   **Definition 3.1 prints the Johnson list factor as `ℓ/(ℓ−1)`, but the correct factor is
   `(ℓ−1)/ℓ`.** The printed form is mathematically wrong — `ℓ/(ℓ−1) > 1` makes
   `J_{q,ℓ} > J_q`, i.e. a *finite* list budget would buy a larger radius than the `ℓ → ∞`
   limit, and it makes the Johnson denominator negative. The authors fixed this upstream on
   **2026-06-13**. ArkLib's `Jqℓ` uses `(ℓ−1)/ℓ`, matching the classical statement (GRS12
   Exercise 7.8, key `codingtheory`); the deviation from the PDF is deliberate and documented at
-  the definition.
+  the definition. **Verified against the 2026-07-06 build: Definition 3.1 now prints
+  `(ℓ−1)/ℓ`,** so ArkLib agrees with the current source and diverges only from the stale PDF.
+- **§3 and §4 numbering differs between the two builds.** Relative to the 2026-04-08 PDF, the
+  2026-07-06 source:
+  - inserts Theorem 3.15 ([KKH26]), so [CW07] is Theorem 3.16;
+  - restates Lemma 4.7 (`εmca(C^≡t,δ) ≤ t·εmca(C,δ)`) as Theorem 4.7 ([Jo26]), an equality;
+  - inserts Lemma 4.16, the MCA information-set lower bound, which the PDF does not contain;
+  - replaces Theorem 4.17 ([CS25] Corollary 1) with Theorem 4.18 ([CS25] Theorem 3), keeping
+    Corollary 1 only as the prose interpretation after Theorem 4.18;
+  - so the PDF's Theorem 4.16 (near-capacity CA lower bound, now attributed to [KKH26]),
+    Theorem 4.18 (CA jump at the Johnson bound), Lemma 4.19 ([DG25] sampling), Definition 4.20
+    (line-decodability) and Theorem 4.21 (line-decoding implies MCA) are 4.17, 4.19, 4.20, 4.21
+    and 4.22;
+  - states line-decodability with probability thresholds `(δ, α, β)` rather than counts
+    `(δ, a, b)`;
+  - adds Appendix C, concrete restatements of [KKH26].
+
+  Numbering in §2, §5, §6 and Appendices A–B is the same in both builds, and the authors' latest
+  source (2026-08-15) numbers everything as the 2026-07-06 source does. The audit ledger uses
+  this numbering.
 - Practical consequence: **when re-checking an ArkLib statement against ABF26, check the
   authors' current source, not only the 2026-04-08 PDF.** A mismatch against the PDF is not by
-  itself evidence of an ArkLib transcription error.
+  itself evidence of an ArkLib transcription error — it may just be the older numbering or an
+  already-corrected formula.
 
 ## Known Divergences From ArkLib
 
@@ -200,7 +221,7 @@ Four source discrepancies affect ArkLib's formal interface. ArkLib uses the corr
    Lean statement is correct as it stands — but the clause is load-bearing for T2.18.
    Note that `GK16` itself is not affected by (b): its §4.2 setup requires `F_q(α) = F_{q^r}`
    with `|S_α| = r·t`, which excludes `α = 0`.
-4. **Definition 4.20 omits the close-set intersection required by line decoding.** Its printed
+4. **Definition 4.21 omits the close-set intersection required by line decoding.** Its printed
    conclusion counts every challenge satisfying affine alignment, even when the sampled line is
    not close to the selected codeword. GG25 Definition 3.1 counts challenges satisfying both
    proximity and alignment, and GG25 Theorem 3.5 proves the MCA implication for that definition.
@@ -210,7 +231,9 @@ Four source discrepancies affect ArkLib's formal interface. ArkLib uses the corr
    affine line whose two coordinates vanish at distinct challenges nevertheless has MCA bad-event
    probability at least `2/3`, exceeding the claimed `a/|F| = 1/3`. Consequently
    `IsLineDecodable` and `IsLineDecodable.mcaError_le` follow GG25 rather than the printed ABF26
-   definition and theorem.
+   definition and theorem. The 2026-07-06 source states the pair as Definition 4.21 /
+   Theorem 4.22 with probability thresholds `α = a/|F|` and `β = b/|F|` (so `α = 1/3` above) and
+   keeps the omission; in the 2026-04-08 PDF the pair is Definition 4.20 / Theorem 4.21.
 
 Directions in which ArkLib is *weaker* than the paper (all deliberate, none unsound):
 
@@ -267,15 +290,21 @@ guard `k ≤ ringChar F` for degree-`< k` messages.
     convention *and* the non-negative-exponent guard its pigeonhole needs, and is false without
     either; Theorem 3.4's premise, read at Theorem 2.18's printed profile, is false (it needs
     [CZ25]'s `(k−1)` level). Both have compiled axiom-clean counterexamples.
-- **L2.10.** The interleaved-code list-size comparison is present as an external `[GGR11]` leaf;
-  proving it in-tree remains open.
-- **§6.** A cost model for erasure correction, without which D6.4/L6.5 carry no content; and
-  §6.4.1 Lemma 6.12, the intended consumer of Claim B.1. Claim B.1 and its supporting probability
-  lemmas exist; the erasure algorithm, its cost model, and the Lemma 6.12 application do not.
-- **§4, §5.** The cited bounds and list-decoding/CA connections are catalogued with 18 new
-  external admits, while their arithmetic corollaries and carrier bridges are proved in-tree.
-  The random-RS MCA result and the draft-only MCA conjecture remain outside this layer. See the
-  ledger for each statement's source-side guards and normalization choices.
+- **§6.** A cost model for erasure correction is open, and without it D6.4/L6.5 carry no
+  content. Definition 6.11 is `partial`: the optimal-adversary identification behind the paper's
+  "exactly" is not proved. Lemma 6.12 is formalized, as
+  `exists_winningSetFor_ncard_ge_of_lambda_lt_card` in
+  `ProofSystem/ToyProblem/SoundnessBounds.lean`, and it consumes Claim B.1 there. The ledger
+  gives the status of every other §6 row.
+- **§4, §5.** The catalogue is proved in-tree except for **four external admits**:
+  Theorem 4.12 ([BCHKS25] RS MCA in the Johnson range), Theorem 4.13 ([GG25] MCA from
+  subspace-design codes), Theorem 4.17 ([KKH26] CA lower bound near capacity), and Theorem 5.4
+  ([BenSassonGKS20] the list-decoding/CA separation). Theorem 4.12 is the load-bearing one: it stands
+  under every Johnson-range `McaLowerWitness`. Statements 4.9, 4.11, 4.14, 4.18, 4.19, 4.20,
+  4.22, the BCGM25 univariate-powers bound, the CA-breakdown interpretation of 4.18, and 5.1-5.3
+  are all axiom-clean. The random-RS MCA result (T4.15) and the draft-only MCA conjecture remain
+  outside this layer. See the ledger for each statement's source-side guards and normalization
+  choices.
 
 ## Source Access
 
