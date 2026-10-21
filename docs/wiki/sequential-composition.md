@@ -39,7 +39,8 @@ corollaries set those errors to zero.
 
 Pure verifier forms describe deterministic verifiers that do not reject. A
 `Verifier.GuardedForm` describes a deterministic verifier with an explicit acceptance check;
-rejection contributes to the completeness error. Guarded theorems live in
+rejection contributes to the completeness error. The form itself is defined in
+`Security/Guarded.lean`; the guarded completeness theorems live in
 `Sequential/GuardedCompleteness.lean`, imported separately from the binary umbrella.
 
 `Prover.SimulatedAppendFactorization` equates the simulated prover programs for every input

@@ -769,6 +769,8 @@ public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoC
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Package
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.ScalarRound
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.SingleRound
+public import ArkLib.OracleReduction.Security.Guarded
+public import ArkLib.OracleReduction.Security.GuardedRoundByRound
 public import ArkLib.OracleReduction.Security.Implications
 public import ArkLib.OracleReduction.Security.RbrGame
 public import ArkLib.OracleReduction.Security.Rewinding
@@ -790,6 +792,7 @@ public import ArkLib.ProofSystem.Binius.BinaryBasefold.QueryPhase
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.SoundnessTools
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.Spec
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.Steps
+public import ArkLib.ProofSystem.Binius.FRIBinius.Conformance
 public import ArkLib.ProofSystem.Binius.FRIBinius.CoreInteractionPhase
 public import ArkLib.ProofSystem.Binius.FRIBinius.General
 public import ArkLib.ProofSystem.Binius.FRIBinius.Prelude
@@ -835,6 +838,8 @@ public import ArkLib.ProofSystem.RingSwitching.Packing.Batching
 public import ArkLib.ProofSystem.RingSwitching.Packing.BatchingAlgebra
 public import ArkLib.ProofSystem.RingSwitching.Packing.BatchingPhase
 public import ArkLib.ProofSystem.RingSwitching.Packing.CheckedObservation
+public import ArkLib.ProofSystem.RingSwitching.Packing.Compatibility
+public import ArkLib.ProofSystem.RingSwitching.Packing.Conformance
 public import ArkLib.ProofSystem.RingSwitching.Packing.Coordinates
 public import ArkLib.ProofSystem.RingSwitching.Packing.DerivedBatching
 public import ArkLib.ProofSystem.RingSwitching.Packing.FinalAlgebra
@@ -889,6 +894,7 @@ public import ArkLib.ProofSystem.Sumcheck.Spec.General
 public import ArkLib.ProofSystem.Sumcheck.Spec.SingleRound
 public import ArkLib.ProofSystem.Sumcheck.Structured
 public import ArkLib.ProofSystem.Sumcheck.Structured.Prismalinear
+public import ArkLib.ProofSystem.Sumcheck.Structured.RoundLemmas
 public import ArkLib.ProofSystem.Sumcheck.Structured.SingleRound
 public import ArkLib.ProofSystem.ToyProblem.Codegen
 public import ArkLib.ProofSystem.ToyProblem.ConstrainedCode

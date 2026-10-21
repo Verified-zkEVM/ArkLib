@@ -31,7 +31,7 @@ each:
    `Packing/Profile.lean`); the relocation is per-instance:
    * **interactive relocation** (the protocol files of `Packing/`) — for an arbitrary
      large-ring evaluation point: carrier message, batching challenge, dedicated packing
-     sumcheck; RBR knowledge soundness (`[IsDomain L]`). Consumed by
+     sumcheck; RBR knowledge soundness (`[NoZeroDivisors L]`). Consumed by
      `ProofSystem/Binius/FRIBinius/` (this is [DP24]'s construction).
    * **deterministic relocation** — for a subring-valued evaluation point the interaction
      collapses to one message and one identity check, with zero soundness error ([NOZ26] §3.1).
@@ -57,7 +57,7 @@ each:
 ## What is genuinely shared between the two families
 
 * The **round-shape verifiers** (this folder's top level): every verifier round of the family
-  is "one prover message, a deterministic local check, an accept/reject statement update" —
+  is "one prover message, a deterministic local check, a statement update or an abort" —
   message-only (`pSpecMessage` + `messageRoundOracleVerifier`: DP24's final step; Hachi's
   §3.1 trace head has the same one-message shape as a plain aborting `Verifier`) or with a
   trailing scalar challenge

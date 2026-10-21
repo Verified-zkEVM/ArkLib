@@ -586,6 +586,18 @@ home_page/            site assets and assembled website root
   master bounds over `simulateQ`/`OptionT` that discharge those implications). This is a **separate
   axis** from the transcript-tree notions below: its extractor type is `Extractor.RoundByRound` on
   transcripts, not `Extractor.TreeBased`, and it carries no escape-event layer.
+  `Security/Guarded.lean` defines guarded verifiers, independent of any security notion:
+  `Verifier.IsGuardedWith`/`IsGuarded`, their data form `Verifier.GuardedForm` (check and verdict
+  map as fields), `GuardedForm.append`, the seam run lemma `Verifier.append_run_guardedLeft`, and
+  `Verifier.GuardedForm.ofQueryGuard`, the guarded form of a query-guard-return oracle
+  verifier. `Security/GuardedRoundByRound.lean` adds what a round-by-round proof needs about a
+  verifier that aborts on a failed check: the positive-probability lemma
+  `Verifier.GuardedForm.check_and_of_prEvent_pos` and the message-then-challenge reducer
+  `Verifier.rbrKnowledgeSoundnessWorstCaseWith_of_two_message`, which bounds the extraction-failure
+  event `rbrExtractionFailureEvent` (defined in `RoundByRound.lean`) per fixed prefix. The run
+  equation of a query-guard-return oracle verifier (one message query, then a guard and a
+  verdict that may read the answer and the challenges),
+  `OracleVerifier.toVerifier_verify_of_query_guard`, is in `OracleReduction/Basic.lean`.
 - Coordinate-wise special soundness ([FMN24]/[NOZ26]) lives in
   `Security/CoordinateWiseSpecialSoundness/`: `Basic` defines the `SS(S, ℓ, k)` combinatorics
   (`CoordEq`, `IsSpecialSoundFamily`), `CWSSStructure`, `CWSSStructure.toShape`, and both forms
@@ -626,9 +638,8 @@ home_page/            site assets and assembled website root
   **event** field), the lossless kind lifts `toEscape`/`toGuarded`, all mixed appends, and the
   universal `▷` elaborator dispatching over the 2×2 grid escape? × guarded?. Since escapes are
   events on `(statement, tree)`, composition matches only relation seams. `Guarded` is the
-  **proven** runtime-rejection layer: `Verifier.IsGuardedWith`/`IsGuarded` and their data form
-  `Verifier.GuardedForm` (check and verdict map as fields, which keeps composed extractors
-  computable), the guarded package `GCWSSPackage` with its append `▷ᵍ`, the guarded seam
+  **proven** runtime-rejection layer over the guarded verifiers of `Security/Guarded.lean`: the
+  guarded package `GCWSSPackage` with its append `▷ᵍ`, the `Verifier.Outputs`-level guarded seam
   lemmas, and both guarded binary CWSS append theorems (plain and escape-threaded). The umbrella
   `CoordinateWiseSpecialSoundness.lean` re-exports the core files.
 - Active areas are often grouped by paper or protocol family, for example
@@ -714,10 +725,23 @@ home_page/            site assets and assembled website root
   `ProfileCoordinates`, `ProfileLayout` and `BatchingAlgebra` connect the profile to the
   finite-coordinate modules, and `FinalAlgebra` identifies the final verifier value.
   These modules do not import the legacy reduction framework.
+  The importable library module `Packing/Conformance.lean` states the legacy DP24 batching
+  phase's check and round-zero sumcheck relation (`batching_conforms`) and its
+  input relation (`mem_batchingInputRelation_iff_layout`) through them, at `PackingData.ofBasis`
+  and the prefix layout `packedPrefixLayout`, and the final sum-check check's equality value
+  through the same multiplier (`compute_final_eq_value_eq_multiplier`).
+  `Binius/FRIBinius/Conformance.lean` specializes it to Binius's profile and first oracle;
+  concrete fixtures remain in `ArkLibTest/ProofSystem/RingSwitching/Conformance/Binius.lean`.
   `Packing/` also contains the legacy DP24/Binius protocol construction (`Prelude` with the
-  protocol vocabulary, `Spec`, `BatchingPhase`, `SumcheckPhase`, `General`; RBR
-  soundness, `[IsDomain L]`); Binius instantiates it in `ProofSystem/Binius/FRIBinius/`
-  (`biniusProfile`). Hachi's §3.1 trace head has carrier `L` itself, so it is not a `Profile`
+  protocol vocabulary, `Compatibility` with the binding hypothesis `AbstractOStmtIn.Functional`,
+  `Spec`, `BatchingPhase`, `SumcheckPhase`, `General`). The phase completeness theorems and the
+  phase worst-case round-by-round knowledge-soundness theorems are proved (`κ/|L|` for batching,
+  `2/|L|` per sum-check round), as is composed completeness. Composed knowledge soundness is
+  conditional on the admitted framework contracts `OracleVerifier.append_rbrKnowledgeSoundness`
+  and `OracleVerifier.seqCompose_rbrKnowledgeSoundness`; the append contracts' statements are
+  flagged as not derivable from their hypotheses, and `seqCompose` is built on them. Binius
+  instantiates the construction in `ProofSystem/Binius/FRIBinius/` (`biniusProfile`).
+  Hachi's §3.1 trace head has carrier `L` itself, so it is not a `Profile`
   instance; it uses the coordinate layer directly, through `PackingData.ofBaseOpening`,
   `packedMLE`, its own `ClaimLayout` and `CheckedObservation`, exercising only the packing,
   evaluation and opening part (no batching, multiplier or sumcheck); `TraceHead/Conformance.lean`
@@ -737,7 +761,11 @@ home_page/            site assets and assembled website root
   committed-scalar seam under `OracleReduction/`.
   Background: KB concept page `docs/kb/concepts/ring-switching.md`; blueprint section
   `proof_systems/ring_switching.tex`. Structured sum-check support lives in
-  `ProofSystem/Sumcheck/Structured*` and `ProofSystem/Sumcheck/Domain.lean`.
+  `ProofSystem/Sumcheck/Structured*` and `ProofSystem/Sumcheck/Domain.lean`; the round algebra
+  (round-polynomial sums, the `d/|L|` collision bound) is in
+  `Sumcheck/Structured/RoundLemmas.lean`, over the prefix-fixing algebra in
+  `Data/MvPolynomial/RestrictDegree.lean` and the root bound
+  `Probability.prob_polynomial_eval_eq_le`.
 - Before assuming a file is authoritative, check whether it is source or derived output. See
   [`generated-files.md`](generated-files.md).
 

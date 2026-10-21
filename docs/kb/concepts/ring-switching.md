@@ -77,8 +77,9 @@ The *protocol* on top of the profile is per-construction. The DP24 packing proto
 (the protocol files of `ProofSystem/RingSwitching/Packing/`) is three phases (batching → sum-check → large-field IOPCS
 opening); see the blueprint section *Ring Switching*
 (`blueprint/src/proof_systems/ring_switching.tex`) for the protocol and security statements.
-Its RBR knowledge error is `κ/|L| + Σ 2/|L| + 1/|L| + ε_IOPCS` (DP24 §3.1–3.2), and soundness
-requires `[IsDomain L]` (Schwartz–Zippel).
+Its RBR knowledge error is `κ/|L| + Σ 2/|L| + ε_IOPCS` (DP24 §3.1–3.2); the final consistency
+step sends no challenge and adds no error. Soundness requires `[NoZeroDivisors L]`
+(Schwartz–Zippel).
 
 ## Shared coordinate algebra
 
@@ -135,6 +136,62 @@ be a field.
   left/right `L`-module bases; all profile laws are **proven** in ArkLib. Because the
   evaluation point is an arbitrary big-field point, the claim is relocated *interactively*
   (batching challenge + dedicated packing sum-check).
+
+  Binius instantiates it with `biniusProfile`. The conformance theorem `batching_conforms`
+  (`ArkLib/ProofSystem/RingSwitching/Packing/Conformance.lean`) states the batching phase's
+  accepting round through the coordinate layer, at `PackingData.ofBasis` of the profile basis
+  and the prefix layout `packedPrefixLayout`. The column check passes and the accepted output is
+  in the round-zero sumcheck relation exactly when:
+  - the packed polynomial is compatible with the oracle statement;
+  - the round polynomial is the shared `multiplier` times the packed polynomial;
+  - the batched rows of the sent carrier are in the shared `sumcheckClaimRel`;
+  - the claim is the layout-weighted sum of the carrier's columns.
+
+  Companion statements put the input relation through the `packedMLE` of the prefix-layout
+  components, and characterize the honest carrier by `sliceRel` on its rows or, equivalently,
+  `openingClaimRel` on its columns. `binius_batching_conforms` instantiates the theorem at
+  `biniusProfile` and the first-codeword relation. `compute_final_eq_value_eq_multiplier`
+  states the final sum-check check's equality value as the same shared `multiplier`, evaluated
+  at the sum-check challenges. The intermediate sum-check rounds and the FRI phases are out of
+  scope.
+
+  These statements identify the relations only. Acceptance fixes only the batched target, not
+  the carrier; that collision event is bounded by `compute_s0_collision_le`. The fixture
+  `failedCheck_aborts` pins that a failed check aborts.
+
+  Security of the DP24 phases is proved as follows.
+  - The shared verifiers (`scalarRoundOracleVerifier`, `messageRoundOracleVerifier`,
+    `Sumcheck.Structured.roundOracleVerifier`) abort on a failed check, so a rejected transcript
+    produces no output.
+  - Knowledge soundness assumes `AbstractOStmtIn.Functional`
+    (`Packing/Compatibility.lean`): an oracle statement is compatible with at most one packed
+    polynomial, so that polynomial is fixed before any challenge.
+  - Each phase's knowledge soundness is proved in the worst-case form
+    (`Verifier.rbrKnowledgeSoundnessWorstCaseWith`: every fixed transcript prefix, over the
+    fresh challenge alone, with the extractor and knowledge-state function named). The
+    existential worst-case and averaged forms are corollaries. These per-phase results are
+    sorry-free and axiom-clean under their stated hypotheses (`AbstractOStmtIn.Functional` and
+    `[NoZeroDivisors L]`).
+  - Batching: `batchingReduction_perfectCompleteness` and
+    `batchingOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_rbrExtractor`, at error `κ/|L|`
+    (`prob_exists_consistent_ne_le`).
+  - Sum-check rounds: `iteratedSumcheckOracleReduction_perfectCompleteness` and
+    `iteratedSumcheckOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_rbrExtractor`, at error
+    `2/|L|` per round.
+  - Final step: it outputs the claim `t'(r') = s'`, completeness is
+    `finalSumcheckOracleReduction_perfectCompleteness`, and it has no challenge
+    (`finalSumcheckOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_rbrExtractor` is vacuous).
+  - Composed completeness: `coreInteraction_perfectCompleteness` and
+    `FullRingSwitching.fullOracleReduction_perfectCompleteness` are proved through the
+    guarded-verifier composition theorems. The full reduction's completeness is stated at the
+    strict relations (`AbstractOStmtIn.strictView`, honest compatibility).
+  - Composed knowledge soundness: `coreInteraction_rbrKnowledgeSoundness` and
+    `FullRingSwitching.fullOracleVerifier_rbrKnowledgeSoundness` are **conditional**. They apply
+    the admitted contracts `OracleVerifier.append_rbrKnowledgeSoundness` and
+    `OracleVerifier.seqCompose_rbrKnowledgeSoundness`. The append contracts' statements are
+    flagged as not derivable from their hypotheses
+    (`Composition/Sequential/Append/Security.lean`), and the `seqCompose` contract is admitted
+    separately and built on them. This is unverified statement debt, not only a missing proof.
 - **Hachi §3.1 trace head** ([`../papers/NOZ26.md`](../papers/NOZ26.md),
   `Commitments/Functional/Hachi/TraceHead/`): `L = R_q`,
   `A = R_q`, `φ₀ = id`, `φ₁ = σ₋₁`, `β = ψ` (Theorem 2). The carrier is `L` itself, so for
@@ -197,6 +254,7 @@ be a field.
 - [`../../../ArkLib/ProofSystem/RingSwitching/Packing/DerivedBatching.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/DerivedBatching.lean) — conditional fixed-list separation for publicly derived slices of the same packed source.
 - [`../../../ArkLib/ProofSystem/RingSwitching/Packing/Algebra.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/Algebra.lean) — `packMLE`, the tensor-product constructor `tensorProductProfile`, the DP24 verifier subroutines.
 - [`../../../ArkLib/ProofSystem/RingSwitching/Packing/Prelude.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/Prelude.lean) — DP24 protocol vocabulary and relations.
+- [`../../../ArkLib/ProofSystem/RingSwitching/Packing/Compatibility.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/Compatibility.lean) — the binding hypothesis `AbstractOStmtIn.Functional`.
 - [`../../../ArkLib/ProofSystem/RingSwitching/Packing/General.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/General.lean) — the full DP24 reduction + security theorems.
 - [`../../../ArkLib/ProofSystem/RingSwitching/Lift/Presentation.lean`](../../../ArkLib/ProofSystem/RingSwitching/Lift/Presentation.lean) — the quotient-presentation abstraction + lift algebra.
 - [`../../../ArkLib/ProofSystem/RingSwitching/Lift/Reduction.lean`](../../../ArkLib/ProofSystem/RingSwitching/Lift/Reduction.lean) — the generic `Lift` construction + CWSS.
@@ -205,9 +263,11 @@ be a field.
 
 ## Notes
 
-- The DP24 protocol skeleton is profile-generic. The displayed completeness and soundness
-  statements are unproved targets (`sorry`); instance-specific packing, folded-evaluation, and
-  multiplier identities remain necessary proof obligations.
-- Soundness reuse across instances is weaker than data-layer reuse: the intended
-  Schwartz–Zippel bounds require `[IsDomain L]`, which fits field instances (Binius) but not
-  non-domain rings (Hachi `R_q`). The latter need a separate soundness argument and error bound.
+- The phase completeness theorems are proved for their stated compatibility relations.
+  `FullRingSwitching.fullOracleReduction_perfectCompleteness` is proved at strict oracle
+  compatibility, using the downstream opening's completeness premise. Per-phase worst-case
+  round-by-round knowledge soundness is proved under `AbstractOStmtIn.Functional`. Composed RBR
+  still uses admitted append/seqCompose contracts; the ordinary knowledge-soundness conversion
+  `Verifier.rbrKnowledgeSoundness_implies_knowledgeSoundness` also remains admitted.
+- Protocol Schwartz–Zippel bounds assume `[NoZeroDivisors L]` over a finite nontrivial
+  commutative ring. Rings with zero divisors need a different soundness argument and error bound.
