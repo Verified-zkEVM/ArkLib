@@ -743,11 +743,15 @@ home_page/            site assets and assembled website root
   protocol vocabulary, `Compatibility` with the binding hypothesis `AbstractOStmtIn.Functional`,
   `Spec`, `BatchingPhase`, `SumcheckPhase`, `General`). The phase completeness theorems and the
   phase worst-case round-by-round knowledge-soundness theorems are proved (`κ/|L|` for batching,
-  `2/|L|` per sum-check round), as is composed completeness. Worst-case round-by-round knowledge
-  soundness for the core and for batching followed by it is proved through guarded composition
-  under the stated binding and ring hypotheses. The full composite still applies the admitted
-  averaged `OracleVerifier.append_rbrKnowledgeSoundness` contract for the downstream opening.
-  Ordinary knowledge soundness also uses the admitted RBR-to-KS implication. Binius
+  `2/|L|` per sum-check round), as is composed completeness. Composed worst-case knowledge
+  soundness of the core interaction and of batching followed by it is sorry-free and axiom-clean
+  under its stated hypotheses, through the guarded composition theorems. So is the full
+  composite's (`fullOracleVerifier_rbrKnowledgeSoundnessWorstCase`), given in addition the
+  worst-case hypothesis `MLIOPCS.RbrKnowledgeSoundWorstCase` on the downstream opening. Under a
+  plain `MLIOPCS`, whose contract is averaged, the full composite
+  (`fullOracleVerifier_rbrKnowledgeSoundness`) is conditional on the admitted
+  `OracleVerifier.append_rbrKnowledgeSoundness`, whose statement is flagged as not derivable from
+  its hypotheses. Binius
   instantiates the construction in `ProofSystem/Binius/FRIBinius/` (`biniusProfile`).
   Hachi's §3.1 trace head has carrier `L` itself, so it is not a `Profile`
   instance; it uses the coordinate layer directly, through `PackingData.ofBaseOpening`,

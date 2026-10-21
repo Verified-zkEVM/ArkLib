@@ -5,6 +5,7 @@ Authors: Alexander Hicks
 -/
 
 import ArkLibTest.ProofSystem.RingSwitching.Conformance.Binius
+import ArkLibTest.ProofSystem.RingSwitching.Conformance.DirectOpening
 import ArkLib.ProofSystem.RingSwitching.Packing.General
 
 /-!
@@ -17,10 +18,19 @@ switching at the GF(4)/GF(2) orientation fixture, with the binding oracle statem
 * `core_rbrKnowledgeSoundnessWorstCase` and `batchingCore_rbrKnowledgeSoundnessWorstCase`
   discharge their uniqueness hypothesis at the fixture. `batchingCore_direct` builds the batching
   composite from the guarded composition lemma itself, rather than from its packaged corollary.
-* `core_relIn_inhabited` and `batching_relIn_inhabited` show that the composites' input relations
-  contain the honest inputs, so the theorems are not vacuous.
-* `core_error`, `batching_core_error_batching`, and `batching_core_error_sumcheck` pin the errors:
-  `κ/|L|` at the batching challenge (here `κ = 1`) and `2/|L|` at each sum-check challenge.
+* `full_rbrKnowledgeSoundnessWorstCase` instantiates the full composite, batching and the core
+  interaction followed by the downstream opening, for every `MLIOPCS` over `exactOStmtIn` that is
+  worst-case round-by-round knowledge sound; `full_rbrKnowledgeSoundness` is its averaged form.
+* `full_concrete` closes the full composite with no hypotheses, at the concrete opening
+  `DirectOpening.mliopcs`, which reads the polynomial from its oracle and checks the claim. So the
+  uniqueness and worst-case opening hypotheses hold together.
+* `core_relIn_inhabited`, `batching_relIn_inhabited` and `full_relIn_inhabited` show that the
+  composites' input relations contain the honest inputs. Together with `full_concrete`, the
+  theorems are not vacuous.
+* `core_error`, `batching_core_error_batching`, `batching_core_error_sumcheck`, and the
+  full-error lemmas compute the errors:
+  `κ/|L|` at the batching challenge (here `κ = 1`), `2/|L|` at every sum-check challenge, and the
+  opening's own error at the opening's challenges.
 -/
 
 open OracleComp OracleSpec ProtocolSpec
@@ -37,10 +47,6 @@ open ArkLibTest.RingSwitchingConformance.Binius RingSwitching.Packing.Conformanc
 attribute [local instance] ArkLibTest.RingSwitchingOrientation.algebraKL
 
 noncomputable local instance : SampleableType GF4 := SampleableType.ofFintype GF4
-
-/-- The binding oracle statement determines its packed polynomial. -/
-theorem exactOStmtIn_functional : exactOStmtIn.Functional :=
-  fun _ _ _ h₁ h₂ => h₁.trans h₂.symm
 
 /-! ## The core interaction -/
 
@@ -105,8 +111,7 @@ theorem batchingCore_direct {σ : Type} (init : ProbComp σ)
       (relOut := exactOStmtIn.toRelInput)
       (FullRingSwitching.batchingCoreRbrKnowledgeError 1 GF4 GF2 P₄ 1) :=
   OracleVerifier.append_rbrKnowledgeSoundnessWorstCase_of_guarded_first _ _
-    (Verifier.GuardedForm.ofEmpty _ (fun stmt =>
-      (⟨0, Fin.elim0, ⟨⟨stmt.1.t_eval_point, stmt.1.original_claim⟩, 0, fun _ => 0⟩⟩, stmt.2)))
+    (scalarRoundOracleVerifierGuardedForm _ _)
     (BatchingPhase.batchingOracleVerifier_rbrKnowledgeSoundnessWorstCase 1 GF4 GF2 P₄ 2 1 rfl
       exactOStmtIn (init := init) (impl := impl) exactOStmtIn_functional)
     (core_rbrKnowledgeSoundnessWorstCase init impl)
@@ -141,5 +146,79 @@ theorem batching_core_error_sumcheck (j : (pSpecCoreInteraction GF4 1).Challenge
     Sum.elim_inr]
   exact core_error j
 
+/-! ## The full composite -/
+
+/-- The full ring-switching composite is worst-case round-by-round knowledge sound at the fixture,
+for every `MLIOPCS` whose oracle statement is `exactOStmtIn` and whose opening protocol is itself
+worst-case round-by-round knowledge sound. -/
+theorem full_rbrKnowledgeSoundnessWorstCase {σ : Type} (init : ProbComp σ)
+    (impl : QueryImpl []ₒ (StateT σ ProbComp)) (M : MLIOPCS GF4 1)
+    (hM : M.toAbstractOStmtIn = exactOStmtIn) (hPCS : M.RbrKnowledgeSoundWorstCase) :
+    OracleProof.rbrKnowledgeSoundnessWorstCase init impl
+      (FullRingSwitching.fullInputRelation 1 GF4 GF2 P₄ 2 1 rfl M)
+      (FullRingSwitching.fullOracleVerifier 1 GF4 GF2 P₄ 2 1 rfl M)
+      (FullRingSwitching.fullRbrKnowledgeError 1 GF4 GF2 P₄ 1 M) :=
+  FullRingSwitching.fullOracleVerifier_rbrKnowledgeSoundnessWorstCase 1 GF4 GF2 P₄ 2 1 rfl M init
+    (hM ▸ exactOStmtIn_functional) hPCS
+
+/-- The averaged form of `full_rbrKnowledgeSoundnessWorstCase`. -/
+theorem full_rbrKnowledgeSoundness {σ : Type} (init : ProbComp σ)
+    (impl : QueryImpl []ₒ (StateT σ ProbComp)) (M : MLIOPCS GF4 1)
+    (hM : M.toAbstractOStmtIn = exactOStmtIn) (hPCS : M.RbrKnowledgeSoundWorstCase) :
+    OracleProof.rbrKnowledgeSoundness init impl
+      (FullRingSwitching.fullInputRelation 1 GF4 GF2 P₄ 2 1 rfl M)
+      (FullRingSwitching.fullOracleVerifier 1 GF4 GF2 P₄ 2 1 rfl M)
+      (FullRingSwitching.fullRbrKnowledgeError 1 GF4 GF2 P₄ 1 M) :=
+  FullRingSwitching.fullOracleVerifier_rbrKnowledgeSoundness_of_worst_case 1 GF4 GF2 P₄ 2 1 rfl M
+    init (hM ▸ exactOStmtIn_functional) hPCS
+
+/-- The full composite preserves the batching challenge's `1/|L|` contribution. -/
+theorem full_error_batching (M : MLIOPCS GF4 1)
+    (j : (pSpecBatching 1 GF4 GF2 P₄).ChallengeIdx) :
+    FullRingSwitching.fullRbrKnowledgeError 1 GF4 GF2 P₄ 1 M
+      (ChallengeIdx.sumEquiv (.inl (ChallengeIdx.sumEquiv (.inl j)))) =
+      1 / (Fintype.card GF4 : ℝ≥0) := by
+  simp only [FullRingSwitching.fullRbrKnowledgeError, Equiv.symm_apply_apply, Sum.elim_inl]
+  exact batching_core_error_batching j
+
+/-- The full composite preserves each sum-check challenge's `2/|L|` contribution. -/
+theorem full_error_sumcheck (M : MLIOPCS GF4 1)
+    (j : (pSpecCoreInteraction GF4 1).ChallengeIdx) :
+    FullRingSwitching.fullRbrKnowledgeError 1 GF4 GF2 P₄ 1 M
+      (ChallengeIdx.sumEquiv (.inl (ChallengeIdx.sumEquiv (.inr j)))) =
+      2 / (Fintype.card GF4 : ℝ≥0) := by
+  simp only [FullRingSwitching.fullRbrKnowledgeError, Equiv.symm_apply_apply, Sum.elim_inl]
+  exact batching_core_error_sumcheck j
+
+/-- Each challenge of the downstream opening costs exactly the opening's own error. -/
+theorem full_error_inr (M : MLIOPCS GF4 1) (j : M.pSpec.ChallengeIdx) :
+    FullRingSwitching.fullRbrKnowledgeError 1 GF4 GF2 P₄ 1 M (ChallengeIdx.sumEquiv (.inr j)) =
+      M.rbrKnowledgeError j := by
+  simp only [FullRingSwitching.fullRbrKnowledgeError, Equiv.symm_apply_apply, Sum.elim_inr]
+
+/-! ## The full composite with a concrete opening -/
+
+/-- The direct opening's oracle statement at the fixture is `exactOStmtIn`. -/
+theorem directOpening_oStmtIn :
+    (DirectOpening.mliopcs (L := GF4) (ℓ' := 1)).toAbstractOStmtIn = exactOStmtIn :=
+  rfl
+
+/-- The full ring-switching composite is worst-case round-by-round knowledge sound at the fixture
+with the direct opening, with no hypotheses left. -/
+theorem full_concrete {σ : Type} (init : ProbComp σ)
+    (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
+    OracleProof.rbrKnowledgeSoundnessWorstCase init impl
+      (FullRingSwitching.fullInputRelation 1 GF4 GF2 P₄ 2 1 rfl DirectOpening.mliopcs)
+      (FullRingSwitching.fullOracleVerifier 1 GF4 GF2 P₄ 2 1 rfl DirectOpening.mliopcs)
+      (FullRingSwitching.fullRbrKnowledgeError 1 GF4 GF2 P₄ 1 DirectOpening.mliopcs) :=
+  full_rbrKnowledgeSoundnessWorstCase init impl DirectOpening.mliopcs directOpening_oStmtIn
+    DirectOpening.mliopcs_rbrKnowledgeSoundWorstCase
+
+/-- The full composite's input relation holds at the honest input of `batching_relIn_inhabited`,
+with the direct opening. -/
+theorem full_relIn_inhabited :
+    ((claimAt 0, oStmt₀), (⟨tX₀, tp⟩ : BatchingWitIn GF4 GF2 2 1)) ∈
+      FullRingSwitching.fullInputRelation 1 GF4 GF2 P₄ 2 1 rfl DirectOpening.mliopcs :=
+  batching_relIn_inhabited
 
 end ArkLibTest.RingSwitchingConformance.BiniusComposition

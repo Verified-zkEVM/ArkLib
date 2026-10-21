@@ -20,19 +20,6 @@ public import ArkLib.OracleReduction.Security.RoundByRound
 public import ArkLib.OracleReduction.Security.GuardedRoundByRound
 
 /-!
-# ArkLib.ProofSystem.RingSwitching.Packing.SumcheckPhase
-
-Definitions and results for this component of ArkLib.
--/
-
-@[expose] public section
-
-open OracleSpec OracleComp ProtocolSpec Finset Polynomial MvPolynomial
-  Module TensorProduct Nat Matrix
-open scoped NNReal
-open Sumcheck.Structured
-
-/-!
 # Relocation sumcheck and the final consistency step
 
 Second phase of the interactive packing reduction. After batching, the target `s₀` is (for
@@ -82,23 +69,30 @@ challenges, which is what the downstream opening can consume.
   The challenge must then be a common point of the two. Under `hUnique : aOStmtIn.Functional` the
   honest polynomial is fixed before the challenge, so `prob_eval_eq_le` bounds this by `2/|L|`.
 * The final step sends no challenge, so `finalSumcheckOracleVerifier_rbrKnowledgeSoundnessWorstCase`
-  holds at any error.
+  has zero challenge error.
 * These per-round and final-step results are sorry-free and axiom-clean under their stated
   hypotheses (`hUnique` and `[NoZeroDivisors L]`). Each is primarily stated with the extractor
   and knowledge-state function named (`…_rbrKnowledgeSoundnessWorstCaseWith_rbrExtractor`), with
   the existential and averaged forms as corollaries.
 * The composite `coreInteraction_rbrKnowledgeSoundnessWorstCase` (sumcheck loop, then final step)
-  is **unconditional**: it is composed from these by the guarded worst-case composition theorems
+  is composed from these by the guarded worst-case composition theorems
   `OracleVerifier.seqCompose_rbrKnowledgeSoundnessWorstCase_of_guarded` and
-  `OracleVerifier.append_rbrKnowledgeSoundnessWorstCase_of_guarded_first`, and is sorry-free and
-  axiom-clean under the same hypotheses. `coreInteraction_rbrKnowledgeSoundness` is its averaged
-  form.
+  `OracleVerifier.append_rbrKnowledgeSoundnessWorstCase_of_guarded_first`, with the loop guarded by
+  its rounds' own checks (`sumcheckLoopGuardedForm`). It is sorry-free and axiom-clean under the
+  same hypotheses. `coreInteraction_rbrKnowledgeSoundness` is its averaged form.
 
 ## References
 
-* [DP24] Diamond, Benjamin E., and Jim Posen. "Polylogarithmic Proofs for Multilinears over
-  Binary Towers." Cryptology ePrint Archive (2024).
+* [Diamond, B. E., and Posen, J., *Polylogarithmic Proofs for Multilinears over
+  Binary Towers*][DP24]
 -/
+
+@[expose] public section
+
+open OracleSpec OracleComp ProtocolSpec Finset Polynomial MvPolynomial
+  Module TensorProduct Nat Matrix
+open scoped NNReal
+open Sumcheck.Structured
 
 namespace RingSwitching.SumcheckPhase
 noncomputable section
@@ -882,6 +876,22 @@ def coreInteractionOracleReduction :=
     (R₂ := finalSumcheckOracleReduction κ L K P ℓ ℓ' h_l aOStmtIn)
     (pSpec₂:=pSpecFinalSumcheck L)
 
+/-- The loop accepts exactly when every round's check passes, and returns the final round
+statement with the preserved oracle family. -/
+def sumcheckLoopGuardedForm :
+    (sumcheckLoopOracleVerifier κ L K P ℓ ℓ' aOStmtIn).toVerifier.GuardedForm :=
+  .ofEq (OracleVerifier.seqCompose_toVerifier _ _ _).symm
+    (.seqCompose (fun i => Statement (L := L) (ℓ := ℓ') (RingSwitchingBaseContext κ L K ℓ P) i ×
+      ∀ j, aOStmtIn.OStmtIn j) _ (iteratedSumcheckGuardedForm κ L K P ℓ ℓ' aOStmtIn))
+
+/-- The core interaction's guard and verdict as data: the sumcheck loop's
+(`sumcheckLoopGuardedForm`), then the final step's consistency check. -/
+def coreInteractionGuardedForm :
+    (coreInteractionOracleVerifier κ L K P ℓ ℓ' h_l aOStmtIn).toVerifier.GuardedForm :=
+  .ofEq (OracleVerifier.append_toVerifier _ _).symm
+    ((sumcheckLoopGuardedForm κ L K P ℓ ℓ' aOStmtIn).append
+      (messageRoundOracleVerifierGuardedForm _ _))
+
 /-!
 ## Security of the composed core interaction
 -/
@@ -906,16 +916,13 @@ theorem coreInteraction_perfectCompleteness :
     (impl := impl) := by
   refine OracleReduction.append_perfectCompleteness_of_guarded_verifiers
     (rel₂ := sumcheckRoundRelation κ L K P ℓ ℓ' h_l aOStmtIn (Fin.last ℓ')) _ _
-    (Verifier.GuardedForm.ofEmpty _ (fun stmt =>
-      (⟨0, fun _ => 0, stmt.1.ctx⟩, stmt.2)))
-    (Verifier.GuardedForm.ofEmpty _ (fun stmt => (⟨fun _ => 0, 0⟩, stmt.2)))
+    (sumcheckLoopGuardedForm κ L K P ℓ ℓ' aOStmtIn) (messageRoundOracleVerifierGuardedForm _ _)
     (fun _ => Or.inl inferInstance) ?_ ?_
   · apply OracleReduction.seqCompose_perfectCompleteness_of_guarded_verifiers
       (rel := fun i => sumcheckRoundRelation κ L K P ℓ ℓ' h_l aOStmtIn i)
       (R := fun i => iteratedSumcheckOracleReduction κ L K P ℓ ℓ' aOStmtIn i)
       (hP := fun _ => inferInstance)
-      (hV := fun _ => Verifier.GuardedForm.ofEmpty _ (fun stmt =>
-        (⟨0, fun _ => 0, stmt.1.ctx⟩, stmt.2)))
+      (hV := iteratedSumcheckGuardedForm κ L K P ℓ ℓ' aOStmtIn)
       (h := fun i s =>
         iteratedSumcheckOracleReduction_perfectCompleteness (κ := κ) (L := L) (K := K)
           (P := P) (ℓ := ℓ) (ℓ' := ℓ') (h_l := h_l) (aOStmtIn := aOStmtIn)
@@ -945,7 +952,7 @@ def coreInteractionRbrKnowledgeErrorWithDegree (d : ℕ)
     (g := fun _ => finalSumcheckRbrKnowledgeError)
     (ChallengeIdx.sumEquiv.symm j)
 
-/-- Standard Binius ring-switching RBR knowledge error (`d = 2`) with exact final-step splitting. -/
+/-- Degree-2 RBR knowledge error, split between sum-check challenges and the final step. -/
 def coreInteractionRbrKnowledgeError (j : (pSpecCoreInteraction L ℓ').ChallengeIdx) : ℝ≥0 :=
   coreInteractionRbrKnowledgeErrorWithDegree L ℓ' 2 j
 
@@ -962,7 +969,7 @@ theorem coreInteraction_rbrKnowledgeSoundnessWorstCase [NoZeroDivisors L]
       (relIn := sumcheckRoundRelation κ L K P ℓ ℓ' h_l aOStmtIn 0)
       (relOut := aOStmtIn.toRelInput) (coreInteractionRbrKnowledgeError L ℓ') :=
   OracleVerifier.append_rbrKnowledgeSoundnessWorstCase_of_guarded_first _ _
-    (Verifier.GuardedForm.ofEmpty _ (fun stmt => (⟨0, fun _ => 0, stmt.1.ctx⟩, stmt.2)))
+    (sumcheckLoopGuardedForm κ L K P ℓ ℓ' aOStmtIn)
     (rel₂ := sumcheckRoundRelation κ L K P ℓ ℓ' h_l aOStmtIn (Fin.last ℓ'))
     (OracleVerifier.seqCompose_rbrKnowledgeSoundnessWorstCase_of_guarded _ _ _
       (fun i => sumcheckRoundRelation κ L K P ℓ ℓ' h_l aOStmtIn i) _

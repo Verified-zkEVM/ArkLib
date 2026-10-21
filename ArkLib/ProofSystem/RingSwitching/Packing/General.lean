@@ -36,12 +36,11 @@ through the guarded-verifier composition theorems, at the *strict* relations: th
 (`AbstractOStmtIn.strictView`). It is proved from the phase theorems and the downstream
 `MLIOPCS.perfectCompleteness` field.
 
-**Round-by-round knowledge soundness** (`fullOracleVerifier_rbrKnowledgeSoundness`) has total
-error `κ/|L|` (batching) `+ 2/|L|` per sumcheck round `+` the downstream protocol's error, at the
-relaxed relations; the final step sends no challenge and adds no error. It assumes
-`[NoZeroDivisors L]` for the Schwartz–Zippel steps and
-`hUnique : mlIOPCS.toAbstractOStmtIn.Functional`, which says the oracle statement determines the
-packed polynomial before any challenge.
+**Round-by-round knowledge soundness** of the full composite has total error `κ/|L|` (batching)
+`+ 2/|L|` per sumcheck round `+` the downstream protocol's error, at the relaxed relations; the
+final step sends no challenge and adds no error. It assumes `[NoZeroDivisors L]` for the
+Schwartz–Zippel steps and `hUnique : mlIOPCS.toAbstractOStmtIn.Functional`, which says the oracle
+statement determines the packed polynomial before any challenge.
 
 The phase theorems are sorry-free and axiom-clean under these hypotheses, and are proved in the
 worst-case form with the extractor and knowledge-state function named
@@ -50,18 +49,23 @@ worst-case form with the extractor and knowledge-state function named
 `SumcheckPhase.finalSumcheckOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_rbrExtractor`).
 They compose by the guarded worst-case composition theorems
 (`OracleVerifier.seqCompose_rbrKnowledgeSoundnessWorstCase_of_guarded`,
-`OracleVerifier.append_rbrKnowledgeSoundnessWorstCase_of_guarded_first`) into **unconditional**
-worst-case theorems for the core interaction
-(`SumcheckPhase.coreInteraction_rbrKnowledgeSoundnessWorstCase`) and for batching followed by the
-core interaction (`batchingCore_rbrKnowledgeSoundnessWorstCase`), each sorry-free and axiom-clean
-under the same hypotheses, with averaged corollaries.
+`OracleVerifier.append_rbrKnowledgeSoundnessWorstCase_of_guarded_first`), each verifier guarded by
+its own checks (`SumcheckPhase.coreInteractionGuardedForm`, `batchingCoreGuardedForm`). The
+results, each sorry-free and axiom-clean under its stated hypotheses, with averaged corollaries:
 
-The full composite is still **conditional**. Its last step appends the downstream opening, whose
-`MLIOPCS.rbrKnowledgeSoundness` contract is averaged, so it applies the admitted framework contract
-`OracleVerifier.append_rbrKnowledgeSoundness`. That contract's statement is flagged as not derivable
-from its hypotheses, so the full composite inherits its `sorryAx`. It becomes unconditional once a
-worst-case extension of `MLIOPCS` supplies a worst-case round-by-round knowledge soundness contract
-for the downstream opening, which then composes by the guarded theorem.
+* the core interaction, `SumcheckPhase.coreInteraction_rbrKnowledgeSoundnessWorstCase`;
+* batching followed by the core interaction, `batchingCore_rbrKnowledgeSoundnessWorstCase`;
+* the full composite, `fullOracleVerifier_rbrKnowledgeSoundnessWorstCase`, given in addition that
+  the downstream opening is worst-case round-by-round knowledge sound
+  (`hPCS : mlIOPCS.RbrKnowledgeSoundWorstCase`). Its averaged form is
+  `fullOracleVerifier_rbrKnowledgeSoundness_of_worst_case`.
+
+Under a plain `MLIOPCS`, whose `MLIOPCS.rbrKnowledgeSoundness` contract is averaged, the full
+composite `fullOracleVerifier_rbrKnowledgeSoundness` remains **conditional**. It applies the
+admitted framework contract `OracleVerifier.append_rbrKnowledgeSoundness`, whose statement is
+flagged as not derivable from its hypotheses, and inherits its `sorryAx`. Ordinary knowledge
+soundness additionally requires the admitted RBR-to-KS bridge; the proved exports here concern
+round-by-round knowledge soundness.
 
 This is one construction of the ring-switching family, not the family itself — see the
 folder umbrella `ArkLib/ProofSystem/RingSwitching/Basic.lean` for the taxonomy. It is
@@ -69,8 +73,8 @@ instantiated by `ProofSystem/Binius/FRIBinius/`.
 
 ## References
 
-- [DP24] Diamond, Benjamin E., and Jim Posen. "Polylogarithmic Proofs for Multilinears over
-  Binary Towers." Cryptology ePrint Archive (2024).
+* [Diamond, B. E., and Posen, J., *Polylogarithmic Proofs for Multilinears over
+  Binary Towers*][DP24]
 -/
 
 @[expose] public section
@@ -96,7 +100,16 @@ def batchingCoreVerifier :=
     (V₂:=SumcheckPhase.coreInteractionOracleVerifier κ L K P ℓ ℓ' h_l mlIOPCS.toAbstractOStmtIn)
     (pSpec₂:=pSpecCoreInteraction L ℓ')
 
-/-- The oracle verifier for the full DP24 ring-switching protocol -/
+/-- The guard and verdict of batching followed by the core interaction, as data: the batching
+check (`scalarRoundOracleVerifierGuardedForm`), then the core interaction's checks
+(`SumcheckPhase.coreInteractionGuardedForm`). -/
+def batchingCoreGuardedForm :
+    (batchingCoreVerifier κ L K P ℓ ℓ' h_l mlIOPCS).toVerifier.GuardedForm :=
+  .ofEq (OracleVerifier.append_toVerifier _ _).symm
+    ((scalarRoundOracleVerifierGuardedForm _ _).append
+      (SumcheckPhase.coreInteractionGuardedForm κ L K P ℓ ℓ' h_l mlIOPCS.toAbstractOStmtIn))
+
+/-- The verifier for batching, relocation sum-check, and downstream opening. -/
 @[reducible]
 def fullOracleVerifier :=
   OracleVerifier.append (oSpec := []ₒ)
@@ -114,7 +127,7 @@ def batchingCoreReduction :=
        mlIOPCS.toAbstractOStmtIn)
     (pSpec₂:=pSpecCoreInteraction L ℓ')
 
-/-- The reduction for the full DP24 ring-switching protocol -/
+/-- Batching, relocation sum-check, and downstream opening as an oracle reduction. -/
 @[reducible]
 def fullOracleReduction :
     OracleProof (oSpec:=[]ₒ)
@@ -127,7 +140,7 @@ def fullOracleReduction :
     (batchingCoreReduction κ L K P ℓ ℓ' h_l mlIOPCS)
     mlIOPCS.oracleReduction
 
-/-- The full DP24 ring-switching protocol as a Proof -/
+/-- The composed ring-switching oracle proof. -/
 @[reducible]
 def fullOracleProof :
     OracleProof []ₒ
@@ -164,10 +177,8 @@ lemma batchingCore_perfectCompleteness [Finite L] [Finite K] :
   classical
   refine OracleReduction.append_perfectCompleteness_of_guarded_verifiers
     (rel₂ := strictSumcheckRoundRelation κ L K P ℓ ℓ' h_l mlIOPCS.toAbstractOStmtIn 0) _ _
-    (Verifier.GuardedForm.ofEmpty _ (fun stmt =>
-      (⟨0, Fin.elim0, ⟨⟨stmt.1.t_eval_point, stmt.1.original_claim⟩, 0, fun _ => 0⟩⟩,
-        stmt.2)))
-    (Verifier.GuardedForm.ofEmpty _ (fun stmt => (⟨fun _ => 0, 0⟩, stmt.2)))
+    (scalarRoundOracleVerifierGuardedForm _ _)
+    (SumcheckPhase.coreInteractionGuardedForm κ L K P ℓ ℓ' h_l mlIOPCS.toAbstractOStmtIn)
     (fun _ => Or.inl inferInstance) ?_ ?_
   · exact BatchingPhase.batchingReduction_perfectCompleteness κ L K P ℓ ℓ' h_l
        mlIOPCS.toAbstractOStmtIn.strictView
@@ -191,7 +202,8 @@ theorem fullOracleReduction_perfectCompleteness [Finite L] [Finite K] :
   exact OracleReduction.append_perfectCompleteness_of_guarded_verifiers
     (Oₛ₃ := fun i : Empty => nomatch i)
     (batchingCoreReduction κ L K P ℓ ℓ' h_l mlIOPCS) mlIOPCS.oracleReduction
-    (Verifier.GuardedForm.ofEmpty _ (fun stmt => (⟨fun _ => 0, 0⟩, stmt.2)))
+    (batchingCoreGuardedForm κ L K P ℓ ℓ' h_l mlIOPCS)
+    -- An arbitrary opening has no named guard; over the empty ambient oracle `ofEmpty` gives one.
     (Verifier.GuardedForm.ofEmpty _ (fun _ => (false, fun i : Empty => nomatch i)))
     (fun _ => Or.inl inferInstance)
     (batchingCore_perfectCompleteness κ L K P ℓ ℓ' h_l mlIOPCS init)
@@ -219,8 +231,7 @@ theorem batchingCore_rbrKnowledgeSoundnessWorstCase [NoZeroDivisors L]
       (relOut := mlIOPCS.toAbstractOStmtIn.toRelInput)
       (batchingCoreRbrKnowledgeError κ L K P ℓ') :=
   OracleVerifier.append_rbrKnowledgeSoundnessWorstCase_of_guarded_first _ _
-    (Verifier.GuardedForm.ofEmpty _ (fun stmt =>
-      (⟨0, Fin.elim0, ⟨⟨stmt.1.t_eval_point, stmt.1.original_claim⟩, 0, fun _ => 0⟩⟩, stmt.2)))
+    (scalarRoundOracleVerifierGuardedForm _ _)
     (BatchingPhase.batchingOracleVerifier_rbrKnowledgeSoundnessWorstCase κ L K P ℓ ℓ' h_l
       mlIOPCS.toAbstractOStmtIn (init := init) (impl := impl) hUnique)
     (SumcheckPhase.coreInteraction_rbrKnowledgeSoundnessWorstCase κ L K P ℓ ℓ' h_l
@@ -239,21 +250,10 @@ theorem batchingCore_rbrKnowledgeSoundness [NoZeroDivisors L]
     (batchingCore_rbrKnowledgeSoundnessWorstCase κ L K P ℓ ℓ' h_l mlIOPCS init hUnique)
 
 omit [NeZero κ] [Fintype K] [DecidableEq K] [NeZero ℓ] [NeZero ℓ'] in
-/-- Round-by-round knowledge soundness for the full ring-switching oracle verifier.
-
-**Conditional on an admitted composition contract.** The batching-and-core part is unconditional
-(`batchingCore_rbrKnowledgeSoundness`, sorry-free and axiom-clean). The last step appends the
-downstream opening, whose `MLIOPCS.rbrKnowledgeSoundness` contract is averaged, so this composite
-applies the admitted `OracleVerifier.append_rbrKnowledgeSoundness`. That contract is stated for
-arbitrary verifiers at the averaged notion, and the section note of
-`Composition/Sequential/Append/Security.lean` flags its statement as not derivable from its
-hypotheses. So this theorem is unverified statement debt, not only a missing proof, and it carries
-`sorryAx`.
-
-It becomes unconditional once a worst-case extension of `MLIOPCS` supplies a worst-case
-round-by-round knowledge soundness contract for the downstream opening: the composite then follows
-from `batchingCore_rbrKnowledgeSoundnessWorstCase` by
-`OracleVerifier.append_rbrKnowledgeSoundnessWorstCase_of_guarded_first`. -/
+/-- Averaged round-by-round knowledge soundness at the relaxed input relation.
+This theorem depends on the admitted averaged composition rule. Use
+`fullOracleVerifier_rbrKnowledgeSoundness_of_worst_case` when the downstream opening has a
+worst-case guarantee. -/
 theorem fullOracleVerifier_rbrKnowledgeSoundness [Finite K] [NoZeroDivisors L]
     (hUnique : mlIOPCS.toAbstractOStmtIn.Functional) :
     OracleProof.rbrKnowledgeSoundness
@@ -282,6 +282,37 @@ theorem fullOracleVerifier_rbrKnowledgeSoundness [Finite K] [NoZeroDivisors L]
       simpa only [OracleProof.rbrKnowledgeSoundness, fullOutputRelation] using
         mlIOPCS.rbrKnowledgeSoundness (init:=init) (impl:=impl))
   simpa only [OracleProof.rbrKnowledgeSoundness, fullOutputRelation, Function.comp_def] using res
+
+omit [NeZero κ] [Fintype K] [DecidableEq K] [NeZero ℓ] [NeZero ℓ'] in
+/-- Worst-case round-by-round knowledge soundness with error `κ/|L|` for batching,
+`2/|L|` per sum-check challenge, and the downstream opening's error. Compatibility must determine
+one packed polynomial, and the opening must satisfy the worst-case guarantee. -/
+theorem fullOracleVerifier_rbrKnowledgeSoundnessWorstCase [NoZeroDivisors L]
+    (hUnique : mlIOPCS.toAbstractOStmtIn.Functional)
+    (hPCS : mlIOPCS.RbrKnowledgeSoundWorstCase) :
+    OracleProof.rbrKnowledgeSoundnessWorstCase init impl
+      (fullInputRelation κ L K P ℓ ℓ' h_l mlIOPCS)
+      (fullOracleVerifier κ L K P ℓ ℓ' h_l mlIOPCS)
+      (fullRbrKnowledgeError κ L K P ℓ' mlIOPCS) :=
+  OracleVerifier.append_rbrKnowledgeSoundnessWorstCase_of_guarded_first _ _
+    (Oₛ₃ := fun i : Empty => nomatch i)
+    (batchingCoreGuardedForm κ L K P ℓ ℓ' h_l mlIOPCS)
+    (batchingCore_rbrKnowledgeSoundnessWorstCase κ L K P ℓ ℓ' h_l mlIOPCS init hUnique) hPCS
+
+omit [NeZero κ] [Fintype K] [DecidableEq K] [NeZero ℓ] [NeZero ℓ'] in
+/-- Averaged round-by-round knowledge soundness with error `κ/|L|` for batching, `2/|L|` per
+sum-check challenge, and the downstream opening's error. -/
+theorem fullOracleVerifier_rbrKnowledgeSoundness_of_worst_case [NoZeroDivisors L]
+    (hUnique : mlIOPCS.toAbstractOStmtIn.Functional)
+    (hPCS : mlIOPCS.RbrKnowledgeSoundWorstCase) :
+    OracleProof.rbrKnowledgeSoundness
+      (verifier := fullOracleVerifier κ L K P ℓ ℓ' (h_l := h_l) mlIOPCS)
+      (init := init)
+      (impl := impl)
+      (relIn := fullInputRelation κ L K P ℓ ℓ' h_l mlIOPCS)
+      (rbrKnowledgeError := fun i => fullRbrKnowledgeError κ L K P ℓ' mlIOPCS i) :=
+  OracleProof.rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness
+    (fullOracleVerifier_rbrKnowledgeSoundnessWorstCase κ L K P ℓ ℓ' h_l mlIOPCS init hUnique hPCS)
 
 end SecurityProperties
 end

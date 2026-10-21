@@ -23,7 +23,8 @@ subroutines and `tensorProductProfile` — lives in `Algebra.lean`, which this f
 * **Protocol types** — statement/witness types at the phase boundaries and the `MLIOPCS`
   interface for the downstream opening (any protocol that opens a large-ring multilinear
   evaluation claim, bundled with its completeness and round-by-round knowledge-soundness
-  obligations). An `AbstractOStmtIn` carries two compatibility relations between the packed
+  obligations), and its worst-case strengthening `MLIOPCS.RbrKnowledgeSoundWorstCase`, carried as
+  a hypothesis. An `AbstractOStmtIn` carries two compatibility relations between the packed
   polynomial and the oracle statements: the relaxed `initialCompatibility` used for knowledge
   soundness, and the honest `strictInitialCompatibility` (by default the same) used for perfect
   completeness through `AbstractOStmtIn.strictView`.
@@ -187,6 +188,31 @@ instance instOstmtMLIOPCS : ∀ (i : aOStmtIn.ιₛᵢ), OracleInterface (aOStmt
   fun i => aOStmtIn.Oₛᵢ i
 
 end OStmt
+
+section WorstCase
+
+attribute [local instance] MLIOPCS.Oₘ MLIOPCS.O_challenges
+
+variable {L ℓ'} in
+/-- **Worst-case round-by-round knowledge soundness of a downstream opening protocol**: for every
+shared-oracle initialisation, its verifier is round-by-round knowledge sound per fixed transcript
+prefix (`OracleProof.rbrKnowledgeSoundnessWorstCase`), at the relation and error of the averaged
+`MLIOPCS.rbrKnowledgeSoundness` field.
+
+It is a hypothesis on an `MLIOPCS`, not a field of it. It implies the averaged field, by
+`OracleProof.rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness`, so an instance that
+proves the worst-case form fills that field with this lemma. The implication runs in one
+direction only (see the note on the worst-case-per-prefix variants in
+`OracleReduction/Security/RoundByRound.lean`), so an opening protocol whose knowledge soundness
+depends on averaging over the prover's randomness or the shared oracle's state is still an
+`MLIOPCS`. Sequential composition is proved for the
+worst-case notion, so a composite that ends with the opening protocol takes this hypothesis. -/
+def MLIOPCS.RbrKnowledgeSoundWorstCase (M : MLIOPCS L ℓ') : Prop :=
+  ∀ {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)},
+    OracleProof.rbrKnowledgeSoundnessWorstCase init impl M.toRelInput
+      M.oracleReduction.toOracleVerifier M.rbrKnowledgeError
+
+end WorstCase
 
 end ProtocolTypes
 end Preliminaries
