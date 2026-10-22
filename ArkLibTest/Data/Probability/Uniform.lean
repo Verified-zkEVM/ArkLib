@@ -45,3 +45,13 @@ example :
       Pr{let n ← $ᵗ (Fin 2)}[n = 0] := by
   exact SampleableType.prEvent_uniformSample_equiv
     (Equiv.swap 0 1) (fun n : Fin 2 => n = 0)
+
+/-- Projection from a six-point uniform space gives probability `1/2` to either first coordinate. -/
+example : Pr{let x ← $ᵗ (Fin 2 × Fin 3)}[x.1 ∈ ({0} : Finset (Fin 2))] =
+    (1 / 2 : ENNReal) := by
+  have hc : (Finset.univ.filter (fun x : Fin 2 × Fin 3 =>
+      x.1 ∈ ({0} : Finset (Fin 2)))).card = 3 := rfl
+  rw [SampleableType.prEvent_uniformSample, hc]
+  convert ENNReal.mul_div_mul_left (a := 1) (b := 2) (c := 3)
+    (by norm_num) (by norm_num) using 1
+  norm_num

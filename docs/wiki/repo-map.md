@@ -661,6 +661,20 @@ home_page/            site assets and assembled website root
   `CoordinateWiseSpecialSoundness.lean` re-exports the core files.
 - Active areas are often grouped by paper or protocol family, for example
   `Data/CodingTheory/ProximityGap/BCIKS20/...` or `ProofSystem/Binius/...`.
+- `ProofSystem/Binius/` contains Binary Basefold and the FRI-Binius packing prelude.
+  `BinaryBasefold/Prelude` owns quotient fibers and folding identities; `Code`, `Compliance`,
+  `Basic`, `Spec` and `Relations` define round codes, decoding, protocol data and strict/relaxed
+  relations. `Commitment` owns the first-oracle compatibility interface.
+  `Soundness/Lift`, `Incremental` and `FoldDistance` prove the folding bounds; `BadBlocks`,
+  `QueryRejection` and `QueryPhaseSoundness` prove query rejection and repeated-query bounds.
+  `ReductionLogic` proves logical-step completeness, while `OracleReduction/LogicStep` owns the
+  shared check and output representation. `Steps` implements fold, commit, relay and final
+  sum-check reductions; `CoreInteractionPhase` composes them with guarded completeness and
+  round-by-round knowledge soundness. `QueryPhase` supplies the oracle-query verifier and its
+  execution, completeness and security proofs. `General` composes core and query; `Opening`
+  exposes multilinear and contextual opening interfaces. Completeness uses exact encodings;
+  security uses unique-decoding compatibility. See the [DP24 page](../kb/papers/DP24.md) for
+  mathematical bounds and the fused FRI-Binius boundary.
 - The ABF26 Section 6 toy IOP lives under `ProofSystem/ToyProblem/`. `Spec/` contains the
   domain-generic protocol and extraction theorems, `Impl/IRS.lean` supplies the computable
   interleaved Reed--Solomon extractor, `Impl/FRS.lean` contains neutral KoalaBear folded-RS
@@ -706,6 +720,12 @@ home_page/            site assets and assembled website root
   `Sequential/GuardedRoundByRound.lean` extends guarded worst-case round-by-round knowledge
   soundness to finite chains, with the `seqCompose` error reindexing proved;
   `Sequential/OracleCompleteness.lean` supplies binary and finite-chain oracle-reduction wrappers.
+  `Sequential/GuardedNary.lean` also gives the guarded form of an appended or sequentially
+  composed oracle verifier from its components' (`OracleVerifier.appendGuardedForm`,
+  `OracleVerifier.seqComposeGuardedForm`). `OracleReduction/CastIdx.lean` moves an oracle verifier
+  or reduction along equalities of the indices of its statement, oracle-statement and witness
+  families (`OracleVerifier.castIdx`, `OracleReduction.castIdx`), with the worst-case
+  round-by-round knowledge soundness, perfect completeness and guarded form moving along.
   `Sequential/NoAmbient.lean` proves output purity for empty ambient oracles and constructs guarded
   forms from explicit fallback maps. `LiftContext/Purity.lean` transports output purity and guarded
   forms through context lifting.
@@ -769,7 +789,7 @@ home_page/            site assets and assembled website root
   (`fullOracleVerifier_rbrKnowledgeSoundness`) is conditional on the admitted
   `OracleVerifier.append_rbrKnowledgeSoundness`, whose statement is flagged as not derivable from
   its hypotheses. Binius
-  instantiates the construction in `ProofSystem/Binius/FRIBinius/` (`biniusProfile`).
+  instantiates the profile in `ProofSystem/Binius/FRIBinius/Prelude.lean` (`biniusProfile`).
   Hachi's §3.1 trace head has carrier `L` itself, so it is not a `Profile`
   instance; it uses the coordinate layer directly, through `PackingData.ofBaseOpening`,
   `packedMLE`, its own `ClaimLayout` and `CheckedObservation`, exercising only the packing,

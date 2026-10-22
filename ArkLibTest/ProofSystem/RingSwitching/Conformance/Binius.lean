@@ -48,13 +48,12 @@ Two further statements cover the rest of the phase:
   equivalently when its columns are the component opening values (`openingClaimRel`). The second
   form goes through the shared `openingClaimRel_iff_sliceRel` and `transpose_decomposeColumns`.
 
-Binius's separate final step, `Binius.FRIBinius.CoreInteractionPhase.finalSumcheckVerifier`,
-calls the shared equality-value function. It still returns a dummy statement on rejection; the
-shared DP24 `SumcheckPhase.finalSumcheckVerifier` aborts.
-`compute_final_eq_value_eq_multiplier` states its equality value as the evaluation of the same
-shared `multiplier`, at the same retained point and
-batching weights, and `final_check_iff_multiplier` states the final check through it. Binius's
-separate sum-check rounds and Binary Basefold folding and query phases are out of scope here.
+The shared DP24 `SumcheckPhase.finalSumcheckVerifier` aborts on a failed check.
+`compute_final_eq_value_eq_multiplier` states its equality value as the evaluation of the shared
+`multiplier`, at the same retained point and batching weights, and `final_check_iff_multiplier`
+states the final check through it. The separate fused FRI-Binius core and final protocol remain
+the R4 restoration gap; these statements concern the shared DP24 construction and batching
+adapter. Binary Basefold folding and query phases are out of scope here.
 
 `binius_batching_conforms` is `batching_conforms` at Binius's `biniusProfile` and oracle statement
 `BinaryBasefoldAbstractOStmtIn`, where compatibility is the first-oracle codeword consistency.

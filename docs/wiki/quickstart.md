@@ -31,6 +31,11 @@ check runs; replacing imported output during elaboration invalidates its evidenc
 a dependency revision, rebuild its dependents before checking clients. Use the normal isolated
 `lake build` and full validation as the final authority for scratch or overlay checks.
 
+For focused checks, prefer `lake build ArkLib.Path.To.Module`. A direct `lake env lean` invocation
+does not inherit the package's Lean options or build-time source-policy plugin. In particular,
+a probe using default `autoImplicit` can accept an undeclared parameter that the project rejects.
+Treat such a probe as provisional until the source passes the project build.
+
 The September 4 baseline in `docs/design/00-current-status.md` records the original typed
 interaction implementation train, not the current package versions.
 
