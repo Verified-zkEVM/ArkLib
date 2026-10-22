@@ -9,6 +9,7 @@ public import Mathlib.Algebra.BigOperators.Fin
 public import Mathlib.Data.Matrix.Mul
 public import Mathlib.LinearAlgebra.Matrix.Notation
 public import Mathlib.Tactic.Ring
+public import ArkLib.Data.Nat.BitSum
 
 /-!
 # BitZ: bitification of a witness over a finitely generated ring
@@ -30,7 +31,6 @@ instead. This file formalizes that algebra, independently of any commitment or p
   weight vector `u = v ⊗ (1, …, 2^{B-1}) ⊗ ψ(γ)` of (47) in `BitZ.bitMatrix_transpose_mulVec`.
 * `BitZ.exists_witness_iff_exists_bits`: a witness for the original claim exists iff a bit vector
   for the bitified claim does, "no knowledge-soundness loss" for Step 2 of [BGKLSW26, §2.5].
-* `BitZ.sum_mul_eq_sum_dotProduct`: the tensor split of an inner product used in Round 2.
 
 ## References
 
@@ -45,23 +45,6 @@ open Finset Matrix
 namespace BitZ
 
 section Bits
-
-/-- A vector of bits `b₀, …, b_{B-1} ∈ {0, 1}` encodes a number below `2^B`. -/
-theorem sum_pow_two_mul_lt {B : ℕ} (b : Fin B → ℕ) (hb : ∀ k, b k ≤ 1) :
-    ∑ k : Fin B, 2 ^ (k : ℕ) * b k < 2 ^ B := by
-  induction B with
-  | zero => simp
-  | succ B ih =>
-    rw [Fin.sum_univ_succ]
-    have h := ih (fun k => b k.succ) (fun k => hb _)
-    have h0 := hb 0
-    have hs : ∑ k : Fin B, 2 ^ ((k.succ : Fin (B + 1)) : ℕ) * b k.succ =
-        2 * ∑ k : Fin B, 2 ^ (k : ℕ) * b k.succ := by
-      rw [mul_sum]
-      exact sum_congr rfl fun k _ => by simp [pow_succ]; ring
-    rw [hs, pow_succ]
-    simp only [Fin.val_zero, pow_zero, one_mul]
-    omega
 
 /-- Every number below `2^B` is the value of a vector of `B` bits. -/
 theorem exists_bits (B n : ℕ) (hn : n < 2 ^ B) :
@@ -110,7 +93,7 @@ theorem bitMatrix_mulVec (γ : M → S) (B : ℕ) (x : ι × Fin B × M → S) (
 theorem bitMatrix_mulVec_mem (γ : M → S) (B : ℕ) (g : ι × Fin B × M → ℕ) (hg : ∀ x, g x ≤ 1)
     (i : ι) : (bitMatrix γ B).mulVec (fun x => (g x : S)) i ∈ boundedSpan γ B := by
   refine ⟨fun j => ∑ k : Fin B, 2 ^ (k : ℕ) * g (i, k, j), fun j => ?_, ?_⟩
-  · exact sum_pow_two_mul_lt (fun k => g (i, k, j)) fun k => hg _
+  · exact Nat.sum_pow_two_mul_lt (fun k => g (i, k, j)) fun k => hg _
   · rw [bitMatrix_mulVec, sum_comm]
     refine sum_congr rfl fun j _ => ?_
     push_cast
@@ -196,21 +179,5 @@ theorem exists_witness_iff_exists_bits (γ : M → S) (B : ℕ) (v : ι → R) (
       by rw [dotProduct_map_mulVec_bits]; exact hgv⟩
 
 end Weights
-
-section Tensor
-
-variable {α : Type*} [CommSemiring α] {ι₁ ι₂ : Type*} [Fintype ι₁] [Fintype ι₂]
-
-/-- **Tensor split of an inner product** (Round 2 of [BGKLSW26, Construction 4.4]): for a weight
-vector `v₁ ⊗ v₂` and a witness `x` indexed by `ι₁ × ι₂`,
-`⟨v₁ ⊗ v₂, x⟩ = ∑ⱼ ⟨v₁, x(·, j)⟩ · v₂ⱼ`. -/
-theorem sum_mul_eq_sum_dotProduct (v₁ : ι₁ → α) (v₂ : ι₂ → α) (x : ι₁ × ι₂ → α) :
-    ∑ p : ι₁ × ι₂, v₁ p.1 * v₂ p.2 * x p = ∑ j, (v₁ ⬝ᵥ fun i => x (i, j)) * v₂ j := by
-  rw [Fintype.sum_prod_type_right]
-  refine sum_congr rfl fun j _ => ?_
-  rw [dotProduct, sum_mul]
-  exact sum_congr rfl fun i _ => by ring
-
-end Tensor
 
 end BitZ
