@@ -11,7 +11,7 @@ public import Mathlib.Data.Finset.Lattice.Basic
 public import Mathlib.Data.Finset.SDiff
 public import Mathlib.Data.Finset.Card
 public import Mathlib.Tactic.Cases
-public import Mathlib.Tactic.LinearCombinationPrime
+public import Mathlib.Tactic.LinearCombination
 
 /-!
   This module provides tools for picking a

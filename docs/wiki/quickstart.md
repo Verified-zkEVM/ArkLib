@@ -12,9 +12,9 @@ Review intervening API additions before writing replacement infrastructure. If t
 checkout contains unrelated work, use a separate worktree for the forward-port and
 leave that work intact.
 
-The Lean 4.34 upgrade uses Lean, Mathlib, cslib, and doc-gen4 `v4.34.0`.
-`lakefile.toml` pins CompPoly to its `v4.34.0` release and VCVio to an exact commit; `lake-manifest.json` records
-the complete resolved dependency set, including the PolyFun revision selected by VCVio.
+The Lean 4.35 upgrade uses Lean, Mathlib, and doc-gen4 `v4.35.0`.
+`lakefile.toml` pins CompPoly and VCVio to their `v4.35.0` releases; `lake-manifest.json`
+records the exact resolved revisions, including the PolyFun revision selected by VCVio.
 Keep that PolyFun pin when updating this stack: a newer PolyFun revision must also be
 validated against VCVio before ArkLib can adopt it.
 The VCVio pin includes the native probability prerequisites and
