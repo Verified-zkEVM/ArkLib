@@ -18,18 +18,21 @@ public import Mathlib.FieldTheory.Finite.Basic
 *Fingerprinting* ([CHA24], and [BGKLSW26, Lemma 4.8] for several variables) replaces a claim
 `h = 0` about an integer polynomial `h ∈ ℤ[X₁, …, Xₘ]` by the claim that `h` vanishes modulo a
 random prime `q` at a random point `α ∈ 𝔽_qᵐ`. If `h ≠ 0` has total degree `≤ d` and all its
-coefficients have absolute value `≤ M`, the claim is false with high probability:
+coefficients have absolute value `≤ M`, the claim is false for most choices:
 
 * the primes `q` that divide *every* coefficient of `h` all divide one fixed nonzero coefficient,
   so there are at most `log_{q_min} M` of them in a set `P` of primes `≥ q_min`
   (`MvPolynomial.card_filter_map_eq_zero_le_log`);
-* for every other prime `q`, `h mod q` is a nonzero polynomial of degree `≤ d` over `𝔽_q`, which
-  by Schwartz–Zippel vanishes at a uniform point with probability `≤ d / q ≤ d / q_min`
+* for every other prime `q`, `h mod q` is a nonzero polynomial of degree `≤ d` over `𝔽_q`, so by
+  Schwartz–Zippel the fraction of points of `𝔽_qᵐ` that are zeros is at most `d / q ≤ d / q_min`
   (`MvPolynomial.zeroCountMod_div_le`).
 
-`MvPolynomial.avg_zeroCountMod_div_le` combines the two: for a uniform prime `q ∈ P` and a uniform
-`α ∈ 𝔽_qᵐ`, `Pr[h(α) ≡ 0 (mod q)] ≤ log_{q_min} M / |P| + d / q_min`. The form in terms of
-`⌊log₂ q_min⌋` stated in [BGKLSW26] is `MvPolynomial.avg_zeroCountMod_div_le_logb`.
+`MvPolynomial.avg_zeroCountMod_div_le` combines the two into a counting statement: the fraction of
+points of `𝔽_qᵐ` that are zeros of `h mod q`, averaged over `q ∈ P`, is at most
+`log_{q_min} M / |P| + d / q_min`. This average is the probability that `h(α) ≡ 0 (mod q)` for a
+uniform `q ∈ P` and a uniform `α ∈ 𝔽_qᵐ`; the file states it as a count, following the
+repository's probability conventions. `MvPolynomial.avg_zeroCountMod_div_le_logb` weakens the
+prime-divisor term to the `⌊log₂ q_min⌋` form of [BGKLSW26].
 
 ## References
 
@@ -60,7 +63,7 @@ theorem zeroCountMod_eq_of_map_eq_zero {h : MvPolynomial (Fin m) ℤ} {q : ℕ} 
   simp [Nat.card_eq_fintype_card]
 
 /-- **Schwartz–Zippel modulo a prime.** If `h mod q ≠ 0` for a prime `q` and `h` has total degree
-`≤ d`, a uniform point of `𝔽_qᵐ` is a zero of `h mod q` with probability `≤ d / q`. -/
+`≤ d`, the fraction of points of `𝔽_qᵐ` that are zeros of `h mod q` is at most `d / q`. -/
 theorem zeroCountMod_div_le {h : MvPolynomial (Fin m) ℤ} {q d : ℕ} (hq : q.Prime)
     (hne : map (Int.castRingHom (ZMod q)) h ≠ 0) (hd : h.totalDegree ≤ d) :
     (zeroCountMod h q : ℝ) / (q : ℝ) ^ m ≤ d / q := by
@@ -109,14 +112,17 @@ theorem card_filter_map_eq_zero_le_log {h : MvPolynomial (Fin m) ℤ} (hh : h �
   exact Nat.le_log_of_pow_le (by omega) (hpow.trans hle)
 
 /-- **Fingerprinting.** Let `h ∈ ℤ[X₁, …, Xₘ]` be nonzero with total degree `≤ d` and all
-coefficients of absolute value `≤ M`. For a nonempty set `P` of primes, all `≥ q_min ≥ 2`, a
-uniform `q ∈ P` and a uniform `α ∈ 𝔽_qᵐ`,
-`Pr[(h mod q)(α) = 0] ≤ log_{q_min} M / |P| + d / q_min`. -/
+coefficients of absolute value `≤ M`. For a set `P` of primes, all `≥ q_min ≥ 2`, the fraction of
+points of `𝔽_qᵐ` that are zeros of `h mod q`, averaged over `q ∈ P`, is at most
+`log_{q_min} M / |P| + d / q_min`. -/
 theorem avg_zeroCountMod_div_le {h : MvPolynomial (Fin m) ℤ} (hh : h ≠ 0) {d M qmin : ℕ}
     (hd : h.totalDegree ≤ d) (hM : ∀ s, (h.coeff s).natAbs ≤ M) {P : Finset ℕ}
-    (hP : ∀ q ∈ P, q.Prime) (hPne : P.Nonempty) (hq2 : 2 ≤ qmin) (hqmin : ∀ q ∈ P, qmin ≤ q) :
+    (hP : ∀ q ∈ P, q.Prime) (hq2 : 2 ≤ qmin) (hqmin : ∀ q ∈ P, qmin ≤ q) :
     (∑ q ∈ P, (zeroCountMod h q : ℝ) / (q : ℝ) ^ m) / #P ≤
       (Nat.log qmin M : ℝ) / #P + (d : ℝ) / qmin := by
+  rcases P.eq_empty_or_nonempty with rfl | hPne
+  · simp only [sum_empty, card_empty, Nat.cast_zero, div_zero, zero_add]
+    positivity
   have hPpos : (0 : ℝ) < #P := by exact_mod_cast hPne.card_pos
   have hqpos : (0 : ℝ) < qmin := by exact_mod_cast (by omega : 0 < qmin)
   set B := P.filter fun q => map (Int.castRingHom (ZMod q)) h = 0 with hB
@@ -155,14 +161,17 @@ theorem avg_zeroCountMod_div_le {h : MvPolynomial (Fin m) ℤ} (hh : h ≠ 0) {d
     _ = ((Nat.log qmin M : ℝ) / #P + (d : ℝ) / qmin) * #P := by
         field_simp
 
-/-- The prime-divisor term in the form of [BGKLSW26]: `log₂ M / (⌊log₂ q_min⌋ · |P|)`. -/
+/-- `avg_zeroCountMod_div_le` with the prime-divisor term weakened to
+`log₂ M / (⌊log₂ q_min⌋ · |P|)`. -/
 theorem avg_zeroCountMod_div_le_logb {h : MvPolynomial (Fin m) ℤ} (hh : h ≠ 0) {d M qmin : ℕ}
-    (hd : h.totalDegree ≤ d) (hM : ∀ s, (h.coeff s).natAbs ≤ M) (hM1 : 1 ≤ M) {P : Finset ℕ}
-    (hP : ∀ q ∈ P, q.Prime) (hPne : P.Nonempty) (hq2 : 2 ≤ qmin) (hqmin : ∀ q ∈ P, qmin ≤ q) :
+    (hd : h.totalDegree ≤ d) (hM : ∀ s, (h.coeff s).natAbs ≤ M) {P : Finset ℕ}
+    (hP : ∀ q ∈ P, q.Prime) (hq2 : 2 ≤ qmin) (hqmin : ∀ q ∈ P, qmin ≤ q) :
     (∑ q ∈ P, (zeroCountMod h q : ℝ) / (q : ℝ) ^ m) / #P ≤
       Real.logb 2 M / (Nat.log 2 qmin * #P) + (d : ℝ) / qmin := by
-  refine (avg_zeroCountMod_div_le hh hd hM hP hPne hq2 hqmin).trans ?_
-  have hPpos : (0 : ℝ) < #P := by exact_mod_cast hPne.card_pos
+  refine (avg_zeroCountMod_div_le hh hd hM hP hq2 hqmin).trans ?_
+  have hM1 : 1 ≤ M := by
+    obtain ⟨s, hs⟩ := ne_zero_iff.1 hh
+    exact (Int.natAbs_pos.2 hs).trans_le (hM s)
   have hlog1 : 1 ≤ Nat.log 2 qmin := Nat.log_pos (by norm_num) hq2
   have hlogpos : (0 : ℝ) < Nat.log 2 qmin := by exact_mod_cast hlog1
   have hnat : (Nat.log qmin M : ℝ) ≤ Real.logb 2 M / Nat.log 2 qmin := by
