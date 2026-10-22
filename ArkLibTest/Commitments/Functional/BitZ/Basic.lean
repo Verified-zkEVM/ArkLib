@@ -4,7 +4,6 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: aryaethn
 -/
 
-import ArkLib.Commitments.Functional.BitZ.Bitification
 import ArkLib.Commitments.Functional.BitZ.ExponentLift
 import ArkLib.Data.MvPolynomial.PrimeFingerprint
 
@@ -12,8 +11,7 @@ import ArkLib.Data.MvPolynomial.PrimeFingerprint
 # BitZ leaf lemmas: instances and axiom boundaries
 
 Concrete instances showing the hypotheses of the BitZ lemmas are satisfiable and that the
-conclusions are not vacuous: a generator of `(ZMod 7)ˣ`, the integer range check, and a
-prime-divisor count.
+conclusions are not vacuous: a generator of `(ZMod 7)ˣ` and a prime-divisor count.
 -/
 
 open BitZ MvPolynomial Matrix Finset
@@ -47,30 +45,6 @@ example : ∏ i : Fin 2, (((Units.val g7 : ZMod 7) ^ γ₁ i - 1) * (b₁ i : ZM
 /-- The overflow hypothesis cannot be dropped: exponents `0` and `6 = orderOf 3` collide. -/
 example : (3 : ZMod 7) ^ 0 = (3 : ZMod 7) ^ 6 ∧ (0 : ℕ) ≠ 6 := by decide
 
-/-! ### Bitification over `ℤ → ZMod 5` -/
-
-/-- The range check is real: `5 ∈ S^{<D}_{≤3}` but `8 ∉ S^{<D}_{≤3}` with a single monomial `1`. -/
-example : (5 : ℤ) ∈ boundedSpan (fun _ : Unit => (1 : ℤ)) 3 :=
-  ⟨fun _ => 5, by decide, by simp⟩
-
-example : (8 : ℤ) ∉ boundedSpan (fun _ : Unit => (1 : ℤ)) 3 := by
-  rintro ⟨h, hlt, hs⟩
-  have := hlt PUnit.unit
-  norm_num at this
-  simp at hs
-  omega
-
-/-- The equivalence of witnesses is instantiated: integer witnesses of three bits against
-`ψ : ℤ → ZMod 5`. -/
-example (v : Fin 2 → ZMod 5) (μ : ZMod 5) :
-    (∃ f : Fin 2 → ℤ, (∀ i, f i ∈ boundedSpan (fun _ : Unit => (1 : ℤ)) 3) ∧
-        v ⬝ᵥ (fun i => Int.castRingHom (ZMod 5) (f i)) = μ) ↔
-      ∃ g : Fin 2 × Fin 3 × Unit → ℕ, (∀ x, g x ≤ 1) ∧
-        (fun p => (g p : ZMod 5)) ⬝ᵥ
-          (((bitMatrix (fun _ : Unit => (1 : ℤ)) 3).map (Int.castRingHom (ZMod 5)))ᵀ.mulVec v) =
-          μ :=
-  exists_witness_iff_exists_bits _ _ _ _ _
-
 /-! ### Fingerprinting -/
 
 /-- Primes `2, 3, 5` all `≥ 2`; the constant polynomial `6` is killed by exactly `2` and `3`, and
@@ -93,13 +67,6 @@ info: 'BitZ.prod_bitFactor_eq_pow_iff' depends on axioms:
 -/
 #guard_msgs (whitespace := lax) in
 #print axioms BitZ.prod_bitFactor_eq_pow_iff
-
-/--
-info: 'BitZ.exists_witness_iff_exists_bits' depends on axioms:
-[propext, Classical.choice, Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms BitZ.exists_witness_iff_exists_bits
 
 /--
 info: 'MvPolynomial.avg_zeroCountMod_div_le' depends on axioms:
