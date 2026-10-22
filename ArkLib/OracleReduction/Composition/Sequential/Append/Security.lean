@@ -15,7 +15,9 @@ oracle-verifier wrappers. Execution and conversion equalities do not establish t
 
 For proved completeness interfaces, use `Append/Completeness.lean` and
 `Sequential/GuardedCompleteness.lean`. The proved soundness interface in `Append/RoundByRound.lean`
-requires fixed-prefix component bounds and a pure first verifier.
+requires fixed-prefix component bounds and a pure first verifier. The proved knowledge-soundness
+interface in `Append/GuardedRoundByRound.lean` requires fixed-prefix component bounds and a guarded
+first verifier.
 -/
 
 @[expose] public section

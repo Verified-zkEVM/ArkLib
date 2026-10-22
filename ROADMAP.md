@@ -1,8 +1,9 @@
 # Roadmap
 
 ArkLib develops executable proof-system specifications and Lean proofs of completeness and
-security. The next deliveries are a reusable ring-switching protocol with concrete consumers,
-native Flock protocols, and complete Binius opening arguments.
+security. Shared ring-switching phases and their DP24/Binary Basefold composite are proved.
+The next deliveries are native Flock protocols, the fused FRI-Binius opening route, and native
+knowledge extraction and cryptographic compilation for concrete consumers.
 
 The [ring-switching tracker](https://github.com/Verified-zkEVM/ArkLib/issues/1286) owns
 implementation progress and dependencies. The [interaction roadmap](docs/design/05-roadmap.md)
@@ -28,33 +29,38 @@ instances. Each instance identifies the source it preserves, the claims it produ
 assumptions required for its security bound. This makes reuse testable at the protocol boundary.
 
 The common mathematics supports independent packing/opening algebras and ranks, representations
-and commitment models. Develop one certified protocol for consumers with matching messages,
-guards, samplers and endpoints, with DP24 as its first adapter. Deliver the generic head and
-continuation before the native reference-Flock protocol. The
-[concept page](docs/kb/concepts/ring-switching.md) explains the construction. Packing and
-composition developments still contain admissions; pure conformance alone does not establish
-commitment binding or a downstream opening theorem. Each concrete security instance must
-discharge its sampler, binding and honest-coverage premises.
+and commitment models. The shared head, product-sumcheck continuation and terminal phases provide
+perfect completeness and worst-case round-by-round knowledge soundness under their declared
+premises. DP24 instantiates these phases and composes with Binary Basefold. Hachi has its own
+trace-head conformance result; native reference-Flock conformance remains work.
+
+Reuse the shared protocol for consumers with matching messages, guards, samplers and endpoints.
+The [consumer guide](docs/wiki/ring-switching-consumers.md) records the concrete interfaces and
+remaining native-Flock obligations; the [concept page](docs/kb/concepts/ring-switching.md)
+explains the construction. Pure conformance alone does not establish commitment binding or a
+downstream opening theorem. Each concrete security instance must discharge its sampler, binding
+and honest-coverage premises. The conversion to ordinary knowledge soundness remains admitted.
 
 ## Binius opening arguments
 
-Complete the opening and composition proofs for two routes: ring switching followed by a
-black-box Binary Basefold opening, and FRI-Binius with sumcheck fused into folding. Preserve
-both routes' production schedules and prove their rejecting behavior, completeness and intended
-knowledge guarantees.
+The ring-switching route followed by a black-box Binary Basefold opening is on main. Binary
+Basefold's core interaction, query verifier and full protocol have perfect completeness and
+worst-case round-by-round knowledge soundness, proved without local admissions. The concrete
+ring-switching composite uses this backend and preserves its input relation and challenge ledger.
 
-The [Binius tracker](https://github.com/Verified-zkEVM/ArkLib/issues/893) connects the remaining
-query, context-transport and full-protocol work. Core interaction and security proofs on main
-still contain admissions; distinguish clean round-by-round knowledge-soundness results from
-ordinary knowledge soundness that uses an admitted bridge. Reusable ring-switching results
-feed these routes; Flock's Frobenius variant can develop independently.
+The fused FRI-Binius core and full protocol remain to be formalized. Preserve the production
+schedule and prove rejecting behavior, completeness and the intended knowledge guarantees.
+Keep these round-by-round results distinct from ordinary knowledge soundness through the
+admitted generic bridge. The
+[Binius tracker](https://github.com/Verified-zkEVM/ArkLib/issues/893) owns follow-up progress;
+Flock's Frobenius variant can develop independently.
 
 ## Native security and cryptographic compilation
 
 Use the proved CompPoly-backed honest Sumcheck prover and its specification correspondence
 for native clients. Measure and optimize its actual workloads, and supply the remaining
-client-specific certificates. Exercise the execution and security interfaces in small FRI
-and Spartan clients before migrating their larger protocol assemblies.
+client-specific certificates. Exercise the native typed-interaction execution and security
+interfaces in small FRI and Spartan clients before migrating their larger protocol assemblies.
 
 Instantiate the native extraction and composition contracts for actual protocol clients, then
 connect them to concrete opening arguments, Merkle commitments and Fiat–Shamir transcripts.
@@ -69,8 +75,11 @@ are tracked together with the consumers.
 
 ## Other protocol and commitment directions
 
-- Extend [FRI](ArkLib/ProofSystem/Fri/), [batched FRI](ArkLib/ProofSystem/BatchedFri/) and
-  [STIR](ArkLib/ProofSystem/Stir/) through their component and assembly contracts.
+- [FRI](ArkLib/ProofSystem/Fri/) has an executable specification with perfect and noisy-input
+  completeness, soundness, and a certified straightline knowledge extractor with explicit
+  resource bounds. Its native typed-interaction migration is a separate direction.
+  [Batched FRI](ArkLib/ProofSystem/BatchedFri/) and [STIR](ArkLib/ProofSystem/Stir/) retain
+  incomplete component or assembly obligations.
 - Complete [Spartan](ArkLib/ProofSystem/Spartan/) and prove correspondence for its native
   migration.
 - Extend [KZG](ArkLib/Commitments/Functional/KZG/) and
