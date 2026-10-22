@@ -6,14 +6,14 @@ Authors: Alexander Hicks
 module
 
 public import ArkLib.Commitments.Functional.Hachi.EvalSplit
-public import ArkLib.ProofSystem.RingSwitching.Packing.ScalarHead.Layout
+public import ArkLib.ProofSystem.RingSwitching.Packing.ClaimLayout
 public import ArkLib.ToCompPoly.Multilinear.Basic
 
 /-!
 # Packing monomial coefficients along the final variables
 
-The retained variables come first and the packed variables last. Indices use the existing
-little-endian `Hachi.splitEquiv`; this is coefficient packing, not Boolean-table packing.
+The retained variables come first and the packed variables last. Indices use the little-endian
+`Hachi.splitEquiv`; this is coefficient packing, not Boolean-table packing.
 
 The read-back identity `unpackCoefficients_eval` is proved directly: evaluating the packed
 polynomial at an embedded retained point packs the coefficient contractions
@@ -22,10 +22,10 @@ polynomial at an embedded retained point packs the coefficient contractions
 The final section states the packing in the shared packed-polynomial layer of
 `RingSwitching.Packing`. `traceHeadData e` is `PackingData.ofBaseOpening` at the basis given by
 `e`: the base ring is the opening algebra, so there is one opening coordinate (`ιE = Unit`).
-`traceHeadLayout e` is a `ScalarHead.ClaimLayout` whose components are the monomial-coefficient
+`traceHeadLayout e` is a `ClaimLayout` whose components are the monomial-coefficient
 rows of the packed variables (`coefficientRows`), transported to `MvPolynomial` by
 `CMlPolynomial.equivMvPolynomialDeg1`; it is not the Boolean-restriction
-`ScalarHead.packedSuffixLayout`. Under the transport `packCoefficients e` is the shared
+`ClaimLayout.packedSuffixLayout`. Under the transport `packCoefficients e` is the shared
 `packedMLE` of the layout's components (`toMvPolynomialDeg1_packCoefficients`). The statements
 connecting the protocol relations to this layer are in the library module
 `TraceHead/Conformance.lean`.
@@ -148,7 +148,7 @@ noncomputable abbrev traceHeadData : PackingData B :=
 /-- The scalar source as a claim layout over `traceHeadData e`. The components are the
 monomial-coefficient rows of the final `t` variables, transported to `MvPolynomial`; the weights
 are the monomial basis at the packed suffix point. -/
-noncomputable def traceHeadLayout : ScalarHead.ClaimLayout (traceHeadData e) n where
+noncomputable def traceHeadLayout : ClaimLayout (traceHeadData e) n where
   Source := CMlPolynomial B (n + t)
   Query := Vector B n × Vector B t
   components := coefficientRows.trans

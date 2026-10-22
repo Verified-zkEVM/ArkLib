@@ -3,70 +3,57 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
-
 module
 
-public import ArkLib.ProofSystem.Binius.FRIBinius.Prelude
+public import ArkLib.ProofSystem.Binius.FRIBinius.RingSwitch
 public import ArkLib.ProofSystem.RingSwitching.Packing.Conformance
 
 /-!
-# Binius batching conformance
+# Binius source and oracle conformance
 
-The batching phase uses the tensor profile and first-oracle compatibility relation. Its scalar
-reconstruction check and packed sum-check target are the shared prefix-packing objects.
+The shared prefix frontend uses the source polynomial's basis packing and the original
+first-codeword oracle. Every source polynomial has an honest input with exact first encoding;
+the relaxed input relation uses the same packed polynomial with unique-radius compatibility.
 -/
 
 @[expose] public section
 
-open Module MvPolynomial RingSwitching Sumcheck.Structured RingSwitching.Packing.Conformance
-
 noncomputable section
-
 namespace Binius.FRIBinius.Conformance
+open Module MvPolynomial RingSwitching RingSwitching.Packing Sumcheck.Structured
 
-section Binius
-
-open Binius.FRIBinius
-
-variable (κ : ℕ) [NeZero κ]
-  (L : Type) [Field L] [Fintype L] [DecidableEq L]
-  (K : Type) [Field K] [Fintype K]
-  [Fact (Fintype.card K = 2)] [Algebra K L]
+variable (κ : ℕ) {L : Type} [Field L] [Fintype L] [DecidableEq L]
+  (K : Type) [Field K] [Fintype K] [Fact (Fintype.card K = 2)] [Algebra K L]
+  (β : Basis (Fin (2 ^ κ)) K L)
 local instance [Finite K] : Fact (Nat.Prime (ringChar K)) := ⟨CharP.prime_ringChar K⟩
-variable (β : Basis (Fin (2 ^ κ)) K L) {ℓ ℓ' 𝓡 ϑ : ℕ} [NeZero ℓ'] [NeZero ϑ]
-  (h_ℓ_add_R_rate : ℓ' + 𝓡 < 2 ^ κ) (h_l : ℓ = ℓ' + κ) [Fact (ϑ ∣ ℓ')]
+variable {ℓ ℓ' R ϑ : ℕ} [NeZero ℓ'] [NeZero ϑ] [Fact (ϑ ∣ ℓ')]
+  (h_rate : ℓ' + R < 2 ^ κ) (h_dim : ℓ = ℓ' + κ)
 
-omit [NeZero κ] in
-/-- Batching acceptance at the tensor profile is equivalent to first-codeword compatibility,
-the multiplier identity, the batched sum-check claim, and column reconstruction. -/
-theorem binius_batching_conforms (stmt : BatchingStmtIn L ℓ)
-    (oStmt : ∀ j, (binaryBasefoldInput κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate).OStmtIn j)
-    (z : (biniusProfile κ L K β).A) (c : Fin κ → L) (wit : RingSwitching.SumcheckWitness L ℓ' 0) :
-    (performCheckOriginalEvaluation κ L K (biniusProfile κ L K β) ℓ ℓ' h_l stmt.original_claim
-          stmt.t_eval_point z = true ∧
-        ((acceptedStatement (biniusProfile κ L K β) stmt z c, oStmt), wit) ∈
-          sumcheckRoundRelation κ L K (biniusProfile κ L K β) ℓ ℓ' h_l
-            (binaryBasefoldInput κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate) 0) ↔
-      Binius.BinaryBasefold.FirstOracleWitnessConsistent K β
-          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) wit.t'
-          (Binius.BinaryBasefold.getFirstOracle K β oStmt) ∧
-        wit.H.val = ((Packing.PackingData.ofBasis (biniusProfile κ L K β).basis).multiplier
-          ((prefixLayout (biniusProfile κ L K β) ℓ').point
-            (prefixQuery (biniusProfile κ L K β) h_l stmt.t_eval_point))
-            (batchingWeight c)).val * wit.t'.val ∧
-        (∑ u, batchingWeight c u * (biniusProfile κ L K β).decomposeRows z u, wit.t') ∈
-          (Packing.PackingData.ofBasis (biniusProfile κ L K β).basis).sumcheckClaimRel ℓ'
-            ((prefixLayout (biniusProfile κ L K β) ℓ').point
-              (prefixQuery (biniusProfile κ L K β) h_l stmt.t_eval_point)) (batchingWeight c) ∧
-        stmt.original_claim = ∑ v,
-          (prefixLayout (biniusProfile κ L K β) ℓ').weight
-            (prefixQuery (biniusProfile κ L K β) h_l stmt.t_eval_point) v *
-            (biniusProfile κ L K β).decomposeColumns z v :=
-  batching_conforms (biniusProfile κ L K β) h_l
-    (binaryBasefoldInput κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate) stmt oStmt z c wit
+/-- The scalar source claim and the packed first oracle are the shared input relation. -/
+theorem mem_relIn_iff (r : Fin ℓ → L) (s : L)
+    (ost : ∀ j, (binaryBasefoldInput κ L K β ℓ' R ϑ h_rate).OStmtIn j)
+    (t : MultilinearPoly K ℓ) :
+    (((r, s), ost), t) ∈ TensorPrefix.relIn (biniusProfile κ L K β) h_dim
+        (binaryBasefoldInput κ L K β ℓ' R ϑ h_rate) ↔
+      s = aeval r t.val ∧ BinaryBasefold.FirstOracleWitnessConsistent K β
+        (packMLE κ L K ℓ ℓ' h_dim (biniusProfile κ L K β).basis t)
+        (BinaryBasefold.getFirstOracle K β ost) := by
+  change (s = aeval r t.val ∧ _ ) ↔ _
+  rw [TensorPrefix.packedMLE_components_eq_packMLE]
+  rfl
 
-end Binius
+/-- Every source polynomial and query give an honest input with the exact packed encoding. -/
+theorem mem_relIn_strictView_honestPackedOracle (t : MultilinearPoly K ℓ) (r : Fin ℓ → L) :
+    (((r, aeval r t.val), honestPackedOracle κ L K β ℓ' R ϑ h_rate
+        (packMLE κ L K ℓ ℓ' h_dim (biniusProfile κ L K β).basis t)), t) ∈
+      TensorPrefix.relIn (biniusProfile κ L K β) h_dim
+        (binaryBasefoldInput κ L K β ℓ' R ϑ h_rate).strictView := by
+  constructor
+  · rfl
+  · change (binaryBasefoldInput κ L K β ℓ' R ϑ h_rate).strictInitialCompatibility
+      ((PackingData.ofBasis (biniusProfile κ L K β).basis).packedMLE
+        ((TensorPrefix.layout (biniusProfile κ L K β) h_dim).components t), _)
+    rw [TensorPrefix.packedMLE_components_eq_packMLE]
+    exact honestPackedOracle_strictCompatible κ L K β ℓ' R ϑ h_rate _
 
 end Binius.FRIBinius.Conformance
-
-end

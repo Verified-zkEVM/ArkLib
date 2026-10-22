@@ -1,235 +1,119 @@
 # Ring Switching
 
-This page is the KB landing page for the **ring-switching** technique. Ring switching is a
-*family* of constructions, not one protocol — ArkLib formalizes two construction folders,
-each with its own data layer: `Packing/` (`RingSwitchingProfile`, small→large packing)
-and `Lift/` (`Lift.Presentation`, large quotient ring→field, the generic
-HMZ25 switch); the taxonomy lives in the folder umbrella
-`ArkLib/ProofSystem/RingSwitching/Basic.lean`. What the two constructions share sits at the folder
-top level: the check-then-update round-shape verifiers (`RoundVerifiers.lean`) and the
-embed-and-evaluate transport algebra (`Transport/Eval.lean` univariate, `Transport/Coeffs.lean`
-degree-generic multivariate).
+Packing reduces a scalar polynomial claim to an evaluation of the same packed polynomial under
+its original commitment. The packing algebra `P` and opening algebra `E` have independent finite
+bases over a common commutative ring `B`; neither an embedding `P → E` nor equal ranks is needed.
+The challenge algebra `C` receives packed coefficients and supplies the sumcheck challenges.
 
-The folder names describe the algebraic operation, not merely the source and target types:
+A separate construction, `Lift`, replaces a quotient-ring equality by an exact polynomial equality
+before evaluating it in a field. Its data and security contracts remain separate from packing.
+`ProofSystem/RingSwitching/Basic.lean` routes both families.
 
-- **Packing** groups a basis-sized block of small-ring coefficients into the coordinates of
-  one large-ring element. For rank `2^κ`, this turns `2^κ` coefficients—and therefore `κ`
-  Boolean-variable positions—into one coefficient over the large ring.
-- **Lift** replaces an equality in `S ≅ R[X]/(φ)`, which holds only modulo `φ`, by an exact
-  equality in `R[X]` with an explicit quotient witness. Evaluating that lifted equality in a
-  field is the subsequent verification step.
+## Coordinate equations
 
-This distinction matters: both operations are called ring switching in the literature, but
-they require different data layers and different security arguments.
+`PackingData` specifies bases indexed by `ιP` and `ιE`. A source layout gives components `pᵢ`,
+a query `q`, an opening point `x(q)` and reconstruction weights `wᵢ(q)`. Its certified identity is
 
-## Scope
+`eval(q,p) = ∑ᵢ wᵢ(q) · pᵢ(x(q))`.
 
-Use this page when a question is about:
+`packedMLE` groups the components in the packing basis; `unpack` is its inverse. A component-value
+family `α : ιP → E` determines its transpose `ιE → P`. For challenge weights `vᵤ(c)`, the verifier
+computes `derivedTarget α v = ∑ᵤ vᵤ(c) · transpose(α)ᵤ`. If `α` is honest, this equals the Boolean
+hypercube sum of the same packed polynomial times the public multiplier `A(q,c)`.
+`Multiplier` evaluates that polynomial using a read-once matrix program; the terminal
+verifier executes this evaluator. The equality certificate links it to the sumcheck polynomial.
 
-- what ring switching is and why a polynomial commitment scheme uses it;
-- the `RingSwitchingProfile` abstraction and how a protocol family instantiates it;
-- where Binius plugs in, and how Hachi's §3 head, which is not a profile instance, uses the
-  coordinate layer;
-- which security statements are generic vs. instance-specific.
+`ClaimLayout` includes prefix and suffix packing. `ClaimLayout/Quirky` gives the skipped/extra-bit
+Lagrange layout with an explicit injective node map. Hachi's monomial-coefficient layout lives
+with its native trace head. `Packing/Conformance` gives the tensor carrier's column/opening and
+row/slice identities and the final equality-value equation.
 
-## The idea
+## One shared protocol
 
-Ring switching reduces a multilinear evaluation claim `s = t(r)` over a **small** coefficient ring
-`B` (a binary-tower field, `𝔽₂`, or a cyclotomic ring `R_q`) to an evaluation claim over a **large**
-extension `L` and **without re-committing** over `L`. Field instances such as Binius pay only an
-additive `O(ℓ/|L|)` soundness cost (`O(1/|L|)` per challenge); Hachi's cyclotomic-ring instance has a separate CWSS-style
-soundness theorem because `R_q` is not a domain. This lets a PCS commit cheaply over a tiny ring
-while running sum-check and the final opening over a carrier large enough for the intended
-soundness argument.
+Import `ArkLib.ProofSystem.RingSwitching.Packing.RingSwitch`. Supply:
 
-With `ℓ = ℓ' + κ`, a small-field multilinear `t` in `ℓ` variables is *packed* into a large-field
-multilinear `t'` in `ℓ'` variables (`packMLE`): each block of `2^κ` coefficients becomes one
-`L`-element via a `B`-basis `β` of `L`. The interaction runs in a *pack/trace carrier* `A` where the
-folded element `ŝ` lives; an eq̃/trace inner-product identity (DP24 §2.5) ties `ŝ`'s coordinates to
-the original claim and the new sum-check target.
+- `PackingData B`, the retained dimension `m` and a `ClaimLayout`;
+- a first-message carrier `M` and an equivalence `M ≃ (ιP → E)`;
+- a `BatchingRule C ιE`, giving the sampled challenge and its weights;
+- a `PackedCommitment P m`, giving the original oracle collection and compatibility relation.
 
-## ArkLib's abstraction
+`Head` sends one encoded component-value family, checks scalar reconstruction, samples the batching
+challenge and derives the product-sumcheck target. Its output is directly the initial
+`ProductSumcheck.Statement`; no formatting phase intervenes. The `m` scalar rounds send degree-two
+polynomials. The terminal sends one evaluation value `v` and checks `A(q,c)(r) * v = target`.
+The endpoint is `pc.evalRelWithContext (layout.Query × rule.Challenge)`: the original query and
+batching challenge remain public, the oracle collection is unchanged, and the witness is the
+same packed polynomial. The terminal does not cancel a zero multiplier or itself certify that
+`v` is the true opening; that remains the downstream opening's relation.
 
-ArkLib formalizes the packing *data layer* once, generic over a `RingSwitchingProfile (B L) κ`:
+A separate `pc.Honest` constructor provides a compatible oracle for every polynomial. Security
+uses only the compatibility relation, with no coverage assumption. Source restrictions such as
+an inherited residual relation `R(q,p)` require separate maintained transport through the
+protocol; retaining `q` does not prove those restrictions.
 
-- `basis`, carrier `A`, ring homomorphisms `φ₀`/`φ₁ : L →+* A`, coordinate maps `decomposeRows`/`Columns`,
-- plus two **reconstruction laws** (`decomposeRows_spec`, `decomposeColumns_spec`) that tie the
-  coordinate maps to `φ₀`/`φ₁`/`basis`,
-- two **inverse laws** (`decomposeRows_recompose`, `decomposeColumns_recompose`) making each
-  coordinate map a two-sided inverse of its recomposition, and `embeddings_agree` (`φ₀`, `φ₁`
-  agree on `B`).
+## Completeness and round-by-round security
 
-With the inverse laws the carrier is additively equivalent to each full coordinate family
-(`RingSwitchingProfile.rowEquiv`/`columnEquiv`), so a finite carrier has `|L|^(2^κ)` elements
-(`RingSwitchingProfile.card_A`). For a finite nontrivial `L` and `κ > 0`, a collapsed carrier
-such as `A = L`, which reconstruction alone would allow, is therefore excluded.
+`RingSwitch.perfectCompleteness` uses a sampleable commutative challenge ring and the layout's
+reconstruction law. It does not require a separation certificate or no-zero-divisors assumption.
 
-The row law is `z = ∑ u, φ₀(basis u) * φ₁(decomposeRows z u)`; the column law is
-`z = ∑ v, φ₀(decomposeColumns z v) * φ₁(basis v)`. In the tensor carrier these read
-`z = ∑ u, basis u ⊗ rows z u` and `z = ∑ v, columns z v ⊗ basis v`. Rows use the
-right-factor scalar action; columns use the left-factor scalar action.
+`BatchingStrategy` adds a collision certificate to a rule. Full worst-case round-by-round
+knowledge soundness requires a finite sampleable challenge ring with no zero divisors,
+`pc.Functional`, and injectivity of `algebraMap P C`. Functionality fixes the compatible packed
+polynomial before each challenge. The explicit finite sum in `RingSwitch.rbrError_sum` is
 
-Those laws are the algebraic profile boundary, not a complete soundness theorem by themselves.
-The batching/sum-check proofs still have to connect the profile coordinates to `packMLE`,
-`embedded_MLP_eval`, `compute_A_func`, and the instance's eq̃/trace identity.
+`bat.error + m * (2 / card C)`.
 
-The *protocol* on top of the profile is per-construction. The DP24 packing protocol
-(the protocol files of `ProofSystem/RingSwitching/Packing/`) is three phases (batching → sum-check → large-field IOPCS
-opening); see the blueprint section *Ring Switching*
-(`blueprint/src/proof_systems/ring_switching.tex`) for the protocol and security statements.
-Its RBR knowledge error is `κ/|L| + Σ 2/|L| + ε_IOPCS` (DP24 §3.1–3.2); the final consistency
-step sends no challenge and adds no error. Soundness requires `[NoZeroDivisors L]`
-(Schwartz–Zippel).
+The head has one batching challenge, the loop `m` scalar challenges, and the terminal none.
+`perfectCompleteness_and_rbrKnowledgeSoundnessWorstCase` bundles completeness, security and this
+exact sum. It makes no ordinary knowledge-soundness claim.
 
-## Shared coordinate algebra
+For the head alone, equal component evaluations at the fixed query suffice: the compatible
+polynomials need not be equal or form a finite set. `Head.pr_exists_derivedTarget_le_of_partials_eq`
+preserves this point-local collision law, and `bad_event_le_of_partials_eq` adds the guard.
+The standalone `Head.rbrKnowledgeSoundnessWorstCaseWith_of_partials_eq` uses the same weaker
+premise for every fixed query and oracle statement, with the extractor and knowledge states.
+`TensorPrefix.pr_exists_target_collision_le_of_embedded_eval_eq` states the carrier collision law.
 
-Below the profile, `Packing/` has a framework-independent coordinate layer that imports no
-reduction framework. `PackingData` (`Packing/Coordinates.lean`) takes independent finite bases of a
-packing algebra `P` and an opening algebra `E` over a common ring `B`, with no embedding between
-them; `PackingData.transpose` is the coordinate transpose `(ιP → E) ≃ₗ[B] (ιE → P)`. On top of it:
+The head also permits a fixed list covering **all** compatible packed candidates before
+the challenge, charging only incorrect candidates. This head bound does not imply bounded-list
+tail security, adaptive-list extraction or preservation of inherited residual constraints.
+`Batching/CoordinateSample` also certifies nontrivial head separation over rings with zero divisors.
 
-- `FiniteObservation` and `CheckedObservation` — weighted observations, their coordinate slices,
-  and read-back of a scalar claim from an accepted, honest message;
-- `Polynomial` and `Relations` — packed multilinear polynomials with both round trips, and the
-  opening, slice and batched-sumcheck relations;
-- `Multiplier` — the public multiplier evaluated by a read-once matrix program
-  (`Data/Matrix/ReadOnce.lean`);
-- `Batching` — `BatchingStrategy`, a uniform challenge distribution with a proved collision bound
-  (`gammaPowers`, `eqFold`, `singleton`, `reindex`), and `BatchingStrategy.separates_finset`: a
-  list of at most `L` families fixed before the challenge has an incorrect collision with
-  probability at most `L` times the strategy error. The finite-list union bound
-  `prEvent_exists_finset_le_card_mul` is imported from `VCVio.EvalDist.ProbabilityBounds`,
-  which also supplies `prEvent_exists_and_le_of_subsingleton`. The phase retains its
-  point-local carrier-binding bound `κ/|L|` and its polynomial-binding corollary
-  `BatchingPhase.prob_exists_consistent_ne_le`. The list bound does not cover
-  challenge-dependent lists, adaptive joint-list invariants or extraction;
-- `ScalarHead/Layout` and `ScalarHead/Quirky` — prefix, suffix and quirky Lagrange layouts, each
-  with a proved reconstruction identity. A consumer may supply its own `ClaimLayout`: Hachi's
-  monomial-coefficient layout lives in `Commitments/Functional/Hachi/TraceHead/Coefficients.lean`.
-- `DerivedBatching` — the fixed-list bound for packed candidates against the publicly derived
-  transpose of fixed component claims. `Relations` supplies `actualSlices` and `derivedTarget`
-  for the pure reconstruction and target laws; injectivity of the packing-to-challenge coefficient map
-  is needed only for separation.
+`RingSwitch.append_rbrKnowledgeSoundnessWorstCase` closes any opening already typed at the
+contextual same-commitment endpoint. `append_perfectCompleteness` supplies the separate
+completeness composition. An opening complete only on exact encodings uses exact compatibility
+for the completeness relation; relaxed-radius compatibility remains the security relation.
 
-Reference Flock's early residual scalar claim, using `quirkyLayout` and `quirkyComponent`, is the
-intended derived-batching consumer. The retained point and bases are public; a preceding prover
-message supplies component claims `α`.
-The verifier derives `transpose α` without another slice message. The candidate packed source
-and list must be anchored to the original commitment by the consumer and fixed before the fresh
-batching challenge; the weights, target and public multiplier depend on the new challenge. The laws
-retain the same packed polynomial and exclude correct candidates from the bad event. The concrete residual
-relation, native head conformance, same-source `pc.evalRel` adapter and extraction remain separate work.
+## Concrete consumers and migration
 
-`PackingData.ofBasis` uses one algebra and one basis in both roles; `PackingData.ofBaseOpening`
-uses the base ring as opening algebra, so there is a single opening coordinate.
+`Packing/TensorPrefix` defines the tensor-prefix/equality-fold specialization through the shared
+program. It preserves the original tensor carrier `P.A`, decoded by `P.columnEquiv`, and proves
+the original scalar check and row-target equation, honest transmitted message, packed
+source, extraction and terminal equality multiplier. This is the DP24 specialization; there is
+no second certified phase implementation.
 
-Everything holds over commutative rings, including rings with zero divisors, except the two
-Schwartz–Zippel batching strategies, which need a finite commutative ring with no zero
-divisors, and the quirky layout, whose Lagrange interpolation needs the opening algebra to
-be a field.
+`Binius/FRIBinius/RingSwitch` appends the Binary Basefold contextual opening. Its existing
+zero-round frontier projects the final evaluation and formats the witness, with no extra wire
+phase. Exact first-codeword encodings give completeness; unique-radius compatibility gives
+worst-case round-by-round security. `fullError_sum_le` transports the full challenge sum
+to the frontend loss plus the backend's closed-form upper bound. The concrete nonconstant
+`GF(16)/GF(2)` acceptance fixture instantiates both and bounds that sum strictly below one.
 
-## The three constructions
+`OpeningAdapter` converts a standard `MLIOPCS` to a contextual opening by a zero-round
+projection, with completeness and worst-case round-by-round security transport. Averaged
+corollaries follow from the framework's worst-case implication. Conversion to ordinary
+knowledge soundness remains admitted.
 
-- **DP24 packing switch** (`ProofSystem/RingSwitching/Packing/`, tensor-product profile
-  `tensorProductProfile`):
-  small field → large field; `A = L ⊗_K L`, `φ₀ = ·⊗1`, `φ₁ = 1⊗·`, coordinates from the
-  left/right `L`-module bases; all profile laws are **proven** in ArkLib. Because the
-  evaluation point is an arbitrary big-field point, the claim is relocated *interactively*
-  (batching challenge + dedicated packing sum-check).
+The full `RingSwitch/{UnequalRankSuffix,Quirky}` fixtures use packing rank four over `GF(16)`, opening rank three
+over `GF(8)`, and challenge algebra `GF(16)`. They exercise nonconstant sources, effective packed
+coordinates, honest and rejected executions, query retention and exact error sum `1/4`.
+Their clear polynomial oracle is a specification fixture, not a PCS. A separate zero-variable
+fixture exercises commutative-ring completeness over `ZMod 4`.
 
-  Binius instantiates it with `biniusProfile`. The conformance theorem `batching_conforms`
-  (`ArkLib/ProofSystem/RingSwitching/Packing/Conformance.lean`) states the batching phase's
-  accepting round through the coordinate layer, at `PackingData.ofBasis` of the profile basis
-  and the prefix layout `packedPrefixLayout`. The column check passes and the accepted output is
-  in the round-zero sumcheck relation exactly when:
-  - the packed polynomial is compatible with the oracle statement;
-  - the round polynomial is the shared `multiplier` times the packed polynomial;
-  - the batched rows of the sent carrier are in the shared `sumcheckClaimRel`;
-  - the claim is the layout-weighted sum of the carrier's columns.
+Native reference-Flock conformance and its source-invariant transport remain work.
 
-  Companion statements put the input relation through the `packedMLE` of the prefix-layout
-  components, and characterize the honest carrier by `sliceRel` on its rows or, equivalently,
-  `openingClaimRel` on its columns. `binius_batching_conforms` instantiates the theorem at
-  `biniusProfile` and the first-codeword relation. `compute_final_eq_value_eq_multiplier`
-  states the final sum-check check's equality value as the same shared `multiplier`, evaluated
-  at the sum-check challenges. The intermediate sum-check rounds and the FRI phases are out of
-  scope.
+## Other constructions
 
-  These statements identify the relations only. Acceptance fixes only the batched target, not
-  the carrier; that collision event is bounded by `compute_s0_collision_le`. The fixture
-  `failedCheck_aborts` pins that a failed check aborts.
-
-  Security of the DP24 phases is proved as follows.
-  - The shared verifiers (`scalarRoundOracleVerifier`, `messageRoundOracleVerifier`,
-    `Sumcheck.Structured.roundOracleVerifier`) abort on a failed check, so a rejected transcript
-    produces no output.
-  - Knowledge soundness assumes `AbstractOStmtIn.Functional`
-    (`Packing/Compatibility.lean`): an oracle statement is compatible with at most one packed
-    polynomial, so that polynomial is fixed before any challenge.
-  - Each phase's knowledge soundness is proved in the worst-case form
-    (`Verifier.rbrKnowledgeSoundnessWorstCaseWith`: every fixed transcript prefix, over the
-    fresh challenge alone, with the extractor and knowledge-state function named). The
-    existential worst-case and averaged forms are corollaries. These per-phase results are
-    sorry-free and axiom-clean under their stated hypotheses (`AbstractOStmtIn.Functional` and
-    `[NoZeroDivisors L]`).
-  - Batching: `batchingReduction_perfectCompleteness` and
-    `batchingOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_rbrExtractor`, at error `κ/|L|`
-    (`prob_exists_consistent_ne_le`).
-  - Sum-check rounds: `iteratedSumcheckOracleReduction_perfectCompleteness` and
-    `iteratedSumcheckOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_rbrExtractor`, at error
-    `2/|L|` per round.
-  - Final step: it outputs the claim `t'(r') = s'`, completeness is
-    `finalSumcheckOracleReduction_perfectCompleteness`, and it has no challenge
-    (`finalSumcheckOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_rbrExtractor` is vacuous).
-  - Composed completeness: `coreInteraction_perfectCompleteness` and
-    `FullRingSwitching.fullOracleReduction_perfectCompleteness` are proved through the
-    guarded-verifier composition theorems. The full reduction's completeness is stated at the
-    strict relations (`AbstractOStmtIn.strictView`, honest compatibility).
-  - Composed knowledge soundness, sorry-free and axiom-clean under the stated hypotheses: the core
-    interaction (`SumcheckPhase.coreInteraction_rbrKnowledgeSoundnessWorstCase`) and batching
-    followed by it (`FullRingSwitching.batchingCore_rbrKnowledgeSoundnessWorstCase`) compose the
-    phase theorems through the guarded worst-case composition theorems
-    (`Verifier.append_rbrKnowledgeSoundnessWorstCaseWith_of_guarded_first`,
-    `Verifier.seqCompose_rbrKnowledgeSoundnessWorstCase_of_guarded`, and their `OracleVerifier`
-    wrappers). Each verifier is guarded by its own checks (`SumcheckPhase.sumcheckLoopGuardedForm`,
-    `SumcheckPhase.coreInteractionGuardedForm`, `FullRingSwitching.batchingCoreGuardedForm`,
-    transported to the converted oracle verifiers by `Verifier.GuardedForm.ofEq`). The averaged
-    `coreInteraction_rbrKnowledgeSoundness` and `batchingCore_rbrKnowledgeSoundness` are
-    corollaries.
-  - The full composite, sorry-free and axiom-clean **given a worst-case opening**:
-    `FullRingSwitching.fullOracleVerifier_rbrKnowledgeSoundnessWorstCase` additionally takes
-    `hPCS : mlIOPCS.RbrKnowledgeSoundWorstCase`, which says the downstream opening's verifier is
-    worst-case round-by-round knowledge sound (`OracleProof.rbrKnowledgeSoundnessWorstCase`) at the
-    relation and error of its averaged field. Its averaged form is
-    `FullRingSwitching.fullOracleVerifier_rbrKnowledgeSoundness_of_worst_case`. The hypotheses
-    hold together: `ArkLibTest/ProofSystem/RingSwitching/Conformance/BiniusComposition.lean`
-    (`full_concrete`) closes the composite at the GF(4)/GF(2) fixture with the zero-round opening
-    of `Conformance/DirectOpening.lean`, which reads the polynomial from its oracle.
-    `MLIOPCS.RbrKnowledgeSoundWorstCase` is a hypothesis on an `MLIOPCS`, not a replacement of its
-    averaged `rbrKnowledgeSoundness` field: worst-case implies averaged
-    (`OracleProof.rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness`, which also fills
-    the averaged field of an instance that proves the worst-case form). The implication runs in
-    one direction only (the note on the worst-case-per-prefix variants in
-    `OracleReduction/Security/RoundByRound.lean`), so an opening whose knowledge soundness depends
-    on averaging is still an `MLIOPCS`.
-  - The full composite **under a plain `MLIOPCS`** stays conditional:
-    `FullRingSwitching.fullOracleVerifier_rbrKnowledgeSoundness` uses only the averaged
-    `MLIOPCS.rbrKnowledgeSoundness` contract, so it applies the admitted
-    `OracleVerifier.append_rbrKnowledgeSoundness`. That contract's statement is flagged as not
-    derivable from its hypotheses (`Composition/Sequential/Append/Security.lean`), so this is
-    unverified statement debt.
-  - Still conditional elsewhere, on other admitted lemmas: scalar (non-round-by-round) knowledge
-    soundness of any composite would go through the admitted
-    `Verifier.rbrKnowledgeSoundness_implies_knowledgeSoundness` (`Security/Implications.lean`).
-    Binary Basefold's actual core-and-query composite is in `BinaryBasefold/General.lean`, with
-    strict honestly encoded inputs for perfect completeness and the relaxed relation for
-    worst-case/averaged RBR soundness. The separate fused FRI-Binius core/full route remains the
-    R4 gap, tracked by [#1286](https://github.com/Verified-zkEVM/ArkLib/issues/1286). In the generic
-    sum-check (`Sumcheck/Spec/`), the full protocol's
-    `Sumcheck.Spec.oracleVerifier_rbrKnowledgeSoundness` applies the admitted
-    `OracleVerifier.seqCompose_rbrKnowledgeSoundness`, and the single round's
-    `Sumcheck.Spec.SingleRound.oracleVerifier_rbrKnowledgeSoundness` applies the admitted
-    `OracleVerifier.liftContext_rbr_knowledgeSoundness`.
 - **Hachi §3.1 trace head** ([`../papers/NOZ26.md`](../papers/NOZ26.md),
   `Commitments/Functional/Hachi/TraceHead/`): `L = R_q`,
   `A = R_q`, `φ₀ = id`, `φ₁ = σ₋₁`, `β = ψ` (Theorem 2). The carrier is `L` itself, so for
@@ -245,7 +129,7 @@ be a field.
   through `CMlPolynomial.equivMvPolynomialDeg1` (`TraceHead/Coefficients.lean`):
   - the packing data is `PackingData.ofBaseOpening` of `ψ`: the fixed subring is the opening
     algebra, with one opening coordinate (`ιE = Unit`), and the shared transpose is `ψ` itself;
-  - `traceHeadLayout` instantiates the `ScalarHead.ClaimLayout` contract, splitting the
+  - `traceHeadLayout` instantiates the `ClaimLayout` contract, splitting the
     **monomial coefficients** of the packed variables (not the Boolean-restriction
     `packedSuffixLayout`); its `reconstruct` is Hachi's own proof (`evalSplit_eq_eval` and the
     evaluation bridge);
@@ -282,32 +166,14 @@ be a field.
 
 ## Main ArkLib Touchpoints
 
-- [`../../../ArkLib/ProofSystem/RingSwitching/Basic.lean`](../../../ArkLib/ProofSystem/RingSwitching/Basic.lean) — the family taxonomy umbrella.
-- [`../../../ArkLib/ProofSystem/RingSwitching/RoundVerifiers.lean`](../../../ArkLib/ProofSystem/RingSwitching/RoundVerifiers.lean) — the shared check-then-update round verifiers.
-- [`../../../ArkLib/ProofSystem/RingSwitching/Transport.lean`](../../../ArkLib/ProofSystem/RingSwitching/Transport.lean) — the shared claim-transport algebra (umbrella for `Transport/`).
-- [`../../../ArkLib/ProofSystem/RingSwitching/Packing/Profile.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/Profile.lean) — the packing abstraction.
-- [`../../../ArkLib/ProofSystem/RingSwitching/Packing/Coordinates.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/Coordinates.lean) — independent packing and opening bases, coordinate transpose.
-- [`../../../ArkLib/ProofSystem/RingSwitching/Packing/Relations.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/Relations.lean) — opening, slice and batched-sumcheck relations.
-- [`../../../ArkLib/ProofSystem/RingSwitching/Packing/Batching.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/Batching.lean) — batching strategies with proved collision bounds.
-- [`../../../ArkLib/ProofSystem/RingSwitching/Packing/DerivedBatching.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/DerivedBatching.lean) — conditional fixed-list separation for publicly derived slices of the same packed source.
-- [`../../../ArkLib/ProofSystem/RingSwitching/Packing/Algebra.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/Algebra.lean) — `packMLE`, the tensor-product constructor `tensorProductProfile`, the DP24 verifier subroutines.
-- [`../../../ArkLib/ProofSystem/RingSwitching/Packing/Prelude.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/Prelude.lean) — DP24 protocol vocabulary and relations.
-- [`../../../ArkLib/ProofSystem/RingSwitching/Packing/Compatibility.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/Compatibility.lean) — the binding hypothesis `AbstractOStmtIn.Functional`.
-- [`../../../ArkLib/ProofSystem/RingSwitching/Packing/General.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/General.lean) — the full DP24 reduction + security theorems.
-- [`../../../ArkLib/ProofSystem/RingSwitching/Lift/Presentation.lean`](../../../ArkLib/ProofSystem/RingSwitching/Lift/Presentation.lean) — the quotient-presentation abstraction + lift algebra.
-- [`../../../ArkLib/ProofSystem/RingSwitching/Lift/Reduction.lean`](../../../ArkLib/ProofSystem/RingSwitching/Lift/Reduction.lean) — the generic `Lift` construction + CWSS.
-- [`../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/CommittedScalar.lean`](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/CommittedScalar.lean) — the committed-scalar protocol seam.
-- [`../../../ArkLib/ProofSystem/Binius/FRIBinius/Prelude.lean`](../../../ArkLib/ProofSystem/Binius/FRIBinius/Prelude.lean) — `biniusProfile`, the concrete instantiation.
+- Pure coordinates and interpolation: `ProofSystem/RingSwitching/Packing/Coordinates.lean`,
+  `Relations.lean`, `Multiplier.lean`, `ClaimLayout.lean`, `ClaimLayout/Quirky.lean`.
+- Operational and certified batching: `Packing/Batching.lean`, `DerivedBatching.lean`.
+- Shared protocol: `Packing/Head.lean`, `ProductSumcheck/`, `RingSwitch.lean`.
+- Tensor-prefix and Binius consumer: `Packing/TensorPrefix.lean`,
+  `Binius/FRIBinius/RingSwitch.lean`, `Binius/BinaryBasefold/Opening.lean`.
+- Deterministic trace: `Commitments/Functional/Hachi/TraceHead/`.
+- Quotient lifting: `ProofSystem/RingSwitching/Lift/`.
 
-## Notes
-
-- The phase completeness theorems are proved for their stated compatibility relations.
-  `FullRingSwitching.fullOracleReduction_perfectCompleteness` is proved at strict oracle
-  compatibility, using the downstream opening's completeness premise. Under
-  `AbstractOStmtIn.Functional`, worst-case round-by-round knowledge soundness is proved at
-  relaxed compatibility for the phases, the relocation core, and batching followed by that core.
-  The full RBR theorem additionally requires a worst-case downstream opening. The averaged-only
-  composition and the conversion from RBR to ordinary knowledge soundness still use admitted
-  framework results.
-- Protocol Schwartz–Zippel bounds assume `[NoZeroDivisors L]` over a finite nontrivial
-  commutative ring. Rings with zero divisors need a different soundness argument and error bound.
+Implementation progress and landing dependencies belong in tracker #1286 and the public design
+roadmap, rather than duplicated status inventories on this concept page.

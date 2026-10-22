@@ -52,7 +52,7 @@ Ring-switching layer:
   coordinate-wise special soundness into `relPolyEval`; its read-back is the shared
   `CheckedObservation`. Its coefficient packing is the shared `PackingData.packedMLE` (at
   `PackingData.ofBaseOpening` of `ψ`, one opening coordinate) of a monomial-coefficient
-  `ScalarHead.ClaimLayout`, transported from CompPoly's `CMlPolynomial` to `MvPolynomial`, and its
+  `ClaimLayout`, transported from CompPoly's `CMlPolynomial` to `MvPolynomial`, and its
   conformance theorem states the accepting condition through the shared `sliceRel`. §3.1 exercises
   only the packing, evaluation and opening part of the shared layer (no batching, multiplier or
   sumcheck), so the reuse is small at the proof level and real at the statement level.

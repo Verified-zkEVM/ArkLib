@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
 
-import ArkLib.ProofSystem.RingSwitching.Packing.ScalarHead.Quirky
+import ArkLib.ProofSystem.RingSwitching.Packing.ClaimLayout.Quirky
 import Mathlib.Algebra.Algebra.Pi
 import Mathlib.LinearAlgebra.StdBasis
 import Mathlib.Algebra.Field.ZMod
@@ -24,7 +24,7 @@ noncomputable section
 namespace RingSwitching.Packing.Tests.Quirky
 
 open MvPolynomial Module
-open RingSwitching.Packing.ScalarHead
+open RingSwitching.Packing.ClaimLayout
 
 local instance : Fact (Nat.Prime 5) := ⟨by decide⟩
 
@@ -64,12 +64,12 @@ abbrev quirky := quirkyLayout quirkyData 1 1 skipNodes (Equiv.refl _)
 
 /-- The unusual skipped/extra order selects the table value at its retained Boolean point. -/
 theorem quirky_component_order :
-    eval (fun _ => (0 : ZMod 5))
+    MvPolynomial.eval (fun _ => (0 : ZMod 5))
       (quirky.components quirkySource ((fun _ => 1), 0)).val = 2 ∧
-    eval (fun _ => (0 : ZMod 5))
+    MvPolynomial.eval (fun _ => (0 : ZMod 5))
       (quirky.components quirkySource ((fun _ => 0), 1)).val = 3 := by
   constructor <;>
-    change eval (fun _ => (0 : ZMod 5)) (MLE _) = _ <;>
+    change MvPolynomial.eval (fun _ => (0 : ZMod 5)) (MLE _) = _ <;>
     rw [show (fun _ : Fin 1 => (0 : ZMod 5)) =
       ((fun _ : Fin 1 => (0 : Fin 2)) : Fin 1 → ZMod 5) from rfl, MLE_eval_zeroOne] <;>
     norm_num [quirkySource]

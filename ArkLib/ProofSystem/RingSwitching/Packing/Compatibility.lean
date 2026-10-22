@@ -6,6 +6,7 @@ Authors: Chung Thai Nguyen
 module
 
 public import ArkLib.ProofSystem.RingSwitching.Packing.Prelude
+public import ArkLib.ProofSystem.RingSwitching.Packing.PackedCommitment
 
 /-!
 # Functional commitment compatibility
@@ -24,6 +25,14 @@ compatibility inherits the property from the relaxed relation
 namespace RingSwitching
 
 variable {L : Type} [CommRing L] {ℓ : ℕ}
+
+/-- The packed-polynomial commitment relation carried by an abstract oracle interface. -/
+def AbstractOStmtIn.toPackedCommitment (a : AbstractOStmtIn L ℓ) :
+    Packing.PackedCommitment L ℓ where
+  ιC := a.ιₛᵢ
+  OStmt := a.OStmtIn
+  Oᵢ := a.Oₛᵢ
+  commitsTo ost p := a.initialCompatibility (p, ost)
 
 /-- One oracle statement is compatible with at most one polynomial. -/
 def AbstractOStmtIn.Functional (a : AbstractOStmtIn L ℓ) : Prop :=

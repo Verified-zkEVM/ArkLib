@@ -178,7 +178,8 @@ theorem challenge_dependent_list_collides :
   (SampleableType.prEvent_uniformSample_eq_one_iff _).mpr fun γ => by
     refine ⟨![-γ, 1], Finset.mem_singleton_self _, fun h => ?_, ?_⟩
     · simpa using congrFun h 1
-    · simp [linear, BatchingStrategy.gammaPowers, Fin.sum_univ_two]
+    · simp [linear, BatchingStrategy.gammaPowers, BatchingRule.gammaPowers,
+        Fin.sum_univ_two]
 
 /-- The one-element list bound `1 * (1/5)` fails for the list chosen after the challenge. -/
 theorem challenge_dependent_list_exceeds_bound :

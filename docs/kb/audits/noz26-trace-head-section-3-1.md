@@ -37,7 +37,7 @@ bridge `CMlPolynomial.eval_eq_eval_toMvPolynomial` (`ToCompPoly/Multilinear/Basi
   subring `B` with its one-element basis. The retained point is `B`-valued, so there is one
   opening coordinate (`ιE = Unit`), and the shared transpose of a family of opening values is its
   image under `ψ` (`traceHeadData_transpose`, `TraceHead/Conformance.lean`).
-- **Layout.** `traceHeadLayout e` instantiates the `ScalarHead.ClaimLayout` contract. Its
+- **Layout.** `traceHeadLayout e` instantiates the `ClaimLayout` contract. Its
   components are the monomial-coefficient rows of the final `α − κ` variables (`coefficientRows`,
   column `j` of `toMatrix`), transported to `MvPolynomial`, and its weights are the monomial basis
   at `xp`. Its `reconstruct` is Hachi's own proof, from `evalSplit_eq_eval` and the evaluation

@@ -28,7 +28,7 @@ component decomposition, so a protocol head keeps the original scalar relation a
 
 noncomputable section
 
-namespace RingSwitching.Packing.ScalarHead
+namespace RingSwitching.Packing
 
 open MvPolynomial
 
@@ -51,6 +51,8 @@ structure ClaimLayout where
   /-- The weighted component evaluations reconstruct the source evaluation. -/
   reconstruct : ∀ q p, eval q p =
     ∑ i, weight q i * MvPolynomial.aeval (point q) (components p i).val
+
+namespace ClaimLayout
 
 /--
 Pack the prefix coordinates and retain the suffix, with an explicit basis-index
@@ -82,6 +84,8 @@ def packedSuffixLayout (k : ℕ) (index : data.ιP ≃ (Fin k → Fin 2)) : Clai
     rw [aeval_append_splitLast]
     exact (index.sum_comp _).symm
 
-end RingSwitching.Packing.ScalarHead
+end ClaimLayout
+
+end RingSwitching.Packing
 
 end
