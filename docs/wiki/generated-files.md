@@ -45,3 +45,43 @@ Edit the source of truth, not the output.
   content.
 - Generated site and blueprint output are for review and deployment, not authoring.
 - If a path looks derived, confirm its source of truth before editing it.
+
+## Reusing local documentation caches
+
+The pinned local doc-gen4 backend stores collected module data in
+`.lake/build/api-docs.db`; its `.lake/build/doc-data/` files include completion markers and
+build traces. A bibliography change can invalidate dependency `docInfo` facets as well as
+ArkLib's own docs, so a warm Lean build can still need substantial documentation regeneration.
+When reusing a completed documentation cache between matching dependency/bibliography snapshots,
+wait for all documentation writers in both the source and destination to finish. Take a
+consistent SQLite backup, including committed WAL pages, together with its matching module/core
+`doc-data/` artifacts and bibliography data.
+HTML generation has separate `*.docs_built` and
+`*.docsHeader_built` completion files, with matching `.hash` and `.trace` files. For an identical
+source snapshot, copy their HTML, static assets and `doc-manifest.json` too, or omit/quarantine
+those exact HTML-marker families so doc-gen4 regenerates local outputs. Invalidate those HTML
+markers when source content or the root-module set changes, even if old HTML exists, to ensure
+a fresh rendering and index from the updated database. Preserve the module/core `*.doc` markers
+and bibliography data; broad `*.doc*` invalidation discards the reusable module-data cache.
+Completion markers alone supply neither database rows nor HTML/static files.
+
+Use isolated writable caches for concurrent builds. Copied Lean traces can retain absolute source
+paths from the former worktree. When changing source after relocation, check that affected module
+traces refer to the current source path; stale foreign inputs can leave an incompatible compiled
+module in use. With all writers stopped, quarantine those affected module traces and rebuild them
+from the current source. Do not rewrite generated trace metadata. For a stack of related slices,
+retaining one worktree path allows later validation runs to reuse completed artifacts without
+concurrent writers.
+
+A copied documentation database can also retain retired module rows. Its global name lookup can
+then mix obsolete and current declaration documentation even when the generated module manifest
+matches the current imports. Check affected declaration pages against their source, including
+structure fields. Use a matching clean snapshot or regenerate the database with the pinned backend.
+If using its module-deletion API to prune an isolated, backed-up copy, first prove each module is
+absent from both source and registered files and that no retained module imports it. Verify database
+integrity, foreign keys and unchanged retained rows before installing the consistent snapshot.
+Before rerendering, quarantine each retired module's `declaration-data-{module}.bmp`,
+`backrefs-{module}.json` and stale pages, along with the exact HTML completion markers. The backend
+merges those per-module index and backreference files independently of its current import/database
+closure. Preserve current module/core data. Overlay site assembly can retain removed pages, so
+check its copy too. Do not patch rendered HTML or trace data.
