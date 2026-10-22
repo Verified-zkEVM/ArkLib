@@ -83,7 +83,7 @@ structure SubfieldCaWitnessData
 omit [Fintype F] [DecidableEq F] in
 private theorem exists_not_mem_proper_subfield (B : Subfield F) (hB : B < ⊤) :
     ∃ a : F, a ∉ B := by
-  obtain ⟨a, _ha_top, ha_not⟩ := SetLike.exists_of_lt hB
+  obtain ⟨a, _ha_top, ha_not⟩ := IsConcreteLE.exists_of_lt hB
   exact ⟨a, ha_not⟩
 
 omit [Fintype F] [DecidableEq F] in

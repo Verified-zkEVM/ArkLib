@@ -193,7 +193,7 @@ lemma rank_eq_iff_det_ne_zero {U : Matrix (Fin n) (Fin n) F} :
   rw[
     ← isUnit_iff_ne_zero,
     ← Matrix.isUnit_iff_isUnit_det,
-    ←  Matrix.linearIndependent_cols_iff_isUnit,
+    ←  Matrix.linearIndependent_col_iff_isUnit,
     Matrix.rank_eq_finrank_span_cols,
     linearIndependent_iff_card_eq_finrank_span,
     Set.finrank
