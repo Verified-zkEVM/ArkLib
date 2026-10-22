@@ -12,10 +12,9 @@ public import ArkLib.ProofSystem.RingSwitching.Packing.SumcheckPhase
 /-!
 # DP24 conformance to shared packing
 
-These library lemmas express the production DP24 batching relations, verifier checks and final
-multiplier through `PackingData` and its prefix claim layout. They cover the shared DP24
-construction. Binius reuses its batching verifier; Binius currently has separate sumcheck and
-final verifier copies.
+The batching relations, reconstruction check and final multiplier are expressed through
+`PackingData` and its prefix claim layout. The tensor carrier transports the component message
+through the profile column equivalence.
 -/
 
 @[expose] public section
@@ -112,7 +111,7 @@ abbrev acceptedStatement (stmt : BatchingStmtIn L ℓ) (z : P.A) (c : Fin κ →
     Statement (L := L) (ℓ := ℓ') (RingSwitchingBaseContext κ L K ℓ P) 0 :=
   BatchingPhase.batchingStmtOut κ L K P ℓ ℓ' stmt z c
 
-/-- The production batching verifier is the shared check-then-update scalar-round verifier with
+/-- The batching verifier is the shared check-then-update scalar-round verifier with
 the column check and the accepted statement `acceptedStatement`. -/
 theorem oracleVerifier_eq_scalarRoundOracleVerifier [DecidableEq L]
     (aOStmtIn : AbstractOStmtIn L ℓ') :
