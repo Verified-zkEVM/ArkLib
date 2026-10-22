@@ -6,7 +6,7 @@ Authors: aryaethn
 module
 
 public import Mathlib.Algebra.BigOperators.Fin
-public import Mathlib.Tactic.Ring
+public import Mathlib.Algebra.Order.Ring.GeomSum
 
 /-!
 # Sums of powers of two weighted by bits
@@ -24,18 +24,14 @@ namespace Nat
 /-- A vector of bits `b₀, …, b_{B-1} ∈ {0, 1}` encodes a number below `2 ^ B`. -/
 theorem sum_pow_two_mul_lt {B : ℕ} (b : Fin B → ℕ) (hb : ∀ k, b k ≤ 1) :
     ∑ k : Fin B, 2 ^ (k : ℕ) * b k < 2 ^ B := by
-  induction B with
-  | zero => simp
-  | succ B ih =>
-    rw [Fin.sum_univ_succ]
-    have h := ih (fun k => b k.succ) (fun k => hb _)
-    have h0 := hb 0
-    have hs : ∑ k : Fin B, 2 ^ ((k.succ : Fin (B + 1)) : ℕ) * b k.succ =
-        2 * ∑ k : Fin B, 2 ^ (k : ℕ) * b k.succ := by
-      rw [mul_sum]
-      exact sum_congr rfl fun k _ => by simp [pow_succ]; ring
-    rw [hs, pow_succ]
-    simp only [Fin.val_zero, pow_zero, one_mul]
-    omega
+  have h : ∑ k : Fin B, 2 ^ (k : ℕ) * b k =
+      ∑ k ∈ (univ.filter fun k : Fin B => b k = 1).map Fin.valEmbedding, 2 ^ k := by
+    rw [sum_map, sum_filter]
+    refine sum_congr rfl fun k _ => ?_
+    rcases Nat.le_one_iff_eq_zero_or_eq_one.1 (hb k) with h0 | h1 <;> simp [*]
+  rw [h]
+  exact Nat.geomSum_lt le_rfl fun k hk => by
+    obtain ⟨a, _, rfl⟩ := mem_map.1 hk
+    exact a.isLt
 
 end Nat

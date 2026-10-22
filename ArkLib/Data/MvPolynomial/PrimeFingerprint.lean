@@ -6,6 +6,7 @@ Authors: aryaethn
 module
 
 public import Mathlib.Algebra.BigOperators.Associated
+public import Mathlib.Algebra.BigOperators.Expect
 public import Mathlib.Algebra.MvPolynomial.SchwartzZippel
 public import Mathlib.Analysis.SpecialFunctions.Log.Base
 public import Mathlib.Data.Nat.Log
@@ -45,6 +46,7 @@ prime-divisor term to the `⌊log₂ q_min⌋` form of [BGKLSW26].
 @[expose] public section
 
 open Finset
+open scoped BigOperators
 
 namespace MvPolynomial
 
@@ -118,8 +120,9 @@ points of `𝔽_qᵐ` that are zeros of `h mod q`, averaged over `q ∈ P`, is a
 theorem avg_zeroCountMod_div_le {h : MvPolynomial (Fin m) ℤ} (hh : h ≠ 0) {d M qmin : ℕ}
     (hd : h.totalDegree ≤ d) (hM : ∀ s, (h.coeff s).natAbs ≤ M) {P : Finset ℕ}
     (hP : ∀ q ∈ P, q.Prime) (hq2 : 2 ≤ qmin) (hqmin : ∀ q ∈ P, qmin ≤ q) :
-    (∑ q ∈ P, (zeroCountMod h q : ℝ) / (q : ℝ) ^ m) / #P ≤
+    𝔼 q ∈ P, (zeroCountMod h q : ℝ) / (q : ℝ) ^ m ≤
       (Nat.log qmin M : ℝ) / #P + (d : ℝ) / qmin := by
+  rw [expect_eq_sum_div_card]
   rcases P.eq_empty_or_nonempty with rfl | hPne
   · simp only [sum_empty, card_empty, Nat.cast_zero, div_zero, zero_add]
     positivity
@@ -166,7 +169,7 @@ theorem avg_zeroCountMod_div_le {h : MvPolynomial (Fin m) ℤ} (hh : h ≠ 0) {d
 theorem avg_zeroCountMod_div_le_logb {h : MvPolynomial (Fin m) ℤ} (hh : h ≠ 0) {d M qmin : ℕ}
     (hd : h.totalDegree ≤ d) (hM : ∀ s, (h.coeff s).natAbs ≤ M) {P : Finset ℕ}
     (hP : ∀ q ∈ P, q.Prime) (hq2 : 2 ≤ qmin) (hqmin : ∀ q ∈ P, qmin ≤ q) :
-    (∑ q ∈ P, (zeroCountMod h q : ℝ) / (q : ℝ) ^ m) / #P ≤
+    𝔼 q ∈ P, (zeroCountMod h q : ℝ) / (q : ℝ) ^ m ≤
       Real.logb 2 M / (Nat.log 2 qmin * #P) + (d : ℝ) / qmin := by
   refine (avg_zeroCountMod_div_le hh hd hM hP hq2 hqmin).trans ?_
   have hM1 : 1 ≤ M := by

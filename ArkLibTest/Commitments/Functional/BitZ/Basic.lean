@@ -18,6 +18,7 @@ hypothesis, a ring that is not a field, and a prime-divisor count where the boun
 -/
 
 open BitZ MvPolynomial Matrix Finset
+open scoped BigOperators
 
 /-! ### Exponent lift in `ZMod 7`, where `3` generates `(ZMod 7)ˣ` (order `6`) -/
 
@@ -97,9 +98,8 @@ example : #{q ∈ ({2, 3, 5} : Finset ℕ) |
   · rintro (rfl | rfl) <;> exact ⟨by simp, by decide⟩
 
 /-- The averaged bound applied to `6 ∈ ℤ` (`d = 0`, `M = 6`) and the primes `{2, 3, 5}`. -/
-example : (∑ q ∈ ({2, 3, 5} : Finset ℕ),
-      (zeroCountMod (C 6 : MvPolynomial (Fin 1) ℤ) q : ℝ) / (q : ℝ) ^ 1) /
-        #({2, 3, 5} : Finset ℕ) ≤
+example : 𝔼 q ∈ ({2, 3, 5} : Finset ℕ),
+      (zeroCountMod (C 6 : MvPolynomial (Fin 1) ℤ) q : ℝ) / (q : ℝ) ^ 1 ≤
     (Nat.log 2 6 : ℝ) / #({2, 3, 5} : Finset ℕ) + ((0 : ℕ) : ℝ) / (2 : ℕ) :=
   avg_zeroCountMod_div_le (C_ne_zero.2 (by norm_num)) (totalDegree_C _).le
     (fun s => by by_cases hs : s = 0 <;> simp [hs])
