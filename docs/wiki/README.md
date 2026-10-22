@@ -26,6 +26,8 @@ For reusable cross-cutting workflows that are not tied to one repo area, see
   correlated-agreement, and mutual-correlated-agreement APIs and their numeric types.
 - [`interaction-naming.md`](interaction-naming.md) - intrinsic meanings and migration of typed
   interaction sources, named oracle contexts, and sequential composition.
+- [`ring-switching-consumers.md`](ring-switching-consumers.md) - instantiate the packing,
+  batching, shared protocol and opening contracts for a consumer.
 - [`sequential-composition.md`](sequential-composition.md) - legacy theorem selection for shared-state
   execution, completeness, and round-by-round soundness.
 - [`probability-conventions.md`](probability-conventions.md) - namespace and export conventions
@@ -52,6 +54,7 @@ For reusable cross-cutting workflows that are not tied to one repo area, see
   - `proximity-error-conventions.md` for the public APIs and numeric types of the proximity-error
     notions in `CodingTheory/ProximityGap/`.
   - `interaction-naming.md` for typed interaction API meanings and name migrations.
+  - `ring-switching-consumers.md` for ring-switching consumer instantiation.
   - `sequential-composition.md` for legacy composition APIs and their hypotheses.
   - `probability-conventions.md` for namespace/export conventions in `Data/Probability/`.
   - `porting-conventions.md` for port history, naming, layout and the port review checklist.
