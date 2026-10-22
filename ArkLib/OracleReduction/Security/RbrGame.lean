@@ -37,7 +37,7 @@ per-fixed-transcript bounds `∀ tr, Pr{let c ← $ᵗ (pSpec.Challenge i)}[even
 
 These statements are `ProtocolSpec`-specific and so live in ArkLib core, but their *content* is
 not: `challengeQueryImpl` is only `fun q => $ᵗ _`, i.e. "answer each query with a uniform sample of
-its answer type", and `QueryImpl.addLift` is already VCV-io's. No notion of protocol, transcript or
+its answer type", and `QueryImpl.addLift` is already VCVio's. No notion of protocol, transcript or
 round enters any proof below — they are `prEvent_bind_le_of_forall_le` plus a `simulateQ`
 normalisation. Generalising the challenge oracle to an arbitrary uniform-answer `QueryImpl` would
 let the mixture bounds move upstream, leaving thin specialisations here. The `loggingOracle` lemmas
