@@ -19,13 +19,23 @@ BitZ ([BGKLSW26], §2.1 Steps 4–5 and Phase 3 of Construction 4.4) turns an in
   `∏ᵢ ((g ^ γᵢ - 1) · bᵢ + 1) = g ^ μ`.
 
 The left-hand side is a product of *bit-dependent* factors, so it is a polynomial expression in the
-committed bits, which is what the grand-product argument proves. This file contains the two
-elementary facts that make the translation sound:
+committed bits, which is what the grand-product argument proves. This file contains the
+elementary facts that make the translation sound.
 
-* `BitZ.prod_bitFactor_eq_pow`: for bits `b`, the product equals `g ^ ⟨γ, b⟩`;
-* `BitZ.inner_eq_of_pow_eq_pow`: if every integer in sight is below the order of `g`, equality in
-  the exponent of `g` implies equality over `ℕ` (no wrap-around, the "overflow" condition
-  `ℓ₁ · max P < |𝔽_{2^ν}| - 1` of [BGKLSW26, Theorem 4.7]).
+## Main statements
+
+* `BitZ.prod_bitFactor_eq_pow`: for bits `b`, the product equals `x ^ ⟨γ, b⟩` in any commutative
+  ring.
+* `BitZ.eq_sum_mul_of_pow_eq_pow`: if every integer in sight is below the order of `g`, equality in
+  the exponent of `g` implies equality over `ℕ` (no wrap-around).
+* `BitZ.prod_bitFactor_eq_pow_iff_of_lt_orderOf`: the iff `∏ᵢ ((x ^ γᵢ - 1) · bᵢ + 1) = x ^ μ ↔
+  ⟨γ, b⟩ = μ` in any commutative ring, as long as `|ι| · qMax < orderOf x`.
+* `BitZ.prod_bitFactor_eq_pow_iff`: the same iff in a finite field with `x` a generator of the
+  units, where `orderOf x = |F| - 1`. This is the statement BitZ uses.
+
+The paper's hypothesis `max P < (|𝔽_{2^ν}| - 1) / ℓ₁` of [BGKLSW26, Theorem 4.7] gives
+`ℓ₁ · q < orderOf g`, which is stronger than the condition `|ι| · qMax < orderOf g` used here with
+`qMax = q - 1`.
 
 ## References
 
@@ -60,21 +70,11 @@ end Product
 
 section Overflow
 
-variable {G : Type*} [Monoid G]
-
-/-- Equality of powers of `g` between two exponents below `orderOf g` is equality of exponents. -/
-theorem eq_of_pow_eq_pow_of_lt_orderOf {g : G} {a b : ℕ} (ha : a < orderOf g) (hb : b < orderOf g)
-    (h : g ^ a = g ^ b) : a = b :=
-  pow_injOn_Iio_orderOf ha hb h
-
-variable {ι : Type*} [Fintype ι]
+variable {G : Type*} [Monoid G] {ι : Type*} [Fintype ι]
 
 /-- **No overflow.** Let `γᵢ ≤ qMax` and let `b` be a vector of bits. If `μ ≤ |ι| · qMax` and
-`|ι| · qMax < orderOf g`, then `g ^ μ = g ^ ∑ᵢ γᵢ bᵢ` already forces `μ = ∑ᵢ γᵢ bᵢ` over `ℕ`.
-
-The paper's hypothesis `max P < (|𝔽_{2^ν}| - 1) / ℓ₁` gives `ℓ₁ · q < orderOf g`, which is
-stronger than the `|ι| · qMax < orderOf g` used here with `qMax = q - 1`. -/
-theorem inner_eq_of_pow_eq_pow {g : G} {qMax μ : ℕ} (γ b : ι → ℕ) (hγ : ∀ i, γ i ≤ qMax)
+`|ι| · qMax < orderOf g`, then `g ^ μ = g ^ ∑ᵢ γᵢ bᵢ` forces `μ = ∑ᵢ γᵢ bᵢ` over `ℕ`. -/
+theorem eq_sum_mul_of_pow_eq_pow {g : G} {qMax μ : ℕ} (γ b : ι → ℕ) (hγ : ∀ i, γ i ≤ qMax)
     (hb : ∀ i, b i ≤ 1) (hμ : μ ≤ Fintype.card ι * qMax) (hord : Fintype.card ι * qMax < orderOf g)
     (h : g ^ μ = g ^ ∑ i, γ i * b i) : μ = ∑ i, γ i * b i := by
   have hsum : ∑ i, γ i * b i ≤ Fintype.card ι * qMax := by
@@ -82,9 +82,25 @@ theorem inner_eq_of_pow_eq_pow {g : G} {qMax μ : ℕ} (γ b : ι → ℕ) (hγ 
           calc γ i * b i ≤ γ i * 1 := Nat.mul_le_mul_left _ (hb i)
             _ ≤ qMax := by simpa using hγ i
       _ = Fintype.card ι * qMax := by simp
-  exact eq_of_pow_eq_pow_of_lt_orderOf (lt_of_le_of_lt hμ hord) (lt_of_le_of_lt hsum hord) h
+  exact pow_injOn_Iio_orderOf (hμ.trans_lt hord) (hsum.trans_lt hord) h
 
 end Overflow
+
+section Iff
+
+variable {A : Type*} [CommRing A] {ι : Type*} [Fintype ι]
+
+/-- **The exponent lift is an iff below the order.** For `x` in a commutative ring, bits `b`,
+`γᵢ ≤ qMax`, `μ ≤ |ι| · qMax` and `|ι| · qMax < orderOf x`, the grand-product claim
+`∏ᵢ ((x ^ γᵢ - 1) · bᵢ + 1) = x ^ μ` holds if and only if `∑ᵢ γᵢ bᵢ = μ` over `ℕ`. -/
+theorem prod_bitFactor_eq_pow_iff_of_lt_orderOf {x : A} {qMax μ : ℕ} (γ b : ι → ℕ)
+    (hγ : ∀ i, γ i ≤ qMax) (hb : ∀ i, b i ≤ 1) (hμ : μ ≤ Fintype.card ι * qMax)
+    (hord : Fintype.card ι * qMax < orderOf x) :
+    ∏ i, ((x ^ γ i - 1) * (b i : A) + 1) = x ^ μ ↔ ∑ i, γ i * b i = μ := by
+  rw [prod_bitFactor_eq_pow x γ b hb]
+  exact ⟨fun h => (eq_sum_mul_of_pow_eq_pow γ b hγ hb hμ hord h.symm).symm, fun h => by rw [h]⟩
+
+end Iff
 
 section Field
 
@@ -99,13 +115,10 @@ theorem prod_bitFactor_eq_pow_iff {g : Fˣ} (hg : ∀ x, x ∈ Subgroup.zpowers 
     (hord : Fintype.card ι * qMax < Fintype.card F - 1) :
     ∏ i, (((g : F) ^ γ i - 1) * (b i : F) + 1) = (g : F) ^ μ ↔ ∑ i, γ i * b i = μ := by
   classical
-  have hord' : orderOf g = Fintype.card F - 1 := by
-    rw [orderOf_eq_card_of_forall_mem_zpowers hg, Nat.card_eq_fintype_card,
+  have hord' : orderOf (g : F) = Fintype.card F - 1 := by
+    rw [orderOf_units, orderOf_eq_card_of_forall_mem_zpowers hg, Nat.card_eq_fintype_card,
       Fintype.card_units]
-  rw [prod_bitFactor_eq_pow _ γ b hb]
-  refine ⟨fun h => ?_, fun h => by rw [h]⟩
-  have h' : g ^ μ = g ^ ∑ i, γ i * b i := Units.ext (by simpa using h.symm)
-  exact (inner_eq_of_pow_eq_pow γ b hγ hb hμ (hord' ▸ hord) h').symm
+  exact prod_bitFactor_eq_pow_iff_of_lt_orderOf γ b hγ hb hμ (hord' ▸ hord)
 
 end Field
 
