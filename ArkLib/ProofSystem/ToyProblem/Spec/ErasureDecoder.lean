@@ -26,9 +26,9 @@ The concrete result is for alphabet `A = F`, an injective evaluation domain
 code or folded-RS decoder.  Berlekamp--Welch, Gao, and Guruswami--Sudan are raw-error
 decoders and are neither needed nor used on this known-erasure path.
 
-## Cost (aspirational; unclocked per library convention)
+## Cost (aspirational; this decoder is unclocked)
 
-ArkLib has no cost harness. The executable path uses CompPoly's pinned v4.32.2
+This decoder has no cost harness. The executable path uses CompPoly's
 `CPolynomial` interpolation and a finite re-encoding check.  No formal field-operation
 bound, and in particular no generic `O((s n)^3)` claim, is made here.
 

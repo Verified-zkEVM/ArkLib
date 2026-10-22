@@ -145,7 +145,7 @@ VCVio already owns the semantics ArkLib should build on:
 | Handler algebra | construction, composition, linking, stateful execution, query-preserving laws | express source routing and substitution through these laws |
 | Instrumentation | tracing before/after a query, logging, caching, counting, weighted cost | reuse erasure, failure, support, and bound-transfer theorems |
 | Resources | query bounds, `ResourceProfile`, `QueryCost`, `CostModel` | refine with protocol labels; do not create a parallel ledger |
-| Probability | measure denotation and kernels; `evalSPMF` compatibility bridge | new observation boundaries use measures; legacy discrete games may retain `Pr[...]` |
+| Probability | measure denotation and kernels; `𝒟[…]` and `Pr{…}[…]` | observation boundaries use measures; the discrete `Pr[...]`/`evalSPMF` surface is retired (VCVio #836/#839, ArkLib #913) |
 | Responders | `ProbResponder`, oracle strategies and machines, wired runs | reuse for probabilistic interaction execution |
 | Complexity | ranked certificates, strict oracle-PPT witnesses, `HandlerCertificate` | keep backend-relative evidence explicit |
 | Reductions | `SecurityGame` and `ReductionWithCost` | reuse cost transforms; add error transport only when a client needs it |
