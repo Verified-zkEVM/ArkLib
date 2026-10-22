@@ -13,7 +13,7 @@ public import ArkLib.Commitments.Functional.Hachi.TraceHead.Conformance
 
 `Coefficients` packs the final variables' monomial coefficients over the fixed subring and states
 that packing in the shared `RingSwitching.Packing` layer: the shared `packedMLE` of a
-monomial-coefficient `ScalarHead.ClaimLayout` with one opening coordinate. `Coordinates` indexes
+monomial-coefficient `ClaimLayout` with one opening coordinate. `Coordinates` indexes
 `psi` by the monomials and turns the scaled trace equality into a coefficient inner product.
 `Protocol` sends one ring value, checks the scaled trace equality, and forwards the weak opening
 to `relPolyEval`; its read-back is a `CheckedObservation`. The head exercises only the packing,

@@ -157,7 +157,6 @@
   "Reduction.liftContext_completeness",
   "Reduction.liftContext_perfectCompleteness",
   "Reduction.liftContext_runWithLog",
-  "RingSwitching.FullRingSwitching.fullOracleVerifier_rbrKnowledgeSoundness",
   "STIR.proximity_gap",
   "SendSingleWitness.oracleReduction_completeness",
   "Spartan.Spec.oracleReduction.firstChallenge",

@@ -51,9 +51,11 @@ it does not establish security by itself.
   before transferring security claims.
 - [Spartan](ArkLib/ProofSystem/Spartan/Basic.lean) contains protocol components and admitted
   definitions. Completing the composed protocol and its security proofs remains work.
-- [Ring switching](ArkLib/ProofSystem/RingSwitching/) includes proved transport and lifting
-  results. Packing, batching, and Sumcheck-phase developments still contain admissions;
-  complete those obligations before claiming security of the full assembly.
+- [Ring switching](ArkLib/ProofSystem/RingSwitching/) provides shared packing, batching,
+  product-sumcheck and terminal phases with perfect completeness and worst-case round-by-round
+  knowledge soundness. DP24 instantiates these phases and composes with Binary Basefold.
+  Native reference-Flock conformance remains work.
+  The conversion to ordinary knowledge soundness remains admitted.
 
 ### FRI, STIR, and Binius
 
@@ -61,8 +63,10 @@ it does not establish security by itself.
   specifications and security developments. Batched FRI still has admitted obligations.
 - [STIR](ArkLib/ProofSystem/Stir/) has component results and an incomplete main-theorem chain.
   Further codeword-folding and WHIR work should state which protocol presentation it formalizes.
-- [Binius](ArkLib/ProofSystem/Binius/) includes Binary Basefold and FRI-Binius developments;
-  some core interaction and security proofs remain admitted.
+- [Binius](ArkLib/ProofSystem/Binius/) includes a Binary Basefold core, query verifier and full
+  protocol with perfect completeness and worst-case round-by-round knowledge soundness, proved
+  without local admissions. The ring-switching composite uses this backend. The fused FRI-Binius
+  core and full protocol remain to be formalized.
 
 Codeword folding in these protocols is distinct from Nova-style folding for incremental
 verifiable computation (IVC). IVC folding is a later direction, not a completed consequence of

@@ -63,7 +63,7 @@ theorem affine_success (a b γ : ZMod 5) :
       data.sumcheckClaimRel 1 r (linear.weight γ) ↔ a + γ * (a + b) = 0 := by
   rw [data.sumcheckClaimRel_iff_actualSlices, actualSlices_affine]
   simp [PackingData.derivedTarget, linear, BatchingStrategy.gammaPowers,
-    Fin.sum_univ_two, eq_comm]
+    BatchingRule.gammaPowers, Fin.sum_univ_two, eq_comm]
 
 theorem affine_incorrect_of_sum_one (a b : ZMod 5) (hab : a + b = 1) :
     ((0, r), data.unpack (affine a b)) ∉ data.openingClaimRel 1 := by
@@ -99,7 +99,7 @@ theorem q2_success (γ : ZMod 5) :
 /-- The nonconstant source `-1 + 2X` has nonzero honest component values `(-1,1)`. -/
 def honestClaims : data.ιP → data.E := fun _ => ![-1, 1]
 
-/-- The actual original opening relation holds for this nonzero family and packed source. -/
+/-- The original opening relation holds for this nonzero family and packed source. -/
 theorem honest_opening : ((honestClaims, r), data.unpack q1) ∈ data.openingClaimRel 1 := by
   rw [data.openingClaimRel_iff_transpose_actualSlices, actualSlices_affine]
   ext u

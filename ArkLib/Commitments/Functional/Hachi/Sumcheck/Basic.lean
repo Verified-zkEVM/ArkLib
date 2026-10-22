@@ -31,8 +31,8 @@ check. The layers differ elsewhere:
   challenge, and its verifier is a plain `Verifier` (the round polynomials go in the clear),
   not an `OracleVerifier`;
 * neither generic mode carries a coordinate-wise special-soundness proof to inherit (the
-  structured round's knowledge soundness is round-by-round, proved for the ring-switching
-  instance in `RingSwitching/Packing/SumcheckPhase.lean`).
+  structured round's knowledge soundness is round-by-round, as instantiated in
+  `ProofSystem/Binius/BinaryBasefold/Steps/Fold.lean`).
 
 ## Folder structure
 

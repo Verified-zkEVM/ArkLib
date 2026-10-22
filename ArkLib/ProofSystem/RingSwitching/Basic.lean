@@ -17,22 +17,28 @@ Umbrella for `ProofSystem/RingSwitching/`. "Ring switching" names several reduct
 move an evaluation or linear claim between a small ring and a large ring — so that each part
 of a proof system can run where it is cheap or sound: commit over the small ring, evaluate
 and open over a large extension; or state a relation over a structured quotient ring, check
-it inside a field. The constructions share *algebra*, not *protocol*; no single *protocol* in
-this library unifies Lift and Packing. Generic work on the Packing side is in progress and is
-intended to subsume the shared packing abstraction, but it does not subsume `Lift`, which is the
-[HMZ25] quotient-evaluation lift rather than a packing. The two construction families, one folder
-each:
+it inside a field. `Packing/RingSwitch` certifies a reusable scalar-to-product-sumcheck
+protocol over independent commutative algebras. `Lift` retains its own quotient-evaluation
+protocol and security interpretation. The two construction families have separate folders:
 
-1. **Packing** (`Packing/`) — small ring `B` → large ring `L`, `L` free of rank
-   `2^κ` over `B`. A basis identifies each `2^κ`-block of a `B`-multilinear's coefficients
-   with one `L`-element, so the polynomial *packs* into an `L`-multilinear in fewer
-   variables, and the claim about the original must be relocated onto the packed one. The
-   packing data is one shared abstraction (`RingSwitchingProfile`,
-   `Packing/Profile.lean`); the relocation is per-instance:
-   * **interactive relocation** (the protocol files of `Packing/`) — for an arbitrary
-     large-ring evaluation point: carrier message, batching challenge, dedicated packing
-     sumcheck; RBR knowledge soundness (`[NoZeroDivisors L]`). Consumed by
-     `ProofSystem/Binius/FRIBinius/` (this is [DP24]'s construction).
+1. **Packing** (`Packing/`) — `PackingData` gives independent finite bases of a packing
+   algebra and an opening algebra over a common commutative ring. A `ClaimLayout` identifies the
+   original scalar claim and its component decomposition. `Head` sends the encoded component
+   values, checks reconstruction and derives a product-sumcheck claim using a `BatchingRule`.
+   `RingSwitch` directly appends `ProductSumcheck`, retaining the original query, batching
+   challenge, commitment oracle and packed witness through the terminal evaluation claim.
+   Completeness requires a commutative challenge ring. Worst-case round-by-round knowledge
+   soundness additionally uses a certified `BatchingStrategy`, functional compatibility,
+   injective coefficient transport and a finite challenge ring with no zero divisors. The
+   challenge-error sum is `bat.error + 2m/|C|`. The head separately supports a fixed list
+   covering all compatible packed candidates, without asserting list security for the tail.
+   Honest commitment coverage is a separate constructor contract, unused by security.
+   * **tensor-prefix relocation** — equal packing/opening algebras, power-of-two ranks, prefix
+     layout and equality-fold batching. `Packing/TensorPrefix` defines the protocol through
+     `RingSwitch` with the original tensor carrier `P.A`, decoded by its column equivalence.
+     Its operational equation is the original scalar check and row-coordinate batching target.
+     `Binius/FRIBinius/RingSwitch` appends the Binary Basefold opening. Exact first-codeword
+     encodings give completeness; unique-radius compatibility gives round-by-round security.
    * **deterministic relocation** — for a subring-valued evaluation point the interaction
      collapses to one message and one identity check, with zero soundness error ([NOZ26] §3.1).
      Its carrier is `L` itself, so it is not a `Profile` instance: the Hachi trace head
@@ -54,10 +60,10 @@ each:
    via the committed-scalar seam. The cyclotomic instance
    (`Commitments/Functional/Hachi/RingSwitch/`) realizes [HMZ25]'s lift as used by Hachi.
 
-## What is genuinely shared between the two families
+## Shared support for the two families
 
-* The **round-shape verifiers** (this folder's top level): every verifier round of the family
-  is "one prover message, a deterministic local check, a statement update or an abort" —
+* The **round-shape verifiers** (this folder's top level) implement a prover message,
+  a deterministic local check and an accepted update or an abort —
   message-only (`pSpecMessage` + `messageRoundOracleVerifier`: DP24's final step; Hachi's
   §3.1 trace head has the same one-message shape as a plain aborting `Verifier`) or with a
   trailing scalar challenge
@@ -97,7 +103,8 @@ structure would carry a lemma either side's proofs consume.
 * `Transport/` — the shared claim-transport algebra (see `Transport.lean`): evaluation
   through a ring embedding with the interpolation kernel (`Eval.lean`, univariate) and
   degree-bounded coefficient transport (`Coeffs.lean`, multivariate).
-* `Packing/` — packing data layer + the DP24 construction (see `Packing.lean`).
+* `Packing/` — independent coordinate algebra, the generic scalar head and the DP24 construction
+  (see `Packing.lean`).
 * `Lift/` — the generic quotient-ring lift to field evaluations (see `Lift.lean`).
 
 ## References

@@ -27,12 +27,9 @@ This file collects single-round primitives for the structured (witness-mode) sum
 - `roundKnowledgeError` — the `d / |L|` Schwartz–Zippel round error for the explicit round
   polynomial degree bound `d`.
 
-These were originally housed in `Binius.BinaryBasefold.Prelude`,
-`RingSwitching.Packing.Spec`, and `RingSwitching.Packing.SumcheckPhase`. They are fully
-generic (no binary-tower or ring-switching dependencies) and have been promoted here so
-that other protocols (e.g. a Galois-ring PCS) can reuse them without
-depending on `Binius.*`. `RingSwitching.Packing.SumcheckPhase` retains thin `@[reducible]`
-wrappers that specialize `Context` and `OStmtIn` back to the DP24 ring-switching types.
+The round definitions are independent of binary towers and ring switching. The product-sumcheck
+consumer in `RingSwitching.Packing.ProductSumcheck` maintains the packed polynomial as its witness
+and derives its degree-two round polynomial from the public multiplier.
 
 Note on rejection: `roundOracleVerifier` below **aborts** (`failure`) on a failed round check,
 rather than emitting a dummy statement. A dummy output on rejection lies in the next round's
@@ -134,7 +131,7 @@ The per-round prover/verifier/reduction (one round; the outer protocol iterates 
 `seqCompose`). Generic in:
 - the underlying carrier `L` (anything `CommRing`),
 - the protocol context `Context : Type` (Binius RingSwitching plugs in
-  `RingSwitchingBaseContext κ L K ℓ`; Hachi will plug in its own),
+  a public context carrying the multiplier parameters),
 - the external oracle statements `OStmtIn : ιₛᵢ → Type` (Binius plugs in
   `aOStmtIn.OStmtIn`).
 

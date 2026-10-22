@@ -7,6 +7,7 @@ Edit the source of truth, not the output.
 | `CLAUDE.md` | compatibility symlink | No | Edit `AGENTS.md` |
 | `ArkLib.lean` | generated umbrella imports | No | `./scripts/update-lib.sh` or `./scripts/check-imports.sh` |
 | `.lake/` | build artifacts and cache | No | `lake build`, `lake exe cache get` |
+| `blueprint/lean_decls` | referenced Lean declarations | No | official Lean blueprint post-parse callback over `blueprint/src/`; `leanblueprint web` refreshes it in CI |
 | `blueprint/web/`, `blueprint/print/` | generated blueprint output | No | `leanblueprint web`, `leanblueprint pdf`, or `./scripts/build-web.sh` |
 | `blueprint/src/print.pdf` | generated blueprint PDF inside source tree | No | `leanblueprint pdf` |
 | `home_page/docs/` | copied API docs for the site | No | `./scripts/build-web.sh` |

@@ -43,10 +43,10 @@ because the check-then-update shape is what the ring-switching constructions sha
 
 ## Instances in this folder
 
-* the `Packing` batching round (`Packing/BatchingPhase.lean`): `check` tests the
+* the `Packing` batching round (`Packing/Head.lean`): `check` tests the
   incoming claim against the message's coordinate decomposition, `accept` batches the
   coordinates into the next sumcheck target;
-* the `Packing` final step (`Packing/SumcheckPhase.lean`): `check` is the closing
+* the `Packing` final step (`Packing/ProductSumcheck/Terminal.lean`): `check` is the closing
   consistency equation of the relocation sumcheck.
 
 Outside this folder, the [NOZ26] §3.1 trace head (`Commitments/Functional/Hachi/TraceHead/`) is

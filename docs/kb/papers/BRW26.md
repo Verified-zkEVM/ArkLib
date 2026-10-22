@@ -9,8 +9,8 @@ status: seeded
 related_concepts:
   - ring-switching
 related_modules:
-  - ArkLib/ProofSystem/RingSwitching/Packing/ScalarHead/Layout.lean
-  - ArkLib/ProofSystem/RingSwitching/Packing/ScalarHead/Quirky.lean
+  - ArkLib/ProofSystem/RingSwitching/Packing/ClaimLayout.lean
+  - ArkLib/ProofSystem/RingSwitching/Packing/ClaimLayout/Quirky.lean
   - ArkLib/ProofSystem/RingSwitching/Packing/Multiplier.lean
 ---
 
@@ -28,7 +28,7 @@ small field to a packed opening by coordinate packing and weighted scalar recons
   packed. Independence of a basis does not justify treating arbitrary extension-field values as
   base-field coordinates; ArkLib's `PackingData.transpose` works on coordinates only.
 - **Ordinary and quirky layouts.** Ordinary claims use equality weights. Appendix B.3's quirky
-  claims use the weight `L_σ(ζ) · eq(ρ, b)` in the `(σ, b)` packing order. `ScalarHead/Quirky.lean`
+  claims use the weight `L_σ(ζ) · eq(ρ, b)` in the `(σ, b)` packing order. `ClaimLayout/Quirky.lean`
   defines the interpolated extension, proves its degree and node values, and proves the weighted
   reconstruction `quirkyEval_eq_sum`.
 - **Multiplier.** The public multiplier is evaluated with multiplication matrices and Boolean
@@ -37,8 +37,8 @@ small field to a packed opening by coordinate packing and weighted scalar recons
 
 ## Main ArkLib Touchpoints
 
-- [`ScalarHead/Layout.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/ScalarHead/Layout.lean) — prefix and suffix layouts.
-- [`ScalarHead/Quirky.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/ScalarHead/Quirky.lean) — the quirky layout.
+- [`ClaimLayout.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/ClaimLayout.lean) — prefix and suffix layouts.
+- [`ClaimLayout/Quirky.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/ClaimLayout/Quirky.lean) — the quirky layout.
 - [`Multiplier.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/Multiplier.lean) — the multiplication-matrix evaluator.
 - [Ring-switching concept](../concepts/ring-switching.md).
 

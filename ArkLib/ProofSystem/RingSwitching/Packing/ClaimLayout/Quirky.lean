@@ -5,7 +5,7 @@ Authors: Alexander Hicks
 -/
 module
 
-public import ArkLib.ProofSystem.RingSwitching.Packing.ScalarHead.Layout
+public import ArkLib.ProofSystem.RingSwitching.Packing.ClaimLayout
 public import Mathlib.LinearAlgebra.Lagrange
 
 /-!
@@ -27,7 +27,7 @@ Packing indexes `(σ,b)` in this order. Appendix B.3's reconstruction weights ar
 
 noncomputable section
 
-namespace RingSwitching.Packing.ScalarHead
+namespace RingSwitching.Packing.ClaimLayout
 
 open MvPolynomial
 
@@ -49,7 +49,7 @@ def quirkyComponent (t : QuirkyTable (B := B) m ks) (v : (Fin ks → Fin 2) × F
 def quirkyComponentsEquiv : QuirkyTable (B := B) m ks ≃
     (((Fin ks → Fin 2) × Fin 2) → B⦃≤ 1⦄[X Fin m]) where
   toFun := quirkyComponent m ks
-  invFun ps yb σ := eval (yb.1 : Fin m → B) (ps (σ, yb.2)).val
+  invFun ps yb σ := MvPolynomial.eval (yb.1 : Fin m → B) (ps (σ, yb.2)).val
   left_inv t := by
     funext yb σ
     exact MLE_eval_zeroOne _ _
@@ -152,6 +152,6 @@ def quirkyLayout
     rw [quirkyEval_eq_sum]
     exact (index.sum_comp _).symm
 
-end RingSwitching.Packing.ScalarHead
+end RingSwitching.Packing.ClaimLayout
 
 end
