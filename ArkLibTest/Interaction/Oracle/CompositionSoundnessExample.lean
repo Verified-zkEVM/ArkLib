@@ -95,7 +95,8 @@ theorem prefix_execution : prefixProgram = (query (spec := ambient) () >>= fun s
 theorem prefix_measure : 𝒟[prefixProgram] =
     (1 / 2 : ENNReal) • Measure.dirac (boundary 0) +
       (1 / 2 : ENNReal) • Measure.dirac (boundary 1) := by
-  rw [prefix_execution, evalDist_bind_of_discrete, OracleComp.evalDist_query]
+  rw [prefix_execution, evalDist_bind_of_discrete, OracleComp.evalDist_query (spec := ambient),
+    MeasureTheory.trim_eq_self]
   change Measure.bind branchMeasure _ = _
   simp only [evalDist_pure]
   rw [Measure.bind_dirac_eq_map _ Measurable.of_discrete]
@@ -227,29 +228,22 @@ theorem suffix_mass (sample : Fin 3) :
     Pr{let result ← nextProgram (boundary sample)}[suffixTrue result] =
       if sample = 0 then (1 : ENNReal) else 1 / 2 := by
   classical
-  rw [suffix_execution, prEvent_bind_eq_lintegral_of_discrete, OracleComp.evalDist_query]
-  change (∫⁻ coin : Fin 3, Pr{let result ← (if 7 + sample.val = 7 ∨ coin = 1 then
-      pure (⟨PUnit.unit, some ⟨7 + sample.val, fun _ => 7 + sample.val⟩⟩ :
-        (path : secondProtocol.tree.BranchPath) × Option (ClosedClaim Nat family))
-    else pure ⟨PUnit.unit, none⟩ : OracleComp ambient _)}[suffixTrue result]
-      ∂branchMeasure) = _
+  rw [suffix_execution, prEvent_bind_eq_lintegral_of_discrete,
+    OracleComp.evalDist_query (spec := ambient), MeasureTheory.trim_eq_self,
+    show OracleSpec.AnswerMeasure.toMeasure (spec := ambient) () = branchMeasure from rfl]
   fin_cases sample <;>
-    simp only [branchMeasure, lintegral_add_measure, lintegral_smul_measure, suffixTrue]
-  all_goals simp only [one_div, Fin.isValue, Protocol.done_tree, true_or, false_or,
-    ↓reduceIte, add_zero, Option.map_eq_some_iff, eq_iff_iff, iff_true, bind_pure_comp,
-    map_pure, Option.some.injEq, exists_eq_left', evalDist_pure,
-    Measure.dirac_apply_singleton_true, lintegral_const, measure_univ, mul_one,
-    smul_eq_mul, mul_ite, mul_zero, Fin.zero_eta, Nat.reduceAdd, Nat.succ_ne_self,
-    lintegral_dirac, zero_ne_one, reduceCtorEq, false_and, exists_false, zero_add,
-    Fin.mk_one, one_ne_zero, ite_eq_left_iff, Nat.reduceEqDiff, Fin.reduceFinMk, Fin.reduceEq]
-  · split
-    · exact ENNReal.inv_two_add_inv_two
-    · rename_i h
-      exact False.elim (h rfl)
-  · intro h
-    exact False.elim (h rfl)
-  · intro h
-    exact False.elim (h rfl)
+    simp only [branchMeasure, lintegral_add_measure, lintegral_smul_measure, lintegral_dirac,
+      smul_eq_mul, Fin.isValue]
+  all_goals simp only [Nat.reduceAdd, Nat.reduceEqDiff, Fin.reduceEq, or_true, or_false,
+    or_self, ↓reduceIte]
+  all_goals repeat erw [prEvent_pure]
+  all_goals simp only [one_div, suffixTrue, Option.map_some, Option.map_none, Option.some.injEq,
+    eq_iff_iff, iff_true, mul_ite, mul_one, mul_zero, zero_add, reduceCtorEq, Fin.zero_eta,
+    Fin.mk_one, Fin.reduceFinMk, Fin.isValue, Fin.reduceEq, one_ne_zero, ite_eq_left_iff,
+    ↓reduceIte]
+  · rw [ite_eq_left rfl]
+    exact ENNReal.inv_two_add_inv_two
+  all_goals exact fun h => absurd rfl h
 
 /-- Structural support includes a sample of probability zero. -/
 theorem null_boundary_supported : boundary 2 ∈ support prefixProgram := by

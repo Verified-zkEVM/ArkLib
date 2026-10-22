@@ -7,30 +7,66 @@ module
 
 public import ArkLib.Data.MvPolynomial.Multilinear
 public import CompPoly.Multilinear.Basic
+public import CompPoly.Multilinear.Equiv
 
 /-!
-  # Evaluation semantics of CompPoly's multilinear evaluation tables
+  # Evaluation semantics of CompPoly's multilinear representations
 
-  Addition to `CompPoly.Multilinear` not yet upstreamed to CompPoly.
+  Additions to `CompPoly.Multilinear` not yet upstreamed to CompPoly.
 
-  CompPoly bridges the two *representations*: `CompPoly.Multilinear.Equiv` transports a hypercube
-  evaluation table `CMlPolynomialEval R n` to `MvPolynomial (Fin n) R` (via `toMvPolynomial`,
-  `toMvPolynomialDeg1`, `equivMvPolynomialDeg1`). What it does not yet record is how the computable
-  evaluator `CMlPolynomialEval.eval` — a dot product against the Lagrange basis — relates to
-  `MvPolynomial.eval` of the transported polynomial. This file supplies that missing half, stated
-  against the multilinear extension `MvPolynomial.MLE` of
-  `ArkLib/Data/MvPolynomial/Multilinear.lean`.
+  CompPoly bridges its representations to Mathlib: `CompPoly.Multilinear.Equiv` transports a
+  monomial-coefficient vector `CMlPolynomial R n` to `MvPolynomial (Fin n) R` (`toMvPolynomial`,
+  `toMvPolynomialDeg1`, `equivMvPolynomialDeg1`), and a hypercube evaluation table
+  `CMlPolynomialEval R n` through `lagrangeToMono`. What it does not yet record is how the
+  computable evaluators relate to `MvPolynomial.eval`. This file supplies both halves.
 
-  The bit-index reconciliation is the whole content: `CMlPolynomialEval` indexes the hypercube by
-  `Fin (2 ^ n)` through little-endian `BitVec` bits, while `MvPolynomial.MLE` indexes it by
-  `Fin n → Fin 2`, and the two are matched by `finFunctionFinEquiv`.
+  * Monomial side: `CMlPolynomial.eval`, a dot product against the little-endian monomial basis,
+    is `MvPolynomial.eval` of `toMvPolynomial` (`CMlPolynomial.eval_eq_eval_toMvPolynomial`).
+  * Lagrange side: `CMlPolynomialEval.eval`, a dot product against the Lagrange basis, is
+    `MvPolynomial.eval` of the multilinear extension `MvPolynomial.MLE` of
+    `ArkLib/Data/MvPolynomial/Multilinear.lean` (`CMlPolynomialEval.eval_eq_MvPolynomial_MLE`).
 
-  This is the boundary the Hachi zero-check crosses (`ZeroCheck/Constraints.lean`): the protocol
-  relations are stated with the computable `CMlPolynomialEval.eval`, while the nested-tree zero
-  test behind the corrected Lemma 10 reasons in `MvPolynomial`.
+  The bit-index reconciliation is the whole content: CompPoly indexes coefficients and hypercube
+  points by `Fin (2 ^ n)` through little-endian bits, while Mathlib uses exponent functions
+  (`CMlPolynomial.monomialOfNat`) and `Fin n → Fin 2` (matched by `finFunctionFinEquiv`).
+
+  The Hachi zero-check (`ZeroCheck/Constraints.lean`) crosses the Lagrange-side boundary: its
+  relations use `CMlPolynomialEval.eval`, while the nested-tree zero test behind the corrected
+  Lemma 10 reasons in `MvPolynomial`. The Hachi trace head (`TraceHead/Coefficients.lean`)
+  crosses the monomial-side boundary to state its packing through the shared `MvPolynomial`
+  packing layer.
 -/
 
 @[expose] public section
+
+namespace CompPoly.CMlPolynomial
+
+variable {R : Type*} [CommSemiring R] {n : ℕ}
+
+/-- Entry `i` of the monomial basis at `x` is the evaluation at `x` of the monomial whose
+exponents are the little-endian bits of `i`. -/
+theorem monomialBasis_get_eq_eval_monomial (x : Vector R n) (i : Fin (2 ^ n)) :
+    (monomialBasis x).get i =
+      MvPolynomial.eval x.get (MvPolynomial.monomial (monomialOfNat i) 1) := by
+  rw [MvPolynomial.eval_monomial, one_mul, Finsupp.prod_fintype _ _ (fun j => pow_zero _)]
+  change (monomialBasis x)[i] = _
+  rw [monomialBasis_getElem]
+  refine Finset.prod_congr rfl fun j _ => ?_
+  simp only [monomialOfNat, Finsupp.onFinset_apply, Nat.getBit_eq_testBit,
+    BitVec.getLsb_eq_getElem, BitVec.getElem_ofFin, Fin.getElem_fin, Vector.get_eq_getElem]
+  split_ifs <;> simp
+
+/-- Direct evaluation of a monomial-coefficient vector agrees with evaluating the transported
+Mathlib polynomial. -/
+theorem eval_eq_eval_toMvPolynomial (p : CMlPolynomial R n) (x : Vector R n) :
+    p.eval x = MvPolynomial.eval x.get (toMvPolynomial p) := by
+  rw [toMvPolynomial, map_sum, eval, Vector.dotProduct_eq_root_dotProduct]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  rw [monomialBasis_get_eq_eval_monomial, MvPolynomial.eval_monomial,
+    MvPolynomial.eval_monomial, one_mul]
+  rfl
+
+end CompPoly.CMlPolynomial
 
 namespace CompPoly.CMlPolynomialEval
 

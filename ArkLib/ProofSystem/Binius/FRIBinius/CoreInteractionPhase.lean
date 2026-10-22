@@ -330,7 +330,7 @@ instance sumcheckFoldCtxLens_complete :
   lift_complete := fun outerStmtIn outerWitIn innerStmtOut innerWitOut compat => by
     sorry
 
-omit [NeZero ℓ] in
+omit [NeZero κ] [NeZero ℓ] in
 -- Perfect completeness for the lifted oracle reduction
 theorem sumcheckFoldOracleReduction_perfectCompleteness :
     OracleReduction.perfectCompleteness

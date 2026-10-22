@@ -13,7 +13,7 @@ public import Mathlib.Tactic.LinearCombinationPrime
 public import ArkLib.Data.CodingTheory.ProximityGap.Basic
 public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.Curves
 public import ArkLib.Data.CodingTheory.ReedSolomon
-public import VCVio.OracleComp.Constructions.SampleableType.NativeMeasure
+public import VCVio.OracleComp.Constructions.SampleableType.Measure
 public import ArkLib.ProofSystem.Stir.ProximityBound
 public import ArkLib.ToMathlib.Polynomial.EvalExt
 
@@ -520,7 +520,7 @@ open LinearCode Classical ProbabilityTheory ReedSolomon STIR in
   Let `dstar` be the target degree, `f₁,...,f_{m-1} : ι → F`,
   `0 < degs₁,...,degs_{m-1} < dstar` be degrees and
   `δ ∈ (0, min{(1-BStar(ρ)), (1-ρ-1/|ι|)})` be a distance parameter, then
-      Pr{r ← F}[δᵣ(Combine(dstar,r,(f₁,degs₁),...,(fₘ,degsₘ)))]
+      Pr{let r ← F}[δᵣ(Combine(dstar,r,(f₁,degs₁),...,(fₘ,degsₘ)))]
                    > err' (dstar, ρ, δ, m * (dstar + 1) - ∑ i degsᵢ) -/
 theorem combine_theorem
     [SampleableType F] {φ : ι ↪ F} {dstar m : ℕ}

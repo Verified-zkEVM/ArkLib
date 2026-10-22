@@ -85,9 +85,9 @@ theorem verifier_rejects_zero (stmt : ℕ) :
 
 /-- Rejection occurs with probability one quarter under the actual simulated prover. -/
 theorem rejection_probability (stmt : ℕ) (s : σ) :
-    Pr{let q ←
+    Pr{let q ← (
       (simulateQ (impl.addLift (challengeQueryImpl (pSpec := protocol)) :
-        QueryImpl _ (StateT σ ProbComp)) (stage.prover.run stmt ())).run s}[
+        QueryImpl _ (StateT σ ProbComp)) (stage.prover.run stmt ())).run s)}[
       guardedForm.check stmt q.1.1 = false] =
       (1 / 4 : ℝ≥0∞) := by
   rw [simulated_run]
@@ -104,8 +104,8 @@ theorem stage_completeness (s : σ) :
   rw [Reduction.completeness_iff_of_guarded_verifier stage guardedForm]
   intro stmt wit _
   cases wit
-  simp only [pure_bind, simulated_run, bind_assoc, guardedForm, Set.mem_univ, true_and,
-    and_true, bne_iff_ne]
+  simp only [pure_bind, simulated_run, guardedForm, Set.mem_univ, true_and,
+    and_true, bne_iff_ne, prEvent_norm]
   rw [nonzero_probability]
   have hratio : (3 / 4 : ℝ≥0∞) = ((3 / 4 : ℝ≥0) : ℝ≥0∞) := by
     rw [ENNReal.coe_div (by norm_num : (4 : ℝ≥0) ≠ 0)]

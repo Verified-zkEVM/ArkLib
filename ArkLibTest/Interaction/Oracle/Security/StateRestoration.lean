@@ -134,7 +134,6 @@ theorem bounded (z : Nat) : RoundExtractor.IsLocallyBounded (extractor z) roles
       exact known
     · intro known
       exact ⟨⟨0, ()⟩, not_false, known, Nat.zero_le _⟩
-  simp only [← map_eq_pure_bind]
   rw [event]
   exact half.le
 

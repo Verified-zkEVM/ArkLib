@@ -18,7 +18,7 @@ linter.style.header = false
 [[require]]
 name = "VCVio"
 git = "https://github.com/Verified-zkEVM/VCVio"
-rev = "d606eab018ab87bf4a0a6ac7b6d2da4fedfa53b0"
+rev = "afa6593f15e1e79ecb3cf22fc56191cecb452bb0"
 
 [[require]]
 name = "«doc-gen4»"
@@ -102,6 +102,13 @@ allowNonModules = true
 name = "sumcheck-runtime"
 srcDir = "scripts"
 root = "SumcheckRuntime"
+allowNonModules = true
+
+# Compiled edge cases and exact instruction counts for the named measured FRI extractor.
+[[lean_exe]]
+name = "fri-extractor-runtime"
+srcDir = "scripts"
+root = "FriExtractorRuntime"
 allowNonModules = true
 
 # Lean-native, exception-free source-policy gate. Since the executable imports Lake, it must link

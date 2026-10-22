@@ -188,6 +188,35 @@ def boolDomain (R : Type u) [CommSemiring R] [Nontrivial R] (k : ℕ) : Sumcheck
 @[simp] lemma points_boolDomain (R : Type u) [CommSemiring R] [Nontrivial R] {k : ℕ}
     (i : Fin k) : (boolDomain R k).points i = Finset.univ.map (boolEmbedding R) := rfl
 
+/-- A sum over the Boolean sum-check cube is the sum over Boolean vectors cast into `R`. -/
+theorem sum_cube_boolDomain {R : Type u} [CommSemiring R] [Nontrivial R] {M : Type*}
+    [AddCommMonoid M] {k : ℕ} (f : (Fin k → R) → M) :
+    ∑ x ∈ (boolDomain R k).cube, f x = ∑ y : Fin k → Fin 2, f (fun i => ((y i : ℕ) : R)) := by
+  classical
+  -- a cube point is the cast of the Boolean vector recording which coordinates are nonzero
+  have hcube : ∀ x ∈ (boolDomain R k).cube,
+      (fun i => (((if x i = 0 then 0 else 1 : Fin 2) : ℕ) : R)) = x := by
+    intro x hx
+    funext i
+    have hi := SumcheckDomain.mem_cube.mp hx i
+    rw [points_boolDomain] at hi
+    obtain ⟨b, -, hb⟩ := Finset.mem_map.mp hi
+    rw [← hb]
+    fin_cases b <;> simp
+  refine Finset.sum_nbij' (fun x i => if x i = 0 then 0 else 1)
+    (fun y i => ((y i : ℕ) : R))
+    (fun _ _ => Finset.mem_univ _) (fun y _ => ?_) hcube (fun y _ => ?_)
+    (fun x hx => by rw [hcube x hx])
+  · refine SumcheckDomain.mem_cube.mpr fun i => ?_
+    rw [points_boolDomain]
+    refine Finset.mem_map.mpr ⟨y i, Finset.mem_univ _, ?_⟩
+    generalize y i = b
+    fin_cases b <;> simp
+  · funext i
+    beta_reduce
+    generalize y i = b
+    fin_cases b <;> simp
+
 /-- A *hyperprism* domain `𝔻 = D × {0,1}^k` (SWIRL): coordinate `0` ranges over a given `2^ℓ`-point
 univariate "skip" domain `Dskip`, and the remaining `k` coordinates are Boolean.
 

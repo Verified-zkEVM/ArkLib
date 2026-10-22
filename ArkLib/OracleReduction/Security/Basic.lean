@@ -170,7 +170,7 @@ theorem perfectCompleteness_eq_prob_one :
           (stmtOut, witOut) ∈ relOut ∧ prvStmtOut = stmtOut] = 1 := by
   simp only [perfectCompleteness, completeness, ENNReal.coe_zero, tsub_zero]
   exact forall_congr' fun _ => forall_congr' fun _ => imp_congr_right fun _ =>
-    ⟨fun h => le_antisymm (prEvent_le_one _ _) (ge_iff_le.mp h),
+    ⟨fun h => le_antisymm (prEvent_le_one _) (ge_iff_le.mp h),
      fun h => ge_of_eq h⟩
 
 /-- **Support criterion for perfect completeness.** A reduction is perfectly complete as soon as
@@ -391,9 +391,7 @@ class IsKnowledgeSound (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut ×
 class Extractor.Straightline.IsMonotone
     (relIn : Set (StmtIn × WitIn))
     (E : Extractor.Straightline oSpec StmtIn WitIn WitOut pSpec)
-    [∀ t, MeasurableSpace (oSpec.Range t)]
-    [∀ t, DiscreteMeasurableSpace (oSpec.Range t)]
-    [oSpec.IsUniformMeasureSpec]
+    [oSpec.UniformAnswerMeasure]
     where
   is_monotone : ∀ witOut stmtIn transcript, ∀ proveQueryLog₁ proveQueryLog₂ : oSpec.QueryLog,
     ∀ verifyQueryLog₁ verifyQueryLog₂ : oSpec.QueryLog,
