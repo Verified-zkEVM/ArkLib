@@ -110,7 +110,11 @@ coordinates, honest and rejected executions, query retention and exact error sum
 Their clear polynomial oracle is a specification fixture, not a PCS. A separate zero-variable
 fixture exercises commutative-ring completeness over `ZMod 4`.
 
-Native reference-Flock conformance and its source-invariant transport remain work.
+Native reference-Flock obligations are maintained in the
+[consumer guide](../../wiki/ring-switching-consumers.md#native-flock-and-acceptance).
+
+For implementation steps and a worked example, see
+[Adding a ring-switching consumer](../../wiki/ring-switching-consumers.md).
 
 ## Other constructions
 

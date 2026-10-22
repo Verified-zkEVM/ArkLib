@@ -670,7 +670,7 @@ home_page/            site assets and assembled website root
   `Commitment` owns the first-oracle interface, and `Opening` supplies multilinear opening with
   exact-encoding completeness and unique-radius round-by-round security. `FRIBinius/Prelude`
   instantiates the tensor profile; `FRIBinius/RingSwitch` composes the shared prefix reduction
-  with Binary Basefold opening.
+  with Binary Basefold opening. See the [consumer guide](ring-switching-consumers.md).
 
 - The ABF26 Section 6 toy IOP lives under `ProofSystem/ToyProblem/`. `Spec/` contains the
   domain-generic protocol and extraction theorems, `Impl/IRS.lean` supplies the computable
@@ -780,7 +780,8 @@ home_page/            site assets and assembled website root
   transparent polynomial oracles are specification fixtures, not commitment schemes.
   Hachi's §3.1 trace head uses `PackingData.ofBaseOpening`, `packedMLE`, its own `ClaimLayout`
   and `CheckedObservation`, with native conformance in `TraceHead/Conformance`. It retains its
-  own deterministic wire. Native reference-Flock conformance remains work.
+  own deterministic wire. Native reference-Flock obligations are listed in the
+  [consumer guide](ring-switching-consumers.md#native-flock-and-acceptance).
   `Lift/` is the **generic HMZ25 lift** (large quotient ring →
   field, CWSS at `k = 2d`): `Presentation.lean` is its data layer (proof-free
   `Presentation R S` + `IsPresentation` laws over any monic modulus — not cyclotomic-specific

@@ -54,7 +54,8 @@ it does not establish security by itself.
 - [Ring switching](ArkLib/ProofSystem/RingSwitching/) provides shared packing, batching,
   product-sumcheck and terminal phases with perfect completeness and worst-case round-by-round
   knowledge soundness. DP24 instantiates these phases and composes with Binary Basefold.
-  Native reference-Flock conformance remains work.
+  Native reference-Flock conformance remains work; see the
+  [consumer guide](docs/wiki/ring-switching-consumers.md#native-flock-and-acceptance).
   The conversion to ordinary knowledge soundness remains admitted.
 
 ### FRI, STIR, and Binius
