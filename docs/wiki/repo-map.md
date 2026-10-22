@@ -89,6 +89,8 @@ home_page/            site assets and assembled website root
   construction and scheme instance, `Correctness` for correctness proofs, `FunctionBinding` for
   the function-binding reduction, and `Binding` for evaluation binding. Shared
   CPolynomial/Polynomial division bridge lemmas live under `ArkLib/ToCompPoly/`.
+- `ArkLib/Commitments/Functional/BitZ/` holds the leaf algebra of the BitZ scheme [BGKLSW26]
+  (the exponent lift of a bit inner product); it has no `Commitment.Scheme` instance yet.
 - Hachi commitment-scheme modules live under `ArkLib/Commitments/Functional/Hachi/` and formalize
   the Greyhound [NS24] / Hachi [NOZ26] *inner-outer* Ajtai lattice commitment over a cyclotomic
   ring `Rq Φ`. The folder is organized by paper section;
