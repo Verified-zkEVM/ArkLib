@@ -27,10 +27,10 @@ Plonky3 writes every constraint as one polynomial that applies on every row.
 It restricts the constraint with three selector variables:
 
 ```text
-    row i of n:     is_first_row = [i = 0]
-                    is_last_row  = [i = n - 1]
+    row i of n:     is_first_row  = [i = 0]
+                    is_last_row   = [i = n - 1]
                     is_transition = [i != n - 1]
-                    next row     = row (i + 1) mod n
+                    next row      = row (i + 1) mod n
 ```
 
 The next row of the last row is row 0.
