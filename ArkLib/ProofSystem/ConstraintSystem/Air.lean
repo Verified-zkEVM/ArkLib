@@ -7,8 +7,6 @@ module
 
 public import Mathlib.Algebra.MvPolynomial.Eval
 
-@[expose] public section
-
 /-!
 # Algebraic intermediate representations
 
@@ -43,6 +41,8 @@ A constraint domain is the set of rows a constraint applies to.
 
 The selector form and the domain form describe the same traces.
 -/
+
+@[expose] public section
 
 namespace Air
 
