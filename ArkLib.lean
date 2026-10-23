@@ -916,6 +916,7 @@ public import ArkLib.ProofSystem.Component.SendWitness
 public import ArkLib.ProofSystem.ConstraintSystem.Basic
 public import ArkLib.ProofSystem.ConstraintSystem.Examples
 public import ArkLib.ProofSystem.ConstraintSystem.Lookup
+public import ArkLib.ProofSystem.ConstraintSystem.LogUp
 public import ArkLib.ProofSystem.ConstraintSystem.MemoryChecking
 public import ArkLib.ProofSystem.ConstraintSystem.Plonk
 public import ArkLib.ProofSystem.ConstraintSystem.R1CS
