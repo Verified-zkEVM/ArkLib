@@ -596,6 +596,7 @@ public import ArkLib.Data.MvPolynomial.WeightedOrder
 public import ArkLib.Data.OracleComp.QueryBounds
 public import ArkLib.Data.Polynomial.BinaryTrace
 public import ArkLib.Data.Polynomial.BinaryTraceQuotient
+public import ArkLib.Data.Polynomial.CosetChunks
 public import ArkLib.Data.Polynomial.Bivariate
 public import ArkLib.Data.Polynomial.BivariateFactorDegrees
 public import ArkLib.Data.Polynomial.ClassicalWronskian
