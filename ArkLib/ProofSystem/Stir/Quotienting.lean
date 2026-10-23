@@ -115,6 +115,45 @@ lemma eval_vanishingPoly_mul_funcQuotient_add_ansPoly {domain : ι ↪ F} {f : �
 noncomputable def polyQuotient (S : Finset F) (fPoly : F[X]) : F[X] :=
     (fPoly - (ansPoly S (fun s => fPoly.eval s))) / (vanishingPoly S)
 
+/-- The vanishing polynomial of `S` divides `fPoly - Ans'`, since both agree on `S`. -/
+lemma vanishingPoly_dvd_sub_ansPoly (S : Finset F) (fPoly : F[X]) :
+    vanishingPoly S ∣ fPoly - ansPoly S (fun s => fPoly.eval s) := by
+  refine Finset.prod_dvd_of_coprime (fun a _ b _ hab => ?_) fun s hs => ?_
+  · exact pairwise_coprime_X_sub_C (s := id) Function.injective_id hab
+  · rw [dvd_iff_isRoot, IsRoot, eval_sub, eval_ansPoly_of_mem S _ ⟨s, hs⟩, sub_self]
+
+/-- Multiplying the polynomial quotient back by `V_S` recovers `fPoly - Ans'`. -/
+lemma vanishingPoly_mul_polyQuotient (S : Finset F) (fPoly : F[X]) :
+    vanishingPoly S * polyQuotient S fPoly = fPoly - ansPoly S (fun s => fPoly.eval s) := by
+  have hV := monic_vanishingPoly S
+  have h := modByMonic_add_div (fPoly - ansPoly S (fun s => fPoly.eval s)) (vanishingPoly S)
+  rw [(modByMonic_eq_zero_iff_dvd hV).2 (vanishingPoly_dvd_sub_ansPoly S fPoly), zero_add,
+    divByMonic_eq_div _ hV] at h
+  exact h
+
+/-- Definition 4.3: the polynomial quotient has degree less than `d - |S|`. -/
+lemma degree_polyQuotient_lt {S : Finset F} {fPoly : F[X]} {d : ℕ} (hS : S.card ≤ d)
+    (hf : fPoly.degree < d) :
+    (polyQuotient S fPoly).degree < ((d - S.card : ℕ) : WithBot ℕ) := by
+  have hans : (ansPoly S (fun s => fPoly.eval s)).degree < d :=
+    (degree_ansPoly_lt S _).trans_le (by exact_mod_cast hS)
+  have hsub : (fPoly - ansPoly S (fun s => fPoly.eval s)).degree < d :=
+    (degree_sub_le _ _).trans_lt (max_lt hf hans)
+  by_cases hQ : polyQuotient S fPoly = 0
+  · rw [hQ]; simp
+  have hV := monic_vanishingPoly S
+  rw [← vanishingPoly_mul_polyQuotient] at hsub
+  have h1 := (natDegree_lt_iff_degree_lt (mul_ne_zero hV.ne_zero hQ)).2 hsub
+  rw [hV.natDegree_mul' hQ, natDegree_vanishingPoly] at h1
+  exact (natDegree_lt_iff_degree_lt hQ).1 (by omega)
+
+/-- Off `S`, the polynomial quotient evaluates to `(fPoly(x) - Ans'(x)) / V_S(x)`. -/
+lemma eval_polyQuotient_of_not_mem {S : Finset F} {fPoly : F[X]} {x : F} (hx : x ∉ S) :
+    (polyQuotient S fPoly).eval x =
+      (fPoly.eval x - (ansPoly S (fun s => fPoly.eval s)).eval x) / (vanishingPoly S).eval x := by
+  rw [eq_div_iff (eval_vanishingPoly_ne_zero hx), mul_comm, ← eval_mul,
+    vanishingPoly_mul_polyQuotient, eval_sub]
+
 /-- We define the set disagreementSet(f,ι,S,Ans) as the set of all points `x ∈ ι` whose
 evaluation point `domain x` lies in `S` such that the Ans' disagrees with `f`, we have
 disagreementSet := { x ∈ ι | domain x ∈ S ∧ Ans'(domain x) ≠ f x }. -/
