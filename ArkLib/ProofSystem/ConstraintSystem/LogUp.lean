@@ -93,16 +93,14 @@ theorem sum_map_eq_sum_netMult (g : κ → R →+ M) (l : List (κ × R)) (S : F
 
 end Net
 
-variable {F : Type*} [Field F] [DecidableEq F]
+variable {F : Type*} [Field F]
 
 local notation "ι" => algebraMap F[X] (RatFunc F)
 
-omit [DecidableEq F] in
 theorem logDerivSum_append (l l' : List (F × F)) :
     logDerivSum (l ++ l') = logDerivSum l + logDerivSum l' := by
   simp [logDerivSum]
 
-omit [DecidableEq F] in
 theorem logDerivSum_neg (l : List (F × F)) :
     logDerivSum (l.map fun p => (p.1, -p.2)) = -logDerivSum l := by
   induction l with
@@ -112,7 +110,8 @@ theorem logDerivSum_neg (l : List (F × F)) :
     rw [ih, C_neg, map_neg, neg_div, neg_add]
 
 /-- The sum regrouped over any set of keys covering the messages. -/
-theorem logDerivSum_eq_sum (l : List (F × F)) (S : Finset F) (hS : ∀ p ∈ l, p.1 ∈ S) :
+theorem logDerivSum_eq_sum [DecidableEq F] (l : List (F × F)) (S : Finset F)
+    (hS : ∀ p ∈ l, p.1 ∈ S) :
     logDerivSum l = ∑ v ∈ S, ι (C (netMult l v)) / ι (X - C v) := by
   let g : F → F →+ RatFunc F := fun v =>
     { toFun := fun m => ι (C m) / ι (X - C v)
@@ -123,6 +122,7 @@ theorem logDerivSum_eq_sum (l : List (F × F)) (S : Finset F) (hS : ∀ p ∈ l,
 /-- Distinct poles: sum_v n_v / (X - v) vanishes only when every n_v does. -/
 theorem sum_div_X_sub_C_eq_zero_iff (S : Finset F) (n : F → F) :
     ∑ v ∈ S, ι (C (n v)) / ι (X - C v) = 0 ↔ ∀ v ∈ S, n v = 0 := by
+  classical
   refine ⟨fun h v₀ hv₀ => ?_, fun h => sum_eq_zero fun v hv => by simp [h v hv]⟩
   have hne : ∀ v, ι (X - C v) ≠ 0 := fun v =>
     (map_ne_zero_iff _ (IsFractionRing.injective F[X] (RatFunc F))).2 (X_sub_C_ne_zero v)
@@ -151,7 +151,8 @@ theorem sum_div_X_sub_C_eq_zero_iff (S : Finset F) (n : F → F) :
 /-- **The log-derivative identity.**
 
 The sum of m / (X - v) vanishes in F(X) exactly when the messages balance. -/
-theorem logDerivSum_eq_zero_iff (l : List (F × F)) : logDerivSum l = 0 ↔ Balanced l := by
+theorem logDerivSum_eq_zero_iff [DecidableEq F] (l : List (F × F)) :
+    logDerivSum l = 0 ↔ Balanced l := by
   classical
   rw [logDerivSum_eq_sum l (l.map (·.1)).toFinset (fun p hp => by simpa using ⟨p.2, hp⟩),
     sum_div_X_sub_C_eq_zero_iff]
@@ -161,7 +162,7 @@ theorem logDerivSum_eq_zero_iff (l : List (F × F)) : logDerivSum l = 0 ↔ Bala
   · exact netMult_of_not_mem (by simpa using hk)
 
 /-- Two message lists have the same sum exactly when every key has the same net multiplicity. -/
-theorem logDerivSum_eq_iff (l l' : List (F × F)) :
+theorem logDerivSum_eq_iff [DecidableEq F] (l l' : List (F × F)) :
     logDerivSum l = logDerivSum l' ↔ ∀ v, netMult l v = netMult l' v := by
   rw [← sub_eq_zero, sub_eq_add_neg, ← logDerivSum_neg, ← logDerivSum_append,
     logDerivSum_eq_zero_iff]
@@ -173,13 +174,13 @@ theorem logDerivSum_eq_iff (l l' : List (F × F)) :
 /-! ## Counts -/
 
 /-- The net multiplicity of unit messages is the count, read in F. -/
-theorem netMult_units (f : List F) (v : F) : netMult (f.map (·, (1 : F))) v = (f.count v : F) := by
+theorem netMult_units [DecidableEq F] (f : List F) (v : F) :
+    netMult (f.map (·, (1 : F))) v = (f.count v : F) := by
   induction f with
   | nil => simp
   | cons a f ih =>
     rw [List.map_cons, netMult_cons, ih, List.count_cons]; by_cases h : a = v <;> simp [h, add_comm]
 
-omit [DecidableEq F] in
 /-- Counts up to L inject into F when no positive count up to L vanishes. -/
 theorem cast_inj_of_le {L : ℕ} (hp : ∀ n : ℕ, 0 < n → n ≤ L → (n : F) ≠ 0) {a b : ℕ}
     (ha : a ≤ L) (hb : b ≤ L) (h : (a : F) = b) : a = b := by
@@ -189,21 +190,20 @@ theorem cast_inj_of_le {L : ℕ} (hp : ∀ n : ℕ, 0 < n → n ≤ L → (n : F
   · by_contra hne
     exact hp (a - b) (by omega) (by omega) (by push_cast [Nat.cast_sub hab]; rw [h, sub_self])
 
-omit [DecidableEq F] in
 /-- In characteristic p, no positive count below p vanishes. -/
 theorem cast_ne_zero_of_lt (p : ℕ) [CharP F p] {L : ℕ} (hL : L < p) :
     ∀ n : ℕ, 0 < n → n ≤ L → (n : F) ≠ 0 := fun n hn hnL h =>
   absurd (Nat.le_of_dvd hn ((CharP.cast_eq_zero_iff F p n).1 h)) (by omega)
 
 /-- The multiplicities that put each value's query count on its last occurrence in the table. -/
-def lastMults (f : List F) : List F → List F
+def lastMults [DecidableEq F] (f : List F) : List F → List F
   | [] => []
   | v :: t => (if v ∈ t then 0 else (f.count v : F)) :: lastMults f t
 
-theorem length_lastMults (f t : List F) : (lastMults f t).length = t.length := by
+theorem length_lastMults [DecidableEq F] (f t : List F) : (lastMults f t).length = t.length := by
   induction t <;> simp_all [lastMults]
 
-theorem netMult_lastMults (f t : List F) (w : F) :
+theorem netMult_lastMults [DecidableEq F] (f t : List F) (w : F) :
     netMult (t.zip (lastMults f t)) w = if w ∈ t then (f.count w : F) else 0 := by
   induction t with
   | nil => simp
@@ -223,6 +223,7 @@ theorem lookupRelation_iff_logDeriv (f t : List F)
     (f, t) ∈ Lookup.relation ↔
       ∃ m : List F, m.length = t.length ∧
         logDerivSum (f.map (·, 1)) = logDerivSum (t.zip m) := by
+  classical
   constructor
   · intro hf
     replace hf : ∀ v ∈ f, v ∈ t := hf
@@ -233,7 +234,7 @@ theorem lookupRelation_iff_logDeriv (f t : List F)
     · rfl
     · rw [List.count_eq_zero.2 fun hvf => hv (hf v hvf), Nat.cast_zero]
   · rintro ⟨m, hm, h⟩
-    show ∀ v ∈ f, v ∈ t
+    change ∀ v ∈ f, v ∈ t
     intro v hv
     by_contra hvt
     rw [logDerivSum_eq_iff] at h
@@ -249,6 +250,7 @@ sum_j 1 / (X - a_j) = sum_j 1 / (X - b_j). -/
 theorem perm_iff_logDeriv (a b : List F) {L : ℕ} (ha : a.length ≤ L)
     (hb : b.length ≤ L) (hp : ∀ n : ℕ, 0 < n → n ≤ L → (n : F) ≠ 0) :
     a.Perm b ↔ logDerivSum (a.map (·, 1)) = logDerivSum (b.map (·, 1)) := by
+  classical
   rw [logDerivSum_eq_iff, List.perm_iff_count]
   refine forall_congr' fun v => ?_
   rw [netMult_units, netMult_units]
