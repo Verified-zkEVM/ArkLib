@@ -39,8 +39,8 @@ The paper's hypothesis `max P < (|𝔽_{2^ν}| - 1) / ℓ₁` of [BGKLSW26, Theo
 
 ## References
 
-* [BGKLSW26] R. Bloemen, A. Garreta, M. Kostrzewa, S. Londhe, L. Soukhanov, J. Wu.
-  *BitZ: proofs and commitments in arbitrary rings through binary fields*. ePrint 2026/2141.
+* [Bloemen, R., Garreta, A., Kostrzewa, M., Londhe, S., Soukhanov, L., and Wu, J.,
+    *BitZ: proofs and commitments in arbitrary rings through binary fields*][BGKLSW26]
 -/
 
 @[expose] public section

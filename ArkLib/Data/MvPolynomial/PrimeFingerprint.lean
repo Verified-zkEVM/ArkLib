@@ -37,10 +37,10 @@ prime-divisor term to the `⌊log₂ q_min⌋` form of [BGKLSW26].
 
 ## References
 
-* [CHA24] M. Campanelli, M. Hall-Andersen. *Fully succinct arguments over the integers from first
-  principles*. ePrint 2024/1548.
-* [BGKLSW26] R. Bloemen, A. Garreta, M. Kostrzewa, S. Londhe, L. Soukhanov, J. Wu.
-  *BitZ: proofs and commitments in arbitrary rings through binary fields*. ePrint 2026/2141.
+* [Campanelli, M., and Hall-Andersen, M., *Fully succinct arguments over the integers
+    from first principles*][CHA24]
+* [Bloemen, R., Garreta, A., Kostrzewa, M., Londhe, S., Soukhanov, L., and Wu, J.,
+    *BitZ: proofs and commitments in arbitrary rings through binary fields*][BGKLSW26]
 -/
 
 @[expose] public section
