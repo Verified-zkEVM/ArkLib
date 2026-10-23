@@ -34,8 +34,6 @@ namespace Lookup.LogUp
 
 open Polynomial Finset
 
-set_option linter.unusedSectionVars false
-
 /-- The net multiplicity of a key: the sum of the multiplicities of its messages. -/
 def netMult {κ R : Type*} [DecidableEq κ] [AddCommMonoid R] (msgs : List (κ × R)) (k : κ) :
     R :=
@@ -99,10 +97,12 @@ variable {F : Type*} [Field F] [DecidableEq F]
 
 local notation "ι" => algebraMap F[X] (RatFunc F)
 
+omit [DecidableEq F] in
 theorem logDerivSum_append (l l' : List (F × F)) :
     logDerivSum (l ++ l') = logDerivSum l + logDerivSum l' := by
   simp [logDerivSum]
 
+omit [DecidableEq F] in
 theorem logDerivSum_neg (l : List (F × F)) :
     logDerivSum (l.map fun p => (p.1, -p.2)) = -logDerivSum l := by
   induction l with
@@ -179,6 +179,7 @@ theorem netMult_units (f : List F) (v : F) : netMult (f.map (·, (1 : F))) v = (
   | cons a f ih =>
     rw [List.map_cons, netMult_cons, ih, List.count_cons]; by_cases h : a = v <;> simp [h, add_comm]
 
+omit [DecidableEq F] in
 /-- Counts up to L inject into F when no positive count up to L vanishes. -/
 theorem cast_inj_of_le {L : ℕ} (hp : ∀ n : ℕ, 0 < n → n ≤ L → (n : F) ≠ 0) {a b : ℕ}
     (ha : a ≤ L) (hb : b ≤ L) (h : (a : F) = b) : a = b := by
@@ -188,6 +189,7 @@ theorem cast_inj_of_le {L : ℕ} (hp : ∀ n : ℕ, 0 < n → n ≤ L → (n : F
   · by_contra hne
     exact hp (a - b) (by omega) (by omega) (by push_cast [Nat.cast_sub hab]; rw [h, sub_self])
 
+omit [DecidableEq F] in
 /-- In characteristic p, no positive count below p vanishes. -/
 theorem cast_ne_zero_of_lt (p : ℕ) [CharP F p] {L : ℕ} (hL : L < p) :
     ∀ n : ℕ, 0 < n → n ≤ L → (n : F) ≠ 0 := fun n hn hnL h =>
