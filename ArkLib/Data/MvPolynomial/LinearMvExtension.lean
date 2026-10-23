@@ -182,6 +182,99 @@ lemma powAlgHom_degree {p : MvPolynomial (Fin m) F} :
   rw [←Polynomial.natDegree_le_iff_degree_le]
   exact powAlgHom_natDegree
 
+/-- A multilinear polynomial in `m` variables is sent by `powAlgHom` to a polynomial of degree at
+most `2 ^ m - 1`. -/
+theorem natDegree_powAlgHom_le {P : MvPolynomial (Fin m) F}
+    (hP : P ∈ restrictDegree (Fin m) F 1) : (powAlgHom P).natDegree ≤ 2 ^ m - 1 :=
+  powAlgHom_of_restrict_degree_natDegree (p := ⟨P, hP⟩)
+
+/-- Evaluating `powAlgHom P` at `ζ` is evaluating `P` at `(ζ, ζ², ζ⁴, …, ζ^(2 ^ (m - 1)))`. -/
+theorem eval_powAlgHom (P : MvPolynomial (Fin m) F) (ζ : F) :
+    (powAlgHom P).eval ζ = MvPolynomial.eval (fun i : Fin m => ζ ^ (2 ^ (i : ℕ))) P := by
+  rw [powAlgHom, ← Polynomial.coe_aeval_eq_eval, ← AlgHom.comp_apply, MvPolynomial.comp_aeval,
+    ← MvPolynomial.coe_aeval_eq_eval]
+  simp
+
+/-- Distinct bit vectors encode distinct numbers. -/
+theorem eq_of_sum_pow_two_mul_eq (b b' : Fin m → ℕ) (hb : ∀ i, b i ≤ 1) (hb' : ∀ i, b' i ≤ 1)
+    (h : ∑ i : Fin m, 2 ^ (i : ℕ) * b i = ∑ i : Fin m, 2 ^ (i : ℕ) * b' i) : b = b' := by
+  induction m with
+  | zero => exact funext fun i => i.elim0
+  | succ m ih =>
+    rw [Fin.sum_univ_succ, Fin.sum_univ_succ] at h
+    have hs : ∀ c : Fin (m + 1) → ℕ, ∑ i : Fin m, 2 ^ ((i.succ : Fin (m + 1)) : ℕ) * c i.succ =
+        2 * ∑ i : Fin m, 2 ^ (i : ℕ) * c i.succ := fun c => by
+      rw [Finset.mul_sum]
+      exact Finset.sum_congr rfl fun i _ => by simp [pow_succ]; ring
+    rw [hs b, hs b'] at h
+    simp only [Fin.val_zero, pow_zero, one_mul] at h
+    have h0 : b 0 = b' 0 := by have := hb 0; have := hb' 0; omega
+    have h1 : ∑ i : Fin m, 2 ^ (i : ℕ) * b i.succ = ∑ i : Fin m, 2 ^ (i : ℕ) * b' i.succ := by
+      omega
+    have := ih (fun i => b i.succ) (fun i => b' i.succ) (fun i => hb _) (fun i => hb' _) h1
+    funext i
+    exact Fin.cases h0 (fun i => congrFun this i) i
+
+/-- The number encoded by the exponent vector `s` of a multilinear monomial: `∑ᵢ 2 ^ i * sᵢ`. -/
+def bitsValue (s : Fin m →₀ ℕ) : ℕ := ∑ i : Fin m, 2 ^ (i : ℕ) * s i
+
+/-- Multilinear monomials are determined by their `bitsValue`. -/
+theorem bitsValue_injOn : Set.InjOn (bitsValue (m := m)) {s | ∀ i, s i ≤ 1} :=
+  fun _ hs _ ht h => Finsupp.ext (congrFun (eq_of_sum_pow_two_mul_eq _ _ hs ht h))
+
+/-- `powAlgHom` sends the monomial `∏ᵢ Xᵢ ^ sᵢ` to `X ^ bitsValue s`. -/
+theorem powAlgHom_eq_sum (P : MvPolynomial (Fin m) F) :
+    powAlgHom P =
+      ∑ s ∈ P.support, Polynomial.C (P.coeff s) * Polynomial.X ^ bitsValue s := by
+  unfold powAlgHom
+  rw [aeval_def, eval₂, Finsupp.sum]
+  refine Finset.sum_congr rfl fun s _ => ?_
+  rw [Finsupp.prod_fintype _ _ (fun i => by simp), bitsValue, ← Finset.prod_pow_eq_pow_sum]
+  simp [pow_mul]
+
+/-- **Coefficient recovery.** For a multilinear `P` and a binary exponent vector `s`, the
+coefficient of `X ^ bitsValue s` in `powAlgHom P` is the coefficient of `∏ᵢ Xᵢ ^ sᵢ` in `P`:
+distinct multilinear monomials get distinct powers of `X`, so no coefficients merge. -/
+theorem coeff_powAlgHom_bitsValue {P : MvPolynomial (Fin m) F}
+    (hP : P ∈ restrictDegree (Fin m) F 1) (s : Fin m →₀ ℕ) (hs : ∀ i, s i ≤ 1) :
+    (powAlgHom P).coeff (bitsValue s) = P.coeff s := by
+  classical
+  have hdeg := (mem_restrictDegree (Fin m) P 1).1 hP
+  simp only [powAlgHom_eq_sum, Polynomial.finsetSum_coeff, Polynomial.coeff_C_mul_X_pow]
+  rw [Finset.sum_eq_single s]
+  · simp
+  · intro t ht hts
+    exact ite_eq_right_iff.2 (fun h => (hts (bitsValue_injOn hs (hdeg t ht) h).symm).elim)
+  · intro hnot
+    simp only [mem_support_iff, not_not] at hnot
+    simp [hnot]
+
+/-- A nonzero multilinear polynomial is sent to a *nonzero* polynomial by `powAlgHom`. -/
+theorem powAlgHom_ne_zero {P : MvPolynomial (Fin m) F}
+    (hP : P ∈ restrictDegree (Fin m) F 1) (h0 : P ≠ 0) : powAlgHom P ≠ 0 := by
+  obtain ⟨s, hs⟩ := MvPolynomial.ne_zero_iff.1 h0
+  have hsb : ∀ i, s i ≤ 1 := (mem_restrictDegree (Fin m) P 1).1 hP s (mem_support_iff.2 hs)
+  intro h
+  have := coeff_powAlgHom_bitsValue hP s hsb
+  rw [h, Polynomial.coeff_zero] at this
+  exact hs this.symm
+
+/-- `powAlgHom` is injective on multilinear polynomials, over any commutative semiring: the
+coefficients of `P` are recovered from those of `powAlgHom P` at the binary exponents
+(`coeff_powAlgHom_bitsValue`), and all other coefficients of a multilinear `P` vanish. -/
+theorem powAlgHom_injOn :
+    Set.InjOn (powAlgHom (F := F) (m := m)) (restrictDegree (Fin m) F 1) := by
+  intro P hP Q hQ hpq
+  ext s
+  by_cases hs : ∀ i, s i ≤ 1
+  · rw [← coeff_powAlgHom_bitsValue hP s hs, ← coeff_powAlgHom_bitsValue hQ s hs, hpq]
+  · have hcoeff : ∀ T : MvPolynomial (Fin m) F,
+        T ∈ restrictDegree (Fin m) F 1 → T.coeff s = 0 := by
+      intro T hT
+      by_contra h
+      exact hs ((mem_restrictDegree (Fin m) T 1).1 hT s (mem_support_iff.2 h))
+    rw [hcoeff P hP, hcoeff Q hQ]
+
 /- The linear map optained by forgetting the multiplicative structure-/
 def powContraction :
     MvPolynomial (Fin m) F →ₗ[F] Polynomial F :=
