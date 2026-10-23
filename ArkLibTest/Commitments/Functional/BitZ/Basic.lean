@@ -22,13 +22,13 @@ open scoped BigOperators
 
 /-! ### Exponent lift in `ZMod 7`, where `3` generates `(ZMod 7)ˣ` (order `6`) -/
 
-private instance : Fact (Nat.Prime 7) := ⟨by decide⟩
+instance : Fact (Nat.Prime 7) := ⟨by decide⟩
 
 /-- The unit `3 ∈ (ZMod 7)ˣ`. -/
-private def g7 : (ZMod 7)ˣ := ⟨3, 5, by decide, by decide⟩
+def g7 : (ZMod 7)ˣ := ⟨3, 5, by decide, by decide⟩
 
 /-- `3` generates `(ZMod 7)ˣ`. -/
-private theorem g7_generates : ∀ x : (ZMod 7)ˣ, x ∈ Subgroup.zpowers g7 := by
+theorem g7_generates : ∀ x : (ZMod 7)ˣ, x ∈ Subgroup.zpowers g7 := by
   intro x
   obtain ⟨n, hn⟩ := (by decide +kernel : ∀ x : (ZMod 7)ˣ, ∃ n : Fin 6, g7 ^ (n : ℕ) = x) x
   exact ⟨n, by simpa using hn⟩
