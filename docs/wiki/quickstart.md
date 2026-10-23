@@ -12,9 +12,9 @@ Review intervening API additions before writing replacement infrastructure. If t
 checkout contains unrelated work, use a separate worktree for the forward-port and
 leave that work intact.
 
-The Lean 4.34 upgrade uses Lean, Mathlib, cslib, and doc-gen4 `v4.34.0`.
-`lakefile.toml` pins CompPoly to its `v4.34.0` release and VCVio to an exact commit; `lake-manifest.json` records
-the complete resolved dependency set, including the PolyFun revision selected by VCVio.
+The Lean 4.35 upgrade uses Lean, Mathlib, and doc-gen4 `v4.35.0`.
+`lakefile.toml` pins CompPoly and VCVio to their `v4.35.0` releases; `lake-manifest.json`
+records the exact resolved revisions, including the PolyFun revision selected by VCVio.
 Keep that PolyFun pin when updating this stack: a newer PolyFun revision must also be
 validated against VCVio before ArkLib can adopt it.
 The VCVio pin includes the native probability prerequisites and
@@ -30,6 +30,11 @@ to its intended source revision, including transitive dependencies. Freeze those
 check runs; replacing imported output during elaboration invalidates its evidence. After changing
 a dependency revision, rebuild its dependents before checking clients. Use the normal isolated
 `lake build` and full validation as the final authority for scratch or overlay checks.
+
+For focused checks, prefer `lake build ArkLib.Path.To.Module`. A direct `lake env lean` invocation
+does not inherit the package's Lean options or build-time source-policy plugin. In particular,
+a probe using default `autoImplicit` can accept an undeclared parameter that the project rejects.
+Treat such a probe as provisional until the source passes the project build.
 
 The September 4 baseline in `docs/design/00-current-status.md` records the original typed
 interaction implementation train, not the current package versions.
@@ -280,6 +285,23 @@ python3 -m pip install leanblueprint
   checks local markdown links and the `CLAUDE.md` symlink.
 - [`../../.github/workflows/kb-generated.yml`](../../.github/workflows/kb-generated.yml)
   opens generated-files PRs for KB indexes and missing cited-paper stubs after pushes to `main`.
+
+To validate a stacked PR while it targets a feature branch, dispatch the existing CI, import,
+and docs-integrity workflows on its published head branch:
+
+```bash
+review_branch=your-published-head-branch
+gh workflow run ci.yml --ref "$review_branch"
+gh workflow run check-imports.yml --ref "$review_branch"
+gh workflow run docs-integrity.yml --ref "$review_branch"
+gh run list --branch "$review_branch" --event workflow_dispatch \
+  --json workflowName,headSha,status,conclusion,url
+```
+
+Check that each run's `headSha` equals the reviewed commit, and retain the run URLs with the
+validation evidence. A later push needs checks for its new head. Dispatch uses the existing
+read-only CI build job; the Pages publisher runs only on push events. Local validation, required
+GitHub reviews, and the eventual main-target and merge-queue checks still apply.
 
 Pull requests enter GitHub's merge queue after their normal review and required checks pass. The
 queue creates a temporary integration ref containing the queued changes on current `main`; the CI,

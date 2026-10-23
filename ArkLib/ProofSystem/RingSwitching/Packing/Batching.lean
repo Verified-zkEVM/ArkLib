@@ -12,9 +12,9 @@ public import VCVio.EvalDist.ProbabilityBounds
 /-!
 # Separation laws for batching a family of claims
 
-A strategy specifies uniform challenges, weights and a collision bound. Power and equality
-batching assume `NoZeroDivisors` for the challenge ring. Singleton batching works over any
-commutative ring.
+A rule supplies sampled challenges and linear weights. A strategy adds a proved collision bound.
+Power and equality strategies require no zero divisors; their operational rules are available
+without this separation hypothesis. Singleton batching is deterministic over any commutative ring.
 
 `BatchingStrategy.separates_finset_le_card_filter_mul` charges only incorrect candidates.
 `BatchingStrategy.separates_finset` separates a bounded candidate list. A list of at most `L`
@@ -34,21 +34,41 @@ namespace RingSwitching.Packing
 open MvPolynomial Probability ProbabilityTheory
 open scoped NNReal ENNReal
 
-/-- Uniform batching together with its separation bound for distinct value families. -/
-structure BatchingStrategy (C : Type) [CommRing C] (W : Type) [Fintype W] where
+/-- A sampled challenge and the linear weights it assigns to a value family. -/
+structure BatchingRule (C W : Type) where
   /-- Verifier challenge type. -/
   Challenge : Type
   [sampleC : SampleableType Challenge]
-  /-- Weight of each claim for a given challenge. -/
+  /-- Weight of each claim at the sampled challenge. -/
   weight : Challenge → W → C
+
+attribute [instance] BatchingRule.sampleC
+
+namespace BatchingRule
+
+/-- Power weights with exponents `0, …, e − 1`. -/
+def gammaPowers (C : Type) [Monoid C] [SampleableType C] (e : ℕ) :
+    BatchingRule C (Fin e) where
+  Challenge := C
+  weight γ u := γ ^ (u : ℕ)
+
+/-- Equality-kernel weights at a fresh multilinear point. -/
+def eqFold (C : Type) [CommRing C] [SampleableType C] (κ : ℕ) :
+    BatchingRule C (Fin κ → Fin 2) where
+  Challenge := Fin κ → C
+  weight c u := eqTilde (u : Fin κ → C) c
+
+end BatchingRule
+
+/-- A batching rule with a bound on collisions between distinct value families. -/
+structure BatchingStrategy (C : Type) [CommRing C] (W : Type) [Fintype W]
+    extends BatchingRule C W where
   /-- Upper bound on the collision probability. -/
   error : ℝ≥0
-  /-- Distinct families coincide after weighting with probability at most `error`. -/
+  /-- Distinct families collide with probability at most `error`. -/
   separates : ∀ s s' : W → C, s ≠ s' →
     Pr{let c ← $ᵗ Challenge}[∑ u, weight c u * s u = ∑ u, weight c u * s' u] ≤
       (error : ℝ≥0∞)
-
-attribute [instance] BatchingStrategy.sampleC
 
 namespace BatchingStrategy
 
@@ -127,8 +147,7 @@ variable (C : Type) [CommRing C] [NoZeroDivisors C] [Fintype C] [SampleableType 
 /-- Power batching with exponents `0, …, e − 1`: distinct families collide at a uniform
 challenge with probability at most `(e − 1)/|C|`. -/
 def gammaPowers (e : ℕ) : BatchingStrategy C (Fin e) where
-  Challenge := C
-  weight γ u := γ ^ (u : ℕ)
+  toBatchingRule := BatchingRule.gammaPowers C e
   error := ((e - 1 : ℕ) : ℝ≥0) / (Fintype.card C : ℝ≥0)
   separates s s' hne := by
     classical
@@ -177,8 +196,7 @@ def gammaPowers (e : ℕ) : BatchingStrategy C (Fin e) where
 
 /-- Boolean-coordinate batching with a fresh multilinear point and loss `κ/|C|`. -/
 def eqFold (κ : ℕ) : BatchingStrategy C (Fin κ → Fin 2) where
-  Challenge := Fin κ → C
-  weight c u := eqTilde (u : Fin κ → C) c
+  toBatchingRule := BatchingRule.eqFold C κ
   error := (κ : ℝ≥0) / (Fintype.card C : ℝ≥0)
   separates s s' hne := by
     classical

@@ -5,146 +5,74 @@ Authors: Tobias Rothmann
 -/
 module
 
-public import ArkLib.ProofSystem.RingSwitching.Packing.Batching
+public import ArkLib.ProofSystem.RingSwitching.Packing.Batching.CoordinateSample
 public import ArkLib.ProofSystem.RingSwitching.Packing.CheckedObservation
-public import ArkLib.ProofSystem.RingSwitching.Packing.DerivedBatching
-public import ArkLib.ProofSystem.RingSwitching.Packing.Multiplier
-public import ArkLib.ProofSystem.RingSwitching.Packing.Relations
-public import ArkLib.ProofSystem.RingSwitching.Packing.ScalarHead.Quirky
+public import ArkLib.ProofSystem.RingSwitching.Packing.ClaimLayout.Quirky
+public import ArkLib.ProofSystem.RingSwitching.Packing.Conformance
+public import ArkLib.ProofSystem.RingSwitching.Packing.TensorPrefix
 public import ArkLib.ProofSystem.RingSwitching.Packing.Profile
-public import ArkLib.ProofSystem.RingSwitching.Packing.General
+public import ArkLib.ProofSystem.RingSwitching.Packing.RingSwitch
 
 /-!
-# `Packing`: packing small-ring coordinates into large-ring elements
+# Packing-based ring switching
 
-Umbrella for `RingSwitching/Packing/`: the ring switches that move an evaluation claim
-from a small ring to a large one **by packing**. When the large ring `L` is free of rank
-`2^κ` over the small ring `B`, a `B`-basis identifies each block of `2^κ` coefficients of a
-`B`-multilinear `t` with a single `L`-element: an `ℓ`-variate multilinear over `B` *is* an
-`(ℓ − κ)`-variate multilinear `t' = packMLE t` over `L`. A claim `t(r) = s` therefore has an
-equivalent formulation in terms of `t'` — and a commitment made cheaply over `B` can be
-opened by a protocol that runs entirely over `L`.
+Let `P` and `E` be finite free algebras over a common commutative ring `B`. A packing basis
+identifies a component family `(pᵢ)` with one polynomial `p = ∑ᵢ βᵢ pᵢ` over `P`. An independent
+basis of `E` transports a scalar evaluation query into coordinates. Neither rank must be a power
+of two, and the ranks need not agree.
 
-The family is called **Packing** because one basis-sized block of `2^κ` small-ring
-coefficients is encoded as one large-ring coefficient. Thus `κ` Boolean variables worth of
-coefficient positions are packed into the coordinates of a single element of `L`. The shared
-`PackingData` layer describes independent packing and opening bases. The DP24
-`RingSwitchingProfile` presents the tensor algebra `L ⊗[B] L` in chosen coordinates.
+A scalar layout reconstructs its source evaluation as `∑ᵢ λᵢ(q) pᵢ(x(q))`. The shared head sends
+these component values through a specified carrier encoding, checks reconstruction, then samples
+batching weights. A public coordinate transpose derives the product-sumcheck target. Product
+sumcheck and a matrix-evaluated terminal check reduce it to an evaluation of the same polynomial
+against the same commitment oracle collection. The original query remains in the public context.
 
-The equivalence is not free: the original claim constrains `t'` through the basis
-coordinates, so the reduction must *relocate* the claim onto `t'` at some point the
-large-ring opening can handle. The DP24 construction has two ingredients:
+## Interfaces
 
-* the **packing data** — the basis, a carrier ring `A` where the relocation checks run, a
-  pair of embeddings into it, and faithful coordinate maps back out — is one abstraction,
-  `RingSwitchingProfile` (`Profile.lean`), a coordinatized tensor-algebra presentation
-  used by the DP24 interactive relocation;
-* the **relocation** is per-instance and depends on where the evaluation point lives. If the
-  point is arbitrary in `L`, the claim is relocated *interactively*: the prover sends the
-  folded carrier element `ŝ`, the verifier reconstructs the original claim from `ŝ`'s
-  coordinates, collapses the `2^κ` coordinate claims with one random batching vector, and a
-  dedicated degree-2 sumcheck moves the batched claim to a fresh random point that the
-  downstream opening consumes (the protocol files of this folder; round-by-round knowledge
-  soundness, `[NoZeroDivisors L]`). If the point is engineered to lie in a subring, the relocation
-  degenerates to a *deterministic* one-message identity check. That trace head computes in
-  `L` itself, so it is not a `Profile` instance; it uses the coordinate layer directly.
+* `PackingData` (`Coordinates.lean`) supplies independent packing and opening bases. The pure
+  coordinate, polynomial and observation layers require no reduction framework.
+* `ClaimLayout` (`ClaimLayout.lean`) supplies an invertible component decomposition and scalar
+  reconstruction. Prefix, suffix and quirky layouts are provided; the quirky layout requires a
+  field for its interpolation nodes.
+* `BatchingRule` (`Batching.lean`) supplies sampled challenges and weights. `BatchingStrategy` adds
+  a collision bound. Power and equality-fold certificates require no zero divisors; coordinate
+  sampling works over arbitrary commutative rings. Fixed-list bounds charge only wrong families.
+* `PackedCommitment` supplies oracle compatibility. `PackedCommitment.Honest` separately supplies
+  honest coverage; `Functional` is an explicit binding hypothesis.
+* `Head.lean` gives the scalar guard, derived target, source extractor and head security. Its
+  endpoint is directly the initial `ProductSumcheck.rel`, without a formatting phase.
+* `ProductSumcheck/` gives degree-two scalar rounds and the terminal same-commitment evaluation
+  relation. A certified `Multiplier` separates its polynomial from its executable point evaluator.
+* `RingSwitch.lean` composes the shared head and product sumcheck. Completeness holds over
+  commutative rings. Worst-case round-by-round knowledge soundness additionally requires a finite
+  challenge ring with no zero divisors, functional compatibility and injective transport `P → C`.
+  Its exact challenge-error sum is `bat.error + m * (2 / card C)`.
 
-The independent `PackingData` coordinate layer also supplies algebra for a reference-Flock head.
-Its source, messages and residual opening relation require their own conformance proofs.
+## Consumers
 
-The *opposite-direction* `Lift` construction—from a large quotient ring down into a field—is
-**not** a packing; it lives in the sibling folder `RingSwitching/Lift/`.
+`TensorPrefix.lean` defines prefix ring switching through the shared protocol, retaining the
+original carrier `P.A` and equality-fold challenges. `Binius/FRIBinius/RingSwitch.lean` composes
+it with the Binary Basefold opening. Exact first encodings give completeness;
+compatibility within the unique decoding radius gives round-by-round security.
 
-## Folder structure
+The maintained `ArkLibTest/.../Packing/RingSwitch/` examples instantiate independent F₁₆/F₈
+algebras with suffix and quirky layouts. Their transparent polynomial oracle is specification
+data rather than a succinct commitment scheme. A native consumer must provide its
+  commitment/opening interface and prove the transport of any additional source invariant.
+Fixed candidate lists certify the head-only bound; they do not supply list-valued tail security.
 
-The shared coordinate algebra imports no reduction framework. It holds over commutative rings,
-except the Schwartz–Zippel batching strategies (finite rings with no zero divisors) and the
-quirky layout (a field):
-
-* `Coordinates.lean` — `PackingData`: independent finite bases of a packing algebra and an
-  opening algebra over a common ring, the coordinate transpose, and the batching map `bridge`.
-* `FiniteObservation.lean`, `CheckedObservation.lean` — weighted observations, their coordinate
-  slices, and read-back of a scalar claim from an accepted honest message.
-* `Polynomial.lean`, `Relations.lean` — packed multilinear polynomials with both round trips, and
-  the opening, slice and batched-sumcheck relations; actual source slices and the target derived
-  from a public transpose with arbitrary weights.
-* `Multiplier.lean` — the public multiplier evaluated by a read-once matrix program.
-* `Batching.lean` — `BatchingStrategy`: uniform challenges with a proved collision bound, and
-  `separates_finset` for candidate lists fixed before the challenge (the generic union bound is in
-  `VCVio.EvalDist.ProbabilityBounds`).
-* `DerivedBatching.lean` — fixed-list separation for packed candidates against publicly derived
-  slices, preserving the same source without an additional slice message. Reference Flock's early
-  residual scalar claim is the intended consumer; its head conformance remains separate.
-* `ScalarHead/Layout.lean`, `ScalarHead/Quirky.lean` — prefix, suffix and quirky source
-  layouts, each with a proved reconstruction identity.
-
-The DP24 construction:
-
-* `Profile.lean` — `RingSwitchingProfile`, the DP24 tensor presentation (basis, carrier,
-  embeddings, coordinate maps, reconstruction and inverse laws) and their consequences.
-* `Algebra.lean` — the framework-independent packing algebra: `packMLE`/`unpackMLE`, the
-  carrier operations, the verifier subroutines (`eqWeightedCoordSum`, the multiplier
-  `compute_A_MLE`, the targets `compute_s0`/`compute_final_eq_value`) and the tensor-product
-  constructor `tensorProductProfile`. Its component-wise carrier embedding is the `d = 1` case
-  of the family-shared coefficient transport (`../Transport/Coeffs.lean`).
-* `ProfileCoordinates.lean`, `ProfileLayout.lean`, `BatchingAlgebra.lean`,
-  `FinalAlgebra.lean` — the profile's coordinate equivalences, the prefix layout of
-  `packMLE`, and the batching/final verifier identities. The first three are stated through the
-  finite-coordinate modules (`Coordinates`, `FiniteObservation`, `CheckedObservation`,
-  `Relations`, `Polynomial`, `ScalarHead/Layout`, `Batching`). None of these imports the
-  reduction framework.
-* `Prelude.lean` — the protocol vocabulary: statement/witness types, the `MLIOPCS`
-  downstream-opening interface, the relaxed and strict (honest) oracle compatibility of
-  `AbstractOStmtIn`, and the sumcheck relations; re-exports `Algebra.lean`.
-* `Compatibility.lean` — `AbstractOStmtIn.Functional`: an oracle statement is compatible with at
-  most one packed polynomial. This is the binding hypothesis of the knowledge-soundness theorems.
-* `Spec.lean` — the transcript shape: the batching round (message then scalar challenge),
-  the sumcheck loop, and the final one-message round (the family-shared wire
-  `pSpecMessage`), with their `OracleInterface`/`SampleableType` instances.
-* `BatchingPhase.lean` — the relocation's first phase: send `ŝ`, check the original claim
-  against its column decomposition (aborting on failure), batch the coordinate claims into one
-  sumcheck target. The verifier is an instance of the family-shared `scalarRoundOracleVerifier`
-  (`../RoundVerifiers.lean`). Perfect completeness and worst-case round-by-round knowledge
-  soundness at error `κ/|L|` are proved; soundness assumes `AbstractOStmtIn.Functional`.
-* `SumcheckPhase.lean` — the relocation sumcheck (`ℓ'` rounds, each aborting on a failed round
-  check) and the final consistency step handing the residual evaluation claim `t'(r') = s'` to
-  the downstream opening; the final verifier is an instance of the family-shared
-  `messageRoundOracleVerifier` (`../RoundVerifiers.lean`). Per-round and final-step completeness
-  and worst-case round-by-round knowledge soundness (`2/|L|` per round) are proved, and so are
-  the composed completeness and the composed worst-case round-by-round knowledge soundness
-  (`coreInteraction_rbrKnowledgeSoundnessWorstCase`, sorry-free and axiom-clean under its stated
-  hypotheses), through the guarded worst-case composition theorems.
-* `General.lean` — the composed reduction (batching ++ sumcheck ++ downstream opening). Perfect
-  completeness at the strict relations is proved from the phases and the downstream opening's
-  completeness. Worst-case round-by-round knowledge soundness of batching ++ sumcheck
-  (`batchingCore_rbrKnowledgeSoundnessWorstCase`) is sorry-free and axiom-clean under its stated
-  hypotheses (`[NoZeroDivisors L]`, `AbstractOStmtIn.Functional`). So is the full composite's
-  (`fullOracleVerifier_rbrKnowledgeSoundnessWorstCase`), given in addition that the downstream
-  opening is worst-case round-by-round knowledge sound (`MLIOPCS.RbrKnowledgeSoundWorstCase`).
-  Under a plain `MLIOPCS`, whose `MLIOPCS.rbrKnowledgeSoundness` contract is averaged, the full
-  composite (`fullOracleVerifier_rbrKnowledgeSoundness`) still depends on the admitted
-  `OracleVerifier.append_rbrKnowledgeSoundness`.
-
-## Instantiations
-
-* **Binius** ([DP24] Construction 3.1) — `B`/`L` binary-tower fields, carrier
-  `A = L ⊗[B] L`; instantiated by `ProofSystem/Binius/FRIBinius/`.
-
-Hachi's §3 head ([NOZ26] Theorem 2) has carrier `A = L = R_q` and an automorphism `φ₁`. For
-`κ > 0` and finite `R_q` it is not a profile instance (`RingSwitchingProfile.card_A`); its
-deterministic trace head is `Commitments/Functional/Hachi/TraceHead/`. It uses the coordinate
-layer directly: its packed polynomial is `packedMLE` at `PackingData.ofBaseOpening` of `ψ` (one
-opening coordinate) of its own monomial-coefficient `ScalarHead.ClaimLayout`, its conformance
-theorem states its accepting condition through `sliceRel`, and its observation is a
-`CheckedObservation`. It exercises only the packing, evaluation and opening part of this layer (no
-batching, multiplier or sumcheck), as in [NOZ26] §3.1.
+Hachi's deterministic trace head uses the coordinate and claim-layout layers through its own trace
+check. It does not need this interactive head or product sumcheck. The opposite-direction `Lift`
+construction lives separately in `RingSwitching/Lift/`.
 
 ## References
 
-* [DP24] Diamond, Benjamin E., and Jim Posen. "Polylogarithmic Proofs for Multilinears over
-  Binary Towers." Cryptology ePrint Archive (2024).
-* [NOZ26] Nguyen, N. K., O'Rourke, G., and Zhang, J. "Hachi: Efficient Lattice-Based
-  Multilinear Polynomial Commitments over Extension Fields." Cryptology ePrint Archive (2026).
+* [Diamond, B. E., and Posen, J., *Polylogarithmic Proofs for Multilinears over Binary
+  Towers*][DP24]
+* [Bünz, B., Rothblum, R., and Wang, W., *Flock: Fast Proving for Batch Boolean
+  Computations*][BRW26]
+* [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
+  Polynomial Commitments over Extension Fields*][NOZ26]
 -/
 
 @[expose] public section

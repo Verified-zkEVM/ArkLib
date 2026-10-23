@@ -18,12 +18,12 @@ linter.style.header = false
 [[require]]
 name = "VCVio"
 git = "https://github.com/Verified-zkEVM/VCVio"
-rev = "afa6593f15e1e79ecb3cf22fc56191cecb452bb0"
+rev = "v4.35.0"
 
 [[require]]
 name = "«doc-gen4»"
 git = "https://github.com/leanprover/doc-gen4"
-rev = "v4.34.0"
+rev = "v4.35.0"
 
 [[require]]
 name = "checkdecls"
@@ -33,7 +33,7 @@ rev = "lean4.18.0"
 [[require]]
 name = "CompPoly"
 git = "https://github.com/Verified-zkEVM/CompPoly"
-rev = "v4.34.0-patch2"
+rev = "v4.35.0"
 
 [[lean_lib]]
 name = "ArkLibLintPlugin"

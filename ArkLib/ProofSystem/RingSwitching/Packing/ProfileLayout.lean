@@ -7,7 +7,7 @@ Authors: Alexander Hicks
 module
 
 public import ArkLib.ProofSystem.RingSwitching.Packing.Algebra
-public import ArkLib.ProofSystem.RingSwitching.Packing.ScalarHead.Layout
+public import ArkLib.ProofSystem.RingSwitching.Packing.ClaimLayout
 
 /-!
 # Polynomial packing and prefix component layouts
@@ -84,7 +84,7 @@ theorem packMLE_eq_packedMLE (t : MultilinearPoly K ℓ) :
 theorem packMLE_eq_packedPrefixLayout (t : MultilinearPoly K ℓ) :
     packMLE κ L K ℓ ℓ' h_l β t =
       (Packing.PackingData.ofBasis β).packedMLE
-        ((Packing.ScalarHead.packedPrefixLayout
+        ((Packing.ClaimLayout.packedPrefixLayout
           (Packing.PackingData.ofBasis β) ℓ' κ (Equiv.refl _)).components
           (sourceDimensionEquiv h_l t)) :=
   packMLE_eq_packedMLE h_l β t

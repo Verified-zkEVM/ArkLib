@@ -4,14 +4,17 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
 
-import ArkLib.ProofSystem.RingSwitching.Packing.General
+import ArkLib.ProofSystem.RingSwitching.Packing.OpeningAdapter
+import ArkLib.OracleReduction.Composition.Sequential.NoAmbient
+import ArkLib.OracleReduction.Security.GuardedRoundByRound
 
 /-!
 # A direct opening protocol for ring switching's downstream claim
 
-A concrete `MLIOPCS` over any commutative ring `L`, used to show that the hypotheses of the full
-ring-switching composite can hold together. The oracle statement is the multilinear polynomial
-itself (`oStmtIn`), and the opening has no rounds: the verifier reads the polynomial from its
+A concrete `MLIOPCS` over any commutative ring `L`, with a contextual adapter certified by
+`OpeningAdapter`. The oracle statement is the multilinear polynomial
+itself (`oStmtIn`), so this is a transparent specification fixture rather than a commitment scheme.
+The opening has no rounds: the verifier reads the polynomial from its
 oracle and accepts exactly when the claimed evaluation is its value at the claimed point.
 
 * `verifier_rbrKnowledgeSoundnessWorstCase`: the verifier is worst-case round-by-round knowledge
@@ -150,5 +153,27 @@ noncomputable def mliopcs : MLIOPCS L ℓ' where
 theorem mliopcs_rbrKnowledgeSoundWorstCase :
     (mliopcs (L := L) (ℓ' := ℓ')).RbrKnowledgeSoundWorstCase :=
   verifier_rbrKnowledgeSoundnessWorstCase _ _ _
+
+/-- A general opening obtains contextual completeness without another security premise. -/
+example (Context : Type) {σ : Type} (init : ProbComp σ)
+    (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
+    OracleProof.perfectCompleteness
+      (oracleProof := Packing.OpeningAdapter.reduction (mliopcs (L := L) (ℓ' := ℓ')) Context)
+      (relation := (mliopcs (L := L) (ℓ' := ℓ')).toAbstractOStmtIn.strictView.toPackedCommitment
+        |>.evalRelWithContext (C := L) Context)
+      (init := init) (impl := impl) :=
+  Packing.OpeningAdapter.perfectCompleteness _ Context init impl
+
+/-- The same adapter transports the general opening's worst-case certificate. -/
+example (Context : Type) {σ : Type} (init : ProbComp σ)
+    (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
+    OracleProof.rbrKnowledgeSoundnessWorstCase init impl
+      ((mliopcs (L := L) (ℓ' := ℓ')).toAbstractOStmtIn.toPackedCommitment
+        |>.evalRelWithContext (C := L) Context)
+      (Packing.OpeningAdapter.reduction (mliopcs (L := L) (ℓ' := ℓ')) Context).toOracleVerifier
+      (Sum.elim (fun _ => 0) (mliopcs (L := L) (ℓ' := ℓ')).rbrKnowledgeError ∘
+        ProtocolSpec.ChallengeIdx.sumEquiv.symm) :=
+  Packing.OpeningAdapter.rbrKnowledgeSoundnessWorstCase _ Context
+    mliopcs_rbrKnowledgeSoundWorstCase init impl
 
 end ArkLibTest.RingSwitchingConformance.DirectOpening

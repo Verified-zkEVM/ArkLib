@@ -23,6 +23,16 @@ The prefix-fixing algebra itself (`MvPolynomial.fixFirstVariablesOfMQP_eq_bind�
 * `sum_getSumcheckRoundPoly_uniform` and `eval_getSumcheckRoundPoly_uniform`: over a uniform
   domain, the univariate round polynomial sums to the round claim and evaluates at a challenge to
   the next round claim.
+* `coe_projectToNextSumcheckPoly`: the next round polynomial `projectToNextSumcheckPoly` is the
+  current one with its first variable fixed, renamed along `ℓ - i - 1 = ℓ - (i + 1)`; and
+  `sum_projectToNextSumcheckPoly_uniform`: over a uniform domain, its sum over the remaining cube is
+  the univariate round polynomial at the challenge.
+* `eval_add_eval_getSumcheckRoundPoly`: over a two-point uniform domain, the univariate round
+  polynomial's values at the two points sum to the round claim.
+* `projectToMidSumcheckPoly_succ`, `coe_projectToMidSumcheckPoly`,
+  `eval_projectToMidSumcheckPoly_last`, `coe_projectToMidSumcheckPoly_last`: the
+  identity-combinator projection `projectToMidSumcheckPoly` at the next round, as a product of
+  prefix fixings, and at the last round, where it is the constant `m(r) · t(r)`.
 * `prob_eval_eq_le`: distinct univariate polynomials of degree at most `d` agree at a uniform
   point with probability at most `d / |L|`, the round error `roundKnowledgeError`. It is the
   degree-bounded form of the root bound `Probability.prob_polynomial_eval_eq_le`.
@@ -49,6 +59,23 @@ theorem projectToMidSumcheckPolyWithParam_succ {Context : Type}
         (fun _ => c)) =
       (projectToMidSumcheckPolyWithParam ℓ param ctx t i.succ (Fin.snoc challenges c)).val :=
   fixFirstVariablesOfMQP_succ i _ challenges c h
+
+/-- The next round polynomial `projectToNextSumcheckPoly` is the current one with its first variable
+fixed to the challenge, renamed along `ℓ - i - 1 = ℓ - (i + 1)`. -/
+theorem coe_projectToNextSumcheckPoly (i : Fin ℓ) (H : MultiquadraticPoly L (ℓ - i)) (c : L)
+    (hdim : ℓ - i - 1 = ℓ - i.succ) :
+    (projectToNextSumcheckPoly ℓ i H c).val =
+      rename (Fin.cast hdim) (fixFirstVariablesOfMQP (ℓ - i) ⟨1, by omega⟩ H.val (fun _ => c)) := by
+  unfold projectToNextSumcheckPoly projectToNextSumcheckPolyWithDegree
+  simp only [eq_mpr_eq_cast]
+  rw [← cast_eq_rename_finCast hdim (congrArg (fun k => MvPolynomial (Fin k) L) hdim)]
+  generalize_proofs h₁ h₂
+  revert h₁ h₂
+  generalize ℓ - i.succ = k at *
+  intro h₁ h₂
+  subst hdim
+  intro _
+  rfl
 
 variable {Context : Type} {ιₛᵢ : Type} {OStmtIn : ιₛᵢ → Type} {d : ℕ}
 
@@ -188,7 +215,72 @@ theorem eval_getSumcheckRoundPoly_uniform (i : Fin ℓ) (H : L⦃≤ d⦄[X Fin 
     simp only [Fin.val_castSucc, finCongr_symm, finCongr_apply, Fin.val_cast]
     omega
 
+/-- Over a uniform domain, summing the next round polynomial `projectToNextSumcheckPoly` over the
+remaining cube is evaluating the univariate round polynomial at the challenge: the honest
+next-round claim, stated through the next round polynomial itself. -/
+theorem sum_projectToNextSumcheckPoly_uniform (i : Fin ℓ) (H : MultiquadraticPoly L (ℓ - i))
+    (c : L) :
+    ∑ x ∈ (SumcheckDomain.uniform D₀ (ℓ - i.succ)).cube,
+        (projectToNextSumcheckPoly ℓ i H c).val.eval x =
+      (getSumcheckRoundPoly ℓ (SumcheckDomain.uniform D₀ ℓ) i H).val.eval c := by
+  have hdim : ℓ - i - 1 = ℓ - i.succ := by simp only [Fin.val_succ]; omega
+  rw [eval_getSumcheckRoundPoly_uniform ℓ D₀ i H c hdim, coe_projectToNextSumcheckPoly ℓ i H c hdim]
+
 end Uniform
+
+/-- Over a two-point uniform domain `D₀`, the univariate round polynomial's values at the two points
+sum to the sum of the round polynomial over the remaining cube: the two-point form of
+`sum_getSumcheckRoundPoly_uniform`. -/
+theorem eval_add_eval_getSumcheckRoundPoly (D₀ : Fin 2 ↪ L) (i : Fin ℓ)
+    (H : L⦃≤ d⦄[X Fin (ℓ - i.castSucc)]) :
+    (getSumcheckRoundPoly ℓ (SumcheckDomain.uniform D₀ ℓ) i H).val.eval (D₀ 0) +
+        (getSumcheckRoundPoly ℓ (SumcheckDomain.uniform D₀ ℓ) i H).val.eval (D₀ 1) =
+      ∑ x ∈ (SumcheckDomain.uniform D₀ (ℓ - i.castSucc)).cube, H.val.eval x := by
+  rw [← sum_getSumcheckRoundPoly_uniform ℓ D₀ i H, SumcheckDomain.points_uniform, Finset.sum_map,
+    Fin.sum_univ_two]
+
+/-- The projected round polynomial at round `i + 1` is the round-`i` projection with its first
+variable fixed to the new challenge, for the identity-combinator projection
+`projectToMidSumcheckPoly`. -/
+theorem projectToMidSumcheckPoly_succ (t m : MultilinearPoly L ℓ) (i : Fin ℓ)
+    (challenges : Fin i.castSucc → L) (c : L) :
+    projectToMidSumcheckPoly ℓ t m i.succ (Fin.snoc challenges c) =
+      projectToNextSumcheckPoly ℓ i (projectToMidSumcheckPoly ℓ t m i.castSucc challenges) c := by
+  have hdim : ℓ - i - 1 = ℓ - (i + 1) := by omega
+  refine Subtype.ext ?_
+  rw [coe_projectToNextSumcheckPoly ℓ i _ c hdim]
+  exact (fixFirstVariablesOfMQP_succ i _ challenges c hdim).symm
+
+/-- The identity-combinator projection is the product of the multiplier and the witness polynomial,
+each with its first `i` variables fixed to the challenges. -/
+theorem coe_projectToMidSumcheckPoly (t m : MultilinearPoly L ℓ) (i : Fin (ℓ + 1))
+    (challenges : Fin i → L) :
+    (projectToMidSumcheckPoly ℓ t m i challenges).val =
+      fixFirstVariablesOfMQP ℓ i m.val challenges *
+        fixFirstVariablesOfMQP ℓ i t.val challenges := by
+  simp only [projectToMidSumcheckPoly, computeInitialSumcheckPoly, fixFirstVariablesOfMQP_eq_bind₁,
+    map_mul]
+
+/-- With every variable fixed, the identity-combinator projection evaluates to the product of the
+multiplier and the witness polynomial at the challenges. -/
+theorem eval_projectToMidSumcheckPoly_last (t m : MultilinearPoly L ℓ)
+    (challenges : Fin ℓ → L) (x : Fin (ℓ - (Fin.last ℓ : Fin (ℓ + 1))) → L) :
+    (projectToMidSumcheckPoly ℓ t m (Fin.last ℓ) challenges).val.eval x =
+      m.val.eval challenges * t.val.eval challenges := by
+  rw [coe_projectToMidSumcheckPoly, map_mul, eval_fixFirstVariablesOfMQP_last,
+    eval_fixFirstVariablesOfMQP_last]
+
+/-- With every variable fixed, the identity-combinator projection is the constant polynomial at the
+product of the multiplier and the witness polynomial evaluated at the challenges. -/
+theorem coe_projectToMidSumcheckPoly_last (t m : MultilinearPoly L ℓ) (challenges : Fin ℓ → L) :
+    (projectToMidSumcheckPoly ℓ t m (Fin.last ℓ) challenges).val =
+      C (m.val.eval challenges * t.val.eval challenges) := by
+  have : IsEmpty (Fin (ℓ - (Fin.last ℓ : Fin (ℓ + 1)))) := by
+    rw [Fin.val_last, Nat.sub_self]
+    infer_instance
+  rw [eq_C_of_isEmpty (projectToMidSumcheckPoly ℓ t m (Fin.last ℓ) challenges).val,
+    ← constantCoeff_eq, ← eval_zero]
+  exact congrArg C (eval_projectToMidSumcheckPoly_last ℓ t m challenges 0)
 
 /-- Two distinct univariate polynomials of degree at most `d` agree at a uniform point with
 probability at most `d / |L|`, the round error `roundKnowledgeError`. The degree-bounded form of

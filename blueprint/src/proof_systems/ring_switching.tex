@@ -8,10 +8,12 @@ field, $\mathbb{F}_2$, or a cyclotomic ring $R_q$) while running sum-check and t
 a field large enough for soundness. It was introduced for binary towers in \cite{DP24}. Hachi's
 extension-field-to-cyclotomic-ring reduction \cite{NOZ26} uses a related trace-based head.
 
-ArkLib formalizes the DP24 packing construction as an oracle reduction parameterized by a
-\emph{packing profile}, with the binary-tower (Binius) construction as one instance. The shared
-coordinate layer also supports Hachi's trace head and reference-Flock packing algebra; each
-consumer supplies its own protocol and conformance proof.
+ArkLib defines the DP24 prefix instance through a shared checked head and product sum-check.
+Its \emph{packing profile} specifies the tensor carrier and coordinates; the binary-tower
+(Binius) construction supplies one instance. The coordinate layer also supports Hachi's separate
+trace head and reference-Flock packing algebra. New scalar consumers instantiate the shared
+protocol, while native Flock source, residual-relation and extraction transport remain separate
+obligations.
 
 \subsection{The packing profile}
 
@@ -111,112 +113,135 @@ special soundness into the ring-level evaluation relation).
 
 \subsection{The reduction}
 
-The full reduction is a sequential composition of three phases, ending in a call to an underlying
-large-field multilinear IOPCS over $L$.
+The shared protocol composes a checked head with product sum-check. Its endpoint is an evaluation
+of the same committed packed polynomial, retaining the original query and batching challenge.
+An opening must accept that contextual evaluation relation to close the protocol. The DP24
+instance uses packing, opening and challenge algebras all equal to $L$, with prefix packing in
+the profile basis; its first message keeps the original carrier $A$.
 
 \begin{enumerate}
-  \item \textbf{Batching} (\lean{RingSwitching.BatchingPhase.batchingOracleReduction}). The prover
-    sends the folded element $\hat s \in A$. The verifier checks the original claim against its
-    column-decomposition, $s = \sum_v \tilde{\mathrm{eq}}(v, r_{0..\kappa-1})\cdot
-    \mathrm{decomposeColumns}(\hat s)_v$, then sends a batching challenge $r'' \in L^\kappa$,
-    collapsing the $\kappa$ packed coordinates into a single sum-check target $s_0 = \sum_u
-    \tilde{\mathrm{eq}}(u, r'')\cdot \mathrm{decomposeRows}(\hat s)_u$. (Soundness loss
-    $\kappa/\lvert L\rvert$.)
-  \item \textbf{Sum-check} (\lean{RingSwitching.SumcheckPhase.coreInteractionOracleReduction}). A
-    degree-$2$ multilinear sum-check over $L$ on $H = A_{\mathrm{MLE}} \cdot t'$, over $\ell'$ rounds
-    plus a final round, reducing the sum claim to a single evaluation of $t'$ at a random point.
-    (Loss $2/\lvert L\rvert$ per round; the final round sends no challenge and adds none.)
-  \item \textbf{Opening}. The residual evaluation claim about $t'$ over $L$ is discharged by the
-    underlying large-field multilinear IOPCS.
+  \item \textbf{Batching} (\lean{RingSwitching.Packing.Head.reduction,
+    RingSwitching.Packing.TensorPrefix.head_verifier_eq}). The prover sends the folded element
+    $\hat s \in A$. The verifier checks the original claim against its column decomposition,
+    $s = \sum_v \tilde{\mathrm{eq}}(v, r_{0..\kappa-1})\cdot
+    \mathrm{decomposeColumns}(\hat s)_v$, then samples a batching challenge $r'' \in L^\kappa$,
+    producing the target $s_0 = \sum_u \tilde{\mathrm{eq}}(u, r'')\cdot
+    \mathrm{decomposeRows}(\hat s)_u$. Its certified batching loss is
+    $\kappa/\lvert L\rvert$.
+  \item \textbf{Sum-check} (\lean{RingSwitching.Packing.ProductSumcheck.reduction}). A degree-$2$
+    sum-check on the product of the public multilinear multiplier and $t'$ runs for $\ell'$
+    challenges, followed by a terminal message and check. Each challenge contributes
+    $2/\lvert L\rvert$; the terminal check sends no challenge. Its accepted output is the
+    contextual evaluation claim about the same $t'$ and oracle family.
+  \item \textbf{Opening}. The concrete Binius construction appends the Binary Basefold contextual
+    opening. Its existing zero-message frontier formats the evaluation claim and may discard the
+    query context; it does not insert another wire phase or change the committed polynomial.
 \end{enumerate}
 
-\begin{definition}[Full ring-switching reduction]
-  \lean{RingSwitching.FullRingSwitching.fullOracleReduction}
+For the concrete Binius construction, specialize the base to a finite field $K$ of cardinality
+$2$ and let $L$ be a finite extension field with a $K$-basis $\beta$ indexed by
+$\{0,\ldots,2^\kappa-1\}$, normalized by $\beta_0=1$. Use its associated tensor-product profile.
+Choose $\ell=\ell'+\kappa$, positive integers $\ell'$, $R$ and $\vartheta$ with
+$\vartheta\mid\ell'$ and $\ell'+R<2^\kappa$, and a number of opening queries
+$\gamma\in\mathbb{N}$. Challenges in $L$ use the uniform sampler.
+
+\begin{definition}[Full Binius ring-switching reduction]
+  \lean{Binius.FRIBinius.RingSwitch.fullReduction}
   \uses{def:ring_switching_profile, def:pack_mle}
   \label{def:full_ring_switching}
-  The composition of the batching phase, the core sum-check interaction, and the large-field IOPCS
-  invocation.
+  In the concrete setup above, compose the shared DP24 prefix protocol with the Binary
+  Basefold opening. This is a
+  non-fused composition ending in an accept/reject statement, rather than an unclosed evaluation
+  claim.
 \end{definition}
 
 \subsection{Security}
 
+Oracle compatibility specifies the relations certified about the program. Honest coverage is
+separate: a \texttt{PackedCommitment.Honest} supplies a compatible oracle statement for every
+packed polynomial. It is not a security premise. The following completeness result applies to
+valid inputs with exact encodings; it does not assert completeness for every oracle within a
+decoding radius.
+
 \begin{theorem}[Perfect completeness]
-  \lean{RingSwitching.FullRingSwitching.fullOracleReduction_perfectCompleteness}
+  \lean{Binius.FRIBinius.RingSwitch.fullReduction_perfectCompleteness,
+    RingSwitching.Packing.RingSwitch.append_perfectCompleteness}
   \uses{def:full_ring_switching}
   \label{thm:ring_switching_completeness}
-  The full ring-switching oracle reduction is perfectly complete for the input relation with honest
-  oracle compatibility: an honest prover holding a witness in that relation always produces a
-  transcript accepted into the output relation. The honest folded $\hat s$ passes the column check
-  by the packing and folded-evaluation identities, its batched target is the round-zero sum-check
-  sum, and the final check holds by the final-multiplier identity. The phases compose through the
-  guarded-verifier composition theorems, and the opening contributes its own completeness.
+  The full Binius reduction is perfectly complete for its input relation with an exact first
+  codeword encoding. The honest folded element passes the column check, its target is the
+  round-zero sum, and the matrix terminal check produces the correct opening of the same packed
+  polynomial. The Binary Basefold opening is complete on that strict relation. More generally,
+  the shared reduction can be closed by a guarded opening already typed at its contextual
+  evaluation endpoint, provided that opening is perfectly complete on that relation for every
+  fixed initial oracle state.
 \end{theorem}
 
-\begin{theorem}[Round-by-round knowledge soundness of batching and the core interaction]
-  \lean{RingSwitching.SumcheckPhase.coreInteraction_rbrKnowledgeSoundnessWorstCase,
-    RingSwitching.FullRingSwitching.batchingCore_rbrKnowledgeSoundnessWorstCase}
-  \uses{def:full_ring_switching, thm:rbr_knowledge_soundness_append_guarded,
+\begin{theorem}[Round-by-round knowledge soundness of the prefix protocol]
+  \lean{RingSwitching.Packing.ProductSumcheck.rbrKnowledgeSoundnessWorstCase,
+    RingSwitching.Packing.TensorPrefix.rbrKnowledgeSoundnessWorstCase,
+    RingSwitching.Packing.TensorPrefix.rbrError_sum}
+  \uses{def:ring_switching_profile, def:pack_mle, thm:rbr_knowledge_soundness_append_guarded,
     thm:rbr_knowledge_soundness_compose_guarded}
   \label{thm:ring_switching_core_soundness}
-  Suppose $L$ is a finite nontrivial commutative ring with no zero divisors and every oracle
-  statement is compatible with at most one packed polynomial. Then the core sum-check
-  interaction, and the batching phase followed by it, are
-  round-by-round knowledge sound for every fixed transcript prefix, with error
-  $\kappa/\lvert L\rvert$ at the batching challenge and $2/\lvert L\rvert$ per sum-check round.
-  Every phase verifier is guarded, so the phases compose by
-  Theorems~\ref{thm:rbr_knowledge_soundness_append_guarded}
-  and~\ref{thm:rbr_knowledge_soundness_compose_guarded}.
-\end{theorem}
-
-\begin{theorem}[Round-by-round knowledge soundness]
-  \lean{RingSwitching.FullRingSwitching.fullOracleVerifier_rbrKnowledgeSoundnessWorstCase,
-    RingSwitching.FullRingSwitching.fullOracleVerifier_rbrKnowledgeSoundness_of_worst_case,
-    RingSwitching.MLIOPCS.RbrKnowledgeSoundWorstCase}
-  \uses{def:full_ring_switching, thm:ring_switching_core_soundness,
-    thm:rbr_knowledge_soundness_append_guarded}
-  \label{thm:ring_switching_soundness}
-  Suppose $L$ is a finite nontrivial commutative ring with no zero divisors, every oracle
-  statement is compatible with at most one packed polynomial, and the large-field IOPCS is
-  round-by-round knowledge sound for every fixed transcript prefix, with error
-  $\varepsilon_{\mathrm{IOPCS}}$. Then the full reduction is
-  round-by-round knowledge sound for every fixed transcript prefix, with the additive error
+  Suppose $L$ is a finite commutative ring with no zero divisors and every oracle statement is
+  compatible with at most one packed polynomial. The product sum-check, and the DP24 prefix
+  head followed by it, are round-by-round knowledge sound at every fixed transcript prefix.
+  The prefix protocol's challenge-index error sum is exactly
   \[
-    \frac{\kappa}{\lvert L\rvert} \;+\; \sum_{\text{rounds}} \frac{2}{\lvert L\rvert}
-    \;+\; \varepsilon_{\mathrm{IOPCS}},
+    \frac{\kappa}{\lvert L\rvert} + \frac{2\ell'}{\lvert L\rvert}.
   \]
-  matching \cite[\S3.1--3.2]{DP24}. The final consistency step sends no challenge, so it adds no
-  error. The no-zero-divisors hypothesis supplies the Schwartz--Zippel bound for distinct
-  polynomial claims. The uniqueness
-  hypothesis fixes the packed polynomial before the batching challenge; without it a prover may
-  choose the packed polynomial after the challenge. Batching followed by the core interaction is
-  guarded, so it composes with the IOPCS by
-  Theorem~\ref{thm:rbr_knowledge_soundness_append_guarded}; the IOPCS itself need not be guarded.
+  The head contributes one batching challenge; each sum-check challenge contributes
+  $2/\lvert L\rvert$. The terminal message has no challenge and contributes no challenge error.
+  The check holds for every multiplier value, including zero.
 \end{theorem}
 
-\begin{theorem}[Round-by-round knowledge soundness under an averaged IOPCS contract (conditional)]
-  \lean{RingSwitching.FullRingSwitching.fullOracleVerifier_rbrKnowledgeSoundness}
-  \uses{def:full_ring_switching, thm:ring_switching_core_soundness,
-    thm:rbr_knowledge_soundness_append}
-  \label{thm:ring_switching_soundness_averaged}
-  Under the hypotheses of Theorem~\ref{thm:ring_switching_soundness}, except that the IOPCS is only
-  round-by-round knowledge sound on average over provers, the full reduction is round-by-round
-  knowledge sound on average over provers, with the same error.
+\begin{theorem}[Closing a contextual opening]
+  \lean{RingSwitching.Packing.RingSwitch.append_rbrKnowledgeSoundnessWorstCase,
+    RingSwitching.Packing.RingSwitch.append_rbrError_sum}
+  \uses{thm:ring_switching_core_soundness, thm:rbr_knowledge_soundness_append_guarded}
+  \label{thm:ring_switching_soundness}
+  For the shared protocol, let $P$ and $E$ be the packing and opening algebras of packing data
+  over a commutative base ring $B$. Let $C$ be a finite commutative ring with its uniform
+  sampler, compatible $B$- and $P$-algebra structures, and the scalar-tower law for
+  $B \to P \to C$. Assume $C$ has no zero divisors, coefficient transport $P \to C$ is
+  injective, oracle compatibility is functional, and the batching rule has a separation
+  certificate with error $\varepsilon_{\mathrm{batch}}$. Let an opening already be typed at
+  the contextual evaluation relation for the same committed polynomial. Suppose it is
+  round-by-round knowledge sound for all inputs in that relation and every fixed transcript
+  prefix, with challenge-error function $\varepsilon_{\mathrm{open}}$. Then its composition with the shared
+  protocol is round-by-round knowledge sound, with the appended component-error functions and
+  total challenge error
+  \[
+    \varepsilon_{\mathrm{batch}} + \frac{2m}{\lvert C\rvert}
+      + \sum_j \varepsilon_{\mathrm{open}}(j),
+  \]
+  where $m$ is the number of retained variables. There is no required map $E \to C$.
+  Compatibility and functionality do not assert honest coverage. In the DP24 instance,
+  $P = E = C = L$, $m = \ell'$ and $\varepsilon_{\mathrm{batch}} = \kappa/\lvert L\rvert$.
 \end{theorem}
 
-\noindent Every verifier aborts on a failed check. The batching, sum-check-round and final-step
-completeness theorems are proved, and so is the composed completeness. The phases'
-round-by-round knowledge soundness is proved in the worst-case form, which bounds the
-extraction-failure probability for every fixed transcript prefix over the fresh challenge alone;
-these per-phase bounds are sorry-free and axiom-clean under their stated hypotheses (uniqueness
-of the packed polynomial and $L$ having no zero divisors). They compose without further assumption
-into Theorem~\ref{thm:ring_switching_core_soundness}, which is sorry-free and axiom-clean. With
-an IOPCS that is round-by-round knowledge sound for every fixed transcript prefix, the full
-Theorem~\ref{thm:ring_switching_soundness} is sorry-free and axiom-clean under its stated
-hypotheses; its averaged form follows. Theorem~\ref{thm:ring_switching_soundness_averaged}, whose
-IOPCS contract is only averaged over provers, is still conditional: the last append applies the
-framework's admitted averaged append contract, whose statement is flagged as not derivable from its
-hypotheses. The worst-case IOPCS contract is a separate hypothesis on the IOPCS interface, not a
-replacement of its averaged contract: the implication between the two notions runs from
-worst-case to averaged only, as the framework's note on the worst-case-per-prefix variants
-(\texttt{OracleReduction/Security/RoundByRound.lean}) explains. Ordinary knowledge soundness
-still uses the admitted framework implication from round-by-round knowledge soundness.
+\begin{theorem}[Binius with Binary Basefold]
+  \lean{Binius.FRIBinius.RingSwitch.fullReduction_perfectCompleteness_and_rbrKnowledgeSoundnessWorstCase,
+    Binius.FRIBinius.RingSwitch.fullError_sum_le,
+    Verifier.rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness}
+  \uses{def:full_ring_switching, thm:ring_switching_soundness}
+  \label{thm:binius_ring_switching_soundness}
+  In the concrete setup above, the full Binius verifier is worst-case round-by-round
+  knowledge sound for its
+  relaxed, unique-decoding-radius input relation. Decoder functionality discharges commitment
+  binding. Its challenge-index error sum is bounded by
+  \[
+    \frac{\kappa}{\lvert L\rvert} + \frac{2\ell'}{\lvert L\rvert}
+      + \varepsilon_{\mathrm{BBF}},
+  \]
+  where $\varepsilon_{\mathrm{BBF}}$ is the concrete Binary Basefold opening's closed-form upper
+  bound. Exact codeword encodings give the separate completeness relation in
+  Theorem~\ref{thm:ring_switching_completeness}. Worst-case round-by-round knowledge soundness
+  also implies the prover-averaged form with the same error.
+\end{theorem}
+
+Every checking verifier aborts on a failed check. The prefix and full-composition results above
+prove round-by-round guarantees; they do not derive a worst-case contract from an opening
+hypothesis that is only averaged over provers. Ordinary knowledge soundness is not asserted here:
+the framework conversion from round-by-round to ordinary knowledge soundness remains admitted.

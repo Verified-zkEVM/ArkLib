@@ -146,7 +146,7 @@ info: 'QuantitativeGuardedRegression.nonzero_probability' depends on axioms:
 
 /--
 info: 'QuantitativeGuardedRegression.verifier_rejects_zero' depends on axioms:
-[propext]
+[propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
 #print axioms QuantitativeGuardedRegression.verifier_rejects_zero
@@ -167,7 +167,7 @@ info: 'QuantitativeGuardedRegression.stage_completeness' depends on axioms:
 
 /--
 info: 'QuantitativeGuardedRegression.output_agreement' depends on axioms:
-[propext]
+[propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
 #print axioms QuantitativeGuardedRegression.output_agreement

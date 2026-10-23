@@ -72,7 +72,7 @@ check) and for every `j ∈ Fin t`, `encode(g)(xⱼ) = f₁(xⱼ) + γ · f₂(x
 
 ## Paper ↔ framework mapping
 
-How each step of Construction 6.2 lands on an ArkLib / VCV-io primitive:
+How each step of Construction 6.2 lands on an ArkLib / VCVio primitive:
 
 * `γ ←$ F` (combination randomness) ↦ `pSpec` round 0 (`.V_to_P`); the
   security games sample it via the `SampleableType F` instance on the
@@ -90,7 +90,7 @@ How each step of Construction 6.2 lands on an ArkLib / VCV-io primitive:
 * the §6.2 round-by-round state and extractor (L6.8) ↦ `GammaState`,
   `rbrKnowledgeStateFunction`, `rbrExtractor`.
 * verifier query routing ↦ `OracleInterface.simOracle2` / `simulateQ`
-  (VCV-io's query-simulation semantics).
+  (VCVio's query-simulation semantics).
 * completeness game ↦ `OracleReduction.perfectCompleteness`.
 * knowledge-soundness games (paper App A.1, Defs A.2 / A.4 / A.5) ↦
   `OracleVerifier.knowledgeSoundness` / `OracleVerifier.rbrKnowledgeSoundness`.
