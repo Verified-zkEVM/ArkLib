@@ -913,6 +913,7 @@ public import ArkLib.ProofSystem.Component.ReduceClaim
 public import ArkLib.ProofSystem.Component.SendChallenge
 public import ArkLib.ProofSystem.Component.SendClaim
 public import ArkLib.ProofSystem.Component.SendWitness
+public import ArkLib.ProofSystem.ConstraintSystem.Air
 public import ArkLib.ProofSystem.ConstraintSystem.Basic
 public import ArkLib.ProofSystem.ConstraintSystem.Examples
 public import ArkLib.ProofSystem.ConstraintSystem.Lookup
