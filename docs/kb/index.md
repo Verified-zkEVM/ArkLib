@@ -29,7 +29,12 @@ page under [`papers/`](papers/README.md); that directory, not this list, is the 
   proximity-generator infrastructure.
 - [`papers/BCS16.md`](papers/BCS16.md) - original IOP reference used by the core oracle-reduction
   layer.
+- [`papers/BGKLSW26.md`](papers/BGKLSW26.md) - BitZ's exponent lift, Round 1 fingerprinting,
+  Round 2 tensor implication and OOD collision bound; paper-to-code mapping and remaining
+  protocol obligations.
 - [`papers/BBS24.md`](papers/BBS24.md) - formal verification reference for sum-check.
+- [`papers/CHA24.md`](papers/CHA24.md) - integer fingerprinting provenance from the Zaratan
+  framework and its reusable multivariate counting layer.
 - [`papers/DG25.md`](papers/DG25.md) - interleaved-code proximity gaps and the DG25 formalization
   subtree.
 - [`papers/DP24.md`](papers/DP24.md) - binary-tower multilinear proof reference for the Binius
