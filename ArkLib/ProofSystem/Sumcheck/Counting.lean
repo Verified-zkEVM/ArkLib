@@ -14,29 +14,47 @@ public import Mathlib.Tactic.ComputeDegree
 /-!
 # Sumcheck: soundness by counting, and compressed round messages
 
-The protocol of Lund, Fortnow, Karloff and Nisan, as Thaler states it in
-"Proofs, Arguments, and Zero-Knowledge", Section 4.1, with a deterministic prover strategy.
+This is the sumcheck protocol of Lund, Fortnow, Karloff and Nisan.
 
-The prover claims `H = ∑_{b ∈ {0,1}^n} g(b)` for `g` of degree at most `d` in each variable.
-Round `i`: the prover sends `g_i` of degree at most `d`; the verifier checks
-`g_i(0) + g_i(1) = c_i`, samples `r_i`, and sets `c_{i+1} = g_i(r_i)`.
-At the end the verifier checks `g(r) = c_n`.
+It follows Thaler, "Proofs, Arguments, and Zero-Knowledge", Section 4.1.
+
+The prover claims that `H = sum_{b in {0,1}^n} g(b)`.
+
+The polynomial `g` has degree at most `d` in each variable.
+
+```text
+    round i:  the prover sends g_i, of degree at most d
+              the verifier checks g_i(0) + g_i(1) = c_i
+              the verifier samples r_i and sets c_{i+1} = g_i(r_i)
+    end:      the verifier checks g(r) = c_n
+```
 
 ## Results
 
-- `completeness`: the honest prover is accepted on every challenge vector.
-- `soundness`: against a false claim and any causal prover, at most `n d |F|^(n-1)` of the
-  `|F|^n` challenge vectors accept, an error of `n d / |F|`.
-- `accepts_induced_iff`, `soundness_decoded`, `completeness_decoded`: a verifier that receives a
-  message `m_i` and decodes `g_i = dec(c_i, m_i)` with the running claim, where every decoding has
-  degree at most `d` and passes the sum check by construction, accepts exactly when the verifier
-  above accepts the decoded polynomials.
-- `decEval_encEval`: the common compression of a quadratic round to `h(0)` and its leading
-  coefficient, with `h(1) = c - h(0)`, is such a decoding, and every admissible quadratic has
-  a message.
+- completeness: the honest prover is accepted on every challenge vector.
+- soundness: a false claim passes on at most `n d |F|^(n-1)` of the `|F|^n` challenge vectors.
 
-The statements need only mathlib; they complement the `OracleComp` development in
-`ArkLib.ProofSystem.Sumcheck.Interaction`.
+The soundness error is therefore `n d / |F|`, against any causal prover.
+
+## Compressed round messages
+
+The prover may send a short message `m_i` instead of `g_i`.
+
+The verifier decodes `g_i = dec(c_i, m_i)` from the message and the running claim.
+
+Every decoding has degree at most `d` and passes the sum check by construction.
+
+- decoded acceptance: this verifier accepts exactly when the verifier above does.
+- decoded soundness and completeness: both bounds carry over to the messages.
+- quadratic rounds: the message `(h(0), coefficient of X^2)` is such a decoding.
+
+In the quadratic case the verifier recovers `h(1) = c - h(0)`.
+
+Every admissible quadratic has a message.
+
+The statements need only mathlib.
+
+They complement the `OracleComp` development in `ArkLib.ProofSystem.Sumcheck.Interaction`.
 -/
 
 @[expose] public section
@@ -76,8 +94,12 @@ noncomputable def fixFirst {n : ℕ} (a : F) (g : MvPolynomial (Fin (n + 1)) F) 
 noncomputable def honestMessage {n : ℕ} (g : MvPolynomial (Fin (n + 1)) F) : Polynomial F :=
   ∑ b ∈ cube n, (finSuccEquiv F n g).map (eval b)
 
-/-- The honest prover: round 0 sends the honest first message, and later rounds recurse on g with
-its first variable set to r_0. -/
+/-- The honest prover.
+
+Round 0 sends the honest first message.
+
+Later rounds recurse on g with its first variable set to r_0.
+-/
 noncomputable def honestProver :
     {n : ℕ} → MvPolynomial (Fin n) F → Fin n → (Fin n → F) → Polynomial F
   | 0, _ => fun i => i.elim0
@@ -204,8 +226,10 @@ theorem card_eval_eq_le [IsDomain F] [Fintype F] {d : ℕ} {p q : Polynomial F} 
     _ ≤ d := (Polynomial.natDegree_sub_le _ _).trans (max_le hp hq)
 
 open scoped Classical in
-/-- Against a false claim, at most n d |F|^(n-1) challenge vectors accept,
-for every causal prover. -/
+/-- Against a false claim, at most n d |F|^(n-1) challenge vectors accept.
+
+This holds for every causal prover.
+-/
 theorem soundness [IsDomain F] [Fintype F] {d : ℕ} :
     ∀ {n : ℕ} (g : MvPolynomial (Fin n) F), IndividualDegreeLE g d →
       ∀ (H : F), H ≠ cubeSum g →
@@ -328,8 +352,10 @@ theorem induced_causal (dec : F → Msg → Polynomial F) :
     simpa [Fin.tail] using h k.succ (Fin.succ_lt_succ_iff.mpr hk)
 
 omit [DecidableEq F] in
-/-- The verifier of Section 4.1 accepts the decoded polynomials exactly when g(r) is the replayed
-claim. -/
+/-- The verifier of Section 4.1 accepts the decoded polynomials exactly when g(r) is the end claim.
+
+The end claim comes from replaying the messages against the challenges.
+-/
 theorem accepts_induced_iff (dec : F → Msg → Polynomial F) {d : ℕ}
     (hdeg : ∀ c m, (dec c m).natDegree ≤ d)
     (hsum : ∀ c m, (dec c m).eval 0 + (dec c m).eval 1 = c) :
@@ -345,8 +371,10 @@ theorem accepts_induced_iff (dec : F → Msg → Polynomial F) {d : ℕ}
     rfl
 
 open scoped Classical in
-/-- Against a false claim, at most n d |F|^(n-1) challenge vectors replay to g(r), for every causal
-message strategy. -/
+/-- Against a false claim, at most n d |F|^(n-1) challenge vectors replay to g(r).
+
+This holds for every causal message strategy.
+-/
 theorem soundness_decoded [IsDomain F] [Fintype F] (dec : F → Msg → Polynomial F) {d : ℕ}
     (hdeg : ∀ c m, (dec c m).natDegree ≤ d)
     (hsum : ∀ c m, (dec c m).eval 0 + (dec c m).eval 1 = c)
@@ -358,8 +386,10 @@ theorem soundness_decoded [IsDomain F] [Fintype F] (dec : F → Msg → Polynomi
   have := soundness g hg H hH _ (induced_causal dec H M hM)
   simpa only [accepts_induced_iff dec hdeg hsum g H M hM] using this
 
-/-- When every polynomial of degree at most d with g_i(0) + g_i(1) = c has a message, the honest
-messages replay to g(r). -/
+/-- The honest messages replay to g(r).
+
+This needs a message for every polynomial of degree at most d with g_i(0) + g_i(1) = c.
+-/
 theorem completeness_decoded (dec : F → Msg → Polynomial F) (enc : Polynomial F → Msg)
     {d : ℕ}
     (henc : ∀ c p, p.natDegree ≤ d → p.eval 0 + p.eval 1 = c → dec c (enc p) = p) :
@@ -402,8 +432,7 @@ theorem eval_one_quad (e0 e1 e_inf : F) : (quad e0 e1 e_inf).eval 1 = e1 := by s
 theorem coeff_two_quad (e0 e1 e_inf : F) : (quad e0 e1 e_inf).coeff 2 = e_inf := by
   simp [quad_eq]
 
-/-- A polynomial of degree at most 2 is the quadratic through its values at 0, 1 and its X^2
-coefficient. -/
+/-- A polynomial of degree at most 2 is determined by p(0), p(1) and its X^2 coefficient. -/
 theorem eq_quad {p : F[X]} (hp : p.natDegree ≤ 2) :
     p = quad (p.eval 0) (p.eval 1) (p.coeff 2) := by
   have h1 : p.eval 1 = p.coeff 0 + p.coeff 1 + p.coeff 2 := by
@@ -415,8 +444,7 @@ theorem eq_quad {p : F[X]} (hp : p.natDegree ≤ 2) :
   · simp
   · simp [coeff_eq_zero_of_natDegree_lt (show p.natDegree < n + 3 by omega)]
 
-/-- The X^2 coefficient of a product of two polynomials of degree at most 1 is the product of their
-slopes. -/
+/-- For p and q of degree at most 1, the X^2 coefficient of p q is the product of their slopes. -/
 theorem coeff_two_mul_of_linear {p q : F[X]} (hp : p.natDegree ≤ 1) (hq : q.natDegree ≤ 1) :
     (p * q).coeff 2 = (p.eval 1 - p.eval 0) * (q.eval 1 - q.eval 0) := by
   rw [eq_X_add_C_of_natDegree_le_one hp, eq_X_add_C_of_natDegree_le_one hq,
