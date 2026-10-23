@@ -118,7 +118,7 @@ Sumcheck on the typed layer:
 | Result | Evidence | Landed in |
 |---|---|---|
 | One-round honest completeness through closing | `SingleRound`, `Closing` | #872 |
-| Legacy correspondence | `legacy_input_iff`, `legacy_output_iff`, `legacy_honest_verifier_correspondence` | #874 |
+| Legacy correspondence | `legacy_input_iff`, `legacy_output_iff`, `legacy_verifier_correspondence`, `legacy_honest_verifier_correspondence` | #874, #1244 |
 | Round relations via multivariate projection | `Projection`, `ProjectionTransport` | #879 |
 | One-round reduction soundness, error `deg` over the field size | `executeCommitted_soundness`, `executeRandomCommitment_soundness` and measure forms | #881 |
 | Two sequential rounds through the actual closed claim | `MultivariateRound`, `Sequential` | #883 |
@@ -322,9 +322,11 @@ dummy query and three for revelation. The informed prover costs seven and succee
 These are guarantees for those fixed native provers, not a theorem that access or cost bounds alone
 imply soundness for arbitrary adversaries.
 
-The legacy verifier correspondence is honest-execution only: the legacy verifier reads the input
-polynomial for its next target, while the typed verifier reads the sent polynomial. Both relation
-directions are proved for arbitrary claims.
+The single-round legacy verifier correspondence identifies scalar outputs for arbitrary sent
+polynomials and fixed challenges, including rejection. Both verifiers evaluate the sent polynomial
+for the next target and retain the input polynomial as the output oracle. Both relation directions
+are proved for arbitrary claims. This does not identify the legacy and native security games or
+transfer their soundness theorems.
 
 The legacy `OracleReduction` layer remains in use. Its carrier is `ProtocolSpec n`; several
 unrestricted stateful composition theorems remain admitted. Existing legacy repairs are tracked
