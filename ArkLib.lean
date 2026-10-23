@@ -3,6 +3,9 @@ module
 public import ArkLib.AGM.Basic
 public import ArkLib.Commitments.Functional.Basic
 public import ArkLib.Commitments.Functional.BitZ.ExponentLift
+public import ArkLib.Commitments.Functional.BitZ.OutOfDomain
+public import ArkLib.Commitments.Functional.BitZ.Round1
+public import ArkLib.Commitments.Functional.BitZ.Round2
 public import ArkLib.Commitments.Functional.Hachi.Basic
 public import ArkLib.Commitments.Functional.Hachi.Commitment
 public import ArkLib.Commitments.Functional.Hachi.Composition
@@ -586,6 +589,7 @@ public import ArkLib.Data.MvPolynomial.MapExponents
 public import ArkLib.Data.MvPolynomial.Multilinear
 public import ArkLib.Data.MvPolynomial.NestedEvaluationTree
 public import ArkLib.Data.MvPolynomial.PrimeFingerprint
+public import ArkLib.Data.MvPolynomial.PrimeFingerprintProbability
 public import ArkLib.Data.MvPolynomial.RadicalSplit.Separable
 public import ArkLib.Data.MvPolynomial.RestrictDegree
 public import ArkLib.Data.MvPolynomial.RestrictDegreeVar
@@ -1053,6 +1057,7 @@ public import ArkLib.ToMathlib.Logic.HEq
 public import ArkLib.ToMathlib.MeasureTheory.Integral.NatFloorCells
 public import ArkLib.ToMathlib.MeasureTheory.Integral.PositivePart
 public import ArkLib.ToMathlib.MvPolynomial.ClearedSubstitution
+public import ArkLib.ToMathlib.MvPolynomial.CoeffBound
 public import ArkLib.ToMathlib.MvPolynomial.CompleteHomogeneous
 public import ArkLib.ToMathlib.MvPolynomial.FirstOrderTaylor
 public import ArkLib.ToMathlib.MvPolynomial.FrobeniusPullback
