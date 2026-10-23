@@ -2,6 +2,7 @@ module
 
 public import ArkLib.AGM.Basic
 public import ArkLib.Commitments.Functional.Basic
+public import ArkLib.Commitments.Functional.BitZ.ExponentLift
 public import ArkLib.Commitments.Functional.Hachi.Basic
 public import ArkLib.Commitments.Functional.Hachi.Commitment
 public import ArkLib.Commitments.Functional.Hachi.Composition
@@ -569,6 +570,7 @@ public import ArkLib.Data.Lattices.CyclotomicRing.Subfield.TraceVanishing
 public import ArkLib.Data.Lattices.ModuleSIS
 public import ArkLib.Data.Lattices.Vectors
 public import ArkLib.Data.Matrix.Basic
+public import ArkLib.Data.Matrix.DotProduct
 public import ArkLib.Data.Matrix.ReadOnce
 public import ArkLib.Data.Matrix.Sparse
 public import ArkLib.Data.Matrix.Vandermonde
@@ -583,6 +585,7 @@ public import ArkLib.Data.MvPolynomial.LinearMvExtension
 public import ArkLib.Data.MvPolynomial.MapExponents
 public import ArkLib.Data.MvPolynomial.Multilinear
 public import ArkLib.Data.MvPolynomial.NestedEvaluationTree
+public import ArkLib.Data.MvPolynomial.PrimeFingerprint
 public import ArkLib.Data.MvPolynomial.RadicalSplit.Separable
 public import ArkLib.Data.MvPolynomial.RestrictDegree
 public import ArkLib.Data.MvPolynomial.RestrictDegreeVar
@@ -593,6 +596,7 @@ public import ArkLib.Data.MvPolynomial.WeightedDegree
 public import ArkLib.Data.MvPolynomial.WeightedDegree.Products
 public import ArkLib.Data.MvPolynomial.WeightedHomogeneous
 public import ArkLib.Data.MvPolynomial.WeightedOrder
+public import ArkLib.Data.Nat.BitSum
 public import ArkLib.Data.OracleComp.QueryBounds
 public import ArkLib.Data.Polynomial.BinaryTrace
 public import ArkLib.Data.Polynomial.BinaryTraceQuotient
