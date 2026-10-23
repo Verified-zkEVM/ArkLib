@@ -123,8 +123,8 @@ home_page/            site assets and assembled website root
   (the exponent lift of a bit inner product); it has no `Commitment.Scheme` instance yet. Its
   generic helpers live under `ArkLib/Data/`: `Nat/BitSum.lean` (vectors of bits and the numbers
   they encode, the first file of the `Data/Nat/` folder), `Matrix/DotProduct.lean` (inner products
-  against a product vector, and ring homomorphisms across `mulVec`), and
-  `MvPolynomial/PrimeFingerprint.lean` (an integer polynomial modulo a random prime).
+  against a product vector), and `MvPolynomial/PrimeFingerprint.lean` (an integer polynomial
+  modulo a random prime).
 - Hachi commitment-scheme modules live under `ArkLib/Commitments/Functional/Hachi/` and formalize
   the Greyhound [NS24] / Hachi [NOZ26] *inner-outer* Ajtai lattice commitment over a cyclotomic
   ring `Rq Φ`. The folder is organized by paper section;
