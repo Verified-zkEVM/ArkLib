@@ -918,6 +918,7 @@ public import ArkLib.ProofSystem.Logup.Interaction.Source
 public import ArkLib.ProofSystem.Logup.Prover.CoefficientCircuit
 public import ArkLib.ProofSystem.Logup.Prover.CoefficientCircuitCost
 public import ArkLib.ProofSystem.Logup.Prover.Helpers
+public import ArkLib.ProofSystem.Logup.Prover.State
 public import ArkLib.ProofSystem.Logup.Security.Initial
 public import ArkLib.ProofSystem.Logup.Security.Weighted
 public import ArkLib.ProofSystem.Plonk.Basic

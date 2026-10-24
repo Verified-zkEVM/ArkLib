@@ -131,6 +131,8 @@ home_page/            site assets and assembled website root
   `ProofSystem/Logup/Prover/Helpers.lean` prepares denominator/weight tables and computes
   termwise-total honest helpers. Local residuals vanish off poles; balanced global helper
   totals vanish at every scalar challenge, including poles.
+  `ProofSystem/Logup/Prover/State.lean` caches those tables and equality weights, and proves
+  that each private table fold substitutes the head variable in the same retained-source circuit.
 
 - `ToCompPoly/Multilinear/Basic.lean` constructs Boolean Lagrange tables by sharing each tail
   table and coordinate complement. `ToCompPoly/Multilinear/Arithmetic.lean` interprets that same
