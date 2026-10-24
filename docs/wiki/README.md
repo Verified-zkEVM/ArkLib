@@ -41,7 +41,7 @@ For reusable cross-cutting workflows that are not tied to one repo area, see
 
 ## Maintenance Contract
 
-- `AGENTS.md` is the canonical root guide. `CLAUDE.md` is only a symlink.
+- `AGENTS.md` is the canonical root guide.
 - Keep one primary owner topic per page. The current pages are:
   - `quickstart.md` for commands, validation, and when to run which checks.
   - `repo-map.md` for repo structure and main work areas.

@@ -3,7 +3,7 @@
 Lean 4 formalization of SNARK-related theory, interactive oracle reductions, and proof systems.
 Start with [`README.md`](README.md) for project overview.
 
-`AGENTS.md` is the canonical root guide. `CLAUDE.md` is a symlink to this file.
+`AGENTS.md` is the canonical root guide.
 
 ## Fast Start
 

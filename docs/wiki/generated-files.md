@@ -4,7 +4,6 @@ Edit the source of truth, not the output.
 
 | Path | What it is | Edit directly? | Source of truth / refresh path |
 | --- | --- | --- | --- |
-| `CLAUDE.md` | compatibility symlink | No | Edit `AGENTS.md` |
 | `ArkLib.lean` | generated umbrella imports | No | `./scripts/update-lib.sh` or `./scripts/check-imports.sh` |
 | `.lake/` | build artifacts and cache | No | `lake build`, `lake exe cache get` |
 | `blueprint/lean_decls` | referenced Lean declarations | No | official Lean blueprint post-parse callback over `blueprint/src/`; `leanblueprint web` refreshes it in CI |
