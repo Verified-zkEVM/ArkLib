@@ -59,7 +59,7 @@ theorem embedded_MLP_eval_eq_observation (p : MultilinearPoly L ℓ') (r : Fin �
   rw [map_eqTilde]
   simp only [map_natCast]
   exact congrArg (fun x => x * P.φ₁ (eval (y : Fin ℓ' → L) p.val))
-    (eqPolynomial_symm _ _)
+    (eqTilde_symm _ _)
 
 /-- The embedded evaluation's rows satisfy the packed-slice relation. -/
 theorem embedded_MLP_eval_sliceRel (p : MultilinearPoly L ℓ') (r : Fin ℓ → L) :

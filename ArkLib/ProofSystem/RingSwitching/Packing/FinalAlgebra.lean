@@ -36,7 +36,8 @@ theorem final_tensor_expansion {n : ℕ} (r r' : Fin n → L) :
   have hpoly := eq_MLE_of_degreeOf_le_one_of_eval_zeroOne_eq
     (fun b : Fin n → Fin 2 => eqTilde (fun i => P.φ₀ (r i)) (b : Fin n → P.A))
     (eqPolynomial (fun i => P.φ₀ (r i)))
-    (eqPolynomial_degreeOf _) (fun _ => rfl)
+    (eqPolynomial_degreeOf _) (fun _ => (eqTilde_eq_eval _ _).symm)
+  rw [eqTilde_eq_eval]
   change MvPolynomial.eval (fun i => P.φ₁ (r' i)) _ = _
   rw [hpoly, MLE_eval]
   apply Finset.sum_congr rfl

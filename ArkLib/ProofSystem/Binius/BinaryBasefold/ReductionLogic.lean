@@ -712,7 +712,8 @@ lemma finalSumcheckStepLogic_verifierCheck_honest
     rw [h_wit_structural_invariant.1]
     rw [Sumcheck.Structured.eval_projectToMidSumcheckPoly_last]
     -- ↑witIn.t = witIn.f ⟨0, ⋯⟩
-    rw [h_witIn_f_0_eq_c, h_c_eq]; rfl
+    rw [h_witIn_f_0_eq_c, h_c_eq, eqTilde_eq_eval]
+    rfl
   -- Combine to finish the proof
   change stmtIn.sumcheck_target = eqTilde stmtIn.ctx.t_eval_point stmtIn.challenges *
     witIn.f ⟨0, by simp only [Fin.val_last, zero_mem]⟩
