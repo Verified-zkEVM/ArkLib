@@ -15,6 +15,7 @@ related_modules:
   - ArkLib/Commitments/Functional/BitZ/Bitification.lean
   - ArkLib/Commitments/Functional/BitZ/RoundsSoundness.lean
   - ArkLib/Commitments/Functional/BitZ/BitifiedClaim.lean
+  - ArkLib/Commitments/Functional/BitZ/Completeness.lean
   - ArkLib/Data/MvPolynomial/PrimeFingerprint.lean
   - ArkLib/Data/MvPolynomial/PrimeFingerprintProbability.lean
   - ArkLib/Data/MvPolynomial/LinearMvExtension.lean
@@ -51,6 +52,7 @@ sampling.
 | Lemma 4.12; equation (47) | `Matrix.dotProduct_map_mulVec`, `BitZ.bitWeights`, `BitZ.bitMatrix_map_transpose_mulVec`, `BitZ.exists_witness_iff_exists_bits` | A ring homomorphism moves `L` across the inner product, the weights of the bitified claim are `v ⊗ (1, …, 2^{B-1}) ⊗ ψ(γ)`, and bitification preserves satisfiability of the claim. |
 | Theorem 4.7 proof, Rounds 1 and 2 together | `BitZ.Round2Check`, `BitZ.Round2Accepts`, `BitZ.sum_prod_mul_mul_eq_of_round2Accepts`, `BitZ.prEvent_round2Accepts_le` | The verifier's checks of Round 2 on a message, the event that some message passes, and the bound that a prover with a false fixed claim passes Round 2 with at most the error of Round 1. The overflow hypothesis `ℓ₁ · (q - 1) < \|F\| - 1` is necessary. |
 | Remark 4.14; equation (65) | `BitZ.bitWeights_tensor`, `BitZ.dotProduct_bitWeights_tensor`, `BitZ.dotProduct_tensor_map_bitMatrix_mulVec`, `BitZ.prEvent_round2Accepts_le_bitified` | A tensor decomposition of the weights gives one of the bitified weights; for bits the original claim is the bitified claim; a false original claim passes Round 2 with at most the error of Round 1 for the bitified length. An eq vector is a tensor of eq vectors by `CompPoly.CMlPolynomialEval.eqTilde_append`. |
+| Completeness of Theorem 4.7 and Theorem 4.15; equation (65) | `BitZ.honestMessage`, `BitZ.claimPoly_eq_honestMessage_sub`, `BitZ.totalDegree_honestMessage_le`, `BitZ.natAbs_coeff_honestMessage_le`, `BitZ.map_honestMessage`, `BitZ.honestRound2Message`, `BitZ.round2Check_honestRound2Message`, `BitZ.map_honestMessage_bitified` | The honest first message has total degree at most `2D` and the norm bound of Round 1. For a matrix of bits, the honest second message passes the Round 2 check against the honest first message at every prime and point, for every unit, with no overflow bound. The canonical image of the honest first message for a bitified witness is the original claim. |
 
 For Round 1, `T = choose(D + k, k)` counts monomials of total degree at most `D` in `k`
 variables, and `ℓ` is the number of bits. The difference polynomial has degree at most `2D`.
@@ -79,6 +81,8 @@ Writing `M = 2 · T · ℓ · N²`, the native Round 1 probability bound is
   bound on that event.
   [`BitifiedClaim.lean`](../../../ArkLib/Commitments/Functional/BitZ/BitifiedClaim.lean) applies
   it to the bitified claim and records the tensor decomposition of the bitified weights.
+  [`Completeness.lean`](../../../ArkLib/Commitments/Functional/BitZ/Completeness.lean) names the
+  honest first message, computes the honest second message, and shows that both pass.
 - [`PrimeFingerprint.lean`](../../../ArkLib/Data/MvPolynomial/PrimeFingerprint.lean) contains
   counting bounds without a sampler dependency;
   [`PrimeFingerprintProbability.lean`](../../../ArkLib/Data/MvPolynomial/PrimeFingerprintProbability.lean)
@@ -97,7 +101,8 @@ exercise the range hypotheses and their failure at the overflow boundary, round 
 semiring injectivity, the OOD theorem applied to CompPoly evaluation tables, and the bitification
 range at `2^B` with executable runs of the matrix, digits and weights, the semiring case
 `S = R = ℕ`, the verifier's Round 2 check run on explicit polynomials, the necessity of the overflow
-hypothesis, and the nontrivial error `2/11` for the bound on passing Round 2. The separate
+hypothesis, the nontrivial error `2/11` for the bound on passing Round 2, and the honest messages
+run through the check with a tampered message and a non-bit matrix as controls. The separate
 [sampler regression](../../../ArkLibTest/Data/MvPolynomial/PrimeFingerprintProbability.lean)
 distinguishes the intended distribution from uniform sampling over all prime/point pairs.
 The clients pin headline theorem dependencies to `propext`, `Classical.choice` and `Quot.sound`.
@@ -130,10 +135,10 @@ The clients pin headline theorem dependencies to `propext`, `Classical.choice` a
 
 ## Open Formalization Gaps
 
-- Construction 4.13 and Theorem 4.15: the honest messages (completeness) of the general-ring
-  reduction. Bitification, the tensor weights of Remark 4.14 and the soundness bound for the
-  bitified claim are covered above; the further tensor split of the powers of two has no consumer
-  yet. This scope is tracked in [issue 1331](https://github.com/Verified-zkEVM/ArkLib/issues/1331).
+- The further tensor split of the vector of powers of two in Remark 4.14, which has no consumer
+  yet. The rest of the algebra of Construction 4.13 and Theorem 4.15 is covered above: bitification,
+  the tensor weights, the identification (65) of the original and bitified claims, and the
+  soundness bound and honest messages for the bitified claim.
 - Source/target relations, named interaction verifiers, rejection behavior, honest execution,
   the knowledge-state function and extractor for Construction 4.4.
 - The transition from a fixed witness to an existential witness. Unique decoding, or OOD
@@ -175,9 +180,11 @@ ordinary callers outside `noncomputable section`, and records these results (rat
 | `BitZ.boundedCombos` | Architectural / 8 | A `Set` of an arbitrary ring `S`: membership has no decision procedure without a representation of `S`. A member carries its coefficient vector as data, which is what `coeffBits` consumes. |
 | `BitZ.Round2Check` | Leaf / 1 | Decidable through an instance for a field with decidable equality; with explicit constant polynomials as lifts it runs, accepting the message `0` and rejecting `1` (grand product), `13` (range) and a wrong `μ'` (weighted sum). |
 | `BitZ.Round2Accepts` | Architectural / 8 | An existential over all prover messages, so a mathematical event; the executable verifier check is `Round2Check`. |
+| `BitZ.honestRound2Message` | Leaf / 1 | Executable given executable lifts: for lifts `(1, 2)` of constant polynomials, bits `(1, 1)` and `q = 3` it runs as `[3]`, and the check accepts it. |
+| `BitZ.honestMessage` | Architectural / 8 | Uses Mathlib's noncomputable polynomial multiplication and sum; it is the proof object for the verifier's bounds, not the prover implementation. An executable prover needs a computational polynomial representation and an agreement bridge. |
 
-Runtime checks live in the existing Round 1/2, fingerprint-probability and bitification acceptance
-modules.
+Runtime checks live in the existing Round 1/2, fingerprint-probability, bitification and
+honest-message acceptance modules.
 The future protocol implementation must use executable representations (including the existing
 CompPoly MLE APIs where appropriate), carry sampler data explicitly, and prove agreement with
 these mathematical views. An abstract nonempty finite prime set alone does not supply an
