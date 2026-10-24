@@ -692,6 +692,7 @@ public import ArkLib.Data.Probability.Sequential
 public import ArkLib.Data.Probability.Uniform
 public import ArkLib.Data.Vector.Histogram
 public import ArkLib.Data.Vector.Lookup
+public import ArkLib.Data.Vector.LookupNormalization
 public import ArkLib.Interaction.CompositionSoundness
 public import ArkLib.Interaction.Oracle.Access
 public import ArkLib.Interaction.Oracle.Claim

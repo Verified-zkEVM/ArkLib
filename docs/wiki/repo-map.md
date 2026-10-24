@@ -82,6 +82,8 @@ home_page/            site assets and assembled website root
   `Data/Vector/Lookup.lean`; generic cast-count permutation recovery lives in
   `ToMathlib/List/Count.lean`. Their boundary cases are checked in
   `ArkLibTest/Data/Vector/LookupCharacteristic.lean`.
+  `Data/Vector/LookupNormalization.lean` compares the indexed histogram with the paper
+  assignment under nonzero table normalizers: key aggregates agree, while messages may differ.
 - `Data/Polynomial/PartialFractions.lean` characterizes weighted reciprocal sums by their key-fiber
   weights, including repeated values. It owns symbolic denominator clearing and the cleared
   numerator degree bound. Its polynomial and rational-function views belong to the proof layer;

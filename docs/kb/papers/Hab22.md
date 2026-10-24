@@ -13,6 +13,7 @@ related_modules:
   - ArkLib/Data/Polynomial/PartialFractions.lean
   - ArkLib/Data/Vector/Histogram.lean
   - ArkLib/Data/Vector/Lookup.lean
+  - ArkLib/Data/Vector/LookupNormalization.lean
   - ArkLib/Data/Fin/ConsecutiveChunks.lean
   - ArkLib/Data/MvPolynomial/Multilinear.lean
   - ArkLib/ProofSystem/Logup/Algebra/Grouped.lean
@@ -46,7 +47,7 @@ must not be treated as a byte-pinned March 2023 artifact.
 | --- | --- |
 | Section 2.1, Lemma 1 | The equality kernel and `MLE_eval` in [Multilinear.lean](../../../ArkLib/Data/MvPolynomial/Multilinear.lean) express a table's multilinear extension as a kernel-weighted Boolean sum. |
 | Section 2.3, Lemma 4 | [PartialFractions.lean](../../../ArkLib/Data/Polynomial/PartialFractions.lean) proves distinct-pole uniqueness and finite-support weighted-fiber vanishing over arbitrary fields. |
-| Section 2.3, Lemma 5 | [Histogram.lean](../../../ArkLib/Data/Vector/Histogram.lean) and [Lookup.lean](../../../ArkLib/Data/Vector/Lookup.lean) provide constructive forward weights and a converse under nonvanishing query counts. |
+| Section 2.3, Lemma 5; Section 3, Eq. (14) | [Histogram.lean](../../../ArkLib/Data/Vector/Histogram.lean) and [Lookup.lean](../../../ArkLib/Data/Vector/Lookup.lean) provide constructive forward weights and a converse under nonvanishing query counts. [LookupNormalization.lean](../../../ArkLib/Data/Vector/LookupNormalization.lean), `Vector.sumFiber_normalizedLookupWeights_eq_histogram`, proves aggregate correspondence with normalized weights under explicit nonzero table normalizers. |
 | Section 3.1, Protocol 2 | [Grouped.lean](../../../ArkLib/ProofSystem/Logup/Algebra/Grouped.lean) supplies the executable group circuit and its polynomial and clearing correspondence. [ConsecutiveChunks.lean](../../../ArkLib/Data/Fin/ConsecutiveChunks.lean) certifies the grouping pattern. The native grouped argument remains under development. |
 | Section 3.2, Theorem 4 | The printed numerical ledger is a comparison target. ArkLib derives its own bound for its actual sampling and verifier execution. |
 
@@ -61,7 +62,8 @@ formalization of the corresponding paper protocol.
   positive query counts to remain nonzero after casting; integer interpretations are separate.
 - The honest multiplicities are natural histograms of supplied lookup indices, cast afterward.
   Duplicate table values are supported without division. Correspondence with the paper's
-  normalized assignment requires its normalizing table counts to be nonzero.
+  normalized assignment requires its normalizing table counts to be nonzero; the proved
+  correspondence is per-key aggregate equality, allowing different messages at duplicate positions.
 - The runtime Boolean domain is `{0,1}^n`. Correspondence with the paper's `{−1,1}^n` uses the
   coordinatewise affine equivalence when two is invertible; weighted balance itself also works
   in characteristic two.
