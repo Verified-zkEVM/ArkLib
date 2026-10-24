@@ -7,6 +7,7 @@ public import ArkLib.Commitments.Functional.BitZ.ExponentLift
 public import ArkLib.Commitments.Functional.BitZ.OutOfDomain
 public import ArkLib.Commitments.Functional.BitZ.Round1
 public import ArkLib.Commitments.Functional.BitZ.Round2
+public import ArkLib.Commitments.Functional.BitZ.RoundsSoundness
 public import ArkLib.Commitments.Functional.Hachi.Basic
 public import ArkLib.Commitments.Functional.Hachi.Commitment
 public import ArkLib.Commitments.Functional.Hachi.Composition
