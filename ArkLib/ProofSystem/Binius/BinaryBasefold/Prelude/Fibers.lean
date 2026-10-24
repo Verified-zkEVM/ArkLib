@@ -254,7 +254,7 @@ theorem multilinear_eval_eq_sum_bool_hypercube {ℓ : ℕ}
     _ = ∑ x : Fin ℓ → Fin 2,
           MvPolynomial.eval challenges (MvPolynomial.eqPolynomial (x : Fin ℓ → L)) *
             MvPolynomial.eval (x : Fin ℓ → L) t.val := by
-      exact MvPolynomial.MLE_eval challenges _
+      simpa only [MvPolynomial.eqTilde_eq_eval] using MvPolynomial.MLE_eval challenges _
     _ = ∑ x : Fin (2 ^ ℓ),
           multilinearWeight (r := challenges) (i := x) *
             MvPolynomial.eval (bitsOfIndex x) t.val := by

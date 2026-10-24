@@ -132,4 +132,33 @@ theorem execute_perfectCompleteness (challenge : ProbComp R)
   exact Native.execute_perfectCompleteness R n deg D challenge count start finish A
     originalOracle stmt impl (toOracleStatement poly hpoly) horiginal hcurrent
 
+/-- Every supported honest execution of the complete verifier returns acceptance. The source
+realization and initial relation are exactly those of the original computational honest prover. -/
+theorem executeWithFinalCheck_support_completeness (challenge : OracleComp ambient R)
+    (domain : List R) (hdomain : domain.Perm (Finset.univ.map D).toList)
+    (count start : ℕ) (finish : start + count = n) (A : PFunctor)
+    (originalOracle : VirtualOracle (OracleSpec.ofPFunctor A) (polynomialFamily R n deg))
+    (stmt : Spec.StatementRound R n ⟨start, by omega⟩)
+    (impl : QueryImpl (OracleSpec.ofPFunctor A) Id)
+    (poly : CMvPolynomial n R) (hpoly : ∀ j, poly.degreeOf j ≤ deg)
+    (horiginal : originalOracle.eval impl =
+      (polynomialFamily R n deg).behaviorOfRealizations
+        (fun _ => toOracleStatement poly hpoly))
+    (hcurrent : closedRelation R n deg D ⟨start, by omega⟩
+      ⟨stmt, originalOracle.eval impl⟩) :
+    ∀ accepted ∈ support (executeWithFinalCheck R n deg ambient challenge
+      domain count start finish A originalOracle stmt impl
+        (honestProver R n deg D ambient count start finish stmt poly hpoly)), accepted = true := by
+  unfold executeWithFinalCheck
+  rw [Native.Core.executeWithFinalCheck_eq_of_domain_perm R n deg
+    (Impl.Representation.Message R deg) (Impl.Representation.evaluate R deg) ambient
+    challenge domain (Finset.univ.map D).toList hdomain]
+  rw [Native.Core.executeWithFinalCheck_eq_execute]
+  intro accepted haccepted
+  rw [support_map, Set.mem_image] at haccepted
+  rcases haccepted with ⟨result, hresult, rfl⟩
+  exact (Native.Core.accepts_eq_true_iff R n deg result).mpr
+    (execute_support_completeness R n deg D ambient challenge count start finish A originalOracle
+      stmt impl poly hpoly horiginal hcurrent result hresult)
+
 end Sumcheck.Interaction.Computable

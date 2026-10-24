@@ -70,7 +70,7 @@ theorem aeval_unpack_of_slices {m : ℕ} {r : Fin m → data.E}
       apply Finset.sum_congr rfl
       intro y _
       have heq : eqTilde (y : Fin m → data.E) r = eqTilde r (y : Fin m → data.E) :=
-        eqPolynomial_symm _ _
+        eqTilde_symm _ _
       rw [data.unpack_eval_zeroOne, Algebra.smul_def, heq]
       exact mul_comm _ _
     _ = ∑ u, data.packBasis.repr (s u) i • data.openBasis u := by

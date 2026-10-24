@@ -69,6 +69,33 @@ home_page/            site assets and assembled website root
 
 ## Navigation Notes
 
+- `Data/Fraction.lean` provides executable unnormalized numerator-denominator pairs and
+  fraction folds. Its regrouping identities hold at zero denominators; agreement with evaluated
+  field fractions separately requires nonzero denominators. External caller, runtime, and axiom
+  checks live in `ArkLibTest/Data/Fraction.lean`.
+- `Data/Finset/SumFiber.lean` owns weighted key-fiber sums and selected-key isolation under an
+  encoding. `Data/Vector/Histogram.lean` counts indexed witnesses in natural numbers and proves
+  duplicate-safe key aggregation before casting. `Data/Vector/Lookup.lean` derives table membership
+  from balanced key weights when positive query counts remain nonzero. Acceptance checks include
+  a characteristic-two counterexample in `ArkLibTest/Data/Vector/Histogram.lean`.
+  Explicit characteristic budgets and the characteristic-zero specialization also live in
+  `Data/Vector/Lookup.lean`; generic cast-count permutation recovery lives in
+  `ToMathlib/List/Count.lean`. Their boundary cases are checked in
+  `ArkLibTest/Data/Vector/LookupCharacteristic.lean`.
+- `Data/Polynomial/PartialFractions.lean` characterizes weighted reciprocal sums by their key-fiber
+  weights, including repeated values. It owns symbolic denominator clearing and the cleared
+  numerator degree bound. Its polynomial and rational-function views belong to the proof layer;
+  executable pair arithmetic remains in `Data/Fraction.lean`.
+- `Data/Fin/ConsecutiveChunks.lean` constructs checked consecutive groups of finite indices and
+  proves ordered coverage, disjointness, and exact block lengths. Its extraction algorithm reuses
+  Batteries' tail-recursive `List.takeList`; the bridge to Mathlib's `List.splitLengths` lives in
+  `ToMathlib/List/SplitLengths.lean`. Caller and boundary checks live in
+  `ArkLibTest/Data/Fin/ConsecutiveChunks.lean`.
+- `Data/MvPolynomial/BatchingProbability.lean` bounds affine batching using one nonzero
+  polynomial selected before the evaluation challenge. Its table specialization charges the
+  multilinear extension's dimension; the number of tables does not multiply that error.
+  The scalar affine bound lives in `Data/Probability/Instances.lean`.
+
 - `ProofSystem/Fri/FoldingSoundness.lean` and `QuerySoundness.lean` contain the algebraic
   soundness arguments; `ErrorBounds.lean` instantiates existing numerical MCA bounds.
   `Fri/Spec/Soundness.lean` proves ordinary and round-by-round soundness of the executable

@@ -99,6 +99,7 @@ end TypeTree
 namespace OpenClaim
 
 /-- Substitute source programs in a claim, retaining its statement and output family. -/
+@[macro_inline]
 def substSource {I J K : Type u} {source : OracleSpec.{u, u} I}
     {target : OracleSpec.{u, u} J} {Data : K → Type u}
     {Out : OracleFamily.{u, u, u} K Data} {Stmt : Type u}
@@ -346,6 +347,7 @@ theorem toCounterpart_routeStrategy {ι : Type u} (ambient : OracleSpec.{u, u} �
 
 /-- Route a verifier's returned claim programs into the actual raw accumulated signature.
 Rejection remains an ordinary terminal result and never skips a nonempty suffix. -/
+@[macro_inline]
 def routeClaimStrategy {ι I : Type u} (ambient : OracleSpec.{u, u} ι)
     (tree : Oracle.TypeTree.{u}) (roles : tree.RoleDecoration) (oracles : tree.OracleDecoration)
     (source target : PFunctor.{u, u})
@@ -438,6 +440,7 @@ theorem toCounterpartWith_routeClaimStrategy {ι I : Type u} (ambient : OracleSp
 The suffix receives the statement, not raw programs or a handler. Returned claims are routed into
 actual accumulated access. A public abort branch can select an empty suffix; terminal rejection
 alone does not skip a nonempty suffix. -/
+@[macro_inline]
 def appendExported {ι I J : Type u} (ambient : OracleSpec.{u, u} ι)
     (tree : Oracle.TypeTree.{u}) (suffix : tree.BranchPath → Oracle.TypeTree.{u})
     (firstRoles : tree.RoleDecoration)

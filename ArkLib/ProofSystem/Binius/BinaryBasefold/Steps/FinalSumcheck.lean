@@ -387,7 +387,7 @@ noncomputable def finalSumcheckKnowledgeStateFunction {σ : Type} (init : ProbCo
           (MvPolynomial.eval stmtIn.challenges
             (multiplier stmtIn.ctx).val) *
             (MvPolynomial.eval stmtIn.challenges tpoly.val) := by
-          rw [h_V_check]
+          rw [h_V_check, eqTilde_eq_eval]
           congr 1
           change c = tpoly.val.eval stmtIn.challenges
           exact eval_eq_final_constant_of_extractMlp_eq_some 𝔽q β

@@ -519,6 +519,7 @@ public import ArkLib.Data.Domain.FftDomain.ToSubgroup
 public import ArkLib.Data.EllipticCurve.BN254
 public import ArkLib.Data.FieldTheory.BinaryTrace
 public import ArkLib.Data.Fin.Basic
+public import ArkLib.Data.Fin.ConsecutiveChunks
 public import ArkLib.Data.Fin.Fold
 public import ArkLib.Data.Fin.Lift
 public import ArkLib.Data.Fin.Sigma
@@ -531,12 +532,14 @@ public import ArkLib.Data.Finset.PairwiseIntersection
 public import ArkLib.Data.Finset.PickSubset
 public import ArkLib.Data.Finset.SampleIncidence
 public import ArkLib.Data.Finset.Staircase
+public import ArkLib.Data.Finset.SumFiber
 public import ArkLib.Data.Finset.TupleIntersection
 public import ArkLib.Data.Finset.WeightedSimplex
 public import ArkLib.Data.Finset.WeightedSimplex.FloorTransfer
 public import ArkLib.Data.Finset.WeightedSimplex.Moments
 public import ArkLib.Data.Finset.WeightedSimplex.RankIntegral
 public import ArkLib.Data.Finset.WeightedSimplex.Variance
+public import ArkLib.Data.Fraction
 public import ArkLib.Data.GroupTheory.PrimeOrder
 public import ArkLib.Data.Hash.DomainSep
 public import ArkLib.Data.Hash.DuplexSponge
@@ -578,6 +581,7 @@ public import ArkLib.Data.Matrix.ReadOnce
 public import ArkLib.Data.Matrix.Sparse
 public import ArkLib.Data.Matrix.Vandermonde
 public import ArkLib.Data.Misc.Basic
+public import ArkLib.Data.MvPolynomial.BatchingProbability
 public import ArkLib.Data.MvPolynomial.Degrees
 public import ArkLib.Data.MvPolynomial.EvenAndOdd
 public import ArkLib.Data.MvPolynomial.FrobeniusContraction
@@ -655,6 +659,7 @@ public import ArkLib.Data.Polynomial.FractionFieldRoots
 public import ArkLib.Data.Polynomial.FrobeniusContraction
 public import ArkLib.Data.Polynomial.Indicator
 public import ArkLib.Data.Polynomial.Interface
+public import ArkLib.Data.Polynomial.PartialFractions
 public import ArkLib.Data.Polynomial.PointCollision
 public import ArkLib.Data.Polynomial.PointCollisionProbability
 public import ArkLib.Data.Polynomial.Prelims
@@ -683,6 +688,8 @@ public import ArkLib.Data.Probability.Instances
 public import ArkLib.Data.Probability.KoalaBear
 public import ArkLib.Data.Probability.Sequential
 public import ArkLib.Data.Probability.Uniform
+public import ArkLib.Data.Vector.Histogram
+public import ArkLib.Data.Vector.Lookup
 public import ArkLib.Interaction.CompositionSoundness
 public import ArkLib.Interaction.Oracle.Access
 public import ArkLib.Interaction.Oracle.Claim
@@ -1054,6 +1061,8 @@ public import ArkLib.ToMathlib.LinearAlgebra.ShiftedPolynomialKernelHeight
 public import ArkLib.ToMathlib.LinearAlgebra.Submodule.Union
 public import ArkLib.ToMathlib.LinearAlgebra.TriangularInjective
 public import ArkLib.ToMathlib.List.Basic
+public import ArkLib.ToMathlib.List.Count
+public import ArkLib.ToMathlib.List.SplitLengths
 public import ArkLib.ToMathlib.Logic.HEq
 public import ArkLib.ToMathlib.MeasureTheory.Integral.NatFloorCells
 public import ArkLib.ToMathlib.MeasureTheory.Integral.PositivePart

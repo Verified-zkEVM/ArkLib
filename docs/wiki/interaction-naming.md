@@ -91,6 +91,13 @@ source query with a program over another signature. `mapSource` specializes this
 `a`'s programs into the downstream oracle `b`; `substWithSuffix` also retains a separate suffix
 signature for downstream queries. These operations use VCVio's existing interpreter.
 
+A mathematical `OracleFamily` descriptor can be noncomputable while its query programs remain
+executable. Wrappers that only transport its interface must erase those descriptor arguments before
+code generation; the substitution and exported-composition wrappers use `macro_inline` for this.
+Check an ordinary external caller, its compiler IR, and a concrete query observation, as in
+[`SourceRoutingPolynomial.lean`](../../ArkLibTest/Interaction/Oracle/SourceRoutingPolynomial.lean).
+Keep runtime APIs computable; do not mark them `noncomputable` to bypass a descriptor-erasure error.
+
 `SemEquiv` compares answers under every deterministic source handler. It does not assert equal
 query traces, equal cost, or equivalence under stateful handlers. In particular, an unused repeated
 query can change a trace without changing deterministic answers. This semantic relation is the

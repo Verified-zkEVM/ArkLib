@@ -13,7 +13,8 @@ public import ArkLib.ProofSystem.Sumcheck.Impl.Representation
 
 This is the shared native verifier and executor specialized to bounded coefficient arrays.
 Every runtime message query uses Horner evaluation. Arbitrary ordinary prover strategies are
-interpreted into mathematical strategies only for the execution and security bridge.
+interpreted into mathematical strategies only for the execution and security bridge. The complete
+endpoint additionally executes final source authentication through the same generic Core verifier.
 -/
 
 @[expose] public section
@@ -41,6 +42,16 @@ abbrev verifier [DecidableEq R] := Native.Core.verifier R n deg (Message R deg)
 /-- Actual execution of any ordinary prover sending computable messages. -/
 abbrev execute [DecidableEq R] := Native.Core.execute R n deg (Message R deg)
   (evaluate R deg) ambient
+
+/-- Complete the native coefficient-message verifier with final oracle authentication. -/
+abbrev verifierWithFinalCheck [DecidableEq R] :=
+  Native.Core.verifierWithFinalCheck R n deg (Impl.Representation.Message R deg)
+    (Impl.Representation.evaluate R deg) ambient
+
+/-- Execute native coefficient-message Sumcheck and its actual final oracle check. -/
+abbrev executeWithFinalCheck [DecidableEq R] :=
+  Native.Core.executeWithFinalCheck R n deg (Impl.Representation.Message R deg)
+    (Impl.Representation.evaluate R deg) ambient
 
 variable [BEq R] [LawfulBEq R]
 
