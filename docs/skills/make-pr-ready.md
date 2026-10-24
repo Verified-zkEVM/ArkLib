@@ -1,18 +1,29 @@
 # /make-pr-ready
 
 Use this workflow to get a branch into shape before opening or finalizing a pull request.
-It is a general checklist skill that chains the project's contribution guidelines, lint cleanup,
-and citation generation into one pass.
+It combines the project's contribution guidelines, a manual API and proof-quality audit,
+warning cleanup, and citation/KB checks. Apply it to the contribution being prepared; preserve
+the user's scope and leave unrelated work alone.
 
 ## Goal
 
-Leave the branch in a state where every contribution guideline is met, no Lean warnings remain,
-and citation metadata is regenerated and consistent — so the PR can be opened without follow-up
-churn.
+Leave the contribution ready for review: names and docstrings match the mathematical API,
+proofs are clear and have no unresolved performance issue, and source/KB context is accurate.
+Meet the repository's warning budgets: no production non-`sorry` warnings and no test warnings.
+Distinguish existing admitted proofs from new regressions; preparing a PR does not itself
+authorize filling unrelated admissions. Keep generated KB outputs at the canonical base.
+
+Opening a PR for review is distinct from merge readiness. A PR may be opened with unfinished
+proofs if its remaining admissions and validation status are clear. Before merging, it must
+introduce no new `sorry`/`admit` or additional `sorryAx` debt relative to the canonical base.
+Closing one gap does not offset a new admission. Baseline updates may record verified closures
+or renames of existing debt; they cannot authorize new debt.
 
 ## TODO List
 
-Work through these in order. Do not stop until every item is complete.
+Work through the checks relevant to the requested readiness stage in order. Report unfinished
+proof obligations when opening an in-progress PR; complete the merge checks before calling it
+merge-ready.
 
 ### 0. Establish the real PR base
 
@@ -43,14 +54,15 @@ Work through these in order. Do not stop until every item is complete.
     `origin/main...HEAD` is empty and `git diff origin/main` (two-dot) *is* the whole PR. Confirm
     which case you are in with that `rev-parse` before concluding the scope is empty.
 - **Check for an in-progress merge before trusting any of the above.** Run
-  `cat .git/MERGE_HEAD 2>/dev/null`. If it exists, the author is mid-merge with the resolution
+  `git rev-parse --verify -q MERGE_HEAD` (also works in a linked worktree). If it resolves, the
+  author is mid-merge with the resolution
   staged, and the union formula **over-reports badly**: every file the base changed since the
   merge-base shows up as if this branch authored it. On a real run this attributed an entire
   directory reorganization, a new README, and several doc pages — about 50 files, all of them
   `origin/main`'s own work — to the branch, and produced a deleted-path list containing renames the
   branch never made. When `MERGE_HEAD` is present, confirm it is the canonical base
-  (`git merge-base --is-ancestor $(cat .git/MERGE_HEAD) origin/main`, and
-  `git log --oneline $(cat .git/MERGE_HEAD)..origin/main` should be empty), then use the **two-dot**
+  (`git merge-base --is-ancestor MERGE_HEAD origin/main`, and
+  `git log --oneline MERGE_HEAD..origin/main` should be empty), then use the **two-dot**
   `git diff origin/main` as the single authoritative PR surface — worktree versus base is exactly
   what the PR will contribute once the merge is committed. Derive the deleted/renamed list the same
   way: `git diff --name-status -M origin/main | awk '/^[DR]/ {print $2}'`. Sanity-check the
@@ -115,6 +127,12 @@ Work through these in order. Do not stop until every item is complete.
   - **Naming**: files `UpperCamelCase.lean`, types/structures `UpperCamelCase`, functions/terms
     `lowerCamelCase`, theorems/proofs `snake_case`, acronyms treated as words, American English
     spelling, and the theorem-naming logic (`_of_`, `left`/`right`, `ext`/`iff`/`inj`/`mono`).
+    Apply the existing Mathlib-style scheme in `CONTRIBUTING.md` consistently so names remain
+    predictable and easy to search across libraries. Check the actual contract too: preservation
+    is not commutativity, `≤` is not `<`, and inverse
+    direction depends on composition order. Name declarations for their mathematics, without
+    paper numbers or internal planning codes; update callers and preserve compatibility as
+    required by the deprecation policy.
   - **Symbol naming**: translate statements into names with the standard symbol dictionary;
     standardize on `≤`/`<`, avoid `≥`/`>` in statements.
   - **Variable conventions**: match the Mathlib-style variable roles (e.g. `R`/`M`/`G`/`F` for
@@ -125,9 +143,36 @@ Work through these in order. Do not stop until every item is complete.
   - **File headers**: Apache 2.0 copyright/license/authors block at the top of every new file.
   - **Documentation**: module docstring (`/-! ... -/` with title, summary, notation, references)
     on each file; `/-- ... -/` docstrings on every definition and major theorem; sectioning
-    comments where helpful.
+    comments where helpful. Declaration docstrings state the meaning/claim, material hypotheses,
+    and any shorthand concisely, without requiring a paper lookup. Keep external citations,
+    URLs, and paper locators only in the top-level module docstring. Internal Lean API links
+    are fine. Check that module summaries describe the actual scope and formalization gaps.
   - **Normal forms, transparency, deprecation**: respect the standard-form, `def`/`abbrev`/
     `irreducible`, and `@[deprecated ...]` policies when relevant to the diff.
+- **Audit proof structure and reuse.** Look for repeated arguments or existing library facts,
+  and put reusable generic lemmas with their mathematical owner. Preserve theorem strength,
+  assumptions, and axiom boundaries. Exercise the public interface with a realistic caller and
+  satisfiable hypotheses; use a nontrivial error bound when that is the intended behavior.
+- **Audit computability.** Apply the [contribution policy](../../CONTRIBUTING.md#computability)
+  and use [`make-computable.md`](make-computable.md) to triage blockers. Protocols and all
+  program/value-computing APIs must be executable; supply missing computational data or a
+  verified executable representation before declaring merge readiness. Pure mathematical
+  views may remain noncomputable only with a concrete, documented reason. Prefer individual
+  markers to a blanket `noncomputable section`. Probe generated code from an ordinary caller
+  outside such a section and run concrete examples with independently known results, exercising
+  meaningful success, failure and boundary cases. Record the evidence. An absent keyword or a
+  clean axiom report is insufficient; admitted bodies can generate code that panics. Check
+  satisfiable hypotheses separately: execution helps detect specification mistakes but does
+  not by itself prove non-vacuity or security.
+- **Measure before optimizing.** Use build timings or Lean's profiler to locate a slow
+  declaration and tactic before rewriting for speed. Separate import/loading time from proof
+  work, then compare before/after on the same workload. Prefer a local structural fix, narrower
+  hypotheses/imports, or a scoped automation set when the measurements support it. Do not
+  mechanically expand stable terminal `simp` calls, replace automation across a file, or
+  equate fewer lines with faster proofs. A clear proof without a measured performance problem
+  needs no performance rewrite.
+- These are manual review checks. A green build or source-policy gate does not establish
+  semantic naming, self-contained documentation, or correspondence with the reference paper.
 - Verify with `./scripts/validate.sh` (add `--docs` for doc generation). Source style and
   repository-wide non-`sorry` warnings are enforced by default. Fix anything it flags.
   - If you added or removed `ArkLib/**.lean` files, run `./scripts/update-lib.sh` **and then
@@ -158,13 +203,30 @@ Work through these in order. Do not stop until every item is complete.
 ### 2. Fix Lean warnings
 
 - Follow the [`fix-lean-warnings.md`](fix-lean-warnings.md) skill end to end for every changed
-  `.lean` file: check with `ReadLints` / `lake env lean path/to/File.lean`, fix by safety order,
-  re-check after each batch, and do not stop until `ReadLints` is clean and the file still builds.
+  `.lean` file within the warning budgets above. Use available Lean diagnostics or
+  `lake env lean path/to/File.lean`, fix by safety order, and re-check after each batch.
+  Resolve every linter/style issue and finish with the full validation gate; test warnings have
+  no admission allowance. Fix the source rather than adding linter suppressions.
+- Before declaring merge readiness, inspect source admissions and `scripts/axiom_baseline.json`
+  against the canonical base, including staged/uncommitted changes. Use
+  `python3 scripts/source-trust-audit.py --base-ref <canonical-base>` to inspect source-only
+  cases such as examples or default arguments, and run `./scripts/validate.sh --axioms` for
+  proof changes. Review specific new obligations, not net counts; neither a passing gate after
+  a baseline edit nor closures elsewhere can authorize a new admission.
+  New declarations may depend only on a subset of `propext`, `Classical.choice`, and
+  `Quot.sound`; reject custom axioms, `sorryAx`, and native-compiler trust dependencies.
+  Existing debt is not an allowance for new declarations.
 
 ### 3. Generate citations correctly
 
-- Make sure every paper cited in a Lean docstring uses a citation key (e.g. `[BCIKS20]`), each
-  citing file has a `## References` section, and every key has a matching BibTeX entry in
+- Inspect the module and declaration docstrings separately: external citations, URLs and
+  paper-specific locators must occur only in the top-level module docstring. Move provenance
+  there while retaining a concise mathematical statement in each declaration docstring.
+  Keep detailed paper-specific statement/version mappings in the KB, reachable from the wiki
+  and module overview. The Lean file should remain understandable when references are revised
+  or renumbered, or the same mathematics appears in several sources.
+- Make sure every paper cited in a module docstring uses a citation key (e.g. `[BCIKS20]`), the
+  module docstring has a `## References` section, and every key has a matching BibTeX entry in
   `blueprint/src/references.bib` (see the citation policy in
   [`../../CONTRIBUTING.md`](../../CONTRIBUTING.md) and the workflow in
   [`../wiki/blueprint-and-citations.md`](../wiki/blueprint-and-citations.md)).
@@ -204,11 +266,13 @@ Work through these in order. Do not stop until every item is complete.
   add any missing entry (then regenerate). A key can be "present-looking" but actually a different
   paper — confirm the entry's title/authors match the citation, not just that the key exists.
 - Know the `kb/lint.py` severity split: a **paper page whose `bibkey` has no BibTeX entry** is an
-  *Error* (fails `validate.sh`), while a **cited key with no paper page** is only a *Warning*.
-  Fix the warning too: `python3 scripts/kb/scaffold_paper.py <KEY>` scaffolds
-  `docs/kb/papers/<KEY>.md` + `docs/kb/sources/<KEY>/metadata.yml` from the bib entry — then
-  replace the TODO sections with real content (what the paper is, what ArkLib uses, touchpoint
-  modules) before staging; a page of TODOs is reviewer bait.
+  *Error* (fails `validate.sh`), while a **cited key with no paper page** is a *Warning*.
+  For active papers introduced or substantially extended by this contribution, add substantive
+  ArkLib context: the used statements, touchpoint modules, version, generalizations and remaining
+  gaps. `python3 scripts/kb/scaffold_paper.py <KEY>` can supply the initial page and metadata;
+  replace its TODOs before staging. Leave stub-only pages and generated registries to the KB
+  workflow, and attribute unrelated existing coverage warnings without expanding the PR to fill
+  the whole backlog. See [`../kb/README.md`](../kb/README.md).
 - A validate/kb failure is not necessarily yours: it can be **pre-existing on `main`** (e.g. a kb
   paper page merged before its BibTeX entry). Attribute it (`git show origin/main:<file>`), but
   fix it in your PR anyway if cheap — it blocks *your* CI regardless of who introduced it.
@@ -216,10 +280,10 @@ Work through these in order. Do not stop until every item is complete.
   | sort | uniq -d`. Neither `kb/lint` nor the sync script flags a key defined twice (the JSON dict
   silently collapses it), but it is real bib cruft a reviewer will hit. Keep the better-formatted
   entry and delete the other.
-- Docstrings must cite **papers, not internal planning documents**. Phrases like "per §1.2 of the
-  X plan" pointing at an out-of-repo design doc are dead references the day the PR merges — restate
-  the design rationale directly in the docstring and cite the underlying paper with a `[KEY]`
-  (e.g. `[NOZ26, Lemma 8]` for a specific result).
+- Cite **papers, not internal planning documents**, in the module overview. Restate any necessary
+  rationale directly in the declaration docstring; move the underlying `[KEY]` citation and paper
+  locator to the top-level module docstring. A declaration must be understandable without a
+  planning file or the paper open beside it.
 - Also check the **reverse direction — orphan entries**: a BibTeX key (and/or a scaffolded
   `docs/kb/papers/<KEY>.md` + `docs/kb/sources/<KEY>/` page) that **no** `[KEY]` in any `.lean`
   docstring or blueprint `.tex` actually cites. `kb/lint` passes on these (they are internally
@@ -233,8 +297,8 @@ Work through these in order. Do not stop until every item is complete.
   `docs/kb/papers/*.md` pages (they are scaffolded once, then curated) — their curated links and
   `related_modules` frontmatter still point at the old path. Step 4 sweeps for these; run it rather
   than relying on `check-docs-integrity.py`, which only sees Markdown *links* and never inspects
-  frontmatter. Running `kb/regenerate.py` after adding a new cited key also **scaffolds** a new
-  `docs/kb/papers/<KEY>.md` + `docs/kb/sources/<KEY>/`; stage those too.
+  frontmatter. A local regeneration may also scaffold paper pages and metadata; retain only the
+  substantive source pages the contribution needs, following the KB policy above.
 
 ### 4. Clean up references to what the branch removed
 
@@ -323,9 +387,8 @@ For each **confirmed** stale reference, pick a disposition — never just delete
 3. **Genuinely gone** → remove the reference, including the clause that introduced it. A stranded
    "see also" with its target excised reads worse than no cross-reference.
 4. **Pointing at a scratch plan stripped in step 0** → **never** repoint it; that file never
-   existed on `main`, so the reference was born dead. Restate the reasoning inline in the docstring
-   and cite the underlying paper with a `[KEY]`. This is the same rule as the "cite papers, not
-   internal planning documents" bullet in step 3 — the strip is what makes it urgent.
+   existed on `main`, so the reference was born dead. Restate the reasoning in the declaration
+   docstring and place the underlying `[KEY]` citation in the module overview, as in step 3.
 
 Then check the places a path grep structurally cannot reach:
 
@@ -411,8 +474,9 @@ number that was just deleted.
 grep, because they are not paths: `milestone F2.0`, `design D5`, `Phase-G`, `(B4)`, `(D12 / R6)`,
 `sorried F5`, `filling F7`, `**(S1)**`, `**(C-1)**`. Once the plan is gone they are unresolvable
 noise. Sweep and delete them, keeping the substance (`(σ₋₁-twisted, design D5)` → `(σ₋₁-twisted)`)
-and re-anchoring the disclosure to a paper locator (`[NOZ26] §4.5`) or plain prose
-("closing this gap") rather than the internal process:
+and retaining the mathematical substance in plain prose. Put any paper locator needed for
+provenance in the top-level module docstring rather than replacing one external dependency in
+a declaration docstring with another:
 
 ```bash
 C='(B|C|D|E|F|G|M|R|S)-?[0-9]+(\.[0-9]+)?'
@@ -428,8 +492,9 @@ the bare code with word boundaries instead, then eyeball the hits.
 
 The bare-code pattern is noisy by construction, so filter rather than narrow: expect `Array.prototype`
 in vendored HTML/JS, `(L9)`/`(L11)`-style *paper* lemma tags, and math like `(S-1)·(D - dY)`. Paper
-section references (`§4.5`, `Figure 3`, `[NOZ26] Lemma 8`) are exactly what step 4 tells you to
-re-anchor *to* — never strip those. And remember `git grep -E` does not honor `\b`: if a code is
+section references (`§4.5`, `Figure 3`, `[NOZ26] Lemma 8`) are valid provenance in the top-level
+module docstring; preserve or relocate them there rather than dropping the source. And remember
+`git grep -E` does not honor `\b`: if a code is
 present but the git grep comes back empty, re-run with plain `grep -rn --include='*.lean'` before
 concluding the file is clean.
 
@@ -485,12 +550,20 @@ another stale path.
 
 ## Persistence Rule
 
-Only consider the PR ready when:
+Only consider the PR merge-ready when:
 
 1. `./scripts/validate.sh` (with `--docs` when appropriate) succeeds.
-2. `ReadLints` is clean for every changed `.lean` file.
+2. Every changed `.lean` file builds and meets the production/test warning budgets.
 3. Citation metadata is consistent, and `docs/kb/_generated/` matches the PR base exactly (step 3
    — it is checked locally, never committed).
 4. The deleted-file sweep in step 4 comes back clean — no reference anywhere in the tree points at
    a path this branch removed. A green `validate.sh` does **not** imply this.
-5. You have reported any suggested improvements to this skill.
+5. The manual API, docstring and proof-quality checks in step 1 are complete; any performance
+   claims have measured support, and paper/KB coverage describes the actual contribution.
+6. The source/axiom comparison introduces no new proof admissions or additional admitted debt;
+   new declarations depend only on the permitted three standard axioms, and baseline
+   bookkeeping does not hide a new obligation.
+7. Protocol and program/value-computing APIs generate code and have runtime evidence; any
+   noncomputable mathematical views have concrete documented blockers and agreement bridges
+   where an executable representation is provided.
+8. You have reported any suggested improvements to this skill.

@@ -123,15 +123,19 @@ the native-trust floor, and the exit-code contract) — and then
 `lake exe axiomsweep --check`: a kernel-level sweep of every `ArkLib.*`
 declaration's axiom dependencies (the `#print axioms` information, library-wide) diffed
 against the committed baseline `scripts/axiom_baseline.json`. It fails on *new* `sorryAx`
-or non-standard-axiom taint, while reporting closed gaps without blocking cleanup. If you
-intentionally add a tagged `sorry` (or close one), refresh and commit the reviewed baseline
-diff:
+or non-standard-axiom taint, while reporting closed gaps without blocking cleanup.
+
+A PR may be opened with unfinished proofs, but merging into `main` must not introduce new
+`sorry`/`admit` or additional admitted proof debt. Compare the source and baseline diffs against
+the canonical base; a baseline edit cannot make new debt mergeable, and closing another gap does
+not offset a new admission. Refresh the baseline only for verified closures or renames of
+existing debt, and commit that reviewed bookkeeping in the same PR:
 
 ```bash
 lake exe axiomsweep --update-baseline
 ```
 
-The baseline is an allowlist for `sorryAx` debt only. Native-compiler trust
+The baseline records existing `sorryAx` debt only. Native-compiler trust
 (`Lean.ofReduceBool`, `Lean.trustCompiler`, and the per-declaration
 `…._native.<tactic>.ax_<n>_<n>` axioms that `native_decide`-style tactics mint) is held to
 a zero-debt rule: no baseline edit can green it, and `--update-baseline` refuses to write
@@ -141,8 +145,12 @@ CI enforces both the fixture matrix and the library regression check (see `ci.ym
 It also runs `scripts/source-trust-audit.py` over every tracked Lean file under `ArkLib/` and `ArkLibTest/`.
 That deterministic, comment/string-aware inventory reports source-only constructs that an
 environment sweep cannot see reliably: admissions in examples or defaults/autoparams and
-constructs in files outside the imported roots. Source inventory changes are review evidence,
-not a global `sorry` ban; the kernel sweep remains the taint verdict.
+constructs in files outside the imported roots. Compare this inventory with the PR base when
+checking for new admissions, for example with
+`python3 scripts/source-trust-audit.py --base-ref origin/main` after fetching the canonical base.
+The inventory complements the kernel sweep; neither a net count nor a refreshed baseline
+substitutes for reviewing new source admissions. Working branches may still contain unfinished
+proofs while their PR is under review.
 
 ### Docstrings, blueprint, or website changes
 
@@ -181,7 +189,8 @@ python3 -m pip install leanblueprint
 
 ## Checking axiom hygiene correctly
 
-ArkLib's axiom-clean baseline is exactly `{propext, Classical.choice, Quot.sound}` (see
+New declarations may depend only on a subset of `{propext, Classical.choice, Quot.sound}`.
+Custom axioms, new admissions, and native-compiler trust dependencies must not merge (see
 [`../skills/prove-milestone.md`](../skills/prove-milestone.md) invariant 6). Two traps make a
 naive check report success on something that should fail:
 

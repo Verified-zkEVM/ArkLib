@@ -31,6 +31,6 @@ After using a skill, review whether it should be updated:
   Hachi-specific; the staging discipline generalizes.
 - [`fix-lean-warnings.md`](fix-lean-warnings.md) - workflow for cleaning Lean 4 linter and style
   warnings safely and incrementally.
-- [`make-pr-ready.md`](make-pr-ready.md) - checklist to get a branch PR-ready: follow the
-  contribution guidelines, fix Lean warnings, regenerate citations, clean up references to files
-  the branch deleted, and suggest skill improvements.
+- [`make-pr-ready.md`](make-pr-ready.md) - prepare a branch for review: audit API names,
+  self-contained docstrings, computability, proof structure and measured performance; validate
+  warnings and axiom boundaries, citation ownership and KB coverage; sweep stale references.
