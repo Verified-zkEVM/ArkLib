@@ -119,6 +119,20 @@ home_page/            site assets and assembled website root
   construction and scheme instance, `Correctness` for correctness proofs, `FunctionBinding` for
   the function-binding reduction, and `Binding` for evaluation binding. Shared
   CPolynomial/Polynomial division bridge lemmas live under `ArkLib/ToCompPoly/`.
+- `ArkLib/Commitments/Functional/BitZ/` holds the supporting algebra and probability bounds of
+  BitZ: `ExponentLift` for the bit inner product in an exponent, `Round1` for the honest-message
+  coefficient bound and fixed-witness fingerprinting error, `Round2` for the deterministic
+  tensor implication, and `OutOfDomain` for the multilinear-list collision bound. There is no
+  `Commitment.Scheme` instance or composed protocol security theorem yet. The
+  [BitZ paper page](../kb/papers/BGKLSW26.md) maps statements to the paper and records the remaining
+  protocol obligations.
+  Binary-encoding bounds and injectivity live under `Data/Nat/BitSum`; other generic helpers are
+  under `Data/Matrix/DotProduct` and
+  `ToMathlib/MvPolynomial/CoeffBound`. `Data/MvPolynomial/PrimeFingerprint` contains counting
+  bounds; `PrimeFingerprintProbability` adds the two-stage native sampler.
+  `Data/MvPolynomial/LinearMvExtension` owns `powAlgHom` coefficient recovery and injectivity.
+  Acceptance clients live under `ArkLibTest/Commitments/Functional/BitZ/`, including a CompPoly
+  evaluation-table application, and `ArkLibTest/Data/MvPolynomial/PrimeFingerprintProbability`.
 - Hachi commitment-scheme modules live under `ArkLib/Commitments/Functional/Hachi/` and formalize
   the Greyhound [NS24] / Hachi [NOZ26] *inner-outer* Ajtai lattice commitment over a cyclotomic
   ring `Rq Φ`. The folder is organized by paper section;

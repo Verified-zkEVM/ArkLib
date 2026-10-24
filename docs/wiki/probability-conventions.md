@@ -22,6 +22,13 @@ Use `prEvent_uniformSample_equiv`, `prEvent_uniformSample_prod`, or
 `prEvent_uniformSample_finSnoc` to transport uniform events. Two samplers with the same
 native distribution need not be equal as programs.
 
+For dependent challenges, preserve the sampling stages. Sampling `q` uniformly from a prime set
+and then `α` uniformly from `Fin k → ZMod q` gives every prime equal weight. A uniform draw from
+the dependent type of all pairs instead weights `q` by `q^k`. The reusable bridge and bounds live
+in `ArkLib/Data/MvPolynomial/PrimeFingerprintProbability.lean`; its test distinguishes the laws
+using primes `{2, 3}` and one variable. Keep the counting input in `PrimeFingerprint` independent
+of sampler assumptions.
+
 Use `ProtocolSpec.instSampleableTypeChallengeSeqCompose` and
 `ProtocolSpec.instSampleableTypeChallengeAppend` when exposing challenge samplers for composed
 protocol families. This keeps the sampler family definitionally equal to the one expected by
