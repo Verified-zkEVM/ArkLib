@@ -922,9 +922,11 @@ public import ArkLib.ProofSystem.Logup.Lookup.Security
 public import ArkLib.ProofSystem.Logup.Lookup.Source
 public import ArkLib.ProofSystem.Logup.Prover.CoefficientCircuit
 public import ArkLib.ProofSystem.Logup.Prover.CoefficientCircuitCost
+public import ArkLib.ProofSystem.Logup.Prover.Completeness
 public import ArkLib.ProofSystem.Logup.Prover.Helpers
 public import ArkLib.ProofSystem.Logup.Prover.RoundCoefficients
 public import ArkLib.ProofSystem.Logup.Prover.State
+public import ArkLib.ProofSystem.Logup.Prover.Strategy
 public import ArkLib.ProofSystem.Logup.Security.Initial
 public import ArkLib.ProofSystem.Logup.Security.Weighted
 public import ArkLib.ProofSystem.Plonk.Basic
