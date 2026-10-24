@@ -127,6 +127,9 @@ home_page/            site assets and assembled website root
   recursion with the existing arithmetic instructions and proves its exact field-operation
   profile. Compiler replacement applies to callers compiled with the extension imported;
   explicit `lagrangeBasisFast` calls also select the shared construction directly.
+  `ToCompPoly/Multilinear/Affine.lean` identifies adjacent table entries with a formal
+  univariate restriction of the MLE. Its row program reads both endpoints once; reusable raw
+  affine/subtraction programs and profiles live in the univariate arithmetic owners.
 
 - `ProofSystem/Fri/FoldingSoundness.lean` and `QuerySoundness.lean` contain the algebraic
   soundness arguments; `ErrorBounds.lean` instantiates existing numerical MCA bounds.

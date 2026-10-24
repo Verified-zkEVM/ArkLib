@@ -10,7 +10,7 @@ public import ArkLib.ToCompPoly.Univariate.ArithmeticPolynomial
 import all CompPoly.Univariate.Raw.Ops
 
 /-!
-# Profiles of canonical polynomial operations
+# Profiles of padded and canonical polynomial operations
 
 The recurrences record executed coefficient requests and zero tests, including trailing
 zeros and the terminal control step. They apply to every coefficient array.
@@ -21,6 +21,12 @@ zeros and the terminal control step. They apply to every coefficient array.
 namespace CompPoly.Arithmetic
 open OracleComp OracleSpec
 variable {F : Type} [Zero F] [Add F] [Sub F] [Mul F] [Inv F] [DecidableEq F]
+
+/-- Constructing a padded affine row requests exactly its slope subtraction. -/
+theorem profileArithmetic_affineRaw (a b : F) :
+    profileArithmetic (affineRaw a b) =
+      (⟨CPolynomial.Raw.affine a b, rfl⟩, arithmeticCost (ArithmeticOp.sub b a)) := by
+  simp [affineRaw, CPolynomial.Raw.affine]
 
 /-- Trimming charges one control step and, when nonempty, a read and zero test. -/
 theorem profileArithmetic_trimRaw (p : CPolynomial.Raw F) :
@@ -109,6 +115,20 @@ theorem profileArithmetic_negRaw (p : CPolynomial.Raw F) :
   cases kind <;>
     simp [negRaw, profileArithmetic_certifiedOfFn,
       arithmeticCost, ArithmeticOp.costKind]
+
+/-- Padded subtraction charges coefficient negation and addition, with no trailing-zero tests. -/
+theorem profileArithmetic_subRaw (p q : CPolynomial.Raw F) :
+    (profileArithmetic (subRaw p q)).2 = fun kind ↦
+      let m := max p.size q.size
+      if kind = .add then m
+      else if kind = .sub then q.size
+      else if kind = .coefficientRead then q.size + 2 * m
+      else if kind = .metadata then q.size + m + 2 else 0 := by
+  have hneg : (CPolynomial.Raw.neg q).size = q.size := by simp [CPolynomial.Raw.neg]
+  funext kind
+  cases kind <;>
+    simp [subRaw, profileArithmetic_negRaw, profileArithmetic_addRaw, hneg,
+      Nat.add_assoc, Nat.add_left_comm]
 
 end AddGroup
 

@@ -1006,6 +1006,7 @@ public import ArkLib.ProofSystem.ToyProblem.Spec.ErasureDecoder
 public import ArkLib.ProofSystem.ToyProblem.Spec.General
 public import ArkLib.ProofSystem.ToyProblem.Spec.KnowledgeSoundness
 public import ArkLib.ProofSystem.ToyProblem.Spec.SimplifiedIOR
+public import ArkLib.ToCompPoly.Multilinear.Affine
 public import ArkLib.ToCompPoly.Multilinear.Arithmetic
 public import ArkLib.ToCompPoly.Multilinear.Basic
 public import ArkLib.ToCompPoly.Multilinear.NestedEvaluationTree
@@ -1024,6 +1025,7 @@ public import ArkLib.ToCompPoly.Univariate.ArithmeticPower
 public import ArkLib.ToCompPoly.Univariate.Basic
 public import ArkLib.ToCompPoly.Univariate.Lagrange
 public import ArkLib.ToCompPoly.Univariate.Primitive
+public import ArkLib.ToCompPoly.Univariate.Raw.Basic
 public import ArkLib.ToCompPoly.Univariate.Raw.Size
 public import ArkLib.ToCompPoly.Univariate.Size
 public import ArkLib.ToMathlib.Algebra.Order.Floor.Ratio
