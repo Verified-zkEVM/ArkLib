@@ -82,6 +82,11 @@ home_page/            site assets and assembled website root
   weights, including repeated values. It owns symbolic denominator clearing and the cleared
   numerator degree bound. Its polynomial and rational-function views belong to the proof layer;
   executable pair arithmetic remains in `Data/Fraction.lean`.
+- `Data/Fin/ConsecutiveChunks.lean` constructs checked consecutive groups of finite indices and
+  proves ordered coverage, disjointness, and exact block lengths. Its extraction algorithm reuses
+  Batteries' tail-recursive `List.takeList`; the bridge to Mathlib's `List.splitLengths` lives in
+  `ToMathlib/List/SplitLengths.lean`. Caller and boundary checks live in
+  `ArkLibTest/Data/Fin/ConsecutiveChunks.lean`.
 
 - `ProofSystem/Fri/FoldingSoundness.lean` and `QuerySoundness.lean` contain the algebraic
   soundness arguments; `ErrorBounds.lean` instantiates existing numerical MCA bounds.

@@ -519,6 +519,7 @@ public import ArkLib.Data.Domain.FftDomain.ToSubgroup
 public import ArkLib.Data.EllipticCurve.BN254
 public import ArkLib.Data.FieldTheory.BinaryTrace
 public import ArkLib.Data.Fin.Basic
+public import ArkLib.Data.Fin.ConsecutiveChunks
 public import ArkLib.Data.Fin.Fold
 public import ArkLib.Data.Fin.Lift
 public import ArkLib.Data.Fin.Sigma
@@ -1059,6 +1060,7 @@ public import ArkLib.ToMathlib.LinearAlgebra.ShiftedPolynomialKernelHeight
 public import ArkLib.ToMathlib.LinearAlgebra.Submodule.Union
 public import ArkLib.ToMathlib.LinearAlgebra.TriangularInjective
 public import ArkLib.ToMathlib.List.Basic
+public import ArkLib.ToMathlib.List.SplitLengths
 public import ArkLib.ToMathlib.Logic.HEq
 public import ArkLib.ToMathlib.MeasureTheory.Integral.NatFloorCells
 public import ArkLib.ToMathlib.MeasureTheory.Integral.PositivePart
