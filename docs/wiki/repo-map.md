@@ -78,6 +78,10 @@ home_page/            site assets and assembled website root
   duplicate-safe key aggregation before casting. `Data/Vector/Lookup.lean` derives table membership
   from balanced key weights when positive query counts remain nonzero. Acceptance checks include
   a characteristic-two counterexample in `ArkLibTest/Data/Vector/Histogram.lean`.
+  Explicit characteristic budgets and the characteristic-zero specialization also live in
+  `Data/Vector/Lookup.lean`; generic cast-count permutation recovery lives in
+  `ToMathlib/List/Count.lean`. Their boundary cases are checked in
+  `ArkLibTest/Data/Vector/LookupCharacteristic.lean`.
 - `Data/Polynomial/PartialFractions.lean` characterizes weighted reciprocal sums by their key-fiber
   weights, including repeated values. It owns symbolic denominator clearing and the cleared
   numerator degree bound. Its polynomial and rational-function views belong to the proof layer;

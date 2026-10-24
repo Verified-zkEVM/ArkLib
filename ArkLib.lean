@@ -1061,6 +1061,7 @@ public import ArkLib.ToMathlib.LinearAlgebra.ShiftedPolynomialKernelHeight
 public import ArkLib.ToMathlib.LinearAlgebra.Submodule.Union
 public import ArkLib.ToMathlib.LinearAlgebra.TriangularInjective
 public import ArkLib.ToMathlib.List.Basic
+public import ArkLib.ToMathlib.List.Count
 public import ArkLib.ToMathlib.List.SplitLengths
 public import ArkLib.ToMathlib.Logic.HEq
 public import ArkLib.ToMathlib.MeasureTheory.Integral.NatFloorCells
