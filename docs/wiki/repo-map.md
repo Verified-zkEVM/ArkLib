@@ -101,6 +101,12 @@ home_page/            site assets and assembled website root
   [paper correspondence](../kb/papers/Hab22.md) records source versions and the complete native
   protocol obligations still in progress.
 
+- `ToCompPoly/Multilinear/Basic.lean` constructs Boolean Lagrange tables by sharing each tail
+  table and coordinate complement. `ToCompPoly/Multilinear/Arithmetic.lean` interprets that same
+  recursion with the existing arithmetic instructions and proves its exact field-operation
+  profile. Compiler replacement applies to callers compiled with the extension imported;
+  explicit `lagrangeBasisFast` calls also select the shared construction directly.
+
 - `ProofSystem/Fri/FoldingSoundness.lean` and `QuerySoundness.lean` contain the algebraic
   soundness arguments; `ErrorBounds.lean` instantiates existing numerical MCA bounds.
   `Fri/Spec/Soundness.lean` proves ordinary and round-by-round soundness of the executable

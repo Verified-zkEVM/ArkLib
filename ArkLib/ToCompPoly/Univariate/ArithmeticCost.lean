@@ -183,3 +183,37 @@ theorem profileArithmetic_addRaw (p q : CPolynomial.Raw F) :
       arithmeticCost, ArithmeticOp.costKind, Nat.mul_comm]
 
 end CompPoly.Arithmetic
+
+namespace CompPoly
+
+open OracleComp OracleSpec
+
+variable {F A : Type} [Zero F] [Add F] [Sub F] [Mul F] [Inv F] [DecidableEq F]
+
+/-- A vector traversal with a constant instruction profile per entry charges that profile
+once per index and returns the vector of the specified entry values. -/
+theorem profileArithmetic_ofFnM_uniform {n : ℕ}
+    (f : Fin n → OracleComp (ArithmeticSpec F) A) (values : Fin n → A)
+    (cost : ArithmeticCost)
+    (h : ∀ i, profileArithmetic (f i) = (values i, cost)) :
+    profileArithmetic (Vector.ofFnM f) =
+      (Vector.ofFn values, fun kind => n * cost kind) := by
+  induction n with
+  | zero =>
+    simp only [Vector.ofFnM_zero, profileArithmetic_pure]
+    apply Prod.ext
+    · ext i hi; omega
+    · funext kind
+      simp
+  | succ n ih =>
+    rw [Vector.ofFnM_succ', profileArithmetic_bind, h]
+    dsimp only
+    rw [profileArithmetic_bind, ih (fun i => f i.succ) (fun i => values i.succ)
+      (fun i => h i.succ)]
+    simp only [profileArithmetic_pure]
+    apply Prod.ext
+    · simp [Vector.ofFn_succ']
+    · funext kind
+      simp [Nat.add_mul, Nat.add_comm]
+
+end CompPoly
