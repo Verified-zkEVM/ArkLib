@@ -97,6 +97,8 @@ home_page/            site assets and assembled website root
   polynomial selected before the evaluation challenge. Its table specialization charges the
   multilinear extension's dimension; the number of tables does not multiply that error.
   The scalar affine bound lives in `Data/Probability/Instances.lean`.
+  `Data/MvPolynomial/BooleanSigned.lean` proves formal coordinate, MLE and equality-kernel
+  transport to the paper's signed cube under explicit nonzero two, including its normalization.
 - `Data/Polynomial/TaggedTuple.lean` checks bus schemas and computes common-width fingerprints
   and padded coefficient columns. `TaggedTupleProbability.lean` isolates one fixed nonzero key
   with error `(s-1)*W/|E|`; balanced fibers transport through every challenge. Native tuple
