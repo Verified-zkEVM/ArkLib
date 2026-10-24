@@ -9,6 +9,7 @@ source_metadata: ../sources/BGKLSW26/metadata.yml
 status: seeded
 related_modules:
   - ArkLib/Commitments/Functional/BitZ/ExponentLift.lean
+  - ArkLib/Commitments/Functional/BitZ/CrtVariant.lean
   - ArkLib/Commitments/Functional/BitZ/Round1.lean
   - ArkLib/Commitments/Functional/BitZ/Round2.lean
   - ArkLib/Commitments/Functional/BitZ/OutOfDomain.lean
@@ -23,8 +24,9 @@ related_modules:
 ## At A Glance
 
 BitZ commits to a bit decomposition over a binary field and proves linear claims over an
-arbitrary finitely generated ring. ArkLib provides the exponent lift, the algebraic implications
-for Rounds 1 and 2 of Construction 4.4, and the out-of-domain collision bound of Lemma B.2.
+arbitrary finitely generated ring. ArkLib provides the exponent lift and its CRT relaxation, the
+algebraic implications for Rounds 1 and 2 of Construction 4.4, and the out-of-domain collision
+bound of Lemma B.2.
 These are supporting results for the protocol; there is no BitZ `Commitment.Scheme` instance or
 composed round-by-round knowledge-soundness theorem.
 
@@ -37,6 +39,7 @@ sampling.
 | Paper statement | Lean interface | Scope |
 | --- | --- | --- |
 | Phase 3 of Construction 4.4; no-overflow argument in Theorem 4.7 | `BitZ.prod_bitFactor_eq_pow`, `BitZ.prod_bitFactor_eq_pow_iff_of_lt_orderOf`, `BitZ.prod_bitFactor_eq_pow_iff` | A bit-dependent grand product equals the generator raised to the integer dot product. Below the generator's order, equality of powers is equivalent to equality of the integers. |
+| Remark A.1, Method 2 | `BitZ.sum_mul_eq_of_prod_bitFactor_eq_pow_of_coprime_orderOf`, `BitZ.sum_mul_eq_of_prod_bitFactor_eq_pow_of_coprime`, `BitZ.coprime_two_pow_card_sub_one` | For one column, the grand product together with a second grand product of the weights reduced modulo `ℓ₁` gives the integer inner product when `ℓ₁` is coprime to the order, `ℓ₁² < ord`, and the target is below `ℓ₁ · ord`. The weights then only need to be below `|F| - 1`. In characteristic `2`, `|F| - 1` is coprime to every power of two. |
 | Lemma 4.8 | `MvPolynomial.avg_zeroCountMod_div_le`, `MvPolynomial.avg_zeroCountMod_div_le_logb` | The count separates primes killing every coefficient from ordinary Schwartz–Zippel zeros. |
 | Sampler of Lemmas 4.3 and 4.8 | `MvPolynomial.modPointSample`, `MvPolynomial.prEvent_fingerprint_eq_average`, `MvPolynomial.prEvent_fingerprint_le` | Native `Pr{…}` bounds for a uniform prime followed by a uniform point in that prime's field. |
 | Round 1; Theorem 4.7 proof, equations (43)–(44) | `BitZ.claimPoly_ne_zero`, `BitZ.totalDegree_claimPoly_le`, `BitZ.natAbs_coeff_claimPoly_le`, `BitZ.prEvent_claim_le` | For a fixed false witness claim and a bounded prover message, the reduced claim succeeds with at most the fingerprinting error. |
@@ -56,6 +59,8 @@ Writing `M = 2 · T · ℓ · N²`, the native Round 1 probability bound is
 
 - [`ExponentLift.lean`](../../../ArkLib/Commitments/Functional/BitZ/ExponentLift.lean) owns
   the bit-factor identity and its general-ring and finite-field converses.
+- [`CrtVariant.lean`](../../../ArkLib/Commitments/Functional/BitZ/CrtVariant.lean) relaxes the
+  no-overflow bound by a second grand product modulo `ℓ₁` and the Chinese remainder theorem.
 - [`Round1.lean`](../../../ArkLib/Commitments/Functional/BitZ/Round1.lean) owns the claim
   polynomial, honest-message bound, reduction at a sampled point, and fixed-witness error
   bounds. Lifts along the canonical map are supplied pointwise; the map is an arbitrary ring hom.
@@ -77,8 +82,9 @@ Writing `M = 2 · T · ℓ · N²`, the native Round 1 probability bound is
 
 Acceptance clients under
 [`ArkLibTest/Commitments/Functional/BitZ/`](../../../ArkLibTest/Commitments/Functional/BitZ/)
-exercise the range hypotheses and their failure at the overflow boundary, round bounds,
-semiring injectivity, and the OOD theorem applied to CompPoly evaluation tables. The separate
+exercise the range hypotheses and their failure at the overflow boundary, the necessity of each
+hypothesis of the CRT variant, round bounds, semiring injectivity, and the OOD theorem applied to
+CompPoly evaluation tables. The separate
 [sampler regression](../../../ArkLibTest/Data/MvPolynomial/PrimeFingerprintProbability.lean)
 distinguishes the intended distribution from uniform sampling over all prime/point pairs.
 The clients pin headline theorem dependencies to `propext`, `Classical.choice` and `Quot.sound`.
@@ -90,6 +96,11 @@ The clients pin headline theorem dependencies to `propext`, `Classical.choice` a
   `Fˣ`. Round 2's target ring can be `ℤ`, covering Remark 4.5.
 - The no-overflow condition `ℓ₁ · (q - 1) < |F| - 1` is sufficient and weaker than the paper's
   bound using `ℓ₁ · max P`. The inequality must be strict.
+- The CRT variant is stated for one column over any commutative ring, with `orderOf` in place of
+  `|F| - 1`. It needs `ℓ₁` coprime to the order (automatic for a power of two in characteristic
+  `2`), `ℓ₁² < ord`, and a target below `ℓ₁ · ord`, which every honest target satisfies because
+  `⟨γ, b⟩ ≤ ℓ₁ · (|F| - 2)`. Acceptance examples show that neither these three conditions nor the
+  second grand product can be dropped.
 - The `Nat.log` fingerprint bound is an integer floor and is stronger than the paper's real-log
   expression. The `_logb` counting variants expose the paper's `κ₀` expression. Empty prime sets
   are permitted by counting; sampling requires a nonempty sample type.
@@ -109,6 +120,10 @@ The clients pin headline theorem dependencies to `propext`, `Classical.choice` a
 - Construction 4.13 and Theorem 4.15: bitification, its closure and witness correspondence,
   the tensor weights of Remark 4.14, and the general-ring reduction. This scope is tracked in
   [issue 1331](https://github.com/Verified-zkEVM/ArkLib/issues/1331).
+- Using the CRT variant in place of the no-overflow hypothesis of Round 2, with the relaxed prime
+  bound `max P < |F| - 1` and the correspondingly relaxed conditions for skipping Round 1. The
+  tensor-product shortcut for the reduced weights, which needs
+  `2 · (ℓ₁² + 1) · ℓ₁ < |F| - 1`, is not formalized.
 - Source/target relations, named interaction verifiers, rejection behavior, honest execution,
   the knowledge-state function and extractor for Construction 4.4.
 - The transition from a fixed witness to an existential witness. Unique decoding, or OOD
@@ -145,6 +160,8 @@ ordinary callers outside `noncomputable section`, and records these results (rat
 | `BitZ.claimPoly` | Architectural / 8 | Mathematical error polynomial uses noncomputable polynomial ring operations; it is a proof object, not the prover implementation. |
 | `MvPolynomial.zeroCountMod` | Architectural / 9 | `Nat.card` of roots permits `q = 0` and an infinite integer domain. Finite enumeration would need a positive modulus and a separate computational API. |
 | `BitZ.collisionSet` | No gap | Its existing finite filter generates code from the supplied field, finite enumeration and decidable equality. |
+
+`CrtVariant.lean` adds only theorems, so it contributes no rows.
 
 Runtime checks live in the existing Round 1/2 and fingerprint-probability acceptance modules.
 The future protocol implementation must use executable representations (including the existing
