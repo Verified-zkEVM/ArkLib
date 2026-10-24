@@ -84,7 +84,8 @@ polynomial constructors, so that `Round2Check` evaluates. -/
 
 private def zeroPoly : MvPolynomial (Fin 0) ℤ := AddMonoidAlgebra.ofCoeff 0
 
-private def constPoly (n : ℤ) (hn : n ≠ 0) : MvPolynomial (Fin 0) ℤ :=
+/-- The constant polynomial `n ≠ 0` with an explicit coefficient representation. -/
+def constPoly (n : ℤ) (hn : n ≠ 0) : MvPolynomial (Fin 0) ℤ :=
   AddMonoidAlgebra.ofCoeff
     { support := {0}
       toFun := fun s => if s = 0 then n else 0
