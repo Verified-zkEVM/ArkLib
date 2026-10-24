@@ -915,6 +915,7 @@ public import ArkLib.ProofSystem.Logup.Interaction.Config
 public import ArkLib.ProofSystem.Logup.Interaction.Execution
 public import ArkLib.ProofSystem.Logup.Interaction.Protocol
 public import ArkLib.ProofSystem.Logup.Interaction.Source
+public import ArkLib.ProofSystem.Logup.Lookup.Language
 public import ArkLib.ProofSystem.Logup.Prover.CoefficientCircuit
 public import ArkLib.ProofSystem.Logup.Prover.CoefficientCircuitCost
 public import ArkLib.ProofSystem.Logup.Prover.Helpers

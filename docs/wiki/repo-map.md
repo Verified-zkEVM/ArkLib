@@ -136,6 +136,10 @@ home_page/            site assets and assembled website root
   `ProofSystem/Logup/Prover/RoundCoefficients.lean` streams formal affine-row coefficients
   into one bounded message and identifies the exact native honest head projection.
 
+- `ProofSystem/Logup/Lookup/Language.lean` defines scalar membership in the declared table
+  collection, checked indexed witnesses, and cast-once histogram multiplicities. Its converse
+  from signed balance needs only the query-count budget below the explicit characteristic.
+
 - `ToCompPoly/Multilinear/Basic.lean` constructs Boolean Lagrange tables by sharing each tail
   table and coordinate complement. `ToCompPoly/Multilinear/Arithmetic.lean` interprets that same
   recursion with the existing arithmetic instructions and proves its exact field-operation

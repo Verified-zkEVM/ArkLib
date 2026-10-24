@@ -44,15 +44,16 @@ integer counts or lookup inclusion by itself. The algebraic API supports arbitra
 types and arbitrary key types with executable equality where an algorithm uses it. Lists and
 vectors get thin interoperability lemmas; the protocol does not adopt a list-only semantic API.
 
-The scalar lookup instance has `M` query columns and one table, all with `N = 2^n` rows. Its input
-language is exactly
+The scalar lookup instance has `M` query columns and `P` physical table pieces forming one
+declared collection, all with `N = 2^n` rows. Its input language is exactly
 
 ```text
-forall column row, exists tableRow, query[column][row] = table[tableRow]
+forall column row, exists piece tableRow, query[column][row] = table[piece][tableRow]
 ```
 
-The honest prover receives an index for every query as private witness data. The relation checks
-that the indexed table value equals the query. Prove that this relation's language is precisely
+The honest prover receives an index into the `P*N` table positions for every query as private
+witness data. Flatten positions as `row + N*column` for both query and table columns. The relation
+checks that the indexed table value equals the query. Prove that this relation's language is precisely
 the inclusion statement. A proof of an existential is never used as a runtime witness constructor.
 
 Construct multiplicities by incrementing a natural-number histogram at those indices and only
@@ -68,7 +69,9 @@ itself needs no such assumption. Do not claim the two assignments' messages are 
 The signed collection has query weights `+1` and table weights `-m`. Forward correctness of the
 histogram is characteristic-independent. The converse from balance to inclusion requires every
 positive query count that can occur to remain nonzero. The public sufficient condition is
-`M * N < ringChar B`; a more precise per-key bound may be exposed separately. A scalar-count
+an explicit numeric `p`, a `CharP B p` certificate, and `M * N < p`. The checked constructor
+checks that numeric budget without computing `ringChar B` at runtime. Neither `P*N` nor the
+number of repeated table values needs this bound. A scalar-count
 overflow example must demonstrate why this assumption is necessary.
 
 For permutation checks, require injectivity of the natural-count cast on both count ranges.
@@ -104,7 +107,8 @@ data may not come from classical choice.
 
 Configuration fixes `n`, a positive number `T` of terms per row, and `1 <= ell <= T`.
 The canonical grouping uses consecutive chunks of size at most `ell`, with
-`K = ceil(T / ell)`. The scalar lookup specializes to `T = M + 1`.
+`K = ceil(T / ell)`. The scalar lookup specializes to `T = M + P`. Empty queries and empty
+table collections are supported separately; the checked configuration excludes `M+P=0`.
 An executable checked constructor produces the plan and its coverage, disjointness, cardinality,
 and ordering certificates. Provers cannot change grouping or message shapes inside a run.
 
@@ -239,7 +243,8 @@ or prover-triggered restart when that hypothesis fails.
 
 For a true scalar lookup, every queried value is a table value, so all needed denominators are
 nonzero except when `alpha` equals a table value. The intended completeness error is at most
-`number of distinct table values / |E| <= N/|E|`. Away from that event, prove that the actual honest
+`number of distinct table values / |E| <= P*N/|E|` for the declared collection. Away from that
+event, prove that the actual honest
 execution accepts for every subsequent challenge sequence. Then use losslessness of the honest
 samplers and execution to derive the probability bound.
 
@@ -312,8 +317,10 @@ Equality of evaluations on a finite field is insufficient: the coefficient regre
 distinguish `X^3` from `X` over the two-element field, even though their field evaluations agree.
 
 The local scalar reconstruction uses a linear scan through each group. The final lookup check
-needs at most `M+K+2` source openings; Sumcheck uses at most `3n` message evaluations on the Boolean
-domain. The general weighted instance uses at most `2T+K` source openings. Prove these counts
+needs at most `M+2P+K` logical source openings (`M+K+2` when `P=1`); Sumcheck uses at most `3n`
+message evaluations on the Boolean domain. The general weighted instance uses at most `2T+K`
+logical source openings. A supplied source view can perform additional raw queries while
+answering one logical opening. Prove these counts
 through virtual substitution and the terminal action, including the zero-round case.
 
 Target prover storage linear in the retained and folded table sizes. For the direct coefficient
@@ -390,7 +397,7 @@ Require all of the following before calling the scoped development complete:
   abort. A suffix cannot replace the original oracle with a freshly chosen one.
 - At least one fully instantiated scalar and tuple theorem has satisfiable premises and a
   calculated total soundness bound below one. For scalar parameters `E=ZMod 257`, `n=2`,
-  `M=2`, `ell=1`, the proposed bound is `20/257`, with completeness error at most `4/257`.
+  `M=2`, `P=1`, `ell=1`, the proposed bound is `20/257`, with completeness error at most `4/257`.
 - Full repository validation, axiom validation, test warning checks, and the appropriate docs
   and citation checks pass on the final head. Stage newly added Lean paths before validation;
   regenerate the root import file through the repository tool.
