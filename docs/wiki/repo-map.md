@@ -95,6 +95,11 @@ home_page/            site assets and assembled website root
   polynomial selected before the evaluation challenge. Its table specialization charges the
   multilinear extension's dimension; the number of tables does not multiply that error.
   The scalar affine bound lives in `Data/Probability/Instances.lean`.
+- `ProofSystem/Logup/Algebra/Grouped.lean` owns executable grouped reconstruction, its
+  polynomial degree and Boolean-sum correspondence, and pole-safe global denominator clearing.
+  The realization covers arbitrary multilinear helpers. The
+  [paper correspondence](../kb/papers/Hab22.md) records source versions and the complete native
+  protocol obligations still in progress.
 
 - `ProofSystem/Fri/FoldingSoundness.lean` and `QuerySoundness.lean` contain the algebraic
   soundness arguments; `ErrorBounds.lean` instantiates existing numerical MCA bounds.

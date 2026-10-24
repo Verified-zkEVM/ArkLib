@@ -908,6 +908,7 @@ public import ArkLib.ProofSystem.Fri.Spec.SingleRound
 public import ArkLib.ProofSystem.Fri.Spec.Soundness
 public import ArkLib.ProofSystem.Fri.Spec.Transcript
 public import ArkLib.ProofSystem.Fri.Spec.VerifierExecution
+public import ArkLib.ProofSystem.Logup.Algebra.Grouped
 public import ArkLib.ProofSystem.Plonk.Basic
 public import ArkLib.ProofSystem.RingSwitching.Basic
 public import ArkLib.ProofSystem.RingSwitching.Lift

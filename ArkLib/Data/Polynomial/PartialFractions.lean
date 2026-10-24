@@ -6,6 +6,7 @@ Authors: Thomas Coratger, ArkLib Contributors
 module
 
 public import ArkLib.Data.Finset.SumFiber
+public import ArkLib.Data.Fraction
 public import Mathlib.Algebra.Polynomial.BigOperators
 public import Mathlib.FieldTheory.RatFunc.Basic
 public import Mathlib.Tactic.FieldSimp
@@ -21,7 +22,8 @@ The polynomial and rational-function definitions are mathematical views. Mathlib
 coefficient operations use a classical finite-support representation, and its rational functions
 use a noncomputable fraction-field representation. These views are individually marked
 `noncomputable`; executable fraction arithmetic is provided by `FractionPair` in
-`ArkLib.Data.Fraction`.
+`ArkLib.Data.Fraction`. The agreement theorems identify its folded polynomial pair with the
+cleared numerator and common denominator, and remain valid when evaluated at a pole.
 
 The distinct-pole argument adapts the denominator-clearing proof by Thomas Coratger.
 -/
@@ -145,5 +147,52 @@ theorem natDegree_clearedNumerator_le [DecidableEq ι] (s : Finset ι)
   simp only [natDegree_C, zero_add]
   apply (natDegree_prod_le _ _).trans
   simp [card_erase_of_mem hi]
+
+/-- Folding symbolic weighted fractions produces the denominator-cleared polynomial pair. -/
+theorem fold_eq_clearedFraction [DecidableEq ι] (s : Finset ι) (value weight : ι → F) :
+    FractionPair.sum (s.toList.map fun i ↦
+      (⟨C (weight i), X - C (value i)⟩ : FractionPair F[X])) =
+        ⟨clearedNumerator s value weight, commonDenominator s value⟩ := by
+  classical
+  let ps : List (FractionPair F[X]) := s.toList.map fun i ↦
+    ⟨C (weight i), X - C (value i)⟩
+  have hd : (FractionPair.sum ps).denominator = commonDenominator s value := by
+    simp [ps, FractionPair.sum_denominator, commonDenominator, List.map_map]
+  have hnonzero : ∀ p ∈ ps.map (FractionPair.map ιₚ), p.denominator ≠ 0 := by
+    intro p hp
+    obtain ⟨q, hq, rfl⟩ := List.mem_map.mp hp
+    obtain ⟨i, _, rfl⟩ := List.mem_map.mp hq
+    exact (map_ne_zero_iff _ (IsFractionRing.injective F[X] (RatFunc F))).2
+      (X_sub_C_ne_zero (value i))
+  have hrecip : FractionPair.value (FractionPair.map ιₚ (FractionPair.sum ps)) =
+      reciprocalSum s value weight := by
+    rw [FractionPair.map_sum, FractionPair.value_sum _ hnonzero]
+    simp [ps, FractionPair.map, FractionPair.value, reciprocalSum, List.map_map, Function.comp_def]
+  have hden : ιₚ (FractionPair.sum ps).denominator ≠ 0 := by
+    rw [hd]
+    exact (map_ne_zero_iff _ (IsFractionRing.injective F[X] (RatFunc F))).2
+      (commonDenominator_ne_zero s value)
+  change ιₚ (FractionPair.sum ps).numerator / ιₚ (FractionPair.sum ps).denominator =
+    reciprocalSum s value weight at hrecip
+  have hn := (div_eq_iff hden).mp hrecip
+  rw [hd] at hn
+  apply FractionPair.ext
+  · apply IsFractionRing.injective F[X] (RatFunc F)
+    rw [map_clearedNumerator]
+    exact hn
+  · exact hd
+
+/-- The scalar fraction fold computes the cleared numerator at every point, including poles. -/
+theorem eval_clearedNumerator_eq_fold_numerator [DecidableEq ι] (s : Finset ι)
+    (value weight : ι → F) (alpha : F) :
+    eval alpha (clearedNumerator s value weight) =
+      (FractionPair.sum (s.toList.map fun i ↦
+        (⟨weight i, alpha - value i⟩ : FractionPair F))).numerator := by
+  have h := congrArg (FractionPair.map (evalRingHom alpha))
+    (fold_eq_clearedFraction s value weight)
+  rw [FractionPair.map_sum] at h
+  have hn := congrArg FractionPair.numerator h
+  simpa [FractionPair.map, List.map_map, Function.comp_def] using hn.symm
+
 
 end PartialFractions

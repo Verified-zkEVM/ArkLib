@@ -1,0 +1,9 @@
+bibkey: Hab22
+source_kind: eprint
+canonical_url: https://eprint.iacr.org/2022/1530
+paper_version: "2023-03-31, date printed in the inspected author-uploaded copy"
+inspected_source_url: https://www.researchgate.net/profile/Ulrich-Haboeck/publication/371339784_Multivariate_lookups_based_on_logarithmic_derivatives_logUp/links/647f6b5cb3dfd73b77698c3c/Multivariate-lookups-based-on-logarithmic-derivatives-logUp.pdf
+archive_received: "2022-11-04"
+archive_last_revision_reported: "2025-02-20"
+committed_artifacts: []
+notes: "The author-uploaded 22-page PDF was inspected through web PDF extraction; its title page is dated March 31, 2023. The current ePrint landing page reports a later archive update, not a verified change to these document statements. Direct raw PDF and archive-version downloads returned HTTP 403, so no local PDF or byte digest is recorded and byte identity with the current ePrint PDF is not asserted. Paper numbering in the Hab22 KB page and LogUp comparison follows the inspected author copy."

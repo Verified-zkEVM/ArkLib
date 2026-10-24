@@ -75,6 +75,28 @@ example : clearedNumerator univ (fun _ : Bool ↦ (9 : F₂)) (fun _ ↦ 1) = 0 
   · simpa [sumFiber_eq_sum_ite, h] using (show (2 : F₂) = 0 by decide)
   · simp [sumFiber_eq_sum_ite, h]
 
+/-- The executable symbolic fold agrees with both denominator-clearing views. -/
+example {ι F : Type*} [Field F] [DecidableEq ι] (s : Finset ι) (value weight : ι → F) :
+    FractionPair.sum (s.toList.map fun i ↦
+      (⟨C (weight i), X - C (value i)⟩ : FractionPair F[X])) =
+        ⟨clearedNumerator s value weight, commonDenominator s value⟩ :=
+  fold_eq_clearedFraction s value weight
+
+example : clearedNumerator univ (fun _ : Bool ↦ (1 : ℚ)) (fun _ ↦ 1) =
+    2 * (X - C 1) := by
+  simp [clearedNumerator, two_mul, sub_add_sub_comm, one_add_one_eq_two]
+
+/-- A pole can make the scalar fold numerator zero for an unbalanced occurrence list. -/
+example : (FractionPair.sum ((univ : Finset Bool).toList.map fun _ ↦
+    (⟨(1 : ℚ), 1 - 1⟩ : FractionPair ℚ))).numerator = 0 := by
+  rw [← eval_clearedNumerator_eq_fold_numerator univ (fun _ : Bool ↦ (1 : ℚ)) (fun _ ↦ 1) 1]
+  simp [clearedNumerator]
+
+example : clearedNumerator univ (fun _ : Bool ↦ (1 : ℚ)) (fun _ ↦ 1) ≠ 0 := by
+  intro h
+  have hzero := (clearedNumerator_eq_zero_iff _ _ _).mp h (1 : ℚ)
+  norm_num [sumFiber_eq_sum_ite] at hzero
+
 open Lean Elab Command
 
 run_cmd do
@@ -83,7 +105,8 @@ run_cmd do
       ``commonDenominator_ne_zero, ``map_clearedNumerator,
       ``sum_div_X_sub_C_eq_zero_iff, ``reciprocalSum_eq_sum_fibers,
       ``reciprocalSum_eq_zero_iff, ``clearedNumerator_eq_zero_iff,
-      ``natDegree_clearedNumerator_le] do
+      ``natDegree_clearedNumerator_le, ``fold_eq_clearedFraction,
+      ``eval_clearedNumerator_eq_fold_numerator] do
     let axioms ← collectAxioms n
     unless axioms.all allowed.contains do
       throwError "`{n}` depends on unexpected axioms: {axioms}"

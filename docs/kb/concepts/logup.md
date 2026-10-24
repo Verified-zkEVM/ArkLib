@@ -9,12 +9,12 @@ grouped-sumcheck argument and its completion criteria.
 ## Reference versions
 
 The protocol reference is Ulrich Haböck, *Multivariate lookups based on logarithmic derivatives*,
-[ePrint 2022/1530](https://eprint.iacr.org/2022/1530.pdf), revision dated March 31, 2023. An
-[author-uploaded copy](https://www.researchgate.net/publication/371339784_Multivariate_lookups_based_on_logarithmic_derivatives_logUp)
-contains the same revision date. The original November 2022 version has a different organization
-of protocol variants. The revised Protocol 2 exposes a partial-sum size controlling helper count
-and algebraic degree. Pin the exact downloaded source and its digest when adding the formalization's
-bibliography and theorem matrix; a live ePrint URL alone does not fix the revision.
+[ePrint 2022/1530](https://eprint.iacr.org/2022/1530), citation key [Hab22](../papers/Hab22.md).
+Statement numbers refer to the author-uploaded document dated March 31, 2023. Its Protocol 2
+exposes a partial-sum size controlling helper count and algebraic degree. The ePrint landing page
+reports a later archive update on February 20, 2025; byte identity with the inspected author copy
+has not been established. [Source metadata](../sources/Hab22/metadata.yml) records the inspected
+copy and the unavailable raw-PDF digest. A live ePrint URL alone does not fix the revision.
 
 Implementation references below are pinned source snapshots. Their equations and interfaces are
 comparison targets; their comments are not formal security premises.
