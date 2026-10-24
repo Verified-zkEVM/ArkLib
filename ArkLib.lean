@@ -1014,6 +1014,7 @@ public import ArkLib.ProofSystem.ToyProblem.Spec.SimplifiedIOR
 public import ArkLib.ToCompPoly.Multilinear.Affine
 public import ArkLib.ToCompPoly.Multilinear.Arithmetic
 public import ArkLib.ToCompPoly.Multilinear.Basic
+public import ArkLib.ToCompPoly.Multilinear.Fold
 public import ArkLib.ToCompPoly.Multilinear.NestedEvaluationTree
 public import ArkLib.ToCompPoly.Multivariate.Eval
 public import ArkLib.ToCompPoly.Univariate.Arithmetic
