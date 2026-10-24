@@ -142,7 +142,6 @@
   "ProximityGap.hensel_lift_hypotheses",
   "ProximityGap.irreducible_H",
   "ProximityGap.irreducible_factorization_of_gs_solution",
-  "ProximityGap.large_agreement_set_on_curve_implies_correlated_agreement",
   "ProximityGap.large_agreement_set_on_curve_implies_correlated_agreement'",
   "ProximityGap.matching_set",
   "ProximityGap.matching_set_at_x",
