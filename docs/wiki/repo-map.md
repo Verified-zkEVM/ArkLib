@@ -107,6 +107,9 @@ home_page/            site assets and assembled website root
   realization for every helper, including at poles, through an explicit base-to-challenge map.
   Its `2T+K` count concerns logical input answers; a supplied input view can perform more raw
   openings. Concrete table readers use CompPoly's recursive `evalMle`/`eval₂Mle` backend.
+  `ProofSystem/Logup/Security/Initial.lean` fixes the cleared numerator before the scalar draw
+  and identifies the actual initial relation with a batch of residual-table multilinear
+  extensions. Its joint-challenge bound is uniform over all fixed retained helper messages.
 
 - `ToCompPoly/Multilinear/Basic.lean` constructs Boolean Lagrange tables by sharing each tail
   table and coordinate complement. `ToCompPoly/Multilinear/Arithmetic.lean` interprets that same
