@@ -65,7 +65,7 @@ example : #(collisionSet ({X 0, X 1} : Finset (MvPolynomial (Fin 2) F))) ≤
     · rw [mem_singleton.1 hP]; exact X_mem 1)
   rwa [card_pair (fun h => absurd (X_injective h) (by decide))] at h
 
-/-- Lemma B.2 for the two-element set `{X₀, X₁}`: probability at most `C(2, 2) · 3 / |F|`. -/
+/-- The OOD bound for `{X₀, X₁}`: collision probability at most `C(2, 2) · 3 / |F|`. -/
 example {K : Type} [Field K] [Fintype K] [SampleableType K] :
     Pr{let ζ ← $ᵗ K}[¬ Set.InjOn (MvPolynomial.eval fun i : Fin 2 => ζ ^ (2 ^ (i : ℕ)))
       ({X 0, X 1} : Set (MvPolynomial (Fin 2) K))] ≤
@@ -107,7 +107,7 @@ private theorem table_eval_eq {F : Type*} [CommRing F] {r : ℕ}
   rw [hv] at h
   exact h
 
-/-- Lemma B.2 for CompPoly's executable evaluator: for a set of at most `L_δ` evaluation tables, a
+/-- The OOD bound for CompPoly's executable evaluator: for at most `L_δ` evaluation tables, a
 uniform `ζ` makes two distinct tables agree at `(ζ, ζ², …, ζ^{2^{r-1}})` with probability at most
 `C(L_δ, 2) · (2^r - 1) / |F|`. -/
 theorem prob_table_collision_le {F : Type} [Field F] [Fintype F] [SampleableType F]
