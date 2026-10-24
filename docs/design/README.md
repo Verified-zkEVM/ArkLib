@@ -57,6 +57,12 @@ The pages distinguish three kinds of statement:
 - **Planned:** an intended theorem or API, with its implementation work in the roadmap.
 - **Conditional or deferred:** work needing a concrete client or a later milestone.
 
+## Protocol designs
+
+- [Executable LogUp formalization](logup.md) specifies the proposed grouped lookup argument,
+  its weighted-balance core, executable representations, proof obligations, and acceptance checks.
+  It consumes the native framework described above; it does not change the framework roadmap.
+
 Architecture chapters specify intended contracts; a design signature is not evidence that the
 corresponding declaration exists. Consult current status for the implemented boundary.
 
