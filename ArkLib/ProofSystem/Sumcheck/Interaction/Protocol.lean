@@ -6,6 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.ProofSystem.Sumcheck.Interaction.MultivariateRound
+public import ArkLib.Interaction.Oracle.Sequential
 
 /-!
 # Native Sumcheck with a public abort branch
@@ -15,7 +16,9 @@ challenge. `none` publicly aborts the interaction; `some r` continues the native
 prover continuations retain their own memory and effects. The restricted verifier queries only
 the latest sent polynomial, retaining all earlier access slots and exporting the original oracle
 through a virtual view. At the final leaf it returns an evaluation claim without querying the
-original polynomial. Truth of that claim is a separate relation.
+original polynomial. Truth of that claim is a separate relation. The complete verifier binds that
+terminal action and queries the retained original source at the returned point before accepting.
+Its execution has exactly the base verifier's closed-relation acceptance event.
 -/
 
 @[expose] public section
@@ -226,6 +229,35 @@ theorem execute_succ (challenge : OracleComp ambient R) (domain : List R)
     rfl
   · rfl
 
+/-- Permuting domain queries preserves closed execution because message handlers are pure.
+The actual prover's private continuations and all ambient effects remain in the same order. -/
+theorem execute_eq_of_domain_perm (challenge : OracleComp ambient R)
+    (domain₁ domain₂ : List R) (hdomain : domain₁.Perm domain₂)
+    (count start : ℕ) (finish : start + count = n) (A : PFunctor)
+    (original : VirtualOracle (ofPFunctor A) (polynomialFamily R n deg))
+    (stmt : Spec.StatementRound R n ⟨start, by omega⟩)
+    (impl : QueryImpl (ofPFunctor A) Id)
+    (prover : Prover.Strategy ambient (protocol R M evaluate count).tree
+      (protocol R M evaluate count).roles (fun _ => Unit)) :
+    execute R n deg M evaluate ambient challenge domain₁ count start finish A original stmt impl
+      prover =
+      execute R n deg M evaluate ambient challenge domain₂ count start finish A original stmt impl
+        prover := by
+  induction count generalizing start A with
+  | zero => rfl
+  | succ count ih =>
+    rw [execute_succ, execute_succ]
+    apply bind_congr
+    rintro ⟨q, respond⟩
+    rw [(hdomain.map (fun x => evaluate q x)).sum_eq]
+    split
+    · apply bind_congr
+      intro r
+      apply bind_congr
+      intro next
+      apply ih
+    · rfl
+
 /-- Equal original-oracle behavior gives the same native execution and optional closed claim.
 
 Both sides use the same statement, challenge program, and arbitrary whole native prover.
@@ -320,6 +352,243 @@ theorem execute_transport (challenge : OracleComp ambient R) (domain : List R)
         exact hview
       · simp only [check, ↓reduceIte]
         rfl
+
+/-- Query the virtual original oracle in the verifier's actual terminal action. -/
+def checkFinalClaim (A : PFunctor)
+    (claim : OpenClaim (ofPFunctor A) (FinalStatement R n)
+      (MultivariateRound.polynomialFamily R n deg)) :
+    OracleComp (ambient + ofPFunctor A) Bool := do
+  let answer : R ← liftM (claim.oracles.query ⟨(), claim.stmt.challenges⟩)
+  return decide (answer = claim.stmt.target)
+
+/-- Interpreting an arbitrary source-only program adds no ambient effects. -/
+private theorem simulate_sourceProgram (A : PFunctor) (impl : QueryImpl (ofPFunctor A) Id)
+    {α : Type} (program : OracleComp (ofPFunctor A) α) :
+    simulateQ (Verifier.liftAccessImpl ambient A impl)
+      (liftM program : OracleComp (ambient + ofPFunctor A) α) =
+      pure (simulateQ impl program) := by
+  change simulateQ (QueryImpl.add (QueryImpl.id' ambient)
+    (impl.liftTarget (OracleComp ambient))) _ = _
+  rw [QueryImpl.add_eq_hAdd, QueryImpl.simulateQ_add_liftM_right, simulateQ_liftTarget]
+  rfl
+
+/-- The terminal query is interpreted with the same current source handler. -/
+theorem simulate_checkFinalClaim (A : PFunctor)
+    (impl : QueryImpl (ofPFunctor A) Id)
+    (claim : OpenClaim (ofPFunctor A) (FinalStatement R n)
+      (MultivariateRound.polynomialFamily R n deg)) :
+    simulateQ (Verifier.liftAccessImpl ambient A impl) (checkFinalClaim R n deg ambient A claim) =
+      pure (decide ((show R from (claim.closeWith impl).oracles ⟨(), claim.stmt.challenges⟩) =
+        claim.stmt.target)) := by
+  have query_eq : simulateQ (Verifier.liftAccessImpl ambient A impl)
+      (liftM (claim.oracles.query ⟨(), claim.stmt.challenges⟩) :
+        OracleComp (ambient + ofPFunctor A) R) =
+      pure (show R from (claim.closeWith impl).oracles ⟨(), claim.stmt.challenges⟩) := by
+    exact simulate_sourceProgram ambient A impl (claim.oracles.query ⟨(), claim.stmt.challenges⟩)
+  simp only [checkFinalClaim, simulateQ_bind, query_eq, simulateQ_pure]
+  rfl
+
+/-- Rejection stays rejection; a successful claim is queried once by the terminal checker. -/
+def checkFinalResult (A : PFunctor)
+    (action : OracleComp (ambient + ofPFunctor A)
+      (Option (OpenClaim (ofPFunctor A) (FinalStatement R n)
+        (MultivariateRound.polynomialFamily R n deg)))) :
+    OracleComp (ambient + ofPFunctor A) Bool := do
+  let result ← action
+  match result with
+  | none => return false
+  | some claim => checkFinalClaim R n deg ambient A claim
+
+/-- Boolean form of the final output relation on an optional closed result.
+This is the terminal criterion also used by stateless replay clients. -/
+def accepts (result : Option (ClosedClaim (FinalStatement R n)
+    (MultivariateRound.polynomialFamily R n deg))) : Bool :=
+  match result with
+  | none => false
+  | some claim =>
+      decide ((show R from claim.oracles ⟨(), claim.stmt.challenges⟩) = claim.stmt.target)
+
+/-- Bool acceptance is precisely the closed-relation event used by existing native soundness. -/
+theorem accepts_eq_true_iff (result : Option (ClosedClaim (FinalStatement R n)
+    (MultivariateRound.polynomialFamily R n deg))) :
+    accepts R n deg result = true ↔
+      result.map (outputRelation R n deg) = some True := by
+  cases result <;>
+    simp [accepts, outputRelation]
+  rfl
+
+/-- The terminal checker realizes the final closed relation using the supplied source behavior. -/
+theorem simulate_checkFinalResult (A : PFunctor) (impl : QueryImpl (ofPFunctor A) Id)
+    (action : OracleComp (ambient + ofPFunctor A)
+      (Option (OpenClaim (ofPFunctor A) (FinalStatement R n)
+        (MultivariateRound.polynomialFamily R n deg)))) :
+    simulateQ (Verifier.liftAccessImpl ambient A impl)
+      (checkFinalResult R n deg ambient A action) =
+      (fun result => accepts R n deg (result.map (fun claim => claim.closeWith impl))) <$>
+        simulateQ (Verifier.liftAccessImpl ambient A impl) action := by
+  simp only [checkFinalResult, simulateQ_bind, map_eq_pure_bind]
+  apply bind_congr
+  intro result
+  cases result with
+  | none => rfl
+  | some claim => exact simulate_checkFinalClaim R n deg ambient A impl claim
+
+/-- Bind the native Sumcheck terminal action before deciding acceptance. -/
+def verifierWithFinalCheck (challenge : OracleComp ambient R) (domain : List R)
+    (count start : ℕ) (finish : start + count = n) (A : PFunctor)
+    (original : VirtualOracle (ofPFunctor A) (MultivariateRound.polynomialFamily R n deg))
+    (stmt : Sumcheck.Spec.StatementRound R n ⟨start, by omega⟩) :
+    Verifier.Strategy ambient (protocol R M evaluate count).tree
+      (protocol R M evaluate count).roles (protocol R M evaluate count).oracles A
+      (fun _ => Bool) :=
+  Verifier.Fragment.mapOutput ambient (fun path action =>
+    checkFinalResult R n deg ambient
+      (TypeTree.accessAfter (protocol R M evaluate count).tree
+        (protocol R M evaluate count).oracles A path) action)
+    (verifier R n deg M evaluate ambient challenge domain count start finish A original stmt)
+
+/-- Execute the complete native verifier, including its actual final source query action.
+The native prover may have arbitrary private output and effectful continuations. -/
+def executeWithFinalCheck (challenge : OracleComp ambient R) (domain : List R)
+    (count start : ℕ) (finish : start + count = n) (A : PFunctor)
+    (original : VirtualOracle (ofPFunctor A) (MultivariateRound.polynomialFamily R n deg))
+    (stmt : Sumcheck.Spec.StatementRound R n ⟨start, by omega⟩)
+    (impl : QueryImpl (ofPFunctor A) Id)
+    {OutP : (protocol R M evaluate count).tree.ExecutionPath → Type}
+    (prover : Prover.Strategy ambient (protocol R M evaluate count).tree
+      (protocol R M evaluate count).roles OutP) : OracleComp ambient Bool :=
+  (fun result => result.2.2) <$>
+    executeStrategies ambient (protocol R M evaluate count).tree
+      (protocol R M evaluate count).roles (protocol R M evaluate count).oracles A impl prover
+      (verifierWithFinalCheck R n deg M evaluate ambient challenge domain count start finish A
+        original stmt)
+
+/-- The existing runner supplies the terminal action with exactly this run's accumulated
+source handler, for every native prover continuation and private output family. -/
+private theorem execute_map_terminal (tree : _root_.Interaction.Oracle.TypeTree)
+    (roles : tree.RoleDecoration) (oracles : tree.OracleDecoration) (A : PFunctor)
+    (impl : QueryImpl (ofPFunctor A) Id)
+    (Leaf Out : tree.BranchPath → Type)
+    (OutP : tree.ExecutionPath → Type)
+    (prover : Prover.Strategy ambient tree roles OutP)
+    (fragment : Verifier.Fragment ambient tree roles oracles A Leaf)
+    (finish : (path : tree.BranchPath) → Leaf path →
+      OracleComp (ambient + ofPFunctor (TypeTree.accessAfter tree oracles A path)) (Out path)) :
+    executeStrategies ambient tree roles oracles A impl prover
+      (Verifier.Fragment.mapOutput ambient finish fragment) = (do
+      let result ← _root_.Interaction.TwoParty.run tree.toTypeTree
+        (TypeTree.RoleDecoration.toTypeTreeRoles tree roles) prover
+        (Verifier.toCounterpartValue ambient tree roles oracles A impl Leaf fragment)
+      let path := TypeTree.ExecutionPath.ofTypeTreePath result.1
+      let out ← simulateQ
+        (Verifier.liftAccessImpl ambient (TypeTree.accessAfter tree oracles A path.toBranchPath)
+          (path.closingImpl oracles A impl))
+        (finish path.toBranchPath result.2.2)
+      return ⟨path, result.2.1, out⟩) := by
+  unfold executeStrategies Verifier.toCounterpart
+  rw [Verifier.toCounterpartWith_mapOutput,
+    Verifier.toCounterpartWith_finish_eq_mapOutput, run_counterpart_mapOutput]
+  simp only [bind_map_left]
+
+/-- The completed native verifier has exactly the original run's path and private output,
+with acceptance given by the original claim closed against that run's retained resources.
+This is an equality of open programs and quantifies over arbitrary native prover continuations. -/
+theorem executeStrategies_verifierWithFinalCheck (challenge : OracleComp ambient R)
+    (domain : List R)
+    (count start : ℕ) (finish : start + count = n) (A : PFunctor)
+    (original : VirtualOracle (ofPFunctor A) (MultivariateRound.polynomialFamily R n deg))
+    (stmt : Sumcheck.Spec.StatementRound R n ⟨start, by omega⟩)
+    (impl : QueryImpl (ofPFunctor A) Id)
+    (OutP : (protocol R M evaluate count).tree.ExecutionPath → Type)
+    (prover : Prover.Strategy ambient (protocol R M evaluate count).tree
+      (protocol R M evaluate count).roles OutP) :
+    executeStrategies ambient (protocol R M evaluate count).tree
+      (protocol R M evaluate count).roles (protocol R M evaluate count).oracles A impl
+      prover (verifierWithFinalCheck R n deg M evaluate ambient challenge domain count start finish
+        A original stmt) =
+    (fun result => ⟨result.1, result.2.1, accepts R n deg
+      (result.2.2.map (fun claim => claim.closeWith
+        (result.1.closingImpl (protocol R M evaluate count).oracles A impl)))⟩) <$>
+      executeStrategies ambient (protocol R M evaluate count).tree
+        (protocol R M evaluate count).roles (protocol R M evaluate count).oracles A impl
+        prover (verifier R n deg M evaluate ambient challenge domain count start finish A original
+          stmt) := by
+  unfold verifierWithFinalCheck
+  rw [execute_map_terminal]
+  simp only [simulate_checkFinalResult, bind_map_left]
+  unfold executeStrategies
+  rw [Verifier.toCounterpart, Verifier.toCounterpartWith_finish_eq_mapOutput,
+    run_counterpart_mapOutput]
+  simp only [bind_map_left, map_bind, map_pure]
+
+/-- The executable Bool event is exactly the existing closed native Sumcheck event.
+Consequently adding terminal authentication contributes zero additional soundness error. -/
+theorem executeWithFinalCheck_eq_execute (challenge : OracleComp ambient R) (domain : List R)
+    (count start : ℕ) (finish : start + count = n) (A : PFunctor)
+    (original : VirtualOracle (ofPFunctor A) (MultivariateRound.polynomialFamily R n deg))
+    (stmt : Sumcheck.Spec.StatementRound R n ⟨start, by omega⟩)
+    (impl : QueryImpl (ofPFunctor A) Id)
+    (prover : Prover.Strategy ambient (protocol R M evaluate count).tree
+      (protocol R M evaluate count).roles (fun _ => Unit)) :
+    executeWithFinalCheck R n deg M evaluate ambient challenge domain count start finish A
+      original stmt impl prover =
+      accepts R n deg <$> execute R n deg M evaluate ambient challenge domain count start finish
+        A original stmt impl prover := by
+  unfold executeWithFinalCheck
+  rw [executeStrategies_verifierWithFinalCheck]
+  simp only [execute, executeStrategiesCore, CoreRun.closed,
+    map_eq_pure_bind, bind_assoc, pure_bind]
+
+/-- Discarding only the prover's final private return value preserves complete acceptance.
+The paired-run output map retains the actual path and every ambient effect, so the existing
+Unit-output native soundness theorem applies to arbitrary private-output prover strategies. -/
+theorem executeWithFinalCheck_eq_execute_eraseOutput
+    (challenge : OracleComp ambient R) (domain : List R)
+    (count start : ℕ) (finish : start + count = n) (A : PFunctor)
+    (original : VirtualOracle (ofPFunctor A) (MultivariateRound.polynomialFamily R n deg))
+    (stmt : Sumcheck.Spec.StatementRound R n ⟨start, by omega⟩)
+    (impl : QueryImpl (ofPFunctor A) Id)
+    {OutP : (protocol R M evaluate count).tree.ExecutionPath → Type}
+    (prover : Prover.Strategy ambient (protocol R M evaluate count).tree
+      (protocol R M evaluate count).roles OutP) :
+    executeWithFinalCheck R n deg M evaluate ambient challenge domain count start finish A
+      original stmt impl prover =
+      accepts R n deg <$> execute R n deg M evaluate ambient challenge domain count start finish
+        A original stmt impl
+        (StrategyOver.TwoParty.Focal.mapOutput (fun _ _ => (() : Unit)) prover) := by
+  let counterpart := Verifier.toCounterpart ambient (protocol R M evaluate count).tree
+    (protocol R M evaluate count).roles (protocol R M evaluate count).oracles A impl
+    (fun _ => Bool)
+    (verifierWithFinalCheck R n deg M evaluate ambient challenge domain count start finish A
+      original stmt)
+  have mapped := TwoParty.run_mapOutput_mapOutput (fun _ _ => (() : Unit))
+    (fun _ out => out) prover counterpart
+  simp only [StrategyOver.TwoParty.Counterpart.mapOutput_id] at mapped
+  rw [← executeWithFinalCheck_eq_execute]
+  simp only [executeWithFinalCheck, executeStrategies, map_bind, map_pure]
+  rw [mapped]
+  simp only [bind_map_left]
+  rfl
+
+/-- Complete executable acceptance is independent of the order of a domain enumeration.
+Only source-query order changes; the closed Bool program preserves all ambient effects. -/
+theorem executeWithFinalCheck_eq_of_domain_perm (challenge : OracleComp ambient R)
+    (domain₁ domain₂ : List R) (hdomain : domain₁.Perm domain₂)
+    (count start : ℕ) (finish : start + count = n) (A : PFunctor)
+    (original : VirtualOracle (ofPFunctor A) (polynomialFamily R n deg))
+    (stmt : Spec.StatementRound R n ⟨start, by omega⟩)
+    (impl : QueryImpl (ofPFunctor A) Id)
+    {OutP : (protocol R M evaluate count).tree.ExecutionPath → Type}
+    (prover : Prover.Strategy ambient (protocol R M evaluate count).tree
+      (protocol R M evaluate count).roles OutP) :
+    executeWithFinalCheck R n deg M evaluate ambient challenge domain₁ count start finish A
+      original stmt impl prover =
+      executeWithFinalCheck R n deg M evaluate ambient challenge domain₂ count start finish A
+        original stmt impl prover := by
+  rw [executeWithFinalCheck_eq_execute_eraseOutput,
+    executeWithFinalCheck_eq_execute_eraseOutput,
+    execute_eq_of_domain_perm R n deg M evaluate ambient challenge domain₁ domain₂ hdomain]
+
 
 end Sumcheck.Interaction.Native.Core
 

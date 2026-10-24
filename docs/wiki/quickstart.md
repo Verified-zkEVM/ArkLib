@@ -228,7 +228,7 @@ it gives the expected answer — are checked by compiled executables under `scri
 | --- | --- | --- |
 | `toyproblem-runtime` | `scripts/ToyProblemRuntime.lean` | the toy-problem launch cone |
 | `hachi-runtime` | `scripts/HachiRuntime.lean` | the nonrecursive Hachi honest-prover path |
-| `sumcheck-runtime` | `scripts/SumcheckRuntime.lean` | CompPoly messages and honest multivariate execution, including private effects, public abort and the retained original oracle |
+| `sumcheck-runtime` | `scripts/SumcheckRuntime.lean` | CompPoly messages, honest multivariate execution and final source authentication, including forgery rejection, zero rounds, retained helpers and private effects after public abort |
 | `fri-extractor-runtime` | `scripts/FriExtractorRuntime.lean` | measured FRI extraction, input guards, raw interpolation corner cases, and exact small instruction counts |
 
 **Put them here, not under `ArkLib/`.** A file under `ArkLib/` is picked up by the generated
@@ -247,6 +247,13 @@ Two things to get right when adding one:
   millisecond checks and hides its composed protocol run behind `--full` (that run passes, but
   takes about six minutes — the honest sumcheck prover dominates), with `--timing` for per-check
   costs.
+
+- **Carry executable domain enumerations into security statements.** `Finset.toList` is
+  noncomputable, so runtime verifiers take an explicit list. A proof-only permutation certificate
+  relates it to the specification's finite domain. Native Sumcheck's
+  `Core.executeWithFinalCheck_eq_of_domain_perm` transports the closed execution while preserving
+  ambient effects; raw source-query order can change. The terminal-authentication acceptance
+  fixture checks the bound on a compiler-checked program using the literal list `[0, 1]`.
 
 ## Optional Direct Commands
 
