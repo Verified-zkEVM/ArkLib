@@ -531,6 +531,7 @@ public import ArkLib.Data.Finset.PairwiseIntersection
 public import ArkLib.Data.Finset.PickSubset
 public import ArkLib.Data.Finset.SampleIncidence
 public import ArkLib.Data.Finset.Staircase
+public import ArkLib.Data.Finset.SumFiber
 public import ArkLib.Data.Finset.TupleIntersection
 public import ArkLib.Data.Finset.WeightedSimplex
 public import ArkLib.Data.Finset.WeightedSimplex.FloorTransfer
@@ -684,6 +685,8 @@ public import ArkLib.Data.Probability.Instances
 public import ArkLib.Data.Probability.KoalaBear
 public import ArkLib.Data.Probability.Sequential
 public import ArkLib.Data.Probability.Uniform
+public import ArkLib.Data.Vector.Histogram
+public import ArkLib.Data.Vector.Lookup
 public import ArkLib.Interaction.CompositionSoundness
 public import ArkLib.Interaction.Oracle.Access
 public import ArkLib.Interaction.Oracle.Claim

@@ -73,6 +73,11 @@ home_page/            site assets and assembled website root
   fraction folds. Its regrouping identities hold at zero denominators; agreement with evaluated
   field fractions separately requires nonzero denominators. External caller, runtime, and axiom
   checks live in `ArkLibTest/Data/Fraction.lean`.
+- `Data/Finset/SumFiber.lean` owns weighted key-fiber sums and selected-key isolation under an
+  encoding. `Data/Vector/Histogram.lean` counts indexed witnesses in natural numbers and proves
+  duplicate-safe key aggregation before casting. `Data/Vector/Lookup.lean` derives table membership
+  from balanced key weights when positive query counts remain nonzero. Acceptance checks include
+  a characteristic-two counterexample in `ArkLibTest/Data/Vector/Histogram.lean`.
 
 - `ProofSystem/Fri/FoldingSoundness.lean` and `QuerySoundness.lean` contain the algebraic
   soundness arguments; `ErrorBounds.lean` instantiates existing numerical MCA bounds.
