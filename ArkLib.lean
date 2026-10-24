@@ -914,6 +914,7 @@ public import ArkLib.ProofSystem.Logup.Interaction.Execution
 public import ArkLib.ProofSystem.Logup.Interaction.Protocol
 public import ArkLib.ProofSystem.Logup.Interaction.Source
 public import ArkLib.ProofSystem.Logup.Security.Initial
+public import ArkLib.ProofSystem.Logup.Security.Weighted
 public import ArkLib.ProofSystem.Plonk.Basic
 public import ArkLib.ProofSystem.RingSwitching.Basic
 public import ArkLib.ProofSystem.RingSwitching.Lift

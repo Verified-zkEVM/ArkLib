@@ -117,6 +117,10 @@ home_page/            site assets and assembled website root
   `ProofSystem/Logup/Interaction/Execution.lean` proves the exact whole-prover prefix binds
   and routed native suffix law, preserving sender/receiver effects and arbitrary dependent
   private returns through terminal authentication.
+  `ProofSystem/Logup/Security/Weighted.lean` derives the whole native acceptance bound
+  `(T*2^n+n*(ell+3))/|E|` against every ordinary prover from genuine source realization and
+  nonzero mapped weight balance. Scalar lookup and tuple language adapters add their own
+  count, encoding and challenge-order obligations.
 
 - `ToCompPoly/Multilinear/Basic.lean` constructs Boolean Lagrange tables by sharing each tail
   table and coordinate complement. `ToCompPoly/Multilinear/Arithmetic.lean` interprets that same
