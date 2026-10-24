@@ -81,4 +81,39 @@ theorem sumFiber_comp_eq_of_isolated (s : Finset ι) (key : ι → κ) (weight :
   · intro i _
     rfl
 
+/-- An encoded fiber is the sum of the original fibers mapping to its encoded key.
+Only occurring keys are enumerated; the key carriers may both be infinite. -/
+theorem sumFiber_comp (s : Finset ι) (key : ι → κ) (weight : ι → R)
+    (encode : κ → ν) (encoded : ν) :
+    s.sumFiber (encode ∘ key) weight encoded =
+      ∑ k ∈ (s.image key).filter (fun k ↦ encode k = encoded), s.sumFiber key weight k := by
+  let selected := s.filter (fun i ↦ encode (key i) = encoded)
+  have hmap : ∀ i ∈ selected, key i ∈ (s.image key).filter (fun k ↦ encode k = encoded) := by
+    intro i hi
+    exact mem_filter.mpr ⟨mem_image.mpr ⟨i, (mem_filter.mp hi).1, rfl⟩,
+      (mem_filter.mp hi).2⟩
+  symm
+  calc
+    _ = ∑ k ∈ (s.image key).filter (fun k ↦ encode k = encoded),
+        selected.sumFiber key weight k := by
+      apply sum_congr rfl
+      intro k hk
+      unfold sumFiber
+      congr 1
+      ext i
+      simp only [mem_filter, selected]
+      constructor
+      · rintro ⟨hi, hkey⟩
+        exact ⟨⟨hi, hkey ▸ (mem_filter.mp hk).2⟩, hkey⟩
+      · exact fun h ↦ ⟨h.1.1, h.2⟩
+    _ = ∑ i ∈ selected, weight i := sum_sumFiber selected _ key weight hmap
+    _ = _ := rfl
+
+/-- Zero weight in every original fiber remains zero after any encoding, even with collisions. -/
+theorem sumFiber_comp_eq_zero (s : Finset ι) (key : ι → κ) (weight : ι → R)
+    (encode : κ → ν) (hzero : ∀ k, s.sumFiber key weight k = 0) (encoded : ν) :
+    s.sumFiber (encode ∘ key) weight encoded = 0 := by
+  rw [sumFiber_comp]
+  exact sum_eq_zero fun k _ ↦ hzero k
+
 end Finset

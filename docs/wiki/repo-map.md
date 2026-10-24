@@ -95,6 +95,10 @@ home_page/            site assets and assembled website root
   polynomial selected before the evaluation challenge. Its table specialization charges the
   multilinear extension's dimension; the number of tables does not multiply that error.
   The scalar affine bound lives in `Data/Probability/Instances.lean`.
+- `Data/Polynomial/TaggedTuple.lean` checks bus schemas and computes common-width fingerprints
+  and padded coefficient columns. `TaggedTupleProbability.lean` isolates one fixed nonzero key
+  with error `(s-1)*W/|E|`; balanced fibers transport through every challenge. Native tuple
+  composition additionally proves the source interpolation and weight/challenge ordering.
 - `ProofSystem/Logup/Algebra/Grouped.lean` owns executable grouped reconstruction, its
   polynomial degree and Boolean-sum correspondence, and pole-safe global denominator clearing.
   The realization covers arbitrary multilinear helpers. The

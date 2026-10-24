@@ -86,6 +86,31 @@ lemma prob_polynomial_eval_eq_le
   exact (Polynomial.mem_roots hr).mpr (by
     simpa [sub_eq_zero] using (Finset.mem_filter.mp hγ).2)
 
+/-- A fixed selected polynomial collides with one of the other finitely many polynomials with
+probability at most their number times the common degree bound. Only selected-key collisions
+are charged; collisions among the other polynomials are unrestricted. -/
+theorem prob_polynomial_eval_exists_eq_le
+    {R κ : Type} [CommRing R] [NoZeroDivisors R] [Fintype R] [SampleableType R]
+    [DecidableEq κ] {d : ℕ} (keys : Finset κ) (p : κ → Polynomial R) (selected : κ)
+    (hp : ∀ k ∈ keys, k ≠ selected → p k ≠ p selected)
+    (hselectedDegree : (p selected).natDegree ≤ d)
+    (hdegree : ∀ k ∈ keys, (p k).natDegree ≤ d) :
+    Pr{let beta ← $ᵗ R}[∃ k ∈ keys.erase selected, (p k).eval beta = (p selected).eval beta] ≤
+      ((keys.erase selected).card * d : ℕ) / (Fintype.card R : ℝ≥0∞) := by
+  classical
+  calc
+    _ ≤ ∑ k ∈ keys.erase selected,
+        Pr{let beta ← $ᵗ R}[(p k).eval beta = (p selected).eval beta] :=
+      prEvent_exists_finset_le _ _ _
+    _ ≤ ∑ _k ∈ keys.erase selected, (d : ℝ≥0∞) / Fintype.card R := by
+      apply Finset.sum_le_sum
+      intro k hk
+      exact prob_polynomial_eval_eq_le
+        (hp k (Finset.mem_erase.mp hk).2 (Finset.mem_erase.mp hk).1)
+        (hdegree k (Finset.mem_erase.mp hk).2) hselectedDegree
+    _ = _ := by
+      simp only [Finset.sum_const, nsmul_eq_mul, Nat.cast_mul, mul_div_assoc]
+
 /-- The polynomial identity lemma in individual-degree form. -/
 lemma prob_polynomial_identity_le
     {R : Type} [CommRing R] [IsDomain R] [Fintype R] [SampleableType R]

@@ -81,19 +81,36 @@ need those assumptions. Equivalence of the equations is the appropriate correspo
 
 ## Compression contracts
 
-Plonky3's per-bus prefix is `alpha + (bus+1)*beta^W`; its payload combiner uses descending powers
-within the tuple. One declared payload width per bus is essential: a short tuple and a longer
-zero-padded tuple can encode the same polynomial. The multi-STARK lookup plan checks agreement
-across declarations sharing a bus. Bus tags must also be distinct in the base field.
+The canonical encoding in
+[`TaggedTuple.lean`](../../../ArkLib/Data/Polynomial/TaggedTuple.lean) is
+`tag*beta^W + sum_j payload_j*beta^j`, with one global maximum width `W` and a declared width
+for each bus. The checked schema makes tags injective in the base field; its dependent key fixes
+payload length. A short raw tuple and a longer zero-padded tuple can otherwise encode the same
+polynomial. The multi-STARK lookup plan checks agreement across declarations sharing a bus.
 
-Stwo's shown combiner uses ascending payload powers and subtracts a sampled offset. SP1's inspected
-verifier samples a multilinear combiner seed. Establish explicit translations for each family;
-do not substitute a probability theorem for one family into another.
+Plonky3's denominator is `alpha + (bus+1)*beta^W - descendingPayload`. Expressing it as
+`alpha - canonicalFingerprint` requires both a reversed payload and canonical tag `-(bus+1)`.
+Stwo's shown ascending payload-minus-offset combiner has the opposite denominator sign; its
+single-bus translation uses tag zero. OpenVM places the tag at the message's own width `w`:
+conversion to the global-width encoding adds `tag*(beta^W-beta^w)`. When `w<W`, these are different
+fingerprint families. Zero tags can give cross-width aliases in the own-width family.
+SP1's inspected verifier uses supplied multilinear combiner coefficients; its family has a
+separate contract from this univariate fingerprint. The acceptance checks pin source revisions
+and test these equations; they do not establish Rust implementation equivalence.
 
 Formal polynomial encoding can be injective even though its evaluation at a sampled scalar has
-collisions. Bus separation participates in this same probabilistic event. To preserve one
-nonzero net weight, it suffices to isolate a fixed nonzero key from the other distinct keys before
-the challenge. Full pairwise collision avoidance is stronger than the soundness proof needs.
+collisions. To preserve one nonzero net weight, it suffices to isolate a fixed nonzero key from
+the other occurring distinct keys. The selected-key bound in
+[`TaggedTupleProbability.lean`](../../../ArkLib/Data/Polynomial/TaggedTupleProbability.lean)
+is `(s-1)*W/|E|`. Semantic keys, schema and weights must all be fixed before `beta`; choosing
+weights afterward can violate that bound. Balanced fibers remain balanced for every encoding,
+including collisions, by finite regrouping.
+
+For row-varying buses, the native adapter must open padded coefficient-column multilinear
+extensions and combine those answers. An interpolated tag at a field point need not be a declared
+bus tag, so it cannot be used to recover a semantic key there. The reusable coefficient accessor
+and its interpolation fixture support this adapter; the complete native tuple argument remains
+an implementation obligation.
 
 ## Bounds that need an independent derivation
 
