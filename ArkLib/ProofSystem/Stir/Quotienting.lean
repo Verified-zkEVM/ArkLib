@@ -10,9 +10,24 @@ public import ArkLib.Data.CodingTheory.ListDecodability
 public import CompPoly.Data.MvPolynomial.Notation
 
 /-!
-# ArkLib.ProofSystem.Stir.Quotienting
+# Polynomial and function quotienting
 
-Definitions and results for this component of ArkLib.
+Subtracting the interpolant of a polynomial on a finite set makes it divisible by the set's
+vanishing polynomial. The resulting quotient has a reduced degree bound and agrees with
+pointwise division away from the set. Function quotienting fills the remaining points explicitly;
+unquotienting supplies the reverse construction used in the Reed-Solomon distance bound.
+
+These are mathematical views: their noncomputable definitions use Mathlib's formal polynomial
+operations, including Lagrange interpolation and Euclidean division, without an executable
+polynomial representation.
+
+The definitions and distance bound follow [ACFY24stir], Definitions 4.2–4.3 and Lemma 4.4.
+See `docs/kb/papers/ACFY24stir.md` for the paper-to-API correspondence and formalization gaps.
+
+## References
+
+* [Arnon, G., Chiesa, A., Fenzi, G., and Yogev, E., *STIR: Reed-Solomon proximity testing
+  with fewer queries*][ACFY24stir]
 -/
 
 @[expose] public section
@@ -31,8 +46,7 @@ variable {F : Type*} [Field F] [DecidableEq F]
 noncomputable def ansPoly (S : Finset F) (Ans : S → F) : Polynomial F :=
   Lagrange.interpolate S.attach (fun i => (i : F)) Ans
 
-/-- VanishingPoly is the vanishing polynomial on S, i.e. the unique polynomial of degree |S|+1
-    that is 0 at each s ∈ S and is not the zero polynomial. That is V(X) = ∏(s ∈ S) (X - s). -/
+/-- The monic vanishing polynomial `∏ s ∈ S, (X - C s)`, of degree `S.card`. -/
 noncomputable def vanishingPoly (S : Finset F) : Polynomial F :=
   ∏ s ∈ S, (Polynomial.X - Polynomial.C s)
 
@@ -74,8 +88,7 @@ lemma natDegree_vanishingPoly (S : Finset F) : (vanishingPoly S).natDegree = S.c
 
 end VanishingPoly
 
-/-- Definition 4.2
-  funcQuotient is the quotient function that outputs
+/-- The quotient function that outputs
   if `domain x ∈ S`,  Fill(domain x).
   else                (f(x) - Ans'(domain x)) / V(domain x).
   Note here that, V(s) = 0 ∀ s ∈ S, otherwise V(s) ≠ 0.
@@ -106,12 +119,10 @@ lemma eval_vanishingPoly_mul_funcQuotient_add_ansPoly {domain : ι ↪ F} {f : �
   field_simp [eval_vanishingPoly_ne_zero hx]
   ring
 
-/-- Definition 4.3
-  polyQuotient is the polynomial derived from the polynomials fPoly, Ans' and V, where
-  Ans' is a polynomial s.t. Ans'(x) = fPoly(x) for x ∈ S, and
-  V is the vanishing polynomial on S as before.
-  Then, polyQuotient = (fPoly - Ans') / V, where
-  polyQuotient.degree < (fPoly.degree - ι.card) -/
+/-- Subtract the interpolant of `fPoly` on `S` and divide by the vanishing polynomial of `S`.
+
+If `fPoly.degree < d` and `S.card ≤ d`, the quotient has degree less than `d - S.card`;
+see `degree_polyQuotient_lt`. -/
 noncomputable def polyQuotient (S : Finset F) (fPoly : F[X]) : F[X] :=
     (fPoly - (ansPoly S (fun s => fPoly.eval s))) / (vanishingPoly S)
 
@@ -131,7 +142,8 @@ lemma vanishingPoly_mul_polyQuotient (S : Finset F) (fPoly : F[X]) :
     divByMonic_eq_div _ hV] at h
   exact h
 
-/-- Definition 4.3: the polynomial quotient has degree less than `d - |S|`. -/
+/-- If `fPoly` has degree less than `d` and `S.card ≤ d`, its quotient has degree less than
+`d - S.card`. -/
 lemma degree_polyQuotient_lt {S : Finset F} {fPoly : F[X]} {d : ℕ} (hS : S.card ≤ d)
     (hf : fPoly.degree < d) :
     (polyQuotient S fPoly).degree < ((d - S.card : ℕ) : WithBot ℕ) := by
@@ -161,7 +173,7 @@ noncomputable def disagreementSet [Fintype ι] (domain : ι ↪ F) (f : ι → F
     (Ans : S → F) : Finset ι :=
   Finset.univ.filter fun x => domain x ∈ S ∧ (ansPoly S Ans).eval (domain x) ≠ f x
 
-/-- The "unquotiented" polynomial `V_S * g + Ans'` of Lemma 4.4. -/
+/-- The unquotiented polynomial `vanishingPoly S * g + ansPoly S Ans`. -/
 noncomputable def unquotient (S : Finset F) (Ans : S → F) (g : F[X]) : F[X] :=
   vanishingPoly S * g + ansPoly S Ans
 
@@ -276,19 +288,20 @@ lemma mem_closeCodewordsRel_of_hammingDist_div_le [Fintype ι] [Nonempty ι] {C 
   push_cast at this
   exact this
 
-/-- Quotienting Lemma 4.4
+/-- Quotienting separates a function from low-degree codewords when the answers disagree with
+every nearby codeword.
+
   Let `f : ι → F` be a function, `degree` a degree parameter, `δ` a distance parameter
   `S` be a set with |S| < degree, `Ans, Fill : S → F`. Suppose for all `u ∈ Λ(code, f, δ)`,
   there exists `x : S`, such that `uPoly(x) ≠ Ans(x)` then
   `δᵣ(funcQuotient(f, S, Ans, Fill), code[ι, F, degree - |S|]) + |T|/|ι| > δ`,
   where T is the disagreementSet as defined above.
 
-  The paper takes `δ ∈ (0, 1)`; the argument does not use this, so the lemma is stated for every
-  `δ`.
+  The bound holds for every nonnegative `δ`.
 
   The hypothesis speaks about `toPolynomialLT u`, the interpolant of the codeword `u`. It is the
   degree-`< degree` polynomial evaluating to `u` only when `degree ≤ |ι|`, i.e. for codes of rate at
-  most one as in the paper, so this is assumed. -/
+  most one, so this is assumed. -/
 lemma quotienting [Fintype ι] {degree : ℕ} {domain : ι ↪ F} [Nonempty ι]
     [DecidableEq ι]
     (S : Finset F) (hS_lt : S.card < degree) (hdeg : degree ≤ Fintype.card ι)
