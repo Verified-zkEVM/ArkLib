@@ -162,6 +162,38 @@ theorem prob_dotProduct_eq_zero_le
       (Fintype.card F : ℝ≥0∞)⁻¹ :=
   le_of_eq (prob_dotProduct_eq_zero_eq_inv_card d hd)
 
+open MvPolynomial in
+/-- A nontrivial affine equation in independently uniform coordinates vanishes with probability
+at most one over the field size. A nonzero constant suffices even if every coefficient is zero. -/
+theorem prob_affine_dotProduct_eq_zero_le {F : Type} [Field F] [Fintype F]
+    [SampleableType F] {K : ℕ} (c : F) (d : Fin K → F)
+    (hnontrivial : c ≠ 0 ∨ d ≠ 0) :
+    Pr{let v ← $ᵗ (Fin K → F)}[c + ∑ j, d j * v j = 0] ≤
+      (Fintype.card F : ENNReal)⁻¹ := by
+  classical
+  let p : MvPolynomial (Fin K) F := C c + ∑ j, C (d j) * X j
+  have hp : p ≠ 0 := by
+    intro hz
+    have hc : c = 0 := by
+      have h := congrArg (MvPolynomial.eval (fun _ ↦ (0 : F))) hz
+      simpa [p] using h
+    rcases hnontrivial with hc' | hd
+    · exact hc' hc
+    · apply hd
+      funext j
+      have h := congrArg (MvPolynomial.eval (Pi.single j (1 : F))) hz
+      simpa [p, hc, Pi.single_apply, mul_ite] using h
+  have hdeg : p.totalDegree ≤ 1 := by
+    apply (totalDegree_add _ _).trans
+    apply max_le
+    · simp
+    · apply totalDegree_finsetSum_le
+      intro j _
+      apply (totalDegree_mul _ _).trans
+      simp
+  simpa [p] using
+    Probability.prob_schwartz_zippel_mv_polynomial_of_totalDegree_le p hp hdeg
+
 /-! ## Product membership bounds -/
 
 /-- For a uniformly random `xs : Fin t → ι`, the probability that every coordinate lands in

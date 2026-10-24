@@ -87,6 +87,10 @@ home_page/            site assets and assembled website root
   Batteries' tail-recursive `List.takeList`; the bridge to Mathlib's `List.splitLengths` lives in
   `ToMathlib/List/SplitLengths.lean`. Caller and boundary checks live in
   `ArkLibTest/Data/Fin/ConsecutiveChunks.lean`.
+- `Data/MvPolynomial/BatchingProbability.lean` bounds affine batching using one nonzero
+  polynomial selected before the evaluation challenge. Its table specialization charges the
+  multilinear extension's dimension; the number of tables does not multiply that error.
+  The scalar affine bound lives in `Data/Probability/Instances.lean`.
 
 - `ProofSystem/Fri/FoldingSoundness.lean` and `QuerySoundness.lean` contain the algebraic
   soundness arguments; `ErrorBounds.lean` instantiates existing numerical MCA bounds.
