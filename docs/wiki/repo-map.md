@@ -141,6 +141,9 @@ home_page/            site assets and assembled website root
   from signed balance needs only the query-count budget below the explicit characteristic.
   `ProofSystem/Logup/Lookup/Source.lean` combines the genuine original value view with the
   actual retained base-field multiplicities, realizing signed tables for every supplied message.
+  `ProofSystem/Logup/Lookup/Config.lean` checks the numeric query budget and grouping.
+  `Protocol.lean` retains the actual multiplicity message before alpha; `Security.lean` proves
+  whole-prover soundness for the complete scalar endpoint with arbitrary dependent private output.
 
 - `ToCompPoly/Multilinear/Basic.lean` constructs Boolean Lagrange tables by sharing each tail
   table and coordinate complement. `ToCompPoly/Multilinear/Arithmetic.lean` interprets that same
