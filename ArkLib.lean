@@ -604,6 +604,7 @@ public import ArkLib.Data.Lattices.CyclotomicRing.Subfield.TraceInnerProduct
 public import ArkLib.Data.Lattices.CyclotomicRing.Subfield.TraceVanishing
 public import ArkLib.Data.Lattices.ModuleSIS
 public import ArkLib.Data.Lattices.Vectors
+public import ArkLib.Data.List.NetMult
 public import ArkLib.Data.Matrix.Basic
 public import ArkLib.Data.Matrix.DotProduct
 public import ArkLib.Data.Matrix.ReadOnce
@@ -690,6 +691,7 @@ public import ArkLib.Data.Polynomial.FrobeniusContraction
 public import ArkLib.Data.Polynomial.GeneratorBatch
 public import ArkLib.Data.Polynomial.Indicator
 public import ArkLib.Data.Polynomial.Interface
+public import ArkLib.Data.Polynomial.LogDerivative
 public import ArkLib.Data.Polynomial.PermutationFingerprint
 public import ArkLib.Data.Polynomial.PermutationFingerprintDegree
 public import ArkLib.Data.Polynomial.PointCollision
