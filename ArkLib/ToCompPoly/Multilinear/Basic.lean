@@ -111,6 +111,22 @@ theorem eval_eq_MvPolynomial_MLE (evals : (Fin n → Fin 2) → R) (x : Fin n �
   interval_cases hval : ((finFunctionFinEquiv.symm i) j).val <;>
     simp [Fin.ext_iff, hval]
 
+/-- Evaluate a Boolean table through an explicit ring homomorphism and interpret the same
+mapped Boolean values using Mathlib's multilinear extension. -/
+theorem eval₂Mle_eq_MvPolynomial_MLE {B E : Type*} [CommRing B] [CommRing E]
+    {n : ℕ} (table : CMlPolynomialEval B n) (f : B →+* E) (x : Fin n → E) :
+    eval₂Mle table f (Vector.ofFn x) =
+      MvPolynomial.eval x
+        (MvPolynomial.MLE (fun u => f (table.get (finFunctionFinEquiv u)))) := by
+  rw [eval₂_mle_eq_eval₂]
+  unfold eval₂
+  convert eval_eq_MvPolynomial_MLE
+    (fun u => f (table.get (finFunctionFinEquiv u))) x using 1
+  apply congrArg (fun p => eval p (Vector.ofFn x))
+  apply Vector.ext
+  intro i hi
+  simp [map, Vector.get_eq_getElem]
+
 universe u v
 
 /-- Build a Boolean Lagrange table using supplied complement and multiplication operations.
