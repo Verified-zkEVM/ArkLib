@@ -100,6 +100,9 @@ home_page/            site assets and assembled website root
   The realization covers arbitrary multilinear helpers. The
   [paper correspondence](../kb/papers/Hab22.md) records source versions and the complete native
   protocol obligations still in progress.
+  `ProofSystem/Logup/Interaction/Config.lean` checks consecutive grouping once and retains its
+  coverage and size certificates. It accepts zero row variables; characteristic budgets belong
+  to the separate lookup specialization.
 
 - `ToCompPoly/Multilinear/Basic.lean` constructs Boolean Lagrange tables by sharing each tail
   table and coordinate complement. `ToCompPoly/Multilinear/Arithmetic.lean` interprets that same
