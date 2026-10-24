@@ -69,6 +69,11 @@ home_page/            site assets and assembled website root
 
 ## Navigation Notes
 
+- `Data/Fraction.lean` provides executable unnormalized numerator-denominator pairs and
+  fraction folds. Its regrouping identities hold at zero denominators; agreement with evaluated
+  field fractions separately requires nonzero denominators. External caller, runtime, and axiom
+  checks live in `ArkLibTest/Data/Fraction.lean`.
+
 - `ProofSystem/Fri/FoldingSoundness.lean` and `QuerySoundness.lean` contain the algebraic
   soundness arguments; `ErrorBounds.lean` instantiates existing numerical MCA bounds.
   `Fri/Spec/Soundness.lean` proves ordinary and round-by-round soundness of the executable

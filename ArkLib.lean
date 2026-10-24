@@ -537,6 +537,7 @@ public import ArkLib.Data.Finset.WeightedSimplex.FloorTransfer
 public import ArkLib.Data.Finset.WeightedSimplex.Moments
 public import ArkLib.Data.Finset.WeightedSimplex.RankIntegral
 public import ArkLib.Data.Finset.WeightedSimplex.Variance
+public import ArkLib.Data.Fraction
 public import ArkLib.Data.GroupTheory.PrimeOrder
 public import ArkLib.Data.Hash.DomainSep
 public import ArkLib.Data.Hash.DuplexSponge
