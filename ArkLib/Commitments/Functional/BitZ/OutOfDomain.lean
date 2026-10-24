@@ -34,6 +34,9 @@ of the list gives the count. This file instantiates the point-collision bounds o
   `κ_OOD ≤ L_δ² · (ℓ/ν - 1) / |𝔽|` of [BGKLSW26, Theorem B.1]. The step "`Enc_C ∘ Pack_ν` is
   injective, so `|L| ≤ L_δ`" is a statement about the code and is not part of this file.
 
+Paper-specific correspondence and remaining formalization work are recorded in the
+[BitZ KB](https://github.com/Verified-zkEVM/ArkLib/blob/main/docs/kb/papers/BGKLSW26.md).
+
 ## References
 
 * [Bloemen, R., Garreta, A., Kostrzewa, M., Londhe, S., Soukhanov, L., and Wu, J.,

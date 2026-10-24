@@ -62,3 +62,25 @@ info: 'MvPolynomial.prEvent_fingerprint_le' depends on axioms:
 -/
 #guard_msgs (whitespace := lax) in
 #print axioms MvPolynomial.prEvent_fingerprint_le
+
+/-! ### Executable sampling at the endpoints of the random oracle's range -/
+
+private theorem prime_three : ∀ q ∈ ({3} : Finset ℕ), q.Prime := by
+  intro q hq
+  simp only [Finset.mem_singleton] at hq
+  subst q
+  decide
+
+private def sampleLast (n : ℕ) : Id (unifSpec.Range n) := pure (Fin.last n)
+
+private def sampleZero (n : ℕ) : Id (unifSpec.Range n) := pure 0
+
+/-- info: [2, 2] -/
+#guard_msgs in
+#eval List.ofFn (simulateQ (r := Id) sampleLast
+  (modPointSample (m := 2) prime_three ⟨3, by simp⟩)) |>.map ZMod.val
+
+/-- info: [0, 0] -/
+#guard_msgs in
+#eval List.ofFn (simulateQ (r := Id) sampleZero
+  (modPointSample (m := 2) prime_three ⟨3, by simp⟩)) |>.map ZMod.val

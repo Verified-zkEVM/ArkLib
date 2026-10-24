@@ -6,47 +6,56 @@ Authors: Ilia Vlasov, Mirco Richter (Least Authority), Aristotle (Harmonic)
 module
 
 public import ArkLib.Data.MvPolynomial.Multilinear
+public import ArkLib.Data.Nat.BitSum
 public import Mathlib.Algebra.MvPolynomial.Eval
 public import Mathlib.Algebra.Polynomial.Eval.Defs
 
 /-!
-  # Conversion of Univariate polynomials to Multilinear polynomials
+# Binary encoding of univariate and multilinear polynomials
 
-  Univariate polynomials of degree < 2ᵐ can be writen as degree wise linear
-  m-variate polynomials by `∑ aᵢ Xⁱ → ∑ aᵢ ∏ⱼ Xⱼ^(bitⱼ(i))` -/
+`linearMvExtension` sends a univariate polynomial of degree below `2^m` to a multilinear
+polynomial in `m` variables by expanding each exponent into binary digits.
+`powAlgHom` substitutes `Xᵢ ↦ X^(2^i)` in the other direction.
+
+For multilinear polynomials, `coeff_powAlgHom_bitsValue` recovers each coefficient after
+substitution, `powAlgHom_injOn` proves injectivity, and `natDegree_powAlgHom_le` bounds the
+resulting degree by `2^m - 1`. These facts hold over a commutative semiring.
+
+`bitExpo` and `bitsValue` are executable. The polynomial-valued mathematical views
+`linearMvExtension` and `linearMvExtensionLMap` use Mathlib's noncomputable polynomial
+addition; `partialEval` uses its noncomputable polynomial constructors. `powAlgHom` and
+`powContraction` use the noncomputable `Polynomial` semiring instance. Executable polynomial
+transformations require a computational representation, with agreement proved against these views.
+-/
 
 @[expose] public section
 
 namespace LinearMvExtension
 
-noncomputable section
-
 open MvPolynomial
 
 variable {F : Type*} [CommSemiring F] {m : ℕ}
 
-/-- Given integers m and i this computes monomial exponents
-  `( σ(0), ..., σ(m-1) ) = ( bit₀(i), ..., bitₘ₋₁(i) )`
-  such that we have `X_0^σ(0)⬝  ⋯  ⬝ X_(m-1)^σ(m-1)`.
-  For `i ≥ 2ᵐ` this is the bit reprsentation of `(i mod 2ᵐ)` -/
+/-- The exponent vector consisting of the lowest `m` binary digits of `i`. -/
 def bitExpo (i : ℕ) : (Fin m) →₀ ℕ :=
-  Finsupp.onFinset Finset.univ
-    (fun j => if Nat.testBit i j.1 then 1 else 0)
-    (by intro j hj; simp)
+  { support := Finset.univ.filter fun j => Nat.testBit i j.1
+    toFun := fun j => if Nat.testBit i j.1 then 1 else 0
+    mem_support_toFun := by intro j; simp }
 
-/-- The linear map that maps univariate polynomials of degree < 2ᵐ onto
-    degree wise linear m-variate polynomials, sending
-    `aᵢ Xⁱ ↦ aᵢ ∏ⱼ Xⱼ^(bitⱼ(i))`, where `bitⱼ(i)` is the j-th binary digit of `(i mod 2ᵐ)`. -/
-def linearMvExtension (p : Polynomial.degreeLT F (2 ^ m)) : MvPolynomial (Fin m) F :=
+/-- Expand each exponent of a univariate polynomial of degree below `2^m` into binary digits,
+sending `aᵢ Xⁱ` to `aᵢ ∏ⱼ Xⱼ^(bitⱼ(i))`. -/
+noncomputable def linearMvExtension (p : Polynomial.degreeLT F (2 ^ m)) : MvPolynomial (Fin m) F :=
   p.val.sum fun i a ↦ monomial (bitExpo i) a
 
+/-- Binary exponent expansion preserves addition. -/
 @[simp]
-lemma linearMvExtension_add_comm {p q : Polynomial.degreeLT F (2 ^ m)} :
+lemma linearMvExtension_add {p q : Polynomial.degreeLT F (2 ^ m)} :
     linearMvExtension (p + q) = linearMvExtension p + linearMvExtension q := by
   simp [linearMvExtension, Polynomial.sum_add_index]
 
+/-- Binary exponent expansion preserves scalar multiplication. -/
 @[simp]
-lemma linearMvExtension_smul_comm {c : F} {p : Polynomial.degreeLT F (2 ^ m)} :
+lemma linearMvExtension_smul {c : F} {p : Polynomial.degreeLT F (2 ^ m)} :
     linearMvExtension (c • p) = c • linearMvExtension p := by
   simp only [linearMvExtension, SetLike.val_smul]
   rw [Polynomial.sum_smul_index _ _ _ (by simp)]
@@ -58,12 +67,13 @@ lemma linearMvExtension_smul_comm {c : F} {p : Polynomial.degreeLT F (2 ^ m)} :
 
 lemma bitExpo_apply (i : ℕ) (j : Fin m) :
     (bitExpo i : Fin m →₀ ℕ) j = if Nat.testBit i j.1 then 1 else 0 := by
-  simp [bitExpo, Finsupp.onFinset_apply]
+  rfl
 
 lemma bitExpo_le_one (i : ℕ) (j : Fin m) :
     (bitExpo i : Fin m →₀ ℕ) j ≤ 1 := by aesop (add simp [bitExpo_apply])
 
-lemma linearMvExtension_degreeOf_lt {p : Polynomial.degreeLT F (2 ^ m)} {i : Fin m} :
+/-- Every variable has degree at most one after binary exponent expansion. -/
+lemma degreeOf_linearMvExtension_le {p : Polynomial.degreeLT F (2 ^ m)} {i : Fin m} :
     MvPolynomial.degreeOf i (linearMvExtension p) ≤ 1 := by
   have h_monomial_degrees {x} (hx : x ∈ p.val.support) :
       (degreeOf i (monomial (bitExpo x) (p.val.coeff x))) ≤ 1 := by
@@ -78,11 +88,9 @@ lemma linearMvExtension_degreeOf_lt {p : Polynomial.degreeLT F (2 ^ m)} {i : Fin
   exact h_sum_degrees.trans (Finset.sup_le @h_monomial_degrees)
 
 
-/-- The linear map that maps univariate polynomials of degree < 2ᵐ onto
-    degree wise linear m-variate polynomials, sending
-    `aᵢ Xⁱ ↦ aᵢ ∏ⱼ Xⱼ^(bitⱼ(i))`, where `bitⱼ(i)` is the j-th binary digit of `(i mod 2ᵐ)`.
-    This is a linear map version. -/
-def linearMvExtensionLMap :
+/-- The linear map sending `X^i`, for `i < 2^m`, to the monomial with exponent vector `bitExpo i`.
+-/
+noncomputable def linearMvExtensionLMap :
     Polynomial.degreeLT F (2^m) →ₗ[F] MvPolynomial (Fin m) F where
     -- p(X) = aᵢ Xᶦ ↦ aᵢ ∏ⱼ Xⱼ^(bitⱼ(i))
     toFun p := linearMvExtension p
@@ -93,10 +101,9 @@ def linearMvExtensionLMap :
 lemma linearMvExtensionLMap_apply (p : Polynomial.degreeLT F (2 ^ m)) :
     linearMvExtensionLMap p = linearMvExtension p := rfl
 
-/-- `partialEval` takes a m-variate polynomial f and a k-vector α as input,
-  partially evaluates f(X_0, X_1,..X_(m-1)) at {X_0 = α_0, X_1 = α_1,.., X_{k-1} = α_{k-1}}
-  and returns a (m-k)-variate polynomial. -/
-def partialEval {k : ℕ} (f : MvPolynomial (Fin m) F) (α : Fin k → F) (h : k ≤ m) :
+/-- Evaluate the first `k` variables of an `m`-variable polynomial at `α`, leaving a polynomial
+in the remaining `m - k` variables. -/
+noncomputable def partialEval {k : ℕ} (f : MvPolynomial (Fin m) F) (α : Fin k → F) (h : k ≤ m) :
     MvPolynomial (Fin (m - k)) F :=
   let φ : Fin m → MvPolynomial (Fin (m - k)) F := fun i =>
     if h' : i.val < k then
@@ -107,11 +114,8 @@ def partialEval {k : ℕ} (f : MvPolynomial (Fin m) F) (α : Fin k → F) (h : k
       X j'
   eval₂ C φ f
 
-/-- The Semiring morphism that maps m-variate polynomials onto univariate
-    polynomials by evaluating them at `(X^(2⁰), ... , X^(2ᵐ⁻¹))`, i.e. sending
-    `aₑ X₀^σ(0) ⬝ ⋯ ⬝ Xₘ₋₁^σ(m-1) →  aₑ (X^(2⁰))^σ(0) ⬝ ⋯ ⬝ (X^(2ᵐ⁻¹))^σ(m-1)`
-    for all `σ : Fin m → ℕ` -/
-def powAlgHom :
+/-- The algebra homomorphism substituting `Xᵢ ↦ X^(2^i)` in an `m`-variable polynomial. -/
+noncomputable def powAlgHom :
     MvPolynomial (Fin m) F →ₐ[F] Polynomial F :=
    aeval fun j => Polynomial.X ^ (2 ^ (j : ℕ))
 
@@ -195,34 +199,17 @@ theorem eval_powAlgHom (P : MvPolynomial (Fin m) F) (ζ : F) :
     ← MvPolynomial.coe_aeval_eq_eval]
   simp
 
-/-- Distinct bit vectors encode distinct numbers. -/
-theorem eq_of_sum_pow_two_mul_eq (b b' : Fin m → ℕ) (hb : ∀ i, b i ≤ 1) (hb' : ∀ i, b' i ≤ 1)
-    (h : ∑ i : Fin m, 2 ^ (i : ℕ) * b i = ∑ i : Fin m, 2 ^ (i : ℕ) * b' i) : b = b' := by
-  induction m with
-  | zero => exact funext fun i => i.elim0
-  | succ m ih =>
-    rw [Fin.sum_univ_succ, Fin.sum_univ_succ] at h
-    have hs : ∀ c : Fin (m + 1) → ℕ, ∑ i : Fin m, 2 ^ ((i.succ : Fin (m + 1)) : ℕ) * c i.succ =
-        2 * ∑ i : Fin m, 2 ^ (i : ℕ) * c i.succ := fun c => by
-      rw [Finset.mul_sum]
-      exact Finset.sum_congr rfl fun i _ => by simp [pow_succ]; ring
-    rw [hs b, hs b'] at h
-    simp only [Fin.val_zero, pow_zero, one_mul] at h
-    have h0 : b 0 = b' 0 := by have := hb 0; have := hb' 0; omega
-    have h1 : ∑ i : Fin m, 2 ^ (i : ℕ) * b i.succ = ∑ i : Fin m, 2 ^ (i : ℕ) * b' i.succ := by
-      omega
-    have := ih (fun i => b i.succ) (fun i => b' i.succ) (fun i => hb _) (fun i => hb' _) h1
-    funext i
-    exact Fin.cases h0 (fun i => congrFun this i) i
+@[deprecated (since := "2026-10-24")]
+alias eq_of_sum_pow_two_mul_eq := Nat.eq_of_sum_pow_two_mul_eq
 
-/-- The number encoded by the exponent vector `s` of a multilinear monomial: `∑ᵢ 2 ^ i * sᵢ`. -/
+/-- The weighted exponent sum `∑ᵢ 2 ^ i * sᵢ`, the binary encoding when every `sᵢ ≤ 1`. -/
 def bitsValue (s : Fin m →₀ ℕ) : ℕ := ∑ i : Fin m, 2 ^ (i : ℕ) * s i
 
-/-- Multilinear monomials are determined by their `bitsValue`. -/
+/-- The binary weighted sum is injective on exponent vectors whose entries are at most one. -/
 theorem bitsValue_injOn : Set.InjOn (bitsValue (m := m)) {s | ∀ i, s i ≤ 1} :=
-  fun _ hs _ ht h => Finsupp.ext (congrFun (eq_of_sum_pow_two_mul_eq _ _ hs ht h))
+  fun _ hs _ ht h => Finsupp.ext (congrFun (Nat.eq_of_sum_pow_two_mul_eq _ _ hs ht h))
 
-/-- `powAlgHom` sends the monomial `∏ᵢ Xᵢ ^ sᵢ` to `X ^ bitsValue s`. -/
+/-- Expand `powAlgHom P` as the sum of `C (P.coeff s) * X ^ bitsValue s` over `P.support`. -/
 theorem powAlgHom_eq_sum (P : MvPolynomial (Fin m) F) :
     powAlgHom P =
       ∑ s ∈ P.support, Polynomial.C (P.coeff s) * Polynomial.X ^ bitsValue s := by
@@ -249,16 +236,6 @@ theorem coeff_powAlgHom_bitsValue {P : MvPolynomial (Fin m) F}
     simp only [mem_support_iff, not_not] at hnot
     simp [hnot]
 
-/-- A nonzero multilinear polynomial is sent to a *nonzero* polynomial by `powAlgHom`. -/
-theorem powAlgHom_ne_zero {P : MvPolynomial (Fin m) F}
-    (hP : P ∈ restrictDegree (Fin m) F 1) (h0 : P ≠ 0) : powAlgHom P ≠ 0 := by
-  obtain ⟨s, hs⟩ := MvPolynomial.ne_zero_iff.1 h0
-  have hsb : ∀ i, s i ≤ 1 := (mem_restrictDegree (Fin m) P 1).1 hP s (mem_support_iff.2 hs)
-  intro h
-  have := coeff_powAlgHom_bitsValue hP s hsb
-  rw [h, Polynomial.coeff_zero] at this
-  exact hs this.symm
-
 /-- `powAlgHom` is injective on multilinear polynomials, over any commutative semiring: the
 coefficients of `P` are recovered from those of `powAlgHom P` at the binary exponents
 (`coeff_powAlgHom_bitsValue`), and all other coefficients of a multilinear `P` vanish. -/
@@ -275,8 +252,14 @@ theorem powAlgHom_injOn :
       exact hs ((mem_restrictDegree (Fin m) T 1).1 hT s (mem_support_iff.2 h))
     rw [hcoeff P hP, hcoeff Q hQ]
 
-/- The linear map optained by forgetting the multiplicative structure-/
-def powContraction :
+/-- Substitution by `Xᵢ ↦ X^(2^i)` preserves nonzero multilinear polynomials. -/
+theorem powAlgHom_ne_zero {P : MvPolynomial (Fin m) F}
+    (hP : P ∈ restrictDegree (Fin m) F 1) (h0 : P ≠ 0) : powAlgHom P ≠ 0 := by
+  intro h
+  exact h0 (powAlgHom_injOn hP (zero_mem _) (by simpa using h))
+
+/-- The linear map underlying the substitution `Xᵢ ↦ X^(2^i)`. -/
+noncomputable def powContraction :
     MvPolynomial (Fin m) F →ₗ[F] Polynomial F :=
   powAlgHom.toLinearMap
 
@@ -304,9 +287,9 @@ private lemma binary_repr_sum (m i : ℕ) (hi : i < 2 ^ m) :
     rw [key, ih (i / 2) hi2]
     rcases Nat.mod_two_eq_zero_or_one i with h | h <;> simp [h] <;> omega
 
-/- Evaluating m-variate polynomials on (X^(2⁰), ... , X^(2ᵐ⁻¹) ) is
-   right inverse to linear multivariate extensions on F^(< 2ᵐ)[X]  -/
-lemma powContraction_is_right_inverse_to_linearMvExtension
+/-- Substitution after binary exponent expansion recovers a univariate polynomial of degree
+below `2^m`. -/
+lemma powContraction_linearMvExtensionLMap
     (p : Polynomial.degreeLT F (2 ^ m)) :
     powContraction.comp linearMvExtensionLMap p = p := by
   have hnat : (p : Polynomial F).natDegree < 2 ^ m := by
@@ -331,7 +314,10 @@ lemma powContraction_is_right_inverse_to_linearMvExtension
     have h_sum : ∑ x : Fin m, 2 ^ (x : ℕ) * (bitExpo i) x = i := by
       convert binary_repr_sum m i (Finset.mem_range.mp hi) using 1
       rw [Finset.sum_range]
-      unfold bitExpo; aesop
+      simp only [bitExpo_apply]
+      apply Finset.sum_congr rfl
+      intro j _
+      split_ifs <;> simp
     simp_rw [← pow_mul]
     rw [Finset.prod_pow_eq_pow_sum, h_sum]
     simp [Polynomial.smul_eq_C_mul]
@@ -340,12 +326,26 @@ lemma powContraction_is_right_inverse_to_linearMvExtension
   convert (Polynomial.as_sum_range' p.val (2 ^ m) hnat).symm using 1
   simp +decide [Polynomial.smul_eq_C_mul, ← Polynomial.C_mul_X_pow_eq_monomial]
 
-lemma powAlgHom_is_right_inverse_to_linearMvExtension
+/-- Binary exponent expansion followed by substitution recovers a polynomial of degree
+below `2^m`. -/
+lemma powAlgHom_linearMvExtension
     (p : Polynomial.degreeLT F (2 ^ m)) :
     powAlgHom (linearMvExtension p) = p := by
-  rw [←powContraction_is_right_inverse_to_linearMvExtension]
-  rfl
+  exact powContraction_linearMvExtensionLMap p
 
-end
+@[deprecated (since := "2026-10-24")]
+alias linearMvExtension_add_comm := linearMvExtension_add
+
+@[deprecated (since := "2026-10-24")]
+alias linearMvExtension_smul_comm := linearMvExtension_smul
+
+@[deprecated (since := "2026-10-24")]
+alias linearMvExtension_degreeOf_lt := degreeOf_linearMvExtension_le
+
+@[deprecated (since := "2026-10-24")]
+alias powContraction_is_right_inverse_to_linearMvExtension := powContraction_linearMvExtensionLMap
+
+@[deprecated (since := "2026-10-24")]
+alias powAlgHom_is_right_inverse_to_linearMvExtension := powAlgHom_linearMvExtension
 
 end LinearMvExtension

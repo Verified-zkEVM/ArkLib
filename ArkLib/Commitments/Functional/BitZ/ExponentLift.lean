@@ -37,6 +37,9 @@ The paper's hypothesis `max P < (|𝔽_{2^ν}| - 1) / ℓ₁` of [BGKLSW26, Theo
 `ℓ₁ · q < orderOf g`, which is stronger than the condition `|ι| · qMax < orderOf g` used here with
 `qMax = q - 1`.
 
+Paper-specific correspondence and remaining formalization work are recorded in the
+[BitZ KB](https://github.com/Verified-zkEVM/ArkLib/blob/main/docs/kb/papers/BGKLSW26.md).
+
 ## References
 
 * [Bloemen, R., Garreta, A., Kostrzewa, M., Londhe, S., Soukhanov, L., and Wu, J.,

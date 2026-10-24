@@ -9,7 +9,7 @@ public import ArkLib.Commitments.Functional.BitZ.ExponentLift
 public import ArkLib.Data.Matrix.DotProduct
 
 /-!
-# BitZ: soundness of Round 2 of Construction 4.4
+# BitZ: recovering tensor claims from grand products
 
 Round 2 of [BGKLSW26, Construction 4.4] splits the claim `⟨v⁽¹⁾ ⊗ v⁽²⁾, π_q(f)⟩ = µ` over `𝔽_q`
 into `ℓ₂` integer claims `⟨f_{*j}, γ⟩ = µⱼ`, where `γ = π_q⁻¹(v⁽¹⁾) ∈ [0 .. q - 1]^{ℓ₁}` and the
@@ -27,6 +27,9 @@ stated for an arbitrary commutative ring `K` in place of `𝔽_q`, so that it al
   hold and `ℓ₁ · (q - 1) < |𝔽| - 1`, then the integer claims `⟨f_{*j}, γ⟩ = µⱼ` hold, and together
   with the verifier check `∑ⱼ µⱼ · v⁽²⁾ⱼ = c` they give `⟨v⁽¹⁾ ⊗ v⁽²⁾, f⟩ = c` in `K`.
 
+Paper-specific correspondence and remaining formalization work are recorded in the
+[BitZ KB](https://github.com/Verified-zkEVM/ArkLib/blob/main/docs/kb/papers/BGKLSW26.md).
+
 ## References
 
 * [Bloemen, R., Garreta, A., Kostrzewa, M., Londhe, S., Soukhanov, L., and Wu, J.,
@@ -42,7 +45,7 @@ namespace BitZ
 variable {F : Type*} [Field F] [Fintype F] {ι₁ ι₂ : Type*} [Fintype ι₁] [Fintype ι₂]
   {K : Type*} [CommRing K]
 
-/-- **Round 2 of [BGKLSW26, Construction 4.4], as a pure implication.** Let `g` generate `Fˣ`, let
+/-- **The tensor claim from bounded grand products.** Let `g` generate `Fˣ`, let
 `γᵢ < q` and `µⱼ ≤ |ι₁| · (q - 1)`, let `f` be a matrix of bits, and assume
 `|ι₁| · (q - 1) < |F| - 1`. Let `v₁ ∈ Kˡ¹` and `v₂ ∈ Kˡ²` with `v₁ = (γᵢ)ᵢ` in `K`, that is, `γ` is
 the integer representative of `v₁`. If every column satisfies the BitZ grand product

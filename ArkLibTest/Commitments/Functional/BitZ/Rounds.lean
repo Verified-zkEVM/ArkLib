@@ -6,6 +6,7 @@ Authors: aryaethn
 
 import ArkLib.Commitments.Functional.BitZ.Round1
 import ArkLib.Commitments.Functional.BitZ.Round2
+import ArkLib.Data.MvPolynomial.LinearMvExtension
 import ArkLibTest.Commitments.Functional.BitZ.Basic
 
 /-!
@@ -105,22 +106,21 @@ example (s : Fin 1 →₀ ℕ) :
   exact natAbs_coeff_honestMessage_le (D := 1) (N := 1) (fun _ => le_rfl)
     (fun _ => (totalDegree_X _).le) (fun _ s => hX s) (fun _ s => hC s) s
 
-private theorem primes_two_three : ∀ q ∈ ({2, 3} : Finset ℕ), q.Prime := by
+private theorem primes_eleven_thirteen : ∀ q ∈ ({11, 13} : Finset ℕ), q.Prime := by
   intro q hq
   simp only [mem_insert, mem_singleton] at hq
   rcases hq with rfl | rfl <;> decide
 
-private instance : Nonempty ↥({2, 3} : Finset ℕ) := ⟨⟨2, by simp⟩⟩
+private instance : Nonempty ↥({11, 13} : Finset ℕ) := ⟨⟨11, by simp⟩⟩
 
 /-- The challenge sampler of Round 1 with one variable and two primes: `π_canon` sends `X₀` to `1`,
 so the claim `⟨1 ⊗ 1, 1⟩ = 1 = µ + 1` is false for `µ = 0`, and the cheating message `µ' = 0`
-passes the check `π_canon(µ') = µ`. -/
-example : Pr{let q ← $ᵗ ↥({2, 3} : Finset ℕ); let α ← modPointSample primes_two_three q}[
+passes `π_canon(µ') = µ`. Primes `{11, 13}` give the nontrivial error bound `2/11`. -/
+example : Pr{let q ← $ᵗ ↥({11, 13} : Finset ℕ); let α ← modPointSample primes_eleven_thirteen q}[
     ∑ p : Fin 1 × Fin 1, reduceAt q.val α (X 0 : MvPolynomial (Fin 1) ℤ) *
       reduceAt q.val α (C 1) * (((fun _ => 1 : Fin 1 × Fin 1 → ℕ) p : ℕ) : ZMod q.val) =
         reduceAt q.val α 0] ≤
-      ENNReal.ofReal ((Nat.log 2 (2 * (1 + 1).choose 1 * Fintype.card (Fin 1 × Fin 1) * 1 ^ 2) :
-        ℝ) / ({2, 3} : Finset ℕ).card + ((2 * 1 : ℕ) : ℝ) / 2) := by
+      ENNReal.ofReal (2 / 11 : ℝ) := by
   have hX : ∀ s, ((X 0 : MvPolynomial (Fin 1) ℤ).coeff s).natAbs ≤ 1 := by
     intro s
     rw [coeff_X]
@@ -129,13 +129,16 @@ example : Pr{let q ← $ᵗ ↥({2, 3} : Finset ℕ); let α ← modPointSample 
     intro s
     rw [coeff_C]
     split_ifs <;> simp
-  exact prEvent_claim_le (R := ℤ) (eval fun _ => 1) (a := fun _ : Fin 1 => X 0)
+  have h := prEvent_claim_le (R := ℤ) (eval fun _ => 1) (a := fun _ : Fin 1 => X 0)
     (b := fun _ : Fin 1 => C 1) (v₁ := fun _ => 1) (v₂ := fun _ => 1) (fun _ => by simp)
     (fun _ => by simp) (f := fun _ => 1) (fun _ => le_rfl) (μ := 0) (μ' := 0) (by simp)
     (by simp) (D := 1) (N := 1) (fun _ => (totalDegree_X _).le)
     (fun _ => (totalDegree_C _).le.trans (Nat.zero_le _)) (fun _ s => hX s) (fun _ s => hC s)
-    (by simp) (fun s => by simp) primes_two_three (qmin := 2) le_rfl
+    (by simp) (fun s => by simp) primes_eleven_thirteen (qmin := 11) (by norm_num)
     (fun q hq => by simp only [mem_insert, mem_singleton] at hq; omega)
+  have hlog : Nat.log 11 4 = 0 := by decide
+  convert h using 1
+  norm_num [hlog]
 
 /-! ### Axiom boundaries -/
 
@@ -179,3 +182,31 @@ info: 'BitZ.prEvent_claim_le' depends on axioms: [propext, Classical.choice, Quo
 -/
 #guard_msgs (whitespace := lax) in
 #print axioms BitZ.prEvent_claim_le
+
+/-! ### Executable helpers
+
+These callers sit outside any noncomputable section. The explicit coefficient representation
+avoids Mathlib's classical polynomial constructors, so reduction itself must generate code.
+-/
+
+private def threeX : MvPolynomial (Fin 1) ℤ :=
+  AddMonoidAlgebra.ofCoeff
+    { support := {LinearMvExtension.bitExpo 1}
+      toFun := fun s => if s = LinearMvExtension.bitExpo 1 then 3 else 0
+      mem_support_toFun := by intro s; simp }
+
+/-- info: [1, 0, 1] -/
+#guard_msgs in
+#eval List.ofFn (LinearMvExtension.bitExpo (m := 3) 5)
+
+/-- info: 5 -/
+#guard_msgs in
+#eval LinearMvExtension.bitsValue (LinearMvExtension.bitExpo (m := 3) 5)
+
+/-- info: [2, 0] -/
+#guard_msgs in
+#eval [(reduceAt 5 (fun _ => 4) threeX).val, (reduceAt 5 (fun _ => 0) threeX).val]
+
+/-- info: -6 -/
+#guard_msgs in
+#eval reduceAt 0 (fun _ => -2) threeX

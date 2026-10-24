@@ -126,7 +126,8 @@ home_page/            site assets and assembled website root
   `Commitment.Scheme` instance or composed protocol security theorem yet. The
   [BitZ paper page](../kb/papers/BGKLSW26.md) maps statements to the paper and records the remaining
   protocol obligations.
-  Generic helpers live under `Data/Nat/BitSum`, `Data/Matrix/DotProduct`, and
+  Binary-encoding bounds and injectivity live under `Data/Nat/BitSum`; other generic helpers are
+  under `Data/Matrix/DotProduct` and
   `ToMathlib/MvPolynomial/CoeffBound`. `Data/MvPolynomial/PrimeFingerprint` contains counting
   bounds; `PrimeFingerprintProbability` adds the two-stage native sampler.
   `Data/MvPolynomial/LinearMvExtension` owns `powAlgHom` coefficient recovery and injectivity.

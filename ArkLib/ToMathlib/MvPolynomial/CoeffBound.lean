@@ -25,6 +25,9 @@ product of integer polynomials. Each coefficient of `p · q` is a sum over the p
 * `MvPolynomial.natAbs_coeff_mul_le` is the bound `C(D + n, n) · ‖p‖∞ · ‖q‖∞` for `p` of total
   degree `≤ D`; `C(D + n, n)` is the quantity `T` of [BGKLSW26, §4.3].
 
+Paper-specific correspondence and remaining formalization work are recorded in the
+[BitZ KB](https://github.com/Verified-zkEVM/ArkLib/blob/main/docs/kb/papers/BGKLSW26.md).
+
 ## References
 
 * [Bloemen, R., Garreta, A., Kostrzewa, M., Londhe, S., Soukhanov, L., and Wu, J.,
@@ -63,7 +66,7 @@ theorem natAbs_coeff_mul_le_card_support {p q : MvPolynomial σ ℤ} {A B : ℕ}
 /-- **Coefficients of a product.** If `p` has total degree `≤ D` in `n` variables and the
 coefficients of `p` and `q` are bounded in absolute value by `A` and `B`, then every coefficient
 of `p · q` is bounded by `T · A · B`, where `T = C(D + n, n)` is the number of monomials of degree
-`≤ D` ([BGKLSW26, §4.3]). No degree bound on `q` is needed. -/
+`≤ D`. No degree bound on `q` is needed. -/
 theorem natAbs_coeff_mul_le [Fintype σ] {p q : MvPolynomial σ ℤ} {D A B : ℕ}
     (hp : p.totalDegree ≤ D) (hA : ∀ s, (p.coeff s).natAbs ≤ A)
     (hB : ∀ s, (q.coeff s).natAbs ≤ B) (u : σ →₀ ℕ) :

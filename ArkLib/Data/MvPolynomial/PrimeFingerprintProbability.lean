@@ -29,6 +29,9 @@ fibres `𝔽_qᵐ` have different sizes (see the test).
 * `MvPolynomial.prEvent_fingerprint_le` is the bound of `MvPolynomial.avg_zeroCountMod_div_le` as a
   probability.
 
+Paper-specific correspondence and remaining formalization work are recorded in the
+[BitZ KB](https://github.com/Verified-zkEVM/ArkLib/blob/main/docs/kb/papers/BGKLSW26.md).
+
 ## References
 
 * [Bloemen, R., Garreta, A., Kostrzewa, M., Londhe, S., Soukhanov, L., and Wu, J.,
@@ -43,7 +46,7 @@ open scoped BigOperators ProbabilityTheory
 namespace MvPolynomial
 
 /-- A uniform point of `𝔽_qᵐ`, for a prime `q ∈ P`. -/
-noncomputable def modPointSample {m : ℕ} {P : Finset ℕ} (hP : ∀ q ∈ P, q.Prime) (q : ↥P) :
+def modPointSample {m : ℕ} {P : Finset ℕ} (hP : ∀ q ∈ P, q.Prime) (q : ↥P) :
     ProbComp (Fin m → ZMod q.val) := by
   let : NeZero q.val := ⟨(hP q.val q.property).ne_zero⟩
   exact $ᵗ (Fin m → ZMod q.val)

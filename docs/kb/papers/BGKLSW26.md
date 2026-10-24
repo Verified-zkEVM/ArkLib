@@ -72,8 +72,8 @@ Writing `M = 2 · T · ℓ · N²`, the native Round 1 probability bound is
 - [`CoeffBound.lean`](../../../ArkLib/ToMathlib/MvPolynomial/CoeffBound.lean) bounds coefficients
   of integer-polynomial products using the existing `Finsupp.degreeLEFinset` monomial count.
   [`Nat/BitSum.lean`](../../../ArkLib/Data/Nat/BitSum.lean) and
-  [`Matrix/DotProduct.lean`](../../../ArkLib/Data/Matrix/DotProduct.lean) own the generic bit-sum
-  bound and tensor-pairing rearrangement.
+  [`Matrix/DotProduct.lean`](../../../ArkLib/Data/Matrix/DotProduct.lean) own the range and injectivity
+  of binary encoding (`Nat.eq_of_sum_pow_two_mul_eq`) and the tensor-pairing rearrangement.
 
 Acceptance clients under
 [`ArkLibTest/Commitments/Functional/BitZ/`](../../../ArkLibTest/Commitments/Functional/BitZ/)
@@ -126,3 +126,29 @@ The clients pin headline theorem dependencies to `propext`, `Classical.choice` a
 - [Public ePrint paper and revision history](https://eprint.iacr.org/2026/2141)
 - [Source metadata](../sources/BGKLSW26/metadata.yml)
 - [Repository bibliography](../../../blueprint/src/references.bib)
+
+## Computability audit
+
+The supporting theorems do not yet constitute an executable BitZ protocol. The cleanup audits
+ordinary callers outside `noncomputable section`, and records these results (ratings follow
+[make-computable](../../skills/make-computable.md)):
+
+| Declaration | Kind / rating | Status and evidence or blocker |
+| --- | --- | --- |
+| `LinearMvExtension.bitExpo` | Leaf / 2 | Executable after replacing classical support filtering with a decidable Boolean filter. Its existing pointwise theorem still specifies every bit; three-bit encoding of `5` runs as `[1, 0, 1]`. |
+| `LinearMvExtension.bitsValue` | Leaf / 1 | Already executable; the blanket noncomputable section is removed. The encoding of `5` evaluates back to `5`. |
+| `MvPolynomial.modPointSample` | Leaf / 1 | Redundant marker removed. Deterministic oracle endpoints at modulus `3` run as `[0, 0]` and `[2, 2]`. The probability theorem independently certifies uniformity. |
+| `BitZ.reduceAt` | Leaf / 2 | Executable fused `eval₂Hom`; `reduceAt_apply` proves agreement with mapping then evaluating. Runtime cases evaluate `3X` at `4` and `0` modulo `5` to `2` and `0`, and at `-2` over `ZMod 0` to `-6`. |
+| `LinearMvExtension.linearMvExtension`, `linearMvExtensionLMap` | Architectural / 8 | Mathematical views use Mathlib's noncomputable polynomial addition. An executable conversion needs a computational polynomial representation and an agreement bridge. |
+| `LinearMvExtension.partialEval` | Architectural / 8 | Its polynomial-valued substitution uses noncomputable Mathlib constructors. Use a computational representation for an executable implementation. |
+| `LinearMvExtension.powAlgHom`, `powContraction` | Architectural / 8 | Mathematical substitution uses Mathlib's noncomputable `Polynomial` semiring instance. A computational representation and bridge are needed for an algorithm. |
+| `BitZ.claimPoly` | Architectural / 8 | Mathematical error polynomial uses noncomputable polynomial ring operations; it is a proof object, not the prover implementation. |
+| `MvPolynomial.zeroCountMod` | Architectural / 9 | `Nat.card` of roots permits `q = 0` and an infinite integer domain. Finite enumeration would need a positive modulus and a separate computational API. |
+| `BitZ.collisionSet` | No gap | Its existing finite filter generates code from the supplied field, finite enumeration and decidable equality. |
+
+Runtime checks live in the existing Round 1/2 and fingerprint-probability acceptance modules.
+The future protocol implementation must use executable representations (including the existing
+CompPoly MLE APIs where appropriate), carry sampler data explicitly, and prove agreement with
+these mathematical views. An abstract nonempty finite prime set alone does not supply an
+executable choice of a prime; callers should provide an executable `SampleableType` instance.
+None of the architectural entries is a claim of completed protocol implementation.

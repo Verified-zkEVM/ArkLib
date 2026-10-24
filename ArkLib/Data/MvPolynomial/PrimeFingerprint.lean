@@ -35,6 +35,13 @@ uniform `q ∈ P` and a uniform `α ∈ 𝔽_qᵐ`; the file states it as a coun
 repository's probability conventions. `MvPolynomial.avg_zeroCountMod_div_le_logb` weakens the
 prime-divisor term to the `⌊log₂ q_min⌋` form of [BGKLSW26].
 
+`zeroCountMod` is a mathematical cardinality, not an enumeration algorithm: its signature also
+allows `q = 0`, where the ambient points are integer tuples rather than a finite field. It uses
+noncomputable `Nat.card`. Executable sampling at positive primes is provided separately.
+
+Paper-specific correspondence and remaining formalization work are recorded in the
+[BitZ KB](https://github.com/Verified-zkEVM/ArkLib/blob/main/docs/kb/papers/BGKLSW26.md).
+
 ## References
 
 * [Campanelli, M., and Hall-Andersen, M., *Fully succinct arguments over the integers
@@ -52,11 +59,11 @@ namespace MvPolynomial
 
 variable {m : ℕ}
 
-/-- The number of zeros in `𝔽_qᵐ` of the reduction modulo `q` of an integer polynomial `h`. -/
+/-- The cardinality of zeros of an integer polynomial after reduction to `ZMod q`. -/
 noncomputable def zeroCountMod (h : MvPolynomial (Fin m) ℤ) (q : ℕ) : ℕ :=
   Nat.card {α : Fin m → ZMod q // eval α (map (Int.castRingHom (ZMod q)) h) = 0}
 
-/-- If `q` divides every coefficient of `h`, every point of `𝔽_qᵐ` is a zero of `h mod q`. -/
+/-- For `q ≠ 0`, if every coefficient of `h` vanishes modulo `q`, all `q^m` points are zeros. -/
 theorem zeroCountMod_eq_of_map_eq_zero {h : MvPolynomial (Fin m) ℤ} {q : ℕ} (hq : q ≠ 0)
     (h0 : map (Int.castRingHom (ZMod q)) h = 0) : zeroCountMod h q = q ^ m := by
   have : NeZero q := ⟨hq⟩
@@ -90,7 +97,7 @@ theorem zeroCountMod_div_le {h : MvPolynomial (Fin m) ℤ} {q d : ℕ} (hq : q.P
   gcongr
 
 /-- The primes of `P` (all `≥ q_min ≥ 2`) that divide every coefficient of a nonzero integer
-polynomial whose coefficients are bounded by `M` number at most `log_{q_min} M`. -/
+polynomial whose coefficients are bounded by `M` number at most `⌊log_{q_min} M⌋`. -/
 theorem card_filter_map_eq_zero_le_log {h : MvPolynomial (Fin m) ℤ} (hh : h ≠ 0) {M qmin : ℕ}
     (hM : ∀ s, (h.coeff s).natAbs ≤ M) {P : Finset ℕ} (hP : ∀ q ∈ P, q.Prime) (hq2 : 2 ≤ qmin)
     (hqmin : ∀ q ∈ P, qmin ≤ q) :
@@ -116,7 +123,7 @@ theorem card_filter_map_eq_zero_le_log {h : MvPolynomial (Fin m) ℤ} (hh : h �
 /-- **Fingerprinting.** Let `h ∈ ℤ[X₁, …, Xₘ]` be nonzero with total degree `≤ d` and all
 coefficients of absolute value `≤ M`. For a set `P` of primes, all `≥ q_min ≥ 2`, the fraction of
 points of `𝔽_qᵐ` that are zeros of `h mod q`, averaged over `q ∈ P`, is at most
-`log_{q_min} M / |P| + d / q_min`. -/
+`⌊log_{q_min} M⌋ / |P| + d / q_min`. -/
 theorem avg_zeroCountMod_div_le {h : MvPolynomial (Fin m) ℤ} (hh : h ≠ 0) {d M qmin : ℕ}
     (hd : h.totalDegree ≤ d) (hM : ∀ s, (h.coeff s).natAbs ≤ M) {P : Finset ℕ}
     (hP : ∀ q ∈ P, q.Prime) (hq2 : 2 ≤ qmin) (hqmin : ∀ q ∈ P, qmin ≤ q) :
