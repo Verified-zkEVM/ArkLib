@@ -151,6 +151,9 @@ home_page/            site assets and assembled website root
   `ProofSystem/Logup/Lookup/Config.lean` checks the numeric query budget and grouping.
   `Protocol.lean` retains the actual multiplicity message before alpha; `Security.lean` proves
   whole-prover soundness for the complete scalar endpoint with arbitrary dependent private output.
+  `ProofSystem/Logup/Lookup/Prover.lean` sends the actual indexed histogram before alpha.
+  `Completeness.lean` transfers honest execution through the retained source and bounds failure
+  by the distinct declared table support, including the separate coarse physical-row bound.
 
 - `ToCompPoly/Multilinear/Basic.lean` constructs Boolean Lagrange tables by sharing each tail
   table and coordinate complement. `ToCompPoly/Multilinear/Arithmetic.lean` interprets that same
