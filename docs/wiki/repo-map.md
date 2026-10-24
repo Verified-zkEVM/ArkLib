@@ -114,6 +114,9 @@ home_page/            site assets and assembled website root
   native Sumcheck and final retained-source authentication. The shared fixtures and
   `scripts/LogupRuntime.lean` exercise source answers, private effects and the existing Ext6
   sampler through the same executable endpoint.
+  `ProofSystem/Logup/Interaction/Execution.lean` proves the exact whole-prover prefix binds
+  and routed native suffix law, preserving sender/receiver effects and arbitrary dependent
+  private returns through terminal authentication.
 
 - `ToCompPoly/Multilinear/Basic.lean` constructs Boolean Lagrange tables by sharing each tail
   table and coordinate complement. `ToCompPoly/Multilinear/Arithmetic.lean` interprets that same
