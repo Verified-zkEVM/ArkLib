@@ -22,6 +22,8 @@ The radius `δ` is an arbitrary real number throughout.
 * Interleaving does not decrease the error when `κ` is nonempty. This direction holds for every
   generator.
 * The two directions give equality when `κ` is nonempty and `|S| ≤ |F|`.
+* For a finite field and any seed space, interleaving increases the error by at most the factor
+  `(q ^ s - 1) / (q ^ (s - 1) * (q - 1))`, where `q := |F|` and `s := |κ|`.
 
 ## Main statements
 
@@ -39,6 +41,8 @@ The radius `δ` is an arbitrary real number throughout.
 * `CoreDefinitions.mcaError_le_mcaError_moduleInterleavedCode`: if `κ` is nonempty, then
   `mcaError G C δ ≤ mcaError G (C^⋈κ) δ`.
 * `CoreDefinitions.mcaError_moduleInterleavedCode_eq_of_card_le`: the equality.
+* `CoreDefinitions.mcaError_moduleInterleavedCode_le_fieldWeighted`: for finite `F` and every
+  seed space, `mcaError G (C^⋈κ) δ ≤ (q ^ s - 1) / (q ^ (s - 1) * (q - 1)) * mcaError G C δ`.
 
 ## Proof outline
 
@@ -67,7 +71,7 @@ are in `ArkLib.Data.CodingTheory.InterleavedCode.ExactAgreement`.
 ## References
 
 * [Jo, S., *Interleaving Stability for Mutual Correlated Agreement and Curve
-  Decodability*][Jo26], Corollary 4.5
+  Decodability*][Jo26], Corollary 4.5 and Theorem 4.2
 -/
 
 @[expose] public section
@@ -194,5 +198,163 @@ theorem mcaError_moduleInterleavedCode_eq_of_card_le [Nonempty κ] {S : Type} [N
     (mcaError_le_mcaError_moduleInterleavedCode G C δ)
 
 end Transfer
+
+section FieldWeighted
+
+open Classical in
+/-- **Proper subspaces miss many row functionals.** A proper submodule of `κ → F` leaves at least
+`q ^ (s - 1) * (q - 1)` row functionals outside it, where `q := |F|` and `s := |κ|`: it has at
+most `q ^ (s - 1)` elements. This is [Jo26] Lemma 3.1 in counting form. -/
+lemma card_le_card_filter_notMem_of_ne_top
+    {F κ : Type} [Field F] [Fintype F] [Fintype κ]
+    (p : Submodule F (κ → F)) (hp : p ≠ ⊤) :
+    Fintype.card F ^ (Fintype.card κ - 1) * (Fintype.card F - 1) ≤
+      (Finset.univ.filter fun l : κ → F ↦ l ∉ p).card := by
+  classical
+  have hq : 1 < Fintype.card F := Fintype.one_lt_card
+  have hd : 0 < Fintype.card κ := by
+    have h := Submodule.finrank_lt hp
+    simpa using (Nat.zero_lt_of_lt h)
+  have hcard : (Finset.univ.filter fun l : κ → F ↦ l ∈ p).card = Fintype.card p := by
+    symm
+    exact Fintype.card_ofFinset _ (by simp)
+  have hbound : Fintype.card p ≤ Fintype.card F ^ (Fintype.card κ - 1) := by
+    rw [Module.card_eq_pow_finrank (K := F) (V := p)]
+    exact Nat.pow_le_pow_right (Nat.zero_lt_of_lt hq)
+      (Nat.le_sub_one_of_lt (by simpa using Submodule.finrank_lt hp))
+  have htotal := Finset.card_filter_add_card_filter_not
+    (s := (Finset.univ : Finset (κ → F))) (p := fun l ↦ l ∈ p)
+  rw [hcard, Finset.card_univ, Fintype.card_fun] at htotal
+  have hpow : Fintype.card F ^ Fintype.card κ =
+      Fintype.card F ^ (Fintype.card κ - 1) * Fintype.card F := by
+    rw [← pow_succ, Nat.sub_add_cancel hd]
+  rw [hpow] at htotal
+  rw [Nat.mul_sub_left_distrib, mul_one]
+  omega
+
+open Classical in
+/-- **Double counting for uniform events.** If every seed with `bad x` satisfies `rel l x` for at
+least `k` elements `l` of `t`, then `k · Pr[bad] ≤ ∑ l ∈ t, Pr[rel l]`. -/
+lemma natCast_mul_prEvent_le_sum_prEvent
+    {S L : Type} [Nonempty S] [Finite S] [SampleableType S]
+    (t : Finset L) (bad : S → Prop) (rel : L → S → Prop) (k : ℕ)
+    (h : ∀ x, bad x → k ≤ (t.filter fun l ↦ rel l x).card) :
+    (k : ENNReal) * Pr{let x ← $ᵗ S}[bad x] ≤
+      ∑ l ∈ t, Pr{let x ← $ᵗ S}[rel l x] := by
+  classical
+  have := Fintype.ofFinite S
+  have hc : k * (Finset.univ.filter bad).card ≤
+      ∑ l ∈ t, (Finset.univ.filter (rel l)).card := by
+    calc
+      k * (Finset.univ.filter bad).card =
+          ∑ x ∈ Finset.univ.filter bad, k := by simp [Nat.mul_comm]
+      _ ≤ ∑ x ∈ Finset.univ.filter bad, (t.filter fun l ↦ rel l x).card :=
+        Finset.sum_le_sum fun x hx ↦ h x (Finset.mem_filter.mp hx).2
+      _ ≤ ∑ x : S, (t.filter fun l ↦ rel l x).card :=
+        Finset.sum_le_sum_of_subset_of_nonneg (Finset.filter_subset _ _) (by intros; omega)
+      _ = ∑ l ∈ t, (Finset.univ.filter (rel l)).card := by
+        simp only [Finset.card_filter]
+        exact Finset.sum_comm
+  simp_rw [SampleableType.prEvent_uniformSample]
+  simp only [div_eq_mul_inv]
+  rw [← Finset.sum_mul, ← mul_assoc]
+  gcongr
+  exact_mod_cast hc
+
+open Classical in
+/-- **A bad interleaved seed stays bad under most row combinations.** If `x` is bad for the
+interleaved family `U` over `C ^⋈ κ`, it is bad over `C` for the row combination
+`j ↦ i ↦ ∑ r, l r • U j i r` of at least `q ^ (s - 1) * (q - 1)` nonzero row functionals `l`.
+The functionals for which it may fail form the proper submodule `goodRowFunctionals C U T` of the
+witness set `T`. This is [Jo26] Lemma 4.1. -/
+lemma card_le_card_filter_isMCA_rowCombination
+    {ι F A κ ℓ : Type} [Fintype ι] [Field F] [Fintype F]
+    [AddCommMonoid A] [Module F A] [Fintype κ] [Fintype ℓ]
+    {S : Type} [Nonempty S] [Fintype S]
+    (G : Generator S ℓ F) (C : ModuleCode ι F A) (δ : ℝ)
+    (U : ℓ → ι → κ → A) (x : S) (hx : IsMCA G (C^⋈κ) x U δ) :
+    Fintype.card F ^ (Fintype.card κ - 1) * (Fintype.card F - 1) ≤
+      ((Finset.univ.erase (0 : κ → F)).filter fun l ↦
+        IsMCA G C x (fun j i ↦ ∑ r, l r • U j i r) δ).card := by
+  classical
+  obtain ⟨T, hT, hcomb, j, hj⟩ := hx
+  have hp : goodRowFunctionals C U T ≠ ⊤ := by
+    intro htop
+    exact hj ((goodRowFunctionals_eq_top_iff C U T).mp htop j)
+  apply (card_le_card_filter_notMem_of_ne_top _ hp).trans
+  apply Finset.card_le_card
+  intro l hl
+  have hlp : l ∉ goodRowFunctionals C U T := (Finset.mem_filter.mp hl).2
+  have hl0 : l ≠ 0 := fun h ↦ hlp (h ▸ (goodRowFunctionals C U T).zero_mem)
+  refine Finset.mem_filter.mpr ⟨Finset.mem_erase.mpr ⟨hl0, Finset.mem_univ _⟩, T, hT, ?_, ?_⟩
+  · have hmem := projectedWord_rowCombination_mem C _ T l hcomb
+    have heq : (fun i ↦ ∑ r, l r • (∑ j, G x j • U j i) r) =
+        fun i ↦ ∑ j, G x j • ∑ r, l r • U j i r := by
+      funext i
+      simp only [Finset.sum_apply, Pi.smul_apply, Finset.smul_sum]
+      rw [Finset.sum_comm]
+      exact Finset.sum_congr rfl fun j _ ↦ Finset.sum_congr rfl fun r _ ↦ smul_comm _ _ _
+    rwa [heq] at hmem
+  · exact not_forall.mp fun h ↦ hlp ((mem_goodRowFunctionals_iff C U T l).mpr h)
+
+/-- **Field-size-weighted interleaving bound.** For every generator `G : Generator S ℓ F` over a
+finite field with `q := |F|` elements, every module code `C`, every finite row index `κ` with
+`s := |κ|` and every real radius `δ`,
+`mcaError G (C^⋈κ) δ ≤ (q ^ s - 1) / (q ^ (s - 1) * (q - 1)) * mcaError G C δ`.
+There is no condition on the seed space; compare
+`mcaError_moduleInterleavedCode_le_of_card_le`, which removes the factor when `|S| ≤ |F|`. The
+factor is `1 + 1/q + ⋯ + 1/q ^ (s - 1) < q / (q - 1)`.
+
+Average over the `q ^ s - 1` nonzero row functionals `l`: by
+`card_le_card_filter_isMCA_rowCombination` each bad seed for `U` stays bad for the row
+combination of at least `q ^ (s - 1) * (q - 1)` of them, so double counting gives
+`q ^ (s - 1) (q - 1) · Pr[bad for U] ≤ (q ^ s - 1) · mcaError G C δ`. For `s = 0` both sides
+are `0`.
+This is [Jo26] Theorem 4.2 (upper bound); the lower bound is
+`mcaError_le_mcaError_moduleInterleavedCode`. -/
+theorem mcaError_moduleInterleavedCode_le_fieldWeighted
+    {ι F A κ ℓ : Type} [Fintype ι] [Field F] [Fintype F] [AddCommMonoid A] [Module F A]
+    [Fintype κ] [Fintype ℓ]
+    {S : Type} [Nonempty S] [Fintype S] [SampleableType S]
+    (G : Generator S ℓ F) (C : ModuleCode ι F A) (δ : ℝ) :
+    mcaError G (C^⋈κ) δ ≤
+      (((Fintype.card F : ENNReal) ^ Fintype.card κ - 1) /
+        ((Fintype.card F : ENNReal) ^ (Fintype.card κ - 1) * ((Fintype.card F : ENNReal) - 1))) *
+        mcaError G C δ := by
+  classical
+  let k : ℕ := Fintype.card F ^ (Fintype.card κ - 1) * (Fintype.card F - 1)
+  let t : Finset (κ → F) := Finset.univ.erase 0
+  have hkpos : 0 < k := Nat.mul_pos (pow_pos Fintype.card_pos _)
+    (Nat.sub_pos_of_lt Fintype.one_lt_card)
+  have hk0 : (k : ENNReal) ≠ 0 := by exact_mod_cast hkpos.ne'
+  have htcard : (t.card : ENNReal) =
+      (Fintype.card F : ENNReal) ^ Fintype.card κ - 1 := by
+    simp [t, Finset.card_erase_of_mem, ENNReal.natCast_sub]
+  have hkcast : (k : ENNReal) =
+      (Fintype.card F : ENNReal) ^ (Fintype.card κ - 1) *
+        ((Fintype.card F : ENNReal) - 1) := by
+    simp [k, ENNReal.natCast_sub]
+  refine iSup_le fun U ↦ ?_
+  let V : (κ → F) → ℓ → ι → A := fun l j i ↦ ∑ r, l r • U j i r
+  have hcount := natCast_mul_prEvent_le_sum_prEvent t (fun x ↦ IsMCA G (C^⋈κ) x U δ)
+    (fun l x ↦ IsMCA G C x (V l) δ) k
+    (fun x hx ↦ card_le_card_filter_isMCA_rowCombination G C δ U x hx)
+  have hsum : (k : ENNReal) * Pr{let x ← $ᵗ S}[IsMCA G (C^⋈κ) x U δ] ≤
+      (t.card : ENNReal) * mcaError G C δ := by
+    calc
+      _ ≤ ∑ l ∈ t, Pr{let x ← $ᵗ S}[IsMCA G C x (V l) δ] := hcount
+      _ ≤ ∑ _l ∈ t, mcaError G C δ := Finset.sum_le_sum fun l _ ↦
+        le_iSup (fun W ↦ Pr{let x ← $ᵗ S}[IsMCA G C x W δ]) (V l)
+      _ = _ := by simp [nsmul_eq_mul]
+  calc
+    Pr{let x ← $ᵗ S}[IsMCA G (C^⋈κ) x U δ] ≤
+        ((t.card : ENNReal) * mcaError G C δ) / (k : ENNReal) := by
+      apply (ENNReal.le_div_iff_mul_le (Or.inl hk0) (Or.inl (by simp))).mpr
+      simpa only [mul_comm] using hsum
+    _ = ((t.card : ENNReal) / (k : ENNReal)) * mcaError G C δ := by
+      simp only [div_eq_mul_inv, mul_comm, mul_left_comm]
+    _ = _ := by rw [htcard, hkcast]
+
+end FieldWeighted
 
 end CoreDefinitions
