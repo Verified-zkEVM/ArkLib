@@ -75,6 +75,9 @@ page under [`papers/`](papers/README.md); that directory, not this list, is the 
   security notion of the Hachi development.
 - [`papers/FRI1216.md`](papers/FRI1216.md) - the generalized FRI low-degree test, for the abstract
   protocol layer in `ProofSystem/Fri`.
+- [`papers/EthStark21.md`](papers/EthStark21.md) - STARK arithmetization context for coset chunks.
+- [`papers/HK24.md`](papers/HK24.md) - Lagrange quotient decomposition and cancellation of chunk
+  masks; the algebraic identities and remaining zero-knowledge protocol obligations.
 - [`papers/GWZC19.md`](papers/GWZC19.md) - Plonk, for the Plonk entry-point module.
 - [`papers/JM24.md`](papers/JM24.md) - AGM/GGM transfer context for the algebraic-group-model
   development.
