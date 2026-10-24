@@ -171,16 +171,17 @@ lake exe axiomsweep --out /tmp/axiom-report.json
 # Regression gate: fail iff current taint is not covered by the baseline
 lake exe axiomsweep --check
 
-# Refresh the baseline (after intentionally adding a tagged sorry, or after
-# closing gaps); commit the resulting diff in the same PR
+# Refresh after verified closures or renames of existing debt;
+# commit the reviewed bookkeeping in the same PR
 lake exe axiomsweep --update-baseline
 ```
 
-The committed baseline makes the distinction the repo cares about mechanical. Pre-existing
-`sorry` gaps are allowed while recorded; additions fail `--check` until an intentional
-`lake exe axiomsweep --update-baseline` diff is reviewed and committed. Removed debt is
-reported without failing so cleanup is never discouraged; refresh the baseline in the same
-PR. The baseline is an allowlist for `sorryAx` debt only; native-compiler trust (`Lean.ofReduceBool`,
+The committed baseline records pre-existing `sorryAx` debt. New taint fails `--check`, while
+removed debt is reported without blocking cleanup. A PR may be opened with unfinished proofs,
+but no new proof admissions or additional admitted debt may merge into `main`; refreshing the
+baseline cannot authorize them. Review source admissions and baseline changes against the
+canonical base, and refresh only for verified closures or renames of existing debt.
+Native-compiler trust (`Lean.ofReduceBool`,
 `Lean.trustCompiler`, and the per-declaration `…._native.<tactic>.ax_<n>_<n>` axioms
 minted by `native_decide`-style tactics) is never allowlistable — `--check` fails on it
 regardless of the baseline, and `--update-baseline` refuses to write while it is present.

@@ -22,8 +22,11 @@ For substantial contributions, discuss the blueprint-first workflow described in
 
 ## Citation Workflow
 
-1. Cite papers in Lean docstrings by citation key, for example `[BCIKS20]`.
-2. Give the Lean file a `## References` section in its module docstring.
+1. Cite papers by citation key, for example `[BCIKS20]`, only in the top-level Lean module
+   docstring. Keep URLs and paper-specific locators there too; declaration docstrings state the
+   mathematics and relevant hypotheses directly.
+2. Give the module docstring a `## References` section and brief provenance. Link to the KB
+   paper page or audit for paper-specific statement/version mappings, coverage and gaps.
 3. Add the matching BibTeX entry to `blueprint/src/references.bib`.
 4. For durable paper context, create or update `docs/kb/papers/KEY.md` for the same citation key.
    Leave stub-only paper pages and source metadata to the main-branch KB workflow.
@@ -31,6 +34,10 @@ For substantial contributions, discuss the blueprint-first workflow described in
    to private or local notes.
 
 ## Knowledge Base Mapping
+
+Lean declarations describe the mathematics independently of a source's numbering or revision.
+The same result can occur in several papers; the KB records those correspondences, and the
+wiki routes contributors to them.
 
 - `blueprint/src/references.bib` is the bibliographic source of truth.
 - `docs/kb/papers/KEY.md` is the preferred repository-local landing page for a cited paper key.

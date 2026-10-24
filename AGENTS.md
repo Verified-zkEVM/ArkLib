@@ -15,12 +15,14 @@ Start with [`README.md`](README.md) for project overview.
 4. For docstring or docs work, `./scripts/validate.sh --docs` is a convenient add-on check.
 5. Only build site or blueprint output when touching `blueprint/` or `home_page/`:
    `./scripts/validate.sh --site`.
-6. When filling or adding a `sorry` (or anything that must stay axiom-clean), run
+6. When changing proofs or admissions (or anything that must stay axiom-clean), run
    `./scripts/validate.sh --axioms`; it first certifies the sweep tool against its
    fixture matrix (`./scripts/test-axiomsweep.sh`), then runs the regression gate.
-   Refresh `scripts/axiom_baseline.json` with `lake exe axiomsweep --update-baseline`
-   and commit the diff if the change is intentional. The baseline covers `sorryAx`
-   debt only — native-compiler trust is never allowlistable.
+   A PR may be opened with unfinished proofs, but no new `sorry`/`admit` or additional
+   `sorryAx` debt may merge into `main`. Refresh `scripts/axiom_baseline.json` with
+   `lake exe axiomsweep --update-baseline` only for verified closures or renames of existing
+   debt, never to authorize new debt. The baseline covers existing `sorryAx` debt only;
+   native-compiler trust is never allowlistable.
 
 ## Where To Work
 
@@ -49,6 +51,12 @@ Start with [`README.md`](README.md) for project overview.
   `dependency_graphs/`, or `home_page/docs/`.
 - Pre-existing `sorry` blocks exist in active formalizations; distinguish existing gaps from new
   regressions.
+- New declarations may depend only on a subset of `propext`, `Classical.choice`, and `Quot.sound`;
+  do not add custom axioms or native-compiler trust dependencies.
+- Make definitions computable wherever possible. Protocols and program/value-computing APIs must
+  be executable, with code-generation and runtime evidence. Document concrete blockers for purely
+  mathematical noncomputable views; see [`CONTRIBUTING.md`](CONTRIBUTING.md#computability) and
+  [`make-computable.md`](docs/skills/make-computable.md).
 - Prefer proof scripts that expose the key mathematical steps and compose predictably. Broad
   automation is welcome when it closes a well-scoped goal quickly and clearly; for a slow proof,
   profile first, then narrow imports, local hypotheses, simp sets, or automation rules, or move a
