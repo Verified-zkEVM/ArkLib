@@ -161,6 +161,8 @@ home_page/            site assets and assembled website root
   `ToCompPoly/Univariate/Raw/Fold.lean` owns padded sums and division-free fraction folds.
   `ArithmeticFractionFold.lean` executes the certified arithmetic traversal; its cost companion
   retains actual accumulator widths and bounds each supported instruction coordinate separately.
+  `ToCompPoly/Univariate/ArithmeticNormalization.lean` scans the original array with a fixed
+  certified result type, then extracts one prefix, with exact read/test/control profiles.
 
 - `ProofSystem/Fri/FoldingSoundness.lean` and `QuerySoundness.lean` contain the algebraic
   soundness arguments; `ErrorBounds.lean` instantiates existing numerical MCA bounds.

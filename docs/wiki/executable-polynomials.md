@@ -10,6 +10,8 @@ Use CompPoly evaluation tables and coefficient arrays for executable data. Keep 
 polynomial interpretations in the proof layer, and explain each representation-specific
 `noncomputable` declaration individually. Proof erasure can remove classical proofs; an algorithm
 cannot obtain its runtime values through classical choice.
+A finite analysis function with executable equality may still be an ordinary computable
+definition. Proof-only use alone does not require a `noncomputable` marker.
 
 For Boolean tables, use the little-endian convention of `CMlPolynomialEval`: adjacent entries
 eliminate the least significant remaining coordinate. `evalMle`, `eval₂Mle` and `evalMleLayer`
@@ -53,6 +55,15 @@ executed program even when the resulting polynomials commute. The
 [raw fraction-fold cost owner](../../ArkLib/ToCompPoly/Univariate/ArithmeticFractionFoldCost.lean)
 records these recurrences. Retain general group-width terms before specializing to a positive,
 nonempty exact partition. Count final trimming and zero tests when they are actually executed.
+
+Inspect compiled control flow as well as arithmetic profiles. Recursive certified wrappers or
+repeated array pops can add work that primitive-request counts do not describe. The
+[normalization program](../../ArkLib/ToCompPoly/Univariate/ArithmeticNormalization.lean)
+keeps its original array and certified result type fixed throughout a backwards scan. A zero
+branch returns the recursive call directly; the outer constructor extracts at most one prefix
+and reuses the full array when possible. Its exact request profile excludes prefix extraction
+and allocation. Scaled native probes supplement that profile without proving machine-time or
+allocator bounds.
 
 ## Source openings and backend work
 

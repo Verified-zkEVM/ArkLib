@@ -1036,6 +1036,7 @@ public import ArkLib.ToCompPoly.Univariate.ArithmeticFractionFoldCost
 public import ArkLib.ToCompPoly.Univariate.ArithmeticInterpolation
 public import ArkLib.ToCompPoly.Univariate.ArithmeticInterpolationBound
 public import ArkLib.ToCompPoly.Univariate.ArithmeticInterpolationCost
+public import ArkLib.ToCompPoly.Univariate.ArithmeticNormalization
 public import ArkLib.ToCompPoly.Univariate.ArithmeticPolynomial
 public import ArkLib.ToCompPoly.Univariate.ArithmeticPolynomialCost
 public import ArkLib.ToCompPoly.Univariate.ArithmeticPower
