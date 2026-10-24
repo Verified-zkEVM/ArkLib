@@ -130,6 +130,9 @@ home_page/            site assets and assembled website root
   `ToCompPoly/Multilinear/Affine.lean` identifies adjacent table entries with a formal
   univariate restriction of the MLE. Its row program reads both endpoints once; reusable raw
   affine/subtraction programs and profiles live in the univariate arithmetic owners.
+  `ToCompPoly/Univariate/Raw/Fold.lean` owns padded sums and division-free fraction folds.
+  `ArithmeticFractionFold.lean` executes the certified arithmetic traversal; its cost companion
+  retains actual accumulator widths and bounds each supported instruction coordinate separately.
 
 - `ProofSystem/Fri/FoldingSoundness.lean` and `QuerySoundness.lean` contain the algebraic
   soundness arguments; `ErrorBounds.lean` instantiates existing numerical MCA bounds.
