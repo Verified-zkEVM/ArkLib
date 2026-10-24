@@ -133,6 +133,8 @@ home_page/            site assets and assembled website root
   totals vanish at every scalar challenge, including poles.
   `ProofSystem/Logup/Prover/State.lean` caches those tables and equality weights, and proves
   that each private table fold substitutes the head variable in the same retained-source circuit.
+  `ProofSystem/Logup/Prover/RoundCoefficients.lean` streams formal affine-row coefficients
+  into one bounded message and identifies the exact native honest head projection.
 
 - `ToCompPoly/Multilinear/Basic.lean` constructs Boolean Lagrange tables by sharing each tail
   table and coordinate complement. `ToCompPoly/Multilinear/Arithmetic.lean` interprets that same

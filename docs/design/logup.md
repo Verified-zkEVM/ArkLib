@@ -293,13 +293,23 @@ with a theorem covering its zero-handling behavior, can replace elementwise inve
 upstream that generic algorithm rather than place it inside LogUp. The off-pole helper values
 must agree with the mathematical formula under either implementation.
 
-For Sumcheck, retain folded tables for the multilinear inputs and helpers, together with the
-equality-kernel data. At each round, adjacent entries give affine univariate polynomials. Evaluate
-the displayed fraction circuit over these polynomials, add the remaining-row contributions, and
-send the resulting bounded coefficient array. Fold the tables using the received challenge.
-Prove that each message is exactly the existing mathematical honest Sumcheck projection of `Q`.
-Transport the whole honest strategy to reuse native completeness. Expanding `Q` into a full
-multivariate coefficient representation is unnecessary at runtime.
+For Sumcheck, initialize challenge-ring denominator tables `D_i=alpha-f(value_i)` and
+weight tables once after receiving `alpha`. Retain their folded versions, the helper tables,
+and one cached equality-kernel table. The formal identity
+`MLE(D_i)=C(alpha)-MLE(f(value_i))` connects this private state to the original retained source.
+After the joint challenge, build the kernel table with the shared fast Lagrange construction.
+Fold it with the same received challenges as the other tables; zero kernel factors need no division.
+
+At each round, adjacent entries give affine univariate coefficient arrays. Bind every row's
+denominator, weight, helper and kernel arrays once. In each fraction convolution, place the fresh
+affine factor on the left to control padded-array work. Compute one row circuit and add it
+directly into a single accumulator; canonicalize only the final bounded message. No list of all
+row coefficient arrays is needed at runtime. Fold the tables using the received challenge.
+
+Prove formal substitution and coefficient equality with the existing mathematical honest
+Sumcheck projection of `Q`, then transport the whole honest strategy to reuse native completeness.
+Equality of evaluations on a finite field is insufficient: the coefficient regression must
+distinguish `X^3` from `X` over the two-element field, even though their field evaluations agree.
 
 The local scalar reconstruction uses a linear scan through each group. The final lookup check
 needs at most `M+K+2` source openings; Sumcheck uses at most `3n` message evaluations on the Boolean
