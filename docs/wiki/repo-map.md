@@ -125,6 +125,9 @@ home_page/            site assets and assembled website root
   `(T*2^n+n*(ell+3))/|E|` against every ordinary prover from genuine source realization and
   nonzero mapped weight balance. Scalar lookup and tuple language adapters add their own
   count, encoding and challenge-order obligations.
+  `ProofSystem/Logup/Prover/CoefficientCircuit.lean` computes padded denominator-row circuits
+  through raw arrays and certified arithmetic programs. Its cost owner keeps actual accumulator
+  widths and specializes to `O(T*ell)` per instruction coordinate only for nonempty exact groups.
 
 - `ToCompPoly/Multilinear/Basic.lean` constructs Boolean Lagrange tables by sharing each tail
   table and coordinate complement. `ToCompPoly/Multilinear/Arithmetic.lean` interprets that same

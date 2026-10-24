@@ -57,12 +57,17 @@ def groupResidual (group : List (Fin T)) (alpha : R) (value weight : Fin T → R
   let fraction := groupFraction group alpha value weight
   helper * fraction.denominator - fraction.numerator
 
+/-- Reconstruct the batched scalar using an already bound equality-kernel value. -/
+def reconstructWithKernel (groups : Vector (List (Fin T)) K) (alpha kernel : R)
+    (lambda : Fin K → R) (value weight : Fin T → R) (helper : Fin K → R) : R :=
+  (∑ k, helper k) + kernel *
+    ∑ k, lambda k * groupResidual groups[k.val] alpha value weight (helper k)
+
 /-- Reconstruct the batched scalar from retained source answers at one query point. -/
 def reconstruct (groups : Vector (List (Fin T)) K) (alpha : R) (z : Fin n → R)
     (lambda : Fin K → R) (x : Fin n → R) (value weight : Fin T → R)
     (helper : Fin K → R) : R :=
-  (∑ k, helper k) + eqTilde z x *
-    ∑ k, lambda k * groupResidual groups[k.val] alpha value weight (helper k)
+  reconstructWithKernel groups alpha (eqTilde z x) lambda value weight helper
 
 /-- A ring homomorphism preserves the grouped fraction fold. -/
 theorem map_groupFraction (f : R →+* S) (group : List (Fin T)) (alpha : R)
@@ -87,6 +92,15 @@ theorem map_groupResidual (f : R →+* S) (group : List (Fin T)) (alpha : R)
   change f (groupFraction group alpha value weight).numerator = _ at hn
   change f (groupFraction group alpha value weight).denominator = _ at hd
   simp only [groupResidual, map_sub, map_mul, hn, hd]
+
+/-- Ring homomorphisms preserve the complete scalar circuit with a supplied kernel value. -/
+theorem map_reconstructWithKernel (f : R →+* S) (groups : Vector (List (Fin T)) K)
+    (alpha kernel : R) (lambda : Fin K → R) (value weight : Fin T → R)
+    (helper : Fin K → R) :
+    f (reconstructWithKernel groups alpha kernel lambda value weight helper) =
+      reconstructWithKernel groups (f alpha) (f kernel) (fun k ↦ f (lambda k))
+        (fun i ↦ f (value i)) (fun i ↦ f (weight i)) (fun k ↦ f (helper k)) := by
+  simp only [reconstructWithKernel, map_add, map_mul, map_sum, map_groupResidual]
 
 /-- The polynomial view of one denominator-cleared group residual. -/
 noncomputable def residualPolynomial (group : List (Fin T)) (alpha : R)
@@ -120,7 +134,8 @@ theorem eval_batchedPolynomial (groups : Vector (List (Fin T)) K) (alpha : R)
     eval x (batchedPolynomial groups alpha z lambda value weight helper) =
       reconstruct groups alpha z lambda x (fun i ↦ eval x (value i))
         (fun i ↦ eval x (weight i)) (fun k ↦ eval x (helper k)) := by
-  simp [batchedPolynomial, reconstruct, eval_residualPolynomial, eqTilde_eq_eval]
+  simp [batchedPolynomial, reconstruct, reconstructWithKernel,
+    eval_residualPolynomial, eqTilde_eq_eval]
 
 /-- Multilinear factors bound both folded individual degrees by the group length. -/
 theorem degreeOf_groupFraction_le (group : List (Fin T)) (alpha : R)
