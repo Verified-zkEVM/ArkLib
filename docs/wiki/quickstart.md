@@ -291,7 +291,7 @@ python3 -m pip install leanblueprint
 - [`../../.github/workflows/check-imports.yml`](../../.github/workflows/check-imports.yml)
   checks that `ArkLib.lean` matches the tracked source tree.
 - [`../../.github/workflows/docs-integrity.yml`](../../.github/workflows/docs-integrity.yml)
-  checks local markdown links and the `CLAUDE.md` symlink.
+  checks that `AGENTS.md` exists and local markdown links resolve.
 - [`../../.github/workflows/kb-generated.yml`](../../.github/workflows/kb-generated.yml)
   opens generated-files PRs for KB indexes and missing cited-paper stubs after pushes to `main`.
 
