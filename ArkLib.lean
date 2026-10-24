@@ -910,6 +910,7 @@ public import ArkLib.ProofSystem.Fri.Spec.Transcript
 public import ArkLib.ProofSystem.Fri.Spec.VerifierExecution
 public import ArkLib.ProofSystem.Logup.Algebra.Grouped
 public import ArkLib.ProofSystem.Logup.Interaction.Config
+public import ArkLib.ProofSystem.Logup.Interaction.Protocol
 public import ArkLib.ProofSystem.Logup.Interaction.Source
 public import ArkLib.ProofSystem.Logup.Security.Initial
 public import ArkLib.ProofSystem.Plonk.Basic

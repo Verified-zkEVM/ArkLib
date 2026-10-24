@@ -104,6 +104,13 @@ srcDir = "scripts"
 root = "SumcheckRuntime"
 allowNonModules = true
 
+# Compiled weighted LogUp prefix, native final authentication and extension sampler checks.
+[[lean_exe]]
+name = "logup-runtime"
+srcDir = "scripts"
+root = "LogupRuntime"
+allowNonModules = true
+
 # Compiled edge cases and exact instruction counts for the named measured FRI extractor.
 [[lean_exe]]
 name = "fri-extractor-runtime"

@@ -149,7 +149,7 @@ BUILD_TIMING_LOG_DIR="$current_dir" \
 BUILD_TIMING_SOURCE_SHA="$(printf 'a%.0s' {1..40})" \
 BUILD_TIMING_SOURCE_SUBJECT='timing <report>' \
 BUILD_TIMING_SOURCE_BRANCH='feature|timing' \
-BUILD_TIMING_NATIVE_COMMAND='lake build toyproblem-runtime hachi-runtime sumcheck-runtime fri-extractor-runtime lint-style' \
+BUILD_TIMING_NATIVE_COMMAND='lake build toyproblem-runtime hachi-runtime sumcheck-runtime logup-runtime fri-extractor-runtime lint-style' \
   bash scripts/build_timing_report.sh render "$current_dir/results.jsonl" > "$report"
 
 grep -Fq -- '- PR head: `aaaaaaa`' "$report"
@@ -158,7 +158,7 @@ grep -Fq -- '- Ref: <code>feature&#124;timing</code>' "$report"
 grep -Fq -- '- Build cache: restored the `main` build of `ccccccc`' "$report"
 grep -Fq -- '- Dependency cache: **exact hit** (<code>primary</code>)' "$report"
 grep -Fq -- '| Library build | 90.00 | 80.00 | ok |' "$report"
-grep -Fq -- 'native build `lake build toyproblem-runtime hachi-runtime sumcheck-runtime fri-extractor-runtime lint-style`' "$report"
+grep -Fq -- 'native build `lake build toyproblem-runtime hachi-runtime sumcheck-runtime logup-runtime fri-extractor-runtime lint-style`' "$report"
 grep -Fq -- 'Rebuilt 4 modules (2 without an earlier time). The 2 with an earlier time took 13s here against 20s when `main` last built them (-7s (-35.0%)).' "$report"
 grep -Fq -- 'summed over all 5 modules: 55s before, 48s after (-7s (-12.6%)).' "$report"
 grep -Fq -- '| 12 | 18 | -6 | <code>ArkLib/Slow.lean</code> |' "$report"
@@ -247,7 +247,7 @@ PY
 grep -Fq 'pullRequest.head.sha !== run.head_sha' .github/workflows/build-timing-report.yml
 grep -Fq 'runPullRequest?.base?.sha || pullRequest.base.sha' \
   .github/workflows/build-timing-report.yml
-grep -Fq 'BUILD_TIMING_NATIVE_COMMAND: lake build toyproblem-runtime hachi-runtime sumcheck-runtime fri-extractor-runtime lint-style' \
+grep -Fq 'BUILD_TIMING_NATIVE_COMMAND: lake build toyproblem-runtime hachi-runtime sumcheck-runtime logup-runtime fri-extractor-runtime lint-style' \
   .github/workflows/build-timing-report.yml
 if grep -Fq 'the previous successful PR update' .github/workflows/build-timing-report.yml; then
   echo 'reporter must not silently use a moving previous-PR baseline' >&2

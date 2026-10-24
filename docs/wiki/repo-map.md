@@ -110,6 +110,10 @@ home_page/            site assets and assembled website root
   `ProofSystem/Logup/Security/Initial.lean` fixes the cleared numerator before the scalar draw
   and identifies the actual initial relation with a batch of residual-table multilinear
   extensions. Its joint-challenge bound is uniform over all fixed retained helper messages.
+  `ProofSystem/Logup/Interaction/Protocol.lean` composes the actual scalar/helper/joint prefix,
+  native Sumcheck and final retained-source authentication. The shared fixtures and
+  `scripts/LogupRuntime.lean` exercise source answers, private effects and the existing Ext6
+  sampler through the same executable endpoint.
 
 - `ToCompPoly/Multilinear/Basic.lean` constructs Boolean Lagrange tables by sharing each tail
   table and coordinate complement. `ToCompPoly/Multilinear/Arithmetic.lean` interprets that same

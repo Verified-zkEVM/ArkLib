@@ -184,8 +184,8 @@ python3 -m pip install leanblueprint
 - `./scripts/validate.sh` is the recommended convenience wrapper for routine local validation.
 - By default it runs `lake build`, rejects non-`sorry` warnings anywhere under `ArkLib/`, runs the
   Lean-native source-policy gate, runs the compiled `toyproblem-runtime`, `hachi-runtime`,
-  `sumcheck-runtime`, and `fri-extractor-runtime` checks, checks generated imports and documentation
-  integrity, and lints knowledge-base inputs.
+  `sumcheck-runtime`, `logup-runtime`, and `fri-extractor-runtime` checks, checks generated imports
+  and documentation integrity, and lints knowledge-base inputs.
 - The lower-level scripts remain valid when you only want one specific check.
 - `docs/kb/_generated/**` freshness is handled by generated-files PRs from the main-branch KB
   workflow, not by ordinary PR validation.
@@ -229,6 +229,7 @@ it gives the expected answer — are checked by compiled executables under `scri
 | `toyproblem-runtime` | `scripts/ToyProblemRuntime.lean` | the toy-problem launch cone |
 | `hachi-runtime` | `scripts/HachiRuntime.lean` | the nonrecursive Hachi honest-prover path |
 | `sumcheck-runtime` | `scripts/SumcheckRuntime.lean` | CompPoly messages, honest multivariate execution and final source authentication, including forgery rejection, zero rounds, retained helpers and private effects after public abort |
+| `logup-runtime` | `scripts/LogupRuntime.lean` | weighted LogUp prefix, retained Q source, native forgery rejection and private effects, plus the actual six-limb extension sampler through the named uniform endpoint |
 | `fri-extractor-runtime` | `scripts/FriExtractorRuntime.lean` | measured FRI extraction, input guards, raw interpolation corner cases, and exact small instruction counts |
 
 **Put them here, not under `ArkLib/`.** A file under `ArkLib/` is picked up by the generated
@@ -264,6 +265,7 @@ lake build
 lake exe toyproblem-runtime
 lake exe hachi-runtime
 lake exe sumcheck-runtime
+lake exe logup-runtime
 lake exe fri-extractor-runtime
 ./scripts/check-imports.sh
 python3 ./scripts/check-docs-integrity.py
@@ -363,7 +365,7 @@ export BUILD_TIMING_LOG_DIR=/tmp/build-timing
 bash scripts/build_timing_report.sh run library_build /tmp/build-timing/results.jsonl -- \
   bash -eo pipefail -c 'lake build'
 bash scripts/build_timing_report.sh run native_build /tmp/build-timing/results.jsonl -- \
-  bash -eo pipefail -c 'lake build toyproblem-runtime hachi-runtime sumcheck-runtime fri-extractor-runtime lint-style'
+  bash -eo pipefail -c 'lake build toyproblem-runtime hachi-runtime sumcheck-runtime logup-runtime fri-extractor-runtime lint-style'
 bash scripts/build_timing_report.sh run test_path /tmp/build-timing/results.jsonl -- \
   bash -eo pipefail -c './scripts/validate.sh'
 bash scripts/build_timing_report.sh render /tmp/build-timing/results.jsonl
@@ -374,9 +376,9 @@ Read the rows in that order, because they share one tree and each leaves it warm
 - `library_build` is `lake build` on whatever the build cache left: the changed modules and their
   importers, or everything when no cache was restored.
 - `native_build` carries the `.c.o` chain that the compiled executables link — currently
-  `toyproblem-runtime`, `hachi-runtime`, `sumcheck-runtime`, `fri-extractor-runtime`, and `lint-style`.
-  It is the row that swings on `.lake` cache state, so a dependency bump shows its cost here. **Adding a compiled executable to
-  `validate.sh` means
+  `toyproblem-runtime`, `hachi-runtime`, `sumcheck-runtime`, `logup-runtime`,
+  `fri-extractor-runtime`, and `lint-style`. It is the row that swings on `.lake` cache state, so a
+  dependency bump shows its cost here. **Adding a compiled executable to `validate.sh` means
   adding it to this command too**, or its link cost lands in `test_path` instead.
 - `test_path` is therefore the cost of the validation gate itself on an already-built project,
   not of a cold `./scripts/validate.sh`. CI passes no flags, so `--docs`, `--site` and
