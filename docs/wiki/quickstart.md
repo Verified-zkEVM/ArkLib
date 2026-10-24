@@ -154,6 +154,14 @@ proofs while their PR is under review.
 
 ### Docstrings, blueprint, or website changes
 
+For prose-only docstring corrections or citation relocation, run the normal validation gate,
+compile the changed Lean modules directly, and verify citation keys and links. Full API
+documentation generation is optional for these edits; it also processes imported dependencies
+and can be substantially slower than a warm Lean build.
+
+When changing documentation rendering, build configuration, or generated API-page behavior, or
+when a complete API preview is requested, run:
+
 ```bash
 ./scripts/validate.sh --docs
 ```

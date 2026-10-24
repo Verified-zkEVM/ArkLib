@@ -175,6 +175,14 @@ merge-ready.
   semantic naming, self-contained documentation, or correspondence with the reference paper.
 - Verify with `./scripts/validate.sh` (add `--docs` for doc generation). Source style and
   repository-wide non-`sorry` warnings are enforced by default. Fix anything it flags.
+  - **Scale documentation checks to the change.** For prose-only docstring corrections or
+    citation relocation, compile the changed Lean modules and check citation keys and links
+    directly, alongside the required validation gates. A full `--docs` build is optional for
+    these edits: it generates API documentation for the library and its imported dependencies,
+    even when the ordinary Lean build is warm. Use it when changing documentation rendering,
+    build configuration, or generated API-page behavior, or when the user requests it. Record
+    which documentation checks ran; an interrupted optional docs build is not a successful
+    complete docs build and does not invalidate required gates that already finished.
   - If you added or removed `ArkLib/**.lean` files, run `./scripts/update-lib.sh` **and then
     `git add ArkLib.lean`**: the import check (`check-imports.sh`) uses `git diff --quiet`
     (working tree vs index), so a regenerated-but-unstaged `ArkLib.lean` still reports
