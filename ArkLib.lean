@@ -1052,6 +1052,7 @@ public import ArkLib.ToCompPoly.Univariate.ArithmeticEvaluation
 public import ArkLib.ToCompPoly.Univariate.ArithmeticEvaluationBound
 public import ArkLib.ToCompPoly.Univariate.ArithmeticFractionFold
 public import ArkLib.ToCompPoly.Univariate.ArithmeticFractionFoldCost
+public import ArkLib.ToCompPoly.Univariate.ArithmeticHorner
 public import ArkLib.ToCompPoly.Univariate.ArithmeticInterpolation
 public import ArkLib.ToCompPoly.Univariate.ArithmeticInterpolationBound
 public import ArkLib.ToCompPoly.Univariate.ArithmeticInterpolationCost
@@ -1064,6 +1065,7 @@ public import ArkLib.ToCompPoly.Univariate.Lagrange
 public import ArkLib.ToCompPoly.Univariate.Primitive
 public import ArkLib.ToCompPoly.Univariate.Raw.Basic
 public import ArkLib.ToCompPoly.Univariate.Raw.Fold
+public import ArkLib.ToCompPoly.Univariate.Raw.Horner
 public import ArkLib.ToCompPoly.Univariate.Raw.Size
 public import ArkLib.ToCompPoly.Univariate.Size
 public import ArkLib.ToMathlib.Algebra.Order.Floor.Ratio

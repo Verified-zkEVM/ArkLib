@@ -6,7 +6,10 @@ Authors: Quang Dao
 module
 
 public import CompPoly.Univariate.ToPoly.Impl
+public import ArkLib.ToCompPoly.Univariate.Raw.Horner
 public import ArkLib.ProofSystem.Sumcheck.Interaction.SingleRound
+-- The bridge unfolds only the package canonical-to-raw mathematical interpretation.
+import all CompPoly.Univariate.ToPoly.Core
 
 /-!
 # Computable Sumcheck round messages
@@ -25,7 +28,8 @@ variable (R : Type) [CommSemiring R] (deg : ℕ)
 abbrev Message := {p : CompPoly.CPolynomial R // p.degree ≤ (deg : WithBot ℕ)}
 
 /-- Evaluation of the actual coefficient array by Horner's algorithm. -/
-def evaluate (q : Message R deg) (x : R) : R := q.val.evalHorner x
+def evaluate (q : Message R deg) (x : R) : R :=
+  CompPoly.CPolynomial.Raw.evalHornerSeeded x q.val.val
 
 variable [BEq R] [LawfulBEq R]
 
@@ -39,7 +43,8 @@ noncomputable def toMessage (q : Message R deg) : Interaction.SingleRound.Messag
 /-- The runtime answer is exactly the answer of the mathematical interpretation. -/
 theorem evaluate_eq (q : Message R deg) (x : R) :
     evaluate R deg q x = (toMessage R deg q).val.eval x := by
-  exact (CompPoly.CPolynomial.eval_horner_eq_eval x q.val).trans
-    (CompPoly.CPolynomial.eval_toPoly x q.val)
+  rw [evaluate, CompPoly.CPolynomial.Raw.evalHornerSeeded_eq_evalHorner,
+    CompPoly.CPolynomial.Raw.evalHorner_eq_eval]
+  exact (CompPoly.CPolynomial.Raw.eval_toPoly_eq_eval x q.val.val).symm
 
 end Sumcheck.Impl.Representation

@@ -8,6 +8,7 @@ module
 public import ArkLib.ProofSystem.Logup.Lookup.Tuple.Provider
 public import ArkLib.ProofSystem.Logup.Lookup.Source
 public import CompPoly.Univariate.ToPoly.Core
+public import ArkLib.ToCompPoly.Univariate.Raw.Horner
 public import ArkLib.Data.OracleComp.Vector
 -- The coefficient bound proof unfolds the defining raw coefficient getter.
 import all CompPoly.Univariate.Raw.Core
@@ -16,7 +17,7 @@ import all CompPoly.Univariate.Raw.Core
 # Tuple lookup sources from fixed coefficient columns
 
 The original source exposes the eagerly stored padded coefficient columns. At any challenge-field
-point, the runtime program opens these coefficient MLEs and uses the existing raw Horner evaluator.
+point, the runtime program opens these coefficient MLEs and uses the shared seeded Horner evaluator.
 It never interprets a semantic bus or payload away from Boolean rows. The value-source theorem
 identifies this linear combination with the MLE of the compressed Boolean keys.
 
@@ -34,7 +35,7 @@ namespace Logup.Lookup.Tuple
 variable {B E : Type} [CommRing B] [CommRing E]
 
 private theorem horner_eq_sum {L : Nat} (coeffs : Vector E L) (beta : E) :
-    CPolynomial.Raw.evalHorner beta coeffs.toArray =
+    CPolynomial.Raw.evalHornerSeeded beta coeffs.toArray =
       ∑ j : Fin L, coeffs[j.val] * beta ^ j.val := by
   classical
   have hpoly : CPolynomial.Raw.toPoly coeffs.toArray = Polynomial.ofFn L coeffs.get := by
@@ -48,7 +49,8 @@ private theorem horner_eq_sum {L : Nat} (coeffs : Vector E L) (beta : E) :
       have hge : coeffs.toArray.size ≤ j := by simpa using Nat.le_of_not_gt hj
       simp only [CPolynomial.Raw.coeff, Array.getD_eq_getD_getElem?,
         Array.getElem?_eq_none hge, Option.getD_none]
-  rw [CPolynomial.Raw.evalHorner_eq_eval, ← CPolynomial.Raw.eval_toPoly_eq_eval, hpoly,
+  rw [CPolynomial.Raw.evalHornerSeeded_eq_evalHorner, CPolynomial.Raw.evalHorner_eq_eval,
+    ← CPolynomial.Raw.eval_toPoly_eq_eval, hpoly,
     Polynomial.ofFn_eq_sum_monomial]
   simp [Polynomial.eval_finsetSum, Polynomial.eval_monomial, Vector.get_eq_getElem]
 
@@ -64,7 +66,7 @@ def queryValue (f : B →+* E) (n M P W : Nat) (beta : E) (A : PFunctor.{0, 0})
     (view : VirtualOracle (ofPFunctor A) (coefficientFamily f n M P W))
     (slot : Fin M ⊕ Fin P) (x : Fin n → E) : OracleComp (ofPFunctor A) E := do
   let coeffs : Vector E (W + 1) ← Vector.ofFnM fun j => view.query ⟨(slot, j), x⟩
-  return CPolynomial.Raw.evalHorner beta coeffs.toArray
+  return CPolynomial.Raw.evalHornerSeeded beta coeffs.toArray
 
 /-- Compressed Boolean rows; this reference table is not rebuilt by source queries. -/
 def PreparedProvider.fingerprintData {b W n M P : Nat} {schema : TaggedTuple.Schema B b W}
@@ -93,7 +95,7 @@ theorem queryValue_eval (f : B →+* E) (n M P W : Nat) (beta : E) (A : PFunctor
       CMlPolynomialEval.eval₂Mle (tables (slot, j)) f (Vector.ofFn x) :=
     congrFun hinput ⟨(slot, j), x⟩
   simp only [queryValue, simulateQ_bind, simulateQ_pure, simulateQ_ofFnM, hq]
-  change CPolynomial.Raw.evalHorner beta
+  change CPolynomial.Raw.evalHornerSeeded beta
     (Vector.ofFn fun j => CMlPolynomialEval.eval₂Mle (tables (slot, j)) f
       (Vector.ofFn x)).toArray = _
   rw [horner_eq_sum]

@@ -69,6 +69,8 @@ home_page/            site assets and assembled website root
 
 ## Navigation Notes
 
+- `ToCompPoly/Univariate/Raw/Horner.lean` and `ArithmeticHorner.lean` share seeded tail-loop
+  evaluation, selected by native Sumcheck messages and tuple sources, with exact request profiles.
 - `ProofSystem/Logup/Prover/ArithmeticStrategy.lean` and `Lookup/ArithmeticProver.lean` select
   actual measured preparation, messages and folds, skipping unused terminal private work.
 - `ProofSystem/Logup/Lookup/Tuple/{Prover,Completeness}.lean` supplies indexed histogram
