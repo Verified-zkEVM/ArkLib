@@ -8,6 +8,9 @@ module
 public import ArkLib.ProofSystem.Sumcheck.Interaction.MultivariateRound
 public import ArkLib.ProofSystem.Sumcheck.Impl.VerifierChecks
 public import ArkLib.Interaction.Oracle.Sequential
+public import ArkLib.Interaction.Oracle.SourceRouting
+-- Source-routing proofs unfold the defining continuation map; no runtime body changes.
+import all PolyFun.Interaction.Basic.StrategyOver
 
 /-!
 # Native Sumcheck with a public abort branch
@@ -602,6 +605,161 @@ theorem executeWithFinalCheck_eq_of_domain_perm (challenge : OracleComp ambient 
     executeWithFinalCheck_eq_execute_eraseOutput,
     execute_eq_of_domain_perm R n deg M evaluate ambient challenge domain₁ domain₂ hdomain]
 
+
+end Sumcheck.Interaction.Native.Core
+
+namespace Sumcheck.Interaction.Native.Core
+
+open _root_.Interaction.Oracle OracleComp OracleSpec
+variable {R : Type} [CommSemiring R]
+set_option backward.isDefEq.respectTransparency false in
+omit [CommSemiring R] in
+private theorem routeProgram_latest (M : Type) (evaluate : M → R → R)
+    {ι : Type} (ambient : OracleSpec ι)
+    (source target : PFunctor)
+    (route : QueryImpl (ofPFunctor source) (OracleComp (ofPFunctor target)))
+    (x : R) :
+    Verifier.routeProgram ambient
+      (Access.extend source (messageInterface R M evaluate))
+      (Access.extend target (messageInterface R M evaluate))
+      (Access.extendRoute source target (messageInterface R M evaluate) route)
+      (latest R M evaluate ambient source x) =
+        latest R M evaluate ambient target x := by
+  rw [Verifier.routeProgram, latest, simulateQ_spec_query]
+  change simulateQ
+    (show QueryImpl (ofPFunctor (Access.extend target (messageInterface R M evaluate)))
+      (OracleComp (ambient + ofPFunctor (Access.extend target
+        (messageInterface R M evaluate)))) from
+      fun q => liftM ((ambient + ofPFunctor (Access.extend target
+        (messageInterface R M evaluate))).query (.inr q)))
+    (Access.queryLatest target (messageInterface R M evaluate) x) = _
+  rw [Access.queryLatest, simulateQ_spec_query]
+  rfl
+
+set_option backward.isDefEq.respectTransparency false in
+private theorem routeProgram_liftComp {ι α : Type} (ambient : OracleSpec ι)
+    (source target : PFunctor)
+    (route : QueryImpl (ofPFunctor source) (OracleComp (ofPFunctor target)))
+    (program : OracleComp ambient α) :
+    Verifier.routeProgram ambient source target route
+      (program.liftComp (ambient + ofPFunctor source)) =
+        program.liftComp (ambient + ofPFunctor target) := by
+  rw [Verifier.routeProgram, OracleComp.liftComp_def, ← QueryImpl.simulateQ_compose,
+    OracleComp.liftComp_def]
+  congr 1
+
+private theorem routeProgram_bind {ι α β : Type} (ambient : OracleSpec ι) (source target : PFunctor)
+    (route : QueryImpl (ofPFunctor source) (OracleComp (ofPFunctor target)))
+    (program : OracleComp (ambient + ofPFunctor source) α)
+    (next : α → OracleComp (ambient + ofPFunctor source) β) :
+    Verifier.routeProgram ambient source target route (program >>= next) =
+      (Verifier.routeProgram ambient source target route program >>= fun result =>
+        Verifier.routeProgram ambient source target route (next result)) := by
+  simp only [Verifier.routeProgram, simulateQ_bind]
+
+private theorem routeProgram_pure {ι α : Type} (ambient : OracleSpec ι) (source target : PFunctor)
+    (route : QueryImpl (ofPFunctor source) (OracleComp (ofPFunctor target))) (value : α) :
+    Verifier.routeProgram ambient source target route (pure value) = pure value := by
+  simp only [Verifier.routeProgram, simulateQ_pure]
+
+set_option backward.isDefEq.respectTransparency false in
+private theorem routeProgram_latestSum (M : Type) (evaluate : M → R → R)
+    {ι : Type} (ambient : OracleSpec ι)
+    (source target : PFunctor)
+    (route : QueryImpl (ofPFunctor source) (OracleComp (ofPFunctor target)))
+    (domain : List R) :
+    Verifier.routeProgram ambient
+      (Access.extend source (messageInterface R M evaluate))
+      (Access.extend target (messageInterface R M evaluate))
+      (Access.extendRoute source target (messageInterface R M evaluate) route)
+      (latestSum R M evaluate ambient source domain) =
+        latestSum R M evaluate ambient target domain := by
+  induction domain with
+  | nil => simp only [latestSum_nil, routeProgram_pure]
+  | cons x xs ih =>
+    simp only [latestSum_cons, routeProgram_bind, routeProgram_latest, routeProgram_pure, ih]
+
+set_option backward.isDefEq.respectTransparency false in
+private theorem sumWeaken_substSource_extendRoute (n deg : Nat) (M : Type) (evaluate : M → R → R)
+    (source target : PFunctor)
+    (route : QueryImpl (ofPFunctor source) (OracleComp (ofPFunctor target)))
+    (original : VirtualOracle (ofPFunctor source) (MultivariateRound.polynomialFamily R n deg)) :
+    (original.sumWeaken (messageInterface R M evaluate).spec).substSource
+      (Access.extendRoute source target (messageInterface R M evaluate) route) =
+    (original.substSource route).sumWeaken (messageInterface R M evaluate).spec := by
+  apply congrArg VirtualOracle.mk
+  funext q
+  simp only [VirtualOracle.sumWeaken, VirtualOracle.substSource, QueryImpl.compose]
+  rw [← QueryImpl.simulateQ_compose, ← QueryImpl.simulateQ_compose]
+  congr 1
+  funext u
+  change simulateQ
+    (Access.extendRoute source target (messageInterface R M evaluate) route)
+    (Access.queryPrior source (messageInterface R M evaluate) u) =
+      simulateQ (Access.queryPrior target (messageInterface R M evaluate)) (route u)
+  rw [Access.queryPrior, simulateQ_spec_query]
+  rfl
+
+variable [DecidableEq R]
+set_option backward.isDefEq.respectTransparency false in
+/-- Routing the native strategy substitutes its actual original-view programs while preserving
+fresh-message reads, public challenges, abort branches and returned claim programs. -/
+theorem routeClaimStrategy_verifier (n deg : Nat) (M : Type) (evaluate : M → R → R)
+    {ι : Type} (ambient : OracleSpec ι)
+    (challenge : OracleComp ambient R) (domain : List R) (count start : Nat)
+    (finish : start + count = n)
+    (source target : PFunctor.{0, 0})
+    (route : QueryImpl (ofPFunctor source) (OracleComp (ofPFunctor target)))
+    (original : VirtualOracle (ofPFunctor source) (MultivariateRound.polynomialFamily R n deg))
+    (stmt : Sumcheck.Spec.StatementRound R n ⟨start, by omega⟩) :
+    Verifier.routeClaimStrategy ambient (protocol R M evaluate count).tree
+      (protocol R M evaluate count).roles (protocol R M evaluate count).oracles
+      source target route (fun _ => FinalStatement R n)
+      (fun _ => Sumcheck.Spec.OracleStatement R n deg)
+      (fun _ => MultivariateRound.polynomialFamily R n deg)
+      (verifier R n deg M evaluate ambient challenge domain
+        count start finish source original stmt) =
+    verifier R n deg M evaluate ambient challenge domain count start finish target
+      (original.substSource route) stmt := by
+  induction count generalizing start source target with
+  | zero =>
+    simp [verifier, protocol,
+      Verifier.routeClaimStrategy, Verifier.routeStrategy, Verifier.routeFragment,
+      Verifier.Fragment.mapOutput, Interaction.ShapeOver.mapOutput, Verifier.decorate,
+      Verifier.routeProgram, TypeTree.routeAfter,
+      OpenClaim.substSource, VirtualOracle.substSource]
+  | succ count ih =>
+    simp only [verifier, protocol, Protocol.oracleWith_tree,
+      Protocol.oracleWith_roles, Protocol.oracleWith_oracles, Protocol.public_tree,
+      Protocol.public_roles, Protocol.public_oracles, Verifier.routeClaimStrategy,
+      Verifier.routeStrategy, Verifier.routeFragment, Verifier.Fragment.mapOutput,
+      Interaction.ShapeOver.mapOutput, Verifier.localShape, Verifier.decorate]
+    simp only [map_bind, map_pure]
+    simp only [routeProgram_bind, routeProgram_pure, routeProgram_latestSum, bind_assoc, pure_bind]
+    apply bind_congr
+    intro total
+    simp only [Sumcheck.Impl.VerifierChecks.equalM, Id.run, decide_eq_true_eq]
+    by_cases check : total = stmt.target
+    · simp only [check, ↓reduceIte, routeProgram_bind, routeProgram_liftComp,
+        routeProgram_latest, routeProgram_pure,
+        bind_assoc, pure_bind]
+      simp only [TypeTree.routeAfter, TypeTree.accessAfter_oracle, TypeTree.accessAfter_public]
+      congr 1
+      apply bind_congr
+      intro r
+      apply bind_congr
+      intro value
+      congr 2
+      have h := ih (start + 1) (by omega)
+        (Access.extend source (messageInterface R M evaluate))
+        (Access.extend target (messageInterface R M evaluate))
+        (Access.extendRoute source target (messageInterface R M evaluate) route)
+        (original.sumWeaken (messageInterface R M evaluate).spec)
+        ⟨value, Fin.snoc stmt.challenges r⟩
+      rw [sumWeaken_substSource_extendRoute] at h
+      exact h
+    · simp only [check, ↓reduceIte, routeProgram_pure, pure_bind]
+      rfl
 
 end Sumcheck.Interaction.Native.Core
 

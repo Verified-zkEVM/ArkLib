@@ -69,6 +69,9 @@ home_page/            site assets and assembled website root
 
 ## Navigation Notes
 
+- Native Sumcheck `Core.routeClaimStrategy_verifier` proves exact source-program
+  substitution while preserving fresh-message queries, public moves and returned claims.
+
 - `Interaction/Oracle/LoggedExecution.lean` proves exact terminal-bind log append under
   the same closing handler; native `Resources.complete_log_eq` instantiates the complete run.
 
