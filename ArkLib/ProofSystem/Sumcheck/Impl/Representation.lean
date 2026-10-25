@@ -31,6 +31,12 @@ abbrev Message := {p : CompPoly.CPolynomial R // p.degree ≤ (deg : WithBot ℕ
 def evaluate (q : Message R deg) (x : R) : R :=
   CompPoly.CPolynomial.Raw.evalHornerSeeded x q.val.val
 
+/-- The canonical bounded message stores at most one coefficient beyond its degree bound. -/
+theorem size_le (q : Message R deg) : q.val.val.size ≤ deg + 1 := by
+  apply CompPoly.CPolynomial.mem_degreeLT_iff_size_le.mp
+  apply CompPoly.CPolynomial.mem_degreeLT.mpr
+  exact lt_of_le_of_lt q.property (WithBot.coe_lt_coe.mpr (Nat.lt_succ_self deg))
+
 variable [BEq R] [LawfulBEq R]
 
 /-- Proof-only interpretation as the existing degree-bounded mathematical message. -/

@@ -69,6 +69,8 @@ home_page/            site assets and assembled website root
 
 ## Navigation Notes
 
+- `ProofSystem/Sumcheck/Impl/Representation.size_le` bounds actual canonical message storage
+  and seeded-evaluation lengths without field, BEq or nontriviality assumptions.
 - `ProofSystem/Sumcheck/Impl/{VerifierChecks,ArithmeticVerifierChecks}.lean` shares selected
   native sum/comparison bodies and profiles; downstream proofs normalize the same comparison.
 - `ProofSystem/Logup/Algebra/{Reconstruction,ArithmeticReconstruction}.lean` shares the actual
