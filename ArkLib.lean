@@ -1028,6 +1028,7 @@ public import ArkLib.ProofSystem.ToyProblem.Spec.KnowledgeSoundness
 public import ArkLib.ProofSystem.ToyProblem.Spec.SimplifiedIOR
 public import ArkLib.ToCompPoly.Multilinear.Affine
 public import ArkLib.ToCompPoly.Multilinear.Arithmetic
+public import ArkLib.ToCompPoly.Multilinear.ArithmeticFold
 public import ArkLib.ToCompPoly.Multilinear.Basic
 public import ArkLib.ToCompPoly.Multilinear.Fold
 public import ArkLib.ToCompPoly.Multilinear.NestedEvaluationTree

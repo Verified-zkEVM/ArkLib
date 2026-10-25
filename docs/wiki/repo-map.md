@@ -168,6 +168,8 @@ home_page/            site assets and assembled website root
   affine/subtraction programs and profiles live in the univariate arithmetic owners.
   `ToCompPoly/Multilinear/Fold.lean` proves that the executed head fold is formal MLE
   substitution and identifies the fast equality cache over arbitrary commutative rings.
+  `ToCompPoly/Multilinear/ArithmeticFold.lean` executes the one-multiplication affine fold
+  and proves exact result and request profiles against that canonical head substitution.
   `ToCompPoly/Univariate/Raw/Fold.lean` owns padded sums and division-free fraction folds.
   `ArithmeticFractionFold.lean` executes the certified arithmetic traversal; its cost companion
   retains actual accumulator widths and bounds each supported instruction coordinate separately.
