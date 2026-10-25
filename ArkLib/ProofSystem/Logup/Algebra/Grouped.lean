@@ -5,8 +5,7 @@ Authors: ArkLib Contributors
 -/
 module
 
-public import ArkLib.Data.Fraction
-public import ArkLib.Data.MvPolynomial.Multilinear
+public import ArkLib.ProofSystem.Logup.Algebra.Reconstruction
 public import ArkLib.Data.Polynomial.PartialFractions
 public import Mathlib.Algebra.BigOperators.Fin
 public import Mathlib.Data.Finset.Prod
@@ -67,7 +66,21 @@ def reconstructWithKernel (groups : Vector (List (Fin T)) K) (alpha kernel : R)
 def reconstruct (groups : Vector (List (Fin T)) K) (alpha : R) (z : Fin n → R)
     (lambda : Fin K → R) (x : Fin n → R) (value weight : Fin T → R)
     (helper : Fin K → R) : R :=
-  reconstructWithKernel groups alpha (eqTilde z x) lambda value weight helper
+  Id.run (Reconstruction.reconstructM (m := Id)
+    (fun a b => pure (a + b)) (fun a b => pure (a - b)) (fun a b => pure (a * b))
+    groups alpha z lambda x value weight helper)
+
+/-- The selected ordinary driver agrees with the denominator-cleared scalar expression. -/
+theorem reconstruct_eq_reconstructWithKernel (groups : Vector (List (Fin T)) K) (alpha : R)
+    (z : Fin n → R) (lambda : Fin K → R) (x : Fin n → R) (value weight : Fin T → R)
+    (helper : Fin K → R) :
+    reconstruct groups alpha z lambda x value weight helper =
+      reconstructWithKernel groups alpha (eqTilde z x) lambda value weight helper := by
+  have hget (k : Fin K) : groups.get k = groups[k.val] := rfl
+  have h := congrArg Id.run
+    (Reconstruction.reconstructM_id groups alpha z lambda x value weight helper)
+  simpa only [reconstruct, reconstructWithKernel, groupResidual, groupFraction, hget, Id.run]
+    using h
 
 /-- A ring homomorphism preserves the grouped fraction fold. -/
 theorem map_groupFraction (f : R →+* S) (group : List (Fin T)) (alpha : R)
@@ -134,8 +147,8 @@ theorem eval_batchedPolynomial (groups : Vector (List (Fin T)) K) (alpha : R)
     eval x (batchedPolynomial groups alpha z lambda value weight helper) =
       reconstruct groups alpha z lambda x (fun i ↦ eval x (value i))
         (fun i ↦ eval x (weight i)) (fun k ↦ eval x (helper k)) := by
-  simp [batchedPolynomial, reconstruct, reconstructWithKernel,
-    eval_residualPolynomial, eqTilde_eq_eval]
+  rw [reconstruct_eq_reconstructWithKernel]
+  simp [batchedPolynomial, reconstructWithKernel, eval_residualPolynomial, eqTilde_eq_eval]
 
 /-- Multilinear factors bound both folded individual degrees by the group length. -/
 theorem degreeOf_groupFraction_le (group : List (Fin T)) (alpha : R)

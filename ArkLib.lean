@@ -913,7 +913,9 @@ public import ArkLib.ProofSystem.Fri.Spec.SingleRound
 public import ArkLib.ProofSystem.Fri.Spec.Soundness
 public import ArkLib.ProofSystem.Fri.Spec.Transcript
 public import ArkLib.ProofSystem.Fri.Spec.VerifierExecution
+public import ArkLib.ProofSystem.Logup.Algebra.ArithmeticReconstruction
 public import ArkLib.ProofSystem.Logup.Algebra.Grouped
+public import ArkLib.ProofSystem.Logup.Algebra.Reconstruction
 public import ArkLib.ProofSystem.Logup.Interaction.Config
 public import ArkLib.ProofSystem.Logup.Interaction.Execution
 public import ArkLib.ProofSystem.Logup.Interaction.Protocol

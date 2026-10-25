@@ -69,6 +69,8 @@ home_page/            site assets and assembled website root
 
 ## Navigation Notes
 
+- `ProofSystem/Logup/Algebra/{Reconstruction,ArithmeticReconstruction}.lean` shares the actual
+  scalar circuit and exact profiles, using seeded fractions and an affine coordinate kernel.
 - `ProofSystem/Logup/Lookup/Tuple/ArithmeticCompression.lean` eagerly materializes compressed
   values and signed weights from stored base cells, with exact arithmetic and marked-site profiles.
 - `ProofSystem/Logup/Prover/{ArithmeticControl,ArithmeticLedger}.lean` shares actual Unit,
