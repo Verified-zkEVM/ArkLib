@@ -34,13 +34,15 @@ The existing `Terminal` namespace is retained to preserve declaration names.
 
 namespace Binius.FRIBinius.Unrolled.Terminal
 
+/-! ## Protocol definitions -/
+
 section Execution
 
-open Binius.BinaryBasefold OracleSpec OracleComp ProtocolSpec
+open Binius.BinaryBasefold OracleSpec OracleComp ProtocolSpec AdditiveNTT
 
 variable {r : ℕ} [NeZero r]
 variable {L : Type} [Field L] [Fintype L] [DecidableEq L]
-variable (K : Type) [Field K] [Fintype K] [DecidableEq K]
+variable (K : Type) [Field K] [Fintype K]
   [Fact (Fintype.card K = 2)] [Algebra K L]
 local instance [Finite K] : Fact (Nat.Prime (ringChar K)) := ⟨CharP.prime_ringChar K⟩
 variable (β : Fin r → L) [Fact (LinearIndependent K β)]
@@ -48,6 +50,7 @@ variable {ℓ R ϑ : ℕ} [NeZero ℓ] [NeZero R] [NeZero ϑ]
   {h_rate : ℓ + R < r} [Fact (ϑ ∣ ℓ)]
 variable {Context : Type}
 variable (evaluateMultiplier : Context → (Fin ℓ → L) → L)
+variable (multiplier : RingSwitching.Packing.ProductSumcheck.Multiplier Context L ℓ)
 variable (outputContext : Context → SumcheckBaseContext L ℓ)
 
 /-- The closing equation uses the received scalar, including at a zero multiplier. -/
@@ -61,6 +64,26 @@ def output (s : Statement (L := L) Context (Fin.last ℓ)) (c : L) :
   challenges := s.challenges
   sumcheck_target := s.sumcheck_target
   finalConstant := c
+
+/-- The honest prover sends the value of its fully folded word at zero. -/
+def prover {ϑ : ℕ} [NeZero ϑ] (outputContext : Context → SumcheckBaseContext L ℓ) :
+    OracleProver ([]ₒ)
+    (Statement (L := L) Context (Fin.last ℓ))
+    (OracleStatement K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) (Fin.last ℓ))
+    (Witness K β (h_ℓ_add_R_rate := h_rate) (Fin.last ℓ))
+    (FinalSumcheckStatementOut (L := L) (ℓ := ℓ))
+    (OracleStatement K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) (Fin.last ℓ))
+    Unit (pSpecFinalSumcheckStep (L := L)) where
+  PrvState _ :=
+    (Statement (L := L) Context (Fin.last ℓ) ×
+      (∀ j, OracleStatement K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) (Fin.last ℓ) j)) ×
+      Witness K β (h_ℓ_add_R_rate := h_rate) (Fin.last ℓ)
+  input := id
+  sendMessage
+  | ⟨0, _⟩ => fun s => pure (s.2.f ⟨0, by simp only [zero_mem]⟩, s)
+  receiveChallenge
+  | ⟨0, h⟩ => nomatch h
+  output s := pure ((output outputContext s.1.1 (s.2.f ⟨0, by simp only [zero_mem]⟩), s.1.2), ())
 
 /-- Read the final scalar, abort on a failed multiplier check, and forward every oracle. -/
 def verifier : OracleVerifier []ₒ
@@ -77,6 +100,20 @@ def verifier : OracleVerifier []ₒ
     embed := Function.Embedding.inl
     hEq := fun _ => rfl
     outputInterface_heq := fun _ => HEq.rfl }
+
+/-- The fused terminal reduction, with an executable scalar-message prover. -/
+def reduction {ϑ : ℕ} [NeZero ϑ] (outputContext : Context → SumcheckBaseContext L ℓ)
+    [DecidableEq K] := OracleReduction.mk
+  (prover K β outputContext (ϑ := ϑ) (h_rate := h_rate))
+  (verifier K β multiplier.evaluate outputContext)
+
+omit [Fact (Fintype.card K = 2)] [NeZero R] [Fact (ϑ ∣ ℓ)] in
+/-- The reduction uses exactly the separately defined verifier. -/
+theorem reduction_verifier [DecidableEq K] :
+    (reduction K β multiplier outputContext (ϑ := ϑ) (h_rate := h_rate)).verifier =
+      verifier K β multiplier.evaluate outputContext (ϑ := ϑ) (h_rate := h_rate) := rfl
+
+variable [DecidableEq K]
 
 /-- The terminal verifier is guarded by exactly the closing multiplier equation. -/
 def guardedForm :
@@ -110,6 +147,10 @@ theorem output_finalConstant (s : Statement (L := L) Context (Fin.last ℓ)) (c 
     (output outputContext s c).finalConstant = c := rfl
 
 end Execution
+
+/-! ## Security
+
+### Perfect completeness -/
 
 section Completeness
 
@@ -158,30 +199,6 @@ theorem check_honest (𝓑 : Fin 2 ↪ L)
 variable {ϑ : ℕ} [NeZero ϑ] [Fact (ϑ ∣ ℓ)]
 variable (outputContext : Context → SumcheckBaseContext L ℓ)
 
-/-- The honest prover sends the value of its fully folded word at zero. -/
-def prover : OracleProver ([]ₒ)
-    (Statement (L := L) Context (Fin.last ℓ))
-    (OracleStatement K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) (Fin.last ℓ))
-    (Witness K β (h_ℓ_add_R_rate := h_rate) (Fin.last ℓ))
-    (FinalSumcheckStatementOut (L := L) (ℓ := ℓ))
-    (OracleStatement K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) (Fin.last ℓ))
-    Unit (pSpecFinalSumcheckStep (L := L)) where
-  PrvState _ :=
-    (Statement (L := L) Context (Fin.last ℓ) ×
-      (∀ j, OracleStatement K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) (Fin.last ℓ) j)) ×
-      Witness K β (h_ℓ_add_R_rate := h_rate) (Fin.last ℓ)
-  input := id
-  sendMessage
-  | ⟨0, _⟩ => fun s => pure (s.2.f ⟨0, by simp only [zero_mem]⟩, s)
-  receiveChallenge
-  | ⟨0, h⟩ => nomatch h
-  output s := pure ((output outputContext s.1.1 (s.2.f ⟨0, by simp only [zero_mem]⟩), s.1.2), ())
-
-/-- The fused terminal reduction, with an executable scalar-message prover. -/
-def reduction [DecidableEq K] := OracleReduction.mk
-  (prover K β outputContext (ϑ := ϑ) (h_rate := h_rate))
-  (verifier K β multiplier.evaluate outputContext)
-
 /-- Strict last-round consistency implies the strict output folding relation consumed by
 the query phase. This property is independent of the public multiplier. -/
 theorem strict_output_of_honest
@@ -224,6 +241,8 @@ theorem perfectCompleteness [DecidableEq K] [SampleableType L] (𝓑 : Fin 2 ↪
   · exact strict_output_of_honest K β outputContext s w ost hstruct.2 horacles
 
 end Completeness
+
+/-! ### Round-by-round knowledge soundness -/
 
 section KnowledgeSoundness
 

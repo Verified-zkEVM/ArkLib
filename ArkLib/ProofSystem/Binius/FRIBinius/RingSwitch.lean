@@ -41,6 +41,8 @@ local instance [Finite K] : Fact (Nat.Prime (ringChar K)) := ⟨CharP.prime_ring
 variable {ℓ ℓ' R ϑ : ℕ} [NeZero ℓ'] [NeZero R] [NeZero ϑ] [Fact (ϑ ∣ ℓ')]
   (h_rate : ℓ' + R < 2 ^ κ) (h_dim : ℓ = ℓ' + κ)
 
+/-! ## Protocol definitions -/
+
 /-- The first-oracle relation of the packed polynomial. -/
 abbrev inputInterface := binaryBasefoldInput κ L K β ℓ' R ϑ h_rate
 
@@ -59,6 +61,12 @@ def verifier := TensorPrefix.verifier (biniusProfile κ L K β) h_dim
 /-- The frontend reduction is defined through the shared prefix protocol. -/
 def reduction := TensorPrefix.reduction (biniusProfile κ L K β) h_dim
   (inputInterface κ K β (ϑ := ϑ) h_rate)
+
+omit [DecidableEq K] [NeZero R] in
+/-- The reduction uses exactly the separately defined verifier. -/
+theorem reduction_verifier :
+    (reduction κ K β (ϑ := ϑ) h_rate h_dim).verifier =
+      verifier κ K β (ϑ := ϑ) h_rate h_dim := rfl
 
 omit [SampleableType L] [DecidableEq K] [NeZero R] in
 /-- The opening receives exactly the frontend's contextual evaluation relation. -/
@@ -115,6 +123,15 @@ def fullReduction (γ : ℕ) := OracleReduction.append
   (BinaryBasefold.Opening.contextualReduction K β (Context κ (L := L) (ℓ := ℓ)) γ
     (ϑ := ϑ) (h_rate := h_rate))
 
+/-- The reduction uses exactly the separately defined verifier. -/
+theorem fullReduction_verifier (γ : ℕ) :
+    (fullReduction κ K β (ϑ := ϑ) h_rate h_dim γ).verifier (Oₛₒ := fun i : Empty => nomatch i) =
+      fullVerifier κ K β (ϑ := ϑ) h_rate h_dim γ := rfl
+
+/-! ## Security
+
+### Error bounds -/
+
 /-- Each full-protocol challenge keeps its component's error bound. -/
 def fullError (γ : ℕ) : (pSpec κ K β (ϑ := ϑ) h_rate (ℓ' := ℓ') γ).ChallengeIdx → ℝ≥0 :=
   Sum.elim (TensorPrefix.rbrError (biniusProfile κ L K β))
@@ -146,6 +163,8 @@ theorem fullError_sum_le (γ : ℕ) :
   exact add_le_add (le_refl _)
     (BinaryBasefold.Opening.openingError_sum_le_concrete K β γ
       (ϑ := ϑ) (h_rate := h_rate))
+
+/-! ### Round-by-round knowledge soundness -/
 
 omit [DecidableEq K] [Fact (β 0 = 1)] [NeZero R] in
 /-- The frontend is worst-case round-by-round knowledge sound for first-oracle compatibility. -/
@@ -179,6 +198,8 @@ theorem fullVerifier_rbrKnowledgeSoundnessWorstCase {σ : Type} (γ : ℕ) (init
   · rw [opening_input_eq]
     exact BinaryBasefold.Opening.contextualVerifier_rbrKnowledgeSoundnessWorstCase K β
       (Context κ (L := L) (ℓ := ℓ)) γ init impl
+
+/-! ### Perfect completeness and combined guarantee -/
 
 /-- Exact first-codeword encodings give perfect completeness of the full protocol. -/
 theorem fullReduction_perfectCompleteness {σ : Type} (γ : ℕ) (init : ProbComp σ)

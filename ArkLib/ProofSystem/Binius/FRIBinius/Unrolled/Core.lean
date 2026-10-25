@@ -44,12 +44,87 @@ variable {Context : Type}
 variable (multiplier : RingSwitching.Packing.ProductSumcheck.Multiplier Context L ℓ)
 variable (outputContext : Context → SumcheckBaseContext L ℓ) (𝓑 : Fin 2 ↪ L)
 
+/-! ## Protocol definitions -/
+
 /-- Interleave the product sumcheck with folds, then check its terminal scalar. -/
 noncomputable def verifier :=
   OracleVerifier.append
     (sumcheckFoldOracleVerifier K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate)
       (𝓑 := 𝓑) (multpoly := multiplier.polynomial))
     (Terminal.verifier K β multiplier.evaluate outputContext (ϑ := ϑ) (h_rate := h_rate))
+
+/-- Honest execution uses the same interleaved folding loop and the fused scalar terminal. -/
+noncomputable def reduction :=
+  OracleReduction.append
+    (sumcheckFoldOracleReduction K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate)
+      (𝓑 := 𝓑) (multpoly := multiplier.polynomial))
+    (Terminal.reduction K β multiplier outputContext (ϑ := ϑ) (h_rate := h_rate))
+
+omit [SampleableType L] [Fact (β 0 = 1)] in
+/-- The reduction uses exactly the separately defined verifier. -/
+theorem reduction_verifier :
+    (reduction K β multiplier outputContext 𝓑 (ϑ := ϑ) (h_rate := h_rate)).verifier =
+      verifier K β multiplier outputContext 𝓑 (ϑ := ϑ) (h_rate := h_rate) := rfl
+
+/-- The fused core followed by the unchanged repeated query check. -/
+noncomputable def queryVerifier (γ : ℕ) :=
+  OracleVerifier.append (Oₛ₃ := fun i : Empty => nomatch i)
+    (verifier K β multiplier outputContext 𝓑 (ϑ := ϑ) (h_rate := h_rate))
+    (QueryPhase.queryOracleVerifier K β γ (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate))
+
+/-- The honest fused loop followed by the repeated query phase. -/
+noncomputable def queryReduction (γ : ℕ) :=
+  OracleReduction.append (Oₛ₃ := fun i : Empty => nomatch i)
+    (reduction K β multiplier outputContext 𝓑 (ϑ := ϑ) (h_rate := h_rate))
+    (QueryPhase.queryOracleReduction K β γ (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate))
+
+omit [SampleableType L] in
+/-- The reduction uses exactly the separately defined verifier. -/
+theorem queryReduction_verifier (γ : ℕ) :
+    (queryReduction K β multiplier outputContext 𝓑 γ (ϑ := ϑ) (h_rate := h_rate)).verifier
+      (Oₛₒ := fun i : Empty => nomatch i) =
+      queryVerifier K β multiplier outputContext 𝓑 γ (ϑ := ϑ) (h_rate := h_rate) := rfl
+
+omit [SampleableType L] in
+/-- Projecting the terminal context does not change the query verifier's computation.
+Only the folding challenges and received constant are inspected by that verifier. -/
+theorem query_verify_output_context_irrelevant (γ : ℕ)
+    (otherContext : Context → SumcheckBaseContext L ℓ)
+    (s : Statement (L := L) Context (Fin.last ℓ)) (c : L) :
+    (QueryPhase.queryOracleVerifier K β γ (ϑ := ϑ)
+      (h_ℓ_add_R_rate := h_rate)).verify (Oₛₒ := fun i : Empty => nomatch i)
+        (Terminal.output outputContext s c) =
+    (QueryPhase.queryOracleVerifier K β γ (ϑ := ϑ)
+      (h_ℓ_add_R_rate := h_rate)).verify (Oₛₒ := fun i : Empty => nomatch i)
+        (Terminal.output otherContext s c) := by
+  rfl
+
+/-- The adapter and fused fold/query tail, ready to receive the batching head's output. -/
+noncomputable def tailVerifier (γ : ℕ) :=
+  OracleVerifier.append (Oₛ₃ := fun i : Empty => nomatch i)
+    (Frontier.verifier K β (Context := Context) (ϑ := ϑ) (h_rate := h_rate))
+    (queryVerifier K β multiplier outputContext (boolEmbedding L) γ
+      (ϑ := ϑ) (h_rate := h_rate))
+
+/-- Honest initialization followed by the fused fold-and-query reduction. -/
+noncomputable def tailReduction (γ : ℕ) :=
+  OracleReduction.append (Oₛ₃ := fun i : Empty => nomatch i)
+    (Frontier.reduction K β multiplier (ϑ := ϑ) (h_rate := h_rate))
+    (queryReduction K β multiplier outputContext (boolEmbedding L) γ
+      (ϑ := ϑ) (h_rate := h_rate))
+
+omit [SampleableType L] in
+/-- The reduction uses exactly the separately defined verifier. -/
+theorem tailReduction_verifier (γ : ℕ) :
+    (tailReduction K β multiplier outputContext γ (ϑ := ϑ) (h_rate := h_rate)).verifier (Oₛₒ :=
+      fun i : Empty => nomatch i) =
+      tailVerifier K β multiplier outputContext γ (ϑ := ϑ) (h_rate := h_rate) := rfl
+
+/-! ## Security -/
+
+/-- No-error reformatting followed by the fold-and-query error family. -/
+noncomputable def tailError (γ : ℕ) :=
+  Opening.openingError K β γ (ϑ := ϑ) (h_rate := h_rate)
 
 omit [DecidableEq K] in
 /-- The fused core has the same per-challenge error as one Binary Basefold loop. -/
@@ -67,26 +142,6 @@ theorem rbrKnowledgeSoundnessWorstCase {σ : Type}
       (𝓑 := 𝓑) (multpoly := multiplier.polynomial))
     (sumcheckFoldOracleVerifier_rbrKnowledgeSoundnessWorstCase K β)
     (Terminal.rbrKnowledgeSoundnessWorstCase K β multiplier outputContext 𝓑 init impl)
-
-/-- The fused core followed by the unchanged repeated query check. -/
-noncomputable def queryVerifier (γ : ℕ) :=
-  OracleVerifier.append (Oₛ₃ := fun i : Empty => nomatch i)
-    (verifier K β multiplier outputContext 𝓑 (ϑ := ϑ) (h_rate := h_rate))
-    (QueryPhase.queryOracleVerifier K β γ (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate))
-
-omit [SampleableType L] in
-/-- Projecting the terminal context does not change the query verifier's computation.
-Only the folding challenges and received constant are inspected by that verifier. -/
-theorem query_verify_output_context_irrelevant (γ : ℕ)
-    (otherContext : Context → SumcheckBaseContext L ℓ)
-    (s : Statement (L := L) Context (Fin.last ℓ)) (c : L) :
-    (QueryPhase.queryOracleVerifier K β γ (ϑ := ϑ)
-      (h_ℓ_add_R_rate := h_rate)).verify (Oₛₒ := fun i : Empty => nomatch i)
-        (Terminal.output outputContext s c) =
-    (QueryPhase.queryOracleVerifier K β γ (ϑ := ϑ)
-      (h_ℓ_add_R_rate := h_rate)).verify (Oₛₒ := fun i : Empty => nomatch i)
-        (Terminal.output otherContext s c) := by
-  rfl
 
 /-- The complete fold-and-query tail retains the ordinary Binary Basefold error family,
 but its input relation uses the ring-switching multiplier. -/
@@ -108,17 +163,6 @@ theorem queryVerifier_rbrKnowledgeSoundnessWorstCase (γ : ℕ) {σ : Type}
     (rbrKnowledgeSoundnessWorstCase K β multiplier outputContext 𝓑 init impl)
     (QueryPhase.queryOracleVerifier_rbrKnowledgeSoundnessWorstCase K β γ init impl)
 
-/-- The adapter and fused fold/query tail, ready to receive the batching head's output. -/
-noncomputable def tailVerifier (γ : ℕ) :=
-  OracleVerifier.append (Oₛ₃ := fun i : Empty => nomatch i)
-    (Frontier.verifier K β (Context := Context) (ϑ := ϑ) (h_rate := h_rate))
-    (queryVerifier K β multiplier outputContext (boolEmbedding L) γ
-      (ϑ := ϑ) (h_rate := h_rate))
-
-/-- No-error reformatting followed by the fold-and-query error family. -/
-noncomputable def tailError (γ : ℕ) :=
-  Opening.openingError K β γ (ϑ := ϑ) (h_rate := h_rate)
-
 /-- Security of the fused tail from the shared batching relation. -/
 theorem tailVerifier_rbrKnowledgeSoundnessWorstCase (γ : ℕ) {σ : Type}
     (init : ProbComp σ) (impl : QueryImpl ([]ₒ) (StateT σ ProbComp)) :
@@ -135,12 +179,7 @@ theorem tailVerifier_rbrKnowledgeSoundnessWorstCase (γ : ℕ) {σ : Type}
     (queryVerifier_rbrKnowledgeSoundnessWorstCase K β multiplier outputContext
       (boolEmbedding L) γ init impl)
 
-/-- Honest execution uses the same interleaved folding loop and the fused scalar terminal. -/
-noncomputable def reduction :=
-  OracleReduction.append
-    (sumcheckFoldOracleReduction K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate)
-      (𝓑 := 𝓑) (multpoly := multiplier.polynomial))
-    (Terminal.reduction K β multiplier outputContext (ϑ := ϑ) (h_rate := h_rate))
+/-! ### Perfect completeness -/
 
 /-- The fused core is perfectly complete for exact honest encodings. -/
 theorem perfectCompleteness {σ : Type}
@@ -158,12 +197,6 @@ theorem perfectCompleteness {σ : Type}
     (sumcheckFoldOracleReduction_perfectCompleteness K β)
     (fun s => Terminal.perfectCompleteness K β multiplier outputContext 𝓑 (pure s) impl)
 
-/-- The honest fused loop followed by the repeated query phase. -/
-noncomputable def queryReduction (γ : ℕ) :=
-  OracleReduction.append (Oₛ₃ := fun i : Empty => nomatch i)
-    (reduction K β multiplier outputContext 𝓑 (ϑ := ϑ) (h_rate := h_rate))
-    (QueryPhase.queryOracleReduction K β γ (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate))
-
 /-- Perfect completeness through the final query acceptance predicate. -/
 theorem queryReduction_perfectCompleteness (γ : ℕ) {σ : Type}
     (init : ProbComp σ) (impl : QueryImpl ([]ₒ) (StateT σ ProbComp)) :
@@ -180,13 +213,6 @@ theorem queryReduction_perfectCompleteness (γ : ℕ) {σ : Type}
     (fun _ => Or.inl inferInstance)
     (perfectCompleteness K β multiplier outputContext 𝓑 init impl)
     (fun s => QueryPhase.queryOracleReduction_perfectCompleteness K β γ (pure s) impl)
-
-/-- Honest initialization followed by the fused fold-and-query reduction. -/
-noncomputable def tailReduction (γ : ℕ) :=
-  OracleReduction.append (Oₛ₃ := fun i : Empty => nomatch i)
-    (Frontier.reduction K β multiplier (ϑ := ϑ) (h_rate := h_rate))
-    (queryReduction K β multiplier outputContext (boolEmbedding L) γ
-      (ϑ := ϑ) (h_rate := h_rate))
 
 /-- Exact product-claim inputs are accepted by the complete fused tail with probability one. -/
 theorem tailReduction_perfectCompleteness (γ : ℕ) {σ : Type}

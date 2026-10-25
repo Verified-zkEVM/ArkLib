@@ -692,6 +692,14 @@ home_page/            site assets and assembled website root
   `Spec` aggregates the fused budget with one `2ℓ'/|L|` sumcheck term. The unfused frontend
   remains available separately. See the [consumer guide](ring-switching-consumers.md).
 
+  Binary Basefold and FRI-Binius keep each verifier immediately followed by its reduction
+  and a `…Reduction_verifier` (or `reduction_verifier`) equality theorem. Put the prover,
+  required instances, and other prerequisites before this group; security proofs follow it.
+  These projection equalities connect the completeness reduction to the soundness verifier.
+  Group operational definitions and their structural equalities separately from security
+  relations, extraction machinery, error bounds, and completeness/soundness proofs. Use
+  per-phase subsections when a module contains several protocol layers.
+
 - The ABF26 Section 6 toy IOP lives under `ProofSystem/ToyProblem/`. `Spec/` contains the
   domain-generic protocol and extraction theorems, `Impl/IRS.lean` supplies the computable
   interleaved Reed--Solomon extractor, `Impl/FRS.lean` contains neutral KoalaBear folded-RS
