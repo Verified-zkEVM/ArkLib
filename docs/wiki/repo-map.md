@@ -69,6 +69,9 @@ home_page/            site assets and assembled website root
 
 ## Navigation Notes
 
+- Sumcheck acceptance preserves the original exported-round suite in `SourceRouting.lean`;
+  new exact native-routing cases live separately in `NativeSourceRouting.lean`.
+
 - Native Sumcheck `Core.routeClaimStrategy_verifier` proves exact source-program
   substitution while preserving fresh-message queries, public moves and returned claims.
 
