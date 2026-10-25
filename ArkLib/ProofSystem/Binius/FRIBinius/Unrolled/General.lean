@@ -74,6 +74,8 @@ variable (β : Basis (Fin (2 ^ κ)) K L) [Fact (β 0 = 1)]
 variable {ℓ ℓ' R ϑ : ℕ} [NeZero ℓ'] [NeZero R] [NeZero ϑ] [Fact (ϑ ∣ ℓ')]
 variable (h_rate : ℓ' + R < 2 ^ κ) (h_l : ℓ = ℓ' + κ)
 
+/-! ## Protocol definitions -/
+
 /-- The public product multiplier derived from the original query and batching challenge. -/
 noncomputable def fusedMultiplier :=
   Head.multiplier (PackingData.ofBasis (biniusProfile κ L K β).basis) ℓ'
@@ -98,6 +100,14 @@ theorem fusedMultiplier_evaluate_eq (r : Fin ℓ → L) (c : Fin κ → L)
 
 variable (outputContext : ((Fin ℓ → L) × (Fin κ → L)) → SumcheckBaseContext L ℓ')
 
+noncomputable instance (γ : ℕ) : ∀ i, OracleInterface
+    ((pSpec κ K β (ϑ := ϑ) h_rate γ).Message i) :=
+  instOracleInterfaceMessageAppend
+
+noncomputable instance (γ : ℕ) : ∀ i, SampleableType
+    ((pSpec κ K β (ϑ := ϑ) h_rate γ).Challenge i) :=
+  instSampleableTypeChallengeAppend
+
 /-- Tensor batching followed directly by the fused folding tail. The context projection only
 populates metadata ignored by the query verifier; no extra message or sumcheck is introduced. -/
 noncomputable def fullVerifier (γ : ℕ) :=
@@ -106,11 +116,39 @@ noncomputable def fullVerifier (γ : ℕ) :=
     (Core.tailVerifier K β (fusedMultiplier κ K β h_l) outputContext γ
       (ϑ := ϑ) (h_rate := h_rate))
 
+/-- The original tensor head's honest prover followed by the fused folding prover. -/
+noncomputable def fullReduction (γ : ℕ) :=
+  OracleReduction.append (Oₛ₃ := fun i : Empty => nomatch i)
+    (Head.reduction (PackingData.ofBasis (biniusProfile κ L K β).basis) ℓ'
+      (TensorPrefix.layout (biniusProfile κ L K β) h_l)
+      (TensorPrefix.messageEquiv (biniusProfile κ L K β)) (BatchingRule.eqFold L κ)
+      (Frontier.strictCommitment K β (ϑ := ϑ) (h_rate := h_rate)))
+    (Core.tailReduction K β (fusedMultiplier κ K β h_l) outputContext γ
+      (ϑ := ϑ) (h_rate := h_rate))
+
+/-- Exact versus relaxed compatibility changes the theorem relation, not the verifier. -/
+theorem fullReduction_verifier (γ : ℕ) :
+    (fullReduction κ K β (ϑ := ϑ) h_rate h_l outputContext γ).verifier
+        (Oₛₒ := fun i : Empty => nomatch i) =
+      fullVerifier κ K β (ϑ := ϑ) h_rate h_l outputContext γ := rfl
+
+/-! ## Security
+
+### Input relations -/
+
 /-- The relaxed original evaluation relation, anchored to the same packed oracle. -/
 def inputRelation :=
   Head.relIn (PackingData.ofBasis (biniusProfile κ L K β).basis) ℓ'
     (TensorPrefix.layout (biniusProfile κ L K β) h_l)
     (Frontier.commitment K β (ϑ := ϑ) (h_rate := h_rate))
+
+/-- The exact input relation used for honest perfect completeness. -/
+def strictInputRelation :=
+  Head.relIn (PackingData.ofBasis (biniusProfile κ L K β).basis) ℓ'
+    (TensorPrefix.layout (biniusProfile κ L K β) h_l)
+    (Frontier.strictCommitment K β (ϑ := ϑ) (h_rate := h_rate))
+
+/-! ### Round-by-round knowledge soundness -/
 
 omit [DecidableEq K] [Fact (β 0 = 1)] [NeZero R] in
 /-- The tensor batching head contributes exactly `κ/|L|` per batching challenge. -/
@@ -128,14 +166,6 @@ theorem head_rbrKnowledgeSoundnessWorstCase {σ : Type}
     (TensorPrefix.messageEquiv (biniusProfile κ L K β)) (BatchingStrategy.eqFold L κ)
     (Frontier.commitment K β (ϑ := ϑ) (h_rate := h_rate))
     (Frontier.commitment_functional K β) (fun _ _ h => h) init impl⟩
-
-noncomputable instance (γ : ℕ) : ∀ i, OracleInterface
-    ((pSpec κ K β (ϑ := ϑ) h_rate γ).Message i) :=
-  instOracleInterfaceMessageAppend
-
-noncomputable instance (γ : ℕ) : ∀ i, SampleableType
-    ((pSpec κ K β (ϑ := ϑ) h_rate γ).Challenge i) :=
-  instSampleableTypeChallengeAppend
 
 /-- Worst-case round-by-round knowledge soundness of the full fused verifier. -/
 theorem fullVerifier_rbrKnowledgeSoundnessWorstCase (γ : ℕ) {σ : Type}
@@ -164,27 +194,7 @@ theorem fullVerifier_rbrKnowledgeSoundness (γ : ℕ) {σ : Type}
   Verifier.rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness init impl
     (fullVerifier_rbrKnowledgeSoundnessWorstCase κ K β h_rate h_l outputContext γ init impl)
 
-/-- The exact input relation used for honest perfect completeness. -/
-def strictInputRelation :=
-  Head.relIn (PackingData.ofBasis (biniusProfile κ L K β).basis) ℓ'
-    (TensorPrefix.layout (biniusProfile κ L K β) h_l)
-    (Frontier.strictCommitment K β (ϑ := ϑ) (h_rate := h_rate))
-
-/-- The original tensor head's honest prover followed by the fused folding prover. -/
-noncomputable def fullReduction (γ : ℕ) :=
-  OracleReduction.append (Oₛ₃ := fun i : Empty => nomatch i)
-    (Head.reduction (PackingData.ofBasis (biniusProfile κ L K β).basis) ℓ'
-      (TensorPrefix.layout (biniusProfile κ L K β) h_l)
-      (TensorPrefix.messageEquiv (biniusProfile κ L K β)) (BatchingRule.eqFold L κ)
-      (Frontier.strictCommitment K β (ϑ := ϑ) (h_rate := h_rate)))
-    (Core.tailReduction K β (fusedMultiplier κ K β h_l) outputContext γ
-      (ϑ := ϑ) (h_rate := h_rate))
-
-/-- Exact versus relaxed compatibility changes the theorem relation, not the verifier. -/
-theorem fullReduction_verifier (γ : ℕ) :
-    (fullReduction κ K β (ϑ := ϑ) h_rate h_l outputContext γ).verifier
-        (Oₛₒ := fun i : Empty => nomatch i) =
-      fullVerifier κ K β (ϑ := ϑ) h_rate h_l outputContext γ := rfl
+/-! ### Perfect completeness -/
 
 /-- Perfect completeness of the full fused protocol on exact packed encodings. -/
 theorem fullReduction_perfectCompleteness (γ : ℕ) {σ : Type}
@@ -215,6 +225,8 @@ theorem fullReduction_perfectCompleteness (γ : ℕ) {σ : Type}
     outputContext γ (ϑ := ϑ) (h_rate := h_rate) (pure s) impl
   rw [Frontier.strictInputRelation_eq_shared] at ht
   exact ht
+
+/-! ### Relation characterizations and honest inputs -/
 
 omit [DecidableEq K] [Fact (β 0 = 1)] [NeZero R] [SampleableType L] in
 /-- Expanded soundness input: the claimed evaluation is exact and the packed codeword is
