@@ -39,10 +39,24 @@ The tensor and polynomial representations of those existing phases are mathemati
 the full composite is not claimed to be an executable implementation. The new terminal
 verifier itself is computable and its guard has runtime regression tests.
 
+## Exact completeness and proximity-based extraction
+
+Perfect completeness is proved for exact packed encodings, while round-by-round knowledge
+soundness uses unique-decoding-radius compatibility with the same packed polynomial. Both
+input relations require the original claimed evaluation. This separation is consistent with
+BaseFold [ZCF24], Definition 8 and Theorem 4: completeness concerns honestly generated
+commitments, whereas extraction permits a nearby encoding satisfying the claimed evaluation.
+We do not identify BaseFold's coset-distance predicate with our compatibility predicate, nor
+derive our RBR theorem from its knowledge-soundness theorem. No perfect-completeness claim
+is made for arbitrary nearby-but-inexact oracles. See also `BinaryBasefold/Relations.lean`
+for the shared relation-level explanation. DP24 remains the reference for the construction.
+
 ## References
 
 * [Diamond, B. E., and Posen, J., *Polylogarithmic Proofs for Multilinears over Binary
   Towers*][DP24]
+* [Zeilberger, H., Chen, B. and Fisch, B., *BaseFold: Efficient Field-Agnostic Polynomial
+  Commitment Schemes from Foldable Codes*][ZCF24]
 -/
 
 @[expose] public section
