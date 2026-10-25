@@ -182,16 +182,17 @@ theorem fullVerifier_rbrKnowledgeSoundnessWorstCase {σ : Type} (γ : ℕ) (init
 
 /-- Standard knowledge soundness for the non-fused composition with its closed-form error.
 This retains first-oracle proximity compatibility, not the strict completeness relation. -/
-theorem fullVerifier_knowledgeSoundness (γ : ℕ) (handler : QueryImpl []ₒ ProbComp) :
+theorem fullVerifier_knowledgeSoundness {σ : Type} (γ : ℕ) (init : ProbComp σ)
+    (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     ((fullVerifier κ K β h_rate h_dim γ).toVerifier
         (Oₛₒ := fun i : Empty => nomatch i)).knowledgeSoundness
-      (pure PUnit.unit) handler.statelessLift
+      init impl
       (TensorPrefix.relIn (biniusProfile κ L K β) h_dim (inputInterface κ K β (ϑ := ϑ) h_rate))
       acceptRejectOracleRel
       ((κ : ℝ≥0) / Fintype.card L + (ℓ' : ℝ≥0) * (2 / Fintype.card L) +
         BinaryBasefold.FullBinaryBasefold.concreteBinaryBasefoldKnowledgeError L ℓ' R γ) :=
   Verifier.knowledgeSoundness_error_mono _ _ (fullError_sum_le κ K β h_rate γ)
-    (Verifier.rbrKnowledgeSoundnessWorstCase_implies_knowledgeSoundness handler _ _ _ _
+    (Verifier.rbrKnowledgeSoundnessWorstCase_implies_knowledgeSoundness_empty init impl _ _ _ _
       (fullVerifier_rbrKnowledgeSoundnessWorstCase κ K β h_rate h_dim γ _ _))
 
 /-- Exact first-codeword encodings give perfect completeness of the full protocol. -/

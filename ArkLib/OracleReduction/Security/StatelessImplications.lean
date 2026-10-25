@@ -5,7 +5,7 @@ Authors: Chung Thai Nguyen
 -/
 module
 
-public import ArkLib.OracleReduction.Security.PrefixProbability
+public import ArkLib.OracleReduction.Security.ReachableImplications
 public import ArkLib.OracleReduction.Security.Stateless
 public import ArkLib.OracleReduction.Security.Acceptance
 
@@ -25,7 +25,8 @@ shows that failed extraction forces a bad challenge. `PrefixProbability` bounds 
 of these events under the actual prefix distributions, without assuming lossless continuations.
 Thus this is an adaptation of the argument, not a literal port of the book's RBR definition.
 
-`Stateless` connects the terminal condition to the actual verifier continuation. Neither a
+The general state-retaining proofs live in `ReachableImplications`; this module specializes
+them using `Stateless` to connect the terminal condition to the verifier continuation. Neither a
 guarded verifier nor an acceptance-only output relation is required. The restriction is on
 the ambient handler, not on the verifier's syntactic form.
 
@@ -55,65 +56,15 @@ theorem rbrSoundness_implies_soundness
     (h : verifier.rbrSoundness (pure PUnit.unit) impl.statelessLift langIn langOut ε) :
     verifier.soundness (pure PUnit.unit) impl.statelessLift langIn langOut (∑ i, ε i) := by
   obtain ⟨sF, hSF⟩ := h
-  intro WitIn WitOut witIn prover stmtIn hstmt
-  let handler : QueryImpl (oSpec + [pSpec.Challenge]ₒ) ProbComp := impl + challengeQueryImpl
-  let event : FullTranscript pSpec → Prop :=
-    Transcript.HasBadRound (sF.badChallenge stmtIn) (.last n)
-  have htrace : Pr{let result ← (simulateQ handler
-      (prover.runToRound (.last n) stmtIn witIn))}[event result.1] ≤ ∑ i, (ε i : ENNReal) := by
-    apply prover.hasBadRound_probability_le_sum
-    · intro m hdir tr hbad
-      exact Direction.noConfusion (hdir.symm.trans hbad.1)
-    · intro i
-      have hi := hSF stmtIn hstmt WitIn WitOut witIn prover i
-      simpa only [pure_bind, QueryImpl.statelessLift_addLift,
-        QueryImpl.simulateQ_statelessLift_run', StateFunction.badChallenge,
-        Transcript.init_concat, i.2, true_and] using hi
-  have hfull := (prover.run_transcript_probability_le handler stmtIn witIn event).trans htrace
-  change Pr{let result ← (OptionT.mk (do
-    (simulateQ (impl.statelessLift.addLift challengeQueryImpl : QueryImpl _
-      (StateT PUnit ProbComp)) ((Reduction.mk prover verifier).run stmtIn witIn).run).run'
-        (← pure PUnit.unit)))}[result.2 ∈ langOut] ≤ _
-  simp only [QueryImpl.statelessLift_addLift,
-    QueryImpl.simulateQ_statelessLift_run', OptionT.prEvent_eq_run, OptionT.run_mk]
-  rw [Reduction.run_run_eq_bind, simulateQ_bind]
-  refine le_trans ?_ (by exact_mod_cast hfull)
-  apply prEvent_bind_le_prEvent_of_support
-  intro result _ hfalse
-  simp only [bind_pure_comp, simulateQ_map, prEvent_map,
-    QueryImpl.simulateQ_add_liftComp_left]
-  apply prEvent_eq_zero_of_forall_mem_support
-  intro out hout
-  cases out with
-  | none => simp
-  | some stmtOut =>
-    intro hmem
-    apply hfalse
-    exact sF.hasBadRound_of_not_mem stmtIn hstmt (.last n) result.1
-      (sF.stateless_terminal stmtIn result.1 stmtOut hout hmem)
+  apply rbrSoundness_implies_soundness_of_reachable
+    (pure PUnit.unit) impl.statelessLift langIn langOut verifier sF ε
+  · intro Wi Wo wi p stmt hstmt i
+    exact hSF stmt hstmt Wi Wo wi p i
+  · intro Wi Wo wi p stmt _ result _ stmtOut hout hrel
+    exact sF.stateless_terminal stmt result.1.1 stmtOut
+      (by simpa only [QueryImpl.simulateQ_statelessLift_run'] using hout) hrel
 
 /-! ## Backward extraction and averaged RBR knowledge soundness -/
-
-omit [∀ i, SampleableType (pSpec.Challenge i)] in
-private theorem backward_game_eq_map
-    (reduction : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec)
-    {WitMid : Fin (n + 1) → Type}
-    (extractor : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid)
-    (stmtIn : StmtIn) (witIn : WitIn) :
-    (do
-      let ⟨⟨⟨transcript, _, witOut⟩, stmtOut⟩, proveLog, verifyLog⟩ ←
-        reduction.runWithLog stmtIn witIn
-      let extractedWitIn ← liftM
-        (extractor.toStraightline stmtIn witOut transcript proveLog.fst verifyLog).run
-      pure (stmtIn, extractedWitIn, stmtOut, witOut)) =
-    (fun ⟨⟨transcript, _, witOut⟩, stmtOut⟩ => (stmtIn,
-      some (extractor.extractPrefix stmtIn (.last n) transcript
-        (extractor.extractOut stmtIn transcript witOut)),
-      stmtOut, witOut)) <$> reduction.run stmtIn witIn := by
-  simp only [Extractor.RoundByRound.toStraightline_run, liftM_pure, bind_pure_comp]
-  rw [← Reduction.runWithLog_discard_logs_eq_run]
-  simp only [Functor.map_map]
-  rfl
 
 /-- The explicit backward extractor turns averaged RBR knowledge soundness into standard
 knowledge soundness for a stateless handler. Relations and the additive error are unchanged. -/
@@ -130,64 +81,14 @@ theorem rbrKnowledgeSoundnessWith_implies_knowledgeSoundnessWith
       relIn relOut WitMid extractor kSF ε) :
     verifier.knowledgeSoundnessWith (pure PUnit.unit) impl.statelessLift relIn relOut
       extractor.toStraightline (∑ i, ε i) := by
-  intro stmtIn witIn prover
-  let handler : QueryImpl (oSpec + [pSpec.Challenge]ₒ) ProbComp := impl + challengeQueryImpl
-  let event : FullTranscript pSpec → Prop :=
-    Transcript.HasBadRound (kSF.badChallenge stmtIn) (.last n)
-  have htrace : Pr{let result ← (simulateQ handler
-      (prover.runToRound (.last n) stmtIn witIn))}[event result.1] ≤ ∑ i, (ε i : ENNReal) := by
-    apply prover.hasBadRound_probability_le_sum
-    · intro m hdir tr hbad
-      exact Direction.noConfusion (hdir.symm.trans hbad.1)
-    · intro i
-      have hi := h stmtIn witIn prover i
-      simp only [pure_bind, QueryImpl.statelessLift_addLift,
-        QueryImpl.simulateQ_statelessLift_run'] at hi
-      let logged := do
-        let ⟨⟨tr, _⟩, log⟩ ← prover.runWithLogToRound i.1.castSucc stmtIn witIn
-        let challenge ← liftComp (pSpec.getChallenge i) _
-        pure (tr, challenge, log)
-      have hmap : (fun ⟨transcript, challenge, _⟩ => (transcript, challenge)) <$> logged = (do
-          let ⟨transcript, _⟩ ← prover.runToRound i.1.castSucc stmtIn witIn
-          let challenge ← liftComp (pSpec.getChallenge i) _
-          pure (transcript, challenge)) := by
-        rw [← Prover.runWithLogToRound_discard_log_eq_runToRound]
-        simp only [logged, map_bind, map_pure, bind_map_left]
-      rw [← hmap, simulateQ_map, prEvent_map]
-      simpa only [KnowledgeStateFunction.badChallenge, Transcript.init_concat, i.2, true_and]
-        using hi
-  have hfull := (prover.run_transcript_probability_le handler stmtIn witIn event).trans htrace
-  change Pr{let ⟨stmtIn, extractedWitIn, stmtOut, witOut⟩ ← (OptionT.mk (do
-    (simulateQ (impl.statelessLift.addLift challengeQueryImpl : QueryImpl _
-      (StateT PUnit ProbComp)) (do
-        let ⟨⟨⟨transcript, _, witOut⟩, stmtOut⟩, proveLog, verifyLog⟩ ←
-          (Reduction.mk prover verifier).runWithLog stmtIn witIn
-        let extractedWitIn ← liftM
-          (extractor.toStraightline stmtIn witOut transcript proveLog.fst verifyLog).run
-        pure (stmtIn, extractedWitIn, stmtOut, witOut)).run).run' (← pure PUnit.unit)))}[
-      (∀ witIn ∈ extractedWitIn, (stmtIn, witIn) ∉ relIn) ∧ (stmtOut, witOut) ∈ relOut] ≤ _
-  rw [backward_game_eq_map, OptionT.run_map]
-  simp only [QueryImpl.statelessLift_addLift, OptionT.prEvent_eq_run, OptionT.run_mk]
-  rw [QueryImpl.simulateQ_statelessLift_run', simulateQ_map, prEvent_map]
-  rw [Reduction.run_run_eq_bind, simulateQ_bind]
-  refine le_trans ?_ (by exact_mod_cast hfull)
-  apply prEvent_bind_le_prEvent_of_support
-  rintro ⟨transcript, _, witOut⟩ _ hfalse
-  simp only [bind_pure_comp, simulateQ_map, prEvent_map,
-    QueryImpl.simulateQ_add_liftComp_left]
-  apply prEvent_eq_zero_of_forall_mem_support
-  intro out hout
-  cases out with
-  | none => simp
-  | some stmtOut =>
-    intro hbad
-    apply hfalse
-    apply kSF.hasBadRound_of_extractPrefix_invalid stmtIn (.last n) transcript
-      (extractor.extractOut stmtIn transcript witOut)
-    · exact kSF.stateless_terminal stmtIn transcript witOut stmtOut hout hbad.2
-    · exact hbad.1 _ rfl
+  apply rbrKnowledgeSoundnessWith_implies_knowledgeSoundnessWith_of_reachable
+    (pure PUnit.unit) impl.statelessLift relIn relOut verifier WitMid extractor kSF ε h
+  intro stmt wi p result _ stmtOut hout hrel
+  exact kSF.stateless_terminal stmt result.1.1 result.1.2.2 stmtOut
+    (by simpa only [QueryImpl.simulateQ_statelessLift_run'] using hout) hrel
 
 /-! ## Worst-case extractor-preserving bridge -/
+
 
 /-- The explicit worst-case extractor is preserved through both implication bridges. -/
 theorem rbrKnowledgeSoundnessWorstCaseWith_implies_knowledgeSoundnessWith

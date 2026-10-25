@@ -321,8 +321,8 @@ theorem fullRbrKnowledgeError_sum_le_concrete :
 
 /-- Standard knowledge soundness with the existing closed-form error and proximity relation.
 Completeness remains an exact-encoding guarantee. -/
-theorem fullOracleVerifier_knowledgeSoundness (handler : QueryImpl []ₒ ProbComp) :
-    OracleProof.knowledgeSoundness (pure PUnit.unit) handler.statelessLift
+theorem fullOracleVerifier_knowledgeSoundness :
+    OracleProof.knowledgeSoundness init impl
       (relation := roundRelation (multpoly := multiplier) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) 0)
       (verifier := fullOracleVerifier 𝔽q β γ_repetitions (ϑ := ϑ)
@@ -330,7 +330,7 @@ theorem fullOracleVerifier_knowledgeSoundness (handler : QueryImpl []ₒ ProbCom
       (knowledgeError := concreteBinaryBasefoldKnowledgeError L ℓ 𝓡 γ_repetitions) :=
   Verifier.knowledgeSoundness_error_mono _ _
     (fullRbrKnowledgeError_sum_le_concrete 𝔽q β γ_repetitions)
-    (Verifier.rbrKnowledgeSoundnessWorstCase_implies_knowledgeSoundness handler _ _ _ _
+    (Verifier.rbrKnowledgeSoundnessWorstCase_implies_knowledgeSoundness_empty init impl _ _ _ _
       (fullOracleVerifier_rbrKnowledgeSoundnessWorstCase 𝔽q β γ_repetitions))
 
 end Binius.BinaryBasefold.FullBinaryBasefold

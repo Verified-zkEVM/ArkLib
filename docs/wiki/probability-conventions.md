@@ -63,6 +63,27 @@ that an execution is impossible.
 
 ## RBR-to-standard implications and ambient state
 
+Import `ArkLib.OracleReduction.Security.ReachableImplications` for arbitrary
+`σ`, `init : ProbComp σ`, and `impl : QueryImpl oSpec (StateT σ ProbComp)`.
+The `_of_reachable` theorems require the terminal implication only for supported outcomes
+of the full prover run (including its output computation), at the actual resulting state.
+The knowledge version preserves the backward extractor and witness-aware terminal condition.
+Both retain the exact sum of the per-round errors.
+
+The `_of_compatible` interfaces instead ask for `Verifier.ReachableOutputCompatible`:
+every successful verifier output possible from a reachable post-prover state must also be
+possible under fresh initialization, for that same statement and transcript. This is support
+inclusion, not equality of distributions or an all-states requirement. It is sufficient, not
+necessary; use the relation-specific `_of_reachable` interface when this is too strong.
+
+For `[]ₒ`, `reachableOutputCompatible_empty` proves compatibility automatically, even for
+subprobabilistic initialization. The `_empty` soundness, KS, and worst-case KS corollaries
+therefore accept arbitrary state without `Subsingleton` or losslessness. The Binary Basefold,
+tensor-prefix ring-switching, and non-fused FRIBinius standard-KS exports use this interface.
+This does not establish compatibility for arbitrary mutable or memoized random-oracle handlers.
+The state-retaining approach builds on [PR #1245](https://github.com/Verified-zkEVM/ArkLib/pull/1245)
+and its reachable-state review discussion, extended here to knowledge extraction.
+
 Import `ArkLib.OracleReduction.Security.StatelessImplications` for
 `Verifier.rbrSoundness_implies_soundness` and
 `Verifier.rbrKnowledgeSoundness_implies_knowledgeSoundness`. They take

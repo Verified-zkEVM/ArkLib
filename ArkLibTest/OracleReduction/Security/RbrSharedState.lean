@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen
 -/
 
-import ArkLib.OracleReduction.Security.RoundByRound
+import ArkLib.OracleReduction.Security.ReachableImplications
 
 /-!
 # A shared-state obstruction to RBR-to-standard soundness
@@ -123,6 +123,14 @@ theorem not_soundness : ¬ verifier.soundness (pure false) impl ∅ Set.univ 0 :
     at hbad
   rw [hexec] at hbad
   simp [↓OptionT.prEvent_mk, impl, QueryImpl.addLift_def] at hbad
+
+/-- The reachable-state condition excludes the shared-bit attack. -/
+theorem not_reachableOutputCompatible :
+    ¬ verifier.ReachableOutputCompatible (pure false) impl := by
+  intro h
+  apply not_soundness
+  simpa using Verifier.rbrSoundness_implies_soundness_of_compatible
+    (pure false) impl ∅ Set.univ verifier h (fun _ => 0) rbr_soundness
 
 end RbrSharedState
 

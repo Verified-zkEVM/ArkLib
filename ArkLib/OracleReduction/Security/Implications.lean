@@ -18,7 +18,9 @@ public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness
 This file collects the implications between the various security notions.
 
 The RBR-to-standard soundness and knowledge-soundness implications are proved in
-`StatelessImplications` for arbitrary stateless ambient handlers. Their former unrestricted
+`ReachableImplications` with reachable-state terminal hypotheses, and specialized in
+`StatelessImplications` for arbitrary stateless ambient handlers. Empty ambient specifications
+support arbitrary state and initialization without additional hypotheses. The former unrestricted
 stateful signatures are invalid: a prover can change the state between the RBR terminal check
 and the actual verifier execution. `ArkLibTest/OracleReduction/Security/RbrSharedState.lean`
 records the zero-round counterexample. Other implications below retain their existing status.

@@ -790,6 +790,7 @@ public import ArkLib.OracleReduction.Security.GuardedRoundByRound
 public import ArkLib.OracleReduction.Security.Implications
 public import ArkLib.OracleReduction.Security.PrefixProbability
 public import ArkLib.OracleReduction.Security.RbrGame
+public import ArkLib.OracleReduction.Security.ReachableImplications
 public import ArkLib.OracleReduction.Security.Rewinding
 public import ArkLib.OracleReduction.Security.RoundByRound
 public import ArkLib.OracleReduction.Security.SpecialSoundness

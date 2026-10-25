@@ -250,12 +250,13 @@ theorem rbrError_sum : ∑ i, rbrError (ℓ' := ℓ') P i =
     (BatchingStrategy.eqFold L κ)
 
 /-- The exact closed-form packing error is unchanged by passing to standard knowledge soundness. -/
-theorem knowledgeSoundness (h : a.Functional) (handler : QueryImpl []ₒ ProbComp) :
-    (verifier P h_l a).toVerifier.knowledgeSoundness (pure PUnit.unit) handler.statelessLift
+theorem knowledgeSoundness (h : a.Functional) {σ : Type} (init : ProbComp σ)
+    (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
+    (verifier P h_l a).toVerifier.knowledgeSoundness init impl
       (relIn P h_l a) ((commitment a).evalRelWithContext ((Fin ℓ → L) × (Fin κ → L)))
       ((κ : ℝ≥0) / Fintype.card L + (ℓ' : ℝ≥0) * (2 / Fintype.card L)) := by
   rw [← rbrError_sum (ℓ' := ℓ') P]
-  exact Verifier.rbrKnowledgeSoundnessWorstCase_implies_knowledgeSoundness handler _ _ _ _
+  exact Verifier.rbrKnowledgeSoundnessWorstCase_implies_knowledgeSoundness_empty init impl _ _ _ _
     (rbrKnowledgeSoundnessWorstCase P h_l a h _ _)
 
 /-- Prefix packing is complete and worst-case round-by-round knowledge sound, with total
