@@ -89,9 +89,10 @@ def nextStatement (stmt : Input data m layout) (α : data.ιP → data.E)
 
 /-- The input anchors the scalar claim to this commitment's packed source. -/
 def relIn : Set (((Input data m layout) × (∀ j, pc.OStmt j)) × layout.Source) :=
-  fun ⟨⟨⟨query, claimedValue⟩, oracles⟩, source⟩ =>
-    claimedValue = layout.eval query source ∧
-      pc.commitsTo oracles (data.packedMLE (layout.components source))
+  { input |
+    let ⟨⟨⟨query, claimedValue⟩, oStmtIn⟩, witIn⟩ := input
+    claimedValue = layout.eval query witIn ∧
+      pc.commitsTo oStmtIn (data.packedMLE (layout.components witIn)) }
 
 open scoped Classical in
 /-- The multiplier polynomial and its read-once matrix evaluator. -/

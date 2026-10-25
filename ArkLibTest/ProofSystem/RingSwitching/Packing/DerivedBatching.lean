@@ -283,7 +283,6 @@ theorem passes (weight : data.ιE → ZMod 5) :
     (data.derivedTarget α weight, (0 : data.P⦃≤ 1⦄[X Fin 1])) ∈
       data.sumcheckClaimRel 1 r weight := by
   rw [derivedTarget_zero]
-  change data.sumcheckClaimRel 1 r weight (0, 0)
   simp [PackingData.sumcheckClaimRel]
 
 abbrev bat := BatchingStrategy.singleton (ZMod 5) Unit
