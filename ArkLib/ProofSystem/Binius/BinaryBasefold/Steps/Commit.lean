@@ -66,6 +66,8 @@ variable {Context : Type} {multpoly : Context → MultilinearPoly L ℓ}
 
 section CommitStep
 
+/-! ## Protocol definitions -/
+
 /-- The prover states of the commit step: before the message, with the oracle statements at round
 `i`; after it, with the sent oracle appended. -/
 def CommitProverState (i : Fin ℓ) : Fin (1 + 1) → Type := fun
@@ -151,6 +153,14 @@ noncomputable def commitOracleReduction (i : Fin ℓ) (hCR : IsCommitmentRound �
   verifier := commitOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
     i hCR
 
+omit [SampleableType L] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero 𝓡] in
+/-- The reduction uses exactly the separately defined verifier. -/
+theorem commitOracleReduction_verifier (i : Fin ℓ) (hCR : IsCommitmentRound ℓ ϑ i) :
+    (commitOracleReduction 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Context :=
+      Context) i hCR).verifier =
+      commitOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Context :=
+      Context) i hCR := rfl
+
 /-- The commit verifier's verdict as data: it accepts every transcript, keeps the statement, and
 appends the sent oracle to the oracle statements. -/
 def commitOracleVerifierPureForm (i : Fin ℓ) (hCR : IsCommitmentRound ℓ ϑ i) :
@@ -177,6 +187,10 @@ theorem commitOracleVerifierGuardedForm_check (i : Fin ℓ) (hCR : IsCommitmentR
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hCR).check s tr = true := rfl
 
 variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)}
+
+/-! ## Security
+
+### Perfect completeness -/
 
 omit [SampleableType L] [DecidableEq 𝔽q] h_β₀_eq_1 in
 /-- Perfect completeness of the commit step, from the strict fold-step output relation to the
@@ -219,6 +233,8 @@ theorem commitOracleReduction_perfectCompleteness (i : Fin ℓ)
     exact (decide_eq_true (show step.verifierCheck stmt tr from trivial)).symm
   · intro stmt oracles tr
     rfl
+
+/-! ### Round-by-round knowledge soundness -/
 
 /-- The commit step sends no challenge, so its round-by-round knowledge error is the empty
 family. -/

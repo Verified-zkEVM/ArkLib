@@ -29,24 +29,7 @@ variable {ℓ R ϑ : ℕ} [NeZero ℓ] [NeZero R] [NeZero ϑ] {h_rate : ℓ + R 
 variable {Context : Type}
 variable (multiplier : RingSwitching.Packing.ProductSumcheck.Multiplier Context L ℓ)
 
-/-- Reformat the batching target and context, preserving every oracle. -/
-def verifier : OracleVerifier ([]ₒ)
-    (RingSwitching.Packing.ProductSumcheck.Statement Context L (m := ℓ) 0)
-    (OracleStatement K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) 0)
-    (Statement (L := L) (ℓ := ℓ) Context 0)
-    (OracleStatement K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) 0) !p[] where
-  verify s _ := pure (initialStatement s.ctx s.target)
-  outputOracle := .inl {
-    embed := Function.Embedding.inl
-    hEq := fun _ => rfl
-    outputInterface_heq := fun _ => HEq.rfl }
-
-/-- The frontier has no checks and leaves all oracle contents unchanged. -/
-def guardedForm :
-    (verifier K β (Context := Context) (ϑ := ϑ) (h_rate := h_rate)).toVerifier.GuardedForm where
-  check _ _ := true
-  out s _ := (initialStatement s.1.ctx s.1.target, s.2)
-  verify_eq _ _ := rfl
+/-! ## Protocol definitions -/
 
 /-- No prover messages are sent; only the internal folding witness is initialized. -/
 noncomputable def prover : OracleProver ([]ₒ)
@@ -66,15 +49,43 @@ noncomputable def prover : OracleProver ([]ₒ)
   output s := pure ((initialStatement s.1.1.ctx s.1.1.target, s.1.2),
     initialWitness K β multiplier.polynomial s.1.1.ctx s.2)
 
+/-- Reformat the batching target and context, preserving every oracle. -/
+def verifier : OracleVerifier ([]ₒ)
+    (RingSwitching.Packing.ProductSumcheck.Statement Context L (m := ℓ) 0)
+    (OracleStatement K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) 0)
+    (Statement (L := L) (ℓ := ℓ) Context 0)
+    (OracleStatement K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) 0) !p[] where
+  verify s _ := pure (initialStatement s.ctx s.target)
+  outputOracle := .inl {
+    embed := Function.Embedding.inl
+    hEq := fun _ => rfl
+    outputInterface_heq := fun _ => HEq.rfl }
+
 /-- The no-communication adapter from the batching head to the folding loop. -/
 noncomputable def reduction := OracleReduction.mk
   (prover K β multiplier (ϑ := ϑ) (h_rate := h_rate)) (verifier K β)
+
+/-- The reduction uses exactly the separately defined verifier. -/
+theorem reduction_verifier :
+    (reduction K β multiplier (ϑ := ϑ) (h_rate := h_rate)).verifier =
+      verifier K β (Context := Context) (ϑ := ϑ) (h_rate := h_rate) := rfl
+
+/-- The frontier has no checks and leaves all oracle contents unchanged. -/
+def guardedForm :
+    (verifier K β (Context := Context) (ϑ := ϑ) (h_rate := h_rate)).toVerifier.GuardedForm where
+  check _ _ := true
+  out s _ := (initialStatement s.1.ctx s.1.target, s.2)
+  verify_eq _ _ := rfl
 
 instance : (prover K β multiplier (ϑ := ϑ) (h_rate := h_rate)).OutputIsPure where
   output_is_pure := ⟨fun s => ((initialStatement s.1.1.ctx s.1.1.target, s.1.2),
     initialWitness K β multiplier.polynomial s.1.1.ctx s.2), fun _ => rfl⟩
 
 variable [Fact (ϑ ∣ ℓ)]
+
+/-! ## Security
+
+### Relaxed relation and knowledge extraction -/
 
 /-- Product-sum claim and uniquely decoding-close compatibility at the adapter input. -/
 def inputRelation : Set
@@ -160,6 +171,8 @@ theorem commitment_functional :
     (commitment K β (ϑ := ϑ) (h_rate := h_rate)).Functional := by
   intro ost p q hp hq
   exact firstOracleWitnessConsistent_functional K β _ p q hp hq
+
+/-! ### Strict relation and perfect completeness -/
 
 omit [Fact (β 0 = 1)] in
 /-- The completeness input uses the same product claim with exact first-oracle encoding. -/
