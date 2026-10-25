@@ -61,6 +61,28 @@ successful mass minus the event probability; replacing it with `1 - Pr{…}[…]
 Operational `support` describes possible executions. A measure-zero event alone does not prove
 that an execution is impossible.
 
+## RBR-to-standard implications and ambient state
+
+Import `ArkLib.OracleReduction.Security.StatelessImplications` for
+`Verifier.rbrSoundness_implies_soundness` and
+`Verifier.rbrKnowledgeSoundness_implies_knowledgeSoundness`. They take
+`impl : QueryImpl oSpec ProbComp`, with arbitrary `oSpec`, and interpret both security games
+using `pure PUnit.unit` and `impl.statelessLift`. The error is exactly the sum of the RBR errors.
+The `With` version exposes the canonical backward extractor; worst-case RBR corollaries reuse
+the existing worst-case-to-averaged bridge.
+
+This replaces the former unrestricted stateful signatures. The existing RBR terminal condition
+starts the verifier from the designated initial distribution, whereas the full game starts it
+after the prover, including the prover's output computation. Those states need not agree.
+`ArkLibTest/OracleReduction/Security/RbrSharedState.lean` checks a zero-round counterexample.
+Do not silently replace a mutable handler with a stateless sampler to apply these theorems.
+Fresh randomized answers are permitted; a memoized random oracle is not a stateless handler.
+
+Backward intermediate witnesses may depend on the transcript suffix. The proof existentially
+hides them in the challenge-prefix event before discarding continuations. Prefix probabilities
+are bounded by domination, not asserted equal without losslessness. Neither the relation pair
+nor the strict-versus-proximity distinction of a protocol changes in this implication.
+
 ## Migrating an in-flight branch
 
 Replace `Pr_{…}[…]` and `$ᵖ` with native event notation and sampling. Replace PMF-specific

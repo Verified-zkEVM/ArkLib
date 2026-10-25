@@ -380,6 +380,17 @@ theorem knowledgeSoundness_of_with
   (knowledgeSoundness_iff_exists_with init impl relIn relOut verifier knowledgeError).mpr
     ⟨extractor, h⟩
 
+/-- Enlarging the knowledge error preserves the relation pair and the same extractor. -/
+theorem knowledgeSoundness_error_mono
+    {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
+    {verifier : Verifier oSpec StmtIn StmtOut pSpec} {ε ε' : ℝ≥0}
+    (hε : ε ≤ ε')
+    (h : verifier.knowledgeSoundness init impl relIn relOut ε) :
+    verifier.knowledgeSoundness init impl relIn relOut ε' := by
+  obtain ⟨extractor, h⟩ := h
+  refine ⟨extractor, fun stmt wit prover => ?_⟩
+  exact (h stmt wit prover).trans (by exact_mod_cast hε)
+
 /-- Type class for knowledge soundness for a verifier -/
 class IsKnowledgeSound (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec) where

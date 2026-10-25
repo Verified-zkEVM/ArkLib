@@ -5,6 +5,8 @@ Authors: ArkLib Contributors
 -/
 module
 
+public import ArkLib.OracleReduction.Security.StatelessImplications
+
 public import ArkLib.ProofSystem.RingSwitching.Packing.RingSwitch
 public import ArkLib.ProofSystem.RingSwitching.Packing.Prelude
 public import ArkLib.ProofSystem.RingSwitching.Packing.Compatibility
@@ -241,11 +243,27 @@ theorem rbrKnowledgeSoundnessWorstCase (h : a.Functional) {σ : Type} (init : Pr
     (messageEquiv P) (BatchingStrategy.eqFold L κ) (commitment a) (commitment_functional a h)
     (fun _ _ h => h) init impl
 
+/-- Standard straightline knowledge soundness preserves the packing input/output relations
+and sums exactly the shared ring-switching RBR error function. -/
+theorem knowledgeSoundness (h : a.Functional) (handler : QueryImpl []ₒ ProbComp) :
+    (verifier P h_l a).toVerifier.knowledgeSoundness (pure PUnit.unit) handler.statelessLift
+      (relIn P h_l a) ((commitment a).evalRelWithContext ((Fin ℓ → L) × (Fin κ → L)))
+      (∑ i, rbrError (ℓ' := ℓ') P i) :=
+  Verifier.rbrKnowledgeSoundnessWorstCase_implies_knowledgeSoundness handler _ _ _ _
+    (rbrKnowledgeSoundnessWorstCase P h_l a h _ _)
+
 /-- The challenge-index sum is `κ/|L| + 2ℓ'/|L|`. -/
 theorem rbrError_sum : ∑ i, rbrError (ℓ' := ℓ') P i =
     (κ : ℝ≥0) / Fintype.card L + (ℓ' : ℝ≥0) * (2 / Fintype.card L) :=
   RingSwitch.rbrError_sum (M := P.A) (PackingData.ofBasis P.basis) ℓ'
     (BatchingStrategy.eqFold L κ)
+
+/-- The exact closed-form packing error is unchanged by passing to standard knowledge soundness. -/
+theorem knowledgeSoundness_concrete (h : a.Functional) (handler : QueryImpl []ₒ ProbComp) :
+    (verifier P h_l a).toVerifier.knowledgeSoundness (pure PUnit.unit) handler.statelessLift
+      (relIn P h_l a) ((commitment a).evalRelWithContext ((Fin ℓ → L) × (Fin κ → L)))
+      ((κ : ℝ≥0) / Fintype.card L + (ℓ' : ℝ≥0) * (2 / Fintype.card L)) := by
+  simpa only [rbrError_sum] using knowledgeSoundness P h_l a h handler
 
 /-- Prefix packing is complete and worst-case round-by-round knowledge sound, with total
 challenge error `κ / card L + 2ℓ' / card L`. -/

@@ -772,6 +772,7 @@ public import ArkLib.OracleReduction.ProtocolSpec.SeqCompose
 public import ArkLib.OracleReduction.Salt
 public import ArkLib.OracleReduction.Security.Acceptance
 public import ArkLib.OracleReduction.Security.Accumulation
+public import ArkLib.OracleReduction.Security.BackwardExtraction
 public import ArkLib.OracleReduction.Security.BadEvents
 public import ArkLib.OracleReduction.Security.Basic
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness
@@ -787,11 +788,14 @@ public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Sin
 public import ArkLib.OracleReduction.Security.Guarded
 public import ArkLib.OracleReduction.Security.GuardedRoundByRound
 public import ArkLib.OracleReduction.Security.Implications
+public import ArkLib.OracleReduction.Security.PrefixProbability
 public import ArkLib.OracleReduction.Security.RbrGame
 public import ArkLib.OracleReduction.Security.Rewinding
 public import ArkLib.OracleReduction.Security.RoundByRound
 public import ArkLib.OracleReduction.Security.SpecialSoundness
 public import ArkLib.OracleReduction.Security.StateRestoration
+public import ArkLib.OracleReduction.Security.Stateless
+public import ArkLib.OracleReduction.Security.StatelessImplications
 public import ArkLib.OracleReduction.Security.TranscriptTree
 public import ArkLib.OracleReduction.Security.TranscriptTree.Basic
 public import ArkLib.OracleReduction.Security.TranscriptTree.Composition

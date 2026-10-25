@@ -6,6 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.OracleReduction.Security.RoundByRound
+public import ArkLib.OracleReduction.Security.StatelessImplications
 public import ArkLib.OracleReduction.Security.StateRestoration
 public import ArkLib.OracleReduction.Salt
 public import ArkLib.OracleReduction.Security.SpecialSoundness
@@ -16,8 +17,11 @@ public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness
 
 This file collects the implications between the various security notions.
 
-For now, we only state the theorems. It's likely that we will split this file into multiple files in
-a single `Implication` folder in the future, each file for the proof of a single implication.
+The RBR-to-standard soundness and knowledge-soundness implications are proved in
+`StatelessImplications` for arbitrary stateless ambient handlers. Their former unrestricted
+stateful signatures are invalid: a prover can change the state between the RBR terminal check
+and the actual verifier execution. `ArkLibTest/OracleReduction/Security/RbrSharedState.lean`
+records the zero-round counterexample. Other implications below retain their existing status.
 -/
 
 @[expose] public section
@@ -36,12 +40,9 @@ section Implications
 
 /- TODO: add the following results
 - `knowledgeSoundness` implies `soundness`
-- `rbrSoundness` implies `soundness`
-- `rbrKnowledgeSoundness` implies `rbrSoundness`
-- `rbrKnowledgeSoundness` implies `knowledgeSoundness`
 
-In other words, we have a lattice of security notions, with `knowledge` and `roundByRound` being
-two strengthenings of soundness.
+For stateless ambient handlers the proved RBR implications preserve the corresponding
+standard notions. Do not interpret this as an unrestricted stateful implication lattice.
 -/
 
 /-- Knowledge soundness with knowledge error `knowledgeError < 1` implies soundness with the same
@@ -73,14 +74,6 @@ theorem knowledgeSoundness_implies_soundness
   --   simp only [Functor.map, Seq.seq, PMF.bind_bind, Function.comp_apply, PMF.pure_bind, hStmtIn,
   --     PMF.bind_const, PMF.pure_apply, eq_iff_iff, iff_false, not_true_eq_false, ↓reduceIte,
   --     zero_add, ℝ≥0.coe_lt_one_iff, hLt]
-
-/-- Round-by-round soundness with error `rbrSoundnessError` implies soundness with error
-`∑ i, rbrSoundnessError i`, where the sum is over all rounds `i`. -/
-theorem rbrSoundness_implies_soundness (langIn : Set StmtIn) (langOut : Set StmtOut)
-    (verifier : Verifier oSpec StmtIn StmtOut pSpec)
-    (rbrSoundnessError : pSpec.ChallengeIdx → ℝ≥0) :
-      rbrSoundness init impl langIn langOut verifier rbrSoundnessError →
-        soundness init impl langIn langOut verifier (∑ i, rbrSoundnessError i) := by sorry
 
 /-- Round-by-round knowledge soundness with error `rbrKnowledgeError` implies round-by-round
 soundness with the same error `rbrKnowledgeError`. -/
@@ -183,15 +176,6 @@ theorem rbrKnowledgeSoundness_implies_rbrSoundness
     intro stmtIn hStmtIn WitIn' WitOut' witIn' prover i
     exact (prEvent_eq_zero_of_forall_not _ _ fun _ hbad ↦
       Fin.succ_ne_zero i.1 hbad.2.1).trans_le zero_le
-
-/-- Round-by-round knowledge soundness with error `rbrKnowledgeError` implies knowledge soundness
-with error `∑ i, rbrKnowledgeError i`, where the sum is over all rounds `i`. -/
-theorem rbrKnowledgeSoundness_implies_knowledgeSoundness
-    (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
-    (verifier : Verifier oSpec StmtIn StmtOut pSpec)
-    (rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0) :
-      rbrKnowledgeSoundness init impl relIn relOut verifier rbrKnowledgeError →
-        knowledgeSoundness init impl relIn relOut verifier (∑ i, rbrKnowledgeError i) := by sorry
 
 -- /-- Round-by-round soundness for a protocol implies state-restoration soundness for the same
 -- protocol with arbitrary added non-empty salts. -/
