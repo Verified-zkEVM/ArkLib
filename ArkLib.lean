@@ -1027,6 +1027,7 @@ public import ArkLib.ProofSystem.Sumcheck.Interaction.ProjectionTransport
 public import ArkLib.ProofSystem.Sumcheck.Interaction.Protocol
 public import ArkLib.ProofSystem.Sumcheck.Interaction.ProtocolCompleteness
 public import ArkLib.ProofSystem.Sumcheck.Interaction.ProtocolSoundness
+public import ArkLib.ProofSystem.Sumcheck.Interaction.Resources
 public import ArkLib.ProofSystem.Sumcheck.Interaction.RoundByRound
 public import ArkLib.ProofSystem.Sumcheck.Interaction.Sequential
 public import ArkLib.ProofSystem.Sumcheck.Interaction.SingleRound

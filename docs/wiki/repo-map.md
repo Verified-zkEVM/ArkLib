@@ -69,6 +69,9 @@ home_page/            site assets and assembled website root
 
 ## Navigation Notes
 
+- `ProofSystem/Sumcheck/Interaction/Resources.lean` connects native path counts to the
+  existing logger and profiles the selected local kernels; terminal view fanout stays explicit.
+
 - `Data/OracleComp/Vector.lean` relates the actual deterministic logged traversal to
   its ordered per-entry request/response logs, including answer-dependent and repeated queries.
 
