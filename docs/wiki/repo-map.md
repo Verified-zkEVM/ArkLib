@@ -137,6 +137,8 @@ home_page/            site assets and assembled website root
   totals vanish at every scalar challenge, including poles.
   `ProofSystem/Logup/Prover/State.lean` caches those tables and equality weights, and proves
   that each private table fold substitutes the head variable in the same retained-source circuit.
+  `ProofSystem/Logup/Prover/ArithmeticState.lean` executes and profiles denominator/helper
+  preparation, kernel caching and affine table folding; base visits and embeddings stay separate.
   `ProofSystem/Logup/Prover/RoundCoefficients.lean` streams formal affine-row coefficients
   into one bounded message and identifies the exact native honest head projection.
   `ProofSystem/Logup/Prover/ArithmeticRound.lean` explicitly executes the measured row/message
