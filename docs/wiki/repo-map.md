@@ -69,6 +69,8 @@ home_page/            site assets and assembled website root
 
 ## Navigation Notes
 
+- `ProofSystem/Logup/Lookup/Tuple/{Protocol,Execution,Security}.lean` owns the actual base
+  multiplicity send, beta response, weighted suffix and whole-program tuple soundness.
 - `ProofSystem/Logup/Lookup/Tuple/Initial.lean` connects fixed original semantic keys and pre-beta
   base multiplicities to the selected-key compression bound, with all-beta histogram balance.
 - `Data/OracleComp/Vector.lean` owns public monad-hom and oracle-simulation laws for the
