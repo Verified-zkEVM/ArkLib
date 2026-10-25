@@ -69,6 +69,8 @@ home_page/            site assets and assembled website root
 
 ## Navigation Notes
 
+- `ProofSystem/Logup/Prover/{ArithmeticControl,ArithmeticLedger}.lean` shares actual Unit,
+  cost and complete-call execution, with exact argument-sensitive history and initial-cost laws.
 - `ToCompPoly/Univariate/Raw/Basic.lean` owns the generic seeded-Horner stored-coefficient
   sum bridge used by tuple sources and eager compression, including noncommutative semirings.
 - `ToCompPoly/Univariate/Raw/Horner.lean` and `ArithmeticHorner.lean` share seeded tail-loop

@@ -5,9 +5,7 @@ Authors: ArkLib Contributors
 -/
 module
 
-public import ArkLib.ProofSystem.Logup.Prover.ArithmeticState
-public import ArkLib.ProofSystem.Logup.Prover.ArithmeticRound
-public import ArkLib.ProofSystem.Logup.Prover.Strategy
+public import ArkLib.ProofSystem.Logup.Prover.ArithmeticControl
 
 /-!
 # Default honest strategy executing the measured arithmetic programs
@@ -51,17 +49,9 @@ def nativeArithmetic {E : Type} [CommRing E] [Inv E] [DecidableEq E]
     (groups : Vector (List (Fin T)) K) (hgroups : ∀ k, (groups.get k).length ≤ ell) :
     (count : Nat) → Logup.Prover.State E T K count →
       Prover.Strategy ambient (Sumcheck.Interaction.Computable.protocol E (ell + 2) count).tree
-        (Sumcheck.Interaction.Computable.protocol E (ell + 2) count).roles (fun _ => Unit)
-  | 0, _ => ()
-  | 1, state => pure ⟨arithmeticBuilder groups hgroups 0 state, fun choice => match choice with
-      | none => pure ()
-      | some _ => pure ()⟩
-  | count + 2, state => pure ⟨arithmeticBuilder groups hgroups (count + 1) state,
-      fun choice => match choice with
-      | none => pure ()
-      | some r =>
-        let next := simulateQ arithmeticAnswer (State.foldProgram state r)
-        pure (nativeArithmetic ambient groups hgroups (count + 1) next)⟩
+        (Sumcheck.Interaction.Computable.protocol E (ell + 2) count).roles (fun _ => Unit) :=
+  fun count state => Accounting.nativeWith (Accounting.unitInterpreter (B := E))
+    Accounting.unit_erases (fun _ _ => ()) ambient groups hgroups count state ()
 
 /-- The measured continuation has the existing ordinary-strategy value, including terminal
 branches. -/
@@ -71,16 +61,8 @@ theorem nativeArithmetic_eq_nativeWith {E : Type} [CommRing E] [Inv E] [Decidabl
     (count : Nat) (state : Logup.Prover.State E T K count) :
     nativeArithmetic ambient groups hgroups count state =
       nativeWith ambient (arithmeticBuilder groups hgroups) count state := by
-  induction count with
-  | zero => rfl
-  | succ count ih =>
-    cases count with
-    | zero =>
-      simp only [nativeArithmetic, nativeWith]
-      rfl
-    | succ count =>
-      simp only [nativeArithmetic, nativeWith, State.simulateQ_foldProgram, ih]
-      rfl
+  rw [arithmeticBuilder_eq_pureBuilder]
+  exact Accounting.native_unit_eq (B := E) ambient groups hgroups count state
 
 /-- Initialize the measured private cache only when at least one native message follows. -/
 def startNativeArithmetic {E : Type} [CommRing E] [Inv E] [DecidableEq E]
@@ -88,11 +70,9 @@ def startNativeArithmetic {E : Type} [CommRing E] [Inv E] [DecidableEq E]
     (groups : Vector (List (Fin T)) K) (hgroups : ∀ k, (groups.get k).length ≤ ell) :
     (count : Nat) → Logup.Prover.Prepared E T K count → (Fin count → E) → (Fin K → E) →
       Prover.Strategy ambient (Sumcheck.Interaction.Computable.protocol E (ell + 2) count).tree
-        (Sumcheck.Interaction.Computable.protocol E (ell + 2) count).roles (fun _ => Unit)
-  | 0, _, _, _ => ()
-  | count + 1, prepared, z, lambda =>
-    let started := simulateQ arithmeticAnswer (State.startProgram prepared z lambda)
-    nativeArithmetic ambient groups hgroups (count + 1) started
+        (Sumcheck.Interaction.Computable.protocol E (ell + 2) count).roles (fun _ => Unit) :=
+  fun count prepared z lambda => Accounting.startWith (Accounting.unitInterpreter (B := E))
+    Accounting.unit_erases (fun _ _ => ()) ambient groups hgroups count prepared z lambda ()
 
 /-- Skipping an unused zero-round cache preserves the existing ordinary continuation. -/
 theorem startNativeArithmetic_eq_nativeWith {E : Type} [CommRing E] [Inv E] [DecidableEq E]
@@ -103,10 +83,8 @@ theorem startNativeArithmetic_eq_nativeWith {E : Type} [CommRing E] [Inv E] [Dec
     startNativeArithmetic ambient groups hgroups count prepared z lambda =
       nativeWith ambient (arithmeticBuilder groups hgroups) count
         (State.start prepared z lambda) := by
-  cases count with
-  | zero => rfl
-  | succ count =>
-    simp only [startNativeArithmetic, State.simulateQ_startProgram, nativeArithmetic_eq_nativeWith]
+  rw [arithmeticBuilder_eq_pureBuilder]
+  exact Accounting.start_unit_eq_nativeWith (B := E) ambient groups hgroups count prepared z lambda
 
 /-- Send actual measured helpers, then execute the measured native strategy without unused
 terminal work. -/
@@ -115,11 +93,8 @@ def prover {B E : Type} [CommRing B] [Field E] [DecidableEq E] {n T ell : Nat}
     (data : Fin 2 × Fin T → CMlPolynomialEval B n) {ι : Type} (ambient : OracleSpec ι) :
     Prover.Strategy ambient (protocol E n (T ⌈/⌉ ell) ell).tree
       (protocol E n (T ⌈/⌉ ell) ell).roles (fun _ => Unit) :=
-  fun (alpha : E) => pure (do
-    let prepared := simulateQ arithmeticAnswer (State.prepareProgram f alpha cfg.groups data)
-    return ⟨prepared.helper, fun joint =>
-      pure (startNativeArithmetic ambient cfg.groups cfg.length_group_le n prepared
-        joint.1 joint.2)⟩)
+  Accounting.proverWith Accounting.unitInterpreter Accounting.unit_erases (fun _ _ => ()) ()
+    f cfg data ambient
 
 /-- The default ordinary strategy equals the existing honest correctness constructor. -/
 theorem prover_eq_honestWith {B E : Type} [CommRing B] [Field E] [DecidableEq E]
@@ -127,9 +102,6 @@ theorem prover_eq_honestWith {B E : Type} [CommRing B] [Field E] [DecidableEq E]
     (data : Fin 2 × Fin T → CMlPolynomialEval B n) {ι : Type} (ambient : OracleSpec ι) :
     prover f cfg data ambient =
       honestWith f cfg data ambient (pureBuilder cfg.groups cfg.length_group_le) := by
-  unfold prover honestWith
-  funext alpha
-  rw [State.simulateQ_prepareProgram f alpha cfg data]
-  simp only [startNativeArithmetic_eq_nativeWith, arithmeticBuilder_eq_pureBuilder]
+  exact Accounting.prover_unit_eq_honestWith f cfg data ambient
 
 end Logup.Prover.Honest

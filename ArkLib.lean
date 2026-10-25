@@ -934,6 +934,8 @@ public import ArkLib.ProofSystem.Logup.Lookup.Tuple.Prover
 public import ArkLib.ProofSystem.Logup.Lookup.Tuple.Provider
 public import ArkLib.ProofSystem.Logup.Lookup.Tuple.Security
 public import ArkLib.ProofSystem.Logup.Lookup.Tuple.Source
+public import ArkLib.ProofSystem.Logup.Prover.ArithmeticControl
+public import ArkLib.ProofSystem.Logup.Prover.ArithmeticLedger
 public import ArkLib.ProofSystem.Logup.Prover.ArithmeticRound
 public import ArkLib.ProofSystem.Logup.Prover.ArithmeticRoundCost
 public import ArkLib.ProofSystem.Logup.Prover.ArithmeticState
