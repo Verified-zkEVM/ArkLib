@@ -127,6 +127,10 @@ def QueryPhaseProverState : Fin (1 + 1) → Type := fun
     (∀ i, OracleStatement 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ) i) × Unit ×
     (pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenge ⟨0, by rfl⟩
 
+/-! ## Protocol definitions
+
+Completeness and soundness proofs are in the sibling `Completeness` and `Soundness` modules. -/
+
 /-- The oracle prover for the final query phase.
 
 Uses components from `queryPhaseLogicStep` for consistency with the logic specification. -/
@@ -196,6 +200,12 @@ noncomputable def queryOracleReduction :
   OracleReduction.mk (Oₛₒ := fun i : Empty => nomatch i)
     (queryOracleProver 𝔽q β (ϑ := ϑ) γ_repetitions)
     (queryOracleVerifier 𝔽q β (ϑ := ϑ) γ_repetitions)
+
+/-- The reduction uses exactly the separately defined verifier. -/
+theorem queryOracleReduction_verifier :
+    (queryOracleReduction 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      γ_repetitions).verifier (Oₛₒ := fun i : Empty => nomatch i) =
+      queryOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) γ_repetitions := rfl
 
 end FinalQueryRoundIOR
 end

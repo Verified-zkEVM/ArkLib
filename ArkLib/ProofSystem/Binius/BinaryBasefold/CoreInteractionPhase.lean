@@ -70,6 +70,8 @@ variable [hdiv : Fact (ϑ ∣ ℓ)]
 
 section CoreInteractionPhaseReduction
 
+/-! ## Protocol definitions -/
+
 /-- The oracle verifier of the core interaction: the sum-check-and-fold rounds, then the final
 sum-check step. -/
 @[reducible]
@@ -101,7 +103,17 @@ def coreInteractionOracleReduction :
       (multpoly := multiplier))
     (finalSumcheckOracleReduction 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑))
 
+omit [SampleableType L] [DecidableEq 𝔽q] h_β₀_eq_1 in
+/-- The reduction uses exactly the separately defined verifier. -/
+theorem coreInteractionOracleReduction_verifier :
+    (coreInteractionOracleReduction 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (𝓑 := 𝓑)).verifier =
+      coreInteractionOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (𝓑 := 𝓑) := rfl
+
 variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)}
+
+/-! ## Security -/
 
 omit [DecidableEq 𝔽q] in
 /-- Perfect completeness of the core interaction, from the strict round relation at round `0` to
