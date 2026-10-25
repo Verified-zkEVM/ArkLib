@@ -102,7 +102,8 @@ variable {n μ d : ℕ} {F : Type} {Stmt : Type}
 together with the instance's admissibility predicate on witnesses. -/
 def relLin (getM : Stmt → PolyMatrix S n μ) (getY : Stmt → PolyVec S n)
     (zOk : Stmt → PolyVec S μ → Prop) : Set (Stmt × PolyVec S μ) :=
-  {p | getM p.1 *ᵥ p.2 = getY p.1 ∧ zOk p.1 p.2}
+  fun ⟨statement, witness⟩ =>
+    getM statement *ᵥ witness = getY statement ∧ zOk statement witness
 
 section CheckAt
 
