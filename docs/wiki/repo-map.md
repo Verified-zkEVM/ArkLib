@@ -139,6 +139,9 @@ home_page/            site assets and assembled website root
   that each private table fold substitutes the head variable in the same retained-source circuit.
   `ProofSystem/Logup/Prover/RoundCoefficients.lean` streams formal affine-row coefficients
   into one bounded message and identifies the exact native honest head projection.
+  `ProofSystem/Logup/Prover/ArithmeticRound.lean` explicitly executes the measured row/message
+  programs. `ArithmeticRoundCost.lean` retains exact request recurrences and padded widths, with
+  canonical bounds stated per instruction coordinate and final normalization counted separately.
   `ProofSystem/Logup/Prover/Strategy.lean` constructs the actual honest strategy with an explicit
   message builder. `Completeness.lean` proves supported off-pole acceptance, uniform failure and
   success bounds from the actual mapped value support, and total probability mass through aborts.
