@@ -69,6 +69,9 @@ home_page/            site assets and assembled website root
 
 ## Navigation Notes
 
+- `Interaction/Oracle/LoggedExecution.lean` proves exact terminal-bind log append under
+  the same closing handler; native `Resources.complete_log_eq` instantiates the complete run.
+
 - `ProofSystem/Logup/Prover/Storage.lean` counts actual retained state/input payload roles
   and canonical messages; source representation and simultaneous workspace stay explicit.
 

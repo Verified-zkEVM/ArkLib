@@ -5,6 +5,9 @@ Authors: Quang Dao
 -/
 module
 
+import ArkLib.ToMathlib.Control.WriterT
+import all PolyFun.Interaction.Basic.StrategyOver
+
 public import ArkLib.Interaction.Oracle.CoreRun
 public import VCVio.OracleComp.QueryTracking.LoggingOracle.Core
 
@@ -74,6 +77,26 @@ theorem loggedLiftAccessImpl_erase {ι : Type u} (ambient : OracleSpec.{u, u} ι
     Prod.fst <$> (simulateQ (loggedLiftAccessImpl ambient access impl) program).run =
       simulateQ (liftAccessImpl ambient access impl) program :=
   QueryImpl.fst_map_run_withTraceAppend ..
+
+/-- Lifted ambient programs retain all their effects and make no verifier source-log entry. -/
+theorem loggedLiftAccessImpl_liftComp {ι : Type u} (ambient : OracleSpec.{u, u} ι)
+    (access : PFunctor.{u, u}) (impl : QueryImpl (ofPFunctor access) Id) {α : Type u}
+    (program : OracleComp ambient α) :
+    (simulateQ (loggedLiftAccessImpl ambient access impl)
+      (program.liftComp (ambient + ofPFunctor access))).run =
+      (fun answer => (answer, [])) <$> program := by
+  let : LawfulMonadLift (OracleComp ambient)
+      (WriterT (QueryLog (ofPFunctor access)) (OracleComp ambient)) :=
+    WriterT.lawfulMonadLiftAppend (by simp)
+  have hleft (q : ambient.Domain) :
+      loggedLiftAccessImpl ambient access impl (.inl q) = liftM (QueryImpl.id' ambient q) := by
+    apply WriterT.ext
+    simp [loggedLiftAccessImpl]
+  rw [QueryImpl.simulateQ_liftComp_left_eq_of_apply _
+    ((QueryImpl.id' ambient).liftTarget
+      (WriterT (QueryLog (ofPFunctor access)) (OracleComp ambient))) hleft]
+  rw [simulateQ_liftTarget, simulateQ_id']
+  rfl
 
 end Verifier
 
@@ -261,5 +284,122 @@ theorem executeStrategiesLogged_erase {ι : Type u} (ambient : OracleSpec.{u, u}
           PFunctor.FreeM.PathAlong.ofMapLensPath, TypeTree.runtimeLens, TypeTree.toTypeTree]
             at lifted ⊢
       exact lifted
+
+set_option backward.isDefEq.respectTransparency false in
+/-- Binding an effectful terminal action appends its actual source trace to the same run's log.
+The complete observed packet retains the path and dependent private prover output. Its terminal
+handler comes from that path's actual retained messages, independently of the recorded log. -/
+theorem executeStrategiesLogged_bindTerminal {ι : Type u}
+    (ambient : OracleSpec.{u, u} ι) (tree : Oracle.TypeTree.{u})
+    (roles : tree.RoleDecoration) (oracles : tree.OracleDecoration) (initial : PFunctor.{u, u})
+    (impl : QueryImpl (ofPFunctor initial) Id)
+    (OldOut NewOut : tree.BranchPath → Type u) (OutP : tree.ExecutionPath → Type u)
+    (prover : Prover.Strategy ambient tree roles OutP)
+    (verifier : Verifier.Strategy ambient tree roles oracles initial OldOut)
+    (next : (path : tree.BranchPath) → OldOut path →
+      OracleComp (ambient + ofPFunctor (TypeTree.accessAfter tree oracles initial path))
+        (NewOut path)) :
+    (fun result : LoggedResult tree oracles initial OutP NewOut =>
+      (⟨result.path, result.proverOut, result.verifierOut, result.sourceLog⟩ :
+        (path : tree.ExecutionPath) × OutP path × NewOut path.toBranchPath ×
+          QueryLog (ofPFunctor (TypeTree.accessAfter tree oracles initial path.toBranchPath)))) <$>
+      executeStrategiesLogged ambient tree roles oracles initial impl prover
+        (Verifier.Fragment.mapOutput ambient (fun path action => action >>= next path) verifier) =
+      (do
+        let result ← executeStrategiesLogged ambient tree roles oracles initial impl prover verifier
+        let terminal ← (simulateQ
+          (Verifier.loggedLiftAccessImpl ambient
+            (TypeTree.accessAfter tree oracles initial result.path.toBranchPath)
+            (result.path.closingImpl oracles initial impl))
+          (next result.path.toBranchPath result.verifierOut)).run
+        return ⟨result.path, result.proverOut, terminal.1, result.sourceLog ++ terminal.2⟩) := by
+  induction tree generalizing initial with
+  | done =>
+    simp only [Verifier.Fragment.mapOutput, ShapeOver.mapOutput,
+      executeStrategiesLogged, simulateQ_bind, WriterT.run_bind',
+      map_bind, map_pure, pure_bind, bind_assoc, bind_map_left]
+    rfl
+  | «public» Moves rest ih =>
+    rcases roles with ⟨role, roles⟩
+    cases role <;>
+      simp only [Verifier.Fragment.mapOutput, ShapeOver.mapOutput, Verifier.localShape,
+        Verifier.decorate, executeStrategiesLogged, simulateQ_map, WriterT.run_map',
+        map_bind, map_pure, pure_bind, bind_assoc, bind_map_left, Prod.map, id_eq]
+    · apply bind_congr
+      rintro ⟨move, nextP⟩
+      apply bind_congr
+      rintro ⟨nextV, earlierLog⟩
+      have h := ih move (roles move) (oracles.2 move) initial impl
+        (fun path => OldOut ⟨move, path⟩) (fun path => NewOut ⟨move, path⟩)
+        (fun path => OutP ⟨move, path⟩) nextP nextV (fun path => next ⟨move, path⟩)
+      have lifted := congrArg (fun program : OracleComp ambient
+          ((path : (rest move).ExecutionPath) × OutP ⟨move, path⟩ ×
+            NewOut ⟨move, path.toBranchPath⟩ × QueryLog (ofPFunctor
+              (TypeTree.accessAfter (rest move) (oracles.2 move) initial path.toBranchPath))) =>
+        (fun packet => (⟨⟨move, packet.1⟩, packet.2.1, packet.2.2.1,
+          TypeTree.routeLog (rest move) (oracles.2 move) initial packet.1.toBranchPath earlierLog ++
+            packet.2.2.2⟩ :
+          (path : (TypeTree.public Moves rest).ExecutionPath) × OutP path ×
+            NewOut path.toBranchPath × QueryLog (ofPFunctor
+              (TypeTree.accessAfter (TypeTree.public Moves rest) oracles initial
+                path.toBranchPath)))) <$> program) h
+      simp only [Functor.map_map, map_bind,
+        Verifier.Fragment.mapOutput, Verifier.localShape,
+        TypeTree.ExecutionPath.closingImpl_public, TypeTree.ExecutionPath.toBranchPath_public,
+        TypeTree.accessAfter_public, List.append_assoc, bind_pure_comp] at lifted ⊢
+      exact lifted
+    · apply bind_congr
+      rintro ⟨⟨move, nextV⟩, earlierLog⟩
+      apply bind_congr
+      intro nextP
+      have h := ih move (roles move) (oracles.2 move) initial impl
+        (fun path => OldOut ⟨move, path⟩) (fun path => NewOut ⟨move, path⟩)
+        (fun path => OutP ⟨move, path⟩) nextP nextV (fun path => next ⟨move, path⟩)
+      have lifted := congrArg (fun program : OracleComp ambient
+          ((path : (rest move).ExecutionPath) × OutP ⟨move, path⟩ ×
+            NewOut ⟨move, path.toBranchPath⟩ × QueryLog (ofPFunctor
+              (TypeTree.accessAfter (rest move) (oracles.2 move) initial path.toBranchPath))) =>
+        (fun packet => (⟨⟨move, packet.1⟩, packet.2.1, packet.2.2.1,
+          TypeTree.routeLog (rest move) (oracles.2 move) initial packet.1.toBranchPath earlierLog ++
+            packet.2.2.2⟩ :
+          (path : (TypeTree.public Moves rest).ExecutionPath) × OutP path ×
+            NewOut path.toBranchPath × QueryLog (ofPFunctor
+              (TypeTree.accessAfter (TypeTree.public Moves rest) oracles initial
+                path.toBranchPath)))) <$> program) h
+      simp only [Functor.map_map, map_bind,
+        Verifier.Fragment.mapOutput, Verifier.localShape,
+        TypeTree.ExecutionPath.closingImpl_public, TypeTree.ExecutionPath.toBranchPath_public,
+        TypeTree.accessAfter_public, List.append_assoc, bind_pure_comp] at lifted ⊢
+      exact lifted
+  | «oracle» Messages rest ih =>
+    simp only [Verifier.Fragment.mapOutput, ShapeOver.mapOutput, Verifier.localShape,
+      Verifier.decorate, executeStrategiesLogged, simulateQ_map, WriterT.run_map',
+      map_bind, map_pure, pure_bind, bind_assoc, bind_map_left, Prod.map, id_eq]
+    apply bind_congr
+    rintro ⟨message, nextP⟩
+    apply bind_congr
+    rintro ⟨nextV, earlierLog⟩
+    let extended := Access.extend initial oracles.1
+    let extendedImpl := Access.extendImpl initial oracles.1 impl message
+    have h := ih (roles.2 PUnit.unit) (oracles.2 PUnit.unit) extended extendedImpl
+      (fun path => OldOut ⟨PUnit.unit, path⟩) (fun path => NewOut ⟨PUnit.unit, path⟩)
+      (fun path => OutP ⟨message, path⟩) nextP nextV (fun path => next ⟨PUnit.unit, path⟩)
+    have lifted := congrArg (fun program : OracleComp ambient
+        ((path : (rest PUnit.unit).ExecutionPath) × OutP ⟨message, path⟩ ×
+          NewOut ⟨PUnit.unit, path.toBranchPath⟩ × QueryLog (ofPFunctor
+            (TypeTree.accessAfter (rest PUnit.unit) (oracles.2 PUnit.unit) extended
+              path.toBranchPath))) =>
+      (fun packet => (⟨⟨message, packet.1⟩, packet.2.1, packet.2.2.1,
+        TypeTree.routeLog (rest PUnit.unit) (oracles.2 PUnit.unit) extended
+          packet.1.toBranchPath earlierLog ++ packet.2.2.2⟩ :
+        (path : (TypeTree.oracle Messages rest).ExecutionPath) × OutP path ×
+          NewOut path.toBranchPath × QueryLog (ofPFunctor
+            (TypeTree.accessAfter (TypeTree.oracle Messages rest) oracles initial
+              path.toBranchPath)))) <$> program) h
+    simp only [Functor.map_map, map_bind,
+      Verifier.Fragment.mapOutput, Verifier.localShape,
+      TypeTree.ExecutionPath.closingImpl_oracle, TypeTree.ExecutionPath.toBranchPath_oracle,
+      TypeTree.accessAfter_oracle, List.append_assoc, bind_pure_comp] at lifted ⊢
+    exact lifted
 
 end Interaction.Oracle
