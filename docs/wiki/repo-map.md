@@ -69,6 +69,8 @@ home_page/            site assets and assembled website root
 
 ## Navigation Notes
 
+- `ProofSystem/Logup/Lookup/Tuple/ArithmeticProver.lean` selects the eager cache and shared
+  weighted control, with actual Unit erasure and exact compression-plus-call cost observations.
 - `ProofSystem/Sumcheck/Impl/Representation.size_le` bounds actual canonical message storage
   and seeded-evaluation lengths without field, BEq or nontriviality assumptions.
 - `ProofSystem/Sumcheck/Impl/{VerifierChecks,ArithmeticVerifierChecks}.lean` shares selected

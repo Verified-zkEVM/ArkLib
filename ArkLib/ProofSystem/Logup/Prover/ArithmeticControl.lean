@@ -325,4 +325,47 @@ theorem prover_unit_eq_honestWith {B E : Type} [CommRing B] [Field E] [Decidable
           (pureBuilder cfg.groups cfg.length_group_le) n
             (State.start prepared joint.1 joint.2)) hprepared)
 
+set_option backward.isDefEq.respectTransparency false in
+/-- Erasing terminal annotations preserves the actual Unit driver's caches and messages. -/
+theorem proverWith_erases_unit {B E C : Type} [CommRing B] [Field E] [DecidableEq E]
+    {n T ell : Nat}
+    (run : Interpreter B E C T (T ⌈/⌉ ell))
+    (law : Erases run) (combine : C → C → C) (initial : C)
+    (f : B →+* E) (cfg : Logup.Interaction.Config n T ell)
+    (data : Fin 2 × Fin T → CMlPolynomialEval B n)
+    {ι : Type} (ambient : OracleSpec ι) :
+    Interaction.StrategyOver.TwoParty.Focal.mapOutput (fun _ _ => ())
+      (proverWith run law combine initial
+        f cfg data ambient) =
+      proverWith
+        unitInterpreter unit_erases
+        (fun _ _ => ()) () f cfg data ambient := by
+  simp only [proverWith,
+    Interaction.StrategyOver.TwoParty.Focal.mapOutput, Interaction.ShapeOver.mapOutput,
+    Interaction.ShapeOver.TwoParty.pairedTypeTree, Interaction.ShapeOver.TwoParty.paired,
+    PFunctor.Lens.id, Logup.Interaction.protocol, Logup.Interaction.prefixProtocol,
+    Protocol.oracleWith, Protocol.public, Protocol.done, Protocol.tree, Protocol.roles,
+    Protocol.oracles, TypeTree.public, TypeTree.oracle, TypeTree.done, TypeTree.toTypeTree,
+    PFunctor.FreeM.Displayed.Decoration.append,
+    PFunctor.FreeM.mapLens, PFunctor.FreeM.append, TypeTree.runtimeLens,
+    TypeTree.RoleDecoration.toTypeTreeRoles, map_pure]
+  funext alpha
+  let call := Call.prepare n f alpha cfg.groups data
+  have hp := law call call.program
+  congr 1
+  congr 1
+  congr 1
+  · exact congrArg (fun prepared : Logup.Prover.Prepared E T (T ⌈/⌉ ell) n =>
+      prepared.helper) hp
+  · funext joint
+    congr 1
+    change Interaction.StrategyOver.TwoParty.Focal.mapOutput (fun _ _ => ())
+      (startWith run law combine ambient cfg.groups
+        cfg.length_group_le n (run call call.program).1 joint.1 joint.2
+        (combine initial (run call call.program).2)) = _
+    rw [hp]
+    exact startWith_erases_unit run law combine ambient cfg.groups
+      cfg.length_group_le n (simulateQ arithmeticAnswer call.program) joint.1 joint.2
+      (combine initial (run call call.program).2)
+
 end Logup.Prover.Honest.Accounting
