@@ -45,6 +45,29 @@ def emptyResult : Vector Nat 0 × List Nat := (simulateQ answer empty).run [99]
 theorem empty_equality : simulateQ answer empty = pure (#v[] : Vector Nat 0) := by
   rw [empty, Vector.ofFnM_zero, simulateQ_pure]
 
+def branching (i : Fin 3) : OracleComp spec Nat := do
+  let a ← liftM (spec.query i)
+  if a = 0 then return a
+  else
+    let b ← liftM (spec.query ⟨a % 3, Nat.mod_lt _ (by decide)⟩)
+    return a + b
+
+def loggedAnswer : QueryImpl spec Id := fun i => ![0, 5, 4] i
+def logged := simulateQ loggedAnswer (Vector.ofFnM branching).withQueryLog
+def loggedSummary : Vector Nat 3 × List (Nat × Nat) :=
+  (logged.1, logged.2.map fun entry => (entry.1.val, entry.2))
+
+theorem logged_equality : logged =
+    (Vector.ofFn (fun i => (simulateQ loggedAnswer (branching i).withQueryLog).1),
+      (List.finRange 3).flatMap
+        (fun i => (simulateQ loggedAnswer (branching i).withQueryLog).2)) :=
+  simulateQ_withQueryLog_ofFnM loggedAnswer branching
+
+theorem empty_logged_equality :
+    simulateQ idAnswer empty.withQueryLog = (#v[], []) := by
+  rw [empty, simulateQ_withQueryLog_ofFnM]
+  rfl
+
 run_cmd do
   unless actual == (#v[2, 111, 42], [99, 0, 0, 1, 2, 2]) do
     throwError "effectful vector simulation lost duplicate requests, order or initial state"
@@ -54,13 +77,17 @@ run_cmd do
     throwError "Id vector simulation changed its entry values"
   unless emptyResult == (#v[], [99]) do
     throwError "empty vector simulation invoked an impossible callback or changed target state"
+  unless loggedSummary == (#v[0, 9, 9], [(0, 0), (1, 5), (2, 4), (2, 4), (1, 5)]) do
+    throwError "logged traversal lost answer-dependent fanout, repeated queries or response order"
   for name in #[``entry, ``answer, ``idAnswer, ``program, ``actual, ``mapped,
-      ``deterministic, ``empty, ``emptyResult] do
+      ``deterministic, ``empty, ``emptyResult, ``branching, ``loggedAnswer,
+      ``logged, ``loggedSummary] do
     unless (Lean.IR.findEnvDecl (← getEnv) name).isSome do
       throwError "missing vector simulation caller executable IR: {name}"
   let allowed := #[``propext, ``Classical.choice, ``Quot.sound]
   for name in #[``MonadHom.map_vector_ofFnM, ``simulateQ_vectorOfFnM, ``simulateQ_ofFnM,
-      ``effectful_equality, ``deterministic_equality, ``empty_equality] do
+      ``simulateQ_withQueryLog_ofFnM, ``effectful_equality, ``deterministic_equality,
+      ``empty_equality, ``logged_equality, ``empty_logged_equality] do
     unless (← collectAxioms name).all allowed.contains do
       throwError "vector simulation has an unexpected axiom: {name}"
 end OracleVectorSimulationTest

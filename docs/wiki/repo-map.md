@@ -69,6 +69,9 @@ home_page/            site assets and assembled website root
 
 ## Navigation Notes
 
+- `Data/OracleComp/Vector.lean` relates the actual deterministic logged traversal to
+  its ordered per-entry request/response logs, including answer-dependent and repeated queries.
+
 - LogUp scalar and tuple request envelopes follow the actual default continuations in
   `Lookup/ArithmeticResources.lean` and `Lookup/Tuple/ArithmeticResources.lean`.
 
