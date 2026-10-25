@@ -162,6 +162,10 @@ home_page/            site assets and assembled website root
   `Completeness.lean` transfers honest execution through the retained source and bounds failure
   by the distinct declared table support, including the separate coarse physical-row bound.
 
+- `ProofSystem/Logup/Lookup/Tuple/Provider.lean` checks physical-piece owners and exact
+  schema/row shapes, then stores padded coefficient tables once. Structural source validity
+  remains separate from query membership in the declared table collection.
+
 - `ToCompPoly/Multilinear/Basic.lean` constructs Boolean Lagrange tables by sharing each tail
   table and coordinate complement. `ToCompPoly/Multilinear/Arithmetic.lean` interprets that same
   recursion with the existing arithmetic instructions and proves its exact field-operation
