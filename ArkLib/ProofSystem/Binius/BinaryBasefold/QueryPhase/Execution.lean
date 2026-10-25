@@ -16,6 +16,8 @@ They use the public simulation laws for the concrete Binary Basefold query progr
 
 @[expose] public section
 
+variable {ι : Type} {oSpec : OracleSpec ι}
+
 open OracleSpec OracleComp ProtocolSpec AdditiveNTT
 
 namespace Binius.BinaryBasefold.QueryPhase
@@ -41,7 +43,7 @@ theorem checkSingleFoldingStep_simulate (γ : ℕ)
     (messages : ∀ i, (pSpecQuery 𝔽q β γ (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Message i)
     (k : Fin (ℓ / ϑ)) (v : sDomain 𝔽q β h_ℓ_add_R_rate ⟨0, by omega⟩)
     (c : L) (stmt : FinalSumcheckStatementOut (L := L) (ℓ := ℓ)) :
-    simulateQ (OracleInterface.simOracle2 []ₒ oStmt messages)
+    simulateQ (OracleInterface.simOracle2 oSpec oStmt messages)
       (checkSingleFoldingStep 𝔽q β (γ_repetitions := γ) (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) k c v stmt).run =
       (do
@@ -52,19 +54,19 @@ theorem checkSingleFoldingStep_simulate (γ : ℕ)
                 have hh := k_succ_mul_ϑ_le_ℓ_₂ (k := k)
                 omega⟩ ϑ))
         pure (logicalComputeFoldedValue 𝔽q β k v stmt
-          (logicalQueryFiberPoints 𝔽q β oStmt k v)) : OptionT (OracleComp []ₒ) L).run := by
-  let so := OracleInterface.simOracle2 []ₒ oStmt messages
+          (logicalQueryFiberPoints 𝔽q β oStmt k v)) : OptionT (OracleComp oSpec) L).run := by
+  let so := OracleInterface.simOracle2 oSpec oStmt messages
   let vec := (⟨Array.finRange (2 ^ ϑ), by simp⟩ : Vector (Fin (2 ^ ϑ)) (2 ^ ϑ)).map
     (logicalQueryFiberPoints 𝔽q β oStmt k v)
   have hf : (simulateQ so (queryFiberPoints 𝔽q β (γ_repetitions := γ) (ϑ := ϑ)
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) k v) : OptionT (OracleComp []ₒ) (Vector L (2 ^ ϑ))) =
-      (pure vec : OptionT (OracleComp []ₒ) (Vector L (2 ^ ϑ))) :=
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) k v) : OptionT (OracleComp oSpec) (Vector L (2 ^ ϑ))) =
+      (pure vec : OptionT (OracleComp oSpec) (Vector L (2 ^ ϑ))) :=
     queryFiberPoints_simulate 𝔽q β γ oStmt messages k v
   have hget : vec.get = logicalQueryFiberPoints 𝔽q β oStmt k v := by
     funext u
     simp [vec, Vector.get_eq_getElem]
   change (simulateQ so (checkSingleFoldingStep 𝔽q β (γ_repetitions := γ) (ϑ := ϑ)
-    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) k c v stmt) : OptionT (OracleComp []ₒ) L) = _
+    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) k c v stmt) : OptionT (OracleComp oSpec) L) = _
   dsimp only [checkSingleFoldingStep]
   rw [simulateQ_optionT_bind, hf, pure_bind, hget]
   dsimp only [logicalComputeFoldedValue]

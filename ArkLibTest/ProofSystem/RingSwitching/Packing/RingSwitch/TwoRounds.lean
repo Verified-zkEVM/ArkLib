@@ -99,7 +99,7 @@ def componentTranscript (c : bat.Challenge) (z : Fin 2 → F16) :
 
 /-- Verification executes both rounds with the first round's target passed to the second. -/
 theorem loop_accepts (c : bat.Challenge) (z : Fin 2 → F16) :
-    (ProductSumcheck.loopVerifier (C := F16)
+    (ProductSumcheck.loopVerifier (oSpec := []ₒ) (C := F16)
       (Context := layout.Query × bat.Challenge) pc).toVerifier.run
       (initial c, honest.commit packed) (FullTranscript.seqCompose (componentTranscript c z)) =
       pure (final c z, honest.commit packed) := by
@@ -109,7 +109,7 @@ theorem loop_accepts (c : bat.Challenge) (z : Fin 2 → F16) :
     (fun i => (statements c z i, honest.commit packed))
   intro i
   fin_cases i
-  · change (ProductSumcheck.Round.verifier pc 0).toVerifier.verify _ _ = _
+  · change (ProductSumcheck.Round.verifier (oSpec := []ₒ) pc 0).toVerifier.verify _ _ = _
     rw [ProductSumcheck.Round.verifier_verify]
     change (if ProductSumcheck.Round.check 0 (initial c) (firstMessage c) then
       pure (middle c z, honest.commit packed) else failure) = _
@@ -117,7 +117,7 @@ theorem loop_accepts (c : bat.Challenge) (z : Fin 2 → F16) :
       ProductSumcheck.Round.check_honestMessage_of_mem_rel multiplier pc 0 (mem_rel c z 0)
     rw [ite_eq_left hc]
     rfl
-  · change (ProductSumcheck.Round.verifier pc 1).toVerifier.verify _ _ = _
+  · change (ProductSumcheck.Round.verifier (oSpec := []ₒ) pc 1).toVerifier.verify _ _ = _
     rw [ProductSumcheck.Round.verifier_verify]
     change (if ProductSumcheck.Round.check 1 (middle c z) (secondMessage c z) then
       pure (final c z, honest.commit packed) else failure) = _
@@ -139,25 +139,28 @@ def transcript (c : bat.Challenge) (z : Fin 2 → F16) :
 
 /-- The complete verifier accepts and retains the two sampled coordinates in their order. -/
 theorem full_accepts (c : bat.Challenge) (z : Fin 2 → F16) :
-    (RingSwitch.verifier data 2 layout codec bat.toBatchingRule pc).toVerifier.run
+    (RingSwitch.verifier (oSpec := []ₒ) data 2 layout codec bat.toBatchingRule pc).toVerifier.run
       ((query, layout.eval query source), honest.commit packed) (transcript c z) =
       pure (((query, c), ((final c z).challenges, finalValue c z)), honest.commit packed) := by
   classical
-  have hhead : (Head.verifier data 2 layout codec bat.toBatchingRule pc).toVerifier.run
+  have hhead : (Head.verifier
+    (oSpec := []ₒ) data 2 layout codec bat.toBatchingRule pc).toVerifier.run
       ((query, layout.eval query source), honest.commit packed)
       (FullTranscript.mk2 (Head.partials data 2 layout query source) c) =
         pure (initial c, honest.commit packed) := by
-    change (Head.verifier data 2 layout codec bat.toBatchingRule pc).toVerifier.verify _ _ = _
-    rw [(Head.guardedForm data 2 layout codec bat.toBatchingRule pc).verify_eq]
+    change (Head.verifier
+      (oSpec := []ₒ) data 2 layout codec bat.toBatchingRule pc).toVerifier.verify _ _ = _
+    rw [(Head.guardedForm (oSpec := []ₒ) data 2 layout codec bat.toBatchingRule pc).verify_eq]
     change (if decide (Head.check data 2 layout (query, layout.eval query source)
       (Head.partials data 2 layout query source)) then _ else _) = _
     rw [decide_eq_true (Head.check_partials_of_mem_relIn data 2 layout pc mem_relIn)]
     rfl
-  have hterminal : (ProductSumcheck.Terminal.verifier multiplier pc).toVerifier.run
+  have hterminal : (ProductSumcheck.Terminal.verifier (oSpec := []ₒ) multiplier pc).toVerifier.run
       (final c z, honest.commit packed)
       (ProductSumcheck.Terminal.transcript (finalValue c z)) =
         pure (((query, c), ((final c z).challenges, finalValue c z)), honest.commit packed) := by
-    change (ProductSumcheck.Terminal.verifier multiplier pc).toVerifier.verify _ _ = _
+    change (ProductSumcheck.Terminal.verifier
+      (oSpec := []ₒ) multiplier pc).toVerifier.verify _ _ = _
     rw [ProductSumcheck.Terminal.verifier_verify]
     change (if ProductSumcheck.Terminal.check multiplier (final c z) (finalValue c z) then
       _ else _) = _
@@ -196,7 +199,7 @@ def badMessage (c : bat.Challenge) (z : Fin 2 → F16) : F16⦃≤ 2⦄[X] :=
 
 /-- Corrupting the second polynomial by `X` aborts the sumcheck round. -/
 example (c : bat.Challenge) (z : Fin 2 → F16) :
-    (ProductSumcheck.Round.verifier pc 1).toVerifier.verify
+    (ProductSumcheck.Round.verifier (oSpec := []ₒ) pc 1).toVerifier.verify
       (middle c z, honest.commit packed) (FullTranscript.mk2 (badMessage c z) (z 1)) =
       failure := by
   classical

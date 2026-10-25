@@ -33,6 +33,8 @@ security also uses uniqueness of the packed polynomial through sumcheck.
 
 @[expose] public section
 
+variable {ιₒ : Type} {oSpec : OracleSpec ιₒ}
+
 noncomputable section
 namespace RingSwitching.Packing.TensorPrefix
 open Module MvPolynomial ProtocolSpec OracleSpec OracleComp Sumcheck.Structured
@@ -75,23 +77,26 @@ abbrev pSpec := RingSwitch.pSpec (M := P.A) (PackingData.ofBasis P.basis) ℓ'
   (BatchingRule.eqFold L κ)
 
 /-- The verifier is an instance of the shared ring-switching verifier. -/
-def verifier := RingSwitch.verifier (PackingData.ofBasis P.basis) ℓ' (layout P h_l)
+def verifier := RingSwitch.verifier (oSpec := oSpec) (PackingData.ofBasis P.basis) ℓ' (layout P h_l)
   (messageEquiv P) (BatchingRule.eqFold L κ) (commitment a)
 
 /-- The prover and verifier are an instance of the shared reduction. -/
-def reduction := RingSwitch.reduction (PackingData.ofBasis P.basis) ℓ' (layout P h_l)
+def reduction := RingSwitch.reduction
+  (oSpec := oSpec) (PackingData.ofBasis P.basis) ℓ' (layout P h_l)
   (messageEquiv P) (BatchingRule.eqFold L κ) (commitment a)
 
 /-- Using strict compatibility leaves the verifier unchanged. -/
-theorem verifier_strictView_eq : verifier P h_l a.strictView = verifier P h_l a := rfl
+theorem verifier_strictView_eq :
+    verifier (oSpec := oSpec) P h_l a.strictView = verifier (oSpec := oSpec) P h_l a := rfl
 
 /-- Using strict compatibility leaves the prover and verifier unchanged. -/
-theorem reduction_strictView_eq : reduction P h_l a.strictView = reduction P h_l a := rfl
+theorem reduction_strictView_eq :
+    reduction (oSpec := oSpec) P h_l a.strictView = reduction (oSpec := oSpec) P h_l a := rfl
 
 /-- Every valid initial claim completes on the same commitment, at every oracle state. -/
 theorem perfectCompleteness {σ : Type} (init : ProbComp σ)
-    (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-    (reduction P h_l a).perfectCompleteness init impl (relIn P h_l a)
+    (impl : QueryImpl oSpec (StateT σ ProbComp)) :
+    (reduction (oSpec := oSpec) P h_l a).perfectCompleteness init impl (relIn P h_l a)
       ((commitment a).evalRelWithContext ((Fin ℓ → L) × (Fin κ → L))) :=
   RingSwitch.perfectCompleteness (PackingData.ofBasis P.basis) ℓ' (layout P h_l)
     (messageEquiv P) (BatchingRule.eqFold L κ) (commitment a) init impl
@@ -118,9 +123,9 @@ theorem derivedTarget_messageEquiv_eq_compute_s0 (z : P.A) (c : Fin κ → L) :
 open scoped Classical in
 /-- The shared head executes the original carrier check and row target. -/
 theorem head_verifier_eq [DecidableEq L] :
-    Head.verifier (PackingData.ofBasis P.basis) ℓ' (layout P h_l)
+    Head.verifier (oSpec := oSpec) (PackingData.ofBasis P.basis) ℓ' (layout P h_l)
         (messageEquiv P) (BatchingRule.eqFold L κ) (commitment a) =
-      scalarRoundOracleVerifier (oSpec := []ₒ) (OStmt := (commitment a).OStmt)
+      scalarRoundOracleVerifier (oSpec := oSpec) (OStmt := (commitment a).OStmt)
         (fun stmt z => performCheckOriginalEvaluation κ L K P ℓ ℓ' h_l stmt.2 stmt.1 z = true)
         (fun stmt z c => (⟨(stmt.1, c), Fin.elim0, compute_s0 κ L K P z c⟩ :
           Head.Output (PackingData.ofBasis P.basis) ℓ' (layout P h_l)
@@ -234,8 +239,9 @@ abbrev rbrError := RingSwitch.rbrError (M := P.A) (PackingData.ofBasis P.basis) 
 
 /-- The verifier inherits the shared worst-case round-by-round security proof. -/
 theorem rbrKnowledgeSoundnessWorstCase (h : a.Functional) {σ : Type} (init : ProbComp σ)
-    (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-    (verifier P h_l a).toVerifier.rbrKnowledgeSoundnessWorstCase init impl (relIn P h_l a)
+    (impl : QueryImpl oSpec (StateT σ ProbComp)) :
+    (verifier
+      (oSpec := oSpec) P h_l a).toVerifier.rbrKnowledgeSoundnessWorstCase init impl (relIn P h_l a)
       ((commitment a).evalRelWithContext ((Fin ℓ → L) × (Fin κ → L))) (rbrError P) :=
   RingSwitch.rbrKnowledgeSoundnessWorstCase (PackingData.ofBasis P.basis) ℓ' (layout P h_l)
     (messageEquiv P) (BatchingStrategy.eqFold L κ) (commitment a) (commitment_functional a h)
@@ -251,10 +257,11 @@ theorem rbrError_sum : ∑ i, rbrError (ℓ' := ℓ') P i =
 challenge error `κ / card L + 2ℓ' / card L`. -/
 theorem perfectCompleteness_and_rbrKnowledgeSoundnessWorstCase
     (h : a.Functional) {σ : Type} (init : ProbComp σ)
-    (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-    (reduction P h_l a).perfectCompleteness init impl (relIn P h_l a)
+    (impl : QueryImpl oSpec (StateT σ ProbComp)) :
+    (reduction (oSpec := oSpec) P h_l a).perfectCompleteness init impl (relIn P h_l a)
         ((commitment a).evalRelWithContext ((Fin ℓ → L) × (Fin κ → L))) ∧
-      (verifier P h_l a).toVerifier.rbrKnowledgeSoundnessWorstCase init impl (relIn P h_l a)
+      (verifier (oSpec := oSpec) P h_l a).toVerifier.rbrKnowledgeSoundnessWorstCase
+        init impl (relIn P h_l a)
         ((commitment a).evalRelWithContext ((Fin ℓ → L) × (Fin κ → L))) (rbrError P) ∧
       (∑ i, rbrError (ℓ' := ℓ') P i) =
         (κ : ℝ≥0) / Fintype.card L + (ℓ' : ℝ≥0) * (2 / Fintype.card L) := by

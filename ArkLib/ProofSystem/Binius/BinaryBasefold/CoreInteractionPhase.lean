@@ -45,6 +45,8 @@ sends the constant `c := f⁽ˡ⁾(0, …, 0)` and the verifier checks `s_ℓ = 
 
 @[expose] public section
 
+variable {ι : Type} {oSpec : OracleSpec ι}
+
 namespace Binius.BinaryBasefold.CoreInteraction
 noncomputable section
 open OracleSpec OracleComp ProtocolSpec Finset AdditiveNTT Polynomial MvPolynomial
@@ -76,21 +78,23 @@ section CoreInteractionPhaseReduction
 sum-check step. -/
 @[reducible]
 def coreInteractionOracleVerifier :
-    OracleVerifier []ₒ
+    OracleVerifier oSpec
       (Statement (L := L) (ℓ := ℓ) (SumcheckBaseContext L ℓ) 0)
       (OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) 0)
       (FinalSumcheckStatementOut (L := L) (ℓ := ℓ))
       (OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ))
       (pSpecCoreInteraction 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
   OracleVerifier.append
-    (sumcheckFoldOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
+    (sumcheckFoldOracleVerifier (oSpec := oSpec) 𝔽q β (ϑ := ϑ)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
       (multpoly := multiplier))
-    (finalSumcheckVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑))
+    (finalSumcheckVerifier (oSpec := oSpec) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (𝓑 := 𝓑))
 
 /-- The oracle reduction of the core interaction. -/
 @[reducible]
 def coreInteractionOracleReduction :
-    OracleReduction []ₒ
+    OracleReduction oSpec
       (Statement (L := L) (ℓ := ℓ) (SumcheckBaseContext L ℓ) 0)
       (OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) 0)
       (Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) 0)
@@ -99,19 +103,34 @@ def coreInteractionOracleReduction :
       Unit
       (pSpecCoreInteraction 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
   OracleReduction.append
-    (sumcheckFoldOracleReduction 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
+    (sumcheckFoldOracleReduction (oSpec := oSpec) 𝔽q β (ϑ := ϑ)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
       (multpoly := multiplier))
-    (finalSumcheckOracleReduction 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑))
+    (finalSumcheckOracleReduction (oSpec := oSpec) 𝔽q β (ϑ := ϑ)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑))
 
 omit [SampleableType L] [DecidableEq 𝔽q] h_β₀_eq_1 in
 /-- The reduction uses exactly the separately defined verifier. -/
 theorem coreInteractionOracleReduction_verifier :
-    (coreInteractionOracleReduction 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    (coreInteractionOracleReduction (oSpec := oSpec) 𝔽q β (ϑ := ϑ)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (𝓑 := 𝓑)).verifier =
-      coreInteractionOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      coreInteractionOracleVerifier (oSpec := oSpec) 𝔽q β (ϑ := ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (𝓑 := 𝓑) := rfl
 
-variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)}
+/-- The core verifier only performs deterministic transcript checks. -/
+def coreInteractionOracleVerifierGuardedForm :
+    (coreInteractionOracleVerifier (oSpec := oSpec) 𝔽q β (ϑ := ϑ)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)).toVerifier.GuardedForm :=
+  OracleVerifier.appendGuardedForm
+    (sumcheckFoldOracleVerifierGuardedForm (oSpec := oSpec) 𝔽q β
+      (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
+      (multpoly := multiplier))
+    (finalSumcheckVerifierGuardedForm (oSpec := oSpec) 𝔽q β
+      (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑))
+
+variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
 
 /-! ## Security -/
 
@@ -124,14 +143,22 @@ theorem coreInteractionOracleReduction_perfectCompleteness :
       (relIn := strictRoundRelation (multpoly := multiplier) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) 0)
       (relOut := strictFinalSumcheckRelOut 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
-      (oracleReduction := coreInteractionOracleReduction 𝔽q β (ϑ := ϑ)
+      (oracleReduction := coreInteractionOracleReduction (oSpec := oSpec) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑))
       (init := init) (impl := impl) :=
   OracleReduction.append_perfectCompleteness_of_guarded_verifiers _ _
-    (sumcheckFoldOracleVerifierGuardedForm 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    (sumcheckFoldOracleVerifierGuardedForm (oSpec := oSpec) 𝔽q β (ϑ := ϑ)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (𝓑 := 𝓑) (multpoly := multiplier))
-    (finalSumcheckVerifierGuardedForm 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑))
-    (fun _ => Or.inl inferInstance)
+    (finalSumcheckVerifierGuardedForm (oSpec := oSpec) 𝔽q β (ϑ := ϑ)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑))
+    (fun _ => Or.inl (by
+      repeat' first
+      | exact ⟨_, fun _ => rfl⟩
+      | apply Prover.OutputIsPure.seqCompose
+      | apply Prover.OutputIsPure.append
+      | apply OracleReduction.castIdx_outputIsPure
+      | intro))
     (sumcheckFoldOracleReduction_perfectCompleteness 𝔽q β)
     (fun s => finalSumcheckOracleReduction_perfectCompleteness 𝔽q β (pure s) impl)
 
@@ -148,7 +175,7 @@ omit [DecidableEq 𝔽q] in
 at round `0` to the final sum-check output relation, with error
 `coreInteractionOracleRbrKnowledgeError`. -/
 theorem coreInteractionOracleVerifier_rbrKnowledgeSoundnessWorstCase :
-    (coreInteractionOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    (coreInteractionOracleVerifier (oSpec := oSpec) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (𝓑 := 𝓑)).toVerifier.rbrKnowledgeSoundnessWorstCase init impl
       (roundRelation (multpoly := multiplier) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) 0)
@@ -156,7 +183,8 @@ theorem coreInteractionOracleVerifier_rbrKnowledgeSoundnessWorstCase :
       (coreInteractionOracleRbrKnowledgeError 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
   OracleVerifier.append_rbrKnowledgeSoundnessWorstCase_of_guarded_first _ _
-    (sumcheckFoldOracleVerifierGuardedForm 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    (sumcheckFoldOracleVerifierGuardedForm (oSpec := oSpec) 𝔽q β (ϑ := ϑ)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (𝓑 := 𝓑) (multpoly := multiplier))
     (sumcheckFoldOracleVerifier_rbrKnowledgeSoundnessWorstCase 𝔽q β)
     (finalSumcheckOracleVerifier_rbrKnowledgeSoundnessWorstCase 𝔽q β init impl)
@@ -165,7 +193,7 @@ omit [DecidableEq 𝔽q] in
 /-- Round-by-round knowledge soundness of the core interaction: the averaged form of
 `coreInteractionOracleVerifier_rbrKnowledgeSoundnessWorstCase`. -/
 theorem coreInteractionOracleVerifier_rbrKnowledgeSoundness :
-    (coreInteractionOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    (coreInteractionOracleVerifier (oSpec := oSpec) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (𝓑 := 𝓑)).rbrKnowledgeSoundness init impl
       (pSpec := pSpecCoreInteraction 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
       (relIn := roundRelation (multpoly := multiplier) 𝔽q β (ϑ := ϑ)

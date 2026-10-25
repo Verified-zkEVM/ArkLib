@@ -303,7 +303,7 @@ theorem false_zero_input (t : MultilinearPoly GF2 2) :
 
 /-- A false scalar claim aborts the materialized head independently of its oracle statement. -/
 theorem failed_check_aborts (ost : ∀ j, exactOStmtIn.OStmtIn j) (c : Fin 1 → GF4) :
-    (Head.verifier data 1 layout codec rule pc).toVerifier.verify
+    (Head.verifier (oSpec := []ₒ) data 1 layout codec rule pc).toVerifier.verify
       (claimAt 1, ost) (ProtocolSpec.FullTranscript.mk2 shat c) = failure := by
   classical
   have hcheck : performCheckOriginalEvaluation 1 GF4 GF2 P₄ 2 1 rfl 1 r₀ shat = false := by
@@ -318,22 +318,22 @@ theorem failed_check_aborts (ost : ∀ j, exactOStmtIn.OStmtIn j) (c : Fin 1 →
     have hh := (TensorPrefix.check_iff P₄ rfl r₀ 1 shat).1 h
     rw [hcheck] at hh
     contradiction
-  have hfalse : (Head.guardedForm data 1 layout codec rule pc).check
+  have hfalse : (Head.guardedForm (oSpec := []ₒ) data 1 layout codec rule pc).check
       (claimAt 1, ost) (ProtocolSpec.FullTranscript.mk2 shat c) = false := by
     rw [Head.guardedForm_check]
     change decide (Head.check data 1 layout (claimAt 1) (codec shat)) = false
     exact decide_eq_false hc
-  rw [(Head.guardedForm data 1 layout codec rule pc).verify_eq, hfalse]
+  rw [(Head.guardedForm (oSpec := []ₒ) data 1 layout codec rule pc).verify_eq, hfalse]
   rfl
 
 example (c : Fin 1 → GF4) :
-    (Head.verifier data 1 layout codec rule pc).toVerifier.verify
+    (Head.verifier (oSpec := []ₒ) data 1 layout codec rule pc).toVerifier.verify
       (claimAt 1, oStmtZero) (ProtocolSpec.FullTranscript.mk2 shat c) = failure :=
   failed_check_aborts oStmtZero c
 
 /-- A zero degree-two message cannot support target one in the shared sumcheck round. -/
 example (c : GF4) :
-    (ProductSumcheck.Round.verifier (Context := layout.Query × rule.Challenge) pc
+    (ProductSumcheck.Round.verifier (oSpec := []ₒ) (Context := layout.Query × rule.Challenge) pc
       (0 : Fin 1)).toVerifier.verify
       ({ acceptedStatement 0 shat 0 with target := 1 }, oStmt₀)
       (ProtocolSpec.FullTranscript.mk2 (0 : Polynomial.degreeLE GF4 2) c) = failure := by
@@ -342,7 +342,7 @@ example (c : GF4) :
     ProtocolSpec.FullTranscript.mk2]
 
 /-- A zero final value cannot support target one in the matrix terminal check. -/
-example : (ProductSumcheck.Terminal.verifier
+example : (ProductSumcheck.Terminal.verifier (oSpec := []ₒ)
     (Head.multiplier data 1 layout rule) pc).toVerifier.verify
     ((⟨(r₀, (0 : Fin 1 → GF4)), 0, 1⟩ :
       ProductSumcheck.Statement (layout.Query × rule.Challenge) GF4 (Fin.last 1)), oStmt₀)

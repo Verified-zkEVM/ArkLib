@@ -62,12 +62,13 @@ abbrev bat := BatchingStrategy.coordinateSample (ZMod 7) (Fin 2)
 abbrev multiplier := Head.multiplier data 1 layout bat.toBatchingRule
 
 example {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-    (RingSwitch.reduction data 1 layout codec bat.toBatchingRule pc).perfectCompleteness init impl
+    (RingSwitch.reduction
+      (oSpec := []ₒ) data 1 layout codec bat.toBatchingRule pc).perfectCompleteness init impl
       (Head.relIn data 1 layout pc) (pc.evalRelWithContext (layout.Query × bat.Challenge)) :=
   RingSwitch.perfectCompleteness data 1 layout codec bat.toBatchingRule pc init impl
 
 example {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-    (RingSwitch.verifier data 1 layout codec bat.toBatchingRule
+    (RingSwitch.verifier (oSpec := []ₒ) data 1 layout codec bat.toBatchingRule
       pc).toVerifier.rbrKnowledgeSoundnessWorstCase
       init impl (Head.relIn data 1 layout pc) (pc.evalRelWithContext (layout.Query × bat.Challenge))
       (RingSwitch.rbrError (M := data.ιP → data.E) data 1 bat) :=
@@ -159,7 +160,7 @@ example : ((lastStatement, honest.commit packed), packed) ∈
   exact ⟨by rw [multiplier_at_one, packed_at_one]; change (3 : ZMod 7) = 3 * 1; norm_num, rfl⟩
 
 /-- A changed final value really aborts the materialized verifier. -/
-example : (ProductSumcheck.Terminal.verifier multiplier pc).toVerifier.verify
+example : (ProductSumcheck.Terminal.verifier (oSpec := []ₒ) multiplier pc).toVerifier.verify
     (lastStatement, honest.commit packed)
     (ProductSumcheck.Terminal.transcript (0 : ZMod 7)) = failure := by
   classical
@@ -181,7 +182,7 @@ def badHeadTranscript :
 
 /-- A false component message aborts the complete protocol for every continuation transcript. -/
 example (tailTr : FullTranscript (ProductSumcheck.pSpec (ZMod 7) 1)) :
-    (RingSwitch.verifier data 1 layout codec bat.toBatchingRule pc).toVerifier.verify
+    (RingSwitch.verifier (oSpec := []ₒ) data 1 layout codec bat.toBatchingRule pc).toVerifier.verify
       ((point, ![1, 3]), honest.commit packed)
       (badHeadTranscript ++ₜ tailTr) = failure := by
   classical
@@ -191,13 +192,14 @@ example (tailTr : FullTranscript (ProductSumcheck.pSpec (ZMod 7) 1)) :
     intro h
     have h0 := congrFun h 0
     norm_num at h0
-  have hfalse : (Head.guardedForm data 1 layout codec bat.toBatchingRule pc).check
+  have hfalse : (Head.guardedForm (oSpec := []ₒ) data 1 layout codec bat.toBatchingRule pc).check
       ((point, ![1, 3]), honest.commit packed) badHeadTranscript = false := by
     rw [Head.guardedForm_check]
     change decide (Head.check data 1 layout (point, ![1, 3]) 0) = false
     exact decide_eq_false hc
   calc
-    _ = _ := (RingSwitch.guardedForm data 1 layout codec bat.toBatchingRule pc).verify_eq _ _
+    _ = _ := (RingSwitch.guardedForm
+      (oSpec := []ₒ) data 1 layout codec bat.toBatchingRule pc).verify_eq _ _
     _ = failure := by
       simp only [RingSwitch.guardedForm, Verifier.GuardedForm.append,
         FullTranscript.append_fst, hfalse, Bool.false_and, Bool.false_eq_true, ↓reduceIte]

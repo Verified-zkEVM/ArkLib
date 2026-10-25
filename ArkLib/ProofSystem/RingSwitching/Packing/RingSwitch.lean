@@ -26,6 +26,8 @@ The challenge-index error sum is exactly `bat.error + m * (2 / card C)`, includi
 
 @[expose] public section
 
+variable {ιₒ : Type} {oSpec : OracleSpec ιₒ}
+
 noncomputable section
 namespace RingSwitching.Packing.RingSwitch
 open OracleSpec OracleComp ProtocolSpec MvPolynomial CoordinateWise.ScalarRound
@@ -83,29 +85,34 @@ instance [SampleableType C] : ∀ j, SampleableType ((pSpec (M := M) data m rule
     (pSpec₁ := Head.pSpec (M := M) data rule) (pSpec₂ := ProductSumcheck.pSpec C m)
 
 /-- The oracle verifier preserving the commitment through the final evaluation claim. -/
-def verifier : OracleVerifier []ₒ (Head.Input data m layout) pc.OStmt
+def verifier : OracleVerifier oSpec (Head.Input data m layout) pc.OStmt
     ((layout.Query × rule.Challenge) × ((Fin m → C) × C)) pc.OStmt (pSpec (M := M) data m rule) :=
-  (Head.verifier data m layout messageEquiv rule pc).append (ProductSumcheck.verifier
+  (Head.verifier
+    (oSpec := oSpec) data m layout messageEquiv rule pc).append (ProductSumcheck.verifier
     (Head.multiplier data m layout rule) pc)
 
 /-- The prover packs the source and preserves the packed polynomial through the tail. -/
-def reduction : OracleReduction []ₒ (Head.Input data m layout) pc.OStmt
+def reduction : OracleReduction oSpec (Head.Input data m layout) pc.OStmt
     (layout.Source) ((layout.Query × rule.Challenge) × ((Fin m → C) × C)) pc.OStmt data.P⦃≤ 1⦄[X Fin
       m] (pSpec (M := M) data m rule) :=
-  (Head.reduction data m layout messageEquiv rule pc).append (ProductSumcheck.reduction
+  (Head.reduction
+    (oSpec := oSpec) data m layout messageEquiv rule pc).append (ProductSumcheck.reduction
     (Head.multiplier data m layout rule) pc)
 
 omit [IsScalarTower B data.P C] in
 /-- Materialization commutes with oracle-verifier append. -/
-theorem verifier_toVerifier : (verifier data m layout messageEquiv rule pc).toVerifier =
-    (Head.verifier data m layout messageEquiv rule pc).toVerifier.append
-      (ProductSumcheck.verifier (Head.multiplier data m layout rule) pc).toVerifier :=
+theorem verifier_toVerifier :
+    (verifier (oSpec := oSpec) data m layout messageEquiv rule pc).toVerifier =
+    (Head.verifier (oSpec := oSpec) data m layout messageEquiv rule pc).toVerifier.append
+      (ProductSumcheck.verifier
+        (oSpec := oSpec) (Head.multiplier data m layout rule) pc).toVerifier :=
   OracleVerifier.append_toVerifier _ _
 
 /-- Guarded form of the generic head followed by the tail. -/
-def guardedForm : (verifier data m layout messageEquiv rule pc).toVerifier.GuardedForm := by
-  let G := (Head.guardedForm data m layout messageEquiv rule pc).append
-    (ProductSumcheck.guardedForm (Head.multiplier data m layout rule) pc)
+def guardedForm :
+    (verifier (oSpec := oSpec) data m layout messageEquiv rule pc).toVerifier.GuardedForm := by
+  let G := (Head.guardedForm (oSpec := oSpec) data m layout messageEquiv rule pc).append
+    (ProductSumcheck.guardedForm (oSpec := oSpec) (Head.multiplier data m layout rule) pc)
   exact {
     check := G.check
     out := G.out
@@ -113,10 +120,12 @@ def guardedForm : (verifier data m layout messageEquiv rule pc).toVerifier.Guard
       rw [verifier_toVerifier]
       exact G.verify_eq stmt tr }
 
-instance : (reduction data m layout messageEquiv rule pc).prover.OutputIsPure :=
+instance : (reduction (oSpec := oSpec) data m layout messageEquiv rule pc).prover.OutputIsPure :=
   Prover.OutputIsPure.append _ _
-    (show (Head.prover data m layout messageEquiv rule pc).OutputIsPure from inferInstance)
-    (show (ProductSumcheck.reduction (Head.multiplier data m layout rule) pc).prover.OutputIsPure
+    (show (Head.prover
+      (oSpec := oSpec) data m layout messageEquiv rule pc).OutputIsPure from inferInstance)
+    (show (ProductSumcheck.reduction
+      (oSpec := oSpec) (Head.multiplier data m layout rule) pc).prover.OutputIsPure
       from inferInstance)
 
 /--
@@ -124,16 +133,20 @@ Perfect completeness for a challenge-algebra evaluation on the same commitment, 
 initial state.
 -/
 theorem perfectCompleteness [SampleableType C] {σ : Type} (init : ProbComp σ)
-    (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-    (reduction data m layout messageEquiv rule pc).perfectCompleteness init impl
+    (impl : QueryImpl oSpec (StateT σ ProbComp)) :
+    (reduction (oSpec := oSpec) data m layout messageEquiv rule pc).perfectCompleteness init impl
       (Head.relIn data m layout pc) (pc.evalRelWithContext (layout.Query × rule.Challenge)) := by
   exact OracleReduction.append_perfectCompleteness_of_guarded_verifiers
-    (Head.reduction data m layout messageEquiv rule pc) (ProductSumcheck.reduction (Head.multiplier
+    (Head.reduction
+      (oSpec := oSpec) data m layout messageEquiv rule pc) (ProductSumcheck.reduction
+      (oSpec := oSpec) (Head.multiplier
       data m layout rule) pc)
-    (Head.guardedForm data m layout messageEquiv rule pc) (ProductSumcheck.guardedForm
+    (Head.guardedForm
+      (oSpec := oSpec) data m layout messageEquiv rule pc) (ProductSumcheck.guardedForm
       (Head.multiplier data m layout rule) pc)
     (fun _ => Or.inl
-      (show (Head.prover data m layout messageEquiv rule pc).OutputIsPure from inferInstance))
+      (show (Head.prover
+        (oSpec := oSpec) data m layout messageEquiv rule pc).OutputIsPure from inferInstance))
     (Head.perfectCompleteness data m layout messageEquiv rule pc init impl)
     (fun s => ProductSumcheck.perfectCompleteness (Head.multiplier data m layout rule) pc (pure s)
       impl)
@@ -169,14 +182,14 @@ theorem rbrError_tail [Fintype C] (i : (ProductSumcheck.pSpec C m).ChallengeIdx)
 /-- The concrete reduction is worst-case round-by-round knowledge sound on the original opening. -/
 theorem rbrKnowledgeSoundnessWorstCase [NoZeroDivisors C] [Fintype C] [SampleableType C]
     (hfunctional : pc.Functional) (hinj : Function.Injective (algebraMap data.P C))
-    {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-    (verifier data m layout messageEquiv bat.toBatchingRule
+    {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp)) :
+    (verifier (oSpec := oSpec) data m layout messageEquiv bat.toBatchingRule
       pc).toVerifier.rbrKnowledgeSoundnessWorstCase init impl
       (Head.relIn data m layout pc) (pc.evalRelWithContext (layout.Query × bat.Challenge)) (rbrError
         (M := M) data m bat) := by
   rw [verifier_toVerifier]
   apply Verifier.append_rbrKnowledgeSoundnessWorstCase_of_guarded_first
-    _ _ (Head.guardedForm data m layout messageEquiv bat.toBatchingRule pc)
+    _ _ (Head.guardedForm (oSpec := oSpec) data m layout messageEquiv bat.toBatchingRule pc)
   · apply (Verifier.rbrKnowledgeSoundnessWorstCase_iff_exists_with init impl _ _ _ _).mpr
     exact ⟨_, _, _, Head.rbrKnowledgeSoundnessWorstCaseWith data m layout messageEquiv bat pc
       hfunctional hinj init impl⟩
@@ -225,10 +238,11 @@ theorem append_rbrError_sum [Fintype C] {n : ℕ} (openingSpec : ProtocolSpec n)
 theorem perfectCompleteness_and_rbrKnowledgeSoundnessWorstCase
     [NoZeroDivisors C] [Fintype C] [SampleableType C]
     (hfunctional : pc.Functional) (hinj : Function.Injective (algebraMap data.P C))
-    {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-    (reduction data m layout messageEquiv bat.toBatchingRule pc).perfectCompleteness init impl
+    {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp)) :
+    (reduction (oSpec := oSpec) data m layout messageEquiv bat.toBatchingRule
+      pc).perfectCompleteness init impl
         (Head.relIn data m layout pc) (pc.evalRelWithContext (layout.Query × bat.Challenge)) ∧
-      (verifier data m layout messageEquiv bat.toBatchingRule
+      (verifier (oSpec := oSpec) data m layout messageEquiv bat.toBatchingRule
         pc).toVerifier.rbrKnowledgeSoundnessWorstCase init impl
         (Head.relIn data m layout pc) (pc.evalRelWithContext (layout.Query × bat.Challenge))
         (rbrError (M := M) data m bat) ∧
@@ -245,22 +259,23 @@ variable {n : ℕ} {openingSpec : ProtocolSpec n}
   [∀ j, OracleInterface (OStmtOut j)]
   [∀ j, OracleInterface (openingSpec.Message j)]
   [∀ j, SampleableType (openingSpec.Challenge j)]
-  {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp))
+  {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
   {relOut : Set ((StmtOut × ∀ j, OStmtOut j) × WitOut)}
 
 /-- A complete contextual opening closes the same-commitment scalar reduction. -/
 theorem append_perfectCompleteness [SampleableType C]
     (rule : BatchingRule C data.ιE) (pc : PackedCommitment data.P m)
-    (opening : OracleReduction []ₒ ((layout.Query × rule.Challenge) × ((Fin m → C) × C))
+    (opening : OracleReduction oSpec ((layout.Query × rule.Challenge) × ((Fin m → C) × C))
       pc.OStmt data.P⦃≤ 1⦄[X Fin m] StmtOut OStmtOut WitOut openingSpec)
     (guard : opening.toReduction.verifier.GuardedForm)
     (hopening : ∀ state : σ, opening.perfectCompleteness (pure state) impl
       (pc.evalRelWithContext (layout.Query × rule.Challenge)) relOut) :
-    ((reduction data m layout messageEquiv rule pc).append opening).perfectCompleteness
+    ((reduction
+      (oSpec := oSpec) data m layout messageEquiv rule pc).append opening).perfectCompleteness
       init impl (Head.relIn data m layout pc) relOut := by
   apply OracleReduction.append_perfectCompleteness_of_guarded_verifiers
-    (reduction data m layout messageEquiv rule pc) opening
-    (guardedForm data m layout messageEquiv rule pc) guard
+    (reduction (oSpec := oSpec) data m layout messageEquiv rule pc) opening
+    (guardedForm (oSpec := oSpec) data m layout messageEquiv rule pc) guard
     (fun _ => Or.inl inferInstance)
   · exact perfectCompleteness data m layout messageEquiv rule pc init impl
   · exact hopening
@@ -269,16 +284,17 @@ theorem append_perfectCompleteness [SampleableType C]
 theorem append_rbrKnowledgeSoundnessWorstCase [NoZeroDivisors C] [Fintype C]
     [SampleableType C] (bat : BatchingStrategy C data.ιE) (pc : PackedCommitment data.P m)
     (hfunctional : pc.Functional) (hinj : Function.Injective (algebraMap data.P C))
-    (opening : OracleVerifier []ₒ ((layout.Query × bat.Challenge) × ((Fin m → C) × C))
+    (opening : OracleVerifier oSpec ((layout.Query × bat.Challenge) × ((Fin m → C) × C))
       pc.OStmt StmtOut OStmtOut openingSpec)
     (openingError : openingSpec.ChallengeIdx → ℝ≥0)
     (hopening : opening.toVerifier.rbrKnowledgeSoundnessWorstCase init impl
       (pc.evalRelWithContext (layout.Query × bat.Challenge)) relOut openingError) :
     Verifier.rbrKnowledgeSoundnessWorstCase init impl (Head.relIn data m layout pc) relOut
-      ((verifier data m layout messageEquiv bat.toBatchingRule pc).append opening).toVerifier
+      ((verifier (oSpec := oSpec) data m layout messageEquiv bat.toBatchingRule pc).append
+        opening).toVerifier
         (Sum.elim (rbrError (M := M) data m bat) openingError ∘ ChallengeIdx.sumEquiv.symm) :=
   OracleVerifier.append_rbrKnowledgeSoundnessWorstCase_of_guarded_first _ _
-    (guardedForm data m layout messageEquiv bat.toBatchingRule pc)
+    (guardedForm (oSpec := oSpec) data m layout messageEquiv bat.toBatchingRule pc)
     (rbrKnowledgeSoundnessWorstCase data m layout messageEquiv bat pc hfunctional hinj init impl)
     hopening
 

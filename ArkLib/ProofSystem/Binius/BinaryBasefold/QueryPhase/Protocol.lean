@@ -22,6 +22,8 @@ the `QueryPhase` umbrella re-exports their public API.
 
 @[expose] public section
 
+variable {ι : Type} {oSpec : OracleSpec ι}
+
 open OracleSpec
 
 namespace Binius.BinaryBasefold.QueryPhase
@@ -81,9 +83,9 @@ This encapsulates the pure logic of the query phase:
 - `proverOut`: The honest prover always outputs `(true, ())` -/
 noncomputable def queryPhaseLogicStep :
     OracleReduction.OracleAwareLogicStep
-      -- oSpec is the base/shared oracle (empty for query phase - no random oracles)
+      -- The ambient oracle is available but unused by these honest query checks.
       -- The structure internally uses oSpec + ([OracleIn]ₒ + [pSpec.Message]ₒ)
-      (oSpec := []ₒ)
+      (oSpec := oSpec)
       (StmtIn := FinalSumcheckStatementOut (L:=L) (ℓ:=ℓ))
       (WitIn := Unit)
       (OracleIn := OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ))
@@ -102,7 +104,7 @@ noncomputable def queryPhaseLogicStep :
       challenges ⟨0, by rfl⟩
     for rep in (List.finRange γ_repetitions) do
       let v := fold_challenges rep
-      let _ ← checkSingleRepetition 𝔽q β (γ_repetitions := γ_repetitions) (ϑ := ϑ)
+      let _ ← checkSingleRepetition (oSpec := oSpec) 𝔽q β (γ_repetitions := γ_repetitions) (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         v stmtIn stmtIn.finalConstant
     return true  -- StmtOut = Bool for QueryPhase
@@ -136,7 +138,7 @@ Completeness and soundness proofs are in the sibling `Completeness` and `Soundne
 Uses components from `queryPhaseLogicStep` for consistency with the logic specification. -/
 noncomputable def queryOracleProver :
   OracleProver
-    (oSpec := []ₒ)
+    (oSpec := oSpec)
     (StmtIn := FinalSumcheckStatementOut (L:=L) (ℓ:=ℓ))
     (OStmtIn := OracleStatement 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (
     Fin.last ℓ))
@@ -160,7 +162,7 @@ noncomputable def queryOracleProver :
       pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) (challenges)
     -- Delegate to proverOut from the logic step
     pure (OracleReduction.LogicStep.proverOut
-      (queryPhaseLogicStep 𝔽q β (ϑ:=ϑ) γ_repetitions
+      (queryPhaseLogicStep (oSpec := oSpec) 𝔽q β (ϑ:=ϑ) γ_repetitions
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) stmtIn witIn oStmtIn transcript)
 
 /-- The oracle verifier for the final query phase.
@@ -171,7 +173,7 @@ Uses components from `queryPhaseLogicStep` for consistency with the logic specif
 - The output has no oracles; `OracleProofVerifier.ofVerify` supplies that interface. -/
 noncomputable def queryOracleVerifier :
   OracleProofVerifier
-    (oSpec := []ₒ)
+    (oSpec := oSpec)
     (Statement := FinalSumcheckStatementOut (L:=L) (ℓ:=ℓ))
     (OStatement := OracleStatement 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (
     Fin.last ℓ))
@@ -179,7 +181,7 @@ noncomputable def queryOracleVerifier :
   OracleProofVerifier.ofVerify fun stmtIn challenges => do
     let transcript := FullTranscript.mk1 (pSpec := pSpecQuery 𝔽q β γ_repetitions
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) (challenges ⟨0, by rfl⟩)
-    let logic := queryPhaseLogicStep 𝔽q β (ϑ:=ϑ) γ_repetitions
+    let logic := queryPhaseLogicStep (oSpec := oSpec) 𝔽q β (ϑ:=ϑ) γ_repetitions
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
     let _ ← (logic.verifierCheck stmtIn transcript)
     pure (logic.verifierOut stmtIn transcript)
@@ -188,7 +190,7 @@ noncomputable def queryOracleVerifier :
 noncomputable def queryOracleReduction :
   OracleReduction
     (Oₛₒ := fun i : Empty => nomatch i)
-    (oSpec := []ₒ)
+    (oSpec := oSpec)
     (StmtIn := FinalSumcheckStatementOut (L:=L) (ℓ:=ℓ))
     (OStmtIn := OracleStatement 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (
     Fin.last ℓ))
@@ -198,8 +200,8 @@ noncomputable def queryOracleReduction :
     (WitOut := Unit)
     (pSpec := pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
   OracleReduction.mk (Oₛₒ := fun i : Empty => nomatch i)
-    (queryOracleProver 𝔽q β (ϑ := ϑ) γ_repetitions)
-    (queryOracleVerifier 𝔽q β (ϑ := ϑ) γ_repetitions)
+    (queryOracleProver (oSpec := oSpec) 𝔽q β (ϑ := ϑ) γ_repetitions)
+    (queryOracleVerifier (oSpec := oSpec) 𝔽q β (ϑ := ϑ) γ_repetitions)
 
 end FinalQueryRoundIOR
 end

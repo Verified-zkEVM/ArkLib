@@ -35,6 +35,8 @@ a commit step does. It is a formalization device and has no counterpart in [DP24
 
 @[expose] public section
 
+variable {ι : Type} {oSpec : OracleSpec ι}
+
 namespace Binius.BinaryBasefold.CoreInteraction
 noncomputable section
 open OracleSpec OracleComp ProtocolSpec Finset AdditiveNTT Polynomial MvPolynomial
@@ -74,7 +76,7 @@ def RelayProverState (i : Fin ℓ) : Fin (0 + 1) → Type := fun
 /-- The prover of the relay step: it sends nothing and reindexes its oracle statements to round
 `i + 1`. -/
 noncomputable def relayOracleProver (i : Fin ℓ) (hNCR : ¬ IsCommitmentRound ℓ ϑ i) :
-  OracleProver (oSpec := []ₒ)
+  OracleProver (oSpec := oSpec)
     -- current round
     (StmtIn := Statement (L := L) Context i.succ)
     (OStmtIn := OracleStatement 𝔽q β (ϑ := ϑ)
@@ -111,7 +113,7 @@ def relayOracleIndexMap (i : Fin ℓ) (hNCR : ¬ IsCommitmentRound ℓ ϑ i) :
 the oracle statements to round `i + 1`. -/
 noncomputable def relayOracleVerifier (i : Fin ℓ) (hNCR : ¬ IsCommitmentRound ℓ ϑ i) :
   OracleVerifier
-    (oSpec := []ₒ)
+    (oSpec := oSpec)
     (StmtIn := Statement (L := L) Context i.succ)
     (OStmtIn := OracleStatement 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc)
@@ -136,7 +138,7 @@ noncomputable def relayOracleVerifier (i : Fin ℓ) (hNCR : ¬ IsCommitmentRound
 
 /-- The oracle reduction of the relay step outside a commitment round. -/
 noncomputable def relayOracleReduction (i : Fin ℓ) (hNCR : ¬ IsCommitmentRound ℓ ϑ i) :
-  OracleReduction (oSpec := []ₒ)
+  OracleReduction (oSpec := oSpec)
     (StmtIn := Statement (L := L) Context i.succ)
     (OStmtIn := OracleStatement 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc)
@@ -146,8 +148,8 @@ noncomputable def relayOracleReduction (i : Fin ℓ) (hNCR : ¬ IsCommitmentRoun
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ)
     (WitOut := Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ)
     (pSpec := pSpecRelay) where
-  prover := relayOracleProver 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hNCR
-  verifier := relayOracleVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hNCR
+  prover := relayOracleProver (oSpec := oSpec) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hNCR
+  verifier := relayOracleVerifier (oSpec := oSpec) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hNCR
 
 omit [SampleableType L] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero 𝓡] in
 /-- The relay verifier's output oracles are the input oracles reindexed along the equal oracle
@@ -156,7 +158,8 @@ lemma mapOStmtOutRelayStep_eq_materializeOutput
     (i : Fin ℓ) (hNCR : ¬ IsCommitmentRound ℓ ϑ i)
     (oStmtIn : ∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i.castSucc j)
     (transcript : FullTranscript pSpecRelay) :
-    let v := relayOracleVerifier (Context := Context) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    let v := relayOracleVerifier (oSpec := oSpec) (Context := Context) 𝔽q β
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       i hNCR
     mapOStmtOutRelayStep 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hNCR oStmtIn =
     OracleVerifier.materializeOutput v transcript.challenges oStmtIn transcript.messages := by
@@ -169,17 +172,19 @@ lemma mapOStmtOutRelayStep_eq_materializeOutput
 /-- The relay verifier's verdict as data: it accepts every transcript, keeps the statement, and
 reindexes the oracle statements (`mapOStmtOutRelayStep`). -/
 def relayOracleVerifierPureForm (i : Fin ℓ) (hNCR : ¬ IsCommitmentRound ℓ ϑ i) :
-    (relayOracleVerifier (Context := Context) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    (relayOracleVerifier (oSpec := oSpec) (Context := Context) 𝔽q β
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       i hNCR).toVerifier.PureForm where
-  verify s tr := (s.1, (relayOracleVerifier (Context := Context) 𝔽q β
+  verify s tr := (s.1, (relayOracleVerifier (oSpec := oSpec) (Context := Context) 𝔽q β
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hNCR).materializeOutput tr.challenges s.2 tr.messages)
   verify_eq _ _ := rfl
 
 /-- The relay verifier's guard and verdict as data: the trivially-true guard of its pure form. -/
 def relayOracleVerifierGuardedForm (i : Fin ℓ) (hNCR : ¬ IsCommitmentRound ℓ ϑ i) :
-    (relayOracleVerifier (Context := Context) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    (relayOracleVerifier (oSpec := oSpec) (Context := Context) 𝔽q β
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       i hNCR).toVerifier.GuardedForm :=
-  (relayOracleVerifierPureForm 𝔽q β i hNCR).toGuardedForm
+  (relayOracleVerifierPureForm (oSpec := oSpec) 𝔽q β i hNCR).toGuardedForm
 
 omit [SampleableType L] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero 𝓡] in
 /-- The relay verifier never rejects. -/
@@ -188,7 +193,7 @@ theorem relayOracleVerifierGuardedForm_check (i : Fin ℓ) (hNCR : ¬ IsCommitme
     (s : Statement (L := L) Context i.succ × ∀ j, OracleStatement 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc j)
     (tr : pSpecRelay.FullTranscript) :
-    (relayOracleVerifierGuardedForm (Context := Context) 𝔽q β
+    (relayOracleVerifierGuardedForm (oSpec := oSpec) (Context := Context) 𝔽q β
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hNCR).check s tr = true := rfl
 
 omit [SampleableType L] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero 𝓡] in
@@ -198,13 +203,14 @@ theorem relayOracleVerifierGuardedForm_out (i : Fin ℓ) (hNCR : ¬ IsCommitment
     (s : Statement (L := L) Context i.succ × ∀ j, OracleStatement 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc j)
     (tr : pSpecRelay.FullTranscript) :
-    (relayOracleVerifierGuardedForm (Context := Context) 𝔽q β
+    (relayOracleVerifierGuardedForm (oSpec := oSpec) (Context := Context) 𝔽q β
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hNCR).out s tr =
       (s.1, mapOStmtOutRelayStep 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hNCR s.2) :=
   Prod.ext rfl
-    (mapOStmtOutRelayStep_eq_materializeOutput (Context := Context) 𝔽q β i hNCR s.2 tr).symm
+    (mapOStmtOutRelayStep_eq_materializeOutput (oSpec := oSpec)
+      (Context := Context) 𝔽q β i hNCR s.2 tr).symm
 
-variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)}
+variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
 
 /-! ## Security
 
@@ -252,15 +258,16 @@ theorem relayOracleReduction_perfectCompleteness (i : Fin ℓ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i)
       (relOut := strictRoundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i.succ)
-      (oracleReduction := relayOracleReduction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (oracleReduction := relayOracleReduction (oSpec := oSpec) 𝔽q β
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         i hNCR)
       (init := init)
       (impl := impl) := by
-  let G := relayOracleVerifierGuardedForm (Context := Context) 𝔽q β
+  let G := relayOracleVerifierGuardedForm (oSpec := oSpec) (Context := Context) 𝔽q β
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hNCR
   apply Reduction.perfectCompleteness_of_guarded_prover_support _ G
   intro ⟨stmt, oStmt⟩ wit hIn q hq
-  have hp : (relayOracleProver (Context := Context) 𝔽q β
+  have hp : (relayOracleProver (oSpec := oSpec) (Context := Context) 𝔽q β
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hNCR).run (stmt, oStmt) wit =
       pure (default, ((stmt, mapOStmtOutRelayStep 𝔽q β
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hNCR oStmt), wit)) := rfl
@@ -283,7 +290,7 @@ def relayKnowledgeError (m : pSpecRelay.ChallengeIdx) : ℝ≥0 :=
 
 /-- The round-by-round extractor of the relay step: the witness passes through unchanged. -/
 noncomputable def relayRbrExtractor (i : Fin ℓ) :
-  Extractor.RoundByRound []ₒ
+  Extractor.RoundByRound oSpec
     (StmtIn := (Statement (L := L) Context i.succ) × (∀ j, OracleStatement 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc j))
     (WitIn := Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ)
@@ -314,13 +321,14 @@ def RelayKnowledgeState (i : Fin ℓ) (hNCR : ¬ IsCommitmentRound ℓ ϑ i)
 
 /-- The knowledge-state function of the relay step, `RelayKnowledgeState`, with its obligations. -/
 def relayKnowledgeStateFunction (i : Fin ℓ) (hNCR : ¬ IsCommitmentRound ℓ ϑ i) :
-    (relayOracleVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    (relayOracleVerifier (oSpec := oSpec) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         i hNCR).KnowledgeStateFunction init impl
       (relIn := foldStepRelOut (multpoly := multpoly) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)  i)
       (relOut := roundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)  i.succ)
-      (extractor := relayRbrExtractor 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) where
+      (extractor := relayRbrExtractor (oSpec := oSpec) 𝔽q β
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) where
   toFun := fun m ⟨stmtIn, oStmtIn⟩ tr witMid =>
     RelayKnowledgeState 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (multpoly := multpoly) (𝓑 := 𝓑)
       i hNCR stmtIn witMid oStmtIn
@@ -337,7 +345,7 @@ def relayKnowledgeStateFunction (i : Fin ℓ) (hNCR : ¬ IsCommitmentRound ℓ �
           (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hNCR stmtIn.challenges oStmtIn))))
   toFun_next := fun m hDir (stmtIn, oStmtIn) tr msg witMid => Fin.elim0 m
   toFun_full := fun s tr witOut h => by
-    have hrel := ((relayOracleVerifierGuardedForm (Context := Context) 𝔽q β
+    have hrel := ((relayOracleVerifierGuardedForm (oSpec := oSpec) (Context := Context) 𝔽q β
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hNCR).check_and_of_prEvent_pos h).2
     rwa [relayOracleVerifierGuardedForm_out 𝔽q β i hNCR s tr] at hrel
 
@@ -348,14 +356,14 @@ omit [SampleableType L] [DecidableEq 𝔽q] in
 the content is the knowledge-state function's obligations. -/
 theorem relayOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith (i : Fin ℓ)
     (hNCR : ¬ IsCommitmentRound ℓ ϑ i) :
-    (relayOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    (relayOracleVerifier (oSpec := oSpec) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       i hNCR).toVerifier.rbrKnowledgeSoundnessWorstCaseWith init impl
       (foldStepRelOut (multpoly := multpoly) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (𝓑 := 𝓑) i)
       (roundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (𝓑 := 𝓑) i.succ)
       (fun _ => Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ)
-      (relayRbrExtractor 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)
+      (relayRbrExtractor (oSpec := oSpec) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)
       (relayKnowledgeStateFunction (multpoly := multpoly) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i hNCR)
       relayKnowledgeError :=
@@ -366,7 +374,7 @@ omit [SampleableType L] [DecidableEq 𝔽q] in
 `relayOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith`. -/
 theorem relayOracleVerifier_rbrKnowledgeSoundnessWorstCase (i : Fin ℓ)
     (hNCR : ¬ IsCommitmentRound ℓ ϑ i) :
-    (relayOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    (relayOracleVerifier (oSpec := oSpec) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       i hNCR).toVerifier.rbrKnowledgeSoundnessWorstCase init impl
       (foldStepRelOut (multpoly := multpoly) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (𝓑 := 𝓑) i)
@@ -382,7 +390,7 @@ omit [SampleableType L] [DecidableEq 𝔽q] in
 `relayOracleVerifier_rbrKnowledgeSoundnessWorstCase`. -/
 theorem relayOracleVerifier_rbrKnowledgeSoundness (i : Fin ℓ)
     (hNCR : ¬ IsCommitmentRound ℓ ϑ i) :
-    (relayOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    (relayOracleVerifier (oSpec := oSpec) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         i hNCR).rbrKnowledgeSoundness init impl
       (relIn := foldStepRelOut (multpoly := multpoly) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i)

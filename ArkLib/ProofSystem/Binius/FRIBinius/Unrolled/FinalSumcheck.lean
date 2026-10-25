@@ -32,6 +32,8 @@ The existing `Terminal` namespace is retained to preserve declaration names.
 
 @[expose] public section
 
+variable {ι : Type} {oSpec : OracleSpec ι}
+
 namespace Binius.FRIBinius.Unrolled.Terminal
 
 /-! ## Protocol definitions -/
@@ -67,7 +69,7 @@ def output (s : Statement (L := L) Context (Fin.last ℓ)) (c : L) :
 
 /-- The honest prover sends the value of its fully folded word at zero. -/
 def prover {ϑ : ℕ} [NeZero ϑ] (outputContext : Context → SumcheckBaseContext L ℓ) :
-    OracleProver ([]ₒ)
+    OracleProver (oSpec)
     (Statement (L := L) Context (Fin.last ℓ))
     (OracleStatement K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) (Fin.last ℓ))
     (Witness K β (h_ℓ_add_R_rate := h_rate) (Fin.last ℓ))
@@ -86,7 +88,7 @@ def prover {ϑ : ℕ} [NeZero ϑ] (outputContext : Context → SumcheckBaseConte
   output s := pure ((output outputContext s.1.1 (s.2.f ⟨0, by simp only [zero_mem]⟩), s.1.2), ())
 
 /-- Read the final scalar, abort on a failed multiplier check, and forward every oracle. -/
-def verifier : OracleVerifier []ₒ
+def verifier : OracleVerifier oSpec
     (Statement (L := L) Context (Fin.last ℓ))
     (OracleStatement K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) (Fin.last ℓ))
     (FinalSumcheckStatementOut (L := L) (ℓ := ℓ))
@@ -104,14 +106,14 @@ def verifier : OracleVerifier []ₒ
 /-- The fused terminal reduction, with an executable scalar-message prover. -/
 def reduction {ϑ : ℕ} [NeZero ϑ] (outputContext : Context → SumcheckBaseContext L ℓ)
     [DecidableEq K] := OracleReduction.mk
-  (prover K β outputContext (ϑ := ϑ) (h_rate := h_rate))
-  (verifier K β multiplier.evaluate outputContext)
+  (prover (oSpec := oSpec) K β outputContext (ϑ := ϑ) (h_rate := h_rate))
+  (verifier (oSpec := oSpec) K β multiplier.evaluate outputContext)
 
 variable [DecidableEq K]
 
 /-- The terminal verifier is guarded by exactly the closing multiplier equation. -/
 def guardedForm :
-    (verifier K β evaluateMultiplier outputContext (ϑ := ϑ)
+    (verifier (oSpec := oSpec) K β evaluateMultiplier outputContext (ϑ := ϑ)
       (h_rate := h_rate)).toVerifier.GuardedForm :=
   Verifier.GuardedForm.ofQueryGuard _ ⟨⟨0, rfl⟩, ()⟩
     (fun s c _ => check evaluateMultiplier s c)
@@ -125,7 +127,8 @@ theorem guardedForm_out
     (s : Statement (L := L) Context (Fin.last ℓ) ×
       ∀ j, OracleStatement K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) (Fin.last ℓ) j)
     (tr : (pSpecFinalSumcheckStep (L := L)).FullTranscript) :
-    (guardedForm K β evaluateMultiplier outputContext (ϑ := ϑ) (h_rate := h_rate)).out s tr =
+    (guardedForm (oSpec := oSpec) K β evaluateMultiplier outputContext (ϑ := ϑ)
+      (h_rate := h_rate)).out s tr =
       (output outputContext s.1 (tr.messages ⟨0, rfl⟩), s.2) := rfl
 
 omit [Fintype L] [DecidableEq L] [NeZero ℓ] in
@@ -210,21 +213,22 @@ theorem strict_output_of_honest
 
 /-- Perfect completeness of the fused terminal reduction from the strict last-round relation. -/
 theorem perfectCompleteness [DecidableEq K] [SampleableType L] (𝓑 : Fin 2 ↪ L)
-    {σ : Type} (init : ProbComp σ) (impl : QueryImpl ([]ₒ) (StateT σ ProbComp)) :
-    (reduction K β multiplier outputContext (ϑ := ϑ) (h_rate := h_rate)).perfectCompleteness
+    {σ : Type} (init : ProbComp σ) (impl : QueryImpl (oSpec) (StateT σ ProbComp)) :
+    (reduction (oSpec := oSpec) K β multiplier outputContext (ϑ := ϑ)
+      (h_rate := h_rate)).perfectCompleteness
       init impl
       (strictRoundRelation K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate)
         (𝓑 := 𝓑) (multpoly := multiplier.polynomial) (Fin.last ℓ))
       (strictFinalSumcheckRelOut K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate)) := by
   classical
   apply Reduction.perfectCompleteness_of_guarded_prover_support _
-    (guardedForm K β multiplier.evaluate outputContext)
+    (guardedForm (oSpec := oSpec) K β multiplier.evaluate outputContext)
   intro ⟨s, ost⟩ w hin q hq
   let c : L := w.f ⟨0, by simp only [zero_mem]⟩
-  have hp : (prover K β outputContext (ϑ := ϑ) (h_rate := h_rate)).run (s, ost) w =
+  have hp : (prover (oSpec := oSpec) K β outputContext (ϑ := ϑ) (h_rate := h_rate)).run (s, ost) w =
       pure (((default : (pSpecFinalSumcheckStep (L := L)).Transcript 0).concat (m := 0) c),
         ((output outputContext s c, ost), ())) := rfl
-  change q ∈ support ((prover K β outputContext).run (s, ost) w) at hq
+  change q ∈ support ((prover (oSpec := oSpec) K β outputContext).run (s, ost) w) at hq
   rw [hp] at hq
   have heq := OracleComp.eq_of_mem_support_pure _ hq
   subst q
@@ -378,7 +382,7 @@ def witnessFamily (m : Fin 2) : Type :=
 /-- Round-by-round extraction for the fused terminal message. It uses the committed oracle,
 not any polynomial supplied by the adversary as an auxiliary witness. -/
 noncomputable def rbrExtractor :
-    Extractor.RoundByRound ([]ₒ)
+    Extractor.RoundByRound (oSpec)
       (StmtIn := Statement (L := L) Context (Fin.last ℓ) ×
         (∀ j, OracleStatement K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) (Fin.last ℓ) j))
       (WitIn := Witness K β (h_ℓ_add_R_rate := h_rate) (Fin.last ℓ))
@@ -412,13 +416,13 @@ def knowledgeState (𝓑 : Fin 2 ↪ L) {m : Fin 2}
 /-- Certified knowledge states for the fused terminal verifier. -/
 noncomputable def knowledgeStateFunction (𝓑 : Fin 2 ↪ L) {σ : Type}
     (init : ProbComp σ)
-    (impl : QueryImpl ([]ₒ) (StateT σ ProbComp)) :
-    (verifier K β multiplier.evaluate outputContext (ϑ := ϑ)
+    (impl : QueryImpl (oSpec) (StateT σ ProbComp)) :
+    (verifier (oSpec := oSpec) K β multiplier.evaluate outputContext (ϑ := ϑ)
       (h_rate := h_rate)).KnowledgeStateFunction init impl
       (relIn := roundRelation K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate)
         (𝓑 := 𝓑) (multpoly := multiplier.polynomial) (Fin.last ℓ))
       (relOut := finalSumcheckRelOut K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate))
-      (extractor := rbrExtractor K β (ϑ := ϑ) (h_rate := h_rate)) where
+      (extractor := rbrExtractor (oSpec := oSpec) K β (ϑ := ϑ) (h_rate := h_rate)) where
   toFun := fun _ s tr w => knowledgeState K β multiplier outputContext 𝓑 s.1 s.2 tr w
   toFun_empty := fun _ _ => by rfl
   toFun_next := fun m _ s tr msg w => by
@@ -429,7 +433,7 @@ noncomputable def knowledgeStateFunction (𝓑 : Fin 2 ↪ L) {σ : Type}
       h.2 h.1
   toFun_full := fun s tr w h => by
     classical
-    obtain ⟨hc, hr⟩ := (guardedForm K β multiplier.evaluate outputContext
+    obtain ⟨hc, hr⟩ := (guardedForm (oSpec := oSpec) K β multiplier.evaluate outputContext
       (ϑ := ϑ) (h_rate := h_rate)).check_and_of_prEvent_pos h
     refine ⟨?_, hr⟩
     change s.1.sumcheck_target = multiplier.evaluate s.1.ctx s.1.challenges * _
@@ -445,8 +449,8 @@ variable [SampleableType L]
 /-- The fused terminal check is worst-case round-by-round knowledge sound with no additional
 challenge error. Its substantive extraction obligations are certified above. -/
 theorem rbrKnowledgeSoundnessWorstCaseWith (𝓑 : Fin 2 ↪ L) {σ : Type}
-    (init : ProbComp σ) (impl : QueryImpl ([]ₒ) (StateT σ ProbComp)) :
-    (verifier K β multiplier.evaluate outputContext (ϑ := ϑ)
+    (init : ProbComp σ) (impl : QueryImpl (oSpec) (StateT σ ProbComp)) :
+    (verifier (oSpec := oSpec) K β multiplier.evaluate outputContext (ϑ := ϑ)
       (h_rate := h_rate)).toVerifier.rbrKnowledgeSoundnessWorstCaseWith init impl
       (roundRelation K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate)
         (𝓑 := 𝓑) (multpoly := multiplier.polynomial) (Fin.last ℓ))
@@ -460,8 +464,8 @@ theorem rbrKnowledgeSoundnessWorstCaseWith (𝓑 : Fin 2 ↪ L) {σ : Type}
 omit [DecidableEq K] in
 /-- Existential form of the terminal guarantee, for guarded sequential composition. -/
 theorem rbrKnowledgeSoundnessWorstCase (𝓑 : Fin 2 ↪ L) {σ : Type}
-    (init : ProbComp σ) (impl : QueryImpl ([]ₒ) (StateT σ ProbComp)) :
-    (verifier K β multiplier.evaluate outputContext (ϑ := ϑ)
+    (init : ProbComp σ) (impl : QueryImpl (oSpec) (StateT σ ProbComp)) :
+    (verifier (oSpec := oSpec) K β multiplier.evaluate outputContext (ϑ := ϑ)
       (h_rate := h_rate)).toVerifier.rbrKnowledgeSoundnessWorstCase init impl
       (roundRelation K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate)
         (𝓑 := 𝓑) (multpoly := multiplier.polynomial) (Fin.last ℓ))

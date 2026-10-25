@@ -37,6 +37,8 @@ The step's round-by-round knowledge soundness is in `Steps/Fold.lean`.
 
 @[expose] public section
 
+variable {ι : Type} {oSpec : OracleSpec ι}
+
 namespace Binius.BinaryBasefold.CoreInteraction
 noncomputable section
 open OracleSpec OracleComp ProtocolSpec Finset AdditiveNTT Polynomial MvPolynomial
@@ -68,7 +70,7 @@ variable {Context : Type} {multpoly : Context → MultilinearPoly L ℓ}
 /-- The prover of the `i`-th fold step: it sends the round polynomial `foldProverComputeMsg`,
 receives the challenge, and outputs `foldStepLogic`'s prover output on the transcript. -/
 noncomputable def foldOracleProver (i : Fin ℓ) :
-  OracleProver (oSpec := []ₒ)
+  OracleProver (oSpec := oSpec)
     (StmtIn := Statement (L := L) Context i.castSucc)
     (OStmtIn := OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc)
     (WitIn := Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) i.castSucc)
@@ -91,7 +93,7 @@ noncomputable def foldOracleProver (i : Fin ℓ) :
   output := fun finalPrvState =>
     let (stmt, oStmt, wit, h_i, r_i') := finalPrvState
     let t := FullTranscript.mk2 (pSpec := pSpecFold (L := L)) h_i r_i'
-    pure ((foldStepLogic 𝔽q β (ϑ := ϑ)
+    pure ((foldStepLogic (oSpec := oSpec) 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (multpoly := multpoly) i).proverOut
         stmt wit oStmt t)
 
@@ -99,7 +101,7 @@ noncomputable def foldOracleProver (i : Fin ℓ) :
 `foldStepLogic`'s check, and outputs its output statement. The oracle statements pass through. -/
 def foldOracleVerifier (i : Fin ℓ) :
     OracleVerifier
-    (oSpec := []ₒ)
+    (oSpec := oSpec)
     (StmtIn := Statement (L := L) Context i.castSucc)
     (OStmtIn := OracleStatement 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc)
@@ -111,19 +113,19 @@ def foldOracleVerifier (i : Fin ℓ) :
     let h_i ← query (spec := [(pSpecFold (L := L)).Message]ₒ) ⟨⟨0, by rfl⟩, (by exact ())⟩
     let r_i' := pSpecChallenges ⟨1, rfl⟩
     let t := FullTranscript.mk2 h_i r_i'
-    let logic := (foldStepLogic 𝔽q β (ϑ := ϑ)
+    let logic := (foldStepLogic (oSpec := oSpec) 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (multpoly := multpoly) i)
     let : Decidable (logic.verifierCheck stmtIn t) := by
       dsimp only [logic, foldStepLogic, foldVerifierCheck]
       infer_instance
     guard (logic.verifierCheck stmtIn t)
     pure (logic.verifierOut stmtIn t)
-  outputOracle := (foldStepLogic 𝔽q β (ϑ := ϑ)
+  outputOracle := (foldStepLogic (oSpec := oSpec) 𝔽q β (ϑ := ϑ)
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (multpoly := multpoly) i).outputOracle
 
 /-- The oracle reduction of the `i`-th fold step. -/
 noncomputable def foldOracleReduction (i : Fin ℓ) :
-  OracleReduction (oSpec := []ₒ)
+  OracleReduction (oSpec := oSpec)
     (StmtIn := Statement (L := L) Context i.castSucc)
     (OStmtIn := OracleStatement 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc)
@@ -133,24 +135,25 @@ noncomputable def foldOracleReduction (i : Fin ℓ) :
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc)
     (WitOut := Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ)
     (pSpec := pSpecFold (L := L)) where
-  prover := foldOracleProver 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
+  prover := foldOracleProver (oSpec := oSpec) 𝔽q β (ϑ := ϑ)
+    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
     (multpoly := multpoly) i
-  verifier := foldOracleVerifier 𝔽q β (ϑ := ϑ)
+  verifier := foldOracleVerifier (oSpec := oSpec) 𝔽q β (ϑ := ϑ)
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (multpoly := multpoly) i
 
 /-- The fold verifier's guard and verdict as data: `foldStepLogic`'s check and output statement on
 the sent round polynomial and the challenge, with the unchanged oracle statements. -/
 def foldOracleVerifierGuardedForm (i : Fin ℓ) :
-    (foldOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
+    (foldOracleVerifier (oSpec := oSpec) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
       (multpoly := multpoly) i).toVerifier.GuardedForm :=
   Verifier.GuardedForm.ofQueryGuard _ ⟨⟨0, rfl⟩, ()⟩
-    (fun s a c => (foldStepLogic 𝔽q β (ϑ := ϑ)
+    (fun s a c => (foldStepLogic (oSpec := oSpec) 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (multpoly := multpoly) i).verifierCheck
         s (FullTranscript.mk2 a (c ⟨1, rfl⟩)))
     (hcheck := fun _ _ _ => by
       dsimp only [foldStepLogic, foldVerifierCheck]
       infer_instance)
-    (fun s a c => (foldStepLogic 𝔽q β (ϑ := ϑ)
+    (fun s a c => (foldStepLogic (oSpec := oSpec) 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (multpoly := multpoly) i).verifierOut
         s (FullTranscript.mk2 a (c ⟨1, rfl⟩))) (fun _ _ => rfl)
 
@@ -162,7 +165,8 @@ theorem foldOracleVerifierGuardedForm_check (i : Fin ℓ)
     (s : Statement (L := L) Context i.castSucc × ∀ j, OracleStatement 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc j)
     (tr : (pSpecFold (L := L)).FullTranscript) :
-    (foldOracleVerifierGuardedForm 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
+    (foldOracleVerifierGuardedForm (oSpec := oSpec) 𝔽q β (ϑ := ϑ)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
       (multpoly := multpoly) i).check s tr =
       decide (foldVerifierCheck i s.1 (𝓑 := 𝓑) (tr.messages ⟨0, rfl⟩)) :=
   decide_eq_decide.mpr Iff.rfl
@@ -176,13 +180,15 @@ theorem foldOracleVerifierGuardedForm_out (i : Fin ℓ)
     (s : Statement (L := L) Context i.castSucc × ∀ j, OracleStatement 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc j)
     (tr : (pSpecFold (L := L)).FullTranscript) :
-    (foldOracleVerifierGuardedForm 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
+    (foldOracleVerifierGuardedForm (oSpec := oSpec) 𝔽q β (ϑ := ϑ)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
       (multpoly := multpoly) i).out s tr =
       (foldVerifierStmtOut i s.1 (tr.messages ⟨0, rfl⟩) (tr.challenges ⟨1, rfl⟩),
-        (foldOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
+        (foldOracleVerifier (oSpec := oSpec) 𝔽q β (ϑ := ϑ)
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
           (multpoly := multpoly) i).materializeOutput tr.challenges s.2 tr.messages) := rfl
 
-variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)}
+variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
 
 omit [SampleableType L] [DecidableEq 𝔽q] h_β₀_eq_1 in
 /-- The fold verifier passes its oracle statements through unchanged. -/
@@ -190,7 +196,7 @@ theorem foldOracleVerifier_materializeOutput (i : Fin ℓ)
     (chals : (pSpecFold (L := L)).Challenges)
     (oStmt : ∀ j, OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc j)
     (msgs : (pSpecFold (L := L)).Messages) :
-    (foldOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
+    (foldOracleVerifier (oSpec := oSpec) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
       (multpoly := multpoly) i).materializeOutput chals oStmt msgs = oStmt := by
   rfl
 
@@ -208,29 +214,31 @@ theorem foldOracleReduction_perfectCompleteness (i : Fin ℓ) :
         (𝓑 := 𝓑) i.castSucc (multpoly := multpoly))
       (relOut := strictFoldStepRelOut 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (𝓑 := 𝓑) i (multpoly := multpoly))
-      (oracleReduction := foldOracleReduction 𝔽q β (ϑ := ϑ)
+      (oracleReduction := foldOracleReduction (oSpec := oSpec) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (multpoly := multpoly) i)
       (init := init)
       (impl := impl) := by
   classical
   let _ : ∀ j, OracleInterface ((pSpecFold (L := L)).Challenge j) :=
     ProtocolSpec.challengeOracleInterface
-  let step := foldStepLogic 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+  let step := foldStepLogic (oSpec := oSpec) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
     (𝓑 := 𝓑) (multpoly := multpoly) i
   apply step.perfectCompleteness_of_isStronglyComplete
-    (foldOracleReduction 𝔽q β (ϑ := ϑ)
+    (foldOracleReduction (oSpec := oSpec) 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (multpoly := multpoly) i)
-    (foldOracleVerifierGuardedForm 𝔽q β (𝓑 := 𝓑) i)
+    (foldOracleVerifierGuardedForm (oSpec := oSpec) 𝔽q β (𝓑 := 𝓑) i)
     (foldStepLogic_isStronglyComplete 𝔽q β (𝓑 := 𝓑) i)
   · intro stmt wit oracles q hq
-    let step := foldStepLogic 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
+    let step := foldStepLogic (oSpec := oSpec) 𝔽q β (ϑ := ϑ)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
       (multpoly := multpoly) i
     let msg : (pSpecFold (L := L)).«Type» 0 :=
       foldProverComputeMsg (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i wit
-    let sample : OracleComp ([]ₒ + [(pSpecFold (L := L)).Challenge]ₒ) L :=
+    let sample : OracleComp (oSpec + [(pSpecFold (L := L)).Challenge]ₒ) L :=
       liftM (query (spec := [(pSpecFold (L := L)).Challenge]ₒ) ⟨⟨1, rfl⟩, ()⟩ :
         OracleComp [(pSpecFold (L := L)).Challenge]ₒ L)
-    have hp : (foldOracleProver 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
+    have hp : (foldOracleProver (oSpec := oSpec) 𝔽q β (ϑ := ϑ)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
         (multpoly := multpoly) i).run (stmt, oracles) wit = (sample >>= fun c =>
         pure (FullTranscript.mk2 (pSpec := pSpecFold (L := L)) msg c,
           step.proverOut stmt wit oracles (FullTranscript.mk2 msg c))) := by

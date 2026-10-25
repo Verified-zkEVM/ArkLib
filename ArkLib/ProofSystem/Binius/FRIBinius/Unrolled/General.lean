@@ -33,6 +33,11 @@ Their challenge-error sum is bounded by `Spec`'s `concreteError`, with one sumch
 `2ℓ'/|L|`. This module does not use the legacy admitted implication from round-by-round to
 plain knowledge soundness.
 
+The head and fused tail share an arbitrary ambient oracle specification `oSpec`. Their honest
+computations do not use the ambient oracle; materialized verification has explicit guarded
+forms. The security statements quantify over arbitrary stateful handlers without changing the
+input relations or challenge-error ledger. The empty-oracle protocol remains a specialization.
+
 The full operational definitions currently inherit noncomputability from `Head.verifier`,
 `sumcheckFoldOracleVerifier` and `queryOracleVerifier`, and their honest prover counterparts.
 The tensor and polynomial representations of those existing phases are mathematical views;
@@ -61,6 +66,8 @@ for the shared relation-level explanation. DP24 remains the reference for the co
 
 @[expose] public section
 
+variable {ι : Type} {oSpec : OracleSpec ι}
+
 namespace Binius.FRIBinius.Unrolled
 
 open OracleSpec OracleComp ProtocolSpec Module RingSwitching RingSwitching.Packing
@@ -83,7 +90,7 @@ noncomputable def fusedMultiplier :=
 
 /-- The original tensor-carrier batching verifier, using relaxed initial-oracle compatibility. -/
 noncomputable def headVerifier :=
-  Head.verifier (PackingData.ofBasis (biniusProfile κ L K β).basis) ℓ'
+  Head.verifier (oSpec := oSpec) (PackingData.ofBasis (biniusProfile κ L K β).basis) ℓ'
     (TensorPrefix.layout (biniusProfile κ L K β) h_l)
     (TensorPrefix.messageEquiv (biniusProfile κ L K β)) (BatchingRule.eqFold L κ)
     (Frontier.commitment K β (ϑ := ϑ) (h_rate := h_rate))
@@ -112,25 +119,25 @@ noncomputable instance (γ : ℕ) : ∀ i, SampleableType
 populates metadata ignored by the query verifier; no extra message or sumcheck is introduced. -/
 noncomputable def fullVerifier (γ : ℕ) :=
   OracleVerifier.append (Oₛ₃ := fun i : Empty => nomatch i)
-    (headVerifier κ K β (ϑ := ϑ) h_rate h_l)
-    (Core.tailVerifier K β (fusedMultiplier κ K β h_l) outputContext γ
+    (headVerifier (oSpec := oSpec) κ K β (ϑ := ϑ) h_rate h_l)
+    (Core.tailVerifier (oSpec := oSpec) K β (fusedMultiplier κ K β h_l) outputContext γ
       (ϑ := ϑ) (h_rate := h_rate))
 
 /-- The original tensor head's honest prover followed by the fused folding prover. -/
 noncomputable def fullReduction (γ : ℕ) :=
   OracleReduction.append (Oₛ₃ := fun i : Empty => nomatch i)
-    (Head.reduction (PackingData.ofBasis (biniusProfile κ L K β).basis) ℓ'
+    (Head.reduction (oSpec := oSpec) (PackingData.ofBasis (biniusProfile κ L K β).basis) ℓ'
       (TensorPrefix.layout (biniusProfile κ L K β) h_l)
       (TensorPrefix.messageEquiv (biniusProfile κ L K β)) (BatchingRule.eqFold L κ)
       (Frontier.strictCommitment K β (ϑ := ϑ) (h_rate := h_rate)))
-    (Core.tailReduction K β (fusedMultiplier κ K β h_l) outputContext γ
+    (Core.tailReduction (oSpec := oSpec) K β (fusedMultiplier κ K β h_l) outputContext γ
       (ϑ := ϑ) (h_rate := h_rate))
 
 /-- Exact versus relaxed compatibility changes the theorem relation, not the verifier. -/
 theorem fullReduction_verifier (γ : ℕ) :
-    (fullReduction κ K β (ϑ := ϑ) h_rate h_l outputContext γ).verifier
+    (fullReduction (oSpec := oSpec) κ K β (ϑ := ϑ) h_rate h_l outputContext γ).verifier
         (Oₛₒ := fun i : Empty => nomatch i) =
-      fullVerifier κ K β (ϑ := ϑ) h_rate h_l outputContext γ := rfl
+      fullVerifier (oSpec := oSpec) κ K β (ϑ := ϑ) h_rate h_l outputContext γ := rfl
 
 /-! ## Security
 
@@ -153,8 +160,9 @@ def strictInputRelation :=
 omit [DecidableEq K] [Fact (β 0 = 1)] [NeZero R] in
 /-- The tensor batching head contributes exactly `κ/|L|` per batching challenge. -/
 theorem head_rbrKnowledgeSoundnessWorstCase {σ : Type}
-    (init : ProbComp σ) (impl : QueryImpl ([]ₒ) (StateT σ ProbComp)) :
-    (headVerifier κ K β (ϑ := ϑ) h_rate h_l).toVerifier.rbrKnowledgeSoundnessWorstCase
+    (init : ProbComp σ) (impl : QueryImpl (oSpec) (StateT σ ProbComp)) :
+    (headVerifier (oSpec := oSpec) κ K β
+      (ϑ := ϑ) h_rate h_l).toVerifier.rbrKnowledgeSoundnessWorstCase
       init impl (inputRelation κ K β (ϑ := ϑ) h_rate h_l)
       (ProductSumcheck.rel (fusedMultiplier κ K β h_l)
         (Frontier.commitment K β (ϑ := ϑ) (h_rate := h_rate)) 0)
@@ -169,14 +177,14 @@ theorem head_rbrKnowledgeSoundnessWorstCase {σ : Type}
 
 /-- Worst-case round-by-round knowledge soundness of the full fused verifier. -/
 theorem fullVerifier_rbrKnowledgeSoundnessWorstCase (γ : ℕ) {σ : Type}
-    (init : ProbComp σ) (impl : QueryImpl ([]ₒ) (StateT σ ProbComp)) :
-    ((fullVerifier κ K β (ϑ := ϑ) h_rate h_l outputContext γ).toVerifier
+    (init : ProbComp σ) (impl : QueryImpl (oSpec) (StateT σ ProbComp)) :
+    ((fullVerifier (oSpec := oSpec) κ K β (ϑ := ϑ) h_rate h_l outputContext γ).toVerifier
       (Oₛₒ := fun i : Empty => nomatch i)).rbrKnowledgeSoundnessWorstCase init impl
       (inputRelation κ K β (ϑ := ϑ) h_rate h_l) acceptRejectOracleRel
       (fullError κ K β (ϑ := ϑ) h_rate γ) := by
   exact OracleVerifier.append_rbrKnowledgeSoundnessWorstCase_of_guarded_first
     (Oₛ₃ := fun i : Empty => nomatch i) _ _
-    (Head.guardedForm (PackingData.ofBasis (biniusProfile κ L K β).basis) ℓ'
+    (Head.guardedForm (oSpec := oSpec) (PackingData.ofBasis (biniusProfile κ L K β).basis) ℓ'
       (TensorPrefix.layout (biniusProfile κ L K β) h_l)
       (TensorPrefix.messageEquiv (biniusProfile κ L K β)) (BatchingRule.eqFold L κ)
       (Frontier.commitment K β (ϑ := ϑ) (h_rate := h_rate)))
@@ -186,8 +194,8 @@ theorem fullVerifier_rbrKnowledgeSoundnessWorstCase (γ : ℕ) {σ : Type}
 
 /-- Averaging over prefixes preserves the same fused round-by-round error family. -/
 theorem fullVerifier_rbrKnowledgeSoundness (γ : ℕ) {σ : Type}
-    (init : ProbComp σ) (impl : QueryImpl ([]ₒ) (StateT σ ProbComp)) :
-    ((fullVerifier κ K β (ϑ := ϑ) h_rate h_l outputContext γ).toVerifier
+    (init : ProbComp σ) (impl : QueryImpl (oSpec) (StateT σ ProbComp)) :
+    ((fullVerifier (oSpec := oSpec) κ K β (ϑ := ϑ) h_rate h_l outputContext γ).toVerifier
       (Oₛₒ := fun i : Empty => nomatch i)).rbrKnowledgeSoundness init impl
       (inputRelation κ K β (ϑ := ϑ) h_rate h_l) acceptRejectOracleRel
       (fullError κ K β (ϑ := ϑ) h_rate γ) :=
@@ -198,24 +206,25 @@ theorem fullVerifier_rbrKnowledgeSoundness (γ : ℕ) {σ : Type}
 
 /-- Perfect completeness of the full fused protocol on exact packed encodings. -/
 theorem fullReduction_perfectCompleteness (γ : ℕ) {σ : Type}
-    (init : ProbComp σ) (impl : QueryImpl ([]ₒ) (StateT σ ProbComp)) :
-    (fullReduction κ K β (ϑ := ϑ) h_rate h_l outputContext γ).perfectCompleteness
+    (init : ProbComp σ) (impl : QueryImpl (oSpec) (StateT σ ProbComp)) :
+    (fullReduction (oSpec := oSpec) κ K β (ϑ := ϑ) h_rate h_l outputContext γ).perfectCompleteness
       (Oₛₒ := fun i : Empty => nomatch i) init impl
       (strictInputRelation κ K β (ϑ := ϑ) h_rate h_l) acceptRejectOracleRel := by
   apply OracleReduction.append_perfectCompleteness_of_guarded_verifiers
     (Oₛ₃ := fun i : Empty => nomatch i)
-    (Head.reduction (PackingData.ofBasis (biniusProfile κ L K β).basis) ℓ'
+    (Head.reduction (oSpec := oSpec) (PackingData.ofBasis (biniusProfile κ L K β).basis) ℓ'
       (TensorPrefix.layout (biniusProfile κ L K β) h_l)
       (TensorPrefix.messageEquiv (biniusProfile κ L K β)) (BatchingRule.eqFold L κ)
       (Frontier.strictCommitment K β (ϑ := ϑ) (h_rate := h_rate)))
-    (Core.tailReduction K β (fusedMultiplier κ K β h_l) outputContext γ
+    (Core.tailReduction (oSpec := oSpec) K β (fusedMultiplier κ K β h_l) outputContext γ
       (ϑ := ϑ) (h_rate := h_rate))
-    (Head.guardedForm (PackingData.ofBasis (biniusProfile κ L K β).basis) ℓ'
+    (Head.guardedForm (oSpec := oSpec) (PackingData.ofBasis (biniusProfile κ L K β).basis) ℓ'
       (TensorPrefix.layout (biniusProfile κ L K β) h_l)
       (TensorPrefix.messageEquiv (biniusProfile κ L K β)) (BatchingRule.eqFold L κ)
       (Frontier.strictCommitment K β (ϑ := ϑ) (h_rate := h_rate)))
-    (Verifier.GuardedForm.ofEmpty _ (fun _ => (false, fun i => nomatch i)))
-    (fun _ => Or.inl inferInstance)
+    (Core.tailGuardedForm (oSpec := oSpec) K β (fusedMultiplier κ K β h_l)
+      outputContext γ (ϑ := ϑ) (h_rate := h_rate))
+    (fun _ => Or.inl ⟨_, fun _ => rfl⟩)
     (Head.perfectCompleteness (PackingData.ofBasis (biniusProfile κ L K β).basis) ℓ'
       (TensorPrefix.layout (biniusProfile κ L K β) h_l)
       (TensorPrefix.messageEquiv (biniusProfile κ L K β)) (BatchingRule.eqFold L κ)

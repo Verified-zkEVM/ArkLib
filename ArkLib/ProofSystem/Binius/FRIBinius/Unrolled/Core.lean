@@ -26,6 +26,8 @@ phase can consume the output. No separate ring-switching sumcheck is inserted.
 
 @[expose] public section
 
+variable {ι : Type} {oSpec : OracleSpec ι}
+
 namespace Binius.FRIBinius.Unrolled.Core
 
 open Binius.BinaryBasefold Binius.BinaryBasefold.CoreInteraction
@@ -49,41 +51,45 @@ variable (outputContext : Context → SumcheckBaseContext L ℓ) (𝓑 : Fin 2 �
 /-- Interleave the product sumcheck with folds, then check its terminal scalar. -/
 noncomputable def verifier :=
   OracleVerifier.append
-    (sumcheckFoldOracleVerifier K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate)
+    (sumcheckFoldOracleVerifier (oSpec := oSpec) K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate)
       (𝓑 := 𝓑) (multpoly := multiplier.polynomial))
-    (Terminal.verifier K β multiplier.evaluate outputContext (ϑ := ϑ) (h_rate := h_rate))
+    (Terminal.verifier (oSpec := oSpec) K β multiplier.evaluate outputContext (ϑ := ϑ)
+      (h_rate := h_rate))
 
 /-- Honest execution uses the same interleaved folding loop and the fused scalar terminal. -/
 noncomputable def reduction :=
   OracleReduction.append
-    (sumcheckFoldOracleReduction K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate)
+    (sumcheckFoldOracleReduction (oSpec := oSpec) K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate)
       (𝓑 := 𝓑) (multpoly := multiplier.polynomial))
-    (Terminal.reduction K β multiplier outputContext (ϑ := ϑ) (h_rate := h_rate))
+    (Terminal.reduction (oSpec := oSpec) K β multiplier outputContext (ϑ := ϑ) (h_rate := h_rate))
 
 omit [SampleableType L] [Fact (β 0 = 1)] in
 /-- The reduction uses exactly the separately defined verifier. -/
 theorem reduction_verifier :
-    (reduction K β multiplier outputContext 𝓑 (ϑ := ϑ) (h_rate := h_rate)).verifier =
-      verifier K β multiplier outputContext 𝓑 (ϑ := ϑ) (h_rate := h_rate) := rfl
+    (reduction (oSpec := oSpec) K β multiplier outputContext 𝓑 (ϑ := ϑ)
+      (h_rate := h_rate)).verifier =
+      verifier (oSpec := oSpec) K β multiplier outputContext 𝓑 (ϑ := ϑ) (h_rate := h_rate) := rfl
 
 /-- The fused core followed by the unchanged repeated query check. -/
 noncomputable def queryVerifier (γ : ℕ) :=
   OracleVerifier.append (Oₛ₃ := fun i : Empty => nomatch i)
-    (verifier K β multiplier outputContext 𝓑 (ϑ := ϑ) (h_rate := h_rate))
-    (QueryPhase.queryOracleVerifier K β γ (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate))
+    (verifier (oSpec := oSpec) K β multiplier outputContext 𝓑 (ϑ := ϑ) (h_rate := h_rate))
+    (QueryPhase.queryOracleVerifier (oSpec := oSpec) K β γ (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate))
 
 /-- The honest fused loop followed by the repeated query phase. -/
 noncomputable def queryReduction (γ : ℕ) :=
   OracleReduction.append (Oₛ₃ := fun i : Empty => nomatch i)
-    (reduction K β multiplier outputContext 𝓑 (ϑ := ϑ) (h_rate := h_rate))
-    (QueryPhase.queryOracleReduction K β γ (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate))
+    (reduction (oSpec := oSpec) K β multiplier outputContext 𝓑 (ϑ := ϑ) (h_rate := h_rate))
+    (QueryPhase.queryOracleReduction (oSpec := oSpec) K β γ (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate))
 
 omit [SampleableType L] in
 /-- The reduction uses exactly the separately defined verifier. -/
 theorem queryReduction_verifier (γ : ℕ) :
-    (queryReduction K β multiplier outputContext 𝓑 γ (ϑ := ϑ) (h_rate := h_rate)).verifier
+    (queryReduction (oSpec := oSpec) K β multiplier outputContext 𝓑 γ (ϑ := ϑ)
+      (h_rate := h_rate)).verifier
       (Oₛₒ := fun i : Empty => nomatch i) =
-      queryVerifier K β multiplier outputContext 𝓑 γ (ϑ := ϑ) (h_rate := h_rate) := rfl
+      queryVerifier (oSpec := oSpec) K β multiplier outputContext 𝓑 γ (ϑ := ϑ)
+        (h_rate := h_rate) := rfl
 
 omit [SampleableType L] in
 /-- Projecting the terminal context does not change the query verifier's computation.
@@ -91,10 +97,10 @@ Only the folding challenges and received constant are inspected by that verifier
 theorem query_verify_output_context_irrelevant (γ : ℕ)
     (otherContext : Context → SumcheckBaseContext L ℓ)
     (s : Statement (L := L) Context (Fin.last ℓ)) (c : L) :
-    (QueryPhase.queryOracleVerifier K β γ (ϑ := ϑ)
+    (QueryPhase.queryOracleVerifier (oSpec := oSpec) K β γ (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_rate)).verify (Oₛₒ := fun i : Empty => nomatch i)
         (Terminal.output outputContext s c) =
-    (QueryPhase.queryOracleVerifier K β γ (ϑ := ϑ)
+    (QueryPhase.queryOracleVerifier (oSpec := oSpec) K β γ (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_rate)).verify (Oₛₒ := fun i : Empty => nomatch i)
         (Terminal.output otherContext s c) := by
   rfl
@@ -102,23 +108,53 @@ theorem query_verify_output_context_irrelevant (γ : ℕ)
 /-- The adapter and fused fold/query tail, ready to receive the batching head's output. -/
 noncomputable def tailVerifier (γ : ℕ) :=
   OracleVerifier.append (Oₛ₃ := fun i : Empty => nomatch i)
-    (Frontier.verifier K β (Context := Context) (ϑ := ϑ) (h_rate := h_rate))
-    (queryVerifier K β multiplier outputContext (boolEmbedding L) γ
+    (Frontier.verifier (oSpec := oSpec) K β (Context := Context) (ϑ := ϑ) (h_rate := h_rate))
+    (queryVerifier (oSpec := oSpec) K β multiplier outputContext (boolEmbedding L) γ
       (ϑ := ϑ) (h_rate := h_rate))
 
 /-- Honest initialization followed by the fused fold-and-query reduction. -/
 noncomputable def tailReduction (γ : ℕ) :=
   OracleReduction.append (Oₛ₃ := fun i : Empty => nomatch i)
-    (Frontier.reduction K β multiplier (ϑ := ϑ) (h_rate := h_rate))
-    (queryReduction K β multiplier outputContext (boolEmbedding L) γ
+    (Frontier.reduction (oSpec := oSpec) K β multiplier (ϑ := ϑ) (h_rate := h_rate))
+    (queryReduction (oSpec := oSpec) K β multiplier outputContext (boolEmbedding L) γ
       (ϑ := ϑ) (h_rate := h_rate))
 
 omit [SampleableType L] in
 /-- The reduction uses exactly the separately defined verifier. -/
 theorem tailReduction_verifier (γ : ℕ) :
-    (tailReduction K β multiplier outputContext γ (ϑ := ϑ) (h_rate := h_rate)).verifier (Oₛₒ :=
+    (tailReduction (oSpec := oSpec) K β multiplier outputContext γ (ϑ := ϑ)
+      (h_rate := h_rate)).verifier (Oₛₒ :=
       fun i : Empty => nomatch i) =
-      tailVerifier K β multiplier outputContext γ (ϑ := ϑ) (h_rate := h_rate) := rfl
+      tailVerifier (oSpec := oSpec) K β multiplier outputContext γ (ϑ := ϑ)
+        (h_rate := h_rate) := rfl
+
+/-- The fused core performs deterministic transcript checks only. -/
+noncomputable def guardedForm :
+    (verifier (oSpec := oSpec) K β multiplier outputContext 𝓑
+      (ϑ := ϑ) (h_rate := h_rate)).toVerifier.GuardedForm :=
+  OracleVerifier.appendGuardedForm
+    (sumcheckFoldOracleVerifierGuardedForm (oSpec := oSpec) K β
+      (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) (𝓑 := 𝓑)
+      (multpoly := multiplier.polynomial))
+    (Terminal.guardedForm (oSpec := oSpec) K β multiplier.evaluate outputContext)
+
+/-- The fused core and the materialized query checks make no ambient calls. -/
+noncomputable def queryGuardedForm (γ : ℕ) :
+    ((queryVerifier (oSpec := oSpec) K β multiplier outputContext 𝓑 γ
+      (ϑ := ϑ) (h_rate := h_rate)).toVerifier
+      (Oₛₒ := fun i : Empty => nomatch i)).GuardedForm :=
+  OracleVerifier.appendGuardedForm (Oₛ₃ := fun i : Empty => nomatch i)
+    (guardedForm (oSpec := oSpec) K β multiplier outputContext 𝓑)
+    (QueryPhase.queryOracleVerifierGuardedForm (oSpec := oSpec) K β γ)
+
+/-- The frontier adapter preserves the tail's effect-free verification. -/
+noncomputable def tailGuardedForm (γ : ℕ) :
+    ((tailVerifier (oSpec := oSpec) K β multiplier outputContext γ
+      (ϑ := ϑ) (h_rate := h_rate)).toVerifier
+      (Oₛₒ := fun i : Empty => nomatch i)).GuardedForm :=
+  OracleVerifier.appendGuardedForm (Oₛ₃ := fun i : Empty => nomatch i)
+    (Frontier.guardedForm (oSpec := oSpec) K β)
+    (queryGuardedForm (oSpec := oSpec) K β multiplier outputContext (boolEmbedding L) γ)
 
 /-! ## Security -/
 
@@ -129,8 +165,8 @@ noncomputable def tailError (γ : ℕ) :=
 omit [DecidableEq K] in
 /-- The fused core has the same per-challenge error as one Binary Basefold loop. -/
 theorem rbrKnowledgeSoundnessWorstCase {σ : Type}
-    (init : ProbComp σ) (impl : QueryImpl ([]ₒ) (StateT σ ProbComp)) :
-    (verifier K β multiplier outputContext 𝓑 (ϑ := ϑ)
+    (init : ProbComp σ) (impl : QueryImpl (oSpec) (StateT σ ProbComp)) :
+    (verifier (oSpec := oSpec) K β multiplier outputContext 𝓑 (ϑ := ϑ)
       (h_rate := h_rate)).toVerifier.rbrKnowledgeSoundnessWorstCase init impl
       (roundRelation K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate)
         (𝓑 := 𝓑) (multpoly := multiplier.polynomial) 0)
@@ -138,7 +174,7 @@ theorem rbrKnowledgeSoundnessWorstCase {σ : Type}
       (coreInteractionOracleRbrKnowledgeError K β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_rate)) := by
   exact OracleVerifier.append_rbrKnowledgeSoundnessWorstCase_of_guarded_first _ _
-    (sumcheckFoldOracleVerifierGuardedForm K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate)
+    (sumcheckFoldOracleVerifierGuardedForm (oSpec := oSpec) K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate)
       (𝓑 := 𝓑) (multpoly := multiplier.polynomial))
     (sumcheckFoldOracleVerifier_rbrKnowledgeSoundnessWorstCase K β)
     (Terminal.rbrKnowledgeSoundnessWorstCase K β multiplier outputContext 𝓑 init impl)
@@ -146,8 +182,8 @@ theorem rbrKnowledgeSoundnessWorstCase {σ : Type}
 /-- The complete fold-and-query tail retains the ordinary Binary Basefold error family,
 but its input relation uses the ring-switching multiplier. -/
 theorem queryVerifier_rbrKnowledgeSoundnessWorstCase (γ : ℕ) {σ : Type}
-    (init : ProbComp σ) (impl : QueryImpl ([]ₒ) (StateT σ ProbComp)) :
-    ((queryVerifier K β multiplier outputContext 𝓑 γ (ϑ := ϑ)
+    (init : ProbComp σ) (impl : QueryImpl (oSpec) (StateT σ ProbComp)) :
+    ((queryVerifier (oSpec := oSpec) K β multiplier outputContext 𝓑 γ (ϑ := ϑ)
       (h_rate := h_rate)).toVerifier (Oₛₒ := fun i : Empty => nomatch i))
       |>.rbrKnowledgeSoundnessWorstCase init impl
       (roundRelation K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate)
@@ -158,15 +194,15 @@ theorem queryVerifier_rbrKnowledgeSoundnessWorstCase (γ : ℕ) {σ : Type}
   unfold queryVerifier FullBinaryBasefold.fullRbrKnowledgeError
   exact OracleVerifier.append_rbrKnowledgeSoundnessWorstCase_of_guarded_first
     (Oₛ₃ := fun i : Empty => nomatch i) _ _
-    (Verifier.GuardedForm.ofEmpty _ (fun input =>
-      (⟨⟨0, fun _ => 0, outputContext input.1.ctx⟩, 0⟩, fun _ _ => 0)))
+    (guardedForm (oSpec := oSpec) K β multiplier outputContext 𝓑)
     (rbrKnowledgeSoundnessWorstCase K β multiplier outputContext 𝓑 init impl)
     (QueryPhase.queryOracleVerifier_rbrKnowledgeSoundnessWorstCase K β γ init impl)
 
 /-- Security of the fused tail from the shared batching relation. -/
 theorem tailVerifier_rbrKnowledgeSoundnessWorstCase (γ : ℕ) {σ : Type}
-    (init : ProbComp σ) (impl : QueryImpl ([]ₒ) (StateT σ ProbComp)) :
-    ((tailVerifier K β multiplier outputContext γ (ϑ := ϑ) (h_rate := h_rate)).toVerifier
+    (init : ProbComp σ) (impl : QueryImpl (oSpec) (StateT σ ProbComp)) :
+    ((tailVerifier (oSpec := oSpec) K β multiplier outputContext γ (ϑ := ϑ)
+      (h_rate := h_rate)).toVerifier
       (Oₛₒ := fun i : Empty => nomatch i)).rbrKnowledgeSoundnessWorstCase init impl
       (RingSwitching.Packing.ProductSumcheck.rel multiplier
         (Frontier.commitment K β (ϑ := ϑ) (h_rate := h_rate)) 0)
@@ -174,7 +210,7 @@ theorem tailVerifier_rbrKnowledgeSoundnessWorstCase (γ : ℕ) {σ : Type}
   rw [← Frontier.inputRelation_eq_shared K β multiplier]
   exact OracleVerifier.append_rbrKnowledgeSoundnessWorstCase_of_guarded_first
     (Oₛ₃ := fun i : Empty => nomatch i) _ _
-    (Frontier.guardedForm K β)
+    (Frontier.guardedForm (oSpec := oSpec) K β)
     (Frontier.rbrKnowledgeSoundnessWorstCase K β multiplier init impl)
     (queryVerifier_rbrKnowledgeSoundnessWorstCase K β multiplier outputContext
       (boolEmbedding L) γ init impl)
@@ -183,49 +219,55 @@ theorem tailVerifier_rbrKnowledgeSoundnessWorstCase (γ : ℕ) {σ : Type}
 
 /-- The fused core is perfectly complete for exact honest encodings. -/
 theorem perfectCompleteness {σ : Type}
-    (init : ProbComp σ) (impl : QueryImpl ([]ₒ) (StateT σ ProbComp)) :
-    (reduction K β multiplier outputContext 𝓑 (ϑ := ϑ) (h_rate := h_rate)).perfectCompleteness
+    (init : ProbComp σ) (impl : QueryImpl (oSpec) (StateT σ ProbComp)) :
+    (reduction (oSpec := oSpec) K β multiplier outputContext 𝓑 (ϑ := ϑ)
+      (h_rate := h_rate)).perfectCompleteness
       init impl
       (strictRoundRelation K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate)
         (𝓑 := 𝓑) (multpoly := multiplier.polynomial) 0)
       (strictFinalSumcheckRelOut K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate)) := by
   exact OracleReduction.append_perfectCompleteness_of_guarded_verifiers _ _
-    (sumcheckFoldOracleVerifierGuardedForm K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate)
+    (sumcheckFoldOracleVerifierGuardedForm (oSpec := oSpec) K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate)
       (𝓑 := 𝓑) (multpoly := multiplier.polynomial))
-    (Terminal.guardedForm K β multiplier.evaluate outputContext)
-    (fun _ => Or.inl inferInstance)
+    (Terminal.guardedForm (oSpec := oSpec) K β multiplier.evaluate outputContext)
+    (fun _ => Or.inl (by
+      repeat' first
+      | exact ⟨_, fun _ => rfl⟩
+      | apply Prover.OutputIsPure.seqCompose
+      | apply Prover.OutputIsPure.append
+      | apply OracleReduction.castIdx_outputIsPure
+      | intro))
     (sumcheckFoldOracleReduction_perfectCompleteness K β)
     (fun s => Terminal.perfectCompleteness K β multiplier outputContext 𝓑 (pure s) impl)
 
 /-- Perfect completeness through the final query acceptance predicate. -/
 theorem queryReduction_perfectCompleteness (γ : ℕ) {σ : Type}
-    (init : ProbComp σ) (impl : QueryImpl ([]ₒ) (StateT σ ProbComp)) :
-    (queryReduction K β multiplier outputContext 𝓑 γ (ϑ := ϑ) (h_rate := h_rate))
+    (init : ProbComp σ) (impl : QueryImpl (oSpec) (StateT σ ProbComp)) :
+    (queryReduction (oSpec := oSpec) K β multiplier outputContext 𝓑 γ (ϑ := ϑ) (h_rate := h_rate))
       |>.perfectCompleteness (Oₛₒ := fun i : Empty => nomatch i) init impl
       (strictRoundRelation K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate)
         (𝓑 := 𝓑) (multpoly := multiplier.polynomial) 0)
       acceptRejectOracleRel := by
   exact OracleReduction.append_perfectCompleteness_of_guarded_verifiers
     (Oₛ₃ := fun i : Empty => nomatch i) _ _
-    (Verifier.GuardedForm.ofEmpty _ (fun input =>
-      (⟨⟨0, fun _ => 0, outputContext input.1.ctx⟩, 0⟩, fun _ _ => 0)))
-    (Verifier.GuardedForm.ofEmpty _ (fun _ => (false, fun i => nomatch i)))
-    (fun _ => Or.inl inferInstance)
+    (guardedForm (oSpec := oSpec) K β multiplier outputContext 𝓑)
+    (QueryPhase.queryOracleVerifierGuardedForm (oSpec := oSpec) K β γ)
+    (fun _ => Or.inl ⟨_, fun _ => rfl⟩)
     (perfectCompleteness K β multiplier outputContext 𝓑 init impl)
     (fun s => QueryPhase.queryOracleReduction_perfectCompleteness K β γ (pure s) impl)
 
 /-- Exact product-claim inputs are accepted by the complete fused tail with probability one. -/
 theorem tailReduction_perfectCompleteness (γ : ℕ) {σ : Type}
-    (init : ProbComp σ) (impl : QueryImpl ([]ₒ) (StateT σ ProbComp)) :
-    (tailReduction K β multiplier outputContext γ (ϑ := ϑ) (h_rate := h_rate))
+    (init : ProbComp σ) (impl : QueryImpl (oSpec) (StateT σ ProbComp)) :
+    (tailReduction (oSpec := oSpec) K β multiplier outputContext γ (ϑ := ϑ) (h_rate := h_rate))
       |>.perfectCompleteness (Oₛₒ := fun i : Empty => nomatch i) init impl
       (Frontier.strictInputRelation K β multiplier (ϑ := ϑ) (h_rate := h_rate))
       acceptRejectOracleRel := by
   exact OracleReduction.append_perfectCompleteness_of_guarded_verifiers
     (Oₛ₃ := fun i : Empty => nomatch i) _ _
-    (Frontier.guardedForm K β)
-    (Verifier.GuardedForm.ofEmpty _ (fun _ => (false, fun i => nomatch i)))
-    (fun _ => Or.inl inferInstance)
+    (Frontier.guardedForm (oSpec := oSpec) K β)
+    (queryGuardedForm (oSpec := oSpec) K β multiplier outputContext (boolEmbedding L) γ)
+    (fun _ => Or.inl ⟨_, fun _ => rfl⟩)
     (Frontier.perfectCompleteness K β multiplier init impl)
     (fun s => queryReduction_perfectCompleteness K β multiplier outputContext
       (boolEmbedding L) γ (pure s) impl)

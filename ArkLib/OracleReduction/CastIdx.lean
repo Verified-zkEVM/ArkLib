@@ -92,6 +92,14 @@ def castIdx (hi : i₁ = i₂) (hj : j₁ = j₂)
   prover := hi ▸ hj ▸ R.prover
   verifier := R.verifier.castIdx hi hj
 
+/-- Pure terminal output is preserved when reindexing an oracle reduction. -/
+theorem castIdx_outputIsPure (hi : i₁ = i₂) (hj : j₁ = j₂)
+    {R : OracleReduction oSpec (StmtIn i₁) (OStmtIn i₁) (WitIn i₁) (StmtOut j₁)
+      (OStmtOut j₁) (WitOut j₁) pSpec}
+    (h : R.prover.OutputIsPure) : (R.castIdx hi hj).prover.OutputIsPure := by
+  subst hi hj
+  exact h
+
 variable [∀ i, SampleableType (pSpec.Challenge i)]
   {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
 

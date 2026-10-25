@@ -108,7 +108,7 @@ private theorem repetition_rejects (γ : ℕ)
   dsimp only [checkSingleRepetition]
   rw [simulateQ_optionT_bind]
   let body := fun (k : Fin (ℓ / ϑ)) (cur : L) => (do
-    let next ← checkSingleFoldingStep 𝔽q β (γ_repetitions := γ) (ϑ := ϑ)
+    let next ← checkSingleFoldingStep (oSpec := []ₒ) 𝔽q β (γ_repetitions := γ) (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) k cur v stmt
     pure (ForInStep.yield next) : OptionT (OracleComp _) (ForInStep L))
   have hb (k : Fin (ℓ / ϑ)) : simulateQ so (body k 0).run =
@@ -140,7 +140,7 @@ example (stmt : FinalSumcheckStatementOut (L := L) (ℓ := ℓ))
     let tr := FullTranscript.mk1 (pSpec := pSpecQuery 𝔽q β 1
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) (chals ⟨0, by rfl⟩)
     simulateQ (OracleInterface.simOracle2 []ₒ (zeroOracles 𝔽q β) tr.messages)
-      ((queryOracleVerifier 𝔽q β (ϑ := ϑ) 1).verify
+      ((queryOracleVerifier (oSpec := []ₒ) 𝔽q β (ϑ := ϑ) 1).verify
         (Oₛₒ := fun i : Empty => nomatch i) bad chals).run = pure none := by
   intro bad tr
   let so := OracleInterface.simOracle2 []ₒ (zeroOracles 𝔽q β
@@ -149,7 +149,7 @@ example (stmt : FinalSumcheckStatementOut (L := L) (ℓ := ℓ))
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (tr.challenges ⟨0, by rfl⟩ 0) bad 1) :
       OptionT (OracleComp []ₒ) Unit) = (OptionT.mk (pure none) : OptionT (OracleComp []ₒ) Unit) :=
     repetition_rejects 𝔽q β 1 tr.messages bad (tr.challenges ⟨0, by rfl⟩ 0)
-  change (simulateQ so ((queryOracleVerifier 𝔽q β (ϑ := ϑ) 1).verify
+  change (simulateQ so ((queryOracleVerifier (oSpec := []ₒ) 𝔽q β (ϑ := ϑ) 1).verify
       (Oₛₒ := fun i : Empty => nomatch i) bad chals) : OptionT (OracleComp []ₒ) Bool) =
     (OptionT.mk (pure none) : OptionT (OracleComp []ₒ) Bool)
   dsimp only [queryOracleVerifier, OracleProofVerifier.ofVerify, queryPhaseLogicStep]
@@ -165,7 +165,7 @@ example (γ : ℕ) (stmt : FinalSumcheckStatementOut (L := L) (ℓ := ℓ))
     let tr := FullTranscript.mk1 (pSpec := pSpecQuery 𝔽q β γ
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) (chals ⟨0, rfl⟩)
     simulateQ (OracleInterface.simOracle2 []ₒ (zeroOracles 𝔽q β) tr.messages)
-      ((queryOracleVerifier 𝔽q β (ϑ := ϑ) γ).verify
+      ((queryOracleVerifier (oSpec := []ₒ) 𝔽q β (ϑ := ϑ) γ).verify
         (Oₛₒ := fun i : Empty => nomatch i) {stmt with finalConstant := 0} chals).run =
       pure (some true) :=
   queryOracleVerifier_simulate_honest 𝔽q β γ _ _ chals (zero_input_strict 𝔽q β stmt)

@@ -103,7 +103,7 @@ theorem error_backend (γ : ℕ)
 example (Context : Type) (ctx : Context) (point : Fin ℓ → L) (claim : L)
     (ost : ∀ j, OracleStatement K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) 0 j)
     (tr : (!p[] : ProtocolSpec 0).FullTranscript) :
-    (frontVerifier K β (contextualQuery (L := L) (ℓ := ℓ) Context)
+    (frontVerifier (oSpec := []ₒ) K β (contextualQuery (L := L) (ℓ := ℓ) Context)
       (ϑ := ϑ) (h_rate := h_rate)).toVerifier.verify ((ctx, (point, claim)), ost) tr =
         pure (statement (⟨point, claim⟩ : MLPEvalStatement L ℓ), ost) :=
   (frontGuard K β (contextualQuery Context)).verify_eq _ _

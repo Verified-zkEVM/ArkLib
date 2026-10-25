@@ -80,13 +80,14 @@ theorem honest_input : (((query, layout.eval query source), honest.commit packed
     Head.relIn data 1 layout pc := Head.mem_relIn_commit data 1 layout pc honest _ _
 
 example {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-    (RingSwitch.reduction data 1 layout codec bat.toBatchingRule pc).perfectCompleteness
+    (RingSwitch.reduction
+      (oSpec := []ₒ) data 1 layout codec bat.toBatchingRule pc).perfectCompleteness
       init impl (Head.relIn data 1 layout pc)
       (pc.evalRelWithContext (layout.Query × bat.Challenge)) :=
   RingSwitch.perfectCompleteness data 1 layout codec bat.toBatchingRule pc init impl
 
 example {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-    (RingSwitch.verifier data 1 layout codec bat.toBatchingRule
+    (RingSwitch.verifier (oSpec := []ₒ) data 1 layout codec bat.toBatchingRule
       pc).toVerifier.rbrKnowledgeSoundnessWorstCase
       init impl (Head.relIn data 1 layout pc)
       (pc.evalRelWithContext (layout.Query × bat.Challenge)) (RingSwitch.rbrError (M := data.ιP →
@@ -107,7 +108,7 @@ example : (1 / 4 : ℝ≥0) < 1 := by norm_num
 /-- Changing the scalar claim makes the honest carrier fail the full verifier,
 for every continuation transcript. -/
 example (c : bat.Challenge) (tailTr : FullTranscript (ProductSumcheck.pSpec F16 1)) :
-    (RingSwitch.verifier data 1 layout codec bat.toBatchingRule pc).toVerifier.verify
+    (RingSwitch.verifier (oSpec := []ₒ) data 1 layout codec bat.toBatchingRule pc).toVerifier.verify
       ((query, layout.eval query source + 1), honest.commit packed)
       ((FullTranscript.mk2 (Head.partials data 1 layout query source) c) ++ₜ tailTr) =
         failure := by
@@ -120,7 +121,7 @@ example (c : bat.Challenge) (tailTr : FullTranscript (ProductSumcheck.pSpec F16 
       aeval (layout.point query) (layout.components source i).val
     rw [← layout.reconstruct query source]
     exact fun h => one_ne_zero (add_left_cancel (h.trans (add_zero _).symm))
-  have hfalse : (Head.guardedForm data 1 layout codec bat.toBatchingRule pc).check
+  have hfalse : (Head.guardedForm (oSpec := []ₒ) data 1 layout codec bat.toBatchingRule pc).check
       ((query, layout.eval query source + 1), honest.commit packed)
       (FullTranscript.mk2 (Head.partials data 1 layout query source) c) = false := by
     rw [Head.guardedForm_check]
@@ -128,7 +129,8 @@ example (c : bat.Challenge) (tailTr : FullTranscript (ProductSumcheck.pSpec F16 
       (Head.partials data 1 layout query source)) = false
     exact decide_eq_false hc
   calc
-    _ = _ := (RingSwitch.guardedForm data 1 layout codec bat.toBatchingRule pc).verify_eq _ _
+    _ = _ := (RingSwitch.guardedForm
+      (oSpec := []ₒ) data 1 layout codec bat.toBatchingRule pc).verify_eq _ _
     _ = failure := by
       simp only [RingSwitch.guardedForm, Verifier.GuardedForm.append,
         FullTranscript.append_fst, hfalse, Bool.false_and, Bool.false_eq_true, ↓reduceIte]

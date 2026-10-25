@@ -97,6 +97,30 @@ example {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ Prob
   fullVerifier_rbrKnowledgeSoundnessWorstCase 2 (ZMod 2) beta (ϑ := 1) (R := 1) (ℓ' := 1)
     (by decide) rfl queryContext 8 init impl
 
+-- A nonempty ambient oracle can be stateless or genuinely stateful. The honest protocol
+-- ignores it; the RBR theorem still quantifies over adversaries that may query it.
+private abbrev ambient : OracleSpec Bool := Bool →ₒ Bool
+
+private def statelessAmbient : QueryImpl ambient ProbComp := fun bit => pure bit
+
+private def statefulAmbient : QueryImpl ambient (StateT Bool ProbComp) := fun write => do
+  if write then set true
+  get
+
+example := fullReduction_perfectCompleteness 2 (ZMod 2) beta
+  (ϑ := 1) (R := 1) (ℓ' := 1) (by decide) rfl queryContext 8
+  (pure ()) (fun bit => liftM (statelessAmbient bit) : QueryImpl ambient (StateT Unit ProbComp))
+
+example := fullVerifier_rbrKnowledgeSoundnessWorstCase 2 (ZMod 2) beta
+  (ϑ := 1) (R := 1) (ℓ' := 1) (by decide) rfl queryContext 8
+  (pure ()) (fun bit => liftM (statelessAmbient bit) : QueryImpl ambient (StateT Unit ProbComp))
+
+example := fullReduction_perfectCompleteness 2 (ZMod 2) beta
+  (ϑ := 1) (R := 1) (ℓ' := 1) (by decide) rfl queryContext 8 (pure false) statefulAmbient
+
+example := fullVerifier_rbrKnowledgeSoundnessWorstCase 2 (ZMod 2) beta
+  (ϑ := 1) (R := 1) (ℓ' := 1) (by decide) rfl queryContext 8 (pure false) statefulAmbient
+
 private theorem card_field : Fintype.card L = 16 := by
   rw [← Nat.card_eq_fintype_card]
   exact GaloisField.card 2 4 (by decide)

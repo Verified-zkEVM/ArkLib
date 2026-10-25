@@ -40,6 +40,8 @@ unique witness consistent with the first oracle, but agrees with it at the chall
 
 @[expose] public section
 
+variable {ι : Type} {oSpec : OracleSpec ι}
+
 namespace Binius.BinaryBasefold.CoreInteraction
 noncomputable section
 open OracleSpec OracleComp ProtocolSpec Finset AdditiveNTT Polynomial MvPolynomial
@@ -68,7 +70,7 @@ variable {Context : Type} {multpoly : Context → MultilinearPoly L ℓ}
 
 section FoldStep
 
-variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)}
+variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
 
 /-- The domain level of the oracle committed at the start of round `i`'s block. -/
 @[reducible]
@@ -123,7 +125,7 @@ witness from a round-`(i + 1)` witness by re-projecting the round polynomial and
 of its multilinear polynomial to the input statement's challenges; across the message it keeps
 the witness. The output witness is extracted as itself. -/
 noncomputable def foldRbrExtractor (i : Fin ℓ) :
-  Extractor.RoundByRound []ₒ
+  Extractor.RoundByRound oSpec
     (StmtIn := (Statement (L := L) Context i.castSucc) × (∀ j,
       OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc j))
     (WitIn := Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc)
@@ -196,7 +198,7 @@ def FoldKnowledgeState {i : Fin ℓ} (m : Fin (2 + 1))
 
 /-- The knowledge-state function of the fold step, `FoldKnowledgeState`, with its obligations. -/
 def foldKnowledgeStateFunction (i : Fin ℓ) :
-    (foldOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
+    (foldOracleVerifier (oSpec := oSpec) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
       (multpoly := multpoly) i).KnowledgeStateFunction init impl
       (relIn := roundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate :=
           h_ℓ_add_R_rate)
@@ -204,7 +206,7 @@ def foldKnowledgeStateFunction (i : Fin ℓ) :
       (relOut := foldStepRelOut (multpoly := multpoly) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate :=
           h_ℓ_add_R_rate)
         (𝓑 := 𝓑)  i)
-      (extractor := foldRbrExtractor (multpoly := multpoly) (𝓡 := 𝓡) (ϑ := ϑ) 𝔽q β
+      (extractor := foldRbrExtractor (oSpec := oSpec) (multpoly := multpoly) (𝓡 := 𝓡) (ϑ := ϑ) 𝔽q β
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) where
   toFun := fun m ⟨stmtMid, oStmtMid⟩ tr witMid =>
     FoldKnowledgeState (multpoly := multpoly) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
@@ -245,7 +247,7 @@ def foldKnowledgeStateFunction (i : Fin ℓ) :
         exact Sumcheck.Structured.eval_add_eval_getSumcheckRoundPoly ℓ 𝓑 i witMid.H
       exact Or.inr ⟨h_sumcheck, h_struct, h_init, h_fold⟩
   toFun_full := fun s tr witOut h => by
-    obtain ⟨hcheck, hrel⟩ := (foldOracleVerifierGuardedForm 𝔽q β (ϑ := ϑ)
+    obtain ⟨hcheck, hrel⟩ := (foldOracleVerifierGuardedForm (oSpec := oSpec) 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (multpoly := multpoly)
           i).check_and_of_prEvent_pos h
     rw [foldOracleVerifierGuardedForm_check 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
@@ -618,7 +620,8 @@ lemma foldStepFreshBadEvent_or_of_rbrExtractionFailureEvent (i : Fin ℓ)
     (hfail : rbrExtractionFailureEvent
       (kSF := foldKnowledgeStateFunction (multpoly := multpoly) (𝓑 := 𝓑) (init := init)
         (impl := impl) (σ := σ) 𝔽q β i)
-      (extractor := foldRbrExtractor (multpoly := multpoly) 𝔽q β i) (i := ⟨1, rfl⟩) (stmtIn :=
+      (extractor := foldRbrExtractor (oSpec := oSpec) (multpoly := multpoly) 𝔽q β i)
+        (i := ⟨1, rfl⟩) (stmtIn :=
           stmtOStmtIn)
     (transcript := FullTranscript.mk1 h_i) (challenge := r_i')) :
     let IncrementalFoldingBadEvent :=
@@ -754,7 +757,7 @@ lemma prob_foldStep_rbrExtractionFailureEvent_le (i : Fin ℓ)
       rbrExtractionFailureEvent
         (kSF := foldKnowledgeStateFunction (multpoly := multpoly) (𝓑 := 𝓑)
           (init := init) (impl := impl) (σ := σ) 𝔽q β i)
-        (extractor := foldRbrExtractor (multpoly := multpoly) 𝔽q β i) ⟨1, rfl⟩
+        (extractor := foldRbrExtractor (oSpec := oSpec) (multpoly := multpoly) 𝔽q β i) ⟨1, rfl⟩
           stmtOStmtIn (FullTranscript.mk1 h_i) y ] ≤
       foldKnowledgeError 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i ⟨1, by rfl⟩ := by
   classical
@@ -762,7 +765,7 @@ lemma prob_foldStep_rbrExtractionFailureEvent_le (i : Fin ℓ)
     rbrExtractionFailureEvent
       (kSF := foldKnowledgeStateFunction (multpoly := multpoly) (𝓑 := 𝓑)
         (init := init) (impl := impl) (σ := σ) 𝔽q β i)
-      (extractor := foldRbrExtractor (multpoly := multpoly) 𝔽q β i) ⟨1, rfl⟩
+      (extractor := foldRbrExtractor (oSpec := oSpec) (multpoly := multpoly) 𝔽q β i) ⟨1, rfl⟩
       stmtOStmtIn (FullTranscript.mk1 h_i) y
   let sumcheckBadEvent : L → Prop := fun y =>
     let IncrementalFoldingBadEvent :=
@@ -899,13 +902,14 @@ omit [DecidableEq 𝔽q] in
 failure probability over the challenge alone is at most the Schwartz–Zippel term plus the fresh
 incremental folding bad-event term. -/
 theorem foldOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith (i : Fin ℓ) :
-    (foldOracleVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
+    (foldOracleVerifier (oSpec := oSpec) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
       (multpoly := multpoly) i).toVerifier.rbrKnowledgeSoundnessWorstCaseWith init impl
       (roundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (𝓑 := 𝓑) i.castSucc)
       (foldStepRelOut (multpoly := multpoly) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (𝓑 := 𝓑) i)
-      (FoldIntermediateWitness 𝔽q β i) (foldRbrExtractor (multpoly := multpoly) 𝔽q β i)
+      (FoldIntermediateWitness 𝔽q β i) (foldRbrExtractor (oSpec := oSpec)
+        (multpoly := multpoly) 𝔽q β i)
       (foldKnowledgeStateFunction (multpoly := multpoly) (𝓡 := 𝓡) (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (init := init) (impl := impl) 𝔽q β i)
       (foldKnowledgeError 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) := by
@@ -925,7 +929,7 @@ omit [DecidableEq 𝔽q] in
 `foldKnowledgeError`: the existential form of
 `foldOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith`. -/
 theorem foldOracleVerifier_rbrKnowledgeSoundnessWorstCase (i : Fin ℓ) :
-    (foldOracleVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
+    (foldOracleVerifier (oSpec := oSpec) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
       (multpoly := multpoly) i).toVerifier.rbrKnowledgeSoundnessWorstCase init impl
       (roundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (𝓑 := 𝓑) i.castSucc)
@@ -939,7 +943,7 @@ omit [DecidableEq 𝔽q] in
 /-- Round-by-round knowledge soundness of the fold step, with error `foldKnowledgeError`: the
 averaged form of `foldOracleVerifier_rbrKnowledgeSoundnessWorstCase`. -/
 theorem foldOracleVerifier_rbrKnowledgeSoundness (i : Fin ℓ) :
-    (foldOracleVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
+    (foldOracleVerifier (oSpec := oSpec) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
       (multpoly := multpoly) i).rbrKnowledgeSoundness init impl
       (relIn := roundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i.castSucc)

@@ -40,6 +40,8 @@ rounds defined in `CoreInteractionPhase/Protocol.lean`, and of their sequence.
 
 @[expose] public section
 
+variable {ι : Type} {oSpec : OracleSpec ι}
+
 namespace Binius.BinaryBasefold.CoreInteraction
 noncomputable section
 open OracleSpec OracleComp ProtocolSpec Finset AdditiveNTT Polynomial MvPolynomial
@@ -68,7 +70,7 @@ variable {Context : Type} {multpoly : Context → MultilinearPoly L ℓ}
 
 section IteratedSumcheckFoldComposition
 
-variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)}
+variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
 
 /-! ### Perfect completeness -/
 
@@ -83,22 +85,29 @@ theorem nonLastSingleBlockOracleReduction_perfectCompleteness (bIdx : Fin (ℓ /
       (relOut := strictRoundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
         ⟨↑bIdx.succ * ϑ, blockIdx_mul_ϑ_lt_ℓ_succ bIdx.succ⟩)
-      (oracleReduction := nonLastSingleBlockOracleReduction 𝔽q β
+      (oracleReduction := nonLastSingleBlockOracleReduction (oSpec := oSpec) 𝔽q β
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (multpoly := multpoly) bIdx) :=
   OracleReduction.append_perfectCompleteness_of_guarded_verifiers _ _
-    (nonLastSingleBlockFoldRelayGuardedForm 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
+    (nonLastSingleBlockFoldRelayGuardedForm (oSpec := oSpec) 𝔽q β
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
       (multpoly := multpoly) bIdx)
     (OracleVerifier.castIdxGuardedForm rfl (nonLastSingleBlockCommitIdx_succ bIdx)
-      (foldCommitOracleVerifierGuardedForm 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
+      (foldCommitOracleVerifierGuardedForm (oSpec := oSpec) 𝔽q β
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
         (multpoly := multpoly) (nonLastSingleBlockCommitIdx bIdx)
         (isCommitmentRound_nonlastBlock (r := r) (𝓡 := 𝓡) bIdx)))
-    (fun _ => Or.inl inferInstance)
+    (fun _ => Or.inl (by
+      repeat' first
+      | exact ⟨_, fun _ => rfl⟩
+      | apply Prover.OutputIsPure.seqCompose
+      | intro))
     (OracleReduction.seqCompose_perfectCompleteness_of_guarded_verifiers _ _ _ _ _
       (fun i => strictRoundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
         (nonLastBlockRoundIndex bIdx i))
-      _ (fun _ => inferInstance)
-      (fun i => foldRelayOracleVerifierGuardedForm 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      _ (fun _ => ⟨_, fun _ => rfl⟩)
+      (fun i => foldRelayOracleVerifierGuardedForm (oSpec := oSpec) 𝔽q β
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (𝓑 := 𝓑) (multpoly := multpoly)
         ⟨bIdx * ϑ + i, bIdx_mul_ϑ_add_i_fin_ℓ_pred_lt_ℓ bIdx i⟩
         (not_isCommitmentRound_of_offset_lt (r := r) (𝓡 := 𝓡) bIdx i (hx := i.isLt)))
@@ -124,7 +133,8 @@ theorem lastBlockOracleReduction_perfectCompleteness :
         ⟨(ℓ / ϑ - 1) * ϑ, lastBlockIdx_mul_ϑ_add_x_lt_ℓ_succ 0 (hx := Nat.zero_le _)⟩)
       (relOut := strictRoundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (Fin.last ℓ))
-      (oracleReduction := lastBlockOracleReduction 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (oracleReduction := lastBlockOracleReduction (oSpec := oSpec) 𝔽q β
+        (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (𝓑 := 𝓑) (multpoly := multpoly)) :=
   OracleReduction.castIdx_perfectCompleteness
     (relIn := fun i => strictRoundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ)
@@ -136,8 +146,9 @@ theorem lastBlockOracleReduction_perfectCompleteness :
       (fun i => strictRoundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
         ⟨(ℓ / ϑ - 1) * ϑ + i, lastBlockIdx_mul_ϑ_add_x_lt_ℓ_succ _ (hx := Fin.is_le i)⟩)
-      _ (fun _ => inferInstance)
-      (fun i => foldRelayOracleVerifierGuardedForm 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      _ (fun _ => ⟨_, fun _ => rfl⟩)
+      (fun i => foldRelayOracleVerifierGuardedForm (oSpec := oSpec) 𝔽q β
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (𝓑 := 𝓑) (multpoly := multpoly)
         ⟨(ℓ / ϑ - 1) * ϑ + i, lastBlockIdx_mul_ϑ_add_fin_lt_ℓ i⟩
         (not_isCommitmentRound_lastBlock i))
@@ -155,13 +166,19 @@ theorem nonLastBlocksOracleReduction_perfectCompleteness :
       (relOut := strictRoundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
         ⟨(ℓ / ϑ - 1) * ϑ, lastBlockIdx_mul_ϑ_add_x_lt_ℓ_succ 0 (hx := Nat.zero_le _)⟩)
-      (oracleReduction := nonLastBlocksOracleReduction 𝔽q β (ϑ := ϑ)
+      (oracleReduction := nonLastBlocksOracleReduction (oSpec := oSpec) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (multpoly := multpoly)) :=
   OracleReduction.seqCompose_perfectCompleteness_of_guarded_verifiers _ _ _ _ _
     (fun i => strictRoundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) ⟨i * ϑ, blockIdx_mul_ϑ_lt_ℓ_succ i⟩)
-    _ (fun _ => inferInstance)
-    (fun bIdx => nonLastSingleBlockOracleVerifierGuardedForm 𝔽q β
+    _ (fun _ => by
+      repeat' first
+      | exact ⟨_, fun _ => rfl⟩
+      | apply Prover.OutputIsPure.seqCompose
+      | apply Prover.OutputIsPure.append
+      | apply OracleReduction.castIdx_outputIsPure
+      | intro)
+    (fun bIdx => nonLastSingleBlockOracleVerifierGuardedForm (oSpec := oSpec) 𝔽q β
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (multpoly := multpoly) bIdx)
     (fun bIdx _ => nonLastSingleBlockOracleReduction_perfectCompleteness 𝔽q β bIdx)
 
@@ -175,7 +192,7 @@ theorem sumcheckFoldOracleReduction_perfectCompleteness :
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) 0)
       (relOut := strictRoundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (Fin.last ℓ))
-      (oracleReduction := sumcheckFoldOracleReduction 𝔽q β (ϑ := ϑ)
+      (oracleReduction := sumcheckFoldOracleReduction (oSpec := oSpec) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (multpoly := multpoly)) :=
   OracleReduction.castIdx_perfectCompleteness
     (relIn := fun i => strictRoundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ)
@@ -184,11 +201,19 @@ theorem sumcheckFoldOracleReduction_perfectCompleteness :
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i)
     (fin_zero_mul_eq (ϑ := ϑ) _) rfl
     (OracleReduction.append_perfectCompleteness_of_guarded_verifiers _ _
-      (nonLastBlocksOracleVerifierGuardedForm 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (nonLastBlocksOracleVerifierGuardedForm (oSpec := oSpec) 𝔽q β (ϑ := ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (𝓑 := 𝓑) (multpoly := multpoly))
-      (lastBlockOracleVerifierGuardedForm 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (lastBlockOracleVerifierGuardedForm (oSpec := oSpec) 𝔽q β (ϑ := ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (𝓑 := 𝓑) (multpoly := multpoly))
-      (fun _ => Or.inl inferInstance)
+      (fun _ => Or.inl (by
+      repeat' first
+      | exact ⟨_, fun _ => rfl⟩
+      | apply Prover.OutputIsPure.seqCompose
+      | apply Prover.OutputIsPure.append
+      | apply OracleReduction.castIdx_outputIsPure
+      | intro))
       (nonLastBlocksOracleReduction_perfectCompleteness 𝔽q β)
       (fun _ => lastBlockOracleReduction_perfectCompleteness 𝔽q β))
 
@@ -205,7 +230,8 @@ omit [DecidableEq 𝔽q] in
 /-- Worst-case round-by-round knowledge soundness of the last block, from the round relation at
 its first round to the round relation at round `ℓ`, with error `lastBlockRbrKnowledgeError`. -/
 theorem lastBlockOracleVerifier_rbrKnowledgeSoundnessWorstCase :
-    (lastBlockOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
+    (lastBlockOracleVerifier (oSpec := oSpec) 𝔽q β (ϑ := ϑ)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
       (multpoly := multpoly)).toVerifier.rbrKnowledgeSoundnessWorstCase init impl
       (roundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (𝓑 := 𝓑)
@@ -223,7 +249,8 @@ theorem lastBlockOracleVerifier_rbrKnowledgeSoundnessWorstCase :
       (fun i => roundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
         ⟨(ℓ / ϑ - 1) * ϑ + i, lastBlockIdx_mul_ϑ_add_x_lt_ℓ_succ _ (hx := Fin.is_le i)⟩) _
-      (fun i => foldRelayOracleVerifierGuardedForm 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (fun i => foldRelayOracleVerifierGuardedForm (oSpec := oSpec) 𝔽q β
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (𝓑 := 𝓑) (multpoly := multpoly)
         ⟨(ℓ / ϑ - 1) * ϑ + i, lastBlockIdx_mul_ϑ_add_fin_lt_ℓ i⟩
         (not_isCommitmentRound_lastBlock i)) _
@@ -241,7 +268,8 @@ theorem lastBlockOracleVerifier_rbrKnowledgeSoundness :
         ⟨(ℓ / ϑ - 1) * ϑ, lastBlockIdx_mul_ϑ_add_x_lt_ℓ_succ 0 (hx := Nat.zero_le _)⟩)
       (roundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (𝓑 := 𝓑) (Fin.last ℓ))
-      (lastBlockOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
+      (lastBlockOracleVerifier (oSpec := oSpec) 𝔽q β (ϑ := ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
         (multpoly := multpoly))
       (rbrKnowledgeError := lastBlockRbrKnowledgeError (L := L) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
@@ -273,7 +301,8 @@ relation at its first round to the round relation at the first round of the next
 error `nonLastSingleBlockRbrKnowledgeError`. -/
 theorem nonLastSingleBlockOracleVerifier_rbrKnowledgeSoundnessWorstCase
     (bIdx : Fin (ℓ / ϑ - 1)) :
-    (nonLastSingleBlockOracleVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
+    (nonLastSingleBlockOracleVerifier (oSpec := oSpec) 𝔽q β
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
       (multpoly := multpoly) bIdx).toVerifier.rbrKnowledgeSoundnessWorstCase init impl
       (roundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (𝓑 := 𝓑) ⟨↑bIdx.castSucc * ϑ, blockIdx_mul_ϑ_lt_ℓ_succ bIdx.castSucc⟩)
@@ -282,13 +311,15 @@ theorem nonLastSingleBlockOracleVerifier_rbrKnowledgeSoundnessWorstCase
       (nonLastSingleBlockRbrKnowledgeError 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         bIdx) :=
   OracleVerifier.append_rbrKnowledgeSoundnessWorstCase_of_guarded_first _ _
-    (nonLastSingleBlockFoldRelayGuardedForm 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
+    (nonLastSingleBlockFoldRelayGuardedForm (oSpec := oSpec) 𝔽q β
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
       (multpoly := multpoly) bIdx)
     (OracleVerifier.seqCompose_rbrKnowledgeSoundnessWorstCase_of_guarded _ _ _
       (fun i => roundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
         (nonLastBlockRoundIndex bIdx i)) _
-      (fun i => foldRelayOracleVerifierGuardedForm 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (fun i => foldRelayOracleVerifierGuardedForm (oSpec := oSpec) 𝔽q β
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (𝓑 := 𝓑) (multpoly := multpoly)
         ⟨bIdx * ϑ + i, bIdx_mul_ϑ_add_i_fin_ℓ_pred_lt_ℓ bIdx i⟩
         (not_isCommitmentRound_of_offset_lt (r := r) (𝓡 := 𝓡) bIdx i (hx := i.isLt))) _
@@ -309,7 +340,8 @@ omit [DecidableEq 𝔽q] in
 /-- Round-by-round knowledge soundness of the `bIdx`-th non-last block: the averaged form of
 `nonLastSingleBlockOracleVerifier_rbrKnowledgeSoundnessWorstCase`. -/
 theorem nonLastSingleBlockOracleVerifier_rbrKnowledgeSoundness (bIdx : Fin (ℓ / ϑ - 1)) :
-    (nonLastSingleBlockOracleVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
+    (nonLastSingleBlockOracleVerifier (oSpec := oSpec) 𝔽q β
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
       (multpoly := multpoly) bIdx).rbrKnowledgeSoundness init impl
       (relIn := roundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
@@ -336,7 +368,8 @@ omit [DecidableEq 𝔽q] in
 at round `0` to the round relation at the first round of the last block, with error
 `nonLastBlocksRbrKnowledgeError`. -/
 theorem nonLastBlocksOracleVerifier_rbrKnowledgeSoundnessWorstCase :
-    (nonLastBlocksOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
+    (nonLastBlocksOracleVerifier (oSpec := oSpec) 𝔽q β (ϑ := ϑ)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
       (multpoly := multpoly)).toVerifier.rbrKnowledgeSoundnessWorstCase init impl
       (roundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (𝓑 := 𝓑) ⟨0 * ϑ, blockIdx_mul_ϑ_lt_ℓ_succ (ϑ := ϑ) 0⟩)
@@ -348,7 +381,7 @@ theorem nonLastBlocksOracleVerifier_rbrKnowledgeSoundnessWorstCase :
   OracleVerifier.seqCompose_rbrKnowledgeSoundnessWorstCase_of_guarded _ _ _
     (fun i => roundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) ⟨i * ϑ, blockIdx_mul_ϑ_lt_ℓ_succ i⟩) _
-    (fun bIdx => nonLastSingleBlockOracleVerifierGuardedForm 𝔽q β
+    (fun bIdx => nonLastSingleBlockOracleVerifierGuardedForm (oSpec := oSpec) 𝔽q β
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (multpoly := multpoly) bIdx) _
     (fun bIdx => nonLastSingleBlockOracleVerifier_rbrKnowledgeSoundnessWorstCase 𝔽q β bIdx)
 
@@ -356,7 +389,8 @@ omit [DecidableEq 𝔽q] in
 /-- Round-by-round knowledge soundness of the non-last blocks: the averaged form of
 `nonLastBlocksOracleVerifier_rbrKnowledgeSoundnessWorstCase`. -/
 theorem nonLastBlocksOracleVerifier_rbrKnowledgeSoundness :
-    (nonLastBlocksOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
+    (nonLastBlocksOracleVerifier (oSpec := oSpec) 𝔽q β (ϑ := ϑ)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
       (multpoly := multpoly)).rbrKnowledgeSoundness init impl
       (relIn := roundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) ⟨0 * ϑ, blockIdx_mul_ϑ_lt_ℓ_succ (ϑ := ϑ) 0⟩)
@@ -382,7 +416,8 @@ omit [DecidableEq 𝔽q] in
 round relation at round `0` to the round relation at round `ℓ`, with error
 `sumcheckFoldKnowledgeError`. -/
 theorem sumcheckFoldOracleVerifier_rbrKnowledgeSoundnessWorstCase :
-    (sumcheckFoldOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
+    (sumcheckFoldOracleVerifier (oSpec := oSpec) 𝔽q β (ϑ := ϑ)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
       (multpoly := multpoly)).toVerifier.rbrKnowledgeSoundnessWorstCase init impl
       (roundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (𝓑 := 𝓑) 0)
@@ -396,7 +431,8 @@ theorem sumcheckFoldOracleVerifier_rbrKnowledgeSoundnessWorstCase :
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i)
     (fin_zero_mul_eq (ϑ := ϑ) _) rfl
     (OracleVerifier.append_rbrKnowledgeSoundnessWorstCase_of_guarded_first _ _
-      (nonLastBlocksOracleVerifierGuardedForm 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (nonLastBlocksOracleVerifierGuardedForm (oSpec := oSpec) 𝔽q β (ϑ := ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (𝓑 := 𝓑) (multpoly := multpoly))
       (nonLastBlocksOracleVerifier_rbrKnowledgeSoundnessWorstCase 𝔽q β)
       (lastBlockOracleVerifier_rbrKnowledgeSoundnessWorstCase 𝔽q β))
@@ -405,7 +441,8 @@ omit [DecidableEq 𝔽q] in
 /-- Round-by-round knowledge soundness of the sum-check-and-fold rounds: the averaged form of
 `sumcheckFoldOracleVerifier_rbrKnowledgeSoundnessWorstCase`. -/
 theorem sumcheckFoldOracleVerifier_rbrKnowledgeSoundness :
-    (sumcheckFoldOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
+    (sumcheckFoldOracleVerifier (oSpec := oSpec) 𝔽q β (ϑ := ϑ)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
       (multpoly := multpoly)).rbrKnowledgeSoundness init impl
       (pSpec := pSpecSumcheckFold 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
       (relIn := roundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ)

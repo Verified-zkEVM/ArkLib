@@ -39,6 +39,8 @@ statement extended by `c`. The step sends no challenge.
 
 @[expose] public section
 
+variable {ι : Type} {oSpec : OracleSpec ι}
+
 namespace Binius.BinaryBasefold.CoreInteraction
 noncomputable section
 open OracleSpec OracleComp ProtocolSpec Finset AdditiveNTT Polynomial MvPolynomial
@@ -72,7 +74,7 @@ open Classical in
 /-- The prover of the final sum-check step: it sends the constant of its fully folded word. -/
 noncomputable def finalSumcheckProver :
   OracleProver
-    (oSpec := []ₒ)
+    (oSpec := oSpec)
     (StmtIn := Statement (L := L) (SumcheckBaseContext L ℓ) (Fin.last ℓ))
     (OStmtIn := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ (Fin.last ℓ))
     (WitIn := Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ))
@@ -99,7 +101,7 @@ noncomputable def finalSumcheckProver :
     -- Construct the transcript from the message and challenges (no challenges in this step)
     let t := FullTranscript.mk1 (pSpec := pSpecFinalSumcheckStep (L := L)) c
     -- Delegate to the logic instance for prover output
-    pure ((finalSumcheckStepLogic 𝔽q β (ϑ := ϑ)
+    pure ((finalSumcheckStepLogic (oSpec := oSpec) 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)).proverOut stmtIn witIn oStmtIn t)
 
 /-- The verifier of the final sum-check step: it queries the sent constant, guards on the closing
@@ -107,7 +109,7 @@ sum-check equation of `finalSumcheckStepLogic`, and outputs the statement extend
 The oracle statements pass through. -/
 noncomputable def finalSumcheckVerifier :
   OracleVerifier
-    (oSpec := []ₒ)
+    (oSpec := oSpec)
     (StmtIn := Statement (L := L) (SumcheckBaseContext L ℓ) (Fin.last ℓ))
     (OStmtIn := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ (Fin.last ℓ))
     (StmtOut := FinalSumcheckStatementOut (L := L) (ℓ := ℓ))
@@ -120,20 +122,20 @@ noncomputable def finalSumcheckVerifier :
     -- Construct the transcript
     let t := FullTranscript.mk1 (pSpec := pSpecFinalSumcheckStep (L := L)) c
     -- Get the logic instance
-    let logic := (finalSumcheckStepLogic 𝔽q β (ϑ := ϑ)
+    let logic := (finalSumcheckStepLogic (oSpec := oSpec) 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑))
     let : Decidable (logic.verifierCheck stmtIn t) := by
       dsimp only [logic, finalSumcheckStepLogic]
       infer_instance
     guard (logic.verifierCheck stmtIn t)
     pure (logic.verifierOut stmtIn t)
-  outputOracle := (finalSumcheckStepLogic 𝔽q β (ϑ := ϑ)
+  outputOracle := (finalSumcheckStepLogic (oSpec := oSpec) 𝔽q β (ϑ := ϑ)
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)).outputOracle
 
 /-- The oracle reduction of the final sum-check step. -/
 noncomputable def finalSumcheckOracleReduction :
   OracleReduction
-    (oSpec := []ₒ)
+    (oSpec := oSpec)
     (StmtIn := Statement (L := L) (SumcheckBaseContext L ℓ) (Fin.last ℓ))
     (OStmtIn := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ (Fin.last ℓ))
     (WitIn := Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ))
@@ -141,21 +143,23 @@ noncomputable def finalSumcheckOracleReduction :
     (OStmtOut := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ (Fin.last ℓ))
     (WitOut := Unit)
     (pSpec := pSpecFinalSumcheckStep (L := L)) where
-  prover := finalSumcheckProver 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
-  verifier := finalSumcheckVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
+  prover := finalSumcheckProver (oSpec := oSpec) 𝔽q β (ϑ := ϑ)
+    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
+  verifier := finalSumcheckVerifier (oSpec := oSpec) 𝔽q β (ϑ := ϑ)
+    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
 
 /-- The final sum-check verifier's guard and verdict as data: `finalSumcheckStepLogic`'s check and
 output statement on the sent constant, with the unchanged oracle statements. -/
 def finalSumcheckVerifierGuardedForm :
-    (finalSumcheckVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    (finalSumcheckVerifier (oSpec := oSpec) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (𝓑 := 𝓑)).toVerifier.GuardedForm :=
   Verifier.GuardedForm.ofQueryGuard _ ⟨⟨0, rfl⟩, ()⟩
-    (fun s a _ => (finalSumcheckStepLogic 𝔽q β (ϑ := ϑ)
+    (fun s a _ => (finalSumcheckStepLogic (oSpec := oSpec) 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)).verifierCheck s (FullTranscript.mk1 a))
     (hcheck := fun _ _ _ => by
       dsimp only [finalSumcheckStepLogic]
       infer_instance)
-    (fun s a _ => (finalSumcheckStepLogic 𝔽q β (ϑ := ϑ)
+    (fun s a _ => (finalSumcheckStepLogic (oSpec := oSpec) 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)).verifierOut s (FullTranscript.mk1 a))
     (fun _ _ => rfl)
 
@@ -168,7 +172,8 @@ theorem finalSumcheckVerifierGuardedForm_check
     (s : Statement (L := L) (SumcheckBaseContext L ℓ) (Fin.last ℓ) × ∀ j, OracleStatement 𝔽q β
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ (Fin.last ℓ) j)
     (tr : (pSpecFinalSumcheckStep (L := L)).FullTranscript) :
-    (finalSumcheckVerifierGuardedForm 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    (finalSumcheckVerifierGuardedForm (oSpec := oSpec) 𝔽q β (ϑ := ϑ)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (𝓑 := 𝓑)).check s tr =
       decide (s.1.sumcheck_target =
         eqTilde s.1.ctx.t_eval_point s.1.challenges * (show L from tr.messages ⟨0, rfl⟩)) :=
@@ -183,7 +188,8 @@ theorem finalSumcheckVerifierGuardedForm_out
     (s : Statement (L := L) (SumcheckBaseContext L ℓ) (Fin.last ℓ) × ∀ j, OracleStatement 𝔽q β
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ (Fin.last ℓ) j)
     (tr : (pSpecFinalSumcheckStep (L := L)).FullTranscript) :
-    (finalSumcheckVerifierGuardedForm 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    (finalSumcheckVerifierGuardedForm (oSpec := oSpec) 𝔽q β (ϑ := ϑ)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (𝓑 := 𝓑)).out s tr =
       ({ ctx := s.1.ctx, sumcheck_target := s.1.sumcheck_target, challenges := s.1.challenges,
           finalConstant := show L from tr.messages ⟨0, rfl⟩ }, s.2) := rfl
@@ -197,25 +203,25 @@ omit [DecidableEq 𝔽q] in
 strict final sum-check output relation. -/
 theorem finalSumcheckOracleReduction_perfectCompleteness {σ : Type}
     (init : ProbComp σ)
-    (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
+    (impl : QueryImpl oSpec (StateT σ ProbComp)) :
     OracleReduction.perfectCompleteness
       (pSpec := pSpecFinalSumcheckStep (L := L))
       (relIn := strictRoundRelation 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (𝓑 := 𝓑) (multpoly := multiplier) (Fin.last ℓ))
       (relOut := strictFinalSumcheckRelOut 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
-      (oracleReduction := finalSumcheckOracleReduction 𝔽q β (ϑ := ϑ)
+      (oracleReduction := finalSumcheckOracleReduction (oSpec := oSpec) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)) (init := init) (impl := impl) := by
   classical
-  let step := finalSumcheckStepLogic 𝔽q β (ϑ := ϑ)
+  let step := finalSumcheckStepLogic (oSpec := oSpec) 𝔽q β (ϑ := ϑ)
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
   apply step.perfectCompleteness_of_isStronglyComplete
-    (finalSumcheckOracleReduction 𝔽q β (ϑ := ϑ)
+    (finalSumcheckOracleReduction (oSpec := oSpec) 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑))
-    (finalSumcheckVerifierGuardedForm 𝔽q β (𝓑 := 𝓑))
+    (finalSumcheckVerifierGuardedForm (oSpec := oSpec) 𝔽q β (𝓑 := 𝓑))
     (finalSumcheckStepLogic_isStronglyComplete 𝔽q β (𝓑 := 𝓑))
   · intro stmt wit oracles q hq
     let c : L := wit.f ⟨0, by simp only [zero_mem]⟩
-    have hp : (finalSumcheckProver 𝔽q β (ϑ := ϑ)
+    have hp : (finalSumcheckProver (oSpec := oSpec) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)).run (stmt, oracles) wit =
         pure (((default : (pSpecFinalSumcheckStep (L := L)).Transcript 0).concat (m := 0) c),
           step.proverOut stmt wit oracles (FullTranscript.mk1 c)) := rfl
@@ -252,7 +258,7 @@ multilinear polynomial from the first oracle and rebuilds the round-`ℓ` witnes
 constant round polynomial at the sum-check target; if decoding fails it returns the zero
 polynomial. -/
 noncomputable def finalSumcheckRbrExtractor :
-  Extractor.RoundByRound []ₒ
+  Extractor.RoundByRound oSpec
     (StmtIn := (Statement (L := L) (SumcheckBaseContext L ℓ) (Fin.last ℓ)) ×
       (∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ (Fin.last ℓ) j))
     (WitIn := Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ))
@@ -326,13 +332,14 @@ def FinalSumcheckKnowledgeState {m : Fin (1 + 1)}
 with its
 obligations. -/
 noncomputable def finalSumcheckKnowledgeStateFunction {σ : Type} (init : ProbComp σ)
-    (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-    (finalSumcheckVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    (impl : QueryImpl oSpec (StateT σ ProbComp)) :
+    (finalSumcheckVerifier (oSpec := oSpec) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (𝓑 := 𝓑)).KnowledgeStateFunction init impl
     (relIn := roundRelation 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (𝓑 := 𝓑) (multpoly := multiplier) (Fin.last ℓ) )
     (relOut := finalSumcheckRelOut 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) )
-    (extractor := finalSumcheckRbrExtractor 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
+    (extractor := finalSumcheckRbrExtractor (oSpec := oSpec) 𝔽q β
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
   where
   toFun := fun m ⟨stmtIn, oStmtIn⟩ tr witMid =>
     FinalSumcheckKnowledgeState 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
@@ -420,7 +427,7 @@ noncomputable def finalSumcheckKnowledgeStateFunction {σ : Type} (init : ProbCo
           (oStmt := oStmtIn) (challenges := stmtIn.challenges)).1 hBad
       )
   toFun_full := fun s tr witOut h => by
-    obtain ⟨hcheck, hrel⟩ := (finalSumcheckVerifierGuardedForm 𝔽q β (ϑ := ϑ)
+    obtain ⟨hcheck, hrel⟩ := (finalSumcheckVerifierGuardedForm (oSpec := oSpec) 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)).check_and_of_prEvent_pos h
     rw [finalSumcheckVerifierGuardedForm_check 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (𝓑 := 𝓑) s tr] at hcheck
@@ -431,15 +438,16 @@ noncomputable def finalSumcheckKnowledgeStateFunction {σ : Type} (init : ProbCo
 the error `finalSumcheckKnowledgeError`. The step sends no challenge, so there is no
 extraction-failure event to bound; the content is the knowledge-state function's obligations. -/
 theorem finalSumcheckOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith {σ : Type}
-    (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-    (finalSumcheckVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp)) :
+    (finalSumcheckVerifier (oSpec := oSpec) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (𝓑 := 𝓑)).toVerifier.rbrKnowledgeSoundnessWorstCaseWith init impl
       (roundRelation 𝔽q β (ϑ := ϑ) (𝓑 := 𝓑) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (multpoly := multiplier) (Fin.last ℓ))
       (finalSumcheckRelOut 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
       (FinalSumcheckWit (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ))
-      (finalSumcheckRbrExtractor 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
-      (finalSumcheckKnowledgeStateFunction 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (finalSumcheckRbrExtractor (oSpec := oSpec) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
+      (finalSumcheckKnowledgeStateFunction (oSpec := oSpec) 𝔽q β (ϑ := ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (𝓑 := 𝓑) init impl)
       finalSumcheckKnowledgeError :=
   Verifier.rbrKnowledgeSoundnessWorstCaseWith_of_isEmpty_challengeIdx _ _
@@ -448,8 +456,8 @@ omit [DecidableEq 𝔽q] in
 /-- Worst-case round-by-round knowledge soundness of the final sum-check step: the existential
 form of `finalSumcheckOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith`. -/
 theorem finalSumcheckOracleVerifier_rbrKnowledgeSoundnessWorstCase {σ : Type}
-    (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-    (finalSumcheckVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp)) :
+    (finalSumcheckVerifier (oSpec := oSpec) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (𝓑 := 𝓑)).toVerifier.rbrKnowledgeSoundnessWorstCase init impl
       (roundRelation 𝔽q β (ϑ := ϑ) (𝓑 := 𝓑) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (multpoly := multiplier) (Fin.last ℓ))
@@ -463,8 +471,8 @@ omit [DecidableEq 𝔽q] in
 /-- Round-by-round knowledge soundness of the final sum-check step: the averaged form of
 `finalSumcheckOracleVerifier_rbrKnowledgeSoundnessWorstCase`. -/
 theorem finalSumcheckOracleVerifier_rbrKnowledgeSoundness {σ : Type}
-    (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-    (finalSumcheckVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp)) :
+    (finalSumcheckVerifier (oSpec := oSpec) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (𝓑 := 𝓑)).rbrKnowledgeSoundness init impl
       (relIn := roundRelation 𝔽q β (ϑ := ϑ) (𝓑 := 𝓑) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (multpoly := multiplier) (Fin.last ℓ))

@@ -21,6 +21,8 @@ challenge error.
 
 @[expose] public section
 
+variable {ιₒ : Type} {oSpec : OracleSpec ιₒ}
+
 noncomputable section
 namespace RingSwitching.Packing.ProductSumcheck.Terminal
 open Probability OracleSpec OracleComp ProtocolSpec MvPolynomial ProbabilityTheory
@@ -46,7 +48,7 @@ def nextStatement (stmt : Statement Context C (Fin.last m)) (v : C) : Context ×
 
 /-- The honest prover preserves the packed polynomial and commitment oracle. -/
 def proverForOracles {ι : Type} (OStmt : ι → Type) :
-    OracleProver []ₒ (Statement Context C (Fin.last m)) OStmt
+    OracleProver oSpec (Statement Context C (Fin.last m)) OStmt
     P⦃≤ 1⦄[X Fin m] (Context × ((Fin m → C) × C)) OStmt P⦃≤ 1⦄[X Fin m] (pSpec C) where
   PrvState _ := ((Statement Context C (Fin.last m)) × (∀ j, OStmt j)) ×
     P⦃≤ 1⦄[X Fin m]
@@ -58,22 +60,23 @@ def proverForOracles {ι : Type} (OStmt : ι → Type) :
   output st := pure ((nextStatement st.1.1 (aeval st.1.1.challenges st.2.val), st.1.2), st.2)
 
 /-- Send the packed evaluation with unchanged oracle values. -/
-def prover := proverForOracles (P := P) (C := C) (Context := Context) (m := m) pc.OStmt
+def prover := proverForOracles (oSpec := oSpec) (P := P) (C := C) (Context := Context)
+  (m := m) pc.OStmt
 
 open scoped Classical in
 /-- A failed product check aborts the oracle verifier. -/
-def verifier : OracleVerifier []ₒ (Statement Context C (Fin.last m)) pc.OStmt
+def verifier : OracleVerifier oSpec (Statement Context C (Fin.last m)) pc.OStmt
     (Context × ((Fin m → C) × C)) pc.OStmt (pSpec C) :=
   messageRoundOracleVerifier (check multiplier) nextStatement
 
 /-- The terminal reduction ends at the original commitment's evaluation relation over C. -/
-def reduction : OracleReduction []ₒ (Statement Context C (Fin.last m)) pc.OStmt
+def reduction : OracleReduction oSpec (Statement Context C (Fin.last m)) pc.OStmt
     P⦃≤ 1⦄[X Fin m] (Context × ((Fin m → C) × C)) pc.OStmt P⦃≤ 1⦄[X Fin m] (pSpec C) :=
-  ⟨prover pc, verifier multiplier pc⟩
+  ⟨prover (oSpec := oSpec) pc, verifier (oSpec := oSpec) multiplier pc⟩
 
 open scoped Classical in
 /-- The deterministic guarded form required by checked sequential composition. -/
-def guardedForm : (verifier multiplier pc).toVerifier.GuardedForm :=
+def guardedForm : (verifier (oSpec := oSpec) multiplier pc).toVerifier.GuardedForm :=
   messageRoundOracleVerifierGuardedForm (check multiplier) nextStatement
 
 omit [Algebra P C] in
@@ -81,14 +84,14 @@ open scoped Classical in
 /-- The terminal guarded form checks the multiplier equation. -/
 theorem guardedForm_check (stmt : Statement Context C (Fin.last m) × (∀ j, pc.OStmt j))
     (tr : FullTranscript (pSpec C)) :
-    (guardedForm multiplier pc).check stmt tr =
+    (guardedForm (oSpec := oSpec) multiplier pc).check stmt tr =
       decide (check multiplier stmt.1 (tr.messages ⟨0, rfl⟩)) := rfl
 
 omit [Algebra P C] in
 /-- The terminal guarded form forwards the evaluation and the input commitment oracles. -/
 theorem guardedForm_out (stmt : Statement Context C (Fin.last m) × (∀ j, pc.OStmt j))
     (tr : FullTranscript (pSpec C)) :
-    (guardedForm multiplier pc).out stmt tr =
+    (guardedForm (oSpec := oSpec) multiplier pc).out stmt tr =
       (nextStatement stmt.1 (tr.messages ⟨0, rfl⟩), stmt.2) := rfl
 
 
@@ -97,14 +100,14 @@ omit [Algebra P C] in
 /-- Exact materialized execution, including absorbing rejection and oracle forwarding. -/
 theorem verifier_verify (stmt : Statement Context C (Fin.last m)) (ost : ∀ j, pc.OStmt j)
     (tr : FullTranscript (pSpec C)) :
-    (verifier multiplier pc).toVerifier.verify (stmt, ost) tr =
+    (verifier (oSpec := oSpec) multiplier pc).toVerifier.verify (stmt, ost) tr =
       (if check multiplier stmt (tr.messages ⟨0, rfl⟩) then
         pure (nextStatement stmt (tr.messages ⟨0, rfl⟩), ost) else failure) := by
-  have h := (guardedForm multiplier pc).verify_eq (stmt, ost) tr
+  have h := (guardedForm (oSpec := oSpec) multiplier pc).verify_eq (stmt, ost) tr
   rw [guardedForm_check, guardedForm_out] at h
   simpa only [decide_eq_true_eq] using h
 
-instance : (prover (C := C) (Context := Context) pc).OutputIsPure where
+instance : (prover (oSpec := oSpec) (C := C) (Context := Context) pc).OutputIsPure where
   output_is_pure := ⟨fun st =>
     ((nextStatement st.1.1 (aeval st.1.1.challenges st.2.val), st.1.2), st.2), fun _ => rfl⟩
 
@@ -138,7 +141,7 @@ def transcript (v : C) : FullTranscript (pSpec C) := fun | ⟨0, _⟩ => v
 /-- Honest execution sends the challenge-algebra evaluation and preserves the packed witness. -/
 theorem prover_run (stmt : Statement Context C (Fin.last m)) (ost : ∀ j, pc.OStmt j)
     (p : P⦃≤ 1⦄[X Fin m]) :
-    (prover pc).run (stmt, ost) p =
+    (prover (oSpec := oSpec) pc).run (stmt, ost) p =
       pure (transcript (aeval stmt.challenges p.val),
         (nextStatement stmt (aeval stmt.challenges p.val), ost), p) := by
   have h0 : (pSpec C).dir 0 = .P_to_V := rfl
@@ -156,26 +159,27 @@ open scoped Classical in
 /-- Complete execution retains failure and the true forwarded value. -/
 theorem reduction_run (stmt : Statement Context C (Fin.last m)) (ost : ∀ j, pc.OStmt j)
     (p : P⦃≤ 1⦄[X Fin m]) :
-    ((reduction multiplier pc).toReduction.run (stmt, ost) p).run =
+    ((reduction (oSpec := oSpec) multiplier pc).toReduction.run (stmt, ost) p).run =
       pure (if check multiplier stmt (aeval stmt.challenges p.val) then
         some ((transcript (aeval stmt.challenges p.val),
           (nextStatement stmt (aeval stmt.challenges p.val), ost), p),
           (nextStatement stmt (aeval stmt.challenges p.val), ost)) else none) := by
-  rw [Reduction.run_eq_of_guarded_verifier _ (guardedForm multiplier pc)]
-  change ((prover pc).run (stmt, ost) p >>= _) = _
+  rw [Reduction.run_eq_of_guarded_verifier _ (guardedForm (oSpec := oSpec) multiplier pc)]
+  change ((prover (oSpec := oSpec) pc).run (stmt, ost) p >>= _) = _
   rw [prover_run, pure_bind]
   by_cases hc : check multiplier stmt (aeval stmt.challenges p.val) <;>
     simp [guardedForm_check, guardedForm_out, transcript, FullTranscript.messages, hc]
 
 /-- Perfect completeness for arbitrary initial state distributions, over commutative rings. -/
 theorem perfectCompleteness {σ : Type} (init : ProbComp σ)
-    (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-    (reduction multiplier pc).perfectCompleteness init impl
+    (impl : QueryImpl oSpec (StateT σ ProbComp)) :
+    (reduction (oSpec := oSpec) multiplier pc).perfectCompleteness init impl
       (rel multiplier pc (Fin.last m)) (pc.evalRelWithContext Context) := by
   classical
-  apply Reduction.perfectCompleteness_of_guarded_prover_support _ (guardedForm multiplier pc)
+  apply Reduction.perfectCompleteness_of_guarded_prover_support _ (guardedForm
+    (oSpec := oSpec) multiplier pc)
   intro ⟨stmt, ost⟩ p hIn q hq
-  change q ∈ support ((prover pc).run (stmt, ost) p) at hq
+  change q ∈ support ((prover (oSpec := oSpec) pc).run (stmt, ost) p) at hq
   rw [prover_run] at hq
   have hq := OracleComp.eq_of_mem_support_pure _ hq
   subst q
@@ -184,16 +188,17 @@ theorem perfectCompleteness {σ : Type} (init : ProbComp σ)
 
 /-- A positive-probability related output determines the accepted product check and opening. -/
 theorem check_and_mem_of_prEvent_pos {σ : Type} (init : ProbComp σ)
-    (impl : QueryImpl []ₒ (StateT σ ProbComp))
+    (impl : QueryImpl oSpec (StateT σ ProbComp))
     (stmt : Statement Context C (Fin.last m)) (ost : ∀ j, pc.OStmt j)
     (tr : FullTranscript (pSpec C)) (p : P⦃≤ 1⦄[X Fin m])
     (h : Pr{let out ← OptionT.mk do
-      (simulateQ impl ((verifier multiplier pc).toVerifier.run (stmt, ost) tr)).run'
+      (simulateQ impl ((verifier
+        (oSpec := oSpec) multiplier pc).toVerifier.run (stmt, ost) tr)).run'
         (← init)}[(out, p) ∈ (pc.evalRelWithContext Context)] > 0) :
     check multiplier stmt (tr.messages ⟨0, rfl⟩) ∧
       ((nextStatement stmt (tr.messages ⟨0, rfl⟩), ost), p) ∈ (pc.evalRelWithContext Context) := by
   classical
-  obtain ⟨hc, hrel⟩ := (guardedForm multiplier pc).check_and_of_prEvent_pos h
+  obtain ⟨hc, hrel⟩ := (guardedForm (oSpec := oSpec) multiplier pc).check_and_of_prEvent_pos h
   exact ⟨of_decide_eq_true hc, hrel⟩
 
 /-- The original packed polynomial is the witness at every terminal prefix. -/
@@ -201,7 +206,7 @@ abbrev WitMid (_i : Fin 2) : Type := P⦃≤ 1⦄[X Fin m]
 
 /-- The terminal extractor preserves the original packed polynomial. -/
 def extractor :
-    Extractor.RoundByRound []ₒ
+    Extractor.RoundByRound oSpec
       (StmtIn := Statement Context C (Fin.last m) × (∀ j, pc.OStmt j))
       (WitIn := P⦃≤ 1⦄[X Fin m]) (WitOut := P⦃≤ 1⦄[X Fin m])
       (pSpec := pSpec C) (WitMid := WitMid (P := P) (m := m)) where
@@ -211,9 +216,10 @@ def extractor :
 
 /-- The knowledge states retain the accepted product guard and exact same-commitment opening. -/
 def knowledgeStateFunction {σ : Type} (init : ProbComp σ)
-    (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-    (verifier multiplier pc).KnowledgeStateFunction init impl
-      (rel multiplier pc (Fin.last m)) (pc.evalRelWithContext Context) (extractor (Context :=
+    (impl : QueryImpl oSpec (StateT σ ProbComp)) :
+    (verifier (oSpec := oSpec) multiplier pc).KnowledgeStateFunction init impl
+      (rel multiplier pc (Fin.last m)) (pc.evalRelWithContext Context) (extractor
+        (oSpec := oSpec) (Context :=
         Context) pc) where
   toFun
     | ⟨0, _⟩ => fun stmt _ p => (stmt, p) ∈ rel multiplier pc (Fin.last m)
@@ -228,11 +234,12 @@ def knowledgeStateFunction {σ : Type} (init : ProbComp σ)
 
 /-- Exact worst-case knowledge with no challenge error, including when m is zero. -/
 theorem rbrKnowledgeSoundnessWorstCaseWith {σ : Type} (init : ProbComp σ)
-    (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
+    (impl : QueryImpl oSpec (StateT σ ProbComp)) :
     Verifier.rbrKnowledgeSoundnessWorstCaseWith init impl
-      (rel multiplier pc (Fin.last m)) (pc.evalRelWithContext Context) (verifier multiplier
+      (rel multiplier pc (Fin.last m)) (pc.evalRelWithContext Context) (verifier
+        (oSpec := oSpec) multiplier
         pc).toVerifier
-      (WitMid (P := P) (m := m)) (extractor (Context := Context) pc)
+      (WitMid (P := P) (m := m)) (extractor (oSpec := oSpec) (Context := Context) pc)
       (knowledgeStateFunction multiplier pc init impl) (fun _ => 0) := by
   intro stmt i tr
   rcases i with ⟨⟨i, hi⟩, hdir⟩

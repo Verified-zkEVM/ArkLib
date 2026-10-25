@@ -107,6 +107,19 @@ def GuardedForm.ofEq {V V' : Verifier oSpec StmtIn StmtOut pSpec} (h : V = V')
   out := G.out
   verify_eq := h ▸ G.verify_eq
 
+/-- An effect-free optional verdict gives a guarded form, even for a nonempty ambient oracle.
+The fallback is used only on rejection. -/
+noncomputable def GuardedForm.ofPureRun (V : Verifier oSpec StmtIn StmtOut pSpec)
+    (fallback : StmtIn → StmtOut)
+    (h : ∀ stmt tr, ∃ out, (V.verify stmt tr).run = pure out) : V.GuardedForm where
+  check := fun stmt tr => (h stmt tr).choose.isSome
+  out := fun stmt tr => (h stmt tr).choose.getD (fallback stmt)
+  verify_eq := by
+    intro stmt tr
+    apply OptionT.ext
+    rw [(h stmt tr).choose_spec]
+    cases heq : (h stmt tr).choose <;> simp [heq]
+
 section GuardedFormAppend
 
 variable {Stmt₁ Stmt₂ Stmt₃ : Type} {m k : ℕ}

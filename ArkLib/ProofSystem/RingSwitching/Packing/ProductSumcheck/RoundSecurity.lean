@@ -20,6 +20,8 @@ commutative ring with no zero divisors.
 
 @[expose] public section
 
+variable {ιₒ : Type} {oSpec : OracleSpec ιₒ}
+
 noncomputable section
 namespace RingSwitching.Packing.ProductSumcheck.Round
 open OracleSpec OracleComp ProtocolSpec Polynomial MvPolynomial Probability ProbabilityTheory
@@ -83,7 +85,7 @@ abbrev WitMid (_j : Fin 3) : Type := P⦃≤ 1⦄[X Fin m]
 
 /-- No witness replacement is needed at a sumcheck message or at the output. -/
 def extractor :
-    Extractor.RoundByRound []ₒ (StmtIn := Statement Context C i.castSucc × (∀ j, pc.OStmt j))
+    Extractor.RoundByRound oSpec (StmtIn := Statement Context C i.castSucc × (∀ j, pc.OStmt j))
       (WitIn := P⦃≤ 1⦄[X Fin m]) (WitOut := P⦃≤ 1⦄[X Fin m])
       (pSpec := pSpec C) (WitMid := WitMid (P := P) (m := m)) where
   eqIn := rfl
@@ -92,10 +94,10 @@ def extractor :
 
 /-- Knowledge states with message and output extraction obligations. -/
 def knowledgeStateFunction {σ : Type} (init : ProbComp σ)
-    (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-    (verifier (C := C) (Context := Context) pc i).KnowledgeStateFunction init impl
+    (impl : QueryImpl oSpec (StateT σ ProbComp)) :
+    (verifier (oSpec := oSpec) (C := C) (Context := Context) pc i).KnowledgeStateFunction init impl
       (rel multiplier pc i.castSucc) (rel multiplier pc i.succ)
-      (extractor (C := C) (Context := Context) pc i) where
+      (extractor (oSpec := oSpec) (C := C) (Context := Context) pc i) where
   toFun
     | ⟨0, _⟩ => fun stmt _ p => (stmt, p) ∈ rel multiplier pc i.castSucc
     | ⟨1, _⟩ => fun stmt tr p => beforeChallenge multiplier pc i stmt.1 stmt.2 (tr 0) p
@@ -115,10 +117,11 @@ def rbrError [Fintype C] (_j : (pSpec C).ChallengeIdx) : ℝ≥0 :=
 /-- Worst-case knowledge soundness at every fixed transcript prefix, with the round extractor. -/
 theorem rbrKnowledgeSoundnessWorstCaseWith [NoZeroDivisors C] [Fintype C] [SampleableType C]
     (hfunctional : pc.Functional) {σ : Type}
-    (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
+    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp)) :
     Verifier.rbrKnowledgeSoundnessWorstCaseWith init impl
-      (rel multiplier pc i.castSucc) (rel multiplier pc i.succ) (verifier pc i).toVerifier
-      (WitMid (P := P) (m := m)) (extractor (C := C) (Context := Context) pc i)
+      (rel multiplier pc i.castSucc) (rel multiplier pc i.succ) (verifier
+        (oSpec := oSpec) pc i).toVerifier
+      (WitMid (P := P) (m := m)) (extractor (oSpec := oSpec) (C := C) (Context := Context) pc i)
       (knowledgeStateFunction multiplier pc i init impl) (rbrError (C := C)) := by
   classical
   refine Verifier.rbrKnowledgeSoundnessWorstCaseWith_of_two_message rfl rfl _ _

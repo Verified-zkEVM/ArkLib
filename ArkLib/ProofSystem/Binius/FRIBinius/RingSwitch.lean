@@ -28,6 +28,8 @@ with the total-error bound.
 
 @[expose] public section
 
+variable {ι : Type} {oSpec : OracleSpec ι}
+
 noncomputable section
 namespace Binius.FRIBinius.RingSwitch
 open OracleSpec OracleComp ProtocolSpec Module MvPolynomial
@@ -55,18 +57,18 @@ theorem inputInterface_eq : inputInterface κ K β (ϑ := ϑ) h_rate =
     BinaryBasefold.Opening.abstractInput K β (ϑ := ϑ) (h_rate := h_rate) := rfl
 
 /-- The frontend verifier is defined through the shared prefix protocol. -/
-def verifier := TensorPrefix.verifier (biniusProfile κ L K β) h_dim
+def verifier := TensorPrefix.verifier (oSpec := oSpec) (biniusProfile κ L K β) h_dim
   (inputInterface κ K β (ϑ := ϑ) h_rate)
 
 /-- The frontend reduction is defined through the shared prefix protocol. -/
-def reduction := TensorPrefix.reduction (biniusProfile κ L K β) h_dim
+def reduction := TensorPrefix.reduction (oSpec := oSpec) (biniusProfile κ L K β) h_dim
   (inputInterface κ K β (ϑ := ϑ) h_rate)
 
 omit [DecidableEq K] [NeZero R] in
 /-- The reduction uses exactly the separately defined verifier. -/
 theorem reduction_verifier :
-    (reduction κ K β (ϑ := ϑ) h_rate h_dim).verifier =
-      verifier κ K β (ϑ := ϑ) h_rate h_dim := rfl
+    (reduction (oSpec := oSpec) κ K β (ϑ := ϑ) h_rate h_dim).verifier =
+      verifier (oSpec := oSpec) κ K β (ϑ := ϑ) h_rate h_dim := rfl
 
 /-- The original carrier wire and product sumcheck followed by the opening wire. -/
 abbrev pSpec (γ : ℕ) := TensorPrefix.pSpec (biniusProfile κ L K β) (ℓ' := ℓ') ++ₚ
@@ -92,21 +94,22 @@ variable [Fact (β 0 = 1)]
 /-- The frontend followed by the concrete opening verifier. -/
 def fullVerifier (γ : ℕ) := OracleVerifier.append
   (Oₛ₃ := fun i : Empty => nomatch i)
-  (verifier κ K β h_rate h_dim)
-  (BinaryBasefold.Opening.contextualVerifier K β (Context κ (L := L) (ℓ := ℓ)) γ
+  (verifier (oSpec := oSpec) κ K β h_rate h_dim)
+  (BinaryBasefold.Opening.contextualVerifier (oSpec := oSpec) K β (Context κ (L := L) (ℓ := ℓ)) γ
     (ϑ := ϑ) (h_rate := h_rate))
 
 /-- The frontend and opening provers share the same packed-polynomial witness. -/
 def fullReduction (γ : ℕ) := OracleReduction.append
   (Oₛ₃ := fun i : Empty => nomatch i)
-  (reduction κ K β h_rate h_dim)
-  (BinaryBasefold.Opening.contextualReduction K β (Context κ (L := L) (ℓ := ℓ)) γ
+  (reduction (oSpec := oSpec) κ K β h_rate h_dim)
+  (BinaryBasefold.Opening.contextualReduction (oSpec := oSpec) K β (Context κ (L := L) (ℓ := ℓ)) γ
     (ϑ := ϑ) (h_rate := h_rate))
 
 /-- The reduction uses exactly the separately defined verifier. -/
 theorem fullReduction_verifier (γ : ℕ) :
-    (fullReduction κ K β (ϑ := ϑ) h_rate h_dim γ).verifier (Oₛₒ := fun i : Empty => nomatch i) =
-      fullVerifier κ K β (ϑ := ϑ) h_rate h_dim γ := rfl
+    (fullReduction (oSpec := oSpec) κ K β (ϑ := ϑ) h_rate h_dim γ).verifier
+      (oSpec := oSpec) (Oₛₒ := fun i : Empty => nomatch i) =
+      fullVerifier (oSpec := oSpec) κ K β (ϑ := ϑ) h_rate h_dim γ := rfl
 
 /-! ## Security
 
@@ -171,8 +174,9 @@ theorem fullError_sum_le (γ : ℕ) :
 omit [DecidableEq K] [Fact (β 0 = 1)] [NeZero R] in
 /-- The frontend is worst-case round-by-round knowledge sound for first-oracle compatibility. -/
 theorem verifier_rbrKnowledgeSoundnessWorstCase {σ : Type} (init : ProbComp σ)
-    (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-    (verifier κ K β h_rate h_dim).toVerifier.rbrKnowledgeSoundnessWorstCase init impl
+    (impl : QueryImpl oSpec (StateT σ ProbComp)) :
+    (verifier
+      (oSpec := oSpec) κ K β h_rate h_dim).toVerifier.rbrKnowledgeSoundnessWorstCase init impl
       (TensorPrefix.relIn (biniusProfile κ L K β) h_dim (inputInterface κ K β (ϑ := ϑ) h_rate))
       ((TensorPrefix.commitment (inputInterface κ K β (ϑ := ϑ) h_rate)).evalRelWithContext
         (Context κ (L := L) (ℓ := ℓ)))
@@ -183,8 +187,8 @@ theorem verifier_rbrKnowledgeSoundnessWorstCase {σ : Type} (init : ProbComp σ)
 
 /-- The full verifier is worst-case round-by-round knowledge sound. -/
 theorem fullVerifier_rbrKnowledgeSoundnessWorstCase {σ : Type} (γ : ℕ) (init : ProbComp σ)
-    (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-    ((fullVerifier κ K β h_rate h_dim γ).toVerifier
+    (impl : QueryImpl oSpec (StateT σ ProbComp)) :
+    ((fullVerifier (oSpec := oSpec) κ K β h_rate h_dim γ).toVerifier
         (Oₛₒ := fun i : Empty => nomatch i)).rbrKnowledgeSoundnessWorstCase init impl
       (TensorPrefix.relIn (biniusProfile κ L K β) h_dim (inputInterface κ K β (ϑ := ϑ) h_rate))
       acceptRejectOracleRel (fullError κ K β (ϑ := ϑ) h_rate γ) := by
@@ -205,40 +209,48 @@ theorem fullVerifier_rbrKnowledgeSoundnessWorstCase {σ : Type} (γ : ℕ) (init
 
 /-- Exact first-codeword encodings give perfect completeness of the full protocol. -/
 theorem fullReduction_perfectCompleteness {σ : Type} (γ : ℕ) (init : ProbComp σ)
-    (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
+    (impl : QueryImpl oSpec (StateT σ ProbComp)) :
     OracleProof.perfectCompleteness
-      (oracleProof := fullReduction κ K β h_rate h_dim γ)
+      (oracleProof := fullReduction (oSpec := oSpec) κ K β h_rate h_dim γ)
       (relation := TensorPrefix.relIn (biniusProfile κ L K β) h_dim
         (inputInterface κ K β (ϑ := ϑ) h_rate).strictView) (init := init) (impl := impl) := by
-  have hhead : (reduction κ K β h_rate h_dim).perfectCompleteness init impl
+  have hhead : (reduction (oSpec := oSpec) κ K β h_rate h_dim).perfectCompleteness init impl
       (TensorPrefix.relIn (biniusProfile κ L K β) h_dim
         (inputInterface κ K β (ϑ := ϑ) h_rate).strictView)
       ((TensorPrefix.commitment
         (inputInterface κ K β (ϑ := ϑ) h_rate).strictView).evalRelWithContext
         (Context κ (L := L) (ℓ := ℓ))) := by
-    have heq : TensorPrefix.reduction (biniusProfile κ L K β) h_dim
+    have heq : TensorPrefix.reduction (oSpec := oSpec) (biniusProfile κ L K β) h_dim
         (inputInterface κ K β (ϑ := ϑ) h_rate).strictView =
-        reduction κ K β h_rate h_dim :=
+        reduction (oSpec := oSpec) κ K β h_rate h_dim :=
       TensorPrefix.reduction_strictView_eq _ _ _
     rw [← heq]
     exact TensorPrefix.perfectCompleteness _ _ _ init impl
   apply OracleReduction.append_perfectCompleteness_of_guarded_verifiers
     (Oₛ₃ := fun i : Empty => nomatch i)
-    (reduction κ K β h_rate h_dim)
-    (BinaryBasefold.Opening.contextualReduction K β (Context κ (L := L) (ℓ := ℓ)) γ
+    (reduction (oSpec := oSpec) κ K β h_rate h_dim)
+    (BinaryBasefold.Opening.contextualReduction (oSpec := oSpec) K β (Context κ (L := L) (ℓ := ℓ)) γ
       (ϑ := ϑ) (h_rate := h_rate))
     (RingSwitching.Packing.RingSwitch.guardedForm
       (PackingData.ofBasis (biniusProfile κ L K β).basis) ℓ'
       (TensorPrefix.layout (biniusProfile κ L K β) h_dim)
       (TensorPrefix.messageEquiv (biniusProfile κ L K β)) (BatchingRule.eqFold L κ)
       (TensorPrefix.commitment (inputInterface κ K β (ϑ := ϑ) h_rate)))
-    (Verifier.GuardedForm.ofEmpty _ (fun _ => (false, fun i : Empty => nomatch i)))
+    (BinaryBasefold.Opening.openingGuardedForm (oSpec := oSpec) K β
+      (BinaryBasefold.Opening.contextualQuery (Context κ (L := L) (ℓ := ℓ))) γ)
     (fun _ => Or.inl (show (RingSwitching.Packing.RingSwitch.reduction
       (PackingData.ofBasis (biniusProfile κ L K β).basis) ℓ'
       (TensorPrefix.layout (biniusProfile κ L K β) h_dim)
       (TensorPrefix.messageEquiv (biniusProfile κ L K β)) (BatchingRule.eqFold L κ)
       (TensorPrefix.commitment (inputInterface κ K β (ϑ := ϑ) h_rate))).prover.OutputIsPure
-        from inferInstance))
+        from by
+          apply Prover.OutputIsPure.append
+          · exact ⟨_, fun _ => rfl⟩
+          · apply Prover.OutputIsPure.append
+            · apply Prover.OutputIsPure.seqCompose
+              intro i
+              exact ⟨_, fun _ => rfl⟩
+            · exact ⟨_, fun _ => rfl⟩))
   · exact hhead
   · intro state
     rw [opening_strict_input_eq]
@@ -249,12 +261,12 @@ theorem fullReduction_perfectCompleteness {σ : Type} (γ : ℕ) (init : ProbCom
 /-- The prefix reduction followed by Binary Basefold is perfectly complete on exact encodings
 and worst-case round-by-round knowledge sound at the sum of the frontend and opening errors. -/
 theorem fullReduction_perfectCompleteness_and_rbrKnowledgeSoundnessWorstCase
-    {σ : Type} (γ : ℕ) (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
+    {σ : Type} (γ : ℕ) (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp)) :
     OracleProof.perfectCompleteness
-        (oracleProof := fullReduction κ K β h_rate h_dim γ)
+        (oracleProof := fullReduction (oSpec := oSpec) κ K β h_rate h_dim γ)
         (relation := TensorPrefix.relIn (biniusProfile κ L K β) h_dim
           (inputInterface κ K β (ϑ := ϑ) h_rate).strictView) (init := init) (impl := impl) ∧
-      ((fullVerifier κ K β h_rate h_dim γ).toVerifier
+      ((fullVerifier (oSpec := oSpec) κ K β h_rate h_dim γ).toVerifier
           (Oₛₒ := fun i : Empty => nomatch i)).rbrKnowledgeSoundnessWorstCase init impl
         (TensorPrefix.relIn (biniusProfile κ L K β) h_dim
           (inputInterface κ K β (ϑ := ϑ) h_rate))

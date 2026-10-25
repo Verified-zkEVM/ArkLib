@@ -39,6 +39,8 @@ before the batching challenge.
 
 @[expose] public section
 
+variable {ιₒ : Type} {oSpec : OracleSpec ιₒ}
+
 noncomputable section
 
 namespace RingSwitching.Packing.Head
@@ -139,7 +141,7 @@ def OracleState {ι : Type} (OStmt : ι → Type) : Fin 3 → Type
 
 /-- The honest round algorithm depends only on the oracle family, independently of compatibility. -/
 def proverForOracles {ι : Type} (OStmt : ι → Type) :
-    OracleProver []ₒ (Input data m layout) OStmt layout.Source
+    OracleProver oSpec (Input data m layout) OStmt layout.Source
     (Output data m layout rule) OStmt data.P⦃≤ 1⦄[X Fin m] (pSpec (M := M) data rule) where
   PrvState := OracleState data m layout rule OStmt
   input := id
@@ -158,13 +160,13 @@ def proverForOracles {ι : Type} (OStmt : ι → Type) :
 abbrev ProverState := OracleState data m layout rule pc.OStmt
 
 /-- Send component values while retaining the same packed polynomial and oracle collection. -/
-def prover := proverForOracles data m layout messageEquiv rule pc.OStmt
+def prover := proverForOracles (oSpec := oSpec) data m layout messageEquiv rule pc.OStmt
 
 open scoped Classical in
 /-- Reject a failed reconstruction and otherwise return the derived batched claim. -/
-def verifier : OracleVerifier []ₒ (Input data m layout) pc.OStmt
+def verifier : OracleVerifier oSpec (Input data m layout) pc.OStmt
     (Output data m layout rule) pc.OStmt (pSpec (M := M) data rule) :=
-  scalarRoundOracleVerifier (oSpec := []ₒ) (OStmt := pc.OStmt)
+  scalarRoundOracleVerifier (oSpec := oSpec) (OStmt := pc.OStmt)
     (fun stmt z => check data m layout stmt (messageEquiv z))
     (fun stmt z c => nextStatement data m layout rule stmt (messageEquiv z) c)
 
@@ -172,14 +174,16 @@ def verifier : OracleVerifier []ₒ (Input data m layout) pc.OStmt
 The reusable scalar-claim reduction, parameterized by both algebras, the message encoding and the
   batching rule.
 -/
-def reduction : OracleReduction []ₒ (Input data m layout) pc.OStmt layout.Source
+def reduction : OracleReduction oSpec (Input data m layout) pc.OStmt layout.Source
     (Output data m layout rule) pc.OStmt data.P⦃≤ 1⦄[X Fin m] (pSpec (M := M) data rule) :=
-  ⟨prover data m layout messageEquiv rule pc, verifier data m layout messageEquiv rule pc⟩
+  ⟨prover (oSpec := oSpec) data m layout messageEquiv rule pc, verifier
+    (oSpec := oSpec) data m layout messageEquiv rule pc⟩
 
 open scoped Classical in
 /-- The exact guard and accepted output of the verifier. -/
-def guardedForm : (verifier data m layout messageEquiv rule pc).toVerifier.GuardedForm :=
-  scalarRoundOracleVerifierGuardedForm (oSpec := []ₒ) (OStmt := pc.OStmt)
+def guardedForm :
+    (verifier (oSpec := oSpec) data m layout messageEquiv rule pc).toVerifier.GuardedForm :=
+  scalarRoundOracleVerifierGuardedForm (oSpec := oSpec) (OStmt := pc.OStmt)
     (fun stmt z => check data m layout stmt (messageEquiv z))
     (fun stmt z c => nextStatement data m layout rule stmt (messageEquiv z) c)
 
@@ -188,14 +192,14 @@ open scoped Classical in
 /-- The guard is the scalar reconstruction check on the transmitted message. -/
 theorem guardedForm_check (stmt : Input data m layout × (∀ j, pc.OStmt j))
     (tr : FullTranscript (pSpec (M := M) data rule)) :
-    (guardedForm data m layout messageEquiv rule pc).check stmt tr =
+    (guardedForm (oSpec := oSpec) data m layout messageEquiv rule pc).check stmt tr =
       decide (check data m layout stmt.1 (messageEquiv (tr.messages ⟨0, rfl⟩))) := rfl
 
 omit [Algebra B C] [IsScalarTower B data.P C] in
 /-- The accepted output retains the input commitment oracle verbatim. -/
 theorem guardedForm_out (stmt : Input data m layout × (∀ j, pc.OStmt j))
     (tr : FullTranscript (pSpec (M := M) data rule)) :
-    (guardedForm data m layout messageEquiv rule pc).out stmt tr =
+    (guardedForm (oSpec := oSpec) data m layout messageEquiv rule pc).out stmt tr =
       (nextStatement data m layout rule stmt.1 (messageEquiv (tr.messages ⟨0, rfl⟩))
         (tr.challenges ⟨1, rfl⟩), stmt.2) := rfl
 
@@ -232,17 +236,17 @@ theorem mem_relIn_of_check_of_openingClaimRel (stmt : Input data m layout) (ost 
   · simpa only [Equiv.apply_symm_apply, data.packedMLE_unpack] using hcommit
 
 /-- The prover output contains no oracle queries and can be composed statefully. -/
-instance : (prover data m layout messageEquiv rule pc).OutputIsPure where
+instance : (prover (oSpec := oSpec) data m layout messageEquiv rule pc).OutputIsPure where
   output_is_pure := ⟨fun ((((stmt, ost), p), α), c) =>
     ((nextStatement data m layout rule stmt α c, ost), p), fun _ => rfl⟩
 
 omit [Algebra B C] [IsScalarTower B data.P C] in
 /-- Exact honest execution of the two-round prover, before materializing its fresh challenge. -/
 theorem prover_run (stmt : Input data m layout) (ost : ∀ j, pc.OStmt j) (p : layout.Source) :
-    (prover data m layout messageEquiv rule pc).run (stmt, ost) p = (do
+    (prover (oSpec := oSpec) data m layout messageEquiv rule pc).run (stmt, ost) p = (do
       let c ← (liftM (query (spec := [(pSpec (M := M) data rule).Challenge]ₒ) ⟨⟨1, rfl⟩, ()⟩ :
         OracleComp [(pSpec (M := M) data rule).Challenge]ₒ rule.Challenge) :
-        OracleComp ([]ₒ + [(pSpec (M := M) data rule).Challenge]ₒ) rule.Challenge)
+        OracleComp (oSpec + [(pSpec (M := M) data rule).Challenge]ₒ) rule.Challenge)
       pure (FullTranscript.mk2 (pSpec := pSpec (M := M) data rule)
         (messageEquiv.symm (partials data m layout stmt.1 p)) c,
         ((nextStatement data m layout rule stmt (partials data m layout stmt.1 p) c, ost),
@@ -262,7 +266,7 @@ theorem prover_run (stmt : Input data m layout) (ost : ∀ j, pc.OStmt j) (p : l
         (messageEquiv.symm (partials data m layout stmt.1 p))).concat (m := 1) c,
       ((nextStatement data m layout rule stmt (partials data m layout stmt.1 p) c, ost),
         data.packedMLE (layout.components p))) :
-    OracleComp ([]ₒ + [(pSpec (M := M) data rule).Challenge]ₒ) _) = _
+    OracleComp (oSpec + [(pSpec (M := M) data rule).Challenge]ₒ) _) = _
   congr 1
   exact congrArg (fun tr => (tr,
     ((nextStatement data m layout rule stmt (partials data m layout stmt.1 p) c, ost),
@@ -272,16 +276,17 @@ theorem prover_run (stmt : Input data m layout) (ost : ∀ j, pc.OStmt j) (p : l
 
 /-- Perfect completeness at every initial oracle state, for every challenge sampled by the phase. -/
 theorem perfectCompleteness {σ : Type} (init : ProbComp σ)
-    (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-    (reduction data m layout messageEquiv rule pc).perfectCompleteness init impl
+    (impl : QueryImpl oSpec (StateT σ ProbComp)) :
+    (reduction (oSpec := oSpec) data m layout messageEquiv rule pc).perfectCompleteness init impl
       (relIn data m layout pc) (relOut data m layout rule pc) := by
   classical
   let _ : ∀ j, OracleInterface ((pSpec (M := M) data rule).Challenge j) :=
     ProtocolSpec.challengeOracleInterface
   apply Reduction.perfectCompleteness_of_guarded_prover_support _
-    (guardedForm data m layout messageEquiv rule pc)
+    (guardedForm (oSpec := oSpec) data m layout messageEquiv rule pc)
   intro ⟨stmt, ost⟩ p hIn q hq
-  change q ∈ support ((prover data m layout messageEquiv rule pc).run (stmt, ost) p) at hq
+  change q ∈ support ((prover
+    (oSpec := oSpec) data m layout messageEquiv rule pc).run (stmt, ost) p) at hq
   rw [prover_run] at hq
   obtain ⟨c, _, hq⟩ := (mem_support_bind_iff _ _ _).mp hq
   have hq := OracleComp.eq_of_mem_support_pure _ hq
@@ -308,7 +313,7 @@ def WitMid : Fin 3 → Type
   | ⟨2, _⟩ => data.P⦃≤ 1⦄[X Fin m]
 
 /-- Read back the original source through both the packing and layout equivalences. -/
-def extractor : Extractor.RoundByRound []ₒ
+def extractor : Extractor.RoundByRound oSpec
     (StmtIn := Input data m layout × (∀ j, pc.OStmt j)) (WitIn := layout.Source)
     (WitOut := data.P⦃≤ 1⦄[X Fin m]) (pSpec := pSpec (M := M) data rule)
     (WitMid := WitMid data m layout) where
@@ -332,8 +337,8 @@ def afterChallenge (stmt : Input data m layout) (ost : ∀ j, pc.OStmt j)
 
 /-- Knowledge states retain the scalar guard, with the committed source at each round. -/
 def knowledgeStateFunction {σ : Type} (init : ProbComp σ)
-    (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-    (verifier data m layout messageEquiv rule pc).KnowledgeStateFunction init impl
+    (impl : QueryImpl oSpec (StateT σ ProbComp)) :
+    (verifier (oSpec := oSpec) data m layout messageEquiv rule pc).KnowledgeStateFunction init impl
       (relIn data m layout pc) (relOut data m layout rule pc) (extractor (M := M) data m layout rule
         pc) where
   toFun
@@ -350,7 +355,8 @@ def knowledgeStateFunction {σ : Type} (init : ProbComp σ)
     | ⟨1, _⟩ => fun hdir => nomatch hdir
   toFun_full stmt tr p h := by
     classical
-    obtain ⟨hc, hrel⟩ := (guardedForm data m layout messageEquiv rule pc).check_and_of_prEvent_pos h
+    obtain ⟨hc, hrel⟩ := (guardedForm
+      (oSpec := oSpec) data m layout messageEquiv rule pc).check_and_of_prEvent_pos h
     exact ⟨of_decide_eq_true hc, hrel⟩
 
 end Program
@@ -453,9 +459,10 @@ theorem rbrKnowledgeSoundnessWorstCaseWith_of_partials_eq
         aeval (layout.point q) (data.unpack p i).val =
           aeval (layout.point q) (data.unpack p' i).val)
     (hinj : Function.Injective (algebraMap data.P C))
-    {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
+    {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp)) :
     Verifier.rbrKnowledgeSoundnessWorstCaseWith init impl
-      (relIn data m layout pc) (relOut data m layout bat.toBatchingRule pc) (verifier data m layout
+      (relIn data m layout pc) (relOut data m layout bat.toBatchingRule pc) (verifier
+        (oSpec := oSpec) data m layout
         messageEquiv bat.toBatchingRule pc).toVerifier
       (WitMid data m layout) (extractor (M := M) data m layout bat.toBatchingRule pc)
       (knowledgeStateFunction data m layout messageEquiv bat.toBatchingRule pc init impl) (rbrError
@@ -470,9 +477,10 @@ theorem rbrKnowledgeSoundnessWorstCaseWith_of_partials_eq
 concrete extractor and knowledge states. -/
 theorem rbrKnowledgeSoundnessWorstCaseWith
     (hfunctional : pc.Functional) (hinj : Function.Injective (algebraMap data.P C))
-    {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
+    {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp)) :
     Verifier.rbrKnowledgeSoundnessWorstCaseWith init impl
-      (relIn data m layout pc) (relOut data m layout bat.toBatchingRule pc) (verifier data m layout
+      (relIn data m layout pc) (relOut data m layout bat.toBatchingRule pc) (verifier
+        (oSpec := oSpec) data m layout
         messageEquiv bat.toBatchingRule pc).toVerifier
       (WitMid data m layout) (extractor (M := M) data m layout bat.toBatchingRule pc)
       (knowledgeStateFunction data m layout messageEquiv bat.toBatchingRule pc init impl) (rbrError
@@ -488,9 +496,10 @@ theorem rbrKnowledgeSoundnessWorstCaseWith_of_fixed_candidates
     (candidates : (∀ j, pc.OStmt j) → Finset data.P⦃≤ 1⦄[X Fin m])
     (hcover : ∀ ost p, pc.commitsTo ost p → p ∈ candidates ost)
     {L : ℕ} (hcard : ∀ ost, (candidates ost).card ≤ L)
-    {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
+    {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp)) :
     Verifier.rbrKnowledgeSoundnessWorstCaseWith init impl
-      (relIn data m layout pc) (relOut data m layout bat.toBatchingRule pc) (verifier data m layout
+      (relIn data m layout pc) (relOut data m layout bat.toBatchingRule pc) (verifier
+        (oSpec := oSpec) data m layout
         messageEquiv bat.toBatchingRule pc).toVerifier
       (WitMid data m layout) (extractor (M := M) data m layout bat.toBatchingRule pc)
       (knowledgeStateFunction data m layout messageEquiv bat.toBatchingRule pc init impl) (fun _ =>

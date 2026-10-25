@@ -44,6 +44,8 @@ The oracle reductions built from these steps are in `Steps/`.
 
 @[expose] public section
 
+variable {ι : Type} {oSpec : OracleSpec ι}
+
 namespace Binius.BinaryBasefold
 
 noncomputable section
@@ -77,7 +79,7 @@ sum-check target, and outputs the statement with target the round polynomial at 
 the challenge appended. The oracle statements pass through. Completeness is stated for the strict
 relations. -/
 def foldStepLogic (i : Fin ℓ) :
-    OracleReduction.DeterministicLogicStep []ₒ
+    OracleReduction.DeterministicLogicStep oSpec
       (Statement (L := L) Context i.castSucc)
       (Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc)
       (OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc)
@@ -116,11 +118,12 @@ omit [SampleableType L] [DecidableEq 𝔽q] h_β₀_eq_1 in
 polynomial passes the check, and the honest output lies in the strict fold-step output relation,
 for every challenge. -/
 lemma foldStepLogic_isStronglyComplete (i : Fin ℓ) :
-    (foldStepLogic 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
+    (foldStepLogic (oSpec := oSpec) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
       (multpoly := multpoly) i).IsStronglyComplete := by
   classical
   intro stmtIn witIn oStmtIn challenges h_relIn
-  let step := (foldStepLogic 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
+  let step := (foldStepLogic (oSpec := oSpec) 𝔽q β (ϑ := ϑ)
+    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
       (multpoly := multpoly) i)
   let transcript := step.honestProverTranscript stmtIn witIn oStmtIn challenges
   let verifierStmtOut := step.verifierOut stmtIn transcript
@@ -210,7 +213,7 @@ namespace CoreInteraction
 /-- The output oracles of the commit verifier as a simulation: the old oracles are queried as
 themselves, and the last one is answered by the sent oracle. -/
 noncomputable def commitOutputSimulation (i : Fin ℓ) (hCR : IsCommitmentRound ℓ ϑ i) :
-    OracleOutputSimulation []ₒ
+    OracleOutputSimulation oSpec
       (OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc)
       (OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ)
       (pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) where
@@ -221,7 +224,7 @@ noncomputable def commitOutputSimulation (i : Fin ℓ) (hCR : IsCommitmentRound 
     rcases q with ⟨j, x⟩
     by_cases hj : j.val < toOutCodewordsCount ℓ ϑ i.castSucc
     · exact liftM <| OracleSpec.query
-        (show ([]ₒ +
+        (show (oSpec +
             ([OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
               i.castSucc]ₒ +
               [(pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).Message]ₒ)).Domain from
@@ -232,7 +235,7 @@ noncomputable def commitOutputSimulation (i : Fin ℓ) (hCR : IsCommitmentRound 
         (destIdx := ⟨i.val + 1, by omega⟩)
         (h_destIdx := by rfl) j hj hCR
       exact liftM <| OracleSpec.query
-        (show ([]ₒ +
+        (show (oSpec +
             ([OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
               i.castSucc]ₒ +
               [(pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).Message]ₒ)).Domain from
@@ -256,7 +259,7 @@ end CoreInteraction
 oracle; the verifier accepts and keeps the statement, and the sent oracle becomes the last oracle
 statement. -/
 def commitStepLogic (i : Fin ℓ) (hCR : IsCommitmentRound ℓ ϑ i) :
-    OracleReduction.DeterministicLogicStep []ₒ
+    OracleReduction.DeterministicLogicStep oSpec
       (Statement (L := L) Context i.succ)
       (Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ)
       (OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc)
@@ -275,7 +278,7 @@ def commitStepLogic (i : Fin ℓ) (hCR : IsCommitmentRound ℓ ϑ i) :
   -- Statement doesn't change
   verifierOut := fun stmt _ => stmt
   outputInterfaces := inferInstance
-  outputOracle := .inr (CoreInteraction.commitOutputSimulation 𝔽q β (ϑ := ϑ)
+  outputOracle := .inr (CoreInteraction.commitOutputSimulation (oSpec := oSpec) 𝔽q β (ϑ := ϑ)
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hCR)
   -- No challenges in 1-message protocol, so transcript is just the message
   honestProverTranscript := fun _stmt wit _oStmt _challenges =>
@@ -321,7 +324,7 @@ lemma strictOracleFoldingConsistent_commitStepLogic
         (v := stmtIn.challenges) (h := by
           simp only [Fin.val_succ, le_add_iff_nonneg_right, zero_le]))
       (oStmt := oStmtIn)) :
-    let step := (commitStepLogic 𝔽q β (ϑ := ϑ)
+    let step := (commitStepLogic (oSpec := oSpec) 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (multpoly := multpoly) i (hCR := hCR))
     let transcript := step.honestProverTranscript stmtIn witIn oStmtIn challenges
     let verifierStmtOut := step.verifierOut stmtIn transcript
@@ -427,10 +430,11 @@ omit [SampleableType L] [DecidableEq 𝔽q] h_β₀_eq_1 in
 /-- The commit step is strongly complete: from the strict fold-step output relation, the honest
 output lies in the strict round relation at `i + 1`. -/
 lemma commitStepLogic_isStronglyComplete (i : Fin ℓ) (hCR : IsCommitmentRound ℓ ϑ i) :
-    (commitStepLogic (multpoly := multpoly) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    (commitStepLogic (oSpec := oSpec) (multpoly := multpoly) 𝔽q β (ϑ := ϑ)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (𝓑 := 𝓑) i (hCR := hCR)).IsStronglyComplete := by
   intro stmtIn witIn oStmtIn challenges h_relIn
-  let step := (commitStepLogic 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+  let step := (commitStepLogic (oSpec := oSpec) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
     (𝓑 := 𝓑) (multpoly := multpoly) i (hCR := hCR))
   let transcript := step.honestProverTranscript stmtIn witIn oStmtIn challenges
   let verifierStmtOut := step.verifierOut stmtIn transcript
@@ -488,7 +492,7 @@ section FinalSumcheckStep
 word; the verifier checks the closing sum-check equation `s_ℓ = eq̃(r, r') · c` and outputs the
 statement extended by `c`. The oracle statements pass through. -/
 def finalSumcheckStepLogic :
-    OracleReduction.DeterministicLogicStep []ₒ
+    OracleReduction.DeterministicLogicStep oSpec
       (Statement (L := L) (SumcheckBaseContext L ℓ) (Fin.last ℓ))
       (Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ))
       (OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ))
@@ -674,14 +678,16 @@ lemma finalSumcheckStepLogic_verifierCheck_honest
       (multpoly := multiplier) (stmtIdx := Fin.last ℓ)
       (oracleIdx := OracleFrontierIndex.mkFromStmtIdx (Fin.last ℓ)) (stmt := stmtIn)
       (wit := witIn) (oStmt := oStmtIn)) :
-    let step := finalSumcheckStepLogic 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
+    let step := finalSumcheckStepLogic (oSpec := oSpec) 𝔽q β (ϑ := ϑ)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
     let transcript := step.honestProverTranscript stmtIn witIn oStmtIn challenges
     step.verifierCheck stmtIn transcript := by
   classical
-  let step := finalSumcheckStepLogic 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
+  let step := finalSumcheckStepLogic (oSpec := oSpec) 𝔽q β (ϑ := ϑ)
+    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
   let transcript := step.honestProverTranscript stmtIn witIn oStmtIn challenges
   -- Simplify the verifier check to the equality we need to prove
-  change (finalSumcheckStepLogic 𝔽q β).verifierCheck stmtIn transcript
+  change (finalSumcheckStepLogic (oSpec := oSpec) 𝔽q β).verifierCheck stmtIn transcript
   simp only [finalSumcheckStepLogic]
   dsimp only [sumcheckConsistencyProp] at h_sumcheck_cons
   simp only [Fin.val_last] at h_sumcheck_cons
@@ -724,10 +730,11 @@ omit [DecidableEq 𝔽q] [SampleableType L] in
 honest constant passes the check and the output lies in the strict final sum-check output
 relation. -/
 lemma finalSumcheckStepLogic_isStronglyComplete :
-    (finalSumcheckStepLogic 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    (finalSumcheckStepLogic (oSpec := oSpec) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (𝓑 := 𝓑)).IsStronglyComplete := by
   intro stmtIn witIn oStmtIn challenges h_relIn
-  let step := (finalSumcheckStepLogic 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+  let step := (finalSumcheckStepLogic (oSpec := oSpec) 𝔽q β (ϑ := ϑ)
+    (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
     (𝓑 := 𝓑))
   let transcript := step.honestProverTranscript stmtIn witIn oStmtIn challenges
   let verifierStmtOut := step.verifierOut stmtIn transcript
@@ -742,7 +749,8 @@ lemma finalSumcheckStepLogic_isStronglyComplete :
   obtain ⟨h_sumcheck_cons, h_strictOracleWitConsistency_In⟩ := h_relIn
   -- The multilinear polynomial of the witness
   let t := witIn.t
-  have h_VCheck_passed := finalSumcheckStepLogic_verifierCheck_honest 𝔽q β (𝓑 := 𝓑) (ϑ := ϑ)
+  have h_VCheck_passed := finalSumcheckStepLogic_verifierCheck_honest (oSpec := oSpec) 𝔽q β
+    (𝓑 := 𝓑) (ϑ := ϑ)
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (stmtIn := stmtIn) (witIn := witIn)
     (oStmtIn := oStmtIn) (challenges := challenges)
     (h_sumcheck_cons := h_sumcheck_cons)

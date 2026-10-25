@@ -67,7 +67,8 @@ example : bat.error = (2 : ℝ≥0) / 3 := rfl
 
 /-- This is a complete protocol instantiation, not only a relation or batching-law example. -/
 example {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-    (Head.reduction data 1 layout codec bat.toBatchingRule pc).perfectCompleteness init impl
+    (Head.reduction
+      (oSpec := []ₒ) data 1 layout codec bat.toBatchingRule pc).perfectCompleteness init impl
       (Head.relIn data 1 layout pc) (Head.relOut data 1 layout bat.toBatchingRule pc) :=
   Head.perfectCompleteness data 1 layout codec bat.toBatchingRule pc init impl
 
@@ -75,7 +76,7 @@ example {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ Prob
 example {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     Verifier.rbrKnowledgeSoundnessWorstCaseWith init impl
       (Head.relIn data 1 layout pc) (Head.relOut data 1 layout bat.toBatchingRule pc)
-      (Head.verifier data 1 layout codec bat.toBatchingRule pc).toVerifier
+      (Head.verifier (oSpec := []ₒ) data 1 layout codec bat.toBatchingRule pc).toVerifier
       (Head.WitMid data 1 layout)
       (Head.extractor (M := data.ιP → data.E) data 1 layout bat.toBatchingRule pc)
       (Head.knowledgeStateFunction data 1 layout codec bat.toBatchingRule pc init impl)
@@ -121,7 +122,8 @@ example : (((point, layout.eval point source),
   Head.mem_relIn_commit data 1 layout pc honest point source
 
 /-- A transcript claiming zero against the all-one family fails the verifier guard. -/
-theorem rejecting_guard : (Head.guardedForm data 1 layout codec bat.toBatchingRule pc).check
+theorem rejecting_guard :
+    (Head.guardedForm (oSpec := []ₒ) data 1 layout codec bat.toBatchingRule pc).check
     ((point, 0), honest.commit (data.packedMLE (layout.components source)))
     (FullTranscript.mk2 (fun _ => 1) (0 : Fin 3)) = false := by
   classical
@@ -135,10 +137,11 @@ theorem rejecting_guard : (Head.guardedForm data 1 layout codec bat.toBatchingRu
   exact (by decide : (0 : ZMod 4) ≠ 1 + 1) h0
 
 /-- Rejection by the materialized verifier produces no output statement. -/
-example : (Head.verifier data 1 layout codec bat.toBatchingRule pc).toVerifier.verify
+example : (Head.verifier (oSpec := []ₒ) data 1 layout codec bat.toBatchingRule pc).toVerifier.verify
     ((point, 0), honest.commit (data.packedMLE (layout.components source)))
     (FullTranscript.mk2 (fun _ => 1) (0 : Fin 3)) = failure := by
-  rw [(Head.guardedForm data 1 layout codec bat.toBatchingRule pc).verify_eq, rejecting_guard]
+  rw [(Head.guardedForm
+    (oSpec := []ₒ) data 1 layout codec bat.toBatchingRule pc).verify_eq, rejecting_guard]
   rfl
 
 /-- A source coordinate polynomial with its explicit multilinearity proof. -/
@@ -257,7 +260,8 @@ example {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ Prob
     Verifier.rbrKnowledgeSoundnessWorstCaseWith init impl
       (Head.relIn data 1 pointLayout pointBound)
       (Head.relOut data 1 pointLayout bat.toBatchingRule pointBound)
-      (Head.verifier data 1 pointLayout codec bat.toBatchingRule pointBound).toVerifier
+      (Head.verifier
+        (oSpec := []ₒ) data 1 pointLayout codec bat.toBatchingRule pointBound).toVerifier
       (Head.WitMid data 1 pointLayout)
       (Head.extractor (M := data.ιP → data.E) data 1 pointLayout bat.toBatchingRule pointBound)
       (Head.knowledgeStateFunction data 1 pointLayout codec bat.toBatchingRule pointBound init impl)

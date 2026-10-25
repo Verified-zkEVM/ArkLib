@@ -17,6 +17,8 @@ strict final consistency identifies the total fold with the claimed final consta
 
 @[expose] public section
 
+variable {ι : Type} {oSpec : OracleSpec ι}
+
 open OracleSpec
 
 namespace Binius.BinaryBasefold.QueryPhase
@@ -52,7 +54,7 @@ theorem queryFiberPoints_simulate (γ : ℕ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ) j)
     (messages : ∀ i, (pSpecQuery 𝔽q β γ (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Message i)
     (k : Fin (ℓ / ϑ)) (v : sDomain 𝔽q β h_ℓ_add_R_rate 0) :
-    simulateQ (OracleInterface.simOracle2 []ₒ oStmt messages)
+    simulateQ (OracleInterface.simOracle2 oSpec oStmt messages)
       (queryFiberPoints 𝔽q β (γ_repetitions := γ) (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) k v).run =
       pure (some ((⟨Array.finRange (2 ^ ϑ), by simp⟩ : Vector (Fin (2 ^ ϑ)) (2 ^ ϑ)).map

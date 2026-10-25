@@ -50,7 +50,7 @@ variable {ι : Type} {oSpec : OracleSpec ι}
 the two components' forms, moved along `OracleVerifier.append_toVerifier`. -/
 def appendGuardedForm {Stmt₁ Stmt₂ Stmt₃ : Type} {ι₁ ι₂ ι₃ : Type} {OStmt₁ : ι₁ → Type}
     {OStmt₂ : ι₂ → Type} {OStmt₃ : ι₃ → Type} [∀ i, OracleInterface (OStmt₁ i)]
-    [∀ i, OracleInterface (OStmt₂ i)] [∀ i, OracleInterface (OStmt₃ i)] {m n : ℕ}
+    [∀ i, OracleInterface (OStmt₂ i)] [Oₛ₃ : ∀ i, OracleInterface (OStmt₃ i)] {m n : ℕ}
     {pSpec₁ : ProtocolSpec m} {pSpec₂ : ProtocolSpec n}
     [∀ i, OracleInterface (pSpec₁.Message i)] [∀ i, OracleInterface (pSpec₂.Message i)]
     {V₁ : OracleVerifier oSpec Stmt₁ OStmt₁ Stmt₂ OStmt₂ pSpec₁}

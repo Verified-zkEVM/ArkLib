@@ -20,6 +20,8 @@ is computed from the C-valued product of the public multiplier and transported w
 
 @[expose] public section
 
+variable {ιₒ : Type} {oSpec : OracleSpec ιₒ}
+
 noncomputable section
 namespace RingSwitching.Packing.ProductSumcheck.Round
 open OracleSpec OracleComp ProtocolSpec Polynomial MvPolynomial
@@ -59,7 +61,7 @@ def OracleState {ι : Type} (OStmt : ι → Type) : Fin 3 → Type
 
 /-- The honest round algorithm depends only on the oracle family, independently of compatibility. -/
 def proverForOracles {ι : Type} (OStmt : ι → Type) :
-    OracleProver []ₒ (Statement Context C i.castSucc) OStmt P⦃≤ 1⦄[X Fin m]
+    OracleProver oSpec (Statement Context C i.castSucc) OStmt P⦃≤ 1⦄[X Fin m]
     (Statement Context C i.succ) OStmt P⦃≤ 1⦄[X Fin m] (pSpec C) where
   PrvState := OracleState (P := P) (C := C) (Context := Context) i OStmt
   input := id
@@ -76,22 +78,24 @@ def proverForOracles {ι : Type} (OStmt : ι → Type) :
 abbrev ProverState := OracleState (P := P) (C := C) (Context := Context) i pc.OStmt
 
 /-- Send the exact product-sum polynomial while retaining the packed witness and oracles. -/
-def prover := proverForOracles (P := P) multiplier i pc.OStmt
+def prover := proverForOracles (oSpec := oSpec) (P := P) multiplier i pc.OStmt
 
 open scoped Classical in
 /-- A failed Boolean sum check aborts; acceptance extends the original challenge prefix. -/
-def verifier : OracleVerifier []ₒ (Statement Context C i.castSucc) pc.OStmt
+def verifier : OracleVerifier oSpec (Statement Context C i.castSucc) pc.OStmt
     (Statement Context C i.succ) pc.OStmt (pSpec C) :=
   scalarRoundOracleVerifier (check i) (nextStatement i)
 
 /-- The scalar-round reduction preserving the commitment oracle. -/
-def reduction : OracleReduction []ₒ (Statement Context C i.castSucc) pc.OStmt P⦃≤ 1⦄[X Fin m]
+def reduction : OracleReduction oSpec (Statement Context C i.castSucc) pc.OStmt P⦃≤ 1⦄[X Fin m]
     (Statement Context C i.succ) pc.OStmt P⦃≤ 1⦄[X Fin m] (pSpec C) :=
-  ⟨prover multiplier pc i, verifier (C := C) (Context := Context) pc i⟩
+  ⟨prover (oSpec := oSpec) multiplier pc i, verifier (oSpec := oSpec) (C := C)
+    (Context := Context) pc i⟩
 
 open scoped Classical in
 /-- The round's exact guarded form supports state-aware composition. -/
-def guardedForm : (verifier (C := C) (Context := Context) pc i).toVerifier.GuardedForm :=
+def guardedForm : (verifier (oSpec := oSpec) (C := C)
+  (Context := Context) pc i).toVerifier.GuardedForm :=
   scalarRoundOracleVerifierGuardedForm (check i) (nextStatement i)
 
 omit [Algebra P C] in
@@ -99,14 +103,14 @@ open scoped Classical in
 /-- The sumcheck guarded form checks the Boolean sum of the clear message. -/
 theorem guardedForm_check (stmt : Statement Context C i.castSucc × (∀ j, pc.OStmt j))
     (tr : FullTranscript (pSpec C)) :
-    (guardedForm (C := C) (Context := Context) pc i).check stmt tr =
+    (guardedForm (oSpec := oSpec) (C := C) (Context := Context) pc i).check stmt tr =
       decide (check i stmt.1 (tr.messages ⟨0, rfl⟩)) := rfl
 
 omit [Algebra P C] in
 /-- The sumcheck guarded form retains the input oracles and appends the scalar challenge. -/
 theorem guardedForm_out (stmt : Statement Context C i.castSucc × (∀ j, pc.OStmt j))
     (tr : FullTranscript (pSpec C)) :
-    (guardedForm (C := C) (Context := Context) pc i).out stmt tr =
+    (guardedForm (oSpec := oSpec) (C := C) (Context := Context) pc i).out stmt tr =
       (nextStatement i stmt.1 (tr.messages ⟨0, rfl⟩) (tr.challenges ⟨1, rfl⟩), stmt.2) := rfl
 
 
@@ -115,15 +119,15 @@ omit [Algebra P C] in
 /-- Round verification with a clear polynomial message and preserved input oracles. -/
 theorem verifier_verify (stmt : Statement Context C i.castSucc) (ost : ∀ j, pc.OStmt j)
     (tr : FullTranscript (pSpec C)) :
-    (verifier pc i).toVerifier.verify (stmt, ost) tr =
+    (verifier (oSpec := oSpec) pc i).toVerifier.verify (stmt, ost) tr =
       (if check i stmt (tr.messages ⟨0, rfl⟩) then
         pure (nextStatement i stmt (tr.messages ⟨0, rfl⟩) (tr.challenges ⟨1, rfl⟩), ost)
       else failure) := by
-  have h := (guardedForm pc i).verify_eq (stmt, ost) tr
+  have h := (guardedForm (oSpec := oSpec) pc i).verify_eq (stmt, ost) tr
   rw [guardedForm_check, guardedForm_out] at h
   simpa only [decide_eq_true_eq] using h
 
-instance : (prover multiplier pc i).OutputIsPure where
+instance : (prover (oSpec := oSpec) multiplier pc i).OutputIsPure where
   output_is_pure := ⟨fun (((stmt, ost), p), c) =>
     ((nextStatement i stmt (honestMessage multiplier i stmt p) c, ost), p), fun _ => rfl⟩
 

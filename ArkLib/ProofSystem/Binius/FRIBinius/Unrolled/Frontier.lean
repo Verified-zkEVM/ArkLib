@@ -16,6 +16,8 @@ This adapter initializes the folding witness without changing any committed orac
 
 @[expose] public section
 
+variable {ι : Type} {oSpec : OracleSpec ι}
+
 namespace Binius.FRIBinius.Unrolled.Frontier
 
 open Binius.BinaryBasefold OracleSpec OracleComp MvPolynomial
@@ -32,7 +34,7 @@ variable (multiplier : RingSwitching.Packing.ProductSumcheck.Multiplier Context 
 /-! ## Protocol definitions -/
 
 /-- No prover messages are sent; only the internal folding witness is initialized. -/
-noncomputable def prover : OracleProver ([]ₒ)
+noncomputable def prover : OracleProver (oSpec)
     (RingSwitching.Packing.ProductSumcheck.Statement Context L (m := ℓ) 0)
     (OracleStatement K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) 0)
     (MultilinearPoly L ℓ)
@@ -50,7 +52,7 @@ noncomputable def prover : OracleProver ([]ₒ)
     initialWitness K β multiplier.polynomial s.1.1.ctx s.2)
 
 /-- Reformat the batching target and context, preserving every oracle. -/
-def verifier : OracleVerifier ([]ₒ)
+def verifier : OracleVerifier (oSpec)
     (RingSwitching.Packing.ProductSumcheck.Statement Context L (m := ℓ) 0)
     (OracleStatement K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) 0)
     (Statement (L := L) (ℓ := ℓ) Context 0)
@@ -63,16 +65,18 @@ def verifier : OracleVerifier ([]ₒ)
 
 /-- The no-communication adapter from the batching head to the folding loop. -/
 noncomputable def reduction := OracleReduction.mk
-  (prover K β multiplier (ϑ := ϑ) (h_rate := h_rate)) (verifier K β)
+  (prover (oSpec := oSpec) K β multiplier (ϑ := ϑ) (h_rate := h_rate)) (verifier
+    (oSpec := oSpec) K β)
 
 /-- The frontier has no checks and leaves all oracle contents unchanged. -/
 def guardedForm :
-    (verifier K β (Context := Context) (ϑ := ϑ) (h_rate := h_rate)).toVerifier.GuardedForm where
+    (verifier (oSpec := oSpec) K β (Context := Context) (ϑ := ϑ)
+      (h_rate := h_rate)).toVerifier.GuardedForm where
   check _ _ := true
   out s _ := (initialStatement s.1.ctx s.1.target, s.2)
   verify_eq _ _ := rfl
 
-instance : (prover K β multiplier (ϑ := ϑ) (h_rate := h_rate)).OutputIsPure where
+instance : (prover (oSpec := oSpec) K β multiplier (ϑ := ϑ) (h_rate := h_rate)).OutputIsPure where
   output_is_pure := ⟨fun s => ((initialStatement s.1.1.ctx s.1.1.target, s.1.2),
     initialWitness K β multiplier.polynomial s.1.1.ctx s.2), fun _ => rfl⟩
 
@@ -93,7 +97,7 @@ def inputRelation : Set
     FirstOracleWitnessConsistent K β witIn (getFirstOracle K β oStmtIn) }
 
 /-- The adapter extracts the packed polynomial carried by the backend witness. -/
-def extractor : Extractor.RoundByRound ([]ₒ)
+def extractor : Extractor.RoundByRound (oSpec)
     (StmtIn := (RingSwitching.Packing.ProductSumcheck.Statement Context L (m := ℓ) 0) ×
       (∀ j, OracleStatement K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) 0 j))
     (WitIn := MultilinearPoly L ℓ)
@@ -107,32 +111,33 @@ variable [Fact (β 0 = 1)]
 
 /-- Backward extraction preserves the product claim and the same relaxed commitment witness. -/
 noncomputable def knowledgeStateFunction {σ : Type} (init : ProbComp σ)
-    (impl : QueryImpl ([]ₒ) (StateT σ ProbComp)) :
-    (verifier K β (Context := Context) (ϑ := ϑ) (h_rate := h_rate)).KnowledgeStateFunction
+    (impl : QueryImpl (oSpec) (StateT σ ProbComp)) :
+    (verifier (oSpec := oSpec) K β (Context := Context) (ϑ := ϑ)
+      (h_rate := h_rate)).KnowledgeStateFunction
       init impl
       (inputRelation K β multiplier (ϑ := ϑ) (h_rate := h_rate))
       (roundRelation K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate)
         (𝓑 := boolEmbedding L) (multpoly := multiplier.polynomial) 0)
-      (extractor K β (ϑ := ϑ) (h_rate := h_rate)) where
+      (extractor (oSpec := oSpec) K β (ϑ := ϑ) (h_rate := h_rate)) where
   toFun _ s _ w := (s, w) ∈ inputRelation K β multiplier (ϑ := ϑ) (h_rate := h_rate)
   toFun_empty _ _ := Iff.rfl
   toFun_next j := nomatch j
   toFun_full s _ w h := by
     exact product_sum_and_compatibility_of_mem_roundRelation_zero K β multiplier.polynomial
       s.1.ctx s.1.target s.2 w
-      ((guardedForm K β).check_and_of_prEvent_pos h).2
+      ((guardedForm (oSpec := oSpec) K β).check_and_of_prEvent_pos h).2
 
 /-- Reformatting adds no challenge and no knowledge error. -/
 theorem rbrKnowledgeSoundnessWorstCase {σ : Type} (init : ProbComp σ)
-    (impl : QueryImpl ([]ₒ) (StateT σ ProbComp)) :
-    (verifier K β (Context := Context) (ϑ := ϑ) (h_rate := h_rate)).toVerifier
+    (impl : QueryImpl (oSpec) (StateT σ ProbComp)) :
+    (verifier (oSpec := oSpec) K β (Context := Context) (ϑ := ϑ) (h_rate := h_rate)).toVerifier
       |>.rbrKnowledgeSoundnessWorstCase init impl
       (inputRelation K β multiplier (ϑ := ϑ) (h_rate := h_rate))
       (roundRelation K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate)
         (𝓑 := boolEmbedding L) (multpoly := multiplier.polynomial) 0)
       (fun _ => 0) := by
   apply (Verifier.rbrKnowledgeSoundnessWorstCase_iff_exists_with init impl _ _ _ _).mpr
-  refine ⟨_, extractor K β, knowledgeStateFunction K β multiplier init impl, ?_⟩
+  refine ⟨_, extractor (oSpec := oSpec) K β, knowledgeStateFunction K β multiplier init impl, ?_⟩
   intro _ j
   exact Fin.elim0 j.1
 
@@ -184,19 +189,20 @@ def strictInputRelation : Set
 omit [Fact (β 0 = 1)] in
 /-- Exact input compatibility initializes the honest folding witness with probability one. -/
 theorem perfectCompleteness {σ : Type} (init : ProbComp σ)
-    (impl : QueryImpl ([]ₒ) (StateT σ ProbComp)) :
-    (reduction K β multiplier (ϑ := ϑ) (h_rate := h_rate)).perfectCompleteness init impl
+    (impl : QueryImpl (oSpec) (StateT σ ProbComp)) :
+    (reduction (oSpec := oSpec) K β multiplier (ϑ := ϑ)
+      (h_rate := h_rate)).perfectCompleteness init impl
       (strictInputRelation K β multiplier (ϑ := ϑ) (h_rate := h_rate))
       (strictRoundRelation K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate)
         (𝓑 := boolEmbedding L) (multpoly := multiplier.polynomial) 0) := by
-  apply Reduction.perfectCompleteness_of_guarded_prover_support _ (guardedForm K β)
+  apply Reduction.perfectCompleteness_of_guarded_prover_support _ (guardedForm (oSpec := oSpec) K β)
   intro ⟨s, ost⟩ p hin q hq
-  have hp : (prover K β multiplier (ϑ := ϑ) (h_rate := h_rate)).run (s, ost) p =
+  have hp : (prover (oSpec := oSpec) K β multiplier (ϑ := ϑ) (h_rate := h_rate)).run (s, ost) p =
       pure (default, ((initialStatement s.ctx s.target, ost),
         initialWitness K β multiplier.polynomial s.ctx p)) := by
     simp [Prover.run, Prover.runToRound, prover]
     rfl
-  change q ∈ support ((prover K β multiplier).run (s, ost) p) at hq
+  change q ∈ support ((prover (oSpec := oSpec) K β multiplier).run (s, ost) p) at hq
   rw [hp] at hq
   have heq := OracleComp.eq_of_mem_support_pure _ hq
   subst q

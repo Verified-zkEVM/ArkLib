@@ -18,6 +18,8 @@ guard. Every challenge has the degree-two collision bound; the terminal adds no 
 
 @[expose] public section
 
+variable {ιₒ : Type} {oSpec : OracleSpec ιₒ}
+
 noncomputable section
 namespace RingSwitching.Packing.ProductSumcheck
 open OracleSpec OracleComp ProtocolSpec MvPolynomial
@@ -38,13 +40,13 @@ theorem loopRbrError_eq [Fintype C] (i : (loopSpec C m).ChallengeIdx) :
 /-- The finite loop is worst-case round-by-round knowledge sound. -/
 theorem loop_rbrKnowledgeSoundnessWorstCase [NoZeroDivisors C] [Fintype C] [SampleableType C]
     (hfunctional : pc.Functional) {σ : Type} (init : ProbComp σ)
-    (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-    (loopVerifier pc).toVerifier.rbrKnowledgeSoundnessWorstCase init impl
+    (impl : QueryImpl oSpec (StateT σ ProbComp)) :
+    (loopVerifier (oSpec := oSpec) pc).toVerifier.rbrKnowledgeSoundnessWorstCase init impl
       (rel multiplier pc 0) (rel multiplier pc (Fin.last m))
       (loopRbrError (C := C) (m := m)) := by
   apply OracleVerifier.seqCompose_rbrKnowledgeSoundnessWorstCase_of_guarded
     (Statement Context C) (fun _ => pc.OStmt) (fun _ => P⦃≤ 1⦄[X Fin m])
-    (rel multiplier pc) (Round.verifier pc) (Round.guardedForm pc)
+    (rel multiplier pc) (Round.verifier (oSpec := oSpec) pc) (Round.guardedForm (oSpec := oSpec) pc)
     (fun _ => Round.rbrError (C := C))
   intro i
   apply (Verifier.rbrKnowledgeSoundnessWorstCase_iff_exists_with init impl _ _ _ _).mpr
@@ -71,12 +73,12 @@ theorem rbrError_eq [Fintype C] (i : (pSpec C m).ChallengeIdx) :
 /-- Worst-case round-by-round knowledge soundness on the original commitment opening. -/
 theorem rbrKnowledgeSoundnessWorstCase [NoZeroDivisors C] [Fintype C] [SampleableType C]
     (hfunctional : pc.Functional) {σ : Type} (init : ProbComp σ)
-    (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-    (verifier multiplier pc).toVerifier.rbrKnowledgeSoundnessWorstCase init impl
+    (impl : QueryImpl oSpec (StateT σ ProbComp)) :
+    (verifier (oSpec := oSpec) multiplier pc).toVerifier.rbrKnowledgeSoundnessWorstCase init impl
       (rel multiplier pc 0) (pc.evalRelWithContext Context) (rbrError (C := C) (m := m)) := by
   rw [verifier_toVerifier]
   apply Verifier.append_rbrKnowledgeSoundnessWorstCase_of_guarded_first
-    _ _ (loopGuardedForm pc)
+    _ _ (loopGuardedForm (oSpec := oSpec) pc)
     (loop_rbrKnowledgeSoundnessWorstCase multiplier pc hfunctional init impl)
   apply (Verifier.rbrKnowledgeSoundnessWorstCase_iff_exists_with init impl _ _ _ _).mpr
   exact ⟨_, _, _, Terminal.rbrKnowledgeSoundnessWorstCaseWith multiplier pc init impl⟩

@@ -81,10 +81,11 @@ theorem zero_initial_strict :
       pointFoldMatrixForm, fiberEvaluations, Matrix.mulVec, dotProduct]
 
 /-- The sampled full honest protocol accepts the exhibited initial strict zero input. -/
-example {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
+example {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
+    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp)) :
     let R := OracleReduction.toReduction (Oₛₒ := fun i : Empty => nomatch i)
       (fullOracleReduction 𝔽q β γ (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) (𝓑 := 𝓑))
-    let pImpl : QueryImpl ([]ₒ + [(fullPSpec 𝔽q β γ (ϑ := ϑ)
+    let pImpl : QueryImpl (oSpec + [(fullPSpec 𝔽q β γ (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_rate)).Challenge]ₒ'challengeOracleInterface)
       (StateT σ ProbComp) := QueryImpl.addLift impl challengeQueryImpl
     Pr{let out ← OptionT.mk do
@@ -107,9 +108,9 @@ example {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ Prob
 
 -- The honest reduction and the certified verifier contain the same append.
 example :
-    (fullOracleReduction 𝔽q β γ (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate)
+    (fullOracleReduction (oSpec := []ₒ) 𝔽q β γ (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate)
       (𝓑 := 𝓑)).toOracleVerifier =
-    fullOracleVerifier 𝔽q β γ (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) (𝓑 := 𝓑) := rfl
+    fullOracleVerifier (oSpec := []ₒ) 𝔽q β γ (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) (𝓑 := 𝓑) := rfl
 
 -- The full protocol is exactly the core transcript followed by the query transcript.
 example :
@@ -156,9 +157,9 @@ example {h_small : 1 + 1 < r} :
 example (input : Statement (L := L) (SumcheckBaseContext L ℓ) 0 ×
       (∀ j, OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) 0 j))
     (tr : (fullPSpec 𝔽q β γ (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate)).FullTranscript)
-    (hcore : (coreInteractionOracleVerifier 𝔽q β (ϑ := ϑ)
+    (hcore : (coreInteractionOracleVerifier (oSpec := []ₒ) 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_rate) (𝓑 := 𝓑)).toVerifier.run input tr.fst = failure) :
-    ((fullOracleVerifier 𝔽q β γ (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate)
+    ((fullOracleVerifier (oSpec := []ₒ) 𝔽q β γ (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate)
       (𝓑 := 𝓑)).toVerifier (Oₛₒ := fun i : Empty => nomatch i)).run input tr = failure := by
   unfold fullOracleVerifier
   rw [OracleVerifier.append_toVerifier (Oₛ₃ := fun i : Empty => nomatch i),

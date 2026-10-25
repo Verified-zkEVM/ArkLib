@@ -38,6 +38,8 @@ oracle to the oracle statements. The step sends no challenge.
 
 @[expose] public section
 
+variable {ι : Type} {oSpec : OracleSpec ι}
+
 namespace Binius.BinaryBasefold.CoreInteraction
 noncomputable section
 open OracleSpec OracleComp ProtocolSpec Finset AdditiveNTT Polynomial MvPolynomial
@@ -94,7 +96,7 @@ def getCommitProverFinalOutput (i : Fin ℓ)
 
 /-- The prover of the commit step: it sends its folded word as a new oracle. -/
 noncomputable def commitOracleProver (i : Fin ℓ) :
-  OracleProver (oSpec := []ₒ)
+  OracleProver (oSpec := oSpec)
     -- current round
     (StmtIn := Statement (L := L) Context i.succ)
     (OStmtIn := OracleStatement 𝔽q β (ϑ := ϑ)
@@ -121,7 +123,7 @@ noncomputable def commitOracleProver (i : Fin ℓ) :
 sent oracle to the oracle statements. -/
 noncomputable def commitOracleVerifier (i : Fin ℓ) (hCR : IsCommitmentRound ℓ ϑ i) :
   OracleVerifier
-    (oSpec := []ₒ)
+    (oSpec := oSpec)
     (StmtIn := Statement (L := L) Context i.succ)
     (OStmtIn := OracleStatement 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc)
@@ -134,12 +136,12 @@ noncomputable def commitOracleVerifier (i : Fin ℓ) (hCR : IsCommitmentRound �
   -- performs an oracle computation that outputs a new statement
   verify := fun stmtIn _pSpecChallenges => do
     pure stmtIn
-  outputOracle := .inr (commitOutputSimulation 𝔽q β (ϑ := ϑ)
+  outputOracle := .inr (commitOutputSimulation (oSpec := oSpec) 𝔽q β (ϑ := ϑ)
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hCR)
 
 /-- The oracle reduction of the commit step at a commitment round. -/
 noncomputable def commitOracleReduction (i : Fin ℓ) (hCR : IsCommitmentRound ℓ ϑ i) :
-  OracleReduction (oSpec := []ₒ)
+  OracleReduction (oSpec := oSpec)
     (StmtIn := Statement (L := L) Context i.succ)
     (OStmtIn := OracleStatement 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc)
@@ -149,24 +151,26 @@ noncomputable def commitOracleReduction (i : Fin ℓ) (hCR : IsCommitmentRound �
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ)
     (WitOut := Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ)
     (pSpec := pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) where
-  prover := commitOracleProver 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i
-  verifier := commitOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+  prover := commitOracleProver (oSpec := oSpec) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i
+  verifier := commitOracleVerifier (oSpec := oSpec) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
     i hCR
 
 /-- The commit verifier's verdict as data: it accepts every transcript, keeps the statement, and
 appends the sent oracle to the oracle statements. -/
 def commitOracleVerifierPureForm (i : Fin ℓ) (hCR : IsCommitmentRound ℓ ϑ i) :
-    (commitOracleVerifier (Context := Context) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    (commitOracleVerifier (oSpec := oSpec) (Context := Context) 𝔽q β (ϑ := ϑ)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       i hCR).toVerifier.PureForm where
-  verify s tr := (s.1, (commitOracleVerifier (Context := Context) 𝔽q β (ϑ := ϑ)
+  verify s tr := (s.1, (commitOracleVerifier (oSpec := oSpec) (Context := Context) 𝔽q β (ϑ := ϑ)
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hCR).materializeOutput tr.challenges s.2 tr.messages)
   verify_eq _ _ := rfl
 
 /-- The commit verifier's guard and verdict as data: the trivially-true guard of its pure form. -/
 def commitOracleVerifierGuardedForm (i : Fin ℓ) (hCR : IsCommitmentRound ℓ ϑ i) :
-    (commitOracleVerifier (Context := Context) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    (commitOracleVerifier (oSpec := oSpec) (Context := Context) 𝔽q β (ϑ := ϑ)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       i hCR).toVerifier.GuardedForm :=
-  (commitOracleVerifierPureForm 𝔽q β i hCR).toGuardedForm
+  (commitOracleVerifierPureForm (oSpec := oSpec) 𝔽q β i hCR).toGuardedForm
 
 omit [SampleableType L] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero 𝓡] in
 /-- The commit verifier never rejects. -/
@@ -175,10 +179,10 @@ theorem commitOracleVerifierGuardedForm_check (i : Fin ℓ) (hCR : IsCommitmentR
     (s : Statement (L := L) Context i.succ × ∀ j, OracleStatement 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc j)
     (tr : (pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).FullTranscript) :
-    (commitOracleVerifierGuardedForm (Context := Context) 𝔽q β (ϑ := ϑ)
+    (commitOracleVerifierGuardedForm (oSpec := oSpec) (Context := Context) 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hCR).check s tr = true := rfl
 
-variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)}
+variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
 
 /-! ## Security
 
@@ -195,19 +199,19 @@ theorem commitOracleReduction_perfectCompleteness (i : Fin ℓ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i)
       (relOut := strictRoundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i.succ)
-      (oracleReduction := commitOracleReduction 𝔽q β (ϑ := ϑ)
+      (oracleReduction := commitOracleReduction (oSpec := oSpec) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hCR)
       (init := init)
       (impl := impl) := by
   classical
-  let step := commitStepLogic 𝔽q β (ϑ := ϑ)
+  let step := commitStepLogic (oSpec := oSpec) 𝔽q β (ϑ := ϑ)
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (multpoly := multpoly) i hCR
   apply step.perfectCompleteness_of_isStronglyComplete
-    (commitOracleReduction 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hCR)
-    (commitOracleVerifierGuardedForm 𝔽q β i hCR)
+    (commitOracleReduction (oSpec := oSpec) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hCR)
+    (commitOracleVerifierGuardedForm (oSpec := oSpec) 𝔽q β i hCR)
     (commitStepLogic_isStronglyComplete 𝔽q β i hCR)
   · intro stmt wit oracles q hq
-    have hp : (commitOracleProver (Context := Context) 𝔽q β (ϑ := ϑ)
+    have hp : (commitOracleProver (oSpec := oSpec) (Context := Context) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).run (stmt, oracles) wit =
         pure (((default : (pSpecCommit 𝔽q β i).Transcript 0).concat (m := 0) wit.f),
           step.proverOut stmt wit oracles
@@ -239,7 +243,7 @@ def commitKnowledgeError {i : Fin ℓ}
 
 /-- The round-by-round extractor of the commit step: the witness passes through unchanged. -/
 noncomputable def commitRbrExtractor (i : Fin ℓ) :
-  Extractor.RoundByRound []ₒ
+  Extractor.RoundByRound oSpec
     (StmtIn := (Statement (L := L) Context i.succ) × (∀ j, OracleStatement 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc j))
     (WitIn := Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ)
@@ -280,13 +284,14 @@ def CommitKnowledgeState (i : Fin ℓ) (m : Fin (1 + 1))
 /-- The knowledge-state function of the commit step, `CommitKnowledgeState`, with its
 obligations. -/
 def commitKnowledgeStateFunction (i : Fin ℓ) (hCR : IsCommitmentRound ℓ ϑ i) :
-    (commitOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    (commitOracleVerifier (oSpec := oSpec) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       i hCR).KnowledgeStateFunction init impl
       (relIn := foldStepRelOut (multpoly := multpoly) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)  i)
       (relOut := roundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)  i.succ)
-      (extractor := commitRbrExtractor 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) where
+      (extractor := commitRbrExtractor (oSpec := oSpec) 𝔽q β
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) where
   toFun := fun m ⟨stmtIn, oStmtIn⟩ tr witMid =>
     CommitKnowledgeState 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
       (i := i) (m := m) (stmtIn := stmtIn) (witMid := witMid) (oStmtIn := oStmtIn)
@@ -345,7 +350,7 @@ def commitKnowledgeStateFunction (i : Fin ℓ) (hCR : IsCommitmentRound ℓ ϑ i
       right
       exact ⟨h_sumcheck, h_struct, h_init_cast, h_fold_cast⟩
   toFun_full := fun s tr witOut h =>
-    ((commitOracleVerifierGuardedForm (Context := Context) 𝔽q β (ϑ := ϑ)
+    ((commitOracleVerifierGuardedForm (oSpec := oSpec) (Context := Context) 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hCR).check_and_of_prEvent_pos h).2
 
 omit [SampleableType L] [DecidableEq 𝔽q] in
@@ -355,14 +360,14 @@ omit [SampleableType L] [DecidableEq 𝔽q] in
 bound; the content is the knowledge-state function's obligations. -/
 theorem commitOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith (i : Fin ℓ)
     (hCR : IsCommitmentRound ℓ ϑ i) :
-    (commitOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    (commitOracleVerifier (oSpec := oSpec) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       i hCR).toVerifier.rbrKnowledgeSoundnessWorstCaseWith init impl
       (foldStepRelOut (multpoly := multpoly) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (𝓑 := 𝓑) i)
       (roundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (𝓑 := 𝓑) i.succ)
       (fun _ => Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ)
-      (commitRbrExtractor 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)
+      (commitRbrExtractor (oSpec := oSpec) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)
       (commitKnowledgeStateFunction (multpoly := multpoly) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate :=
           h_ℓ_add_R_rate)
         (𝓑 := 𝓑) i hCR)
@@ -374,7 +379,7 @@ omit [SampleableType L] [DecidableEq 𝔽q] in
 `commitOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith`. -/
 theorem commitOracleVerifier_rbrKnowledgeSoundnessWorstCase (i : Fin ℓ)
     (hCR : IsCommitmentRound ℓ ϑ i) :
-    (commitOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    (commitOracleVerifier (oSpec := oSpec) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       i hCR).toVerifier.rbrKnowledgeSoundnessWorstCase init impl
       (foldStepRelOut (multpoly := multpoly) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (𝓑 := 𝓑) i)
@@ -390,7 +395,7 @@ omit [SampleableType L] [DecidableEq 𝔽q] in
 `commitOracleVerifier_rbrKnowledgeSoundnessWorstCase`. -/
 theorem commitOracleVerifier_rbrKnowledgeSoundness (i : Fin ℓ)
     (hCR : IsCommitmentRound ℓ ϑ i) :
-    (commitOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    (commitOracleVerifier (oSpec := oSpec) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       i hCR).rbrKnowledgeSoundness init impl
       (relIn := foldStepRelOut (multpoly := multpoly) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i)
