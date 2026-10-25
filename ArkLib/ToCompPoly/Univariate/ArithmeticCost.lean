@@ -216,4 +216,30 @@ theorem profileArithmetic_ofFnM_uniform {n : ℕ}
     · funext kind
       simp [Nat.add_mul, Nat.add_comm]
 
+/-- A vector traversal returns its specified values and sums the actual index-dependent
+instruction profiles. -/
+theorem profileArithmetic_ofFnM {n : ℕ}
+    (f : Fin n → OracleComp (ArithmeticSpec F) A) (values : Fin n → A)
+    (cost : Fin n → ArithmeticCost)
+    (h : ∀ i, profileArithmetic (f i) = (values i, cost i)) :
+    profileArithmetic (Vector.ofFnM f) =
+      (Vector.ofFn values, fun kind => ∑ i : Fin n, cost i kind) := by
+  induction n with
+  | zero =>
+    simp only [Vector.ofFnM_zero, profileArithmetic_pure]
+    apply Prod.ext
+    · ext i hi; omega
+    · funext kind
+      simp
+  | succ n ih =>
+    rw [Vector.ofFnM_succ', profileArithmetic_bind, h]
+    dsimp only
+    rw [profileArithmetic_bind, ih (fun i => f i.succ) (fun i => values i.succ)
+      (fun i => cost i.succ) (fun i => h i.succ)]
+    simp only [profileArithmetic_pure]
+    apply Prod.ext
+    · simp [Vector.ofFn_succ']
+    · funext kind
+      simp [Fin.sum_univ_succ]
+
 end CompPoly
