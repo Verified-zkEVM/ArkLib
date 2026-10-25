@@ -69,6 +69,9 @@ home_page/            site assets and assembled website root
 
 ## Navigation Notes
 
+- `ProofSystem/Logup/Prover/Storage.lean` counts actual retained state/input payload roles
+  and canonical messages; source representation and simultaneous workspace stay explicit.
+
 - `ProofSystem/Logup/Interaction/Resources.lean` derives actual per-Q raw source fanout
   and local kernel profiles, distinguishing retained mu/helpers and synthetic weight sites.
 
