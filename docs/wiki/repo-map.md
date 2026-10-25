@@ -69,6 +69,8 @@ home_page/            site assets and assembled website root
 
 ## Navigation Notes
 
+- `ProofSystem/Logup/Prover/ArithmeticResources.lean` bounds the actual selected private
+  request profiles and exact call charges geometrically, including every optional abort history.
 - `ProofSystem/Logup/Lookup/Tuple/ArithmeticProver.lean` selects the eager cache and shared
   weighted control, with actual Unit erasure and exact compression-plus-call cost observations.
 - `ProofSystem/Sumcheck/Impl/Representation.size_le` bounds actual canonical message storage
