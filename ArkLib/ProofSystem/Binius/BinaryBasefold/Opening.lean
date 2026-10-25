@@ -96,10 +96,11 @@ variable (witnessEquiv : WitIn ≃ MultilinearPoly L ℓ)
 /-- Evaluation and unique-radius compatibility with the supplied first oracle. -/
 def inputRelation : Set ((StmtIn ×
     (∀ j, OracleStatement K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) 0 j)) × WitIn) :=
-  fun ⟨⟨statement, oracles⟩, witness⟩ =>
-    (evalQuery statement).original_claim =
-      (witnessEquiv witness).val.eval (evalQuery statement).t_eval_point ∧
-    FirstOracleWitnessConsistent K β (witnessEquiv witness) (getFirstOracle K β oracles)
+  { input |
+    let ⟨⟨stmtIn, oStmtIn⟩, witIn⟩ := input
+    (evalQuery stmtIn).original_claim =
+      (witnessEquiv witIn).val.eval (evalQuery stmtIn).t_eval_point ∧
+    FirstOracleWitnessConsistent K β (witnessEquiv witIn) (getFirstOracle K β oStmtIn) }
 
 omit [SampleableType L] [DecidableEq K] in
 /-- An initial relaxed witness certifies the evaluation of its own source polynomial. -/
@@ -321,10 +322,11 @@ theorem mem_strictRoundRelation_zero_witness (s : MLPEvalStatement L ℓ)
 /-- Evaluation and exact first-codeword encoding for honest completeness. -/
 def strictInputRelation : Set ((StmtIn ×
     (∀ j, OracleStatement K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) 0 j)) × WitIn) :=
-  fun ⟨⟨statement, oracles⟩, witness⟩ =>
-    (evalQuery statement).original_claim =
-      (witnessEquiv witness).val.eval (evalQuery statement).t_eval_point ∧
-    getFirstOracle K β oracles = firstOracleEncoding K β (witnessEquiv witness)
+  { input |
+    let ⟨⟨stmtIn, oStmtIn⟩, witIn⟩ := input
+    (evalQuery stmtIn).original_claim =
+      (witnessEquiv witIn).val.eval (evalQuery stmtIn).t_eval_point ∧
+    getFirstOracle K β oStmtIn = firstOracleEncoding K β (witnessEquiv witIn) }
 
 omit [SampleableType L] [DecidableEq K] [Fact (β 0 = 1)] in
 /-- Perfect completeness of reformatting at the exact input relation. -/
