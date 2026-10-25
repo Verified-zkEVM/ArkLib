@@ -921,6 +921,7 @@ public import ArkLib.ProofSystem.Logup.Interaction.Execution
 public import ArkLib.ProofSystem.Logup.Interaction.Protocol
 public import ArkLib.ProofSystem.Logup.Interaction.Source
 public import ArkLib.ProofSystem.Logup.Lookup.ArithmeticProver
+public import ArkLib.ProofSystem.Logup.Lookup.ArithmeticResources
 public import ArkLib.ProofSystem.Logup.Lookup.Completeness
 public import ArkLib.ProofSystem.Logup.Lookup.Config
 public import ArkLib.ProofSystem.Logup.Lookup.Language
@@ -930,6 +931,7 @@ public import ArkLib.ProofSystem.Logup.Lookup.Security
 public import ArkLib.ProofSystem.Logup.Lookup.Source
 public import ArkLib.ProofSystem.Logup.Lookup.Tuple.ArithmeticCompression
 public import ArkLib.ProofSystem.Logup.Lookup.Tuple.ArithmeticProver
+public import ArkLib.ProofSystem.Logup.Lookup.Tuple.ArithmeticResources
 public import ArkLib.ProofSystem.Logup.Lookup.Tuple.Completeness
 public import ArkLib.ProofSystem.Logup.Lookup.Tuple.Execution
 public import ArkLib.ProofSystem.Logup.Lookup.Tuple.Initial

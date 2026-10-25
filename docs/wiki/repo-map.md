@@ -69,6 +69,9 @@ home_page/            site assets and assembled website root
 
 ## Navigation Notes
 
+- LogUp scalar and tuple request envelopes follow the actual default continuations in
+  `Lookup/ArithmeticResources.lean` and `Lookup/Tuple/ArithmeticResources.lean`.
+
 - `ToMathlib/Control/WriterT.lean` supplies the named empty-log lift law for append writers,
   allowing logged simulation to reuse existing monad-lift laws through a local instance.
 - `ProofSystem/Logup/Prover/ArithmeticResources.lean` bounds the actual selected private
