@@ -69,6 +69,9 @@ home_page/            site assets and assembled website root
 
 ## Navigation Notes
 
+- `ProofSystem/Logup/Interaction/Resources.lean` derives actual per-Q raw source fanout
+  and local kernel profiles, distinguishing retained mu/helpers and synthetic weight sites.
+
 - `ProofSystem/Sumcheck/Interaction/Resources.lean` connects native path counts to the
   existing logger and profiles the selected local kernels; terminal view fanout stays explicit.
 

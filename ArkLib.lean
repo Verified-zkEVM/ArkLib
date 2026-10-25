@@ -919,6 +919,7 @@ public import ArkLib.ProofSystem.Logup.Algebra.Reconstruction
 public import ArkLib.ProofSystem.Logup.Interaction.Config
 public import ArkLib.ProofSystem.Logup.Interaction.Execution
 public import ArkLib.ProofSystem.Logup.Interaction.Protocol
+public import ArkLib.ProofSystem.Logup.Interaction.Resources
 public import ArkLib.ProofSystem.Logup.Interaction.Source
 public import ArkLib.ProofSystem.Logup.Lookup.ArithmeticProver
 public import ArkLib.ProofSystem.Logup.Lookup.ArithmeticResources
