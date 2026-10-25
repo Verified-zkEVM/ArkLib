@@ -4,16 +4,19 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ArkLib Contributors
 -/
 import ArkLibTest.ProofSystem.Logup.Interaction.Fixture
+import ArkLibTest.ProofSystem.Logup.Interaction.MeasuredRuntime
 import VCVio.OracleComp.RunIO
 
 /-!
-# Native weighted LogUp execution checks
+# Native weighted, scalar and tuple LogUp execution checks
 
-The classic acceptance caller and native executable share one fixture. The traced random handler
-uses the same primitive as OracleComp.runIO, recording each inclusive uniform bound. The named
-uniform endpoint must sample four extension elements through their existing six base-field limbs.
-The balanced nonzero weights give Q=0 at every alpha, including poles, so these checks never rely
-on a favorable random draw. No empirical soundness or cryptographic RNG claim is made here.
+Classic acceptance and this executable share the weighted reference and measured-default fixtures.
+The traced random handler uses the same primitive as OracleComp.runIO, recording each inclusive
+uniform bound. Named measured scalar/tuple endpoints must use exactly 24/30 existing base-field
+limbs. Their zero-weight inputs accept for every alpha/beta, including poles; scripted zero limbs
+also exercise those actual sampler paths deterministically. Substantive measured-default cases
+check nonzero cubic messages, retained-source mutations, private effects, abort and zero rounds.
+No empirical soundness or cryptographic RNG claim is made here.
 -/
 
 open LogupRuntimeFixture OracleComp OracleSpec
@@ -55,7 +58,23 @@ def main : IO Unit := do
   check "extension sampler did not use exactly24 base limbs" (bounds.length == 24)
   check "uniform endpoint enumerated an extension or function space"
     (bounds.all (· == KoalaBear.fieldSize - 1))
-  IO.println "weighted LogUp native runtime: all16 checks passed"
+  LogupMeasuredRuntime.deterministicChecks
+  let (scalarAccepted, scalarBounds) ←
+    (simulateQ randomTrace LogupMeasuredRuntime.Uniform.scalar).run []
+  check "measured scalar uniform endpoint rejected balanced zero weights" scalarAccepted
+  check "measured scalar endpoint did not use exactly 24 actual base limbs"
+    (scalarBounds.length == 24)
+  check "measured scalar uniform endpoint changed the actual primitive bounds"
+    (scalarBounds.all (· == KoalaBear.fieldSize - 1))
+  let (tupleAccepted, tupleBounds) ←
+    (simulateQ randomTrace LogupMeasuredRuntime.Uniform.tuple).run []
+  check "measured tuple uniform endpoint rejected balanced zero weights" tupleAccepted
+  check "measured tuple endpoint did not use exactly 30 actual base limbs"
+    (tupleBounds.length == 30)
+  check "measured tuple uniform endpoint changed the actual primitive bounds"
+    (tupleBounds.all (· == KoalaBear.fieldSize - 1))
+  IO.println
+    "LogUp native runtime: reference 16, measured deterministic 19 and uniform 6 checks passed"
 
 end LogupRuntime
 

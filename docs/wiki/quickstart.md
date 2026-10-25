@@ -229,7 +229,7 @@ it gives the expected answer — are checked by compiled executables under `scri
 | `toyproblem-runtime` | `scripts/ToyProblemRuntime.lean` | the toy-problem launch cone |
 | `hachi-runtime` | `scripts/HachiRuntime.lean` | the nonrecursive Hachi honest-prover path |
 | `sumcheck-runtime` | `scripts/SumcheckRuntime.lean` | CompPoly messages, honest multivariate execution and final source authentication, including forgery rejection, zero rounds, retained helpers and private effects after public abort |
-| `logup-runtime` | `scripts/LogupRuntime.lean` | weighted LogUp prefix, retained Q source, native forgery rejection and private effects, plus the actual six-limb extension sampler through the named uniform endpoint |
+| `logup-runtime` | `scripts/LogupRuntime.lean` | weighted reference plus selected measured scalar/tuple defaults, nonzero cubic/native messages, retained mu/helper mutations, private effects and zero-round authentication, with actual named extension samplers using 24/30 base limbs and deterministic pole paths |
 | `fri-extractor-runtime` | `scripts/FriExtractorRuntime.lean` | measured FRI extraction, input guards, raw interpolation corner cases, and exact small instruction counts |
 
 **Put them here, not under `ArkLib/`.** A file under `ArkLib/` is picked up by the generated

@@ -69,6 +69,9 @@ home_page/            site assets and assembled website root
 
 ## Navigation Notes
 
+- `scripts/LogupRuntime.lean` retains the original weighted checks and executes measured
+  scalar/tuple mutation, abort, zero-round and actual named 24/30-limb sampler checks.
+
 - Sumcheck acceptance preserves the original exported-round suite in `SourceRouting.lean`;
   new exact native-routing cases live separately in `NativeSourceRouting.lean`.
 
