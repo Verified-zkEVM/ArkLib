@@ -55,15 +55,13 @@ def Functional : Prop := ∀ {c : ∀ j, pc.OStmt j} {p p' : P⦃≤ 1⦄[X Fin 
 /-- The same-oracle opening relation, allowing evaluation in an algebra of packed coefficients. -/
 def evalRel {C : Type} [CommRing C] [Algebra P C] :
     Set (((((Fin m → C) × C) × (∀ j, pc.OStmt j))) × P⦃≤ 1⦄[X Fin m]) :=
-  { input |
-    let ⟨⟨⟨point, claimedValue⟩, oStmt⟩, wit⟩ := input
+  { ⟨⟨⟨point, claimedValue⟩, oStmt⟩, wit⟩ |
     claimedValue = aeval point wit.val ∧ pc.commitsTo oStmt wit }
 
 /-- Retain a public context beside an evaluation of the same committed polynomial. -/
 def evalRelWithContext (Context : Type) {C : Type} [CommRing C] [Algebra P C] :
     Set (((Context × ((Fin m → C) × C)) × (∀ j, pc.OStmt j)) × P⦃≤ 1⦄[X Fin m]) :=
-  { input |
-    let ⟨⟨⟨_context, evaluationClaim⟩, oStmt⟩, wit⟩ := input
+  { ⟨⟨⟨_context, evaluationClaim⟩, oStmt⟩, wit⟩ |
     ((evaluationClaim, oStmt), wit) ∈ pc.evalRel }
 
 /-- Forgetting the retained context gives the original opening relation. -/
