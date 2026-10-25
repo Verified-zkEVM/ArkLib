@@ -840,6 +840,14 @@ public import ArkLib.ProofSystem.Binius.BinaryBasefold.Steps.Relay
 public import ArkLib.ProofSystem.Binius.FRIBinius.Conformance
 public import ArkLib.ProofSystem.Binius.FRIBinius.Prelude
 public import ArkLib.ProofSystem.Binius.FRIBinius.RingSwitch
+public import ArkLib.ProofSystem.Binius.FRIBinius.Unrolled.Core
+public import ArkLib.ProofSystem.Binius.FRIBinius.Unrolled.Frontier
+public import ArkLib.ProofSystem.Binius.FRIBinius.Unrolled.General
+public import ArkLib.ProofSystem.Binius.FRIBinius.Unrolled.Initial
+public import ArkLib.ProofSystem.Binius.FRIBinius.Unrolled.Spec
+public import ArkLib.ProofSystem.Binius.FRIBinius.Unrolled.Terminal
+public import ArkLib.ProofSystem.Binius.FRIBinius.Unrolled.TerminalCompleteness
+public import ArkLib.ProofSystem.Binius.FRIBinius.Unrolled.TerminalExtraction
 public import ArkLib.ProofSystem.Component.CheckClaim
 public import ArkLib.ProofSystem.Component.DoNothing
 public import ArkLib.ProofSystem.Component.NoInteraction
