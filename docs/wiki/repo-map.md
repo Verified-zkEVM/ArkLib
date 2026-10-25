@@ -165,6 +165,8 @@ home_page/            site assets and assembled website root
 - `ProofSystem/Logup/Lookup/Tuple/Provider.lean` checks physical-piece owners and exact
   schema/row shapes, then stores padded coefficient tables once. Structural source validity
   remains separate from query membership in the declared table collection.
+  `ProofSystem/Logup/Lookup/Tuple/Source.lean` opens those stored coefficient MLEs and
+  Horner-combines their answers at beta, with realization for every retained base multiplicity.
 
 - `ToCompPoly/Multilinear/Basic.lean` constructs Boolean Lagrange tables by sharing each tail
   table and coordinate complement. `ToCompPoly/Multilinear/Arithmetic.lean` interprets that same
