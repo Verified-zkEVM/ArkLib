@@ -631,9 +631,7 @@ def RoundRelated (i : Fin (ℓ + 1))
     (input : (Statement (L := L) Context i ×
       (∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i j)) ×
       Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) : Prop :=
-  let stmt := input.1.1
-  let oStmt := input.1.2
-  let wit := input.2
+  let ⟨⟨stmt, oStmt⟩, wit⟩ := input
   let sumCheckConsistency: Prop :=
     sumcheckConsistencyProp (SumcheckDomain.uniform 𝓑 _) stmt.sumcheck_target wit.H
   KnowledgeInvariant (multpoly := multpoly) 𝔽q β
@@ -645,9 +643,7 @@ def FoldStepRelated (i : Fin ℓ)
     (input : (Statement (L := L) Context i.succ ×
       (∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i.castSucc j)) ×
       Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ) : Prop :=
-  let stmt := input.1.1
-  let oStmt := input.1.2
-  let wit := input.2
+  let ⟨⟨stmt, oStmt⟩, wit⟩ := input
   let sumCheckConsistency: Prop :=
     sumcheckConsistencyProp (SumcheckDomain.uniform 𝓑 _) stmt.sumcheck_target wit.H
   KnowledgeInvariant (multpoly := multpoly) 𝔽q β
@@ -773,9 +769,7 @@ def StrictRoundRelated (i : Fin (ℓ + 1))
     (input : (Statement (L := L) Context i ×
       (∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i j)) ×
       Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) : Prop :=
-  let stmt := input.1.1
-  let oStmt := input.1.2
-  let wit := input.2
+  let ⟨⟨stmt, oStmt⟩, wit⟩ := input
   let sumCheckConsistency: Prop :=
     sumcheckConsistencyProp (SumcheckDomain.uniform 𝓑 _) stmt.sumcheck_target wit.H
   let StrictOracleWitnessConsistent: Prop :=
@@ -788,9 +782,7 @@ def StrictFoldStepRelated (i : Fin ℓ)
     (input : (Statement (L := L) Context i.succ ×
       (∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i.castSucc j)) ×
       Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ) : Prop :=
-  let stmt := input.1.1
-  let oStmt := input.1.2
-  let wit := input.2
+  let ⟨⟨stmt, oStmt⟩, wit⟩ := input
   let sumCheckConsistency: Prop :=
     sumcheckConsistencyProp (SumcheckDomain.uniform 𝓑 _) stmt.sumcheck_target wit.H
   let StrictOracleWitnessConsistent: Prop :=
