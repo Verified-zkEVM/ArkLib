@@ -87,10 +87,11 @@ def inputRelation : Set
     (((RingSwitching.Packing.ProductSumcheck.Statement Context L (m := ℓ) 0) ×
       (∀ j, OracleStatement K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) 0 j)) ×
       MultilinearPoly L ℓ) :=
-  fun ⟨⟨statement, oracles⟩, polynomial⟩ =>
-    statement.target = ∑ y : Fin ℓ → Fin 2,
-      (multiplier statement.ctx).val.eval (y : Fin ℓ → L) * polynomial.val.eval (y : Fin ℓ → L) ∧
-    FirstOracleWitnessConsistent K β polynomial (getFirstOracle K β oracles)
+  { input |
+    let ⟨⟨stmtIn, oStmtIn⟩, witIn⟩ := input
+    stmtIn.target = ∑ y : Fin ℓ → Fin 2,
+      (multiplier stmtIn.ctx).val.eval (y : Fin ℓ → L) * witIn.val.eval (y : Fin ℓ → L) ∧
+    FirstOracleWitnessConsistent K β witIn (getFirstOracle K β oStmtIn) }
 
 /-- The adapter extracts the packed polynomial carried by the backend witness. -/
 def extractor : Extractor.RoundByRound ([]ₒ)
@@ -176,10 +177,11 @@ def strictInputRelation : Set
     (((RingSwitching.Packing.ProductSumcheck.Statement Context L (m := ℓ) 0) ×
       (∀ j, OracleStatement K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) 0 j)) ×
       MultilinearPoly L ℓ) :=
-  fun ⟨⟨statement, oracles⟩, polynomial⟩ =>
-    statement.target = ∑ y : Fin ℓ → Fin 2,
-      (multiplier statement.ctx).val.eval (y : Fin ℓ → L) * polynomial.val.eval (y : Fin ℓ → L) ∧
-    getFirstOracle K β oracles = firstOracleEncoding K β polynomial
+  { input |
+    let ⟨⟨stmtIn, oStmtIn⟩, witIn⟩ := input
+    stmtIn.target = ∑ y : Fin ℓ → Fin 2,
+      (multiplier stmtIn.ctx).val.eval (y : Fin ℓ → L) * witIn.val.eval (y : Fin ℓ → L) ∧
+    getFirstOracle K β oStmtIn = firstOracleEncoding K β witIn }
 
 omit [Fact (β 0 = 1)] in
 /-- Exact input compatibility initializes the honest folding witness with probability one. -/
