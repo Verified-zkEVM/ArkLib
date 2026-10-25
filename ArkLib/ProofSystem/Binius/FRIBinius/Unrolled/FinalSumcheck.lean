@@ -107,12 +107,6 @@ def reduction {ϑ : ℕ} [NeZero ϑ] (outputContext : Context → SumcheckBaseCo
   (prover K β outputContext (ϑ := ϑ) (h_rate := h_rate))
   (verifier K β multiplier.evaluate outputContext)
 
-omit [Fact (Fintype.card K = 2)] [NeZero R] [Fact (ϑ ∣ ℓ)] in
-/-- The reduction uses exactly the separately defined verifier. -/
-theorem reduction_verifier [DecidableEq K] :
-    (reduction K β multiplier outputContext (ϑ := ϑ) (h_rate := h_rate)).verifier =
-      verifier K β multiplier.evaluate outputContext (ϑ := ϑ) (h_rate := h_rate) := rfl
-
 variable [DecidableEq K]
 
 /-- The terminal verifier is guarded by exactly the closing multiplier equation. -/

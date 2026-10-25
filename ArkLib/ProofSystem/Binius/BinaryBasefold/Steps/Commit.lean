@@ -153,14 +153,6 @@ noncomputable def commitOracleReduction (i : Fin ℓ) (hCR : IsCommitmentRound �
   verifier := commitOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
     i hCR
 
-omit [SampleableType L] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero 𝓡] in
-/-- The reduction uses exactly the separately defined verifier. -/
-theorem commitOracleReduction_verifier (i : Fin ℓ) (hCR : IsCommitmentRound ℓ ϑ i) :
-    (commitOracleReduction 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Context :=
-      Context) i hCR).verifier =
-      commitOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Context :=
-      Context) i hCR := rfl
-
 /-- The commit verifier's verdict as data: it accepts every transcript, keeps the statement, and
 appends the sent oracle to the oracle statements. -/
 def commitOracleVerifierPureForm (i : Fin ℓ) (hCR : IsCommitmentRound ℓ ϑ i) :
