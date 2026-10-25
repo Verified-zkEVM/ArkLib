@@ -150,12 +150,6 @@ def frontVerifier : OracleVerifier []ₒ StmtIn
 def frontReduction := OracleReduction.mk
   (frontProver K β evalQuery witnessEquiv (ϑ := ϑ) (h_rate := h_rate)) (frontVerifier K β evalQuery)
 
-omit [SampleableType L] [DecidableEq K] [Fact (β 0 = 1)] [Fact (ϑ ∣ ℓ)] in
-/-- The reduction uses exactly the separately defined verifier. -/
-theorem frontReduction_verifier :
-    (frontReduction K β evalQuery witnessEquiv (ϑ := ϑ) (h_rate := h_rate)).verifier =
-      frontVerifier K β evalQuery (ϑ := ϑ) (h_rate := h_rate) := rfl
-
 /-- The reformatting verifier always accepts and preserves the oracle family. -/
 def frontGuard :
     (frontVerifier K β evalQuery (ϑ := ϑ) (h_rate := h_rate)).toVerifier.GuardedForm where

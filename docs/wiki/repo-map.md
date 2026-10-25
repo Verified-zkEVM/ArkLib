@@ -698,10 +698,15 @@ home_page/            site assets and assembled website root
   `Spec` aggregates the fused budget with one `2ℓ'/|L|` sumcheck term. The unfused frontend
   remains available separately. See the [consumer guide](ring-switching-consumers.md).
 
-  Binary Basefold and FRI-Binius keep each verifier immediately followed by its reduction
-  and a `…Reduction_verifier` (or `reduction_verifier`) equality theorem. Put the prover,
-  required instances, and other prerequisites before this group; security proofs follow it.
-  These projection equalities connect the completeness reduction to the soundness verifier.
+  Binary Basefold and FRI-Binius preserve established verifier and reduction sections; do not
+  interleave them merely to place matching declarations together. Within a per-phase definitions
+  section without separate zones, a verifier may be followed by its reduction.
+  When they are constructed separately (for example, through composition or wrappers), follow
+  the reduction with a `…Reduction_verifier` (or `reduction_verifier`) equality theorem, even when its
+  proof is `rfl`. Omit this theorem when the reduction explicitly supplies that same verifier
+  through `OracleReduction.mk` or its `verifier` field. Put the prover, required instances,
+  and other prerequisites before this group; security proofs follow it. The retained equalities
+  connect the separately constructed completeness reduction to the soundness verifier.
   Group operational definitions and their structural equalities separately from security
   relations, extraction machinery, error bounds, and completeness/soundness proofs. Use
   per-phase subsections when a module contains several protocol layers.

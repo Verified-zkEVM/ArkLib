@@ -150,14 +150,6 @@ noncomputable def relayOracleReduction (i : Fin ℓ) (hNCR : ¬ IsCommitmentRoun
   verifier := relayOracleVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hNCR
 
 omit [SampleableType L] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero 𝓡] in
-/-- The reduction uses exactly the separately defined verifier. -/
-theorem relayOracleReduction_verifier (i : Fin ℓ) (hNCR : ¬ IsCommitmentRound ℓ ϑ i) :
-    (relayOracleReduction 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Context :=
-      Context) i hNCR).verifier =
-      relayOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Context :=
-      Context) i hNCR := rfl
-
-omit [SampleableType L] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero 𝓡] in
 /-- The relay verifier's output oracles are the input oracles reindexed along the equal oracle
 counts, `mapOStmtOutRelayStep`. -/
 lemma mapOStmtOutRelayStep_eq_materializeOutput

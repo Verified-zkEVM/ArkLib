@@ -68,26 +68,6 @@ theorem reduction_verifier :
     (reduction κ K β (ϑ := ϑ) h_rate h_dim).verifier =
       verifier κ K β (ϑ := ϑ) h_rate h_dim := rfl
 
-omit [SampleableType L] [DecidableEq K] [NeZero R] in
-/-- The opening receives exactly the frontend's contextual evaluation relation. -/
-theorem opening_input_eq :
-    (TensorPrefix.commitment (inputInterface κ K β (ϑ := ϑ) h_rate)).evalRelWithContext
-        (Context κ (L := L) (ℓ := ℓ)) =
-      BinaryBasefold.Opening.contextualInputRelation K β (Context κ (L := L) (ℓ := ℓ))
-        (ϑ := ϑ) (h_rate := h_rate) := by
-  ext x
-  rfl
-
-omit [SampleableType L] [DecidableEq K] [NeZero R] in
-/-- Exact encodings identify the frontend's honest endpoint with the opening's strict input. -/
-theorem opening_strict_input_eq :
-    (TensorPrefix.commitment (inputInterface κ K β (ϑ := ϑ) h_rate).strictView).evalRelWithContext
-        (Context κ (L := L) (ℓ := ℓ)) =
-      BinaryBasefold.Opening.contextualStrictInputRelation K β (Context κ (L := L) (ℓ := ℓ))
-        (ϑ := ϑ) (h_rate := h_rate) := by
-  ext x
-  rfl
-
 /-- The original carrier wire and product sumcheck followed by the opening wire. -/
 abbrev pSpec (γ : ℕ) := TensorPrefix.pSpec (biniusProfile κ L K β) (ℓ' := ℓ') ++ₚ
   ((!p[] : ProtocolSpec 0) ++ₚ BinaryBasefold.fullPSpec K β γ
@@ -130,7 +110,29 @@ theorem fullReduction_verifier (γ : ℕ) :
 
 /-! ## Security
 
-### Error bounds -/
+### Relation interfaces -/
+
+omit [SampleableType L] [DecidableEq K] [NeZero R] [Fact (β 0 = 1)] in
+/-- The opening receives exactly the frontend's contextual evaluation relation. -/
+theorem opening_input_eq :
+    (TensorPrefix.commitment (inputInterface κ K β (ϑ := ϑ) h_rate)).evalRelWithContext
+        (Context κ (L := L) (ℓ := ℓ)) =
+      BinaryBasefold.Opening.contextualInputRelation K β (Context κ (L := L) (ℓ := ℓ))
+        (ϑ := ϑ) (h_rate := h_rate) := by
+  ext x
+  rfl
+
+omit [SampleableType L] [DecidableEq K] [NeZero R] [Fact (β 0 = 1)] in
+/-- Exact encodings identify the frontend's honest endpoint with the opening's strict input. -/
+theorem opening_strict_input_eq :
+    (TensorPrefix.commitment (inputInterface κ K β (ϑ := ϑ) h_rate).strictView).evalRelWithContext
+        (Context κ (L := L) (ℓ := ℓ)) =
+      BinaryBasefold.Opening.contextualStrictInputRelation K β (Context κ (L := L) (ℓ := ℓ))
+        (ϑ := ϑ) (h_rate := h_rate) := by
+  ext x
+  rfl
+
+/-! ### Error bounds -/
 
 /-- Each full-protocol challenge keeps its component's error bound. -/
 def fullError (γ : ℕ) : (pSpec κ K β (ϑ := ϑ) h_rate (ℓ' := ℓ') γ).ChallengeIdx → ℝ≥0 :=

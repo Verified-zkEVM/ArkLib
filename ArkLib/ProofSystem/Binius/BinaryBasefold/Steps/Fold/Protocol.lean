@@ -138,14 +138,6 @@ noncomputable def foldOracleReduction (i : Fin ℓ) :
   verifier := foldOracleVerifier 𝔽q β (ϑ := ϑ)
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (multpoly := multpoly) i
 
-omit [SampleableType L] [DecidableEq 𝔽q] h_β₀_eq_1 in
-/-- The reduction uses exactly the separately defined verifier. -/
-theorem foldOracleReduction_verifier (i : Fin ℓ) :
-    (foldOracleReduction 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (𝓑 := 𝓑) (multpoly := multpoly) i).verifier =
-      foldOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (𝓑 := 𝓑) (multpoly := multpoly) i := rfl
-
 /-- The fold verifier's guard and verdict as data: `foldStepLogic`'s check and output statement on
 the sent round polynomial and the challenge, with the unchanged oracle statements. -/
 def foldOracleVerifierGuardedForm (i : Fin ℓ) :
