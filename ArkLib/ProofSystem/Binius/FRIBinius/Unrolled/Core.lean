@@ -5,8 +5,7 @@ Authors: Chung Thai Nguyen, Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Binius.FRIBinius.Unrolled.TerminalExtraction
-public import ArkLib.ProofSystem.Binius.FRIBinius.Unrolled.TerminalCompleteness
+public import ArkLib.ProofSystem.Binius.FRIBinius.Unrolled.FinalSumcheck
 public import ArkLib.ProofSystem.Binius.FRIBinius.Unrolled.Frontier
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.CoreInteractionPhase
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.General
