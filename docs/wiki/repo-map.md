@@ -69,6 +69,8 @@ home_page/            site assets and assembled website root
 
 ## Navigation Notes
 
+- `ProofSystem/Sumcheck/Impl/{VerifierChecks,ArithmeticVerifierChecks}.lean` shares selected
+  native sum/comparison bodies and profiles; downstream proofs normalize the same comparison.
 - `ProofSystem/Logup/Algebra/{Reconstruction,ArithmeticReconstruction}.lean` shares the actual
   scalar circuit and exact profiles, using seeded fractions and an affine coordinate kernel.
 - `ProofSystem/Logup/Lookup/Tuple/ArithmeticCompression.lean` eagerly materializes compressed

@@ -6,6 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.ProofSystem.Sumcheck.Interaction.MultivariateRound
+public import ArkLib.ProofSystem.Sumcheck.Impl.VerifierChecks
 public import ArkLib.Interaction.Oracle.Sequential
 
 /-!
@@ -86,13 +87,22 @@ def latest (A : PFunctor) (x : R) :
     (.inr (.inr x)))
 
 /-- Sum the latest message over the declared domain. -/
-def latestSum (A : PFunctor) : List R →
-    OracleComp (ambient + OracleSpec.ofPFunctor (Access.extend A (messageInterface R M evaluate))) R
-  | [] => pure 0
-  | x :: xs => do
+def latestSum (A : PFunctor) (domain : List R) :
+    OracleComp
+      (ambient + OracleSpec.ofPFunctor (Access.extend A (messageInterface R M evaluate))) R :=
+  Impl.VerifierChecks.sumM (latest R M evaluate ambient A) (fun a b => pure (a + b)) domain
+
+/-- Empty domain summation makes no query or addition. -/
+@[simp]
+theorem latestSum_nil (A : PFunctor) : latestSum R M evaluate ambient A [] = pure 0 := rfl
+
+/-- The selected shared sum keeps the original read/head-tail-add order. -/
+@[simp]
+theorem latestSum_cons (A : PFunctor) (x : R) (xs : List R) :
+    latestSum R M evaluate ambient A (x :: xs) = (do
       let value ← latest R M evaluate ambient A x
-      let rest ← latestSum A xs
-      return value + rest
+      let rest ← latestSum R M evaluate ambient A xs
+      return value + rest) := rfl
 
 variable [DecidableEq R]
 
@@ -112,7 +122,8 @@ def verifier (challenge : OracleComp ambient R) (domain : List R) :
   | count + 1, start, finish, A, originalOracle, stmt => do
       let total ← latestSum R M evaluate ambient A domain
       return do
-        if total = stmt.target then
+        if Id.run (Impl.VerifierChecks.equalM (m := Id)
+            (fun a b => decide (a = b)) total stmt.target) then
           let r ← OracleComp.liftComp challenge
             (ambient + OracleSpec.ofPFunctor (Access.extend A (messageInterface R M evaluate)))
           let value ← latest R M evaluate ambient A r
@@ -161,7 +172,7 @@ theorem simulate_latestSum (A : PFunctor) (impl : QueryImpl (OracleSpec.ofPFunct
   induction domain with
   | nil => rfl
   | cons x xs ih =>
-      simp only [latestSum, simulateQ_bind, simulate_latest, pure_bind, ih, simulateQ_pure]
+      simp only [latestSum_cons, simulateQ_bind, simulate_latest, pure_bind, ih, simulateQ_pure]
       rfl
 
 /-- With no rounds left, the terminal verifier exports the original view without querying it. -/
@@ -218,7 +229,8 @@ theorem execute_succ (challenge : OracleComp ambient R) (domain : List R)
     InteractionOver.TwoParty.paired,
     TwoParty.participantProfile,
     TwoParty.collectParticipantOutputs]
-  simp only [simulateQ_bind, simulateQ_pure, simulate_latestSum, pure_bind, bind_assoc]
+  simp only [simulateQ_bind, simulateQ_pure, simulate_latestSum, pure_bind, bind_assoc,
+    Impl.VerifierChecks.equalM, Id.run, decide_eq_true_eq]
   congr 1
   funext chosen
   split
@@ -359,7 +371,8 @@ def checkFinalClaim (A : PFunctor)
       (MultivariateRound.polynomialFamily R n deg)) :
     OracleComp (ambient + ofPFunctor A) Bool := do
   let answer : R ← liftM (claim.oracles.query ⟨(), claim.stmt.challenges⟩)
-  return decide (answer = claim.stmt.target)
+  return Id.run (Impl.VerifierChecks.equalM (m := Id)
+    (fun a b => decide (a = b)) answer claim.stmt.target)
 
 /-- Interpreting an arbitrary source-only program adds no ambient effects. -/
 private theorem simulate_sourceProgram (A : PFunctor) (impl : QueryImpl (ofPFunctor A) Id)

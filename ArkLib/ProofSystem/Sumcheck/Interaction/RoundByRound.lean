@@ -446,7 +446,7 @@ private theorem transcriptObserver_fresh {m₀ : ℕ} (D : Fin m₀ ↪ F)
     intro q next hnext
     dsimp only [protocol, Core.protocol, Protocol.oracleWith_oracles] at hnext
     simp only [verifier, Core.verifier, simulateQ_bind, simulateQ_pure,
-      Core.simulate_latestSum] at hnext
+      Core.simulate_latestSum, Impl.VerifierChecks.equalM, Id.run, decide_eq_true_eq] at hnext
     simp only [LawfulMonad.pure_bind] at hnext
     rw [mem_support_pure_iff] at hnext
     subst next
@@ -531,7 +531,8 @@ private theorem executeStrategies_succ {ι : Type} (ambient : OracleSpec ι)
   rw [executeStrategies_oracle]
   simp only [verifier, Core.verifier, simulateQ_bind, simulateQ_pure]
   dsimp only [protocol, Core.protocol, Protocol.oracleWith_oracles]
-  simp only [Core.simulate_latestSum, LawfulMonad.pure_bind]
+  simp only [Core.simulate_latestSum, LawfulMonad.pure_bind,
+    Impl.VerifierChecks.equalM, Id.run, decide_eq_true_eq]
   congr 1
   funext chosen
   rw [executeStrategies_public_receiver]
