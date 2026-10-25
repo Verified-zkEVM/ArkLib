@@ -144,14 +144,6 @@ noncomputable def finalSumcheckOracleReduction :
   prover := finalSumcheckProver 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
   verifier := finalSumcheckVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
 
-omit [SampleableType L] [DecidableEq 𝔽q] h_β₀_eq_1 in
-/-- The reduction uses exactly the separately defined verifier. -/
-theorem finalSumcheckOracleReduction_verifier :
-    (finalSumcheckOracleReduction 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (𝓑 := 𝓑)).verifier =
-      finalSumcheckVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (𝓑 := 𝓑) := rfl
-
 /-- The final sum-check verifier's guard and verdict as data: `finalSumcheckStepLogic`'s check and
 output statement on the sent constant, with the unchanged oracle statements. -/
 def finalSumcheckVerifierGuardedForm :

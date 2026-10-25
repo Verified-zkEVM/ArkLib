@@ -201,12 +201,6 @@ noncomputable def queryOracleReduction :
     (queryOracleProver 𝔽q β (ϑ := ϑ) γ_repetitions)
     (queryOracleVerifier 𝔽q β (ϑ := ϑ) γ_repetitions)
 
-/-- The reduction uses exactly the separately defined verifier. -/
-theorem queryOracleReduction_verifier :
-    (queryOracleReduction 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      γ_repetitions).verifier (Oₛₒ := fun i : Empty => nomatch i) =
-      queryOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) γ_repetitions := rfl
-
 end FinalQueryRoundIOR
 end
 end Binius.BinaryBasefold.QueryPhase
