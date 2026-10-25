@@ -65,11 +65,6 @@ def verifier : OracleVerifier ([]ₒ)
 noncomputable def reduction := OracleReduction.mk
   (prover K β multiplier (ϑ := ϑ) (h_rate := h_rate)) (verifier K β)
 
-/-- The reduction uses exactly the separately defined verifier. -/
-theorem reduction_verifier :
-    (reduction K β multiplier (ϑ := ϑ) (h_rate := h_rate)).verifier =
-      verifier K β (Context := Context) (ϑ := ϑ) (h_rate := h_rate) := rfl
-
 /-- The frontier has no checks and leaves all oracle contents unchanged. -/
 def guardedForm :
     (verifier K β (Context := Context) (ϑ := ϑ) (h_rate := h_rate)).toVerifier.GuardedForm where
