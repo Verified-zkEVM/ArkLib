@@ -10,17 +10,17 @@ import ArkLib.ProofSystem.Binius.FRIBinius.RingSwitch
 
 open Binius.BinaryBasefold.FullBinaryBasefold
 
-/-- info: 'Binius.BinaryBasefold.FullBinaryBasefold.fullOracleVerifier_knowledgeSoundness_concrete'
+/-- info: 'Binius.BinaryBasefold.FullBinaryBasefold.fullOracleVerifier_knowledgeSoundness'
 depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
-#print axioms fullOracleVerifier_knowledgeSoundness_concrete
+#print axioms fullOracleVerifier_knowledgeSoundness
 
-/-- info: 'RingSwitching.Packing.TensorPrefix.knowledgeSoundness_concrete'
+/-- info: 'RingSwitching.Packing.TensorPrefix.knowledgeSoundness'
 depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
-#print axioms RingSwitching.Packing.TensorPrefix.knowledgeSoundness_concrete
+#print axioms RingSwitching.Packing.TensorPrefix.knowledgeSoundness
 
-/-- info: 'Binius.FRIBinius.RingSwitch.fullVerifier_knowledgeSoundness_concrete'
+/-- info: 'Binius.FRIBinius.RingSwitch.fullVerifier_knowledgeSoundness'
 depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
-#print axioms Binius.FRIBinius.RingSwitch.fullVerifier_knowledgeSoundness_concrete
+#print axioms Binius.FRIBinius.RingSwitch.fullVerifier_knowledgeSoundness

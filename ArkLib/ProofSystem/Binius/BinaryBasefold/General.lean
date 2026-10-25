@@ -232,19 +232,6 @@ theorem fullOracleVerifier_rbrKnowledgeSoundness :
   Verifier.rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness init impl
     (fullOracleVerifier_rbrKnowledgeSoundnessWorstCase 𝔽q β γ_repetitions)
 
-/-- Standard straightline knowledge soundness with the same proximity relation and exact
-challenge-error sum as the RBR theorem. Completeness remains an exact-encoding guarantee. -/
-theorem fullOracleVerifier_knowledgeSoundness (handler : QueryImpl []ₒ ProbComp) :
-    OracleProof.knowledgeSoundness (pure PUnit.unit) handler.statelessLift
-      (relation := roundRelation (multpoly := multiplier) 𝔽q β (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) 0)
-      (verifier := fullOracleVerifier 𝔽q β γ_repetitions (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑))
-      (knowledgeError := ∑ i, fullRbrKnowledgeError 𝔽q β γ_repetitions (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) :=
-  Verifier.rbrKnowledgeSoundnessWorstCase_implies_knowledgeSoundness handler _ _ _ _
-    (fullOracleVerifier_rbrKnowledgeSoundnessWorstCase 𝔽q β γ_repetitions)
-
 /-- Upper bound `2ℓ/|L| + 2^(ℓ+𝓡)/|L| + (1/2 + 1/(2·2^𝓡))^γ_rep` for the core-and-query
 RBR error sum, excluding batching. -/
 noncomputable def concreteBinaryBasefoldKnowledgeError (L : Type) [Fintype L] (ℓ 𝓡 γ_rep : ℕ) :
@@ -332,8 +319,9 @@ theorem fullRbrKnowledgeError_sum_le_concrete :
     exact add_le_add h_core_le (le_refl _)
   exact h_mid
 
-/-- Standard knowledge soundness with the existing closed-form Binary Basefold error. -/
-theorem fullOracleVerifier_knowledgeSoundness_concrete (handler : QueryImpl []ₒ ProbComp) :
+/-- Standard knowledge soundness with the existing closed-form error and proximity relation.
+Completeness remains an exact-encoding guarantee. -/
+theorem fullOracleVerifier_knowledgeSoundness (handler : QueryImpl []ₒ ProbComp) :
     OracleProof.knowledgeSoundness (pure PUnit.unit) handler.statelessLift
       (relation := roundRelation (multpoly := multiplier) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) 0)
@@ -342,6 +330,7 @@ theorem fullOracleVerifier_knowledgeSoundness_concrete (handler : QueryImpl []�
       (knowledgeError := concreteBinaryBasefoldKnowledgeError L ℓ 𝓡 γ_repetitions) :=
   Verifier.knowledgeSoundness_error_mono _ _
     (fullRbrKnowledgeError_sum_le_concrete 𝔽q β γ_repetitions)
-    (fullOracleVerifier_knowledgeSoundness 𝔽q β γ_repetitions handler)
+    (Verifier.rbrKnowledgeSoundnessWorstCase_implies_knowledgeSoundness handler _ _ _ _
+      (fullOracleVerifier_rbrKnowledgeSoundnessWorstCase 𝔽q β γ_repetitions))
 
 end Binius.BinaryBasefold.FullBinaryBasefold
