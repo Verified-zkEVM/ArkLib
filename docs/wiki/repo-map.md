@@ -69,6 +69,8 @@ home_page/            site assets and assembled website root
 
 ## Navigation Notes
 
+- `Data/OracleComp/Vector.lean` owns public monad-hom and oracle-simulation laws for the
+  standard finite vector traversal, preserving target effects and their index order.
 - `Data/Fraction.lean` provides executable unnormalized numerator-denominator pairs and
   fraction folds. Its regrouping identities hold at zero denominators; agreement with evaluated
   field fractions separately requires nonzero denominators. External caller, runtime, and axiom

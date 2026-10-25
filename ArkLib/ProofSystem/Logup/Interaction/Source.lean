@@ -8,6 +8,7 @@ module
 public import ArkLib.ProofSystem.Logup.Algebra.Grouped
 public import ArkLib.ProofSystem.Sumcheck.Interaction.MultivariateRound
 public import ArkLib.ToCompPoly.Multilinear.Basic
+public import ArkLib.Data.OracleComp.Vector
 
 /-!
 # Retained-source realization of scalar LogUp
@@ -61,19 +62,6 @@ theorem eval₂Mle_eq_tablePolynomial (table : CMlPolynomialEval B n) (x : Fin n
     CMlPolynomialEval.eval₂Mle table f (Vector.ofFn x) =
       MvPolynomial.eval x (tablePolynomial f n table).val :=
   CMlPolynomialEval.eval₂Mle_eq_MvPolynomial_MLE table f x
-
-private theorem simulateQ_ofFnM {ι α : Type} {spec : OracleSpec ι} {k : ℕ}
-    (answer : QueryImpl spec Id) (g : Fin k → OracleComp spec α) :
-    simulateQ answer (Vector.ofFnM g) = Vector.ofFn fun i => simulateQ answer (g i) := by
-  induction k with
-  | zero =>
-    rw [Vector.ofFnM_zero, simulateQ_pure]
-    apply Vector.ext
-    intro i hi
-    omega
-  | succ k ih =>
-    simp only [Vector.ofFnM_succ', simulateQ_bind, simulateQ_pure, ih, Vector.ofFn_succ']
-    rfl
 
 /-- Read a logical input column through its actual supplied source view. -/
 def queryInput (A : PFunctor.{0, 0})
