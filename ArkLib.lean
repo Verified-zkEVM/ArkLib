@@ -925,9 +925,11 @@ public import ArkLib.ProofSystem.Logup.Lookup.Protocol
 public import ArkLib.ProofSystem.Logup.Lookup.Prover
 public import ArkLib.ProofSystem.Logup.Lookup.Security
 public import ArkLib.ProofSystem.Logup.Lookup.Source
+public import ArkLib.ProofSystem.Logup.Lookup.Tuple.Completeness
 public import ArkLib.ProofSystem.Logup.Lookup.Tuple.Execution
 public import ArkLib.ProofSystem.Logup.Lookup.Tuple.Initial
 public import ArkLib.ProofSystem.Logup.Lookup.Tuple.Protocol
+public import ArkLib.ProofSystem.Logup.Lookup.Tuple.Prover
 public import ArkLib.ProofSystem.Logup.Lookup.Tuple.Provider
 public import ArkLib.ProofSystem.Logup.Lookup.Tuple.Security
 public import ArkLib.ProofSystem.Logup.Lookup.Tuple.Source

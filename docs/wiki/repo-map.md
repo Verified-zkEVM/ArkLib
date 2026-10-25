@@ -69,6 +69,8 @@ home_page/            site assets and assembled website root
 
 ## Navigation Notes
 
+- `ProofSystem/Logup/Lookup/Tuple/{Prover,Completeness}.lean` supplies indexed histogram
+  witnesses and supported/uniform honest completeness for every beta, including collisions.
 - `ProofSystem/Logup/Lookup/Tuple/{Protocol,Execution,Security}.lean` owns the actual base
   multiplicity send, beta response, weighted suffix and whole-program tuple soundness.
 - `ProofSystem/Logup/Lookup/Tuple/Initial.lean` connects fixed original semantic keys and pre-beta
