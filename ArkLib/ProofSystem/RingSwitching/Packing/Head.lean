@@ -89,8 +89,7 @@ def nextStatement (stmt : Input data m layout) (α : data.ιP → data.E)
 
 /-- The input anchors the scalar claim to this commitment's packed source. -/
 def relIn : Set (((Input data m layout) × (∀ j, pc.OStmt j)) × layout.Source) :=
-  { input |
-    let ⟨⟨⟨query, claimedValue⟩, oStmtIn⟩, witIn⟩ := input
+  { ⟨⟨⟨query, claimedValue⟩, oStmtIn⟩, witIn⟩ |
     claimedValue = layout.eval query witIn ∧
       pc.commitsTo oStmtIn (data.packedMLE (layout.components witIn)) }
 
