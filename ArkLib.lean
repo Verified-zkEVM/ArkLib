@@ -918,6 +918,7 @@ public import ArkLib.ProofSystem.Logup.Interaction.Config
 public import ArkLib.ProofSystem.Logup.Interaction.Execution
 public import ArkLib.ProofSystem.Logup.Interaction.Protocol
 public import ArkLib.ProofSystem.Logup.Interaction.Source
+public import ArkLib.ProofSystem.Logup.Lookup.ArithmeticProver
 public import ArkLib.ProofSystem.Logup.Lookup.Completeness
 public import ArkLib.ProofSystem.Logup.Lookup.Config
 public import ArkLib.ProofSystem.Logup.Lookup.Language
@@ -936,6 +937,7 @@ public import ArkLib.ProofSystem.Logup.Lookup.Tuple.Source
 public import ArkLib.ProofSystem.Logup.Prover.ArithmeticRound
 public import ArkLib.ProofSystem.Logup.Prover.ArithmeticRoundCost
 public import ArkLib.ProofSystem.Logup.Prover.ArithmeticState
+public import ArkLib.ProofSystem.Logup.Prover.ArithmeticStrategy
 public import ArkLib.ProofSystem.Logup.Prover.CoefficientCircuit
 public import ArkLib.ProofSystem.Logup.Prover.CoefficientCircuitCost
 public import ArkLib.ProofSystem.Logup.Prover.Completeness
