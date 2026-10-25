@@ -690,7 +690,12 @@ home_page/            site assets and assembled website root
   `Commitment` owns the first-oracle interface, and `Opening` supplies multilinear opening with
   exact-encoding completeness and unique-radius round-by-round security. `FRIBinius/Prelude`
   instantiates the tensor profile; `FRIBinius/RingSwitch` composes the shared prefix reduction
-  with Binary Basefold opening. See the [consumer guide](ring-switching-consumers.md).
+  with Binary Basefold opening. `FRIBinius/Unrolled/` instead connects the tensor batching
+  head directly to one product-sumcheck/folding loop: `Frontier` initializes the witness,
+  `Terminal` checks the product multiplier, `Core` composes folding and queries, and `General`
+  proves exact-input perfect completeness and relaxed-input worst-case RBR knowledge soundness.
+  `Spec` aggregates the fused budget with one `2ℓ'/|L|` sumcheck term. The unfused frontend
+  remains available separately. See the [consumer guide](ring-switching-consumers.md).
 
 - The ABF26 Section 6 toy IOP lives under `ProofSystem/ToyProblem/`. `Spec/` contains the
   domain-generic protocol and extraction theorems, `Impl/IRS.lean` supplies the computable
