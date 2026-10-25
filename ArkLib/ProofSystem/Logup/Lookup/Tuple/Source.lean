@@ -8,7 +8,7 @@ module
 public import ArkLib.ProofSystem.Logup.Lookup.Tuple.Provider
 public import ArkLib.ProofSystem.Logup.Lookup.Source
 public import CompPoly.Univariate.ToPoly.Core
-public import ArkLib.ToCompPoly.Univariate.Raw.Horner
+public import ArkLib.ToCompPoly.Univariate.Raw.Basic
 public import ArkLib.Data.OracleComp.Vector
 -- The coefficient bound proof unfolds the defining raw coefficient getter.
 import all CompPoly.Univariate.Raw.Core
@@ -33,26 +33,6 @@ open CompPoly
 open scoped BigOperators
 namespace Logup.Lookup.Tuple
 variable {B E : Type} [CommRing B] [CommRing E]
-
-private theorem horner_eq_sum {L : Nat} (coeffs : Vector E L) (beta : E) :
-    CPolynomial.Raw.evalHornerSeeded beta coeffs.toArray =
-      ∑ j : Fin L, coeffs[j.val] * beta ^ j.val := by
-  classical
-  have hpoly : CPolynomial.Raw.toPoly coeffs.toArray = Polynomial.ofFn L coeffs.get := by
-    ext j
-    rw [CPolynomial.Raw.coeff_toPoly]
-    by_cases hj : j < L
-    · rw [Polynomial.ofFn_coeff_eq_val_of_lt _ hj,
-        CPolynomial.Raw.Trim.coeff_eq_getElem (by simpa using hj)]
-      simp [Vector.get_eq_getElem]
-    · rw [Polynomial.ofFn_coeff_eq_zero_of_ge _ (by omega)]
-      have hge : coeffs.toArray.size ≤ j := by simpa using Nat.le_of_not_gt hj
-      simp only [CPolynomial.Raw.coeff, Array.getD_eq_getD_getElem?,
-        Array.getElem?_eq_none hge, Option.getD_none]
-  rw [CPolynomial.Raw.evalHornerSeeded_eq_evalHorner, CPolynomial.Raw.evalHorner_eq_eval,
-    ← CPolynomial.Raw.eval_toPoly_eq_eval, hpoly,
-    Polynomial.ofFn_eq_sum_monomial]
-  simp [Polynomial.eval_finsetSum, Polynomial.eval_monomial, Vector.get_eq_getElem]
 
 open _root_.Interaction.Oracle OracleComp OracleSpec
 
@@ -98,7 +78,7 @@ theorem queryValue_eval (f : B →+* E) (n M P W : Nat) (beta : E) (A : PFunctor
   change CPolynomial.Raw.evalHornerSeeded beta
     (Vector.ofFn fun j => CMlPolynomialEval.eval₂Mle (tables (slot, j)) f
       (Vector.ofFn x)).toArray = _
-  rw [horner_eq_sum]
+  rw [CPolynomial.Raw.evalHornerSeeded_toArray_eq_sum]
   simp only [Vector.getElem_ofFn]
 
 private theorem eval_fingerprintData {b W n M P : Nat} {schema : TaggedTuple.Schema B b W}

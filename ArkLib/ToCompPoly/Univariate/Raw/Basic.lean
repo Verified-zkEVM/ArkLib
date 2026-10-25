@@ -6,6 +6,8 @@ Authors: ArkLib Contributors
 module
 
 public import CompPoly.Univariate.ToPoly
+public import ArkLib.ToCompPoly.Univariate.Raw.Horner
+import Mathlib.Algebra.Polynomial.OfFn
 
 import all CompPoly.Univariate.Raw.Core
 import all CompPoly.Univariate.Raw.Ops
@@ -21,6 +23,29 @@ are installed on arrays with distinct representations of the same polynomial.
 @[expose] public section
 
 namespace CompPoly.CPolynomial.Raw
+
+/-- Seeded evaluation is the sum of all stored coefficient powers, including trailing zeros. -/
+theorem evalHornerSeeded_eq_sum {R : Type*} [Semiring R] (x : R) (p : Array R) :
+    evalHornerSeeded x p = ∑ i : Fin p.size, p[i.val] * x ^ i.val := by
+  classical
+  have hpoly : toPoly p = Polynomial.ofFn p.size (fun i => p[i.val]) := by
+    ext j
+    rw [coeff_toPoly]
+    by_cases hj : j < p.size
+    · rw [Polynomial.ofFn_coeff_eq_val_of_lt _ hj, Trim.coeff_eq_getElem hj]
+    · rw [Polynomial.ofFn_coeff_eq_zero_of_ge _ (by omega)]
+      simp only [coeff, Array.getD_eq_getD_getElem?,
+        Array.getElem?_eq_none (Nat.le_of_not_gt hj), Option.getD_none]
+  rw [evalHornerSeeded_eq_evalHorner, evalHorner_eq_eval, ← eval_toPoly_eq_eval,
+    hpoly, Polynomial.ofFn_eq_sum_monomial]
+  simp only [Polynomial.eval_finsetSum, Polynomial.eval_monomial]
+
+/-- A typed coefficient vector has the same stored-coordinate sum as its seeded array view. -/
+theorem evalHornerSeeded_toArray_eq_sum {R : Type*} [Semiring R] {L : Nat}
+    (x : R) (p : Vector R L) :
+    evalHornerSeeded x p.toArray = ∑ i : Fin L, p[i.val] * x ^ i.val := by
+  rcases p with ⟨p, rfl⟩
+  exact evalHornerSeeded_eq_sum x p
 
 /-- The two stored coefficients of the affine function with values `a` at zero and `b` at one. -/
 def affine {R : Type*} [Sub R] (a b : R) : Raw R := #[a, b - a]
