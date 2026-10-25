@@ -68,8 +68,7 @@ structure Statement (Context C : Type) {m : ℕ} (i : Fin (m + 1)) where
 def rel (multiplier : Multiplier Context C m) (pc : PackedCommitment P m)
     (i : Fin (m + 1)) :
     Set (((Statement Context C i) × (∀ j, pc.OStmt j)) × P⦃≤ 1⦄[X Fin m]) :=
-  { input |
-    let ⟨⟨stmt, oStmt⟩, wit⟩ := input
+  { ⟨⟨stmt, oStmt⟩, wit⟩ |
     stmt.target = hypercubeSum m (productPoly (multiplier stmt.ctx) wit).val
       i stmt.challenges ∧ pc.commitsTo oStmt wit }
 

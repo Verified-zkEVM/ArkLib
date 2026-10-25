@@ -89,8 +89,7 @@ def AbstractOStmtIn.strictView (aOStmtIn : AbstractOStmtIn L ℓ') : AbstractOSt
 /-- Evaluation equality together with commitment compatibility. -/
 def AbstractOStmtIn.toRelInput (aOStmtIn : AbstractOStmtIn L ℓ') :
     Set (((MLPEvalStatement L ℓ') × (∀ j, aOStmtIn.OStmtIn j)) × (WitMLP L ℓ')) :=
-  { input |
-    let ⟨⟨stmtIn, oStmtIn⟩, witIn⟩ := input
+  { ⟨⟨stmtIn, oStmtIn⟩, witIn⟩ |
     stmtIn.original_claim = witIn.t.val.eval stmtIn.t_eval_point ∧
       aOStmtIn.initialCompatibility ⟨witIn.t, oStmtIn⟩ }
 

@@ -87,8 +87,7 @@ def inputRelation : Set
     (((RingSwitching.Packing.ProductSumcheck.Statement Context L (m := ℓ) 0) ×
       (∀ j, OracleStatement K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) 0 j)) ×
       MultilinearPoly L ℓ) :=
-  { input |
-    let ⟨⟨stmtIn, oStmtIn⟩, witIn⟩ := input
+  { ⟨⟨stmtIn, oStmtIn⟩, witIn⟩ |
     stmtIn.target = ∑ y : Fin ℓ → Fin 2,
       (multiplier stmtIn.ctx).val.eval (y : Fin ℓ → L) * witIn.val.eval (y : Fin ℓ → L) ∧
     FirstOracleWitnessConsistent K β witIn (getFirstOracle K β oStmtIn) }
@@ -177,8 +176,7 @@ def strictInputRelation : Set
     (((RingSwitching.Packing.ProductSumcheck.Statement Context L (m := ℓ) 0) ×
       (∀ j, OracleStatement K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) 0 j)) ×
       MultilinearPoly L ℓ) :=
-  { input |
-    let ⟨⟨stmtIn, oStmtIn⟩, witIn⟩ := input
+  { ⟨⟨stmtIn, oStmtIn⟩, witIn⟩ |
     stmtIn.target = ∑ y : Fin ℓ → Fin 2,
       (multiplier stmtIn.ctx).val.eval (y : Fin ℓ → L) * witIn.val.eval (y : Fin ℓ → L) ∧
     getFirstOracle K β oStmtIn = firstOracleEncoding K β witIn }

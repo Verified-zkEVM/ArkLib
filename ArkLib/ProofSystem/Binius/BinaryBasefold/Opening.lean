@@ -96,8 +96,7 @@ variable (witnessEquiv : WitIn ≃ MultilinearPoly L ℓ)
 /-- Evaluation and unique-radius compatibility with the supplied first oracle. -/
 def inputRelation : Set ((StmtIn ×
     (∀ j, OracleStatement K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) 0 j)) × WitIn) :=
-  { input |
-    let ⟨⟨stmtIn, oStmtIn⟩, witIn⟩ := input
+  { ⟨⟨stmtIn, oStmtIn⟩, witIn⟩ |
     (evalQuery stmtIn).original_claim =
       (witnessEquiv witIn).val.eval (evalQuery stmtIn).t_eval_point ∧
     FirstOracleWitnessConsistent K β (witnessEquiv witIn) (getFirstOracle K β oStmtIn) }
@@ -322,8 +321,7 @@ theorem mem_strictRoundRelation_zero_witness (s : MLPEvalStatement L ℓ)
 /-- Evaluation and exact first-codeword encoding for honest completeness. -/
 def strictInputRelation : Set ((StmtIn ×
     (∀ j, OracleStatement K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) 0 j)) × WitIn) :=
-  { input |
-    let ⟨⟨stmtIn, oStmtIn⟩, witIn⟩ := input
+  { ⟨⟨stmtIn, oStmtIn⟩, witIn⟩ |
     (evalQuery stmtIn).original_claim =
       (witnessEquiv witIn).val.eval (evalQuery stmtIn).t_eval_point ∧
     getFirstOracle K β oStmtIn = firstOracleEncoding K β (witnessEquiv witIn) }
