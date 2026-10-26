@@ -3,8 +3,9 @@
 LogUp uses sums of weighted reciprocals to test finite collections of messages. The common
 algebraic statement is that every key has net weight zero in a field. Table inclusion and integer
 multiset equality are applications with additional hypotheses preventing count wraparound.
-The [executable formalization design](../../design/logup.md) specifies ArkLib's planned native
-grouped-sumcheck argument and its completion criteria.
+The [executable formalization](../../design/logup.md) implements native grouped-Sumcheck
+weighted balance, scalar indexed lookup and typed tuple/bus indexed lookup, with actual terminal
+authentication, whole-prover soundness and executable honest defaults.
 
 ## Reference versions
 
@@ -48,12 +49,12 @@ Sumcheck followed by oracle evaluation. Plonky3's `lookup` crate also provides a
 fraction columns and a shared accumulator. Fractional GKR instead builds a binary tree of the pair
 operation and reduces layer claims with Sumcheck. These are separate protocol constructions.
 
-Current Plonky3, OpenVM, SP1, and Stwo snapshots expose fractional-GKR machinery. This does not
+The pinned Plonky3, OpenVM, SP1 and Stwo snapshots expose fractional-GKR machinery. This does not
 make their complete proof systems identical. In particular, the Plonky3 fractional verifier returns
 opening claims for the original numerator and denominator tables, and Stwo names its entry point
 `partially_verify_batch`. Their callers owe authentication of the returned claims. A complete
-ArkLib verifier must perform its final oracle check or return a reduction whose output relation
-states exactly what remains to be checked.
+ArkLib endpoint performs the final oracle check; its underlying native reduction separately
+exports the evaluation claim for composition. These are distinct acceptance contracts.
 
 Plonky3's [LogUp* implementation](https://github.com/Plonky3/Plonky3/blob/9734387626cf5a859885de6a6b30dc49532ed96c/multi-stark/src/logup_star/mod.rs)
 has an indexed-read statement and challenge-dependent pushforward weights. Its ability to operate
@@ -66,9 +67,12 @@ A missing key cannot balance when its positive query count remains nonzero in th
 An integer count equal to the characteristic does vanish, regardless of the degree or size of an
 extension field used for challenges.
 
-Lookup specializations therefore need a count bound, a declared table collection, and a proof
-that enabled requests really have the intended integer weights. Permutation specializations need
-count-cast injectivity on both sides. General field balance needs neither integer interpretation.
+ArkLib scalar and tuple lookup configurations therefore carry an explicit characteristic
+certificate and query budget `M*2^n<p`. The declared collection has `P` physical table pieces; no
+`P*2^n<p` budget is required for the missing-key converse. Enabled-request and signed-count
+interpretations remain caller obligations. Bounded cast-count equality recovers `Vector.Perm`
+algebraically; the inclusion endpoint plus equal lengths does not prove a permutation. General
+weighted balance has no integer interpretation or characteristic lower bound.
 The Plonky3 `Count` wrapper and OpenVM `count_weight` record static budgets; their stated magnitude
 and selector obligations still need caller constraints. A budget label alone does not prove them.
 
@@ -99,33 +103,38 @@ separate contract from this univariate fingerprint. The acceptance checks pin so
 and test these equations; they do not establish Rust implementation equivalence.
 
 Formal polynomial encoding can be injective even though its evaluation at a sampled scalar has
-collisions. To preserve one nonzero net weight, it suffices to isolate a fixed nonzero key from
-the other occurring distinct keys. The selected-key bound in
+collisions. To preserve one nonzero net weight, it suffices to isolate a fixed key carrying that
+weight from the other occurring distinct keys. The selected-key bound in
 [`TaggedTupleProbability.lean`](../../../ArkLib/Data/Polynomial/TaggedTupleProbability.lean)
 is `(s-1)*W/|E|`. Semantic keys, schema and weights must all be fixed before `beta`; choosing
 weights afterward can violate that bound. Balanced fibers remain balanced for every encoding,
 including collisions, by finite regrouping.
 
-For row-varying buses, the native adapter must open padded coefficient-column multilinear
-extensions and combine those answers. An interpolated tag at a field point need not be a declared
-bus tag, so it cannot be used to recover a semantic key there. The reusable coefficient accessor
-and its interpolation fixture support this adapter; the complete native tuple argument remains
-an implementation obligation.
+For row-varying buses, [Tuple/Source.lean](../../../ArkLib/ProofSystem/Logup/Lookup/Tuple/Source.lean)
+opens the stored padded coefficient-column multilinear extensions and combines their answers.
+An interpolated tag at a field point need not be a registered bus tag, so the source never decodes
+a semantic key there. Its realization holds for every retained BASE multiplicity message;
+[Tuple/Security.lean](../../../ArkLib/ProofSystem/Logup/Lookup/Tuple/Security.lean) composes this
+actual source with the complete native argument.
 
-## Bounds that need an independent derivation
+## Independently derived bounds
 
 The paper's revised soundness sketch states a `K/|F|` contribution for the equality-kernel step.
 A nonzero multilinear polynomial in `n` variables has total degree at most `n`; a generic root
 bound is `n/|F|`. Multilinearity alone does not give `1/|F|`: over `F_5`, `X_1*X_2` vanishes at
-`9/25` of the points. The formalization must derive the kernel bound it actually uses, and must
-not claim the printed numerical constants without an additional argument. Selecting one nonzero
-residual before the kernel challenge avoids a union bound over all groups.
+`9/25` of the points. ArkLib proves `n/|E|` for one nonzero
+residual selected before the kernel challenge, avoiding a union bound over all groups. It does
+not import the printed numerical constants.
 
-The proposed ArkLib grouped proof also differs from the old pole-plus-root analysis. If every
-group residual is zero and the helper total is zero, the global cleared numerator vanishes by
-polynomial regrouping, including at zero denominators. This suggests charging only its roots for
-outer soundness. The proof is an explicit early obligation in the design. Completeness still
-accounts for the honest helper construction encountering poles.
+ArkLib's grouped proof uses a division-free global clearing implication: if every group residual
+is zero and the helper total is zero, the cleared numerator vanishes, including at zero
+denominators. [Grouped.lean](../../../ArkLib/ProofSystem/Logup/Algebra/Grouped.lean) proves this
+identity; [weighted soundness](../../../ArkLib/ProofSystem/Logup/Security/Weighted.lean) charges
+only its roots for outer soundness. The complete weighted bound is
+`(T*2^n+n*(ell+3))/|E|`. The tuple argument adds `(s-1)*W/|E|` for one fixed semantic key
+among `s` occurring keys, with arbitrary BASE multiplicities fixed before beta. Completeness
+separately accounts for honest helpers encountering poles; tuple completeness holds for every
+beta and adds no compression-error term.
 
 Plonky3's [security accounting](https://github.com/Plonky3/Plonky3/blob/9734387626cf5a859885de6a6b30dc49532ed96c/security/src/logup.rs)
 includes its own fingerprint and pole budgets. Those are bounds for its stated construction and
@@ -133,13 +142,39 @@ accounting model; they are not substitutes for a proof about the native grouped 
 Fiat–Shamir and grinding terms in implementation security reports are outside the initial
 interactive proof's theorem.
 
-## ArkLib ownership
+## Delivered ArkLib interfaces
 
-Reusable algebra belongs under `Data/`; the oracle protocol belongs under `ProofSystem/`.
-Reuse [computable native Sumcheck](../../../ArkLib/ProofSystem/Sumcheck/Interaction/Computable.lean),
-its [soundness theorem](../../../ArkLib/ProofSystem/Sumcheck/Interaction/ComputableSoundness.lean),
-CompPoly evaluation tables, and existing native source-routing and composition laws.
-The [toy IOP code-generation gates](../../../ArkLib/ProofSystem/ToyProblem/Codegen.lean) and
-[FRI execution theorems](../../../ArkLib/ProofSystem/Fri/Spec/Execution.lean) illustrate executable
-roots and reasoning about actual oracle accesses. LogUp additionally needs a complete native
-terminal check and table-based round generation without polynomial expansion.
+| Contract | Owner |
+| --- | --- |
+| Weighted scalar circuit, individual degree `ell+2`, Boolean sum and pole-safe clearing | [Grouped.lean](../../../ArkLib/ProofSystem/Logup/Algebra/Grouped.lean) |
+| Arbitrary-helper realization from retained values, weights and helpers | [Interaction/Source.lean](../../../ArkLib/ProofSystem/Logup/Interaction/Source.lean) |
+| Actual prefix/native/terminal execution and arbitrary whole-prover weighted soundness | [Interaction/Execution.lean](../../../ArkLib/ProofSystem/Logup/Interaction/Execution.lean), [Security/Weighted.lean](../../../ArkLib/ProofSystem/Logup/Security/Weighted.lean) |
+| Scalar membership, retained BASE histogram, whole-prover security and honest completeness | [Lookup/](../../../ArkLib/ProofSystem/Logup/Lookup/) |
+| Checked typed provider, beta compression, original-key security and all-beta honest completeness | [Lookup/Tuple/](../../../ArkLib/ProofSystem/Logup/Lookup/Tuple/) |
+| Direct formal coefficient messages and selected measured honest control | [Prover/RoundCoefficients.lean](../../../ArkLib/ProofSystem/Logup/Prover/RoundCoefficients.lean), [ArithmeticControl.lean](../../../ArkLib/ProofSystem/Logup/Prover/ArithmeticControl.lean) |
+| Actual weighted/scalar/tuple defaults | [ArithmeticStrategy.lean](../../../ArkLib/ProofSystem/Logup/Prover/ArithmeticStrategy.lean), [scalar ArithmeticProver.lean](../../../ArkLib/ProofSystem/Logup/Lookup/ArithmeticProver.lean), [tuple ArithmeticProver.lean](../../../ArkLib/ProofSystem/Logup/Lookup/Tuple/ArithmeticProver.lean) |
+
+The defaults construct honest helpers termwise with total inversion, including at poles. They
+cache denominator, weight, helper and equality tables, stream adjacent affine-row coefficients,
+and fold only states needed by later rounds. Proofs establish **formal** polynomial/message
+agreement; finite-field pointwise equality is insufficient. Zero rounds still authenticate the
+original source, and public abort preserves the prover's actual private continuation effects.
+
+[Computable native Sumcheck](../../../ArkLib/ProofSystem/Sumcheck/Interaction/Computable.lean)
+and its [soundness](../../../ArkLib/ProofSystem/Sumcheck/Interaction/ComputableSoundness.lean)
+supply the native core. Its source-routing, final-claim query and terminal-log bridge connect the
+complete endpoint to the retained original view. The
+[compiled runtime suite](../../../ArkLibTest/ProofSystem/Logup/Interaction/MeasuredRuntime.lean)
+executes measured scalar/tuple defaults and actual KoalaBear-to-Ext6 sampler paths alongside the
+weighted fixtures. The [design resource table](../../design/logup.md#separate-resource-metrics)
+separates selected E instructions, BASE/Nat preprocessing, raw view fanout, dense source backend,
+party sampling and logical storage.
+[Actual packet laws](../../../ArkLib/ProofSystem/Logup/Interaction/Resources.lean) retain the
+whole prefix and actual returned-claim Q query, including final rejection. The
+[sampling consumers](../../../ArkLib/ProofSystem/Logup/Interaction/SamplingResources.lean) connect
+actual Bool/log endpoints to supported phased paths. Arbitrary draw programs use their actual
+supported lengths; selected uniform defaults have total primitive length `c*(1+n+K+s)`, or
+`c*(2+n+K+s)` for tuples, using the proved honest private-party count zero. Malicious private
+queries are not bounded. These are full supported-result claims, not losslessness or partial-run
+counts, and transfer no arithmetic or memory profile. No metric alone is a total machine-time or
+heap bound. Fractional GKR, LogUp*, PCS/FRI composition and Fiat–Shamir remain separate protocols.

@@ -59,8 +59,8 @@ The pages distinguish three kinds of statement:
 
 ## Protocol designs
 
-- [Executable LogUp formalization](logup.md) specifies the proposed grouped lookup argument,
-  its weighted-balance core, executable representations, proof obligations, and acceptance checks.
+- [Executable LogUp formalization](logup.md) describes the complete grouped weighted-balance,
+  scalar indexed-lookup and typed tuple/bus arguments, their executable defaults and proved bounds.
   It consumes the native framework described above; it does not change the framework roadmap.
 
 Architecture chapters specify intended contracts; a design signature is not evidence that the

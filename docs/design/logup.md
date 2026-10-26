@@ -1,407 +1,328 @@
-# Executable LogUp formalization
+# Executable LogUp
 
-The target is a complete, executable interactive oracle argument for lookup inclusion, built from
-a reusable argument for field-valued multiset balance. The first implementation follows the grouped
-sumcheck construction of Haböck's revised LogUp paper, using native interaction and computable
-Sumcheck. It includes weighted balance, scalar lookups, and a tuple-and-bus compression adapter.
-Every delivered variant has its own complete correctness theorems and executable acceptance check.
+ArkLib implements complete interactive oracle arguments for field-valued weighted balance,
+scalar indexed lookup, and typed tuple/bus indexed lookup. They use Haböck's grouped construction,
+computable native Sumcheck, retained original sources and an executable terminal authentication
+check. Honest provers operate on Boolean evaluation tables and coefficient arrays.
 
-The [reference comparison](../kb/concepts/logup.md) records the paper version and pinned Plonky3,
-OpenVM, SP1, and Stwo implementations. This is a proposed implementation contract; the declarations
-and improved bounds below are proof obligations, not claims that they already exist.
+The [reference comparison](../kb/concepts/logup.md) records the inspected paper version and pinned
+Plonky3, OpenVM, SP1 and Stwo sources. Those references explain the equations and design choices;
+they do not establish Rust/Lean program equivalence. Fractional GKR, LogUp*, heterogeneous trace
+packing, a STARK AIR compiler, polynomial commitments, Fiat–Shamir and zero knowledge are separate
+protocol developments.
 
-## Scope and completion boundary
+## Statements and witnesses
 
-The initial development includes:
-
-- Generic net multiplicities, rational identities, denominator clearing, and fraction folding.
-- Field-valued weighted balance, with no characteristic lower bound.
-- Scalar table lookups and integer multiset equality as separately proved specializations, with
-  explicit assumptions preventing multiplicities from vanishing in the field.
-- A complete grouped-sumcheck native protocol, an honest prover operating on evaluation tables,
-  an executable virtual polynomial oracle, and the terminal verifier check.
-- Base-field data with extension-field challenges; tuple compression and typed bus separation.
-- Exact execution correspondence, ordinary soundness against arbitrary native prover strategies,
-  honest completeness, query bounds, code-generation gates, and compiled runtime checks.
-
-Full fractional GKR, LogUp*, a STARK AIR compiler, concrete polynomial commitments, Fiat–Shamir,
-zero knowledge, and cross-language verification of Rust are separate developments. Shared algebra
-and oracle interfaces must allow those consumers without requiring their security theorems here.
-No placeholder declarations or conditional claims of having verified these other protocols belong
-in the initial merge.
-
-## Semantic statements
-
-For a finite collection of messages `(key_i, weight_i)`, define
+For finite messages `(key_i, weight_i)`, weighted balance means
 
 ```text
 netWeight(k) = sum_{i : key_i = k} weight_i
-Balanced     = forall k, netWeight(k) = 0
+Balanced    = forall k, netWeight(k) = 0
 ```
 
-Weights live in a field. `Balanced` means equality in that field. It does not assert equality of
-integer counts or lookup inclusion by itself. The algebraic API supports arbitrary finite index
-types and arbitrary key types with executable equality where an algorithm uses it. Lists and
-vectors get thin interoperability lemmas; the protocol does not adopt a list-only semantic API.
+The weighted protocol tests balance **after** the explicit scalar map `f : B →+* E`. It does not
+infer integer multiset equality or lookup membership from field balance alone. Generic fiber,
+fraction and histogram algebra has no field-size, characteristic or finite-key assumption beyond
+the operations used by each declaration.
 
-The scalar lookup instance has `M` query columns and `P` physical table pieces forming one
-declared collection, all with `N = 2^n` rows. Its input language is exactly
+A scalar lookup has `M` query columns and `P` declared physical table pieces, each with
+`N = 2^n` rows. Its language is exactly
 
 ```text
-forall column row, exists piece tableRow, query[column][row] = table[piece][tableRow]
+forall queryColumn row, exists piece tableRow,
+  query[queryColumn][row] = table[piece][tableRow]
 ```
 
-The honest prover receives an index into the `P*N` table positions for every query as private
-witness data. Flatten positions as `row + N*column` for both query and table columns. The relation
-checks that the indexed table value equals the query. Prove that this relation's language is precisely
-the inclusion statement. A proof of an existential is never used as a runtime witness constructor.
+`Logup.Lookup.ValidIndices` checks a supplied table position for every query. The honest prover
+computes a natural histogram of those indices once, then casts and reshapes it into the actual
+multiplicity message. Duplicate values and different valid witnesses are supported. Runtime
+witnesses come from input data, not classical extraction from an existential proof.
 
-Construct multiplicities by incrementing a natural-number histogram at those indices and only
-then casting counts into the field. Different queries may select different occurrences of the
-same table value. The construction needs no division by the table multiplicity, no injectivity of
-the table, and no canonical choice among duplicates. A finite-search witness finder may be offered
-as a separate checked convenience algorithm; the protocol prover does not depend on it.
-This is a deliberate change from the paper's normalized honest assignment. Prove that both
-assignments satisfy the same per-value weight equations when the paper's normalizing counts are
-nonzero in the field, in particular under its characteristic assumptions. Histogram correctness
-itself needs no such assumption. Do not claim the two assignments' messages are equal.
+Queries have weight `+1`; table rows have the negative retained multiplicity. Histogram balance
+holds in every characteristic. The converse from field balance to membership needs positive
+query counts to stay nonzero. `Logup.Lookup.Config` carries an explicit `p` and proof-only
+`CharP B p` certificate; `create?` checks `M*N < p` and the grouping bounds. It does not search
+for a characteristic at runtime, and it requires no table-row budget `P*N < p`.
+An extension field enlarges the challenge space without repairing base-characteristic wraparound.
 
-The signed collection has query weights `+1` and table weights `-m`. Forward correctness of the
-histogram is characteristic-independent. The converse from balance to inclusion requires every
-positive query count that can occur to remain nonzero. The public sufficient condition is
-an explicit numeric `p`, a `CharP B p` certificate, and `M * N < p`. The checked constructor
-checks that numeric budget without computing `ringChar B` at runtime. Neither `P*N` nor the
-number of repeated table values needs this bound. A scalar-count
-overflow example must demonstrate why this assumption is necessary.
+The [normalization bridge](../../ArkLib/Data/Vector/LookupNormalization.lean) proves equality of
+per-key aggregates with the paper's normalized assignment when its table normalizers are nonzero.
+The messages themselves can differ. Bounded count-cast recovery and `Vector.Perm` are separate
+algebraic results in [Lookup.lean](../../ArkLib/Data/Vector/Lookup.lean) and
+[Count.lean](../../ArkLib/ToMathlib/List/Count.lean). The lookup endpoint is an inclusion argument;
+equal collection lengths alone do not turn it into a permutation argument.
 
-For permutation checks, require injectivity of the natural-count cast on both count ranges.
-An extension field increases the challenge space, but does not increase the characteristic or
-repair count wraparound.
+## Grouped circuit
 
-## Data and executable representations
+Let `T` be the number of terms per row: `T=M+P` for scalar and tuple lookups. The checked
+[weighted configuration](../../ArkLib/ProofSystem/Logup/Interaction/Config.lean) accepts `T>0`
+and `1≤ell≤T`. It stores the actual consecutive groups `I_k`, with `K=ceil(T/ell)`, exact ordered
+coverage and lengths at most `ell`. Zero row variables and empty query or table collections are
+allowed; a zero total collection is rejected.
 
-Use a base field `B` and a challenge field `E` with an injective field embedding. The scalar theory
-also specializes to `B = E`. Executable APIs carry the equality, field operations, and samplers
-they actually use; generic finite-type enumeration is not the default concrete field sampler.
-
-Use CompPoly's `CMlPolynomialEval`, a `Vector` of `2^n` values, for multilinear oracle data. Reuse
-its little-endian row order, `evalMle`, `eval₂Mle`, and `evalMleLayer`. Each round eliminates the
-least significant remaining bit. Prove every conversion to Boolean-function and mathematical
-polynomial views; an asymmetric fixture must distinguish reversed variable orders.
-Use the Boolean domain `{0,1}^n` directly. Relate it to the paper's `{minus one,one}^n` by the
-coordinatewise affine equivalence where two is invertible. That correspondence must not impose
-an odd-characteristic assumption on the more general weighted-balance protocol.
-
-Reuse the native Sumcheck bounded coefficient-array message and Horner query interface.
-Construct round polynomials by coefficient arithmetic, so their construction needs neither
-distinct interpolation nodes nor inversions of interpolation denominators.
-
-Keep the mathematical polynomial and rational-function interpretations in the proof layer.
-Their representation-specific noncomputability must be documented individually and must never
-enter the runtime dependency graph. Every program and value-computing API in this development
-must compile, including the generic prover, verifier, virtual oracle, witness construction,
-configuration checks, and concrete samplers. Proof erasure may remove classical proofs; runtime
-data may not come from classical choice.
-
-## Group plan and fraction algebra
-
-Configuration fixes `n`, a positive number `T` of terms per row, and `1 <= ell <= T`.
-The canonical grouping uses consecutive chunks of size at most `ell`, with
-`K = ceil(T / ell)`. The scalar lookup specializes to `T = M + P`. Empty queries and empty
-table collections are supported separately; the checked configuration excludes `M+P=0`.
-An executable checked constructor produces the plan and its coverage, disjointness, cardinality,
-and ordering certificates. Provers cannot change grouping or message shapes inside a run.
-
-The common algebraic operation combines numerator-denominator pairs:
+[FractionPair](../../ArkLib/Data/Fraction.lean) folds unnormalized pairs using
 
 ```text
-(a,b) +fraction (c,d) = (a*d + c*b, b*d)
-unit                  = (0,1)
+combine (a,b) (c,d) = (a*d + c*b, b*d)
+unit                = (0,1)
 ```
 
-Prove associativity, commutativity, regrouping, and agreement with fraction addition when
-denominators are nonzero. The unnormalized pair operation is polynomial arithmetic and remains
-well-defined at zero denominators. Use it for executable scalar reconstruction and univariate
-round-polynomial construction, avoiding a separate erased-product computation for each term.
-Neutral padding is `(0,1)` when constructing fraction collections; it is not `0/0`.
-
-The mathematical cleared numerator for all `D = T*N` occurrences is
+Associativity, commutativity, regrouping and numerator scaling hold even at zero denominators.
+Agreement with evaluated fractions separately requires nonzero denominators. The pairs have no
+misleading field or semiring instance. [PartialFractions.lean](../../ArkLib/Data/Polynomial/PartialFractions.lean)
+proves rational uniqueness, repeated-pole denominator clearing and the degree bound for
 
 ```text
-P(X) = sum_a w_a * product_{b != a} (X - v_b)
+P(X) = sum_a w_a * product_{b != a} (X - v_b),    degree P ≤ T*N-1.
 ```
 
-Prove that a nonzero net multiplicity makes `P` nonzero, even with repeated values, and that its
-degree is at most `D-1`. Factor this through the generic rational identity and denominator-clearing
-bridge. Do not retain a parallel Taylor-coefficient proof unless it earns an independent consumer.
-
-## Protocol and actual verifier execution
-
-For lookup inclusion, the initial table and query oracles are fixed before interaction begins.
-The prover first sends its multiplicity oracle. For weighted balance, both value and weight
-oracles are already fixed inputs. The remaining scalar protocol is:
-
-1. Draw a uniform `alpha : E`.
-2. The prover sends `K` multilinear helper oracles. Honest helper values on a Boolean row are
-   `h_k(u) = sum_{i in I_k} w_i(u) / (alpha - v_i(u))`.
-3. Draw independent uniform `z : E^n` and `lambda : E^K`.
-4. Run existing computable native Sumcheck on the zero-sum claim for the polynomial below.
-5. Perform the final oracle query action and accept only if the retained oracle evaluations
-   reconstruct Sumcheck's claimed value at its final point.
-
-Public configuration contains the characteristic certificate when the chosen specialization
-needs one; its runtime constructor checks the corresponding natural-number budget. That proof
-is not repeated in every public statement. The native tree fixes the message and challenge order,
-so multiplicities cannot adapt to `alpha` or `beta`, and helpers cannot adapt to `z` or `lambda`.
-
-Write `d_i = alpha - v_i` and define the residual and batched polynomial by
+For a scalar challenge `alpha`, set `d_i=alpha-v_i`. The grouped residual and batched polynomial are
 
 ```text
 R_k(X) = h_k(X) * product_{i in I_k} d_i(X)
          - sum_{i in I_k} w_i(X) * product_{j in I_k, j != i} d_j(X)
 
 Q(X)   = sum_k h_k(X) + eq(X,z) * sum_k lambda_k * R_k(X)
-eq(r,z)= product_j ((1-r_j)*(1-z_j) + r_j*z_j)
+eq(x,z)= product_j ((1-x_j)*(1-z_j) + x_j*z_j).
 ```
 
-All value, weight, and helper inputs here are multilinear. Prove the individual degree bound
-`degreeOf j Q <= ell + 2`; use that bound in actual message types and soundness, rather than
-charging the worst-case number of columns.
-
-Define the virtual `Q` oracle by querying the retained input and helper sources and applying this
-scalar formula. Prove it realizes the same degree-bounded polynomial for arbitrary well-typed
-oracle data, including malicious helper messages. It must not rebuild a mathematical polynomial
-or enumerate Boolean rows to answer a verifier query.
-
-Use native interaction trees, ordinary native prover continuations, exported claims, and the
-existing composition and source-routing laws. Initial input resources and sent messages are the
-ones used by the later queries. Preserve private continuations and their effects after challenges
-and public aborts. Prototype this complete composition before freezing the public API.
-
-Expose two endpoints: a reduction returning the retained evaluation claim for composition, and
-a complete argument whose terminal action checks it and returns accept or reject. The latter's
-security event is the acceptance of a false initial statement. Returning an unchecked opening
-claim is not completion of that argument. The final check has no fresh randomness and zero
-additional soundness error.
-
-Malformed runtime configuration and array shapes return explicit errors. Typed messages rule
-out excess polynomial degree. Any raw-array convenience interface validates lengths before
-constructing those messages; it must not silently truncate them or panic on malformed input.
-
-## Soundness proof targets
-
-The new proof should avoid the old division-based bad-event machine. Establish this deterministic
-implication first, allowing zero denominator values:
+[Grouped.lean](../../ArkLib/ProofSystem/Logup/Algebra/Grouped.lean) proves the scalar circuit,
+polynomial realization, Boolean sum and individual degree bound `degreeOf j Q≤ell+2` for arbitrary
+multilinear value, weight and helper inputs. Its global clearing implication is division-free:
 
 ```text
-(forall k u, R_k(u) = 0) and (sum_{k,u} h_k(u) = 0)  ==>  P(alpha) = 0
+(forall k u, R_k(u)=0) and (sum_{k,u} h_k(u)=0)  ==>  P(alpha)=0.
 ```
 
-Indeed, regroup the global denominator product by `(group,row)`. Substituting every group numerator
-by its helper times its denominator turns the global cleared numerator into
-`(sum_{k,u} h_k(u)) * product_a (alpha-v_a)`. This is a polynomial identity, with no division or
-nonzero-denominator hypothesis. Consequently a false balanced-sum claim can escape through a root
-of `P`; a separate pole event need not be charged in this protocol's outer soundness proof.
+This includes poles. Soundness therefore charges roots of the fixed cleared numerator without a
+separate pole event. Mathematical sparse-polynomial and rational-function views are individually
+noncomputable proof objects; the scalar circuit and all protocol algorithms remain executable.
 
-After `alpha` and the helpers are fixed, either the helper total is nonzero or some residual table
-is nonzero. In the second case with zero helper total, select one nonzero residual before drawing
-`z`. Its multilinear extension has total degree at most `n`, so hiding it costs at most `n/|E|`.
-There is no need to union-bound over all `K` residuals. Conditional on the remaining coefficients
-being nontrivial, the independent affine batching equation costs at most `1/|E|`.
+## Interaction and retained sources
 
-The intended scalar error ledger is therefore:
+For scalar lookup, the prover sends its BASE multiplicity oracle `mu` before `alpha`. For tuple
+lookup, it sends `mu` before an additional fingerprint challenge `beta`; the compressed weighted
+suffix follows. Weighted balance starts with fixed value and weight sources. Their common suffix is:
 
-| Event | Target upper bound |
-| --- | --- |
-| Cleared numerator vanishes at `alpha` | `(D-1)/|E|` |
-| A selected nonzero residual is hidden at `z` | `n/|E|` |
-| Nontrivial affine batching equation vanishes | `1/|E|` |
-| Native Sumcheck turns a false claim into a true final claim | `n*(ell+2)/|E|` |
-| Terminal oracle check | `0` |
+1. Draw `alpha : E` from the whole challenge field.
+2. The prover sends `K` multilinear helper oracles. Honest Boolean entries are the **termwise**
+   total-field sums `h_k(u)=sum_{i in I_k} w_i(u)/(alpha-v_i(u))`, including at poles.
+3. Draw the joint `(z,lambda) : E^n × E^K`.
+4. Run native Sumcheck on the zero-sum claim for `Q`, using degree `ell+2` coefficient messages.
+5. Execute the returned final claim's oracle action against the retained original sources and
+   actual helper message; compare its result with the claimed value.
 
-For `D >= 1`, the sum is `(D + n*(ell+3))/|E|`. Each entry must be proved for the actual sampling
-stages and actual arbitrary prover continuation at that history. The claimed result is a `<=`
-bound, with an optional cap at one, not an imported numerical statement from the paper.
-If a sharper target needs correction during proof, settle the mathematical contract explicitly
-before implementing its consumers; do not add an assumption asserting the desired bound.
+[Interaction/Protocol.lean](../../ArkLib/ProofSystem/Logup/Interaction/Protocol.lean) selects the
+actual computable native verifier and terminal action. [Source.lean](../../ArkLib/ProofSystem/Logup/Interaction/Source.lean)
+binds each value, weight and helper scalar once before `Logup.reconstruct`; its realization theorem
+holds for every well-typed helper, with no honesty or off-pole premise. Queries build no sparse
+polynomial and enumerate no Boolean rows in the reconstruction circuit.
 
-Use existing native Sumcheck soundness and exported-oracle composition. Prove that every reachable
-export satisfies the polynomial-realization premise, making its admissibility error zero.
-Initial statement truth must not be an admissibility premise. The theorem quantifies over every
-well-typed whole native prover, with arbitrary private continuation memory.
+The scalar and tuple source adapters retain the actual earlier `mu` and the later helper in their
+distinct slots, even when interfaces have the same shape. Arbitrary original source views remain
+explicit. [Execution.lean](../../ArkLib/ProofSystem/Logup/Interaction/Execution.lean) and the scalar/
+tuple execution owners prove the actual prefix binds and routed native suffix, preserving private
+continuations, effects after public abort, path-dependent outputs and terminal authentication.
+The native reduction still exposes a final claim for composition; the complete endpoint additionally
+checks it. A returned unchecked claim is not acceptance.
 
-Round-by-round results may be exposed where proved useful, but ordinary soundness must not depend
-on the admitted legacy implication from round-by-round soundness. No legacy security or lifting
-admission may appear in the dependency closure of a new declaration.
+`n=0` still sends the required helper, receives the joint challenge and performs final source
+checking; it has no coefficient messages or private equality-cache initialization. At positive
+`n`, a failed round sum returns `None` and no native challenge is drawn for that round. The prover's
+`None` continuation still executes. Successful final rounds omit an unused private fold.
 
-## Completeness and poles
+## Soundness and completeness
 
-Sample `alpha` from all of `E`, with no verifier table scan and no rejection sampler. The honest
-helper algorithm uses total field inversion, including its defined zero case. Its correctness
-lemma assumes the relevant denominators are nonzero; the protocol adds no extra oracle message
-or prover-triggered restart when that hypothesis fails.
+The three `uniformExecute_soundness` theorems quantify over arbitrary whole native prover
+strategies, including dependent private outputs. They require genuine realization by the original
+source and preserve the actual ordering of `mu`, `beta`, helpers and later challenges.
+Weighted soundness tests balance after `f` in the finite challenge field. Scalar/tuple membership
+soundness uses fields `B,E`, hence an injective field map, and the certified query-count budget.
+For `q=|E|`, `D=T*N` and `s` distinct occurring typed keys, their bounds are:
 
-For a true scalar lookup, every queried value is a table value, so all needed denominators are
-nonzero except when `alpha` equals a table value. The intended completeness error is at most
-`number of distinct table values / |E| <= P*N/|E|` for the declared collection. Away from that
-event, prove that the actual honest
-execution accepts for every subsequent challenge sequence. Then use losslessness of the honest
-samplers and execution to derive the probability bound.
+| Complete endpoint | False initial statement | Acceptance probability at most |
+| --- | --- | --- |
+| [Weighted](../../ArkLib/ProofSystem/Logup/Security/Weighted.lean) | Nonzero mapped net weight at some value | `(D+n*(ell+3))/q` |
+| [Scalar](../../ArkLib/ProofSystem/Logup/Lookup/Security.lean) | False membership in the declared table collection | `((M+P)*N+n*(ell+3))/q` |
+| [Tuple/bus](../../ArkLib/ProofSystem/Logup/Lookup/Tuple/Security.lean) | False membership among original semantic keys | `((s-1)*W+(M+P)*N+n*(ell+3))/q` |
 
-For general weighted balance, charge the corresponding support of denominator values. Perfect
-completeness through modified constraints is a distinct protocol variant and is outside the first
-implementation. A seeded test handler is an execution fixture, not evidence of uniform sampling.
+The weighted proof charges `(D-1)/q` for the fixed cleared numerator, `n/q` for one nonzero residual
+selected before `z`, `1/q` for affine batching, and `n*(ell+2)/q` for native Sumcheck. It has no union
+factor `K` on the residual event. Final authentication adds no soundness error. These are proved
+upper bounds, which can exceed one for unsuitable parameters; they do not import the paper's
+printed numerical ledger.
 
-## Tuple and bus adapter
+The honest helper algorithm uses total inversion, with no pole scan, retry or rejection sampler.
+[Weighted completeness](../../ArkLib/ProofSystem/Logup/Prover/Completeness.lean) proves acceptance
+away from the actual mapped value support. Scalar completeness sharpens this to the distinct
+**declared table** support, at most `P*N` values. Tuple completeness holds for every `beta`, including
+fingerprint collisions, with the same coarse `P*N/q` failure bound and no compression-error term.
+The completeness owners expose supported off-pole acceptance, uniform failure/success bounds and
+exact total probability mass one, including public abort branches.
 
-Represent a schema by a finite bus type, an injective base-field tag assignment, and one declared
-payload width per bus, bounded by `W`. The key type is the dependent pair of a bus and its payload.
-Widths are fixed by the schema across all producers and consumers. Runtime schema construction
-checks this contract and tag uniqueness; a table-provider registry checks ownership for the lookup
-specialization. Several physical pieces may implement one declared table collection.
+## Typed tuple and bus encoding
 
-A simple canonical fingerprint is
+[TaggedTuple.lean](../../ArkLib/Data/Polynomial/TaggedTuple.lean) checks a finite schema with
+injective BASE bus tags and one fixed payload width per bus, bounded by `W`. A key is the dependent
+pair of its bus and exact-width payload. Its fingerprint is
 
 ```text
-c_beta(bus,payload) = tag(bus)*beta^W + sum_{j < width(bus)} payload_j*beta^j
+c_beta(bus,payload) = tag(bus)*beta^W + sum_{j < width(bus)} payload_j*beta^j.
 ```
 
-First prove injectivity as a map from semantic keys to formal polynomials. Evaluation at a sampled
-`beta` is probabilistic, not injective: even bus separation can degenerate at a particular value.
-Prove transport of weights through compression and isolate one key with nonzero net weight before
-the challenge. Against a collection with `s` distinct keys, the proposed compression error is
-`(s-1)*W/|E|`. This avoids a union bound over every pair of keys.
+Under an injective coefficient map, the formal polynomial encoding is injective. Evaluation at a
+particular `beta` can collide, including across buses. [TaggedTupleProbability.lean](../../ArkLib/Data/Polynomial/TaggedTupleProbability.lean)
+isolates one fixed key with nonzero net weight from the other `s-1` occurring keys, with error
+at most `(s-1)*W/q`.
+The original keys and arbitrary BASE `mu` are fixed before beta; honest histogram balance instead
+transports for every beta. Plonky3/Stwo power-order translations have explicit equations; SP1's
+multilinear hash is a different family and is not verified by this univariate fingerprint theorem.
 
-All value, weight, and multiplicity data is fixed before independent `(beta,alpha)` are drawn.
-The adapter feeds compressed multilinear values into the scalar weighted protocol. Prove
-completeness for every `beta` away from denominator poles, and add the compression term only to
-soundness. For a common row domain the group degree remains `ell+2`.
+[Provider.lean](../../ArkLib/ProofSystem/Logup/Lookup/Tuple/Provider.lean) checks common Boolean
+row heights, exact payload shapes and declared physical-piece ownership. It stores original typed
+keys and padded coefficient tables once. Structural provider validity is separate from lookup
+membership. Several physical pieces may have the same bus owner; unused registered buses and
+zero-width payloads retain their schema and container roles. `Schema.mk?`,
+`ProviderLayout.create?` and `PreparedProvider.prepareRaw?` return `None` on malformed raw tags,
+widths, column/row lengths or owners. Typed messages carry their shape and degree proofs.
+Heterogeneous-height packing and caller constraints for enabled/signed counts remain separate adapters.
 
-The Plonky3 power order and bus offset are connected by explicit translation lemmas. Stwo's
-power order gets its own translation. SP1's multilinear combiner is a different hash family;
-record its contract and do not claim the univariate fingerprint theorem verifies it.
+## Honest programs and defaults
 
-The first protocol adapter uses a common Boolean row domain, as in the scalar construction.
-Finite-message balance and fraction-fold algebra remain independent of row layout. Packing
-heterogeneous trace heights into a single committed domain, with authenticated mappings back to
-the original traces, is a later adapter; it is not implicitly verified by zero-weight padding.
+Boolean tables use CompPoly's little-endian order: adjacent entries eliminate the least significant
+remaining coordinate. [Helpers.lean](../../ArkLib/ProofSystem/Logup/Prover/Helpers.lean) prepares
+`D_i(u)=alpha-f(V_i(u))`, mapped weights and termwise helpers. [State.lean](../../ArkLib/ProofSystem/Logup/Prover/State.lean)
+retains D/weight/helper tables and lambda. After the joint challenge it caches equality weights
+using the certified fast Boolean basis. Every nonterminal challenge folds all four table families
+with `a+r*(b-a)`, preserving the exact formal head substitution without inversion.
 
-For enabled lookups or bounded signed counts, Boolean selectors and natural/integer magnitude
-bounds are semantic obligations proved by the caller or checked by the specialized input
-relation. A field element carrying a claimed bound is insufficient. Derive per-bus natural-number
-budgets before field casting. Zero-weight padding does not justify changing payload schemas.
+[RoundCoefficients.lean](../../ArkLib/ProofSystem/Logup/Prover/RoundCoefficients.lean) turns adjacent
+entries into affine coefficient arrays, evaluates the fraction circuit and streams each suffix
+row directly into one padded accumulator. It normalizes once and packs a message of degree at
+most `ell+2`. Its theorem identifies the formal native honest projection; equality of finite-field
+point functions would be insufficient (`X^3` and `X` agree over `F₂` but have different coefficients).
+No full multivariate expansion or interpolation-node inversion is used.
 
-## Honest prover and cost targets
+The public constructors are:
 
-Construct helper tables from the original evaluation data. A checked batch-inversion primitive,
-with a theorem covering its zero-handling behavior, can replace elementwise inversions. Reuse or
-upstream that generic algorithm rather than place it inside LogUp. The off-pole helper values
-must agree with the mathematical formula under either implementation.
+| Variant | Explicit-builder reference | Selected default |
+| --- | --- | --- |
+| Weighted | `Logup.Prover.Honest.honestWith` | [`Logup.Prover.Honest.prover`](../../ArkLib/ProofSystem/Logup/Prover/ArithmeticStrategy.lean) |
+| Scalar | `Logup.Lookup.Honest.proverWith` | [`Logup.Lookup.Honest.prover`](../../ArkLib/ProofSystem/Logup/Lookup/ArithmeticProver.lean) |
+| Tuple/bus | `Logup.Lookup.Tuple.Honest.proverWith` | [`Logup.Lookup.Tuple.Honest.prover`](../../ArkLib/ProofSystem/Logup/Lookup/Tuple/ArithmeticProver.lean) |
 
-For Sumcheck, initialize challenge-ring denominator tables `D_i=alpha-f(value_i)` and
-weight tables once after receiving `alpha`. Retain their folded versions, the helper tables,
-and one cached equality-kernel table. The formal identity
-`MLE(D_i)=C(alpha)-MLE(f(value_i))` connects this private state to the original retained source.
-After the joint challenge, build the kernel table with the shared fast Lagrange construction.
-Fold it with the same received challenges as the other tables; zero kernel factors need no division.
+The selected defaults execute named arithmetic programs. Scalar histogram construction precedes
+alpha; tuple histogram construction precedes beta, and the tuple default then eagerly constructs
+both E cache matrices once with direct BASE coefficient reads and seeded Horner. Native coefficient
+queries and public tuple queries select the same reusable seeded Horner core. A length-L message
+uses L coefficient reads and `max(L-1,0)` multiplications/additions.
 
-At each round, adjacent entries give affine univariate coefficient arrays. Bind every row's
-denominator, weight, helper and kernel arrays once. In each fraction convolution, place the fresh
-affine factor on the left to control padded-array work. Compute one row circuit and add it
-directly into a single accumulator; canonicalize only the final bounded message. No list of all
-row coefficient arrays is needed at runtime. Fold the tables using the received challenge.
+[ArithmeticControl.lean](../../ArkLib/ProofSystem/Logup/Prover/ArithmeticControl.lean) shares the
+actual Unit, Cost and complete-Call control; [ArithmeticLedger.lean](../../ArkLib/ProofSystem/Logup/Prover/ArithmeticLedger.lean)
+relates exact selected program arguments and messages along typed optional histories. Unit retains
+no Call/Cost instrumentation. Whole-strategy equalities transfer correctness to the explicit-builder
+reference. Resource bounds refer to the selected programs themselves, not a separate algorithm
+with equal outputs.
 
-Prove formal substitution and coefficient equality with the existing mathematical honest
-Sumcheck projection of `Q`, then transport the whole honest strategy to reuse native completeness.
-Equality of evaluations on a finite field is insufficient: the coefficient regression must
-distinguish `X^3` from `X` over the two-element field, even though their field evaluations agree.
+## Separate resource metrics
 
-The local scalar reconstruction uses a linear scan through each group. The final lookup check
-needs at most `M+2P+K` logical source openings (`M+K+2` when `P=1`); Sumcheck uses at most `3n`
-message evaluations on the Boolean domain. The general weighted instance uses at most `2T+K`
-logical source openings. A supplied source view can perform additional raw queries while
-answering one logical opening. Prove these counts
-through virtual substitution and the terminal action, including the zero-round case.
+Write `C` for the exact tuple compression profile and `D=(M+P)*N` for its value rows. The resource
+owners distinguish the following metrics; none is a total machine-time bound.
 
-Target prover storage linear in the retained and folded table sizes. For the direct coefficient
-algorithm, target field work `O(N*T*ell)` for the Sumcheck portion: the remaining row counts halve
-each round, and folding a group of affine factors costs quadratically in its size with basic
-coefficient multiplication. Prove loop-size and operation-count recurrences before claiming this
-bound; include the cost of equality-kernel construction and all helper generation separately.
-Concrete timings validate engineering choices but are not complexity proofs.
+| Metric | Delivered contract | Boundary |
+| --- | --- | --- |
+| Private arithmetic requests | [Weighted resource envelope](../../ArkLib/ProofSystem/Logup/Prover/ArithmeticResources.lean): each of nine instruction coordinates is at most `1012*N*T*ell`; their sum is at most `9108*N*T*ell`. | Includes selected prepare/helpers/start/native message/fold programs; excludes BASE/Nat work, embeddings, sampling, source handlers and allocation. |
+| Scalar frontend | [Scalar resources](../../ArkLib/ProofSystem/Logup/Lookup/ArithmeticResources.lean): `M*N` histogram increment sites, `P*N` counters/casts, `P*N` BASE negation sites and `2*T*N` embedding sites. | Structural sites and dimensions; not Nat bit operations or opaque embedding work. |
+| Tuple frontend | [Tuple resources](../../ArkLib/ProofSystem/Logup/Lookup/Tuple/ArithmeticResources.lean): exact compression prefix `C`, plus the same weighted request envelope; nine-kind cache total `D*(3W+3)+2*M*N+4*P*N`. | Direct reads/embeddings of `D*(W+1)` BASE coefficient cells and `P*N` BASE multiplicities; provider/histogram preparation remains separate. |
+| Verifier-local arithmetic | [Native path usage](../../ArkLib/ProofSystem/Sumcheck/Interaction/Resources.lean), seeded Horner, shared sum/equality checks and [scalar reconstruction](../../ArkLib/ProofSystem/Logup/Algebra/ArithmeticReconstruction.lean). | Exact request recurrences for those selected local bodies; source/view/backend and sampling work remain separate. Reconstruction requests no inversion. |
+| Logical and expanded source openings | [Source resources](../../ArkLib/ProofSystem/Logup/Interaction/Resources.lean): one Q query binds `2T+K` logical answers. Identity scalar sources expand it to `M+2P+K` raw openings; identity tuple coefficient sources to `(W+1)*(M+P)+P+K`. Native message queries are at most `3n`. | Arbitrary views use their actual fanout. The terminal Q action occurs after all rounds pass, including `n=0`, even if final authentication rejects; public abort skips it. |
+| Dense source backend | Original `evalMle`/`eval₂Mle` recursively interpolate actual dense tables. | Count backend work separately from openings; the transparent runner is not thereby a succinct verifier. It does not silently select the private one-multiplication fold or fast equality cache. |
+| Logical storage | [Storage.lean](../../ArkLib/ProofSystem/Logup/Prover/Storage.lean), [StorageBuffers.lean](../../ArkLib/ProofSystem/Logup/Prover/StorageBuffers.lean) and [StorageLedger.lean](../../ArkLib/ProofSystem/Logup/Prover/StorageLedger.lean): actual all-level fields, source/path messages, frontend/provider/cache data and named construction roles, with seven separate category envelopes. | Explicit original/view/embedding/raw allowances; logical cells and containers, not bytes, allocator peak, physical sharing, closure/stack layout or GC liveness. |
 
-Count verifier-local arithmetic and source queries separately from the work of the source handler.
-A transparent dense-table handler takes linear time to answer a multilinear opening. An oracle
-query bound alone does not make that transparent end-to-end runner a succinct verifier.
+A full all-success history visits every positive private level, totaling `2N-2` table rows and
+`nK` private lambda slots; early abort retains a prefix with no larger census.
+Retaining all verifier target/challenge prefixes gives a triangular census bounded by `2N`.
+Completed affine inputs use `4T+4K+2` coefficient cells; completed phase buffers and expanded builder roles have
+distinct `96*(ell+4)` and `256*(ell+4)` bounds. The inventory inspects the actual array push loops,
+`List.mapTR` reverse accumulators and certified heads/suffix/list-to-array builders separately.
 
-## Module ownership and implementation order
+### Actual source packets and ambient logs
 
-Proposed homes, refined to existing owner modules during implementation:
+In [Interaction/Resources.lean](../../ArkLib/ProofSystem/Logup/Interaction/Resources.lean),
+`executeStrategiesLogged_eq_prefix_bind`, `scalar_executeStrategiesLogged_eq_sender_bind` and
+`tuple_executeStrategiesLogged_eq_sender_beta_bind` preserve the complete actual path, dependent
+private output, Bool and source-log order through the prefix and native suffix.
+`qView_complete_log_eq_boundary` appends the actual Q boundary query to that same native message
+log exactly when the bare native result is `Some claim`. `qView_final_log_length` gives the
+complete source length: actual native `messageQueries`, plus the original view's actual fanouts
+at that claim's returned challenges, plus K retained helpers.
+The final Bool may be false: reaching authentication and passing it are different events. `None`
+skips the Q query. These laws require no source-truth or honest-message premise.
 
-| Layer | Responsibility |
+The public source's synthetic query weights have M constant-one and P unary-negation sites.
+Those negations are separate from `ArithmeticSpec.sub` requests in the already-bound scalar
+reconstruction profile. Public tuple queries buffer W+1 E coefficient answers before seeded
+Horner; the private eager cache instead reads BASE coefficients directly. Neither local profile
+prices the dense MLE backend or an opaque original view.
+
+[Interaction/SamplingResources.lean](../../ArkLib/ProofSystem/Logup/Interaction/SamplingResources.lean)
+keeps arbitrary draw programs separate from uniform specialization. For every **supported complete**
+phased run, `phased_verifier_queries` and its scalar/tuple variants count verifier-party ambient
+queries as `ca+cj+cr*s`, with an additional `cb` for tuples. The constants are supported log lengths
+of the actual alpha, joint, native-round and beta programs; `s` is the actual native path's
+`roundSamples`. A scripted joint program need not draw every coordinate independently.
+The `execute_world_eq`, `scalar_execute_world_eq` and `tuple_execute_world_eq` program equalities
+connect the actual Bool endpoint and its full ordered ambient log to that same phased run.
+They preserve arbitrary prover effects; there is no bound on malicious prover-private sampling.
+
+For the selected uniform function/product programs, the joint draw is one public phase event but
+uses `n+K` E sample blocks. Given a proved supported primitive-log length c for one selected E
+sample, `uniform_phased_verifier_queries` and its scalar/tuple variants give
+`c*(1+n+K+s)` verifier queries, or `c*(2+n+K+s)` for tuples. No generic `SampleableType` is assumed
+to cost one or six. The pinned KoalaBear.Field and Ext6 sample programs provide c=1 and c=6.
+
+[HonestSamplingResources.lean](../../ArkLib/ProofSystem/Logup/Interaction/HonestSamplingResources.lean)
+proves that actual weighted/scalar/tuple defaults make zero prover-party ambient queries, including
+public abort responses and zero rounds, for any restricted verifier. The three variants of
+`uniformExecute_default_queries` in SamplingResources combine this fact with the existing
+phase partition. Each supported **actual named uniform endpoint** Bool/log pair retains a supported
+concrete path with that exact Bool and ordered log, and the same formula now counts its **total**
+primitive queries. There is no caller-supplied private-purity, valid-index or off-pole premise.
+Ordinary-strategy equality transfers observable ambient logs here; it transfers no separate
+arithmetic or storage cost.
+
+When all native round checks pass, `s=n`: weighted/scalar uniform sampling has `1+K+2n` E blocks,
+and tuple sampling adds beta, regardless of the final authentication Bool. The actual Ext6
+`n=1,K=1` scalar/tuple fixtures attain 24/30 primitive BASE requests. Zero rounds still draw alpha
+and the joint lambda vector, plus beta for tuples. Public round abort skips its unreached native
+draw; a private ambient/runtime abort can prevent later stages entirely. The count theorems cover
+supported complete results and assert neither losslessness nor a fixed count for such partial
+runs. Uniform-oracle request counts do not price RNG internals, BASE/Nat preprocessing, field
+instructions, source backends or memory.
+
+## Owners and validation
+
+| Owner | Responsibility |
 | --- | --- |
-| `Data/` generic multiplicity modules | Net weights, histograms, index witnesses, list/vector bridges |
-| `Data/Fraction.lean` | Executable unnormalized fraction pairs and division-free regrouping |
-| `Data/Polynomial/` and rational-function modules | Partial fractions, denominator clearing, degree and root bounds |
-| `Data/MvPolynomial/` and CompPoly | Equality kernel, evaluation-table interpretation and folding, reusable message-construction lemmas |
-| `ProofSystem/Logup/Algebra/` | Grouped residuals, `Q`, degree bounds, scalar reconstruction agreement |
-| `ProofSystem/Logup/Protocol/` | Native tree, oracle families, exports, verifier, complete terminal action |
-| `ProofSystem/Logup/Impl/` | Histogram-based prover, helpers, direct round messages, code-generation gates |
-| `ProofSystem/Logup/Security/` | Actual-execution correctness, completeness, outer soundness, composed soundness and query bounds |
-| `ArkLibTest/ProofSystem/Logup/` | Caller acceptance, boundaries, adversarial continuations, axiom checks |
-| `scripts/LogupRuntime.lean` | Compiled end-to-end fixtures and checked failure cases |
+| `Data/Fraction.lean`, `Data/Polynomial/PartialFractions.lean` | Executable pair algebra; rational and symbolic clearing proofs |
+| `Data/Vector/`, `ToMathlib/List/Count.lean` | Indexed histograms, membership/count converses, normalization and bounded permutation recovery |
+| `Data/Polynomial/TaggedTuple*.lean` | Checked semantic schemas, fingerprint equations and selected-key collision bounds |
+| `ProofSystem/Logup/Algebra/` | Grouped circuit, degree/clearing/Boolean-sum proofs and shared scalar reconstruction |
+| `ProofSystem/Logup/Interaction/`, `Security/` | Actual weighted source, native execution, arbitrary-prover soundness and source resources |
+| `ProofSystem/Logup/Lookup/`, `Lookup/Tuple/` | Scalar/typed provider languages, retained multiplicities, complete endpoints, security, completeness and defaults |
+| `ProofSystem/Logup/Prover/` | Helpers, private state, formal streamed messages, actual arithmetic control and resource/storage ledgers |
+| `ToCompPoly/Multilinear/`, `ToCompPoly/Univariate/` | Reusable executable basis, affine/fold/formal-view bridges, raw arithmetic, seeded Horner and normalization |
 
-Deliver in this order, with no admitted definitions in merged slices:
+`ArkLibTest/` includes ordinary generic callers, compiler-IR and standard-axiom guards, exact
+finite-field cases, characteristic wraparound, repeated/unused rows, malformed shapes, source/
+helper corruption, forged final claims, private effects on abort and nontrivial security bounds.
+Concrete [scalar soundness fixtures](../../ArkLibTest/ProofSystem/Logup/Lookup/Security.lean)
+instantiate `20/257<1`; the [tuple fixtures](../../ArkLibTest/ProofSystem/Logup/Lookup/Tuple/Security.lean)
+instantiate `14/17<1` with false semantic membership. The [measured runtime fixtures](../../ArkLibTest/ProofSystem/Logup/Interaction/MeasuredRuntime.lean)
+and `lake exe logup-runtime` exercise the actual complete defaults, including KoalaBear-to-Ext6,
+scripted poles and named uniform IO samplers. Random checks use statements valid at every draw;
+scripted exact values separately test failures and challenge ordering.
 
-1. **Algebra contract.** Extract the useful mathematics from the two earlier PRs into its owners.
-   Prove the division-free regrouping implication and characteristic-sensitive specializations.
-   Freeze the scalar error ledger and the tuple-compression contract.
-2. **Executable oracle boundary.** Build representations, the grouping constructor, scalar
-   reconstruction, the virtual `Q` oracle and its realization theorem. Compile a minimal native
-   Sumcheck-plus-terminal composition and test actual source routing before building the full
-   honest prover.
-3. **Complete scalar argument.** Implement the histogram witness path, helpers, direct round
-   messages, native lookup tree and terminal verifier. Close exact execution, completeness,
-   soundness, query bounds, code generation, and compiled execution together.
-4. **Complete tuple and bus argument.** Add the schema constructor, compression and its probability
-   bound, typed lookup/permutation specializations, and corresponding full-protocol fixtures.
-   Expand the module and paper correspondence documentation around the delivered API.
-
-Generic improvements to CompPoly or VCVio belong upstream or in their established owner layers.
-No LogUp-private replacement probability, interaction, or polynomial library is introduced.
-
-## Acceptance evidence
-
-Require all of the following before calling the scoped development complete:
-
-- Every new declaration depends only on a subset of `propext`, `Classical.choice`, and
-  `Quot.sound`; no inherited `sorryAx`, custom axiom, or native-compiler trust is allowed.
-- External caller probes outside noncomputable sections compile the actual algorithms and
-  composed protocol. IR assertions cover the computational roots and concrete samplers.
-- A concrete base-field/extension-field fixture uses the existing KoalaBear and `KoalaBear.Ext6`
-  computational field and sampler implementations. Small prime-field fixtures make exact bad-event
-  enumeration practical; they do not substitute for checking the extension-field runtime path.
-- A compiled `logup-runtime` executes complete honest and adversarial native runs through the
-  actual verifier, with independent expected values and query/effect logs.
-- Fixtures cover repeated table values with different valid index witnesses, unused rows,
-  `M=0`, `n=0`, `ell=1`, `ell=T`, a short final group, and unequal coordinate data.
-- Negative fixtures cover false inclusion, incorrect witness indices, helper corruption,
-  a forged final claim with otherwise valid Sumcheck data, malformed lengths, wrong bus,
-  inconsistent widths, and missing final opening authentication.
-- Explicit cases exercise zero denominators and characteristic wraparound. A kernel fixture
-  distinguishes a degree-`n` zero bound from an unjustified `1/|E|` bound.
-- Tuple fixtures distinguish bus tags, reversed coefficient order, and zero-padding aliases.
-  Source-comparison vectors carry the exact Rust revision and the equation they exercise;
-  they do not claim Rust program equivalence.
-- Adaptive-prover tests retain private state across every phase and observe effects on public
-  abort. A suffix cannot replace the original oracle with a freshly chosen one.
-- At least one fully instantiated scalar and tuple theorem has satisfiable premises and a
-  calculated total soundness bound below one. For scalar parameters `E=ZMod 257`, `n=2`,
-  `M=2`, `P=1`, `ell=1`, the proposed bound is `20/257`, with completeness error at most `4/257`.
-- Full repository validation, axiom validation, test warning checks, and the appropriate docs
-  and citation checks pass on the final head. Stage newly added Lean paths before validation;
-  regenerate the root import file through the repository tool.
-
-The initial complete artifact is the grouped native lookup argument with these acceptance checks.
-Fractional GKR can then consume the same fraction algebra, weighted relation, compression layer,
-computable table operations, and authenticated-opening boundary in a separately proved protocol.
+Run the [normal, docs and axiom gates](../wiki/quickstart.md) on the final coherent source/artifact
+head. IR/native checks establish execution evidence; they do not replace kernel-checked semantic
+proofs or review of the complete old-to-new source and acceptance-test delta.

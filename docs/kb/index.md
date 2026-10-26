@@ -62,7 +62,7 @@ page under [`papers/`](papers/README.md); that directory, not this list, is the 
   multiplicity-code analysis, whose Hasse-derivative variant differs from `ABF26` Definition A.6.
 
 The [LogUp concept page](concepts/logup.md) compares the revised paper with pinned Plonky3,
-OpenVM, SP1, and Stwo implementations and links the proposed executable formalization.
+OpenVM, SP1 and Stwo implementations and links the complete executable LogUp arguments.
 
 - [`papers/AHIV22.md`](papers/AHIV22.md) - Ligero-family interleaved-code and affine-line proximity
   statements, secondary to the `BCIKS20` development.

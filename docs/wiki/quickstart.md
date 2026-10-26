@@ -84,6 +84,18 @@ Run `lake test` to build them; `./scripts/validate.sh` runs this target by defau
 test warnings, including admissions. Stage new tests so source linting and the trust inventory
 include them. Production modules must not import tests.
 
+Before creating an acceptance file, verify that the proposed path is absent both in the working
+tree and in the intended integration/base tree. A path absent from a development checkout may
+already hold a suite on the branch being integrated. For an existing path, read the whole old file
+and review the complete old-to-new patch; preserve existing cases when adding a separate fixture.
+Use a new descriptive path when the suites have different owners or purposes.
+
+Before publishing, inspect per-path changes with `git diff --no-renames --numstat BASE` and
+`git diff --no-renames BASE -- ArkLibTest/`, using the actual canonical base. Account for every
+existing-test deletion or replacement explicitly. Passing CI establishes that the remaining tests
+pass; it does not establish preservation of the previous acceptance coverage. Include both the
+existing and new suites in focused target selection.
+
 Typed Interaction PRs also have a focused hosted check, including when stacked on a feature
 branch. It compiles all tracked `ArkLib/Interaction/` and `ArkLibTest/Interaction/` modules with
 the existing build-time source-policy plugin and rejects every warning in those modules,

@@ -69,198 +69,75 @@ home_page/            site assets and assembled website root
 
 ## Navigation Notes
 
-LogUp endpoint sampling: `ProofSystem/Logup/Interaction/SamplingResources.lean` composes actual prefix phases, selected sampler programs and honest private-empty traces into exact whole endpoint primitive logs.
+### LogUp
 
-LogUp complete source packets: `ProofSystem/Logup/Interaction/Resources.lean` preserves real weighted, scalar and tuple prefix effects and the returned Q view, with exact final raw fanout under retained handlers.
+The [executable LogUp design](../design/logup.md) is the detailed protocol/resource contract;
+the [paper/source correspondence](../kb/concepts/logup.md) records reference versions and scope.
+The complete variants are weighted balance, scalar indexed lookup and typed tuple/bus lookup.
 
-Honest sampling resources: `ProofSystem/Logup/Interaction/HonestSamplingResources.lean` proves zero private ambient queries for actual reference and measured defaults, with the existing phase log partition.
+| Area | Owners |
+| --- | --- |
+| Weighted argument | [Interaction/](../../ArkLib/ProofSystem/Logup/Interaction/) owns configuration, retained-source realization, protocol and exact execution; [Security/](../../ArkLib/ProofSystem/Logup/Security/) owns initial clearing/batching and whole-prover soundness. |
+| Scalar lookup | [Lookup/](../../ArkLib/ProofSystem/Logup/Lookup/) owns the declared language, indexed histogram, characteristic budget, retained BASE multiplicities, complete protocol, security and completeness. |
+| Typed tuple/bus lookup | [Lookup/Tuple/](../../ArkLib/ProofSystem/Logup/Lookup/Tuple/) owns checked schema/provider shapes, stored coefficient sources, beta compression, original-key security, all-beta completeness and the eager-cache default. |
+| Grouped algebra | [Algebra/](../../ArkLib/ProofSystem/Logup/Algebra/) owns the residual circuit, individual degree, Boolean sum, pole-safe denominator clearing and shared scalar reconstruction with exact profiles. |
+| Honest prover | [Prover/](../../ArkLib/ProofSystem/Logup/Prover/) owns helpers, denominator/weight/helper/kernel state, streamed formal coefficient messages and complete honest-strategy correctness. `ArithmeticStrategy` selects the measured default; `ArithmeticControl`/`ArithmeticLedger` share Unit/Cost/Call programs and exact typed-history observations. |
+| Arithmetic resources | `Prover/ArithmeticResources` bounds the actual selected private requests. Scalar and tuple `ArithmeticResources` add their actual frontend/cache contracts. BASE casts/signing, embedding sites, Nat work and source/backend costs stay separate. |
+| Source packets | [Interaction/Resources.lean](../../ArkLib/ProofSystem/Logup/Interaction/Resources.lean) preserves actual prefix/path/private-output packets, returned-claim Q logs and source fanout, with separate local kernel profiles. |
+| Ambient sampling | [Interaction/SamplingResources.lean](../../ArkLib/ProofSystem/Logup/Interaction/SamplingResources.lean) connects actual Bool/ordered logs to supported phases and selected uniform default totals. [HonestSamplingResources.lean](../../ArkLib/ProofSystem/Logup/Interaction/HonestSamplingResources.lean) proves private-party count zero; malicious private queries remain unrestricted. Native [Resources](../../ArkLib/ProofSystem/Sumcheck/Interaction/Resources.lean) and [SamplingResources](../../ArkLib/ProofSystem/Sumcheck/Interaction/SamplingResources.lean) supply path/local-arithmetic and verifier-party phase observations. |
+| Logical storage | [Storage.lean](../../ArkLib/ProofSystem/Logup/Prover/Storage.lean) counts actual fields/history; [StorageBuffers.lean](../../ArkLib/ProofSystem/Logup/Prover/StorageBuffers.lean) proves concrete builder/buffer invariants; [StorageLedger.lean](../../ArkLib/ProofSystem/Logup/Prover/StorageLedger.lean) combines seven logical categories with explicit source/workspace allowances. |
 
-Native sampling resources: `ProofSystem/Sumcheck/Interaction/SamplingResources.lean` derives verifier-party primitive query counts from supported complete phased executions, retaining arbitrary prover-private effects.
+Reusable algebra has independent owners: [Fraction.lean](../../ArkLib/Data/Fraction.lean) for
+executable unnormalized pairs; [PartialFractions.lean](../../ArkLib/Data/Polynomial/PartialFractions.lean)
+for rational uniqueness and symbolic clearing;
+[Multilinear.lean](../../ArkLib/Data/MvPolynomial/Multilinear.lean) for the direct equality kernel
+and MLE view; [SumFiber.lean](../../ArkLib/Data/Finset/SumFiber.lean)
+and [Data/Vector/](../../ArkLib/Data/Vector/) for weighted fibers, duplicate-safe histograms,
+count-sensitive membership and normalized-weight correspondence. Bounded cast-count permutation
+recovery is algebraic in [Count.lean](../../ArkLib/ToMathlib/List/Count.lean), not a permutation
+claim for the lookup endpoint. [TaggedTuple.lean](../../ArkLib/Data/Polynomial/TaggedTuple.lean)
+and its probability companion own fingerprint schemas/equations and selected-key collision bounds.
+[ConsecutiveChunks.lean](../../ArkLib/Data/Fin/ConsecutiveChunks.lean) checks exact ordered groups;
+[BatchingProbability.lean](../../ArkLib/Data/MvPolynomial/BatchingProbability.lean) selects one
+nonzero table before the challenge without a group-count union factor.
 
-LogUp complete logical inventories: `ProofSystem/Logup/Prover/StorageLedger.lean` combines actual selected state histories, frontend inputs, named construction workspaces and separate opaque allowances in seven categories.
+Executable polynomial support stays in [ToCompPoly/Multilinear/](../../ArkLib/ToCompPoly/Multilinear/)
+(fast basis, affine rows, formal head folds and one-product measured folding) and
+[ToCompPoly/Univariate/](../../ArkLib/ToCompPoly/Univariate/) (padded raw/fraction arithmetic,
+seeded Horner, exact request profiles and one-prefix normalization).
+[BooleanSigned.lean](../../ArkLib/Data/MvPolynomial/BooleanSigned.lean) proves formal signed-cube
+transport under explicit nonzero two. General weighted algebra does not require odd characteristic.
+See [executable-polynomials.md](executable-polynomials.md) for formal-coefficient, cost-transfer
+and logical-builder conventions.
 
-LogUp named builder buffers: `ProofSystem/Logup/Prover/StorageBuffers.lean` connects selected preparation, convolution, fold and source backends to explicit logical container bounds.
+[LogUp acceptance](../../ArkLibTest/ProofSystem/Logup/) and `lake exe logup-runtime` exercise actual
+weighted/scalar/tuple default endpoints, malicious source/message changes, private effects,
+zero rounds, poles and concrete KoalaBear-to-Ext6 sampling. Native Sumcheck acceptance preserves
+both [SourceRouting.lean](../../ArkLibTest/ProofSystem/Sumcheck/Interaction/SourceRouting.lean)
+and the distinct [NativeSourceRouting.lean](../../ArkLibTest/ProofSystem/Sumcheck/Interaction/NativeSourceRouting.lean)
+suites; [FragmentMaps.lean](../../ArkLibTest/Interaction/Oracle/FragmentMaps.lean) consumes the
+public restricted-fragment mapping laws in
+[Execution.lean](../../ArkLib/Interaction/Oracle/Execution.lean).
 
-- Native `Resources.logged_final_query_eq_boundary` transports the actual returned claim
-  query to the same boundary view; generic prior-log routing is shared in `SourceRouting.lean`.
+### Native source and log infrastructure
 
-- Generic sampler laws in `Data/Probability/{Uniform,KoalaBear}.lean` expose selected
-  programs and supported primitive log lengths; vector log laws preserve actual query order.
+[SourceRouting.lean](../../ArkLib/Interaction/Oracle/SourceRouting.lean) transports actual prior
+programs and ordered logs while preserving fresh-message access.
+[LoggedExecution.lean](../../ArkLib/Interaction/Oracle/LoggedExecution.lean) proves exact terminal
+bind/log append and erasure; native `Resources.logged_final_query_eq_boundary` closes the returned
+claim query through that same boundary view. `Native.Core.routeClaimStrategy_verifier` preserves
+the verifier node programs, public moves and returned claims under source substitution.
+[Data/OracleComp/Vector.lean](../../ArkLib/Data/OracleComp/Vector.lean) owns effect-preserving
+traversal/simulation and ordered response-dependent query logs.
+[WriterT.lean](../../ArkLib/ToMathlib/Control/WriterT.lean) supplies the empty append-log lift law.
+Generic BASE/Ext6 sampler laws
+live in [Uniform.lean](../../ArkLib/Data/Probability/Uniform.lean) and
+[KoalaBear.lean](../../ArkLib/Data/Probability/KoalaBear.lean); party observations use the actual
+[WorldSegments.lean](../../ArkLib/Interaction/Oracle/WorldSegments.lean) fold/partition and
+[PhasedExecution.lean](../../ArkLib/Interaction/Oracle/PhasedExecution.lean). These are separate
+from arithmetic request counts and arbitrary prover-private sampling budgets.
 
-- Restricted verifier `Fragment.mapOutput_id` and `mapOutput_comp` preserve actual
-  node programs and dependent leaf types, supporting exact exported-prefix normalization.
-
-- `scripts/LogupRuntime.lean` retains the original weighted checks and executes measured
-  scalar/tuple mutation, abort, zero-round and actual named 24/30-limb sampler checks.
-
-- Sumcheck acceptance preserves the original exported-round suite in `SourceRouting.lean`;
-  new exact native-routing cases live separately in `NativeSourceRouting.lean`.
-
-- Native Sumcheck `Core.routeClaimStrategy_verifier` proves exact source-program
-  substitution while preserving fresh-message queries, public moves and returned claims.
-
-- `Interaction/Oracle/LoggedExecution.lean` proves exact terminal-bind log append under
-  the same closing handler; native `Resources.complete_log_eq` instantiates the complete run.
-
-- `ProofSystem/Logup/Prover/Storage.lean` counts actual retained state/input payload roles
-  and canonical messages; source representation and simultaneous workspace stay explicit.
-
-- `ProofSystem/Logup/Interaction/Resources.lean` derives actual per-Q raw source fanout
-  and local kernel profiles, distinguishing retained mu/helpers and synthetic weight sites.
-
-- `ProofSystem/Sumcheck/Interaction/Resources.lean` connects native path counts to the
-  existing logger and profiles the selected local kernels; terminal view fanout stays explicit.
-
-- `Data/OracleComp/Vector.lean` relates the actual deterministic logged traversal to
-  its ordered per-entry request/response logs, including answer-dependent and repeated queries.
-
-- LogUp scalar and tuple request envelopes follow the actual default continuations in
-  `Lookup/ArithmeticResources.lean` and `Lookup/Tuple/ArithmeticResources.lean`.
-
-- `ToMathlib/Control/WriterT.lean` supplies the named empty-log lift law for append writers,
-  allowing logged simulation to reuse existing monad-lift laws through a local instance.
-- `ProofSystem/Logup/Prover/ArithmeticResources.lean` bounds the actual selected private
-  request profiles and exact call charges geometrically, including every optional abort history.
-- `ProofSystem/Logup/Lookup/Tuple/ArithmeticProver.lean` selects the eager cache and shared
-  weighted control, with actual Unit erasure and exact compression-plus-call cost observations.
-- `ProofSystem/Sumcheck/Impl/Representation.size_le` bounds actual canonical message storage
-  and seeded-evaluation lengths without field, BEq or nontriviality assumptions.
-- `ProofSystem/Sumcheck/Impl/{VerifierChecks,ArithmeticVerifierChecks}.lean` shares selected
-  native sum/comparison bodies and profiles; downstream proofs normalize the same comparison.
-- `ProofSystem/Logup/Algebra/{Reconstruction,ArithmeticReconstruction}.lean` shares the actual
-  scalar circuit and exact profiles, using seeded fractions and an affine coordinate kernel.
-- `ProofSystem/Logup/Lookup/Tuple/ArithmeticCompression.lean` eagerly materializes compressed
-  values and signed weights from stored base cells, with exact arithmetic and marked-site profiles.
-- `ProofSystem/Logup/Prover/{ArithmeticControl,ArithmeticLedger}.lean` shares actual Unit,
-  cost and complete-call execution, with exact argument-sensitive history and initial-cost laws.
-- `ToCompPoly/Univariate/Raw/Basic.lean` owns the generic seeded-Horner stored-coefficient
-  sum bridge used by tuple sources and eager compression, including noncommutative semirings.
-- `ToCompPoly/Univariate/Raw/Horner.lean` and `ArithmeticHorner.lean` share seeded tail-loop
-  evaluation, selected by native Sumcheck messages and tuple sources, with exact request profiles.
-- `ProofSystem/Logup/Prover/ArithmeticStrategy.lean` and `Lookup/ArithmeticProver.lean` select
-  actual measured preparation, messages and folds, skipping unused terminal private work.
-- `ProofSystem/Logup/Lookup/Tuple/{Prover,Completeness}.lean` supplies indexed histogram
-  witnesses and supported/uniform honest completeness for every beta, including collisions.
-- `ProofSystem/Logup/Lookup/Tuple/{Protocol,Execution,Security}.lean` owns the actual base
-  multiplicity send, beta response, weighted suffix and whole-program tuple soundness.
-- `ProofSystem/Logup/Lookup/Tuple/Initial.lean` connects fixed original semantic keys and pre-beta
-  base multiplicities to the selected-key compression bound, with all-beta histogram balance.
-- `Data/OracleComp/Vector.lean` owns public monad-hom and oracle-simulation laws for the
-  standard finite vector traversal, preserving target effects and their index order.
-- `Data/Fraction.lean` provides executable unnormalized numerator-denominator pairs and
-  fraction folds. Its regrouping identities hold at zero denominators; agreement with evaluated
-  field fractions separately requires nonzero denominators. External caller, runtime, and axiom
-  checks live in `ArkLibTest/Data/Fraction.lean`.
-- `Data/Finset/SumFiber.lean` owns weighted key-fiber sums and selected-key isolation under an
-  encoding. `Data/Vector/Histogram.lean` counts indexed witnesses in natural numbers and proves
-  duplicate-safe key aggregation before casting. `Data/Vector/Lookup.lean` derives table membership
-  from balanced key weights when positive query counts remain nonzero. Acceptance checks include
-  a characteristic-two counterexample in `ArkLibTest/Data/Vector/Histogram.lean`.
-  Explicit characteristic budgets and the characteristic-zero specialization also live in
-  `Data/Vector/Lookup.lean`; generic cast-count permutation recovery lives in
-  `ToMathlib/List/Count.lean`. Their boundary cases are checked in
-  `ArkLibTest/Data/Vector/LookupCharacteristic.lean`.
-  `Data/Vector/LookupNormalization.lean` compares the indexed histogram with the paper
-  assignment under nonzero table normalizers: key aggregates agree, while messages may differ.
-- `Data/Polynomial/PartialFractions.lean` characterizes weighted reciprocal sums by their key-fiber
-  weights, including repeated values. It owns symbolic denominator clearing and the cleared
-  numerator degree bound. Its polynomial and rational-function views belong to the proof layer;
-  executable pair arithmetic remains in `Data/Fraction.lean`.
-- `Data/Fin/ConsecutiveChunks.lean` constructs checked consecutive groups of finite indices and
-  proves ordered coverage, disjointness, and exact block lengths. Its extraction algorithm reuses
-  Batteries' tail-recursive `List.takeList`; the bridge to Mathlib's `List.splitLengths` lives in
-  `ToMathlib/List/SplitLengths.lean`. Caller and boundary checks live in
-  `ArkLibTest/Data/Fin/ConsecutiveChunks.lean`.
-- `Data/MvPolynomial/BatchingProbability.lean` bounds affine batching using one nonzero
-  polynomial selected before the evaluation challenge. Its table specialization charges the
-  multilinear extension's dimension; the number of tables does not multiply that error.
-  The scalar affine bound lives in `Data/Probability/Instances.lean`.
-  `Data/MvPolynomial/BooleanSigned.lean` proves formal coordinate, MLE and equality-kernel
-  transport to the paper's signed cube under explicit nonzero two, including its normalization.
-- `Data/Polynomial/TaggedTuple.lean` checks bus schemas and computes common-width fingerprints
-  and padded coefficient columns. `TaggedTupleProbability.lean` isolates one fixed nonzero key
-  with error `(s-1)*W/|E|`; balanced fibers transport through every challenge. Native tuple
-  composition additionally proves the source interpolation and weight/challenge ordering.
-- `ProofSystem/Logup/Algebra/Grouped.lean` owns executable grouped reconstruction, its
-  polynomial degree and Boolean-sum correspondence, and pole-safe global denominator clearing.
-  The realization covers arbitrary multilinear helpers. The
-  [paper correspondence](../kb/papers/Hab22.md) records source versions and the complete native
-  protocol obligations still in progress.
-  `ProofSystem/Logup/Interaction/Config.lean` checks consecutive grouping once and retains its
-  coverage and size certificates. It accepts zero row variables; characteristic budgets belong
-  to the separate lookup specialization.
-  `ProofSystem/Logup/Interaction/Source.lean` binds retained value, weight and helper answers and proves their
-  realization for every helper, including at poles, through an explicit base-to-challenge map.
-  Its `2T+K` count concerns logical input answers; a supplied input view can perform more raw
-  openings. Concrete table readers use CompPoly's recursive `evalMle`/`eval₂Mle` backend.
-  `ProofSystem/Logup/Security/Initial.lean` fixes the cleared numerator before the scalar draw
-  and identifies the actual initial relation with a batch of residual-table multilinear
-  extensions. Its joint-challenge bound is uniform over all fixed retained helper messages.
-  `ProofSystem/Logup/Interaction/Protocol.lean` composes the actual scalar/helper/joint prefix,
-  native Sumcheck and final retained-source authentication. The shared fixtures and
-  `scripts/LogupRuntime.lean` exercise source answers, private effects and the existing Ext6
-  sampler through the same executable endpoint.
-  `ProofSystem/Logup/Interaction/Execution.lean` proves the exact whole-prover prefix binds
-  and routed native suffix law, preserving sender/receiver effects and arbitrary dependent
-  private returns through terminal authentication.
-  `ProofSystem/Logup/Security/Weighted.lean` derives the whole native acceptance bound
-  `(T*2^n+n*(ell+3))/|E|` against every ordinary prover from genuine source realization and
-  nonzero mapped weight balance. Scalar lookup and tuple language adapters add their own
-  count, encoding and challenge-order obligations.
-  `ProofSystem/Logup/Prover/CoefficientCircuit.lean` computes padded denominator-row circuits
-  through raw arrays and certified arithmetic programs. Its cost owner keeps actual accumulator
-  widths and specializes to `O(T*ell)` per instruction coordinate only for nonempty exact groups.
-  `ProofSystem/Logup/Prover/Helpers.lean` prepares denominator/weight tables and computes
-  termwise-total honest helpers. Local residuals vanish off poles; balanced global helper
-  totals vanish at every scalar challenge, including poles.
-  `ProofSystem/Logup/Prover/State.lean` caches those tables and equality weights, and proves
-  that each private table fold substitutes the head variable in the same retained-source circuit.
-  `ProofSystem/Logup/Prover/ArithmeticState.lean` executes and profiles denominator/helper
-  preparation, kernel caching and affine table folding; base visits and embeddings stay separate.
-  `ProofSystem/Logup/Prover/RoundCoefficients.lean` streams formal affine-row coefficients
-  into one bounded message and identifies the exact native honest head projection.
-  `ProofSystem/Logup/Prover/ArithmeticRound.lean` explicitly executes the measured row/message
-  programs. `ArithmeticRoundCost.lean` retains exact request recurrences and padded widths, with
-  canonical bounds stated per instruction coordinate and final normalization counted separately.
-  `ProofSystem/Logup/Prover/Strategy.lean` constructs the actual honest strategy with an explicit
-  message builder. `Completeness.lean` proves supported off-pole acceptance, uniform failure and
-  success bounds from the actual mapped value support, and total probability mass through aborts.
-
-- `ProofSystem/Logup/Lookup/Language.lean` defines scalar membership in the declared table
-  collection, checked indexed witnesses, and cast-once histogram multiplicities. Its converse
-  from signed balance needs only the query-count budget below the explicit characteristic.
-  `ProofSystem/Logup/Lookup/Source.lean` combines the genuine original value view with the
-  actual retained base-field multiplicities, realizing signed tables for every supplied message.
-  `ProofSystem/Logup/Lookup/Config.lean` checks the numeric query budget and grouping.
-  `Protocol.lean` retains the actual multiplicity message before alpha; `Security.lean` proves
-  whole-prover soundness for the complete scalar endpoint with arbitrary dependent private output.
-  `ProofSystem/Logup/Lookup/Prover.lean` sends the actual indexed histogram before alpha.
-  `Completeness.lean` transfers honest execution through the retained source and bounds failure
-  by the distinct declared table support, including the separate coarse physical-row bound.
-
-- `ProofSystem/Logup/Lookup/Tuple/Provider.lean` checks physical-piece owners and exact
-  schema/row shapes, then stores padded coefficient tables once. Structural source validity
-  remains separate from query membership in the declared table collection.
-  `ProofSystem/Logup/Lookup/Tuple/Source.lean` opens those stored coefficient MLEs and
-  Horner-combines their answers at beta, with realization for every retained base multiplicity.
-
-- `ToCompPoly/Multilinear/Basic.lean` constructs Boolean Lagrange tables by sharing each tail
-  table and coordinate complement. `ToCompPoly/Multilinear/Arithmetic.lean` interprets that same
-  recursion with the existing arithmetic instructions and proves its exact field-operation
-  profile. Compiler replacement applies to callers compiled with the extension imported;
-  explicit `lagrangeBasisFast` calls also select the shared construction directly.
-  `ToCompPoly/Multilinear/Affine.lean` identifies adjacent table entries with a formal
-  univariate restriction of the MLE. Its row program reads both endpoints once; reusable raw
-  affine/subtraction programs and profiles live in the univariate arithmetic owners.
-  `ToCompPoly/Multilinear/Fold.lean` proves that the executed head fold is formal MLE
-  substitution and identifies the fast equality cache over arbitrary commutative rings.
-  `ToCompPoly/Multilinear/ArithmeticFold.lean` executes the one-multiplication affine fold
-  and proves exact result and request profiles against that canonical head substitution.
-  `ToCompPoly/Univariate/Raw/Fold.lean` owns padded sums and division-free fraction folds.
-  `ArithmeticFractionFold.lean` executes the certified arithmetic traversal; its cost companion
-  retains actual accumulator widths and bounds each supported instruction coordinate separately.
-  `ToCompPoly/Univariate/ArithmeticNormalization.lean` scans the original array with a fixed
-  certified result type, then extracts one prefix, with exact read/test/control profiles.
+### Other protocol navigation
 
 - `ProofSystem/Fri/FoldingSoundness.lean` and `QuerySoundness.lean` contain the algebraic
   soundness arguments; `ErrorBounds.lean` instantiates existing numerical MCA bounds.
