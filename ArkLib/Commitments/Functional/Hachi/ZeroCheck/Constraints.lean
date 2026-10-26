@@ -6,7 +6,7 @@ Authors: Tobias Rothmann, Pablo Martín Vinuelas
 module
 
 public import ArkLib.Commitments.Functional.Hachi.RingSwitch.Reduction
-public import ArkLib.Data.MvPolynomial.Multilinear
+public import ArkLib.Data.MvPolynomial.Hypercube
 public import ArkLib.ToCompPoly.Multilinear.NestedEvaluationTree
 public import ArkLib.ToCompPoly.Multivariate.Eval
 public import CompPoly.Multivariate.Operations
@@ -854,7 +854,7 @@ def alphaPublicEvals (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatement Φ n μ
 
 /-- Assemble a point from a fixed prefix and a Boolean suffix. -/
 def hypercubePoint (i : ℕ) (cs : Fin i → F) (x : Fin (m₀ - i) → Fin 2) : Fin m₀ → F :=
-  fun j => if h : j.val < i then cs ⟨j, h⟩ else (x ⟨j.val - i, by omega⟩ : F)
+  MvPolynomial.hypercubePoint m₀ i cs x
 
 /-- The range sumcheck summand `F_{0,τ₀}`, characterized by `∑_{x} F_{0,τ₀}(x) = H₀(τ₀)`
 (`sum_sumcheckPolyZero`) with per-variable degree `roundDegZero b = 2b`.

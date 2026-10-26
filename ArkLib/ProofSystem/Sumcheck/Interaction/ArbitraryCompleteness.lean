@@ -7,7 +7,7 @@ module
 
 public import ArkLib.ProofSystem.Sumcheck.Interaction.ArbitraryRounds
 public import VCVio.OracleComp.EvalDist.Measure
-public import VCVio.OracleComp.Constructions.SampleableType.NativeMeasure
+public import VCVio.OracleComp.Constructions.SampleableType.Measure
 
 /-!
 # Perfect completeness of arbitrary sampled Sumcheck rounds
@@ -89,10 +89,10 @@ theorem executeRoundsSampled_perfectCompleteness [DecidableEq R] {m : ℕ} (D : 
     (p : Spec.OracleStatement R n deg ())
     (challenges : (i : Fin n) → Spec.StatementRound R n i.castSucc → ProbComp R)
     (h : ((stmt, fun _ => p), ()) ∈ Spec.relationRound R n deg D _) :
-    Pr{let result ← executeRoundsSampled R n deg unifSpec start count bound
+    Pr{let result ← (executeRoundsSampled R n deg unifSpec start count bound
         (Finset.univ.map D).toList
         ⟨stmt, (polynomialFamily R n deg).behaviorOfRealizations (fun _ => p)⟩
-        (honestMessages R n deg D p) challenges}[
+        (honestMessages R n deg D p) challenges)}[
       result.map (closedRelation R n deg D ⟨start + count, by omega⟩) = some True] = 1 :=
   OracleComp.prEvent_eq_one_of_forall_mem_support _ _
     (executeRoundsSampled_support_completeness R n deg D start count bound stmt p challenges h)
@@ -119,10 +119,10 @@ theorem executeRounds_uniform_perfectCompleteness [DecidableEq R] [SampleableTyp
     (stmt : Spec.StatementRound R n ⟨start, by omega⟩)
     (p : Spec.OracleStatement R n deg ())
     (h : ((stmt, fun _ => p), ()) ∈ Spec.relationRound R n deg D _) :
-    Pr{let result ← executeRoundsSampled R n deg unifSpec start count bound
+    Pr{let result ← (executeRoundsSampled R n deg unifSpec start count bound
         (Finset.univ.map D).toList
         ⟨stmt, (polynomialFamily R n deg).behaviorOfRealizations (fun _ => p)⟩
-        (honestMessages R n deg D p) (fun _ _ => $ᵗ R)}[
+        (honestMessages R n deg D p) (fun _ _ => $ᵗ R))}[
       result.map (closedRelation R n deg D ⟨start + count, by omega⟩) = some True] = 1 :=
   executeRoundsSampled_perfectCompleteness R n deg D start count bound stmt p _ h
 

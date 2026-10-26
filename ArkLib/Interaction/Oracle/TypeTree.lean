@@ -181,12 +181,12 @@ namespace ExecutionPath
 /-- View an execution path as a path through the erased runtime type tree. -/
 def toTypeTreePath {tree : TypeTree.{u}} (path : ExecutionPath tree) :
     _root_.Interaction.TypeTree.Path tree.toTypeTree :=
-  PFunctor.FreeM.pathAlongToMapLensPath runtimeLens tree path
+  PFunctor.FreeM.PathAlong.toMapLensPath runtimeLens tree path
 
 /-- Recover an execution path from a path through the erased runtime type tree. -/
 def ofTypeTreePath {tree : TypeTree.{u}}
     (path : _root_.Interaction.TypeTree.Path tree.toTypeTree) : ExecutionPath tree :=
-  PFunctor.FreeM.mapLensPathToPathAlong runtimeLens tree path
+  PFunctor.FreeM.PathAlong.ofMapLensPath runtimeLens tree path
 
 /-- Forget opaque oracle payloads while preserving public structural choices. -/
 def toBranchPath {tree : TypeTree.{u}} (path : ExecutionPath tree) : BranchPath tree :=
@@ -196,12 +196,12 @@ def toBranchPath {tree : TypeTree.{u}} (path : ExecutionPath tree) : BranchPath 
 theorem toTypeTreePath_ofTypeTreePath {tree : TypeTree.{u}}
     (path : _root_.Interaction.TypeTree.Path tree.toTypeTree) :
     (ofTypeTreePath path).toTypeTreePath = path :=
-  PFunctor.FreeM.pathAlongToMapLensPath_toPathAlong runtimeLens tree path
+  PFunctor.FreeM.PathAlong.toMapLensPath_ofMapLensPath runtimeLens tree path
 
 @[simp]
 theorem ofTypeTreePath_toTypeTreePath {tree : TypeTree.{u}} (path : ExecutionPath tree) :
     ofTypeTreePath path.toTypeTreePath = path :=
-  PFunctor.FreeM.mapLensPathToPathAlong_toMapLensPath runtimeLens tree path
+  PFunctor.FreeM.PathAlong.ofMapLensPath_toMapLensPath runtimeLens tree path
 
 @[simp]
 theorem toBranchPath_done (path : ExecutionPath TypeTree.done) :

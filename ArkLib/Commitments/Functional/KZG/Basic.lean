@@ -15,7 +15,7 @@ public import ArkLib.ToCompPoly.Univariate.Basic
 public import Mathlib.Algebra.Field.ZMod
 public import Mathlib.Algebra.Order.Star.Basic
 public import Mathlib.Algebra.Polynomial.FieldDivision
-public import VCVio.OracleComp.SimSemantics.QueryImpl.Constructions
+public import VCVio.OracleComp.SimSemantics.QueryImpl.Constructions.Core
 public import VCVio.OracleComp.QueryTracking.CachingOracle
 
 /-!

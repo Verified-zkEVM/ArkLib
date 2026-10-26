@@ -221,6 +221,32 @@ theorem dist_le_UDR_iff_relDist_le_relUDR {ι : Type*} [Fintype ι] {F : Type*} 
       IsUnit.div_mul_cancel]
     rw [Nat.le_floor_iff (ha := by simp only [zero_le])]
 
+/-- The chosen closest codeword equals any codeword within the unique-decoding radius. -/
+lemma pickClosestCodeword_eq_of_le_uniqueDecodingRadius
+    {ι F : Type*} [Fintype ι] [DecidableEq F] (C : Set (ι → F)) (u : ι → F) {v : ι → F}
+    (hv : v ∈ C)
+    (hvu : Δ₀(u, v) ≤ Code.uniqueDecodingRadius C) :
+    letI : Nonempty C := ⟨⟨v, hv⟩⟩
+    (Code.pickClosestCodeword_of_Nonempty_Code C u : C) = ⟨v, hv⟩ := by
+  let : Nonempty C := ⟨⟨v, hv⟩⟩
+  let w : C := Code.pickClosestCodeword_of_Nonempty_Code C u
+  have hwdist : Δ₀(u, (w : ι → F)) ≤ Code.uniqueDecodingRadius C := by
+    have hdist : Δ₀(u, C) ≤ Δ₀(u, v) := Code.distFromCode_le_dist_to_mem u v hv
+    have hdist' : Δ₀(u, C) = Δ₀(u, (w : ι → F)) :=
+      Code.distFromPickClosestCodeword_of_Nonempty_Code C u
+    have haux : Δ₀(u, C) ≤ (Code.uniqueDecodingRadius C : ℕ∞) := by
+      exact le_trans hdist (by exact_mod_cast hvu)
+    rw [hdist'] at haux
+    exact_mod_cast haux
+  have hw_mem : (w : ι → F) ∈ C := w.property
+  have h_eq : (w : ι → F) = v := by
+    apply Code.eq_of_le_uniqueDecodingRadius (C := C) (u := u)
+      (v := (w : ι → F)) (w := v)
+      (hv := hw_mem) (hw := hv)
+      (huv := hwdist) (huw := hvu)
+  apply Subtype.ext
+  exact h_eq
+
 end DecodingRadius
 
 end

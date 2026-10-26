@@ -32,7 +32,7 @@ soundness from canonical-mode soundness — is left for follow-up work. Until th
 modes carry independent proofs.
 
 ## Contents (lifted from `Binius.BinaryBasefold.Basic` § `SumcheckOperations` and
-`RingSwitching.SumcheckWitness`)
+`Sumcheck.Structured.SumcheckWitness`)
 
 - `MultilinearPoly`, `MultiquadraticPoly` — degree-1 / degree-2 `MvPolynomial` abbreviations.
 - `SumcheckMultiplierParam` — bundles a `Context → MultilinearPoly` (the multiplier `m`).

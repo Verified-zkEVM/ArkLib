@@ -27,7 +27,7 @@ clean.
 | 2 | Long lines | Break at binders, `:`, `=`, long arguments, or long subexpressions |
 | 3 | Isolated `·` | Merge `·` with the next tactic line |
 | 4 | Whitespace / notation style | Apply the exact spacing the linter asks for |
-| 5 | Long file | Add `set_option linter.style.longFile N` near the top with a reasonable ceiling; if the repo style script tracks long-file exceptions separately, update that watermark too |
+| 5 | Long file | Split at a conceptual API or proof boundary before 1500 lines; do not add linter suppressions or exception watermarks |
 | 6 | Unused tactic | Delete the no-op tactic |
 | 7 | Deprecated names | Replace with the linter-suggested name |
 | 8 | `intro` suggestions | Collapse repeated `intro` lines into the suggested pattern |

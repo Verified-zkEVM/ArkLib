@@ -96,11 +96,35 @@ variable {tree : Oracle.TypeTree.{u}}
 def root (tree : Oracle.TypeTree.{u}) : ExecutionPrefix tree :=
   ⟨Cursor.root tree, PUnit.unit⟩
 
+/-- Prepend an actual public move to a concrete prefix of its selected continuation. -/
+def prependPublic {Moves : Type u} {rest : Moves → Oracle.TypeTree.{u}}
+    (move : Moves) (pfx : ExecutionPrefix (rest move)) :
+    ExecutionPrefix (.public Moves rest) :=
+  ⟨Cursor.down move pfx.cursor, pfx.messages⟩
+
+/-- Prepend an actual oracle message, retaining its realization in the concrete prefix. -/
+def prependOracle {Messages : Type u} {rest : PUnit.{u + 1} → Oracle.TypeTree.{u}}
+    (message : Messages) (pfx : ExecutionPrefix (rest PUnit.unit)) :
+    ExecutionPrefix (.oracle Messages rest) :=
+  ⟨Cursor.down PUnit.unit pfx.cursor, ⟨message, pfx.messages⟩⟩
+
 /-- Continue with a concrete prefix of the selected residual. -/
 def comp (first : ExecutionPrefix tree) (second : ExecutionPrefix first.cursor.residual) :
     ExecutionPrefix tree :=
   ⟨first.cursor.comp second.cursor,
     PrefixMessages.comp first.cursor.spine second.cursor.spine first.messages second.messages⟩
+
+/-- Concrete continuation commutes with prepending a public move. -/
+theorem prependPublic_comp {Moves : Type u} {rest : Moves → Oracle.TypeTree.{u}}
+    (move : Moves) (first : ExecutionPrefix (rest move))
+    (second : ExecutionPrefix first.cursor.residual) :
+    (prependPublic move first).comp second = prependPublic move (first.comp second) := rfl
+
+/-- Concrete continuation commutes with prepending an oracle realization. -/
+theorem prependOracle_comp {Messages : Type u}
+    {rest : PUnit.{u + 1} → Oracle.TypeTree.{u}} (message : Messages)
+    (first : ExecutionPrefix (rest PUnit.unit)) (second : ExecutionPrefix first.cursor.residual) :
+    (prependOracle message first).comp second = prependOracle message (first.comp second) := rfl
 
 @[simp]
 theorem root_comp (pfx : ExecutionPrefix tree) : (root tree).comp pfx = pfx := by
@@ -173,6 +197,17 @@ def ofExecutionPath : {tree : Oracle.TypeTree.{u}} → tree.ExecutionPath → Ex
       let tail := ofExecutionPath path.2
       ⟨Cursor.down PUnit.unit tail.cursor, ⟨path.1, tail.messages⟩⟩
 
+/-- A complete public path retains its first move and the concrete terminal suffix. -/
+theorem ofExecutionPath_public {Moves : Type u} {rest : Moves → Oracle.TypeTree.{u}}
+    (path : (.public Moves rest : Oracle.TypeTree.{u}).ExecutionPath) :
+    ofExecutionPath path = prependPublic path.1 (ofExecutionPath path.2) := rfl
+
+/-- A complete oracle path retains its first realization and the concrete terminal suffix. -/
+theorem ofExecutionPath_oracle {Messages : Type u}
+    {rest : PUnit.{u + 1} → Oracle.TypeTree.{u}}
+    (path : (.oracle Messages rest : Oracle.TypeTree.{u}).ExecutionPath) :
+    ofExecutionPath path = prependOracle path.1 (ofExecutionPath path.2) := rfl
+
 /-- Terminal prefix projection is the existing structural projection of execution paths. -/
 theorem cursor_ofExecutionPath : {tree : Oracle.TypeTree.{u}} →
     (path : tree.ExecutionPath) →
@@ -197,6 +232,19 @@ def roles (pfx : ExecutionPrefix tree) (decoration : tree.RoleDecoration) :
     RoleDecoration pfx.cursor.residual :=
   Displayed.Decoration.restrict pfx.cursor decoration
 
+/-- Restricting after a prepended public move uses the role decoration of that continuation. -/
+theorem roles_prependPublic {Moves : Type u} {rest : Moves → Oracle.TypeTree.{u}}
+    (move : Moves) (pfx : ExecutionPrefix (rest move))
+    (decoration : (TypeTree.public Moves rest).RoleDecoration) :
+    (prependPublic move pfx).roles decoration = pfx.roles (decoration.2 move) := rfl
+
+/-- An oracle realization retains the role decoration of its structural continuation. -/
+theorem roles_prependOracle {Messages : Type u}
+    {rest : PUnit.{u + 1} → Oracle.TypeTree.{u}} (message : Messages)
+    (pfx : ExecutionPrefix (rest PUnit.unit))
+    (decoration : (TypeTree.oracle Messages rest).RoleDecoration) :
+    (prependOracle message pfx).roles decoration = pfx.roles (decoration.2 PUnit.unit) := rfl
+
 /-- Oracle interfaces restricted to the selected residual, preserving branch dependence. -/
 def oracles (pfx : ExecutionPrefix tree) (decoration : tree.OracleDecoration.{u, v}) :
     OracleDecoration.{u, v} pfx.cursor.residual :=
@@ -218,6 +266,18 @@ theorem oracles_comp (first : ExecutionPrefix tree) (second : ExecutionPrefix fi
 def plug (pfx : ExecutionPrefix tree) (path : ExecutionPath pfx.cursor.residual) :
     tree.ExecutionPath :=
   PrefixMessages.plug pfx.cursor.spine pfx.messages path
+
+/-- Completing a prepended public prefix retains the actual first move. -/
+theorem prependPublic_plug {Moves : Type u} {rest : Moves → Oracle.TypeTree.{u}}
+    (move : Moves) (pfx : ExecutionPrefix (rest move))
+    (path : ExecutionPath pfx.cursor.residual) :
+    (prependPublic move pfx).plug path = ⟨move, pfx.plug path⟩ := rfl
+
+/-- Completing a prepended oracle prefix retains the actual first realization. -/
+theorem prependOracle_plug {Messages : Type u}
+    {rest : PUnit.{u + 1} → Oracle.TypeTree.{u}} (message : Messages)
+    (pfx : ExecutionPrefix (rest PUnit.unit)) (path : ExecutionPath pfx.cursor.residual) :
+    (prependOracle message pfx).plug path = ⟨message, pfx.plug path⟩ := rfl
 
 /-- Completing two consecutive prefixes agrees with their single ordered composition. -/
 theorem plug_comp (first : ExecutionPrefix tree) (second : ExecutionPrefix first.cursor.residual)
