@@ -956,6 +956,7 @@ public import ArkLib.ProofSystem.Logup.Prover.RoundCoefficients
 public import ArkLib.ProofSystem.Logup.Prover.State
 public import ArkLib.ProofSystem.Logup.Prover.Storage
 public import ArkLib.ProofSystem.Logup.Prover.StorageBuffers
+public import ArkLib.ProofSystem.Logup.Prover.StorageLedger
 public import ArkLib.ProofSystem.Logup.Prover.Strategy
 public import ArkLib.ProofSystem.Logup.Security.Initial
 public import ArkLib.ProofSystem.Logup.Security.Weighted
