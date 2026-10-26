@@ -1033,6 +1033,7 @@ public import ArkLib.ProofSystem.Sumcheck.Interaction.ProtocolCompleteness
 public import ArkLib.ProofSystem.Sumcheck.Interaction.ProtocolSoundness
 public import ArkLib.ProofSystem.Sumcheck.Interaction.Resources
 public import ArkLib.ProofSystem.Sumcheck.Interaction.RoundByRound
+public import ArkLib.ProofSystem.Sumcheck.Interaction.SamplingResources
 public import ArkLib.ProofSystem.Sumcheck.Interaction.Sequential
 public import ArkLib.ProofSystem.Sumcheck.Interaction.SingleRound
 public import ArkLib.ProofSystem.Sumcheck.Interaction.Soundness
