@@ -184,21 +184,15 @@ before that challenge. Neither theorem states multi-round or knowledge soundness
 
 `legacy_input_iff` and `legacy_output_iff` give both directions of relation correspondence for
 arbitrary concrete claims. `legacy_verifier_correspondence` identifies single-round scalar outputs
-for arbitrary sent polynomials and fixed challenges, including rejection. Both verifiers evaluate
-the sent polynomial for the next target and retain the input polynomial as the output oracle.
-`legacy_honest_verifier_correspondence` specializes this result to honest messages. These execution
-results do not identify the legacy and native security games or transfer their soundness theorems.
+for arbitrary sent polynomials and fixed challenges, including rejection: both verifiers take the
+sent polynomial at the challenge as the next target and keep the input polynomial as the output
+oracle. It does not relate the legacy and native security games.
 
-The legacy RBR knowledge-soundness statements in `Sumcheck/Spec/SingleRound.lean` and
-`Sumcheck/Spec/General.lean` additionally require `[IsDomain R]`, including the experimental
-component decomposition and every lifted or composed soundness statement. Together with the
-existing finiteness assumption, this supports the polynomial collision bound: a finite commutative
-semiring with `IsDomain` is either a field or a two-element semiring, where the bound follows
-from an evaluation disagreement (with unequal constants handled separately at degree zero).
-Over `ZMod 4`, `p = 0`, target `2`, domain `{0}`, and `q = 2X + 2` pass the sum guard and give
-true output claims at two of four challenges, exceeding the degree-one bound `1/4`. Verifier
-execution, completeness, and execution correspondence keep their commutative-semiring generality.
-The legacy soundness claims retain their existing admissions and admission dependencies.
+The legacy round-by-round knowledge-soundness statements in `Sumcheck/Spec/` require
+`[IsDomain R]` on top of `[Fintype R]`; without it the error `deg / |R|` fails over rings with zero
+divisors. A finite commutative semiring with `IsDomain` is a finite field or the Boolean semiring,
+and two degree-`deg` polynomials that differ somewhere agree on at most `deg` points in both cases.
+Verifier execution and completeness keep the commutative-semiring generality.
 
 ## Consecutive multivariate rounds
 

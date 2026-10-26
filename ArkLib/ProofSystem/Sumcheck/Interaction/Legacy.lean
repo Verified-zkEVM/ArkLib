@@ -12,9 +12,9 @@ public import ArkLib.ProofSystem.Sumcheck.Interaction.Closing
 
 The input and output relation theorems are bidirectional for arbitrary concrete claims. The
 verifier-execution theorem compares scalar outputs for arbitrary sent polynomials and fixed
-challenges, including rejection. Both verifiers read the sent polynomial for the next target and
-retain the input polynomial as the output oracle. This is a single-round correspondence; it does
-not identify the legacy and native security games or transfer their soundness theorems.
+challenges, including rejection: both verifiers take the sent polynomial at the challenge as the
+next target and keep the input polynomial as the output oracle. It does not relate the legacy and
+native security games.
 -/
 
 @[expose] public section
@@ -117,21 +117,6 @@ theorem legacy_verifier_correspondence [DecidableEq R]
   rw [Spec.SingleRound.Simple.oracleVerifier_eq_verifier, executeAt_eq]
   by_cases h : (∑ x, q.val.eval (D x)) = target <;>
     simp [Spec.SingleRound.Simple.verifier, Finset.sum_map_toList, h]
-
-/-- Honest legacy verifier execution agrees with the typed executor's scalar output. -/
-theorem legacy_honest_verifier_correspondence [DecidableEq R]
-    {ι : Type} (ambient : OracleSpec ι) {m : ℕ} (D : Fin m ↪ R)
-    (p : Message R deg) (target r : R)
-    (h : ((target, (fun _ : Unit => p)), ()) ∈
-      Spec.SingleRound.Simple.inputRelation R deg D) :
-    (Option.map Prod.fst) <$>
-      ((Spec.SingleRound.Simple.oracleVerifier R deg D ambient).toVerifier.verify
-        (target, fun _ => p) (legacyTranscript R deg p r)).run =
-      (fun result => result.2.2) <$>
-        executeAt R deg ambient p p (Finset.univ.map D).toList target r := by
-  simpa only [executeAt_honest R deg ambient p _ target r
-    (legacy_input_sum R deg D p target h)] using
-    legacy_verifier_correspondence R deg ambient D p p target r
 
 
 end

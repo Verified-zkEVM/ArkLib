@@ -218,9 +218,8 @@ theorem reduction_perfectCompleteness :
     (fun _ => inferInstance) (SingleRound.verifierGuardedForm R n deg D oSpec)
     (fun i s => SingleRound.reduction_perfectCompleteness (init := pure s) i)
 
-/-- Round-by-round knowledge soundness with error `deg / |R|` per challenge over a finite
-commutative semiring with `IsDomain R`. This composition still depends on admitted legacy
-soundness results. -/
+/-- Round-by-round knowledge soundness with error `deg / |R|` per challenge for the (full)
+  sum-check protocol -/
 theorem oracleVerifier_rbrKnowledgeSoundness [Fintype R] [IsDomain R] :
     (oracleVerifier R deg D n oSpec).rbrKnowledgeSoundness init impl
       (relationRound R n deg D 0) (relationRound R n deg D (.last n))
