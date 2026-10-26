@@ -20,6 +20,11 @@ import all CompPoly.Univariate.Raw.Ops
 
 namespace CompPoly.CPolynomial
 
+/-- Canonicalization never increases the number of stored coefficients. -/
+theorem size_ofArray_le {R : Type*} [Zero R] [BEq R] [LawfulBEq R] (p : Array R) :
+    (ofArray p).val.size ≤ p.size :=
+  Raw.Trim.size_le_size p
+
 /-- A canonical constant stores at most one coefficient. -/
 theorem size_C_le {R : Type} [Zero R] [BEq R] [LawfulBEq R] (x : R) :
     (C x).val.size ≤ 1 := by

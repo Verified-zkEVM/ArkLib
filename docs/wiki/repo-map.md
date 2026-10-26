@@ -69,6 +69,8 @@ home_page/            site assets and assembled website root
 
 ## Navigation Notes
 
+LogUp named builder buffers: `ProofSystem/Logup/Prover/StorageBuffers.lean` connects selected preparation, convolution, fold and source backends to explicit logical container bounds.
+
 - Native `Resources.logged_final_query_eq_boundary` transports the actual returned claim
   query to the same boundary view; generic prior-log routing is shared in `SourceRouting.lean`.
 
