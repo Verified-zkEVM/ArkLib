@@ -149,6 +149,25 @@ theorem eval_fixFirstVariablesOfMQP (v : Fin (ℓ + 1)) (H : MvPolynomial (Fin �
   unfold fixFirstVariablesSubst
   split_ifs <;> simp
 
+/-- Prefix-fixing evaluation in the `Fin.append` convention used by round polynomials. -/
+theorem eval_fixFirstVariablesOfMQP_append (v : Fin (ℓ + 1))
+    (H : MvPolynomial (Fin ℓ) L) (c : Fin v → L) (x : Fin (ℓ - v) → L) :
+    eval x (fixFirstVariablesOfMQP ℓ v H c) =
+      eval (Fin.append c x ∘ Fin.cast (Nat.add_sub_of_le v.is_le).symm) H := by
+  rw [eval_fixFirstVariablesOfMQP]
+  apply congrArg (fun f => eval f H)
+  funext j
+  simp only [Fin.append, Fin.addCases, Function.comp_apply, Fin.val_cast]
+  split <;> first | rfl | simp [Fin.subNat]
+
+/-- First-variable fixing evaluates by prepending the fixed scalar. -/
+theorem eval_fixFirstVariablesOfMQP_one (h : 0 < ℓ) (H : MvPolynomial (Fin ℓ) L)
+    (c : L) (x : Fin (ℓ - 1) → L) :
+    eval x (fixFirstVariablesOfMQP ℓ ⟨1, by omega⟩ H (fun _ => c)) =
+      eval (Fin.cons c x ∘ Fin.cast (by omega)) H := by
+  rw [eval_fixFirstVariablesOfMQP_append (ℓ := ℓ) ⟨1, by omega⟩, Fin.append_left_eq_cons]
+  simp only [Function.comp_def, Fin.cast_cast]
+
 /-- Fixing every variable leaves evaluation at the fixed point. -/
 theorem eval_fixFirstVariablesOfMQP_last (H : MvPolynomial (Fin ℓ) L)
     (challenges : Fin (Fin.last ℓ : Fin (ℓ + 1)) → L)

@@ -15,6 +15,7 @@ public import ArkLib.ProofSystem.Component.CheckClaim
 public import ArkLib.ProofSystem.Component.RandomQuery
 public import ArkLib.ProofSystem.Component.ReduceClaim
 public import ArkLib.Data.Fin.Basic
+public import ArkLib.Data.MvPolynomial.RoundPolynomial
 -- `Vector.finRange` is unfolded by `rw` below; its body is not exposed by default.
 import all Init.Data.Vector.FinRange
 
@@ -584,19 +585,6 @@ theorem oracleVerifier_rbrKnowledgeSoundness [Fintype R] [IsDomain R] :
 
 end Simple
 
-/-- Auxiliary lemma for proving that the polynomial sent by the honest prover is of degree at most
-  `deg` -/
-theorem sumcheck_roundPoly_degreeLE (i : Fin (n + 1)) {challenges : Fin i.castSucc → R}
-    {poly : R[X Fin (n + 1)]} (hp : poly ∈ R⦃≤ deg⦄[X Fin (n + 1)]) :
-      ∑ x ∈ (univ.map D) ^ᶠ (n - i), poly ⸨X ⦃i⦄, challenges, x⸩'
-        (by simp; omega) ∈ R⦃≤ deg⦄[X] := by
-  refine mem_degreeLE.mpr (le_trans (degree_sum_le ((univ.map D) ^ᶠ (n - i)) _) ?_)
-  simp only [Finset.sup_le_iff, Fintype.mem_piFinset, mem_map, mem_univ, true_and]
-  intro x hx
-  refine le_trans (degree_map_le) (natDegree_le_iff_degree_le.mp ?_)
-  rw [natDegree_finSuccEquivNth]
-  exact degreeOf_le_iff.mpr fun m a ↦ hp a i
-
 /-- Assignment to the variables after round `i`, formed by appending the
 prior challenges to a remaining-domain suffix.  Naming this cast-sensitive
 map keeps the materialized polynomial and executable query path definitionally
@@ -618,8 +606,8 @@ def projectedRoundPolynomial (i : Fin n) (challenges : Fin i.castSucc → R)
       ⟨∑ x ∈ (univ.map D) ^ᶠ (n - i),
           Polynomial.map (MvPolynomial.eval (roundSuffix R n i challenges x))
             (MvPolynomial.finSuccEquivNth R i poly.val), by
-        simpa only [roundSuffix] using
-          sumcheck_roundPoly_degreeLE R n deg D i poly.property⟩
+        simpa only [roundSuffix, MvPolynomial.sumRoundPolynomial] using
+          MvPolynomial.sumRoundPolynomial_mem_degreeLE _ _ i poly.property⟩
 
 /-- The oracle statement lens that connect the simple to the full single-round sum-check protocol
 
@@ -987,7 +975,7 @@ theorem oracleVerifier_rbrKnowledgeSoundness [Fintype R] [IsDomain R] :
 --     | 1 => relationRound R n deg D i.castSucc ⟨stmt, oStmt⟩ ()
 --       ∧ (by simpa using partialTranscript ⟨0, by simp⟩ : R⦃≤ deg⦄[X]) =
 --         ⟨∑ x ∈ (univ.map D) ^ᶠ (n - i), (oStmt 0).1 ⸨X ⦃i⦄, stmt.challenges, x⸩'(by simp; omega),
---           sumcheck_roundPoly_degreeLE R n deg D i (oStmt 0).2⟩
+--           MvPolynomial.sumRoundPolynomial_mem_degreeLE _ _ i (oStmt 0).2⟩
 --     -- If `m = 2`, so we get the full transcript, returns the above checks, and also whether the
 --     -- updated statement satisfies the new relation
 --     | 2 => relationRound R n deg D i.succ ⟨⟨stmt.target,
@@ -1047,7 +1035,7 @@ def proverRound (i : Fin n) : ProverRound oSpec (pSpec R deg) where
       let ⟨⟨_, challenges⟩, oStmt⟩ := state
       let ⟨poly, hp⟩ := oStmt 0
       pure ⟨ ⟨∑ x ∈ (univ.map D) ^ᶠ (n - i), poly ⸨X ⦃i⦄, challenges, x⸩'(by simp; omega),
-        sumcheck_roundPoly_degreeLE R n deg D i hp⟩,
+        MvPolynomial.sumRoundPolynomial_mem_degreeLE _ _ i hp⟩,
           state⟩
   | ⟨1, h⟩ => nomatch h
 

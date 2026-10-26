@@ -41,7 +41,7 @@ check. The layers differ elsewhere:
   `∑ F_{α,τ_α} = a` with the linear target `a` computed by the verifier). Pure reshaping
   through the batching identities.
 * `Sumcheck/RoundPoly.lean` — the round-polynomial layer the round soundness runs on: the
-  cube split `hypercubeSum_succ`, the partial sum as a univariate `roundPoly` with its
+  cube split `MvPolynomial.hypercubeSum_succ`, the partial sum as a univariate `roundPoly` with its
   evaluation and degree lemmas, and the two degree instances at Hachi's summands (`≤ 2b` and
   `≤ 2`). Proof-side only: `roundPoly` is `noncomputable`, the wire object stays computable.
 * `Sumcheck/Rounds.lean` — the `m₀`-round paired sumcheck loop: each round sends the

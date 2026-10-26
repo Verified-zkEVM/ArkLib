@@ -25,8 +25,12 @@ theorem second_eval (middle : Spec.StatementRound (ZMod 17) 2 1) (x : ZMod 17) :
     (second middle).val.eval x =
       1 + 2 * middle.challenges ⟨0, by decide⟩ + 3 * x +
         4 * middle.challenges ⟨0, by decide⟩ * x := by
-  rw [second, SingleRound.projectedRoundPolynomial_eval]
-  simp [polynomial, Fin.append, Fin.addCases, Fin.snoc]
+  change (sumRoundPolynomial ((univ.map domain) ^ᶠ 0)
+    (Spec.SingleRound.roundSuffix (ZMod 17) 1 1 middle.challenges)
+    (1 : Fin 2) polynomial.val).eval x = _
+  rw [sumRoundPolynomial_eval]
+  simp [polynomial, Spec.SingleRound.roundSuffix, Fin.append, Fin.addCases,
+    Fin.insertNth, Fin.succAboveCases]
 
 /-- Challenges three then five produce final target fourteen and preserve the original oracle. -/
 example :

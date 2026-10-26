@@ -112,9 +112,8 @@ theorem roundMessage_eval (i : Fin m) (H : C⦃≤ 2⦄[X Fin m]) (r : Fin i →
 theorem roundMessage_sum (i : Fin m) (H : C⦃≤ 2⦄[X Fin m]) (r : Fin i → C) :
     (roundMessage i H r).val.eval 0 + (roundMessage i H r).val.eval 1 =
       hypercubeSum m H.val i r := by
-  rw [roundMessage_eval, roundMessage_eval]
   cases m with
   | zero => exact i.elim0
-  | succ n => exact (hypercubeSum_succ H.val i r).symm
+  | succ n => exact roundPoly_sum H.val i r
 
 end RingSwitching.Packing.ProductSumcheck

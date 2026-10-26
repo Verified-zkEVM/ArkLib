@@ -744,7 +744,7 @@ lemma foldStepFreshBadEvent_or_of_rbrExtractionFailureEvent (i : Fin ℓ)
 omit [DecidableEq 𝔽q] in
 /-- For every input statement and every sent round polynomial, the probability over the challenge
 alone of an extraction failure at the fold step is at most `foldKnowledgeError`: a union bound
-over the bad sum-check event (Schwartz–Zippel, `Sumcheck.Structured.prob_eval_eq_le`) and the
+over the bad sum-check event (Schwartz–Zippel, `Probability.prob_degreeLE_eval_eq_le`) and the
 fresh incremental folding bad event (`prob_incrementalFoldingBadEvent_fresh_le`). -/
 lemma prob_foldStep_rbrExtractionFailureEvent_le (i : Fin ℓ)
     (stmtOStmtIn : (Statement (L := L) Context i.castSucc) × (∀ j,
@@ -848,7 +848,7 @@ lemma prob_foldStep_rbrExtractionFailureEvent_le (i : Fin ℓ)
   · dsimp only [sumcheckBadEvent]
     -- Strategy: ignore the `FoldStepFreshBadEvent`; `firstOracleWitnessConsistency_unique`
     -- makes the witness consistent with the first oracle unique, so the bound is
-    -- `Sumcheck.Structured.prob_eval_eq_le` at that witness's honest round polynomial.
+    -- `Probability.prob_degreeLE_eval_eq_le` at that witness's honest round polynomial.
     let compatPred : MultilinearPoly L ℓ → Prop := fun t =>
       FirstOracleWitnessConsistent 𝔽q β t (getFirstOracle 𝔽q β stmtOStmtIn.2)
     by_cases hCompat : ∃ t : MultilinearPoly L ℓ, compatPred t
@@ -878,7 +878,7 @@ lemma prob_foldStep_rbrExtractionFailureEvent_le (i : Fin ℓ)
       · rw [prEvent_eq_zero_of_forall_not _ _ fun _ h => h.1 hne]
         exact _root_.zero_le
       · refine (prEvent_mono _ _ _ fun _ h => h.2).trans ?_
-        have h_sz := Sumcheck.Structured.prob_eval_eq_le (L := L) hne
+        have h_sz := Probability.prob_degreeLE_eval_eq_le (R := L) hne
         rw [ENNReal.coe_div (by simp)] at h_sz ⊢
         simpa using h_sz
     · have h_prob_mono_false := prEvent_mono ($ᵗ L)

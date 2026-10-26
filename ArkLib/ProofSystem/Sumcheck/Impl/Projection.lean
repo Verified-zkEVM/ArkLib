@@ -120,15 +120,9 @@ theorem projectedRoundPolynomial_natDegree_le (D : Fin m ↪ R) (i : Fin (n + 1)
     {deg : ℕ} (hpoly : ∀ j, poly.degreeOf j ≤ deg) :
     (projectedRoundPolynomial D i challenges poly).natDegree ≤ deg := by
   classical
-  rw [CPolynomial.natDegree_toPoly]
-  unfold projectedRoundPolynomial
-  rw [toPoly_sum]
-  apply Polynomial.natDegree_sum_le_of_forall_le
-  intro x _
-  rw [← CPolynomial.natDegree_toPoly]
-  exact (CPolynomial.natDegree_mapRingHom_le _ _).trans
-    (by simpa only [CPoly.CMvPolynomial.finSuccEquivNth_apply] using
-      natDegree_finSuccEquivNthHom_le i poly hpoly)
+  rw [CPolynomial.natDegree_toPoly, projectedRoundPolynomial_toPoly_sum]
+  exact (MvPolynomial.sumRoundPolynomial_natDegree_le _ _ i _).trans
+    ((congrFun (CPoly.degreeOf_equiv (S := R) (p := poly)) i).symm.le.trans (hpoly i))
 
 /-- Individual degree bounds also bound the extended natural degree used by messages. -/
 theorem projectedRoundPolynomial_degree_le (D : Fin m ↪ R) (i : Fin (n + 1))

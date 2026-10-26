@@ -519,6 +519,7 @@ public import ArkLib.Data.Domain.FftDomain.ToSubgroup
 public import ArkLib.Data.EllipticCurve.BN254
 public import ArkLib.Data.FieldTheory.BinaryTrace
 public import ArkLib.Data.Fin.Basic
+public import ArkLib.Data.Fin.BigOperators
 public import ArkLib.Data.Fin.Fold
 public import ArkLib.Data.Fin.Lift
 public import ArkLib.Data.Fin.Sigma
@@ -593,6 +594,7 @@ public import ArkLib.Data.MvPolynomial.PrimeFingerprintProbability
 public import ArkLib.Data.MvPolynomial.RadicalSplit.Separable
 public import ArkLib.Data.MvPolynomial.RestrictDegree
 public import ArkLib.Data.MvPolynomial.RestrictDegreeVar
+public import ArkLib.Data.MvPolynomial.RoundPolynomial
 public import ArkLib.Data.MvPolynomial.SchwartzZippelCounting
 public import ArkLib.Data.MvPolynomial.Split
 public import ArkLib.Data.MvPolynomial.WeightAtMost

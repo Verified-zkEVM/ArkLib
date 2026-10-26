@@ -86,6 +86,18 @@ lemma prob_polynomial_eval_eq_le
   exact (Polynomial.mem_roots hr).mpr (by
     simpa [sub_eq_zero] using (Finset.mem_filter.mp hγ).2)
 
+/-- Distinct degree-bounded polynomials agree with probability at most `d / |R|`.
+The NNReal presentation is convenient for protocol error bounds. -/
+lemma prob_degreeLE_eval_eq_le
+    {R : Type} [CommRing R] [NoZeroDivisors R] [Fintype R] [SampleableType R]
+    {d : ℕ} {p q : Polynomial.degreeLE R d} (hne : p ≠ q) :
+    Pr{let c ← $ᵗ R}[p.val.eval c = q.val.eval c] ≤
+      (((d : ℝ≥0) / Fintype.card R : ℝ≥0) : ℝ≥0∞) := by
+  rw [ENNReal.coe_div (by simp), ENNReal.coe_natCast, ENNReal.coe_natCast]
+  exact prob_polynomial_eval_eq_le (fun h => hne (Subtype.ext h))
+    (Polynomial.natDegree_le_of_degree_le (Polynomial.mem_degreeLE.mp p.property))
+    (Polynomial.natDegree_le_of_degree_le (Polynomial.mem_degreeLE.mp q.property))
+
 /-- The polynomial identity lemma in individual-degree form. -/
 lemma prob_polynomial_identity_le
     {R : Type} [CommRing R] [IsDomain R] [Fintype R] [SampleableType R]
