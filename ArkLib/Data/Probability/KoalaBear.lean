@@ -6,6 +6,7 @@ Authors: Alexander Hicks
 module
 
 public import CompPoly.Fields.KoalaBear.Ext6
+public import ArkLib.Data.Probability.Uniform
 public import VCVio.OracleComp.Constructions.SampleableType.Measure
 
 /-!
@@ -48,5 +49,42 @@ theorem evalDist_sample [MeasurableSpace Ext6] [MeasurableSingletonClass Ext6] :
     𝒟[sample] = ProbabilityTheory.uniformOn Set.univ := by
   rw [← uniformSample_eq_sample]
   exact SampleableType.evalDist_uniformSample
+
+end KoalaBear.Ext6
+
+namespace KoalaBear.Field
+
+open OracleSpec
+
+/-- Every supported log of the selected base-field sample has one primitive uniform query. -/
+theorem uniformSample_log_length (result : KoalaBear.Field × QueryLog unifSpec)
+    (member : result ∈ support ($ᵗ KoalaBear.Field).withQueryLog) : result.2.length = 1 := by
+  change result ∈ support
+    (((FinEnum.equiv (α := KoalaBear.Field)).symm <$>
+      (liftM (unifSpec.query (KoalaBear.fieldSize - 1)) :
+        ProbComp (Fin KoalaBear.fieldSize))).withQueryLog) at member
+  rw [OracleComp.withQueryLog_map, support_map] at member
+  obtain ⟨original, member, rfl⟩ := member
+  rw [withQueryLog_query, mem_support_bind_iff] at member
+  obtain ⟨answer, _, member⟩ := member
+  rw [mem_support_pure_iff] at member
+  subst original
+  rfl
+end KoalaBear.Field
+
+namespace KoalaBear.Ext6
+
+/-- The selected extension sampler draws six base-field coefficients in traversal order. -/
+theorem uniformSample_eq_ofFnM : ($ᵗ Ext6) = coeffsEquiv <$>
+    Vector.ofFnM (fun _ : Fin 6 => ($ᵗ KoalaBear.Field)) := by
+  rw [uniformSample_eq_sample, sample, SampleableType.uniformSample_vector_eq_ofFnM]
+
+/-- Every supported log of the selected extension sample has six primitive uniform queries. -/
+theorem uniformSample_log_length (result : Ext6 × OracleSpec.QueryLog unifSpec)
+    (member : result ∈ support ($ᵗ Ext6).withQueryLog) : result.2.length = 6 := by
+  rw [uniformSample_eq_ofFnM, OracleComp.withQueryLog_map, support_map] at member
+  obtain ⟨original, member, rfl⟩ := member
+  exact OracleComp.withQueryLog_ofFnM_const_length ($ᵗ KoalaBear.Field) 1 6
+    KoalaBear.Field.uniformSample_log_length original member
 
 end KoalaBear.Ext6

@@ -78,4 +78,49 @@ theorem simulateQ_withQueryLog_ofFnM {ι α : Type} {spec : OracleSpec ι} {k : 
     change (_, _ ++ (_ ++ [])) = (_, _)
     simp only [List.append_nil, id_eq]
 
+/-- Mapping a result preserves each actual request and response in the ordered log. -/
+theorem withQueryLog_map {ι A B : Type} {spec : OracleSpec ι}
+    (program : OracleComp spec A) (f : A → B) :
+    (f <$> program).withQueryLog =
+      (fun result => (f result.1, result.2)) <$> program.withQueryLog := by
+  simp [map_eq_bind_pure_comp, withQueryLog_bind]
+
+private theorem log_length_bind {ι A B : Type} {spec : OracleSpec ι}
+    (first : OracleComp spec A) (next : A → OracleComp spec B) (c d : Nat)
+    (hfirst : ∀ result ∈ support first.withQueryLog, result.2.length = c)
+    (hnext : ∀ value, ∀ result ∈ support (next value).withQueryLog, result.2.length = d)
+    (result : B × QueryLog spec)
+    (member : result ∈ support (first >>= next).withQueryLog) : result.2.length = c + d := by
+  rw [withQueryLog_bind, mem_support_bind_iff] at member
+  obtain ⟨firstLog, hp, member⟩ := member
+  rw [support_map] at member
+  obtain ⟨tail, ht, rfl⟩ := member
+  simp only [Prod.map, List.length_append]
+  rw [hfirst firstLog hp, hnext firstLog.1 tail ht]
+
+/-- If each completed entry has log length c, every completed traversal has log length n * c. -/
+theorem withQueryLog_ofFnM_const_length {ι A : Type} {spec : OracleSpec ι}
+    (sample : OracleComp spec A) (c n : Nat)
+    (hsample : ∀ result ∈ support sample.withQueryLog, result.2.length = c)
+    (result : Vector A n × QueryLog spec)
+    (member : result ∈ support (Vector.ofFnM (fun _ : Fin n => sample)).withQueryLog) :
+    result.2.length = n * c := by
+  induction n with
+  | zero =>
+    rw [Vector.ofFnM_zero, withQueryLog_pure, mem_support_pure_iff] at member
+    subst result
+    simp only [List.length_nil, Nat.zero_mul]
+  | succ n ih =>
+    rw [Vector.ofFnM_succ'] at member
+    have h := log_length_bind sample _ c (n * c) hsample ?_ result member
+    · simpa only [Nat.succ_mul, Nat.add_comm] using h
+    · intro value tail htail
+      have ht := log_length_bind (Vector.ofFnM (fun _ : Fin n => sample)) _ (n * c) 0
+        (fun r hr => ih r hr) ?_ tail htail
+      · simpa only [Nat.add_zero] using ht
+      · intro values out hout
+        rw [withQueryLog_pure, mem_support_pure_iff] at hout
+        subst out
+        rfl
+
 end OracleComp

@@ -69,6 +69,9 @@ home_page/            site assets and assembled website root
 
 ## Navigation Notes
 
+- Generic sampler laws in `Data/Probability/{Uniform,KoalaBear}.lean` expose selected
+  programs and supported primitive log lengths; vector log laws preserve actual query order.
+
 - Restricted verifier `Fragment.mapOutput_id` and `mapOutput_comp` preserve actual
   node programs and dependent leaf types, supporting exact exported-prefix normalization.
 
