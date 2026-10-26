@@ -10,6 +10,7 @@ public import ArkLib.ProofSystem.Sumcheck.Impl.ArithmeticVerifierChecks
 public import ArkLib.Interaction.Oracle.LoggedExecution
 -- The proof unfolds the existing runner; its runtime remains owned by LoggedExecution.
 import all ArkLib.Interaction.Oracle.LoggedExecution
+import ArkLib.Interaction.Oracle.SourceRouting
 
 /-!
 # Actual native Sumcheck verifier resource observations
@@ -437,5 +438,106 @@ theorem complete_log_eq [DecidableEq R] (n deg : Nat) {ι : Type}
     rw [logged_checkFinalClaim n deg ambient _
       (result.path.closingImpl (protocol R deg count).oracles A impl) claim]
     rfl
+
+set_option backward.isDefEq.respectTransparency false in
+private theorem logged_terminal_query_eq_boundary [DecidableEq R]
+    (n deg : Nat) {ι : Type} (ambient : OracleSpec ι) (challenge : OracleComp ambient R)
+    (count start : Nat) (finish : start + count = n) (A : PFunctor)
+    (original : VirtualOracle (ofPFunctor A) (MultivariateRound.polynomialFamily R n deg))
+    (stmt : Spec.StatementRound R n ⟨start, by omega⟩) (impl : QueryImpl (ofPFunctor A) Id)
+    {OutP : (protocol R deg count).tree.ExecutionPath → Type}
+    (prover : Prover.Strategy ambient (protocol R deg count).tree
+      (protocol R deg count).roles OutP) :
+    ∀ result ∈ support (executeStrategiesLogged ambient (protocol R deg count).tree
+      (protocol R deg count).roles (protocol R deg count).oracles A impl prover
+      (verifier R n deg ambient challenge [0, 1] count start finish A original stmt)),
+      ∀ (claim : OpenClaim
+        (ofPFunctor (TypeTree.accessAfter (protocol R deg count).tree
+          (protocol R deg count).oracles A result.path.toBranchPath))
+        (FinalStatement R n) (MultivariateRound.polynomialFamily R n deg)),
+      result.verifierOut = some claim → ∀ x : Fin n → R,
+      (simulateQ (result.path.closingImpl (protocol R deg count).oracles A impl)
+        (claim.oracles.query ⟨(), x⟩).withQueryLog).run =
+        let boundary : R × QueryLog (ofPFunctor A) :=
+          (simulateQ impl (original.query ⟨(), x⟩).withQueryLog).run
+        (boundary.1, TypeTree.routeLog (protocol R deg count).tree
+          (protocol R deg count).oracles A result.path.toBranchPath boundary.2) := by
+  induction count generalizing start A with
+  | zero =>
+    intro result hresult claim hclaim x
+    change result ∈ support (pure _) at hresult
+    have heq := OracleComp.eq_of_mem_support_pure _ hresult
+    subst result
+    cases hclaim
+    simp [Computable.protocol, Native.Core.protocol, TypeTree.routeLog, TypeTree.routeEntry]
+  | succ count ih =>
+    intro result hresult claim hclaim x
+    simp only [Computable.verifier, Native.Core.verifier, Computable.protocol,
+      Native.Core.protocol, Protocol.oracleWith_tree, Protocol.oracleWith_roles,
+      Protocol.oracleWith_oracles, Protocol.public_tree, Protocol.public_roles,
+      Protocol.public_oracles, executeStrategiesLogged] at hresult
+    obtain ⟨chosen, _, hresult⟩ := OracleComp.mem_support_bind_peel _ _ hresult
+    simp only [simulateQ_bind, simulateQ_pure, WriterT.run_bind', WriterT.run_pure',
+      logged_latestSum, pure_bind, map_pure, Prod.map, id_eq,
+      Impl.VerifierChecks.equalM, Id.run, decide_eq_true_eq, bind_assoc] at hresult
+    by_cases check : ([0, 1].map fun x => Impl.Representation.evaluate R deg chosen.1 x).sum =
+        stmt.target
+    · simp only [check, ↓reduceIte, simulateQ_bind, simulateQ_pure,
+        WriterT.run_bind', WriterT.run_pure', Verifier.loggedLiftAccessImpl_liftComp, logged_latest,
+        bind_map_left, pure_bind, map_pure, Prod.map, id_eq, List.nil_append, bind_assoc] at hresult
+      obtain ⟨r, _, hresult⟩ := OracleComp.mem_support_bind_peel _ _ hresult
+      obtain ⟨nextP, _, hresult⟩ := OracleComp.mem_support_bind_peel _ _ hresult
+      obtain ⟨tail, htail, hresult⟩ := OracleComp.mem_support_bind_peel _ _ hresult
+      have heq := OracleComp.eq_of_mem_support_pure _ hresult
+      subst result
+      have ht := ih (start + 1) (by omega) _
+        (original.sumWeaken (Native.Core.messageInterface R
+          (Impl.Representation.Message R deg) (Impl.Representation.evaluate R deg)).spec)
+        ⟨Impl.Representation.evaluate R deg chosen.1 r, Fin.snoc stmt.challenges r⟩
+        (Access.extendImpl A (Native.Core.messageInterface R
+          (Impl.Representation.Message R deg) (Impl.Representation.evaluate R deg)) impl chosen.1)
+        (OutP := fun path => OutP ⟨chosen.1, ⟨some r, path⟩⟩) nextP tail htail claim hclaim x
+      simp only [VirtualOracle.sumWeaken, VirtualOracle.substSource, QueryImpl.compose] at ht
+      erw [Access.simulateQ_queryPrior_withQueryLog] at ht
+      simp only [Computable.protocol, Native.Core.protocol,
+        Protocol.oracleWith_tree, Protocol.oracleWith_oracles,
+        Protocol.public_tree, Protocol.public_oracles,
+        TypeTree.routeLog, TypeTree.routeEntry, Id.run, List.map_map, Function.comp_def] at ht ⊢
+      exact ht
+    · simp only [check, ↓reduceIte, simulateQ_pure, WriterT.run_pure', pure_bind] at hresult
+      obtain ⟨nextP, _, hresult⟩ := OracleComp.mem_support_bind_peel _ _ hresult
+      have heq := OracleComp.eq_of_mem_support_pure _ hresult
+      subst result
+      cases hclaim
+
+set_option backward.isDefEq.respectTransparency false in
+/-- A claim returned by the actual bare run retains the boundary original view. Closing its
+query at the actual final challenges returns the same answer and injects the original ordered
+raw log past the retained native message slots. Neither truth nor fixed source fanout is needed. -/
+theorem logged_final_query_eq_boundary [DecidableEq R]
+    (n deg : Nat) {ι : Type} (ambient : OracleSpec ι) (challenge : OracleComp ambient R)
+    (count start : Nat) (finish : start + count = n) (A : PFunctor)
+    (original : VirtualOracle (ofPFunctor A) (MultivariateRound.polynomialFamily R n deg))
+    (stmt : Spec.StatementRound R n ⟨start, by omega⟩) (impl : QueryImpl (ofPFunctor A) Id)
+    {OutP : (protocol R deg count).tree.ExecutionPath → Type}
+    (prover : Prover.Strategy ambient (protocol R deg count).tree
+      (protocol R deg count).roles OutP) :
+    ∀ result ∈ support (executeStrategiesLogged ambient (protocol R deg count).tree
+      (protocol R deg count).roles (protocol R deg count).oracles A impl prover
+      (verifier R n deg ambient challenge [0, 1] count start finish A original stmt)),
+      ∀ (claim : OpenClaim
+        (ofPFunctor (TypeTree.accessAfter (protocol R deg count).tree
+          (protocol R deg count).oracles A result.path.toBranchPath))
+        (FinalStatement R n) (MultivariateRound.polynomialFamily R n deg)),
+      result.verifierOut = some claim →
+      (simulateQ (result.path.closingImpl (protocol R deg count).oracles A impl)
+        (claim.oracles.query ⟨(), claim.stmt.challenges⟩).withQueryLog).run =
+        let boundary : R × QueryLog (ofPFunctor A) :=
+          (simulateQ impl (original.query ⟨(), claim.stmt.challenges⟩).withQueryLog).run
+        (boundary.1, TypeTree.routeLog (protocol R deg count).tree
+          (protocol R deg count).oracles A result.path.toBranchPath boundary.2) := by
+  intro result hresult claim hclaim
+  exact logged_terminal_query_eq_boundary n deg ambient challenge count start finish A original
+    stmt impl prover result hresult claim hclaim claim.stmt.challenges
 
 end Sumcheck.Interaction.Computable.Resources

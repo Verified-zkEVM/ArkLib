@@ -7,6 +7,7 @@ module
 
 public import ArkLib.Interaction.Oracle.Sequential
 public import ArkLib.Interaction.Oracle.Claim
+public import VCVio.OracleComp.QueryTracking.LoggingOracle.Core
 
 /-!
 # Routing restricted verifiers through exported interfaces
@@ -52,6 +53,38 @@ theorem compose_extendRoute {Messages : Type u} (source target : PFunctor.{u, u}
     rw [← QueryImpl.simulateQ_compose]
     congr 1
   | inr q => exact eval_queryLatest target interface impl message q
+
+/-- Prior-source routing preserves each actual response and injects its ordered raw log. -/
+theorem simulateQ_queryPrior_withQueryLog {A : PFunctor.{u, u}} {Msg : Type u}
+    (interface : OracleInterface.{u, u} Msg)
+    (impl : QueryImpl (ofPFunctor A) Id) (message : Msg) {α : Type u}
+    (program : OracleComp (ofPFunctor A) α) :
+    simulateQ (Access.extendImpl A interface impl message)
+        (simulateQ (Access.queryPrior A interface) program).withQueryLog =
+      let result := simulateQ impl program.withQueryLog
+      (result.1, result.2.map fun entry => ⟨Sum.inl entry.1, entry.2⟩) := by
+  have hbind {κ : Type u} {spec : OracleSpec.{u, u} κ} {α β : Type u}
+      (program : OracleComp spec α) (next : α → OracleComp spec β) :
+      (program >>= next).withQueryLog = program.withQueryLog >>= fun pair =>
+        Prod.map id (pair.2 ++ ·) <$> (next pair.1).withQueryLog := by
+    simp only [withQueryLog, simulateQ_bind, WriterT.run_bind']
+  have hpure {κ : Type u} {spec : OracleSpec.{u, u} κ} {α : Type u} (value : α) :
+      (pure value : OracleComp spec α).withQueryLog = pure (value, []) := rfl
+  have hquery {κ : Type u} {spec : OracleSpec.{u, u} κ} (q : spec.Domain) :
+      (liftM (spec.query q) : OracleComp spec _).withQueryLog =
+        liftM (spec.query q) >>= fun answer => pure (answer, [⟨q, answer⟩]) := by
+    simp [withQueryLog]
+  induction program using OracleComp.inductionOn with
+  | pure value =>
+    simp only [simulateQ_pure, hpure]
+    rfl
+  | query_bind q next ih =>
+    simp only [simulateQ_bind, simulateQ_spec_query]
+    simp only [Access.queryPrior, hbind, hquery, simulateQ_bind, simulateQ_pure, simulateQ_map]
+    simp only [simulateQ_spec_query, Access.extendImpl_prior, ih]
+    dsimp only [Bind.bind, Pure.pure, Functor.map, Prod.map]
+    cases simulateQ impl (next (impl q)).withQueryLog
+    rfl
 
 end Access
 

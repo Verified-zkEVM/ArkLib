@@ -8,6 +8,7 @@ module
 public import ArkLib.ProofSystem.Logup.Lookup.Tuple.Source
 public import ArkLib.ProofSystem.Logup.Algebra.ArithmeticReconstruction
 public import ArkLib.ToCompPoly.Univariate.ArithmeticHorner
+import ArkLib.Interaction.Oracle.SourceRouting
 
 /-!
 # Actual LogUp source openings and local scalar kernels
@@ -52,28 +53,6 @@ private theorem query_return_log_length {ι α : Type} {spec : OracleSpec ι}
   simp only [simulateQ_bind, simulateQ_map, simulateQ_spec_query, simulateQ_pure,
     withQueryLog_pure]
   rfl
-
-/-- Prior-source routing preserves each actual response and injects its ordered raw log. -/
-private theorem prior_withQueryLog {A : PFunctor.{0, 0}} {Msg : Type}
-    (interface : OracleInterface Msg)
-    (impl : QueryImpl (ofPFunctor A) Id) (message : Msg) {α : Type}
-    (program : OracleComp (ofPFunctor A) α) :
-    simulateQ (Access.extendImpl A interface impl message)
-        (simulateQ (Access.queryPrior A interface) program).withQueryLog =
-      let result := simulateQ impl program.withQueryLog
-      (result.1, result.2.map fun entry => ⟨Sum.inl entry.1, entry.2⟩) := by
-  induction program using OracleComp.inductionOn with
-  | pure value =>
-    simp only [simulateQ_pure, withQueryLog_pure]
-    rfl
-  | query_bind q next ih =>
-    simp only [simulateQ_bind, simulateQ_spec_query]
-    simp only [Access.queryPrior, withQueryLog_bind, withQueryLog_query,
-      simulateQ_bind, simulateQ_pure, simulateQ_map]
-    simp only [simulateQ_spec_query, Access.extendImpl_prior, ih]
-    dsimp only [Bind.bind, Pure.pure, Functor.map, Prod.map]
-    cases simulateQ impl (next (impl q)).withQueryLog
-    rfl
 
 variable {B E : Type} [CommRing B] [CommRing E]
 variable (f : B →+* E) (n T K : Nat)
@@ -132,7 +111,7 @@ theorem queryQ_log_length (groups : Vector (List (Fin T)) K) (alpha : E) (z : Fi
       (Access.extendImpl A (helperInterface (E := E) n K) impl helpers)
       (simulateQ (Access.queryPrior A (helperInterface (E := E) n K))
         (view.query ⟨(kind, i), x⟩)).withQueryLog).2.length = _
-    rw [prior_withQueryLog]
+    rw [Access.simulateQ_queryPrior_withQueryLog]
     exact List.length_map ..
   simp only [h]
 
@@ -175,7 +154,7 @@ theorem scalar_queryWeighted_log_length (A : PFunctor.{0, 0})
     change (simulateQ (Access.extendImpl A (Logup.Lookup.multiplicityInterface f n P) impl mu)
       (simulateQ (Access.queryPrior A (Logup.Lookup.multiplicityInterface f n P))
         (view.query ⟨finSumFinEquiv.symm i, x⟩)).withQueryLog).2.length = _
-    rw [prior_withQueryLog]
+    rw [Access.simulateQ_queryPrior_withQueryLog]
     exact List.length_map ..
   · simp only [Logup.Lookup.queryWeighted, hk, ↓reduceIte]
     generalize hs : finSumFinEquiv.symm i = slot
@@ -250,7 +229,7 @@ theorem tuple_queryWeighted_log_length (beta : E) (A : PFunctor.{0, 0})
       (simulateQ (Access.queryPrior A (Logup.Lookup.multiplicityInterface f n P))
         (Logup.Lookup.Tuple.queryValue f n M P W beta A view
           (finSumFinEquiv.symm i) x)).withQueryLog).2.length = _
-    rw [prior_withQueryLog, List.length_map, tuple_queryValue_log_length]
+    rw [Access.simulateQ_queryPrior_withQueryLog, List.length_map, tuple_queryValue_log_length]
   · simp only [Logup.Lookup.Tuple.queryWeighted, hk, ↓reduceIte]
     generalize hs : finSumFinEquiv.symm i = slot
     cases slot with

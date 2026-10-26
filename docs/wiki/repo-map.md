@@ -69,6 +69,9 @@ home_page/            site assets and assembled website root
 
 ## Navigation Notes
 
+- Native `Resources.logged_final_query_eq_boundary` transports the actual returned claim
+  query to the same boundary view; generic prior-log routing is shared in `SourceRouting.lean`.
+
 - Generic sampler laws in `Data/Probability/{Uniform,KoalaBear}.lean` expose selected
   programs and supported primitive log lengths; vector log laws preserve actual query order.
 
