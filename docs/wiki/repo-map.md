@@ -69,6 +69,9 @@ home_page/            site assets and assembled website root
 
 ## Navigation Notes
 
+- Restricted verifier `Fragment.mapOutput_id` and `mapOutput_comp` preserve actual
+  node programs and dependent leaf types, supporting exact exported-prefix normalization.
+
 - `scripts/LogupRuntime.lean` retains the original weighted checks and executes measured
   scalar/tuple mutation, abort, zero-round and actual named 24/30-limb sampler checks.
 
