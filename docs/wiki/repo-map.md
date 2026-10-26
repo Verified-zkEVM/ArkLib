@@ -69,6 +69,8 @@ home_page/            site assets and assembled website root
 
 ## Navigation Notes
 
+LogUp endpoint sampling: `ProofSystem/Logup/Interaction/SamplingResources.lean` composes actual prefix phases, selected sampler programs and honest private-empty traces into exact whole endpoint primitive logs.
+
 LogUp complete source packets: `ProofSystem/Logup/Interaction/Resources.lean` preserves real weighted, scalar and tuple prefix effects and the returned Q view, with exact final raw fanout under retained handlers.
 
 Honest sampling resources: `ProofSystem/Logup/Interaction/HonestSamplingResources.lean` proves zero private ambient queries for actual reference and measured defaults, with the existing phase log partition.
