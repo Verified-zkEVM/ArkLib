@@ -6,6 +6,14 @@ Authors: ArkLib Contributors
 module
 
 public import ArkLib.ProofSystem.Logup.Lookup.Tuple.Source
+public import ArkLib.ProofSystem.Logup.Interaction.Protocol
+public import ArkLib.ProofSystem.Logup.Lookup.Protocol
+public import ArkLib.ProofSystem.Logup.Lookup.Tuple.Protocol
+public import ArkLib.Interaction.Oracle.PhasedExecution
+public import ArkLib.ProofSystem.Sumcheck.Interaction.Resources
+-- Prefix routing proofs unfold the defining maps and the existing logged runner only.
+import all PolyFun.Interaction.Basic.StrategyOver
+import all ArkLib.Interaction.Oracle.LoggedExecution
 public import ArkLib.ProofSystem.Logup.Algebra.ArithmeticReconstruction
 public import ArkLib.ToCompPoly.Univariate.ArithmeticHorner
 import ArkLib.Interaction.Oracle.SourceRouting
@@ -27,9 +35,13 @@ The M constant-one/P negation branch census is stated separately.
 
 All source statements allow arbitrary retained mu and helper tables, including poles, without a
 lookup-truth or source-realization premise. Cost profiles additionally use the existing arithmetic
-carrier's Inv/DecidableEq instances; reconstruction requests no inversion. A Q expansion is local
-to an actual terminal source query. Whole execution may stop before that query; endpoint log and
-sampling composition require their separate execution laws and are not asserted by these counts.
+carrier's Inv/DecidableEq instances; reconstruction requests no inversion.
+
+The complete logged packet laws preserve the actual weighted prefix, scalar multiplicity sender
+and tuple beta response, including dependent private outputs and effects. The native suffix then
+authenticates the boundary Q at its actual returned challenges, appending its ordered raw trace.
+Final rejection still authenticates Q; public round abort has no terminal tail. Reached sampler
+phases and honest private-query observations are stated in separate consumer laws.
 -/
 
 @[expose] public section
@@ -398,5 +410,312 @@ theorem lookup_weight_sites :
   rw [← List.ofFn_eq_map, List.sum_ofFn]
   rw [← Equiv.sum_comp (finSumFinEquiv : Fin M ⊕ Fin P ≃ Fin (M + P))]
   simp
+
+
+set_option backward.isDefEq.respectTransparency false in
+/-- The actual suffix authenticates Q at its returned challenges, preserving the full packet.
+The native message log is followed by the routed boundary Q log, including final rejection. -/
+theorem qView_complete_log_eq_boundary [DecidableEq E] (f : B →+* E) (n T K ell : Nat)
+    (groups : Vector (List (Fin T)) K) (alpha : E) (z : Fin n → E) (lambda : Fin K → E)
+    {ι : Type} (ambient : OracleSpec ι) (roundDraw : OracleComp ambient E)
+    (A : PFunctor.{0, 0}) (view : VirtualOracle (ofPFunctor A) (inputFamily f n T))
+    (impl : QueryImpl (ofPFunctor A) Id) (helpers : Vector (CMlPolynomialEval E n) K)
+    {OutP : (Sumcheck.Interaction.Computable.protocol E (ell + 2) n).tree.ExecutionPath → Type}
+    (prover : Prover.Strategy ambient
+      (Sumcheck.Interaction.Computable.protocol E (ell + 2) n).tree
+      (Sumcheck.Interaction.Computable.protocol E (ell + 2) n).roles OutP) :
+    LoggedResult.observe <$> executeStrategiesLogged ambient
+      (Sumcheck.Interaction.Computable.protocol E (ell + 2) n).tree
+      (Sumcheck.Interaction.Computable.protocol E (ell + 2) n).roles
+      (Sumcheck.Interaction.Computable.protocol E (ell + 2) n).oracles
+      (Access.extend A (helperInterface (E := E) n K))
+      (Access.extendImpl A (helperInterface (E := E) n K) impl helpers) prover
+      (Sumcheck.Interaction.Computable.verifierWithFinalCheck E n (ell + 2) ambient roundDraw
+        [0, 1] n 0 (Nat.zero_add n) (Access.extend A (helperInterface (E := E) n K))
+        (qView f n T K groups alpha z lambda ell A view) (zeroStatement E n)) = (do
+      let result ← executeStrategiesLogged ambient
+        (Sumcheck.Interaction.Computable.protocol E (ell + 2) n).tree
+        (Sumcheck.Interaction.Computable.protocol E (ell + 2) n).roles
+        (Sumcheck.Interaction.Computable.protocol E (ell + 2) n).oracles
+        (Access.extend A (helperInterface (E := E) n K))
+        (Access.extendImpl A (helperInterface (E := E) n K) impl helpers) prover
+        (Sumcheck.Interaction.Computable.verifier E n (ell + 2) ambient roundDraw [0, 1] n 0
+          (Nat.zero_add n) (Access.extend A (helperInterface (E := E) n K))
+          (qView f n T K groups alpha z lambda ell A view) (zeroStatement E n))
+      match result.verifierOut with
+      | none => return ⟨result.path, result.proverOut, false, result.sourceLog⟩
+      | some claim =>
+        let boundary := simulateQ
+          (Access.extendImpl A (helperInterface (E := E) n K) impl helpers)
+          (queryQ f n T K groups alpha z lambda A view claim.stmt.challenges).withQueryLog
+        return ⟨result.path, result.proverOut, decide (boundary.1 = claim.stmt.target),
+          result.sourceLog ++ TypeTree.routeLog
+            (Sumcheck.Interaction.Computable.protocol E (ell + 2) n).tree
+            (Sumcheck.Interaction.Computable.protocol E (ell + 2) n).oracles
+            (Access.extend A (helperInterface (E := E) n K))
+            result.path.toBranchPath boundary.2⟩) := by
+  unfold LoggedResult.observe
+  erw [Sumcheck.Interaction.Computable.Resources.complete_log_eq]
+  apply OracleComp.bind_congr_of_forall_mem_support
+  intro result hresult
+  cases hc : result.verifierOut with
+  | none => rfl
+  | some claim =>
+    have h := Sumcheck.Interaction.Computable.Resources.logged_final_query_eq_boundary
+      n (ell + 2) ambient roundDraw n 0 (Nat.zero_add n)
+      (Access.extend A (helperInterface (E := E) n K))
+      (qView f n T K groups alpha z lambda ell A view) (zeroStatement E n)
+      (Access.extendImpl A (helperInterface (E := E) n K) impl helpers)
+      prover result hresult claim hc
+    simp only
+    erw [h]
+    rfl
+
+set_option backward.isDefEq.respectTransparency false in
+/-- A reached final claim contributes the actual original fanouts plus retained helpers.
+The preceding message count comes from the same supported bare run.
+The final Bool is unrestricted. -/
+theorem qView_final_log_length [DecidableEq E] (f : B →+* E) (n T K ell : Nat)
+    (groups : Vector (List (Fin T)) K) (alpha : E) (z : Fin n → E) (lambda : Fin K → E)
+    {ι : Type} (ambient : OracleSpec ι) (roundDraw : OracleComp ambient E)
+    (A : PFunctor.{0, 0}) (view : VirtualOracle (ofPFunctor A) (inputFamily f n T))
+    (impl : QueryImpl (ofPFunctor A) Id) (helpers : Vector (CMlPolynomialEval E n) K)
+    {OutP : (Sumcheck.Interaction.Computable.protocol E (ell + 2) n).tree.ExecutionPath → Type}
+    (prover : Prover.Strategy ambient
+      (Sumcheck.Interaction.Computable.protocol E (ell + 2) n).tree
+      (Sumcheck.Interaction.Computable.protocol E (ell + 2) n).roles OutP) :
+    ∀ result ∈ support (executeStrategiesLogged ambient
+        (Sumcheck.Interaction.Computable.protocol E (ell + 2) n).tree
+        (Sumcheck.Interaction.Computable.protocol E (ell + 2) n).roles
+        (Sumcheck.Interaction.Computable.protocol E (ell + 2) n).oracles
+        (Access.extend A (helperInterface (E := E) n K))
+        (Access.extendImpl A (helperInterface (E := E) n K) impl helpers) prover
+        (Sumcheck.Interaction.Computable.verifier E n (ell + 2) ambient roundDraw [0, 1] n 0
+          (Nat.zero_add n) (Access.extend A (helperInterface (E := E) n K))
+          (qView f n T K groups alpha z lambda ell A view) (zeroStatement E n))),
+      ∀ claim, result.verifierOut = some claim →
+      (result.sourceLog ++ (simulateQ
+        (result.path.closingImpl
+          (Sumcheck.Interaction.Computable.protocol E (ell + 2) n).oracles
+          (Access.extend A (helperInterface (E := E) n K))
+          (Access.extendImpl A (helperInterface (E := E) n K) impl helpers))
+        (claim.oracles.query ⟨(), claim.stmt.challenges⟩).withQueryLog).run.2).length =
+      (Sumcheck.Interaction.Computable.Resources.pathUsage (ell + 2) n
+        result.path).messageQueries +
+        (((List.finRange T).map fun i =>
+          (simulateQ impl (view.query ⟨(0, i), claim.stmt.challenges⟩).withQueryLog).2.length).sum +
+        ((List.finRange T).map fun i =>
+          (simulateQ impl (view.query ⟨(1, i), claim.stmt.challenges⟩).withQueryLog).2.length).sum +
+          K) := by
+  intro result hresult claim hclaim
+  have ht := Sumcheck.Interaction.Computable.Resources.logged_final_query_eq_boundary
+    n (ell + 2) ambient roundDraw n 0 (Nat.zero_add n)
+    (Access.extend A (helperInterface (E := E) n K))
+    (qView f n T K groups alpha z lambda ell A view) (zeroStatement E n)
+    (Access.extendImpl A (helperInterface (E := E) n K) impl helpers)
+    prover result hresult claim hclaim
+  have hu := Sumcheck.Interaction.Computable.Resources.logged_verifier_usage
+    n (ell + 2) ambient roundDraw n 0 (Nat.zero_add n)
+    (Access.extend A (helperInterface (E := E) n K))
+    (qView f n T K groups alpha z lambda ell A view) (zeroStatement E n)
+    (Access.extendImpl A (helperInterface (E := E) n K) impl helpers)
+    prover result hresult
+  have hl := congrArg (fun packet => packet.2.length) ht
+  simp only [TypeTree.routeLog_length] at hl
+  rw [List.length_append, hu.1, hl]
+  exact congrArg (fun size =>
+    (Sumcheck.Interaction.Computable.Resources.pathUsage (ell + 2) n result.path).messageQueries +
+      size) (queryQ_log_length f n T K groups alpha z lambda A view impl helpers
+        claim.stmt.challenges)
+
+section WeightedEndpoint
+
+variable [DecidableEq E] (ell : Nat) (cfg : Config n T ell)
+variable {ι : Type} (ambient : OracleSpec ι)
+
+set_option backward.isDefEq.respectTransparency false in
+/-- The actual weighted verifier exports its retained Q view into the native suffix. -/
+theorem verifier_eq_prefix (alphaDraw : OracleComp ambient E)
+    (jointDraw : OracleComp ambient ((Fin n → E) × (Fin (T ⌈/⌉ ell) → E)))
+    (roundDraw : OracleComp ambient E) (A : PFunctor.{0, 0})
+    (inputView : VirtualOracle (ofPFunctor A) (inputFamily f n T)) :
+    verifier f n T ell cfg ambient alphaDraw jointDraw roundDraw A inputView = (do
+      let alpha ← alphaDraw.liftComp (ambient + ofPFunctor A)
+      return ⟨alpha, pure (do
+        let joint ← jointDraw.liftComp
+          (ambient + ofPFunctor (Access.extend A (helperInterface (E := E) n (T ⌈/⌉ ell))))
+        return ⟨joint,
+          Sumcheck.Interaction.Native.Core.verifierWithFinalCheck E n (ell + 2)
+            (Sumcheck.Impl.Representation.Message E (ell + 2))
+            (Sumcheck.Impl.Representation.evaluate E (ell + 2)) ambient roundDraw [0, 1] n 0
+            (Nat.zero_add n) (Access.extend A (helperInterface (E := E) n (T ⌈/⌉ ell)))
+            (qView f n T (T ⌈/⌉ ell) cfg.groups alpha joint.1 joint.2 ell A inputView)
+            (zeroStatement E n)⟩)⟩) := by
+  simp only [verifier, reductionVerifier, Verifier.appendExported,
+    suffixVerifier, Sumcheck.Interaction.Computable.verifier]
+  simp_rw [Sumcheck.Interaction.Native.Core.routeClaimStrategy_verifier]
+  simp only [VirtualOracle.substSource, VirtualOracle.id, QueryImpl.compose_id']
+  simp only [Interaction.Oracle.Verifier.append, Interaction.Oracle.Verifier.appendFragment,
+    protocol, prefixProtocol, prefixVerifier,
+    Protocol.public_tree, Protocol.public_roles, Protocol.public_oracles,
+    Protocol.done_tree, Protocol.done_roles, Protocol.done_oracles,
+    Protocol.oracleWith_tree, Protocol.oracleWith_roles, Protocol.oracleWith_oracles,
+    Verifier.Fragment.mapOutput, Interaction.ShapeOver.mapOutput,
+    Verifier.localShape, Verifier.decorate,
+    PFunctor.FreeM.append, PFunctor.FreeM.Displayed.Decoration.append]
+  simp only [map_bind, map_pure, TypeTree.accessAfter_public,
+    TypeTree.accessAfter_oracle, TypeTree.accessAfter_done]
+  apply bind_congr
+  intro alpha
+  congr 3
+  apply bind_congr
+  intro joint
+  congr 2
+  change Verifier.Fragment.mapOutput ambient
+    (fun path action => Sumcheck.Interaction.Native.Core.checkFinalResult E n (ell + 2)
+      ambient (TypeTree.accessAfter
+        (Sumcheck.Interaction.Computable.protocol E (ell + 2) n).tree
+        (Sumcheck.Interaction.Computable.protocol E (ell + 2) n).oracles
+        (Access.extend A (helperInterface (E := E) n (T ⌈/⌉ ell))) path) action)
+    (Verifier.Fragment.mapOutput ambient (fun _ action => action)
+      (Verifier.Fragment.mapOutput ambient (fun _ action => (fun out => out) <$> action)
+        (Sumcheck.Interaction.Computable.verifier E n (ell + 2) ambient roundDraw [0, 1]
+          n 0 (Nat.zero_add n) (Access.extend A (helperInterface (E := E) n (T ⌈/⌉ ell)))
+          (qView f n T (T ⌈/⌉ ell) cfg.groups alpha joint.1 joint.2 ell A inputView)
+          (zeroStatement E n)))) = _
+  simp only [id_map', Verifier.Fragment.mapOutput_id]
+  rfl
+
+set_option backward.isDefEq.respectTransparency false in
+/-- Actual prefix and native execution preserve the full path, private output and raw log. -/
+theorem executeStrategiesLogged_eq_prefix_bind (alphaDraw : OracleComp ambient E)
+    (jointDraw : OracleComp ambient ((Fin n → E) × (Fin (T ⌈/⌉ ell) → E)))
+    (roundDraw : OracleComp ambient E) (A : PFunctor.{0, 0})
+    (inputView : VirtualOracle (ofPFunctor A) (inputFamily f n T))
+    (impl : QueryImpl (ofPFunctor A) Id)
+    {OutP : (protocol E n (T ⌈/⌉ ell) ell).tree.ExecutionPath → Type}
+    (wholeProver : Prover.Strategy ambient (protocol E n (T ⌈/⌉ ell) ell).tree
+      (protocol E n (T ⌈/⌉ ell) ell).roles OutP) :
+    LoggedResult.observe <$> executeStrategiesLogged ambient (protocol E n (T ⌈/⌉ ell) ell).tree
+      (protocol E n (T ⌈/⌉ ell) ell).roles (protocol E n (T ⌈/⌉ ell) ell).oracles A
+      impl wholeProver (verifier f n T ell cfg ambient alphaDraw jointDraw roundDraw A inputView) =
+      (do
+        let alpha ← alphaDraw
+        let afterAlpha ← wholeProver alpha
+        let sent ← afterAlpha
+        let joint ← jointDraw
+        let suffix ← sent.2 joint
+        let result ← executeStrategiesLogged ambient
+          (Sumcheck.Interaction.Computable.protocol E (ell + 2) n).tree
+          (Sumcheck.Interaction.Computable.protocol E (ell + 2) n).roles
+          (Sumcheck.Interaction.Computable.protocol E (ell + 2) n).oracles
+          (Access.extend A (helperInterface (E := E) n (T ⌈/⌉ ell)))
+          (Access.extendImpl A (helperInterface (E := E) n (T ⌈/⌉ ell)) impl sent.1)
+          (OutP := fun path => OutP ⟨alpha, ⟨sent.1, ⟨joint, path⟩⟩⟩) suffix
+          (Sumcheck.Interaction.Computable.verifierWithFinalCheck E n (ell + 2) ambient
+            roundDraw [0, 1] n 0 (Nat.zero_add n)
+            (Access.extend A (helperInterface (E := E) n (T ⌈/⌉ ell)))
+            (qView f n T (T ⌈/⌉ ell) cfg.groups alpha joint.1 joint.2 ell A inputView)
+            (zeroStatement E n))
+        return ⟨⟨alpha, ⟨sent.1, ⟨joint, result.path⟩⟩⟩, result.proverOut,
+          result.verifierOut, result.sourceLog⟩) := by
+  rw [verifier_eq_prefix]
+  simp only [protocol, prefixProtocol, Protocol.public_tree, Protocol.public_roles,
+    Protocol.public_oracles, Protocol.oracleWith_tree, Protocol.oracleWith_roles,
+    Protocol.oracleWith_oracles, Protocol.done_tree, Protocol.done_roles,
+    Protocol.done_oracles, PFunctor.FreeM.append, PFunctor.FreeM.Displayed.Decoration.append,
+    executeStrategiesLogged, map_bind, map_pure, LoggedResult.observe, TypeTree.routeLog]
+  simp only [simulateQ_bind, simulateQ_pure, WriterT.run_bind', WriterT.run_pure',
+    Verifier.loggedLiftAccessImpl_liftComp, bind_map_left, pure_bind, map_pure,
+    bind_assoc, Prod.map, id_eq, List.nil_append]
+  simp only [List.empty_eq, List.map_nil, List.nil_append]
+  rfl
+
+end WeightedEndpoint
+
+
+section LookupEndpoint
+
+variable [DecidableEq E] (ell : Nat) (cfg : Logup.Lookup.Config B n M P ell)
+variable {ι : Type} (ambient : OracleSpec ι)
+
+set_option backward.isDefEq.respectTransparency false in
+/-- The actual scalar sender retains its multiplicity slot and complete weighted packet. -/
+theorem scalar_executeStrategiesLogged_eq_sender_bind (alphaDraw : OracleComp ambient E)
+    (jointDraw : OracleComp ambient ((Fin n → E) × (Fin ((M + P) ⌈/⌉ ell) → E)))
+    (roundDraw : OracleComp ambient E) (A : PFunctor.{0, 0})
+    (valuesView : VirtualOracle (ofPFunctor A) (Logup.Lookup.valuesFamily f n M P))
+    (impl : QueryImpl (ofPFunctor A) Id)
+    {OutP : (Logup.Lookup.protocol f n M P ell).tree.ExecutionPath → Type}
+    (wholeProver : Prover.Strategy ambient (Logup.Lookup.protocol f n M P ell).tree
+      (Logup.Lookup.protocol f n M P ell).roles OutP) :
+    LoggedResult.observe <$>
+      executeStrategiesLogged ambient (Logup.Lookup.protocol f n M P ell).tree
+      (Logup.Lookup.protocol f n M P ell).roles (Logup.Lookup.protocol f n M P ell).oracles A
+      impl wholeProver
+      (Logup.Lookup.verifier f n M P ell cfg ambient alphaDraw jointDraw roundDraw A valuesView) =
+      (do
+        let sent ← wholeProver
+        let result ← executeStrategiesLogged ambient
+          (Logup.Interaction.protocol E n ((M + P) ⌈/⌉ ell) ell).tree
+          (Logup.Interaction.protocol E n ((M + P) ⌈/⌉ ell) ell).roles
+          (Logup.Interaction.protocol E n ((M + P) ⌈/⌉ ell) ell).oracles
+          (Access.extend A (Logup.Lookup.multiplicityInterface f n P))
+          (Access.extendImpl A (Logup.Lookup.multiplicityInterface f n P) impl sent.1)
+          (OutP := fun path => OutP ⟨sent.1, path⟩) sent.2
+          (Logup.Interaction.verifier f n (M + P) ell cfg.weighted ambient alphaDraw jointDraw
+            roundDraw (Access.extend A (Logup.Lookup.multiplicityInterface f n P))
+            (Logup.Lookup.weightedView f n M P A valuesView))
+        return ⟨⟨sent.1, result.path⟩, result.proverOut,
+          result.verifierOut, result.sourceLog⟩) := by
+  simp only [Logup.Lookup.protocol, Protocol.oracleWith_tree, Protocol.oracleWith_roles,
+    Protocol.oracleWith_oracles, Logup.Lookup.verifier, executeStrategiesLogged,
+    simulateQ_pure, WriterT.run_pure', pure_bind, map_bind, map_pure, LoggedResult.observe,
+    TypeTree.routeLog, List.empty_eq, List.map_nil, List.nil_append]
+
+set_option backward.isDefEq.respectTransparency false in
+/-- The actual tuple sender and beta response retain their effects and complete weighted packet. -/
+theorem tuple_executeStrategiesLogged_eq_sender_beta_bind
+    (betaDraw alphaDraw : OracleComp ambient E)
+    (jointDraw : OracleComp ambient ((Fin n → E) × (Fin ((M + P) ⌈/⌉ ell) → E)))
+    (roundDraw : OracleComp ambient E) (A : PFunctor.{0, 0})
+    (coeffView : VirtualOracle (ofPFunctor A) (Logup.Lookup.Tuple.coefficientFamily f n M P W))
+    (impl : QueryImpl (ofPFunctor A) Id)
+    {OutP : (Logup.Lookup.Tuple.protocol f n M P ell).tree.ExecutionPath → Type}
+    (wholeProver : Prover.Strategy ambient (Logup.Lookup.Tuple.protocol f n M P ell).tree
+      (Logup.Lookup.Tuple.protocol f n M P ell).roles OutP) :
+    LoggedResult.observe <$>
+      executeStrategiesLogged ambient (Logup.Lookup.Tuple.protocol f n M P ell).tree
+        (Logup.Lookup.Tuple.protocol f n M P ell).roles
+        (Logup.Lookup.Tuple.protocol f n M P ell).oracles A impl wholeProver
+        (Logup.Lookup.Tuple.verifier f n M P W ell cfg ambient betaDraw alphaDraw jointDraw
+          roundDraw A coeffView) =
+      (do
+        let sent ← wholeProver
+        let beta ← betaDraw
+        let suffix ← sent.2 beta
+        let result ← executeStrategiesLogged ambient
+          (Logup.Interaction.protocol E n ((M + P) ⌈/⌉ ell) ell).tree
+          (Logup.Interaction.protocol E n ((M + P) ⌈/⌉ ell) ell).roles
+          (Logup.Interaction.protocol E n ((M + P) ⌈/⌉ ell) ell).oracles
+          (Access.extend A (Logup.Lookup.multiplicityInterface f n P))
+          (Access.extendImpl A (Logup.Lookup.multiplicityInterface f n P) impl sent.1)
+          (OutP := fun path => OutP ⟨sent.1, ⟨beta, path⟩⟩) suffix
+          (Logup.Interaction.verifier (RingHom.id E) n (M + P) ell cfg.weighted ambient
+            alphaDraw jointDraw roundDraw
+            (Access.extend A (Logup.Lookup.multiplicityInterface f n P))
+            (Logup.Lookup.Tuple.weightedView f n M P W beta A coeffView))
+        return ⟨⟨sent.1, ⟨beta, result.path⟩⟩, result.proverOut,
+          result.verifierOut, result.sourceLog⟩) := by
+  simp only [Logup.Lookup.Tuple.protocol, Protocol.oracleWith_tree, Protocol.oracleWith_roles,
+    Protocol.oracleWith_oracles, Protocol.public_tree, Protocol.public_roles,
+    Protocol.public_oracles, Logup.Lookup.Tuple.verifier, executeStrategiesLogged,
+    simulateQ_bind, simulateQ_pure, WriterT.run_bind', WriterT.run_pure',
+    Verifier.loggedLiftAccessImpl_liftComp, pure_bind, map_bind, map_pure, LoggedResult.observe,
+    bind_map_left, bind_assoc, Prod.map, id_eq,
+    TypeTree.routeLog, List.empty_eq, List.map_nil, List.nil_append]
+  rfl
+
+end LookupEndpoint
 
 end Logup.Interaction.Resources

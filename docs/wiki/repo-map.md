@@ -69,6 +69,8 @@ home_page/            site assets and assembled website root
 
 ## Navigation Notes
 
+LogUp complete source packets: `ProofSystem/Logup/Interaction/Resources.lean` preserves real weighted, scalar and tuple prefix effects and the returned Q view, with exact final raw fanout under retained handlers.
+
 Honest sampling resources: `ProofSystem/Logup/Interaction/HonestSamplingResources.lean` proves zero private ambient queries for actual reference and measured defaults, with the existing phase log partition.
 
 Native sampling resources: `ProofSystem/Sumcheck/Interaction/SamplingResources.lean` derives verifier-party primitive query counts from supported complete phased executions, retaining arbitrary prover-private effects.
