@@ -181,6 +181,20 @@ theorem queryCount_oracle {Messages : Type} {rest : PUnit → Oracle.TypeTree}
   cases party <;>
     (simp [queryCount, phases, List.map_map, Function.comp_def, prepend]; rfl)
 
+/-- The existing prover and verifier phases partition the complete chronological world log. -/
+theorem queryCount_partition {tree : Oracle.TypeTree} (roles : tree.RoleDecoration)
+    {path : tree.ExecutionPath} (trace : WorldSegments ambient tree path) :
+    queryCount .prover roles trace + queryCount .verifier roles trace = trace.flatten.length := by
+  unfold queryCount
+  rw [← List.sum_map_add]
+  have h (phase : WorldPhase ambient tree) :
+      (if phase.party = .prover then phase.queries.length else 0) +
+        (if phase.party = .verifier then phase.queries.length else 0) = phase.queries.length := by
+    cases phase.party <;> simp
+  simp_rw [h]
+  simpa only [List.length_flatten, List.map_map, Function.comp_def] using
+    congrArg List.length (phases_flatten roles trace)
+
 set_option backward.isDefEq.respectTransparency false in
 /-- Every recorded action boundary is a concrete prefix of this same complete execution,
 including agreement of hidden payloads. This is structural reachability, not a strategy claim. -/

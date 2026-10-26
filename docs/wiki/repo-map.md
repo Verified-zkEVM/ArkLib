@@ -69,6 +69,8 @@ home_page/            site assets and assembled website root
 
 ## Navigation Notes
 
+Honest sampling resources: `ProofSystem/Logup/Interaction/HonestSamplingResources.lean` proves zero private ambient queries for actual reference and measured defaults, with the existing phase log partition.
+
 Native sampling resources: `ProofSystem/Sumcheck/Interaction/SamplingResources.lean` derives verifier-party primitive query counts from supported complete phased executions, retaining arbitrary prover-private effects.
 
 LogUp complete logical inventories: `ProofSystem/Logup/Prover/StorageLedger.lean` combines actual selected state histories, frontend inputs, named construction workspaces and separate opaque allowances in seven categories.
