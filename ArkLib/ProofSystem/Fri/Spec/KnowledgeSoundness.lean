@@ -308,7 +308,7 @@ private theorem knowledge_soundness_with_of_history_extractor
     refine ⟨hbad, ?_⟩
     intro p hp hdist
     exact hfail p hp (mem_inputRelation_of_relHammingDist_le s d hdom δ stmt p hdist)
-  · intro stmt wit prover os
+  · intro Aux stmt wit prover os
     have hrec : ∀ f tr,
         SafeHistory s d (queryHistory s l f tr) (queryFoldChallenges s l tr) θ →
         (finalPolynomial s (queryHistory s l f tr)).natDegree < d.val →

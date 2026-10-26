@@ -53,7 +53,8 @@ theorem knowledgeSoundness_implies_soundness
     (knowledgeError : ℝ≥0) (hLt : knowledgeError < 1) :
       knowledgeSoundness init impl relIn relOut verifier knowledgeError →
         soundness init impl relIn.language relOut.language verifier knowledgeError := by
-  simp only [knowledgeSoundness, ChallengeIdx, Challenge, QueryImpl.addLift_def,
+  simp only [knowledgeSoundness, knowledgeSoundnessWith, ChallengeIdx, Challenge,
+    QueryImpl.addLift_def,
     PFunctor.Handler.liftTarget_self, bind_pure_comp, OptionT.run_bind,
     OptionT.run_map, simulateQ_option_elimM, simulateQ_pure, simulateQ_map,
     StateT.run'_eq, OptionT.mk_bind, Option.mem_def, Prod.mk.eta, soundness,
