@@ -123,7 +123,6 @@
   "ProximityGap.WeightedAgreement.weighted_correlated_agreement_over_affine_spaces'",
   "ProximityGap.correlatedAgreement_affine_curves",
   "ProximityGap.folding_preserves_distance",
-  "ProximityGap.large_agreement_set_on_curve_implies_correlated_agreement",
   "ProximityGap.large_agreement_set_on_curve_implies_correlated_agreement'",
   "RSCode.isMCAGenerator_of_isPolynomialGeneratorOfFull",
   "RSCode.isMCAGenerator_tensorGeneratorPiUnivariate",
