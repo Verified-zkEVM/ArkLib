@@ -15,7 +15,7 @@ public import ArkLib.ProofSystem.Logup.Lookup.Completeness
 
 Valid semantic indices remain valid after every fingerprint, including collisions. The honest
 base histogram therefore balances the compressed weighted tables for every beta. The actual
-sender/beta bind delegates to the unchanged complete weighted prover over the genuine coefficient
+sender/beta bind delegates to the complete weighted prover over the genuine coefficient
 source and the retained multiplicity message.
 
 For each beta, all compressed query values occur in the declared table collection. Its existing
@@ -24,8 +24,9 @@ over beta adds no compression loss, union bound or retry. The uniform endpoint r
 including aborts returning false. The reference data depend only on beta and the fixed input;
 weighted initialization materializes each value column after alpha and caches its denominators.
 
-The round builder is explicit. A later measured default must account separately for tuple
-compression and data construction; output correctness does not transfer E-core resource profiles.
+The round builder is explicit. The selected default in `Lookup/Tuple/Prover.lean` accounts for
+tuple compression and data construction in `Lookup/Tuple/ArithmeticResources.lean` separately
+from the weighted core; output correctness does not transfer E-core resource profiles.
 -/
 
 @[expose] public section
@@ -58,7 +59,7 @@ variable {layout : ProviderLayout b P}
 
 variable [DecidableEq E]
 
-/-- The actual histogram sender and pure beta response leave the unchanged weighted endpoint. -/
+/-- The actual histogram sender and pure beta response leave the complete weighted endpoint. -/
 theorem execute_proverWith_eq (f : B →+* E) (cfg : Logup.Lookup.Config B n M P ell)
     (prepared : PreparedProvider schema layout n M)
     (indices : Vector (Fin (P * 2 ^ n)) (M * 2 ^ n))
@@ -97,7 +98,7 @@ theorem valueSupport_weighted_eq_tableSupport (prepared : PreparedProvider schem
   simpa only [PreparedProvider.fingerprintData, Vector.get_eq_getElem, Vector.getElem_map] using
     congrArg (schema.fingerprint f beta) heq
 
-/-- The named uniform endpoint samples beta before the unchanged weighted uniform endpoint. -/
+/-- The named uniform endpoint samples beta before the weighted uniform endpoint. -/
 theorem uniformExecute_proverWith_eq [SampleableType E]
     (f : B →+* E) (cfg : Logup.Lookup.Config B n M P ell)
     (prepared : PreparedProvider schema layout n M)

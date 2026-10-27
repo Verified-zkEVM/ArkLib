@@ -11,11 +11,9 @@ authentication, whole-prover soundness and executable honest defaults.
 
 The protocol reference is Ulrich Haböck, *Multivariate lookups based on logarithmic derivatives*,
 [ePrint 2022/1530](https://eprint.iacr.org/2022/1530), citation key [Hab22](../papers/Hab22.md).
-Statement numbers refer to the author-uploaded document dated March 31, 2023. Its Protocol 2
-exposes a partial-sum size controlling helper count and algebraic degree. The ePrint landing page
-reports a later archive update on February 20, 2025; byte identity with the inspected author copy
-has not been established. [Source metadata](../sources/Hab22/metadata.yml) records the inspected
-copy and the unavailable raw-PDF digest. A live ePrint URL alone does not fix the revision.
+Statement numbers follow the inspected March 31, 2023 author copy identified in the
+[source metadata](../sources/Hab22/metadata.yml). Its Protocol 2 exposes a partial-sum size
+controlling helper count and algebraic degree.
 
 Implementation references below are pinned source snapshots. Their equations and interfaces are
 comparison targets; their comments are not formal security premises.
@@ -142,39 +140,9 @@ accounting model; they are not substitutes for a proof about the native grouped 
 Fiat–Shamir and grinding terms in implementation security reports are outside the initial
 interactive proof's theorem.
 
-## Delivered ArkLib interfaces
+## ArkLib implementation
 
-| Contract | Owner |
-| --- | --- |
-| Weighted scalar circuit, individual degree `ell+2`, Boolean sum and pole-safe clearing | [Algebra/Grouped.lean](../../../ArkLib/ProofSystem/Logup/Algebra/Grouped.lean) |
-| Arbitrary-helper realization from retained values, weights and helpers | [Interaction/Source.lean](../../../ArkLib/ProofSystem/Logup/Interaction/Source.lean) |
-| Actual prefix/native/terminal execution and arbitrary whole-prover weighted soundness | [Interaction/Execution.lean](../../../ArkLib/ProofSystem/Logup/Interaction/Execution.lean), [Security/Soundness.lean](../../../ArkLib/ProofSystem/Logup/Security/Soundness.lean) |
-| Scalar membership, retained BASE histogram, whole-prover security and honest completeness | [Lookup/](../../../ArkLib/ProofSystem/Logup/Lookup/) |
-| Checked typed provider, beta compression, original-key security and all-beta honest completeness | [Lookup/Tuple/](../../../ArkLib/ProofSystem/Logup/Lookup/Tuple/) |
-| Direct formal coefficient messages and selected measured honest control | [Prover/RoundCoefficients.lean](../../../ArkLib/ProofSystem/Logup/Prover/RoundCoefficients.lean), [Prover/Arithmetic/Control.lean](../../../ArkLib/ProofSystem/Logup/Prover/Arithmetic/Control.lean) |
-| Actual weighted/scalar/tuple defaults | [Prover/Default.lean](../../../ArkLib/ProofSystem/Logup/Prover/Default.lean), [Lookup/Prover.lean](../../../ArkLib/ProofSystem/Logup/Lookup/Prover.lean), [Lookup/Tuple/Prover.lean](../../../ArkLib/ProofSystem/Logup/Lookup/Tuple/Prover.lean) |
-
-The defaults construct honest helpers termwise with total inversion, including at poles. They
-cache denominator, weight, helper and equality tables, stream adjacent affine-row coefficients,
-and fold only states needed by later rounds. Proofs establish **formal** polynomial/message
-agreement; finite-field pointwise equality is insufficient. Zero rounds still authenticate the
-original source, and public abort preserves the prover's actual private continuation effects.
-
-[Computable native Sumcheck](../../../ArkLib/ProofSystem/Sumcheck/Interaction/Computable.lean)
-and its [soundness](../../../ArkLib/ProofSystem/Sumcheck/Interaction/ComputableSoundness.lean)
-supply the native core. Its source-routing, final-claim query and terminal-log bridge connect the
-complete endpoint to the retained original view. The
-[compiled runtime suite](../../../ArkLibTest/ProofSystem/Logup/Interaction/MeasuredRuntime.lean)
-executes measured scalar/tuple defaults and actual KoalaBear-to-Ext6 sampler paths alongside the
-weighted fixtures. The [design resource table](../../design/logup.md#separate-resource-metrics)
-separates selected E instructions, BASE/Nat preprocessing, raw view fanout, dense source backend,
-party sampling and logical storage.
-[Actual packet laws](../../../ArkLib/ProofSystem/Logup/Interaction/Resources.lean) retain the
-whole prefix and actual returned-claim Q query, including final rejection. The
-[sampling consumers](../../../ArkLib/ProofSystem/Logup/Interaction/SamplingResources.lean) connect
-actual Bool/log endpoints to supported phased paths. Arbitrary draw programs use their actual
-supported lengths; selected uniform defaults have total primitive length `c*(1+n+K+s)`, or
-`c*(2+n+K+s)` for tuples, using the proved honest private-party count zero. Malicious private
-queries are not bounded. These are full supported-result claims, not losslessness or partial-run
-counts, and transfer no arithmetic or memory profile. No metric alone is a total machine-time or
-heap bound. Fractional GKR, LogUp*, PCS/FRI composition and Fiat–Shamir remain separate protocols.
+ArkLib implements weighted balance, scalar indexed lookup and typed tuple/bus indexed lookup.
+The [design](../../design/logup.md) states their protocol, assumptions and resource contracts;
+the [code-local index](../../../ArkLib/ProofSystem/Logup/README.md) links their executable
+endpoints, honest provers and theorems.

@@ -12,7 +12,7 @@ public import ArkLib.ProofSystem.Logup.Lookup.Tuple.Protocol
 
 The actual base multiplicity sender runs before the public beta draw and the prover's effectful
 beta response. This equality preserves all ambient effects, aborts and path-dependent private
-output while exposing the unchanged weighted verifier over the same retained original source.
+output while exposing the weighted verifier over the same retained original source.
 No continuation kernel or execution-equality premise is supplied by the caller.
 -/
 

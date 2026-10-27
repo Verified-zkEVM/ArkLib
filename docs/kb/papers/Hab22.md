@@ -6,7 +6,7 @@ year: 2022
 bib_source: blueprint/src/references.bib
 canonical_url: https://eprint.iacr.org/2022/1530
 source_metadata: ../sources/Hab22/metadata.yml
-status: active-audit
+status: seeded
 related_concepts:
   - logup
 related_modules:
@@ -37,15 +37,9 @@ precise resource and protocol boundaries.
 
 ## Version And Source
 
-Statement numbers here refer to the [author-uploaded PDF](https://www.researchgate.net/profile/Ulrich-Haboeck/publication/371339784_Multivariate_lookups_based_on_logarithmic_derivatives_logUp/links/647f6b5cb3dfd73b77698c3c/Multivariate-lookups-based-on-logarithmic-derivatives-logUp.pdf),
-whose title page is dated March 31, 2023. The ePrint landing page reports receipt on
-November 4, 2022 and an archive update on February 20, 2025. The latter is not the document date
-used for this correspondence. No comparison with the current ePrint PDF's bytes is claimed.
-
-The author copy was inspected through web PDF extraction. Raw PDF downloads and ePrint's version
-history were inaccessible during this audit, so no local PDF digest is available. The
-[source metadata](../sources/Hab22/metadata.yml) records this limitation; the canonical live URL
-must not be treated as a byte-pinned March 2023 artifact.
+Statement numbers follow the inspected author copy dated March 31, 2023. The
+[source metadata](../sources/Hab22/metadata.yml) identifies that copy and the later reported
+archive revision; their byte identity has not been verified.
 
 ## What ArkLib Uses From This Paper
 
@@ -59,17 +53,10 @@ must not be treated as a byte-pinned March 2023 artifact.
 
 ## Main ArkLib Touchpoints
 
-The [weighted execution law](../../../ArkLib/ProofSystem/Logup/Interaction/Execution.lean)
-preserves the actual prefix, source routing, private continuations and final authentication.
-[Security/Completeness.lean](../../../ArkLib/ProofSystem/Logup/Security/Completeness.lean) proves
-off-pole supported acceptance, uniform failure/success bounds and total mass one. The selected
-[default prover](../../../ArkLib/ProofSystem/Logup/Prover/Default.lean) constructs
-formal coefficient messages directly from cached evaluation tables. Scalar and typed tuple/bus
-adapters have their own complete execution, security and completeness owners under
-[Lookup/](../../../ArkLib/ProofSystem/Logup/Lookup/).
-
-These are semantic correspondences with explicit changes below, not a claim that every variant
-or numerical statement in the paper has been formalized unchanged.
+The [design](../../design/logup.md) describes ArkLib's protocol and resource contracts; the
+[code-local index](../../../ArkLib/ProofSystem/Logup/README.md) locates its executable endpoints
+and theorem owners. The correspondences above retain the deliberate differences below rather
+than asserting that every paper variant or numerical statement is formalized unchanged.
 
 ## Deliberate Differences
 
@@ -90,26 +77,15 @@ or numerical statement in the paper has been formalized unchanged.
   before the kernel challenge. The proved bound is `(D+n*(ell+3))/|E|`; it does not import the
   paper's printed `K/|F|` kernel contribution.
 
-## Completion Boundary
+## Scope
 
-The delivered protocols are grouped weighted balance, scalar indexed lookup, and typed tuple/bus
-indexed lookup. Each has an executable terminal check, arbitrary whole-prover soundness and
-honest completeness. Explicit indexed histograms construct multiplicities; measured defaults
-construct helpers, cached table folds and streamed formal Sumcheck messages. Query/backend,
-sampling, instruction and logical-storage accounting retain distinct metrics and explicit opaque
-source/workspace boundaries; they are not machine-time or allocator-peak theorems. The
-[actual packet/source laws](../../../ArkLib/ProofSystem/Logup/Interaction/Resources.lean) preserve
-prefix effects and terminal authentication logs. The
-[sampling consumers](../../../ArkLib/ProofSystem/Logup/Interaction/SamplingResources.lean) prove
-exact supported endpoint Bool/log correspondence and named honest-default primitive totals,
-without bounding arbitrary malicious private sampling or asserting losslessness.
-
-The tuple adapter adds selected-key fingerprint soundness and preserves honest balance for every
-beta. Bounded cast-count permutation recovery is algebraic; scalar inclusion plus equal lengths
-alone does not establish a permutation protocol. Fractional GKR, LogUp*, heterogeneous-height AIR
-packing, polynomial commitments, Fiat–Shamir, zero knowledge and cross-language program equivalence
-are outside these protocol theorems. No local raw-PDF digest or byte identity with the later archive
-revision is asserted.
+ArkLib's grouped weighted, scalar indexed and typed tuple/bus indexed arguments have complete
+interactive endpoint theorems, described in the [design](../../design/logup.md). Tuple compression
+adds selected-key soundness loss while preserving honest balance for every beta. Bounded cast-count
+permutation recovery is algebraic; scalar inclusion plus equal lengths alone does not establish
+a permutation protocol. Fractional GKR, LogUp*, heterogeneous-height AIR packing, polynomial
+commitments, Fiat–Shamir, zero knowledge and cross-language program equivalence are separate
+protocol developments.
 
 ## Source Access
 

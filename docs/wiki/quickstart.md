@@ -241,7 +241,7 @@ it gives the expected answer — are checked by compiled executables under `scri
 | `toyproblem-runtime` | `scripts/ToyProblemRuntime.lean` | the toy-problem launch cone |
 | `hachi-runtime` | `scripts/HachiRuntime.lean` | the nonrecursive Hachi honest-prover path |
 | `sumcheck-runtime` | `scripts/SumcheckRuntime.lean` | CompPoly messages, honest multivariate execution and final source authentication, including forgery rejection, zero rounds, retained helpers and private effects after public abort |
-| `logup-runtime` | `scripts/LogupRuntime.lean` | weighted reference plus selected measured scalar/tuple defaults, nonzero cubic/native messages, retained mu/helper mutations, private effects and zero-round authentication, with actual named extension samplers using 24/30 base limbs and deterministic pole paths |
+| `logup-runtime` | `scripts/LogupRuntime.lean` | weighted reference and scalar/tuple defaults, authentication, aborts, poles, zero rounds and extension-field samplers |
 | `fri-extractor-runtime` | `scripts/FriExtractorRuntime.lean` | measured FRI extraction, input guards, raw interpolation corner cases, and exact small instruction counts |
 
 **Put them here, not under `ArkLib/`.** A file under `ArkLib/` is picked up by the generated
@@ -250,7 +250,7 @@ interpreter, which is far slower than compiled code. The pattern each file follo
 `check : String → Bool → IO Unit` that throws on failure, a `run : IO Unit` listing the checks,
 and `def main := run`.
 
-Two things to get right when adding one:
+When adding a runtime executable:
 
 - **Make each check lazy** — `def myCheck : Unit → Bool := fun _ => …`, not `def myCheck : Bool`.
   Top-level values of non-function type are evaluated at *module initialization*, so an eager
@@ -260,7 +260,6 @@ Two things to get right when adding one:
   millisecond checks and hides its composed protocol run behind `--full` (that run passes, but
   takes about six minutes — the honest sumcheck prover dominates), with `--timing` for per-check
   costs.
-
 - **Carry executable domain enumerations into security statements.** `Finset.toList` is
   noncomputable, so runtime verifiers take an explicit list. A proof-only permutation certificate
   relates it to the specification's finite domain. Native Sumcheck's

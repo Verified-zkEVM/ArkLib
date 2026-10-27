@@ -23,7 +23,7 @@ interpretation; it does not introduce another arithmetic language or protocol.
 
 Public abort ends the continuation. A successful final round needs no subsequent private fold,
 and zero native rounds need no private cache initialization. All interpretations preserve the
-reviewed ordinary honest strategy after their terminal annotations are erased. Exact observed-call
+reference honest strategy after their terminal annotations are erased. Exact observed-call
 accounting and whole-prover resource envelopes are separate statements.
 -/
 
@@ -140,7 +140,7 @@ abbrev NativeStrategy {ι : Type} (ambient : OracleSpec ι) (ell count : Nat) (C
   Prover.Strategy ambient (Sumcheck.Interaction.Computable.protocol E (ell + 2) count).tree
     (Sumcheck.Interaction.Computable.protocol E (ell + 2) count).roles (fun _ => C)
 
-/-- Erasing terminal annotations gives the reviewed native honest continuation. -/
+/-- Erasing terminal annotations gives the reference native honest continuation. -/
 theorem nativeWith_erases (run : Interpreter B E C T K) (law : Erases run)
     (combine : C → C → C) {ell : Nat} {ι : Type} (ambient : OracleSpec ι)
     (groups : Vector (List (Fin T)) K) (hgroups : ∀ k, (groups.get k).length ≤ ell)
@@ -233,7 +233,7 @@ def proverWith {B E C : Type} [CommRing B] [Field E] [DecidableEq E] {n T ell : 
       pure (startWith run law combine ambient cfg.groups cfg.length_group_le n prepared.1
         joint.1 joint.2 (combine initial prepared.2))⟩)
 
-/-- The Unit interpretation is the reviewed native honest continuation. -/
+/-- The Unit interpretation is the reference native honest continuation. -/
 theorem native_unit_eq {ell : Nat} {ι : Type} (ambient : OracleSpec ι)
     (groups : Vector (List (Fin T)) K) (hgroups : ∀ k, (groups.get k).length ≤ ell)
     (count : Nat) (state : Logup.Prover.State E T K count) :
@@ -284,7 +284,7 @@ theorem startWith_erases_unit (run : Interpreter B E C T K) (law : Erases run)
         (congrArg (fun state => nativeWith (unitInterpreter (B := B)) unit_erases
           (fun _ _ => ()) ambient groups hgroups (count + 1) state ()) (law call call.program))
 
-/-- Skipping a zero-round cache preserves the reviewed ordinary continuation. -/
+/-- Skipping a zero-round cache preserves the reference ordinary continuation. -/
 theorem start_unit_eq_nativeWith {ell : Nat} {ι : Type} (ambient : OracleSpec ι)
     (groups : Vector (List (Fin T)) K) (hgroups : ∀ k, (groups.get k).length ≤ ell)
     (count : Nat) (prepared : Logup.Prover.Prepared E T K count)
@@ -301,7 +301,7 @@ theorem start_unit_eq_nativeWith {ell : Nat} {ι : Type} (ambient : OracleSpec �
     rw [State.simulateQ_startProgram]
     exact native_unit_eq (B := B) ambient groups hgroups (count + 1) _
 
-/-- The complete Unit interpretation is the reviewed honest ordinary strategy. -/
+/-- The complete Unit interpretation is the reference honest strategy. -/
 theorem prover_unit_eq_honestWith {B E : Type} [CommRing B] [Field E] [DecidableEq E]
     {n T ell : Nat} (f : B →+* E) (cfg : Config n T ell)
     (data : Fin 2 × Fin T → CMlPolynomialEval B n) {ι : Type} (ambient : OracleSpec ι) :

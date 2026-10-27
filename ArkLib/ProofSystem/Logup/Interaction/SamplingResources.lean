@@ -30,7 +30,7 @@ For the selected honest defaults, the proved private-empty observation and exist
 partition convert the verifier count into the whole named uniform endpoint's primitive log
 length. Actual output and a supported concrete path survive that comparison. This transfers
 observable strategy behavior only, not arithmetic, preprocessing, backend, storage or machine
-costs. No protocol, sampler, runner or runtime body is changed here.
+costs.
 -/
 
 @[expose] public section

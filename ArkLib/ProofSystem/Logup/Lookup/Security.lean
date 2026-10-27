@@ -13,7 +13,7 @@ public import ArkLib.ProofSystem.Logup.Security.Soundness
 
 For every actual initial multiplicity message, false lookup membership gives a nonzero mapped
 weighted fiber under the certified query-count budget. The actual sender-bind law then applies
-the reviewed weighted soundness theorem to each retained message and continuation. Subprobability
+the weighted soundness theorem to each retained message and continuation. Subprobability
 averaging preserves the bound without assuming malicious losslessness or restricting private
 sender effects and path-dependent output. No table-size characteristic bound is required.
 -/

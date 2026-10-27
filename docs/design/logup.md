@@ -206,13 +206,8 @@ most `ell+2`. Its theorem identifies the formal native honest projection; equali
 point functions would be insufficient (`X^3` and `X` agree over `F₂` but have different coefficients).
 No full multivariate expansion or interpolation-node inversion is used.
 
-The public constructors are:
-
-| Variant | Explicit-builder reference | Selected default |
-| --- | --- | --- |
-| Weighted | `Logup.Prover.Honest.honestWith` | [`Logup.Prover.Honest.prover`](../../ArkLib/ProofSystem/Logup/Prover/Default.lean) |
-| Scalar | `Logup.Lookup.Honest.proverWith` | [`Logup.Lookup.Honest.prover`](../../ArkLib/ProofSystem/Logup/Lookup/Prover.lean) |
-| Tuple/bus | `Logup.Lookup.Tuple.Honest.proverWith` | [`Logup.Lookup.Tuple.Honest.prover`](../../ArkLib/ProofSystem/Logup/Lookup/Tuple/Prover.lean) |
+The [code-local guide](../../ArkLib/ProofSystem/Logup/README.md) lists the selected weighted,
+scalar and tuple constructors, explicit-builder references and a scalar usage walkthrough.
 
 The selected defaults execute named arithmetic programs. Scalar histogram construction precedes
 alpha; tuple histogram construction precedes beta, and the tuple default then eagerly constructs
@@ -245,22 +240,19 @@ owners distinguish the following metrics; none is a total machine-time bound.
 A full all-success history visits every positive private level, totaling `2N-2` table rows and
 `nK` private lambda slots; early abort retains a prefix with no larger census.
 Retaining all verifier target/challenge prefixes gives a triangular census bounded by `2N`.
-Completed affine inputs use `4T+4K+2` coefficient cells; completed phase buffers and expanded builder roles have
-distinct `96*(ell+4)` and `256*(ell+4)` bounds. The inventory inspects the actual array push loops,
-`List.mapTR` reverse accumulators and certified heads/suffix/list-to-array builders separately.
+Completed buffers and their construction roles are counted separately in
+[StorageBuffers.lean](../../ArkLib/ProofSystem/Logup/Prover/Resources/StorageBuffers.lean).
+Its invariants distinguish array push loops, `List.mapTR` reverse accumulators and certified
+heads/suffix/list-to-array builders; a logical container census is not a heap-liveness claim.
 
 ### Actual source packets and ambient logs
 
-In [Interaction/Resources.lean](../../ArkLib/ProofSystem/Logup/Interaction/Resources.lean),
-`executeStrategiesLogged_eq_prefix_bind`, `scalar_executeStrategiesLogged_eq_sender_bind` and
-`tuple_executeStrategiesLogged_eq_sender_beta_bind` preserve the complete actual path, dependent
-private output, Bool and source-log order through the prefix and native suffix.
-`qView_complete_log_eq_boundary` appends the actual Q boundary query to that same native message
-log exactly when the bare native result is `Some claim`. `qView_final_log_length` gives the
-complete source length: actual native `messageQueries`, plus the original view's actual fanouts
-at that claim's returned challenges, plus K retained helpers.
-The final Bool may be false: reaching authentication and passing it are different events. `None`
-skips the Q query. These laws require no source-truth or honest-message premise.
+[Source resource laws](../../ArkLib/ProofSystem/Logup/Interaction/Resources.lean) preserve the
+complete path, dependent private output, Bool and source-log order through the prefix and native
+suffix. Authentication appends the Q query exactly when the bare native result is `Some claim`;
+its complete source length is the native message-query count, plus the original view's fanouts
+at the returned challenges, plus K retained helpers. A final Bool of false can still include this
+query; `None` skips it. These laws require no source-truth or honest-message premise.
 
 The public source's synthetic query weights have M constant-one and P unary-negation sites.
 Those negations are separate from `ArithmeticSpec.sub` requests in the already-bound scalar
@@ -268,64 +260,30 @@ reconstruction profile. Public tuple queries buffer W+1 E coefficient answers be
 Horner; the private eager cache instead reads BASE coefficients directly. Neither local profile
 prices the dense MLE backend or an opaque original view.
 
-[Interaction/SamplingResources.lean](../../ArkLib/ProofSystem/Logup/Interaction/SamplingResources.lean)
-keeps arbitrary draw programs separate from uniform specialization. For every **supported complete**
-phased run, `phased_verifier_queries` and its scalar/tuple variants count verifier-party ambient
-queries as `ca+cj+cr*s`, with an additional `cb` for tuples. The constants are supported log lengths
-of the actual alpha, joint, native-round and beta programs; `s` is the actual native path's
-`roundSamples`. A scripted joint program need not draw every coordinate independently.
-The `execute_world_eq`, `scalar_execute_world_eq` and `tuple_execute_world_eq` program equalities
-connect the actual Bool endpoint and its full ordered ambient log to that same phased run.
-They preserve arbitrary prover effects; there is no bound on malicious prover-private sampling.
+[Sampling resource laws](../../ArkLib/ProofSystem/Logup/Interaction/SamplingResources.lean)
+connect the actual Bool and full ordered ambient log to a supported phased run. For arbitrary
+draw programs, the verifier-party count is `ca+cj+cr*s`, plus `cb` for tuples: these constants
+are the supported log lengths of the alpha, joint, native-round and beta programs, and `s` is
+the native path's `roundSamples`. Arbitrary prover effects are preserved; malicious prover-private
+sampling is unbounded.
 
-For the selected uniform function/product programs, the joint draw is one public phase event but
-uses `n+K` E sample blocks. Given a proved supported primitive-log length c for one selected E
-sample, `uniform_phased_verifier_queries` and its scalar/tuple variants give
-`c*(1+n+K+s)` verifier queries, or `c*(2+n+K+s)` for tuples. No generic `SampleableType` is assumed
-to cost one or six. The pinned KoalaBear.Field and Ext6 sample programs provide c=1 and c=6.
-
-[Interaction/HonestSamplingResources.lean](../../ArkLib/ProofSystem/Logup/Interaction/HonestSamplingResources.lean)
-proves that actual weighted/scalar/tuple defaults make zero prover-party ambient queries, including
-public abort responses and zero rounds, for any restricted verifier. The three variants of
-`uniformExecute_default_queries` in SamplingResources combine this fact with the existing
-phase partition. Each supported **actual named uniform endpoint** Bool/log pair retains a supported
-concrete path with that exact Bool and ordered log, and the same formula now counts its **total**
-primitive queries. There is no caller-supplied private-purity, valid-index or off-pole premise.
-Ordinary-strategy equality transfers observable ambient logs here; it transfers no separate
-arithmetic or storage cost.
+The selected uniform function/product programs use `n+K` E sample blocks for their one joint
+phase. If one selected E sample has proved supported primitive-log length c, the verifier count
+is `c*(1+n+K+s)`, or `c*(2+n+K+s)` for tuples. A generic `SampleableType` is not assumed to
+cost one or six; the KoalaBear.Field and Ext6 programs provide c=1 and c=6.
+[HonestSamplingResources.lean](../../ArkLib/ProofSystem/Logup/Interaction/HonestSamplingResources.lean)
+proves zero prover-party queries for the selected defaults, for any restricted verifier and
+including public abort responses and zero rounds. Consequently the named uniform-default laws
+count **total** primitive queries with the same formulas, retaining the exact endpoint Bool,
+ordered log and supported path. They need no caller-supplied private-purity, valid-index or
+off-pole premise. Ordinary-strategy equality transfers these observations, not arithmetic or
+storage costs.
 
 When all native round checks pass, `s=n`: weighted/scalar uniform sampling has `1+K+2n` E blocks,
-and tuple sampling adds beta, regardless of the final authentication Bool. The actual Ext6
-`n=1,K=1` scalar/tuple fixtures attain 24/30 primitive BASE requests. Zero rounds still draw alpha
-and the joint lambda vector, plus beta for tuples. Public round abort skips its unreached native
-draw; a private ambient/runtime abort can prevent later stages entirely. The count theorems cover
-supported complete results and assert neither losslessness nor a fixed count for such partial
-runs. Uniform-oracle request counts do not price RNG internals, BASE/Nat preprocessing, field
-instructions, source backends or memory.
-
-## Owners and validation
-
-| Owner | Responsibility |
-| --- | --- |
-| `Data/Fraction.lean`, `Data/Polynomial/PartialFractions.lean` | Executable pair algebra; rational and symbolic clearing proofs |
-| `Data/Vector/`, `ToMathlib/List/Count.lean` | Indexed histograms, membership/count converses, normalization and bounded permutation recovery |
-| `Data/Polynomial/TaggedTuple*.lean` | Checked semantic schemas, fingerprint equations and selected-key collision bounds |
-| `ProofSystem/Logup/Algebra/` | Grouped circuit, degree/clearing/Boolean-sum proofs and shared scalar reconstruction |
-| `ProofSystem/Logup/Interaction/`, `Security/` | Actual weighted source, native execution, arbitrary-prover soundness and source resources |
-| `ProofSystem/Logup/Lookup/`, `Lookup/Tuple/` | Scalar/typed provider languages, retained multiplicities, complete endpoints, security, completeness and defaults |
-| `ProofSystem/Logup/Prover/` | Helpers, private state, formal streamed messages, actual arithmetic control and resource/storage ledgers |
-| `ToCompPoly/Multilinear/`, `ToCompPoly/Univariate/` | Reusable executable basis, affine/fold/formal-view bridges, raw arithmetic, seeded Horner and normalization |
-
-`ArkLibTest/` includes ordinary generic callers, compiler-IR and standard-axiom guards, exact
-finite-field cases, characteristic wraparound, repeated/unused rows, malformed shapes, source/
-helper corruption, forged final claims, private effects on abort and nontrivial security bounds.
-Concrete [scalar soundness fixtures](../../ArkLibTest/ProofSystem/Logup/Lookup/Security.lean)
-instantiate `20/257<1`; the [tuple fixtures](../../ArkLibTest/ProofSystem/Logup/Lookup/Tuple/Security.lean)
-instantiate `14/17<1` with false semantic membership. The [measured runtime fixtures](../../ArkLibTest/ProofSystem/Logup/Interaction/MeasuredRuntime.lean)
-and `lake exe logup-runtime` exercise the actual complete defaults, including KoalaBear-to-Ext6,
-scripted poles and named uniform IO samplers. Random checks use statements valid at every draw;
-scripted exact values separately test failures and challenge ordering.
-
-Run the [normal, docs and axiom gates](../wiki/quickstart.md) on the final coherent source/artifact
-head. IR/native checks establish execution evidence; they do not replace kernel-checked semantic
-proofs or review of the complete old-to-new source and acceptance-test delta.
+and tuple sampling adds beta, regardless of the final authentication Bool. The Ext6 `n=1,K=1`
+scalar/tuple fixtures attain 24/30 primitive BASE requests. Zero rounds still draw alpha and the
+joint lambda vector, plus beta for tuples. Public round abort skips its unreached native draw;
+a private ambient/runtime abort can prevent later stages entirely. The count theorems concern
+**supported complete results**, not losslessness or a fixed count for partial runs. Uniform-oracle
+requests do not price RNG internals, BASE/Nat preprocessing, field instructions, source backends
+or memory.

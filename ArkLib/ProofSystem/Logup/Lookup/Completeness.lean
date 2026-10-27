@@ -13,15 +13,16 @@ public import ArkLib.ProofSystem.Logup.Security.Completeness
 
 The actual initial multiplicity sender is the computed natural histogram. Valid indices give
 mapped balance through the existing characteristic-independent histogram theorem. The scalar
-sender-bind law then invokes the unchanged complete weighted endpoint and its actual source law.
+sender-bind law then invokes the complete weighted endpoint and its actual source law.
 
 Query membership in the declared collection identifies the weighted mapped value support with
 only the declared physical table support, independent of multiplicities. Its finite image is
 computable with explicit equality, but the verifier never calls or scans it. This sharpens honest
 pole loss to the table support, bounded by P times the Boolean row count. No retry is introduced.
 
-These are correctness/completeness results for an explicit message implementation. The final
-measured default and the complete work/storage ledger are separate consumer obligations.
+These are correctness/completeness results for an explicit message implementation. `Lookup/Prover`
+selects the measured default; `Lookup/ArithmeticResources` and `Prover/Resources/StorageLedger`
+account for its arithmetic and logical storage separately.
 -/
 
 @[expose] public section

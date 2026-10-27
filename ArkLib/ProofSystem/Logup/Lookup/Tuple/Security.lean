@@ -15,7 +15,7 @@ public import ArkLib.ProofSystem.Logup.Security.Soundness
 The actual base multiplicity message is retained before beta. For each such fixed message, the
 selected-key compression bound charges only `(s - 1) * W / |E|`, where s counts the original
 semantic keys across queries and all declared pieces. Outside compressed balance, the existing
-weighted verifier over the actual coefficient source incurs its unchanged scalar/native error.
+weighted verifier over the actual coefficient source incurs the scalar/native error bound.
 
 The proof follows the real sender and beta-response binds, preserving arbitrary private effects,
 missing mass and path-dependent output. It assumes genuine stored coefficient realization and

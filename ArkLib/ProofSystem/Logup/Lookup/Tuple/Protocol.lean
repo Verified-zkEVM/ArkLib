@@ -30,7 +30,7 @@ open _root_.Interaction.Oracle OracleComp OracleSpec CompPoly
 namespace Logup.Lookup.Tuple
 variable {B E : Type} [CommRing B] [CommRing E]
 
-/-- Retain base multiplicities before beta and the unchanged complete weighted suffix. -/
+/-- Retain base multiplicities before beta and the complete weighted suffix. -/
 def protocol (f : B →+* E) (n M P ell : Nat) : Protocol :=
   .oracleWith (Vector (CMlPolynomialEval B n) P) (Logup.Lookup.multiplicityInterface f n P)
     (.public .receiver E fun _ => Logup.Interaction.protocol E n ((M + P) ⌈/⌉ ell) ell)

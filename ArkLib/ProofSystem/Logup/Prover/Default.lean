@@ -21,9 +21,10 @@ last continuation returns Unit without an unused private fold; zero native round
 unused private kernel and batching-vector copy. The required joint challenge and original retained
 source authentication remain in the verifier.
 
-The equality theorems identify ordinary strategy values with the existing correctness constructor.
-They transfer correctness only. Resource claims must count the named programs actually selected
-here, including the terminal call structure, separate base preprocessing and retained messages.
+The equality theorems identify ordinary strategy values with the explicit-builder reference and
+transfer correctness only. `Prover/Resources/Arithmetic.lean` bounds the named programs selected
+by this driver. Frontend resource owners account for BASE preprocessing separately, and
+`Prover/Resources/StorageLedger.lean` counts retained messages.
 -/
 
 @[expose] public section

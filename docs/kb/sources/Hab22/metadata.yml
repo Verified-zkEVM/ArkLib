@@ -6,4 +6,4 @@ inspected_source_url: https://www.researchgate.net/profile/Ulrich-Haboeck/public
 archive_received: "2022-11-04"
 archive_last_revision_reported: "2025-02-20"
 committed_artifacts: []
-notes: "The author-uploaded 22-page PDF was inspected through web PDF extraction; its title page is dated March 31, 2023. The current ePrint landing page reports a later archive update, not a verified change to these document statements. Direct raw PDF and archive-version downloads returned HTTP 403, so no local PDF or byte digest is recorded and byte identity with the current ePrint PDF is not asserted. Paper numbering in the Hab22 KB page and LogUp comparison follows the inspected author copy."
+notes: "Statement numbering in the Hab22 paper page and LogUp comparison follows the inspected 22-page author copy dated March 31, 2023. No local PDF or byte digest is recorded. Byte identity with the current ePrint PDF and any changes associated with the reported archive revision have not been verified."

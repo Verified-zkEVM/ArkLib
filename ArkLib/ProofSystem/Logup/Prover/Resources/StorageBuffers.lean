@@ -19,10 +19,12 @@ list suffix before certifiedOfFn converts the final list to an array. Their inva
 proved separately. Fin/index positions and list/array roles are not coefficient positions.
 
 Coefficient bounds follow the selected affine-left convolution, streamed groups/rows and single
-final normalization. Completed buffers have a 96(ell+4) allowance; their declared old/new
-construction roles have the separate conservative allowance 256(ell+4). Fixed-height preparation,
-private folds, fast-basis initialization and the pinned dense source evaluator have their own
-inventories. Source evalMle is not the private optimized fold and does not build a basis table.
+final normalization. Completed affine row inputs occupy 4T+4K+2 coefficient positions. Completed
+phase buffers have a 96(ell+4) allowance; their declared old/new construction roles have the
+separate conservative allowance 256(ell+4). Including affine-input builders gives the round
+allowance 12T+12K+6+256(ell+4). Fixed-height preparation, private folds, fast-basis initialization
+and the pinned dense source evaluator have their own inventories. Source evalMle is not the private
+optimized fold and does not build a basis table.
 
 These are declared named-container payload censuses. They may count aliases more than once and
 assert no heap peak, allocator capacity, physical sharing, compiler stack/closure layout, garbage

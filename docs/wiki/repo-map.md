@@ -71,55 +71,28 @@ home_page/            site assets and assembled website root
 
 ### LogUp
 
-Start with the [code-local LogUp index](../../ArkLib/ProofSystem/Logup/README.md) to choose a
-variant and find its protocol, selected prover, soundness and completeness declarations.
-The [executable LogUp design](../design/logup.md) is the detailed protocol/resource contract;
-the [paper/source correspondence](../kb/concepts/logup.md) records reference versions and scope.
-The complete variants are weighted balance, scalar indexed lookup and typed tuple/bus lookup.
+The [code-local LogUp guide](../../ArkLib/ProofSystem/Logup/README.md) is the navigation and usage
+entry point for weighted balance, scalar indexed lookup and typed tuple/bus lookup. The
+[design](../design/logup.md) owns equations, assumptions and resource boundaries; the
+[KB comparison](../kb/concepts/logup.md) owns paper and implementation correspondence.
 
-| Area | Owners |
-| --- | --- |
-| Weighted argument | [Interaction/](../../ArkLib/ProofSystem/Logup/Interaction/) owns configuration, retained-source realization, protocol and exact execution; [Security/](../../ArkLib/ProofSystem/Logup/Security/) colocates initial clearing/batching, whole-prover soundness and honest completeness. |
-| Scalar lookup | [Lookup/](../../ArkLib/ProofSystem/Logup/Lookup/) owns the declared language, indexed histogram, characteristic budget, retained BASE multiplicities, complete protocol, security and completeness. |
-| Typed tuple/bus lookup | [Lookup/Tuple/](../../ArkLib/ProofSystem/Logup/Lookup/Tuple/) owns checked schema/provider shapes, stored coefficient sources, beta compression, original-key security, all-beta completeness and the eager-cache default. |
-| Grouped algebra | [Algebra/](../../ArkLib/ProofSystem/Logup/Algebra/) owns the residual circuit, individual degree, Boolean sum, pole-safe denominator clearing and shared scalar reconstruction with exact profiles. |
-| Honest prover | [Prover/](../../ArkLib/ProofSystem/Logup/Prover/) owns helpers, state and formal coefficient messages. `Reference.lean` supplies explicit-builder strategies; `Default.lean` selects measured execution. [Arithmetic/](../../ArkLib/ProofSystem/Logup/Prover/Arithmetic/) owns the measured state/round programs, shared Unit/Cost/Call control and exact typed-history observations; [Resources/](../../ArkLib/ProofSystem/Logup/Prover/Resources/) owns arithmetic and storage bounds. Scalar/tuple `Prover.lean` files select defaults, with explicit builders in their `Prover/Reference.lean` companions. |
-| Arithmetic resources | `Prover/Resources/Arithmetic` bounds the actual selected private requests. Scalar and tuple `ArithmeticResources` add their actual frontend/cache contracts. BASE casts/signing, embedding sites, Nat work and source/backend costs stay separate. |
-| Source packets | [Interaction/Resources.lean](../../ArkLib/ProofSystem/Logup/Interaction/Resources.lean) preserves actual prefix/path/private-output packets, returned-claim Q logs and source fanout, with separate local kernel profiles. |
-| Ambient sampling | [Interaction/SamplingResources.lean](../../ArkLib/ProofSystem/Logup/Interaction/SamplingResources.lean) connects actual Bool/ordered logs to supported phases and selected uniform default totals. [Interaction/HonestSamplingResources.lean](../../ArkLib/ProofSystem/Logup/Interaction/HonestSamplingResources.lean) proves private-party count zero; malicious private queries remain unrestricted. Native [Resources](../../ArkLib/ProofSystem/Sumcheck/Interaction/Resources.lean) and [SamplingResources](../../ArkLib/ProofSystem/Sumcheck/Interaction/SamplingResources.lean) supply path/local-arithmetic and verifier-party phase observations. |
-| Logical storage | [Prover/Resources/Storage.lean](../../ArkLib/ProofSystem/Logup/Prover/Resources/Storage.lean) counts actual fields/history; [Prover/Resources/StorageBuffers.lean](../../ArkLib/ProofSystem/Logup/Prover/Resources/StorageBuffers.lean) proves concrete builder/buffer invariants; [Prover/Resources/StorageLedger.lean](../../ArkLib/ProofSystem/Logup/Prover/Resources/StorageLedger.lean) combines seven logical categories with explicit source/workspace allowances. |
+- [Interaction/](../../ArkLib/ProofSystem/Logup/Interaction/) and
+  [Security/](../../ArkLib/ProofSystem/Logup/Security/) contain the common weighted protocol,
+  source authentication, soundness, completeness and execution/log laws.
+- [Lookup/](../../ArkLib/ProofSystem/Logup/Lookup/) and
+  [Lookup/Tuple/](../../ArkLib/ProofSystem/Logup/Lookup/Tuple/) add indexed witnesses, retained
+  multiplicities, checked typed providers and fingerprint compression.
+- [Algebra/](../../ArkLib/ProofSystem/Logup/Algebra/) owns the grouped circuit and its polynomial
+  realization. [Prover/](../../ArkLib/ProofSystem/Logup/Prover/) owns helpers, folded state and
+  formal coefficient messages; its `Arithmetic/` and `Resources/` subfolders separate selected
+  programs from instruction and logical-storage bounds.
 
-Reusable algebra has independent owners: [Fraction.lean](../../ArkLib/Data/Fraction.lean) for
-executable unnormalized pairs; [PartialFractions.lean](../../ArkLib/Data/Polynomial/PartialFractions.lean)
-for rational uniqueness and symbolic clearing;
-[Multilinear.lean](../../ArkLib/Data/MvPolynomial/Multilinear.lean) for the direct equality kernel
-and MLE view; [SumFiber.lean](../../ArkLib/Data/Finset/SumFiber.lean)
-and [Data/Vector/](../../ArkLib/Data/Vector/) for weighted fibers, duplicate-safe histograms,
-count-sensitive membership and normalized-weight correspondence. Bounded cast-count permutation
-recovery is algebraic in [Count.lean](../../ArkLib/ToMathlib/List/Count.lean), not a permutation
-claim for the lookup endpoint. [TaggedTuple.lean](../../ArkLib/Data/Polynomial/TaggedTuple.lean)
-and its probability companion own fingerprint schemas/equations and selected-key collision bounds.
-[ConsecutiveChunks.lean](../../ArkLib/Data/Fin/ConsecutiveChunks.lean) checks exact ordered groups;
-[BatchingProbability.lean](../../ArkLib/Data/MvPolynomial/BatchingProbability.lean) selects one
-nonzero table before the challenge without a group-count union factor.
-
-Executable polynomial support stays in [ToCompPoly/Multilinear/](../../ArkLib/ToCompPoly/Multilinear/)
-(fast basis, affine rows, formal head folds and one-product measured folding) and
-[ToCompPoly/Univariate/](../../ArkLib/ToCompPoly/Univariate/) (padded raw/fraction arithmetic,
-seeded Horner, exact request profiles and one-prefix normalization).
-[BooleanSigned.lean](../../ArkLib/Data/MvPolynomial/BooleanSigned.lean) proves formal signed-cube
-transport under explicit nonzero two. General weighted algebra does not require odd characteristic.
-See [executable-polynomials.md](executable-polynomials.md) for formal-coefficient, cost-transfer
-and logical-builder conventions.
-
-[LogUp acceptance](../../ArkLibTest/ProofSystem/Logup/) and `lake exe logup-runtime` exercise actual
-weighted/scalar/tuple default endpoints, malicious source/message changes, private effects,
-zero rounds, poles and concrete KoalaBear-to-Ext6 sampling. Native Sumcheck acceptance preserves
-both [SourceRouting.lean](../../ArkLibTest/ProofSystem/Sumcheck/Interaction/SourceRouting.lean)
-and the distinct [NativeSourceRouting.lean](../../ArkLibTest/ProofSystem/Sumcheck/Interaction/NativeSourceRouting.lean)
-suites; [FragmentMaps.lean](../../ArkLibTest/Interaction/Oracle/FragmentMaps.lean) consumes the
-public restricted-fragment mapping laws in
-[Execution.lean](../../ArkLib/Interaction/Oracle/Execution.lean).
+Reusable support lives under [Data/](../../ArkLib/Data/) and
+[ToCompPoly/](../../ArkLib/ToCompPoly/); the code-local guide links the fraction, histogram and
+fingerprint owners. [Executable-polynomial conventions](executable-polynomials.md) explain
+formal-coefficient, arithmetic-profile and builder-census requirements. Acceptance modules mirror
+these owners in [ArkLibTest/ProofSystem/Logup/](../../ArkLibTest/ProofSystem/Logup/); the compiled
+complete defaults run with `lake exe logup-runtime`.
 
 ### Native source and log infrastructure
 

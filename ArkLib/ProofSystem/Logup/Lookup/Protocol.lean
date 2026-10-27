@@ -12,10 +12,10 @@ public import ArkLib.ProofSystem.Logup.Interaction.Protocol
 /-!
 # Executable scalar lookup with an initial multiplicity message
 
-One actual base-field multiplicity oracle is retained before the reviewed weighted LogUp protocol
+One actual base-field multiplicity oracle is retained before the weighted LogUp protocol
 publishes alpha. The verifier uses the original value view and that actual retained slot to expose
-query weights1 and negative table multiplicities. The entire weighted suffix, including its native
-Sumcheck and terminal source authentication, is unchanged.
+query weights one and negative table multiplicities. It reuses the complete weighted suffix,
+including native Sumcheck and terminal source authentication.
 
 The exact sender-bind law retains all effects, abort behavior and arbitrary path-dependent private
 output of the ordinary whole prover. It assumes no message kernel or execution equality. Security

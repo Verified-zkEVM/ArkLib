@@ -12,7 +12,7 @@ public import ArkLib.ProofSystem.Logup.Prover.Reference
 # Honest tuple lookup with a supplied semantic index witness
 
 The actual sender computes and casts one natural index histogram before the public fingerprint
-challenge. Its beta response delegates to the unchanged weighted honest strategy on the compressed
+challenge. Its beta response delegates to the weighted honest strategy on the compressed
 Boolean values and those same retained base multiplicities. Fingerprint collisions cause no retry.
 
 The message builder is explicit. Import `ArkLib.ProofSystem.Logup.Lookup.Tuple.Prover` for the

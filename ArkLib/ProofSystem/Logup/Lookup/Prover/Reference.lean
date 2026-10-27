@@ -12,7 +12,7 @@ public import ArkLib.ProofSystem.Logup.Prover.Reference
 # Honest scalar lookup with an explicit indexed witness
 
 Compute the natural histogram once, cast it into the base field, and send the actual multiplicity
-oracle before alpha. The continuation is the unchanged weighted honest strategy on the original
+oracle before alpha. The continuation is the weighted honest strategy on the original
 values and these signed weights. No witness is extracted or table membership searched at runtime.
 
 The message builder is explicit. Import `ArkLib.ProofSystem.Logup.Lookup.Prover` for the

@@ -27,6 +27,30 @@ The [design guide](../../../docs/design/logup.md) explains the protocol equation
 bounds and resource metrics. The [reference comparison](../../../docs/kb/concepts/logup.md)
 records the paper and implementation correspondence.
 
+## Run a scalar lookup
+
+The compiled [`ArithmeticLookupTests.Small.uniform` fixture](../../../ArkLibTest/ProofSystem/Logup/Lookup/Prover.lean)
+shows the complete default call. Its [`LogupScalarHonestTest.Small` prerequisites](../../../ArkLibTest/ProofSystem/Logup/Lookup/Completeness.lean)
+provide a `ZMod 17` field, `f`, checked `cfg`, table data, witness indices and the original source
+view/handler. It uses one query column, two physical table pieces, two rows and `ell=1`.
+
+1. Check the dimensions, characteristic budget and grouping with `Config.create?`. Here
+   `n=1, M=1, P=2` gives two queries and the budget `2<17`.
+2. Supply `Data` and actual table-position `indices`. The fixture queries `[5,7]` against pieces
+   `[3,3]` and `[5,7]`, with flattened witness indices `[2,3]`; its `ValidIndices` proof certifies
+   membership. The default computes the histogram from these indices before alpha.
+3. Supply the original `valuesFamily` view and handler. The fixture uses `VirtualOracle.id` and
+   `behaviorOfRealizations data`; `realizes` is the source-agreement premise used for completeness.
+4. Construct `Honest.prover f cfg data indices unifSpec`, then pass it to
+   `Logup.Lookup.uniformExecute f 1 1 2 1 cfg access view impl`. The result is `ProbComp Bool`,
+   including the final original-source check. `Small.uniform_failure`, `uniform_success` and
+   `uniform_total` specialize completeness to failure at most `3/17`, success at least `14/17`
+   and total mass one.
+
+For explicit alpha/joint/round draw programs, use `execute` instead of `uniformExecute`.
+For a custom message builder, use the variant's `Prover/Reference.lean` entry point and discharge
+its builder-correctness premise. Run the existing compiled examples with `lake exe logup-runtime`.
+
 ## Find a definition or proof
 
 | Question | Start here |
@@ -75,6 +99,11 @@ Start with [scalar prover examples](../../../ArkLibTest/ProofSystem/Logup/Lookup
 [complete runtime fixtures](../../../ArkLibTest/ProofSystem/Logup/Interaction/MeasuredRuntime.lean).
 Run the compiled fixtures with `lake exe logup-runtime`.
 
-Generic fractions, fibers, histograms and fingerprints live under [Data/](../../Data/).
-Executable polynomial operations and their mathematical bridges live under [ToCompPoly/](../../ToCompPoly/).
-The [repository map](../../../docs/wiki/repo-map.md#logup) links their individual owner modules.
+For reusable fractions, clearing and histogram lemmas, start with [Fraction.lean](../../Data/Fraction.lean),
+[PartialFractions.lean](../../Data/Polynomial/PartialFractions.lean) and
+[Data/Vector/](../../Data/Vector/). Fingerprint schemas and collision bounds live in
+[TaggedTuple.lean](../../Data/Polynomial/TaggedTuple.lean) and
+[TaggedTupleProbability.lean](../../Data/Polynomial/TaggedTupleProbability.lean). Polynomial
+operations and their mathematical bridges live under [ToCompPoly/](../../ToCompPoly/); see the
+[executable-polynomial guide](../../../docs/wiki/executable-polynomials.md) for representation,
+code-generation, arithmetic-profile and logical-builder conventions.
