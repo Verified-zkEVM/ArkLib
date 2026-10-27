@@ -33,11 +33,6 @@ namespace Sumcheck.Impl.Computable
 variable {R : Type} [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
   {n m : ℕ}
 
-/-- Append prior challenges to a domain suffix after omitting the round's pivot. -/
-def roundSuffix (i : Fin (n + 1)) (challenges : Fin i.castSucc → R)
-    (x : Fin (n - i) → R) : Fin n → R :=
-  Fin.append challenges x ∘ Fin.cast (by simp; omega)
-
 /-- Enumerate suffixes by their domain indices, avoiding any choice of preimages. -/
 def suffixEmbedding (D : Fin m ↪ R) (k : ℕ) : (Fin k → Fin m) ↪ (Fin k → R) where
   toFun x := D ∘ x
@@ -65,7 +60,7 @@ This construction accepts arbitrary individual degrees and arbitrary finite doma
 def projectedRoundPolynomial (D : Fin m ↪ R) (i : Fin (n + 1))
     (challenges : Fin i.castSucc → R) (poly : CMvPolynomial (n + 1) R) : CPolynomial R :=
   ∑ x : Fin (n - i) → Fin m,
-    CPolynomial.mapRingHom (evalHom (roundSuffix i challenges (D ∘ x)))
+    CPolynomial.mapRingHom (evalHom (Spec.SingleRound.roundSuffix R (n + 1) i challenges (D ∘ x)))
       (finSuccEquivNth i poly)
 
 omit [Nontrivial R] in
@@ -94,13 +89,13 @@ theorem toPoly_sum {ι : Type*} (s : Finset ι) (f : ι → CPolynomial R) :
 theorem projectedRoundPolynomial_toPoly_sum (D : Fin m ↪ R) (i : Fin (n + 1))
     (challenges : Fin i.castSucc → R) (poly : CMvPolynomial (n + 1) R) :
     (projectedRoundPolynomial D i challenges poly).toPoly =
-      ∑ x ∈ (Finset.univ.map D) ^ᶠ (n - i),
-        Polynomial.map (MvPolynomial.eval (Spec.SingleRound.roundSuffix R n i challenges x))
-          (MvPolynomial.finSuccEquivNth R i (CPoly.fromCMvPolynomial poly)) := by
+      MvPolynomial.sumRoundPolynomial ((Finset.univ.map D) ^ᶠ (n - i))
+        (Spec.SingleRound.roundSuffix R (n + 1) i challenges) i (CPoly.fromCMvPolynomial poly) := by
   classical
   unfold projectedRoundPolynomial
   rw [toPoly_sum]
   simp_rw [projectedSummand_toPoly]
+  simp only [MvPolynomial.sumRoundPolynomial]
   rw [← suffixDomain_eq D (n - i), Finset.sum_map]
   rfl
 
@@ -120,15 +115,9 @@ theorem projectedRoundPolynomial_natDegree_le (D : Fin m ↪ R) (i : Fin (n + 1)
     {deg : ℕ} (hpoly : ∀ j, poly.degreeOf j ≤ deg) :
     (projectedRoundPolynomial D i challenges poly).natDegree ≤ deg := by
   classical
-  rw [CPolynomial.natDegree_toPoly]
-  unfold projectedRoundPolynomial
-  rw [toPoly_sum]
-  apply Polynomial.natDegree_sum_le_of_forall_le
-  intro x _
-  rw [← CPolynomial.natDegree_toPoly]
-  exact (CPolynomial.natDegree_mapRingHom_le _ _).trans
-    (by simpa only [CPoly.CMvPolynomial.finSuccEquivNth_apply] using
-      natDegree_finSuccEquivNthHom_le i poly hpoly)
+  rw [CPolynomial.natDegree_toPoly, projectedRoundPolynomial_toPoly_sum]
+  exact (MvPolynomial.sumRoundPolynomial_natDegree_le _ _ i _).trans
+    ((congrFun (CPoly.degreeOf_equiv (S := R) (p := poly)) i).symm.le.trans (hpoly i))
 
 /-- Individual degree bounds also bound the extended natural degree used by messages. -/
 theorem projectedRoundPolynomial_degree_le (D : Fin m ↪ R) (i : Fin (n + 1))

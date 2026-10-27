@@ -14,10 +14,10 @@ public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness
 /-!
 # Implications between security notions
 
-This file collects the implications between the various security notions.
-
-For now, we only state the theorems. It's likely that we will split this file into multiple files in
-a single `Implication` folder in the future, each file for the proof of a single implication.
+This file collects the averaged knowledge-to-soundness projection, the state-restoration
+implications, and the equivalence between special soundness and its canonical coordinate-wise
+form. The guarded bridges from fixed-prefix round-by-round security to ordinary security live in
+`Security.GuardedSoundness` and `Security.GuardedBridges`.
 -/
 
 @[expose] public section
@@ -33,55 +33,6 @@ variable {ι : Type} {oSpec : OracleSpec ι}
 namespace Verifier
 
 section Implications
-
-/- TODO: add the following results
-- `knowledgeSoundness` implies `soundness`
-- `rbrSoundness` implies `soundness`
-- `rbrKnowledgeSoundness` implies `rbrSoundness`
-- `rbrKnowledgeSoundness` implies `knowledgeSoundness`
-
-In other words, we have a lattice of security notions, with `knowledge` and `roundByRound` being
-two strengthenings of soundness.
--/
-
-/-- Knowledge soundness with knowledge error `knowledgeError < 1` implies soundness with the same
-soundness error `knowledgeError`, and for the corresponding input and output languages. -/
-theorem knowledgeSoundness_implies_soundness
-    (relIn : Set (StmtIn × WitIn))
-    (relOut : Set (StmtOut × WitOut))
-    (verifier : Verifier oSpec StmtIn StmtOut pSpec)
-    (knowledgeError : ℝ≥0) (hLt : knowledgeError < 1) :
-      knowledgeSoundness init impl relIn relOut verifier knowledgeError →
-        soundness init impl relIn.language relOut.language verifier knowledgeError := by
-  simp only [knowledgeSoundness, knowledgeSoundnessWith, ChallengeIdx, Challenge,
-    QueryImpl.addLift_def,
-    PFunctor.Handler.liftTarget_self, bind_pure_comp, OptionT.run_bind,
-    OptionT.run_map, simulateQ_option_elimM, simulateQ_pure, simulateQ_map,
-    StateT.run'_eq, OptionT.mk_bind, Option.mem_def, Prod.mk.eta, soundness,
-    Set.language, Set.mem_image, Prod.exists, exists_and_right, exists_eq_right,
-    not_exists, forall_exists_index]
-  intro extractor hKS WitIn' WitOut' witIn' prover stmtIn hStmtIn
-  sorry
-  -- have hKS' := hKS stmtIn witIn' prover
-  -- clear hKS
-  -- contrapose! hKS'
-  -- constructor
-  -- · convert hKS'; rename_i result
-  --   obtain ⟨transcript, queryLog, stmtOut, witOut⟩ := result
-  --   simp
-  --   sorry
-  -- · simp only [Set.language, Set.mem_setOf_eq, not_exists] at hStmtIn
-  --   simp only [Functor.map, Seq.seq, PMF.bind_bind, Function.comp_apply, PMF.pure_bind, hStmtIn,
-  --     PMF.bind_const, PMF.pure_apply, eq_iff_iff, iff_false, not_true_eq_false, ↓reduceIte,
-  --     zero_add, ℝ≥0.coe_lt_one_iff, hLt]
-
-/-- Round-by-round soundness with error `rbrSoundnessError` implies soundness with error
-`∑ i, rbrSoundnessError i`, where the sum is over all rounds `i`. -/
-theorem rbrSoundness_implies_soundness (langIn : Set StmtIn) (langOut : Set StmtOut)
-    (verifier : Verifier oSpec StmtIn StmtOut pSpec)
-    (rbrSoundnessError : pSpec.ChallengeIdx → ℝ≥0) :
-      rbrSoundness init impl langIn langOut verifier rbrSoundnessError →
-        soundness init impl langIn langOut verifier (∑ i, rbrSoundnessError i) := by sorry
 
 /-- Round-by-round knowledge soundness with error `rbrKnowledgeError` implies round-by-round
 soundness with the same error `rbrKnowledgeError`. -/
@@ -184,15 +135,6 @@ theorem rbrKnowledgeSoundness_implies_rbrSoundness
     intro stmtIn hStmtIn WitIn' WitOut' witIn' prover i
     exact (prEvent_eq_zero_of_forall_not _ _ fun _ hbad ↦
       Fin.succ_ne_zero i.1 hbad.2.1).trans_le zero_le
-
-/-- Round-by-round knowledge soundness with error `rbrKnowledgeError` implies knowledge soundness
-with error `∑ i, rbrKnowledgeError i`, where the sum is over all rounds `i`. -/
-theorem rbrKnowledgeSoundness_implies_knowledgeSoundness
-    (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
-    (verifier : Verifier oSpec StmtIn StmtOut pSpec)
-    (rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0) :
-      rbrKnowledgeSoundness init impl relIn relOut verifier rbrKnowledgeError →
-        knowledgeSoundness init impl relIn relOut verifier (∑ i, rbrKnowledgeError i) := by sorry
 
 -- /-- Round-by-round soundness for a protocol implies state-restoration soundness for the same
 -- protocol with arbitrary added non-empty salts. -/

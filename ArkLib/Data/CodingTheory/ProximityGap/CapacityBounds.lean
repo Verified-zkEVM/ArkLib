@@ -225,7 +225,10 @@ codes over prime fields whose rate is within `O(1/log n)` of `ρ` and for which
 
 The uniform constants record the `O(1/log₂ n)` rate control, `Θ(1/log₂ n)` capacity slack, and
 two-sided `|F| = Θ(n^β)` field growth. Quantifying over every lower length bound makes this a
-family statement rather than a single-instance asymptotic claim. -/
+family statement rather than a single-instance asymptotic claim.
+
+Solicited proof: see
+<https://github.com/Verified-zkEVM/ArkLib/issues/1352>. -/
 theorem exists_rs_epsCa_large_near_capacity
     (c : ℝ≥0) (_hc : 0 < c) (ρ : ℝ≥0) (_hρ_pos : 0 < ρ) (_hρ_lt : ρ < (1 / 2 : ℝ≥0)) :
     ∃ Kρ K₁ K₂ : ℝ, 0 < Kρ ∧ 0 < K₁ ∧ K₁ ≤ K₂ ∧

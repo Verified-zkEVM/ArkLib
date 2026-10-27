@@ -381,7 +381,7 @@ noncomputable def finalSumcheckKnowledgeStateFunction {σ : Type} (init : ProbCo
         unfold finalSumcheckRbrExtractor WitnessStructuralInvariant
         simp only [Fin.val_last, Fin.mk_zero', h_extractMLP, Fin.coe_ofNat_eq_mod, and_true]
         refine SetLike.coe_eq_coe.mp ?_
-        rw [Sumcheck.Structured.coe_projectToMidSumcheckPoly_last ℓ tpoly
+        rw [Sumcheck.Structured.coe_fixPrefix_initial_last ℓ tpoly
           (multiplier stmtIn.ctx) stmtIn.challenges]
         have h_sumcheck_target_eq : stmtIn.sumcheck_target =
           (MvPolynomial.eval stmtIn.challenges
