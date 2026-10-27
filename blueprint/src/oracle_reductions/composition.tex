@@ -231,16 +231,26 @@ execution factorization alone does not establish them.
     \uses{def:perfect_completeness, def:reduction_append, thm:completeness_append}
 \end{theorem}
 
-\begin{theorem}[Soundness Preservation under Append (Admitted)]
+\begin{theorem}[Soundness Preservation under Append]
     \label{thm:soundness_append}
-    If verifiers $V_1$ and $V_2$ satisfy soundness with respective errors $\epsilon_1$ and $\epsilon_2$, then their sequential composition satisfies soundness with error $\epsilon_1 + \epsilon_2$.
+    Suppose $V_1$ is guarded and sound with error $\epsilon_1$ from the initial distribution $\mu$,
+    and $V_2$ is sound with error $\epsilon_2$ from every deterministic shared state. Then
+    $V_1.\append\ V_2$ is sound from $\mu$ with error $\epsilon_1 + \epsilon_2$. The second verifier
+    needs no guard. Some restriction is necessary: a later verifier that queries the shared oracle
+    can be steered by the prover's queries in an earlier stage. The every-state hypothesis is needed
+    because the intermediate statement is chosen after oracle answers; it holds for lazily sampled
+    oracles and fails for states that hide a secret from the prover.
     \lean{Verifier.append_soundness}
     \uses{def:soundness, def:verifier_append}
 \end{theorem}
 
-\begin{theorem}[Knowledge Soundness Preservation under Append (Admitted)]
+\begin{theorem}[Knowledge Soundness Preservation under Append]
     \label{thm:knowledge_soundness_append}
-    If verifiers $V_1$ and $V_2$ satisfy knowledge soundness with respective errors $\epsilon_1$ and $\epsilon_2$, then their sequential composition satisfies knowledge soundness with error $\epsilon_1 + \epsilon_2$.
+    Suppose $V_1$ is guarded and knowledge sound with error $\epsilon_1$ from $\mu$, and $V_2$ is
+    knowledge sound with error $\epsilon_2$ from every deterministic shared state, both with pure
+    extractors that read only the transcript and the output witness. Then $V_1.\append\ V_2$ is
+    knowledge sound from $\mu$ with error $\epsilon_1 + \epsilon_2$, with the extractor that runs the
+    second extractor and then the first.
     \lean{Verifier.append_knowledgeSoundness}
     \uses{def:knowledge_soundness, def:verifier_append}
 \end{theorem}
@@ -276,8 +286,8 @@ execution factorization alone does not establish them.
 \end{theorem}
 
 Finite-chain completeness likewise requires guarantees from every shared state.
-The generic finite-chain soundness and knowledge-soundness contracts below remain admitted;
-worst-case round-by-round knowledge soundness of a guarded chain is proved.
+Finite-chain soundness and knowledge soundness hold for guarded chains, and so does worst-case
+round-by-round knowledge soundness.
 
 \begin{theorem}[General Completeness Preservation]
     \label{thm:completeness_compose}
@@ -290,14 +300,21 @@ worst-case round-by-round knowledge soundness of a guarded chain is proved.
     \uses{def:completeness, def:reduction_compose, thm:completeness_append}
 \end{theorem}
 
-\begin{theorem}[General Soundness Preservation (Admitted)]
+\begin{theorem}[General Soundness Preservation]
     \label{thm:soundness_compose}
+    Let $V_0, \ldots, V_{k-1}$ be guarded verifiers, each sound with error $\epsilon_i$ from every
+    deterministic shared state. Then their sequential composition is sound from any initial
+    distribution with error $\sum_{i=0}^{k-1} \epsilon_i$.
     \lean{Verifier.seqCompose_soundness}
     \uses{def:soundness, def:verifier_compose}
 \end{theorem}
 
-\begin{theorem}[General Knowledge Soundness Preservation (Admitted)]
+\begin{theorem}[General Knowledge Soundness Preservation]
     \label{thm:knowledge_soundness_compose}
+    Let $V_0, \ldots, V_{k-1}$ be guarded verifiers, each knowledge sound with error $\epsilon_i$
+    from every deterministic shared state with a pure transcript-and-output extractor. Then their
+    sequential composition is knowledge sound from any initial distribution with error
+    $\sum_{i=0}^{k-1} \epsilon_i$, with the extractors folded backwards over the chain.
     \lean{Verifier.seqCompose_knowledgeSoundness}
     \uses{def:knowledge_soundness, def:verifier_compose}
 \end{theorem}
