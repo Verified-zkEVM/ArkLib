@@ -34,7 +34,7 @@ challenges and a bounded exceptional set.
 
 ## References
 
-* [DKTZ26]
+* [DKT26]
 -/
 
 @[expose] public section

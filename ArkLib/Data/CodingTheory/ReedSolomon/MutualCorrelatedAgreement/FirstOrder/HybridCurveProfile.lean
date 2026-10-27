@@ -16,8 +16,8 @@ A verified interpolation profile gives both optimized hybrid recovery and sharp 
 recovery. The smaller of their exceptional-set bounds still has a recovery theorem: whichever
 bound is smaller supplies one exceptional set fixed before every challenge and candidate.
 The squarefree ordinary threshold may either be fixed at the candidate degree plus one or
-minimized independently of the regular threshold. The two alternatives correspond to
-[DKTZ26, `lem:first-order-hybrid` and `lem:first-order-factorwise`].
+minimized independently of the regular threshold. The hybrid bound is [DKT26], Section 5.5.1,
+Lemma 5.9; the squarefree bound, with either ordinary threshold, is Section 5.4, Lemma 5.6.
 
 ## Main statements
 
@@ -30,7 +30,7 @@ minimized independently of the regular threshold. The two alternatives correspon
 
 ## References
 
-* [DKTZ26]
+* [DKT26]
 -/
 
 @[expose] public section

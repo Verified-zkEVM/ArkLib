@@ -35,7 +35,7 @@ power agreement with base-field constituents and the same complete agreement set
 
 ## References
 
-* [DKTZ26]
+* [DKT26]
 -/
 
 @[expose] public section
