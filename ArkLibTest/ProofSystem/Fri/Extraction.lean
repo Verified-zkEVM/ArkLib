@@ -5,13 +5,14 @@ Authors: Alexander Hicks
 -/
 import ArkLib.ProofSystem.Fri.Spec.KnowledgeSoundness
 import ArkLib.ProofSystem.Fri.Spec.Extraction.ClosedCost
+import ArkLib.ProofSystem.Fri.Spec.MeasuredKnowledgeSoundness
 
 /-!
 # Certified FRI extractor acceptance checks
 
 Classic clients inspect proof dependencies for the concrete extractor, its recovery guarantees,
-its all-input logged knowledge game, and its complete-program resource bounds. Compiled small
-histories are checked separately by
+its all-input logged knowledge game, its complete-program resource bounds, and the game packaged
+with those bounds. Compiled small histories are checked separately by
 `scripts/FriExtractorRuntime.lean`.
 -/
 
@@ -133,3 +134,10 @@ info: 'Fri.Spec.Extractor.profile_extractProgram_eq_le' depends on axioms:
 -/
 #guard_msgs (whitespace := lax) in
 #print axioms Fri.Spec.Extractor.profile_extractProgram_eq_le
+
+/--
+info: 'Fri.Spec.knowledgeSoundnessWithResources_extract' depends on axioms:
+[propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms Fri.Spec.knowledgeSoundnessWithResources_extract

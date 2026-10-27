@@ -167,6 +167,17 @@ only at the final round. `profile_extractProgram_apply_le` separately bounds eve
 node-cache, value-cache, and metadata coordinate by the explicit `extractorProfileBound` vector.
 Its transparent definition composes initialization, the complete scan, and final interpolation.
 
+`Fri.Spec.knowledgeSoundnessWithResources_extract` combines the knowledge game for the same
+extractor with the `extractorProfileBound` vector as its budget, through
+`Verifier.knowledgeSoundnessWithResources`. The closed forms in the table, including the tighter
+retained-word bound, remain separate theorems about the same program. Its measured program
+`Extractor.measuredProgram` takes the retained history and folding challenges as its view;
+reconstructing them from the input statement and transcript prefix is outside the charged program.
+The theorem proves that `extract` is the execution of `extractProgram` on that view, and bounds
+every path of the instruction program over all responses. Because every instruction response is
+a certified singleton, the program has one path, whose cost is the recorded profile. The
+exclusions listed above apply unchanged.
+
 Under the reduction's `D ≤ N` constraint these envelopes are polynomial in `N`, rather than in
 `log N`. They do not imply a cryptographic polynomial-time or bit-runtime bound. The compiled
 fixtures include rejection of a canonical polynomial with 4097 coefficients before other input

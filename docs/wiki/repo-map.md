@@ -92,8 +92,10 @@ home_page/            site assets and assembled website root
   words and interpolates a bounded prefix of accepting positions. Its public result erases the
   same instruction program whose word and field operations are counted. `Spec/ExtractionCorrectness`
   proves exact returned-witness recovery; `Spec/KnowledgeSoundness` proves all-input knowledge
-  soundness with this extractor and the existing error. `Spec/Extraction/` owns the immutable
-  access backend, generated domain points, driver, and resource proofs; reusable measured
+  soundness with this extractor and the existing error. `Spec/MeasuredKnowledgeSoundness` adds
+  the program's operation-count vector through `knowledgeSoundnessWithResources`.
+  `Spec/Extraction/` owns the immutable access backend, generated domain points, driver, and
+  resource proofs; reusable measured
   polynomial operations live in `ToCompPoly/Univariate/Arithmetic*.lean`. Compiled small cases run
   with `lake exe fri-extractor-runtime`; classic trust checks live in
   `ArkLibTest/ProofSystem/Fri/Extraction.lean`.
@@ -633,6 +635,14 @@ home_page/            site assets and assembled website root
   equation of a query-guard-return oracle verifier (one message query, then a guard and a
   verdict that may read the answer and the challenges),
   `OracleVerifier.toVerifier_verify_of_query_guard`, is in `OracleReduction/Basic.lean`.
+- Measured extraction lives in `Security/Resources.lean`. An
+  `Extractor.Straightline.MeasuredProgram` is an uncharged view of the extractor's inputs, a
+  charged instruction program on that view, and deterministic handlers;
+  `Verifier.knowledgeSoundnessWithResources` adds to `knowledgeSoundnessWith` that the named
+  extractor executes the program and that every program path stays within a budget (VCVio
+  `WorstCaseCostBound`). This counts declared instructions only, not running time.
+  `Data/OracleComp/DeterminedCost.lean` turns a deterministic handler's recorded cost into that
+  bound when responses are certified.
 - Coordinate-wise special soundness ([FMN24]/[NOZ26]) lives in
   `Security/CoordinateWiseSpecialSoundness/`: `Basic` defines the `SS(S, ℓ, k)` combinatorics
   (`CoordEq`, `IsSpecialSoundFamily`), `CWSSStructure`, `CWSSStructure.toShape`, and both forms
