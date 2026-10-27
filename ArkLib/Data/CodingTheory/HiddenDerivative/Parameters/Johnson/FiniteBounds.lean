@@ -133,7 +133,7 @@ def johnsonGamma (n D : ℕ) (eta : ℝ) : ℝ :=
 
 /-- The Johnson exception estimate
 `((2 t_B⁵ + 3 t_B γ ρ₋) / (3 √ρ₋³)) n + t_B / √ρ₋`, written with `√ρ₋ ^ 3`; the equality
-`√ρ₋ ^ 3 = ρ₋ ^ (3/2)` is `johnson_sqrt_cube_eq_rpow_three_halves`. -/
+`√ρ₋ ^ 3 = ρ₋ ^ (3/2)` is `sqrt_cube_eq_rpow_three_halves`. -/
 def johnsonComparisonEstimate (n D : ℕ) (eta : ℝ) : ℝ :=
   let rho := johnsonRhoMinus n D
   let tB := johnsonComparisonShift n D eta
@@ -156,16 +156,14 @@ theorem johnsonRhoMinus_lt_one {n D : ℕ} (hD : 1 ≤ D) (hDn : D < n) :
   have hDn' : D < n := by omega
   exact (div_lt_one (by exact_mod_cast (show 0 < n by omega))).2 (by exact_mod_cast hDn')
 
-/-- `√ρ₋ ^ 3 = ρ₋ ^ (3/2)` as a real power. No hypothesis is needed because `ρ₋ ≥ 0`. -/
-theorem johnson_sqrt_cube_eq_rpow_three_halves (n D : ℕ) :
-    √(johnsonRhoMinus n D) ^ 3 =
-      Real.rpow (johnsonRhoMinus n D) (3 / 2 : ℝ) := by
+/-- `√ρ ^ 3 = ρ ^ (3/2)` as a real power, for `ρ ≥ 0`; in particular for `ρ₋`. -/
+theorem sqrt_cube_eq_rpow_three_halves {rho : ℝ} (hrho : 0 ≤ rho) :
+    √rho ^ 3 = Real.rpow rho (3 / 2 : ℝ) := by
   symm
   calc
-    Real.rpow (johnsonRhoMinus n D) (3 / 2 : ℝ) =
-        Real.rpow (√(johnsonRhoMinus n D)) (3 : ℝ) :=
-      Real.rpow_div_two_eq_sqrt 3 (by unfold johnsonRhoMinus; positivity)
-    _ = √(johnsonRhoMinus n D) ^ 3 := Real.rpow_natCast _ 3
+    Real.rpow rho (3 / 2 : ℝ) = Real.rpow (√rho) (3 : ℝ) :=
+      Real.rpow_div_two_eq_sqrt 3 hrho
+    _ = √rho ^ 3 := Real.rpow_natCast _ 3
 
 /-- `0 < √ρ₋ < 1` when `1 ≤ D < n`. -/
 theorem johnsonSqrt_mem_Ioo {n D : ℕ} (hD : 1 ≤ D) (hDn : D < n) :

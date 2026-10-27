@@ -8,6 +8,8 @@ module
 public import ArkLib.Data.CodingTheory.ReedSolomon
 public import ArkLib.Data.CodingTheory.ProximityGenerator.MDSGenerator
 public import ArkLib.Data.CodingTheory.ProximityGenerator.TensorGenerator
+import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.CurveExplicit
+import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Johnson.FullCode
 
 /-!
 # Mutual correlated agreement for polynomial generators
@@ -26,13 +28,12 @@ by right multiplication with a coefficient matrix that has a left inverse.
   generators have MCA with the factors' errors adding; the `tight` variant is proved, from a
   factor hypothesis quantified over module codes of a fixed relative distance.
 - `PolynomialGenIsMCA.isMCAGenerator_of_isPolynomialGeneratorOf`: a polynomial generator over
-  restricted seed sets has MCA for every linear code. Its only unproved input is
-  `isMCAGenerator_of_isMDSGenerator`.
+  restricted seed sets has MCA for every linear code, using the proved MDS-generator bound.
 - `RSCode.reedSolomonMCAError`: the MCA error function for Reed-Solomon codes.
-- `RSCode.isMCAGenerator_univariatePowersGenerator` (sorried): the univariate powers generator
-  has MCA for Reed-Solomon codes up to the Johnson bound.
+- `RSCode.isMCAGenerator_univariatePowersGenerator`: exact power agreement gives MCA for
+  Reed-Solomon codes up to the Johnson bound, with the BCGM25 explicit error.
 - `RSCode.isMCAGenerator_of_isPolynomialGeneratorOfFull`: a full-field polynomial generator has
-  MCA for Reed-Solomon codes up to the Johnson bound, assuming the previous item.
+  MCA for Reed-Solomon codes up to the Johnson bound.
 
 These results formalize §8 and §9 of [BCGM25] (Definitions 8.1 and 9.1, Theorem 8.2, Lemma 9.3,
 Theorem 9.2); the per-declaration correspondence is catalogued in
@@ -285,16 +286,64 @@ noncomputable def reedSolomonMCAError [Fintype F] [NeZero k] (d m : ℕ) : I →
       else
         1
 
+/-- A constant powers generator returns its sole input word, so its MCA error is zero. -/
+theorem mcaError_zeroPowers_eq_zero [Fintype F] [SampleableType F]
+    {A : Type} [AddCommMonoid A] [Module F A] (MC : ModuleCode ι F A) (radius : ℝ) :
+    mcaError (univariatePowersGenerator F 0) MC radius = 0 := by
+  classical
+  have : Subsingleton (Fin (0 + 1)) := inferInstanceAs (Subsingleton (Fin 1))
+  apply le_antisymm _ bot_le
+  refine iSup_le fun U ↦ ?_
+  have hfalse : ∀ x : F, ¬ IsMCA (univariatePowersGenerator F 0) MC x U radius := by
+    rintro x ⟨T, -, hmem, j, hj⟩
+    apply hj
+    have hvec : (fun i ↦ ∑ j', univariatePowersGenerator F 0 x j' • U j' i) = U j := by
+      funext i
+      rw [Fintype.sum_subsingleton _ j]
+      simp [univariatePowersGenerator]
+    rwa [hvec] at hmem
+  exact le_of_eq (prEvent_eq_zero_of_forall_not _ _ hfalse)
+
 /-- The univariate powers generator of degree `d` has MCA for the Reed-Solomon code of degree
 `k` over the domain `D`, with error `reedSolomonMCAError k D d m`, for every `m ≥ 3`.
 
-Sorried: the proof requires the Guruswami-Sudan list-decoding machinery, which is not yet
-available in this development. -/
+A single Johnson exceptional set controls every agreeing polynomial and every MCA witness
+subset. The finite count fits the explicit multiplicity budget. Constant codes use the
+pair-collision bound; full codes and degree-zero generators have no MCA failure event. -/
 lemma isMCAGenerator_univariatePowersGenerator [Fintype F] [SampleableType F] [NeZero k]
     (d m : ℕ) (hm : 3 ≤ m) :
     IsMCAGenerator (univariatePowersGenerator F d) (reedSolomonMCAError k D d m)
       (ReedSolomon.code D k) := by
-  sorry
+  classical
+  intro γ
+  by_cases hfull : Fintype.card ι ≤ k
+  · rw [ReedSolomon.mcaError_eq_zero_of_card_le _ D hfull]
+    exact bot_le
+  have hproper : k < Fintype.card ι := by omega
+  have hkpos : 0 < k := NeZero.pos k
+  have hn : 0 < Fintype.card ι := by omega
+  let : Nonempty ι := Fintype.card_pos_iff.mp hn
+  by_cases hd : d = 0
+  · subst d
+    rw [mcaError_zeroPowers_eq_zero]
+    exact bot_le
+  unfold reedSolomonMCAError
+  split_ifs with hγ
+  swap
+  · simpa using mcaError_le_one (univariatePowersGenerator F d) (ReedSolomon.code D k) (γ : ℝ)
+  let A : ℕ := ⌈(Fintype.card ι : ℝ) * (1 - (γ : ℝ))⌉₊
+  let B : ℝ := (m + 1 / 2 : ℝ) ^ 7 * (Fintype.card ι : ℝ) ^ 2 /
+    (3 * (ReedSolomon.sqrtRate k D : ℝ) ^ 3)
+  have hexact := ProximityGap.exists_curve_exactPowerAgreement_explicit_budget
+    k D d m (γ : ℝ) hkpos hproper hm γ.2.1 hγ
+  have hbound := ProximityGap.mcaError_powers_le_of_exactPowerAgreement k D d A
+    (d * B) (γ : ℝ) le_rfl hexact
+  apply hbound.trans
+  change ENNReal.ofReal _ ≤ ENNReal.ofReal _
+  apply ENNReal.ofReal_le_ofReal
+  dsimp [B]
+  ring_nf
+  exact le_rfl
 
 /-- The multi-index (as a finitely supported function) associated to a bounded exponent vector. -/
 noncomputable def exponentFinsupp {s : ℕ} {d : Fin s → ℕ} (e : (i : Fin s) → Fin (d i + 1)) :
@@ -471,7 +520,7 @@ lemma isMDSGenerator_univariatePowersGeneratorOn [DecidableEq F] (s : Set F) [Fi
 every module code over `ι` whose relative distance equals that of `LC` — in particular for `LC`
 itself (`MC := LC`, `hδ := rfl`) and for every iterated interleaving of `LC`.
 
-For `d ≥ 1` this is `isMCAGenerator_of_isMDSGenerator` (sorried) together with the
+For `d ≥ 1` this is `isMCAGenerator_of_isMDSGenerator` together with the
 identifications `mdsMCAError_congr` (as `mdsMCAError` reads the code only through `δᵣ`) and
 `mdsMCAError_eq_powersMCAError`; for `d = 0` the MCA event is vacuous at any alphabet, so the
 error `0 ≤ powersMCAError` suffices. -/
@@ -561,7 +610,7 @@ lemma generatorByRightMul_coeffMatrix_on {s : ℕ} {ℓ : Type} [Fintype ℓ]
 /-- A polynomial generator over restricted seed sets `Sᵢ` with `|Sᵢ| ≥ dᵢ + 1` has MCA for
 every linear code `LC`, with error `∑ᵢ powersMCAError LC dᵢ |Sᵢ| η`, for every `0 < η < 1`.
 
-Its only unproved input is `isMCAGenerator_of_isMDSGenerator`: the tensor stage is
+The base case is `isMCAGenerator_of_isMDSGenerator`; the tensor stage is
 `isMCAGenerator_tensorGeneratorPi_tight`, which reaches the unscaled error sum through the
 proved interleaved-hypothesis lemma. -/
 theorem isMCAGenerator_of_isPolynomialGeneratorOf {ι : Type} [Fintype ι] [Nonempty ι]

@@ -162,6 +162,8 @@ public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.C
 public import
   ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.CurveSupportCertificate
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.JohnsonCertificate
+public import
+  ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.JohnsonCurveCertificate
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.LocalRank
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.PartitionRank
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.ReceivedCurve
@@ -209,6 +211,7 @@ public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.Un
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FreeOrder
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.Johnson.FiniteBounds
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.Johnson.InterpolationBounds
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.Johnson.LegacyComparison
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.Johnson.WeightedCertificate
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RankRounding
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.BlockLength
@@ -271,21 +274,26 @@ public import ArkLib.Data.CodingTheory.ProximityGap.AHIV22
 public import ArkLib.Data.CodingTheory.ProximityGap.AHIV22Support
 public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.BWMatrix
 public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.GoodCoeffs
+public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.JohnsonBridge
+public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.JohnsonComparison
 public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.JointAgreement
 public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.Main
 public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.UniqueDecoding
 public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineSpaces
 public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineSpaces.Basic
 public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.CurveBWMatrix
+public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.CurveBridge
+public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.CurveExplicit
+public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.CurveUniqueAgreement
 public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.Curves
 public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.EpsCa
 public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ErrorBound
-public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ListDecoding.Agreement
-public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ListDecoding.Extraction
 public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ListDecoding.Guruswami
 public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.Prelude
 public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ReedSolomonGap
 public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.WeightedAgreement
+public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.WeightedAgreement.Bounds
+public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.WeightedAgreement.Exact
 public import ArkLib.Data.CodingTheory.ProximityGap.Basic
 public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds
 public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Entropy
@@ -445,6 +453,7 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Gra
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.GraphLineComponent
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.HalfGap.Line
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Johnson.Agreement
+public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Johnson.Curves
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Johnson.FullCode
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Johnson.Probability
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.LineToAffine

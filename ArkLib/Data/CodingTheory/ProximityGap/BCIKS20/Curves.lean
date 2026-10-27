@@ -10,11 +10,17 @@ public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ErrorBound
 public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.JointAgreement
 public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.CurveBWMatrix
 public import ArkLib.Data.CodingTheory.ReedSolomon
+public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.CurveBridge
+public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.CurveExplicit
+public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.JohnsonComparison
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.Johnson.LegacyComparison
 
 /-!
 # ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.Curves
 
-Definitions and results for this component of ArkLib.
+Polynomial received curves satisfy correlated agreement throughout the open Johnson radius.
+The unique-decoding proof uses a Berlekamp–Welch matrix; the Johnson proof uses ordinary
+exact power agreement and finite comparisons with the original BCIKS20 error budgets.
 -/
 
 @[expose] public section
@@ -25,36 +31,126 @@ open NNReal Finset Function ProbabilityTheory
 open scoped BigOperators LinearCode ProbabilityTheory
 open Code
 
-section CoreResults
+/-- The Johnson exact-power exceptional set fits the original BCIKS20 curve error budget.
+This is the non-unique-decoding branch; its message dimension is positive and its radius lies
+strictly below the Johnson threshold. -/
+theorem exists_curve_exactPowerAgreement_johnson_budget
+    {ι F : Type} [Fintype ι] [Nonempty ι] [Field F] [Fintype F] [DecidableEq F]
+    {deg k : ℕ} (domain : ι ↪ F) (δ : ℝ≥0) (hdeg_pos : 0 < deg)
+    (hδ : δ < 1 - ReedSolomon.sqrtRate deg domain)
+    (hUD : ¬ δ ≤ Code.relativeUniqueDecodingRadius
+      (C := (ReedSolomon.code domain deg : Set (ι → F))))
+    (u : Fin (k + 1) → ι → F) :
+    ∃ E : Finset F,
+      (E.card : ℝ) ≤ (k : ℝ) * (errorBound δ deg domain : ℝ) * Fintype.card F ∧
+      ∀ z ∉ E, ∀ P : Polynomial F, P.degree < deg →
+        ⌈(Fintype.card ι : ℝ) * (1 - (δ : ℝ))⌉₊ ≤
+          (ReedSolomon.polynomialAgreementSet domain
+            (ReedSolomon.powerBatchedWord u z) P).card →
+        ReedSolomon.HasExactPowerAgreement domain u (RingHom.id F) deg z P := by
+  classical
+  have hn : 0 < Fintype.card ι := Fintype.card_pos
+  have hproper : deg < Fintype.card ι := by
+    by_contra h
+    have hfull : Fintype.card ι ≤ deg := by omega
+    have hrate : LinearCode.rate (ReedSolomon.code domain deg) = 1 := by
+      rw [ReedSolomon.rateOfLinearCode_eq_min_div, min_eq_right hfull]
+      exact div_self (by exact_mod_cast hn.ne')
+    simp [ReedSolomon.sqrtRate, hrate] at hδ
+  let : NeZero deg := ⟨hdeg_pos.ne'⟩
+  have hrate : (LinearCode.rate (ReedSolomon.code domain deg) : ℝ≥0) =
+      (deg : ℝ≥0) / Fintype.card ι := by
+    rw [ReedSolomon.rateOfLinearCode_eq_div hproper.le]
+    simp [NNRat.cast_div, NNRat.cast_natCast]
+  have hJ : δ ∈ Set.Ioo
+      ((1 - (LinearCode.rate (ReedSolomon.code domain deg) : ℝ≥0)) / 2)
+      (1 - NNReal.sqrt (LinearCode.rate (ReedSolomon.code domain deg) : ℝ≥0)) := by
+    refine ⟨?_, hδ⟩
+    rw [hrate]
+    rwa [ReedSolomon.relativeUniqueDecodingRadius_RS_eq hproper.le, not_le] at hUD
+  let s : ℝ := ReedSolomon.sqrtRate deg domain
+  have hs0 : 0 < s := ReedSolomon.sqrtRate_pos hdeg_pos
+  have hs : s = Real.sqrt ((deg : ℝ) / Fintype.card ι) := by
+    simp only [s, hrate, Real.coe_sqrt, NNReal.coe_div, NNReal.coe_natCast]
+  have hδR : (δ : ℝ) < 1 - s := by
+    have h := NNReal.coe_lt_coe.mpr hδ
+    rwa [NNReal.coe_sub (ReedSolomon.sqrtRate_le_one deg domain), NNReal.coe_one] at h
+  let b : ℝ := min (1 - s - δ) (s / 20)
+  have hb : 0 < b := lt_min (by linarith) (by positivity)
+  have hbRate : b ≤ Real.sqrt ((deg : ℝ) / Fintype.card ι) / 20 := by
+    rw [← hs]
+    exact min_le_right _ _
+  have herr : (errorBound δ deg domain : ℝ) =
+      (deg : ℝ) ^ 2 / ((2 * b) ^ 7 * Fintype.card F) := by
+    rw [errorBound_eq_johnson hJ]
+    change ((deg ^ 2 : ℝ≥0) : ℝ) / _ = _
+    simp [b, s, NNReal.coe_sub hδ.le,
+      NNReal.coe_sub (ReedSolomon.sqrtRate_le_one deg domain)]
+  let A := ⌈(Fintype.card ι : ℝ) * (1 - (δ : ℝ))⌉₊
+  let B : ℝ := (k : ℝ) * ((deg : ℝ) ^ 2 / (2 * b) ^ 7)
+  have hexact : ∃ E : Finset F, (E.card : ℝ) ≤ B ∧
+      ∀ z ∉ E, ∀ P : Polynomial F, P.degree < deg →
+        A ≤ (ReedSolomon.polynomialAgreementSet domain
+          (ReedSolomon.powerBatchedWord u z) P).card →
+        ReedSolomon.HasExactPowerAgreement domain u (RingHom.id F) deg z P := by
+    obtain ⟨D, rfl⟩ := Nat.exists_eq_succ_of_ne_zero hdeg_pos.ne'
+    by_cases hD : D = 0
+    · subst D
+      obtain ⟨E, hE, hgood⟩ := ReedSolomon.uniformExactPowerAgreement_constantCode domain u A
+      refine ⟨E, ?_, hgood⟩
+      have hc := ReedSolomon.HiddenDerivative.choose_two_le_bciks hn hb
+        (by simpa using hbRate)
+      have hE' : (E.card : ℝ) ≤ k * (Fintype.card ι).choose 2 := by
+        exact_mod_cast hE.trans (Nat.div_le_self _ _)
+      exact hE'.trans (by simpa [B] using mul_le_mul_of_nonneg_left hc (Nat.cast_nonneg k))
+    · let eta : ℝ := 1 - δ - Real.sqrt
+          (ReedSolomon.HiddenDerivative.johnsonRhoMinus (Fintype.card ι) D)
+      have hDpos : 1 ≤ D := by omega
+      have hDn : D ≤ Fintype.card ι - 2 := by omega
+      have hsmall : Real.sqrt
+          (ReedSolomon.HiddenDerivative.johnsonRhoMinus (Fintype.card ι) D) ≤ s := by
+        rw [hs]
+        apply Real.sqrt_le_sqrt
+        unfold ReedSolomon.HiddenDerivative.johnsonRhoMinus
+        gcongr
+        exact_mod_cast Nat.le_succ D
+      have hbeta : b ≤ eta := by
+        have := min_le_left (1 - s - (δ : ℝ)) (s / 20)
+        dsimp only [b, eta] at *
+        linarith
+      have heta : 0 < eta := hb.trans_le hbeta
+      have ha : ReedSolomon.HiddenDerivative.johnsonAgreement (Fintype.card ι) D eta =
+          1 - δ := by
+        unfold ReedSolomon.HiddenDerivative.johnsonAgreement eta
+        ring
+      have hthreshold : ReedSolomon.HiddenDerivative.johnsonAgreement
+          (Fintype.card ι) D eta * Fintype.card ι ≤ A := by
+        rw [ha, mul_comm]
+        exact Nat.le_ceil _
+      have hAn : A ≤ Fintype.card ι := by
+        apply Nat.ceil_le.mpr
+        exact mul_le_of_le_one_right (Nat.cast_nonneg _) (sub_le_self _ δ.coe_nonneg)
+      obtain ⟨E, hE, hgood⟩ := exists_johnson_curve_exactPowerAgreement_of_fintype
+        domain u hDpos hDn heta hthreshold hAn
+      refine ⟨E, ?_, hgood⟩
+      have hc := ReedSolomon.HiddenDerivative.two_mul_johnsonExceptionCount_le_bciks
+        hDpos hDn heta hthreshold hb hbeta (by simpa using hbRate)
+      have hh := mul_le_mul_of_nonneg_left hc (Nat.cast_nonneg k)
+      dsimp [B]
+      push_cast
+      nlinarith only [hE, hh]
+  obtain ⟨E, hE, hgood⟩ := hexact
+  refine ⟨E, hE.trans ?_, hgood⟩
+  have hq : (Fintype.card F : ℝ) ≠ 0 := by exact_mod_cast Fintype.card_ne_zero
+  rw [herr]
+  dsimp only [B]
+  apply le_of_eq
+  field_simp
 
-variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-variable {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
-
-
-omit [DecidableEq ι] in
-/-- Theorem 1.5 (Correlated agreement for low-degree parameterised curves) in [BCIKS20].
-
-Take a Reed-Solomon code of length `ι` and degree `deg`, a proximity-error parameter
-pair `(δ, ε)` and a curve passing through words `u₀, ..., uκ`, such that
-the probability that a random point on the curve is `δ`-close to the Reed-Solomon code
-is greater than `k * ε`. Then, the words `u₀, ..., uκ` have correlated agreement.
-
-This statement is restricted to the proven open Johnson/Guruswami-Sudan regime
-`0 < δ < 1 - √ρ`. It does not encode the separate capacity-regime extension proposed as
-Conjecture 8.4 of [BCIKS20]. -/
-theorem correlatedAgreement_affine_curves {k : ℕ}
-    {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
-    (hδ_pos : 0 < δ)
-    (hδ : δ < 1 - ReedSolomon.sqrtRate deg domain) :
-    δ_ε_correlatedAgreementCurves (k := k) (A := F) (F := F) (ι := ι)
-      (C := ReedSolomon.code domain deg) (δ := δ) (ε := errorBound δ deg domain) := by
-  sorry
-
-end CoreResults
 
 section BCIKS20ProximityGapSection6
 
-variable {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
+variable {F : Type} [Field F] [Fintype F] [sampleF : SampleableType F] [DecidableEq F]
 variable {n : ℕ} [NeZero n]
 
 /-- The parameters for which the curve points are `δ`-close to a set `V`
@@ -455,10 +551,65 @@ theorem large_agreement_set_on_curve_implies_correlated_agreement {l deg : ℕ}
           rw [he]
           exact Nat.floor_le (by positivity)
 
+omit [DecidableEq F] in
+/-- Uniform sampling turns a strict probability bound into a strict cardinality bound. -/
+private theorem card_filter_gt_of_prob_gt (P : F → Prop) [DecidablePred P] (B : ℝ)
+    (hp : ENNReal.ofReal (B / Fintype.card F) < Pr{let z ← $ᵗ F}[P z]) :
+    B < ((Finset.univ.filter P).card : ℝ) := by
+  classical
+  by_contra h
+  have hc : ((Finset.univ.filter P).card : ℝ) ≤ B := le_of_not_gt h
+  apply (not_lt_of_ge ?_) hp
+  rw [SampleableType.prEvent_uniformSample]
+  have hq : (0 : ℝ) < Fintype.card F := by exact_mod_cast Fintype.card_pos
+  rw [← ENNReal.ofReal_natCast, ← ENNReal.ofReal_natCast,
+    ← ENNReal.ofReal_div_of_pos hq]
+  exact ENNReal.ofReal_le_ofReal (div_le_div_of_nonneg_right hc hq.le)
+
+omit [Fintype F] [SampleableType F] in
+/-- A close parameter with exact power agreement yields a common agreement set for all
+coefficient words. -/
+private theorem jointAgreement_of_exact_curve
+    {ι : Type} [Fintype ι] [Nonempty ι] {deg l : ℕ} (domain : ι ↪ F)
+    (u : Fin (l + 1) → ι → F) (δ : ℝ≥0) (hδ : δ ≤ 1) (z : F)
+    (hz : δᵣ(ReedSolomon.powerBatchedWord u z,
+      (ReedSolomon.code domain deg : Set (ι → F))) ≤ δ)
+    (hgood : ∀ P : Polynomial F, P.degree < deg →
+      ⌈(Fintype.card ι : ℝ) * (1 - (δ : ℝ))⌉₊ ≤
+        (ReedSolomon.polynomialAgreementSet domain (ReedSolomon.powerBatchedWord u z) P).card →
+      ReedSolomon.HasExactPowerAgreement domain u (RingHom.id F) deg z P) :
+    Code.jointAgreement (ReedSolomon.code domain deg) δ u := by
+  classical
+  obtain ⟨c, hc, hclose⟩ :=
+    (Code.relCloseToCode_iff_relCloseToCodeword_of_minDist _ δ).mp hz
+  obtain ⟨P, hP, hPc⟩ := ReedSolomon.mem_code_iff_eval.mp hc
+  obtain ⟨S, hS, hagree⟩ := (Code.relCloseToWord_iff_exists_agreementCols _ _ _).mp hclose
+  have hSNN := (Code.relDist_floor_bound_iff_complement_bound _ _ _).mp hS
+  have hSR : (Fintype.card ι : ℝ) * (1 - (δ : ℝ)) ≤ S.card := by
+    have hh := NNReal.coe_le_coe.mpr hSNN
+    rw [NNReal.coe_mul, NNReal.coe_sub hδ] at hh
+    push_cast at hh
+    nlinarith only [hh]
+  have hsub : S ⊆ ReedSolomon.polynomialAgreementSet domain
+      (ReedSolomon.powerBatchedWord u z) P := by
+    intro i hi
+    rw [ReedSolomon.mem_polynomialAgreementSet]
+    exact (hPc i).trans ((hagree i).1 hi).symm
+  have hA := (Nat.ceil_le.mpr hSR).trans (Finset.card_le_card hsub)
+  obtain ⟨polys, hpolys, _, hset⟩ :=
+    (ReedSolomon.hasExactPowerAgreement_id_iff _ _ _ _ _).mp (hgood P hP hA)
+  refine ⟨S, hSNN, fun t ↦ ReedSolomon.evalOnPoints domain (polys t), fun t ↦ ⟨?_, ?_⟩⟩
+  · exact ReedSolomon.mem_code_iff_eval.mpr ⟨polys t, hpolys t, fun i ↦ rfl⟩
+  · intro i hi
+    have hi' := hsub hi
+    rw [hset, ReedSolomon.mem_commonCurveAgreementSet] at hi'
+    exact Finset.mem_filter.mpr ⟨Finset.mem_univ _, hi' t⟩
+
 /-- The distance bound from [BCIKS20]. -/
 noncomputable def δ₀ (rho : ℝ) (m : ℕ) : ℝ :=
   1 - Real.sqrt rho - Real.sqrt rho / (2 * m)
 
+omit sampleF in
 /-- Theorem 6.2 of [BCIKS20], strictly within the Johnson/Guruswami-Sudan regime.
 
 If the set of points on the curve defined by `u` close to the fixed Reed-Solomon code has at least
@@ -484,8 +635,209 @@ theorem large_agreement_set_on_curve_implies_correlated_agreement' {l deg : ℕ}
     ∃ v : Fin (l + 1) → Fin n → F,
       (∀ i, v i ∈ ReedSolomon.code domain deg) ∧
       (1 - δ) * n ≤ ({ x : Fin n | ∀ i, u i x = v i x } : Finset _).card := by
-  sorry
+  classical
+  have hn : 0 < n := NeZero.pos n
+  have hmpos : (0 : ℝ) < m := by exact_mod_cast (show 0 < m by omega)
+  have hs : (ReedSolomon.sqrtRate deg domain : ℝ) =
+      Real.sqrt ((LinearCode.rate (ReedSolomon.code domain deg) : ℚ≥0) : ℝ) := by
+    simp only [ReedSolomon.sqrtRate, Real.coe_sqrt]
+    rfl
+  have hspos : 0 < (ReedSolomon.sqrtRate deg domain : ℝ) :=
+    ReedSolomon.sqrtRate_pos hdeg_pos
+  have hδ' : (δ : ℝ) ≤ 1 - (1 + 1 / (2 * (m : ℝ))) *
+      (ReedSolomon.sqrtRate deg domain : ℝ) := by
+    rw [hs]
+    unfold δ₀ at hδ
+    convert hδ using 1
+    ring
+  have hproper : deg < n := by
+    by_contra h
+    have hfull : n ≤ deg := by omega
+    have hrate : LinearCode.rate (ReedSolomon.code domain deg) = 1 := by
+      rw [ReedSolomon.rateOfLinearCode_eq_min_div]
+      simp only [Fintype.card_fin, min_eq_right hfull]
+      exact div_self (by exact_mod_cast hn.ne')
+    have hsone : (ReedSolomon.sqrtRate deg domain : ℝ) = 1 := by
+      simp [ReedSolomon.sqrtRate, hrate]
+    rw [hsone] at hδ'
+    have := δ.coe_nonneg
+    have hfrac : 0 < 1 / (2 * (m : ℝ)) := by positivity
+    linarith
+  obtain ⟨E, hE, hgood⟩ := exists_curve_exactPowerAgreement_explicit_budget
+    deg domain l m (δ : ℝ) hdeg_pos (by simpa using hproper) hm δ.coe_nonneg hδ' u
+  have hsmall : (E.card : ℝ) <
+      (coeffs_of_close_proximity_curve (F := F) δ u
+        (ReedSolomon.toFinset domain deg)).card := by
+    apply hE.trans_lt
+    convert hS using 1
+    rw [Fintype.card_fin, hs,
+      ReedSolomon.HiddenDerivative.sqrt_cube_eq_rpow_three_halves (by positivity),
+      ReedSolomon.HiddenDerivative.legacy_shift_pow_seven m (by omega)]
+    norm_num
+    ring
+  obtain ⟨z, hz, hzE⟩ := Finset.exists_mem_notMem_of_card_lt_card
+    (show E.card < (coeffs_of_close_proximity_curve (F := F) δ u
+      (ReedSolomon.toFinset domain deg)).card by exact_mod_cast hsmall)
+  have hclose : δᵣ(ReedSolomon.powerBatchedWord u z,
+      (ReedSolomon.code domain deg : Set (Fin n → F))) ≤ δ := by
+    have hword : ReedSolomon.powerBatchedWord u z = Curve.polynomialCurveEval u z := by
+      funext i
+      simp [ReedSolomon.powerBatchedWord, Curve.polynomialCurveEval]
+    rw [hword]
+    simpa [coeffs_of_close_proximity_curve, ReedSolomon.toFinset,
+      ReedSolomon.RScodeSet] using hz
+  have hδone : δ ≤ 1 := by
+    apply NNReal.coe_le_coe.mp
+    have hnonneg : 0 ≤ (1 + 1 / (2 * (m : ℝ))) *
+        (ReedSolomon.sqrtRate deg domain : ℝ) := by positivity
+    norm_num only [NNReal.coe_one]
+    linarith
+  obtain ⟨S, hSsize, v, hv⟩ := jointAgreement_of_exact_curve domain u δ hδone z hclose
+    (hgood z hzE)
+  refine ⟨v, fun i ↦ (hv i).1, ?_⟩
+  have hsub : S ⊆ ({x : Fin n | ∀ i, u i x = v i x} : Finset _) := by
+    intro x hx
+    simp only [Finset.mem_filter, Finset.mem_univ, true_and]
+    intro i
+    exact (Finset.mem_filter.mp ((hv i).2 hx)).2.symm
+  have hSsize' : (1 - δ) * n ≤ (S.card : ℝ≥0) := by simpa using hSsize
+  exact hSsize'.trans (by exact_mod_cast Finset.card_le_card hsub)
+
 
 end BCIKS20ProximityGapSection6
+
+section CoreResults
+
+variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+variable {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
+
+
+omit [DecidableEq ι] in
+private theorem unique_curve_ca {k deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
+    (hdeg : 0 < deg) (hdeg_le : deg ≤ Fintype.card ι)
+    (hUD : δ ≤ Code.relativeUniqueDecodingRadius (ReedSolomon.code domain deg : Set (ι → F)))
+    (u : Fin (k + 1) → ι → F)
+    (hprob : Pr{let z ← $ᵗ F}[δᵣ(∑ t : Fin (k + 1), z ^ (t : ℕ) • u t,
+      (ReedSolomon.code domain deg : Set (ι → F))) ≤ δ] > k * errorBound δ deg domain) :
+    Code.jointAgreement (ReedSolomon.code domain deg) δ u := by
+  classical
+  let n := Fintype.card ι
+  let e : Fin n ≃ ι := (Fintype.equivFin ι).symm
+  let domain' := e.toEmbedding.trans domain
+  let u' : Fin (k + 1) → Fin n → F := fun t ↦ u t ∘ e
+  let : NeZero n := ⟨Fintype.card_ne_zero⟩
+  let : NeZero deg := ⟨hdeg.ne'⟩
+  have hUD' : δ ≤ Code.relativeUniqueDecodingRadius
+      (ReedSolomon.code domain' deg : Set (Fin n → F)) := by
+    rw [ReedSolomon.relativeUniqueDecodingRadius_RS_eq (by simpa [n] using hdeg_le)]
+    rw [ReedSolomon.relativeUniqueDecodingRadius_RS_eq hdeg_le] at hUD
+    simpa [n] using hUD
+  let P : F → Prop := fun z ↦ δᵣ(∑ t : Fin (k + 1), z ^ (t : ℕ) • u t,
+    (ReedSolomon.code domain deg : Set (ι → F))) ≤ δ
+  have hnumeric : ENNReal.ofReal ((k : ℝ) * n / Fintype.card F) <
+      Pr{let z ← $ᵗ F}[P z] := by
+    have herror : ENNReal.ofReal ((k : ℝ) * n / Fintype.card F) =
+        (k : ENNReal) * (errorBound δ deg domain : ENNReal) := by
+      rw [errorBound_eq_n_div_q_of_le_relUDR hUD,
+        ENNReal.ofReal_div_of_pos (by exact_mod_cast Fintype.card_pos (α := F)),
+        ENNReal.ofReal_mul (Nat.cast_nonneg k)]
+      simp [n, div_eq_mul_inv, mul_assoc]
+    rw [herror]
+    exact hprob
+  have hcount : n * k < (Finset.univ.filter P).card := by
+    have hh := card_filter_gt_of_prob_gt P ((k : ℝ) * n) hnumeric
+    have hh' : ((n * k : ℕ) : ℝ) < ((Finset.univ.filter P).card : ℝ) := by
+      simpa [Nat.cast_mul, mul_comm] using hh
+    exact_mod_cast hh'
+  have hcurve (z : F) : Curve.polynomialCurveEval u' z =
+      (∑ t : Fin (k + 1), z ^ (t : ℕ) • u t) ∘ e := by
+    ext i
+    simp [Curve.polynomialCurveEval, u']
+  have hcoeff : coeffs_of_close_proximity_curve (F := F) δ u'
+      (ReedSolomon.toFinset domain' deg) = Finset.univ.filter P := by
+    ext z
+    simp only [coeffs_of_close_proximity_curve, Set.mem_toFinset, Set.mem_ofPred_eq,
+      Finset.mem_filter, Finset.mem_univ, true_and]
+    simp only [ReedSolomon.toFinset, ReedSolomon.RScodeSet, Set.coe_toFinset]
+    rw [hcurve]
+    exact relCloseToCode_comp_equiv e domain deg _ δ
+  obtain ⟨_, v, hv, _, hbad⟩ := large_agreement_set_on_curve_implies_correlated_agreement
+    hdeg (by simpa [n] using hdeg_le) hUD' (u := u') (by rwa [hcoeff])
+  apply jointAgreement_of_comp_equiv e domain deg u δ
+  let bad : Finset (Fin n) := {x | ∃ t, u' t x ≠ v t x}
+  refine ⟨badᶜ, ?_, v, fun t ↦ ⟨hv t, ?_⟩⟩
+  · apply (Code.relDist_floor_bound_iff_complement_bound _ _ _).mp
+    simp only [Finset.card_compl, Fintype.card_fin]
+    exact Nat.sub_le_sub_left (Nat.le_floor hbad) n
+  · intro i hi
+    have hi' : ¬ ∃ t, u' t i ≠ v t i := by simpa [bad] using hi
+    apply Finset.mem_filter.mpr
+    exact ⟨Finset.mem_univ _, (not_ne_iff.mp fun h ↦ hi' ⟨t, h⟩).symm⟩
+
+omit [DecidableEq ι] in
+/-- Theorem 1.5 (Correlated agreement for low-degree parameterised curves) in [BCIKS20].
+
+Take a Reed-Solomon code of length `ι` and degree `deg`, a proximity-error parameter
+pair `(δ, ε)` and a curve passing through words `u₀, ..., uκ`, such that
+the probability that a random point on the curve is `δ`-close to the Reed-Solomon code
+is greater than `k * ε`. Then, the words `u₀, ..., uκ` have correlated agreement.
+
+A positive message dimension is required: the zero code does not satisfy this bound.
+This statement is restricted to the proven open Johnson regime
+`0 < δ < 1 - √ρ`. It does not encode the separate capacity-regime extension proposed as
+Conjecture 8.4 of [BCIKS20]. -/
+theorem correlatedAgreement_affine_curves {k : ℕ}
+    {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
+    (hdeg_pos : 0 < deg)
+    (hδ_pos : 0 < δ)
+    (hδ : δ < 1 - ReedSolomon.sqrtRate deg domain) :
+    δ_ε_correlatedAgreementCurves (k := k) (A := F) (F := F) (ι := ι)
+      (C := ReedSolomon.code domain deg) (δ := δ) (ε := errorBound δ deg domain) := by
+  classical
+  intro u hprob
+  have hn : 0 < Fintype.card ι := Fintype.card_pos
+  have hproper : deg < Fintype.card ι := by
+    by_contra h
+    have hfull : Fintype.card ι ≤ deg := by omega
+    have hrate : LinearCode.rate (ReedSolomon.code domain deg) = 1 := by
+      rw [ReedSolomon.rateOfLinearCode_eq_min_div, min_eq_right hfull]
+      exact div_self (by exact_mod_cast hn.ne')
+    have hsone : ReedSolomon.sqrtRate deg domain = 1 := by
+      simp [ReedSolomon.sqrtRate, hrate]
+    rw [hsone, tsub_self] at hδ
+    exact (lt_irrefl 0) (hδ_pos.trans hδ)
+  have hδone : δ ≤ 1 := hδ.le.trans tsub_le_self
+  by_cases hUD : δ ≤ Code.relativeUniqueDecodingRadius
+      (C := (ReedSolomon.code domain deg : Set (ι → F)))
+  · exact unique_curve_ca hdeg_pos hproper.le hUD u hprob
+  obtain ⟨E, hE, hgood⟩ := exists_curve_exactPowerAgreement_johnson_budget
+    domain δ hdeg_pos hδ hUD u
+  let B : ℝ := (k : ℝ) * (errorBound δ deg domain : ℝ) * Fintype.card F
+  let P : F → Prop := fun z ↦ δᵣ(ReedSolomon.powerBatchedWord u z,
+    (ReedSolomon.code domain deg : Set (ι → F))) ≤ δ
+  have hword (z : F) : ReedSolomon.powerBatchedWord u z =
+      ∑ i : Fin (k + 1), z ^ (i : ℕ) • u i := by
+    funext i
+    simp [ReedSolomon.powerBatchedWord]
+  have hp : ENNReal.ofReal (B / Fintype.card F) < Pr{let z ← $ᵗ F}[P z] := by
+    have heq : ENNReal.ofReal (B / Fintype.card F) =
+        ((k * errorBound δ deg domain : ℝ≥0) : ENNReal) := by
+      rw [← ENNReal.ofReal_coe_nnreal]
+      congr 1
+      simp only [NNReal.coe_mul, NNReal.coe_natCast]
+      dsimp [B]
+      have hq : (Fintype.card F : ℝ) ≠ 0 := by exact_mod_cast Fintype.card_ne_zero
+      field_simp
+    rw [heq]
+    simpa [P, hword] using hprob
+  have hcard := card_filter_gt_of_prob_gt P B hp
+  have hlt : E.card < (Finset.univ.filter P).card := by exact_mod_cast hE.trans_lt hcard
+  obtain ⟨z, hz, hzE⟩ := Finset.exists_mem_notMem_of_card_lt_card hlt
+  exact jointAgreement_of_exact_curve domain u δ hδone z (Finset.mem_filter.mp hz).2
+    (hgood z hzE)
+
+
+end CoreResults
+
 
 end ProximityGap
