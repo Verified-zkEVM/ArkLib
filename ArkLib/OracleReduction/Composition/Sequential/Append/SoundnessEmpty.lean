@@ -9,7 +9,7 @@ public import ArkLib.OracleReduction.Composition.Sequential.NoAmbient
 public import ArkLib.OracleReduction.Composition.Sequential.Append.Security
 
 /-!
-# Ordinary soundness composition without ambient oracles
+# Ordinary soundness and knowledge soundness without ambient oracles
 
 In the plain model the only oracle queries are independent protocol challenges. The entire game
 is independent of the auxiliary oracle state and its initialization, so both component bounds may
@@ -70,5 +70,53 @@ theorem append_soundness_of_empty {lang₁ : Set Stmt₁} {lang₂ : Set Stmt₂
   let := (GuardedForm.ofEmpty V₁ fallback).isGuarded
   exact append_soundness V₁ V₂ h₁ fun s =>
     (soundness_empty_init_iff V₂ (pure s)).mp h₂
+
+/-- Without ambient queries, changing the initial oracle state distribution leaves the named
+knowledge-soundness game unchanged, including its extractor. -/
+theorem knowledgeSoundnessWith_empty_init_iff {Wit₁ Wit₂ : Type}
+    (V : Verifier []ₒ Stmt₁ Stmt₂ pSpec₁) (init' : ProbComp σ)
+    {rel₁ : Set (Stmt₁ × Wit₁)} {rel₂ : Set (Stmt₂ × Wit₂)}
+    {E : Extractor.Straightline []ₒ Stmt₁ Wit₁ Wit₂ pSpec₁} {ε : ℝ≥0} :
+    V.knowledgeSoundnessWith init impl rel₁ rel₂ E ε ↔
+      V.knowledgeSoundnessWith init' impl rel₁ rel₂ E ε := by
+  unfold knowledgeSoundnessWith
+  simp only [simulateQ_empty_challenges_run', OptionT.prEvent_eq_run, OptionT.run_mk,
+    map_bind, OracleComp.prEvent_bind_const]
+
+/-- In the plain model, pure extractors compose with both component bounds at the same
+initialization. The fallback describes the guarded output on rejecting transcripts. -/
+theorem append_knowledgeSoundnessWith_of_empty {Wit₁ Wit₂ Wit₃ : Type}
+    (V₁ : Verifier []ₒ Stmt₁ Stmt₂ pSpec₁) (V₂ : Verifier []ₒ Stmt₂ Stmt₃ pSpec₂)
+    (fallback : Stmt₁ → Stmt₂)
+    (e₁ : Stmt₁ → Wit₂ → pSpec₁.FullTranscript → Option Wit₁)
+    (e₂ : Stmt₂ → Wit₃ → pSpec₂.FullTranscript → Option Wit₂)
+    {rel₁ : Set (Stmt₁ × Wit₁)} {rel₂ : Set (Stmt₂ × Wit₂)} {rel₃ : Set (Stmt₃ × Wit₃)}
+    {ε₁ ε₂ : ℝ≥0}
+    (h₁ : V₁.knowledgeSoundnessWith init impl rel₁ rel₂
+      (Extractor.Straightline.ofTranscriptAndOutput e₁) ε₁)
+    (h₂ : V₂.knowledgeSoundnessWith init impl rel₂ rel₃
+      (Extractor.Straightline.ofTranscriptAndOutput e₂) ε₂) :
+    (V₁.append V₂).knowledgeSoundnessWith init impl rel₁ rel₃
+      (Extractor.Straightline.ofTranscriptAndOutput
+        ((GuardedForm.ofEmpty V₁ fallback).appendExtract e₁ e₂)) (ε₁ + ε₂) :=
+  append_knowledgeSoundnessWith (GuardedForm.ofEmpty V₁ fallback) e₁ e₂ h₁ fun s =>
+    (knowledgeSoundnessWith_empty_init_iff V₂ (pure s)).mp h₂
+
+/-- Plain-model existential knowledge-soundness composition for pure extractors. Both
+component hypotheses use the original initialization. -/
+theorem append_knowledgeSoundness_of_empty {Wit₁ Wit₂ Wit₃ : Type}
+    (V₁ : Verifier []ₒ Stmt₁ Stmt₂ pSpec₁) (V₂ : Verifier []ₒ Stmt₂ Stmt₃ pSpec₂)
+    (fallback : Stmt₁ → Stmt₂)
+    {rel₁ : Set (Stmt₁ × Wit₁)} {rel₂ : Set (Stmt₂ × Wit₂)} {rel₃ : Set (Stmt₃ × Wit₃)}
+    {ε₁ ε₂ : ℝ≥0}
+    (h₁ : ∃ e₁, V₁.knowledgeSoundnessWith init impl rel₁ rel₂
+      (Extractor.Straightline.ofTranscriptAndOutput e₁) ε₁)
+    (h₂ : ∃ e₂, V₂.knowledgeSoundnessWith init impl rel₂ rel₃
+      (Extractor.Straightline.ofTranscriptAndOutput e₂) ε₂) :
+    (V₁.append V₂).knowledgeSoundness init impl rel₁ rel₃ (ε₁ + ε₂) := by
+  obtain ⟨e₁, h₁⟩ := h₁
+  obtain ⟨e₂, h₂⟩ := h₂
+  exact knowledgeSoundness_of_with init impl
+    (append_knowledgeSoundnessWith_of_empty V₁ V₂ fallback e₁ e₂ h₁ h₂)
 
 end Verifier

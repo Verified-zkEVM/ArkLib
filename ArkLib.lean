@@ -776,6 +776,7 @@ public import ArkLib.OracleReduction.Security.Acceptance
 public import ArkLib.OracleReduction.Security.Accumulation
 public import ArkLib.OracleReduction.Security.BadEvents
 public import ArkLib.OracleReduction.Security.Basic
+public import ArkLib.OracleReduction.Security.ChallengePresampling
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Basic
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.CommittedScalar
@@ -791,6 +792,8 @@ public import ArkLib.OracleReduction.Security.GuardedBridges
 public import ArkLib.OracleReduction.Security.GuardedRoundByRound
 public import ArkLib.OracleReduction.Security.GuardedSoundness
 public import ArkLib.OracleReduction.Security.Implications
+public import ArkLib.OracleReduction.Security.KnowledgeSoundnessRun
+public import ArkLib.OracleReduction.Security.OrdinaryComposition
 public import ArkLib.OracleReduction.Security.RbrGame
 public import ArkLib.OracleReduction.Security.Rewinding
 public import ArkLib.OracleReduction.Security.RoundByRound

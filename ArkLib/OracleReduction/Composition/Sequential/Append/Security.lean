@@ -7,9 +7,10 @@ module
 
 public import ArkLib.OracleReduction.Composition.Sequential.Append.ProverSplit
 public import ArkLib.OracleReduction.Security.SoundnessInitialization
+public import ArkLib.OracleReduction.Security.OrdinaryComposition
 
 /-!
-# Ordinary soundness of sequential composition
+# Ordinary soundness and knowledge soundness of sequential composition
 
 `Verifier.append_soundness` and its oracle-verifier wrapper are proved for a guarded first
 verifier and a second-stage soundness bound valid from every deterministic oracle state. The
@@ -17,7 +18,13 @@ first-stage bound uses the given initialization, and the composite error is the 
 errors. The proof restricts an arbitrary adversarial prover at the seam and retains its private
 state and the actual shared oracle state.
 
-The legacy knowledge-soundness and round-by-round contracts below remain admitted.
+Knowledge soundness composes pure statement/output/transcript extractors using
+`GuardedForm.appendExtract`. The first-stage adversary computes the intermediate witness by
+playing the suffix against presampled challenges in its output step. Ambient oracle queries
+remain real and retain their shared state. No inhabitance assumption on the intermediate witness
+type is needed. The named-extractor and existential forms have the sum of the component errors.
+
+The legacy round-by-round contracts below remain admitted.
 
 For proved completeness interfaces, use `Append/Completeness.lean` and
 `Sequential/GuardedCompleteness.lean`. The proved soundness interface in `Append/RoundByRound.lean`
@@ -83,18 +90,114 @@ theorem append_soundness {lang₁ : Set Stmt₁} {lang₂ : Set Stmt₂} {lang�
       v.1.elim False (fun v => v ∈ lang₃)] ≤ _
     simp
 
-/-- If two verifiers satisfy knowledge soundness with compatible relations and respective knowledge
-    errors, then their sequential composition also satisfies knowledge soundness.
-    The knowledge error of the appended verifier is the sum of the individual errors. -/
+/-- Pure transcript-and-output extractors compose through a guarded first verifier. The second
+component's bound must hold from every deterministic shared oracle state, at the same extractor. -/
+theorem append_knowledgeSoundnessWith
+    {V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁}
+    {V₂ : Verifier oSpec Stmt₂ Stmt₃ pSpec₂}
+    (G₁ : V₁.GuardedForm)
+    (e₁ : Stmt₁ → Wit₂ → pSpec₁.FullTranscript → Option Wit₁)
+    (e₂ : Stmt₂ → Wit₃ → pSpec₂.FullTranscript → Option Wit₂) {ε₁ ε₂ : ℝ≥0}
+    (h₁ : V₁.knowledgeSoundnessWith init impl rel₁ rel₂
+      (Extractor.Straightline.ofTranscriptAndOutput e₁) ε₁)
+    (h₂ : ∀ s : σ, V₂.knowledgeSoundnessWith (pure s) impl rel₂ rel₃
+      (Extractor.Straightline.ofTranscriptAndOutput e₂) ε₂) :
+    (V₁.append V₂).knowledgeSoundnessWith init impl rel₁ rel₃
+      (Extractor.Straightline.ofTranscriptAndOutput (G₁.appendExtract e₁ e₂)) (ε₁ + ε₂) := by
+  classical
+  rw [knowledgeSoundnessWith_iff_run]
+  intro Aux stmt aux P
+  let pre := do
+    let s ← init
+    (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
+      ((P.appendPrefix (G₁.out stmt)).run stmt aux)).run s
+  let core := do
+    let z ← pre
+    let r ← (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
+      ((P.appendSuffix (Stmt₂ := Stmt₂)).run (G₁.out stmt z.1.1) z.1.2.2)).run z.2
+    pure (z, r)
+  let verify := fun (r :
+    ((pSpec₁.FullTranscript × Stmt₂ × P.PrvState (ChallengeTree.leftRound (Fin.last m))) × σ) ×
+      ((pSpec₂.FullTranscript × Stmt₃ × Wit₃) × σ)) => (simulateQ impl
+    ((V₁.append V₂).run stmt (r.1.1.1 ++ₜ r.2.1.1))).run r.2.2
+  have hsplit := prEvent_bind_split_le core verify
+    (fun r v => v.1.elim False (fun out =>
+      (∀ w₁ ∈ (e₂ (G₁.out stmt r.1.1.1) r.2.1.2.2 r.2.1.1 >>= fun w₂ =>
+        e₁ stmt w₂ r.1.1.1), (stmt, w₁) ∉ rel₁) ∧ (out, r.2.1.2.2) ∈ rel₃))
+    (fun r => G₁.check stmt r.1.1.1 = true ∧
+      ∃ w₂ ∈ e₂ (G₁.out stmt r.1.1.1) r.2.1.2.2 r.2.1.1,
+        (∀ w₁ ∈ e₁ stmt w₂ r.1.1.1, (stmt, w₁) ∉ rel₁) ∧
+          (G₁.out stmt r.1.1.1, w₂) ∈ rel₂)
+    (fun r v => v.1.elim False (fun out =>
+      (∀ w₂ ∈ e₂ (G₁.out stmt r.1.1.1) r.2.1.2.2 r.2.1.1,
+        (G₁.out stmt r.1.1.1, w₂) ∉ rel₂) ∧ (out, r.2.1.2.2) ∈ rel₃)) (by
+      intro r v hv hb
+      by_cases hc : G₁.check stmt r.1.1.1 = true
+      · cases ho : v.1 with
+        | none => simp [ho] at hb
+        | some out =>
+          simp only [ho, Option.elim_some] at hb ⊢
+          by_cases he : ∃ w₂ ∈ e₂ (G₁.out stmt r.1.1.1) r.2.1.2.2 r.2.1.1,
+              (G₁.out stmt r.1.1.1, w₂) ∈ rel₂
+          · obtain ⟨w₂, hw₂, hr₂⟩ := he
+            refine Or.inl ⟨hc, w₂, hw₂, ?_, hr₂⟩
+            intro w₁ hw₁
+            apply hb.1 w₁
+            have he₂ : e₂ (G₁.out stmt r.1.1.1) r.2.1.2.2 r.2.1.1 = some w₂ := hw₂
+            simpa only [he₂, Option.bind_eq_bind, Option.bind_some] using hw₁
+          · exact Or.inr ⟨fun w₂ hw₂ hr₂ => he ⟨w₂, hw₂, hr₂⟩, hb.2⟩
+      · have hv' : v = (none, r.2.2) := by
+          simp only [verify, append_run_guardedLeft V₁ V₂ G₁.check G₁.out G₁.verify_eq,
+            ite_eq_right hc] at hv
+          change v ∈ support (pure (none, r.2.2) : ProbComp (Option Stmt₃ × σ)) at hv
+          exact OracleComp.eq_of_mem_support_pure _ hv
+        simp [hv'] at hb)
+  have hp := G₁.append_prefix_bad_le e₁ e₂ h₁ stmt aux P
+  have hs : Pr{let r ← (do let a ← core; let v ← verify a; pure (a, v))}[
+      r.2.1.elim False (fun out =>
+        (∀ w₂ ∈ e₂ (G₁.out stmt r.1.1.1.1) r.1.2.1.2.2 r.1.2.1.1,
+          (G₁.out stmt r.1.1.1.1, w₂) ∉ rel₂) ∧ (out, r.1.2.1.2.2) ∈ rel₃)] ≤ ε₂ := by
+    simp only [core, bind_assoc, pure_bind]
+    apply prEvent_bind_le_of_forall_le
+    intro z
+    have hb := (knowledgeSoundnessWith_iff_run e₂).mp (h₂ z.2) _
+      (G₁.out stmt z.1.1) z.1.2.2 (P.appendSuffix (Stmt₂ := Stmt₂))
+    by_cases hc : G₁.check stmt z.1.1 = true
+    · simpa only [verify, append_run_guardedLeft V₁ V₂ G₁.check G₁.out G₁.verify_eq,
+        hc, ite_true, pure_bind, map_bind, Functor.map_map, map_pure,
+        bind_pure_comp] using hb
+    · simp only [verify, append_run_guardedLeft V₁ V₂ G₁.check G₁.out G₁.verify_eq,
+        ite_eq_right hc]
+      apply prEvent_bind_le_of_forall_le
+      intro r
+      change Pr{let v ← (pure (none, r.2) : ProbComp (Option Stmt₃ × σ))}[
+        v.1.elim False (fun out =>
+          (∀ w₂ ∈ e₂ (G₁.out stmt z.1.1) r.1.2.2 r.1.1,
+            (G₁.out stmt z.1.1, w₂) ∉ rel₂) ∧ (out, r.1.2.2) ∈ rel₃)] ≤ _
+      simp
+  simp only [core, pre, bind_assoc] at hsplit hs
+  have hbound := hsplit.trans (add_le_add hp hs)
+  rw [ENNReal.coe_add]
+  simpa only [core, pre, verify, Prover.simulateQ_run_appendSplit impl P (G₁.out stmt),
+    bind_assoc, pure_bind, GuardedForm.appendExtract, FullTranscript.append_fst,
+    FullTranscript.append_snd, bind_pure_comp, map_bind, Functor.map_map,
+    map_pure, bind_map_left] using hbound
+
+/-- Existential pure transcript-and-output extractors compose with the sum of the errors.
+The suffix extractor is fixed uniformly over its initial oracle state. -/
 theorem append_knowledgeSoundness
     (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁)
-    (V₂ : Verifier oSpec Stmt₂ Stmt₃ pSpec₂)
+    (V₂ : Verifier oSpec Stmt₂ Stmt₃ pSpec₂) (G₁ : V₁.GuardedForm)
     {knowledgeError₁ knowledgeError₂ : ℝ≥0}
-    (h₁ : V₁.knowledgeSoundness init impl rel₁ rel₂ knowledgeError₁)
-    (h₂ : V₂.knowledgeSoundness init impl rel₂ rel₃ knowledgeError₂) :
+    (h₁ : ∃ e₁, V₁.knowledgeSoundnessWith init impl rel₁ rel₂
+      (Extractor.Straightline.ofTranscriptAndOutput e₁) knowledgeError₁)
+    (h₂ : ∃ e₂, ∀ s : σ, V₂.knowledgeSoundnessWith (pure s) impl rel₂ rel₃
+      (Extractor.Straightline.ofTranscriptAndOutput e₂) knowledgeError₂) :
       (V₁.append V₂).knowledgeSoundness init impl
         rel₁ rel₃ (knowledgeError₁ + knowledgeError₂) := by
-  sorry
+  obtain ⟨e₁, h₁⟩ := h₁
+  obtain ⟨e₂, h₂⟩ := h₂
+  exact knowledgeSoundness_of_with init impl (append_knowledgeSoundnessWith G₁ e₁ e₂ h₁ h₂)
 
 /-! ### Round-by-round composition assumptions
 
@@ -173,20 +276,40 @@ theorem append_soundness
   convert Verifier.append_soundness V₁.toVerifier V₂.toVerifier h₁ h₂
   simp only [append_toVerifier]
 
-/-- If two oracle verifiers satisfy knowledge soundness with compatible relations and respective
-    knowledge errors, then their sequential composition also satisfies knowledge soundness.
-    The knowledge error of the appended verifier is the sum of the individual errors. -/
+/-- The named pure extractor composition theorem for oracle verifiers. -/
+theorem append_knowledgeSoundnessWith
+    {V₁ : OracleVerifier oSpec Stmt₁ OStmt₁ Stmt₂ OStmt₂ pSpec₁}
+    {V₂ : OracleVerifier oSpec Stmt₂ OStmt₂ Stmt₃ OStmt₃ pSpec₂}
+    (G₁ : V₁.toVerifier.GuardedForm)
+    (e₁ : (Stmt₁ × ∀ i, OStmt₁ i) → Wit₂ → pSpec₁.FullTranscript → Option Wit₁)
+    (e₂ : (Stmt₂ × ∀ i, OStmt₂ i) → Wit₃ → pSpec₂.FullTranscript → Option Wit₂)
+    {ε₁ ε₂ : ℝ≥0}
+    (h₁ : V₁.knowledgeSoundnessWith init impl rel₁ rel₂
+      (Extractor.Straightline.ofTranscriptAndOutput e₁) ε₁)
+    (h₂ : ∀ s : σ, V₂.knowledgeSoundnessWith (pure s) impl rel₂ rel₃
+      (Extractor.Straightline.ofTranscriptAndOutput e₂) ε₂) :
+    (V₁.append V₂).knowledgeSoundnessWith init impl rel₁ rel₃
+      (Extractor.Straightline.ofTranscriptAndOutput (G₁.appendExtract e₁ e₂)) (ε₁ + ε₂) := by
+  unfold knowledgeSoundnessWith
+  rw [append_toVerifier]
+  exact Verifier.append_knowledgeSoundnessWith G₁ e₁ e₂ h₁ h₂
+
+/-- Oracle verifiers with pure transcript-and-output extractors compose through a guarded first
+verifier and a uniform suffix bound over deterministic shared oracle states. -/
 theorem append_knowledgeSoundness
     (V₁ : OracleVerifier oSpec Stmt₁ OStmt₁ Stmt₂ OStmt₂ pSpec₁)
     (V₂ : OracleVerifier oSpec Stmt₂ OStmt₂ Stmt₃ OStmt₃ pSpec₂)
+    (G₁ : V₁.toVerifier.GuardedForm)
     {knowledgeError₁ knowledgeError₂ : ℝ≥0}
-    (h₁ : V₁.knowledgeSoundness init impl rel₁ rel₂ knowledgeError₁)
-    (h₂ : V₂.knowledgeSoundness init impl rel₂ rel₃ knowledgeError₂) :
+    (h₁ : ∃ e₁, V₁.knowledgeSoundnessWith init impl rel₁ rel₂
+      (Extractor.Straightline.ofTranscriptAndOutput e₁) knowledgeError₁)
+    (h₂ : ∃ e₂, ∀ s : σ, V₂.knowledgeSoundnessWith (pure s) impl rel₂ rel₃
+      (Extractor.Straightline.ofTranscriptAndOutput e₂) knowledgeError₂) :
       (V₁.append V₂).knowledgeSoundness init impl rel₁ rel₃
         (knowledgeError₁ + knowledgeError₂) := by
   unfold knowledgeSoundness
-  convert Verifier.append_knowledgeSoundness V₁.toVerifier V₂.toVerifier h₁ h₂
-  simp only [append_toVerifier]
+  rw [append_toVerifier]
+  exact Verifier.append_knowledgeSoundness V₁.toVerifier V₂.toVerifier G₁ h₁ h₂
 
 /-- If two oracle verifiers satisfy round-by-round soundness with compatible languages and
   respective RBR soundness errors, then their sequential composition also satisfies
