@@ -74,6 +74,35 @@ theorem mem_inputRelation_of_relHammingDist_le
   cases k <;> exact hprox
 
 
+/-- The input relation bounds the distance of the indexed initial word to its witness. -/
+theorem relHammingDist_le_of_mem_inputRelation
+    (hdom : 2 ^ (∑ j, (s j).val) * d.val ≤ 2 ^ n) (δ : ℝ≥0)
+    (stmt : Statement F (0 : Fin (k + 1)) × ∀ j, OracleStatement s ω 0 j)
+    (p : Witness F s d (0 : Fin (k + 2)))
+    (hmem : (stmt, p) ∈ inputRelation k s d hdom δ) :
+    (Code.relHammingDist (fun z ↦ initialOracle s stmt (initialQuery z))
+      (fun z ↦ p.1.eval (ω z)) : ℝ) ≤ δ := by
+  let e := (ω.subdomain 0).equivToFinset
+  have he (z : Fin (2 ^ n)) : e z = initialQuery z := by
+    apply Subtype.ext
+    simp [e, initialQuery, CosetFftDomain.subdomain_zero_eq_self]
+  have hdist : Code.relHammingDist ((initialOracle s stmt) ∘ e)
+      ((fun x : (ω.subdomain 0).toFinset ↦ p.1.eval x.val) ∘ e) =
+      Code.relHammingDist (initialOracle s stmt) (fun x ↦ p.1.eval x.val) := by
+    unfold Code.relHammingDist
+    rw [hammingDist_comp_equiv, Fintype.card_congr e]
+  have hf : initialOracle s stmt ∘ e = (fun z ↦ initialOracle s stmt (initialQuery z)) :=
+    funext (fun z ↦ congrArg (initialOracle s stmt) (he z))
+  have hp : (fun x : (ω.subdomain 0).toFinset ↦ p.1.eval x.val) ∘ e =
+      (fun z ↦ p.1.eval (ω z)) := by
+    funext z
+    rw [Function.comp_apply, he]
+    rfl
+  have hprox : Code.relHammingDist (initialOracle s stmt) (fun x ↦ p.1.eval x.val) ≤ δ := by
+    cases k <;> exact hmem
+  rw [← hdist, hf, hp] at hprox
+  exact_mod_cast hprox
+
 /-- A word strictly within radius `δ` of the initial code has a witness in the existing
 FRI input relation, which uses a closed proximity ball. -/
 theorem mem_inputLanguage_of_proximity

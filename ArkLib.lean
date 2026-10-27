@@ -272,6 +272,8 @@ public import ArkLib.Data.CodingTheory.PolishchukSpielman.Resultant
 public import ArkLib.Data.CodingTheory.Prelims
 public import ArkLib.Data.CodingTheory.ProximityGap.AHIV22
 public import ArkLib.Data.CodingTheory.ProximityGap.AHIV22Support
+public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineCoefficients
+public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineCoefficients.Basic
 public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.BWMatrix
 public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.GoodCoeffs
 public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.JohnsonBridge
@@ -288,6 +290,7 @@ public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.CurveUniqueAgreement
 public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.Curves
 public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.EpsCa
 public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ErrorBound
+public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.GeneratorBounds
 public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ListDecoding.Guruswami
 public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.Prelude
 public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ReedSolomonGap
@@ -336,6 +339,7 @@ public import ArkLib.Data.CodingTheory.ProximityGenerator.ExceptionalSet
 public import ArkLib.Data.CodingTheory.ProximityGenerator.Interleaving
 public import ArkLib.Data.CodingTheory.ProximityGenerator.MCAGenerator
 public import ArkLib.Data.CodingTheory.ProximityGenerator.MDSGenerator
+public import ArkLib.Data.CodingTheory.ProximityGenerator.Multilinear
 public import ArkLib.Data.CodingTheory.ProximityGenerator.PolynomialGenerator
 public import ArkLib.Data.CodingTheory.ProximityGenerator.TensorGenerator
 public import ArkLib.Data.CodingTheory.ReedSolomon
@@ -817,6 +821,7 @@ public import ArkLib.OracleReduction.Security.TranscriptTree
 public import ArkLib.OracleReduction.Security.TranscriptTree.Basic
 public import ArkLib.OracleReduction.Security.TranscriptTree.Composition
 public import ArkLib.OracleReduction.VectorIOR
+public import ArkLib.ProofSystem.BatchedFri.EndToEnd
 public import ArkLib.ProofSystem.BatchedFri.Security
 public import ArkLib.ProofSystem.BatchedFri.Spec.General
 public import ArkLib.ProofSystem.BatchedFri.Spec.SingleRound

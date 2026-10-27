@@ -455,7 +455,7 @@ private theorem epsCa_le_one
     (C : Set (ι → F)) (δ_fld δ_int : NNReal) :
     epsCa (F := F) (A := F) C δ_fld δ_int ≤ 1 := by
   classical
-  unfold epsCa
+  simp only [epsCa_eq]
   refine iSup_le fun u => ?_
   split_ifs
   · exact zero_le_one
@@ -491,7 +491,7 @@ theorem epsCa_eq_one_of_all_folds_close_not_joint
         else Pr{let γ ← $ᵗ F}[
           Code.relDistFromCode (u 0 + γ • u 1) C ≤ (δ : ENNReal)]) := (ite_eq_right hjoint).symm
     _ ≤ epsCa (F := F) (A := F) C δ δ := by
-      unfold epsCa
+      simp only [epsCa_eq]
       exact le_iSup (fun w : Code.WordStack F (Fin 2) ι =>
         if Code.jointProximity C (u := w) δ then 0
         else Pr{let γ ← $ᵗ F}[
