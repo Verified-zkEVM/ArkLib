@@ -6,7 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.ProofSystem.BatchedFri.Spec.General
-public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineSpaces
+public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineCoefficients
 public import ArkLib.OracleReduction.Composition.Sequential.GuardedCompleteness
 public import ArkLib.OracleReduction.Security.GuardedSoundness
 
@@ -136,23 +136,8 @@ theorem close_of_mem_outputLanguage
       ((ReedSolomon.code (ω : Fin (2 ^ n) ↪ F)
         (2 ^ (∑ i, (s i).1) * d)).carrier) ≤ δ := by
   obtain ⟨p, hp⟩ := (Set.mem_language_iff _ _).mp h
-  have hprox : Code.relHammingDist
-      (Fri.Spec.initialOracle s (Fin.elim0, combinedOracle s m cs os))
-      (fun x ↦ p.1.eval x.1) ≤ δ := by
-    cases k <;> exact hp
-  let e := (ω.subdomain 0).equivToFinset
-  have he (z : Fin (2 ^ n)) : e z = Fri.Spec.initialQuery z := by
-    apply Subtype.ext
-    simp [e, Fri.Spec.initialQuery, CosetFftDomain.subdomain_zero_eq_self]
-  have hdist : Code.relHammingDist
-      ((Fri.Spec.initialOracle s (Fin.elim0, combinedOracle s m cs os)) ∘ e)
-      ((fun x : (ω.subdomain 0).toFinset ↦ p.1.eval x.val) ∘ e) =
-      Code.relHammingDist
-        (Fri.Spec.initialOracle s (Fin.elim0, combinedOracle s m cs os))
-        (fun x ↦ p.1.eval x.val) := by
-    unfold Code.relHammingDist
-    rw [hammingDist_comp_equiv, Fintype.card_congr e]
-  rw [← hdist] at hprox
+  have hprox := Fri.Spec.relHammingDist_le_of_mem_inputRelation s d hdom δ
+    (Fin.elim0, combinedOracle s m cs os) p hp
   have heval : (fun z ↦ p.1.eval (ω z)) ∈
       ReedSolomon.code (ω : Fin (2 ^ n) ↪ F) (2 ^ (∑ i, (s i).1) * d) := by
     apply ReedSolomon.mem_code_iff_eval.mpr
@@ -163,17 +148,13 @@ theorem close_of_mem_outputLanguage
       exact (CompPoly.CPolynomial.eval_toPoly (ω z) p.1).symm
   apply (Code.relCloseToCode_iff_relCloseToCodeword_of_minDist _ δ).2
   refine ⟨_, heval, ?_⟩
-  have hf : (Fri.Spec.initialOracle s (Fin.elim0, combinedOracle s m cs os)) ∘ e =
-      inputWords m os 0 + ∑ i, cs i • inputWords m os i.succ := by
+  have hf : (fun z ↦ Fri.Spec.initialOracle s (Fin.elim0, combinedOracle s m cs os)
+      (Fri.Spec.initialQuery z)) = inputWords m os 0 + ∑ i, cs i • inputWords m os i.succ := by
     funext z
-    rw [Function.comp_apply, he, initialOracle_combinedOracle]
+    rw [initialOracle_combinedOracle]
     simp only [Pi.add_apply, Finset.sum_apply, Pi.smul_apply, smul_eq_mul]
-  have hp' : (fun x : (ω.subdomain 0).toFinset ↦ p.1.eval x.val) ∘ e =
-      (fun z ↦ p.1.eval (ω z)) := by
-    funext z
-    rw [Function.comp_apply, he]
-    rfl
-  rwa [hf, hp'] at hprox
+  rw [hf] at hprox
+  exact_mod_cast hprox
 
 variable [SampleableType F]
 
@@ -231,54 +212,6 @@ theorem perfect_completeness
   intro cs
   exact combined_mem_outputRelation s d m hdom δ stmt ps hin cs
 
-/-- Uniform coefficients induce the uniform distribution on their affine image, including
-linearly dependent and zero directions. The fibers are translates of the kernel. -/
-theorem uniform_affine_combination {ι : Type} [Fintype ι] [DecidableEq ι]
-    (u : Fin (m + 1) → ι → F) (P : (ι → F) → Prop) :
-    Pr{let cs ← $ᵗ (Fin m → F)}[P (u 0 + ∑ i, cs i • u i.succ)] =
-    Pr{let y ← $ᵗ ↥(Affine.affineSubspaceAtOrigin (F := F) (u 0) (Fin.tail u))}[
-      P y.1] := by
-  classical
-  let L : (Fin m → F) →ₗ[F] (ι → F) :=
-    { toFun := fun c ↦ ∑ i, c i • u i.succ
-      map_add' := by intro a b; simp [add_smul, sum_add_distrib]
-      map_smul' := by intro a b; simp [Finset.smul_sum, smul_smul] }
-  let U := ↥(Affine.affineSubspaceAtOrigin (F := F) (u 0) (Fin.tail u))
-  have lift_exists (y : U) : ∃ c, y.1 = u 0 + L c :=
-    (Affine.mem_affineSubspaceFrom_iff _ _ _).mp y.2
-  let t : U → (Fin m → F) := fun y ↦ (lift_exists y).choose
-  have ht (y : U) : y.1 = u 0 + L (t y) := (lift_exists y).choose_spec
-  let f : (Fin m → F) → U := fun c ↦
-    ⟨u 0 + L c, (Affine.mem_affineSubspaceFrom_iff _ _ _).mpr ⟨c, rfl⟩⟩
-  let e : (Fin m → F) ≃ U × L.ker :=
-    { toFun := fun c ↦ (f c, ⟨c - t (f c), by
-        change L (c - t (f c)) = 0
-        rw [map_sub, sub_eq_zero]
-        exact add_left_cancel (ht (f c))⟩)
-      invFun := fun y ↦ t y.1 + y.2.1
-      left_inv := by intro c; dsimp; abel
-      right_inv := by
-        rintro ⟨y, z⟩
-        have hf : f (t y + z.1) = y := by
-          apply Subtype.ext
-          change u 0 + L (t y + z.1) = y.1
-          rw [map_add, z.2, add_zero, ← ht]
-        apply Prod.ext
-        · exact hf
-        · apply Subtype.ext
-          change t y + z.1 - t (f (t y + z.1)) = z.1
-          rw [hf]; abel }
-  have h := SampleableType.prEvent_uniformSample_equiv e (fun y ↦ P y.1.1)
-  change Pr{let c ← $ᵗ (Fin m → F)}[P (u 0 + L c)] = _
-  change Pr{let c ← $ᵗ (Fin m → F)}[P (e c).1.1] = _
-  rw [h, SampleableType.prEvent_uniformSample_prod]
-  simp only [prEvent_norm]
-  conv_rhs => rw [← bind_pure_comp]
-  apply OracleComp.prEvent_bind_congr_of_support
-  intro x _
-  simpa only [bind_pure_comp] using
-    OracleComp.prEvent_bind_const ($ᵗ L.ker : ProbComp _) (pure (P x.val))
-
 omit [SampleableType F] in
 /-- With no directions, an output witness already establishes the unbatched input language. -/
 theorem mem_inputLanguage_of_output_zero
@@ -305,19 +238,22 @@ theorem mem_inputLanguage_of_output_zero
 /-- If the input words lack correlated agreement, a uniformly sampled combined word lands
 in the FRI input language with probability at most the affine-space proximity error.
 The radius is positive and below the Johnson bound; the degree is the initial FRI bound,
-strictly below the domain size, and the stated error must be less than one. -/
+strictly below the domain size as a consequence of that radius bound. Errors at least
+one give the trivial probability bound. -/
 theorem batching_error
     (hdom : 2 ^ (∑ i, (s i).1) * d ≤ 2 ^ n) (δ : ℝ≥0)
     (hδ_pos : 0 < δ)
     (hδ : δ < 1 - ReedSolomon.sqrtRate (2 ^ (∑ i, (s i).1) * d) (ω : Fin (2 ^ n) ↪ F))
-    (hRS : 2 ^ (∑ i, (s i).1) * d + 1 ≤ Fintype.card (Fin (2 ^ n)))
-    (hε : ProximityGap.errorBound δ (2 ^ (∑ i, (s i).1) * d) (ω : Fin (2 ^ n) ↪ F) < 1)
     (stmt : Unit × ∀ j, OracleStatement m ω j)
     (hnot : stmt ∉ (inputRelation (ω := ω) s d m δ).language) :
     Pr{let cs ← $ᵗ (Fin m → F)}[
       (Fin.elim0, combinedOracle s m cs stmt.2) ∈
         (outputRelation (ω := ω) s d hdom δ).language] ≤
       ProximityGap.errorBound δ (2 ^ (∑ i, (s i).1) * d) (ω : Fin (2 ^ n) ↪ F) := by
+  by_cases hε : ProximityGap.errorBound δ (2 ^ (∑ i, (s i).1) * d)
+      (ω : Fin (2 ^ n) ↪ F) < 1
+  swap
+  · exact (prEvent_le_one _).trans (by exact_mod_cast le_of_not_gt hε)
   by_cases hm : m = 0
   · subst m
     have hz : Pr{let cs ← $ᵗ (Fin 0 → F)}[
@@ -333,14 +269,17 @@ theorem batching_error
     close_of_mem_outputLanguage s d m hdom δ stmt.2 cs h))
   apply le_of_not_gt
   intro hprob
-  have heq := uniform_affine_combination m (inputWords m stmt.2)
-    (fun f ↦ Code.relDistFromCode f
-      (ReedSolomon.code (ω : Fin (2 ^ n) ↪ F) (2 ^ (∑ i, (s i).1) * d)).carrier ≤ δ)
-  have hprob' := lt_of_lt_of_eq hprob heq
+  have hRS : 2 ^ (∑ i, (s i).1) * d + 1 ≤ Fintype.card (Fin (2 ^ n)) := by
+    by_cases heq : 2 ^ (∑ i, (s i).1) * d.val = 2 ^ n
+    · rw [heq] at hδ
+      simp [ReedSolomon.sqrtRate, ReedSolomon.rateOfLinearCode_eq_min_div] at hδ
+    · have hd : 2 ^ (∑ i, (s i).1) * d.val ≤ 2 ^ n := hdom
+      simp only [Fintype.card_fin]
+      omega
   apply hnot
   apply mem_inputLanguage_of_jointAgreement s d m δ stmt
-  exact ProximityGap.correlatedAgreement_affine_spaces
-    (by positivity) hδ_pos hδ hRS hε (inputWords m stmt.2) hprob'
+  exact ProximityGap.correlatedAgreement_affine_coefficients m
+    (by positivity) hδ_pos hδ hRS hε (inputWords m stmt.2) hprob
 
 /-- Before the sole challenge the certificate is input-language membership; afterward it
 is membership of the verifier's deterministic output in the output language. -/
@@ -375,9 +314,6 @@ theorem round_soundness
     (hδ_pos : 0 < δ)
     (hδ : δ < 1 - ReedSolomon.sqrtRate (2 ^ (∑ i, (s i).1) * d)
       (ω : Fin (2 ^ n) ↪ F))
-    (hRS : 2 ^ (∑ i, (s i).1) * d + 1 ≤ Fintype.card (Fin (2 ^ n)))
-    (hε : ProximityGap.errorBound δ (2 ^ (∑ i, (s i).1) * d)
-      (ω : Fin (2 ^ n) ↪ F) < 1)
     {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (batchVerifier (ω := ω) s m).toVerifier.rbrSoundnessWorstCase init impl
       (inputRelation s d m δ).language (outputRelation s d hdom δ).language
@@ -400,7 +336,7 @@ theorem round_soundness
     (instSampleableTypeChallenge m ⟨0, hi⟩) inferInstance (Equiv.refl _)
     (fun cs ↦ (Fin.elim0, combinedOracle s m cs stmt.2) ∈
       (outputRelation s d hdom δ).language)
-  exact heq.trans_le (batching_error s d m hdom δ hδ_pos hδ hRS hε stmt hnot)
+  exact heq.trans_le (batching_error s d m hdom δ hδ_pos hδ stmt hnot)
 
 /-- Ordinary soundness against any prover, with the affine-space error at the actual FRI rate. -/
 theorem soundness
@@ -408,9 +344,6 @@ theorem soundness
     (hδ_pos : 0 < δ)
     (hδ : δ < 1 - ReedSolomon.sqrtRate (2 ^ (∑ i, (s i).1) * d)
       (ω : Fin (2 ^ n) ↪ F))
-    (hRS : 2 ^ (∑ i, (s i).1) * d + 1 ≤ Fintype.card (Fin (2 ^ n)))
-    (hε : ProximityGap.errorBound δ (2 ^ (∑ i, (s i).1) * d)
-      (ω : Fin (2 ^ n) ↪ F) < 1)
     {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (batchVerifier (ω := ω) s m).soundness init impl
       (inputRelation s d m δ).language (outputRelation s d hdom δ).language
@@ -420,7 +353,7 @@ theorem soundness
     { default := ⟨0, rfl⟩
       uniq := fun j ↦ Subtype.ext (Fin.eq_zero j.1) }
   have h := (batchPureForm (ω := ω) s m).toGuardedForm.soundness_of_rbrSoundnessWorstCase
-    (round_soundness s d m hdom δ hδ_pos hδ hRS hε init impl)
+    (round_soundness s d m hdom δ hδ_pos hδ init impl)
   simpa only [OracleVerifier.soundness, Finset.sum_const, Finset.card_univ,
     Fintype.card_unique, one_nsmul] using h
 

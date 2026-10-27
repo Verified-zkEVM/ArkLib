@@ -13,7 +13,7 @@ Check virtual batching, executable witness combination, rejection of an invalid 
 nonvacuous soundness parameters, and the axioms of the round security theorems.
 -/
 
-open Domain BatchedFri.Spec BatchedFri.Spec.BatchingRound
+open OracleSpec Domain BatchedFri.Spec BatchedFri.Spec.BatchingRound
 open scoped NNReal
 
 namespace BatchedFriTest
@@ -108,7 +108,7 @@ example : ((), badWords) ∉ (BatchingRound.inputRelation schedule 1 0 0).langua
 
 -- The soundness premises have a nontrivial small-field instance: rate 1/2,
 -- radius 1/8, and affine-space error 4/17 < 1.
-example :
+private theorem toyParameters :
     (1 / 8 : ℝ≥0) < 1 - ReedSolomon.sqrtRate 2 (domain : Fin 4 ↪ ZMod 17) ∧
     ProximityGap.errorBound (1 / 8) 2 (domain : Fin 4 ↪ ZMod 17) = 4 / 17 ∧
     ProximityGap.errorBound (1 / 8) 2 (domain : Fin 4 ↪ ZMod 17) < 1 := by
@@ -125,6 +125,19 @@ example :
     norm_num
   norm_num only [NNReal.coe_div, NNReal.coe_one, NNReal.coe_ofNat] at ⊢
   nlinarith
+
+-- The public ordinary-soundness API applies with all premises discharged together.
+noncomputable local instance : SampleableType (ZMod 17) := SampleableType.ofFintype _
+
+example {σ : Type}
+    (init : ProbComp σ)
+    (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
+    (batchVerifier (ω := domain) schedule 1).soundness init impl
+      (BatchingRound.inputRelation schedule 1 1 (1 / 8)).language
+      (BatchingRound.outputRelation schedule 1 (by decide) (1 / 8)).language
+      (ProximityGap.errorBound (1 / 8) 2 (domain : Fin 4 ↪ ZMod 17)) := by
+  apply soundness schedule 1 1 (by decide) (1 / 8) (by norm_num)
+  exact toyParameters.1
 
 end BatchedFriTest
 
@@ -162,3 +175,17 @@ info: 'BatchedFri.Spec.BatchingRound.soundness' depends on axioms:
 -/
 #guard_msgs (whitespace := lax) in
 #print axioms BatchedFri.Spec.BatchingRound.soundness
+
+/--
+info: 'ProximityGap.correlatedAgreement_affine_coefficients' depends on axioms:
+[propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms ProximityGap.correlatedAgreement_affine_coefficients
+
+/--
+info: 'Fri.Spec.relHammingDist_le_of_mem_inputRelation' depends on axioms:
+[propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms Fri.Spec.relHammingDist_le_of_mem_inputRelation

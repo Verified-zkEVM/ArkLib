@@ -50,7 +50,7 @@ variable (l m : ℕ)
 variable {ω : SmoothCosetFftDomain n F}
 
 /-- The composite protocol starts with the batching round's correlated-agreement relation. -/
-def inputRelation (δ : ℝ≥0) :=
+abbrev inputRelation (δ : ℝ≥0) :=
   BatchingRound.inputRelation (ω := ω) s d m δ
 
 

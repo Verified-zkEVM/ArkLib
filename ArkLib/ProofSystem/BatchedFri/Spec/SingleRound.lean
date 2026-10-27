@@ -165,50 +165,13 @@ def combinedWitness (cs : Fin m → F) (ps : Witness F s d m) :
         CompPoly.CPolynomial F).toPoly ∈ _
       rw [CompPoly.CPolynomial.toPoly_add, CompPoly.CPolynomial.toPoly_sum]
       simp only [CompPoly.CPolynomial.toPoly_mul, CompPoly.CPolynomial.C_toPoly]
-      set q : F[X] :=
-        (ps 0).1.toPoly + ∑ i, Polynomial.C (cs i) * (ps i.succ).1.toPoly with hq
-      apply mem_degreeLT.mpr
-      by_cases h : q = 0
-      · rw [h]
-        simp only [degree_zero, finRangeTo, List.take_zero, List.toFinset_nil, sum_empty,
-          tsub_zero, Nat.cast_mul, Nat.cast_pow, Nat.cast_ofNat]
-        exact compareOfLessAndEq_eq_lt.mp rfl
-      · rw [Polynomial.degree_eq_natDegree h]
-        norm_cast
-        apply Nat.lt_of_le_pred (by simp)
-        transitivity
-        · exact Polynomial.natDegree_add_le _ _
-        · apply Nat.max_le_of_le_of_le
-          · have h_ps0 := mem_degreeLT.mp
-              ((CompPoly.CPolynomial.degreeLT_toPoly (R := F)).mp (ps 0).2)
-            by_cases h₀ : (ps 0).1.toPoly = 0
-            · rw [h₀]
-              simp
-            · erw
-                [
-                  Polynomial.degree_eq_natDegree h₀,
-                  WithBot.coe_lt_coe,
-                  Nat.cast_id, Nat.cast_id
-                ] at h_ps0
-              exact Nat.le_pred_of_lt h_ps0
-          · apply Polynomial.natDegree_sum_le_of_forall_le
-            intros i _
-            by_cases h : Polynomial.C (cs i) = 0
-            · rw [h]
-              simp
-            · by_cases h' : (ps i.succ).1.toPoly = 0
-              · rw [h']
-                simp
-              · rw [Polynomial.natDegree_mul h h', Polynomial.natDegree_C, zero_add]
-                have h_psi := mem_degreeLT.mp
-                  ((CompPoly.CPolynomial.degreeLT_toPoly (R := F)).mp (ps i.succ).2)
-                erw
-                  [
-                    Polynomial.degree_eq_natDegree h',
-                    WithBot.coe_lt_coe,
-                    Nat.cast_id, Nat.cast_id
-                  ] at h_psi
-                exact Nat.le_pred_of_lt h_psi
+      simp only [finRangeTo, List.take_zero, List.toFinset_nil, sum_empty, tsub_zero]
+      apply Submodule.add_mem
+      · exact CompPoly.CPolynomial.degreeLT_toPoly.mp (ps 0).2
+      · apply Submodule.sum_mem
+        intro i _
+        rw [← Polynomial.smul_eq_C_mul]
+        exact Submodule.smul_mem _ _ (CompPoly.CPolynomial.degreeLT_toPoly.mp (ps i.succ).2)
   ⟩
 
 /-- The batching round oracle prover. -/

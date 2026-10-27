@@ -708,8 +708,10 @@ home_page/            site assets and assembled website root
   words on one common set of density at least `1 - δ`; its output relation is exactly FRI's
   input relation. `BatchedFri/Security.lean` proves perfect completeness and ordinary and
   worst-case round-by-round soundness, with the affine-space error at the actual initial
-  degree bound. Uniform coefficient sampling is proved equivalent to uniform sampling of the
-  affine image even for dependent directions. The obsolete full-rate FRI claims and their
+  degree bound, without extra degree or error restrictions beyond the radius hypotheses.
+  `Data/CodingTheory/ProximityGap/BCIKS20/AffineCoefficients.lean` supplies the coefficient-form
+  correlated-agreement theorem and proves uniform coefficient sampling equivalent to uniform
+  sampling of the affine image even for dependent directions. The obsolete full-rate FRI claims and their
   manufactured folding-history implementation have been removed. The composite security
   theorem remains deferred to sequential composition. Acceptance and axiom checks are in
   `ArkLibTest/ProofSystem/BatchedFri.lean`.
