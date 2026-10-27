@@ -7,6 +7,7 @@ module
 
 public import ArkLib.ProofSystem.Sumcheck.Structured
 public import ArkLib.ProofSystem.Sumcheck.Spec.SingleRound
+public import ArkLib.OracleReduction.Security.Guarded
 
 /-!
 # Structured (Witness-Mode) Sumcheck — Single-Round Primitives
@@ -26,20 +27,16 @@ This file collects single-round primitives for the structured (witness-mode) sum
 - `roundKnowledgeError` — the `d / |L|` Schwartz–Zippel round error for the explicit round
   polynomial degree bound `d`.
 
-These were originally housed in `Binius.BinaryBasefold.Prelude`,
-`RingSwitching.Packing.Spec`, and `RingSwitching.Packing.SumcheckPhase`. They are fully
-generic (no binary-tower or ring-switching dependencies) and have been promoted here so
-that other protocols (e.g. a Galois-ring PCS) can reuse them without
-depending on `Binius.*`. `RingSwitching.Packing.SumcheckPhase` retains thin `@[reducible]`
-wrappers that specialize `Context` and `OStmtIn` back to the DP24 ring-switching types.
+The round definitions are independent of binary towers and ring switching. The product-sumcheck
+consumer in `RingSwitching.Packing.ProductSumcheck` maintains the packed polynomial as its witness
+and derives its degree-two round polynomial from the public multiplier.
 
-Note on rejection: `roundOracleVerifier` below rejects by emitting a **dummy statement** rather
-than `failure`. That is fine for a round-by-round soundness argument, but it is not usable for
-tree-based (coordinate-wise special soundness) extraction, where all siblings of a node share the
-prover message and a dummy output collapses every branch onto the same statement. Protocols that
-need the latter use a `failure`-guarded verifier instead — Hachi's §4.3 round
-(`Commitments/Functional/Hachi/Sumcheck/Rounds.lean`) is the worked example, and generalizing it
-here is the natural way to give this layer a CWSS certificate.
+Note on rejection: `roundOracleVerifier` below **aborts** (`failure`) on a failed round check,
+rather than emitting a dummy statement. A dummy output on rejection lies in the next round's
+relation for suitable witnesses, which makes the terminal knowledge-state obligation of a
+round-by-round argument false; it also collapses the branches of a tree-based extraction onto one
+statement. `roundOracleVerifierGuardedForm` gives its guard and verdict as data, stated by
+`roundOracleVerifierGuardedForm_check` and `roundOracleVerifierGuardedForm_out`.
 -/
 
 @[expose] public section
@@ -134,7 +131,7 @@ The per-round prover/verifier/reduction (one round; the outer protocol iterates 
 `seqCompose`). Generic in:
 - the underlying carrier `L` (anything `CommRing`),
 - the protocol context `Context : Type` (Binius RingSwitching plugs in
-  `RingSwitchingBaseContext κ L K ℓ`; Hachi will plug in its own),
+  a public context carrying the multiplier parameters),
 - the external oracle statements `OStmtIn : ιₛᵢ → Type` (Binius plugs in
   `aOStmtIn.OStmtIn`).
 
@@ -248,7 +245,8 @@ def roundOracleProver (i : Fin ℓ) :
 Receives the degree-`d` univariate `h_i(X)` from the prover, checks
 `s_i ?= ∑ b ∈ D.points i, h_i(b)` (summing the round polynomial over coordinate `i`'s evaluation
 domain, to match how the prover builds it; for the boolean hypercube this is `h_i(0) + h_i(1)`),
-samples `r'_i ∈ L`, and outputs the updated statement with `s_{i+1} := h_i(r'_i)`. -/
+samples `r'_i ∈ L`, and outputs the updated statement with `s_{i+1} := h_i(r'_i)`. A failed check
+aborts. -/
 def roundOracleVerifier (i : Fin ℓ) :
     OracleVerifier
     (oSpec := []ₒ)
@@ -264,14 +262,7 @@ def roundOracleVerifier (i : Fin ℓ) :
       ⟨⟨0, rfl⟩, ()⟩
     -- Sumcheck check: s_i ?= ∑_{b ∈ D.points i} h_i(b), summing the round polynomial over the
     -- evaluation domain of coordinate `i` (for the boolean hypercube this is `h_i(0) + h_i(1)`).
-    let sumcheck_check := (∑ b ∈ D.points i, h_i.val.eval b) = stmtIn.sumcheck_target
-    unless sumcheck_check do
-      let dummyStmt : Statement (L := L) (ℓ := ℓ) Context i.succ := {
-        ctx := stmtIn.ctx,
-        sumcheck_target := 0,
-        challenges := Fin.snoc stmtIn.challenges 0
-      }
-      return dummyStmt
+    guard ((∑ b ∈ D.points i, h_i.val.eval b) = stmtIn.sumcheck_target)
     -- Message 1: V samples r'_i and sends it to P.
     let r_i' : L := pSpecChallenges ⟨1, rfl⟩
     let stmtOut : Statement (L := L) (ℓ := ℓ) Context i.succ := {
@@ -286,6 +277,44 @@ def roundOracleVerifier (i : Fin ℓ) :
     outputInterface_heq := by
       intro j
       rfl }
+
+omit [NeZero ℓ] in
+/-- The round verifier's guard and verdict as data: it outputs the folded statement when the round
+polynomial sums to the running target over coordinate `i`'s domain, and aborts otherwise. -/
+def roundOracleVerifierGuardedForm (i : Fin ℓ) :
+    (roundOracleVerifier (L := L) (ℓ := ℓ) (D := D) (Context := Context) (OStmtIn := OStmtIn)
+      (d := d) i).toVerifier.GuardedForm :=
+  Verifier.GuardedForm.ofQueryGuard _ ⟨⟨0, rfl⟩, ()⟩
+    (fun s h _ => (∑ b ∈ D.points i, h.val.eval b) = s.sumcheck_target)
+    (fun s h chals =>
+      { ctx := s.ctx
+        sumcheck_target := h.val.eval (chals ⟨1, rfl⟩)
+        challenges := Fin.snoc s.challenges (chals ⟨1, rfl⟩) })
+    (fun _ _ => rfl)
+
+omit [NeZero ℓ] in
+/-- The round verifier's guard: the round polynomial sums to the running target over coordinate
+`i`'s domain. -/
+@[simp]
+theorem roundOracleVerifierGuardedForm_check (i : Fin ℓ)
+    (s : Statement (L := L) (ℓ := ℓ) Context i.castSucc × ∀ j, OStmtIn j)
+    (tr : (pSpecSumcheckRound L d).FullTranscript) :
+    (roundOracleVerifierGuardedForm ℓ D Context (OStmtIn := OStmtIn) d i).check s tr =
+      decide ((∑ b ∈ D.points i, (tr.messages ⟨0, rfl⟩).val.eval b) = s.1.sumcheck_target) :=
+  rfl
+
+omit [NeZero ℓ] in
+/-- The round verifier's verdict: the statement folded at the round polynomial and the challenge,
+with the input oracle statements. -/
+@[simp]
+theorem roundOracleVerifierGuardedForm_out (i : Fin ℓ)
+    (s : Statement (L := L) (ℓ := ℓ) Context i.castSucc × ∀ j, OStmtIn j)
+    (tr : (pSpecSumcheckRound L d).FullTranscript) :
+    (roundOracleVerifierGuardedForm ℓ D Context (OStmtIn := OStmtIn) d i).out s tr =
+      ({ ctx := s.1.ctx
+         sumcheck_target := (tr.messages ⟨0, rfl⟩).val.eval (tr.challenges ⟨1, rfl⟩)
+         challenges := Fin.snoc s.1.challenges (tr.challenges ⟨1, rfl⟩) }, s.2) :=
+  rfl
 
 /-- The oracle reduction bundling the per-round prover and verifier. -/
 def roundOracleReduction (i : Fin ℓ) :

@@ -39,7 +39,8 @@ corollaries set those errors to zero.
 
 Pure verifier forms describe deterministic verifiers that do not reject. A
 `Verifier.GuardedForm` describes a deterministic verifier with an explicit acceptance check;
-rejection contributes to the completeness error. Guarded theorems live in
+rejection contributes to the completeness error. The form itself is defined in
+`Security/Guarded.lean`; the guarded completeness theorems live in
 `Sequential/GuardedCompleteness.lean`, imported separately from the binary umbrella.
 
 `Prover.SimulatedAppendFactorization` equates the simulated prover programs for every input
@@ -78,9 +79,28 @@ transcript prefix, under a pure first verifier. Each round retains its component
 `append_rbrSoundness_of_worst_case_of_pure_first` derives the prover-averaged conclusion from
 these hypotheses. Prover-averaged component bounds alone do not supply this contract.
 
-Generic soundness composition and the implication from round-by-round to ordinary soundness
-remain admitted. Sumcheck, Packing, and Binius use the proved completeness interfaces above;
-their completeness theorems still depend on separate component and context-lifting admissions.
+For knowledge soundness, `Verifier.append_rbrKnowledgeSoundnessWorstCaseWith_of_guarded_first`
+(`Append/GuardedRoundByRound.lean`) composes worst-case component bounds under a *guarded* first
+verifier (`Verifier.GuardedForm`), at the composed extractor `Extractor.RoundByRound.append` and
+the knowledge state function `KnowledgeStateFunction.appendGuarded`. The components share only
+the intermediate relation. `append_rbrKnowledgeSoundnessWorstCase_of_guarded_first` is the
+existential form. `Sequential/GuardedRoundByRound.lean` gives the finite-chain form
+`seqCompose_rbrKnowledgeSoundnessWorstCase_of_guarded`. Each has an averaged corollary and an
+`OracleVerifier` wrapper. Over an empty ambient oracle `Verifier.GuardedForm.ofEmpty` supplies
+the guarded form of any verifier. A named form is preferable where one exists, since the first
+factor's verdict map enters the composed extractor. For oracle verifiers,
+`OracleVerifier.appendGuardedForm` and `OracleVerifier.seqComposeGuardedForm`
+(`Sequential/GuardedNary.lean`) build the composite's guarded form from the components', and
+`OracleVerifier.castIdxGuardedForm` (`OracleReduction/CastIdx.lean`) moves one along an index cast;
+Binary Basefold's core interaction composes all its rounds this way.
+
+Composition from averaged component guarantees alone and the implication from round-by-round to
+ordinary soundness remain admitted. Sumcheck, Packing and Binary Basefold use the proved
+completeness interfaces above. Each client still owes its own component and honest-oracle premises.
+Binary Basefold's `General.lean` composes its actual core and query through the proved guarded
+completeness and worst-case RBR interfaces. Its completeness premise is strict honest encoding;
+its RBR guarantee uses the relaxed relation. `ArkLibTest/ProofSystem/Binius/BinaryBasefold/General.lean`
+checks an inhabited full initial premise, sampled acceptance and the actual append boundary.
 
 ## Clients and validation
 

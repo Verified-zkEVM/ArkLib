@@ -72,7 +72,7 @@ check) and for every `j ∈ Fin t`, `encode(g)(xⱼ) = f₁(xⱼ) + γ · f₂(x
 
 ## Paper ↔ framework mapping
 
-How each step of Construction 6.2 lands on an ArkLib / VCV-io primitive:
+How each step of Construction 6.2 lands on an ArkLib / VCVio primitive:
 
 * `γ ←$ F` (combination randomness) ↦ `pSpec` round 0 (`.V_to_P`); the
   security games sample it via the `SampleableType F` instance on the
@@ -90,7 +90,7 @@ How each step of Construction 6.2 lands on an ArkLib / VCV-io primitive:
 * the §6.2 round-by-round state and extractor (L6.8) ↦ `GammaState`,
   `rbrKnowledgeStateFunction`, `rbrExtractor`.
 * verifier query routing ↦ `OracleInterface.simOracle2` / `simulateQ`
-  (VCV-io's query-simulation semantics).
+  (VCVio's query-simulation semantics).
 * completeness game ↦ `OracleReduction.perfectCompleteness`.
 * knowledge-soundness games (paper App A.1, Defs A.2 / A.4 / A.5) ↦
   `OracleVerifier.knowledgeSoundness` / `OracleVerifier.rbrKnowledgeSoundness`.
@@ -1052,10 +1052,10 @@ lemma accepts_of_probEvent_pos_verifier_run
     (tr : FullTranscript (pSpec (ι := ι) (F := F) k t))
     (witOut : OutputWitness)
     (relOut : Set ((OutputStatement × ∀ i, OutputOracleStatement i) × OutputWitness))
-    (h : Pr{let stmtOut ← OptionT.mk do
+    (h : Pr{let stmtOut ← (OptionT.mk do
           (simulateQ impl
               (((oracleVerifier (k := k) (t := t) encode).toVerifier).run stmtIn tr)).run'
-            (← init)}[(stmtOut, witOut) ∈ relOut] > 0) :
+            (← init))}[(stmtOut, witOut) ∈ relOut] > 0) :
     Accepts (k := k) (t := t) encode stmtIn.1 stmtIn.2
       (tr ⟨0, by decide⟩) (tr ⟨1, by decide⟩) (tr ⟨2, by decide⟩) := by
   rw [gt_iff_lt, OracleComp.OptionT.prEvent_mk_pos_iff] at h

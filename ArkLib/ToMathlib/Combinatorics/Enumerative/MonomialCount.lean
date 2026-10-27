@@ -8,6 +8,7 @@ module
 public import Mathlib.Algebra.Order.Antidiag.FinsuppEquiv
 public import Mathlib.Combinatorics.Enumerative.InclusionExclusion
 public import Mathlib.RingTheory.Polynomial.HilbertPoly
+public import Mathlib.Algebra.Polynomial.Eval.SMul
 
 /-!
 # Counting exponent vectors of bounded degree outside finitely many cones

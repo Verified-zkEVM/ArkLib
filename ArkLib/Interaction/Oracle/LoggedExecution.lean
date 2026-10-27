@@ -6,7 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.Interaction.Oracle.CoreRun
-public import VCVio.OracleComp.QueryTracking.LoggingOracle
+public import VCVio.OracleComp.QueryTracking.LoggingOracle.Core
 
 /-!
 # Ordered source logging
@@ -209,7 +209,7 @@ theorem executeStrategiesLogged_erase {ι : Type u} (ambient : OracleSpec.{u, u}
             <$> program) h
         simp only [Functor.map_map, LoggedResult.erase, executeStrategies, map_bind,
           bind_pure_comp, TypeTree.ExecutionPath.ofTypeTreePath,
-          PFunctor.FreeM.mapLensPathToPathAlong, TypeTree.runtimeLens, TypeTree.toTypeTree]
+          PFunctor.FreeM.PathAlong.ofMapLensPath, TypeTree.runtimeLens, TypeTree.toTypeTree]
             at lifted ⊢
         exact lifted
       · erw [TwoParty.run_receiver]
@@ -230,7 +230,7 @@ theorem executeStrategiesLogged_erase {ι : Type u} (ambient : OracleSpec.{u, u}
             <$> program) h
         simp only [Functor.map_map, LoggedResult.erase, executeStrategies, map_bind,
           bind_pure_comp, TypeTree.ExecutionPath.ofTypeTreePath,
-          PFunctor.FreeM.mapLensPathToPathAlong, TypeTree.runtimeLens, TypeTree.toTypeTree]
+          PFunctor.FreeM.PathAlong.ofMapLensPath, TypeTree.runtimeLens, TypeTree.toTypeTree]
             at lifted ⊢
         exact lifted
   | «oracle» Messages rest ih =>
@@ -258,7 +258,7 @@ theorem executeStrategiesLogged_erase {ι : Type u} (ambient : OracleSpec.{u, u}
           <$> program) h
       simp only [Functor.map_map, LoggedResult.erase, executeStrategies, map_bind,
         bind_pure_comp, TypeTree.ExecutionPath.ofTypeTreePath,
-          PFunctor.FreeM.mapLensPathToPathAlong, TypeTree.runtimeLens, TypeTree.toTypeTree]
+          PFunctor.FreeM.PathAlong.ofMapLensPath, TypeTree.runtimeLens, TypeTree.toTypeTree]
             at lifted ⊢
       exact lifted
 

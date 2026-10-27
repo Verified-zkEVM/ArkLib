@@ -15,7 +15,6 @@ public import ArkLib.Data.Polynomial.RationalFunctions
 public import ArkLib.Data.CodingTheory.ReedSolomon
 public import ArkLib.Data.Polynomial.Trivariate
 public import ArkLib.Data.CodingTheory.Basic.DecodingRadius
-public import Mathlib.MeasureTheory.Integral.Lebesgue.Basic
 
 /-!
 # Foundations for affine-space proximity bounds
@@ -170,7 +169,7 @@ theorem exists_basepoint_with_large_line_prob_aux {ι : Type} [Fintype ι] [None
   have hP2_integral : P2 = ∫⁻ a, lineProb a ∂𝒟[$ᵗ U] := by
     change Pr{let a ← $ᵗ U; let z ← $ᵗ F}[good (a.1 + z • dir)] =
       ∫⁻ a, Pr{let z ← $ᵗ F}[good (a.1 + z • dir)] ∂𝒟[$ᵗ U]
-    simpa only [id_eq, bind_pure] using
+    simpa only [id_map, bind_pure_comp] using
       (prEvent_bind_eq_lintegral_of_discrete ($ᵗ U)
         (fun a : U => do
           let z ← $ᵗ F
@@ -192,7 +191,7 @@ theorem exists_basepoint_with_large_line_prob_aux {ι : Type} [Fintype ι] [None
     have hsplit :
         Pr{let z ← $ᵗ F; let a ← $ᵗ U}[good (a.1 + z • dir)] =
           ∫⁻ z, Pr{let a ← $ᵗ U}[good (a.1 + z • dir)] ∂𝒟[$ᵗ F] := by
-      simpa only [id_eq, bind_pure] using
+      simpa only [id_map, bind_pure_comp] using
         (prEvent_bind_eq_lintegral_of_discrete ($ᵗ F)
           (fun z : F => do
             let a ← $ᵗ U
@@ -639,8 +638,7 @@ Proof strategy:
 theorem all_affine_elements_close {k : ℕ} [NeZero k]
     (u : Fin (k + 1) → ι → F) {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
     (hδ : δ ≤ 1 - ReedSolomon.sqrtRate deg domain)
-    (hPr : Pr{
-      let y ← $ᵗ (Affine.affineSubspaceAtOrigin (F := F) (u 0) (Fin.tail u))}[δᵣ(↑y,
+    (hPr : Pr{let y ← $ᵗ (Affine.affineSubspaceAtOrigin (F := F) (u 0) (Fin.tail u))}[δᵣ(↑y,
         (ReedSolomon.code domain deg : Set (ι → F))) ≤ δ] >
       ProximityGap.errorBound δ deg domain) :
     ∀ x ∈ (Affine.affineSubspaceAtOrigin (F := F) (u 0) (Fin.tail u) : Set (ι → F)),
@@ -866,9 +864,7 @@ theorem all_affine_elements_close {k : ℕ} [NeZero k]
             exact Prod.ext hc_eq (Subtype.ext (Subtype.ext hx_eq))
       · push Not at hε_lt
         exact absurd hPr_fin (not_lt.mpr (le_trans
-          (prEvent_le_one ($ᵗ (affineFinset (u 0) (Fin.tail u)))
-            (fun y => δᵣ(↑y, (V : Set (ι → F))) ≤ δ))
-          (by exact_mod_cast hε_lt)))
+          (prEvent_le_one _) (by exact_mod_cast hε_lt)))
     intro x hx
     rcases exists_basepoint_with_large_line_prob (U'_sub := spanU) (u0 := 0)
       (dir := x) (hdir := hx) (V := (V : Set (ι → F))) (δ := δ)

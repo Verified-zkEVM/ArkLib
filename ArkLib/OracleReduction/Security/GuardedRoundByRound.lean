@@ -1,0 +1,113 @@
+/-
+Copyright (c) 2026 ArkLib Contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Chung Thai Nguyen, Alexander Hicks
+-/
+module
+
+public import ArkLib.OracleReduction.Security.RoundByRound
+public import ArkLib.OracleReduction.Security.Guarded
+
+/-!
+# Guarded verifiers in round-by-round arguments
+
+A guarded verifier either returns a deterministic verdict or aborts. This file collects the
+facts a round-by-round proof needs about such a verifier.
+
+* `Verifier.GuardedForm.check_and_of_prEvent_pos`: a positive-probability output event of a
+  guarded verifier forces its guard to pass and the event to hold at its verdict. This discharges
+  the terminal obligation `KnowledgeStateFunction.toFun_full`.
+* `Verifier.rbrKnowledgeSoundnessWorstCaseWith_of_two_message`: for a prover-message,
+  verifier-challenge protocol, worst-case round-by-round knowledge soundness
+  (`Verifier.rbrKnowledgeSoundnessWorstCaseWith`) follows from a bound on the extraction-failure
+  event `rbrExtractionFailureEvent` for every input statement and every length-one transcript
+  prefix, that is, every prover message. The averaged notion follows through
+  `Verifier.rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness`.
+* `Verifier.rbrKnowledgeSoundnessWorstCaseWith_of_isEmpty_challengeIdx`: a protocol with no
+  verifier challenge is worst-case round-by-round knowledge sound at any extractor, knowledge-state
+  function and error, since there is no extraction-failure event to bound.
+
+The guarded form of a query-guard-return oracle verifier, which
+`Verifier.GuardedForm.check_and_of_prEvent_pos` consumes, is `Verifier.GuardedForm.ofQueryGuard`
+(in `Security/Guarded.lean`); its guard may read the challenges as well as the queried message.
+-/
+
+@[expose] public section
+
+noncomputable section
+
+open OracleComp OracleSpec ProtocolSpec
+open scoped NNReal ENNReal ProbabilityTheory
+
+variable {ι : Type} {oSpec : OracleSpec ι} {StmtIn WitIn StmtOut WitOut : Type}
+  {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
+
+namespace Verifier
+
+/-- A positive-probability output event of a guarded verifier forces the guard to pass and the
+event to hold at the verdict: a failed guard aborts, and an aborted run outputs nothing. -/
+theorem GuardedForm.check_and_of_prEvent_pos {n : ℕ} {pSpec : ProtocolSpec n}
+    {V : Verifier oSpec StmtIn StmtOut pSpec} (G : V.GuardedForm) {stmt : StmtIn}
+    {tr : FullTranscript pSpec} {p : StmtOut → Prop}
+    (h : Pr{let s ← OptionT.mk do
+      (simulateQ impl (V.run stmt tr)).run' (← init)}[p s] > 0) :
+    G.check stmt tr = true ∧ p (G.out stmt tr) := by
+  have hrun : (V.run stmt tr : OracleComp oSpec (Option StmtOut)) =
+      if G.check stmt tr then pure (some (G.out stmt tr)) else pure none := by
+    simp only [Verifier.run, G.verify_eq stmt tr]
+    split <;> rfl
+  rw [gt_iff_lt, OptionT.prEvent_mk_pos_iff] at h
+  obtain ⟨x, hx, hp⟩ := h
+  rw [hrun] at hx
+  by_cases hc : G.check stmt tr = true
+  · simp only [hc, ite_true, simulateQ_pure, support_bind, Set.mem_iUnion, exists_prop] at hx
+    obtain ⟨s, -, hs⟩ := hx
+    have hxo : x = G.out stmt tr := by
+      simpa [StateT.run'_eq, StateT.run_pure] using hs
+    exact ⟨hc, hxo ▸ hp⟩
+  · simp only [hc, Bool.false_eq_true, ite_false, simulateQ_pure, support_bind, Set.mem_iUnion,
+      exists_prop] at hx
+    obtain ⟨s, -, hs⟩ := hx
+    simp [StateT.run'_eq] at hs
+
+/-- **Worst-case round-by-round knowledge soundness of a message-then-challenge round.** For a
+protocol in which the prover sends one message and the verifier then sends one challenge, a bound
+on the extraction-failure event at the challenge, for every input statement and every prover
+message, is worst-case round-by-round knowledge soundness at that error, with the given
+extractor and knowledge-state function. -/
+theorem rbrKnowledgeSoundnessWorstCaseWith_of_two_message {pSpec : ProtocolSpec 2}
+    [∀ i, SampleableType (pSpec.Challenge i)]
+    (hDir0 : pSpec.dir 0 = .P_to_V) (hDir1 : pSpec.dir 1 = .V_to_P)
+    {V : Verifier oSpec StmtIn StmtOut pSpec}
+    {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
+    {rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0} {WitMid : Fin 3 → Type}
+    (extractor : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid)
+    (kSF : V.KnowledgeStateFunction init impl relIn relOut extractor)
+    (hbound : ∀ (stmtIn : StmtIn)
+      (transcript : Transcript (⟨1, hDir1⟩ : pSpec.ChallengeIdx).1.castSucc pSpec),
+      Pr{let c ← $ᵗ (pSpec.Challenge ⟨1, hDir1⟩)}[rbrExtractionFailureEvent kSF.toFun
+        extractor ⟨1, hDir1⟩ stmtIn transcript c] ≤ rbrKnowledgeError ⟨1, hDir1⟩) :
+    V.rbrKnowledgeSoundnessWorstCaseWith init impl relIn relOut WitMid extractor kSF
+      rbrKnowledgeError := by
+  intro stmtIn i transcript
+  obtain ⟨j, hj⟩ := i
+  fin_cases j
+  · exact absurd (hDir0.symm.trans hj) (by decide)
+  · exact hbound stmtIn transcript
+
+/-- **Worst-case round-by-round knowledge soundness without challenges.** A protocol with no
+verifier challenge has no extraction-failure event to bound, so every extractor and
+knowledge-state function give worst-case round-by-round knowledge soundness, at any error. The
+substance of such a step lies in its knowledge-state function's obligations. -/
+theorem rbrKnowledgeSoundnessWorstCaseWith_of_isEmpty_challengeIdx {n : ℕ}
+    {pSpec : ProtocolSpec n} [∀ i, SampleableType (pSpec.Challenge i)]
+    [IsEmpty pSpec.ChallengeIdx] {V : Verifier oSpec StmtIn StmtOut pSpec}
+    {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
+    {rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0} {WitMid : Fin (n + 1) → Type}
+    (extractor : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid)
+    (kSF : V.KnowledgeStateFunction init impl relIn relOut extractor) :
+    V.rbrKnowledgeSoundnessWorstCaseWith init impl relIn relOut WitMid extractor kSF
+      rbrKnowledgeError :=
+  fun _ i _ => (IsEmpty.false i).elim
+
+end Verifier

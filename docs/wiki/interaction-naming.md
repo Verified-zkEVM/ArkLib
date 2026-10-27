@@ -152,9 +152,10 @@ state, and computes the next private state from the actual execution path and ac
 `OrderedExecution` runs these stages in order and stops on rejection.
 
 The invariant theorems require preservation at every stage. Their probabilistic forms require
-almost-sure acceptance and invariant preservation; the measure bridge additionally assumes the
-stated discrete measurable spaces and `OracleSpec.IsMeasureSpec` probability measures for
-oracle answers. These interfaces and theorems do not by themselves assert execution provenance,
+almost-sure acceptance and invariant preservation; the measure bridge additionally assumes
+discrete measurable spaces on the stage states and `OracleSpec.AnswerMeasure` answer measures,
+whose answers carry the discrete σ-algebra and need no measurable-space assumption. These
+interfaces and theorems do not by themselves assert execution provenance,
 noninterference of values captured when constructing a stage, or a security composition theorem.
 
 `TypeTree.sourceAfter` is one source context for the final accumulated access signature. Its
@@ -182,9 +183,16 @@ bounds accepted true outputs for a false input sum under a fresh uniform finite-
 before that challenge. Neither theorem states multi-round or knowledge soundness.
 
 `legacy_input_iff` and `legacy_output_iff` give both directions of relation correspondence for
-arbitrary concrete claims. `legacy_honest_verifier_correspondence` is narrower: it compares honest
-executions. The legacy verifier reads the input polynomial for its next target, while the typed
-verifier reads the sent polynomial. Their arbitrary-message executions are not identified.
+arbitrary concrete claims. `legacy_verifier_correspondence` identifies single-round scalar outputs
+for arbitrary sent polynomials and fixed challenges, including rejection: both verifiers take the
+sent polynomial at the challenge as the next target and keep the input polynomial as the output
+oracle. It does not relate the legacy and native security games.
+
+The legacy round-by-round knowledge-soundness statements in `Sumcheck/Spec/` require
+`[IsDomain R]` on top of `[Fintype R]`; without it the error `deg / |R|` fails over rings with zero
+divisors. A finite commutative semiring with `IsDomain` is a finite field or the Boolean semiring,
+and two degree-`deg` polynomials that differ somewhere agree on at most `deg` points in both cases.
+Verifier execution and completeness keep the commutative-semiring generality.
 
 ## Consecutive multivariate rounds
 
@@ -336,7 +344,6 @@ unchanged. For named contexts and their views, replace old `tensor` uses by `dis
 | `executeRoundsSampled_measure_complete` | `executeRoundsSampled_measureCompleteness` |
 | `executeRounds_uniform_measure_complete` | `executeRounds_uniform_measureCompleteness` |
 | Soundness `*_measure_soundness` | `*_measureSoundness` |
-| `legacy_verifier_correspondence` | `legacy_honest_verifier_correspondence` |
 | `TypeTree.FullPrefix` | `TypeTree.ExecutionPrefix` |
 | Prefix `resources`, `resourceInclusion` | `availableContext`, `contextInclusion` |
 | Prefix `no_future` | `available_length_le` |

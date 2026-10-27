@@ -13,7 +13,7 @@ public import VCVio.EvalDist.List
 public import ToMathlib.Data.Vector
 -- Owns `OracleComp.support_ofFn_mapM_index`, used in `Verifier.run_all_eq_bind` below.
 public import VCVio.OracleComp.Constructions.Replicate
-public import VCVio.OracleComp.QueryTracking.LoggingOracle
+public import VCVio.OracleComp.QueryTracking.LoggingOracle.Core
 
 /-!
   # Execution Semantics of Interactive Oracle Reductions
@@ -399,7 +399,7 @@ def Reduction.runWithLog (stmt : StmtIn) (wit : WitIn)
 
 Both logs are discarded the same way: `monadLift_bind_fst` pulls the `Prod.fst` projection inside
 the lift, which exposes the party's logged run to the lemma that strips its log —
-`Prover.runWithLog_discard_log_eq_run` for the prover and VCV-io's
+`Prover.runWithLog_discard_log_eq_run` for the prover and VCVio's
 `loggingOracle.fst_map_run_simulateQ` for the verifier. The `▸`/`exact` spelling is forced rather
 than stylistic: after `simp only` the goal is not type-correct at `instances` transparency (ArkLib's
 `Verifier.run` is an `OptionT`, which `kabstract` sees as `OracleComp _ (Option _)`), so `rw`

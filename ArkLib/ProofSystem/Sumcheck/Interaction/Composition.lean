@@ -287,7 +287,7 @@ theorem execute_appendExported_succ (challenge : OracleComp ambient R) (domain :
       Protocol.done_tree, Protocol.oracleWith_oracles, Protocol.public_oracles,
       Protocol.done_oracles]
     simp only [TypeTree.ExecutionPath.ofTypeTreePath,
-      PFunctor.FreeM.mapLensPathToPathAlong,
+      PFunctor.FreeM.PathAlong.ofMapLensPath,
       remainingProtocol, Core.remainingProtocol,
       remainingVerifier]
     dsimp only [TypeTree.ExecutionPath.toBranchPath, PFunctor.FreeM.projectPathAlong,
@@ -318,7 +318,7 @@ theorem execute_appendExported_succ (challenge : OracleComp ambient R) (domain :
       Protocol.done_tree, Protocol.oracleWith_oracles, Protocol.public_oracles,
       Protocol.done_oracles]
     simp only [TypeTree.ExecutionPath.ofTypeTreePath,
-      PFunctor.FreeM.mapLensPathToPathAlong,
+      PFunctor.FreeM.PathAlong.ofMapLensPath,
       remainingProtocol, Core.remainingProtocol,
       remainingVerifier]
     dsimp only [TypeTree.ExecutionPath.toBranchPath, PFunctor.FreeM.projectPathAlong,
