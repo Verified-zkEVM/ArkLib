@@ -239,11 +239,12 @@ section SumcheckContextIncluded_Relations
 variable {Context : Type} {multpoly : Context → MultilinearPoly L ℓ}
 
 /-- The witness is structured: its round polynomial `H` is `multpoly ctx · t` with the statement's
-challenges substituted for the first variables (the `P · t` sum-check, `projectToMidSumcheckPoly`),
+challenges substituted for the first variables (the `P · t` sum-check, `MvPolynomial.fixPrefix`),
 and its folded word `f` is the honest fold of `t`'s codeword by those challenges. -/
 def WitnessStructuralInvariant {i : Fin (ℓ + 1)} (stmt : Statement (L := L) Context i)
     (wit : Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) : Prop :=
-  wit.H = projectToMidSumcheckPoly ℓ wit.t (m := multpoly stmt.ctx) i stmt.challenges ∧
+  wit.H = MvPolynomial.fixPrefix ℓ i
+    (computeInitialSumcheckPoly ℓ wit.t (multpoly stmt.ctx)) stmt.challenges ∧
   wit.f = getMidCodewords 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) wit.t
     stmt.challenges
 

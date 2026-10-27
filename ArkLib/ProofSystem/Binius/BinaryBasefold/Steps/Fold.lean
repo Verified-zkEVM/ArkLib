@@ -112,9 +112,9 @@ def foldStepWitBeforeFromWitMid (i : Fin ℓ)
     (witMid : Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ) :
     Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc where
   t := witMid.t
-  H := projectToMidSumcheckPoly (L := L) (ℓ := ℓ)
-    (t := witMid.t) (m := multpoly stmtIn.ctx)
-    (i := i.castSucc) (challenges := stmtIn.challenges)
+  H := MvPolynomial.fixPrefix ℓ i.castSucc
+    (computeInitialSumcheckPoly ℓ witMid.t (multpoly stmtIn.ctx))
+    (challenges := stmtIn.challenges)
   f := getMidCodewords 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) witMid.t
     (challenges := stmtIn.challenges)
 
@@ -679,13 +679,13 @@ lemma foldStepFreshBadEvent_or_of_rbrExtractionFailureEvent (i : Fin ℓ)
           (foldStepHStarFromWitMid (multpoly := multpoly) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
             (𝓑 := 𝓑) i stmtOStmtIn.1 witMid) := by
       have h_wit_struct_after :
-          witMid.H = projectToMidSumcheckPoly (L := L) (ℓ := ℓ) (t := witMid.t)
-            (m := multpoly stmtOStmtIn.1.ctx) (i := i.succ)
+          witMid.H = MvPolynomial.fixPrefix ℓ i.succ
+            (computeInitialSumcheckPoly ℓ witMid.t (multpoly stmtOStmtIn.1.ctx))
             (challenges := Fin.snoc stmtOStmtIn.1.challenges r_i') := by
         exact h_consistency.1.1
       let H_before : L⦃≤ 2⦄[X Fin (ℓ - i.castSucc)] :=
-        projectToMidSumcheckPoly (L := L) (ℓ := ℓ) (t := witMid.t)
-          (m := multpoly stmtOStmtIn.1.ctx) (i := i.castSucc)
+        MvPolynomial.fixPrefix ℓ i.castSucc
+          (computeInitialSumcheckPoly ℓ witMid.t (multpoly stmtOStmtIn.1.ctx))
           (challenges := stmtOStmtIn.1.challenges)
       let h_star_extracted : L⦃≤ 2⦄[X] := getSumcheckRoundPoly ℓ (SumcheckDomain.uniform 𝓑 ℓ)
           (i := i) (h := H_before)
@@ -693,7 +693,7 @@ lemma foldStepFreshBadEvent_or_of_rbrExtractionFailureEvent (i : Fin ℓ)
           Polynomial.eval r_i' h_i.val = Polynomial.eval r_i' h_star_extracted.val := by
         unfold sumcheckConsistencyProp at h_sumcheck_after
         rw [h_wit_struct_after] at h_sumcheck_after
-        rw [Sumcheck.Structured.projectToMidSumcheckPoly_succ ℓ witMid.t
+        rw [Sumcheck.Structured.fixPrefix_initial_succ ℓ witMid.t
           (multpoly stmtOStmtIn.1.ctx) i stmtOStmtIn.1.challenges r_i'] at h_sumcheck_after
         exact h_sumcheck_after.trans
           (Sumcheck.Structured.sum_projectToNextSumcheckPoly_uniform ℓ 𝓑 i H_before r_i')
@@ -744,7 +744,7 @@ lemma foldStepFreshBadEvent_or_of_rbrExtractionFailureEvent (i : Fin ℓ)
 omit [DecidableEq 𝔽q] in
 /-- For every input statement and every sent round polynomial, the probability over the challenge
 alone of an extraction failure at the fold step is at most `foldKnowledgeError`: a union bound
-over the bad sum-check event (Schwartz–Zippel, `Sumcheck.Structured.prob_eval_eq_le`) and the
+over the bad sum-check event (Schwartz–Zippel, `Probability.prob_degreeLE_eval_eq_le`) and the
 fresh incremental folding bad event (`prob_incrementalFoldingBadEvent_fresh_le`). -/
 lemma prob_foldStep_rbrExtractionFailureEvent_le (i : Fin ℓ)
     (stmtOStmtIn : (Statement (L := L) Context i.castSucc) × (∀ j,
@@ -848,15 +848,15 @@ lemma prob_foldStep_rbrExtractionFailureEvent_le (i : Fin ℓ)
   · dsimp only [sumcheckBadEvent]
     -- Strategy: ignore the `FoldStepFreshBadEvent`; `firstOracleWitnessConsistency_unique`
     -- makes the witness consistent with the first oracle unique, so the bound is
-    -- `Sumcheck.Structured.prob_eval_eq_le` at that witness's honest round polynomial.
+    -- `Probability.prob_degreeLE_eval_eq_le` at that witness's honest round polynomial.
     let compatPred : MultilinearPoly L ℓ → Prop := fun t =>
       FirstOracleWitnessConsistent 𝔽q β t (getFirstOracle 𝔽q β stmtOStmtIn.2)
     by_cases hCompat : ∃ t : MultilinearPoly L ℓ, compatPred t
     · rcases hCompat with ⟨t_fixed, h_t_fixed_compat⟩
       let H_fixed : L⦃≤ 2⦄[X Fin (ℓ - i.castSucc)] :=
-        projectToMidSumcheckPoly (L := L) (ℓ := ℓ) (t := t_fixed)
-          (m := multpoly stmtOStmtIn.1.ctx)
-          (i := i.castSucc) (challenges := stmtOStmtIn.1.challenges)
+        MvPolynomial.fixPrefix ℓ i.castSucc
+          (computeInitialSumcheckPoly ℓ t_fixed (multpoly stmtOStmtIn.1.ctx))
+          (challenges := stmtOStmtIn.1.challenges)
       let h_star_fixed : L⦃≤ 2⦄[X] := getSumcheckRoundPoly ℓ (SumcheckDomain.uniform 𝓑 ℓ) (i := i)
           (h := H_fixed)
       have h_prob_mono_sum := prEvent_mono ($ᵗ L)
@@ -878,7 +878,7 @@ lemma prob_foldStep_rbrExtractionFailureEvent_le (i : Fin ℓ)
       · rw [prEvent_eq_zero_of_forall_not _ _ fun _ h => h.1 hne]
         exact _root_.zero_le
       · refine (prEvent_mono _ _ _ fun _ h => h.2).trans ?_
-        have h_sz := Sumcheck.Structured.prob_eval_eq_le (L := L) hne
+        have h_sz := Probability.prob_degreeLE_eval_eq_le (R := L) hne
         rw [ENNReal.coe_div (by simp)] at h_sz ⊢
         simpa using h_sz
     · have h_prob_mono_false := prEvent_mono ($ᵗ L)
