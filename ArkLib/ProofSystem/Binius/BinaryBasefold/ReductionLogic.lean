@@ -180,7 +180,7 @@ lemma foldStepLogic_isStronglyComplete (i : Fin ℓ) :
           foldStepLogic, verifierStmtOut]
         constructor
         · rw [h_H_In]
-          exact (Sumcheck.Structured.projectToMidSumcheckPoly_succ ℓ witIn.t _ i _ _).symm
+          exact (Sumcheck.Structured.fixPrefix_initial_succ ℓ witIn.t _ i _ _).symm
         · rw [h_f_In]
           exact (getMidCodewords_succ 𝔽q β
             (h_ℓ_add_R_rate := h_ℓ_add_R_rate) witIn.t i stmtIn.challenges
@@ -705,12 +705,12 @@ lemma finalSumcheckStepLogic_verifierCheck_honest
       (t := witIn.t) (destIdx := ⟨Fin.last ℓ, by omega⟩)
       (h_destIdx := by simp only [Fin.val_last]) (challenges := stmtIn.challenges)
     exact congr_fun (h := h_eval) ⟨0, by simp only [Fin.val_last, zero_mem]⟩
-  -- Apply `eval_projectToMidSumcheckPoly_last` to connect H.eval with eqTilde * f(0)
+  -- Apply `eval_fixPrefix_initial_last` to connect H.eval with eqTilde * f(0)
   have h_H_eval_at_zero_eq_mul : witIn.H.val.eval (fun _ => (0 : L)) =
       eqTilde stmtIn.ctx.t_eval_point stmtIn.challenges *
       (witIn.f ⟨0, by simp only [zero_mem]⟩) := by
     rw [h_wit_structural_invariant.1]
-    rw [Sumcheck.Structured.eval_projectToMidSumcheckPoly_last]
+    rw [Sumcheck.Structured.eval_fixPrefix_initial_last]
     -- ↑witIn.t = witIn.f ⟨0, ⋯⟩
     rw [h_witIn_f_0_eq_c, h_c_eq]; rfl
   -- Combine to finish the proof

@@ -6,7 +6,7 @@ Authors: ArkLib Contributors
 module
 
 public import ArkLib.ProofSystem.RingSwitching.Packing.ProductSumcheck.RoundExecution
-public import ArkLib.ProofSystem.Sumcheck.Structured.RoundLemmas
+public import ArkLib.Data.Probability.Instances
 
 /-!
 # Fixed-prefix knowledge security of a product-sumcheck round
@@ -26,14 +26,6 @@ open OracleSpec OracleComp ProtocolSpec Polynomial MvPolynomial Probability Prob
 open scoped NNReal ENNReal
 variable {P C Context : Type} [CommRing P] [CommRing C] [Algebra P C] {m : ℕ}
   (multiplier : Multiplier Context C m) (pc : PackedCommitment P m) (i : Fin m)
-
-/-- Distinct degree-two messages agree at a uniform challenge with probability at most
-`2 / card C`. -/
-theorem message_collision_le [NoZeroDivisors C] [Fintype C] [SampleableType C]
-    (g h : C⦃≤ 2⦄[X]) (hne : g ≠ h) :
-    Pr{let c ← $ᵗ C}[g.val.eval c = h.val.eval c] ≤
-      (((2 : ℝ≥0) / Fintype.card C : ℝ≥0) : ℝ≥0∞) := by
-  exact_mod_cast Sumcheck.Structured.prob_eval_eq_le hne
 
 /--
 Before sampling, the received polynomial equals the residual polynomial of the committed
@@ -68,7 +60,7 @@ theorem bad_event_le [NoZeroDivisors C] [Fintype C] [SampleableType C] (hfunctio
       g ≠ honestMessage multiplier i stmt p₀
   · obtain ⟨p₀, hcommit, _, hne⟩ := hlive
     refine (prEvent_mono _ _ _ ?_).trans
-      (message_collision_le g (honestMessage multiplier i stmt p₀) hne)
+      (Probability.prob_degreeLE_eval_eq_le hne)
     rintro c ⟨p, _, _, hsum, hcommit'⟩
     obtain rfl : p = p₀ := hfunctional hcommit' hcommit
     exact hsum.trans (roundMessage_eval i (productPoly (multiplier stmt.ctx) p)

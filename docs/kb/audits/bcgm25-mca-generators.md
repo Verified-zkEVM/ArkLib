@@ -42,9 +42,9 @@ is unstatable in it. Bounds are therefore vacuous once they exceed `1`.
 | Lemma 3.16 (monotone in the distance) | `CoreDefinitions.mcaError_mono` | proved |
 | Lemma 4.1 (right multiplication by a matrix with a left pseudoinverse) | `LinearTransformations.mcaError_generatorByRightMul_le`, `LinearTransformations.pseudoinverseGen` | proved |
 | Cor 4.2 (projection onto a subset of outputs) | `LinearTransformations.mcaError_projectedGenerator_le`, `LinearTransformations.generatorSubset` | proved |
-| Lemma 4.4 (tensor generator), printed statement | `LinearTransformations.isMCAGenerator_tensorGenerator_tight` | **sorried, open** — see below |
-| Lemma 4.4, provable forms | `TensorMCA.isMCAGenerator_tensorGenerator_of_moduleInterleavedCode` (interleaved hypothesis, printed error), `TensorMCA.isMCAGenerator_tensorGenerator` (printed hypothesis, error scaled by `ℓ`) | proved |
-| Lemma 4.4, `s`-fold iterations | `PolynomialGenIsMCA.isMCAGenerator_tensorGeneratorPi` (consumes the open form), `PolynomialGenIsMCA.isMCAGenerator_tensorGeneratorPi_tight` (δᵣ-anchored factor hypothesis, routed through the proved interleaved form) | the `tight` variant is sorry-free |
+| Lemma 4.4 (tensor generator), printed statement | `LinearTransformations.isMCAGenerator_tensorGenerator_tight` | proved, by an argument different from the paper's — see below |
+| Lemma 4.4, other forms | `TensorMCA.isMCAGenerator_tensorGenerator_of_moduleInterleavedCode` (interleaved hypothesis, printed error), `TensorMCA.isMCAGenerator_tensorGenerator` (printed hypothesis, error scaled by `ℓ`) | proved |
+| Lemma 4.4, `s`-fold iterations | `PolynomialGenIsMCA.isMCAGenerator_tensorGeneratorPi` (through the printed form), `PolynomialGenIsMCA.isMCAGenerator_tensorGeneratorPi_tight` (δᵣ-anchored factor hypothesis, routed through the interleaved form) | proved |
 | Remark 3.20 (polynomial ⇒ zero-evading) | `PolynomialGenerator.poly_gen_is_zero_evading` | proved, total-degree variant |
 | Lemma 3.22 (MCA implies CA) | — | not formalized; this is what licenses reading an `mcaError` bound as a correlated-agreement threshold statement |
 | Lemma 7.1 (affine lines to affine spaces) | `AffineMCAMain.isMCAGenerator_affineSpaceGenerator_of_affineLineGenerator` | proved over module alphabets, at `ℓ ≥ 1` where the paper states `s ≥ 2`. At `ℓ = 1` the affine space generator *is* the affine line generator and the conclusion is immediate, since the scaled error `(1 - 1/|F|)⁻¹ · ϵMCA` only exceeds `ϵMCA`; the proof covers that case uniformly |
@@ -60,9 +60,9 @@ is unstatable in it. Bounds are therefore vacuous once they exceed `1`.
 | Claim 6.8 (few seeds strictly extend a large maximal CA domain) | `card_le_of_ssubset_isMaxAgreementDomain_of_isMDSGenerator` | proved; the paper's "without loss of generality `T` is a maximal agreement domain" is a hypothesis, discharged at the call site by `exists_subset_isMaxAgreementDomain` |
 | Claim 6.9 (few seeds avoid every large maximal CA domain) | `card_mul_le_of_forall_not_subset_of_isMDSGenerator` | proved, stated division-free as the disjunction of the two cleared bounds of the paper's `max`. The probabilistic step is the generic `Finset.exists_injective_two_mul_card_filter_lt_card_inf_inter` (`ArkLib/Data/Finset/TupleIntersection.lean`): an incidence identity, Jensen, and a birthday bound, with no probability monad. The paper's birthday hypothesis `|B²| > ℓ(ℓ+1)/η` is stronger than the `ℓ(ℓ-1)/η` the proof needs |
 | Thm 6.1, list-decoding seed count (body of the paper's proof) | `card_filter_isMCA_le_of_isMDSGenerator_of_le_one_sub` | proved, at abstract thresholds `α`, `β`; the `B⁽¹⁾`/`B⁽²⁾` partition with Claims 6.7–6.9 |
-| Thm 8.2 (polynomial generators, arbitrary linear codes) | `PolynomialGenIsMCA.isMCAGenerator_of_isPolynomialGeneratorOf` | proved, now unconditionally since Thm 6.1 is proved: the tensor stage is the sorry-free `isMCAGenerator_tensorGeneratorPi_tight`, so the open Lemma 4.4 is not on its path. Strengthenings over the paper: no `ℓ ≥ 2` hypothesis, and the `d = 0` factor case (skipped by the paper's proof) is proved via the vacuous-event argument |
+| Thm 8.2 (polynomial generators, arbitrary linear codes) | `PolynomialGenIsMCA.isMCAGenerator_of_isPolynomialGeneratorOf` | proved, now unconditionally since Thm 6.1 is proved: the tensor stage is `isMCAGenerator_tensorGeneratorPi_tight`. Strengthenings over the paper: no `ℓ ≥ 2` hypothesis, and the `d = 0` factor case (skipped by the paper's proof) is proved via the vacuous-event argument |
 | Lemma 9.3 (`G_d` for Reed–Solomon) | `RSCode.isMCAGenerator_univariatePowersGenerator` | **sorried**; needs the Guruswami–Sudan machinery |
-| Thm 9.2 (polynomial generators, Reed–Solomon up to Johnson) | `RSCode.isMCAGenerator_of_isPolynomialGeneratorOfFull` | proved assuming Lemma 9.3 **and** the open printed Lemma 4.4 — the latter dependence mirrors a gap in the paper's own proof, see below |
+| Thm 9.2 (polynomial generators, Reed–Solomon up to Johnson) | `RSCode.isMCAGenerator_of_isPolynomialGeneratorOfFull` | proved assuming Lemma 9.3; the printed proof has a separate gap, see below |
 | Lemma 10.1 (`ϵMCA(C^k) ≤ k · ϵMCA(C)`) | — | not formalized |
 
 ## Lemma 6.2: the printed unique-decoding error is off by one
@@ -95,7 +95,7 @@ argument proves `|B| ≤ (e + 1)·(ℓ - 1)` and no more. The example above atta
 with this correction: it is the seed count `card_filter_isMCA_le_of_isMDSGenerator`, converted to
 an `mcaError` bound by `CoreDefinitions.mcaError_le_of_exists_exceptional_set`.
 
-## Lemma 4.4: the printed statement is open
+## Lemma 4.4: the printed statement
 
 Lemma 4.4 assumes both generators have MCA for `C` and concludes error `ϵMCA + ϵ′MCA`. Its proof
 splits the tensor event by the law of total probability and bounds Equation (5), whose clauses are
@@ -105,7 +105,7 @@ splits the tensor event by the law of total probability and bounds Equation (5),
 
 by "ϵ′MCA(γ), the MCA error of G′". A single application of `G′`'s MCA at a fixed family does not
 give this. The bad index `k = (i₀, j₀)` is determined by the event and so depends on the outer seed
-`x′`, which means the family fed to `G′` is not fixed. Two ways out:
+`x′`, which means the family fed to `G′` is not fixed. Two repairs keep the paper's split:
 
 1. Apply `G′`'s MCA to the `ℓ`-fold interleaving `C^ℓ ⊆ (Σ^ℓ)ⁿ` with the family
    `w_j := (u_{(1,j)}, …, u_{(ℓ,j)})`. The `∀ i` clause is exactly membership in the interleaved
@@ -116,41 +116,44 @@ give this. The bad index `k = (i₀, j₀)` is determined by the event and so de
    `ϵMCA + ℓ · ϵ′MCA`.
 
 `TensorMCA.isMCAGenerator_of_moduleInterleavedCode` shows form 1's hypothesis is a strengthening of
-form 2's, so the two do not subsume one another. The printed statement itself is in-tree as the
-sorried `LinearTransformations.isMCAGenerator_tensorGenerator_tight`.
+form 2's.
 
-That the printed error is *unreachable* from the printed hypothesis is not claimed and is not
-known — no separation at equal error is exhibited here or in the paper. What is established is that
-the paper's own argument does not reach it.
+The printed statement holds as stated, by a different split
+(`LinearTransformations.isMCAGenerator_tensorGenerator_tight`). Write `W_{x′,i} := Σ_j G′(x′)_j u_{(i,j)}`
+and `V_{x,j} := Σ_i G(x)_i u_{(i,j)}`; the tensor combination is `Σ_i G(x)_i W_{x′,i}` and also
+`Σ_j G′(x′)_j V_{x,j}`. Choose a family `Z_{x′}` for `G` that depends on `x′` only:
 
-Closing the gap by this route needs `ϵMCA(C^ℓ) ≤ ϵMCA(C)`. The exact transfer
-`CoreDefinitions.mcaError_moduleInterleavedCode_le_of_card_le` supplies it when the inner
-generator's seed space has at most `|F|` elements. The printed Lemma 4.4 has no such seed-size
-condition, so its full stated hypothesis still needs a stronger interleaving bound or another
-argument.
+- if some `T` of the required size has every `W_{x′,i}|_T ∈ C|_T` but some `u_{(i₀,j₀)}|_T ∉ C|_T`,
+  take the column `Z_{x′} := (u_{(i,j₀)})_i`. At a bad `(x, x′)`, either `G′` is bad for the family
+  `V_x` at `x′`, or every `V_{x,j}|_T ∈ C|_T`, in particular `Σ_i G(x)_i u_{(i,j₀)}`, so `G` is bad
+  for `Z_{x′}` at `x` on `T`;
+- otherwise take `Z_{x′} := (W_{x′,i})_i`. At a bad `(x, x′)` some `W_{x′,i}` fails on the tensor
+  witness set, so `G` is bad for `Z_{x′}` at `x`.
 
-### Where the two headline theorems stand relative to the open lemma
+The bad event lies in `{G bad for Z_{x′} at x} ∪ {G′ bad for V_x at x′}`. The first family is
+fixed once `x′` is, and the second once `x` is, so each marginal MCA bound applies for every value
+of the other seed, and the union bound gives `ϵMCA + ϵ′MCA` with no interleaved hypothesis and no
+seed-size condition.
 
-BCGM25 invokes Lemma 4.4 twice, with different outcomes in-tree.
+### Where the two headline theorems stand
 
-- **Thm 8.2** (polynomial generators) does **not** need it. The base MCA comes from Thm 6.1,
-  whose error reads the code only through `n` and `δᵣ` (`mdsMCAError_congr`), both preserved by
-  interleaving (`Code.minRelHammingDistCode_moduleInterleavedCode`). The δᵣ-anchored induction
-  `isMCAGenerator_tensorGeneratorPi_tight` therefore discharges every interleaved hypothesis
-  through the proved form 1, and `isMCAGenerator_of_isPolynomialGeneratorOf` reaches the paper's
-  exact error. With Thm 6.1 proved it is unconditional.
-- **Thm 9.2** (Reed–Solomon, list-decoding regime) genuinely needs it. The base MCA comes from
-  Lemma 9.3, which is Reed–Solomon-specific: its proof constructs the Guruswami–Sudan polynomial
-  `Q(X, Y, Z)` of `BCIKS20` Thm 5.1 and factors `disc*_Y(Q)`. The interleaving `RS^ℓ ⊆ (F^ℓ)ⁿ`
-  is not a Reed–Solomon code, so the interleaved hypothesis is not available at error `ϵ′MCA`,
-  and `isMCAGenerator_of_isPolynomialGeneratorOfFull` consumes the open
-  `isMCAGenerator_tensorGenerator_tight` (via `isMCAGenerator_tensorGeneratorPiUnivariate`).
+BCGM25 invokes Lemma 4.4 twice.
+
+- **Thm 8.2** (polynomial generators). The base MCA comes from Thm 6.1, whose error reads the code
+  only through `n` and `δᵣ` (`mdsMCAError_congr`), both preserved by interleaving
+  (`Code.minRelHammingDistCode_moduleInterleavedCode`). The δᵣ-anchored induction
+  `isMCAGenerator_tensorGeneratorPi_tight` discharges every interleaved hypothesis through form 1,
+  and `isMCAGenerator_of_isPolynomialGeneratorOf` reaches the paper's exact error.
+- **Thm 9.2** (Reed–Solomon, list-decoding regime). The base MCA comes from Lemma 9.3, which is
+  Reed–Solomon-specific, and the interleaving `RS^ℓ ⊆ (F^ℓ)ⁿ` is not a Reed–Solomon code, so form 1
+  is not available. `isMCAGenerator_of_isPolynomialGeneratorOfFull` uses the printed form through
+  `isMCAGenerator_tensorGeneratorPiUnivariate`, so its only unproved input is Lemma 9.3, used at
+  `RS[F, D, k]` itself.
 
 ## A separate gap in the source
 
 The proof of Thm 9.2 writes "By Lemma 9.3, `G_d` has mutual correlated agreement for any linear
 code `C` with error `ϵMCA,RS,d`", but Lemma 9.3 is stated only for `RS[F, D, k]`. The parallel
 sentence in the proof of Thm 8.2 ("for any `F`-linear code `C`") *is* justified, by Thm 6.1; the
-Thm 9.2 one is not justified by the lemma it cites. Thm 9.2's printed error therefore does not
-follow from its printed proof, independently of anything in the formalization. Were Lemma 9.3 in
-fact alphabet-general, the interleaved hypothesis would be dischargeable there too.
+Thm 9.2 one is not justified by the lemma it cites. The formalized proof does not use that
+sentence: with the printed Lemma 4.4 proved, it needs Lemma 9.3 only at `RS[F, D, k]`.

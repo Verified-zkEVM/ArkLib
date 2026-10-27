@@ -41,7 +41,7 @@ every characteristic. The line theorem therefore assumes only characteristic zer
 
 ## References
 
-* [DKTZ26]
+* [DKT26]
 -/
 
 @[expose] public section

@@ -891,6 +891,13 @@ def hypercubeSum (H : CMvPolynomial m₀ F) (i : ℕ) (cs : Fin i → F) : F :=
   ∑ x : Fin (m₀ - i) → Fin 2, H.eval (hypercubePoint m₀ i cs x)
 
 omit [BEq F] [LawfulBEq F] in
+/-- The executable cube fold agrees with the mathematical product-domain sum. -/
+theorem hypercubeSum_eq_mathlib (H : CMvPolynomial m₀ F) (i : ℕ) (cs : Fin i → F) :
+    hypercubeSum m₀ H i cs = MvPolynomial.hypercubeSum m₀ (fromCMvPolynomial H) i cs := by
+  simp only [hypercubeSum, MvPolynomial.hypercubeSum, Fintype.piFinset_univ,
+    hypercubePoint, CPoly.eval_equiv]
+
+omit [BEq F] [LawfulBEq F] in
 /-- **Saturation of the partial sum.** Once the challenge prefix covers every cube coordinate
 (`m₀ ≤ i`), the trailing cube is a single point and `hypercubeSum` collapses to a plain evaluation
 at the prefix — in particular it stops depending on the coordinates beyond the `m₀`-th.
