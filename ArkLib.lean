@@ -553,8 +553,6 @@ public import ArkLib.Data.Finset.WeightedSimplex.Moments
 public import ArkLib.Data.Finset.WeightedSimplex.RankIntegral
 public import ArkLib.Data.Finset.WeightedSimplex.Variance
 public import ArkLib.Data.GroupTheory.PrimeOrder
-public import ArkLib.Data.Hash.DomainSep
-public import ArkLib.Data.Hash.DuplexSponge
 public import ArkLib.Data.Hash.Poseidon2
 public import ArkLib.Data.Lattices.CyclotomicRing.Core
 public import ArkLib.Data.Lattices.CyclotomicRing.Core.Basic
@@ -768,17 +766,6 @@ public import ArkLib.OracleReduction.Equiv
 public import ArkLib.OracleReduction.Execution
 public import ArkLib.OracleReduction.FiatShamir.Basic
 public import ArkLib.OracleReduction.FiatShamir.Completeness
-public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Defs
-public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.AbortAnalysis
-public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Backtrack
-public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.BadEvents
-public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Completeness
-public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.KeyLemma
-public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Lookahead
-public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.ProverTransform
-public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Soundness
-public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.TraceTransform
-public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.State
 public import ArkLib.OracleReduction.LiftContext.Lens
 public import ArkLib.OracleReduction.LiftContext.OracleReduction
 public import ArkLib.OracleReduction.LiftContext.Purity
