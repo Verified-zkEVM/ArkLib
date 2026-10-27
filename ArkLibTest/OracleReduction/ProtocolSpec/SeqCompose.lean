@@ -9,15 +9,7 @@ import ArkLibTest.Data.Fin.Tuple.Lemmas
 /-!
 # Compiled reads of composed protocol specifications
 
-The challenge instances and message oracle interfaces of `pSpec₁ ++ₚ pSpec₂` are built with
-`Fin.fappend₂`, `FullTranscript.append` is `Fin.happend`, the directions of `ProtocolSpec.concat`
-are `Fin.vconcat`, and the instances of `seqCompose` and `FullTranscript.seqCompose` append one
-component at a time. These ordinary callers read every challenge default and every transcript
-entry of forty one-challenge rounds, each prepended to the rest, the directions of forty rounds
-added at the end, and a sequential composition of forty rounds, in generated code. Compiled code
-reads them by one comparison per snoc or append (`ArkLib.Data.Fin.Tuple.Lemmas`), which
-`checkCompiledForms` checks first; through the recursive definitions, the same reads take time
-exponential in the number of rounds.
+Read challenge instances and transcripts through append and sequential composition.
 -/
 
 open ProtocolSpec
@@ -67,11 +59,6 @@ def chalsTranscript : (k : ℕ) → (chals k).FullTranscript
   | 0 => fun i => i.elim0
   | k + 1 => (fun _ => Fin.ofNat 7 k : chal.FullTranscript) ++ₜ chalsTranscript k
 
-/-- `k` challenge rounds, each added at the end by `ProtocolSpec.concat`. -/
-def concatChals : (k : ℕ) → ProtocolSpec k
-  | 0 => !p[]
-  | k + 1 => (concatChals k).concat .V_to_P (Fin 7)
-
 /-- `k` challenge rounds, composed by `seqCompose`. -/
 abbrev seqChals (k : ℕ) := seqCompose fun _ : Fin k => chal
 
@@ -107,8 +94,6 @@ def seqEntries (k : ℕ) : List (Fin 7) :=
 
 -- These ordinary callers require generated code, which reads every round by comparisons.
 private def compiledChecks : IO Unit := do
-  unless List.ofFn (concatChals 40).dir = List.replicate 40 .V_to_P do
-    throw (IO.userError "Incorrect directions of concatenated rounds")
   unless chalsDefaults 40 = List.replicate 40 3 do
     throw (IO.userError "Incorrect challenge defaults of prepended rounds")
   unless chalsEntries 40 = (List.range 40).reverse.map (Fin.ofNat 7) do

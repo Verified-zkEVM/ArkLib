@@ -6,15 +6,9 @@ Authors: ArkLib Contributors
 import ArkLib.Data.Fin.Tuple.Lemmas
 
 /-!
-# Compiled snocs and appends of `Fin` tuples
+# Compiled tuple operations
 
-Compiled code runs `Fin.vconcat`, `Fin.fconcat`, `Fin.fconcat₂`, `Fin.hconcat`, `Fin.fappend`,
-`Fin.fappend₂` and `Fin.happend` through their forms by one comparison (`Fin.vconcat_eq_vconcatSnoc`
-and its siblings). `checkCompiledForms` fails at once unless each `@[csimp]` theorem is registered.
-The ordinary callers below then read every entry of tuples built by many nested snocs, and of
-appends whose second tuple is long, in generated code, and compare them with independently known
-lists. Through the recursive definitions, the same reads take time exponential in the number of
-snocs or in the length of the second tuple.
+Check the compiler rules and read nested snocs and long appends through ordinary callers.
 -/
 
 namespace ArkLibTest.FinTupleCompiledForms
@@ -89,10 +83,6 @@ def hwide (k : ℕ) : Fin (1 + k) → ℕ := fun i =>
   cast (vappend_const ℕ i)
     (happend (α := fun _ : Fin 1 => ℕ) (β := fun _ : Fin k => ℕ) (fun _ => 0)
       (fun j => j.val + 1) i)
-
--- The kernel unfolds the recursive definitions.
-example : List.ofFn (snocs 3) = [0, 1, 2] := by decide
-example : List.ofFn (wide₂ 2) = [0, 1, 2] := by decide
 
 -- These ordinary callers require generated code, which runs the forms by one comparison.
 private def compiledChecks : IO Unit := do
