@@ -76,8 +76,8 @@ These values use `Set` code carriers because their events are also meaningful fo
 Use `ModuleCode` when applying the comparison theorems with mutual correlated agreement.
 
 `epsCa` and `epsCa'` are abbreviations. Use `epsCa_eq` to recover the affine-line
-sampling formula in proofs. The former `epsCaCurves` and `epsCaAffineSpaces` definitions
-have been removed; use the generators in the table above.
+sampling formula in proofs. Curves and affine spaces use `caError` with the generators in
+the table above.
 
 `caError_affineSpace_eq` recovers uniform sampling from the generated affine subspace.
 Its proof uses `uniform_affine_combination`, including dependent and zero directions.
@@ -143,8 +143,8 @@ ArkLib.
 The numeric correlated-agreement values are connected to the predicate API by:
 
 - `δ_ε_correlatedAgreementAffineLines_iff_epsCa_le`;
-- `δ_ε_correlatedAgreementCurves_iff_epsCaCurves_le`;
-- `δ_ε_correlatedAgreementAffineSpaces_iff_epsCaAffineSpaces_le`.
+- `δ_ε_correlatedAgreementCurves_iff_caError_le`;
+- `δ_ε_correlatedAgreementAffineSpaces_iff_caError_le`.
 
 These equivalences allow existing predicate-based proofs to consume numeric bounds without
 introducing a second predicate.

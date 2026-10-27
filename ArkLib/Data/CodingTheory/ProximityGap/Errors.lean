@@ -520,7 +520,7 @@ theorem δ_ε_correlatedAgreementAffineLines_iff_epsCa_le
 
 omit [DecidableEq ι] [Fintype F] [DecidableEq F] in
 /-- Bridge for the polynomial-curve correlated-agreement predicate. -/
-theorem δ_ε_correlatedAgreementCurves_iff_epsCaCurves_le {k : ℕ}
+theorem δ_ε_correlatedAgreementCurves_iff_caError_le {k : ℕ}
     (C : Set (ι → A)) (δ ε : ℝ≥0) :
     δ_ε_correlatedAgreementCurves (F := F) (k := k) C δ ε ↔
       caError (univariatePowersGenerator F k) C δ δ ≤ ((k * ε : ℝ≥0) : ENNReal) := by
@@ -549,7 +549,7 @@ theorem δ_ε_correlatedAgreementCurves_iff_epsCaCurves_le {k : ℕ}
 
 omit [Fintype F] [DecidableEq F] in
 /-- Bridge for the affine-space correlated-agreement predicate. -/
-theorem δ_ε_correlatedAgreementAffineSpaces_iff_epsCaAffineSpaces_le {k : ℕ}
+theorem δ_ε_correlatedAgreementAffineSpaces_iff_caError_le {k : ℕ}
     (C : Set (ι → A)) (δ ε : ℝ≥0) :
     δ_ε_correlatedAgreementAffineSpaces (F := F) (k := k) C δ ε ↔
       caError (AffineSpaceGenerator F k) C δ δ ≤ (ε : ENNReal) := by
