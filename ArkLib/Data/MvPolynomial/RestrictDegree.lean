@@ -177,14 +177,6 @@ theorem eval_fixFirstVariablesOfMQP_last (H : MvPolynomial (Fin ℓ) L)
   refine congrArg (fun f => eval f H) (funext fun j => ?_)
   simp only [Fin.val_last, j.isLt, ↓reduceDIte]
 
-/-- A cast between polynomial rings on equal numbers of variables is a renaming along
-`Fin.cast`. -/
-theorem cast_eq_rename_finCast {a b : ℕ} (hab : a = b)
-    (h : MvPolynomial (Fin a) L = MvPolynomial (Fin b) L) (p : MvPolynomial (Fin a) L) :
-    cast h p = rename (Fin.cast hab) p := by
-  subst hab
-  rw [cast_eq, show (Fin.cast (rfl : a = a)) = id from funext fun _ => rfl, rename_id_apply]
-
 /-- Fixing one more variable after a prefix of length `i` is fixing the prefix of length `i + 1`
 extended by the new value. The renaming identifies `ℓ - i - 1` with `ℓ - (i + 1)`. -/
 theorem fixFirstVariablesOfMQP_succ (i : Fin ℓ) (H : MvPolynomial (Fin ℓ) L)
@@ -281,5 +273,12 @@ theorem degreeOf_aeval_le {L : Type*} [CommSemiring L] {σ : Type*} (i : σ)
     _ ≤ e * 1 := by gcongr
     _ = e := mul_one e
     _ ≤ Q.natDegree := Polynomial.le_natDegree_of_mem_supp e he
+
+/-- Degree-bounded packaging of `fixFirstVariablesOfMQP` for protocol witnesses.
+The underlying operation and its per-variable degree theorem also cover nonuniform bounds. -/
+noncomputable def fixPrefix {d : ℕ} (v : Fin (ℓ + 1))
+    (p : L⦃≤ d⦄[X Fin ℓ]) (challenges : Fin v → L) : L⦃≤ d⦄[X Fin (ℓ - v)] :=
+  ⟨fixFirstVariablesOfMQP ℓ v p.val challenges,
+    fixFirstVariablesOfMQP_degreeLE ℓ v p.property⟩
 
 end MvPolynomial

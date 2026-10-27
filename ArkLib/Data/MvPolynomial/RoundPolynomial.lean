@@ -78,9 +78,11 @@ theorem map_finSuccEquivNth_eq_eval₂_insertNth
       simp [Fin.insertNth_apply_succAbove]
 
 /-- Sum selected-coordinate projections over any finite family of assignments. -/
-noncomputable def sumRoundPolynomial {ι : Type*} (S : Finset ι) (s : ι → Fin n → R)
-    (k : Fin (n + 1)) (p : MvPolynomial (Fin (n + 1)) R) : Polynomial R :=
-  ∑ x ∈ S, Polynomial.map (MvPolynomial.eval (s x)) (finSuccEquivNth R k p)
+noncomputable def sumRoundPolynomial {m : ℕ} {ι : Type*} (S : Finset ι)
+    (s : ι → Fin (m - 1) → R) (k : Fin m) (p : MvPolynomial (Fin m) R) : Polynomial R :=
+  match m with
+  | 0 => k.elim0
+  | _ + 1 => ∑ x ∈ S, Polynomial.map (MvPolynomial.eval (s x)) (finSuccEquivNth R k p)
 
 /-- Evaluation of a round polynomial is the residual sum with the free coordinate fixed. -/
 theorem sumRoundPolynomial_eval {ι : Type*} (S : Finset ι) (s : ι → Fin n → R)
@@ -90,20 +92,11 @@ theorem sumRoundPolynomial_eval {ι : Type*} (S : Finset ι) (s : ι → Fin n �
   simp only [sumRoundPolynomial, Polynomial.eval_finsetSum,
     ← eval_eq_eval_mv_eval_finSuccEquivNth]
 
-/-- First-coordinate evaluation when the arity is presented by an equality. -/
-theorem sumRoundPolynomial_eval_cast {m l : ℕ} (h : l = m + 1)
-    (S : Finset (Fin m → R)) (p : MvPolynomial (Fin l) R) (r : R) :
-    (sumRoundPolynomial S id 0 (cast (congrArg (fun k => MvPolynomial (Fin k) R) h) p)).eval r =
-      ∑ x ∈ S, p.eval (Fin.cons r x ∘ Fin.cast h) := by
-  subst l
-  simp only [cast_eq, sumRoundPolynomial_eval, id_eq, Fin.insertNth_zero, Fin.cast_refl,
-    Function.comp_id]
-
 /-- Prefix form of residual evaluation, with an arbitrary finite suffix domain. -/
 theorem sumRoundPolynomial_eval_prefix {l : ℕ} (i : Fin (n + 1))
     (c : Fin i → R) (S : Finset (Fin l → R)) (h : n = i + l)
     (p : MvPolynomial (Fin (n + 1)) R) (r : R) :
-    (sumRoundPolynomial S (fun x => Fin.append c x ∘ Fin.cast h) i p).eval r =
+    (sumRoundPolynomial (m := n + 1) S (fun x => Fin.append c x ∘ Fin.cast h) i p).eval r =
       ∑ x ∈ S, p.eval (Fin.append (Fin.snoc c r) x ∘ Fin.cast (by omega)) := by
   rw [sumRoundPolynomial_eval]
   simp only [Fin.insertNth_append_cast i c _ r h]
@@ -128,7 +121,7 @@ theorem sumRoundPolynomial_sum_prefix {l : ℕ} (i : Fin (n + 1))
     (c : Fin i → R) (S : Fin (l + 1) → Finset R) (h : n = i + l)
     (p : MvPolynomial (Fin (n + 1)) R) :
     ∑ a ∈ S 0,
-      (sumRoundPolynomial (Fintype.piFinset (Fin.tail S))
+      (sumRoundPolynomial (m := n + 1) (Fintype.piFinset (Fin.tail S))
         (fun x => Fin.append c x ∘ Fin.cast h) i p).eval a =
       ∑ x ∈ Fintype.piFinset S, p.eval (Fin.append c x ∘ Fin.cast (by omega)) := by
   rw [Fin.sum_piFinset_cons]
@@ -142,17 +135,20 @@ theorem sumRoundPolynomial_sum_prefix {l : ℕ} (i : Fin (n + 1))
   simp only [Function.comp_def, Fin.cast_cast]
 
 /-- The degree of a round sum is bounded by the source's degree in the free coordinate. -/
-theorem sumRoundPolynomial_natDegree_le {ι : Type*} (S : Finset ι) (s : ι → Fin n → R)
-    (k : Fin (n + 1)) (p : MvPolynomial (Fin (n + 1)) R) :
+theorem sumRoundPolynomial_natDegree_le {m : ℕ} {ι : Type*} (S : Finset ι)
+    (s : ι → Fin (m - 1) → R) (k : Fin m) (p : MvPolynomial (Fin m) R) :
     (sumRoundPolynomial S s k p).natDegree ≤ p.degreeOf k := by
-  apply Polynomial.natDegree_sum_le_of_forall_le
-  intro x _
-  exact Polynomial.natDegree_map_le.trans (le_of_eq (natDegree_finSuccEquivNth _))
+  cases m with
+  | zero => exact k.elim0
+  | succ n =>
+    apply Polynomial.natDegree_sum_le_of_forall_le
+    intro x _
+    exact Polynomial.natDegree_map_le.trans (le_of_eq (natDegree_finSuccEquivNth _))
 
 /-- A global individual-degree cap specializes the coordinate bound. -/
-theorem sumRoundPolynomial_mem_degreeLE {ι : Type*} (S : Finset ι) (s : ι → Fin n → R)
-    (k : Fin (n + 1)) {p : MvPolynomial (Fin (n + 1)) R} {d : ℕ}
-    (hp : p ∈ restrictDegree (Fin (n + 1)) R d) :
+theorem sumRoundPolynomial_mem_degreeLE {m : ℕ} {ι : Type*} (S : Finset ι)
+    (s : ι → Fin (m - 1) → R) (k : Fin m) {p : MvPolynomial (Fin m) R} {d : ℕ}
+    (hp : p ∈ restrictDegree (Fin m) R d) :
     sumRoundPolynomial S s k p ∈ Polynomial.degreeLE R d := by
   apply Polynomial.mem_degreeLE.mpr
   apply Polynomial.natDegree_le_iff_degree_le.mp
@@ -168,12 +164,23 @@ theorem sum_sumRoundPolynomial (S : Fin (n + 1) → Finset R)
   simp_rw [sumRoundPolynomial_eval, id_eq, Fin.insertNth_zero]
   exact (Fin.sum_piFinset_cons S (fun x => p.eval x)).symm
 
-/-- Uniform first-coordinate sum under an arity cast. -/
-theorem sum_sumRoundPolynomial_cast {m l : ℕ} (h : l = m + 1) (S : Finset R)
+/-- First-coordinate evaluation with an arity equation. Only the assignment indices need
+transport; the source polynomial stays in its original ring. -/
+theorem sumRoundPolynomial_eval_first {m l : ℕ} (h : l = m + 1)
+    (S : Finset (Fin m → R)) (p : MvPolynomial (Fin l) R) (r : R) :
+    (sumRoundPolynomial (m := l) S (fun x => x ∘ Fin.cast (by omega))
+      ⟨0, by omega⟩ p).eval r =
+      ∑ x ∈ S, p.eval (Fin.cons r x ∘ Fin.cast h) := by
+  subst l
+  simp only [sumRoundPolynomial_eval, Fin.mk_zero', Fin.insertNth_zero, Fin.cast_refl,
+    Function.comp_id, cast_eq]
+
+/-- Summing a first-coordinate round with an arity equation recovers the original cube sum. -/
+theorem sum_sumRoundPolynomial_first {m l : ℕ} (h : l = m + 1) (S : Finset R)
     (p : MvPolynomial (Fin l) R) :
-    ∑ a ∈ S, (sumRoundPolynomial (Fintype.piFinset (fun _ : Fin m => S)) id 0
-      (cast (congrArg (fun k => MvPolynomial (Fin k) R) h) p)).eval a =
-        ∑ x ∈ Fintype.piFinset (fun _ : Fin l => S), p.eval x := by
+    ∑ a ∈ S, (sumRoundPolynomial (m := l) (Fintype.piFinset (fun _ : Fin m => S))
+      (fun x => x ∘ Fin.cast (by omega)) ⟨0, by omega⟩ p).eval a =
+      ∑ x ∈ Fintype.piFinset (fun _ : Fin l => S), p.eval x := by
   subst l
   exact sum_sumRoundPolynomial (fun _ => S) p
 

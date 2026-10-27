@@ -585,35 +585,26 @@ theorem oracleVerifier_rbrKnowledgeSoundness [Fintype R] [IsDomain R] :
 
 end Simple
 
-/-- Assignment to the variables after round `i`, formed by appending the
-prior challenges to a remaining-domain suffix.  Naming this cast-sensitive
+/-- Assignment to all variables except round `i`'s free coordinate, formed by appending
+the prior challenges to a remaining-domain suffix.  Naming this cast-sensitive
 map keeps the materialized polynomial and executable query path definitionally
 aligned. -/
-def roundSuffix (i : Fin (n + 1)) (challenges : Fin i.castSucc → R)
-    (x : Fin (n - i) → R) : Fin n → R :=
-  Fin.append challenges x ∘ Fin.cast (by simp; omega)
+def roundSuffix (i : Fin n) (challenges : Fin i.castSucc → R)
+    (x : Fin (n - 1 - i) → R) : Fin (n - 1) → R :=
+  Fin.append challenges x ∘ Fin.cast (by have := i.isLt; simp; omega)
 
 /-- The univariate round polynomial obtained from the multivariate sum-check
 oracle at round `i`.  This named definition is shared by the extensional lens
 and its query-by-query implementation. -/
 def projectedRoundPolynomial (i : Fin n) (challenges : Fin i.castSucc → R)
     (poly : R⦃≤ deg⦄[X Fin n]) : R⦃≤ deg⦄[X] :=
-  match h : n with
-  | 0 => ⟨Polynomial.C <| MvPolynomial.isEmptyAlgEquiv R (Fin 0) poly, by
-      rw [Polynomial.mem_degreeLE]
-      exact le_trans Polynomial.degree_C_le (by simp)⟩
-  | n + 1 =>
-      ⟨∑ x ∈ (univ.map D) ^ᶠ (n - i),
-          Polynomial.map (MvPolynomial.eval (roundSuffix R n i challenges x))
-            (MvPolynomial.finSuccEquivNth R i poly.val), by
-        simpa only [roundSuffix, MvPolynomial.sumRoundPolynomial] using
-          MvPolynomial.sumRoundPolynomial_mem_degreeLE _ _ i poly.property⟩
+  ⟨MvPolynomial.sumRoundPolynomial ((univ.map D) ^ᶠ (n - 1 - i))
+      (roundSuffix R n i challenges) i poly.val,
+    MvPolynomial.sumRoundPolynomial_mem_degreeLE _ _ i poly.property⟩
 
 /-- The oracle statement lens that connect the simple to the full single-round sum-check protocol
 
-For `n = 0`, since `poly : R[X Fin 0]` is just a constant, we need to embed it as a constant poly.
-
-For other `n := n + 1`, we proceed with the sum `∑ x ∈ D ^ (n - i), poly ⸨challenges, X, x⸩` -/
+The round index guarantees positive arity. The projection sums over the suffix domain. -/
 def oStmtLens (i : Fin n) : OracleStatement.Lens
     (StatementRound R n i.castSucc) (StatementRound R n i.succ) (Simple.StmtIn R) (Simple.StmtOut R)
     (OracleStatement R n deg) (OracleStatement R n deg)
@@ -654,7 +645,7 @@ def simulateProjectedRoundPolynomial (i : Fin n)
       exact do
         let evals ← ((univ.map D) ^ᶠ (n - i)).toList.mapM fun x =>
           queryRoundInput R (n + 1) deg <| Fin.insertNth i r
-            (roundSuffix R n i stmt.challenges x)
+            (roundSuffix R (n + 1) i stmt.challenges x)
         pure evals.sum
 
 theorem simulateProjectedRoundPolynomial_eq (i : Fin n)
@@ -678,27 +669,18 @@ theorem simulateProjectedRoundPolynomial_eq (i : Fin n)
       change
         (List.map (fun x => (oStmt ()).val.eval <|
             Fin.insertNth i r
-              (roundSuffix R n i stmt.challenges x))
+              (roundSuffix R (n + 1) i stmt.challenges x))
           ((univ.map D) ^ᶠ (n - i)).toList).sum =
         Polynomial.eval r
           (projectedRoundPolynomial R (n + 1) deg D i stmt.challenges (oStmt ())).val
       calc
         _ = ∑ x ∈ (univ.map D) ^ᶠ (n - i), (oStmt ()).val.eval
               (Fin.insertNth i r
-                (roundSuffix R n i stmt.challenges x)) := by
+                (roundSuffix R (n + 1) i stmt.challenges x)) := by
             exact Multiset.sum_map_toList
               (((univ.map D) ^ᶠ (n - i)).1) _
         _ = _ := by
-          rw [show (projectedRoundPolynomial R (n + 1) deg D i
-              stmt.challenges (oStmt ())).val =
-              ∑ x ∈ (univ.map D) ^ᶠ (n - i),
-                Polynomial.map (MvPolynomial.eval (roundSuffix R n i stmt.challenges x))
-                  (MvPolynomial.finSuccEquivNth R i (oStmt ()).val) from rfl]
-          rw [Polynomial.eval_finsetSum]
-          apply Finset.sum_congr rfl
-          intro x hx
-          exact eval_eq_eval_mv_eval_finSuccEquivNth
-            (roundSuffix R n i stmt.challenges x) r (oStmt ()).val
+          exact (MvPolynomial.sumRoundPolynomial_eval _ _ i (oStmt ()).val r).symm
 
 /-- Executable oracle-statement lens for a full sum-check round. -/
 def oStmtExecutableLens (i : Fin n) : OracleStatement.ExecutableLens
@@ -864,8 +846,7 @@ where
     | succ n ih =>
       intro stmt oStmt hRelIn
       simp only [← hRelIn]
-      simp_rw [Polynomial.eval_finsetSum]
-      simp_rw [← eval_eq_eval_mv_eval_finSuccEquivNth]
+      simp_rw [MvPolynomial.sumRoundPolynomial_eval]
       -- Remaining: ∑ a ∈ D, ∑ y ∈ D^(n-i), eval (insertNth i a (append c y ∘ cast)) p
       --          = ∑ z ∈ D^(n+1-i), eval (append c z ∘ cast) p
       -- Needs: (1) insertNth i a (append c y ∘ cast) = append c (cons a y) ∘ cast
@@ -904,6 +885,7 @@ instance extractorLens_rbr_knowledge_soundness :
     | zero => exact Fin.elim0 i
     | succ n ih =>
       intro stmt oStmt hRelIn
+      simp only [MvPolynomial.sumRoundPolynomial_eval] at hRelIn ⊢
       simp at hRelIn ⊢
       -- Now it's a statement about polynomials
       sorry
@@ -1029,14 +1011,8 @@ def proverRound (i : Fin n) : ProverRound oSpec (pSpec R deg) where
 
   sendMessage
   | ⟨0, _⟩ => fun state =>
-    match n with
-    | 0 => Fin.elim0 i
-    | n + 1 =>
-      let ⟨⟨_, challenges⟩, oStmt⟩ := state
-      let ⟨poly, hp⟩ := oStmt 0
-      pure ⟨ ⟨∑ x ∈ (univ.map D) ^ᶠ (n - i), poly ⸨X ⦃i⦄, challenges, x⸩'(by simp; omega),
-        MvPolynomial.sumRoundPolynomial_mem_degreeLE _ _ i hp⟩,
-          state⟩
+    let ⟨⟨_, challenges⟩, oStmt⟩ := state
+    pure ⟨projectedRoundPolynomial R n deg D i challenges (oStmt ()), state⟩
   | ⟨1, h⟩ => nomatch h
 
   receiveChallenge

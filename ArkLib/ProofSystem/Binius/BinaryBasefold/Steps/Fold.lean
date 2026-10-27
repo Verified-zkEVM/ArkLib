@@ -112,9 +112,9 @@ def foldStepWitBeforeFromWitMid (i : Fin ℓ)
     (witMid : Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ) :
     Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc where
   t := witMid.t
-  H := projectToMidSumcheckPoly (L := L) (ℓ := ℓ)
-    (t := witMid.t) (m := multpoly stmtIn.ctx)
-    (i := i.castSucc) (challenges := stmtIn.challenges)
+  H := MvPolynomial.fixPrefix ℓ i.castSucc
+    (computeInitialSumcheckPoly ℓ witMid.t (multpoly stmtIn.ctx))
+    (challenges := stmtIn.challenges)
   f := getMidCodewords 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) witMid.t
     (challenges := stmtIn.challenges)
 
@@ -679,13 +679,13 @@ lemma foldStepFreshBadEvent_or_of_rbrExtractionFailureEvent (i : Fin ℓ)
           (foldStepHStarFromWitMid (multpoly := multpoly) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
             (𝓑 := 𝓑) i stmtOStmtIn.1 witMid) := by
       have h_wit_struct_after :
-          witMid.H = projectToMidSumcheckPoly (L := L) (ℓ := ℓ) (t := witMid.t)
-            (m := multpoly stmtOStmtIn.1.ctx) (i := i.succ)
+          witMid.H = MvPolynomial.fixPrefix ℓ i.succ
+            (computeInitialSumcheckPoly ℓ witMid.t (multpoly stmtOStmtIn.1.ctx))
             (challenges := Fin.snoc stmtOStmtIn.1.challenges r_i') := by
         exact h_consistency.1.1
       let H_before : L⦃≤ 2⦄[X Fin (ℓ - i.castSucc)] :=
-        projectToMidSumcheckPoly (L := L) (ℓ := ℓ) (t := witMid.t)
-          (m := multpoly stmtOStmtIn.1.ctx) (i := i.castSucc)
+        MvPolynomial.fixPrefix ℓ i.castSucc
+          (computeInitialSumcheckPoly ℓ witMid.t (multpoly stmtOStmtIn.1.ctx))
           (challenges := stmtOStmtIn.1.challenges)
       let h_star_extracted : L⦃≤ 2⦄[X] := getSumcheckRoundPoly ℓ (SumcheckDomain.uniform 𝓑 ℓ)
           (i := i) (h := H_before)
@@ -693,7 +693,7 @@ lemma foldStepFreshBadEvent_or_of_rbrExtractionFailureEvent (i : Fin ℓ)
           Polynomial.eval r_i' h_i.val = Polynomial.eval r_i' h_star_extracted.val := by
         unfold sumcheckConsistencyProp at h_sumcheck_after
         rw [h_wit_struct_after] at h_sumcheck_after
-        rw [Sumcheck.Structured.projectToMidSumcheckPoly_succ ℓ witMid.t
+        rw [Sumcheck.Structured.fixPrefix_initial_succ ℓ witMid.t
           (multpoly stmtOStmtIn.1.ctx) i stmtOStmtIn.1.challenges r_i'] at h_sumcheck_after
         exact h_sumcheck_after.trans
           (Sumcheck.Structured.sum_projectToNextSumcheckPoly_uniform ℓ 𝓑 i H_before r_i')
@@ -854,9 +854,9 @@ lemma prob_foldStep_rbrExtractionFailureEvent_le (i : Fin ℓ)
     by_cases hCompat : ∃ t : MultilinearPoly L ℓ, compatPred t
     · rcases hCompat with ⟨t_fixed, h_t_fixed_compat⟩
       let H_fixed : L⦃≤ 2⦄[X Fin (ℓ - i.castSucc)] :=
-        projectToMidSumcheckPoly (L := L) (ℓ := ℓ) (t := t_fixed)
-          (m := multpoly stmtOStmtIn.1.ctx)
-          (i := i.castSucc) (challenges := stmtOStmtIn.1.challenges)
+        MvPolynomial.fixPrefix ℓ i.castSucc
+          (computeInitialSumcheckPoly ℓ t_fixed (multpoly stmtOStmtIn.1.ctx))
+          (challenges := stmtOStmtIn.1.challenges)
       let h_star_fixed : L⦃≤ 2⦄[X] := getSumcheckRoundPoly ℓ (SumcheckDomain.uniform 𝓑 ℓ) (i := i)
           (h := H_fixed)
       have h_prob_mono_sum := prEvent_mono ($ᵗ L)

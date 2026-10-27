@@ -54,28 +54,10 @@ variable {L : Type} [CommRing L] (ℓ : ℕ) [NeZero ℓ] (D : SumcheckDomain L 
 /- `H_i(X_i, ..., X_{ℓ-1})` -> `g_i(X)` derivation. Degree-generic: the round polynomial
 `h` and the resulting univariate `g_i` share the degree bound `d` (inferred from `h`). -/
 def getSumcheckRoundPoly {d : ℕ} (i : Fin ℓ)
-    (h : ↥L⦃≤ d⦄[X Fin (ℓ - ↑i.castSucc)]) : L⦃≤ d⦄[X] := by
-  have h_i_lt_ℓ : ℓ - ↑i.castSucc > 0 := by
-    have hi := i.2
-    exact Nat.zero_lt_sub_of_lt hi
-  have h_count_eq : ℓ - ↑i.castSucc - 1 + 1 = ℓ - ↑i.castSucc := by
-    omega
-  let challenges : Fin 0 → L := fun (j : Fin 0) => j.elim0
-  let curH_cast : L[X Fin ((ℓ - ↑i.castSucc - 1) + 1)] := by
-    convert h.val
-  let g := ∑ x ∈ (D.drop (↑i.castSucc + 1)).cube, curH_cast ⸨X ⦃0⦄, challenges, x⸩' (by omega)
-  exact ⟨g, by
-    have h_deg_le_d : g ∈ L⦃≤ d⦄[X] := by
-      simp only [g]
-      have h_in_degLE : curH_cast ∈ L⦃≤ d⦄[X Fin (ℓ - ↑i.castSucc - 1 + 1)] := by
-        rw! (castMode := .all) [h_count_eq]
-        dsimp only [Fin.val_castSucc, eq_mpr_eq_cast, curH_cast]
-        rw [eqRec_eq_cast, cast_cast, cast_eq]
-        exact h.property
-      exact MvPolynomial.sumRoundPolynomial_mem_degreeLE _ _ 0 h_in_degLE
-    rw [mem_degreeLE] at h_deg_le_d ⊢
-    exact h_deg_le_d
-  ⟩
+    (h : ↥L⦃≤ d⦄[X Fin (ℓ - ↑i.castSucc)]) : L⦃≤ d⦄[X] :=
+  ⟨MvPolynomial.sumRoundPolynomial (m := ℓ - i) (D.drop (i + 1)).cube
+      (fun x => x ∘ Fin.cast (by omega)) ⟨0, by have := i.isLt; omega⟩ h.val,
+    MvPolynomial.sumRoundPolynomial_mem_degreeLE _ _ _ h.property⟩
 
 end RoundPoly
 
@@ -163,24 +145,9 @@ def getRoundProverFinalOutput (i : Fin ℓ)
     sumcheck_target := newSumcheckTarget,
     challenges := Fin.snoc stmtIn.challenges r_i'
   }
-  let challenges : Fin 1 → L := fun _ => r_i'
-  let witOut : SumcheckWitness L ℓ i.succ d := by
-    let hvars : ℓ - i - 1 = ℓ - i.succ := by
-      have hi : i.succ.val = i.val + 1 := rfl
-      omega
-    let rawProjectedH := fixFirstVariablesOfMQP (ℓ := ℓ - i) (v := ⟨1, by omega⟩)
-      (H := witIn.H.val) (challenges := challenges)
-    let projectedH : L[X Fin (ℓ - i.succ)] := cast (by rw [hvars]) rawProjectedH
-    exact {
-      t' := witIn.t',
-      H := ⟨projectedH, by
-        have hp := witIn.H.property
-        dsimp only [projectedH]
-        cases hvars
-        exact fixFirstVariablesOfMQP_degreeLE (L := L) (ℓ := ℓ - i) (v := ⟨1, by omega⟩)
-          (poly := witIn.H.val) (challenges := challenges) (deg := d) hp
-      ⟩
-    }
+  let witOut : SumcheckWitness L ℓ i.succ d :=
+    { t' := witIn.t'
+      H := projectToNextSumcheckPoly ℓ i witIn.H r_i' }
   exact ⟨⟨stmtOut, oStmtIn⟩, witOut⟩
 
 /-- The prover for the `i`-th round of the structured sumcheck.

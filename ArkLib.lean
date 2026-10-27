@@ -979,7 +979,6 @@ public import ArkLib.ProofSystem.Sumcheck.Interaction.Soundness
 public import ArkLib.ProofSystem.Sumcheck.Spec.General
 public import ArkLib.ProofSystem.Sumcheck.Spec.SingleRound
 public import ArkLib.ProofSystem.Sumcheck.Structured
-public import ArkLib.ProofSystem.Sumcheck.Structured.Prismalinear
 public import ArkLib.ProofSystem.Sumcheck.Structured.RoundLemmas
 public import ArkLib.ProofSystem.Sumcheck.Structured.SingleRound
 public import ArkLib.ProofSystem.ToyProblem.Codegen

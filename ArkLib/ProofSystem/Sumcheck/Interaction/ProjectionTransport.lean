@@ -39,7 +39,6 @@ theorem projected_sum_of_relationRound (i : Fin n)
     apply hlist.trans
     change (∑ a ∈ univ.map D,
       (MvPolynomial.sumRoundPolynomial _ _ i p.val).eval a) = _
-    unfold roundSuffix
     refine (MvPolynomial.sumRoundPolynomial_sum_prefix (l := n - i) i stmt.challenges
       (fun _ => univ.map D) (by omega) p.val).trans ?_
     change (∑ z ∈ (univ.map D) ^ᶠ (n + 1 - i.val),

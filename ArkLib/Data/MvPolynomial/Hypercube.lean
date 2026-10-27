@@ -12,8 +12,9 @@ public import ArkLib.Data.MvPolynomial.RoundPolynomial
 # Hypercube sums and their round polynomials over commutative semirings
 
 Coordinate splitting expresses a Boolean hypercube sum as the sum of its two faces.
-`roundPoly` sums the remaining coordinates after substituting the challenge prefix;
-its evaluation and degree bounds describe a sumcheck prover message.
+`hypercubeSuffix` assembles the assignments for the Boolean specialization of
+`sumRoundPolynomial`; its evaluation and degree bounds describe a sumcheck prover message.
+Cube sums use `Fintype.piFinset`.
 -/
 
 @[expose] public section
@@ -23,17 +24,26 @@ namespace MvPolynomial
 open MvPolynomial
 variable {F : Type*} [CommSemiring F] {M : ℕ}
 
+/-- Assign every coordinate except the round's free coordinate: a challenge prefix followed
+by a Boolean suffix. Shared by the mathematical and computable round polynomials. -/
+def hypercubeSuffix {m : ℕ} (i : Fin m) (cs : Fin i → F)
+    (y : Fin (m - (i + 1)) → Fin 2) : Fin (m - 1) → F :=
+  Fin.append cs (fun j => ((y j : ℕ) : F)) ∘ Fin.cast (by have := i.isLt; omega)
+
 /-- Assemble a full point from a fixed prefix and a Boolean suffix. -/
 def hypercubePoint (m i : ℕ) (cs : Fin i → F) (x : Fin (m - i) → Fin 2) : Fin m → F :=
   fun j => if h : j.val < i then cs ⟨j, h⟩ else (x ⟨j.val - i, by omega⟩ : F)
 
 /-- Sum a polynomial over Boolean completions of a fixed challenge prefix. -/
 def hypercubeSum (m : ℕ) (H : MvPolynomial (Fin m) F) (i : ℕ) (cs : Fin i → F) : F :=
-  ∑ x : Fin (m - i) → Fin 2, H.eval (hypercubePoint m i cs x)
+  ∑ x ∈ Fintype.piFinset (fun _ : Fin (m - i) => (Finset.univ : Finset (Fin 2))),
+    H.eval (hypercubePoint m i cs x)
 
 /-- The initial sum is the ordinary Boolean sum. -/
 theorem hypercubeSum_zero (m : ℕ) (H : MvPolynomial (Fin m) F) :
-    hypercubeSum m H 0 Fin.elim0 = ∑ x : Fin m → Fin 2, H.eval (x : Fin m → F) := rfl
+    hypercubeSum m H 0 Fin.elim0 = ∑ x : Fin m → Fin 2, H.eval (x : Fin m → F) := by
+  simp only [hypercubeSum, Fintype.piFinset_univ]
+  rfl
 
 /-- After the last challenge the cube has one point, including when the original arity is zero. -/
 theorem hypercubeSum_last (m : ℕ) (H : MvPolynomial (Fin m) F) (cs : Fin m → F) :
@@ -78,12 +88,8 @@ theorem hypercubeSum_succ (H : MvPolynomial (Fin (M + 1)) F) (i : Fin (M + 1)) (
         hypercubeSum (M + 1) H ((i : ℕ) + 1) (Fin.snoc cs 1) := by
   have hsplit : (M + 1) - (i : ℕ) = (M + 1 - ((i : ℕ) + 1)) + 1 := by omega
   unfold hypercubeSum
-  rw [show (∑ x : Fin ((M + 1) - (i : ℕ)) → Fin 2,
-      H.eval (hypercubePoint (M + 1) i cs x)) =
-      ∑ x ∈ Fintype.piFinset (fun _ : Fin ((M + 1) - (i : ℕ)) => Finset.univ),
-        H.eval (hypercubePoint (M + 1) i cs x) by simp]
   rw [Fin.sum_piFinset_cast _ hsplit, Fin.sum_piFinset_cons]
-  simp only [Fin.sum_univ_two]
+  simp only [Fintype.piFinset_univ, Fin.sum_univ_two]
   congr 1
   · refine Finset.sum_congr rfl fun y _ => ?_
     simpa only [Function.comp_def, finCongr_apply, Fin.val_zero, Nat.cast_zero] using
@@ -92,38 +98,29 @@ theorem hypercubeSum_succ (H : MvPolynomial (Fin (M + 1)) F) (i : Fin (M + 1)) (
     simpa only [Function.comp_def, finCongr_apply, Fin.val_one, Nat.cast_one] using
       congrArg (fun x => H.eval x) (hypercubePoint_cons i cs 1 y)
 
-/-- The round polynomial of a partial hypercube sum: the univariate whose value at `T` is the
-round-`(i+1)` partial sum at the challenge prefix extended by `T` (`roundPoly_eval`), with
-the per-variable degree of `H` as its degree bound (`roundPoly_degree_le`). -/
-noncomputable def roundPoly (H : MvPolynomial (Fin (M + 1)) F) (i : Fin (M + 1)) (cs : Fin i → F) :
-    Polynomial F :=
-  ∑ y : Fin (M + 1 - ((i : ℕ) + 1)) → Fin 2,
-    Polynomial.map
-      (MvPolynomial.eval (Fin.append cs (fun j => ((y j : ℕ) : F)) ∘ Fin.cast (by omega)))
-      (MvPolynomial.finSuccEquivNth F i H)
-
 /-- The round polynomial computes the partial sum: its value at any `T` is the round-`(i+1)`
 partial hypercube sum at the prefix extended by `T`. -/
-theorem roundPoly_eval (H : MvPolynomial (Fin (M + 1)) F) (i : Fin (M + 1))
+theorem sumRoundPolynomial_eval_hypercube (H : MvPolynomial (Fin (M + 1)) F) (i : Fin (M + 1))
     (cs : Fin i → F) (T : F) :
-    Polynomial.eval T (roundPoly H i cs)
+    Polynomial.eval T (sumRoundPolynomial (m := M + 1)
+      (Finset.univ : Finset (Fin (M + 1 - (i + 1)) → Fin 2))
+      (hypercubeSuffix i cs) i H)
       = hypercubeSum (M + 1) H ((i : ℕ) + 1) (Fin.snoc cs T) := by
-  change (sumRoundPolynomial _ _ i H).eval T = _
   rw [sumRoundPolynomial_eval, hypercubeSum]
+  unfold hypercubeSuffix
+  simp only [Fintype.piFinset_univ]
   refine Finset.sum_congr rfl fun y _ => ?_
   rw [Fin.insertNth_append_cast (l := M + 1 - (i + 1)) i cs _ T (by omega),
     hypercubePoint_eq_append (M + 1) (i + 1) (by omega) (Fin.snoc cs T) y]
 
 /-- The Boolean values of the round polynomial sum to the previous residual claim. -/
-theorem roundPoly_sum (H : MvPolynomial (Fin (M + 1)) F) (i : Fin (M + 1)) (cs : Fin i → F) :
-    (roundPoly H i cs).eval 0 + (roundPoly H i cs).eval 1 = hypercubeSum (M + 1) H i cs := by
-  rw [roundPoly_eval, roundPoly_eval, hypercubeSum_succ]
-
-/-- The round polynomial inherits the per-variable degree bound of its multivariate polynomial. -/
-theorem roundPoly_degree_le (H : MvPolynomial (Fin (M + 1)) F) (i : Fin (M + 1)) (cs : Fin i → F)
-    {D : ℕ} (hH : ∀ j, H.degreeOf j ≤ D) :
-    (roundPoly H i cs).degree ≤ (D : WithBot ℕ) := by
-  exact Polynomial.natDegree_le_iff_degree_le.mp
-    ((sumRoundPolynomial_natDegree_le _ _ i H).trans (hH i))
+theorem sumRoundPolynomial_sum_hypercube (H : MvPolynomial (Fin (M + 1)) F)
+    (i : Fin (M + 1)) (cs : Fin i → F) :
+    (sumRoundPolynomial (m := M + 1) (Finset.univ : Finset (Fin (M + 1 - (i + 1)) → Fin 2))
+      (hypercubeSuffix i cs) i H).eval 0 +
+    (sumRoundPolynomial (m := M + 1) (Finset.univ : Finset (Fin (M + 1 - (i + 1)) → Fin 2))
+      (hypercubeSuffix i cs) i H).eval 1 =
+        hypercubeSum (M + 1) H i cs := by
+  rw [sumRoundPolynomial_eval_hypercube, sumRoundPolynomial_eval_hypercube, hypercubeSum_succ]
 
 end MvPolynomial

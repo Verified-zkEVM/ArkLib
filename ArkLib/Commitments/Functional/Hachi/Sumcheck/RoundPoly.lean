@@ -86,7 +86,10 @@ variable {M : ℕ}
 extended by `T`. -/
 noncomputable def roundPoly (H : CMvPolynomial (M + 1) F) (i : Fin (M + 1)) (cs : Fin i → F) :
     Polynomial F :=
-  MvPolynomial.roundPoly (fromCMvPolynomial H) i cs
+  MvPolynomial.sumRoundPolynomial
+    (Finset.univ : Finset (Fin (M + 1 - (i + 1)) → Fin 2))
+    (hypercubeSuffix i cs)
+    i (fromCMvPolynomial H)
 
 omit [NeZero q] [IsCyclotomic Φ] [BEq (ZMod q)] [LawfulBEq (ZMod q)] [BEq F] [LawfulBEq F] in
 /-- The round polynomial computes the partial sum: its value at any `T` is the round-`(i+1)`
@@ -94,22 +97,23 @@ partial hypercube sum at the prefix extended by `T`. -/
 theorem roundPoly_eval (H : CMvPolynomial (M + 1) F) (i : Fin (M + 1)) (cs : Fin i → F) (T : F) :
     Polynomial.eval T (roundPoly H i cs)
       = hypercubeSum (M + 1) H ((i : ℕ) + 1) (Fin.snoc cs T) := by
-  simpa only [roundPoly, hypercubeSum, hypercubePoint, CPoly.eval_equiv,
-    MvPolynomial.hypercubeSum] using MvPolynomial.roundPoly_eval (fromCMvPolynomial H) i cs T
+  simpa only [roundPoly, hypercubeSum_eq_mathlib] using
+    MvPolynomial.sumRoundPolynomial_eval_hypercube (fromCMvPolynomial H) i cs T
 
 omit [NeZero q] [IsCyclotomic Φ] [BEq (ZMod q)] [LawfulBEq (ZMod q)] [BEq F] [LawfulBEq F] in
 /-- The two Boolean values recover the previous CompPoly residual sum. -/
 theorem roundPoly_sum (H : CMvPolynomial (M + 1) F) (i : Fin (M + 1)) (cs : Fin i → F) :
     (roundPoly H i cs).eval 0 + (roundPoly H i cs).eval 1 = hypercubeSum (M + 1) H i cs := by
-  simpa only [roundPoly, hypercubeSum, hypercubePoint, CPoly.eval_equiv,
-    MvPolynomial.hypercubeSum] using MvPolynomial.roundPoly_sum (fromCMvPolynomial H) i cs
+  simpa only [roundPoly, hypercubeSum_eq_mathlib] using
+    MvPolynomial.sumRoundPolynomial_sum_hypercube (fromCMvPolynomial H) i cs
 
 omit [NeZero q] [IsCyclotomic Φ] [BEq (ZMod q)] [LawfulBEq (ZMod q)] [BEq F] [LawfulBEq F] in
 /-- A uniform bound on the variable degrees of `H` bounds its round polynomial's degree. -/
 theorem roundPoly_degree_le (H : CMvPolynomial (M + 1) F) (i : Fin (M + 1)) (cs : Fin i → F)
     {D : ℕ} (hH : ∀ j, (fromCMvPolynomial H).degreeOf j ≤ D) :
     (roundPoly H i cs).degree ≤ (D : WithBot ℕ) := by
-  exact MvPolynomial.roundPoly_degree_le (fromCMvPolynomial H) i cs hH
+  exact Polynomial.natDegree_le_iff_degree_le.mp
+    ((MvPolynomial.sumRoundPolynomial_natDegree_le _ _ i (fromCMvPolynomial H)).trans (hH i))
 
 /-! ### The computable round polynomial
 
@@ -120,19 +124,12 @@ That is an ordinary `CMvPolynomial.eval₂`, so it computes, and `computableRoun
 identifies the result with `roundPoly` — after which the value and degree facts are transports
 of `roundPoly_eval` and `roundPoly_degree_le`, proved once above. -/
 
-/-- The scalar half of the round assignment: the challenge prefix `cs` followed by the Boolean
-tail `y`, as a point of `F^M`. Shared with `roundPoly`, whose summand evaluates at exactly this
-point (`MvPolynomial.hypercubePoint_eq_append` describes the same tuple convention). -/
-def roundAssignment (i : Fin (M + 1)) (cs : Fin i → F)
-    (y : Fin (M + 1 - ((i : ℕ) + 1)) → Fin 2) : Fin M → F :=
-  Fin.append cs (fun k => ((y k : ℕ) : F)) ∘ Fin.cast (by omega)
-
 /-- The assignment `computableRoundPoly` evaluates through: the free coordinate `i` gets the
-indeterminate `X`, every other coordinate gets the constant `roundAssignment` puts there. This
-is the computable counterpart of `finSuccEquivNth`'s pivot convention. -/
+indeterminate `X`, every other coordinate gets the constant from `MvPolynomial.hypercubeSuffix`.
+This is the computable counterpart of `finSuccEquivNth`'s pivot convention. -/
 def freeVariableAssignment (i : Fin (M + 1)) (cs : Fin i → F)
     (y : Fin (M + 1 - ((i : ℕ) + 1)) → Fin 2) : Fin (M + 1) → CPolynomial F :=
-  Fin.insertNth i CPolynomial.X (fun j => CPolynomial.C (roundAssignment i cs y j))
+  Fin.insertNth i CPolynomial.X (fun j => CPolynomial.C (hypercubeSuffix i cs y j))
 
 /-- **The round polynomial the honest prover computes**: the partial hypercube sum in the free
 coordinate, as a computable `CPolynomial F`. Each Boolean tail `y` contributes `H` evaluated
@@ -182,13 +179,13 @@ omit [NeZero q] [IsCyclotomic Φ] [BEq (ZMod q)] [LawfulBEq (ZMod q)] in
 /-- **The computable round polynomial is the round polynomial.** Termwise
 `toPoly_eval₂_CHom_insertNth`, after pushing `toPoly` through the finite sum
 (`CPolynomial.toPoly_sum`); the two summations are over the same Boolean tail and at the same
-scalar assignment `roundAssignment`. -/
+scalar assignment `MvPolynomial.hypercubeSuffix`. -/
 theorem computableRoundPoly_toPoly (H : CMvPolynomial (M + 1) F) (i : Fin (M + 1))
     (cs : Fin i → F) :
     (computableRoundPoly H i cs).toPoly = roundPoly H i cs := by
   rw [computableRoundPoly, roundPoly, CPolynomial.toPoly_sum]
   refine Finset.sum_congr rfl fun y _ => ?_
-  exact toPoly_eval₂_CHom_insertNth H i (roundAssignment i cs y)
+  exact toPoly_eval₂_CHom_insertNth H i (hypercubeSuffix i cs y)
 
 omit [NeZero q] [IsCyclotomic Φ] [BEq (ZMod q)] [LawfulBEq (ZMod q)] in
 /-- **What the prover's round message evaluates to**: the round-`(i+1)` partial hypercube sum at
