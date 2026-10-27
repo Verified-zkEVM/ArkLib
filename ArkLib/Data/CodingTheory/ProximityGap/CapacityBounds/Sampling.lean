@@ -134,7 +134,7 @@ theorem linear_close_probability_le_epsCa
   have hline :
       Pr{let r ← $ᵗ F}[Good (z + r • d)] ≤
         epsCa (F := F) (A := F) (C : Set (ι → F)) δ δ := by
-    unfold epsCa
+    simp only [epsCa_eq]
     refine le_iSup_of_le u (le_of_eq ?_)
     rw [ite_eq_right hnotjoint]
     simp [u, Good]

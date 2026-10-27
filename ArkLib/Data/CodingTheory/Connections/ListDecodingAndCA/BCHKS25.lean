@@ -471,7 +471,7 @@ theorem rs_Lambda_le_card_of_epsCa_lt
           (ReedSolomon.code domain k : Set (ι → F))
           ((δ + 2 / Fintype.card ι).toNNReal) δ_int := by
     dsimp only [Pevent]
-    unfold epsCa
+    simp only [epsCa_eq]
     exact le_iSup_of_le u (by rw [ite_eq_right hnotjoint])
   exact (not_lt_of_ge (hlowerprob.trans hratio_le)) _hε_ca
 

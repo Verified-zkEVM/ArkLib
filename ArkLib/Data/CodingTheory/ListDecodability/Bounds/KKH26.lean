@@ -473,7 +473,7 @@ theorem sumSet_card_div_le_epsCa [SampleableType F] (domain : ι ↪ F) {d h kha
   have hu1 : u 1 = -(ReedSolomon.evalOnPoints domain (X ^ ((khat - 1) * d))) := by
     rw [hu]; simp [Matrix.cons_val_one]
   -- Step 3: reduce `epsCa` to its `u`-summand, with the `ite_eq_right` branch.
-  rw [epsCa]
+  rw [epsCa_eq]
   refine le_iSup_of_le u ?_
   -- Step 4: the pair `u` is NOT jointly `δ`-close, so we take the `Pr` branch.
   have hnj : ¬ Code.jointProximity Cset (u := u) δ := by
