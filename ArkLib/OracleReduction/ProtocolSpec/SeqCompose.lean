@@ -578,8 +578,8 @@ instance lawfulSubSpec_challenge_append_right :
 round index is `< m` and a right-injected one is `≥ m`. This is what rules out the two components'
 challenge queries aliasing each other after composition.
 
-Currently unconsumed: recorded because `Verifier.append_soundness` will need it, and because VCV-io
-ships the analogue for `spec₁ + spec₂`. -/
+This records structural disjointness of the challenge inclusions, analogous to the VCV-io
+instance for `spec₁ + spec₂`; ordinary append soundness uses run decomposition instead. -/
 instance disjointSubSpec_challenge_append_left_right :
     OracleSpec.DisjointSubSpec
       [pSpec₁.Challenge]ₒ [pSpec₂.Challenge]ₒ [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ :=
