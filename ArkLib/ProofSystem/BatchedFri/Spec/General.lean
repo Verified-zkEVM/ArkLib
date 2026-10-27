@@ -16,8 +16,11 @@ The batching round followed by the FRI reduction.
 
 ## Status
 
-The composite security theorem follows from the batching round theorems and FRI's
-by sequential composition; its formalization is deferred to the composition work.
+`BatchedFri.Spec.batchedFRI_soundness` in `BatchedFri/EndToEnd.lean` proves the
+composite ordinary soundness bound by sequential composition, and
+`BatchedFri.Spec.batchedFRI_perfectCompleteness` proves perfect completeness at radius zero.
+Composite knowledge soundness is out of scope
+because the batching round has no extractor.
 -/
 
 @[expose] public section

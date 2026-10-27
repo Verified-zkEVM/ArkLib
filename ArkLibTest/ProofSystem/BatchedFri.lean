@@ -3,7 +3,7 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.ProofSystem.BatchedFri.Security
+import ArkLib.ProofSystem.BatchedFri.EndToEnd
 import Mathlib.Algebra.Field.ZMod
 
 /-!
@@ -139,7 +139,25 @@ example {σ : Type}
   apply soundness schedule 1 1 (by decide) (1 / 8) (by norm_num)
   exact toyParameters.1
 
+-- The composite API accepts the same concrete domain, schedule, and radius.
+example {σ : Type} (init : ProbComp σ)
+    (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
+    (batchedFRIreduction (ω := domain) 0 schedule 1 (by decide) 1 1).verifier.soundness
+      init impl (BatchingRound.inputRelation schedule 1 1 (1 / 8)).language
+      (Fri.Spec.outputRelation 0 schedule 1 (by decide) (1 / 8)).language
+      (ProximityGap.errorBound (1 / 8) 2 (domain : Fin 4 ↪ ZMod 17) +
+        Fri.Spec.soundnessError (ω := domain) schedule 1 1 (1 / 2) (1 / 8)) := by
+  exact batchedFRI_soundness schedule 1 (by decide) 1 1 (1 / 2) (1 / 8)
+    (by norm_num) toyParameters.1 init impl
+
 end BatchedFriTest
+
+/--
+info: 'BatchedFri.Spec.batchedFRI_soundness' depends on axioms:
+[propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms BatchedFri.Spec.batchedFRI_soundness
 
 /--
 info: 'BatchedFri.Spec.BatchingRound.combined_mem_outputRelation' depends on axioms:
@@ -189,3 +207,10 @@ info: 'Fri.Spec.relHammingDist_le_of_mem_inputRelation' depends on axioms:
 -/
 #guard_msgs (whitespace := lax) in
 #print axioms Fri.Spec.relHammingDist_le_of_mem_inputRelation
+
+/--
+info: 'BatchedFri.Spec.batchedFRI_perfectCompleteness' depends on axioms:
+[propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms BatchedFri.Spec.batchedFRI_perfectCompleteness

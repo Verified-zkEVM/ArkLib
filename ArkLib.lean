@@ -817,6 +817,7 @@ public import ArkLib.OracleReduction.Security.TranscriptTree
 public import ArkLib.OracleReduction.Security.TranscriptTree.Basic
 public import ArkLib.OracleReduction.Security.TranscriptTree.Composition
 public import ArkLib.OracleReduction.VectorIOR
+public import ArkLib.ProofSystem.BatchedFri.EndToEnd
 public import ArkLib.ProofSystem.BatchedFri.Security
 public import ArkLib.ProofSystem.BatchedFri.Spec.General
 public import ArkLib.ProofSystem.BatchedFri.Spec.SingleRound

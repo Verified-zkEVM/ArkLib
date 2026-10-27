@@ -712,8 +712,11 @@ home_page/            site assets and assembled website root
   `Data/CodingTheory/ProximityGap/BCIKS20/AffineCoefficients.lean` supplies the coefficient-form
   correlated-agreement theorem and proves uniform coefficient sampling equivalent to uniform
   sampling of the affine image even for dependent directions. The obsolete full-rate FRI claims and their
-  manufactured folding-history implementation have been removed. The composite security
-  theorem remains deferred to sequential composition. Acceptance and axiom checks are in
+  manufactured folding-history implementation have been removed. `BatchedFri/EndToEnd.lean` proves
+  `batchedFRI_soundness` with the sum of the batching and FRI errors. `batchedFRI_perfectCompleteness`
+  proves perfect completeness at radius zero using guarded append composition and the
+  induced verifiers' empty ambient oracle. Composite knowledge soundness
+  is out of scope because the batching round has no extractor. Acceptance and axiom checks are in
   `ArkLibTest/ProofSystem/BatchedFri.lean`.
 - Binary sequential composition lives in `OracleReduction/Composition/Sequential/Append/`,
   exported by `Composition/Sequential/Append.lean`:
