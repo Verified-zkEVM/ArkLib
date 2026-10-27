@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.OracleReduction.FiatShamir.Basic
+import ArkLib.OracleReduction.FiatShamir.Completeness
 
 /-!
 # Fixed default challenges do not preserve completeness error
@@ -64,8 +64,9 @@ theorem interactive_complete :
         pure ((if b = false then none else some ()).map
           (fun v => ((transcript b, (), ()), v)))) := by
     let : VerifierOnly spec := { verifier_first' := rfl }
-    erw [Reduction.run_option, Prover.run_of_verifier_first stmt wit reduction.prover]
-    simp only [reduction, prover, liftComp_eq_liftM, liftM_pure, pure_bind, bind_assoc]
+    erw [Reduction.run_run_eq_bind, Prover.run_of_verifier_first stmt wit reduction.prover]
+    simp only [Verifier.run, reduction, prover, liftComp_eq_liftM, liftM_pure,
+      pure_bind, bind_assoc]
     erw [StateT.run'_eq]
     simp only [simulateQ_bind, StateT.run_bind, map_bind]
     erw [simulateQ_addLift_challengeQueryImpl_getChallenge impl
@@ -99,10 +100,21 @@ theorem fixed_default_not_complete :
           challengeQueryImpl :
         QueryImpl _ (StateT (Unit × QueryImpl (srChallengeOracle Unit spec) Id) ProbComp))
       (reduction.fiatShamir.run () ()).run).run' ((), defaultTable) = pure none := by
+    rw [Reduction.fiatShamir_run_option]
+    simp only [liftComp_eq_liftM]
     rfl
   have h := h () () (Set.mem_univ _)
   simp only [pure_bind] at h
   erw [hr] at h
   norm_num [OptionT.prEvent_mk] at h
+
+/-- Fixed default tables cannot preserve arbitrary completeness errors. -/
+theorem old_completeness_claim_false :
+    ¬ ∀ R : Reduction []ₒ Unit Unit Unit Unit spec,
+      R.completeness (pure ()) impl Set.univ Set.univ (1 / 2) →
+      R.fiatShamir.completeness (pure ((), defaultTable))
+        (impl.addLift fsChallengeQueryImpl') Set.univ Set.univ (1 / 2) := by
+  intro h
+  exact fixed_default_not_complete (h reduction interactive_complete)
 
 end FiatShamirCompletenessTest

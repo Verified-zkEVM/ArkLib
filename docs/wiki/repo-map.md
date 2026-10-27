@@ -44,7 +44,11 @@ home_page/            site assets and assembled website root
 - `Interaction/Oracle/Composition.lean` supplies a separate sequential execution combinator.
   Its explicit interface handoffs are not a substitute for a native strategy execution theorem.
 - `ArkLib/OracleReduction/` remains the conceptual center of the legacy reduction and security
-  layer while protocol clients migrate.
+  layer while protocol clients migrate. `FiatShamir/Basic.lean` owns the transform;
+  `FiatShamir/Completeness.lean` adds fixed-table perfect completeness and shared lazy
+  random-oracle completeness. Duplex-sponge definitions import only the former.
+  Generic transcript projection and reconstruction equations live in `ProtocolSpec/Basic.lean`;
+  round and optional-run factorization lemmas live in `Execution.lean`.
 - `ArkLib/Data/`, `ArkLib/ToMathlib/`, and `ArkLib/ToCompPoly/` support the
   core with reusable definitions and lemmas.
 - `ArkLib/Commitments/` and `ArkLib/ProofSystem/` build on top of those foundations.

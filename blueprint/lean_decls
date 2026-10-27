@@ -97,7 +97,8 @@ Prover.fiatShamir
 ProtocolSpec.Messages.deriveTranscriptFS
 Verifier.fiatShamir
 Reduction.fiatShamir
-fiatShamir_completeness
+fiatShamir_perfectCompleteness
+fiatShamir_completeness_randomOracle
 DoNothing.reduction
 DoNothing.oracleReduction
 DoNothing.reduction_perfectCompleteness

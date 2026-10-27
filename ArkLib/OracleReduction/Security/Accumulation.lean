@@ -26,14 +26,6 @@ variable {ι : Type} {oSpec : OracleSpec ι}
 variable {StmtIn WitIn StmtOut WitOut : Type} {n : ℕ} {pSpec : ProtocolSpec n}
 variable (prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
 
-/-- Processing a round factors through its current transcript and private state. -/
-theorem processRound_bind (j : Fin n)
-    (current : OracleComp (oSpec + [pSpec.Challenge]ₒ)
-      (pSpec.Transcript j.castSucc × prover.PrvState j.castSucc)) :
-    prover.processRound j current =
-      current >>= fun x ↦ prover.processRound j (pure x) := by
-  simp only [processRound, pure_bind]
-
 /-- A prefix budget sums the errors of precisely the rounds already executed. -/
 noncomputable def errorBudget (ε : Fin n → ℝ≥0∞) (m : Fin (n + 1)) : ℝ≥0∞ :=
   ∑ j : Fin m.val, ε ⟨j.val, Nat.lt_of_lt_of_le j.isLt m.is_le⟩
