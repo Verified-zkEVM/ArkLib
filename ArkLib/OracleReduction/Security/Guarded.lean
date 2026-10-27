@@ -22,6 +22,8 @@ completeness, round-by-round and coordinate-wise special soundness arguments can
 
 * `Verifier.IsGuardedWith` / `Verifier.IsGuarded`: the guard predicate, with a `Bool`-valued
   check; `IsGuarded.of_isPure` is the pure case.
+* `Verifier.isGuarded_iff_isTotalQueryBound_zero`: a verifier is guarded exactly when its verdict
+  makes no query to the ambient oracle.
 * `Verifier.GuardedForm`: guardedness with its check and verdict map as **data**, the guarded
   mirror of `Verifier.PureForm`. `GuardedForm.isGuarded` forgets back to the class, and
   `PureForm.toGuardedForm` is the data form of `IsGuarded.of_isPure`, and `GuardedForm.ofEq`
@@ -69,6 +71,33 @@ theorem IsGuarded.of_isPure (V : Verifier oSpec StmtIn StmtOut pSpec) (h : V.IsP
 /-- Every pure verifier is guarded automatically: the instance form of `IsGuarded.of_isPure`. -/
 instance (V : Verifier oSpec StmtIn StmtOut pSpec) [h : V.IsPure] : V.IsGuarded :=
   IsGuarded.of_isPure V h
+
+/-- A verifier is guarded exactly when its verdict makes no query to the ambient oracle `oSpec`.
+
+`OracleComp` is a free monad, so a computation with no query is `pure (some y)` or `pure none`,
+which is `if check stmt tr then pure (out stmt tr) else failure`. The condition is syntactic: a
+verifier that queries and discards the answer is not guarded, since with a stateful oracle the
+query still changes the state. `Nonempty StmtOut` is needed only from right to left, to give `out`
+a value on rejected inputs. -/
+theorem isGuarded_iff_isTotalQueryBound_zero [Nonempty StmtOut]
+    (V : Verifier oSpec StmtIn StmtOut pSpec) :
+    V.IsGuarded ↔ ∀ stmt tr, IsTotalQueryBound (V.verify stmt tr).run 0 := by
+  simp only [isTotalQueryBound_zero_iff]
+  constructor
+  · rintro ⟨check, out, h⟩ stmt tr
+    refine ⟨if check stmt tr then some (out stmt tr) else none, ?_⟩
+    rw [h stmt tr]
+    cases check stmt tr <;> rfl
+  · intro hf
+    choose f hf using hf
+    obtain ⟨d⟩ := ‹Nonempty StmtOut›
+    refine ⟨⟨fun s tr => (f s tr).isSome, fun s tr => (f s tr).getD d, fun s tr => ?_⟩⟩
+    dsimp only
+    rw [show V.verify s tr = OptionT.mk (V.verify s tr).run from rfl, hf s tr]
+    have key : ∀ x : Option StmtOut, (OptionT.mk (pure x) : OptionT (OracleComp oSpec) StmtOut) =
+        if x.isSome then pure (x.getD d) else failure := by
+      intro x; cases x <;> rfl
+    exact key _
 
 /-- A **guardedness witness carrying check and output map as data**: the bundled form of
 `Verifier.IsGuardedWith`, and the guarded mirror of `Verifier.PureForm`.
