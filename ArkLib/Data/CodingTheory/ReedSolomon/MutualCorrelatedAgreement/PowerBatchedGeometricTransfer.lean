@@ -23,7 +23,7 @@ descend to the base field by pulling the exceptional set back along the embeddin
 
 ## References
 
-* [DKTZ26]
+* [DKT26]
 -/
 
 @[expose] public section

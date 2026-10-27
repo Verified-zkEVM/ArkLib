@@ -29,7 +29,7 @@ mutual correlated agreement error.
 
 ## References
 
-* [DKTZ26]
+* [DKT26]
 -/
 
 @[expose] public section

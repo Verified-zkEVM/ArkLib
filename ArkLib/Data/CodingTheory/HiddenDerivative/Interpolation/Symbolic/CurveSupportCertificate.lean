@@ -29,7 +29,7 @@ rate and block parameters provide this margin.
 
 ## References
 
-* [DKTZ26]
+* [DKT26]
 -/
 
 @[expose] public section

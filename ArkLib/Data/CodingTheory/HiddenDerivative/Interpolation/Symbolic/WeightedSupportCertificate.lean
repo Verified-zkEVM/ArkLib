@@ -34,7 +34,7 @@ parameters provide the surplus for the certificate construction.
 
 ## References
 
-* [DKTZ26], Section 5.1, Corollary 5.3
+* [DKT26], Section 3.7, Proposition 3.13, applied to the weighted support (70) of Section 6.1
 -/
 
 @[expose] public section

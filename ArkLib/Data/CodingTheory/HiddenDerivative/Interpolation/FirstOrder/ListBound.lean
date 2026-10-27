@@ -29,7 +29,7 @@ the sharp and dimension-sensitive first-order list bounds.
 
 ## References
 
-* [DKTZ26]
+* [DKT26]
 -/
 
 @[expose] public section
