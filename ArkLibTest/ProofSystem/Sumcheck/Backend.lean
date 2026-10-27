@@ -108,4 +108,14 @@ example {R : Type} [CommRing R] [DecidableEq R] [Nontrivial R] (c : R) (m : R ×
   simpa only [quadraticModel, Finset.sum_pair (zero_ne_one : (0 : R) ≠ 1)] using
     ((quadraticModel (R := R)).accept_iff c m).mp rfl
 
+/-- info: 'Sumcheck.enumerationModel' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms enumerationModel
+
+/--
+info: 'Sumcheck.enumeration_honest_step' depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs in
+#print axioms enumeration_honest_step
+
 end Sumcheck.BackendTest
