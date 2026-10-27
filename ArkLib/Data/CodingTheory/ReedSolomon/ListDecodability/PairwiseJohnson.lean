@@ -32,7 +32,7 @@ exceeds `k + δ n` and `4 (k - 1) ≤ δ² n`, the bound is at most `4 / (3 δ)`
 ## References
 
 * [Joh62]
-* [DKTZ26]
+* [DKT26]
 -/
 
 @[expose] public section
