@@ -91,6 +91,26 @@ as FRI's do. Here `size` describes the charged representation or access contract
 size of an arbitrary Lean closure. All representation choices, the instruction semantics,
 `cm`, and `B` are public parameters. The theorem must name the same `E` as the game theorem.
 
+The E2 implementation makes three scope choices. They narrow its first instance of this
+contract; they do not change the contract.
+
+- **Deterministic handlers.** Handlers have type `QueryImpl (spec v) Id`, and the extractor's run
+  is `pure` of their execution. E2 therefore covers extractors that make no ambient `oSpec`
+  query, including FRI and the executable Toy extractors. A handler into `OracleComp oSpec` could
+  make ambient queries that no instruction charge accounts for. Supporting querying extractors
+  needs a bound on those queries after the actual interpreter; it waits for a client.
+- **One budget per parameter set.** The budget is a single value that bounds every view at the
+  given parameters, which suffices for FRI's `extractorProfileBound`. A per-view budget
+  `B params (size v)` remains valid in principle when `B` and `size` are specified independently
+  of the program. E2 omits it because its instance needs no size convention, and because a budget
+  that may be any function of the view could be defined as the program's own cost on that view.
+- **Deferred equality transport.** E2 provides budget monotonicity, but not transport of a
+  certificate along a proved program equality. The first step that proves such an equality adds
+  the transport for its own use.
+
+The instruction charges are a field of the named measured program rather than a separate
+argument, and remain public through it.
+
 Use VCVio's existing `WorstCaseCostBound` or `AddWriterT.PathwiseCostAtMost` after the actual
 interpreter. Prefer the former when the structural instruction specification captures all allowed
 responses; use the latter when an interpreted environment is essential, with an explicit bridge.
@@ -197,7 +217,8 @@ knowledgeSoundnessWithin
   → knowledgeSoundness.
 ```
 
-Also provide budget monotonicity and transport along proved program equality. There is no reverse
+Also provide budget monotonicity, and transport along proved program equality once a step needs
+it; E2 defers the transport, as recorded under the measured contract. There is no reverse
 implication from a measured profile to realized time. A family certificate supplies its own shared
 polynomial; it cannot imply an arbitrarily chosen concrete budget. The public FRI/Toy theorems
 should show both their concrete budget and the exact extractor, rather than exposing only an
