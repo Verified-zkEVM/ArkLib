@@ -6,7 +6,7 @@ Authors: Alexander Hicks
 module
 
 public import ArkLib.ProofSystem.Logup.Interaction.Execution
-public import ArkLib.ProofSystem.Logup.Security.Initial
+public import ArkLib.ProofSystem.Logup.Security.InitialSoundness
 public import ArkLib.ProofSystem.Sumcheck.Interaction.ComputableSoundness
 
 /-!

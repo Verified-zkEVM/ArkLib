@@ -3,7 +3,7 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
-import ArkLib.ProofSystem.Logup.Prover.Completeness
+import ArkLib.ProofSystem.Logup.Security.Completeness
 import ArkLibTest.ProofSystem.Logup.Prover.State
 import ArkLib.Interaction.Oracle.LoggedExecution
 import Lean.Compiler.IR

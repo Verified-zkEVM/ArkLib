@@ -6,9 +6,9 @@ Authors: Alexander Hicks
 module
 
 public import ArkLib.ProofSystem.Logup.Lookup.ArithmeticResources
-public import ArkLib.ProofSystem.Logup.Lookup.Tuple.ArithmeticProver
+public import ArkLib.ProofSystem.Logup.Lookup.Tuple.Prover
 -- The resource proof unfolds the exact producer's private prefix, without changing its runtime.
-import all ArkLib.ProofSystem.Logup.Lookup.Tuple.ArithmeticProver
+import all ArkLib.ProofSystem.Logup.Lookup.Tuple.Prover
 
 /-!
 # Resource corollaries for the actual cached tuple default

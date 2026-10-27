@@ -3,8 +3,8 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
-import ArkLib.ProofSystem.Logup.Prover.ArithmeticLedger
-import ArkLibTest.ProofSystem.Logup.Prover.ArithmeticStrategy
+import ArkLib.ProofSystem.Logup.Prover.Arithmetic.Ledger
+import ArkLibTest.ProofSystem.Logup.Prover.Default
 import Lean.Compiler.IR
 
 /-! # Actual shared-control messages, typed histories and exact primitive-request annotations -/

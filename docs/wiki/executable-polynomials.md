@@ -102,8 +102,8 @@ old/new prefixes. `List.mapTR` instead keeps a reverse accumulator. Recursive `c
 retain certified heads and a returned suffix before list-to-array conversion. An array-push
 invariant does not justify the latter census. Distinguish completed buffers from their builder
 prefixes, and count empty arrays/outer containers separately from scalar positions. The
-[concrete buffer proofs](../../ArkLib/ProofSystem/Logup/Prover/StorageBuffers.lean) illustrate these
-three cases; the [combined inventory](../../ArkLib/ProofSystem/Logup/Prover/StorageLedger.lean)
+[concrete buffer proofs](../../ArkLib/ProofSystem/Logup/Prover/Resources/StorageBuffers.lean) illustrate these
+three cases; the [combined inventory](../../ArkLib/ProofSystem/Logup/Prover/Resources/StorageLedger.lean)
 keeps BASE/E/Nat/Fin payload, arrays, list cells and context roots in separate categories.
 
 Label such bounds as declared logical cells/container roles. They may conservatively count aliases

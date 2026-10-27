@@ -5,9 +5,9 @@ Authors: Alexander Hicks
 -/
 module
 
-public import ArkLib.ProofSystem.Logup.Prover.StorageBuffers
-public import ArkLib.ProofSystem.Logup.Lookup.ArithmeticProver
-public import ArkLib.ProofSystem.Logup.Lookup.Tuple.ArithmeticProver
+public import ArkLib.ProofSystem.Logup.Prover.Resources.StorageBuffers
+public import ArkLib.ProofSystem.Logup.Lookup.Prover
+public import ArkLib.ProofSystem.Logup.Lookup.Tuple.Prover
 
 /-!
 # Combined logical payload inventories

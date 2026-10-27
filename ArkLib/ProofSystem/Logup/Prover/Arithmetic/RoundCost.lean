@@ -5,7 +5,7 @@ Authors: Alexander Hicks
 -/
 module
 
-public import ArkLib.ProofSystem.Logup.Prover.ArithmeticRound
+public import ArkLib.ProofSystem.Logup.Prover.Arithmetic.Round
 
 /-!
 # Primitive profiles of streamed round-message construction

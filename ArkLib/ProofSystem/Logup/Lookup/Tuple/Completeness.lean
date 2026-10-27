@@ -5,9 +5,9 @@ Authors: Alexander Hicks
 -/
 module
 
-public import ArkLib.ProofSystem.Logup.Lookup.Tuple.Prover
+public import ArkLib.ProofSystem.Logup.Lookup.Tuple.Prover.Reference
 public import ArkLib.ProofSystem.Logup.Lookup.Tuple.Execution
-public import ArkLib.ProofSystem.Logup.Lookup.Tuple.Initial
+public import ArkLib.ProofSystem.Logup.Lookup.Tuple.CompressionSoundness
 public import ArkLib.ProofSystem.Logup.Lookup.Completeness
 
 /-!

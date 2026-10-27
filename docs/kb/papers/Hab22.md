@@ -19,8 +19,8 @@ related_modules:
   - ArkLib/Data/MvPolynomial/BooleanSigned.lean
   - ArkLib/ProofSystem/Logup/Algebra/Grouped.lean
   - ArkLib/ProofSystem/Logup/Interaction/Protocol.lean
-  - ArkLib/ProofSystem/Logup/Security/Weighted.lean
-  - ArkLib/ProofSystem/Logup/Prover/Completeness.lean
+  - ArkLib/ProofSystem/Logup/Security/Soundness.lean
+  - ArkLib/ProofSystem/Logup/Security/Completeness.lean
   - ArkLib/ProofSystem/Logup/Lookup/Tuple/Security.lean
 ---
 
@@ -54,16 +54,16 @@ must not be treated as a byte-pinned March 2023 artifact.
 | Section 2.1, Eq. (1) and Lemma 1 | [Multilinear.lean](../../../ArkLib/Data/MvPolynomial/Multilinear.lean) supplies the Boolean kernel and MLE. In [BooleanSigned.lean](../../../ArkLib/Data/MvPolynomial/BooleanSigned.lean), `MvPolynomial.bind₁_eqPolynomial'_halfShift` and `MvPolynomial.bind₁_MLE_halfShift` prove formal transport to the signed kernel, including its `2^(-n)` normalization, under explicit nonzero two. |
 | Section 2.3, Lemma 4 | [PartialFractions.lean](../../../ArkLib/Data/Polynomial/PartialFractions.lean) proves distinct-pole uniqueness and finite-support weighted-fiber vanishing over arbitrary fields. |
 | Section 2.3, Lemma 5; Section 3, Eq. (14) | [Histogram.lean](../../../ArkLib/Data/Vector/Histogram.lean) and [Lookup.lean](../../../ArkLib/Data/Vector/Lookup.lean) provide constructive forward weights and a converse under nonvanishing query counts. [LookupNormalization.lean](../../../ArkLib/Data/Vector/LookupNormalization.lean), `Vector.sumFiber_normalizedLookupWeights_eq_histogram`, proves aggregate correspondence with normalized weights under explicit nonzero table normalizers. |
-| Section 3.1, Protocol 2 | [Grouped.lean](../../../ArkLib/ProofSystem/Logup/Algebra/Grouped.lean) supplies the executable group circuit and its polynomial and clearing correspondence. [ConsecutiveChunks.lean](../../../ArkLib/Data/Fin/ConsecutiveChunks.lean) certifies the grouping pattern. [Interaction/Protocol.lean](../../../ArkLib/ProofSystem/Logup/Interaction/Protocol.lean) selects the native Sumcheck suffix and complete retained-source terminal check. |
-| Section 3.2, Theorem 4 | `Logup.Interaction.uniformExecute_soundness` in [Weighted.lean](../../../ArkLib/ProofSystem/Logup/Security/Weighted.lean) proves `(T*2^n+n*(ell+3))/\|E\|` for the actual complete endpoint and arbitrary whole native provers. It derives its own residual/root/batching ledger rather than importing the printed constants. |
+| Section 3.1, Protocol 2 | [Algebra/Grouped.lean](../../../ArkLib/ProofSystem/Logup/Algebra/Grouped.lean) supplies the executable group circuit and its polynomial and clearing correspondence. [ConsecutiveChunks.lean](../../../ArkLib/Data/Fin/ConsecutiveChunks.lean) certifies the grouping pattern. [Interaction/Protocol.lean](../../../ArkLib/ProofSystem/Logup/Interaction/Protocol.lean) selects the native Sumcheck suffix and complete retained-source terminal check. |
+| Section 3.2, Theorem 4 | `Logup.Interaction.uniformExecute_soundness` in [Security/Soundness.lean](../../../ArkLib/ProofSystem/Logup/Security/Soundness.lean) proves `(T*2^n+n*(ell+3))/\|E\|` for the actual complete endpoint and arbitrary whole native provers. It derives its own residual/root/batching ledger rather than importing the printed constants. |
 
 ## Main ArkLib Touchpoints
 
 The [weighted execution law](../../../ArkLib/ProofSystem/Logup/Interaction/Execution.lean)
 preserves the actual prefix, source routing, private continuations and final authentication.
-[Prover/Completeness.lean](../../../ArkLib/ProofSystem/Logup/Prover/Completeness.lean) proves
+[Security/Completeness.lean](../../../ArkLib/ProofSystem/Logup/Security/Completeness.lean) proves
 off-pole supported acceptance, uniform failure/success bounds and total mass one. The selected
-[default prover](../../../ArkLib/ProofSystem/Logup/Prover/ArithmeticStrategy.lean) constructs
+[default prover](../../../ArkLib/ProofSystem/Logup/Prover/Default.lean) constructs
 formal coefficient messages directly from cached evaluation tables. Scalar and typed tuple/bus
 adapters have their own complete execution, security and completeness owners under
 [Lookup/](../../../ArkLib/ProofSystem/Logup/Lookup/).

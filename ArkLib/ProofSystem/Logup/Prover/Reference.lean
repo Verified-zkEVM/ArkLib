@@ -16,9 +16,10 @@ The prover prepares denominator, weight and termwise helper tables after alpha, 
 then starts the cached kernel only after the joint challenge. Native continuations fold private
 state at each received challenge. Public abort terminates the continuation.
 
-The round builder is explicit. `pureBuilder` is a correctness constructor; the eventual default
-must select the measured implementation explicitly. This owner makes no arithmetic or storage
-claim, and an equal-output implementation alone does not transfer its work.
+The round builder is explicit. `pureBuilder` is the formal reference constructor. Import
+`ArkLib.ProofSystem.Logup.Prover.Default` for the selected measured `Honest.prover`.
+Its correctness is proved in `ArkLib.ProofSystem.Logup.Security.Completeness`; arithmetic
+and storage bounds live in `Prover/Resources/`. Equal outputs alone do not transfer work bounds.
 -/
 
 @[expose] public section

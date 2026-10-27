@@ -6,7 +6,7 @@ Authors: Alexander Hicks
 module
 
 public import ArkLib.ProofSystem.Logup.Lookup.Protocol
-public import ArkLib.ProofSystem.Logup.Security.Weighted
+public import ArkLib.ProofSystem.Logup.Security.Soundness
 
 /-!
 # Whole-program soundness of scalar lookup

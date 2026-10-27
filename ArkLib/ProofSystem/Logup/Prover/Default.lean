@@ -5,10 +5,14 @@ Authors: Alexander Hicks
 -/
 module
 
-public import ArkLib.ProofSystem.Logup.Prover.ArithmeticControl
+public import ArkLib.ProofSystem.Logup.Prover.Arithmetic.Control
 
 /-!
 # Default honest strategy executing the measured arithmetic programs
+
+This is the selected weighted `Logup.Prover.Honest.prover`. The explicit-builder construction
+is in `Prover/Reference.lean`; endpoint correctness is in `Security/Completeness.lean`.
+See the code-local `Logup/README.md` for the scalar and tuple entry points.
 
 The ordinary prover computes actual helper tables, initializes its equality cache after the joint
 challenge, and streams native coefficient messages using the measured builders. Nonterminal

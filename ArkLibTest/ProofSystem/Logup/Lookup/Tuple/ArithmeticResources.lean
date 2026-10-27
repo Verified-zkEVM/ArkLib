@@ -4,8 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
 import ArkLib.ProofSystem.Logup.Lookup.Tuple.ArithmeticResources
-import ArkLibTest.ProofSystem.Logup.Lookup.ArithmeticProver
-import ArkLibTest.ProofSystem.Logup.Lookup.Tuple.ArithmeticProver
+import ArkLibTest.ProofSystem.Logup.Lookup.Prover
+import ArkLibTest.ProofSystem.Logup.Lookup.Tuple.Prover
 import Lean.Compiler.IR
 
 /-! # Actual retained scalar continuation and tuple compression-prefix resource bounds -/

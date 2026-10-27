@@ -27,8 +27,8 @@ The mathematical substitution map below uses Mathlib's sparse polynomial support
 which require classical coefficient choices; it appears only in proofs. A supplied bounded
 polynomial connects the resulting message to the existing honest Sumcheck projection.
 
-These are pure correctness constructors. Measured execution, normalization profiles, and transfer
-to the eventual default honest runtime belong to the separate arithmetic companion.
+These are pure correctness constructors. `Prover/Arithmetic/Round.lean` supplies their measured
+execution; `Prover/Default.lean` selects it in the actual honest runtime.
 
 ## References
 

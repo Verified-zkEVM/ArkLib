@@ -4,8 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
 module
-public import ArkLib.ProofSystem.Logup.Lookup.ArithmeticProver
-public import ArkLib.ProofSystem.Logup.Lookup.Tuple.ArithmeticProver
+public import ArkLib.ProofSystem.Logup.Lookup.Prover
+public import ArkLib.ProofSystem.Logup.Lookup.Tuple.Prover
 public import ArkLib.Interaction.Oracle.PhasedExecution
 import all ArkLib.Interaction.Oracle.PhasedExecution
 

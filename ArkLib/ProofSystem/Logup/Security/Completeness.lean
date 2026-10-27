@@ -5,9 +5,9 @@ Authors: Alexander Hicks
 -/
 module
 
-public import ArkLib.ProofSystem.Logup.Prover.Strategy
+public import ArkLib.ProofSystem.Logup.Prover.Reference
 public import ArkLib.ProofSystem.Logup.Interaction.Execution
-public import ArkLib.ProofSystem.Logup.Security.Initial
+public import ArkLib.ProofSystem.Logup.Security.InitialSoundness
 public import ArkLib.ProofSystem.Sumcheck.Interaction.ComputableCompleteness
 
 -- The concrete prefix specialization unfolds PolyFun's `Focal.splitPrefix`.
@@ -21,9 +21,9 @@ polynomial native honest prover. These proof-only homomorphisms are private; run
 only tables and coefficient arrays. The exact native interpretation and source realization reuse
 existing Sumcheck completeness, including its actual terminal authentication and executable domain.
 
-The message implementation has an explicit formal head-projection contract. Selecting a measured
-builder later changes the actual constructor argument; correctness does not imply an arithmetic
-cost transfer. Initial-state and fold resource accounting are separate obligations.
+The message implementation has an explicit formal head-projection contract. The selected
+`Prover/Default.lean` construction specializes it to the measured builder; correctness does not
+imply an arithmetic cost transfer. Arithmetic and storage bounds live in `Prover/Resources/`.
 
 Balanced mapped fibers give zero helper total for every alpha, including poles. Off-pole alpha
 also gives zero local residuals, so every supported full execution accepts. The named uniform

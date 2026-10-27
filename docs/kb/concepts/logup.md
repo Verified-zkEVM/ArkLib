@@ -110,11 +110,11 @@ is `(s-1)*W/|E|`. Semantic keys, schema and weights must all be fixed before `be
 weights afterward can violate that bound. Balanced fibers remain balanced for every encoding,
 including collisions, by finite regrouping.
 
-For row-varying buses, [Tuple/Source.lean](../../../ArkLib/ProofSystem/Logup/Lookup/Tuple/Source.lean)
+For row-varying buses, [Lookup/Tuple/Source.lean](../../../ArkLib/ProofSystem/Logup/Lookup/Tuple/Source.lean)
 opens the stored padded coefficient-column multilinear extensions and combines their answers.
 An interpolated tag at a field point need not be a registered bus tag, so the source never decodes
 a semantic key there. Its realization holds for every retained BASE multiplicity message;
-[Tuple/Security.lean](../../../ArkLib/ProofSystem/Logup/Lookup/Tuple/Security.lean) composes this
+[Lookup/Tuple/Security.lean](../../../ArkLib/ProofSystem/Logup/Lookup/Tuple/Security.lean) composes this
 actual source with the complete native argument.
 
 ## Independently derived bounds
@@ -128,8 +128,8 @@ not import the printed numerical constants.
 
 ArkLib's grouped proof uses a division-free global clearing implication: if every group residual
 is zero and the helper total is zero, the cleared numerator vanishes, including at zero
-denominators. [Grouped.lean](../../../ArkLib/ProofSystem/Logup/Algebra/Grouped.lean) proves this
-identity; [weighted soundness](../../../ArkLib/ProofSystem/Logup/Security/Weighted.lean) charges
+denominators. [Algebra/Grouped.lean](../../../ArkLib/ProofSystem/Logup/Algebra/Grouped.lean) proves this
+identity; [weighted soundness](../../../ArkLib/ProofSystem/Logup/Security/Soundness.lean) charges
 only its roots for outer soundness. The complete weighted bound is
 `(T*2^n+n*(ell+3))/|E|`. The tuple argument adds `(s-1)*W/|E|` for one fixed semantic key
 among `s` occurring keys, with arbitrary BASE multiplicities fixed before beta. Completeness
@@ -146,13 +146,13 @@ interactive proof's theorem.
 
 | Contract | Owner |
 | --- | --- |
-| Weighted scalar circuit, individual degree `ell+2`, Boolean sum and pole-safe clearing | [Grouped.lean](../../../ArkLib/ProofSystem/Logup/Algebra/Grouped.lean) |
+| Weighted scalar circuit, individual degree `ell+2`, Boolean sum and pole-safe clearing | [Algebra/Grouped.lean](../../../ArkLib/ProofSystem/Logup/Algebra/Grouped.lean) |
 | Arbitrary-helper realization from retained values, weights and helpers | [Interaction/Source.lean](../../../ArkLib/ProofSystem/Logup/Interaction/Source.lean) |
-| Actual prefix/native/terminal execution and arbitrary whole-prover weighted soundness | [Interaction/Execution.lean](../../../ArkLib/ProofSystem/Logup/Interaction/Execution.lean), [Security/Weighted.lean](../../../ArkLib/ProofSystem/Logup/Security/Weighted.lean) |
+| Actual prefix/native/terminal execution and arbitrary whole-prover weighted soundness | [Interaction/Execution.lean](../../../ArkLib/ProofSystem/Logup/Interaction/Execution.lean), [Security/Soundness.lean](../../../ArkLib/ProofSystem/Logup/Security/Soundness.lean) |
 | Scalar membership, retained BASE histogram, whole-prover security and honest completeness | [Lookup/](../../../ArkLib/ProofSystem/Logup/Lookup/) |
 | Checked typed provider, beta compression, original-key security and all-beta honest completeness | [Lookup/Tuple/](../../../ArkLib/ProofSystem/Logup/Lookup/Tuple/) |
-| Direct formal coefficient messages and selected measured honest control | [Prover/RoundCoefficients.lean](../../../ArkLib/ProofSystem/Logup/Prover/RoundCoefficients.lean), [ArithmeticControl.lean](../../../ArkLib/ProofSystem/Logup/Prover/ArithmeticControl.lean) |
-| Actual weighted/scalar/tuple defaults | [ArithmeticStrategy.lean](../../../ArkLib/ProofSystem/Logup/Prover/ArithmeticStrategy.lean), [scalar ArithmeticProver.lean](../../../ArkLib/ProofSystem/Logup/Lookup/ArithmeticProver.lean), [tuple ArithmeticProver.lean](../../../ArkLib/ProofSystem/Logup/Lookup/Tuple/ArithmeticProver.lean) |
+| Direct formal coefficient messages and selected measured honest control | [Prover/RoundCoefficients.lean](../../../ArkLib/ProofSystem/Logup/Prover/RoundCoefficients.lean), [Prover/Arithmetic/Control.lean](../../../ArkLib/ProofSystem/Logup/Prover/Arithmetic/Control.lean) |
+| Actual weighted/scalar/tuple defaults | [Prover/Default.lean](../../../ArkLib/ProofSystem/Logup/Prover/Default.lean), [Lookup/Prover.lean](../../../ArkLib/ProofSystem/Logup/Lookup/Prover.lean), [Lookup/Tuple/Prover.lean](../../../ArkLib/ProofSystem/Logup/Lookup/Tuple/Prover.lean) |
 
 The defaults construct honest helpers termwise with total inversion, including at poles. They
 cache denominator, weight, helper and equality tables, stream adjacent affine-row coefficients,

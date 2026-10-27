@@ -3,8 +3,8 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
-import ArkLib.ProofSystem.Logup.Prover.ArithmeticStrategy
-import ArkLibTest.ProofSystem.Logup.Prover.Completeness
+import ArkLib.ProofSystem.Logup.Prover.Default
+import ArkLibTest.ProofSystem.Logup.Security.Completeness
 import Lean.Compiler.IR
 
 /-! # Actual measured default at the retained-source endpoint -/

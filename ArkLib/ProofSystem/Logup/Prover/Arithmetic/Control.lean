@@ -5,9 +5,9 @@ Authors: Alexander Hicks
 -/
 module
 
-public import ArkLib.ProofSystem.Logup.Prover.ArithmeticState
-public import ArkLib.ProofSystem.Logup.Prover.ArithmeticRound
-public import ArkLib.ProofSystem.Logup.Prover.Strategy
+public import ArkLib.ProofSystem.Logup.Prover.Arithmetic.State
+public import ArkLib.ProofSystem.Logup.Prover.Arithmetic.Round
+public import ArkLib.ProofSystem.Logup.Prover.Reference
 
 import all PolyFun.Interaction.Basic.StrategyOver
 import all PolyFun.Interaction.TwoParty.Strategy

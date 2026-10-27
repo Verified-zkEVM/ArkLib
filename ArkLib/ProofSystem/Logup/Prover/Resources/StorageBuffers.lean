@@ -5,8 +5,8 @@ Authors: Alexander Hicks
 -/
 module
 
-public import ArkLib.ProofSystem.Logup.Prover.Storage
-public import ArkLib.ProofSystem.Logup.Prover.ArithmeticRound
+public import ArkLib.ProofSystem.Logup.Prover.Resources.Storage
+public import ArkLib.ProofSystem.Logup.Prover.Arithmetic.Round
 public import ArkLib.ToCompPoly.Univariate.ArithmeticNormalization
 public import ArkLib.ToCompPoly.Univariate.Size
 

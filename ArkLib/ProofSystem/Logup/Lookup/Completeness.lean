@@ -5,8 +5,8 @@ Authors: Alexander Hicks
 -/
 module
 
-public import ArkLib.ProofSystem.Logup.Lookup.Prover
-public import ArkLib.ProofSystem.Logup.Prover.Completeness
+public import ArkLib.ProofSystem.Logup.Lookup.Prover.Reference
+public import ArkLib.ProofSystem.Logup.Security.Completeness
 
 /-!
 # Completeness of actual indexed scalar lookup

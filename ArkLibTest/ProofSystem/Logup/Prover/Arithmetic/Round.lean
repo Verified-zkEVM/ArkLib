@@ -3,7 +3,7 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
-import ArkLib.ProofSystem.Logup.Prover.ArithmeticRoundCost
+import ArkLib.ProofSystem.Logup.Prover.Arithmetic.RoundCost
 import ArkLibTest.ProofSystem.Logup.Prover.RoundCoefficients
 import Lean.Compiler.IR
 

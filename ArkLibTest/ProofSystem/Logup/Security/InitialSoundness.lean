@@ -3,7 +3,7 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
-import ArkLib.ProofSystem.Logup.Security.Initial
+import ArkLib.ProofSystem.Logup.Security.InitialSoundness
 import Mathlib.Algebra.Field.ZMod
 import Lean.Compiler.IR
 

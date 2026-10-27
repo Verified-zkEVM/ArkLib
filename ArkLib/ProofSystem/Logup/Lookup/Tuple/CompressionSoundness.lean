@@ -9,7 +9,7 @@ public import ArkLib.ProofSystem.Logup.Lookup.Tuple.Source
 public import ArkLib.Data.Polynomial.TaggedTupleProbability
 public import Mathlib.Algebra.CharP.Algebra
 /-!
-# Fixed-multiplicity tuple compression and semantic balance
+# Tuple compression soundness and semantic balance
 
 Semantic keys and the actual retained multiplicity weights are fixed before the fingerprint
 challenge. A false lookup then has a nonzero semantic-key fiber under the explicit query-count

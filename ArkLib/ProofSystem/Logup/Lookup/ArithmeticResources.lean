@@ -5,8 +5,8 @@ Authors: Alexander Hicks
 -/
 module
 
-public import ArkLib.ProofSystem.Logup.Lookup.ArithmeticProver
-public import ArkLib.ProofSystem.Logup.Prover.ArithmeticResources
+public import ArkLib.ProofSystem.Logup.Lookup.Prover
+public import ArkLib.ProofSystem.Logup.Prover.Resources.Arithmetic
 
 /-!
 # Resource corollaries for the actual scalar lookup default

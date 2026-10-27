@@ -3,7 +3,7 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
-import ArkLib.ProofSystem.Logup.Lookup.Tuple.ArithmeticProver
+import ArkLib.ProofSystem.Logup.Lookup.Tuple.Prover
 import ArkLibTest.ProofSystem.Logup.Lookup.Tuple.Completeness
 import Lean.Compiler.IR
 

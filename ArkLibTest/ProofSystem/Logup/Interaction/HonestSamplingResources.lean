@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
 import ArkLib.ProofSystem.Logup.Interaction.HonestSamplingResources
-import ArkLibTest.ProofSystem.Logup.Prover.Completeness
+import ArkLibTest.ProofSystem.Logup.Security.Completeness
 import ArkLibTest.ProofSystem.Logup.Lookup.Completeness
 import ArkLibTest.ProofSystem.Logup.Lookup.Tuple.Completeness
 import ArkLibTest.ProofSystem.Sumcheck.Interaction.SamplingResources

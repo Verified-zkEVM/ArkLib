@@ -5,8 +5,8 @@ Authors: Alexander Hicks
 -/
 module
 
-public import ArkLib.ProofSystem.Logup.Prover.ArithmeticLedger
-public import ArkLib.ProofSystem.Logup.Prover.ArithmeticRoundCost
+public import ArkLib.ProofSystem.Logup.Prover.Arithmetic.Ledger
+public import ArkLib.ProofSystem.Logup.Prover.Arithmetic.RoundCost
 import Mathlib.Algebra.Ring.GeomSum
 
 /-!

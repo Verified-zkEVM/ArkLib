@@ -5,7 +5,7 @@ Authors: Alexander Hicks
 -/
 module
 
-public import ArkLib.ProofSystem.Logup.Prover.ArithmeticResources
+public import ArkLib.ProofSystem.Logup.Prover.Resources.Arithmetic
 public import ArkLib.ProofSystem.Logup.Lookup.Tuple.Provider
 
 /-!

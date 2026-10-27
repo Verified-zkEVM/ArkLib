@@ -6,8 +6,8 @@ Authors: Alexander Hicks
 module
 
 public import ArkLib.ProofSystem.Logup.Lookup.Tuple.Execution
-public import ArkLib.ProofSystem.Logup.Lookup.Tuple.Initial
-public import ArkLib.ProofSystem.Logup.Security.Weighted
+public import ArkLib.ProofSystem.Logup.Lookup.Tuple.CompressionSoundness
+public import ArkLib.ProofSystem.Logup.Security.Soundness
 
 /-!
 # Whole-program soundness of tuple lookup

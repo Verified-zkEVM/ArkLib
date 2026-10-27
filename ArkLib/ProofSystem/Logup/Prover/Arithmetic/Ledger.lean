@@ -5,7 +5,7 @@ Authors: Alexander Hicks
 -/
 module
 
-public import ArkLib.ProofSystem.Logup.Prover.ArithmeticControl
+public import ArkLib.ProofSystem.Logup.Prover.Arithmetic.Control
 
 /-!
 # Exact observed arithmetic calls of the honest strategy

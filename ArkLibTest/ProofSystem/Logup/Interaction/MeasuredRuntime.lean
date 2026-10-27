@@ -3,8 +3,8 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
-import ArkLibTest.ProofSystem.Logup.Lookup.ArithmeticProver
-import ArkLibTest.ProofSystem.Logup.Lookup.Tuple.ArithmeticProver
+import ArkLibTest.ProofSystem.Logup.Lookup.Prover
+import ArkLibTest.ProofSystem.Logup.Lookup.Tuple.Prover
 import Lean.Compiler.IR
 
 /-! # Native gates for the selected measured scalar and tuple defaults

@@ -1,5 +1,8 @@
 # Executable LogUp
 
+For source navigation and import entry points, start with the
+[code-local index](../../ArkLib/ProofSystem/Logup/README.md).
+
 ArkLib implements complete interactive oracle arguments for field-valued weighted balance,
 scalar indexed lookup, and typed tuple/bus indexed lookup. They use Haböck's grouped construction,
 computable native Sumcheck, retained original sources and an executable terminal authentication
@@ -86,7 +89,7 @@ Q(X)   = sum_k h_k(X) + eq(X,z) * sum_k lambda_k * R_k(X)
 eq(x,z)= product_j ((1-x_j)*(1-z_j) + x_j*z_j).
 ```
 
-[Grouped.lean](../../ArkLib/ProofSystem/Logup/Algebra/Grouped.lean) proves the scalar circuit,
+[Algebra/Grouped.lean](../../ArkLib/ProofSystem/Logup/Algebra/Grouped.lean) proves the scalar circuit,
 polynomial realization, Boolean sum and individual degree bound `degreeOf j Q≤ell+2` for arbitrary
 multilinear value, weight and helper inputs. Its global clearing implication is division-free:
 
@@ -113,14 +116,14 @@ suffix follows. Weighted balance starts with fixed value and weight sources. The
    actual helper message; compare its result with the claimed value.
 
 [Interaction/Protocol.lean](../../ArkLib/ProofSystem/Logup/Interaction/Protocol.lean) selects the
-actual computable native verifier and terminal action. [Source.lean](../../ArkLib/ProofSystem/Logup/Interaction/Source.lean)
+actual computable native verifier and terminal action. [Interaction/Source.lean](../../ArkLib/ProofSystem/Logup/Interaction/Source.lean)
 binds each value, weight and helper scalar once before `Logup.reconstruct`; its realization theorem
 holds for every well-typed helper, with no honesty or off-pole premise. Queries build no sparse
 polynomial and enumerate no Boolean rows in the reconstruction circuit.
 
 The scalar and tuple source adapters retain the actual earlier `mu` and the later helper in their
 distinct slots, even when interfaces have the same shape. Arbitrary original source views remain
-explicit. [Execution.lean](../../ArkLib/ProofSystem/Logup/Interaction/Execution.lean) and the scalar/
+explicit. [Interaction/Execution.lean](../../ArkLib/ProofSystem/Logup/Interaction/Execution.lean) and the scalar/
 tuple execution owners prove the actual prefix binds and routed native suffix, preserving private
 continuations, effects after public abort, path-dependent outputs and terminal authentication.
 The native reduction still exposes a final claim for composition; the complete endpoint additionally
@@ -142,7 +145,7 @@ For `q=|E|`, `D=T*N` and `s` distinct occurring typed keys, their bounds are:
 
 | Complete endpoint | False initial statement | Acceptance probability at most |
 | --- | --- | --- |
-| [Weighted](../../ArkLib/ProofSystem/Logup/Security/Weighted.lean) | Nonzero mapped net weight at some value | `(D+n*(ell+3))/q` |
+| [Weighted](../../ArkLib/ProofSystem/Logup/Security/Soundness.lean) | Nonzero mapped net weight at some value | `(D+n*(ell+3))/q` |
 | [Scalar](../../ArkLib/ProofSystem/Logup/Lookup/Security.lean) | False membership in the declared table collection | `((M+P)*N+n*(ell+3))/q` |
 | [Tuple/bus](../../ArkLib/ProofSystem/Logup/Lookup/Tuple/Security.lean) | False membership among original semantic keys | `((s-1)*W+(M+P)*N+n*(ell+3))/q` |
 
@@ -153,7 +156,7 @@ upper bounds, which can exceed one for unsuitable parameters; they do not import
 printed numerical ledger.
 
 The honest helper algorithm uses total inversion, with no pole scan, retry or rejection sampler.
-[Weighted completeness](../../ArkLib/ProofSystem/Logup/Prover/Completeness.lean) proves acceptance
+[Weighted completeness](../../ArkLib/ProofSystem/Logup/Security/Completeness.lean) proves acceptance
 away from the actual mapped value support. Scalar completeness sharpens this to the distinct
 **declared table** support, at most `P*N` values. Tuple completeness holds for every `beta`, including
 fingerprint collisions, with the same coarse `P*N/q` failure bound and no compression-error term.
@@ -178,7 +181,7 @@ The original keys and arbitrary BASE `mu` are fixed before beta; honest histogra
 transports for every beta. Plonky3/Stwo power-order translations have explicit equations; SP1's
 multilinear hash is a different family and is not verified by this univariate fingerprint theorem.
 
-[Provider.lean](../../ArkLib/ProofSystem/Logup/Lookup/Tuple/Provider.lean) checks common Boolean
+[Lookup/Tuple/Provider.lean](../../ArkLib/ProofSystem/Logup/Lookup/Tuple/Provider.lean) checks common Boolean
 row heights, exact payload shapes and declared physical-piece ownership. It stores original typed
 keys and padded coefficient tables once. Structural provider validity is separate from lookup
 membership. Several physical pieces may have the same bus owner; unused registered buses and
@@ -190,13 +193,13 @@ Heterogeneous-height packing and caller constraints for enabled/signed counts re
 ## Honest programs and defaults
 
 Boolean tables use CompPoly's little-endian order: adjacent entries eliminate the least significant
-remaining coordinate. [Helpers.lean](../../ArkLib/ProofSystem/Logup/Prover/Helpers.lean) prepares
-`D_i(u)=alpha-f(V_i(u))`, mapped weights and termwise helpers. [State.lean](../../ArkLib/ProofSystem/Logup/Prover/State.lean)
+remaining coordinate. [Prover/Helpers.lean](../../ArkLib/ProofSystem/Logup/Prover/Helpers.lean) prepares
+`D_i(u)=alpha-f(V_i(u))`, mapped weights and termwise helpers. [Prover/State.lean](../../ArkLib/ProofSystem/Logup/Prover/State.lean)
 retains D/weight/helper tables and lambda. After the joint challenge it caches equality weights
 using the certified fast Boolean basis. Every nonterminal challenge folds all four table families
 with `a+r*(b-a)`, preserving the exact formal head substitution without inversion.
 
-[RoundCoefficients.lean](../../ArkLib/ProofSystem/Logup/Prover/RoundCoefficients.lean) turns adjacent
+[Prover/RoundCoefficients.lean](../../ArkLib/ProofSystem/Logup/Prover/RoundCoefficients.lean) turns adjacent
 entries into affine coefficient arrays, evaluates the fraction circuit and streams each suffix
 row directly into one padded accumulator. It normalizes once and packs a message of degree at
 most `ell+2`. Its theorem identifies the formal native honest projection; equality of finite-field
@@ -207,9 +210,9 @@ The public constructors are:
 
 | Variant | Explicit-builder reference | Selected default |
 | --- | --- | --- |
-| Weighted | `Logup.Prover.Honest.honestWith` | [`Logup.Prover.Honest.prover`](../../ArkLib/ProofSystem/Logup/Prover/ArithmeticStrategy.lean) |
-| Scalar | `Logup.Lookup.Honest.proverWith` | [`Logup.Lookup.Honest.prover`](../../ArkLib/ProofSystem/Logup/Lookup/ArithmeticProver.lean) |
-| Tuple/bus | `Logup.Lookup.Tuple.Honest.proverWith` | [`Logup.Lookup.Tuple.Honest.prover`](../../ArkLib/ProofSystem/Logup/Lookup/Tuple/ArithmeticProver.lean) |
+| Weighted | `Logup.Prover.Honest.honestWith` | [`Logup.Prover.Honest.prover`](../../ArkLib/ProofSystem/Logup/Prover/Default.lean) |
+| Scalar | `Logup.Lookup.Honest.proverWith` | [`Logup.Lookup.Honest.prover`](../../ArkLib/ProofSystem/Logup/Lookup/Prover.lean) |
+| Tuple/bus | `Logup.Lookup.Tuple.Honest.proverWith` | [`Logup.Lookup.Tuple.Honest.prover`](../../ArkLib/ProofSystem/Logup/Lookup/Tuple/Prover.lean) |
 
 The selected defaults execute named arithmetic programs. Scalar histogram construction precedes
 alpha; tuple histogram construction precedes beta, and the tuple default then eagerly constructs
@@ -217,8 +220,8 @@ both E cache matrices once with direct BASE coefficient reads and seeded Horner.
 queries and public tuple queries select the same reusable seeded Horner core. A length-L message
 uses L coefficient reads and `max(L-1,0)` multiplications/additions.
 
-[ArithmeticControl.lean](../../ArkLib/ProofSystem/Logup/Prover/ArithmeticControl.lean) shares the
-actual Unit, Cost and complete-Call control; [ArithmeticLedger.lean](../../ArkLib/ProofSystem/Logup/Prover/ArithmeticLedger.lean)
+[Prover/Arithmetic/Control.lean](../../ArkLib/ProofSystem/Logup/Prover/Arithmetic/Control.lean) shares the
+actual Unit, Cost and complete-Call control; [Prover/Arithmetic/Ledger.lean](../../ArkLib/ProofSystem/Logup/Prover/Arithmetic/Ledger.lean)
 relates exact selected program arguments and messages along typed optional histories. Unit retains
 no Call/Cost instrumentation. Whole-strategy equalities transfer correctness to the explicit-builder
 reference. Resource bounds refer to the selected programs themselves, not a separate algorithm
@@ -231,13 +234,13 @@ owners distinguish the following metrics; none is a total machine-time bound.
 
 | Metric | Delivered contract | Boundary |
 | --- | --- | --- |
-| Private arithmetic requests | [Weighted resource envelope](../../ArkLib/ProofSystem/Logup/Prover/ArithmeticResources.lean): each of nine instruction coordinates is at most `1012*N*T*ell`; their sum is at most `9108*N*T*ell`. | Includes selected prepare/helpers/start/native message/fold programs; excludes BASE/Nat work, embeddings, sampling, source handlers and allocation. |
+| Private arithmetic requests | [Weighted resource envelope](../../ArkLib/ProofSystem/Logup/Prover/Resources/Arithmetic.lean): each of nine instruction coordinates is at most `1012*N*T*ell`; their sum is at most `9108*N*T*ell`. | Includes selected prepare/helpers/start/native message/fold programs; excludes BASE/Nat work, embeddings, sampling, source handlers and allocation. |
 | Scalar frontend | [Scalar resources](../../ArkLib/ProofSystem/Logup/Lookup/ArithmeticResources.lean): `M*N` histogram increment sites, `P*N` counters/casts, `P*N` BASE negation sites and `2*T*N` embedding sites. | Structural sites and dimensions; not Nat bit operations or opaque embedding work. |
 | Tuple frontend | [Tuple resources](../../ArkLib/ProofSystem/Logup/Lookup/Tuple/ArithmeticResources.lean): exact compression prefix `C`, plus the same weighted request envelope; nine-kind cache total `D*(3W+3)+2*M*N+4*P*N`. | Direct reads/embeddings of `D*(W+1)` BASE coefficient cells and `P*N` BASE multiplicities; provider/histogram preparation remains separate. |
 | Verifier-local arithmetic | [Native path usage](../../ArkLib/ProofSystem/Sumcheck/Interaction/Resources.lean), seeded Horner, shared sum/equality checks and [scalar reconstruction](../../ArkLib/ProofSystem/Logup/Algebra/ArithmeticReconstruction.lean). | Exact request recurrences for those selected local bodies; source/view/backend and sampling work remain separate. Reconstruction requests no inversion. |
 | Logical and expanded source openings | [Source resources](../../ArkLib/ProofSystem/Logup/Interaction/Resources.lean): one Q query binds `2T+K` logical answers. Identity scalar sources expand it to `M+2P+K` raw openings; identity tuple coefficient sources to `(W+1)*(M+P)+P+K`. Native message queries are at most `3n`. | Arbitrary views use their actual fanout. The terminal Q action occurs after all rounds pass, including `n=0`, even if final authentication rejects; public abort skips it. |
 | Dense source backend | Original `evalMle`/`eval₂Mle` recursively interpolate actual dense tables. | Count backend work separately from openings; the transparent runner is not thereby a succinct verifier. It does not silently select the private one-multiplication fold or fast equality cache. |
-| Logical storage | [Storage.lean](../../ArkLib/ProofSystem/Logup/Prover/Storage.lean), [StorageBuffers.lean](../../ArkLib/ProofSystem/Logup/Prover/StorageBuffers.lean) and [StorageLedger.lean](../../ArkLib/ProofSystem/Logup/Prover/StorageLedger.lean): actual all-level fields, source/path messages, frontend/provider/cache data and named construction roles, with seven separate category envelopes. | Explicit original/view/embedding/raw allowances; logical cells and containers, not bytes, allocator peak, physical sharing, closure/stack layout or GC liveness. |
+| Logical storage | [Prover/Resources/Storage.lean](../../ArkLib/ProofSystem/Logup/Prover/Resources/Storage.lean), [Prover/Resources/StorageBuffers.lean](../../ArkLib/ProofSystem/Logup/Prover/Resources/StorageBuffers.lean) and [Prover/Resources/StorageLedger.lean](../../ArkLib/ProofSystem/Logup/Prover/Resources/StorageLedger.lean): actual all-level fields, source/path messages, frontend/provider/cache data and named construction roles, with seven separate category envelopes. | Explicit original/view/embedding/raw allowances; logical cells and containers, not bytes, allocator peak, physical sharing, closure/stack layout or GC liveness. |
 
 A full all-success history visits every positive private level, totaling `2N-2` table rows and
 `nK` private lambda slots; early abort retains a prefix with no larger census.
@@ -281,7 +284,7 @@ sample, `uniform_phased_verifier_queries` and its scalar/tuple variants give
 `c*(1+n+K+s)` verifier queries, or `c*(2+n+K+s)` for tuples. No generic `SampleableType` is assumed
 to cost one or six. The pinned KoalaBear.Field and Ext6 sample programs provide c=1 and c=6.
 
-[HonestSamplingResources.lean](../../ArkLib/ProofSystem/Logup/Interaction/HonestSamplingResources.lean)
+[Interaction/HonestSamplingResources.lean](../../ArkLib/ProofSystem/Logup/Interaction/HonestSamplingResources.lean)
 proves that actual weighted/scalar/tuple defaults make zero prover-party ambient queries, including
 public abort responses and zero rounds, for any restricted verifier. The three variants of
 `uniformExecute_default_queries` in SamplingResources combine this fact with the existing

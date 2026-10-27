@@ -3,7 +3,7 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
-import ArkLib.ProofSystem.Logup.Prover.Storage
+import ArkLib.ProofSystem.Logup.Prover.Resources.Storage
 import Mathlib.Data.Rat.Defs
 import Lean.Compiler.IR
 
