@@ -87,9 +87,9 @@ def Extractor.Straightline.ofTranscript (e : StmtIn → pSpec.FullTranscript →
   fun stmt _ tr _ _ ↦ OptionT.mk (pure (e stmt tr))
 
 private theorem Reduction.ofTranscript_game_eq_map
-    (R : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec)
+    {Aux : Type} (R : Reduction oSpec StmtIn Aux StmtOut WitOut pSpec)
     (e : StmtIn → pSpec.FullTranscript → Option WitIn)
-    (stmt : StmtIn) (wit : WitIn) :
+    (stmt : StmtIn) (wit : Aux) :
     (do
       let ⟨⟨pr, out⟩, plog, vlog⟩ ← R.runWithLog stmt wit
       let extracted ← liftM
@@ -113,12 +113,12 @@ theorem Verifier.knowledgeSoundnessWith_of_transcript_event
     (ε : NNReal) (E : StmtIn → pSpec.FullTranscript → Prop)
     (hreject : ∀ stmt tr, (∀ p ∈ e stmt tr, (stmt, p) ∉ relIn) → ¬ E stmt tr →
       (V.run stmt tr).run = pure none)
-    (hbound : ∀ (stmt : StmtIn) (wit : WitIn)
-      (P : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec) (os : σ),
+    (hbound : ∀ (Aux : Type) (stmt : StmtIn) (wit : Aux)
+      (P : Prover oSpec StmtIn Aux StmtOut WitOut pSpec) (os : σ),
       Pr{let x ← (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
         (P.run stmt wit)).run os}[E stmt x.1.1] ≤ ε) :
     V.knowledgeSoundnessWith init impl relIn relOut (Extractor.Straightline.ofTranscript e) ε := by
-  intro stmt wit P
+  intro Aux stmt wit P
   change Pr{let result ← OptionT.mk do
     (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
       (do
@@ -133,7 +133,7 @@ theorem Verifier.knowledgeSoundnessWith_of_transcript_event
   intro os _
   rw [StateT.run'_eq, prEvent_map, Reduction.run_run_eq_bind,
     simulateQ_bind, StateT.run_map, prEvent_map, StateT.run_bind]
-  refine le_trans ?_ (hbound stmt wit P os)
+  refine le_trans ?_ (hbound Aux stmt wit P os)
   refine prEvent_bind_le_prEvent_of_support
     ((simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
       (P.run stmt wit)).run os)

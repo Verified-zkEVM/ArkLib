@@ -809,7 +809,7 @@ def rbrSoundness (langIn : Set Statement)
   verifier.rbrSoundness init impl langIn acceptRejectRel.language rbrSoundnessError
 
 @[reducible, simp]
-def rbrKnowledgeSoundness (relation : Set (Statement × Bool))
+def rbrKnowledgeSoundness (relation : Set (Statement × Witness))
     (verifier : Verifier oSpec Statement Bool pSpec)
     (rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0) : Prop :=
   verifier.rbrKnowledgeSoundness init impl relation acceptRejectRel rbrKnowledgeError

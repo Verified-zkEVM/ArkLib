@@ -458,10 +458,10 @@ theorem liftContext_knowledgeSoundness [Inhabited InnerStmtOut] [Inhabited Inner
     (h : V.knowledgeSoundness init impl innerRelIn innerRelOut knowledgeError) :
       (V.liftContext stmtLens).knowledgeSoundness init impl outerRelIn outerRelOut
         knowledgeError := by
-  unfold knowledgeSoundness at h ⊢
+  unfold knowledgeSoundness knowledgeSoundnessWith at h ⊢
   obtain ⟨E, h'⟩ := h
   refine ⟨E.liftContext ⟨stmtLens, witLens⟩, ?_⟩
-  intro outerStmtIn outerWitIn outerP
+  intro Aux outerStmtIn outerWitIn outerP
   simp only [ChallengeIdx, Challenge, QueryImpl.addLift_def,
     PFunctor.Handler.liftTarget_self, Extractor.Straightline.liftContext,
     bind_pure_comp, OptionT.run_map, liftM_map, Functor.map_map, OptionT.run_bind,
@@ -481,7 +481,7 @@ theorem liftContext_knowledgeSoundness [Inhabited InnerStmtOut] [Inhabited Inner
   simp only [ChallengeIdx, Challenge, QueryImpl.addLift_def,
     PFunctor.Handler.liftTarget_self, bind_pure_comp, OptionT.run_bind,
     OptionT.run_map, StateT.run'_eq, OptionT.mk_bind, Option.mem_def, Prod.mk.eta] at h'
-  have hR := h' (stmtLens.proj outerStmtIn) default innerP
+  have hR := h' InnerWitIn (stmtLens.proj outerStmtIn) default innerP
   simp only [Reduction.runWithLog, ChallengeIdx, Challenge, run, bind_pure_comp,
     OptionT.run_bind, OptionT.run_monadLift, monadLift_self, OptionT.run_map,
     Option.elimM_map, Option.elim_some, Option.elimM_bind, simulateQ_bind,
