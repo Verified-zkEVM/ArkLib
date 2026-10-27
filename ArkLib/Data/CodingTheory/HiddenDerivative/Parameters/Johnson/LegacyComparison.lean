@@ -19,15 +19,6 @@ rounded curve heights and affine sampling, fits the seventh-power budget of BCIK
 
 namespace ReedSolomon.HiddenDerivative
 
-/-- The cubic square-root denominator agrees with the legacy real-power denominator. -/
-theorem sqrt_cube_eq_rpow_three_halves {rho : ℝ} (hrho : 0 ≤ rho) :
-    Real.sqrt rho ^ 3 = Real.rpow rho (3 / 2 : ℝ) := by
-  symm
-  calc
-    Real.rpow rho (3 / 2 : ℝ) = Real.rpow (Real.sqrt rho) (3 : ℝ) :=
-      Real.rpow_div_two_eq_sqrt 3 hrho
-    _ = Real.sqrt rho ^ 3 := Real.rpow_natCast _ 3
-
 /-- A prescribed multiplicity bounds the rounded Johnson multiplicity as soon as it supplies
 the required half-gap. -/
 theorem johnsonT_le_of_half_gap {n D m : ℕ} {eta : ℝ}

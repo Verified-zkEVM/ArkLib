@@ -516,7 +516,7 @@ lemma master_lemma
     exact (WithBot.add_lt_add_iff_right (by simp)).mp ih
 
 open LinearCode Classical ProbabilityTheory ReedSolomon STIR in
-/-- Let the target degree `dstar` be positive and let each component
+/-- Lemma 4.13. Let the target degree `dstar` be positive and let each component
 bound `degs i` be at most `dstar`. If the probability that the combined word is within distance
 `δ` of the target Reed–Solomon code exceeds the curve error bound, all component words agree
 with codewords of their respective degrees on a common set of at least `(1 - δ) * |ι|` positions.
