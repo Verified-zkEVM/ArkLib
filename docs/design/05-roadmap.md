@@ -298,6 +298,52 @@ automatically prove every legacy equivalence.
 
 ## Later extraction and compiler work
 
+### Extractor efficiency repair
+
+**Proposed.** This sequence repairs resource claims for the existing FRI and Toy extractors;
+it does not depend on migrating either protocol to the native interaction framework. Native
+knowledge games should reuse its resource contracts when they are introduced. The contracts and
+computational-model decisions belong to [the efficiency chapter](03a-extractor-efficiency.md).
+Each implementation PR starts from current `main` or its explicit prerequisite branch; keep
+dependency upgrades separate.
+
+| Step | Deliverable | Acceptance evidence |
+|---|---|---|
+| E1 | Clarify unbounded/named game contracts and the actual straightline access type | Compile the classical-selector event identity and its relation-aware game consequence; state losslessness and witness-supply premises where needed; record the omitted extraction-time requirement in the ABF26 Definition A.3 audit row; preserve existing results |
+| E2 | Ship `knowledgeSoundnessWithResources` and FRI's operation-count result independently | Semantic identity with the named extractor, transported FRI profiles, explicit profile exclusions in the public claim/audit, and an acceptance example showing that query cost alone does not imply execution time |
+| E3a | Build a generic algebraic execution backend for the PolyFun/VCVio quantitative layer | Executable code type with semantics for field operations, indices, control and storage; gate on realizing one real FRI fold-consistency check with proved output agreement and execution bound |
+| E3 | Add `knowledgeSoundnessWithin` using the E3a backend | Quantitative realization, explicit representations, charged pure computation, termination/access proof, and a documented review of primitive adequacy; no claimed standard-machine correspondence |
+| E4 | Certify all local work of FRI's same named extractor | Bound view preparation, scan/control/storage and interpolation, retain early rejection, combine with `knowledge_soundness_with`, and derive a polynomial envelope under the protocol constraints |
+| E5 | Add the measured eager Toy decoder and terminal certificate | Equality with the existing extractor on all inputs, measured agreement/interpolation/re-encoding/materialization, and the unchanged `certifiedExtractorError` |
+| E6 | Certify Toy round-by-round execution | Per-stage budgets for the actual available prefixes, exact extractor identities and the existing per-round error guarantees |
+| E7 | Deferred: add uniform family corollaries when a consumer fixes the policy | One packed family realization and polynomial for fixed backend/boundary/contracts, with explicit parameter growth and representation policy |
+
+E2 follows E1 and ships without waiting for E3a or E3. E3 consumes the E3a backend and E2's
+same-program bridge. E4 and E5 consume E3 and can be developed independently; E6 follows E5.
+E3a's real FRI check is the gate before scaling the backend to the complete extractor. E3's
+formal gain over E2 is that every piece of pure computation is charged through the backend;
+the primitive model's adequacy is reviewed, not proved against a standard machine.
+
+E7 waits for a consumer and an explicit parameter-growth policy. It uses the corresponding
+concrete certificates and must not infer uniformity merely from parametric Lean definitions.
+Update public summaries and protocol audits with each concrete result in E2 and E4–E6, marking
+whether it supplies operation counts, algebraic execution bounds or bit-time bounds; those
+documentation updates do not wait for E7.
+
+Protocol code stays in ArkLib; generic cost/realization combinators belong upstream. Use the
+existing arithmetic layer rather than importing FRI-specific access instructions into Toy.
+The generic algebraic code type belongs in PolyFun; a temporary `ArkLib/ToCompPoly` backend
+must name its upstream destination and removal condition if upstream landing would delay the work.
+Retain compatibility names with precise docstrings while adding the resource-certified public
+theorems. A Caliper field/kernel pilot and bit-machine refinements are later clients, not
+prerequisites for a complete claim relative to the explicit algebraic model.
+
+For E1–E7, including E3a, run the normal repository validation, the axiom regression gate for axiom-clean
+theorems, and the relevant existing compiled extractor clients. Extend acceptance tests with the
+failure modes in the efficiency chapter. Runtime fixtures check implementation behavior; the
+kernel-checked bounds and realization establish the resource claim. Update current status only
+when results land, and make public summaries match the strongest completed layer.
+
 ### State restoration and knowledge composition
 
 After runtime and log composition are available, prove the causal trace and witness facts needed by
