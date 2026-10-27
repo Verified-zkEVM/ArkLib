@@ -912,7 +912,7 @@ theorem folding_preserves_distance
       correlatedAgreement_affine_curves (F := F) (ι := Fin (2 ^ (n - k)))
         (k := 2 ^ k - 1) (deg := 2 ^ (d - k))
         (domain := domain.subdomain k) (δ := δ)
-        (hδ_pos := _δ_gt_0) (hδ := bound_tighter)
+        (hdeg_pos := by positivity) (hδ_pos := _δ_gt_0) (hδ := bound_tighter)
     unfold foldWord δ_ε_correlatedAgreementCurves at *
     by_contra contra
     simp only [not_le, foldValue_eq_sum_of_foldAuxCoeff_mul_pow_alpha,

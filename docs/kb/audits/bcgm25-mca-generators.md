@@ -61,8 +61,8 @@ is unstatable in it. Bounds are therefore vacuous once they exceed `1`.
 | Claim 6.9 (few seeds avoid every large maximal CA domain) | `card_mul_le_of_forall_not_subset_of_isMDSGenerator` | proved, stated division-free as the disjunction of the two cleared bounds of the paper's `max`. The probabilistic step is the generic `Finset.exists_injective_two_mul_card_filter_lt_card_inf_inter` (`ArkLib/Data/Finset/TupleIntersection.lean`): an incidence identity, Jensen, and a birthday bound, with no probability monad. The paper's birthday hypothesis `|B²| > ℓ(ℓ+1)/η` is stronger than the `ℓ(ℓ-1)/η` the proof needs |
 | Thm 6.1, list-decoding seed count (body of the paper's proof) | `card_filter_isMCA_le_of_isMDSGenerator_of_le_one_sub` | proved, at abstract thresholds `α`, `β`; the `B⁽¹⁾`/`B⁽²⁾` partition with Claims 6.7–6.9 |
 | Thm 8.2 (polynomial generators, arbitrary linear codes) | `PolynomialGenIsMCA.isMCAGenerator_of_isPolynomialGeneratorOf` | proved, now unconditionally since Thm 6.1 is proved: the tensor stage is `isMCAGenerator_tensorGeneratorPi_tight`. Strengthenings over the paper: no `ℓ ≥ 2` hypothesis, and the `d = 0` factor case (skipped by the paper's proof) is proved via the vacuous-event argument |
-| Lemma 9.3 (`G_d` for Reed–Solomon) | `RSCode.isMCAGenerator_univariatePowersGenerator` | **sorried**; needs the Guruswami–Sudan machinery |
-| Thm 9.2 (polynomial generators, Reed–Solomon up to Johnson) | `RSCode.isMCAGenerator_of_isPolynomialGeneratorOfFull` | proved assuming Lemma 9.3; the printed proof has a separate gap, see below |
+| Lemma 9.3 (`G_d` for Reed–Solomon) | `RSCode.isMCAGenerator_univariatePowersGenerator` | proved from exact Johnson power agreement and the finite explicit-multiplicity comparison; one exceptional set works for every candidate and every MCA witness subset |
+| Thm 9.2 (polynomial generators, Reed–Solomon up to Johnson) | `RSCode.isMCAGenerator_of_isPolynomialGeneratorOfFull` | proved from Lemma 9.3 and the tight tensor theorem; the printed proof has a separate gap, see below |
 | Lemma 10.1 (`ϵMCA(C^k) ≤ k · ϵMCA(C)`) | — | not formalized |
 
 ## Lemma 6.2: the printed unique-decoding error is off by one
@@ -147,8 +147,47 @@ BCGM25 invokes Lemma 4.4 twice.
 - **Thm 9.2** (Reed–Solomon, list-decoding regime). The base MCA comes from Lemma 9.3, which is
   Reed–Solomon-specific, and the interleaving `RS^ℓ ⊆ (F^ℓ)ⁿ` is not a Reed–Solomon code, so form 1
   is not available. `isMCAGenerator_of_isPolynomialGeneratorOfFull` uses the printed form through
-  `isMCAGenerator_tensorGeneratorPiUnivariate`, so its only unproved input is Lemma 9.3, used at
-  `RS[F, D, k]` itself.
+  `isMCAGenerator_tensorGeneratorPiUnivariate`, applying the proved Lemma 9.3 at
+  `RS[F, D, k]` itself. Both the base and tensor steps are kernel checked.
+
+## Lemma 9.3: the exact-agreement route
+
+`ReedSolomon.exists_johnson_curve_exactPowerAgreement` constructs one exceptional set before
+choosing a seed or an agreeing polynomial. Its size is at most twice the curve degree times the
+finite Johnson line count. A primitive symbolic certificate at height `ℓ·(h + 1) − 1` feeds the
+ordinary power-equation theorem, so the result has no characteristic restriction.
+
+`ProximityGap.mcaError_powers_le_of_exactPowerAgreement` converts that conclusion to MCA:
+exact equality of the full agreement set lets the coefficient codewords restrict to every
+large witness subset. There is no union bound over subsets. The arithmetic theorem
+`two_mul_johnsonExceptionCount_le_explicit_budget` fits the count inside Definition 9.1's
+seventh-power budget, without changing `reedSolomonMCAError`.
+
+The wrapper also covers the boundary cases: dimension-one codes use
+`uniformExactPowerAgreement_constantCode`, full codes (including an empty evaluation domain)
+have zero MCA error, and the degree-zero powers generator returns its only input word.
+The error definition's other branch uses the probability bound one. The powers theorem,
+`isMCAGenerator_tensorGeneratorPiUnivariate`, and the full-field polynomial theorem each depend
+only on `propext`, `Classical.choice`, and `Quot.sound`.
+
+## Curve and weighted compatibility interfaces
+
+The exact-set bridge also proves the legacy curve and weighted statements. The general curve
+wrapper and all four weighted wrappers require `0 < deg`; the former zero-dimension statements
+were false. The unprimed weighted curve theorem now samples a uniform field parameter, rather
+than sampling distinct image points uniformly. Polynomial maps can have unequal fibers, so these
+are different distributions. Affine sampling still uses uniform points in the affine space,
+justified by the equal-fiber coefficient map even for dependent generators.
+
+`exists_exactPowerAgreement_unique` upgrades the sharp common decoder to exact power agreement
+with at most `ℓ·n` exceptional seeds: uniqueness identifies every close candidate, and a union
+of coordinate polynomial root sets excludes accidental agreement. The generic weighted bridge
+then retains the chosen decoder's entire agreement set. Coordinate weights are normalized by the
+code length, not by their sum, and are distinct from Johnson interpolation weights.
+
+`Combine.combine_theorem` additionally requires `0 < dstar`; its old degree-zero case was false.
+The folding theorem discharges its positive degree automatically. Cardinality-only wrappers drop
+unused sampling instances, and the weighted wrappers drop unused `k`/`δ` parameters.
 
 ## A separate gap in the source
 
