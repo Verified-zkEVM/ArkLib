@@ -496,8 +496,10 @@ home_page/            site assets and assembled website root
   `ProximityGap/LineDecoding.lean` holds the GG25-corrected interfaces corresponding to ABF26
   Definition 4.20 and Theorem 4.21, and
   `Connections/ListDecodingAndCA.lean` holds the four list-decoding/CA connections. Extensions
-  that turn those admits into prize witnesses live below `ProximityGap/GrandChallenges/`, so the
-  core `GrandChallenges.lean` grid and carrier API does not import the catalogue.
+  that turn bounds into prize witnesses live below `ProximityGap/GrandChallenges/`, so the
+  core `GrandChallenges.lean` grid and carrier API does not import the catalogue. The
+  Johnson-range witness uses the bound proved via [DKT26], with the [BCHKS25] Theorem 4.6
+  printed constant.
 - The folded Wronskian (GK16 Definition 11) and its linear-independence criterion live in
   `ArkLib/Data/Polynomial/FoldedWronskian.lean`, not under `CodingTheory/`; its sibling
   `ArkLib/Data/Polynomial/ClassicalWronskian.lean` holds the ordinary Wronskian and the
@@ -729,8 +731,8 @@ home_page/            site assets and assembled website root
   bounds. `Data/CodingTheory/ProximityGenerator/Multilinear.lean` defines the executable tensor
   generator and proves the third bound using the additive tensor MCA theorem and the proved
   affine-line unique-decoding estimate. Its 1.5-Johnson alternative uses
-  `linear_mcaError_le_one_point_five_johnson`; neither result depends on the admitted
-  Reed–Solomon Johnson bound.
+  `linear_mcaError_le_one_point_five_johnson`; neither result uses the
+  Reed–Solomon Johnson bound proved via [DKT26].
   `multilinearBatchGenerator` presents the same coefficients at index `Fin ((2^t - 1) + 1)`.
   Composite knowledge soundness remains out of scope because batching has no extractor.
   Executable examples, concrete soundness applications, and axiom checks are in

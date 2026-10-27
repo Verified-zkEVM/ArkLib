@@ -114,7 +114,7 @@ values and the encoder `(Fin k → F) →ₗ[F] (ι → A)` range over `A`.
 Combination of codeword values is the module action `f₀ + γ • f₁` (it
 specializes to `f₀ + γ · f₁` when `A = F`).
 
-## Verified vs. admitted
+## Verified reduction and numeric bounds
 
 What is verified here is the **reduction**, with a **symbolic** error. Every theorem in
 `ProofSystem/ToyProblem/` is `sorry`-free, and the headline declarations (completeness, the plain
@@ -126,15 +126,14 @@ bounds, and the actual-vs-certified bridges) depend only on `propext`, `Classica
 `Code.Lambda`, not numerals. Nothing in this directory evaluates them.
 
 Numeric values for the bracket come from the MCA/CA capacity bounds under
-`Data/CodingTheory/ProximityGap/CapacityBounds`. Several of those are fully proven; the rest
-are **external admits** (each `sorry` is tagged with the primary source it stands in for) —
-in particular the Johnson-range MCA input `rs_mcaError_le_in_johnson_range`.
-That subtree is deliberately **not** in this directory's import cone, so the quarantine is
-structural rather than a convention: no toy-problem theorem can silently acquire a numeric
-claim, admit-backed or otherwise. Consequently the
-theorems apply at production parameter sizes — they are parametric in `C`, `δ`, and `t` — but
-no numeric error value is proven in-tree at any production shape. For the interleaved-RS profile
-the remaining distance is short and is spelled out in `Impl/IRS.lean`.
+`Data/CodingTheory/ProximityGap/CapacityBounds`. Several of those are fully proven, including
+the Johnson-range MCA input `rs_mcaError_le_in_johnson_range`, proved via [DKT26] with the
+printed constant from [BCHKS25] Theorem 4.6. Other catalogue entries remain external assumptions.
+That subtree is deliberately outside this directory's import cone, so no toy-problem theorem
+can silently acquire a numeric claim. Consequently the theorems apply at production parameter
+sizes, since they are parametric in `C`, `δ`, and `t`, but no numeric error value is proven
+in-tree at any production shape. For the interleaved-RS profile, the remaining composition of
+proved inputs is spelled out in `Impl/IRS.lean`.
 
 One further admitted region sits outside every proof here and must not be read as backing any
 statement in this file: the generic `StateT` security-composition theorems of
@@ -144,6 +143,8 @@ separately).
 
 ## References
 
+* [BCHKS25] Theorem 4.6 (Johnson-range printed constant).
+* [DKT26] (proof of the Johnson-range MCA bound).
 * [Arnon, G., Boneh, D., Fenzi, G., *Open Problems in List Decoding and
   Correlated Agreement*][ABF26] (§6).
 -/

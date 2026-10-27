@@ -30,38 +30,35 @@ transition extractor.
 
 Everything proven below is parametric: the shipped error keeps `ε_mca(C,δ)` and
 `Λ(C^{≡2},δ)` symbolic, so no numeral is asserted at any parameter shape (see the
-"Verified vs. admitted" section of `Spec/General.lean`).  For this interleaved-RS profile
-the route to a numeral is short, and it is worth recording exactly what is missing:
+"Verified reduction and numeric bounds" section of `Spec/General.lean`). For this interleaved-RS
+profile, the remaining work is to compose the proved bounds and their real-arithmetic bridges:
 
-* **MCA term.**  `ProximityGap.mcaError_interleaved_eq` (`ProximityGap/Errors.lean`,
-  `sorry`-free) collapses the interleaved MCA error to the scalar one, so at radius
-  `δ ∈ (0,1)` the `s`-interleaved code inherits the RS bound at message length `k / s`.
-  In the Johnson range the scalar bound, `rs_mcaError_le_in_johnson_range`
-  (`ProximityGap/CapacityBounds.lean`), is the **one external admit** on this path
-  ([BCHKS25, Thm 4.6]); at smaller radii the proven
+* **MCA term.** `ProximityGap.mcaError_interleaved_eq` (`ProximityGap/Errors.lean`)
+  collapses the interleaved MCA error to the scalar one, so at radius `δ ∈ (0,1)` the
+  `s`-interleaved code inherits the RS bound at message length `k / s`.
+  In the Johnson range, `rs_mcaError_le_in_johnson_range`
+  (`ProximityGap/CapacityBounds.lean`) is proved via [DKT26], with the printed constant
+  from [BCHKS25, Thm 4.6]. At smaller radii,
   `linear_mcaError_le_one_point_five_johnson`
-  (`ProximityGap/CapacityBounds/JohnsonMca.lean`) already supplies an admit-free bound.
-* **List term.**  Fully proven route, no admits:
-  `ListDecodability.lambda_interleaved_le_choose_mul_pow` composed with
-  `irs_lambda_le_johnson_mds` (both in `sorry`-free files), with
-  `ReedSolomon.Interleaved.minDist_irsCode` supplying the relative-distance input.  What
-  is missing is only real-arithmetic glue, not a mathematical input.
-* **Coercions.**  The `ENNReal → ℝ≥0` bridges needed to land the two terms in the
+  (`ProximityGap/CapacityBounds/JohnsonMca.lean`) also supplies a proved bound.
+* **List term.** `ListDecodability.lambda_interleaved_le_choose_mul_pow` composed with
+  `irs_lambda_le_johnson_mds` gives a proved route, with
+  `ReedSolomon.Interleaved.minDist_irsCode` supplying the relative-distance input.
+  Only real-arithmetic glue remains.
+* **Coercions.** The `ENNReal → ℝ≥0` bridges needed to land the two terms in the
   error type are proven.
 
-So a numeric §6.4-shaped corollary would rest on exactly one external admit.  It is
-deliberately not stated here.  Beyond the import-cone quarantine, the live downstream
-consumer of these theorems cannot use an admit-backed numeral at all: it enforces a
-transitive axiom closure of exactly `propext`, `Classical.choice`, `Quot.sound`, and it
-reaches a numeric bound by a different, fully axiom-clean route — ArkLib's *unique-decoding*
-correlated-agreement bound transported through interleaving, rather than the Johnson-range
-MCA admit.  An admit-backed corollary here would therefore be a weaker-provenance parallel
-route to the same quantity.  Any future numeric claim in-tree should adopt
-`CapacityBounds.lean`'s "external admit unless stated" convention rather than pull that file
-into the launch cone.
+A numeric §6.4-shaped corollary can therefore use proved mathematical inputs. Such a corollary
+is not stated here. The live downstream consumer enforces a transitive axiom closure of
+exactly `propext`, `Classical.choice`, and `Quot.sound`, and currently reaches a numeric bound
+through ArkLib's unique-decoding correlated-agreement bound transported through interleaving.
+Any future Johnson-range numeric claim should compose the proved scalar MCA bound with the
+interleaving and list-size bounds above, while preserving that axiom closure.
 
 ## References
 
+* [BCHKS25] Theorem 4.6 (Johnson-range printed constant).
+* [DKT26] (proof of the Johnson-range MCA bound).
 * [Arnon, G., Boneh, D., and Fenzi, G., *Open Problems in List Decoding and
   Correlated Agreement*][ABF26], §6 (the interleaved-RS instantiation and the
   Appendix A.1 erasure-decoding extractor realized executably here).
