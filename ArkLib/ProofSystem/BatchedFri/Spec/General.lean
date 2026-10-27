@@ -12,7 +12,12 @@ public import ArkLib.ProofSystem.Fri.Spec.General
 /-!
 # ArkLib.ProofSystem.BatchedFri.Spec.General
 
-Definitions and results for this component of ArkLib.
+The batching round followed by the FRI reduction.
+
+## Status
+
+The composite security theorem follows from the batching round theorems and FRI's
+by sequential composition; its formalization is deferred to the composition work.
 -/
 
 @[expose] public section
@@ -35,7 +40,7 @@ open OracleSpec OracleComp ProtocolSpec NNReal BatchingRound Domain
    - `domain_size_cond`, a proof that the initial evaluation domain is large enough to test
       for proximity of a polynomial of appropriate degree.
   - `l`, the number of round consistency checks to be run by the query round.
-  - `m`, number of batched polynomials.
+  - `m`, number of random coefficients; there are `m + 1` input polynomials.
 -/
 variable {F : Type} [NonBinaryField F] [Fintype F] [DecidableEq F]
 variable {n : ℕ}
@@ -44,12 +49,9 @@ variable (dom_size_cond : (2 ^ (∑ i, (s i).1)) * d ≤ 2 ^ n)
 variable (l m : ℕ)
 variable {ω : SmoothCosetFftDomain n F}
 
--- /- Input/Output relations for the Batched FRI protocol. -/
-def inputRelation (δ : ℝ≥0) :
-    Set
-      (
-        Unit × (∀ j, OracleStatement m ω j) × (Witness F s d m)
-      ) := sorry
+/-- The composite protocol starts with the batching round's correlated-agreement relation. -/
+def inputRelation (δ : ℝ≥0) :=
+  BatchingRound.inputRelation (ω := ω) s d m δ
 
 
 instance instBatchFRIreductionMessageOI : ∀ j,

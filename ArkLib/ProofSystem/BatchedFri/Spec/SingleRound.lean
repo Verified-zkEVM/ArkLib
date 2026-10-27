@@ -7,7 +7,7 @@ module
 
 public import ArkLib.OracleReduction.Basic
 public import ArkLib.ProofSystem.Fri.RoundConsistency
-public import ArkLib.ProofSystem.Fri.Spec.SingleRound
+public import ArkLib.ProofSystem.Fri.Spec.InputRelation
 public import CompPoly.Univariate.Basic
 public import CompPoly.Univariate.Linear
 public import CompPoly.Univariate.ToPoly.Impl
@@ -35,7 +35,7 @@ namespace Spec
    - `k` the number of, non final, folding rounds the protocol will run.
    - `s` the "folding degree", for `s = 1` this corresponds to the standard "even-odd" folding.
    - `d` the degree bound on the final polynomial returned in the final folding round.
-   - `m` the number of polynomials batched
+   - `m` the number of random coefficients; there are `m + 1` input polynomials
 -/
 variable {F : Type} [NonBinaryField F] [Fintype F] [DecidableEq F]
 variable {n : ℕ}
@@ -86,25 +86,20 @@ def combinedOracle (cs : Fin m → F) (oStmt : ∀ j, OracleStatement m ω j) :
       ((List.finRange m).map fun (i : Fin m) =>
         cs i * oStmt i.succ (initialDomainPoint (s := s) j v)).sum
 
-def inputRelation :
-    Set
-      (
-        (Unit × (∀ j, OracleStatement m ω j)) ×
-        Witness F s d m
-      ) := sorry
+/-- The words agree with their degree-bounded polynomial witnesses on one common set
+of relative size at least `1 - δ` in the initial evaluation domain. -/
+def inputRelation (δ : ℝ≥0) :
+    Set ((Unit × (∀ j, OracleStatement m ω j)) × Witness F s d m) :=
+  {sw | ∃ S : Finset (Fin (2 ^ n)),
+    (1 - δ) * Fintype.card (Fin (2 ^ n)) ≤ S.card ∧
+    ∀ i, ∀ z ∈ S, sw.1.2 i (ω.equivToFinset z) = (sw.2 i).1.eval (ω z)}
 
-/- The FRI non-final folding round output relation, with proximity parameter `δ`,
-   for the `i`th round. -/
-def outputRelation :
-    Set
-      (
-        (Fri.Spec.Statement F (0 : Fin (k + 1)) ×
-        (∀ j, Fri.Spec.OracleStatement s ω (0 : Fin (k + 1)) j)) ×
-        Fri.Spec.Witness F s d (0 : Fin (k + 2))
-      ) := sorry
+/-- The batching output relation is exactly the initial FRI relation at the same radius. -/
+def outputRelation (dom_size_cond : 2 ^ (∑ i, (s i).1) * d ≤ 2 ^ n) (δ : ℝ≥0) :=
+  Fri.Spec.inputRelation k (ω := ω) s d dom_size_cond δ
 
-/-- The verifier send `m` field elements to batch the `m + 1` batched polynomials,
-    the prover then returns the putative codeword corresponding to the batched polynomial -/
+/-- The verifier sends `m` field elements. The combined word is a virtual oracle;
+the prover sends no message in this round. -/
 @[reducible]
 def batchSpec (F : Type) (m : ℕ) : ProtocolSpec 1 := ⟨!v[.V_to_P], !v[Fin m → F]⟩
 
@@ -156,6 +151,66 @@ theorem simulateQ_queryInput
   change id <$> (pure (oStmt i x) : OracleComp []ₒ F) = pure (oStmt i x)
   simp only [map_pure, id_eq]
 
+/-- The degree-bounded polynomial carried into FRI by honest batching. -/
+def combinedWitness (cs : Fin m → F) (ps : Witness F s d m) :
+    Fri.Spec.Witness F s d (0 : Fin (k + 2)) :=
+  let q : CompPoly.CPolynomial F :=
+    (ps 0).1 + ∑ i, CompPoly.CPolynomial.C (cs i) * (ps i.succ).1
+  ⟨
+    q, by
+      unfold Fri.Spec.Witness
+      simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod]
+      rw [CompPoly.CPolynomial.degreeLT_toPoly]
+      change (((ps 0).1 + ∑ i, CompPoly.CPolynomial.C (cs i) * (ps i.succ).1) :
+        CompPoly.CPolynomial F).toPoly ∈ _
+      rw [CompPoly.CPolynomial.toPoly_add, CompPoly.CPolynomial.toPoly_sum]
+      simp only [CompPoly.CPolynomial.toPoly_mul, CompPoly.CPolynomial.C_toPoly]
+      set q : F[X] :=
+        (ps 0).1.toPoly + ∑ i, Polynomial.C (cs i) * (ps i.succ).1.toPoly with hq
+      apply mem_degreeLT.mpr
+      by_cases h : q = 0
+      · rw [h]
+        simp only [degree_zero, finRangeTo, List.take_zero, List.toFinset_nil, sum_empty,
+          tsub_zero, Nat.cast_mul, Nat.cast_pow, Nat.cast_ofNat]
+        exact compareOfLessAndEq_eq_lt.mp rfl
+      · rw [Polynomial.degree_eq_natDegree h]
+        norm_cast
+        apply Nat.lt_of_le_pred (by simp)
+        transitivity
+        · exact Polynomial.natDegree_add_le _ _
+        · apply Nat.max_le_of_le_of_le
+          · have h_ps0 := mem_degreeLT.mp
+              ((CompPoly.CPolynomial.degreeLT_toPoly (R := F)).mp (ps 0).2)
+            by_cases h₀ : (ps 0).1.toPoly = 0
+            · rw [h₀]
+              simp
+            · erw
+                [
+                  Polynomial.degree_eq_natDegree h₀,
+                  WithBot.coe_lt_coe,
+                  Nat.cast_id, Nat.cast_id
+                ] at h_ps0
+              exact Nat.le_pred_of_lt h_ps0
+          · apply Polynomial.natDegree_sum_le_of_forall_le
+            intros i _
+            by_cases h : Polynomial.C (cs i) = 0
+            · rw [h]
+              simp
+            · by_cases h' : (ps i.succ).1.toPoly = 0
+              · rw [h']
+                simp
+              · rw [Polynomial.natDegree_mul h h', Polynomial.natDegree_C, zero_add]
+                have h_psi := mem_degreeLT.mp
+                  ((CompPoly.CPolynomial.degreeLT_toPoly (R := F)).mp (ps i.succ).2)
+                erw
+                  [
+                    Polynomial.degree_eq_natDegree h',
+                    WithBot.coe_lt_coe,
+                    Nat.cast_id, Nat.cast_id
+                  ] at h_psi
+                exact Nat.le_pred_of_lt h_psi
+  ⟩
+
 /-- The batching round oracle prover. -/
 def batchProver :
     OracleProver []ₒ
@@ -176,64 +231,7 @@ def batchProver :
   receiveChallenge
   | ⟨0, _⟩ => fun ⟨os, ps⟩ => pure <|
     fun (cs : Fin m → F) =>
-      let q : CompPoly.CPolynomial F :=
-        (ps 0).1 + ∑ i, CompPoly.CPolynomial.C (cs i) * (ps i.succ).1
-      ⟨cs, os,
-        ⟨
-          q, by
-            unfold Fri.Spec.Witness
-            simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod]
-            rw [CompPoly.CPolynomial.degreeLT_toPoly]
-            change (((ps 0).1 + ∑ i, CompPoly.CPolynomial.C (cs i) * (ps i.succ).1) :
-              CompPoly.CPolynomial F).toPoly ∈ _
-            rw [CompPoly.CPolynomial.toPoly_add, CompPoly.CPolynomial.toPoly_sum]
-            simp only [CompPoly.CPolynomial.toPoly_mul, CompPoly.CPolynomial.C_toPoly]
-            set q : F[X] :=
-              (ps 0).1.toPoly + ∑ i, Polynomial.C (cs i) * (ps i.succ).1.toPoly with hq
-            apply mem_degreeLT.mpr
-            by_cases h : q = 0
-            · rw [h]
-              simp only [degree_zero, finRangeTo, List.take_zero, List.toFinset_nil, sum_empty,
-                tsub_zero, Nat.cast_mul, Nat.cast_pow, Nat.cast_ofNat]
-              exact compareOfLessAndEq_eq_lt.mp rfl
-            · rw [Polynomial.degree_eq_natDegree h]
-              norm_cast
-              apply Nat.lt_of_le_pred (by simp)
-              transitivity
-              · exact Polynomial.natDegree_add_le _ _
-              · apply Nat.max_le_of_le_of_le
-                · have h_ps0 := mem_degreeLT.mp
-                    ((CompPoly.CPolynomial.degreeLT_toPoly (R := F)).mp (ps 0).2)
-                  by_cases h₀ : (ps 0).1.toPoly = 0
-                  · rw [h₀]
-                    simp
-                  · erw
-                      [
-                        Polynomial.degree_eq_natDegree h₀,
-                        WithBot.coe_lt_coe,
-                        Nat.cast_id, Nat.cast_id
-                      ] at h_ps0
-                    exact Nat.le_pred_of_lt h_ps0
-                · apply Polynomial.natDegree_sum_le_of_forall_le
-                  intros i _
-                  by_cases h : Polynomial.C (cs i) = 0
-                  · rw [h]
-                    simp
-                  · by_cases h' : (ps i.succ).1.toPoly = 0
-                    · rw [h']
-                      simp
-                    · rw [Polynomial.natDegree_mul h h', Polynomial.natDegree_C, zero_add]
-                      have h_psi := mem_degreeLT.mp
-                        ((CompPoly.CPolynomial.degreeLT_toPoly (R := F)).mp (ps i.succ).2)
-                      erw
-                        [
-                          Polynomial.degree_eq_natDegree h',
-                          WithBot.coe_lt_coe,
-                          Nat.cast_id, Nat.cast_id
-                        ] at h_psi
-                      exact Nat.le_pred_of_lt h_psi
-        ⟩
-      ⟩
+      ⟨cs, os, combinedWitness s d m cs ps⟩
 
   output := fun ⟨cs, os, p⟩ => pure <|
     ⟨⟨Fin.elim0, combinedOracle (s := s) m cs os⟩, p⟩

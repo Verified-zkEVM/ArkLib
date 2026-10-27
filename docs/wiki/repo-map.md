@@ -704,6 +704,15 @@ home_page/            site assets and assembled website root
   removed rather than renamed: downstream code should compose
   `BatchingRound.batchOracleReduction` directly with `Fri.Spec.reduction` as
   `BatchedFri.Spec.batchedFRIreduction` does.
+  Its input relation now carries degree-bounded polynomial witnesses agreeing with all `m + 1`
+  words on one common set of density at least `1 - δ`; its output relation is exactly FRI's
+  input relation. `BatchedFri/Security.lean` proves perfect completeness and ordinary and
+  worst-case round-by-round soundness, with the affine-space error at the actual initial
+  degree bound. Uniform coefficient sampling is proved equivalent to uniform sampling of the
+  affine image even for dependent directions. The obsolete full-rate FRI claims and their
+  manufactured folding-history implementation have been removed. The composite security
+  theorem remains deferred to sequential composition. Acceptance and axiom checks are in
+  `ArkLibTest/ProofSystem/BatchedFri.lean`.
 - Binary sequential composition lives in `OracleReduction/Composition/Sequential/Append/`,
   exported by `Composition/Sequential/Append.lean`:
   - `Append/Basic.lean` — the `append` operations on provers, verifiers, and reductions, their
