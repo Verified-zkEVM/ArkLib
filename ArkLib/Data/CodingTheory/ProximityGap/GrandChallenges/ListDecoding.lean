@@ -38,15 +38,16 @@ The unique-decoding constructor mirrors `McaLowerWitness.ofUniqueDecodingRange` 
 and is the honest floor: interleaving preserves minimum distance
 (`Code.minDist_interleavedCodeSet`), hence the unique-decoding radius, and inside that radius
 every point list is a subsingleton (`Code.isUniquelyDecodable_relativeUniqueDecodingRadius`).
-Both are proved in-tree, so nothing beneath it is admitted. But the radius is only half the
+Both are proved in-tree. But the radius is only half the
 minimum distance, far short of what the challenge cares about.
 
 The Johnson constructor is the Johnson bound ([Joh62]; Theorem 3.2 of [ABF26]) applied to the
-interleaved code. It reaches much further, and — unlike its MCA counterpart
-`McaLowerWitness.ofJohnsonRangeBound`, which rests on the external `[BCHKS25]` admit
-`rs_mcaError_le_in_johnson_range` — it is *also* admit-free:
+interleaved code. It reaches much further.
 `CodingTheory.johnson_bound_lambda_le_ell` is stated over an arbitrary finite alphabet and is
-itself axiom-clean, so it applies to the interleaved code at alphabet `Fin m → F` directly.
+axiom-clean, so it applies to the interleaved code at alphabet `Fin m → F` directly. Its MCA
+counterpart `McaLowerWitness.ofJohnsonRangeBound` also has a proved input:
+`rs_mcaError_le_in_johnson_range` follows from [DKT26], with the printed constant of
+[BCHKS25] Theorem 4.6.
 
 The Johnson radius is computed at the interleaved alphabet `q = |F|^m`, the alphabet of
 `C^⋈(Fin m)`. Where the radicand is non-negative, `J_q` decreases to `J(δ) = 1 - √(1 - δ)` as
@@ -58,6 +59,7 @@ The Johnson radius is computed at the interleaved alphabet `q = |F|^m`, the alph
   Agreement*][ABF26]
 * [Ben-Sasson, E., Carmon, D., Haböck, U., Kopparty, S., Saraf, S., *On Proximity Gaps for
   Reed-Solomon Codes*][BCHKS25]
+* [DKT26] (proof of the Johnson-range MCA bound).
 * [Johnson, S. M., *A new upper bound for error-correcting codes*][Joh62]
 -/
 
@@ -96,8 +98,7 @@ any radius up to `J_{q,ℓ}` computed at `q = |F|^m` and the base code's relativ
 the interleaved list size is at most `ℓ`, so any threshold whose `ε_star · |F|` clears `ℓ`
 codewords is witnessed.
 
-Unlike `McaLowerWitness.ofJohnsonRangeBound` on the MCA side, nothing below this constructor is
-admitted. -/
+The list-size bound and the corresponding Johnson-range MCA bound are both proved in-tree. -/
 noncomputable def ListLowerWitness.ofJohnsonBound
     (C : Set (ι → F)) (m ℓ : ℕ) (δ ε_star : ℝ≥0)
     (hm : 0 < m)

@@ -17,7 +17,7 @@ correlated agreement. For code carriers and distance types, see
 | `ProximityGap/CapacityBounds.lean` | Source-audited §4 upper/lower bounds on `epsCa` and canonical `mcaError` |
 | `ProximityGap/LineDecoding.lean` | Natural-cardinality line decodability and its MCA consequence |
 | `Connections/ListDecodingAndCA.lean` | §5 conversions between `Code.Lambda`, CA, and MCA |
-| `ProximityGap/GrandChallenges/CapacityBounds.lean` | Admit-dependent capacity-bound witness extensions; imports the core carrier, never conversely |
+| `ProximityGap/GrandChallenges/CapacityBounds.lean` | Proved Johnson-range capacity-bound witnesses; imports the core carrier, never conversely |
 
 ## Mutual correlated agreement
 
@@ -52,6 +52,7 @@ The main value lemmas are:
 
 - `mcaError_mono`, `mcaError_le_one`, and `mcaError_ne_top`;
 - `mcaError_eq_of_floor_eq` for constancy on integer-agreement cells;
+- `isMCA_comp_equiv` and `mcaError_comp_equiv` for invariance under coordinate equivalences;
 - the transport lemmas in `MCAGenerator.lean` and `TensorGenerator.lean`.
 
 ## Proximity gap and correlated agreement
@@ -155,8 +156,9 @@ and `ListPrizeResolution.to_prize` assemble per-rate answers.
 
 Bounds that produce one-sided prize evidence belong in extension modules below
 `ProximityGap/GrandChallenges/`. For example, `McaLowerWitness.ofJohnsonRangeBound` is in
-`GrandChallenges/CapacityBounds.lean`; this keeps `GrandChallenges.lean` independent of the
-catalogue's external admits.
+`GrandChallenges/CapacityBounds.lean`. Its bound is proved via [DKT26], with the printed
+constant from [BCHKS25] Theorem 4.6. Keeping it in an extension leaves `GrandChallenges.lean`
+independent of the bound catalogue.
 
 ## Naming
 
