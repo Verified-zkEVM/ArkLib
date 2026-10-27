@@ -447,8 +447,7 @@ end OracleFrontierIndex
 -- (`ArkLib.ProofSystem.Sumcheck.Structured`). Binary Basefold is the `P · t` sum-check: its
 -- relations take the multiplier `P` as a function `Context → MultilinearPoly L ℓ` (the type of
 -- `SumcheckMultiplierParam.multpoly`) and use the identity-combinator projections.
-export Sumcheck.Structured (computeInitialSumcheckPoly projectToMidSumcheckPoly
-  projectToNextSumcheckPoly)
+export Sumcheck.Structured (computeInitialSumcheckPoly projectToNextSumcheckPoly)
 
 
 end Binius.BinaryBasefold

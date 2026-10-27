@@ -32,8 +32,7 @@ by right multiplication with a coefficient matrix that has a left inverse.
 - `RSCode.isMCAGenerator_univariatePowersGenerator` (sorried): the univariate powers generator
   has MCA for Reed-Solomon codes up to the Johnson bound.
 - `RSCode.isMCAGenerator_of_isPolynomialGeneratorOfFull`: a full-field polynomial generator has
-  MCA for Reed-Solomon codes up to the Johnson bound, assuming the previous item and the open
-  `isMCAGenerator_tensorGenerator_tight`.
+  MCA for Reed-Solomon codes up to the Johnson bound, assuming the previous item.
 
 These results formalize §8 and §9 of [BCGM25] (Definitions 8.1 and 9.1, Theorem 8.2, Lemma 9.3,
 Theorem 9.2); the per-declaration correspondence is catalogued in
@@ -110,10 +109,10 @@ def tensorGeneratorPi {s : ℕ} {α : Fin s → Type} {ℓ : Fin s → Type}
 
 omit [Nonempty ι] in
 /-- The iterated tensor product of a family of MCA generators has MCA for any module code `MC`,
-with error the sum `∑ᵢ εᵢ` of the factors' errors. The inductive step is the open
-`isMCAGenerator_tensorGenerator_tight`, which this lemma therefore inherits; see
-`isMCAGenerator_tensorGeneratorPi_tight` for the proved variant with a stronger factor
-hypothesis.
+with error the sum `∑ᵢ εᵢ` of the factors' errors. The inductive step is
+`isMCAGenerator_tensorGenerator_tight` (BCGM25 Lemma 4.4); see
+`isMCAGenerator_tensorGeneratorPi_tight` for the variant whose factor hypothesis is anchored on a
+relative distance.
 
 The seeds and generator entries stay over `F` — it is only the code alphabet that is a general
 `F`-module, which is all the induction needs: both `isMCAGenerator_tensorGenerator_tight` and
@@ -185,7 +184,7 @@ its fixed error `ε i`, for *every* module code over `ι` of relative distance `
 
 That hypothesis is closed under the interleavings the induction steps through
 (`Code.minRelHammingDistCode_moduleInterleavedCode`), so the inductive step can use the proved
-`TensorMCA.isMCAGenerator_tensorGenerator_of_moduleInterleavedCode` instead of the open
+`TensorMCA.isMCAGenerator_tensorGenerator_of_moduleInterleavedCode` instead of
 `isMCAGenerator_tensorGenerator_tight`. The hypothesis is supplied by any generator whose MCA
 error reads the code only through its block length and relative distance — in particular by
 `isMCAGenerator_of_isMDSGenerator`, whose error `mdsMCAError` does (`mdsMCAError_congr`). -/
@@ -326,8 +325,7 @@ def tensorGeneratorPiUnivariate {s : ℕ} (d : Fin s → ℕ) :
 
 /-- The `s`-fold tensor product of univariate powers generators has MCA for any module code
 `MC`, with error the sum `∑ i, ε (d i)` of the factors' errors, provided each univariate powers
-generator has MCA for `MC` with error `ε e`. Routed through `isMCAGenerator_tensorGeneratorPi`,
-so it inherits the open `isMCAGenerator_tensorGenerator_tight`.
+generator has MCA for `MC` with error `ε e`. Routed through `isMCAGenerator_tensorGeneratorPi`.
 
 Only the code alphabet is generalised: the generator `x ↦ (1, x, …, x^e)` is still over `F`.
 At `A := F` this is the linear-code statement. -/
@@ -412,10 +410,8 @@ lemma hasLeftPseudoInverse_coeffMatrix {s : ℕ} {ℓ : Type} [Fintype ℓ] [Dec
 /-- A full-field polynomial generator has MCA for the Reed-Solomon code of degree `k` over the
 domain `D`, with error `∑ i, reedSolomonMCAError k D (maxDegreeOf P i) m`, for every `m ≥ 3`.
 
-The proof factors the generator through `tensorGeneratorPiUnivariate` via `coeffMatrix` and
-consumes two unproved inputs: `isMCAGenerator_univariatePowersGenerator` for each factor, and —
-through `isMCAGenerator_tensorGeneratorPiUnivariate` — the open
-`isMCAGenerator_tensorGenerator_tight`. -/
+The proof factors the generator through `tensorGeneratorPiUnivariate` via `coeffMatrix`. Its
+only unproved input is `isMCAGenerator_univariatePowersGenerator` (Lemma 9.3) for each factor. -/
 lemma isMCAGenerator_of_isPolynomialGeneratorOfFull [Fintype F] [SampleableType F] [NeZero k]
     (m : ℕ) (hm : 3 ≤ m)
     {ℓ : Type} [Fintype ℓ] {s : ℕ} [SampleableType (Fin s → F)]
@@ -524,8 +520,7 @@ def tensorGeneratorPiUnivariateOn {s : ℕ} (S : Fin s → Set F) (d : Fin s →
 code `LC`, with error the sum `∑ᵢ powersMCAError LC dᵢ` of the factors' errors. Proved through
 `isMCAGenerator_tensorGeneratorPi_tight`: `isMCAGenerator_univariatePowersGeneratorOn` supplies
 each factor's MCA at every module code of relative distance `δᵣ LC`, which covers the iterated
-interleavings the induction routes through, so the open `isMCAGenerator_tensorGenerator_tight`
-is not needed. -/
+interleavings the induction routes through. -/
 lemma isMCAGenerator_tensorGeneratorPiUnivariateOn {ι : Type} [Fintype ι] [Nonempty ι]
     [DecidableEq F] (LC : LinearCode ι F) (η : ℝ) (hη : 0 < η ∧ η < 1)
     {s : ℕ} (S : Fin s → Set F) [∀ i, Fintype ↥(S i)] [∀ i, Inhabited ↥(S i)]
@@ -568,8 +563,7 @@ every linear code `LC`, with error `∑ᵢ powersMCAError LC dᵢ |Sᵢ| η`, fo
 
 Its only unproved input is `isMCAGenerator_of_isMDSGenerator`: the tensor stage is
 `isMCAGenerator_tensorGeneratorPi_tight`, which reaches the unscaled error sum through the
-proved interleaved-hypothesis lemma rather than the open
-`isMCAGenerator_tensorGenerator_tight`. -/
+proved interleaved-hypothesis lemma. -/
 theorem isMCAGenerator_of_isPolynomialGeneratorOf {ι : Type} [Fintype ι] [Nonempty ι]
     [DecidableEq F] {ℓ : Type} [Fintype ℓ] (LC : LinearCode ι F)
     (η : ℝ) (hη : 0 < η ∧ η < 1)

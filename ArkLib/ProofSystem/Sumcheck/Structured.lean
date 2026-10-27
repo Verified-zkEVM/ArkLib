@@ -11,8 +11,9 @@ public import ArkLib.ProofSystem.Sumcheck.Domain
 /-!
 # Structured (Witness-Mode) Sumcheck — Types and Helpers
 
-This file collects the data types and degree-bookkeeping helpers used by the
-**structured sumcheck**: the witness-mode degree-2 multilinear-times-multilinear sumcheck
+This file owns the product polynomial `P · Q(t)`, its per-variable degree parameters,
+and the degree-bounded next-coordinate projection. It also collects the state types for
+**structured sumcheck**, including the degree-2 multilinear-times-multilinear specialization
 that underlies Binius BinaryBasefold and Binius RingSwitching. (Hachi's §4.3 sumcheck is *shaped*
 like this — see `SumcheckMultiplierParam` — but carries its own guarded round layer under
 `Commitments/Functional/Hachi/Sumcheck/`, for the reasons set out in that folder's umbrella.)
@@ -35,9 +36,9 @@ modes carry independent proofs.
 `Sumcheck.Structured.SumcheckWitness`)
 
 - `MultilinearPoly`, `MultiquadraticPoly` — degree-1 / degree-2 `MvPolynomial` abbreviations.
-- `SumcheckMultiplierParam` — bundles a `Context → MultilinearPoly` (the multiplier `m`).
+- `SumcheckMultiplierParam` — the multiplier and combinator, with per-variable degree bounds.
 - `computeInitialSumcheckPoly` — `H := m · t` with the degree-2 proof.
-- `projectToMidSumcheckPoly`, `projectToNextSumcheckPoly` — partial evaluation of `H` at
+- `MvPolynomial.fixPrefix`, `projectToNextSumcheckPoly` — partial evaluation of `H` at
   the verifier's previous challenges.
 - `SumcheckBaseContext` — `(t_eval_point, original_claim)` shared input.
 - `Statement Context i` — per-round state: `(sumcheck_target, challenges, ctx)`.
@@ -66,154 +67,75 @@ Boolean coords). `MultilinearPoly L ℓ = PrismalinearPoly L (fun _ : Fin ℓ =>
 abbrev PrismalinearPoly (L : Type) [CommSemiring L] {ℓ : ℕ} (b : Fin ℓ → ℕ) :=
   ↥(MvPolynomial.restrictDegreeVar (Fin ℓ) L b)
 
-/-- Belt-and-braces: lock in the `rfl` claim from the `PrismalinearPoly` docstring. The multilinear
-case is *definitionally* the constant-1 prismalinear case, so existing multilinear consumers
-(`SumcheckMultiplierParam`) compose with the prismalinear surface
-(`Sumcheck.Structured.Prismalinear.SumcheckMultiplierParam` in `Structured/Prismalinear.lean`, when
-`multpolyBound = fun _ => 1`) without any coercion. -/
-example {L : Type} [CommSemiring L] {ℓ : ℕ} :
-    MultilinearPoly L ℓ = PrismalinearPoly L (fun _ : Fin ℓ => 1) := rfl
+/-- Public parameters for `P · Q(t)`. The multiplier has a separate degree bound for each
+variable; constant bounds cover multilinear multipliers.
 
-/-- Parameters describing how the round polynomial `H` is built from the witness `t`:
-`H = P · Q(t)`, where `P` is a public multilinear multiplier and `Q` is a public univariate
-*combinator* applied to the (multilinear) witness. The round polynomial then has degree
-`≤ degCombinator + 1` in each variable.
-
-No instantiation is privileged: every consumer specifies its own `combinator`, `degCombinator`,
-and degree proof. The plain degree-2 case `H = P · t` (Binary Basefold, ring-switching) takes
-`combinator := X`, `degCombinator := 1`; Hachi's range/smallness check uses the vanishing
-polynomial of the symmetric range `{−(b−1), …, b−1}`, `Q := X · ∏_{j=1}^{b−1} (X − j)(X + j)`, of
-degree `2b − 1`, giving a degree-`2b` round polynomial (`roundDegZero b = 2 * b` in
-`Commitments/Functional/Hachi/ZeroCheck/Constraints.lean`; the range side degenerates at `b = 0`,
-where `Q = X`, so Hachi's degree pin carries a `0 < b` hypothesis). For the SWIRL hyperprism
-(where `P` is
-*prismalinear* rather than multilinear), use the parallel
-`Sumcheck.Structured.Prismalinear.SumcheckMultiplierParam` shape in `Structured/Prismalinear.lean`.
-
-For example, in Binary Basefold `multpoly` is `eqTilde(r₀, .., r_{ℓ-1}, X₀, .., X_{ℓ-1})`. -/
-structure SumcheckMultiplierParam (L : Type) [CommRing L] (ℓ : ℕ) (Context : Type) where
-  /-- Public multilinear multiplier `P`. -/
-  multpoly : (ctx : Context) → MultilinearPoly L ℓ
-  /-- Public univariate combinator `Q`, applied to the witness: `H = P · Q(t)`.
-  The identity-like `X` recovers the plain degree-2 case `H = P · t`. -/
-  combinator : (ctx : Context) → Polynomial L
-  /-- Uniform degree bound on `combinator`; the round polynomial is degree `≤ degCombinator + 1`. -/
+Binary Basefold takes `P = eqTilde(r₀, …, r_{ℓ-1}, X₀, …, X_{ℓ-1})` and `Q = X`,
+with `degCombinator = 1`, giving a degree-two product. Hachi's range check takes the
+vanishing polynomial of `{−(b−1), …, b−1}`,
+`Q = X · ∏_{j=1}^{b−1} (X − j)(X + j)`. For `0 < b`, its degree is `2b − 1`, giving a
+product of degree at most `2b` in each variable with a multilinear multiplier. At `b = 0`,
+`Q = X`, so Hachi's degree bound requires `0 < b` (see `roundDegZero` in
+`Commitments/Functional/Hachi/ZeroCheck/Constraints.lean`). -/
+structure SumcheckMultiplierParam (L : Type) [CommSemiring L] (ℓ : ℕ) (Context : Type)
+    (multpolyBound : Fin ℓ → ℕ := fun _ => 1) where
+  /-- Public multiplier `P`. -/
+  multpoly : Context → PrismalinearPoly L multpolyBound
+  /-- Public univariate combinator `Q`. -/
+  combinator : Context → Polynomial L
+  /-- Uniform degree bound on `Q`. -/
   degCombinator : ℕ
-  /-- `combinator` respects its degree bound. For the `combinator := X`, `degCombinator := 1`
-  case, discharge with `Polynomial.natDegree_X_le` (which needs only `Semiring`, so it holds even
-  over a trivial ring — unlike `natDegree_X`, which needs `Nontrivial`). -/
+  /-- The combinator respects its bound. -/
   combinator_natDegree_le : ∀ ctx, (combinator ctx).natDegree ≤ degCombinator
 
--- The prismalinear specialization (SWIRL hyperprism — per-variable multpoly degree bound) lives
--- in `Sumcheck.Structured.Prismalinear`, with `SumcheckMultiplierParam` and `computeRoundPoly`
--- mirroring the multilinear surface in this file. See `Structured/Prismalinear.lean`.
+variable {L : Type} [CommSemiring L] (ℓ : ℕ)
 
--- The variable block matches the original `Binius.BinaryBasefold.Basic`'s line-19 block
--- (`ℓ` explicit + `[NeZero ℓ]` instance) so that positional callers like
--- `projectToMidSumcheckPoly ℓ wit.t ...` continue to typecheck. PR 4 will weaken these
--- once `ProofSystem/RingSwitching/*` no longer uses positional `ℓ`.
-variable {L : Type} [CommRing L] (ℓ : ℕ) [NeZero ℓ]
-
-/-- `H₀(X₀, ..., X_{ℓ-1}) = h(X₀, ..., X_{ℓ-1}) =`
-  `m(X_0, ..., X_{ℓ-1}) · t(X_0, ..., X_{ℓ-1})` -/
-def computeInitialSumcheckPoly (t : MultilinearPoly L ℓ)
-    (m : MultilinearPoly L ℓ) : MultiquadraticPoly L ℓ :=
-  ⟨m * t, by
-    rw [MvPolynomial.mem_restrictDegree_iff_degreeOf_le]
-    intro i
-    have h_t_deg: degreeOf i t.val ≤ 1 :=
-      degreeOf_le_iff.mpr fun term a ↦ (t.property) a i
-    have h_m_deg: degreeOf i m.val ≤ 1 :=
-      degreeOf_le_iff.mpr fun term a ↦ (m.property) a i
-    calc
-      _ ≤ (degreeOf i m.val) + (degreeOf i t.val) :=
-        degreeOf_mul_le i m.val t.val
-      _ ≤ 2 := by omega
-  ⟩
-
-/-- The general round polynomial `H = P · Q(t)`, where `P = param.multpoly ctx` is the public
-multilinear multiplier and `Q = param.combinator ctx` is the public univariate combinator applied
-to the multilinear witness `t`. Its degree in each variable is `≤ param.degCombinator + 1`.
-
-Specializes to `computeInitialSumcheckPoly t (param.multpoly ctx)` when `combinator = X`. -/
-def computeRoundPoly {Context : Type} (param : SumcheckMultiplierParam L ℓ Context)
-    (ctx : Context) (t : MultilinearPoly L ℓ) : L⦃≤ param.degCombinator + 1⦄[X Fin ℓ] :=
+/-- The product polynomial `P · Q(t)`, with per-variable degree bounds. -/
+def computeRoundPoly {Context : Type} {multpolyBound : Fin ℓ → ℕ}
+    (param : SumcheckMultiplierParam L ℓ Context multpolyBound)
+    (ctx : Context) (t : MultilinearPoly L ℓ) :
+    PrismalinearPoly L (fun i => param.degCombinator + multpolyBound i) :=
   ⟨(param.multpoly ctx).val * Polynomial.aeval t.val (param.combinator ctx), by
-    rw [MvPolynomial.mem_restrictDegree_iff_degreeOf_le]
+    rw [MvPolynomial.mem_restrictDegreeVar_iff_degreeOf_le]
     intro i
-    have hP : degreeOf i (param.multpoly ctx).val ≤ 1 :=
-      degreeOf_le_iff.mpr fun term a ↦ (param.multpoly ctx).property a i
+    have hP : degreeOf i (param.multpoly ctx).val ≤ multpolyBound i :=
+      (MvPolynomial.mem_restrictDegreeVar_iff_degreeOf_le _).mp
+        (param.multpoly ctx).property i
     have ht : degreeOf i t.val ≤ 1 :=
       degreeOf_le_iff.mpr fun term a ↦ t.property a i
     calc degreeOf i ((param.multpoly ctx).val * Polynomial.aeval t.val (param.combinator ctx))
         ≤ degreeOf i (param.multpoly ctx).val
             + degreeOf i (Polynomial.aeval t.val (param.combinator ctx)) := degreeOf_mul_le i _ _
-      _ ≤ 1 + (param.combinator ctx).natDegree := by
+      _ ≤ multpolyBound i + (param.combinator ctx).natDegree := by
           gcongr
           exact MvPolynomial.degreeOf_aeval_le i (param.combinator ctx) t.val ht
-      _ ≤ 1 + param.degCombinator := by gcongr; exact param.combinator_natDegree_le ctx
-      _ = param.degCombinator + 1 := by ring⟩
+      _ ≤ multpolyBound i + param.degCombinator := by
+          gcongr
+          exact param.combinator_natDegree_le ctx
+      _ = param.degCombinator + multpolyBound i := by ring⟩
 
--- The prismalinear analog `computeRoundPoly` (per-variable degree bound on the multiplier and the
--- resulting round polynomial) lives in `Sumcheck.Structured.Prismalinear`. See
--- `Structured/Prismalinear.lean`.
+/-- The identity-combinator specialization `m · t`, packaged with its degree-two bound. -/
+def computeInitialSumcheckPoly (t m : MultilinearPoly L ℓ) : MultiquadraticPoly L ℓ :=
+  computeRoundPoly ℓ
+    { multpoly := fun _ : Unit => m
+      combinator := fun _ => Polynomial.X
+      degCombinator := 1
+      combinator_natDegree_le := fun _ => Polynomial.natDegree_X_le } () t
 
-/-- Generic projection
-`Hᵢ(Xᵢ, ..., X_{ℓ-1}) = H₀(r₀, …, rᵢ₋₁, Xᵢ, …, X_{ℓ-1})`
-for `H₀ = P · Q(t)`. -/
-def projectToMidSumcheckPolyWithParam {Context : Type}
-    (param : SumcheckMultiplierParam L ℓ Context) (ctx : Context)
-    (t : MultilinearPoly L ℓ) (i : Fin (ℓ + 1)) (challenges : Fin i → L) :
-    L⦃≤ param.degCombinator + 1⦄[X Fin (ℓ-i)] :=
-  let H₀ := computeRoundPoly (L := L) (ℓ := ℓ) param ctx t
-  let Hᵢ := fixFirstVariablesOfMQP (ℓ := ℓ) (v := ⟨i, by omega⟩)
-    (H := H₀) (challenges := challenges)
-  ⟨Hᵢ, by
-    have hp := H₀.property
-    simpa using
-      (fixFirstVariablesOfMQP_degreeLE (L := L) (ℓ := ℓ) (v := ⟨i, by omega⟩)
-        (poly := H₀.val) (challenges := challenges) (deg := param.degCombinator + 1) hp)
-  ⟩
+/-- The identity combinator reduces the general construction to ordinary multiplication. -/
+@[simp]
+theorem coe_computeInitialSumcheckPoly (t m : MultilinearPoly L ℓ) :
+    (computeInitialSumcheckPoly ℓ t m).val = m.val * t.val := by
+  simp [computeInitialSumcheckPoly, computeRoundPoly]
 
-/-- Identity-combinator projection
-`Hᵢ(Xᵢ, ..., X_{ℓ-1}) = H₀(r₀, …, rᵢ₋₁, Xᵢ, …, X_{ℓ-1})`
-for `H₀ = m · t`. For non-identity combinators, use
-`projectToMidSumcheckPolyWithParam`. -/
-def projectToMidSumcheckPoly (t : MultilinearPoly L ℓ)
-    (m : MultilinearPoly L ℓ) (i : Fin (ℓ + 1))
-    (challenges : Fin i → L) : MultiquadraticPoly L (ℓ-i) :=
-  let H₀: MultiquadraticPoly L ℓ := computeInitialSumcheckPoly (ℓ:=ℓ) t m
-  let Hᵢ := fixFirstVariablesOfMQP (ℓ := ℓ) (v := ⟨i, by omega⟩)
-    (H := H₀) (challenges := challenges)
-  ⟨Hᵢ, by
-    have hp := H₀.property
-    simpa using
-      (fixFirstVariablesOfMQP_degreeLE (L := L) (ℓ := ℓ) (v := ⟨i, by omega⟩)
-        (poly := H₀.val) (challenges := challenges) (deg := 2) hp)
-  ⟩
-
-/-- Derive `H_{i+1}` from a degree-`d` `H_i` by projecting the first variable. -/
-def projectToNextSumcheckPolyWithDegree {d : ℕ} (i : Fin (ℓ))
-    (Hᵢ : L⦃≤ d⦄[X Fin (ℓ - i)]) (rᵢ : L) :
-    L⦃≤ d⦄[X Fin (ℓ - i.succ)] := by
-  have hdim : ℓ - i.succ = ℓ - i - 1 := by
-    simp only [Fin.val_succ]
-    omega
-  rw [hdim]
-  let projectedH := fixFirstVariablesOfMQP (ℓ := ℓ - i) (v := ⟨1, by omega⟩)
-    (H := Hᵢ.val) (challenges := fun _ => rᵢ)
-  exact ⟨projectedH, by
-    have hp := Hᵢ.property
-    simpa only [projectedH] using
-      (fixFirstVariablesOfMQP_degreeLE (L := L) (ℓ := ℓ - i) (v := ⟨1, by omega⟩)
-        (poly := Hᵢ.val) (challenges := fun _ => rᵢ) (deg := d) hp)
-  ⟩
-
-/-- Derive `H_{i+1}` from a multiquadratic `H_i` by projecting the first variable. -/
-def projectToNextSumcheckPoly (i : Fin (ℓ)) (Hᵢ : MultiquadraticPoly L (ℓ - i))
-    (rᵢ : L) : -- the current challenge
-    MultiquadraticPoly L (ℓ - i.succ) :=
-  projectToNextSumcheckPolyWithDegree (L := L) (ℓ := ℓ) (i := i) Hᵢ rᵢ
+/-- Fix the next coordinate of a uniformly degree-bounded residual polynomial. The renaming
+handles the round-index equation once; prefix fixing itself is `MvPolynomial.fixPrefix`. -/
+def projectToNextSumcheckPoly {d : ℕ} (i : Fin ℓ)
+    (Hᵢ : L⦃≤ d⦄[X Fin (ℓ - i)]) (rᵢ : L) : L⦃≤ d⦄[X Fin (ℓ - i.succ)] :=
+  let p := fixPrefix (ℓ - i) ⟨1, by omega⟩ Hᵢ (fun _ => rᵢ)
+  let hdim : ℓ - i - 1 = ℓ - i.succ := by simp only [Fin.val_succ]; omega
+  ⟨rename (finCongr hdim) p.val,
+    rename_equiv_mem_restrictDegreeVar (finCongr hdim) p.val (b := fun _ => d) p.property⟩
 
 end SumcheckOperations
 
