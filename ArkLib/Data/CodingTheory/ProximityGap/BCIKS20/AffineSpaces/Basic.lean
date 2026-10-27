@@ -11,7 +11,6 @@ public import Mathlib.LinearAlgebra.Dimension.Free
 public import ArkLib.Data.CodingTheory.GuruswamiSudan
 public import ArkLib.Data.CodingTheory.ProximityGap.Basic
 public import ArkLib.Data.CodingTheory.DivergenceOfSets
-public import ArkLib.Data.Polynomial.RationalFunctions
 public import ArkLib.Data.CodingTheory.ReedSolomon
 public import ArkLib.Data.Polynomial.Trivariate
 public import ArkLib.Data.CodingTheory.Basic.DecodingRadius
@@ -291,8 +290,6 @@ theorem average_proximity_implies_proximity_of_linear_subspace
       u' ∈ (Submodule.span F (Finset.univ.image (Fin.tail u) : Set (ι → F)) :
         Submodule F (ι → F)) := by
     simpa [Set.mem_toFinset] using hu'
-  have hδ_le : δ ≤ 1 - ReedSolomon.sqrtRate (k + 1) domain :=
-    le_of_lt hδ.2
   rcases
       (exists_basepoint_with_large_line_prob
         (ι := ι) (F := F)
@@ -309,7 +306,7 @@ theorem average_proximity_implies_proximity_of_linear_subspace
         (C := ReedSolomon.code domain (k + 1)) (δ := δ)
         (ε := ProximityGap.errorBound δ (k + 1) domain) :=
     RS_correlatedAgreement_affineLines (ι := ι) (F := F) (deg := k + 1) (domain := domain)
-      (δ := δ) hδ_le
+      (δ := δ) (by omega) hδ.2
   have hJA :
       jointAgreement (C := ReedSolomon.code domain (k + 1)) (δ := δ)
         (W := Code.finMapTwoWords a.1 u') := by
@@ -637,7 +634,8 @@ Proof strategy:
    Since U ⊆ span(U), all elements of U are close. -/
 theorem all_affine_elements_close {k : ℕ} [NeZero k]
     (u : Fin (k + 1) → ι → F) {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
-    (hδ : δ ≤ 1 - ReedSolomon.sqrtRate deg domain)
+    (hdeg : 0 < deg)
+    (hδ : δ < 1 - ReedSolomon.sqrtRate deg domain)
     (hPr : Pr{let y ← $ᵗ (Affine.affineSubspaceAtOrigin (F := F) (u 0) (Fin.tail u))}[δᵣ(↑y,
         (ReedSolomon.code domain deg : Set (ι → F))) ≤ δ] >
       ProximityGap.errorBound δ deg domain) :
@@ -667,7 +665,7 @@ theorem all_affine_elements_close {k : ℕ} [NeZero k]
       hPr_fin with ⟨a, hline⟩
     have hJA : Code.jointAgreement (C := (V : Set (ι → F))) (δ := δ)
         (W := Code.finMapTwoWords a.1 dir) := by
-      apply RS_correlatedAgreement_affineLines hδ
+      apply RS_correlatedAgreement_affineLines hdeg hδ
       change Pr{let z ← $ᵗ F}[δᵣ(a.1 + z • dir, (V : Set (ι → F))) ≤ δ] > _
       exact hline
     exact jointAgreement_implies_second_proximity
@@ -871,7 +869,7 @@ theorem all_affine_elements_close {k : ℕ} [NeZero k]
       (ε := ProximityGap.errorBound δ deg domain) hPr_span with ⟨a, hline⟩
     have hJA : Code.jointAgreement (C := (V : Set (ι → F))) (δ := δ)
         (W := Code.finMapTwoWords a.1 x) := by
-      apply RS_correlatedAgreement_affineLines hδ
+      apply RS_correlatedAgreement_affineLines hdeg hδ
       change Pr{let z ← $ᵗ F}[δᵣ(a.1 + z • x, (V : Set (ι → F))) ≤ δ] > _
       exact hline
     exact jointAgreement_implies_second_proximity

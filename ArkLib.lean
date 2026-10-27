@@ -271,6 +271,8 @@ public import ArkLib.Data.CodingTheory.ProximityGap.AHIV22
 public import ArkLib.Data.CodingTheory.ProximityGap.AHIV22Support
 public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.BWMatrix
 public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.GoodCoeffs
+public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.JohnsonBridge
+public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.JohnsonComparison
 public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.JointAgreement
 public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.Main
 public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.UniqueDecoding
@@ -279,8 +281,6 @@ public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineSpaces.Basic
 public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.Curves
 public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.EpsCa
 public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ErrorBound
-public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ListDecoding.Agreement
-public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ListDecoding.Extraction
 public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ListDecoding.Guruswami
 public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.Prelude
 public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ReedSolomonGap
