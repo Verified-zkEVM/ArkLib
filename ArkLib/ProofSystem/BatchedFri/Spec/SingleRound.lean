@@ -115,11 +115,11 @@ instance : ∀ j, OracleInterface ((batchSpec S).Message j)
 instance : ∀ j, OracleInterface ((batchSpec S).Challenge j) :=
   ProtocolSpec.challengeOracleInterface
 
-noncomputable instance : ∀ j, Inhabited ((batchSpec S).Challenge j) := by
+instance [Inhabited S] : ∀ j, Inhabited ((batchSpec S).Challenge j) := by
   rintro ⟨j, hj⟩
   have hz : j = 0 := Fin.eq_zero j
   subst j
-  exact Classical.inhabited_of_nonempty (inferInstanceAs (Nonempty S))
+  exact inferInstanceAs (Inhabited S)
 
 instance : ∀ j, Fintype ((batchSpec S).Challenge j) := by
   rintro ⟨j, hj⟩
