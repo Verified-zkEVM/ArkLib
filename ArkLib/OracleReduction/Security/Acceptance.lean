@@ -29,24 +29,6 @@ open scoped NNReal
 variable {ι : Type} {oSpec : OracleSpec ι}
 variable {StmtIn WitIn StmtOut WitOut : Type} {n : ℕ} {pSpec : ProtocolSpec n}
 
-/-- Expose the prover/verifier boundary in the optional reduction execution. -/
-theorem Reduction.run_run_eq_bind
-    (reduction : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec)
-    (stmt : StmtIn) (wit : WitIn) :
-    (reduction.run stmt wit).run = (do
-      let pr ← reduction.prover.run stmt wit
-      let out ← liftComp (reduction.verifier.run stmt pr.1).run
-        (oSpec + [pSpec.Challenge]ₒ)
-      pure (out.map (fun v ↦ (pr, v)))) := by
-  simp only [Reduction.run, OptionT.run_bind, ← monadLift_liftM_OptionT,
-    OptionT.run_monadLift, Option.elimM,
-    bind_map_left, Option.elim_some, liftComp_eq_liftM]
-  congr 1
-  funext pr
-  congr 1
-  funext out
-  cases out <;> rfl
-
 namespace Verifier
 
 variable [∀ i, SampleableType (pSpec.Challenge i)]
