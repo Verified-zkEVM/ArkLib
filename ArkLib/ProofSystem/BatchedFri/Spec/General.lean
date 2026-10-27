@@ -12,7 +12,9 @@ public import ArkLib.ProofSystem.Fri.Spec.General
 /-!
 # ArkLib.ProofSystem.BatchedFri.Spec.General
 
-The batching round followed by the FRI reduction.
+The batching round parameterized by a proximity generator `G`, followed by the FRI reduction.
+Independent coefficients, powers, and multilinear monomials differ only in their generator
+and correlated-agreement error; the relations and FRI stage are shared.
 
 ## Status
 
@@ -43,13 +45,15 @@ open OracleSpec OracleComp ProtocolSpec NNReal BatchingRound Domain
    - `domain_size_cond`, a proof that the initial evaluation domain is large enough to test
       for proximity of a polynomial of appropriate degree.
   - `l`, the number of round consistency checks to be run by the query round.
-  - `m`, number of random coefficients; there are `m + 1` input polynomials.
+  - `m`, one less than the number of batched input polynomials.
 -/
 variable {F : Type} [NonBinaryField F] [Fintype F] [DecidableEq F]
 variable {n : ℕ}
 variable (k : ℕ) (s : Fin (k + 1) → ℕ+) (d : ℕ+)
 variable (dom_size_cond : (2 ^ (∑ i, (s i).1)) * d ≤ 2 ^ n)
 variable (l m : ℕ)
+variable {S : Type} [Fintype S] [Nonempty S]
+variable (G : CoreDefinitions.Generator S (Fin (m + 1)) F)
 variable {ω : SmoothCosetFftDomain n F}
 
 /-- The composite protocol starts with the batching round's correlated-agreement relation. -/
@@ -59,7 +63,7 @@ abbrev inputRelation (δ : ℝ≥0) :=
 
 instance instBatchFRIreductionMessageOI : ∀ j,
   OracleInterface
-    ((batchSpec F m ++ₚ
+    ((batchSpec S ++ₚ
       (
         Fri.Spec.pSpecFold k (ω := ω) s ++ₚ
         Fri.Spec.FinalFoldPhase.pSpec F ++ₚ
@@ -70,7 +74,7 @@ instance instBatchFRIreductionMessageOI : ∀ j,
 
 instance instBatchFRIreductionChallengeOI : ∀ j,
   OracleInterface
-    ((batchSpec F m ++ₚ
+    ((batchSpec S ++ₚ
       (
         Fri.Spec.pSpecFold k (ω := ω) s ++ₚ
         Fri.Spec.FinalFoldPhase.pSpec F ++ₚ
@@ -83,7 +87,7 @@ instance instBatchFRIreductionChallengeOI : ∀ j,
 @[reducible]
 def batchedFRIreduction :=
   OracleReduction.append
-    (BatchingRound.batchOracleReduction s d m)
+    (BatchingRound.batchOracleReduction s d m G)
     (Fri.Spec.reduction (ω := ω) k s d dom_size_cond l)
 
 end Spec

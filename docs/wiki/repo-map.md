@@ -703,24 +703,37 @@ home_page/            site assets and assembled website root
   `Data/CodingTheory/ProximityGap/CapacityBounds`, several proven and the rest external admits,
   deliberately outside the toy-problem import cone; no numeric error value is proven in-tree at
   any production shape.
-- Batched FRI's batching round now emits the random-linear-combination codeword directly as a
-  virtual output oracle. The former `BatchedFri.Spec.liftingLens` / `liftedFRI` repair layer was
-  removed rather than renamed: downstream code should compose
-  `BatchingRound.batchOracleReduction` directly with `Fri.Spec.reduction` as
-  `BatchedFri.Spec.batchedFRIreduction` does.
-  Its input relation now carries degree-bounded polynomial witnesses agreeing with all `m + 1`
-  words on one common set of density at least `1 - δ`; its output relation is exactly FRI's
-  input relation. `BatchedFri/Security.lean` proves perfect completeness and ordinary and
-  worst-case round-by-round soundness, with the affine-space error at the actual initial
-  degree bound, without extra degree or error restrictions beyond the radius hypotheses.
-  `Data/CodingTheory/ProximityGap/BCIKS20/AffineCoefficients.lean` supplies the coefficient-form
-  correlated-agreement theorem and proves uniform coefficient sampling equivalent to uniform
-  sampling of the affine image even for dependent directions. The obsolete full-rate FRI claims and their
-  manufactured folding-history implementation have been removed. `BatchedFri/EndToEnd.lean` proves
-  `batchedFRI_soundness` with the sum of the batching and FRI errors. `batchedFRI_perfectCompleteness`
-  proves perfect completeness at radius zero using guarded append composition and the
-  induced verifiers' empty ambient oracle. Composite knowledge soundness
-  is out of scope because the batching round has no extractor. Acceptance and axiom checks are in
+- Batched FRI takes a proximity generator `G : S → Fin (m + 1) → F`. Its single
+  uniformly sampled seed selects the coefficients of the virtual output word. Compose
+  `BatchingRound.batchOracleReduction s d m G` directly with `Fri.Spec.reduction`, as
+  `BatchedFri.Spec.batchedFRIreduction` does. The input relation carries degree-bounded
+  polynomial witnesses agreeing with all input words on one common set of density at least
+  `1 - δ`; the output relation is definitionally FRI's input relation.
+  `BatchedFri/Security.lean` proves perfect completeness at every radius and ordinary and
+  worst-case round-by-round soundness for any `ε` bounding `caError G C δ δ`.
+  `BatchedFri/EndToEnd.lean` adds the FRI soundness error and proves composite perfect
+  completeness at radius zero. Neither generic soundness theorem restricts the radius.
+  Family corollaries instantiate these bounds:
+  - `soundness_affineSpace` / `batchedFRI_soundness_affineSpace`: independent coefficients,
+    error `errorBound`, for `0 < δ < 1 - √ρ`.
+  - `soundness_powers` / `batchedFRI_soundness_powers`: powers `(1,r,…,r^m)`, error
+    `m * errorBound`, in the same open Johnson regime.
+  - `soundness_multilinear` / `batchedFRI_soundness_multilinear`: `2^t` words with monomial
+    tensor coefficients, error `t * n / |F|`, for positive radius at most the relative
+    unique-decoding radius. Here `n` is the code length. At `t = 2` the coefficient order
+    is `[1, r₁, r₀, r₀*r₁]`. The additional `_multilinear_johnson` corollaries use
+    `t * affineLineMcaJohnsonError` below the proved 1.5-Johnson radius
+    `δ ≤ 1 - (1 - δ_min + η)^(1/3)`, with `δ_min = minDist(C)/n` and
+    `0 < η < δ_min`. The numeric error is defined in `Multilinear.lean`.
+  `Data/CodingTheory/ProximityGap/BCIKS20/GeneratorBounds.lean` supplies the first two numeric
+  bounds. `Data/CodingTheory/ProximityGenerator/Multilinear.lean` defines the executable tensor
+  generator and proves the third bound using the additive tensor MCA theorem and the proved
+  affine-line unique-decoding estimate. Its 1.5-Johnson alternative uses
+  `linear_mcaError_le_one_point_five_johnson`; neither result depends on the admitted
+  Reed–Solomon Johnson bound.
+  `multilinearBatchGenerator` presents the same coefficients at index `Fin ((2^t - 1) + 1)`.
+  Composite knowledge soundness remains out of scope because batching has no extractor.
+  Executable examples, concrete soundness applications, and axiom checks are in
   `ArkLibTest/ProofSystem/BatchedFri.lean`.
 - Binary sequential composition lives in `OracleReduction/Composition/Sequential/Append/`,
   exported by `Composition/Sequential/Append.lean`:
