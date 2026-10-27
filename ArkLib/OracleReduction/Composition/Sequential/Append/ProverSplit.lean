@@ -7,6 +7,7 @@ module
 
 public import ArkLib.OracleReduction.Composition.Sequential.Append.Simulation
 public import ArkLib.OracleReduction.Security.TranscriptTree.Composition
+public import ArkLib.OracleReduction.Security.Accumulation
 
 /-!
 # Restrictions of an arbitrary prover at an append boundary
@@ -82,27 +83,6 @@ theorem appendPrefixTranscript_concat {i : Fin m}
   · simp only [appendPrefixTranscript, Transcript.concat_castSucc]
     rfl
 
-private theorem split_liftLeft_ambient {α : Type} (oa : OracleComp oSpec α) :
-    liftAppendLeft pSpec₂ (liftM oa : OracleComp (oSpec + [pSpec₁.Challenge]ₒ) α) =
-      (liftM oa : OracleComp (oSpec + [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ) α) := by
-  unfold liftAppendLeft
-  induction oa using OracleComp.inductionOn with
-  | pure a => rfl
-  | query_bind t k ih => simp [ih]; congr 1
-
-private theorem split_liftLeft_challenge (i : pSpec₁.ChallengeIdx) :
-    liftAppendLeft pSpec₂ (liftM (pSpec₁.getChallenge i) :
-      OracleComp (oSpec + [pSpec₁.Challenge]ₒ) (pSpec₁.Challenge i)) =
-    cast (challenge_append_inl (pSpec₂ := pSpec₂) i) <$>
-      (liftM ((pSpec₁ ++ₚ pSpec₂).getChallenge (ChallengeIdx.inl i)) :
-        OracleComp (oSpec + [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ) _) := rfl
-
-private theorem split_processRound_bind {k : ℕ} {p : ProtocolSpec k}
-    (P : Prover oSpec Stmt₁ Wit₁ Stmt₃ Wit₃ p) (i : Fin k)
-    (oa : OracleComp (oSpec + [p.Challenge]ₒ) (p.Transcript i.castSucc × P.PrvState i.castSucc)) :
-    P.processRound i oa = oa >>= fun z => P.processRound i (pure z) := by
-  simp [processRound]
-
 private theorem appendPrefix_processRound
     (P : Prover oSpec Stmt₁ Wit₁ Stmt₃ Wit₃ (pSpec₁ ++ₚ pSpec₂))
     (out : pSpec₁.FullTranscript → Stmt₂) (i : Fin m)
@@ -122,7 +102,7 @@ private theorem appendPrefix_processRound
         OracleComp (oSpec + [pSpec₁.Challenge]ₒ) _)
       pure ((appendPrefixTranscript tr).concat (cast (append_Type_castAdd i) z.1),
         (appendPrefixTranscript tr).concat (cast (append_Type_castAdd i) z.1), z.2)) = _
-    rw [split_liftLeft_ambient]
+    rw [liftAppendLeft_liftM]
     simp only [appendPrefixTranscript_concat]
     rfl
   | V_to_P =>
@@ -136,8 +116,8 @@ private theorem appendPrefix_processRound
         OracleComp (oSpec + [pSpec₁.Challenge]ₒ) _)
       pure ((appendPrefixTranscript tr).concat c, (appendPrefixTranscript tr).concat c,
         f (cast (challenge_append_inl ⟨i, hd⟩).symm c))) = _
-    rw [split_liftLeft_challenge]
-    simp only [bind_map_left, split_liftLeft_ambient,
+    rw [liftAppendLeft_getChallenge]
+    simp only [bind_map_left, liftAppendLeft_liftM,
       cast_cast, cast_eq, appendPrefixTranscript_concat]
     rfl
 
@@ -162,7 +142,7 @@ theorem appendPrefix_runToRound
     change liftAppendLeft pSpec₂ ((P.appendPrefix out).runToRound i.succ stmt wit) =
       (do let z ← P.runToRound (Fin.castAdd n i).succ stmt wit
           pure (appendPrefixTranscript z.1, appendPrefixTranscript z.1, z.2))
-    rw [runToRound_succ, runToRound_succ, split_processRound_bind, split_processRound_bind]
+    rw [runToRound_succ, runToRound_succ, Prover.processRound_bind, Prover.processRound_bind]
     simp only [liftAppendLeft, liftM_bind]
     change (do let z ← liftAppendLeft pSpec₂ ((P.appendPrefix out).runToRound i.castSucc stmt wit)
                liftAppendLeft pSpec₂ ((P.appendPrefix out).processRound i (pure z))) = _
@@ -264,7 +244,7 @@ theorem appendSuffix_runToRound
         (funext fun z => congrArg pure (he z).symm))
   | succ i ih =>
     change P.runToRound (Fin.natAdd m i).succ stmt wit = _
-    rw [runToRound_succ, split_processRound_bind]
+    rw [runToRound_succ, Prover.processRound_bind]
     change (do let z ← P.runToRound (rightRound i.castSucc) stmt wit
                P.processRound (Fin.natAdd m i) (pure z)) = _
     rw [ih]
@@ -272,7 +252,7 @@ theorem appendSuffix_runToRound
     congr 1
     funext z
     simp only [pure_bind]
-    rw [runToRound_succ, split_processRound_bind]
+    rw [runToRound_succ, Prover.processRound_bind]
     simp only [liftAppendRight, liftM_bind, bind_assoc]
     congr 1
     funext z₂

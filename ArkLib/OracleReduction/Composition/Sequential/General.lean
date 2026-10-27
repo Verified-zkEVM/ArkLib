@@ -442,12 +442,17 @@ namespace Verifier
 
 omit Oₘ in
 /-- Guarded verifiers that are sound from every deterministic oracle state compose with the
-sum of their errors, for an arbitrary initialization of the shared oracle state. -/
+sum of their errors, for an arbitrary initialization of the shared oracle state.
+
+The second-stage bound is required from every fixed oracle state because the intermediate
+statement is chosen adaptively after oracle answers. This excludes oracle states that hide a
+secret from the prover (a trapdoor or an eagerly sampled random function); lazily sampled
+oracles satisfy this requirement. -/
 theorem seqCompose_soundness
     (lang : (i : Fin (m + 1)) → Set (Stmt i))
     (V : (i : Fin m) → Verifier oSpec (Stmt i.castSucc) (Stmt i.succ) (pSpec i))
     (soundnessError : Fin m → ℝ≥0)
-    (G : ∀ i, (V i).GuardedForm)
+    [∀ i, (V i).IsGuarded]
     (h : ∀ i, ∀ s : σ,
       (V i).soundness (pure s) impl (lang i.castSucc) (lang i.succ) (soundnessError i)) :
       (Verifier.seqCompose Stmt V).soundness init impl (lang 0) (lang (Fin.last m))
@@ -461,16 +466,20 @@ theorem seqCompose_soundness
     simp only [Fin.vsum_succ, seqCompose_succ, Fin.castSucc_zero, Fin.succ_zero_eq_one,
       Function.comp_apply, Fin.succ_last, Nat.succ_eq_add_one]
     rw [Fin.sum_univ_succ]
-    let := (G 0).isGuarded
     apply append_soundness (V 0) (seqCompose (Stmt ∘ Fin.succ) (fun i => V i.succ))
       (soundness_of_forall_pure (h 0))
     intro s
     exact ih (init := pure s) (fun i => lang i.succ) (fun i => V i.succ)
-      (fun i => soundnessError i.succ) (fun i => G i.succ) (fun i => h i.succ)
+      (fun i => soundnessError i.succ) (fun i => h i.succ)
 
 omit Oₘ in
 /-- A chain of guarded verifiers with named pure extractors has the sum of the component
-knowledge errors. Each component bound is uniform over deterministic initial oracle states. -/
+knowledge errors. Each component bound is uniform over deterministic initial oracle states.
+
+The second-stage bound is required from every fixed oracle state because the intermediate
+statement is chosen adaptively after oracle answers. This excludes oracle states that hide a
+secret from the prover (a trapdoor or an eagerly sampled random function); lazily sampled
+oracles satisfy this requirement. -/
 theorem seqCompose_knowledgeSoundnessWith
     (rel : (i : Fin (m + 1)) → Set (Stmt i × Wit i))
     (V : (i : Fin m) → Verifier oSpec (Stmt i.castSucc) (Stmt i.succ) (pSpec i))
@@ -503,8 +512,13 @@ theorem seqCompose_knowledgeSoundnessWith
       (fun i => h i.succ)
 
 omit Oₘ in
-/-- Existential pure component extractors give ordinary knowledge soundness of a guarded chain.
-Each extractor is fixed before the initial oracle state is chosen. -/
+/-- Pure transcript-and-output extractors give ordinary knowledge soundness of a guarded chain.
+Each extractor is fixed before the initial oracle state is chosen.
+
+The second-stage bound is required from every fixed oracle state because the intermediate
+statement is chosen adaptively after oracle answers. This excludes oracle states that hide a
+secret from the prover (a trapdoor or an eagerly sampled random function); lazily sampled
+oracles satisfy this requirement. -/
 theorem seqCompose_knowledgeSoundness
     (rel : (i : Fin (m + 1)) → Set (Stmt i × Wit i))
     (V : (i : Fin m) → Verifier oSpec (Stmt i.castSucc) (Stmt i.succ) (pSpec i))
@@ -579,24 +593,34 @@ end Verifier
 namespace OracleVerifier
 
 /-- Oracle verifiers whose induced verifiers are guarded and sound from every deterministic
-oracle state compose with the sum of their errors, for arbitrary initialization. -/
+oracle state compose with the sum of their errors, for arbitrary initialization.
+
+The second-stage bound is required from every fixed oracle state because the intermediate
+statement is chosen adaptively after oracle answers. This excludes oracle states that hide a
+secret from the prover (a trapdoor or an eagerly sampled random function); lazily sampled
+oracles satisfy this requirement. -/
 theorem seqCompose_soundness
     (lang : (i : Fin (m + 1)) → Set (Stmt i × ∀ j, OStmt i j))
     (V : (i : Fin m) →
       OracleVerifier oSpec (Stmt i.castSucc) (OStmt i.castSucc) (Stmt i.succ) (OStmt i.succ)
         (pSpec i))
     (soundnessError : Fin m → ℝ≥0)
-    (G : ∀ i, (V i).toVerifier.GuardedForm)
+    [∀ i, (V i).toVerifier.IsGuarded]
     (h : ∀ i, ∀ s : σ,
       (V i).soundness (pure s) impl (lang i.castSucc) (lang i.succ) (soundnessError i)) :
       (OracleVerifier.seqCompose Stmt OStmt V).soundness init impl (lang 0) (lang (Fin.last m))
         (∑ i, soundnessError i) := by
   unfold OracleVerifier.soundness
-  convert Verifier.seqCompose_soundness lang (fun i => (V i).toVerifier) soundnessError G h
+  convert Verifier.seqCompose_soundness lang (fun i => (V i).toVerifier) soundnessError h
   simp only [seqCompose_toVerifier]
 
 /-- Named pure extractors compose along a chain of oracle verifiers with guarded induced
-verifiers and component bounds uniform over deterministic shared oracle states. -/
+verifiers and component bounds uniform over deterministic shared oracle states.
+
+The second-stage bound is required from every fixed oracle state because the intermediate
+statement is chosen adaptively after oracle answers. This excludes oracle states that hide a
+secret from the prover (a trapdoor or an eagerly sampled random function); lazily sampled
+oracles satisfy this requirement. -/
 theorem seqCompose_knowledgeSoundnessWith
     (rel : (i : Fin (m + 1)) → Set ((Stmt i × ∀ j, OStmt i j) × Wit i))
     (V : (i : Fin m) →
@@ -618,8 +642,13 @@ theorem seqCompose_knowledgeSoundnessWith
   exact Verifier.seqCompose_knowledgeSoundnessWith rel (fun i => (V i).toVerifier)
     knowledgeError G e h
 
-/-- Existential pure component extractors give ordinary knowledge soundness of a guarded oracle
-chain, with the sum of the component errors. -/
+/-- Pure transcript-and-output extractors give ordinary knowledge soundness of a guarded oracle
+chain, with the sum of the component errors.
+
+The second-stage bound is required from every fixed oracle state because the intermediate
+statement is chosen adaptively after oracle answers. This excludes oracle states that hide a
+secret from the prover (a trapdoor or an eagerly sampled random function); lazily sampled
+oracles satisfy this requirement. -/
 theorem seqCompose_knowledgeSoundness
     (rel : (i : Fin (m + 1)) → Set ((Stmt i × ∀ j, OStmt i j) × Wit i))
     (V : (i : Fin m) →

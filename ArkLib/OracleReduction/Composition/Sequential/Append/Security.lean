@@ -7,7 +7,7 @@ module
 
 public import ArkLib.OracleReduction.Composition.Sequential.Append.ProverSplit
 public import ArkLib.OracleReduction.Security.SoundnessInitialization
-public import ArkLib.OracleReduction.Security.OrdinaryComposition
+public import ArkLib.OracleReduction.Composition.Sequential.Append.OrdinaryComposition
 
 /-!
 # Ordinary soundness and knowledge soundness of sequential composition
@@ -58,7 +58,12 @@ namespace Verifier
 
 /-- A guarded first verifier and a second verifier sound from every deterministic oracle state
 compose with the sum of their soundness errors. The first bound uses the given initialization;
-the second verifier need not be guarded. -/
+the second verifier need not be guarded.
+
+The second-stage bound is required from every fixed oracle state because the intermediate
+statement is chosen adaptively after oracle answers. This excludes oracle states that hide a
+secret from the prover (a trapdoor or an eagerly sampled random function); lazily sampled
+oracles satisfy this requirement. -/
 theorem append_soundness {lang₁ : Set Stmt₁} {lang₂ : Set Stmt₂} {lang₃ : Set Stmt₃}
     (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁) (V₂ : Verifier oSpec Stmt₂ Stmt₃ pSpec₂)
     [V₁.IsGuarded]
@@ -91,7 +96,12 @@ theorem append_soundness {lang₁ : Set Stmt₁} {lang₂ : Set Stmt₂} {lang�
     simp
 
 /-- Pure transcript-and-output extractors compose through a guarded first verifier. The second
-component's bound must hold from every deterministic shared oracle state, at the same extractor. -/
+component's bound must hold from every deterministic shared oracle state, at the same extractor.
+
+The second-stage bound is required from every fixed oracle state because the intermediate
+statement is chosen adaptively after oracle answers. This excludes oracle states that hide a
+secret from the prover (a trapdoor or an eagerly sampled random function); lazily sampled
+oracles satisfy this requirement. -/
 theorem append_knowledgeSoundnessWith
     {V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁}
     {V₂ : Verifier oSpec Stmt₂ Stmt₃ pSpec₂}
@@ -120,17 +130,25 @@ theorem append_knowledgeSoundnessWith
     ((pSpec₁.FullTranscript × Stmt₂ × P.PrvState (ChallengeTree.leftRound (Fin.last m))) × σ) ×
       ((pSpec₂.FullTranscript × Stmt₃ × Wit₃) × σ)) => (simulateQ impl
     ((V₁.append V₂).run stmt (r.1.1.1 ++ₜ r.2.1.1))).run r.2.2
+  let prefixBad := fun (r :
+    ((pSpec₁.FullTranscript × Stmt₂ × P.PrvState (ChallengeTree.leftRound (Fin.last m))) × σ) ×
+      ((pSpec₂.FullTranscript × Stmt₃ × Wit₃) × σ)) =>
+    G₁.check stmt r.1.1.1 = true ∧
+      ∃ w₂ ∈ e₂ (G₁.out stmt r.1.1.1) r.2.1.2.2 r.2.1.1,
+        (∀ w₁ ∈ e₁ stmt w₂ r.1.1.1, (stmt, w₁) ∉ rel₁) ∧
+          (G₁.out stmt r.1.1.1, w₂) ∈ rel₂
+  let suffixBad := fun (r :
+    ((pSpec₁.FullTranscript × Stmt₂ × P.PrvState (ChallengeTree.leftRound (Fin.last m))) × σ) ×
+      ((pSpec₂.FullTranscript × Stmt₃ × Wit₃) × σ)) (v : Option Stmt₃ × σ) =>
+    v.1.elim False (fun out =>
+      (∀ w₂ ∈ e₂ (G₁.out stmt r.1.1.1) r.2.1.2.2 r.2.1.1,
+        (G₁.out stmt r.1.1.1, w₂) ∉ rel₂) ∧ (out, r.2.1.2.2) ∈ rel₃)
   have hsplit := prEvent_bind_split_le core verify
     (fun r v => v.1.elim False (fun out =>
       (∀ w₁ ∈ (e₂ (G₁.out stmt r.1.1.1) r.2.1.2.2 r.2.1.1 >>= fun w₂ =>
         e₁ stmt w₂ r.1.1.1), (stmt, w₁) ∉ rel₁) ∧ (out, r.2.1.2.2) ∈ rel₃))
-    (fun r => G₁.check stmt r.1.1.1 = true ∧
-      ∃ w₂ ∈ e₂ (G₁.out stmt r.1.1.1) r.2.1.2.2 r.2.1.1,
-        (∀ w₁ ∈ e₁ stmt w₂ r.1.1.1, (stmt, w₁) ∉ rel₁) ∧
-          (G₁.out stmt r.1.1.1, w₂) ∈ rel₂)
-    (fun r v => v.1.elim False (fun out =>
-      (∀ w₂ ∈ e₂ (G₁.out stmt r.1.1.1) r.2.1.2.2 r.2.1.1,
-        (G₁.out stmt r.1.1.1, w₂) ∉ rel₂) ∧ (out, r.2.1.2.2) ∈ rel₃)) (by
+    prefixBad suffixBad (by
+      dsimp only [prefixBad, suffixBad]
       intro r v hv hb
       by_cases hc : G₁.check stmt r.1.1.1 = true
       · cases ho : v.1 with
@@ -154,10 +172,8 @@ theorem append_knowledgeSoundnessWith
         simp [hv'] at hb)
   have hp := G₁.append_prefix_bad_le e₁ e₂ h₁ stmt aux P
   have hs : Pr{let r ← (do let a ← core; let v ← verify a; pure (a, v))}[
-      r.2.1.elim False (fun out =>
-        (∀ w₂ ∈ e₂ (G₁.out stmt r.1.1.1.1) r.1.2.1.2.2 r.1.2.1.1,
-          (G₁.out stmt r.1.1.1.1, w₂) ∉ rel₂) ∧ (out, r.1.2.1.2.2) ∈ rel₃)] ≤ ε₂ := by
-    simp only [core, bind_assoc, pure_bind]
+      suffixBad r.1 r.2] ≤ ε₂ := by
+    simp only [suffixBad, core, bind_assoc, pure_bind]
     apply prEvent_bind_le_of_forall_le
     intro z
     have hb := (knowledgeSoundnessWith_iff_run e₂).mp (h₂ z.2) _
@@ -175,16 +191,19 @@ theorem append_knowledgeSoundnessWith
           (∀ w₂ ∈ e₂ (G₁.out stmt z.1.1) r.1.2.2 r.1.1,
             (G₁.out stmt z.1.1, w₂) ∉ rel₂) ∧ (out, r.1.2.2) ∈ rel₃)] ≤ _
       simp
-  simp only [core, pre, bind_assoc] at hsplit hs
+  simp only [prefixBad, suffixBad, core, pre, bind_assoc] at hsplit hs
   have hbound := hsplit.trans (add_le_add hp hs)
   rw [ENNReal.coe_add]
-  simpa only [core, pre, verify, Prover.simulateQ_run_appendSplit impl P (G₁.out stmt),
-    bind_assoc, pure_bind, GuardedForm.appendExtract, FullTranscript.append_fst,
-    FullTranscript.append_snd, bind_pure_comp, map_bind, Functor.map_map,
-    map_pure, bind_map_left] using hbound
+  simp only [Prover.simulateQ_run_appendSplit impl P (G₁.out stmt)]
+  simpa [verify, bind_assoc, GuardedForm.appendExtract, bind_pure_comp] using hbound
 
 /-- Existential pure transcript-and-output extractors compose with the sum of the errors.
-The suffix extractor is fixed uniformly over its initial oracle state. -/
+The suffix extractor is fixed uniformly over its initial oracle state.
+
+The second-stage bound is required from every fixed oracle state because the intermediate
+statement is chosen adaptively after oracle answers. This excludes oracle states that hide a
+secret from the prover (a trapdoor or an eagerly sampled random function); lazily sampled
+oracles satisfy this requirement. -/
 theorem append_knowledgeSoundness
     (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁)
     (V₂ : Verifier oSpec Stmt₂ Stmt₃ pSpec₂) (G₁ : V₁.GuardedForm)
@@ -263,7 +282,12 @@ variable {lang₁ : Set (Stmt₁ × (∀ i, OStmt₁ i))} {lang₂ : Set (Stmt�
     {lang₃ : Set (Stmt₃ × (∀ i, OStmt₃ i))}
 
 /-- Oracle verifiers compose with the sum of their soundness errors when the first induced
-verifier is guarded and the second bound holds from every deterministic oracle state. -/
+verifier is guarded and the second bound holds from every deterministic oracle state.
+
+The second-stage bound is required from every fixed oracle state because the intermediate
+statement is chosen adaptively after oracle answers. This excludes oracle states that hide a
+secret from the prover (a trapdoor or an eagerly sampled random function); lazily sampled
+oracles satisfy this requirement. -/
 theorem append_soundness
     (V₁ : OracleVerifier oSpec Stmt₁ OStmt₁ Stmt₂ OStmt₂ pSpec₁)
     (V₂ : OracleVerifier oSpec Stmt₂ OStmt₂ Stmt₃ OStmt₃ pSpec₂)
@@ -276,7 +300,12 @@ theorem append_soundness
   convert Verifier.append_soundness V₁.toVerifier V₂.toVerifier h₁ h₂
   simp only [append_toVerifier]
 
-/-- The named pure extractor composition theorem for oracle verifiers. -/
+/-- The named pure transcript-and-output extractor composition theorem for oracle verifiers.
+
+The second-stage bound is required from every fixed oracle state because the intermediate
+statement is chosen adaptively after oracle answers. This excludes oracle states that hide a
+secret from the prover (a trapdoor or an eagerly sampled random function); lazily sampled
+oracles satisfy this requirement. -/
 theorem append_knowledgeSoundnessWith
     {V₁ : OracleVerifier oSpec Stmt₁ OStmt₁ Stmt₂ OStmt₂ pSpec₁}
     {V₂ : OracleVerifier oSpec Stmt₂ OStmt₂ Stmt₃ OStmt₃ pSpec₂}
@@ -295,7 +324,12 @@ theorem append_knowledgeSoundnessWith
   exact Verifier.append_knowledgeSoundnessWith G₁ e₁ e₂ h₁ h₂
 
 /-- Oracle verifiers with pure transcript-and-output extractors compose through a guarded first
-verifier and a uniform suffix bound over deterministic shared oracle states. -/
+verifier and a uniform suffix bound over deterministic shared oracle states.
+
+The second-stage bound is required from every fixed oracle state because the intermediate
+statement is chosen adaptively after oracle answers. This excludes oracle states that hide a
+secret from the prover (a trapdoor or an eagerly sampled random function); lazily sampled
+oracles satisfy this requirement. -/
 theorem append_knowledgeSoundness
     (V₁ : OracleVerifier oSpec Stmt₁ OStmt₁ Stmt₂ OStmt₂ pSpec₁)
     (V₂ : OracleVerifier oSpec Stmt₂ OStmt₂ Stmt₃ OStmt₃ pSpec₂)

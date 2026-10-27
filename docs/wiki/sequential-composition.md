@@ -72,6 +72,29 @@ inhabitedness on arbitrary output oracle families; an always-rejecting verifier 
 `Empty` has no such form. `LiftContext/Purity.lean` transports output purity and guarded forms
 through ordinary context lifting.
 
+## Ordinary soundness
+
+`Append/Security.lean` proves `append_soundness` for a guarded first verifier and
+`General.lean` proves `seqCompose_soundness` for guarded chains. Both soundness interfaces
+use `IsGuarded` instances. The second-stage bound must hold from every fixed oracle state:
+the intermediate statement is chosen adaptively after oracle answers. This rules out states
+hiding a trapdoor or an eagerly sampled random function from the prover; lazy sampling supports
+this contract. The first binary bound may use the original initialization distribution.
+
+The `append_knowledgeSoundnessWith` and `seqCompose_knowledgeSoundnessWith` interfaces compose
+pure transcript-and-output extractors (`ofTranscriptAndOutput`), retaining explicit guarded
+forms to define the composed extractor. Their existential counterparts have the same restriction.
+The suffix extractor is fixed uniformly over starting states. All errors add without changing
+the component bounds.
+
+`Append/ProverSplit.lean` restricts arbitrary adversaries at the seam.
+`Append/OrdinaryComposition.lean` supplies prefix extraction and its bad-event bound, along
+with `OracleComp.prEvent_bind_split_le`. `Append/NoAmbient.lean` specializes these results to
+empty ambient oracles, where both bounds can use one initialization. Its soundness theorem
+requires no fallback, including when the intermediate statement type is empty.
+`ArkLibTest/OracleReduction/Composition/Sequential/OrdinaryComposition.lean` checks these APIs,
+extractor execution, exact axiom dependencies, and a suffix that queries a shared counter.
+
 ## Round-by-round soundness
 
 `Verifier.append_rbrSoundnessWorstCase_of_pure_first` composes bounds that hold for each fixed

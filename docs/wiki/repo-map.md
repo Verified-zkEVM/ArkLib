@@ -723,7 +723,11 @@ home_page/            site assets and assembled website root
     under a guarded first verifier, with the composed extractor and knowledge state function
     (`KnowledgeStateFunction.appendGuarded`) named; the components share only the intermediate
     relation.
-  - `Append/Security.lean` — admitted soundness and knowledge-soundness composition claims.
+  - `Append/ProverSplit.lean` — arbitrary prover restrictions retaining shared state at the seam.
+  - `Append/OrdinaryComposition.lean` — prefix extraction and ordinary bad-event bounds.
+  - `Append/Security.lean` — proved guarded ordinary soundness and pure-extractor knowledge
+    soundness; the legacy round-by-round claims remain admitted.
+  - `Append/NoAmbient.lean` — ordinary composition with one initialization and no ambient oracles.
 
   `Sequential/Completeness.lean` adds finite-chain completeness for pure outputs/verdicts;
   `Sequential/GuardedCompleteness.lean` handles deterministic rejecting verifiers.
@@ -752,7 +756,7 @@ home_page/            site assets and assembled website root
   module.
 - Virtual-output execution commutes through append, salt, cast, and executable lifting. This does
   not close the inherited generic append-security boundary: the unrestricted `StateT`
-  soundness and knowledge-soundness composition theorems in
+  round-by-round soundness and knowledge-soundness composition theorems in
   `Composition/Sequential/Append/Security.lean` remain admitted and must not anchor a standalone
   security claim. Completeness composition uses the proved interfaces with explicit shared-state
   hypotheses.

@@ -59,17 +59,39 @@ theorem soundness_empty_init_iff (V : Verifier []ₒ Stmt₁ Stmt₂ pSpec₁)
   simp only [simulateQ_empty_challenges_run', OptionT.prEvent_eq_run, OptionT.run_mk,
     map_bind, OracleComp.prEvent_bind_const]
 
-/-- In the plain model, the component soundness bounds may share one initialization. A fallback
-is needed only to describe the first verifier's unused output when it rejects. -/
+/-- In the plain model, the component soundness bounds may share one initialization,
+even when the intermediate statement type is empty. -/
 theorem append_soundness_of_empty {lang₁ : Set Stmt₁} {lang₂ : Set Stmt₂} {lang₃ : Set Stmt₃}
     (V₁ : Verifier []ₒ Stmt₁ Stmt₂ pSpec₁) (V₂ : Verifier []ₒ Stmt₂ Stmt₃ pSpec₂)
-    (fallback : Stmt₁ → Stmt₂) {ε₁ ε₂ : ℝ≥0}
+    {ε₁ ε₂ : ℝ≥0}
     (h₁ : V₁.soundness init impl lang₁ lang₂ ε₁)
     (h₂ : V₂.soundness init impl lang₂ lang₃ ε₂) :
     (V₁.append V₂).soundness init impl lang₁ lang₃ (ε₁ + ε₂) := by
-  let := (GuardedForm.ofEmpty V₁ fallback).isGuarded
-  exact append_soundness V₁ V₂ h₁ fun s =>
-    (soundness_empty_init_iff V₂ (pure s)).mp h₂
+  classical
+  by_cases h : Nonempty Stmt₂
+  · let := (GuardedForm.ofEmpty V₁ (fun _ => Classical.choice h)).isGuarded
+    exact append_soundness V₁ V₂ h₁ fun s =>
+      (soundness_empty_init_iff V₂ (pure s)).mp h₂
+  · have hrun (stmt : Stmt₁) (tr : pSpec₁.FullTranscript) : V₁.run stmt tr = pure none := by
+      rw [eq_pure_runEmpty (V₁.run stmt tr)]
+      congr 1
+      cases he : (V₁.run stmt tr).runEmpty with
+      | none => rfl
+      | some x => exact (h ⟨x⟩).elim
+    rw [soundness_iff_run]
+    intro Aux Out wit P stmt _
+    apply prEvent_bind_le_of_forall_le
+    intro z
+    have hc : ((V₁.append V₂).run stmt z.1.1).run = pure none := by
+      simp only [Verifier.append_run, OptionT.run_bind]
+      change ((V₁.run stmt z.1.1.fst).run >>= fun x => _) = _
+      rw [hrun]
+      rfl
+    change Pr{let v ← (simulateQ impl ((V₁.append V₂).run stmt z.1.1).run).run z.2}[
+      v.1.elim False (fun v => v ∈ lang₃)] ≤ _
+    rw [hc]
+    simp
+
 
 /-- Without ambient queries, changing the initial oracle state distribution leaves the named
 knowledge-soundness game unchanged, including its extractor. -/

@@ -148,6 +148,13 @@ theorem append_prefix_bad_le (G : V₁.GuardedForm)
             (∀ w₁ ∈ e₁ stmt w₂ r.1.1.1, (stmt, w₁) ∉ rel₁) ∧
               (G.out stmt r.1.1.1, w₂) ∈ rel₂] ≤ ε := by
   classical
+  let prefixBad := fun (r :
+    ((pSpec₁.FullTranscript × Stmt₂ × P.PrvState (ChallengeTree.leftRound (Fin.last m))) × σ) ×
+      ((pSpec₂.FullTranscript × Stmt₃ × Wit₃) × σ)) =>
+    G.check stmt r.1.1.1 = true ∧
+      ∃ w₂ ∈ e₂ (G.out stmt r.1.1.1) r.2.1.2.2 r.2.1.1,
+        (∀ w₁ ∈ e₁ stmt w₂ r.1.1.1, (stmt, w₁) ∉ rel₁) ∧
+          (G.out stmt r.1.1.1, w₂) ∈ rel₂
   by_cases hW : Nonempty Wit₂
   · let fallback : Wit₂ := Classical.choice hW
     let : ∀ i, Fintype (pSpec₂.Challenge i) := fun _ => Fintype.ofFinite _
@@ -165,11 +172,8 @@ theorem append_prefix_bad_le (G : V₁.GuardedForm)
       (fun z c => (fun r => (z, r)) <$>
         (simulateQ impl (simulateQ (fixedChallengeImpl c)
           ((P.appendSuffix (Stmt₂ := Stmt₂)).run (G.out stmt z.1.1) z.1.2.2))).run z.2)
-    have heq := (hd.trans hs).prEvent_eq (fun r =>
-      G.check stmt r.1.1.1 = true ∧
-        ∃ w₂ ∈ e₂ (G.out stmt r.1.1.1) r.2.1.2.2 r.2.1.1,
-          (∀ w₁ ∈ e₁ stmt w₂ r.1.1.1, (stmt, w₁) ∉ rel₁) ∧
-            (G.out stmt r.1.1.1, w₂) ∈ rel₂)
+    have heq := (hd.trans hs).prEvent_eq prefixBad
+    dsimp only [prefixBad] at heq
     simp only [pre, bind_assoc] at heq
     simp only [bind_pure_comp]
     rw [heq]
@@ -198,10 +202,7 @@ theorem append_prefix_bad_le (G : V₁.GuardedForm)
         let r ← (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
           ((P.appendSuffix (Stmt₂ := Stmt₂)).run (G.out stmt z.1.1) z.1.2.2)).run z.2
         pure (z, r))}[
-          G.check stmt r.1.1.1 = true ∧
-            ∃ w₂ ∈ e₂ (G.out stmt r.1.1.1) r.2.1.2.2 r.2.1.1,
-              (∀ w₁ ∈ e₁ stmt w₂ r.1.1.1, (stmt, w₁) ∉ rel₁) ∧
-                (G.out stmt r.1.1.1, w₂) ∈ rel₂] = 0 := by
+          prefixBad r] = 0 := by
       apply prEvent_eq_zero_of_forall_not
       rintro r ⟨_, w₂, _⟩
       exact hW ⟨w₂⟩
@@ -212,7 +213,7 @@ end Verifier.GuardedForm
 
 /-- Split an event after a continuation into an event already determined by its input and a
 remaining continuation event. The first term pays only once for the prefix event. -/
-theorem prEvent_bind_split_le {A B : Type} (pre : ProbComp A) (next : A → ProbComp B)
+theorem OracleComp.prEvent_bind_split_le {A B : Type} (pre : ProbComp A) (next : A → ProbComp B)
     (bad : A → B → Prop) (left : A → Prop) (right : A → B → Prop)
     (h : ∀ a b, b ∈ support (next a) → bad a b → left a ∨ right a b) :
     Pr{let r ← (do let a ← pre; let b ← next a; pure (a, b))}[bad r.1 r.2] ≤

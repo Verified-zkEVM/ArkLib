@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.OracleReduction.Composition.Sequential.Append.SoundnessEmpty
+import ArkLib.OracleReduction.Composition.Sequential.Append.NoAmbient
 import ArkLib.OracleReduction.Composition.Sequential.General
 
 /-!
@@ -57,15 +57,15 @@ theorem binary : ((stage true).append (stage false)).soundness init impl languag
 
 /-- The plain-model interface needs only the two component bounds at the same initialization. -/
 theorem plain : ((stage true).append (stage false)).soundness init impl language language 0 := by
-  simpa using Verifier.append_soundness_of_empty (stage true) (stage false) id
+  simpa using Verifier.append_soundness_of_empty (stage true) (stage false)
     (stage_soundness init impl true) (stage_soundness init impl false)
 
-/-- The finite-chain API accepts guarded forms as data and per-state component bounds. -/
+/-- The finite-chain API accepts guarded instances and per-state component bounds. -/
 theorem chain :
     (Verifier.seqCompose (fun _ : Fin 3 => Bool) (fun _ : Fin 2 => stage true)).soundness
       init impl language language 0 := by
   simpa using Verifier.seqCompose_soundness (fun _ : Fin 3 => language)
-    (fun _ : Fin 2 => stage true) (fun _ => 0) (fun _ => guarded true)
+    (fun _ : Fin 2 => stage true) (fun _ => 0)
     (fun _ s => stage_soundness (pure s) impl true) (init := init)
 
 example : (stage true).run false (fun _ => false) = failure := rfl
@@ -203,13 +203,103 @@ run_cmd do
   unless emptyExtract false true emptyTranscript == some true do
     throwError "Empty folded extraction did not return its output witness"
 
+namespace Stateful
+
+/-- Each ambient query returns the old counter and increments the shared state. -/
+abbrev counterSpec : OracleSpec Unit := Unit →ₒ ℕ
+
+def counterImpl : QueryImpl counterSpec (StateT ℕ ProbComp) := fun _ => do
+  let n ← get
+  set (n + 1)
+  pure n
+
+/-- The first stage preserves the statement without querying the counter. -/
+def first : Verifier counterSpec Bool Bool protocol := ⟨fun stmt _ => pure stmt⟩
+
+def firstGuarded : first.GuardedForm :=
+  ⟨fun _ _ => true, fun stmt _ => stmt, fun _ _ => rfl⟩
+
+instance : first.IsGuarded := firstGuarded.isGuarded
+
+/-- The suffix queries the counter and rejects at odd counter values. -/
+def second : Verifier counterSpec Bool Bool protocol := ⟨fun stmt _ => OptionT.mk do
+  let n ← (query (spec := counterSpec) () : OracleComp counterSpec ℕ)
+  pure (if n % 2 = 0 then some stmt else none)⟩
+
+/-- This bound holds for arbitrary adversaries and every counter value at the seam. -/
+theorem second_soundness (s : ℕ) :
+    second.soundness (pure s) counterImpl language language 0 := by
+  rw [Verifier.soundness_iff_run]
+  intro Aux Out wit P stmt hstmt
+  apply prEvent_bind_le_of_forall_le
+  intro z
+  change Pr{let v ← (simulateQ counterImpl (do
+    let n ← (query (spec := counterSpec) () : OracleComp counterSpec ℕ)
+    pure (if n % 2 = 0 then some stmt else none))).run z.2}[
+      v.1.elim False (fun v => v ∈ language)] ≤ _
+  by_cases h : z.2 % 2 = 0 <;>
+    simp_all [counterImpl, StateT.run_bind, language]
+
+
+/-- The ambient state may change arbitrarily during the prover's prefix and suffix. -/
+theorem binary (initial : ProbComp ℕ) :
+    (first.append second).soundness initial counterImpl language language 0 := by
+  have h₁ : first.soundness initial counterImpl language language 0 := by
+    rw [firstGuarded.soundness_iff]
+    intro Aux Out wit P stmt hstmt
+    simp only [firstGuarded, hstmt, and_false, prEvent_false, ENNReal.coe_zero, le_refl]
+  simpa using Verifier.append_soundness first second h₁ second_soundness
+
+/-- The suffix really reads and updates state, including on rejection. -/
+example (stmt : Bool) (tr : protocol.FullTranscript) :
+    (simulateQ counterImpl (second.run stmt tr)).run 3 = pure (none, 4) := by
+  change (simulateQ counterImpl (do
+    let n ← (query (spec := counterSpec) () : OracleComp counterSpec ℕ)
+    pure (if n % 2 = 0 then some stmt else none))).run 3 = _
+  simp [counterImpl, StateT.run_bind]
+
+run_cmd do
+  match (counterImpl ()).run 3 with
+  | .pure (answer, next) =>
+    unless answer == 3 && next == 4 do
+      throwError "Counter query did not return the old state and increment it"
+  | _ => throwError "Counter query unexpectedly sampled randomness"
+
+end Stateful
+
+/-- info: 'OrdinaryCompositionRegression.Stateful.binary' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms Stateful.binary
+
+/-- info: 'OrdinaryCompositionRegression.binary_knowledgeWith' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
 #print axioms binary_knowledgeWith
+/-- info: 'OrdinaryCompositionRegression.plain_knowledge' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
 #print axioms plain_knowledge
+/-- info: 'OrdinaryCompositionRegression.chain_knowledgeWith' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
 #print axioms chain_knowledgeWith
+/-- info: 'OrdinaryCompositionRegression.empty_intermediate' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
 #print axioms empty_intermediate
 
+/-- info: 'OrdinaryCompositionRegression.binary' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
 #print axioms binary
+/-- info: 'OrdinaryCompositionRegression.plain' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
 #print axioms plain
+/-- info: 'OrdinaryCompositionRegression.chain' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
 #print axioms chain
 
 end OrdinaryCompositionRegression
