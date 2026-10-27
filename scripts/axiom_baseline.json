@@ -140,7 +140,6 @@
     "Verifier.srKnowledgeSoundness_implies_knowledgeSoundness",
     "Verifier.srSoundness_addSalt_implies_srSoundness_original",
     "Verifier.srSoundness_implies_soundness",
-    "fiatShamir_completeness",
     "instUnitTranscriptFSProverState",
     "instUnitTranscriptFSVerifierState"
   ],

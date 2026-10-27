@@ -763,6 +763,7 @@ public import ArkLib.OracleReduction.Composition.Sequential.OracleCompleteness
 public import ArkLib.OracleReduction.Equiv
 public import ArkLib.OracleReduction.Execution
 public import ArkLib.OracleReduction.FiatShamir.Basic
+public import ArkLib.OracleReduction.FiatShamir.Completeness
 public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Defs
 public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.AbortAnalysis
 public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Backtrack
