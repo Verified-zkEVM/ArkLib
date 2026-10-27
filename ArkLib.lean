@@ -733,9 +733,11 @@ public import ArkLib.OracleReduction.Composition.Sequential.Append.Completeness
 public import ArkLib.OracleReduction.Composition.Sequential.Append.Execution
 public import ArkLib.OracleReduction.Composition.Sequential.Append.GuardedRoundByRound
 public import ArkLib.OracleReduction.Composition.Sequential.Append.OneMessage
+public import ArkLib.OracleReduction.Composition.Sequential.Append.ProverSplit
 public import ArkLib.OracleReduction.Composition.Sequential.Append.RoundByRound
 public import ArkLib.OracleReduction.Composition.Sequential.Append.Security
 public import ArkLib.OracleReduction.Composition.Sequential.Append.Simulation
+public import ArkLib.OracleReduction.Composition.Sequential.Append.SoundnessEmpty
 public import ArkLib.OracleReduction.Composition.Sequential.Append.StateFunction
 public import ArkLib.OracleReduction.Composition.Sequential.Completeness
 public import ArkLib.OracleReduction.Composition.Sequential.General
@@ -792,6 +794,7 @@ public import ArkLib.OracleReduction.Security.Implications
 public import ArkLib.OracleReduction.Security.RbrGame
 public import ArkLib.OracleReduction.Security.Rewinding
 public import ArkLib.OracleReduction.Security.RoundByRound
+public import ArkLib.OracleReduction.Security.SoundnessInitialization
 public import ArkLib.OracleReduction.Security.SpecialSoundness
 public import ArkLib.OracleReduction.Security.StateRestoration
 public import ArkLib.OracleReduction.Security.TranscriptTree

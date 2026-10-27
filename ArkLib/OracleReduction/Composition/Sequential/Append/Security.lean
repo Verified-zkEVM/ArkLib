@@ -5,13 +5,19 @@ Authors: Quang Dao, scaraven
 -/
 module
 
-public import ArkLib.OracleReduction.Composition.Sequential.Append.Execution
+public import ArkLib.OracleReduction.Composition.Sequential.Append.ProverSplit
+public import ArkLib.OracleReduction.Security.SoundnessInitialization
 
 /-!
-# Admitted soundness composition contracts
+# Ordinary soundness of sequential composition
 
-This module contains admitted soundness and knowledge-soundness composition contracts and their
-oracle-verifier wrappers. Execution and conversion equalities do not establish these contracts.
+`Verifier.append_soundness` and its oracle-verifier wrapper are proved for a guarded first
+verifier and a second-stage soundness bound valid from every deterministic oracle state. The
+first-stage bound uses the given initialization, and the composite error is the sum of the two
+errors. The proof restricts an arbitrary adversarial prover at the seam and retains its private
+state and the actual shared oracle state.
+
+The legacy knowledge-soundness and round-by-round contracts below remain admitted.
 
 For proved completeness interfaces, use `Append/Completeness.lean` and
 `Sequential/GuardedCompleteness.lean`. The proved soundness interface in `Append/RoundByRound.lean`
@@ -43,16 +49,39 @@ variable {Stmt₁ Wit₁ Stmt₂ Wit₂ Stmt₃ Wit₃ : Type}
 
 namespace Verifier
 
-/-- If two verifiers satisfy soundness with compatible languages and respective soundness errors,
-    then their sequential composition also satisfies soundness.
-    The soundness error of the appended verifier is the sum of the individual errors. -/
+/-- A guarded first verifier and a second verifier sound from every deterministic oracle state
+compose with the sum of their soundness errors. The first bound uses the given initialization;
+the second verifier need not be guarded. -/
 theorem append_soundness {lang₁ : Set Stmt₁} {lang₂ : Set Stmt₂} {lang₃ : Set Stmt₃}
     (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁) (V₂ : Verifier oSpec Stmt₂ Stmt₃ pSpec₂)
+    [V₁.IsGuarded]
     {soundnessError₁ soundnessError₂ : ℝ≥0}
     (h₁ : V₁.soundness init impl lang₁ lang₂ soundnessError₁)
-    (h₂ : V₂.soundness init impl lang₂ lang₃ soundnessError₂) :
+    (h₂ : ∀ s : σ, V₂.soundness (pure s) impl lang₂ lang₃ soundnessError₂) :
       (V₁.append V₂).soundness init impl lang₁ lang₃ (soundnessError₁ + soundnessError₂) := by
-  sorry
+  obtain ⟨check, out, hG⟩ := (inferInstance : V₁.IsGuarded).is_guarded
+  let G : V₁.GuardedForm := ⟨check, out, hG⟩
+  rw [soundness_iff_run]
+  intro Aux Out wit P stmt hstmt
+  have hpref := G.soundness_iff.mp h₁ _ _ wit (P.appendPrefix (out stmt)) stmt hstmt
+  rw [ENNReal.coe_add]
+  simp only [Prover.simulateQ_run_appendSplit impl P (out stmt), bind_assoc, pure_bind]
+  rw [← bind_assoc]
+  refine (prEvent_bind_le_prEvent_add _ _
+    (fun z => check stmt z.1.1 = true ∧ out stmt z.1.1 ∈ lang₂) _ ?_).trans
+      (add_le_add hpref (le_refl (soundnessError₂ : ENNReal)))
+  intro z hz
+  by_cases hc : check stmt z.1.1 = true
+  · have hy : out stmt z.1.1 ∉ lang₂ := fun hy => hz ⟨hc, hy⟩
+    have hs := soundness_iff_run.mp (h₂ z.2) _ _ z.1.2.2
+      (P.appendSuffix (Stmt₂ := Stmt₂)) (out stmt z.1.1) hy
+    simpa only [pure_bind, append_run_guardedLeft V₁ V₂ check out hG, hc, ite_true] using hs
+  · simp only [append_run_guardedLeft V₁ V₂ check out hG, ite_eq_right hc]
+    apply prEvent_bind_le_of_forall_le
+    intro z₂
+    change Pr{let v ← (pure (none, z₂.2) : ProbComp (Option Stmt₃ × σ))}[
+      v.1.elim False (fun v => v ∈ lang₃)] ≤ _
+    simp
 
 /-- If two verifiers satisfy knowledge soundness with compatible relations and respective knowledge
     errors, then their sequential composition also satisfies knowledge soundness.
@@ -130,15 +159,15 @@ namespace OracleVerifier
 variable {lang₁ : Set (Stmt₁ × (∀ i, OStmt₁ i))} {lang₂ : Set (Stmt₂ × (∀ i, OStmt₂ i))}
     {lang₃ : Set (Stmt₃ × (∀ i, OStmt₃ i))}
 
-/-- If two oracle verifiers satisfy soundness with compatible languages and respective soundness
-    errors, then their sequential composition also satisfies soundness.
-    The soundness error of the appended verifier is the sum of the individual errors. -/
+/-- Oracle verifiers compose with the sum of their soundness errors when the first induced
+verifier is guarded and the second bound holds from every deterministic oracle state. -/
 theorem append_soundness
     (V₁ : OracleVerifier oSpec Stmt₁ OStmt₁ Stmt₂ OStmt₂ pSpec₁)
     (V₂ : OracleVerifier oSpec Stmt₂ OStmt₂ Stmt₃ OStmt₃ pSpec₂)
+    [V₁.toVerifier.IsGuarded]
     {soundnessError₁ soundnessError₂ : ℝ≥0}
     (h₁ : V₁.soundness init impl lang₁ lang₂ soundnessError₁)
-    (h₂ : V₂.soundness init impl lang₂ lang₃ soundnessError₂) :
+    (h₂ : ∀ s : σ, V₂.soundness (pure s) impl lang₂ lang₃ soundnessError₂) :
       (V₁.append V₂).soundness init impl lang₁ lang₃ (soundnessError₁ + soundnessError₂) := by
   unfold soundness
   convert Verifier.append_soundness V₁.toVerifier V₂.toVerifier h₁ h₂

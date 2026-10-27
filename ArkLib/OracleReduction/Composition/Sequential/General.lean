@@ -423,17 +423,19 @@ open scoped NNReal
 
 namespace Verifier
 
-/-- If all verifiers in a sequence satisfy soundness with respective soundness errors, then their
-    sequential composition also satisfies soundness.
-    The soundness error of the seqComposed verifier is the sum of the individual errors. -/
+omit Oₘ in
+/-- Guarded verifiers that are sound from every deterministic oracle state compose with the
+sum of their errors, for an arbitrary initialization of the shared oracle state. -/
 theorem seqCompose_soundness
     (lang : (i : Fin (m + 1)) → Set (Stmt i))
     (V : (i : Fin m) → Verifier oSpec (Stmt i.castSucc) (Stmt i.succ) (pSpec i))
     (soundnessError : Fin m → ℝ≥0)
-    (h : ∀ i, (V i).soundness init impl (lang i.castSucc) (lang i.succ) (soundnessError i)) :
+    (G : ∀ i, (V i).GuardedForm)
+    (h : ∀ i, ∀ s : σ,
+      (V i).soundness (pure s) impl (lang i.castSucc) (lang i.succ) (soundnessError i)) :
       (Verifier.seqCompose Stmt V).soundness init impl (lang 0) (lang (Fin.last m))
         (∑ i, soundnessError i) := by
-  induction m with
+  induction m generalizing init with
   | zero =>
     simp only [Fin.isValue, Fin.reduceLast, Fin.vsum_zero, seqCompose_zero,
       Finset.univ_eq_empty, Finset.sum_empty]
@@ -441,12 +443,13 @@ theorem seqCompose_soundness
   | succ m ih =>
     simp only [Fin.vsum_succ, seqCompose_succ, Fin.castSucc_zero, Fin.succ_zero_eq_one,
       Function.comp_apply, Fin.succ_last, Nat.succ_eq_add_one]
-    have := ih (fun i => lang i.succ) (fun i => V i.succ)
-      (fun i => soundnessError i.succ) (fun i => h i.succ)
-    simp only [Fin.succ_zero_eq_one, Fin.succ_last, Nat.succ_eq_add_one] at this
     rw [Fin.sum_univ_succ]
-    exact append_soundness (V 0) (seqCompose (Stmt ∘ Fin.succ) (fun i => V i.succ))
-      (h 0) this
+    let := (G 0).isGuarded
+    apply append_soundness (V 0) (seqCompose (Stmt ∘ Fin.succ) (fun i => V i.succ))
+      (soundness_of_forall_pure (h 0))
+    intro s
+    exact ih (init := pure s) (fun i => lang i.succ) (fun i => V i.succ)
+      (fun i => soundnessError i.succ) (fun i => G i.succ) (fun i => h i.succ)
 
 /-- If all verifiers in a sequence satisfy knowledge soundness with respective knowledge errors,
     then their sequential composition also satisfies knowledge soundness.
@@ -533,21 +536,21 @@ end Verifier
 
 namespace OracleVerifier
 
-/-- If all verifiers in a sequence satisfy soundness with respective soundness errors, then their
-  sequential composition also satisfies soundness.
-  The soundness error of the sequentially composed oracle verifier is the sum of the individual
-  errors. -/
+/-- Oracle verifiers whose induced verifiers are guarded and sound from every deterministic
+oracle state compose with the sum of their errors, for arbitrary initialization. -/
 theorem seqCompose_soundness
     (lang : (i : Fin (m + 1)) → Set (Stmt i × ∀ j, OStmt i j))
     (V : (i : Fin m) →
       OracleVerifier oSpec (Stmt i.castSucc) (OStmt i.castSucc) (Stmt i.succ) (OStmt i.succ)
         (pSpec i))
     (soundnessError : Fin m → ℝ≥0)
-    (h : ∀ i, (V i).soundness init impl (lang i.castSucc) (lang i.succ) (soundnessError i)) :
+    (G : ∀ i, (V i).toVerifier.GuardedForm)
+    (h : ∀ i, ∀ s : σ,
+      (V i).soundness (pure s) impl (lang i.castSucc) (lang i.succ) (soundnessError i)) :
       (OracleVerifier.seqCompose Stmt OStmt V).soundness init impl (lang 0) (lang (Fin.last m))
         (∑ i, soundnessError i) := by
   unfold OracleVerifier.soundness
-  convert Verifier.seqCompose_soundness lang (fun i => (V i).toVerifier) soundnessError h
+  convert Verifier.seqCompose_soundness lang (fun i => (V i).toVerifier) soundnessError G h
   simp only [seqCompose_toVerifier]
 
 /-- If all verifiers in a sequence satisfy knowledge soundness with respective knowledge errors,
