@@ -604,6 +604,11 @@ home_page/            site assets and assembled website root
   events along that split). The umbrella `Security/TranscriptTree.lean` re-exports both files.
   Both plain and coordinate-wise special soundness are instances of `Verifier.treeSpecialSound` for
   different shapes; neither special-soundness file imports the other.
+- `Security/UnboundedExtraction.lean` records what `Verifier.knowledgeSoundness` means without
+  an extractor cost bound: the classical selector `Extractor.Straightline.choose` makes it
+  equivalent to `Verifier.relationSoundness` (`Verifier.knowledgeSoundness_iff_relationSoundness`).
+  When extraction itself matters, state `knowledgeSoundnessWith` for a named extractor and bound
+  that extractor's cost separately.
 - Plain `(k)`-special soundness lives in `Security/SpecialSoundness.lean`. It is the instance of
   `Verifier.treeSpecialSound` for the pairwise-distinct shape `distinctShape k` (arity `kᵢ`, node
   predicate `Function.Injective`), with input/output relations like CWSS; it is the `ℓᵢ = 1`
