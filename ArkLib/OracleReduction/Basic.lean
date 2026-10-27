@@ -525,17 +525,6 @@ theorem toVerifier_verify_of_query_guard (q : [pSpec.Message]ₒ.Domain)
     Option.elim_some]
   split_ifs <;> rfl
 
-/-- The number of queries made to the oracle statements and the prover's messages, for a given input
-    statement and challenges.
-
-  This is given as an oracle computation itself, since the oracle verifier may be adaptive and has
-  different number of queries depending on the prior responses.
-
-  TODO: define once `numQueries` is defined in `OracleComp` -/
-def numQueries (stmt : StmtIn) (challenges : ∀ i, pSpec.Challenge i)
-    (verifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec) :
-  OracleComp (oSpec + ([OStmtIn]ₒ + [pSpec.Message]ₒ)) ℕ := sorry
-
 /-- A **non-adaptive** oracle verifier is an oracle verifier that makes a **fixed** list of queries
     to the input oracle statements and the prover's messages. These queries can depend on the input
     statement and the challenges, but later queries are not dependent on the responses of previous

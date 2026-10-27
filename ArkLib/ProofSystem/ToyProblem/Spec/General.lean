@@ -96,8 +96,7 @@ How each step of Construction 6.2 lands on an ArkLib / VCVio primitive:
   `OracleVerifier.knowledgeSoundness` / `OracleVerifier.rbrKnowledgeSoundness`.
   Two caveats: extraction **time** (the paper's `O(enc + ecor)` extractor
   cost) is outside ArkLib's cost-free model, and the verifier's query
-  complexity (`2t + 1`) is documented, not enforced
-  (`OracleVerifier.numQueries` is upstream-sorried).
+  complexity (`2t + 1`) is documented, not enforced.
 
 ## Codeword alphabet `A` (folding-generic)
 
