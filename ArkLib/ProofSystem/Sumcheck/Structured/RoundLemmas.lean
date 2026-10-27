@@ -53,7 +53,8 @@ theorem sum_getSumcheckRoundPoly_uniform (i : Fin ℓ) (H : L⦃≤ d⦄[X Fin (
     ∑ b ∈ (SumcheckDomain.uniform D₀ ℓ).points i,
         (getSumcheckRoundPoly ℓ (SumcheckDomain.uniform D₀ ℓ) i H).val.eval b =
       ∑ x ∈ (SumcheckDomain.uniform D₀ (ℓ - i.castSucc)).cube, H.val.eval x := by
-  exact sum_sumRoundPolynomial_first (by have := i.isLt; simp; omega) (univ.map D₀) H.val
+  simp only [getSumcheckRoundPoly, Polynomial.eval_finsetSum]
+  exact sum_eval_evalExcept_first (by have := i.isLt; simp; omega) (univ.map D₀) H.val
 
 /-- Over a uniform domain, the univariate round polynomial evaluates at the challenge to the sum of
 the next round polynomial over the remaining cube: the honest next-round claim. -/
@@ -70,7 +71,8 @@ theorem eval_getSumcheckRoundPoly_uniform (i : Fin ℓ) (H : L⦃≤ d⦄[X Fin 
   have heval : (getSumcheckRoundPoly ℓ (SumcheckDomain.uniform D₀ ℓ) i H).val.eval c =
       ∑ x ∈ ((SumcheckDomain.uniform D₀ ℓ).drop (i.castSucc + 1)).cube,
         eval (Fin.cons c x ∘ Fin.cast hm) H.val := by
-    exact sumRoundPolynomial_eval_first _ _ H.val c
+    simp only [getSumcheckRoundPoly, Polynomial.eval_finsetSum]
+    exact Finset.sum_congr rfl fun x _ => eval_evalExcept_first _ x H.val c
   rw [heval]
   simp only [SumcheckDomain.drop_uniform, SumcheckDomain.cube_uniform]
   change (∑ x ∈ (univ.map D₀) ^ᶠ (ℓ - i - 1),

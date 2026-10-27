@@ -594,6 +594,7 @@ public import ArkLib.Data.Matrix.Sparse
 public import ArkLib.Data.Matrix.Vandermonde
 public import ArkLib.Data.Misc.Basic
 public import ArkLib.Data.MvPolynomial.Degrees
+public import ArkLib.Data.MvPolynomial.EvalExcept
 public import ArkLib.Data.MvPolynomial.EvenAndOdd
 public import ArkLib.Data.MvPolynomial.FrobeniusContraction
 public import ArkLib.Data.MvPolynomial.Hypercube
@@ -608,7 +609,6 @@ public import ArkLib.Data.MvPolynomial.PrimeFingerprintProbability
 public import ArkLib.Data.MvPolynomial.RadicalSplit.Separable
 public import ArkLib.Data.MvPolynomial.RestrictDegree
 public import ArkLib.Data.MvPolynomial.RestrictDegreeVar
-public import ArkLib.Data.MvPolynomial.RoundPolynomial
 public import ArkLib.Data.MvPolynomial.SchwartzZippelCounting
 public import ArkLib.Data.MvPolynomial.Split
 public import ArkLib.Data.MvPolynomial.WeightAtMost
@@ -1000,6 +1000,12 @@ public import ArkLib.ProofSystem.Sumcheck.Interaction.RoundByRound
 public import ArkLib.ProofSystem.Sumcheck.Interaction.Sequential
 public import ArkLib.ProofSystem.Sumcheck.Interaction.SingleRound
 public import ArkLib.ProofSystem.Sumcheck.Interaction.Soundness
+public import ArkLib.ProofSystem.Sumcheck.Message.Basic
+public import ArkLib.ProofSystem.Sumcheck.Message.CompPoly
+public import ArkLib.ProofSystem.Sumcheck.Message.Quadratic
+public import ArkLib.ProofSystem.Sumcheck.Prover.Basic
+public import ArkLib.ProofSystem.Sumcheck.Prover.Enumeration
+public import ArkLib.ProofSystem.Sumcheck.Source
 public import ArkLib.ProofSystem.Sumcheck.Spec.General
 public import ArkLib.ProofSystem.Sumcheck.Spec.SingleRound
 public import ArkLib.ProofSystem.Sumcheck.Structured

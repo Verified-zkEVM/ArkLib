@@ -37,9 +37,8 @@ theorem projected_sum_of_relationRound (i : Fin n)
       (fun a => (projectedRoundPolynomial R (n + 1) deg D i stmt.challenges p).val.eval a)
     change _ = ∑ a ∈ univ.map D, _ at hlist
     apply hlist.trans
-    change (∑ a ∈ univ.map D,
-      (MvPolynomial.sumRoundPolynomial _ _ i p.val).eval a) = _
-    refine (MvPolynomial.sumRoundPolynomial_sum_prefix (l := n - i) i stmt.challenges
+    simp only [projectedRoundPolynomial, Polynomial.eval_finsetSum]
+    refine (MvPolynomial.sum_eval_evalExcept_append (l := n - i) i stmt.challenges
       (fun _ => univ.map D) (by omega) p.val).trans ?_
     change (∑ z ∈ (univ.map D) ^ᶠ (n + 1 - i.val),
       p.val.eval (Fin.append stmt.challenges z ∘ Fin.cast (by simp))) = _ at h
@@ -75,8 +74,18 @@ theorem relationRound_projected_output (i : Fin n)
   cases n with
   | zero => exact Fin.elim0 i
   | succ n =>
-    exact (MvPolynomial.sumRoundPolynomial_eval_prefix_uniform i stmt.challenges
-      (univ.map D) p.val r).symm
+    change _ = (∑ x ∈ (univ.map D) ^ᶠ (n - i),
+      p.val.evalExcept i (Fin.append stmt.challenges x ∘ Fin.cast (by simp; omega))).eval r
+    simp only [Polynomial.eval_finsetSum, MvPolynomial.eval_evalExcept_append]
+    change (∑ x ∈ (univ.map D) ^ᶠ (n + 1 - (i + 1)),
+      p.val.eval (Fin.append (Fin.snoc stmt.challenges r) x ∘ Fin.cast (by simp; omega))) = _
+    rw [Fin.sum_piFinset_cast (univ.map D)
+      (show n + 1 - (i + 1) = n - i by omega)]
+    apply Finset.sum_congr rfl
+    intro x _
+    congr 1
+    rw [Fin.append_cast_right]
+    rfl
 
 /-- For an arbitrary next target, the successor relation is exactly projected evaluation. -/
 theorem relationRound_output_iff (i : Fin n)
