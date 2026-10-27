@@ -163,7 +163,8 @@ structure StateFunction
     ∀ stmt tr, ¬ toFun m.castSucc stmt tr →
     ∀ msg, ¬ toFun m.succ stmt (tr.concat msg)
   /-- If the state function is false for a full transcript, the verifier will not output a statement
-    in the output language -/
+    in the output language in a fresh-`init` experiment. For guarded verifiers, the guarded
+    terminal lemmas make this faithful to execution from the current shared oracle state. -/
   toFun_full : ∀ stmt tr, ¬ toFun (.last n) stmt tr →
     Pr{let stmtOut ← (OptionT.mk do
       (simulateQ impl (verifier.run stmt tr)).run' (← init))}[stmtOut ∈ langOut] = 0
@@ -199,7 +200,8 @@ structure KnowledgeStateFunction
       toFun m.castSucc stmtIn tr (extractor.extractMid m stmtIn (tr.concat msg) witMid)
   /-- If the verifier can output a statement `stmtOut` that is in the output relation with some
     output witness `witOut`, then the state function is true for the full transcript and the
-    extracted last middle witness. -/
+    extracted last middle witness. This describes a fresh-`init` experiment; the guarded
+    terminal lemmas make it faithful to the current shared oracle state for guarded verifiers. -/
   toFun_full : ∀ stmtIn tr witOut,
     Pr{let stmtOut ← (OptionT.mk do
       (simulateQ impl (verifier.run stmtIn tr)).run' (← init))}[
