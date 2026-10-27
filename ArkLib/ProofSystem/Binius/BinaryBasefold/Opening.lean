@@ -57,14 +57,15 @@ def statement (s : MLPEvalStatement L ℓ) :
 def witness (s : MLPEvalStatement L ℓ) (t : MultilinearPoly L ℓ) :
     Witness K β (h_ℓ_add_R_rate := h_rate) (ℓ := ℓ) 0 where
   t := t
-  H := projectToMidSumcheckPoly ℓ t (multiplier (statement s).ctx) 0 Fin.elim0
+  H := MvPolynomial.fixPrefix ℓ 0
+    (computeInitialSumcheckPoly ℓ t (multiplier (statement s).ctx)) Fin.elim0
   f := getMidCodewords K β (h_ℓ_add_R_rate := h_rate) t Fin.elim0
 
 omit [SampleableType L] [DecidableEq K] [Fact (β 0 = 1)] [NeZero ℓ] in
 /-- The canonical sum-check polynomial is the equality kernel times the source. -/
 theorem witness_H_val (s : MLPEvalStatement L ℓ) (t : MultilinearPoly L ℓ) :
     (witness K β (h_rate := h_rate) s t).H.val = eqPolynomial s.t_eval_point * t.val := by
-  simp [witness, projectToMidSumcheckPoly, computeInitialSumcheckPoly,
+  simp [witness, MvPolynomial.fixPrefix, Sumcheck.Structured.coe_computeInitialSumcheckPoly,
     MvPolynomial.fixFirstVariablesOfMQP_zero, multiplier, eqMultiplier, statement]
 
 omit [SampleableType L] [DecidableEq K] [Fact (β 0 = 1)] [NeZero ℓ] in
