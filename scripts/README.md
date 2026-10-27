@@ -30,6 +30,8 @@ This directory contains various utility scripts for the ArkLib project.
 - **`SumcheckRuntime.lean`** (`lake exe sumcheck-runtime`) - Compiled checks of CompPoly-backed
   round messages and the honest multivariate prover in the shared native Sumcheck executor,
   including continuation effects, abort, original-oracle evaluation and zero remaining rounds.
+- **`LogupRuntime.lean`** (`lake exe logup-runtime`) - Compiled weighted prefix, retained Q source,
+  native terminal authentication, private effects and actual extension-field sampler checks.
 - **`HachiRuntime.lean`** (`lake exe hachi-runtime`) - Compiled small-parameter checks that the
   nonrecursive Hachi honest-prover path executes: the balanced committer, the computable honest
   lift quotient, the concrete Ajtai lift commitment, and the terminal reveal-and-check. `--full`
@@ -228,8 +230,8 @@ before and after the run; the report shows wall time beside `user + sys` CPU wor
 
 The three measurements share one tree and run in order, so each leaves it warmer than the last.
 `native_build` exists to hold the `.c.o` chain that the compiled executables link
-(`toyproblem-runtime`, `hachi-runtime`, `sumcheck-runtime`, and `fri-extractor-runtime`): that is the
-cost which swings on `.lake` cache state,
+(`toyproblem-runtime`, `hachi-runtime`, `sumcheck-runtime`, `logup-runtime`, and
+`fri-extractor-runtime`): that is the cost which swings on `.lake` cache state,
 and billing it separately keeps the validation wrapper's row comparable across dependency bumps.
 Any new compiled executable run by `validate.sh` has to be added to that command as well. See
 [`../docs/wiki/quickstart.md`](../docs/wiki/quickstart.md) for how to read the rows.

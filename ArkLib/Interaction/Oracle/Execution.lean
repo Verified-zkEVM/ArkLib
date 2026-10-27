@@ -132,6 +132,84 @@ def Fragment.mapOutput {ι : Type u} (ambient : OracleSpec.{u, u} ι)
     Fragment ambient tree roles oracles initial B :=
   ShapeOver.mapOutput (localShape ambient) (decorate tree roles oracles initial) f verifier
 
+namespace Fragment
+
+set_option backward.isDefEq.respectTransparency false in
+/-- Mapping each fragment leaf to itself preserves the actual restricted strategy. -/
+theorem mapOutput_id {ι : Type u} (ambient : OracleSpec.{u, u} ι)
+    (tree : Oracle.TypeTree.{u}) (roles : tree.RoleDecoration) (oracles : tree.OracleDecoration)
+    (initial : PFunctor.{u, u}) (Out : tree.BranchPath → Type u)
+    (fragment : Fragment ambient tree roles oracles initial Out) :
+    mapOutput ambient (fun _ out => out) fragment = fragment := by
+  induction tree generalizing initial with
+  | done => rfl
+  | «public» Moves rest ih =>
+    rcases roles with ⟨role, roles⟩
+    cases role
+    · funext move
+      change (fun next => mapOutput ambient (fun _ out => out) next) <$>
+        fragment move = fragment move
+      simp only [ih, id_map']
+    · change (fun next => ⟨next.1,
+          mapOutput ambient (fun _ out => out) next.2⟩) <$> fragment = fragment
+      calc
+        _ = (fun next => next) <$> fragment := by
+          congr 1
+          funext ⟨move, next⟩
+          simp only [ih]
+        _ = fragment := id_map' _
+  | oracle Messages rest ih =>
+    change (fun next => mapOutput ambient (fun _ out => out) next) <$> fragment = fragment
+    simp only [ih, id_map']
+
+set_option backward.isDefEq.respectTransparency false in
+/-- Composing path-dependent leaf maps preserves every node program and branch. -/
+theorem mapOutput_comp {ι : Type u} (ambient : OracleSpec.{u, u} ι)
+    (tree : Oracle.TypeTree.{u}) (roles : tree.RoleDecoration) (oracles : tree.OracleDecoration)
+    (initial : PFunctor.{u, u}) (A B C : tree.BranchPath → Type u)
+    (f : (path : tree.BranchPath) → A path → B path)
+    (g : (path : tree.BranchPath) → B path → C path)
+    (fragment : Fragment ambient tree roles oracles initial A) :
+    mapOutput ambient g (mapOutput ambient f fragment) =
+      mapOutput ambient (fun path out => g path (f path out)) fragment := by
+  induction tree generalizing initial with
+  | done => rfl
+  | «public» Moves rest ih =>
+    rcases roles with ⟨role, roles⟩
+    cases role
+    · funext move
+      change (fun next => mapOutput ambient _ next) <$>
+        ((fun next => mapOutput ambient _ next) <$> fragment move) =
+          (fun next => mapOutput ambient _ next) <$> fragment move
+      simp only [Functor.map_map]
+      congr 1
+      funext next
+      exact ih move _ _ _ _ _ _ _ _ next
+    · let FA := (move : Moves) × Fragment ambient (rest move) (roles move)
+          (oracles.2 move) initial (fun path => A ⟨move, path⟩)
+      let FB := (move : Moves) × Fragment ambient (rest move) (roles move)
+          (oracles.2 move) initial (fun path => B ⟨move, path⟩)
+      let FC := (move : Moves) × Fragment ambient (rest move) (roles move)
+          (oracles.2 move) initial (fun path => C ⟨move, path⟩)
+      change (fun next : FB => (⟨next.1, mapOutput ambient _ next.2⟩ : FC)) <$>
+        ((fun next : FA => (⟨next.1, mapOutput ambient _ next.2⟩ : FB)) <$> fragment) =
+          (fun next : FA => (⟨next.1, mapOutput ambient _ next.2⟩ : FC)) <$> fragment
+      simp only [Functor.map_map]
+      congr 1
+      funext ⟨move, next⟩
+      congr 1
+      exact ih move _ _ _ _ _ _ _ _ next
+  | oracle Messages rest ih =>
+    change (fun next => mapOutput ambient _ next) <$>
+      ((fun next => mapOutput ambient _ next) <$> fragment) =
+        (fun next => mapOutput ambient _ next) <$> fragment
+    simp only [Functor.map_map]
+    congr 1
+    funext next
+    exact ih _ _ _ _ _ _ _ _ next
+
+end Fragment
+
 /-- A completed verifier is a fragment whose leaf returns the final query action. The executor
 runs that action exactly once after the paired interaction has terminated. -/
 abbrev Strategy {ι : Type u} (ambient : OracleSpec.{u, u} ι)

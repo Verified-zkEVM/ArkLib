@@ -19,24 +19,24 @@ import all CompPoly.Univariate.Raw.Ops
 namespace CompPoly.CPolynomial.Raw
 /-- A raw scalar stores one coefficient even when that coefficient is zero. -/
 @[simp]
-theorem size_C {R : Type} (x : R) : (C x).size = 1 := by rfl
+theorem size_C {R : Type*} (x : R) : (C x).size = 1 := by rfl
 
 /-- Scalar multiplication preserves the coefficient count. -/
 @[simp]
-theorem size_smul {R : Type} [Mul R] (x : R) (p : Raw R) :
+theorem size_smul {R : Type*} [Mul R] (x : R) (p : Raw R) :
     (smul x p).size = p.size := by simp [smul]
 
 /-- Multiplication by a power of `X` retains every prepended zero. -/
 @[simp]
-theorem size_mulPowX {R : Type} [Zero R] (i : ℕ) (p : Raw R) :
+theorem size_mulPowX {R : Type*} [Zero R] (i : ℕ) (p : Raw R) :
     (mulPowX i p).size = i + p.size := by simp [mulPowX]
 
 /-- Padded addition stores the larger input size. -/
-theorem size_addRaw {R : Type} [Zero R] [Add R] (p q : Raw R) :
+theorem size_addRaw {R : Type*} [Zero R] [Add R] (p q : Raw R) :
     (addRaw p q).size = max p.size q.size := by
   simp [addRaw, Array.size_rightpad, max_comm]
 
-variable {R : Type} [Semiring R]
+variable {R : Type*} [Semiring R]
 
 /-- Raw convolution retains every shifted row, including padding from an empty right array. -/
 theorem size_mulRaw (p q : Raw R) :

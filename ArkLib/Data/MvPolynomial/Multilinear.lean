@@ -18,6 +18,9 @@ public import ArkLib.Data.MvPolynomial.Interpolation
   companion `exists_nonzero_vanishing_on_axis_cross`: vanishing on a coordinate-wise star does
   *not* determine a multilinear polynomial, in contrast with `MLE_eq_zero_iff` on the hypercube.
 
+  The equality kernel `eqTilde` computes directly from its coordinates and the supplied finite
+  enumeration. `eqTilde_eq_eval` identifies it with evaluation of the equality polynomial.
+
   ## References
 
   * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
@@ -88,11 +91,11 @@ abbrev eqPolynomial' : R[X (σ ⊕ σ)] :=
 abbrev eqPolynomial (r : σ → R) : R[X σ] :=
   ∏ i : σ, singleEqPolynomial (r i) (X i)
 
-/-- The equality polynomial value `eq̃(r, r') := eval r' (eqPolynomial r)` — the multilinear
-extension of the equality indicator on `{0,1}^σ`. Equals `1` iff `r = r'` on the Boolean cube.
-This is the canonical `eq̃` used in multilinear-extension-based sumcheck protocols (Binius
-ring-switching, Hachi range checks, …). -/
-noncomputable def eqTilde (r r' : σ → R) : R := eval r' (eqPolynomial r)
+/-- The multilinear equality kernel, computed as one affine factor per coordinate.
+It agrees with evaluation of the equality polynomial and is the equality indicator on the
+Boolean cube. -/
+def eqTilde (r r' : σ → R) : R :=
+  ∏ i, (r i * r' i + (1 - r i) * (1 - r' i))
 
 theorem eqPolynomial_expanded (r : σ → R) :
     eqPolynomial r = ∏ i : σ, ((1 - C (r i)) * (1 - X i) + C (r i) * X i) := rfl
@@ -106,11 +109,18 @@ theorem eqPolynomial_symm (x : σ → R) (y : σ → R) :
 
 /-- The equality kernel is a product of one affine equality factor per coordinate. -/
 theorem eqTilde_eq_prod (x y : σ → R) :
-    eqTilde x y = ∏ i, (x i * y i + (1 - x i) * (1 - y i)) := by
-  unfold eqTilde
-  rw [eqPolynomial_expanded]
+    eqTilde x y = ∏ i, (x i * y i + (1 - x i) * (1 - y i)) := rfl
+
+/-- The executable coordinate product equals evaluation of the equality polynomial. -/
+theorem eqTilde_eq_eval (x y : σ → R) : eqTilde x y = eval y (eqPolynomial x) := by
+  rw [eqTilde_eq_prod, eqPolynomial_expanded]
   simp only [map_prod, map_add, map_mul, map_sub, map_one, eval_C, eval_X]
   exact Finset.prod_congr rfl fun i _ => by ring
+
+/-- The equality kernel is symmetric in its two points. -/
+theorem eqTilde_symm (x y : σ → R) : eqTilde x y = eqTilde y x := by
+  rw [eqTilde_eq_eval, eqTilde_eq_eval]
+  exact eqPolynomial_symm x y
 
 /-- The equality kernel factors across appended coordinate blocks. -/
 theorem eqTilde_append {m n : ℕ} (x₁ y₁ : Fin m → R) (x₂ y₂ : Fin n → R) :
@@ -176,7 +186,7 @@ theorem MLE_expanded (evals : (σ → Fin 2) → R) : MLE evals =
 theorem MLE_eval (x : σ → R) (evals : (σ → Fin 2) → R) :
     eval x (MLE evals) =
       ∑ b : σ → Fin 2, eqTilde (b : σ → R) x * evals b := by
-  simp only [MLE, eval_sum, eval_mul, eval_C, eqTilde]
+  simp only [MLE, eval_sum, eval_mul, eval_C, eqTilde_eq_eval]
 
 @[simp]
 theorem MLE_eval_zeroOne (x : σ → Fin 2) (evals : (σ → Fin 2) → R) :

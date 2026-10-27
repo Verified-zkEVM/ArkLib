@@ -22,6 +22,8 @@ For reusable cross-cutting workflows that are not tied to one repo area, see
   `ArkLib/Data/CodingTheory/`.
 - [`polynomial-conventions.md`](polynomial-conventions.md) - semantic axes for nested bivariate
   and trivariate polynomial representations.
+- [`executable-polynomials.md`](executable-polynomials.md) - computational representations,
+  formal coefficient refinement and costs tied to executed arithmetic programs.
 - [`proximity-error-conventions.md`](proximity-error-conventions.md) - the proximity-gap,
   correlated-agreement, and mutual-correlated-agreement APIs and their numeric types.
 - [`interaction-naming.md`](interaction-naming.md) - intrinsic meanings and migration of typed
@@ -51,6 +53,7 @@ For reusable cross-cutting workflows that are not tied to one repo area, see
   - `knowledge-base.md` for when and how agents should use `docs/kb/`.
   - `coding-theory-conventions.md` for notation, types and local conventions in `CodingTheory/`.
   - `polynomial-conventions.md` for nested polynomial axes and semantic evaluation/degree APIs.
+  - `executable-polynomials.md` for polynomial runtime/refinement and arithmetic-program costs.
   - `proximity-error-conventions.md` for the public APIs and numeric types of the proximity-error
     notions in `CodingTheory/ProximityGap/`.
   - `interaction-naming.md` for typed interaction API meanings and name migrations.

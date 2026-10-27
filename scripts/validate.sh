@@ -23,6 +23,7 @@ Default checks:
   - lake exe toyproblem-runtime
   - lake exe hachi-runtime
   - lake exe sumcheck-runtime
+  - lake exe logup-runtime
   - lake exe fri-extractor-runtime
   - fail on non-`sorry` warnings under ArkLib/
   - ./scripts/test-retiredsweep.sh and lake exe retiredsweep --require-empty
@@ -122,6 +123,10 @@ lake exe hachi-runtime
 echo ""
 echo "# Running computable Sumcheck runtime checks"
 lake exe sumcheck-runtime
+
+echo ""
+echo "# Running weighted LogUp runtime checks"
+lake exe logup-runtime
 
 echo ""
 echo "# Running measured FRI extractor runtime checks"

@@ -84,6 +84,18 @@ Run `lake test` to build them; `./scripts/validate.sh` runs this target by defau
 test warnings, including admissions. Stage new tests so source linting and the trust inventory
 include them. Production modules must not import tests.
 
+Before creating an acceptance file, verify that the proposed path is absent both in the working
+tree and in the intended integration/base tree. A path absent from a development checkout may
+already hold a suite on the branch being integrated. For an existing path, read the whole old file
+and review the complete old-to-new patch; preserve existing cases when adding a separate fixture.
+Use a new descriptive path when the suites have different owners or purposes.
+
+Before publishing, inspect per-path changes with `git diff --no-renames --numstat BASE` and
+`git diff --no-renames BASE -- ArkLibTest/`, using the actual canonical base. Account for every
+existing-test deletion or replacement explicitly. Passing CI establishes that the remaining tests
+pass; it does not establish preservation of the previous acceptance coverage. Include both the
+existing and new suites in focused target selection.
+
 Typed Interaction PRs also have a focused hosted check, including when stacked on a feature
 branch. It compiles all tracked `ArkLib/Interaction/` and `ArkLibTest/Interaction/` modules with
 the existing build-time source-policy plugin and rejects every warning in those modules,
@@ -184,8 +196,8 @@ python3 -m pip install leanblueprint
 - `./scripts/validate.sh` is the recommended convenience wrapper for routine local validation.
 - By default it runs `lake build`, rejects non-`sorry` warnings anywhere under `ArkLib/`, runs the
   Lean-native source-policy gate, runs the compiled `toyproblem-runtime`, `hachi-runtime`,
-  `sumcheck-runtime`, and `fri-extractor-runtime` checks, checks generated imports and documentation
-  integrity, and lints knowledge-base inputs.
+  `sumcheck-runtime`, `logup-runtime`, and `fri-extractor-runtime` checks, checks generated imports
+  and documentation integrity, and lints knowledge-base inputs.
 - The lower-level scripts remain valid when you only want one specific check.
 - `docs/kb/_generated/**` freshness is handled by generated-files PRs from the main-branch KB
   workflow, not by ordinary PR validation.
@@ -228,7 +240,8 @@ it gives the expected answer — are checked by compiled executables under `scri
 | --- | --- | --- |
 | `toyproblem-runtime` | `scripts/ToyProblemRuntime.lean` | the toy-problem launch cone |
 | `hachi-runtime` | `scripts/HachiRuntime.lean` | the nonrecursive Hachi honest-prover path |
-| `sumcheck-runtime` | `scripts/SumcheckRuntime.lean` | CompPoly messages and honest multivariate execution, including private effects, public abort and the retained original oracle |
+| `sumcheck-runtime` | `scripts/SumcheckRuntime.lean` | CompPoly messages, honest multivariate execution and final source authentication, including forgery rejection, zero rounds, retained helpers and private effects after public abort |
+| `logup-runtime` | `scripts/LogupRuntime.lean` | weighted reference and scalar/tuple defaults, authentication, aborts, poles, zero rounds and extension-field samplers |
 | `fri-extractor-runtime` | `scripts/FriExtractorRuntime.lean` | measured FRI extraction, input guards, raw interpolation corner cases, and exact small instruction counts |
 
 **Put them here, not under `ArkLib/`.** A file under `ArkLib/` is picked up by the generated
@@ -237,7 +250,7 @@ interpreter, which is far slower than compiled code. The pattern each file follo
 `check : String → Bool → IO Unit` that throws on failure, a `run : IO Unit` listing the checks,
 and `def main := run`.
 
-Two things to get right when adding one:
+When adding a runtime executable:
 
 - **Make each check lazy** — `def myCheck : Unit → Bool := fun _ => …`, not `def myCheck : Bool`.
   Top-level values of non-function type are evaluated at *module initialization*, so an eager
@@ -247,6 +260,12 @@ Two things to get right when adding one:
   millisecond checks and hides its composed protocol run behind `--full` (that run passes, but
   takes about six minutes — the honest sumcheck prover dominates), with `--timing` for per-check
   costs.
+- **Carry executable domain enumerations into security statements.** `Finset.toList` is
+  noncomputable, so runtime verifiers take an explicit list. A proof-only permutation certificate
+  relates it to the specification's finite domain. Native Sumcheck's
+  `Core.executeWithFinalCheck_eq_of_domain_perm` transports the closed execution while preserving
+  ambient effects; raw source-query order can change. The terminal-authentication acceptance
+  fixture checks the bound on a compiler-checked program using the literal list `[0, 1]`.
 
 ## Optional Direct Commands
 
@@ -257,6 +276,7 @@ lake build
 lake exe toyproblem-runtime
 lake exe hachi-runtime
 lake exe sumcheck-runtime
+lake exe logup-runtime
 lake exe fri-extractor-runtime
 ./scripts/check-imports.sh
 python3 ./scripts/check-docs-integrity.py
@@ -356,7 +376,7 @@ export BUILD_TIMING_LOG_DIR=/tmp/build-timing
 bash scripts/build_timing_report.sh run library_build /tmp/build-timing/results.jsonl -- \
   bash -eo pipefail -c 'lake build'
 bash scripts/build_timing_report.sh run native_build /tmp/build-timing/results.jsonl -- \
-  bash -eo pipefail -c 'lake build toyproblem-runtime hachi-runtime sumcheck-runtime fri-extractor-runtime lint-style'
+  bash -eo pipefail -c 'lake build toyproblem-runtime hachi-runtime sumcheck-runtime logup-runtime fri-extractor-runtime lint-style'
 bash scripts/build_timing_report.sh run test_path /tmp/build-timing/results.jsonl -- \
   bash -eo pipefail -c './scripts/validate.sh'
 bash scripts/build_timing_report.sh render /tmp/build-timing/results.jsonl
@@ -367,9 +387,9 @@ Read the rows in that order, because they share one tree and each leaves it warm
 - `library_build` is `lake build` on whatever the build cache left: the changed modules and their
   importers, or everything when no cache was restored.
 - `native_build` carries the `.c.o` chain that the compiled executables link — currently
-  `toyproblem-runtime`, `hachi-runtime`, `sumcheck-runtime`, `fri-extractor-runtime`, and `lint-style`.
-  It is the row that swings on `.lake` cache state, so a dependency bump shows its cost here. **Adding a compiled executable to
-  `validate.sh` means
+  `toyproblem-runtime`, `hachi-runtime`, `sumcheck-runtime`, `logup-runtime`,
+  `fri-extractor-runtime`, and `lint-style`. It is the row that swings on `.lake` cache state, so a
+  dependency bump shows its cost here. **Adding a compiled executable to `validate.sh` means
   adding it to this command too**, or its link cost lands in `test_path` instead.
 - `test_path` is therefore the cost of the validation gate itself on an already-built project,
   not of a cold `./scripts/validate.sh`. CI passes no flags, so `--docs`, `--site` and

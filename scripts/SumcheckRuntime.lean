@@ -4,6 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 import ArkLib.ProofSystem.Sumcheck.Interaction.ComputableCompleteness
+import ArkLib.Interaction.Oracle.LoggedExecution
+import ArkLib.Interaction.Oracle.SourceRouting
 import Mathlib.Algebra.Field.ZMod
 
 /-!
@@ -154,6 +156,18 @@ def quadraticObserve : Option (F × F × F × F) × List (Fin 4) :=
       claim.stmt.challenges ⟨1, by decide⟩,
       claim.oracles ⟨(), claim.stmt.challenges⟩)) <$> quadraticRun)).run []
 
+/-- The complete endpoint also runs actual indexed-domain honest message generation. -/
+def quadraticAuthenticatedRun :=
+  Computable.executeWithFinalCheck F 2 2 events (event 1) [0, 1, 2] 2 0 (by decide)
+    (MultivariateRound.polynomialFamily F 2 2).spec.toPFunctor
+    (VirtualOracle.id (MultivariateRound.polynomialFamily F 2 2))
+    quadraticInitial quadraticOriginal
+    (Computable.honestProver F 2 2 three events 2 0 (by decide) quadraticInitial
+      quadratic quadratic_degree)
+
+def quadraticAuthenticatedObserve (_ : Unit) : Bool × List (Fin 4) :=
+  (simulateQ quadraticRecord quadraticAuthenticatedRun).run []
+
 def quadraticFinal : Sumcheck.Spec.StatementRound F 2 (Fin.last 2) := ⟨16, ![4, 4]⟩
 
 def quadraticZeroRun :=
@@ -181,11 +195,278 @@ def quadraticChecks : IO Unit := do
       quadratic_degree).val.evalHorner 4 == 7
   check "honest native two rounds and retained computational original" fun _ =>
     quadraticObserve == (some (16, 4, 4, 16), [1, 1])
+  check "complete verifier accepts actual computational honest messages" fun _ =>
+    quadraticAuthenticatedObserve () == (true, [1, 1])
   check "zero rounds retain computational original without sampling" fun _ =>
     quadraticZeroObserve == (some (16, 4, 4, 16), [])
 
 end SumcheckRuntime
 
+open OracleComp OracleSpec Interaction.Oracle
+open Sumcheck.Interaction
+
+namespace SumcheckRuntime.TerminalAuthentication
+
+abbrev ambientSpec : OracleSpec (Fin 3) := Fin 3 →ₒ F
+abbrev inputSpec : OracleSpec (Fin 2 × F) := (Fin 2 × F) →ₒ F
+
+def event (i : Fin 3) : OracleComp ambientSpec F := liftM (ambientSpec.query i)
+
+/-- The two retained inputs compute `2*x` and `-1`, respectively. -/
+def inputImpl : QueryImpl inputSpec Id := fun ⟨i, x⟩ => (show F from if i = 0 then 2*x else -1)
+
+/-- The virtual polynomial computes its answer by two actual input-source queries. -/
+def originalView : VirtualOracle (ofPFunctor inputSpec.toPFunctor)
+    (MultivariateRound.polynomialFamily F 1 1) := ⟨fun q => do
+  let a ← liftM ((ofPFunctor inputSpec.toPFunctor).query ((0 : Fin 2), q.2 0))
+  let b ← liftM ((ofPFunctor inputSpec.toPFunctor).query ((1 : Fin 2), q.2 0))
+  return a+b⟩
+
+def prover (q : Sumcheck.Impl.Representation.Message F 1) :
+    Prover.Strategy ambientSpec (Computable.protocol F 1 1).tree
+      (Computable.protocol F 1 1).roles (fun _ => F) := do
+  let secret ← event 0
+  return ⟨q, fun choice =>
+    match choice with
+    | none => do
+      let trailing ← event 2
+      return secret + trailing
+    | some r => do
+      let trailing ← event 2
+      return secret + r + trailing⟩
+
+def initial : Sumcheck.Spec.StatementRound F 1 0 := ⟨0, Fin.elim0⟩
+
+def logger : QueryImpl ambientSpec (StateM (List Nat)) := fun i => do
+  modify (· ++ [i.val])
+  return ![7,3,5] i
+
+abbrev Result := LoggedResult (Computable.protocol F 1 1).tree
+  (Computable.protocol F 1 1).oracles inputSpec.toPFunctor (fun _ => F) (fun _ => Bool)
+
+def run (q : Sumcheck.Impl.Representation.Message F 1) : OracleComp ambientSpec Result :=
+  executeStrategiesLogged ambientSpec (Computable.protocol F 1 1).tree
+    (Computable.protocol F 1 1).roles (Computable.protocol F 1 1).oracles
+    inputSpec.toPFunctor inputImpl (prover q)
+    (Computable.verifierWithFinalCheck F 1 1 ambientSpec (event 1) [0,1] 1 0 rfl
+      inputSpec.toPFunctor originalView initial)
+
+def observed (q : Sumcheck.Impl.Representation.Message F 1) : Result × List Nat :=
+  (simulateQ logger (run q)).run []
+
+/-- Project an already completed run without unfolding its execution during elaboration. -/
+def summarize {tree : _root_.Interaction.Oracle.TypeTree} {oracles : tree.OracleDecoration}
+    {A : PFunctor}
+    (result : LoggedResult tree oracles A (fun _ => F) (fun _ => Bool) × List Nat) :
+    Bool × F × Nat × List Nat :=
+  (result.1.verifierOut, result.1.proverOut, result.1.sourceLog.length, result.2)
+
+abbrev oneRoundAccess := Access.extend inputSpec.toPFunctor
+  (Native.Core.messageInterface F (Sumcheck.Impl.Representation.Message F 1)
+    (Sumcheck.Impl.Representation.evaluate F 1))
+
+def encodeEntry (entry : (query : oneRoundAccess.A) × oneRoundAccess.B query) : String × F :=
+  match entry with
+  | ⟨.inl ⟨i, x⟩, answer⟩ => (s!"input[{i.val}]({reprStr (show F from x)})", answer)
+  | ⟨.inr x, answer⟩ => (s!"message({reprStr (show F from x)})", answer)
+
+def encodeSource (path : (Computable.protocol F 1 1).tree.ExecutionPath) :
+    QueryLog (ofPFunctor (TypeTree.accessAfter (Computable.protocol F 1 1).tree
+      (Computable.protocol F 1 1).oracles inputSpec.toPFunctor path.toBranchPath)) →
+      List (String × F) := by
+  rcases path with ⟨message, choice, stop⟩
+  cases choice with
+  | none => exact fun log => log.map encodeEntry
+  | some r => exact fun log => log.map encodeEntry
+
+def observations (q : Sumcheck.Impl.Representation.Message F 1) : List (String × F) :=
+  let result := (observed q).1
+  encodeSource result.path result.sourceLog
+
+def summary (q : Sumcheck.Impl.Representation.Message F 1) : Bool × F × Nat × List Nat :=
+  summarize (observed q)
+
+/-- A zero-round native protocol still executes final authentication at its retained prefix. -/
+abbrev FinalResult := LoggedResult (Computable.protocol F 1 0).tree
+  (Computable.protocol F 1 0).oracles inputSpec.toPFunctor (fun _ => F) (fun _ => Bool)
+
+def runFinal (target : F) : OracleComp ambientSpec FinalResult :=
+  executeStrategiesLogged ambientSpec (Computable.protocol F 1 0).tree
+    (Computable.protocol F 1 0).roles (Computable.protocol F 1 0).oracles
+    inputSpec.toPFunctor inputImpl (OutP := fun _ => F) (9 : F)
+    (Computable.verifierWithFinalCheck F 1 1 ambientSpec (event 1) [0, 1] 0 1 rfl
+      inputSpec.toPFunctor originalView ⟨target, fun _ => 3⟩)
+
+def summaryFinal (target : F) : Bool × F × Nat × List Nat :=
+  summarize ((simulateQ logger (runFinal target)).run [])
+
+namespace Composed
+
+open PFunctor.FreeM.Displayed (Decoration)
+
+@[reducible]
+def helperInterface : OracleInterface F where
+  Query := Unit
+  toOC.spec := Unit →ₒ F
+  toOC.impl _ := read
+
+local notation "family" => MultivariateRound.polynomialFamily F 1 1
+abbrev firstProtocol : _root_.Interaction.Oracle.Protocol :=
+  .oracleWith F helperInterface .done
+abbrev secondProtocol : _root_.Interaction.Oracle.Protocol := Computable.protocol F 1 1
+abbrev combined : _root_.Interaction.Oracle.Protocol :=
+  ⟨PFunctor.FreeM.append firstProtocol.tree (fun _ => secondProtocol.tree),
+    Decoration.append firstProtocol.roles (fun _ => secondProtocol.roles),
+    Decoration.append firstProtocol.oracles (fun _ => secondProtocol.oracles)⟩
+abbrev prefixAccess := Access.extend inputSpec.toPFunctor helperInterface
+
+/-- The exported polynomial retains a fixed input and the actual prefix message. -/
+def exportView : VirtualOracle (ofPFunctor prefixAccess) family := ⟨fun q => do
+  let input : F ← liftM ((ofPFunctor prefixAccess).query (.inl ((0 : Fin 2), q.2 0)))
+  let helper : F ← liftM ((ofPFunctor prefixAccess).query (.inr ()))
+  return input + helper⟩
+
+def firstVerifier : Verifier.Fragment ambientSpec firstProtocol.tree firstProtocol.roles
+    firstProtocol.oracles inputSpec.toPFunctor (fun p =>
+      OpenClaim (ofPFunctor (TypeTree.accessAfter firstProtocol.tree firstProtocol.oracles
+        inputSpec.toPFunctor p)) (Sumcheck.Spec.StatementRound F 1 0) family) :=
+  pure ⟨initial, exportView⟩
+
+/-- The suffix is authored over Q alone, with no access to its raw input or helper sources. -/
+def secondVerifier (_ : firstProtocol.tree.BranchPath)
+    (stmt : Sumcheck.Spec.StatementRound F 1 0) :
+    Verifier.Strategy ambientSpec secondProtocol.tree secondProtocol.roles secondProtocol.oracles
+      (family).spec.toPFunctor (TerminalClaim secondProtocol (family).spec.toPFunctor
+        (fun _ => Computable.FinalStatement F 1) (fun _ => family)) :=
+  Computable.verifier F 1 1 ambientSpec (event 1) [0, 1] 1 0 rfl (family).spec.toPFunctor
+    (VirtualOracle.id family) stmt
+
+/-- Exported composition routes the native final claim back to actual retained sources. -/
+def reductionVerifier : Verifier.Strategy ambientSpec combined.tree combined.roles combined.oracles
+    inputSpec.toPFunctor (TerminalClaim combined inputSpec.toPFunctor
+      (fun _ => Computable.FinalStatement F 1) (fun _ => family)) :=
+  Verifier.appendExported ambientSpec firstProtocol.tree (fun _ => secondProtocol.tree)
+    firstProtocol.roles (fun _ => secondProtocol.roles)
+    firstProtocol.oracles (fun _ => secondProtocol.oracles) inputSpec.toPFunctor
+    (fun _ => Sumcheck.Spec.StatementRound F 1 0)
+    (fun _ => Sumcheck.Spec.OracleStatement F 1 1) (fun _ => family)
+    (fun _ => Computable.FinalStatement F 1)
+    (fun _ => Sumcheck.Spec.OracleStatement F 1 1) (fun _ => family)
+    firstVerifier secondVerifier
+
+/-- A complete native argument executes the routed final query action. -/
+def verifier : Verifier.Strategy ambientSpec combined.tree combined.roles combined.oracles
+    inputSpec.toPFunctor (fun _ => Bool) :=
+  Verifier.Fragment.mapOutput ambientSpec (fun path action =>
+    Native.Core.checkFinalResult F 1 1 ambientSpec
+      (TypeTree.accessAfter combined.tree combined.oracles inputSpec.toPFunctor path) action)
+    reductionVerifier
+
+/-- Ordinary native continuations cross both fragments with their private state intact. -/
+def prover (helper : F) (q : Sumcheck.Impl.Representation.Message F 1) :
+    Prover.Strategy ambientSpec combined.tree combined.roles (fun _ => F) := do
+  let secret ← event 0
+  return ⟨helper, do
+    return ⟨q, fun choice =>
+      match choice with
+      | none => do
+        let trailing ← event 2
+        return secret + trailing
+      | some r => do
+        let trailing ← event 2
+        return secret + r + trailing⟩⟩
+
+abbrev Result := LoggedResult combined.tree combined.oracles inputSpec.toPFunctor
+  (fun _ => F) (fun _ => Bool)
+
+def run (helper : F) (q : Sumcheck.Impl.Representation.Message F 1) :
+    OracleComp ambientSpec Result :=
+  executeStrategiesLogged ambientSpec combined.tree combined.roles combined.oracles
+    inputSpec.toPFunctor inputImpl (prover helper q) verifier
+
+def observed (helper : F) (q : Sumcheck.Impl.Representation.Message F 1) : Result × List Nat :=
+  (simulateQ logger (run helper q)).run []
+
+abbrev finalAccess := Access.extend prefixAccess
+  (Native.Core.messageInterface F (Sumcheck.Impl.Representation.Message F 1)
+    (Sumcheck.Impl.Representation.evaluate F 1))
+
+def encodeEntry (entry : (query : finalAccess.A) × finalAccess.B query) : String × F :=
+  match entry with
+  | ⟨.inl (.inl ⟨i, x⟩), answer⟩ => (s!"input[{i.val}]({reprStr (show F from x)})", answer)
+  | ⟨.inl (.inr ()), answer⟩ => ("helper", answer)
+  | ⟨.inr x, answer⟩ => (s!"message({reprStr (show F from x)})", answer)
+
+def encodeSource (path : combined.tree.ExecutionPath) :
+    QueryLog (ofPFunctor (TypeTree.accessAfter combined.tree combined.oracles
+      inputSpec.toPFunctor path.toBranchPath)) → List (String × F) := by
+  rcases path with ⟨helper, message, choice, stop⟩
+  cases choice with
+  | none => exact fun log => log.map encodeEntry
+  | some r => exact fun log => log.map encodeEntry
+
+def observations (helper : F) (q : Sumcheck.Impl.Representation.Message F 1) :
+    List (String × F) :=
+  let result := (observed helper q).1
+  encodeSource result.path result.sourceLog
+
+def summary (helper : F) (q : Sumcheck.Impl.Representation.Message F 1) :
+    Bool × F × Nat × List Nat :=
+  summarize (observed helper q)
+
+end Composed
+
+/-- The named complete endpoint executes the same verifier with arbitrary private prover output. -/
+def endpointSummary (q : Sumcheck.Impl.Representation.Message F 1) : Bool × List Nat :=
+  (simulateQ logger (Computable.executeWithFinalCheck F 1 1 ambientSpec (event 1) [0,1]
+    1 0 rfl inputSpec.toPFunctor originalView initial inputImpl (prover q))).run []
+
+/-- Change only the final private return type of the actual native prover. -/
+def erasedProver (q : Sumcheck.Impl.Representation.Message F 1) :
+    Prover.Strategy ambientSpec (Computable.protocol F 1 1).tree
+      (Computable.protocol F 1 1).roles (fun _ => Unit) :=
+  Interaction.StrategyOver.TwoParty.Focal.mapOutput (fun _ _ => (() : Unit)) (prover q)
+
+/-- Erasing the private return retains the same transcript and ambient effect order. -/
+def erasedEndpointSummary (q : Sumcheck.Impl.Representation.Message F 1) : Bool × List Nat :=
+  (simulateQ logger (Computable.executeWithFinalCheck F 1 1 ambientSpec (event 1) [0,1]
+    1 0 rfl inputSpec.toPFunctor originalView initial inputImpl
+    (erasedProver q))).run []
+
+/-- Independently calculated outcomes exercise the complete executable native endpoint. -/
+def runChecks : IO Unit := do
+  check "zero rounds still authenticate the retained original source" fun _ =>
+    summaryFinal 5 == (true, 9, 2, []) && summaryFinal 0 == (false, 9, 2, [])
+  check "final source check accepts the honest round message" fun _ =>
+    summary (affine 2 (-1)) == (true, 15, 5, [0, 1, 2]) &&
+    (observations (affine 2 (-1))).map Prod.snd == [16, 1, 5, 6, 16]
+  check "round-sum success cannot hide a forged final value" fun _ =>
+    summary (affine 0 0) == (false, 15, 5, [0, 1, 2]) &&
+    (observations (affine 0 0)).map Prod.snd == [0, 0, 0, 6, 16]
+  check "terminal authentication preserves public-abort response effects" fun _ =>
+    summary (affine 0 1) == (false, 12, 2, [0, 2]) &&
+    (observations (affine 0 1)).map Prod.snd == [1, 1]
+  check "exported native composition accepts the retained honest helper" fun _ =>
+    Composed.summary (-1) (affine 2 (-1)) == (true, 15, 5, [0, 1, 2]) &&
+    (Composed.observations (-1) (affine 2 (-1))).map Prod.snd == [16, 1, 5, 6, 16]
+  check "exported composition queries the actual helper instead of an earlier input slot" fun _ =>
+    Composed.summary 0 (affine 2 (-1)) == (false, 15, 5, [0, 1, 2]) &&
+    (Composed.observations 0 (affine 2 (-1))).map Prod.snd == [16, 1, 5, 6, 0]
+  check "exported composition rejects a forgery and preserves the abort continuation" fun _ =>
+    Composed.summary (-1) (affine 0 0) == (false, 15, 5, [0, 1, 2]) &&
+    Composed.summary (-1) (affine 0 1) == (false, 12, 2, [0, 2])
+  check "named complete endpoint retains arbitrary private-output prover effects" fun _ =>
+    endpointSummary (affine 2 (-1)) == (true, [0, 1, 2]) &&
+    endpointSummary (affine 0 0) == (false, [0, 1, 2]) &&
+    endpointSummary (affine 0 1) == (false, [0, 2])
+  check "private-output erasure preserves native acceptance and ambient effects" fun _ =>
+    erasedEndpointSummary (affine 2 (-1)) == (true, [0, 1, 2]) &&
+    erasedEndpointSummary (affine 0 0) == (false, [0, 1, 2]) &&
+    erasedEndpointSummary (affine 0 1) == (false, [0, 2])
+
+end SumcheckRuntime.TerminalAuthentication
+
 def main : IO Unit := do
   SumcheckRuntime.runChecks
   SumcheckRuntime.quadraticChecks
+  SumcheckRuntime.TerminalAuthentication.runChecks

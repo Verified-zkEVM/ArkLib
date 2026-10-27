@@ -69,6 +69,51 @@ home_page/            site assets and assembled website root
 
 ## Navigation Notes
 
+### LogUp
+
+The [code-local LogUp guide](../../ArkLib/ProofSystem/Logup/README.md) is the navigation and usage
+entry point for weighted balance, scalar indexed lookup and typed tuple/bus lookup. The
+[design](../design/logup.md) owns equations, assumptions and resource boundaries; the
+[KB comparison](../kb/concepts/logup.md) owns paper and implementation correspondence.
+
+- [Interaction/](../../ArkLib/ProofSystem/Logup/Interaction/) and
+  [Security/](../../ArkLib/ProofSystem/Logup/Security/) contain the common weighted protocol,
+  source authentication, soundness, completeness and execution/log laws.
+- [Lookup/](../../ArkLib/ProofSystem/Logup/Lookup/) and
+  [Lookup/Tuple/](../../ArkLib/ProofSystem/Logup/Lookup/Tuple/) add indexed witnesses, retained
+  multiplicities, checked typed providers and fingerprint compression.
+- [Algebra/](../../ArkLib/ProofSystem/Logup/Algebra/) owns the grouped circuit and its polynomial
+  realization. [Prover/](../../ArkLib/ProofSystem/Logup/Prover/) owns helpers, folded state and
+  formal coefficient messages; its `Arithmetic/` and `Resources/` subfolders separate selected
+  programs from instruction and logical-storage bounds.
+
+Reusable support lives under [Data/](../../ArkLib/Data/) and
+[ToCompPoly/](../../ArkLib/ToCompPoly/); the code-local guide links the fraction, histogram and
+fingerprint owners. [Executable-polynomial conventions](executable-polynomials.md) explain
+formal-coefficient, arithmetic-profile and builder-census requirements. Acceptance modules mirror
+these owners in [ArkLibTest/ProofSystem/Logup/](../../ArkLibTest/ProofSystem/Logup/); the compiled
+complete defaults run with `lake exe logup-runtime`.
+
+### Native source and log infrastructure
+
+[SourceRouting.lean](../../ArkLib/Interaction/Oracle/SourceRouting.lean) transports actual prior
+programs and ordered logs while preserving fresh-message access.
+[LoggedExecution.lean](../../ArkLib/Interaction/Oracle/LoggedExecution.lean) proves exact terminal
+bind/log append and erasure; native `Resources.logged_final_query_eq_boundary` closes the returned
+claim query through that same boundary view. `Native.Core.routeClaimStrategy_verifier` preserves
+the verifier node programs, public moves and returned claims under source substitution.
+[Data/OracleComp/Vector.lean](../../ArkLib/Data/OracleComp/Vector.lean) owns effect-preserving
+traversal/simulation and ordered response-dependent query logs.
+[WriterT.lean](../../ArkLib/ToMathlib/Control/WriterT.lean) supplies the empty append-log lift law.
+Generic BASE/Ext6 sampler laws
+live in [Uniform.lean](../../ArkLib/Data/Probability/Uniform.lean) and
+[KoalaBear.lean](../../ArkLib/Data/Probability/KoalaBear.lean); party observations use the actual
+[WorldSegments.lean](../../ArkLib/Interaction/Oracle/WorldSegments.lean) fold/partition and
+[PhasedExecution.lean](../../ArkLib/Interaction/Oracle/PhasedExecution.lean). These are separate
+from arithmetic request counts and arbitrary prover-private sampling budgets.
+
+### Other protocol navigation
+
 - `ProofSystem/Fri/FoldingSoundness.lean` and `QuerySoundness.lean` contain the algebraic
   soundness arguments; `ErrorBounds.lean` instantiates existing numerical MCA bounds.
   `Fri/Spec/Soundness.lean` proves ordinary and round-by-round soundness of the executable

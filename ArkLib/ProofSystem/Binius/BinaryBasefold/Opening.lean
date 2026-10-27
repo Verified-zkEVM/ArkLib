@@ -83,7 +83,9 @@ theorem sumcheckConsistencyProp_witness_iff (s : MLPEvalStatement L ℓ) (t : Mu
   rw [ht] at hsum
   have heq (y : Fin ℓ → Fin 2) :
       eval (y : Fin ℓ → L) (eqPolynomial s.t_eval_point) =
-        eqTilde (y : Fin ℓ → L) s.t_eval_point := eqPolynomial_symm _ _
+        eqTilde (y : Fin ℓ → L) s.t_eval_point := by
+    rw [eqTilde_eq_eval]
+    exact eqPolynomial_symm _ _
   simp only [heq]
   rw [← hsum]
 

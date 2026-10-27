@@ -129,6 +129,72 @@ theorem phases_flatten {tree : Oracle.TypeTree} (roles : tree.RoleDecoration)
       congr 1
       exact ih (roles.2 PUnit.unit) trace.2.2
 
+/-- Count one participant's queries by folding the existing boundary-labelled phases.
+This observation does not assert that an arbitrary segment carrier came from execution. -/
+def queryCount {tree : Oracle.TypeTree} (party : PhaseParty) (roles : tree.RoleDecoration)
+    {path : tree.ExecutionPath} (trace : WorldSegments ambient tree path) : Nat :=
+  ((phases roles trace).map fun phase =>
+    if phase.party = party then phase.queries.length else 0).sum
+
+/-- The terminal local action belongs to the verifier. -/
+theorem queryCount_done (party : PhaseParty) (trace : QueryLog ambient) :
+    queryCount (tree := .done) (path := PUnit.unit) party ⟨⟩ trace =
+      if party = .verifier then trace.length else 0 := by
+  cases party <;> simp [queryCount, phases]
+
+set_option backward.isDefEq.respectTransparency false in
+/-- A sender-owned public node places the prover action before the verifier response. -/
+theorem queryCount_public_sender {Moves : Type} {rest : Moves → Oracle.TypeTree}
+    (party : PhaseParty) (roles : (move : Moves) → (rest move).RoleDecoration)
+    (path : (Oracle.TypeTree.public Moves rest).ExecutionPath)
+    (trace : WorldSegments ambient (.public Moves rest) path) :
+    queryCount (tree := .public Moves rest) party ⟨.sender, roles⟩ trace =
+      (if party = .prover then trace.1.length else 0) +
+      (if party = .verifier then trace.2.1.length else 0) +
+      queryCount party (roles path.1) trace.2.2 := by
+  cases party <;>
+    (simp [queryCount, phases, List.map_map, Function.comp_def, prepend]; rfl)
+
+set_option backward.isDefEq.respectTransparency false in
+/-- A receiver-owned public node places the verifier action before the prover response. -/
+theorem queryCount_public_receiver {Moves : Type} {rest : Moves → Oracle.TypeTree}
+    (party : PhaseParty) (roles : (move : Moves) → (rest move).RoleDecoration)
+    (path : (Oracle.TypeTree.public Moves rest).ExecutionPath)
+    (trace : WorldSegments ambient (.public Moves rest) path) :
+    queryCount (tree := .public Moves rest) party ⟨.receiver, roles⟩ trace =
+      (if party = .verifier then trace.1.length else 0) +
+      (if party = .prover then trace.2.1.length else 0) +
+      queryCount party (roles path.1) trace.2.2 := by
+  cases party <;>
+    (simp [queryCount, phases, List.map_map, Function.comp_def, prepend]; rfl)
+
+set_option backward.isDefEq.respectTransparency false in
+/-- An oracle node places the private sender before the verifier's receive action. -/
+theorem queryCount_oracle {Messages : Type} {rest : PUnit → Oracle.TypeTree}
+    (party : PhaseParty) (roles : (Oracle.TypeTree.oracle Messages rest).RoleDecoration)
+    (path : (Oracle.TypeTree.oracle Messages rest).ExecutionPath)
+    (trace : WorldSegments ambient (.oracle Messages rest) path) :
+    queryCount party roles trace =
+      (if party = .prover then trace.1.length else 0) +
+      (if party = .verifier then trace.2.1.length else 0) +
+      queryCount party (roles.2 PUnit.unit) trace.2.2 := by
+  cases party <;>
+    (simp [queryCount, phases, List.map_map, Function.comp_def, prepend]; rfl)
+
+/-- The existing prover and verifier phases partition the complete chronological world log. -/
+theorem queryCount_partition {tree : Oracle.TypeTree} (roles : tree.RoleDecoration)
+    {path : tree.ExecutionPath} (trace : WorldSegments ambient tree path) :
+    queryCount .prover roles trace + queryCount .verifier roles trace = trace.flatten.length := by
+  unfold queryCount
+  rw [← List.sum_map_add]
+  have h (phase : WorldPhase ambient tree) :
+      (if phase.party = .prover then phase.queries.length else 0) +
+        (if phase.party = .verifier then phase.queries.length else 0) = phase.queries.length := by
+    cases phase.party <;> simp
+  simp_rw [h]
+  simpa only [List.length_flatten, List.map_map, Function.comp_def] using
+    congrArg List.length (phases_flatten roles trace)
+
 set_option backward.isDefEq.respectTransparency false in
 /-- Every recorded action boundary is a concrete prefix of this same complete execution,
 including agreement of hidden payloads. This is structural reachability, not a strategy claim. -/

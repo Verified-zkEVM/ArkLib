@@ -6,6 +6,7 @@ Authors: Alexander Hicks
 module
 
 public import ArkLib.ToCompPoly.Univariate.ArithmeticCost
+public import ArkLib.ToCompPoly.Univariate.Raw.Basic
 public import CompPoly.Univariate.Basic
 
 import all CompPoly.Univariate.Basic
@@ -13,7 +14,7 @@ import all CompPoly.Univariate.Raw.Core
 import all CompPoly.Univariate.Raw.Ops
 
 /-!
-# Measured canonical polynomial arithmetic
+# Measured polynomial coefficient arithmetic
 
 Raw convolution preserves padding until the requested canonicalization. Trimming exposes
 all coefficient reads and zero tests; coefficient negation uses subtraction from zero.
@@ -41,6 +42,12 @@ private theorem trim_push_zero {R : Type} [Zero R] [DecidableEq R]
     · have hgt : p.size < i := by omega
       simp [CPolynomial.Raw.coeff, Array.getD_eq_getD_getElem?,
         Nat.not_lt.mpr hgt.le, Nat.not_lt.mpr (by omega : p.size + 1 ≤ i)]
+
+/-- Construct a padded affine row using one subtraction for its slope. -/
+def affineRaw (a b : F) :
+    OracleComp (ArithmeticSpec F) {p : CPolynomial.Raw F // p = CPolynomial.Raw.affine a b} := do
+  let slope ← sub b a
+  pure ⟨#[a, slope.val], by rw [slope.property]; rfl⟩
 
 /-- Remove trailing zero coefficients, charging every read and equality test. -/
 def trimRaw (p : CPolynomial.Raw F) :
@@ -141,6 +148,13 @@ def negRaw (p : CPolynomial.Raw F) :
     · simp [CPolynomial.Raw.neg]
     · intro i hi hi'
       simp [CPolynomial.Raw.neg]⟩
+
+/-- Subtract raw coefficient arrays without trimming their padding. -/
+def subRaw (p q : CPolynomial.Raw F) :
+    OracleComp (ArithmeticSpec F) {r : CPolynomial.Raw F // r = CPolynomial.Raw.subRaw p q} := do
+  let n ← negRaw q
+  let r ← addRaw p n.val
+  pure ⟨r.val, by rw [r.property, n.property]; rfl⟩
 
 end AddGroup
 
