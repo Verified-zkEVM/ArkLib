@@ -133,7 +133,7 @@ private theorem fold_density_le_eps_ca_of_not_joint_proximity
   have hcardF_ne : (Fintype.card F : NNReal) ≠ 0 := by
     exact_mod_cast Fintype.card_ne_zero
   rw [ENNReal.coe_div hcardF_ne]
-  unfold _root_.ProximityGap.epsCa
+  simp only [_root_.ProximityGap.epsCa_eq]
   refine le_iSup_of_le u ?_
   rw [ite_eq_right hnot]
   rw [SampleableType.prEvent_uniformSample]

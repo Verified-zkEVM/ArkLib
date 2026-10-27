@@ -1039,9 +1039,9 @@ theorem exists_winningSetFor_ncard_ge_of_epsCa_pos {k : ℕ} [SampleableType F]
       (if jointProximity C u δ then (0 : ENNReal)
        else Pr{let γ ← $ᵗ F}[δᵣ(u 0 + γ • u 1, C) ≤ δ]) := by
     refine le_antisymm ?_ ?_
-    · rw [epsCa]
+    · rw [epsCa_eq]
       exact iSup_le hu_max
-    · rw [epsCa]
+    · rw [epsCa_eq]
       exact le_iSup (fun w : WordStack A (Fin 2) ι ↦
         if jointProximity C w δ then (0 : ENNReal)
         else Pr{let γ ← $ᵗ F}[δᵣ(w 0 + γ • w 1, C) ≤ δ]) u
