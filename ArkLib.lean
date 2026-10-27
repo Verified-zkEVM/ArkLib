@@ -273,6 +273,7 @@ public import ArkLib.Data.CodingTheory.Prelims
 public import ArkLib.Data.CodingTheory.ProximityGap.AHIV22
 public import ArkLib.Data.CodingTheory.ProximityGap.AHIV22Support
 public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineCoefficients
+public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineCoefficients.Basic
 public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.BWMatrix
 public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.GoodCoeffs
 public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.JohnsonBridge
