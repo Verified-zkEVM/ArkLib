@@ -660,11 +660,12 @@ To define round-by-round (knowledge) soundness, we need to define the notion of 
 
 \subsubsection{Implications Between Security Notions}
 
-Knowledge and round-by-round soundness both strengthen soundness. The round-by-round notions pass
-to the ordinary ones for \emph{guarded} verifiers, whose verdict makes no oracle query: a state
+Round-by-round soundness implies soundness, and round-by-round knowledge soundness implies knowledge
+soundness, only for \emph{guarded} verifiers, whose verdict makes no oracle query: a state
 function's terminal condition is checked from a fresh oracle state, while the ordinary games run the
 verifier from whatever oracle state the prover left behind, so without the guard the implications
-fail.
+fail. The library states no implication from knowledge soundness to soundness: the knowledge game
+fixes the output witness before a randomized verifier runs, so the usual argument does not apply.
 
 \begin{theorem}[RBR Soundness Implies Soundness]
     \label{thm:rbr_soundness_implies_soundness}

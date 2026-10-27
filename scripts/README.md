@@ -162,13 +162,13 @@ git -C .lake/packages/VCVio submodule update --init --recursive
 ```
 
 ```bash
-# Summary: total declarations, sorryAx-tainted, non-standard-axiom-tainted
+# Summary: total declarations, sorryAx-tainted, solicited, non-standard-axiom-tainted
 lake exe axiomsweep
 
 # Full per-declaration report (name, module, kind, line, axioms)
 lake exe axiomsweep --out /tmp/axiom-report.json
 
-# Regression gate: fail iff current taint is not covered by the baseline
+# Regression gate: enforce taint and solicited-proof rules
 lake exe axiomsweep --check
 
 # Refresh after verified closures or renames of existing debt;
@@ -186,6 +186,27 @@ Native-compiler trust (`Lean.ofReduceBool`,
 minted by `native_decide`-style tactics) is never allowlistable — `--check` fails on it
 regardless of the baseline, and `--update-baseline` refuses to write while it is present.
 CI and `./scripts/validate.sh --axioms` both run the check enforcing.
+
+A **solicited proof** is a true, faithfully stated external result whose research-sized proof
+is intentionally left open for contributors. Reviewed entries live in the baseline's
+`solicited` array as `{ "name": "...", "issue": "https://..." }`; a missing array means empty.
+Entries are added only after review, never to excuse false statements. They are excluded
+from the baseline's `sorry` list and counted separately in the summary. Their actual axioms
+remain visible in the per-declaration report.
+
+Both `--check` and `--update-baseline` enforce five conditions:
+
+1. Every listed declaration exists in the swept environment.
+2. It still depends on `sorryAx`; remove the entry in the same PR that proves it.
+3. It depends on no non-standard axiom other than `sorryAx`.
+4. Its docstring contains the entry's issue URL.
+5. No reportable declaration outside the solicited list depends on it, directly or
+   transitively. Solicited declarations may depend on one another.
+
+Thus solicited results remain leaves with respect to the rest of the library. The sweep
+uses its existing dependency closure, including cycle repair, to enforce this rule.
+`--update-baseline` preserves the hand-reviewed solicited list unchanged and refuses to
+write if any condition fails. The native-trust floor and new-taint checks still apply.
 
 The tool itself is certified by `./scripts/test-axiomsweep.sh`, which builds the isolated
 `AxiomSweepTestFixtures` library (deliberate synthetic taint of every shape the sweep

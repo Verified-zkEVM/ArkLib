@@ -31,7 +31,7 @@ primality of the characteristic forces `k ≤ 3`, and the pairwise Johnson bound
 
 ## References
 
-* [DKTZ26]
+* [DKT26]
 -/
 
 @[expose] public section
