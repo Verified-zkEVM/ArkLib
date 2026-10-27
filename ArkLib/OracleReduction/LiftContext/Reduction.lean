@@ -318,6 +318,32 @@ theorem liftContext_run
   simp?
   cases a_1 <;> simp [Option.getM, map_pure]
 
+/-- Simulation commutes with a pure post-map on an `OptionT` computation. `OptionT.run_map` is a
+theorem rather than a definitional unfolding, so `simulateQ_map` cannot fire until the
+`Option.map` is exposed. The general home of this lemma is VCVio. -/
+private theorem simulateQ_optionT_map
+    {m : Type → Type} [Monad m] [LawfulMonad m]
+    (impl : QueryImpl oSpec m)
+    {α β : Type} (f : α → β) (oa : OptionT (OracleComp oSpec) α) :
+    simulateQ impl (f <$> oa : OptionT (OracleComp oSpec) β)
+      = Option.map f <$> simulateQ impl (oa : OracleComp oSpec (Option α)) := by
+  have h : (f <$> oa : OptionT (OracleComp oSpec) β)
+      = (Option.map f <$> (oa : OracleComp oSpec (Option α)) : OracleComp oSpec (Option β)) := by
+    change OptionT.run (f <$> oa) = _
+    exact OptionT.run_map ..
+  rw [h, simulateQ_map]
+
+/-- A pure post-map leaves the log written by a `WriterT` simulation unchanged. -/
+private theorem run_simulateQ_writerT_optionT_map
+    {ω : Type} [EmptyCollection ω] [Append ω] {m : Type → Type} [Monad m]
+    [LawfulMonad (WriterT ω m)]
+    (impl : QueryImpl oSpec (WriterT ω m))
+    {α β : Type} (f : α → β) (oa : OptionT (OracleComp oSpec) α) :
+    (simulateQ impl (f <$> oa : OptionT (OracleComp oSpec) β)).run
+      = (fun p => (Option.map f p.1, p.2)) <$>
+          (simulateQ impl (oa : OracleComp oSpec (Option α))).run := by
+  rw [simulateQ_optionT_map, WriterT.run_map]
+
 theorem liftContext_runWithLog
     {lens : Context.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
                         OuterWitIn OuterWitOut InnerWitIn InnerWitOut}
@@ -328,9 +354,13 @@ theorem liftContext_runWithLog
           R.runWithLog.uncurry (lens.proj (outerStmtIn, outerWitIn))
         return ⟨⟨⟨fullTranscript, lens.lift (outerStmtIn, outerWitIn) innerCtxOut⟩,
                 lens.stmt.lift outerStmtIn verInnerStmtOut⟩, queryLog⟩ := by
+  have hGet {α β : Type} (f : α → β) (x : Option α) :
+      (Option.map f x).getM = f <$> (x.getM : OptionT (OracleComp (oSpec +
+        [pSpec.Challenge]ₒ)) α) := by
+    cases x <;> simp [Option.getM, map_pure]
   unfold runWithLog
-  simp [liftContext, Prover.liftContext_runWithLog, Verifier.liftContext, Verifier.run]
-  sorry
+  simp [liftContext, Prover.liftContext_runWithLog, Verifier.liftContext, Verifier.run,
+    run_simulateQ_writerT_optionT_map, liftM_map, hGet]
 
 end Reduction
 
@@ -361,20 +391,29 @@ theorem liftContext_completeness
     (lensComplete.proj_complete _ _ hRelIn)
   rw [Reduction.liftContext_run]
   refine le_trans hR ?_
-  simp?
-  sorry
-  -- Refine by event monotonicity.
-  -- intro ⟨innerContextOut, a, b⟩ hSupport ⟨hRelOut, hRelOut'⟩
-  -- have : innerContextOut ∈
-  --     Prod.fst <$>
-  --       (R.run (lens.stmt.proj outerStmtIn)
-  -- (lens.wit.proj (outerStmtIn, outerWitIn))).support := by
-  --   simp
-  --   exact ⟨a, b, hSupport⟩
-  -- simp_all
-  -- rw [← hRelOut'] at hRelOut ⊢
-  -- refine lensComplete.lift_complete _ _ _ _ ?_ hRelIn hRelOut
-  -- simp [compatContext]; exact this
+  -- The lifted run is a pure post-map of the inner run; move that map out of the simulation so
+  -- both probability events are over the same computation.
+  simp only [Function.uncurry, bind_pure_comp, OptionT.run_map, simulateQ_map, StateT.run'_map',
+    Statement.Lens.proj, Witness.Lens.proj, ← map_bind]
+  have hMap {α β : Type} (mx : ProbComp (Option α)) (f : α → β) (p : β → Prop) :
+      Pr{let x ← OptionT.mk (Option.map f <$> mx)}[p x] =
+        Pr{let x ← OptionT.mk mx}[p (f x)] := by
+    rw [OptionT.prEvent_mk, prEvent_map, OptionT.prEvent_mk]
+    apply prEvent_congr _ _ _
+    intro o
+    cases o <;> rfl
+  rw [hMap]
+  refine prEvent_mono_of_support _ _ _ ?_
+  rintro ⟨⟨tr, innerStmtOut, innerWitOut⟩, verStmtOut⟩ hSupport ⟨hRelOut, hEq⟩
+  simp only at hRelOut hEq ⊢
+  subst hEq
+  obtain ⟨s, -, hSupport'⟩ := OptionT.mem_support_bind_mk _ _ hSupport
+  rw [OptionT.mem_support_iff] at hSupport'
+  have hMem := support_simulateQ_run'_subset _ _ s hSupport'
+  rw [← OptionT.mem_support_iff] at hMem
+  have hCompat : R.compatContext lens (outerStmtIn, outerWitIn) (innerStmtOut, innerWitOut) :=
+    ⟨((tr, innerStmtOut, innerWitOut), innerStmtOut), hMem, rfl⟩
+  exact ⟨lensComplete.lift_complete _ _ _ _ hCompat hRelIn hRelOut, rfl⟩
 
 theorem liftContext_perfectCompleteness
     (h : R.perfectCompleteness init impl innerRelIn innerRelOut) :
