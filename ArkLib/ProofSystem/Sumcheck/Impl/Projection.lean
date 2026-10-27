@@ -89,13 +89,14 @@ theorem toPoly_sum {ι : Type*} (s : Finset ι) (f : ι → CPolynomial R) :
 theorem projectedRoundPolynomial_toPoly_sum (D : Fin m ↪ R) (i : Fin (n + 1))
     (challenges : Fin i.castSucc → R) (poly : CMvPolynomial (n + 1) R) :
     (projectedRoundPolynomial D i challenges poly).toPoly =
-      MvPolynomial.sumRoundPolynomial ((Finset.univ.map D) ^ᶠ (n - i))
-        (Spec.SingleRound.roundSuffix R (n + 1) i challenges) i (CPoly.fromCMvPolynomial poly) := by
+      (∑ x ∈ (Finset.univ.map D) ^ᶠ (n - i),
+        (CPoly.fromCMvPolynomial poly).evalExcept i
+          (Spec.SingleRound.roundSuffix R (n + 1) i challenges x)) := by
   classical
   unfold projectedRoundPolynomial
   rw [toPoly_sum]
   simp_rw [projectedSummand_toPoly]
-  simp only [MvPolynomial.sumRoundPolynomial]
+  simp only [MvPolynomial.evalExcept]
   rw [← suffixDomain_eq D (n - i), Finset.sum_map]
   rfl
 
@@ -116,7 +117,9 @@ theorem projectedRoundPolynomial_natDegree_le (D : Fin m ↪ R) (i : Fin (n + 1)
     (projectedRoundPolynomial D i challenges poly).natDegree ≤ deg := by
   classical
   rw [CPolynomial.natDegree_toPoly, projectedRoundPolynomial_toPoly_sum]
-  exact (MvPolynomial.sumRoundPolynomial_natDegree_le _ _ i _).trans
+  apply Polynomial.natDegree_sum_le_of_forall_le
+  intro x _
+  exact (MvPolynomial.natDegree_evalExcept_le i _ _).trans
     ((congrFun (CPoly.degreeOf_equiv (S := R) (p := poly)) i).symm.le.trans (hpoly i))
 
 /-- Individual degree bounds also bound the extended natural degree used by messages. -/

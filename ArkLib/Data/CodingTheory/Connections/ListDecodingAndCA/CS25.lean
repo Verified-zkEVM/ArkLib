@@ -42,7 +42,7 @@ private theorem rs_eps_ca_ne_top (C : Set (ι → F)) (δ_fld δ_int : ℝ≥0) 
     ProximityGap.epsCa (F := F) (A := F) C δ_fld δ_int ≠ ⊤ := by
   classical
   refine ne_top_of_le_ne_top ENNReal.one_ne_top ?_
-  unfold ProximityGap.epsCa
+  simp only [ProximityGap.epsCa_eq]
   refine iSup_le fun u => ?_
   split_ifs
   · exact zero_le_one
@@ -72,7 +72,7 @@ private theorem rs_fold_probability_le_eps_ca_of_not_joint
     Pr{let γ ← $ᵗ F}[Code.relDistFromCode (v 0 + γ • v 1) C ≤ δ_fld] ≤
       ProximityGap.epsCa (F := F) (A := F) C δ_fld δ_int := by
   classical
-  unfold ProximityGap.epsCa
+  simp only [ProximityGap.epsCa_eq]
   have hle := le_iSup
     (fun w : Code.WordStack F (Fin 2) ι =>
       if Code.jointProximity C (u := w) δ_int then (0 : ENNReal)
@@ -359,7 +359,7 @@ theorem rs_Lambda_extended_le_of_epsCa_int_radius
     exact Finset.mem_filter.mpr ⟨Finset.mem_univ _, hgood c hc⟩
   have hprob : ((Good.card : ℝ≥0) / (q : ℝ≥0) : ENNReal) ≤
       epsCa (F := F) (A := F) Ck ((f : ℝ≥0) / n) ((f : ℝ≥0) / n) := by
-    unfold epsCa
+    simp only [epsCa_eq]
     refine le_iSup_of_le v ?_
     rw [ite_eq_right hvnot, SampleableType.prEvent_uniformSample]
     simp only [Good, q]

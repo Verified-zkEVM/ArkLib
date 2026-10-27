@@ -15,7 +15,7 @@ public import ArkLib.ProofSystem.Component.CheckClaim
 public import ArkLib.ProofSystem.Component.RandomQuery
 public import ArkLib.ProofSystem.Component.ReduceClaim
 public import ArkLib.Data.Fin.Basic
-public import ArkLib.Data.MvPolynomial.RoundPolynomial
+public import ArkLib.Data.MvPolynomial.EvalExcept
 -- `Vector.finRange` is unfolded by `rw` below; its body is not exposed by default.
 import all Init.Data.Vector.FinRange
 
@@ -598,9 +598,9 @@ oracle at round `i`.  This named definition is shared by the extensional lens
 and its query-by-query implementation. -/
 def projectedRoundPolynomial (i : Fin n) (challenges : Fin i.castSucc → R)
     (poly : R⦃≤ deg⦄[X Fin n]) : R⦃≤ deg⦄[X] :=
-  ⟨MvPolynomial.sumRoundPolynomial ((univ.map D) ^ᶠ (n - 1 - i))
-      (roundSuffix R n i challenges) i poly.val,
-    MvPolynomial.sumRoundPolynomial_mem_degreeLE _ _ i poly.property⟩
+  ⟨∑ x ∈ (univ.map D) ^ᶠ (n - 1 - i),
+      poly.val.evalExcept i (roundSuffix R n i challenges x),
+    Submodule.sum_mem _ fun _ _ => MvPolynomial.evalExcept_mem_degreeLE i _ poly.property⟩
 
 /-- The oracle statement lens that connect the simple to the full single-round sum-check protocol
 
@@ -680,7 +680,10 @@ theorem simulateProjectedRoundPolynomial_eq (i : Fin n)
             exact Multiset.sum_map_toList
               (((univ.map D) ^ᶠ (n - i)).1) _
         _ = _ := by
-          exact (MvPolynomial.sumRoundPolynomial_eval _ _ i (oStmt ()).val r).symm
+          symm
+          simp only [projectedRoundPolynomial, Polynomial.eval_finsetSum,
+            MvPolynomial.eval_evalExcept]
+          rfl
 
 /-- Executable oracle-statement lens for a full sum-check round. -/
 def oStmtExecutableLens (i : Fin n) : OracleStatement.ExecutableLens
@@ -846,7 +849,7 @@ where
     | succ n ih =>
       intro stmt oStmt hRelIn
       simp only [← hRelIn]
-      simp_rw [MvPolynomial.sumRoundPolynomial_eval]
+      simp_rw [Polynomial.eval_finsetSum, MvPolynomial.eval_evalExcept]
       -- Remaining: ∑ a ∈ D, ∑ y ∈ D^(n-i), eval (insertNth i a (append c y ∘ cast)) p
       --          = ∑ z ∈ D^(n+1-i), eval (append c z ∘ cast) p
       -- Needs: (1) insertNth i a (append c y ∘ cast) = append c (cons a y) ∘ cast
@@ -885,7 +888,7 @@ instance extractorLens_rbr_knowledge_soundness :
     | zero => exact Fin.elim0 i
     | succ n ih =>
       intro stmt oStmt hRelIn
-      simp only [MvPolynomial.sumRoundPolynomial_eval] at hRelIn ⊢
+      simp only [Polynomial.eval_finsetSum, MvPolynomial.eval_evalExcept] at hRelIn ⊢
       simp at hRelIn ⊢
       -- Now it's a statement about polynomials
       sorry
@@ -957,7 +960,7 @@ theorem oracleVerifier_rbrKnowledgeSoundness [Fintype R] [IsDomain R] :
 --     | 1 => relationRound R n deg D i.castSucc ⟨stmt, oStmt⟩ ()
 --       ∧ (by simpa using partialTranscript ⟨0, by simp⟩ : R⦃≤ deg⦄[X]) =
 --         ⟨∑ x ∈ (univ.map D) ^ᶠ (n - i), (oStmt 0).1 ⸨X ⦃i⦄, stmt.challenges, x⸩'(by simp; omega),
---           MvPolynomial.sumRoundPolynomial_mem_degreeLE _ _ i (oStmt 0).2⟩
+--           Submodule.sum_mem _ fun _ _ => MvPolynomial.evalExcept_mem_degreeLE i _ (oStmt 0).2⟩
 --     -- If `m = 2`, so we get the full transcript, returns the above checks, and also whether the
 --     -- updated statement satisfies the new relation
 --     | 2 => relationRound R n deg D i.succ ⟨⟨stmt.target,

@@ -1293,7 +1293,7 @@ private theorem linear_eps_ca_le_one_point_five_johnson_aux
     epsCa (F := F) (A := F) ((C : Set (ι → F))) δ_fld (δ_src + η) ≤
       ENNReal.ofReal (2 / ((η : ℝ) ^ 2 * Fintype.card F)) := by
   classical
-  unfold epsCa
+  simp only [epsCa_eq]
   refine iSup_le fun u => ?_
   by_cases hjp : Code.jointProximity (C : Set (ι → F)) u (δ_src + η)
   · rw [ite_eq_left hjp]

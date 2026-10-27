@@ -46,7 +46,7 @@ ArkLib, missing, or present in a materially different form.
 
 ## Section 1 — Grand Challenges
 
-| Paper item | Status | Lean refs | Notes |
+| Paper item (§1) | Status | Lean refs | Notes |
 | --- | --- | --- | --- |
 | Grand MCA Challenge | present | `grandMcaChallenge`, `GrandMcaAnswer.to_challenge`, `McaPrizeResolution.to_prize` in [GrandChallenges.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/GrandChallenges.lean) | Uses affine-line `mcaError` and accepts either an adjacent grid crossing or an all-good endpoint at radius one. `PrizeDomainAdmissible` and `prizeCode_rate_eq` ensure that the selected Reed--Solomon codes have rates `1/2`, `1/4`, `1/8`, and `1/16`. |
 | Grand List Decoding Challenge | present | `grandListDecodingChallenge`, `GrandListAnswer.to_challenge`, `ListPrizeResolution.to_prize` in [GrandChallenges.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/GrandChallenges.lean) | Uses `Code.Lambda` on a positive-width interleaving and the same adjacent-crossing or all-good endpoint answer shape. |
@@ -80,7 +80,7 @@ ArkLib, missing, or present in a materially different form.
 
 ## Section 3: List Decoding
 
-| Paper item | Status | Lean refs | Notes |
+| Paper item (§3) | Status | Lean refs | Notes |
 | --- | --- | --- | --- |
 | Definition 3.1 Johnson functions `J_{q,\ell}`, `J_q`, `J` | present | `Jqℓ` in [ArkLib/Data/CodingTheory/JohnsonBound/Family.lean](../../../ArkLib/Data/CodingTheory/JohnsonBound/Family.lean); `J` (= the paper's `J_q`) in [ArkLib/Data/CodingTheory/JohnsonBound/Lemmas.lean](../../../ArkLib/Data/CodingTheory/JohnsonBound/Lemmas.lean) and `Jcap` (= the paper's `J`) in [ArkLib/Data/CodingTheory/JohnsonBound/Basic.lean](../../../ArkLib/Data/CodingTheory/JohnsonBound/Basic.lean) — `Lemmas.lean` is the upstream file, and the byte-identical downstream copy of `J` that used to sit in `Basic.lean` under the name `J'` has been deleted | Full three-function family. **Divergence from the printed PDF:** the PDF's list factor `\ell/(\ell-1)` is a typo (it makes `J_{q,\ell} > J_q`, inverts monotonicity in `\ell`, and diverges at `\ell = 1`); Lean uses the correct `(\ell-1)/\ell`, matching [codingtheory] and the authors' current tex (fixed upstream 2026-06-13). `Jqℓ` is now **defined** as `J q (((ℓ-1)/ℓ) * δ)`, with `Jqℓ_eq_J` the (`rfl`) bridge and `Jqℓ_eq_mul_one_sub_sqrt` recovering the printed shape; and `sqrt_le_J` is stated as `Jcap δ ≤ J q δ`, which is the paper's `J(δ) ≤ J_q(δ)`. So the three functions are one family, not three spellings of the radius. |
 | Theorem 3.2 Johnson bound | present | `johnson_bound_lambda_le_ell` in [ArkLib/Data/CodingTheory/JohnsonBound/Family.lean](../../../ArkLib/Data/CodingTheory/JohnsonBound/Family.lean); numeric core `johnson_card_le_ell`; underlying condition-based form `johnson_bound`, `johnson_bound_alphabet_free` in [ArkLib/Data/CodingTheory/JohnsonBound/Basic.lean](../../../ArkLib/Data/CodingTheory/JohnsonBound/Basic.lean) | Proved in the paper's guard-free `Lambda`/`Jqℓ` packaging, for the paper's full range `ℓ ≥ 1` (`ℓ = 1` degenerates to a radius-0 list; `ℓ = 0` is genuinely false as encoded — a `ℚ`-division artefact recorded in the docstring). The internal radicand-positive branch uses the Johnson argument; the complementary Plotkin corner uses `plotkin_card_le_ell`. |
@@ -101,10 +101,10 @@ ArkLib, missing, or present in a materially different form.
 
 ## Section 4: Correlated Agreement Conjectures
 
-| Paper item | Status | Lean refs | Notes |
+| Paper item (§4) | Status | Lean refs | Notes |
 | --- | --- | --- | --- |
 | §4.1 proximity-gap error `εpg(C,δ)` | present | `epsPg`, `epsPg_eq_zero_of_one_le`, and `epsPg_singleton_zero_pos` in [Errors.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/Errors.lean) | Numeric proximity-gap error with a nonnegative radius. |
-| Definition 4.1 correlated agreement error `εca(C,δ_fld,δ_int)` | present | `epsCa`, `epsCa'`, `epsCaCurves`, `epsCaAffineSpaces` and the three predicate bridges in [Errors.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/Errors.lean) | Numeric correlated-agreement values with separate fold and interleaved radii. |
+| Definition 4.1 correlated agreement error `εca(C,δ_fld,δ_int)` | present | `caError` (indexed by a proximity generator), its affine-line instances `epsCa` and `epsCa'`, and the three predicate bridges in [Errors.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/Errors.lean) | Numeric correlated-agreement values with separate fold and interleaved radii. |
 | Remark 4.2 discretization of proximity loss | present | `epsCa_eq_of_floor_eq` in [Errors.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/Errors.lean) | Constancy on integer-agreement floor cells. |
 | Definition 4.3 mutual correlated agreement error `εmca(C,δ)` | present | `CoreDefinitions.mcaError` / `IsMCA` in [Basic.lean](../../../ArkLib/Data/CodingTheory/ProximityGenerator/Basic.lean); `epsMca` in [Errors.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/Errors.lean) | `epsMca` is transparent notation for the affine-line specialization. |
 | Remark 4.4 MCA with proximity loss | out-of-scope | none | **Not a formalization gap.** The remark explicitly declines to define the notion: "While it is conceivable to define a version of mutual correlated agreement with proximity loss, analogous to correlated agreement, this remains to be thoroughly explored, and so we do not attempt to define such a notion in this paper." There is no statement here to formalize. |
@@ -131,7 +131,7 @@ ArkLib, missing, or present in a materially different form.
 
 ## Section 5: Connections Between List Decoding and Correlated Agreement
 
-| Paper item | Status | Lean refs | Notes |
+| Paper item (§5) | Status | Lean refs | Notes |
 | --- | --- | --- | --- |
 | Theorem 5.1 list decoding implies MCA | present | `linear_mcaError_le_of_Lambda_le` in [Connections/ListDecodingAndCA/GCXK25.lean](../../../ArkLib/Data/CodingTheory/Connections/ListDecodingAndCA/GCXK25.lean) | **Proved in-tree and axiom-clean**, after [GCXK25] Theorem 3, with the source's `δ < Δ_C` hypothesis. The unrestricted real-radius `mcaError` avoids truncating a negative Johnson lift and needs no extra `η ≤ δ` guard. |
 | Theorem 5.2 small CA error implies list size `≤ \|F\|` | present | `rs_Lambda_le_card_of_epsCa_lt` in [Connections/ListDecodingAndCA/BCHKS25.lean](../../../ArkLib/Data/CodingTheory/Connections/ListDecodingAndCA/BCHKS25.lean) | **Proved in-tree and axiom-clean**, after [BCHKS25] Theorem 1.9, with the source's non-strict list-size conclusion and a strict interleaved threshold below the joint-distance witness. |
@@ -140,7 +140,7 @@ ArkLib, missing, or present in a materially different form.
 
 ## Section 6: Toy Problem
 
-| Paper item | Status | Lean refs | Notes |
+| Paper item (§6) | Status | Lean refs | Notes |
 | --- | --- | --- | --- |
 | Definition 6.1 toy problem relation `R_C^ℓ` | present | `ToyProblem.RelationFor` in [Definitions.lean](../../../ArkLib/ProofSystem/ToyProblem/Definitions.lean); bundled-language bridge in [General.lean](../../../ArkLib/ProofSystem/ToyProblem/Spec/General.lean) | Stated for a fixed linear encoder into an arbitrary finite module alphabet; the bridge identifies language membership with existence of the protocol witness. |
 | Definition 6.3 relaxed toy relation `R̃_C,δ^ℓ` | present | `ToyProblem.RelaxedRelationFor` in [Definitions.lean](../../../ArkLib/ProofSystem/ToyProblem/Definitions.lean); bundled-language bridges in [General.lean](../../../ArkLib/ProofSystem/ToyProblem/Spec/General.lean) and [SimplifiedIOR.lean](../../../ArkLib/ProofSystem/ToyProblem/Spec/SimplifiedIOR.lean) | Uses one common agreement-coordinate set across all rows and is publicly connected to the witness-bearing C6.2/C6.9 relations. |
@@ -161,7 +161,7 @@ ArkLib, missing, or present in a materially different form.
 
 ## Appendix A: Additional Preliminaries
 
-| Paper item | Status | Lean refs | Notes |
+| Paper item (Appendix A) | Status | Lean refs | Notes |
 | --- | --- | --- | --- |
 | Definition A.1 completeness for IORs | present-but-different | `Reduction.completeness`, `Reduction.perfectCompleteness` in [ArkLib/OracleReduction/Security/Basic.lean](../../../ArkLib/OracleReduction/Security/Basic.lean) | Present in ArkLib's more general oracle-reduction framework rather than the paper's `(x,y,w)` relation presentation. |
 | Remark A.2 IOP as IOR to trivial relation | present-but-different | same framework in [ArkLib/OracleReduction/Security/Basic.lean](../../../ArkLib/OracleReduction/Security/Basic.lean) | Conceptually supported by the framework, but not isolated as this exact remark. |
@@ -172,7 +172,7 @@ ArkLib, missing, or present in a materially different form.
 
 ## Appendix B
 
-| Paper item | Status | Lean refs | Notes |
+| Paper item (Appendix B) | Status | Lean refs | Notes |
 | --- | --- | --- | --- |
 | Claim B.1 collision bound for random functions | present | `Probability.exists_large_image_of_pairwise_collision_bound` in [ArkLib/Data/Probability/Combinatorial.lean](../../../ArkLib/Data/Probability/Combinatorial.lean) | Proven sorry-free. Route (via two `private` helper lemmas in the same file): a fiber partition + diagonal decomposition, then Cauchy–Schwarz over the fibers (Mathlib's `sq_sum_le_card_mul_sum_sq` over `ℝ`); main theorem by contradiction via `ENNReal.tsum_lt_tsum` strict averaging. |
 
