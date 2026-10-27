@@ -785,7 +785,9 @@ public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Pac
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.ScalarRound
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.SingleRound
 public import ArkLib.OracleReduction.Security.Guarded
+public import ArkLib.OracleReduction.Security.GuardedBridges
 public import ArkLib.OracleReduction.Security.GuardedRoundByRound
+public import ArkLib.OracleReduction.Security.GuardedSoundness
 public import ArkLib.OracleReduction.Security.Implications
 public import ArkLib.OracleReduction.Security.RbrGame
 public import ArkLib.OracleReduction.Security.Rewinding
