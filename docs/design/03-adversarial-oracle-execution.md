@@ -322,7 +322,9 @@ these proofs are separate upstream gaps.
 Knowledge soundness with an efficient extractor also needs a certificate for the computation
 named in its game. The proposed [extractor efficiency contracts](03a-extractor-efficiency.md)
 separate measured operations, realized execution, and uniform polynomial-time families, with
-FRI and the Toy IOP as the first clients. The legacy existential game alone imposes no time bound.
+FRI and the Toy IOP as the first clients. The legacy existential game alone imposes no time bound,
+and neither do the existential round-by-round, special-soundness and state-restoration notions;
+that chapter lists each notion's additional obligations.
 
 Knowledge soundness requires witness availability, not only a bound on true output claims.
 An offline extractor of a final execution path may learn a middle witness too late to supply it
@@ -373,8 +375,9 @@ strong claim-tree interface must remain distinguishable from the relaxed probabi
 
 ## 8. Budgets, errors, and time
 
-The [efficiency chapter](03a-extractor-efficiency.md#two-resource-contracts) specifies how an
-extractor's probability theorem is connected to its measured program and quantitative realization.
+The [efficiency chapter](03a-extractor-efficiency.md#the-measured-operation-contract) specifies
+how an extractor's probability theorem is connected to its measured program, and the
+[execution-backend chapter](03b-extractor-execution.md) its quantitative realization.
 Positive query costs alone do not bound ordinary computation between queries. A machine-time
 claim needs the explicit representation and adequacy obligations described there.
 

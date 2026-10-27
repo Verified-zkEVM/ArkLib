@@ -300,10 +300,12 @@ automatically prove every legacy equivalence.
 
 ### Extractor efficiency repair
 
-**Proposed.** This sequence repairs resource claims for the existing FRI and Toy extractors;
-it does not depend on migrating either protocol to the native interaction framework. Native
-knowledge games should reuse its resource contracts when they are introduced. The contracts and
-computational-model decisions belong to [the efficiency chapter](03a-extractor-efficiency.md).
+**Proposed.** This sequence repairs resource claims for the existing FRI and Toy extractors.
+The measured contract is designed for the native knowledge games first, with the legacy
+straightline game as an adapter, so FRI's result does not wait for a migration to the native
+interaction framework. The near-term contracts belong to [the efficiency
+chapter](03a-extractor-efficiency.md); complete execution and computational-model decisions
+belong to [the execution-backend chapter](03b-extractor-execution.md).
 Each implementation PR starts from current `main` or its explicit prerequisite branch; keep
 dependency upgrades separate.
 
@@ -311,14 +313,19 @@ dependency upgrades separate.
 |---|---|---|
 | E1 | Clarify unbounded/named game contracts and the actual straightline access type | Compile the classical-selector event identity and its relation-aware game consequence; state losslessness and witness-supply premises where needed; record the omitted extraction-time requirement in the ABF26 Definition A.3 audit row; preserve existing results |
 | E2 | Ship `knowledgeSoundnessWithResources` and FRI's operation-count result independently | Semantic identity with the named extractor, transported FRI profiles, explicit profile exclusions in the public claim/audit, and an acceptance example showing that query cost alone does not imply execution time; scope limited to deterministic handlers and one budget per parameter set, with equality transport deferred |
-| E3a | Build a generic algebraic execution backend for the PolyFun/VCVio quantitative layer | Executable code type with semantics for field operations, indices, control and storage; gate on realizing one real FRI fold-consistency check with proved output agreement and execution bound |
-| E3 | Add `knowledgeSoundnessWithin` using the E3a backend | Quantitative realization, explicit representations, charged pure computation, termination/access proof, and a documented review of primitive adequacy; no claimed standard-machine correspondence |
+| E3a | Proposed route, replaceable: build a generic algebraic execution backend for the PolyFun/VCVio quantitative layer | Executable code type with semantics for field operations, indices, control and storage; gate on realizing one real FRI fold-consistency check with proved output agreement and execution bound |
+| E3 | Required later for efficient-extraction claims: add `knowledgeSoundnessWithin` using the E3a backend or another adequately reviewed execution model | Quantitative realization, explicit representations, charged pure computation, termination/access proof, and a documented review of primitive adequacy; no claimed standard-machine correspondence |
 | E4 | Certify all local work of FRI's same named extractor | Bound view preparation, scan/control/storage and interpolation, retain early rejection, combine with `knowledge_soundness_with`, and derive a polynomial envelope under the protocol constraints |
 | E5 | Add the measured eager Toy decoder and terminal certificate | Equality with the existing extractor on all inputs, measured agreement/interpolation/re-encoding/materialization, and the unchanged `certifiedExtractorError` |
 | E6 | Certify Toy round-by-round execution | Per-stage budgets for the actual available prefixes, exact extractor identities and the existing per-round error guarantees |
 | E7 | Deferred: add uniform family corollaries when a consumer fixes the policy | One packed family realization and polynomial for fixed backend/boundary/contracts, with explicit parameter growth and representation policy |
 
-E2 follows E1 and ships without waiting for E3a or E3. E3 consumes the E3a backend and E2's
+E2 follows E1 and ships without waiting for E3a or E3. E3 is required before ArkLib claims
+efficient extraction without qualification, but it is scheduled after higher-priority work: each
+extractor-bearing notion in the efficiency chapter's obligations table states its structural
+content and cost caveat, and the native soundness contracts and their composition are complete.
+No probability theorem waits for E3. E3a is the proposed backend route; another execution model
+with a reviewed adequacy argument can replace it. E3 consumes the chosen backend and E2's
 same-program bridge. E4 and E5 consume E3 and can be developed independently; E6 follows E5.
 E3a's real FRI check is the gate before scaling the backend to the complete extractor. E3's
 formal gain over E2 is that every piece of pure computation is charged through the backend;
