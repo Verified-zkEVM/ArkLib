@@ -75,7 +75,8 @@ theorem derived_eval (x : ZMod 17) : derived x = 5 + 8 * x := by
   rw [derived, projectedInput_eq]
   change (Spec.SingleRound.projectedRoundPolynomial (ZMod 17) 2 1 domain 0
     statement.challenges polynomial).val.eval x = _
-  simp only [Spec.SingleRound.projectedRoundPolynomial, MvPolynomial.sumRoundPolynomial_eval]
+  simp only [Spec.SingleRound.projectedRoundPolynomial, Polynomial.eval_finsetSum,
+    MvPolynomial.eval_evalExcept]
   change (∑ f ∈ Fintype.piFinset (fun _ : Fin 1 => Finset.univ.map domain),
     polynomial.val.eval (Fin.insertNth 0 x
       (Spec.SingleRound.roundSuffix (ZMod 17) 2 0 statement.challenges f))) = _

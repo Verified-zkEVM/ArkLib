@@ -590,6 +590,7 @@ public import ArkLib.Data.Matrix.Sparse
 public import ArkLib.Data.Matrix.Vandermonde
 public import ArkLib.Data.Misc.Basic
 public import ArkLib.Data.MvPolynomial.Degrees
+public import ArkLib.Data.MvPolynomial.EvalExcept
 public import ArkLib.Data.MvPolynomial.EvenAndOdd
 public import ArkLib.Data.MvPolynomial.FrobeniusContraction
 public import ArkLib.Data.MvPolynomial.Hypercube
@@ -604,7 +605,6 @@ public import ArkLib.Data.MvPolynomial.PrimeFingerprintProbability
 public import ArkLib.Data.MvPolynomial.RadicalSplit.Separable
 public import ArkLib.Data.MvPolynomial.RestrictDegree
 public import ArkLib.Data.MvPolynomial.RestrictDegreeVar
-public import ArkLib.Data.MvPolynomial.RoundPolynomial
 public import ArkLib.Data.MvPolynomial.SchwartzZippelCounting
 public import ArkLib.Data.MvPolynomial.Split
 public import ArkLib.Data.MvPolynomial.WeightAtMost

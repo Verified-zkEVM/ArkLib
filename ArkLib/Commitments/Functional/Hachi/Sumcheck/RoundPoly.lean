@@ -86,10 +86,8 @@ variable {M : ℕ}
 extended by `T`. -/
 noncomputable def roundPoly (H : CMvPolynomial (M + 1) F) (i : Fin (M + 1)) (cs : Fin i → F) :
     Polynomial F :=
-  MvPolynomial.sumRoundPolynomial
-    (Finset.univ : Finset (Fin (M + 1 - (i + 1)) → Fin 2))
-    (hypercubeSuffix i cs)
-    i (fromCMvPolynomial H)
+  ∑ x : Fin (M + 1 - (i + 1)) → Fin 2,
+    (fromCMvPolynomial H).evalExcept i (hypercubeSuffix i cs x)
 
 omit [NeZero q] [IsCyclotomic Φ] [BEq (ZMod q)] [LawfulBEq (ZMod q)] [BEq F] [LawfulBEq F] in
 /-- The round polynomial computes the partial sum: its value at any `T` is the round-`(i+1)`
@@ -98,14 +96,14 @@ theorem roundPoly_eval (H : CMvPolynomial (M + 1) F) (i : Fin (M + 1)) (cs : Fin
     Polynomial.eval T (roundPoly H i cs)
       = hypercubeSum (M + 1) H ((i : ℕ) + 1) (Fin.snoc cs T) := by
   simpa only [roundPoly, hypercubeSum_eq_mathlib] using
-    MvPolynomial.sumRoundPolynomial_eval_hypercube (fromCMvPolynomial H) i cs T
+    MvPolynomial.eval_sum_evalExcept_hypercube (fromCMvPolynomial H) i cs T
 
 omit [NeZero q] [IsCyclotomic Φ] [BEq (ZMod q)] [LawfulBEq (ZMod q)] [BEq F] [LawfulBEq F] in
 /-- The two Boolean values recover the previous CompPoly residual sum. -/
 theorem roundPoly_sum (H : CMvPolynomial (M + 1) F) (i : Fin (M + 1)) (cs : Fin i → F) :
     (roundPoly H i cs).eval 0 + (roundPoly H i cs).eval 1 = hypercubeSum (M + 1) H i cs := by
   simpa only [roundPoly, hypercubeSum_eq_mathlib] using
-    MvPolynomial.sumRoundPolynomial_sum_hypercube (fromCMvPolynomial H) i cs
+    MvPolynomial.sum_eval_sum_evalExcept_hypercube (fromCMvPolynomial H) i cs
 
 omit [NeZero q] [IsCyclotomic Φ] [BEq (ZMod q)] [LawfulBEq (ZMod q)] [BEq F] [LawfulBEq F] in
 /-- A uniform bound on the variable degrees of `H` bounds its round polynomial's degree. -/
@@ -113,7 +111,8 @@ theorem roundPoly_degree_le (H : CMvPolynomial (M + 1) F) (i : Fin (M + 1)) (cs 
     {D : ℕ} (hH : ∀ j, (fromCMvPolynomial H).degreeOf j ≤ D) :
     (roundPoly H i cs).degree ≤ (D : WithBot ℕ) := by
   exact Polynomial.natDegree_le_iff_degree_le.mp
-    ((MvPolynomial.sumRoundPolynomial_natDegree_le _ _ i (fromCMvPolynomial H)).trans (hH i))
+    (Polynomial.natDegree_sum_le_of_forall_le _ _ fun _ _ =>
+      (MvPolynomial.natDegree_evalExcept_le i _ (fromCMvPolynomial H)).trans (hH i))
 
 /-! ### The computable round polynomial
 
