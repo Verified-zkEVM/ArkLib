@@ -9,24 +9,23 @@ import Mathlib.Analysis.Complex.ExponentialBounds
 import ArkLib.ProofSystem.Stir.MainThm
 
 /-!
-# STIR main theorem and round-by-round soundness: the hypotheses are consistent
+# STIR Section 5 parameter and relation regressions
 
-The hypotheses of `stir_rbr_soundness` (Lemma 5.4 of [ACFY24stir]) used to be contradictory, so the
-lemma was vacuous (#1284). These tests check that, after the restatement:
-* the hypotheses are jointly satisfiable, by an explicit instance with `M = 0`
-  (`F = ZMod 5`, `ι₀` the four units, `deg = 2`, `k₀ = 2`, `δ₀ = 1/4`);
-* the reversed condition `|ιᵢ| ≤ degreeᵢ` is rejected by `ParamConditions`, and it is what made the
-  hypotheses contradictory;
-* the other conditions that were corrected are exercised: the degree is a power of 2, and the
-  repetition parameter of the last round is not constrained;
-* the hypotheses of `stir_main` (Theorem 5.1) are satisfiable for every constant `c_F` of the
-  field-size bound, which is chosen before the parameters (`main_hypotheses_satisfiable`), and they
-  force `degree < |ι|`, so the denominator `log (1 / ρ)` of that bound is positive and the bound is
-  not met through a division by zero (`degree_lt_card_of_delta_bounds`, `log_inv_rate_pos`);
-* the completeness and soundness relations fit together: the codewords are in the soundness
-  language when `0 < δ`, and the strict relation is empty for `δ = 0`
-  (`stirRelation_zero_subset_stirOpenRelation`, `stirOpenRelation_zero_eq_empty`), which is why
-  `0 < δ₀` and `0 < δ` are assumed.
+These tests exercise the mathematical ingredients for the unformalized Construction 5.2,
+Lemma 5.4 and Theorem 5.1 of [ACFY24stir]:
+* the parameter and distance assumptions are jointly satisfiable, by an explicit instance with
+  `M = 0` (`F = ZMod 5`, `ι₀` the four units, `deg = 2`, `k₀ = 2`, `δ₀ = 1/4`);
+* an `M = 1` instance distinguishes the current degree from the next degree in the repetition
+  condition, and the final repetition parameter is unconstrained;
+* `ParamConditions` rejects a domain no larger than its degree and a degree that is not a power
+  of two;
+* the field-size and distance assumptions of Theorem 5.1 are satisfiable for every previously
+  chosen constant `c_F` (`main_hypotheses_satisfiable`), and force `degree < |ι|`, so the
+  denominator `log (1 / ρ)` is positive (`degree_lt_card_of_delta_bounds`, `log_inv_rate_pos`);
+* codewords lie in the strict soundness language when `0 < δ`, and that language is empty for
+  `δ = 0` (`stirRelation_zero_subset_stirOpenRelation`, `stirOpenRelation_zero_eq_empty`).
+
+These facts concern parameters and relations; they do not construct a STIR protocol.
 
 ## References
 
@@ -111,7 +110,7 @@ private lemma delta_zero_lt :
   calc (1 / 4 : ℝ≥0) + NNReal.sqrt ((1 / 2 : ℚ≥0) : ℝ≥0) < 1 / 4 + 3 / 4 := by gcongr
     _ = 1 := by norm_num
 
-/-- The hypotheses of `stir_rbr_soundness` are jointly satisfiable, for `M = 0`: the conditions on
+/-- The assumptions for Lemma 5.4 are jointly satisfiable, for `M = 0`: the conditions on
 the parameters, the list-decodable codes, `0 < δ₀ < 1 - B⋆(ρ₀)`, and the (empty) conditions on
 `δᵢ` for `0 < i ≤ M`. -/
 theorem rbr_soundness_hypotheses_satisfiable :
@@ -132,6 +131,54 @@ the repetition parameter `100` of the last round, which Construction 5.2 does no
 example : ¬ (params.repeatParam 0 + 1 ≤ degree domains params 0) := by
   rw [degree_zero_eq]
   simp [params]
+
+/-- Both rounds use the four units of `ZMod 5`. -/
+private abbrev twoDomains : Fin (1 + 1) → Type := fun _ => Fin 4
+
+/-- One inner fold lowers degree `2` to `1`; the final repetition count is unconstrained. -/
+private def twoParams : Params twoDomains (ZMod 5) where
+  deg := 2
+  foldingParam := ![2, 1]
+  φ := fun _ => units
+  repeatParam := ![0, 100]
+
+/-- The repetition condition uses the next degree, which differs from the current one. -/
+example : degree twoDomains twoParams 0 = 2 ∧ degree twoDomains twoParams 1 = 1 := by
+  decide
+
+/-- Construction 5.2's parameter conditions have an instance with an inner round. -/
+example : Nonempty (ParamConditions twoDomains twoParams) := by
+  refine ⟨{
+    h_deg := ⟨1, rfl⟩
+    h_foldingParams := ?_
+    h_deg_ge := by decide
+    h_smooth := fun _ => smoothUnits
+    h_smooth_lt := ?_
+    h_repeatP_le := ?_ }⟩
+  · intro i
+    fin_cases i
+    · exact ⟨1, rfl⟩
+    · exact ⟨0, rfl⟩
+  · intro i
+    fin_cases i <;> decide
+  · intro i
+    fin_cases i
+    decide
+
+/-- A repetition count that fits the current degree can exceed the next degree. -/
+private def wrongRepeatParams : Params twoDomains (ZMod 5) :=
+  { twoParams with repeatParam := ![1, 100] }
+
+example : wrongRepeatParams.repeatParam 0 + 1 ≤ degree twoDomains wrongRepeatParams 0 := by
+  decide
+
+/-- The next-degree condition rejects that count at the actual inner index. -/
+example : ¬ Nonempty (ParamConditions twoDomains wrongRepeatParams) := by
+  rintro ⟨hP⟩
+  have h := hP.h_repeatP_le 0
+  have hnot : ¬ (wrongRepeatParams.repeatParam (0 : Fin 1).castSucc + 1 ≤
+      degree twoDomains wrongRepeatParams (0 : Fin 1).succ) := by decide
+  exact hnot h
 
 /-- The reversed condition: a domain no larger than the degree is rejected by `ParamConditions`. -/
 theorem not_paramConditions_of_card_le_degree {F : Type} [Field F] [DecidableEq F]
@@ -209,7 +256,7 @@ private lemma rate_signs : rate (code (signs p) 1) = 1 / 2 := by
 
 end SignDomain
 
-/-- The field-size expression of `stir_main` for `secpar = 1`, `degree = 1` and `|ι| = 2` is at most
+/-- The field-size expression of Theorem 5.1 for `secpar = 1`, `degree = 1` and `|ι| = 2` is at most
 `100`: `2 * 2^{7/2} / log 2 < 47`. -/
 private lemma field_size_expr_le :
     ((1 : ℕ) : ℝ) * 2 ^ 1 * ((1 : ℕ) : ℝ) ^ 2 * ((2 : ℕ) : ℝ) ^ ((7 : ℝ) / 2) /
@@ -226,7 +273,7 @@ private lemma field_size_expr_le :
   nlinarith [h1, h2]
 
 
-/-- The hypotheses of `stir_main` are satisfiable for every constant `c_F`: take `L = {1, -1}` in
+/-- The assumptions for Theorem 5.1 are satisfiable for every constant `c_F`: take `L = {1, -1}` in
 `ZMod p` for a prime `p` large enough, `degree = 1`, `secpar = 1`, `k = 4` and `δ = 1/8`. -/
 theorem main_hypotheses_satisfiable (c_F : ℝ) :
     ∃ (p : ℕ) (_ : Fact p.Prime) (_ : Fact (2 < p)) (φ : Fin 2 ↪ ZMod p) (_ : Smooth φ),
@@ -281,7 +328,7 @@ theorem stirOpenRelation_zero_eq_empty {F : Type} [Field F] [Fintype F] [Decidab
   have h' : δᵣ(oracle (), ReedSolomon.code φ degree) < ((0 : ℝ≥0) : ENNReal) := h
   exact not_lt_zero h'
 
-/-- The hypotheses `0 < δ < 1 - 1.05 √(degree / |ι|)` of `stir_main` force `degree < |ι|`. -/
+/-- The hypotheses `0 < δ < 1 - 1.05 √(degree / |ι|)` of Theorem 5.1 force `degree < |ι|`. -/
 theorem degree_lt_card_of_delta_bounds {degree n : ℕ} (hn : 0 < n) (δ : ℝ≥0) (hδPos : 0 < δ)
     (hδub : δ < 1 - 1.05 * Real.sqrt ((degree : ℝ) / n)) : degree < n := by
   by_contra h
@@ -294,7 +341,7 @@ theorem degree_lt_card_of_delta_bounds {degree n : ℕ} (hn : 0 < n) (δ : ℝ�
   have h3 : (0 : ℝ) < (δ : ℝ) := by exact_mod_cast hδPos
   linarith
 
-/-- So the denominator `log (1 / ρ)` of the field-size bound of `stir_main` is positive: the bound
+/-- So the denominator `log (1 / ρ)` of the field-size bound of Theorem 5.1 is positive: the bound
 is not met through a division by zero. -/
 theorem log_inv_rate_pos {F : Type} [Field F] {ι : Type} [Fintype ι] [Nonempty ι]
     (φ : ι ↪ F) {degree : ℕ} (hdeg : 0 < degree) (hlt : degree < Fintype.card ι) :

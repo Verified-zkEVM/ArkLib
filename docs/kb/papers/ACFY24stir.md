@@ -28,6 +28,29 @@ underlying Reed-Solomon proximity and list-decoding machinery.
 - Comparison context for list-decoding and Reed-Solomon proximity notions shared with WHIR and
   `BCIKS20`.
 
+### Proximity gap
+
+`STIR.proximity_gap` proves Theorem 4.1 from the correlated-agreement theorem for powers curves.
+For positive degree and `0 < δ < 1 - √ρ`, a powers combination of `m` words being within distance
+`δ` with probability greater than `err⋆` gives a single set of size at least `(1 - δ)|L|` on which
+every word agrees with a codeword. The arity is unrestricted, and the unique-decoding branch
+includes its endpoint. The functions are indexed from zero, so the coefficient of `fⱼ` is `rʲ`.
+The positive-degree assumption makes the paper's positive-rate regime explicit: the totalized error
+formula does not support degree zero.
+
+### Section 5 ingredients
+
+`StirIOP.Params`, `ParamConditions`, `Distances` and `CodeParams` retain Construction 5.2's
+parameter, domain and list-decoding conditions. In particular, the repetition condition uses the
+next degree, `tᵢ + 1 ≤ dᵢ₊₁` for `i < M`, without constraining `t_M`.
+`stirRelation` describes exact-codeword completeness at radius zero, and `stirOpenRelation`
+describes the strict soundness language whose complement includes distance exactly `δ`.
+
+Construction 5.2, Lemma 5.4 and Theorem 5.1 remain unformalized targets. Their numerical bounds are
+recorded in the module docstring and blueprint. There are no exported Section 5 protocol theorems:
+an arbitrary existential protocol without query bounds can be an exhaustive exact-membership
+verifier, so those bounds alone do not characterize STIR.
+
 ### Quotienting
 
 `Quotienting.funcQuotient` and `Quotienting.polyQuotient` implement Definitions 4.2 and 4.3.
@@ -62,10 +85,11 @@ claimed low-degree polynomial.
 ## Version Notes
 
 - This page tracks the STIR conference-version key currently present in `references.bib`.
-- The statements of `Stir/ProximityGap.lean` and `Stir/MainThm.lean` were checked against the
-  ePrint 2024/390 revision dated 2025-01-27. In that revision Theorem 5.1 requires
+- The proximity-gap theorem and the Section 5 targets follow the ePrint 2024/390 revision dated
+  2025-01-27. In that revision Theorem 5.1 requires
   `|F| = Ω(λ · 2^λ · d² · |L|^{3.5} / log(1/ρ))` (also Theorem 1 and Appendix C.1), and the
-  blueprint and Lean use the exponent `7/2`. An earlier version of the blueprint had `|L|²`.
+  blueprint and module docstring use the exponent `7/2`. An earlier version of the blueprint had
+  `|L|²`.
 - Keep separate from WHIR-related keys even when the coding-theory prerequisites overlap.
 
 ## Known Divergences From ArkLib
@@ -73,23 +97,9 @@ claimed low-degree polynomial.
 - ArkLib expresses much of the reusable mathematics in shared coding-theory modules rather than in
   STIR-only files.
 - As a result, not every paper notion will appear first in the `ProofSystem/Stir` subtree.
-- `STIR.proximity_gap` (Theorem 4.1), `StirIOP.stir_rbr_soundness` (Lemma 5.4) and
-  `StirIOP.stir_main` (Theorem 5.1) are still admitted. Their statements follow the paper, with
-  these differences:
-  - the functions of Theorem 4.1 are numbered from `0`, so the weight of `fⱼ` is `rʲ`, and
-    `degree ≥ 1` is assumed (the paper's `err⋆` divides by the rate; with `x / 0 = 0` the
-    statement is false for `degree = 0`);
-  - Lemma 5.4 and Theorem 5.1 are existence statements about a vector IOP. ArkLib does not
-    formalize Construction 5.2, so they do not force the protocol to be STIR. In Lemma 5.4 the
-    protocol is chosen from the parameters alone, before the distances `δᵢ` and list sizes `ℓᵢ`,
-    as in the paper;
-  - soundness is stated for the oracles that are at least `δ`-far from the code
-    (`stirOpenRelation`, strict), completeness for the codewords;
-  - every challenge of Lemma 5.4 is given the maximum of the four error families, which is weaker
-    than the paper's vector of per-round errors; the round `i` of the paper is `j + 1` for
-    `j : Fin M`;
-  - the constants of the `Ω` and `O` bounds of Theorem 5.1 are chosen before the parameters
-    (`O_k` for the proof length), and the two query-complexity items are not stated.
+- The strict soundness relation and corrected parameters are formalized, but no concrete STIR
+  prover, verifier or transcript has been assembled. The paper's Section 5 results are documented
+  as targets rather than exported as arbitrary-protocol existence statements.
 
 ## Open Formalization Gaps
 
@@ -99,7 +109,10 @@ claimed low-degree polynomial.
 - Verifier query complexity: `OracleVerifier.numQueries` is a stub, and the paper counts the `k`
   points read together as one symbol. VCVio has `IsQueryBound`, `IsQueryBoundP` and
   `IsPerIndexQueryBound` that a statement could use.
-- The paper's vector of per-round errors in Lemma 5.4 is collapsed to its maximum.
+- Lemma 5.4 needs the paper's vector of per-challenge errors for the concrete protocol.
+- The challenge representation must support exact uniform sampling from evaluation domains and
+  their complements. Fixed-length uniformly sampled field vectors do not generally encode these
+  distributions.
 - Appendix C.1 requires `|F| > 10^7 (λ+1) 2^{λ+1} d² |L|^{3.5} (1 + max{1/(-log(1-δ')),
   1/(-log(1.05 √ρ))})`, which grows as `δ' → 0`, while Theorem 5.1 prints no `δ` in its `Ω`. Read
   from the paper only; it matters once the query clauses are stated.

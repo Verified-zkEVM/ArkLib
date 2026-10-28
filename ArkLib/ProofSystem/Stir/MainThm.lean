@@ -13,13 +13,51 @@ public import ArkLib.ProofSystem.Stir.ProximityBound
 /-!
 # ArkLib.ProofSystem.Stir.MainThm
 
-Section 5 of [ACFY24stir]: the parameters of Construction 5.2 (`Params`, `ParamConditions`), the
-round-by-round soundness of STIR (Lemma 5.4, `stir_rbr_soundness`) and the main theorem
-(Theorem 5.1, `stir_main`).
+Parameters and relations for Section 5 of [ACFY24stir]. `Params` and `ParamConditions` record
+Construction 5.2's numerical and domain conditions, and `CodeParams` records the inner-round
+list-decoding assumptions. `stirRelation` describes completeness on codewords;
+`stirOpenRelation` describes the soundness language with its strict distance bound.
 
-Both results are stated as the existence of a vector IOPP with the bounds of the paper. ArkLib does
-not yet formalize Construction 5.2 or the number of queries a verifier makes, so they do not force
-the protocol to be STIR; the docstrings say what is and is not stated.
+Construction 5.2, Lemma 5.4 and Theorem 5.1 remain unformalized targets. A concrete STIR prover,
+verifier and transcript are needed: existence of an arbitrary protocol with numerical error and
+proof-length bounds alone also permits an exhaustive exact-membership verifier. The construction
+must sample from the specified domains and their complements, and its analysis must track each
+challenge's error and the verifier's queries.
+
+## Round-by-round soundness target (Lemma 5.4)
+
+Fix `P : Params ι F` satisfying `ParamConditions ι P` and an out-of-domain repetition parameter `s`.
+Write `dᵢ = deg / ∏_{j<i} kⱼ`, `kᵢ = foldingParamᵢ`, `tᵢ = repeatParamᵢ` and
+`ρᵢ = rate (code φᵢ dᵢ)`. The protocol must depend only on these construction parameters,
+before distances `δᵢ` and list sizes `ℓᵢ` are chosen. Assume `0 < δ₀ < 1 - B⋆(ρ₀)` and, for
+`0 < i ≤ M`, list decodability at `(δᵢ, ℓᵢ)` with
+`0 < δᵢ < min(1 - ρᵢ - 1/|Lᵢ|, 1 - B⋆(ρᵢ))`. For oracles at least `δ₀`-far from the
+initial code, the intended per-challenge error vector is
+`(ε_fold, ε_out₁, ε_shift₁, …, ε_out_M, ε_shift_M, ε_fin)`, with
+
+* `ε_fold ≤ err⋆(d₀/k₀, ρ₀, δ₀, k₀)`;
+* `ε_outᵢ ≤ ℓᵢ²/2 * (dᵢ / (|F| - |Lᵢ|))^s` for `0 < i ≤ M`;
+* `ε_shiftᵢ ≤ (1 - δᵢ₋₁)^tᵢ₋₁ + err⋆(dᵢ, ρᵢ, δᵢ, tᵢ₋₁ + s)
+  + err⋆(dᵢ/kᵢ, ρᵢ, δᵢ, kᵢ)` for `0 < i ≤ M`;
+* `ε_fin ≤ (1 - δ_M)^t_M`, including `M = 0`.
+
+Here `err⋆` is `STIR.proximityError`. The paper's `2M + 1` interactive rounds and final
+randomized decision must be represented with their actual challenge distributions.
+
+## Main theorem target (Theorem 5.1)
+
+For a smooth Reed–Solomon code of power-of-two degree `d`, rate `ρ = d/|L|`, security parameter
+`λ`, distance `0 < δ < 1 - 1.05 * √ρ`, and power-of-two folding parameter `k ≥ 4`, the paper
+claims a public-coin IOPP with round-by-round error `2^(-λ)`, `O(log_k d)` rounds, proof length
+`|L| + Oₖ(log d)`, input query complexity `λ / (-log(1 - δ))`, and proof query complexity
+`Oₖ(log d + λ * log(log d / log(1/ρ)))`, under
+`|F| = Ω(λ * 2^λ * d² * |L|^(7/2) / log(1/ρ))`.
+
+The constants must be uniform in the protocol parameters, except that the `Oₖ` constants may
+depend on `k`. Query accounting must use the paper's convention of counting `k` grouped points
+as one symbol. The January 2025 revision's Appendix C.1 has an additional field-size dependence
+on `1/(-log(1 - δ'))`, absent from the displayed Theorem 5.1; deriving uniform constants requires
+resolving this discrepancy.
 
 ## References
 
@@ -129,146 +167,6 @@ def stirOpenRelation
     (degree : ℕ) (φ : ι ↪ F) (err : ℝ≥0) : Set ((Unit × ∀ i, (OracleStatement ι F i)) × Unit) :=
   fun ⟨⟨_, oracle⟩, _⟩ => δᵣ(oracle (), ReedSolomon.code φ degree) < err
 
-/-- **Theorem 5.1 of [ACFY24stir]: STIR.**
-
-  There are constants `c_F`, `c_M > 0` and `c_len : ℕ → ℝ` such that the following holds for every
-  security parameter `secpar`, Reed-Solomon code `RS[F, ι, degree]` of rate `ρ = degree / |ι|`
-  (`degree` a power of 2, `φ` embedding a smooth domain), proximity parameter
-  `δ ∈ (0, 1 - 1.05 * √ρ)` and folding parameter `k ≥ 4` that is a power of 2.
-  If `|F| ≥ c_F * secpar * 2^secpar * degree² * |ι|^{7/2} / log(1/ρ)`, there is a vector IOPP `π`
-  for the code, with `2M + 2` challenges from the verifier, that is complete and round-by-round
-  sound against the oracles that are at least `δ`-far from the code (`stirOpenRelation`), with
-  - round-by-round soundness error `≤ 2^(-secpar)`,
-  - `M ≤ c_M * log_k degree`,
-  - proof length `≤ |ι| + c_len k * log degree`.
-
-  The constants are chosen before the parameters, so these are the paper's `Ω` and `O` bounds
-  (`Oₖ` for the proof length, whose constant may depend on `k`). The exponent `7/2` of the field
-  size is the one of the January 2025 revision of ePrint 2024/390.
-
-  Not stated: the two query-complexity items of the theorem, `secpar / (- log(1-δ))` queries to the
-  input and `Oₖ(log degree + secpar * log(log degree / log(1/ρ)))` queries to the proof strings.
-  `VectorIOP` has no notion of the number of queries a verifier makes
-  (`OracleVerifier.numQueries` is a stub), and the paper counts the `k` points read together as one
-  symbol. Without them this is an existence statement that does not force `π` to be STIR: a
-  verifier that reads its whole oracle is not excluded. -/
-theorem stir_main :
-    ∃ c_F : ℝ, 0 < c_F ∧ ∃ c_M : ℝ, 0 < c_M ∧ ∃ c_len : ℕ → ℝ,
-    ∀ (F : Type) [Field F] [Fintype F] [DecidableEq F] [SampleableType F]
-      (secpar : ℕ) (ι : Type) [Fintype ι] [Nonempty ι] (φ : ι ↪ F) [Smooth φ]
-      (degree : ℕ) (hdeg : ∃ p : ℕ, degree = 2 ^ p)
-      (k : ℕ) (hk : ∃ p : ℕ, k = 2 ^ p) (hkGe : 4 ≤ k)
-      (δ : ℝ≥0) (hδPos : 0 < δ) (hδub : δ < 1 - 1.05 * Real.sqrt (degree / Fintype.card ι))
-      (hF : c_F * (secpar * 2 ^ secpar * degree ^ 2 * (Fintype.card ι : ℝ) ^ ((7 : ℝ) / 2) /
-            Real.log (1 / rate (code φ degree))) ≤ Fintype.card F),
-    ∃ (M n : ℕ) (vPSpec : ProtocolSpec.VectorSpec n),
-      Fintype.card vPSpec.ChallengeIdx = 2 * M + 2 ∧
-      ∃ (ε_rbr : vPSpec.ChallengeIdx → ℝ≥0)
-        (π : VectorIOP Unit (OracleStatement ι F) Unit vPSpec F),
-        IsSecureWithGap (stirRelation degree φ 0) (stirOpenRelation degree φ δ) ε_rbr π ∧
-        (∀ i, ε_rbr i ≤ 1 / 2 ^ secpar) ∧
-        (M : ℝ) ≤ c_M * (Real.log degree / Real.log k) ∧
-        (vPSpec.totalMessageLength : ℝ) ≤ Fintype.card ι + c_len k * Real.log degree := by
-  sorry
-
 end MainTheorem
-
-section RBRSoundness
-
-open LinearCode
-
-/-- **Lemma 5.4 of [ACFY24stir]: round-by-round soundness of STIR.**
-
-  Indices start at `0`. Consider:
-  - `ι = {ιᵢ}_{i = 0, …, M}`, the smooth evaluation domains `Lᵢ`;
-  - `P : Params ι F`, the parameters of Construction 5.2: the initial degree `deg`, the folding
-    parameters `kᵢ = foldingParamᵢ`, the embeddings `φᵢ` and the repetition parameters
-    `tᵢ = repeatParamᵢ`; and `s`, the out-of-domain repetition;
-  - `hParams : ParamConditions ι P`, the conditions that these parameters must satisfy.
-
-  Write `dᵢ = degree ι P i = deg / ∏_{j<i} kⱼ` and `ρᵢ = rate (code φᵢ dᵢ)`, the rate of
-  `RS[F, Lᵢ, dᵢ]`. Then there is a vector IOP `π` with `2M + 2` challenges from the verifier, which
-  depends on these parameters only, such that for all
-  - `Dist` and `Codes : CodeParams ι P Dist`, the distances `δᵢ` and list sizes `ℓᵢ = lᵢ`, with
-    `RS[F, Lᵢ, dᵢ]` being `(δᵢ, ℓᵢ)`-list decodable for `0 < i ≤ M`;
-  - `0 < δ₀ < 1 - B⋆(ρ₀)` and, for `0 < i ≤ M`, `0 < δᵢ < 1 - ρᵢ - 1/|Lᵢ|` and
-    `δᵢ < 1 - B⋆(ρᵢ)`,
-
-  `π` is complete for `RS[F, L₀, d₀]` and round-by-round sound against the oracles that are at least
-  `δ₀`-far from it (`stirOpenRelation`), with errors `ε_fold`, `ε_outᵢ`, `ε_shiftᵢ` and `ε_fin`
-  such that
-  - `ε_fold ≤ err⋆(d₀/k₀, ρ₀, δ₀, k₀)`
-  - `ε_outᵢ ≤ ℓᵢ²/2 * (dᵢ / (|F| - |Lᵢ|))^s`
-  - `ε_shiftᵢ ≤ (1 - δᵢ₋₁)^{tᵢ₋₁} + err⋆(dᵢ, ρᵢ, δᵢ, tᵢ₋₁ + s) + err⋆(dᵢ/kᵢ, ρᵢ, δᵢ, kᵢ)`
-  - `ε_fin ≤ (1 - δ_M)^{t_M}`.
-
-  The paper's round `i ∈ {1, …, M}` is `j + 1` for `j : Fin M`, so `ε_out j` and `ε_shift j` are
-  the errors of round `j + 1`. Every challenge is given the maximum of the four families as its
-  error, which is weaker than the paper's vector of per-round errors.
-
-  **Limitation.** This is an existence statement. ArkLib has neither Construction 5.2 nor a count
-  of the queries of a verifier, so the statement does not force `π` to be STIR: it records the
-  error bounds that Construction 5.2 achieves. -/
-theorem stir_rbr_soundness
-    [SampleableType F] {s : ℕ}
-    {P : Params ι F}
-    [h_nonempty : ∀ i : Fin (M + 1), Nonempty (ι i)]
-    (hParams : ParamConditions ι P) :
-    ∃ n : ℕ,
-    -- There exists an `n`-message vector IOPP,
-    ∃ vPSpec : ProtocolSpec.VectorSpec n,
-    -- such that there are `2 * M + 2` challenges from the verifier to the prover,
-    Fintype.card (vPSpec.ChallengeIdx) = 2 * M + 2 ∧
-    -- ∃ vector IOPP π with the aforementioned `vPSpec`, and for
-    -- `Statement = Unit, Witness = Unit, OracleStatement(ι₀, F)` such that, for all distances and
-    -- list sizes `Dist` of the lemma,
-    ∃ π : VectorIOP Unit (OracleStatement (ι 0) F) Unit vPSpec F,
-    ∀ {Dist : Distances M} (Codes : CodeParams ι P Dist)
-      (hδ₀Pos : 0 < Dist.δ 0)
-      (hδ₀ : Dist.δ 0 < (1 - Bstar (rate (code (P.φ 0) (degree ι P 0)))))
-      (hδᵢ : ∀ {j : Fin (M + 1)}, j ≠ 0 →
-        0 < Dist.δ j ∧
-        Dist.δ j < (1 - rate (code (P.φ j) (degree ι P j))
-          - 1 / Fintype.card (ι j) : ℝ) ∧
-        Dist.δ j < (1 - Bstar (rate (code (P.φ j) (degree ι P j))))),
-    -- there are round-by-round errors `ε_fold`, `ε_out`, `ε_shift`, `ε_fin` of `π`, whose maximum
-    -- is the error of every challenge, such that
-    ∃ (ε_fold : ℝ≥0) (ε_out ε_shift : Fin M → ℝ≥0) (ε_fin : ℝ≥0),
-    (IsSecureWithGap (stirRelation (degree ι P 0) (P.φ 0) 0)
-                    (stirOpenRelation (degree ι P 0) (P.φ 0) (Dist.δ 0))
-                    (fun _ => ε_fold ⊔ ε_fin ⊔ univ.sup ε_out ⊔ univ.sup ε_shift) π) ∧
-    -- `ε_fold ≤ errStar(degree₀/foldingParam₀, ρ₀, δ₀, foldingParam₀)`
-      ε_fold ≤ proximityError F (degree ι P 0 / P.foldingParam 0)
-                 (rate (code (P.φ 0) (degree ι P 0))) (Dist.δ 0) (P.foldingParam 0)
-      ∧
-      -- Note here that `j : Fin M`, so we need to cast into `Fin (M + 1)` for indexing of
-      -- `Dist.δ` and `P.repeatParam`. To get `j`, we use `.castSucc`, whereas to get `j + 1`,
-      -- we use `.succ`.
-      -- Because of the difference in indexing between the paper and the code, we essentially have
-      -- `j = i - 1` compared to the paper.
-      -- `ε_out_{j+1} ≤ l_{j+1}²/2 * (degree_{j+1} / (|F| - |ι_{j+1}|))^s`
-      (∀ j : Fin M,
-        ε_out j ≤ ((Dist.l j.succ : ℝ) ^ 2 / 2) *
-          ((degree ι P j.succ : ℝ) / (Fintype.card F - Fintype.card (ι j.succ))) ^ s
-        ∧
-        -- `ε_shift_{j+1} ≤ (1 - δ_j)^repeatParam_j`
-        -- `+ errStar(degree_{j+1}, ρ_{j+1}, δ_{j+1}, repeatParam_j + s)`
-        -- `+ errStar(degree_{j+1}/foldingParam_{j+1}, ρ_{j+1}, δ_{j+1}, foldingParam_{j+1})`
-        ε_shift j ≤
-          (1 - Dist.δ j.castSucc) ^ (P.repeatParam j.castSucc)  +
-          -- proximityError(degree_{j+1}, ρ(code_{j+1}), δ_{j+1}, repeatParam_j + s),
-          -- where code_{j+1} = code φ_{j+1} degree_{j+1}
-           proximityError F (degree ι P j.succ) (rate (code (P.φ j.succ) (degree ι P j.succ)))
-            (Dist.δ j.succ) (P.repeatParam j.castSucc + s) +
-          -- proximityError(degree_{j+1} / foldingParam_{j+1}, ρ(code_{j+1}), δ_{j+1},
-          -- foldingParam_{j+1})
-           proximityError F ((degree ι P j.succ) / P.foldingParam j.succ)
-            (rate (code (P.φ j.succ) (degree ι P j.succ)))
-            (Dist.δ j.succ) (P.foldingParam j.succ)) ∧
-      -- `ε_fin ≤ (1 - δ_M)^repeatParam_M`
-      ε_fin ≤ (1 - Dist.δ (Fin.last M)) ^ (P.repeatParam (Fin.last M)) := by
-  sorry
-
-end RBRSoundness
 
 end StirIOP
