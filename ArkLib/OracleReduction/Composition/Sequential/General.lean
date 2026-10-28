@@ -141,6 +141,59 @@ def seqComposeExtract {m : ℕ} (Stmt Wit : Fin (m + 1) → Type)
 
 end Verifier
 
+namespace Extractor.RoundByRound
+
+/-- Intermediate witnesses for a finite chain, retaining each first factor's seam witness. -/
+def seqComposeWitMid {m : ℕ} (Wit : Fin (m + 1) → Type) {n : Fin m → ℕ}
+    (WitMid : ∀ i, Fin (n i + 1) → Type) : Fin (Fin.vsum n + 1) → Type :=
+  match m with
+  | 0 => fun _ => Wit 0
+  | _ + 1 => Fin.append (WitMid 0)
+      (Fin.tail (seqComposeWitMid (Wit ∘ Fin.succ) (fun i => WitMid i.succ))) ∘
+        Fin.cast (by simp only [Fin.vsum_succ, Function.comp_def]; omega)
+
+/-- Fold round-by-round extractors along the guarded outputs, with the identity at the end. -/
+def seqCompose {m : ℕ} (Stmt Wit : Fin (m + 1) → Type)
+    {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
+    (V : ∀ i, Verifier oSpec (Stmt i.castSucc) (Stmt i.succ) (pSpec i))
+    (G : ∀ i, (V i).GuardedForm)
+    {WitMid : ∀ i, Fin (n i + 1) → Type}
+    (E : ∀ i, Extractor.RoundByRound oSpec (Stmt i.castSucc) (Wit i.castSucc)
+      (Wit i.succ) (pSpec i) (WitMid i)) :
+    Extractor.RoundByRound oSpec (Stmt 0) (Wit 0) (Wit (Fin.last m))
+      (ProtocolSpec.seqCompose pSpec) (seqComposeWitMid Wit WitMid) :=
+  match m with
+  | 0 => .id
+  | _ + 1 => (E 0).append
+      (seqCompose (Stmt ∘ Fin.succ) (Wit ∘ Fin.succ) (fun i => V i.succ)
+        (fun i => G i.succ) (fun i => E i.succ)) (G 0).out
+
+end Extractor.RoundByRound
+
+namespace Verifier.KnowledgeStateFunction
+
+/-- Fold named knowledge states by guarded append along the same recursion as `seqCompose`.
+Every component guard is used, including the last component before the terminal identity. -/
+def seqComposeGuarded {m : ℕ} (Stmt Wit : Fin (m + 1) → Type)
+    {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
+    {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
+    (rel : ∀ i, Set (Stmt i × Wit i))
+    (V : ∀ i, Verifier oSpec (Stmt i.castSucc) (Stmt i.succ) (pSpec i))
+    (G : ∀ i, (V i).GuardedForm)
+    {WitMid : ∀ i, Fin (n i + 1) → Type}
+    (E : ∀ i, Extractor.RoundByRound oSpec (Stmt i.castSucc) (Wit i.castSucc)
+      (Wit i.succ) (pSpec i) (WitMid i))
+    (K : ∀ i, (V i).KnowledgeStateFunction init impl (rel i.castSucc) (rel i.succ) (E i)) :
+    (Verifier.seqCompose Stmt V).KnowledgeStateFunction init impl (rel 0) (rel (Fin.last m))
+      (Extractor.RoundByRound.seqCompose Stmt Wit V G E) :=
+  match m with
+  | 0 => .id init impl
+  | _ + 1 => (K 0).appendGuarded (G 0)
+      (seqComposeGuarded (Stmt ∘ Fin.succ) (Wit ∘ Fin.succ) (fun i => rel i.succ)
+        (fun i => V i.succ) (fun i => G i.succ) (fun i => E i.succ) (fun i => K i.succ))
+
+end Verifier.KnowledgeStateFunction
+
 namespace Reduction
 
 /-- Sequential composition of reductions, defined via sequential composition of provers and
@@ -288,6 +341,33 @@ lemma seqCompose_toVerifier {m : ℕ}
       (fun i => OStmt (Fin.succ i)) (fun i => V (Fin.succ i)))
     exact h1.trans (congrArg ((V 0).toVerifier.append ·)
       (ih (Stmt ∘ Fin.succ) (fun i => OStmt (Fin.succ i)) (fun i => V (Fin.succ i))))
+
+/-- The folded named knowledge state transported to the oracle chain's verifier semantics. -/
+def seqComposeKnowledgeStateFunction {m : ℕ}
+    (Stmt : Fin (m + 1) → Type) {ιₛ : Fin (m + 1) → Type}
+    (OStmt : (i : Fin (m + 1)) → ιₛ i → Type) [∀ i j, OracleInterface (OStmt i j)]
+    (Wit : Fin (m + 1) → Type) {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
+    [∀ i j, OracleInterface ((pSpec i).Message j)]
+    {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
+    (rel : ∀ i, Set ((Stmt i × ∀ j, OStmt i j) × Wit i))
+    (V : ∀ i, OracleVerifier oSpec (Stmt i.castSucc) (OStmt i.castSucc) (Stmt i.succ)
+      (OStmt i.succ) (pSpec i))
+    (G : ∀ i, (V i).toVerifier.GuardedForm)
+    {WitMid : ∀ i, Fin (n i + 1) → Type}
+    (E : ∀ i, Extractor.RoundByRound oSpec (Stmt i.castSucc × ∀ j, OStmt i.castSucc j)
+      (Wit i.castSucc) (Wit i.succ) (pSpec i) (WitMid i))
+    (K : ∀ i, (V i).toVerifier.KnowledgeStateFunction init impl
+      (rel i.castSucc) (rel i.succ) (E i)) :
+    (seqCompose Stmt OStmt V).toVerifier.KnowledgeStateFunction init impl
+      (rel 0) (rel (Fin.last m))
+      (Extractor.RoundByRound.seqCompose (fun i => Stmt i × ∀ j, OStmt i j) Wit
+        (fun i => (V i).toVerifier) G E) :=
+  let state := Verifier.KnowledgeStateFunction.seqComposeGuarded
+    (fun i => Stmt i × ∀ j, OStmt i j) Wit rel (fun i => (V i).toVerifier) G E K
+  { toFun := state.toFun
+    toFun_empty := state.toFun_empty
+    toFun_next := state.toFun_next
+    toFun_full := by simpa only [seqCompose_toVerifier] using state.toFun_full }
 
 end OracleVerifier
 
