@@ -185,7 +185,7 @@ theorem check_honest (𝓑 : Fin 2 ↪ L)
       (t := w.t) (destIdx := ⟨Fin.last ℓ, by omega⟩)
       (h_destIdx := by simp only [Fin.val_last]) (challenges := s.challenges))
       ⟨0, by simp only [Fin.val_last, zero_mem]⟩
-  rw [hstruct.1, Sumcheck.Structured.eval_projectToMidSumcheckPoly_last] at hsum
+  rw [hstruct.1, Sumcheck.Structured.eval_fixPrefix_initial_last] at hsum
   unfold check
   rw [multiplier.evaluate_eq, hc]
   exact hsum
@@ -298,7 +298,7 @@ theorem decodedWitness_structural
       (multpoly := multiplier.polynomial) s (decodedWitness K β s p) := by
   refine ⟨?_, rfl⟩
   apply SetLike.coe_eq_coe.mp
-  rw [Sumcheck.Structured.coe_projectToMidSumcheckPoly_last]
+  rw [Sumcheck.Structured.coe_fixPrefix_initial_last]
   simp only [decodedWitness, h, MvPolynomial.C_mul]
 
 omit [DecidableEq K] [Fact (β 0 = 1)] [NeZero ℓ] in
@@ -384,7 +384,7 @@ noncomputable def rbrExtractor :
       (WitIn := Witness K β (h_ℓ_add_R_rate := h_rate) (Fin.last ℓ))
       (WitOut := Unit) (pSpec := pSpecFinalSumcheckStep (L := L))
       (WitMid := witnessFamily K β (h_rate := h_rate)) where
-  eqIn := rfl
+  extractIn _ w := w
   extractMid := fun m s _ _ => by
     have hm : m = 0 := by omega
     subst hm
@@ -420,7 +420,7 @@ noncomputable def knowledgeStateFunction (𝓑 : Fin 2 ↪ L) {σ : Type}
       (relOut := finalSumcheckRelOut K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate))
       (extractor := rbrExtractor K β (ϑ := ϑ) (h_rate := h_rate)) where
   toFun := fun _ s tr w => knowledgeState K β multiplier outputContext 𝓑 s.1 s.2 tr w
-  toFun_empty := fun _ _ => by rfl
+  toFun_empty := fun _ _ h => h
   toFun_next := fun m _ s tr msg w => by
     have hm : m = 0 := by omega
     subst hm
