@@ -296,6 +296,64 @@ theorem liftContext_runWithLog
     WriterT.run_map]
   congr
 
+section FrozenInput
+
+variable {OS OO IS IO Aux IAux OW IW : Type}
+
+/-- Retain the complete outer adversary. Only its public output and witness are changed. -/
+def frozen (P : Prover oSpec OS Aux OO OW pSpec) (x : OS) (a : Aux)
+    (dummy : IO) (project : OW → IW) : Prover oSpec IS IAux IO IW pSpec where
+  PrvState := P.PrvState
+  input := fun _ => P.input (x, a)
+  sendMessage := P.sendMessage
+  receiveChallenge := P.receiveChallenge
+  output := fun s => do
+    let (_, w) ← P.output s
+    return (dummy, project w)
+
+theorem frozen_processRound (P : Prover oSpec OS Aux OO OW pSpec) (x : OS) (a : Aux)
+    (dummy : IO) (project : OW → IW) (i : Fin n)
+    (current : OracleComp (oSpec + [pSpec.Challenge]ₒ)
+      (pSpec.Transcript i.castSucc × P.PrvState i.castSucc)) :
+    (frozen (IS := IS) (IAux := IAux) P x a dummy project).processRound i current =
+      P.processRound i current := by
+  unfold Prover.processRound frozen
+  rfl
+
+theorem frozen_runToRound (P : Prover oSpec OS Aux OO OW pSpec) (x : OS) (a : Aux)
+    (dummy : IO) (project : OW → IW) (i : Fin (n + 1)) (y : IS) (b : IAux) :
+    (frozen P x a dummy project).runToRound i y b = P.runToRound i x a := by
+  induction i using Fin.induction with
+  | zero => rfl
+  | succ i ih =>
+    rw [Prover.runToRound_succ, Prover.runToRound_succ, ih]
+    exact frozen_processRound P x a dummy project i _
+
+theorem frozen_runWithLogToRound (P : Prover oSpec OS Aux OO OW pSpec) (x : OS) (a : Aux)
+    (dummy : IO) (project : OW → IW) (i : Fin (n + 1)) (y : IS) (b : IAux) :
+    (frozen P x a dummy project).runWithLogToRound i y b =
+      P.runWithLogToRound i x a := by
+  unfold Prover.runWithLogToRound
+  rw [frozen_runToRound]
+  rfl
+
+theorem frozen_run (P : Prover oSpec OS Aux OO OW pSpec) (x : OS) (a : Aux)
+    (dummy : IO) (project : OW → IW) (y : IS) (b : IAux) :
+    (frozen P x a dummy project).run y b =
+      (fun z => (z.1, dummy, project z.2.2)) <$> P.run x a := by
+  unfold Prover.run
+  rw [frozen_runToRound]
+  simp [frozen]
+
+theorem frozen_runWithLog (P : Prover oSpec OS Aux OO OW pSpec) (x : OS) (a : Aux)
+    (dummy : IO) (project : OW → IW) (y : IS) (b : IAux) :
+    (frozen P x a dummy project).runWithLog y b =
+      (fun z => ((z.1.1, dummy, project z.1.2.2), z.2)) <$> P.runWithLog x a := by
+  simp only [Prover.runWithLog, frozen_run, simulateQ_map]
+  rfl
+
+end FrozenInput
+
 end Prover
 
 namespace Reduction
@@ -361,6 +419,116 @@ theorem liftContext_runWithLog
   unfold runWithLog
   simp [liftContext, Prover.liftContext_runWithLog, Verifier.liftContext, Verifier.run,
     run_simulateQ_writerT_optionT_map, liftM_map, hGet]
+
+section FrozenInput
+
+variable {OS OO IS IO Aux IAux OW IW : Type}
+
+/-- Run the outer prover and inner verifier on their respective inputs. -/
+private def jointRun (P : Prover oSpec OS Aux OO OW pSpec)
+    (V : Verifier oSpec IS IO pSpec)
+    (x : OS) (a : Aux) (y : IS) :
+    OptionT (OracleComp (oSpec + [pSpec.Challenge]ₒ))
+      ((FullTranscript pSpec × OO × OW) × IO) := do
+  let pr ← P.run x a
+  let out ← liftM (V.run y pr.1).run
+  return (pr, ← out.getM)
+
+private theorem outer_jointRun (P : Prover oSpec OS Aux OO OW pSpec)
+    (V : Verifier oSpec IS IO pSpec)
+    (l : Statement.Lens OS OO IS IO) (x : OS) (a : Aux) :
+    (Reduction.mk P (V.liftContext l)).run x a =
+      (fun z => (z.1, l.lift x z.2)) <$> jointRun P V x a (l.proj x) := by
+  simp only [Reduction.run, jointRun, Verifier.run, Verifier.liftContext,
+    bind_pure_comp, OptionT.run_map, liftM_map, bind_map_left, map_bind, Functor.map_map]
+  congr 1
+  funext pr
+  congr 1
+  funext out
+  cases out <;> rfl
+
+private theorem inner_jointRun (P : Prover oSpec OS Aux OO OW pSpec)
+    (V : Verifier oSpec IS IO pSpec)
+    (dummy : IO) (project : OW → IW) (x : OS) (a : Aux) (y : IS) (b : IAux) :
+    (Reduction.mk (Prover.frozen P x a dummy project) V).run y b =
+      (fun z => ((z.1.1, dummy, project z.1.2.2), z.2)) <$> jointRun P V x a y := by
+  simp [Reduction.run, jointRun, Prover.frozen_run, map_bind]
+
+/-- Log the queries of the outer prover and inner verifier separately. -/
+private def jointRunWithLog (P : Prover oSpec OS Aux OO OW pSpec)
+    (V : Verifier oSpec IS IO pSpec)
+    (x : OS) (a : Aux) (y : IS) :
+    OptionT (OracleComp (oSpec + [pSpec.Challenge]ₒ))
+      (((FullTranscript pSpec × OO × OW) × IO) ×
+        QueryLog (oSpec + [pSpec.Challenge]ₒ) × QueryLog oSpec) := do
+  let (pr, plog) ← P.runWithLog x a
+  let (out, vlog) ← liftM (simulateQ loggingOracle (V.run y pr.1)).run
+  return ((pr, ← out.getM), plog, vlog)
+
+private theorem outer_jointRunWithLog (P : Prover oSpec OS Aux OO OW pSpec)
+    (V : Verifier oSpec IS IO pSpec)
+    (l : Statement.Lens OS OO IS IO) (x : OS) (a : Aux) :
+    (Reduction.mk P (V.liftContext l)).runWithLog x a =
+      (fun z => ((z.1.1, l.lift x z.1.2), z.2)) <$>
+        jointRunWithLog P V x a (l.proj x) := by
+  have hGet (f : IO → OO) (out : Option IO) :
+      (Option.map f out).getM = f <$> (out.getM :
+        OptionT (OracleComp (oSpec + [pSpec.Challenge]ₒ)) IO) := by
+    cases out <;> simp [Option.getM, map_pure]
+  simp [Reduction.runWithLog, jointRunWithLog, Verifier.run, Verifier.liftContext,
+    Reduction.run_simulateQ_writerT_optionT_map, hGet]
+
+private theorem inner_jointRunWithLog (P : Prover oSpec OS Aux OO OW pSpec)
+    (V : Verifier oSpec IS IO pSpec)
+    (dummy : IO) (project : OW → IW) (x : OS) (a : Aux) (y : IS) (b : IAux) :
+    (Reduction.mk (Prover.frozen P x a dummy project) V).runWithLog y b =
+      (fun z => (((z.1.1.1, dummy, project z.1.1.2.2), z.1.2), z.2)) <$>
+        jointRunWithLog P V x a y := by
+  simp [Reduction.runWithLog, jointRunWithLog, Prover.frozen_runWithLog, map_bind]
+
+/-- A successful joint run returns a supported verifier output. -/
+private theorem mem_support_jointRun (P : Prover oSpec OS Aux OO OW pSpec)
+    (V : Verifier oSpec IS IO pSpec) (x : OS) (a : Aux) (y : IS)
+    (z : (FullTranscript pSpec × OO × OW) × IO)
+    (hz : z ∈ support (jointRun P V x a y)) :
+    z.2 ∈ support (V.run y z.1.1) := by
+  simp only [jointRun, OptionT.mem_support_iff, OptionT.run_bind,
+    ← monadLift_liftM_OptionT, OptionT.run_monadLift, bind_map_left,
+    Option.elimM, Option.elim_some, mem_support_bind_iff] at hz
+  obtain ⟨pr, _, out, hout, hz⟩ := hz
+  cases out with
+  | none => simp [Option.getM] at hz
+  | some v =>
+    have heq : z = (pr, v) := by simpa [Option.getM] using hz
+    subst z
+    rw [OptionT.mem_support_iff]
+    exact (mem_support_liftComp_iff _ _).mp hout
+
+/-- A successful logged joint run returns a supported verifier output. -/
+private theorem mem_support_jointRunWithLog (P : Prover oSpec OS Aux OO OW pSpec)
+    (V : Verifier oSpec IS IO pSpec) (x : OS) (a : Aux) (y : IS)
+    (z : ((FullTranscript pSpec × OO × OW) × IO) ×
+      QueryLog (oSpec + [pSpec.Challenge]ₒ) × QueryLog oSpec)
+    (hz : z ∈ support (jointRunWithLog P V x a y)) :
+    z.1.2 ∈ support (V.run y z.1.1.1) := by
+  simp only [jointRunWithLog, OptionT.mem_support_iff, OptionT.run_bind,
+    ← monadLift_liftM_OptionT, OptionT.run_monadLift, bind_map_left,
+    Option.elimM, Option.elim_some, mem_support_bind_iff] at hz
+  obtain ⟨pr, _, ⟨out, log⟩, hout, hz⟩ := hz
+  cases out with
+  | none => simp [Option.getM] at hz
+  | some v =>
+    have heq : z = ((pr.1, v), pr.2, log) := by simpa [Option.getM] using hz
+    subst z
+    have hlog := (mem_support_liftComp_iff _ _).mp hout
+    have hval : some v ∈ support
+        (Prod.fst <$> (simulateQ loggingOracle (V.run y pr.1.1)).run) := by
+      rw [support_map]
+      exact ⟨(some v, log), hlog, rfl⟩
+    rw [loggingOracle.fst_map_run_simulateQ] at hval
+    exact (OptionT.mem_support_iff _ _).mpr hval
+
+end FrozenInput
 
 end Reduction
 
@@ -433,6 +601,18 @@ theorem liftContext_perfectCompleteness
 
 end Reduction
 
+private theorem prEvent_simulate_map {α β : Type}
+    (oa : OptionT (OracleComp oSpec) α) (f : α → β) (event : β → Prop) :
+    Pr{let x ← OptionT.mk do
+      (simulateQ impl (f <$> oa).run).run' (← init)}[event x] =
+    Pr{let x ← OptionT.mk do
+      (simulateQ impl oa.run).run' (← init)}[event (f x)] := by
+  simp only [OptionT.run_map, simulateQ_map, StateT.run'_map', ← map_bind]
+  rw [OptionT.prEvent_mk, prEvent_map, OptionT.prEvent_mk]
+  apply prEvent_congr _ _ _
+  intro o
+  cases o <;> rfl
+
 namespace Verifier
 
 /-- Lifting the reduction preserves soundness, assuming the lens satisfies its soundness
@@ -443,37 +623,31 @@ theorem liftContext_soundness [Inhabited InnerStmtOut]
     {soundnessError : ℝ≥0}
     {lens : Statement.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut}
     (V : Verifier oSpec InnerStmtIn InnerStmtOut pSpec)
-    -- TODO: figure out the right compatibility relation for the IsSound condition
     [lensSound : lens.IsSound outerLangIn outerLangOut innerLangIn innerLangOut
       (V.compatStatement lens)]
     (h : V.soundness init impl innerLangIn innerLangOut soundnessError) :
       (V.liftContext lens).soundness init impl outerLangIn outerLangOut soundnessError := by
-  unfold soundness Reduction.run at h ⊢
-  -- Note: there is no distinction between `Outer` and `Inner` here
-  intro WitIn WitOut outerWitIn outerP outerStmtIn hOuterStmtIn
-  simp only [ChallengeIdx, Challenge, QueryImpl.addLift_def,
-    PFunctor.Handler.liftTarget_self, bind_pure_comp, OptionT.run_bind,
-    OptionT.run_monadLift, monadLift_self, OptionT.run_map, Option.elimM_map,
-    Option.elim_some, simulateQ_bind, StateT.run'_eq, StateT.run_bind, map_bind,
-    OptionT.mk_bind] at h ⊢
-  have innerP : Prover oSpec InnerStmtIn WitIn InnerStmtOut WitOut pSpec := {
-    PrvState := outerP.PrvState
-    input := fun _ => outerP.input (outerStmtIn, outerWitIn)
-    sendMessage := outerP.sendMessage
-    receiveChallenge := outerP.receiveChallenge
-    output := fun state => do
-      let ⟨outerStmtOut, outerWitOut⟩ ← outerP.output state
-      return ⟨default, outerWitOut⟩
-  }
-  have : lens.proj outerStmtIn ∉ innerLangIn := by
-    apply lensSound.proj_sound
-    exact hOuterStmtIn
-  have hSound := h WitIn WitOut outerWitIn innerP (lens.proj outerStmtIn) this
-  refine le_trans ?_ hSound
-  simp [Verifier.liftContext, Verifier.run]
-  -- Put the two events over the same base computation `oa`.
-  -- Then apply `lensSound.lift_sound`?
-  sorry
+  intro Aux WitOut aux P x hx
+  have hInner := h Aux WitOut aux (P.frozen x aux default id) (lens.proj x)
+    (lensSound.proj_sound x hx)
+  refine le_trans ?_ hInner
+  change Pr{let z ← OptionT.mk do
+    (simulateQ (impl.addLift challengeQueryImpl :
+      QueryImpl _ (StateT σ ProbComp))
+      ((Reduction.mk P (V.liftContext lens)).run x aux).run).run' (← init)}[
+        z.2 ∈ outerLangOut] ≤ _
+  rw [Reduction.outer_jointRun, Reduction.inner_jointRun]
+  rw [prEvent_simulate_map, prEvent_simulate_map]
+  refine prEvent_mono_of_support _ _ _ ?_
+  intro z hz hout
+  obtain ⟨s, _, hs⟩ := OptionT.mem_support_bind_mk _ _ hz
+  rw [OptionT.mem_support_iff] at hs
+  have hmem := support_simulateQ_run'_subset _ _ s hs
+  rw [← OptionT.mem_support_iff] at hmem
+  have hcompat : V.compatStatement lens x z.2 :=
+    ⟨z.1.1, Reduction.mem_support_jointRun P V x aux (lens.proj x) z hmem⟩
+  by_contra hbad
+  exact lensSound.lift_sound x z.2 hcompat hbad hout
 
 /-
   Lifting the reduction preserves knowledge soundness, assuming the lens satisfies its knowledge
@@ -485,7 +659,7 @@ theorem liftContext_soundness [Inhabited InnerStmtOut]
 
   (future extensions may define lifting relative to a particular extractor, if needed)
 -/
-theorem liftContext_knowledgeSoundness [Inhabited InnerStmtOut] [Inhabited InnerWitIn]
+theorem liftContext_knowledgeSoundness [Inhabited InnerStmtOut]
     {outerRelIn : Set (OuterStmtIn × OuterWitIn)} {outerRelOut : Set (OuterStmtOut × OuterWitOut)}
     {innerRelIn : Set (InnerStmtIn × InnerWitIn)} {innerRelOut : Set (InnerStmtOut × InnerWitOut)}
     {knowledgeError : ℝ≥0}
@@ -497,45 +671,60 @@ theorem liftContext_knowledgeSoundness [Inhabited InnerStmtOut] [Inhabited Inner
     (h : V.knowledgeSoundness init impl innerRelIn innerRelOut knowledgeError) :
       (V.liftContext stmtLens).knowledgeSoundness init impl outerRelIn outerRelOut
         knowledgeError := by
-  unfold knowledgeSoundness knowledgeSoundnessWith at h ⊢
-  obtain ⟨E, h'⟩ := h
+  obtain ⟨E, hE⟩ := h
   refine ⟨E.liftContext ⟨stmtLens, witLens⟩, ?_⟩
-  intro Aux outerStmtIn outerWitIn outerP
-  simp only [ChallengeIdx, Challenge, QueryImpl.addLift_def,
-    PFunctor.Handler.liftTarget_self, Extractor.Straightline.liftContext,
-    bind_pure_comp, OptionT.run_map, liftM_map, Functor.map_map, OptionT.run_bind,
-    StateT.run'_eq, OptionT.mk_bind, Option.mem_def, Prod.mk.eta]
-  let innerP : Prover oSpec InnerStmtIn InnerWitIn InnerStmtOut InnerWitOut pSpec :=
-    {
-      PrvState := outerP.PrvState
-      input := fun _ => outerP.input (outerStmtIn, outerWitIn)
-      sendMessage := outerP.sendMessage
-      receiveChallenge := outerP.receiveChallenge
-      output := fun state => do
-        let ⟨outerStmtOut, outerWitOut⟩ ← outerP.output state
-        return ⟨default, witLens.proj (outerStmtIn, outerWitOut)⟩
-    }
-  have h_innerP_input {innerStmtIn} {innerWitIn} :
-      innerP.input (innerStmtIn, innerWitIn) = outerP.input (outerStmtIn, outerWitIn) := rfl
-  simp only [ChallengeIdx, Challenge, QueryImpl.addLift_def,
-    PFunctor.Handler.liftTarget_self, bind_pure_comp, OptionT.run_bind,
-    OptionT.run_map, StateT.run'_eq, OptionT.mk_bind, Option.mem_def, Prod.mk.eta] at h'
-  have hR := h' InnerWitIn (stmtLens.proj outerStmtIn) default innerP
-  simp only [Reduction.runWithLog, ChallengeIdx, Challenge, run, bind_pure_comp,
-    OptionT.run_bind, OptionT.run_monadLift, monadLift_self, OptionT.run_map,
-    Option.elimM_map, Option.elim_some, Option.elimM_bind, simulateQ_bind,
-    StateT.run_bind, map_bind, OptionT.mk_bind, liftContext, ge_iff_le] at hR ⊢
-  have h_innerP_runWithLog {innerStmtIn} {innerWitIn} :
-      innerP.runWithLog innerStmtIn innerWitIn
-      = do
-        let ⟨⟨transcript, ⟨_, outerWitOut⟩⟩, rest⟩ ← outerP.runWithLog outerStmtIn outerWitIn
-        return ⟨⟨transcript, ⟨default, witLens.proj (outerStmtIn, outerWitOut)⟩⟩, rest⟩ := by
-    sorry
-  refine le_trans ?_ hR
-  -- Put the two events over the same base computation `oa`.
-  simp [h_innerP_runWithLog]
-  -- Apply event monotonicity.
-  sorry
+  intro Aux x aux P
+  have hInner := hE Aux (stmtLens.proj x) aux
+    (P.frozen x aux default (fun w => witLens.proj (x, w)))
+  let joint := Reduction.jointRunWithLog P V x aux (stmtLens.proj x)
+  let exec : OptionT (OracleComp (oSpec + [pSpec.Challenge]ₒ))
+      ((((FullTranscript pSpec × OuterStmtOut × OuterWitOut) × InnerStmtOut) ×
+        QueryLog (oSpec + [pSpec.Challenge]ₒ) × QueryLog oSpec) × Option InnerWitIn) := do
+    let z ← joint
+    let w ← liftM (E (stmtLens.proj x) (witLens.proj (x, z.1.1.2.2))
+      z.1.1.1 z.2.1.fst z.2.2).run
+    return (z, w)
+  have hOuterRun : (do
+      let z ← (Reduction.mk P (V.liftContext stmtLens)).runWithLog x aux
+      let w ← liftM ((E.liftContext ⟨stmtLens, witLens⟩) x z.1.1.2.2
+        z.1.1.1 z.2.1.fst z.2.2).run
+      return (x, w, z.1.2, z.1.1.2.2)) =
+      (fun z => (x, z.2.map (witLens.lift (x, z.1.1.1.2.2)),
+        stmtLens.lift x z.1.1.2, z.1.1.1.2.2)) <$> exec := by
+    simp [exec, joint, Reduction.outer_jointRunWithLog, Extractor.Straightline.liftContext,
+      OptionT.run_map, liftM_map, map_bind]
+  have hInnerRun : (do
+      let z ← (Reduction.mk
+        (P.frozen x aux default (fun w => witLens.proj (x, w))) V).runWithLog
+          (stmtLens.proj x) aux
+      let w ← liftM (E (stmtLens.proj x) z.1.1.2.2 z.1.1.1 z.2.1.fst z.2.2).run
+      return (stmtLens.proj x, w, z.1.2, z.1.1.2.2)) =
+      (fun z => (stmtLens.proj x, z.2, z.1.1.2,
+        witLens.proj (x, z.1.1.1.2.2))) <$> exec := by
+    simp [exec, joint, Reduction.inner_jointRunWithLog, map_bind]
+  dsimp only at hInner ⊢
+  rw [hOuterRun]
+  rw [hInnerRun] at hInner
+  rw [prEvent_simulate_map]
+  rw [prEvent_simulate_map] at hInner
+  refine le_trans ?_ hInner
+  refine prEvent_mono_of_support _ _ _ ?_
+  intro z hz hbad
+  obtain ⟨s, _, hs⟩ := OptionT.mem_support_bind_mk _ _ hz
+  rw [OptionT.mem_support_iff] at hs
+  have hmem := support_simulateQ_run'_subset _ _ s hs
+  rw [← OptionT.mem_support_iff] at hmem
+  have hjoint : z.1 ∈ support joint := by
+    simp only [exec, mem_support_bind_iff, support_pure, Set.mem_singleton_iff] at hmem
+    obtain ⟨a, ha, b, _, hab⟩ := hmem
+    cases hab
+    exact ha
+  have hcompat : V.compatStatement stmtLens x z.1.1.2 :=
+    ⟨z.1.1.1.1, Reduction.mem_support_jointRunWithLog P V x aux (stmtLens.proj x) z.1 hjoint⟩
+  refine ⟨?_, lensKS.proj_knowledgeSound x z.1.1.2 z.1.1.1.2.2 hcompat hbad.2⟩
+  intro w hw hin
+  exact hbad.1 _ (Option.mem_map_of_mem _ hw)
+    (lensKS.lift_knowledgeSound x z.1.1.1.2.2 w True.intro hin)
 
 /-
   Lifting the reduction preserves round-by-round soundness, assuming the lens satisfies its
