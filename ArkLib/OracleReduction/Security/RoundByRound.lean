@@ -85,6 +85,12 @@ structure RoundByRound
   /-- Construct the intermediate witness for the final round from the output witness -/
   extractOut : StmtIn → FullTranscript pSpec → WitOut → WitMid (.last n)
 
+/-- The extractor with no witnesses. -/
+def RoundByRound.unit : RoundByRound oSpec StmtIn Unit Unit pSpec (fun _ => Unit) where
+  extractIn := fun _ _ => ()
+  extractMid := fun _ _ _ _ => ()
+  extractOut := fun _ _ _ => ()
+
 namespace RoundByRoundOneShot
 
 /-- A one-shot round-by-round extractor can be converted to the general round-by-round extractor
@@ -118,6 +124,13 @@ noncomputable def toRoundByRoundOfRel (E : RoundByRoundOneShot oSpec StmtIn WitI
   extractIn := fun _ => _root_.id
   extractMid := fun _ stmtIn _ witIn => if h : ∃ v, (stmtIn, v) ∈ relIn then h.choose else witIn
   extractOut := fun stmtIn tr _ => E (.last n) stmtIn tr default
+
+open Classical in
+/-- An unbounded one-shot extractor, selecting an input witness whenever one exists.
+This is noncomputable because it chooses a witness from an arbitrary relation. -/
+noncomputable def ofRelation [Nonempty WitIn] (relIn : Set (StmtIn × WitIn)) :
+    RoundByRoundOneShot oSpec StmtIn WitIn pSpec :=
+  fun _ stmt _ _ => if h : ∃ w, (stmt, w) ∈ relIn then h.choose else Classical.ofNonempty
 
 end RoundByRoundOneShot
 
@@ -288,13 +301,15 @@ theorem KnowledgeStateFunctionOneShot.toFun_empty_of_eq_zero
   subst this
   exact stF.toFun_empty stmtIn
 
-/-- A state function & a one-shot round-by-round extractor gives rise to a knowledge state function
-  where the intermediate witness types are all equal to the input witness type -/
-noncomputable def KnowledgeStateFunctionOneShot.toKnowledgeStateFunction
+/-- A state function and a one-shot extractor induce a knowledge state function when the
+extractor recovers a valid witness at a true initial state. Intermediate extraction uses
+noncomputable choice of a related witness. -/
+noncomputable def StateFunction.toKnowledgeStateFunctionOfOneShot
     {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
     {verifier : Verifier oSpec StmtIn StmtOut pSpec}
-    (stF : KnowledgeStateFunctionOneShot init impl relIn.language relOut.language verifier)
-    (oneShotE : Extractor.RoundByRoundOneShot oSpec StmtIn WitIn pSpec) :
+    (stF : StateFunction init impl relIn.language relOut.language verifier)
+    (oneShotE : Extractor.RoundByRoundOneShot oSpec StmtIn WitIn pSpec)
+    (hE : ∀ stmt, stF.toFun 0 stmt default → (stmt, oneShotE 0 stmt default default) ∈ relIn) :
     verifier.KnowledgeStateFunction init impl relIn relOut
       (oneShotE.toRoundByRoundOfRel (WitOut := WitOut) relIn) where
   toFun := fun m stmtIn tr witIn => if m = 0 then (stmtIn, witIn) ∈ relIn else
@@ -302,23 +317,25 @@ noncomputable def KnowledgeStateFunctionOneShot.toKnowledgeStateFunction
   toFun_empty := fun stmtIn witIn h => by
     simpa [Extractor.RoundByRoundOneShot.toRoundByRoundOfRel] using h
   toFun_next := fun m hDir stmtIn tr msg witIn h => by
-    -- `m.succ ≠ 0`, so the hypothesis is the `else` branch.
     rw [ite_eq_right (Fin.succ_ne_zero m)] at h
+    have hprev : stF.toFun m.castSucc stmtIn tr ∨ ∃ v, (stmtIn, v) ∈ relIn :=
+      h.imp_left fun hsucc => not_not.mp fun hcast =>
+        stF.toFun_next m hDir stmtIn tr hcast msg hsucc
     by_cases hm : m.castSucc = 0
-    · -- Round-0 obligation: produce a witness *valid for `relIn`*.
-      rw [ite_eq_left hm]
-      -- The left disjunct of `h` is impossible: the state function is false on the empty
-      -- transcript, and `toFun_next` propagates that falsity across a `P_to_V` round.
-      have hstF : ¬ stF.toFun m.succ stmtIn (tr.concat msg) := by
-        refine stF.toFun_next m hDir stmtIn tr msg ?_
-        exact stF.toFun_empty_of_eq_zero (stmtIn := stmtIn) (m := m.castSucc) (hm := hm) (tr := tr)
-      have hex : ∃ v, (stmtIn, v) ∈ relIn := h.resolve_left hstF
-      -- `extractMid` selects such a valid witness.
+    · rw [ite_eq_left hm]
+      have hex : ∃ v, (stmtIn, v) ∈ relIn := by
+        rcases hprev with hprev | hex
+        · have hzero : stF.toFun 0 stmtIn default := by
+            have htransport : ∀ (k : Fin (n + 1)) (tr : Transcript k pSpec),
+                k = 0 → stF.toFun k stmtIn tr → stF.toFun 0 stmtIn default := by
+              intro k tr hk
+              subst hk
+              simp [Subsingleton.elim tr default]
+            exact htransport _ tr hm hprev
+          exact (Set.mem_language_iff relIn stmtIn).1 (stF.toFun_empty stmtIn hzero)
+        · exact hex
       simpa [Extractor.RoundByRoundOneShot.toRoundByRoundOfRel, hex] using hex.choose_spec
-    · rw [ite_eq_right hm]
-      refine h.imp_left ?_
-      -- Contrapositive of the one-shot `toFun_next`.
-      exact fun hsucc => not_not.mp fun hcast => stF.toFun_next m hDir stmtIn tr msg hcast hsucc
+    · exact (ite_eq_right hm).symm ▸ hprev
   toFun_full := fun stmtIn tr witOut h => by
     have hLang :
         0 < Pr{let stmtOut ← (OptionT.mk do
@@ -330,15 +347,84 @@ noncomputable def KnowledgeStateFunctionOneShot.toKnowledgeStateFunction
       by_contra hfalse
       rw [stF.toFun_full stmtIn tr hfalse] at hLang
       exact (lt_irrefl 0 hLang).elim
-    by_cases hn : n = 0
-    · exact (stF.toFun_empty_of_eq_zero (init := init) (impl := impl)
-        (stmtIn := stmtIn) (m := .last n)
-        (hm := by apply Fin.ext; simpa using hn) (tr := tr) hstF).elim
-    · rw [ite_eq_right (show (Fin.last n : Fin (n + 1)) ≠ 0 by
-          intro hzero
-          apply hn
-          simpa [Fin.ext_iff] using congrArg Fin.val hzero)]
+    by_cases hn : (Fin.last n : Fin (n + 1)) = 0
+    · simp only [hn, ↓reduceIte]
+      simp only [Extractor.RoundByRoundOneShot.toRoundByRoundOfRel]
+      clear h hLang
+      generalize hk : (Fin.last n : Fin (n + 1)) = k at tr hstF ⊢
+      have hk0 : k = 0 := hk.symm.trans hn
+      subst hk0
+      have htr : tr = default := Subsingleton.elim _ _
+      subst htr
+      exact hE stmtIn hstF
+    · rw [ite_eq_right hn]
       exact Or.inl hstF
+
+/-- An ordinary state function induces a knowledge state function by unbounded extraction.
+The extractor is noncomputable because it chooses related input witnesses. -/
+noncomputable def StateFunction.toKnowledgeStateFunctionOfRel [Nonempty WitIn]
+    {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
+    {verifier : Verifier oSpec StmtIn StmtOut pSpec}
+    (S : verifier.StateFunction init impl relIn.language relOut.language) :
+    verifier.KnowledgeStateFunction init impl relIn relOut
+      ((Extractor.RoundByRoundOneShot.ofRelation relIn).toRoundByRoundOfRel relIn) :=
+  S.toKnowledgeStateFunctionOfOneShot init impl
+    (Extractor.RoundByRoundOneShot.ofRelation relIn) (fun stmt h => by
+      have hex := (Set.mem_language_iff relIn stmt).1 (S.toFun_empty stmt h)
+      simpa [Extractor.RoundByRoundOneShot.ofRelation, hex] using hex.choose_spec)
+
+omit [∀ i, SampleableType (pSpec.Challenge i)] in
+/-- Unbounded extraction can fail only outside the input language, at a bad state transition. -/
+theorem StateFunction.toKnowledgeStateFunctionOfRel_failure [Nonempty WitIn]
+    {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
+    {verifier : Verifier oSpec StmtIn StmtOut pSpec}
+    (S : verifier.StateFunction init impl relIn.language relOut.language)
+    (i : pSpec.ChallengeIdx) (stmt : StmtIn) (tr : Transcript i.1.castSucc pSpec)
+    (challenge : pSpec.Challenge i)
+    (h : rbrExtractionFailureEvent (oSpec := oSpec) (WitOut := WitOut)
+      (S.toKnowledgeStateFunctionOfRel init impl).toFun
+      ((Extractor.RoundByRoundOneShot.ofRelation relIn).toRoundByRoundOfRel relIn)
+      i stmt tr challenge) :
+    stmt ∉ relIn.language ∧ ¬ S.toFun i.1.castSucc stmt tr ∧
+      S.toFun i.1.succ stmt (tr.concat challenge) := by
+  classical
+  obtain ⟨w, hprev, hnext⟩ := h
+  simp only [toKnowledgeStateFunctionOfRel, toKnowledgeStateFunctionOfOneShot,
+    Extractor.RoundByRoundOneShot.toRoundByRoundOfRel,
+    ite_eq_right (Fin.succ_ne_zero _)] at hprev hnext
+  have hnex : ¬ ∃ v, (stmt, v) ∈ relIn := by
+    intro hex
+    apply hprev
+    split
+    · simpa [hex] using hex.choose_spec
+    · exact Or.inr hex
+  have hlang : stmt ∉ relIn.language := fun h => hnex ((Set.mem_language_iff _ _).1 h)
+  refine ⟨hlang, ?_, hnext.resolve_right hnex⟩
+  intro hstate
+  by_cases hz : i.1.castSucc = 0
+  · have hzero : ∀ (k : Fin (n + 1)) (tr : Transcript k pSpec),
+        k = 0 → S.toFun k stmt tr → stmt ∈ relIn.language := by
+      intro k tr hk
+      subst hk
+      simpa [Subsingleton.elim tr default] using S.toFun_empty stmt
+    exact hlang (hzero _ tr hz hstate)
+  · exact hprev (by simpa [hz] using Or.inl hstate)
+
+/-- A one-shot state function and extractor induce a knowledge state function with input
+witnesses at every round. Intermediate extraction uses noncomputable choice. -/
+noncomputable def KnowledgeStateFunctionOneShot.toKnowledgeStateFunction
+    {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
+    {verifier : Verifier oSpec StmtIn StmtOut pSpec}
+    (stF : KnowledgeStateFunctionOneShot init impl relIn.language relOut.language verifier)
+    (oneShotE : Extractor.RoundByRoundOneShot oSpec StmtIn WitIn pSpec) :
+    verifier.KnowledgeStateFunction init impl relIn relOut
+      (oneShotE.toRoundByRoundOfRel (WitOut := WitOut) relIn) :=
+  StateFunction.toKnowledgeStateFunctionOfOneShot init impl
+    { toFun := stF.toFun
+      toFun_empty := fun stmt h => (stF.toFun_empty stmt h).elim
+      toFun_next := fun m hdir stmt tr h msg => stF.toFun_next m hdir stmt tr msg h
+      toFun_full := stF.toFun_full }
+    oneShotE (fun stmt h => (stF.toFun_empty stmt h).elim)
 
 /-- Coercion to the underlying function of a state function -/
 instance {langIn : Set StmtIn} {langOut : Set StmtOut}
@@ -357,6 +443,44 @@ instance {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
     CoeFun (verifier.KnowledgeStateFunction init impl relIn relOut extractor)
     (fun _ => (m : Fin (n + 1)) → StmtIn → Transcript m pSpec → WitMid m → Prop) :=
       ⟨fun f => f.toFun⟩
+
+/-- An ordinary state function, read as a knowledge state function with `Unit` witnesses. -/
+def StateFunction.toKnowledgeStateFunction
+    {langIn : Set StmtIn} {langOut : Set StmtOut}
+    {verifier : Verifier oSpec StmtIn StmtOut pSpec}
+    (S : verifier.StateFunction init impl langIn langOut) :
+    verifier.KnowledgeStateFunction init impl (langIn ×ˢ (Set.univ : Set Unit))
+      (langOut ×ˢ (Set.univ : Set Unit)) Extractor.RoundByRound.unit where
+  toFun := fun m x tr _ => S m x tr
+  toFun_empty := fun x _ h => ⟨S.toFun_empty x h, Set.mem_univ _⟩
+  toFun_next := fun m hdir x tr msg _ h => by
+    by_contra hprev
+    exact S.toFun_next m hdir x tr hprev msg h
+  toFun_full := fun x tr _ h => by
+    by_contra hfalse
+    have hzero := S.toFun_full x tr hfalse
+    simp only [Set.mem_prod, Set.mem_univ, and_true] at h
+    exact (ne_of_gt h) hzero
+
+omit [∀ i, SampleableType (pSpec.Challenge i)] in
+@[simp]
+theorem StateFunction.toKnowledgeStateFunction_apply
+    {langIn : Set StmtIn} {langOut : Set StmtOut}
+    {verifier : Verifier oSpec StmtIn StmtOut pSpec}
+    (S : verifier.StateFunction init impl langIn langOut)
+    (m : Fin (n + 1)) (x : StmtIn) (tr : Transcript m pSpec) :
+    S.toKnowledgeStateFunction init impl m x tr () ↔ S m x tr := Iff.rfl
+
+omit [∀ i, SampleableType (pSpec.Challenge i)] in
+@[simp]
+theorem StateFunction.toKnowledgeStateFunction_toStateFunction_apply
+    {langIn : Set StmtIn} {langOut : Set StmtOut}
+    {verifier : Verifier oSpec StmtIn StmtOut pSpec}
+    (S : verifier.StateFunction init impl langIn langOut)
+    (m : Fin (n + 1)) (x : StmtIn) (tr : Transcript m pSpec) :
+    (S.toKnowledgeStateFunction init impl).toStateFunction init impl m x tr ↔ S m x tr := by
+  change (∃ _ : Unit, S m x tr) ↔ S m x tr
+  simp
 
 /-- A protocol with `verifier` satisfies round-by-round soundness with respect to input language
   `langIn`, output language `langOut`, and error `rbrSoundnessError` if:
@@ -693,7 +817,8 @@ theorem rbrKnowledgeSoundnessOneShot_implies_rbrKnowledgeSoundness
   refine prEvent_mono _ _ _ ?_
   rintro ⟨transcript, challenge, proveQueryLog⟩ ⟨witMid, hcast, hsucc⟩
   simp only [Extractor.RoundByRoundOneShot.toRoundByRoundOfRel, ite_eq_right (Fin.succ_ne_zero _),
-    KnowledgeStateFunctionOneShot.toKnowledgeStateFunction] at hcast hsucc
+    KnowledgeStateFunctionOneShot.toKnowledgeStateFunction,
+    StateFunction.toKnowledgeStateFunctionOfOneShot] at hcast hsucc
   -- The crux: the general bad event forces `relIn` to have *no* witness for `stmtIn` at all.
   -- That is what bridges the gap to the one-shot event, whose extractor sees the prover's query
   -- log while `extractMid` cannot.
