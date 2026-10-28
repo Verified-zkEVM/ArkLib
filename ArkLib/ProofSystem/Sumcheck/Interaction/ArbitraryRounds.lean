@@ -196,7 +196,8 @@ theorem roundStages_honest [DecidableEq R] {m : ℕ} (D : Fin m ↪ R)
   congr 1
   funext r
   erw [executeCore_accepted R n deg ambient ⟨start + j, by omega⟩ input.1.stmt _ _ _ r
-    (projected_sum_of_relationRound R n deg D ⟨start + j, by omega⟩ input.1.stmt p h)]
+    (Spec.SingleRound.projected_sum_of_relationRound R n deg D
+      ⟨start + j, by omega⟩ input.1.stmt p h)]
   rfl
 
 /-- Honest execution of any remaining interval accepts from one initial multivariate relation.
@@ -242,9 +243,9 @@ theorem executeRounds_honest [DecidableEq R] {m : ℕ} (D : Fin m ↪ R)
       erw [executeCore_sampled_eq]
       simp only [pure_bind]
       erw [executeCore_accepted R n deg ambient i current _ _ _ r
-        (projected_sum_of_relationRound R n deg D i current p hcurrent)]
+        (Spec.SingleRound.projected_sum_of_relationRound R n deg D i current p hcurrent)]
       rfl
-    · exact relationRound_projected_output R n deg D i current p r
+    · exact Spec.SingleRound.relationRound_projected_output R n deg D i current p r
   obtain ⟨output, hex, horacles, hrelation⟩ :=
     OrderedExecution.run_preserves count I stages Inv preserves
       (⟨stmt, (polynomialFamily R n deg).behaviorOfRealizations (fun _ => p)⟩, ()) ⟨rfl, h⟩

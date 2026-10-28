@@ -60,7 +60,8 @@ theorem executeRoundsSampled_support_completeness [DecidableEq R] {m : ℕ} (D :
       support_map] at hresult
     obtain ⟨r, _, rfl⟩ := hresult
     refine ⟨_, rfl, himpl, ?_⟩
-    exact relationRound_projected_output R n deg D ⟨start + j, by omega⟩ input.1.stmt p r
+    exact Spec.SingleRound.relationRound_projected_output R n deg D
+      ⟨start + j, by omega⟩ input.1.stmt p r
   have hrun := OrderedExecution.run_preserves_support count I stages Inv preserves
     (⟨stmt, (polynomialFamily R n deg).behaviorOfRealizations (fun _ => p)⟩, ()) ⟨rfl, h⟩
   intro result hresult

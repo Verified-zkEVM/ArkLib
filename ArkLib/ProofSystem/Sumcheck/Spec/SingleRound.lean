@@ -10,10 +10,6 @@ public import ArkLib.OracleReduction.Composition.Sequential.General
 public import ArkLib.OracleReduction.LiftContext.OracleReduction
 public import ArkLib.OracleReduction.LiftContext.Purity
 public import VCVio.OracleComp.SimSemantics.OptionT.Basic
-public import ArkLib.ProofSystem.Component.SendClaim
-public import ArkLib.ProofSystem.Component.CheckClaim
-public import ArkLib.ProofSystem.Component.RandomQuery
-public import ArkLib.ProofSystem.Component.ReduceClaim
 public import ArkLib.Data.Fin.Basic
 public import ArkLib.Data.MvPolynomial.EvalExcept
 -- `Vector.finRange` is unfolded by `rw` below; its body is not exposed by default.
@@ -23,8 +19,8 @@ import all Init.Data.Vector.FinRange
 # Single round of the Sum-check Protocol
 
 We define a single round of the sum-check protocol as a two-message oracle reduction. The simple
-round has proved perfect completeness; lifted completeness and legacy round-by-round knowledge
-soundness still depend on admissions. `General.lean` composes the rounds into the full protocol.
+round and its lifted form have proved perfect completeness; legacy round-by-round knowledge
+soundness still depends on admissions. `General.lean` composes the rounds into the full protocol.
 
 ## Protocol Description
 
@@ -458,6 +454,84 @@ def projectedRoundPolynomial (i : Fin n) (challenges : Fin i.castSucc → R)
       poly.val.evalExcept i (roundSuffix R n i challenges x),
     Submodule.sum_mem _ fun _ _ => MvPolynomial.evalExcept_mem_degreeLE i _ poly.property⟩
 
+/-- The projected polynomial satisfies the univariate sum claim of the input round. -/
+theorem projected_sum_of_relationRound (i : Fin n)
+    (stmt : Spec.StatementRound R n i.castSucc) (p : Spec.OracleStatement R n deg ())
+    (h : ((stmt, fun _ => p), ()) ∈ Spec.relationRound R n deg D i.castSucc) :
+    ((univ.map D).toList.map (fun x =>
+      (projectedRoundPolynomial R n deg D i stmt.challenges p).val.eval x)).sum =
+        stmt.target := by
+  cases n with
+  | zero => exact Fin.elim0 i
+  | succ n =>
+    have hlist := Multiset.sum_map_toList (univ.map D).1
+      (fun a => (projectedRoundPolynomial R (n + 1) deg D i stmt.challenges p).val.eval a)
+    change _ = ∑ a ∈ univ.map D, _ at hlist
+    apply hlist.trans
+    simp only [projectedRoundPolynomial, Polynomial.eval_finsetSum]
+    refine (MvPolynomial.sum_eval_evalExcept_append (l := n - i) i stmt.challenges
+      (fun _ => univ.map D) (by omega) p.val).trans ?_
+    change (∑ z ∈ (univ.map D) ^ᶠ (n + 1 - i.val),
+      p.val.eval (Fin.append stmt.challenges z ∘ Fin.cast (by simp))) = _ at h
+    rw [Fin.sum_piFinset_cast _ (show n + 1 - i.val = (n - i.val) + 1 by omega)] at h
+    rw [← h]
+    apply Finset.sum_congr rfl
+    intro x _
+    congr 1
+    rw [Fin.append_cast_right]
+    rfl
+
+/-- The projected sum claim and the current multivariate relation are equivalent. -/
+theorem projected_sum_iff_relationRound (i : Fin n)
+    (stmt : Spec.StatementRound R n i.castSucc) (p : Spec.OracleStatement R n deg ()) :
+    ((univ.map D).toList.map (fun x =>
+      (projectedRoundPolynomial R n deg D i stmt.challenges p).val.eval x)).sum =
+        stmt.target ↔ ((stmt, fun _ => p), ()) ∈ Spec.relationRound R n deg D i.castSucc := by
+  let total := ∑ x ∈ (univ.map D) ^ᶠ (n - i.val),
+    p.val.eval (Fin.append stmt.challenges x ∘ Fin.cast (by simp))
+  have h := projected_sum_of_relationRound R n deg D i
+    ⟨total, stmt.challenges⟩ p (by rfl)
+  change _ = total at h
+  change _ = stmt.target ↔ total = stmt.target
+  rw [h]
+
+/-- Updating the target to the projected evaluation establishes the next multivariate round. -/
+theorem relationRound_projected_output (i : Fin n)
+    (stmt : Spec.StatementRound R n i.castSucc) (p : Spec.OracleStatement R n deg ())
+    (r : R) :
+    (((⟨(projectedRoundPolynomial R n deg D i stmt.challenges p).val.eval r,
+      Fin.snoc stmt.challenges r⟩ : Spec.StatementRound R n i.succ), fun _ => p), ()) ∈
+        Spec.relationRound R n deg D i.succ := by
+  cases n with
+  | zero => exact Fin.elim0 i
+  | succ n =>
+    change _ = (∑ x ∈ (univ.map D) ^ᶠ (n - i),
+      p.val.evalExcept i (Fin.append stmt.challenges x ∘ Fin.cast (by simp; omega))).eval r
+    simp only [Polynomial.eval_finsetSum, MvPolynomial.eval_evalExcept_append]
+    change (∑ x ∈ (univ.map D) ^ᶠ (n + 1 - (i + 1)),
+      p.val.eval (Fin.append (Fin.snoc stmt.challenges r) x ∘ Fin.cast (by simp; omega))) = _
+    rw [Fin.sum_piFinset_cast (univ.map D)
+      (show n + 1 - (i + 1) = n - i by omega)]
+    apply Finset.sum_congr rfl
+    intro x _
+    congr 1
+    rw [Fin.append_cast_right]
+    rfl
+
+/-- For an arbitrary next target, the successor relation is exactly projected evaluation. -/
+theorem relationRound_output_iff (i : Fin n)
+    (stmt : Spec.StatementRound R n i.castSucc) (p : Spec.OracleStatement R n deg ())
+    (r target : R) :
+    (((⟨target, Fin.snoc stmt.challenges r⟩ : Spec.StatementRound R n i.succ),
+      fun _ => p), ()) ∈ Spec.relationRound R n deg D i.succ ↔
+      (projectedRoundPolynomial R n deg D i stmt.challenges p).val.eval r = target := by
+  have h := relationRound_projected_output R n deg D i stmt p r
+  change (∑ x ∈ (univ.map D) ^ᶠ (n - i.succ.val),
+    p.val.eval (Fin.append (Fin.snoc stmt.challenges r) x ∘ Fin.cast (by simp))) = _ at h
+  change (∑ x ∈ (univ.map D) ^ᶠ (n - i.succ.val),
+    p.val.eval (Fin.append (Fin.snoc stmt.challenges r) x ∘ Fin.cast (by simp))) = target ↔ _
+  rw [h]
+
 /-- The oracle statement lens that connect the simple to the full single-round sum-check protocol
 
 The round index guarantees positive arity. The projection sums over the suffix domain. -/
@@ -685,7 +759,78 @@ variable {R : Type} [CommSemiring R] [DecidableEq R] [SampleableType R]
   {n : ℕ} {deg : ℕ} {m : ℕ} {D : Fin m ↪ R}
   {ι : Type} {oSpec : OracleSpec ι} (i : Fin n)
 
--- Showing that the lenses satisfy the completeness and rbr knowledge soundness conditions
+omit [DecidableEq R] [SampleableType R] in
+private lemma input_projection (stmt : StatementRound R n i.castSucc)
+    (os : ∀ j, OracleStatement R n deg j) :
+    (((oStmtLens R n deg D i).proj (stmt, os)), ()) ∈ Simple.inputRelation R deg D ↔
+      ((stmt, os), ()) ∈ relationRound R n deg D i.castSucc := by
+  have h := projected_sum_iff_relationRound R n deg D i stmt (os ())
+  have hsum := Multiset.sum_map_toList (univ.map D).val
+    (fun x => (projectedRoundPolynomial R n deg D i stmt.challenges (os ())).val.eval x)
+  change (List.map _ (univ.map D).toList).sum = ∑ x ∈ univ.map D, _ at hsum
+  rw [hsum] at h
+  simpa [Simple.inputRelation, oStmtLens, Statement.Lens.proj] using h
+
+omit [DecidableEq R] [SampleableType R] in
+private lemma output_projection (stmt : StatementRound R n i.castSucc)
+    (os : ∀ j, OracleStatement R n deg j) (target r : R) :
+    (((oStmtLens R n deg D i).lift (stmt, os) ((target, r), fun _ =>
+      projectedRoundPolynomial R n deg D i stmt.challenges (os ()))), ()) ∈
+        relationRound R n deg D i.succ ↔
+      ((((target, r), fun _ => projectedRoundPolynomial R n deg D i stmt.challenges (os ())), ()) ∈
+        Simple.outputRelation R deg) := by
+  simpa [oStmtLens, Statement.Lens.lift, Simple.outputRelation] using
+    relationRound_output_iff R n deg D i stmt (os ()) r target
+
+omit [SampleableType R] in
+private lemma verifier_polynomial (stmt : StatementRound R n i.castSucc)
+    (os : ∀ j, OracleStatement R n deg j)
+    (out : Simple.StmtOut R × (∀ j, Simple.OStmtOut R deg j))
+    (hc : (Simple.oracleVerifier R deg D oSpec).toVerifier.compatStatement
+      (oStmtLens R n deg D i) (stmt, os) out) :
+    out.2 () = projectedRoundPolynomial R n deg D i stmt.challenges (os ()) := by
+  rw [Simple.oracleVerifier_eq_verifier] at hc
+  rcases hc with ⟨tr, htr⟩
+  simp only [Simple.StmtOut, Simple.OStmtOut, Verifier.run, Simple.StmtIn, Simple.OStmtIn,
+    Simple.verifier, Fin.isValue, sum_map, guard_eq, bind_pure_comp, Statement.Lens.proj,
+    oStmtLens, Fin.val_castSucc, ofPFunctor_toPFunctor, Fin.val_succ, MonadAttach.support_map,
+    MonadAttach.support_ite, MonadAttach.support_pure, support_failure, Set.mem_image,
+    Set.mem_ite_empty_right, Set.mem_singleton_iff, and_true, exists_const] at htr
+  exact (congrFun (congrArg Prod.snd htr.2) ()).symm
+
+private lemma reduction_prover_support {SI WI SO WO : Type} {k : ℕ} {ps : ProtocolSpec k}
+    (red : Reduction oSpec SI WI SO WO ps) (x : SI) (w : WI)
+    (z : (FullTranscript ps × SO × WO) × SO)
+    (hz : z ∈ support (red.run x w)) : z.1 ∈ support (red.prover.run x w) := by
+  change some z ∈ support (red.run x w).run at hz
+  rw [Reduction.run_run_eq_bind] at hz
+  simp only [mem_support_bind_iff, mem_support_pure_iff] at hz
+  rcases hz with ⟨pr, hpr, o, _ho, heq⟩
+  cases o with
+  | none => simp at heq
+  | some out =>
+    simp only [Option.map_some, Option.some.injEq] at heq
+    subst z
+    exact hpr
+
+omit [DecidableEq R] [SampleableType R] in
+private lemma honest_round (stmt : Simple.StmtIn R × (∀ j, Simple.OStmtIn R deg j)) :
+    (Simple.prover R deg oSpec).runToRound (Fin.last 2) stmt () = (do
+      let chal ← (pSpec R deg).getChallenge ⟨1, rfl⟩
+      pure (FullTranscript.mk2 (stmt.2 ()) chal, (stmt.2 (), chal))) := by
+  have step1 : (Simple.prover R deg oSpec).runToRound ((1 : Fin 2).castSucc) stmt () =
+      (Simple.prover R deg oSpec).processRound 0
+        ((Simple.prover R deg oSpec).runToRound ((0 : Fin 2).castSucc) stmt ()) :=
+    Prover.runToRound_succ 0 _ _ _
+  refine (Prover.runToRound_succ 1 _ _ _).trans ?_
+  rw [step1, Prover.processRound_of_dir_eq_P_to_V 0 rfl,
+    Prover.processRound_of_dir_eq_V_to_P 1 rfl]
+  simp only [Simple.prover, Prover.runToRound_zero_of_prover_first, Nat.reduceAdd,
+    Fin.castSucc_zero, Fin.reduceLast, Fin.coe_ofNat_eq_mod, liftM_pure,
+    bind_pure_comp, map_pure, pure_bind]
+  congr 1
+  funext c
+  exact congrArg (·, stmt.2 (), c) (FullTranscript.mk2_eq_snoc_snoc _ _).symm
 
 instance oCtxLens_complete :
     (oCtxLens R n deg D i).toContext.IsComplete
@@ -695,33 +840,29 @@ instance oCtxLens_complete :
         (oCtxLens R n deg D i).toContext)
 where
   proj_complete := by
-    simp only [relationRound, Fin.val_castSucc, Set.mem_ofPred_eq, Simple.StmtIn,
-      Simple.OStmtIn, Simple.inputRelation, sum_map, Simple.StmtOut, Simple.OStmtOut,
-      oCtxLens, forall_const, Prod.forall]
-    unfold oStmtLens
-    unfold projectedRoundPolynomial
-    induction n with
-    | zero => exact Fin.elim0 i
-    | succ n ih =>
-      intro stmt oStmt hRelIn
-      simp only [← hRelIn]
-      simp_rw [Polynomial.eval_finsetSum, MvPolynomial.eval_evalExcept]
-      -- Remaining: ∑ a ∈ D, ∑ y ∈ D^(n-i), eval (insertNth i a (append c y ∘ cast)) p
-      --          = ∑ z ∈ D^(n+1-i), eval (append c z ∘ cast) p
-      -- Needs: (1) insertNth i a (append c y ∘ cast) = append c (cons a y) ∘ cast
-      --        (2) piFinset cons decomposition for D^(n+1-i) ↔ D × D^(n-i)
-      sorry
+    rintro ⟨stmt, os⟩ ⟨⟩ h
+    exact (input_projection i stmt os).mpr h
   lift_complete := by
-    simp only [Simple.StmtOut, Simple.OStmtOut, Simple.StmtIn, Simple.OStmtIn,
-      oCtxLens, relationRound, Fin.val_castSucc, Set.mem_ofPred_eq, Fin.val_succ,
-      Prod.forall]
-    unfold compatContext oStmtLens
-    -- simp
-    -- induction n with
-    -- | zero => exact Fin.elim0 i
-    -- | succ n ih =>
-    --   simp
-    sorry
+    rintro ⟨stmt, os⟩ ⟨⟩ out ⟨⟩ hc _hi _ho
+    rw [Simple.oracleReduction_eq_reduction] at hc
+    rcases hc with ⟨z, hz, hout⟩
+    have hp := reduction_prover_support (Simple.reduction R deg D oSpec) _ _ z hz
+    change z.1 ∈ support ((Simple.prover R deg oSpec).run
+      ((oStmtLens R n deg D i).proj (stmt, os)) ()) at hp
+    rw [Prover.run, honest_round] at hp
+    simp only [Simple.StmtOut, Simple.OStmtOut, ChallengeIdx, Nat.reduceAdd, Nat.add_zero,
+      Fin.vcons_fin_zero, Fin.vappend_zero, Challenge, Fin.reduceLast, Simple.StmtIn,
+      Simple.OStmtIn, Simple.prover, Fin.isValue, MessageIdx, Message, Fin.castSucc_zero,
+      Fin.succ_zero_eq_one, Fin.castSucc_one, Fin.succ_one_eq_two,
+      HasQuery.instOfMonadLift_query, Fin.coe_ofNat_eq_mod, Nat.reduceMod, bind_pure_comp,
+      liftM_pure, map_pure, Functor.map_map, MonadAttach.support_map, Set.mem_image,
+      MonadAttach.mem_support] at hp
+    obtain ⟨c, _hc, heq⟩ := hp
+    change z.1.2 = (out, ()) at hout
+    rw [← heq] at hout
+    simp only [Prod.mk.injEq, and_true] at hout
+    subst out
+    exact (output_projection i stmt os _ c).mpr rfl
 
 instance extractorLens_rbr_knowledge_soundness :
     Extractor.Lens.IsKnowledgeSound
@@ -731,24 +872,14 @@ instance extractorLens_rbr_knowledge_soundness :
       (fun _ _ => True)
       ⟨oStmtLens R n deg D i, Witness.InvLens.trivial⟩ where
   proj_knowledgeSound := by
-    -- simp [relationRound, Simple.outputRelation, Verifier.compatStatement,
-    --   Simple.oracleVerifier_eq_verifier, Simple.verifier, Verifier.run]
-    sorry
+    rintro ⟨stmt, os⟩ ⟨⟨target, r⟩, ios⟩ ⟨⟩ hc ho
+    have hp := verifier_polynomial i stmt os ((target, r), ios) hc
+    have hi := (output_projection i stmt os target r).mp ho
+    change ios () = projectedRoundPolynomial R n deg D i stmt.challenges (os ()) at hp
+    simpa [Simple.outputRelation, hp] using hi
   lift_knowledgeSound := by
-    simp only [Simple.StmtIn, Simple.OStmtIn, Simple.inputRelation, sum_map,
-      Statement.Lens.proj, Simple.StmtOut, Simple.OStmtOut, Set.mem_ofPred_eq,
-      relationRound, Fin.val_castSucc, forall_const, Prod.forall]
-    unfold oStmtLens
-    unfold projectedRoundPolynomial
-    induction n with
-    | zero => exact Fin.elim0 i
-    | succ n ih =>
-      intro stmt oStmt hRelIn
-      simp only [Polynomial.eval_finsetSum, MvPolynomial.eval_evalExcept] at hRelIn ⊢
-      simp at hRelIn ⊢
-      -- Now it's a statement about polynomials
-      sorry
-
+    rintro ⟨stmt, os⟩ ⟨⟩ ⟨⟩ _ h
+    exact (input_projection i stmt os).mp h
 
 variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
 
@@ -757,7 +888,9 @@ theorem reduction_perfectCompleteness :
     (relationRound R n deg D i.castSucc) (relationRound R n deg D i.succ) :=
   Reduction.liftContext_perfectCompleteness
     (lens := (oCtxLens R n deg D i).toContext)
-    (lensComplete := by simp; sorry)
+    (lensComplete := by
+      rw [← Simple.oracleReduction_eq_reduction]
+      exact oCtxLens_complete i)
     (Simple.reduction_perfectCompleteness R deg D oSpec)
 
 /-- Round-by-round knowledge soundness for the lifted round verifier. -/
