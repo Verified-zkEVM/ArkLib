@@ -323,7 +323,9 @@ dependency upgrades separate.
 E2 follows E1 and ships without waiting for E3a or E3. E3 is required before ArkLib claims
 efficient extraction without qualification, but it is scheduled after higher-priority work: each
 extractor-bearing notion in the efficiency chapter's obligations table states its structural
-content and cost caveat, and the native soundness contracts and their composition are complete.
+content and cost caveat; the native soundness contracts and their composition are complete; and a
+native resource conjunction measures named round extractors with E2's game-independent measured
+program, with an acceptance example on an existing native client.
 No probability theorem waits for E3. E3a is the proposed backend route; another execution model
 with a reviewed adequacy argument can replace it. E3 consumes the chosen backend and E2's
 same-program bridge. E4 and E5 consume E3 and can be developed independently; E6 follows E5.

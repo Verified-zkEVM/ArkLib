@@ -14,7 +14,8 @@ execution bounds (E3, E3a) and uniform families (E7). The
 [security chapter](03-adversarial-oracle-execution.md#6-extractors-and-knowledge-composition)
 owns extractor access, causality, and knowledge composition. The
 [roadmap](05-roadmap.md#extractor-efficiency-repair) owns implementation order and acceptance checks.
-All new API names and theorem signatures below are proposals, not implemented declarations.
+New API names and theorem signatures below are proposals, except where a paragraph describes the
+E2 implementation.
 
 
 ## Existing guarantees and the repair
@@ -86,27 +87,27 @@ notion needs its own statement of what its unbounded form means, with its actual
 | Notion | Extractor in ArkLib | Content without a cost bound | Additional obligation for efficient extraction |
 |---|---|---|---|
 | Terminal knowledge soundness | `Extractor.Straightline` | Relation soundness, by the collapse above | Complete execution of the named extractor in its declared access model |
-| Round-by-round knowledge soundness | Legacy `Extractor.RoundByRound`; native `RoundExtractor` backward witness maps | Local bounds on bad transitions relative to the named maps; maps chosen classically are admitted | Execution of each stage on its available prefix, intermediate witness sizes, and their composition |
-| Special soundness and CWSS | `Extractor.TreeBased`, from the statement, a transcript tree and its leaf witnesses | Each structured accepting tree with valid leaf witnesses yields an input witness, or exhibits an escape event | Tree processing; a knowledge corollary also bounds obtaining the tree and producing any escape |
-| State-restoration knowledge soundness | `Extractor.StateRestoration` | The restoration game's bad event for an unbounded extractor | Extraction together with replay and simulation of the restoration oracle |
+| Round-by-round knowledge soundness | Legacy `Extractor.RoundByRound`; native `RoundExtractor` backward witness maps | Local bounds on bad transitions relative to the named maps; maps chosen classically are admitted wherever the earlier witness carriers are nonempty | Execution of each stage on its available prefix, intermediate witness sizes, and their composition |
+| Special soundness and CWSS | `Extractor.TreeBased`, from the statement, a transcript tree and its leaf witnesses | Each structured accepting tree with valid leaf witnesses yields an input witness, or exhibits an escape event; with a classical selector, the input statement lies in the language of the input relation | Tree processing; a knowledge corollary also bounds obtaining the tree and producing any escape |
+| State-restoration knowledge soundness | `Extractor.StateRestoration` | Presumably relation soundness of the restoration game, by the same selector; not proved | Extraction together with replay and simulation of the restoration oracle |
 
 **Round-by-round knowledge soundness.** The legacy existential `rbrKnowledgeSoundness` admits an
 extractor built by classical choice (`RoundByRoundOneShot.toRoundByRoundOfRel`), so it carries no
 efficiency content. The native knowledge certificates state that they assert no extraction
-efficiency. Whether the unbounded form is equivalent to round-by-round soundness for the languages
-of the relations is not established. Round-by-round knowledge soundness gains its knowledge content
-from per-round certificates for named stage extractors, such as those the Toy IOP requires below.
-ABF26 Definition A.5 bounds per-round extraction times, while its knowledge-state function may be
-inefficient.
+efficiency. Whether the unbounded form collapses to a round-by-round relation-soundness notion, as
+the terminal notion collapses to relation soundness, is not established. Round-by-round knowledge
+soundness gains its efficiency content from per-round cost certificates for named stage extractors,
+such as those the Toy IOP requires below. ABF26 Definition A.5 bounds per-round extraction times,
+while its knowledge-state function may be inefficient.
 
-**Special and coordinate-wise special soundness.** In the published Journal of Cryptology version
-of FMN24, Definitions 2.29–2.30 require polynomial-time extraction from a tree, and Lemma 2.31
+**Special and coordinate-wise special soundness.** In the published Journal of Cryptology version of
+FMN24, Definitions 2.29–2.30 require polynomial-time extraction from a tree, and Lemma 2.31
 discusses the resulting knowledge extractor and its expected number of prover executions. The ePrint
 version numbers these results differently. ArkLib's CWSS docstrings cite the ePrint numbering, which
 has not been rechecked against the published version. Polynomial time in the size of a supplied tree
 need not be polynomial in the original instance: the tree's size is the product of its per-round
-arities, which is exponential in the number of rounds once every arity is at least two. An escape
-disjunct supports a reduction to a computational assumption only together with an efficient
+arities, which is exponential in the number of challenge rounds once every arity is at least two. An
+escape disjunct supports a reduction to a computational assumption only together with an efficient
 algorithm producing the escape; the event alone is existential. ArkLib has no theorem deriving
 knowledge soundness from special soundness or CWSS by tree extraction. That theorem is where the
 cost of obtaining the tree must be bounded.
@@ -118,19 +119,21 @@ complete-execution work below; see the roadmap.
 
 The proposed `knowledgeSoundnessWithResources` packages the existing game for a named `E` with
 an explicit instruction program `P`, interpreter `H`, VCVio `CostModel`, and budget `B`.
-Schematically, for a packaged extractor view `v`, its obligations are
+Schematically, with an uncharged `view` from the extractor's inputs `x` to the program's view
+`v`, its obligations are
 
 ```text
 knowledgeSoundnessWith(init, impl, relIn, relOut, verifier, E, κ)
-simulateQ H (P v) = (E v).run
+(E x).run = simulateQ H (P (view x))                  for every x
 WorstCaseCostBound (P v) cm (B params (size v))       for every v.
 ```
 
-The interpreter targets `OracleComp oSpec`; deterministic handlers can be lifted from `Id`.
-Allow a dependent instruction specification when its response types certify the retained input,
-as FRI's do. Here `size` describes the charged representation or access contract, not the
-size of an arbitrary Lean closure. All representation choices, the instruction semantics,
-`cm`, and `B` are public parameters. The theorem must name the same `E` as the game theorem.
+The interpreter targets `OracleComp oSpec`; deterministic handlers can be lifted from `Id`. Allow a
+dependent instruction specification when its response types certify the retained input, as FRI's do.
+Here `size` describes the charged representation or access contract, not the size of an arbitrary
+Lean closure. All representation choices, `view`, the instruction semantics, `cm`, and `B` are
+public parameters; `view` is the main uncharged channel. The theorem must name the same `E` as the
+game theorem.
 
 The E2 implementation makes three scope choices. They narrow its first instance of this
 contract; they do not change the contract.
@@ -193,19 +196,21 @@ State the measured program independently of any game: a view of an arbitrary ext
 charged instruction program with its result type, deterministic handlers, and charges. Each game
 then states its resource conjunction for its own extractor shape. Design those conjunctions against
 the native knowledge games first, where new security development takes place; the legacy
-straightline game, which FRI's result uses, is an adapter. Put the generic measured program, the
-legacy game conjunctions and their erasure lemmas in a proposed
+straightline game, which FRI's result uses, is an adapter. Put the generic measured program in a
+proposed `ArkLib/Data/OracleComp/MeasuredProgram.lean`, which imports no game, and the legacy game
+conjunctions and their erasure lemmas in a proposed
 `ArkLib/OracleReduction/Security/Resources.lean`. Protocol-specific certificates stay with FRI
 extraction and Toy decoding. Native interaction games should consume the same upstream resource
 evidence through their own game adapter, rather than inheriting the legacy execution machinery.
 Reusable arithmetic remains under `ArkLib/ToCompPoly/Univariate/`; generic instrumentation and
 realization laws belong in VCVio/PolyFun.
 
-The measured contract retains `E`, `P`, `H`, `cm` and `B` as parameters. The realized contract of
-the execution-backend chapter additionally retains `Q`, `bd`, the response contract and `T`. Its evidence contains the actual
-implementing code/realization and its semantic and run-bound proofs. Operational code must be
-executable; a proof using classical reasoning is compatible with that requirement, while using
-classical choice to manufacture the running witness values is not an implementation.
+The measured contract retains `E`, `view`, `P`, `H`, `cm` and `B` as parameters. The realized
+contract of the execution-backend chapter additionally retains `Q`, `bd`, the response contract and
+`T`. Its evidence contains the actual implementing code/realization and its semantic and run-bound
+proofs. Operational code must be executable; a proof using classical reasoning is compatible with
+that requirement, while using classical choice to manufacture the running witness values is not an
+implementation.
 
 Provide explicit forgetful implications:
 
@@ -284,11 +289,11 @@ Cubic interpolation and the existing power-sum evaluation give a conservative po
 derive its actual constants and degree from the measured implementation. Do not assert the paper's
 `O(enc_C + ecor_C)` performance for a different decoder without matching its cost conventions.
 
-For the round-by-round theorem, certify each invoked stage and its own available prefix. Retain
-the existing knowledge-state function as proof-side data. These per-round certificates give the
-Toy IOP's round-by-round knowledge soundness its knowledge content; the existential form alone has
-none. The terminal certificate and the per-round certificates must identify their respective public
-extractors; one does not imply the other without a timing and composition proof.
+For the round-by-round theorem, certify each invoked stage and its own available prefix. Retain the
+existing knowledge-state function as proof-side data. These per-round certificates give the Toy
+IOP's round-by-round knowledge soundness its efficiency content; the existential form alone has no
+efficiency content. The terminal certificate and the per-round certificates must identify their
+respective public extractors; one does not imply the other without a timing and composition proof.
 
 ## Completion criteria and design review
 

@@ -107,10 +107,11 @@ correspondence. A parameter-dependent builder that emits a different program for
 therefore needs a uniform-generation argument before supporting an asymptotic claim.
 
 The initial repair should use VCVio/PolyFun and an explicit algebraic execution model. Do not make
-it wait for a Caliper port from Lean 4.32.2 to ArkLib's Lean 4.35.0 stack. A later pilot can implement
-one field primitive or interpolation kernel in Caliper, prove semantic agreement, and substitute
-its operation costs. A 64-bit field modulus still needs a proved modular arithmetic implementation,
-including intermediate overflow handling; fitting field elements in one word is insufficient.
+it wait for a Caliper port from Lean 4.32.2 to ArkLib's Lean 4.35.0 stack. A later pilot can
+implement one field primitive or interpolation kernel in Caliper, prove semantic agreement, and
+substitute its operation costs. A 64-bit field modulus still needs a proved modular arithmetic
+implementation, including intermediate overflow handling; fitting field elements in one word is
+insufficient.
 
 Sources: VCVio's pinned
 [cost API](https://github.com/Verified-zkEVM/VCVio/blob/88efe9715a9fa9e7d89635c38cf70259836766c2/VCVio/OracleComp/QueryTracking/CostModel.lean),
@@ -122,12 +123,13 @@ and [limitations](https://github.com/zksecurity/caliper/blob/b62f7c8be35df0aa728
 
 ## FRI realization requirements
 
-The realization of FRI's named extractor must cover domain-index enumeration, loop guards and
-index arithmetic, selected node/value storage, list traversal and append, interpolation
-allocation and coefficient access, prefix/view preparation, and witness construction. Audit these costs as algorithms; a linter for
-field syntax cannot establish them. Preserve the early final-degree guard and bound the work
-before rejection of an oversized final polynomial. Acquisition or validation of an already
-canonical polynomial is a separately stated input cost, not hidden inside a constant-cost read.
+The realization of FRI's named extractor must cover domain-index enumeration, loop guards and index
+arithmetic, selected node/value storage, list traversal and append, interpolation allocation and
+coefficient access, prefix/view preparation, and witness construction. Audit these costs as
+algorithms; a linter for field syntax cannot establish them. Preserve the early final-degree guard
+and bound the work before rejection of an oversized final polynomial. Acquisition or validation of
+an already canonical polynomial is a separately stated input cost, not hidden inside a constant-cost
+read.
 
 Declare the IOP access model explicitly: immutable tables have indexed field-element reads; the
 retained prefix and final polynomial have bounded, described representations. The extraction
