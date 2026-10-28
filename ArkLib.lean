@@ -916,6 +916,9 @@ public import ArkLib.ProofSystem.Fri.Spec.Soundness
 public import ArkLib.ProofSystem.Fri.Spec.Transcript
 public import ArkLib.ProofSystem.Fri.Spec.VerifierExecution
 public import ArkLib.ProofSystem.Plonk.Basic
+public import ArkLib.ProofSystem.Plonk.Computable
+public import ArkLib.ProofSystem.Plonk.Domain
+public import ArkLib.ProofSystem.Plonk.Encoding
 public import ArkLib.ProofSystem.Plonk.Prepared
 public import ArkLib.ProofSystem.RingSwitching.Basic
 public import ArkLib.ProofSystem.RingSwitching.Lift

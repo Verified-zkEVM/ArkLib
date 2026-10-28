@@ -80,7 +80,13 @@ home_page/            site assets and assembled website root
   occurrence assignments, with public-occurrence coverage for reconstruction.
   `ProofSystem/Plonk/Prepared.lean` prepends public equality rows, decodes private witnesses, and
   separates their baked-in constants into cleared selectors and an explicit public-input term.
-  Concrete cycle, satisfaction, and decoder checks live in `ArkLibTest/ProofSystem/Plonk.lean`.
+  `ProofSystem/Plonk/Domain.lean` supplies injective evaluation nodes and disjoint coset labels.
+  `ProofSystem/Plonk/Encoding.lean` identifies occurrence columns with degree-bounded polynomials,
+  proves the prepared gate and copy relation equivalence, and reconstructs private witnesses.
+  `ProofSystem/Plonk/Computable.lean` refines the encoding through CompPoly coefficient arrays.
+  Concrete cycle, satisfaction, and decoder checks live in `ArkLibTest/ProofSystem/Plonk.lean`;
+  `ArkLibTest/ProofSystem/PlonkEncoding.lean` checks order-four encoding over a prime field,
+  including rejected gates, inconsistent copies, and incorrect public inputs.
 
 - `ProofSystem/Fri/FoldingSoundness.lean` and `QuerySoundness.lean` contain the algebraic
   soundness arguments; `ErrorBounds.lean` instantiates existing numerical MCA bounds.
