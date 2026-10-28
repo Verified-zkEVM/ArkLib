@@ -334,12 +334,12 @@ guard `k ≤ ringChar F` for degree-`< k` messages.
   `exists_winningSetFor_ncard_ge_of_lambda_lt_card` in
   `ProofSystem/ToyProblem/SoundnessBounds.lean`, and it consumes Claim B.1 there. The ledger
   gives the status of every other §6 row.
-- **§4, §5.** The catalogue is proved in-tree except for **three external assumptions**:
-  Theorem 4.13 ([GG25] MCA from subspace-design codes), Theorem 4.17 ([KKH26] CA lower bound
+- **§4, §5.** The catalogue is proved in-tree except for **two external assumptions**:
+  Theorem 4.17 ([KKH26] CA lower bound
   near capacity), and Theorem 5.4 ([BenSassonGKS20] the list-decoding/CA separation).
   Theorem 4.12 is proved via [DKT26] with the [BCHKS25] printed constant, so every
   Johnson-range `McaLowerWitness` has a proved numeric input. Statements 4.9, 4.11, 4.12,
-  4.14, 4.18, 4.19, 4.20, 4.22, the BCGM25 univariate-powers bound, the CA-breakdown
+  4.13 (at the proof-derived radius `1 - τ(2t) - 3/(2t)`), 4.14, 4.18, 4.19, 4.20, 4.22, the BCGM25 univariate-powers bound, the CA-breakdown
   interpretation of 4.18, and 5.1-5.3 are all axiom-clean. The random-RS MCA result (T4.15)
   and the draft-only MCA conjecture remain outside this layer. See the ledger for each
   statement's source-side guards and normalization choices.

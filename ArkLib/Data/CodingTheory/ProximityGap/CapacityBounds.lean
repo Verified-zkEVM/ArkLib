@@ -79,7 +79,7 @@ Real-valued bounds are embedded into `ENNReal` with `ENNReal.ofReal`.
 ### Subspace-design / FRS MCA up to capacity (§4.2.2)
 
 - `subspace_design_mcaError_le` — ABF26 T4.13 [GG25 Cor 4.9]: τ-subspace-design code
-  has explicit `ε_mca` bound at `1 - τ(t+1) - 3/(2t)`.
+  has explicit `ε_mca` bound at `1 - τ(2t) - 3/(2t)`.
 - `frs_mcaError_le` — ABF26 T4.14 [GG25 Cor 4.10]: folded RS up to capacity
   has the integer-native bound `ε_mca(C, 1 - ρ - 2/t) ≤ (nt+3t³)/|F|`.
 
@@ -344,26 +344,5 @@ theorem exists_rs_epsCa_large_near_capacity
 
 
 end ReedSolomon
-
-section SubspaceDesignFRS
-
-/-- An affine-line MCA bound for a `τ`-subspace-design code:
-
-  `ε_mca(C, 1 - τ(t+1) - 3/(2t)) ≤ (t·n + 4·t³) / |F|`
-
-The cubic term is the affine specialization of the source's general generator bound. -/
-theorem subspace_design_mcaError_le
-    {ι : Type} [Fintype ι] [Nonempty ι]
-    {F : Type} [Field F] [Fintype F] [SampleableType F]
-    (s : ℕ) (τ : ℕ → ℝ) (C : Submodule F (ι → Fin s → F))
-    (_h : IsSubspaceDesign s τ C)
-    (t : ℕ) (_ht : 0 < t) :
-    mcaError (AffineLineGenerator F) C
-        (1 - τ (t + 1) - 3 / (2 * t)) ≤
-      ENNReal.ofReal (((t : ℝ) * Fintype.card ι + 4 * t ^ 3) / Fintype.card F) := by
-  sorry -- ABF26-T4.13; external admit [GG25 Cor 4.9].
-
-
-end SubspaceDesignFRS
 
 end CodingTheory
