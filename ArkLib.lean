@@ -660,6 +660,7 @@ public import ArkLib.Data.Polynomial.Differential.TotalJetDegreeCount
 public import ArkLib.Data.Polynomial.Differential.Types
 public import ArkLib.Data.Polynomial.Differential.WitnessCount
 public import ArkLib.Data.Polynomial.DivisorReconstruction
+public import ArkLib.Data.Polynomial.FiniteDomainQuotient
 public import ArkLib.Data.Polynomial.FoldedWronskian
 public import ArkLib.Data.Polynomial.FoldingPolynomial
 public import ArkLib.Data.Polynomial.FractionFieldExpand
