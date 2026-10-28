@@ -670,6 +670,8 @@ public import ArkLib.Data.Polynomial.FractionFieldRoots
 public import ArkLib.Data.Polynomial.FrobeniusContraction
 public import ArkLib.Data.Polynomial.Indicator
 public import ArkLib.Data.Polynomial.Interface
+public import ArkLib.Data.Polynomial.PermutationFingerprint
+public import ArkLib.Data.Polynomial.PermutationFingerprintDegree
 public import ArkLib.Data.Polynomial.PointCollision
 public import ArkLib.Data.Polynomial.PointCollisionProbability
 public import ArkLib.Data.Polynomial.Prelims
@@ -919,6 +921,7 @@ public import ArkLib.ProofSystem.Plonk.Basic
 public import ArkLib.ProofSystem.Plonk.Computable
 public import ArkLib.ProofSystem.Plonk.Domain
 public import ArkLib.ProofSystem.Plonk.Encoding
+public import ArkLib.ProofSystem.Plonk.PermutationFingerprint
 public import ArkLib.ProofSystem.Plonk.Prepared
 public import ArkLib.ProofSystem.RingSwitching.Basic
 public import ArkLib.ProofSystem.RingSwitching.Lift
