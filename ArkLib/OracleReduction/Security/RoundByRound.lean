@@ -62,8 +62,8 @@ class RoundByRoundOneShot.IsMonotone (E : RoundByRoundOneShot oSpec StmtIn WitIn
   witness from the output witness, through a series of intermediate witnesses
   (indexed by `m : Fin (n + 1)`). Formally, it contains the following components:
 
-  - A proof `eqIn : WitMid 0 = WitIn` that the first intermediate witness type is equal to the
-    input witness type
+  - A function `extractIn : StmtIn → WitMid 0 → WitIn` from the initial intermediate witness
+    to the input witness
   - A function `extractMid : (m : Fin n) → StmtIn → Transcript m.succ pSpec`
     `→ WitMid m.succ → WitMid m.castSucc` that extracts the intermediate witness for round `m`
     from the intermediate witness for round `m+1`, using the transcript up to round `m+1` and
@@ -77,8 +77,8 @@ class RoundByRoundOneShot.IsMonotone (E : RoundByRoundOneShot oSpec StmtIn WitIn
 structure RoundByRound
     (oSpec : OracleSpec ι) (StmtIn WitIn WitOut : Type) {n : ℕ} (pSpec : ProtocolSpec n)
     (WitMid : Fin (n + 1) → Type) where
-  /-- The first intermediate witness type is equal to the input witness type -/
-  eqIn : WitMid 0 = WitIn
+  /-- Extract an input witness from the initial intermediate witness. -/
+  extractIn : StmtIn → WitMid 0 → WitIn
   /-- Extract intermediate witness for round `m` from intermediate witness for round `m+1`,
     using the transcript up to round `m+1` -/
   extractMid : (m : Fin n) → StmtIn → Transcript m.succ pSpec → WitMid m.succ → WitMid m.castSucc
@@ -94,7 +94,7 @@ namespace RoundByRoundOneShot
   round-by-round extractor to a one-shot one. -/
 def toRoundByRound (E : RoundByRoundOneShot oSpec StmtIn WitIn pSpec) :
     RoundByRound oSpec StmtIn WitIn WitOut pSpec (fun _ => WitIn) where
-  eqIn := rfl
+  extractIn := fun _ => _root_.id
   extractMid := fun m stmtIn tr witIn =>
     if m.castSucc = 0 then witIn else E m.castSucc stmtIn (Fin.init tr) default
   extractOut := fun stmtIn tr _ => E (.last n) stmtIn tr default
@@ -110,15 +110,12 @@ selecting a valid witness non-constructively preserves the property formalized h
 establish the extraction-time bounds present in algorithmic formulations of round-by-round
 knowledge soundness.
 
-The distinction is not cosmetic. The round-0 obligation of a `KnowledgeStateFunction` is
-`(stmtIn, extracted) ∈ relIn` (forced by `toFun_empty`), and `toRoundByRound`'s intermediate step
-hands back its `witIn` argument, which is universally quantified and so may be an arbitrary invalid
-witness. That obligation is therefore unprovable for `toRoundByRound`, which is why
-`toKnowledgeStateFunction` is stated against this variant. -/
+This relation-aware variant retains the extraction-failure condition needed by the
+one-shot-to-general security implication. -/
 noncomputable def toRoundByRoundOfRel (E : RoundByRoundOneShot oSpec StmtIn WitIn pSpec)
     (relIn : Set (StmtIn × WitIn)) :
     RoundByRound oSpec StmtIn WitIn WitOut pSpec (fun _ => WitIn) where
-  eqIn := rfl
+  extractIn := fun _ => _root_.id
   extractMid := fun _ stmtIn _ witIn => if h : ∃ v, (stmtIn, v) ∈ relIn then h.choose else witIn
   extractOut := fun stmtIn tr _ => E (.last n) stmtIn tr default
 
@@ -155,7 +152,7 @@ structure StateFunction
   toFun : (m : Fin (n + 1)) → StmtIn → Transcript m pSpec → Prop
   /-- For all input statement not in the language, the state function is false for that statement
     and the empty transcript -/
-  toFun_empty : ∀ stmt, stmt ∈ langIn ↔ toFun 0 stmt default
+  toFun_empty : ∀ stmt, toFun 0 stmt default → stmt ∈ langIn
   /-- If the state function is false for a partial transcript, and the next message is from the
     prover to the verifier, then the state function is also false for the new partial transcript
     regardless of the message -/
@@ -173,12 +170,10 @@ structure StateFunction
 relation `relIn`, output relation `relOut`, and stage-dependent witness types `WitMid`. This is used
 to define round-by-round knowledge soundness.
 
-This contract deliberately differs from ABF26 Definition A.5 in two ways. Across a prover move,
-`extractMid` may transform the later-stage witness before testing the earlier state, whereas A.5
-uses the same knowledge-state witness. At a full transcript, ArkLib requires the direction
-"positive-probability related verifier output implies the extracted final state"; A.5 prints an
-iff. These generalizations are sufficient for `toStateFunction` and the bad-transition proof, but
-source-fidelity claims must establish the stronger same-witness/final-iff properties separately. -/
+Across prover moves, `extractMid` may transform the witness before testing the earlier state.
+The terminal law requires positive-probability related output to imply the extracted final state.
+A true initial state yields a related witness via `extractIn`; relation membership need not make
+that state true. These contracts suffice for `toStateFunction` and the bad-transition proof. -/
 structure KnowledgeStateFunction
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
@@ -188,10 +183,9 @@ structure KnowledgeStateFunction
   /-- The knowledge state function: takes in round index, input statement, transcript up to that
       round, and intermediate witness of that round, and returns True/False. -/
   toFun : (m : Fin (n + 1)) → StmtIn → Transcript m pSpec → WitMid m → Prop
-  /-- The input statement and witness are in the input relation if and only if the state function is
-      true for the empty transcript and the input witness -/
+  /-- A true initial state yields a related extracted input witness. -/
   toFun_empty : ∀ stmtIn witMid,
-    ⟨stmtIn, cast extractor.eqIn witMid⟩ ∈ relIn ↔ toFun 0 stmtIn default witMid
+    toFun 0 stmtIn default witMid → ⟨stmtIn, extractor.extractIn stmtIn witMid⟩ ∈ relIn
   /-- If the state function is true for a partial transcript extended with a prover message, then
     the state function is also true for the original partial transcript with the extracted
     intermediate witness -/
@@ -234,15 +228,8 @@ def KnowledgeStateFunction.toStateFunction
       verifier.StateFunction init impl relIn.language relOut.language where
   toFun := fun m stmtIn tr => ∃ witMid, kSF.toFun m stmtIn tr witMid
   toFun_empty := by
-    intro stmtIn
-    simp only [Set.mem_image, Prod.exists, exists_and_right, exists_eq_right]
-    constructor
-    · intro ⟨witIn, h⟩
-      have := kSF.toFun_empty stmtIn (cast extractor.eqIn.symm witIn)
-      simp at this
-      refine ⟨_, this.mp h⟩
-    · intro ⟨witMid, h⟩
-      exact ⟨_, (kSF.toFun_empty stmtIn witMid).mpr h⟩
+    rintro stmtIn ⟨witMid, h⟩
+    exact (Set.mem_language_iff relIn stmtIn).2 ⟨_, kSF.toFun_empty stmtIn witMid h⟩
   toFun_next := fun m hDir stmtIn tr hToFunNext msg => by
     simp only [not_exists]
     intro witMid hToFunNext
@@ -312,9 +299,8 @@ noncomputable def KnowledgeStateFunctionOneShot.toKnowledgeStateFunction
       (oneShotE.toRoundByRoundOfRel (WitOut := WitOut) relIn) where
   toFun := fun m stmtIn tr witIn => if m = 0 then (stmtIn, witIn) ∈ relIn else
     stF.toFun m stmtIn tr ∨ ∃ v, (stmtIn, v) ∈ relIn
-  toFun_empty := fun stmtIn witIn => by
-    have := stF.toFun_empty stmtIn
-    simp_all
+  toFun_empty := fun stmtIn witIn h => by
+    simpa [Extractor.RoundByRoundOneShot.toRoundByRoundOfRel] using h
   toFun_next := fun m hDir stmtIn tr msg witIn h => by
     -- `m.succ ≠ 0`, so the hypothesis is the `else` branch.
     rw [ite_eq_right (Fin.succ_ne_zero m)] at h
@@ -882,7 +868,7 @@ section Trivial
 def Verifier.StateFunction.id {lang : Set Statement} :
     (Verifier.id : Verifier oSpec Statement _ _).StateFunction init impl lang lang where
   toFun | ⟨0, _⟩ => fun stmtIn _ => stmtIn ∈ lang
-  toFun_empty := fun _ => by simp
+  toFun_empty := fun _ h => h
   toFun_next := fun i => Fin.elim0 i
   toFun_full := fun stmt tr h => by
     simp only [Verifier.id, Verifier.run]
@@ -912,7 +898,7 @@ lemma Verifier.id_rbrSoundness {lang : Set Statement} :
   input witness. -/
 def Extractor.RoundByRound.id :
     Extractor.RoundByRound oSpec Statement Witness Witness !p[] (fun _ => Witness) where
-  eqIn := rfl
+  extractIn := fun _ => _root_.id
   extractMid := fun i => Fin.elim0 i
   extractOut := fun _ _ => _root_.id
 
@@ -922,7 +908,7 @@ def Verifier.KnowledgeStateFunction.id {rel : Set (Statement × Witness)} :
     (Verifier.id : Verifier oSpec Statement _ _).KnowledgeStateFunction init impl rel rel
       (Extractor.RoundByRound.id) where
   toFun | ⟨0, _⟩ => fun stmtIn _ witIn => (stmtIn, witIn) ∈ rel
-  toFun_empty := fun _ => by simp
+  toFun_empty := fun _ _ h => h
   toFun_next := fun i => Fin.elim0 i
   toFun_full := fun stmtIn tr witOut h => by
     simp only [Verifier.id, Verifier.run] at h

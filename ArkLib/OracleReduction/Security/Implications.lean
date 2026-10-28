@@ -106,7 +106,7 @@ theorem rbrKnowledgeSoundness_implies_rbrSoundness
         _ ≤ _ := hk
     · let extractToInput : (m : Fin (n + 1)) → Transcript m pSpec → WitMid m → WitIn :=
         Fin.induction
-          (fun tr w => cast extractor.eqIn w)
+          (fun tr w => extractor.extractIn stmtIn w)
           (fun m ih tr w =>
             ih (Fin.init tr) (extractor.extractMid m stmtIn tr w))
       refine (prEvent_eq_zero_of_forall_not _ _ fun x hbad ↦ ?_).trans_le zero_le
@@ -122,7 +122,7 @@ theorem rbrKnowledgeSoundness_implies_rbrSoundness
       { toFun := fun m stmtIn _ => m = 0 ∧ stmtIn ∈ relIn.language
         toFun_empty := by
           intro stmtIn
-          simp only [true_and]
+          exact fun h => h.2
         toFun_next := by
           intro m hdir stmtIn tr hfalse msg htrue
           exact Fin.succ_ne_zero m htrue.1

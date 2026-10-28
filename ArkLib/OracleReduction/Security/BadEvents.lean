@@ -134,7 +134,7 @@ def stateFunctionOfBadEvents
         (simulateQ impl (verifier.run stmt tr)).run' (← init)}[result ∈ langOut] = 0) :
     verifier.StateFunction init impl langIn langOut where
   toFun := badEventState langIn bad
-  toFun_empty := fun stmt ↦ (badEventState_zero langIn bad stmt default).symm
+  toFun_empty := fun stmt ↦ (badEventState_zero langIn bad stmt default).mp
   toFun_next := badEventState_prover_next langIn bad
   toFun_full := by
     intro stmt tr h

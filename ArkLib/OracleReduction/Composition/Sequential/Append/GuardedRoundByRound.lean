@@ -184,11 +184,12 @@ theorem append_extractMid_seam (hn : 0 < n) (stmt : Stmt₁)
     (tr : (pSpec₁ ++ₚ pSpec₂).Transcript (Fin.natAdd m (⟨0, hn⟩ : Fin n)).succ) (w) :
     HEq ((E₁.append E₂ verify).extractMid (Fin.natAdd m ⟨0, hn⟩) stmt tr w)
       (E₁.extractOut stmt (tr.fstUpTo (Fin.last m) (by simp))
-        (_root_.cast ((congrArg WitMid₂ (Fin.ext (by simp))).trans E₂.eqIn)
+        (E₂.extractIn (verify stmt (tr.fstUpTo (Fin.last m) (by simp)))
+          (_root_.cast (congrArg WitMid₂ (Fin.ext (by simp)))
           (E₂.extractMid ⟨0, hn⟩ (verify stmt (tr.fstUpTo (Fin.last m) (by simp)))
             (tr.sndUpTo (⟨0, hn⟩ : Fin n).succ (by simp))
             (_root_.cast (wit_mid_append_right (WitMid₁ := WitMid₁) _ (⟨0, hn⟩ : Fin n).succ
-              (by simp) (by simp)) w)))) := by
+              (by simp) (by simp)) w))))) := by
   simp only [Extractor.RoundByRound.append]
   rw [dite_eq_right (show ¬ (Fin.natAdd m (⟨0, hn⟩ : Fin n)).val < m by simp),
     dite_eq_left (show (Fin.natAdd m (⟨0, hn⟩ : Fin n)).val = m by simp)]
@@ -230,9 +231,9 @@ extractor's output to the first extractor's. -/
 theorem append_extractOut_of_eq_zero (hn : n = 0) (stmt : Stmt₁)
     (tr : (pSpec₁ ++ₚ pSpec₂).FullTranscript) (w : Wit₃) :
     HEq ((E₁.append E₂ verify).extractOut stmt tr w)
-      (E₁.extractOut stmt tr.fst (_root_.cast
-        ((congrArg WitMid₂ (Fin.ext (by simp [hn]))).trans E₂.eqIn)
-        (E₂.extractOut (verify stmt tr.fst) tr.snd w))) := by
+      (E₁.extractOut stmt tr.fst (E₂.extractIn (verify stmt tr.fst) (_root_.cast
+        (congrArg WitMid₂ (Fin.ext (by simp [hn])))
+        (E₂.extractOut (verify stmt tr.fst) tr.snd w)))) := by
   simp only [Extractor.RoundByRound.append]
   rw [dite_eq_right (show ¬ 0 < n by omega)]
   exact cast_heq _ _
@@ -346,12 +347,12 @@ theorem KnowledgeStateFunction.appendGuarded_seam (hn : 0 < n) (stmt : Stmt₁)
     (T₂ : pSpec₂.Transcript (⟨0, hn⟩ : Fin n).castSucc) (w₂ : WitMid₂ (⟨0, hn⟩ : Fin n).castSucc)
     (h : K₂.toFun (⟨0, hn⟩ : Fin n).castSucc (G₁.out stmt tr₁) T₂ w₂) :
     K₁.toFun (Fin.last m) stmt tr₁ (E₁.extractOut stmt tr₁
-      (_root_.cast ((congrArg WitMid₂ (Fin.ext (by simp))).trans E₂.eqIn) w₂)) := by
+      (E₂.extractIn (G₁.out stmt tr₁)
+        (_root_.cast (congrArg WitMid₂ (Fin.ext (by simp))) w₂))) := by
   have h0 : (⟨0, hn⟩ : Fin n).castSucc = 0 := Fin.ext (by simp)
-  have hmem := (K₂.toFun_empty (G₁.out stmt tr₁) (_root_.cast (congrArg WitMid₂ h0) w₂)).mpr
+  have hmem := (K₂.toFun_empty (G₁.out stmt tr₁) (_root_.cast (congrArg WitMid₂ h0) w₂))
     ((K₂.toFun_congr h0 _ (Transcript.heq_ext (congrArg Fin.val h0) fun i hi _ => by simp at hi)
       (cast_heq _ _).symm).mp h)
-  rw [cast_cast] at hmem
   exact K₁.toFun_full stmt tr₁ _ (G₁.prEvent_pos_of_check hc hmem)
 
 /-- After a first-protocol move, the composed knowledge state is the first one on the extended
@@ -467,10 +468,9 @@ theorem KnowledgeStateFunction.appendGuardedToFun_full (stmt : Stmt₁)
   rcases Nat.eq_zero_or_pos n with hn | hn
   · have hl : Fin.last n = 0 := Fin.ext (by simp [hn])
     have hmem := (K₂.toFun_empty _ (_root_.cast (congrArg WitMid₂ hl)
-      (E₂.extractOut (G₁.out stmt tr.fst) tr.snd witOut))).mpr ((K₂.toFun_congr hl _
+      (E₂.extractOut (G₁.out stmt tr.fst) tr.snd witOut))) ((K₂.toFun_congr hl _
         (Transcript.heq_ext (congrArg Fin.val hl) fun i hi _ => by simp [hn] at hi)
         (cast_heq _ _).symm).mp h₂)
-    rw [cast_cast] at hmem
     have h₁ := K₁.toFun_full stmt tr.fst _ (G₁.prEvent_pos_of_check hc hmem)
     refine (appendGuardedToFun_of_le G₁ K₁ K₂ (Fin.last (m + n)) (Fin.last m) (by simp [hn])
       stmt tr _).mpr ?_
@@ -494,10 +494,12 @@ compatibility it needs between the two components is the shared intermediate rel
 def KnowledgeStateFunction.appendGuarded :
     (V₁.append V₂).KnowledgeStateFunction init impl rel₁ rel₃ (E₁.append E₂ G₁.out) where
   toFun := appendGuardedToFun G₁ K₁ K₂
-  toFun_empty stmt w := by
-    rw [appendGuardedToFun_of_le G₁ K₁ K₂ 0 0 (by simp),
-      show Transcript.fstUpTo (default : (pSpec₁ ++ₚ pSpec₂).Transcript 0) 0 (by simp) = default
-        from Subsingleton.elim _ _, ← K₁.toFun_empty, cast_cast]
+  toFun_empty stmt w h := by
+    apply K₁.toFun_empty stmt
+    simpa only [show Transcript.fstUpTo
+      (default : (pSpec₁ ++ₚ pSpec₂).Transcript 0) 0 (by simp) = default
+        from Subsingleton.elim _ _] using
+      (appendGuardedToFun_of_le G₁ K₁ K₂ 0 0 (by simp) stmt default w).mp h
   toFun_next j hDir stmt tr msg w h := appendGuardedToFun_next G₁ K₁ K₂ j hDir stmt tr msg w h
   toFun_full stmt tr witOut h := appendGuardedToFun_full G₁ K₁ K₂ stmt tr witOut h
 

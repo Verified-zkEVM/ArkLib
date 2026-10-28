@@ -328,7 +328,7 @@ def simplifiedRbrExtractor (k s : ℕ) (hdvd : s ∣ k)
       (SimplifiedIOR.OutputWitness (F := F) k)
       (SimplifiedIOR.pSpec (F := F))
       (simplifiedRbrWitMid (F := F) k) where
-  eqIn := rfl
+  extractIn := fun _ w => w
   extractMid
   | ⟨0, _⟩ => fun stmtIn tr g ↦
       transitionExtractor k s hdvd domain stmtIn
@@ -361,7 +361,7 @@ def rbrExtractor (k s t : ℕ) (hdvd : s ∣ k) (domain : ι ↪ F) :
         (∀ i, Spec.OracleStatement ι (Fin s → F) i))
       (Spec.Witness (F := F) k) Spec.OutputWitness
       (Spec.pSpec (ι := ι) (F := F) k t) (rbrWitMid (F := F) k) where
-  eqIn := rfl
+  extractIn := fun _ w => w
   extractMid
   | ⟨0, _⟩ => fun stmtIn tr g ↦
       transitionExtractor k s hdvd domain stmtIn
@@ -768,7 +768,7 @@ noncomputable def simplifiedRbrKnowledgeStateFunction (k s : ℕ) (hdvd : s ∣ 
         stmtIn.1.1 stmtIn.1.2.1 stmtIn.1.2.2
         (stmtIn.2 0) (stmtIn.2 1)
         (SimplifiedIOR.transcriptGamma (F := F) tr) g
-  toFun_empty := fun _ _ ↦ Iff.rfl
+  toFun_empty := fun _ _ h ↦ h
   toFun_next := fun m ↦ match m with
     | ⟨0, _⟩ => fun hDir ↦ absurd hDir (fun h ↦ Direction.noConfusion h)
   toFun_full := fun stmtIn tr witOut h ↦
@@ -917,7 +917,7 @@ noncomputable def rbrKnowledgeStateFunction (k s t : ℕ) (hdvd : s ∣ k)
         (tr ⟨1, Nat.succ_lt_succ (Nat.zero_lt_succ _)⟩)
         (tr ⟨2, Nat.succ_lt_succ
           (Nat.succ_lt_succ (Nat.zero_lt_succ _))⟩)
-  toFun_empty := fun _ _ ↦ Iff.rfl
+  toFun_empty := fun _ _ h ↦ h
   toFun_next := fun m ↦ match m with
     | ⟨0, _⟩ => fun hDir ↦ absurd hDir (fun h ↦ Direction.noConfusion h)
     | ⟨1, _⟩ => fun _ _ _ _ _ h ↦ h

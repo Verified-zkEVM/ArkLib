@@ -239,7 +239,7 @@ noncomputable def commitRbrExtractor (i : Fin ℓ) :
     (pSpec := pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)
     (WitMid := fun _messageIdx => Witness (L := L) 𝔽q β
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ) where
-  eqIn := rfl
+  extractIn := fun _ w => w
   extractMid := fun _ _ _ witMidSucc => witMidSucc
   extractOut := fun _ _ witOut => witOut
 
@@ -283,10 +283,7 @@ def commitKnowledgeStateFunction (i : Fin ℓ) (hCR : IsCommitmentRound ℓ ϑ i
     CommitKnowledgeState 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
       (i := i) (m := m) (stmtIn := stmtIn) (witMid := witMid) (oStmtIn := oStmtIn)
       (tr := tr) (multpoly := multpoly)
-  toFun_empty := fun ⟨stmtIn, oStmtIn⟩ witMid => by
-    -- CommitKnowledgeState 0 = FoldStepRelated i (same KnowledgeInvariant)
-    rw [cast_eq]
-    simp only [foldStepRelOut, FoldStepRelated, Set.mem_ofPred_eq, CommitKnowledgeState]
+  toFun_empty := fun ⟨stmtIn, oStmtIn⟩ witMid h => h
   toFun_next := fun m hDir (stmtIn, oStmtIn) tr msg witMid => by
     -- For pSpecCommit, the only P_to_V message is at index 0
     -- So m = 0, m.succ = 1, m.castSucc = 0
