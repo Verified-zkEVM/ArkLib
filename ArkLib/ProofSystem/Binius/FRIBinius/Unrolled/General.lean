@@ -7,6 +7,7 @@ module
 
 public import ArkLib.ProofSystem.Binius.FRIBinius.Unrolled.Core
 public import ArkLib.ProofSystem.Binius.FRIBinius.Unrolled.Spec
+public import ArkLib.OracleReduction.Security.GuardedBridges
 
 /-!
 # Fused tensor batching and Binary Basefold
@@ -28,10 +29,12 @@ computation, as proved by `Core.query_verify_output_context_irrelevant`; the ori
 and batching challenge remain available throughout the fused sumcheck itself. No original
 claim is reconstructed from the batching target.
 
-The exported security results are worst-case and averaged round-by-round knowledge soundness.
-Their challenge-error sum is bounded by `Spec`'s `concreteError`, with one sumcheck loss of
-`2ℓ'/|L|`. This module does not use the legacy admitted implication from round-by-round to
-plain knowledge soundness.
+The exported security results include worst-case and averaged round-by-round knowledge
+soundness, ordinary knowledge soundness, and soundness of the input relation's language.
+The guarded bridges fold the round extractors backward along the actual transcript and
+accumulate the challenge errors without resetting shared oracle state. The ordinary results
+use `Spec`'s `concreteError`, with one sumcheck loss of `2ℓ'/|L|`. They retain the relaxed input
+relation and do not assert efficient extraction or cryptographic compilation.
 
 The full operational definitions currently inherit noncomputability from `Head.verifier`,
 `sumcheckFoldOracleVerifier` and `queryOracleVerifier`, and their honest prover counterparts.
@@ -193,6 +196,44 @@ theorem fullVerifier_rbrKnowledgeSoundness (γ : ℕ) {σ : Type}
       (fullError κ K β (ϑ := ϑ) h_rate γ) :=
   Verifier.rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness init impl
     (fullVerifier_rbrKnowledgeSoundnessWorstCase κ K β h_rate h_l outputContext γ init impl)
+
+/-! ### Ordinary knowledge soundness and soundness -/
+
+/-- Ordinary knowledge soundness for the relaxed evaluation relation at the fused scalar bound.
+The extractor folds the round extractors backward; no efficiency bound is asserted. -/
+theorem fullVerifier_knowledgeSoundness (γ : ℕ) {σ : Type}
+    (init : ProbComp σ) (impl : QueryImpl ([]ₒ) (StateT σ ProbComp)) :
+    ((fullVerifier κ K β (ϑ := ϑ) h_rate h_l outputContext γ).toVerifier
+      (Oₛₒ := fun i : Empty => nomatch i)).knowledgeSoundness init impl
+      (inputRelation κ K β (ϑ := ϑ) h_rate h_l) acceptRejectOracleRel
+      (concreteError κ (L := L) (ℓ' := ℓ') (R := R) γ) := by
+  let G := Verifier.GuardedForm.ofEmpty
+    ((fullVerifier κ K β (ϑ := ϑ) h_rate h_l outputContext γ).toVerifier
+      (Oₛₒ := fun i : Empty => nomatch i)) (fun _ => (false, fun i => nomatch i))
+  obtain ⟨E, hE⟩ := G.knowledgeSoundness_of_rbrKnowledgeSoundnessWorstCase
+    (fullVerifier_rbrKnowledgeSoundnessWorstCase κ K β h_rate h_l outputContext γ init impl)
+  refine ⟨E, ?_⟩
+  intro Aux stmt aux P
+  exact (hE Aux stmt aux P).trans (by
+    exact_mod_cast fullError_sum_le_concrete κ K β (ϑ := ϑ) h_rate γ)
+
+/-- Ordinary soundness for statements with no relaxed evaluation witness, at the same fused bound.
+The proof projects the fixed-prefix knowledge certificate before applying the guarded bridge. -/
+theorem fullVerifier_soundness (γ : ℕ) {σ : Type}
+    (init : ProbComp σ) (impl : QueryImpl ([]ₒ) (StateT σ ProbComp)) :
+    ((fullVerifier κ K β (ϑ := ϑ) h_rate h_l outputContext γ).toVerifier
+      (Oₛₒ := fun i : Empty => nomatch i)).soundness init impl
+      (inputRelation κ K β (ϑ := ϑ) h_rate h_l).language acceptRejectOracleRel.language
+      (concreteError κ (L := L) (ℓ' := ℓ') (R := R) γ) := by
+  let G := Verifier.GuardedForm.ofEmpty
+    ((fullVerifier κ K β (ϑ := ϑ) h_rate h_l outputContext γ).toVerifier
+      (Oₛₒ := fun i : Empty => nomatch i)) (fun _ => (false, fun i => nomatch i))
+  have hS := G.soundness_of_rbrSoundnessWorstCase
+    (Verifier.rbrSoundnessWorstCase_of_rbrKnowledgeSoundnessWorstCase
+      (fullVerifier_rbrKnowledgeSoundnessWorstCase κ K β h_rate h_l outputContext γ init impl))
+  intro Aux Out aux P stmt hstmt
+  exact (hS Aux Out aux P stmt hstmt).trans (by
+    exact_mod_cast fullError_sum_le_concrete κ K β (ϑ := ϑ) h_rate γ)
 
 /-! ### Perfect completeness -/
 

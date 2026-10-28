@@ -695,6 +695,8 @@ home_page/            site assets and assembled website root
   `FinalSumcheck` contains the terminal multiplier check and its completeness/extraction proofs,
   `Core` composes folding and queries, and `General`
   proves exact-input perfect completeness and relaxed-input worst-case RBR knowledge soundness.
+  Its guarded bridges also give ordinary knowledge soundness and language soundness at the
+  same concrete fused bound, without an extractor-efficiency claim.
   `Spec` aggregates the fused budget with one `2ℓ'/|L|` sumcheck term. The unfused frontend
   remains available separately. See the [consumer guide](ring-switching-consumers.md).
 
