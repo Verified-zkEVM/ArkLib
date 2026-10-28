@@ -145,6 +145,51 @@ private lemma bstar_rate : Bstar (LinearCode.rate (code pts 1)) = 1 / 2 := by
   push_cast
   norm_num
 
+/-- An ordinary-import application with two distinct constant words and a nonconstant
+powers combination. Its probability hypothesis is satisfied with error `4/5`. -/
+theorem proximity_gap_two_constants :
+    ∃ S : Finset (Fin 4), S.card ≥ (1 - (1 / 4 : ℝ≥0)) * Fintype.card (Fin 4) ∧
+      ∀ i : Fin 2, ∃ u : Fin 4 → ZMod 5, u ∈ code pts 1 ∧
+        ∀ x ∈ S, (i.val : ZMod 5) = u x := by
+  have hclose (r : ZMod 5) :
+      δᵣ((fun _ : Fin 4 => ∑ j : Fin 2, r ^ (j : ℕ) * (j.val : ZMod 5)),
+        (code pts 1 : Set (Fin 4 → ZMod 5))) ≤
+        ((1 / 4 : ℝ≥0) : ENNReal) := by
+    have hmem : (fun _ : Fin 4 => r) ∈ code pts 1 := constantCode_mem_code
+    have hdist := Code.relDistFromCode_le_relDist_to_mem
+      (fun _ : Fin 4 => r) (fun _ => r) hmem
+    have hzero : δᵣ((fun _ : Fin 4 => r), (code pts 1 : Set (Fin 4 → ZMod 5))) = 0 := by
+      have hdself : Code.relHammingDist (fun _ : Fin 4 => r) (fun _ => r) = 0 := by
+        simp [Code.relHammingDist]
+      rw [hdself] at hdist
+      simpa [ENNReal.coe_NNRat_coe_NNReal] using hdist
+    simp [Fin.sum_univ_two, hzero]
+  apply STIR.proximity_gap (φ := pts) (degree := 1) (δ := 1 / 4)
+    (f := fun (i : Fin 2) (_ : Fin 4) => (i.val : ZMod 5)) (by decide) (by norm_num)
+  · rw [bstar_rate]
+    exact (lt_tsub_iff_right).2 (by norm_num)
+  · have herr : proximityError (ZMod 5) 1 (LinearCode.rate (code pts 1)) (1 / 4) 2 =
+        4 / 5 := by
+      rw [rate_eq]
+      push_cast
+      have hsub : (1 - 1 / 4 : ℝ≥0) = 3 / 4 := tsub_eq_of_eq_add (by norm_num)
+      have htwo : (2 - 1 : ℝ≥0) = 1 := tsub_eq_of_eq_add (by norm_num)
+      norm_num [proximityError, ZMod.card, hsub, htwo]
+    rw [herr, ENNReal.ofReal_coe_nnreal]
+    simp only [hclose]
+    norm_num [ENNReal.div_lt_iff]
+
+/-- info: 'STIR.proximity_gap' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in
+#print axioms STIR.proximity_gap
+
+/--
+info: 'ArkLibTest.StirProximityGap.proximity_gap_two_constants' depends on axioms:
+[propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs in
+#print axioms proximity_gap_two_constants
+
 /-- At `δ = 1 - √ρ` the error `err⋆` is `0`. -/
 private lemma err_at_bound :
     proximityError (ZMod 5) 1 (LinearCode.rate (code pts 1)) (1 / 2) 2 = 0 := by
