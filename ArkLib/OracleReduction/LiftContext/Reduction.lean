@@ -861,6 +861,34 @@ theorem liftContext_rbrSoundnessWorstCase
   intro c hc
   simpa only [StateFunction.liftContext, hx, false_or] using hc
 
+/-- Context lifting preserves the named extractor and knowledge state at every fixed prefix,
+with the same error. -/
+theorem liftContext_rbrKnowledgeSoundnessWorstCaseWith
+    {outerRelIn : Set (OuterStmtIn × OuterWitIn)} {outerRelOut : Set (OuterStmtOut × OuterWitOut)}
+    {innerRelIn : Set (InnerStmtIn × InnerWitIn)} {innerRelOut : Set (InnerStmtOut × InnerWitOut)}
+    {rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0}
+    {stmtLens : Statement.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut}
+    {witLens : Witness.InvLens OuterStmtIn OuterWitIn OuterWitOut InnerWitIn InnerWitOut}
+    (V : Verifier oSpec InnerStmtIn InnerStmtOut pSpec)
+    [lensKS : Extractor.Lens.IsKnowledgeSound outerRelIn innerRelIn outerRelOut innerRelOut
+      (V.compatStatement stmtLens) (fun _ _ => True) ⟨stmtLens, witLens⟩]
+    {WitMid : Fin (n + 1) → Type}
+    (E : Extractor.RoundByRound oSpec InnerStmtIn InnerWitIn InnerWitOut pSpec WitMid)
+    (K : V.KnowledgeStateFunction init impl innerRelIn innerRelOut E)
+    (h : V.rbrKnowledgeSoundnessWorstCaseWith init impl innerRelIn innerRelOut
+      WitMid E K rbrKnowledgeError) :
+      (V.liftContext stmtLens).rbrKnowledgeSoundnessWorstCaseWith init impl outerRelIn outerRelOut
+        (fun k => OuterWitOut × WitMid k) (E.liftContext ⟨stmtLens, witLens⟩)
+        (K.liftContext ⟨stmtLens, witLens⟩ V outerRelIn innerRelIn outerRelOut innerRelOut E)
+        rbrKnowledgeError := by
+  intro x i tr
+  refine le_trans (prEvent_mono _ _ _ ?_) (h (stmtLens.proj x) i tr)
+  rintro c ⟨⟨w, v⟩, hprev, hnext⟩
+  change ¬ (K _ _ _ _ ∨ _) at hprev
+  change K _ _ _ v ∨ _ at hnext
+  exact ⟨v, (fun hv => hprev (Or.inl hv)),
+    hnext.resolve_right (fun hs => hprev (Or.inr hs))⟩
+
 /-- Context lifting preserves round-by-round knowledge soundness at every fixed prefix
 with the same error. -/
 theorem liftContext_rbrKnowledgeSoundnessWorstCase
@@ -876,17 +904,9 @@ theorem liftContext_rbrKnowledgeSoundnessWorstCase
       (V.liftContext stmtLens).rbrKnowledgeSoundnessWorstCase init impl outerRelIn outerRelOut
         rbrKnowledgeError := by
   obtain ⟨WitMid, E, K, hbound⟩ := h
-  let lens : Extractor.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
-      OuterWitIn OuterWitOut InnerWitIn InnerWitOut := ⟨stmtLens, witLens⟩
-  refine ⟨(fun k => OuterWitOut × WitMid k), E.liftContext lens,
-    K.liftContext lens V outerRelIn innerRelIn outerRelOut innerRelOut E, ?_⟩
-  intro x i tr
-  refine le_trans (prEvent_mono _ _ _ ?_) (hbound (stmtLens.proj x) i tr)
-  rintro c ⟨⟨w, v⟩, hprev, hnext⟩
-  change ¬ (K _ _ _ _ ∨ _) at hprev
-  change K _ _ _ v ∨ _ at hnext
-  exact ⟨v, (fun hv => hprev (Or.inl hv)),
-    hnext.resolve_right (fun hs => hprev (Or.inr hs))⟩
+  exact ⟨(fun k => OuterWitOut × WitMid k), E.liftContext ⟨stmtLens, witLens⟩,
+    K.liftContext ⟨stmtLens, witLens⟩ V outerRelIn innerRelIn outerRelOut innerRelOut E,
+    V.liftContext_rbrKnowledgeSoundnessWorstCaseWith E K hbound⟩
 
 end Verifier
 
