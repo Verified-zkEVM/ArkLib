@@ -625,6 +625,14 @@ home_page/            site assets and assembled website root
   master bounds over `simulateQ`/`OptionT` that discharge those implications). This is a **separate
   axis** from the transcript-tree notions below: its extractor type is `Extractor.RoundByRound` on
   transcripts, not `Extractor.TreeBased`, and it carries no escape-event layer.
+  `Security/Implications.lean` identifies round-by-round knowledge soundness, averaged and
+  worst-case, with soundness of the induced languages under unbounded extraction. Without input
+  witnesses the identification holds for all relations and errors exactly when no input statement,
+  full transcript and output witness exist together
+  (`Verifier.forall_rbrSoundness_iff_rbrKnowledgeSoundness_iff` and its `WorstCase` form), because
+  only then does a round-by-round extractor exist (`Extractor.RoundByRound.exists_nonempty_iff`);
+  `ArkLibTest/OracleReduction/RoundByRoundCharacterization.lean` checks the separating example.
+  The one-shot notion `rbrKnowledgeSoundnessOneShot` is outside this characterization.
   `Security/Guarded.lean` defines guarded verifiers, independent of any security notion:
   `Verifier.IsGuardedWith`/`IsGuarded`, their data form `Verifier.GuardedForm` (check and verdict
   map as fields), `GuardedForm.append`, the seam run lemma `Verifier.append_run_guardedLeft`, and
