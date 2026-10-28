@@ -672,6 +672,7 @@ public import ArkLib.Data.Polynomial.Indicator
 public import ArkLib.Data.Polynomial.Interface
 public import ArkLib.Data.Polynomial.PointCollision
 public import ArkLib.Data.Polynomial.PointCollisionProbability
+public import ArkLib.Data.Polynomial.PowerBatch
 public import ArkLib.Data.Polynomial.Prelims
 public import ArkLib.Data.Polynomial.RationalFunctions
 public import ArkLib.Data.Polynomial.RationalFunctions.FunctionField
@@ -857,6 +858,7 @@ public import ArkLib.ProofSystem.Binius.FRIBinius.RingSwitch
 public import ArkLib.ProofSystem.Component.CheckClaim
 public import ArkLib.ProofSystem.Component.DoNothing
 public import ArkLib.ProofSystem.Component.NoInteraction
+public import ArkLib.ProofSystem.Component.PowerBatch
 public import ArkLib.ProofSystem.Component.QuotientZeroTest
 public import ArkLib.ProofSystem.Component.RandomQuery
 public import ArkLib.ProofSystem.Component.ReduceClaim
