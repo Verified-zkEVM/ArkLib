@@ -25,7 +25,6 @@
     "ArkLib.Lattices.Ajtai.InnerOuter.traceCheck",
     "ArkLib.Lattices.Ajtai.InnerOuter.wTableMleEval_split",
     "ArkLib.Lattices.Ajtai.InnerOuter.zBatchPackage",
-    "CodingTheory.subspace_design_mcaError_le",
     "OracleVerifier.append_rbrKnowledgeSoundness",
     "OracleVerifier.append_rbrSoundness",
     "OracleVerifier.seqCompose_rbrKnowledgeSoundness",
