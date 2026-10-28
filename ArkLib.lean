@@ -957,7 +957,9 @@ public import ArkLib.ProofSystem.RingSwitching.RoundVerifiers
 public import ArkLib.ProofSystem.RingSwitching.Transport
 public import ArkLib.ProofSystem.RingSwitching.Transport.Coeffs
 public import ArkLib.ProofSystem.RingSwitching.Transport.Eval
+public import ArkLib.ProofSystem.Spartan.Algebra
 public import ArkLib.ProofSystem.Spartan.Basic
+public import ArkLib.ProofSystem.Spartan.Layout
 public import ArkLib.ProofSystem.Stir.Combine
 public import ArkLib.ProofSystem.Stir.MainThm
 public import ArkLib.ProofSystem.Stir.OutOfDomSmpl

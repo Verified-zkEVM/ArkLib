@@ -5,8 +5,8 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.ConstraintSystem.R1CS
-public import ArkLib.Data.MvPolynomial.Multilinear
+public import ArkLib.ProofSystem.Spartan.Layout
+public import ArkLib.ProofSystem.Spartan.Algebra
 public import ArkLib.ProofSystem.Sumcheck.Spec.General
 public import ArkLib.ProofSystem.Component.SendWitness
 public import ArkLib.ProofSystem.Component.RandomQuery
@@ -21,12 +21,9 @@ public import ArkLib.ProofSystem.Component.CheckClaim
   - `R` is the underlying ring, required to be a finite integral domain.
   - `n := 2 ^ ℓ_n` is the number of variables in the R1CS relation.
   - `m := 2 ^ ℓ_m` is the number of constraints in the R1CS relation.
-  - `n_w := 2 ^ ℓ_w` is the number of witness variables, where `ℓ_w < ℓ_n`.
+  - `n_w := 2 ^ ℓ_w` is the number of witness variables, where `ℓ_w ≤ ℓ_n`.
 
   Note that all dimensions are required to be powers of two.
-
-  (Maybe we shouldn't do this? And do the padding explicitly, so we can handle arbitrary
-  dimensions?)
 
   It is used to prove the correctness of R1CS relations: `(A *ᵥ 𝕫) * (B *ᵥ 𝕫) = (C *ᵥ 𝕫)`, where:
   - `A, B, C : Matrix (Fin m) (Fin n) R` are the R1CS constraint matrices.
@@ -35,8 +32,9 @@ public import ArkLib.ProofSystem.Component.CheckClaim
   - `𝕫 = 𝕩 ‖ 𝕨` is the concatenation of the public input `𝕩` and the private witness `𝕨`.
   - `*ᵥ` denotes the standard matrix-vector product, and `*` denotes the component-wise product.
 
-  The protocol may prove R1CS relations whose dimensions are not powers of two by zero-padding.
-  (details in the `R1CS.lean` file)
+  Arbitrary R1CS instances embed into this layout by padding the public and witness blocks
+  separately and relocating witness columns; see `Spartan.Layout`. Ordinary right-padding with
+  an unchanged public-input length is insufficient.
 
   The protocol (described as a PIOP, before composing with poly commitments) proceeds as follows:
 
@@ -47,13 +45,13 @@ public import ArkLib.ProofSystem.Component.CheckClaim
     `C`. Otherwise, the oracle verifier may see the matrices `A`, `B`, and `C` directly (as part of
     the input statement).
 
-  - **Stage 1:** The prover sends the multilinear extension `MLE 𝕨 : R[X Fin n_w]` of the witness
+  - **Stage 1:** The prover sends the multilinear extension `MLE 𝕨 : R[X Fin ℓ_w]` of the witness
     `w` to the verifier. The verifier sends back a challenge `τ : Fin ℓ_m → R`.
 
   - **Stage 2:** The prover and verifier engage in a sum-check protocol to verify the computation:
       `∑ x ∈ {0, 1}^ℓ_m, eqPoly ⸨τ, x⸩ * (A𝕫 ⸨x⸩ * B𝕫 ⸨x⸩ - C𝕫 ⸨x⸩) = 0`,
 
-    where `A𝕫 ⸨X⸩ = ∑ y ∈ {0, 1}^ℓ_m, (MLE A) ⸨X⸩ ⸨y⸩ * (MLE 𝕫) ⸨y⸩`, and similarly for `B𝕫` and
+    where `A𝕫 ⸨X⸩ = ∑ y ∈ {0, 1}^ℓ_n, (MLE A) ⸨X⸩ ⸨y⸩ * (MLE 𝕫) ⸨y⸩`, and similarly for `B𝕫` and
     `C𝕫`.
 
     The sum-check protocol terminates with random challenges `r_x : Fin ℓ_m → R`, and the purported
@@ -79,17 +77,15 @@ public import ArkLib.ProofSystem.Component.CheckClaim
 
   **II. Verification Phase:**
 
-  1. The verifier makes a query to the polynomial oracle `MLE 𝕨` at `r_y [ℓ_n - ℓ_k :] : Fin ℓ_k →
-     R`, and obtain an evaluation value `v_𝕨 : R`.
+  1. The verifier queries the witness MLE at the low `ℓ_w` coordinates of `r_y`, obtaining
+     `v_𝕨 : R`. Integer indices use the little-endian convention of `finFunctionFinEquiv`.
 
-  2. The verifier makes three queries to the polynomial oracles `MLE A, MLE B, MLE C` at
-  `r_y ‖ r_x : Fin (ℓ_n + ℓ_m) → R`, obtaining evaluation values `v_1, v_2, v_3 : R`.
+  2. The verifier queries each matrix MLE at `(r_x, r_y)`: row point first, column point second.
+     If it has the matrices directly, it computes these evaluations instead.
 
-  Alternatively, if the verifier does not receive oracle access, then it computes the evaluation
-  values directly.
-
-  3. The verifier computes `v_𝕫 := 𝕩 *ᵢₚ (⊗ i, (1, r_y i))[: n - k] + (∏ i < ℓ_k, r_y i) * v_𝕨`,
-     where `*ᵢₚ` denotes the inner product, and `⊗` denotes the tensor product.
+  3. The verifier reconstructs the assignment evaluation as the equality-kernel weighted sum
+     of public entries, plus `(∏ i ≥ ℓ_w, r_y i) * v_𝕨`. This is the unequal suffix layout
+     specified by `assignment_mle_split`; no constant-one coordinate is inserted implicitly.
 
   4. The verifier accepts if and only if both of the following holds:
     - `e_x = eqPoly ⸨τ, r_x⸩ * (v_A * v_B - v_C)`
@@ -103,30 +99,7 @@ open MvPolynomial Matrix OracleComp ProtocolSpec
 
 namespace Spartan
 
--- Note: this is the _padded_ Spartan protocol. The non-padded version will be defined via padding
--- to the nearest power of two
-
 noncomputable section
-
-/-- The public parameters of the (padded) Spartan protocol. Consists of the number of bits of the
-  R1CS dimensions, and the number of bits of the witness variables. -/
-structure PublicParams where
-  ℓ_m : ℕ
-  ℓ_n : ℕ
-  ℓ_w : ℕ
-  ℓ_w_le_ℓ_n : ℓ_w ≤ ℓ_n := by omega
-
-namespace PublicParams
-
-/-- The R1CS dimensions / sizes are the powers of two of the public parameters. -/
-def toSizeR1CS (pp : PublicParams) : R1CS.Size := {
-  m := 2 ^ pp.ℓ_m
-  n := 2 ^ pp.ℓ_n
-  n_w := 2 ^ pp.ℓ_w
-  n_w_le_n := Nat.pow_le_pow_of_le (by decide) pp.ℓ_w_le_ℓ_n
-}
-
-end PublicParams
 
 namespace Spec
 
@@ -174,7 +147,7 @@ instance : OracleInterface (Witness R pp) where
   Query := Fin pp.ℓ_w → R
   toOC.spec := fun _ => R
   toOC.impl := fun evalPoint => do
-    return (MLE ((← read) ∘ finFunctionFinEquiv)) ⸨evalPoint⸩
+    return (MLE' (← read)) ⸨evalPoint⸩
 
 /-!
   ## First message
@@ -212,10 +185,7 @@ def zeroCheckVirtualPolynomial (𝕩 : Statement.AfterFirstMessage R pp)
     -- Recall: `oStmt = (A, B, C, 𝕨)`
     (oStmt : ∀ i, OracleStatement.AfterFirstMessage R pp i) :
       MvPolynomial (Fin pp.ℓ_m) R :=
-  letI 𝕫 := R1CS.𝕫 𝕩 (oStmt (.inr 0))
-  ∑ x : Fin (2 ^ pp.ℓ_m),
-    (eqPolynomial (finFunctionFinEquiv.symm x : Fin pp.ℓ_m → R)) *
-      C ((oStmt (.inl .A) *ᵥ 𝕫) x * (oStmt (.inl .B) *ᵥ 𝕫) x - (oStmt (.inl .C) *ᵥ 𝕫) x)
+  Algebra.residualMLE (fun i => oStmt (.inl i)) (R1CS.𝕫 𝕩 (oStmt (.inr 0)))
 
 /-- Unfolds to `τ : Fin ℓ_m → R` -/
 @[simp]
@@ -373,7 +343,9 @@ def oracleReduction.linearCombination :
 def secondSumCheckVirtualPolynomial
     (stmt : Statement.AfterLinearCombination R pp)
     (oStmt : ∀ i, OracleStatement.AfterLinearCombination R pp i) :
-      MvPolynomial (Fin pp.ℓ_n) R := sorry
+      MvPolynomial (Fin pp.ℓ_n) R :=
+  Algebra.secondVirtual (fun i => oStmt (.inr (.inl i)))
+    (R1CS.𝕫 stmt.2.2.2 (oStmt (.inr (.inr 0)))) stmt.2.1 stmt.1
 
 @[simp]
 abbrev SecondSumcheckChallenge : Type := Fin pp.ℓ_n → R

@@ -39,7 +39,6 @@
     "Spartan.Spec.oracleReduction.firstChallenge",
     "Spartan.Spec.oracleReduction.linearCombination",
     "Spartan.Spec.oracleReduction.sendEvalClaim",
-    "Spartan.Spec.secondSumCheckVirtualPolynomial",
     "StirIOP.stir_main",
     "StirIOP.stir_rbr_soundness",
     "Sumcheck.Spec.SingleRound.Simple.oracleVerifier_rbrKnowledgeSoundness",
