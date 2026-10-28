@@ -343,6 +343,46 @@ theorem liftContext_rbr_knowledgeSoundness [Inhabited InnerWitIn]
   exact V.toVerifier.liftContext_rbr_knowledgeSoundness h
     (stmtLens := stmtLens.toLens) (witLens := witLens)
 
+omit [Inhabited InnerStmtOut] [∀ i, Inhabited (InnerOStmtOut i)] in
+/-- Lifting preserves the fixed-prefix round-by-round soundness bound. -/
+theorem liftContext_rbrSoundnessWorstCase
+    {rbrSoundnessError : pSpec.ChallengeIdx → ℝ≥0}
+    {lens : OracleStatement.ExecutableLens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
+                                OuterOStmtIn OuterOStmtOut InnerOStmtIn InnerOStmtOut}
+    (V : OracleVerifier oSpec InnerStmtIn InnerOStmtIn InnerStmtOut InnerOStmtOut pSpec)
+    (output : OracleVerifier.LiftContextOutput lens V)
+    [lensSound : lens.toLens.IsSound
+      outerLangIn outerLangOut innerLangIn innerLangOut
+      (V.toVerifier.compatStatement lens.toLens)]
+    (h : V.toVerifier.rbrSoundnessWorstCase init impl innerLangIn innerLangOut
+      rbrSoundnessError) :
+      (V.liftContext lens output).toVerifier.rbrSoundnessWorstCase init impl
+        outerLangIn outerLangOut rbrSoundnessError := by
+  rw [liftContext_toVerifier_comm lens V output]
+  exact V.toVerifier.liftContext_rbrSoundnessWorstCase h (lens := lens.toLens)
+
+omit [Inhabited InnerStmtOut] [∀ i, Inhabited (InnerOStmtOut i)] in
+/-- Lifting preserves the fixed-prefix round-by-round knowledge soundness bound. -/
+theorem liftContext_rbrKnowledgeSoundnessWorstCase
+    {rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0}
+    {stmtLens : OracleStatement.ExecutableLens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
+                                OuterOStmtIn OuterOStmtOut InnerOStmtIn InnerOStmtOut}
+    {witLens : Witness.InvLens (OuterStmtIn × ∀ i, OuterOStmtIn i)
+                            OuterWitIn OuterWitOut InnerWitIn InnerWitOut}
+    (V : OracleVerifier oSpec InnerStmtIn InnerOStmtIn InnerStmtOut InnerOStmtOut pSpec)
+    (output : OracleVerifier.LiftContextOutput stmtLens V)
+    [lensKS : Extractor.Lens.IsKnowledgeSound
+      outerRelIn innerRelIn outerRelOut innerRelOut
+      (V.toVerifier.compatStatement stmtLens.toLens) (fun _ _ => True)
+      ⟨stmtLens.toLens, witLens⟩]
+    (h : V.toVerifier.rbrKnowledgeSoundnessWorstCase init impl innerRelIn innerRelOut
+      rbrKnowledgeError) :
+      (V.liftContext stmtLens output).toVerifier.rbrKnowledgeSoundnessWorstCase init impl
+        outerRelIn outerRelOut rbrKnowledgeError := by
+  rw [liftContext_toVerifier_comm stmtLens V output]
+  exact V.toVerifier.liftContext_rbrKnowledgeSoundnessWorstCase h
+    (stmtLens := stmtLens.toLens) (witLens := witLens)
+
 end OracleVerifier
 
 end Security

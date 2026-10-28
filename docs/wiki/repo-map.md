@@ -753,20 +753,22 @@ home_page/            site assets and assembled website root
   - `Append/OneMessage.lean` — the one-message specialization with effectful prover outputs.
   - `Append/RoundByRound.lean` — composition from fixed-prefix bounds under a pure first verifier.
   - `Append/GuardedRoundByRound.lean` — worst-case round-by-round knowledge soundness composes
-    under a guarded first verifier, with the composed extractor and knowledge state function
-    (`KnowledgeStateFunction.appendGuarded`) named; the components share only the intermediate
-    relation.
+    from fixed-prefix component bounds under a guarded first verifier, with the composed extractor
+    and knowledge state function (`KnowledgeStateFunction.appendGuarded`) named; the components
+    share only the intermediate relation.
   - `Append/ProverSplit.lean` — arbitrary prover restrictions retaining shared state at the seam.
   - `Append/OrdinaryComposition.lean` — prefix extraction and ordinary bad-event bounds.
   - `Append/Security.lean` — proved guarded ordinary soundness and pure-extractor knowledge
-    soundness; the legacy round-by-round claims remain admitted.
+    soundness, with a guarded first verifier and a suffix bound valid from every deterministic
+    shared oracle state.
   - `Append/NoAmbient.lean` — ordinary composition with one initialization and no ambient oracles.
 
   `Sequential/Completeness.lean` adds finite-chain completeness for pure outputs/verdicts;
   `Sequential/GuardedCompleteness.lean` handles deterministic rejecting verifiers.
   `Sequential/GuardedNary.lean` extends guarded completeness to finite chains;
   `Sequential/GuardedRoundByRound.lean` extends guarded worst-case round-by-round knowledge
-  soundness to finite chains, with the `seqCompose` error reindexing proved;
+  soundness to finite chains, requiring fixed-prefix bounds and guardedness for every component,
+  with the `seqCompose` error reindexing proved;
   `Sequential/OracleCompleteness.lean` supplies binary and finite-chain oracle-reduction wrappers.
   `Sequential/GuardedNary.lean` also gives the guarded form of an appended or sequentially
   composed oracle verifier from its components' (`OracleVerifier.appendGuardedForm`,
@@ -787,11 +789,13 @@ home_page/            site assets and assembled website root
   `Transcript.concat`, with the extensionality lemma `Transcript.heq_ext`, next to `concat` itself
   in `ProtocolSpec/Basic.lean` — put new ones there rather than re-deriving them privately per
   module.
-- Virtual-output execution commutes through append, salt, cast, and executable lifting. This does
-  not close the inherited generic append-security boundary: the unrestricted `StateT`
-  round-by-round soundness and knowledge-soundness composition theorems in
-  `Composition/Sequential/Append/Security.lean` remain admitted and must not anchor a standalone
-  security claim. Completeness composition uses the proved interfaces with explicit shared-state
+- Virtual-output execution commutes through append, salt, cast, and executable lifting.
+  Ordinary soundness and knowledge soundness compose through `Append/Security.lean` under a
+  guarded first verifier and state-uniform suffix bounds, with pure extractors for knowledge
+  soundness. Round-by-round knowledge soundness composes through
+  `Append/GuardedRoundByRound.lean` from fixed-prefix component bounds and a guarded first
+  verifier. `Sequential/GuardedRoundByRound.lean` requires fixed-prefix bounds and guardedness
+  for every component of a finite chain. Completeness composition uses explicit shared-state
   hypotheses.
 - Ring switching has two construction families, routed by
   `ProofSystem/RingSwitching/Basic.lean`. Packing groups independent coordinates; `Lift` replaces
