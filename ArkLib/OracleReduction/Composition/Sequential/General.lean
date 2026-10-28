@@ -15,9 +15,8 @@ public import ArkLib.OracleReduction.Composition.Sequential.Append
 
   Ordinary soundness and knowledge soundness are proved for guarded components with bounds
   uniform over deterministic shared oracle states. Knowledge soundness names a computable fold
-  of pure transcript-and-output extractors. The legacy round-by-round contracts remain admitted;
-  their per-step error reindexing is proved
-  (`ProtocolSpec.apply_seqComposeChallengeIdxToSigma_eq_sumElim`). The proved worst-case
+  of pure transcript-and-output extractors. Per-step error reindexing is given by
+  `ProtocolSpec.apply_seqComposeChallengeIdxToSigma_eq_sumElim`. The worst-case
   round-by-round knowledge-soundness interface for guarded chains is
   `Sequential/GuardedRoundByRound.lean`.
   The false fixed-init completeness contracts have been removed. Proved completeness interfaces
@@ -381,18 +380,6 @@ variable {m : ℕ}
     [∀ i, ∀ j, SampleableType ((pSpec i).Challenge j)]
     {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
 
--- section Execution
-
--- -- Executing .
--- theorem Reduction.run_seqCompose
---     (stmt : Stmt 0) (wit : Wit 0)
---     (R : ∀ i, Reduction oSpec (Stmt i.castSucc) (Wit i.castSucc) (Stmt i.succ) (Wit i.succ)
---       (pSpec i)) :
---       (Reduction.seqCompose R).run stmt wit := by
---   sorry
-
--- end Execution
-
 namespace ProtocolSpec
 
 /-- A function of a component challenge index, evaluated at the decoding of a combined challenge
@@ -532,62 +519,6 @@ theorem seqCompose_knowledgeSoundness
   exact knowledgeSoundness_of_with init impl
     (seqCompose_knowledgeSoundnessWith rel V knowledgeError G e he)
 
-/-- If all verifiers in a sequence satisfy round-by-round soundness with respective RBR soundness
-    errors, then their sequential composition also satisfies round-by-round soundness. -/
-theorem seqCompose_rbrSoundness
-    (lang : (i : Fin (m + 1)) → Set (Stmt i))
-    (V : (i : Fin m) → Verifier oSpec (Stmt i.castSucc) (Stmt i.succ) (pSpec i))
-    (rbrSoundnessError : ∀ i, (pSpec i).ChallengeIdx → ℝ≥0)
-    (h : ∀ i, (V i).rbrSoundness init impl (lang i.castSucc) (lang i.succ) (rbrSoundnessError i)) :
-      (Verifier.seqCompose Stmt V).rbrSoundness init impl (lang 0) (lang (Fin.last m))
-        (fun combinedIdx =>
-          letI ij := seqComposeChallengeIdxToSigma combinedIdx
-          rbrSoundnessError ij.1 ij.2) := by
-  induction m with
-  | zero =>
-    have herr : (fun combinedIdx =>
-        letI ij := seqComposeChallengeIdxToSigma combinedIdx
-        rbrSoundnessError ij.1 ij.2) = 0 := by
-      funext i
-      exact Fin.elim0 i.val
-    rw [herr]
-    rw [Verifier.seqCompose_zero]
-    exact Verifier.id_rbrSoundness init impl
-  | succ m ih =>
-    rw [ProtocolSpec.apply_seqComposeChallengeIdxToSigma_eq_sumElim]
-    exact append_rbrSoundness (V 0) (seqCompose (Stmt ∘ Fin.succ) (fun i => V i.succ)) (h 0)
-      (ih (fun i => lang i.succ) (fun i => V i.succ) (fun i => rbrSoundnessError i.succ)
-        (fun i => h i.succ))
-
-/-- If all verifiers in a sequence satisfy round-by-round knowledge soundness with respective RBR
-    knowledge errors, then their sequential composition also satisfies round-by-round knowledge
-    soundness. -/
-theorem seqCompose_rbrKnowledgeSoundness
-    (rel : ∀ i, Set (Stmt i × Wit i))
-    (V : ∀ i, Verifier oSpec (Stmt i.castSucc) (Stmt i.succ) (pSpec i))
-    (rbrKnowledgeError : ∀ i, (pSpec i).ChallengeIdx → ℝ≥0)
-    (h : ∀ i, (V i).rbrKnowledgeSoundness init impl
-      (rel i.castSucc) (rel i.succ) (rbrKnowledgeError i)) :
-      (Verifier.seqCompose Stmt V).rbrKnowledgeSoundness init impl (rel 0) (rel (Fin.last m))
-        (fun combinedIdx =>
-          letI ij := seqComposeChallengeIdxToSigma combinedIdx
-          rbrKnowledgeError ij.1 ij.2) := by
-  induction m with
-  | zero =>
-    have herr : (fun combinedIdx =>
-        letI ij := seqComposeChallengeIdxToSigma combinedIdx
-        rbrKnowledgeError ij.1 ij.2) = 0 := by
-      funext i
-      exact Fin.elim0 i.val
-    rw [herr]
-    rw [Verifier.seqCompose_zero]
-    exact Verifier.id_rbrKnowledgeSoundness init impl
-  | succ m ih =>
-    rw [ProtocolSpec.apply_seqComposeChallengeIdxToSigma_eq_sumElim]
-    exact append_rbrKnowledgeSoundness (V 0) (seqCompose (Stmt ∘ Fin.succ) (fun i => V i.succ))
-      (h 0) (ih (fun i => rel i.succ) (fun i => V i.succ) (fun i => rbrKnowledgeError i.succ)
-        (fun i => h i.succ))
-
 end Verifier
 
 namespace OracleVerifier
@@ -663,45 +594,6 @@ theorem seqCompose_knowledgeSoundness
   unfold OracleVerifier.knowledgeSoundness
   rw [seqCompose_toVerifier]
   exact Verifier.seqCompose_knowledgeSoundness rel (fun i => (V i).toVerifier) knowledgeError G h
-
-/-- If all verifiers in a sequence satisfy round-by-round soundness with respective RBR soundness
-    errors, then their sequential composition also satisfies round-by-round soundness. -/
-theorem seqCompose_rbrSoundness
-    (lang : (i : Fin (m + 1)) → Set (Stmt i × ∀ j, OStmt i j))
-    (V : (i : Fin m) →
-      OracleVerifier oSpec (Stmt i.castSucc) (OStmt i.castSucc) (Stmt i.succ) (OStmt i.succ)
-        (pSpec i))
-    (rbrSoundnessError : ∀ i, (pSpec i).ChallengeIdx → ℝ≥0)
-    (h : ∀ i, (V i).rbrSoundness init impl (lang i.castSucc) (lang i.succ) (rbrSoundnessError i)) :
-      (OracleVerifier.seqCompose Stmt OStmt V).rbrSoundness
-        init impl (lang 0) (lang (Fin.last m))
-        (fun combinedIdx =>
-          letI ij := seqComposeChallengeIdxToSigma combinedIdx
-          rbrSoundnessError ij.1 ij.2) := by
-  unfold OracleVerifier.rbrSoundness
-  convert Verifier.seqCompose_rbrSoundness lang (fun i => (V i).toVerifier)
-    rbrSoundnessError h
-  simp only [seqCompose_toVerifier]
-
-/-- If all verifiers in a sequence satisfy round-by-round knowledge soundness with respective RBR
-    knowledge errors, then their sequential composition also satisfies round-by-round knowledge
-    soundness. -/
-theorem seqCompose_rbrKnowledgeSoundness
-    (rel : ∀ i, Set ((Stmt i × ∀ j, OStmt i j) × Wit i))
-    (V : (i : Fin m) → OracleVerifier oSpec (Stmt i.castSucc) (OStmt i.castSucc)
-      (Stmt i.succ) (OStmt i.succ) (pSpec i))
-    (rbrKnowledgeError : ∀ i, (pSpec i).ChallengeIdx → ℝ≥0)
-    (h : ∀ i, (V i).rbrKnowledgeSoundness init impl
-      (rel i.castSucc) (rel i.succ) (rbrKnowledgeError i)) :
-    (OracleVerifier.seqCompose Stmt OStmt V).rbrKnowledgeSoundness
-        init impl (rel 0) (rel (Fin.last m))
-        (fun combinedIdx =>
-          letI ij := seqComposeChallengeIdxToSigma combinedIdx
-          rbrKnowledgeError ij.1 ij.2) := by
-  unfold OracleVerifier.rbrKnowledgeSoundness
-  convert Verifier.seqCompose_rbrKnowledgeSoundness rel (fun i => (V i).toVerifier)
-    rbrKnowledgeError h
-  simp only [seqCompose_toVerifier]
 
 end OracleVerifier
 
