@@ -43,14 +43,14 @@ def initialStatement (ctx : Context) (target : L) :
 noncomputable def initialWitness (ctx : Context) (p : MultilinearPoly L ℓ) :
     Witness K β (h_ℓ_add_R_rate := h_rate) (ℓ := ℓ) 0 where
   t := p
-  H := projectToMidSumcheckPoly ℓ p (multpoly ctx) 0 Fin.elim0
+  H := fixPrefix ℓ 0 (computeInitialSumcheckPoly ℓ p (multpoly ctx)) Fin.elim0
   f := getMidCodewords K β (h_ℓ_add_R_rate := h_rate) p Fin.elim0
 
 /-- The initial residual polynomial is the public multiplier times the packed polynomial. -/
 theorem initialWitness_H_val (ctx : Context) (p : MultilinearPoly L ℓ) :
     (initialWitness K β multpoly (h_rate := h_rate) ctx p).H.val =
       (multpoly ctx).val * p.val := by
-  simp [initialWitness, projectToMidSumcheckPoly, computeInitialSumcheckPoly,
+  simp [initialWitness, fixPrefix,
     MvPolynomial.fixFirstVariablesOfMQP_zero]
 
 /-- Canonical initialization satisfies the folding loop's structural invariant, independently

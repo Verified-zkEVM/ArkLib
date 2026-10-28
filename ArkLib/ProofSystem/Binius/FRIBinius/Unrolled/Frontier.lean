@@ -99,7 +99,7 @@ def extractor : Extractor.RoundByRound ([]ₒ)
     (WitIn := MultilinearPoly L ℓ)
     (WitOut := Witness K β (h_ℓ_add_R_rate := h_rate) (ℓ := ℓ) 0)
     (pSpec := !p[]) (WitMid := fun _ => MultilinearPoly L ℓ) where
-  eqIn := rfl
+  extractIn _ w := w
   extractMid j := nomatch j
   extractOut _ _ w := w.t
 
@@ -115,7 +115,7 @@ noncomputable def knowledgeStateFunction {σ : Type} (init : ProbComp σ)
         (𝓑 := boolEmbedding L) (multpoly := multiplier.polynomial) 0)
       (extractor K β (ϑ := ϑ) (h_rate := h_rate)) where
   toFun _ s _ w := (s, w) ∈ inputRelation K β multiplier (ϑ := ϑ) (h_rate := h_rate)
-  toFun_empty _ _ := Iff.rfl
+  toFun_empty _ _ h := h
   toFun_next j := nomatch j
   toFun_full s _ w h := by
     exact product_sum_and_compatibility_of_mem_roundRelation_zero K β multiplier.polynomial

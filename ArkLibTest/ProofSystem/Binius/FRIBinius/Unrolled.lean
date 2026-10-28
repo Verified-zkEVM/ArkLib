@@ -97,6 +97,14 @@ example {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ Prob
   fullVerifier_rbrKnowledgeSoundnessWorstCase 2 (ZMod 2) beta (ϑ := 1) (R := 1) (ℓ' := 1)
     (by decide) rfl queryContext 8 init impl
 
+example {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :=
+  fullVerifier_knowledgeSoundness 2 (ZMod 2) beta (ϑ := 1) (R := 1) (ℓ' := 1)
+    (by decide) rfl queryContext 8 init impl
+
+example {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :=
+  fullVerifier_soundness 2 (ZMod 2) beta (ϑ := 1) (R := 1) (ℓ' := 1)
+    (by decide) rfl queryContext 8 init impl
+
 private theorem card_field : Fintype.card L = 16 := by
   rw [← Nat.card_eq_fintype_card]
   exact GaloisField.card 2 4 (by decide)
@@ -144,3 +152,17 @@ depends on axioms: [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
 #print axioms strictInputRelation_subset_inputRelation
+
+/--
+info: 'Binius.FRIBinius.Unrolled.fullVerifier_knowledgeSoundness'
+depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms fullVerifier_knowledgeSoundness
+
+/--
+info: 'Binius.FRIBinius.Unrolled.fullVerifier_soundness'
+depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms fullVerifier_soundness
