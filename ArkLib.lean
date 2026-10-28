@@ -663,6 +663,7 @@ public import ArkLib.Data.Polynomial.Differential.TotalJetDegreeCount
 public import ArkLib.Data.Polynomial.Differential.Types
 public import ArkLib.Data.Polynomial.Differential.WitnessCount
 public import ArkLib.Data.Polynomial.DivisorReconstruction
+public import ArkLib.Data.Polynomial.FiniteDomainQuotient
 public import ArkLib.Data.Polynomial.FoldedWronskian
 public import ArkLib.Data.Polynomial.FoldingPolynomial
 public import ArkLib.Data.Polynomial.FractionFieldExpand
@@ -676,6 +677,7 @@ public import ArkLib.Data.Polynomial.PermutationFingerprint
 public import ArkLib.Data.Polynomial.PermutationFingerprintDegree
 public import ArkLib.Data.Polynomial.PointCollision
 public import ArkLib.Data.Polynomial.PointCollisionProbability
+public import ArkLib.Data.Polynomial.PowerBatch
 public import ArkLib.Data.Polynomial.Prelims
 public import ArkLib.Data.Polynomial.RationalFunctions
 public import ArkLib.Data.Polynomial.RationalFunctions.FunctionField
@@ -861,6 +863,8 @@ public import ArkLib.ProofSystem.Binius.FRIBinius.RingSwitch
 public import ArkLib.ProofSystem.Component.CheckClaim
 public import ArkLib.ProofSystem.Component.DoNothing
 public import ArkLib.ProofSystem.Component.NoInteraction
+public import ArkLib.ProofSystem.Component.PowerBatch
+public import ArkLib.ProofSystem.Component.QuotientZeroTest
 public import ArkLib.ProofSystem.Component.RandomQuery
 public import ArkLib.ProofSystem.Component.ReduceClaim
 public import ArkLib.ProofSystem.Component.SendChallenge
