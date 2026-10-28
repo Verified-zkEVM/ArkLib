@@ -127,7 +127,7 @@ jobs:
           BUILD_TIMING_TEST_NAME: Validation wrapper
           BUILD_TIMING_TEST_COMMAND: ./scripts/validate.sh
           BUILD_TIMING_NATIVE_NAME: Native build
-          BUILD_TIMING_NATIVE_COMMAND: lake build toyproblem-runtime hachi-runtime lint-style
+          BUILD_TIMING_NATIVE_COMMAND: lake build toyproblem-runtime hachi-runtime sumcheck-runtime fri-extractor-runtime lint-style
         # The per-module baseline travels inside the current artifact (`module-times-base.json`,
         # recorded with the build cache the run restored), so no other run's artifact is needed.
         run: |

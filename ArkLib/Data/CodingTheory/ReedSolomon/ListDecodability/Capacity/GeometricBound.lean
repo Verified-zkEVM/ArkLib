@@ -24,7 +24,7 @@ characteristic zero or characteristic at least the block length.
 
 ## References
 
-* [DKTZ26]
+* [DKT26]
 -/
 
 @[expose] public section

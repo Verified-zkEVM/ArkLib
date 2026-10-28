@@ -10,7 +10,7 @@ public import ArkLib.Data.CodingTheory.Basic.Distance
 public import ArkLib.Data.CodingTheory.Basic.LinearCode
 public import ArkLib.Data.CodingTheory.Basic.RelativeDistance
 public import ArkLib.Data.CodingTheory.ReedSolomon
-public import VCVio.OracleComp.Constructions.SampleableType.NativeMeasure
+public import VCVio.OracleComp.Constructions.SampleableType.Measure
 public import ArkLib.ProofSystem.Stir.ProximityBound
 
 /-!

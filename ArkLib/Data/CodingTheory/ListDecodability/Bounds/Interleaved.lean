@@ -803,4 +803,22 @@ theorem lambda_interleaved_le_choose_mul_pow {ι A : Type} [Fintype ι] [Finite 
     simp only [Set.encard_empty]
     exact (zero_le : (0 : ℕ∞) ≤ _)
 
+open scoped NNReal in
+/-- Inside the base code's relative unique-decoding radius, every point list of a nonempty
+interleaving is a subsingleton, so `Λ ≤ 1`. Interleaving preserves that radius
+(`Code.relativeUniqueDecodingRadius_interleavedCodeSet`), and every code is uniquely decodable at
+its own radius (`Code.isUniquelyDecodable_relativeUniqueDecodingRadius`). -/
+theorem lambda_interleaved_le_one_of_le_relUDR {ι A : Type*} [Fintype ι] [DecidableEq A]
+    (C : Set (ι → A)) {m : ℕ} (hm : 0 < m)
+    {δ : ℝ≥0} (hδ : δ ≤ relativeUniqueDecodingRadius C) :
+    Lambda (C^⋈(Fin m)) (δ : ℝ) ≤ 1 := by
+  have : Nonempty (Fin m) := Fin.pos_iff_nonempty.mp hm
+  refine le_trans (Lambda_mono ?_)
+    (isUniquelyDecodable_iff_Lambda_le.mp
+      (isUniquelyDecodable_relativeUniqueDecodingRadius (C^⋈(Fin m))))
+  calc (δ : ℝ)
+      ≤ (relativeUniqueDecodingRadius C : ℝ) := by exact_mod_cast hδ
+    _ = (relativeUniqueDecodingRadius (C^⋈(Fin m)) : ℝ) := by
+        exact_mod_cast (relativeUniqueDecodingRadius_interleavedCodeSet (κ := Fin m) C).symm
+
 end InterleavedCode

@@ -286,6 +286,7 @@ theorem liftContext_soundness
   rw [liftContext_toVerifier_comm lens V output]
   exact V.toVerifier.liftContext_soundness h (lens := lens.toLens)
 
+/-- Lift knowledge soundness, using a default inner witness if inner extraction fails. -/
 theorem liftContext_knowledgeSoundness [Inhabited InnerWitIn]
     {knowledgeError : ℝ≥0}
     {stmtLens : OracleStatement.ExecutableLens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut

@@ -229,7 +229,7 @@ commitment `stmt.zc.t` and both are short, so the pair is a `LiftCom.Collision` 
 cube sum in the free coordinate is a univariate of degree `≤ 2b` resp. `≤ 2`
 (`roundPoly_degree_le_sumcheckPolyZero` / `…Alpha`) agreeing with the degree-matched `g` at
 `k > deg` distinct points, hence equal to it as a polynomial. Evaluating at `0` and `1`,
-splitting the cube (`hypercubeSum_succ`) and using the round check recovers the round-`i`
+the shared `roundPoly_sum` identity and the round check recover the round-`i`
 claims. The tree plumbing is the generic
 `ScalarRound.coordinateWiseSpecialSoundWithEscape_of_mkWitness_scalar_guarded`.
 
@@ -290,7 +290,7 @@ theorem round_coordinateWiseSpecialSoundWithEscape
         omega
     have key : hypercubeSum (M + 1) (sumcheckPolyZero Φ (M + 1) φF b s.zc.τ₀ (resp z))
         ((⟨i, hi⟩ : Fin (M + 1)) : ℕ) s.challenges = s.target₀ := by
-      rw [hypercubeSum_succ, ← roundPoly_eval, ← roundPoly_eval, hdefect,
+      rw [← roundPoly_sum, hdefect,
         ← CPolynomial.eval_toPoly, ← CPolynomial.eval_toPoly]
       exact hguard.1
     exact key
@@ -312,7 +312,7 @@ theorem round_coordinateWiseSpecialSoundWithEscape
     have key : hypercubeSum (M + 1)
         (sumcheckPolyAlpha Φ (M + 1) m₁ φF b s.zc.rlin s.zc.α s.zc.τα (resp z))
         ((⟨i, hi⟩ : Fin (M + 1)) : ℕ) s.challenges = s.targetα := by
-      rw [hypercubeSum_succ, ← roundPoly_eval, ← roundPoly_eval, hdefect,
+      rw [← roundPoly_sum, hdefect,
         ← CPolynomial.eval_toPoly, ← CPolynomial.eval_toPoly]
       exact hguard.2
     exact key

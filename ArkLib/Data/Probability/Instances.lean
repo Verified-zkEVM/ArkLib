@@ -1,8 +1,8 @@
 /-
-Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
+Copyright (c) 2024 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Chung Thai Nguyen, Katerina Hristova,
-         Ilia Vlasov, Aristotle (Harmonic)
+  Ilia Vlasov, Aristotle (Harmonic), Alexander Hicks
 -/
 module
 
@@ -15,7 +15,7 @@ public import CompPoly.Data.Fin.BigOperators
 
 ArkLib's specialized counting arguments are exposed here over VCVio's native `ProbComp`
 uniform sampler. Generic event algebra, counting formulas, transport along equivalences, and product
-sampling are provided by `SampleableType.NativeMeasure`.
+sampling are provided by `SampleableType.Measure`.
 -/
 
 @[expose] public section
@@ -30,7 +30,7 @@ namespace Probability
 /-- **Schwartz-Zippel**, in probability form at an arbitrary degree bound: for a nonzero
 `n`-variate polynomial `P` of total degree at most `d` over a finite domain `R`,
 
-  `Pr{r ← $ᵗ R^n}[eval r P = 0] ≤ d / |R|`.
+  `Pr{let r ← $ᵗ R^n}[eval r P = 0] ≤ d / |R|`.
 -/
 lemma prob_schwartz_zippel_mv_polynomial_of_totalDegree_le
     {R : Type} [CommRing R] [IsDomain R] [Fintype R] [SampleableType R]
@@ -50,6 +50,53 @@ lemma prob_schwartz_zippel_mv_polynomial
     Pr{let r ← $ᵗ (Fin n → R)}[MvPolynomial.eval r P = 0] ≤
       (n : ℝ≥0∞) / Fintype.card R :=
   prob_schwartz_zippel_mv_polynomial_of_totalDegree_le P h_nonzero h_deg
+
+/-- Scalar-challenge form of the polynomial root bound for one variable. -/
+lemma prob_schwartz_zippel_single_variable
+    {R : Type} [CommRing R] [NoZeroDivisors R] [Fintype R] [SampleableType R]
+    (p : MvPolynomial (Fin 1) R) {d : ℕ} (hne : p ≠ 0) (hdeg : p.totalDegree ≤ d) :
+    Pr{let γ ← $ᵗ R}[MvPolynomial.eval (fun _ : Fin 1 => γ) p = 0] ≤
+      (d : ℝ≥0∞) / Fintype.card R := by
+  have : Nontrivial R := by
+    by_contra h
+    have : Subsingleton R := not_nontrivial_iff_subsingleton.mp h
+    exact hne (Subsingleton.elim _ _)
+  have : IsDomain R := NoZeroDivisors.to_isDomain R
+  exact (SampleableType.prEvent_uniformSample_equiv (Equiv.funUnique (Fin 1) R).symm
+    (fun r => MvPolynomial.eval r p = 0)).trans_le
+      (prob_schwartz_zippel_mv_polynomial_of_totalDegree_le p hne hdeg)
+
+/-- Two distinct univariate polynomials of degree at most `d` agree at a uniform point with
+probability at most `d / |R|`: their difference has at most `d` roots. -/
+lemma prob_polynomial_eval_eq_le
+    {R : Type} [CommRing R] [NoZeroDivisors R] [Fintype R] [SampleableType R]
+    {d : ℕ} {p q : Polynomial R} (hne : p ≠ q) (hp : p.natDegree ≤ d) (hq : q.natDegree ≤ d) :
+    Pr{let γ ← $ᵗ R}[p.eval γ = q.eval γ] ≤ (d : ℝ≥0∞) / Fintype.card R := by
+  classical
+  have : Nontrivial R := by
+    by_contra h
+    have : Subsingleton R := not_nontrivial_iff_subsingleton.mp h
+    exact hne (Subsingleton.elim _ _)
+  have : IsDomain R := NoZeroDivisors.to_isDomain R
+  rw [SampleableType.prEvent_uniformSample]
+  gcongr
+  have hr : p - q ≠ 0 := sub_ne_zero.mpr hne
+  refine (Polynomial.card_le_degree_of_subset_roots (p := p - q) fun γ hγ => ?_).trans
+    ((Polynomial.natDegree_sub_le _ _).trans (max_le hp hq))
+  exact (Polynomial.mem_roots hr).mpr (by
+    simpa [sub_eq_zero] using (Finset.mem_filter.mp hγ).2)
+
+/-- Distinct degree-bounded polynomials agree with probability at most `d / |R|`.
+The NNReal presentation is convenient for protocol error bounds. -/
+lemma prob_degreeLE_eval_eq_le
+    {R : Type} [CommRing R] [NoZeroDivisors R] [Fintype R] [SampleableType R]
+    {d : ℕ} {p q : Polynomial.degreeLE R d} (hne : p ≠ q) :
+    Pr{let c ← $ᵗ R}[p.val.eval c = q.val.eval c] ≤
+      (((d : ℝ≥0) / Fintype.card R : ℝ≥0) : ℝ≥0∞) := by
+  rw [ENNReal.coe_div (by simp), ENNReal.coe_natCast, ENNReal.coe_natCast]
+  exact prob_polynomial_eval_eq_le (fun h => hne (Subtype.ext h))
+    (Polynomial.natDegree_le_of_degree_le (Polynomial.mem_degreeLE.mp p.property))
+    (Polynomial.natDegree_le_of_degree_le (Polynomial.mem_degreeLE.mp q.property))
 
 /-- The polynomial identity lemma in individual-degree form. -/
 lemma prob_polynomial_identity_le

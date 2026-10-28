@@ -483,6 +483,103 @@ theorem executeStrategies_eq_run {ι : Type u} (ambient : OracleSpec.{u, u} ι)
       return ⟨TypeTree.ExecutionPath.ofTypeTreePath result.1, result.2.1, out⟩) :=
   rfl
 
+/-- At a terminal node the actual executor runs the final verifier action once. -/
+theorem executeStrategies_done {ι : Type u} (ambient : OracleSpec.{u, u} ι)
+    (initial : PFunctor.{u, u}) (impl : QueryImpl (OracleSpec.ofPFunctor initial) Id)
+    {OutP : TypeTree.done.ExecutionPath → Type u}
+    {OutV : TypeTree.done.BranchPath → Type u}
+    (prover : Prover.Strategy ambient .done PUnit.unit OutP)
+    (verifier : Verifier.Strategy ambient .done PUnit.unit PUnit.unit initial OutV) :
+    executeStrategies ambient .done PUnit.unit PUnit.unit initial impl prover verifier = (do
+      let out ← simulateQ (Verifier.liftAccessImpl ambient initial impl) verifier
+      return ⟨PUnit.unit, prover, out⟩) := rfl
+
+set_option backward.isDefEq.respectTransparency false in
+/-- A prover public move runs before the verifier's actual receive effect and the continuation. -/
+theorem executeStrategies_public_sender {ι : Type u} (ambient : OracleSpec.{u, u} ι)
+    {Moves : Type u} {rest : Moves → Oracle.TypeTree.{u}}
+    (roles : (move : Moves) → (rest move).RoleDecoration)
+    (oracles : (TypeTree.public Moves rest).OracleDecoration)
+    (initial : PFunctor.{u, u}) (impl : QueryImpl (OracleSpec.ofPFunctor initial) Id)
+    {OutP : (TypeTree.public Moves rest).ExecutionPath → Type u}
+    {OutV : (TypeTree.public Moves rest).BranchPath → Type u}
+    (prover : Prover.Strategy ambient (.public Moves rest) ⟨.sender, roles⟩ OutP)
+    (verifier : Verifier.Strategy ambient (.public Moves rest) ⟨.sender, roles⟩ oracles
+      initial OutV) :
+    executeStrategies ambient (.public Moves rest) ⟨.sender, roles⟩ oracles initial impl
+      prover verifier = (do
+        let chosen ← prover
+        let next ← simulateQ (Verifier.liftAccessImpl ambient initial impl) (verifier chosen.1)
+        let result ← executeStrategies ambient (rest chosen.1) (roles chosen.1)
+          (oracles.2 chosen.1) initial impl
+          (OutP := fun path => OutP ⟨chosen.1, path⟩)
+          (OutV := fun path => OutV ⟨chosen.1, path⟩) chosen.2 next
+        return ⟨⟨chosen.1, result.1⟩, result.2.1, result.2.2⟩) := by
+  simp only [executeStrategies, Verifier.toCounterpart, Verifier.toCounterpartWith,
+    TypeTree.toTypeTree_public, TypeTree.RoleDecoration.toTypeTreeRoles_public,
+    TwoParty.run, InteractionOver.runTypeTree, InteractionOver.TwoParty.pairedTypeTree,
+    InteractionOver.TwoParty.paired, TwoParty.participantProfile,
+    TwoParty.collectParticipantOutputs, bind_assoc, pure_bind]
+  rfl
+
+set_option backward.isDefEq.respectTransparency false in
+/-- A verifier public move runs before the prover's actual response and the continuation. -/
+theorem executeStrategies_public_receiver {ι : Type u} (ambient : OracleSpec.{u, u} ι)
+    {Moves : Type u} {rest : Moves → Oracle.TypeTree.{u}}
+    (roles : (move : Moves) → (rest move).RoleDecoration)
+    (oracles : (TypeTree.public Moves rest).OracleDecoration)
+    (initial : PFunctor.{u, u}) (impl : QueryImpl (OracleSpec.ofPFunctor initial) Id)
+    {OutP : (TypeTree.public Moves rest).ExecutionPath → Type u}
+    {OutV : (TypeTree.public Moves rest).BranchPath → Type u}
+    (prover : Prover.Strategy ambient (.public Moves rest) ⟨.receiver, roles⟩ OutP)
+    (verifier : Verifier.Strategy ambient (.public Moves rest) ⟨.receiver, roles⟩ oracles
+      initial OutV) :
+    executeStrategies ambient (.public Moves rest) ⟨.receiver, roles⟩ oracles initial impl
+      prover verifier = (do
+        let chosen ← simulateQ (Verifier.liftAccessImpl ambient initial impl) verifier
+        let next ← prover chosen.1
+        let result ← executeStrategies ambient (rest chosen.1) (roles chosen.1)
+          (oracles.2 chosen.1) initial impl
+          (OutP := fun path => OutP ⟨chosen.1, path⟩)
+          (OutV := fun path => OutV ⟨chosen.1, path⟩) next chosen.2
+        return ⟨⟨chosen.1, result.1⟩, result.2.1, result.2.2⟩) := by
+  simp only [executeStrategies, Verifier.toCounterpart, Verifier.toCounterpartWith,
+    TypeTree.toTypeTree_public, TypeTree.RoleDecoration.toTypeTreeRoles_public,
+    TwoParty.run, InteractionOver.runTypeTree, InteractionOver.TwoParty.pairedTypeTree,
+    InteractionOver.TwoParty.paired, TwoParty.participantProfile,
+    TwoParty.collectParticipantOutputs, bind_assoc, pure_bind]
+  rfl
+
+set_option backward.isDefEq.respectTransparency false in
+/-- An oracle send retains the concrete realization and extends the actual closing handler. -/
+theorem executeStrategies_oracle {ι : Type u} (ambient : OracleSpec.{u, u} ι)
+    {Messages : Type u} {rest : PUnit.{u + 1} → Oracle.TypeTree.{u}}
+    (roles : (TypeTree.oracle Messages rest).RoleDecoration)
+    (oracles : (TypeTree.oracle Messages rest).OracleDecoration)
+    (initial : PFunctor.{u, u}) (impl : QueryImpl (OracleSpec.ofPFunctor initial) Id)
+    {OutP : (TypeTree.oracle Messages rest).ExecutionPath → Type u}
+    {OutV : (TypeTree.oracle Messages rest).BranchPath → Type u}
+    (prover : Prover.Strategy ambient (.oracle Messages rest) roles OutP)
+    (verifier : Verifier.Strategy ambient (.oracle Messages rest) roles oracles initial OutV) :
+    executeStrategies ambient (.oracle Messages rest) roles oracles initial impl
+      prover verifier = (do
+        let chosen ← prover
+        let next ← simulateQ
+          (Verifier.liftAccessImpl ambient (Access.extend initial oracles.1)
+            (Access.extendImpl initial oracles.1 impl chosen.1)) verifier
+        let result ← executeStrategies ambient (rest PUnit.unit) (roles.2 PUnit.unit)
+          (oracles.2 PUnit.unit) (Access.extend initial oracles.1)
+          (Access.extendImpl initial oracles.1 impl chosen.1)
+          (OutP := fun path => OutP ⟨chosen.1, path⟩)
+          (OutV := fun path => OutV ⟨PUnit.unit, path⟩) chosen.2 next
+        return ⟨⟨chosen.1, result.1⟩, result.2.1, result.2.2⟩) := by
+  simp only [executeStrategies, Verifier.toCounterpart, Verifier.toCounterpartWith,
+    TypeTree.toTypeTree_oracle, TypeTree.RoleDecoration.toTypeTreeRoles_oracle,
+    TwoParty.run, InteractionOver.runTypeTree, InteractionOver.TwoParty.pairedTypeTree,
+    InteractionOver.TwoParty.paired, TwoParty.participantProfile,
+    TwoParty.collectParticipantOutputs, bind_assoc, pure_bind]
+  rfl
+
 /-- Project only the public structural path and verifier result. This intentionally is not named a
 verifier local view: it does not contain the verifier's ordered query/answer observations. -/
 def publicResult {tree : Oracle.TypeTree.{u}}

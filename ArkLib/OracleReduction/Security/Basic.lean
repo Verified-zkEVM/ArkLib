@@ -170,7 +170,7 @@ theorem perfectCompleteness_eq_prob_one :
           (stmtOut, witOut) ∈ relOut ∧ prvStmtOut = stmtOut] = 1 := by
   simp only [perfectCompleteness, completeness, ENNReal.coe_zero, tsub_zero]
   exact forall_congr' fun _ => forall_congr' fun _ => imp_congr_right fun _ =>
-    ⟨fun h => le_antisymm (prEvent_le_one _ _) (ge_iff_le.mp h),
+    ⟨fun h => le_antisymm (prEvent_le_one _) (ge_iff_le.mp h),
      fun h => ge_of_eq h⟩
 
 /-- **Support criterion for perfect completeness.** A reduction is perfectly complete as soon as
@@ -294,20 +294,22 @@ class IsSound (langIn : Set StmtIn) (langOut : Set StmtOut)
 
 Unlike `knowledgeSoundness`, this predicate keeps the extractor's identity in its type. This is
 the appropriate public contract when a caller needs to name, execute, or audit the exact
-extractor certified by a theorem. -/
+extractor certified by a theorem. The extractor is fixed before the arbitrary malicious prover,
+which has its own private input of any type. -/
 def knowledgeSoundnessWith
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
     (extractor : Extractor.Straightline oSpec StmtIn WitIn WitOut pSpec)
     (knowledgeError : ℝ≥0) : Prop :=
+  ∀ Aux : Type,
   ∀ stmtIn : StmtIn,
-  ∀ witIn : WitIn,
-  ∀ prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec,
+  ∀ aux : Aux,
+  ∀ prover : Prover oSpec StmtIn Aux StmtOut WitOut pSpec,
     let pImpl : QueryImpl (oSpec + [pSpec.Challenge]ₒ) (StateT σ ProbComp) :=
       impl.addLift challengeQueryImpl
     let exec := do
       let ⟨⟨⟨transcript, ⟨_, witOut⟩⟩, stmtOut⟩, proveQueryLog, verifyQueryLog⟩
-        ← (Reduction.mk prover verifier).runWithLog stmtIn witIn
+        ← (Reduction.mk prover verifier).runWithLog stmtIn aux
       let extractedWitIn? ←
         liftM (extractor stmtIn witOut transcript proveQueryLog.fst verifyQueryLog).run
       return (stmtIn, extractedWitIn?, stmtOut, witOut)
@@ -319,7 +321,8 @@ def knowledgeSoundnessWith
 /-- A reduction satisfies **(straightline) knowledge soundness** with error `knowledgeError ≥ 0` and
   with respect to input relation `relIn` and output relation `relOut` if:
   - there exists a straightline extractor `E`, such that
-  - for all input statement `stmtIn`, witness `witIn`, and (malicious) prover `prover`,
+  - for every private input type `Aux`, input statement `stmtIn`, private input `aux : Aux`,
+    and arbitrary malicious prover `prover` with that input type, chosen after the extractor,
   - if the execution with the honest verifier results in a pair `(stmtOut, witOut)`,
 
   then the probability that `(stmtOut, witOut)` is valid and yet the extractor fails to produce
@@ -343,21 +346,7 @@ def knowledgeSoundnessWith
 def knowledgeSoundness (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec) (knowledgeError : ℝ≥0) : Prop :=
   ∃ extractor : Extractor.Straightline oSpec StmtIn WitIn WitOut pSpec,
-  ∀ stmtIn : StmtIn,
-  ∀ witIn : WitIn,
-  ∀ prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec,
-    let pImpl : QueryImpl (oSpec + [pSpec.Challenge]ₒ) (StateT σ ProbComp) :=
-      impl.addLift challengeQueryImpl
-    let exec := do
-      let ⟨⟨⟨transcript, ⟨_, witOut⟩⟩, stmtOut⟩, proveQueryLog, verifyQueryLog⟩
-        ← (Reduction.mk prover verifier).runWithLog stmtIn witIn
-      let extractedWitIn? ←
-        liftM (extractor stmtIn witOut transcript proveQueryLog.fst verifyQueryLog).run
-      return (stmtIn, extractedWitIn?, stmtOut, witOut)
-    Pr{let ⟨stmtIn, extractedWitIn?, stmtOut, witOut⟩ ← OptionT.mk do
-      (simulateQ pImpl exec.run).run' (← init)}[
-        (∀ extractedWitIn ∈ extractedWitIn?, (stmtIn, extractedWitIn) ∉ relIn) ∧
-          (stmtOut, witOut) ∈ relOut] ≤ knowledgeError
+    verifier.knowledgeSoundnessWith init impl relIn relOut extractor knowledgeError
 
 /-- Existential knowledge soundness is exactly the existence of an extractor satisfying
 `knowledgeSoundnessWith`. -/
@@ -391,9 +380,7 @@ class IsKnowledgeSound (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut ×
 class Extractor.Straightline.IsMonotone
     (relIn : Set (StmtIn × WitIn))
     (E : Extractor.Straightline oSpec StmtIn WitIn WitOut pSpec)
-    [∀ t, MeasurableSpace (oSpec.Range t)]
-    [∀ t, DiscreteMeasurableSpace (oSpec.Range t)]
-    [oSpec.IsUniformMeasureSpec]
+    [oSpec.UniformAnswerMeasure]
     where
   is_monotone : ∀ witOut stmtIn transcript, ∀ proveQueryLog₁ proveQueryLog₂ : oSpec.QueryLog,
     ∀ verifyQueryLog₁ verifyQueryLog₂ : oSpec.QueryLog,
@@ -549,7 +536,7 @@ def soundness (langIn : Set Statement)
   verifier.soundness init impl langIn acceptRejectRel.language soundnessError
 
 @[reducible, simp]
-def knowledgeSoundness (relation : Set (Statement × Bool))
+def knowledgeSoundness (relation : Set (Statement × Witness))
     (verifier : Verifier oSpec Statement Bool pSpec)
     (knowledgeError : ℝ≥0) : Prop :=
   verifier.knowledgeSoundness init impl relation acceptRejectRel knowledgeError
@@ -665,7 +652,7 @@ theorem Verifier.id_knowledgeSoundness {rel : Set (StmtIn × WitIn)} :
   -- game, the identity verifier outputs the input statement, so the bad event requires both
   -- `(stmtIn, witOut) ∉ rel` (extracted witness invalid) and `(stmtIn, witOut) ∈ rel`
   -- (output pair valid): a contradiction.
-  refine ⟨Extractor.Straightline.id, fun stmtIn witIn prover => ?_⟩
+  refine ⟨Extractor.Straightline.id, fun Aux stmtIn aux prover => ?_⟩
   simp only [ENNReal.coe_zero, le_zero_iff]
   rw [OptionT.prEvent_mk_eq_zero_iff]
   intro x hx

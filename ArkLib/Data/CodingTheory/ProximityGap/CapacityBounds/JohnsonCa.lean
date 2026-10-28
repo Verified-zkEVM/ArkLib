@@ -288,8 +288,7 @@ private theorem linear_bgks_good_scalars_card_gt
     (C : LinearCode ι F) (u : Code.WordStack F (Fin 2) ι)
     (δ_src η : ℝ≥0) (hη : 0 < η)
     (hprob : ENNReal.ofReal (2 / ((η : ℝ) ^ 2 * Fintype.card F)) <
-      Pr{
-        let x ← $ᵗ F}[δᵣ(u 0 + x • u 1, (C : Set (ι → F))) < δ_src]) :
+      Pr{let x ← $ᵗ F}[δᵣ(u 0 + x • u 1, (C : Set (ι → F))) < δ_src]) :
     2 / (η : ℝ) ^ 2 < ((linear_bgks_good_scalars C u δ_src).card : ℝ) := by
   classical
   have he : 0 < (η : ℝ) := by exact_mod_cast hη
@@ -1294,7 +1293,7 @@ private theorem linear_eps_ca_le_one_point_five_johnson_aux
     epsCa (F := F) (A := F) ((C : Set (ι → F))) δ_fld (δ_src + η) ≤
       ENNReal.ofReal (2 / ((η : ℝ) ^ 2 * Fintype.card F)) := by
   classical
-  unfold epsCa
+  simp only [epsCa_eq]
   refine iSup_le fun u => ?_
   by_cases hjp : Code.jointProximity (C : Set (ι → F)) u (δ_src + η)
   · rw [ite_eq_left hjp]

@@ -382,10 +382,10 @@ theorem mem_outputRelationFor_of_probEvent_pos_oracleVerifier_run
     (stmtIn : Statement (F := F) k × (∀ i, OracleStatement ι A i))
     (tr : (pSpec (F := F)).FullTranscript)
     (witOut : OutputWitness (F := F) k)
-    (h : Pr{let stmtOut ← OptionT.mk do
+    (h : Pr{let stmtOut ← (OptionT.mk do
           (simulateQ impl
             (((oracleVerifier (ι := ι) (F := F) (A := A) (k := k)).toVerifier).run
-              stmtIn tr)).run' (← init)}[(stmtOut, witOut) ∈
+              stmtIn tr)).run' (← init))}[(stmtOut, witOut) ∈
             outputRelationFor k encode δ] > 0) :
     (derivedOutput (ι := ι) (F := F) (A := A) k stmtIn
       (transcriptGamma (F := F) tr), witOut) ∈ outputRelationFor k encode δ := by
@@ -507,7 +507,7 @@ theorem knowledgeSoundnessWith_of_transition_failure_prob_le
   unfold OracleVerifier.knowledgeSoundnessWith
   rw [oracleVerifier_toVerifier_eq_verifier (k := k)]
   unfold Verifier.knowledgeSoundnessWith
-  rintro ⟨stmt, oStmt⟩ witIn prover
+  rintro Aux ⟨stmt, oStmt⟩ witIn prover
   refine ProtocolSpec.prEvent_optionT_simulateQ_addLift_getChallenge_bind_some_le
     init impl _ ⟨0, rfl⟩
     (fun γ ↦ (liftComp (prover.receiveChallenge ⟨0, rfl⟩
@@ -580,7 +580,7 @@ theorem verifier_knowledgeSoundness
   -- input statement alone (always-`some`; cf. `Spec.chooseRelaxedWitness`).
   refine ⟨fun stmtIn _ _ _ _ ↦
     pure (Spec.chooseRelaxedWitness k ((encode : (Fin k → F) → (ι → A))) δ stmtIn), ?_⟩
-  rintro ⟨stmt, oStmt⟩ witIn prover
+  rintro Aux ⟨stmt, oStmt⟩ witIn prover
   refine ProtocolSpec.prEvent_optionT_simulateQ_addLift_getChallenge_bind_some_le
     init impl _ ⟨0, rfl⟩
     (fun γ ↦ (liftComp (prover.receiveChallenge ⟨0, rfl⟩
