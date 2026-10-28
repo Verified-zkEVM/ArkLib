@@ -59,7 +59,7 @@ def measuredProgram (hs : (∑ j, (s j).val) ≤ n) :
       (Statement F (0 : Fin (k + 1)) × ∀ j, OracleStatement s ω 0 j)
       (Witness F s d 0) (Witness F s d (Fin.last (k + 1))) (pSpec k (ω := ω) s l) Cost where
   View := (∀ j, FinalOracleStatement s ω j) × FinalStatement F k
-  view stmt _ tr _ _ := (queryHistory s l (initialOracle s stmt) (queryPrefix s l tr),
+  view := fun ⟨stmt, _, tr, _, _⟩ ↦ (queryHistory s l (initialOracle s stmt) (queryPrefix s l tr),
     queryFoldChallenges s l (queryPrefix s l tr))
   Op := ArithmeticOp F ⊕ AccessOp s ω
   spec v := InstructionSpec s v.1 v.2
@@ -77,7 +77,7 @@ theorem measuredProgram_realizes (hs : (∑ j, (s j).val) ≤ n) :
 /-- Every execution path of the measured program stays within `extractorProfileBound`. -/
 theorem measuredProgram_costAtMost (hs : (∑ j, (s j).val) ≤ n) :
     (measuredProgram (ω := ω) s d l hs).CostAtMost (extractorProfileBound n s d) :=
-  _root_.Extractor.Straightline.MeasuredProgram.costAtMost_of_forall_eq_answer _ _
+  OracleComp.MeasuredProgram.costAtMost_of_forall_eq_answer _ _
     (fun v ↦ eq_instructionAnswer s v.1 v.2)
     (fun v ↦ by
       change (simulateQ (QueryImpl.withAddCost (instructionAnswer s v.1 v.2) (instructionCost s))
