@@ -963,12 +963,17 @@ public import ArkLib.ProofSystem.Spartan.Algebra
 public import ArkLib.ProofSystem.Spartan.Basic
 public import ArkLib.ProofSystem.Spartan.Batching
 public import ArkLib.ProofSystem.Spartan.BatchingRelation
+public import ArkLib.ProofSystem.Spartan.Computable
+public import ArkLib.ProofSystem.Spartan.Context
 public import ArkLib.ProofSystem.Spartan.Evaluation
+public import ArkLib.ProofSystem.Spartan.FirstSumcheck
 public import ArkLib.ProofSystem.Spartan.Layout
 public import ArkLib.ProofSystem.Spartan.Realization
+public import ArkLib.ProofSystem.Spartan.SecondSumcheck
 public import ArkLib.ProofSystem.Spartan.SendEvaluations
 public import ArkLib.ProofSystem.Spartan.Terminal
 public import ArkLib.ProofSystem.Spartan.VirtualOracle
+public import ArkLib.ProofSystem.Spartan.WitnessAttachment
 public import ArkLib.ProofSystem.Spartan.ZeroCheck
 public import ArkLib.ProofSystem.Spartan.ZeroCheckRelation
 public import ArkLib.ProofSystem.Stir.Combine
@@ -979,6 +984,7 @@ public import ArkLib.ProofSystem.Stir.ProximityGap
 public import ArkLib.ProofSystem.Stir.Quotienting
 public import ArkLib.ProofSystem.Sumcheck.Domain
 public import ArkLib.ProofSystem.Sumcheck.Impl.Basic
+public import ArkLib.ProofSystem.Sumcheck.Impl.OracleProver
 public import ArkLib.ProofSystem.Sumcheck.Impl.Projection
 public import ArkLib.ProofSystem.Sumcheck.Impl.Representation
 public import ArkLib.ProofSystem.Sumcheck.Interaction.ArbitraryCompleteness

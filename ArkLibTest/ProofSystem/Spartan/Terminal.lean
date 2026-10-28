@@ -29,10 +29,9 @@ def oracles : ∀ i, OracleStatement (R := ZMod 5) params i
   | .inr _ => witness
 
 def statement : FinalStatement (R := ZMod 5) params where
-  x := publicInput
-  r_x := ![2]
+  input := ⟨(0, ⟨publicInput, 0, ![2], 0⟩),
+    (fun | .A => 1 | .B => 2 | .C => 3), 0⟩
   r_y := ![3, 4]
-  ρ := fun | .A => 1 | .B => 2 | .C => 3
   e := 1
 
 def perturbed : FinalStatement (R := ZMod 5) params := {statement with e := 2}
@@ -78,10 +77,9 @@ example : (finalVerifier params ([]ₒ)).toVerifier.run (perturbed, oracles) def
 
 /-- info: true -/
 #guard_msgs in
-#eval ((simulateQ (OracleInterface.simOracle2 ([]ₒ) oracles
-    (default : (!p[] : ProtocolSpec 0).Messages))
-    (VirtualOracle.first.{0} params ([]ₒ) publicInput (![1] : Fin 1 → ZMod 5)
-      statement.r_x)).runEmpty ==
+#eval ((simulateQ (OracleInterface.simOracle0 (OracleStatement (R := ZMod 5) params) oracles)
+    (VirtualOracle.first params publicInput (![1] : Fin 1 → ZMod 5)
+      statement.r_x)).run ==
   firstEval matrices (R1CS.𝕫 publicInput witness) (![1] : Fin 1 → ZMod 5) statement.r_x)
 
 end SpartanTest.Terminal

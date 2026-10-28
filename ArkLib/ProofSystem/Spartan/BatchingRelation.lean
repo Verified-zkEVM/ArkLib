@@ -32,15 +32,6 @@ open scoped BigOperators
 
 variable {R : Type} [CommRing R] (pp : PublicParams)
 
-/-- The row claims and first sumcheck terminal statement, fixed before batching. -/
-abbrev InputStatement := (R1CS.MatrixIdx → R) × Evaluation.Statement (R := R) pp
-
-/-- The independent coefficients, claimed sum, and retained row claims. -/
-structure Statement where
-  input : InputStatement (R := R) pp
-  ρ : R1CS.MatrixIdx → R
-  c : R
-
 /-- The claimed sum for the second sumcheck. -/
 def batchedClaim (ρ v : R1CS.MatrixIdx → R) : R := ∑ i, ρ i * v i
 
