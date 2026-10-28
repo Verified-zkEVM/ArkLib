@@ -60,8 +60,8 @@ theorem second_sum (r : ZMod 17) :
     (((univ.map domain).toList).map (fun x =>
       (second ⟨projected.val.eval r, Fin.snoc statement.challenges r⟩).val.eval x)).sum =
       projected.val.eval r := by
-  exact SingleRound.projected_sum_of_relationRound (ZMod 17) 2 1 domain 1 _ polynomial
-    (SingleRound.relationRound_projected_output (ZMod 17) 2 1 domain 0 statement polynomial r)
+  exact Spec.SingleRound.projected_sum_of_relationRound (ZMod 17) 2 1 domain 1 _ polynomial
+    (Spec.SingleRound.relationRound_projected_output (ZMod 17) 2 1 domain 0 statement polynomial r)
 
 /-- Distinct observable events identify the two verifier challenge phases. -/
 abbrev events : OracleSpec Bool := Bool →ₒ Unit
