@@ -873,6 +873,7 @@ instance extractorLens_rbr_knowledge_soundness :
       ⟨oStmtLens R n deg D i, Witness.InvLens.trivial⟩ where
   proj_knowledgeSound := by
     rintro ⟨stmt, os⟩ ⟨⟨target, r⟩, ios⟩ ⟨⟩ hc ho
+    left
     have hp := verifier_polynomial i stmt os ((target, r), ios) hc
     have hi := (output_projection i stmt os target r).mp ho
     change ios () = projectedRoundPolynomial R n deg D i stmt.challenges (os ()) at hp

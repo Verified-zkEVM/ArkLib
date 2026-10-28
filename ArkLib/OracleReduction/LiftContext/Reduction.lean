@@ -101,17 +101,18 @@ def Reduction.liftContext
   verifier := R.verifier.liftContext lens.stmt
 
 open Verifier in
-/-- The outer extractor after lifting invokes the inner extractor on the projected input, and
-  lifts the output -/
-def Extractor.Straightline.liftContext
+/-- Lift the inner extractor's output, using a default inner witness when extraction fails.
+The default lets the witness lens recover a valid outer witness in the shortcut case. -/
+def Extractor.Straightline.liftContext [Inhabited InnerWitIn]
     (lens : Extractor.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
                         OuterWitIn OuterWitOut InnerWitIn InnerWitOut)
     (E : Extractor.Straightline oSpec InnerStmtIn InnerWitIn InnerWitOut pSpec) :
       Extractor.Straightline oSpec OuterStmtIn OuterWitIn OuterWitOut pSpec :=
   fun outerStmtIn outerWitOut fullTranscript proveQueryLog verifyQueryLog => do
     let ⟨innerStmtIn, innerWitOut⟩ := lens.proj (outerStmtIn, outerWitOut)
-    let innerWitIn ← E innerStmtIn innerWitOut fullTranscript proveQueryLog verifyQueryLog
-    return lens.wit.lift (outerStmtIn, outerWitOut) innerWitIn
+    let innerWitIn ← liftM (E innerStmtIn innerWitOut fullTranscript
+      proveQueryLog verifyQueryLog).run
+    return lens.wit.lift (outerStmtIn, outerWitOut) (innerWitIn.getD default)
 
 open Verifier in
 /-- The outer round-by-round extractor after lifting invokes the inner extractor on the projected
@@ -647,19 +648,12 @@ theorem liftContext_soundness [Inhabited InnerStmtOut]
   have hcompat : V.compatStatement lens x z.2 :=
     ⟨z.1.1, Reduction.mem_support_jointRun P V x aux (lens.proj x) z hmem⟩
   by_contra hbad
-  exact lensSound.lift_sound x z.2 hcompat hbad hout
+  exact lensSound.lift_sound x z.2 hx hcompat hbad hout
 
-/-
-  Lifting the reduction preserves knowledge soundness, assuming the lens satisfies its knowledge
-  soundness conditions
-
-  Note: since knowledge soundness is defined existentially in terms of the extractor, we also cannot
-  impose any meaningful compatibility conditions on the witnesses (outer output & inner input),
-  hence `compatWit` field is just always true
-
-  (future extensions may define lifting relative to a particular extractor, if needed)
--/
-theorem liftContext_knowledgeSoundness [Inhabited InnerStmtOut]
+/-- Lifting preserves knowledge soundness. A default inner input witness lets the lifted
+extractor use the lens shortcut even when the inner extractor fails. Witness compatibility
+is unrestricted because knowledge soundness existentially quantifies over the extractor. -/
+theorem liftContext_knowledgeSoundness [Inhabited InnerStmtOut] [Inhabited InnerWitIn]
     {outerRelIn : Set (OuterStmtIn × OuterWitIn)} {outerRelOut : Set (OuterStmtOut × OuterWitOut)}
     {innerRelIn : Set (InnerStmtIn × InnerWitIn)} {innerRelOut : Set (InnerStmtOut × InnerWitOut)}
     {knowledgeError : ℝ≥0}
@@ -689,7 +683,7 @@ theorem liftContext_knowledgeSoundness [Inhabited InnerStmtOut]
       let w ← liftM ((E.liftContext ⟨stmtLens, witLens⟩) x z.1.1.2.2
         z.1.1.1 z.2.1.fst z.2.2).run
       return (x, w, z.1.2, z.1.1.2.2)) =
-      (fun z => (x, z.2.map (witLens.lift (x, z.1.1.1.2.2)),
+      (fun z => (x, some (witLens.lift (x, z.1.1.1.2.2) (z.2.getD default)),
         stmtLens.lift x z.1.1.2, z.1.1.1.2.2)) <$> exec := by
     simp [exec, joint, Reduction.outer_jointRunWithLog, Extractor.Straightline.liftContext,
       OptionT.run_map, liftM_map, map_bind]
@@ -721,10 +715,14 @@ theorem liftContext_knowledgeSoundness [Inhabited InnerStmtOut]
     exact ha
   have hcompat : V.compatStatement stmtLens x z.1.1.2 :=
     ⟨z.1.1.1.1, Reduction.mem_support_jointRunWithLog P V x aux (stmtLens.proj x) z.1 hjoint⟩
-  refine ⟨?_, lensKS.proj_knowledgeSound x z.1.1.2 z.1.1.1.2.2 hcompat hbad.2⟩
-  intro w hw hin
-  exact hbad.1 _ (Option.mem_map_of_mem _ hw)
-    (lensKS.lift_knowledgeSound x z.1.1.1.2.2 w True.intro hin)
+  rcases lensKS.proj_knowledgeSound x z.1.1.2 z.1.1.1.2.2 hcompat hbad.2 with
+    hAccept | hShortcut
+  · refine ⟨?_, hAccept⟩
+    intro w hw hin
+    have hw' : z.2 = some w := hw
+    exact hbad.1 (witLens.lift (x, z.1.1.1.2.2) (z.2.getD default)) rfl (by
+      simpa [hw'] using lensKS.lift_knowledgeSound x z.1.1.1.2.2 w True.intro hin)
+  · exact False.elim (hbad.1 _ rfl (hShortcut (z.2.getD default) True.intro))
 
 /-
   Lifting the reduction preserves round-by-round soundness, assuming the lens satisfies its
@@ -844,6 +842,7 @@ theorem instTestLensKnowledgeSound : testLensE.IsKnowledgeSound
     outerRelIn_Test innerRelIn_Test outerRelOut_Test innerRelOut_Test
       (fun ⟨p, q, _⟩ ⟨f, _⟩ => p * q = f) (fun _ _ => True) where
   proj_knowledgeSound := fun ⟨p, q, t⟩ ⟨f, t', r⟩ _ h h' => by
+    left
     change f.eval r = t'
     change (p * q).eval r = t' at h'
     simpa [← h] using h'
