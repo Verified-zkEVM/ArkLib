@@ -34,7 +34,6 @@
     "OracleVerifier.liftContext_rbr_soundness",
     "OracleVerifier.seqCompose_rbrKnowledgeSoundness",
     "OracleVerifier.seqCompose_rbrSoundness",
-    "Plonk.ConstraintSystem.perm",
     "STIR.proximity_gap",
     "Spartan.Spec.oracleReduction.firstChallenge",
     "Spartan.Spec.oracleReduction.linearCombination",
