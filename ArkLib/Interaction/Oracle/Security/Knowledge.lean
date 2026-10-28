@@ -47,7 +47,8 @@ theorem KnowledgeState.holds_cast {first second : KnowledgeState.{w}} (same : fi
 /-- Total backward witness maps on actual native messages, supplied independently of knowledge.
 Each child retains its own witness type and predicate. At oracle nodes that type may depend on
 the concrete payload even though the structural branch is `PUnit`. Maps from an inhabited later
-carrier to an empty earlier carrier cannot be supplied; that is an explicit extraction premise. -/
+carrier to an empty earlier carrier cannot be supplied; that is an explicit extraction premise.
+The maps are Lean functions with no cost bound, and need not be computable. -/
 def RoundExtractor : (tree : Oracle.TypeTree.{u}) → KnowledgeState.{w} → Type (max (u+1) (w+1))
   | .done, _ => PUnit
   | .public Moves next, state =>
@@ -412,7 +413,9 @@ def KnowledgeState.ofProblem {Context : Type u} {family : ClaimFamily.{u, u} Con
 
 /-- Local witness-indexed knowledge security for a native tree, with named extractors.
 The certificate supplies prover preservation and bounds at every authored verifier prefix.
-Its fresh challenge programs require a separate native-verifier correspondence where used. -/
+Its fresh challenge programs require a separate native-verifier correspondence where used.
+It bounds no extraction cost: knowledge soundness in the cryptographic sense also needs a cost
+bound for each named witness map, which is not part of this certificate. -/
 structure KnowledgeCertificate (tree : Oracle.TypeTree.{0}) (roles : tree.RoleDecoration)
     (state : KnowledgeState.{w}) where
   /-- Total, named backward witness maps on the actual native messages. -/
