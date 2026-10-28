@@ -968,11 +968,14 @@ public import ArkLib.ProofSystem.Spartan.Batching
 public import ArkLib.ProofSystem.Spartan.BatchingRelation
 public import ArkLib.ProofSystem.Spartan.Computable
 public import ArkLib.ProofSystem.Spartan.Context
+public import ArkLib.ProofSystem.Spartan.Error
 public import ArkLib.ProofSystem.Spartan.Evaluation
 public import ArkLib.ProofSystem.Spartan.FirstSumcheck
 public import ArkLib.ProofSystem.Spartan.Layout
+public import ArkLib.ProofSystem.Spartan.Protocol
 public import ArkLib.ProofSystem.Spartan.Realization
 public import ArkLib.ProofSystem.Spartan.SecondSumcheck
+public import ArkLib.ProofSystem.Spartan.Security
 public import ArkLib.ProofSystem.Spartan.SendEvaluations
 public import ArkLib.ProofSystem.Spartan.Terminal
 public import ArkLib.ProofSystem.Spartan.VirtualOracle
