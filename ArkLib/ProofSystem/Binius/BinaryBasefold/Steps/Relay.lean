@@ -282,7 +282,7 @@ noncomputable def relayRbrExtractor (i : Fin ℓ) :
     (pSpec := pSpecRelay)
     (WitMid := fun _messageIdx => Witness (L := L) 𝔽q β
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ) where
-  eqIn := rfl
+  extractIn := fun _ w => w
   extractMid := fun _ _ _ witMidSucc => witMidSucc
   extractOut := fun _ _ witOut => witOut
 
@@ -315,17 +315,16 @@ def relayKnowledgeStateFunction (i : Fin ℓ) (hNCR : ¬ IsCommitmentRound ℓ �
   toFun := fun m ⟨stmtIn, oStmtIn⟩ tr witMid =>
     RelayKnowledgeState 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (multpoly := multpoly) (𝓑 := 𝓑)
       i hNCR stmtIn witMid oStmtIn
-  toFun_empty := fun ⟨stmtIn, oStmtIn⟩ witIn => by
-    rw [cast_eq]
-    simp only [foldStepRelOut, FoldStepRelated, Set.mem_ofPred_eq, RelayKnowledgeState]
-    unfold KnowledgeInvariant
-    simp only [Fin.val_succ]
-    exact or_congr
+  toFun_empty := fun ⟨stmtIn, oStmtIn⟩ witIn h => by
+    simp only [foldStepRelOut, FoldStepRelated, Set.mem_ofPred_eq, RelayKnowledgeState] at h ⊢
+    unfold KnowledgeInvariant at h ⊢
+    simp only [Fin.val_succ] at h ⊢
+    exact (or_congr
       (incrementalBadEventExists_relay_iff 𝔽q β
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hNCR oStmtIn stmtIn.challenges)
       (and_congr Iff.rfl (and_congr Iff.rfl (and_congr Iff.rfl
         (oracleFoldingConsistent_relay_iff 𝔽q β
-          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hNCR stmtIn.challenges oStmtIn))))
+          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hNCR stmtIn.challenges oStmtIn))))).mpr h
   toFun_next := fun m hDir (stmtIn, oStmtIn) tr msg witMid => Fin.elim0 m
   toFun_full := fun s tr witOut h => by
     have hrel := ((relayOracleVerifierGuardedForm (Context := Context) 𝔽q β

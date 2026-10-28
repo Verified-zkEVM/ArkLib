@@ -205,7 +205,7 @@ def extractor :
       (StmtIn := Statement Context C (Fin.last m) × (∀ j, pc.OStmt j))
       (WitIn := P⦃≤ 1⦄[X Fin m]) (WitOut := P⦃≤ 1⦄[X Fin m])
       (pSpec := pSpec C) (WitMid := WitMid (P := P) (m := m)) where
-  eqIn := rfl
+  extractIn := fun _ w => w
   extractMid _ _ _ p := p
   extractOut _ _ p := p
 
@@ -219,7 +219,7 @@ def knowledgeStateFunction {σ : Type} (init : ProbComp σ)
     | ⟨0, _⟩ => fun stmt _ p => (stmt, p) ∈ rel multiplier pc (Fin.last m)
     | ⟨1, _⟩ => fun stmt tr p => check multiplier stmt.1 (tr 0) ∧
       ((nextStatement stmt.1 (tr 0), stmt.2), p) ∈ (pc.evalRelWithContext Context)
-  toFun_empty _ _ := Iff.rfl
+  toFun_empty _ _ h := h
   toFun_next
     | ⟨0, _⟩ => fun _ stmt _tr v p h => mem_rel_last_of_check multiplier pc stmt.1 stmt.2 v p h.1
       h.2

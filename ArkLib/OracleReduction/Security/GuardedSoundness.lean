@@ -158,7 +158,7 @@ theorem soundness_of_rbrSoundnessWorstCase_of_full
   have hp := P.prob_state_runToRound_le
     (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp)) stmt wit
     (fun m tr ↦ S m stmt tr) (badEventRoundError (fun i ↦ (ε i : ℝ≥0∞)))
-    (fun hs ↦ hstmt ((S.toFun_empty stmt).mpr hs))
+    (fun hs ↦ hstmt (S.toFun_empty stmt hs))
   have hstep : ∀ (j : Fin n) (tr : Transcript j.castSucc pSpec)
       (st : P.PrvState j.castSucc) (os : σ), ¬ S j.castSucc stmt tr →
       Pr{let x ← (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))

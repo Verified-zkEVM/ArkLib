@@ -251,7 +251,7 @@ noncomputable def finalSumcheckRbrExtractor :
     (WitOut := Unit)
     (pSpec := pSpecFinalSumcheckStep (L := L))
     (WitMid := FinalSumcheckWit (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ)) where
-  eqIn := rfl
+  extractIn := fun _ w => w
   extractMid := fun m ⟨stmtMid, oStmtMid⟩ trSucc witMidSucc => by
     have hm : m = 0 := by omega
     subst hm
@@ -329,8 +329,7 @@ noncomputable def finalSumcheckKnowledgeStateFunction {σ : Type} (init : ProbCo
   toFun := fun m ⟨stmtIn, oStmtIn⟩ tr witMid =>
     FinalSumcheckKnowledgeState 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
       (tr := tr) (stmtIn := stmtIn) (witMid := witMid) (oStmtIn := oStmtIn)
-  toFun_empty := fun ⟨stmtIn, oStmtIn⟩ witMid => by
-    rfl
+  toFun_empty := fun ⟨stmtIn, oStmtIn⟩ witMid h => h
   toFun_next := fun m hDir (stmtIn, oStmtIn) tr msg witMid => by
     have h_m_eq_0 : m = 0 := by
       cases m using Fin.cases with

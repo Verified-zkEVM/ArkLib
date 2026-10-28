@@ -248,7 +248,7 @@ def batchStateFunction
     | 0, stmt, _ => stmt ∈ (inputRelation s d m δ).language
     | 1, stmt, tr => (batchPureForm s m G).verify stmt tr ∈
         (outputRelation s d hdom δ).language
-  toFun_empty := fun _ ↦ Iff.rfl
+  toFun_empty := fun _ h ↦ h
   toFun_next := by
     intro i hi
     have hz : i = 0 := Fin.eq_zero i

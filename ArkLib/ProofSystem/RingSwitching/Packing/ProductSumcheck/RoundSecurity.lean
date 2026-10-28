@@ -78,7 +78,7 @@ def extractor :
     Extractor.RoundByRound []ₒ (StmtIn := Statement Context C i.castSucc × (∀ j, pc.OStmt j))
       (WitIn := P⦃≤ 1⦄[X Fin m]) (WitOut := P⦃≤ 1⦄[X Fin m])
       (pSpec := pSpec C) (WitMid := WitMid (P := P) (m := m)) where
-  eqIn := rfl
+  extractIn := fun _ w => w
   extractMid _ _ _ p := p
   extractOut _ _ p := p
 
@@ -92,7 +92,7 @@ def knowledgeStateFunction {σ : Type} (init : ProbComp σ)
     | ⟨0, _⟩ => fun stmt _ p => (stmt, p) ∈ rel multiplier pc i.castSucc
     | ⟨1, _⟩ => fun stmt tr p => beforeChallenge multiplier pc i stmt.1 stmt.2 (tr 0) p
     | ⟨2, _⟩ => fun stmt tr p => afterChallenge multiplier pc i stmt.1 stmt.2 (tr 0) (tr 1) p
-  toFun_empty _ _ := Iff.rfl
+  toFun_empty _ _ h := h
   toFun_next
     | ⟨0, _⟩ => fun _ stmt _tr g p h => mem_rel_of_beforeChallenge multiplier pc i stmt.1 stmt.2
       g p h

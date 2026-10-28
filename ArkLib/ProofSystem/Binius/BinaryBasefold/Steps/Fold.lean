@@ -130,7 +130,7 @@ noncomputable def foldRbrExtractor (i : Fin ℓ) :
     (WitOut := Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ)
     (pSpec := pSpecFold (L := L))
     (WitMid := FoldIntermediateWitness 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) where
-  eqIn := rfl
+  extractIn := fun _ w => w
   extractMid := fun m ⟨stmtIn, _oStmtIn⟩ _tr witMidSucc =>
     match m with
     | ⟨0, _⟩ => witMidSucc  -- WitMid 1 → WitMid 0, both are Witness i.castSucc
@@ -210,7 +210,7 @@ def foldKnowledgeStateFunction (i : Fin ℓ) :
     FoldKnowledgeState (multpoly := multpoly) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (𝓑 := 𝓑)
       (i := i) (m := m) (tr := tr) (stmtMid := stmtMid) (witMid := witMid) (oStmtMid := oStmtMid)
-  toFun_empty := fun _ _ => by rfl
+  toFun_empty := fun _ _ h => h
   toFun_next := fun m hDir ⟨stmtMid, oStmtMid⟩ tr msg witMid => by
     -- For pSpecFold, the only P_to_V message is at index 0
     -- So m = 0, m.succ = 1, m.castSucc = 0

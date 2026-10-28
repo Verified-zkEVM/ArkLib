@@ -1211,7 +1211,7 @@ private noncomputable def rbrExtractor (encode : (Fin k → F) → (ι → A)) (
       (Statement (F := F) k × (∀ i, OracleStatement ι A i))
       (Witness (F := F) k) OutputWitness
       (pSpec (ι := ι) (F := F) k t) (rbrWitMid (F := F) k) where
-  eqIn := rfl
+  extractIn := fun _ w => w
   extractMid
   | ⟨0, _⟩ => fun stmtIn _ _ ↦ chooseRelaxedWitness k encode δ stmtIn
   | ⟨1, _⟩ => fun _ _ w ↦ w
@@ -1243,7 +1243,7 @@ private noncomputable def rbrKnowledgeStateFunction
       Accepts (k := k) (t := t) encode stmtIn.1 stmtIn.2
         (tr ⟨0, Nat.zero_lt_succ _⟩) (tr ⟨1, Nat.succ_lt_succ (Nat.zero_lt_succ _)⟩)
         (tr ⟨2, Nat.succ_lt_succ (Nat.succ_lt_succ (Nat.zero_lt_succ _))⟩)
-  toFun_empty := fun _ _ ↦ Iff.rfl
+  toFun_empty := fun _ _ h ↦ h
   toFun_next := fun m ↦ match m with
     | ⟨0, _⟩ => fun hDir ↦ absurd hDir (fun h ↦ Direction.noConfusion h)
     | ⟨1, _⟩ => fun _ _ _ _ _ h ↦ h
