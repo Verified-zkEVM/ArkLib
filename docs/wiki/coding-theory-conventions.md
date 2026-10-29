@@ -103,6 +103,16 @@ base-field-dimension rate `dim/n`. Over a module alphabet `F^s` the alphabet-nor
 one; substituting `rate` there gives false statements. Both formulas are total and yield `0` in
 the zero-denominator cases.
 
+**Guruswami–Sudan degree and radius boundaries.** For messages of degree `< k`,
+`gs_degree_bound k n m` is `⌊D_X⌋₊` at rate `k/n`, and `Conditions.Q_deg` is inclusive.
+Accordingly, `gs_divisibility` assumes distance strictly below `gs_johnson k n m`.
+The paper-facing pair `gs_existence_strict` and `gs_divisibility_of_degree_lt` uses
+weighted degree strictly below real `D_X` and distance at most that radius, including
+integral `D_X`. The BCIKS20 Lemma 5.3 wrappers translate degree `≤ k` into message
+length `k + 1` and use rate `(k + 1)/n`. The older `proximity_gap_degree_bound` and
+`proximity_gap_johnson` helpers add one to their input, so they take input `k` in
+those wrappers. Passing `k + 1` to these helpers instead gives rate `(k + 2)/n`.
+
 **Where the closed interval `[0,1]` does and does not bind.** It binds on the *error bound*:
 BCGM25 Def 3.14 types `ϵMCA : [0,1] → [0,1]` and quantifies `γ ∈ [0,1]`, and both ABF26 Grand
 Challenges quantify `δ* ∈ [0,1]`, so `IsMCAGenerator` quantifies `δ : I` and types its `ε_mca` as
