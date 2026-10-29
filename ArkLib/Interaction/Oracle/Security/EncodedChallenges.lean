@@ -6,7 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.Interaction.Oracle.Security.EncodedWeighted
-public import VCVio.OracleComp.Constructions.SampleableType.NativeMeasure
+public import VCVio.OracleComp.Constructions.SampleableType.Measure
 
 /-!
 # A common uniform challenge carrier for encoded restoration keys

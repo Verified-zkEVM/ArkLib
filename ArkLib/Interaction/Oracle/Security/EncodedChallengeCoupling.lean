@@ -170,7 +170,8 @@ theorem CommonChallenge.evalDist_logged_hashQuery
     (key : Key Input Salt rounds)
     (cache : (oracleSpec Input Salt rounds).QueryCache) :
     letI : MeasurableSpace
-      ((C × QueryLog (Key Input Salt rounds →ₒ C)) ×
+      (((unifSpec + (Key Input Salt rounds →ₒ C)).Range (.inr key) ×
+          QueryLog (Key Input Salt rounds →ₒ C)) ×
         (Key Input Salt rounds →ₒ C).QueryCache) := ⊤
     𝒟[common.encodeJoint <$> randomOracleLoggedRun
       (common.simulateNative
@@ -180,6 +181,10 @@ theorem CommonChallenge.evalDist_logged_hashQuery
       (common.toCommonCache cache)] := by
   let : MeasurableSpace
       ((C × QueryLog (Key Input Salt rounds →ₒ C)) ×
+        (Key Input Salt rounds →ₒ C).QueryCache) := ⊤
+  let : MeasurableSpace
+      (((unifSpec + (Key Input Salt rounds →ₒ C)).Range (.inr key) ×
+          QueryLog (Key Input Salt rounds →ₒ C)) ×
         (Key Input Salt rounds →ₒ C).QueryCache) := ⊤
   let : MeasurableSpace (C × (Key Input Salt rounds →ₒ C).QueryCache) := ⊤
   rw [common.simulateNative_hashQuery, randomOracleLoggedRun_map]
@@ -209,7 +214,8 @@ theorem CommonChallenge.evalDist_logged_uniformQuery
     [DecidableEq Input] [DecidableEq Salt] [SampleableType C]
     (n : ℕ) (cache : (oracleSpec Input Salt rounds).QueryCache) :
     letI : MeasurableSpace
-      ((Fin (n + 1) × QueryLog (Key Input Salt rounds →ₒ C)) ×
+      (((unifSpec + (Key Input Salt rounds →ₒ C)).Range (.inl n) ×
+          QueryLog (Key Input Salt rounds →ₒ C)) ×
         (Key Input Salt rounds →ₒ C).QueryCache) := ⊤
     𝒟[common.encodeJoint <$> randomOracleLoggedRun
       (common.simulateNative

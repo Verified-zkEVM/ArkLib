@@ -124,7 +124,7 @@ theorem encodedExternalStopped_prEvent_eq_native
       (Option (Input × (protocol rounds).tree.ExecutionPath × W)) := ⊤
   have hresult := encodedExternalStopped_evalDist_result_eq_native
     rounds common codec guards external
-  have hevent := prEvent_congr_of_evalDist_eq _ _ hresult event
+  have hevent := (evalDistEq_iff_evalDist_eq.mpr hresult).prEvent_eq event
   simpa only [prEvent_map] using hevent
 
 /-- The actual external image-weighted query charge equals the native certificate experiment's
