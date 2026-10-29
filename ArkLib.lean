@@ -862,6 +862,7 @@ public import ArkLib.ProofSystem.Component.ReduceClaim
 public import ArkLib.ProofSystem.Component.SendChallenge
 public import ArkLib.ProofSystem.Component.SendClaim
 public import ArkLib.ProofSystem.Component.SendWitness
+public import ArkLib.ProofSystem.ConstraintSystem.Air
 public import ArkLib.ProofSystem.ConstraintSystem.Lookup
 public import ArkLib.ProofSystem.ConstraintSystem.MemoryChecking
 public import ArkLib.ProofSystem.ConstraintSystem.Plonk
