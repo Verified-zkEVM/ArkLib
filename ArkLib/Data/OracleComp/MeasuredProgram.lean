@@ -94,7 +94,7 @@ cost within the budget. -/
 theorem CostAtMost.runAdd_le [AddCommMonoid ω] [Preorder ω] {budget : ω}
     (h : M.CostAtMost budget) (v : M.View) :
     (simulateQ ((M.answer v).withAddCost M.cost) (M.program v)).runAdd.2 ≤ budget :=
-  WorstCaseCostBound.runAdd_withAddCost_le (h v) (M.answer v)
+  ArkLib.DeterminedCost.worstCaseCostBound_runAdd_withAddCost_le (h v) (M.answer v)
 
 /-- If the handlers' answers are the only responses, the cost recorded by running the handlers
 bounds every execution path. -/
@@ -103,8 +103,8 @@ theorem costAtMost_of_forall_eq_answer [AddCommMonoid ω] [Preorder ω] (budget 
     (hcost : ∀ v, (simulateQ ((M.answer v).withAddCost M.cost) (M.program v)).runAdd.2 ≤
       budget) :
     M.CostAtMost budget :=
-  fun v ↦ (worstCaseCostBound_iff_of_forall_eq_answer (M.answer v) (hanswer v) (M.program v)
-    ⟨M.cost⟩ budget).mpr (hcost v)
+  fun v ↦ (ArkLib.DeterminedCost.worstCaseCostBound_iff_of_forall_eq_answer
+    (M.answer v) (hanswer v) (M.program v) ⟨M.cost⟩ budget).mpr (hcost v)
 
 end MeasuredProgram
 

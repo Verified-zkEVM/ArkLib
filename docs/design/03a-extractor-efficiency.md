@@ -1,6 +1,6 @@
 # Extractor efficiency and knowledge soundness
 
-**Proposed contracts.** ArkLib should state knowledge soundness together with a resource
+**Implemented measured contracts.** ArkLib states knowledge soundness together with a resource
 certificate for the same named extractor. Keep three claims distinct: its probability of
 extraction failure, its measured operation counts, and its running time in an explicit
 computational model. FRI already supplies the first two. Completing the third requires charging
@@ -14,8 +14,8 @@ execution bounds (E3, E3a) and uniform families (E7). The
 [security chapter](03-adversarial-oracle-execution.md#6-extractors-and-knowledge-composition)
 owns extractor access, causality, and knowledge composition. The
 [roadmap](05-roadmap.md#extractor-efficiency-repair) owns implementation order and acceptance checks.
-New API names and theorem signatures below are proposals, except where a paragraph describes the
-E2 implementation.
+The unbounded games (E1) and measured-operation contract (E2) are implemented. Complete execution
+bounds (E3) and the execution backend remain proposed.
 
 
 ## Existing guarantees and the repair
@@ -130,8 +130,9 @@ complete-execution work below; see the roadmap.
 
 ## The measured-operation contract
 
-The proposed `knowledgeSoundnessWithResources` packages the existing game for a named `E` with
-an explicit instruction program `P`, interpreter `H`, VCVio `CostModel`, and budget `B`.
+`knowledgeSoundnessWithResources` in `ArkLib/OracleReduction/Security/Resources.lean` packages
+the existing game for a named `E` with an explicit instruction program `P`, interpreter `H`,
+VCVio `CostModel`, and budget `B`.
 Schematically, with an uncharged `view` from the extractor's inputs `x` to the program's view
 `v`, its obligations are
 
@@ -185,7 +186,8 @@ that `pure (f input)` has zero query cost, independently of the computation of `
 query charges cannot fix that omission. The contract must say which ordinary computation and
 input acquisition costs its profile excludes.
 
-This is the near-term public result for FRI and should ship independently of the execution
+This is the public result for FRI in
+`ArkLib/ProofSystem/Fri/Spec/MeasuredKnowledgeSoundness.lean`, independent of the execution
 backend. Its label is knowledge soundness for the named extractor with concrete operation-count
 bounds, with the profile's exclusions stated beside the claim. It does not need to wait for the
 realization or family-level results.
@@ -209,11 +211,11 @@ State the measured program independently of any game: a view of an arbitrary ext
 charged instruction program with its result type, deterministic handlers, and charges. Each game
 then states its resource conjunction for its own extractor shape. Design those conjunctions against
 the native knowledge games first, where new security development takes place; the legacy
-straightline game, which FRI's result uses, is an adapter. Put the generic measured program in a
-proposed `ArkLib/Data/OracleComp/MeasuredProgram.lean`, which imports no game, and the legacy game
-conjunctions and their erasure lemmas in a proposed
-`ArkLib/OracleReduction/Security/Resources.lean`. Protocol-specific certificates stay with FRI
-extraction and Toy decoding. Native interaction games should consume the same upstream resource
+straightline game, which FRI's result uses, is an adapter. The generic measured program lives in
+`ArkLib/Data/OracleComp/MeasuredProgram.lean`, which imports no game. The legacy game conjunctions
+and their erasure lemmas live in `ArkLib/OracleReduction/Security/Resources.lean`. The FRI
+certificate lives in `ArkLib/ProofSystem/Fri/Spec/MeasuredKnowledgeSoundness.lean`; the Toy decoding
+certificate remains proposed. Native interaction games should consume the same upstream resource
 evidence through their own game adapter, rather than inheriting the legacy execution machinery.
 Reusable arithmetic remains under `ArkLib/ToCompPoly/Univariate/`; generic instrumentation and
 realization laws belong in VCVio/PolyFun.
@@ -225,7 +227,8 @@ proofs. Operational code must be executable; a proof using classical reasoning i
 that requirement, while using classical choice to manufacture the running witness values is not an
 implementation.
 
-Provide explicit forgetful implications:
+The measured contract provides the forgetful implications to the unbounded games. The proposed
+execution contract adds the first implication:
 
 ```text
 knowledgeSoundnessWithin
@@ -249,8 +252,9 @@ and its named `Extractor.extract`. The
 `extractHistory` as the result projection of its measured execution. Its
 [full profile](../../ArkLib/ProofSystem/Fri/Spec/Extraction/FullCost.lean) and
 [field-operation envelopes](../../ArkLib/ProofSystem/Fri/Spec/Extraction/ClosedCost.lean)
-apply to every retained history, including early rejection. Package these existing theorems
-without changing the extraction algorithm or its soundness error.
+apply to every retained history, including early rejection.
+`ArkLib/ProofSystem/Fri/Spec/MeasuredKnowledgeSoundness.lean` packages these theorems without
+changing the extraction algorithm or its soundness error.
 
 Write `N = 2^n`, `r = k+1`, `b_i = 2^(s_i)`, and `D = (∏ b_i)d`. Existing bounds include
 

@@ -700,10 +700,12 @@ home_page/            site assets and assembled website root
   a function's input, a charged instruction program on that view, and deterministic handlers, with
   `Realizes` and a budget `CostAtMost` on every program path (VCVio `WorstCaseCostBound`). A
   native backward witness map can be measured by it (see
-  `ArkLibTest/OracleReduction/MeasuredExtraction.lean`); no native resource contract exists yet. `Extractor.Straightline.MeasuredProgram` is its
-  instance at the straightline extractor's inputs, and `Verifier.knowledgeSoundnessWithResources`
-  adds to `knowledgeSoundnessWith` that the named extractor executes the program within the
-  budget. This counts declared instructions only, not running time.
+  `ArkLibTest/OracleReduction/MeasuredExtraction.lean`); no native resource contract exists yet.
+  `Extractor.Straightline.MeasuredProgram` is its instance at the straightline extractor's inputs.
+  Its `RealizesExtractor` relates the extractor's run to the program execution, and
+  `Verifier.knowledgeSoundnessWithResources` adds to `knowledgeSoundnessWith` that the named
+  extractor executes the program within the budget. This counts declared instructions only, not
+  running time.
   `Data/OracleComp/DeterminedCost.lean` turns a deterministic handler's recorded cost into that
   bound when responses are certified.
 - Coordinate-wise special soundness ([FMN24]/[NOZ26]) lives in

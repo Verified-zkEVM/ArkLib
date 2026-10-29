@@ -68,8 +68,8 @@ def measuredProgram (hs : (∑ j, (s j).val) ≤ n) :
   cost := instructionCost s
 
 /-- The named extractor is the execution of its measured program. -/
-theorem measuredProgram_realizes (hs : (∑ j, (s j).val) ≤ n) :
-    (measuredProgram (ω := ω) s d l hs).Realizes (extract s d hs l) := by
+theorem measuredProgram_realizesExtractor (hs : (∑ j, (s j).val) ≤ n) :
+    (measuredProgram (ω := ω) s d l hs).RealizesExtractor (extract s d hs l) := by
   intro stmt wit tr proveQueryLog verifyQueryLog
   rw [extract_run, extractHistory_eq_profile, profile_fst]
   rfl
@@ -108,7 +108,7 @@ theorem knowledgeSoundnessWithResources_extract
       (Extractor.measuredProgram s d l (round_bound hdom))
       (Extractor.extractorProfileBound n s d) :=
   ⟨knowledge_soundness_with s d l hdom θ δ hrate init impl,
-    Extractor.measuredProgram_realizes s d l (round_bound hdom),
+    Extractor.measuredProgram_realizesExtractor s d l (round_bound hdom),
     Extractor.measuredProgram_costAtMost s d l (round_bound hdom)⟩
 
 end Fri.Spec
