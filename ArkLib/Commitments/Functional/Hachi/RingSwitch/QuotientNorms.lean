@@ -11,15 +11,15 @@ public import ArkLib.ToMathlib.Polynomial.DivByXPowAddOne
 /-!
 # Centered coefficient bounds for the honest lift quotient
 
-The honest prover of the HMZ25 lift (Hachi Figure 4) commits to the lifted witness `(z, ρ)`, where
-`ρᵢ = (rowSumᵢ − rep yᵢ) /ₘ φ` (`Presentation.quotient`). The commitment's shortness regime
-`RhoShort ρBound ρ` is a centered coefficient bound on those quotients, and this file proves it
-without developing any general theory of coefficient growth under polynomial division.
+The honest witness of the HMZ25 lift (Hachi Figure 4) is `(z, ρ)`, where
+`ρᵢ = (rowSumᵢ − rep yᵢ) /ₘ φ` (`Presentation.quotient`). This file proves the auxiliary
+raw-coefficient bound `RhoShort ρBound ρ` on those quotients, without developing any general
+theory of coefficient growth under polynomial division.
 
-`liftShort` does not ask for it: the committed quotient block is the base-`b` digit decomposition
-(`rhoDigits`), whose coefficients are `⌊b/2⌋`-bounded outright. What the results below establish is
-how large an *undecomposed* quotient can get — and `rhoShort_half`'s sharp `q/2` is exactly why the
-decomposition is needed.
+`liftShort` instead bounds the committed quotient's base-`b` digit decomposition (`rhoDigits`),
+whose coefficients are `⌊b/2⌋`-bounded outright. The results below bound the *undecomposed*
+quotient; digit encoding gives the chain a small coefficient bound independently of these raw
+estimates.
 
 **The mechanism.** For the power-of-two cyclotomic modulus `φ = X ^ d + 1`, dividing a polynomial of
 degree `< 2d` by `φ` *selects* coefficients rather than combining them:
@@ -43,10 +43,9 @@ representative bounds it. `valMinAbs_natAbs_mul_le` and `valMinAbs_natAbs_sum_le
   `RingSwitch/Completeness`, where the honest witness is named).
 * `Rq.lInftyNorm_le_half`, `rhoShort_half`: the *unconditional* fallback.
   Every element of `Rq Φ` has centered `ℓ∞` norm `≤ q/2`, so `RhoShort (q/2)` holds for **any**
-  quotient family with no hypotheses at all. This is what makes the honest lift's `liftShort`
-  obligation dischargeable for the Hachi chain, where the `R^lin` matrix contains the Ajtai key
-  blocks `D`, `B`, `A` and the gadget powers `bᵉ` — none of them short, so `q/2` is the only honest
-  `βM`. See `rhoShort_half`'s docstring for what that costs downstream.
+  quotient family with no hypotheses at all. These are auxiliary raw-coefficient bounds.
+  The honest lift's quotient-digit conjunct of `liftShort` is instead discharged by
+  `rhoDigitsShort_of_half_le`, packaged as `rhoDigitsShort_of_digitBaseOk` for the Hachi chain.
 
 ## References
 
@@ -184,16 +183,17 @@ omit [BEq (ZMod q)] [LawfulBEq (ZMod q)] in
 /-- **The unconditional fallback: `RhoShort (q/2)` holds for every quotient family.** Centered
 representatives live in `(−q/2, q/2]`, so this needs no hypotheses whatsoever.
 
-It is the bound the Hachi chain actually uses, and that is a substantive statement about the
-construction rather than laziness: `rlinStmt` assembles its matrix from the Ajtai key blocks `D`,
-`B`, `A` and the gadget powers `bᵉ`, all of which are (or may be) uniform mod `q`, so the honest
-`βM` of `rhoShort_honestLiftWitness` is `q/2` and the growth bound `μ · 2d · (q/2) · βz` exceeds
-`q/2` — i.e. the honest quotient of a Hachi `R^lin` instance is *not* short, and no sharper claim is
-available without assuming a short commitment key.
+This is an auxiliary raw-coefficient bound. The Hachi chain's quotient-digit conjunct of
+`liftShort` instead follows from `rhoDigitsShort_of_half_le`.
 
-**Why the digit encoding is necessary rather than decorative.** A range table checking these raw
-rows against a single base `b` would need `b − 1 ≥ q/2`, degenerating the parameters.
-`ZeroCheck/Constraints` therefore range-checks the quotient's base-`b` **digits**, which are
+`rlinStmt` assembles its matrix from the Ajtai key blocks `D`, `B`, `A` and the gadget powers
+`bᵉ`. Taking the universal bound `βM = q/2` in `rhoShort_honestLiftWitness` gives the growth
+estimate `μ · 2d · (q/2) · βz`. When this exceeds `q/2`, the estimate supplies no sharper uniform
+raw bound; it does not establish that an individual honest quotient is large.
+
+**Why the quotient is encoded as digits.** Certifying raw rows from the unconditional `q/2`
+bound with a range table at base `b` would require `b − 1 ≥ q/2`, degenerating the parameters.
+`ZeroCheck/Constraints` instead range-checks the quotient's base-`b` **digits**, which are
 `⌊b/2⌋`-bounded outright (`rhoDigits_valMinAbs_natAbs_le`). -/
 theorem rhoShort_half {n : ℕ} (ρ : Fin n → CPolynomial (ZMod q)) : RhoShort (q / 2) ρ :=
   fun _ _ => ZMod.natAbs_valMinAbs_le _
