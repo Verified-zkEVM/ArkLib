@@ -5,8 +5,8 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Plonk.BatchData
-public import ArkLib.ProofSystem.Plonk.GrandProduct
+public import ArkLib.ProofSystem.Plonk.Batch.Data
+public import ArkLib.ProofSystem.Plonk.GrandProduct.Reduction
 public import ArkLib.OracleReduction.Composition.Sequential.GuardedCompleteness
 
 /-! # Plonk residual batching

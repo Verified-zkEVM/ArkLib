@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Plonk.Assembly
+public import ArkLib.ProofSystem.Plonk.Assembly.Reduction
 
 /-! # Extraction for the original Plonk circuit relation
 

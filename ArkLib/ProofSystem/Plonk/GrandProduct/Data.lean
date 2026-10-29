@@ -6,7 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.Data.Polynomial.GeneratorBatch
-public import ArkLib.ProofSystem.Plonk.AccumulatorComputable
+public import ArkLib.ProofSystem.Plonk.Accumulator.Computable
 
 /-! # Plonk permutation grand product: degree-bounded data
 

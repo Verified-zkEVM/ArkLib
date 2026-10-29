@@ -5,8 +5,8 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Plonk.Domain
-public import ArkLib.ProofSystem.Plonk.Prepared
+public import ArkLib.ProofSystem.Plonk.Encoding.Domain
+public import ArkLib.ProofSystem.Plonk.Relation.Prepared
 public import Mathlib.LinearAlgebra.Lagrange
 
 /-! # Polynomial encoding of Plonk
