@@ -248,16 +248,8 @@ theorem drop_update_of_ge (m : ℕ) (h : m ≤ n) (v : (i : Fin n) → α i) (i 
     subst h_2
     simp_all only [Nat.sub_add_cancel, Fin.eta, not_true_eq_false]
 
--- /-- Dropping the first `m ≤ n` elements of an `addCases u v`, where `u` is a `n`-tuple,
--- is the same as dropping the first `m` elements of `u` and then adding `v` to the result. -/
--- theorem drop_addCases_left {n' : ℕ} {motive : Fin (n + n') → Sort*} (m : ℕ) (h : m ≤ n)
---     (u : (i : Fin n) → motive (castAdd n' i)) (v : (i : Fin n') → motive (natAdd n i)) :
---       drop m (Nat.le_add_right_of_le h) (addCases u v) =
---         fun i : Fin (n + n' - m) =>
---           dcast (by simp)
---             (addCases (m := n - m) (n := n') (drop m h u) v (i.cast (by omega))) := sorry
-
-/-- Version of `drop_addCases_left` that specializes `addCases` to `append`. -/
+/-- Dropping the first `m ≤ n` elements of `append u v`, where `u` is an `n`-tuple,
+is the same as dropping the first `m` elements of `u` and then appending `v`. -/
 theorem drop_append_left {n' : ℕ} {α : Sort*} (m : ℕ) (h : m ≤ n) (u : (i : Fin n) → α)
     (v : (i : Fin n') → α) :
       drop m (Nat.le_add_right_of_le h) (append u v) =
@@ -379,8 +371,8 @@ theorem take_drop_append {α : Sort*} (m : ℕ) (h : m ≤ n) (v : Fin n → α)
   · have : i.val - m + m = i.val := by omega
     simp [this]
 
-/-- Taking the first `m₂ - m₁` elements of the last `m₂` elements of a tuple is the same as taking
-the first `m₂ - m₁` elements of the original tuple. -/
+/-- Taking the first `m₂ - m₁` elements after dropping `m₁` elements is the same as dropping
+`m₁` elements from the first `m₂` elements. Both give the slice `[m₁, m₂)`. -/
 theorem take_drop_eq_drop_take (m₁ m₂ : ℕ) (h₁ : m₁ ≤ m₂) (h₂ : m₂ ≤ n) (v : (i : Fin n) → α i) :
     take (m₂ - m₁) (by omega) (drop m₁ (by omega) v) =
       drop m₁ (by omega) (take m₂ h₂ v) := by

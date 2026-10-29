@@ -479,7 +479,7 @@ lemma subdomain_sqFoldMapGen_eq_pow_domain [NeZero n] {i : ℕ} {j : Fin (2 ^ n)
   simp_all [funext_iff, ReedSolomon.evalOnPoints]
 
 /-- `sqFoldMapGen j` equals `sqFoldMapGen j'`
-  if `ω j ^ 2 ^ j` equals `ω j ^ 2 ^ j'`. -/
+  if `ω j ^ 2 ^ i` equals `ω j' ^ 2 ^ i`. -/
 lemma sqFoldMapGen_eq_sqFoldMapGen_of_pow_apply_eq_pow_apply [NeZero n] {i : ℕ} {j j' : Fin (2 ^ n)}
     (h : ω j ^ 2 ^ i = ω j' ^ 2 ^ i) :
   sqFoldMapGen (i := i) j = sqFoldMapGen j' :=
@@ -566,7 +566,7 @@ def twoNthRootAux (n i : ℕ) (ω : SmoothCosetFftDomain n F) (x : F) (fuel : �
       if (ω ⟨fuel, h⟩) ^ 2 ^ i = x then ⟨ω ⟨fuel, h⟩, by simp⟩ else twoNthRootAux n i ω x fuel
     else default
 
-/-- Finds a `2 ^ n`th root of `x`. -/
+/-- Finds a `2 ^ i`th root of `x` when `i ≤ n`. -/
 def twoNthRoot {n i : ℕ} {ω : SmoothCosetFftDomain n F} (x : ω.subdomain i) : ω :=
   twoNthRootAux n i ω x.1 (2 ^ n)
 
