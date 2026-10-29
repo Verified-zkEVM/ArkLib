@@ -25,11 +25,7 @@
     "ArkLib.Lattices.Ajtai.InnerOuter.traceCheck",
     "ArkLib.Lattices.Ajtai.InnerOuter.wTableMleEval_split",
     "ArkLib.Lattices.Ajtai.InnerOuter.zBatchPackage",
-    "Spartan.Spec.oracleReduction.linearCombination",
-    "Verifier.srKnowledgeSoundness_addSalt_implies_srKnowledgeSoundness_original",
-    "Verifier.srKnowledgeSoundness_implies_knowledgeSoundness",
-    "Verifier.srSoundness_addSalt_implies_srSoundness_original",
-    "Verifier.srSoundness_implies_soundness"
+    "Spartan.Spec.oracleReduction.linearCombination"
   ],
   "solicited": [
     {

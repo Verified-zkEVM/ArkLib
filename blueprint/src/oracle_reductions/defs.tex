@@ -501,7 +501,8 @@ For knowledge soundness, we need to consider different types of extractors that 
     along with the output statement and witness.
 
     This models adversaries in the state-restoration setting where challenges can be queried programmably.
-    \lean{Prover.StateRestoration.KnowledgeSoundness}
+    In the Lean formalization, state-restoration provers are developed natively in
+    \texttt{Interaction.Oracle.Security.StateRestoration}.
     \uses{def:transcript}
 \end{definition}
 
@@ -778,8 +779,8 @@ By default, the properties we consider are perfect completeness and (straightlin
     for all witnesses, and for all state-restoration provers, the probability that the verifier
     outputs a statement in the output language is bounded by the soundness error.
 
-    \emph{Note: This definition is currently under development in the Lean formalization.}
-    % \lean{Verifier.srSoundness}
+    In the Lean formalization, state-restoration security is developed natively in
+    \texttt{Interaction.Oracle.Security.StateRestoration}.
 \end{definition}
 
 \begin{definition}[State-Restoration Knowledge Soundness]
@@ -793,8 +794,6 @@ By default, the properties we consider are perfect completeness and (straightlin
     produce any valid input witness, is bounded by the state-restoration knowledge-soundness error.
     The extractor is partial in the Lean formalization, so extractor failure counts as a bad event
     on accepting executions.
-
-    \lean{Verifier.StateRestoration.knowledgeSoundness}
 \end{definition}
 
 
