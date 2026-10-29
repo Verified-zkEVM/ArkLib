@@ -153,13 +153,13 @@ theorem exists_exceptional_exactPowerAgreement_of_polynomials
     (P : Fin (ℓ + 1) → F[X]) (hP : ∀ t, (P t).degree < k) :
     ∃ E : Finset F, E.card ≤ ℓ * Fintype.card ι ∧
       ∀ z ∉ E, HasExactPowerAgreement domain w (RingHom.id F) k z
-        (powerBatchedPolynomial P z) := by
+        (Polynomial.powerBatch P z) := by
   classical
   let diff : ι → F[X] := fun i ↦ powerBatchedCoordinate (fun t ↦ (P t).eval (domain i) - w t i)
   let E := Finset.univ.biUnion (fun i ↦ (diff i).roots.toFinset)
   have heval (i : ι) (z : F) : (diff i).eval z =
-      (powerBatchedPolynomial P z).eval (domain i) - powerBatchedWord w z i := by
-    simp only [diff, powerBatchedCoordinate_eval, powerBatchedPolynomial_eval,
+      (Polynomial.powerBatch P z).eval (domain i) - powerBatchedWord w z i := by
+    simp only [diff, powerBatchedCoordinate_eval, Polynomial.powerBatch_eval,
       powerBatchedWord, mul_sub, Finset.sum_sub_distrib]
   refine ⟨E, ?_, fun z hz ↦ ?_⟩
   · calc
@@ -171,7 +171,7 @@ theorem exists_exceptional_exactPowerAgreement_of_polynomials
   · refine (hasExactPowerAgreement_id_iff _ _ _ _ _).mpr ⟨P, hP, rfl, ?_⟩
     apply Finset.Subset.antisymm ?_
       (fun i hi ↦ by
-        rw [mem_polynomialAgreementSet, powerBatchedPolynomial_eval]
+        rw [mem_polynomialAgreementSet, Polynomial.powerBatch_eval]
         apply Finset.sum_congr rfl
         intro t _
         rw [(mem_commonCurveAgreementSet domain w P i).mp hi t])
