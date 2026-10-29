@@ -150,7 +150,7 @@ theorem core_ineq (ρ : ℝ) (hρ0 : 0 < ρ) (_hρ1 : ρ < 1) (cp : ℕ) (_hcp :
 
 /-- For every rate `ρ ∈ (0,1)` and `c ∈ ℕ`, there is a constant `Kc > 0` and a threshold
 `b₀` such that
-for every `b ≥ b₀` the parameters `a`, `k = ⌈ρ·2^{a+b}⌉`, `khat = ⌈k/2^a⌉` satisfy the
+for every `b ≥ b₀` the parameters `a`, `k = ⌊ρ·2^{a+b}⌋ + 1`, `khat = ⌈k/2^a⌉` satisfy the
 hypotheses of `choose_le_Lambda_rs_vanilla_of_smooth` at `d = 2^a`, `h = 2^b`,
 `n = 2^{a+b}`, together with the rate
 band, the `O(1/log n)` slack bound, and the list target `n^c ≤ C(2^b, khat)`. -/

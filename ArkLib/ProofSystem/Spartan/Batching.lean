@@ -145,8 +145,8 @@ variable {F : Type} [Field F] [Fintype F] [SampleableType F] (pp : PublicParams)
 
 /-- Fixed-prefix knowledge soundness for the named extractor, with error exactly `1 / |F|`
 for the independent coefficient challenge. -/
-theorem batch_rbrKnowledgeSoundnessWorstCaseWith :
-    (oracleVerifier (R := F) pp oSpec).toVerifier.rbrKnowledgeSoundnessWorstCaseWith init impl
+theorem batch_rbrKnowledgeSoundnessWith :
+    (oracleVerifier (R := F) pp oSpec).toVerifier.rbrKnowledgeSoundnessWith init impl
       (relIn pp) (relOut pp) (fun _ => Unit) (rbrExtractor pp oSpec)
       (knowledgeStateFunction pp oSpec init impl) (fun _ => (1 : ℝ≥0) / Fintype.card F) := by
   rintro ⟨s, oracles⟩ i tr
@@ -174,11 +174,11 @@ theorem batch_rbrKnowledgeSoundnessWorstCaseWith :
       exact_mod_cast Fintype.card_ne_zero
     rw [ENNReal.coe_div hdenom, ENNReal.coe_one, ENNReal.coe_natCast]
 
-/-- Independent batching has worst-case, fixed-prefix knowledge error `1 / |F|`. -/
-theorem batch_rbrKnowledgeSoundnessWorstCase :
-    (oracleVerifier (R := F) pp oSpec).toVerifier.rbrKnowledgeSoundnessWorstCase init impl
+/-- Independent batching has fixed-prefix knowledge error `1 / |F|`. -/
+theorem batch_rbrKnowledgeSoundness :
+    (oracleVerifier (R := F) pp oSpec).toVerifier.rbrKnowledgeSoundness init impl
       (relIn pp) (relOut pp) (fun _ => (1 : ℝ≥0) / Fintype.card F) :=
   ⟨fun _ => Unit, rbrExtractor pp oSpec, knowledgeStateFunction pp oSpec init impl,
-    batch_rbrKnowledgeSoundnessWorstCaseWith pp oSpec init impl⟩
+    batch_rbrKnowledgeSoundnessWith pp oSpec init impl⟩
 
 end Spartan.Batching

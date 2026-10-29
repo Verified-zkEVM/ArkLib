@@ -144,18 +144,18 @@ example : (SecondSumcheck.oracleReduction (R := F) params []ₒ).perfectComplete
   SecondSumcheck.perfectCompleteness params []ₒ (pure ()) emptyImpl
 
 example : (FirstSumcheck.oracleVerifier (R := F) params
-      []ₒ).toVerifier.rbrKnowledgeSoundnessWorstCase
+      []ₒ).toVerifier.rbrKnowledgeSoundness
       (pure ()) emptyImpl
       (FirstSumcheck.relIn params) (FirstSumcheck.relOut params)
       (fun _ => (3 : ℝ≥0) / Fintype.card F) :=
-  FirstSumcheck.rbrKnowledgeSoundnessWorstCase params []ₒ
+  FirstSumcheck.rbrKnowledgeSoundness params []ₒ
 
 example : (SecondSumcheck.oracleVerifier (R := F) params
-      []ₒ).toVerifier.rbrKnowledgeSoundnessWorstCase
+      []ₒ).toVerifier.rbrKnowledgeSoundness
       (pure ()) emptyImpl
       (SecondSumcheck.relIn params) (SecondSumcheck.relOut params)
       (fun _ => (2 : ℝ≥0) / Fintype.card F) :=
-  SecondSumcheck.rbrKnowledgeSoundnessWorstCase params []ₒ (pure ()) emptyImpl
+  SecondSumcheck.rbrKnowledgeSoundness params []ₒ (pure ()) emptyImpl
 
 example : AllQueriesSatisfy
     ((FirstSumcheck.oracleVerifier params []ₒ).verify firstInput firstChallenges).run

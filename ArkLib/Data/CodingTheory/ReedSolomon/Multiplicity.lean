@@ -44,11 +44,12 @@ not Hasse derivatives. Correspondingly, the results above assume `ringChar F = 0
 `k ≤ ringChar F`, phrased as a disjunction so that characteristic zero is not excluded by
 `ringChar F = 0` forcing `k = 0`.
 
-That hypothesis is what makes the two agree up to the units `j !`, and it cannot be dropped:
-in characteristic `p ≤ k` one has `derivative^[p] (X ^ p) = 0`, so the encoder loses
-information and the dimension statement fails. A small-characteristic variant should
-therefore be a separate definition built on `Polynomial.hasseDeriv`, not a substitution
-here.
+That hypothesis is what makes the two agree up to the units `j !`. Dropping it can cause
+information loss: in characteristic `p`, on the singleton domain `{0}` with `k = s = p + 1`,
+the messages `X ^ p` and `0` have the same value and all ordinary derivatives at `0`. The
+boundary `k = p` is covered by the hypothesis, since `X ^ p` is outside the message space.
+A small-characteristic variant should be a separate definition built on
+`Polynomial.hasseDeriv`, not a substitution here.
 
 ## References
 

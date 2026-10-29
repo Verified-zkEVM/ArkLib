@@ -31,8 +31,10 @@ noncomputable def uniqueDecodingRadius {ι : Type*} [Fintype ι] {F : Type*} [De
 
 alias UDR := uniqueDecodingRadius
 
-/-- The relative unique decoding radius, obtained from the absolute radius by normalizing with the
-block length. This also works with `≤`. -/
+/-- The relative unique decoding radius `max(d - 1, 0) / (2 * n)`, with subtraction and
+division in `NNReal`, where `d` is the code distance and `n` is the block length. It induces
+the same closed decoding ball as the normalized integer absolute radius, although the radii
+need not be numerically equal. -/
 noncomputable def relativeUniqueDecodingRadius {ι : Type*} [Fintype ι] {F : Type*} [DecidableEq F]
     (C : Set (ι → F)) : NNReal :=
   (((‖C‖₀ : NNReal) - 1) / 2) / (Fintype.card ι : NNReal)

@@ -34,7 +34,7 @@ The `hε : errorBound δ deg domain < 1` hypothesis is required for the `Xor` ex
 `δ_ε_proximityGap`: without `ε < 1`, the two branches `Pr = 1` and `Pr ≤ ε` could both hold
 when `ε = 1`, violating `Xor`.
 
-This proof depends on `correlatedAgreement_affine_spaces` (Theorem 1.7) in `AffineSpaces.lean`. -/
+This proof depends on `correlatedAgreement_affine_spaces` (Theorem 1.6) in `AffineSpaces.lean`. -/
 theorem proximity_gap_RSCodes {k t : ℕ} [NeZero k] [NeZero t] {deg : ℕ} {domain : ι ↪ F}
     (hdeg : 0 < deg)
     (hRS : deg + 1 ≤ Fintype.card ι)

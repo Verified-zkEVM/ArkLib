@@ -129,50 +129,50 @@ variable {ι : Type} (oSpec : OracleSpec ι) (F : Type) [Field F] [Fintype F] [S
 
 /-- Fixed-prefix knowledge soundness, with error `d / |F|` when every polynomial has total degree
 at most `d`. -/
-theorem oracleVerifier_rbrKnowledgeSoundnessWorstCaseWith
+theorem oracleVerifier_rbrKnowledgeSoundnessWith
     (d : ℕ) (hP : ∀ stmt oracles, (P stmt oracles).totalDegree ≤ d) :
-    (oracleVerifier oSpec F m Statement OStatement).toVerifier.rbrKnowledgeSoundnessWorstCaseWith
+    (oracleVerifier oSpec F m Statement OStatement).toVerifier.rbrKnowledgeSoundnessWith
       init impl (relIn F m Statement OStatement P) (relOut F m Statement OStatement P)
       (fun _ => Unit) (rbrExtractor oSpec F m Statement OStatement)
       (knowledgeStateFunction oSpec F m Statement OStatement P)
       (fun _ => (d : ℝ≥0) / Fintype.card F) :=
-  RandomQuery.oracleVerifier_rbrKnowledgeSoundnessWorstCaseWith oSpec Statement OStatement
+  RandomQuery.oracleVerifier_rbrKnowledgeSoundnessWith oSpec Statement OStatement
     (MvPolynomial (Fin m) F) P 0 _
     fun stmt oracles hP0 => prob_answer_eq_zero_le (P stmt oracles) hP0 d (hP stmt oracles)
 
-/-- Worst-case, fixed-prefix round-by-round knowledge soundness, with error `d / |F|`. -/
-theorem oracleVerifier_rbrKnowledgeSoundnessWorstCase
+/-- Fixed-prefix round-by-round knowledge soundness, with error `d / |F|`. -/
+theorem oracleVerifier_rbrKnowledgeSoundness
     (d : ℕ) (hP : ∀ stmt oracles, (P stmt oracles).totalDegree ≤ d) :
-    (oracleVerifier oSpec F m Statement OStatement).toVerifier.rbrKnowledgeSoundnessWorstCase
+    (oracleVerifier oSpec F m Statement OStatement).toVerifier.rbrKnowledgeSoundness
       init impl (relIn F m Statement OStatement P) (relOut F m Statement OStatement P)
       (fun _ => (d : ℝ≥0) / Fintype.card F) :=
   ⟨fun _ => Unit, rbrExtractor oSpec F m Statement OStatement,
     knowledgeStateFunction oSpec F m Statement OStatement P,
-    oracleVerifier_rbrKnowledgeSoundnessWorstCaseWith oSpec F m Statement OStatement P d hP⟩
+    oracleVerifier_rbrKnowledgeSoundnessWith oSpec F m Statement OStatement P d hP⟩
 
-/-- The multilinear case of `oracleVerifier_rbrKnowledgeSoundnessWorstCaseWith`, with error
+/-- The multilinear case of `oracleVerifier_rbrKnowledgeSoundnessWith`, with error
 `m / |F|`. -/
-theorem oracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_of_degreeOf_le_one
+theorem oracleVerifier_rbrKnowledgeSoundnessWith_of_degreeOf_le_one
     (hP : ∀ stmt oracles i, degreeOf i (P stmt oracles) ≤ 1) :
-    (oracleVerifier oSpec F m Statement OStatement).toVerifier.rbrKnowledgeSoundnessWorstCaseWith
+    (oracleVerifier oSpec F m Statement OStatement).toVerifier.rbrKnowledgeSoundnessWith
       init impl (relIn F m Statement OStatement P) (relOut F m Statement OStatement P)
       (fun _ => Unit) (rbrExtractor oSpec F m Statement OStatement)
       (knowledgeStateFunction oSpec F m Statement OStatement P)
       (fun _ => (m : ℝ≥0) / Fintype.card F) :=
-  oracleVerifier_rbrKnowledgeSoundnessWorstCaseWith oSpec F m Statement OStatement P m
+  oracleVerifier_rbrKnowledgeSoundnessWith oSpec F m Statement OStatement P m
     fun stmt oracles => by
       simpa using totalDegree_le_card_of_degreeOf_le_one _ (hP stmt oracles)
 
-/-- The multilinear case of `oracleVerifier_rbrKnowledgeSoundnessWorstCase`, with error
+/-- The multilinear case of `oracleVerifier_rbrKnowledgeSoundness`, with error
 `m / |F|`. -/
-theorem oracleVerifier_rbrKnowledgeSoundnessWorstCase_of_degreeOf_le_one
+theorem oracleVerifier_rbrKnowledgeSoundness_of_degreeOf_le_one
     (hP : ∀ stmt oracles i, degreeOf i (P stmt oracles) ≤ 1) :
-    (oracleVerifier oSpec F m Statement OStatement).toVerifier.rbrKnowledgeSoundnessWorstCase
+    (oracleVerifier oSpec F m Statement OStatement).toVerifier.rbrKnowledgeSoundness
       init impl (relIn F m Statement OStatement P) (relOut F m Statement OStatement P)
       (fun _ => (m : ℝ≥0) / Fintype.card F) :=
   ⟨fun _ => Unit, rbrExtractor oSpec F m Statement OStatement,
     knowledgeStateFunction oSpec F m Statement OStatement P,
-    oracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_of_degreeOf_le_one
+    oracleVerifier_rbrKnowledgeSoundnessWith_of_degreeOf_le_one
       oSpec F m Statement OStatement P hP⟩
 
 end Soundness

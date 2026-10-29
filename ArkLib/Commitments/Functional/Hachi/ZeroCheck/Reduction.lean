@@ -434,8 +434,8 @@ vanish at the direct points carried by the statement.
 
 The `liftShort` conjunct is the commitment's **shortness index**, not a range assumption smuggled
 in: it is what makes a pair of colliding branch openings a member of `LiftCom.Collision`, hence a
-Module-SIS break under [NOZ26] Lemma 7 / Remark 2. Its `RhoShort` half — the range claim Lemma 10
-exists to establish — is still *derived*, at the batching bridge, from `H₀ ≡ 0`
+Module-SIS break under [NOZ26] Lemma 7 / Remark 2. Its `RhoDigitsShort` half — the range claim
+Lemma 10 exists to establish — is still *derived*, at the batching bridge, from `H₀ ≡ 0`
 (`hZero_eq_zero_imp_liftShort`); it is never assumed here. What this seam genuinely cannot
 recover, and does not pretend to, is the range identity itself: a single evaluation
 `H₀(τ₀) = 0` never implies `H₀ ≡ 0`

@@ -71,15 +71,15 @@ def knowledgeStateFunction :
 variable [Fintype F]
 
 /-- The circuit decoder preserves the composed named fixed-prefix certificate. -/
-theorem oracleVerifier_rbrKnowledgeSoundnessWorstCaseWith :
-    (oracleReduction ω hω hn cs hℓ x L oSpec).verifier.toVerifier.rbrKnowledgeSoundnessWorstCaseWith
+theorem oracleVerifier_rbrKnowledgeSoundnessWith :
+    (oracleReduction ω hω hn cs hℓ x L oSpec).verifier.toVerifier.rbrKnowledgeSoundnessWith
       init impl (relIn cs hℓ x)
         (Quotient.relOut (F := F) (n := ℓ + n)) _ (rbrExtractor ω hω hn cs hℓ x L oSpec)
         (knowledgeStateFunction ω hω hn cs hℓ x L oSpec init impl) (error ω hω hn) := by
-  have h := Assembly.oracleVerifier_rbrKnowledgeSoundnessWorstCaseWith ω hω hn
+  have h := Assembly.oracleVerifier_rbrKnowledgeSoundnessWith ω hω hn
     (cs.prepare hℓ (fun _ => 0)) L
     (publicInputPolynomial (EvaluationDomain.primitiveRoot ω hω) (by omega) x) oSpec init impl
-  simpa only [Verifier.rbrKnowledgeSoundnessWorstCaseWith, knowledgeStateFunction,
+  simpa only [Verifier.rbrKnowledgeSoundnessWith, knowledgeStateFunction,
     rbrExtractor, Stmt, OStmt, OracleIdx] using h
 
 omit [SampleableType F] [Fintype F] in
@@ -95,11 +95,11 @@ theorem oracleVerifier_knowledgeSoundnessWith :
       (relIn cs hℓ x) (Quotient.relOut (F := F) (n := ℓ + n))
       (transcriptExtractor ω hω hn cs hℓ x oSpec)
       (((7 * (ℓ + n) - 3 : ℕ) : ℝ≥0) / Fintype.card F) := by
-  have h := OracleVerifier.knowledgeSoundnessWith_of_rbrKnowledgeSoundnessWorstCaseWith_of_guarded
+  have h := OracleVerifier.knowledgeSoundnessWith_of_rbrKnowledgeSoundnessWith_of_guarded
     (Assembly.guardedForm ω hω hn (cs.prepare hℓ (fun _ => 0)) L
       (publicInputPolynomial (EvaluationDomain.primitiveRoot ω hω) (by omega) x) oSpec)
     (knowledgeStateFunction ω hω hn cs hℓ x L oSpec init impl)
-    (oracleVerifier_rbrKnowledgeSoundnessWorstCaseWith ω hω hn cs hℓ x L oSpec init impl)
+    (oracleVerifier_rbrKnowledgeSoundnessWith ω hω hn cs hℓ x L oSpec init impl)
   change (oracleReduction ω hω hn cs hℓ x L oSpec).verifier.knowledgeSoundnessWith init impl
     (relIn cs hℓ x) (Quotient.relOut (F := F) (n := ℓ + n))
     (rbrExtractor ω hω hn cs hℓ x L oSpec).foldExtractor (∑ i, error ω hω hn i) at h

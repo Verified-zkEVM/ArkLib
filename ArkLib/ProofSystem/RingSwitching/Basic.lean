@@ -27,7 +27,7 @@ protocol and security interpretation. The two construction families have separat
    values, checks reconstruction and derives a product-sumcheck claim using a `BatchingRule`.
    `RingSwitch` directly appends `ProductSumcheck`, retaining the original query, batching
    challenge, commitment oracle and packed witness through the terminal evaluation claim.
-   Completeness requires a commutative challenge ring. Worst-case round-by-round knowledge
+   Completeness requires a commutative challenge ring. Round-by-round knowledge
    soundness additionally uses a certified `BatchingStrategy`, functional compatibility,
    injective coefficient transport and a finite challenge ring with no zero divisors. The
    challenge-error sum is `bat.error + 2m/|C|`. The head separately supports a fixed list

@@ -91,21 +91,21 @@ noncomputable def knowledgeStateFunction :
       stmt tr wit (by rwa [relOut_eq] at h)
 
 /-- Named-extractor, fixed-prefix RBR knowledge soundness with error `ℓ_m / |R|`. -/
-theorem challenge_rbrKnowledgeSoundnessWorstCaseWith :
-    (oracleReduction (R := R) pp oSpec).verifier.toVerifier.rbrKnowledgeSoundnessWorstCaseWith
+theorem challenge_rbrKnowledgeSoundnessWith :
+    (oracleReduction (R := R) pp oSpec).verifier.toVerifier.rbrKnowledgeSoundnessWith
       init impl (relIn pp) (relOut pp) (fun _ => Unit) (rbrExtractor pp oSpec)
       (knowledgeStateFunction pp oSpec) (fun _ => (pp.ℓ_m : ℝ≥0) / Fintype.card R) := by
   -- The contract reads the knowledge state only through `toFun`, which is the generic one.
   intro stmtIn i tr
-  exact RandomEvaluation.oracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_of_degreeOf_le_one
+  exact RandomEvaluation.oracleVerifier_rbrKnowledgeSoundnessWith_of_degreeOf_le_one
     oSpec R pp.ℓ_m (R1CS.Statement R pp.toSizeR1CS) (OracleStatement (R := R) pp) (polynomial pp)
     (polynomial_degree_le_one pp) (init := init) (impl := impl) stmtIn i tr
 
-/-- Worst-case, fixed-prefix RBR knowledge soundness with error `ℓ_m / |R|`. -/
-theorem challenge_rbrKnowledgeSoundnessWorstCase :
-    (oracleReduction (R := R) pp oSpec).verifier.toVerifier.rbrKnowledgeSoundnessWorstCase
+/-- Fixed-prefix RBR knowledge soundness with error `ℓ_m / |R|`. -/
+theorem challenge_rbrKnowledgeSoundness :
+    (oracleReduction (R := R) pp oSpec).verifier.toVerifier.rbrKnowledgeSoundness
       init impl (relIn pp) (relOut pp) (fun _ => (pp.ℓ_m : ℝ≥0) / Fintype.card R) :=
   ⟨fun _ => Unit, rbrExtractor pp oSpec, knowledgeStateFunction pp oSpec,
-    challenge_rbrKnowledgeSoundnessWorstCaseWith pp oSpec⟩
+    challenge_rbrKnowledgeSoundnessWith pp oSpec⟩
 
 end Spartan.ZeroCheck

@@ -1068,8 +1068,8 @@ theorem vectorSpan_finset_le_submodule_of_subset
 
 open scoped BigOperators in
 /-- **The subspace-design agreement bound.** If `τ` stays below `t` on `1 ≤ r ≤ d` and `T` is a set
-of at most `d + 1` codewords of a `τ`-design, then the agreement weight of `T` against any word is
-*strictly* less than `n · (|T| − 1) · t`.
+of between `2` and `d + 1` codewords of a `τ`-design, then the agreement weight of `T` against any
+word is *strictly* less than `n · (|T| − 1) · t`.
 
 Two bounds on the same quantity meet: a minimal heavy subset `U` forces the sum of the edge affine
 ranks to be at least `geometricAffineRank U · n · t`, while `vectorSpan_agreementEdges_le_inf_ker`

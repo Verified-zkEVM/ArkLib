@@ -975,6 +975,35 @@ private theorem dvd_property_of_sufficient_multiplicity_bound [DecidableEq F]
   norm_num [Nat.cast_sub (show hammingDist f (fun i ↦ (toPolynomial p).eval (ωs i)) ≤ n
     from le_trans (Finset.card_le_univ _) (by norm_num))]
 
+/-- If the weighted degree of `Q` is less than the total root multiplicity supplied by the
+agreement points of a codeword `P`, then `Y - P(X)` divides `Q(X,Y)`. -/
+theorem dvd_property_of_degree_lt [DecidableEq F] (hk : k + 1 ≤ n) (p : code ωs k)
+    {Q : F[X][Y]}
+    (hQ_mult : ∀ i, m ≤ rootMultiplicity Q (ωs i) (f i))
+    (hQ_deg : natWeightedDegree Q 1 (k - 1) <
+      m * (n - hammingDist f (fun i ↦ (toPolynomial p).eval (ωs i)))) :
+    X - C (toPolynomial p) ∣ Q := by
+  apply dvd_iff_isRoot.mpr
+  by_contra hR
+  let A := Finset.univ.filter (fun i ↦ f i = (toPolynomial p).eval (ωs i))
+  have hcard : A.card + hammingDist f (fun i ↦ (toPolynomial p).eval (ωs i)) = n := by
+    simpa [A, hammingDist] using
+      (Finset.card_filter_add_card_filter_not
+        (s := Finset.univ) (p := fun i ↦ f i = (toPolynomial p).eval (ωs i)))
+  have hroots : ∀ i ∈ A, m ≤ (Q.eval (toPolynomial p)).rootMultiplicity (ωs i) := by
+    intro i hi
+    have horder : HasOrderAt Q (ωs i) (f i) m :=
+      (rootMultiplicity₀_ge_iff _ m).2 fun r hr ↦
+        Option.some_le_some.mp (Option.mem_def.mp hr ▸ hQ_mult i)
+    rw [(Finset.mem_filter.mp hi).2] at horder
+    exact (orderAt_eval_ge Q (toPolynomial p) (ωs i) m horder).resolve_left hR
+  apply hR
+  refine roots_le_degree_of_deg_lt_roots (Q.eval (toPolynomial p)) m A hroots ?_
+  have hdeg := degree_eval_le_weightedDegree Q (toPolynomial p) k (toPolynomial_degree_le hk p)
+  have hcard_eq : A.card = n - hammingDist f (fun i ↦ (toPolynomial p).eval (ωs i)) := by omega
+  rw [hcard_eq]
+  exact hdeg.trans_lt hQ_deg
+
 /-- If $Q$ satisfies the weighted degree bound and vanishes to order $m$ at each point
     $(\omega_i, f_i)$, and if $P$ is a codeword close enough to $f$, then $Y - P(X)$
     divides $Q(X,Y)$. -/
@@ -1008,6 +1037,27 @@ lemma gs_numVars_gt_numConstraints_of_gt_one (hn : n ≠ 0) (hk : 1 < k) (hm : 1
   refine numVars_gt_numConstraints_of_mul_lt hk ?_
   have hnm := one_le_n_mul_m_mul_succ (m := m) hn hm
   linarith [(by positivity : (0 : ℝ) ≤ k * n)]
+
+/-- The rate-corrected interpolation system is underdetermined whenever `(D + 1)²` is at least
+`(m + 1/2)² * k * n`. The non-strict square bound includes integral degree thresholds. -/
+lemma gs_numVars_gt_numConstraints_of_le_sq {D : ℕ} (hn : n ≠ 0) (hk : 0 < k)
+    (hm : 1 ≤ m)
+    (hD : (m + 1 / 2 : ℝ) ^ 2 * k * n ≤ ((D : ℝ) + 1) ^ 2) :
+    numVars k D > numConstraints n m := by
+  have hnpos : (0 : ℝ) < n := Nat.cast_pos.mpr (Nat.pos_of_ne_zero hn)
+  by_cases hk1 : k ≤ 1
+  · have hk_eq : k = 1 := by omega
+    subst k
+    rw [numVars_eq_sq (by omega : 1 ≤ 1), numConstraints, card_constraintIndices]
+    have hreal : ((n * (m * (m + 1)) : ℕ) : ℝ) < (((D + 1) ^ 2 : ℕ) : ℝ) := by
+      push_cast
+      nlinarith only [hD, hnpos]
+    exact lt_of_le_of_lt (Nat.mul_le_mul_left n (Nat.div_le_self _ _))
+      (Nat.cast_lt.mp hreal)
+  · refine numVars_gt_numConstraints_of_mul_lt (by omega) ?_
+    have hnm := one_le_n_mul_m_mul_succ (m := m) hn hm
+    have hkn : (0 : ℝ) < k * n := mul_pos (Nat.cast_pos.mpr hk) hnpos
+    nlinarith only [hD, hnm, hkn]
 
 /-- The degree bound with ρ = k/n is strictly less than m times the number of
     agreement points, provided the distance is within the rate-corrected Johnson

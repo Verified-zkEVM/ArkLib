@@ -115,8 +115,8 @@ def knowledgeStateFunction : (oracleVerifier oSpec).toVerifier.KnowledgeStateFun
   toFun_full stmt tr _ h := ((guardedForm oSpec).check_and_of_prEvent_pos h).2
 
 /-- The reveal has zero fixed-prefix knowledge error. -/
-theorem oracleVerifier_rbrKnowledgeSoundnessWorstCaseWith :
-    (oracleVerifier oSpec).toVerifier.rbrKnowledgeSoundnessWorstCaseWith init impl
+theorem oracleVerifier_rbrKnowledgeSoundnessWith :
+    (oracleVerifier oSpec).toVerifier.rbrKnowledgeSoundnessWith init impl
       (relIn ω hω cs pi) (GrandProduct.relIn ω hω cs pi) _ (rbrExtractor oSpec)
       (knowledgeStateFunction ω hω cs pi oSpec init impl) (fun _ => 0) := by
   intro _ ⟨i, hi⟩

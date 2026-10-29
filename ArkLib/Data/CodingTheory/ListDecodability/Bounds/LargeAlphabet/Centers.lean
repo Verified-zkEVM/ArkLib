@@ -220,9 +220,10 @@ theorem hamming_center_from_disjoint_blocks
       _ ≤ r' - t := Nat.sub_le_sub_right hDle t
       _ ≤ r := hother
 
-/-- **Balanced centre from `ℓ` nearby codewords.** If `c` and `v 1, …, v ℓ` are pairwise within the
-boosted radius and they disagree with `c` on a large common set, then some single word `y` is within
-radius `p` of all of them — so the point list at `y` has `ℓ + 1` members. -/
+/-- **Balanced centre from `ℓ` words near a reference word.** If each `v j` is within the boosted
+radius of `c` and all `v j` disagree with `c` on a large common set, then, under the stated length
+bound, some single word `y` is within relative radius `p` of `c` and every `v j`. A point-list lower
+bound of `ℓ + 1` additionally requires these words to be distinct members of the code. -/
 theorem balanced_center_construction :
     ∀ (ℓ : ℕ), 2 ≤ ℓ → ∀ (p : ℝ), 0 < p → p < 1 →
       ∀ {ι A : Type} [Fintype ι] [DecidableEq A]

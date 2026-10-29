@@ -31,7 +31,7 @@ author credit are recorded on the paper page.
 | Literal measured extractor | `Fri.Spec.Extractor.extractHistory_eq_profile` | Public result is the first projection of the measured program |
 | End-to-end knowledge soundness with named extractor | `Fri.Spec.knowledge_soundness_with` | Every input statement; actual logged knowledge game; extraction failure includes `none` |
 | End-to-end existential knowledge soundness | `Fri.Spec.knowledge_soundness` | The same specific straightline extractor witnesses existence |
-| End-to-end round-by-round soundness | `Fri.Spec.rbr_soundness` | Existing `OracleVerifier.rbrSoundness` and original input/output relations |
+| End-to-end round-by-round soundness | `Fri.Spec.rbr_soundness` | Fixed-prefix `OracleVerifier.rbrSoundness` and original input/output relations |
 
 ## Parameters and conclusions
 
@@ -78,7 +78,7 @@ hypotheses hold, and in particular covers the paper's full parameter range.
    a bad challenge has occurred. Prover messages preserve a false state because they cannot
    alter earlier challenge prefixes.
 3. `Spec/RoundSoundness` and `BadEvents` bound each fresh bad event conditional on no earlier
-   one. The query event includes the final degree guard. The worst-case-prefix interface
+   one. The query event includes the final degree guard. The fixed-prefix interface
    supplies round-by-round soundness.
 4. `OracleReduction/Security/Accumulation` sums conditional errors along `Prover.runToRound`,
    retaining private prover state and shared oracle state. Its terminal bound covers

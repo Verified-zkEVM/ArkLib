@@ -17,7 +17,7 @@ with independent coefficients supplies the second sumcheck claim. The terminal s
 that claim through the retained matrix and witness oracles.
 
 `oracleReduction` composes the seven stages with an executable honest prover.
-`perfectCompleteness`, `rbrKnowledgeSoundnessWorstCaseWith`, and `knowledgeSoundness`
+`perfectCompleteness`, `rbrKnowledgeSoundnessWith`, and `knowledgeSoundness`
 certify this reduction for the original R1CS relation. Its additive knowledge error is
 `(4s + 2t + 1) / |R|`, and `knowledgeSoundness_clipped` caps the bound at one.
 The sumcheck lenses use the retained oracles; neither virtual polynomial is sent as a new oracle.

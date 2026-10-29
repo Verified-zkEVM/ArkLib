@@ -21,7 +21,7 @@ public import ArkLib.ProofSystem.Binius.BinaryBasefold.Relations.Initial
 
 The opening protocol reformats an evaluation claim without communication, then runs the
 Binary Basefold core and query protocol. Exact first-codeword encodings give perfect completeness;
-unique-radius compatibility gives worst-case round-by-round knowledge soundness.
+unique-radius compatibility gives round-by-round knowledge soundness.
 The strict input relation uses exact first-codeword encodings; the relaxed input relation uses
 unique-decoding-radius compatibility.
 -/
@@ -164,10 +164,10 @@ def frontKnowledgeStateFunction {σ : Type} (init : ProbComp σ)
     simpa only [frontExtractor, Equiv.apply_symm_apply] using hp
 
 omit [SampleableType L] [DecidableEq K] in
-/-- Worst-case round-by-round security with no challenge positions. -/
-theorem frontVerifier_rbrKnowledgeSoundnessWorstCaseWith {σ : Type} (init : ProbComp σ)
+/-- Round-by-round security with no challenge positions. -/
+theorem frontVerifier_rbrKnowledgeSoundnessWith {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-    Verifier.rbrKnowledgeSoundnessWorstCaseWith init impl
+    Verifier.rbrKnowledgeSoundnessWith init impl
       (inputRelation K β evalQuery witnessEquiv (ϑ := ϑ) (h_rate := h_rate))
       (roundRelation (multpoly := multiplier) K β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_rate) (𝓑 := boolEmbedding L) 0)
@@ -250,21 +250,21 @@ instance instChallengeSampleable (γ : ℕ) : ∀ j, SampleableType
       (h_ℓ_add_R_rate := h_rate)).Challenge j) :=
   instSampleableTypeChallengeAppend
 
-/-- Worst-case round-by-round knowledge soundness of the opening verifier. -/
-theorem openingVerifier_rbrKnowledgeSoundnessWorstCase (γ : ℕ) {σ : Type} (init : ProbComp σ)
+/-- Round-by-round knowledge soundness of the opening verifier. -/
+theorem openingVerifier_rbrKnowledgeSoundness (γ : ℕ) {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-    Verifier.rbrKnowledgeSoundnessWorstCase init impl
+    Verifier.rbrKnowledgeSoundness init impl
       (inputRelation K β evalQuery witnessEquiv (ϑ := ϑ) (h_rate := h_rate)) acceptRejectOracleRel
       ((openingVerifier K β evalQuery γ (ϑ := ϑ) (h_rate := h_rate)).toVerifier
         (Oₛₒ := fun i : Empty => nomatch i))
       (openingError K β γ (ϑ := ϑ) (h_rate := h_rate)) := by
-  exact OracleVerifier.append_rbrKnowledgeSoundnessWorstCase_of_guarded_first
+  exact OracleVerifier.append_rbrKnowledgeSoundness_of_guarded_first
     (Oₛ₃ := fun i : Empty => nomatch i) _ _
     (frontGuard K β evalQuery)
     ⟨_, frontExtractor K β witnessEquiv, frontKnowledgeStateFunction K β evalQuery witnessEquiv
       init impl,
-      frontVerifier_rbrKnowledgeSoundnessWorstCaseWith K β evalQuery witnessEquiv init impl⟩
-    (FullBinaryBasefold.fullOracleVerifier_rbrKnowledgeSoundnessWorstCase K β γ
+      frontVerifier_rbrKnowledgeSoundnessWith K β evalQuery witnessEquiv init impl⟩
+    (FullBinaryBasefold.fullOracleVerifier_rbrKnowledgeSoundness K β γ
       (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) (𝓑 := boolEmbedding L))
 
 -- The strict initial fold identity compares definitionally equal dependent domains.
@@ -386,16 +386,16 @@ def mliopcs (γ : ℕ) : MLIOPCS L ℓ where
   oracleReduction := openingReduction K β id mlpWitnessEquiv γ (ϑ := ϑ) (h_rate := h_rate)
   perfectCompleteness := openingReduction_perfectCompleteness K β id mlpWitnessEquiv γ _ _
   rbrKnowledgeError := openingError K β γ (ϑ := ϑ) (h_rate := h_rate)
-  rbrKnowledgeSoundness := by
+  rbrKnowledgeSoundnessAveraged := by
     intro σ init impl
-    exact OracleProof.rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness
-      (openingVerifier_rbrKnowledgeSoundnessWorstCase K β id mlpWitnessEquiv γ init impl)
+    exact OracleProof.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged
+      (openingVerifier_rbrKnowledgeSoundness K β id mlpWitnessEquiv γ init impl)
 
-/-- The multilinear opening protocol satisfies worst-case round-by-round security. -/
-theorem mliopcs_rbrKnowledgeSoundWorstCase (γ : ℕ) :
-    (mliopcs K β γ (ϑ := ϑ) (h_rate := h_rate)).RbrKnowledgeSoundWorstCase := by
+/-- The multilinear opening protocol satisfies round-by-round security. -/
+theorem mliopcs_rbrKnowledgeSound (γ : ℕ) :
+    (mliopcs K β γ (ϑ := ϑ) (h_rate := h_rate)).RbrKnowledgeSound := by
   intro σ init impl
-  exact openingVerifier_rbrKnowledgeSoundnessWorstCase K β id mlpWitnessEquiv γ init impl
+  exact openingVerifier_rbrKnowledgeSoundness K β id mlpWitnessEquiv γ init impl
 
 /-- The evaluation claim after discarding the surrounding context. -/
 def contextualQuery (Context : Type) :
@@ -422,17 +422,17 @@ def contextualStrictInputRelation (Context : Type) :=
   strictInputRelation K β (contextualQuery (L := L) (ℓ := ℓ) Context)
     (Equiv.refl (MultilinearPoly L ℓ)) (ϑ := ϑ) (h_rate := h_rate)
 
-/-- Worst-case round-by-round security for contextual evaluation opening. -/
-theorem contextualVerifier_rbrKnowledgeSoundnessWorstCase (Context : Type) (γ : ℕ) {σ : Type}
+/-- Round-by-round security for contextual evaluation opening. -/
+theorem contextualVerifier_rbrKnowledgeSoundness (Context : Type) (γ : ℕ) {σ : Type}
     (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-    Verifier.rbrKnowledgeSoundnessWorstCase init impl
+    Verifier.rbrKnowledgeSoundness init impl
       (contextualInputRelation K β Context (ϑ := ϑ) (h_rate := h_rate))
       acceptRejectOracleRel
       ((contextualVerifier K β Context γ (ϑ := ϑ) (h_rate := h_rate)).toVerifier
         (Oₛₒ := fun i : Empty => nomatch i))
       (openingError K β γ (ϑ := ϑ) (h_rate := h_rate)) :=
-  openingVerifier_rbrKnowledgeSoundnessWorstCase K β (contextualQuery Context) (Equiv.refl _) γ
+  openingVerifier_rbrKnowledgeSoundness K β (contextualQuery Context) (Equiv.refl _) γ
     init impl
 
 /-- Perfect completeness for exact contextual evaluation inputs. -/

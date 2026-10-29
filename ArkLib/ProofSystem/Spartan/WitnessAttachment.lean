@@ -205,8 +205,8 @@ def knowledgeStateFunction :
     exact (attached_relation_iff sz s.1 s.2 (tr ⟨0, by simp⟩)).mp hout
 
 /-- The named transcript-reading extractor has zero fixed-prefix knowledge error. -/
-theorem rbrKnowledgeSoundnessWorstCaseWith :
-    (oracleVerifier (R := R) sz oSpec).toVerifier.rbrKnowledgeSoundnessWorstCaseWith init impl
+theorem rbrKnowledgeSoundnessWith :
+    (oracleVerifier (R := R) sz oSpec).toVerifier.rbrKnowledgeSoundnessWith init impl
       (relIn sz) (relOut sz) (fun _ => R1CS.Witness R (pp).toSizeR1CS)
       (rbrExtractor sz oSpec) (knowledgeStateFunction sz oSpec init impl) (fun _ => 0) := by
   intro _ i
