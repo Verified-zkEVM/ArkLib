@@ -78,7 +78,7 @@ MultiConfigurationExtractability,     -- per-configuration projection of one glo
 RootHiding, SelectiveOpeningPrivacy (local-view simulator), Equivocation
 ```
 
-with explicit tree-shape/padding/encoding data (leaf-vs-internal query classification requires disjoint encodings — an *injectivity proof*, not a `domainSep` tag) and salt parameters. The current `Commitments/Functional/Basic.lean` placeholder (`extractability` ending in `False`, single-commitment binding) must never be cited by a compiler theorem.
+with explicit tree-shape/padding/encoding data (leaf-vs-internal query classification requires disjoint encodings — an *injectivity proof*, not a `domainSep` tag) and salt parameters. `Commitments/Functional/Basic.lean` defines single-commitment extractability by bounding accepted openings inconsistent with data extracted from the commitment-phase query log.
 
 `BCSPublicView` (commitments + challenges + clear messages) is distinct from the erased `SharedTranscript` skeleton; query functions read the former.
 
