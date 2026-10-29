@@ -34,7 +34,7 @@ variable {F : Type} [Field F] [DecidableEq F] {m n ℓ : ℕ}
 /-- The public-input contribution encoded in executable coefficients. -/
 def publicInputPolynomial (D : EvaluationDomain F (ℓ + n)) (hn : 0 < ℓ + n)
     (x : Fin ℓ → F) :
-    PowerBatch.Poly F (ℓ + n) :=
+    GeneratorBatch.Poly F (ℓ + n) :=
   ⟨Computable.publicInputPolynomial D (Nat.le_add_right ℓ n) x, by
     rw [Computable.publicInputPolynomial_toPoly]
     have h := (Plonk.publicInputPolynomial D (Nat.le_add_right ℓ n) x).property
@@ -52,13 +52,13 @@ theorem publicInputPolynomial_toPoly (D : EvaluationDomain F (ℓ + n))
   simp [publicInputPolynomial]
 
 /-- Evaluate an executable table at each wire position. -/
-def occurrences (D : EvaluationDomain F n) (a : Fin 3 → PowerBatch.Poly F n)
+def occurrences (D : EvaluationDomain F n) (a : Fin 3 → GeneratorBatch.Poly F n)
     (p : Fin (3 * n)) : F :=
   CPolynomial.evalHorner (D.node (finProdFinEquiv.symm p).2)
     (a (finProdFinEquiv.symm p).1).val
 
 /-- Executable row evaluation agrees with the polynomial interpretation. -/
-theorem occurrences_eq (D : EvaluationDomain F n) (a : Fin 3 → PowerBatch.Poly F n) :
+theorem occurrences_eq (D : EvaluationDomain F n) (a : Fin 3 → GeneratorBatch.Poly F n) :
     occurrences D a = polynomialOccurrences D (GrandProduct.wires a) := by
   funext p
   simp [occurrences, polynomialOccurrences, GrandProduct.wires, GrandProduct.mathPoly,
@@ -66,7 +66,7 @@ theorem occurrences_eq (D : EvaluationDomain F n) (a : Fin 3 → PowerBatch.Poly
 
 /-- Decode the revealed initial polynomial table into the original private witness. -/
 def circuitExtractor (D : EvaluationDomain F (ℓ + n)) (cs : ConstraintSystem F m n)
-    (hℓ : ℓ ≤ m) (x : Fin ℓ → F) (a : Fin 3 → PowerBatch.Poly F (ℓ + n)) :
+    (hℓ : ℓ ≤ m) (x : Fin ℓ → F) (a : Fin 3 → GeneratorBatch.Poly F (ℓ + n)) :
     Fin (m - ℓ) → F :=
   cs.decodePrepared hℓ x (occurrences D a)
 
@@ -87,7 +87,7 @@ theorem prepared_wireAt_eq (cs : ConstraintSystem F m n) (hℓ : ℓ ≤ m)
 theorem inputRelation_iff_polynomialRelation (ω : F)
     (hω : IsPrimitiveRoot ω (ℓ + n)) (hn : 0 < ℓ + n)
     (cs : ConstraintSystem F m n) (hℓ : ℓ ≤ m) (x : Fin ℓ → F)
-    (a : Fin 3 → PowerBatch.Poly F (ℓ + n)) :
+    (a : Fin 3 → GeneratorBatch.Poly F (ℓ + n)) :
     GrandProduct.InputRelation ω hω (cs.prepare hℓ (fun _ => 0))
       (publicInputPolynomial (EvaluationDomain.primitiveRoot ω hω) hn x) a ↔
     PolynomialRelation (EvaluationDomain.primitiveRoot ω hω) cs hℓ x (GrandProduct.wires a) := by
@@ -104,7 +104,7 @@ theorem inputRelation_iff_polynomialRelation (ω : F)
 /-- A valid initial polynomial table decodes to a witness of the original circuit. -/
 theorem relation_circuitExtractor (ω : F) (hω : IsPrimitiveRoot ω (ℓ + n))
     (hn : 0 < ℓ + n) (cs : ConstraintSystem F m n) (hℓ : ℓ ≤ m) (x : Fin ℓ → F)
-    (a : Fin 3 → PowerBatch.Poly F (ℓ + n))
+    (a : Fin 3 → GeneratorBatch.Poly F (ℓ + n))
     (ha : GrandProduct.InputRelation ω hω (cs.prepare hℓ (fun _ => 0))
       (publicInputPolynomial (EvaluationDomain.primitiveRoot ω hω) hn x) a) :
     relation cs ℓ hℓ x
@@ -117,7 +117,7 @@ theorem relation_circuitExtractor (ω : F) (hω : IsPrimitiveRoot ω (ℓ + n))
 /-- Interpolate the three wire columns of the original circuit witness. -/
 def honestWires (D : EvaluationDomain F (ℓ + n)) (hn : 0 < ℓ + n)
     (cs : ConstraintSystem F m n) (hℓ : ℓ ≤ m) (x : Fin ℓ → F)
-    (w : Fin (m - ℓ) → F) : Fin 3 → PowerBatch.Poly F (ℓ + n) :=
+    (w : Fin (m - ℓ) → F) : Fin 3 → GeneratorBatch.Poly F (ℓ + n) :=
   fun c => ⟨Computable.wirePolynomials D
       ((cs.prepare hℓ x).occurrences (fullAssignment hℓ x w)) c, by
     rw [Computable.wirePolynomials_toPoly]

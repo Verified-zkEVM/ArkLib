@@ -29,19 +29,19 @@ instance : ∀ i, OracleInterface (OStmtIn i) := fun i => Fin.elim0 i
 
 /-- One table of three degree-bounded wire polynomials. -/
 @[reducible] def pSpec : ProtocolSpec 1 :=
-  ⟨!v[.P_to_V], !v[Fin 3 → PowerBatch.Poly F n]⟩
+  ⟨!v[.P_to_V], !v[Fin 3 → GeneratorBatch.Poly F n]⟩
 
 instance : ∀ i, OracleInterface ((pSpec F n).Message i)
-  | ⟨0, _⟩ => OracleInterface.instProdForall (fun _ : Fin 3 => PowerBatch.Poly F n)
+  | ⟨0, _⟩ => OracleInterface.instProdForall (fun _ : Fin 3 => GeneratorBatch.Poly F n)
 
 instance : ∀ i, SampleableType ((pSpec F n).Challenge i)
   | ⟨0, h⟩ => nomatch h
 
 variable {F n} {m : ℕ} (ω : F) (hω : IsPrimitiveRoot ω n)
-  (cs : ConstraintSystem F m n) (pi : PowerBatch.Poly F n)
+  (cs : ConstraintSystem F m n) (pi : GeneratorBatch.Poly F n)
 
 /-- The unrevealed table satisfies the gate and copy equations. -/
-def relIn : Set ((Unit × ∀ i, OStmtIn i) × (Fin 3 → PowerBatch.Poly F n)) :=
+def relIn : Set ((Unit × ∀ i, OStmtIn i) × (Fin 3 → GeneratorBatch.Poly F n)) :=
   {x | GrandProduct.InputRelation ω hω cs pi x.2}
 
 variable {ι : Type} (oSpec : OracleSpec ι)
@@ -77,9 +77,9 @@ def guardedForm : (oracleVerifier (F := F) (n := n) oSpec).toVerifier.GuardedFor
   verify_eq := oracleVerifier_toVerifier oSpec
 
 /-- The honest prover sends its input table unchanged. -/
-def oracleProver : OracleProver oSpec Unit OStmtIn (Fin 3 → PowerBatch.Poly F n)
+def oracleProver : OracleProver oSpec Unit OStmtIn (Fin 3 → GeneratorBatch.Poly F n)
     Unit (GrandProduct.OStmtIn F n) Unit (pSpec F n) where
-  PrvState _ := Fin 3 → PowerBatch.Poly F n
+  PrvState _ := Fin 3 → GeneratorBatch.Poly F n
   input x := x.2
   sendMessage | ⟨0, _⟩ => fun a => pure (a, a)
   receiveChallenge | ⟨0, h⟩ => nomatch h
@@ -88,16 +88,16 @@ def oracleProver : OracleProver oSpec Unit OStmtIn (Fin 3 → PowerBatch.Poly F 
 instance : (oracleProver (F := F) (n := n) oSpec).OutputIsPure := ⟨_, fun _ => rfl⟩
 
 /-- The initial polynomial-table reveal reduction. -/
-def oracleReduction : OracleReduction oSpec Unit OStmtIn (Fin 3 → PowerBatch.Poly F n)
+def oracleReduction : OracleReduction oSpec Unit OStmtIn (Fin 3 → GeneratorBatch.Poly F n)
     Unit (GrandProduct.OStmtIn F n) Unit (pSpec F n) :=
   ⟨oracleProver oSpec, oracleVerifier oSpec⟩
 
 /-- Intermediate witnesses retain the table throughout the reveal. -/
-abbrev WitMid (_ : Fin 2) := Fin 3 → PowerBatch.Poly F n
+abbrev WitMid (_ : Fin 2) := Fin 3 → GeneratorBatch.Poly F n
 
 /-- Backward extraction reads the actual table message. -/
 def rbrExtractor : Extractor.RoundByRound oSpec (Unit × ∀ i, OStmtIn i)
-    (Fin 3 → PowerBatch.Poly F n) Unit (pSpec F n) (WitMid (F := F) (n := n)) where
+    (Fin 3 → GeneratorBatch.Poly F n) Unit (pSpec F n) (WitMid (F := F) (n := n)) where
   extractIn _ a := a
   extractMid _ _ tr _ := tr ⟨0, Nat.zero_lt_succ _⟩
   extractOut _ tr _ := tr 0

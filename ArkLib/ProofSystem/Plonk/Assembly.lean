@@ -62,7 +62,7 @@ instance : ∀ i j, OracleInterface (OStmt F n i j)
 
 /-- Only the input has a private polynomial table. -/
 def Wit : Fin 5 → Type
-  | 0 => Fin 3 → PowerBatch.Poly F n
+  | 0 => Fin 3 → GeneratorBatch.Poly F n
   | 1 => Unit
   | 2 => Unit
   | 3 => Unit
@@ -73,7 +73,7 @@ def rounds : Fin 4 → ℕ := ![1, 2, 1, 2]
 
 variable {F n} {m : ℕ} (ω : F) (hω : IsPrimitiveRoot ω n) (hn : 2 ≤ n)
   (cs : ConstraintSystem F m n)
-  (L : CosetLabels (EvaluationDomain.primitiveRoot ω hω)) (pi : PowerBatch.Poly F n)
+  (L : CosetLabels (EvaluationDomain.primitiveRoot ω hω)) (pi : GeneratorBatch.Poly F n)
 
 /-- Stage protocol specifications in execution order. -/
 def stageSpec : (i : Fin 4) → ProtocolSpec (rounds i)
@@ -296,7 +296,7 @@ theorem sum_error : ∑ i, error ω hω hn i =
 
 /-- The ordinary extractor returns the exact initially revealed table. -/
 def transcriptExtractor : Extractor.Straightline oSpec
-    (Unit × ∀ i, SendWitness.OStmtIn i) (Fin 3 → PowerBatch.Poly F n) Unit
+    (Unit × ∀ i, SendWitness.OStmtIn i) (Fin 3 → GeneratorBatch.Poly F n) Unit
     (pSpec ω hω hn) :=
   fun _ _ tr _ _ => pure (tr ⟨0, by decide⟩)
 
