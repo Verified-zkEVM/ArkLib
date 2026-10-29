@@ -7,7 +7,6 @@ module
 
 public import ArkLib.OracleReduction.LiftContext.Lens
 public import ArkLib.OracleReduction.Security.RoundByRound
--- import ArkLib.OracleReduction.Security.StateRestoration
 
 /-!
   ## Lifting Reductions to Larger Contexts
