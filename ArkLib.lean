@@ -734,6 +734,7 @@ public import ArkLib.Interaction.Oracle.Security.StateRestorationCoins
 public import ArkLib.Interaction.Oracle.Security.StateRestorationGame
 public import ArkLib.Interaction.Oracle.Security.StateRestorationOracle
 public import ArkLib.Interaction.Oracle.Security.StateRestorationReplay
+public import ArkLib.Interaction.Oracle.Security.StateRestorationResources
 public import ArkLib.Interaction.Oracle.Sequential
 public import ArkLib.Interaction.Oracle.Source
 public import ArkLib.Interaction.Oracle.SourceRouting

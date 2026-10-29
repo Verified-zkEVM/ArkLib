@@ -129,7 +129,10 @@ theorem costAtMost_ofFun [AddCommMonoid ω] [Preorder ω] (f : Input → Result)
 end MeasuredProgram
 
 /-- A named measured program for `f` and a budget: the program realizes `f`, and every execution
-path of the program, on every view, costs at most the budget. -/
+path of the program, on every view, costs at most the budget.
+Native stages form a tree-indexed family of data, so each node keeps its program, budget and proofs
+in one value; `Verifier.knowledgeSoundnessWithResources` instead keeps the program and budget as
+parameters for budget monotonicity and realizes the extractor's monadic run. -/
 structure BudgetedProgram {Input Result : Type} (f : Input → Result) (ω : Type) [AddCommMonoid ω]
     [Preorder ω] where
   /-- The measured program executed by `f`. -/

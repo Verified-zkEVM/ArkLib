@@ -5,6 +5,7 @@ Authors: Alexander Hicks
 -/
 import ArkLib.OracleReduction.Security.Resources
 import ArkLib.Interaction.Oracle.Security.KnowledgeResources
+import ArkLibTest.Data.OracleComp.AddProgram
 
 /-!
 # Measured extraction charges only declared instructions
@@ -18,7 +19,7 @@ program with a charged addition realizes the stage map of a one-round extractor 
 although the later witness type depends on the message.
 -/
 
-open OracleComp OracleSpec ProtocolSpec
+open OracleComp OracleSpec ProtocolSpec AddProgramTest
 
 section Search
 
@@ -76,34 +77,9 @@ def afterState (message : Fin 8) : KnowledgeState := ⟨Fin (message.val + 1), f
 def addExtractor : RoundExtractor oneRound inputState :=
   fun message ↦ ⟨afterState message, fun w ↦ w.val + message.val, PUnit.unit⟩
 
-/-- One addition instruction, whose response is certified to be the sum. -/
-def addSpec (v : ℕ × ℕ) : OracleSpec.{0, 0} Unit :=
-  fun _ ↦ {r : ℕ // r = v.1 + v.2}
-
-/-- The stage map as one program with a single charged addition. Its view is the later witness
-and the message, so one budget covers every message. -/
-def addProgram : MeasuredProgram addExtractor.StageInput ℕ ℕ where
-  View := ℕ × ℕ
-  view x := (x.2.val, x.1.val)
-  Op := Unit
-  spec := addSpec
-  program v := do
-    let r ← liftM (OracleSpec.query (spec := addSpec v) ())
-    return r.1
-  answer v := fun _ ↦ ⟨v.1 + v.2, rfl⟩
-  cost := fun _ ↦ 1
-
-/-- The stage map of the native extractor is the execution of the program. -/
-theorem addProgram_realizes : addProgram.Realizes addExtractor.stageMap :=
-  fun _ ↦ rfl
-
-/-- Every backward witness map costs one addition. -/
-theorem addProgram_costAtMost_one : addProgram.CostAtMost 1 :=
-  MeasuredProgram.costAtMost_of_forall_eq_answer _ 1 (fun _ _ u ↦ Subtype.ext u.2)
-    (fun _ ↦ le_rfl)
-
 /-- The single stage of the native extractor, with budget one. -/
 def addStages : addExtractor.MeasuredStages ℕ :=
-  ⟨⟨addProgram, 1, addProgram_realizes, addProgram_costAtMost_one⟩, fun _ ↦ PUnit.unit⟩
+  ⟨⟨addProgram (fun x => (x.2.val, x.1.val)), 1, addProgram_realizes _,
+    addProgram_costAtMost_one _⟩, fun _ ↦ PUnit.unit⟩
 
 end MeasuredExtractionTest

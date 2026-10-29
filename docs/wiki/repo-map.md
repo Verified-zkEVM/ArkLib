@@ -709,11 +709,16 @@ home_page/            site assets and assembled website root
   witness map at a node, on its move and later witness; `RoundExtractor.MeasuredStages` names a
   budgeted program for the stage at every authored node; and `MeasuredKnowledgeCertificate`
   extends `KnowledgeCertificate` with them; `MeasuredStages.BudgetAtMost` bounds every stage's
-  budget uniformly. It bounds each stage only: earlier moves, the carrier identifications such as
+  budget uniformly. The packaged theorem in
+  `Interaction/Oracle/Security/StateRestorationResources.lean`,
+  `MeasuredKnowledgeCertificate.stateRestoration_oracle_knowledge_soundness_nonuniform`,
+  conjoins the security bound and the stage budget for the same named extractor.
+  It bounds each stage only: earlier moves, the carrier identifications such as
   `terminalWitness`, the stages' composition and intermediate witness sizes are uncharged.
   Clients: `ArkLibTest/OracleReduction/MeasuredExtraction.lean` and the state-restoration client
   `ArkLibTest/Interaction/Oracle/Security/StateRestorationBudget.lean`. All of this counts
-  declared instructions only, not running time.
+  declared instructions only, not running time. Only a named program with a stated instruction
+  set is evidence.
   `Data/OracleComp/DeterminedCost.lean` turns a deterministic handler's recorded cost into that
   bound when responses are certified.
 - Coordinate-wise special soundness ([FMN24]/[NOZ26]) lives in

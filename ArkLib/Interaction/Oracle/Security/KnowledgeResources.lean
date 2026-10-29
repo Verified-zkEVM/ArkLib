@@ -22,7 +22,10 @@ that realizes the stage map and a budget for its declared instruction charges
 (`OracleComp.BudgetedProgram`). `MeasuredStages.BudgetAtMost` bounds all of these budgets by one
 value. `MeasuredKnowledgeCertificate` adds the stages to a `KnowledgeCertificate` for the same
 extractor; forgetting them recovers the certificate, whose fields the native round-by-round and
-state-restoration theorems take.
+state-restoration theorems take. The theorem
+`MeasuredKnowledgeCertificate.stateRestoration_oracle_knowledge_soundness_nonuniform` in
+`StateRestorationResources` packages the closed-oracle security bound with a stage budget for that
+same named extractor.
 
 ## Scope
 
