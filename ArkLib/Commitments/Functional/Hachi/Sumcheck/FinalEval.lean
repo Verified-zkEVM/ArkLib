@@ -24,9 +24,9 @@ public import ArkLib.Commitments.Functional.Hachi.Sumcheck.Rounds
 
   The honest side is here as well: `honestComputeY := wTableMleEval` is the true evaluation, the
   protocol object is `finalEvalReduction`, and `finalEvalReduction_perfectCompleteness` (error `0`,
-  unconditional) is its perfect completeness. This is the first Hachi link whose verifier can
-  actually reject, so "the honest run cannot fail" is *proved*, from the guard lemma
-  `finalCheck_honestComputeY`, rather than holding by construction; the relation step is
+  unconditional) is its perfect completeness. As for the preceding guarded paired sumcheck
+  rounds, "the honest run cannot fail" is *proved*, here from the guard lemma
+  `finalCheck_honestComputeY`; the relation step is
   `mem_relWEvalClaim_of_nestedRoundRel`. Protocol object and package share a verifier
   (`finalEvalReduction_verifier`).
 
@@ -267,8 +267,8 @@ omit [NeZero q] [IsCyclotomic Φ] [SampleableType F] in
 `finalCheck`'s two equations. The third conjunct is the bound-sanity fact carried by the round
 relation.
 
-This is the first completeness obligation in the Hachi tree where the verifier can actually
-*reject*: every earlier link had a pure pass-through verifier. -/
+As for the preceding paired sumcheck rounds, completeness requires this honest guard to be
+proved because the verifier can reject. -/
 theorem finalCheck_honestComputeY
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig)) (φF : ZMod q →+* F)
     (stmt : NestedRoundStatement Φ K.TCom F n μ m₀ m₁ m₀) (w : LiftedWitness Φ μ n)
@@ -341,9 +341,9 @@ omit [NeZero q] [IsCyclotomic Φ] [SampleableType F] in
 /-- **Honest-run characterization.** Every outcome of an honest run is the single success carrying
 the claim `⟨t, a, y′⟩` on both sides, with `y′ = mle[w̃](a)` and the witness passed through.
 
-Failure is excluded by `finalCheck_honestComputeY` — this is the first link of the chain where that
-has to be *proved* rather than being impossible by construction, since `finalEvalVerifier` is
-`if finalCheck … then … else failure`. -/
+Failure is excluded by `finalCheck_honestComputeY`, since `finalEvalVerifier` is
+`if finalCheck … then … else failure`. As for the preceding paired sumcheck rounds, the honest
+guard must be proved. -/
 lemma finalEvalReduction_run_support
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig)) (φF : ZMod q →+* F)
     (stmt : NestedRoundStatement Φ K.TCom F n μ m₀ m₁ m₀) (w : LiftedWitness Φ μ n)
