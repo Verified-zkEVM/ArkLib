@@ -369,14 +369,8 @@ home_page/            site assets and assembled website root
     `endPieceCheck_eq_true_iff` is shared with the nonrecursive scheme's terminal verdict
     (`Correctness.lean`), so the closing link has one decision procedure.
     `EndPiece/Basic.lean` re-exports `EndPiece/Reduction.lean`.
-  - `Recursion/` (§4.5) — the recursion adapters, **outside the completed development and not
-    composed into `Composition.lean`'s chain**: `PartialEval` (Eq. (24) peeling, pure
-    derive-`y₀`), `ZBatchBridge` (Eqs. (25)–(26) `Z`-packing — ⚠ carries the open
-    partial-evaluation soundness gap, analyzed in its module docstring), `TraceHandoff`
-    (Eqs. (27)–(28)
-    — guarded trace check, lands on the next iteration's `QuadEval` seam over `Φ'`).
-    `Recursion/Basic.lean` re-exports the folder, and the top-level `Hachi.lean` umbrella imports
-    it so the umbrella reaches every folder it documents.
+  - The recursive opening (§4.5) is not formalized; `docs/kb/audits/noz26-recursion-z-packing.md`
+    records why.
   - `Composition.lean` — the **CWSS composition home**: `iteration` chains all nine subprotocol
     links (rows 1–9 of the header's seam table) into one evaluation iteration, and
     `hachi_iteration_coordinateWiseSpecialSoundWithEscape` states its composed named-extractor CWSS
@@ -390,10 +384,8 @@ home_page/            site assets and assembled website root
     seams have to match.
   - `Commitment.lean` — **Hachi as a `Commitment.Scheme`**: the eval `OracleInterface`, honest
     `keygen`/`commit` (the paper's **balanced** base-`b` gadget decomposition at width
-    `δ = ⌈log_b q⌉`, digits in Eq. (20)'s box `S_b` — `[-8, 7]` at `b = 16`), and the `hachi`
-    scheme value, whose `opening` field is the §4.5 *recursive* opening and is `sorry` (the
-    recursion boundary; the declared `pSpec` covers only the bridge ▷ QuadEval prefix). `hachi` and
-    `hachiNonrecursive` share this committer; the unsigned `zmodDigitDecomposition` survives only
+    `δ = ⌈log_b q⌉`, digits in Eq. (20)'s box `S_b` — `[-8, 7]` at `b = 16`), used by
+    `hachiNonrecursive`; the unsigned `zmodDigitDecomposition` survives only
     as the building block the balanced digits are shifted from (`Gadget/Core`), and
     `InnerOuter.perfectlyCorrect` is likewise stated at the balanced digits. The file also carries
     the **honest-committer facts** the honest chain needs: `verifiedOpening_honestOpening` (the

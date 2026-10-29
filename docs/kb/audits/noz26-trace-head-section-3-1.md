@@ -72,8 +72,8 @@ bridge `CMlPolynomial.eval_eq_eval_toMvPolynomial` (`ToCompPoly/Multilinear/Basi
   bound on both sides; `relScalarEvalMsgShort` adds the honest committer's message norm bound, and
   completeness and soundness hold for it as well.
 - **Not covered.** §3.2 (base-field coefficients and partial evaluations) and §4.5's recursion
-  handoff. `Recursion/TraceHandoff.lean` describes a trace guard of the same kind over the next
-  ring; its `traceCheck` is still `sorry`.
+  handoff, which would use a trace guard of the same kind over the next ring; see
+  [`noz26-recursion-z-packing.md`](noz26-recursion-z-packing.md).
 
 ## Paper erratum
 
