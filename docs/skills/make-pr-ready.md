@@ -206,9 +206,9 @@ merge-ready.
   - The **ArkLib warning budget** fails on any non-`sorry` warning under `ArkLib/`. A
     toolchain/Mathlib bump commonly introduces **deprecation** warnings (e.g.
     `X has been deprecated: Use Y instead`) — fix these by switching to the suggested name.
-- Confirm the eventual PR title/description will follow the
-  `<type>(<scope>): <subject>` convention (imperative, lowercase, no trailing dot) and includes
-  motivation, contrast with previous behavior, and issue references.
+- Make sure that the planned title follows the `<type>(<scope>): <subject>` convention: imperative,
+  lowercase, and no period at the end. Step 7 writes the description from the
+  [pull request template](../../.github/pull_request_template.md).
 
 ### 2. Fix Lean warnings
 
@@ -455,6 +455,16 @@ unresolvable from the root. Before reporting a name as dead, find where it is ac
 enclosing `namespace`) and re-probe with the full path. A live structure field can look dead
 this way.
 
+**A rename also makes blueprint references stale.** Only `./scripts/validate.sh --site` checks the
+`\lean{...}` names in `blueprint/src/`, and a default validation does not run it. A stale name then
+fails the declaration check on `main` after the merge. Search for each old full name directly:
+
+```bash
+git grep -nF '<Old.Declaration.Name>' -- blueprint/src
+```
+
+Change each `\lean{...}` entry to the new name.
+
 **Sweep the *un*-sorrying direction too — proving something out orphans status prose.** Step 4
 instinctively hunts for things the branch *deleted*, but a branch that *finishes* a proof leaves
 just as many false sentences behind, and no check catches them. When a branch takes a file from
@@ -553,7 +563,78 @@ Finish by re-running `./scripts/update-lib.sh` (then `git add ArkLib.lean`) and
 `./scripts/validate.sh`, and re-run the sweep itself — repointing one reference can introduce
 another stale path.
 
-### 5. Suggest skill improvements
+### 5. Audit statements, claims, and overlap
+
+A green build does not find a wrong statement or a false claim. Do these checks on each headline
+declaration that the branch adds or changes:
+
+1. Do the checks in [Statement Correctness](../../CONTRIBUTING.md#statement-correctness). Record
+   the result of each check for the description.
+2. In a probe file outside the repository, state each headline theorem as an `example`. Try
+   `trivial`, `simp`, `decide`, `aesop`, and `exact?` on it. If one of them proves the theorem, report the
+   statement as probably too weak.
+3. For each admission that the branch adds, check that its statement is true. Evaluate small
+   instances with `decide` or `#eval` where the types permit it. Report each admission that you
+   could not check.
+4. Make sure that each hypothesis of a headline theorem is necessary. The unused-variable linter
+   finds only a hypothesis that the proof never mentions. If your tools include the Lean
+   language server tool `lean_minimal_hypotheses`, run it on the theorem. If not, and the proof
+   is fast, remove the hypothesis in a probe copy and build the copy again.
+   Also compare each hypothesis with the source. A missing hypothesis, for example a query
+   bound, can make a theorem false or vacuous.
+5. List each claim in the planned title and description, for example "proves", "sorry-free", or
+   "as stated in the paper". For each claim, run `#print axioms` on the declaration that it names.
+   A claim of "no admissions" requires an output with only `propext`, `Classical.choice`, and
+   `Quot.sound`.
+6. Search the open pull requests for the same declarations and files:
+
+   ```bash
+   gh pr list -R Verified-zkEVM/ArkLib --state open --search "<declaration or file name>"
+   ```
+
+   Report each open pull request that changes the same declarations. Do not change the branch of a
+   different pull request.
+
+A file without `sorry` can depend on an admission in an imported declaration. Thus check the
+axioms of each declaration, not the source text of its file. On a real run, a pull request
+advertised "sorry-free" files whose theorems depended on admitted framework definitions.
+
+### 6. Check the writing
+
+Check the prose that the branch adds or changes against the
+[writing standard](../wiki/writing.md). This prose includes docstrings, comments, Markdown, commit
+messages, and the planned description.
+
+1. Find the sentences that are longer than the limit for their text type.
+2. Find semicolons, Latin abbreviations, contractions, and the words that the
+   [vocabulary](../wiki/writing-vocabulary.md#words-to-avoid) tells you to avoid:
+
+   ```bash
+   git diff origin/main -U0 -- '*.md' '*.lean' | grep '^+' \
+     | grep -nE ";|\b(e\.g\.|i\.e\.|etc\.|utilize|leverage|ensure|seamless|robust|crucial)\b"
+   ```
+
+   This search also finds Lean code, where a semicolon is permitted. Read each match before you
+   change it.
+3. Read the changed text one time for the rules that a search cannot find. These rules include one
+   topic for each sentence, the active voice, and the claims rules C1 to C8.
+
+### 7. Draft the pull request description
+
+Complete the [pull request template](../../.github/pull_request_template.md) with the results of
+steps 1 to 6. Write the draft to a file outside the repository and give it to the user. Do not edit
+the description of an open pull request unless the user asks for it.
+
+- **Formalized statements**: the source comparison from step 5.
+- **Admissions and axioms**: the admission changes from step 2 and the axiom output from step 5.
+- **Validation**: each command that you ran, and the output of `git rev-parse HEAD`.
+- **Breaking changes**: the renamed and deleted declarations from step 4.
+- **Known gaps**: the differences from the source that step 5 found and that stay open.
+- **Related work**: the overlapping pull requests from step 5.
+
+Write the draft to the writing standard.
+
+### 8. Suggest skill improvements
 
 - After completing the pass, tell the user whether this skill could be improved: any new recurring
   guideline gap, a missing or stale step, a better ordering, or a check worth adding. Follow the
@@ -578,4 +659,8 @@ Only consider the PR merge-ready when:
 7. Protocol and program/value-computing APIs generate code and have runtime evidence; any
    noncomputable mathematical views have concrete documented blockers and agreement bridges
    where an executable representation is provided.
-8. You have reported any suggested improvements to this skill.
+8. The statement audit in step 5 is complete. Each claim in the title and the description agrees
+   with the `#print axioms` output for the declaration that it names.
+9. The prose that the branch adds or changes follows the writing standard (step 6).
+10. A draft description from the pull request template exists (step 7).
+11. You reported any suggested improvements to this skill.

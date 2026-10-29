@@ -75,6 +75,11 @@ Start with [`README.md`](README.md) for the project overview.
   profile first, then narrow imports, local hypotheses, simp sets, or automation rules, or move a
   recurring argument into its owner layer. Do not mechanically expand a short, stable terminal
   `simp` into a brittle `simp only` list.
+- Write all prose to the [writing standard](docs/wiki/writing.md). This prose includes
+  docstrings, comments, documentation, commit messages, and pull request and issue bodies.
+- Before you open a pull request, follow [`make-pr-ready.md`](docs/skills/make-pr-ready.md). Complete
+  the [pull request template](.github/pull_request_template.md) and claim only what the code
+  proves.
 - If a PR changes commands, repo structure, generated outputs, or the blueprint/citation
   workflow, update the matching page in [`docs/wiki/`](docs/wiki/README.md) in the same PR.
 - Promote recurring agent learnings into [`docs/wiki/`](docs/wiki/README.md); do not let stable
@@ -93,12 +98,13 @@ Start with [`README.md`](README.md) for the project overview.
 - [`docs/design/README.md`](docs/design/README.md) - interaction-layer architecture and its
   implementation plan.
 - [`docs/kb/README.md`](docs/kb/README.md) - paper knowledge base.
+- [`docs/wiki/writing.md`](docs/wiki/writing.md) - the writing standard for all prose.
 
 ## Canonical Project Docs
 
 - [`README.md`](README.md) - project overview.
-- [`CONTRIBUTING.md`](CONTRIBUTING.md) - style, naming, docstrings, citations, and large
-  contributions.
+- [`CONTRIBUTING.md`](CONTRIBUTING.md) - the contribution process, pull request and merge
+  requirements, style, naming, docstrings, and citations.
 - [`ROADMAP.md`](ROADMAP.md) - status: what is complete, in progress, and planned.
 - [`BACKGROUND.md`](BACKGROUND.md) - background theory and references, and how ArkLib's
   oracle reductions compare with the literature.
