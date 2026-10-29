@@ -543,6 +543,7 @@ public import ArkLib.Data.Fin.Tuple.Defs
 public import ArkLib.Data.Fin.Tuple.Lemmas
 public import ArkLib.Data.Fin.Tuple.Notation
 public import ArkLib.Data.Fin.Tuple.TakeDrop
+public import ArkLib.Data.Finset.CyclicProduct
 public import ArkLib.Data.Finset.Enumeration
 public import ArkLib.Data.Finset.PairwiseIntersection
 public import ArkLib.Data.Finset.PickSubset
@@ -618,6 +619,7 @@ public import ArkLib.Data.MvPolynomial.WeightedHomogeneous
 public import ArkLib.Data.MvPolynomial.WeightedOrder
 public import ArkLib.Data.Nat.BitSum
 public import ArkLib.Data.OracleComp.QueryBounds
+public import ArkLib.Data.Polynomial.AffineFactorBadChallenge
 public import ArkLib.Data.Polynomial.BinaryTrace
 public import ArkLib.Data.Polynomial.BinaryTraceQuotient
 public import ArkLib.Data.Polynomial.Bivariate
@@ -918,6 +920,9 @@ public import ArkLib.ProofSystem.Fri.Spec.SingleRound
 public import ArkLib.ProofSystem.Fri.Spec.Soundness
 public import ArkLib.ProofSystem.Fri.Spec.Transcript
 public import ArkLib.ProofSystem.Fri.Spec.VerifierExecution
+public import ArkLib.ProofSystem.Plonk.Accumulator
+public import ArkLib.ProofSystem.Plonk.AccumulatorComputable
+public import ArkLib.ProofSystem.Plonk.AccumulatorResidual
 public import ArkLib.ProofSystem.Plonk.Basic
 public import ArkLib.ProofSystem.Plonk.Computable
 public import ArkLib.ProofSystem.Plonk.Domain
