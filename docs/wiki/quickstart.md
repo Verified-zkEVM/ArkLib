@@ -190,6 +190,24 @@ is not installed. If blueprint output matters, install it first:
 python3 -m pip install leanblueprint
 ```
 
+### Prose, titles, and pull request descriptions
+
+The [writing standard](writing.md) applies to all prose. To check the prose that your branch
+changes, run:
+
+```bash
+python3 ./scripts/check-writing.py --base origin/main
+```
+
+The script checks the measurable rules and reports each problem as a warning. Add `--strict` to
+get exit code 1 when it finds a problem. To check a description or another text before you post
+it, give the text on standard input:
+
+```bash
+python3 ./scripts/check-writing.py --stdin description < description.md
+python3 ./scripts/check-pr-title.py "feat(fri): prove query soundness"
+```
+
 ## Important Notes
 
 - `./scripts/validate.sh` is the recommended convenience wrapper for routine local validation.
@@ -313,6 +331,10 @@ python3 -m pip install leanblueprint
   checks that `ArkLib.lean` matches the tracked source tree.
 - [`../../.github/workflows/docs-integrity.yml`](../../.github/workflows/docs-integrity.yml)
   checks that `AGENTS.md` exists and local markdown links resolve.
+- [`../../.github/workflows/pr-checks.yml`](../../.github/workflows/pr-checks.yml)
+  checks the pull request title with `scripts/check-pr-title.py`, and fails on an invalid title.
+  It also runs `scripts/check-writing.py` on the changed prose and on the description. The
+  writing job reports warnings only.
 - [`../../.github/workflows/kb-generated.yml`](../../.github/workflows/kb-generated.yml)
   regenerates KB indexes and missing cited-paper stubs nightly and after pushes to `main` that
   change the bibliography, KB papers or sources, or the KB scripts. It updates one rolling PR from
