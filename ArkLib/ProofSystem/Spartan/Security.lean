@@ -247,19 +247,6 @@ theorem knowledgeSoundnessWith_straightlineExtractor :
   rw [← foldExtractor_eq_straightlineExtractor sz oSpec init impl]
   exact knowledgeSoundnessWith (R := R) sz oSpec init impl
 
-/-- The executable first-message extractor also satisfies the knowledge-error bound clipped
-at one. -/
-theorem knowledgeSoundnessWith_straightlineExtractor_clipped :
-    (oracleReduction (R := R) sz oSpec).verifier.knowledgeSoundnessWith init impl
-      (WitnessAttachment.relIn sz) (Terminal.relOut params)
-      (straightlineExtractor (R := R) sz oSpec)
-      (min 1 (totalError (params).ℓ_m (params).ℓ_n (Fintype.card R))) := by
-  intro Aux stmt aux prover
-  have h := knowledgeSoundnessWith_straightlineExtractor (R := R) sz oSpec init impl
-    Aux stmt aux prover
-  rw [ENNReal.coe_min, ENNReal.coe_one]
-  exact le_min (prEvent_le_one _) h
-
 /-- Spartan is knowledge sound for the original R1CS relation with additive error
 `(4s + 2t + 1) / |R|`. -/
 theorem knowledgeSoundness :
@@ -267,18 +254,19 @@ theorem knowledgeSoundness :
       (WitnessAttachment.relIn sz) (Terminal.relOut params)
       (totalError (params).ℓ_m (params).ℓ_n (Fintype.card R)) :=
   OracleVerifier.knowledgeSoundness_of_with init impl
-    (knowledgeSoundnessWith (R := R) sz oSpec init impl)
+    (knowledgeSoundnessWith_straightlineExtractor (R := R) sz oSpec init impl)
 
-/-- The same folded extractor also satisfies the error bound clipped at one. -/
+/-- The executable extractor also satisfies the error bound clipped at one. -/
 theorem knowledgeSoundness_clipped :
     (oracleReduction (R := R) sz oSpec).verifier.knowledgeSoundness init impl
       (WitnessAttachment.relIn sz) (Terminal.relOut params)
       (min 1 (totalError (params).ℓ_m (params).ℓ_n (Fintype.card R))) := by
   apply OracleVerifier.knowledgeSoundness_of_with init impl
     (verifier := (oracleReduction (R := R) sz oSpec).verifier)
-    (extractor := (rbrExtractor (R := R) sz oSpec init impl).foldExtractor)
+    (extractor := straightlineExtractor (R := R) sz oSpec)
   intro Aux stmt aux prover
-  have h := knowledgeSoundnessWith (R := R) sz oSpec init impl Aux stmt aux prover
+  have h := knowledgeSoundnessWith_straightlineExtractor (R := R) sz oSpec init impl
+    Aux stmt aux prover
   rw [ENNReal.coe_min, ENNReal.coe_one]
   exact le_min (prEvent_le_one _) h
 
