@@ -803,7 +803,7 @@ theorem samplesChallenges_append_withLeaf {ι : Type} (ambient : OracleSpec ι)
       · intro event
         simp only [Verifier.appendFragment, withLeaf, Verifier.Fragment.mapOutput,
           ShapeOver.mapOutput, Verifier.localShape, Verifier.decorate, simulateQ_map,
-          Functor.map_map, prEvent_map]
+          Functor.map_map]
         exact fresh.1 event
       · intro chosen supported
         simp only [Verifier.appendFragment, withLeaf, Verifier.Fragment.mapOutput,

@@ -201,6 +201,20 @@ theorem vconcat_eq_snoc (v : Fin n → α) (a : α) : vconcat v a = snoc v a := 
   have := this a
   exact this
 
+/-! The recursive tuple operations preserve definitional equalities. Their compiler rules use
+`snoc` and `addCases` to avoid repeated reads. `vconcat` needs its own rule because it is
+compiled before `dconcat_eq_snoc` is registered. -/
+
+/-- Compiler implementation of `vconcat` using `snoc`. -/
+def vconcatSnoc {α : Sort u} {n : ℕ} (v : Fin n → α) (a : α) : Fin (n + 1) → α :=
+  snoc v a
+
+/-- Compile `vconcat` using `vconcatSnoc`. -/
+@[csimp]
+theorem vconcat_eq_vconcatSnoc : @vconcat = @vconcatSnoc := by
+  funext α n v a
+  exact vconcat_eq_snoc v a
+
 theorem dconcat_dcons_eq_dcons_dconcat {motive : Fin (n + 2) → Sort u} (a : motive 0)
     (v : (i : Fin n) → motive (succ (castSucc i))) (b : motive (last (n + 1))) :
     (a ::ᵈ v) :+ᵈ⟨motive⟩ b = a ::ᵈ⟨motive⟩ (v :+ᵈ b) := by
@@ -677,6 +691,21 @@ theorem fconcat₂_last {α₁ : Fin n → A} {α₂ : Fin n → B} {β₁ : A} 
     rw! (castMode := .all) [ih]
     rfl
 
+/-- Compiler implementation of `fconcat₂` using `snoc`. -/
+def fconcat₂Snoc {A : Sort u} {B : Sort v} {F : A → B → Sort w} {n : ℕ}
+    {α₁ : Fin n → A} {β₁ : A} {α₂ : Fin n → B} {β₂ : B}
+    (u : (i : Fin n) → F (α₁ i) (α₂ i)) (a : F β₁ β₂) :
+    (i : Fin (n + 1)) → F (vconcat α₁ β₁ i) (vconcat α₂ β₂ i) :=
+  snoc (α := fun i => F (vconcat α₁ β₁ i) (vconcat α₂ β₂ i))
+    (fun i => cast (congrArg₂ F (vconcat_castSucc α₁ β₁ i) (vconcat_castSucc α₂ β₂ i)).symm (u i))
+    (cast (congrArg₂ F (vconcat_last α₁ β₁) (vconcat_last α₂ β₂)).symm a)
+
+/-- Compile `fconcat₂` using `fconcat₂Snoc`. -/
+@[csimp]
+theorem fconcat₂_eq_fconcat₂Snoc : @fconcat₂ = @fconcat₂Snoc := by
+  funext A B F n α₁ β₁ α₂ β₂ u a i
+  induction i using lastCases <;> simp [fconcat₂Snoc]
+
 theorem fconcat₂_injective2 {α₁ : Fin n → A} {α₂ : Fin n → B} {β₁ : A} {β₂ : B} :
     Function.Injective2 (@fconcat₂ A B F₂ n α₁ β₁ α₂ β₂) := by
   intro v₁ a₁ v₂ a₂ h
@@ -748,6 +777,21 @@ theorem fappend₂_right {α₁ : Fin m → A} {α₂ : Fin m → B} {β₁ : Fi
     · have hi : i = last n := by ext; simp; omega
       have : natAdd m i = last (m + n) := by ext; simp; omega
       rw! [this, fconcat₂_last, hi]; rfl
+
+/-- Compiler implementation of `fappend₂` using `addCases`. -/
+def fappend₂AddCases {A : Sort u} {B : Sort v} {F : A → B → Sort w} {m n : ℕ}
+    {α₁ : Fin m → A} {β₁ : Fin n → A} {α₂ : Fin m → B} {β₂ : Fin n → B}
+    (u : (i : Fin m) → F (α₁ i) (α₂ i)) (v : (i : Fin n) → F (β₁ i) (β₂ i)) :
+    (i : Fin (m + n)) → F (vappend α₁ β₁ i) (vappend α₂ β₂ i) :=
+  addCases (motive := fun i => F (vappend α₁ β₁ i) (vappend α₂ β₂ i))
+    (fun i => cast (congrArg₂ F (vappend_left α₁ β₁ i) (vappend_left α₂ β₂ i)).symm (u i))
+    (fun i => cast (congrArg₂ F (vappend_right α₁ β₁ i) (vappend_right α₂ β₂ i)).symm (v i))
+
+/-- Compile `fappend₂` using `fappend₂AddCases`. -/
+@[csimp]
+theorem fappend₂_eq_fappend₂AddCases : @fappend₂ = @fappend₂AddCases := by
+  funext A B F m n α₁ β₁ α₂ β₂ u v i
+  induction i using addCases <;> simp [fappend₂AddCases]
 
 theorem fappend₂_ext {α₁ : Fin m → A} {α₂ : Fin m → B} {β₁ : Fin n → A} {β₂ : Fin n → B}
     (u₁ u₂ : (i : Fin m) → F₂ (α₁ i) (α₂ i)) (v₁ v₂ : (i : Fin n) → F₂ (β₁ i) (β₂ i)) :
@@ -848,6 +892,19 @@ theorem fconcat_last {α : Fin n → A} {β : A} (v : (i : Fin n) → F (α i)) 
     rw! (castMode := .all) [ih]
     rfl
 
+/-- Compiler implementation of `fconcat` using `snoc`. -/
+def fconcatSnoc {A : Sort u} {F : A → Sort v} {n : ℕ} {α : Fin n → A} {β : A}
+    (u : (i : Fin n) → F (α i)) (a : F β) : (i : Fin (n + 1)) → F (vconcat α β i) :=
+  snoc (α := fun i => F (vconcat α β i))
+    (fun i => cast (congrArg F (vconcat_castSucc α β i)).symm (u i))
+    (cast (congrArg F (vconcat_last α β)).symm a)
+
+/-- Compile `fconcat` using `fconcatSnoc`. -/
+@[csimp]
+theorem fconcat_eq_fconcatSnoc : @fconcat = @fconcatSnoc := by
+  funext A F n α β u a i
+  induction i using lastCases <;> simp [fconcatSnoc]
+
 -- Injectivity properties for fconcat
 theorem fconcat_injective2 {α : Fin n → A} {β : A} :
     Function.Injective2 (@fconcat A F n α β) := by
@@ -920,6 +977,20 @@ theorem fappend_right {α : Fin m → A} {β : Fin n → A}
       have : natAdd m i = last (m + n) := by ext; simp; omega
       rw! [this, fconcat_last, hi]; rfl
 
+/-- Compiler implementation of `fappend` using `addCases`. -/
+def fappendAddCases {A : Sort u} {F : A → Sort v} {m n : ℕ} {α : Fin m → A} {β : Fin n → A}
+    (u : (i : Fin m) → F (α i)) (v : (i : Fin n) → F (β i)) :
+    (i : Fin (m + n)) → F (vappend α β i) :=
+  addCases (motive := fun i => F (vappend α β i))
+    (fun i => cast (congrArg F (vappend_left α β i)).symm (u i))
+    (fun i => cast (congrArg F (vappend_right α β i)).symm (v i))
+
+/-- Compile `fappend` using `fappendAddCases`. -/
+@[csimp]
+theorem fappend_eq_fappendAddCases : @fappend = @fappendAddCases := by
+  funext A F m n α β u v i
+  induction i using addCases <;> simp [fappendAddCases]
+
 theorem fappend_ext {α : Fin m → A} {β : Fin n → A}
     (u₁ u₂ : (i : Fin m) → F (α i)) (v₁ v₂ : (i : Fin n) → F (β i)) :
     fappend u₁ v₁ = fappend u₂ v₂ ↔ u₁ = u₂ ∧ v₁ = v₂ := by
@@ -987,6 +1058,17 @@ theorem hconcat_eq_snoc {α : Fin n → Sort u} {β : Sort u} (v : (i : Fin n) �
       rw [this, hconcat_castSucc, snoc_castSucc]
     · have : i = last (n + 1) := by ext; simp; omega
       rw [this, hconcat_last, snoc_last]
+
+/-- Compiler implementation of `hconcat` using `snoc`. -/
+def hconcatSnoc {n : ℕ} {α : Fin n → Sort u} {β : Sort u} (u : (i : Fin n) → α i) (a : β) :
+    (i : Fin (n + 1)) → vconcat α β i :=
+  fconcatSnoc (F := id) u a
+
+/-- Compile `hconcat` using `hconcatSnoc`. -/
+@[csimp]
+theorem hconcat_eq_hconcatSnoc : @hconcat = @hconcatSnoc := by
+  unfold hconcat hconcatSnoc
+  rw [fconcat_eq_fconcatSnoc]
 
 -- Injectivity properties for cons (from functorial versions)
 theorem hcons_right_injective {β : Fin n → Sort u} (a : α) :
@@ -1105,6 +1187,17 @@ theorem happend_eq_addCases {α : Fin m → Sort u} {β : Fin n → Sort u}
   · have : i = natAdd m ⟨i.val - m, by omega⟩ := by ext; simp; omega
     rw [this]
     simp only [addCases_right, happend_right]
+
+/-- Compiler implementation of `happend` using `addCases`. -/
+def happendAddCases {m n : ℕ} {α : Fin m → Sort u} {β : Fin n → Sort u}
+    (u : (i : Fin m) → α i) (v : (i : Fin n) → β i) : (i : Fin (m + n)) → vappend α β i :=
+  fappendAddCases (F := id) u v
+
+/-- Compile `happend` using `happendAddCases`. -/
+@[csimp]
+theorem happend_eq_happendAddCases : @happend = @happendAddCases := by
+  unfold happend happendAddCases
+  rw [fappend_eq_fappendAddCases]
 
 /-- Access into a heterogeneous append on the left, by value: if `↑j < m`, then `happend u v j` is
 (heterogeneously) the `j`-th entry of `u`. -/

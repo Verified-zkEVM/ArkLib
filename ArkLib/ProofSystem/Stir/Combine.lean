@@ -8,12 +8,12 @@ module
 
 public import Mathlib.Tactic.FieldSimp
 public import Mathlib.Tactic.Cases
-public import Mathlib.Tactic.LinearCombinationPrime
+public import Mathlib.Tactic.LinearCombination
 
 public import ArkLib.Data.CodingTheory.ProximityGap.Basic
 public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.Curves
 public import ArkLib.Data.CodingTheory.ReedSolomon
-public import VCVio.OracleComp.Constructions.SampleableType.NativeMeasure
+public import VCVio.OracleComp.Constructions.SampleableType.Measure
 public import ArkLib.ProofSystem.Stir.ProximityBound
 public import ArkLib.ToMathlib.Polynomial.EvalExt
 
@@ -410,7 +410,7 @@ private lemma glorious_lemma
     (1 - rho - 1 / (↑m))))
   (hrho : rho = n / (↑m : ℚ≥0)) :
   ↑rho + 1 / ↑(m) < 1 - δ := by
-  all_goals first | infer_instance | simp_all +decide [lt_tsub_iff_left]
+  all_goals simp_all +decide [lt_tsub_iff_left]
   ring_nf at *
   exact hδLt.2.trans_le' (by norm_cast)
 
@@ -516,15 +516,18 @@ lemma master_lemma
     exact (WithBot.add_lt_add_iff_right (by simp)).mp ih
 
 open LinearCode Classical ProbabilityTheory ReedSolomon STIR in
-/-- Lemma 4.13
-  Let `dstar` be the target degree, `f₁,...,f_{m-1} : ι → F`,
-  `0 < degs₁,...,degs_{m-1} < dstar` be degrees and
-  `δ ∈ (0, min{(1-BStar(ρ)), (1-ρ-1/|ι|)})` be a distance parameter, then
-      Pr{r ← F}[δᵣ(Combine(dstar,r,(f₁,degs₁),...,(fₘ,degsₘ)))]
-                   > err' (dstar, ρ, δ, m * (dstar + 1) - ∑ i degsᵢ) -/
+/-- Lemma 4.13. Let the target degree `dstar` be positive and let each component
+bound `degs i` be at most `dstar`. If the probability that the combined word is within distance
+`δ` of the target Reed–Solomon code exceeds the curve error bound, all component words agree
+with codewords of their respective degrees on a common set of at least `(1 - δ) * |ι|` positions.
+
+The positive target degree is essential for this error bound. At degree zero,
+its Johnson branch vanishes, although a random linear combination can have
+zero coordinates when its coefficient words have no common zero. -/
 theorem combine_theorem
     [SampleableType F] {φ : ι ↪ F} {dstar m : ℕ}
   (fs : Fin m → ι → F) (degs : Fin m → ℕ) (hdegs : ∀ i, degs i ≤ dstar)
+  (hdeg_pos : 0 < dstar)
   (δ : ℝ≥0) (hδPos : δ > 0)
   (hδLt : δ < (min (1 - (ReedSolomon.sqrtRate dstar φ))
                    (1 - (rate (code φ dstar)) - 1 / Fintype.card ι)))
@@ -556,7 +559,7 @@ theorem combine_theorem
       · simp [total_terms, block_size] at htotal
     · have proximity_gap :=
         @ProximityGap.correlatedAgreement_affine_curves ι _ _ F _ _ _ _
-          (total_terms dstar degs - 1) dstar φ δ hδPos (lt_min_iff.mp hδLt).1
+          (total_terms dstar degs - 1) dstar φ δ hdeg_pos hδPos (lt_min_iff.mp hδLt).1
       simp only [ProximityGap.δ_ε_correlatedAgreementCurves] at proximity_gap
       specialize proximity_gap
           (fun l (x : ι) ↦ (

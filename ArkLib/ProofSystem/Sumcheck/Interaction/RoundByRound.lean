@@ -464,13 +464,10 @@ private theorem transcriptObserver_fresh {m₀ : ℕ} (D : Fin m₀ ↪ F)
           · simp only [simulateQ_bind, simulateQ_pure]
             rw [QueryImpl.simulateQ_liftComp_left_eq_of_apply _ (QueryImpl.id' ambient)
               (fun _ => rfl), simulateQ_id']
-            simp only [Core.simulate_latest, LawfulMonad.pure_bind,
-              simulateQ_pure, bind_assoc]
-            change Pr{let r ← simulateQ handler challenge}[event (some r)] =
-              Pr{let result ← (some <$> ($ᵗ F))}[event result]
-            rw [prEvent_map]
+            simp only [Core.simulate_latest, LawfulMonad.pure_bind, simulateQ_pure, prEvent_norm]
             exact hchallenge (fun r => event (some r))
-          · simp only [simulateQ_pure, LawfulMonad.pure_bind, evalDist_pure]
+          · classical
+            simp only [simulateQ_pure, prEvent_pure]
         · intro move
           rfl
       · intro chosen hchosen

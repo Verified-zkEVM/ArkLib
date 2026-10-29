@@ -29,16 +29,16 @@ variable {ι : Type} {oSpec : OracleSpec ι}
 
 section Reduction
 
-variable (mapStmt : StmtIn → OracleComp oSpec StmtOut)
+variable (mapStmt : StmtIn → StmtOut)
   (mapWit : StmtIn → WitIn → OracleComp oSpec WitOut)
 
 /-- Collect the functions `mapStmt` and `mapWit` into a single function `mapCtx` -/
 @[reducible]
 def combineMap : StmtIn × WitIn → OracleComp oSpec (StmtOut × WitOut) :=
-  fun ⟨stmt, wit⟩ => do return (← mapStmt stmt, ← mapWit stmt wit)
+  fun ⟨stmt, wit⟩ => do return (mapStmt stmt, ← mapWit stmt wit)
 
 /-- The prover in a no-interaction reduction can be specified by a tuple of functions:
-- `mapStmt : StmtIn → OracleComp oSpec StmtOut` maps the input statement to an output statement
+- `mapStmt : StmtIn → StmtOut` maps the input statement to an output statement
 - `mapWit : StmtIn → WitIn → OracleComp oSpec WitOut` maps the input witness to an output witness,
   depending on the input statement
 -/
@@ -50,17 +50,19 @@ def prover : Prover oSpec StmtIn WitIn StmtOut WitOut !p[] where
   receiveChallenge := fun i => nomatch i
   output := combineMap mapStmt mapWit
 
-/- Output executes the supplied `mapStmt` and `mapWit` computations. Purity requires an
-additional condition on those computations. -/
-
-/-- The verifier in a no-interaction reduction takes an empty transcript, and hence reduce to a
-  function `mapStmt : StmtIn → OracleComp oSpec StmtOut` -/
+/-- The verifier in a no-interaction reduction takes an empty transcript, and hence reduces to a
+  function `mapStmt : StmtIn → StmtOut`.
+  The statement map is pure because the verifier must recompute the prover's statement. -/
 @[reducible]
 def verifier : Verifier oSpec StmtIn StmtOut !p[] where
-  verify := fun stmt _ => mapStmt stmt
+  verify := fun stmt _ => pure (mapStmt stmt)
+
+/-- The no-interaction verifier deterministically recomputes the output statement. -/
+instance instIsPure : (verifier (oSpec := oSpec) mapStmt).IsPure :=
+  ⟨fun stmt _ => mapStmt stmt, fun _ _ => rfl⟩
 
 /-- The no-interaction reduction can be specified by a tuple of functions:
-- `mapStmt : StmtIn → OracleComp oSpec StmtOut` maps the input statement to an output statement
+- `mapStmt : StmtIn → StmtOut` maps the input statement to an output statement
 - `mapWit : StmtIn → WitIn → OracleComp oSpec WitOut` maps the input witness to an output witness,
   depending on the input statement
 -/
@@ -74,21 +76,23 @@ variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ Pro
 
 theorem reduction_completeness {ε : ℝ≥0}
     (hRel : ∀ stmtIn witIn, (stmtIn, witIn) ∈ relIn →
-      Pr{let ⟨stmtOut, witOut⟩ ← do
-        (simulateQ impl <| combineMap mapStmt mapWit ⟨stmtIn, witIn⟩).run' (← init)}[(stmtOut,
-          witOut) ∈ relOut] ≥ 1 - ε) :
+      Pr{let witOut ← do
+        (simulateQ impl (mapWit stmtIn witIn)).run' (← init)}[(mapStmt stmtIn, witOut) ∈ relOut]
+        ≥ 1 - ε) :
     Reduction.completeness init impl relIn relOut (reduction mapStmt mapWit) ε := by
-  classical
-  simp only [Reduction.completeness, ChallengeIdx, Challenge, QueryImpl.addLift_def,
-    PFunctor.Handler.liftTarget_self, Reduction.run, Prover.run, Fin.reduceLast, prover,
-    Nat.reduceAdd, Fin.isValue, MessageIdx, Message, Prover.runToRound_zero_of_prover_first,
-    id_eq, liftM_bind, bind_pure_comp, liftM_map, map_bind, Functor.map_map, pure_bind,
-    monadLift_liftM_OptionT, Verifier.run, OptionT.run_monadLift, monadLift_self,
-    bind_map_left, Option.getM_some, map_pure, bind_assoc, OptionT.run_bind,
-    OptionT.run_map, StateT.run'_eq, OptionT.mk_bind, ge_iff_le]
-  intro stmtIn witIn hStmtIn
-  refine ge_trans ?_ (hRel stmtIn witIn hStmtIn)
-  sorry
+  intro stmtIn witIn hIn
+  let : ∀ i, OracleInterface ((!p[]).Challenge i) := challengeOracleInterface
+  have hrun : ((reduction mapStmt mapWit).run stmtIn witIn).run =
+      (fun w => some (((default : (!p[]).FullTranscript), mapStmt stmtIn, w), mapStmt stmtIn)) <$>
+        (liftM (mapWit stmtIn witIn) : OracleComp (oSpec + [(!p[]).Challenge]ₒ) WitOut) := by
+    simp [Reduction.run, Prover.run, prover, reduction, combineMap, verifier,
+      Verifier.run, Prover.runToRound_zero_of_prover_first,
+      ← monadLift_liftM_OptionT, OptionT.run_monadLift]
+    rfl
+  change 1 - (ε : ℝ≥0∞) ≤ _
+  rw [hrun, OptionT.prEvent_mk]
+  simpa [QueryImpl.addLift_def, QueryImpl.simulateQ_add_liftM_left,
+    StateT.run'_eq, OptionT.prEvent_mk] using hRel stmtIn witIn hIn
 
 end Reduction
 

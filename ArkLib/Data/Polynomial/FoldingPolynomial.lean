@@ -9,7 +9,7 @@ public import ArkLib.Data.Polynomial.Bivariate
 
 public import Mathlib.Algebra.Polynomial.Basic
 public import Mathlib.Tactic.Cases
-public import Mathlib.Tactic.LinearCombinationPrime
+public import Mathlib.Tactic.LinearCombination
 public import CompPoly.Univariate.ToPoly.Impl
 
 /-!
@@ -553,7 +553,7 @@ theorem folding_polynomial_is_unique {q f : F[X]} {Q : F[X][Y]}
             |> Polynomial.map (Polynomial.compRingHom q)
             |> Polynomial.eval Polynomial.X)) = f from
               substitution_property_of_folding_polynomial)
-      exact ⟨Q'' - Q', by linear_combination' hQ'' - hQ'⟩
+      exact ⟨Q'' - Q', by linear_combination hQ'' - hQ'⟩
     have hQ'_zero : Q' = 0 := by
       have hQ'_deg : natDegreeY (Q - foldingPolynomial q f) < q.natDegree := by
         have hQ'_deg :

@@ -172,9 +172,9 @@ theorem executeTwo_honest [DecidableEq R] {m : ℕ} (D : Fin m ↪ R) (i : Fin (
             ClosedClaim (Spec.StatementRound R (n + 2) i.succ.succ)
               (polynomialFamily R (n + 2) deg))) := by
   apply executeTwo_accepted
-  · exact projected_sum_of_relationRound R (n + 2) deg D i.castSucc stmt p h
-  · exact projected_sum_of_relationRound R (n + 2) deg D i.succ _ p
-      (relationRound_projected_output R (n + 2) deg D i.castSucc stmt p r₁)
+  · exact Spec.SingleRound.projected_sum_of_relationRound R (n + 2) deg D i.castSucc stmt p h
+  · exact Spec.SingleRound.projected_sum_of_relationRound R (n + 2) deg D i.succ _ p
+      (Spec.SingleRound.relationRound_projected_output R (n + 2) deg D i.castSucc stmt p r₁)
 
 /-- Actual honest sequential execution ends in a claim satisfying the final round relation. -/
 theorem executeTwo_complete [DecidableEq R] {m : ℕ} (D : Fin m ↪ R) (i : Fin (n + 1))

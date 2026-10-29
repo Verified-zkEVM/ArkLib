@@ -158,25 +158,22 @@ Every row below is an error seen while porting real ArkLib files.
 
 ### `backward.proofsInPublic`
 
-Three files set `set_option backward.proofsInPublic true`, all in the Binius tree:
+Binary Basefold's composed bundles use explicit result types and named index equalities,
+so they elaborate under the default settings.
 
-- `ArkLib/ProofSystem/Binius/BinaryBasefold/CoreInteractionPhase.lean`
-- `ArkLib/ProofSystem/Binius/BinaryBasefold/QueryPhase.lean`
-- `ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean`
-
-They hold composed verifier and reduction bundles written as `def foo := <let-chain>` with no type
-ascription, whose *inferred* type embeds the inline `Fin` bounds proofs from their bodies. That
+A composed verifier or reduction written as `def foo := <let-chain>` without a type ascription
+can have an *inferred* type that embeds the inline `Fin` bounds proofs from its body. That
 shape has no good outcome under the default: exposed, every `by` is delayed until the still-unknown
 result type is solved and none ever is; not exposed, each proof is abstracted into a private
 auxiliary theorem that the public signature may not mention. The option restores the classic
-elaboration those definitions were written against, and each site carries a comment saying so.
+elaboration those definitions were written against, and each site must carry a comment saying so.
 
 This is a compatibility flag, not a suppression — it silences no diagnostic and the zero-warning
-budget still applies to these files. Do not reach for it before trying the hoist above, and never
-reach for `backward.privateInPublic`, which logs a warning at every access site.
+budget still applies to any file that sets it. Do not reach for it before trying the hoist above,
+and never reach for `backward.privateInPublic`, which logs a warning at every access site.
 
-Writing these definitions with explicit result types would retire the option; that is a
-Binius-authors change, not a mechanical one.
+Writing these definitions with explicit result types retires the option, as the Binary Basefold
+core interaction shows.
 
 ### Why `ArkLibTest/` stays classic
 

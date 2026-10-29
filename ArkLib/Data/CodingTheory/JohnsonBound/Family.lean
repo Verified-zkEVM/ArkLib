@@ -38,6 +38,8 @@ distance `δ` of a given word, and their specializations to MDS and Reed-Solomon
   Reed-Solomon, and folded Reed-Solomon codes.
 * `CodingTheory.johnson_isListDecodable`, `CodingTheory.johnson_isListDecodable_of_le` — the
   Johnson bound in the `IsListDecodable` shape, and its weakening to any larger list budget.
+* `CodingTheory.lambda_interleaved_le_of_le_johnson` — the Johnson bound at an
+  `m`-interleaved code `C^⋈(Fin m)`, stated on the base code at alphabet size `|F|^m`.
 
 The alphabet-generic bound is proved from the absolute-distance Johnson bound of
 `JohnsonBound/Basic.lean`, with the very-low-rate regime — where the Johnson radicand turns
@@ -933,5 +935,23 @@ theorem frs_lambda_le_johnson_mds
   exact mds_johnson_lambda_le_of_rate_distance _ ρ η hρ_pos hρ_le1 hη_pos
     (ReedSolomon.Folded.frs_rate_distance_of_dvd hs hdvd dom ω hadm hω hk)
 
+/-- The Johnson bound at an `m`-interleaved code, with its two code-dependent inputs stated on
+the base code: the alphabet size is `|F|^m`, and the minimum distance is unchanged
+(`Code.minDist_interleavedCodeSet`). A caller holds `C`, not `C^⋈(Fin m)`, so this is the form
+it can discharge. -/
+theorem lambda_interleaved_le_of_le_johnson
+    {ι : Type*} [Fintype ι] [Nonempty ι] {F : Type*} [Fintype F] [DecidableEq F]
+    (C : Set (ι → F)) {m ℓ : ℕ} (hm : 0 < m) (hℓ : 1 ≤ ℓ) {δ : ℝ≥0}
+    (hδ : (δ : ℝ) ≤ Jqℓ ((Fintype.card F : ℚ) ^ m) (ℓ : ℚ)
+            ((Code.minDist C : ℚ) / (Fintype.card ι : ℚ))) :
+    Lambda (C^⋈(Fin m)) (δ : ℝ) ≤ (ℓ : ℕ∞) := by
+  have : Nonempty (Fin m) := Fin.pos_iff_nonempty.mp hm
+  have hcard : (Fintype.card (Fin m → F) : ℚ) = (Fintype.card F : ℚ) ^ m := by
+    simp
+  have hmd : (Code.minDist (C^⋈(Fin m)) : ℚ) = (Code.minDist C : ℚ) := by
+    exact_mod_cast minDist_interleavedCodeSet (κ := Fin m) C
+  refine le_trans (Lambda_mono ?_) (johnson_bound_lambda_le_ell (C^⋈(Fin m)) ℓ hℓ)
+  rw [hcard, hmd]
+  exact hδ
 
 end CodingTheory

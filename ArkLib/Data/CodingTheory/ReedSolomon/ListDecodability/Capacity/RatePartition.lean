@@ -23,7 +23,7 @@ uniform over fields, codes, evaluation sets, and received words.
 
 ## References
 
-* [DKTZ26]
+* [DKT26]
 -/
 
 @[expose] public section

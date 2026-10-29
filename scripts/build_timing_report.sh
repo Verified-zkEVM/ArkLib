@@ -131,7 +131,7 @@ test_path_command = os.environ.get("BUILD_TIMING_TEST_COMMAND", "./scripts/valid
 
 native_build_name = os.environ.get("BUILD_TIMING_NATIVE_NAME", "Native build")
 native_build_command = os.environ.get(
-    "BUILD_TIMING_NATIVE_COMMAND", "lake build toyproblem-runtime hachi-runtime lint-style"
+    "BUILD_TIMING_NATIVE_COMMAND", "lake build toyproblem-runtime hachi-runtime sumcheck-runtime fri-extractor-runtime lint-style"
 )
 
 display = {
