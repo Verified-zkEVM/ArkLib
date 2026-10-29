@@ -140,7 +140,7 @@ def frontExtractor : Extractor.RoundByRound []ₒ
     (WitIn := WitIn)
     (WitOut := Witness K β (h_ℓ_add_R_rate := h_rate) (ℓ := ℓ) 0)
     (pSpec := !p[]) (WitMid := fun _ => WitIn) where
-  eqIn := rfl
+  extractIn := fun _ w => w
   extractMid j := nomatch j
   extractOut _ _ w := witnessEquiv.symm w.t
 
@@ -153,7 +153,7 @@ def frontKnowledgeStateFunction {σ : Type} (init : ProbComp σ)
         (h_ℓ_add_R_rate := h_rate) (𝓑 := boolEmbedding L) 0)
       (frontExtractor K β witnessEquiv (ϑ := ϑ) (h_rate := h_rate)) where
   toFun _ x _ w := (x, w) ∈ inputRelation K β evalQuery witnessEquiv (ϑ := ϑ) (h_rate := h_rate)
-  toFun_empty _ _ := Iff.rfl
+  toFun_empty _ _ h := h
   toFun_next j := nomatch j
   toFun_full x _tr w h := by
     have hp := eval_eq_and_firstOracleWitnessConsistent_of_mem_roundRelation_zero K β (evalQuery

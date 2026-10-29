@@ -13,7 +13,7 @@ import ArkLib.OracleReduction.Composition.Sequential.Completeness
 
 The one-message specialization retains arbitrary effectful component provers and accepts the
 all-distributions suffix premise used by the original theorem. The n-ary and fixed-prefix RBR
-results must not acquire dependencies on the legacy admitted composition contracts.
+results depend only on the proved guarded composition theorems.
 -/
 
 open OracleComp OracleSpec ProtocolSpec

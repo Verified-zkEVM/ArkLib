@@ -210,10 +210,10 @@ variable {F ι : Type*} [Field F] [Fintype ι] [DecidableEq F] {ℓ : ℕ}
 private theorem commonCurveAgreementSet_subset (domain : ι ↪ F) (w : Fin (ℓ + 1) → ι → F)
     (P : Fin (ℓ + 1) → F[X]) (z : F) :
     commonCurveAgreementSet domain w P ⊆
-      polynomialAgreementSet domain (powerBatchedWord w z) (powerBatchedPolynomial P z) := by
+      polynomialAgreementSet domain (powerBatchedWord w z) (Polynomial.powerBatch P z) := by
   intro i hi
   rw [mem_commonCurveAgreementSet] at hi
-  simp [powerBatchedPolynomial_eval, powerBatchedWord, hi]
+  simp [Polynomial.powerBatch_eval, powerBatchedWord, hi]
 
 /-- **Exact power agreement of a constant.** A polynomial `Q` of degree below `1` has exact power
 agreement at `z` exactly when the columns `(w t i)_t` coincide on the agreement set of `Q` with
@@ -235,11 +235,11 @@ theorem hasExactPowerAgreement_constant_iff (domain : ι ↪ F) (w : Fin (ℓ + 
     by_cases hne : (polynomialAgreementSet domain (powerBatchedWord w z) Q).Nonempty
     · obtain ⟨i, hi⟩ := hne
       have hiQ := (mem_polynomialAgreementSet _ _ _ _).mp hi
-      have hQP : Q = powerBatchedPolynomial (fun t ↦ C (w t i)) z := by
+      have hQP : Q = Polynomial.powerBatch (fun t ↦ C (w t i)) z := by
         have hc : Q.coeff 0 = powerBatchedWord w z i := by
           rw [← hiQ, hconst hQ (domain i) 0, coeff_zero_eq_eval_zero]
         rw [eq_C_of_degree_le_zero (Order.lt_succ_iff.mp hQ), hc]
-        simp [powerBatchedPolynomial, powerBatchedWord, map_sum, smul_C]
+        simp [Polynomial.powerBatch, Polynomial.generatorBatch, powerBatchedWord, map_sum, smul_C]
       refine ⟨fun t ↦ C (w t i), fun t ↦ degree_C_lt, hQP, ?_⟩
       ext j
       rw [mem_commonCurveAgreementSet]
@@ -251,8 +251,8 @@ theorem hasExactPowerAgreement_constant_iff (domain : ι ↪ F) (w : Fin (ℓ + 
         simp [powerBatchedWord, hj]
     · rw [Finset.not_nonempty_iff_eq_empty] at hne
       let P : Fin (ℓ + 1) → F[X] := fun t ↦ if t = 0 then Q else 0
-      have hQP : Q = powerBatchedPolynomial P z := by
-        simp [P, powerBatchedPolynomial]
+      have hQP : Q = Polynomial.powerBatch P z := by
+        simp [P, Polynomial.powerBatch, Polynomial.generatorBatch]
       refine ⟨P, fun t ↦ ?_, hQP, ?_⟩
       · simp only [P]
         split_ifs

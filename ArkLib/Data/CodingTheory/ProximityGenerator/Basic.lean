@@ -193,6 +193,85 @@ noncomputable def mcaError {S : Type} [Nonempty S] [Fintype S] [SampleableType S
     (G : Generator S ℓ F) (MC : ModuleCode ι F A) : ℝ → ENNReal :=
   fun δ => ⨆ U : ℓ → (ι → A), Pr{let x ←$ᵗ S}[IsMCA G MC x U δ]
 
+/-- Coordinate equivalences preserve the MCA event when they transport code membership. -/
+theorem isMCA_comp_equiv {κ : Type} [Fintype κ]
+    {S : Type} [Nonempty S] [Fintype S] {A : Type} [AddCommMonoid A] [Module F A]
+    (G : Generator S ℓ F) (MC : ModuleCode ι F A) (MC' : ModuleCode κ F A)
+    (e : κ ≃ ι) (hcode : ∀ w : ι → A, w ∘ e ∈ MC' ↔ w ∈ MC)
+    (x : S) (U : ℓ → ι → A) (δ : ℝ) :
+    IsMCA G MC' x (fun j => U j ∘ e) δ ↔ IsMCA G MC x U δ := by
+  classical
+  have hmem (T : Finset κ) (v : ι → A) :
+      projectedWord (v ∘ e) T ∈ projectedCodeSubmod MC' T ↔
+        projectedWord v (T.map e.toEmbedding) ∈ projectedCodeSubmod MC (T.map e.toEmbedding) := by
+    simp only [mem_projectedCodeSubmod_iff, projectedCode, Set.mem_ofPred_eq]
+    constructor
+    · rintro ⟨w, hw, heq⟩
+      refine ⟨w ∘ e.symm, (hcode _).mp ?_, ?_⟩
+      · simpa [Function.comp_def] using hw
+      · funext i
+        obtain ⟨j, hj, hij⟩ := Finset.mem_map.mp i.property
+        change v i = w (e.symm i)
+        rw [← hij]
+        simpa [projectedWord, Function.comp_def] using congrFun heq ⟨j, hj⟩
+    · rintro ⟨w, hw, heq⟩
+      refine ⟨w ∘ e, (hcode _).mpr hw, ?_⟩
+      funext i
+      exact congrFun heq ⟨e i, Finset.mem_map.mpr ⟨i, i.property, rfl⟩⟩
+  have hcard : Fintype.card κ = Fintype.card ι := Fintype.card_congr e
+  constructor
+  · rintro ⟨T, hT, hv, j, hj⟩
+    refine ⟨T.map e.toEmbedding, ?_, (hmem _ _).mp hv, j, ?_⟩
+    · simpa [hcard] using hT
+    · exact fun h => hj ((hmem _ _).mpr h)
+  · rintro ⟨T, hT, hv, j, hj⟩
+    let T' := T.map e.symm.toEmbedding
+    have hT' : T'.map e.toEmbedding = T := by
+      ext i
+      simp [T']
+    refine ⟨T', ?_, ?_, j, ?_⟩
+    · simpa [T', hcard] using hT
+    · apply (hmem T' (fun k => ∑ j, G x j • U j k)).mpr
+      rw [hT']
+      exact hv
+    · intro h
+      apply hj
+      have hh := (hmem T' (U j)).mp h
+      rw [hT'] at hh
+      exact hh
+
+/-- Coordinate equivalences preserve the worst-case MCA error. -/
+theorem mcaError_comp_equiv {κ : Type} [Fintype κ]
+    {S : Type} [Nonempty S] [Fintype S] [SampleableType S]
+    {A : Type} [AddCommMonoid A] [Module F A]
+    (G : Generator S ℓ F) (MC : ModuleCode ι F A) (MC' : ModuleCode κ F A)
+    (e : κ ≃ ι) (hcode : ∀ w : ι → A, w ∘ e ∈ MC' ↔ w ∈ MC) (δ : ℝ) :
+    mcaError G MC' δ = mcaError G MC δ := by
+  classical
+  have hprob (U : ℓ → ι → A) :
+      Pr{let x ←$ᵗ S}[IsMCA G MC' x (fun j => U j ∘ e) δ] =
+        Pr{let x ←$ᵗ S}[IsMCA G MC x U δ] := by
+    have hp : (fun x => IsMCA G MC' x (fun j => U j ∘ e) δ) =
+        (fun x => IsMCA G MC x U δ) := by
+      funext x
+      exact propext (isMCA_comp_equiv G MC MC' e hcode x U δ)
+    rw [hp]
+  unfold mcaError
+  apply le_antisymm
+  · apply iSup_le
+    intro U
+    let V : ℓ → ι → A := fun j => U j ∘ e.symm
+    have hU : (fun j => V j ∘ e) = U := by
+      funext j i
+      simp [V, Function.comp_def]
+    rw [← hU, hprob]
+    exact le_iSup (fun V : ℓ → ι → A => Pr{let x ←$ᵗ S}[IsMCA G MC x V δ]) V
+  · apply iSup_le
+    intro U
+    rw [← hprob]
+    exact le_iSup (fun V : ℓ → κ → A => Pr{let x ←$ᵗ S}[IsMCA G MC' x V δ])
+      (fun j => U j ∘ e)
+
 /-- A generator has mutual correlated agreement (MCA) with error `ε_mca` if the probability that
 the generator satisfies the MCA condition is bounded above by `ε_mca`.
 

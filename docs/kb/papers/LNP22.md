@@ -8,7 +8,7 @@ source_metadata: ../sources/LNP22/metadata.yml
 related_modules:
   - ArkLib/Data/Lattices/CyclotomicRing/Core.lean
   - ArkLib/Data/Lattices/CyclotomicRing/Galois/Automorphism.lean
-  - ArkLib/Commitments/Functional/Hachi/Recursion/TraceHandoff.lean
+  - ArkLib/Commitments/Functional/Hachi/TraceHead/Protocol.lean
 status: seeded
 ---
 
@@ -44,8 +44,8 @@ it is cited to the paper that states it in the form ArkLib uses.
   — the modulus data and the semantic quotient `R[X]/(φ)`.
 - [`ArkLib/Data/Lattices/CyclotomicRing/Galois/Automorphism.lean`](../../../ArkLib/Data/Lattices/CyclotomicRing/Galois/Automorphism.lean)
   — the automorphisms `σ_i`, in computable and semantic form with the bridge between them.
-- [`ArkLib/Commitments/Functional/Hachi/Recursion/TraceHandoff.lean`](../../../ArkLib/Commitments/Functional/Hachi/Recursion/TraceHandoff.lean)
-  — trace/handoff step of the Hachi recursion, in the same ring setting.
+- [`ArkLib/Commitments/Functional/Hachi/TraceHead/Protocol.lean`](../../../ArkLib/Commitments/Functional/Hachi/TraceHead/Protocol.lean)
+  — Hachi's trace head, a trace check over the same ring setting.
 
 ## Known Divergences From ArkLib
 

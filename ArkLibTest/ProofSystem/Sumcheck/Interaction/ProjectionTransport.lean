@@ -44,7 +44,8 @@ example :
 example :
     (((⟨12, fun _ => 3⟩ : Spec.StatementRound (ZMod 17) 2 1), fun _ => polynomial), ()) ∈
       Spec.relationRound (ZMod 17) 2 1 domain 1 := by
-  have h := relationRound_projected_output (ZMod 17) 2 1 domain 0 statement polynomial 3
+  have h := Spec.SingleRound.relationRound_projected_output
+    (ZMod 17) 2 1 domain 0 statement polynomial 3
   change (((⟨projected.val.eval 3, _⟩ : Spec.StatementRound (ZMod 17) 2 1), _), ()) ∈ _ at h
   rw [projected_eval] at h
   have hn : (5 + 8 * 3 : ZMod 17) = 12 := by decide

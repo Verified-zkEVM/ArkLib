@@ -25,10 +25,10 @@ theorem second_eval (middle : Spec.StatementRound (ZMod 17) 2 1) (x : ZMod 17) :
     (second middle).val.eval x =
       1 + 2 * middle.challenges ⟨0, by decide⟩ + 3 * x +
         4 * middle.challenges ⟨0, by decide⟩ * x := by
-  change (sumRoundPolynomial ((univ.map domain) ^ᶠ 0)
-    (Spec.SingleRound.roundSuffix (ZMod 17) 2 1 middle.challenges)
-    (1 : Fin 2) polynomial.val).eval x = _
-  rw [sumRoundPolynomial_eval]
+  change (∑ y ∈ (univ.map domain) ^ᶠ 0,
+    polynomial.val.evalExcept (1 : Fin 2)
+      (Spec.SingleRound.roundSuffix (ZMod 17) 2 1 middle.challenges y)).eval x = _
+  simp only [Polynomial.eval_finsetSum, eval_evalExcept]
   simp [polynomial, Spec.SingleRound.roundSuffix, Fin.append, Fin.addCases,
     Fin.insertNth, Fin.succAboveCases]
 
@@ -60,8 +60,8 @@ theorem second_sum (r : ZMod 17) :
     (((univ.map domain).toList).map (fun x =>
       (second ⟨projected.val.eval r, Fin.snoc statement.challenges r⟩).val.eval x)).sum =
       projected.val.eval r := by
-  exact SingleRound.projected_sum_of_relationRound (ZMod 17) 2 1 domain 1 _ polynomial
-    (SingleRound.relationRound_projected_output (ZMod 17) 2 1 domain 0 statement polynomial r)
+  exact Spec.SingleRound.projected_sum_of_relationRound (ZMod 17) 2 1 domain 1 _ polynomial
+    (Spec.SingleRound.relationRound_projected_output (ZMod 17) 2 1 domain 0 statement polynomial r)
 
 /-- Distinct observable events identify the two verifier challenge phases. -/
 abbrev events : OracleSpec Bool := Bool →ₒ Unit
