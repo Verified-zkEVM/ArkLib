@@ -1448,7 +1448,7 @@ hypercube sums match the current targets.
 Both summands read the scalar-round challenges directly, with no derived evaluation-point encoding
 (no curve, no seed expansion). The `liftShort` conjunct is the commitment's shortness index: it is
 what makes a pair of colliding branch openings a member of `LiftCom.Collision`, hence a
-Module-SIS break, at the escape event of the sumcheck rounds. Its `RhoShort` half — the range
+Module-SIS break, at the escape event of the sumcheck rounds. Its `RhoDigitsShort` half — the range
 claim Lemma 10 exists to prove — is still *derived* from `H₀ ≡ 0`
 (`hZero_eq_zero_imp_liftShort`), never assumed. -/
 def nestedRoundRel (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
