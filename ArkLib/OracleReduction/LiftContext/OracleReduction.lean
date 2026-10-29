@@ -362,6 +362,66 @@ theorem liftContext_rbrSoundnessWorstCase
   exact V.toVerifier.liftContext_rbrSoundnessWorstCase h (lens := lens.toLens)
 
 omit [Inhabited InnerStmtOut] [∀ i, Inhabited (InnerOStmtOut i)] in
+/-- The lifted knowledge state on materialized oracle statements. -/
+def liftContextKnowledgeStateFunction
+    {stmtLens : OracleStatement.ExecutableLens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
+                                OuterOStmtIn OuterOStmtOut InnerOStmtIn InnerOStmtOut}
+    {witLens : Witness.InvLens (OuterStmtIn × ∀ i, OuterOStmtIn i)
+                            OuterWitIn OuterWitOut InnerWitIn InnerWitOut}
+    (V : OracleVerifier oSpec InnerStmtIn InnerOStmtIn InnerStmtOut InnerOStmtOut pSpec)
+    (output : OracleVerifier.LiftContextOutput stmtLens V)
+    [lensKS : Extractor.Lens.IsKnowledgeSound
+      outerRelIn innerRelIn outerRelOut innerRelOut
+      (V.toVerifier.compatStatement stmtLens.toLens) (fun _ _ => True)
+      ⟨stmtLens.toLens, witLens⟩]
+    {WitMid : Fin (n + 1) → Type}
+    (E : Extractor.RoundByRound oSpec (InnerStmtIn × ∀ i, InnerOStmtIn i)
+      InnerWitIn InnerWitOut pSpec WitMid)
+    (K : V.toVerifier.KnowledgeStateFunction init impl innerRelIn innerRelOut E) :
+    (V.liftContext stmtLens output).toVerifier.KnowledgeStateFunction init impl
+      outerRelIn outerRelOut (E.liftContext ⟨stmtLens.toLens, witLens⟩) where
+  toFun := (K.liftContext ⟨stmtLens.toLens, witLens⟩ V.toVerifier
+    outerRelIn innerRelIn outerRelOut innerRelOut E).toFun
+  toFun_empty := (K.liftContext ⟨stmtLens.toLens, witLens⟩ V.toVerifier
+    outerRelIn innerRelIn outerRelOut innerRelOut E).toFun_empty
+  toFun_next := (K.liftContext ⟨stmtLens.toLens, witLens⟩ V.toVerifier
+    outerRelIn innerRelIn outerRelOut innerRelOut E).toFun_next
+  toFun_full := by
+    rw [liftContext_toVerifier_comm stmtLens V output]
+    exact (K.liftContext ⟨stmtLens.toLens, witLens⟩ V.toVerifier
+      outerRelIn innerRelIn outerRelOut innerRelOut E).toFun_full
+
+omit [Inhabited InnerStmtOut] [∀ i, Inhabited (InnerOStmtOut i)] in
+/-- Lifting preserves the named fixed-prefix certificate and its error function. -/
+theorem liftContext_rbrKnowledgeSoundnessWorstCaseWith
+    {rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0}
+    {stmtLens : OracleStatement.ExecutableLens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
+                                OuterOStmtIn OuterOStmtOut InnerOStmtIn InnerOStmtOut}
+    {witLens : Witness.InvLens (OuterStmtIn × ∀ i, OuterOStmtIn i)
+                            OuterWitIn OuterWitOut InnerWitIn InnerWitOut}
+    (V : OracleVerifier oSpec InnerStmtIn InnerOStmtIn InnerStmtOut InnerOStmtOut pSpec)
+    (output : OracleVerifier.LiftContextOutput stmtLens V)
+    [lensKS : Extractor.Lens.IsKnowledgeSound
+      outerRelIn innerRelIn outerRelOut innerRelOut
+      (V.toVerifier.compatStatement stmtLens.toLens) (fun _ _ => True)
+      ⟨stmtLens.toLens, witLens⟩]
+    {WitMid : Fin (n + 1) → Type}
+    (E : Extractor.RoundByRound oSpec (InnerStmtIn × ∀ i, InnerOStmtIn i)
+      InnerWitIn InnerWitOut pSpec WitMid)
+    (K : V.toVerifier.KnowledgeStateFunction init impl innerRelIn innerRelOut E)
+    (h : V.toVerifier.rbrKnowledgeSoundnessWorstCaseWith init impl innerRelIn innerRelOut
+      WitMid E K rbrKnowledgeError) :
+      (V.liftContext stmtLens output).toVerifier.rbrKnowledgeSoundnessWorstCaseWith init impl
+        outerRelIn outerRelOut (fun k => OuterWitOut × WitMid k)
+        (E.liftContext ⟨stmtLens.toLens, witLens⟩)
+        (V.liftContextKnowledgeStateFunction output E K)
+        rbrKnowledgeError := by
+  exact
+    V.toVerifier.liftContext_rbrKnowledgeSoundnessWorstCaseWith
+      (outerRelIn := outerRelIn) (outerRelOut := outerRelOut) E K h
+      (stmtLens := stmtLens.toLens) (witLens := witLens)
+
+omit [Inhabited InnerStmtOut] [∀ i, Inhabited (InnerOStmtOut i)] in
 /-- Lifting preserves the fixed-prefix round-by-round knowledge soundness bound. -/
 theorem liftContext_rbrKnowledgeSoundnessWorstCase
     {rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0}
