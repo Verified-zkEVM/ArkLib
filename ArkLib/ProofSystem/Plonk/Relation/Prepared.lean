@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Plonk.Basic
+public import ArkLib.ProofSystem.Plonk.Relation.Basic
 public import ArkLib.Data.Fin.Basic
 
 /-! # Public inputs and prepared Plonk rows

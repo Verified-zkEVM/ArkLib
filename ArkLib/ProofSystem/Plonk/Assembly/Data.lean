@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Plonk.GrandProductData
+public import ArkLib.ProofSystem.Plonk.GrandProduct.Data
 
 /-! # Data and arithmetic for Plonk assembly
 

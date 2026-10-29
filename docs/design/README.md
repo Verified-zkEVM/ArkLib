@@ -36,6 +36,8 @@ implementation schedule.
 | [Access and execution contract](01c-access-execution-contract.md) | What the verifier can observe and query at each protocol position |
 | [Claims, closing, and composition](02-oracle-reduction-core.md) | Output interfaces, their interpretation, and execution conditions for composition |
 | [Execution and security](03-adversarial-oracle-execution.md) | Persistent worlds, security events, probability premises, extraction, and costs |
+| [Extractor efficiency](03a-extractor-efficiency.md) | Proposed near-term resource contracts for named extractors, the obligations of each extractor-bearing notion, and FRI and Toy requirements |
+| [Extractor execution backends](03b-extractor-execution.md) | Proposed complete execution bounds, backend requirements, and uniform families for extractors |
 | [Oracle-elimination compiler](04-oracle-elimination-compiler.md) | Backend obligations and how compilation preserves oracle guarantees |
 | [Roadmap](05-roadmap.md) | The single active implementation sequence, dependencies, acceptance checks, and issue links |
 

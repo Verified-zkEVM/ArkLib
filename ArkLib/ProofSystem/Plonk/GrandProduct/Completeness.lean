@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Plonk.GrandProduct
+public import ArkLib.ProofSystem.Plonk.GrandProduct.Reduction
 public import ArkLib.OracleReduction.Composition.Sequential.GuardedCompleteness
 
 /-! # Plonk permutation grand product: completeness

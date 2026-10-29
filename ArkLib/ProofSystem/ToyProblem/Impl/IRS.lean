@@ -728,7 +728,9 @@ theorem simplifiedOracleVerifier_knowledgeSoundnessWith_straightlineExtractor
 
 omit [DecidableEq ι] in
 /-- Existential C6.9 knowledge soundness, retained as a corollary of the
-public exact straightline-extractor theorem. -/
+public exact straightline-extractor theorem. The existential statement forgets
+the executable extractor and has the content of relation soundness
+(`Verifier.knowledgeSoundness_iff_relationSoundness`). -/
 theorem simplifiedOracleVerifier_knowledgeSoundness
     [SampleableType F] [Nonempty ι]
     (k s : ℕ) (hdvd : s ∣ k) [NeZero (k / s)] (domain : ι ↪ F)
@@ -1087,7 +1089,9 @@ theorem oracleVerifier_knowledgeSoundnessWith_straightlineExtractor
 
 omit [DecidableEq ι] in
 /-- Existential knowledge soundness is retained as a corollary of the public
-exact-extractor theorem. -/
+exact-extractor theorem. The existential statement forgets the executable
+extractor and has the content of relation soundness
+(`Verifier.knowledgeSoundness_iff_relationSoundness`). -/
 theorem oracleVerifier_knowledgeSoundness [SampleableType F]
     [SampleableType ι] [Nonempty ι]
     (k s t : ℕ) (hdvd : s ∣ k) [NeZero (k / s)] (domain : ι ↪ F)
