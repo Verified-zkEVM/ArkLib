@@ -10,6 +10,8 @@ public import ArkLib.OracleReduction.Composition.Sequential.General
 public import ArkLib.OracleReduction.LiftContext.OracleReduction
 public import ArkLib.OracleReduction.LiftContext.Purity
 public import VCVio.OracleComp.SimSemantics.OptionT.Basic
+public import ArkLib.Data.Probability.Instances
+public import ArkLib.OracleReduction.Security.GuardedSoundness
 public import ArkLib.Data.Fin.Basic
 public import ArkLib.Data.MvPolynomial.EvalExcept
 -- `Vector.finRange` is unfolded by `rw` below; its body is not exposed by default.
@@ -19,8 +21,9 @@ import all Init.Data.Vector.FinRange
 # Single round of the Sum-check Protocol
 
 We define a single round of the sum-check protocol as a two-message oracle reduction. The simple
-round and its lifted form have proved perfect completeness; legacy round-by-round knowledge
-soundness still depends on admissions. `General.lean` composes the rounds into the full protocol.
+round and its lifted form have proved perfect completeness. The simple round has round-by-round
+knowledge soundness with error `deg / |R|`; soundness of the lifted round remains open.
+`General.lean` composes the rounds into the full protocol.
 
 ## Protocol Description
 
@@ -301,7 +304,7 @@ def oracleReduction : OracleReduction oSpec (StmtIn R) (OStmtIn R deg) Unit
   verifier := oracleVerifier R deg D oSpec
 
 open Reduction
-open scoped NNReal
+open scoped NNReal ENNReal
 
 -- instance : ∀ i, SampleableType (OracleInterface.Response (Challenge (pSpec R deg) i))
 --   | ⟨1, _⟩ => by dsimp [pSpec, OracleInterface.Response]; infer_instance
@@ -420,18 +423,122 @@ theorem oracleReduction_perfectCompleteness :
   rw [oracleReduction_eq_reduction]
   exact reduction_perfectCompleteness R deg D oSpec
 
+private def extractor : Extractor.RoundByRound oSpec
+    (StmtIn R × (∀ j, OStmtIn R deg j)) Unit Unit
+    (pSpec R deg) (fun _ => Unit) where
+  extractIn := fun _ _ => ()
+  extractMid := fun _ _ _ _ => ()
+  extractOut := fun _ _ _ => ()
+
+private def state (k : Fin 3)
+    (stmt : StmtIn R × (∀ j, OStmtIn R deg j))
+    (tr : Transcript k (pSpec R deg)) (_ : Unit) : Prop :=
+  (stmt, ()) ∈ inputRelation R deg D ∨
+    if h : k.val = 2 then
+      let q : R⦃≤ deg⦄[X] := tr ⟨0, by omega⟩
+      let r : R := tr ⟨1, by omega⟩
+      (∑ x ∈ univ.map D, q.val.eval x = stmt.1) ∧
+        (stmt.2 ()).val.eval r = q.val.eval r
+    else False
+
+private def knowledge : (verifier R deg D oSpec).KnowledgeStateFunction init impl
+    (inputRelation R deg D) (outputRelation R deg)
+    (extractor R deg oSpec) where
+  toFun := state R deg D
+  toFun_empty := by intro stmt w h; simpa [state, extractor] using h
+  toFun_next := by
+    intro k hk stmt tr msg w h
+    fin_cases k
+    · simpa [state] using h
+    · exact Direction.noConfusion (show Direction.V_to_P = Direction.P_to_V from hk)
+  toFun_full := by
+    intro stmt tr w hp
+    have h := (verifierGuardedForm R deg D oSpec).check_and_of_prEvent_pos hp
+    simp only [state, Fin.val_last]
+    exact Or.inr (by simpa [verifierGuardedForm, outputRelation] using h)
+
+omit [DecidableEq R] [SampleableType R] in
+private theorem bad_event_iff (stmt : StmtIn R × (∀ j, OStmtIn R deg j))
+    (tr : Transcript (1 : Fin 2).castSucc (pSpec R deg)) (r : R) :
+    (∃ w : Unit, ¬ state R deg D 1 stmt tr () ∧
+      state R deg D 2 stmt (tr.concat r) w) ↔
+    (stmt, ()) ∉ inputRelation R deg D ∧
+      (∑ x ∈ univ.map D, (tr ⟨0, by decide⟩).val.eval x = stmt.1) ∧
+      (stmt.2 ()).val.eval r = (tr ⟨0, by decide⟩).val.eval r := by
+  have h0 : (tr.concat r) ⟨0, by decide⟩ = tr ⟨0, by decide⟩ :=
+    eq_of_heq (Transcript.concat_apply_lt tr r 0 (by decide) (by decide))
+  have h1 : (tr.concat r) ⟨1, by decide⟩ = r :=
+    eq_of_heq (Transcript.concat_apply_last tr r 1 rfl (by decide))
+  simp only [state, show (1 : Fin 3).val ≠ 2 by decide,
+    show (2 : Fin 3).val = 2 from rfl, dite_eq_left]
+  erw [h0, h1]
+  simp only [dite_eq_right (fun h : False => h), or_false]
+  constructor
+  · rintro ⟨w, hn, hs⟩
+    exact ⟨hn, hs.resolve_left hn⟩
+  · rintro ⟨hn, hs⟩
+    exact ⟨(), hn, Or.inr hs⟩
+
+
+omit [DecidableEq R] in
+private theorem fixed_message_bound [Fintype R] [IsDomain R]
+    (target : R) (p q : R⦃≤ deg⦄[X]) :
+    Pr{let r ← $ᵗ R}[
+      (∑ x ∈ univ.map D, p.val.eval x) ≠ target ∧
+      (∑ x ∈ univ.map D, q.val.eval x) = target ∧
+      p.val.eval r = q.val.eval r] ≤
+      (((deg : ℝ≥0) / Fintype.card R : ℝ≥0) : ℝ≥0∞) := by
+  classical
+  by_cases hsum : (∑ x ∈ univ.map D, q.val.eval x) = target
+  · by_cases hfalse : (∑ x ∈ univ.map D, p.val.eval x) ≠ target
+    · have hne : (∑ x ∈ univ.map D, p.val.eval x) ≠ ∑ x ∈ univ.map D, q.val.eval x :=
+        fun h => hfalse (h.trans hsum)
+      exact (prEvent_mono _ _ _ (fun _ h => h.2.2)).trans
+        (Probability.prob_agreement_of_sum_ne (univ.map D) p q hne)
+    · exact (prEvent_eq_zero_of_forall_not ($ᵗ R) _ (fun _ h => hfalse h.1)).le.trans zero_le
+  · exact (prEvent_eq_zero_of_forall_not ($ᵗ R) _ (fun _ h => hsum h.2.1)).le.trans zero_le
+
+/-- At every fixed prefix, a false sum becomes valid with probability at most `deg / |R|`. -/
+theorem verifier_rbrKnowledgeSoundnessWorstCase [Fintype R] [IsDomain R] :
+    (verifier R deg D oSpec).rbrKnowledgeSoundnessWorstCase init impl
+      (inputRelation R deg D) (outputRelation R deg)
+      (fun _ => (deg : ℝ≥0) / Fintype.card R) := by
+  refine ⟨fun _ => Unit, extractor R deg oSpec, knowledge R deg D oSpec, ?_⟩
+  intro stmt i tr
+  rcases i with ⟨i, hi⟩
+  fin_cases i
+  · exact Direction.noConfusion (show Direction.P_to_V = Direction.V_to_P from hi)
+  · change Pr{let r ← $ᵗ R}[
+      ∃ w : Unit, ¬ state R deg D 1 stmt tr () ∧
+        state R deg D 2 stmt (tr.concat r) w] ≤ _
+    refine le_trans (prEvent_mono _ _ _ ?_)
+      (fixed_message_bound R deg D stmt.1 (stmt.2 ()) (tr ⟨0, Nat.zero_lt_succ 0⟩))
+    intro r hr
+    simpa only [inputRelation, Set.mem_ofPred_eq] using
+      (bad_event_iff R deg D stmt tr r).mp hr
+
 /-- Round-by-round knowledge soundness for the verifier. `IsDomain R` bounds by `deg / |R|` the
-probability that a uniform challenge is an agreement point of two distinct round polynomials. -/
+probability of agreement at a uniform challenge for round polynomials with unequal sums. -/
 theorem verifier_rbrKnowledgeSoundness [Fintype R] [IsDomain R] :
     (verifier R deg D oSpec).rbrKnowledgeSoundness init impl
     (inputRelation R deg D) (outputRelation R deg) (fun _ => (deg : ℝ≥0) / (Fintype.card R)) := by
-  sorry
+  exact Verifier.rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness init impl
+    (verifier_rbrKnowledgeSoundnessWorstCase R deg D oSpec)
 
 /-- Round-by-round knowledge soundness for the oracle verifier. -/
 theorem oracleVerifier_rbrKnowledgeSoundness [Fintype R] [IsDomain R] :
     (oracleVerifier R deg D oSpec).rbrKnowledgeSoundness init impl
     (inputRelation R deg D) (outputRelation R deg) (fun _ => (deg : ℝ≥0) / (Fintype.card R)) := by
-  sorry
+  change (oracleVerifier R deg D oSpec).toVerifier.rbrKnowledgeSoundness init impl _ _ _
+  rw [oracleVerifier_eq_verifier]
+  exact verifier_rbrKnowledgeSoundness R deg D oSpec
+
+/-- Fixed-prefix round-by-round knowledge soundness for the oracle verifier. -/
+theorem oracleVerifier_rbrKnowledgeSoundnessWorstCase [Fintype R] [IsDomain R] :
+    (oracleVerifier R deg D oSpec).toVerifier.rbrKnowledgeSoundnessWorstCase init impl
+    (inputRelation R deg D) (outputRelation R deg) (fun _ => (deg : ℝ≥0) / Fintype.card R) := by
+  rw [oracleVerifier_eq_verifier]
+  exact verifier_rbrKnowledgeSoundnessWorstCase R deg D oSpec
 
 -- TODO: break down the oracle reduction into a series of oracle reductions as stated above
 
