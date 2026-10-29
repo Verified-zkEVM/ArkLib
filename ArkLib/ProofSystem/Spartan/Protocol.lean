@@ -81,7 +81,7 @@ abbrev length : Fin 7 → ℕ :=
 /-- The protocol of each stage, in transcript order. -/
 abbrev stageSpec : (i : Fin 7) → ProtocolSpec (length sz i)
   | 0 => WitnessAttachment.pSpec (R := R) sz
-  | 1 => _root_.ZeroCheck.pSpec R (params).ℓ_m
+  | 1 => RandomEvaluation.pSpec R (params).ℓ_m
   | 2 => Sumcheck.Spec.pSpec R 3 (params).ℓ_m
   | 3 => SendEvaluations.pSpec R
   | 4 => Batching.pSpec R
@@ -92,7 +92,7 @@ instance messageInterface : ∀ i j, OracleInterface.{0, 0} ((stageSpec (R := R)
   | 0 => by
     letI : OracleInterface (R1CS.Witness R (params).toSizeR1CS) := Terminal.witnessInterface params
     exact inferInstanceAs (∀ j, OracleInterface ((WitnessAttachment.pSpec (R := R) sz).Message j))
-  | 1 => inferInstanceAs (∀ j, OracleInterface ((_root_.ZeroCheck.pSpec R (params).ℓ_m).Message j))
+  | 1 => inferInstanceAs (∀ j, OracleInterface ((RandomEvaluation.pSpec R (params).ℓ_m).Message j))
   | 2 => inferInstanceAs (∀ j, OracleInterface ((Sumcheck.Spec.pSpec R 3 (params).ℓ_m).Message j))
   | 3 => inferInstanceAs (∀ j, OracleInterface ((SendEvaluations.pSpec R).Message j))
   | 4 => inferInstanceAs (∀ j, OracleInterface ((Batching.pSpec R).Message j))
@@ -101,7 +101,7 @@ instance messageInterface : ∀ i j, OracleInterface.{0, 0} ((stageSpec (R := R)
 
 instance challengeSampling : ∀ i j, SampleableType ((stageSpec (R := R) sz i).Challenge j)
   | 0 => inferInstanceAs (∀ j, SampleableType ((WitnessAttachment.pSpec (R := R) sz).Challenge j))
-  | 1 => inferInstanceAs (∀ j, SampleableType ((_root_.ZeroCheck.pSpec R (params).ℓ_m).Challenge j))
+  | 1 => inferInstanceAs (∀ j, SampleableType ((RandomEvaluation.pSpec R (params).ℓ_m).Challenge j))
   | 2 => inferInstanceAs (∀ j, SampleableType ((Sumcheck.Spec.pSpec R 3 (params).ℓ_m).Challenge j))
   | 3 => inferInstanceAs (∀ j, SampleableType ((SendEvaluations.pSpec R).Challenge j))
   | 4 => inferInstanceAs (∀ j, SampleableType ((Batching.pSpec R).Challenge j))
@@ -189,7 +189,7 @@ theorem perfectCompleteness :
   · intro i
     fin_cases i
     · exact inferInstanceAs (WitnessAttachment.oracleProver sz oSpec).OutputIsPure
-    · exact inferInstanceAs (_root_.ZeroCheck.oracleProver oSpec R (params).ℓ_m
+    · exact inferInstanceAs (RandomEvaluation.oracleProver oSpec R (params).ℓ_m
         (R1CS.Statement R (params).toSizeR1CS) (OracleStatement (R := R) params)).OutputIsPure
     · exact FirstSumcheck.oracleProver_outputIsPure params oSpec
     · exact ⟨_, fun _ => rfl⟩

@@ -209,7 +209,7 @@ theorem sum_challengeError :
   rw [sum_seqComposeChallengeIdxToSigma]
   simp only [Fin.sum_univ_succ, Fin.sum_univ_zero]
   change (∑ _ : (WitnessAttachment.pSpec (R := R) sz).ChallengeIdx, (0 : ℝ≥0)) +
-    ((∑ _ : (_root_.ZeroCheck.pSpec R (params).ℓ_m).ChallengeIdx,
+    ((∑ _ : (RandomEvaluation.pSpec R (params).ℓ_m).ChallengeIdx,
       ((params).ℓ_m : ℝ≥0) / Fintype.card R) +
     ((∑ _ : (Sumcheck.Spec.pSpec R 3 (params).ℓ_m).ChallengeIdx,
       3 / (Fintype.card R : ℝ≥0)) +
@@ -219,7 +219,7 @@ theorem sum_challengeError :
       2 / (Fintype.card R : ℝ≥0)) +
     ((∑ _ : (!p[] : ProtocolSpec 0).ChallengeIdx, (0 : ℝ≥0)) + 0)))))) = _
   simp only [Finset.sum_const_zero, add_zero, zero_add, sumcheck]
-  have hz : Fintype.card (_root_.ZeroCheck.pSpec R (params).ℓ_m).ChallengeIdx = 1 :=
+  have hz : Fintype.card (RandomEvaluation.pSpec R (params).ℓ_m).ChallengeIdx = 1 :=
     Fintype.card_unique
   have hb : Fintype.card (Batching.pSpec R).ChallengeIdx = 1 := Fintype.card_unique
   simpa only [Finset.sum_const, Finset.card_univ, hz, hb, one_smul, add_assoc] using
