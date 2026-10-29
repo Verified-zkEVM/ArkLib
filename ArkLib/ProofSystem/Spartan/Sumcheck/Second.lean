@@ -355,7 +355,7 @@ structure InnerCertificate where
       (Sumcheck.Spec.relationRound R pp.ℓ_n 2 (boolEmbedding R) 0)
       (Sumcheck.Spec.relationRound R pp.ℓ_n 2 (boolEmbedding R) (.last pp.ℓ_n))
       (Sumcheck.Spec.oracleVerifier R 2 (boolEmbedding R) pp.ℓ_n oSpec).toVerifier extractor
-  sound : Verifier.rbrKnowledgeSoundnessWorstCaseWith init impl
+  sound : Verifier.rbrKnowledgeSoundnessWith init impl
       (Sumcheck.Spec.relationRound R pp.ℓ_n 2 (boolEmbedding R) 0)
       (Sumcheck.Spec.relationRound R pp.ℓ_n 2 (boolEmbedding R) (.last pp.ℓ_n))
       (Sumcheck.Spec.oracleVerifier R 2 (boolEmbedding R) pp.ℓ_n oSpec).toVerifier
@@ -365,7 +365,7 @@ structure InnerCertificate where
 certificate. The general theorem exports their existence rather than computational data. -/
 noncomputable def innerCertificate : InnerCertificate (R := R) pp oSpec init impl :=
   Classical.choice <| by
-    obtain ⟨W, E, K, h⟩ := Sumcheck.Spec.oracleVerifier_rbrKnowledgeSoundnessWorstCase
+    obtain ⟨W, E, K, h⟩ := Sumcheck.Spec.oracleVerifier_rbrKnowledgeSoundness
       R 2 (boolEmbedding R) pp.ℓ_n oSpec (init := init) (impl := impl)
     exact ⟨⟨W, E, K, h⟩⟩
 
@@ -404,13 +404,13 @@ noncomputable def knowledgeStateFunction :
 
 /-- Fixed-prefix knowledge soundness for the named lifted certificate, with error
 `2 / |R|` per challenge. -/
-theorem rbrKnowledgeSoundnessWorstCaseWith :
-    (oracleVerifier (R := R) pp oSpec).toVerifier.rbrKnowledgeSoundnessWorstCaseWith init impl
+theorem rbrKnowledgeSoundnessWith :
+    (oracleVerifier (R := R) pp oSpec).toVerifier.rbrKnowledgeSoundnessWith init impl
       (relIn pp) (relOut pp) (intermediateWitness (R := R) pp oSpec init impl)
       (rbrExtractor pp oSpec init impl) (knowledgeStateFunction pp oSpec init impl)
       (fun _ => (2 : ℝ≥0) / Fintype.card R) := by
   intro stmt i tr
-  exact OracleVerifier.liftContext_rbrKnowledgeSoundnessWorstCaseWith
+  exact OracleVerifier.liftContext_rbrKnowledgeSoundnessWith
       (Sumcheck.Spec.oracleVerifier R 2 (boolEmbedding R) pp.ℓ_n oSpec)
       (outerRelIn := relIn pp) (outerRelOut := relOut pp)
       (witLens := Witness.InvLens.trivial) (output pp oSpec)
@@ -419,11 +419,11 @@ theorem rbrKnowledgeSoundnessWorstCaseWith :
       (innerCertificate (R := R) pp oSpec init impl).sound stmt i tr
 
 /-- The second virtual sumcheck has fixed-prefix knowledge error `2 / |R|` per challenge. -/
-theorem rbrKnowledgeSoundnessWorstCase :
-    (oracleVerifier (R := R) pp oSpec).toVerifier.rbrKnowledgeSoundnessWorstCase init impl
+theorem rbrKnowledgeSoundness :
+    (oracleVerifier (R := R) pp oSpec).toVerifier.rbrKnowledgeSoundness init impl
       (relIn pp) (relOut pp) (fun _ => (2 : ℝ≥0) / Fintype.card R) :=
   ⟨intermediateWitness (R := R) pp oSpec init impl, rbrExtractor pp oSpec init impl,
     knowledgeStateFunction pp oSpec init impl,
-    rbrKnowledgeSoundnessWorstCaseWith pp oSpec init impl⟩
+    rbrKnowledgeSoundnessWith pp oSpec init impl⟩
 
 end Spartan.SecondSumcheck

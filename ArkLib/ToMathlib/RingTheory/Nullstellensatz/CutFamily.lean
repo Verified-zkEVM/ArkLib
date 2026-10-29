@@ -37,9 +37,10 @@ variable {k K σ : Type*} [Field k] [Field K] [Algebra k K] [Finite σ]
 vanish and every element of `cuts` vanishes. Then `x` is a zero of some member `Q` of the iterated
 retained cut family with `P ≤ Q`.
 
-The hypothesis `aeval x s ≠ 0` is needed: every member avoids `s` after one cut, so a point with
-`s = 0` can be covered only for `cuts = []`. The vanishing of the cuts at `x` is needed because
-every member contains every cut. -/
+The hypothesis `aeval x s ≠ 0` guarantees coverage. A retained component can also contain
+points where `s` vanishes: retention means that its ideal does not contain `s`, rather than
+pointwise nonvanishing. The vanishing of the cuts at `x` is needed because every member contains
+every cut. -/
 theorem exists_mem_iteratedRetainedCutFamily_of_mem_zeroLocus
     {Ps : Finset (Ideal (MvPolynomial σ k))} {P : Ideal (MvPolynomial σ k)} (hP : P ∈ Ps)
     {s : MvPolynomial σ k} {cuts : List (MvPolynomial σ k)} {x : σ → K}

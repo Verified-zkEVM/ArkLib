@@ -58,11 +58,11 @@ theorem reduction_perfectCompleteness :
     (reduction oSpec Statement Witness).perfectCompleteness init impl rel rel :=
   Reduction.id_perfectCompleteness init impl
 
-/-- The `DoNothing` verifier is perfectly round-by-round knowledge sound. -/
+/-- The `DoNothing` verifier is perfectly prover-averaged round-by-round knowledge sound. -/
 @[simp]
-theorem verifier_rbrKnowledgeSoundness :
-    (verifier oSpec Statement).rbrKnowledgeSoundness init impl rel rel 0 :=
-  Verifier.id_rbrKnowledgeSoundness init impl
+theorem verifier_rbrKnowledgeSoundnessAveraged :
+    (verifier oSpec Statement).rbrKnowledgeSoundnessAveraged init impl rel rel 0 :=
+  Verifier.id_rbrKnowledgeSoundnessAveraged init impl
 
 end Reduction
 
@@ -104,11 +104,11 @@ theorem oracleReduction_perfectCompleteness :
     (oracleReduction oSpec Statement OStatement Witness).perfectCompleteness init impl rel rel :=
   OracleReduction.id_perfectCompleteness init impl
 
-/-- The `DoNothing` oracle verifier is perfectly round-by-round knowledge sound. -/
+/-- The `DoNothing` oracle verifier is perfectly prover-averaged round-by-round knowledge sound. -/
 @[simp]
-theorem oracleVerifier_rbrKnowledgeSoundness :
-    (oracleVerifier oSpec Statement OStatement).rbrKnowledgeSoundness init impl rel rel 0 :=
-  OracleVerifier.id_rbrKnowledgeSoundness init impl
+theorem oracleVerifier_rbrKnowledgeSoundnessAveraged :
+    (oracleVerifier oSpec Statement OStatement).rbrKnowledgeSoundnessAveraged init impl rel rel 0 :=
+  OracleVerifier.id_rbrKnowledgeSoundnessAveraged init impl
 
 end OracleReduction
 

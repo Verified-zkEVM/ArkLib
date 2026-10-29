@@ -60,7 +60,7 @@ def HasLeftPseudoInverse (A : Matrix ℓ ℓ' F) : Prop := ∃ B : Matrix ℓ' �
 /-- A matrix `B` is a left pseudoinverse of a matrix `A` if `B * A = 1`. -/
 def IsLeftPseudoInverse (A : Matrix ℓ ℓ' F) (B : Matrix ℓ' ℓ F) : Prop := B * A = 1
 
-/-- For a matrix `A`, if the determinant of `A^T * A` is a unit, then `A^T * A * A^T` is a left
+/-- For a matrix `A`, if the determinant of `A^T * A` is a unit, then `(A^T * A)⁻¹ * A^T` is a left
 pseudoinverse of `A`. Here `A^T` denotes the transpose of `A`. -/
 lemma leftPseudoInverse_transpose_mul_self (A : Matrix ℓ ℓ' F) (hA : IsUnit (A.transpose * A).det) :
     IsLeftPseudoInverse A ((A.transpose * A)⁻¹ * A.transpose) := by

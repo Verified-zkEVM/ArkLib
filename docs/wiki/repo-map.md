@@ -676,12 +676,13 @@ home_page/            site assets and assembled website root
   `coordinateWiseSpecialSound (ofSpecialSound k) ↔ specialSound k` lives in
   `Security/Implications.lean`.
 - Round-by-round security lives in `Security/RoundByRound.lean` (state functions,
-  `Extractor.RoundByRound`, the one-shot variants and their bridges, plus the **worst-case** layer
-  `rbrSoundnessWorstCase` / `rbrKnowledgeSoundnessWorstCase` and the implications back to the
-  averaged notions), on top of the probability glue in `Security/RbrGame.lean` (the challenge-first
-  master bounds over `simulateQ`/`OptionT` that discharge those implications). This is a **separate
-  axis** from the transcript-tree notions below: its extractor type is `Extractor.RoundByRound` on
-  transcripts, not `Extractor.TreeBased`, and it carries no escape-event layer.
+  `Extractor.RoundByRound`, the one-shot variants and their bridges, plus the default
+  **fixed-prefix** notions `rbrSoundness` / `rbrKnowledgeSoundness` and their implications to the
+  prover-averaged `rbrSoundnessAveraged` / `rbrKnowledgeSoundnessAveraged`), on top of the
+  probability glue in `Security/RbrGame.lean` (the challenge-first master bounds over
+  `simulateQ`/`OptionT` that discharge those implications). This is a **separate axis** from the
+  transcript-tree notions below: its extractor type is `Extractor.RoundByRound` on transcripts,
+  not `Extractor.TreeBased`, and it carries no escape-event layer.
   `Security/Guarded.lean` defines guarded verifiers, independent of any security notion:
   `Verifier.IsGuardedWith`/`IsGuarded`, their data form `Verifier.GuardedForm` (check and verdict
   map as fields), `GuardedForm.append`, the seam run lemma `Verifier.append_run_guardedLeft`, and
@@ -689,7 +690,7 @@ home_page/            site assets and assembled website root
   verifier. `Security/GuardedRoundByRound.lean` adds what a round-by-round proof needs about a
   verifier that aborts on a failed check: the positive-probability lemma
   `Verifier.GuardedForm.check_and_of_prEvent_pos` and the message-then-challenge reducer
-  `Verifier.rbrKnowledgeSoundnessWorstCaseWith_of_two_message`, which bounds the extraction-failure
+  `Verifier.rbrKnowledgeSoundnessWith_of_two_message`, which bounds the extraction-failure
   event `rbrExtractionFailureEvent` (defined in `RoundByRound.lean`) per fixed prefix. The run
   equation of a query-guard-return oracle verifier (one message query, then a guard and a
   verdict that may read the answer and the challenges),
@@ -771,7 +772,7 @@ home_page/            site assets and assembled website root
   polynomial witnesses agreeing with all input words on one common set of density at least
   `1 - δ`; the output relation is definitionally FRI's input relation.
   `BatchedFri/Security.lean` proves perfect completeness at every radius and ordinary and
-  worst-case round-by-round soundness for any `ε` bounding `caError G C δ δ`.
+  round-by-round soundness for any `ε` bounding `caError G C δ δ`.
   `BatchedFri/EndToEnd.lean` adds the FRI soundness error and proves composite perfect
   completeness at radius zero. Neither generic soundness theorem restricts the radius.
   Family corollaries instantiate these bounds:
@@ -812,7 +813,7 @@ home_page/            site assets and assembled website root
     with seam and purity corollaries and state-uniform suffix correctness.
   - `Append/OneMessage.lean` — the one-message specialization with effectful prover outputs.
   - `Append/RoundByRound.lean` — composition from fixed-prefix bounds under a pure first verifier.
-  - `Append/GuardedRoundByRound.lean` — worst-case round-by-round knowledge soundness composes
+  - `Append/GuardedRoundByRound.lean` — round-by-round knowledge soundness composes
     from fixed-prefix component bounds under a guarded first verifier, with the composed extractor
     and knowledge state function (`KnowledgeStateFunction.appendGuarded`) named; the components
     share only the intermediate relation.
@@ -826,7 +827,7 @@ home_page/            site assets and assembled website root
   `Sequential/Completeness.lean` adds finite-chain completeness for pure outputs/verdicts;
   `Sequential/GuardedCompleteness.lean` handles deterministic rejecting verifiers.
   `Sequential/GuardedNary.lean` extends guarded completeness to finite chains;
-  `Sequential/GuardedRoundByRound.lean` extends guarded worst-case round-by-round knowledge
+  `Sequential/GuardedRoundByRound.lean` extends guarded round-by-round knowledge
   soundness to finite chains, requiring fixed-prefix bounds and guardedness for every component,
   with the `seqCompose` error reindexing proved;
   `Sequential/OracleCompleteness.lean` supplies binary and finite-chain oracle-reduction wrappers.
@@ -834,7 +835,7 @@ home_page/            site assets and assembled website root
   composed oracle verifier from its components' (`OracleVerifier.appendGuardedForm`,
   `OracleVerifier.seqComposeGuardedForm`). `OracleReduction/CastIdx.lean` moves an oracle verifier
   or reduction along equalities of the indices of its statement, oracle-statement and witness
-  families (`OracleVerifier.castIdx`, `OracleReduction.castIdx`), with the worst-case
+  families (`OracleVerifier.castIdx`, `OracleReduction.castIdx`), with the
   round-by-round knowledge soundness, perfect completeness and guarded form moving along.
   `Sequential/NoAmbient.lean` proves output purity for empty ambient oracles and constructs guarded
   forms from explicit fallback maps. `LiftContext/Purity.lean` transports output purity and guarded
@@ -873,7 +874,7 @@ home_page/            site assets and assembled website root
   owns the scalar rounds, residual relation, matrix terminal check and guarded composition on the
   same packed witness. `RingSwitch` composes them directly, with exact challenge-error sum
   `bat.error + 2m/card C`; it also closes any opening already typed at the contextual evaluation
-  endpoint through `append_perfectCompleteness` and `append_rbrKnowledgeSoundnessWorstCase`.
+  endpoint through `append_perfectCompleteness` and `append_rbrKnowledgeSoundness`.
   Completeness uses a commutative challenge ring; full security uses finite sampling, no zero
   divisors, functional compatibility and injective packing-to-challenge coefficient transport.
   The head's point-local collision law needs only equal component evaluations among compatible
@@ -889,7 +890,7 @@ home_page/            site assets and assembled website root
   `Binius/FRIBinius/RingSwitch` composes the shared frontend with the Binary Basefold
   contextual opening. Completeness uses exact encodings, security unique-radius compatibility.
   `Packing/OpeningAdapter` transports a standard `MLIOPCS` to the contextual opening contract
-  through a zero-round projection, preserving completeness and worst-case round-by-round security.
+  through a zero-round projection, preserving completeness and round-by-round security.
   `ArkLibTest/ProofSystem/RingSwitching/Packing/RingSwitch/{UnequalRankSuffix,Quirky}` instantiate full protocols
   with effective ranks four/three over different fields and exact error sum below one. Their
   transparent polynomial oracles are specification fixtures, not commitment schemes.

@@ -108,8 +108,8 @@ One of the most fundamental oracle reductions tests whether two values computed 
 \end{theorem}
 
 \begin{theorem}[RandomQuery Knowledge Soundness]
-    Suppose that whenever $f(x, \mathsf{o}) \neq g(x, \mathsf{o})$, a uniformly random query $q$ satisfies $\mathsf{answer}(f(x, \mathsf{o}), q) = \mathsf{answer}(g(x, \mathsf{o}), q)$ with probability at most $\varepsilon$. Then the RandomQuery oracle reduction satisfies worst-case round-by-round knowledge soundness with error $\varepsilon$.
-    \lean{RandomQuery.oracleVerifier_rbrKnowledgeSoundnessWorstCase}
+    Suppose that whenever $f(x, \mathsf{o}) \neq g(x, \mathsf{o})$, a uniformly random query $q$ satisfies $\mathsf{answer}(f(x, \mathsf{o}), q) = \mathsf{answer}(g(x, \mathsf{o}), q)$ with probability at most $\varepsilon$. Then the RandomQuery oracle reduction satisfies fixed-prefix round-by-round knowledge soundness with error $\varepsilon$.
+    \lean{RandomQuery.oracleVerifier_rbrKnowledgeSoundness}
     \uses{def:randomquery_oracle_reduction}
 \end{theorem}
 
@@ -123,8 +123,8 @@ The agreement bound only needs to hold for the pairs $f(x, \mathsf{o}), g(x, \ma
 \end{definition}
 
 \begin{theorem}[RandomQuery Knowledge Soundness from Distance]
-    If the oracle interface on $M$ has distance bound $d$, then the RandomQuery oracle reduction satisfies round-by-round knowledge soundness with error $\frac{d}{|\mathsf{Query}|}$.
-    \lean{RandomQuery.oracleVerifier_rbrKnowledgeSoundness}
+    If the oracle interface on $M$ has distance bound $d$, then the RandomQuery oracle reduction satisfies prover-averaged round-by-round knowledge soundness with error $\frac{d}{|\mathsf{Query}|}$.
+    \lean{RandomQuery.oracleVerifier_rbrKnowledgeSoundnessAveraged}
     \uses{def:randomquery_oracle_reduction, def:oracle_distance}
 \end{theorem}
 
@@ -145,8 +145,8 @@ Polynomial identity testing is the instance of RandomQuery in which $M$ is the t
 \end{definition}
 
 \begin{theorem}[RandomEvaluation Soundness]
-    If every $P(x, \mathsf{o})$ has total degree at most $d$, the RandomEvaluation reduction satisfies worst-case round-by-round knowledge soundness with error $\frac{d}{|\mathbb{F}|}$. This follows from the Schwartz--Zippel lemma: a nonzero polynomial of total degree at most $d$ vanishes at a uniformly random point of $\mathbb{F}^m$ with probability at most $\frac{d}{|\mathbb{F}|}$. For multilinear polynomials the error is $\frac{m}{|\mathbb{F}|}$.
-    \lean{RandomEvaluation.oracleVerifier_rbrKnowledgeSoundnessWorstCase}
+    If every $P(x, \mathsf{o})$ has total degree at most $d$, the RandomEvaluation reduction satisfies fixed-prefix round-by-round knowledge soundness with error $\frac{d}{|\mathbb{F}|}$. This follows from the Schwartz--Zippel lemma: a nonzero polynomial of total degree at most $d$ vanishes at a uniformly random point of $\mathbb{F}^m$ with probability at most $\frac{d}{|\mathbb{F}|}$. For multilinear polynomials the error is $\frac{m}{|\mathbb{F}|}$.
+    \lean{RandomEvaluation.oracleVerifier_rbrKnowledgeSoundness}
     \uses{def:random_evaluation}
 \end{theorem}
 

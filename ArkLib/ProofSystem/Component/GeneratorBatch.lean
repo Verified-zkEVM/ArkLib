@@ -201,10 +201,10 @@ variable [Fintype S] [Nonempty S]
 
 omit [Fintype S] in
 /-- A pointwise zero-evasion bound gives a fixed-prefix knowledge certificate. -/
-theorem oracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_of_prob_le (ε : ℝ≥0)
+theorem oracleVerifier_rbrKnowledgeSoundnessWith_of_prob_le (ε : ℝ≥0)
     (hG : ∀ v : Fin k → F, v ≠ 0 →
       Pr{let s ← $ᵗ S}[dotProduct (G s) v = 0] ≤ (ε : ℝ≥0∞)) :
-    (oracleVerifier F S d k G hd oSpec).toVerifier.rbrKnowledgeSoundnessWorstCaseWith init impl
+    (oracleVerifier F S d k G hd oSpec).toVerifier.rbrKnowledgeSoundnessWith init impl
       (relIn F D d k) (relOut F D d) (fun _ => Unit) (rbrExtractor F S d k oSpec)
       (knowledgeStateFunction F S D d k G hd oSpec init impl) (fun _ => ε) := by
   intro stmt i tr
@@ -222,24 +222,24 @@ theorem oracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_of_prob_le (ε : ℝ�
       Polynomial.prob_zeroOn_generatorBatch_le_of_pointwise G hG hf
 
 /-- A zero-evading generator hides each fixed false family with probability at most `ε`. -/
-theorem oracleVerifier_rbrKnowledgeSoundnessWorstCaseWith (ε : unitInterval)
+theorem oracleVerifier_rbrKnowledgeSoundnessWith (ε : unitInterval)
     (hG : IsZeroEvadingGenerator G ε) :
-    (oracleVerifier F S d k G hd oSpec).toVerifier.rbrKnowledgeSoundnessWorstCaseWith init impl
+    (oracleVerifier F S d k G hd oSpec).toVerifier.rbrKnowledgeSoundnessWith init impl
       (relIn F D d k) (relOut F D d) (fun _ => Unit) (rbrExtractor F S d k oSpec)
       (knowledgeStateFunction F S D d k G hd oSpec init impl)
       (fun _ => unitInterval.toNNReal ε) := by
-  apply oracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_of_prob_le
+  apply oracleVerifier_rbrKnowledgeSoundnessWith_of_prob_le
   intro v hv
   rw [← ENNReal.ofReal_coe_nnreal]
   apply le_trans (le_sSup ?_) hG
   exact ⟨v, hv, rfl⟩
 
 /-- Existential form of the named fixed-prefix knowledge certificate. -/
-theorem oracleVerifier_rbrKnowledgeSoundnessWorstCase (ε : unitInterval)
+theorem oracleVerifier_rbrKnowledgeSoundness (ε : unitInterval)
     (hG : IsZeroEvadingGenerator G ε) :
-    (oracleVerifier F S d k G hd oSpec).toVerifier.rbrKnowledgeSoundnessWorstCase init impl
+    (oracleVerifier F S d k G hd oSpec).toVerifier.rbrKnowledgeSoundness init impl
       (relIn F D d k) (relOut F D d) (fun _ => unitInterval.toNNReal ε) :=
   ⟨_, rbrExtractor F S d k oSpec, knowledgeStateFunction F S D d k G hd oSpec init impl,
-    oracleVerifier_rbrKnowledgeSoundnessWorstCaseWith F S D d k G hd oSpec init impl ε hG⟩
+    oracleVerifier_rbrKnowledgeSoundnessWith F S D d k G hd oSpec init impl ε hG⟩
 
 end GeneratorBatch

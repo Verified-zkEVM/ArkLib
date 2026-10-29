@@ -521,7 +521,7 @@ def ranges {n : ℕ} (a : Fin n → ℕ) : (i : Fin n) → Fin (a i) → ℕ :=
       simp only [tail, pred, subNat_one_succ] at rest
       exact fun j => rest j + a 0
 
-/-- Find the first index `i` such that `k` is smaller than `∑ j < i, a j`, and return `none`
+/-- Find the first index `i` such that `k` is smaller than `∑ j ≤ i, n j`, and return `none`
   otherwise.
 
   This is the dependent version of `Fin.divNat`.

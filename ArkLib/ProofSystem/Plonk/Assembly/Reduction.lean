@@ -213,26 +213,26 @@ noncomputable def error (i : (pSpec ω hω hn).ChallengeIdx) : ℝ≥0 :=
   stageError ω hω hn j.1 j.2
 
 /-- Named fixed-prefix knowledge security of the entire oracle reduction. -/
-theorem oracleVerifier_rbrKnowledgeSoundnessWorstCaseWith :
-    (oracleReduction ω hω hn cs L pi oSpec).verifier.toVerifier.rbrKnowledgeSoundnessWorstCaseWith
+theorem oracleVerifier_rbrKnowledgeSoundnessWith :
+    (oracleReduction ω hω hn cs L pi oSpec).verifier.toVerifier.rbrKnowledgeSoundnessWith
       init impl (rel ω hω cs pi 0)
         (rel ω hω cs pi 4) _ (rbrExtractor ω hω hn cs L pi oSpec)
         (knowledgeStateFunction ω hω hn cs L pi oSpec init impl) (error ω hω hn) := by
-  change Verifier.rbrKnowledgeSoundnessWorstCaseWith init impl _ _
+  change Verifier.rbrKnowledgeSoundnessWith init impl _ _
     (OracleVerifier.seqCompose (Stmt F) (OStmt F n)
       (fun i => (stages ω hω hn cs L pi oSpec i).verifier)).toVerifier _ _ _ _
-  refine OracleVerifier.seqCompose_rbrKnowledgeSoundnessWorstCaseWith_of_guarded
+  refine OracleVerifier.seqCompose_rbrKnowledgeSoundnessWith_of_guarded
     (Stmt F) (OStmt F n) (Wit F n) (rel ω hω cs pi)
     (fun i => (stages ω hω hn cs L pi oSpec i).verifier)
     (stageGuards ω hω hn cs L pi oSpec) (stageExtractors ω hω hn oSpec)
     (stageKnowledge ω hω hn cs L pi oSpec init impl) (stageError ω hω hn) ?_
   intro i
   fin_cases i
-  · exact SendWitness.oracleVerifier_rbrKnowledgeSoundnessWorstCaseWith ω hω cs pi oSpec init impl
-  · exact GrandProduct.oracleVerifier_rbrKnowledgeSoundnessWorstCaseWith ω hω hn cs L pi
+  · exact SendWitness.oracleVerifier_rbrKnowledgeSoundnessWith ω hω cs pi oSpec init impl
+  · exact GrandProduct.oracleVerifier_rbrKnowledgeSoundnessWith ω hω hn cs L pi
       oSpec init impl
-  · exact Batch.oracleVerifier_rbrKnowledgeSoundnessWorstCaseWith ω hω oSpec init impl
-  · exact Quotient.oracleVerifier_rbrKnowledgeSoundnessWorstCaseWith ω hω hn oSpec init impl
+  · exact Batch.oracleVerifier_rbrKnowledgeSoundnessWith ω hω oSpec init impl
+  · exact Quotient.oracleVerifier_rbrKnowledgeSoundnessWith ω hω hn oSpec init impl
 
 /-- Completeness loss occurs only at the joint grand-product challenge. Real division is
 noncomputable. -/
@@ -311,9 +311,9 @@ theorem oracleVerifier_knowledgeSoundnessWith :
     (oracleReduction ω hω hn cs L pi oSpec).verifier.knowledgeSoundnessWith init impl
       (rel ω hω cs pi 0) (rel ω hω cs pi 4) (transcriptExtractor ω hω hn oSpec)
       (((7 * n - 3 : ℕ) : ℝ≥0) / Fintype.card F) := by
-  have h := OracleVerifier.knowledgeSoundnessWith_of_rbrKnowledgeSoundnessWorstCaseWith_of_guarded
+  have h := OracleVerifier.knowledgeSoundnessWith_of_rbrKnowledgeSoundnessWith_of_guarded
     (guardedForm ω hω hn cs L pi oSpec) (knowledgeStateFunction ω hω hn cs L pi oSpec init impl)
-    (oracleVerifier_rbrKnowledgeSoundnessWorstCaseWith ω hω hn cs L pi oSpec init impl)
+    (oracleVerifier_rbrKnowledgeSoundnessWith ω hω hn cs L pi oSpec init impl)
   change (oracleReduction ω hω hn cs L pi oSpec).verifier.knowledgeSoundnessWith init impl
     (rel ω hω cs pi 0) (rel ω hω cs pi 4)
     (rbrExtractor ω hω hn cs L pi oSpec).foldExtractor (∑ i, error ω hω hn i) at h

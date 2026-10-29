@@ -189,20 +189,20 @@ def knowledgeStateFunction :
     simpa only [guardedForm, decide_eq_true_eq, checkValue_eq, terminalRelation] using hc
 
 /-- The unit extractor certifies the terminal verifier with fixed-prefix error zero. -/
-theorem finalVerifier_rbrKnowledgeSoundnessWorstCaseWith :
-    (finalVerifier (R := R) pp oSpec).toVerifier.rbrKnowledgeSoundnessWorstCaseWith init impl
+theorem finalVerifier_rbrKnowledgeSoundnessWith :
+    (finalVerifier (R := R) pp oSpec).toVerifier.rbrKnowledgeSoundnessWith init impl
       (relIn pp) (relOut pp) (fun _ => Unit) Extractor.RoundByRound.unit
       (knowledgeStateFunction pp oSpec init impl) (fun _ => 0) := by
   intro _ i
   exact Fin.elim0 i.1
 
 /-- The terminal verifier has fixed-prefix round-by-round knowledge error zero. -/
-theorem finalVerifier_rbrKnowledgeSoundnessWorstCase :
-    (finalVerifier (R := R) pp oSpec).toVerifier.rbrKnowledgeSoundnessWorstCase init impl
+theorem finalVerifier_rbrKnowledgeSoundness :
+    (finalVerifier (R := R) pp oSpec).toVerifier.rbrKnowledgeSoundness init impl
       (relIn pp) (relOut pp) (fun _ => 0) := by
   exact ⟨fun _ => Unit, Extractor.RoundByRound.unit,
     knowledgeStateFunction pp oSpec init impl,
-    finalVerifier_rbrKnowledgeSoundnessWorstCaseWith pp oSpec init impl⟩
+    finalVerifier_rbrKnowledgeSoundnessWith pp oSpec init impl⟩
 
 /-- The terminal oracle reduction is perfectly complete for the semantic terminal equation. -/
 theorem finalReduction_perfectCompleteness :

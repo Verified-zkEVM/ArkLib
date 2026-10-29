@@ -120,19 +120,19 @@ def knowledgeStateFunction :
     exact Evaluation.inputRelation_of_check pp s.1 s.2 v hcheck hv
 
 /-- Fixed-prefix knowledge soundness with the named unit extractor and zero error. -/
-theorem verifier_rbrKnowledgeSoundnessWorstCaseWith :
-    (oracleVerifier (R := R) pp oSpec).toVerifier.rbrKnowledgeSoundnessWorstCaseWith init impl
+theorem verifier_rbrKnowledgeSoundnessWith :
+    (oracleVerifier (R := R) pp oSpec).toVerifier.rbrKnowledgeSoundnessWith init impl
       (relIn pp) (relOut pp) (fun _ => Unit) Extractor.RoundByRound.unit
       (knowledgeStateFunction pp oSpec init impl) (fun _ => 0) := by
   intro _ i
   exact isEmptyElim i
 
 /-- Sending and checking row evaluations has zero fixed-prefix knowledge error. -/
-theorem verifier_rbrKnowledgeSoundnessWorstCase :
-    (oracleVerifier (R := R) pp oSpec).toVerifier.rbrKnowledgeSoundnessWorstCase init impl
+theorem verifier_rbrKnowledgeSoundness :
+    (oracleVerifier (R := R) pp oSpec).toVerifier.rbrKnowledgeSoundness init impl
       (relIn pp) (relOut pp) (fun _ => 0) :=
   ⟨_, _, knowledgeStateFunction pp oSpec init impl,
-    verifier_rbrKnowledgeSoundnessWorstCaseWith pp oSpec init impl⟩
+    verifier_rbrKnowledgeSoundnessWith pp oSpec init impl⟩
 
 /-- Honest row evaluations pass the scalar check and establish all three output claims. -/
 theorem reduction_perfectCompleteness :

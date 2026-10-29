@@ -96,10 +96,10 @@ example :
 example {ι σ : Type} (oSpec : OracleSpec ι) (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp)) :
     (_root_.QuotientZeroTest.oracleVerifier F domain 2 oSpec).toVerifier
-      |>.rbrKnowledgeSoundnessWorstCase init impl (_root_.QuotientZeroTest.relIn F domain 2)
+      |>.rbrKnowledgeSoundness init impl (_root_.QuotientZeroTest.relIn F domain 2)
         _root_.QuotientZeroTest.relOut (fun _ => (2 : ℝ≥0) / 5) := by
   simpa [F] using
-    _root_.QuotientZeroTest.oracleVerifier_rbrKnowledgeSoundnessWorstCase
+    _root_.QuotientZeroTest.oracleVerifier_rbrKnowledgeSoundness
       F domain 2 oSpec init impl (by decide)
 
 example (z : F) :

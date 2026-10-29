@@ -56,7 +56,7 @@ protocol; retaining `q` does not prove those restrictions.
 `RingSwitch.perfectCompleteness` uses a sampleable commutative challenge ring and the layout's
 reconstruction law. It does not require a separation certificate or no-zero-divisors assumption.
 
-`BatchingStrategy` adds a collision certificate to a rule. Full worst-case round-by-round
+`BatchingStrategy` adds a collision certificate to a rule. Full round-by-round
 knowledge soundness requires a finite sampleable challenge ring with no zero divisors,
 `pc.Functional`, and injectivity of `algebraMap P C`. Functionality fixes the compatible packed
 polynomial before each challenge. The explicit finite sum in `RingSwitch.rbrError_sum` is
@@ -64,13 +64,13 @@ polynomial before each challenge. The explicit finite sum in `RingSwitch.rbrErro
 `bat.error + m * (2 / card C)`.
 
 The head has one batching challenge, the loop `m` scalar challenges, and the terminal none.
-`perfectCompleteness_and_rbrKnowledgeSoundnessWorstCase` bundles completeness, security and this
+`perfectCompleteness_and_rbrKnowledgeSoundness` bundles completeness, security and this
 exact sum. It makes no ordinary knowledge-soundness claim.
 
 For the head alone, equal component evaluations at the fixed query suffice: the compatible
 polynomials need not be equal or form a finite set. `Head.pr_exists_derivedTarget_le_of_partials_eq`
 preserves this point-local collision law, and `bad_event_le_of_partials_eq` adds the guard.
-The standalone `Head.rbrKnowledgeSoundnessWorstCaseWith_of_partials_eq` uses the same weaker
+The standalone `Head.rbrKnowledgeSoundnessWith_of_partials_eq` uses the same weaker
 premise for every fixed query and oracle statement, with the extractor and knowledge states.
 `TensorPrefix.pr_exists_target_collision_le_of_embedded_eval_eq` states the carrier collision law.
 
@@ -79,7 +79,7 @@ the challenge, charging only incorrect candidates. This head bound does not impl
 tail security, adaptive-list extraction or preservation of inherited residual constraints.
 `Batching/CoordinateSample` also certifies nontrivial head separation over rings with zero divisors.
 
-`RingSwitch.append_rbrKnowledgeSoundnessWorstCase` closes any opening already typed at the
+`RingSwitch.append_rbrKnowledgeSoundness` closes any opening already typed at the
 contextual same-commitment endpoint. `append_perfectCompleteness` supplies the separate
 completeness composition. An opening complete only on exact encodings uses exact compatibility
 for the completeness relation; relaxed-radius compatibility remains the security relation.
@@ -95,13 +95,13 @@ no second certified phase implementation.
 `Binius/FRIBinius/RingSwitch` appends the Binary Basefold contextual opening. Its existing
 zero-round frontier projects the final evaluation and formats the witness, with no extra wire
 phase. Exact first-codeword encodings give completeness; unique-radius compatibility gives
-worst-case round-by-round security. `fullError_sum_le` transports the full challenge sum
+round-by-round security. `fullError_sum_le` transports the full challenge sum
 to the frontend loss plus the backend's closed-form upper bound. The concrete nonconstant
 `GF(16)/GF(2)` acceptance fixture instantiates both and bounds that sum strictly below one.
 
 `OpeningAdapter` converts a standard `MLIOPCS` to a contextual opening by a zero-round
-projection, with completeness and worst-case round-by-round security transport. Averaged
-corollaries follow from the framework's worst-case implication. Conversion to ordinary
+projection, with completeness and round-by-round security transport. Prover-averaged
+corollaries follow from the framework's fixed-prefix implication. Conversion to ordinary
 knowledge soundness remains admitted.
 
 The full `RingSwitch/{UnequalRankSuffix,Quirky}` fixtures use packing rank four over `GF(16)`, opening rank three

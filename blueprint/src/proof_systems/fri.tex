@@ -116,7 +116,7 @@ The conditional probability of each fresh bad event is bounded by the appropriat
 folding or query theorem. The executable verifier accepts exactly the final
 query event, including the terminal degree guard, so it rejects whenever the
 persistent state is false. This supplies round-by-round soundness through ArkLib's
-worst-case-prefix interface. Separately, induction over the actual stateful prover
+fixed-prefix interface. Separately, induction over the actual stateful prover
 execution accumulates the conditional errors and proves ordinary soundness,
 without invoking unfinished general composition or implication theorems.
 \end{proof}

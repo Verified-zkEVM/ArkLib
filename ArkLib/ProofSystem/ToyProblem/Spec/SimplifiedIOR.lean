@@ -554,7 +554,7 @@ therefore is not the deterministic round-by-round Definition A.5 result.
 The executable exact-extractor contracts are
 `Impl.IRS.simplifiedOracleVerifier_knowledgeSoundnessWith_straightlineExtractor`
 and
-`Impl.IRS.simplifiedOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_rbrExtractor`;
+`Impl.IRS.simplifiedOracleVerifier_rbrKnowledgeSoundnessWith_rbrExtractor`;
 existential knowledge soundness is a corollary there. -/
 theorem verifier_knowledgeSoundness
     [SampleableType F] [Nonempty ι] [Finite A]

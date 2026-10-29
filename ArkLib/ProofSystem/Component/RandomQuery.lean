@@ -27,7 +27,8 @@ Completeness is immediate. Round-by-round knowledge soundness has error `ε` whe
 of distinct values `f ≠ g` that can occur agrees at a uniform query with probability at most
 `ε`. Two special cases:
    - comparing two oracle statements of a type with oracle distance at most `d` (`distanceLE`),
-     with error `d / |Query|` (`oracleVerifier_rbrKnowledgeSoundness`);
+     with error `d / |Query|`, stated in the prover-averaged form
+     (`oracleVerifier_rbrKnowledgeSoundnessAveraged`);
    - polynomial identity testing, comparing a polynomial with `0` by evaluation at a random point
      (`RandomEvaluation`).
 -/
@@ -183,11 +184,11 @@ def knowledgeStateFunction :
 
 /-- Fixed-prefix knowledge soundness for the named extractor and knowledge state, with error `ε`
 when every pair of distinct values agrees at a uniform query with probability at most `ε`. -/
-theorem oracleVerifier_rbrKnowledgeSoundnessWorstCaseWith (ε : ℝ≥0)
+theorem oracleVerifier_rbrKnowledgeSoundnessWith (ε : ℝ≥0)
     (hAgree : ∀ stmt oracles, f stmt oracles ≠ g stmt oracles →
       Pr{let q ← $ᵗ Query M}[answer (f stmt oracles) q = answer (g stmt oracles) q] ≤ ε) :
     (oracleVerifier oSpec Statement OStatement
-        (Query M)).toVerifier.rbrKnowledgeSoundnessWorstCaseWith init impl
+        (Query M)).toVerifier.rbrKnowledgeSoundnessWith init impl
       (relIn Statement OStatement M f g) (relOut Statement OStatement M f g)
       (fun _ => Unit) (rbrExtractor oSpec Statement OStatement (Query M))
       (knowledgeStateFunction oSpec Statement OStatement M f g) (fun _ => ε) := by
@@ -211,16 +212,16 @@ theorem oracleVerifier_rbrKnowledgeSoundnessWorstCaseWith (ε : ℝ≥0)
   · simp [hfg]
   · simpa only [hfg, not_false_eq_true, true_and] using hAgree stmt oracles hfg
 
-/-- Worst-case, fixed-prefix round-by-round knowledge soundness with error `ε`. -/
-theorem oracleVerifier_rbrKnowledgeSoundnessWorstCase (ε : ℝ≥0)
+/-- Fixed-prefix round-by-round knowledge soundness with error `ε`. -/
+theorem oracleVerifier_rbrKnowledgeSoundness (ε : ℝ≥0)
     (hAgree : ∀ stmt oracles, f stmt oracles ≠ g stmt oracles →
       Pr{let q ← $ᵗ Query M}[answer (f stmt oracles) q = answer (g stmt oracles) q] ≤ ε) :
-    (oracleVerifier oSpec Statement OStatement (Query M)).toVerifier.rbrKnowledgeSoundnessWorstCase
+    (oracleVerifier oSpec Statement OStatement (Query M)).toVerifier.rbrKnowledgeSoundness
       init impl (relIn Statement OStatement M f g) (relOut Statement OStatement M f g)
       (fun _ => ε) :=
   ⟨fun _ => Unit, rbrExtractor oSpec Statement OStatement (Query M),
     knowledgeStateFunction oSpec Statement OStatement M f g,
-    oracleVerifier_rbrKnowledgeSoundnessWorstCaseWith oSpec Statement OStatement M f g ε
+    oracleVerifier_rbrKnowledgeSoundnessWith oSpec Statement OStatement M f g ε
       hAgree⟩
 
 section Distance
@@ -250,14 +251,14 @@ theorem prob_answer_eq_le_of_distanceLE {d : ℕ} (hDist : distanceLE O d) (a b 
 
 variable (M)
 
-/-- For a type with oracle distance at most `d`, the random-query reduction is round-by-round
-knowledge sound with error `d / |Query|`. -/
-theorem oracleVerifier_rbrKnowledgeSoundness {d : ℕ} (hDist : distanceLE O d) :
-    (oracleVerifier oSpec Statement OStatement (Query M)).rbrKnowledgeSoundness init impl
+/-- For a type with oracle distance at most `d`, the random-query reduction is prover-averaged
+round-by-round knowledge sound with error `d / |Query|`. -/
+theorem oracleVerifier_rbrKnowledgeSoundnessAveraged {d : ℕ} (hDist : distanceLE O d) :
+    (oracleVerifier oSpec Statement OStatement (Query M)).rbrKnowledgeSoundnessAveraged init impl
       (relIn Statement OStatement M f g) (relOut Statement OStatement M f g)
       (fun _ => (d : ℝ≥0) / (Fintype.card (Query M) : ℝ≥0)) := by
-  apply Verifier.rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness
-  exact oracleVerifier_rbrKnowledgeSoundnessWorstCase oSpec Statement OStatement M f g _
+  apply Verifier.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged
+  exact oracleVerifier_rbrKnowledgeSoundness oSpec Statement OStatement M f g _
     fun stmt oracles hfg => prob_answer_eq_le_of_distanceLE hDist _ _ hfg
 
 end Distance

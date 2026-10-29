@@ -78,25 +78,25 @@ info: 'Reduction.seqCompose_perfectCompleteness_of_pure' depends on axioms:
 #print axioms Reduction.seqCompose_perfectCompleteness_of_pure
 
 /--
-info: 'Verifier.append_rbrSoundnessWorstCase_of_pure_first' depends on axioms:
+info: 'Verifier.append_rbrSoundness_of_pure_first' depends on axioms:
 [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Verifier.append_rbrSoundnessWorstCase_of_pure_first
+#print axioms Verifier.append_rbrSoundness_of_pure_first
 
 /--
-info: 'Verifier.append_rbrSoundness_of_worst_case_of_pure_first' depends on axioms:
+info: 'Verifier.append_rbrSoundnessAveraged_of_pure_first' depends on axioms:
 [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Verifier.append_rbrSoundness_of_worst_case_of_pure_first
+#print axioms Verifier.append_rbrSoundnessAveraged_of_pure_first
 
 /--
-info: 'OracleVerifier.append_rbrSoundness_of_worst_case_of_pure_first' depends on axioms:
+info: 'OracleVerifier.append_rbrSoundnessAveraged_of_pure_first' depends on axioms:
 [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms OracleVerifier.append_rbrSoundness_of_worst_case_of_pure_first
+#print axioms OracleVerifier.append_rbrSoundnessAveraged_of_pure_first
 
 /--
 info: 'AppendSpecializationRegression.message_only_suffix_factorization' depends on axioms:
