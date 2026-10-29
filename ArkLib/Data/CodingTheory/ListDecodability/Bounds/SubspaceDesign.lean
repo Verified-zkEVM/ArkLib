@@ -38,6 +38,67 @@ open Code
 
 section SubspaceDesignUpperBounds
 
+/-- A `τ`-subspace-design code has list size at most `L` at every radius strictly below
+`L/(L+1) · (1 − τ(r))`, provided `1 ≤ L ≤ r`. -/
+theorem subspaceDesign_lambda_le_of_radius_lt
+    {ι : Type} [Fintype ι] [Nonempty ι]
+    {F : Type} [Field F]
+    {s : ℕ} {τ : ℕ → ℝ} {C : Submodule F (ι → Fin s → F)}
+    (hdesign : IsSubspaceDesign s τ C)
+    {r L : ℕ} (hL : 1 ≤ L) (hLr : L ≤ r)
+    {δ : ℝ} (hδ : δ < (L : ℝ) / (L + 1) * (1 - τ r)) :
+    Lambda (C : Set (ι → Fin s → F)) δ ≤ (L : ℕ∞) := by
+  classical
+  let : DecidableEq (Fin s → F) := Classical.decEq _
+  let u : ℝ := (((L : ℝ) + 1) * (1 - δ) - 1) / L
+  have hLR : (0 : ℝ) < L := by exact_mod_cast hL
+  have hτu : τ r < u := by
+    rw [div_mul_eq_mul_div, lt_div_iff₀ (by positivity)] at hδ
+    dsimp [u]
+    rw [lt_div_iff₀ hLR]
+    nlinarith only [hδ]
+  have hdesign' : IsSubspaceDesign s (fun q => if q ≤ r then τ r else τ q) C := by
+    intro q A hAC hAq
+    dsimp only
+    split_ifs with hqr
+    · exact hdesign r A hAC (hAq.trans hqr)
+    · exact hdesign q A hAC hAq
+  apply Lambda_le_of_forall_finset_card_le
+  intro y T hT
+  by_contra hTL
+  have hbig : L + 1 ≤ T.card := by omega
+  obtain ⟨U, hUT, hUcard⟩ := Finset.exists_subset_card_eq hbig
+  have hUC : ∀ c ∈ U, c ∈ C := fun c hc => (hT c (hUT hc)).1
+  have hupper0 := agreementWeight_lt_of_subspaceDesign hdesign' L u
+    (fun q _ hq => by simpa only [ite_eq_left (hq.trans hLr)] using hτu)
+    y U (by omega) (by omega) hUC
+  have hupper : (agreementWeight y U : ℝ) <
+      (Fintype.card ι : ℝ) * (U.card - 1) * u := by
+    convert hupper0 using 1
+    congr
+  have hn : (0 : ℝ) < Fintype.card ι := by
+    exact_mod_cast Fintype.card_pos
+  have hdist : ∀ c ∈ U,
+      (hammingDist c y : ℝ) ≤ δ * Fintype.card ι := by
+    intro c hc
+    have hclose : (Code.relHammingDist y c : ℝ) ≤ δ := by
+      simpa only [Code.relHammingBall, Set.mem_ofPred_eq] using (hT c (hUT hc)).2
+    unfold Code.relHammingDist at hclose
+    simp only [NNRat.cast_div, NNRat.cast_natCast] at hclose
+    rw [div_le_iff₀ hn] at hclose
+    rw [hammingDist_comm]
+    exact hclose
+  have hlower := agreementWeight_ge_of_hammingDist_le δ y U hdist
+  rw [hUcard] at hupper hlower
+  have heq : ((L + 1 : ℕ) : ℝ) * Fintype.card ι * (1 - δ) - Fintype.card ι =
+      (Fintype.card ι : ℝ) * (((L + 1 : ℕ) : ℝ) - 1) * u := by
+    dsimp [u]
+    push_cast
+    field_simp
+    ring
+  rw [heq] at hlower
+  exact (not_lt_of_ge hlower) hupper
+
 /-- **Subspace-design codes are list-decodable up to capacity** — [CZ25, Theorem B.5], the
 one-integer-parameter form at [CZ25]'s `(k−1)`-level design premise. This is the engine behind
 [ABF26] Theorem 3.4 and Corollary 3.5, but it is **not** [ABF26] Theorem 3.4 as printed; see the

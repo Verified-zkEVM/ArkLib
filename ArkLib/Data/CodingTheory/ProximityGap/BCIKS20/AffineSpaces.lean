@@ -1172,7 +1172,7 @@ theorem correlatedAgreement_affine_spaces {k : ℕ} [NeZero k]
       δᵣ(↑y, (V : Set (ι → F))) ≤ δ] > errorBound δ deg domain := by
     convert hPr using 1
   have h_all_close : ∀ x ∈ U, δᵣ(x, (V : Set (ι → F))) ≤ δ :=
-    all_affine_elements_close u (le_of_lt hδ) hPr_sub
+    all_affine_elements_close u hdeg hδ hPr_sub
   have hu0_mem : u 0 ∈ U := by
     change u 0 ∈ Affine.affineSubspaceAtOrigin (F := F) (u 0) (Fin.tail u)
     rw [Affine.mem_affineSubspaceFrom_iff]; exact ⟨0, by simp⟩
@@ -1197,8 +1197,8 @@ theorem correlatedAgreement_affine_spaces {k : ℕ} [NeZero k]
     have h_close := h_all_close u_star hu_star_mem
     rw [relDistFromCode'_eq_relDistFromCode] at h_close
     exact_mod_cast h_close
-  have hδ_star_le_sqrt : δ_star ≤ 1 - ReedSolomon.sqrtRate deg domain :=
-    le_trans hδ_star_le (le_of_lt hδ)
+  have hδ_star_lt_sqrt : δ_star < 1 - ReedSolomon.sqrtRate deg domain :=
+    lt_of_le_of_lt hδ_star_le hδ
   -- The affine space with u* as origin equals U (same direction span).
   have hU_star_eq : (Affine.affineSubspaceAtOrigin (F := F) u_star (Fin.tail u) :
       Set (ι → F)) = U := by
@@ -1261,7 +1261,7 @@ theorem correlatedAgreement_affine_spaces {k : ℕ} [NeZero k]
       jointAgreement (C := (V : Set (ι → F))) (δ := δ_star)
         (W := finMapTwoWords u_star (Fin.tail u j)) := by
     intro j
-    apply RS_correlatedAgreement_affineLines hδ_star_le_sqrt
+    apply RS_correlatedAgreement_affineLines hdeg hδ_star_lt_sqrt
     rw [h_line_pr1_star _ (h_dir_in_U_star j)]
     exact hεδ_star_lt_one
   choose S_j hS_j v_pair hv_pair using fun j => h_pair_ja j
@@ -1272,7 +1272,7 @@ theorem correlatedAgreement_affine_spaces {k : ℕ} [NeZero k]
         (W := finMapTwoWords u_star (x - u_star)) := by
     intro x hx
     have hx_U := (hU_star_eq ▸ hx : x ∈ U)
-    apply RS_correlatedAgreement_affineLines hδ_star_le_sqrt
+    apply RS_correlatedAgreement_affineLines hdeg hδ_star_lt_sqrt
     rw [h_line_pr1_star _ (fun z => h_line_in_U_star x hx_U z)]
     exact hεδ_star_lt_one
   have hδ_star_strict : δ_star < 1 - ReedSolomon.sqrtRate deg domain :=

@@ -25,6 +25,8 @@ This directory contains various utility scripts for the ArkLib project.
 - **`ToyProblemRuntime.lean`** (`lake exe toyproblem-runtime`) - Compiled small-parameter checks
   for KoalaBear sextic arithmetic, executable interleaved-RS extraction, and the C6.9 virtual
   output-oracle and exact-extractor paths
+- **`FriExtractorRuntime.lean`** (`lake exe fri-extractor-runtime`) - Compiled checks of the
+  measured FRI extractor, immutable-input guards, and exact arithmetic and word-read counts.
 - **`SumcheckRuntime.lean`** (`lake exe sumcheck-runtime`) - Compiled checks of CompPoly-backed
   round messages and the honest multivariate prover in the shared native Sumcheck executor,
   including continuation effects, abort, original-oracle evaluation and zero remaining rounds.
@@ -34,7 +36,7 @@ This directory contains various utility scripts for the ArkLib project.
   additionally runs the whole composed opening and checks the verifier accepts — it passes, in
   about six minutes, which is why it is not gated: the honest sumcheck prover dominates the cost
   of the entire chain. `--timing` reports per-check costs
-- **`check-docs-integrity.py`** - Check docs links and the `CLAUDE.md` symlink
+- **`check-docs-integrity.py`** - Check the canonical agent guide and local documentation links
 - **`LintStyle.lean`** and **`LintStyle/Checks.lean`** (`lake exe lint-style`) - Lean-native,
   exception-free source policy, including import discipline, whitespace, headers, line/file size,
   and hazardous-Unicode checks. It verifies that every tracked Lean file under `ArkLib/` and `ArkLibTest/` file is in the
@@ -160,29 +162,51 @@ git -C .lake/packages/VCVio submodule update --init --recursive
 ```
 
 ```bash
-# Summary: total declarations, sorryAx-tainted, non-standard-axiom-tainted
+# Summary: total declarations, sorryAx-tainted, solicited, non-standard-axiom-tainted
 lake exe axiomsweep
 
 # Full per-declaration report (name, module, kind, line, axioms)
 lake exe axiomsweep --out /tmp/axiom-report.json
 
-# Regression gate: fail iff current taint is not covered by the baseline
+# Regression gate: enforce taint and solicited-proof rules
 lake exe axiomsweep --check
 
-# Refresh the baseline (after intentionally adding a tagged sorry, or after
-# closing gaps); commit the resulting diff in the same PR
+# Refresh after verified closures or renames of existing debt;
+# commit the reviewed bookkeeping in the same PR
 lake exe axiomsweep --update-baseline
 ```
 
-The committed baseline makes the distinction the repo cares about mechanical. Pre-existing
-`sorry` gaps are allowed while recorded; additions fail `--check` until an intentional
-`lake exe axiomsweep --update-baseline` diff is reviewed and committed. Removed debt is
-reported without failing so cleanup is never discouraged; refresh the baseline in the same
-PR. The baseline is an allowlist for `sorryAx` debt only; native-compiler trust (`Lean.ofReduceBool`,
+The committed baseline records pre-existing `sorryAx` debt. New taint fails `--check`, while
+removed debt is reported without blocking cleanup. A PR may be opened with unfinished proofs,
+but no new proof admissions or additional admitted debt may merge into `main`; refreshing the
+baseline cannot authorize them. Review source admissions and baseline changes against the
+canonical base, and refresh only for verified closures or renames of existing debt.
+Native-compiler trust (`Lean.ofReduceBool`,
 `Lean.trustCompiler`, and the per-declaration `…._native.<tactic>.ax_<n>_<n>` axioms
 minted by `native_decide`-style tactics) is never allowlistable — `--check` fails on it
 regardless of the baseline, and `--update-baseline` refuses to write while it is present.
 CI and `./scripts/validate.sh --axioms` both run the check enforcing.
+
+A **solicited proof** is a true, faithfully stated external result whose research-sized proof
+is intentionally left open for contributors. Reviewed entries live in the baseline's
+`solicited` array as `{ "name": "...", "issue": "https://..." }`; a missing array means empty.
+Entries are added only after review, never to excuse false statements. They are excluded
+from the baseline's `sorry` list and counted separately in the summary. Their actual axioms
+remain visible in the per-declaration report.
+
+Both `--check` and `--update-baseline` enforce five conditions:
+
+1. Every listed declaration exists in the swept environment.
+2. It still depends on `sorryAx`; remove the entry in the same PR that proves it.
+3. It depends on no non-standard axiom other than `sorryAx`.
+4. Its docstring contains the entry's issue URL.
+5. No reportable declaration outside the solicited list depends on it, directly or
+   transitively. Solicited declarations may depend on one another.
+
+Thus solicited results remain leaves with respect to the rest of the library. The sweep
+uses its existing dependency closure, including cycle repair, to enforce this rule.
+`--update-baseline` preserves the hand-reviewed solicited list unchanged and refuses to
+write if any condition fails. The native-trust floor and new-taint checks still apply.
 
 The tool itself is certified by `./scripts/test-axiomsweep.sh`, which builds the isolated
 `AxiomSweepTestFixtures` library (deliberate synthetic taint of every shape the sweep
@@ -225,7 +249,8 @@ before and after the run; the report shows wall time beside `user + sys` CPU wor
 
 The three measurements share one tree and run in order, so each leaves it warmer than the last.
 `native_build` exists to hold the `.c.o` chain that the compiled executables link
-(`toyproblem-runtime` and `hachi-runtime`): that is the cost which swings on `.lake` cache state,
+(`toyproblem-runtime`, `hachi-runtime`, `sumcheck-runtime`, and `fri-extractor-runtime`): that is the
+cost which swings on `.lake` cache state,
 and billing it separately keeps the validation wrapper's row comparable across dependency bumps.
 Any new compiled executable run by `validate.sh` has to be added to that command as well. See
 [`../docs/wiki/quickstart.md`](../docs/wiki/quickstart.md) for how to read the rows.

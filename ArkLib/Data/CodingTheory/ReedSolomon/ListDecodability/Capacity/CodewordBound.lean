@@ -25,7 +25,7 @@ codeword-list function. It also instantiates that transfer with the prescribed g
 
 ## References
 
-* [DKTZ26]
+* [DKT26]
 -/
 
 @[expose] public section

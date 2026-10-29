@@ -85,7 +85,7 @@ theorem execute_support_completeness (challenge : OracleComp ambient R)
       rw [horiginal] at hcurrent
       exact hcurrent
     have hcheck : ((Finset.univ.map D).toList.map (fun x => q.val.eval x)).sum = stmt.target :=
-      projected_sum_of_relationRound R n deg D i stmt p hconcrete
+      Spec.SingleRound.projected_sum_of_relationRound R n deg D i stmt p hconcrete
     rw [execute_eq_appendExported, execute_appendExported_succ]
     simp only [honestProver, pure_bind]
     dsimp only [q, i] at hcheck
@@ -99,7 +99,7 @@ theorem execute_support_completeness (challenge : OracleComp ambient R)
     · rw [VirtualOracle.eval_id]
       exact horiginal
     · rw [VirtualOracle.eval_id, horiginal]
-      exact relationRound_projected_output R n deg D i stmt p r
+      exact Spec.SingleRound.relationRound_projected_output R n deg D i stmt p r
     · exact hnext
 
 /-- Actual native honest execution has probability-one completeness for any `ProbComp` challenge.

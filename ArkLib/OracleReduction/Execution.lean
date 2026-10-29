@@ -13,7 +13,7 @@ public import VCVio.EvalDist.List
 public import ToMathlib.Data.Vector
 -- Owns `OracleComp.support_ofFn_mapM_index`, used in `Verifier.run_all_eq_bind` below.
 public import VCVio.OracleComp.Constructions.Replicate
-public import VCVio.OracleComp.QueryTracking.LoggingOracle
+public import VCVio.OracleComp.QueryTracking.LoggingOracle.Core
 
 /-!
   # Execution Semantics of Interactive Oracle Reductions
@@ -110,6 +110,15 @@ def processRound (j : Fin n)
   | .P_to_V => do
     let ⟨msg, newState⟩ ← prover.sendMessage ⟨j, hDir⟩ state
     return ⟨transcript.concat msg, newState⟩
+
+/-- Processing a round factors through its current transcript and private state. -/
+theorem processRound_bind (prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
+    (j : Fin n)
+    (current : OracleComp (oSpec + [pSpec.Challenge]ₒ)
+      (pSpec.Transcript j.castSucc × prover.PrvState j.castSucc)) :
+    prover.processRound j current =
+      current >>= fun x ↦ prover.processRound j (pure x) := by
+  simp only [processRound, pure_bind]
 
 /-- Run the prover in an interactive reduction up to round index `i`, via first inputting the
   statement and witness, and then processing each round up to round `i`. Returns the transcript up
@@ -216,6 +225,24 @@ def Reduction.run (stmt : StmtIn) (wit : WitIn)
   let proverResult ← reduction.prover.run stmt wit
   let stmtOut ← liftM (reduction.verifier.run stmt proverResult.1).run
   return ⟨proverResult, ← stmtOut.getM⟩
+
+/-- Expose the prover/verifier boundary in the optional reduction execution. -/
+theorem Reduction.run_run_eq_bind
+    (reduction : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec)
+    (stmt : StmtIn) (wit : WitIn) :
+    (reduction.run stmt wit).run = (do
+      let pr ← reduction.prover.run stmt wit
+      let out ← liftComp (reduction.verifier.run stmt pr.1).run
+        (oSpec + [pSpec.Challenge]ₒ)
+      pure (out.map (fun v ↦ (pr, v)))) := by
+  simp only [Reduction.run, OptionT.run_bind, ← monadLift_liftM_OptionT,
+    OptionT.run_monadLift, Option.elimM,
+    bind_map_left, Option.elim_some, liftComp_eq_liftM]
+  congr 1
+  funext pr
+  congr 1
+  funext out
+  cases out <;> rfl
 
 /-- Run a reduction and return only the verifier's output statement, discarding the full transcript
   and prover witness. Useful when only the final verdict matters (e.g. for `Proof`s). -/
@@ -399,7 +426,7 @@ def Reduction.runWithLog (stmt : StmtIn) (wit : WitIn)
 
 Both logs are discarded the same way: `monadLift_bind_fst` pulls the `Prod.fst` projection inside
 the lift, which exposes the party's logged run to the lemma that strips its log —
-`Prover.runWithLog_discard_log_eq_run` for the prover and VCV-io's
+`Prover.runWithLog_discard_log_eq_run` for the prover and VCVio's
 `loggingOracle.fst_map_run_simulateQ` for the verifier. The `▸`/`exact` spelling is forced rather
 than stylistic: after `simp only` the goal is not type-correct at `instances` transparency (ArkLib's
 `Verifier.run` is an `OptionT`, which `kabstract` sees as `OracleComp _ (Option _)`), so `rw`

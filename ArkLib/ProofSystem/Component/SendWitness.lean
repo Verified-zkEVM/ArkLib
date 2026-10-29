@@ -403,20 +403,30 @@ def toORelOut :
 theorem oracleReduction_completeness :
     (oracleReduction oSpec Statement OStatement Witness).perfectCompleteness init impl oRelIn
     (toORelOut oRelIn) := by
-  sorry
-  -- TODO: clean up this proof
-  -- simp only [OracleReduction.perfectCompleteness, oraclePSpec, toORelOut, Fin.isValue,
-  --   OracleReduction.toReduction, MessageIdx, Reduction.perfectCompleteness_eq_prob_one,
-  --   ChallengeIdx, StateT.run'_eq, Set.mem_setOf_eq, probEvent_eq_one_iff,
-  --   probFailure_eq_zero_iff, neverFails_bind_iff, neverFails_map_iff, support_bind,
-  --   support_map, Set.mem_iUnion, Set.mem_image, Prod.exists, exists_and_right,
-  --   exists_eq_right, exists_prop, forall_exists_index, and_imp, Prod.forall, Prod.mk.injEq]
-  -- simp_rw [h, Reduction.run, oracleReduction, oracleVerifier_toVerifier_run, oracleProver_run]
-  -- simp only [ChallengeIdx, oraclePSpec, id_eq, liftM_eq_liftComp,
-  --   liftComp_pure, bind_pure_comp, map_pure, simulateQ_pure, StateT.run_pure,
-  --   neverFails_pure, implies_true, and_self, support_pure, Set.mem_singleton_iff, Prod.mk.injEq,
-  --   and_true, Fin.isValue, and_imp, forall_const, true_and]
-  -- aesop
+  apply Reduction.perfectCompleteness_of_run_support
+  intro ⟨stmt, oStmt⟩ wit hIn x hx
+  let : ∀ i, OracleInterface ((oraclePSpec Witness).Challenge i) := challengeOracleInterface
+  simp only [OracleReduction.toReduction, Reduction.run] at hx
+  change x ∈ MonadAttach.support (do
+    let p ← liftM ((oracleProver oSpec Statement OStatement Witness).run (stmt, oStmt) wit)
+    let s ← liftM ((oracleVerifier oSpec Statement OStatement Witness).toVerifier.run
+      (stmt, oStmt) p.1)
+    pure (p, s) : OptionT (OracleComp (oSpec + [(oraclePSpec Witness).Challenge]ₒ)) _).run at hx
+  erw [oracleProver_run] at hx
+  simp only [liftM_pure, pure_bind] at hx
+  erw [oracleVerifier_toVerifier_run] at hx
+  simp only [oraclePSpec, Fin.vcons_fin_zero, Nat.reduceAdd, ChallengeIdx, Challenge,
+    Fin.isValue, Fin.vcons_of_one, id_eq, liftM_OptionT_eq, simulateQ_optionT_pure,
+    bind_pure_comp, map_pure, OptionT.run_pure, MonadAttach.support_pure] at hx
+  subst x
+  refine ⟨_, rfl, hIn, ?_⟩
+  dsimp only
+  congr 1
+  funext i
+  rcases i with j | j
+  · rfl
+  · fin_cases j
+    rfl
 
 /-- **Coordinate-wise special soundness of `SendSingleWitness`, named form.** The oracle verifier
 has no challenge rounds, so CWSS collapses (via the oracle no-challenge bridge

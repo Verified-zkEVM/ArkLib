@@ -12,9 +12,14 @@ public import ArkLib.Data.CodingTheory.GuruswamiSudan.GuruswamiSudan
 public import ArkLib.Data.Polynomial.Trivariate
 
 /-!
-# ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ListDecoding.Guruswami
+# Guruswami–Sudan interpolation for BCIKS20
 
-Definitions and results for this component of ArkLib.
+This module proves the existence and divisibility statements of BCIKS20 Lemma 5.3 and the
+modified trivariate interpolation construction of Claim 5.4. The construction supplies a
+nonzero polynomial satisfying the degree and multiplicity bounds in `ModifiedGuruswami`.
+
+The affine-line correlated-agreement theorem in `BCIKS20.AffineLines.Main` uses the proved
+Johnson bound independently of this construction.
 -/
 
 @[expose] public section
@@ -1098,76 +1103,6 @@ lemma modified_guruswami_has_a_solution {m n k : ℕ}
   modified_guruswami_has_a_solution_core hn hk hm
 
 end
-
-variable {m : ℕ} (k : ℕ) {δ : ℚ} {x₀ : F} {u₀ u₁ : Fin n → F} {Q : F[Z][X][Y]} {ωs : Fin n ↪ F}
-         [Finite F]
-
-noncomputable instance {α : Type} (s : Set α) [inst : Finite s] : Fintype s := Fintype.ofFinite _
-
-/-- The set `S` (equation 5.2 of [BCIKS20]). -/
-noncomputable def coeffs_of_close_proximity (ωs : Fin n ↪ F) (δ : ℚ)
-    (u₀ u₁ : Fin n → F) : Finset F :=
-  Set.toFinset { z | ∃ v : ReedSolomon.code ωs (k + 1), δᵣ(u₀ + z • u₁, v) ≤ δ }
-
-open Polynomial
-
-omit [DecidableEq (RatFunc F)] in
-/-- There exists a `δ`-close polynomial `P_z` for each `z` from the set `S`. -/
-lemma exists_Pz_of_coeffs_of_close_proximity
-    {k : ℕ}
-  {z : F}
-  (hS : z ∈ coeffs_of_close_proximity (k := k) ωs δ u₀ u₁) :
-  ∃ Pz : F[X], Pz.natDegree ≤ k ∧ δᵣ(u₀ + z • u₁, Pz.eval ∘ ωs) ≤ δ := by
-    unfold coeffs_of_close_proximity at hS
-    obtain ⟨w, hS, dist⟩ : ∃ a ∈ ReedSolomon.code ωs (k + 1), ↑δᵣ(u₀ + z • u₁, a) ≤ δ := by
-      simpa using hS
-    obtain ⟨p, hS⟩ : ∃ y ∈ degreeLT F (k + 1), (ReedSolomon.evalOnPoints ωs) y = w := by
-      change ∃ y ∈ degreeLT F (k + 1), (ReedSolomon.evalOnPoints ωs) y = w at hS
-      exact hS
-    exact ⟨p, ⟨
-      by if h : p = 0
-         then simp [h]
-         else rw [mem_degreeLT, degree_eq_natDegree h, Nat.cast_lt] at hS; grind,
-      by convert dist; rw [←hS.2]; rfl
-    ⟩⟩
-
-/-- The `δ`-close polynomial `Pz` for each `z` from the set `S` (`coeffs_of_close_proximity`). -/
-noncomputable def Pz {k : ℕ} {z : F} (hS : z ∈ coeffs_of_close_proximity k ωs δ u₀ u₁) : F[X] :=
-  (exists_Pz_of_coeffs_of_close_proximity (n := n) (k := k) hS).choose
-
-open Trivariate
-omit [DecidableEq (RatFunc F)] in
-/-- Proposition 5.5 from [BCIKS20].
-There exists a subset `S'` of the set `S` and a bivariate polynomial `P(X, Z)` that matches `Pz` on
-that set, with `degX P ≤ k` and `degZ P ≤ 1`.
-
-The three conjuncts are (5.9), (5.10) and (5.11) of [BCIKS20]. Note that (5.11) is *not* under the
-`∀ z ∈ S'` binder in the paper, and that (5.9) is a division of reals; both are reflected here.
-
-Still missing relative to the paper: the standing hypothesis on `#S` from Theorem 5.1 (eq. 5.3).
-Without it the statement is false whenever `coeffs_of_close_proximity = ∅` — then `S' ⊆ ∅` forces
-`#S' = 0`, while (5.9) demands `#S' > 0`. Separately, `ModifiedGuruswami` permits `D_Y Q = 0`, and
-there `2 * D_Y Q = 0` makes the right-hand side of (5.9) zero rather than the paper's `+∞`. -/
-lemma exists_a_set_and_a_matching_polynomial
-    (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) :
-    ∃ S', ∃ (h_sub : S' ⊆ coeffs_of_close_proximity k ωs δ u₀ u₁), ∃ P : F[Z][X],
-     (#S' : ℝ) > #(coeffs_of_close_proximity k ωs δ u₀ u₁) / (2 * D_Y Q) ∧
-     (∀ z : S', Pz (h_sub z.2) = P.map (Polynomial.evalRingHom z.1)) ∧
-     P.natDegree ≤ k ∧
-     Bivariate.degreeX P ≤ 1 := by
-    sorry
-
-/-- The subset `S'` extracted from Proprosition 5.5 [BCIKS20]. -/
-noncomputable def matching_set (ωs : Fin n ↪ F) (δ : ℚ) (u₀ u₁ : Fin n → F)
-  (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) : Finset F :=
-  (exists_a_set_and_a_matching_polynomial k h_gs (δ := δ)).choose
-
-omit [DecidableEq (RatFunc F)] in
-/-- `S'` is indeed a subset of `S` -/
-lemma matching_set_is_a_sub_of_coeffs_of_close_proximity
-    (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) :
-    matching_set k ωs δ u₀ u₁ h_gs ⊆ coeffs_of_close_proximity k ωs δ u₀ u₁ :=
-  (exists_a_set_and_a_matching_polynomial k h_gs (δ := δ)).choose_spec.choose
 
 end BCIKS20ProximityGapSection5
 
