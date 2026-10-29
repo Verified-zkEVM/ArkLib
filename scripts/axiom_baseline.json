@@ -29,7 +29,6 @@
     "OracleVerifier.append_rbrSoundness",
     "OracleVerifier.seqCompose_rbrKnowledgeSoundness",
     "OracleVerifier.seqCompose_rbrSoundness",
-    "Plonk.ConstraintSystem.perm",
     "Spartan.Spec.oracleReduction.firstChallenge",
     "Spartan.Spec.oracleReduction.linearCombination",
     "Spartan.Spec.oracleReduction.sendEvalClaim",
