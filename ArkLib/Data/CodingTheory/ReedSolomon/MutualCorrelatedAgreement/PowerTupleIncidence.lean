@@ -144,7 +144,7 @@ theorem commonAgreement_of_frobeniusPowerAgreementEquation_mem_prime [IsAlgClose
         (fun j ↦ (frobeniusPowerInitialGraph center (p ^ e)
           (fun t ↦ (P t).map ι) j).eval (x none)) =
         Polynomial.expand E (p ^ e)
-          (powerBatchedPolynomial (fun t ↦ (P t).map ι) ((x none) ^ (p ^ e))) := by
+          (Polynomial.powerBatch (fun t ↦ (P t).map ι) ((x none) ^ (p ^ e))) := by
       simpa only [frobeniusPowerGraphMap, Option.elim_some] using hspecial
     simp only [hφ, φ, Polynomial.aeval_def, Algebra.algebraMap_self,
       Polynomial.eval₂_id, Polynomial.eval_C, frobeniusPowerCoordinate_eval] at heval
@@ -155,7 +155,7 @@ theorem commonAgreement_of_frobeniusPowerAgreementEquation_mem_prime [IsAlgClose
     change mismatch.eval ((x none) ^ (p ^ e)) = 0
     rw [curveDiscrepancy_eval]
     apply sub_eq_zero.mpr
-    simpa only [expand_eval, hroots, powerBatchedPolynomial_eval, powerBatchedWord,
+    simpa only [expand_eval, hroots, Polynomial.powerBatch_eval, powerBatchedWord,
       domainE, wordE, tupleE, Function.Embedding.trans_apply, Function.Embedding.coeFn_mk,
       Polynomial.eval_map, Polynomial.eval₂_at_apply, pow_mul] using heval
   have hcommon := (curveDiscrepancy_eq_zero_iff domainE wordE tupleE i).mp hzero
