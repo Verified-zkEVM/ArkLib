@@ -63,6 +63,8 @@ variable [hdiv : Fact (ϑ ∣ ℓ)]
 section FoldStep
 variable {Context : Type} {multpoly : Context → MultilinearPoly L ℓ}
 
+/-! ## Protocol definitions -/
+
 /-- The prover of the `i`-th fold step: it sends the round polynomial `foldProverComputeMsg`,
 receives the challenge, and outputs `foldStepLogic`'s prover output on the transcript. -/
 noncomputable def foldOracleProver (i : Fin ℓ) :
@@ -191,6 +193,10 @@ theorem foldOracleVerifier_materializeOutput (i : Fin ℓ)
     (foldOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
       (multpoly := multpoly) i).materializeOutput chals oStmt msgs = oStmt := by
   rfl
+
+/-! ## Security: perfect completeness
+
+Round-by-round knowledge soundness is proved in `Steps/Fold.lean`. -/
 
 omit [DecidableEq 𝔽q] h_β₀_eq_1 in
 /-- Perfect completeness of the `i`-th fold step, from the strict round relation at `i` to the

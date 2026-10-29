@@ -707,7 +707,28 @@ home_page/            site assets and assembled website root
   `Commitment` owns the first-oracle interface, and `Opening` supplies multilinear opening with
   exact-encoding completeness and unique-radius round-by-round security. `FRIBinius/Prelude`
   instantiates the tensor profile; `FRIBinius/RingSwitch` composes the shared prefix reduction
-  with Binary Basefold opening. See the [consumer guide](ring-switching-consumers.md).
+  with Binary Basefold opening. `FRIBinius/Unrolled/` instead connects the tensor batching
+  head directly to one product-sumcheck/folding loop: `Frontier` initializes the witness,
+  `FinalSumcheck` contains the terminal multiplier check and its completeness/extraction proofs,
+  `Core` composes folding and queries, and `General`
+  proves exact-input perfect completeness and relaxed-input worst-case RBR knowledge soundness.
+  Its guarded bridges also give ordinary knowledge soundness and language soundness at the
+  same concrete fused bound, without an extractor-efficiency claim.
+  `Spec` aggregates the fused budget with one `2ℓ'/|L|` sumcheck term. The unfused frontend
+  remains available separately. See the [consumer guide](ring-switching-consumers.md).
+
+  Binary Basefold and FRI-Binius preserve established verifier and reduction sections; do not
+  interleave them merely to place matching declarations together. Within a per-phase definitions
+  section without separate zones, a verifier may be followed by its reduction.
+  When they are constructed separately (for example, through composition or wrappers), follow
+  the reduction with a `…Reduction_verifier` (or `reduction_verifier`) equality theorem, even when its
+  proof is `rfl`. Omit this theorem when the reduction explicitly supplies that same verifier
+  through `OracleReduction.mk` or its `verifier` field. Put the prover, required instances,
+  and other prerequisites before this group; security proofs follow it. The retained equalities
+  connect the separately constructed completeness reduction to the soundness verifier.
+  Group operational definitions and their structural equalities separately from security
+  relations, extraction machinery, error bounds, and completeness/soundness proofs. Use
+  per-phase subsections when a module contains several protocol layers.
 
 - The ABF26 Section 6 toy IOP lives under `ProofSystem/ToyProblem/`. `Spec/` contains the
   domain-generic protocol and extraction theorems, `Impl/IRS.lean` supplies the computable

@@ -77,6 +77,8 @@ variable {Context : Type} {multpoly : Context → MultilinearPoly L ℓ}
 
 section FoldRelayRound
 
+/-! ### Fold-relay: protocol definitions -/
+
 /-- The `i`-th round outside a commitment round: the fold step, then the relay step. -/
 @[reducible]
 def foldRelayOracleVerifier (i : Fin ℓ) (hNCR : ¬ IsCommitmentRound ℓ ϑ i) :
@@ -107,6 +109,14 @@ def foldRelayOracleReduction (i : Fin ℓ) (hNCR : ¬ IsCommitmentRound ℓ ϑ i
       (multpoly := multpoly) i)
     (relayOracleReduction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hNCR)
 
+omit [SampleableType L] [DecidableEq 𝔽q] h_β₀_eq_1 in
+/-- The reduction uses exactly the separately defined verifier. -/
+theorem foldRelayOracleReduction_verifier (i : Fin ℓ) (hNCR : ¬ IsCommitmentRound ℓ ϑ i) :
+    (foldRelayOracleReduction 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (𝓑 := 𝓑) (multpoly := multpoly) i hNCR).verifier =
+      foldRelayOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (𝓑 := 𝓑) (multpoly := multpoly) i hNCR := rfl
+
 /-- The guarded form of the fold-relay round: the fold step's check, then the relay step's
 trivially-true one. -/
 def foldRelayOracleVerifierGuardedForm (i : Fin ℓ) (hNCR : ¬ IsCommitmentRound ℓ ϑ i) :
@@ -118,6 +128,8 @@ def foldRelayOracleVerifierGuardedForm (i : Fin ℓ) (hNCR : ¬ IsCommitmentRoun
     (relayOracleVerifierGuardedForm 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hNCR)
 
 variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)}
+
+/-! ### Fold-relay: security -/
 
 omit [DecidableEq 𝔽q] h_β₀_eq_1 in
 /-- Perfect completeness of the fold-relay round, from the strict round relation at `i` to the
@@ -185,6 +197,8 @@ end FoldRelayRound
 
 section FoldCommitRound
 
+/-! ### Fold-commit: protocol definitions -/
+
 /-- The `i`-th round at a commitment round: the fold step, then the commit step. -/
 @[reducible]
 def foldCommitOracleVerifier (i : Fin ℓ) (hCR : IsCommitmentRound ℓ ϑ i) :
@@ -215,6 +229,14 @@ def foldCommitOracleReduction (i : Fin ℓ) (hCR : IsCommitmentRound ℓ ϑ i) :
       (multpoly := multpoly) i)
     (commitOracleReduction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hCR)
 
+omit [SampleableType L] [DecidableEq 𝔽q] h_β₀_eq_1 in
+/-- The reduction uses exactly the separately defined verifier. -/
+theorem foldCommitOracleReduction_verifier (i : Fin ℓ) (hCR : IsCommitmentRound ℓ ϑ i) :
+    (foldCommitOracleReduction 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (𝓑 := 𝓑) (multpoly := multpoly) i hCR).verifier =
+      foldCommitOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (𝓑 := 𝓑) (multpoly := multpoly) i hCR := rfl
+
 /-- The guarded form of the fold-commit round: the fold step's check, then the commit step's
 trivially-true one. -/
 def foldCommitOracleVerifierGuardedForm (i : Fin ℓ) (hCR : IsCommitmentRound ℓ ϑ i) :
@@ -226,6 +248,8 @@ def foldCommitOracleVerifierGuardedForm (i : Fin ℓ) (hCR : IsCommitmentRound �
     (commitOracleVerifierGuardedForm 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hCR)
 
 variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)}
+
+/-! ### Fold-commit: security -/
 
 omit [DecidableEq 𝔽q] h_β₀_eq_1 in
 /-- Perfect completeness of the fold-commit round, from the strict round relation at `i` to the
@@ -457,6 +481,14 @@ def nonLastSingleBlockFoldRelayOracleReduction (bIdx : Fin (ℓ / ϑ - 1)) :=
         (multpoly := multpoly) ⟨bIdx * ϑ + i, bIdx_mul_ϑ_add_i_fin_ℓ_pred_lt_ℓ bIdx i⟩
         (not_isCommitmentRound_of_offset_lt (r := r) (𝓡 := 𝓡) bIdx i (hx := i.isLt)))
 
+omit [SampleableType L] [DecidableEq 𝔽q] h_β₀_eq_1 in
+/-- The reduction uses exactly the separately defined verifier. -/
+theorem nonLastSingleBlockFoldRelayOracleReduction_verifier (bIdx : Fin (ℓ / ϑ - 1)) :
+    (nonLastSingleBlockFoldRelayOracleReduction 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (𝓑 := 𝓑) (multpoly := multpoly) bIdx).verifier =
+      nonLastSingleBlockFoldRelayOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (𝓑 := 𝓑) (multpoly := multpoly) bIdx := rfl
+
 /-- The oracle reduction of the `bIdx`-th non-last block. -/
 def nonLastSingleBlockOracleReduction (bIdx : Fin (ℓ / ϑ - 1)) :
     OracleReduction []ₒ
@@ -486,6 +518,14 @@ def nonLastSingleBlockOracleReduction (bIdx : Fin (ℓ / ϑ - 1)) :
         (multpoly := multpoly) (nonLastSingleBlockCommitIdx bIdx)
         (isCommitmentRound_nonlastBlock (r := r) (𝓡 := 𝓡) bIdx)))
 
+omit [SampleableType L] [DecidableEq 𝔽q] h_β₀_eq_1 in
+/-- The reduction uses exactly the separately defined verifier. -/
+theorem nonLastSingleBlockOracleReduction_verifier (bIdx : Fin (ℓ / ϑ - 1)) :
+    (nonLastSingleBlockOracleReduction 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (𝓑 := 𝓑) (multpoly := multpoly) bIdx).verifier =
+      nonLastSingleBlockOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (𝓑 := 𝓑) (multpoly := multpoly) bIdx := rfl
+
 /-- The oracle reduction of the non-last blocks in sequence. -/
 def nonLastBlocksOracleReduction :
     OracleReduction []ₒ
@@ -512,6 +552,14 @@ def nonLastBlocksOracleReduction :
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) bIdx)
     (fun bIdx => nonLastSingleBlockOracleReduction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (𝓑 := 𝓑) (multpoly := multpoly) bIdx)
+
+omit [SampleableType L] [DecidableEq 𝔽q] h_β₀_eq_1 in
+/-- The reduction uses exactly the separately defined verifier. -/
+theorem nonLastBlocksOracleReduction_verifier :
+    (nonLastBlocksOracleReduction 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (𝓑 := 𝓑) (multpoly := multpoly)).verifier =
+      nonLastBlocksOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (𝓑 := 𝓑) (multpoly := multpoly) := rfl
 
 /-- The oracle reduction of the last block. -/
 def lastBlockOracleReduction :
@@ -545,6 +593,14 @@ def lastBlockOracleReduction :
         (multpoly := multpoly) ⟨(ℓ / ϑ - 1) * ϑ + i, lastBlockIdx_mul_ϑ_add_fin_lt_ℓ i⟩
         (not_isCommitmentRound_lastBlock i)))
 
+omit [SampleableType L] [DecidableEq 𝔽q] h_β₀_eq_1 in
+/-- The reduction uses exactly the separately defined verifier. -/
+theorem lastBlockOracleReduction_verifier :
+    (lastBlockOracleReduction 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (𝓑 := 𝓑) (multpoly := multpoly)).verifier =
+      lastBlockOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (𝓑 := 𝓑) (multpoly := multpoly) := rfl
+
 /-- The oracle reduction of the sum-check-and-fold rounds. -/
 def sumcheckFoldOracleReduction :
     OracleReduction []ₒ
@@ -567,6 +623,14 @@ def sumcheckFoldOracleReduction :
         (multpoly := multpoly))
       (lastBlockOracleReduction 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
         (multpoly := multpoly)))
+
+omit [SampleableType L] [DecidableEq 𝔽q] h_β₀_eq_1 in
+/-- The reduction uses exactly the separately defined verifier. -/
+theorem sumcheckFoldOracleReduction_verifier :
+    (sumcheckFoldOracleReduction 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (𝓑 := 𝓑) (multpoly := multpoly)).verifier =
+      sumcheckFoldOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (𝓑 := 𝓑) (multpoly := multpoly) := rfl
 
 /-! ### Guarded forms of the composed verifiers -/
 

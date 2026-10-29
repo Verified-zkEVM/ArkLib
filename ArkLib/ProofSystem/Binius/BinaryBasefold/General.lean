@@ -65,6 +65,8 @@ variable {𝓑 : Fin 2 ↪ L}
 
 open CoreInteraction QueryPhase
 
+/-! ## Protocol definitions -/
+
 /-- The oracle verifier for the full Binary Basefold protocol -/
 @[reducible]
 noncomputable def fullOracleVerifier :
@@ -112,6 +114,14 @@ noncomputable def fullOracleReduction :
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ:=ϑ) (𝓑 := 𝓑))
     (R₂ := QueryPhase.queryOracleReduction 𝔽q β γ_repetitions
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ:=ϑ))
+
+omit [SampleableType L] in
+/-- The reduction uses exactly the separately defined verifier. -/
+theorem fullOracleReduction_verifier :
+    (fullOracleReduction 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (𝓑 := 𝓑) γ_repetitions).verifier (Oₛₒ := fun i : Empty => nomatch i) =
+      fullOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (𝓑 := 𝓑) γ_repetitions := rfl
 
 /-!
 ## Security Properties

@@ -68,8 +68,9 @@ structure Statement (Context C : Type) {m : ℕ} (i : Fin (m + 1)) where
 def rel (multiplier : Multiplier Context C m) (pc : PackedCommitment P m)
     (i : Fin (m + 1)) :
     Set (((Statement Context C i) × (∀ j, pc.OStmt j)) × P⦃≤ 1⦄[X Fin m]) :=
-  {x | x.1.1.target = hypercubeSum m (productPoly (multiplier x.1.1.ctx) x.2).val
-      i x.1.1.challenges ∧ pc.commitsTo x.1.2 x.2}
+  { ⟨⟨stmt, oStmt⟩, wit⟩ |
+    stmt.target = hypercubeSum m (productPoly (multiplier stmt.ctx) wit).val
+      i stmt.challenges ∧ pc.commitsTo oStmt wit }
 
 /-- The initial relation is the Boolean cube sum of the challenge-algebra product. -/
 theorem rel_zero (multiplier : Multiplier Context C m) (pc : PackedCommitment P m)

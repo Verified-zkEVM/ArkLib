@@ -48,6 +48,8 @@ variable (β : Fin r → L) [Fact (LinearIndependent K β)] [Fact (β 0 = 1)]
 variable {ℓ R ϑ : ℕ} [NeZero ℓ] [NeZero R] [NeZero ϑ]
   {h_rate : ℓ + R < r} [Fact (ϑ ∣ ℓ)]
 
+/-! ## Initialization and relation prerequisites -/
+
 /-- The evaluation claim as an initial Binary Basefold statement. -/
 def statement (s : MLPEvalStatement L ℓ) :
     Statement (L := L) (ℓ := ℓ) (SumcheckBaseContext L ℓ) 0 :=
@@ -95,9 +97,10 @@ variable (witnessEquiv : WitIn ≃ MultilinearPoly L ℓ)
 /-- Evaluation and unique-radius compatibility with the supplied first oracle. -/
 def inputRelation : Set ((StmtIn ×
     (∀ j, OracleStatement K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) 0 j)) × WitIn) :=
-  {x | (evalQuery x.1.1).original_claim =
-      (witnessEquiv x.2).val.eval (evalQuery x.1.1).t_eval_point ∧
-    FirstOracleWitnessConsistent K β (witnessEquiv x.2) (getFirstOracle K β x.1.2)}
+  { ⟨⟨stmtIn, oStmtIn⟩, witIn⟩ |
+    (evalQuery stmtIn).original_claim =
+      (witnessEquiv witIn).val.eval (evalQuery stmtIn).t_eval_point ∧
+    FirstOracleWitnessConsistent K β (witnessEquiv witIn) (getFirstOracle K β oStmtIn) }
 
 omit [SampleableType L] [DecidableEq K] in
 /-- An initial relaxed witness certifies the evaluation of its own source polynomial. -/
@@ -115,6 +118,24 @@ theorem eval_eq_and_firstOracleWitnessConsistent_of_mem_roundRelation_zero
   rw [hH] at hsum
   exact ⟨(sumcheckConsistencyProp_witness_iff K β s w.t).mp hsum, hfirst⟩
 
+/-! ## Protocol definitions
+
+### Reformatting frontier and opening -/
+
+/-- The honest reformatting prover constructs the canonical initial witness. -/
+def frontProver : OracleProver []ₒ StmtIn
+    (OracleStatement K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) 0) WitIn
+    (Statement (L := L) (ℓ := ℓ) (SumcheckBaseContext L ℓ) 0)
+    (OracleStatement K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) 0)
+    (Witness K β (h_ℓ_add_R_rate := h_rate) (ℓ := ℓ) 0) !p[] where
+  PrvState _ := (StmtIn ×
+    (∀ j, OracleStatement K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) 0 j)) × WitIn
+  input := id
+  sendMessage j := nomatch j
+  receiveChallenge j := nomatch j
+  output st := pure ((statement (evalQuery st.1.1), st.1.2),
+    witness K β (evalQuery st.1.1) (witnessEquiv st.2))
+
 /-- The zero-message, zero-challenge statement reformatting verifier. -/
 def frontVerifier : OracleVerifier []ₒ StmtIn
     (OracleStatement K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) 0)
@@ -126,12 +147,58 @@ def frontVerifier : OracleVerifier []ₒ StmtIn
     hEq := fun _ => rfl
     outputInterface_heq := fun _ => HEq.rfl }
 
+/-- The canonical prover and oracle-preserving verifier for statement reformatting. -/
+def frontReduction := OracleReduction.mk
+  (frontProver K β evalQuery witnessEquiv (ϑ := ϑ) (h_rate := h_rate)) (frontVerifier K β evalQuery)
+
 /-- The reformatting verifier always accepts and preserves the oracle family. -/
 def frontGuard :
     (frontVerifier K β evalQuery (ϑ := ϑ) (h_rate := h_rate)).toVerifier.GuardedForm where
   check _ _ := true
   out x _ := (statement (evalQuery x.1), x.2)
   verify_eq _ _ := rfl
+
+instance : (frontProver K β evalQuery witnessEquiv (ϑ := ϑ) (h_rate := h_rate)).OutputIsPure where
+  output_is_pure := ⟨fun st => ((statement (evalQuery st.1.1), st.1.2),
+    witness K β (evalQuery st.1.1) (witnessEquiv st.2)),
+    fun _ => rfl⟩
+
+instance instMessageInterface (γ : ℕ) : ∀ j, OracleInterface
+    (((!p[] : ProtocolSpec 0) ++ₚ fullPSpec K β γ (ϑ := ϑ)
+      (h_ℓ_add_R_rate := h_rate)).Message j) :=
+  instOracleInterfaceMessageAppend
+
+instance instChallengeSampleable (γ : ℕ) : ∀ j, SampleableType
+    (((!p[] : ProtocolSpec 0) ++ₚ fullPSpec K β γ (ϑ := ϑ)
+      (h_ℓ_add_R_rate := h_rate)).Challenge j) :=
+  instSampleableTypeChallengeAppend
+
+/-- The reformatting verifier followed by the full Binary Basefold verifier. -/
+def openingVerifier (γ : ℕ) := OracleVerifier.append
+  (Stmt₃ := Bool) (OStmt₃ := fun _ : Empty => Unit)
+  (Oₛ₃ := fun i : Empty => nomatch i)
+  (frontVerifier K β evalQuery (ϑ := ϑ) (h_rate := h_rate))
+  (FullBinaryBasefold.fullOracleVerifier K β γ (ϑ := ϑ)
+    (h_ℓ_add_R_rate := h_rate) (𝓑 := boolEmbedding L))
+
+/-- The reformatting reduction followed by the full Binary Basefold reduction. -/
+def openingReduction (γ : ℕ) := OracleReduction.append
+  (Stmt₃ := Bool) (Wit₃ := Unit) (OStmt₃ := fun _ : Empty => Unit)
+  (Oₛ₃ := fun i : Empty => nomatch i)
+  (frontReduction K β evalQuery witnessEquiv (ϑ := ϑ) (h_rate := h_rate))
+  (FullBinaryBasefold.fullOracleReduction K β γ (ϑ := ϑ)
+    (h_ℓ_add_R_rate := h_rate) (𝓑 := boolEmbedding L))
+
+omit [SampleableType L] in
+/-- The reduction uses exactly the separately defined verifier. -/
+theorem openingReduction_verifier (γ : ℕ) :
+    (openingReduction K β evalQuery witnessEquiv γ (ϑ := ϑ) (h_rate := h_rate)).verifier
+        (Oₛₒ := fun i : Empty => nomatch i) =
+      openingVerifier K β evalQuery γ (ϑ := ϑ) (h_rate := h_rate) := rfl
+
+/-! ## Security
+
+### Frontier extraction and opening soundness -/
 
 /-- The extracted source is the backend witness's own polynomial. -/
 def frontExtractor : Extractor.RoundByRound []ₒ
@@ -177,45 +244,6 @@ theorem frontVerifier_rbrKnowledgeSoundnessWorstCaseWith {σ : Type} (init : Pro
   intro _ j
   exact Fin.elim0 j.1
 
-/-- The honest reformatting prover constructs the canonical initial witness. -/
-def frontProver : OracleProver []ₒ StmtIn
-    (OracleStatement K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) 0) WitIn
-    (Statement (L := L) (ℓ := ℓ) (SumcheckBaseContext L ℓ) 0)
-    (OracleStatement K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) 0)
-    (Witness K β (h_ℓ_add_R_rate := h_rate) (ℓ := ℓ) 0) !p[] where
-  PrvState _ := (StmtIn ×
-    (∀ j, OracleStatement K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) 0 j)) × WitIn
-  input := id
-  sendMessage j := nomatch j
-  receiveChallenge j := nomatch j
-  output st := pure ((statement (evalQuery st.1.1), st.1.2),
-    witness K β (evalQuery st.1.1) (witnessEquiv st.2))
-
-/-- The canonical prover and oracle-preserving verifier for statement reformatting. -/
-def frontReduction := OracleReduction.mk
-  (frontProver K β evalQuery witnessEquiv (ϑ := ϑ) (h_rate := h_rate)) (frontVerifier K β evalQuery)
-
-instance : (frontProver K β evalQuery witnessEquiv (ϑ := ϑ) (h_rate := h_rate)).OutputIsPure where
-  output_is_pure := ⟨fun st => ((statement (evalQuery st.1.1), st.1.2),
-    witness K β (evalQuery st.1.1) (witnessEquiv st.2)),
-    fun _ => rfl⟩
-
-/-- The reformatting verifier followed by the full Binary Basefold verifier. -/
-def openingVerifier (γ : ℕ) := OracleVerifier.append
-  (Stmt₃ := Bool) (OStmt₃ := fun _ : Empty => Unit)
-  (Oₛ₃ := fun i : Empty => nomatch i)
-  (frontVerifier K β evalQuery (ϑ := ϑ) (h_rate := h_rate))
-  (FullBinaryBasefold.fullOracleVerifier K β γ (ϑ := ϑ)
-    (h_ℓ_add_R_rate := h_rate) (𝓑 := boolEmbedding L))
-
-/-- The reformatting reduction followed by the full Binary Basefold reduction. -/
-def openingReduction (γ : ℕ) := OracleReduction.append
-  (Stmt₃ := Bool) (Wit₃ := Unit) (OStmt₃ := fun _ : Empty => Unit)
-  (Oₛ₃ := fun i : Empty => nomatch i)
-  (frontReduction K β evalQuery witnessEquiv (ϑ := ϑ) (h_rate := h_rate))
-  (FullBinaryBasefold.fullOracleReduction K β γ (ϑ := ϑ)
-    (h_ℓ_add_R_rate := h_rate) (𝓑 := boolEmbedding L))
-
 /-- The Binary Basefold challenge error transported through the zero-round prefix. -/
 def openingError (γ : ℕ)
     (j : ((!p[] : ProtocolSpec 0) ++ₚ fullPSpec K β γ (ϑ := ϑ)
@@ -240,16 +268,6 @@ theorem openingError_sum_le_concrete (γ : ℕ) :
   simp only [f, Sum.elim_inl, Sum.elim_inr, Finset.sum_const_zero, zero_add]
   exact FullBinaryBasefold.fullRbrKnowledgeError_sum_le_concrete K β γ
 
-instance instMessageInterface (γ : ℕ) : ∀ j, OracleInterface
-    (((!p[] : ProtocolSpec 0) ++ₚ fullPSpec K β γ (ϑ := ϑ)
-      (h_ℓ_add_R_rate := h_rate)).Message j) :=
-  instOracleInterfaceMessageAppend
-
-instance instChallengeSampleable (γ : ℕ) : ∀ j, SampleableType
-    (((!p[] : ProtocolSpec 0) ++ₚ fullPSpec K β γ (ϑ := ϑ)
-      (h_ℓ_add_R_rate := h_rate)).Challenge j) :=
-  instSampleableTypeChallengeAppend
-
 /-- Worst-case round-by-round knowledge soundness of the opening verifier. -/
 theorem openingVerifier_rbrKnowledgeSoundnessWorstCase (γ : ℕ) {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
@@ -266,6 +284,8 @@ theorem openingVerifier_rbrKnowledgeSoundnessWorstCase (γ : ℕ) {σ : Type} (i
       frontVerifier_rbrKnowledgeSoundnessWorstCaseWith K β evalQuery witnessEquiv init impl⟩
     (FullBinaryBasefold.fullOracleVerifier_rbrKnowledgeSoundnessWorstCase K β γ
       (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) (𝓑 := boolEmbedding L))
+
+/-! ### Perfect completeness -/
 
 -- The strict initial fold identity compares definitionally equal dependent domains.
 set_option backward.isDefEq.respectTransparency false in
@@ -302,9 +322,10 @@ theorem mem_strictRoundRelation_zero_witness (s : MLPEvalStatement L ℓ)
 /-- Evaluation and exact first-codeword encoding for honest completeness. -/
 def strictInputRelation : Set ((StmtIn ×
     (∀ j, OracleStatement K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) 0 j)) × WitIn) :=
-  {x | (evalQuery x.1.1).original_claim =
-      (witnessEquiv x.2).val.eval (evalQuery x.1.1).t_eval_point ∧
-    getFirstOracle K β x.1.2 = firstOracleEncoding K β (witnessEquiv x.2)}
+  { ⟨⟨stmtIn, oStmtIn⟩, witIn⟩ |
+    (evalQuery stmtIn).original_claim =
+      (witnessEquiv witIn).val.eval (evalQuery stmtIn).t_eval_point ∧
+    getFirstOracle K β oStmtIn = firstOracleEncoding K β (witnessEquiv witIn) }
 
 omit [SampleableType L] [DecidableEq K] [Fact (β 0 = 1)] in
 /-- Perfect completeness of reformatting at the exact input relation. -/
@@ -350,6 +371,8 @@ theorem openingReduction_perfectCompleteness (γ : ℕ) {σ : Type} (init : Prob
     (fun st => FullBinaryBasefold.fullOracleReduction_perfectCompleteness K β γ
       (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) (𝓑 := boolEmbedding L)
       (init := pure st) (impl := impl))
+
+/-! ## Commitment interface and certified PCS bundle -/
 
 /-- The shared first-oracle interface used by the opening protocol. -/
 def abstractInput : AbstractOStmtIn L ℓ :=
@@ -397,6 +420,10 @@ theorem mliopcs_rbrKnowledgeSoundWorstCase (γ : ℕ) :
   intro σ init impl
   exact openingVerifier_rbrKnowledgeSoundnessWorstCase K β id mlpWitnessEquiv γ init impl
 
+/-! ## Contextual opening
+
+### Protocol definitions -/
+
 /-- The evaluation claim after discarding the surrounding context. -/
 def contextualQuery (Context : Type) :
     Context × ((Fin ℓ → L) × L) → MLPEvalStatement L ℓ :=
@@ -411,6 +438,15 @@ def contextualVerifier (Context : Type) (γ : ℕ) :=
 def contextualReduction (Context : Type) (γ : ℕ) :=
   openingReduction K β (contextualQuery (L := L) (ℓ := ℓ) Context)
     (Equiv.refl (MultilinearPoly L ℓ)) γ (ϑ := ϑ) (h_rate := h_rate)
+
+omit [SampleableType L] in
+/-- The reduction uses exactly the separately defined verifier. -/
+theorem contextualReduction_verifier (Context : Type) (γ : ℕ) :
+    (contextualReduction K β Context γ (ϑ := ϑ) (h_rate := h_rate)).verifier (Oₛₒ := fun i :
+      Empty => nomatch i) =
+      contextualVerifier K β Context γ (ϑ := ϑ) (h_rate := h_rate) := rfl
+
+/-! ### Security -/
 
 /-- Contextual evaluation and unique-radius first-oracle compatibility. -/
 def contextualInputRelation (Context : Type) :=
