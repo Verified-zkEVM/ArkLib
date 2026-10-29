@@ -586,6 +586,7 @@ public import ArkLib.Data.Lattices.CyclotomicRing.Subfield.TraceInnerProduct
 public import ArkLib.Data.Lattices.CyclotomicRing.Subfield.TraceVanishing
 public import ArkLib.Data.Lattices.ModuleSIS
 public import ArkLib.Data.Lattices.Vectors
+public import ArkLib.Data.List.NetMult
 public import ArkLib.Data.Matrix.Basic
 public import ArkLib.Data.Matrix.DotProduct
 public import ArkLib.Data.Matrix.ReadOnce
@@ -670,6 +671,7 @@ public import ArkLib.Data.Polynomial.FractionFieldRoots
 public import ArkLib.Data.Polynomial.FrobeniusContraction
 public import ArkLib.Data.Polynomial.Indicator
 public import ArkLib.Data.Polynomial.Interface
+public import ArkLib.Data.Polynomial.LogDerivative
 public import ArkLib.Data.Polynomial.PointCollision
 public import ArkLib.Data.Polynomial.PointCollisionProbability
 public import ArkLib.Data.Polynomial.Prelims
@@ -862,6 +864,7 @@ public import ArkLib.ProofSystem.Component.ReduceClaim
 public import ArkLib.ProofSystem.Component.SendChallenge
 public import ArkLib.ProofSystem.Component.SendClaim
 public import ArkLib.ProofSystem.Component.SendWitness
+public import ArkLib.ProofSystem.ConstraintSystem.LogUp
 public import ArkLib.ProofSystem.ConstraintSystem.Lookup
 public import ArkLib.ProofSystem.ConstraintSystem.MemoryChecking
 public import ArkLib.ProofSystem.ConstraintSystem.Plonk
