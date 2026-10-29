@@ -298,9 +298,146 @@ Hachi Lemma 8's extracted norm bound (`QuadEval/Soundness.lean`) is
 
 /-- The soundness-side `βSq` of Lemma 8 at the profile, at `τ = 5`. The degree slot is the ring's
 own `natDegree` rather than the literal `hachiD`, so this value is *syntactically* the `βSq` field
-of `quadEvalPackage` at the profile. -/
+of `quadEvalPackage` at the profile.
+
+At `κ = 2ω = 32`, the extracted inner Module-SIS target is trivially solvable for every
+one-row key (`innerSISSolutionAtProfile_valid`): its squared-norm bound
+`151115439221589934080000` exceeds `2·1024·⌊q/2⌋² = 9444732525934644436992`, which admits a
+two-column syzygy (or a unit vector when both selected columns vanish). The weak-binding
+reduction therefore gives no concrete binding guarantee at this profile. The CWSS, inclusion,
+and extraction statements are unaffected; a concrete binding claim needs a tighter norm analysis
+or revised parameters. -/
 def betaSq : ℕ :=
   quadEvalBetaSq params.γ hachiB hachiTau (𝓜(hachiQ, hachiAlpha)).φ.natDegree hachiM hachiDelta
+
+/-! ### The inner Module-SIS target at the profile -/
+
+section InnerSIS
+
+local instance : NeZero (2 ^ hachiM * hachiDelta) := ⟨by norm_num [hachiM, hachiDelta]⟩
+local instance : NeZero hachiN := ⟨by norm_num [hachiN]⟩
+local instance : Subsingleton (Fin hachiN) := by
+  change Subsingleton (Fin 1)
+  infer_instance
+
+/-- A profile-width vector supported on its first two coordinates, with entries `a` and `b`. -/
+def twoColumnVectorAtProfile (a b : Rq 𝓜(hachiQ, hachiAlpha)) :
+    ModuleSIS.Solution 𝓜(hachiQ, hachiAlpha) (2 ^ hachiM * hachiDelta) :=
+  fun j => if j = 0 then a else if j = 1 then b else 0
+
+private theorem sum_supported_on_two_columns {M : Type*} [AddCommMonoid M]
+    (f : Fin (2 ^ hachiM * hachiDelta) → M)
+    (hf : ∀ j, j ≠ 0 → j ≠ 1 → f j = 0) : ∑ j, f j = f 0 + f 1 := by
+  have hs : ∑ j ∈ ({0, 1} : Finset (Fin (2 ^ hachiM * hachiDelta))), f j = ∑ j, f j :=
+    Finset.sum_subset (Finset.subset_univ _) (by
+      intro j _ hj
+      simp only [Finset.mem_insert, Finset.mem_singleton, not_or] at hj
+      exact hf j hj.1 hj.2)
+  rw [← hs]
+  simp [show (0 : Fin (2 ^ hachiM * hachiDelta)) ≠ 1 by decide]
+
+private theorem entry_l2NormSq_le (a : Rq 𝓜(hachiQ, hachiAlpha)) :
+    ‖a‖₂² ≤ hachiD * (hachiQ / 2) ^ 2 := by
+  unfold Rq.l2NormSq
+  calc _ ≤ ∑ _k ∈ Finset.range 𝓜(hachiQ, hachiAlpha).φ.natDegree, (hachiQ / 2) ^ 2 :=
+      Finset.sum_le_sum fun k _ => Nat.pow_le_pow_left (ZMod.natAbs_valMinAbs_le _) 2
+    _ = _ := by rw [Finset.sum_const, Finset.card_range, smul_eq_mul, ringDim_eq]
+
+private theorem twoColumnVectorAtProfile_l2NormSq_le (a b : Rq 𝓜(hachiQ, hachiAlpha)) :
+    ‖twoColumnVectorAtProfile a b‖₂² ≤ 2 * hachiD * (hachiQ / 2) ^ 2 := by
+  unfold vecL2NormSq
+  rw [sum_supported_on_two_columns _ (by
+    intro j hj0 hj1
+    simp [twoColumnVectorAtProfile, hj0, hj1, Rq.l2NormSq, Rq.zero_val,
+      CompPoly.CPolynomial.coeff_zero])]
+  simp only [twoColumnVectorAtProfile, ↓reduceIte,
+    show (1 : Fin (2 ^ hachiM * hachiDelta)) ≠ 0 by decide]
+  have ha := entry_l2NormSq_le a
+  have hb := entry_l2NormSq_le b
+  nlinarith
+
+private theorem twoColumnVectorAtProfile_mul (A : PolyMatrix (Rq 𝓜(hachiQ, hachiAlpha)) hachiN
+    (2 ^ hachiM * hachiDelta)) (a b : Rq 𝓜(hachiQ, hachiAlpha)) :
+    A *ᵥ twoColumnVectorAtProfile a b = fun i => A i 0 * a + A i 1 * b := by
+  funext i
+  rw [matVecMul_apply, dot_eq_sum, sum_supported_on_two_columns _ (by
+    intro j hj0 hj1
+    simp [twoColumnVectorAtProfile, hj0, hj1])]
+  simp [twoColumnVectorAtProfile, show (1 : Fin (2 ^ hachiM * hachiDelta)) ≠ 0 by decide]
+
+/-- The extracted squared-norm bound at the profile is `36893417778708480000`. -/
+theorem betaSq_eq : betaSq = 36893417778708480000 := by
+  rw [betaSq, quadEvalBetaSq, quadEvalZL2SqBound, ringDim_eq]
+  norm_num [zRecomposeL2SqBound, subL2NormSqBound, params,
+    HonestRangeParams.ofPinnedDigitBase, hachiB, hachiTau, hachiD, hachiM, hachiDelta,
+    Finset.sum_range_succ]
+
+/-- The inner weak-binding reduction permits squared norm `151115439221589934080000`. -/
+theorem innerShort_bound_eq :
+    subL2NormSqBound (scalarVecMulMulL2NormSqBound (2 * hachiOmega) betaSq) =
+      151115439221589934080000 := by
+  rw [betaSq_eq]
+  norm_num [subL2NormSqBound, scalarVecMulMulL2NormSqBound, hachiOmega]
+
+/-- A solution for every one-row inner key: the two-column syzygy `(A₁, −A₀, 0, …)`,
+or the first unit vector when both selected columns vanish. -/
+def innerSISSolutionAtProfile
+    (A : PolyMatrix (Rq 𝓜(hachiQ, hachiAlpha)) hachiN (2 ^ hachiM * hachiDelta)) :
+    ModuleSIS.Solution 𝓜(hachiQ, hachiAlpha) (2 ^ hachiM * hachiDelta) :=
+  if A 0 0 = 0 ∧ A 0 1 = 0 then twoColumnVectorAtProfile 1 0
+  else twoColumnVectorAtProfile (A 0 1) (-A 0 0)
+
+/-- Every one-row inner key at the profile has a nonzero short kernel vector accepted by the
+inner Module-SIS relation of the weak-binding reduction, at `κ = 2ω = 32` and `βSq = betaSq`.
+The solution is supported on its first two entries and has squared norm at most
+`2·1024·⌊q/2⌋² = 9444732525934644436992`, below the reduction's permitted squared norm
+`151115439221589934080000`. -/
+theorem innerSISSolutionAtProfile_valid
+    (A : PolyMatrix (Rq 𝓜(hachiQ, hachiAlpha)) hachiN (2 ^ hachiM * hachiDelta)) :
+    ModuleSIS.relation 𝓜(hachiQ, hachiAlpha)
+      (WeakBinding.innerShort 𝓜(hachiQ, hachiAlpha) (2 * hachiOmega) betaSq)
+      A (innerSISSolutionAtProfile A) = true := by
+  have hshort (a b : Rq 𝓜(hachiQ, hachiAlpha)) :
+      WeakBinding.innerShort 𝓜(hachiQ, hachiAlpha) (2 * hachiOmega) betaSq
+        (twoColumnVectorAtProfile a b) = true := by
+    simp only [WeakBinding.innerShort, decide_eq_true_eq, innerShort_bound_eq]
+    exact (twoColumnVectorAtProfile_l2NormSq_le a b).trans (by norm_num [hachiD, hachiQ])
+  unfold innerSISSolutionAtProfile
+  split_ifs with hzero
+  · have hne : twoColumnVectorAtProfile (1 : Rq 𝓜(hachiQ, hachiAlpha)) 0 ≠ 0 := by
+      intro h
+      have h0 := congrFun h 0
+      have h10 : (1 : Rq 𝓜(hachiQ, hachiAlpha)) = 0 := by
+        simpa only [twoColumnVectorAtProfile, ↓reduceIte, Pi.zero_apply] using h0
+      have hc := congrArg (fun x : Rq 𝓜(hachiQ, hachiAlpha) => x.1.coeff 0) h10
+      rw [Rq.one_val _ (Nat.succ_le_of_lt ringDim_pos), Rq.zero_val,
+        CompPoly.CPolynomial.coeff_one, CompPoly.CPolynomial.coeff_zero] at hc
+      norm_num at hc
+    have hker : A *ᵥ twoColumnVectorAtProfile (1 : Rq 𝓜(hachiQ, hachiAlpha)) 0 = 0 := by
+      rw [twoColumnVectorAtProfile_mul]
+      funext i
+      have hi : i = 0 := Subsingleton.elim _ _
+      subst i
+      simp [hzero.1]
+    simp [ModuleSIS.relation, hne, hshort, hker]
+  · have hne : twoColumnVectorAtProfile (A 0 1) (-A 0 0) ≠ 0 := by
+      intro h
+      apply hzero
+      have h0 := congrFun h 0
+      have h1 := congrFun h 1
+      simp only [twoColumnVectorAtProfile,
+        show (1 : Fin (2 ^ hachiM * hachiDelta)) ≠ 0 by decide, ↓reduceIte,
+        Pi.zero_apply, neg_eq_zero] at h0 h1
+      exact ⟨h1, h0⟩
+    have hker : A *ᵥ twoColumnVectorAtProfile (A 0 1) (-A 0 0) = 0 := by
+      rw [twoColumnVectorAtProfile_mul]
+      funext i
+      have hi : i = 0 := Subsingleton.elim _ _
+      subst i
+      simp [mul_comm]
+    simp [ModuleSIS.relation, hne, hshort, hker]
+
+end InnerSIS
 
 /-! ## The profile instantiated: both security directions, at one `τ`
 
@@ -406,7 +543,13 @@ theorem sq_two_omega_lt_q : (2 * hachiOmega) ^ 2 < hachiQ := by
 
 /-- **Hachi Lemma 8's escape-aware CWSS certificate at this file's profile**, at the same
 `zDigits = τ = 5` the correctness chain uses and at the chain's own ball radius `γ = params.γ = 15`
-(soundness is parametric in `γ`; the correctness chain pins it to `bZero − 1`). -/
+(soundness is parametric in `γ`; the correctness chain pins it to `bZero − 1`).
+
+When `innerRows = hachiN = 1`, the inner-SIS target of the subsequent weak-binding reduction
+is trivially solvable at this profile (`innerSISSolutionAtProfile_valid`), so that reduction
+gives no concrete binding guarantee here. This CWSS certificate, its relation inclusions,
+and its extraction statements are unaffected. A concrete binding claim needs a tighter norm
+analysis or revised parameters. -/
 def packageAtProfile
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (pp : Hachi.PublicParamsD 𝓜(hachiQ, hachiAlpha) innerRows (2 ^ hachiM) hachiDelta outerRows
