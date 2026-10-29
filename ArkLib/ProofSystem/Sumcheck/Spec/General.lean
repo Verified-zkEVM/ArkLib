@@ -7,6 +7,8 @@ module
 
 public import ArkLib.ProofSystem.Sumcheck.Spec.SingleRound
 public import ArkLib.OracleReduction.Composition.Sequential.GuardedNary
+public import ArkLib.OracleReduction.Composition.Sequential.GuardedRoundByRound
+public import ArkLib.OracleReduction.Security.GuardedBridges
 
 /-!
 # The Sum-check Protocol
@@ -218,16 +220,44 @@ theorem reduction_perfectCompleteness :
     (fun _ => inferInstance) (SingleRound.verifierGuardedForm R n deg D oSpec)
     (fun i s => SingleRound.reduction_perfectCompleteness (init := pure s) i)
 
-/-- Round-by-round knowledge soundness with error `deg / |R|` per challenge for the (full)
-  sum-check protocol -/
+/-- The full oracle verifier retains the checks of every sum-check round. -/
+def oracleVerifierGuardedForm : (oracleVerifier R deg D n oSpec).toVerifier.GuardedForm :=
+  OracleVerifier.seqComposeGuardedForm (StatementRound R n)
+    (fun _ => OracleStatement R n deg) (fun i =>
+      Verifier.GuardedForm.ofEq (SingleRound.oracleVerifier_eq_verifier R n deg D oSpec i).symm
+        (SingleRound.verifierGuardedForm R n deg D oSpec i))
+
+/-- Fixed-prefix knowledge soundness with error `deg / |R|` at every challenge. -/
+theorem oracleVerifier_rbrKnowledgeSoundnessWorstCase [Fintype R] [IsDomain R] :
+    (oracleVerifier R deg D n oSpec).toVerifier.rbrKnowledgeSoundnessWorstCase init impl
+      (relationRound R n deg D 0) (relationRound R n deg D (.last n))
+      (fun _ => (deg : ℝ≥0) / Fintype.card R) :=
+  OracleVerifier.seqCompose_rbrKnowledgeSoundnessWorstCase_of_guarded
+    (StatementRound R n) (fun _ => OracleStatement R n deg) (fun _ => Unit)
+    (relationRound R n deg D) (SingleRound.oracleVerifier R n deg D oSpec)
+    (fun i => Verifier.GuardedForm.ofEq
+      (SingleRound.oracleVerifier_eq_verifier R n deg D oSpec i).symm
+      (SingleRound.verifierGuardedForm R n deg D oSpec i))
+    (fun _ _ => (deg : ℝ≥0) / Fintype.card R)
+    (fun i => SingleRound.oracleVerifier_rbrKnowledgeSoundnessWorstCase i)
+
+/-- Round-by-round knowledge soundness with error `deg / |R|` per challenge for the full
+sum-check protocol. -/
 theorem oracleVerifier_rbrKnowledgeSoundness [Fintype R] [IsDomain R] :
     (oracleVerifier R deg D n oSpec).rbrKnowledgeSoundness init impl
       (relationRound R n deg D 0) (relationRound R n deg D (.last n))
       (fun _ => (deg : ℝ≥0) / (Fintype.card R)) :=
-  OracleVerifier.seqCompose_rbrKnowledgeSoundness
-    (rel := relationRound R n deg D)
-    (V := SingleRound.oracleVerifier R n deg D oSpec)
-    (h := fun i => SingleRound.oracleVerifier_rbrKnowledgeSoundness i)
+  Verifier.rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness init impl
+    (oracleVerifier_rbrKnowledgeSoundnessWorstCase R deg D n oSpec)
+
+/-- Ordinary knowledge soundness with the sum of the per-challenge errors. -/
+theorem oracleVerifier_knowledgeSoundness [Fintype R] [IsDomain R] :
+    (oracleVerifier R deg D n oSpec).knowledgeSoundness init impl
+      (relationRound R n deg D 0) (relationRound R n deg D (.last n))
+      (∑ _ : (pSpec R deg n).ChallengeIdx, (deg : ℝ≥0) / Fintype.card R) :=
+  OracleVerifier.knowledgeSoundness_of_rbrKnowledgeSoundnessWorstCase_of_guarded
+    (oracleVerifierGuardedForm R deg D n oSpec)
+    (oracleVerifier_rbrKnowledgeSoundnessWorstCase R deg D n oSpec)
 
 end Spec
 
