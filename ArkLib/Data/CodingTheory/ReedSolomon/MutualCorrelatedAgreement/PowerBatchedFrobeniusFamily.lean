@@ -109,7 +109,7 @@ theorem exists_exceptional_frobeniusRetainedPowerTupleFamily
         domain values ι roots center Q K k τ s,
         ∀ z ∉ exceptional,
           HasExactPowerAgreement domain values ι k z
-            (powerBatchedPolynomial (fun t ↦ (P t).map ι) z) := by
+            (Polynomial.powerBatch (fun t ↦ (P t).map ι) z) := by
   classical
   let tuples := frobeniusRetainedPowerTupleFamily
     domain values ι roots center Q K k τ s
