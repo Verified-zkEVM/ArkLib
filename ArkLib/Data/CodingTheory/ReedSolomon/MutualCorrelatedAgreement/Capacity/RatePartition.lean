@@ -31,7 +31,7 @@ fields, block lengths, codes, and received lines.
 
 ## References
 
-* [DKTZ26]
+* [DKT26]
 -/
 
 @[expose] public section

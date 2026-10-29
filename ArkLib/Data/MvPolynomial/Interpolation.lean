@@ -241,17 +241,6 @@ end Finset
 
 end MvPolynomialDetermination
 
-section Interpolation
-
-variable {F : Type*} [Field F] {ι : Type*} [DecidableEq ι]
-variable {s : Finset ι} {v : ι → F} {i j : ι}
-
-/-- Define basis polynomials for interpolation -/
-protected def basis : F := sorry
-
-end Interpolation
-
-
 end MvPolynomial
 
 end

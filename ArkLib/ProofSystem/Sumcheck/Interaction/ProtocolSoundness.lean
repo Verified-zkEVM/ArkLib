@@ -113,7 +113,7 @@ theorem exportedPrefixRun_soundness {m : ℕ} (D : Fin m ↪ F)
   rintro ⟨q, respond⟩
   change SingleRound.Message F deg at q
   by_cases hcheck : ((Finset.univ.map D).toList.map (fun x => q.val.eval x)).sum = stmt.target
-  · simp only [hcheck, ↓reduceIte, bind_assoc, pure_bind]
+  · simp only [hcheck, ↓reduceIte, prEvent_norm]
     let i : Fin n := ⟨start, by omega⟩
     let good : F → Prop := fun r => closedRelation F n deg D i.succ
       ⟨⟨q.val.eval r, Fin.snoc stmt.challenges r⟩,
@@ -134,9 +134,9 @@ theorem exportedPrefixRun_soundness {m : ℕ} (D : Fin m ↪ F)
         let _next ← respond (some r)
         return good r) good (fun truth => truth) (by
           intro r hr
-          simp only [hr, bind_assoc, pure_bind, prEvent_false])
-    simpa only [bind_assoc, pure_bind] using hbound.trans hgood
-  · simp only [hcheck, ↓reduceIte, bind_assoc, pure_bind]
+          simp only [hr, prEvent_norm, prEvent_false])
+    simpa only [bind_assoc, pure_bind, prEvent_norm] using hbound.trans hgood
+  · simp only [hcheck, ↓reduceIte, prEvent_norm]
     change Pr{let _next ← respond none}[False] ≤ _
     simp only [prEvent_false, zero_le]
 
@@ -168,7 +168,7 @@ theorem exportedPrefixRun_admissibility {m : ℕ} (D : Fin m ↪ F)
   rintro ⟨q, respond⟩
   change SingleRound.Message F deg at q
   by_cases hcheck : ((Finset.univ.map D).toList.map (fun x => q.val.eval x)).sum = stmt.target
-  · simp only [hcheck, ↓reduceIte, bind_assoc, pure_bind]
+  · simp only [hcheck, ↓reduceIte, prEvent_norm]
     change Pr{let r ← ($ᵗ F); let _next ← respond (some r)}[
       ¬ (originalOracle.sumWeaken (polynomialInterface F deg).spec).eval
         (Access.extendImpl A (polynomialInterface F deg) impl q) =
@@ -179,8 +179,8 @@ theorem exportedPrefixRun_admissibility {m : ℕ} (D : Fin m ↪ F)
       let r ← ($ᵗ F)
       let _next ← respond (some r)
       return ())
-    simpa only [bind_assoc, pure_bind] using hzero.le
-  · simp only [hcheck, ↓reduceIte, bind_assoc, pure_bind]
+    simpa only [bind_assoc, pure_bind, prEvent_norm] using hzero.le
+  · simp only [hcheck, ↓reduceIte, prEvent_norm]
     change Pr{let _next ← respond none}[
       ¬ (originalOracle.sumWeaken (polynomialInterface F deg).spec).eval
         (Access.extendImpl A (polynomialInterface F deg) impl q) =

@@ -131,7 +131,7 @@ theorem reduction_completeness --(h : init.neverFails)
   `mapWitInv` from the output witness to the input witness. -/
 def extractor (mapWitInv : StmtIn → WitOut → WitIn) :
     Extractor.RoundByRound oSpec StmtIn WitIn WitOut !p[] (fun _ => WitIn) where
-  eqIn := rfl
+  extractIn := fun _ w => w
   extractMid := fun i => Fin.elim0 i
   extractOut := fun stmtIn _ witOut => mapWitInv stmtIn witOut
 
@@ -143,7 +143,7 @@ def knowledgeStateFunction (hRel : ∀ stmtIn witOut,
     (verifier oSpec mapStmt).KnowledgeStateFunction
       init impl relIn relOut (extractor mapWitInv) where
   toFun | ⟨0, _⟩ => fun stmtIn _ witIn => ⟨stmtIn, witIn⟩ ∈ relIn
-  toFun_empty := fun stmtIn witIn => by simp
+  toFun_empty := fun stmtIn witIn h => h
   toFun_next := fun m => Fin.elim0 m
   toFun_full := fun stmtIn _ witOut h => by
     -- Verifier deterministically returns `mapStmt stmtIn`; from positive probability we extract
@@ -325,7 +325,7 @@ def oracleKnowledgeStateFunction (hRel : ∀ stmtIn oStmtIn witOut,
     (oracleVerifier oSpec mapStmt embedIdx hEq hInterface).KnowledgeStateFunction
       init impl relIn relOut (extractor mapWitInv) where
   toFun | ⟨0, _⟩ => fun ⟨stmtIn, oStmtIn⟩ _ witIn => ⟨⟨stmtIn, oStmtIn⟩, witIn⟩ ∈ relIn
-  toFun_empty := fun stmtIn witIn => by simp
+  toFun_empty := fun stmtIn witIn h => h
   toFun_next := fun m => Fin.elim0 m
   toFun_full := fun ⟨stmtIn, oStmtIn⟩ _ witOut => by
     intro h

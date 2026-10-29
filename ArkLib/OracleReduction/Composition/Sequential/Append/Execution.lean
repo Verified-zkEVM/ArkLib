@@ -31,7 +31,7 @@ section Execution
 The appended prover `P₁.append P₂` is defined by a three-way `dif` on the round index (below the
 seam / at the seam / above the seam), and each branch transports its state along a type equality.
 Reasoning about `runToRound` therefore forces us to work up to `HEq`.  The lemmas below build the
-transport ladder that `Prover.append_run` needs; they are all `private`, since they exist only to
+transport ladder that `Prover.append_run` needs; most are `private`, since they exist only to
 serve that proof and the security proofs later in this file.
 -/
 
@@ -145,7 +145,7 @@ private theorem processRound_eq_bind {N : ℕ} {pSpec : ProtocolSpec N} (j : Fin
 
 /-- Lifting an `oSpec` computation into the first component and then into the appended protocol
 is the same as lifting it into the appended protocol directly. -/
-private theorem liftAppendLeft_liftM {α : Type} (oa : OracleComp oSpec α) :
+theorem liftAppendLeft_liftM {α : Type} (oa : OracleComp oSpec α) :
     (liftAppendLeft pSpec₂ (liftM oa : OracleComp (oSpec + [pSpec₁.Challenge]ₒ) α))
       = (liftM oa : OracleComp (oSpec + [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ) α) := by
   unfold liftAppendLeft
@@ -157,7 +157,7 @@ private theorem liftAppendLeft_liftM {α : Type} (oa : OracleComp oSpec α) :
 
 /-- Lifting a left-component challenge query into the appended protocol queries the
 left-injected index and transports the response back. -/
-private theorem liftAppendLeft_getChallenge (i : ChallengeIdx pSpec₁) :
+theorem liftAppendLeft_getChallenge (i : ChallengeIdx pSpec₁) :
     liftAppendLeft pSpec₂
         ((liftM (pSpec₁.getChallenge i)) :
           OracleComp (oSpec + [pSpec₁.Challenge]ₒ) (pSpec₁.Challenge i))

@@ -91,14 +91,14 @@ private theorem verifier_run_loggingOracle_eq
 
 omit [Fintype ι] [DecidableEq ι] [Field F] [Fintype F] [DecidableEq F]
   [AddCommGroup A] [Module F A] [Fintype A] [DecidableEq A] in
-private theorem prover_run_map_eq {k t : ℕ} {β : Type}
+private theorem prover_run_map_eq {k t : ℕ} {Aux β : Type}
     (prover : Prover []ₒ
       (Statement (F := F) k × (∀ i, OracleStatement ι A i))
-      (Witness (F := F) k)
+      Aux
       (OutputStatement × ∀ i, OutputOracleStatement i) OutputWitness
       (pSpec (ι := ι) (F := F) k t))
     (stmt : Statement (F := F) k × (∀ i, OracleStatement ι A i))
-    (witIn : Witness (F := F) k)
+    (witIn : Aux)
     (post : F → (Fin k → F) → (Fin t → ι) →
       ((OutputStatement × ∀ i, OutputOracleStatement i) × OutputWitness) → β) :
     (fun r ↦ post (r.1.challenges ⟨0, rfl⟩)
@@ -173,7 +173,7 @@ theorem oracleVerifier_knowledgeSoundnessWith_of_transition_failure_prob_le
   subst extractor
   classical
   unfold OracleVerifier.knowledgeSoundnessWith Verifier.knowledgeSoundnessWith
-  rintro ⟨stmt, oStmt⟩ witIn prover
+  rintro Aux ⟨stmt, oStmt⟩ witIn prover
   rw [ENNReal.coe_add, ENNReal.coe_mul, ENNReal.coe_sub, ENNReal.coe_one]
   refine ProtocolSpec.prEvent_optionT_simulateQ_addLift_getChallenge_first_bind_le_convex
     (ε₂ := (((1 - δ) ^ t : ℝ≥0) : ENNReal))

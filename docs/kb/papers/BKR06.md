@@ -35,11 +35,12 @@ parameters to reals; ArkLib follows the primary source instead.
 **Log base.** The source's `N^{(δ−ρ²)log₂ N}` fixes the base at `2`, so the Lean uses `Real.logb 2`;
 a natural log would weaken the exponent by `1/ln 2`.
 
-**Degree convention — harmless.** [BKR06] defines `RS[N, K]` by degree **≤ K** and its witnessing family
-has degree exactly `K`, whereas [ABF26]'s `RS[F, L, k]` — and `ReedSolomon.code` — is degree **< k**. The
-cited witnesses therefore sit one degree above the code, but they are monic subspace polynomials
-`∏_{a ∈ L}(X − a)`, so subtracting any fixed member gives `|P|` distinct polynomials of degree `< K`, all
-agreeing with the shifted word `w − P₀` on the same `≥ q^v` points. The construction transfers.
+**Degree convention.** [BKR06] uses degree **≤ K**, whereas [ABF26] and
+`ReedSolomon.code` use degree **< k**. BKR06's codewords are differences of monic subspace
+polynomials of degree `2^v`, with degree at most `2^u` and varying leading coefficients;
+subtracting a fixed member need not lower the degree. With `a = αm ≥ 1` and `v = βm`,
+apply Theorem 2.1 with `u = a − 1`: the degree bound `2^(a−1) < 2^a = k` puts the
+witnesses inside the degree-`< k` code.
 
 **Rationality is encoded, not approximated.** Corollary 2.2 requires `δ, ρ ∈ ℚ` and its proof needs
 `u = δm`, `v = ρm` integral. The Lean declaration therefore binds `α β : ℚ`, coercing them

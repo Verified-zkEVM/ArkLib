@@ -7,6 +7,7 @@ module
 
 public import ArkLib.Data.Lattices.CyclotomicRing.Subfield.Factorization
 public import ArkLib.Data.Lattices.CyclotomicRing.Subfield.Cardinality
+public import Mathlib.FieldTheory.Finite.GaloisField
 public import Mathlib.RingTheory.IntegralDomain
 public import Mathlib.Algebra.Polynomial.Reverse
 

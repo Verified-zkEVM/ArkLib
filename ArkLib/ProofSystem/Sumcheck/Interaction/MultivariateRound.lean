@@ -273,7 +273,7 @@ theorem executeCore_honest [DecidableEq R] {m : ℕ} (D : Fin m ↪ R) (i : Fin 
         (polynomialFamily R n deg).behaviorOfRealizations (fun _ => p)⟩ :
           ClosedClaim (Spec.StatementRound R n i.succ) (polynomialFamily R n deg))) := by
   exact executeCore_closed R n deg ambient i stmt _ _ _ r
-    (projected_sum_of_relationRound R n deg D i stmt p h)
+    (Spec.SingleRound.projected_sum_of_relationRound R n deg D i stmt p h)
 
 /-- The honest successor satisfies the next relation, including at the last round. -/
 theorem honestNext_related {m : ℕ} (D : Fin m ↪ R) (i : Fin n)
@@ -281,7 +281,7 @@ theorem honestNext_related {m : ℕ} (D : Fin m ↪ R) (i : Fin n)
     closedRelation R n deg D i.succ
       ⟨honestNext R n deg D i stmt p r,
         (polynomialFamily R n deg).behaviorOfRealizations (fun _ => p)⟩ := by
-  exact relationRound_projected_output R n deg D i stmt p r
+  exact Spec.SingleRound.relationRound_projected_output R n deg D i stmt p r
 
 
 /-- The final closed round is precisely evaluation at the full challenge vector. -/
