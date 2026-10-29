@@ -10,7 +10,7 @@ public import ArkLib.Interaction.Oracle.Security.StateRestorationStoppedBudget
 /-!
 # Strict encodings of restoration query keys
 
-A decoder recognizes exactly the encoded image. Its `none` fibre is the off-image domain that
+A decoder recognizes exactly the encoded image. Inputs decoded to `none` form the domain that
 an arbitrary external adversary can also query. Both inverse laws are necessary: a left inverse
 alone would allow a decoder to identify unrelated external strings with a native key.
 -/
