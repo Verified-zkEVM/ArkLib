@@ -29,7 +29,7 @@ public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoC
   A *pure* verifier states its conditions in the output relation instead of rejecting. That is not
   available here — the output statement is `Unit` and retains none of the data the check reads — so
   the check runs at verification time and rejects on failure. That is a **guarded** verifier, in
-  the sense of `CoordinateWiseSpecialSoundness/Guarded.lean`.
+  the sense of `Security/Guarded.lean`.
 
   ## How extraction works
 

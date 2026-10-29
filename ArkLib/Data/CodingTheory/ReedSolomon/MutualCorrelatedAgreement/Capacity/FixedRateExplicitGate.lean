@@ -24,7 +24,6 @@ uniformly over fields, code dimensions, evaluation domains, and received lines.
 ## References
 
 * [DKT26]
-* [DKTZ26]
 -/
 
 @[expose] public section

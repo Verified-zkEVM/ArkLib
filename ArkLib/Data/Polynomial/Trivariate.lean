@@ -74,7 +74,7 @@ noncomputable def evalAtZ (z : R) (p : R[Z][X][Y]) : R[X][Y] :=
   p.map (Polynomial.mapRingHom (Polynomial.evalRingHom z))
 
 /-- Backwards-compatible name for `evalAtZ`. New code should use the axis-explicit API. -/
-@[deprecated evalAtZ (since := "2026-08-21")]
+@[deprecated evalAtZ +typeChanged (since := "2026-08-21")]
 noncomputable abbrev eval_on_Z (p : R[Z][X][Y]) (z : R) : R[X][Y] :=
   evalAtZ z p
 

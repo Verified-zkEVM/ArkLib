@@ -10,14 +10,14 @@ correlated agreement. For code carriers and distance types, see
 | Module | Contents |
 | --- | --- |
 | `ProximityGenerator/Basic.lean` | Generator-parametric mutual correlated agreement: `IsMCA`, `mcaError`, and `IsMCAGenerator` |
-| `ProximityGap/Errors.lean` | `epsPg`, `epsCa`, `epsMca`, their order properties, predicate bridges, and affine-line MCA comparison theorems |
+| `ProximityGap/Errors.lean` | `caError`, `epsPg`, `epsCa`, `epsMca`, their order properties, predicate bridges, and affine-line MCA comparison theorems |
 | `ProximityGap/Basic.lean` | Predicate forms of proximity gap and correlated agreement |
 | `ProximityGenerator/TensorGenerator.lean` | Mutual-correlated-agreement transport through tensor generators and row-wise interleaving |
 | `ProximityGap/GrandChallenges.lean` | Integer-grid challenge predicates, answer types, witnesses, and Reed--Solomon prize specializations |
 | `ProximityGap/CapacityBounds.lean` | Source-audited §4 upper/lower bounds on `epsCa` and canonical `mcaError` |
 | `ProximityGap/LineDecoding.lean` | Natural-cardinality line decodability and its MCA consequence |
 | `Connections/ListDecodingAndCA.lean` | §5 conversions between `Code.Lambda`, CA, and MCA |
-| `ProximityGap/GrandChallenges/CapacityBounds.lean` | Admit-dependent capacity-bound witness extensions; imports the core carrier, never conversely |
+| `ProximityGap/GrandChallenges/CapacityBounds.lean` | Proved Johnson-range capacity-bound witnesses; imports the core carrier, never conversely |
 
 ## Mutual correlated agreement
 
@@ -52,39 +52,65 @@ The main value lemmas are:
 
 - `mcaError_mono`, `mcaError_le_one`, and `mcaError_ne_top`;
 - `mcaError_eq_of_floor_eq` for constancy on integer-agreement cells;
+- `isMCA_comp_equiv` and `mcaError_comp_equiv` for invariance under coordinate equivalences;
 - the transport lemmas in `MCAGenerator.lean` and `TensorGenerator.lean`.
 
 ## Proximity gap and correlated agreement
 
-`Errors.lean` provides the following paper-facing values:
+`ProximityGap.caError G C δ_fld δ_int` is the generator-indexed CA error. It takes the
+supremum, over stacks that are not jointly `δ_int`-close to `C`, of the probability that
+`∑ j, G x j • u j` is `δ_fld`-close when `x` is sampled uniformly. Stacks that are jointly
+close contribute zero. The seed type needs `SampleableType`; this already implies that it
+is finite and nonempty. The row and coordinate types have `Fintype` instances.
+
+`Errors.lean` provides these specializations:
 
 | Declaration | Type and meaning |
 | --- | --- |
 | `epsPg C δ` | proximity-gap error for `C : Set (ι → A)` and `δ : ℝ≥0` |
 | `epsCa C δ_fld δ_int` | affine-line correlated-agreement error with separate fold and interleaved radii |
 | `epsCa' C δ` | equal-radius specialization `epsCa C δ δ` |
-| `epsCaCurves C k δ_fld δ_int` | correlated-agreement error for degree-`k` polynomial combinations |
-| `epsCaAffineSpaces C k δ_fld δ_int` | correlated-agreement error for uniform samples from affine spans |
+| `caError (univariatePowersGenerator F k) C δ_fld δ_int` | correlated-agreement error for degree-`k` polynomial combinations |
+| `caError (AffineSpaceGenerator F k) C δ_fld δ_int` | correlated-agreement error for uniform samples from affine spans |
 
 These values use `Set` code carriers because their events are also meaningful for nonlinear codes.
 Use `ModuleCode` when applying the comparison theorems with mutual correlated agreement.
+
+`epsCa` and `epsCa'` are abbreviations. Use `epsCa_eq` to recover the affine-line
+sampling formula in proofs. Curves and affine spaces use `caError` with the generators in
+the table above.
+
+`caError_affineSpace_eq` recovers uniform sampling from the generated affine subspace.
+Its proof uses `uniform_affine_combination`, including dependent and zero directions.
+That lemma lives in `BCIKS20/AffineCoefficients/Basic.lean`; the higher-level
+`BCIKS20/AffineCoefficients.lean` gives `correlatedAgreement_affine_coefficients`.
+The affine-space numeric bridge now requires a finite-field sampler, whereas the
+predicate itself can sample a finite affine image without sampling the field.
 
 Their order behavior is not uniform:
 
 | Value | Available behavior |
 | --- | --- |
 | `mcaError G C δ` (and hence `epsMca C δ`) | monotone in `δ` |
-| `epsCa C δ_fld δ_int` | monotone in `δ_fld` and antitone in `δ_int` |
+| `caError G C δ_fld δ_int` (and hence `epsCa`) | monotone in `δ_fld` and antitone in `δ_int` |
 | `epsPg C δ` | zero for `1 ≤ δ`; the zero singleton code gives a positive value at `δ = 0`, so global monotonicity fails in general |
 | `epsCa' C δ` | zero for `1 ≤ δ`; no global monotonicity lemma is provided |
 
-The relevant declarations are `epsCa_mono_left`, `epsCa_antitone_right`,
+The generator-level declarations are `caError_mono_left` and `caError_antitone_right`.
+The affine-line versions `epsCa_mono_left` and `epsCa_antitone_right` specialize them.
+The endpoint declarations are
 `epsPg_eq_zero_of_one_le`, `epsCa_eq_zero_of_one_le_right`, and
 `epsPg_singleton_zero_pos`.
 
 ## Comparisons and bridges
 
-For a module code and a common nonnegative radius,
+Use `prob_le_caError` to bound one stack's fold-close probability when joint proximity
+fails. For a module code, `caError_le_mcaError` gives
+`caError G C δ δ ≤ mcaError G C (δ : ℝ)` for any generator and nonnegative radius.
+A close combination supplies an agreement set; failure of joint proximity forces some
+row to have no codeword extension on that set, which witnesses `IsMCA`.
+
+For the affine-line instance,
 
 ```text
 epsPg C δ ≤ epsCa C δ δ ≤ epsMca C δ.
@@ -118,8 +144,8 @@ ArkLib.
 The numeric correlated-agreement values are connected to the predicate API by:
 
 - `δ_ε_correlatedAgreementAffineLines_iff_epsCa_le`;
-- `δ_ε_correlatedAgreementCurves_iff_epsCaCurves_le`;
-- `δ_ε_correlatedAgreementAffineSpaces_iff_epsCaAffineSpaces_le`.
+- `δ_ε_correlatedAgreementCurves_iff_caError_le`;
+- `δ_ε_correlatedAgreementAffineSpaces_iff_caError_le`.
 
 These equivalences allow existing predicate-based proofs to consume numeric bounds without
 introducing a second predicate.
@@ -129,7 +155,7 @@ introducing a second predicate.
 | Quantity | Type |
 | --- | --- |
 | radius passed to `IsMCA`, `mcaError`, or `Code.Lambda` | `ℝ` |
-| radius passed to `epsPg`, `epsCa`, or `epsMca` | `ℝ≥0` |
+| radius passed to `caError`, `epsPg`, `epsCa`, or `epsMca` | `ℝ≥0` |
 | radius quantified by `IsMCAGenerator` | `I`, the closed unit interval |
 | numeric error value or probability | `ENNReal` |
 | error bound | `ℝ≥0` |
@@ -155,14 +181,15 @@ and `ListPrizeResolution.to_prize` assemble per-rate answers.
 
 Bounds that produce one-sided prize evidence belong in extension modules below
 `ProximityGap/GrandChallenges/`. For example, `McaLowerWitness.ofJohnsonRangeBound` is in
-`GrandChallenges/CapacityBounds.lean`; this keeps `GrandChallenges.lean` independent of the
-catalogue's external admits.
+`GrandChallenges/CapacityBounds.lean`. Its bound is proved via [DKT26], with the printed
+constant from [BCHKS25] Theorem 4.6. Keeping it in an extension leaves `GrandChallenges.lean`
+independent of the bound catalogue.
 
 ## Naming
 
 Names treat initialisms as words: `epsMca`, `epsCa`, `epsPg`, `GrandMcaAnswer`, and
 `grandMcaChallenge`.
-The canonical generator-level value retains its established name `mcaError`. The suffixes `_le`,
+The generator-level values are `caError` and `mcaError`. The suffixes `_le`,
 `_eq`, `_mono`, `_of_...`, and `_iff_...` describe the conclusion and hypotheses in the usual
 mathlib style.
 

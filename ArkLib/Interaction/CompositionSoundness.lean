@@ -140,8 +140,8 @@ theorem run_appendFlat_soundness_weighted_ae
   have h := run_appendFlat_soundness_weighted_ae_finish prover counterpart₁ counterpart₂ Exceptional
     (fun path _ out => pure (⟨path, out⟩ : (t : TypeTree.Path (s₁.append s₂)) × OutputC t))
     (fun result => Success result.1 result.2) error
-    (by simpa only [bind_assoc, pure_bind] using hsuffix)
-  simpa only [bind_assoc, pure_bind] using h
+    (by simpa only [bind_assoc, pure_bind, prEvent_norm] using hsuffix)
+  simpa only [bind_assoc, pure_bind, prEvent_norm] using h
 
 /-- The weighted bound only needs suffix security at structurally reachable outputs of this
 whole prover's prefix. Reachability includes the actual returned continuation. Unlike the

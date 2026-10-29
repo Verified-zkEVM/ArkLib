@@ -38,7 +38,6 @@ ring homomorphism applied to the interpolant is applied to the coefficient vecto
 ## References
 
 * [DKT26]
-* [DKTZ26]
 -/
 
 @[expose] public section

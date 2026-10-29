@@ -40,8 +40,8 @@ lemma mem_rs_code_iff_exists_mle
       aesop (add simp [Polynomial.mem_degreeLT])
     ⟩
     exists ⟨poly, by aesop (add simp [mem_restrictDegree_iff_degreeOf_le,
-                                       linearMvExtension_degreeOf_lt])⟩
-    aesop (add simp powAlgHom_is_right_inverse_to_linearMvExtension)
+                                       degreeOf_linearMvExtension_le])⟩
+    aesop (add simp powAlgHom_linearMvExtension)
   · obtain ⟨g, h⟩ := h
     exact mem_code_of_polynomial_of_natDegree_lt_of_eval
       (powAlgHom g.1)

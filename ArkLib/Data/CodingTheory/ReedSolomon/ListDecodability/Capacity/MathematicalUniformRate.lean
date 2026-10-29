@@ -35,7 +35,7 @@ dimension is at most `ν` and the pairwise Johnson bound gives at most `4/(3δ)`
 
 ## References
 
-* [DKTZ26]
+* [DKT26]
 -/
 
 @[expose] public section

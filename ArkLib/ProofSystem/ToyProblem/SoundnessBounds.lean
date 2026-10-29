@@ -168,7 +168,7 @@ theorem encStack_mem_closeCodewordsRel_iff [Nonempty ι] {k : ℕ}
 
 omit [Field F] [Fintype F] [Fintype A] [AddCommGroup A] in
 /-- Deprecated compatibility name for the general coding-theory bound. -/
-@[deprecated Code.minRelHammingDistCode_le_one (since := "2026-08-16")]
+@[deprecated Code.minRelHammingDistCode_le_one +typeChanged (since := "2026-08-16")]
 theorem minRelHammingDistCode_le_one [Nonempty ι] (C : Set (ι → A)) :
     minRelHammingDistCode C ≤ 1 :=
   Code.minRelHammingDistCode_le_one (C := C)
@@ -1039,9 +1039,9 @@ theorem exists_winningSetFor_ncard_ge_of_epsCa_pos {k : ℕ} [SampleableType F]
       (if jointProximity C u δ then (0 : ENNReal)
        else Pr{let γ ← $ᵗ F}[δᵣ(u 0 + γ • u 1, C) ≤ δ]) := by
     refine le_antisymm ?_ ?_
-    · rw [epsCa]
+    · rw [epsCa_eq]
       exact iSup_le hu_max
-    · rw [epsCa]
+    · rw [epsCa_eq]
       exact le_iSup (fun w : WordStack A (Fin 2) ι ↦
         if jointProximity C w δ then (0 : ENNReal)
         else Pr{let γ ← $ᵗ F}[δᵣ(w 0 + γ • w 1, C) ≤ δ]) u

@@ -1,124 +1,111 @@
 # Roadmap
 
-ArkLib develops executable protocol specifications and Lean proofs of completeness and security.
-This page maps the current work and contribution directions. The
-[interaction roadmap](docs/design/05-roadmap.md) owns the detailed composition milestones;
-[the blueprint](blueprint/src/content.tex) organizes the mathematical development.
-Use [open issues](https://github.com/Verified-zkEVM/ArkLib/issues) for bounded tasks and
-[CONTRIBUTING.md](CONTRIBUTING.md) for the development and review process.
+ArkLib develops executable proof-system specifications and Lean proofs of completeness and
+security. Shared ring-switching phases and their DP24/Binary Basefold composite are proved.
+The next deliveries are native Flock protocols, the fused FRI-Binius opening route, and native
+knowledge extraction and cryptographic compilation for concrete consumers.
 
-A protocol definition, a proved security theorem, and a compiled implementation are separate
-results. Existing `sorry` declarations remain in several developments. The
-[axiom regression gate](docs/wiki/quickstart.md#filling-a-sorry-or-work-that-must-stay-axiom-clean)
-tracks that debt; a successful library build does not mean every protocol has a complete proof.
+The [ring-switching tracker](https://github.com/Verified-zkEVM/ArkLib/issues/1286) owns
+implementation progress and dependencies. The [interaction roadmap](docs/design/05-roadmap.md)
+owns framework contracts. Use [open issues](https://github.com/Verified-zkEVM/ArkLib/issues) for
+assignments and [CONTRIBUTING.md](CONTRIBUTING.md) for the development and review process.
 
-## Immediate direction: finish the native Sumcheck path
+## Flock in ArkLib
 
-The [native Sumcheck modules](ArkLib/ProofSystem/Sumcheck/Interaction/) prove ordinary soundness
-and honest completeness for arbitrary round counts. Their composition proof retains the actual
-whole prover, private continuation, exported oracle behavior, and final closed claim. The final
-relation compares the original polynomial oracle with the claimed value.
+Upstream Flock's reusable mathematics and circuit library, define its native prover and verifier,
+and prove the security and correspondence needed by leanerVM. Keep field choices, circuit sizes,
+bases and domains explicit, so other applications can instantiate the same results.
 
-The next Sumcheck work precedes the native FRI migration:
+The implementation plan covers both the reference-paper construction and leanVM's Frobenius-map
+variant. leanerVM supplies its concrete fields, BLAKE2s circuit and VM linkage. The
+[Flock consumer tracker](https://github.com/Verified-zkEVM/leanerVM/issues/3) records the profile
+contracts, source correspondence and acceptance checks. Native execution/security correspondence
+and full committed extraction remain proof obligations.
 
-1. Complete the computable honest prover using CompPoly and prove its correspondence with
-   the native mathematical specification. The
-   [computable verifier and executor](ArkLib/ProofSystem/Sumcheck/Interaction/Computable.lean)
-   already use bounded coefficient-array messages, with proved execution and ordinary-soundness
-   bridges. [Compiled checks](scripts/SumcheckRuntime.lean) cover concrete executions, aborts,
-   and the final evaluation relation. The general honest-prover
-   [implementation module](ArkLib/ProofSystem/Sumcheck/Impl/Basic.lean) remains a scaffold.
-2. Prove native round-by-round (RBR) soundness, knowledge soundness, and round-by-round
-   knowledge soundness. Ordinary soundness does not supply an extractor or a witness available
-   at an intermediate boundary.
-3. Exercise the same interfaces in a small FRI or Spartan client, proving correspondence with
-   its established presentation before migrating further protocol layers.
+## Reusable ring switching
 
-The [interaction framework](ArkLib/Interaction/) now supplies native sequential composition,
-restricted oracle routing, actual source logs, persistent-runtime execution and soundness, and
-canonical access and weighted query-cost certificates. Its
-[maintained status](docs/design/00-current-status.md) and
-[adversarial execution design](docs/design/03-adversarial-oracle-execution.md) explain the contracts
-and remaining extraction work. A cost or access certificate accompanies a security theorem;
-it does not establish security by itself.
+Deliver algebra and claim-conversion results with proved Binius, Hachi and reference-Flock
+instances. Each instance identifies the source it preserves, the claims it produces and the
+assumptions required for its security bound. This makes reuse testable at the protocol boundary.
 
-## Protocol and commitment developments
+The common mathematics supports independent packing/opening algebras and ranks, representations
+and commitment models. The shared head, product-sumcheck continuation and terminal phases provide
+perfect completeness and worst-case round-by-round knowledge soundness under their declared
+premises. DP24 instantiates these phases and composes with Binary Basefold. Hachi has its own
+trace-head conformance result; native reference-Flock conformance remains work.
 
-### Sumcheck, Spartan, and ring switching
+Reuse the shared protocol for consumers with matching messages, guards, samplers and endpoints.
+The [consumer guide](docs/wiki/ring-switching-consumers.md) records the concrete interfaces and
+remaining native-Flock obligations; the [concept page](docs/kb/concepts/ring-switching.md)
+explains the construction. Pure conformance alone does not establish commitment binding or a
+downstream opening theorem. Each concrete security instance must discharge its sampler, binding
+and honest-coverage premises. The conversion to ordinary knowledge soundness remains admitted.
 
-- [Sumcheck](ArkLib/ProofSystem/Sumcheck/) includes legacy and native presentations. Preserve
-  existing component correspondences, and prove any further legacy-to-native correspondence
-  before transferring security claims.
-- [Spartan](ArkLib/ProofSystem/Spartan/Basic.lean) contains protocol components and admitted
-  definitions. Completing the composed protocol and its security proofs remains work.
-- [Ring switching](ArkLib/ProofSystem/RingSwitching/) includes proved transport and lifting
-  results. Packing, batching, and Sumcheck-phase developments still contain admissions;
-  complete those obligations before claiming security of the full assembly.
+## Binius opening arguments
 
-### FRI, STIR, and Binius
+The ring-switching route followed by a black-box Binary Basefold opening is on main. Binary
+Basefold's core interaction, query verifier and full protocol have perfect completeness and
+worst-case round-by-round knowledge soundness, proved without local admissions. The concrete
+ring-switching composite uses this backend and preserves its input relation and challenge ledger.
 
-- [FRI](ArkLib/ProofSystem/Fri/) and [batched FRI](ArkLib/ProofSystem/BatchedFri/) have protocol
-  specifications and security developments. Batched FRI still has admitted obligations.
-- [STIR](ArkLib/ProofSystem/Stir/) has component results and an incomplete main-theorem chain.
-  Further codeword-folding and WHIR work should state which protocol presentation it formalizes.
-- [Binius](ArkLib/ProofSystem/Binius/) includes Binary Basefold and FRI-Binius developments;
-  some core interaction and security proofs remain admitted.
+The fused FRI-Binius core and full protocol remain to be formalized. Preserve the production
+schedule and prove rejecting behavior, completeness and the intended knowledge guarantees.
+Keep these round-by-round results distinct from ordinary knowledge soundness through the
+admitted generic bridge. The
+[Binius tracker](https://github.com/Verified-zkEVM/ArkLib/issues/893) owns follow-up progress;
+Flock's Frobenius variant can develop independently.
 
-Codeword folding in these protocols is distinct from Nova-style folding for incremental
-verifiable computation (IVC). IVC folding is a later direction, not a completed consequence of
-codeword-folding results.
+## Native security and cryptographic compilation
 
-### KZG and lattice-based commitments
+Use the proved CompPoly-backed honest Sumcheck prover and its specification correspondence
+for native clients. Measure and optimize its actual workloads, and supply the remaining
+client-specific certificates. Exercise the native typed-interaction execution and security
+interfaces in small FRI and Spartan clients before migrating their larger protocol assemblies.
 
-- [KZG](ArkLib/Commitments/Functional/KZG/) has proved correctness and binding developments,
-  including function binding, under their declared algebraic and hardness assumptions.
-  These modules contain no local `sorry` declarations. This is not a claim of an unconditional
-  security theorem or a verified external implementation.
-- [Lattices](ArkLib/Data/Lattices/) and [Ajtai commitments](ArkLib/Commitments/Ordinary/Ajtai/)
-  support the [Hachi development](ArkLib/Commitments/Functional/Hachi/). Its nonrecursive opening
-  chain has formalized results and [compiled runtime checks](scripts/HachiRuntime.lean).
-  Recursive opening and related handoffs still contain admitted obligations and documented
-  soundness gaps. Keep those boundaries explicit when extending the scheme.
+Instantiate the native extraction and composition contracts for actual protocol clients, then
+connect them to concrete opening arguments, Merkle commitments and Fiat–Shamir transcripts.
+For Flock's leanVM instance, this includes one shared WHIR opening and the deployed chain with
+proof of work.
 
-## Supporting mathematics and upstream ownership
+The [framework design](docs/design/03-adversarial-oracle-execution.md) specifies execution,
+security games and resources. The [compiler design](docs/design/04-oracle-elimination-compiler.md)
+specifies how oracle guarantees become commitment and opening obligations. Their
+[protocol dependencies](https://github.com/Verified-zkEVM/ArkLib/issues/1286)
+are tracked together with the consumers.
 
-- [Coding theory](ArkLib/Data/CodingTheory/) supplies code definitions, Reed–Solomon results,
-  list-decoding and correlated-agreement bounds, and proximity-gap developments. Some advanced
-  bounds remain admitted. New protocol error bounds should identify the exact theorem and
-  parameter regime they use.
-- [Polynomial additions](ArkLib/Data/Polynomial/) and
-  [multivariate polynomial theory](ArkLib/Data/MvPolynomial/) support local proof needs.
-  Computable univariate and multilinear representations, binary tower fields, and prime-field
-  implementations are developed upstream in [CompPoly](https://github.com/Verified-zkEVM/CompPoly).
-  ArkLib's local additions and bridges live in [ToCompPoly](ArkLib/ToCompPoly/).
-- Oracle computations, probability semantics, query tracking, and Merkle-tree developments
-  belong upstream in [VCVio](https://github.com/Verified-zkEVM/VCVio). Generic interaction and
-  strategy laws belong in [PolyFun](https://github.com/Verified-zkEVM/PolyFun).
-  ArkLib still needs concrete backend adapters; upstream Merkle results alone do not complete
-  ArkLib's commitment compiler.
+## Other protocol and commitment directions
 
-Use the versions pinned by [lakefile.toml](lakefile.toml) and
-[lake-manifest.json](lake-manifest.json). Avoid maintaining parallel implementations of relocated
-components or treating old unchecked lists as their current upstream status.
+- [FRI](ArkLib/ProofSystem/Fri/) has an executable specification with perfect and noisy-input
+  completeness, soundness, and a certified straightline knowledge extractor with explicit
+  resource bounds. Its native typed-interaction migration is a separate direction.
+  [Batched FRI](ArkLib/ProofSystem/BatchedFri/) and [STIR](ArkLib/ProofSystem/Stir/) retain
+  incomplete component or assembly obligations.
+- Complete [Spartan](ArkLib/ProofSystem/Spartan/) and prove correspondence for its native
+  migration.
+- Extend [KZG](ArkLib/Commitments/Functional/KZG/) and
+  [Hachi](ArkLib/Commitments/Functional/Hachi/) under their declared assumptions, including
+  recursive opening and trace handoffs.
+- Develop zero knowledge, the algebraic group model, pairing-based systems, Plonk,
+  Twist/Shout, IVC folding and a mechanized PCP theorem as concrete clients require them.
 
-## Later framework and implementation work
+## Supporting mathematics and implementation
 
-The detailed dependency order belongs in the
-[interaction roadmap](docs/design/05-roadmap.md#later-extraction-and-compiler-work):
+[Coding theory](ArkLib/Data/CodingTheory/) and [polynomial theory](ArkLib/Data/MvPolynomial/)
+supply the algebraic bounds consumed by protocol proofs. Computable polynomial representations,
+field implementations and NTT kernels belong in
+[CompPoly](https://github.com/Verified-zkEVM/CompPoly); local bridges live in
+[ToCompPoly](ArkLib/ToCompPoly/). Generic probability, oracle games and resource accounting
+belong in [VCVio](https://github.com/Verified-zkEVM/VCVio), and interaction structure in
+[PolyFun](https://github.com/Verified-zkEVM/PolyFun).
 
-- Establish causal witness extraction and state-restoration facts for knowledge composition.
-- Connect the [BCS transform](ArkLib/OracleReduction/BCS/) and
-  [Fiat–Shamir developments](ArkLib/OracleReduction/FiatShamir/) to the native framework through
-  proved correspondences and concrete commitment adapters.
-- Carry security, privacy, access, and execution costs through the
-  [oracle-elimination compiler](docs/design/04-oracle-elimination-compiler.md).
-- Extend the [algebraic group model](ArkLib/AGM/), zero-knowledge theory, and further proof-system
-  families as their first concrete clients require. Plonk, IVC folding, and a mechanized PCP
-  theorem remain broader directions rather than completed end-to-end formalizations.
-- Verify correspondence with external implementations only after the relevant Lean protocol
-  path compiles and its mathematical specification and security assumptions are explicit.
+Prove optimized algorithms agree with their specifications, exercise honest and rejecting runs,
+and measure the actual workloads. Use each checkout's [manifest](lake-manifest.json) and the
+[validation workflow](docs/wiki/quickstart.md).
 
-For examples of the difference between proofs and execution checks, see the
-[toy-problem runtime](scripts/ToyProblemRuntime.lean) and
-[nonrecursive Hachi runtime](scripts/HachiRuntime.lean). Their concrete checks do not certify
-performance or full security of every protocol family.
+## Completion evidence
+
+Each delivery names its theorem, hypotheses, concrete consumer and transitive axiom report.
+Keep mathematical security, native correspondence, execution tests and compiled implementation
+claims distinct. The [axiom regression gate](docs/wiki/quickstart.md#filling-a-sorry-or-work-that-must-stay-axiom-clean)
+tracks remaining admissions; a successful build or a deleted declaration alone does not close
+a proof obligation.

@@ -273,13 +273,13 @@ theorem executeStrategiesWithRuntime_appendExported_prEvent
     [EvalDistSemantics (OracleComp imports)] (runtime : OracleRuntime imports ambient)
     (TruthFinal : (p : TypeTree.BranchPath (PFunctor.FreeM.append tree suffix)) →
       ClosedClaim (FinalStmt p) (Final p) → Prop) :
-    Pr{let result ← executeStrategiesWithRuntime runtime
+    Pr{let result ← (executeStrategiesWithRuntime runtime
           (protocol := ⟨PFunctor.FreeM.append tree suffix,
             PFunctor.FreeM.Displayed.Decoration.append firstRoles secondRoles,
             PFunctor.FreeM.Displayed.Decoration.append firstOracles secondOracles⟩)
           (initial := initial) impl prover
           (appendExported ambient tree suffix firstRoles secondRoles firstOracles secondOracles
-            initial Stmt Data Export FinalStmt FinalData Final first second)}[
+            initial Stmt Data Export FinalStmt FinalData Final first second))}[
       result.output.core.closed.map (TruthFinal result.output.core.path.toBranchPath) = some True] =
     Pr{let result ← (runtime.run (do
       let b ← exportedPrefixRun ambient tree suffix firstRoles secondRoles firstOracles initial
@@ -336,13 +336,13 @@ theorem executeStrategiesWithRuntime_appendExported_soundness
     (∫⁻ b in {b | ¬ Exceptional b},
       Pr{let result ← runtime.resume b next}[Success result.output] ∂𝒟[runtime.run prefixProgram]) ≤
         ∫⁻ b in {b | ¬ Exceptional b}, error b ∂𝒟[runtime.run prefixProgram] →
-    Pr{let result ← executeStrategiesWithRuntime runtime
+    Pr{let result ← (executeStrategiesWithRuntime runtime
           (protocol := ⟨PFunctor.FreeM.append tree suffix,
             PFunctor.FreeM.Displayed.Decoration.append firstRoles secondRoles,
             PFunctor.FreeM.Displayed.Decoration.append firstOracles secondOracles⟩)
           (initial := initial) impl prover
           (appendExported ambient tree suffix firstRoles secondRoles firstOracles secondOracles
-            initial Stmt Data Export FinalStmt FinalData Final first second)}[
+            initial Stmt Data Export FinalStmt FinalData Final first second))}[
       result.output.core.closed.map (TruthFinal result.output.core.path.toBranchPath) = some True] ≤
         Pr{let b ← runtime.run prefixProgram}[Exceptional b] +
           ∫⁻ b in {b | ¬ Exceptional b}, error b ∂𝒟[runtime.run prefixProgram] := by

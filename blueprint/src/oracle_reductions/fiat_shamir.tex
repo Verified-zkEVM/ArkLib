@@ -139,10 +139,10 @@ The Fiat-Shamir transformation preserves important security properties of the or
 
 \begin{theorem}[Fiat-Shamir Preserves Completeness]
     \label{thm:fiat_shamir_completeness}
-    Let $R$ be an interactive reduction with completeness error $\epsilon$ with respect to input relation $R_{\text{in}}$ and output relation $R_{\text{out}}$. Then the Fiat-Shamir transformed reduction $R.\mathsf{fiatShamir}$ also satisfies completeness with error $\epsilon$ with respect to the same relations.
+    If an interactive reduction $R$ has perfect completeness, its Fiat-Shamir transform has perfect completeness for every fixed challenge table.
 
-    Formally: $R.\mathsf{completeness} \;R_{\text{in}} \;R_{\text{out}} \;\epsilon \to (R.\mathsf{fiatShamir}).\mathsf{completeness} \;R_{\text{in}} \;R_{\text{out}} \;\epsilon$
-    \lean{fiatShamir_completeness}
+    If $R$ has completeness error $\epsilon$, its Fiat-Shamir transform preserves this error when the challenge oracle is a lazily sampled random oracle shared by prover and verifier, starting from an empty cache. Both claims use the same input and output relations as $R$.
+    \lean{fiatShamir_perfectCompleteness, fiatShamir_completeness_randomOracle}
     \uses{def:reduction_fiat_shamir}
 \end{theorem}
 
