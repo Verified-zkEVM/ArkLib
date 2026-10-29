@@ -10,9 +10,9 @@ import ArkLib.OracleReduction.Security.Implications
 
 A zero-round verifier that rejects every transcript, with an input statement and an output
 witness but no input witnesses, separates the two notions for every output relation. Both the
-prover-averaged and the worst-case forms of round-by-round soundness hold, while no round-by-round
-extractor exists, because extraction must also map the rejected transcript. Knowledge soundness
-therefore fails for every pair of relations and every error.
+default fixed-prefix and the prover-averaged forms of round-by-round soundness hold, while no
+round-by-round extractor exists, because extraction must also map the rejected transcript.
+Knowledge soundness therefore fails for every pair of relations and every error.
 -/
 
 open OracleComp OracleSpec ProtocolSpec
@@ -44,36 +44,37 @@ theorem rejectAll_prEvent_eq_zero (langOut : Set Unit) (stmt : Unit) (tr : !p[].
 /-- For every output relation, prover-averaged round-by-round soundness holds and knowledge
 soundness fails. -/
 example (relOut : Set (Unit × Unit)) :
-    rejectAll.rbrSoundness init impl (∅ : Set (Unit × Empty)).language relOut.language 0 ∧
+    rejectAll.rbrSoundnessAveraged init impl (∅ : Set (Unit × Empty)).language
+        relOut.language 0 ∧
+      ¬ rejectAll.rbrKnowledgeSoundnessAveraged init impl (∅ : Set (Unit × Empty)) relOut 0 :=
+  ⟨Verifier.rbrSoundnessAveraged_of_forall_prEvent_eq_zero init impl
+      (rejectAll_prEvent_eq_zero init impl _) 0,
+    Verifier.not_rbrKnowledgeSoundnessAveraged_of_isEmpty init impl () default ()⟩
+
+/-- For every output relation, round-by-round soundness holds and round-by-round knowledge
+soundness fails. -/
+example (relOut : Set (Unit × Unit)) :
+    rejectAll.rbrSoundness init impl (∅ : Set (Unit × Empty)).language
+        relOut.language 0 ∧
       ¬ rejectAll.rbrKnowledgeSoundness init impl (∅ : Set (Unit × Empty)) relOut 0 :=
   ⟨Verifier.rbrSoundness_of_forall_prEvent_eq_zero init impl
       (rejectAll_prEvent_eq_zero init impl _) 0,
     Verifier.not_rbrKnowledgeSoundness_of_isEmpty init impl () default ()⟩
 
-/-- For every output relation, worst-case round-by-round soundness holds and worst-case knowledge
-soundness fails. -/
-example (relOut : Set (Unit × Unit)) :
-    rejectAll.rbrSoundnessWorstCase init impl (∅ : Set (Unit × Empty)).language
-        relOut.language 0 ∧
-      ¬ rejectAll.rbrKnowledgeSoundnessWorstCase init impl (∅ : Set (Unit × Empty)) relOut 0 :=
-  ⟨Verifier.rbrSoundnessWorstCase_of_forall_prEvent_eq_zero init impl
-      (rejectAll_prEvent_eq_zero init impl _) 0,
-    Verifier.not_rbrKnowledgeSoundnessWorstCase_of_isEmpty init impl () default ()⟩
-
 /-- The equivalence fails for some relations and error. -/
 example : ¬ ∀ (relIn : Set (Unit × Empty)) (relOut : Set (Unit × Unit))
       (ε : !p[].ChallengeIdx → ℝ≥0),
-    rejectAll.rbrSoundness init impl relIn.language relOut.language ε ↔
-      rejectAll.rbrKnowledgeSoundness init impl relIn relOut ε := fun h =>
-  ((Verifier.forall_rbrSoundness_iff_rbrKnowledgeSoundness_iff init impl).1 h).elim
-    (fun ⟨w⟩ => w.elim) fun hempty => hempty.false ((), default, ())
+    rejectAll.rbrSoundnessAveraged init impl relIn.language relOut.language ε ↔
+      rejectAll.rbrKnowledgeSoundnessAveraged init impl relIn relOut ε := fun h =>
+  ((Verifier.forall_rbrSoundnessAveraged_iff_rbrKnowledgeSoundnessAveraged_iff
+      init impl).1 h).elim (fun ⟨w⟩ => w.elim) fun hempty => hempty.false ((), default, ())
 
 /-- With an empty output-witness type the two notions coincide again, without input witnesses. -/
 example (relIn : Set (Unit × Empty)) (relOut : Set (Unit × Empty))
     (ε : !p[].ChallengeIdx → ℝ≥0) :
-    rejectAll.rbrSoundness init impl relIn.language relOut.language ε ↔
-      rejectAll.rbrKnowledgeSoundness init impl relIn relOut ε :=
-  Verifier.rbrSoundness_iff_rbrKnowledgeSoundness_of_nonempty_or_isEmpty init impl
+    rejectAll.rbrSoundnessAveraged init impl relIn.language relOut.language ε ↔
+      rejectAll.rbrKnowledgeSoundnessAveraged init impl relIn relOut ε :=
+  Verifier.rbrSoundnessAveraged_iff_rbrKnowledgeSoundnessAveraged_of_nonempty_or_isEmpty init impl
     (Or.inr inferInstance)
 
 end RoundByRoundCharacterization

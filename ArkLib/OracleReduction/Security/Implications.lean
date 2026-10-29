@@ -6,20 +6,18 @@ Authors: Quang Dao
 module
 
 public import ArkLib.OracleReduction.Security.RoundByRound
-public import ArkLib.OracleReduction.Security.StateRestoration
-public import ArkLib.OracleReduction.Salt
 public import ArkLib.OracleReduction.Security.SpecialSoundness
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness
 
 /-!
 # Implications between security notions
 
-This file identifies round-by-round knowledge soundness with soundness of the induced
-languages, in both the prover-averaged and the worst-case forms, and characterizes exactly when
-this holds without input witnesses. It also collects the state-restoration implications and the
-equivalence between special soundness and its canonical coordinate-wise form. The guarded
-bridges from fixed-prefix round-by-round security to ordinary security live in
-`Security.GuardedSoundness` and `Security.GuardedBridges`.
+This file identifies round-by-round knowledge soundness with soundness of the induced languages, in
+both the default fixed-prefix and the prover-averaged forms, and characterizes exactly when this
+holds without input witnesses. It also proves the equivalence between special soundness and its
+canonical coordinate-wise form. State-restoration security is developed natively in
+`Interaction.Oracle.Security.StateRestoration`. The guarded bridges from fixed-prefix round-by-round
+security to ordinary security live in `Security.GuardedSoundness` and `Security.GuardedBridges`.
 -/
 
 @[expose] public section
@@ -36,19 +34,19 @@ namespace Verifier
 
 section Implications
 
-/-- Round-by-round knowledge soundness with error `rbrKnowledgeError` implies round-by-round
-soundness with the same error `rbrKnowledgeError`. -/
-theorem rbrKnowledgeSoundness_implies_rbrSoundness
+/-- Prover-averaged round-by-round knowledge soundness with error `rbrKnowledgeError` implies
+prover-averaged round-by-round soundness with the same error `rbrKnowledgeError`. -/
+theorem rbrKnowledgeSoundnessAveraged_implies_rbrSoundnessAveraged
     {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
     {verifier : Verifier oSpec StmtIn StmtOut pSpec}
     {rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0}
-    (h : verifier.rbrKnowledgeSoundness init impl relIn relOut rbrKnowledgeError) :
-    verifier.rbrSoundness init impl relIn.language relOut.language rbrKnowledgeError := by
+    (h : verifier.rbrKnowledgeSoundnessAveraged init impl relIn relOut rbrKnowledgeError) :
+    verifier.rbrSoundnessAveraged init impl relIn.language relOut.language rbrKnowledgeError := by
   classical
-  unfold rbrKnowledgeSoundness at h
+  unfold rbrKnowledgeSoundnessAveraged at h
   obtain ⟨WitMid, extractor, kSF, hkSF⟩ := h
   by_cases hWout : Nonempty WitOut
-  · unfold rbrSoundness
+  · unfold rbrSoundnessAveraged
     refine ⟨kSF.toStateFunction init impl, ?_⟩
     intro stmtIn hStmtIn WitIn' WitOut' witIn' prover i
     by_cases hWin : Nonempty WitIn
@@ -127,22 +125,22 @@ theorem rbrKnowledgeSoundness_implies_rbrSoundness
           intro stmtIn tr hfalse
           rw [hLangOut]
           exact prEvent_eq_zero_of_forall_not _ _ fun _ ↦ by simp }
-    unfold rbrSoundness
+    unfold rbrSoundnessAveraged
     refine ⟨sF, ?_⟩
     intro stmtIn hStmtIn WitIn' WitOut' witIn' prover i
     exact (prEvent_eq_zero_of_forall_not _ _ fun _ hbad ↦
       Fin.succ_ne_zero i.1 hbad.2.1).trans_le zero_le
 
-/-- Round-by-round soundness implies knowledge soundness with an unbounded extractor.
-Without input witnesses the implication holds for all relations and errors exactly when no input
-statement, full transcript and output witness exist together
-(`forall_rbrSoundness_iff_rbrKnowledgeSoundness_iff`). -/
-theorem rbrSoundness_implies_rbrKnowledgeSoundness [Nonempty WitIn]
+/-- Prover-averaged round-by-round soundness implies prover-averaged round-by-round knowledge
+soundness with an unbounded extractor. Without input witnesses the implication holds for all
+relations and errors exactly when no input statement, full transcript and output witness exist
+together (`forall_rbrSoundnessAveraged_iff_rbrKnowledgeSoundnessAveraged_iff`). -/
+theorem rbrSoundnessAveraged_implies_rbrKnowledgeSoundnessAveraged [Nonempty WitIn]
     {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
     {verifier : Verifier oSpec StmtIn StmtOut pSpec}
     {ε : pSpec.ChallengeIdx → ℝ≥0}
-    (h : verifier.rbrSoundness init impl relIn.language relOut.language ε) :
-    verifier.rbrKnowledgeSoundness init impl relIn relOut ε := by
+    (h : verifier.rbrSoundnessAveraged init impl relIn.language relOut.language ε) :
+    verifier.rbrKnowledgeSoundnessAveraged init impl relIn relOut ε := by
   classical
   obtain ⟨S, hS⟩ := h
   refine ⟨_, _, S.toKnowledgeStateFunctionOfRel init impl, ?_⟩
@@ -180,27 +178,28 @@ theorem rbrSoundness_implies_rbrKnowledgeSoundness [Nonempty WitIn]
         rw [← hmap, prEvent_map]
       _ ≤ _ := hS stmt hstmt WitIn WitOut wit prover i
 
-/-- Round-by-round knowledge soundness places no efficiency or access restriction on the
-extractor, so it coincides with round-by-round soundness of the induced languages when input
-witnesses are nonempty. `rbrSoundness_iff_rbrKnowledgeSoundness_of_nonempty_or_isEmpty` also
-covers the remaining case in which the two coincide. -/
-theorem rbrSoundness_iff_rbrKnowledgeSoundness [Nonempty WitIn]
+/-- Prover-averaged round-by-round knowledge soundness places no efficiency or access restriction
+on the extractor, so it coincides with prover-averaged round-by-round soundness of the induced
+languages when input witnesses are nonempty.
+`rbrSoundnessAveraged_iff_rbrKnowledgeSoundnessAveraged_of_nonempty_or_isEmpty` also covers the
+remaining case in which the two coincide. -/
+theorem rbrSoundnessAveraged_iff_rbrKnowledgeSoundnessAveraged [Nonempty WitIn]
     {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
     {verifier : Verifier oSpec StmtIn StmtOut pSpec}
     {ε : pSpec.ChallengeIdx → ℝ≥0} :
-    verifier.rbrSoundness init impl relIn.language relOut.language ε ↔
-      verifier.rbrKnowledgeSoundness init impl relIn relOut ε :=
-  ⟨rbrSoundness_implies_rbrKnowledgeSoundness init impl,
-    rbrKnowledgeSoundness_implies_rbrSoundness init impl⟩
+    verifier.rbrSoundnessAveraged init impl relIn.language relOut.language ε ↔
+      verifier.rbrKnowledgeSoundnessAveraged init impl relIn relOut ε :=
+  ⟨rbrSoundnessAveraged_implies_rbrKnowledgeSoundnessAveraged init impl,
+    rbrKnowledgeSoundnessAveraged_implies_rbrSoundnessAveraged init impl⟩
 
-/-- Worst-case round-by-round knowledge soundness implies soundness of the induced languages,
+/-- Round-by-round knowledge soundness implies soundness of the induced languages,
 with the same error at every fixed transcript prefix. -/
-theorem rbrKnowledgeSoundnessWorstCase_implies_rbrSoundnessWorstCase
+theorem rbrKnowledgeSoundness_implies_rbrSoundness
     {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
     {verifier : Verifier oSpec StmtIn StmtOut pSpec}
     {ε : pSpec.ChallengeIdx → ℝ≥0}
-    (h : verifier.rbrKnowledgeSoundnessWorstCase init impl relIn relOut ε) :
-    verifier.rbrSoundnessWorstCase init impl relIn.language relOut.language ε := by
+    (h : verifier.rbrKnowledgeSoundness init impl relIn relOut ε) :
+    verifier.rbrSoundness init impl relIn.language relOut.language ε := by
   obtain ⟨WitMid, extractor, K, hK⟩ := h
   refine ⟨K.toStateFunction init impl, ?_⟩
   intro stmt _ i tr
@@ -208,16 +207,16 @@ theorem rbrKnowledgeSoundnessWorstCase_implies_rbrSoundnessWorstCase
   rintro challenge ⟨hprev, w, hnext⟩
   exact ⟨w, fun hw => hprev ⟨_, hw⟩, hnext⟩
 
-/-- Worst-case round-by-round soundness implies knowledge soundness with an unbounded extractor.
+/-- Round-by-round soundness implies knowledge soundness with an unbounded extractor.
 Without input witnesses the implication holds for all relations and errors exactly when no input
 statement, full transcript and output witness exist together
-(`forall_rbrSoundnessWorstCase_iff_rbrKnowledgeSoundnessWorstCase_iff`). -/
-theorem rbrSoundnessWorstCase_implies_rbrKnowledgeSoundnessWorstCase [Nonempty WitIn]
+(`forall_rbrSoundness_iff_rbrKnowledgeSoundness_iff`). -/
+theorem rbrSoundness_implies_rbrKnowledgeSoundness [Nonempty WitIn]
     {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
     {verifier : Verifier oSpec StmtIn StmtOut pSpec}
     {ε : pSpec.ChallengeIdx → ℝ≥0}
-    (h : verifier.rbrSoundnessWorstCase init impl relIn.language relOut.language ε) :
-    verifier.rbrKnowledgeSoundnessWorstCase init impl relIn relOut ε := by
+    (h : verifier.rbrSoundness init impl relIn.language relOut.language ε) :
+    verifier.rbrKnowledgeSoundness init impl relIn relOut ε := by
   obtain ⟨S, hS⟩ := h
   refine ⟨_, _, S.toKnowledgeStateFunctionOfRel init impl, ?_⟩
   intro stmt i tr
@@ -228,20 +227,34 @@ theorem rbrSoundnessWorstCase_implies_rbrKnowledgeSoundnessWorstCase [Nonempty W
     exact fun challenge hbad =>
       (S.toKnowledgeStateFunctionOfRel_failure init impl i stmt tr challenge hbad).2
 
-/-- With no efficiency or access restriction on extraction, worst-case round-by-round knowledge
+/-- With no efficiency or access restriction on extraction, round-by-round knowledge
 soundness coincides with soundness of the induced languages for nonempty input witnesses.
-`rbrSoundnessWorstCase_iff_rbrKnowledgeSoundnessWorstCase_of_nonempty_or_isEmpty` also covers the
+`rbrSoundness_iff_rbrKnowledgeSoundness_of_nonempty_or_isEmpty` also covers the
 remaining case in which the two coincide. -/
-theorem rbrSoundnessWorstCase_iff_rbrKnowledgeSoundnessWorstCase [Nonempty WitIn]
+theorem rbrSoundness_iff_rbrKnowledgeSoundness [Nonempty WitIn]
     {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
     {verifier : Verifier oSpec StmtIn StmtOut pSpec}
     {ε : pSpec.ChallengeIdx → ℝ≥0} :
-    verifier.rbrSoundnessWorstCase init impl relIn.language relOut.language ε ↔
-      verifier.rbrKnowledgeSoundnessWorstCase init impl relIn relOut ε :=
-  ⟨rbrSoundnessWorstCase_implies_rbrKnowledgeSoundnessWorstCase init impl,
-    rbrKnowledgeSoundnessWorstCase_implies_rbrSoundnessWorstCase init impl⟩
+    verifier.rbrSoundness init impl relIn.language relOut.language ε ↔
+      verifier.rbrKnowledgeSoundness init impl relIn relOut ε :=
+  ⟨rbrSoundness_implies_rbrKnowledgeSoundness init impl,
+    rbrKnowledgeSoundness_implies_rbrSoundness init impl⟩
 
-/-- Round-by-round soundness is the specialization of knowledge soundness to `Unit` witnesses. -/
+/-- Prover-averaged round-by-round soundness is the specialization of prover-averaged knowledge
+soundness to `Unit` witnesses. -/
+theorem rbrSoundnessAveraged_iff_rbrKnowledgeSoundnessAveraged_unit
+    {langIn : Set StmtIn} {langOut : Set StmtOut}
+    {verifier : Verifier oSpec StmtIn StmtOut pSpec}
+    {ε : pSpec.ChallengeIdx → ℝ≥0} :
+    verifier.rbrSoundnessAveraged init impl langIn langOut ε ↔
+      verifier.rbrKnowledgeSoundnessAveraged init impl (langIn ×ˢ (Set.univ : Set Unit))
+        (langOut ×ˢ (Set.univ : Set Unit)) ε := by
+  simpa only [Set.language, Set.fst_image_prod _ Set.univ_nonempty] using
+    (rbrSoundnessAveraged_iff_rbrKnowledgeSoundnessAveraged init impl
+      (verifier := verifier) (ε := ε)
+      (relIn := langIn ×ˢ (Set.univ : Set Unit)) (relOut := langOut ×ˢ (Set.univ : Set Unit)))
+
+/-- Round-by-round soundness is knowledge soundness specialized to `Unit` witnesses. -/
 theorem rbrSoundness_iff_rbrKnowledgeSoundness_unit
     {langIn : Set StmtIn} {langOut : Set StmtOut}
     {verifier : Verifier oSpec StmtIn StmtOut pSpec}
@@ -251,19 +264,6 @@ theorem rbrSoundness_iff_rbrKnowledgeSoundness_unit
         (langOut ×ˢ (Set.univ : Set Unit)) ε := by
   simpa only [Set.language, Set.fst_image_prod _ Set.univ_nonempty] using
     (rbrSoundness_iff_rbrKnowledgeSoundness init impl
-      (verifier := verifier) (ε := ε)
-      (relIn := langIn ×ˢ (Set.univ : Set Unit)) (relOut := langOut ×ˢ (Set.univ : Set Unit)))
-
-/-- Worst-case round-by-round soundness is knowledge soundness specialized to `Unit` witnesses. -/
-theorem rbrSoundnessWorstCase_iff_rbrKnowledgeSoundnessWorstCase_unit
-    {langIn : Set StmtIn} {langOut : Set StmtOut}
-    {verifier : Verifier oSpec StmtIn StmtOut pSpec}
-    {ε : pSpec.ChallengeIdx → ℝ≥0} :
-    verifier.rbrSoundnessWorstCase init impl langIn langOut ε ↔
-      verifier.rbrKnowledgeSoundnessWorstCase init impl (langIn ×ˢ (Set.univ : Set Unit))
-        (langOut ×ˢ (Set.univ : Set Unit)) ε := by
-  simpa only [Set.language, Set.fst_image_prod _ Set.univ_nonempty] using
-    (rbrSoundnessWorstCase_iff_rbrKnowledgeSoundnessWorstCase init impl
       (verifier := verifier) (ε := ε)
       (relIn := langIn ×ˢ (Set.univ : Set Unit)) (relOut := langOut ×ˢ (Set.univ : Set Unit)))
 
@@ -280,11 +280,26 @@ instance when it always rejects.
 
 The one-shot notion `rbrKnowledgeSoundnessOneShot` is not characterized here. -/
 
-/-- Round-by-round soundness holds with any error for a verifier that never outputs a statement of
-the output language: the everywhere false state function satisfies every law and has no bad
-transition. -/
-theorem rbrSoundness_of_forall_prEvent_eq_zero {langIn : Set StmtIn} {langOut : Set StmtOut}
+/-- Prover-averaged round-by-round soundness holds with any error for a verifier that never
+outputs a statement of the output language: the everywhere false state function satisfies every
+law and has no bad transition. -/
+theorem rbrSoundnessAveraged_of_forall_prEvent_eq_zero {langIn : Set StmtIn}
+    {langOut : Set StmtOut}
     {verifier : Verifier oSpec StmtIn StmtOut pSpec}
+    (h : ∀ stmt tr, Pr{let stmtOut ← (OptionT.mk do
+      (simulateQ impl (verifier.run stmt tr)).run' (← init))}[stmtOut ∈ langOut] = 0)
+    (ε : pSpec.ChallengeIdx → ℝ≥0) :
+    verifier.rbrSoundnessAveraged init impl langIn langOut ε :=
+  ⟨{ toFun := fun _ _ _ => False
+     toFun_empty := fun _ h => h.elim
+     toFun_next := fun _ _ _ _ _ _ h => h
+     toFun_full := fun stmt tr _ => h stmt tr },
+   fun _ _ _ _ _ _ _ => (prEvent_eq_zero_of_forall_not _ _ fun _ h ↦ h.2).trans_le zero_le⟩
+
+/-- Round-by-round soundness holds with any error for a verifier that never outputs a statement of
+the output language. -/
+theorem rbrSoundness_of_forall_prEvent_eq_zero {langIn : Set StmtIn}
+    {langOut : Set StmtOut} {verifier : Verifier oSpec StmtIn StmtOut pSpec}
     (h : ∀ stmt tr, Pr{let stmtOut ← (OptionT.mk do
       (simulateQ impl (verifier.run stmt tr)).run' (← init))}[stmtOut ∈ langOut] = 0)
     (ε : pSpec.ChallengeIdx → ℝ≥0) :
@@ -293,40 +308,36 @@ theorem rbrSoundness_of_forall_prEvent_eq_zero {langIn : Set StmtIn} {langOut : 
      toFun_empty := fun _ h => h.elim
      toFun_next := fun _ _ _ _ _ _ h => h
      toFun_full := fun stmt tr _ => h stmt tr },
-   fun _ _ _ _ _ _ _ => (prEvent_eq_zero_of_forall_not _ _ fun _ h ↦ h.2).trans_le zero_le⟩
-
-/-- Worst-case round-by-round soundness holds with any error for a verifier that never outputs a
-statement of the output language. -/
-theorem rbrSoundnessWorstCase_of_forall_prEvent_eq_zero {langIn : Set StmtIn}
-    {langOut : Set StmtOut} {verifier : Verifier oSpec StmtIn StmtOut pSpec}
-    (h : ∀ stmt tr, Pr{let stmtOut ← (OptionT.mk do
-      (simulateQ impl (verifier.run stmt tr)).run' (← init))}[stmtOut ∈ langOut] = 0)
-    (ε : pSpec.ChallengeIdx → ℝ≥0) :
-    verifier.rbrSoundnessWorstCase init impl langIn langOut ε :=
-  ⟨{ toFun := fun _ _ _ => False
-     toFun_empty := fun _ h => h.elim
-     toFun_next := fun _ _ _ _ _ _ h => h
-     toFun_full := fun stmt tr _ => h stmt tr },
    fun _ _ _ _ => (prEvent_eq_zero_of_forall_not _ _ fun _ h ↦ h.2).trans_le zero_le⟩
 
-/-- If no input statement, full transcript and output witness exist together, round-by-round
-knowledge soundness holds for every pair of relations, with any error. -/
-theorem rbrKnowledgeSoundness_of_isEmpty [IsEmpty (StmtIn × FullTranscript pSpec × WitOut)]
-    {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
-    {verifier : Verifier oSpec StmtIn StmtOut pSpec} (ε : pSpec.ChallengeIdx → ℝ≥0) :
-    verifier.rbrKnowledgeSoundness init impl relIn relOut ε :=
-  ⟨_, _, KnowledgeStateFunction.ofIsEmpty init impl, fun _ _ _ _ =>
-    (prEvent_eq_zero_of_forall_not _ _ fun _ ⟨w, _⟩ ↦ w.elim).trans_le zero_le⟩
-
-/-- If no input statement, full transcript and output witness exist together, worst-case
+/-- If no input statement, full transcript and output witness exist together, prover-averaged
 round-by-round knowledge soundness holds for every pair of relations, with any error. -/
-theorem rbrKnowledgeSoundnessWorstCase_of_isEmpty
+theorem rbrKnowledgeSoundnessAveraged_of_isEmpty
     [IsEmpty (StmtIn × FullTranscript pSpec × WitOut)]
     {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
     {verifier : Verifier oSpec StmtIn StmtOut pSpec} (ε : pSpec.ChallengeIdx → ℝ≥0) :
-    verifier.rbrKnowledgeSoundnessWorstCase init impl relIn relOut ε :=
+    verifier.rbrKnowledgeSoundnessAveraged init impl relIn relOut ε :=
+  ⟨_, _, KnowledgeStateFunction.ofIsEmpty init impl, fun _ _ _ _ =>
+    (prEvent_eq_zero_of_forall_not _ _ fun _ ⟨w, _⟩ ↦ w.elim).trans_le zero_le⟩
+
+/-- If no input statement, full transcript and output witness exist together, round-by-round
+knowledge soundness holds for every pair of relations, with any error. -/
+theorem rbrKnowledgeSoundness_of_isEmpty
+    [IsEmpty (StmtIn × FullTranscript pSpec × WitOut)]
+    {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
+    {verifier : Verifier oSpec StmtIn StmtOut pSpec} (ε : pSpec.ChallengeIdx → ℝ≥0) :
+    verifier.rbrKnowledgeSoundness init impl relIn relOut ε :=
   ⟨_, _, KnowledgeStateFunction.ofIsEmpty init impl, fun _ _ _ =>
     (prEvent_eq_zero_of_forall_not _ _ fun _ ⟨w, _⟩ ↦ w.elim).trans_le zero_le⟩
+
+/-- With no input witnesses, an input statement, full transcript and output witness preclude
+prover-averaged round-by-round knowledge soundness, whatever the relations and error. -/
+theorem not_rbrKnowledgeSoundnessAveraged_of_isEmpty [IsEmpty WitIn] (stmtIn : StmtIn)
+    (tr : FullTranscript pSpec) (witOut : WitOut)
+    {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
+    {verifier : Verifier oSpec StmtIn StmtOut pSpec} {ε : pSpec.ChallengeIdx → ℝ≥0} :
+    ¬ verifier.rbrKnowledgeSoundnessAveraged init impl relIn relOut ε := fun ⟨_, E, _⟩ =>
+  (Extractor.RoundByRound.isEmpty_of_isEmpty_witIn stmtIn tr witOut).false E
 
 /-- With no input witnesses, an input statement, full transcript and output witness preclude
 round-by-round knowledge soundness, whatever the relations and error. -/
@@ -337,17 +348,22 @@ theorem not_rbrKnowledgeSoundness_of_isEmpty [IsEmpty WitIn] (stmtIn : StmtIn)
     ¬ verifier.rbrKnowledgeSoundness init impl relIn relOut ε := fun ⟨_, E, _⟩ =>
   (Extractor.RoundByRound.isEmpty_of_isEmpty_witIn stmtIn tr witOut).false E
 
-/-- With no input witnesses, an input statement, full transcript and output witness preclude
-worst-case round-by-round knowledge soundness, whatever the relations and error. -/
-theorem not_rbrKnowledgeSoundnessWorstCase_of_isEmpty [IsEmpty WitIn] (stmtIn : StmtIn)
-    (tr : FullTranscript pSpec) (witOut : WitOut)
+/-- Prover-averaged round-by-round soundness of the induced languages is knowledge soundness when
+input witnesses exist, or when no input statement, full transcript and output witness exist
+together. -/
+theorem rbrSoundnessAveraged_iff_rbrKnowledgeSoundnessAveraged_of_nonempty_or_isEmpty
+    (h : Nonempty WitIn ∨ IsEmpty (StmtIn × FullTranscript pSpec × WitOut))
     {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
     {verifier : Verifier oSpec StmtIn StmtOut pSpec} {ε : pSpec.ChallengeIdx → ℝ≥0} :
-    ¬ verifier.rbrKnowledgeSoundnessWorstCase init impl relIn relOut ε := fun ⟨_, E, _⟩ =>
-  (Extractor.RoundByRound.isEmpty_of_isEmpty_witIn stmtIn tr witOut).false E
+    verifier.rbrSoundnessAveraged init impl relIn.language relOut.language ε ↔
+      verifier.rbrKnowledgeSoundnessAveraged init impl relIn relOut ε := by
+  rcases h with h | h
+  · exact rbrSoundnessAveraged_iff_rbrKnowledgeSoundnessAveraged init impl
+  · exact ⟨fun _ => rbrKnowledgeSoundnessAveraged_of_isEmpty init impl ε,
+      rbrKnowledgeSoundnessAveraged_implies_rbrSoundnessAveraged init impl⟩
 
-/-- Round-by-round soundness of the induced languages is knowledge soundness when input
-witnesses exist, or when no input statement, full transcript and output witness exist
+/-- Round-by-round soundness of the induced languages is knowledge soundness when
+input witnesses exist, or when no input statement, full transcript and output witness exist
 together. -/
 theorem rbrSoundness_iff_rbrKnowledgeSoundness_of_nonempty_or_isEmpty
     (h : Nonempty WitIn ∨ IsEmpty (StmtIn × FullTranscript pSpec × WitOut))
@@ -360,25 +376,32 @@ theorem rbrSoundness_iff_rbrKnowledgeSoundness_of_nonempty_or_isEmpty
   · exact ⟨fun _ => rbrKnowledgeSoundness_of_isEmpty init impl ε,
       rbrKnowledgeSoundness_implies_rbrSoundness init impl⟩
 
-/-- Worst-case round-by-round soundness of the induced languages is knowledge soundness when
-input witnesses exist, or when no input statement, full transcript and output witness exist
-together. -/
-theorem rbrSoundnessWorstCase_iff_rbrKnowledgeSoundnessWorstCase_of_nonempty_or_isEmpty
-    (h : Nonempty WitIn ∨ IsEmpty (StmtIn × FullTranscript pSpec × WitOut))
-    {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
-    {verifier : Verifier oSpec StmtIn StmtOut pSpec} {ε : pSpec.ChallengeIdx → ℝ≥0} :
-    verifier.rbrSoundnessWorstCase init impl relIn.language relOut.language ε ↔
-      verifier.rbrKnowledgeSoundnessWorstCase init impl relIn relOut ε := by
-  rcases h with h | h
-  · exact rbrSoundnessWorstCase_iff_rbrKnowledgeSoundnessWorstCase init impl
-  · exact ⟨fun _ => rbrKnowledgeSoundnessWorstCase_of_isEmpty init impl ε,
-      rbrKnowledgeSoundnessWorstCase_implies_rbrSoundnessWorstCase init impl⟩
+/-- Prover-averaged round-by-round soundness of the induced languages coincides with prover-averaged
+knowledge soundness for all relations and errors exactly when input witnesses exist, or no input
+statement, full transcript and output witness exist together. The condition does not depend on the
+verifier, `init`, `impl` or the error. Otherwise the empty relations separate them: soundness holds
+and knowledge soundness fails. Without input witnesses the input relation is necessarily empty. -/
+theorem forall_rbrSoundnessAveraged_iff_rbrKnowledgeSoundnessAveraged_iff
+    {verifier : Verifier oSpec StmtIn StmtOut pSpec} :
+    (∀ (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
+        (ε : pSpec.ChallengeIdx → ℝ≥0),
+      verifier.rbrSoundnessAveraged init impl relIn.language relOut.language ε ↔
+        verifier.rbrKnowledgeSoundnessAveraged init impl relIn relOut ε) ↔
+      Nonempty WitIn ∨ IsEmpty (StmtIn × FullTranscript pSpec × WitOut) := by
+  refine ⟨fun h => ?_, fun h _ _ _ =>
+    rbrSoundnessAveraged_iff_rbrKnowledgeSoundnessAveraged_of_nonempty_or_isEmpty init impl h⟩
+  by_contra hne
+  rw [not_or, not_nonempty_iff, not_isEmpty_iff] at hne
+  obtain ⟨_, ⟨stmtIn, tr, witOut⟩⟩ := hne
+  refine not_rbrKnowledgeSoundnessAveraged_of_isEmpty init impl stmtIn tr witOut
+    ((h ∅ ∅ 0).1 ?_)
+  exact rbrSoundnessAveraged_of_forall_prEvent_eq_zero init impl
+    (fun _ _ => prEvent_eq_zero_of_forall_not _ _ fun _ ↦ by simp [Set.language]) 0
 
-/-- Round-by-round soundness of the induced languages coincides with knowledge soundness for all
-relations and errors exactly when input witnesses exist, or no input statement, full transcript
-and output witness exist together. The condition does not depend on the verifier, `init`, `impl`
-or the error. Otherwise the empty relations separate them: soundness holds and knowledge soundness
-fails. Without input witnesses the input relation is necessarily empty. -/
+/-- Round-by-round soundness of the induced languages coincides with round-by-round
+knowledge soundness for all relations and errors exactly when input witnesses exist, or no input
+statement, full transcript and output witness exist together. The condition does not depend on
+the verifier, `init`, `impl` or the error. -/
 theorem forall_rbrSoundness_iff_rbrKnowledgeSoundness_iff
     {verifier : Verifier oSpec StmtIn StmtOut pSpec} :
     (∀ (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
@@ -391,123 +414,10 @@ theorem forall_rbrSoundness_iff_rbrKnowledgeSoundness_iff
   by_contra hne
   rw [not_or, not_nonempty_iff, not_isEmpty_iff] at hne
   obtain ⟨_, ⟨stmtIn, tr, witOut⟩⟩ := hne
-  refine not_rbrKnowledgeSoundness_of_isEmpty init impl stmtIn tr witOut ((h ∅ ∅ 0).1 ?_)
+  refine not_rbrKnowledgeSoundness_of_isEmpty init impl stmtIn tr witOut
+    ((h ∅ ∅ 0).1 ?_)
   exact rbrSoundness_of_forall_prEvent_eq_zero init impl
     (fun _ _ => prEvent_eq_zero_of_forall_not _ _ fun _ ↦ by simp [Set.language]) 0
-
-/-- Worst-case round-by-round soundness of the induced languages coincides with worst-case
-knowledge soundness for all relations and errors exactly when input witnesses exist, or no input
-statement, full transcript and output witness exist together. The condition does not depend on
-the verifier, `init`, `impl` or the error. -/
-theorem forall_rbrSoundnessWorstCase_iff_rbrKnowledgeSoundnessWorstCase_iff
-    {verifier : Verifier oSpec StmtIn StmtOut pSpec} :
-    (∀ (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
-        (ε : pSpec.ChallengeIdx → ℝ≥0),
-      verifier.rbrSoundnessWorstCase init impl relIn.language relOut.language ε ↔
-        verifier.rbrKnowledgeSoundnessWorstCase init impl relIn relOut ε) ↔
-      Nonempty WitIn ∨ IsEmpty (StmtIn × FullTranscript pSpec × WitOut) := by
-  refine ⟨fun h => ?_, fun h _ _ _ =>
-    rbrSoundnessWorstCase_iff_rbrKnowledgeSoundnessWorstCase_of_nonempty_or_isEmpty init impl h⟩
-  by_contra hne
-  rw [not_or, not_nonempty_iff, not_isEmpty_iff] at hne
-  obtain ⟨_, ⟨stmtIn, tr, witOut⟩⟩ := hne
-  refine not_rbrKnowledgeSoundnessWorstCase_of_isEmpty init impl stmtIn tr witOut
-    ((h ∅ ∅ 0).1 ?_)
-  exact rbrSoundnessWorstCase_of_forall_prEvent_eq_zero init impl
-    (fun _ _ => prEvent_eq_zero_of_forall_not _ _ fun _ ↦ by simp [Set.language]) 0
-
--- /-- Round-by-round soundness for a protocol implies state-restoration soundness for the same
--- protocol with arbitrary added non-empty salts. -/
--- theorem rbrSoundness_implies_srSoundness_addSalt
---     {init : ProbComp (QueryImpl (srChallengeOracle StmtIn pSpec) Id)}
---     {impl : QueryImpl oSpec (StateT (QueryImpl (srChallengeOracle StmtIn pSpec) Id) ProbComp)}
---     (langIn : Set StmtIn) (langOut : Set StmtOut)
---     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
---     (rbrSoundnessError : pSpec.ChallengeIdx → ℝ≥0)
---     (Salt : pSpec.MessageIdx → Type) [∀ i, Nonempty (Salt i)] [∀ i, Fintype (Salt i)] :
---       rbrSoundness init impl langIn langOut verifier rbrSoundnessError →
---         Verifier.StateRestoration.soundness init impl langIn langOut (verifier.addSalt Salt)
---           (∑ i, (rbrSoundnessError i)) := by sorry
-
--- /-- Round-by-round knowledge soundness for a protocol implies state-restoration
--- knowledge soundness for the same protocol with arbitrary added non-empty salts. -/
--- theorem rbrKnowledgeSoundness_implies_srKnowledgeSoundness_addSalt
---     {init : ProbComp (QueryImpl (srChallengeOracle StmtIn pSpec) Id)}
---     {impl : QueryImpl oSpec (StateT (QueryImpl (srChallengeOracle StmtIn pSpec) Id) ProbComp)}
---     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
---     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
---     (rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0)
---     (Salt : pSpec.MessageIdx → Type) [∀ i, Nonempty (Salt i)] [∀ i, Fintype (Salt i)] :
---       rbrKnowledgeSoundness init impl relIn relOut verifier rbrKnowledgeError →
---         Verifier.StateRestoration.knowledgeSoundness init impl relIn relOut
---           (verifier.addSalt Salt) (∑ i, rbrKnowledgeError i) := by sorry
-
-/-- State-restoration soundness for a protocol with added salts implies state-restoration
-soundness for the original protocol (with improved parameters?)
--/
-theorem srSoundness_addSalt_implies_srSoundness_original
-    (langIn : Set StmtIn) (langOut : Set StmtOut)
-    (Salt : pSpec.MessageIdx → Type) [∀ i, Nonempty (Salt i)] [∀ i, Fintype (Salt i)]
-    (verifier : Verifier oSpec StmtIn StmtOut pSpec)
-    (srInit : ProbComp (QueryImpl (srChallengeOracle StmtIn (pSpec.addSalt Salt)) Id))
-    (srImpl : QueryImpl oSpec
-      (StateT (QueryImpl (srChallengeOracle StmtIn (pSpec.addSalt Salt)) Id) ProbComp))
-    (srSoundnessError : ℝ≥0) :
-      Verifier.StateRestoration.soundness srInit srImpl langIn langOut
-        (verifier.addSalt Salt) srSoundnessError →
-        Verifier.StateRestoration.soundness sorry sorry langIn langOut
-          verifier srSoundnessError := by sorry
-
-/-- State-restoration knowledge soundness for a protocol with added salts implies state-restoration
-knowledge soundness for the original protocol with improved parameters. -/
-theorem srKnowledgeSoundness_addSalt_implies_srKnowledgeSoundness_original
-    (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
-    (Salt : pSpec.MessageIdx → Type) [∀ i, Nonempty (Salt i)] [∀ i, Fintype (Salt i)]
-    (verifier : Verifier oSpec StmtIn StmtOut pSpec)
-    (srInit : ProbComp (QueryImpl (srChallengeOracle StmtIn (pSpec.addSalt Salt)) Id))
-    (srImpl : QueryImpl oSpec
-      (StateT (QueryImpl (srChallengeOracle StmtIn (pSpec.addSalt Salt)) Id) ProbComp))
-    (srKnowledgeError : ℝ≥0) :
-      Verifier.StateRestoration.knowledgeSoundness srInit srImpl relIn relOut
-        (verifier.addSalt Salt) srKnowledgeError →
-        Verifier.StateRestoration.knowledgeSoundness sorry sorry relIn relOut
-          verifier srKnowledgeError := by sorry
-
-/-- State-restoration soundness implies basic (straightline) soundness.
-
-This theorem shows that state-restoration security is a strengthening of basic soundness.
-The error is preserved in the implication. -/
-theorem srSoundness_implies_soundness
-    (langIn : Set StmtIn) (langOut : Set StmtOut)
-    (verifier : Verifier oSpec StmtIn StmtOut pSpec)
-    (srInit : ProbComp (QueryImpl (srChallengeOracle StmtIn pSpec) Id))
-    (srImpl : QueryImpl oSpec (StateT (QueryImpl (srChallengeOracle StmtIn pSpec) Id) ProbComp))
-    (srSoundnessError : ℝ≥0) :
-      Verifier.StateRestoration.soundness srInit srImpl langIn langOut verifier srSoundnessError →
-        soundness init impl langIn langOut verifier srSoundnessError := by
-  sorry
-
-/-- State-restoration knowledge soundness implies basic (straightline) knowledge soundness.
-
-This theorem shows that state-restoration knowledge soundness is a strengthening of basic
-knowledge soundness. The error is preserved in the implication. -/
-theorem srKnowledgeSoundness_implies_knowledgeSoundness
-    (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
-    (verifier : Verifier oSpec StmtIn StmtOut pSpec)
-    (srInit : ProbComp (QueryImpl (srChallengeOracle StmtIn pSpec) Id))
-    (srImpl : QueryImpl oSpec (StateT (QueryImpl (srChallengeOracle StmtIn pSpec) Id) ProbComp))
-    (srKnowledgeError : ℝ≥0) :
-      Verifier.StateRestoration.knowledgeSoundness srInit srImpl relIn relOut
-        verifier srKnowledgeError →
-      knowledgeSoundness init impl relIn relOut verifier srKnowledgeError := by sorry
-
--- TODO: state that round-by-round security implies state-restoration security for protocol with
--- arbitrary added (non-empty?) salts
-
--- TODO: state that state-restoration security for added salts imply state-restoration security for
--- the original protocol (with some better parameters)
-
--- TODO: state that state-restoration security implies basic security
 
 end Implications
 

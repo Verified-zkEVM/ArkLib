@@ -98,6 +98,92 @@ lemma prob_degreeLE_eval_eq_le
     (Polynomial.natDegree_le_of_degree_le (Polynomial.mem_degreeLE.mp p.property))
     (Polynomial.natDegree_le_of_degree_le (Polynomial.mem_degreeLE.mp q.property))
 
+/-- Degree-bounded polynomials with unequal sums on a finite set agree at a uniform point
+with probability at most `d / |R|`, including over finite semiring domains. -/
+lemma prob_agreement_of_sum_ne
+    {R : Type} [CommSemiring R] [IsDomain R] [Fintype R] [SampleableType R]
+    {d : ℕ} (S : Finset R) (p q : Polynomial.degreeLE R d)
+    (hne : (∑ x ∈ S, p.val.eval x) ≠ ∑ x ∈ S, q.val.eval x) :
+    Pr{let r ← $ᵗ R}[p.val.eval r = q.val.eval r] ≤
+      (((d : ℝ≥0) / Fintype.card R : ℝ≥0) : ℝ≥0∞) := by
+  classical
+  have hex : ∃ r : R, p.val.eval r ≠ q.val.eval r := by
+    by_contra h
+    push Not at h
+    exact hne (Finset.sum_congr rfl (fun x _ => h x))
+  have hsplit : (∃ a : R, a + 1 = 0) ∨ ∀ a : R, a = 0 ∨ a = 1 := by
+    let s : R := ∑ x : R, x
+    have hs (a : R) (ha : a ≠ 0) : a * s = s := by
+      rw [show a * s = ∑ x : R, a * x by simp [s, mul_sum]]
+      exact Fintype.sum_bijective (a * ·)
+        ⟨fun _ _ h => mul_left_cancel₀ ha h,
+          Finite.surjective_of_injective (fun _ _ h => mul_left_cancel₀ ha h)⟩
+        (a * ·) id (fun _ => rfl)
+    by_cases hz : s = 0
+    · left
+      refine ⟨∑ x ∈ (univ : Finset R).erase 1, x, ?_⟩
+      rw [sum_erase_add _ _ (mem_univ 1)]
+      exact hz
+    · right
+      intro a
+      by_cases ha : a = 0
+      · exact Or.inl ha
+      · exact Or.inr (mul_right_cancel₀ hz (by simpa using hs a ha))
+  rcases hsplit with ⟨a, ha⟩ | hb
+  · let : CommRing R :=
+      { (inferInstance : CommSemiring R) with
+        neg x := a * x
+        zsmul := @zsmulRec R _ _ ⟨fun x => a * x⟩ (fun n x => n • x)
+        zsmul_zero' x := zero_nsmul x
+        zsmul_succ' n x := by
+          change (n + 1) • x = n • x + x
+          simpa only [add_comm] using succ_nsmul' x n
+        neg_add_cancel x := by
+          change a * x + x = 0
+          calc
+            a * x + x = (a + 1) * x := by rw [add_mul, one_mul]
+            _ = 0 := by rw [ha, zero_mul] }
+    apply prob_degreeLE_eval_eq_le
+    intro h
+    subst q
+    exact hne rfl
+  · by_cases hd : d = 0
+    · subst d
+      have hp : p.val = Polynomial.C (p.val.coeff 0) :=
+        Polynomial.eq_C_of_degree_le_zero (Polynomial.mem_degreeLE.mp p.property)
+      have hq : q.val = Polynomial.C (q.val.coeff 0) :=
+        Polynomial.eq_C_of_degree_le_zero (Polynomial.mem_degreeLE.mp q.property)
+      have hz : Pr{let r ← $ᵗ R}[p.val.eval r = q.val.eval r] = 0 := by
+        apply prEvent_eq_zero_of_forall_not
+        intro r hr
+        obtain ⟨s, hs⟩ := hex
+        apply hs
+        rw [hp, hq, Polynomial.eval_C, Polynomial.eval_C] at hr ⊢
+        exact hr
+      exact hz.le.trans zero_le
+    · have hu : (univ : Finset R) = {0, 1} := by
+        ext x
+        simp only [mem_univ, mem_insert, mem_singleton, true_iff]
+        exact hb x
+      have hc : Fintype.card R = 2 := by
+        rw [← card_univ, hu]
+        simp [zero_ne_one]
+      obtain ⟨r, hr⟩ := hex
+      have hsub : univ.filter (fun x => p.val.eval x = q.val.eval x) ⊆ univ.erase r := by
+        intro x hx
+        refine mem_erase.mpr ⟨?_, mem_univ _⟩
+        intro hxr
+        subst x
+        exact hr (mem_filter.mp hx).2
+      have hcard : (univ.filter (fun x => p.val.eval x = q.val.eval x)).card ≤ d := by
+        calc
+          _ ≤ (univ.erase r).card := card_le_card hsub
+          _ = Fintype.card R - 1 := by rw [card_erase_of_mem (mem_univ r), card_univ]
+          _ ≤ d := by omega
+      rw [SampleableType.prEvent_uniformSample]
+      rw [ENNReal.coe_div (by simp), ENNReal.coe_natCast, ENNReal.coe_natCast]
+      gcongr
+
 /-- The polynomial identity lemma in individual-degree form. -/
 lemma prob_polynomial_identity_le
     {R : Type} [CommRing R] [IsDomain R] [Fintype R] [SampleableType R]
@@ -113,14 +199,16 @@ lemma prob_polynomial_identity_le
 
 /-- A nonzero `F`-linear form vanishes with probability exactly `1 / |F|`. -/
 theorem prob_dotProduct_eq_zero_eq_inv_card
-    {F : Type} [Field F] [Fintype F] [SampleableType F] {k : ℕ}
-    (d : Fin k → F) (hd : d ≠ 0) :
-    Pr{let v ← $ᵗ (Fin k → F)}[(∑ j, d j * v j) = 0] =
-      (Fintype.card F : ℝ≥0∞)⁻¹ := open scoped Classical in by
-  let p : (Fin k → F) → Prop := fun v ↦ ∑ j, d j * v j = 0
+    {ι F : Type} [Fintype ι] [Field F] [Fintype F]
+    [SampleableType F] [SampleableType (ι → F)]
+    (d : ι → F) (hd : d ≠ 0) :
+    Pr{let v ← $ᵗ (ι → F)}[(∑ j, d j * v j) = 0] =
+      (Fintype.card F : ℝ≥0∞)⁻¹ := by
+  classical
+  let p : (ι → F) → Prop := fun v ↦ ∑ j, d j * v j = 0
   let decP : DecidablePred p := fun _ ↦ Classical.propDecidable _
-  change Pr{let v ← $ᵗ (Fin k → F)}[p v] = (Fintype.card F : ℝ≥0∞)⁻¹
-  set L : (Fin k → F) →ₗ[F] F := ∑ j, d j • LinearMap.proj j with hL
+  change Pr{let v ← $ᵗ (ι → F)}[p v] = (Fintype.card F : ℝ≥0∞)⁻¹
+  set L : (ι → F) →ₗ[F] F := ∑ j, d j • LinearMap.proj j with hL
   have hLapply : ∀ v, L v = ∑ j, d j * v j := by
     intro v
     simp only [hL, LinearMap.coe_sum, Finset.sum_apply, LinearMap.smul_apply,
@@ -137,10 +225,10 @@ theorem prob_dotProduct_eq_zero_eq_inv_card
       rw [Pi.single_eq_of_ne hb, mul_zero]
     · intro h
       exact absurd (Finset.mem_univ j₀) h
-  have hquot : Nat.card ((Fin k → F) ⧸ LinearMap.ker L) = Fintype.card F := by
+  have hquot : Nat.card ((ι → F) ⧸ LinearMap.ker L) = Fintype.card F := by
     rw [Nat.card_congr (L.quotKerEquivOfSurjective hsurj).toEquiv, Nat.card_eq_fintype_card]
   let fintypeKer : Fintype (LinearMap.ker L) := Fintype.ofFinite _
-  have hcard : Fintype.card (Fin k → F) =
+  have hcard : Fintype.card (ι → F) =
       @Fintype.card (LinearMap.ker L) fintypeKer * Fintype.card F := by
     have h := Submodule.card_eq_card_quotient_mul_card (LinearMap.ker L)
     rw [hquot] at h
@@ -148,7 +236,7 @@ theorem prob_dotProduct_eq_zero_eq_inv_card
       ← @Nat.card_eq_fintype_card (LinearMap.ker L) fintypeKer]
     exact h
   have hfilter :
-      (@Finset.filter (Fin k → F) p decP Finset.univ).card =
+      (@Finset.filter (ι → F) p decP Finset.univ).card =
         @Fintype.card (LinearMap.ker L) fintypeKer := by
     let fintypeP : Fintype {v // p v} := Fintype.ofFinite _
     rw [@Fintype.card_congr _ _ fintypeKer fintypeP
@@ -168,9 +256,10 @@ theorem prob_dotProduct_eq_zero_eq_inv_card
 
 /-- `≤`-form of `prob_dotProduct_eq_zero_eq_inv_card`. -/
 theorem prob_dotProduct_eq_zero_le
-    {F : Type} [Field F] [Fintype F] [SampleableType F] {k : ℕ}
-    (d : Fin k → F) (hd : d ≠ 0) :
-    Pr{let v ← $ᵗ (Fin k → F)}[(∑ j, d j * v j) = 0] ≤
+    {ι F : Type} [Fintype ι] [Field F] [Fintype F]
+    [SampleableType F] [SampleableType (ι → F)]
+    (d : ι → F) (hd : d ≠ 0) :
+    Pr{let v ← $ᵗ (ι → F)}[(∑ j, d j * v j) = 0] ≤
       (Fintype.card F : ℝ≥0∞)⁻¹ :=
   le_of_eq (prob_dotProduct_eq_zero_eq_inv_card d hd)
 

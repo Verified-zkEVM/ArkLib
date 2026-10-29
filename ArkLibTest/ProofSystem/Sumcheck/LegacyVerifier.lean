@@ -19,7 +19,7 @@ A degree-one case uses `q = X + 1` with the same domain and claimed sum. Its nex
 be `r + 1` at each challenge `r`, so evaluation at a different point is observable.
 
 These tests reduce the actual legacy verifier programs, including oracle simulation. They do not
-use the admitted legacy soundness theorems or assert a full correspondence with native Sumcheck.
+assert a full correspondence with native Sumcheck.
 -/
 
 namespace Sumcheck.LegacyVerifierTest
@@ -130,3 +130,33 @@ info: 'Sumcheck.LegacyVerifierTest.actual_execution_output_relation_false' depen
 end
 
 end Sumcheck.LegacyVerifierTest
+
+/--
+info: 'Sumcheck.Spec.SingleRound.Simple.verifier_rbrKnowledgeSoundness' depends on axioms:
+[propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms Sumcheck.Spec.SingleRound.Simple.verifier_rbrKnowledgeSoundness
+
+/--
+info: 'Sumcheck.Spec.SingleRound.Simple.verifier_rbrKnowledgeSoundnessAveraged' depends on axioms:
+[propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms Sumcheck.Spec.SingleRound.Simple.verifier_rbrKnowledgeSoundnessAveraged
+
+/--
+info: 'Sumcheck.Spec.SingleRound.Simple.oracleVerifier_rbrKnowledgeSoundness'
+depends on axioms:
+[propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms Sumcheck.Spec.SingleRound.Simple.oracleVerifier_rbrKnowledgeSoundness
+
+/--
+info: 'Sumcheck.Spec.SingleRound.Simple.oracleVerifier_rbrKnowledgeSoundnessAveraged'
+depends on axioms:
+[propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms Sumcheck.Spec.SingleRound.Simple.oracleVerifier_rbrKnowledgeSoundnessAveraged

@@ -199,9 +199,14 @@ oracle state. Fix one stateful oracle implementation on a state space $\Sigma$ a
 state distribution $\mu$. The second component receives the state left by the first component.
 A guarantee for the second component initialized separately from $\mu$ does not cover this state.
 
-The completeness theorems below are proved under their stated hypotheses. The generic soundness,
-knowledge-soundness, and round-by-round contracts listed afterwards remain admitted in Lean;
-execution factorization alone does not establish them.
+The composition theorems below are proved under their stated hypotheses.
+Ordinary soundness and knowledge soundness use the guarded interface in
+\texttt{Append/Security.lean}, with suffix bounds valid from every deterministic shared state
+and pure extractors for knowledge soundness. Round-by-round knowledge soundness uses
+\texttt{Append/GuardedRoundByRound.lean} for binary composition and
+\texttt{Sequential/GuardedRoundByRound.lean} for finite chains. Both require fixed-prefix
+component bounds; binary composition requires a guarded first verifier, and finite-chain
+composition requires every component verifier to be guarded.
 
 \begin{theorem}[Completeness Preservation under Append]
     \label{thm:completeness_append}
@@ -255,21 +260,11 @@ execution factorization alone does not establish them.
     \uses{def:knowledge_soundness, def:verifier_append}
 \end{theorem}
 
-\begin{theorem}[Round-by-Round Soundness Preservation under Append (Admitted)]
-    \label{thm:rbr_soundness_append}
-    If verifiers $V_1$ and $V_2$ satisfy round-by-round soundness, then their sequential composition also satisfies round-by-round soundness.
-    \lean{Verifier.append_rbrSoundness}
-    \uses{def:round_by_round_soundness, def:verifier_append}
-\end{theorem}
+Prover-averaged component guarantees alone do not compose: queries to the shared oracle can
+correlate a later round with the earlier transcript. Fixed-prefix guarantees and a guarded first
+verifier give the following composition theorem.
 
-\begin{theorem}[Round-by-Round Knowledge Soundness Preservation under Append (Admitted)]
-    \label{thm:rbr_knowledge_soundness_append}
-    If verifiers $V_1$ and $V_2$ satisfy round-by-round knowledge soundness, then their sequential composition also satisfies round-by-round knowledge soundness.
-    \lean{Verifier.append_rbrKnowledgeSoundness}
-    \uses{def:round_by_round_knowledge_soundness, def:verifier_append}
-\end{theorem}
-
-\begin{theorem}[Worst-Case Round-by-Round Knowledge Soundness under a Guarded First Verifier]
+\begin{theorem}[Round-by-Round Knowledge Soundness under a Guarded First Verifier]
     \label{thm:rbr_knowledge_soundness_append_guarded}
     Suppose $V_1$ is guarded: it returns a deterministic verdict when its check passes and aborts
     otherwise. Suppose $V_1$ and $V_2$ are round-by-round knowledge sound for every fixed
@@ -280,13 +275,13 @@ execution factorization alone does not establish them.
     one up to the seam, and after it is the first check together with the second knowledge state at
     the first verdict. At the seam, the second knowledge state at round $0$ places the verdict in
     $R_2$, and a passing check makes that verdict a positive-probability output of $V_1$.
-    \lean{Verifier.append_rbrKnowledgeSoundnessWorstCaseWith_of_guarded_first,
-      Verifier.append_rbrKnowledgeSoundnessWorstCase_of_guarded_first}
+    \lean{Verifier.append_rbrKnowledgeSoundnessWith_of_guarded_first,
+      Verifier.append_rbrKnowledgeSoundness_of_guarded_first}
     \uses{def:round_by_round_knowledge_soundness, def:verifier_append}
 \end{theorem}
 
 Finite-chain completeness likewise requires guarantees from every shared state.
-Finite-chain soundness and knowledge soundness hold for guarded chains, and so does worst-case
+Finite-chain soundness and knowledge soundness hold for guarded chains, and so does
 round-by-round knowledge soundness.
 
 \begin{theorem}[General Completeness Preservation]
@@ -319,13 +314,13 @@ round-by-round knowledge soundness.
     \uses{def:knowledge_soundness, def:verifier_compose}
 \end{theorem}
 
-\begin{theorem}[Worst-Case Round-by-Round Knowledge Soundness of a Guarded Chain]
+\begin{theorem}[Round-by-Round Knowledge Soundness of a Guarded Chain]
     \label{thm:rbr_knowledge_soundness_compose_guarded}
     If every verifier of a finite chain is guarded and round-by-round knowledge sound for every
     fixed transcript prefix between consecutive relations, so is the chain. Each combined
     challenge keeps the error of the component challenge it corresponds to. The proof iterates
     Theorem~\ref{thm:rbr_knowledge_soundness_append_guarded}.
-    \lean{Verifier.seqCompose_rbrKnowledgeSoundnessWorstCase_of_guarded}
+    \lean{Verifier.seqCompose_rbrKnowledgeSoundness_of_guarded}
     \uses{def:round_by_round_knowledge_soundness, def:verifier_compose,
       thm:rbr_knowledge_soundness_append_guarded}
 \end{theorem}
@@ -458,14 +453,14 @@ For lifting to preserve security properties, the context lens must satisfy certa
 \begin{theorem}[RBR Soundness Preservation under Context Lifting]
     \label{thm:lift_context_rbr_soundness}
     If a verifier satisfies round-by-round soundness and the statement lens is RBR soundness-preserving, then the lifted verifier also satisfies round-by-round soundness.
-    \lean{Verifier.liftContext_rbr_soundness}
+    \lean{Verifier.liftContext_rbrSoundness}
     \uses{def:round_by_round_soundness, def:verifier_lift_context, def:statement_lens_is_rbr_sound}
 \end{theorem}
 
 \begin{theorem}[RBR Knowledge Soundness Preservation under Context Lifting]
     \label{thm:lift_context_rbr_knowledge_soundness}
     If a verifier satisfies round-by-round knowledge soundness and the context lens is knowledge soundness-preserving, then the lifted verifier also satisfies round-by-round knowledge soundness.
-    \lean{Verifier.liftContext_rbr_knowledgeSoundness}
+    \lean{Verifier.liftContext_rbrKnowledgeSoundness}
     \uses{def:round_by_round_knowledge_soundness, def:verifier_lift_context, def:context_lens_is_knowledge_sound}
 \end{theorem}
 

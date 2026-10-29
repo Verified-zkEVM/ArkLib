@@ -9,7 +9,7 @@ source_metadata: ../sources/LPS24/metadata.yml
 status: seeded
 related_modules:
   - ArkLib/AGM/Basic.lean
-  - ArkLib/ProofSystem/Plonk/Basic.lean
+  - ArkLib/ProofSystem/Plonk/Relation/Basic.lean
 ---
 
 # LPS24
@@ -29,7 +29,7 @@ knowledge-soundness, which matches ArkLib's long-term protocol ambitions.
 ## Main ArkLib Touchpoints
 
 - [`ArkLib/AGM/Basic.lean`](../../../ArkLib/AGM/Basic.lean) cites `LPS24` directly.
-- [`ArkLib/ProofSystem/Plonk/Basic.lean`](../../../ArkLib/ProofSystem/Plonk/Basic.lean) is the
+- [`ArkLib/ProofSystem/Plonk/Relation/Basic.lean`](../../../ArkLib/ProofSystem/Plonk/Relation/Basic.lean) is the
   natural neighboring subtree when this reference matters in protocol work.
 
 ## Version Notes

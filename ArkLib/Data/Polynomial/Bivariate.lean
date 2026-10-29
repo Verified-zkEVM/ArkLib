@@ -143,8 +143,8 @@ def quotient (f g : F[X][Y]) : Prop := ∃ q : F[X][Y], g = q * f
 @[grind .]
 lemma quotient_nezero {f q : F[X][Y]} (hg : q * f ≠ 0) : q ≠ 0 := by by_contra h; apply hg; simp [h]
 
-/-- If a non-zero bivariate polynomial `f` divides a non-zero bivariate polynomial `g`, then
-all the coefficients of the quoetient are non-zero. -/
+/-- If `q * f` is non-zero, then the coefficient function of `q` is non-zero,
+equivalently some coefficient of `q` is non-zero. -/
 @[grind .]
 lemma coeff_ne_zero {f q : F[X][Y]} (hg : q * f ≠ 0) : q.coeff ≠ 0 :=
   (ne_zero_iff_coeffs_ne_zero q).1 (quotient_nezero hg)

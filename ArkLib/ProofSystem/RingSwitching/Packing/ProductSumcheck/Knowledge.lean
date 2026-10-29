@@ -35,20 +35,20 @@ def loopRbrError [Fintype C] : (loopSpec C m).ChallengeIdx → ℝ≥0 :=
 theorem loopRbrError_eq [Fintype C] (i : (loopSpec C m).ChallengeIdx) :
     loopRbrError (C := C) i = 2 / Fintype.card C := rfl
 
-/-- The finite loop is worst-case round-by-round knowledge sound. -/
-theorem loop_rbrKnowledgeSoundnessWorstCase [NoZeroDivisors C] [Fintype C] [SampleableType C]
+/-- The finite loop is round-by-round knowledge sound. -/
+theorem loop_rbrKnowledgeSoundness [NoZeroDivisors C] [Fintype C] [SampleableType C]
     (hfunctional : pc.Functional) {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-    (loopVerifier pc).toVerifier.rbrKnowledgeSoundnessWorstCase init impl
+    (loopVerifier pc).toVerifier.rbrKnowledgeSoundness init impl
       (rel multiplier pc 0) (rel multiplier pc (Fin.last m))
       (loopRbrError (C := C) (m := m)) := by
-  apply OracleVerifier.seqCompose_rbrKnowledgeSoundnessWorstCase_of_guarded
+  apply OracleVerifier.seqCompose_rbrKnowledgeSoundness_of_guarded
     (Statement Context C) (fun _ => pc.OStmt) (fun _ => P⦃≤ 1⦄[X Fin m])
     (rel multiplier pc) (Round.verifier pc) (Round.guardedForm pc)
     (fun _ => Round.rbrError (C := C))
   intro i
-  apply (Verifier.rbrKnowledgeSoundnessWorstCase_iff_exists_with init impl _ _ _ _).mpr
-  exact ⟨_, _, _, Round.rbrKnowledgeSoundnessWorstCaseWith multiplier pc i hfunctional init impl⟩
+  apply (Verifier.rbrKnowledgeSoundness_iff_exists_with init impl _ _ _ _).mpr
+  exact ⟨_, _, _, Round.rbrKnowledgeSoundnessWith multiplier pc i hfunctional init impl⟩
 
 /-- The scalar challenges retain their component error; the terminal contributes none. -/
 def rbrError [Fintype C] : (pSpec C m).ChallengeIdx → ℝ≥0 :=
@@ -68,17 +68,17 @@ theorem rbrError_eq [Fintype C] (i : (pSpec C m).ChallengeIdx) :
     subst j
     contradiction
 
-/-- Worst-case round-by-round knowledge soundness on the original commitment opening. -/
-theorem rbrKnowledgeSoundnessWorstCase [NoZeroDivisors C] [Fintype C] [SampleableType C]
+/-- Round-by-round knowledge soundness on the original commitment opening. -/
+theorem rbrKnowledgeSoundness [NoZeroDivisors C] [Fintype C] [SampleableType C]
     (hfunctional : pc.Functional) {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-    (verifier multiplier pc).toVerifier.rbrKnowledgeSoundnessWorstCase init impl
+    (verifier multiplier pc).toVerifier.rbrKnowledgeSoundness init impl
       (rel multiplier pc 0) (pc.evalRelWithContext Context) (rbrError (C := C) (m := m)) := by
   rw [verifier_toVerifier]
-  apply Verifier.append_rbrKnowledgeSoundnessWorstCase_of_guarded_first
+  apply Verifier.append_rbrKnowledgeSoundness_of_guarded_first
     _ _ (loopGuardedForm pc)
-    (loop_rbrKnowledgeSoundnessWorstCase multiplier pc hfunctional init impl)
-  apply (Verifier.rbrKnowledgeSoundnessWorstCase_iff_exists_with init impl _ _ _ _).mpr
-  exact ⟨_, _, _, Terminal.rbrKnowledgeSoundnessWorstCaseWith multiplier pc init impl⟩
+    (loop_rbrKnowledgeSoundness multiplier pc hfunctional init impl)
+  apply (Verifier.rbrKnowledgeSoundness_iff_exists_with init impl _ _ _ _).mpr
+  exact ⟨_, _, _, Terminal.rbrKnowledgeSoundnessWith multiplier pc init impl⟩
 
 end RingSwitching.Packing.ProductSumcheck

@@ -441,7 +441,9 @@ theorem oracleVerifier_knowledgeSoundnessWith_choiceStraightlineExtractor
 
 omit [DecidableEq ι] [Fintype A] in
 /-- Existential knowledge soundness for the winning-set/spot-check upper bound, retained as
-a corollary of the theorem naming the classical extractor.
+a corollary of the theorem naming the classical extractor. Like every existential
+knowledge-soundness statement, it has the content of relation soundness
+(`Verifier.knowledgeSoundness_iff_relationSoundness`).
 
 **Consumer note on `δ`.**  No hypothesis constrains `δ` here, and that is sound: the error
 `winningSetUpperBound encode δ t` is the winning-set/spot-check expression at

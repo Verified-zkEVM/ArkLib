@@ -47,7 +47,7 @@ commitment scheme rather than restricting `commitsTo` to make a proof easier.
 
 `RingSwitch.perfectCompleteness` works over the stated commutative-ring/algebra structures.
 A collision certificate is unnecessary for that theorem. Its security theorem
-`RingSwitch.rbrKnowledgeSoundnessWorstCase` additionally uses a certified strategy,
+`RingSwitch.rbrKnowledgeSoundness` additionally uses a certified strategy,
 `pc.Functional`, injective coefficient transport `P → C`, and a finite sampled challenge ring
 `C` with no zero divisors. There is no separate `IsDomain P` premise, although injectivity into
 `C` already implies that `P` has no zero divisors. No such condition is required of `E`. The challenge-index error sum is exactly
@@ -96,20 +96,20 @@ and batching challenge accompany an evaluation claim against the same committed 
 Retaining those values does not prove an additional invariant about them. A consumer must
 transport its own inherited relation on that context and witness.
 
-`RingSwitch.append_perfectCompleteness` and `append_rbrKnowledgeSoundnessWorstCase` consume an
+`RingSwitch.append_perfectCompleteness` and `append_rbrKnowledgeSoundness` consume an
 opening whose input already matches this contextual relation. `OpeningAdapter` converts a general
 `MLIOPCS` to this relation through a zero-round context projection and witness wrapper, transporting
-completeness and worst-case soundness.
+completeness and fixed-prefix round-by-round knowledge soundness.
 Completeness must hold for every
-fixed initial state; worst-case RBR must cover all inputs in the stated contextual evaluation
+fixed initial state; RBR must cover all inputs in the stated contextual evaluation
 relation, not only a selected honest encoding or context. Match the commitment, oracle
 interfaces, prover, verifier, witness and extraction transport. Keep strict honest encoding for
 completeness distinct from relaxed compatibility used by security.
 
 The [Binius ring switch][binius] instantiates `TensorPrefix` and appends the Binary Basefold
 contextual opening. Its bundled
-`fullReduction_perfectCompleteness_and_rbrKnowledgeSoundnessWorstCase` theorem includes
-completeness, worst-case round-by-round knowledge soundness and the total-error bound.
+`fullReduction_perfectCompleteness_and_rbrKnowledgeSoundness` theorem includes
+completeness, round-by-round knowledge soundness and the total-error bound.
 The maintained [composite fixture][composite] uses a nonconstant `GF(16)/GF(2)` source and its
 honest codeword encoding. It checks sampled acceptance and a full challenge-error
 sum bounded below one. A direct-polynomial opening example alone would not certify this backend.

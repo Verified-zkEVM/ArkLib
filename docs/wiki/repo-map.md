@@ -73,6 +73,65 @@ home_page/            site assets and assembled website root
 
 ## Navigation Notes
 
+- `ProofSystem/Spartan/` keeps its polynomial mathematics independent of both interaction layers.
+  `Layout.lean` embeds arbitrary R1CS sizes and recovers witnesses by restriction;
+  `Context.lean` owns the retained public records. `Algebra.lean` defines the virtual polynomials,
+  `Computable.lean` constructs them with CompPoly, and `Realization.lean` connects finite-table
+  evaluation to their semantics. The relation modules own the zero-check, row-claim and batching
+  equations. `FirstSumcheck.lean` and `SecondSumcheck.lean` lift the general Sumcheck protocol
+  through executable virtual-polynomial lenses, preserving the original oracle tables and
+  proving stage completeness and fixed-prefix errors `3 / |R|` and `2 / |R|`.
+  The first verifier's query-bound theorem excludes evaluation of its virtual input polynomial.
+  `WitnessAttachment.lean` sends the padded original witness, forwards scalar matrix queries,
+  and extracts by restricting the actual sent table; its input relation is the original R1CS
+  relation. `Basic.lean` imports these stage modules. The stage certificates are separate;
+  a single assembled reduction and its end-to-end certificate remain to be constructed.
+- `ProofSystem/Sumcheck/Impl/OracleProver.lean` provides the executable legacy honest prover,
+  with exact refinement to `Spec.oracleReduction.prover` and preservation of the input polynomial
+  oracle. `Impl/Representation.lean` and `Impl/Projection.lean` connect finite coefficient
+  computations to the mathematical polynomial representations.
+- Plonk's finite mathematics is independent of both execution layers.
+  `ProofSystem/ConstraintSystem/Plonk.lean` owns gates, the prefix/private relation, and the
+  wiring permutation whose cycles are exactly the variable fibers. Its generic cycle construction
+  lives in `Data/Equiv/FiberCycle.lean`. `ProofSystem/Plonk/` groups each protocol stage into a
+  subfolder (`Relation`, `Encoding`, `Accumulator`, `GrandProduct`, `Batch`, `Quotient`,
+  `Assembly`), with `SendWitness.lean` at the top. `Plonk/Relation/Basic.lean` connects variable and
+  occurrence assignments, with public-occurrence coverage for reconstruction.
+  `Plonk/Relation/Prepared.lean` prepends public equality rows, decodes private witnesses, and
+  separates their baked-in constants into cleared selectors and an explicit public-input term.
+  `Plonk/Encoding/Domain.lean` supplies injective evaluation nodes and disjoint coset labels.
+  `Plonk/Encoding/Basic.lean` identifies occurrence columns with degree-bounded polynomials,
+  proves the prepared gate and copy relation equivalence, and reconstructs private witnesses.
+  `Plonk/Encoding/Computable.lean` refines the encoding through CompPoly coefficient arrays.
+  Concrete cycle, satisfaction, and decoder checks live in
+  `ArkLibTest/ProofSystem/Plonk/Relation.lean`;
+  `ArkLibTest/ProofSystem/Plonk/Encoding.lean` checks order-four encoding over a prime field,
+  including rejected gates, inconsistent copies, and incorrect public inputs.
+
+- `ProofSystem/Plonk/GrandProduct/` formalizes the Plonk permutation grand product:
+  a univariate accumulator `Z` over the multiplicative evaluation domain with `Z(1) = 1` and
+  `Z(ωx) * Q(x) = Z(x) * N(x)`. `Data.lean` defines its executable polynomials and
+  residuals; `Reduction.lean` defines the oracle reduction; `Completeness.lean` and `Security.lean`
+  prove its completeness and fixed-prefix knowledge bounds.
+  `ProofSystem/Plonk/Batch/` batches the three residuals through `GeneratorBatch` with
+  `powerBatchGenerator F 3`, one uniform field challenge, and knowledge error `2 / |F|`.
+  `ProofSystem/Plonk/Quotient/` checks the resulting residual through the quotient zero test.
+  The multilinear (GKR-style) grand-product argument is a different protocol and is not
+  formalized here.
+
+- `ProofSystem/Component/GeneratorBatch.lean` batches polynomial zero tests with a single
+  seed from a zero-evading generator. It provides the virtual evaluation oracle, extractor,
+  guarded form, perfect completeness, and fixed-prefix knowledge certificates. Its output
+  relation is the input relation of `Component/QuotientZeroTest.lean`; the quotient stage
+  performs the acceptance check. Power, affine, and multilinear weights are instances of this
+  same component, selected by the generator parameter.
+  Weighted polynomial arithmetic and the vanishing-to-dot-product probability bound live in
+  `Data/Polynomial/GeneratorBatch.lean`; its “Power weights” section also owns
+  `Polynomial.powerBatch` and its algebra lemmas for coding-theory consumers. Generator
+  zero-evasion bounds for powers, affine coordinates, and multilinear tensors live in
+  `Data/CodingTheory/ProximityGenerator/ZeroEvading.lean`. `MultilinearBasic.lean` owns the
+  shared tensor definitions so this theory does not depend on Reed–Solomon agreement results.
+
 - `ProofSystem/Fri/FoldingSoundness.lean` and `QuerySoundness.lean` contain the algebraic
   soundness arguments; `ErrorBounds.lean` instantiates existing numerical MCA bounds.
   `Fri/Spec/Soundness.lean` proves ordinary and round-by-round soundness of the executable
@@ -330,14 +389,8 @@ home_page/            site assets and assembled website root
     `endPieceCheck_eq_true_iff` is shared with the nonrecursive scheme's terminal verdict
     (`Correctness.lean`), so the closing link has one decision procedure.
     `EndPiece/Basic.lean` re-exports `EndPiece/Reduction.lean`.
-  - `Recursion/` (§4.5) — the recursion adapters, **outside the completed development and not
-    composed into `Composition.lean`'s chain**: `PartialEval` (Eq. (24) peeling, pure
-    derive-`y₀`), `ZBatchBridge` (Eqs. (25)–(26) `Z`-packing — ⚠ carries the open
-    partial-evaluation soundness gap, analyzed in its module docstring), `TraceHandoff`
-    (Eqs. (27)–(28)
-    — guarded trace check, lands on the next iteration's `QuadEval` seam over `Φ'`).
-    `Recursion/Basic.lean` re-exports the folder, and the top-level `Hachi.lean` umbrella imports
-    it so the umbrella reaches every folder it documents.
+  - The recursive opening (§4.5) is not formalized; `docs/kb/audits/noz26-recursion-z-packing.md`
+    records why.
   - `Composition.lean` — the **CWSS composition home**: `iteration` chains all nine subprotocol
     links (rows 1–9 of the header's seam table) into one evaluation iteration, and
     `hachi_iteration_coordinateWiseSpecialSoundWithEscape` states its composed named-extractor CWSS
@@ -351,10 +404,8 @@ home_page/            site assets and assembled website root
     seams have to match.
   - `Commitment.lean` — **Hachi as a `Commitment.Scheme`**: the eval `OracleInterface`, honest
     `keygen`/`commit` (the paper's **balanced** base-`b` gadget decomposition at width
-    `δ = ⌈log_b q⌉`, digits in Eq. (20)'s box `S_b` — `[-8, 7]` at `b = 16`), and the `hachi`
-    scheme value, whose `opening` field is the §4.5 *recursive* opening and is `sorry` (the
-    recursion boundary; the declared `pSpec` covers only the bridge ▷ QuadEval prefix). `hachi` and
-    `hachiNonrecursive` share this committer; the unsigned `zmodDigitDecomposition` survives only
+    `δ = ⌈log_b q⌉`, digits in Eq. (20)'s box `S_b` — `[-8, 7]` at `b = 16`), used by
+    `hachiNonrecursive`; the unsigned `zmodDigitDecomposition` survives only
     as the building block the balanced digits are shifted from (`Gadget/Core`), and
     `InnerOuter.perfectlyCorrect` is likewise stated at the balanced digits. The file also carries
     the **honest-committer facts** the honest chain needs: `verifiedOpening_honestOpening` (the
@@ -612,6 +663,11 @@ home_page/            site assets and assembled website root
   events along that split). The umbrella `Security/TranscriptTree.lean` re-exports both files.
   Both plain and coordinate-wise special soundness are instances of `Verifier.treeSpecialSound` for
   different shapes; neither special-soundness file imports the other.
+- `Security/UnboundedExtraction.lean` records what `Verifier.knowledgeSoundness` means without
+  an extractor cost bound: the classical selector `Extractor.Straightline.choose` makes it
+  equivalent to `Verifier.relationSoundness` (`Verifier.knowledgeSoundness_iff_relationSoundness`).
+  When extraction itself matters, state `knowledgeSoundnessWith` for a named extractor and bound
+  that extractor's cost separately.
 - Plain `(k)`-special soundness lives in `Security/SpecialSoundness.lean`. It is the instance of
   `Verifier.treeSpecialSound` for the pairwise-distinct shape `distinctShape k` (arity `kᵢ`, node
   predicate `Function.Injective`), with input/output relations like CWSS; it is the `ℓᵢ = 1`
@@ -619,17 +675,18 @@ home_page/            site assets and assembled website root
   `coordinateWiseSpecialSound (ofSpecialSound k) ↔ specialSound k` lives in
   `Security/Implications.lean`.
 - Round-by-round security lives in `Security/RoundByRound.lean` (state functions,
-  `Extractor.RoundByRound`, the one-shot variants and their bridges, plus the **worst-case** layer
-  `rbrSoundnessWorstCase` / `rbrKnowledgeSoundnessWorstCase` and the implications back to the
-  averaged notions), on top of the probability glue in `Security/RbrGame.lean` (the challenge-first
-  master bounds over `simulateQ`/`OptionT` that discharge those implications). This is a **separate
-  axis** from the transcript-tree notions below: its extractor type is `Extractor.RoundByRound` on
-  transcripts, not `Extractor.TreeBased`, and it carries no escape-event layer.
-  `Security/Implications.lean` identifies round-by-round knowledge soundness, averaged and
-  worst-case, with soundness of the induced languages under unbounded extraction. Without input
-  witnesses the identification holds for all relations and errors exactly when no input statement,
-  full transcript and output witness exist together
-  (`Verifier.forall_rbrSoundness_iff_rbrKnowledgeSoundness_iff` and its `WorstCase` form), because
+  `Extractor.RoundByRound`, the one-shot variants and their bridges, plus the default
+  **fixed-prefix** notions `rbrSoundness` / `rbrKnowledgeSoundness` and their implications to the
+  prover-averaged `rbrSoundnessAveraged` / `rbrKnowledgeSoundnessAveraged`), on top of the
+  probability glue in `Security/RbrGame.lean` (the challenge-first master bounds over
+  `simulateQ`/`OptionT` that discharge those implications). This is a **separate axis** from the
+  transcript-tree notions below: its extractor type is `Extractor.RoundByRound` on transcripts,
+  not `Extractor.TreeBased`, and it carries no escape-event layer.
+  `Security/Implications.lean` identifies round-by-round knowledge soundness, fixed-prefix and
+  prover-averaged, with soundness of the induced languages under unbounded extraction. Without
+  input witnesses the identification holds for all relations and errors exactly when no input
+  statement, full transcript and output witness exist together
+  (`Verifier.forall_rbrSoundness_iff_rbrKnowledgeSoundness_iff` and its `Averaged` form), because
   only then does a round-by-round extractor exist (`Extractor.RoundByRound.exists_nonempty_iff`);
   `ArkLibTest/OracleReduction/RoundByRoundCharacterization.lean` checks the separating example.
   The one-shot notion `rbrKnowledgeSoundnessOneShot` is outside this characterization.
@@ -640,7 +697,7 @@ home_page/            site assets and assembled website root
   verifier. `Security/GuardedRoundByRound.lean` adds what a round-by-round proof needs about a
   verifier that aborts on a failed check: the positive-probability lemma
   `Verifier.GuardedForm.check_and_of_prEvent_pos` and the message-then-challenge reducer
-  `Verifier.rbrKnowledgeSoundnessWorstCaseWith_of_two_message`, which bounds the extraction-failure
+  `Verifier.rbrKnowledgeSoundnessWith_of_two_message`, which bounds the extraction-failure
   event `rbrExtractionFailureEvent` (defined in `RoundByRound.lean`) per fixed prefix. The run
   equation of a query-guard-return oracle verifier (one message query, then a guard and a
   verdict that may read the answer and the challenges),
@@ -722,7 +779,7 @@ home_page/            site assets and assembled website root
   polynomial witnesses agreeing with all input words on one common set of density at least
   `1 - δ`; the output relation is definitionally FRI's input relation.
   `BatchedFri/Security.lean` proves perfect completeness at every radius and ordinary and
-  worst-case round-by-round soundness for any `ε` bounding `caError G C δ δ`.
+  round-by-round soundness for any `ε` bounding `caError G C δ δ`.
   `BatchedFri/EndToEnd.lean` adds the FRI soundness error and proves composite perfect
   completeness at radius zero. Neither generic soundness theorem restricts the radius.
   Family corollaries instantiate these bounds:
@@ -738,8 +795,9 @@ home_page/            site assets and assembled website root
     `δ ≤ 1 - (1 - δ_min + η)^(1/3)`, with `δ_min = minDist(C)/n` and
     `0 < η < δ_min`. The numeric error is defined in `Multilinear.lean`.
   `Data/CodingTheory/ProximityGap/BCIKS20/GeneratorBounds.lean` supplies the first two numeric
-  bounds. `Data/CodingTheory/ProximityGenerator/Multilinear.lean` defines the executable tensor
-  generator and proves the third bound using the additive tensor MCA theorem and the proved
+  bounds. `Data/CodingTheory/ProximityGenerator/MultilinearBasic.lean` defines the executable
+  tensor generator; `Multilinear.lean` proves the third bound using the additive tensor MCA
+  theorem and the proved
   affine-line unique-decoding estimate. Its 1.5-Johnson alternative uses
   `linear_mcaError_le_one_point_five_johnson`; neither result uses the
   Reed–Solomon Johnson bound proved via [DKT26].
@@ -762,27 +820,29 @@ home_page/            site assets and assembled website root
     with seam and purity corollaries and state-uniform suffix correctness.
   - `Append/OneMessage.lean` — the one-message specialization with effectful prover outputs.
   - `Append/RoundByRound.lean` — composition from fixed-prefix bounds under a pure first verifier.
-  - `Append/GuardedRoundByRound.lean` — worst-case round-by-round knowledge soundness composes
-    under a guarded first verifier, with the composed extractor and knowledge state function
-    (`KnowledgeStateFunction.appendGuarded`) named; the components share only the intermediate
-    relation.
+  - `Append/GuardedRoundByRound.lean` — round-by-round knowledge soundness composes
+    from fixed-prefix component bounds under a guarded first verifier, with the composed extractor
+    and knowledge state function (`KnowledgeStateFunction.appendGuarded`) named; the components
+    share only the intermediate relation.
   - `Append/ProverSplit.lean` — arbitrary prover restrictions retaining shared state at the seam.
   - `Append/OrdinaryComposition.lean` — prefix extraction and ordinary bad-event bounds.
   - `Append/Security.lean` — proved guarded ordinary soundness and pure-extractor knowledge
-    soundness; the legacy round-by-round claims remain admitted.
+    soundness, with a guarded first verifier and a suffix bound valid from every deterministic
+    shared oracle state.
   - `Append/NoAmbient.lean` — ordinary composition with one initialization and no ambient oracles.
 
   `Sequential/Completeness.lean` adds finite-chain completeness for pure outputs/verdicts;
   `Sequential/GuardedCompleteness.lean` handles deterministic rejecting verifiers.
   `Sequential/GuardedNary.lean` extends guarded completeness to finite chains;
-  `Sequential/GuardedRoundByRound.lean` extends guarded worst-case round-by-round knowledge
-  soundness to finite chains, with the `seqCompose` error reindexing proved;
+  `Sequential/GuardedRoundByRound.lean` extends guarded round-by-round knowledge
+  soundness to finite chains, requiring fixed-prefix bounds and guardedness for every component,
+  with the `seqCompose` error reindexing proved;
   `Sequential/OracleCompleteness.lean` supplies binary and finite-chain oracle-reduction wrappers.
   `Sequential/GuardedNary.lean` also gives the guarded form of an appended or sequentially
   composed oracle verifier from its components' (`OracleVerifier.appendGuardedForm`,
   `OracleVerifier.seqComposeGuardedForm`). `OracleReduction/CastIdx.lean` moves an oracle verifier
   or reduction along equalities of the indices of its statement, oracle-statement and witness
-  families (`OracleVerifier.castIdx`, `OracleReduction.castIdx`), with the worst-case
+  families (`OracleVerifier.castIdx`, `OracleReduction.castIdx`), with the
   round-by-round knowledge soundness, perfect completeness and guarded form moving along.
   `Sequential/NoAmbient.lean` proves output purity for empty ambient oracles and constructs guarded
   forms from explicit fallback maps. `LiftContext/Purity.lean` transports output purity and guarded
@@ -797,11 +857,13 @@ home_page/            site assets and assembled website root
   `Transcript.concat`, with the extensionality lemma `Transcript.heq_ext`, next to `concat` itself
   in `ProtocolSpec/Basic.lean` — put new ones there rather than re-deriving them privately per
   module.
-- Virtual-output execution commutes through append, salt, cast, and executable lifting. This does
-  not close the inherited generic append-security boundary: the unrestricted `StateT`
-  round-by-round soundness and knowledge-soundness composition theorems in
-  `Composition/Sequential/Append/Security.lean` remain admitted and must not anchor a standalone
-  security claim. Completeness composition uses the proved interfaces with explicit shared-state
+- Virtual-output execution commutes through append, salt, cast, and executable lifting.
+  Ordinary soundness and knowledge soundness compose through `Append/Security.lean` under a
+  guarded first verifier and state-uniform suffix bounds, with pure extractors for knowledge
+  soundness. Round-by-round knowledge soundness composes through
+  `Append/GuardedRoundByRound.lean` from fixed-prefix component bounds and a guarded first
+  verifier. `Sequential/GuardedRoundByRound.lean` requires fixed-prefix bounds and guardedness
+  for every component of a finite chain. Completeness composition uses explicit shared-state
   hypotheses.
 - Ring switching has two construction families, routed by
   `ProofSystem/RingSwitching/Basic.lean`. Packing groups independent coordinates; `Lift` replaces
@@ -819,7 +881,7 @@ home_page/            site assets and assembled website root
   owns the scalar rounds, residual relation, matrix terminal check and guarded composition on the
   same packed witness. `RingSwitch` composes them directly, with exact challenge-error sum
   `bat.error + 2m/card C`; it also closes any opening already typed at the contextual evaluation
-  endpoint through `append_perfectCompleteness` and `append_rbrKnowledgeSoundnessWorstCase`.
+  endpoint through `append_perfectCompleteness` and `append_rbrKnowledgeSoundness`.
   Completeness uses a commutative challenge ring; full security uses finite sampling, no zero
   divisors, functional compatibility and injective packing-to-challenge coefficient transport.
   The head's point-local collision law needs only equal component evaluations among compatible
@@ -835,7 +897,7 @@ home_page/            site assets and assembled website root
   `Binius/FRIBinius/RingSwitch` composes the shared frontend with the Binary Basefold
   contextual opening. Completeness uses exact encodings, security unique-radius compatibility.
   `Packing/OpeningAdapter` transports a standard `MLIOPCS` to the contextual opening contract
-  through a zero-round projection, preserving completeness and worst-case round-by-round security.
+  through a zero-round projection, preserving completeness and round-by-round security.
   `ArkLibTest/ProofSystem/RingSwitching/Packing/RingSwitch/{UnequalRankSuffix,Quirky}` instantiate full protocols
   with effective ranks four/three over different fields and exact error sum below one. Their
   transparent polynomial oracles are specification fixtures, not commitment schemes.

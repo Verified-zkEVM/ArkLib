@@ -12,7 +12,8 @@ public import CompPoly.Data.MvPolynomial.Notation
 # Computable Sumcheck round messages
 
 The actual message is a canonical coefficient array with a degree proof. Runtime queries use
-Horner evaluation. Conversion to the mathematical polynomial is solely its specification map.
+Horner evaluation. The mathematical polynomial is reconstructed from its explicit coefficient
+support, so both representations can be produced at runtime.
 -/
 
 @[expose] public section
@@ -29,16 +30,30 @@ def evaluate (q : Message R deg) (x : R) : R := q.val.evalHorner x
 
 variable [BEq R] [LawfulBEq R]
 
-/-- Proof-only interpretation as the existing degree-bounded mathematical message. -/
-noncomputable def toMessage (q : Message R deg) : Polynomial.degreeLE R deg :=
-  ⟨q.val.toPoly, by
+/-- Convert the coefficient array to the degree-bounded mathematical message. -/
+def toMessage (q : Message R deg) : Polynomial.degreeLE R deg :=
+  let p : Polynomial R := .ofFinsupp (.ofCoeff {
+    support := q.val.support
+    toFun := q.val.coeff
+    mem_support_toFun := CompPoly.CPolynomial.mem_support_iff q.val })
+  have hp : p = q.val.toPoly := by
+    ext i
+    exact CompPoly.CPolynomial.coeff_toPoly q.val i
+  ⟨p, by
+    rw [hp]
     apply Polynomial.mem_degreeLE.mpr
     rw [← CompPoly.CPolynomial.degree_toPoly]
     exact q.property⟩
 
+/-- Conversion preserves the coefficient-array interpretation. -/
+theorem toMessage_val (q : Message R deg) : (toMessage R deg q).val = q.val.toPoly := by
+  ext i
+  exact CompPoly.CPolynomial.coeff_toPoly q.val i
+
 /-- The runtime answer is exactly the answer of the mathematical interpretation. -/
 theorem evaluate_eq (q : Message R deg) (x : R) :
     evaluate R deg q x = (toMessage R deg q).val.eval x := by
+  rw [toMessage_val]
   exact (CompPoly.CPolynomial.eval_horner_eq_eval x q.val).trans
     (CompPoly.CPolynomial.eval_toPoly x q.val)
 

@@ -20,7 +20,7 @@ public import ArkLib.Commitments.Functional.Hachi.Sumcheck.Rounds
     The check reads the final targets, which the output statement drops, so the verifier is
     guarded (`failure` on a failed check), like the round verifiers of `Sumcheck/Rounds.lean`;
   * **output** — the evaluation claim `WEvalStatement`: the commitment `t`, the sumcheck
-    point `a`, and the claimed value `y′`, consumed by the `Recursion/` adapters.
+    point `a`, and the claimed value `y′`, closed by the end piece (`EndPiece/`).
 
   The honest side is here as well: `honestComputeY := wTableMleEval` is the true evaluation, the
   protocol object is `finalEvalReduction`, and `finalEvalReduction_perfectCompleteness` (error `0`,

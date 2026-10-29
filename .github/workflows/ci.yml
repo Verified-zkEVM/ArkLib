@@ -3,8 +3,8 @@ name: CI
 on:
   push:
     branches: ["main"]
+  # Every pull request is checked, including stacked ones whose base is another PR branch.
   pull_request:
-    branches: ["main"]
   merge_group:
     types: [checks_requested]
   # Nightly clean build of `main`: the absolute build-time trend, and a check that nothing passes

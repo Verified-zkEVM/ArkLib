@@ -18,8 +18,8 @@ The original query and batching challenge remain beside that final evaluation cl
 
 The program sends one encoded component family, one degree-two polynomial per retained variable,
 and the final value. It samples one batching challenge and one scalar per retained variable.
-Completeness holds over commutative rings using an operational batching rule. Worst-case
-round-by-round knowledge soundness uses a certified strategy, functional commitment semantics,
+Completeness holds over commutative rings using an operational batching rule. Round-by-round
+knowledge soundness uses a certified strategy, functional commitment semantics,
 injective packed-coefficient transport and a finite challenge ring with no zero divisors.
 The challenge-index error sum is exactly `bat.error + m * (2 / card C)`, including `m = 0`.
 -/
@@ -166,21 +166,21 @@ theorem rbrError_tail [Fintype C] (i : (ProductSumcheck.pSpec C m).ChallengeIdx)
   simp only [rbrError, Function.comp_apply, Equiv.symm_apply_apply, Sum.elim_inr]
   exact ProductSumcheck.rbrError_eq i
 
-/-- The concrete reduction is worst-case round-by-round knowledge sound on the original opening. -/
-theorem rbrKnowledgeSoundnessWorstCase [NoZeroDivisors C] [Fintype C] [SampleableType C]
+/-- The concrete reduction is round-by-round knowledge sound on the original opening. -/
+theorem rbrKnowledgeSoundness [NoZeroDivisors C] [Fintype C] [SampleableType C]
     (hfunctional : pc.Functional) (hinj : Function.Injective (algebraMap data.P C))
     {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (verifier data m layout messageEquiv bat.toBatchingRule
-      pc).toVerifier.rbrKnowledgeSoundnessWorstCase init impl
+      pc).toVerifier.rbrKnowledgeSoundness init impl
       (Head.relIn data m layout pc) (pc.evalRelWithContext (layout.Query × bat.Challenge)) (rbrError
         (M := M) data m bat) := by
   rw [verifier_toVerifier]
-  apply Verifier.append_rbrKnowledgeSoundnessWorstCase_of_guarded_first
+  apply Verifier.append_rbrKnowledgeSoundness_of_guarded_first
     _ _ (Head.guardedForm data m layout messageEquiv bat.toBatchingRule pc)
-  · apply (Verifier.rbrKnowledgeSoundnessWorstCase_iff_exists_with init impl _ _ _ _).mpr
-    exact ⟨_, _, _, Head.rbrKnowledgeSoundnessWorstCaseWith data m layout messageEquiv bat pc
+  · apply (Verifier.rbrKnowledgeSoundness_iff_exists_with init impl _ _ _ _).mpr
+    exact ⟨_, _, _, Head.rbrKnowledgeSoundnessWith data m layout messageEquiv bat pc
       hfunctional hinj init impl⟩
-  · exact ProductSumcheck.rbrKnowledgeSoundnessWorstCase (Head.multiplier data m layout
+  · exact ProductSumcheck.rbrKnowledgeSoundness (Head.multiplier data m layout
     bat.toBatchingRule) pc hfunctional init impl
 
 omit [Algebra B C] [Algebra data.P C] [IsScalarTower B data.P C] in
@@ -220,21 +220,21 @@ theorem append_rbrError_sum [Fintype C] {n : ℕ} (openingSpec : ProtocolSpec n)
   simp only [Sum.elim_inl, Sum.elim_inr]
   rw [rbrError_sum]
 
-/-- Completeness and worst-case round-by-round knowledge soundness with total challenge error `ε +
+/-- Completeness and round-by-round knowledge soundness with total challenge error `ε +
   2m/|C|`. -/
-theorem perfectCompleteness_and_rbrKnowledgeSoundnessWorstCase
+theorem perfectCompleteness_and_rbrKnowledgeSoundness
     [NoZeroDivisors C] [Fintype C] [SampleableType C]
     (hfunctional : pc.Functional) (hinj : Function.Injective (algebraMap data.P C))
     {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (reduction data m layout messageEquiv bat.toBatchingRule pc).perfectCompleteness init impl
         (Head.relIn data m layout pc) (pc.evalRelWithContext (layout.Query × bat.Challenge)) ∧
       (verifier data m layout messageEquiv bat.toBatchingRule
-        pc).toVerifier.rbrKnowledgeSoundnessWorstCase init impl
+        pc).toVerifier.rbrKnowledgeSoundness init impl
         (Head.relIn data m layout pc) (pc.evalRelWithContext (layout.Query × bat.Challenge))
         (rbrError (M := M) data m bat) ∧
       (∑ i, rbrError (M := M) data m bat i) = bat.error + (m : ℝ≥0) * (2 / Fintype.card C) :=
   ⟨perfectCompleteness data m layout messageEquiv bat.toBatchingRule pc init impl,
-    rbrKnowledgeSoundnessWorstCase data m layout messageEquiv bat pc hfunctional hinj init impl,
+    rbrKnowledgeSoundness data m layout messageEquiv bat pc hfunctional hinj init impl,
     rbrError_sum (M := M) data m bat⟩
 
 end Security
@@ -265,21 +265,21 @@ theorem append_perfectCompleteness [SampleableType C]
   · exact perfectCompleteness data m layout messageEquiv rule pc init impl
   · exact hopening
 
-/-- A contextual opening with worst-case round-by-round knowledge soundness closes the reduction. -/
-theorem append_rbrKnowledgeSoundnessWorstCase [NoZeroDivisors C] [Fintype C]
+/-- A contextual opening with round-by-round knowledge soundness closes the reduction. -/
+theorem append_rbrKnowledgeSoundness [NoZeroDivisors C] [Fintype C]
     [SampleableType C] (bat : BatchingStrategy C data.ιE) (pc : PackedCommitment data.P m)
     (hfunctional : pc.Functional) (hinj : Function.Injective (algebraMap data.P C))
     (opening : OracleVerifier []ₒ ((layout.Query × bat.Challenge) × ((Fin m → C) × C))
       pc.OStmt StmtOut OStmtOut openingSpec)
     (openingError : openingSpec.ChallengeIdx → ℝ≥0)
-    (hopening : opening.toVerifier.rbrKnowledgeSoundnessWorstCase init impl
+    (hopening : opening.toVerifier.rbrKnowledgeSoundness init impl
       (pc.evalRelWithContext (layout.Query × bat.Challenge)) relOut openingError) :
-    Verifier.rbrKnowledgeSoundnessWorstCase init impl (Head.relIn data m layout pc) relOut
+    Verifier.rbrKnowledgeSoundness init impl (Head.relIn data m layout pc) relOut
       ((verifier data m layout messageEquiv bat.toBatchingRule pc).append opening).toVerifier
         (Sum.elim (rbrError (M := M) data m bat) openingError ∘ ChallengeIdx.sumEquiv.symm) :=
-  OracleVerifier.append_rbrKnowledgeSoundnessWorstCase_of_guarded_first _ _
+  OracleVerifier.append_rbrKnowledgeSoundness_of_guarded_first _ _
     (guardedForm data m layout messageEquiv bat.toBatchingRule pc)
-    (rbrKnowledgeSoundnessWorstCase data m layout messageEquiv bat pc hfunctional hinj init impl)
+    (rbrKnowledgeSoundness data m layout messageEquiv bat pc hfunctional hinj init impl)
     hopening
 
 end Opening
