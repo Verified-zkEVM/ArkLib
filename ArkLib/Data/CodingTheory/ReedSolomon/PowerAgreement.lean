@@ -9,7 +9,7 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.Agreement
 public import ArkLib.Data.CodingTheory.InterleavedCode.ExactAgreement
 public import ArkLib.Data.CodingTheory.ProximityGenerator.Basic
 public import ArkLib.Data.Polynomial.SpecializationAvoidance
-public import ArkLib.Data.Polynomial.PowerBatch
+public import ArkLib.Data.Polynomial.GeneratorBatch
 public import Mathlib.Algebra.Polynomial.Expand
 public import Mathlib.Algebra.Polynomial.OfFn
 public import Mathlib.LinearAlgebra.Lagrange
@@ -693,8 +693,9 @@ theorem exists_powerBatchedPolynomial_eq (domain : ι ↪ F) {k : ℕ} {z : F} {
     · exact Submodule.zero_mem _
   · dsimp only
     split_ifs <;> simp [hP₀c, hDeval]
-  · simp only [Polynomial.powerBatch, smul_add, Finset.sum_add_distrib, smul_ite, smul_zero,
-      Finset.sum_ite_eq', Finset.mem_univ, ite_true, Fin.val_zero, pow_zero, one_smul]
+  · simp only [Polynomial.powerBatch, Polynomial.generatorBatch, smul_add,
+      Finset.sum_add_distrib, smul_ite, smul_zero, Finset.sum_ite_eq', Finset.mem_univ,
+      ite_true, Fin.val_zero, pow_zero, one_smul]
     change Q = Polynomial.powerBatch P₀ z + D
     rw [hD]
     ring
