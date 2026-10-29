@@ -5,20 +5,28 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Component.ZeroCheck.Algebra
+public import ArkLib.ProofSystem.Component.RandomEvaluation.Algebra
 public import ArkLib.OracleReduction.Security.RoundByRound
 public import ArkLib.OracleReduction.Security.Guarded
 
 /-!
-# Zero-check challenge component
+# Random evaluation
 
-The verifier samples a uniform vector and retains the input context and oracles. The polynomial
-is an abstract semantic view of that context: the challenge component never queries it.
+A one-round reduction from the claim `P = 0`, for a multivariate polynomial `P` determined by the
+statement and oracle statements, to the claim `P(τ) = 0` at a uniform point `τ : Fin m → F`.
+
+The verifier samples `τ` and retains the input statement and oracles; it never evaluates or
+queries `P`, which is a semantic view of the context and may be virtual. Completeness is immediate.
+Round-by-round knowledge soundness has error `d / |F|` when every `P` has total degree at most `d`
+(Schwartz–Zippel), and `m / |F|` when every `P` is multilinear.
+
+A zero-check over the Boolean hypercube (as in Spartan) is an instance: the hypercube identity is
+rewritten as the vanishing of a polynomial, and this component tests that polynomial.
 -/
 
 @[expose] public section
 
-namespace ZeroCheck
+namespace RandomEvaluation
 
 open OracleSpec OracleComp OracleQuery OracleInterface ProtocolSpec MvPolynomial
 open scoped NNReal ENNReal
@@ -142,14 +150,14 @@ def knowledgeStateFunction :
     exact hRel
 
 /-- Fixed-prefix knowledge soundness for the named extractor and knowledge state, with error
-`m / |F|` for the single vector challenge. -/
+`d / |F|` when every polynomial has total degree at most `d`. -/
 theorem challenge_rbrKnowledgeSoundnessWorstCaseWith
-    (hP : ∀ stmt oracles i, degreeOf i (P stmt oracles) ≤ 1) :
+    (d : ℕ) (hP : ∀ stmt oracles, (P stmt oracles).totalDegree ≤ d) :
     (oracleVerifier oSpec F m Statement OStatement).toVerifier.rbrKnowledgeSoundnessWorstCaseWith
       init impl (relIn F m Statement OStatement P) (relOut F m Statement OStatement P)
       (fun _ => Unit) (rbrExtractor oSpec F m Statement OStatement)
       (knowledgeStateFunction oSpec F m Statement OStatement P)
-      (fun _ => (m : ℝ≥0) / Fintype.card F) := by
+      (fun _ => (d : ℝ≥0) / Fintype.card F) := by
   rintro ⟨stmt, oracles⟩ i tr
   have hi : i = ⟨0, by simp⟩ := by
     apply Subtype.ext
@@ -169,16 +177,37 @@ theorem challenge_rbrKnowledgeSoundnessWorstCaseWith
   have hdenom : (Fintype.card F : ℝ≥0) ≠ 0 := by
     exact_mod_cast Fintype.card_ne_zero
   rw [ENNReal.coe_div hdenom]
-  exact badEvent_bound (P stmt oracles) (hP stmt oracles)
+  exact badEvent_bound (P stmt oracles) d (hP stmt oracles)
 
-/-- Worst-case, fixed-prefix round-by-round knowledge soundness with error `m / |F|`. -/
+/-- Worst-case, fixed-prefix round-by-round knowledge soundness with error `d / |F|`. -/
 theorem challenge_rbrKnowledgeSoundnessWorstCase
+    (d : ℕ) (hP : ∀ stmt oracles, (P stmt oracles).totalDegree ≤ d) :
+    (oracleVerifier oSpec F m Statement OStatement).toVerifier.rbrKnowledgeSoundnessWorstCase
+      init impl (relIn F m Statement OStatement P) (relOut F m Statement OStatement P)
+      (fun _ => (d : ℝ≥0) / Fintype.card F) :=
+  ⟨fun _ => Unit, rbrExtractor oSpec F m Statement OStatement,
+    knowledgeStateFunction oSpec F m Statement OStatement P,
+    challenge_rbrKnowledgeSoundnessWorstCaseWith oSpec F m Statement OStatement P d hP⟩
+
+/-- The multilinear case of `challenge_rbrKnowledgeSoundnessWorstCaseWith`, with error
+`m / |F|`. -/
+theorem challenge_rbrKnowledgeSoundnessWorstCaseWith_of_degreeOf_le_one
+    (hP : ∀ stmt oracles i, degreeOf i (P stmt oracles) ≤ 1) :
+    (oracleVerifier oSpec F m Statement OStatement).toVerifier.rbrKnowledgeSoundnessWorstCaseWith
+      init impl (relIn F m Statement OStatement P) (relOut F m Statement OStatement P)
+      (fun _ => Unit) (rbrExtractor oSpec F m Statement OStatement)
+      (knowledgeStateFunction oSpec F m Statement OStatement P)
+      (fun _ => (m : ℝ≥0) / Fintype.card F) :=
+  challenge_rbrKnowledgeSoundnessWorstCaseWith oSpec F m Statement OStatement P m
+    fun stmt oracles => totalDegree_le_of_degreeOf_le_one _ (hP stmt oracles)
+
+/-- The multilinear case of `challenge_rbrKnowledgeSoundnessWorstCase`, with error `m / |F|`. -/
+theorem challenge_rbrKnowledgeSoundnessWorstCase_of_degreeOf_le_one
     (hP : ∀ stmt oracles i, degreeOf i (P stmt oracles) ≤ 1) :
     (oracleVerifier oSpec F m Statement OStatement).toVerifier.rbrKnowledgeSoundnessWorstCase
       init impl (relIn F m Statement OStatement P) (relOut F m Statement OStatement P)
       (fun _ => (m : ℝ≥0) / Fintype.card F) :=
-  ⟨fun _ => Unit, rbrExtractor oSpec F m Statement OStatement,
-    knowledgeStateFunction oSpec F m Statement OStatement P,
-    challenge_rbrKnowledgeSoundnessWorstCaseWith oSpec F m Statement OStatement P hP⟩
+  challenge_rbrKnowledgeSoundnessWorstCase oSpec F m Statement OStatement P m
+    fun stmt oracles => totalDegree_le_of_degreeOf_le_one _ (hP stmt oracles)
 
-end ZeroCheck
+end RandomEvaluation

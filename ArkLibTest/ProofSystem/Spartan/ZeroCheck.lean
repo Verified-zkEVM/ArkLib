@@ -19,31 +19,41 @@ local instance : Fact (Nat.Prime 5) := ⟨by decide⟩
 noncomputable local instance : SampleableType (ZMod 5) := SampleableType.ofFintype _
 
 /-- A false identity can pass at the zero challenge. -/
-example : _root_.ZeroCheck.badEvent (X (0 : Fin 1) : MvPolynomial (Fin 1) (ZMod 5))
+example : RandomEvaluation.badEvent (X (0 : Fin 1) : MvPolynomial (Fin 1) (ZMod 5))
     (fun _ => (0 : ZMod 5)) := by
-  simp [_root_.ZeroCheck.badEvent]
+  simp [RandomEvaluation.badEvent]
 
 /-- The same false identity fails at a nonzero challenge. -/
-example : ¬ _root_.ZeroCheck.badEvent (X (0 : Fin 1) : MvPolynomial (Fin 1) (ZMod 5))
+example : ¬ RandomEvaluation.badEvent (X (0 : Fin 1) : MvPolynomial (Fin 1) (ZMod 5))
     (fun _ => (1 : ZMod 5)) := by
-  simp [_root_.ZeroCheck.badEvent]
+  simp [RandomEvaluation.badEvent]
 
 /-- The zero-check error for this nonzero linear polynomial is at most one fifth. -/
 example :
     Pr{let τ ← $ᵗ (Fin 1 → ZMod 5)}[
-      _root_.ZeroCheck.badEvent (X (0 : Fin 1) : MvPolynomial (Fin 1) (ZMod 5)) τ] ≤
+      RandomEvaluation.badEvent (X (0 : Fin 1) : MvPolynomial (Fin 1) (ZMod 5)) τ] ≤
       (1 : ℝ≥0∞) / 5 := by
   simpa only [ZMod.card, Nat.cast_one, Nat.cast_ofNat] using
-    _root_.ZeroCheck.badEvent_bound (X (0 : Fin 1) : MvPolynomial (Fin 1) (ZMod 5))
+    RandomEvaluation.badEvent_bound_of_degreeOf_le_one
+      (X (0 : Fin 1) : MvPolynomial (Fin 1) (ZMod 5))
       (fun i => degreeOf_X_le (R := ZMod 5) i (0 : Fin 1))
+
+/-- A nonzero quadratic passes with probability at most two fifths. -/
+example :
+    Pr{let τ ← $ᵗ (Fin 1 → ZMod 5)}[
+      RandomEvaluation.badEvent (X (0 : Fin 1) ^ 2 : MvPolynomial (Fin 1) (ZMod 5)) τ] ≤
+      (2 : ℝ≥0∞) / 5 := by
+  simpa only [ZMod.card, Nat.cast_ofNat] using
+    RandomEvaluation.badEvent_bound (X (0 : Fin 1) ^ 2 : MvPolynomial (Fin 1) (ZMod 5)) 2
+      (totalDegree_X_pow (0 : Fin 1) 2).le
 
 /-- With no variables, a false constant identity never passes. -/
 example :
     Pr{let τ ← $ᵗ (Fin 0 → ZMod 5)}[
-      _root_.ZeroCheck.badEvent (C 1 : MvPolynomial (Fin 0) (ZMod 5)) τ] = 0 := by
+      RandomEvaluation.badEvent (C 1 : MvPolynomial (Fin 0) (ZMod 5)) τ] = 0 := by
   apply le_antisymm _ zero_le
-  simpa using _root_.ZeroCheck.badEvent_bound (C 1 : MvPolynomial (Fin 0) (ZMod 5))
-    (fun i => Fin.elim0 i)
+  simpa using RandomEvaluation.badEvent_bound_of_degreeOf_le_one
+    (C 1 : MvPolynomial (Fin 0) (ZMod 5)) (fun i => Fin.elim0 i)
 
 /-- The specialized first challenge preserves satisfaction over the small prime field. -/
 example (pp : PublicParams) (x : R1CS.Statement (ZMod 5) pp.toSizeR1CS)

@@ -867,13 +867,13 @@ public import ArkLib.ProofSystem.Component.DoNothing
 public import ArkLib.ProofSystem.Component.GeneratorBatch
 public import ArkLib.ProofSystem.Component.NoInteraction
 public import ArkLib.ProofSystem.Component.QuotientZeroTest
+public import ArkLib.ProofSystem.Component.RandomEvaluation
+public import ArkLib.ProofSystem.Component.RandomEvaluation.Algebra
 public import ArkLib.ProofSystem.Component.RandomQuery
 public import ArkLib.ProofSystem.Component.ReduceClaim
 public import ArkLib.ProofSystem.Component.SendChallenge
 public import ArkLib.ProofSystem.Component.SendClaim
 public import ArkLib.ProofSystem.Component.SendWitness
-public import ArkLib.ProofSystem.Component.ZeroCheck
-public import ArkLib.ProofSystem.Component.ZeroCheck.Algebra
 public import ArkLib.ProofSystem.ConstraintSystem.Basic
 public import ArkLib.ProofSystem.ConstraintSystem.Examples
 public import ArkLib.ProofSystem.ConstraintSystem.Lookup
