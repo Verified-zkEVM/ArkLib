@@ -8,11 +8,12 @@ module
 public import ArkLib.ProofSystem.Plonk.GrandProduct
 public import ArkLib.OracleReduction.Composition.Sequential.GuardedCompleteness
 
-/-! # Grand-product completeness
+/-! # Plonk permutation grand product: completeness
 
-The honest prover uses one joint challenge and computes its accumulator by interpolation.
-Its residuals vanish outside the explicit zero-denominator-factor bad set, giving completeness
-error at most `3n / |F|`.
+The honest prover uses one joint challenge and interpolates a univariate accumulator over the
+multiplicative evaluation domain. Its boundary and recurrence residuals encode `Z(1) = 1` and
+`Z(ωx) * Q(x) = Z(x) * N(x)` for the quotient zero test. The residuals vanish outside the explicit
+zero-denominator-factor bad set, giving completeness error at most `3n / |F|`.
 -/
 
 @[expose] public section
@@ -25,23 +26,23 @@ open scoped NNReal ENNReal ProbabilityTheory
 variable {F : Type} [Field F] [DecidableEq F] {m n : ℕ}
   (ω : F) (hω : IsPrimitiveRoot ω n) (hn : 2 ≤ n)
   (cs : ConstraintSystem F m n)
-  (L : CosetLabels (EvaluationDomain.primitiveRoot ω hω)) (pi : PowerBatch.Poly F n)
+  (L : CosetLabels (EvaluationDomain.primitiveRoot ω hω)) (pi : GeneratorBatch.Poly F n)
   {ι : Type} (oSpec : OracleSpec ι)
 
 /-- The honest transcript contains the joint challenge and its computed accumulator. -/
-def honestTranscript (a : Fin 3 → PowerBatch.Poly F n) (r : F × F) :
+def honestTranscript (a : Fin 3 → GeneratorBatch.Poly F n) (r : F × F) :
     (pSpec F n).FullTranscript :=
   ((default : (pSpec F n).Transcript 0).concat (m := (0 : Fin 2)) r).concat
     (m := (1 : Fin 2)) (honestAccumulator ω hω hn cs L a r.1 r.2)
 
 /-- The honest transcript starts with its joint challenge. -/
 @[simp]
-theorem honestTranscript_zero (a : Fin 3 → PowerBatch.Poly F n) (r : F × F) :
+theorem honestTranscript_zero (a : Fin 3 → GeneratorBatch.Poly F n) (r : F × F) :
     honestTranscript ω hω hn cs L a r 0 = r := rfl
 
 /-- The honest transcript ends with its computed accumulator. -/
 @[simp]
-theorem honestTranscript_one (a : Fin 3 → PowerBatch.Poly F n) (r : F × F) :
+theorem honestTranscript_one (a : Fin 3 → GeneratorBatch.Poly F n) (r : F × F) :
     honestTranscript ω hω hn cs L a r 1 =
       honestAccumulator ω hω hn cs L a r.1 r.2 := rfl
 
@@ -77,8 +78,8 @@ theorem simulateQ_oracleProver_run (stmt : Unit × ∀ i, OStmtIn F n i) (wit : 
 
 variable [Fintype F]
 
-/-- The honest grand-product reduction is complete with error at most `3n / |F|`, for every
-ambient oracle implementation and initialization distribution. -/
+/-- The honest Plonk permutation grand product reduction is complete with error at most `3n / |F|`,
+for every ambient oracle implementation and initialization distribution. -/
 theorem oracleReduction_completeness :
     (oracleReduction ω hω hn cs L pi oSpec).completeness init impl
       (relIn ω hω cs pi) (relOut ω hω)

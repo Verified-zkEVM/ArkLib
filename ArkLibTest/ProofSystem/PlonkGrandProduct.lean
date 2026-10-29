@@ -40,10 +40,10 @@ private def cosets : CosetLabels domain where
 
 private def circuit : ConstraintSystem F 2 2 := ![Gate.add 0 0 1, Gate.add 0 0 1]
 
-private def wires (c : Fin 3) : PowerBatch.Poly F 2 :=
+private def wires (c : Fin 3) : GeneratorBatch.Poly F 2 :=
   ⟨CompPoly.CPolynomial.C (![1, 1, 2] c), by simp⟩
 
-private def publicInput : PowerBatch.Poly F 2 := ⟨0, by simp⟩
+private def publicInput : GeneratorBatch.Poly F 2 := ⟨0, by simp⟩
 
 private def noQueries : QueryImpl []ₒ Id := fun q => nomatch q
 
