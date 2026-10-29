@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Plonk.GrandProduct
+public import ArkLib.ProofSystem.Plonk.GrandProduct.Reduction
 
 /-! # Plonk permutation grand product: fixed-prefix knowledge
 

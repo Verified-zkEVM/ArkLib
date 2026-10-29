@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Plonk.GrandProductData
+public import ArkLib.ProofSystem.Plonk.GrandProduct.Data
 public import ArkLib.ProofSystem.Component.GeneratorBatch
 
 /-! # Plonk permutation grand product: oracle reduction

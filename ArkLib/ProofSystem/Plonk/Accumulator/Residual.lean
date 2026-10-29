@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Plonk.Accumulator
+public import ArkLib.ProofSystem.Plonk.Accumulator.Basic
 public import Mathlib.Algebra.Polynomial.BigOperators
 public import Mathlib.Algebra.Polynomial.Degree.Lemmas
 
