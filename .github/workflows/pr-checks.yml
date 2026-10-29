@@ -1,0 +1,52 @@
+name: Pull Request Checks
+
+# The title and the body come from the pull request author. Pass them to the scripts through
+# environment variables. Never interpolate them into a shell command.
+
+on:
+  pull_request:
+    branches: ["main"]
+    types: [opened, edited, reopened, synchronize, ready_for_review]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  title:
+    name: Check Pull Request Title
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Check the title format
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: python3 ./scripts/check-pr-title.py
+
+  writing:
+    name: Check Writing (warnings only)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Check the changed prose
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: python3 ./scripts/check-writing.py --base "origin/${BASE_REF}" --github
+      - name: Check the pull request body
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: printf '%s\n' "$PR_BODY" | python3 ./scripts/check-writing.py --stdin body --github
