@@ -1,7 +1,5 @@
 {
-  "sorry": [
-    "Spartan.Spec.oracleReduction.linearCombination"
-  ],
+  "sorry": [],
   "solicited": [
     {
       "name": "CodingTheory.exists_rs_epsCa_large_near_capacity",

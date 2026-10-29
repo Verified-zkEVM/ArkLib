@@ -990,6 +990,8 @@ public import ArkLib.ProofSystem.RingSwitching.Transport.Coeffs
 public import ArkLib.ProofSystem.RingSwitching.Transport.Eval
 public import ArkLib.ProofSystem.Spartan.Algebra
 public import ArkLib.ProofSystem.Spartan.Basic
+public import ArkLib.ProofSystem.Spartan.Batching
+public import ArkLib.ProofSystem.Spartan.BatchingRelation
 public import ArkLib.ProofSystem.Spartan.Evaluation
 public import ArkLib.ProofSystem.Spartan.Layout
 public import ArkLib.ProofSystem.Spartan.Realization

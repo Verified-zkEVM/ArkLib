@@ -9,6 +9,7 @@ public import ArkLib.ProofSystem.Spartan.Layout
 public import ArkLib.ProofSystem.Spartan.Algebra
 public import ArkLib.ProofSystem.Spartan.VirtualOracle
 public import ArkLib.ProofSystem.Spartan.SendEvaluations
+public import ArkLib.ProofSystem.Spartan.Batching
 public import ArkLib.ProofSystem.Component.SendWitness
 public import ArkLib.ProofSystem.Spartan.ZeroCheck
 
@@ -256,10 +257,10 @@ def oracleReduction.sendEvalClaim :
 @[simp]
 abbrev LinearCombinationChallenge : Type := R1CS.MatrixIdx → R
 
-/-- The independent batching coefficients and retained row claims. -/
+/-- The independent coefficients, claimed sum, and retained row claims. -/
 @[simp]
 abbrev Statement.AfterLinearCombination : Type :=
-  LinearCombinationChallenge R × Statement.AfterSendEvalClaim R pp
+  Batching.Statement (R := R) pp
 
 @[simp]
 abbrev OracleStatement.AfterLinearCombination : R1CS.MatrixIdx ⊕ Fin 1 → Type :=
@@ -270,10 +271,10 @@ abbrev Witness.AfterLinearCombination : Type := Unit
 
 def oracleReduction.linearCombination :
     OracleReduction oSpec
-      (Statement.AfterFirstSumcheck R pp) (OracleStatement.AfterFirstSumcheck R pp) (Witness R pp)
+      (Statement.AfterSendEvalClaim R pp) (OracleStatement.AfterSendEvalClaim R pp) Unit
       (Statement.AfterLinearCombination R pp) (OracleStatement.AfterLinearCombination R pp) Unit
       ⟨!v[.V_to_P], !v[LinearCombinationChallenge R]⟩ :=
-  sorry
+  Batching.oracleReduction pp oSpec
 
 /-!
   ## Second sum-check
@@ -288,7 +289,7 @@ noncomputable def secondSumCheckVirtualPolynomial
     (oStmt : ∀ i, OracleStatement.AfterLinearCombination R pp i) :
       MvPolynomial (Fin pp.ℓ_n) R :=
   Algebra.secondVirtual (fun i => oStmt (.inl i))
-    (R1CS.𝕫 stmt.2.2.x (oStmt (.inr 0))) stmt.2.2.r_x stmt.1
+    (R1CS.𝕫 stmt.input.2.x (oStmt (.inr 0))) stmt.input.2.r_x stmt.ρ
 
 @[simp]
 abbrev SecondSumcheckChallenge : Type := Fin pp.ℓ_n → R
