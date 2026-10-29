@@ -135,12 +135,6 @@ sizes, since they are parametric in `C`, `δ`, and `t`, but no numeric error val
 in-tree at any production shape. For the interleaved-RS profile, the remaining composition of
 proved inputs is spelled out in `Impl/IRS.lean`.
 
-One further admitted region sits outside every proof here and must not be read as backing any
-statement in this file: the generic `StateT` security-composition theorems of
-`OracleReduction/Composition/Sequential/Append.lean` (admitted, with no toy-problem
-consumer — the virtual-output *execution* lemmas that composition needs are proven
-separately).
-
 ## References
 
 * [BCHKS25] Theorem 4.6 (Johnson-range printed constant).
