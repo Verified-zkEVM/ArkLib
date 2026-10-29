@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Plonk.BatchData
+public import ArkLib.ProofSystem.Plonk.Batch.Data
 
 /-! # Plonk quotient domain
 

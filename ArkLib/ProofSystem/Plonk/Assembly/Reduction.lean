@@ -5,11 +5,11 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Plonk.AssemblyData
+public import ArkLib.ProofSystem.Plonk.Assembly.Data
 public import ArkLib.ProofSystem.Plonk.SendWitness
-public import ArkLib.ProofSystem.Plonk.GrandProductCompleteness
-public import ArkLib.ProofSystem.Plonk.GrandProductSecurity
-public import ArkLib.ProofSystem.Plonk.Quotient
+public import ArkLib.ProofSystem.Plonk.GrandProduct.Completeness
+public import ArkLib.ProofSystem.Plonk.GrandProduct.Security
+public import ArkLib.ProofSystem.Plonk.Quotient.Reduction
 public import ArkLib.OracleReduction.Composition.Sequential.GuardedNary
 public import ArkLib.OracleReduction.Composition.Sequential.GuardedRoundByRound
 public import ArkLib.OracleReduction.Security.GuardedBridges

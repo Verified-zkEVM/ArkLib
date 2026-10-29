@@ -93,26 +93,29 @@ home_page/            site assets and assembled website root
 - Plonk's finite mathematics is independent of both execution layers.
   `ProofSystem/ConstraintSystem/Plonk.lean` owns gates, the prefix/private relation, and the
   wiring permutation whose cycles are exactly the variable fibers. Its generic cycle construction
-  lives in `Data/Equiv/FiberCycle.lean`. `ProofSystem/Plonk/Basic.lean` connects variable and
+  lives in `Data/Equiv/FiberCycle.lean`. `ProofSystem/Plonk/` groups each protocol stage into a
+  subfolder (`Relation`, `Encoding`, `Accumulator`, `GrandProduct`, `Batch`, `Quotient`,
+  `Assembly`), with `SendWitness.lean` at the top. `Plonk/Relation/Basic.lean` connects variable and
   occurrence assignments, with public-occurrence coverage for reconstruction.
-  `ProofSystem/Plonk/Prepared.lean` prepends public equality rows, decodes private witnesses, and
+  `Plonk/Relation/Prepared.lean` prepends public equality rows, decodes private witnesses, and
   separates their baked-in constants into cleared selectors and an explicit public-input term.
-  `ProofSystem/Plonk/Domain.lean` supplies injective evaluation nodes and disjoint coset labels.
-  `ProofSystem/Plonk/Encoding.lean` identifies occurrence columns with degree-bounded polynomials,
+  `Plonk/Encoding/Domain.lean` supplies injective evaluation nodes and disjoint coset labels.
+  `Plonk/Encoding/Basic.lean` identifies occurrence columns with degree-bounded polynomials,
   proves the prepared gate and copy relation equivalence, and reconstructs private witnesses.
-  `ProofSystem/Plonk/Computable.lean` refines the encoding through CompPoly coefficient arrays.
-  Concrete cycle, satisfaction, and decoder checks live in `ArkLibTest/ProofSystem/Plonk.lean`;
-  `ArkLibTest/ProofSystem/PlonkEncoding.lean` checks order-four encoding over a prime field,
+  `Plonk/Encoding/Computable.lean` refines the encoding through CompPoly coefficient arrays.
+  Concrete cycle, satisfaction, and decoder checks live in
+  `ArkLibTest/ProofSystem/Plonk/Relation.lean`;
+  `ArkLibTest/ProofSystem/Plonk/Encoding.lean` checks order-four encoding over a prime field,
   including rejected gates, inconsistent copies, and incorrect public inputs.
 
-- `ProofSystem/Plonk/GrandProduct*.lean` formalizes the Plonk permutation grand product:
+- `ProofSystem/Plonk/GrandProduct/` formalizes the Plonk permutation grand product:
   a univariate accumulator `Z` over the multiplicative evaluation domain with `Z(1) = 1` and
-  `Z(ωx) * Q(x) = Z(x) * N(x)`. `GrandProductData.lean` defines its executable polynomials and
-  residuals; `GrandProduct.lean` defines the oracle reduction; the `Completeness` and `Security`
-  modules prove its completeness and fixed-prefix knowledge bounds.
-  `ProofSystem/Plonk/Batch*.lean` batches the three residuals through `GeneratorBatch` with
+  `Z(ωx) * Q(x) = Z(x) * N(x)`. `Data.lean` defines its executable polynomials and
+  residuals; `Reduction.lean` defines the oracle reduction; `Completeness.lean` and `Security.lean`
+  prove its completeness and fixed-prefix knowledge bounds.
+  `ProofSystem/Plonk/Batch/` batches the three residuals through `GeneratorBatch` with
   `powerBatchGenerator F 3`, one uniform field challenge, and knowledge error `2 / |F|`.
-  `ProofSystem/Plonk/Quotient*.lean` checks the resulting residual through the quotient zero test.
+  `ProofSystem/Plonk/Quotient/` checks the resulting residual through the quotient zero test.
   The multilinear (GKR-style) grand-product argument is a different protocol and is not
   formalized here.
 
@@ -660,6 +663,11 @@ home_page/            site assets and assembled website root
   events along that split). The umbrella `Security/TranscriptTree.lean` re-exports both files.
   Both plain and coordinate-wise special soundness are instances of `Verifier.treeSpecialSound` for
   different shapes; neither special-soundness file imports the other.
+- `Security/UnboundedExtraction.lean` records what `Verifier.knowledgeSoundness` means without
+  an extractor cost bound: the classical selector `Extractor.Straightline.choose` makes it
+  equivalent to `Verifier.relationSoundness` (`Verifier.knowledgeSoundness_iff_relationSoundness`).
+  When extraction itself matters, state `knowledgeSoundnessWith` for a named extractor and bound
+  that extractor's cost separately.
 - Plain `(k)`-special soundness lives in `Security/SpecialSoundness.lean`. It is the instance of
   `Verifier.treeSpecialSound` for the pairwise-distinct shape `distinctShape k` (arity `kᵢ`, node
   predicate `Function.Injective`), with input/output relations like CWSS; it is the `ℓᵢ = 1`

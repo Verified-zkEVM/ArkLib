@@ -5,8 +5,8 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Plonk.PermutationFingerprint
-public import ArkLib.ProofSystem.Plonk.Encoding
+public import ArkLib.ProofSystem.Plonk.Relation.PermutationFingerprint
+public import ArkLib.ProofSystem.Plonk.Encoding.Basic
 public import ArkLib.Data.Finset.CyclicProduct
 public import ArkLib.Data.Polynomial.AffineFactorBadChallenge
 public import Mathlib.Algebra.Polynomial.BigOperators

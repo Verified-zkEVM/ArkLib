@@ -6,8 +6,8 @@ Authors: Quang Dao
 module
 
 public import ArkLib.Data.Polynomial.PermutationFingerprint
-public import ArkLib.ProofSystem.Plonk.Basic
-public import ArkLib.ProofSystem.Plonk.Domain
+public import ArkLib.ProofSystem.Plonk.Relation.Basic
+public import ArkLib.ProofSystem.Plonk.Encoding.Domain
 
 /-! # Plonk copy constraints as permutation fingerprints
 

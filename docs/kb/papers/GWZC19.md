@@ -8,7 +8,7 @@ canonical_url: https://eprint.iacr.org/2019/953.pdf
 source_metadata: ../sources/GWZC19/metadata.yml
 status: seeded
 related_modules:
-  - ArkLib/ProofSystem/Plonk/Basic.lean
+  - ArkLib/ProofSystem/Plonk/Relation/Basic.lean
 ---
 
 # GWZC19
@@ -27,7 +27,7 @@ formalization of the original paper.
 
 ## Main ArkLib Touchpoints
 
-- [`ArkLib/ProofSystem/Plonk/Basic.lean`](../../../ArkLib/ProofSystem/Plonk/Basic.lean)
+- [`ArkLib/ProofSystem/Plonk/Relation/Basic.lean`](../../../ArkLib/ProofSystem/Plonk/Relation/Basic.lean)
   is the current repository landing point for the Plonk formalization effort and cites `GWZC19`
   directly.
 
