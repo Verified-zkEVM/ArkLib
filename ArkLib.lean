@@ -314,7 +314,6 @@ public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Sampling
 public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Subfield
 public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Subfield.Algebra
 public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Subfield.Moments
-public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.SubspaceDesign
 public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.UniqueDecoding
 public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.UniqueDecoding.Internal
 public import ArkLib.Data.CodingTheory.ProximityGap.DG25.Basic
@@ -532,7 +531,6 @@ public import ArkLib.Data.Domain.FftDomain.Ops
 public import ArkLib.Data.Domain.FftDomain.Subdomain
 public import ArkLib.Data.Domain.FftDomain.ToSubgroup
 public import ArkLib.Data.EllipticCurve.BN254
-public import ArkLib.Data.Equiv.FiberCycle
 public import ArkLib.Data.FieldTheory.BinaryTrace
 public import ArkLib.Data.Fin.Basic
 public import ArkLib.Data.Fin.BigOperators
