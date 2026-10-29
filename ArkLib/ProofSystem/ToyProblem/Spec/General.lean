@@ -72,7 +72,7 @@ check) and for every `j ∈ Fin t`, `encode(g)(xⱼ) = f₁(xⱼ) + γ · f₂(x
 
 ## Paper ↔ framework mapping
 
-How each step of Construction 6.2 lands on an ArkLib / VCV-io primitive:
+How each step of Construction 6.2 lands on an ArkLib / VCVio primitive:
 
 * `γ ←$ F` (combination randomness) ↦ `pSpec` round 0 (`.V_to_P`); the
   security games sample it via the `SampleableType F` instance on the
@@ -90,14 +90,13 @@ How each step of Construction 6.2 lands on an ArkLib / VCV-io primitive:
 * the §6.2 round-by-round state and extractor (L6.8) ↦ `GammaState`,
   `rbrKnowledgeStateFunction`, `rbrExtractor`.
 * verifier query routing ↦ `OracleInterface.simOracle2` / `simulateQ`
-  (VCV-io's query-simulation semantics).
+  (VCVio's query-simulation semantics).
 * completeness game ↦ `OracleReduction.perfectCompleteness`.
 * knowledge-soundness games (paper App A.1, Defs A.2 / A.4 / A.5) ↦
   `OracleVerifier.knowledgeSoundness` / `OracleVerifier.rbrKnowledgeSoundness`.
   Two caveats: extraction **time** (the paper's `O(enc + ecor)` extractor
   cost) is outside ArkLib's cost-free model, and the verifier's query
-  complexity (`2t + 1`) is documented, not enforced
-  (`OracleVerifier.numQueries` is upstream-sorried).
+  complexity (`2t + 1`) is documented, not enforced.
 
 ## Codeword alphabet `A` (folding-generic)
 
@@ -115,7 +114,7 @@ values and the encoder `(Fin k → F) →ₗ[F] (ι → A)` range over `A`.
 Combination of codeword values is the module action `f₀ + γ • f₁` (it
 specializes to `f₀ + γ · f₁` when `A = F`).
 
-## Verified vs. admitted
+## Verified reduction and numeric bounds
 
 What is verified here is the **reduction**, with a **symbolic** error. Every theorem in
 `ProofSystem/ToyProblem/` is `sorry`-free, and the headline declarations (completeness, the plain
@@ -127,15 +126,14 @@ bounds, and the actual-vs-certified bridges) depend only on `propext`, `Classica
 `Code.Lambda`, not numerals. Nothing in this directory evaluates them.
 
 Numeric values for the bracket come from the MCA/CA capacity bounds under
-`Data/CodingTheory/ProximityGap/CapacityBounds`. Several of those are fully proven; the rest
-are **external admits** (each `sorry` is tagged with the primary source it stands in for) —
-in particular the Johnson-range MCA input `rs_mcaError_le_in_johnson_range`.
-That subtree is deliberately **not** in this directory's import cone, so the quarantine is
-structural rather than a convention: no toy-problem theorem can silently acquire a numeric
-claim, admit-backed or otherwise. Consequently the
-theorems apply at production parameter sizes — they are parametric in `C`, `δ`, and `t` — but
-no numeric error value is proven in-tree at any production shape. For the interleaved-RS profile
-the remaining distance is short and is spelled out in `Impl/IRS.lean`.
+`Data/CodingTheory/ProximityGap/CapacityBounds`. Several of those are fully proven, including
+the Johnson-range MCA input `rs_mcaError_le_in_johnson_range`, proved via [DKT26] with the
+printed constant from [BCHKS25] Theorem 4.6. Other catalogue entries remain external assumptions.
+That subtree is deliberately outside this directory's import cone, so no toy-problem theorem
+can silently acquire a numeric claim. Consequently the theorems apply at production parameter
+sizes, since they are parametric in `C`, `δ`, and `t`, but no numeric error value is proven
+in-tree at any production shape. For the interleaved-RS profile, the remaining composition of
+proved inputs is spelled out in `Impl/IRS.lean`.
 
 One further admitted region sits outside every proof here and must not be read as backing any
 statement in this file: the generic `StateT` security-composition theorems of
@@ -145,6 +143,8 @@ separately).
 
 ## References
 
+* [BCHKS25] Theorem 4.6 (Johnson-range printed constant).
+* [DKT26] (proof of the Johnson-range MCA bound).
 * [Arnon, G., Boneh, D., Fenzi, G., *Open Problems in List Decoding and
   Correlated Agreement*][ABF26] (§6).
 -/
@@ -1052,10 +1052,10 @@ lemma accepts_of_probEvent_pos_verifier_run
     (tr : FullTranscript (pSpec (ι := ι) (F := F) k t))
     (witOut : OutputWitness)
     (relOut : Set ((OutputStatement × ∀ i, OutputOracleStatement i) × OutputWitness))
-    (h : Pr{let stmtOut ← OptionT.mk do
+    (h : Pr{let stmtOut ← (OptionT.mk do
           (simulateQ impl
               (((oracleVerifier (k := k) (t := t) encode).toVerifier).run stmtIn tr)).run'
-            (← init)}[(stmtOut, witOut) ∈ relOut] > 0) :
+            (← init))}[(stmtOut, witOut) ∈ relOut] > 0) :
     Accepts (k := k) (t := t) encode stmtIn.1 stmtIn.2
       (tr ⟨0, by decide⟩) (tr ⟨1, by decide⟩) (tr ⟨2, by decide⟩) := by
   rw [gt_iff_lt, OracleComp.OptionT.prEvent_mk_pos_iff] at h
@@ -1211,7 +1211,7 @@ private noncomputable def rbrExtractor (encode : (Fin k → F) → (ι → A)) (
       (Statement (F := F) k × (∀ i, OracleStatement ι A i))
       (Witness (F := F) k) OutputWitness
       (pSpec (ι := ι) (F := F) k t) (rbrWitMid (F := F) k) where
-  eqIn := rfl
+  extractIn := fun _ w => w
   extractMid
   | ⟨0, _⟩ => fun stmtIn _ _ ↦ chooseRelaxedWitness k encode δ stmtIn
   | ⟨1, _⟩ => fun _ _ w ↦ w
@@ -1243,7 +1243,7 @@ private noncomputable def rbrKnowledgeStateFunction
       Accepts (k := k) (t := t) encode stmtIn.1 stmtIn.2
         (tr ⟨0, Nat.zero_lt_succ _⟩) (tr ⟨1, Nat.succ_lt_succ (Nat.zero_lt_succ _)⟩)
         (tr ⟨2, Nat.succ_lt_succ (Nat.succ_lt_succ (Nat.zero_lt_succ _))⟩)
-  toFun_empty := fun _ _ ↦ Iff.rfl
+  toFun_empty := fun _ _ h ↦ h
   toFun_next := fun m ↦ match m with
     | ⟨0, _⟩ => fun hDir ↦ absurd hDir (fun h ↦ Direction.noConfusion h)
     | ⟨1, _⟩ => fun _ _ _ _ _ h ↦ h

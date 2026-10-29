@@ -86,7 +86,7 @@ theorem executeStrategies_state_bound {ι : Type} (ambient : OracleSpec ι)
         (OutV := fun path => OutV ⟨chosen.1, path⟩)
         chosen.2 next (fun pfx => embed (ExecutionPrefix.prependPublic chosen.1 pfx))
         (hprover.2 chosen.1) (hschedule.2 chosen.1) (hfresh chosen.1 next hnext) hfalseNext
-      simpa only [bind_assoc, pure_bind,
+      simpa only [prEvent_norm,
         ExecutionPrefix.ofExecutionPath_public, hschedule.1 chosen.1] using bound
     | receiver =>
       rw [executeStrategies_public_receiver]
@@ -106,7 +106,9 @@ theorem executeStrategies_state_bound {ι : Type} (ambient : OracleSpec ι)
           ¬ state (embed (.root _)) ∧ state (model.extend (embed (.root _)) result)] ≤ _ at h
         rw [← heq (fun result =>
           ¬ state (embed (.root _)) ∧ state (model.extend (embed (.root _)) result))] at h
-        simpa only [hfalse, not_false_eq_true, true_and, hextend, action, after] using h
+        simp only [prEvent_norm, hfalse, not_false_eq_true, true_and, hextend, action, after]
+          at h ⊢
+        exact h
       have htail := prEvent_bind_le_prEvent_add_of_support action
         (fun chosen => do
           let next ← simulateQ handler (prover chosen.1)
@@ -128,7 +130,7 @@ theorem executeStrategies_state_bound {ι : Type} (ambient : OracleSpec ι)
             (OutV := fun path => OutV ⟨chosen.1, path⟩)
             next chosen.2 (fun pfx => embed (ExecutionPrefix.prependPublic chosen.1 pfx))
             (hprover.2 chosen.1) (hschedule.2 chosen.1) (hnext chosen hchosen) hfalseNext
-          simpa only [bind_assoc, pure_bind,
+          simpa only [prEvent_norm,
             ExecutionPrefix.ofExecutionPath_public, hschedule.1.2 chosen.1] using bound)
       exact htail.trans ((add_le_add hstep le_rfl).trans (le_of_eq
         (Finset.sum_eq_sum_Ico_succ_bot hschedule.1.1 error).symm))
@@ -148,7 +150,7 @@ theorem executeStrategies_state_bound {ι : Type} (ambient : OracleSpec ι)
       (OutV := fun path => OutV ⟨PUnit.unit, path⟩)
       chosen.2 next (fun pfx => embed (ExecutionPrefix.prependOracle chosen.1 pfx))
       (hprover.2 chosen.1) (hschedule.2 chosen.1) (hfresh chosen.1 next hnext) hfalseNext
-    simpa only [bind_assoc, pure_bind,
+    simpa only [prEvent_norm,
       ExecutionPrefix.ofExecutionPath_oracle, hschedule.1 chosen.1] using bound
 
 /-- Round-by-round local soundness bounds ordinary soundness of actual native execution. -/
@@ -231,6 +233,6 @@ theorem LocalSoundness.random_prefix {protocol : Protocol} {model : ChallengeMod
       rw [prEvent_map, OptionT.prEvent_lift]
       have h := (RoundByRound.GameFamily.isBounded_iff _ _).mp hlocal (authoredPrefix a) ()
       simpa only [localGames, hrank, id_eq] using h)
-  simpa only [id_eq, bind_pure] using bound
+  simpa only [prEvent_norm, id_eq] using bound
 
 end Interaction.Oracle.Security

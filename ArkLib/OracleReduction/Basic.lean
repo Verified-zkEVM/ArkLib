@@ -495,16 +495,35 @@ def toVerifier : Verifier oSpec (StmtIn × ∀ i, OStmtIn i) (StmtOut × (∀ i,
       simulateQ (OracleInterface.simOracle2 oSpec oStmt transcript.messages)
         (verifier.verify stmt transcript.challenges).run
 
-/-- The number of queries made to the oracle statements and the prover's messages, for a given input
-    statement and challenges.
-
-  This is given as an oracle computation itself, since the oracle verifier may be adaptive and has
-  different number of queries depending on the prior responses.
-
-  TODO: define once `numQueries` is defined in `OracleComp` -/
-def numQueries (stmt : StmtIn) (challenges : ∀ i, pSpec.Challenge i)
-    (verifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec) :
-  OracleComp (oSpec + ([OStmtIn]ₒ + [pSpec.Message]ₒ)) ℕ := sorry
+/-- **Run equation of a query-guard-return oracle verifier.** If the verifier makes one query `q`
+to the prover's messages, guards on the answer and the challenges, and returns a statement built
+from the answer and the challenges, then the induced verifier returns that statement, with the
+materialized output oracles, when the guard holds on the transcript's answer and challenges, and
+aborts otherwise. A guard that ignores the challenges is the case `check := fun s a _ => …`. -/
+theorem toVerifier_verify_of_query_guard (q : [pSpec.Message]ₒ.Domain)
+    (check : StmtIn → [pSpec.Message]ₒ.Range q → pSpec.Challenges → Prop)
+    [hcheck : ∀ s a c, Decidable (check s a c)]
+    (accept : StmtIn → [pSpec.Message]ₒ.Range q → pSpec.Challenges → StmtOut)
+    (hV : ∀ stmt chals, verifier.verify stmt chals = do
+      let a ← query (spec := [pSpec.Message]ₒ) q
+      guard (check stmt a chals)
+      return accept stmt a chals)
+    (stmt : StmtIn) (oStmt : ∀ i, OStmtIn i) (tr : pSpec.FullTranscript) :
+    verifier.toVerifier.verify (stmt, oStmt) tr =
+      letI a : [pSpec.Message]ₒ.Range q := OracleInterface.answer (tr.messages q.1) q.2
+      if check stmt a tr.challenges then
+        pure (accept stmt a tr.challenges,
+          verifier.materializeOutput tr.challenges oStmt tr.messages)
+      else failure := by
+  simp only [toVerifier, hV, guard]
+  -- `erw`: `query` reaches `OptionT` through VCVio's `HasQuery`/`MonadLiftT` chain, and its
+  -- answer type `[pSpec.Message]ₒ.Range q` is the message interface's `Response` only through the
+  -- semireducible `OracleInterface.toOracleSpec`; both match only up to that unfolding.
+  erw [OptionT.run_bind, simulateQ_bind, OptionT.run_monadLift]
+  simp only [simulateQ_map]
+  erw [OracleInterface.simulateQ_simOracle2_liftM_query_snd, map_pure, pure_bind,
+    Option.elim_some]
+  split_ifs <;> rfl
 
 /-- A **non-adaptive** oracle verifier is an oracle verifier that makes a **fixed** list of queries
     to the input oracle statements and the prover's messages. These queries can depend on the input
@@ -958,6 +977,23 @@ instance [IsSingleRound pSpec] [h : VCVCompatible (pSpec.Challenge default)] :
   exact h
 
 end IsSingleRound
+
+/-- The full transcript of a one-message protocol. -/
+@[inline, reducible]
+def FullTranscript.mk1 {pSpec : ProtocolSpec 1} (msg0 : pSpec.«Type» 0) :
+    FullTranscript pSpec := fun | ⟨0, _⟩ => msg0
+
+/-- A one-message transcript is the empty transcript extended by its message. -/
+@[simp]
+theorem FullTranscript.mk1_eq_snoc {pSpec : ProtocolSpec 1} (msg0 : pSpec.«Type» 0) :
+    FullTranscript.mk1 msg0 = (default : pSpec.Transcript 0).concat msg0 := by
+  unfold FullTranscript.mk1 Transcript.concat
+  simp only [default, Fin.isValue]
+  funext i
+  have hi : i = 0 := by omega
+  subst hi
+  simp only [Fin.isValue, Fin.coe_ofNat_eq_mod, Nat.zero_mod, Nat.reduceAdd,
+    Fin.succ_zero_eq_one, Nat.reduceMod, take_Type, Transcript.concat_zero]
 
 @[inline, reducible]
 def FullTranscript.mk2 {pSpec : ProtocolSpec 2} (msg0 : pSpec.«Type» 0) (msg1 : pSpec.«Type» 1) :

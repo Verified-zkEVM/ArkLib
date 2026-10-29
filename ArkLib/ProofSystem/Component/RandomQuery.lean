@@ -208,7 +208,7 @@ def stateFunction [Inhabited OStatement] : (oracleVerifier oSpec OStatement).Sta
 /-- The round-by-round extractor is trivial since the output witness is `Unit`. -/
 def rbrExtractor : Extractor.RoundByRound oSpec
     (StmtIn × (∀ _ : Fin 2, OStatement)) WitIn WitOut (pSpec OStatement) (fun _ => Unit) where
-  eqIn := rfl
+  extractIn := fun _ w => w
   extractMid := fun _ _ _ _ => ()
   extractOut := fun _ _ _ => ()
 

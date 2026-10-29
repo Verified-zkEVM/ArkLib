@@ -59,20 +59,16 @@ prints arbitrary real parameters, an extension not supplied by the cited source.
 subsequence `q = 2^m`, integrality of `αm` also makes `q^α = 2^(αm)` a natural number, so
 `⌊q^α⌋ = q^α` exactly; the rational restriction removes a potential dimension-rounding mismatch.
 
-**Degree convention.** [BKR06] defines `RS[N, K]` by degree **≤ K** and its witnessing family has
-degree exactly `K = N^δ`, whereas [ABF26]'s `RS[F, L, k]` is degree **< k** (as its footnote
-defines it) and instantiates `k = ⌊q^α⌋`. Under that convention — which
-`ReedSolomon.code domain k` matches exactly — the witnesses of the cited construction sit one
-degree above the code.
+**Degree convention.** [BKR06] uses degree **≤ K**, whereas [ABF26] and
+`ReedSolomon.code domain k` use degree **< k**. BKR06's codewords are differences of
+monic subspace polynomials of degree `2^v`; their degree is at most `2^u`, with varying
+leading coefficients, so subtracting a fixed member need not lower the degree.
+Instead, with `a = αm ≥ 1` and `v = βm`, apply [BKR06, Theorem 2.1] with `u = a − 1`:
+its degree bound `2^(a−1) < 2^a = k` places the witnesses inside the degree-`< k` code.
+The rational restriction remains necessary to choose integral `αm` and `βm`.
 
-The degree convention is **harmless**: [BKR06]'s family consists of monic subspace polynomials
-`∏_{a ∈ L}(X − a)` of degree exactly `K`, so subtracting any fixed member gives `|P|` distinct
-polynomials of degree `< K` — inside the degree-`< k` code — all agreeing with the shifted word
-`w − P₀` on the same `≥ q^v` points. So the cited construction does transfer.
-
-The rational restriction is separate from that degree translation: subtracting a fixed monic
-witness justifies the latter, but says nothing about extending the source from rational to real
-parameters. -/
+Solicited proof: see
+<https://github.com/Verified-zkEVM/ArkLib/issues/1352>. -/
 theorem rs_lambda_superpoly_extension
     (α β : ℚ) (_hα_pos : 0 < α) (_hα_lt : α < β) (_hβ_lt : β < 1) :
     ∃ qs : ℕ → ℕ, StrictMono qs ∧ (∀ i, IsPrimePow (qs i)) ∧
@@ -597,7 +593,10 @@ issue [ABF26] Theorem 3.4 raises in its `η`-form. Derive it at a call site with
 
 [BGM23] (exponential alphabet) and [GZ23] (polynomial-size alphabet) are the preceding results, and
 [AGGLZ25] combines them; [ABF26] cites all three as context for this theorem, and none is
-formalised. -/
+formalised.
+
+Solicited proof: see
+<https://github.com/Verified-zkEVM/ArkLib/issues/1352>. -/
 theorem rs_random_domain_lambda_le
     {F : Type} [Field F] [Fintype F]
     (ℓ : ℕ) (_hℓ_ge : 2 ≤ ℓ) (η : ℝ) (_hη_pos : 0 < η) (_hη_lt : η < 1)

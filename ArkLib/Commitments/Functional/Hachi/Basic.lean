@@ -11,6 +11,7 @@ public import ArkLib.Commitments.Functional.Hachi.HonestChain
 public import ArkLib.Commitments.Functional.Hachi.Correctness
 public import ArkLib.Commitments.Functional.Hachi.Concrete
 public import ArkLib.Commitments.Functional.Hachi.Params
+public import ArkLib.Commitments.Functional.Hachi.TraceHead.Basic
 public import ArkLib.Commitments.Functional.Hachi.Gadget.Basic
 public import ArkLib.Commitments.Functional.Hachi.InnerOuter.Basic
 public import ArkLib.Commitments.Functional.Hachi.QuadEval.Basic
@@ -53,6 +54,8 @@ re-export, and this file is the umbrella for the whole development.
   `BoundedDigitDecomposition` for the folded witness `z`, whose digit count `τ` is set by the
   deterministic bound `‖z‖∞ ≤ 2ʳ·ω·⌊b/2⌋` rather than by `q` (`τ = 5` at the `ℓ = 30`
   parameters — see `Params.lean`).
+* `TraceHead/` (§3.1) — the one-message scalar trace head, coefficient packing, and
+  honest-committer coverage into the message-bounded scalar relation `relScalarEvalMsgShort`.
 * `EvalSplit.lean` (§4, Eq. (12)) — multilinear evaluation as the vector–matrix–vector product
   `mb(xl) ⬝ᵥ (toMatrix p *ᵥ mb(xh))`.
 * `InnerOuter/` (§4.1) — the inner-outer Ajtai commitment: the scheme with its weak openings

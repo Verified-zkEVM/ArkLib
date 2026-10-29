@@ -110,7 +110,7 @@ theorem honestComputeG_snd_eval {TCom : Type} (hb : 0 < b) (φF : ZMod q →+* F
 omit [NeZero q] [IsCyclotomic Φ] [DecidableEq F] in
 /-- **The honest round message passes the round check.** For each summand the round-`i` claim of
 `nestedRoundRel` *is* the partial cube sum, which splits into its two Boolean extensions
-(`hypercubeSum_succ`); those two are the honest polynomial's values at `0` and `1`
+(`MvPolynomial.hypercubeSum_succ`); those two are the honest polynomial's values at `0` and `1`
 (`computableRoundPoly_eval`). So `g(0) + g(1) = targetᵢ` for both components, which is exactly
 `roundCheck`.
 
@@ -128,10 +128,8 @@ theorem roundCheck_honestComputeG
   change hypercubeSum (M + 1)
     (sumcheckPolyAlpha Φ (M + 1) m₁ φF b stmt.zc.rlin stmt.zc.α stmt.zc.τα w) i
     stmt.challenges = stmt.targetα at hAlpha
-  rw [hypercubeSum_succ (i := ⟨i, hi⟩)] at hZero hAlpha
-  rw [roundCheck, Bool.and_eq_true, beq_iff_eq, beq_iff_eq,
-    honestComputeG_fst_eval, honestComputeG_fst_eval,
-    honestComputeG_snd_eval, honestComputeG_snd_eval]
+  simp only [roundCheck, Bool.and_eq_true, beq_iff_eq, honestComputeG,
+    CPolynomial.eval_toPoly, computableRoundPoly_toPoly, roundPoly_sum]
   exact ⟨hZero, hAlpha⟩
 
 omit [NeZero q] [IsCyclotomic Φ] [DecidableEq F] in

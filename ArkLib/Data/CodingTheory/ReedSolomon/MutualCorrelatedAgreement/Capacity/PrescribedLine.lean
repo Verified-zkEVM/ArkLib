@@ -22,7 +22,7 @@ an exact correlated-pair conclusion.
 
 ## References
 
-* [DKTZ26]
+* [DKT26]
 -/
 
 @[expose] public section

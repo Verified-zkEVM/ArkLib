@@ -10,7 +10,7 @@ public import ArkLib.Data.Polynomial.Bivariate
 public import Mathlib.Algebra.Polynomial.Basic
 public import Mathlib.LinearAlgebra.Lagrange
 public import Mathlib.Tactic.Cases
-public import Mathlib.Tactic.LinearCombinationPrime
+public import Mathlib.Tactic.LinearCombination
 
 /-! This module is mostly needed from proving lemma 4.9
   from [ACFY24] but we thought it might be useful for
