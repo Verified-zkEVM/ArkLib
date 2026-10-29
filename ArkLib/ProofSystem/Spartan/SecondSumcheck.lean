@@ -208,6 +208,20 @@ theorem oracleProver_eq : oracleProver (R := R) pp oSpec =
       (Sumcheck.Spec.oracleReduction R 2 (boolEmbedding R) pp.ℓ_n oSpec).prover := by
   rw [oracleProver, Sumcheck.Impl.Computable.generalOracleProver_eq]
 
+/-- The honest prover's final output uses no ambient oracle queries. -/
+instance oracleProver_outputIsPure :
+    Prover.OutputIsPure.{0} (oracleProver (R := R) pp oSpec) := by
+  apply (congrArg Prover.OutputIsPure (oracleProver_eq (R := R) pp oSpec)).mpr
+  have h :
+      (Sumcheck.Spec.oracleReduction R 2 (boolEmbedding R) pp.ℓ_n oSpec).prover.OutputIsPure := by
+    apply Prover.OutputIsPure.seqCompose
+    intro i
+    change Prover.OutputIsPure
+      (Sumcheck.Spec.SingleRound.reduction R pp.ℓ_n 2 (boolEmbedding R) oSpec i).prover
+    infer_instance
+  let := h
+  infer_instance
+
 /-- The second virtual sumcheck reduction with its executable honest prover. -/
 def oracleReduction : OracleReduction oSpec (Batching.Statement (R := R) pp)
     (OracleStatement (R := R) pp) Unit (FinalStatement (R := R) pp)
@@ -295,7 +309,8 @@ instance extractorLens_knowledgeSound : Extractor.Lens.IsKnowledgeSound
     (Sumcheck.Spec.relationRound R pp.ℓ_n 2 (boolEmbedding R) (.last pp.ℓ_n))
     ((Sumcheck.Spec.oracleVerifier R 2 (boolEmbedding R) pp.ℓ_n oSpec).toVerifier.compatStatement
       (lens pp).toLens) (fun _ _ => True)
-    (⟨(lens pp).toLens, Witness.InvLens.trivial⟩ : Extractor.Lens _ _ _ _ Unit Unit Unit Unit) where
+    (⟨(lens pp).toLens, Witness.InvLens.trivial⟩ :
+      Extractor.Lens _ _ _ _ Unit Unit Unit Unit) where
   proj_knowledgeSound := by
     rintro ⟨s, o⟩ ⟨out, innerO⟩ _ hc ho
     left
@@ -329,19 +344,86 @@ variable {R : Type} [CommRing R] [DecidableEq R] [SampleableType R] [Fintype R] 
   (pp : PublicParams) {ι : Type} (oSpec : OracleSpec ι)
   {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
 
+/-- The data and bound furnished by the general sumcheck knowledge theorem. -/
+structure InnerCertificate where
+  witness : Fin (Fin.vsum (fun _ : Fin pp.ℓ_n => 2) + 1) → Type
+  extractor : Extractor.RoundByRound oSpec
+    (Sumcheck.Spec.StatementRound R pp.ℓ_n 0 ×
+      (∀ i, Sumcheck.Spec.OracleStatement R pp.ℓ_n 2 i)) Unit Unit
+    (Sumcheck.Spec.pSpec R 2 pp.ℓ_n) witness
+  state : Verifier.KnowledgeStateFunction init impl
+      (Sumcheck.Spec.relationRound R pp.ℓ_n 2 (boolEmbedding R) 0)
+      (Sumcheck.Spec.relationRound R pp.ℓ_n 2 (boolEmbedding R) (.last pp.ℓ_n))
+      (Sumcheck.Spec.oracleVerifier R 2 (boolEmbedding R) pp.ℓ_n oSpec).toVerifier extractor
+  sound : Verifier.rbrKnowledgeSoundnessWorstCaseWith init impl
+      (Sumcheck.Spec.relationRound R pp.ℓ_n 2 (boolEmbedding R) 0)
+      (Sumcheck.Spec.relationRound R pp.ℓ_n 2 (boolEmbedding R) (.last pp.ℓ_n))
+      (Sumcheck.Spec.oracleVerifier R 2 (boolEmbedding R) pp.ℓ_n oSpec).toVerifier
+      witness extractor state (fun _ => (2 : ℝ≥0) / Fintype.card R)
+
+/-- Choose the witness family, extractor, and state supplied by the proved general sumcheck
+certificate. The general theorem exports their existence rather than computational data. -/
+noncomputable def innerCertificate : InnerCertificate (R := R) pp oSpec init impl :=
+  Classical.choice <| by
+    obtain ⟨W, E, K, h⟩ := Sumcheck.Spec.oracleVerifier_rbrKnowledgeSoundnessWorstCase
+      R 2 (boolEmbedding R) pp.ℓ_n oSpec (init := init) (impl := impl)
+    exact ⟨⟨W, E, K, h⟩⟩
+
+/-- The retained terminal witness paired with the chosen inner sumcheck witness family. -/
+noncomputable def intermediateWitness :
+    Fin (Fin.vsum (fun _ : Fin pp.ℓ_n => 2) + 1) → Type :=
+  fun k => Unit × (innerCertificate (R := R) pp oSpec init impl).witness k
+
+/-- The chosen inner extractor lifted through the explicit virtual-polynomial lens.
+Its only noncomputable ingredient is the certificate chosen from the general theorem. -/
+noncomputable def rbrExtractor : Extractor.RoundByRound oSpec
+    (Batching.Statement (R := R) pp ×
+      (∀ i, OracleStatement (R := R) pp i)) Unit Unit
+    (Sumcheck.Spec.pSpec R 2 pp.ℓ_n) (intermediateWitness (R := R) pp oSpec init impl) :=
+  (innerCertificate (R := R) pp oSpec init impl).extractor.liftContext
+    ⟨(lens pp).toLens, Witness.InvLens.trivial⟩
+
+/-- The inner semantic knowledge state transported through the virtual-polynomial lens.
+The underlying certificate is chosen from the general sumcheck existence theorem. -/
+noncomputable def knowledgeStateFunction :
+    (oracleVerifier (R := R) pp oSpec).toVerifier.KnowledgeStateFunction init impl
+      (relIn pp) (relOut pp) (rbrExtractor pp oSpec init impl) := by
+  let K := OracleVerifier.liftContextKnowledgeStateFunction
+      (Sumcheck.Spec.oracleVerifier R 2 (boolEmbedding R) pp.ℓ_n oSpec)
+      (outerRelIn := relIn pp) (outerRelOut := relOut pp)
+      (witLens := Witness.InvLens.trivial) (output pp oSpec)
+      (innerCertificate (R := R) pp oSpec init impl).extractor
+      (innerCertificate (R := R) pp oSpec init impl).state
+  exact {
+    toFun := K.toFun
+    toFun_empty := K.toFun_empty
+    toFun_next := K.toFun_next
+    toFun_full := by
+      rw [oracleVerifier_eq_liftContext]
+      exact K.toFun_full }
+
+/-- Fixed-prefix knowledge soundness for the named lifted certificate, with error
+`2 / |R|` per challenge. -/
+theorem rbrKnowledgeSoundnessWorstCaseWith :
+    (oracleVerifier (R := R) pp oSpec).toVerifier.rbrKnowledgeSoundnessWorstCaseWith init impl
+      (relIn pp) (relOut pp) (intermediateWitness (R := R) pp oSpec init impl)
+      (rbrExtractor pp oSpec init impl) (knowledgeStateFunction pp oSpec init impl)
+      (fun _ => (2 : ℝ≥0) / Fintype.card R) := by
+  intro stmt i tr
+  exact OracleVerifier.liftContext_rbrKnowledgeSoundnessWorstCaseWith
+      (Sumcheck.Spec.oracleVerifier R 2 (boolEmbedding R) pp.ℓ_n oSpec)
+      (outerRelIn := relIn pp) (outerRelOut := relOut pp)
+      (witLens := Witness.InvLens.trivial) (output pp oSpec)
+      (innerCertificate (R := R) pp oSpec init impl).extractor
+      (innerCertificate (R := R) pp oSpec init impl).state
+      (innerCertificate (R := R) pp oSpec init impl).sound stmt i tr
+
 /-- The second virtual sumcheck has fixed-prefix knowledge error `2 / |R|` per challenge. -/
 theorem rbrKnowledgeSoundnessWorstCase :
     (oracleVerifier (R := R) pp oSpec).toVerifier.rbrKnowledgeSoundnessWorstCase init impl
-      (relIn pp) (relOut pp) (fun _ => (2 : ℝ≥0) / Fintype.card R) := by
-  rw [oracleVerifier_eq_liftContext]
-  obtain ⟨WitMid, E, K, h⟩ := Sumcheck.Spec.oracleVerifier_rbrKnowledgeSoundnessWorstCase
-    R 2 (boolEmbedding R) pp.ℓ_n oSpec (init := init) (impl := impl)
-  let V := Sumcheck.Spec.oracleVerifier R 2 (boolEmbedding R) pp.ℓ_n oSpec
-  exact ⟨fun k => Unit × WitMid k,
-    E.liftContext ⟨(lens pp).toLens, Witness.InvLens.trivial⟩,
-    V.liftContextKnowledgeStateFunction (witLens := Witness.InvLens.trivial)
-      (output pp oSpec) E K,
-    V.liftContext_rbrKnowledgeSoundnessWorstCaseWith (witLens := Witness.InvLens.trivial)
-      (output pp oSpec) E K h⟩
+      (relIn pp) (relOut pp) (fun _ => (2 : ℝ≥0) / Fintype.card R) :=
+  ⟨intermediateWitness (R := R) pp oSpec init impl, rbrExtractor pp oSpec init impl,
+    knowledgeStateFunction pp oSpec init impl,
+    rbrKnowledgeSoundnessWorstCaseWith pp oSpec init impl⟩
 
 end Spartan.SecondSumcheck
