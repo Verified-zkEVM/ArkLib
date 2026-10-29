@@ -677,13 +677,13 @@ theorem linear_card_le_of_rate_radius
 
 omit [DecidableEq ι] [DecidableEq F] in
 /-- **The generalized Singleton bound for list decoding** ([ABF26] Theorem 3.9, after
-[ST20, Theorem 1.2]). For a finite field `F`, `0 < ℓ < |F|`, `δ ∈ (0, 1)` with `δ·n` an integer, and
-a linear code `C ⊆ F^n` with `|Λ(C, δ)| ≤ ℓ`:
+[ST20, Theorem 1.2]). For a finite field `F`, `0 < ℓ < |F|`, `δ ∈ (0, 1)` with `δ·n` an integer,
+`⌊(ℓ+1)/ℓ · δ · n⌋ ≤ n`, and a linear code `C ⊆ F^n` with `|Λ(C, δ)| ≤ ℓ`:
 
   `|C| ≤ |F|^{n - ⌊(ℓ+1)/ℓ · δ · n⌋}` ,
 
-whence `δ ≤ ℓ/(ℓ+1) · (1-ρ)` via `linear_card_le_of_rate_radius`'s converse arithmetic. The content
-is the *implication* from list decodability; the arithmetic step is `linear_card_le_of_rate_radius`.
+Equivalently, `⌊(ℓ+1)/ℓ · δ · n⌋ ≤ n − dim C`. If `(ℓ+1)/ℓ · δ · n` is an integer, this gives
+`δ ≤ ℓ/(ℓ+1) · (1-ρ)`, where `ρ = dim C / n`.
 
 **`_hδn_int` is [ST20]'s own hypothesis, not an ArkLib convenience.** Their proof of Theorem 1.2
 opens "Let `a := ⌊(L+1)rn/L⌋ = rn + ⌊rn/L⌋` (**assuming `rn` is an integer**)", and the identity it

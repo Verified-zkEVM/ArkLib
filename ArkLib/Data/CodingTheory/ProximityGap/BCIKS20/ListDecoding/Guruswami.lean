@@ -14,9 +14,15 @@ public import ArkLib.Data.Polynomial.Trivariate
 /-!
 # Guruswami–Sudan interpolation for BCIKS20
 
-This module proves the existence and divisibility statements of BCIKS20 Lemma 5.3 and the
-modified trivariate interpolation construction of Claim 5.4. The construction supplies a
-nonzero polynomial satisfying the degree and multiplicity bounds in `ModifiedGuruswami`.
+This module proves the existence and divisibility statements of BCIKS20 Lemma 5.3
+with rate `(k + 1)/n` for messages of degree at most `k`, weighted degree strictly
+below real `D_X(m)`, and relative distance at most `δ₀`. These boundary conventions
+differ from the floored, non-strict degree cutoff and strict distance used by the
+conservative Guruswami–Sudan API.
+
+It also proves the modified trivariate interpolation construction of Claim 5.4.
+The construction supplies a nonzero polynomial satisfying the degree and
+multiplicity bounds in `ModifiedGuruswami`.
 
 The affine-line correlated-agreement theorem in `BCIKS20.AffineLines.Main` uses the proved
 Johnson bound independently of this construction.
@@ -45,31 +51,37 @@ open GuruswamiSudan Polynomial.Bivariate RatFunc Trivariate
 noncomputable def D_X (rho : ℚ) (n m : ℕ) : ℝ := (m + 1/2) * (Real.sqrt rho) * n
 
 omit [DecidableEq (RatFunc F)] in
-/-- The first part of Lemma 5.3 from [BCIKS20].
-Given `D_X` (`proximity_gap_degree_bound`) and `δ₀` (`proximity_gap_johnson`), a solution to
-Guruswami-Sudan system exists. -/
+/-- The first part of BCIKS20 Lemma 5.3: for messages of degree at most `k`, a
+nonzero multiplicity-`m` interpolation polynomial exists with `(1, k)`-weighted
+degree strictly below real `D_X(m)` at rate `(k + 1)/n`. -/
 lemma guruswami_sudan_for_proximity_gap_existence {k m : ℕ} {ωs : Fin n ↪ F} {f : Fin n → F}
-    (hm : 1 ≤ m) :
-    ∃ Q, Conditions (k + 1) m (_root_.proximity_gap_degree_bound (k + 1) n m) ωs f Q :=
-    GuruswamiSudan.proximity_gap_existence (k + 1) n ωs f hm
+    (hn : n ≠ 0) (hm : 1 ≤ m) :
+    ∃ Q, Conditions (k + 1) m (_root_.proximity_gap_degree_bound k n m) ωs f Q ∧
+      (natWeightedDegree Q 1 k : ℝ) < D_X ((k + 1) / (n : ℚ)) n m := by
+  simpa only [gs_degree_bound, _root_.proximity_gap_degree_bound, D_X,
+    Nat.cast_add, Nat.cast_one, Nat.add_sub_cancel] using
+    GuruswamiSudan.gs_existence_strict (k + 1) n ωs f (by omega) hn hm
 
 omit [DecidableEq (RatFunc F)] in
 open Polynomial in
-/-- The second part of Lemma 5.3 from [BCIKS20].
-For any solution `Q` of the Guruswami-Sudan system, and for any polynomial `P ∈ RS[n, k, rho]`
-such that `δᵣ(w, P) ≤ δ₀(rho, m)`, we have that `Y - P(X)` divides `Q(X, Y)` in the polynomial ring
-`F[X][Y]`. Note that in `F[X][Y]`, the term `X` actually refers to the outer variable, `Y`.
--/
+/-- The second part of BCIKS20 Lemma 5.3: for messages of degree at most `k`,
+weighted degree strictly below real `D_X(m)` and distance at most `δ₀` imply
+`Y - P(X) ∣ Q(X, Y)`, using rate `(k + 1)/n`. In `F[X][Y]`, `X` denotes the outer
+variable `Y` and `C` embeds the inner polynomial `P(X)`. -/
 lemma guruswami_sudan_for_proximity_gap_property {k m : ℕ} {ωs : Fin n ↪ F}
     {w : Fin n → F}
     {Q : F[X][Y]}
     (hk : k + 2 ≤ n) (hm : 1 ≤ m)
-    (cond : Conditions (k + 1) m (_root_.proximity_gap_degree_bound (k + 1) n m) ωs w Q)
+    (cond : Conditions (k + 1) m (_root_.proximity_gap_degree_bound k n m) ωs w Q)
+    (hdeg : (natWeightedDegree Q 1 k : ℝ) < D_X ((k + 1) / (n : ℚ)) n m)
     {p : ReedSolomon.code ωs (k + 1)}
-    (h : (↑Δ₀(w, fun i ↦ Polynomial.eval (ωs i) (ReedSolomon.toPolynomial p)) : ℝ) / ↑n <
-         _root_.proximity_gap_johnson (k + 1) n m) :
-    (Polynomial.X - Polynomial.C (ReedSolomon.toPolynomial p)) ∣ Q :=
-  GuruswamiSudan.proximity_gap_divisibility hk hm p cond h
+    (h : (↑Δ₀(w, fun i ↦ Polynomial.eval (ωs i) (ReedSolomon.toPolynomial p)) : ℝ) / ↑n ≤
+         _root_.proximity_gap_johnson k n m) :
+    (Polynomial.X - Polynomial.C (ReedSolomon.toPolynomial p)) ∣ Q := by
+  apply GuruswamiSudan.gs_divisibility_of_degree_lt (by omega) hm p
+    (by simpa only [Nat.add_sub_cancel, Nat.cast_add, Nat.cast_one, D_X] using hdeg)
+    cond.Q_multiplicity
+  simpa only [gs_johnson, _root_.proximity_gap_johnson, Nat.cast_add, Nat.cast_one] using h
 
 /-- The Guruswami-Sudan condition as it is stated in [BCIKS20]. -/
 structure ModifiedGuruswami

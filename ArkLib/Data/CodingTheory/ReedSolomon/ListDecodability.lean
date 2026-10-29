@@ -38,7 +38,8 @@ variable {ι F : Type*} [Fintype ι] [Field F]
 
 This is the Reed-Solomon instance of the alphabet-agnostic counting bound
 `Code.card_le_of_pairwise_agree_le`: two distinct codewords agree in fewer than `m` positions
-(`agree_lt_of_mem_code`), and `m ≤ (√ρ)² · |ι|` by definition of the rate. -/
+(`agree_lt_of_mem_code`), so their agreement is at most
+`min(m, |ι|) = (√ρ)² · |ι|` by definition of the saturated rate. -/
 lemma card_le_of_subset_closeCodewords [Nonempty ι] (domain : ι ↪ F) {m : ℕ} (hm : 0 < m)
     {η : ℝ} (hη : 0 < η) (y : ι → F) (T : Finset (ι → F))
     (hT : ∀ c ∈ T, c ∈ Code.closeCodewordsRel (ReedSolomon.code domain m : Set (ι → F)) y

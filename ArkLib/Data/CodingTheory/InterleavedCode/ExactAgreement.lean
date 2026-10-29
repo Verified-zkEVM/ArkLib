@@ -118,9 +118,10 @@ def UniformExactAgreement (G : S → ℓ → F) (C : ModuleCode ι F A) (a e : �
 
 omit [Fintype ℓ] in
 /-- **Codewords are determined by `a` agreements.** Two codewords of `C` that agree on some set
-of at least `a` coordinates are equal. For a linear code of length `n` with `a ≤ n` this says
-that the minimum distance exceeds `n - a`. The Reed–Solomon code of message length `k` satisfies
-it whenever `k ≤ a` (`ReedSolomon.determinedByAgreement_code`). -/
+of at least `a` coordinates are equal. For a code of length `n` with `a ≤ n`, this says
+that every pair of distinct codewords has distance greater than `n - a`. The Reed–Solomon code
+of message length `k` satisfies it whenever `k ≤ a`
+(`ReedSolomon.determinedByAgreement_code`). -/
 def DeterminedByAgreement (C : ModuleCode ι F A) (a : ℕ) : Prop :=
   ∀ c ∈ C, ∀ c' ∈ C, ∀ T : Finset ι, a ≤ T.card → (∀ i ∈ T, c i = c' i) → c = c'
 
