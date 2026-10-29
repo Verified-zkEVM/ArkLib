@@ -311,7 +311,7 @@ def extractor : Extractor.RoundByRound []ₒ
     (StmtIn := Input data m layout × (∀ j, pc.OStmt j)) (WitIn := layout.Source)
     (WitOut := data.P⦃≤ 1⦄[X Fin m]) (pSpec := pSpec (M := M) data rule)
     (WitMid := WitMid data m layout) where
-  eqIn := rfl
+  extractIn := fun _ w => w
   extractMid i _ _ p := match i with
     | ⟨0, _⟩ => layout.components.symm (data.unpack p)
     | ⟨1, _⟩ => p
@@ -341,7 +341,7 @@ def knowledgeStateFunction {σ : Type} (init : ProbComp σ)
       0)) p
     | ⟨2, _⟩ => fun stmt tr p => afterChallenge data m layout rule pc stmt.1 stmt.2 (messageEquiv
       (tr 0)) (tr 1) p
-  toFun_empty _ _ := Iff.rfl
+  toFun_empty _ _ h := h
   toFun_next
     | ⟨0, _⟩ => fun _ stmt _tr α p h =>
       mem_relIn_of_check_of_openingClaimRel data m layout pc stmt.1 stmt.2 (messageEquiv α) p h.1

@@ -63,8 +63,6 @@ Reduction.append_completeness_of_pure_verifiers
 Reduction.append_perfectCompleteness_of_pure_verifiers
 Verifier.append_soundness
 Verifier.append_knowledgeSoundness
-Verifier.append_rbrSoundness
-Verifier.append_rbrKnowledgeSoundness
 Verifier.append_rbrKnowledgeSoundnessWorstCaseWith_of_guarded_first
 Verifier.append_rbrKnowledgeSoundnessWorstCase_of_guarded_first
 Reduction.seqCompose_completeness_of_pure
@@ -180,8 +178,6 @@ Combine.geometric_sum_units
 Combine.combine
 Combine.degCor
 Combine.combine
-StirIOP.stir_main
-StirIOP.stir_rbr_soundness
 BlockRelDistance.blockRelDistance
 BlockRelDistance.relHammingDist_le_blockRelDistance
 OutOfDomSmpl.out_of_dom_smpl_1

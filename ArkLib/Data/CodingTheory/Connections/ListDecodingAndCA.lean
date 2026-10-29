@@ -75,7 +75,7 @@ private lemma epsCa_ne_top (C : Set (ι → F)) (δ_fld δ_int : ℝ≥0) :
     epsCa (F := F) (A := F) C δ_fld δ_int ≠ ⊤ := by
   classical
   refine ne_top_of_le_ne_top ENNReal.one_ne_top ?_
-  unfold epsCa
+  simp only [epsCa_eq]
   refine iSup_le fun u => ?_
   split_ifs
   · exact zero_le_one

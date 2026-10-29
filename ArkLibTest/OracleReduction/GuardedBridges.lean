@@ -44,14 +44,14 @@ abbrev relOut : Set (Bool × Bool) := {p | p.2 = true}
 
 /-- Every backward step preserves the actual output witness. -/
 def extractor : Extractor.RoundByRound oracle Bool Bool Bool mixed (fun _ => Bool) where
-  eqIn := rfl
+  extractIn := fun _ w => w
   extractMid := fun _ _ _ w => w
   extractOut := fun _ _ w => w
 
 noncomputable def knowledgeState : verifier.KnowledgeStateFunction (pure false) impl
     relIn relOut extractor where
   toFun := fun _ stmt _ w => stmt = true ∧ w = true
-  toFun_empty := fun _ _ => Iff.rfl
+  toFun_empty := fun _ _ h => h
   toFun_next := fun _ _ _ _ _ _ h => h
   toFun_full := fun stmt tr w hp => by
     exact guarded.check_and_of_prEvent_pos hp
@@ -112,7 +112,7 @@ example (stmt : Bool) (tr : mixed.FullTranscript) :
 /-- Noncommuting steps read their own prefix endpoint, so skipping or reversing a step changes
 this concrete fold's result. -/
 def orderedExtractor : Extractor.RoundByRound oracle Bool Nat Nat mixed (fun _ => Nat) where
-  eqIn := rfl
+  extractIn := fun _ w => w
   extractMid := fun i _ tr w =>
     if i.val = 0 then w + (cond (tr (Fin.last i.val)) 1 2)
     else 2 * w + (cond (tr (Fin.last i.val)) 3 4)
@@ -128,6 +128,26 @@ run_cmd do
 
 abbrev zero : ProtocolSpec 0 := !p[]
 
+/-- Initial extraction can read the statement even when its witness type is different. -/
+def statementExtractor : Extractor.RoundByRound oracle Bool Bool Unit zero (fun _ => Unit) where
+  extractIn := fun stmt _ => stmt
+  extractMid := fun i => Fin.elim0 i
+  extractOut := fun _ _ w => w
+
+example : statementExtractor.foldPrefix true 0 default () = true := rfl
+
+example : statementExtractor.foldPrefix false 0 default () = false := rfl
+
+example (stmt : Bool) :
+    (statementExtractor.foldExtractor stmt () default default default).run =
+      pure (some stmt) := rfl
+
+run_cmd do
+  unless statementExtractor.foldPrefix true 0 default () do
+    throwError "Initial extraction lost the true statement"
+  if statementExtractor.foldPrefix false 0 default () then
+    throwError "Initial extraction lost the false statement"
+
 def rejecting : Verifier oracle Unit Unit zero := ⟨fun _ _ => failure⟩
 
 def rejectingGuard : rejecting.GuardedForm :=
@@ -135,13 +155,20 @@ def rejectingGuard : rejecting.GuardedForm :=
 
 noncomputable def rejectingState : rejecting.StateFunction (pure false) impl ∅ Set.univ where
   toFun := fun _ _ _ => False
-  toFun_empty := fun _ => Iff.rfl
+  toFun_empty := fun _ h => h
   toFun_next := fun i => Fin.elim0 i
   toFun_full := fun _ _ _ => by
     apply le_antisymm _ zero_le
     apply le_of_not_gt
     intro hp
     exact Bool.false_ne_true (rejectingGuard.check_and_of_prEvent_pos hp).1
+
+/-- A true input language need not make the initial state true. -/
+example : rejecting.StateFunction (pure false) impl Set.univ Set.univ where
+  toFun := fun _ _ _ => False
+  toFun_empty := fun _ _ => Set.mem_univ _
+  toFun_next := fun i => Fin.elim0 i
+  toFun_full := rejectingState.toFun_full
 
 /-- Zero rounds and a rejecting guard give zero ordinary soundness error. -/
 example : rejecting.soundness (pure false) impl ∅ Set.univ 0 := by
@@ -182,7 +209,7 @@ example := emptyWitnessKnowledge Unit () () zeroProver
 zero-round protocol with inhabited statements. The optional adapter above exercises the concrete
 malicious-prover boundary independently. -/
 def emptyExtractor : Extractor.RoundByRound oracle Unit Empty Empty zero (fun _ => Empty) where
-  eqIn := rfl
+  extractIn := fun _ w => w
   extractMid := fun i => Fin.elim0 i
   extractOut := fun _ _ w => w
 

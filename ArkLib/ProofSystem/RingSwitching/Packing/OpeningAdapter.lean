@@ -65,7 +65,7 @@ def projectionExtractor : Extractor.RoundByRound []ₒ
     (StmtIn := (Context × ((Fin m → L) × L)) × (∀ j, M.OStmtIn j))
     (WitIn := MultilinearPoly L m) (WitOut := WitMLP L m)
     (pSpec := !p[]) (WitMid := fun _ => MultilinearPoly L m) where
-  eqIn := rfl
+  extractIn := fun _ w => w
   extractMid i := nomatch i
   extractOut _ _ w := w.t
 
@@ -77,7 +77,7 @@ def projectionKnowledgeStateFunction {σ : Type} (init : ProbComp σ)
       (projectionExtractor M Context) where
   toFun _ s _ w := (s, w) ∈ M.toAbstractOStmtIn.toPackedCommitment.evalRelWithContext (C := L)
     Context
-  toFun_empty _ _ := Iff.rfl
+  toFun_empty _ _ h := h
   toFun_next i := nomatch i
   toFun_full s tr w h := by
     have hp := ((projectionGuard M Context).check_and_of_prEvent_pos h).2

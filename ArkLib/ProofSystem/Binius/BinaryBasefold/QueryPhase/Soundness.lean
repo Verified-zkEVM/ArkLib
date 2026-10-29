@@ -424,7 +424,7 @@ noncomputable def queryRbrExtractor :
     Unit
     (pSpec := pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
     (fun _ => Unit) where
-  eqIn := rfl
+  extractIn := fun _ w => w
   extractMid := fun _ _ _ witMidSucc => witMidSucc
   extractOut := fun _ _ _ => ()
 
@@ -461,7 +461,7 @@ noncomputable def queryKnowledgeStateFunction {σ : Type} (init : ProbComp σ)
     QueryKnowledgeState 𝔽q β (ϑ:=ϑ) (γ_repetitions:=γ_repetitions)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (m:=m) (tr:=tr) (stmtIn:=stmtIn) (witMid:=witMid) (oStmtIn:=oStmtIn)
-  toFun_empty := fun ⟨stmtIn, oStmtIn⟩ witMid => by rfl
+  toFun_empty := fun ⟨stmtIn, oStmtIn⟩ witMid h => h
   toFun_next := fun m hDir ⟨stmtMid, oStmtMid⟩ tr msg witMid => by
     simp only [ne_eq, reduceCtorEq, not_false_eq_true, Matrix.cons_val_fin_one,
       Direction.not_V_to_P_eq_P_to_V] at hDir

@@ -17,8 +17,8 @@ public import ArkLib.OracleReduction.Security.Basic
     Fiat-Shamir oracle, which for the `i`-th challenge requires the input statement and all messages
     up to round `i`
 
-  This is the _basic_ (or slow) version to be distinguished from the more efficient version based on
-  duplex sponge (see `DuplexSponge` folder).
+  This is the _basic_ (or slow) version, as opposed to the more efficient duplex-sponge version,
+  which is not formalized here.
 
   We will show that the transformation satisfies security properties as follows:
 

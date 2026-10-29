@@ -6,14 +6,14 @@ Authors: Pablo Martín Vinuelas, ArkLib Contributors
 module
 
 public import ArkLib.Data.MvPolynomial.Multilinear
-public import ArkLib.Data.MvPolynomial.RoundPolynomial
+public import ArkLib.Data.MvPolynomial.EvalExcept
 
 /-!
-# Hypercube sums and their round polynomials over commutative semirings
+# Hypercube sums and coordinate-line restrictions over commutative semirings
 
 Coordinate splitting expresses a Boolean hypercube sum as the sum of its two faces.
-`hypercubeSuffix` assembles the assignments for the Boolean specialization of
-`sumRoundPolynomial`; its evaluation and degree bounds describe a sumcheck prover message.
+`hypercubeSuffix` assembles a fixed prefix and Boolean suffix for `evalExcept`.
+Summing these restrictions computes the corresponding partial hypercube sum.
 Cube sums use `Fintype.piFinset`.
 -/
 
@@ -24,8 +24,8 @@ namespace MvPolynomial
 open MvPolynomial
 variable {F : Type*} [CommSemiring F] {M : ℕ}
 
-/-- Assign every coordinate except the round's free coordinate: a challenge prefix followed
-by a Boolean suffix. Shared by the mathematical and computable round polynomials. -/
+/-- Assign every coordinate except a selected coordinate: a fixed prefix followed
+by a Boolean suffix. -/
 def hypercubeSuffix {m : ℕ} (i : Fin m) (cs : Fin i → F)
     (y : Fin (m - (i + 1)) → Fin 2) : Fin (m - 1) → F :=
   Fin.append cs (fun j => ((y j : ℕ) : F)) ∘ Fin.cast (by have := i.isLt; omega)
@@ -54,7 +54,7 @@ theorem hypercubeSum_last (m : ℕ) (H : MvPolynomial (Fin m) F) (cs : Fin m →
     simp [hypercubePoint, j.isLt]
   simp [hypercubeSum, hp]
 
-/-- Boolean points use the prefix/suffix concatenation of arbitrary-domain round polynomials. -/
+/-- Boolean points use prefix/suffix concatenation. -/
 theorem hypercubePoint_eq_append (m i : ℕ) (hi : i ≤ m)
     (cs : Fin i → F)
     (x : Fin (m - i) → Fin 2) :
@@ -98,29 +98,29 @@ theorem hypercubeSum_succ (H : MvPolynomial (Fin (M + 1)) F) (i : Fin (M + 1)) (
     simpa only [Function.comp_def, finCongr_apply, Fin.val_one, Nat.cast_one] using
       congrArg (fun x => H.eval x) (hypercubePoint_cons i cs 1 y)
 
-/-- The round polynomial computes the partial sum: its value at any `T` is the round-`(i+1)`
-partial hypercube sum at the prefix extended by `T`. -/
-theorem sumRoundPolynomial_eval_hypercube (H : MvPolynomial (Fin (M + 1)) F) (i : Fin (M + 1))
+/-- The sum of coordinate-line restrictions evaluates to the partial hypercube sum
+at the prefix extended by `T`. -/
+theorem eval_sum_evalExcept_hypercube (H : MvPolynomial (Fin (M + 1)) F) (i : Fin (M + 1))
     (cs : Fin i → F) (T : F) :
-    Polynomial.eval T (sumRoundPolynomial (m := M + 1)
-      (Finset.univ : Finset (Fin (M + 1 - (i + 1)) → Fin 2))
-      (hypercubeSuffix i cs) i H)
+    Polynomial.eval T (∑ x : Fin (M + 1 - (i + 1)) → Fin 2,
+      H.evalExcept i (hypercubeSuffix i cs x))
       = hypercubeSum (M + 1) H ((i : ℕ) + 1) (Fin.snoc cs T) := by
-  rw [sumRoundPolynomial_eval, hypercubeSum]
+  simp only [Polynomial.eval_finsetSum, eval_evalExcept]
+  rw [hypercubeSum]
   unfold hypercubeSuffix
   simp only [Fintype.piFinset_univ]
   refine Finset.sum_congr rfl fun y _ => ?_
   rw [Fin.insertNth_append_cast (l := M + 1 - (i + 1)) i cs _ T (by omega),
     hypercubePoint_eq_append (M + 1) (i + 1) (by omega) (Fin.snoc cs T) y]
 
-/-- The Boolean values of the round polynomial sum to the previous residual claim. -/
-theorem sumRoundPolynomial_sum_hypercube (H : MvPolynomial (Fin (M + 1)) F)
+/-- Summing the two Boolean evaluations recovers the partial hypercube sum. -/
+theorem sum_eval_sum_evalExcept_hypercube (H : MvPolynomial (Fin (M + 1)) F)
     (i : Fin (M + 1)) (cs : Fin i → F) :
-    (sumRoundPolynomial (m := M + 1) (Finset.univ : Finset (Fin (M + 1 - (i + 1)) → Fin 2))
-      (hypercubeSuffix i cs) i H).eval 0 +
-    (sumRoundPolynomial (m := M + 1) (Finset.univ : Finset (Fin (M + 1 - (i + 1)) → Fin 2))
-      (hypercubeSuffix i cs) i H).eval 1 =
+    (∑ x : Fin (M + 1 - (i + 1)) → Fin 2,
+      H.evalExcept i (hypercubeSuffix i cs x)).eval 0 +
+    (∑ x : Fin (M + 1 - (i + 1)) → Fin 2,
+      H.evalExcept i (hypercubeSuffix i cs x)).eval 1 =
         hypercubeSum (M + 1) H i cs := by
-  rw [sumRoundPolynomial_eval_hypercube, sumRoundPolynomial_eval_hypercube, hypercubeSum_succ]
+  rw [eval_sum_evalExcept_hypercube, eval_sum_evalExcept_hypercube, hypercubeSum_succ]
 
 end MvPolynomial

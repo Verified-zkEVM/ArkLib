@@ -35,8 +35,8 @@ def searchProgram (m : ℕ) (rel : ℕ → Fin (2 ^ m) → Bool) :
   MeasuredProgram.ofFun fun input ↦ (List.finRange (2 ^ m)).find? (rel input.1)
 
 /-- The search extractor is the execution of its program. -/
-theorem searchProgram_realizes (m : ℕ) (rel : ℕ → Fin (2 ^ m) → Bool) :
-    (searchProgram m rel (WitOut := WitOut) (pSpec := pSpec)).Realizes
+theorem searchProgram_realizesExtractor (m : ℕ) (rel : ℕ → Fin (2 ^ m) → Bool) :
+    (searchProgram m rel (WitOut := WitOut) (pSpec := pSpec)).RealizesExtractor
       (searchExtractor m rel) :=
   fun _ _ _ _ _ ↦ rfl
 
@@ -55,7 +55,7 @@ example (m : ℕ) [∀ i, SampleableType (pSpec.Challenge i)] {σ : Type} (init 
       knowledgeError) :
     verifier.knowledgeSoundnessWithResources init impl relIn relOut (searchExtractor m rel)
       knowledgeError (searchProgram m rel) 0 :=
-  ⟨h, searchProgram_realizes m rel, searchProgram_costAtMost_zero m rel⟩
+  ⟨h, searchProgram_realizesExtractor m rel, searchProgram_costAtMost_zero m rel⟩
 
 end Search
 

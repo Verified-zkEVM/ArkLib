@@ -105,9 +105,10 @@ manuscript, not to the original sources it cites — those get their own keys (`
   `h(u) = (1 - √(1 - u))/u` increasing, so where the radicand is non-negative `J_q(δ)` decreases
   in `q` down to the alphabet-free `J(δ) = 1 - √(1 - δ)` that the challenge is phrased in, and
   stays at or above it.
-  Note the asymmetry with the MCA side: `McaLowerWitness.ofJohnsonRangeBound` is sorry-tainted
-  through the external [BCHKS25] admit `rs_mcaError_le_in_johnson_range`, whereas the list-side
-  Johnson witness rests on an in-tree axiom-clean bound and needs no admit.
+  The MCA-side `McaLowerWitness.ofJohnsonRangeBound` also has a proved input:
+  `rs_mcaError_le_in_johnson_range` follows from the [DKT26] port, with the printed constant
+  from [BCHKS25] Theorem 4.6. Both Johnson witness constructors rest on in-tree axiom-clean
+  bounds.
   The generic shapes — `ListLowerWitness.ofLe`, `ListUpperWitness.ofGt`, and
   `ListUpperWitness.ofEncardGt`, the last reducing an unsafe witness to a single word with an
   oversized point list — sit alongside the MCA ones in `GrandChallenges.lean`. Neither
@@ -117,7 +118,8 @@ manuscript, not to the original sources it cites — those get their own keys (`
   connections on the canonical error and list-size carriers. `LineDecoding.lean` uses the
   close-and-aligned formulation from GG25 Definition 3.1 and its MCA consequence; this corrects
   the missing close-set intersection in ABF26 Definition 4.21. The prize witness consuming the
-  BCHKS25 upper bound is isolated in `GrandChallenges/CapacityBounds.lean`.
+  Johnson-range upper bound, proved via [DKT26] with the [BCHKS25] printed constant, is isolated
+  in `GrandChallenges/CapacityBounds.lean`.
 - **§3.15 and the KKH appendix.** `ListDecodability/Bounds/KKH26.lean` contains the concrete
   useful-family and sum-set templates; `KKH26Asymptotic.lean` derives the asymptotic list lower
   bound while carrying finite-field/smooth-domain existence as an explicit hypothesis.
@@ -332,15 +334,15 @@ guard `k ≤ ringChar F` for degree-`< k` messages.
   `exists_winningSetFor_ncard_ge_of_lambda_lt_card` in
   `ProofSystem/ToyProblem/SoundnessBounds.lean`, and it consumes Claim B.1 there. The ledger
   gives the status of every other §6 row.
-- **§4, §5.** The catalogue is proved in-tree except for **four external admits**:
-  Theorem 4.12 ([BCHKS25] RS MCA in the Johnson range), Theorem 4.13 ([GG25] MCA from
-  subspace-design codes), Theorem 4.17 ([KKH26] CA lower bound near capacity), and Theorem 5.4
-  ([BenSassonGKS20] the list-decoding/CA separation). Theorem 4.12 is the load-bearing one: it stands
-  under every Johnson-range `McaLowerWitness`. Statements 4.9, 4.11, 4.14, 4.18, 4.19, 4.20,
-  4.22, the BCGM25 univariate-powers bound, the CA-breakdown interpretation of 4.18, and 5.1-5.3
-  are all axiom-clean. The random-RS MCA result (T4.15) and the draft-only MCA conjecture remain
-  outside this layer. See the ledger for each statement's source-side guards and normalization
-  choices.
+- **§4, §5.** The catalogue is proved in-tree except for **two external assumptions**:
+  Theorem 4.17 ([KKH26] CA lower bound
+  near capacity), and Theorem 5.4 ([BenSassonGKS20] the list-decoding/CA separation).
+  Theorem 4.12 is proved via [DKT26] with the [BCHKS25] printed constant, so every
+  Johnson-range `McaLowerWitness` has a proved numeric input. Statements 4.9, 4.11, 4.12,
+  4.13 (at the proof-derived radius `1 - τ(2t) - 3/(2t)`), 4.14, 4.18, 4.19, 4.20, 4.22, the BCGM25 univariate-powers bound, the CA-breakdown
+  interpretation of 4.18, and 5.1-5.3 are all axiom-clean. The random-RS MCA result (T4.15)
+  and the draft-only MCA conjecture remain outside this layer. See the ledger for each
+  statement's source-side guards and normalization choices.
 
 ## Source Access
 

@@ -45,9 +45,10 @@ abbrev MeasuredProgram (oSpec : OracleSpec ι) (StmtIn WitIn WitOut : Type)
   OracleComp.MeasuredProgram (Input oSpec StmtIn WitOut pSpec) (Option WitIn) ω
 
 /-- The extractor returns the handlers' execution of the program on its view, without querying
-`oSpec`. Under dot notation this replaces `OracleComp.MeasuredProgram.Realizes`, since the
-extractor's run is a computation rather than a value. -/
-def MeasuredProgram.Realizes {ω : Type} (M : MeasuredProgram oSpec StmtIn WitIn WitOut pSpec ω)
+`oSpec`. This lifts `OracleComp.MeasuredProgram.Realizes` from a value-returning function to
+the extractor's computation by requiring it to return that value purely. -/
+def MeasuredProgram.RealizesExtractor {ω : Type}
+    (M : MeasuredProgram oSpec StmtIn WitIn WitOut pSpec ω)
     (extractor : Extractor.Straightline oSpec StmtIn WitIn WitOut pSpec) : Prop :=
   ∀ stmtIn witOut transcript proveQueryLog verifyQueryLog,
     (extractor stmtIn witOut transcript proveQueryLog verifyQueryLog).run =
@@ -71,7 +72,7 @@ def knowledgeSoundnessWithResources {ω : Type} [AddCommMonoid ω] [Preorder ω]
     (program : Extractor.Straightline.MeasuredProgram oSpec StmtIn WitIn WitOut pSpec ω)
     (budget : ω) : Prop :=
   verifier.knowledgeSoundnessWith init impl relIn relOut extractor knowledgeError ∧
-    program.Realizes extractor ∧ program.CostAtMost budget
+    program.RealizesExtractor extractor ∧ program.CostAtMost budget
 
 namespace knowledgeSoundnessWithResources
 

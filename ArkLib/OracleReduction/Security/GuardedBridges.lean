@@ -30,13 +30,13 @@ namespace Extractor.RoundByRound
 /-- Fold intermediate extraction backward along a transcript prefix. -/
 def foldPrefix (E : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid)
     (stmt : StmtIn) : (m : Fin (n + 1)) → pSpec.Transcript m → WitMid m → WitIn :=
-  Fin.induction (fun _ w ↦ cast E.eqIn w)
+  Fin.induction (fun _ w ↦ E.extractIn stmt w)
     (fun j ih tr w ↦ ih (Fin.init tr) (E.extractMid j stmt tr w))
 
 @[simp]
 theorem foldPrefix_zero (E : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid)
     (stmt : StmtIn) (tr : pSpec.Transcript 0) (w : WitMid 0) :
-    E.foldPrefix stmt 0 tr w = cast E.eqIn w := rfl
+    E.foldPrefix stmt 0 tr w = E.extractIn stmt w := rfl
 
 @[simp]
 theorem foldPrefix_succ (E : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid)
@@ -77,7 +77,7 @@ theorem KnowledgeStateFunction.foldPrefix_mem_of_no_badEvent
   | zero =>
     have htr : tr = default := Subsingleton.elim _ _
     simpa only [Extractor.RoundByRound.foldPrefix_zero, htr] using
-      (K.toFun_empty stmt w).mpr (htr ▸ hK)
+      K.toFun_empty stmt w (htr ▸ hK)
   | succ j ih =>
     let prev : pSpec.Transcript j.castSucc := Fin.init tr
     let msg : pSpec.«Type» j := tr (Fin.last j.val)

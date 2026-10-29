@@ -35,5 +35,6 @@ example {R : Type} [CommRing R] {n d : ℕ} [NeZero n]
     (D : SumcheckDomain R n) (i : Fin n) (p : R⦃≤ d⦄[X Fin (n - i)]) (r : R) :
     (getSumcheckRoundPoly n D i p).val.eval r =
       ∑ x ∈ (D.drop (i + 1)).cube,
-        p.val.eval (Fin.cons r x ∘ Fin.cast (by have := i.isLt; omega)) :=
-  sumRoundPolynomial_eval_first _ _ p.val r
+        p.val.eval (Fin.cons r x ∘ Fin.cast (by have := i.isLt; omega)) := by
+  simp only [getSumcheckRoundPoly, Polynomial.eval_finsetSum]
+  exact Finset.sum_congr rfl fun x _ => eval_evalExcept_first _ x p.val r

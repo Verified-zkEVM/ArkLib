@@ -73,11 +73,11 @@ theorem verifier_rbrKnowledgeSoundnessWorstCase {σ : Type} (init : ProbComp σ)
     OracleProof.rbrKnowledgeSoundnessWorstCase init impl
       (oStmtIn (L := L) (ℓ' := ℓ')).toRelInput verifier err := by
   refine ⟨fun _ => WitMLP L ℓ',
-    { eqIn := rfl
+    { extractIn := fun _ w => w
       extractMid := fun i => Fin.elim0 i
       extractOut := fun s _ _ => ⟨s.2 ()⟩ },
     { toFun := fun _ s _ w => (s, w) ∈ (oStmtIn (L := L) (ℓ' := ℓ')).toRelInput
-      toFun_empty := fun _ _ => Iff.rfl
+      toFun_empty := fun _ _ h => h
       toFun_next := fun m => Fin.elim0 m
       toFun_full := fun s tr _ h => ?_ },
     fun _ i => Fin.elim0 i.1⟩

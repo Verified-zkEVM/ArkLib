@@ -55,9 +55,10 @@ variable {L : Type} [CommRing L] (ℓ : ℕ) [NeZero ℓ] (D : SumcheckDomain L 
 `h` and the resulting univariate `g_i` share the degree bound `d` (inferred from `h`). -/
 def getSumcheckRoundPoly {d : ℕ} (i : Fin ℓ)
     (h : ↥L⦃≤ d⦄[X Fin (ℓ - ↑i.castSucc)]) : L⦃≤ d⦄[X] :=
-  ⟨MvPolynomial.sumRoundPolynomial (m := ℓ - i) (D.drop (i + 1)).cube
-      (fun x => x ∘ Fin.cast (by omega)) ⟨0, by have := i.isLt; omega⟩ h.val,
-    MvPolynomial.sumRoundPolynomial_mem_degreeLE _ _ _ h.property⟩
+  ⟨∑ x ∈ (D.drop (i + 1)).cube,
+      h.val.evalExcept ⟨0, by have := i.isLt; simp only [Fin.val_castSucc]; omega⟩
+        (x ∘ Fin.cast (by simp only [Fin.val_castSucc]; omega)),
+    Submodule.sum_mem _ fun _ _ => MvPolynomial.evalExcept_mem_degreeLE _ _ h.property⟩
 
 end RoundPoly
 

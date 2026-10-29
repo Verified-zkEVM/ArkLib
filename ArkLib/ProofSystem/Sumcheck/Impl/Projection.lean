@@ -89,13 +89,14 @@ theorem toPoly_sum {ι : Type*} (s : Finset ι) (f : ι → CPolynomial R) :
 theorem projectedRoundPolynomial_toPoly_sum (D : Fin m ↪ R) (i : Fin (n + 1))
     (challenges : Fin i.castSucc → R) (poly : CMvPolynomial (n + 1) R) :
     (projectedRoundPolynomial D i challenges poly).toPoly =
-      MvPolynomial.sumRoundPolynomial ((Finset.univ.map D) ^ᶠ (n - i))
-        (Spec.SingleRound.roundSuffix R (n + 1) i challenges) i (CPoly.fromCMvPolynomial poly) := by
+      (∑ x ∈ (Finset.univ.map D) ^ᶠ (n - i),
+        (CPoly.fromCMvPolynomial poly).evalExcept i
+          (Spec.SingleRound.roundSuffix R (n + 1) i challenges x)) := by
   classical
   unfold projectedRoundPolynomial
   rw [toPoly_sum]
   simp_rw [projectedSummand_toPoly]
-  simp only [MvPolynomial.sumRoundPolynomial]
+  simp only [MvPolynomial.evalExcept]
   rw [← suffixDomain_eq D (n - i), Finset.sum_map]
   rfl
 
@@ -116,7 +117,9 @@ theorem projectedRoundPolynomial_natDegree_le (D : Fin m ↪ R) (i : Fin (n + 1)
     (projectedRoundPolynomial D i challenges poly).natDegree ≤ deg := by
   classical
   rw [CPolynomial.natDegree_toPoly, projectedRoundPolynomial_toPoly_sum]
-  exact (MvPolynomial.sumRoundPolynomial_natDegree_le _ _ i _).trans
+  apply Polynomial.natDegree_sum_le_of_forall_le
+  intro x _
+  exact (MvPolynomial.natDegree_evalExcept_le i _ _).trans
     ((congrFun (CPoly.degreeOf_equiv (S := R) (p := poly)) i).symm.le.trans (hpoly i))
 
 /-- Individual degree bounds also bound the extended natural degree used by messages. -/
@@ -143,8 +146,9 @@ theorem projectedRoundMessage_toMessage (D : Fin m ↪ R) (i : Fin (n + 1))
     (specPoly : R⦃≤ deg⦄[X Fin (n + 1)])
     (hinterpret : CPoly.fromCMvPolynomial poly = specPoly.val) :
     Representation.toMessage R deg (projectedRoundMessage D i challenges poly hpoly) =
-      Spec.SingleRound.projectedRoundPolynomial R (n + 1) deg D i challenges specPoly := by
+        Spec.SingleRound.projectedRoundPolynomial R (n + 1) deg D i challenges specPoly := by
   apply Subtype.ext
+  rw [Representation.toMessage_val]
   exact projectedRoundPolynomial_toPoly D i challenges poly specPoly hinterpret
 
 /-- Runtime Horner evaluation of the constructed message agrees with the honest spec answer. -/
@@ -160,9 +164,37 @@ theorem projectedRoundMessage_evaluate (D : Fin m ↪ R) (i : Fin (n + 1))
     projectedRoundMessage_toMessage D i challenges poly hpoly specPoly hinterpret]
 
 omit [Nontrivial R] in
-/-- Mathematical interpretation of a computational polynomial with an individual degree bound.
-This map is used only in proofs; it is never part of the honest prover's runtime computation. -/
-noncomputable def toOracleStatement (poly : CMvPolynomial n R) {deg : ℕ}
+/-- Construct computational input data from the explicitly supported bounded polynomial. -/
+def fromOracleStatement {deg : ℕ} (poly : Spec.OracleStatement R n deg ()) :
+    CMvPolynomial n R :=
+  poly.val.coeff.support.sum fun mon =>
+    CMvPolynomial.monomial (CMvMonomial.ofFinsupp mon) (poly.val.coeff.toFun mon)
+
+omit [Nontrivial R] in
+/-- The computational input has exactly the specified polynomial interpretation. -/
+theorem fromOracleStatement_interpretation {deg : ℕ}
+    (poly : Spec.OracleStatement R n deg ()) :
+    CPoly.fromCMvPolynomial (fromOracleStatement poly) = poly.val := by
+  classical
+  unfold fromOracleStatement
+  rw [fromCMvPolynomial_sum]
+  simp_rw [fromCMvPolynomial_monomial, CMvMonomial.toFinsupp_ofFinsupp]
+  exact MvPolynomial.support_sum_monomial_coeff poly.val
+
+omit [Nontrivial R] in
+/-- The computational input inherits every individual degree bound of its statement. -/
+theorem fromOracleStatement_degreeOf_le {deg : ℕ}
+    (poly : Spec.OracleStatement R n deg ()) (j : Fin n) :
+    (fromOracleStatement poly).degreeOf j ≤ deg := by
+  rw [congrFun (CPoly.degreeOf_equiv (S := R) (p := fromOracleStatement poly)) j,
+    fromOracleStatement_interpretation]
+  apply MvPolynomial.degreeOf_le_iff.mpr
+  intro mon hmon
+  exact (MvPolynomial.mem_restrictDegree (Fin n) _ deg).mp poly.property mon hmon j
+
+omit [Nontrivial R] in
+/-- Mathematical interpretation of a computational polynomial with an individual degree bound. -/
+def toOracleStatement (poly : CMvPolynomial n R) {deg : ℕ}
     (hpoly : ∀ j, poly.degreeOf j ≤ deg) : Spec.OracleStatement R n deg () :=
   ⟨CPoly.fromCMvPolynomial poly, by
     apply (MvPolynomial.mem_restrictDegree (Fin n) _ deg).mpr

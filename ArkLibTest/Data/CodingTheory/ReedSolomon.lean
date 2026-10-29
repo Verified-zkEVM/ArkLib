@@ -99,7 +99,7 @@ example :
       ∃ exceptional : Finset (ZMod 2), exceptional.card ≤ 1 ∧
         ∀ z ∉ exceptional,
           polynomialAgreementSet domain2 (powerBatchedWord twoWords z)
-              (powerBatchedPolynomial twoPolynomials z) = {0} := by
+              (Polynomial.powerBatch twoPolynomials z) = {0} := by
   have hcommon : commonCurveAgreementSet domain2 twoWords twoPolynomials = {0} := by
     ext i
     fin_cases i
