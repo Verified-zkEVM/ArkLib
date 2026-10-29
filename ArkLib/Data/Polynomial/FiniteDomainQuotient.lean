@@ -7,6 +7,7 @@ module
 
 public import Mathlib.LinearAlgebra.Lagrange
 public import CompPoly.ToMathlib.Polynomial.Roots
+public import CompPoly.Univariate.DivisionCorrectness
 public import ArkLib.Data.Probability.Instances
 
 /-!
@@ -17,9 +18,10 @@ Monic division gives the unique quotient, including for the zero polynomial and 
 For a false vanishing claim, a fixed quotient of degree at most `d - S.card` passes a uniform
 evaluation check with probability at most `d / |F|`, provided `S.card ≤ d`.
 
-The polynomial and quotient use Mathlib's mathematical representation. Evaluation of the nodal
-polynomial is the computable finite product in `Lagrange.eval_nodal`; for multiplicative subgroups
-it is the power expression `x ^ n - 1`.
+Bounded computable polynomials and monic division provide an executable quotient. Their
+mathematical specifications use Mathlib's polynomial representation. Evaluation of the nodal
+polynomial is the finite product in `Lagrange.eval_nodal`; for multiplicative subgroups it is
+the power expression `x ^ n - 1`.
 -/
 
 @[expose] public section
@@ -113,5 +115,77 @@ theorem eval_nodal_subgroup {F : Type*} [Field F] (H : Subgroup Fˣ) [Fintype H]
       x ^ Fintype.card H - 1 := by
   rw [nodal_subgroup_eq_X_pow_card_sub_one]
   simp
+
+end Lagrange
+
+namespace FiniteDomainQuotient
+
+open CompPoly
+
+variable (F : Type*) [Field F] [BEq F] [LawfulBEq F]
+
+/-- A computable polynomial within an inclusive natural-degree budget. -/
+abbrev Poly (d : ℕ) := {p : CPolynomial F // p.toPoly.natDegree ≤ d}
+
+variable {F} {d : ℕ}
+
+/-- Horner evaluation of a bounded polynomial. -/
+def eval (p : Poly F d) (z : F) : F := CPolynomial.evalHorner z p.val
+
+/-- Computable evaluation agrees with the mathematical polynomial. -/
+theorem eval_eq (p : Poly F d) (z : F) : eval p z = p.val.toPoly.eval z := by
+  rw [eval, CPolynomial.eval_horner_eq_eval, CPolynomial.eval_toPoly]
+
+/-- The nodal polynomial as a computable product of monic linear factors. -/
+def nodal (S : Finset F) : CPolynomial F :=
+  ∏ x ∈ S, (CPolynomial.X - CPolynomial.C x)
+
+/-- The computable nodal product represents Mathlib's nodal polynomial. -/
+theorem nodal_toPoly (S : Finset F) : (nodal S).toPoly = Lagrange.nodal S id := by
+  classical
+  simp [nodal, Lagrange.nodal]
+
+/-- Monic division computes a quotient within the remaining degree budget. -/
+def quotient (S : Finset F) (f : Poly F d) : Poly F (d - S.card) :=
+  ⟨f.val.divByMonic (nodal S), by
+    rw [CPolynomial.divByMonic_toPoly_eq_divByMonic _ _ (by
+      rw [CPolynomial.monic_toPoly_iff, nodal_toPoly]
+      exact Lagrange.nodal_monic), nodal_toPoly,
+      Polynomial.natDegree_divByMonic _ Lagrange.nodal_monic, Lagrange.natDegree_nodal]
+    exact Nat.sub_le_sub_right f.property _⟩
+
+/-- A vanishing polynomial equals the computed quotient times its nodal polynomial. -/
+theorem quotient_identity (S : Finset F) (f : Poly F d)
+    (hf : Polynomial.ZeroOn S f.val.toPoly) :
+    f.val.toPoly = (quotient S f).val.toPoly * Lagrange.nodal S id := by
+  obtain ⟨q, hq⟩ := Polynomial.zeroOn_iff_nodal_dvd.mp hf
+  change f.val.toPoly = (f.val.divByMonic (nodal S)).toPoly * Lagrange.nodal S id
+  rw [CPolynomial.divByMonic_toPoly_eq_divByMonic _ _ (by
+    rw [CPolynomial.monic_toPoly_iff, nodal_toPoly]
+    exact Lagrange.nodal_monic), nodal_toPoly, hq,
+    Polynomial.mul_divByMonic_cancel_left _ Lagrange.nodal_monic, mul_comm]
+
+end FiniteDomainQuotient
+
+namespace Lagrange
+
+/-- A multiplicative subgroup embeds into the field by forgetting its unit structure. -/
+def subgroupEmbedding {F : Type*} [Field F] (H : Subgroup Fˣ) : H ↪ F where
+  toFun h := (h.val : F)
+  inj' _ _ h := Subtype.ext (Units.val_injective h)
+
+/-- The image of a finite multiplicative subgroup has nodal evaluation `z ^ |H| - 1`. -/
+theorem eval_nodal_image_subgroup {F : Type*} [Field F] (H : Subgroup Fˣ)
+    [Fintype H] (z : F) :
+    (nodal (Finset.univ.map (subgroupEmbedding H)) id).eval z =
+      z ^ Fintype.card H - 1 := by
+  classical
+  have hprod : nodal (Finset.univ.map (subgroupEmbedding H)) id =
+      nodal (H : Set Fˣ).toFinset ((↑) : Fˣ → F) := by
+    simp only [nodal, Finset.prod_map, id_eq,
+      subgroupEmbedding]
+    exact Finset.prod_set_coe (f := fun h : Fˣ => Polynomial.X - Polynomial.C (h : F))
+      (H : Set Fˣ)
+  rw [hprod, eval_nodal_subgroup]
 
 end Lagrange
