@@ -29,7 +29,6 @@
     "OracleVerifier.append_rbrSoundness",
     "OracleVerifier.seqCompose_rbrKnowledgeSoundness",
     "OracleVerifier.seqCompose_rbrSoundness",
-    "Plonk.ConstraintSystem.perm",
     "Spartan.Spec.oracleReduction.linearCombination",
     "Sumcheck.Spec.SingleRound.Simple.oracleVerifier_rbrKnowledgeSoundness",
     "Sumcheck.Spec.SingleRound.Simple.verifier_rbrKnowledgeSoundness",
