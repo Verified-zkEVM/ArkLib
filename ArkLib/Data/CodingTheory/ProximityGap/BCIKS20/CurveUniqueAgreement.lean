@@ -63,11 +63,11 @@ theorem exists_exactPowerAgreement_unique_fin
   · obtain ⟨_, v, hv, hclose, _⟩ :=
       large_agreement_set_on_curve_implies_correlated_agreement hdeg hdeg_le hδ hS
     choose P hP hPv using fun t ↦ mem_code_iff_eval.mp (hv t)
-    have hPv' (z : F) : evalOnPoints domain (powerBatchedPolynomial P z) =
+    have hPv' (z : F) : evalOnPoints domain (Polynomial.powerBatch P z) =
         Curve.polynomialCurveEval v z := by
       funext i
-      change (powerBatchedPolynomial P z).eval (domain i) = _
-      simp only [powerBatchedPolynomial_eval, Curve.polynomialCurveEval,
+      change (Polynomial.powerBatch P z).eval (domain i) = _
+      simp only [Polynomial.powerBatch_eval, Curve.polynomialCurveEval,
         Finset.sum_apply, Pi.smul_apply, smul_eq_mul, hPv]
     obtain ⟨E, hE, hgood⟩ := exists_exceptional_exactPowerAgreement_of_polynomials domain w P hP
     refine ⟨E, by simpa using hE, fun z hz Q hQ hA ↦ ?_⟩
@@ -75,19 +75,19 @@ theorem exists_exactPowerAgreement_unique_fin
       Q δ hδ1).mp (by simpa using hA)
     have hcodeQ : evalOnPoints domain Q ∈ code domain deg :=
       mem_code_iff_eval.mpr ⟨Q, hQ, fun _ ↦ rfl⟩
-    have hcodeP : evalOnPoints domain (powerBatchedPolynomial P z) ∈ code domain deg :=
-      mem_code_iff_eval.mpr ⟨_, powerBatchedPolynomial_degree_lt P z deg hP, fun _ ↦ rfl⟩
+    have hcodeP : evalOnPoints domain (Polynomial.powerBatch P z) ∈ code domain deg :=
+      mem_code_iff_eval.mpr ⟨_, Polynomial.degree_powerBatch_lt P z deg hP, fun _ ↦ rfl⟩
     have heq := eq_of_relClose_unique (code domain deg) (powerBatchedWord w z)
-      (evalOnPoints domain Q) (evalOnPoints domain (powerBatchedPolynomial P z))
+      (evalOnPoints domain Q) (evalOnPoints domain (Polynomial.powerBatch P z))
       hcodeQ hcodeP δ hδ hcQ (by rw [hPv', ← hword]; exact_mod_cast hclose z)
-    have hpoly : Q = powerBatchedPolynomial P z := by
+    have hpoly : Q = Polynomial.powerBatch P z := by
       apply Polynomial.eq_of_natDegree_lt_card_of_eval_eq Q _ domain.injective
         (fun i ↦ congrFun heq i)
       apply max_lt
       · exact (ReedSolomon.natDegree_lt_of_mem_degreeLT
           (Polynomial.mem_degreeLT.mpr hQ)).trans_le (by simpa using hdeg_le)
       · exact (ReedSolomon.natDegree_lt_of_mem_degreeLT (Polynomial.mem_degreeLT.mpr
-          (powerBatchedPolynomial_degree_lt P z deg hP))).trans_le (by simpa using hdeg_le)
+          (Polynomial.degree_powerBatch_lt P z deg hP))).trans_le (by simpa using hdeg_le)
     rw [hpoly]
     exact hgood z hz
   · refine ⟨S, by simpa [Nat.mul_comm] using Nat.le_of_not_gt hS, fun z hz Q hQ hA ↦ ?_⟩
