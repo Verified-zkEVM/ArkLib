@@ -24,11 +24,11 @@ a + D b₀ + (D - 1) b₁ + ... + (D - d) b_d < m A.
 The last expression is the `differentialWeight D` weight of the exponent, the same weight that
 bounds the degree of a specialization `Q(X, P, P', ...)` for `deg P ≤ D`.
 
-The hypothesis `d < D` is necessary for finiteness: it gives every jet variable weight at least
-`D - d > 0`, which bounds the total jet degree by `⌊(mA - 1)/(D - d)⌋`. At `D = d` the variable
-`Y_d` has weight zero and all of its powers are eligible. The space is therefore indexed by a
-proof of `d < D`, and its canonical monomial basis gives finite coefficient coordinates, the
-columns of the local constraint systems.
+The hypothesis `d < D` is a sufficient uniform finiteness guard: it gives every jet variable
+weight at least `D - d > 0`, which bounds the total jet degree by `⌊(mA - 1)/(D - d)⌋`.
+Without `d < D`, finiteness can fail: when `d = D = 0` and `0 < m * A`, every power of `Y₀`
+is eligible. The space is indexed by a proof of `d < D`, and its canonical monomial basis
+gives finite coefficient coordinates, the columns of the local constraint systems.
 
 ## Main statements
 

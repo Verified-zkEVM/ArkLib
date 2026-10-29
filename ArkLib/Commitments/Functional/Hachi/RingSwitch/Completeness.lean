@@ -27,8 +27,9 @@ public import ArkLib.Commitments.Functional.Hachi.RingSwitch.QuotientNorms
     (`vecLInftyNorm_le_of_mem_relRlinImage`), the quotient bound from the digit encoding
     (`rhoDigitsShort_of_digitBaseOk`) — so no admissibility hypothesis on the witness remains.
     `…_of_zShort` is the parameterized form over an arbitrary input relation.
-  * `rhoShort_honestLiftWitness` — the `ρ`-half of `liftShort` at the sharp quotient bound
-    `μ · 2d · βM · βz`, for a caller whose `R^lin` matrix is short.
+  * `rhoShort_honestLiftWitness` — an auxiliary raw-quotient coefficient-growth bound
+    `μ · 2d · βM · βz`, for a caller whose `R^lin` matrix is short. The digit conjunct of
+    `liftShort` instead follows from `rhoDigitsShort_of_digitBaseOk`.
 
   The lift consumes `relRlinImage`, not `relRlin`: `relRlin` forgets the matrix provenance and the
   value of `s.bound`, and `∀ s, bound ≤ s.bound` is false for positive `bound`, so the honest side
@@ -219,11 +220,13 @@ by `rfl`. -/
   rfl
 
 omit [NeZero q] in
-/-- **The `ρ`-half of `liftShort` for the honest lifted witness**, at the explicit growth bound
-`μ · 2d · βM · βz`: the honest quotients are coefficientwise selections from the row sum
+/-- **An auxiliary raw-quotient coefficient-growth bound for the honest lifted witness**, at
+the explicit growth bound `μ · 2d · βM · βz`: the honest quotients are coefficientwise selections
+from the row sum
 (`valMinAbs_natAbs_coeff_quotient_le`), so coefficient bounds on the `R^lin` matrix and on the
 witness transfer with **no growth from the division itself**. No wraparound hypothesis is needed
-(centered representatives are minimal among integer representatives). -/
+(centered representatives are minimal among integer representatives). The digit conjunct of
+`liftShort` instead follows from `rhoDigitsShort_of_digitBaseOk`. -/
 theorem rhoShort_honestLiftWitness {d : ℕ} (hφ : Φ.φ.toPoly = Polynomial.X ^ d + 1) (hdpos : 0 < d)
     (hd : 0 < Φ.φ.natDegree) {βM βz : ℕ} (s : RlinStatement Φ n μ)
     (z : ArkLib.Lattices.PolyVec (Rq Φ) μ)

@@ -90,6 +90,14 @@ def instructionAnswer (o : ∀ j, FinalOracleStatement s ω j) (α : FinalStatem
   | .inl op => arithmeticAnswer op
   | .inr op => accessAnswer s o α op
 
+/-- Every certified instruction response is the handler's answer. -/
+theorem eq_instructionAnswer (o : ∀ j, FinalOracleStatement s ω j) (α : FinalStatement F k)
+    (op : ArithmeticOp F ⊕ AccessOp s ω) (u : (InstructionSpec s o α).Range op) :
+    u = instructionAnswer s o α op := by
+  rcases op with op | op
+  · exact eq_arithmeticAnswer op u
+  · cases op <;> exact Subtype.ext u.property
+
 /-- Execute the instruction backend while recording every requested operation. -/
 def measuredAnswer (o : ∀ j, FinalOracleStatement s ω j) (α : FinalStatement F k) :
     QueryImpl (InstructionSpec s o α) (AddWriterT Cost Id) :=

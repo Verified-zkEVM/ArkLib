@@ -277,7 +277,7 @@ The **alphabet-normalized rate** of a code over the module alphabet `Fin s → F
 For a finite nontrivial field `F` and `s ≥ 1` this is `log_{|Σ|} |C| / n` for the alphabet
 `Σ = F^s`, the rate relative to the alphabet rather than to the base field. The formula is
 algebraically total: it assigns `0` when `s = 0` or the block length is zero. It agrees
-with `rate` exactly when `s = 1` (`alphabetRate_one_eq_rate`).
+with `rate` when `s = 1` (`alphabetRate_one_eq_rate`).
 -/
 noncomputable def alphabetRate [Semiring F] {s : ℕ}
     (MC : ModuleCode ι F (Fin s → F)) : ℚ≥0 :=

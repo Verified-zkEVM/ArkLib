@@ -86,7 +86,11 @@ re-export, and this file is the umbrella for the whole development.
   `β = 2ʳ·ω·b = 262144` and the sharper `131072` proved in this development, for which `5` digits
   are minimal (`tau_minimal`). Figure 9's tabulated `z = 30583` is exactly four digits' balanced
   capacity; the paper does not derive that entry as a deterministic bound on `z`. See the
-  `Params.lean` module docstring and `docs/kb/papers/NOZ26.md`.
+  `Params.lean` module docstring and `docs/kb/papers/NOZ26.md`. At this profile the inner-SIS
+  target of the weak-binding reduction is trivially solvable for every one-row key
+  (`HachiParams.innerSISSolutionAtProfile_valid`), so the reduction gives no concrete binding
+  guarantee here. The CWSS, inclusion, and extraction statements are unaffected; a concrete
+  binding claim needs a tighter norm analysis or revised parameters.
 
 Importing this file brings in the whole development. A new file joins its folder umbrella; the
 umbrella chain carries it here.

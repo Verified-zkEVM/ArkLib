@@ -84,6 +84,11 @@ def arithmeticAnswer {F : Type} [Zero F] [Add F] [Sub F] [Mul F] [Inv F] [Decida
   | .valueRead a i => ⟨a[i]?.getD 0, rfl⟩
   | .metadata => ()
 
+/-- Every certified arithmetic response is the handler's answer. -/
+theorem eq_arithmeticAnswer {F : Type} [Zero F] [Add F] [Sub F] [Mul F] [Inv F] [DecidableEq F]
+    (op : ArithmeticOp F) (u : (ArithmeticSpec F).Range op) : u = arithmeticAnswer op := by
+  cases op <;> first | rfl | exact Subtype.ext u.property
+
 /-- Execute arithmetic instructions while recording every requested operation. -/
 def arithmeticMeasured {F : Type} [Zero F] [Add F] [Sub F] [Mul F] [Inv F] [DecidableEq F] :
     QueryImpl (ArithmeticSpec F) (AddWriterT ArithmeticCost Id) :=

@@ -151,8 +151,10 @@ home_page/            site assets and assembled website root
   words and interpolates a bounded prefix of accepting positions. Its public result erases the
   same instruction program whose word and field operations are counted. `Spec/ExtractionCorrectness`
   proves exact returned-witness recovery; `Spec/KnowledgeSoundness` proves all-input knowledge
-  soundness with this extractor and the existing error. `Spec/Extraction/` owns the immutable
-  access backend, generated domain points, driver, and resource proofs; reusable measured
+  soundness with this extractor and the existing error. `Spec/MeasuredKnowledgeSoundness` adds
+  the program's operation-count vector through `knowledgeSoundnessWithResources`.
+  `Spec/Extraction/` owns the immutable access backend, generated domain points, driver, and
+  resource proofs; reusable measured
   polynomial operations live in `ToCompPoly/Univariate/Arithmetic*.lean`. Compiled small cases run
   with `lake exe fri-extractor-runtime`; classic trust checks live in
   `ArkLibTest/ProofSystem/Fri/Extraction.lean`.
@@ -700,6 +702,19 @@ home_page/            site assets and assembled website root
   equation of a query-guard-return oracle verifier (one message query, then a guard and a
   verdict that may read the answer and the challenges),
   `OracleVerifier.toVerifier_verify_of_query_guard`, is in `OracleReduction/Basic.lean`.
+- Measured extraction lives in `Security/Resources.lean`. Its game-independent core,
+  `OracleComp.MeasuredProgram` in `Data/OracleComp/MeasuredProgram.lean`, is an uncharged view of
+  a function's input, a charged instruction program on that view, and deterministic handlers, with
+  `Realizes` and a budget `CostAtMost` on every program path (VCVio `WorstCaseCostBound`). A
+  native backward witness map can be measured by it (see
+  `ArkLibTest/OracleReduction/MeasuredExtraction.lean`); no native resource contract exists yet.
+  `Extractor.Straightline.MeasuredProgram` is its instance at the straightline extractor's inputs.
+  Its `RealizesExtractor` relates the extractor's run to the program execution, and
+  `Verifier.knowledgeSoundnessWithResources` adds to `knowledgeSoundnessWith` that the named
+  extractor executes the program within the budget. This counts declared instructions only, not
+  running time.
+  `Data/OracleComp/DeterminedCost.lean` turns a deterministic handler's recorded cost into that
+  bound when responses are certified.
 - Coordinate-wise special soundness ([FMN24]/[NOZ26]) lives in
   `Security/CoordinateWiseSpecialSoundness/`: `Basic` defines the `SS(S, ℓ, k)` combinatorics
   (`CoordEq`, `IsSpecialSoundFamily`), `CWSSStructure`, `CWSSStructure.toShape`, and both forms

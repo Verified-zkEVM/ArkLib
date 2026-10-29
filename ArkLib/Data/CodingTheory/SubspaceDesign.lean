@@ -628,15 +628,15 @@ private lemma pow_dvd_classicalWronskian {F : Type*} [Field F] {σ s : ℕ}
 
 /-- Folded Reed-Solomon codes are subspace designs for the profile
 
-  `τ r = s * ρ / (s - r + 1)` for `1 ≤ r ≤ s`, and `τ r = 1` otherwise,
+  `τ r = (s * ρ - 1 / n) / (s - r + 1)` for `1 ≤ r ≤ s`, and `τ r = 1` otherwise,
 
 where `ρ` is the alphabet-normalized rate `LinearCode.alphabetRate (frsCode domain k s ω)`.
-Note `τ 1 = ρ` and `τ s = s * ρ`.
+For `s ≥ 1`, `τ 1 = ρ - 1 / (s * n)` and `τ s = s * ρ - 1 / n`.
 
 Since `dim (frsCode domain k s ω) = min k (s * n)`, the profile reads
-`τ r = (k / n) / (s - r + 1)` in the intended regime `k ≤ s * n`. Beyond it the rate
-saturates at `ρ = 1`, and the statement becomes vacuous: a profile that is at least `1`
-throughout `[1, s]` is a design profile for every code.
+`τ r = ((k - 1) / n) / (s - r + 1)` in the intended regime `1 ≤ k ≤ s * n`.
+When `1 ≤ s` and `k > s * n`, the rate saturates at `ρ = 1`, and
+`sum_finrank_inf_ker_le` gives the design bound.
 
 Both hypotheses on `ω` are necessary.
 
@@ -656,8 +656,8 @@ the other `frsCode` statements; restrict it from a larger ambient point set with
 `ReedSolomon.Folded.Admissible.subset`.
 
 The proof is a Wronskian root count. Outside `1 ≤ r ≤ s`, and for `A = ⊥`, the bound
-follows from `dim (A ⊓ ker (proj i)) ≤ σ := dim A`. When `k > s * n` the rate is `1`, and it
-follows from `sum_finrank_inf_ker_le`. This bookkeeping is shared with
+follows from `dim (A ⊓ ker (proj i)) ≤ σ := dim A`. When `1 ≤ s` and `k > s * n`, the rate
+is `1`, and the bound follows from `sum_finrank_inf_ker_le`. This bookkeeping is shared with
 `isSubspaceDesign_umCode_sub_one`. In the remaining regime `1 ≤ r ≤ s` and `1 ≤ k ≤ s * n`,
 the `n * s` folded evaluation points are distinct and nonzero, the encoder is injective on
 `degreeLT F k`, and `A` together with each `A ⊓ ker (proj i)` lifts to message-side
@@ -914,12 +914,15 @@ theorem isSubspaceDesign_frsCode
 
 /-- Univariate multiplicity codes are subspace designs for the profile
 
-  `τ r = s * ρ / (s - r + 1)` for `1 ≤ r ≤ s`, and `τ r = 1` otherwise,
+  `τ r = (s * ρ - 1 / n) / (s - r + 1)` for `1 ≤ r ≤ s`, and `τ r = 1` otherwise,
 
 where `ρ` is the alphabet-normalized rate `LinearCode.alphabetRate (umCode domain k s)`.
+For `s ≥ 1`, `τ 1 = ρ - 1 / (s * n)` and `τ s = s * ρ - 1 / n`.
 
-As in `isSubspaceDesign_frsCode`, `dim (umCode domain k s) = min k (s * n)`, so the
-statement stays exact in the saturated regime `k > s * n`, where `ρ = 1` makes it vacuous.
+Since `dim (umCode domain k s) = min k (s * n)`, the profile reads
+`τ r = ((k - 1) / n) / (s - r + 1)` in the intended regime `1 ≤ k ≤ s * n`.
+When `1 ≤ s` and `k > s * n`, the rate saturates at `ρ = 1`, and the design bound
+follows from `sum_finrank_inf_ker_le`, as in `isSubspaceDesign_frsCode_sub_one`.
 
 The characteristic hypothesis is what makes `d !` a unit for every `d < k`, so that the
 classical Wronskian of a basis of a space of polynomials of degree `< k` is nonzero. It is
