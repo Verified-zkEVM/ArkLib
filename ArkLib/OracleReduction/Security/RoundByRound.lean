@@ -91,6 +91,66 @@ def RoundByRound.unit : RoundByRound oSpec StmtIn Unit Unit pSpec (fun _ => Unit
   extractMid := fun _ _ _ _ => ()
   extractOut := fun _ _ _ => ()
 
+namespace RoundByRound
+
+variable {WitMid : Fin (n + 1) → Type}
+
+/-- Fold intermediate extraction backward along a transcript prefix. -/
+def foldPrefix (E : RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid)
+    (stmt : StmtIn) : (m : Fin (n + 1)) → pSpec.Transcript m → WitMid m → WitIn :=
+  Fin.induction (fun _ w ↦ E.extractIn stmt w)
+    (fun j ih tr w ↦ ih (Fin.init tr) (E.extractMid j stmt tr w))
+
+omit [∀ i, SampleableType (pSpec.Challenge i)] in
+@[simp]
+theorem foldPrefix_zero (E : RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid)
+    (stmt : StmtIn) (tr : pSpec.Transcript 0) (w : WitMid 0) :
+    E.foldPrefix stmt 0 tr w = E.extractIn stmt w := rfl
+
+omit [∀ i, SampleableType (pSpec.Challenge i)] in
+@[simp]
+theorem foldPrefix_succ (E : RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid)
+    (stmt : StmtIn) (j : Fin n) (tr : pSpec.Transcript j.succ) (w : WitMid j.succ) :
+    E.foldPrefix stmt j.succ tr w =
+      E.foldPrefix stmt j.castSucc (Fin.init tr) (E.extractMid j stmt tr w) := by
+  simp [foldPrefix, Fin.induction_succ]
+
+omit [∀ i, SampleableType (pSpec.Challenge i)] in
+/-- With no input witnesses, a round-by-round extractor exists only if no input statement, full
+transcript and output witness exist together: folding extraction from them would produce an
+input witness. Extraction is total, so this holds whatever the relations, including for
+transcripts the verifier rejects. -/
+theorem isEmpty_of_isEmpty_witIn [IsEmpty WitIn] (stmtIn : StmtIn) (tr : FullTranscript pSpec)
+    (witOut : WitOut) : IsEmpty (RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid) :=
+  ⟨fun E => isEmptyElim (E.foldPrefix stmtIn (.last n) tr (E.extractOut stmtIn tr witOut))⟩
+
+/-- The extractor with empty intermediate witnesses, available when no input statement, full
+transcript and output witness exist together. -/
+def ofIsEmpty [IsEmpty (StmtIn × FullTranscript pSpec × WitOut)] :
+    RoundByRound oSpec StmtIn WitIn WitOut pSpec (fun _ => Empty) where
+  extractIn := fun _ w => w.elim
+  extractMid := fun _ _ _ w => w
+  extractOut := fun stmtIn tr witOut => isEmptyElim (stmtIn, tr, witOut)
+
+omit [∀ i, SampleableType (pSpec.Challenge i)] in
+/-- A round-by-round extractor exists for some intermediate witness types exactly when input
+witnesses exist, or no input statement, full transcript and output witness exist together. -/
+theorem exists_nonempty_iff :
+    (∃ WitMid : Fin (n + 1) → Type,
+        Nonempty (RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid)) ↔
+      Nonempty WitIn ∨ IsEmpty (StmtIn × FullTranscript pSpec × WitOut) := by
+  refine ⟨fun ⟨_, ⟨E⟩⟩ => ?_, ?_⟩
+  · by_contra h
+    rw [not_or, not_nonempty_iff, not_isEmpty_iff] at h
+    obtain ⟨_, ⟨stmtIn, tr, witOut⟩⟩ := h
+    exact (isEmpty_of_isEmpty_witIn stmtIn tr witOut).false E
+  · rintro (h | h)
+    · exact ⟨fun _ => WitIn,
+        ⟨⟨fun _ w => w, fun _ _ _ w => w, fun _ _ _ => Classical.choice h⟩⟩⟩
+    · exact ⟨_, ⟨ofIsEmpty⟩⟩
+
+end RoundByRound
+
 open Classical in
 /-- An unbounded round-by-round extractor that selects a related input witness whenever one
 exists. It is noncomputable because the input relation is arbitrary. -/
@@ -227,6 +287,20 @@ def KnowledgeStateFunction.toStateFunction
       exact ⟨stmtOut, hStmtOut, hRelOut⟩
     have := kSF.toFun_full stmtIn tr witOut hProb
     simp_all
+
+/-- The everywhere false knowledge state function of `Extractor.RoundByRound.ofIsEmpty`. Its
+terminal law is vacuous because no input statement, full transcript and output witness exist
+together. -/
+def KnowledgeStateFunction.ofIsEmpty [IsEmpty (StmtIn × FullTranscript pSpec × WitOut)]
+    {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
+    {verifier : Verifier oSpec StmtIn StmtOut pSpec} :
+    verifier.KnowledgeStateFunction init impl relIn relOut
+      (Extractor.RoundByRound.ofIsEmpty (oSpec := oSpec)) where
+  toFun := fun _ _ _ _ => False
+  toFun_empty := fun _ _ h => h.elim
+  toFun_next := fun _ _ _ _ _ _ h => h
+  toFun_full := fun stmtIn tr witOut _ =>
+    isEmptyElim (α := StmtIn × FullTranscript pSpec × WitOut) (stmtIn, tr, witOut)
 
 /-- An ordinary state function induces a knowledge state function by unbounded extraction.
 The extractor is noncomputable because it chooses related input witnesses. -/

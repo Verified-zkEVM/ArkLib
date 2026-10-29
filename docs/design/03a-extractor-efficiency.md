@@ -101,8 +101,9 @@ soundness to soundness needs no inhabitation assumption. These results preserve 
 prefix quantifiers and terminal semantics; they are distinct from the terminal
 relation-soundness equivalence.
 
-The open pull request [#1396](https://github.com/Verified-zkEVM/ArkLib/pull/1396), not yet
-merged, characterizes the remaining carrier cases: the equivalence holds uniformly over
+`Verifier.forall_rbrSoundness_iff_rbrKnowledgeSoundness_iff` in
+`ArkLib/OracleReduction/Security/Implications.lean` characterizes the remaining carrier cases:
+the equivalence holds uniformly over
 relations and errors exactly when the input-witness type is inhabited or
 `StmtIn × FullTranscript pSpec × WitOut` is empty. Otherwise total backward extraction is
 impossible, even for rejected transcripts and unrelated output witnesses. This is a constraint of

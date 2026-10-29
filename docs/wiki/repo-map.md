@@ -681,6 +681,13 @@ home_page/            site assets and assembled website root
   from the
   transcript-tree notions below: its extractor type is `Extractor.RoundByRound` on transcripts,
   not `Extractor.TreeBased`, and it carries no escape-event layer.
+  `Security/Implications.lean` identifies round-by-round knowledge soundness with soundness of the
+  induced languages under unbounded extraction. Without
+  input witnesses the identification holds for all relations and errors exactly when no input
+  statement, full transcript and output witness exist together
+  (`Verifier.forall_rbrSoundness_iff_rbrKnowledgeSoundness_iff`), because
+  only then does a round-by-round extractor exist (`Extractor.RoundByRound.exists_nonempty_iff`);
+  `ArkLibTest/OracleReduction/RoundByRoundCharacterization.lean` checks the separating example.
   `Security/Guarded.lean` defines guarded verifiers, independent of any security notion:
   `Verifier.IsGuardedWith`/`IsGuarded`, their data form `Verifier.GuardedForm` (check and verdict
   map as fields), `GuardedForm.append`, the seam run lemma `Verifier.append_run_guardedLeft`, and
