@@ -6,13 +6,16 @@ Authors: Quang Dao
 module
 
 public import ArkLib.ProofSystem.Plonk.GrandProductData
-public import ArkLib.ProofSystem.Component.PowerBatch
+public import ArkLib.ProofSystem.Component.GeneratorBatch
 
-/-! # The Plonk grand-product oracle reduction
+/-! # Plonk permutation grand product: oracle reduction
 
-One joint field-pair challenge precedes a degree-bounded accumulator message. The output retains
-all wire and accumulator oracles and exposes the gate, recurrence and boundary as virtual
-polynomials. Only evaluations of the retained oracles are available to the verifier.
+The univariate accumulator polynomial `Z` over the multiplicative evaluation domain satisfies
+`Z(1) = 1` and `Z(ωx) * Q(x) = Z(x) * N(x)`. One joint field-pair challenge precedes its
+degree-bounded message. The output retains all wire and accumulator oracles and exposes the gate,
+recurrence and boundary as virtual polynomials for the quotient zero test. Only evaluations of the
+retained oracles are available to the verifier. The multilinear (GKR-style) grand-product argument
+is a different protocol and is not formalized here.
 -/
 
 @[expose] public section
@@ -26,44 +29,44 @@ variable (F : Type) [Field F] [DecidableEq F] (n : ℕ)
 
 /-- A single joint challenge followed by the accumulator polynomial. -/
 @[reducible] def pSpec : ProtocolSpec 2 :=
-  ⟨!v[.V_to_P, .P_to_V], !v[F × F, PowerBatch.Poly F n]⟩
+  ⟨!v[.V_to_P, .P_to_V], !v[F × F, GeneratorBatch.Poly F n]⟩
 
 instance : ∀ i, OracleInterface ((pSpec F n).Message i)
   | ⟨0, h⟩ => nomatch h
-  | ⟨1, _⟩ => inferInstanceAs (OracleInterface (PowerBatch.Poly F n))
+  | ⟨1, _⟩ => inferInstanceAs (OracleInterface (GeneratorBatch.Poly F n))
 
 instance [SampleableType F] : ∀ i, SampleableType ((pSpec F n).Challenge i)
   | ⟨0, _⟩ => inferInstanceAs (SampleableType (F × F))
   | ⟨1, h⟩ => nomatch h
 
 /-- Three wire polynomials, fixed before the challenge. -/
-abbrev OStmtIn := fun _ : Fin 3 => PowerBatch.Poly F n
+abbrev OStmtIn := fun _ : Fin 3 => GeneratorBatch.Poly F n
 
 /-- Retained wires, the accumulator, and the three derived residuals. -/
 abbrev OStmtOut : Fin 3 ⊕ (Unit ⊕ Fin 3) → Type :=
   Sum.elim (OStmtIn F n)
-    (Sum.elim (fun _ => PowerBatch.Poly F n)
-      (fun _ => PowerBatch.Poly F (residualDegree n + 1)))
+    (Sum.elim (fun _ => GeneratorBatch.Poly F n)
+      (fun _ => GeneratorBatch.Poly F (residualDegree n + 1)))
 
 instance : ∀ i, OracleInterface (OStmtOut F n i)
-  | .inl _ => inferInstanceAs (OracleInterface (PowerBatch.Poly F n))
-  | .inr (.inl _) => inferInstanceAs (OracleInterface (PowerBatch.Poly F n))
+  | .inl _ => inferInstanceAs (OracleInterface (GeneratorBatch.Poly F n))
+  | .inr (.inl _) => inferInstanceAs (OracleInterface (GeneratorBatch.Poly F n))
   | .inr (.inr _) => inferInstanceAs
-      (OracleInterface (PowerBatch.Poly F (residualDegree n + 1)))
+      (OracleInterface (GeneratorBatch.Poly F (residualDegree n + 1)))
 
 variable {F n} {m : ℕ} (ω : F) (hω : IsPrimitiveRoot ω n) (hn : 2 ≤ n)
   (cs : ConstraintSystem F m n)
-  (L : CosetLabels (EvaluationDomain.primitiveRoot ω hω)) (pi : PowerBatch.Poly F n)
+  (L : CosetLabels (EvaluationDomain.primitiveRoot ω hω)) (pi : GeneratorBatch.Poly F n)
 
 /-- Materialized residuals share their underlying retained wire and accumulator data. -/
-def outputOracles (a : Fin 3 → PowerBatch.Poly F n) (r : F × F)
-    (Z : PowerBatch.Poly F n) : ∀ i, OStmtOut F n i
+def outputOracles (a : Fin 3 → GeneratorBatch.Poly F n) (r : F × F)
+    (Z : GeneratorBatch.Poly F n) : ∀ i, OStmtOut F n i
   | .inl c => a c
   | .inr (.inl _) => Z
   | .inr (.inr j) => residuals ω hω hn cs L pi a r.1 r.2 Z j
 
 /-- The verifier records the joint challenge alongside its output oracles. -/
-def output (a : Fin 3 → PowerBatch.Poly F n) (r : F × F) (Z : PowerBatch.Poly F n) :=
+def output (a : Fin 3 → GeneratorBatch.Poly F n) (r : F × F) (Z : GeneratorBatch.Poly F n) :=
   (r, outputOracles ω hω hn cs L pi a r Z)
 
 /-- The initial claim includes the gate equation and copy constraints. -/
@@ -167,7 +170,7 @@ theorem oracleVerifier_toVerifier (stmt : Unit × ∀ i, OStmtIn F n i)
   erw [simulateQ_optionT_pure]
   rfl
 
-/-- The grand-product stage forwards without a runtime guard. -/
+/-- The Plonk permutation grand product stage forwards without a runtime guard. -/
 def guardedForm : (oracleVerifier ω hω hn cs L pi oSpec).toVerifier.GuardedForm where
   check _ _ := true
   out stmt tr := output ω hω hn cs L pi stmt.2 (tr 0) (tr 1)
@@ -176,7 +179,7 @@ def guardedForm : (oracleVerifier ω hω hn cs L pi oSpec).toVerifier.GuardedFor
 /-- The honest prover interpolates ratio prefixes, including its total zero-factor fallback. -/
 def oracleProver : OracleProver oSpec Unit (OStmtIn F n) Unit
     (F × F) (OStmtOut F n) Unit (pSpec F n) where
-  PrvState _ := (Fin 3 → PowerBatch.Poly F n) × (F × F)
+  PrvState _ := (Fin 3 → GeneratorBatch.Poly F n) × (F × F)
   input x := (x.1.2, (0, 0))
   sendMessage
     | ⟨0, h⟩ => nomatch h
@@ -189,7 +192,7 @@ def oracleProver : OracleProver oSpec Unit (OStmtIn F n) Unit
 
 instance : (oracleProver ω hω hn cs L pi oSpec).OutputIsPure := ⟨_, fun _ => rfl⟩
 
-/-- The joint-challenge grand-product oracle reduction. -/
+/-- The joint-challenge Plonk permutation grand product oracle reduction. -/
 def oracleReduction : OracleReduction oSpec Unit (OStmtIn F n) Unit
     (F × F) (OStmtOut F n) Unit (pSpec F n) :=
   ⟨oracleProver ω hω hn cs L pi oSpec, oracleVerifier ω hω hn cs L pi oSpec⟩

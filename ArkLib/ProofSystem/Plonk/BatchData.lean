@@ -6,6 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.ProofSystem.Plonk.GrandProductData
+public import ArkLib.Data.CodingTheory.ProximityGenerator.ZeroEvading
 
 /-! # Plonk batching data
 
@@ -17,7 +18,7 @@ bound. Evaluation commutes with this operation, and vanishing is interpreted on 
 
 namespace Plonk.Batch
 
-open CompPoly
+open CompPoly CoreDefinitions
 
 variable {F : Type} [Field F] [DecidableEq F] {n d : ℕ}
 
@@ -31,13 +32,15 @@ theorem vanishes_iff_zeroOn (ω : F) (hω : IsPrimitiveRoot ω n) (p : Polynomia
   simp [EvaluationDomain.Vanishes, Polynomial.ZeroOn, points]
 
 /-- Repackage the component's actual batch with the exact inclusive residual budget. -/
-def batch (f : Fin 3 → PowerBatch.Poly F (d + 1)) (α : F) :
+def batch (f : Fin 3 → GeneratorBatch.Poly F (d + 1)) (α : F) :
     FiniteDomainQuotient.Poly F d :=
-  ⟨(PowerBatch.batch (Nat.succ_pos d) f α).val,
-    Nat.le_of_lt_succ (PowerBatch.batch_natDegree_lt (Nat.succ_pos d) f α)⟩
+  ⟨(GeneratorBatch.batch (Nat.succ_pos d) f (powerBatchGenerator F 3 α)).val,
+    Nat.le_of_lt_succ (GeneratorBatch.batch_natDegree_lt
+      (Nat.succ_pos d) f (powerBatchGenerator F 3 α))⟩
 
 /-- Tightening the degree proof preserves the component's polynomial value. -/
-theorem batch_val (f : Fin 3 → PowerBatch.Poly F (d + 1)) (α : F) :
-    (batch f α).val = (PowerBatch.batch (Nat.succ_pos d) f α).val := rfl
+theorem batch_val (f : Fin 3 → GeneratorBatch.Poly F (d + 1)) (α : F) :
+    (batch f α).val =
+      (GeneratorBatch.batch (Nat.succ_pos d) f (powerBatchGenerator F 3 α)).val := rfl
 
 end Plonk.Batch

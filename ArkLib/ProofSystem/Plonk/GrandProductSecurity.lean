@@ -7,11 +7,13 @@ module
 
 public import ArkLib.ProofSystem.Plonk.GrandProduct
 
-/-! # Fixed-prefix knowledge for the Plonk grand product
+/-! # Plonk permutation grand product: fixed-prefix knowledge
 
-Immediately after the joint challenge, knowledge asserts existence of a bounded accumulator
-whose three residuals vanish. Its later message makes that accumulator concrete. A false initial
-claim can cross this challenge only when the labeled permutation fingerprint vanishes.
+Immediately after the joint challenge, knowledge asserts existence of a degree-bounded univariate
+accumulator over the multiplicative evaluation domain whose three residuals vanish. Its boundary
+and recurrence express `Z(1) = 1` and `Z(ωx) * Q(x) = Z(x) * N(x)` for the quotient zero test.
+Its later message makes that accumulator concrete. A false initial claim can cross this challenge
+only when the labeled permutation fingerprint vanishes.
 -/
 
 @[expose] public section
@@ -24,7 +26,7 @@ open scoped NNReal ENNReal ProbabilityTheory
 variable {F : Type} [Field F] [DecidableEq F] {m n : ℕ}
   (ω : F) (hω : IsPrimitiveRoot ω n) (hn : 2 ≤ n)
   (cs : ConstraintSystem F m n)
-  (L : CosetLabels (EvaluationDomain.primitiveRoot ω hω)) (pi : PowerBatch.Poly F n)
+  (L : CosetLabels (EvaluationDomain.primitiveRoot ω hω)) (pi : GeneratorBatch.Poly F n)
   {ι : Type} (oSpec : OracleSpec ι)
 
 /-- All witnesses are unique after the initial wire oracles have been revealed. -/
@@ -43,7 +45,7 @@ def knowledgeStateFunction :
     init impl (relIn ω hω cs pi) (relOut ω hω) (rbrExtractor (F := F) (n := n) oSpec) where
   toFun
     | 0 => fun stmt _ _ => InputRelation ω hω cs pi stmt.2
-    | 1 => fun stmt tr _ => ∃ Z : PowerBatch.Poly F n,
+    | 1 => fun stmt tr _ => ∃ Z : GeneratorBatch.Poly F n,
         OutputRelation ω hω hn cs L pi stmt.2 (tr ⟨0, by decide⟩).1 (tr ⟨0, by decide⟩).2 Z
     | 2 => fun stmt tr _ =>
         OutputRelation ω hω hn cs L pi stmt.2
@@ -53,7 +55,7 @@ def knowledgeStateFunction :
     intro i hi stmt tr msg w h
     fin_cases i
     · nomatch hi
-    · change ∃ Z : PowerBatch.Poly F n,
+    · change ∃ Z : GeneratorBatch.Poly F n,
         OutputRelation ω hω hn cs L pi stmt.2
           (tr ⟨0, by decide⟩).1 (tr ⟨0, by decide⟩).2 Z
       exact ⟨msg, h⟩
@@ -75,7 +77,7 @@ theorem oracleVerifier_rbrKnowledgeSoundnessWorstCaseWith :
   fin_cases i
   · change Pr{let r ← $ᵗ (F × F)}[∃ _ : Unit,
       ¬ InputRelation ω hω cs pi stmt.2 ∧
-        ∃ Z : PowerBatch.Poly F n, OutputRelation ω hω hn cs L pi stmt.2 r.1 r.2 Z] ≤ _
+        ∃ Z : GeneratorBatch.Poly F n, OutputRelation ω hω hn cs L pi stmt.2 r.1 r.2 Z] ≤ _
     simp only [exists_const]
     by_cases hg : (EvaluationDomain.primitiveRoot ω hω).Vanishes
         (gate ω hω cs pi stmt.2).val.toPoly
