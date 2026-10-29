@@ -87,19 +87,19 @@ noncomputable def error : (i : Fin 7) → (stageSpec (R := R) sz i).ChallengeIdx
 
 /-- Each stage satisfies its named fixed-prefix certificate at the displayed error. -/
 theorem stageCertificate (i : Fin 7) :
-    (stage (R := R) sz oSpec i).verifier.toVerifier.rbrKnowledgeSoundnessWorstCaseWith
+    (stage (R := R) sz oSpec i).verifier.toVerifier.rbrKnowledgeSoundnessWith
       init impl (relation (R := R) sz i.castSucc) (relation (R := R) sz i.succ)
       (intermediateWitness (R := R) sz oSpec init impl i)
       (extractor (R := R) sz oSpec init impl i) (knowledgeState (R := R) sz oSpec init impl i)
       (error sz i) := by
   fin_cases i
-  · exact WitnessAttachment.rbrKnowledgeSoundnessWorstCaseWith sz oSpec init impl
-  · exact ZeroCheck.challenge_rbrKnowledgeSoundnessWorstCaseWith params oSpec
-  · exact FirstSumcheck.rbrKnowledgeSoundnessWorstCaseWith params oSpec init impl
-  · exact SendEvaluations.verifier_rbrKnowledgeSoundnessWorstCaseWith params oSpec init impl
-  · exact Batching.batch_rbrKnowledgeSoundnessWorstCaseWith (F := R) params oSpec init impl
-  · exact SecondSumcheck.rbrKnowledgeSoundnessWorstCaseWith params oSpec init impl
-  · exact Terminal.finalVerifier_rbrKnowledgeSoundnessWorstCaseWith params oSpec init impl
+  · exact WitnessAttachment.rbrKnowledgeSoundnessWith sz oSpec init impl
+  · exact ZeroCheck.challenge_rbrKnowledgeSoundnessWith params oSpec
+  · exact FirstSumcheck.rbrKnowledgeSoundnessWith params oSpec init impl
+  · exact SendEvaluations.verifier_rbrKnowledgeSoundnessWith params oSpec init impl
+  · exact Batching.batch_rbrKnowledgeSoundnessWith (F := R) params oSpec init impl
+  · exact SecondSumcheck.rbrKnowledgeSoundnessWith params oSpec init impl
+  · exact Terminal.finalVerifier_rbrKnowledgeSoundnessWith params oSpec init impl
 
 end Assembly
 
@@ -176,13 +176,13 @@ noncomputable def challengeError (i : (pSpec (R := R) sz).ChallengeIdx) : ℝ≥
 
 /-- The seven-stage verifier has a named fixed-prefix knowledge certificate for the original
 R1CS relation, with each combined challenge charged exactly its component error. -/
-theorem rbrKnowledgeSoundnessWorstCaseWith :
-    (oracleReduction (R := R) sz oSpec).verifier.toVerifier.rbrKnowledgeSoundnessWorstCaseWith
+theorem rbrKnowledgeSoundnessWith :
+    (oracleReduction (R := R) sz oSpec).verifier.toVerifier.rbrKnowledgeSoundnessWith
       init impl (WitnessAttachment.relIn sz) (Terminal.relOut params) _
       (rbrExtractor (R := R) sz oSpec init impl)
       (knowledgeStateFunction (R := R) sz oSpec init impl)
       (challengeError (R := R) sz) := by
-  exact OracleVerifier.seqCompose_rbrKnowledgeSoundnessWorstCaseWith_of_guarded
+  exact OracleVerifier.seqCompose_rbrKnowledgeSoundnessWith_of_guarded
     (Assembly.Statement (R := R) sz) (Assembly.Oracles (R := R) sz)
     (Assembly.Witness (R := R) sz) (Assembly.relation (R := R) sz)
     (fun i => (Assembly.stage (R := R) sz oSpec i).verifier)
@@ -233,9 +233,9 @@ theorem knowledgeSoundnessWith :
       (rbrExtractor (R := R) sz oSpec init impl).foldExtractor
       (totalError (params).ℓ_m (params).ℓ_n (Fintype.card R)) := by
   rw [← sum_challengeError (R := R) sz]
-  exact OracleVerifier.knowledgeSoundnessWith_of_rbrKnowledgeSoundnessWorstCaseWith_of_guarded
+  exact OracleVerifier.knowledgeSoundnessWith_of_rbrKnowledgeSoundnessWith_of_guarded
     (guardedForm (R := R) sz oSpec) (knowledgeStateFunction (R := R) sz oSpec init impl)
-    (rbrKnowledgeSoundnessWorstCaseWith (R := R) sz oSpec init impl)
+    (rbrKnowledgeSoundnessWith (R := R) sz oSpec init impl)
 
 /-- The executable first-message extractor is knowledge sound for the original R1CS relation
 with the exact additive error `(4s + 2t + 1) / |R|`. -/

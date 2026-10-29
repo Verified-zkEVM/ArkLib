@@ -587,12 +587,12 @@ lemma prEvent_rbrExtractionFailureEvent_le_queryRbrKnowledgeError {σ : Type} (i
           simpa only [SampleableType.prEvent_uniformSample] using h_single
       _ = ↑(queryRbrKnowledgeErrorSingleRepetition (𝓡 := 𝓡) ^ γ_repetitions) := by
           rw [ENNReal.coe_pow]
-/-- Worst-case round-by-round knowledge soundness for the oracle-query verifier.
+/-- Round-by-round knowledge soundness for the oracle-query verifier.
 The fixed input and empty prefix precede its fresh family of query points. -/
-theorem queryOracleVerifier_rbrKnowledgeSoundnessWorstCase {σ : Type} (init : ProbComp σ)
+theorem queryOracleVerifier_rbrKnowledgeSoundness {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (OracleVerifier.toVerifier (Oₛₒ := fun i : Empty => nomatch i)
-      (queryOracleVerifier 𝔽q β (ϑ := ϑ) γ_repetitions)).rbrKnowledgeSoundnessWorstCase
+      (queryOracleVerifier 𝔽q β (ϑ := ϑ) γ_repetitions)).rbrKnowledgeSoundness
       init impl
       (relIn := finalSumcheckRelOut 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
       (relOut := acceptRejectOracleRel)
@@ -611,16 +611,16 @@ theorem queryOracleVerifier_rbrKnowledgeSoundnessWorstCase {σ : Type} (init : P
   exact (SampleableType.prEvent_uniformSample_inst_irrel _ _ _).le.trans h
 
 /-- The averaged guarantee follows from the fixed-input, fresh-challenge theorem. -/
-theorem queryOracleVerifier_rbrKnowledgeSoundness {σ : Type} (init : ProbComp σ)
+theorem queryOracleVerifier_rbrKnowledgeSoundnessAveraged {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-    (queryOracleVerifier 𝔽q β (ϑ := ϑ) γ_repetitions).rbrKnowledgeSoundness init impl
+    (queryOracleVerifier 𝔽q β (ϑ := ϑ) γ_repetitions).rbrKnowledgeSoundnessAveraged init impl
       (Oₛₒ := fun i : Empty => nomatch i)
       (relIn := finalSumcheckRelOut 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
       (relOut := acceptRejectOracleRel)
       (rbrKnowledgeError := queryRbrKnowledgeError 𝔽q β γ_repetitions
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
-  Verifier.rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness init impl
-    (queryOracleVerifier_rbrKnowledgeSoundnessWorstCase 𝔽q β γ_repetitions init impl)
+  Verifier.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged init impl
+    (queryOracleVerifier_rbrKnowledgeSoundness 𝔽q β γ_repetitions init impl)
 
 end FinalQueryRoundIOR
 end

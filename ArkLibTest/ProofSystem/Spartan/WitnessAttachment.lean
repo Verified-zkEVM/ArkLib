@@ -104,12 +104,12 @@ example : (Spartan.WitnessAttachment.oracleReduction (R := F) size emptySpec).pe
   Spartan.WitnessAttachment.perfectCompleteness size emptySpec (pure ()) emptyImpl
 
 example : (Spartan.WitnessAttachment.oracleVerifier (R := F) size
-      emptySpec).toVerifier.rbrKnowledgeSoundnessWorstCaseWith (pure ()) emptyImpl
+      emptySpec).toVerifier.rbrKnowledgeSoundnessWith (pure ()) emptyImpl
     (Spartan.WitnessAttachment.relIn size) (Spartan.WitnessAttachment.relOut size)
     (fun _ => R1CS.Witness F params.toSizeR1CS)
     (Spartan.WitnessAttachment.rbrExtractor size emptySpec)
     (Spartan.WitnessAttachment.knowledgeStateFunction size emptySpec (pure ()) emptyImpl)
     (fun _ => 0) :=
-  Spartan.WitnessAttachment.rbrKnowledgeSoundnessWorstCaseWith size emptySpec (pure ()) emptyImpl
+  Spartan.WitnessAttachment.rbrKnowledgeSoundnessWith size emptySpec (pure ()) emptyImpl
 
 end SpartanTest.WitnessAttachment

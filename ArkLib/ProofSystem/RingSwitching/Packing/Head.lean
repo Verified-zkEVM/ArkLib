@@ -29,7 +29,7 @@ an identity equivalence. There is one message and one challenge, with no extra s
 The output is the initial product-sumcheck statement on `A_c · p`, retaining `(q,c)`, the same
 commitment oracle collection and the same packed polynomial. `RingSwitch` appends product sumcheck
 directly. Completeness uses only the operational batching rule and scalar reconstruction.
-Worst-case round-by-round knowledge soundness uses a separation certificate and injective
+Round-by-round knowledge soundness uses a separation certificate and injective
 coefficient transport. Equal component evaluations among compatible polynomials at each fixed query
 and oracle statement suffice for the standalone head theorem. Polynomial functionality supplies
 that premise as a corollary; full ring-switching security retains functionality through sumcheck.
@@ -444,58 +444,58 @@ theorem bad_event_le_of_fixed_candidates
 /-- The single fresh challenge incurs exactly the strategy's separation bound. -/
 def rbrError (_i : (pSpec (M := M) data bat.toBatchingRule).ChallengeIdx) : ℝ≥0 := bat.error
 
-/-- Worst-case round-by-round knowledge soundness for the head requires only equal
+/-- Round-by-round knowledge soundness for the head requires only equal
 component evaluations among compatible polynomials at each fixed query and oracle statement. -/
-theorem rbrKnowledgeSoundnessWorstCaseWith_of_partials_eq
+theorem rbrKnowledgeSoundnessWith_of_partials_eq
     (hpartials : ∀ (q : layout.Query) (ost : ∀ j, pc.OStmt j)
       (p p' : data.P⦃≤ 1⦄[X Fin m]), pc.commitsTo ost p → pc.commitsTo ost p' → ∀ i,
         aeval (layout.point q) (data.unpack p i).val =
           aeval (layout.point q) (data.unpack p' i).val)
     (hinj : Function.Injective (algebraMap data.P C))
     {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-    Verifier.rbrKnowledgeSoundnessWorstCaseWith init impl
+    Verifier.rbrKnowledgeSoundnessWith init impl
       (relIn data m layout pc) (relOut data m layout bat.toBatchingRule pc) (verifier data m layout
         messageEquiv bat.toBatchingRule pc).toVerifier
       (WitMid data m layout) (extractor (M := M) data m layout bat.toBatchingRule pc)
       (knowledgeStateFunction data m layout messageEquiv bat.toBatchingRule pc init impl) (rbrError
         data bat) := by
   classical
-  refine Verifier.rbrKnowledgeSoundnessWorstCaseWith_of_two_message rfl rfl _ _
+  refine Verifier.rbrKnowledgeSoundnessWith_of_two_message rfl rfl _ _
     fun stmt tr => ?_
   exact bad_event_le_of_partials_eq data m layout bat pc hinj stmt.1 stmt.2
     (messageEquiv (tr ⟨0, by change 0 < 1; decide⟩)) (hpartials stmt.1.1 stmt.2)
 
-/-- Functional compatibility implies worst-case round-by-round knowledge soundness for the
+/-- Functional compatibility implies round-by-round knowledge soundness for the
 concrete extractor and knowledge states. -/
-theorem rbrKnowledgeSoundnessWorstCaseWith
+theorem rbrKnowledgeSoundnessWith
     (hfunctional : pc.Functional) (hinj : Function.Injective (algebraMap data.P C))
     {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-    Verifier.rbrKnowledgeSoundnessWorstCaseWith init impl
+    Verifier.rbrKnowledgeSoundnessWith init impl
       (relIn data m layout pc) (relOut data m layout bat.toBatchingRule pc) (verifier data m layout
         messageEquiv bat.toBatchingRule pc).toVerifier
       (WitMid data m layout) (extractor (M := M) data m layout bat.toBatchingRule pc)
       (knowledgeStateFunction data m layout messageEquiv bat.toBatchingRule pc init impl) (rbrError
         data bat) :=
-  rbrKnowledgeSoundnessWorstCaseWith_of_partials_eq data m layout messageEquiv bat pc
+  rbrKnowledgeSoundnessWith_of_partials_eq data m layout messageEquiv bat pc
     (fun _ _ p p' hp hp' _ => by rw [hfunctional hp hp']) hinj init impl
 
 /-- The same concrete knowledge states and extractor support a commitment with a uniformly
 bounded finite list of compatible packed polynomials. Each list depends only on the original
 oracle statement, so it is fixed before the fresh batching challenge. -/
-theorem rbrKnowledgeSoundnessWorstCaseWith_of_fixed_candidates
+theorem rbrKnowledgeSoundnessWith_of_fixed_candidates
     (hinj : Function.Injective (algebraMap data.P C))
     (candidates : (∀ j, pc.OStmt j) → Finset data.P⦃≤ 1⦄[X Fin m])
     (hcover : ∀ ost p, pc.commitsTo ost p → p ∈ candidates ost)
     {L : ℕ} (hcard : ∀ ost, (candidates ost).card ≤ L)
     {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-    Verifier.rbrKnowledgeSoundnessWorstCaseWith init impl
+    Verifier.rbrKnowledgeSoundnessWith init impl
       (relIn data m layout pc) (relOut data m layout bat.toBatchingRule pc) (verifier data m layout
         messageEquiv bat.toBatchingRule pc).toVerifier
       (WitMid data m layout) (extractor (M := M) data m layout bat.toBatchingRule pc)
       (knowledgeStateFunction data m layout messageEquiv bat.toBatchingRule pc init impl) (fun _ =>
         L * bat.error) := by
   classical
-  refine Verifier.rbrKnowledgeSoundnessWorstCaseWith_of_two_message rfl rfl _ _
+  refine Verifier.rbrKnowledgeSoundnessWith_of_two_message rfl rfl _ _
     fun stmt tr => ?_
   rw [ENNReal.coe_mul, ENNReal.coe_natCast]
   exact bad_event_le_of_fixed_candidates data m layout bat pc hinj stmt.1 stmt.2

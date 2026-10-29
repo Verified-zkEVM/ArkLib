@@ -179,13 +179,13 @@ def knowledgeStateFunction :=
 variable [Fintype F]
 
 /-- The quotient/evaluation/terminal stage has exactly `4(n - 1) / |F|` fixed-prefix error. -/
-theorem oracleVerifier_rbrKnowledgeSoundnessWorstCaseWith :
-    (oracleVerifier ω hω hn oSpec).toVerifier.rbrKnowledgeSoundnessWorstCaseWith
+theorem oracleVerifier_rbrKnowledgeSoundnessWith :
+    (oracleVerifier ω hω hn oSpec).toVerifier.rbrKnowledgeSoundnessWith
       init impl (relIn ω hω) (relOut (F := F) (n := n)) (fun _ => Unit × Unit)
       (rbrExtractor ω hω hn oSpec) (knowledgeStateFunction ω hω hn oSpec init impl)
       (fun _ => (GrandProduct.residualDegree n : ℝ≥0) / Fintype.card F) := by
-  apply OracleVerifier.liftContext_rbrKnowledgeSoundnessWorstCaseWith
-  apply QuotientZeroTest.oracleVerifier_rbrKnowledgeSoundnessWorstCaseWith
+  apply OracleVerifier.liftContext_rbrKnowledgeSoundnessWith
+  apply QuotientZeroTest.oracleVerifier_rbrKnowledgeSoundnessWith
   change (Batch.points ω hω).card ≤ GrandProduct.residualDegree n
   rw [points_card]
   unfold GrandProduct.residualDegree
