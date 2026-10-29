@@ -3,7 +3,7 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.ProofSystem.Spartan.Layout
+import ArkLib.ProofSystem.Spartan.Algebra.Layout
 import Mathlib.Data.ZMod.Basic
 
 /-! Field-point checks for the unequal public/witness layout and executable dimension selection. -/

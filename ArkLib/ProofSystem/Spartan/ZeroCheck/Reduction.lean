@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Spartan.ZeroCheckRelation
+public import ArkLib.ProofSystem.Spartan.ZeroCheck.Relation
 public import ArkLib.ProofSystem.Spartan.Terminal
 public import ArkLib.ProofSystem.Component.RandomEvaluation
 

@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Spartan.Realization
+public import ArkLib.ProofSystem.Spartan.Algebra.Realization
 public import ArkLib.ProofSystem.Component.CheckClaim
 public import ArkLib.OracleReduction.Security.GuardedRoundByRound
 

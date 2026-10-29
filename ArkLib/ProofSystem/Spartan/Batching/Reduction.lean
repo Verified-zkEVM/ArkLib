@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Spartan.BatchingRelation
+public import ArkLib.ProofSystem.Spartan.Batching.Relation
 public import ArkLib.OracleReduction.Security.GuardedRoundByRound
 
 /-!

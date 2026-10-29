@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Spartan.Layout
+public import ArkLib.ProofSystem.Spartan.Algebra.Layout
 
 /-!
 # Spartan polynomial identities

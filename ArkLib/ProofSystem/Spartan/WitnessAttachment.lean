@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Spartan.ZeroCheck
+public import ArkLib.ProofSystem.Spartan.ZeroCheck.Reduction
 public import ArkLib.ProofSystem.Component.SendWitness
 public import ArkLib.OracleReduction.Security.GuardedRoundByRound
 public import ArkLib.OracleReduction.LiftContext.Purity

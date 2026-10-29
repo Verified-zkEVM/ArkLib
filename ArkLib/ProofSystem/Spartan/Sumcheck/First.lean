@@ -5,11 +5,11 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Spartan.VirtualOracle
-public import ArkLib.ProofSystem.Spartan.Computable
+public import ArkLib.ProofSystem.Spartan.Sumcheck.VirtualOracle
+public import ArkLib.ProofSystem.Spartan.Algebra.Computable
 public import ArkLib.ProofSystem.Sumcheck.Impl.OracleProver
-public import ArkLib.ProofSystem.Spartan.ZeroCheckRelation
-public import ArkLib.ProofSystem.Spartan.SendEvaluations
+public import ArkLib.ProofSystem.Spartan.ZeroCheck.Relation
+public import ArkLib.ProofSystem.Spartan.Evaluation.Reduction
 public import ArkLib.ProofSystem.Sumcheck.Spec.General
 public import ArkLib.ProofSystem.Sumcheck.Domain
 

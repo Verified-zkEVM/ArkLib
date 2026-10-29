@@ -6,8 +6,8 @@ Authors: Quang Dao
 module
 
 public import ArkLib.ProofSystem.Spartan.WitnessAttachment
-public import ArkLib.ProofSystem.Spartan.FirstSumcheck
-public import ArkLib.ProofSystem.Spartan.SecondSumcheck
+public import ArkLib.ProofSystem.Spartan.Sumcheck.First
+public import ArkLib.ProofSystem.Spartan.Sumcheck.Second
 public import ArkLib.OracleReduction.Composition.Sequential.OracleCompleteness
 public import ArkLib.OracleReduction.Composition.Sequential.GuardedRoundByRound
 public import ArkLib.OracleReduction.Security.GuardedBridges
