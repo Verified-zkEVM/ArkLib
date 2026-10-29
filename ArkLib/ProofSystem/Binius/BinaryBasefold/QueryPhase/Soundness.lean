@@ -415,7 +415,8 @@ theorem logicalProximityChecksSpec_of_mem_support_verifier_run
 open scoped NNReal
 
 /-- The round-by-round extractor for the query phase.
-Since f^(0) is always available, we can invoke the extractMlp function directly. -/
+It transports `Unit` witnesses; the remaining folding checks are carried by
+`QueryKnowledgeState`. -/
 noncomputable def queryRbrExtractor :
   Extractor.RoundByRound []ₒ
     (StmtIn := (FinalSumcheckStatementOut (L:=L) (ℓ:=ℓ))
