@@ -102,7 +102,7 @@ example : _root_.PowerBatch.relOut F domain 3 = QuotientZeroTest.relIn F domain 
 example (α : F) :
     eval (_root_.PowerBatch.batch (by decide : 0 < 1)
       (fun i : Fin 0 => Fin.elim0 i) α) 0 = 0 := by
-  simp [_root_.PowerBatch.batch, eval, CPolynomial.eval_horner_eq_eval,
+  simp [eval, CPolynomial.eval_horner_eq_eval,
     CPolynomial.eval_toPoly]
 
 namespace Composition

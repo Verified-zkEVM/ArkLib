@@ -288,7 +288,7 @@ theorem exactNestedPowerAgreement_of_interleaved {m maxDegree k L : ℕ} (domain
     fun g t ↦ Ppad ⟨t.val, Nat.lt_succ_iff.mpr ((Nat.le_of_lt_succ t.isLt).trans (hdegree g))⟩ g
   have hReq' (g) : R g = Polynomial.powerBatch (P g) u := by
     rw [hReq g]
-    unfold Polynomial.powerBatch
+    unfold Polynomial.powerBatch Polynomial.generatorBatch
     rw [← sum_padFin (Nat.add_le_add_right (hdegree g) 1)
       (fun t : Fin (degree g + 1) ↦ u ^ t.val • P g t)]
     refine Finset.sum_congr rfl fun t _ ↦ ?_
