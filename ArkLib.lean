@@ -30,10 +30,6 @@ public import ArkLib.Commitments.Functional.Hachi.QuadEval.Completeness
 public import ArkLib.Commitments.Functional.Hachi.QuadEval.Gadgets
 public import ArkLib.Commitments.Functional.Hachi.QuadEval.Reduction
 public import ArkLib.Commitments.Functional.Hachi.QuadEval.Soundness
-public import ArkLib.Commitments.Functional.Hachi.Recursion.Basic
-public import ArkLib.Commitments.Functional.Hachi.Recursion.PartialEval
-public import ArkLib.Commitments.Functional.Hachi.Recursion.TraceHandoff
-public import ArkLib.Commitments.Functional.Hachi.Recursion.ZBatchBridge
 public import ArkLib.Commitments.Functional.Hachi.RingSwitch.Basic
 public import ArkLib.Commitments.Functional.Hachi.RingSwitch.Completeness
 public import ArkLib.Commitments.Functional.Hachi.RingSwitch.ComputableWitness
