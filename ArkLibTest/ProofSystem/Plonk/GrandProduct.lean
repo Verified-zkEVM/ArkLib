@@ -3,9 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.ProofSystem.Plonk.GrandProduct
-import ArkLib.ProofSystem.Plonk.Batch
-import ArkLib.ProofSystem.Plonk.Quotient
+import ArkLib.ProofSystem.Plonk.GrandProduct.Reduction
+import ArkLib.ProofSystem.Plonk.Batch.Reduction
+import ArkLib.ProofSystem.Plonk.Quotient.Reduction
 import Mathlib.Algebra.Field.ZMod
 
 /-! # Executable Plonk stage checks over a prime field -/

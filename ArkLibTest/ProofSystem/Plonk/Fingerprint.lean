@@ -3,7 +3,7 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.ProofSystem.Plonk.PermutationFingerprint
+import ArkLib.ProofSystem.Plonk.Relation.PermutationFingerprint
 import Mathlib.Algebra.Field.ZMod
 
 /-! # Plonk permutation fingerprints over a small prime field -/
