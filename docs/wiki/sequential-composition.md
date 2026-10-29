@@ -117,8 +117,10 @@ factor's verdict map enters the composed extractor. For oracle verifiers,
 `OracleVerifier.castIdxGuardedForm` (`OracleReduction/CastIdx.lean`) moves one along an index cast;
 Binary Basefold's core interaction composes all its rounds this way.
 
-Composition from averaged component guarantees alone and the implication from round-by-round to
-ordinary soundness remain admitted. Sumcheck, Packing and Binary Basefold use the proved
+Averaged component guarantees alone do not compose: an earlier verifier can query the shared
+oracle and correlate later rounds. `Security/GuardedBridges.lean` derives ordinary knowledge
+soundness from a guarded verifier's fixed-prefix knowledge guarantee, with the sum of the
+per-challenge errors. Sumcheck, Packing and Binary Basefold use the proved
 completeness interfaces above. Each client still owes its own component and honest-oracle premises.
 Binary Basefold's `General.lean` composes its actual core and query through the proved guarded
 completeness and worst-case RBR interfaces. Its completeness premise is strict honest encoding;
