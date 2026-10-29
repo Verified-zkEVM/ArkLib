@@ -178,6 +178,15 @@ theorem MLE_eval (x : σ → R) (evals : (σ → Fin 2) → R) :
       ∑ b : σ → Fin 2, eqTilde (b : σ → R) x * evals b := by
   simp only [MLE, eval_sum, eval_mul, eval_C, eqTilde]
 
+/-- Evaluation of an integer-indexed Boolean table in the equality-kernel basis. -/
+theorem MLE'_eval {n : ℕ} (r : Fin n → R) (v : Fin (2 ^ n) → R) :
+    eval r (MLE' v) = ∑ j : Fin (2 ^ n),
+      eqTilde (finFunctionFinEquiv.symm j : Fin n → R) r * v j := by
+  rw [MLE', MLE_eval]
+  simpa only [Equiv.symm_apply_apply, Function.comp_apply] using
+    (finFunctionFinEquiv.sum_comp (fun j : Fin (2 ^ n) =>
+      eqTilde (finFunctionFinEquiv.symm j : Fin n → R) r * v j))
+
 @[simp]
 theorem MLE_eval_zeroOne (x : σ → Fin 2) (evals : (σ → Fin 2) → R) :
     MvPolynomial.eval (x : σ → R) (MLE evals) = evals x := by

@@ -1,10 +1,5 @@
 {
-  "sorry": [
-    "Spartan.Spec.oracleReduction.firstChallenge",
-    "Spartan.Spec.oracleReduction.linearCombination",
-    "Spartan.Spec.oracleReduction.sendEvalClaim",
-    "Spartan.Spec.secondSumCheckVirtualPolynomial"
-  ],
+  "sorry": [],
   "solicited": [
     {
       "name": "CodingTheory.exists_rs_epsCa_large_near_capacity",
