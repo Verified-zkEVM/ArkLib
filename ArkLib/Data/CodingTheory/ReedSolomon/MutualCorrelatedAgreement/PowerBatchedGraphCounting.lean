@@ -136,8 +136,8 @@ theorem exists_regularHighCutJetImage_of_admissibleChartTuples
       (tuples : Set (Fin (ℓ + 1) → F[X])) := by
     intro P hP R hR heq
     apply hinj hP hR
-    change powerBatchedPolynomial (fun t ↦ (P t).map iota) z =
-      powerBatchedPolynomial (fun t ↦ (R t).map iota) z
+    change Polynomial.powerBatch (fun t ↦ (P t).map iota) z =
+      Polynomial.powerBatch (fun t ↦ (R t).map iota) z
     rw [← (hspec P hP).2.2.2, ← (hspec R hR).2.2.2, heq]
   have hcard : jets.card = tuples.card := Finset.card_image_of_injOn hjetinj
   refine ⟨z, jets, ?_, ?_, hjetinj, hcard, ?_, ?_⟩
@@ -160,11 +160,11 @@ theorem exists_regularHighCutJetImage_of_admissibleChartTuples
       have hi' : ∀ t, (P t).eval (domain i) = w t i :=
         (mem_commonCurveAgreementSet domain w P i).mp hi
       have hbatch :
-          (powerBatchedPolynomial (fun t ↦ (P t).map iota) z).eval
+          (Polynomial.powerBatch (fun t ↦ (P t).map iota) z).eval
             (iota (domain i)) = powerBatchedWord (fun t j ↦ iota (w t j)) z i := by
-        change (powerBatchedPolynomial (fun t ↦ (P t).map iota) z).eval
+        change (Polynomial.powerBatch (fun t ↦ (P t).map iota) z).eval
             (iota (domain i)) = ∑ t, z ^ t.val * iota (w t i)
-        rw [powerBatchedPolynomial_eval]
+        rw [Polynomial.powerBatch_eval]
         apply Finset.sum_congr rfl
         intro t _
         congr 1

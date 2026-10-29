@@ -85,7 +85,7 @@ theorem IsAdmissibleFrobeniusPowerTuple.specialize
       (fun j ↦ (frobeniusPowerGraphMap center (p ^ e) (fun t ↦ (P t).map ι)
         (some j)).eval z) =
       Polynomial.expand E (p ^ e)
-        (powerBatchedPolynomial (fun t ↦ (P t).map ι) (z ^ (p ^ e))) := by
+        (Polynomial.powerBatch (fun t ↦ (P t).map ι) (z ^ (p ^ e))) := by
   obtain ⟨sample, hcard, hsample, hcuts⟩ := hP.sample
   obtain ⟨R, hRdegree, hRsample, hrecognize⟩ :=
     exists_frobeniusPowerGraph_of_symbolic_sample domain values sample hcard
@@ -205,8 +205,8 @@ theorem IsAdmissibleFrobeniusPowerTuple.eq_of_initialGraph_eq [Infinite E]
       subst i
       exact congrFun hgraph 0
   have heq (z : E) (hz : sep.eval z ≠ 0) :
-      powerBatchedPolynomial (fun t ↦ (P t).map ι) (z ^ (p ^ e)) =
-        powerBatchedPolynomial (fun t ↦ (R t).map ι) (z ^ (p ^ e)) := by
+      Polynomial.powerBatch (fun t ↦ (P t).map ι) (z ^ (p ^ e)) =
+        Polynomial.powerBatch (fun t ↦ (R t).map ι) (z ^ (p ^ e)) := by
     apply Polynomial.expand_injective hs
     let jetP : Fin 1 → E := fun j ↦ (graphP (some j)).eval z
     let jetR : Fin 1 → E := fun j ↦ (graphR (some j)).eval z
@@ -218,20 +218,20 @@ theorem IsAdmissibleFrobeniusPowerTuple.eq_of_initialGraph_eq [Infinite E]
     have hT := congrArg T hjet
     have hPspec : T jetP =
         Polynomial.expand E (p ^ e)
-          (powerBatchedPolynomial (fun t ↦ (P t).map ι) (z ^ (p ^ e))) := by
+          (Polynomial.powerBatch (fun t ↦ (P t).map ι) (z ^ (p ^ e))) := by
       simpa only [T, jetP, graphP] using hP.specialize hroots hK hKk hτ z
         (by simpa [sep, graphP] using hz)
     have hzR : (aeval graphR (jointInitialJetSeparant center Q)).eval z ≠ 0 := by
       simpa [sep, graphP, graphR, hgraphs] using hz
     have hRspec : T jetR =
         Polynomial.expand E (p ^ e)
-          (powerBatchedPolynomial (fun t ↦ (R t).map ι) (z ^ (p ^ e))) := by
+          (Polynomial.powerBatch (fun t ↦ (R t).map ι) (z ^ (p ^ e))) := by
       simpa only [T, jetR, graphR] using hR.specialize hroots hK hKk hτ z hzR
     have hExpanded :
         Polynomial.expand E (p ^ e)
-          (powerBatchedPolynomial (fun t ↦ (P t).map ι) (z ^ (p ^ e))) =
+          (Polynomial.powerBatch (fun t ↦ (P t).map ι) (z ^ (p ^ e))) =
         Polynomial.expand E (p ^ e)
-          (powerBatchedPolynomial (fun t ↦ (R t).map ι) (z ^ (p ^ e))) :=
+          (Polynomial.powerBatch (fun t ↦ (R t).map ι) (z ^ (p ^ e))) :=
       hPspec.symm.trans (hT.trans hRspec)
     exact hExpanded
   have hpow_inj : Function.Injective (fun z : E ↦ z ^ (p ^ e)) := by
@@ -245,8 +245,8 @@ theorem IsAdmissibleFrobeniusPowerTuple.eq_of_initialGraph_eq [Infinite E]
     rintro w ⟨z, hz, rfl⟩
     exact ⟨z, hz, rfl⟩
   have hspecializations :
-      {w : E | powerBatchedPolynomial (fun t ↦ (P t).map ι) w =
-        powerBatchedPolynomial (fun t ↦ (R t).map ι) w}.Infinite := by
+      {w : E | Polynomial.powerBatch (fun t ↦ (P t).map ι) w =
+        Polynomial.powerBatch (fun t ↦ (R t).map ι) w}.Infinite := by
     apply hpowered.mono
     rintro w ⟨z, hz, rfl⟩
     exact heq z hz
