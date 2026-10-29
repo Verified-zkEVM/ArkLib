@@ -926,9 +926,12 @@ public import ArkLib.ProofSystem.Fri.Spec.VerifierExecution
 public import ArkLib.ProofSystem.Plonk.Accumulator
 public import ArkLib.ProofSystem.Plonk.AccumulatorComputable
 public import ArkLib.ProofSystem.Plonk.AccumulatorResidual
+public import ArkLib.ProofSystem.Plonk.Assembly
+public import ArkLib.ProofSystem.Plonk.AssemblyData
 public import ArkLib.ProofSystem.Plonk.Basic
 public import ArkLib.ProofSystem.Plonk.Batch
 public import ArkLib.ProofSystem.Plonk.BatchData
+public import ArkLib.ProofSystem.Plonk.Circuit
 public import ArkLib.ProofSystem.Plonk.Computable
 public import ArkLib.ProofSystem.Plonk.Domain
 public import ArkLib.ProofSystem.Plonk.Encoding
@@ -940,6 +943,7 @@ public import ArkLib.ProofSystem.Plonk.PermutationFingerprint
 public import ArkLib.ProofSystem.Plonk.Prepared
 public import ArkLib.ProofSystem.Plonk.Quotient
 public import ArkLib.ProofSystem.Plonk.QuotientData
+public import ArkLib.ProofSystem.Plonk.SendWitness
 public import ArkLib.ProofSystem.RingSwitching.Basic
 public import ArkLib.ProofSystem.RingSwitching.Lift
 public import ArkLib.ProofSystem.RingSwitching.Lift.Presentation
