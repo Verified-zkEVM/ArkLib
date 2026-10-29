@@ -717,6 +717,7 @@ public import ArkLib.Interaction.Oracle.RuntimeSoundness
 public import ArkLib.Interaction.Oracle.Security.Knowledge
 public import ArkLib.Interaction.Oracle.Security.KnowledgeAppend
 public import ArkLib.Interaction.Oracle.Security.KnowledgeComposition
+public import ArkLib.Interaction.Oracle.Security.KnowledgeResources
 public import ArkLib.Interaction.Oracle.Security.RoundByRound
 public import ArkLib.Interaction.Oracle.Security.Soundness
 public import ArkLib.Interaction.Oracle.Security.StateRestoration

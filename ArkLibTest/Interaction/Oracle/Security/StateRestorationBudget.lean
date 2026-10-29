@@ -4,11 +4,18 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 import ArkLib.Interaction.Oracle.Security.StateRestorationBudget
+import ArkLib.Interaction.Oracle.Security.KnowledgeResources
 
 /-!
 A two-round native closed-oracle client with distinct challenge alphabets and local errors 1/8
 and 1/16. Input statements range over Nat. The actual terminal output reads the second oracle
 message; named backward extraction adds both actual payloads to the supplied witness.
+
+Each stage of that extractor has a named measured program and budget, and every budget is at most
+one. The two message stages each perform one charged addition. The two challenge stages return the
+later witness or its first component; copying and projection are uncharged under this accounting,
+so they request no instruction. The measured certificate's underlying fields feed the
+state-restoration theorem.
 -/
 
 open Interaction.Oracle Interaction.TwoParty OracleComp OracleSpec
@@ -295,5 +302,110 @@ example : ∃ claim, closedTerminalObservation initial inputImpl Out family orac
 #eval (closedTerminalObservation initial inputImpl Out family oracleTerminal 0 (path 1 1)).map
   (fun claim => (outputValue 0 (path 1 1).toBranchPath claim.stmt,
     (claim.oracles ⟨(), ()⟩).val))
+
+section Measured
+
+/-- One addition instruction on a pair of numbers, whose response is certified to be the sum. -/
+def addSpec (v : Nat × Nat) : OracleSpec.{0, 0} Unit := fun _ => {r : Nat // r = v.1 + v.2}
+
+/-- A program performing one charged addition on the view of its input. -/
+def addProgram {Input : Type} (view : Input → Nat × Nat) : MeasuredProgram Input Nat Nat where
+  View := Nat × Nat
+  view := view
+  Op := Unit
+  spec := addSpec
+  program v := do
+    let r ← liftM (OracleSpec.query (spec := addSpec v) ())
+    return r.1
+  answer v := fun _ => ⟨v.1 + v.2, rfl⟩
+  cost := fun _ => 1
+
+theorem addProgram_costAtMost_one {Input : Type} (view : Input → Nat × Nat) :
+    (addProgram view).CostAtMost 1 :=
+  MeasuredProgram.costAtMost_of_forall_eq_answer _ 1 (fun _ _ u => Subtype.ext u.2)
+    (fun _ => le_rfl)
+
+/-- The first stage adds the actual first oracle message to the later witness. -/
+def firstMessageStage (z : Nat) : BudgetedProgram (extractor z).stageMap Nat :=
+  ⟨addProgram fun x => (x.2, x.1.val), 1, fun _ => rfl, addProgram_costAtMost_one _⟩
+
+/-- The first challenge stage returns the later witness itself; copying is uncharged. -/
+def firstChallengeStage (z : Nat) (firstMessage : Fin 8) :
+    BudgetedProgram ((extractor z) firstMessage).2.2.stageMap Nat :=
+  BudgetedProgram.ofFun _
+
+/-- The second stage adds the actual second oracle message to the later witness. -/
+def secondMessageStage (z : Nat) (firstMessage first : Fin 8) :
+    BudgetedProgram (((extractor z) firstMessage).2.2 first).2.2.stageMap Nat :=
+  ⟨addProgram fun x => (x.2, x.1.val), 1, fun _ => rfl, addProgram_costAtMost_one _⟩
+
+/-- The second challenge stage returns the first component of the later witness; projection is
+uncharged. -/
+def secondChallengeStage (z : Nat) (firstMessage first secondMessage : Fin 8) :
+    BudgetedProgram ((((extractor z) firstMessage).2.2 first).2.2 secondMessage).2.2.stageMap
+      Nat :=
+  BudgetedProgram.ofFun _
+
+/-- The challenge stages are the identity and the first projection. -/
+example (z : Nat) (firstMessage first secondMessage : Fin 8) (w : Nat) (second : Fin 16)
+    (w' : Nat × Unit) :
+    ((extractor z) firstMessage).2.2.stageMap ⟨first, w⟩ = w ∧
+      ((((extractor z) firstMessage).2.2 first).2.2 secondMessage).2.2.stageMap ⟨second, w'⟩ =
+        w'.1 :=
+  ⟨rfl, rfl⟩
+
+/-- The measured stages of the named extractor. -/
+def stages (z : Nat) : (extractor z).MeasuredStages Nat :=
+  ⟨firstMessageStage z, fun firstMessage =>
+    ⟨firstChallengeStage z firstMessage, fun first =>
+      ⟨secondMessageStage z firstMessage first, fun secondMessage =>
+        ⟨secondChallengeStage z firstMessage first secondMessage, fun _ => PUnit.unit⟩⟩⟩⟩
+
+/-- The stages have budgets one, zero, one and zero along every path. -/
+example (z : Nat) (firstMessage first secondMessage : Fin 8) :
+    (stages z).1.budget = 1 ∧ ((stages z).2 firstMessage).1.budget = 0 ∧
+      (((stages z).2 firstMessage).2 first).1.budget = 1 ∧
+      ((((stages z).2 firstMessage).2 first).2 secondMessage).1.budget = 0 :=
+  ⟨rfl, rfl, rfl, rfl⟩
+
+/-- Every stage costs at most one addition. -/
+theorem stages_budgetAtMost_one (z : Nat) : (stages z).BudgetAtMost 1 :=
+  ⟨le_rfl, fun _ => ⟨Nat.zero_le 1, fun _ => ⟨le_rfl, fun _ => ⟨Nat.zero_le 1, fun _ => trivial⟩⟩⟩⟩
+
+/-- Complete extraction on a path is the composition of the four stage maps. -/
+example (z : Nat) (path : tree.ExecutionPath) (w : ((extractor z).terminalState path).Witness) :
+    (extractor z).extractWitness path w = (extractor z).stageMap ⟨path.1,
+      ((extractor z) path.1).2.2.extractWitness path.2 w⟩ :=
+  RoundExtractor.extractWitness_oracle _ path w
+
+/-- The knowledge certificate of the named extractor, with its measured stages. -/
+noncomputable def measuredCertificate (z : Nat) :
+    MeasuredKnowledgeCertificate Nat tree roles (inputState z) where
+  extractor := extractor z
+  challenges := roundErrorSchedule rounds errors
+  prover_preserving := preserving z
+  local_bound := bounded z
+  stages := stages z
+
+/-- The measured certificate's extractor is the client's named extractor. -/
+example (z : Nat) : (measuredCertificate z).toKnowledgeCertificate.extractor = extractor z := rfl
+
+/-- The state-restoration theorem takes the measured certificate's prover-preservation and local
+bound fields. -/
+example : Pr{let result ← (simulateQ randomOracle
+      (closedVerificationGame initial inputImpl Out family oracleTerminal adversary)).run' ∅}[
+      result.1 ∈ Set.univ ∧
+      (∃ claim, result.2.2.1 = some claim ∧
+        Rout result.1 result.2.1.toBranchPath claim result.2.2.2) ∧
+      ¬ Rin result.1 (extractInputWitness inputState (fun z => (measuredCertificate z).extractor)
+        terminalWitness result.1 result.2.1 result.2.2.2)] ≤
+      2 * Finset.univ.sup errors + ∑ j, errors j :=
+  stateRestoration_oracle_knowledge_soundness_nonuniform inputState
+    (fun z => (measuredCertificate z).extractor) Set.univ errors
+    (fun z _ => (measuredCertificate z).prover_preserving)
+    (fun z _ => (measuredCertificate z).local_bound) initial inputImpl Out family oracleTerminal
+    Rin Rout terminalWitness inputLaw outputLaw adversary 2 queryBound
+
+end Measured
 
 end Interaction.Oracle.Security.StateRestorationBudgetTest
