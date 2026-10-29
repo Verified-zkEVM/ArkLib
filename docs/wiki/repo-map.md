@@ -87,6 +87,7 @@ home_page/            site assets and assembled website root
   Concrete cycle, satisfaction, and decoder checks live in `ArkLibTest/ProofSystem/Plonk.lean`;
   `ArkLibTest/ProofSystem/PlonkEncoding.lean` checks order-four encoding over a prime field,
   including rejected gates, inconsistent copies, and incorrect public inputs.
+  Concrete cycle, satisfaction, and decoder checks live in `ArkLibTest/ProofSystem/Plonk.lean`.
 
 - `ProofSystem/Fri/FoldingSoundness.lean` and `QuerySoundness.lean` contain the algebraic
   soundness arguments; `ErrorBounds.lean` instantiates existing numerical MCA bounds.
