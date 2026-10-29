@@ -122,8 +122,8 @@ theorem certificate_locallyBounded {m : ℕ} (D : Fin m ↪ F)
               (fun x => q.val.eval x)).sum = stmt.target
           · by_cases htruth : closedRelation F n deg D ⟨start, by omega⟩
                 ⟨stmt, (polynomialFamily F n deg).behaviorOfRealizations (fun _ => p)⟩
-            · simp [RoundExtractor.badChallenge, certificate,
-                claimState, hp, htruth]
+            · refine (le_of_eq (prEvent_eq_zero_of_forall_not _ _ fun r => ?_)).trans (by simp)
+              simp [RoundExtractor.badChallenge, certificate, claimState, hp, htruth]
             · have hb := uniform_successor_soundness n deg F D ⟨start, by omega⟩ stmt p q
                 htruth hc
               apply le_trans _ hb
@@ -132,9 +132,10 @@ theorem certificate_locallyBounded {m : ℕ} (D : Fin m ↪ F)
               rcases hevent with ⟨w, _, hgood⟩
               exact hgood.2
           · have hc' : ¬ (∑ x, q.val.eval (D x)) = stmt.target := by simpa using hc
+            refine (le_of_eq (prEvent_eq_zero_of_forall_not _ _ fun r => ?_)).trans (by simp)
             simp [RoundExtractor.badChallenge, certificate, claimState, hc']
-        · simp [RoundExtractor.badChallenge, certificate,
-            claimState, hp]
+        · refine (le_of_eq (prEvent_eq_zero_of_forall_not _ _ fun r => ?_)).trans (by simp)
+          simp [RoundExtractor.badChallenge, certificate, claimState, hp]
       · intro r
         exact ih (start + 1) (by omega) _ _
 
