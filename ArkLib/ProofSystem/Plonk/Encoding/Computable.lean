@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Plonk.Encoding
+public import ArkLib.ProofSystem.Plonk.Encoding.Basic
 public import CompPoly.Univariate.Lagrange
 
 /-! # Executable Plonk polynomial encoding

@@ -5,8 +5,8 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Plonk.Batch
-public import ArkLib.ProofSystem.Plonk.QuotientData
+public import ArkLib.ProofSystem.Plonk.Batch.Reduction
+public import ArkLib.ProofSystem.Plonk.Quotient.Data
 public import ArkLib.OracleReduction.LiftContext.Purity
 
 /-! # Plonk quotient, evaluation and terminal check

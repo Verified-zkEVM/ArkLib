@@ -4,8 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ArkLib Contributors
 -/
 
-import ArkLib.ProofSystem.Plonk.Basic
-import ArkLib.ProofSystem.Plonk.Prepared
+import ArkLib.ProofSystem.Plonk.Relation.Basic
+import ArkLib.ProofSystem.Plonk.Relation.Prepared
 
 /-! # Finite Plonk acceptance examples -/
 

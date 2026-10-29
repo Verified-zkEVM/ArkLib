@@ -5,8 +5,8 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Plonk.AccumulatorResidual
-public import ArkLib.ProofSystem.Plonk.Computable
+public import ArkLib.ProofSystem.Plonk.Accumulator.Residual
+public import ArkLib.ProofSystem.Plonk.Encoding.Computable
 
 /-! # Executable Plonk accumulators
 
