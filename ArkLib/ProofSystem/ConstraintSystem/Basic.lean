@@ -71,10 +71,6 @@ abbrev Wit (i : C.Index) (s : C.Stmt i) (o : C.OStmt i) :=
 abbrev satisfies (i : C.Index) (s : C.Stmt i) (o : C.OStmt i) (w : C.Wit i s o) : Prop :=
   C.toProblem.rel i (s, o) w
 
-/-- Satisfiability of a full claim is membership in the underlying problem's language. -/
-abbrev IsSatisfiable (i : C.Index) (s : C.Stmt i) (o : C.OStmt i) : Prop :=
-  C.toProblem.language i (s, o)
-
 /-- Build a constraint system from a plain indexed relation (no oracle statement slot). -/
 def ofRelation
     {Idx : Type u} {S : Idx → Type v} {W : Idx → Type w}
