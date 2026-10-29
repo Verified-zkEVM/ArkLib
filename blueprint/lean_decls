@@ -178,8 +178,6 @@ Combine.geometric_sum_units
 Combine.combine
 Combine.degCor
 Combine.combine
-StirIOP.stir_main
-StirIOP.stir_rbr_soundness
 BlockRelDistance.blockRelDistance
 BlockRelDistance.relHammingDist_le_blockRelDistance
 OutOfDomSmpl.out_of_dom_smpl_1

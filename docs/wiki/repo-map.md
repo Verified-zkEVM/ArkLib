@@ -509,7 +509,9 @@ home_page/            site assets and assembled website root
   folded-Reed-Solomon and univariate-multiplicity capacity corollaries) and the [AGL23]
   large-alphabet barrier.
 - ABF26's citation-heavy §4–§5 catalogue is separated from the core error definitions:
-  `ProximityGap/CapacityBounds.lean` holds the numeric upper/lower bounds,
+  `ProximityGap/CapacityBounds.lean` holds the numeric upper/lower bounds.
+  `ProximityGap/CapacityBounds/SubspaceDesign.lean` shares the subspace-design pinning
+  and affine-line MCA conversion used by the generic and folded Reed--Solomon bounds.
   `ProximityGap/LineDecoding.lean` holds the GG25-corrected interfaces corresponding to ABF26
   Definition 4.20 and Theorem 4.21, and
   `Connections/ListDecodingAndCA.lean` holds the four list-decoding/CA connections. Extensions
