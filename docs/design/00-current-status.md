@@ -326,10 +326,14 @@ The single-round legacy verifier correspondence identifies scalar outputs for ar
 polynomials and fixed challenges, including rejection. Both relation directions are proved for
 arbitrary claims. This does not relate the legacy and native security games.
 
-The legacy `OracleReduction` layer remains in use. Its carrier is `ProtocolSpec n`; several
-unrestricted stateful composition theorems remain admitted. Existing legacy repairs are tracked
-separately in [#676](https://github.com/Verified-zkEVM/ArkLib/issues/676). The native results above
-do not remove admissions from legacy clients.
+The `OracleReduction` layer uses `ProtocolSpec n`. Its `Append/Security.lean` interface proves
+ordinary soundness and knowledge soundness under a guarded first verifier and suffix bounds valid
+from every deterministic shared oracle state, with pure extractors for knowledge soundness.
+Round-by-round knowledge soundness uses `Append/GuardedRoundByRound.lean` for binary composition
+and `Sequential/GuardedRoundByRound.lean` for finite chains. Both require fixed-prefix component
+bounds; the binary theorem requires a guarded first verifier, and the finite-chain theorem requires
+every component to be guarded. The full sum-check protocol satisfies these guarded composition
+requirements.
 
 The preserved `archive/oracle-reduction-v2-pre-split` branch contains the earlier interaction-native
 prototype and protocol ports (FRI, Spartan, Fiat–Shamir, BCS, boundary transport, security

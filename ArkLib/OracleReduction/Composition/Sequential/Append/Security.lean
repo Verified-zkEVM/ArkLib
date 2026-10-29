@@ -24,8 +24,6 @@ playing the suffix against presampled challenges in its output step. Ambient ora
 remain real and retain their shared state. No inhabitance assumption on the intermediate witness
 type is needed. The named-extractor and existential forms have the sum of the component errors.
 
-The legacy round-by-round contracts below remain admitted.
-
 For proved completeness interfaces, use `Append/Completeness.lean` and
 `Sequential/GuardedCompleteness.lean`. The proved soundness interface in `Append/RoundByRound.lean`
 requires fixed-prefix component bounds and a pure first verifier. The proved knowledge-soundness
@@ -218,43 +216,6 @@ theorem append_knowledgeSoundness
   obtain ⟨e₂, h₂⟩ := h₂
   exact knowledgeSoundness_of_with init impl (append_knowledgeSoundnessWith G₁ e₁ e₂ h₁ h₂)
 
-/-! ### Round-by-round composition assumptions
-
-The generic contracts below remain admitted. The state-function constructor requires a pure,
-total first verifier, which these statements do not assume. A proof also needs compatible
-restrictions of the combined prover and bounds after conditioning on the first transcript and
-actual shared oracle state. Bounds under the original initialization distribution alone do not
-supply those conditional suffix bounds. -/
-
-/-- If two verifiers satisfy round-by-round soundness with compatible languages and respective RBR
-    soundness errors, then their sequential composition also satisfies round-by-round soundness.
-    The RBR soundness error of the appended verifier extends the individual errors appropriately. -/
-theorem append_rbrSoundness {lang₁ : Set Stmt₁} {lang₂ : Set Stmt₂} {lang₃ : Set Stmt₃}
-    (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁)
-    (V₂ : Verifier oSpec Stmt₂ Stmt₃ pSpec₂)
-    {rbrSoundnessError₁ : pSpec₁.ChallengeIdx → ℝ≥0}
-    {rbrSoundnessError₂ : pSpec₂.ChallengeIdx → ℝ≥0}
-    (h₁ : V₁.rbrSoundness init impl lang₁ lang₂ rbrSoundnessError₁)
-    (h₂ : V₂.rbrSoundness init impl lang₂ lang₃ rbrSoundnessError₂) :
-      (V₁.append V₂).rbrSoundness init impl lang₁ lang₃
-        (Sum.elim rbrSoundnessError₁ rbrSoundnessError₂ ∘ ChallengeIdx.sumEquiv.symm) := by
-  sorry
-
-/-- If two verifiers satisfy round-by-round knowledge soundness with compatible relations and
-    respective RBR knowledge errors, then their sequential composition also satisfies
-    round-by-round knowledge soundness.
-    The RBR knowledge error of the appended verifier extends the individual errors appropriately. -/
-theorem append_rbrKnowledgeSoundness
-    (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁)
-    (V₂ : Verifier oSpec Stmt₂ Stmt₃ pSpec₂)
-    {rbrKnowledgeError₁ : pSpec₁.ChallengeIdx → ℝ≥0}
-    {rbrKnowledgeError₂ : pSpec₂.ChallengeIdx → ℝ≥0}
-    (h₁ : V₁.rbrKnowledgeSoundness init impl rel₁ rel₂ rbrKnowledgeError₁)
-    (h₂ : V₂.rbrKnowledgeSoundness init impl rel₂ rel₃ rbrKnowledgeError₂) :
-      (V₁.append V₂).rbrKnowledgeSoundness init impl rel₁ rel₃
-        (Sum.elim rbrKnowledgeError₁ rbrKnowledgeError₂ ∘ ChallengeIdx.sumEquiv.symm) := by
-  sorry
-
 end Verifier
 
 end Protocol
@@ -344,38 +305,6 @@ theorem append_knowledgeSoundness
   unfold knowledgeSoundness
   rw [append_toVerifier]
   exact Verifier.append_knowledgeSoundness V₁.toVerifier V₂.toVerifier G₁ h₁ h₂
-
-/-- If two oracle verifiers satisfy round-by-round soundness with compatible languages and
-  respective RBR soundness errors, then their sequential composition also satisfies
-  round-by-round soundness. The RBR soundness error of the appended verifier extends the
-  individual errors appropriately. -/
-theorem append_rbrSoundness (V₁ : OracleVerifier oSpec Stmt₁ OStmt₁ Stmt₂ OStmt₂ pSpec₁)
-    (V₂ : OracleVerifier oSpec Stmt₂ OStmt₂ Stmt₃ OStmt₃ pSpec₂)
-    {rbrSoundnessError₁ : pSpec₁.ChallengeIdx → ℝ≥0}
-    {rbrSoundnessError₂ : pSpec₂.ChallengeIdx → ℝ≥0}
-    (h₁ : V₁.rbrSoundness init impl lang₁ lang₂ rbrSoundnessError₁)
-    (h₂ : V₂.rbrSoundness init impl lang₂ lang₃ rbrSoundnessError₂) :
-      (V₁.append V₂).rbrSoundness init impl lang₁ lang₃
-        (Sum.elim rbrSoundnessError₁ rbrSoundnessError₂ ∘ ChallengeIdx.sumEquiv.symm) := by
-  unfold rbrSoundness
-  convert Verifier.append_rbrSoundness V₁.toVerifier V₂.toVerifier h₁ h₂
-  simp only [append_toVerifier]
-
-/-- If two oracle verifiers satisfy round-by-round knowledge soundness with compatible relations
-    and respective RBR knowledge errors, then their sequential composition also satisfies
-    round-by-round knowledge soundness.
-    The RBR knowledge error of the appended verifier extends the individual errors appropriately. -/
-theorem append_rbrKnowledgeSoundness (V₁ : OracleVerifier oSpec Stmt₁ OStmt₁ Stmt₂ OStmt₂ pSpec₁)
-    (V₂ : OracleVerifier oSpec Stmt₂ OStmt₂ Stmt₃ OStmt₃ pSpec₂)
-    {rbrKnowledgeError₁ : pSpec₁.ChallengeIdx → ℝ≥0}
-    {rbrKnowledgeError₂ : pSpec₂.ChallengeIdx → ℝ≥0}
-    (h₁ : V₁.rbrKnowledgeSoundness init impl rel₁ rel₂ rbrKnowledgeError₁)
-    (h₂ : V₂.rbrKnowledgeSoundness init impl rel₂ rel₃ rbrKnowledgeError₂) :
-      (V₁.append V₂).rbrKnowledgeSoundness init impl rel₁ rel₃
-        (Sum.elim rbrKnowledgeError₁ rbrKnowledgeError₂ ∘ ChallengeIdx.sumEquiv.symm) := by
-  unfold rbrKnowledgeSoundness
-  convert Verifier.append_rbrKnowledgeSoundness V₁.toVerifier V₂.toVerifier h₁ h₂
-  simp only [append_toVerifier]
 
 end OracleVerifier
 
