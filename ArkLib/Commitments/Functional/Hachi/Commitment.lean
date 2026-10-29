@@ -18,11 +18,10 @@ file supplies what the generic interface asks of a functional commitment: the mu
 eval-oracle interface (`multilinearEvalOracleInterface`), honest key generation and commitment
 (`keygen` / `commit`, using the balanced base-`b` gadget decomposition
 `balancedZmodDigitDecomposition` at the paper's width `δ = ⌈log_b q⌉ = Nat.clog b q`,
-[NOZ26] §2.1/§4.1), and the `hachi` scheme itself.
+[NOZ26] §2.1/§4.1).
 
-The complete scheme is `hachiNonrecursive` (`Correctness.lean`), which packages these pieces with
-the composed opening and proves perfect correctness. The `hachi` value here is the *recursive*
-packaging; its succinct opening is part of [NOZ26] §4.5, outside this development (`Recursion/`).
+The scheme itself is `hachiNonrecursive` (`Correctness.lean`), which packages these pieces with
+the composed opening and proves perfect correctness.
 
 ## Main definitions
 
@@ -32,8 +31,8 @@ packaging; its succinct opening is part of [NOZ26] §4.5, outside this developme
   uniformly; the resulting `PublicParamsD` serves as both committer and verifier key.
 * `commit`: the honest Hachi commitment — reshape the polynomial into its `2^r × 2^m` coefficient
   matrix, gadget-decompose it at the balanced base-`b` digits, whose range is Eq. (20)'s box `S_b`,
-  and outer-commit; the decommitment is the `Decomp` data. Deterministic, and the committer of both
-  `hachi` and `hachiNonrecursive`.
+  and outer-commit; the decommitment is the `Decomp` data. Deterministic, and the committer of
+  `hachiNonrecursive`.
 * `mem_relInBox_of_commit`: the honest committer's output satisfies paper-exact `QuadEval`'s input
   relation `relInBox`.
 
@@ -125,33 +124,6 @@ def commit [DecidableEq (ZMod q)] (hb : 1 < b)
     pp.toPublicParams (Hachi.toMatrix p)
   (commitWithDecomps 𝓜(q, α) pp.toPublicParams decomps, decomps)
 
-/-- **Hachi's recursive packaging as a `Commitment.Scheme`.** Over the multilinear data
-`CMlPolynomial (Rq 𝓜(q,α)) (r + m)`, with the `r`/`m` split feeding the outer/inner gadgets. It
-commits a polynomial directly: the honest committer is `commit`, the paper's **balanced** base-`b`
-gadget decomposition at the width `δ = ⌈log_b q⌉ = Nat.clog b q`
-([NOZ26] §2.1/§4.1), shared by the message and inner gadgets, so `messageDigits`/`innerDigits` are
-not free parameters. The only parameters are the gadget base `b` and `1 < b`.
-
-⚠ Recursion boundary. The `opening` field is the *succinct, recursive* opening of [NOZ26] §4.5,
-which is outside the completed development (`Recursion/`): it is `sorry`, and the declared `pSpec`
-records only the bridge ▷ `QuadEval` prefix rather than a full opening spec. **The complete scheme
-is `hachiNonrecursive` (`Correctness.lean`)**, which packages the same `commit` with the
-composed opening and is proved perfectly correct. -/
-def hachi [DecidableEq (ZMod q)] (hb : 1 < b) :
-    Commitment.Scheme unifSpec
-      (CMlPolynomial (Rq 𝓜(q, α)) (r + m))
-      (Commitment 𝓜(q, α) outerRows)
-      (Decomp 𝓜(q, α) innerRows (2 ^ m) (Nat.clog b q) (2 ^ r) (Nat.clog b q))
-      (Hachi.PublicParamsD 𝓜(q, α) innerRows (2 ^ m) (Nat.clog b q) outerRows (2 ^ r) (Nat.clog b q)
-        dRows)
-      (Hachi.PublicParamsD 𝓜(q, α) innerRows (2 ^ m) (Nat.clog b q) outerRows (2 ^ r) (Nat.clog b q)
-        dRows)
-      ((!p[] : ProtocolSpec 0) ++ₚ
-        pSpec (CarrierCom 𝓜(q, α) dRows) (ShortChallenge 𝓜(q, α) ω) r) where
-  keygen := keygen b
-  commit := fun pp p => pure (commit b hb pp p)
-  opening := sorry
-
 /-! ## The honest commitment and the paper-exact input relation `relInBox`
 
 Three separate notions, deliberately not merged:
@@ -166,7 +138,7 @@ Three separate notions, deliberately not merged:
 `mem_relInBox_of_honestBalanced` combines them into `QuadEval`'s box-carrying input relation
 `relInBox`, the input of paper-exact `QuadEval` completeness, and
 `mem_relInBox_of_commit` restates it at the actual output of `commit`, the committer
-`hachi` and `hachiNonrecursive` use, so the paper-exact link applies to the honest scheme itself.
+`hachiNonrecursive` uses, so the paper-exact link applies to the honest scheme itself.
 
 This establishes that input relation only; end-to-end commitment correctness is
 `hachiNonrecursive_perfectCorrectness` (`Correctness.lean`). -/

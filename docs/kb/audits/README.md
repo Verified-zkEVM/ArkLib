@@ -33,6 +33,9 @@ Current audit pages:
 - [`noz26-trace-head-section-3-1.md`](noz26-trace-head-section-3-1.md)
   - [`NOZ26`](../papers/NOZ26.md) §3.1 trace head: correspondence, departures (no field
     hypothesis), and its completeness, soundness and escape shape.
+- [`noz26-recursion-z-packing.md`](noz26-recursion-z-packing.md)
+  - [`NOZ26`](../papers/NOZ26.md) §4.5 recursion: why the `Z`-packing step does not support
+    extraction of the partial evaluations, with a counterexample and candidate repairs.
 - [`bcgm25-mca-generators.md`](bcgm25-mca-generators.md)
   - [`BCGM25`](../papers/BCGM25.md) generator layer: definition and result correspondence, the two
     forms Lemma 4.4 is proved in and why, and a gap in the paper's Theorem 9.2 citation.

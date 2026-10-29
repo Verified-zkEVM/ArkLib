@@ -73,8 +73,9 @@ determine a multilinear polynomial. No prover message separates those rounds, so
 protocol is unchanged; only the tree shape the extractor is handed changes. See
 `ZeroCheck/Reduction.lean` and `docs/kb/audits/noz26-zero-check-lemma10.md`.
 
-The `Recursion/` adapters that would carry an iteration's evaluation claim to the next ring are
-not composed here; see `Recursion/Basic.lean`.
+The recursive opening of [NOZ26] §4.5, which would carry an iteration's evaluation claim to the
+next ring instead of closing it with `endPiece`, is not formalized; see
+`docs/kb/audits/noz26-recursion-z-packing.md`.
 
 ## References
 
