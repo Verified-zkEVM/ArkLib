@@ -381,6 +381,16 @@ theorem knowledgeSoundness_of_with
   (knowledgeSoundness_iff_exists_with init impl relIn relOut verifier knowledgeError).mpr
     ⟨extractor, h⟩
 
+/-- Increasing the allowed error preserves knowledge soundness. -/
+theorem knowledgeSoundness_error_mono
+    {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
+    {verifier : Verifier oSpec StmtIn StmtOut pSpec} {ε ε' : ℝ≥0}
+    (hε : ε ≤ ε') (h : verifier.knowledgeSoundness init impl relIn relOut ε) :
+    verifier.knowledgeSoundness init impl relIn relOut ε' := by
+  obtain ⟨extractor, h⟩ := h
+  refine ⟨extractor, fun Aux stmt aux prover => ?_⟩
+  exact (h Aux stmt aux prover).trans (by exact_mod_cast hε)
+
 /-- Type class for knowledge soundness for a verifier. Like `knowledgeSoundness`, it bounds no
 extractor cost. -/
 class IsKnowledgeSound (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
@@ -514,6 +524,16 @@ theorem knowledgeSoundness_of_with
     (h : verifier.knowledgeSoundnessWith init impl relIn relOut extractor knowledgeError) :
     verifier.knowledgeSoundness init impl relIn relOut knowledgeError :=
   Verifier.knowledgeSoundness_of_with init impl h
+
+/-- Increasing the allowed error preserves oracle knowledge soundness. -/
+theorem knowledgeSoundness_error_mono
+    {relIn : Set ((StmtIn × ∀ i, OStmtIn i) × WitIn)}
+    {relOut : Set ((StmtOut × ∀ i, OStmtOut i) × WitOut)}
+    {verifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec}
+    {ε ε' : ℝ≥0} (hε : ε ≤ ε')
+    (h : verifier.knowledgeSoundness init impl relIn relOut ε) :
+    verifier.knowledgeSoundness init impl relIn relOut ε' :=
+  Verifier.knowledgeSoundness_error_mono init impl hε h
 
 end OracleVerifier
 
