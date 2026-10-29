@@ -347,7 +347,13 @@ theorem knowledge_soundness_with
     funext (initialWord_queryHistory s l f tr)
   simpa only [hf] using hdist.trans (min_le_right θ (δ : ℝ))
 
-/-- The measured prefix extractor witnesses straightline knowledge soundness. -/
+/-- The measured prefix extractor witnesses straightline knowledge soundness.
+
+The existential statement forgets the extractor, and with it the operation-count bounds proved for
+its measured program `Extractor.extractProgram`; it has the content of relation soundness
+(`Verifier.knowledgeSoundness_iff_relationSoundness`). The extraction guarantee is
+`knowledge_soundness_with` together with those bounds, which do not charge the history
+reconstruction outside that program. -/
 theorem knowledge_soundness
     (hdom : 2 ^ (∑ j, (s j).val) * d.val ≤ 2 ^ n)
     (θ : ℝ) (δ : ℝ≥0)
