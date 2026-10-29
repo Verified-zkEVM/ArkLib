@@ -27,24 +27,6 @@ variable {ι : Type} {oSpec : OracleSpec ι}
 
 namespace Extractor.RoundByRound
 
-/-- Fold intermediate extraction backward along a transcript prefix. -/
-def foldPrefix (E : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid)
-    (stmt : StmtIn) : (m : Fin (n + 1)) → pSpec.Transcript m → WitMid m → WitIn :=
-  Fin.induction (fun _ w ↦ E.extractIn stmt w)
-    (fun j ih tr w ↦ ih (Fin.init tr) (E.extractMid j stmt tr w))
-
-@[simp]
-theorem foldPrefix_zero (E : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid)
-    (stmt : StmtIn) (tr : pSpec.Transcript 0) (w : WitMid 0) :
-    E.foldPrefix stmt 0 tr w = E.extractIn stmt w := rfl
-
-@[simp]
-theorem foldPrefix_succ (E : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid)
-    (stmt : StmtIn) (j : Fin n) (tr : pSpec.Transcript j.succ) (w : WitMid j.succ) :
-    E.foldPrefix stmt j.succ tr w =
-      E.foldPrefix stmt j.castSucc (Fin.init tr) (E.extractMid j stmt tr w) := by
-  simp [foldPrefix, Fin.induction_succ]
-
 /-- A pure straightline extractor using the actual output witness and transcript. -/
 def foldExtractor (E : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid) :
     Extractor.Straightline oSpec StmtIn WitIn WitOut pSpec :=

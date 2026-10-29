@@ -12,12 +12,12 @@ public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness
 /-!
 # Implications between security notions
 
-This file identifies round-by-round knowledge soundness with soundness of the induced
-languages, and proves the equivalence between special soundness and its canonical coordinate-wise
-form. State-restoration security is developed natively in
-`Interaction.Oracle.Security.StateRestoration`. The guarded bridges from fixed-prefix
-round-by-round security to ordinary security live in `Security.GuardedSoundness` and
-`Security.GuardedBridges`.
+This file identifies round-by-round knowledge soundness with soundness of the induced languages, in
+both the default fixed-prefix and the prover-averaged forms, and characterizes exactly when this
+holds without input witnesses. It also proves the equivalence between special soundness and its
+canonical coordinate-wise form. State-restoration security is developed natively in
+`Interaction.Oracle.Security.StateRestoration`. The guarded bridges from fixed-prefix round-by-round
+security to ordinary security live in `Security.GuardedSoundness` and `Security.GuardedBridges`.
 -/
 
 @[expose] public section
@@ -104,14 +104,9 @@ theorem rbrKnowledgeSoundnessAveraged_implies_rbrSoundnessAveraged
               obtain ⟨hprev, w, hnext⟩ := hbad
               exact ⟨w, fun hw => hprev ⟨_, hw⟩, hnext⟩
         _ ≤ _ := hk
-    · let extractToInput : (m : Fin (n + 1)) → Transcript m pSpec → WitMid m → WitIn :=
-        Fin.induction
-          (fun tr w => extractor.extractIn stmtIn w)
-          (fun m ih tr w =>
-            ih (Fin.init tr) (extractor.extractMid m stmtIn tr w))
-      refine (prEvent_eq_zero_of_forall_not _ _ fun x hbad ↦ ?_).trans_le zero_le
+    · refine (prEvent_eq_zero_of_forall_not _ _ fun x hbad ↦ ?_).trans_le zero_le
       obtain ⟨-, w, hnext⟩ := hbad
-      exact hWin ⟨extractToInput i.1.succ (x.1.concat x.2) w⟩
+      exact hWin ⟨extractor.foldPrefix stmtIn i.1.succ (x.1.concat x.2) w⟩
   · have hLangOut : relOut.language = ∅ := by
       ext stmtOut
       simp only [Set.language, Set.mem_image, Prod.exists, exists_and_right,
@@ -137,9 +132,9 @@ theorem rbrKnowledgeSoundnessAveraged_implies_rbrSoundnessAveraged
       Fin.succ_ne_zero i.1 hbad.2.1).trans_le zero_le
 
 /-- Prover-averaged round-by-round soundness implies prover-averaged round-by-round knowledge
-soundness with an unbounded extractor. Nonempty input witnesses are necessary in general: already
-for a zero-round protocol, empty input witnesses and nonempty output witnesses preclude extraction
-from a nonempty statement type. -/
+soundness with an unbounded extractor. Without input witnesses the implication holds for all
+relations and errors exactly when no input statement, full transcript and output witness exist
+together (`forall_rbrSoundnessAveraged_iff_rbrKnowledgeSoundnessAveraged_iff`). -/
 theorem rbrSoundnessAveraged_implies_rbrKnowledgeSoundnessAveraged [Nonempty WitIn]
     {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
     {verifier : Verifier oSpec StmtIn StmtOut pSpec}
@@ -185,7 +180,9 @@ theorem rbrSoundnessAveraged_implies_rbrKnowledgeSoundnessAveraged [Nonempty Wit
 
 /-- Prover-averaged round-by-round knowledge soundness places no efficiency or access restriction
 on the extractor, so it coincides with prover-averaged round-by-round soundness of the induced
-languages when input witnesses are nonempty. -/
+languages when input witnesses are nonempty.
+`rbrSoundnessAveraged_iff_rbrKnowledgeSoundnessAveraged_of_nonempty_or_isEmpty` also covers the
+remaining case in which the two coincide. -/
 theorem rbrSoundnessAveraged_iff_rbrKnowledgeSoundnessAveraged [Nonempty WitIn]
     {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
     {verifier : Verifier oSpec StmtIn StmtOut pSpec}
@@ -211,8 +208,9 @@ theorem rbrKnowledgeSoundness_implies_rbrSoundness
   exact ⟨w, fun hw => hprev ⟨_, hw⟩, hnext⟩
 
 /-- Round-by-round soundness implies knowledge soundness with an unbounded extractor.
-Nonempty input witnesses are necessary in general: already for a zero-round protocol, empty input
-witnesses and nonempty output witnesses preclude extraction from a nonempty statement type. -/
+Without input witnesses the implication holds for all relations and errors exactly when no input
+statement, full transcript and output witness exist together
+(`forall_rbrSoundness_iff_rbrKnowledgeSoundness_iff`). -/
 theorem rbrSoundness_implies_rbrKnowledgeSoundness [Nonempty WitIn]
     {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
     {verifier : Verifier oSpec StmtIn StmtOut pSpec}
@@ -230,7 +228,9 @@ theorem rbrSoundness_implies_rbrKnowledgeSoundness [Nonempty WitIn]
       (S.toKnowledgeStateFunctionOfRel_failure init impl i stmt tr challenge hbad).2
 
 /-- With no efficiency or access restriction on extraction, round-by-round knowledge
-soundness coincides with soundness of the induced languages for nonempty input witnesses. -/
+soundness coincides with soundness of the induced languages for nonempty input witnesses.
+`rbrSoundness_iff_rbrKnowledgeSoundness_of_nonempty_or_isEmpty` also covers the
+remaining case in which the two coincide. -/
 theorem rbrSoundness_iff_rbrKnowledgeSoundness [Nonempty WitIn]
     {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
     {verifier : Verifier oSpec StmtIn StmtOut pSpec}
@@ -266,6 +266,158 @@ theorem rbrSoundness_iff_rbrKnowledgeSoundness_unit
     (rbrSoundness_iff_rbrKnowledgeSoundness init impl
       (verifier := verifier) (ε := ε)
       (relIn := langIn ×ˢ (Set.univ : Set Unit)) (relOut := langOut ×ˢ (Set.univ : Set Unit)))
+
+/-! ### Inhabitation of witness types
+
+The equivalences above assume `[Nonempty WitIn]`. Without input witnesses they hold for all
+relations and errors exactly when no input statement, full transcript and output witness exist
+together. Otherwise no round-by-round extractor exists
+(`Extractor.RoundByRound.exists_nonempty_iff`): extraction is total, so it must also map rejected
+transcripts and unrelated output witnesses. The separation is therefore a consequence of extractor
+totality rather than a gap in soundness: knowledge soundness fails for every pair of relations,
+while soundness holds whenever the verifier never outputs a statement of the output language, for
+instance when it always rejects.
+
+The one-shot notion `rbrKnowledgeSoundnessOneShot` is not characterized here. -/
+
+/-- Prover-averaged round-by-round soundness holds with any error for a verifier that never
+outputs a statement of the output language: the everywhere false state function satisfies every
+law and has no bad transition. -/
+theorem rbrSoundnessAveraged_of_forall_prEvent_eq_zero {langIn : Set StmtIn}
+    {langOut : Set StmtOut}
+    {verifier : Verifier oSpec StmtIn StmtOut pSpec}
+    (h : ∀ stmt tr, Pr{let stmtOut ← (OptionT.mk do
+      (simulateQ impl (verifier.run stmt tr)).run' (← init))}[stmtOut ∈ langOut] = 0)
+    (ε : pSpec.ChallengeIdx → ℝ≥0) :
+    verifier.rbrSoundnessAveraged init impl langIn langOut ε :=
+  ⟨{ toFun := fun _ _ _ => False
+     toFun_empty := fun _ h => h.elim
+     toFun_next := fun _ _ _ _ _ _ h => h
+     toFun_full := fun stmt tr _ => h stmt tr },
+   fun _ _ _ _ _ _ _ => (prEvent_eq_zero_of_forall_not _ _ fun _ h ↦ h.2).trans_le zero_le⟩
+
+/-- Round-by-round soundness holds with any error for a verifier that never outputs a statement of
+the output language. -/
+theorem rbrSoundness_of_forall_prEvent_eq_zero {langIn : Set StmtIn}
+    {langOut : Set StmtOut} {verifier : Verifier oSpec StmtIn StmtOut pSpec}
+    (h : ∀ stmt tr, Pr{let stmtOut ← (OptionT.mk do
+      (simulateQ impl (verifier.run stmt tr)).run' (← init))}[stmtOut ∈ langOut] = 0)
+    (ε : pSpec.ChallengeIdx → ℝ≥0) :
+    verifier.rbrSoundness init impl langIn langOut ε :=
+  ⟨{ toFun := fun _ _ _ => False
+     toFun_empty := fun _ h => h.elim
+     toFun_next := fun _ _ _ _ _ _ h => h
+     toFun_full := fun stmt tr _ => h stmt tr },
+   fun _ _ _ _ => (prEvent_eq_zero_of_forall_not _ _ fun _ h ↦ h.2).trans_le zero_le⟩
+
+/-- If no input statement, full transcript and output witness exist together, prover-averaged
+round-by-round knowledge soundness holds for every pair of relations, with any error. -/
+theorem rbrKnowledgeSoundnessAveraged_of_isEmpty
+    [IsEmpty (StmtIn × FullTranscript pSpec × WitOut)]
+    {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
+    {verifier : Verifier oSpec StmtIn StmtOut pSpec} (ε : pSpec.ChallengeIdx → ℝ≥0) :
+    verifier.rbrKnowledgeSoundnessAveraged init impl relIn relOut ε :=
+  ⟨_, _, KnowledgeStateFunction.ofIsEmpty init impl, fun _ _ _ _ =>
+    (prEvent_eq_zero_of_forall_not _ _ fun _ ⟨w, _⟩ ↦ w.elim).trans_le zero_le⟩
+
+/-- If no input statement, full transcript and output witness exist together, round-by-round
+knowledge soundness holds for every pair of relations, with any error. -/
+theorem rbrKnowledgeSoundness_of_isEmpty
+    [IsEmpty (StmtIn × FullTranscript pSpec × WitOut)]
+    {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
+    {verifier : Verifier oSpec StmtIn StmtOut pSpec} (ε : pSpec.ChallengeIdx → ℝ≥0) :
+    verifier.rbrKnowledgeSoundness init impl relIn relOut ε :=
+  ⟨_, _, KnowledgeStateFunction.ofIsEmpty init impl, fun _ _ _ =>
+    (prEvent_eq_zero_of_forall_not _ _ fun _ ⟨w, _⟩ ↦ w.elim).trans_le zero_le⟩
+
+/-- With no input witnesses, an input statement, full transcript and output witness preclude
+prover-averaged round-by-round knowledge soundness, whatever the relations and error. -/
+theorem not_rbrKnowledgeSoundnessAveraged_of_isEmpty [IsEmpty WitIn] (stmtIn : StmtIn)
+    (tr : FullTranscript pSpec) (witOut : WitOut)
+    {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
+    {verifier : Verifier oSpec StmtIn StmtOut pSpec} {ε : pSpec.ChallengeIdx → ℝ≥0} :
+    ¬ verifier.rbrKnowledgeSoundnessAveraged init impl relIn relOut ε := fun ⟨_, E, _⟩ =>
+  (Extractor.RoundByRound.isEmpty_of_isEmpty_witIn stmtIn tr witOut).false E
+
+/-- With no input witnesses, an input statement, full transcript and output witness preclude
+round-by-round knowledge soundness, whatever the relations and error. -/
+theorem not_rbrKnowledgeSoundness_of_isEmpty [IsEmpty WitIn] (stmtIn : StmtIn)
+    (tr : FullTranscript pSpec) (witOut : WitOut)
+    {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
+    {verifier : Verifier oSpec StmtIn StmtOut pSpec} {ε : pSpec.ChallengeIdx → ℝ≥0} :
+    ¬ verifier.rbrKnowledgeSoundness init impl relIn relOut ε := fun ⟨_, E, _⟩ =>
+  (Extractor.RoundByRound.isEmpty_of_isEmpty_witIn stmtIn tr witOut).false E
+
+/-- Prover-averaged round-by-round soundness of the induced languages is knowledge soundness when
+input witnesses exist, or when no input statement, full transcript and output witness exist
+together. -/
+theorem rbrSoundnessAveraged_iff_rbrKnowledgeSoundnessAveraged_of_nonempty_or_isEmpty
+    (h : Nonempty WitIn ∨ IsEmpty (StmtIn × FullTranscript pSpec × WitOut))
+    {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
+    {verifier : Verifier oSpec StmtIn StmtOut pSpec} {ε : pSpec.ChallengeIdx → ℝ≥0} :
+    verifier.rbrSoundnessAveraged init impl relIn.language relOut.language ε ↔
+      verifier.rbrKnowledgeSoundnessAveraged init impl relIn relOut ε := by
+  rcases h with h | h
+  · exact rbrSoundnessAveraged_iff_rbrKnowledgeSoundnessAveraged init impl
+  · exact ⟨fun _ => rbrKnowledgeSoundnessAveraged_of_isEmpty init impl ε,
+      rbrKnowledgeSoundnessAveraged_implies_rbrSoundnessAveraged init impl⟩
+
+/-- Round-by-round soundness of the induced languages is knowledge soundness when
+input witnesses exist, or when no input statement, full transcript and output witness exist
+together. -/
+theorem rbrSoundness_iff_rbrKnowledgeSoundness_of_nonempty_or_isEmpty
+    (h : Nonempty WitIn ∨ IsEmpty (StmtIn × FullTranscript pSpec × WitOut))
+    {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
+    {verifier : Verifier oSpec StmtIn StmtOut pSpec} {ε : pSpec.ChallengeIdx → ℝ≥0} :
+    verifier.rbrSoundness init impl relIn.language relOut.language ε ↔
+      verifier.rbrKnowledgeSoundness init impl relIn relOut ε := by
+  rcases h with h | h
+  · exact rbrSoundness_iff_rbrKnowledgeSoundness init impl
+  · exact ⟨fun _ => rbrKnowledgeSoundness_of_isEmpty init impl ε,
+      rbrKnowledgeSoundness_implies_rbrSoundness init impl⟩
+
+/-- Prover-averaged round-by-round soundness of the induced languages coincides with prover-averaged
+knowledge soundness for all relations and errors exactly when input witnesses exist, or no input
+statement, full transcript and output witness exist together. The condition does not depend on the
+verifier, `init`, `impl` or the error. Otherwise the empty relations separate them: soundness holds
+and knowledge soundness fails. Without input witnesses the input relation is necessarily empty. -/
+theorem forall_rbrSoundnessAveraged_iff_rbrKnowledgeSoundnessAveraged_iff
+    {verifier : Verifier oSpec StmtIn StmtOut pSpec} :
+    (∀ (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
+        (ε : pSpec.ChallengeIdx → ℝ≥0),
+      verifier.rbrSoundnessAveraged init impl relIn.language relOut.language ε ↔
+        verifier.rbrKnowledgeSoundnessAveraged init impl relIn relOut ε) ↔
+      Nonempty WitIn ∨ IsEmpty (StmtIn × FullTranscript pSpec × WitOut) := by
+  refine ⟨fun h => ?_, fun h _ _ _ =>
+    rbrSoundnessAveraged_iff_rbrKnowledgeSoundnessAveraged_of_nonempty_or_isEmpty init impl h⟩
+  by_contra hne
+  rw [not_or, not_nonempty_iff, not_isEmpty_iff] at hne
+  obtain ⟨_, ⟨stmtIn, tr, witOut⟩⟩ := hne
+  refine not_rbrKnowledgeSoundnessAveraged_of_isEmpty init impl stmtIn tr witOut
+    ((h ∅ ∅ 0).1 ?_)
+  exact rbrSoundnessAveraged_of_forall_prEvent_eq_zero init impl
+    (fun _ _ => prEvent_eq_zero_of_forall_not _ _ fun _ ↦ by simp [Set.language]) 0
+
+/-- Round-by-round soundness of the induced languages coincides with round-by-round
+knowledge soundness for all relations and errors exactly when input witnesses exist, or no input
+statement, full transcript and output witness exist together. The condition does not depend on
+the verifier, `init`, `impl` or the error. -/
+theorem forall_rbrSoundness_iff_rbrKnowledgeSoundness_iff
+    {verifier : Verifier oSpec StmtIn StmtOut pSpec} :
+    (∀ (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
+        (ε : pSpec.ChallengeIdx → ℝ≥0),
+      verifier.rbrSoundness init impl relIn.language relOut.language ε ↔
+        verifier.rbrKnowledgeSoundness init impl relIn relOut ε) ↔
+      Nonempty WitIn ∨ IsEmpty (StmtIn × FullTranscript pSpec × WitOut) := by
+  refine ⟨fun h => ?_, fun h _ _ _ =>
+    rbrSoundness_iff_rbrKnowledgeSoundness_of_nonempty_or_isEmpty init impl h⟩
+  by_contra hne
+  rw [not_or, not_nonempty_iff, not_isEmpty_iff] at hne
+  obtain ⟨_, ⟨stmtIn, tr, witOut⟩⟩ := hne
+  refine not_rbrKnowledgeSoundness_of_isEmpty init impl stmtIn tr witOut
+    ((h ∅ ∅ 0).1 ?_)
+  exact rbrSoundness_of_forall_prEvent_eq_zero init impl
+    (fun _ _ => prEvent_eq_zero_of_forall_not _ _ fun _ ↦ by simp [Set.language]) 0
 
 end Implications
 
