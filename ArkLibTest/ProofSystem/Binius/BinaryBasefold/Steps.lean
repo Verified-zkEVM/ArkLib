@@ -10,7 +10,7 @@ import ArkLib.ProofSystem.Binius.BinaryBasefold.Steps
 /-!
 # Binary Basefold steps: axioms of the leaf theorems
 
-The worst-case round-by-round knowledge soundness and the perfect completeness of the four
+The round-by-round knowledge soundness and the perfect completeness of the four
 Binary Basefold steps (fold, commit, relay, final sum-check) at their own extractors,
 knowledge-state functions and errors depend only on the standard axioms. The core interaction
 composes these leaves, so a `sorry` reaching any of them would taint every composite.
@@ -23,10 +23,10 @@ open Lean Elab Command
 run_cmd do
   let allowed := #[``propext, ``Classical.choice, ``Quot.sound]
   for n in #[
-      ``foldOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith,
-      ``commitOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith,
-      ``relayOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith,
-      ``finalSumcheckOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith,
+      ``foldOracleVerifier_rbrKnowledgeSoundnessWith,
+      ``commitOracleVerifier_rbrKnowledgeSoundnessWith,
+      ``relayOracleVerifier_rbrKnowledgeSoundnessWith,
+      ``finalSumcheckOracleVerifier_rbrKnowledgeSoundnessWith,
       ``foldOracleReduction_perfectCompleteness,
       ``commitOracleReduction_perfectCompleteness,
       ``relayOracleReduction_perfectCompleteness,

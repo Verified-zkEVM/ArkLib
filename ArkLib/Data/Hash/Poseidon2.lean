@@ -32,7 +32,7 @@ namespace Poseidon2
 
 /-! First, we give the round constants -/
 
-/-- The constants for Poseidon2 with 16 rounds
+/-- The constants for Poseidon2 with width 16
 (total of 8 * 16 + 20 = 148 constants) -/
 def rawConstants16 : Vector KoalaBear.Field 148 := #v[
     -- External initial rounds (4 × 16 constants)
@@ -414,7 +414,9 @@ def RAW_CONSTANTS_24 : Vector KoalaBear.Field 215 := #v[
 /-- The degree of the S-Box for Poseidon2 over the KoalaBear field -/
 def sBoxDegree : Nat := 3
 
-/-- The parameters determining a Poseidon2 permutation (over the KoalaBear field) -/
+/-- Parameters for the Poseidon2 round function over the KoalaBear field.
+The size and round-count conditions are checked; invertibility of the linear layers is not
+required. -/
 structure Params where
   -- First, the parameters
   width : Nat
@@ -600,7 +602,7 @@ def internalLinearLayer (state : Vector KoalaBear.Field params.width) :
   -- This is `sumAll + d_i * s_i`.
   state.zipWith (fun s d => sumAll + d * s) params.internalDiagVectors
 
-/-- A single full round of the Poseidon2 permutation. -/
+/-- A single full round of the Poseidon2 round function. -/
 def fullRound (params : Params) (state : Vector KoalaBear.Field params.width)
     (roundConstants : Vector KoalaBear.Field params.width) : Vector KoalaBear.Field params.width :=
   -- 1. Add round constants
@@ -610,7 +612,7 @@ def fullRound (params : Params) (state : Vector KoalaBear.Field params.width)
   -- 3. Apply external linear layer
   externalLinearLayer params stateAfterSbox
 
-/-- A single partial round of the Poseidon2 permutation. -/
+/-- A single partial round of the Poseidon2 round function. -/
 def partialRound (state : Vector KoalaBear.Field params.width) (roundConstant : KoalaBear.Field) :
     Vector KoalaBear.Field params.width :=
   -- 1. Add round constant to the first element
@@ -656,7 +658,8 @@ lemma secondHalfRoundConstants_extract_length (params : Params)
   rw [Nat.succ_mul] at h1
   omega
 
-/-- Full Poseidon2 permutation on a state vector. -/
+/-- Full Poseidon2 round function on a state vector.
+This is a permutation when its linear layers are invertible. -/
 @[inline]
 def permute (params : Params) (state : Vector KoalaBear.Field params.width) :
     Vector KoalaBear.Field params.width :=

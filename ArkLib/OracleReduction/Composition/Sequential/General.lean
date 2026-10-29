@@ -16,7 +16,7 @@ public import ArkLib.OracleReduction.Composition.Sequential.Append
   Ordinary soundness and knowledge soundness are proved for guarded components with bounds
   uniform over deterministic shared oracle states. Knowledge soundness names a computable fold
   of pure transcript-and-output extractors. Per-step error reindexing is given by
-  `ProtocolSpec.apply_seqComposeChallengeIdxToSigma_eq_sumElim`. The worst-case
+  `ProtocolSpec.apply_seqComposeChallengeIdxToSigma_eq_sumElim`. The fixed-prefix
   round-by-round knowledge-soundness interface for guarded chains is
   `Sequential/GuardedRoundByRound.lean`.
   The false fixed-init completeness contracts have been removed. Proved completeness interfaces
@@ -69,6 +69,36 @@ lemma seqCompose_succ {m : ℕ}
       Prover oSpec (Stmt i.castSucc) (Wit i.castSucc) (Stmt i.succ) (Wit i.succ) (pSpec i)) :
     seqCompose Stmt Wit P =
       append (P 0) (seqCompose (Stmt ∘ Fin.succ) (Wit ∘ Fin.succ) (fun i => P (Fin.succ i))) := rfl
+
+/-- Sequential composition preserves a retained statement factor when every component does. -/
+theorem seqCompose_run_retains {k : ℕ} (S W : Fin (k + 1) → Type) {O : Type}
+    {ns : Fin k → ℕ} {ps : ∀ i, ProtocolSpec (ns i)}
+    (P : (i : Fin k) → Prover oSpec (S i.castSucc × O) (W i.castSucc)
+      (S i.succ × O) (W i.succ) (ps i))
+    (hpure : ∀ i, (P i).OutputIsPure)
+    (hretains : ∀ i s w z, z ∈ support ((P i).run s w) → z.2.1.2 = s.2)
+    (s : S 0 × O) (w : W 0)
+    (z : (ProtocolSpec.seqCompose ps).FullTranscript × (S (.last k) × O) × W (.last k))
+    (hz : z ∈ support ((Prover.seqCompose (fun j => S j × O) W P).run s w)) :
+    z.2.1.2 = s.2 := by
+  induction k with
+  | zero =>
+    simp [Prover.seqCompose_zero, Prover.run, Prover.id, Prover.runToRound] at hz
+    subst z
+    rfl
+  | succ k ih =>
+    rw [Prover.seqCompose_succ] at hz
+    erw [Prover.append_run (hPure := hpure 0)] at hz
+    obtain ⟨left, hleft, hz⟩ := (mem_support_bind_iff _ _ _).mp hz
+    obtain ⟨right, hright, hz⟩ := (mem_support_bind_iff _ _ _).mp hz
+    have hzEq := (mem_support_pure_iff _ _).mp hz
+    subst z
+    have hl := hretains 0 s w left
+      (OracleComp.mem_support_of_mem_support_liftComp _ _ _ hleft)
+    have hr := ih (S ∘ Fin.succ) (W ∘ Fin.succ) (fun i => P i.succ) (fun i => hpure i.succ)
+      (fun i => hretains i.succ) left.2.1 left.2.2 right
+      (OracleComp.mem_support_of_mem_support_liftComp _ _ _ hright)
+    exact hr.trans hl
 
 end Prover
 
@@ -316,6 +346,82 @@ lemma seqCompose_succ {m : ℕ}
       append (V 0) (seqCompose (Stmt ∘ Fin.succ) (fun i => OStmt (Fin.succ i))
         (Oₛ := fun i => Oₛ (Fin.succ i)) (Oₘ := fun i => Oₘ (Fin.succ i))
           (fun i => V (Fin.succ i))) := rfl
+
+/-- Sequential composition queries only sent messages when every component does. -/
+theorem seqCompose_only_message_queries {m : ℕ}
+    (S : Fin (m + 1) → Type)
+    {ιₛ : Fin (m + 1) → Type} (OStmt : (i : Fin (m + 1)) → ιₛ i → Type)
+    [∀ i j, OracleInterface (OStmt i j)]
+    {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
+    [∀ i j, OracleInterface ((pSpec i).Message j)]
+    (V : (i : Fin m) → OracleVerifier oSpec (S i.castSucc) (OStmt i.castSucc)
+      (S i.succ) (OStmt i.succ) (pSpec i))
+    (hV : ∀ i stmt challenges, AllQueriesSatisfy ((V i).verify stmt challenges).run
+      (fun q => ∃ j, q = Sum.inr (Sum.inr j)))
+    (stmt : S 0) (challenges : (ProtocolSpec.seqCompose pSpec).Challenges) :
+    AllQueriesSatisfy ((seqCompose S OStmt V).verify stmt challenges).run
+      (fun q => ∃ i, q = Sum.inr (Sum.inr i)) := by
+  have htransport {A B : Type} (OA : OracleInterface A) (OB : OracleInterface B)
+      (hType : A = B) (hInterface : HEq OA OB) {ι' : Type} {spec : OracleSpec ι'}
+      (impl : (q : OB.Query) → OracleComp spec (OB.Response q)) (q : OA.Query)
+      (P : ι' → Prop) (himpl : ∀ q, AllQueriesSatisfy (impl q) P) :
+      AllQueriesSatisfy (OracleVerifier.queryAlongHEq OA OB hType hInterface impl q) P := by
+    cases hType
+    cases eq_of_heq hInterface
+    exact himpl q
+  induction m with
+  | zero =>
+      simp only [OracleVerifier.seqCompose_zero, OracleVerifier.id]
+      exact allQueriesSatisfy_pure _ _
+  | succ rounds ih =>
+      rw [OracleVerifier.seqCompose_succ]
+      simp only [OracleVerifier.append]
+      apply allQueriesSatisfy_bind
+      · apply AllQueriesSatisfy.simulateQ (P := fun q => ∃ j, q = Sum.inr (Sum.inr j))
+        · exact hV 0 _ _
+        · rintro q ⟨j, rfl⟩
+          simp only [firstQueryImpl, QueryImpl.add_apply_inr]
+          rcases j with ⟨j, point⟩
+          dsimp only [messageQueryInl]
+          apply htransport
+          intro point
+          simp only [QueryImpl.liftTarget_apply, QueryImpl.id'_apply]
+          exact (allQueriesSatisfy_query_iff _ _).2 ⟨_, rfl⟩
+      · intro intermediate
+        cases intermediate with
+        | none => exact allQueriesSatisfy_pure _ _
+        | some intermediate =>
+            apply AllQueriesSatisfy.simulateQ (P := fun q => ∃ j, q = Sum.inr (Sum.inr j))
+            · exact ih (S ∘ Fin.succ) (fun i => OStmt i.succ) (fun i => V i.succ)
+                (fun i => hV i.succ) _ _
+            · rintro q ⟨j, rfl⟩
+              simp only [secondQueryImpl, QueryImpl.add_apply_inr]
+              rcases j with ⟨j, point⟩
+              dsimp only [messageQueryInr]
+              apply htransport
+              intro point
+              simp only [QueryImpl.liftTarget_apply, QueryImpl.id'_apply]
+              exact (allQueriesSatisfy_query_iff _ _).2 ⟨_, rfl⟩
+
+/-- Sequential composition retains an oracle family when every component materializes it
+unchanged. -/
+theorem seqCompose_materializeOutput {m : ℕ}
+    (S : Fin (m + 1) → Type) {ιₛ : Type} (OStmt : ιₛ → Type)
+    [∀ j, OracleInterface (OStmt j)]
+    {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
+    [∀ i j, OracleInterface ((pSpec i).Message j)]
+    (V : (i : Fin m) → OracleVerifier oSpec (S i.castSucc) OStmt
+      (S i.succ) OStmt (pSpec i))
+    (hV : ∀ i c os ms, (V i).materializeOutput c os ms = os)
+    (c : (ProtocolSpec.seqCompose pSpec).Challenges) (os : ∀ j, OStmt j)
+    (ms : (ProtocolSpec.seqCompose pSpec).Messages) :
+    (seqCompose S (fun _ => OStmt) V).materializeOutput c os ms = os := by
+  induction m with
+  | zero => rfl
+  | succ m ih =>
+      rw [seqCompose_succ]
+      erw [append_materializeOutput, hV]
+      exact ih (S ∘ Fin.succ) (fun i => V i.succ) (fun i => hV i.succ) _ _
 
 @[simp]
 lemma seqCompose_toVerifier {m : ℕ}

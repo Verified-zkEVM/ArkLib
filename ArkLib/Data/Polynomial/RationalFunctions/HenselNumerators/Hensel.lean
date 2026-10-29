@@ -631,8 +631,8 @@ theorem gammaOfNumerators_eq_gammaFromAlpha (x₀ : F) (R : F[X][X][Y]) (H : F[X
   exact hshape n
 
 /-- The residual at step `t`: the `(t+1)`-st coefficient of `R(x₀+S, γ, Z)` with the `ζ·α_{t+1}`
-term removed.  It vanishes exactly when `α_{t+1}` solves the Hensel equation, and after clearing
-denominators it becomes the next numerator. -/
+term removed. The `(t+1)`-st coefficient equation holds exactly when
+`ζ·α_{t+1} + residual = 0`; after clearing denominators, its negative gives the next numerator. -/
 noncomputable def henselCoeffResidual (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [Fact (Irreducible H)] [Fact (0 < H.natDegree)]
     (αseq : ℕ → 𝕃 H) (t : ℕ) : 𝕃 H :=

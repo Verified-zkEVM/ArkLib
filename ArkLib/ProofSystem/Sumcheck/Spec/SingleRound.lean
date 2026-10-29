@@ -10,6 +10,7 @@ public import ArkLib.OracleReduction.Composition.Sequential.General
 public import ArkLib.OracleReduction.LiftContext.OracleReduction
 public import ArkLib.OracleReduction.LiftContext.Purity
 public import VCVio.OracleComp.SimSemantics.OptionT.Basic
+public import VCVio.OracleComp.QueryTracking.QueryBound.Simulation
 public import ArkLib.Data.Probability.Instances
 public import ArkLib.OracleReduction.Security.GuardedSoundness
 public import ArkLib.Data.Fin.Basic
@@ -303,6 +304,85 @@ def oracleReduction : OracleReduction oSpec (StmtIn R) (OStmtIn R deg) Unit
   prover := prover R deg oSpec
   verifier := oracleVerifier R deg D oSpec
 
+omit [SampleableType R] in
+/-- Every query made by the simple verifier is to its round message oracle. -/
+theorem oracleVerifier_only_message_queries (target : StmtIn R)
+    (challenges : (pSpec R deg).Challenges) :
+    AllQueriesSatisfy ((oracleVerifier R deg D oSpec).verify target challenges).run
+      (fun q => ∃ i, q = Sum.inr (Sum.inr i)) := by
+  let P : (oSpec + ([OStmtIn R deg]ₒ + [(pSpec R deg).Message]ₒ)).Domain → Prop :=
+    fun q => ∃ i, q = Sum.inr (Sum.inr i)
+  let ask (x : R) : OptionT
+      (OracleComp (oSpec + ([OStmtIn R deg]ₒ + [(pSpec R deg).Message]ₒ))) R :=
+    OptionT.lift <| OracleComp.liftComp
+      (OracleComp.lift <| OracleSpec.query
+        (show [(pSpec R deg).Message]ₒ.Domain from ⟨default, x⟩)) _
+  have hquery (x : R) : AllQueriesSatisfy (ask x).run P := by
+    simp only [ask, OptionT.lift, OracleComp.liftComp_query,
+      OracleQuery.cont_query, OracleQuery.input_query]
+    change AllQueriesSatisfy
+      (some <$> (liftM (OracleSpec.query
+        (spec := oSpec + ([OStmtIn R deg]ₒ + [(pSpec R deg).Message]ₒ)) (Sum.inr (Sum.inr
+        (show [(pSpec R deg).Message]ₒ.Domain from ⟨default, x⟩)))) :
+        OracleComp (oSpec + ([OStmtIn R deg]ₒ + [(pSpec R deg).Message]ₒ)) R)) P
+    rw [allQueriesSatisfy_def, isQueryBound_map_iff, ← allQueriesSatisfy_def]
+    exact (allQueriesSatisfy_query_iff _ _).2 ⟨_, rfl⟩
+  have hvector {k : ℕ} (v : Vector (Fin m) k) :
+      AllQueriesSatisfy (v.mapM (fun i => ask (D i))).run P := by
+    induction k with
+    | zero =>
+        rw [Vector.eq_empty (xs := v)]
+        simp only [Vector.mapM_mk_empty, OptionT.run_pure]
+        exact allQueriesSatisfy_pure _ _
+    | succ k ih =>
+        obtain ⟨v, i, rfl⟩ := Vector.exists_push (xs := v)
+        have hsingle : (#v[i].mapM (fun i => ask (D i))).run =
+            (Option.map fun x => #v[x]) <$> (ask (D i)).run := by
+          have heq : (#v[i].mapM (fun i => ask (D i))) =
+              (fun x => #v[x]) <$> ask (D i) := by
+            apply Vector.map_toArray_inj.mp
+            simp
+          rw [heq, OptionT.run_map]
+        rw [← Vector.append_singleton, Vector.mapM_append]
+        simp only [OptionT.run_bind, OptionT.run_pure, Option.elimM]
+        apply allQueriesSatisfy_bind (ih v)
+        intro x
+        cases x with
+        | none => exact allQueriesSatisfy_pure _ _
+        | some x =>
+            apply allQueriesSatisfy_bind
+            · rw [hsingle]
+              rw [allQueriesSatisfy_def, isQueryBound_map_iff, ← allQueriesSatisfy_def]
+              exact hquery (D i)
+            · intro y; cases y <;> exact allQueriesSatisfy_pure _ _
+  change AllQueriesSatisfy ((do
+    let evals ← (Vector.finRange m).mapM (fun i => ask (D i))
+    guard (evals.sum = target)
+    let newTarget ← ask (challenges default)
+    pure (newTarget, challenges default) : OptionT _ _).run) P
+  simp only [OptionT.run_bind, OptionT.run_pure, Option.elimM]
+  change AllQueriesSatisfy
+    (((Vector.finRange m).mapM (fun i => ask (D i))).run >>= fun evals =>
+      Option.elim evals (pure none) (fun evals =>
+        ((guard (evals.sum = target) : OptionT _ Unit).run >>= fun checked =>
+          Option.elim checked (pure none) (fun _ =>
+            (ask (challenges default)).run >>= fun newTarget =>
+              pure (Option.map (fun x => (x, challenges default)) newTarget))))) P
+  apply allQueriesSatisfy_bind (hvector _)
+  intro evals
+  cases evals with
+  | none => exact allQueriesSatisfy_pure _ _
+  | some evals =>
+      simp only [Option.elim_some]
+      by_cases h : evals.sum = target
+      · simp only [OracleComp.guard_eq, h, ite_true, OptionT.run_pure, pure_bind, Option.elim_some]
+        apply allQueriesSatisfy_bind (hquery _)
+        intro x
+        exact allQueriesSatisfy_pure _ _
+      · simp only [OracleComp.guard_eq, h, ite_false, OptionT.run_failure, pure_bind,
+          Option.elim_none]
+        exact allQueriesSatisfy_pure _ _
+
 open Reduction
 open scoped NNReal ENNReal
 
@@ -492,8 +572,8 @@ private theorem fixed_message_bound [Fintype R] [IsDomain R]
   · exact (prEvent_eq_zero_of_forall_not ($ᵗ R) _ (fun _ h => hsum h.2.1)).le.trans zero_le
 
 /-- At every fixed prefix, a false sum becomes valid with probability at most `deg / |R|`. -/
-theorem verifier_rbrKnowledgeSoundnessWorstCase [Fintype R] [IsDomain R] :
-    (verifier R deg D oSpec).rbrKnowledgeSoundnessWorstCase init impl
+theorem verifier_rbrKnowledgeSoundness [Fintype R] [IsDomain R] :
+    (verifier R deg D oSpec).rbrKnowledgeSoundness init impl
       (inputRelation R deg D) (outputRelation R deg)
       (fun _ => (deg : ℝ≥0) / Fintype.card R) := by
   refine ⟨fun _ => Unit, Extractor.RoundByRound.unit, knowledge R deg D oSpec, ?_⟩
@@ -510,28 +590,29 @@ theorem verifier_rbrKnowledgeSoundnessWorstCase [Fintype R] [IsDomain R] :
     simpa only [inputRelation, Set.mem_ofPred_eq] using
       (bad_event_iff R deg D stmt tr r).mp hr
 
-/-- Round-by-round knowledge soundness for the verifier. `IsDomain R` bounds by `deg / |R|` the
-probability of agreement at a uniform challenge for round polynomials with unequal sums. -/
-theorem verifier_rbrKnowledgeSoundness [Fintype R] [IsDomain R] :
-    (verifier R deg D oSpec).rbrKnowledgeSoundness init impl
+/-- Prover-averaged round-by-round knowledge soundness for the verifier. `IsDomain R` bounds by
+`deg / |R|` the probability of agreement at a uniform challenge for round polynomials with unequal
+sums. -/
+theorem verifier_rbrKnowledgeSoundnessAveraged [Fintype R] [IsDomain R] :
+    (verifier R deg D oSpec).rbrKnowledgeSoundnessAveraged init impl
     (inputRelation R deg D) (outputRelation R deg) (fun _ => (deg : ℝ≥0) / (Fintype.card R)) := by
-  exact Verifier.rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness init impl
-    (verifier_rbrKnowledgeSoundnessWorstCase R deg D oSpec)
+  exact Verifier.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged init impl
+    (verifier_rbrKnowledgeSoundness R deg D oSpec)
 
-/-- Round-by-round knowledge soundness for the oracle verifier. -/
-theorem oracleVerifier_rbrKnowledgeSoundness [Fintype R] [IsDomain R] :
-    (oracleVerifier R deg D oSpec).rbrKnowledgeSoundness init impl
+/-- Prover-averaged round-by-round knowledge soundness for the oracle verifier. -/
+theorem oracleVerifier_rbrKnowledgeSoundnessAveraged [Fintype R] [IsDomain R] :
+    (oracleVerifier R deg D oSpec).rbrKnowledgeSoundnessAveraged init impl
     (inputRelation R deg D) (outputRelation R deg) (fun _ => (deg : ℝ≥0) / (Fintype.card R)) := by
-  change (oracleVerifier R deg D oSpec).toVerifier.rbrKnowledgeSoundness init impl _ _ _
+  change (oracleVerifier R deg D oSpec).toVerifier.rbrKnowledgeSoundnessAveraged init impl _ _ _
   rw [oracleVerifier_eq_verifier]
-  exact verifier_rbrKnowledgeSoundness R deg D oSpec
+  exact verifier_rbrKnowledgeSoundnessAveraged R deg D oSpec
 
 /-- Fixed-prefix round-by-round knowledge soundness for the oracle verifier. -/
-theorem oracleVerifier_rbrKnowledgeSoundnessWorstCase [Fintype R] [IsDomain R] :
-    (oracleVerifier R deg D oSpec).toVerifier.rbrKnowledgeSoundnessWorstCase init impl
+theorem oracleVerifier_rbrKnowledgeSoundness [Fintype R] [IsDomain R] :
+    (oracleVerifier R deg D oSpec).toVerifier.rbrKnowledgeSoundness init impl
     (inputRelation R deg D) (outputRelation R deg) (fun _ => (deg : ℝ≥0) / Fintype.card R) := by
   rw [oracleVerifier_eq_verifier]
-  exact verifier_rbrKnowledgeSoundnessWorstCase R deg D oSpec
+  exact verifier_rbrKnowledgeSoundness R deg D oSpec
 
 -- TODO: break down the oracle reduction into a series of oracle reductions as stated above
 
@@ -799,7 +880,7 @@ def extractorLens (i : Fin n) : Extractor.Lens
   stmt := oStmtLens R n deg D i
   wit := Witness.InvLens.trivial
 
-variable {ι : Type} (oSpec : OracleSpec ι) [DecidableEq R] [SampleableType R]
+variable {ι : Type} (oSpec : OracleSpec ι) [DecidableEq R]
 
 /-- The verifier for the `i`-th round of the sum-check protocol -/
 def verifier (i : Fin n) : Verifier oSpec
@@ -807,11 +888,93 @@ def verifier (i : Fin n) : Verifier oSpec
     (StatementRound R n i.succ × (∀ i, OracleStatement R n deg i)) (pSpec R deg) :=
   (Simple.verifier R deg D oSpec).liftContext (oStmtLens R n deg D i)
 
-/-- The oracle verifier for the `i`-th round of the sum-check protocol -/
-def oracleVerifier (i : Fin n) : OracleVerifier oSpec (StatementRound R n i.castSucc)
-    (OracleStatement R n deg) (StatementRound R n i.succ) (OracleStatement R n deg) (pSpec R deg) :=
-  (Simple.oracleVerifier R deg D oSpec).liftContext
-    (oStmtExecutableLens R n deg D i) (liftContextOutput R n deg D oSpec i)
+/-- The verifier forwards base and message queries.  Its univariate input handler
+is unreachable because the simple verifier queries only message polynomials. -/
+def verifierQueryImpl : QueryImpl
+    (oSpec + ([Simple.OStmtIn R deg]ₒ + [(pSpec R deg).Message]ₒ))
+    (OracleComp (oSpec + ([OracleStatement R n deg]ₒ + [(pSpec R deg).Message]ₒ))) :=
+  QueryImpl.addLift (QueryImpl.id' oSpec)
+    (QueryImpl.addLift ((fun q => by
+      rcases q with ⟨u, point⟩
+      rcases u with ⟨⟩
+      exact pure (0 : R)) : QueryImpl [Simple.OStmtIn R deg]ₒ
+        (OracleComp [OracleStatement R n deg]ₒ))
+      (QueryImpl.id' [(pSpec R deg).Message]ₒ) :
+      QueryImpl ([Simple.OStmtIn R deg]ₒ + [(pSpec R deg).Message]ₒ)
+        (OracleComp ([OracleStatement R n deg]ₒ + [(pSpec R deg).Message]ₒ)))
+
+/-- The oracle verifier for the `i`-th round of the sum-check protocol. -/
+def oracleVerifier [SampleableType R] (i : Fin n) :
+    OracleVerifier oSpec (StatementRound R n i.castSucc)
+    (OracleStatement R n deg) (StatementRound R n i.succ) (OracleStatement R n deg) (pSpec R deg)
+    where
+  verify := fun stmt challenges => OptionT.mk <|
+    Option.map (fun result : R × R =>
+      (⟨result.1, Fin.snoc stmt.challenges result.2⟩ : StatementRound R n i.succ)) <$>
+      simulateQ (verifierQueryImpl R n deg oSpec)
+        ((Simple.oracleVerifier R deg D oSpec).verify stmt.target challenges).run
+  outputOracle := .inr (liftOutputSimulation R n deg oSpec)
+
+variable [SampleableType R]
+
+/-- The message-only verifier agrees exactly with the virtual-polynomial context lift. -/
+theorem oracleVerifier_eq_liftContext (i : Fin n) :
+    oracleVerifier R n deg D oSpec i =
+      (Simple.oracleVerifier R deg D oSpec).liftContext
+        (oStmtExecutableLens R n deg D i) (liftContextOutput R n deg D oSpec i) := by
+  apply OracleVerifier.ext
+  · funext stmt challenges
+    apply OptionT.ext
+    change Option.map (fun result : R × R =>
+        (⟨result.1, Fin.snoc stmt.challenges result.2⟩ : StatementRound R n i.succ)) <$>
+        simulateQ (verifierQueryImpl R n deg oSpec)
+          ((Simple.oracleVerifier R deg D oSpec).verify stmt.target challenges).run =
+      Option.map (fun result : R × R =>
+        (⟨result.1, Fin.snoc stmt.challenges result.2⟩ : StatementRound R n i.succ)) <$>
+        simulateQ (OracleVerifier.liftContextQueryImpl (oStmtExecutableLens R n deg D i) stmt)
+          ((Simple.oracleVerifier R deg D oSpec).verify stmt.target challenges).run
+    congr 1
+    have hb := Simple.oracleVerifier_only_message_queries R deg D oSpec stmt.target challenges
+    generalize
+      ((Simple.oracleVerifier R deg D oSpec).verify stmt.target challenges).run = oa at hb ⊢
+    revert hb
+    induction oa using OracleComp.inductionOn with
+    | pure x => intro _; rfl
+    | query_bind q next ih =>
+        intro hb
+        obtain ⟨⟨j, rfl⟩, hnext⟩ := (allQueriesSatisfy_query_bind_iff _ _ _).1 hb
+        simp only [simulateQ_bind, simulateQ_spec_query]
+        have hh : verifierQueryImpl R n deg oSpec (Sum.inr (Sum.inr j)) =
+            OracleVerifier.liftContextQueryImpl (oStmtExecutableLens R n deg D i) stmt
+              (Sum.inr (Sum.inr j)) := by
+          simp only [verifierQueryImpl, OracleVerifier.liftContextQueryImpl,
+            QueryImpl.addLift_def, QueryImpl.add_apply_inr, QueryImpl.liftTarget_apply]
+        rw [hh]
+        congr 1
+        funext answer
+        exact ih answer (hnext answer)
+  · rfl
+
+/-- A full sum-check round queries only its sent message polynomial.  Its virtual
+projection of the input polynomial is never evaluated by the verifier. -/
+theorem oracleVerifier_only_message_queries (i : Fin n)
+    (stmt : StatementRound R n i.castSucc) (challenges : (pSpec R deg).Challenges) :
+    AllQueriesSatisfy ((oracleVerifier R n deg D oSpec i).verify stmt challenges).run
+      (fun q => ∃ j, q = Sum.inr (Sum.inr j)) := by
+  rw [oracleVerifier_eq_liftContext]
+  change AllQueriesSatisfy (Option.map _ <$> simulateQ
+    (OracleVerifier.liftContextQueryImpl (oStmtExecutableLens R n deg D i) stmt)
+    ((Simple.oracleVerifier R deg D oSpec).verify
+      ((oStmtExecutableLens R n deg D i).projStmt stmt) challenges).run) _
+  rw [allQueriesSatisfy_def, isQueryBound_map_iff, ← allQueriesSatisfy_def]
+  apply (Simple.oracleVerifier_only_message_queries R deg D oSpec _ challenges).simulateQ
+  rintro q ⟨j, rfl⟩
+  simp only [OracleVerifier.liftContextQueryImpl, QueryImpl.addLift_def,
+    QueryImpl.add_apply_inr, QueryImpl.liftTarget_apply]
+  change AllQueriesSatisfy (liftM (OracleSpec.query
+    (spec := oSpec + ([OracleStatement R n deg]ₒ + [(pSpec R deg).Message]ₒ))
+    (Sum.inr (Sum.inr j)))) _
+  exact (allQueriesSatisfy_query_iff _ _).2 ⟨j, rfl⟩
 
 /-- The sum-check reduction for the `i`-th round of the sum-check protocol -/
 def reduction (i : Fin n) : Reduction oSpec
@@ -848,7 +1011,20 @@ lemma reduction_verifier_eq_verifier {i : Fin n} :
 @[simp]
 lemma oracleReduction_verifier_eq_verifier {i : Fin n} :
     (oracleReduction R n deg D oSpec i).verifier = oracleVerifier R n deg D oSpec i := by
-  rfl
+  exact (oracleVerifier_eq_liftContext R n deg D oSpec i).symm
+
+/-- Materializing the oracle round gives its ordinary context-lifted reduction. -/
+@[simp]
+theorem oracleReduction_toReduction (i : Fin n) :
+    (oracleReduction R n deg D oSpec i).toReduction = reduction R n deg D oSpec i := by
+  calc
+    _ = (Simple.oracleReduction R deg D oSpec).toReduction.liftContext
+        (oCtxExecutableLens R n deg D i).toLens.toContext :=
+      OracleReduction.liftContext_toReduction_comm (oCtxExecutableLens R n deg D i)
+        (Simple.oracleReduction R deg D oSpec) (liftContextOutput R n deg D oSpec i)
+    _ = reduction R n deg D oSpec i := by
+      rw [Simple.oracleReduction_eq_reduction]
+      rfl
 
 section Security
 
@@ -995,26 +1171,26 @@ theorem reduction_perfectCompleteness :
     (Simple.reduction_perfectCompleteness R deg D oSpec)
 
 /-- Fixed-prefix round-by-round knowledge soundness for the lifted round verifier. -/
-theorem verifier_rbrKnowledgeSoundnessWorstCase [Fintype R] [IsDomain R] :
-    (verifier R n deg D oSpec i).rbrKnowledgeSoundnessWorstCase init impl
+theorem verifier_rbrKnowledgeSoundness [Fintype R] [IsDomain R] :
+    (verifier R n deg D oSpec i).rbrKnowledgeSoundness init impl
     (relationRound R n deg D i.castSucc) (relationRound R n deg D i.succ)
     (fun _ => (deg : ℝ≥0) / Fintype.card R) := by
-  exact Verifier.liftContext_rbrKnowledgeSoundnessWorstCase
+  exact Verifier.liftContext_rbrKnowledgeSoundness
     (stmtLens := oStmtLens R n deg D i)
     (witLens := Witness.InvLens.trivial)
     (Simple.verifier R deg D oSpec)
     (lensKS := by
       rw [← Simple.oracleVerifier_eq_verifier]
       exact extractorLens_rbr_knowledge_soundness i)
-    (Simple.verifier_rbrKnowledgeSoundnessWorstCase R deg D oSpec)
+    (Simple.verifier_rbrKnowledgeSoundness R deg D oSpec)
 
-/-- Round-by-round knowledge soundness for the lifted round verifier. -/
-theorem verifier_rbrKnowledgeSoundness [Fintype R] [IsDomain R] :
-    (verifier R n deg D oSpec i).rbrKnowledgeSoundness init impl
+/-- Prover-averaged round-by-round knowledge soundness for the lifted round verifier. -/
+theorem verifier_rbrKnowledgeSoundnessAveraged [Fintype R] [IsDomain R] :
+    (verifier R n deg D oSpec i).rbrKnowledgeSoundnessAveraged init impl
     (relationRound R n deg D i.castSucc) (relationRound R n deg D i.succ)
     (fun _ => (deg : ℝ≥0) / Fintype.card R) :=
-  Verifier.rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness init impl
-    (verifier_rbrKnowledgeSoundnessWorstCase i)
+  Verifier.rbrKnowledgeSoundness_implies_rbrKnowledgeSoundnessAveraged init impl
+    (verifier_rbrKnowledgeSoundness i)
 
 /-- Completeness theorem for single-round of sum-check, obtained by transporting the completeness
 proof for the simplified version -/
@@ -1038,30 +1214,33 @@ theorem oracleReduction_perfectCompleteness :
 local instance : Inhabited R := ⟨0⟩
 
 /-- Fixed-prefix round-by-round knowledge soundness for the lifted oracle verifier. -/
-theorem oracleVerifier_rbrKnowledgeSoundnessWorstCase [Fintype R] [IsDomain R] :
-    (oracleVerifier R n deg D oSpec i).toVerifier.rbrKnowledgeSoundnessWorstCase init impl
-    (relationRound R n deg D i.castSucc) (relationRound R n deg D i.succ)
-    (fun _ => (deg : ℝ≥0) / Fintype.card R) :=
-  OracleVerifier.liftContext_rbrKnowledgeSoundnessWorstCase
-    (stmtLens := oStmtExecutableLens R n deg D i)
-    (witLens := Witness.InvLens.trivial)
-    (Simple.oracleVerifier R deg D oSpec)
-    (liftContextOutput R n deg D oSpec i)
-    (lensKS := by simpa using extractorLens_rbr_knowledge_soundness i)
-    (Simple.oracleVerifier_rbrKnowledgeSoundnessWorstCase R deg D oSpec)
-
-/-- Round-by-round knowledge soundness for a single round, transported from the simple round. -/
 theorem oracleVerifier_rbrKnowledgeSoundness [Fintype R] [IsDomain R] :
-    (oracleVerifier R n deg D oSpec i).rbrKnowledgeSoundness init impl
+    (oracleVerifier R n deg D oSpec i).toVerifier.rbrKnowledgeSoundness init impl
     (relationRound R n deg D i.castSucc) (relationRound R n deg D i.succ)
-    (fun _ => (deg : ℝ≥0) / Fintype.card R) :=
-  OracleVerifier.liftContext_rbr_knowledgeSoundness
+    (fun _ => (deg : ℝ≥0) / Fintype.card R) := by
+  rw [oracleVerifier_eq_liftContext]
+  exact OracleVerifier.liftContext_rbrKnowledgeSoundness
     (stmtLens := oStmtExecutableLens R n deg D i)
     (witLens := Witness.InvLens.trivial)
     (Simple.oracleVerifier R deg D oSpec)
     (liftContextOutput R n deg D oSpec i)
     (lensKS := by simpa using extractorLens_rbr_knowledge_soundness i)
     (Simple.oracleVerifier_rbrKnowledgeSoundness R deg D oSpec)
+
+/-- Prover-averaged round-by-round knowledge soundness for a single round, transported from the
+simple round. -/
+theorem oracleVerifier_rbrKnowledgeSoundnessAveraged [Fintype R] [IsDomain R] :
+    (oracleVerifier R n deg D oSpec i).rbrKnowledgeSoundnessAveraged init impl
+    (relationRound R n deg D i.castSucc) (relationRound R n deg D i.succ)
+    (fun _ => (deg : ℝ≥0) / Fintype.card R) := by
+  rw [oracleVerifier_eq_liftContext]
+  exact OracleVerifier.liftContext_rbrKnowledgeSoundnessAveraged
+    (stmtLens := oStmtExecutableLens R n deg D i)
+    (witLens := Witness.InvLens.trivial)
+    (Simple.oracleVerifier R deg D oSpec)
+    (liftContextOutput R n deg D oSpec i)
+    (lensKS := by simpa using extractorLens_rbr_knowledge_soundness i)
+    (Simple.oracleVerifier_rbrKnowledgeSoundnessAveraged R deg D oSpec)
 
 
 end Security
@@ -1172,7 +1351,7 @@ theorem verifier_eq_unfolded (i : Fin n) :
 /-- The executable oracle projection preserves the repaired legacy verifier. -/
 theorem oracleVerifier_eq_verifier (i : Fin n) :
     (oracleVerifier R n deg D oSpec i).toVerifier = verifier R n deg D oSpec i := by
-  rw [oracleVerifier, OracleVerifier.liftContext_toVerifier_comm,
+  rw [oracleVerifier_eq_liftContext, OracleVerifier.liftContext_toVerifier_comm,
     Simple.oracleVerifier_eq_verifier, oStmtExecutableLens_toLens]
   rfl
 

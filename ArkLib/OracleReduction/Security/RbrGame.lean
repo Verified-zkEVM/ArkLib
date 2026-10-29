@@ -14,9 +14,9 @@ public import VCVio.OracleComp.Constructions.SampleableType.Measure
 /-!
 # `ProtocolSpec` glue for the round-by-round (knowledge) soundness games
 
-ArkLib's round-by-round soundness games (`Verifier.rbrSoundness`,
-`Verifier.rbrKnowledgeSoundness` in `ArkLib/OracleReduction/Security/RoundByRound.lean`) all
-compute, per challenge round `i`, a probability of the shape
+ArkLib's prover-averaged round-by-round soundness games (`Verifier.rbrSoundnessAveraged`,
+`Verifier.rbrKnowledgeSoundnessAveraged` in `ArkLib/OracleReduction/Security/RoundByRound.lean`)
+all compute, per challenge round `i`, a probability of the shape
 
 ```
 Pr{let x ← (do
@@ -44,11 +44,11 @@ let the mixture bounds move upstream, leaving thin specialisations here. The `lo
 they build on live upstream in `VCVio/OracleComp/QueryTracking/LoggingOracle.lean`.
 
 Cf. VCVio PR #475, which adds a protocol-agnostic round-by-round layer. Its generic
-`KnowledgeTransitionFamily.IsBounded` packages exactly the inner worst-case obligation of
-`Verifier.rbrKnowledgeSoundnessWorstCase`, but it has no averaged, prover-sampled notion, so the
-worst-case ⇒ averaged bridges in `Security/RoundByRound.lean` are not subsumed by it; and its
-transition family is law-free data, so ArkLib's `KnowledgeStateFunction` obligations do not
-transfer. Its source-shaped `ExtractionCondition` is a *different* notion from ArkLib's
+`KnowledgeTransitionFamily.IsBounded` packages exactly the inner fixed-prefix obligation of
+`Verifier.rbrKnowledgeSoundness`, but it has no prover-averaged notion, so the
+fixed-prefix ⇒ prover-averaged bridges in `Security/RoundByRound.lean` are not subsumed by it;
+and its transition family is law-free data, so ArkLib's `KnowledgeStateFunction` obligations do
+not transfer. Its source-shaped `ExtractionCondition` is a *different* notion from ArkLib's
 `rbrKnowledgeSoundnessOneShot`, which samples the prefix by running a prover and feeds the prover's
 query log to the extractor.
 
@@ -98,7 +98,7 @@ sampled from `init`, prover run simulated under `impl.addLift challengeQueryImpl
 obtained via `liftComp (pSpec.getChallenge i) _` — is at most `ε`.
 
 `f` packages the game's `return` expression (e.g. `fun tr c ↦ (tr.1.1, c, tr.2)` for
-`rbrKnowledgeSoundness`); when applying this lemma to a game whose `do`-block destructures
+`rbrKnowledgeSoundnessAveraged`); when applying this lemma to a game whose `do`-block destructures
 the prover output, pass `f` explicitly and use `exact` (the match-lambdas agree only up to
 definitional structure eta). -/
 theorem prEvent_simulateQ_addLift_getChallenge_bind_le
@@ -130,9 +130,10 @@ open ProtocolSpec
 variable {n : ℕ} {pSpec : ProtocolSpec n} [∀ j, SampleableType (pSpec.Challenge j)]
   {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 
-/-- Executable documentation: the master lemma engages the exact `rbrKnowledgeSoundness` game
-shape — destructuring prover-output bind, challenge via `liftComp (pSpec.getChallenge i) _`,
-`return` of the `(transcript, challenge, log)` triple — with `f` passed explicitly. -/
+/-- Executable documentation: the master lemma engages the exact
+`rbrKnowledgeSoundnessAveraged` game shape — destructuring prover-output bind, challenge via
+`liftComp (pSpec.getChallenge i) _`, `return` of the `(transcript, challenge, log)` triple —
+with `f` passed explicitly. -/
 example {T₁ T₂ L : Type}
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (oa : OracleComp (oSpec + [pSpec.Challenge]ₒ) ((T₁ × T₂) × L)) (i : pSpec.ChallengeIdx)

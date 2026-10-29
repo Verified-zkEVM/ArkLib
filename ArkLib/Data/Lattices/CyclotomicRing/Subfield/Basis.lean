@@ -185,11 +185,12 @@ theorem galoisAut_Xpow' (α m j : ℕ) (hm : Odd m) :
   rw [galoisAut_toQuotient α m hm, Xpow_toQuotient, galoisAutₛ_mk, Xpow_toQuotient,
     map_pow, Polynomial.aeval_X, ← pow_mul, Nat.mul_comm]
 
-/-- `X^{2^{α+1}} = 1` (the conductor `2d = 2^{α+1}` is the order of `X`): `X^{2d} = (X^d)^2 = 1`. -/
+/-- `X^{2^{α+1}} = 1`: the conductor `2d = 2^{α+1}` is a period of the powers of `X`,
+since `X^{2d} = (X^d)^2 = 1`. -/
 theorem Xpow_conductor (α : ℕ) : Xpow (powTwoCyclotomic (R := R) α) (2 ^ (α + 1)) = 1 := by
   rw [pow_succ, Xpow_mul, Xpow_natDegree, neg_one_sq]
 
-/-- **Conductor periodicity**: `X^n = X^{n mod 2^{α+1}}` (no sign — `X` has order `2d`). -/
+/-- **Conductor periodicity**: `X^n = X^{n mod 2^{α+1}}`, since `X^{2d} = 1`. -/
 theorem Xpow_periodic (α n : ℕ) :
     Xpow (powTwoCyclotomic (R := R) α) n
       = Xpow (powTwoCyclotomic (R := R) α) (n % 2 ^ (α + 1)) := by

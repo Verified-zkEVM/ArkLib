@@ -73,7 +73,7 @@ theorem honest_input : ((claimAt 0, oStmt₀), tX₀) ∈ TensorPrefix.relIn P�
     rfl
 
 example {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :=
-  TensorPrefix.rbrKnowledgeSoundnessWorstCase P₄ rfl exactOStmtIn exactOStmtIn_functional init impl
+  TensorPrefix.rbrKnowledgeSoundness P₄ rfl exactOStmtIn exactOStmtIn_functional init impl
 
 /-- With one packed variable, a layout-weighted sum is the linear interpolation at the point's
 first coordinate. -/

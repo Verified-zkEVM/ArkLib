@@ -80,10 +80,10 @@ example {ι : Type} (oSpec : OracleSpec ι) :
 example {ι σ : Type} (oSpec : OracleSpec ι) (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp)) :
     (_root_.GeneratorBatch.oracleVerifier F (Fin 2 → F) 3 3 (AffineSpaceGenerator F 2)
-      (by decide) oSpec).toVerifier.rbrKnowledgeSoundnessWorstCase init impl
+      (by decide) oSpec).toVerifier.rbrKnowledgeSoundness init impl
       (_root_.GeneratorBatch.relIn F domain 3 3) (_root_.GeneratorBatch.relOut F domain 3)
       (fun _ => unitInterval.toNNReal (cappedError (1 / Fintype.card F))) :=
-  _root_.GeneratorBatch.oracleVerifier_rbrKnowledgeSoundnessWorstCase F (Fin 2 → F)
+  _root_.GeneratorBatch.oracleVerifier_rbrKnowledgeSoundness F (Fin 2 → F)
     domain 3 3 (AffineSpaceGenerator F 2) (by decide) oSpec init impl _
     (isZeroEvadingGenerator_affineSpaceGenerator 2)
 
@@ -91,7 +91,7 @@ example {ι σ : Type} (oSpec : OracleSpec ι) (init : ProbComp σ)
 example {ι σ : Type} (oSpec : OracleSpec ι) (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp)) :
     (_root_.GeneratorBatch.oracleVerifier F (Fin 6 → F) 3 (2 ^ 6)
-      (multilinearGenerator F 6) (by decide) oSpec).toVerifier.rbrKnowledgeSoundnessWorstCaseWith
+      (multilinearGenerator F 6) (by decide) oSpec).toVerifier.rbrKnowledgeSoundnessWith
       init impl
       (_root_.GeneratorBatch.relIn F domain 3 (2 ^ 6))
       (_root_.GeneratorBatch.relOut F domain 3) (fun _ => Unit)
@@ -99,7 +99,7 @@ example {ι σ : Type} (oSpec : OracleSpec ι) (init : ProbComp σ)
       (_root_.GeneratorBatch.knowledgeStateFunction F (Fin 6 → F) domain 3 (2 ^ 6)
         (multilinearGenerator F 6) (by decide) oSpec init impl)
       (fun _ => (6 : ℝ≥0) / 5) := by
-  apply _root_.GeneratorBatch.oracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_of_prob_le
+  apply _root_.GeneratorBatch.oracleVerifier_rbrKnowledgeSoundnessWith_of_prob_le
   intro v hv
   simpa only [ENNReal.coe_div (by norm_num : (5 : ℝ≥0) ≠ 0), ENNReal.coe_ofNat,
     ZMod.card, Nat.cast_ofNat] using prob_dotProduct_multilinearGenerator_eq_zero_le 6 v hv
@@ -163,9 +163,9 @@ example {ι σ : Type} (oSpec : OracleSpec ι) (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp)) :
     (_root_.GeneratorBatch.oracleVerifier F F 3 3 (powerBatchGenerator F 3)
       (by decide) oSpec).toVerifier
-      |>.rbrKnowledgeSoundnessWorstCase init impl (_root_.GeneratorBatch.relIn F domain 3 3)
+      |>.rbrKnowledgeSoundness init impl (_root_.GeneratorBatch.relIn F domain 3 3)
         (_root_.GeneratorBatch.relOut F domain 3) (fun _ => (2 : ℝ≥0) / 5) := by
-  have h := _root_.GeneratorBatch.oracleVerifier_rbrKnowledgeSoundnessWorstCase F F
+  have h := _root_.GeneratorBatch.oracleVerifier_rbrKnowledgeSoundness F F
     domain 3 3 (powerBatchGenerator F 3) (by decide) oSpec init impl _
     (isZeroEvadingGenerator_powerBatchGenerator 3)
   norm_num [F, cappedError, unitInterval.toNNReal] at h
@@ -253,12 +253,12 @@ variable {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ Pro
 /-- The actual batching and quotient oracle verifiers compose their named guarded certificates. -/
 theorem composedCertificate (hcard : D.points.card ≤ d) :
     (OracleVerifier.seqCompose (fun _ : Fin 3 => Unit) (oracleStatement F d k)
-      (verifier F D d k hd oSpec)).toVerifier.rbrKnowledgeSoundnessWorstCase init impl
+      (verifier F D d k hd oSpec)).toVerifier.rbrKnowledgeSoundness init impl
       (_root_.GeneratorBatch.relIn F D d k) QuotientZeroTest.relOut
       (fun i =>
         let ij := ProtocolSpec.seqComposeChallengeIdxToSigma i
         challengeError F D d k ij.1 ij.2) := by
-  apply OracleVerifier.seqCompose_rbrKnowledgeSoundnessWorstCase_of_guarded
+  apply OracleVerifier.seqCompose_rbrKnowledgeSoundness_of_guarded
     (fun _ : Fin 3 => Unit) (oracleStatement F d k) (fun _ => Unit)
     (relation F D d k) (verifier F D d k hd oSpec) (guards F D d k hd oSpec)
     (challengeError F D d k)
@@ -267,12 +267,12 @@ theorem composedCertificate (hcard : D.points.card ≤ d) :
   · refine ⟨_, _root_.GeneratorBatch.rbrExtractor F F d k oSpec,
       _root_.GeneratorBatch.knowledgeStateFunction F F D d k (powerBatchGenerator F k)
         hd oSpec init impl, ?_⟩
-    apply _root_.GeneratorBatch.oracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_of_prob_le
+    apply _root_.GeneratorBatch.oracleVerifier_rbrKnowledgeSoundnessWith_of_prob_le
     intro v hv
     change _ ≤ ((((k - 1 : ℕ) : ℝ≥0) / Fintype.card F : ℝ≥0) : ℝ≥0∞)
     simpa only [ENNReal.coe_div (by simp : (Fintype.card F : ℝ≥0) ≠ 0),
       ENNReal.coe_natCast] using prob_dotProduct_powerBatchGenerator_eq_zero_le v hv
-  · exact QuotientZeroTest.oracleVerifier_rbrKnowledgeSoundnessWorstCase
+  · exact QuotientZeroTest.oracleVerifier_rbrKnowledgeSoundness
       F D d oSpec init impl hcard
 
 omit [DecidableEq F] [SampleableType F] in
@@ -302,7 +302,7 @@ theorem composedKnowledgeSoundness (hcard : D.points.card ≤ d) :
       (verifier F D d k hd oSpec)).knowledgeSoundness init impl
       (_root_.GeneratorBatch.relIn F D d k) QuotientZeroTest.relOut
       (((k - 1 : ℕ) : ℝ≥0) / Fintype.card F + (d : ℝ≥0) / Fintype.card F) := by
-  have h := OracleVerifier.knowledgeSoundness_of_rbrKnowledgeSoundnessWorstCase_of_guarded
+  have h := OracleVerifier.knowledgeSoundness_of_rbrKnowledgeSoundness_of_guarded
     (OracleVerifier.seqComposeGuardedForm (fun _ : Fin 3 => Unit) (oracleStatement F d k)
       (guards F D d k hd oSpec))
     (composedCertificate F D d k hd oSpec init impl hcard)

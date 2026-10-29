@@ -263,14 +263,14 @@ def batchStateFunction
       stmt tr (fun out ↦ out ∈ (outputRelation s d hdom δ).language)).mp hpos
     exact hnot hp.2
 
-/-- Worst-case round-by-round soundness for the batching verifier. There are no prover
+/-- Round-by-round soundness for the batching verifier. There are no prover
 messages; the only transition is the uniformly sampled seed. -/
 theorem round_soundness
     (hdom : 2 ^ (∑ i, (s i).1) * d ≤ 2 ^ n) (δ ε : ℝ≥0)
     (hε : ProximityGap.caError G
       (ReedSolomon.code (ω : Fin (2 ^ n) ↪ F) (2 ^ (∑ i, (s i).1) * d)).carrier δ δ ≤ ε)
     {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-    (batchVerifier (ω := ω) s m G).toVerifier.rbrSoundnessWorstCase init impl
+    (batchVerifier (ω := ω) s m G).toVerifier.rbrSoundness init impl
       (inputRelation s d m δ).language (outputRelation s d hdom δ).language
       (fun _ ↦ ε) := by
   classical
@@ -304,7 +304,7 @@ theorem soundness
   let : Unique (batchSpec S).ChallengeIdx :=
     { default := ⟨0, rfl⟩
       uniq := fun j ↦ Subtype.ext (Fin.eq_zero j.1) }
-  have h := (batchPureForm (ω := ω) s m G).toGuardedForm.soundness_of_rbrSoundnessWorstCase
+  have h := (batchPureForm (ω := ω) s m G).toGuardedForm.soundness_of_rbrSoundness
     (round_soundness s d m G hdom δ ε hε init impl)
   simpa only [OracleVerifier.soundness, Finset.sum_const, Finset.card_univ,
     Fintype.card_unique, one_nsmul] using h
@@ -335,7 +335,7 @@ theorem round_soundness_affineSpace [SampleableType F]
       (ω : Fin (2 ^ n) ↪ F))
     {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (batchVerifier (ω := ω) s m
-      (CoreDefinitions.AffineSpaceGenerator F m)).toVerifier.rbrSoundnessWorstCase
+      (CoreDefinitions.AffineSpaceGenerator F m)).toVerifier.rbrSoundness
       init impl
       (inputRelation s d m δ).language (outputRelation s d hdom δ).language
       (fun _ ↦ ProximityGap.errorBound δ (2 ^ (∑ i, (s i).1) * d) (ω : Fin (2 ^ n) ↪ F)) := by
@@ -379,7 +379,7 @@ theorem round_soundness_powers [SampleableType F]
       (ω : Fin (2 ^ n) ↪ F))
     {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (batchVerifier (ω := ω) s m
-      (CoreDefinitions.univariatePowersGenerator F m)).toVerifier.rbrSoundnessWorstCase
+      (CoreDefinitions.univariatePowersGenerator F m)).toVerifier.rbrSoundness
       init impl
       (inputRelation s d m δ).language (outputRelation s d hdom δ).language
       (fun _ ↦ m * ProximityGap.errorBound δ (2 ^ (∑ i, (s i).1) * d) (ω : Fin (2 ^ n) ↪ F)) := by
@@ -411,7 +411,7 @@ theorem round_soundness_multilinear [SampleableType F] (t : ℕ)
       (ReedSolomon.code (ω : Fin (2 ^ n) ↪ F) (2 ^ (∑ i, (s i).1) * d)).carrier)
     {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (batchVerifier (ω := ω) s (2 ^ t - 1)
-      (CoreDefinitions.multilinearBatchGenerator F t)).toVerifier.rbrSoundnessWorstCase
+      (CoreDefinitions.multilinearBatchGenerator F t)).toVerifier.rbrSoundness
       init impl
       (inputRelation s d (2 ^ t - 1) δ).language (outputRelation s d hdom δ).language
       (fun _ ↦ t * (2 ^ n / Fintype.card F)) := by

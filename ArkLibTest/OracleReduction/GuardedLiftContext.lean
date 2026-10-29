@@ -52,7 +52,7 @@ def innerState : inner.KnowledgeStateFunction (pure ()) impl innerRel innerRel
   toFun_next := fun _ _ _ _ _ _ h => h
   toFun_full := fun _ _ _ hp => (innerGuard.check_and_of_prEvent_pos hp).1
 
-theorem innerCertificate : inner.rbrKnowledgeSoundnessWorstCaseWith (pure ()) impl
+theorem innerCertificate : inner.rbrKnowledgeSoundnessWith (pure ()) impl
     innerRel innerRel (fun _ => Unit) innerExtractor innerState (fun _ => 0) := by
   intro stmt i tr
   simp [innerState, innerExtractor]
@@ -80,9 +80,9 @@ def liftedState : lifted.KnowledgeStateFunction (pure ()) impl outerRel outerRel
 def liftedGuard : lifted.GuardedForm := innerGuard.liftContext lens.stmt inner
 
 /-- The transported certificate names both the lifted extractor and lifted knowledge state. -/
-theorem liftedCertificate : lifted.rbrKnowledgeSoundnessWorstCaseWith (pure ()) impl
+theorem liftedCertificate : lifted.rbrKnowledgeSoundnessWith (pure ()) impl
     outerRel outerRel (fun _ => Bool × Unit) liftedExtractor liftedState (fun _ => 0) :=
-  inner.liftContext_rbrKnowledgeSoundnessWorstCaseWith innerExtractor innerState innerCertificate
+  inner.liftContext_rbrKnowledgeSoundnessWith innerExtractor innerState innerCertificate
 
 /-- The extra conjunct is present at both ends of the lifted component. -/
 example : ((true, false), false) ∈ outerRel ∧ ((true, false), true) ∉ outerRel := by
@@ -114,7 +114,7 @@ def rejectingState : rejecting.KnowledgeStateFunction (pure ()) impl outerRel ou
   toFun_full := fun _ _ _ hp =>
     Bool.false_ne_true (rejectingGuard.check_and_of_prEvent_pos hp).1
 
-theorem rejectingCertificate : rejecting.rbrKnowledgeSoundnessWorstCaseWith (pure ()) impl
+theorem rejectingCertificate : rejecting.rbrKnowledgeSoundnessWith (pure ()) impl
     outerRel outerRel (fun _ => Bool) rejectingExtractor rejectingState (fun _ => 0) := by
   intro stmt i tr
   simp [rejectingState]
@@ -146,7 +146,7 @@ def componentState : (i : Fin 2) → (componentVerifier i).KnowledgeStateFunctio
   Fin.cases liftedState (fun _ => rejectingState)
 
 theorem componentCertificate (i : Fin 2) :
-    (componentVerifier i).rbrKnowledgeSoundnessWorstCaseWith (pure ()) impl
+    (componentVerifier i).rbrKnowledgeSoundnessWith (pure ()) impl
       (componentRel i.castSucc) (componentRel i.succ) (componentWitMid i)
       (componentExtractor i) (componentState i) (fun _ => 0) := by
   refine Fin.cases liftedCertificate (fun j => ?_) i
@@ -171,24 +171,24 @@ abbrev composedError (ε : (i : Fin 2) → (componentProtocol i).ChallengeIdx �
   ε ij.1 ij.2
 
 /-- The named finite-chain certificate retains the lifted component's extractor and state. -/
-theorem composedCertificate : composed.rbrKnowledgeSoundnessWorstCaseWith (pure ()) impl
+theorem composedCertificate : composed.rbrKnowledgeSoundnessWith (pure ()) impl
     outerRel outerRel _ composedExtractor composedState (fun _ => 0) := by
-  exact Verifier.seqCompose_rbrKnowledgeSoundnessWorstCaseWith_of_guarded
+  exact Verifier.seqCompose_rbrKnowledgeSoundnessWith_of_guarded
     componentStmt componentWit componentRel componentVerifier componentGuard
     componentExtractor componentState (fun _ _ => 0) componentCertificate
 
 /-- The named composed extractor also supplies the ordinary knowledge certificate. -/
 theorem composedKnowledge : composed.knowledgeSoundnessWith (pure ()) impl outerRel outerRel
     composedExtractor.foldExtractor 0 := by
-  simpa using composedGuard.knowledgeSoundnessWith_of_rbrKnowledgeSoundnessWorstCaseWith
+  simpa using composedGuard.knowledgeSoundnessWith_of_rbrKnowledgeSoundnessWith
     composedState composedCertificate
 
 /-- Component bounds are transported through the dependent challenge-index decoding. -/
 theorem composedCertificateWith
     (ε : (i : Fin 2) → (componentProtocol i).ChallengeIdx → ℝ≥0) :
-    composed.rbrKnowledgeSoundnessWorstCaseWith (pure ()) impl outerRel outerRel _
+    composed.rbrKnowledgeSoundnessWith (pure ()) impl outerRel outerRel _
       composedExtractor composedState (composedError ε) := by
-  apply Verifier.seqCompose_rbrKnowledgeSoundnessWorstCaseWith_of_guarded
+  apply Verifier.seqCompose_rbrKnowledgeSoundnessWith_of_guarded
     componentStmt componentWit componentRel componentVerifier componentGuard
     componentExtractor componentState ε
   intro i stmt j tr
@@ -213,7 +213,7 @@ example (j : protocol.ChallengeIdx) :
   rw [composedError_transport]
   norm_num [taggedError]
 
-example : composed.rbrKnowledgeSoundnessWorstCaseWith (pure ()) impl outerRel outerRel _
+example : composed.rbrKnowledgeSoundnessWith (pure ()) impl outerRel outerRel _
     composedExtractor composedState (composedError taggedError) :=
   composedCertificateWith taggedError
 

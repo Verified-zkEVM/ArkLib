@@ -199,14 +199,16 @@ lemma prob_polynomial_identity_le
 
 /-- A nonzero `F`-linear form vanishes with probability exactly `1 / |F|`. -/
 theorem prob_dotProduct_eq_zero_eq_inv_card
-    {F : Type} [Field F] [Fintype F] [SampleableType F] {k : ℕ}
-    (d : Fin k → F) (hd : d ≠ 0) :
-    Pr{let v ← $ᵗ (Fin k → F)}[(∑ j, d j * v j) = 0] =
-      (Fintype.card F : ℝ≥0∞)⁻¹ := open scoped Classical in by
-  let p : (Fin k → F) → Prop := fun v ↦ ∑ j, d j * v j = 0
+    {ι F : Type} [Fintype ι] [Field F] [Fintype F]
+    [SampleableType F] [SampleableType (ι → F)]
+    (d : ι → F) (hd : d ≠ 0) :
+    Pr{let v ← $ᵗ (ι → F)}[(∑ j, d j * v j) = 0] =
+      (Fintype.card F : ℝ≥0∞)⁻¹ := by
+  classical
+  let p : (ι → F) → Prop := fun v ↦ ∑ j, d j * v j = 0
   let decP : DecidablePred p := fun _ ↦ Classical.propDecidable _
-  change Pr{let v ← $ᵗ (Fin k → F)}[p v] = (Fintype.card F : ℝ≥0∞)⁻¹
-  set L : (Fin k → F) →ₗ[F] F := ∑ j, d j • LinearMap.proj j with hL
+  change Pr{let v ← $ᵗ (ι → F)}[p v] = (Fintype.card F : ℝ≥0∞)⁻¹
+  set L : (ι → F) →ₗ[F] F := ∑ j, d j • LinearMap.proj j with hL
   have hLapply : ∀ v, L v = ∑ j, d j * v j := by
     intro v
     simp only [hL, LinearMap.coe_sum, Finset.sum_apply, LinearMap.smul_apply,
@@ -223,10 +225,10 @@ theorem prob_dotProduct_eq_zero_eq_inv_card
       rw [Pi.single_eq_of_ne hb, mul_zero]
     · intro h
       exact absurd (Finset.mem_univ j₀) h
-  have hquot : Nat.card ((Fin k → F) ⧸ LinearMap.ker L) = Fintype.card F := by
+  have hquot : Nat.card ((ι → F) ⧸ LinearMap.ker L) = Fintype.card F := by
     rw [Nat.card_congr (L.quotKerEquivOfSurjective hsurj).toEquiv, Nat.card_eq_fintype_card]
   let fintypeKer : Fintype (LinearMap.ker L) := Fintype.ofFinite _
-  have hcard : Fintype.card (Fin k → F) =
+  have hcard : Fintype.card (ι → F) =
       @Fintype.card (LinearMap.ker L) fintypeKer * Fintype.card F := by
     have h := Submodule.card_eq_card_quotient_mul_card (LinearMap.ker L)
     rw [hquot] at h
@@ -234,7 +236,7 @@ theorem prob_dotProduct_eq_zero_eq_inv_card
       ← @Nat.card_eq_fintype_card (LinearMap.ker L) fintypeKer]
     exact h
   have hfilter :
-      (@Finset.filter (Fin k → F) p decP Finset.univ).card =
+      (@Finset.filter (ι → F) p decP Finset.univ).card =
         @Fintype.card (LinearMap.ker L) fintypeKer := by
     let fintypeP : Fintype {v // p v} := Fintype.ofFinite _
     rw [@Fintype.card_congr _ _ fintypeKer fintypeP
@@ -254,9 +256,10 @@ theorem prob_dotProduct_eq_zero_eq_inv_card
 
 /-- `≤`-form of `prob_dotProduct_eq_zero_eq_inv_card`. -/
 theorem prob_dotProduct_eq_zero_le
-    {F : Type} [Field F] [Fintype F] [SampleableType F] {k : ℕ}
-    (d : Fin k → F) (hd : d ≠ 0) :
-    Pr{let v ← $ᵗ (Fin k → F)}[(∑ j, d j * v j) = 0] ≤
+    {ι F : Type} [Fintype ι] [Field F] [Fintype F]
+    [SampleableType F] [SampleableType (ι → F)]
+    (d : ι → F) (hd : d ≠ 0) :
+    Pr{let v ← $ᵗ (ι → F)}[(∑ j, d j * v j) = 0] ≤
       (Fintype.card F : ℝ≥0∞)⁻¹ :=
   le_of_eq (prob_dotProduct_eq_zero_eq_inv_card d hd)
 
