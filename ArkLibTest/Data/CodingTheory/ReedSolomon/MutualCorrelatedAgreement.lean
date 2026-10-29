@@ -105,13 +105,13 @@ private theorem tuples_ne : tupleOne ≠ tupleChallenge := fun h ↦ by
   simpa [tupleOne, tupleChallenge] using congrFun h 0
 
 example :
-    {z : ℚ | powerBatchedPolynomial (fun t ↦ (tupleOne t).map (RingHom.id ℚ)) z =
-      powerBatchedPolynomial (fun t ↦ (tupleChallenge t).map (RingHom.id ℚ)) z}.Finite :=
+    {z : ℚ | Polynomial.powerBatch (fun t ↦ (tupleOne t).map (RingHom.id ℚ)) z =
+      Polynomial.powerBatch (fun t ↦ (tupleChallenge t).map (RingHom.id ℚ)) z}.Finite :=
   finite_polynomialTuple_collisions (RingHom.id ℚ) tuples_ne
 
 example : ∃ z : ℚ, z ≠ 1 ∧ z ≠ 0 ∧
-    powerBatchedPolynomial (fun t ↦ (tupleOne t).map (RingHom.id ℚ)) z ≠
-      powerBatchedPolynomial (fun t ↦ (tupleChallenge t).map (RingHom.id ℚ)) z := by
+    Polynomial.powerBatch (fun t ↦ (tupleOne t).map (RingHom.id ℚ)) z ≠
+      Polynomial.powerBatch (fun t ↦ (tupleChallenge t).map (RingHom.id ℚ)) z := by
   classical
   obtain ⟨z, hz, hinj, hroot⟩ := exists_polynomialTuple_specialization_injective_avoiding_roots
     (RingHom.id ℚ) {tupleOne, tupleChallenge} {1} {X} (by simp [X_ne_zero])
@@ -371,7 +371,7 @@ private def recognitionJet : Fin 1 → ZMod 3 := fun _ ↦ 0
 example : ∃ P : Fin 2 → Polynomial (ZMod 3), (∀ t, (P t).degree < 1) ∧
     (∀ i ∈ ({0} : Finset (Fin 1)), ∀ t, (P t).eval (recognitionDomain i) = recognitionWords t i) ∧
     rationalTaylorPolynomial (0 : ZMod 3) recognitionChartAt 2 recognitionJet =
-      powerBatchedPolynomial (fun t ↦ (P t).map (RingHom.id _)) 1 ∧
+      Polynomial.powerBatch (fun t ↦ (P t).map (RingHom.id _)) 1 ∧
     (recognitionJet = fun j ↦ Polynomial.eval 1
       (powerBatchedJetGraph (r := 0) (0 : ZMod 3) (fun t ↦ (P t).map (RingHom.id _)) j)) ∧
     ∀ l : Fin 2, MvPolynomial.aeval recognitionJet
@@ -379,7 +379,7 @@ example : ∃ P : Fin 2 → Polynomial (ZMod 3), (∀ t, (P t).degree < 1) ∧
       MvPolynomial.aeval recognitionJet
           (initialJetSeparant (0 : ZMod 3) recognitionChartAt) ^ 4 *
         (Polynomial.taylor 0
-          (powerBatchedPolynomial (fun t ↦ (P t).map (RingHom.id _)) 1)).coeff l.val := by
+          (Polynomial.powerBatch (fun t ↦ (P t).map (RingHom.id _)) 1)).coeff l.val := by
   obtain ⟨P, hP, hs, hrecognize⟩ :=
     exists_polynomialGraph_of_symbolic_sample_of_exponent (k := 1) (K := 2) (r := 0)
       recognitionDomain recognitionWords {0} (by simp) (RingHom.id _) 0 recognitionChart

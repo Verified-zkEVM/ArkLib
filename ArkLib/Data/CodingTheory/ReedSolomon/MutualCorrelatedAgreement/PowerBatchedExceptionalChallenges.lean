@@ -109,7 +109,7 @@ theorem finite_powerBatchedChart_badChallenges_card_le [IsAlgClosed E]
       rw [eval_chartTuplePullback, aeval_jointInitialJetSeparant]
       simpa only [Option.elim_none, Option.elim_some, hφ] using hsepz'
     have hrec := (hP.specialize hτ hkK z hregular).2.2.2
-    have hw : witness z = powerBatchedPolynomial (fun t ↦ (P t).map iota) z := by
+    have hw : witness z = Polynomial.powerBatch (fun t ↦ (P t).map iota) z := by
       rw [← (hchart z hzc).2.2.2, hjetEq]
       exact hrec
     have hPmem : P ∈ tuples :=
